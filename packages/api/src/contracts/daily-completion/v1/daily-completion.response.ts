@@ -142,7 +142,7 @@ export const monthlyStatsResponseSchema = z
   })
   .meta({
     example: {
-      year: 2026,
+      year: 2_026,
       month: 1,
       totalCompleteDays: 12,
       totalDaysWithTodos: 17,

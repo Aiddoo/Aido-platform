@@ -216,7 +216,7 @@ async function getFixtureAccessToken(input: {
   sessionId: string;
   jwtSecret: string;
 }): Promise<string> {
-  const issuedAt = Math.floor(Date.now() / 1000);
+  const issuedAt = Math.floor(Date.now() / 1_000);
   const header = Buffer.from(JSON.stringify({ alg: "HS256", typ: "JWT" })).toString("base64url");
   const payload = Buffer.from(
     JSON.stringify({

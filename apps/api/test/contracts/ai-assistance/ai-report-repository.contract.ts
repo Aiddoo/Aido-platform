@@ -56,7 +56,7 @@ export function describeAiReportRepositoryContract(
         await repository.existsForPeriod({
           userId: USER_ID,
           type: "WEEKLY",
-          year: 2026,
+          year: 2_026,
           period: 11,
         }),
       ).toBe(true);
@@ -112,7 +112,7 @@ export function describeAiReportRepositoryContract(
       const exists = await repository.existsForPeriod({
         userId: USER_ID,
         type: "WEEKLY",
-        year: 2026,
+        year: 2_026,
         period: 11,
       });
 

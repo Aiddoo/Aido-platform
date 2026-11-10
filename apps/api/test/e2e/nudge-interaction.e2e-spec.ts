@@ -37,7 +37,7 @@ describe("콕 답장·감사 E2E (실제 DB)", () => {
       customizeBuilder: (builder) =>
         builder.overrideProvider(NudgeInteractionConfigPort).useValue({ isEnabled: true }),
     });
-  }, 60000);
+  }, 60_000);
 
   afterAll(async () => {
     await destroyE2eApp(ctx);

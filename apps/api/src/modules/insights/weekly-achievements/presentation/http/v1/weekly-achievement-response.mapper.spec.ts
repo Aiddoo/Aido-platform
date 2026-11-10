@@ -1,7 +1,7 @@
 import { IsoWeek } from "../../../domain/iso-week.vo.js";
 import { formatWeekLabel } from "./weekly-achievement-response.mapper.js";
 
-const YEARS = [2024, 2025, 2026, 2027, 2028, 2029, 2030];
+const YEARS = [2_024, 2_025, 2_026, 2_027, 2_028, 2_029, 2_030];
 const WEEKS = Array.from({ length: 53 }, (_, index) => index + 1);
 
 describe("주간 성취 응답의 주차 라벨·기간", () => {

@@ -10,7 +10,7 @@ describe("리마인더 옛 토큰·이름 호환 (E2E 앱 조립)", () => {
 
   beforeAll(async () => {
     ctx = await createE2eApp();
-  }, 60000);
+  }, 60_000);
 
   afterAll(async () => {
     await destroyE2eApp(ctx);

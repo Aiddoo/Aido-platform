@@ -16,14 +16,14 @@ export function signJwtWithAlgorithm(
   secret: string,
   algorithm: JwtTestAlgorithm,
 ): string {
-  const issuedAt = Math.floor(Date.now() / 1000);
+  const issuedAt = Math.floor(Date.now() / 1_000);
   const claims = { ...payload, iat: issuedAt, exp: issuedAt + 900 };
 
   if (algorithm === "none") {
     return `${encodeSegment({ alg: "none", typ: "JWT" })}.${encodeSegment(claims)}.`;
   }
   if (algorithm === "RS256") {
-    const { privateKey } = generateKeyPairSync("rsa", { modulusLength: 2048 });
+    const { privateKey } = generateKeyPairSync("rsa", { modulusLength: 2_048 });
     return jwtService.sign(claims, { privateKey, algorithm });
   }
   return jwtService.sign(claims, { secret, algorithm });

@@ -12,7 +12,7 @@ import { GetWeeklyAchievementUseCase } from "./get-weekly-achievement.use-case.j
 describe("GetWeeklyAchievementUseCase", () => {
   it("요청한 사용자의 그 주 기록을 돌려준다", async () => {
     // Given
-    const achievement = createWeeklyAchievementFixture({ year: 2026, week: 10 });
+    const achievement = createWeeklyAchievementFixture({ year: 2_026, week: 10 });
     const useCase = new GetWeeklyAchievementUseCase({
       weeklyAchievementRepository: new InMemoryWeeklyAchievementRepository([achievement]),
     });
@@ -20,7 +20,7 @@ describe("GetWeeklyAchievementUseCase", () => {
     // When
     const found = await useCase.execute({
       userId: WEEKLY_ACHIEVEMENT_FIXTURE_USER_ID,
-      year: 2026,
+      year: 2_026,
       week: 10,
     });
 
@@ -39,14 +39,14 @@ describe("GetWeeklyAchievementUseCase", () => {
     // When
     const execution = useCase.execute({
       userId: WEEKLY_ACHIEVEMENT_FIXTURE_USER_ID,
-      year: 2026,
+      year: 2_026,
       week: 10,
     });
 
     // Then
     await expect(execution).rejects.toMatchObject({
       errorCode: ErrorCode.ACHIEVEMENT_1801,
-      details: { year: 2026, week: 10 },
+      details: { year: 2_026, week: 10 },
     });
   });
 });

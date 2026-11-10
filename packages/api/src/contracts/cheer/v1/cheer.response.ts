@@ -213,7 +213,7 @@ export const cheerCooldownInfoSchema = z
       userId: "clz7x5p8k0005qz0z8z8z8z8z",
       canCheer: false,
       cooldownEndsAt: "2026-01-18T10:00:00.000Z",
-      remainingSeconds: 3600,
+      remainingSeconds: 3_600,
     },
   });
 

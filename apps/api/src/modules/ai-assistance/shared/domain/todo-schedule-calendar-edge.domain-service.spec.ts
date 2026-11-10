@@ -71,7 +71,7 @@ describe("resolveTodoSchedule — 윤일", () => {
     const result = resolveAt(
       "2027-02-01T03:00:00Z",
       SEOUL,
-      draft({ date: { kind: "CALENDAR_DATE", year: 2027, month: 2, day: 29 } }),
+      draft({ date: { kind: "CALENDAR_DATE", year: 2_027, month: 2, day: 29 } }),
     );
 
     expect(result.warnings).toContain("INVALID_DATE");

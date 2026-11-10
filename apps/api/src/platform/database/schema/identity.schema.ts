@@ -219,7 +219,7 @@ export const loginAttempt = pgTable(
 export const oAuthState = pgTable(
   "OAuthState",
   {
-    accessToken: varchar({ length: 1000 }),
+    accessToken: varchar({ length: 1_000 }),
     accountRestored: boolean(),
     codeVerifier: varchar({ length: 128 }),
     createdAt: instant()
@@ -236,7 +236,7 @@ export const oAuthState = pgTable(
     profileImage: varchar({ length: 500 }),
     provider: accountProvider().notNull(),
     redirectUri: varchar({ length: 500 }).notNull(),
-    refreshToken: varchar({ length: 1000 }),
+    refreshToken: varchar({ length: 1_000 }),
     state: varchar({ length: 64 }).notNull(),
     userAgent: varchar({ length: 500 }),
     userId: varchar({ length: 255 }),

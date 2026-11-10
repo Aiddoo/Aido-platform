@@ -13,7 +13,7 @@ export const AI_PARSE_LIMITS = {
  */
 export const ACTION_PLAN_LIMITS = {
   /** 빠른 계획 입력 최대 길이 */
-  QUICK_PLAN_TEXT_MAX_LENGTH: 1000,
+  QUICK_PLAN_TEXT_MAX_LENGTH: 1_000,
   /** 계획 하나의 할 일 최대 수 */
   MAX_TODOS: 10,
   /** 계획 하나의 메모 최대 수 */
@@ -27,7 +27,7 @@ export const ACTION_PLAN_LIMITS = {
   /** 녹음 정리 제목 최대 길이 */
   DIGEST_TITLE_MAX_LENGTH: 100,
   /** 녹음 정리 요약 최대 길이 */
-  DIGEST_SUMMARY_MAX_LENGTH: 1000,
+  DIGEST_SUMMARY_MAX_LENGTH: 1_000,
   /** 핵심 포인트 하나의 최대 길이 */
   DIGEST_KEY_POINT_MAX_LENGTH: 200,
 } as const;

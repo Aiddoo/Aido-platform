@@ -28,7 +28,7 @@ const STATUS_KINDS: Readonly<Record<number, AiFailureKind>> = {
 };
 
 const USAGE = {
-  inputTokens: { total: 1000, noCache: 1000, cacheRead: 0, cacheWrite: 0 },
+  inputTokens: { total: 1_000, noCache: 1_000, cacheRead: 0, cacheWrite: 0 },
   outputTokens: { total: 200, text: 200, reasoning: 0 },
 };
 

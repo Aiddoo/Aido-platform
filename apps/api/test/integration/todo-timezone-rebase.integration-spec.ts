@@ -62,7 +62,7 @@ import { suppressLogger } from "../setup/suppress-logger.js";
 const SEOUL = "Asia/Seoul";
 const NEW_YORK = "America/New_York";
 const SCHEMA = "pgboss";
-const HOUR_MS = 60 * 60 * 1000;
+const HOUR_MS = 60 * 60 * 1_000;
 
 describe("시간대 재계산 (실제 PostgreSQL·pg-boss)", () => {
   let database: TestDatabase;
@@ -233,7 +233,7 @@ describe("시간대 재계산 (실제 PostgreSQL·pg-boss)", () => {
 
   it("새 시간대에서 10분 안쪽으로 남으면 바로 보내지 않고 건너뛴다", async () => {
     // Given
-    const soon = new Date(Date.now() + 5 * 60 * 1000);
+    const soon = new Date(Date.now() + 5 * 60 * 1_000);
     const localTime = toLocalTimeString(soon, NEW_YORK);
     const id = await seedTodo(localDateInTimezone(soon, NEW_YORK), localTime, {
       scheduledTime: nowInstant().add({ milliseconds: 5 * HOUR_MS }),

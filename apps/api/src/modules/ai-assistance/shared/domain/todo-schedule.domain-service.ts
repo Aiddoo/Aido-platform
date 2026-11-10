@@ -31,7 +31,7 @@ const MONTH_EARLY_LAST_DAY = 10;
 /** "올해 초"로 보는 달(1월) */
 const YEAR_EARLY_MONTH = 1;
 /** YYYY-MM-DD로 쓸 수 있는 마지막 해 */
-const MAX_CALENDAR_YEAR = 9999;
+const MAX_CALENDAR_YEAR = 9_999;
 
 /** 때만 말한 경우의 기본 시각(분). 자정은 대상 날짜 다음 날 00:00으로 따로 다룬다. */
 const PART_OF_DAY_MINUTES: Readonly<Record<Exclude<PartOfDay, "MIDNIGHT">, number>> = {

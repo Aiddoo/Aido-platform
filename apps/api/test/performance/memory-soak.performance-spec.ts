@@ -22,9 +22,9 @@ import { preparePgBossSchema, useRealJobRuntime } from "#test/e2e/helpers/real-j
  */
 const WARM_UP = { requests: 3_000, jobs: 500 };
 const SOAK = { requests: 5_000, jobs: 1_000 };
-const HEAP_GROWTH_LIMIT_BYTES = 4 * 1024 * 1024;
+const HEAP_GROWTH_LIMIT_BYTES = 4 * 1_024 * 1_024;
 const USER_COUNT = 20;
-const MB = 1024 * 1024;
+const MB = 1_024 * 1_024;
 
 const soakJobSchema = z.object({ userId: z.string(), sequence: z.number().int() });
 const createdTodoSchema = z.object({ data: z.object({ todo: z.object({ id: z.number() }) }) });

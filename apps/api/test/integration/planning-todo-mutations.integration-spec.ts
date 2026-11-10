@@ -179,7 +179,7 @@ describe("Todo 변경 원자성·Drizzle 쿼리 실행 수 (실제 PostgreSQL)",
         `);
         expect(waiting.rows[0]?.count).toBe(expected);
       },
-      { timeout: 5000, interval: 10 },
+      { timeout: 5_000, interval: 10 },
     );
   }
 
@@ -296,7 +296,7 @@ describe("Todo 변경 원자성·Drizzle 쿼리 실행 수 (실제 PostgreSQL)",
     const unitOfWork = context.module.get<UnitOfWorkPort>(UNIT_OF_WORK);
 
     // When
-    const result = unitOfWork.run(() => repository.reorderItems([first.id, 999999]));
+    const result = unitOfWork.run(() => repository.reorderItems([first.id, 999_999]));
 
     // Then
     await expect(result).rejects.toBeInstanceOf(DatabaseRecordNotFoundError);

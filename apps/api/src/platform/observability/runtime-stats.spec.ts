@@ -5,7 +5,7 @@ import {
   type RuntimeSample,
 } from "./runtime-stats.js";
 
-const MB = 1024 * 1024;
+const MB = 1_024 * 1_024;
 
 function sample(overrides: Partial<RuntimeSample> = {}): RuntimeSample {
   return {

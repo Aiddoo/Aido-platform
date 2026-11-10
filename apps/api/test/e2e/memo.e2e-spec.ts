@@ -34,7 +34,7 @@ describe("메모 E2E", () => {
 
   beforeAll(async () => {
     ctx = await createE2eApp();
-  }, 60000);
+  }, 60_000);
 
   afterAll(async () => {
     await destroyE2eApp(ctx);
@@ -139,7 +139,7 @@ describe("메모 E2E", () => {
     it("5000자 초과 내용으로 생성 시 400 에러 반환", async () => {
       // Given - 인증된 사용자와 5001자 텍스트
       const user = await ctx.helpers.createVerifiedUser("memo-create-long@test.com", password);
-      const longContent = "가".repeat(5001);
+      const longContent = "가".repeat(5_001);
 
       // When - 긴 내용으로 생성
       const response = await request(ctx.app.getHttpServer())
@@ -459,7 +459,7 @@ describe("메모 E2E", () => {
       const response = await request(ctx.app.getHttpServer())
         .patch(`/v1/memos/${memo.id}/reorder`)
         .set("Authorization", `Bearer ${user.accessToken}`)
-        .send({ targetMemoId: 999999, position: "after" })
+        .send({ targetMemoId: 999_999, position: "after" })
         .expect(404);
 
       // Then - MEMO_2002 에러

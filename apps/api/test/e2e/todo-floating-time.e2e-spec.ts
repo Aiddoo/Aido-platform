@@ -41,7 +41,7 @@ describe("떠 있는 시각 E2E", () => {
 
   beforeAll(async () => {
     ctx = await createE2eApp();
-  }, 60000);
+  }, 60_000);
   afterAll(async () => {
     await destroyE2eApp(ctx);
   });
@@ -378,7 +378,7 @@ describe("떠 있는 시각 표 (시간대 × 할 일 종류)", () => {
 
   beforeAll(async () => {
     ctx = await createE2eApp();
-  }, 60000);
+  }, 60_000);
   afterAll(async () => {
     await destroyE2eApp(ctx);
   });

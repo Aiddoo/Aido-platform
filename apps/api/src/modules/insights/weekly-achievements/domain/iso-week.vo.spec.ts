@@ -11,12 +11,12 @@ describe("IsoWeek", () => {
   it("연초 1주·DST 전환 주·53주·다음 해 1주의 월~일 날짜를 시간대와 상관없이 준다", () => {
     // Given
     const weeks = [
-      [2026, 1],
-      [2026, 10],
-      [2026, 44],
-      [2026, 53],
-      [2027, 1],
-      [2028, 9],
+      [2_026, 1],
+      [2_026, 10],
+      [2_026, 44],
+      [2_026, 53],
+      [2_027, 1],
+      [2_028, 9],
     ] as const;
 
     // When
@@ -36,13 +36,13 @@ describe("IsoWeek", () => {
   });
 
   it.each([
-    { previous: [2026, 9], next: [2026, 10], expected: true },
-    { previous: [2026, 9], next: [2026, 11], expected: false },
-    { previous: [2025, 52], next: [2026, 1], expected: true },
-    { previous: [2026, 52], next: [2027, 1], expected: false },
-    { previous: [2026, 53], next: [2027, 1], expected: true },
-    { previous: [2020, 53], next: [2021, 1], expected: true },
-    { previous: [2026, 10], next: [2027, 11], expected: false },
+    { previous: [2_026, 9], next: [2_026, 10], expected: true },
+    { previous: [2_026, 9], next: [2_026, 11], expected: false },
+    { previous: [2_025, 52], next: [2_026, 1], expected: true },
+    { previous: [2_026, 52], next: [2_027, 1], expected: false },
+    { previous: [2_026, 53], next: [2_027, 1], expected: true },
+    { previous: [2_020, 53], next: [2_021, 1], expected: true },
+    { previous: [2_026, 10], next: [2_027, 11], expected: false },
   ] as const)("$previous 다음 주가 $next인지는 $expected", ({ previous, next, expected }) => {
     // Given
     const before = IsoWeek.create(previous[0], previous[1]);
@@ -57,7 +57,7 @@ describe("IsoWeek", () => {
 
   it.each([0, 54, 1.5])("주가 1~53 정수가 아니면(%s) SYS_0002로 거절한다", (week) => {
     // When
-    const creating = () => IsoWeek.create(2026, week);
+    const creating = () => IsoWeek.create(2_026, week);
 
     // Then
     expect(creating).toThrow(expect.objectContaining({ errorCode: ErrorCode.SYS_0002 }));

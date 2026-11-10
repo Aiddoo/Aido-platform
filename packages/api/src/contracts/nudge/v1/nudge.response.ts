@@ -249,7 +249,7 @@ export const nudgeCooldownInfoSchema = z
     example: {
       canNudge: false,
       cooldownEndsAt: "2026-01-17T10:00:00.000Z",
-      remainingSeconds: 3600,
+      remainingSeconds: 3_600,
     },
   });
 

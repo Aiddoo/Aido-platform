@@ -115,7 +115,7 @@ describe("DrizzleUserLocationRepository (실제 PostgreSQL)", () => {
           );
           expect(waiting.rows[0]?.count).toBe(2);
         },
-        { timeout: 5000, interval: 10 },
+        { timeout: 5_000, interval: 10 },
       );
     } finally {
       released.resolve();

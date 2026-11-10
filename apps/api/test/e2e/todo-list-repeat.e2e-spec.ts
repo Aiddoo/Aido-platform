@@ -13,7 +13,7 @@ import { todoSeries } from "#api/platform/database/schema/index";
 import { releasedTodoSchema } from "./fixtures/released-todo-response.schema.js";
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 
-const DAY_MS = 24 * 60 * 60 * 1000;
+const DAY_MS = 24 * 60 * 60 * 1_000;
 
 function dateAfter(days: number): string {
   return new Date(Date.now() + days * DAY_MS).toISOString().slice(0, 10);
@@ -36,7 +36,7 @@ describe("할 일 응답의 반복 정보 E2E", () => {
 
   beforeAll(async () => {
     ctx = await createE2eApp();
-  }, 60000);
+  }, 60_000);
 
   afterAll(async () => {
     await destroyE2eApp(ctx);

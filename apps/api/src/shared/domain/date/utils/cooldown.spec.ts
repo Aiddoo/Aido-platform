@@ -43,7 +43,7 @@ describe("calculateCooldown", () => {
     const result = calculateCooldown(lastAction, 1);
 
     expect(result.isActive).toBe(true);
-    expect(result.remainingSeconds).toBe(1800); // 30분 = 1800초
+    expect(result.remainingSeconds).toBe(1_800); // 30분 = 1800초
     expect(result.endsAt).toEqual(new Date("2026-03-03T12:30:00Z"));
   });
 
@@ -66,6 +66,6 @@ describe("calculateCooldown", () => {
     const result = calculateCooldown(lastAction, 1);
 
     expect(result.isActive).toBe(true);
-    expect(result.remainingSeconds).toBe(3600);
+    expect(result.remainingSeconds).toBe(3_600);
   });
 });

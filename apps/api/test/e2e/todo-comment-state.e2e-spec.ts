@@ -139,7 +139,7 @@ describe("댓글 상태 HTTP 회귀", () => {
     const childId = await writeComment(owner.accessToken, todoId, "중간 답글", rootId);
     vi.setSystemTime(new Date(COMMENT_TIME.getTime() + 2));
     const leafId = await writeComment(owner.accessToken, todoId, "마지막 답글", childId);
-    vi.setSystemTime(new Date(COMMENT_TIME.getTime() + 1000));
+    vi.setSystemTime(new Date(COMMENT_TIME.getTime() + 1_000));
     const otherRootId = await writeComment(owner.accessToken, todoId, "다른 대화");
 
     // When

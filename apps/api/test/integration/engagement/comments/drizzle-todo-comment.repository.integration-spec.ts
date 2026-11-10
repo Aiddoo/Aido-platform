@@ -22,7 +22,7 @@ import { UserFixture } from "#test/fixtures/index";
 import { createDatabaseTransactionFixture } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
-const CATEGORY_ID = 7101;
+const CATEGORY_ID = 7_101;
 const TODO_IDS = [0, 1, 2].map((offset) => TODO_COMMENT_FIXTURE_TODO_ID + offset);
 
 describe("Drizzle 댓글 저장소 (실제 PostgreSQL)", () => {

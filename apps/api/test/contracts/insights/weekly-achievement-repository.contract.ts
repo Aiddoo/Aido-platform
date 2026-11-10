@@ -109,9 +109,9 @@ export function describeWeeklyAchievementRepositoryContract(
       const repository = await createRepository();
       await saveWeeks(repository, [1, 2, 3, 4]);
       await saveWeeks(repository, [7], { userId: OTHER.value });
-      await saveWeeks(repository, [8], { year: 2025 });
+      await saveWeeks(repository, [8], { year: 2_025 });
       const list = (afterWeek: number | null) =>
-        repository.listByYear({ userId: USER, year: 2026, afterWeek, limit: 3 });
+        repository.listByYear({ userId: USER, year: 2_026, afterWeek, limit: 3 });
 
       // When
       const pages = {
@@ -146,14 +146,14 @@ export function describeWeeklyAchievementRepositoryContract(
       const repository = await createRepository();
       await saveWeeks(repository, [3, 1, 2]);
       await saveWeeks(repository, [5], { userId: OTHER.value });
-      await saveWeeks(repository, [52], { year: 2025 });
+      await saveWeeks(repository, [52], { year: 2_025 });
 
       // When
-      const all = await repository.listAllByYear({ userId: USER, year: 2026 });
+      const all = await repository.listAllByYear({ userId: USER, year: 2_026 });
 
       // Then
       expect(weeksOf(all)).toEqual([1, 2, 3]);
-      expect(all.every((achievement) => achievement.isoWeek.year === 2026)).toBe(true);
+      expect(all.every((achievement) => achievement.isoWeek.year === 2_026)).toBe(true);
     });
   });
 }

@@ -5,7 +5,7 @@ import { z } from "zod";
 import { RedisCacheStore } from "#api/platform/cache/adapters/redis-cache.store";
 import { describeCacheStoreContract } from "#test/contracts/platform/cache-store.contract";
 
-const REDIS_PORT = 6379;
+const REDIS_PORT = 6_379;
 
 describe.each([
   { name: "Redis", image: "redis:7.4-alpine" },

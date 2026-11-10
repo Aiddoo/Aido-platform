@@ -63,7 +63,7 @@ it("같은 PostgreSQL·pool·데이터에서 기존 8쿼리와 준비된 ORM 집
         samples.push(performance.now() - start);
       }
       const elapsedCpu = process.cpuUsage(cpu);
-      return { samples, cpuMs: (elapsedCpu.user + elapsedCpu.system) / 1000 };
+      return { samples, cpuMs: (elapsedCpu.user + elapsedCpu.system) / 1_000 };
     };
     const summarize = (rounds: Awaited<ReturnType<typeof measure>>[]) => {
       const samples = rounds.flatMap((round) => round.samples).sort((a, b) => a - b);
@@ -149,7 +149,7 @@ it("같은 PostgreSQL·pool·데이터에서 기존 8쿼리와 준비된 ORM 집
         })),
       };
     };
-    for (const rowCount of [1000, 10_000, 100_000]) {
+    for (const rowCount of [1_000, 10_000, 100_000]) {
       await testDb.cleanup();
       const user = requireRecord(
         (
@@ -176,11 +176,11 @@ it("같은 PostgreSQL·pool·데이터에서 기존 8쿼리와 준비된 ORM 집
           })),
         )
         .returning();
-      for (let offset = 0; offset < rowCount; offset += 1000) {
+      for (let offset = 0; offset < rowCount; offset += 1_000) {
         await client.insert(todo).values(
-          Array.from({ length: Math.min(1000, rowCount - offset) }, (_, index) => {
+          Array.from({ length: Math.min(1_000, rowCount - offset) }, (_, index) => {
             const i = offset + index;
-            const startDate = new Date(Date.UTC(2026, 1, 16 + (i % 14)));
+            const startDate = new Date(Date.UTC(2_026, 1, 16 + (i % 14)));
             const category = categories[i % categories.length];
             if (category === undefined) {
               throw new Error("Benchmark category missing");
@@ -194,7 +194,7 @@ it("같은 PostgreSQL·pool·데이터에서 기존 8쿼리와 준비된 ORM 집
               completedAt:
                 i % 3 !== 0
                   ? instantFromDate(
-                      new Date(startDate.getTime() + (i % 24) * 3600_000 + (i % 3600) * 1000),
+                      new Date(startDate.getTime() + (i % 24) * 3_600_000 + (i % 3_600) * 1_000),
                     )
                   : null,
               updatedAt: nowInstant(),
@@ -227,7 +227,7 @@ it("같은 PostgreSQL·pool·데이터에서 기존 8쿼리와 준비된 ORM 집
       expect(afterStatements).toBe(5);
       // 실행 순서와 공유 프로세스의 GC 영향을 줄이도록 6회 교차 측정한다.
       // RSS는 seed와 두 측정이 공유하는 프로세스 값이므로 특정 조회의 사용량으로 표시하지 않는다.
-      let sharedPeakRssMiB = process.memoryUsage().rss / 1024 / 1024;
+      let sharedPeakRssMiB = process.memoryUsage().rss / 1_024 / 1_024;
       for (let round = 0; round < 6; round++) {
         const before = async () => beforeRounds.push(await measure(() => baseline(params)));
         const after = async () =>
@@ -239,7 +239,7 @@ it("같은 PostgreSQL·pool·데이터에서 기존 8쿼리와 준비된 ORM 집
           await after();
           await before();
         }
-        sharedPeakRssMiB = Math.max(sharedPeakRssMiB, process.memoryUsage().rss / 1024 / 1024);
+        sharedPeakRssMiB = Math.max(sharedPeakRssMiB, process.memoryUsage().rss / 1_024 / 1_024);
       }
       process.stdout.write(
         `${JSON.stringify({ count: rowCount, before: { ...summarize(beforeRounds), statements: beforeStatements }, after: { ...summarize(afterRounds), statements: afterStatements }, sharedPeakRssMiB, connections: pooledConnections?.() })}\n`,

@@ -20,8 +20,8 @@ import { TestDatabase } from "#test/setup/test-database";
 
 const SCHEMA = "pgboss";
 const USER_ID = "user-reminder";
-const HOUR_MS = 60 * 60 * 1000;
-const MINUTE_MS = 60 * 1000;
+const HOUR_MS = 60 * 60 * 1_000;
+const MINUTE_MS = 60 * 1_000;
 // 테스트가 기다리지 않게 같은 큐를 1초마다 가져간다
 const FAST_TODO_REMINDER_QUEUE = {
   ...TODO_REMINDER_QUEUE,
@@ -103,7 +103,7 @@ describe("리마인더 재예약 (실제 pg-boss)", () => {
 
   it("범위 수정처럼 취소 뒤 일괄 등록해도 새 시각의 작업만 대기한다", async () => {
     // Given
-    const todoIds = [nextTodoId, nextTodoId + 1000];
+    const todoIds = [nextTodoId, nextTodoId + 1_000];
     const first = nowInstant().add({ milliseconds: 5 * HOUR_MS });
     const moved = nowInstant().add({ milliseconds: 8 * HOUR_MS });
     await scheduler.scheduleReminders(

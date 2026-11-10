@@ -43,8 +43,8 @@ describe("캐시 무효화 통합 테스트 (Memory adapter)", () => {
             registerAs(cacheConfig.namespace, () =>
               cacheConfig.parse({
                 CACHE_TYPE: "memory",
-                CACHE_DEFAULT_TTL_MS: 60000,
-                CACHE_MAX_ITEMS: 1000,
+                CACHE_DEFAULT_TTL_MS: 60_000,
+                CACHE_MAX_ITEMS: 1_000,
               }),
             ),
           ],
@@ -73,7 +73,7 @@ describe("캐시 무효화 통합 테스트 (Memory adapter)", () => {
       const sessionId = "sess_integration_test_123";
       const session = {
         userId: "user_integration_1",
-        expiresAt: new Date(Date.now() + 3600000),
+        expiresAt: new Date(Date.now() + 3_600_000),
         revokedAt: null,
       };
 
@@ -447,7 +447,7 @@ describe("캐시 무효화 통합 테스트 (Memory adapter)", () => {
               registerAs(cacheConfig.namespace, () =>
                 cacheConfig.parse({
                   CACHE_TYPE: "memory",
-                  CACHE_DEFAULT_TTL_MS: 60000,
+                  CACHE_DEFAULT_TTL_MS: 60_000,
                   CACHE_MAX_ITEMS: 5,
                 }),
               ),

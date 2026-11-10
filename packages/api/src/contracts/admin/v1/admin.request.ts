@@ -4,7 +4,7 @@ import { BROADCAST_TARGET_FILTER } from "../../../vocabulary/admin.constants.js"
 import { notificationActionSchema } from "../../notification/v1/notification.payload.js";
 
 const MAX_GROWTH_QUERY_DAYS = 90;
-const MILLISECONDS_PER_DAY = 24 * 60 * 60 * 1000;
+const MILLISECONDS_PER_DAY = 24 * 60 * 60 * 1_000;
 
 /**
  * 관리자 성장 지표 요약 조회
@@ -116,7 +116,7 @@ export const targetedNotificationSchema = z
     userIds: z
       .array(z.cuid())
       .min(1, "최소 1명의 사용자를 선택해주세요")
-      .max(1000, "최대 1000명까지 선택할 수 있습니다")
+      .max(1_000, "최대 1000명까지 선택할 수 있습니다")
       .describe("알림 대상 사용자 ID 목록"),
     action: notificationActionSchema
       .optional()

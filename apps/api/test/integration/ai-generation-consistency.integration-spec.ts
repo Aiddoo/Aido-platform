@@ -547,7 +547,7 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
         );
         expect(waiting.rows[0]?.count).toBe(count);
       },
-      { timeout: 5000, interval: 10 },
+      { timeout: 5_000, interval: 10 },
     );
   }
 

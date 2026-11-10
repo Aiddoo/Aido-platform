@@ -37,7 +37,7 @@ describe("반복 할 일의 시간대 규칙 E2E", () => {
 
   beforeAll(async () => {
     ctx = await createE2eApp();
-  }, 60000);
+  }, 60_000);
   afterAll(async () => {
     await destroyE2eApp(ctx);
   });

@@ -296,7 +296,7 @@ describe("resolveTodoSchedule — 결정 규칙과 경계", () => {
 
   it("없는 날짜는 오늘로 두고 INVALID_DATE를 남긴다", () => {
     // Given
-    const input = draft({ date: { kind: "CALENDAR_DATE", year: 2026, month: 2, day: 30 } });
+    const input = draft({ date: { kind: "CALENDAR_DATE", year: 2_026, month: 2, day: 30 } });
     // When
     const result = resolveTodoSchedule(input, SEOUL);
     // Then
@@ -559,7 +559,7 @@ describe("resolveTodoSchedule — 지난 날짜를 만들지 않는다", () => {
 
   it("연도까지 말한 지난 날짜는 오늘로 두고 INVALID_DATE를 남긴다", () => {
     // Given
-    const input = draft({ date: { kind: "CALENDAR_DATE", year: 2026, month: 11, day: 6 } });
+    const input = draft({ date: { kind: "CALENDAR_DATE", year: 2_026, month: 11, day: 6 } });
     // When
     const result = resolveTodoSchedule(input, SATURDAY);
     // Then
@@ -569,7 +569,7 @@ describe("resolveTodoSchedule — 지난 날짜를 만들지 않는다", () => {
   it("연도까지 말한 오늘과 앞으로의 날짜는 그대로 둔다", () => {
     // Given
     const said = [7, 8].map((day) =>
-      draft({ date: { kind: "CALENDAR_DATE", year: 2026, month: 11, day } }),
+      draft({ date: { kind: "CALENDAR_DATE", year: 2_026, month: 11, day } }),
     );
     // When
     const results = said.map((input) => resolveTodoSchedule(input, SATURDAY));
@@ -802,7 +802,7 @@ describe("resolveTodoSchedule — 반복 규칙 (서울 수 2026-10-28)", () => 
       repeat: {
         pattern: "WEEKLY_DAYS",
         daysOfWeek: ["WED", "MON"],
-        until: { kind: "CALENDAR_DATE", year: 2026, month: 12, day: 31 },
+        until: { kind: "CALENDAR_DATE", year: 2_026, month: 12, day: 31 },
       },
       expected: {
         frequency: "WEEKLY",
@@ -875,7 +875,10 @@ describe("resolveTodoSchedule — 반복 규칙 (서울 수 2026-10-28)", () => 
     },
     {
       why: "until이 시작일보다 앞선 날",
-      repeat: { pattern: "DAILY", until: { kind: "CALENDAR_DATE", year: 2026, month: 10, day: 1 } },
+      repeat: {
+        pattern: "DAILY",
+        until: { kind: "CALENDAR_DATE", year: 2_026, month: 10, day: 1 },
+      },
     },
     {
       why: "기간이 하루뿐인 forDuration",

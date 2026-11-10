@@ -13,7 +13,7 @@ import { createPostgresPool } from "#api/platform/database/postgres-pool";
 const CONNECTION_TIMEOUT_MS = 300;
 const QUERY_TIMEOUT_MS = 600;
 // 타이머·소켓 정리 지연을 감안한 여유. 기본 상한(연결 5초·쿼리 20초)보다 한참 짧다
-const TIMER_SLACK_MS = 1000;
+const TIMER_SLACK_MS = 1_000;
 
 // AuthenticationOk + ReadyForQuery(idle). 로그인을 끝낸 서버처럼 보인다
 const LOGIN_COMPLETE = Buffer.from([0x52, 0, 0, 0, 8, 0, 0, 0, 0, 0x5a, 0, 0, 0, 5, 0x49]);

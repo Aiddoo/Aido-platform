@@ -9,5 +9,5 @@ export type InquiryCategory = (typeof INQUIRY_CATEGORY)[keyof typeof INQUIRY_CAT
 
 export const INQUIRY_CONTENT_LIMITS = {
   MIN_LENGTH: 10,
-  MAX_LENGTH: 2000,
+  MAX_LENGTH: 2_000,
 } as const;

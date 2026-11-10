@@ -61,7 +61,7 @@ describe("날씨 E2E", () => {
         () => sunTimeProvider.clear(),
       ],
     });
-  }, 60000);
+  }, 60_000);
 
   afterAll(async () => {
     await destroyE2eApp(ctx);

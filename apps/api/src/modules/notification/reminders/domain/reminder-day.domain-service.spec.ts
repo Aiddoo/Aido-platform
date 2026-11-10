@@ -40,10 +40,10 @@ describe("리마인더 날짜 경계", () => {
   });
 
   it.each([
-    { today: "2026-11-09", start: "2026-11-02", end: "2026-11-09", isoYear: 2026, isoWeek: 45 },
-    { today: "2026-11-15", start: "2026-11-02", end: "2026-11-09", isoYear: 2026, isoWeek: 45 },
-    { today: "2027-01-04", start: "2026-12-28", end: "2027-01-04", isoYear: 2026, isoWeek: 53 },
-    { today: "2026-01-05", start: "2025-12-29", end: "2026-01-05", isoYear: 2026, isoWeek: 1 },
+    { today: "2026-11-09", start: "2026-11-02", end: "2026-11-09", isoYear: 2_026, isoWeek: 45 },
+    { today: "2026-11-15", start: "2026-11-02", end: "2026-11-09", isoYear: 2_026, isoWeek: 45 },
+    { today: "2027-01-04", start: "2026-12-28", end: "2027-01-04", isoYear: 2_026, isoWeek: 53 },
+    { today: "2026-01-05", start: "2025-12-29", end: "2026-01-05", isoYear: 2_026, isoWeek: 1 },
   ])("previousIsoWeekOf($today)는 $start~$end, $isoYear-W$isoWeek", (row) => {
     // Given
     const today = Temporal.PlainDate.from(row.today);

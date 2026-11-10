@@ -46,7 +46,7 @@ describe("renderDiscordEmbed", () => {
 
     // Then
     expect(embed.fields).toEqual([
-      { name: "시각", value: `<t:${Math.floor(Date.parse(iso) / 1000)}:f>`, inline: false },
+      { name: "시각", value: `<t:${Math.floor(Date.parse(iso) / 1_000)}:f>`, inline: false },
       { name: "이름", value: "아이도" },
     ]);
   });

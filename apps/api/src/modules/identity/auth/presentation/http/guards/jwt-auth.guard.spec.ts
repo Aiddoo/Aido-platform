@@ -95,7 +95,7 @@ async function activate(guard: JwtAuthGuard | JwtRefreshGuard, request: TestRequ
 }
 
 describe("JwtAuthGuard — access 토큰 검증(Passport 대체)", () => {
-  const sessionValidUntil = AUTH_FIXTURE_NOW.add({ hours: 24 * 3650 });
+  const sessionValidUntil = AUTH_FIXTURE_NOW.add({ hours: 24 * 3_650 });
 
   function validSessionGuard() {
     return createAccessGuard(() => createAuthSessionFixture({ expiresAt: sessionValidUntil }));

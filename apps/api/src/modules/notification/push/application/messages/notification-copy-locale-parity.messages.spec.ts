@@ -98,9 +98,9 @@ const REPRESENTATIVE_FACTS: Readonly<Record<string, readonly NotificationCopyFac
   "social.INVITE_QUALIFY_REMINDER": [{ inviterName: longName }],
   "social.INVITE_JOINED": [{ inviteeName: longName }],
   "social.INVITE_REWARDED": [
-    { premiumDays: 9999, friendSlots: 9999 },
-    { premiumDays: 9999, friendSlots: 0 },
-    { premiumDays: 0, friendSlots: 9999 },
+    { premiumDays: 9_999, friendSlots: 9_999 },
+    { premiumDays: 9_999, friendSlots: 0 },
+    { premiumDays: 0, friendSlots: 9_999 },
   ],
   "social.NUDGE_RECEIVED": [
     { senderName: longName, todoTitle },
@@ -124,7 +124,7 @@ const REPRESENTATIVE_FACTS: Readonly<Record<string, readonly NotificationCopyFac
   "social.TODO_COMMENT_REPLY_TO_REPLY": [{ senderName: longName }],
   "social.TODO_COMMENT_REPLY_CHAIN": [{ senderName: longName, count: 999 }],
   "social.TODO_COMMENT_LIKE": [{ senderName: longName }],
-  "system.WEEKLY_ACHIEVEMENT": [{ completedCount: 99999 }],
+  "system.WEEKLY_ACHIEVEMENT": [{ completedCount: 99_999 }],
   "system.WEEKLY_ACHIEVEMENT_ALMOST": [{ rate: 99 }],
   "system.PREMIUM_TRIAL_ENDING_RENEWING": [0, 1, 30].map((days) => ({
     days,
@@ -139,8 +139,8 @@ const REPRESENTATIVE_FACTS: Readonly<Record<string, readonly NotificationCopyFac
   })),
   "system.PREMIUM_RENEWAL_UPCOMING": [{ days: 30, at, timezone: "Asia/Seoul" }],
   "system.MARKETING_CONSENT_RECONFIRM": [{ agreedAt: at, timezone: "Asia/Seoul" }],
-  "system.ONBOARDING_DAY5": [{ completedCount: 0 }, { completedCount: 99999 }],
-  "system.ONBOARDING_DAY7": [{ completedCount: 0 }, { completedCount: 99999 }],
+  "system.ONBOARDING_DAY5": [{ completedCount: 0 }, { completedCount: 99_999 }],
+  "system.ONBOARDING_DAY7": [{ completedCount: 0 }, { completedCount: 99_999 }],
 };
 
 // 출시 문구를 그대로 옮긴 예외. 문구를 바꾸려면 Before/After 검토를 따로 거친다

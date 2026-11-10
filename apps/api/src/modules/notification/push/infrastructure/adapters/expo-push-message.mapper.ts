@@ -2,7 +2,7 @@ import type { ExpoPushMessage } from "expo-server-sdk";
 
 import type { PushPayload } from "../../application/ports/push-provider.port.js";
 
-export const EXPO_PUSH_PAYLOAD_MAX_BYTE_LENGTH = 4096;
+export const EXPO_PUSH_PAYLOAD_MAX_BYTE_LENGTH = 4_096;
 
 export type ExpoPushMessageBuildResult =
   | {

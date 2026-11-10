@@ -22,7 +22,7 @@ describe("오늘의 할 일 요약 E2E", () => {
 
   beforeAll(async () => {
     ctx = await createE2eApp();
-  }, 60000);
+  }, 60_000);
 
   afterAll(async () => {
     await destroyE2eApp(ctx);
@@ -258,7 +258,7 @@ describe("오늘의 할 일 요약 E2E", () => {
         password,
       );
       const outOfRange = new Date(
-        todayInTimezone(timezone).getTime() + offsetDays * 24 * 60 * 60 * 1000,
+        todayInTimezone(timezone).getTime() + offsetDays * 24 * 60 * 60 * 1_000,
       );
 
       // When

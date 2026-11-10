@@ -131,9 +131,9 @@ describe("AiSdkGeneratorAdapter — 업체 체인·폴백·제한 시간", () =>
       model: "anthropic:claude-haiku-5-5",
       attempts: 1,
       fallbackFrom: null,
-      inputTokens: 1000,
+      inputTokens: 1_000,
       outputTokens: 200,
-      estimatedCostMicroUsd: 1000 * 0.1 + 200 * 0.5,
+      estimatedCostMicroUsd: 1_000 * 0.1 + 200 * 0.5,
     });
     expect([chain.google.callCount, chain.openai.callCount]).toEqual([0, 0]);
   });
@@ -151,7 +151,7 @@ describe("AiSdkGeneratorAdapter — 업체 체인·폴백·제한 시간", () =>
       model: "google:gemini-3.1-flash-lite",
       attempts: 2,
       fallbackFrom: "anthropic",
-      estimatedCostMicroUsd: 1000 * 0.25 + 200 * 1.5,
+      estimatedCostMicroUsd: 1_000 * 0.25 + 200 * 1.5,
     });
     expect(warn).toHaveBeenCalledWith({
       event: "ai.provider.fallback",
@@ -252,7 +252,7 @@ describe("AiSdkGeneratorAdapter — 업체 체인·폴백·제한 시간", () =>
     expect([chain.anthropic.callCount, chain.google.callCount]).toEqual([2, 1]);
     // 출력 검증에 실패한 두 번의 Claude 호출 토큰도 비용에 더한다.
     expect(result.estimatedCostMicroUsd).toBe(
-      2 * (1000 * 0.1 + 200 * 0.5) + 1000 * 0.25 + 200 * 1.5,
+      2 * (1_000 * 0.1 + 200 * 0.5) + 1_000 * 0.25 + 200 * 1.5,
     );
   });
 
@@ -766,7 +766,7 @@ describe("AiSdkGeneratorAdapter — 입력 상한·킬 스위치·비용 예산"
     // When
     await generate(chain.generator);
     // Then
-    const expected = 2 * (1000 * 0.1 + 200 * 0.5) + 1000 * 0.25 + 200 * 1.5;
+    const expected = 2 * (1_000 * 0.1 + 200 * 0.5) + 1_000 * 0.25 + 200 * 1.5;
     expect(
       await chain.meter.read([
         spendKey("2026-11-05"),
@@ -786,7 +786,7 @@ describe("AiSdkGeneratorAdapter — 입력 상한·킬 스위치·비용 예산"
     // Then
     expect(result.estimatedCostMicroUsd).toBeNull();
     const [daily] = await chain.meter.read([spendKey("2026-11-05")]);
-    expect(daily).toBe(Math.round("규칙PRIVATE_PROMPT".length * 0.25 + 1024 * 1.5));
+    expect(daily).toBe(Math.round("규칙PRIVATE_PROMPT".length * 0.25 + 1_024 * 1.5));
   });
 
   it("계량 저장소가 실패해도 생성은 막지 않고 원인 종류만 error로 남긴다", async () => {

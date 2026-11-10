@@ -14,7 +14,7 @@ export function createWeeklyAchievementFixture(
   return WeeklyAchievement.reconstitute({
     id: 1,
     userId: WEEKLY_ACHIEVEMENT_FIXTURE_USER_ID,
-    year: 2026,
+    year: 2_026,
     week: 10,
     totalTodos: 10,
     completedTodos: 7,
@@ -29,7 +29,7 @@ export function createWeeklyAchievementRecordInputFixture(
 ): WeeklyAchievementRecordInput {
   return {
     userId: WEEKLY_ACHIEVEMENT_FIXTURE_USER_ID,
-    year: 2026,
+    year: 2_026,
     week: 10,
     totalTodos: 5,
     completedTodos: 3,

@@ -79,7 +79,7 @@ describe("ValueObject — 값 객체 베이스", () => {
   it("PlainDate를 담은 객체 값은 날짜가 같으면 같고 다르면 다르다", () => {
     // Given
     const base = Schedule.of({ date: Temporal.PlainDate.from("2026-11-10"), time: null });
-    const sameDate = Schedule.of({ date: new Temporal.PlainDate(2026, 11, 10), time: null });
+    const sameDate = Schedule.of({ date: new Temporal.PlainDate(2_026, 11, 10), time: null });
     const nextDate = Schedule.of({ date: Temporal.PlainDate.from("2026-11-11"), time: null });
 
     // When

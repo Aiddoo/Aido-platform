@@ -13,28 +13,28 @@ function weeks(...pairs: ReadonlyArray<readonly [number, number]>): IsoWeek[] {
 describe("주간 성취 요약", () => {
   it.each([
     { name: "기록이 없으면 0", records: weeks(), current: 0, best: 0 },
-    { name: "한 주면 1", records: weeks([2026, 5]), current: 1, best: 1 },
+    { name: "한 주면 1", records: weeks([2_026, 5]), current: 1, best: 1 },
     {
       name: "가운데 빈 주에서 끊긴다",
-      records: weeks([2026, 5], [2026, 6], [2026, 8], [2026, 9], [2026, 10]),
+      records: weeks([2_026, 5], [2_026, 6], [2_026, 8], [2_026, 9], [2_026, 10]),
       current: 3,
       best: 3,
     },
     {
       name: "52주 해의 연말에서 다음 해 1주로 잇는다",
-      records: weeks([2025, 51], [2025, 52], [2026, 1], [2026, 2]),
+      records: weeks([2_025, 51], [2_025, 52], [2_026, 1], [2_026, 2]),
       current: 4,
       best: 4,
     },
     {
       name: "53주 해의 53주에서 다음 해 1주로 잇는다",
-      records: weeks([2020, 52], [2020, 53], [2021, 1]),
+      records: weeks([2_020, 52], [2_020, 53], [2_021, 1]),
       current: 3,
       best: 3,
     },
     {
       name: "최고 기록과 현재 연속이 다를 수 있다",
-      records: weeks([2026, 1], [2026, 2], [2026, 3], [2026, 4], [2026, 8], [2026, 9]),
+      records: weeks([2_026, 1], [2_026, 2], [2_026, 3], [2_026, 4], [2_026, 8], [2_026, 9]),
       current: 2,
       best: 4,
     },

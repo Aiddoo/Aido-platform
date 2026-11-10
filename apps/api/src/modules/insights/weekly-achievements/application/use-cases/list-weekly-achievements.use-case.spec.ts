@@ -24,7 +24,7 @@ describe("ListWeeklyAchievementsUseCase", () => {
     // When
     const result = await useCase.execute({
       userId: WEEKLY_ACHIEVEMENT_FIXTURE_USER_ID,
-      year: 2026,
+      year: 2_026,
       size: 2,
     });
 
@@ -47,7 +47,7 @@ describe("ListWeeklyAchievementsUseCase", () => {
     // When
     const result = await useCase.execute({
       userId: WEEKLY_ACHIEVEMENT_FIXTURE_USER_ID,
-      year: 2026,
+      year: 2_026,
       cursor: 3,
       size: 2,
     });
@@ -64,7 +64,7 @@ describe("ListWeeklyAchievementsUseCase", () => {
     // When
     const result = await useCase.execute({
       userId: WEEKLY_ACHIEVEMENT_FIXTURE_USER_ID,
-      year: 2026,
+      year: 2_026,
     });
 
     // Then

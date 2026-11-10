@@ -14,7 +14,7 @@ function create(overrides: { totalTodos?: number; completedTodos?: number; week?
   return WeeklyAchievement.create({
     id: WeeklyAchievementId.reconstitute(1),
     userId: UserId.reconstitute(WEEKLY_ACHIEVEMENT_FIXTURE_USER_ID),
-    year: 2026,
+    year: 2_026,
     week: overrides.week ?? 10,
     totalTodos: overrides.totalTodos ?? 5,
     completedTodos: overrides.completedTodos ?? 3,

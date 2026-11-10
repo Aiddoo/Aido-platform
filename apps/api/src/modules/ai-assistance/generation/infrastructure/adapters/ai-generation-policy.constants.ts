@@ -19,15 +19,15 @@ export interface AiGenerationPolicy {
  * 비용은 실제 생성량에만 비례하고, 잘린 출력은 TRUNCATED로 분류된다.
  */
 const TASK_MAX_OUTPUT_TOKENS: Readonly<Record<AiTaskId, number>> = {
-  "parse-todo": 1024,
+  "parse-todo": 1_024,
   // 2026-10-26 live eval에서 긴 메모(할 일 12개)의 사고+출력이 최대 3,067 토큰이었다. 여유를 두 배로 둔다.
-  "parse-memo": 6144,
-  report: 2048,
-  suggestion: 2048,
+  "parse-memo": 6_144,
+  report: 2_048,
+  suggestion: 2_048,
   // 할 일 최대 10개 + 메모 1개의 계획. parse-memo와 같은 여유를 둔다.
-  "quick-plan": 6144,
+  "quick-plan": 6_144,
   // 30분 녹음의 요약·핵심 포인트·계획(출력 약 1.5k 토큰)에 사고 토큰 여유를 더한다.
-  "voice-note-digest": 8192,
+  "voice-note-digest": 8_192,
 };
 
 /** 재시도 층은 하나다. 배경 작업은 pg-boss가 다시 부르므로 SDK 재시도를 쓰지 않고 모델 호출도 더 적게 둔다. */

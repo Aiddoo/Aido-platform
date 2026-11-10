@@ -273,7 +273,7 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
     requestPasswordReset = module.get(RequestPasswordResetUseCase);
     deleteAccount = module.get(DeleteAccountUseCase);
     purgeDeletedAccounts = module.get(PurgeDeletedAccountsUseCase);
-  }, 60000);
+  }, 60_000);
 
   beforeEach(async () => {
     suppressLogger();

@@ -31,7 +31,7 @@ describe("InMemoryLockAdapter — 인메모리 락 어댑터", () => {
     it("잠금을 획득하면 release 함수를 반환한다", async () => {
       // Given
       const resource = "todo:123:reminder";
-      const ttlMs = 5000;
+      const ttlMs = 5_000;
 
       // When
       const release = await lock.acquire(resource, ttlMs);
@@ -44,10 +44,10 @@ describe("InMemoryLockAdapter — 인메모리 락 어댑터", () => {
     it("이미 잠긴 리소스에 대해 null을 반환한다", async () => {
       // Given
       const resource = "todo:123:reminder";
-      await lock.acquire(resource, 5000);
+      await lock.acquire(resource, 5_000);
 
       // When
-      const secondAttempt = await lock.acquire(resource, 5000);
+      const secondAttempt = await lock.acquire(resource, 5_000);
 
       // Then
       expect(secondAttempt).toBeNull();
@@ -56,12 +56,12 @@ describe("InMemoryLockAdapter — 인메모리 락 어댑터", () => {
     it("release 후 동일 리소스를 재획득할 수 있다", async () => {
       // Given
       const resource = "todo:123:reminder";
-      const release = await lock.acquire(resource, 5000);
+      const release = await lock.acquire(resource, 5_000);
       expect(release).not.toBeNull();
 
       // When
       await release?.();
-      const secondRelease = await lock.acquire(resource, 5000);
+      const secondRelease = await lock.acquire(resource, 5_000);
 
       // Then
       expect(secondRelease).not.toBeNull();
@@ -71,12 +71,12 @@ describe("InMemoryLockAdapter — 인메모리 락 어댑터", () => {
     it("TTL 만료 후 자동으로 잠금이 해제된다", async () => {
       // Given
       const resource = "todo:123:reminder";
-      const ttlMs = 3000;
+      const ttlMs = 3_000;
       await lock.acquire(resource, ttlMs);
 
       // When
       vi.advanceTimersByTime(ttlMs);
-      const release = await lock.acquire(resource, 5000);
+      const release = await lock.acquire(resource, 5_000);
 
       // Then
       expect(release).not.toBeNull();
@@ -85,12 +85,12 @@ describe("InMemoryLockAdapter — 인메모리 락 어댑터", () => {
     it("TTL이 만료되지 않은 동안에는 잠금이 유지된다", async () => {
       // Given
       const resource = "todo:123:reminder";
-      const ttlMs = 5000;
+      const ttlMs = 5_000;
       await lock.acquire(resource, ttlMs);
 
       // When
       vi.advanceTimersByTime(ttlMs - 1);
-      const secondAttempt = await lock.acquire(resource, 5000);
+      const secondAttempt = await lock.acquire(resource, 5_000);
 
       // Then
       expect(secondAttempt).toBeNull();
@@ -99,9 +99,9 @@ describe("InMemoryLockAdapter — 인메모리 락 어댑터", () => {
     it("TTL 만료 뒤 늦게 호출한 release는 다른 소유자의 잠금을 해제하지 않는다", async () => {
       // Given
       const resource = "todo:123:reminder";
-      const staleRelease = await lock.acquire(resource, 1000);
-      vi.advanceTimersByTime(1001);
-      const currentRelease = await lock.acquire(resource, 5000);
+      const staleRelease = await lock.acquire(resource, 1_000);
+      vi.advanceTimersByTime(1_001);
+      const currentRelease = await lock.acquire(resource, 5_000);
       expect(currentRelease).not.toBeNull();
 
       // When
@@ -109,7 +109,7 @@ describe("InMemoryLockAdapter — 인메모리 락 어댑터", () => {
 
       // Then
       expect(await lock.isLocked(resource)).toBe(true);
-      expect(await lock.acquire(resource, 5000)).toBeNull();
+      expect(await lock.acquire(resource, 5_000)).toBeNull();
     });
 
     it("서로 다른 리소스는 독립적으로 잠금을 획득할 수 있다", async () => {
@@ -118,8 +118,8 @@ describe("InMemoryLockAdapter — 인메모리 락 어댑터", () => {
       const resource2 = "todo:456:reminder";
 
       // When
-      const release1 = await lock.acquire(resource1, 5000);
-      const release2 = await lock.acquire(resource2, 5000);
+      const release1 = await lock.acquire(resource1, 5_000);
+      const release2 = await lock.acquire(resource2, 5_000);
 
       // Then
       expect(release1).not.toBeNull();
@@ -131,7 +131,7 @@ describe("InMemoryLockAdapter — 인메모리 락 어댑터", () => {
     it("잠겨있는 리소스에 대해 true를 반환한다", async () => {
       // Given
       const resource = "todo:123:reminder";
-      await lock.acquire(resource, 5000);
+      await lock.acquire(resource, 5_000);
 
       // When
       const result = await lock.isLocked(resource);
@@ -154,7 +154,7 @@ describe("InMemoryLockAdapter — 인메모리 락 어댑터", () => {
     it("release 후 false를 반환한다", async () => {
       // Given
       const resource = "todo:123:reminder";
-      const release = await lock.acquire(resource, 5000);
+      const release = await lock.acquire(resource, 5_000);
       await release?.();
 
       // When
@@ -167,7 +167,7 @@ describe("InMemoryLockAdapter — 인메모리 락 어댑터", () => {
     it("TTL 만료 후 false를 반환한다", async () => {
       // Given
       const resource = "todo:123:reminder";
-      const ttlMs = 3000;
+      const ttlMs = 3_000;
       await lock.acquire(resource, ttlMs);
 
       // When
@@ -181,7 +181,7 @@ describe("InMemoryLockAdapter — 인메모리 락 어댑터", () => {
     it("TTL 만료 전에는 true를 반환한다", async () => {
       // Given
       const resource = "todo:123:reminder";
-      const ttlMs = 5000;
+      const ttlMs = 5_000;
       await lock.acquire(resource, ttlMs);
 
       // When
@@ -198,7 +198,7 @@ describe("InMemoryLockAdapter — 인메모리 락 어댑터", () => {
       // Given
       const resource1 = "todo:1:reminder";
       const resource2 = "todo:2:reminder";
-      await lock.acquire(resource1, 5000);
+      await lock.acquire(resource1, 5_000);
       await lock.acquire(resource2, 10_000);
 
       // When
@@ -245,9 +245,9 @@ describe("InMemoryLockAdapter — 인메모리 락 어댑터", () => {
     it("상한에 닿아도 만료된 잠금을 지우고 새 잠금을 받는다", async () => {
       // Given
       for (let index = 0; index < LOCK_MAX_ENTRIES; index += 1) {
-        await lock.acquire(`resource:${index}`, 1000);
+        await lock.acquire(`resource:${index}`, 1_000);
       }
-      vi.advanceTimersByTime(1001);
+      vi.advanceTimersByTime(1_001);
 
       // When
       const release = await lock.acquire("resource:after-expiry", 60_000);

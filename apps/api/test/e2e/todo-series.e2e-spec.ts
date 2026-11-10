@@ -24,7 +24,7 @@ import {
 } from "./fixtures/released-todo-response.schema.js";
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 
-const DAY_MS = 24 * 60 * 60 * 1000;
+const DAY_MS = 24 * 60 * 60 * 1_000;
 
 function dateAfter(days: number): string {
   return new Date(Date.now() + days * DAY_MS).toISOString().slice(0, 10);
@@ -44,7 +44,7 @@ describe("반복 할 일 생성 E2E", () => {
         builder.overrideProvider(AiGeneratorPort).useValue(fakeAiGenerator),
       additionalResetters: [() => fakeAiGenerator.clear()],
     });
-  }, 60000);
+  }, 60_000);
 
   afterAll(async () => {
     await destroyE2eApp(ctx);

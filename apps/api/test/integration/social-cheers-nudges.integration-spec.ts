@@ -145,7 +145,7 @@ describe("Social 일일 한도·쿨다운·조회 쿼리 (실제 PostgreSQL)", (
           );
           expect(waiting.rows[0]?.count).toBe(2);
         },
-        { timeout: 5000, interval: 10 },
+        { timeout: 5_000, interval: 10 },
       );
       const waiting = await client.execute<{ query: string }>(
         sql`SELECT query FROM pg_stat_activity WHERE datname=current_database() AND wait_event_type='Lock' ORDER BY query`,

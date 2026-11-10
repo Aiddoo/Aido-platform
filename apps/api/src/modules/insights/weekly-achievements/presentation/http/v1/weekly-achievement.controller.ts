@@ -49,8 +49,8 @@ export class WeeklyAchievementController {
     name: "year",
     required: true,
     description: "조회할 연도 (2024-2100)",
-    schema: { type: "number", minimum: 2024, maximum: 2100 },
-    example: 2026,
+    schema: { type: "number", minimum: 2_024, maximum: 2_100 },
+    example: 2_026,
   })
   @ApiQuery({
     name: "cursor",
@@ -119,7 +119,7 @@ GET /weekly-achievements?year=2026&cursor=21&size=20
   @ApiParam({
     name: "year",
     description: "ISO 연도",
-    example: 2026,
+    example: 2_026,
   })
   @ApiParam({
     name: "week",

@@ -38,7 +38,7 @@ export const notification = pgTable(
   "Notification",
   {
     actionType: notificationActionType().default("DEEP_LINK").notNull(),
-    actionUrl: varchar({ length: 1000 }),
+    actionUrl: varchar({ length: 1_000 }),
     body: varchar({ length: 500 }).notNull(),
     campaignKey: varchar({ length: 100 }),
     cheerId: integer(),

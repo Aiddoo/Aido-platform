@@ -59,7 +59,7 @@ describe("DrizzleWeeklyAchievementRepository (실제 PostgreSQL)", () => {
     expect(
       await repository.listAllByYear({
         userId: UserId.reconstitute(WEEKLY_ACHIEVEMENT_FIXTURE_USER_ID),
-        year: 2026,
+        year: 2_026,
       }),
     ).toEqual([]);
   });

@@ -16,7 +16,7 @@ import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import { PreferenceLogEvent } from "../../../application/preferences.log-events.js";
 import { RefreshPushTimezoneUseCase } from "../../../application/use-cases/refresh-push-timezone.use-case.js";
 
-export const TIMEZONE_SELF_HEAL_TTL_MS = 60 * 60 * 1000;
+export const TIMEZONE_SELF_HEAL_TTL_MS = 60 * 60 * 1_000;
 // 한 시간에 이보다 많은 사용자가 오면 가장 오래 안 본 사용자를 잊는다. 잊힌 사용자는 시간대를 한 번 더 저장할 뿐이다
 export const TIMEZONE_SELF_HEAL_MAX_ENTRIES = 10_000;
 

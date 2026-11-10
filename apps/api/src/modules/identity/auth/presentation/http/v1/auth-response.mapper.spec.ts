@@ -56,7 +56,7 @@ describe("AuthMapper — 인증 매퍼", () => {
         tokens: {
           accessToken: "access-token",
           refreshToken: "refresh-token",
-          expiresIn: 3600,
+          expiresIn: 3_600,
         },
         name: "테스터",
         profileImage: "https://example.com/img.jpg",
@@ -85,7 +85,7 @@ describe("AuthMapper — 인증 매퍼", () => {
         tokens: {
           accessToken: "login-access",
           refreshToken: "login-refresh",
-          expiresIn: 3600,
+          expiresIn: 3_600,
         },
         sessionId: "session-789",
         name: null,
@@ -115,7 +115,7 @@ describe("AuthMapper — 인증 매퍼", () => {
         tokens: {
           accessToken: "restored-access",
           refreshToken: "restored-refresh",
-          expiresIn: 3600,
+          expiresIn: 3_600,
         },
         sessionId: "session-restored",
         name: "복구유저",
@@ -140,7 +140,7 @@ describe("AuthMapper — 인증 매퍼", () => {
         tokens: {
           accessToken: "social-access",
           refreshToken: "social-refresh",
-          expiresIn: 3600,
+          expiresIn: 3_600,
         },
         sessionId: "session-social",
         name: "소셜유저",
@@ -172,7 +172,7 @@ describe("AuthMapper — 인증 매퍼", () => {
         tokens: {
           accessToken: "new-access",
           refreshToken: "new-refresh",
-          expiresIn: 3600,
+          expiresIn: 3_600,
         },
         sessionId: "session-123",
       };

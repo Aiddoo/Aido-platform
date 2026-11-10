@@ -198,7 +198,7 @@ describe("핵심 큐 프로세서 컴포넌트 테스트 (실제 PostgreSQL + pg
       await harness.retentionRepository.enroll({
         userId: recipient.id,
         variant: "TREATMENT",
-        startedAt: Temporal.Instant.fromEpochMilliseconds(Date.now() - 3 * 60 * 60 * 1000),
+        startedAt: Temporal.Instant.fromEpochMilliseconds(Date.now() - 3 * 60 * 60 * 1_000),
       });
 
       // When

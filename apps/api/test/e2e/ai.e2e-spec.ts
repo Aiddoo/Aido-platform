@@ -47,7 +47,7 @@ function at(hour: number, minute = 0) {
 function memoTodo(title: string, overrides: Record<string, unknown> = {}) {
   return {
     ...createTodoDraftResponse({ title }),
-    categoryId: 999999,
+    categoryId: 999_999,
     items: [],
     ...overrides,
   };
@@ -114,7 +114,7 @@ describe("AI E2E", () => {
         builder.overrideProvider(AiGeneratorPort).useValue(fakeAiGenerator),
       additionalResetters: [() => fakeAiGenerator.clear()],
     });
-  }, 60000);
+  }, 60_000);
 
   afterAll(async () => {
     await destroyE2eApp(ctx);
@@ -141,7 +141,7 @@ describe("AI E2E", () => {
         vi.setSystemTime(new Date("2025-01-25T03:00:00Z"));
         fakeAiGenerator.setResponse({
           title: "팀 미팅",
-          date: onDate(2025, 1, 26),
+          date: onDate(2_025, 1, 26),
           time: at(15),
         });
 
@@ -177,7 +177,7 @@ describe("AI E2E", () => {
 
       it("확정 뒤 한도를 읽지 못해도 파싱 결과를 주고 featureQuota만 뺀다", async () => {
         // Given
-        fakeAiGenerator.setResponse({ title: "회의", date: onDate(2025, 1, 26) });
+        fakeAiGenerator.setResponse({ title: "회의", date: onDate(2_025, 1, 26) });
         // 남은 횟수 선검사(@RequireQuota)는 원장 read를 거치지 않아 확정 뒤 읽기만 실패시킨다
         const ledger = ctx.module.get(QuotaLedgerPort);
         vi.spyOn(ledger, "read").mockRejectedValueOnce(new TypeError("db down"));
@@ -199,7 +199,7 @@ describe("AI E2E", () => {
         // Given
         fakeAiGenerator.setResponse({
           title: "팀 미팅",
-          date: onDate(2025, 1, 26),
+          date: onDate(2_025, 1, 26),
           time: at(15),
         });
 
@@ -219,7 +219,7 @@ describe("AI E2E", () => {
         // Given
         fakeAiGenerator.setResponse({
           title: "팀 미팅",
-          date: onDate(2025, 1, 26),
+          date: onDate(2_025, 1, 26),
           time: at(15),
         });
 
@@ -241,8 +241,8 @@ describe("AI E2E", () => {
         vi.setSystemTime(new Date("2025-01-25T03:00:00Z"));
         fakeAiGenerator.setResponse({
           title: "출장",
-          date: onDate(2025, 1, 27),
-          endDate: onDate(2025, 1, 31),
+          date: onDate(2_025, 1, 27),
+          endDate: onDate(2_025, 1, 31),
           time: null,
         });
 
@@ -264,7 +264,7 @@ describe("AI E2E", () => {
         // Given
         fakeAiGenerator.setDefaultResponse({
           title: "테스트",
-          date: onDate(2025, 1, 26),
+          date: onDate(2_025, 1, 26),
         });
 
         // When
@@ -292,7 +292,7 @@ describe("AI E2E", () => {
         // Given
         fakeAiGenerator.setResponse({
           title: "테스트",
-          date: onDate(2025, 1, 25),
+          date: onDate(2_025, 1, 25),
           time: null,
         });
 
@@ -377,7 +377,7 @@ describe("AI E2E", () => {
         // Given
         fakeAiGenerator.setDefaultResponse({
           title: "테스트",
-          date: onDate(2026, 5, 1),
+          date: onDate(2_026, 5, 1),
         });
         const now = new Date();
         const previousMonthFirstDay = new Date(
@@ -419,7 +419,7 @@ describe("AI E2E", () => {
         expect(resetsAt.getUTCHours()).toBe(15);
         expect(resetsAt.getUTCMinutes()).toBe(0);
         expect(resetsAt.getUTCSeconds()).toBe(0);
-        const kstDate = new Date(resetsAt.getTime() + 9 * 60 * 60 * 1000);
+        const kstDate = new Date(resetsAt.getTime() + 9 * 60 * 60 * 1_000);
         expect(kstDate.getUTCDate()).toBe(1);
       });
 
@@ -427,7 +427,7 @@ describe("AI E2E", () => {
         // Given
         fakeAiGenerator.setDefaultResponse({
           title: "테스트",
-          date: onDate(2025, 1, 26),
+          date: onDate(2_025, 1, 26),
         });
 
         // When
@@ -595,7 +595,7 @@ describe("AI E2E", () => {
         fakeAiGenerator.setTokenUsage({ input: 200, output: 80 });
         fakeAiGenerator.setResponse({
           title: "테스트",
-          date: onDate(2025, 1, 26),
+          date: onDate(2_025, 1, 26),
         });
 
         // When
@@ -718,7 +718,7 @@ describe("AI E2E", () => {
       // Given
       fakeAiGenerator.setResponse({
         title: "테스트",
-        date: onDate(2025, 1, 26),
+        date: onDate(2_025, 1, 26),
       });
 
       // When
@@ -740,7 +740,7 @@ describe("AI E2E", () => {
       // Given
       fakeAiGenerator.setResponse({
         title: "테스트",
-        date: onDate(2025, 1, 26),
+        date: onDate(2_025, 1, 26),
       });
 
       // When
@@ -760,7 +760,7 @@ describe("AI E2E", () => {
       // Given
       fakeAiGenerator.setDefaultResponse({
         title: "테스트",
-        date: onDate(2025, 1, 26),
+        date: onDate(2_025, 1, 26),
       });
 
       // When
@@ -800,7 +800,7 @@ describe("AI E2E", () => {
       // Given
       fakeAiGenerator.setDefaultResponse({
         title: "테스트",
-        date: onDate(2025, 1, 26),
+        date: onDate(2_025, 1, 26),
       });
       await setUsage(testUserId, FREE_AI_LIMIT);
 
@@ -835,11 +835,11 @@ describe("AI E2E", () => {
         fakeAiGenerator.setRawResponse({
           todos: [
             memoTodo("버그 수정", {
-              date: onDate(2026, 4, 12),
+              date: onDate(2_026, 4, 12),
               time: at(14),
               items: [{ title: "로그 확인" }],
             }),
-            memoTodo("자료 올리기", { date: onDate(2026, 4, 11) }),
+            memoTodo("자료 올리기", { date: onDate(2_026, 4, 11) }),
           ],
         });
 
@@ -1058,7 +1058,7 @@ describe("AI E2E", () => {
       if (route === "parse-todo") {
         fakeAiGenerator.setResponse(draft);
       } else {
-        fakeAiGenerator.setRawResponse({ todos: [{ ...draft, categoryId: 999999, items: [] }] });
+        fakeAiGenerator.setRawResponse({ todos: [{ ...draft, categoryId: 999_999, items: [] }] });
       }
       vi.useFakeTimers({ toFake: ["Date"] });
       vi.setSystemTime(new Date("2026-03-07T14:30:00Z"));

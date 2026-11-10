@@ -23,7 +23,7 @@ export const weeklyAchievementSchema = z
   .meta({
     example: {
       id: 42,
-      year: 2026,
+      year: 2_026,
       week: 10,
       weekLabel: "3월 2주차",
       dateRange: { startDate: "2026-03-02", endDate: "2026-03-08" },
@@ -67,7 +67,7 @@ export const weeklyAchievementListResponseSchema = cursorPageSchema(
       items: [
         {
           id: 42,
-          year: 2026,
+          year: 2_026,
           week: 10,
           weekLabel: "3월 2주차",
           dateRange: { startDate: "2026-03-02", endDate: "2026-03-08" },

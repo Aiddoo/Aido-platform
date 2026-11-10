@@ -96,7 +96,7 @@ export const PREMIUM_FEATURES = {
     meter: "AI_PLAN",
     free: 10,
     premium: null,
-    fairUse: { premium: 1000 },
+    fairUse: { premium: 1_000 },
   },
   CHEER: { kind: "quota", period: "day", free: 3, premium: null },
   NUDGE: { kind: "quota", period: "day", free: 3, premium: null },
@@ -122,7 +122,7 @@ export const PLAN_CATALOG = {
     premium: null,
     fairUse: { premium: 100 },
     perUse: {
-      maxSeconds: { free: 180, premium: 1800 },
+      maxSeconds: { free: 180, premium: 1_800 },
       maxCharacters: { free: 4_000, premium: 40_000 },
     },
   },

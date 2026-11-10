@@ -3,7 +3,7 @@ export function todoActionDraft(overrides: Record<string, unknown> = {}) {
   return {
     title: "회의록 보내기",
     categoryId: null,
-    date: { kind: "CALENDAR_DATE", year: 2027, month: 1, day: 4 },
+    date: { kind: "CALENDAR_DATE", year: 2_027, month: 1, day: 4 },
     endDate: null,
     time: null,
     repeat: { pattern: "NONE" },

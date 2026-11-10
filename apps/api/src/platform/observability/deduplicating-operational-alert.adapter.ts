@@ -7,7 +7,7 @@ import {
   OperationalAlertPort,
 } from "#api/shared/application/ports/operational-alert.port";
 
-const HOUR_MS = 60 * 60 * 1000;
+const HOUR_MS = 60 * 60 * 1_000;
 
 /**
  * Sentry 무료 플랜 오류 한도(월 5,000건) 안에서 경보를 보내는 기준.

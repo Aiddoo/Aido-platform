@@ -83,7 +83,7 @@ describe("arithmetic", () => {
 
   describe("addMilliseconds", () => {
     it("지정 밀리초를 더한 시각 반환", () => {
-      expect(addMilliseconds(1500, base)).toEqual(new Date("2026-03-03T12:00:01.500Z"));
+      expect(addMilliseconds(1_500, base)).toEqual(new Date("2026-03-03T12:00:01.500Z"));
     });
   });
 

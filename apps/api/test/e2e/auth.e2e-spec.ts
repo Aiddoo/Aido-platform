@@ -39,7 +39,7 @@ describe("인증 E2E", () => {
     // CacheService 인스턴스 가져오기
     cacheService = ctx.module.get<CacheService>(CacheService);
     _cacheAdapter = ctx.module.get<ICacheService>(CACHE_SERVICE);
-  }, 60000);
+  }, 60_000);
 
   afterAll(async () => {
     await destroyE2eApp(ctx);

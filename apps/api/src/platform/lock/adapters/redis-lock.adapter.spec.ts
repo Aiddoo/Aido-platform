@@ -33,7 +33,7 @@ describe("RedisLockAdapter — Redis 분산 잠금 어댑터", () => {
   describe("정상 동작", () => {
     it("락을 획득하면 release 함수를 반환한다", async () => {
       // When
-      const release = await lock.acquire("resource", 5000);
+      const release = await lock.acquire("resource", 5_000);
 
       // Then
       expect(release).not.toBeNull();
@@ -42,10 +42,10 @@ describe("RedisLockAdapter — Redis 분산 잠금 어댑터", () => {
 
     it("이미 잠긴 리소스는 null을 반환한다", async () => {
       // Given
-      await lock.acquire("resource", 5000);
+      await lock.acquire("resource", 5_000);
 
       // When
-      const second = await lock.acquire("resource", 5000);
+      const second = await lock.acquire("resource", 5_000);
 
       // Then
       expect(second).toBeNull();
@@ -53,11 +53,11 @@ describe("RedisLockAdapter — Redis 분산 잠금 어댑터", () => {
 
     it("release 후 다시 획득할 수 있다", async () => {
       // Given
-      const release = await lock.acquire("resource", 5000);
+      const release = await lock.acquire("resource", 5_000);
 
       // When
       await release?.();
-      const reacquired = await lock.acquire("resource", 5000);
+      const reacquired = await lock.acquire("resource", 5_000);
 
       // Then
       expect(reacquired).not.toBeNull();
@@ -77,7 +77,7 @@ describe("RedisLockAdapter — Redis 분산 잠금 어댑터", () => {
       vi.spyOn(redis, "set").mockRejectedValue(failure);
 
       // When
-      const release = await lock.acquire("resource", 5000);
+      const release = await lock.acquire("resource", 5_000);
 
       // Then — 소비처는 busy와 동일하게 스킵/재시도 경로를 탄다
       expect(release).toBeNull();
@@ -86,7 +86,7 @@ describe("RedisLockAdapter — Redis 분산 잠금 어댑터", () => {
 
     it("release 실패는 throw하지 않는다 (TTL이 정리)", async () => {
       // Given
-      const release = await lock.acquire("resource", 5000);
+      const release = await lock.acquire("resource", 5_000);
       vi.spyOn(redis, "eval").mockRejectedValue(failure);
 
       // When / Then

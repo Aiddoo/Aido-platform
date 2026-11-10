@@ -234,6 +234,29 @@
           }
         ]
       }
+    },
+    {
+      "files": ["apps/api/**/*.ts", "packages/api/**/*.ts"],
+      "rules": {
+        "unicorn/numeric-separators-style": [
+          "error",
+          {
+            "number": {
+              "minimumDigits": 4,
+              "groupLength": 3
+            },
+            "hexadecimal": {
+              "onlyIfContainsSeparator": true
+            },
+            "binary": {
+              "onlyIfContainsSeparator": true
+            },
+            "octal": {
+              "onlyIfContainsSeparator": true
+            }
+          }
+        ]
+      }
     }
   ]
 }

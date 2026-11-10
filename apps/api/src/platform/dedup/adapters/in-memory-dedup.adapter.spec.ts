@@ -14,9 +14,9 @@ describe("InMemoryDedupAdapter — 인메모리 중복 방지", () => {
   it("멤버를 다시 더하면 Redis PEXPIRE처럼 Set 전체의 TTL을 그때부터 다시 잰다", async () => {
     // Given
     const dedup = new InMemoryDedupAdapter();
-    await dedup.addMembers("winback:user-1", ["D3"], 1000);
+    await dedup.addMembers("winback:user-1", ["D3"], 1_000);
     vi.advanceTimersByTime(800);
-    await dedup.addMembers("winback:user-1", ["D7"], 1000);
+    await dedup.addMembers("winback:user-1", ["D7"], 1_000);
 
     // When
     vi.advanceTimersByTime(800);

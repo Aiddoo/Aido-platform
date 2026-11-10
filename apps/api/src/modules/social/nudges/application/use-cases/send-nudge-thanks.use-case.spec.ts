@@ -70,7 +70,7 @@ function createSendNudgeThanksUseCase(
 describe("SendNudgeThanksUseCase — 완료한 할 일의 콕에 감사", () => {
   it("친구 천 명의 감사를 100명씩 저장하고 알림도 같은 배치로 남긴다", async () => {
     // Given
-    const friendIds = Array.from({ length: 1000 }, (_, index) => `friend-${index}`);
+    const friendIds = Array.from({ length: 1_000 }, (_, index) => `friend-${index}`);
     const nudgeRepository = new InMemoryNudgeRepository();
     const todoId = await seedCompletedTodo(nudgeRepository, friendIds);
     const notifier = new RecordingNudgeNotifier();
@@ -83,11 +83,11 @@ describe("SendNudgeThanksUseCase — 완료한 할 일의 콕에 감사", () => 
     const result = await useCase.execute({
       userId: NUDGE_FIXTURE_RECEIVER_ID,
       todoId,
-      throughNudgeId: 1000,
+      throughNudgeId: 1_000,
     });
 
     // Then
-    expect(result).toEqual({ sentCount: 1000 });
+    expect(result).toEqual({ sentCount: 1_000 });
     expect(nudgeRepository.thanksBatchSizes).toEqual(Array(10).fill(100));
     expect(notifier.interactionBatchSizes).toEqual(Array(10).fill(100));
     expect((await nudgeRepository.findById(NudgeId.reconstitute(1)))?.thankedAt).toEqual(
@@ -95,7 +95,7 @@ describe("SendNudgeThanksUseCase — 완료한 할 일의 콕에 감사", () => 
     );
     expect(notifier.interactions[0]).toEqual({
       kind: "thanks",
-      nudgeId: 1000,
+      nudgeId: 1_000,
       todoId,
       actorId: NUDGE_FIXTURE_RECEIVER_ID,
       recipientId: "friend-999",

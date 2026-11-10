@@ -16,7 +16,7 @@ import { user } from "./identity.schema.js";
 export const memo = pgTable(
   "Memo",
   {
-    content: varchar({ length: 5000 }).notNull(),
+    content: varchar({ length: 5_000 }).notNull(),
     createdAt: instant()
       .default(sql`now()`)
       .notNull(),

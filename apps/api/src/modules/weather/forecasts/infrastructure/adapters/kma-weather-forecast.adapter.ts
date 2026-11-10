@@ -95,7 +95,7 @@ export class KmaWeatherForecastAdapter implements WeatherForecastProviderPort {
           {
             serviceKey: this.#config.kmaApiKey ?? "",
             pageNo: 1,
-            numOfRows: 1000,
+            numOfRows: 1_000,
             dataType: "JSON",
             base_date: baseDate,
             base_time: baseTime,

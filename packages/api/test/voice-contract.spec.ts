@@ -114,14 +114,14 @@ describe("voice 계약", () => {
       period: "month",
       resetsAt: "2026-11-30T15:00:00.000Z",
       isFairUse: false,
-      perUse: { maxSeconds: 180, maxCharacters: 4000 },
+      perUse: { maxSeconds: 180, maxCharacters: 4_000 },
     };
     // When
     const tooLong = toPublicErrorDetails(ErrorCode.AI_1312, {
       charged: false,
       featureQuota,
-      characterCount: 5000,
-      maxCharacters: 4000,
+      characterCount: 5_000,
+      maxCharacters: 4_000,
       secret: "x",
     });
     const rejected = toPublicErrorDetails(ErrorCode.AI_1315, {
@@ -134,8 +134,8 @@ describe("voice 계약", () => {
     expect(tooLong).toEqual({
       charged: false,
       featureQuota,
-      characterCount: 5000,
-      maxCharacters: 4000,
+      characterCount: 5_000,
+      maxCharacters: 4_000,
     });
     expect(rejected).toEqual({ reason: "CATEGORY_NOT_OWNED", categoryIds: [9] });
     expect(reused).toEqual({ charged: false });

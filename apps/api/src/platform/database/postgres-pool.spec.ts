@@ -65,7 +65,7 @@ describe("createPostgresPoolConfig", () => {
     const config = createPostgresPoolConfig(url, {
       max: 10,
       idleTimeoutMs: 10_000,
-      connectionTimeoutMs: 5000,
+      connectionTimeoutMs: 5_000,
       queryTimeoutMs: 20_000,
     });
 
@@ -73,7 +73,7 @@ describe("createPostgresPoolConfig", () => {
     expect(config).toMatchObject({
       max: 10,
       idleTimeoutMillis: 10_000,
-      connectionTimeoutMillis: 5000,
+      connectionTimeoutMillis: 5_000,
       query_timeout: 20_000,
     });
   });

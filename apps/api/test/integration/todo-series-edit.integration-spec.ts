@@ -1441,7 +1441,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
               `);
               expect(waiting.rows[0]?.count).toBe(count);
             },
-            { timeout: 5000, interval: 10 },
+            { timeout: 5_000, interval: 10 },
           );
         const deleting = context.module
           .get(DeleteTodoCategoryUseCase, { strict: false })

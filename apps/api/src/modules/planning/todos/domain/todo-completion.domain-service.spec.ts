@@ -30,7 +30,7 @@ describe("completion-policy — 완료 정책", () => {
 
     it("마일스톤이 아닌 카운트는 null을 반환한다 (정확 일치 — 지나친 카운트 재발화 없음)", () => {
       // Given - 경계 주변·중간 값들
-      const nonMilestones = [0, 2, 9, 11, 49, 51, 99, 101, 1000];
+      const nonMilestones = [0, 2, 9, 11, 49, 51, 99, 101, 1_000];
 
       // When & Then
       for (const count of nonMilestones) {

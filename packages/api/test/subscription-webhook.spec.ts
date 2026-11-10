@@ -9,7 +9,7 @@ import {
 const DOCUMENTED_TRANSFER = {
   event: {
     app_id: "1234567890",
-    event_timestamp_ms: 78789789798798,
+    event_timestamp_ms: 78_789_789_798_798,
     id: "CD489E0E-5D52-4E03-966B-A7F17788E432",
     store: "APP_STORE",
     transferred_from: ["00005A1C-6091-4F81-BE77-F0A83A271AB6"],
@@ -44,7 +44,7 @@ describe("RevenueCat 웹훅 계약", () => {
 
   it("BILLING_ISSUE의 결제 유예 끝은 숫자나 null로 받는다", () => {
     // When
-    const results = [1601933447000, null].map(
+    const results = [1_601_933_447_000, null].map(
       (grace) =>
         revenueCatWebhookPayloadSchema.safeParse({
           event: {

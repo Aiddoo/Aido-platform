@@ -373,7 +373,7 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
       body: {
         event: {
           app_id: "1234567890",
-          event_timestamp_ms: 78789789798798,
+          event_timestamp_ms: 78_789_789_798_798,
           id: "CD489E0E-5D52-4E03-966B-A7F17788E432",
           store: "APP_STORE",
           transferred_from: [giverAppUserId],

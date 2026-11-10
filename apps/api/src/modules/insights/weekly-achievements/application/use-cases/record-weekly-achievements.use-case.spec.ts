@@ -20,7 +20,7 @@ function setup() {
 function findWeek(repository: InMemoryWeeklyAchievementRepository, userId: string, week: number) {
   return repository.findByWeek({
     userId: UserId.reconstitute(userId),
-    isoWeek: IsoWeek.reconstitute(2026, week),
+    isoWeek: IsoWeek.reconstitute(2_026, week),
   });
 }
 
@@ -61,7 +61,7 @@ describe("RecordWeeklyAchievementsUseCase", () => {
     expect(after?.toPrimitives()).toEqual({
       id: before?.id.value,
       userId: first.userId,
-      year: 2026,
+      year: 2_026,
       week: 10,
       totalTodos: 5,
       completedTodos: 5,
