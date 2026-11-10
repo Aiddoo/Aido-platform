@@ -293,9 +293,14 @@ jobs:
       - name: Conventions
         run: node apps/mobile/scripts/check-mobile-conventions.mjs
 
-      - name: Type Check and Test
+      - name: Type Check
         if: needs.gate.outputs.api == 'true' || needs.gate.outputs.mobile == 'true'
-        run: pnpm turbo run typecheck test test:integration --affected ${{ needs.gate.outputs.mobile != 'true' && '--filter=@aido/server' || needs.gate.outputs.api != 'true' && '--filter=@aido/mobile' || '' }}
+        run: pnpm turbo run typecheck --affected ${{ needs.gate.outputs.mobile != 'true' && '--filter=@aido/server' || needs.gate.outputs.api != 'true' && '--filter=@aido/mobile' || '' }}
+
+      # 테스트 러너마다 코어 비율로 worker를 잡아 겹치면 4 vCPU 러너를 과포화시키므로 테스트 작업은 한 번에 하나씩 돈다.
+      - name: Test
+        if: needs.gate.outputs.api == 'true' || needs.gate.outputs.mobile == 'true'
+        run: pnpm turbo run test test:integration --affected --concurrency=1 ${{ needs.gate.outputs.mobile != 'true' && '--filter=@aido/server' || needs.gate.outputs.api != 'true' && '--filter=@aido/mobile' || '' }}
 
       - name: Build API and dependency closure
         if: needs.gate.outputs.api == 'true'
