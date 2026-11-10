@@ -26,7 +26,7 @@ Expo 기반 React Native 모바일 앱. Feature-based Layered Architecture.
 | 홈 화면 위젯 (iOS WidgetKit / Android AppWidget)           | [.claude/widgets.md](.claude/widgets.md)                                                       |
 | 푸시 알림 클라이언트 (권한·토큰 보고·안내)                 | [docs/push-notifications.md](docs/push-notifications.md)                                       |
 | 새로운 기능 출시 (Steps·캠페인·이미지)                     | [docs/whats-new-release.md](docs/whats-new-release.md)                                         |
-| 현재 릴리스 1.15.0 변경                                    | [docs/releases/1.15.0-client.md](docs/releases/1.15.0-client.md)                               |
+| 현재 릴리스 1.15.1 변경                                    | [docs/releases/1.15.1-client.md](docs/releases/1.15.1-client.md)                               |
 | 지난 릴리스                                                | [docs/releases/](docs/releases/)                                                               |
 | EAS 빌드·Secrets                                           | [docs/eas-build-guide.md](docs/eas-build-guide.md), [docs/EAS_SECRETS.md](docs/EAS_SECRETS.md) |
 | 배포 (EAS, App Store / Play)                               | [DEPLOYMENT.md](DEPLOYMENT.md)                                                                 |
