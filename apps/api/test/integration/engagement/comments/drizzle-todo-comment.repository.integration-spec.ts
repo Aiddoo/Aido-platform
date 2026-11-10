@@ -2,6 +2,7 @@ import { DELETED_COMMENT_AUTHOR } from "#api/modules/engagement/comments/domain/
 import { DrizzleTodoCommentLikeRepository } from "#api/modules/engagement/comments/infrastructure/persistence/drizzle-todo-comment-like.repository";
 import { DrizzleTodoCommentPurgeRepository } from "#api/modules/engagement/comments/infrastructure/persistence/drizzle-todo-comment-purge.repository";
 import { DrizzleTodoCommentRepository } from "#api/modules/engagement/comments/infrastructure/persistence/drizzle-todo-comment.repository";
+import { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
 import { todo, todoCategory, user } from "#api/platform/database/schema/index";
 import {
   describeTodoCommentLikeRepositoryContract,
@@ -95,7 +96,10 @@ describe("Drizzle 댓글 저장소 (실제 PostgreSQL)", () => {
 
     // When
     await comments.save(comment);
-    const found = await comments.findByIdAndTodoId(comment.id, TODO_COMMENT_FIXTURE_TODO_ID);
+    const found = await comments.findByIdAndTodoId(
+      comment.id,
+      TodoId.reconstitute(TODO_COMMENT_FIXTURE_TODO_ID),
+    );
 
     // Then
     expect(found?.toPrimitives().createdAt).toEqual(createdAt);

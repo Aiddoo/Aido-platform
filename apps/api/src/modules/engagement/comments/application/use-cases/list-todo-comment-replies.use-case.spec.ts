@@ -10,6 +10,7 @@ import {
   type TodoCommentsFixture,
 } from "#test/fixtures/engagement/todo-comments.fixture";
 
+import { TodoCommentId } from "../../domain/todo-comment-id.vo.js";
 import { ListTodoCommentRepliesUseCase } from "./list-todo-comment-replies.use-case.js";
 
 const TODO_ID = TODO_COMMENT_FIXTURE_TODO_ID;
@@ -108,7 +109,7 @@ describe("ListTodoCommentRepliesUseCase — 묶음의 답글 목록", () => {
     // Then
     expect(fixture.reader.replyParams.at(0)).toMatchObject({
       mode: "BEFORE",
-      anchorReplyId: REPLY_ID,
+      anchorReplyId: TodoCommentId.reconstitute(REPLY_ID),
     });
     await expect(foreign).rejects.toMatchObject({ errorCode: ErrorCode.SYS_0002 });
   });

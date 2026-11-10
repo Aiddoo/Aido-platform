@@ -10,6 +10,7 @@ import { TodoCommentPurgeRepositoryPort } from "#api/modules/engagement/comments
 import { CleanUpAccountTodoCommentsUseCase } from "#api/modules/engagement/comments/application/use-cases/clean-up-account-todo-comments.use-case";
 import { InvalidateCleanedTodoCachesUseCase } from "#api/modules/engagement/comments/application/use-cases/invalidate-cleaned-todo-caches.use-case";
 import { DELETED_COMMENT_AUTHOR } from "#api/modules/engagement/comments/domain/comments.constants";
+import { TodoCommentId } from "#api/modules/engagement/comments/domain/todo-comment-id.vo";
 import { TodoCommentAccountCleanupPort } from "#api/modules/engagement/comments/engagement-comments.public";
 import { TodoCommentAccountCleanupAdapter } from "#api/modules/engagement/comments/infrastructure/adapters/todo-comment-account-cleanup.adapter";
 import { DrizzleTodoCommentPurgeRepository } from "#api/modules/engagement/comments/infrastructure/persistence/drizzle-todo-comment-purge.repository";
@@ -25,6 +26,7 @@ import { DeleteActorNotificationsUseCase } from "#api/modules/notification/inbox
 import { DrizzleNotificationRepository } from "#api/modules/notification/inbox/infrastructure/persistence/drizzle-notification.repository";
 import { DrizzleTodoDetailsReader } from "#api/modules/planning/todos/infrastructure/persistence/drizzle-todo-details.reader";
 import { DrizzleTodoEngagementCounterAdapter } from "#api/modules/planning/todos/infrastructure/persistence/drizzle-todo-engagement-counter.adapter";
+import { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
 import {
   TodoEngagementCounterPort,
   TodoViewCacheInvalidatorPort,
@@ -489,7 +491,10 @@ describe("댓글 계정 purge (실제 PostgreSQL)", () => {
     await purgeDeletedAccounts.execute();
     const { txHost } = createDatabaseTransactionFixture(client);
     const reader = new DrizzleTodoCommentReader(txHost, new DrizzleTodoDetailsReader(txHost));
-    const replyToPurged = await reader.findComment(fixture.todoId, fixture.activeGrandchildId);
+    const replyToPurged = await reader.findComment(
+      TodoId.reconstitute(fixture.todoId),
+      TodoCommentId.reconstitute(fixture.activeGrandchildId),
+    );
 
     // Then
     expect(replyToPurged).toMatchObject({

@@ -2,6 +2,7 @@ import { TodoCommentIdempotencyRace } from "#api/modules/engagement/comments/app
 import { TodoCommentRepositoryPort } from "#api/modules/engagement/comments/application/ports/todo-comment.repository.port";
 import { TodoCommentId } from "#api/modules/engagement/comments/domain/todo-comment-id.vo";
 import { TodoComment } from "#api/modules/engagement/comments/domain/todo-comment.aggregate";
+import type { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 // 저장 사본을 두어 save 없이 바꾼 Aggregate가 저장소 상태로 새지 않게 한다
@@ -30,9 +31,9 @@ export class InMemoryTodoCommentRepository extends TodoCommentRepositoryPort {
     return TodoCommentId.reconstitute(`cmmemory${String(this.#sequence).padStart(17, "0")}`);
   }
 
-  async findByIdAndTodoId(commentId: TodoCommentId, todoId: number): Promise<TodoComment | null> {
+  async findByIdAndTodoId(commentId: TodoCommentId, todoId: TodoId): Promise<TodoComment | null> {
     const comment = this.#comments.get(commentId.value);
-    return comment != null && comment.todoId === todoId ? copyOf(comment) : null;
+    return comment != null && comment.todoId === todoId.value ? copyOf(comment) : null;
   }
 
   async listByAuthorIdAndClientRequestIds(

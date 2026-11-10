@@ -1,5 +1,6 @@
 import { uniq } from "es-toolkit";
 
+import { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
 import type {
   TodoEngagementCounterPort,
   TodoViewCacheInvalidatorPort,
@@ -65,12 +66,14 @@ export class DeleteTodoCommentUseCase {
   async #delete(command: DeleteTodoCommentCommand): Promise<boolean> {
     const { mutationLock, clock, reader, repository, likeRepository, engagementCounter } =
       this.#dependencies;
+    const todoId = TodoId.reconstitute(command.todoId);
+    const userId = UserId.reconstitute(command.userId);
     const commentId = TodoCommentId.reconstitute(command.commentId);
-    const todoOwnerId = await reader.findAccessibleTodoOwnerId(command.todoId, command.userId);
+    const todoOwnerId = await reader.findAccessibleTodoOwnerId(todoId, userId);
     if (todoOwnerId == null) {
       throw todoNotFound(command.todoId);
     }
-    const unlocked = await repository.findByIdAndTodoId(commentId, command.todoId);
+    const unlocked = await repository.findByIdAndTodoId(commentId, todoId);
     if (unlocked == null) {
       throw commentNotFound(command.commentId);
     }
@@ -78,13 +81,13 @@ export class DeleteTodoCommentUseCase {
     await mutationLock.acquire(
       uniq([command.commentId, unlocked.threadCommentId.value]).map(TodoCommentLockKeys.comment),
     );
-    const comment = await repository.findByIdAndTodoId(commentId, command.todoId);
+    const comment = await repository.findByIdAndTodoId(commentId, todoId);
     if (comment == null) {
       throw commentNotFound(command.commentId);
     }
     const now = clock.now();
     const isDeleted = comment.markDeleted({
-      actorId: UserId.reconstitute(command.userId),
+      actorId: userId,
       todoOwnerId: UserId.reconstitute(todoOwnerId),
       now,
     });
@@ -97,7 +100,7 @@ export class DeleteTodoCommentUseCase {
     await repository.save(comment);
     await likeRepository.deactivateAllByCommentId(commentId, now);
     if (comment.isReply) {
-      const thread = await repository.findByIdAndTodoId(comment.threadCommentId, command.todoId);
+      const thread = await repository.findByIdAndTodoId(comment.threadCommentId, todoId);
       if (thread == null) {
         throw commentStateConflict(comment.threadCommentId.value);
       }

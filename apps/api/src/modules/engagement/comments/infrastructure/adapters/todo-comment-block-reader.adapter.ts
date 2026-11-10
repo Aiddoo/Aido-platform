@@ -1,7 +1,7 @@
 import { Inject, Injectable } from "@nestjs/common";
 
 import { UserBlockReaderPort } from "#api/modules/social/blocks/social-blocks.public";
-import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { TodoCommentBlockReaderPort } from "../../application/ports/todo-comment-block-reader.port.js";
 
@@ -14,12 +14,9 @@ export class TodoCommentBlockReaderAdapter implements TodoCommentBlockReaderPort
   }
 
   findBlockedCounterpartIds(
-    viewerId: string,
-    candidateUserIds: readonly string[],
+    viewerId: UserId,
+    candidateUserIds: readonly UserId[],
   ): Promise<ReadonlySet<string>> {
-    return this.#userBlockReader.findBlockedCounterpartIds(
-      UserId.reconstitute(viewerId),
-      candidateUserIds.map((userId) => UserId.reconstitute(userId)),
-    );
+    return this.#userBlockReader.findBlockedCounterpartIds(viewerId, candidateUserIds);
   }
 }

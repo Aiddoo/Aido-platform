@@ -15,6 +15,7 @@ import {
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { AuthAccountRepositoryPort } from "../auth/application/ports/auth-account.repository.port.js";
 import { AuthCachePort } from "../auth/application/ports/auth-collaboration.port.js";
@@ -42,7 +43,10 @@ export const accountNotificationCleanupProvider: FactoryProvider<AccountNotifica
 export const accountTodoCommentCleanupProvider: FactoryProvider<AccountTodoCommentCleanupPort> = {
   provide: AccountTodoCommentCleanupPort,
   inject: [TodoCommentAccountCleanupPort],
-  useFactory: (cleanup: TodoCommentAccountCleanupPort): AccountTodoCommentCleanupPort => cleanup,
+  useFactory: (cleanup: TodoCommentAccountCleanupPort): AccountTodoCommentCleanupPort => ({
+    cleanupInTransaction: (userId) => cleanup.cleanupInTransaction(UserId.reconstitute(userId)),
+    settleAfterCommit: (result) => cleanup.settleAfterCommit(result),
+  }),
 };
 
 export const accountUsageCleanupProvider: FactoryProvider<AccountUsageCleanupPort> = {

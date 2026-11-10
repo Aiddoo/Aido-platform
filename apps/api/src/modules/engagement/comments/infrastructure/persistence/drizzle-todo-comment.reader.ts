@@ -17,11 +17,15 @@ import {
 } from "drizzle-orm";
 import { alias, type AnyPgColumn } from "drizzle-orm/pg-core";
 
-import { TodoDetailsReaderPort } from "#api/modules/planning/todos/planning-todo-queries.public";
+import {
+  type TodoId,
+  TodoDetailsReaderPort,
+} from "#api/modules/planning/todos/planning-todo-queries.public";
 import { requireRecord } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { type KeysetOperand, tupleGreaterThan, tupleLessThan } from "#api/platform/database/keyset";
 import { todo, todoComment, user, userProfile } from "#api/platform/database/schema/index";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import {
   type ListTodoCommentRepliesParams,
@@ -40,6 +44,7 @@ import type {
   TodoConversationWindow,
   TodoDetailsReadModel,
 } from "../../application/read-models/todo-comment.read-model.js";
+import type { TodoCommentId } from "../../domain/todo-comment-id.vo.js";
 import {
   toRootPosition,
   toTodoCommentParticipantAuthor,
@@ -206,33 +211,33 @@ export class DrizzleTodoCommentReader implements TodoCommentReaderPort {
     return friendship != null;
   }
 
-  async findAccessibleTodoOwnerId(todoId: number, viewerId: string): Promise<string | null> {
-    const access = await this.#todoDetails.findAccess(todoId);
+  async findAccessibleTodoOwnerId(todoId: TodoId, viewerId: UserId): Promise<string | null> {
+    const access = await this.#todoDetails.findAccess(todoId.value);
     if (access == null) {
       return null;
     }
-    if (access.ownerId === viewerId) {
+    if (access.ownerId === viewerId.value) {
       return access.ownerId;
     }
     if (access.visibility !== "PUBLIC") {
       return null;
     }
-    return (await this.#isAcceptedFriend(access.ownerId, viewerId)) ? access.ownerId : null;
+    return (await this.#isAcceptedFriend(access.ownerId, viewerId.value)) ? access.ownerId : null;
   }
 
   async findAccessibleTodoDetails(
-    todoId: number,
-    viewerId: string,
+    todoId: TodoId,
+    viewerId: UserId,
   ): Promise<TodoDetailsReadModel | null> {
-    const details = await this.#todoDetails.findDetails(todoId);
+    const details = await this.#todoDetails.findDetails(todoId.value);
     if (details == null) {
       return null;
     }
     const { todo } = details;
-    const isOwner = todo.userId === viewerId;
+    const isOwner = todo.userId === viewerId.value;
     const canAccess =
       isOwner ||
-      (todo.visibility === "PUBLIC" && (await this.#isAcceptedFriend(todo.userId, viewerId)));
+      (todo.visibility === "PUBLIC" && (await this.#isAcceptedFriend(todo.userId, viewerId.value)));
     if (!canAccess) {
       return null;
     }
@@ -256,18 +261,22 @@ export class DrizzleTodoCommentReader implements TodoCommentReaderPort {
     };
   }
 
-  async findComment(todoId: number, commentId: string): Promise<TodoCommentReadModel | null> {
+  async findComment(
+    todoId: TodoId,
+    commentId: TodoCommentId,
+  ): Promise<TodoCommentReadModel | null> {
     const [comment] = await this.listComments(todoId, [commentId]);
     return comment ?? null;
   }
 
   async listComments(
-    todoId: number,
-    commentIds: readonly string[],
+    todoId: TodoId,
+    commentIds: readonly TodoCommentId[],
   ): Promise<TodoCommentReadModel[]> {
     if (commentIds.length === 0) {
       return [];
     }
+    const ids = commentIds.map((commentId) => commentId.value);
     const source = columnsOf(anchorComment);
     const rows = await this.#db
       .select(projectionOf(source))
@@ -277,9 +286,9 @@ export class DrizzleTodoCommentReader implements TodoCommentReaderPort {
       .leftJoin(authorUser, eq(authorUser.id, source.authorId))
       .leftJoin(replyTarget, eq(replyTarget.id, source.replyToCommentId))
       .leftJoin(replyTargetProfile, eq(replyTargetProfile.userId, replyTarget.authorId))
-      .where(and(eq(anchorComment.todoId, todoId), inArray(anchorComment.id, [...commentIds])));
+      .where(and(eq(anchorComment.todoId, todoId.value), inArray(anchorComment.id, ids)));
     const commentsById = new Map(rows.map((row) => [row.commentId, requireReadModel(row)]));
-    return commentIds.flatMap((commentId) => {
+    return ids.flatMap((commentId) => {
       const comment = commentsById.get(commentId);
       return comment == null ? [] : [comment];
     });
@@ -294,7 +303,7 @@ export class DrizzleTodoCommentReader implements TodoCommentReaderPort {
       return null;
     }
     const summaries = await this.#findThreadSummaries(
-      params.todoId,
+      params.todoId.value,
       window.items.map((comment) => comment.id),
     );
     return {
@@ -321,7 +330,7 @@ export class DrizzleTodoCommentReader implements TodoCommentReaderPort {
     const db = this.#db;
     const isLatest = params.sort === TODO_COMMENT_SORT.LATEST;
     const visibleThread = and(
-      eq(candidateComment.todoId, params.todoId),
+      eq(candidateComment.todoId, params.todoId.value),
       isNull(candidateComment.parentId),
       or(isNull(candidateComment.deletedAt), gt(candidateComment.replyCount, 0)),
     );
@@ -331,8 +340,8 @@ export class DrizzleTodoCommentReader implements TodoCommentReaderPort {
         .from(anchorComment)
         .where(
           and(
-            eq(anchorComment.todoId, params.todoId),
-            eq(anchorComment.id, params.anchorCommentId ?? ""),
+            eq(anchorComment.todoId, params.todoId.value),
+            eq(anchorComment.id, params.anchorCommentId?.value ?? ""),
             isNull(anchorComment.parentId),
             params.mode === "ANCHOR"
               ? or(isNull(anchorComment.deletedAt), gt(anchorComment.replyCount, 0))
@@ -412,7 +421,7 @@ export class DrizzleTodoCommentReader implements TodoCommentReaderPort {
     return toTodoCommentKeysetWindow({
       items,
       mode: params.mode === "ANCHOR" ? "FOCUS" : params.mode,
-      anchorId: params.anchorCommentId,
+      anchorId: params.anchorCommentId?.value,
       size: params.size,
     });
   }
@@ -522,8 +531,8 @@ export class DrizzleTodoCommentReader implements TodoCommentReaderPort {
     }
     const db = this.#db;
     const visibleReply = and(
-      eq(candidateComment.todoId, params.todoId),
-      eq(candidateComment.parentId, params.threadCommentId),
+      eq(candidateComment.todoId, params.todoId.value),
+      eq(candidateComment.parentId, params.threadCommentId.value),
       isNull(candidateComment.deletedAt),
     );
     const anchor = db.$with("anchor").as(
@@ -532,9 +541,9 @@ export class DrizzleTodoCommentReader implements TodoCommentReaderPort {
         .from(anchorComment)
         .where(
           and(
-            eq(anchorComment.todoId, params.todoId),
-            eq(anchorComment.parentId, params.threadCommentId),
-            eq(anchorComment.id, params.anchorReplyId ?? ""),
+            eq(anchorComment.todoId, params.todoId.value),
+            eq(anchorComment.parentId, params.threadCommentId.value),
+            eq(anchorComment.id, params.anchorReplyId?.value ?? ""),
             params.mode === "AROUND" ? isNull(anchorComment.deletedAt) : undefined,
           ),
         ),
@@ -592,7 +601,7 @@ export class DrizzleTodoCommentReader implements TodoCommentReaderPort {
     const window = toTodoCommentKeysetWindow({
       items: rows.map(requireReadModel),
       mode: params.mode === "AROUND" ? "FOCUS" : params.mode,
-      anchorId: params.anchorReplyId,
+      anchorId: params.anchorReplyId?.value,
       size: params.size,
     });
     return { items: window.items, hasPrevious: window.hasPrevious, hasNext: window.hasNext };
@@ -620,14 +629,14 @@ export class DrizzleTodoCommentReader implements TodoCommentReaderPort {
     const snapshot =
       params.anchorPosition == null || params.anchorThreadId == null
         ? null
-        : { threadId: params.anchorThreadId, position: params.anchorPosition };
+        : { threadId: params.anchorThreadId.value, position: params.anchorPosition };
     const threads = db.$with("threads").as(
       db
         .select(columnsOf(headComment))
         .from(headComment)
         .where(
           and(
-            eq(headComment.todoId, params.todoId),
+            eq(headComment.todoId, params.todoId.value),
             isNull(headComment.parentId),
             this.#conversationThreadCondition(params),
           ),
@@ -670,8 +679,10 @@ export class DrizzleTodoCommentReader implements TodoCommentReaderPort {
         .from(tree)
         .where(
           and(
-            eq(tree.id, params.anchorCommentId ?? ""),
-            params.anchorThreadId == null ? undefined : eq(tree.threadId, params.anchorThreadId),
+            eq(tree.id, params.anchorCommentId?.value ?? ""),
+            params.anchorThreadId == null
+              ? undefined
+              : eq(tree.threadId, params.anchorThreadId.value),
           ),
         ),
     );
@@ -794,7 +805,7 @@ export class DrizzleTodoCommentReader implements TodoCommentReaderPort {
     const window = toTodoCommentKeysetWindow({
       items,
       mode: params.mode,
-      anchorId: params.anchorCommentId,
+      anchorId: params.anchorCommentId?.value,
       size: params.size,
     });
     return {
@@ -812,7 +823,7 @@ export class DrizzleTodoCommentReader implements TodoCommentReaderPort {
     if (params.mode === "FOCUS") {
       // 댓글을 열면 그 댓글이, 답글을 열면 그 답글의 묶음 머리가 대상이다
       return or(
-        eq(headComment.id, params.anchorCommentId ?? ""),
+        eq(headComment.id, params.anchorCommentId?.value ?? ""),
         inArray(
           headComment.id,
           this.#db
@@ -820,14 +831,16 @@ export class DrizzleTodoCommentReader implements TodoCommentReaderPort {
             .from(focusComment)
             .where(
               and(
-                eq(focusComment.todoId, params.todoId),
-                eq(focusComment.id, params.anchorCommentId ?? ""),
+                eq(focusComment.todoId, params.todoId.value),
+                eq(focusComment.id, params.anchorCommentId?.value ?? ""),
               ),
             ),
         ),
       );
     }
-    return params.scope === "THREAD" ? eq(headComment.id, params.anchorThreadId ?? "") : undefined;
+    return params.scope === "THREAD"
+      ? eq(headComment.id, params.anchorThreadId?.value ?? "")
+      : undefined;
   }
 
   #rootPositionAt(
@@ -844,23 +857,27 @@ export class DrizzleTodoCommentReader implements TodoCommentReaderPort {
   }
 
   async listLikedCommentIds(
-    commentIds: readonly string[],
-    viewerId: string,
+    commentIds: readonly TodoCommentId[],
+    viewerId: UserId,
   ): Promise<ReadonlySet<string>> {
     if (commentIds.length === 0) {
       return new Set();
     }
     const likes = await this.#db.query.todoCommentLike.findMany({
       columns: { commentId: true },
-      where: { commentId: { in: [...commentIds] }, userId: viewerId, isActive: true },
+      where: {
+        commentId: { in: commentIds.map((commentId) => commentId.value) },
+        userId: viewerId.value,
+        isActive: true,
+      },
     });
     return new Set(likes.map((like) => like.commentId));
   }
 
-  async findUserDisplayName(userId: string): Promise<string | null> {
+  async findUserDisplayName(userId: UserId): Promise<string | null> {
     const profile = await this.#db.query.userProfile.findFirst({
       columns: { name: true },
-      where: { userId },
+      where: { userId: userId.value },
     });
     return profile?.name ?? null;
   }

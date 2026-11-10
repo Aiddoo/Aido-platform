@@ -1,5 +1,7 @@
+import { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
 import type { TodoEngagementCounterPort } from "#api/modules/planning/todos/planning-todos.public";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { todoNotFound } from "../comments.errors.js";
 import type { TodoCommentReaderPort } from "../ports/todo-comment.reader.port.js";
@@ -27,7 +29,10 @@ export class GetTodoDetailsUseCase {
   execute(query: GetTodoDetailsQuery): Promise<TodoDetailsReadModel> {
     const { unitOfWork, reader, engagementCounter } = this.#dependencies;
     return unitOfWork.run(async () => {
-      const details = await reader.findAccessibleTodoDetails(query.todoId, query.viewerId);
+      const details = await reader.findAccessibleTodoDetails(
+        TodoId.reconstitute(query.todoId),
+        UserId.reconstitute(query.viewerId),
+      );
       if (details == null) {
         throw todoNotFound(query.todoId);
       }

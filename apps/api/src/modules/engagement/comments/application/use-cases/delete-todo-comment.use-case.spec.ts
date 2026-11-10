@@ -1,5 +1,6 @@
 import { ErrorCode } from "@aido/api/errors";
 
+import { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
 import {
   createTodoCommentLikeFixture,
   TODO_COMMENT_FIXTURE_FRIEND_ID,
@@ -47,13 +48,19 @@ describe("DeleteTodoCommentUseCase — 댓글 삭제", () => {
     await useCase.execute(command);
 
     // Then
-    const stored = await fixture.repository.findByIdAndTodoId(reply.id, TODO_ID);
+    const stored = await fixture.repository.findByIdAndTodoId(
+      reply.id,
+      TodoId.reconstitute(TODO_ID),
+    );
     expect(stored?.toPrimitives()).toMatchObject({
       content: null,
       likeCount: 0,
       deletedAt: fixture.clock.now().subtract({ minutes: 1 }),
     });
-    expect((await fixture.repository.findByIdAndTodoId(head.id, TODO_ID))?.replyCount).toBe(1);
+    expect(
+      (await fixture.repository.findByIdAndTodoId(head.id, TodoId.reconstitute(TODO_ID)))
+        ?.replyCount,
+    ).toBe(1);
     expect(fixture.likeRepository.list().map((like) => like.isActive)).toEqual([false]);
     expect(fixture.engagementCounter.commentCounts.get(TODO_ID)).toBe(2);
     expect(fixture.todoViewCache.invalidatedTodoIds).toEqual([TODO_ID]);
@@ -76,7 +83,10 @@ describe("DeleteTodoCommentUseCase — 댓글 삭제", () => {
     });
 
     // Then
-    const stored = await fixture.repository.findByIdAndTodoId(head.id, TODO_ID);
+    const stored = await fixture.repository.findByIdAndTodoId(
+      head.id,
+      TodoId.reconstitute(TODO_ID),
+    );
     expect({ isDeleted: stored?.isDeleted, replyCount: stored?.replyCount }).toEqual({
       isDeleted: true,
       replyCount: 1,
@@ -98,7 +108,10 @@ describe("DeleteTodoCommentUseCase — 댓글 삭제", () => {
     });
 
     // Then
-    expect((await fixture.repository.findByIdAndTodoId(comment.id, TODO_ID))?.isDeleted).toBe(true);
+    expect(
+      (await fixture.repository.findByIdAndTodoId(comment.id, TodoId.reconstitute(TODO_ID)))
+        ?.isDeleted,
+    ).toBe(true);
   });
 
   it("작성자도 할 일 주인도 아닌 사람의 삭제는 TODO_0832로 거부하고 수와 원문을 둔다", async () => {
@@ -114,9 +127,10 @@ describe("DeleteTodoCommentUseCase — 댓글 삭제", () => {
 
     // Then
     await expect(deleting).rejects.toMatchObject({ errorCode: ErrorCode.TODO_0832 });
-    expect((await fixture.repository.findByIdAndTodoId(comment.id, TODO_ID))?.content).toBe(
-      "댓글 원문",
-    );
+    expect(
+      (await fixture.repository.findByIdAndTodoId(comment.id, TodoId.reconstitute(TODO_ID)))
+        ?.content,
+    ).toBe("댓글 원문");
     expect(fixture.engagementCounter.commentCounts.get(TODO_ID)).toBe(1);
   });
 
