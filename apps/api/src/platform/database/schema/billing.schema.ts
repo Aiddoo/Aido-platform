@@ -27,6 +27,7 @@ export const subscription = pgTable(
   {
     cancelledAt: timestamp({ precision: 3 }),
     createdAt: timestamp({ precision: 3 }).defaultNow().notNull(),
+    // 1.15.2에서 DROP: 코드 참조 없음(롤백 호환 때문에 1.15.1은 유지)
     dataRetentionUntil: timestamp({ precision: 3 }),
     deletedAt: timestamp({ precision: 3 }),
     /** 구매 웹훅의 결제 환경. 이 열을 추가하기 전에 만든 행은 null(알 수 없음)이다. */

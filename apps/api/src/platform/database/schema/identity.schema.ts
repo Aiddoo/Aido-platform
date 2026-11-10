@@ -42,7 +42,9 @@ export const user = pgTable(
     status: userStatus().default("PENDING_VERIFY").notNull(),
     subscriptionExpiresAt: timestamp({ precision: 3 }),
     subscriptionStatus: subscriptionStatus().default("FREE").notNull(),
+    // 1.15.2에서 DROP: 코드 참조 없음(롤백 호환 때문에 1.15.1은 유지)
     twoFactorEnabled: boolean().default(false).notNull(),
+    // 1.15.2에서 DROP: 코드 참조 없음(롤백 호환 때문에 1.15.1은 유지)
     twoFactorSecret: varchar({ length: 255 }),
     updatedAt: timestamp({ precision: 3 })
       .notNull()

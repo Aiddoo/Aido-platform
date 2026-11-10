@@ -209,6 +209,7 @@ export const pushToken = pgTable(
   ],
 );
 
+// 1.15.2에서 DROP: 코드 참조 없음(롤백 호환 때문에 1.15.1은 유지)
 export const pushDailyBudget = pgTable(
   "PushDailyBudget",
   {
@@ -431,6 +432,7 @@ export const pushRateLimitReservation = pgTable(
 export const retentionExperimentAssignment = pgTable(
   "RetentionExperimentAssignment",
   {
+    // 1.15.2에서 DROP: 코드 참조 없음(롤백 호환 때문에 1.15.1은 유지)
     assignedAt: timestamp({ precision: 3 }).defaultNow().notNull(),
     experimentKey: varchar({ length: 100 }).notNull(),
     id: text().primaryKey().$defaultFn(createEntityId),
