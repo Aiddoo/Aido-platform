@@ -1,4 +1,4 @@
-export const WeatherLogEvent = {
+export const ForecastLogEvent = {
   FORECAST_PROVIDER_FAILED: "weather.forecast.provider_failed",
   FORECAST_FALLBACK_USED: "weather.forecast.fallback_used",
   FORECAST_BATCH_READ: "weather.forecast.batch_read",

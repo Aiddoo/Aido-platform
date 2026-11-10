@@ -25,8 +25,8 @@ interface SignedToken {
 
 /** WeatherKit REST용 ES256 개발자 토큰. 토큰 하나만 메모리에 두고 동시 서명은 한 번으로 묶는다. */
 @Injectable()
-export class WeatherKitTokenResolver {
-  readonly #logger = new Logger(WeatherKitTokenResolver.name);
+export class WeatherKitTokenAdapter {
+  readonly #logger = new Logger(WeatherKitTokenAdapter.name);
   #current: SignedToken | null = null;
   #signing: Promise<string> | null = null;
   readonly #configService: Pick<TypedConfigService, "weatherKit">;

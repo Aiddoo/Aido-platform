@@ -9,7 +9,7 @@ import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy
 
 import type {
   AirQuality,
-  AirQualityProvider,
+  AirQualityProviderPort,
 } from "../../application/ports/air-quality-provider.port.js";
 import { convertToTm } from "../../domain/wgs84-to-utmk.domain-service.js";
 import { WeatherProviderLogEvent } from "../weather-provider.log-events.js";
@@ -46,8 +46,8 @@ const airQualityResponseSchema = z.object({
 });
 
 @Injectable()
-export class AirkoreaProvider implements AirQualityProvider {
-  readonly #logger = new Logger(AirkoreaProvider.name);
+export class AirkoreaAirQualityAdapter implements AirQualityProviderPort {
+  readonly #logger = new Logger(AirkoreaAirQualityAdapter.name);
 
   readonly #policy: OutboundPolicy;
 

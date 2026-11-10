@@ -7,12 +7,12 @@ import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import { now } from "#api/shared/domain/date/utils/core";
 
 import type { UserLocation } from "../../locations/domain/user-location.entity.js";
-import { KmaForecastAvailabilityPolicy } from "../domain/kma-forecast-availability.domain-service.js";
-import { WeatherLogEvent } from "./forecasts.log-events.js";
-import { type WeatherCachePort } from "./ports/weather-forecast-cache.port.js";
+import { resolveKmaForecastAvailability } from "../domain/kma-forecast-availability.domain-service.js";
+import { ForecastLogEvent } from "./forecasts.log-events.js";
+import { type WeatherForecastCachePort } from "./ports/weather-forecast-cache.port.js";
 import {
   type WeatherForecast,
-  type WeatherProvider,
+  type WeatherForecastProviderPort,
 } from "./ports/weather-forecast-provider.port.js";
 import type { GridInput, WeatherForecastReaderPort } from "./ports/weather-forecast.reader.port.js";
 
@@ -26,9 +26,9 @@ const MAX_CONCURRENT_FORECAST_REQUESTS = 4;
  * 공급자 호출·장애 폴백 오케스트레이션을 한 곳에 둔다(SRP/DRY).
  */
 interface WeatherForecastReaderDependencies {
-  readonly weatherProvider: Pick<WeatherProvider, "getForecast" | "name">;
+  readonly weatherProvider: Pick<WeatherForecastProviderPort, "getForecast" | "name">;
   readonly weatherCache: Pick<
-    WeatherCachePort,
+    WeatherForecastCachePort,
     | "getForecast"
     | "getOrLoadForecast"
     | "hasRecentForecastFailure"
@@ -54,7 +54,7 @@ export class WeatherForecastReader implements WeatherForecastReaderPort {
    */
   async fetchForLocation(location: UserLocation, date: Date): Promise<WeatherForecast> {
     const grid = location.requireKmaGrid();
-    const availability = KmaForecastAvailabilityPolicy.resolve(date, now());
+    const availability = resolveKmaForecastAvailability({ target: date, now: now() });
     if (availability.kind === "UNAVAILABLE") {
       throw new ApplicationException(ErrorCode.SYS_0002, { field: "date" });
     }
@@ -77,7 +77,7 @@ export class WeatherForecastReader implements WeatherForecastReaderPort {
         );
       } catch (error) {
         logger.warn({
-          event: WeatherLogEvent.FORECAST_PROVIDER_FAILED,
+          event: ForecastLogEvent.FORECAST_PROVIDER_FAILED,
           provider: weatherProvider.name,
           errorType: toErrorType(error),
         });
@@ -87,7 +87,7 @@ export class WeatherForecastReader implements WeatherForecastReaderPort {
 
     const latest = await this.#dependencies.weatherCache.getLatestForecast(grid.gridX, grid.gridY);
     if (latest != null) {
-      this.#dependencies.logger.warn({ event: WeatherLogEvent.FORECAST_FALLBACK_USED });
+      this.#dependencies.logger.warn({ event: ForecastLogEvent.FORECAST_FALLBACK_USED });
       return latest;
     }
 
@@ -108,10 +108,10 @@ export class WeatherForecastReader implements WeatherForecastReaderPort {
       return result;
     }
 
-    const availability = KmaForecastAvailabilityPolicy.resolve(date, now());
+    const availability = resolveKmaForecastAvailability({ target: date, now: now() });
     if (availability.kind === "UNAVAILABLE") {
       this.#dependencies.logger.warn({
-        event: WeatherLogEvent.FORECAST_DATE_UNAVAILABLE,
+        event: ForecastLogEvent.FORECAST_DATE_UNAVAILABLE,
         gridCount: grids.length,
       });
       return result;
@@ -191,14 +191,14 @@ export class WeatherForecastReader implements WeatherForecastReaderPort {
       }
       if (fallbackCount > 0) {
         this.#dependencies.logger.warn({
-          event: WeatherLogEvent.FORECAST_FALLBACK_USED,
+          event: ForecastLogEvent.FORECAST_FALLBACK_USED,
           fallbackCount,
         });
       }
     }
 
     this.#dependencies.logger.debug({
-      event: WeatherLogEvent.FORECAST_BATCH_READ,
+      event: ForecastLogEvent.FORECAST_BATCH_READ,
       gridCount: grids.length,
       cacheMissCount: misses.length,
     });

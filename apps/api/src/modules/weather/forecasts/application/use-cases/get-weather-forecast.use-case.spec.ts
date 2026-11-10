@@ -2,7 +2,7 @@ import { ErrorCode } from "@aido/api/errors";
 import { mock } from "vitest-mock-extended";
 
 import { WeatherForecastReader } from "#api/modules/weather/forecasts/application/weather-forecast.reader";
-import { WeatherCacheAdapter } from "#api/modules/weather/forecasts/infrastructure/cache/weather-forecast.cache";
+import { WeatherForecastCache } from "#api/modules/weather/forecasts/infrastructure/cache/weather-forecast.cache";
 import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
 import { CacheService } from "#api/platform/cache/cache.service";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
@@ -10,13 +10,13 @@ import { weatherLocationFixture } from "#test/fixtures/weather.fixture";
 import { StubWeatherLocationRepository, StubWeatherProvider } from "#test/mocks/ports/weather.stub";
 import { suppressLogger } from "#test/setup/suppress-logger";
 
-import { GetWeatherForecast } from "./get-weather-forecast.use-case.js";
+import { GetWeatherForecastUseCase } from "./get-weather-forecast.use-case.js";
 
-describe("GetWeatherForecast — 사용자 위치와 예보", () => {
+describe("GetWeatherForecastUseCase — 사용자 위치와 예보", () => {
   let memory: InMemoryCacheStore;
   let repository: StubWeatherLocationRepository;
   let weatherProvider: StubWeatherProvider;
-  let useCase: GetWeatherForecast;
+  let useCase: GetWeatherForecastUseCase;
   const date = new Date("2026-07-23T00:00:00.000Z");
 
   beforeEach(() => {
@@ -27,13 +27,16 @@ describe("GetWeatherForecast — 사용자 위치와 예보", () => {
     memory = new InMemoryCacheStore({ defaultTtlMs: 60_000, maxItems: 100 });
     repository = new StubWeatherLocationRepository([weatherLocationFixture()]);
     weatherProvider = new StubWeatherProvider();
-    const cache = new WeatherCacheAdapter(new CacheService(memory));
+    const cache = new WeatherForecastCache(new CacheService(memory));
     const forecastReader = new WeatherForecastReader({
       weatherProvider,
       weatherCache: cache,
       logger: mock<ApplicationLoggerPort>(),
     });
-    useCase = new GetWeatherForecast({ weatherLocationRepository: repository, forecastReader });
+    useCase = new GetWeatherForecastUseCase({
+      weatherLocationRepository: repository,
+      forecastReader,
+    });
   });
   afterEach(() => {
     vi.useRealTimers();

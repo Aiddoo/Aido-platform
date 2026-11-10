@@ -1,10 +1,10 @@
-import { type WeatherCachePort } from "../../../forecasts/application/ports/weather-forecast-cache.port.js";
+import { type WeatherForecastCachePort } from "../../../forecasts/application/ports/weather-forecast-cache.port.js";
 import { Coordinate } from "../../../shared/domain/coordinate.vo.js";
 import { GeoCell } from "../../../shared/domain/geo-cell.vo.js";
-import { KoreanWeatherCoveragePolicy } from "../../../shared/domain/korean-weather-coverage.domain-service.js";
+import { isKoreanWeatherCovered } from "../../../shared/domain/korean-weather-coverage.domain-service.js";
 import { UserLocation } from "../../domain/user-location.entity.js";
 import type { TimezoneResolverPort } from "../ports/timezone-resolver.port.js";
-import { type WeatherLocationRepositoryPort } from "../ports/user-location.repository.port.js";
+import { type UserLocationRepositoryPort } from "../ports/user-location.repository.port.js";
 import type { WeatherGridResolverPort } from "../ports/weather-grid-resolver.port.js";
 
 /**
@@ -24,16 +24,13 @@ export interface UpsertLocationResult {
 }
 
 interface UpsertLocationDependencies {
-  readonly weatherLocationRepository: Pick<
-    WeatherLocationRepositoryPort,
-    "findByUserId" | "upsert"
-  >;
-  readonly weatherCache: Pick<WeatherCachePort, "invalidateGrid">;
+  readonly weatherLocationRepository: Pick<UserLocationRepositoryPort, "findByUserId" | "upsert">;
+  readonly weatherCache: Pick<WeatherForecastCachePort, "invalidateGrid">;
   readonly weatherGridResolver: Pick<WeatherGridResolverPort, "resolveGrid">;
   readonly timezoneResolver: Pick<TimezoneResolverPort, "resolve">;
 }
 
-export class UpsertLocation {
+export class UpsertUserLocationUseCase {
   readonly #dependencies: UpsertLocationDependencies;
 
   constructor(dependencies: UpsertLocationDependencies) {
@@ -42,7 +39,7 @@ export class UpsertLocation {
 
   async execute(input: UpsertLocationInput): Promise<UpsertLocationResult> {
     const coordinate = Coordinate.of(input.latitude, input.longitude);
-    const grid = KoreanWeatherCoveragePolicy.covers(coordinate)
+    const grid = isKoreanWeatherCovered(coordinate)
       ? this.#dependencies.weatherGridResolver.resolveGrid(coordinate)
       : null;
     const { timezone } = this.#dependencies.timezoneResolver.resolve(

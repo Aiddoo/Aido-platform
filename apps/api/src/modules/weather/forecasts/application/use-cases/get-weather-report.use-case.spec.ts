@@ -3,7 +3,7 @@ import { mock, type MockProxy } from "vitest-mock-extended";
 
 import { WeatherReportReader } from "#api/modules/weather/forecasts/application/weather-report.reader";
 import { WeatherKitNotConfiguredError } from "#api/modules/weather/forecasts/infrastructure/adapters/weatherkit-token.adapter";
-import { WeatherReportCacheAdapter } from "#api/modules/weather/forecasts/infrastructure/cache/weather-report.cache";
+import { WeatherReportCache } from "#api/modules/weather/forecasts/infrastructure/cache/weather-report.cache";
 import { UserLocation } from "#api/modules/weather/locations/domain/user-location.entity";
 import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
 import { CacheService } from "#api/platform/cache/cache.service";
@@ -21,18 +21,18 @@ import {
   StubWeatherReportProvider,
 } from "#test/mocks/ports/weather.stub";
 
-import { GetWeatherReport } from "./get-weather-report.use-case.js";
+import { GetWeatherReportUseCase } from "./get-weather-report.use-case.js";
 
-describe("GetWeatherReport — 칸 단위 캐시·폴백과 한국 대기질", () => {
+describe("GetWeatherReportUseCase — 칸 단위 캐시·폴백과 한국 대기질", () => {
   const now = new Date("2026-11-02T06:20:00.000Z");
   let memory: InMemoryCacheStore;
-  let cache: WeatherReportCacheAdapter;
+  let cache: WeatherReportCache;
   let repository: StubWeatherLocationRepository;
   let provider: StubWeatherReportProvider;
   let timezoneResolver: StubTimezoneResolver;
   let airQuality: StubAirQualityProvider;
   let logger: MockProxy<ApplicationLoggerPort>;
-  let useCase: GetWeatherReport;
+  let useCase: GetWeatherReportUseCase;
 
   /** 캐시 TTL과 응답 시각이 같은 시계를 보도록 Date만 고정·이동한다. */
   function moveClockTo(iso: string): Date {
@@ -45,13 +45,13 @@ describe("GetWeatherReport — 칸 단위 캐시·폴백과 한국 대기질", (
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(now);
     memory = new InMemoryCacheStore({ defaultTtlMs: 60_000, maxItems: 100 });
-    cache = new WeatherReportCacheAdapter(new CacheService(memory));
+    cache = new WeatherReportCache(new CacheService(memory));
     repository = new StubWeatherLocationRepository([weatherLocationFixture()]);
     provider = new StubWeatherReportProvider();
     timezoneResolver = new StubTimezoneResolver();
     airQuality = new StubAirQualityProvider();
     logger = mock<ApplicationLoggerPort>();
-    useCase = new GetWeatherReport({
+    useCase = new GetWeatherReportUseCase({
       weatherLocationRepository: repository,
       weatherReportReader: new WeatherReportReader({
         weatherReportProvider: provider,

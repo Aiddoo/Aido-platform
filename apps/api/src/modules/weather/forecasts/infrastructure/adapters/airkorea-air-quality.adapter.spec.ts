@@ -2,7 +2,7 @@ import { HttpClient, getHttpClientToken } from "@nestjs/http-client";
 import { TestBed } from "@suites/unit";
 import type { MockInstance } from "vitest";
 /**
- * AirkoreaProvider 단위 테스트
+ * AirkoreaAirQualityAdapter 단위 테스트
  *
  * @description
  * 에어코리아 측정소 조회 및 대기질 API 호출 검증.
@@ -20,15 +20,15 @@ import { TypedConfigService } from "#api/platform/config/services/config.service
 import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
 import { createWeatherOutbound } from "#test/mocks/ports/weather.stub";
 
-import { AirkoreaProvider } from "./airkorea-air-quality.adapter.js";
+import { AirkoreaAirQualityAdapter } from "./airkorea-air-quality.adapter.js";
 
-describe("AirkoreaProvider — 에어코리아 대기질 프로바이더", () => {
-  let provider: AirkoreaProvider;
+describe("AirkoreaAirQualityAdapter — 에어코리아 대기질 프로바이더", () => {
+  let provider: AirkoreaAirQualityAdapter;
   let configService: Mocked<TypedConfigService>;
   let fetchSpy: MockInstance<typeof globalThis.fetch>;
 
   beforeEach(async () => {
-    const { unit, unitRef } = await TestBed.solitary(AirkoreaProvider)
+    const { unit, unitRef } = await TestBed.solitary(AirkoreaAirQualityAdapter)
       .mock(getHttpClientToken("weather"))
       .final(new HttpClient({ retry: false, throwOnHttpError: false }))
       .mock(OutboundPolicyRegistry)

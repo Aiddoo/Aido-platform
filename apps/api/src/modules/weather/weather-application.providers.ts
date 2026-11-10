@@ -8,18 +8,18 @@ import { WEATHER_PROVIDER } from "./forecasts/application/ports/weather-forecast
 import { WEATHER_REPORT_CACHE } from "./forecasts/application/ports/weather-report-cache.port.js";
 import { WEATHER_REPORT_PROVIDER } from "./forecasts/application/ports/weather-report-provider.port.js";
 import { WEATHER_REPORT_READER } from "./forecasts/application/ports/weather-report.reader.port.js";
-import { GetWeatherConditions } from "./forecasts/application/use-cases/get-weather-conditions.use-case.js";
-import { GetWeatherForecast } from "./forecasts/application/use-cases/get-weather-forecast.use-case.js";
-import { GetWeatherReport } from "./forecasts/application/use-cases/get-weather-report.use-case.js";
+import { GetWeatherConditionsUseCase } from "./forecasts/application/use-cases/get-weather-conditions.use-case.js";
+import { GetWeatherForecastUseCase } from "./forecasts/application/use-cases/get-weather-forecast.use-case.js";
+import { GetWeatherReportUseCase } from "./forecasts/application/use-cases/get-weather-report.use-case.js";
 import { WeatherForecastReader } from "./forecasts/application/weather-forecast.reader.js";
 import { WeatherReportReader } from "./forecasts/application/weather-report.reader.js";
 import { TIMEZONE_RESOLVER } from "./locations/application/ports/timezone-resolver.port.js";
 import { WEATHER_LOCATION_REPOSITORY } from "./locations/application/ports/user-location.repository.port.js";
 import { WEATHER_GRID_RESOLVER } from "./locations/application/ports/weather-grid-resolver.port.js";
-import { UpsertLocation } from "./locations/application/use-cases/upsert-user-location.use-case.js";
+import { UpsertUserLocationUseCase } from "./locations/application/use-cases/upsert-user-location.use-case.js";
 
-export const getWeatherConditionsProvider: FactoryProvider<GetWeatherConditions> = {
-  provide: GetWeatherConditions,
+export const getWeatherConditionsProvider: FactoryProvider<GetWeatherConditionsUseCase> = {
+  provide: GetWeatherConditionsUseCase,
   inject: [
     WEATHER_LOCATION_REPOSITORY,
     AIR_QUALITY_PROVIDER,
@@ -31,18 +31,24 @@ export const getWeatherConditionsProvider: FactoryProvider<GetWeatherConditions>
   ],
   useFactory: (
     weatherLocationRepository: ConstructorParameters<
-      typeof GetWeatherConditions
+      typeof GetWeatherConditionsUseCase
     >[0]["weatherLocationRepository"],
-    airQualityProvider: ConstructorParameters<typeof GetWeatherConditions>[0]["airQualityProvider"],
+    airQualityProvider: ConstructorParameters<
+      typeof GetWeatherConditionsUseCase
+    >[0]["airQualityProvider"],
     lifestyleIndexProvider: ConstructorParameters<
-      typeof GetWeatherConditions
+      typeof GetWeatherConditionsUseCase
     >[0]["lifestyleIndexProvider"],
-    sunTimeProvider: ConstructorParameters<typeof GetWeatherConditions>[0]["sunTimeProvider"],
-    weatherProvider: ConstructorParameters<typeof GetWeatherConditions>[0]["weatherProvider"],
-    forecastReader: ConstructorParameters<typeof GetWeatherConditions>[0]["forecastReader"],
-    weatherCache: ConstructorParameters<typeof GetWeatherConditions>[0]["weatherCache"],
+    sunTimeProvider: ConstructorParameters<
+      typeof GetWeatherConditionsUseCase
+    >[0]["sunTimeProvider"],
+    weatherProvider: ConstructorParameters<
+      typeof GetWeatherConditionsUseCase
+    >[0]["weatherProvider"],
+    forecastReader: ConstructorParameters<typeof GetWeatherConditionsUseCase>[0]["forecastReader"],
+    weatherCache: ConstructorParameters<typeof GetWeatherConditionsUseCase>[0]["weatherCache"],
   ) =>
-    new GetWeatherConditions({
+    new GetWeatherConditionsUseCase({
       weatherLocationRepository,
       airQualityProvider,
       lifestyleIndexProvider,
@@ -50,19 +56,19 @@ export const getWeatherConditionsProvider: FactoryProvider<GetWeatherConditions>
       weatherProvider,
       forecastReader,
       weatherCache,
-      logger: new Logger(GetWeatherConditions.name),
+      logger: new Logger(GetWeatherConditionsUseCase.name),
     }),
 };
 
-export const getWeatherForecastProvider: FactoryProvider<GetWeatherForecast> = {
-  provide: GetWeatherForecast,
+export const getWeatherForecastProvider: FactoryProvider<GetWeatherForecastUseCase> = {
+  provide: GetWeatherForecastUseCase,
   inject: [WEATHER_LOCATION_REPOSITORY, WeatherForecastReader],
   useFactory: (
     weatherLocationRepository: ConstructorParameters<
-      typeof GetWeatherForecast
+      typeof GetWeatherForecastUseCase
     >[0]["weatherLocationRepository"],
-    forecastReader: ConstructorParameters<typeof GetWeatherForecast>[0]["forecastReader"],
-  ) => new GetWeatherForecast({ weatherLocationRepository, forecastReader }),
+    forecastReader: ConstructorParameters<typeof GetWeatherForecastUseCase>[0]["forecastReader"],
+  ) => new GetWeatherForecastUseCase({ weatherLocationRepository, forecastReader }),
 };
 
 export const weatherForecastReaderProvider: FactoryProvider<WeatherForecastReader> = {
@@ -79,18 +85,22 @@ export const weatherForecastReaderProvider: FactoryProvider<WeatherForecastReade
     }),
 };
 
-export const upsertLocationProvider: FactoryProvider<UpsertLocation> = {
-  provide: UpsertLocation,
+export const upsertLocationProvider: FactoryProvider<UpsertUserLocationUseCase> = {
+  provide: UpsertUserLocationUseCase,
   inject: [WEATHER_LOCATION_REPOSITORY, WEATHER_CACHE, WEATHER_GRID_RESOLVER, TIMEZONE_RESOLVER],
   useFactory: (
     weatherLocationRepository: ConstructorParameters<
-      typeof UpsertLocation
+      typeof UpsertUserLocationUseCase
     >[0]["weatherLocationRepository"],
-    weatherCache: ConstructorParameters<typeof UpsertLocation>[0]["weatherCache"],
-    weatherGridResolver: ConstructorParameters<typeof UpsertLocation>[0]["weatherGridResolver"],
-    timezoneResolver: ConstructorParameters<typeof UpsertLocation>[0]["timezoneResolver"],
+    weatherCache: ConstructorParameters<typeof UpsertUserLocationUseCase>[0]["weatherCache"],
+    weatherGridResolver: ConstructorParameters<
+      typeof UpsertUserLocationUseCase
+    >[0]["weatherGridResolver"],
+    timezoneResolver: ConstructorParameters<
+      typeof UpsertUserLocationUseCase
+    >[0]["timezoneResolver"],
   ) =>
-    new UpsertLocation({
+    new UpsertUserLocationUseCase({
       weatherLocationRepository,
       weatherCache,
       weatherGridResolver,
@@ -98,8 +108,8 @@ export const upsertLocationProvider: FactoryProvider<UpsertLocation> = {
     }),
 };
 
-export const getWeatherReportProvider: FactoryProvider<GetWeatherReport> = {
-  provide: GetWeatherReport,
+export const getWeatherReportProvider: FactoryProvider<GetWeatherReportUseCase> = {
+  provide: GetWeatherReportUseCase,
   inject: [
     WEATHER_LOCATION_REPOSITORY,
     WEATHER_REPORT_READER,
@@ -110,24 +120,30 @@ export const getWeatherReportProvider: FactoryProvider<GetWeatherReport> = {
   ],
   useFactory: (
     weatherLocationRepository: ConstructorParameters<
-      typeof GetWeatherReport
+      typeof GetWeatherReportUseCase
     >[0]["weatherLocationRepository"],
-    weatherReportReader: ConstructorParameters<typeof GetWeatherReport>[0]["weatherReportReader"],
+    weatherReportReader: ConstructorParameters<
+      typeof GetWeatherReportUseCase
+    >[0]["weatherReportReader"],
     weatherReportProvider: ConstructorParameters<
-      typeof GetWeatherReport
+      typeof GetWeatherReportUseCase
     >[0]["weatherReportProvider"],
-    weatherReportCache: ConstructorParameters<typeof GetWeatherReport>[0]["weatherReportCache"],
-    timezoneResolver: ConstructorParameters<typeof GetWeatherReport>[0]["timezoneResolver"],
-    airQualityProvider: ConstructorParameters<typeof GetWeatherReport>[0]["airQualityProvider"],
+    weatherReportCache: ConstructorParameters<
+      typeof GetWeatherReportUseCase
+    >[0]["weatherReportCache"],
+    timezoneResolver: ConstructorParameters<typeof GetWeatherReportUseCase>[0]["timezoneResolver"],
+    airQualityProvider: ConstructorParameters<
+      typeof GetWeatherReportUseCase
+    >[0]["airQualityProvider"],
   ) =>
-    new GetWeatherReport({
+    new GetWeatherReportUseCase({
       weatherLocationRepository,
       weatherReportReader,
       weatherReportProvider,
       weatherReportCache,
       timezoneResolver,
       airQualityProvider,
-      logger: new Logger(GetWeatherReport.name),
+      logger: new Logger(GetWeatherReportUseCase.name),
     }),
 };
 

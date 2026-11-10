@@ -5,7 +5,7 @@ import { CacheService } from "#api/platform/cache/cache.service";
 import { dayWindowInTimezone } from "#api/shared/domain/date/utils/timezone";
 
 import type {
-  WeatherCachePort,
+  WeatherForecastCachePort,
   WeatherForecastEntry,
   WeatherGridRef,
 } from "../../application/ports/weather-forecast-cache.port.js";
@@ -71,7 +71,7 @@ function forecastKey(gridX: number, gridY: number, timing: KmaForecastTiming): s
 }
 
 @Injectable()
-export class WeatherCacheAdapter implements WeatherCachePort {
+export class WeatherForecastCache implements WeatherForecastCachePort {
   readonly #cacheService: CacheService;
 
   constructor(cacheService: CacheService) {

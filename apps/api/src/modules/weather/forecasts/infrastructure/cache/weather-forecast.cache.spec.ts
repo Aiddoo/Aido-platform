@@ -5,7 +5,7 @@ import { FakeWeatherProvider } from "#test/mocks/fake-weather.provider";
 import { suppressLogger } from "#test/setup/suppress-logger";
 
 import type { WeatherConditions } from "../../application/ports/weather-forecast-provider.port.js";
-import { WeatherCacheAdapter } from "./weather-forecast.cache.js";
+import { WeatherForecastCache } from "./weather-forecast.cache.js";
 
 const at = new Date("2026-07-23T00:00:00Z");
 const next = new Date("2026-07-24T00:00:00Z");
@@ -21,7 +21,7 @@ const conditions: WeatherConditions = {
 describe("Weather 캐시 날짜·배치·TTL (실제 캐시 어댑터)", () => {
   let memory: InMemoryCacheStore;
   let cache: CacheService;
-  let weather: WeatherCacheAdapter;
+  let weather: WeatherForecastCache;
 
   beforeEach(() => {
     suppressLogger();
@@ -29,7 +29,7 @@ describe("Weather 캐시 날짜·배치·TTL (실제 캐시 어댑터)", () => {
     vi.setSystemTime(at);
     memory = new InMemoryCacheStore({ defaultTtlMs: 60_000, maxItems: 100 });
     cache = new CacheService(memory);
-    weather = new WeatherCacheAdapter(cache);
+    weather = new WeatherForecastCache(cache);
   });
 
   afterEach(() => {

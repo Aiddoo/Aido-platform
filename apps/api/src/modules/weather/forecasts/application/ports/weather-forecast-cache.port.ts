@@ -14,7 +14,7 @@ export interface WeatherForecastEntry extends WeatherGridRef {
   readonly forecast: WeatherForecast;
 }
 
-export interface WeatherCachePort {
+export interface WeatherForecastCachePort {
   /** 정규 예보 단건 조회. */
   getForecast(
     gridX: number,

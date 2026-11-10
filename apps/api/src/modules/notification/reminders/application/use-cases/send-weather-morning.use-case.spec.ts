@@ -1,6 +1,6 @@
 import type { ReminderWeatherReport } from "#api/modules/notification/reminders/application/ports/reminder-weather-report.reader.port";
 import { WeatherReportReader } from "#api/modules/weather/forecasts/application/weather-report.reader";
-import { WeatherReportCacheAdapter } from "#api/modules/weather/forecasts/infrastructure/cache/weather-report.cache";
+import { WeatherReportCache } from "#api/modules/weather/forecasts/infrastructure/cache/weather-report.cache";
 import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
 import { CacheService } from "#api/platform/cache/cache.service";
 import { RecordingNotificationPublisher } from "#test/doubles/notification/recording-notification-publisher";
@@ -224,7 +224,7 @@ describe("SendWeatherMorningUseCase + weather v2 리포트 — 공급자 호출 
       notificationHistoryReader: new StubNotificationHistoryReader(),
       weatherReportReader: new WeatherReportReader({
         weatherReportProvider: provider,
-        weatherReportCache: new WeatherReportCacheAdapter(new CacheService(memory)),
+        weatherReportCache: new WeatherReportCache(new CacheService(memory)),
         timezoneResolver: new StubTimezoneResolver(),
         logger: new SilentLogger(),
       }),

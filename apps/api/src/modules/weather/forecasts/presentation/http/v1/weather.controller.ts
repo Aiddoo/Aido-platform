@@ -10,8 +10,8 @@ import { ApiDoc, ApiSuccessResponse, SWAGGER_TAGS } from "#api/platform/http/swa
 import { now } from "#api/shared/domain/date/utils/core";
 import { parseDateOnly } from "#api/shared/domain/date/utils/parse";
 
-import { GetWeatherConditions } from "../../../application/use-cases/get-weather-conditions.use-case.js";
-import { GetWeatherForecast } from "../../../application/use-cases/get-weather-forecast.use-case.js";
+import { GetWeatherConditionsUseCase } from "../../../application/use-cases/get-weather-conditions.use-case.js";
+import { GetWeatherForecastUseCase } from "../../../application/use-cases/get-weather-forecast.use-case.js";
 import {
   GetForecastQueryDto,
   WeatherConditionsResponseDto,
@@ -22,10 +22,13 @@ import {
 @ApiBearerAuth()
 @Controller({ path: "weather", version: API_VERSION.V1 })
 export class WeatherController {
-  readonly #getWeatherForecast: GetWeatherForecast;
-  readonly #getWeatherConditions: GetWeatherConditions;
+  readonly #getWeatherForecast: GetWeatherForecastUseCase;
+  readonly #getWeatherConditions: GetWeatherConditionsUseCase;
 
-  constructor(getWeatherForecast: GetWeatherForecast, getWeatherConditions: GetWeatherConditions) {
+  constructor(
+    getWeatherForecast: GetWeatherForecastUseCase,
+    getWeatherConditions: GetWeatherConditionsUseCase,
+  ) {
     this.#getWeatherForecast = getWeatherForecast;
     this.#getWeatherConditions = getWeatherConditions;
   }

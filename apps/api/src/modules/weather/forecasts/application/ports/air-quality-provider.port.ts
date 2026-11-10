@@ -5,6 +5,6 @@ export interface AirQuality {
   readonly pm25: number | null;
 }
 
-export interface AirQualityProvider {
+export interface AirQualityProviderPort {
   getAirQuality(lat: number, lon: number): Promise<AirQuality | null>;
 }

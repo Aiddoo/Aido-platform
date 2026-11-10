@@ -4,16 +4,16 @@ import { ApplicationException } from "#api/shared/application/application.except
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { toLocalTimeString } from "#api/shared/domain/date/utils/timezone";
 
-import { type WeatherLocationRepositoryPort } from "../../../locations/application/ports/user-location.repository.port.js";
+import { type UserLocationRepositoryPort } from "../../../locations/application/ports/user-location.repository.port.js";
 import type { UserLocation } from "../../../locations/domain/user-location.entity.js";
-import { WeatherLogEvent } from "../forecasts.log-events.js";
-import { type AirQualityProvider } from "../ports/air-quality-provider.port.js";
-import { type LifestyleIndexProvider } from "../ports/lifestyle-index-provider.port.js";
-import { type SunTimeProvider } from "../ports/sun-time-provider.port.js";
-import { type WeatherCachePort } from "../ports/weather-forecast-cache.port.js";
+import { ForecastLogEvent } from "../forecasts.log-events.js";
+import { type AirQualityProviderPort } from "../ports/air-quality-provider.port.js";
+import { type LifestyleIndexProviderPort } from "../ports/lifestyle-index-provider.port.js";
+import { type SunTimeProviderPort } from "../ports/sun-time-provider.port.js";
+import { type WeatherForecastCachePort } from "../ports/weather-forecast-cache.port.js";
 import type {
   WeatherConditions,
-  WeatherProvider,
+  WeatherForecastProviderPort,
 } from "../ports/weather-forecast-provider.port.js";
 import type { WeatherForecastReader } from "../weather-forecast.reader.js";
 
@@ -26,17 +26,17 @@ export interface GetWeatherConditionsInput {
 }
 
 interface GetWeatherConditionsDependencies {
-  readonly weatherLocationRepository: Pick<WeatherLocationRepositoryPort, "findByUserId">;
-  readonly airQualityProvider: Pick<AirQualityProvider, "getAirQuality">;
-  readonly lifestyleIndexProvider: Pick<LifestyleIndexProvider, "getIndex">;
-  readonly sunTimeProvider: Pick<SunTimeProvider, "getSunTime">;
+  readonly weatherLocationRepository: Pick<UserLocationRepositoryPort, "findByUserId">;
+  readonly airQualityProvider: Pick<AirQualityProviderPort, "getAirQuality">;
+  readonly lifestyleIndexProvider: Pick<LifestyleIndexProviderPort, "getIndex">;
+  readonly sunTimeProvider: Pick<SunTimeProviderPort, "getSunTime">;
   readonly forecastReader: Pick<WeatherForecastReader, "fetchForLocation">;
-  readonly weatherProvider: Pick<WeatherProvider, "timeZone">;
-  readonly weatherCache: Pick<WeatherCachePort, "getConditions" | "setConditions">;
+  readonly weatherProvider: Pick<WeatherForecastProviderPort, "timeZone">;
+  readonly weatherCache: Pick<WeatherForecastCachePort, "getConditions" | "setConditions">;
   readonly logger: Pick<ApplicationLoggerPort, "warn">;
 }
 
-export class GetWeatherConditions {
+export class GetWeatherConditionsUseCase {
   readonly #dependencies: GetWeatherConditionsDependencies;
 
   constructor(dependencies: GetWeatherConditionsDependencies) {
@@ -117,7 +117,7 @@ export class GetWeatherConditions {
         windSpeed: forecast.windSpeed,
       };
     } catch {
-      this.#dependencies.logger.warn({ event: WeatherLogEvent.CONDITIONS_FORECAST_UNAVAILABLE });
+      this.#dependencies.logger.warn({ event: ForecastLogEvent.CONDITIONS_FORECAST_UNAVAILABLE });
       return { currentTemp: 0, windSpeed: 0 };
     }
   }

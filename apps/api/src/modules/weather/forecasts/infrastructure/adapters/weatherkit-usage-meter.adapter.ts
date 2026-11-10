@@ -13,7 +13,7 @@ import {
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import { now } from "#api/shared/domain/date/utils/core";
 
-import { WeatherAlertKey } from "../../application/forecasts.alerts.js";
+import { ForecastAlertKey } from "../../application/forecasts.alerts.js";
 import { WeatherKitLogEvent } from "../weatherkit.log-events.js";
 import { WEATHERKIT_MONTHLY_CALL_ALERTS } from "./weather-outbound.policy.js";
 
@@ -24,8 +24,8 @@ export const WEATHERKIT_CALL_METER = "weatherkit.call";
  * 닿기 전에 경보로 알 수 있다. 계량 실패는 날씨 응답을 막지 않는다.
  */
 @Injectable()
-export class WeatherKitUsageMeter {
-  readonly #logger = new Logger(WeatherKitUsageMeter.name);
+export class WeatherKitUsageMeterAdapter {
+  readonly #logger = new Logger(WeatherKitUsageMeterAdapter.name);
 
   readonly #meter: Pick<UsageMeterPort, "add">;
   readonly #alert: OperationalAlertPort;
@@ -50,7 +50,7 @@ export class WeatherKitUsageMeter {
       for (const threshold of crossedThresholds(total, 1, WEATHERKIT_MONTHLY_CALL_ALERTS)) {
         this.#logger.warn({ event: WeatherKitLogEvent.MONTHLY_CALLS_REACHED, period, threshold });
         this.#alert.raise({
-          key: WeatherAlertKey.WEATHERKIT_MONTHLY_CALLS,
+          key: ForecastAlertKey.WEATHERKIT_MONTHLY_CALLS,
           severity: "warning",
           message: `WeatherKit 이번 달 호출이 ${threshold}회에 닿았습니다`,
           tags: { period },

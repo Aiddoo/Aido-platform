@@ -1,11 +1,11 @@
 import { count, eq, sql } from "drizzle-orm";
 
-import { WeatherCacheAdapter } from "#api/modules/weather/forecasts/infrastructure/cache/weather-forecast.cache";
-import { UpsertLocation } from "#api/modules/weather/locations/application/use-cases/upsert-user-location.use-case";
+import { WeatherForecastCache } from "#api/modules/weather/forecasts/infrastructure/cache/weather-forecast.cache";
+import { UpsertUserLocationUseCase } from "#api/modules/weather/locations/application/use-cases/upsert-user-location.use-case";
 import { UserLocation } from "#api/modules/weather/locations/domain/user-location.entity";
-import { KmaWeatherGridResolver } from "#api/modules/weather/locations/infrastructure/adapters/kma-weather-grid-resolver.adapter";
-import { TzLookupTimezoneResolver } from "#api/modules/weather/locations/infrastructure/adapters/tz-lookup-timezone-resolver.adapter";
-import { DrizzleWeatherLocationRepository } from "#api/modules/weather/locations/infrastructure/persistence/drizzle-user-location.repository";
+import { KmaWeatherGridResolverAdapter } from "#api/modules/weather/locations/infrastructure/adapters/kma-weather-grid-resolver.adapter";
+import { TzLookupTimezoneResolverAdapter } from "#api/modules/weather/locations/infrastructure/adapters/tz-lookup-timezone-resolver.adapter";
+import { DrizzleUserLocationRepository } from "#api/modules/weather/locations/infrastructure/persistence/drizzle-user-location.repository";
 import { Coordinate } from "#api/modules/weather/shared/domain/coordinate.vo";
 import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
 import { CacheService } from "#api/platform/cache/cache.service";
@@ -18,8 +18,8 @@ import { createDatabaseTransactionFixture, createTestClient } from "#test/setup/
 import { suppressLogger } from "#test/setup/suppress-logger";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
-const resolver = new KmaWeatherGridResolver();
-const timezoneResolver = new TzLookupTimezoneResolver();
+const resolver = new KmaWeatherGridResolverAdapter();
+const timezoneResolver = new TzLookupTimezoneResolverAdapter();
 function location(userId: string, latitude = 37.5665, longitude = 126.978): UserLocation {
   const coordinate = Coordinate.of(latitude, longitude);
   return UserLocation.create({
@@ -45,7 +45,7 @@ function coordinates(saved: UserLocation | null) {
 describe("Weather 위치 저장·unique·외래 키·rollback (실제 PostgreSQL)", () => {
   const database = new TestDatabase({ createClient: (url) => createTestClient(url, { max: 6 }) });
   let client: TestDatabaseClient;
-  let repository: DrizzleWeatherLocationRepository;
+  let repository: DrizzleUserLocationRepository;
   let uow: UnitOfWorkPort;
   let userId: string;
   let anotherUserId: string;
@@ -53,7 +53,7 @@ describe("Weather 위치 저장·unique·외래 키·rollback (실제 PostgreSQL
   beforeAll(async () => {
     client = await database.start();
     const transaction = createDatabaseTransactionFixture(client);
-    repository = new DrizzleWeatherLocationRepository(transaction.txHost);
+    repository = new DrizzleUserLocationRepository(transaction.txHost);
     uow = transaction.uow;
   });
 
@@ -150,7 +150,7 @@ describe("Weather 위치 저장·unique·외래 키·rollback (실제 PostgreSQL
     const released = Promise.withResolvers<void>();
     const holder = createDatabaseTransactionFixture(client);
     const holding = holder.uow.run(async () => {
-      await new DrizzleWeatherLocationRepository(holder.txHost).upsert(seoul);
+      await new DrizzleUserLocationRepository(holder.txHost).upsert(seoul);
       acquired.resolve();
       await released.promise;
     });
@@ -253,8 +253,8 @@ describe("Weather 위치 저장·unique·외래 키·rollback (실제 PostgreSQL
   it("실제 위치 변경은 이전 격자 캐시를 무효화하고 해외 좌표는 격자 없이 저장한다", async () => {
     // Given
     const memory = new InMemoryCacheStore({ defaultTtlMs: 60_000, maxItems: 100 });
-    const cache = new WeatherCacheAdapter(new CacheService(memory));
-    const update = new UpsertLocation({
+    const cache = new WeatherForecastCache(new CacheService(memory));
+    const update = new UpsertUserLocationUseCase({
       weatherLocationRepository: repository,
       weatherCache: cache,
       weatherGridResolver: resolver,

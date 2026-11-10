@@ -1,4 +1,4 @@
-import { WeatherCacheAdapter } from "#api/modules/weather/forecasts/infrastructure/cache/weather-forecast.cache";
+import { WeatherForecastCache } from "#api/modules/weather/forecasts/infrastructure/cache/weather-forecast.cache";
 import { Coordinate } from "#api/modules/weather/shared/domain/coordinate.vo";
 import { GeoCell } from "#api/modules/weather/shared/domain/geo-cell.vo";
 import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
@@ -16,26 +16,26 @@ import {
 } from "#test/mocks/ports/weather.stub";
 import { suppressLogger } from "#test/setup/suppress-logger";
 
-import { UpsertLocation } from "./upsert-user-location.use-case.js";
+import { UpsertUserLocationUseCase } from "./upsert-user-location.use-case.js";
 
-describe("UpsertLocation — 위치 저장과 이전 격자 무효화", () => {
+describe("UpsertUserLocationUseCase — 위치 저장과 이전 격자 무효화", () => {
   let memory: InMemoryCacheStore;
-  let cache: WeatherCacheAdapter;
+  let cache: WeatherForecastCache;
   let repository: StubWeatherLocationRepository;
   let resolver: StubWeatherGridResolver;
   let timezoneResolver: StubTimezoneResolver;
-  let useCase: UpsertLocation;
+  let useCase: UpsertUserLocationUseCase;
   const date = new Date("2026-07-23T00:00:00.000Z");
   const next = new Date("2026-07-24T00:00:00.000Z");
 
   beforeEach(() => {
     suppressLogger();
     memory = new InMemoryCacheStore({ defaultTtlMs: 60_000, maxItems: 100 });
-    cache = new WeatherCacheAdapter(new CacheService(memory));
+    cache = new WeatherForecastCache(new CacheService(memory));
     repository = new StubWeatherLocationRepository();
     resolver = new StubWeatherGridResolver();
     timezoneResolver = new StubTimezoneResolver();
-    useCase = new UpsertLocation({
+    useCase = new UpsertUserLocationUseCase({
       weatherLocationRepository: repository,
       weatherCache: cache,
       weatherGridResolver: resolver,

@@ -8,16 +8,16 @@ import {
 import { API_VERSION } from "#api/platform/http/api-versioning";
 import { ApiDoc, ApiSuccessResponse, SWAGGER_TAGS } from "#api/platform/http/swagger/index";
 
-import { UpsertLocation } from "../../../application/use-cases/upsert-user-location.use-case.js";
+import { UpsertUserLocationUseCase } from "../../../application/use-cases/upsert-user-location.use-case.js";
 import { LocationResponseDto, UpdateLocationDto } from "./weather-location.dto.js";
 
 @ApiTags(SWAGGER_TAGS.WEATHER_V1)
 @ApiBearerAuth()
 @Controller({ path: "weather", version: API_VERSION.V1 })
 export class WeatherLocationController {
-  readonly #upsertLocation: UpsertLocation;
+  readonly #upsertLocation: UpsertUserLocationUseCase;
 
-  constructor(upsertLocation: UpsertLocation) {
+  constructor(upsertLocation: UpsertUserLocationUseCase) {
     this.#upsertLocation = upsertLocation;
   }
 

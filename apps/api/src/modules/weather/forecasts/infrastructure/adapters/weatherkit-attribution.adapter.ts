@@ -18,7 +18,7 @@ import {
 } from "../cache/weather-report.keyspace.js";
 import { WeatherKitLogEvent } from "../weatherkit.log-events.js";
 import { WEATHERKIT_POLICY } from "./weather-outbound.policy.js";
-import { WeatherKitUsageMeter } from "./weatherkit-usage-meter.adapter.js";
+import { WeatherKitUsageMeterAdapter } from "./weatherkit-usage-meter.adapter.js";
 
 const WEATHERKIT_ORIGIN = "https://weatherkit.apple.com";
 const ATTRIBUTION_TIMEOUT_MS = 3_000;
@@ -63,19 +63,19 @@ export class WeatherKitAttributionRequestError extends Error {
  * 실패한 언어는 1분 동안 다시 부르지 않아 Apple 장애 중 요청마다 3초를 기다리지 않는다.
  */
 @Injectable()
-export class WeatherKitAttributionResolver {
-  readonly #logger = new Logger(WeatherKitAttributionResolver.name);
+export class WeatherKitAttributionAdapter {
+  readonly #logger = new Logger(WeatherKitAttributionAdapter.name);
   readonly #policy: OutboundPolicy;
   readonly #http: HttpClient;
   readonly #cacheService: Pick<CacheService, "wrap" | "has" | "set">;
-  readonly #usage: Pick<WeatherKitUsageMeter, "recordCall">;
+  readonly #usage: Pick<WeatherKitUsageMeterAdapter, "recordCall">;
 
   constructor(
     @InjectHttpClient("weather") http: HttpClient,
     @Inject(CacheService)
     cacheService: Pick<CacheService, "wrap" | "has" | "set">,
     policies: OutboundPolicyRegistry,
-    @Inject(WeatherKitUsageMeter) usage: Pick<WeatherKitUsageMeter, "recordCall">,
+    @Inject(WeatherKitUsageMeterAdapter) usage: Pick<WeatherKitUsageMeterAdapter, "recordCall">,
   ) {
     this.#http = http;
     this.#cacheService = cacheService;

@@ -1,6 +1,6 @@
 import type {
   WeatherForecast,
-  WeatherProvider,
+  WeatherForecastProviderPort,
 } from "#api/modules/weather/forecasts/application/ports/weather-forecast-provider.port";
 import type { KmaForecastTiming } from "#api/modules/weather/forecasts/domain/kma-forecast-availability.domain-service";
 
@@ -9,7 +9,7 @@ import type { KmaForecastTiming } from "#api/modules/weather/forecasts/domain/km
  *
  * 실제 기상청(KMA) API를 호출하지 않고, 고정된 예보 데이터를 반환합니다.
  */
-export class FakeWeatherProvider implements WeatherProvider {
+export class FakeWeatherProvider implements WeatherForecastProviderPort {
   readonly name = "fake";
   readonly timeZone = "Asia/Seoul";
   private _calls: Array<{ lat: number; lon: number; date: Date }> = [];

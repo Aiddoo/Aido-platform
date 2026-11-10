@@ -1,6 +1,6 @@
 import { weatherReportFixture } from "#test/fixtures/weather.fixture";
 
-import { windowWeatherReport } from "./weather-report.vo.js";
+import { windowWeatherReport } from "./weather-report-window.domain-service.js";
 
 describe("windowWeatherReport — 응답 시각 기준 창", () => {
   it("시간별은 현재 시각이 속한 시간부터 최대 24개다", () => {

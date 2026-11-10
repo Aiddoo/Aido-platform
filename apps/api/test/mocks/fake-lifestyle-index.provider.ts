@@ -1,6 +1,6 @@
 import type {
   LifestyleIndex,
-  LifestyleIndexProvider,
+  LifestyleIndexProviderPort,
 } from "#api/modules/weather/forecasts/application/ports/lifestyle-index-provider.port";
 
 /**
@@ -8,7 +8,7 @@ import type {
  *
  * 실제 기상청 생활기상지수 API를 호출하지 않고, 고정된 데이터를 반환합니다.
  */
-export class FakeLifestyleIndexProvider implements LifestyleIndexProvider {
+export class FakeLifestyleIndexProvider implements LifestyleIndexProviderPort {
   private _calls: Array<{
     lat: number;
     lon: number;

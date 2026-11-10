@@ -2,7 +2,7 @@ import { ErrorCode } from "@aido/api/errors";
 
 import { ApplicationException } from "#api/shared/application/application.exception";
 
-import { type WeatherLocationRepositoryPort } from "../../../locations/application/ports/user-location.repository.port.js";
+import { type UserLocationRepositoryPort } from "../../../locations/application/ports/user-location.repository.port.js";
 import type { UserLocation } from "../../../locations/domain/user-location.entity.js";
 import type { WeatherForecast } from "../ports/weather-forecast-provider.port.js";
 import type { WeatherForecastReader } from "../weather-forecast.reader.js";
@@ -22,11 +22,11 @@ export interface GetWeatherForecastInput {
 }
 
 interface GetWeatherForecastDependencies {
-  readonly weatherLocationRepository: Pick<WeatherLocationRepositoryPort, "findByUserId">;
+  readonly weatherLocationRepository: Pick<UserLocationRepositoryPort, "findByUserId">;
   readonly forecastReader: Pick<WeatherForecastReader, "fetchForLocation">;
 }
 
-export class GetWeatherForecast {
+export class GetWeatherForecastUseCase {
   readonly #dependencies: GetWeatherForecastDependencies;
 
   constructor(dependencies: GetWeatherForecastDependencies) {

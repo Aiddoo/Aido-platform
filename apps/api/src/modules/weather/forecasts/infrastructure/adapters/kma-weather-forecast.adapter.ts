@@ -11,7 +11,7 @@ import { ApplicationExceptions } from "#api/shared/application/exceptions/applic
 import { convertToGrid } from "../../../shared/domain/kma-grid-projection.domain-service.js";
 import type {
   WeatherForecast,
-  WeatherProvider,
+  WeatherForecastProviderPort,
 } from "../../application/ports/weather-forecast-provider.port.js";
 import {
   type KmaBaseDateTime,
@@ -29,10 +29,10 @@ import { type KmaApiResponse, kmaApiResponseSchema } from "./kma.wire.js";
 import { KMA_FORECAST_POLICY } from "./weather-outbound.policy.js";
 
 @Injectable()
-export class KmaWeatherProvider implements WeatherProvider {
+export class KmaWeatherForecastAdapter implements WeatherForecastProviderPort {
   readonly name = "kma";
   readonly timeZone = KMA_TIMEZONE;
-  readonly #logger = new Logger(KmaWeatherProvider.name);
+  readonly #logger = new Logger(KmaWeatherForecastAdapter.name);
   readonly #policy: OutboundPolicy;
 
   readonly #configService: TypedConfigService;

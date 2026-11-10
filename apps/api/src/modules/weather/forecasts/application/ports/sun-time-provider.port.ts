@@ -5,6 +5,6 @@ export interface SunTime {
   readonly sunset: string; // "HH:mm"
 }
 
-export interface SunTimeProvider {
+export interface SunTimeProviderPort {
   getSunTime(lat: number, lon: number, date: Date): Promise<SunTime | null>;
 }

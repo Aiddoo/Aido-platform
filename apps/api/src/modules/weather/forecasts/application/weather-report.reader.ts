@@ -16,8 +16,9 @@ import {
   type WeatherReportCacheScope,
   type WeatherReportLanguage,
 } from "../domain/weather-report-language.domain-service.js";
-import { type WeatherReport, windowWeatherReport } from "../domain/weather-report.vo.js";
-import { WeatherLogEvent } from "./forecasts.log-events.js";
+import { windowWeatherReport } from "../domain/weather-report-window.domain-service.js";
+import type { WeatherReport } from "../domain/weather-report.vo.js";
+import { ForecastLogEvent } from "./forecasts.log-events.js";
 import type { WeatherReportCachePort } from "./ports/weather-report-cache.port.js";
 import type {
   WeatherReportProviderPort,
@@ -63,7 +64,7 @@ export class WeatherReportReader implements WeatherReportReaderPort {
       const latest = await this.#latestReport(cell, scope, language);
       if (latest == null) {
         this.#dependencies.logger.error({
-          event: WeatherLogEvent.REPORT_UNAVAILABLE,
+          event: ForecastLogEvent.REPORT_UNAVAILABLE,
           cellKey: cell.key,
           fallback: false,
           errorType: toErrorType(error),
@@ -72,7 +73,7 @@ export class WeatherReportReader implements WeatherReportReaderPort {
         throw new ApplicationException(ErrorCode.WEATHER_1901);
       }
       this.#dependencies.logger.warn({
-        event: WeatherLogEvent.REPORT_FALLBACK_USED,
+        event: ForecastLogEvent.REPORT_FALLBACK_USED,
         cellKey: cell.key,
         fallback: true,
         fetchedAt: latest.fetchedAt.toISOString(),
@@ -112,7 +113,7 @@ export class WeatherReportReader implements WeatherReportReaderPort {
           // 공급자·캐시 실패는 readReport가 이미 남겼다. 그 밖의 실패만 여기서 남긴다.
           if (!(error instanceof ApplicationException)) {
             this.#dependencies.logger.warn({
-              event: WeatherLogEvent.REPORT_READ_FAILED,
+              event: ForecastLogEvent.REPORT_READ_FAILED,
               cellKey: first.cell.key,
               errorType: toErrorType(error),
             });
@@ -157,7 +158,7 @@ export class WeatherReportReader implements WeatherReportReaderPort {
         : SHARED_WEATHER_REPORT_SCOPE;
     } catch (error) {
       this.#dependencies.logger.warn({
-        event: WeatherLogEvent.REPORT_CACHE_SCOPE_FAILED,
+        event: ForecastLogEvent.REPORT_CACHE_SCOPE_FAILED,
         cellKey: cell.key,
         errorType: toErrorType(error),
       });

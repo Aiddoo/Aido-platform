@@ -2,7 +2,7 @@ import { ErrorCode } from "@aido/api/errors";
 import { mock } from "vitest-mock-extended";
 
 import { WeatherForecastReader } from "#api/modules/weather/forecasts/application/weather-forecast.reader";
-import { WeatherCacheAdapter } from "#api/modules/weather/forecasts/infrastructure/cache/weather-forecast.cache";
+import { WeatherForecastCache } from "#api/modules/weather/forecasts/infrastructure/cache/weather-forecast.cache";
 import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
 import { CacheService } from "#api/platform/cache/cache.service";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
@@ -16,17 +16,17 @@ import {
 } from "#test/mocks/ports/weather.stub";
 import { suppressLogger } from "#test/setup/suppress-logger";
 
-import { GetWeatherConditions } from "./get-weather-conditions.use-case.js";
+import { GetWeatherConditionsUseCase } from "./get-weather-conditions.use-case.js";
 
-describe("GetWeatherConditions — 날짜별 부가정보와 부분 실패", () => {
+describe("GetWeatherConditionsUseCase — 날짜별 부가정보와 부분 실패", () => {
   let memory: InMemoryCacheStore;
-  let cache: WeatherCacheAdapter;
+  let cache: WeatherForecastCache;
   let repository: StubWeatherLocationRepository;
   let weatherProvider: StubWeatherProvider;
   let airQualityProvider: StubAirQualityProvider;
   let lifestyleIndexProvider: StubLifestyleIndexProvider;
   let sunTimeProvider: StubSunTimeProvider;
-  let conditions: GetWeatherConditions;
+  let conditions: GetWeatherConditionsUseCase;
   const date = new Date("2026-07-23T00:00:00.000Z");
 
   beforeEach(() => {
@@ -34,7 +34,7 @@ describe("GetWeatherConditions — 날짜별 부가정보와 부분 실패", () 
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(date);
     memory = new InMemoryCacheStore({ defaultTtlMs: 60_000, maxItems: 100 });
-    cache = new WeatherCacheAdapter(new CacheService(memory));
+    cache = new WeatherForecastCache(new CacheService(memory));
     repository = new StubWeatherLocationRepository([weatherLocationFixture()]);
     weatherProvider = new StubWeatherProvider();
     airQualityProvider = new StubAirQualityProvider();
@@ -46,7 +46,7 @@ describe("GetWeatherConditions — 날짜별 부가정보와 부분 실패", () 
       weatherCache: cache,
       logger,
     });
-    conditions = new GetWeatherConditions({
+    conditions = new GetWeatherConditionsUseCase({
       weatherLocationRepository: repository,
       weatherProvider,
       airQualityProvider,
@@ -146,7 +146,7 @@ describe("GetWeatherConditions — 날짜별 부가정보와 부분 실패", () 
       weatherCache: cache,
       logger,
     });
-    const localConditions = new GetWeatherConditions({
+    const localConditions = new GetWeatherConditionsUseCase({
       weatherLocationRepository: repository,
       weatherProvider: provider,
       airQualityProvider,

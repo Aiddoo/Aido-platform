@@ -21,7 +21,7 @@ import {
 import { THROTTLED_DESCRIPTION, ThrottleByUser } from "#api/platform/throttle/index";
 import { now } from "#api/shared/domain/date/utils/core";
 
-import { GetWeatherReport } from "../../../application/use-cases/get-weather-report.use-case.js";
+import { GetWeatherReportUseCase } from "../../../application/use-cases/get-weather-report.use-case.js";
 import { resolveWeatherReportLanguage } from "../../../domain/weather-report-language.domain-service.js";
 import { toWeatherReportResponse } from "./weather-report-response.mapper.js";
 import { WeatherReportResponseDto } from "./weather-report.dto.js";
@@ -34,9 +34,9 @@ export const WEATHER_REPORT_V2_THROTTLE = {
 @ApiBearerAuth()
 @Controller({ path: "weather", version: API_VERSION.V2 })
 export class WeatherV2Controller {
-  readonly #getWeatherReport: GetWeatherReport;
+  readonly #getWeatherReport: GetWeatherReportUseCase;
 
-  constructor(getWeatherReport: GetWeatherReport) {
+  constructor(getWeatherReport: GetWeatherReportUseCase) {
     this.#getWeatherReport = getWeatherReport;
   }
 

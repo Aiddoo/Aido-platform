@@ -1,16 +1,19 @@
-import { KmaForecastAvailabilityPolicy } from "./kma-forecast-availability.domain-service.js";
+import { resolveKmaForecastAvailability } from "./kma-forecast-availability.domain-service.js";
 
 /** v1 앱은 `date=YYYY-MM-DD`를 보내고 서버는 그 날 UTC 자정(KST 09:00)으로 해석한다. */
 function requestedDay(day: string): Date {
   return new Date(`${day}T00:00:00.000Z`);
 }
 
-describe("KmaForecastAvailabilityPolicy — KMA 단기예보 제공 범위", () => {
+describe("resolveKmaForecastAvailability — KMA 단기예보 제공 범위", () => {
   it("오늘 날짜를 아침 발표 전(KST 04:18)에 요청하면 아직 없는 09시 발표 대신 지금의 발표를 쓴다", () => {
     // Given
     const now = new Date("2026-11-01T19:18:00.000Z");
     // When
-    const availability = KmaForecastAvailabilityPolicy.resolve(requestedDay("2026-11-02"), now);
+    const availability = resolveKmaForecastAvailability({
+      target: requestedDay("2026-11-02"),
+      now: now,
+    });
     // Then
     expect(availability).toEqual({
       kind: "AVAILABLE",
@@ -23,7 +26,7 @@ describe("KmaForecastAvailabilityPolicy — KMA 단기예보 제공 범위", () 
     const now = new Date("2026-11-02T03:00:00.000Z");
     const target = requestedDay("2026-11-02");
     // When
-    const availability = KmaForecastAvailabilityPolicy.resolve(target, now);
+    const availability = resolveKmaForecastAvailability({ target: target, now: now });
     // Then
     expect(availability).toEqual({ kind: "AVAILABLE", timing: { target, issuance: target } });
   });
@@ -34,8 +37,8 @@ describe("KmaForecastAvailabilityPolicy — KMA 단기예보 제공 범위", () 
     const afterMidnight = new Date("2026-11-02T15:00:00.000Z");
     const target = requestedDay("2026-11-05");
     // When
-    const before = KmaForecastAvailabilityPolicy.resolve(target, beforeMidnight);
-    const after = KmaForecastAvailabilityPolicy.resolve(target, afterMidnight);
+    const before = resolveKmaForecastAvailability({ target: target, now: beforeMidnight });
+    const after = resolveKmaForecastAvailability({ target: target, now: afterMidnight });
     // Then
     expect(before.kind).toBe("UNAVAILABLE");
     expect(after).toEqual({
@@ -48,8 +51,14 @@ describe("KmaForecastAvailabilityPolicy — KMA 단기예보 제공 범위", () 
     // Given
     const now = new Date("2026-11-02T03:00:00.000Z");
     // When
-    const dayAfterTomorrow = KmaForecastAvailabilityPolicy.resolve(requestedDay("2026-11-04"), now);
-    const threeDaysLater = KmaForecastAvailabilityPolicy.resolve(requestedDay("2026-11-05"), now);
+    const dayAfterTomorrow = resolveKmaForecastAvailability({
+      target: requestedDay("2026-11-04"),
+      now: now,
+    });
+    const threeDaysLater = resolveKmaForecastAvailability({
+      target: requestedDay("2026-11-05"),
+      now: now,
+    });
     // Then
     expect(dayAfterTomorrow).toEqual({
       kind: "AVAILABLE",
@@ -62,8 +71,14 @@ describe("KmaForecastAvailabilityPolicy — KMA 단기예보 제공 범위", () 
     // Given
     const now = new Date("2026-11-02T03:00:00.000Z");
     // When
-    const twoDaysAgo = KmaForecastAvailabilityPolicy.resolve(requestedDay("2026-10-31"), now);
-    const threeDaysAgo = KmaForecastAvailabilityPolicy.resolve(requestedDay("2026-10-30"), now);
+    const twoDaysAgo = resolveKmaForecastAvailability({
+      target: requestedDay("2026-10-31"),
+      now: now,
+    });
+    const threeDaysAgo = resolveKmaForecastAvailability({
+      target: requestedDay("2026-10-30"),
+      now: now,
+    });
     // Then
     expect(twoDaysAgo).toEqual({
       kind: "AVAILABLE",
@@ -77,7 +92,7 @@ describe("KmaForecastAvailabilityPolicy — KMA 단기예보 제공 범위", () 
     const now = new Date("2026-11-02T03:00:00.000Z");
     const earliestDayMidnight = new Date("2026-10-30T15:00:00.000Z");
     // When
-    const availability = KmaForecastAvailabilityPolicy.resolve(earliestDayMidnight, now);
+    const availability = resolveKmaForecastAvailability({ target: earliestDayMidnight, now: now });
     // Then
     expect(availability).toEqual({
       kind: "AVAILABLE",

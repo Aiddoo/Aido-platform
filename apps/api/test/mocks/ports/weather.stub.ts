@@ -1,18 +1,18 @@
 import type {
   AirQuality,
-  AirQualityProvider,
+  AirQualityProviderPort,
 } from "#api/modules/weather/forecasts/application/ports/air-quality-provider.port";
 import type {
   LifestyleIndex,
-  LifestyleIndexProvider,
+  LifestyleIndexProviderPort,
 } from "#api/modules/weather/forecasts/application/ports/lifestyle-index-provider.port";
 import type {
   SunTime,
-  SunTimeProvider,
+  SunTimeProviderPort,
 } from "#api/modules/weather/forecasts/application/ports/sun-time-provider.port";
 import type {
   WeatherForecast,
-  WeatherProvider,
+  WeatherForecastProviderPort,
 } from "#api/modules/weather/forecasts/application/ports/weather-forecast-provider.port";
 import type {
   WeatherReportProviderPort,
@@ -22,12 +22,12 @@ import type { KmaForecastTiming } from "#api/modules/weather/forecasts/domain/km
 import type { WeatherReportLanguage } from "#api/modules/weather/forecasts/domain/weather-report-language.domain-service";
 import type { WeatherReportAttribution } from "#api/modules/weather/forecasts/domain/weather-report.vo";
 import type { WeatherReport } from "#api/modules/weather/forecasts/domain/weather-report.vo";
-import { WeatherKitUsageMeter } from "#api/modules/weather/forecasts/infrastructure/adapters/weatherkit-usage-meter.adapter";
+import { WeatherKitUsageMeterAdapter } from "#api/modules/weather/forecasts/infrastructure/adapters/weatherkit-usage-meter.adapter";
 import type {
   ResolvedRegion,
   TimezoneResolverPort,
 } from "#api/modules/weather/locations/application/ports/timezone-resolver.port";
-import type { WeatherLocationRepositoryPort } from "#api/modules/weather/locations/application/ports/user-location.repository.port";
+import type { UserLocationRepositoryPort } from "#api/modules/weather/locations/application/ports/user-location.repository.port";
 import type { WeatherGridResolverPort } from "#api/modules/weather/locations/application/ports/weather-grid-resolver.port";
 import type { UserLocation } from "#api/modules/weather/locations/domain/user-location.entity";
 import type { Coordinate } from "#api/modules/weather/shared/domain/coordinate.vo";
@@ -42,7 +42,7 @@ import {
 import { InMemoryUsageMeterAdapter } from "#test/mocks/in-memory-usage-meter.adapter";
 import { RecordingOperationalAlert } from "#test/mocks/recording-operational-alert";
 
-export class StubWeatherLocationRepository implements WeatherLocationRepositoryPort {
+export class StubWeatherLocationRepository implements UserLocationRepositoryPort {
   readonly records = new Map<string, UserLocation>();
   readonly reads: string[] = [];
   readonly writes: UserLocation[] = [];
@@ -86,7 +86,7 @@ export class StubWeatherGridResolver implements WeatherGridResolverPort {
   }
 }
 
-export class StubWeatherProvider implements WeatherProvider {
+export class StubWeatherProvider implements WeatherForecastProviderPort {
   readonly name = "fixture";
   constructor(readonly timeZone = "Asia/Seoul") {}
   readonly calls: { lat: number; lon: number; date: Date; issuance: Date }[] = [];
@@ -118,7 +118,7 @@ export class StubWeatherProvider implements WeatherProvider {
   }
 }
 
-export class StubAirQualityProvider implements AirQualityProvider {
+export class StubAirQualityProvider implements AirQualityProviderPort {
   readonly calls: { lat: number; lon: number }[] = [];
   result: AirQuality | null = { pm10: 0, pm25: 0 };
   failure: Error | null = null;
@@ -137,7 +137,7 @@ export class StubAirQualityProvider implements AirQualityProvider {
   }
 }
 
-export class StubLifestyleIndexProvider implements LifestyleIndexProvider {
+export class StubLifestyleIndexProvider implements LifestyleIndexProviderPort {
   readonly calls: {
     lat: number;
     lon: number;
@@ -170,7 +170,7 @@ export class StubLifestyleIndexProvider implements LifestyleIndexProvider {
   }
 }
 
-export class StubSunTimeProvider implements SunTimeProvider {
+export class StubSunTimeProvider implements SunTimeProviderPort {
   readonly calls: { lat: number; lon: number; date: Date }[] = [];
   readonly dates = new Map<string, SunTime | null>();
   result: SunTime | null = { sunrise: "05:23", sunset: "19:00" };
@@ -284,6 +284,6 @@ export function createWeatherOutbound() {
     alert,
     meter,
     policies: new OutboundPolicyRegistry(alert),
-    usage: new WeatherKitUsageMeter(meter, alert),
+    usage: new WeatherKitUsageMeterAdapter(meter, alert),
   };
 }

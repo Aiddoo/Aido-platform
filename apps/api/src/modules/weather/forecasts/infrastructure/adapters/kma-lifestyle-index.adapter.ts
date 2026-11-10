@@ -10,7 +10,7 @@ import { dayWindowInTimezone, toLocalTimeString } from "#api/shared/domain/date/
 
 import type {
   LifestyleIndex,
-  LifestyleIndexProvider,
+  LifestyleIndexProviderPort,
 } from "../../application/ports/lifestyle-index-provider.port.js";
 import { KMA_TIMEZONE } from "../../domain/kma-forecast-availability.domain-service.js";
 import { getRegionCode } from "../../domain/region-code.domain-service.js";
@@ -34,8 +34,8 @@ const uvIndexResponseSchema = z.object({
 });
 
 @Injectable()
-export class KmaLifestyleIndexProvider implements LifestyleIndexProvider {
-  readonly #logger = new Logger(KmaLifestyleIndexProvider.name);
+export class KmaLifestyleIndexAdapter implements LifestyleIndexProviderPort {
+  readonly #logger = new Logger(KmaLifestyleIndexAdapter.name);
 
   readonly #policy: OutboundPolicy;
 

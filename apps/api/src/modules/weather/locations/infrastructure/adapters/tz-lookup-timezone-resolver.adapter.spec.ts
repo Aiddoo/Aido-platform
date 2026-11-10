@@ -1,9 +1,9 @@
 import { Coordinate } from "#api/modules/weather/shared/domain/coordinate.vo";
 
-import { TzLookupTimezoneResolver } from "./tz-lookup-timezone-resolver.adapter.js";
+import { TzLookupTimezoneResolverAdapter } from "./tz-lookup-timezone-resolver.adapter.js";
 
-describe("TzLookupTimezoneResolver — 좌표의 시간대와 국가", () => {
-  const resolver = new TzLookupTimezoneResolver();
+describe("TzLookupTimezoneResolverAdapter — 좌표의 시간대와 국가", () => {
+  const resolver = new TzLookupTimezoneResolverAdapter();
 
   it.each([
     ["서울", 37.5665, 126.978, { timezone: "Asia/Seoul", countryCode: "KR" }],

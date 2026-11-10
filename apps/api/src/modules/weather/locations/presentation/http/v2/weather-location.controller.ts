@@ -17,7 +17,7 @@ import {
 } from "#api/platform/http/swagger/index";
 import { THROTTLED_DESCRIPTION, ThrottleByUser } from "#api/platform/throttle/index";
 
-import { UpsertLocation } from "../../../application/use-cases/upsert-user-location.use-case.js";
+import { UpsertUserLocationUseCase } from "../../../application/use-cases/upsert-user-location.use-case.js";
 import { toWeatherLocationResponse } from "./weather-location-response.mapper.js";
 import { UpdateWeatherLocationDto, WeatherLocationResponseDto } from "./weather-location.dto.js";
 
@@ -33,9 +33,9 @@ export const WEATHER_LOCATION_V2_THROTTLE = {
 @ApiBearerAuth()
 @Controller({ path: "weather", version: API_VERSION.V2 })
 export class WeatherLocationV2Controller {
-  readonly #upsertLocation: UpsertLocation;
+  readonly #upsertLocation: UpsertUserLocationUseCase;
 
-  constructor(upsertLocation: UpsertLocation) {
+  constructor(upsertLocation: UpsertUserLocationUseCase) {
     this.#upsertLocation = upsertLocation;
   }
 

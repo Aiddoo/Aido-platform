@@ -8,7 +8,10 @@ import type { OutboundPolicy } from "#api/platform/resilience/outbound-policy";
 import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
 import { dayWindowInTimezone } from "#api/shared/domain/date/utils/timezone";
 
-import type { SunTime, SunTimeProvider } from "../../application/ports/sun-time-provider.port.js";
+import type {
+  SunTime,
+  SunTimeProviderPort,
+} from "../../application/ports/sun-time-provider.port.js";
 import { KMA_TIMEZONE } from "../../domain/kma-forecast-availability.domain-service.js";
 import { WeatherProviderLogEvent } from "../weather-provider.log-events.js";
 import { KASI_POLICY } from "./weather-outbound.policy.js";
@@ -34,8 +37,8 @@ const sunTimeResponseSchema = z.object({
 });
 
 @Injectable()
-export class KasiSunTimeProvider implements SunTimeProvider {
-  readonly #logger = new Logger(KasiSunTimeProvider.name);
+export class KasiSunTimeAdapter implements SunTimeProviderPort {
+  readonly #logger = new Logger(KasiSunTimeAdapter.name);
 
   readonly #policy: OutboundPolicy;
 

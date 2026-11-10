@@ -2,7 +2,7 @@ import { ErrorCode } from "@aido/api/errors";
 import { mock } from "vitest-mock-extended";
 
 import type { KmaForecastTiming } from "#api/modules/weather/forecasts/domain/kma-forecast-availability.domain-service";
-import { WeatherCacheAdapter } from "#api/modules/weather/forecasts/infrastructure/cache/weather-forecast.cache";
+import { WeatherForecastCache } from "#api/modules/weather/forecasts/infrastructure/cache/weather-forecast.cache";
 import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
 import { CacheService } from "#api/platform/cache/cache.service";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
@@ -18,7 +18,7 @@ import { WeatherForecastReader } from "./weather-forecast.reader.js";
 
 describe("WeatherForecastReader — cache·latest fallback·격자 batch", () => {
   let memory: InMemoryCacheStore;
-  let cache: WeatherCacheAdapter;
+  let cache: WeatherForecastCache;
   let weatherProvider: StubWeatherProvider;
   let reader: WeatherForecastReader;
   const date = new Date("2026-07-23T00:00:00.000Z");
@@ -29,7 +29,7 @@ describe("WeatherForecastReader — cache·latest fallback·격자 batch", () =>
     vi.setSystemTime(date);
     suppressLogger();
     memory = new InMemoryCacheStore({ defaultTtlMs: 60_000, maxItems: 100 });
-    cache = new WeatherCacheAdapter(new CacheService(memory));
+    cache = new WeatherForecastCache(new CacheService(memory));
     weatherProvider = new StubWeatherProvider();
     reader = new WeatherForecastReader({
       weatherProvider,
@@ -224,7 +224,7 @@ class ConcurrencyTrackingWeatherProvider extends StubWeatherProvider {
 
 describe("WeatherForecastReader — KMA 제공 범위 (#1156)", () => {
   let memory: InMemoryCacheStore;
-  let cache: WeatherCacheAdapter;
+  let cache: WeatherForecastCache;
   let weatherProvider: StubWeatherProvider;
   let reader: WeatherForecastReader;
   /** 운영에서 503이 난 시각: KST 2026-11-02 04:18 */
@@ -235,7 +235,7 @@ describe("WeatherForecastReader — KMA 제공 범위 (#1156)", () => {
     vi.setSystemTime(now);
     suppressLogger();
     memory = new InMemoryCacheStore({ defaultTtlMs: 60_000, maxItems: 100 });
-    cache = new WeatherCacheAdapter(new CacheService(memory));
+    cache = new WeatherForecastCache(new CacheService(memory));
     weatherProvider = new StubWeatherProvider();
     reader = new WeatherForecastReader({
       weatherProvider,

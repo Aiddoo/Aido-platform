@@ -13,7 +13,7 @@ import {
   StubWeatherKitTokenResolver,
 } from "#test/mocks/ports/weather.stub";
 
-import { WeatherKitReportProvider, WeatherKitRequestError } from "./weatherkit-report.adapter.js";
+import { WeatherKitReportAdapter, WeatherKitRequestError } from "./weatherkit-report.adapter.js";
 import { WeatherKitNotConfiguredError } from "./weatherkit-token.adapter.js";
 
 const USER_COORDINATE = Coordinate.of(37.5665, 126.978);
@@ -68,7 +68,7 @@ function pathKind(request: Request | undefined): string | undefined {
   return new URL(request?.url ?? "https://invalid.test/").pathname.split("/")[3];
 }
 
-describe("WeatherKitReportProvider — 가용성·REST 요청과 실패 분류", () => {
+describe("WeatherKitReportAdapter — 가용성·REST 요청과 실패 분류", () => {
   const cell = GeoCell.fromCoordinate(USER_COORDINATE);
   let memory: InMemoryCacheStore;
   let cacheService: CacheService;
@@ -94,7 +94,7 @@ describe("WeatherKitReportProvider — 가용성·REST 요청과 실패 분류",
     const stub = createStubFetch(responses);
     const http = new HttpClient({ retry: false, throwOnHttpError: false, fetch: stub.fetch });
     const outbound = createWeatherOutbound();
-    const provider = new WeatherKitReportProvider(
+    const provider = new WeatherKitReportAdapter(
       http,
       tokenResolver,
       cacheService,
@@ -461,7 +461,7 @@ describe("WeatherKitReportProvider — 가용성·REST 요청과 실패 분류",
       ];
     }
 
-    async function readCells(provider: WeatherKitReportProvider, targets: readonly GeoCell[]) {
+    async function readCells(provider: WeatherKitReportAdapter, targets: readonly GeoCell[]) {
       for (const target of targets) {
         await provider.getReport(target, REQUEST).catch(() => undefined);
       }

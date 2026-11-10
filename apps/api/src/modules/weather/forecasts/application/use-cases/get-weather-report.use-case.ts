@@ -5,17 +5,17 @@ import type { ApplicationLoggerPort } from "#api/shared/application/ports/applic
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 
 import type { TimezoneResolverPort } from "../../../locations/application/ports/timezone-resolver.port.js";
-import type { WeatherLocationRepositoryPort } from "../../../locations/application/ports/user-location.repository.port.js";
+import type { UserLocationRepositoryPort } from "../../../locations/application/ports/user-location.repository.port.js";
 import { GeoCell } from "../../../shared/domain/geo-cell.vo.js";
-import { KoreanWeatherCoveragePolicy } from "../../../shared/domain/korean-weather-coverage.domain-service.js";
+import { isKoreanWeatherCovered } from "../../../shared/domain/korean-weather-coverage.domain-service.js";
 import type { WeatherReportLanguage } from "../../domain/weather-report-language.domain-service.js";
+import { windowWeatherReport } from "../../domain/weather-report-window.domain-service.js";
 import {
   type WeatherReport,
   type WeatherReportAttribution,
-  windowWeatherReport,
 } from "../../domain/weather-report.vo.js";
-import { WeatherLogEvent } from "../forecasts.log-events.js";
-import type { AirQuality, AirQualityProvider } from "../ports/air-quality-provider.port.js";
+import { ForecastLogEvent } from "../forecasts.log-events.js";
+import type { AirQuality, AirQualityProviderPort } from "../ports/air-quality-provider.port.js";
 import type { WeatherReportCachePort } from "../ports/weather-report-cache.port.js";
 import type { WeatherReportProviderPort } from "../ports/weather-report-provider.port.js";
 import type { WeatherReportReaderPort } from "../ports/weather-report.reader.port.js";
@@ -40,16 +40,16 @@ export interface WeatherReportResult {
 }
 
 interface GetWeatherReportDependencies {
-  readonly weatherLocationRepository: Pick<WeatherLocationRepositoryPort, "findByUserId">;
+  readonly weatherLocationRepository: Pick<UserLocationRepositoryPort, "findByUserId">;
   readonly weatherReportReader: Pick<WeatherReportReaderPort, "readReport">;
   readonly weatherReportProvider: Pick<WeatherReportProviderPort, "getAttribution">;
   readonly weatherReportCache: Pick<WeatherReportCachePort, "getOrLoadAirQuality">;
   readonly timezoneResolver: Pick<TimezoneResolverPort, "resolve">;
-  readonly airQualityProvider: Pick<AirQualityProvider, "getAirQuality">;
+  readonly airQualityProvider: Pick<AirQualityProviderPort, "getAirQuality">;
   readonly logger: Pick<ApplicationLoggerPort, "warn" | "error">;
 }
 
-export class GetWeatherReport {
+export class GetWeatherReportUseCase {
   readonly #dependencies: GetWeatherReportDependencies;
 
   constructor(dependencies: GetWeatherReportDependencies) {
@@ -66,7 +66,7 @@ export class GetWeatherReport {
     // 리포트·대기질 캐시를 칸 단위로 공유하므로 시간대·국가·대기질 여부도 사용자 좌표가 아닌 칸 중심에서 정한다.
     const region = this.#dependencies.timezoneResolver.resolve(cell.center);
     const isKorea =
-      region.countryCode === KOREA_COUNTRY_CODE && KoreanWeatherCoveragePolicy.covers(cell.center);
+      region.countryCode === KOREA_COUNTRY_CODE && isKoreanWeatherCovered(cell.center);
 
     // 리포트는 언어 공유 캐시일 수 있으므로 공급자 표기는 요청 언어로 따로 받는다.
     const [reportResult, airQualityResult, attributionResult] = await Promise.allSettled([
@@ -82,7 +82,7 @@ export class GetWeatherReport {
     }
     if (airQualityResult.status === "rejected") {
       this.#dependencies.logger.warn({
-        event: WeatherLogEvent.REPORT_AIR_QUALITY_UNAVAILABLE,
+        event: ForecastLogEvent.REPORT_AIR_QUALITY_UNAVAILABLE,
         cellKey: cell.key,
         errorType: toErrorType(airQualityResult.reason),
       });

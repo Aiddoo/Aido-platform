@@ -43,7 +43,7 @@ export interface WeatherConditions {
 }
 
 /** 공급자 중립 예보 계약. 현재 KMA 단일 binding이며 새 지역 지원은 별도 작업이다. */
-export interface WeatherProvider {
+export interface WeatherForecastProviderPort {
   /** 프로바이더 식별자 (예: "kma", "openweathermap") — 지역 라우팅·로깅용. */
   readonly name: string;
   /** 정규화한 시간별 예보의 지역 시간대. */

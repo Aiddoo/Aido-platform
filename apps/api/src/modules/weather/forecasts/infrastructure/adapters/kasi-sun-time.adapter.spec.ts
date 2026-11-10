@@ -3,7 +3,7 @@ import { HttpClient, getHttpClientToken } from "@nestjs/http-client";
 import { TestBed } from "@suites/unit";
 import type { MockInstance } from "vitest";
 /**
- * KasiSunTimeProvider 단위 테스트
+ * KasiSunTimeAdapter 단위 테스트
  *
  * @description
  * KASI 일출/일몰 API 호출 및 시각 포맷 변환 검증.
@@ -22,15 +22,15 @@ import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy
 import { createWeatherOutbound } from "#test/mocks/ports/weather.stub";
 
 import { WeatherProviderLogEvent } from "../weather-provider.log-events.js";
-import { KasiSunTimeProvider } from "./kasi-sun-time.adapter.js";
+import { KasiSunTimeAdapter } from "./kasi-sun-time.adapter.js";
 
-describe("KasiSunTimeProvider — KASI 일출일몰 프로바이더", () => {
-  let provider: KasiSunTimeProvider;
+describe("KasiSunTimeAdapter — KASI 일출일몰 프로바이더", () => {
+  let provider: KasiSunTimeAdapter;
   let configService: Mocked<TypedConfigService>;
   let fetchSpy: MockInstance<typeof globalThis.fetch>;
 
   beforeEach(async () => {
-    const { unit, unitRef } = await TestBed.solitary(KasiSunTimeProvider)
+    const { unit, unitRef } = await TestBed.solitary(KasiSunTimeAdapter)
       .mock(getHttpClientToken("weather"))
       .final(new HttpClient({ retry: false, throwOnHttpError: false }))
       .mock(OutboundPolicyRegistry)

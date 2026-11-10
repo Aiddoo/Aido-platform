@@ -5,7 +5,7 @@ export interface LifestyleIndex {
   readonly uvIndex: number | null;
 }
 
-export interface LifestyleIndexProvider {
+export interface LifestyleIndexProviderPort {
   getIndex(
     lat: number,
     lon: number,

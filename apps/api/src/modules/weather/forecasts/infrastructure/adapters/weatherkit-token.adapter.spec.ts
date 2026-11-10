@@ -3,7 +3,7 @@ import { decodeJwt, decodeProtectedHeader, exportPKCS8, generateKeyPair, jwtVeri
 
 import {
   WeatherKitNotConfiguredError,
-  WeatherKitTokenResolver,
+  WeatherKitTokenAdapter,
 } from "./weatherkit-token.adapter.js";
 
 const CREDENTIALS = {
@@ -12,7 +12,7 @@ const CREDENTIALS = {
   serviceId: "com.example.weatherkit-client",
 };
 
-describe("WeatherKitTokenResolver — ES256 개발자 토큰", () => {
+describe("WeatherKitTokenAdapter — ES256 개발자 토큰", () => {
   let publicKey: CryptoKey;
   let privateKeyPem: string;
 
@@ -38,7 +38,7 @@ describe("WeatherKitTokenResolver — ES256 개발자 토큰", () => {
         return { ...CREDENTIALS, privateKey: privateKeyPem };
       },
     };
-    return { resolver: new WeatherKitTokenResolver(configService), signCount: () => signCount };
+    return { resolver: new WeatherKitTokenAdapter(configService), signCount: () => signCount };
   }
 
   it("Apple 형식의 header·claim으로 1시간짜리 토큰을 서명한다", async () => {
@@ -107,7 +107,7 @@ describe("WeatherKitTokenResolver — ES256 개발자 토큰", () => {
 
   it("자격이 없으면 설정 오류이며 다음 호출에서 다시 확인한다", async () => {
     // Given
-    const resolver = new WeatherKitTokenResolver({ weatherKit: null });
+    const resolver = new WeatherKitTokenAdapter({ weatherKit: null });
     // When
     const first = resolver.resolve();
     const second = resolver.resolve();

@@ -2,7 +2,7 @@ import { HttpClient, getHttpClientToken } from "@nestjs/http-client";
 import { TestBed } from "@suites/unit";
 import type { MockInstance } from "vitest";
 /**
- * KmaLifestyleIndexProvider 단위 테스트
+ * KmaLifestyleIndexAdapter 단위 테스트
  *
  * @description
  * UV 지수 API 호출 및 체감온도 계산 검증.
@@ -20,15 +20,15 @@ import { TypedConfigService } from "#api/platform/config/services/config.service
 import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
 import { createWeatherOutbound } from "#test/mocks/ports/weather.stub";
 
-import { KmaLifestyleIndexProvider } from "./kma-lifestyle-index.adapter.js";
+import { KmaLifestyleIndexAdapter } from "./kma-lifestyle-index.adapter.js";
 
-describe("KmaLifestyleIndexProvider — KMA 생활기상지수 프로바이더", () => {
-  let provider: KmaLifestyleIndexProvider;
+describe("KmaLifestyleIndexAdapter — KMA 생활기상지수 프로바이더", () => {
+  let provider: KmaLifestyleIndexAdapter;
   let configService: Mocked<TypedConfigService>;
   let fetchSpy: MockInstance<typeof globalThis.fetch>;
 
   beforeEach(async () => {
-    const { unit, unitRef } = await TestBed.solitary(KmaLifestyleIndexProvider)
+    const { unit, unitRef } = await TestBed.solitary(KmaLifestyleIndexAdapter)
       .mock(getHttpClientToken("weather"))
       .final(new HttpClient({ retry: false, throwOnHttpError: false }))
       .mock(OutboundPolicyRegistry)

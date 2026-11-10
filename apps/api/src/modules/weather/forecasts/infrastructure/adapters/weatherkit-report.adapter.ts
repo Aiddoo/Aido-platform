@@ -25,13 +25,13 @@ import {
 } from "../cache/weather-report.keyspace.js";
 import { WeatherKitLogEvent } from "../weatherkit.log-events.js";
 import { WEATHERKIT_POLICY } from "./weather-outbound.policy.js";
-import { WeatherKitAttributionResolver } from "./weatherkit-attribution.adapter.js";
+import { WeatherKitAttributionAdapter } from "./weatherkit-attribution.adapter.js";
 import { toWeatherReport } from "./weatherkit-report.mapper.js";
 import {
   WeatherKitNotConfiguredError,
-  WeatherKitTokenResolver,
+  WeatherKitTokenAdapter,
 } from "./weatherkit-token.adapter.js";
-import { WeatherKitUsageMeter } from "./weatherkit-usage-meter.adapter.js";
+import { WeatherKitUsageMeterAdapter } from "./weatherkit-usage-meter.adapter.js";
 import { type WeatherKitWeather, weatherKitWeatherSchema } from "./weatherkit.wire.js";
 
 const WEATHERKIT_API_URL = "https://weatherkit.apple.com/api/v1";
@@ -115,25 +115,25 @@ function statusOf(error: unknown): number | null {
 }
 
 @Injectable()
-export class WeatherKitReportProvider implements WeatherReportProviderPort {
-  readonly #logger = new Logger(WeatherKitReportProvider.name);
+export class WeatherKitReportAdapter implements WeatherReportProviderPort {
+  readonly #logger = new Logger(WeatherKitReportAdapter.name);
   readonly #policy: OutboundPolicy;
   readonly #http: HttpClient;
-  readonly #tokenResolver: Pick<WeatherKitTokenResolver, "resolve" | "invalidate">;
+  readonly #tokenResolver: Pick<WeatherKitTokenAdapter, "resolve" | "invalidate">;
   readonly #cacheService: Pick<CacheService, "wrap" | "has" | "set">;
-  readonly #attributionResolver: Pick<WeatherKitAttributionResolver, "resolve">;
-  readonly #usage: Pick<WeatherKitUsageMeter, "recordCall">;
+  readonly #attributionResolver: Pick<WeatherKitAttributionAdapter, "resolve">;
+  readonly #usage: Pick<WeatherKitUsageMeterAdapter, "recordCall">;
 
   constructor(
     @InjectHttpClient("weather") http: HttpClient,
-    @Inject(WeatherKitTokenResolver)
-    tokenResolver: Pick<WeatherKitTokenResolver, "resolve" | "invalidate">,
+    @Inject(WeatherKitTokenAdapter)
+    tokenResolver: Pick<WeatherKitTokenAdapter, "resolve" | "invalidate">,
     @Inject(CacheService)
     cacheService: Pick<CacheService, "wrap" | "has" | "set">,
-    @Inject(WeatherKitAttributionResolver)
-    attributionResolver: Pick<WeatherKitAttributionResolver, "resolve">,
+    @Inject(WeatherKitAttributionAdapter)
+    attributionResolver: Pick<WeatherKitAttributionAdapter, "resolve">,
     policies: OutboundPolicyRegistry,
-    @Inject(WeatherKitUsageMeter) usage: Pick<WeatherKitUsageMeter, "recordCall">,
+    @Inject(WeatherKitUsageMeterAdapter) usage: Pick<WeatherKitUsageMeterAdapter, "recordCall">,
   ) {
     this.#http = http;
     this.#tokenResolver = tokenResolver;

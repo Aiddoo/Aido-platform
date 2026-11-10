@@ -1,6 +1,6 @@
 import type {
   SunTime,
-  SunTimeProvider,
+  SunTimeProviderPort,
 } from "#api/modules/weather/forecasts/application/ports/sun-time-provider.port";
 
 /**
@@ -8,7 +8,7 @@ import type {
  *
  * 실제 KASI(한국천문연구원) API를 호출하지 않고, 고정된 일출/일몰 데이터를 반환합니다.
  */
-export class FakeSunTimeProvider implements SunTimeProvider {
+export class FakeSunTimeProvider implements SunTimeProviderPort {
   private _calls: Array<{ lat: number; lon: number; date: Date }> = [];
 
   async getSunTime(lat: number, lon: number, date: Date): Promise<SunTime | null> {

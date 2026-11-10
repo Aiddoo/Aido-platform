@@ -1,6 +1,6 @@
 import { mock, type MockProxy } from "vitest-mock-extended";
 
-import { WeatherReportCacheAdapter } from "#api/modules/weather/forecasts/infrastructure/cache/weather-report.cache";
+import { WeatherReportCache } from "#api/modules/weather/forecasts/infrastructure/cache/weather-report.cache";
 import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
 import { CacheService } from "#api/platform/cache/cache.service";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
@@ -31,7 +31,7 @@ describe("WeatherReportReader — 여러 위치의 v2 리포트를 칸 캐시로
     logger = mock<ApplicationLoggerPort>();
     reader = new WeatherReportReader({
       weatherReportProvider: provider,
-      weatherReportCache: new WeatherReportCacheAdapter(new CacheService(memory)),
+      weatherReportCache: new WeatherReportCache(new CacheService(memory)),
       timezoneResolver,
       logger,
     });

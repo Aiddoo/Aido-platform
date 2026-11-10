@@ -135,7 +135,7 @@ const AIR_QUALITY_SCHEMA = z
   .nullable() satisfies z.ZodType<AirQuality | null>;
 
 @Injectable()
-export class WeatherReportCacheAdapter implements WeatherReportCachePort {
+export class WeatherReportCache implements WeatherReportCachePort {
   readonly #cacheService: CacheService;
 
   constructor(cacheService: CacheService) {

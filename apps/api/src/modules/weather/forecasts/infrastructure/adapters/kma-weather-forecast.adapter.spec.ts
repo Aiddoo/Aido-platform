@@ -10,15 +10,15 @@ import { kmaTimingFixture } from "#test/fixtures/weather.fixture";
 import { createWeatherOutbound } from "#test/mocks/ports/weather.stub";
 
 import { WeatherProviderLogEvent } from "../weather-provider.log-events.js";
-import { KmaWeatherProvider } from "./kma-weather-forecast.adapter.js";
+import { KmaWeatherForecastAdapter } from "./kma-weather-forecast.adapter.js";
 
 describe("KMA 예보 HTTP 요청·오류 계약", () => {
-  let provider: KmaWeatherProvider;
+  let provider: KmaWeatherForecastAdapter;
   let config: Mocked<TypedConfigService>;
   let fetchSpy: MockInstance<typeof globalThis.fetch>;
 
   beforeEach(async () => {
-    const { unit, unitRef } = await TestBed.solitary(KmaWeatherProvider)
+    const { unit, unitRef } = await TestBed.solitary(KmaWeatherForecastAdapter)
       .mock(getHttpClientToken("weather"))
       .final(new HttpClient({ retry: false, throwOnHttpError: false }))
       .mock(OutboundPolicyRegistry)

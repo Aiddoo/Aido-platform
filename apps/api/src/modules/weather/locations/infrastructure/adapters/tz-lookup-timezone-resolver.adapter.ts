@@ -13,7 +13,7 @@ import type {
  * 여러 나라가 한 시간대를 쓰는 지역(예: Asia/Bangkok의 베트남)에서는 실제 국가와 다를 수 있다.
  */
 @Injectable()
-export class TzLookupTimezoneResolver implements TimezoneResolverPort {
+export class TzLookupTimezoneResolverAdapter implements TimezoneResolverPort {
   resolve(coordinate: Coordinate): ResolvedRegion {
     const timezone = tzLookup(coordinate.latitude, coordinate.longitude);
     return { timezone, countryCode: getCountryForTimezone(timezone)?.id ?? null };

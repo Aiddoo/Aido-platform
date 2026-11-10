@@ -6,7 +6,7 @@ import { CacheService } from "#api/platform/cache/cache.service";
 import { createWeatherOutbound } from "#test/mocks/ports/weather.stub";
 
 import { WeatherKitLogEvent } from "../weatherkit.log-events.js";
-import { WeatherKitAttributionResolver } from "./weatherkit-attribution.adapter.js";
+import { WeatherKitAttributionAdapter } from "./weatherkit-attribution.adapter.js";
 
 const OBSERVED_KO_ATTRIBUTION = {
   "logoDark@3x": "/assets/branding/ko/Apple_Weather_wht_ko_3X_090122.png",
@@ -38,7 +38,7 @@ function createResolver(responses: readonly (() => Response)[]) {
   );
   const { policies, usage } = createWeatherOutbound();
   return {
-    resolver: new WeatherKitAttributionResolver(http, cacheService, policies, usage),
+    resolver: new WeatherKitAttributionAdapter(http, cacheService, policies, usage),
     requests,
   };
 }
@@ -48,7 +48,7 @@ const json =
   () =>
     new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
 
-describe("WeatherKitAttributionResolver — Apple 날씨 출처 표기", () => {
+describe("WeatherKitAttributionAdapter — Apple 날씨 출처 표기", () => {
   let warnSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {

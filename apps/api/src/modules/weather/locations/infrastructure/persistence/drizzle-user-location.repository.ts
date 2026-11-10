@@ -5,7 +5,7 @@ import { requireRecord } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { userLocation } from "#api/platform/database/schema/index";
 
-import type { WeatherLocationRepositoryPort } from "../../application/ports/user-location.repository.port.js";
+import type { UserLocationRepositoryPort } from "../../application/ports/user-location.repository.port.js";
 import { UserLocation } from "../../domain/user-location.entity.js";
 
 const locationColumns = {
@@ -18,7 +18,7 @@ const locationColumns = {
 };
 
 @Injectable()
-export class DrizzleWeatherLocationRepository implements WeatherLocationRepositoryPort {
+export class DrizzleUserLocationRepository implements UserLocationRepositoryPort {
   readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
 
   constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>) {
