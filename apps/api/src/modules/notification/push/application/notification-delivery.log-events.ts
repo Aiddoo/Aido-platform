@@ -32,7 +32,7 @@ export const NotificationDeliveryLogEvent = {
   GET_NOTIFICATIONS_LISTED: "notification.delivery.get-notifications.listed",
   MARK_ALL_AS_READ_READ_ALL_PROCESSED: "notification.delivery.mark-all-as-read.read-all-processed",
   MARK_AS_READ_READ_PROCESSED: "notification.delivery.mark-as-read.read-processed",
-  MARK_NOTIFICATION_OPENED_OPENED: "notification.delivery.mark-notification-opened.opened",
+  PUSH_OPENED: "notification.push.opened",
   OPT_OUT_MARKETING_PUSH_OPTED_OUT: "notification.delivery.opt-out-marketing-push.opted-out",
   PUBLISH_PUSH_DELIVERY_OUTBOX_ENQUEUE_DEFERRED:
     "notification.delivery.publish-push-delivery-outbox.enqueue-deferred",

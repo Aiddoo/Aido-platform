@@ -68,7 +68,8 @@ createBroadcastCampaignSchema = broadcastNotificationSchema.extend({
 | 푸시 퍼널        | 캠페인·종류별 생성 → 건너뜀(사유별) → 발송 요청 → receipt 성공 → 열람(`openedAt`)              |
 
 - 정의는 문서와 타입(`GROWTH_METRIC_DEFINITIONS`, 관리자 Swagger 설명이 이 상수로 만들어진다) 두 곳에 고정한다. 관리자 지표는 operations `metrics` slice가 소유한다.
-- 열람은 앱이 푸시를 누를 때 부르는 `POST /v1/notifications/{id}/opened`의 `openedAt`이다. 집계는 notification push의 public `PushFunnelReaderPort`가 하고 operations metrics가 읽는다.
+- 열람은 앱이 푸시를 누를 때 부르는 `POST /v1/notifications/{id}/opened`의 `openedAt`이다. 푸시 data의 `notificationId`·`navigation`으로 앱이 탭 즉시 부르고, 처음 열 때만 `Notification.openedAt`·읽음과 `PushDispatch.openedAt`을 남기며 `notification.push.opened`(userId·notificationId)를 한 번 로그한다.
+- 집계는 notification push의 public `PushFunnelReaderPort.summarize`(생성 구간·캠페인·종류로 좁힘)가 한 SQL 묶음으로 한다. 관리자 HTTP API로는 아직 내보내지 않는다.
 - 문구·발송 시각 실험은 `ExperimentAssignerPort`(결정적 해시)로 배정하고 결과는 퍼널과 리텐션으로 읽는다.
 - SANDBOX 결제는 매출 지표에서 뺀다([결제](billing.md#sandbox-결제)).
 
