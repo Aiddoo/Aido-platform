@@ -3,7 +3,7 @@ import { Test, type TestingModule } from "@nestjs/testing";
  * Inquiry 외부 경계(어댑터) 통합 테스트
  *
  * @description
- * EmailInquiryMailerAdapter가 EmailService·TypedConfigService와 함께 올바르게
+ * EmailInquiryMailerAdapter가 EmailService·문의 설정과 함께 올바르게
  * 배선되고, 설정에서 읽은 supportEmail로 위임하는지 검증합니다. 실제 이메일은
  * 보내지 않습니다(EmailService는 mock). 전달 실패 시의 예외 처리는 핸들러
  * 단위 테스트가 담당합니다.
@@ -17,7 +17,7 @@ import { vi } from "vitest";
 
 import { SendTransactionalEmailUseCase } from "#api/modules/notification/notification-email.public";
 import { EmailInquiryMailerAdapter } from "#api/modules/support/inquiries/infrastructure/adapters/email-inquiry-mailer.adapter";
-import { TypedConfigService } from "#api/platform/config/services/config.service";
+import { supportInquiriesConfig } from "#api/modules/support/inquiries/support-inquiries.config";
 import { suppressLogger } from "#test/setup/suppress-logger";
 
 describe("Inquiry 어댑터 통합 테스트 (Mock Email)", () => {
@@ -28,16 +28,6 @@ describe("Inquiry 어댑터 통합 테스트 (Mock Email)", () => {
     sendInquiry: vi.fn(),
   };
 
-  const mockConfigService = {
-    email: {
-      supportEmail: "support@aido.kr",
-      apiKey: "test",
-      from: "noreply@test.com",
-      fromName: "Test",
-      isConfigured: true,
-    },
-  };
-
   beforeAll(async () => {
     suppressLogger();
 
@@ -45,7 +35,7 @@ describe("Inquiry 어댑터 통합 테스트 (Mock Email)", () => {
       providers: [
         EmailInquiryMailerAdapter,
         { provide: SendTransactionalEmailUseCase, useValue: mockEmailService },
-        { provide: TypedConfigService, useValue: mockConfigService },
+        { provide: supportInquiriesConfig.KEY, useValue: { supportEmail: "support@aido.kr" } },
       ],
     }).compile();
 
