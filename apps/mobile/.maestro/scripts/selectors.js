@@ -3,6 +3,12 @@
 // docs: https://docs.maestro.dev/get-started/supported-platform/react-native
 
 output.ids = {
+  common: {
+    hintPopover: 'hint-popover',
+    hintPopoverClose: 'hint-popover-close',
+    // 네이티브 헤더 버튼은 testID를 받지 않아 접근성 라벨(ko|en)로 찾는다
+    headerCloseLabel: '닫기|Close',
+  },
   app: {
     rootError: 'root-error-fallback',
     offlineBanner: 'offline-banner',
@@ -45,6 +51,7 @@ output.ids = {
     item: (memoId) => 'memo-item-' + memoId,
   },
   notification: {
+    onboardingScreen: 'push-onboarding-screen',
     inbox: 'notification-inbox',
     item: (type) => 'notification-item-' + type,
   },
@@ -54,6 +61,7 @@ output.ids = {
     redeemButton: 'invite-card-redeem',
     welcomeSheet: 'invite-welcome-sheet',
     welcomeLater: 'invite-welcome-later',
+    welcomeOpenFriendFeed: 'invite-welcome-open-friend-feed',
   },
   subscription: {
     paywall: 'subscription-paywall',

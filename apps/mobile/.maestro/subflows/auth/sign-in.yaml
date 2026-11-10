@@ -17,3 +17,4 @@ name: 로그인 화면에서 이메일로 로그인해 피드를 연다
     visible:
       id: ${output.ids.feed.screen}
     timeout: 30000
+- runFlow: ../app/dismiss-hints.yaml

@@ -7,6 +7,7 @@ executionOrder:
   continueOnFailure: true
   # 초대 수락 기록은 되돌릴 수 없어(pnpm e2e:accounts reset만 지운다) 기록을 남기는 수락 흐름을 뒤에 둔다.
   # 태그로 고른 묶음에 뒤 흐름만 있고 앞 흐름이 없으면 Maestro가 실행을 거부하므로 두 흐름의 태그를 똑같이 둔다
+  # flowsOrder는 파일 이름이 아니라 각 흐름의 name으로 찾는다
   flowsOrder:
-    - invite-code-already-friends
-    - invite-code-happy-path
+    - 이미 친구인 사람의 초대 링크를 수락하면 보상 없이 그 친구의 피드로 간다
+    - 초대 코드를 직접 입력해 수락하면 초대한 사람과 친구가 된다

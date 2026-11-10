@@ -1,0 +1,23 @@
+appId: ${MAESTRO_APP_ID}
+name: 처음 쓰는 계정에 뜨는 안내를 닫는다
+---
+- extendedWaitUntil:
+    visible:
+      id: ${output.ids.notification.onboardingScreen}
+    timeout: 5000
+    optional: true
+- runFlow:
+    label: 가입 직후 알림 안내 화면이 뜨면 닫는다(iOS 시뮬레이터는 알림 권한을 미리 줄 수 없어 늘 뜬다)
+    when:
+      visible:
+        id: ${output.ids.notification.onboardingScreen}
+    commands:
+      - tapOn: ${output.ids.common.headerCloseLabel}
+- runFlow:
+    label: 기능 안내 말풍선이 떠 있으면 닫는다
+    when:
+      visible:
+        id: ${output.ids.common.hintPopover}
+    commands:
+      - tapOn:
+          id: ${output.ids.common.hintPopoverClose}

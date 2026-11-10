@@ -7,7 +7,7 @@ onFlowStart:
   - runFlow: ../../subflows/app/load-helpers.yaml
   - evalScript: ${output.main = output.api.signIn('main')}
   - evalScript: ${output.main.removeE2eCategories()}
-  - evalScript: ${output.category = output.main.createCategory('todo ' + output.config.runId)}
+  - evalScript: ${output.category = output.main.createCategory('category ' + output.config.runId)}
   - evalScript: ${output.todoTitle = 'E2E todo ' + output.config.runId}
   - runFlow: ../../subflows/app/launch-fresh.yaml
 onFlowComplete:
@@ -29,7 +29,10 @@ onFlowComplete:
 # Then: 서버에 완료하지 않은 할 일로 저장된다
 - evalScript: ${output.todo = output.main.waitForTodo(output.category.id, output.todoTitle, false)}
 
-# When: 체크박스를 누른다
+# When: 체크박스를 누른다(새 계정은 피드 위에 첫 할 일 안내가 있어 아래로 밀려 있다)
+- scrollUntilVisible:
+    element:
+      id: ${output.ids.todo.checkbox(output.todo.id)}
 - tapOn:
     id: ${output.ids.todo.checkbox(output.todo.id)}
 # Then: 서버에서도 완료로 바뀐다
@@ -40,6 +43,5 @@ onFlowComplete:
     file: ../../subflows/todo/delete.yaml
     env:
       TODO_ID: ${output.todo.id}
-      TODO_TITLE: ${output.todoTitle}
 # Then: 서버에서도 사라진다
 - evalScript: ${output.main.waitForTodoGone(output.category.id, output.todoTitle)}

@@ -3,6 +3,7 @@ name: 메모 탭에서 새 메모를 저장한다
 # env: MEMO_TEXT
 ---
 - openLink: ${output.config.appScheme}://memo
+- runFlow: ../app/dismiss-hints.yaml
 - tapOn:
     id: ${output.ids.memo.createButton}
 - tapOn:
@@ -11,5 +12,6 @@ name: 메모 탭에서 새 메모를 저장한다
 # 헤더 저장 버튼은 네이티브 툴바라 testID를 받지 않는다
 - tapOn: ${output.labels.save}
 - extendedWaitUntil:
-    visible: ${MEMO_TEXT}
+    # 메모 카드는 접근성 요소 하나로 묶여 라벨이 "본문, 날짜"라 부분 일치로 찾는다
+    visible: ${'.*' + MEMO_TEXT + '.*'}
     timeout: 10000

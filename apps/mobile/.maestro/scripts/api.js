@@ -6,6 +6,7 @@
 const E2E_PREFIX = 'E2E ';
 const POLL_INTERVAL_MS = 300;
 const POLL_TIMEOUT_MS = 15000;
+const BODYLESS_METHODS = ['GET', 'DELETE'];
 
 function call(method, path, token, body, allowedStatuses) {
   const headers = { 'Content-Type': 'application/json', Accept: 'application/json' };
@@ -15,7 +16,13 @@ function call(method, path, token, body, allowedStatuses) {
   const response = http.request(output.config.apiUrl + path, {
     method: method,
     headers: headers,
-    body: body === undefined ? undefined : JSON.stringify(body),
+    // Maestro http는 POST·PUT·PATCH에 본문이 없으면 보내지 않는다
+    body:
+      body === undefined
+        ? BODYLESS_METHODS.includes(method)
+          ? undefined
+          : '{}'
+        : JSON.stringify(body),
   });
   if (!response.ok && !(allowedStatuses || []).includes(response.status)) {
     throw new Error(method + ' ' + path + ' 가 ' + response.status + '로 응답했습니다.');

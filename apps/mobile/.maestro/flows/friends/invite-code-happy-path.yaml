@@ -48,7 +48,7 @@ onFlowComplete:
       id: ${output.ids.invite.welcomeSheet}
     timeout: 20000
 - tapOn:
-    id: ${output.ids.invite.welcomeLater}
+    id: ${output.ids.invite.welcomeOpenFriendFeed}
 - assertTrue:
     condition: ${output.main.isFriendOf(output.second.userId)}
     label: 서버에서 친구가 됐다
