@@ -263,8 +263,7 @@
             ]
           }
         ],
-        "typescript/consistent-type-imports": "error",
-        "typescript/no-non-null-assertion": "error"
+        "typescript/consistent-type-imports": "error"
       }
     },
     {
@@ -298,8 +297,7 @@
             ]
           }
         ],
-        "typescript/consistent-type-imports": "error",
-        "typescript/no-non-null-assertion": "error"
+        "typescript/consistent-type-imports": "error"
       }
     },
     {

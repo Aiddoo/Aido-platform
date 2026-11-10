@@ -9,7 +9,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node scripts/agent-hooks/lint-edited-file.mjs"
+            "command": "node \"$CLAUDE_PROJECT_DIR/scripts/agent-hooks/lint-edited-file.mjs\""
           }
         ]
       }

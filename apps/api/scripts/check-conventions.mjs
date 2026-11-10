@@ -1,7 +1,7 @@
 // 서버 관례 검사. 새 slice·옮긴 Context(architecture.ratchet.json)만 실패시키고 옛 경로는 경고로 둔다.
 //   node scripts/check-conventions.mjs [--file <path>] [--strict-enums]
 import { execFileSync } from "node:child_process";
-import { readFileSync, readdirSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -10,11 +10,12 @@ const repoRoot = resolve(apiRoot, "../..");
 const SOURCE_ROOTS = ["apps/api/src", "packages/api/src"];
 const JUNK_FILE = /(?:^|\/)(?:\.DS_Store|\.gitkeep)$/;
 const LEGACY_LAYERS = new Set(["domain", "application", "infrastructure", "presentation"]);
-const MEMBER_KEYWORD = /^\s+(private|public|protected)\s/;
+// 접근 제어자는 static·readonly·override·abstract·declare 같은 한정자와 어떤 순서로 와도 잡는다.
+const MEMBER_KEYWORD =
+  /^\s+(?:(?:static|readonly|override|abstract|declare|async)\s+)*(private|public|protected)\s/;
+const NON_CODE_LINE = /^\s*(?:\/\/|\/\*|\*)/;
 const FORWARD_REF = /\bforwardRef\(/;
 const PG_ENUM_LITERAL = /pgEnum\(\s*["'`][^"'`]+["'`]\s*,\s*\[/g;
-// shared/domain 기반 클래스의 하위 클래스 확장점만 protected를 쓴다.
-const PROTECTED_ALLOWED = /^src\/shared\/domain\//;
 
 const args = process.argv.slice(2);
 const strictEnums = args.includes("--strict-enums");
@@ -49,15 +50,33 @@ function lineOf(text, index) {
   return text.slice(0, index).split("\n").length;
 }
 
+// 템플릿 리터럴 안쪽 줄(시작 줄 제외)의 번호. 백틱 개수 홀짝으로 열림을 추적한다.
+function findTemplateLiteralLines(lines) {
+  const inside = new Set();
+  let open = false;
+  lines.forEach((line, index) => {
+    if (open) {
+      inside.add(index);
+    }
+    const ticks = (line.match(/(?<!\\)`/g) ?? []).length;
+    if (ticks % 2 === 1) {
+      open = !open;
+    }
+  });
+  return inside;
+}
+
 function checkFile(rel, violations, warnings) {
   const text = readFileSync(join(apiRoot, rel), "utf8");
   const strict = isStrictPath(rel);
   const lines = text.split("\n");
+  const templateLines = findTemplateLiteralLines(lines);
 
   lines.forEach((line, index) => {
-    if (strict) {
+    if (strict && !templateLines.has(index) && !NON_CODE_LINE.test(line)) {
       const match = MEMBER_KEYWORD.exec(line);
-      if (match && !(match[1] === "protected" && PROTECTED_ALLOWED.test(rel))) {
+      // shared/domain 기반 클래스의 하위 클래스 확장점은 'override protected'로 쓴다.
+      if (match && !(match[1] === "protected" && /\boverride\s/.test(line))) {
         violations.push(
           `${rel}:${index + 1}: '${match[1]}' 멤버 키워드는 쓰지 않는다. 비공개는 '#' 필드·메서드로 둔다.`,
         );
@@ -80,28 +99,44 @@ function checkFile(rel, violations, warnings) {
   }
 }
 
-function listSourceFiles() {
-  return readdirSync(join(apiRoot, "src"), { recursive: true })
-    .map((entry) => `src/${String(entry).split(sep).join("/")}`)
-    .filter((rel) => rel.endsWith(".ts"));
+// 로컬에만 있는 무시 파일이 CI와 결과를 갈라놓지 않도록 저장소가 보는 파일만 대상으로 삼는다.
+function listRepoFiles() {
+  try {
+    const output = execFileSync(
+      "git",
+      ["ls-files", "-z", "--cached", "--others", "--exclude-standard"],
+      { cwd: repoRoot, encoding: "utf8", maxBuffer: 64 * 1024 * 1024 },
+    );
+    return output.split("\0").filter((path) => path !== "" && existsSync(join(repoRoot, path)));
+  } catch {
+    return null;
+  }
 }
 
-// 비어 있는 폴더(하위까지 포함해 파일이 없거나 .DS_Store·.gitkeep뿐)는 남기지 않는다.
-function findEmptyDirectories(dirPath, violations) {
-  let hasContent = false;
-  for (const entry of readdirSync(dirPath, { withFileTypes: true })) {
-    if (entry.isDirectory()) {
-      hasContent = findEmptyDirectories(join(dirPath, entry.name), violations) || hasContent;
-    } else if (entry.name !== ".DS_Store" && entry.name !== ".gitkeep") {
-      hasContent = true;
+function listSourceFiles(repoFiles) {
+  return repoFiles
+    .filter((path) => path.startsWith("apps/api/src/") && path.endsWith(".ts"))
+    .map((path) => path.slice("apps/api/".length));
+}
+
+// 저장소가 보는 파일이 .DS_Store·.gitkeep뿐인 폴더는 남기지 않는다. 빈 폴더는 git에 없어 CI에서 보이지 않으므로 대상이 아니다.
+function findEmptyDirectories(repoFiles, violations) {
+  const contentDirs = new Set();
+  const junkDirs = new Set();
+  for (const path of repoFiles) {
+    if (!SOURCE_ROOTS.some((root) => path.startsWith(`${root}/`))) {
+      continue;
+    }
+    const target = JUNK_FILE.test(path) ? junkDirs : contentDirs;
+    for (let dir = dirname(path); dir !== "."; dir = dirname(dir)) {
+      target.add(dir);
     }
   }
-  if (!hasContent) {
-    violations.push(
-      `${relative(repoRoot, dirPath).split(sep).join("/")}: 파일 없는 빈 폴더. 폴더를 지운다.`,
-    );
+  for (const dir of junkDirs) {
+    if (!contentDirs.has(dir) && SOURCE_ROOTS.every((root) => dir !== root)) {
+      violations.push(`${dir}: 파일 없는 빈 폴더. 폴더를 지운다.`);
+    }
   }
-  return hasContent;
 }
 
 function findTrackedJunkFiles(violations) {
@@ -124,7 +159,12 @@ function findTrackedJunkFiles(violations) {
 
 const violations = [];
 const warnings = [];
-const files = singleFile == null ? listSourceFiles() : [toApiRelative(singleFile)];
+const repoFiles = singleFile == null ? listRepoFiles() : null;
+if (singleFile == null && repoFiles == null) {
+  console.error("git ls-files를 실행하지 못해 관례 검사를 할 수 없다.");
+  process.exit(1);
+}
+const files = singleFile == null ? listSourceFiles(repoFiles) : [toApiRelative(singleFile)];
 
 for (const rel of files) {
   if (!rel.startsWith("src/") || !rel.endsWith(".ts")) {
@@ -134,9 +174,7 @@ for (const rel of files) {
 }
 
 if (singleFile == null) {
-  for (const sourceRoot of SOURCE_ROOTS) {
-    findEmptyDirectories(join(repoRoot, sourceRoot), violations);
-  }
+  findEmptyDirectories(repoFiles, violations);
   findTrackedJunkFiles(violations);
 }
 

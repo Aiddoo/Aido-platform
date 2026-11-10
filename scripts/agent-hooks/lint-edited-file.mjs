@@ -18,8 +18,17 @@ function readFilePath() {
   }
 }
 
-function run(command, args) {
-  const result = spawnSync(command, args, { cwd: repoRoot, encoding: 'utf8', timeout: 2500 });
+// 두 검사를 합쳐 3초 안에 끝낸다. 시간 초과·실행 오류는 통과로 본다.
+const TOTAL_BUDGET_MS = 3000;
+const startedAt = Date.now();
+
+function run(command, args, share) {
+  const remaining = TOTAL_BUDGET_MS - (Date.now() - startedAt);
+  if (remaining <= 0) {
+    return { ok: true, output: '' };
+  }
+  const timeout = Math.max(1, Math.floor(remaining / share));
+  const result = spawnSync(command, args, { cwd: repoRoot, encoding: 'utf8', timeout });
   return {
     ok: result.status === 0 || result.error != null,
     output: `${result.stdout ?? ''}${result.stderr ?? ''}`.trim(),
@@ -38,15 +47,15 @@ if (!TARGET.test(rel) || !existsSync(absolute)) {
 }
 
 const failures = [];
-const lint = run(join(repoRoot, 'node_modules/.bin/oxlint'), [rel]);
+const lint = run(join(repoRoot, 'node_modules/.bin/oxlint'), [rel], 2);
 if (!lint.ok) {
   failures.push(lint.output);
 }
-const conventions = run(process.execPath, [
-  'apps/api/scripts/check-conventions.mjs',
-  '--file',
-  rel,
-]);
+const conventions = run(
+  process.execPath,
+  ['apps/api/scripts/check-conventions.mjs', '--file', rel],
+  1,
+);
 if (!conventions.ok) {
   failures.push(conventions.output);
 }

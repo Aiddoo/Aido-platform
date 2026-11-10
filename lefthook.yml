@@ -1,6 +1,8 @@
 # 테스트는 GitHub Actions가 아닌 이 훅에서 실행한다(docs/conventions/git.md#커밋).
 # https://lefthook.dev/configuration/
 
+glob_matcher: doublestar
+
 pre-commit:
   piped: true
   jobs:
