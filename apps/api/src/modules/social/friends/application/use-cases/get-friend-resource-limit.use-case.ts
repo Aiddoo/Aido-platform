@@ -1,19 +1,21 @@
-import type { EntitlementReaderPort } from "#api/modules/access/access-entitlement.public";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import type { FollowReader } from "../follow.reader.js";
+import type { FollowReaderPort } from "../ports/follow.reader.port.js";
+import type { FriendLimitReaderPort } from "../ports/friend-limit.reader.port.js";
 
-export interface GetFriendResourceLimitInput {
+export interface GetFriendResourceLimitQuery {
   readonly userId: string;
 }
 
-export interface GetFriendResourceLimitResult {
+export interface FriendResourceLimit {
   readonly friendCount: number;
+  // null은 무제한이다
   readonly maxCount: number | null;
 }
 
-interface GetFriendResourceLimitDependencies {
-  readonly reader: Pick<FollowReader, "countFriends">;
-  readonly entitlementReader: Pick<EntitlementReaderPort, "getLimit">;
+export interface GetFriendResourceLimitDependencies {
+  readonly followReader: Pick<FollowReaderPort, "countFriends">;
+  readonly limitReader: Pick<FriendLimitReaderPort, "readMaxFriendCount">;
 }
 
 export class GetFriendResourceLimitUseCase {
@@ -23,10 +25,11 @@ export class GetFriendResourceLimitUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: GetFriendResourceLimitInput): Promise<GetFriendResourceLimitResult> {
+  async execute(query: GetFriendResourceLimitQuery): Promise<FriendResourceLimit> {
+    const { followReader, limitReader } = this.#dependencies;
     const [maxCount, friendCount] = await Promise.all([
-      this.#dependencies.entitlementReader.getLimit(input.userId, "FRIEND"),
-      this.#dependencies.reader.countFriends(input.userId),
+      limitReader.readMaxFriendCount(UserId.reconstitute(query.userId)),
+      followReader.countFriends(query.userId),
     ]);
     return { friendCount, maxCount };
   }

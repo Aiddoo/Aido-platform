@@ -1,19 +1,18 @@
-import { ErrorCode } from "@aido/api/errors";
-
-import { ApplicationException } from "#api/shared/application/application.exception";
-
 import { UserTag } from "../../domain/user-tag.vo.js";
-import { type FollowRepositoryPort } from "../ports/follow.repository.port.js";
-import type { SendFriendRequestUseCase } from "./send-friend-request.use-case.js";
-import { type SendFriendRequestResult } from "./send-friend-request.use-case.js";
+import { friendTargetTagNotFound } from "../friends.errors.js";
+import type { FriendProfileReaderPort } from "../ports/friend-profile.reader.port.js";
+import type {
+  SendFriendRequestResult,
+  SendFriendRequestUseCase,
+} from "./send-friend-request.use-case.js";
 
-export interface SendFriendRequestByTagInput {
+export interface SendFriendRequestByTagCommand {
   readonly userId: string;
   readonly targetUserTag: string;
 }
 
-interface SendFriendRequestByTagDependencies {
-  readonly followRepository: Pick<FollowRepositoryPort, "findUserByTag">;
+export interface SendFriendRequestByTagDependencies {
+  readonly profileReader: Pick<FriendProfileReaderPort, "findActiveUserIdByTag">;
   readonly sendFriendRequest: Pick<SendFriendRequestUseCase, "execute">;
 }
 
@@ -24,18 +23,14 @@ export class SendFriendRequestByTagUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: SendFriendRequestByTagInput): Promise<SendFriendRequestResult> {
-    const targetTag = UserTag.of(input.targetUserTag);
-    const targetUser = await this.#dependencies.followRepository.findUserByTag(targetTag.value);
-    if (targetUser == null) {
-      throw new ApplicationException(ErrorCode.FOLLOW_0905, {
-        userTag: input.targetUserTag,
-      });
+  async execute(command: SendFriendRequestByTagCommand): Promise<SendFriendRequestResult> {
+    const { profileReader, sendFriendRequest } = this.#dependencies;
+    const targetUserId = await profileReader.findActiveUserIdByTag(
+      UserTag.create(command.targetUserTag),
+    );
+    if (targetUserId == null) {
+      throw friendTargetTagNotFound(command.targetUserTag);
     }
-
-    return this.#dependencies.sendFriendRequest.execute({
-      userId: input.userId,
-      targetUserId: targetUser.id,
-    });
+    return sendFriendRequest.execute({ userId: command.userId, targetUserId: targetUserId.value });
   }
 }

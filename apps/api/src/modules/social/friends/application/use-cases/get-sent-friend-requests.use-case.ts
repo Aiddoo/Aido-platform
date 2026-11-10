@@ -1,22 +1,23 @@
-import type { PaginationService } from "#api/shared/application/pagination/index";
+import { clampPageSize, type CursorPage, toCursorPage } from "#api/shared/application/cursor-page";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import type { FollowRepositoryPort, FollowWithUser } from "../ports/follow.repository.port.js";
+import { FriendshipId } from "../../domain/friendship-id.vo.js";
+import type { FriendshipReaderPort } from "../ports/friendship.reader.port.js";
+import type { FriendRequestReadModel } from "../read-models/friend.read-model.js";
 
-export interface GetSentFriendRequestsInput {
+export interface GetSentFriendRequestsQuery {
   readonly userId: string;
   readonly cursor?: string;
   readonly size?: number;
 }
 
 export interface GetSentFriendRequestsResult {
-  readonly items: FollowWithUser[];
+  readonly page: CursorPage<FriendRequestReadModel, string>;
   readonly totalCount: number;
-  readonly hasMore: boolean;
 }
 
-interface GetSentFriendRequestsDependencies {
-  readonly followRepository: Pick<FollowRepositoryPort, "findSentRequests" | "countSentRequests">;
-  readonly paginationService: PaginationService;
+export interface GetSentFriendRequestsDependencies {
+  readonly friendshipReader: Pick<FriendshipReaderPort, "listSentRequests" | "countSentRequests">;
 }
 
 export class GetSentFriendRequestsUseCase {
@@ -26,25 +27,21 @@ export class GetSentFriendRequestsUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: GetSentFriendRequestsInput): Promise<GetSentFriendRequestsResult> {
-    const { cursor, size } = this.#dependencies.paginationService.normalizeCursorPagination<string>(
-      {
-        cursor: input.cursor,
-        size: input.size,
-      },
-    );
-    const [items, totalCount] = await Promise.all([
-      this.#dependencies.followRepository.findSentRequests({
-        userId: input.userId,
-        cursor,
-        size,
+  async execute(query: GetSentFriendRequestsQuery): Promise<GetSentFriendRequestsResult> {
+    const { friendshipReader } = this.#dependencies;
+    const userId = UserId.reconstitute(query.userId);
+    const size = clampPageSize(query.size);
+    const [requests, totalCount] = await Promise.all([
+      friendshipReader.listSentRequests({
+        userId,
+        afterFriendshipId: query.cursor == null ? null : FriendshipId.reconstitute(query.cursor),
+        limit: size + 1,
       }),
-      this.#dependencies.followRepository.countSentRequests(input.userId),
+      friendshipReader.countSentRequests(userId),
     ]);
-    const page = this.#dependencies.paginationService.createCursorPaginatedResponse<
-      FollowWithUser,
-      string
-    >({ items, size });
-    return { items: page.items, totalCount, hasMore: page.pagination.hasNext };
+    return {
+      page: toCursorPage({ rows: requests, size, toCursor: (request) => request.friendshipId }),
+      totalCount,
+    };
   }
 }

@@ -8,11 +8,9 @@ import {
 } from "#api/modules/social/cheers/application/ports/cheer.repository.port";
 import { MarkCheerReadUseCase } from "#api/modules/social/cheers/application/use-cases/mark-cheer-read.use-case";
 import { SendCheerUseCase } from "#api/modules/social/cheers/application/use-cases/send-cheer.use-case";
-import {
-  FOLLOW_REPOSITORY,
-  type FollowRepositoryPort,
-} from "#api/modules/social/friends/application/ports/follow.repository.port";
-import { normalizeUserSearchQuery } from "#api/modules/social/friends/domain/user-search-query.domain-service";
+import { FollowRepositoryPort } from "#api/modules/social/friends/application/ports/follow.repository.port";
+import { FriendSearchReaderPort } from "#api/modules/social/friends/application/ports/friend-search.reader.port";
+import { UserSearchTerm } from "#api/modules/social/friends/domain/user-search-term.vo";
 import {
   NUDGE_REPOSITORY,
   type NudgeRepositoryPort,
@@ -29,6 +27,7 @@ import {
   userProfile,
 } from "#api/platform/database/schema/index";
 import { dayWindowInTimezone } from "#api/shared/domain/date/utils/timezone";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { UserFixture, TodoFixture, TodoCategoryFixture } from "#test/fixtures/index";
 import { createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
@@ -287,27 +286,32 @@ describe("Social 일일 한도·쿨다운·조회 쿼리 (실제 PostgreSQL)", (
     if (receiverId === undefined) {
       throw new Error("receiver fixture 누락");
     }
-    const repository = context.module.get<FollowRepositoryPort>(FOLLOW_REPOSITORY);
+    const repository = context.module.get(FollowRepositoryPort);
+    const isMutualFriend = (userId: string, targetUserId: string) =>
+      repository.existsMutualFriendship(
+        UserId.reconstitute(userId),
+        UserId.reconstitute(targetUserId),
+      );
     const statements: string[] = [];
 
     // When
     recording = statements;
-    const accepted = await repository.isMutualFriend(senderId, receiverId);
+    const accepted = await isMutualFriend(senderId, receiverId);
     recording = null;
     await client
       .update(follow)
       .set({ status: "PENDING" })
       .where(and(eq(follow.followerId, receiverId), eq(follow.followingId, senderId)));
-    const pending = await repository.isMutualFriend(senderId, receiverId);
+    const pending = await isMutualFriend(senderId, receiverId);
     await client
       .delete(follow)
       .where(and(eq(follow.followerId, receiverId), eq(follow.followingId, senderId)));
-    const missingReverse = await repository.isMutualFriend(senderId, receiverId);
+    const missingReverse = await isMutualFriend(senderId, receiverId);
     await client
       .insert(follow)
       .values({ followerId: senderId, followingId: senderId, status: "ACCEPTED", sortOrder: 0 });
-    const self = await repository.isMutualFriend(senderId, senderId);
-    const missingUser = await repository.isMutualFriend(senderId, createEntityId());
+    const self = await isMutualFriend(senderId, senderId);
+    const missingUser = await isMutualFriend(senderId, createEntityId());
 
     // Then
     expect({ accepted, pending, missingReverse, self, missingUser }).toEqual({
@@ -335,7 +339,7 @@ describe("Social 일일 한도·쿨다운·조회 쿼리 (실제 PostgreSQL)", (
     ]);
     await client.update(userTable).set({ deletedAt: AT }).where(eq(userTable.id, deletedId));
     await client.update(userTable).set({ status: "LOCKED" }).where(eq(userTable.id, inactiveId));
-    const repository = context.module.get<FollowRepositoryPort>(FOLLOW_REPOSITORY);
+    const searchReader = context.module.get(FriendSearchReaderPort);
 
     // When
     const results = [];
@@ -348,16 +352,10 @@ describe("Social 일일 한도·쿨다운·조회 쿼리 (실제 PostgreSQL)", (
       { query: "_", expected: 2 },
       { query: "없는 이름", expected: 0 },
     ]) {
-      const normalized = normalizeUserSearchQuery(query);
-      const input = {
-        viewerId: senderId,
-        nfcQuery: normalized.nfc,
-        upperTag: normalized.upperTag,
-        size: 20,
-      };
+      const input = { viewerId: UserId.reconstitute(senderId), term: UserSearchTerm.create(query) };
       const [page, count] = await Promise.all([
-        repository.searchUsers(input),
-        repository.countSearchUsers(input),
+        searchReader.searchUsers({ ...input, after: null, limit: 21 }),
+        searchReader.countUsers(input),
       ]);
       results.push({ query, expected, page, count });
     }
@@ -367,44 +365,9 @@ describe("Social 일일 한도·쿨다운·조회 쿼리 (실제 PostgreSQL)", (
       expect(count, query).toBe(expected);
       expect(page, query).toHaveLength(count);
       expect(
-        page.every((item) => item.id !== deletedId && item.id !== inactiveId),
+        page.every((item) => item.user.id !== deletedId && item.user.id !== inactiveId),
         query,
       ).toBe(true);
     }
-  });
-
-  it("팔로우 수정은 실제 수정된 상태와 프로필 없는 사용자 관계를 반환한다", async () => {
-    // Given
-    const receiverId = receiverIds[0];
-    if (receiverId === undefined) {
-      throw new Error("receiver fixture 누락");
-    }
-    const row = await client.query.follow.findFirst({
-      columns: { id: true },
-      where: { followerId: senderId, followingId: receiverId },
-    });
-    if (row === undefined) {
-      throw new Error("follow fixture 누락");
-    }
-    const repository = context.module.get<FollowRepositoryPort>(FOLLOW_REPOSITORY);
-
-    // When
-    const updated = await repository.update(row.id, { status: "PENDING", sortOrder: 4 });
-    const reciprocal = await repository.updateByFollowerAndFollowing(senderId, receiverId, {
-      status: "ACCEPTED",
-      sortOrder: 0,
-    });
-    const projection = await repository.updateFollowSortOrder(row.id, 2);
-
-    // Then
-    expect(updated.isPending()).toBe(true);
-    expect(updated.sortOrder).toBe(4);
-    expect(reciprocal.isAccepted()).toBe(true);
-    expect(reciprocal.sortOrder).toBe(0);
-    expect(projection).toMatchObject({
-      sortOrder: 2,
-      follower: { id: senderId, profile: null },
-      following: { id: receiverId, profile: null },
-    });
   });
 });

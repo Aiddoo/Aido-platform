@@ -1,5 +1,3 @@
-import { ErrorCode } from "@aido/api/errors";
-
 import type { FollowCachePort } from "#api/modules/social/friends/application/ports/follow-cache.port";
 import type {
   FollowNotifierPort,
@@ -7,187 +5,36 @@ import type {
   FollowMutualNotification,
   FirstFriendMilestoneNotification,
 } from "#api/modules/social/friends/application/ports/follow-notifier.port";
-import type {
-  FollowRepositoryPort,
-  FollowRecord,
-  FollowUserBrief,
-  FollowWithUser,
-  FindFollowsParams,
-  CreateFollowInput,
-  UpdateFollowInput,
-  UserSearchResult,
-} from "#api/modules/social/friends/application/ports/follow.repository.port";
-import { Friendship } from "#api/modules/social/friends/domain/friendship.aggregate";
-import { ApplicationException } from "#api/shared/application/application.exception";
-import { now } from "#api/shared/domain/date/utils/core";
+import type { UserBriefRow } from "#api/modules/social/friends/infrastructure/persistence/user-brief-relation.constants";
 import { FollowFixture } from "#test/fixtures/friend.fixture";
+import type { Follow } from "#test/types/database-rows";
 
-export class StubFollowRepository implements FollowRepositoryPort {
-  readonly users = new Map<string, FollowUserBrief>();
-  readonly follows = new Map<string, FollowRecord>();
-  searchResults: UserSearchResult[] = [];
-  searchTotal = 0;
+// 옮기지 않은 social slice spec이 친구 관계 seed로만 쓰는 옛 stub이다. friends spec은 InMemory 저장소를 쓴다
+export class StubFollowRepository {
+  readonly users = new Map<string, UserBriefRow>();
+  readonly follows = new Map<string, Follow>();
 
-  seed(
-    input: Partial<FollowRecord> & Pick<FollowRecord, "followerId" | "followingId">,
-  ): FollowRecord {
+  seed(input: Partial<Follow> & Pick<Follow, "followerId" | "followingId">): Follow {
     const record = FollowFixture.create(input);
     this.follows.set(record.id, structuredClone(record));
     return structuredClone(record);
   }
 
-  async create(input: CreateFollowInput): Promise<Friendship> {
-    if (await this.findByFollowerAndFollowing(input.followerId, input.followingId)) {
-      throw new ApplicationException(ErrorCode.FOLLOW_0901);
-    }
-    return Friendship.reconstitute(this.seed(input));
-  }
-
-  async findByFollowerAndFollowing(
-    followerId: string,
-    followingId: string,
-  ): Promise<Friendship | null> {
-    const record = [...this.follows.values()].find(
-      (follow) => follow.followerId === followerId && follow.followingId === followingId,
-    );
-    return record ? Friendship.reconstitute(record) : null;
-  }
-
-  async findByIdWithUser(id: string): Promise<FollowWithUser | null> {
-    const record = this.follows.get(id);
-    if (!record) {
-      return null;
-    }
-    const follower = this.users.get(record.followerId);
-    const following = this.users.get(record.followingId);
-    return follower && following ? structuredClone({ ...record, follower, following }) : null;
-  }
-
-  async update(id: string, input: UpdateFollowInput): Promise<Friendship> {
-    const record = this.follows.get(id);
-    if (!record) {
-      throw new ApplicationException(ErrorCode.FOLLOW_0903);
-    }
-    const next = { ...record, ...input, updatedAt: now() };
-    this.follows.set(id, structuredClone(next));
-    return Friendship.reconstitute(next);
-  }
-
-  async updateByFollowerAndFollowing(
-    followerId: string,
-    followingId: string,
-    input: UpdateFollowInput,
-  ): Promise<Friendship> {
-    const follow = await this.findByFollowerAndFollowing(followerId, followingId);
-    if (!follow) {
-      throw new ApplicationException(ErrorCode.FOLLOW_0903);
-    }
-    return this.update(follow.id, input);
-  }
-
-  async delete(id: string): Promise<void> {
-    this.follows.delete(id);
-  }
-
-  async findMutualFriends(input: FindFollowsParams): Promise<FollowWithUser[]> {
-    return this.#projections(
-      [...this.follows.values()].filter(
-        (record) => record.followerId === input.userId && record.status === "ACCEPTED",
-      ),
-    );
-  }
-  async findReceivedRequests(input: FindFollowsParams): Promise<FollowWithUser[]> {
-    return this.#projections(
-      [...this.follows.values()].filter(
-        (record) => record.followingId === input.userId && record.status === "PENDING",
-      ),
-    );
-  }
-  async findSentRequests(input: FindFollowsParams): Promise<FollowWithUser[]> {
-    return this.#projections(
-      [...this.follows.values()].filter(
-        (record) => record.followerId === input.userId && record.status === "PENDING",
-      ),
-    );
-  }
-  async searchUsers(): Promise<UserSearchResult[]> {
-    return structuredClone(this.searchResults);
-  }
-  async countSearchUsers(): Promise<number> {
-    return this.searchTotal;
-  }
-
-  async findAcceptedByIdAndFollowerId(id: string, followerId: string): Promise<Friendship | null> {
-    const record = this.follows.get(id);
-    return record?.followerId === followerId && record.status === "ACCEPTED"
-      ? Friendship.reconstitute(record)
-      : null;
-  }
-  async getMaxSortOrderForFriends(followerId: string): Promise<number> {
-    return Math.max(
-      -1,
-      ...[...this.follows.values()]
-        .filter((record) => record.followerId === followerId && record.status === "ACCEPTED")
-        .map((record) => record.sortOrder),
-    );
-  }
-  async shiftFriendSortOrders(
-    followerId: string,
-    fromSortOrder: number,
-    toSortOrder: number | null,
-    delta: number,
-  ): Promise<number> {
-    let count = 0;
-    for (const [id, record] of this.follows) {
-      if (
-        record.followerId === followerId &&
-        record.status === "ACCEPTED" &&
-        record.sortOrder >= fromSortOrder &&
-        (toSortOrder === null || record.sortOrder <= toSortOrder)
-      ) {
-        this.follows.set(id, { ...record, sortOrder: record.sortOrder + delta });
-        count += 1;
-      }
-    }
-    return count;
-  }
-  async updateFollowSortOrder(id: string, sortOrder: number): Promise<FollowWithUser> {
-    await this.update(id, { sortOrder });
-    const result = await this.findByIdWithUser(id);
-    if (!result) {
-      throw new ApplicationException(ErrorCode.FOLLOW_0910);
-    }
-    return result;
-  }
   async isMutualFriend(userId: string, targetUserId: string): Promise<boolean> {
-    const direct = await this.findByFollowerAndFollowing(userId, targetUserId);
-    const reverse = await this.findByFollowerAndFollowing(targetUserId, userId);
-    return direct?.isAccepted() === true && reverse?.isAccepted() === true;
+    const direct = this.#find(userId, targetUserId);
+    const reverse = this.#find(targetUserId, userId);
+    return direct?.status === "ACCEPTED" && reverse?.status === "ACCEPTED";
   }
+
   async countMutualFriends(userId: string): Promise<number> {
     return (await this.getMutualFriendIds(userId)).length;
   }
-  async countReceivedRequests(userId: string): Promise<number> {
-    return [...this.follows.values()].filter(
-      (record) => record.followingId === userId && record.status === "PENDING",
-    ).length;
-  }
-  async countSentRequests(userId: string): Promise<number> {
-    return [...this.follows.values()].filter(
-      (record) => record.followerId === userId && record.status === "PENDING",
-    ).length;
-  }
-  async userExists(userId: string): Promise<boolean> {
-    return this.users.has(userId);
-  }
+
   async getUserDisplayName(userId: string): Promise<string> {
     const user = this.users.get(userId);
     return user?.profile?.name ?? user?.userTag ?? "";
   }
-  async findUserByTag(userTag: string): Promise<{ id: string } | null> {
-    const user = [...this.users.values()].find((user) => user.userTag === userTag);
-    return user ? { id: user.id } : null;
-  }
+
   async getMutualFriendIds(userId: string): Promise<string[]> {
     const ids: string[] = [];
     for (const record of this.follows.values()) {
@@ -197,13 +44,11 @@ export class StubFollowRepository implements FollowRepositoryPort {
     }
     return ids;
   }
-  async #projections(records: FollowRecord[]): Promise<FollowWithUser[]> {
-    const projections = await Promise.all(
-      records
-        .sort((left, right) => left.sortOrder - right.sortOrder)
-        .map((record) => this.findByIdWithUser(record.id)),
+
+  #find(followerId: string, followingId: string): Follow | undefined {
+    return [...this.follows.values()].find(
+      (follow) => follow.followerId === followerId && follow.followingId === followingId,
     );
-    return projections.filter((record) => record !== null);
   }
 }
 

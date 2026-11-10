@@ -1,53 +1,99 @@
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+
+import { FriendshipId } from "./friendship-id.vo.js";
 import { Friendship } from "./friendship.aggregate.js";
 
-const make = (status: "PENDING" | "ACCEPTED", sortOrder = 0): Friendship =>
-  Friendship.reconstitute({
-    id: "f-1",
-    followerId: "u1",
-    followingId: "u2",
-    status,
-    sortOrder,
-    createdAt: new Date("2026-01-01T00:00:00.000Z"),
-    updatedAt: new Date("2026-01-02T00:00:00.000Z"),
+const CREATED_AT = Temporal.Instant.from("2027-01-08T12:00:00Z");
+const LATER = CREATED_AT.add({ seconds: 5 });
+
+function createRequest(): Friendship {
+  return Friendship.create({
+    id: FriendshipId.reconstitute("clz7x5p8k0010qz0z8z8z8z8z"),
+    followerId: UserId.reconstitute("clz7x5p8k0001qz0z8z8z8z8z"),
+    followingId: UserId.reconstitute("clz7x5p8k0002qz0z8z8z8z8z"),
+    now: CREATED_AT,
   });
+}
 
-describe("Friendship 엔티티", () => {
-  it("reconstitute와 getter", () => {
-    const f = make("PENDING", 3);
-    expect(f.id).toBe("f-1");
-    expect(f.followerId).toBe("u1");
-    expect(f.followingId).toBe("u2");
-    expect(f.status).toBe("PENDING");
-    expect(f.sortOrder).toBe(3);
-  });
+describe("Friendship 상태 전이", () => {
+  it("새 친구 요청은 대기 상태이고 친구 목록 순서 0, 생성·수정 시각이 같다", () => {
+    // Given
+    const friendship = createRequest();
 
-  it("상태 판별", () => {
-    expect(make("PENDING").isPending()).toBe(true);
-    expect(make("PENDING").isAccepted()).toBe(false);
-    expect(make("ACCEPTED").isAccepted()).toBe(true);
-  });
+    // When
+    const primitives = friendship.toPrimitives();
 
-  it("수락하면 상태와 친구 정렬 순서를 함께 전이한다", () => {
-    const friendship = make("PENDING");
-
-    friendship.accept(4);
-
-    expect(friendship.isAccepted()).toBe(true);
-    expect(friendship.toUpdate()).toEqual({
-      status: "ACCEPTED",
-      sortOrder: 4,
+    // Then
+    expect(primitives).toEqual({
+      id: "clz7x5p8k0010qz0z8z8z8z8z",
+      followerId: "clz7x5p8k0001qz0z8z8z8z8z",
+      followingId: "clz7x5p8k0002qz0z8z8z8z8z",
+      status: "PENDING",
+      sortOrder: 0,
+      createdAt: CREATED_AT,
+      updatedAt: CREATED_AT,
     });
   });
 
-  it("planReorderRelativeTo는 도메인 서비스와 동일 계획", () => {
-    const plan = make("ACCEPTED", 5).planReorderRelativeTo(2, "before");
-    expect(plan.newSortOrder).toBe(2);
-    expect(plan.shift).toEqual({ from: 2, to: 4, delta: 1 });
+  it("수락하면 친구 목록 자리와 친구가 된 시각을 함께 바꾼다", () => {
+    // Given
+    const friendship = createRequest();
+
+    // When
+    const isChanged = friendship.accept(4, LATER);
+
+    // Then
+    expect(isChanged).toBe(true);
+    expect(friendship.isAccepted()).toBe(true);
+    expect(friendship.toPrimitives()).toMatchObject({
+      status: "ACCEPTED",
+      sortOrder: 4,
+      createdAt: CREATED_AT,
+      updatedAt: LATER,
+    });
   });
 
-  it("planReorderToEdge(after)는 맨 뒤로", () => {
-    const plan = make("ACCEPTED", 3).planReorderToEdge("after", 9);
-    expect(plan.newSortOrder).toBe(9);
-    expect(plan.shift).toEqual({ from: 4, to: null, delta: -1 });
+  it("이미 같은 자리에 수락된 관계를 다시 수락하면 바꾸지 않는다", () => {
+    // Given
+    const friendship = createRequest();
+    friendship.accept(4, CREATED_AT);
+
+    // When
+    const isChanged = friendship.accept(4, LATER);
+
+    // Then
+    expect(isChanged).toBe(false);
+    expect(friendship.updatedAt).toEqual(CREATED_AT);
+  });
+
+  it("수락된 관계도 다른 자리로 다시 수락하면 그 자리로 옮긴다", () => {
+    // Given
+    const friendship = createRequest();
+    friendship.accept(1, CREATED_AT);
+
+    // When
+    const isChanged = friendship.accept(3, LATER);
+
+    // Then
+    expect(isChanged).toBe(true);
+    expect(friendship.sortOrder).toBe(3);
+    expect(friendship.updatedAt).toEqual(LATER);
+  });
+
+  it.each([
+    { name: "같은 자리", sortOrder: 2, isChanged: false, updatedAt: CREATED_AT },
+    { name: "다른 자리", sortOrder: 5, isChanged: true, updatedAt: LATER },
+  ])("$name로 옮기면 바뀜=$isChanged", ({ sortOrder, isChanged, updatedAt }) => {
+    // Given
+    const friendship = createRequest();
+    friendship.accept(2, CREATED_AT);
+
+    // When
+    const result = friendship.moveTo(sortOrder, LATER);
+
+    // Then
+    expect(result).toBe(isChanged);
+    expect(friendship.sortOrder).toBe(sortOrder);
+    expect(friendship.updatedAt).toEqual(updatedAt);
   });
 });

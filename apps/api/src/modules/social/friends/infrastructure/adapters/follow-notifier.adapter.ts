@@ -9,10 +9,6 @@ import type {
   FollowNotifierPort,
 } from "../../application/ports/follow-notifier.port.js";
 
-/**
- * FollowNotifierPort의 어댑터 — NotificationQueueService에 위임한다.
- * notification 모듈이 클린아키텍처로 이관되면 이 어댑터 내부만 교체하면 된다.
- */
 @Injectable()
 export class FollowNotifierAdapter implements FollowNotifierPort {
   readonly #queue: NotificationQueueService;
@@ -30,9 +26,6 @@ export class FollowNotifierAdapter implements FollowNotifierPort {
   }
 
   notifyFirstFriendMilestone(payload: FirstFriendMilestoneNotification): void {
-    this.#queue.enqueueMilestoneReached({
-      userId: payload.userId,
-      milestone: "FIRST_FRIEND",
-    });
+    this.#queue.enqueueMilestoneReached({ userId: payload.userId, milestone: "FIRST_FRIEND" });
   }
 }

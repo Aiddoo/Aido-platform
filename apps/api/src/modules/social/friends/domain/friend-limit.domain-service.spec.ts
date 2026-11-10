@@ -2,21 +2,18 @@ import { hasReachedFriendLimit } from "./friend-limit.domain-service.js";
 
 describe("hasReachedFriendLimit", () => {
   it.each([
-    { maxCount: null, friendCount: 1_000, expected: false },
-    { maxCount: 5, friendCount: 4, expected: false },
-    { maxCount: 5, friendCount: 5, expected: true },
-    { maxCount: 5, friendCount: 6, expected: true },
+    { maxFriendCount: null, friendCount: 1_000, expected: false },
+    { maxFriendCount: 5, friendCount: 4, expected: false },
+    { maxFriendCount: 5, friendCount: 5, expected: true },
+    { maxFriendCount: 5, friendCount: 6, expected: true },
   ])(
-    "한도 $maxCount에 친구 $friendCount명이면 $expected다",
-    ({ maxCount, friendCount, expected }) => {
-      // Given
-      const limit = maxCount;
-
+    "한도 $maxFriendCount에 친구 $friendCount명이면 $expected다",
+    ({ maxFriendCount, friendCount, expected }) => {
       // When
-      const reached = hasReachedFriendLimit(limit, friendCount);
+      const isReached = hasReachedFriendLimit({ maxFriendCount, friendCount });
 
       // Then
-      expect(reached).toBe(expected);
+      expect(isReached).toBe(expected);
     },
   );
 });

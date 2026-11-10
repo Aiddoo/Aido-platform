@@ -44,7 +44,16 @@ import { RemoveFriendUseCase } from "../../../application/use-cases/remove-frien
 import { ReorderFriendUseCase } from "../../../application/use-cases/reorder-friend.use-case.js";
 import { SearchUsersUseCase } from "../../../application/use-cases/search-users.use-case.js";
 import { SendFriendRequestByTagUseCase } from "../../../application/use-cases/send-friend-request-by-tag.use-case.js";
-import { FollowMapper } from "./follow-response.mapper.js";
+import {
+  FOLLOW_RESPONSE_MESSAGES,
+  toAcceptFriendRequestResponse,
+  toFriendsListResponse,
+  toReceivedRequestsResponse,
+  toReorderFriendResponse,
+  toSearchUsersResponse,
+  toSendFriendRequestResponse,
+  toSentRequestsResponse,
+} from "./follow-response.mapper.js";
 import {
   AcceptFriendRequestResponseDto,
   FollowResourceLimitResponseDto,
@@ -150,14 +159,7 @@ export class FollowController {
       userId: user.userId,
       targetUserTag: params.userTag,
     });
-
-    const message = result.autoAccepted ? "친구가 되었습니다." : "친구 요청을 보냈습니다.";
-
-    return {
-      message,
-      follow: FollowMapper.toResponse(result.follow),
-      autoAccepted: result.autoAccepted,
-    };
+    return toSendFriendRequestResponse(result);
   }
 
   @Patch(":userId/accept")
@@ -188,15 +190,11 @@ export class FollowController {
     @Param({ schema: UserIdParamDto }) params: UserIdParamDto,
     @AppVersion() appVersion?: string,
   ): Promise<AcceptFriendRequestResponseDto> {
-    const result = await this.#acceptFriendRequestUseCase.execute({
+    const friend = await this.#acceptFriendRequestUseCase.execute({
       userId: user.userId,
       requesterUserId: params.userId,
     });
-
-    return {
-      message: "친구 요청을 수락했습니다.",
-      friend: FollowMapper.toFriendUser(result, appVersion),
-    };
+    return toAcceptFriendRequestResponse(friend, appVersion);
   }
 
   @Patch(":userId/reject")
@@ -225,7 +223,7 @@ export class FollowController {
       requesterUserId: params.userId,
     });
 
-    return { message: "친구 요청을 거절했습니다." };
+    return { message: FOLLOW_RESPONSE_MESSAGES.REQUEST_REJECTED };
   }
 
   @Delete(":userId")
@@ -254,7 +252,7 @@ export class FollowController {
       targetUserId: params.userId,
     });
 
-    return { message: "친구를 삭제했습니다." };
+    return { message: FOLLOW_RESPONSE_MESSAGES.REMOVED };
   }
 
   @Patch("friends/:followId/reorder")
@@ -288,17 +286,13 @@ export class FollowController {
     @Body({ schema: ReorderFriendDto }) dto: ReorderFriendDto,
     @AppVersion() appVersion?: string,
   ): Promise<ReorderFriendResponseDto> {
-    const result = await this.#reorderFriendUseCase.execute({
-      followId,
+    const friend = await this.#reorderFriendUseCase.execute({
       userId: user.userId,
-      targetFollowId: dto.targetFollowId,
+      friendshipId: followId,
+      targetFriendshipId: dto.targetFollowId,
       position: dto.position,
     });
-
-    return {
-      message: "친구 순서가 변경되었습니다.",
-      friend: FollowMapper.toFriendUser(result, appVersion),
-    };
+    return toReorderFriendResponse(friend, appVersion);
   }
 
   @Get("resource-limit")
@@ -354,11 +348,7 @@ export class FollowController {
       search: query.search,
     });
 
-    return {
-      friends: result.items.map((item) => FollowMapper.toFriendUser(item, appVersion)),
-      totalCount: result.totalCount,
-      hasMore: result.hasMore,
-    };
+    return toFriendsListResponse(result, appVersion);
   }
 
   @Get("search")
@@ -396,12 +386,7 @@ export class FollowController {
       size: query.limit,
     });
 
-    return {
-      items: result.items.map((item) => FollowMapper.toSearchUser(item, appVersion)),
-      totalCount: result.totalCount,
-      hasMore: result.hasMore,
-      nextCursor: result.nextCursor,
-    };
+    return toSearchUsersResponse(result, appVersion);
   }
 
   @Get("requests/received")
@@ -433,11 +418,7 @@ export class FollowController {
       size: query.limit,
     });
 
-    return {
-      requests: result.items.map((item) => FollowMapper.toReceivedRequest(item, appVersion)),
-      totalCount: result.totalCount,
-      hasMore: result.hasMore,
-    };
+    return toReceivedRequestsResponse(result, appVersion);
   }
 
   @Get("requests/sent")
@@ -469,10 +450,6 @@ export class FollowController {
       size: query.limit,
     });
 
-    return {
-      requests: result.items.map((item) => FollowMapper.toSentRequest(item, appVersion)),
-      totalCount: result.totalCount,
-      hasMore: result.hasMore,
-    };
+    return toSentRequestsResponse(result, appVersion);
   }
 }

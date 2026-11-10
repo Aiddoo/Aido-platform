@@ -1,84 +1,167 @@
-import type { Follow, FriendRequestUser, FriendUser, SearchUser } from "@aido/api";
-/**
- * Follow 프레젠테이션 매퍼
- *
- * 애플리케이션 타입(FollowRecord/FollowWithUser)을 API 응답(@aido/api) 형식으로
- * 변환하는 Static 메서드를 제공한다. 필드·직렬화 규칙은 레거시와 동일하다(계약 불변).
- */
+import type {
+  AcceptFriendRequestResponse,
+  Follow as FollowResponse,
+  FriendRequestUser,
+  FriendsListResponse,
+  FriendUser,
+  ReceivedRequestsResponse,
+  ReorderFriendResponse,
+  SearchUser,
+  SearchUsersResponse,
+  SendFriendRequestResponse,
+  SentRequestsResponse,
+} from "@aido/api/contracts/follow";
 
 import { resolveProfileImage } from "#api/platform/http/profile/profile-image.resolver";
-import { toISOString } from "#api/shared/domain/date/utils/format";
+import { toIsoString } from "#api/shared/domain/time/instant";
 
 import type {
-  FollowWithUser,
-  UserSearchResult,
-} from "../../../application/ports/follow.repository.port.js";
+  FriendReadModel,
+  FriendRequestReadModel,
+} from "../../../application/read-models/friend.read-model.js";
+import type { UserSearchResultReadModel } from "../../../application/read-models/user-search-result.read-model.js";
+import type { GetFriendsResult } from "../../../application/use-cases/get-friends.use-case.js";
+import type { GetReceivedFriendRequestsResult } from "../../../application/use-cases/get-received-friend-requests.use-case.js";
+import type { GetSentFriendRequestsResult } from "../../../application/use-cases/get-sent-friend-requests.use-case.js";
+import type { SearchUsersResult } from "../../../application/use-cases/search-users.use-case.js";
+import type { SendFriendRequestResult } from "../../../application/use-cases/send-friend-request.use-case.js";
 import type { Friendship } from "../../../domain/friendship.aggregate.js";
 
-export const FollowMapper = {
-  /** Friendship 애그리게잇을 기본 응답 형식으로 변환 */
-  toResponse(entity: Friendship): Follow {
-    return {
-      id: entity.id,
-      followerId: entity.followerId,
-      followingId: entity.followingId,
-      status: entity.status,
-      createdAt: toISOString(entity.createdAt),
-      updatedAt: toISOString(entity.updatedAt),
-    };
-  },
+export const FOLLOW_RESPONSE_MESSAGES = {
+  REQUEST_SENT: "친구 요청을 보냈습니다.",
+  BECAME_FRIENDS: "친구가 되었습니다.",
+  REQUEST_ACCEPTED: "친구 요청을 수락했습니다.",
+  REQUEST_REJECTED: "친구 요청을 거절했습니다.",
+  REMOVED: "친구를 삭제했습니다.",
+  REORDERED: "친구 순서가 변경되었습니다.",
+} as const;
 
-  /**
-   * FollowWithUser를 친구 정보로 변환.
-   * following이 항상 친구(상대방)이다.
-   */
-  toFriendUser(follow: FollowWithUser, appVersion?: string): FriendUser {
-    const friend = follow.following;
-    return {
-      followId: follow.id,
-      id: friend.id,
-      userTag: friend.userTag,
-      name: friend.profile?.name ?? null,
-      profileImage: resolveProfileImage(friend.profile?.profileImage ?? null, appVersion),
-      friendsSince: toISOString(follow.updatedAt),
-    };
-  },
+export function toFollowResponse(friendship: Friendship): FollowResponse {
+  const primitives = friendship.toPrimitives();
+  return {
+    id: primitives.id,
+    followerId: primitives.followerId,
+    followingId: primitives.followingId,
+    status: primitives.status,
+    createdAt: toIsoString(primitives.createdAt),
+    updatedAt: toIsoString(primitives.updatedAt),
+  };
+}
 
-  /** 받은 친구 요청 변환 (follower가 요청자) */
-  toReceivedRequest(follow: FollowWithUser, appVersion?: string): FriendRequestUser {
-    const requester = follow.follower;
-    return {
-      id: requester.id,
-      userTag: requester.userTag,
-      name: requester.profile?.name ?? null,
-      profileImage: resolveProfileImage(requester.profile?.profileImage ?? null, appVersion),
-      requestedAt: toISOString(follow.createdAt),
-    };
-  },
+export function toFriendUserResponse(friend: FriendReadModel, appVersion?: string): FriendUser {
+  return {
+    followId: friend.friendshipId,
+    id: friend.user.id,
+    userTag: friend.user.userTag,
+    name: friend.user.name,
+    profileImage: resolveProfileImage(friend.user.profileImage, appVersion),
+    friendsSince: toIsoString(friend.friendsSince),
+  };
+}
 
-  /** 보낸 친구 요청 변환 (following이 수신자) */
-  toSentRequest(follow: FollowWithUser, appVersion?: string): FriendRequestUser {
-    const recipient = follow.following;
-    return {
-      id: recipient.id,
-      userTag: recipient.userTag,
-      name: recipient.profile?.name ?? null,
-      profileImage: resolveProfileImage(recipient.profile?.profileImage ?? null, appVersion),
-      requestedAt: toISOString(follow.createdAt),
-    };
-  },
+export function toFriendRequestUserResponse(
+  request: FriendRequestReadModel,
+  appVersion?: string,
+): FriendRequestUser {
+  return {
+    id: request.user.id,
+    userTag: request.user.userTag,
+    name: request.user.name,
+    profileImage: resolveProfileImage(request.user.profileImage, appVersion),
+    requestedAt: toIsoString(request.requestedAt),
+  };
+}
 
-  /** 사용자 검색 결과 변환 (내부 rank는 드롭, 관계 flag 전달) */
-  toSearchUser(result: UserSearchResult, appVersion?: string): SearchUser {
-    return {
-      id: result.id,
-      userTag: result.userTag,
-      name: result.profile?.name ?? null,
-      profileImage: resolveProfileImage(result.profile?.profileImage ?? null, appVersion),
-      isFollowing: result.isFollowing,
-      isFollower: result.isFollower,
-      isFriend: result.isFriend,
-      requestPending: result.requestPending,
-    };
-  },
-};
+export function toSearchUserResponse(
+  result: UserSearchResultReadModel,
+  appVersion?: string,
+): SearchUser {
+  return {
+    id: result.user.id,
+    userTag: result.user.userTag,
+    name: result.user.name,
+    profileImage: resolveProfileImage(result.user.profileImage, appVersion),
+    isFollowing: result.isFollowing,
+    isFollower: result.isFollower,
+    isFriend: result.isFriend,
+    requestPending: result.isRequestPending,
+  };
+}
+
+export function toSendFriendRequestResponse(
+  result: SendFriendRequestResult,
+): SendFriendRequestResponse {
+  return {
+    message: result.isAutoAccepted
+      ? FOLLOW_RESPONSE_MESSAGES.BECAME_FRIENDS
+      : FOLLOW_RESPONSE_MESSAGES.REQUEST_SENT,
+    follow: toFollowResponse(result.friendship),
+    autoAccepted: result.isAutoAccepted,
+  };
+}
+
+export function toAcceptFriendRequestResponse(
+  friend: FriendReadModel,
+  appVersion?: string,
+): AcceptFriendRequestResponse {
+  return {
+    message: FOLLOW_RESPONSE_MESSAGES.REQUEST_ACCEPTED,
+    friend: toFriendUserResponse(friend, appVersion),
+  };
+}
+
+export function toReorderFriendResponse(
+  friend: FriendReadModel,
+  appVersion?: string,
+): ReorderFriendResponse {
+  return {
+    message: FOLLOW_RESPONSE_MESSAGES.REORDERED,
+    friend: toFriendUserResponse(friend, appVersion),
+  };
+}
+
+// 친구·요청 목록은 출시 계약이 { 목록, totalCount, hasMore } 모양이다
+export function toFriendsListResponse(
+  result: GetFriendsResult,
+  appVersion?: string,
+): FriendsListResponse {
+  return {
+    friends: result.page.items.map((friend) => toFriendUserResponse(friend, appVersion)),
+    totalCount: result.totalCount,
+    hasMore: result.page.pagination.hasNext,
+  };
+}
+
+export function toReceivedRequestsResponse(
+  result: GetReceivedFriendRequestsResult,
+  appVersion?: string,
+): ReceivedRequestsResponse {
+  return {
+    requests: result.page.items.map((request) => toFriendRequestUserResponse(request, appVersion)),
+    totalCount: result.totalCount,
+    hasMore: result.page.pagination.hasNext,
+  };
+}
+
+export function toSentRequestsResponse(
+  result: GetSentFriendRequestsResult,
+  appVersion?: string,
+): SentRequestsResponse {
+  return {
+    requests: result.page.items.map((request) => toFriendRequestUserResponse(request, appVersion)),
+    totalCount: result.totalCount,
+    hasMore: result.page.pagination.hasNext,
+  };
+}
+
+export function toSearchUsersResponse(
+  result: SearchUsersResult,
+  appVersion?: string,
+): SearchUsersResponse {
+  return {
+    items: result.page.items.map((item) => toSearchUserResponse(item, appVersion)),
+    totalCount: result.totalCount,
+    hasMore: result.page.pagination.hasNext,
+    nextCursor: result.page.pagination.nextCursor,
+  };
+}

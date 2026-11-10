@@ -1,22 +1,6 @@
-import { ErrorCode } from "@aido/api/errors";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
-import {
-  and,
-  asc,
-  eq,
-  exists,
-  gt,
-  gte,
-  ilike,
-  isNull,
-  lte,
-  max,
-  ne,
-  or,
-  sql,
-  type SQL,
-} from "drizzle-orm";
+import { and, eq, exists, gte, lte, max, sql, type SQL } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 
 import {
@@ -24,32 +8,17 @@ import {
   requireRecord,
 } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
-import { follow, user, userProfile } from "#api/platform/database/schema/index";
-import { ApplicationException } from "#api/shared/application/application.exception";
+import { createEntityId } from "#api/platform/database/entity-id";
+import { follow } from "#api/platform/database/schema/social.schema";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { instantToDate } from "#api/shared/domain/time/instant";
 
-import { hasNoBlockWith } from "../../../blocks/infrastructure/persistence/drizzle-user-block.repository.js";
-import type {
-  CreateFollowInput,
-  FindFollowsParams,
-  FollowRepositoryPort,
-  FollowWithUser,
-  SearchUsersParams,
-  UpdateFollowInput,
-  UserSearchResult,
-} from "../../application/ports/follow.repository.port.js";
-import { Friendship } from "../../domain/friendship.aggregate.js";
-import { USER_BRIEF_RELATION, type UserBriefRow } from "./user-brief-relation.constants.js";
-
-type FollowRow = typeof follow.$inferSelect;
-type FollowRowWithUser = FollowRow & {
-  follower: UserBriefRow;
-  following: UserBriefRow;
-};
-
-const FOLLOW_USER_RELATIONS = {
-  follower: USER_BRIEF_RELATION,
-  following: USER_BRIEF_RELATION,
-} as const;
+import { friendRequestAlreadySent } from "../../application/friends.errors.js";
+import { FollowRepositoryPort } from "../../application/ports/follow.repository.port.js";
+import type { SortOrderShift } from "../../domain/friend-ordering.domain-service.js";
+import { FriendshipId } from "../../domain/friendship-id.vo.js";
+import type { Friendship } from "../../domain/friendship.aggregate.js";
+import { toFriendship, toFriendshipRow } from "./friendship-row.mapper.js";
 
 @Injectable()
 export class DrizzleFollowRepository implements FollowRepositoryPort {
@@ -63,212 +32,112 @@ export class DrizzleFollowRepository implements FollowRepositoryPort {
     return this.#txHost.tx;
   }
 
-  async create(input: CreateFollowInput): Promise<Friendship> {
-    try {
-      const [row] = await this.#db
-        .insert(follow)
-        .values({
-          followerId: input.followerId,
-          followingId: input.followingId,
-          status: input.status,
-          ...(input.sortOrder != null && { sortOrder: input.sortOrder }),
-        })
-        .returning();
-      return toFriendship(requireRecord(row));
-    } catch (error) {
-      if (isUniqueConstraintViolation(error)) {
-        throw new ApplicationException(ErrorCode.FOLLOW_0901, {
-          targetUserId: input.followingId,
-        });
-      }
-      throw error;
-    }
+  async nextId(): Promise<FriendshipId> {
+    return FriendshipId.reconstitute(createEntityId());
   }
 
   async findByFollowerAndFollowing(
-    followerId: string,
-    followingId: string,
+    followerId: UserId,
+    followingId: UserId,
   ): Promise<Friendship | null> {
-    const row = await this.#db.query.follow.findFirst({ where: { followerId, followingId } });
-    return row == null ? null : toFriendship(row);
-  }
-
-  async findByIdWithUser(id: string): Promise<FollowWithUser | null> {
     const row = await this.#db.query.follow.findFirst({
-      where: { id },
-      with: FOLLOW_USER_RELATIONS,
-    });
-    return row == null ? null : toWithUser(row);
-  }
-
-  async update(id: string, input: UpdateFollowInput): Promise<Friendship> {
-    const [row] = await this.#db.update(follow).set(input).where(eq(follow.id, id)).returning();
-    return toFriendship(requireRecord(row));
-  }
-
-  async updateByFollowerAndFollowing(
-    followerId: string,
-    followingId: string,
-    input: UpdateFollowInput,
-  ): Promise<Friendship> {
-    const [row] = await this.#db
-      .update(follow)
-      .set(input)
-      .where(and(eq(follow.followerId, followerId), eq(follow.followingId, followingId)))
-      .returning();
-    return toFriendship(requireRecord(row));
-  }
-
-  async delete(id: string): Promise<void> {
-    const [row] = await this.#db
-      .delete(follow)
-      .where(eq(follow.id, id))
-      .returning({ id: follow.id });
-    requireRecord(row);
-  }
-
-  async findMutualFriends(params: FindFollowsParams): Promise<FollowWithUser[]> {
-    const { userId, cursor, size, search } = params;
-    const pattern =
-      search == null
-        ? undefined
-        : `%${search.replaceAll("\\", "\\\\").replaceAll("%", "\\%").replaceAll("_", "\\_")}%`;
-    const anchor =
-      cursor == null
-        ? undefined
-        : await this.#db.query.follow.findFirst({
-            columns: { id: true, sortOrder: true },
-            where: { id: cursor },
-          });
-    if (cursor != null && anchor == null) {
-      return [];
-    }
-
-    const rows = await this.#db.query.follow.findMany({
-      where: {
-        followerId: userId,
-        status: "ACCEPTED",
-        following: {
-          ...(pattern != null && { userTag: { ilike: pattern } }),
-          following: { followerId: { ne: userId }, followingId: userId, status: "ACCEPTED" },
-        },
-        ...(anchor != null && {
-          RAW: (table) =>
-            sql`(${table.sortOrder}, ${table.id}) > (${anchor.sortOrder}, ${anchor.id})`,
-        }),
-      },
-      with: FOLLOW_USER_RELATIONS,
-      orderBy: { sortOrder: "asc", id: "asc" },
-      limit: size + 1,
-    });
-    return rows.map((row) => toWithUser(row));
-  }
-
-  findReceivedRequests(params: FindFollowsParams): Promise<FollowWithUser[]> {
-    return this.#findPendingRequests(params, "followingId");
-  }
-
-  findSentRequests(params: FindFollowsParams): Promise<FollowWithUser[]> {
-    return this.#findPendingRequests(params, "followerId");
-  }
-
-  async #findPendingRequests(
-    { userId, cursor, size }: FindFollowsParams,
-    owner: "followerId" | "followingId",
-  ): Promise<FollowWithUser[]> {
-    const anchor =
-      cursor == null
-        ? undefined
-        : await this.#db.query.follow.findFirst({
-            columns: { id: true, createdAt: true },
-            where: { id: cursor },
-          });
-    if (cursor != null && anchor == null) {
-      return [];
-    }
-
-    const rows = await this.#db.query.follow.findMany({
-      where: {
-        ...(owner === "followingId" ? { followingId: userId } : { followerId: userId }),
-        status: "PENDING",
-        ...(anchor != null && {
-          RAW: (table) =>
-            sql`(${table.createdAt}, ${table.id}) < (${sql.param(anchor.createdAt, table.createdAt)}, ${anchor.id})`,
-        }),
-      },
-      with: FOLLOW_USER_RELATIONS,
-      orderBy: { createdAt: "desc", id: "desc" },
-      limit: size + 1,
-    });
-    return rows.map((row) => toWithUser(row));
-  }
-
-  async findAcceptedByIdAndFollowerId(id: string, followerId: string): Promise<Friendship | null> {
-    const row = await this.#db.query.follow.findFirst({
-      where: { id, followerId, status: "ACCEPTED" },
+      where: { followerId: followerId.value, followingId: followingId.value },
     });
     return row == null ? null : toFriendship(row);
   }
 
-  async getMaxSortOrderForFriends(followerId: string): Promise<number> {
+  async findAcceptedByIdAndFollowerId(
+    friendshipId: FriendshipId,
+    followerId: UserId,
+  ): Promise<Friendship | null> {
+    const row = await this.#db.query.follow.findFirst({
+      where: { id: friendshipId.value, followerId: followerId.value, status: "ACCEPTED" },
+    });
+    return row == null ? null : toFriendship(row);
+  }
+
+  async findMaxFriendSortOrder(followerId: UserId): Promise<number | null> {
     const [result] = await this.#db
-      .select({ maximum: max(follow.sortOrder) })
+      .select({ maxSortOrder: max(follow.sortOrder) })
       .from(follow)
-      .where(and(eq(follow.followerId, followerId), eq(follow.status, "ACCEPTED")));
-    return result?.maximum ?? -1;
+      .where(and(eq(follow.followerId, followerId.value), eq(follow.status, "ACCEPTED")));
+    return result?.maxSortOrder ?? null;
   }
 
-  async shiftFriendSortOrders(
-    followerId: string,
-    fromSortOrder: number,
-    toSortOrder: number | null,
-    delta: number,
-  ): Promise<number> {
-    const shifted = await this.#db
-      .update(follow)
-      .set({ sortOrder: sql`${follow.sortOrder} + ${delta}` })
-      .where(
-        and(
-          eq(follow.followerId, followerId),
-          eq(follow.status, "ACCEPTED"),
-          gte(follow.sortOrder, fromSortOrder),
-          toSortOrder == null ? undefined : lte(follow.sortOrder, toSortOrder),
-        ),
-      )
-      .returning({ id: follow.id });
-    return shifted.length;
+  countMutualFriends(userId: UserId): Promise<number> {
+    return this.#db.$count(follow, this.#mutualFriendCondition(userId));
   }
 
-  async updateFollowSortOrder(id: string, sortOrder: number): Promise<FollowWithUser> {
-    const [updated] = await this.#db
-      .update(follow)
-      .set({ sortOrder })
-      .where(eq(follow.id, id))
-      .returning({ id: follow.id });
-    const row = await this.#db.query.follow.findFirst({
-      where: { id: requireRecord(updated).id },
-      with: FOLLOW_USER_RELATIONS,
-    });
-    return toWithUser(requireRecord(row));
-  }
-
-  async isMutualFriend(userId: string, targetUserId: string): Promise<boolean> {
+  async existsMutualFriendship(userId: UserId, targetUserId: UserId): Promise<boolean> {
     const row = await this.#db.query.follow.findFirst({
       columns: { id: true },
       where: {
-        followerId: userId,
-        followingId: targetUserId,
+        followerId: userId.value,
+        followingId: targetUserId.value,
         status: "ACCEPTED",
-        following: { following: { followingId: userId, status: "ACCEPTED" } },
+        following: { following: { followingId: userId.value, status: "ACCEPTED" } },
       },
     });
     return row != null;
   }
 
-  #mutualFriendCondition(userId: string): SQL | undefined {
+  async listMutualFriendIds(userId: UserId): Promise<UserId[]> {
+    const rows = await this.#db
+      .select({ followingId: follow.followingId })
+      .from(follow)
+      .where(this.#mutualFriendCondition(userId));
+    return rows.map((row) => UserId.reconstitute(row.followingId));
+  }
+
+  async shiftFriendSortOrders(
+    followerId: UserId,
+    shift: SortOrderShift,
+    now: Temporal.Instant,
+  ): Promise<void> {
+    await this.#db
+      .update(follow)
+      .set({ sortOrder: sql`${follow.sortOrder} + ${shift.delta}`, updatedAt: instantToDate(now) })
+      .where(
+        and(
+          eq(follow.followerId, followerId.value),
+          eq(follow.status, "ACCEPTED"),
+          gte(follow.sortOrder, shift.fromSortOrder),
+          shift.toSortOrder == null ? undefined : lte(follow.sortOrder, shift.toSortOrder),
+        ),
+      );
+  }
+
+  async save(friendship: Friendship): Promise<void> {
+    const row = toFriendshipRow(friendship);
+    try {
+      await this.#db
+        .insert(follow)
+        .values(row)
+        .onConflictDoUpdate({
+          target: follow.id,
+          set: { status: row.status, sortOrder: row.sortOrder, updatedAt: row.updatedAt },
+        });
+    } catch (error) {
+      // 같은 두 사람·방향 unique(Follow_followerId_followingId_key)는 이미 보낸 요청이다
+      if (isUniqueConstraintViolation(error)) {
+        throw friendRequestAlreadySent(friendship.followingId);
+      }
+      throw error;
+    }
+  }
+
+  async delete(friendship: Friendship): Promise<void> {
+    const [deleted] = await this.#db
+      .delete(follow)
+      .where(eq(follow.id, friendship.id.value))
+      .returning({ id: follow.id });
+    requireRecord(deleted);
+  }
+
+  #mutualFriendCondition(userId: UserId): SQL | undefined {
     const reverse = alias(follow, "reverse");
     return and(
-      eq(follow.followerId, userId),
+      eq(follow.followerId, userId.value),
       eq(follow.status, "ACCEPTED"),
       exists(
         this.#db
@@ -277,190 +146,11 @@ export class DrizzleFollowRepository implements FollowRepositoryPort {
           .where(
             and(
               eq(reverse.followerId, follow.followingId),
-              eq(reverse.followingId, userId),
+              eq(reverse.followingId, userId.value),
               eq(reverse.status, "ACCEPTED"),
             ),
           ),
       ),
     );
   }
-
-  countMutualFriends(userId: string): Promise<number> {
-    return this.#db.$count(follow, this.#mutualFriendCondition(userId));
-  }
-
-  countReceivedRequests(userId: string): Promise<number> {
-    return this.#db.$count(
-      follow,
-      and(eq(follow.followingId, userId), eq(follow.status, "PENDING")),
-    );
-  }
-
-  countSentRequests(userId: string): Promise<number> {
-    return this.#db.$count(
-      follow,
-      and(eq(follow.followerId, userId), eq(follow.status, "PENDING")),
-    );
-  }
-
-  async userExists(userId: string): Promise<boolean> {
-    const found = await this.#db.query.user.findFirst({
-      columns: { id: true },
-      where: { id: userId, status: "ACTIVE", deletedAt: { isNull: true } },
-    });
-    return found != null;
-  }
-
-  async getUserDisplayName(userId: string): Promise<string> {
-    const found = await this.#db.query.user.findFirst({
-      columns: { userTag: true },
-      where: { id: userId },
-      with: { profile: { columns: { name: true } } },
-    });
-    return found?.profile?.name ?? found?.userTag ?? userId;
-  }
-
-  async findUserByTag(userTag: string): Promise<{ id: string } | null> {
-    const found = await this.#db.query.user.findFirst({
-      columns: { id: true },
-      where: { userTag, status: "ACTIVE", deletedAt: { isNull: true } },
-    });
-    return found ?? null;
-  }
-
-  async getMutualFriendIds(userId: string): Promise<string[]> {
-    const rows = await this.#db
-      .select({ followingId: follow.followingId })
-      .from(follow)
-      .where(this.#mutualFriendCondition(userId));
-    return rows.map((row) => row.followingId);
-  }
-
-  async searchUsers(params: SearchUsersParams): Promise<UserSearchResult[]> {
-    const { viewerId, nfcQuery, upperTag, cursor, size } = params;
-    const outgoing = alias(follow, "fout");
-    const incoming = alias(follow, "fin");
-
-    const candidates = this.#db
-      .select({
-        id: user.id,
-        userTag: user.userTag,
-        name: userProfile.name,
-        profileImage: userProfile.profileImage,
-        isFollowing: sql<boolean>`COALESCE(${outgoing.status} = 'ACCEPTED', false)`.as(
-          "isFollowing",
-        ),
-        isFollower: sql<boolean>`COALESCE(${incoming.status} = 'ACCEPTED', false)`.as("isFollower"),
-        isFriend:
-          sql<boolean>`COALESCE(${outgoing.status} = 'ACCEPTED' AND ${incoming.status} = 'ACCEPTED', false)`.as(
-            "isFriend",
-          ),
-        requestPending: sql<boolean>`COALESCE(${outgoing.status} = 'PENDING', false)`.as(
-          "requestPending",
-        ),
-        rank: sql<number>`CASE
-          WHEN ${user.userTag} = ${upperTag} THEN 0
-          WHEN ${user.userTag} ILIKE ${upperTag} || '%' THEN 1
-          WHEN ${userProfile.name} ILIKE ${nfcQuery} || '%' THEN 2
-          ELSE 3
-        END`.as("rank"),
-      })
-      .from(user)
-      .leftJoin(userProfile, eq(userProfile.userId, user.id))
-      .leftJoin(outgoing, and(eq(outgoing.followerId, viewerId), eq(outgoing.followingId, user.id)))
-      .leftJoin(incoming, and(eq(incoming.followerId, user.id), eq(incoming.followingId, viewerId)))
-      .where(
-        and(
-          ne(user.id, viewerId),
-          isNull(user.deletedAt),
-          eq(user.status, "ACTIVE"),
-          hasNoBlockWith(user.id, viewerId),
-          or(ilike(user.userTag, `%${upperTag}%`), ilike(userProfile.name, `%${nfcQuery}%`)),
-        ),
-      )
-      .as("s");
-
-    const rows = await this.#db
-      .select()
-      .from(candidates)
-      .where(
-        cursor == null
-          ? undefined
-          : or(
-              gt(candidates.rank, cursor.rank),
-              and(eq(candidates.rank, cursor.rank), gt(candidates.id, cursor.id)),
-            ),
-      )
-      .orderBy(asc(candidates.rank), asc(candidates.id))
-      .limit(size + 1);
-
-    return rows.map((row) => ({
-      id: row.id,
-      userTag: row.userTag,
-      profile: { name: row.name, profileImage: row.profileImage },
-      isFollowing: row.isFollowing,
-      isFollower: row.isFollower,
-      isFriend: row.isFriend,
-      requestPending: row.requestPending,
-      rank: Number(row.rank),
-    }));
-  }
-
-  countSearchUsers(params: Omit<SearchUsersParams, "cursor" | "size">): Promise<number> {
-    const { viewerId, nfcQuery, upperTag } = params;
-    return this.#db.$count(
-      user,
-      and(
-        ne(user.id, viewerId),
-        isNull(user.deletedAt),
-        eq(user.status, "ACTIVE"),
-        hasNoBlockWith(user.id, viewerId),
-        or(
-          ilike(user.userTag, `%${upperTag}%`),
-          exists(
-            this.#db
-              .select({ one: sql`1` })
-              .from(userProfile)
-              .where(
-                and(eq(userProfile.userId, user.id), ilike(userProfile.name, `%${nfcQuery}%`)),
-              ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-function toWithUser(row: FollowRowWithUser): FollowWithUser {
-  return {
-    id: row.id,
-    followerId: row.followerId,
-    followingId: row.followingId,
-    status: row.status,
-    sortOrder: row.sortOrder,
-    createdAt: row.createdAt,
-    updatedAt: row.updatedAt,
-    follower: {
-      id: row.follower.id,
-      userTag: row.follower.userTag,
-      profile: row.follower.profile,
-    },
-    following: {
-      id: row.following.id,
-      userTag: row.following.userTag,
-      profile: row.following.profile,
-    },
-  };
-}
-
-function toFriendship(row: FollowRow): Friendship {
-  return Friendship.reconstitute({
-    id: row.id,
-    followerId: row.followerId,
-    followingId: row.followingId,
-    status: row.status,
-    sortOrder: row.sortOrder,
-    createdAt: row.createdAt,
-    updatedAt: row.updatedAt,
-  });
 }

@@ -1,24 +1,23 @@
-import { ErrorCode } from "@aido/api/errors";
-
-import { FriendLockKeys } from "#api/modules/social/friends/application/friends.lock-keys";
-import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
-import { type MutationLockPort, type UnitOfWorkPort } from "#api/shared/application/ports/index";
+import type { MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
+import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
+import { friendRequestNotFound } from "../friends.errors.js";
+import { FriendLockKeys } from "../friends.lock-keys.js";
 import { FriendLogEvent } from "../friends.log-events.js";
-import { type FollowRepositoryPort } from "../ports/follow.repository.port.js";
+import type { FollowRepositoryPort } from "../ports/follow.repository.port.js";
 
-export interface RejectFriendRequestInput {
+export interface RejectFriendRequestCommand {
   readonly userId: string;
   readonly requesterUserId: string;
 }
 
-interface RejectFriendRequestDependencies {
-  readonly followRepository: Pick<FollowRepositoryPort, "findByFollowerAndFollowing" | "delete">;
+export interface RejectFriendRequestDependencies {
   readonly unitOfWork: UnitOfWorkPort;
   readonly mutationLock: MutationLockPort;
-  readonly logger: ApplicationLoggerPort;
+  readonly followRepository: Pick<FollowRepositoryPort, "findByFollowerAndFollowing" | "delete">;
+  readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
 
 export class RejectFriendRequestUseCase {
@@ -28,30 +27,24 @@ export class RejectFriendRequestUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: RejectFriendRequestInput): Promise<void> {
-    const { userId, requesterUserId } = input;
+  async execute(command: RejectFriendRequestCommand): Promise<void> {
+    const { unitOfWork, mutationLock, followRepository, logger } = this.#dependencies;
+    const userId = UserId.reconstitute(command.userId);
+    const requesterUserId = UserId.reconstitute(command.requesterUserId);
 
-    await this.#dependencies.unitOfWork.run(async () => {
-      await this.#dependencies.mutationLock.acquire([
-        FriendLockKeys.pair(UserId.reconstitute(userId), UserId.reconstitute(requesterUserId)),
-      ]);
-      const request = await this.#dependencies.followRepository.findByFollowerAndFollowing(
-        requesterUserId,
-        userId,
-      );
+    await unitOfWork.run(async () => {
+      await mutationLock.acquire([FriendLockKeys.pair(userId, requesterUserId)]);
+      const request = await followRepository.findByFollowerAndFollowing(requesterUserId, userId);
       if (request == null || !request.isPending()) {
-        throw new ApplicationException(ErrorCode.FOLLOW_0903, {
-          targetUserId: requesterUserId,
-        });
+        throw friendRequestNotFound(requesterUserId);
       }
-
-      await this.#dependencies.followRepository.delete(request.id);
+      await followRepository.delete(request);
     });
 
-    this.#dependencies.logger.log({
+    logger.log({
       event: FriendLogEvent.REQUEST_REJECTED,
-      userId,
-      requesterUserId,
+      userId: command.userId,
+      requesterUserId: command.requesterUserId,
     });
   }
 }

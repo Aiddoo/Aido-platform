@@ -10,7 +10,7 @@ import type {
   FindCheersParams,
 } from "#api/modules/social/cheers/application/ports/cheer.repository.port";
 import { Cheer } from "#api/modules/social/cheers/domain/cheer.aggregate";
-import type { FollowUserBrief } from "#api/modules/social/friends/application/ports/follow.repository.port";
+import type { UserBriefRow as FollowUserBrief } from "#api/modules/social/friends/infrastructure/persistence/user-brief-relation.constants";
 import type {
   NudgeNotifierPort,
   NudgeSentNotification,

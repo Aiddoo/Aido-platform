@@ -1,29 +1,31 @@
-import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
+import { ErrorCode } from "@aido/api/errors";
 
 import { FriendshipStatus } from "./friendship-status.vo.js";
 
-describe("FriendshipStatus VO", () => {
-  it("pending/accepted 팩토리와 판별", () => {
-    expect(FriendshipStatus.pending().isPending()).toBe(true);
-    expect(FriendshipStatus.pending().isAccepted()).toBe(false);
-    expect(FriendshipStatus.accepted().isAccepted()).toBe(true);
+describe("FriendshipStatus", () => {
+  it.each([
+    { raw: "PENDING", isPending: true, isAccepted: false },
+    { raw: "ACCEPTED", isPending: false, isAccepted: true },
+  ])("$raw 상태를 만들고 대기·수락을 판별한다", ({ raw, isPending, isAccepted }) => {
+    // When
+    const status = FriendshipStatus.create(raw);
+
+    // Then
+    expect(status.value).toBe(raw);
+    expect(status.isPending()).toBe(isPending);
+    expect(status.isAccepted()).toBe(isAccepted);
   });
 
-  it("of는 유효한 값만 허용", () => {
-    expect(FriendshipStatus.of("PENDING").raw).toBe("PENDING");
-    expect(FriendshipStatus.of("ACCEPTED").raw).toBe("ACCEPTED");
-  });
+  it("알 수 없는 상태는 SYS_0001로 거절한다", () => {
+    // When
+    const creation = () => FriendshipStatus.create("BLOCKED");
 
-  it("of는 알 수 없는 상태를 거부한다", () => {
-    expect(() => FriendshipStatus.of("BLOCKED")).toThrow(DomainException);
-  });
-
-  it("accept는 ACCEPTED로 전이", () => {
-    expect(FriendshipStatus.pending().accept().isAccepted()).toBe(true);
-  });
-
-  it("equals", () => {
-    expect(FriendshipStatus.pending().equals(FriendshipStatus.pending())).toBe(true);
-    expect(FriendshipStatus.pending().equals(FriendshipStatus.accepted())).toBe(false);
+    // Then
+    expect(creation).toThrow(
+      expect.objectContaining({
+        errorCode: ErrorCode.SYS_0001,
+        details: { detail: "Unknown friendship status", value: "BLOCKED" },
+      }),
+    );
   });
 });

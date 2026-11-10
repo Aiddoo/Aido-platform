@@ -4,10 +4,13 @@ import { eq, sql } from "drizzle-orm";
 import type { FollowCachePort } from "#api/modules/social/friends/application/ports/follow-cache.port";
 import type { FollowNotifierPort } from "#api/modules/social/friends/application/ports/follow-notifier.port";
 import { AcceptFriendRequestUseCase } from "#api/modules/social/friends/application/use-cases/accept-friend-request.use-case";
-import { FriendshipEffects } from "#api/modules/social/friends/application/use-cases/friendship-effects.use-case";
+import { CheckFirstFriendMilestoneUseCase } from "#api/modules/social/friends/application/use-cases/check-first-friend-milestone.use-case";
 import { DrizzleFollowRepository } from "#api/modules/social/friends/infrastructure/persistence/drizzle-follow.repository";
+import { DrizzleFriendProfileReader } from "#api/modules/social/friends/infrastructure/persistence/drizzle-friend-profile.reader";
+import { DrizzleFriendshipReader } from "#api/modules/social/friends/infrastructure/persistence/drizzle-friendship.reader";
 import { PostgresMutationLockAdapter } from "#api/platform/database/postgres-mutation-lock.adapter";
 import { follow, user } from "#api/platform/database/schema/index";
+import { DateClock } from "#test/doubles/platform/date-clock";
 import { UserFixture, FollowFixture } from "#test/fixtures/index";
 import { createTestClient, createDatabaseTransactionFixture } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
@@ -73,12 +76,20 @@ describe("친구 수락 경쟁 (실제 PostgreSQL)", () => {
       },
     };
     const logger = { log() {}, debug() {}, warn() {}, error() {} };
-    const effects = new FriendshipEffects({ followRepository, cache, notifier, logger });
     acceptFriendRequest = new AcceptFriendRequestUseCase({
-      followRepository,
       unitOfWork: uow,
       mutationLock: new PostgresMutationLockAdapter(txHost),
-      effects,
+      followRepository,
+      friendshipReader: new DrizzleFriendshipReader(txHost),
+      profileReader: new DrizzleFriendProfileReader(txHost),
+      cache,
+      notifier,
+      checkFirstFriendMilestone: new CheckFirstFriendMilestoneUseCase({
+        followRepository,
+        notifier,
+        logger,
+      }),
+      clock: new DateClock(),
       logger,
     });
   });

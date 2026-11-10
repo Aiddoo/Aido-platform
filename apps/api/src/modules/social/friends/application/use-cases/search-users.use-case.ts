@@ -1,32 +1,28 @@
-import type { PaginationService } from "#api/shared/application/pagination/index";
+import { clampPageSize, type CursorPage, toCursorPage } from "#api/shared/application/cursor-page";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import { normalizeUserSearchQuery } from "../../domain/user-search-query.domain-service.js";
+import { UserSearchTerm } from "../../domain/user-search-term.vo.js";
 import { FriendLogEvent } from "../friends.log-events.js";
-import {
-  type FollowRepositoryPort,
-  type UserSearchResult,
-} from "../ports/follow.repository.port.js";
-import { decodeSearchCursor, encodeSearchCursor } from "../user-search-cursor.mapper.js";
+import type { FriendSearchReaderPort } from "../ports/friend-search.reader.port.js";
+import type { UserSearchResultReadModel } from "../read-models/user-search-result.read-model.js";
+import { decodeUserSearchCursor, encodeUserSearchCursor } from "../user-search-cursor.mapper.js";
 
-export interface SearchUsersInput {
+export interface SearchUsersQuery {
   readonly viewerId: string;
   readonly query: string;
   readonly cursor?: string;
   readonly size?: number;
 }
 
-export interface SearchUsersOutput {
-  readonly items: UserSearchResult[];
+export interface SearchUsersResult {
+  readonly page: CursorPage<UserSearchResultReadModel, string>;
   readonly totalCount: number;
-  readonly hasMore: boolean;
-  readonly nextCursor: string | null;
 }
 
-interface SearchUsersDependencies {
-  readonly followRepository: Pick<FollowRepositoryPort, "searchUsers" | "countSearchUsers">;
-  readonly paginationService: PaginationService;
-  readonly logger: ApplicationLoggerPort;
+export interface SearchUsersDependencies {
+  readonly searchReader: Pick<FriendSearchReaderPort, "searchUsers" | "countUsers">;
+  readonly logger: Pick<ApplicationLoggerPort, "debug">;
 }
 
 export class SearchUsersUseCase {
@@ -36,42 +32,29 @@ export class SearchUsersUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: SearchUsersInput): Promise<SearchUsersOutput> {
-    const { nfc, upperTag } = normalizeUserSearchQuery(input.query);
+  async execute(query: SearchUsersQuery): Promise<SearchUsersResult> {
+    const { searchReader, logger } = this.#dependencies;
+    // 검색어를 커서보다 먼저 검사한다(출시 앱이 받는 오류 우선순위)
+    const term = UserSearchTerm.create(query.query);
+    const size = clampPageSize(query.size);
+    const after = query.cursor == null ? null : decodeUserSearchCursor(query.cursor);
+    const viewerId = UserId.reconstitute(query.viewerId);
 
-    const { size } = this.#dependencies.paginationService.normalizeCursorPagination<string>({
-      size: input.size,
-    });
-
-    const cursor = input.cursor != null ? decodeSearchCursor(input.cursor) : undefined;
-
-    const [rows, totalCount] = await Promise.all([
-      this.#dependencies.followRepository.searchUsers({
-        viewerId: input.viewerId,
-        nfcQuery: nfc,
-        upperTag,
-        cursor,
-        size,
-      }),
-      this.#dependencies.followRepository.countSearchUsers({
-        viewerId: input.viewerId,
-        nfcQuery: nfc,
-        upperTag,
-      }),
+    const [results, totalCount] = await Promise.all([
+      searchReader.searchUsers({ viewerId, term, after, limit: size + 1 }),
+      searchReader.countUsers({ viewerId, term }),
     ]);
-
-    const hasMore = rows.length > size;
-    const items = hasMore ? rows.slice(0, size) : rows;
-    const last = items.at(-1);
-    const nextCursor =
-      hasMore && last != null ? encodeSearchCursor({ rank: last.rank, id: last.id }) : null;
-
-    this.#dependencies.logger.debug({
-      event: FriendLogEvent.SEARCHED,
-      viewerId: input.viewerId,
-      resultCount: items.length,
+    const page = toCursorPage({
+      rows: results,
+      size,
+      toCursor: (result) => encodeUserSearchCursor({ rank: result.rank, id: result.user.id }),
     });
 
-    return { items, totalCount, hasMore, nextCursor };
+    logger.debug({
+      event: FriendLogEvent.SEARCHED,
+      viewerId: query.viewerId,
+      resultCount: page.items.length,
+    });
+    return { page, totalCount };
   }
 }

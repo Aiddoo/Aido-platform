@@ -1,23 +1,28 @@
-import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
+import { ErrorCode } from "@aido/api/errors";
 
 import { UserTag } from "./user-tag.vo.js";
 
-describe("UserTag VO", () => {
-  it("8자리 영숫자 대문자를 허용한다", () => {
-    expect(UserTag.of("JOHN2026").value).toBe("JOHN2026");
-    expect(UserTag.of("ABCDEFGH").value).toBe("ABCDEFGH");
-    expect(UserTag.of("12345678").value).toBe("12345678");
+describe("UserTag", () => {
+  it.each(["JOHN2026", "ABCDEFGH", "12345678"])("8자 영문 대문자·숫자 %s를 받는다", (raw) => {
+    // When
+    const userTag = UserTag.create(raw);
+
+    // Then
+    expect(userTag.value).toBe(raw);
   });
 
-  it("형식이 틀리면 DomainException", () => {
-    expect(() => UserTag.of("john2026")).toThrow(DomainException); // 소문자
-    expect(() => UserTag.of("SHORT")).toThrow(DomainException); // 8자 미만
-    expect(() => UserTag.of("TOOLONG123")).toThrow(DomainException); // 8자 초과
-    expect(() => UserTag.of("JOHN-202")).toThrow(DomainException); // 특수문자
-  });
+  it.each([
+    { name: "소문자", raw: "john2026" },
+    { name: "8자 미만", raw: "SHORT" },
+    { name: "8자 초과", raw: "TOOLONG123" },
+    { name: "특수문자", raw: "JOHN-202" },
+  ])("$name 태그는 SYS_0002로 거절한다", ({ raw }) => {
+    // When
+    const creation = () => UserTag.create(raw);
 
-  it("equals", () => {
-    expect(UserTag.of("JOHN2026").equals(UserTag.of("JOHN2026"))).toBe(true);
-    expect(UserTag.of("JOHN2026").equals(UserTag.of("JANE2026"))).toBe(false);
+    // Then
+    expect(creation).toThrow(
+      expect.objectContaining({ errorCode: ErrorCode.SYS_0002, details: { userTag: raw } }),
+    );
   });
 });

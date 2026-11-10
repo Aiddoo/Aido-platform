@@ -1,36 +1,44 @@
-import { ErrorCode } from "@aido/api/errors";
-
-import { FriendLockKeys } from "#api/modules/social/friends/application/friends.lock-keys";
-import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
-import { type MutationLockPort, type UnitOfWorkPort } from "#api/shared/application/ports/index";
+import type { ClockPort } from "#api/shared/application/ports/clock.port";
+import type { MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
+import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
+import { nextFriendSortOrder } from "../../domain/friend-ordering.domain-service.js";
+import { Friendship } from "../../domain/friendship.aggregate.js";
+import { acceptedFriendNotFound, friendRequestNotFound } from "../friends.errors.js";
+import { FriendLockKeys } from "../friends.lock-keys.js";
 import { FriendLogEvent } from "../friends.log-events.js";
-import { type FollowRepositoryPort, type FollowWithUser } from "../ports/follow.repository.port.js";
-import type { FriendshipEffects } from "./friendship-effects.use-case.js";
+import {
+  type FriendshipCacheInvalidator,
+  invalidateFriendshipCaches,
+} from "../ports/follow-cache.port.js";
+import type { FollowNotifierPort } from "../ports/follow-notifier.port.js";
+import type { FollowRepositoryPort } from "../ports/follow.repository.port.js";
+import type { FriendProfileReaderPort } from "../ports/friend-profile.reader.port.js";
+import type { FriendshipReaderPort } from "../ports/friendship.reader.port.js";
+import type { FriendReadModel } from "../read-models/friend.read-model.js";
+import type { CheckFirstFriendMilestoneUseCase } from "./check-first-friend-milestone.use-case.js";
 
-export interface AcceptFriendRequestInput {
+export interface AcceptFriendRequestCommand {
   readonly userId: string;
   readonly requesterUserId: string;
 }
 
-interface AcceptFriendRequestDependencies {
-  readonly followRepository: Pick<
-    FollowRepositoryPort,
-    | "findByFollowerAndFollowing"
-    | "getMaxSortOrderForFriends"
-    | "update"
-    | "create"
-    | "findByIdWithUser"
-  >;
+export interface AcceptFriendRequestDependencies {
   readonly unitOfWork: UnitOfWorkPort;
   readonly mutationLock: MutationLockPort;
-  readonly effects: Pick<
-    FriendshipEffects,
-    "invalidateFriendshipCaches" | "notifyFriendshipEstablished" | "checkFirstFriendMilestone"
+  readonly followRepository: Pick<
+    FollowRepositoryPort,
+    "nextId" | "findByFollowerAndFollowing" | "findMaxFriendSortOrder" | "save"
   >;
-  readonly logger: ApplicationLoggerPort;
+  readonly friendshipReader: Pick<FriendshipReaderPort, "findFriendById">;
+  readonly profileReader: Pick<FriendProfileReaderPort, "findDisplayName">;
+  readonly cache: FriendshipCacheInvalidator;
+  readonly notifier: Pick<FollowNotifierPort, "notifyFollowMutual">;
+  readonly checkFirstFriendMilestone: Pick<CheckFirstFriendMilestoneUseCase, "execute">;
+  readonly clock: ClockPort;
+  readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
 
 export class AcceptFriendRequestUseCase {
@@ -40,86 +48,73 @@ export class AcceptFriendRequestUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: AcceptFriendRequestInput): Promise<FollowWithUser> {
-    const { userId, requesterUserId } = input;
+  async execute(command: AcceptFriendRequestCommand): Promise<FriendReadModel> {
+    const { unitOfWork, mutationLock, cache, logger } = this.#dependencies;
+    const userId = UserId.reconstitute(command.userId);
+    const requesterUserId = UserId.reconstitute(command.requesterUserId);
 
-    const myFollow = await this.#dependencies.unitOfWork.run(async () => {
-      await this.#dependencies.mutationLock.acquire([
-        FriendLockKeys.pair(UserId.reconstitute(userId), UserId.reconstitute(requesterUserId)),
-        FriendLockKeys.list(UserId.reconstitute(userId)),
-        FriendLockKeys.list(UserId.reconstitute(requesterUserId)),
+    const friend = await unitOfWork.run(async () => {
+      await mutationLock.acquire([
+        FriendLockKeys.pair(userId, requesterUserId),
+        FriendLockKeys.list(userId),
+        FriendLockKeys.list(requesterUserId),
       ]);
-      const request = await this.#dependencies.followRepository.findByFollowerAndFollowing(
-        requesterUserId,
-        userId,
-      );
-      if (request == null || !request.isPending()) {
-        throw new ApplicationException(ErrorCode.FOLLOW_0903, {
-          targetUserId: requesterUserId,
-        });
-      }
-
-      const [maxSortUser, maxSortRequester] = await Promise.all([
-        this.#dependencies.followRepository.getMaxSortOrderForFriends(userId),
-        this.#dependencies.followRepository.getMaxSortOrderForFriends(requesterUserId),
-      ]);
-
-      request.accept(maxSortRequester + 1);
-      await this.#dependencies.followRepository.update(request.id, request.toUpdate());
-
-      const existingReverse = await this.#dependencies.followRepository.findByFollowerAndFollowing(
-        userId,
-        requesterUserId,
-      );
-
-      if (existingReverse != null) {
-        existingReverse.accept(maxSortUser + 1);
-      }
-
-      const createdFollow =
-        existingReverse != null
-          ? await this.#dependencies.followRepository.update(
-              existingReverse.id,
-              existingReverse.toUpdate(),
-            )
-          : await this.#dependencies.followRepository.create({
-              followerId: userId,
-              followingId: requesterUserId,
-              status: "ACCEPTED",
-              sortOrder: maxSortUser + 1,
-            });
-
-      const followWithUser = await this.#dependencies.followRepository.findByIdWithUser(
-        createdFollow.id,
-      );
-      if (followWithUser == null) {
-        throw new ApplicationException(ErrorCode.SYS_0001, {
-          detail: "Failed to retrieve created follow with user info",
-          context: { followId: createdFollow.id, userId, requesterUserId },
-        });
-      }
-      return followWithUser;
+      return this.#accept(userId, requesterUserId);
     });
 
-    this.#dependencies.logger.log({
+    logger.log({
       event: FriendLogEvent.REQUEST_ACCEPTED,
-      userId,
-      requesterUserId,
+      userId: userId.value,
+      requesterUserId: requesterUserId.value,
     });
+    await invalidateFriendshipCaches(cache, userId.value, requesterUserId.value);
+    await this.#notifyRequester(userId, requesterUserId);
+    return friend;
+  }
 
-    await this.#dependencies.effects.invalidateFriendshipCaches(userId, requesterUserId);
+  async #accept(userId: UserId, requesterUserId: UserId): Promise<FriendReadModel> {
+    const { followRepository, friendshipReader, clock } = this.#dependencies;
+    const request = await followRepository.findByFollowerAndFollowing(requesterUserId, userId);
+    if (request == null || !request.isPending()) {
+      throw friendRequestNotFound(requesterUserId);
+    }
 
-    this.#dependencies.effects.notifyFriendshipEstablished({
-      actorId: userId,
-      actorName: myFollow.follower.profile?.name ?? myFollow.follower.userTag,
-      counterpartId: requesterUserId,
-    });
-
-    await Promise.all([
-      this.#dependencies.effects.checkFirstFriendMilestone(userId),
-      this.#dependencies.effects.checkFirstFriendMilestone(requesterUserId),
+    const [userMaxSortOrder, requesterMaxSortOrder] = await Promise.all([
+      followRepository.findMaxFriendSortOrder(userId),
+      followRepository.findMaxFriendSortOrder(requesterUserId),
     ]);
+    const now = clock.now();
+    request.accept(nextFriendSortOrder(requesterMaxSortOrder), now);
+    await followRepository.save(request);
 
-    return myFollow;
+    const mine =
+      (await followRepository.findByFollowerAndFollowing(userId, requesterUserId)) ??
+      Friendship.create({
+        id: await followRepository.nextId(),
+        followerId: userId,
+        followingId: requesterUserId,
+        now,
+      });
+    if (mine.accept(nextFriendSortOrder(userMaxSortOrder), now)) {
+      await followRepository.save(mine);
+    }
+
+    const friend = await friendshipReader.findFriendById(mine.id);
+    if (friend == null) {
+      throw acceptedFriendNotFound({ friendshipId: mine.id, userId, requesterUserId });
+    }
+    return friend;
+  }
+
+  async #notifyRequester(userId: UserId, requesterUserId: UserId): Promise<void> {
+    const { profileReader, notifier, checkFirstFriendMilestone } = this.#dependencies;
+    notifier.notifyFollowMutual({
+      userId: requesterUserId.value,
+      friendId: userId.value,
+      friendName: (await profileReader.findDisplayName(userId)) ?? userId.value,
+    });
+    await checkFirstFriendMilestone.execute({
+      userIds: [userId.value, requesterUserId.value],
+    });
   }
 }
