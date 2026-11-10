@@ -84,7 +84,10 @@ describe('canViewRelease', () => {
     [false, false, true],
   ])('초대 필요 %s, 초대 가능 %s이면 %s다', (requiresInvite, isInviteAvailable, expected) => {
     // When
-    const result = WhatsNewPolicy.canViewRelease({ requiresInvite }, { isInviteAvailable });
+    const result = WhatsNewPolicy.canViewRelease(
+      { ...RELEASES[0], requiresInvite },
+      { isInviteAvailable },
+    );
 
     // Then
     expect(result).toBe(expected);

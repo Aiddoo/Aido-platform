@@ -26,21 +26,19 @@ interface AutoOpenInput {
 }
 
 /** 서버가 켠 캠페인을 앱이 묶어 온 출시로 찾는다. 앱이 모르는 캠페인이면 없다 */
-function findReleaseByCampaign<T extends Pick<Release, 'campaignId'>>(
+function findReleaseByCampaign<T extends Release>(
   releases: readonly T[],
   campaignId: string,
 ): T | null {
   return releases.find((release) => release.campaignId === campaignId) ?? null;
 }
 
-function getLatestRelease<T extends Pick<Release, 'releasedOn'>>(
-  releases: readonly [T, ...T[]],
-): T {
+function getLatestRelease<T extends Release>(releases: readonly [T, ...T[]]): T {
   return maxBy(releases, (release) => Date.parse(release.releasedOn));
 }
 
 function canViewRelease(
-  release: Pick<Release, 'requiresInvite'>,
+  release: Release,
   { isInviteAvailable }: { isInviteAvailable: boolean },
 ): boolean {
   return !release.requiresInvite || isInviteAvailable;
