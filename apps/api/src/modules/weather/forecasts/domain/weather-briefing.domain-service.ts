@@ -31,9 +31,23 @@ interface WeatherRescheduleOption {
   readonly isRecommended: boolean;
 }
 
-export interface WeatherBriefing {
+/** 할 일과 그 시각의 시간별 예보 */
+export interface ForecastTodo<
+  TTodo extends WeatherBriefingTodo = WeatherBriefingTodo,
+  THour extends WeatherBriefingHour = WeatherBriefingHour,
+> {
+  readonly todo: TTodo;
+  readonly hour: THour;
+}
+
+export interface WeatherBriefing<
+  TTodo extends WeatherBriefingTodo = WeatherBriefingTodo,
+  THour extends WeatherBriefingHour = WeatherBriefingHour,
+> {
   /** 영향받는 할 일이 있을 때만 값이 있다. 비·눈이 더위보다 먼저다. */
   readonly reason: WeatherRescheduleReason | null;
+  /** 영향받는 할 일 전부(시각 순). 알림 문구가 고를 할 일과 시간을 본다 */
+  readonly affected: readonly ForecastTodo<TTodo, THour>[];
   readonly affectedTodoIds: readonly number[];
   readonly rescheduleOptions: readonly {
     readonly todoId: number;
@@ -41,45 +55,43 @@ export interface WeatherBriefing {
   }[];
 }
 
-interface ForecastTodo {
-  readonly todo: WeatherBriefingTodo;
-  readonly hour: WeatherBriefingHour;
-}
-
-// 기준값은 날씨 푸시(notification weather-briefing.policy)와 앱 브리핑이 쓰는 WEATHER_BRIEFING_RULES 한곳이다.
-// 푸시 정책은 notification이 소유해 public으로 열려 있지 않아 같은 규칙을 여기 둔다(통합할 때 한 곳으로 합친다).
-function isWetHour(hour: Pick<WeatherBriefingHour, "precipitationChance">): boolean {
+// 기준값은 날씨 화면·날씨 알림·앱이 함께 쓰는 WEATHER_BRIEFING_RULES 한곳이다
+export function isWetHour(hour: Pick<WeatherBriefingHour, "precipitationChance">): boolean {
   return hour.precipitationChance >= WEATHER_BRIEFING_RULES.WET_HOUR_CHANCE;
 }
 
-function isHotHour(hour: WeatherBriefingHour): boolean {
+export function isHotHour(
+  hour: Pick<WeatherBriefingHour, "isDaylight" | "apparentTemperature">,
+): boolean {
   return (
     hour.isDaylight && hour.apparentTemperature >= WEATHER_BRIEFING_RULES.HOT_APPARENT_TEMPERATURE
   );
 }
 
-function findHourAt(hourly: readonly WeatherBriefingHour[], at: Date): WeatherBriefingHour | null {
+/** 그 순간이 든 시간별 예보의 위치. 없으면 -1이다 */
+export function findHourIndexAt(
+  hourly: readonly Pick<WeatherBriefingHour, "startsAt">[],
+  at: Date,
+): number {
   const time = at.getTime();
-  return (
-    hourly.find(
-      (hour) =>
-        hour.startsAt.getTime() <= time && time < hour.startsAt.getTime() + TIME_UNIT.MS_PER_HOUR,
-    ) ?? null
+  return hourly.findIndex(
+    (hour) =>
+      hour.startsAt.getTime() <= time && time < hour.startsAt.getTime() + TIME_UNIT.MS_PER_HOUR,
   );
 }
 
 /** 지금 이후 시각의 할 일을 그 시각의 시간별 예보와 묶는다. 예보 범위 밖이면 뺀다. */
-function toForecastTodos(
-  hourly: readonly WeatherBriefingHour[],
-  todos: readonly WeatherBriefingTodo[],
+function toForecastTodos<TTodo extends WeatherBriefingTodo, THour extends WeatherBriefingHour>(
+  hourly: readonly THour[],
+  todos: readonly TTodo[],
   now: Date,
-): ForecastTodo[] {
+): ForecastTodo<TTodo, THour>[] {
   const ordered = orderBy([...todos], [(todo) => todo.scheduledAt.getTime()], ["asc"]);
   return ordered.flatMap((todo) => {
     if (todo.scheduledAt.getTime() < now.getTime()) {
       return [];
     }
-    const hour = findHourAt(hourly, todo.scheduledAt);
+    const hour = hourly[findHourIndexAt(hourly, todo.scheduledAt)];
     return hour == null ? [] : [{ todo, hour }];
   });
 }
@@ -125,17 +137,20 @@ function planRescheduleOptions(params: {
 }
 
 /**
- * 오늘 할 일 가운데 날씨와 겹친 것과, 옮길 만한 시간 후보를 고른다.
+ * 오늘 할 일 가운데 날씨와 겹친 것과, 옮길 만한 시간 후보를 고른다. 날씨 화면 브리핑과 아침 날씨 알림이 함께 쓴다.
  * 비·눈이 오는 시간에 걸린 할 일이 있으면 그것이, 없으면 더운 낮에 걸린 할 일이 영향받는 할 일이다.
- * 알림 대상 할 일을 고르는 순서(비·눈 → 더위)와 같다. 할 일은 앞에서부터 상한까지만 싣는다.
+ * 옮기기 대상 id와 후보는 앞에서부터 상한까지만 싣는다.
  */
-export function planWeatherBriefing(params: {
-  readonly hourly: readonly WeatherBriefingHour[];
-  readonly todos: readonly WeatherBriefingTodo[];
+export function planWeatherBriefing<
+  TTodo extends WeatherBriefingTodo,
+  THour extends WeatherBriefingHour,
+>(params: {
+  readonly hourly: readonly THour[];
+  readonly todos: readonly TTodo[];
   readonly now: Date;
   /** 할 일을 저장한 기기 시간대 */
   readonly timezone: string;
-}): WeatherBriefing {
+}): WeatherBriefing<TTodo, THour> {
   const { hourly, todos, now, timezone } = params;
   const forecastTodos = toForecastTodos(hourly, todos, now);
   const wetTodos = forecastTodos.filter(({ hour }) => isWetHour(hour));
@@ -143,16 +158,16 @@ export function planWeatherBriefing(params: {
   const reason: WeatherRescheduleReason | null =
     wetTodos.length > 0 ? "rain" : hotTodos.length > 0 ? "heat" : null;
   if (reason == null) {
-    return { reason: null, affectedTodoIds: [], rescheduleOptions: [] };
+    return { reason: null, affected: [], affectedTodoIds: [], rescheduleOptions: [] };
   }
 
-  const affected = (reason === "rain" ? wetTodos : hotTodos)
-    .slice(0, WEATHER_RESCHEDULE_MAX_TODO_IDS)
-    .map(({ todo }) => todo);
+  const affected = reason === "rain" ? wetTodos : hotTodos;
+  const shown = affected.slice(0, WEATHER_RESCHEDULE_MAX_TODO_IDS).map(({ todo }) => todo);
   return {
     reason,
-    affectedTodoIds: affected.map((todo) => todo.id),
-    rescheduleOptions: affected.map((todo) => ({
+    affected,
+    affectedTodoIds: shown.map((todo) => todo.id),
+    rescheduleOptions: shown.map((todo) => ({
       todoId: todo.id,
       options: planRescheduleOptions({ hourly, todo, now, timezone, reason }),
     })),

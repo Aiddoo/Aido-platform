@@ -1,5 +1,9 @@
 import { groupBy } from "es-toolkit";
 
+import {
+  decideMorningWeatherBriefing,
+  type MorningWeatherBriefing,
+} from "#api/modules/weather/forecasts/weather-forecasts.public";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { dayWindowInTimezone } from "#api/shared/domain/date/utils/timezone";
@@ -16,10 +20,6 @@ import {
 } from "../../../push/application/messages/notification.messages.js";
 import type { PublishNotificationUseCase } from "../../../push/application/use-cases/publish-notification.use-case.js";
 import type { TimezoneContext } from "../../domain/timezone-context.read-model.js";
-import {
-  decideMorningWeatherBriefing,
-  type MorningWeatherBriefing,
-} from "../../domain/weather-briefing.domain-service.js";
 import type { ReminderWeatherReportReaderPort } from "../ports/reminder-weather-report.reader.port.js";
 import type { TimezoneReminderStrategyPort } from "../ports/timezone-reminder-strategy.port.js";
 import type { WeatherBriefingTodoReaderPort } from "../ports/weather-briefing-todo.reader.port.js";

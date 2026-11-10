@@ -10,4 +10,14 @@ export {
 export type { GridInput } from "./application/ports/weather-forecast.reader.port.js";
 export { WeatherReportReaderPort } from "./application/ports/weather-report.reader.port.js";
 export type { WeatherForecast } from "./application/read-models/weather-forecast.read-model.js";
+// 날씨 알림 내용도 날씨 화면 브리핑과 같은 판단(planWeatherBriefing)에서 나온다
+export {
+  decideEveningWeatherBriefing,
+  decideMorningWeatherBriefing,
+  type EveningWeatherBriefing,
+  type MorningWeatherBriefing,
+  type WeatherBriefingDay,
+  type WeatherBriefingForecast,
+  type WeatherDayPart,
+} from "./domain/weather-notification-briefing.domain-service.js";
 export { WeatherForecastsModule } from "./weather-forecasts.module.js";

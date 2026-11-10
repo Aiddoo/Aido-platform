@@ -1,6 +1,5 @@
+import type { WeatherBriefingForecast } from "#api/modules/weather/forecasts/weather-forecasts.public";
 import type { SupportedLocale } from "#api/shared/domain/locale";
-
-import type { WeatherBriefingForecast } from "../../domain/weather-briefing.domain-service.js";
 
 export interface ReminderWeatherReportRequest {
   /** 결과를 다시 찾을 키. 날씨 알림은 사용자 ID를 쓴다 */

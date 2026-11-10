@@ -3,8 +3,8 @@ import {
   decideMorningWeatherBriefing,
   type WeatherBriefingDay,
   type WeatherBriefingForecast,
-  type WeatherBriefingHour,
-} from "./weather-briefing.domain-service.js";
+  type WeatherBriefingReportHour,
+} from "./weather-notification-briefing.domain-service.js";
 
 const HOUR_MS = 60 * 60_000;
 /** 서울 2026-07-16 07:00 */
@@ -13,8 +13,8 @@ const SEOUL = { now: NOW, timezone: "Asia/Seoul", locationTimezone: "Asia/Seoul"
 
 function hourAt(
   kstHour: number,
-  overrides: Partial<WeatherBriefingHour> = {},
-): WeatherBriefingHour {
+  overrides: Partial<WeatherBriefingReportHour> = {},
+): WeatherBriefingReportHour {
   return {
     startsAt: new Date(NOW.getTime() + (kstHour - 7) * HOUR_MS),
     condition: "CLEAR",
@@ -40,7 +40,7 @@ function day(date: string, overrides: Partial<WeatherBriefingDay> = {}): Weather
 
 /** 서울 07시부터 24시간 맑음. changes의 KST 시각만 바꾼다 */
 function forecast(
-  changes: Record<number, Partial<WeatherBriefingHour>> = {},
+  changes: Record<number, Partial<WeatherBriefingReportHour>> = {},
 ): WeatherBriefingForecast {
   return {
     hourly: Array.from({ length: 24 }, (_, index) => hourAt(7 + index, changes[7 + index] ?? {})),
@@ -194,7 +194,7 @@ describe("날씨 브리핑 정책 — 저녁", () => {
   const EVENING = { ...SEOUL, now: new Date("2026-07-16T12:00:00.000Z") };
 
   function eveningForecast(
-    changes: Record<number, Partial<WeatherBriefingHour>> = {},
+    changes: Record<number, Partial<WeatherBriefingReportHour>> = {},
     tomorrow: Partial<WeatherBriefingDay> = {},
   ): WeatherBriefingForecast {
     // 서울 21시부터 24시간
