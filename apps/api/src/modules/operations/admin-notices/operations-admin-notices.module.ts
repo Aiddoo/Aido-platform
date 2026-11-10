@@ -4,7 +4,6 @@ import { HttpClientModule } from "@nestjs/http-client";
 import { DatabaseModule } from "#api/platform/database/index";
 
 import { AdminEventNotifierPort } from "./application/ports/admin-event-notifier.port.js";
-import { AdminEventNotifierAdapter } from "./infrastructure/adapters/admin-event-notifier.adapter.js";
 import {
   DISCORD_HTTP_CLIENT_NAME,
   OPERATIONS_ADMIN_NOTICES_PROVIDERS,
@@ -20,6 +19,6 @@ import {
     }),
   ],
   providers: [...OPERATIONS_ADMIN_NOTICES_PROVIDERS],
-  exports: [AdminEventNotifierPort, AdminEventNotifierAdapter],
+  exports: [AdminEventNotifierPort],
 })
 export class OperationsAdminNoticesModule {}

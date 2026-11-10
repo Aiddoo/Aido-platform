@@ -37,7 +37,7 @@ import { DrizzleUserPreferenceRepository } from "#api/modules/identity/preferenc
 import { DrizzleUserRepository } from "#api/modules/identity/users/infrastructure/persistence/drizzle-user.repository";
 import { NotificationQueueAdapter } from "#api/modules/notification/notification-delivery-jobs.public";
 import { SendTransactionalEmailUseCase } from "#api/modules/notification/notification-email.public";
-import { AdminEventNotifier } from "#api/modules/operations/operations-notifications.public";
+import { AdminEventNotifierPort } from "#api/modules/operations/admin-notices/operations-admin-notices.public";
 import { DefaultTodoCategoryProvisionerAdapter } from "#api/modules/planning/categories/infrastructure/adapters/default-todo-category-provisioner.adapter";
 import { CacheService } from "#api/platform/cache/cache.service";
 import { CACHE_SERVICE } from "#api/platform/cache/interfaces/cache.interface";
@@ -178,7 +178,7 @@ export async function createAuthTestModule(
       { provide: AuthCachePort, useExisting: AuthCacheAdapter },
       {
         provide: AuthRegistrationNotifierPort,
-        useExisting: AdminEventNotifier,
+        useExisting: AdminEventNotifierPort,
       },
       DrizzleUserConsentRepository,
       DrizzleUserPreferenceRepository,
@@ -266,7 +266,7 @@ export async function createAuthTestModule(
         },
       },
       {
-        provide: AdminEventNotifier,
+        provide: AdminEventNotifierPort,
         useValue: {
           notifyUserRegistered: () => {},
           notifySubscriptionEvent: () => {},

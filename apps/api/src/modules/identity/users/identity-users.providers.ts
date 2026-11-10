@@ -3,10 +3,7 @@ import type { FactoryProvider, Provider } from "@nestjs/common";
 import { ENTITLEMENT_READER } from "#api/modules/access/access-entitlement.public";
 import { QUOTA_LEDGER } from "#api/modules/access/access-quota.public";
 import { PREMIUM_ACCESS_READER } from "#api/modules/billing/subscriptions/billing-subscriptions.public";
-import {
-  TODO_COMMENT_ACCOUNT_CLEANUP,
-  type TodoCommentAccountCleanupPort,
-} from "#api/modules/engagement/comments/engagement-comments.public";
+import { TodoCommentAccountCleanupPort } from "#api/modules/engagement/comments/engagement-comments.public";
 import { NotificationAccountCleanup } from "#api/modules/notification/notification-delivery.public";
 import { CHEER_USAGE_READER } from "#api/modules/social/cheers/social-cheers.public";
 import { NUDGE_USAGE_READER } from "#api/modules/social/nudges/social-nudges.public";
@@ -43,7 +40,7 @@ export const accountNotificationCleanupProvider: FactoryProvider<AccountNotifica
 
 export const accountTodoCommentCleanupProvider: FactoryProvider<AccountTodoCommentCleanupPort> = {
   provide: AccountTodoCommentCleanupPort,
-  inject: [TODO_COMMENT_ACCOUNT_CLEANUP],
+  inject: [TodoCommentAccountCleanupPort],
   useFactory: (cleanup: TodoCommentAccountCleanupPort): AccountTodoCommentCleanupPort => cleanup,
 };
 
