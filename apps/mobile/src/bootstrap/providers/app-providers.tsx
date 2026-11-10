@@ -6,10 +6,7 @@ import { NotificationProvider } from '@src/bootstrap/providers/notification-prov
 import { OnlineManagerProvider } from '@src/bootstrap/providers/online-manager-provider';
 import { PurchasesProvider } from '@src/bootstrap/providers/purchases-provider';
 import { QueryProvider } from '@src/bootstrap/providers/query-provider';
-import {
-  createQueryCacheStorage,
-  disabledQueryCacheStorage,
-} from '@src/bootstrap/query/query-cache-persistence';
+import { createQueryCacheStorage } from '@src/bootstrap/query/query-cache-persistence';
 import type { EncryptedStorageBootstrap } from '@src/shared/infra/storage/encrypted-draft-storage';
 import { FontScaleProvider } from '@src/shared/providers/font-scale-provider';
 import { LanguageProvider } from '@src/shared/providers/language-provider';
@@ -67,7 +64,7 @@ export function AppProviders({ children, encryptedStorageBootstrap }: AppProvide
                 <QueryProvider cacheStorage={queryCacheStorage}>
                   <DIProvider
                     encryptedStorageBootstrap={encryptedStorageBootstrap}
-                    queryCacheStorage={queryCacheStorage ?? disabledQueryCacheStorage}
+                    queryCacheStorage={queryCacheStorage}
                   >
                     <OnlineManagerProvider>
                       <LocalDateProvider>
