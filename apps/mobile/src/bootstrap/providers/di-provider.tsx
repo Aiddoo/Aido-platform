@@ -315,7 +315,7 @@ export function DIProvider({
       {
         'whats-new': () =>
           whatsNewRepository.removeRetiredKeys({
-            campaignIds: RELEASES.map((release) => release.campaignId),
+            campaignIds: RELEASES.flatMap((release) => release.campaignId ?? []),
             now: getNowInstant(),
           }),
         coachmark: () => coachmarkRepository.removeRetiredKeys(),

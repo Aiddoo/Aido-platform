@@ -4,15 +4,24 @@ import { isSemanticVersionAtLeast } from '@src/shared/utils/semantic-version';
 import { maxBy } from 'es-toolkit';
 import { z } from 'zod';
 
-import { RELEASE_ID, WHATS_NEW_REENTRY_WINDOW_MS } from '../constants/whats-new.constants';
+import {
+  RELEASE_ID,
+  TOUR_RELEASE_IDS,
+  WHATS_NEW_REENTRY_WINDOW_MS,
+} from '../constants/whats-new.constants';
 
-export const releaseIdSchema = z.enum(RELEASE_ID);
+const releaseIdSchema = z.enum(RELEASE_ID);
 export type ReleaseId = z.infer<typeof releaseIdSchema>;
+
+export const tourReleaseIdSchema = z.enum(TOUR_RELEASE_IDS);
+type TourReleaseId = z.infer<typeof tourReleaseIdSchema>;
 
 export const releaseSchema = z.object({
   id: releaseIdSchema,
-  campaignId: z.string().min(1),
+  /** 서버가 자동으로 열 수 있는 출시에만 있다. 지난 출시는 목록에서만 연다 */
+  campaignId: z.string().min(1).optional(),
   releasedOn: z.iso.date(),
+  /** 초대가 꺼져 있으면 쓸 수 없는 기능이라 목록에서 숨긴다 */
   requiresInvite: z.boolean(),
 });
 export type Release = z.infer<typeof releaseSchema>;
@@ -35,11 +44,18 @@ function getLatestRelease<T extends Release>(releases: readonly [T, ...T[]]): T 
   return maxBy(releases, (release) => Date.parse(release.releasedOn));
 }
 
+/** 목록은 지금 쓸 수 있는 기능만 보인다. 쓸 수 없는 기능은 누를 수 없게 두지 않고 숨긴다 */
 function canViewRelease(
   release: Release,
   { isInviteAvailable }: { isInviteAvailable: boolean },
 ): boolean {
   return !release.requiresInvite || isInviteAvailable;
+}
+
+/** 최근 두 출시만 여러 단계 소개가 있다. 없으면 목록 줄은 바로 해 보기로 이어진다 */
+function findTourId(release: Release): TourReleaseId | null {
+  const parsed = tourReleaseIdSchema.safeParse(release.id);
+  return parsed.success ? parsed.data : null;
 }
 
 /** 서버가 이 출시의 캠페인과 자동 열기를 켰고, 지원하는 앱이고, 아직 보지 않았으면 연다. 가입 시점은 보지 않아 새 계정도 한 번 본다 */
@@ -66,8 +82,9 @@ function shouldShowReentry(openedAt: Instant | null, now: Instant): boolean {
 
 export const WhatsNewPolicy = {
   shouldAutoOpen,
+  canViewRelease,
   findReleaseByCampaign,
+  findTourId,
   getLatestRelease,
   shouldShowReentry,
-  canViewRelease,
 } as const;

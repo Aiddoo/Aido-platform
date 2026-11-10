@@ -63,8 +63,8 @@ export function Release1140Steps({ isInviteAvailable }: Release1140StepsProps) {
             })}
             actionLabel={isInviteAvailable ? t('v1_14_0.friendInvite.action') : undefined}
             onAction={() => {
-              flow.trackCta({ step: 'friendInvite', feature: 'friend_invite' });
-              flow.leaveTo('/friends/invite');
+              flow.trackCta({ step: 'friendInvite', feature: RELEASE_1_14_0.cta.feature });
+              flow.leaveTo(RELEASE_1_14_0.cta.href);
             }}
           />
         )}

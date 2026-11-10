@@ -72,9 +72,12 @@ describe('getLatestRelease', () => {
 });
 
 describe('findReleaseByCampaign', () => {
-  it('앱이 모르는 캠페인이면 찾지 못한다', () => {
+  it.each([
+    ['앱이 모르는', 'feature-discovery-2026-08'],
+    ['목록에만 남긴 지난 출시(친구 초대)가 쓰던', 'feature-discovery-2026-11'],
+  ])('%s 캠페인이면 찾지 못해 자동으로 열지 않는다', (_label, campaignId) => {
     // When
-    const result = WhatsNewPolicy.findReleaseByCampaign(RELEASES, 'feature-discovery-2026-08');
+    const result = WhatsNewPolicy.findReleaseByCampaign(RELEASES, campaignId);
 
     // Then
     expect(result).toBeNull();
@@ -86,16 +89,19 @@ describe('canViewRelease', () => {
     [true, false, false],
     [true, true, true],
     [false, false, true],
-  ])('초대 필요 %s, 초대 가능 %s이면 %s다', (requiresInvite, isInviteAvailable, expected) => {
-    // When
-    const result = WhatsNewPolicy.canViewRelease(
-      { ...RELEASES[0], requiresInvite },
-      { isInviteAvailable },
-    );
+  ])(
+    '초대 필요 %s, 초대 가능 %s이면 목록에 보이는지 %s다',
+    (requiresInvite, isInviteAvailable, expected) => {
+      // When
+      const result = WhatsNewPolicy.canViewRelease(
+        { ...RELEASES[0], requiresInvite },
+        { isInviteAvailable },
+      );
 
-    // Then
-    expect(result).toBe(expected);
-  });
+      // Then
+      expect(result).toBe(expected);
+    },
+  );
 });
 
 describe('shouldShowReentry', () => {

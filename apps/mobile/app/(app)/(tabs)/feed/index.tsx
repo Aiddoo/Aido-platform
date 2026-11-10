@@ -166,12 +166,7 @@ function MyFeed({
   useOpenPushOnboarding({ isStable });
   const isPushOnboardingSettled = useIsPushOnboardingGuardClosed();
   const isReminderOff = useIsPushReminderOff();
-  const isInviteAvailable = useIsInviteAvailable();
-  const whatsNew = useWhatsNewFeed({
-    isStable,
-    isInviteAvailable,
-    isOnboardingSettled: isPushOnboardingSettled,
-  });
+  const whatsNew = useWhatsNewFeed({ isStable, isOnboardingSettled: isPushOnboardingSettled });
   const [isRefreshing, handleRefresh] = useRefresh(() =>
     Promise.all([invalidateFeedTodos(queryClient), invalidateWeather(queryClient)]),
   );

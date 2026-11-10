@@ -18,18 +18,24 @@ import { RELEASE_ID } from '../constants/whats-new.constants';
 import { useWhatsNewFeed } from './use-whats-new-feed';
 
 const LAUNCHED_AT = toInstant('2026-11-05T00:00:00.000Z');
+const USER_ID = 'user-1';
 
 async function renderFeed({
   signedUpAt,
   isOnboardingSettled = true,
+  syncStorage = createMemoryObservableSyncStorage(),
 }: {
   signedUpAt: string;
   isOnboardingSettled?: boolean;
+  syncStorage?: ReturnType<typeof createMemoryObservableSyncStorage>;
 }) {
   const queryClient = createTestQueryClient({
     defaultOptions: { queries: { staleTime: Infinity } },
   });
-  queryClient.setQueryData(USER_QUERY_KEYS.me(), createUser({ createdAt: toInstant(signedUpAt) }));
+  queryClient.setQueryData(
+    USER_QUERY_KEYS.me(),
+    createUser({ id: USER_ID, createdAt: toInstant(signedUpAt) }),
+  );
   const config: FeatureCampaignConfig = {
     enabled: true,
     campaignId: WHATS_NEW_CAMPAIGN_ID,
@@ -40,18 +46,13 @@ async function renderFeed({
   queryClient.setQueryData(FEATURE_CAMPAIGN_QUERY_KEYS.config(), config);
   const onboarding = { isSettled: isOnboardingSettled };
   const hook = await renderUiHook(
-    () =>
-      useWhatsNewFeed({
-        isStable: true,
-        isInviteAvailable: true,
-        isOnboardingSettled: onboarding.isSettled,
-      }),
+    () => useWhatsNewFeed({ isStable: true, isOnboardingSettled: onboarding.isSettled }),
     {
       queryClient,
       withLocalDate: true,
       di: {
         authSessionStore: createAuthSessionStoreStub('authenticated'),
-        syncStorage: createMemoryObservableSyncStorage(),
+        syncStorage,
       },
     },
   );
@@ -115,5 +116,21 @@ describe('useWhatsNewFeed — 첫 피드', () => {
 
     // Then
     await waitFor(() => expect(router.push).toHaveBeenCalledTimes(1));
+  });
+
+  it('1.15.0 앱에서 이미 본 계정은 같은 저장 키를 읽어 업데이트한 뒤에도 다시 열지 않는다', async () => {
+    // Given
+    const syncStorage = createMemoryObservableSyncStorage();
+    syncStorage.set(
+      `aido_feature_discovery_seen_v1:${USER_ID}:feature-discovery-2026-12`,
+      '2026-11-10T09:00:00.000Z',
+    );
+
+    // When
+    await renderFeed({ signedUpAt: '2026-10-01T00:00:00.000Z', syncStorage });
+
+    // Then
+    await new Promise((resolve) => setImmediate(resolve));
+    expect(router.push).not.toHaveBeenCalled();
   });
 });
