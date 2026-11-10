@@ -41,7 +41,6 @@ export const aiReportSchema = z.object({
   type: reportTypeSchema,
   year: z.number(),
   period: z.number(),
-  periodLabel: z.string(),
   dateRange: z.object({ startDate: z.iso.date(), endDate: z.iso.date() }),
   stats: reportStatsSchema,
   categoryBreakdown: z.array(categoryBreakdownItemSchema),

@@ -1,11 +1,11 @@
-import { DAY_OF_WEEK_MAP, type DayOfWeek } from '@aido/api/vocabulary';
+import { DAY_OF_WEEK_MAP, type DayOfWeek, type SupportedLocale } from '@aido/api/vocabulary';
 import { t } from '@src/shared/i18n';
 
 import { type DateFormatContext, formatDateKeyLabel, formatRelativeTimeWith } from './date-format';
-import { getCalendarWeek, isSameYearDateKey } from './date-key';
+import { getCalendarWeek, getIsoWeekOfMonth, isSameYearDateKey } from './date-key';
 import type { Instant } from './instant';
 
-export function toCatalogLanguage(context: DateFormatContext): 'ko' | 'en' {
+export function toCatalogLanguage(context: DateFormatContext): SupportedLocale {
   return context.locale === 'ko-KR' ? 'ko' : 'en';
 }
 
@@ -47,6 +47,16 @@ export function formatWeekOfMonthLabel(
       context,
     ),
     week: week.weekOfMonth,
+  });
+}
+
+/** 월요일 시작 주를 "3월 2주차"로 읽는다. 어느 날짜 key를 넘겨도 같은 주면 같은 라벨이다 */
+export function formatIsoWeekOfMonthLabel(dateKey: string, context: DateFormatContext): string {
+  const { thursdayDateKey, weekOfMonth } = getIsoWeekOfMonth(dateKey);
+  return t('common:calendar.weekHeader', {
+    lng: toCatalogLanguage(context),
+    month: formatDateKeyLabel(thursdayDateKey, 'month', context),
+    week: weekOfMonth,
   });
 }
 

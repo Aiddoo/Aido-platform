@@ -14,7 +14,6 @@ function createAiReport(overrides: Partial<AiReport> = {}) {
     type: 'WEEKLY',
     year: 2026,
     period: 10,
-    periodLabel: '3월 2주차',
     dateRange: { startDate: '2026-03-02', endDate: '2026-03-08' },
     stats: {
       totalTodos: 10,

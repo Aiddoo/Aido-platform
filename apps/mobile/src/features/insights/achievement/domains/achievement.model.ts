@@ -5,7 +5,6 @@ export const weeklyAchievementSchema = z.object({
   id: z.int(),
   year: z.int(),
   week: z.int().min(1).max(53),
-  weekLabel: z.string(),
   dateRange: z.object({ startDate: z.iso.date(), endDate: z.iso.date() }),
   totalTodos: z.int().nonnegative(),
   completedTodos: z.int().nonnegative(),

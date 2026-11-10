@@ -26,6 +26,7 @@ import { match } from 'ts-pattern';
 
 import { isReportUnavailableError } from '../domains/report.error';
 import { type AiReport, ReportPolicy } from '../domains/report.model';
+import { formatReportPeriodLabel } from '../utils/report-period.view-model';
 import { ReportTypeChip } from './report-type-chip';
 
 const TOP_HOUR_COUNT = 3;
@@ -98,7 +99,7 @@ function ReportPeriodLabel({ report }: { report: AiReport }) {
       <ReportTypeChip type={report.type} className="self-center" />
 
       <Text size="b2" weight="semibold" shade={9}>
-        {report.periodLabel}
+        {formatReportPeriodLabel(report, dateFormatContext)}
       </Text>
 
       <Text size="b4" shade={5}>
