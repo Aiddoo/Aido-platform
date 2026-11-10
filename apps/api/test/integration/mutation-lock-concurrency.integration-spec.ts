@@ -21,6 +21,7 @@ import { CreateTodoCategoryUseCase } from "#api/modules/planning/categories/appl
 import { ReorderTodoCategoryUseCase } from "#api/modules/planning/categories/application/use-cases/reorder-todo-category.use-case";
 import { TodoCategoryLimitReaderAdapter } from "#api/modules/planning/categories/infrastructure/adapters/todo-category-limit-reader.adapter";
 import { DrizzleTodoCategoryRepository } from "#api/modules/planning/categories/infrastructure/persistence/drizzle-todo-category.repository";
+import type { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
 import { CheerLockKeys } from "#api/modules/social/cheers/application/cheers.lock-keys";
 import type { CheerLimitReaderPort } from "#api/modules/social/cheers/application/ports/cheer-limit.reader.port";
 import type { CheerNotifierPort } from "#api/modules/social/cheers/application/ports/cheer-notifier.port";
@@ -199,7 +200,7 @@ class RacingNudgeRepository extends DrizzleNudgeRepository {
     return count;
   }
 
-  override async findLastSentForTodo(senderId: UserId, todoId: number) {
+  override async findLastSentForTodo(senderId: UserId, todoId: TodoId) {
     const lastNudge = await super.findLastSentForTodo(senderId, todoId);
     await this.todoCooldownBarrier?.wait();
     return lastNudge;
@@ -515,7 +516,7 @@ async function completeWithin<T>(promise: Promise<T>, timeoutMs: number): Promis
 }
 
 function createFollowReaderStub(): Pick<FollowReaderPort, "isMutualFriend" | "getUserDisplayName"> {
-  return { isMutualFriend: async () => true, getUserDisplayName: async (userId) => userId };
+  return { isMutualFriend: async () => true, getUserDisplayName: async (userId) => userId.value };
 }
 
 function createCheerNotifier(): CheerNotifierPort {

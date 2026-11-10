@@ -1,5 +1,6 @@
 import { chunk } from "es-toolkit";
 
+import { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
 import type { FollowReaderPort } from "#api/modules/social/friends/social-friends.public";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
@@ -66,9 +67,10 @@ export class SendNudgeThanksUseCase {
     }
     const ownerId = UserId.reconstitute(command.userId);
     const throughNudgeId = NudgeId.reconstitute(command.throughNudgeId);
+    const todoId = TodoId.reconstitute(command.todoId);
 
     return unitOfWork.run(async () => {
-      const todo = await nudgeRepository.lockInteractionTodo(command.todoId, ownerId);
+      const todo = await nudgeRepository.lockInteractionTodo(todoId, ownerId);
       if (todo == null) {
         throw thanksTodoNotFound();
       }
@@ -87,11 +89,12 @@ export class SendNudgeThanksUseCase {
       ) {
         throw nudgeInteractionNotFound();
       }
+      const friendIds = await followReader.getCurrentMutualFriendIds(ownerId);
       const candidates = await nudgeRepository.listThanksCandidates({
         ownerId,
-        todoId: command.todoId,
+        todoId,
         throughNudgeId,
-        friendIds: await followReader.getCurrentMutualFriendIds(command.userId),
+        friendIds: friendIds.map((friendId) => UserId.reconstitute(friendId)),
       });
       const actorName = cutoff.receiver.name ?? cutoff.receiver.userTag;
       const thankedAt = clock.now();

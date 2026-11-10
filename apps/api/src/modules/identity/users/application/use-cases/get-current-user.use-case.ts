@@ -8,6 +8,7 @@ import type { PremiumAccessReaderPort } from "#api/modules/billing/subscriptions
 import type { DailySendUsageReaderPort } from "#api/modules/social/cheers/social-cheers.public";
 import { ApplicationException } from "#api/shared/application/application.exception";
 import { toISOString, toISOStringOrNull } from "#api/shared/domain/date/utils/format";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { toIsoString } from "#api/shared/domain/time/instant";
 
 import type { AuthCachePort } from "../../../auth/application/ports/auth-collaboration.port.js";
@@ -122,8 +123,8 @@ export class GetCurrentUserUseCase {
     const [userEntitlements, aiUsage, cheerUsage, nudgeUsage] = await Promise.all([
       entitlementReader.getEntitlements(userId),
       quotaLedger.read(userId, "AI_PARSE"),
-      cheerUsageReader.readDailyUsage(userId, timezone),
-      nudgeUsageReader.readDailyUsage(userId, timezone),
+      cheerUsageReader.readDailyUsage(UserId.reconstitute(userId), timezone),
+      nudgeUsageReader.readDailyUsage(UserId.reconstitute(userId), timezone),
     ]);
     // 출시 앱 /me.entitlements 계약의 기능만 담는다. 1.15.0부터 더한 기능은 GET /v1/entitlements가 준다.
     const features = pick(userEntitlements.features, PREMIUM_FEATURE_KEYS);

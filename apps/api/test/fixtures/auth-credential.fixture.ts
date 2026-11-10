@@ -24,6 +24,7 @@ import type {
   DailySendUsage,
   DailySendUsageReaderPort,
 } from "#api/modules/social/cheers/social-cheers.public";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { InMemoryAuthAccountRepository } from "#test/doubles/identity/in-memory-auth-account.repository";
 import { InMemoryAuthLoginAttemptRepository } from "#test/doubles/identity/in-memory-auth-login-attempt.repository";
 import { InMemoryAuthSecurityLogRepository } from "#test/doubles/identity/in-memory-auth-security-log.repository";
@@ -204,7 +205,7 @@ export class StubDailySendUsage implements Pick<DailySendUsageReaderPort, "readD
   resetsAt = new Date("2026-11-03T15:00:00.000Z");
   readonly timezones: string[] = [];
 
-  async readDailyUsage(_userId: string, timezone: string): Promise<DailySendUsage> {
+  async readDailyUsage(_userId: UserId, timezone: string): Promise<DailySendUsage> {
     this.timezones.push(timezone);
     return { used: this.used, resetsAt: new Date(this.resetsAt) };
   }

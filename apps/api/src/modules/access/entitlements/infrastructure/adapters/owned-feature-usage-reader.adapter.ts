@@ -48,9 +48,9 @@ export class OwnedFeatureUsageReaderAdapter extends OwnedFeatureUsageReaderPort 
   }): Promise<OwnedFeatureUsage> {
     const userId = params.userId.value;
     const [cheer, nudge, friendCount, categoryCount] = await Promise.all([
-      this.#cheerUsageReader.readDailyUsage(userId, params.timeZone),
-      this.#nudgeUsageReader.readDailyUsage(userId, params.timeZone),
-      this.#friendCountReader.countCurrentFriends(userId),
+      this.#cheerUsageReader.readDailyUsage(params.userId, params.timeZone),
+      this.#nudgeUsageReader.readDailyUsage(params.userId, params.timeZone),
+      this.#friendCountReader.countCurrentFriends(params.userId),
       this.#categoryCountReader.countCategories(userId),
     ]);
     return {

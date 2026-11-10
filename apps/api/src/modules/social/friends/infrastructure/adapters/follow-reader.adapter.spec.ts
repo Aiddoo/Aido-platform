@@ -1,3 +1,4 @@
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { FakeFollowCache } from "#test/doubles/social/fake-follow-cache";
 import { InMemoryFollowRepository } from "#test/doubles/social/in-memory-follow.repository";
 import { InMemoryFriendProfileReader } from "#test/doubles/social/in-memory-friend-profile.reader";
@@ -11,6 +12,8 @@ import { FollowReaderAdapter } from "./follow-reader.adapter.js";
 
 const ME = FRIENDSHIP_FIXTURE_USER_ID;
 const FRIEND = FRIENDSHIP_FIXTURE_FRIEND_ID;
+const ME_ID = UserId.reconstitute(ME);
+const FRIEND_ID = UserId.reconstitute(FRIEND);
 
 function setup() {
   const followRepository = new InMemoryFollowRepository();
@@ -32,13 +35,13 @@ describe("FollowReaderAdapter — 다른 Context가 보는 친구 판정", () =>
   it("맞팔 아님 캐시는 두 방향 조회에 함께 쓰고 무효화한 뒤에는 다시 읽는다", async () => {
     // Given
     const { reader, followRepository, cache } = setup();
-    const isFriendBefore = await reader.isMutualFriend(ME, FRIEND);
+    const isFriendBefore = await reader.isMutualFriend(ME_ID, FRIEND_ID);
     await befriend(followRepository);
 
     // When
-    const isFriendCached = await reader.isMutualFriend(FRIEND, ME);
-    await cache.invalidateMutualFriend(ME, FRIEND);
-    const isFriendAfter = await reader.isMutualFriend(FRIEND, ME);
+    const isFriendCached = await reader.isMutualFriend(FRIEND_ID, ME_ID);
+    await cache.invalidateMutualFriend(ME_ID, FRIEND_ID);
+    const isFriendAfter = await reader.isMutualFriend(FRIEND_ID, ME_ID);
 
     // Then
     expect([isFriendBefore, isFriendCached, isFriendAfter]).toEqual([false, false, true]);
@@ -47,16 +50,16 @@ describe("FollowReaderAdapter — 다른 Context가 보는 친구 판정", () =>
   it("친구 수·id 목록은 캐시를 쓰고 권한을 판단하는 current 경로는 지금 관계를 읽는다", async () => {
     // Given
     const { reader, followRepository } = setup();
-    await reader.countFriends(ME);
-    await reader.getMutualFriendIds(ME);
+    await reader.countFriends(ME_ID);
+    await reader.getMutualFriendIds(ME_ID);
     await befriend(followRepository);
 
     // When
-    const cached = [await reader.countFriends(ME), await reader.getMutualFriendIds(ME)];
+    const cached = [await reader.countFriends(ME_ID), await reader.getMutualFriendIds(ME_ID)];
     const current = [
-      await reader.countCurrentFriends(ME),
-      await reader.getCurrentMutualFriendIds(ME),
-      await reader.isCurrentMutualFriend(ME, FRIEND),
+      await reader.countCurrentFriends(ME_ID),
+      await reader.getCurrentMutualFriendIds(ME_ID),
+      await reader.isCurrentMutualFriend(ME_ID, FRIEND_ID),
     ];
 
     // Then
@@ -70,9 +73,9 @@ describe("FollowReaderAdapter — 다른 Context가 보는 친구 판정", () =>
 
     // When
     const names = await Promise.all([
-      reader.getUserDisplayName(ME),
-      reader.getUserDisplayName(FRIEND),
-      reader.getUserDisplayName("missing"),
+      reader.getUserDisplayName(ME_ID),
+      reader.getUserDisplayName(FRIEND_ID),
+      reader.getUserDisplayName(UserId.reconstitute("missing")),
     ]);
 
     // Then

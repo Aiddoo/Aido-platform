@@ -79,7 +79,7 @@ export class BlockUserUseCase {
     });
 
     if (result.removedFriendshipCount > 0) {
-      await invalidateFriendshipCaches(friendshipCache, blockerId.value, blockedId.value);
+      await invalidateFriendshipCaches(friendshipCache, blockerId, blockedId);
     }
     if (result.isNewlyBlocked) {
       logger.log({

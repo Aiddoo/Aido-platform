@@ -6,6 +6,7 @@ import { ListTodoCommentRepliesUseCase } from "#api/modules/engagement/comments/
 import { ListTodoCommentThreadsUseCase } from "#api/modules/engagement/comments/application/use-cases/list-todo-comment-threads.use-case";
 import { engagementCommentsConfig } from "#api/modules/engagement/comments/engagement-comments.config";
 import { HmacTodoCommentCursorCodecAdapter } from "#api/modules/engagement/comments/infrastructure/adapters/hmac-todo-comment-cursor-codec.adapter";
+import { TodoCommentBlockReaderAdapter } from "#api/modules/engagement/comments/infrastructure/adapters/todo-comment-block-reader.adapter";
 import { DrizzleTodoCommentReader } from "#api/modules/engagement/comments/infrastructure/persistence/drizzle-todo-comment.reader";
 import { DrizzleTodoDetailsReader } from "#api/modules/planning/todos/infrastructure/persistence/drizzle-todo-details.reader";
 import { DrizzleUserBlockRepository } from "#api/modules/social/blocks/infrastructure/persistence/drizzle-user-block.repository";
@@ -71,7 +72,7 @@ describe("댓글 v2 묶음·답글 읽기 (실제 PostgreSQL)", () => {
     client = await testDatabase.start();
     const { txHost } = createDatabaseTransactionFixture(client);
     const reader = new DrizzleTodoCommentReader(txHost, new DrizzleTodoDetailsReader(txHost));
-    const blockReader = new DrizzleUserBlockRepository(txHost);
+    const blockReader = new TodoCommentBlockReaderAdapter(new DrizzleUserBlockRepository(txHost));
     cursorModule = await Test.createTestingModule({
       providers: [
         HmacTodoCommentCursorCodecAdapter,

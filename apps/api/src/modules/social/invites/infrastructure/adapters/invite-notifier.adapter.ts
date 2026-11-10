@@ -10,6 +10,7 @@ import {
   PushQuietHoursReaderPort,
   TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY,
 } from "#api/modules/notification/notification-delivery.public";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantToDate } from "#api/shared/domain/time/instant";
 
 import {
@@ -130,11 +131,11 @@ export class InviteNotifierAdapter extends InviteNotifierPort {
     });
   }
 
-  async isInQuietHours(userId: string, at: Temporal.Instant): Promise<boolean> {
+  async isInQuietHours(userId: UserId, at: Temporal.Instant): Promise<boolean> {
     const quietUserIds = await this.#quietHoursReader.findUsersInQuietHours(
-      [userId],
+      [userId.value],
       instantToDate(at),
     );
-    return quietUserIds.has(userId);
+    return quietUserIds.has(userId.value);
   }
 }

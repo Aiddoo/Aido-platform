@@ -21,6 +21,7 @@ import {
 import type { AnyPgColumn } from "drizzle-orm/pg-core";
 import { compact, groupBy } from "es-toolkit";
 
+import type { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { tupleLessThan } from "#api/platform/database/keyset";
 import {
@@ -106,9 +107,9 @@ export class DrizzleNudgeRepository implements NudgeRepositoryPort, NudgeReaderP
     return row == null ? null : toNudge(row);
   }
 
-  async findLastSentForTodo(senderId: UserId, todoId: number): Promise<Nudge | null> {
+  async findLastSentForTodo(senderId: UserId, todoId: TodoId): Promise<Nudge | null> {
     const row = await this.#db.query.nudge.findFirst({
-      where: { senderId: senderId.value, todoId },
+      where: { senderId: senderId.value, todoId: todoId.value },
       orderBy: { createdAt: "desc" },
     });
     return row == null ? null : toNudge(row);
@@ -190,19 +191,19 @@ export class DrizzleNudgeRepository implements NudgeRepositoryPort, NudgeReaderP
     return rows.map(toNudge);
   }
 
-  async findTargetTodo(todoId: number): Promise<NudgeTargetTodo | null> {
+  async findTargetTodo(todoId: TodoId): Promise<NudgeTargetTodo | null> {
     const row = await this.#db.query.todo.findFirst({
       columns: { userId: true, title: true, visibility: true, startDate: true, endDate: true },
-      where: { id: todoId },
+      where: { id: todoId.value },
     });
     return row == null ? null : toNudgeTargetTodo(row);
   }
 
-  async lockInteractionTodo(todoId: number, ownerId: UserId): Promise<NudgeInteractionTodo | null> {
+  async lockInteractionTodo(todoId: TodoId, ownerId: UserId): Promise<NudgeInteractionTodo | null> {
     const [row] = await this.#db
       .select(INTERACTION_TODO_COLUMNS)
       .from(todoTable)
-      .where(and(eq(todoTable.id, todoId), eq(todoTable.userId, ownerId.value)))
+      .where(and(eq(todoTable.id, todoId.value), eq(todoTable.userId, ownerId.value)))
       .limit(1)
       .for("update");
     return row == null ? null : toNudgeInteractionTodo(row);
@@ -326,24 +327,24 @@ export class DrizzleNudgeRepository implements NudgeRepositoryPort, NudgeReaderP
     return rows.map(toNudgeListItem);
   }
 
-  async findInteractionTodo(todoId: number, ownerId: UserId): Promise<NudgeInteractionTodo | null> {
+  async findInteractionTodo(todoId: TodoId, ownerId: UserId): Promise<NudgeInteractionTodo | null> {
     const row = await this.#db.query.todo.findFirst({
       columns: { id: true, userId: true, title: true, completed: true, visibility: true },
-      where: { id: todoId, userId: ownerId.value },
+      where: { id: todoId.value, userId: ownerId.value },
     });
     return row == null ? null : toNudgeInteractionTodo(row);
   }
 
-  async findLastReceivedNudgeId(todoId: number, receiverId: UserId): Promise<NudgeId | null> {
+  async findLastReceivedNudgeId(todoId: TodoId, receiverId: UserId): Promise<NudgeId | null> {
     const row = await this.#db.query.nudge.findFirst({
       columns: { id: true },
-      where: { todoId, receiverId: receiverId.value },
+      where: { todoId: todoId.value, receiverId: receiverId.value },
       orderBy: { id: "desc" },
     });
     return row == null ? null : NudgeId.reconstitute(row.id);
   }
 
-  async countThankedRecipients(todoId: number, receiverId: UserId): Promise<number> {
+  async countThankedRecipients(todoId: TodoId, receiverId: UserId): Promise<number> {
     const [row] = await this.#db
       .select({ count: countDistinct(nudgeTable.senderId) })
       .from(nudgeTable)
@@ -351,7 +352,7 @@ export class DrizzleNudgeRepository implements NudgeRepositoryPort, NudgeReaderP
     return row?.count ?? 0;
   }
 
-  async findLastThankedAt(todoId: number, receiverId: UserId): Promise<Temporal.Instant | null> {
+  async findLastThankedAt(todoId: TodoId, receiverId: UserId): Promise<Temporal.Instant | null> {
     const [row] = await this.#db
       .select({ lastThankedAt: max(nudgeTable.thankedAt) })
       .from(nudgeTable)
@@ -385,9 +386,9 @@ export class DrizzleNudgeRepository implements NudgeRepositoryPort, NudgeReaderP
     return (await this.#listThanksCandidateIds(query)).length;
   }
 
-  #thankedOnTodo(todoId: number, receiverId: UserId): SQL | undefined {
+  #thankedOnTodo(todoId: TodoId, receiverId: UserId): SQL | undefined {
     return and(
-      eq(nudgeTable.todoId, todoId),
+      eq(nudgeTable.todoId, todoId.value),
       eq(nudgeTable.receiverId, receiverId.value),
       isNotNull(nudgeTable.thankedAt),
     );
@@ -407,10 +408,13 @@ export class DrizzleNudgeRepository implements NudgeRepositoryPort, NudgeReaderP
       .from(nudgeTable)
       .where(
         and(
-          eq(nudgeTable.todoId, query.todoId),
+          eq(nudgeTable.todoId, query.todoId.value),
           eq(nudgeTable.receiverId, query.ownerId.value),
           lte(nudgeTable.id, query.throughNudgeId.value),
-          inArray(nudgeTable.senderId, [...query.friendIds]),
+          inArray(
+            nudgeTable.senderId,
+            query.friendIds.map((friendId) => friendId.value),
+          ),
           thankedSenderIds.length === 0
             ? undefined
             : notInArray(nudgeTable.senderId, thankedSenderIds),

@@ -1,3 +1,4 @@
+import { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
 import type { FollowReaderPort } from "#api/modules/social/friends/social-friends.public";
 import { toCursorPage } from "#api/shared/application/cursor-page";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
@@ -48,7 +49,8 @@ export class GetNudgeThanksPreviewUseCase {
       throw nudgeInteractionNotFound();
     }
     const ownerId = UserId.reconstitute(query.userId);
-    const todo = await nudgeReader.findInteractionTodo(query.todoId, ownerId);
+    const todoId = TodoId.reconstitute(query.todoId);
+    const todo = await nudgeReader.findInteractionTodo(todoId, ownerId);
     if (todo == null) {
       throw thanksTodoNotFound();
     }
@@ -68,10 +70,10 @@ export class GetNudgeThanksPreviewUseCase {
     }
     const [throughNudgeId, thankedRecipientCount, lastThankedAt] = await Promise.all([
       query.throughNudgeId == null
-        ? nudgeReader.findLastReceivedNudgeId(query.todoId, ownerId)
+        ? nudgeReader.findLastReceivedNudgeId(todoId, ownerId)
         : NudgeId.reconstitute(query.throughNudgeId),
-      nudgeReader.countThankedRecipients(query.todoId, ownerId),
-      nudgeReader.findLastThankedAt(query.todoId, ownerId),
+      nudgeReader.countThankedRecipients(todoId, ownerId),
+      nudgeReader.findLastThankedAt(todoId, ownerId),
     ]);
     const preview = { todoId: query.todoId, thankedRecipientCount, lastThankedAt };
     if (throughNudgeId == null || todo.visibility !== "PUBLIC") {
@@ -83,11 +85,12 @@ export class GetNudgeThanksPreviewUseCase {
       };
     }
 
+    const friendIds = await followReader.getCurrentMutualFriendIds(ownerId);
     const candidateQuery = {
       ownerId,
-      todoId: query.todoId,
+      todoId,
       throughNudgeId,
-      friendIds: await followReader.getCurrentMutualFriendIds(query.userId),
+      friendIds: friendIds.map((friendId) => UserId.reconstitute(friendId)),
     };
     if (query.limit == null) {
       const recipients = await nudgeReader.listThanksRecipients({
