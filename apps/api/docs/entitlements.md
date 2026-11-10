@@ -34,7 +34,10 @@
 
 ## 역할 변경
 
-역할(USER·ADMIN)을 바꾸는 서버 경로는 없다(운영자가 DB에서 바꾼다). 잠금 안의 쓰기 판단(`canInTx`·`getFeatureLimitInTx`·원장 예약)과 `GET /v1/entitlements`는 캐시 없이 읽어 바로 새 역할을 따른다. 캐시를 읽는 판단(`can`·`getFeatureLimit`·`getEntitlements`·/me)은 권한 캐시(10분)가 남는 동안 이전 역할을 쓰므로, 역할을 바꾼 뒤에는 `EntitlementCacheInvalidatorPort.invalidateEntitlements(userId)`로 비우거나 TTL이 지나기를 기다린다. ADMIN 권한 가드는 access token의 role claim을 보므로 다시 로그인해야 바뀐다.
+역할(USER·ADMIN)을 바꾸는 API는 없다. 잠금 안의 쓰기 판단(`canInTx`·`getFeatureLimitInTx`·원장 예약)과 `GET /v1/entitlements`는 캐시 없이 읽어 바로 새 역할을 따르고, 캐시를 읽는 판단(`can`·`getFeatureLimit`·`getEntitlements`)과 /me는 캐시가 남는 동안 이전 역할을 쓴다. 운영자가 DB에서 `User.role`을 바꾼 뒤:
+
+1. 그 사용자의 권한 캐시 `aido:v1:subscription:status:v2:{userId}`(10분)와 프로필 캐시 `aido:v1:auth:user-profile:{userId}`(5분)를 지운다. `CACHE_TYPE=redis`면 두 키를 `DEL`하고, 운영 기본값 memory는 밖에서 지울 수 없으니 10분을 기다린다(API 재시작은 모든 캐시를 비운다).
+2. ADMIN 가드는 access token의 role claim을 본다. refresh는 refresh token의 claim을 그대로 옮기므로 새 역할은 다시 로그인한 토큰부터다.
 
 ## 다운그레이드
 
