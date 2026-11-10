@@ -301,7 +301,10 @@ describe("Todo 변경 원자성·Drizzle 쿼리 실행 수 (실제 PostgreSQL)",
 
     // When
     const result = unitOfWork.run(() =>
-      repository.reorderItems([TodoItemId.reconstitute(first.id), TodoItemId.reconstitute(999999)]),
+      repository.reorderItems([
+        TodoItemId.reconstitute(first.id),
+        TodoItemId.reconstitute(999_999),
+      ]),
     );
 
     // Then
