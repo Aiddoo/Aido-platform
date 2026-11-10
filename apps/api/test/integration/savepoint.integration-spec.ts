@@ -1,13 +1,14 @@
 import { ClsPluginTransactional, TransactionHost } from "@nestjs-cls/transactional";
 import { TransactionalAdapterDrizzleOrm } from "@nestjs-cls/transactional-adapter-drizzle-orm";
+import { Global, Module } from "@nestjs/common";
 import { Test, type TestingModule } from "@nestjs/testing";
 import { asc, eq, sql } from "drizzle-orm";
 import { ClsModule } from "nestjs-cls";
 
+import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { databaseSqlState } from "#api/platform/database/database-error.util";
 import { DRIZZLE, type DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { DatabaseModule } from "#api/platform/database/database.module";
-import { PostgresPool } from "#api/platform/database/postgres-pool";
 import { memo, user } from "#api/platform/database/schema/index";
 import {
   AFTER_COMMIT_TASK_REGISTRY,
@@ -20,6 +21,21 @@ import {
 import { UserFixture } from "#test/fixtures/index";
 import { createTestClient } from "#test/setup/database-context";
 import { TestDatabase } from "#test/setup/test-database";
+
+// DrizzleModule이 만드는 기본 pool은 DRIZZLE을 테스트 client로 덮어써 쓰이지 않는다
+@Global()
+@Module({
+  providers: [
+    {
+      provide: TypedConfigService,
+      useValue: {
+        database: { url: "postgresql://unused:unused@localhost:5432/unused", poolMax: 1 },
+      },
+    },
+  ],
+  exports: [TypedConfigService],
+})
+class TestConfigModule {}
 
 describe("Drizzle 동일 연결 savepoint (실제 PostgreSQL)", () => {
   let database: TestDatabase;
@@ -35,6 +51,7 @@ describe("Drizzle 동일 연결 savepoint (실제 PostgreSQL)", () => {
     const client = await database.start();
     module = await Test.createTestingModule({
       imports: [
+        TestConfigModule,
         DatabaseModule,
         ClsModule.forRoot({
           global: true,
@@ -49,8 +66,6 @@ describe("Drizzle 동일 연결 savepoint (실제 PostgreSQL)", () => {
     })
       .overrideProvider(DRIZZLE)
       .useValue(client)
-      .overrideProvider(PostgresPool)
-      .useValue({})
       .compile();
     await module.init();
     unitOfWork = module.get<UnitOfWorkPort>(UNIT_OF_WORK);

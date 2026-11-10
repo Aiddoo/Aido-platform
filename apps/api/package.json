@@ -55,6 +55,7 @@
     "@nestjs/common": "catalog:nest12",
     "@nestjs/config": "catalog:nest12",
     "@nestjs/core": "catalog:nest12",
+    "@nestjs/drizzle": "catalog:nest12",
     "@nestjs/event-emitter": "catalog:nest12",
     "@nestjs/http-client": "catalog:nest12",
     "@nestjs/jwt": "catalog:nest12",

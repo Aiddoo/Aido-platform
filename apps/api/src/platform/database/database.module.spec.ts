@@ -3,6 +3,7 @@ import { Global, Module } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
 import { ClsModule } from "nestjs-cls";
 
+import { TypedConfigService } from "#api/platform/config/services/config.service";
 import {
   AFTER_COMMIT_TASK_REGISTRY,
   type AfterCommitTaskRegistryPort,
@@ -12,28 +13,32 @@ import {
 
 import { ClsUnitOfWork } from "./cls-unit-of-work.js";
 import { DatabaseModule } from "./database.module.js";
-import { PostgresPool } from "./postgres-pool.js";
 
 const transactionHost = {
   isTransactionActive: () => false,
   withTransaction: <T>(work: () => Promise<T>) => work(),
 };
 
+// pg Pool은 첫 쿼리 전까지 연결하지 않아 조립만 볼 때 실제 DB가 필요 없다
+const config = {
+  database: { url: "postgresql://unused:unused@localhost:5432/unused", poolMax: 1 },
+};
+
 @Global()
 @Module({
-  providers: [{ provide: TransactionHost, useValue: transactionHost }],
-  exports: [TransactionHost],
+  providers: [
+    { provide: TransactionHost, useValue: transactionHost },
+    { provide: TypedConfigService, useValue: config },
+  ],
+  exports: [TransactionHost, TypedConfigService],
 })
-class TestTransactionHostModule {}
+class TestInfrastructureModule {}
 
 describe("DatabaseModule", () => {
   it("UoW와 after-commit registry 토큰에 같은 ClsUnitOfWork singleton을 제공한다", async () => {
     const module = await Test.createTestingModule({
-      imports: [ClsModule.forRoot({ global: true }), TestTransactionHostModule, DatabaseModule],
-    })
-      .overrideProvider(PostgresPool)
-      .useValue({})
-      .compile();
+      imports: [ClsModule.forRoot({ global: true }), TestInfrastructureModule, DatabaseModule],
+    }).compile();
 
     const concrete = module.get(ClsUnitOfWork);
     const unitOfWork = module.get<UnitOfWorkPort>(UNIT_OF_WORK);

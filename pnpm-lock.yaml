@@ -545,6 +545,9 @@ catalogs:
     '@nestjs/core':
       specifier: 12.4.2
       version: 12.4.2
+    '@nestjs/drizzle':
+      specifier: 0.0.2
+      version: 0.0.2
     '@nestjs/event-emitter':
       specifier: 12.0.2
       version: 12.0.2
@@ -685,6 +688,9 @@ importers:
       '@nestjs/core':
         specifier: catalog:nest12
         version: 12.4.2(@nestjs/common@12.4.2(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/platform-express@12.4.2)(reflect-metadata@0.2.2)(rxjs@7.8.2)
+      '@nestjs/drizzle':
+        specifier: catalog:nest12
+        version: 0.0.2(@nestjs/common@12.4.2(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/core@12.4.2)(drizzle-orm@1.0.0-rc.5(@cloudflare/workers-types@5.20261006.1)(@effect/sql-d1@4.0.3(effect@4.0.3))(@effect/sql-sqlite-do@4.0.3(effect@4.0.3))(@electric-sql/pglite@0.3.15)(@libsql/client@0.17.4)(@opentelemetry/api@1.9.1)(@sinclair/typebox@0.34.52)(@types/pg@8.23.1)(arktype@2.2.7)(effect@4.0.3)(pg@8.23.1)(valibot@1.5.0(typescript@6.0.3))(zod@4.6.7))(reflect-metadata@0.2.2)
       '@nestjs/event-emitter':
         specifier: catalog:nest12
         version: 12.0.2(@nestjs/common@12.4.2(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/core@12.4.2)
@@ -3790,6 +3796,15 @@ packages:
         optional: true
       '@nestjs/websockets':
         optional: true
+
+  '@nestjs/drizzle@0.0.2':
+    resolution: {integrity: sha512-9jBMBcqxPLV7BNuqoOQ/6boSH7z1cA6psKKiArHgJgDefBqniQExYjVNhE/GrqJd3vBEwCXkWXwpEvCi8qRIZg==}
+    engines: {node: '>=20.19.0'}
+    peerDependencies:
+      '@nestjs/common': ^11.0.0 || ^12.0.0
+      '@nestjs/core': ^11.0.0 || ^12.0.0
+      drizzle-orm: '>=0.35.0 || >=1.0.0-0'
+      reflect-metadata: ^0.1.13 || ^0.2.0
 
   '@nestjs/event-emitter@12.0.2':
     resolution: {integrity: sha512-Vbg+3sm7aVFxrmMA4tf78LWS/ooOC5qH6djhyJvqQjCkDb1NOHERNH7qsjiQ++u/XsUeVWXzL/F6A/hr9cbcrw==}
@@ -15177,6 +15192,13 @@ snapshots:
       uid: 2.0.2
     optionalDependencies:
       '@nestjs/platform-express': 12.4.2(@nestjs/common@12.4.2(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/core@12.4.2)(rxjs@7.8.2)(supports-color@8.1.1)
+
+  '@nestjs/drizzle@0.0.2(@nestjs/common@12.4.2(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/core@12.4.2)(drizzle-orm@1.0.0-rc.5(@cloudflare/workers-types@5.20261006.1)(@effect/sql-d1@4.0.3(effect@4.0.3))(@effect/sql-sqlite-do@4.0.3(effect@4.0.3))(@electric-sql/pglite@0.3.15)(@libsql/client@0.17.4)(@opentelemetry/api@1.9.1)(@sinclair/typebox@0.34.52)(@types/pg@8.23.1)(arktype@2.2.7)(effect@4.0.3)(pg@8.23.1)(valibot@1.5.0(typescript@6.0.3))(zod@4.6.7))(reflect-metadata@0.2.2)':
+    dependencies:
+      '@nestjs/common': 12.4.2(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1)
+      '@nestjs/core': 12.4.2(@nestjs/common@12.4.2(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/platform-express@12.4.2)(reflect-metadata@0.2.2)(rxjs@7.8.2)
+      drizzle-orm: 1.0.0-rc.5(@cloudflare/workers-types@5.20261006.1)(@effect/sql-d1@4.0.3(effect@4.0.3))(@effect/sql-sqlite-do@4.0.3(effect@4.0.3))(@electric-sql/pglite@0.3.15)(@libsql/client@0.17.4)(@opentelemetry/api@1.9.1)(@sinclair/typebox@0.34.52)(@types/pg@8.23.1)(arktype@2.2.7)(effect@4.0.3)(pg@8.23.1)(valibot@1.5.0(typescript@6.0.3))(zod@4.6.7)
+      reflect-metadata: 0.2.2
 
   '@nestjs/event-emitter@12.0.2(@nestjs/common@12.4.2(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/core@12.4.2)':
     dependencies:

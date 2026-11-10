@@ -1,3 +1,4 @@
+import { DrizzleModule, getDrizzleToken } from "@nestjs/drizzle";
 import { Test, type TestingModule } from "@nestjs/testing";
 import { eq } from "drizzle-orm";
 import { Pool } from "pg";
@@ -5,7 +6,7 @@ import { mock } from "vitest-mock-extended";
 
 import { createDatabase, DRIZZLE, type Database } from "#api/platform/database/database.client";
 import { createEntityId } from "#api/platform/database/entity-id";
-import { createPostgresPoolConfig, PostgresPool } from "#api/platform/database/postgres-pool";
+import { createPostgresPoolConfig } from "#api/platform/database/postgres-pool";
 import { user as userTable } from "#api/platform/database/schema/index";
 import { JobRuntimeLifecycle } from "#api/platform/jobs/job-runtime.module";
 import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
@@ -21,14 +22,6 @@ it("종료 중 활성 worker가 DB 저장을 마친 뒤 연결이 닫힌다", as
   const events: string[] = [];
   const runtime = mock<JobRuntimePort>();
   const { promise: gate, resolve: release } = Promise.withResolvers<void>();
-  const postgres = {
-    pool,
-    async onApplicationShutdown() {
-      events.push("database-close-start");
-      await pool.end();
-      events.push("database-closed");
-    },
-  };
   let worker: Promise<{ error?: unknown }> | undefined;
   let database: Database | undefined;
   let userId: string | undefined;
@@ -62,7 +55,7 @@ it("종료 중 활성 worker가 DB 저장을 마친 뒤 연결이 닫힌다", as
     events.push("runtime-stop-start");
     release();
     const outcome = await worker;
-    events.push("runtime-stop-completed");
+    events.push(pool.ended ? "database-closed-before-worker" : "runtime-stop-completed");
     if (outcome?.error !== undefined) {
       throw outcome.error;
     }
@@ -70,9 +63,9 @@ it("종료 중 활성 worker가 DB 저장을 마친 뒤 연결이 닫힌다", as
   let module: TestingModule | undefined;
   try {
     module = await Test.createTestingModule({
+      imports: [DrizzleModule.forRoot({ db: createDatabase(pool) })],
       providers: [
-        { provide: PostgresPool, useValue: postgres },
-        { provide: DRIZZLE, useValue: createDatabase(pool) },
+        { provide: DRIZZLE, useExisting: getDrizzleToken() },
         { provide: JOB_RUNTIME, useValue: runtime },
         JobRuntimeLifecycle,
       ],
@@ -111,9 +104,14 @@ it("종료 중 활성 worker가 DB 저장을 마친 뒤 연결이 닫힌다", as
     expect(outcome?.error).toBeUndefined();
     expect(closeError).toBeUndefined();
     expect(stored?.aiUsageCount).toBe(1);
-    expect(events.indexOf("worker-write-completed")).toBeLessThan(
-      events.indexOf("database-closed"),
-    );
+    expect(events).toEqual([
+      "worker-active",
+      "runtime-stop-start",
+      "worker-write-start",
+      "worker-write-completed",
+      "runtime-stop-completed",
+    ]);
+    expect(pool.ended).toBe(true);
   } finally {
     release();
     await worker;

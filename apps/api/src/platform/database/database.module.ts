@@ -1,5 +1,7 @@
 import { Global, Module } from "@nestjs/common";
+import { DrizzleModule, getDrizzleToken } from "@nestjs/drizzle";
 
+import { TypedConfigService } from "#api/platform/config/services/config.service";
 import {
   AFTER_COMMIT_TASK_REGISTRY,
   AfterCommitTaskRegistryPort,
@@ -15,17 +17,21 @@ import { ClsSavepointRunner } from "./cls-savepoint-runner.js";
 import { ClsUnitOfWork } from "./cls-unit-of-work.js";
 import { createDatabase, DRIZZLE } from "./database.client.js";
 import { PostgresMutationLockAdapter } from "./postgres-mutation-lock.adapter.js";
-import { PostgresPool } from "./postgres-pool.js";
+import { createPostgresPool } from "./postgres-pool.js";
 
 @Global()
 @Module({
+  imports: [
+    // 앱 종료 때 DrizzleModule이 pool을 한 번 닫는다(job worker는 그 전 beforeApplicationShutdown에서 멈춘다)
+    DrizzleModule.forRootAsync({
+      inject: [TypedConfigService],
+      useFactory: (config: TypedConfigService) => ({
+        db: createDatabase(createPostgresPool(config.database)),
+      }),
+    }),
+  ],
   providers: [
-    PostgresPool,
-    {
-      provide: DRIZZLE,
-      inject: [PostgresPool],
-      useFactory: (postgres: PostgresPool) => createDatabase(postgres.pool),
-    },
+    { provide: DRIZZLE, useExisting: getDrizzleToken() },
     ClsUnitOfWork,
     { provide: SAVEPOINT_RUNNER, useClass: ClsSavepointRunner },
     { provide: UNIT_OF_WORK, useExisting: ClsUnitOfWork },
