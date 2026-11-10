@@ -1,3 +1,7 @@
+# Aido monorepo — .gitignore
+# - 저장소 전체에 공통인 항목만 둔다. 앱 전용 항목은 apps/<app>/.gitignore에 둔다.
+# - 비밀값은 올리지 않는다. 환경 변수는 *.example 파일만 올린다.
+
 # Dependencies
 node_modules/
 .pnpm-store/
@@ -14,10 +18,11 @@ coverage/
 # Environment & secrets
 .env*
 !.env*.example
+# E2E 전용 가짜 값만 담겨 있어 올린다
 !/apps/api/.env.test
 .secrets/
 
-# Mobile native (signing keys, store binaries)
+# Signing keys & store binaries
 *.keystore
 *.jks
 *.p8
@@ -29,24 +34,26 @@ coverage/
 *.apk
 *.aab
 
-# IDE & OS
-.idea/
-.vscode/*
-!.vscode/extensions.json
-!.vscode/settings.json
-.cursor/
-.zed/
-*.swp
-.DS_Store
-
 # Logs
 *.log
 
 # Tool caches & local workspaces
 .turbo/
 .worktrees/
+myDocs/
+
+# Claude Code: 팀이 함께 쓰는 명령·설정만 올리고 개인 설정·worktree는 뺀다
 /.claude/*
 !/.claude/commands/
 !/.claude/settings.json
 settings.local.json
-myDocs/
+
+# Editors & OS
+.idea/
+.cursor/
+.zed/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+*.swp
+.DS_Store
