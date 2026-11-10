@@ -37,7 +37,7 @@ export class StubPushDeliveryLifecycleRepository extends PushDeliveryLifecycleRe
   readonly finalizedSkipped: FinalizeSkippedPushDeliveryInput[][] = [];
   readonly finalizedResults: FinalizePushDeliveryResultsInput[][] = [];
   readonly released: ReleasePushDeliveryInput[][] = [];
-  readonly staleRecoveries: Date[] = [];
+  readonly staleRecoveries: Temporal.Instant[] = [];
   readonly #failures = new Map<PushDeliveryLifecycleOperation, unknown[]>();
   readonly #observe: (operation: PushDeliveryLifecycleOperation) => void;
 
@@ -101,7 +101,7 @@ export class StubPushDeliveryLifecycleRepository extends PushDeliveryLifecycleRe
     return inputs.length;
   }
 
-  async recoverStaleProcessing(startedBefore: Date): Promise<number> {
+  async recoverStaleProcessing(startedBefore: Temporal.Instant): Promise<number> {
     this.staleRecoveries.push(startedBefore);
     this.#enter("recoverStaleProcessing");
     return 0;

@@ -23,19 +23,19 @@ export interface ClaimedPushDelivery {
 
 export interface PushDeliveryContext {
   readonly timezone: string;
-  readonly localDate: Date;
+  readonly localDate: Temporal.PlainDate;
 }
 
 export interface ClaimPushDeliveriesInput {
   readonly publications: readonly PushDeliveryPublication[];
   readonly processingJobId: string;
   readonly processingJobAttempt: number;
-  readonly startedAt: Date;
+  readonly startedAt: Temporal.Instant;
 }
 
 export interface ReopenPushDeliveriesAfterClaimFailureInput {
   readonly publications: readonly PushDeliveryPublication[];
-  readonly availableAt: Date;
+  readonly availableAt: Temporal.Instant;
   readonly error: string;
 }
 
@@ -47,7 +47,7 @@ export interface FinalizeSkippedPushDeliveryInput {
 
 export interface ReservePushDeliveryRateLimitInput {
   readonly fence: PushDeliveryFence;
-  readonly reservedAt: Date;
+  readonly reservedAt: Temporal.Instant;
 }
 
 export interface FinalizePushDeliveryResultsInput {
@@ -61,7 +61,7 @@ export interface ReleasePushDeliveryInput {
   readonly error: string;
   // JobRuntime의 마지막 attempt일 때만 새 publication generation을 열어 둔다.
   readonly reopenOutbox: boolean;
-  readonly availableAt: Date;
+  readonly availableAt: Temporal.Instant;
 }
 
 // PushDispatch worker lease를 job ID와 증가 attempt로 fencing한다.
@@ -82,5 +82,5 @@ export abstract class PushDeliveryLifecycleRepositoryPort {
   abstract finalizeSkipped(inputs: readonly FinalizeSkippedPushDeliveryInput[]): Promise<number>;
   abstract finalizeResults(inputs: readonly FinalizePushDeliveryResultsInput[]): Promise<number>;
   abstract release(inputs: readonly ReleasePushDeliveryInput[]): Promise<number>;
-  abstract recoverStaleProcessing(startedBefore: Date): Promise<number>;
+  abstract recoverStaleProcessing(startedBefore: Temporal.Instant): Promise<number>;
 }

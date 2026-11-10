@@ -35,6 +35,7 @@ import { DrizzleSweepCursorAdapter } from "#api/platform/jobs/drizzle-sweep-curs
 import { SweepCursorPort } from "#api/shared/application/ports/sweep-cursor.port";
 import { StubNotificationRecipientLocaleReader } from "#test/doubles/notification/stub-notification-recipient-locale.reader";
 import { StubTodoSeriesOwnerDormancy } from "#test/doubles/notification/stub-todo-series-owner-dormancy";
+import { DateClock } from "#test/doubles/platform/date-clock";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
@@ -93,7 +94,7 @@ describe("리마인더 sweep 따라잡기 (실제 PostgreSQL)", () => {
     publisher = new PublishNotificationUseCase({
       sendNotification: new SendNotificationUseCase({
         notificationRepository: new DrizzleNotificationRepository(txHost),
-        pushDispatchStaging: new DrizzlePushDispatchStagingRepository(txHost),
+        pushDispatchStaging: new DrizzlePushDispatchStagingRepository(txHost, new DateClock()),
         cache: { invalidateUnreadCount: async () => undefined },
         unitOfWork: uow,
         afterCommit: { register: () => undefined },
@@ -104,7 +105,7 @@ describe("리마인더 sweep 따라잡기 (실제 PostgreSQL)", () => {
       sendBatchNotification: new SendBatchNotificationUseCase({
         persistBatchNotificationUseCase: new PersistBatchNotificationUseCase({
           notificationRepository: new DrizzleNotificationRepository(txHost),
-          pushDispatchStaging: new DrizzlePushDispatchStagingRepository(txHost),
+          pushDispatchStaging: new DrizzlePushDispatchStagingRepository(txHost, new DateClock()),
           unitOfWork: uow,
           afterCommitPublisher: { register: () => undefined },
         }),

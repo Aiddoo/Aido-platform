@@ -1,9 +1,6 @@
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
-import { addMilliseconds } from "#api/shared/domain/date/utils/arithmetic";
-import { parseDateOnly } from "#api/shared/domain/date/utils/parse";
-import { instantToDate } from "#api/shared/domain/time/instant";
 
 import type { CreateNotificationData } from "../../../inbox/application/ports/notification-draft.port.js";
 import { pushDeliveryOutboxRetryDelayMs } from "../../domain/push-delivery-outbox-retry.domain-service.js";
@@ -368,7 +365,7 @@ export class DeliverPushNotificationsUseCase {
   }
 
   #context(timezone: string, localDate: string): PushDeliveryContext {
-    return { timezone, localDate: parseDateOnly(localDate) };
+    return { timezone, localDate: Temporal.PlainDate.from(localDate) };
   }
 
   #logSkipped(data: CreateNotificationData, reason: PushDispatchSkipReason): void {
@@ -380,8 +377,8 @@ export class DeliverPushNotificationsUseCase {
     });
   }
 
-  #now(): Date {
-    return instantToDate(this.#dependencies.clock.now());
+  #now(): Temporal.Instant {
+    return this.#dependencies.clock.now();
   }
 
   async #release(
@@ -398,10 +395,11 @@ export class DeliverPushNotificationsUseCase {
             fence: item.fence,
             error: message,
             reopenOutbox: isFinalAttempt,
-            availableAt: addMilliseconds(
-              isFinalAttempt ? pushDeliveryOutboxRetryDelayMs(item.fence.publishAttempt) : 0,
-              at,
-            ),
+            availableAt: at.add({
+              milliseconds: isFinalAttempt
+                ? pushDeliveryOutboxRetryDelayMs(item.fence.publishAttempt)
+                : 0,
+            }),
           })),
         ),
       );

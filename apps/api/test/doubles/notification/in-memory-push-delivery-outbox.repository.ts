@@ -17,8 +17,8 @@ export interface InMemoryPushDeliveryOutboxRow {
   readonly lane: PushDeliveryLane;
   readonly status: PushDeliveryOutboxStatus;
   readonly publishAttempts: number;
-  readonly availableAt: Date;
-  readonly lockedAt: Date | null;
+  readonly availableAt: Temporal.Instant;
+  readonly lockedAt: Temporal.Instant | null;
   readonly lastError: string | null;
 }
 
@@ -43,7 +43,7 @@ export class InMemoryPushDeliveryOutboxRepository extends PushDeliveryOutboxRepo
       lane: "TRANSACTIONAL",
       status: "PENDING",
       publishAttempts: 0,
-      availableAt: new Date(0),
+      availableAt: Temporal.Instant.fromEpochMilliseconds(0),
       lockedAt: null,
       lastError: null,
       ...overrides,
@@ -56,7 +56,7 @@ export class InMemoryPushDeliveryOutboxRepository extends PushDeliveryOutboxRepo
 
   async claimByDispatchIds(
     dispatchIds: readonly number[],
-    lockedAt: Date,
+    lockedAt: Temporal.Instant,
   ): Promise<readonly ClaimedPushDeliveryPublication[]> {
     return this.#claim(
       [...this.#rows.values()].filter((row) => dispatchIds.includes(row.dispatchId)),
@@ -73,7 +73,7 @@ export class InMemoryPushDeliveryOutboxRepository extends PushDeliveryOutboxRepo
 
   async markPublished(
     publications: readonly PushDeliveryPublication[],
-    _publishedAt: Date,
+    _publishedAt: Temporal.Instant,
   ): Promise<number> {
     if (this.markPublishedError != null) {
       throw this.markPublishedError;
@@ -96,12 +96,12 @@ export class InMemoryPushDeliveryOutboxRepository extends PushDeliveryOutboxRepo
     }));
   }
 
-  async recoverStaleProcessing(lockedBefore: Date): Promise<number> {
+  async recoverStaleProcessing(lockedBefore: Temporal.Instant): Promise<number> {
     const stale = [...this.#rows.values()].filter(
       (row) =>
         row.status === "PROCESSING" &&
         row.lockedAt != null &&
-        row.lockedAt.getTime() < lockedBefore.getTime(),
+        Temporal.Instant.compare(row.lockedAt, lockedBefore) < 0,
     );
     for (const row of stale) {
       this.#rows.set(row.dispatchId, { ...row, status: "PENDING", lockedAt: null });
@@ -111,14 +111,17 @@ export class InMemoryPushDeliveryOutboxRepository extends PushDeliveryOutboxRepo
 
   #claim(
     candidates: readonly InMemoryPushDeliveryOutboxRow[],
-    lockedAt: Date,
+    lockedAt: Temporal.Instant,
     limit: number,
   ): ClaimedPushDeliveryPublication[] {
     const claimable = candidates
-      .filter((row) => row.status === "PENDING" && row.availableAt.getTime() <= lockedAt.getTime())
+      .filter(
+        (row) =>
+          row.status === "PENDING" && Temporal.Instant.compare(row.availableAt, lockedAt) <= 0,
+      )
       .toSorted(
         (left, right) =>
-          left.availableAt.getTime() - right.availableAt.getTime() ||
+          Temporal.Instant.compare(left.availableAt, right.availableAt) ||
           left.dispatchId - right.dispatchId,
       )
       .slice(0, limit);

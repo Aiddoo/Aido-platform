@@ -7,7 +7,6 @@ import {
   varchar,
   boolean,
   serial,
-  date,
   jsonb,
   index,
   uniqueIndex,
@@ -221,14 +220,13 @@ export const pushDailyBudget = pgTable(
   "PushDailyBudget",
   {
     automatedCount: integer().default(0).notNull(),
-    createdAt: timestamp({ precision: 3 }).defaultNow().notNull(),
+    createdAt: instant()
+      .default(sql`now()`)
+      .notNull(),
     id: serial().primaryKey(),
-    lastSentAt: timestamp({ precision: 3 }),
-    localDate: date({ mode: "date" }).notNull(),
-    updatedAt: timestamp({ precision: 3 })
-      .notNull()
-      .$defaultFn(() => new Date())
-      .$onUpdate(() => new Date()),
+    lastSentAt: instant(),
+    localDate: plainDate().notNull(),
+    updatedAt: instant().notNull(),
     userId: text().notNull(),
   },
   (table) => [
@@ -246,7 +244,9 @@ export const pushDailyBudget = pgTable(
 export const pushDeliveryAttempt = pgTable(
   "PushDeliveryAttempt",
   {
-    createdAt: timestamp({ precision: 3 }).defaultNow().notNull(),
+    createdAt: instant()
+      .default(sql`now()`)
+      .notNull(),
     dispatchId: integer().notNull(),
     errorCode: varchar({ length: 100 }),
     errorMessage: varchar({ length: 500 }),
@@ -255,12 +255,10 @@ export const pushDeliveryAttempt = pgTable(
     /** 공급자 중립 이름. 컬럼은 운영 데이터 호환을 위해 기존 이름을 유지한다. */
     providerTicketId: varchar("expoTicketId", { length: 100 }),
     pushTokenId: integer().notNull(),
-    receiptCheckedAt: timestamp({ precision: 3 }),
+    receiptCheckedAt: instant(),
     status: pushDeliveryStatus().default("PENDING").notNull(),
-    updatedAt: timestamp({ precision: 3 })
-      .notNull()
-      .$defaultFn(() => new Date())
-      .$onUpdate(() => new Date()),
+    // 발송 저장소가 insert·update마다 명시한다(ClockPort 값 또는 같은 문장의 CURRENT_TIMESTAMP)
+    updatedAt: instant().notNull(),
     tokenFingerprint: varchar({ length: 64 }),
   },
   (table) => [
@@ -299,27 +297,29 @@ export const pushDispatch = pgTable(
   "PushDispatch",
   {
     campaignKey: varchar({ length: 100 }),
-    createdAt: timestamp({ precision: 3 }).defaultNow().notNull(),
+    createdAt: instant()
+      .default(sql`now()`)
+      .notNull(),
     deliveryAttemptCount: integer().default(0).notNull(),
     id: serial().primaryKey(),
     lastError: varchar({ length: 500 }),
-    localDate: date({ mode: "date" }),
+    localDate: plainDate(),
     notificationId: integer().notNull(),
-    openedAt: timestamp({ precision: 3 }),
+    openedAt: instant(),
     processingJobAttempt: integer(),
     processingJobId: varchar({ length: 255 }),
-    processingStartedAt: timestamp({ precision: 3 }),
+    processingStartedAt: instant(),
     purpose: notificationPurpose().notNull(),
-    rateLimitReservedAt: timestamp({ precision: 3 }),
-    scheduledAt: timestamp({ precision: 3 }).defaultNow().notNull(),
-    sentAt: timestamp({ precision: 3 }),
+    rateLimitReservedAt: instant(),
+    scheduledAt: instant()
+      .default(sql`now()`)
+      .notNull(),
+    sentAt: instant(),
     skipReason: varchar({ length: 100 }),
     status: pushDispatchStatus().default("PENDING").notNull(),
     timezone: varchar({ length: 50 }).default("UTC").notNull(),
-    updatedAt: timestamp({ precision: 3 })
-      .notNull()
-      .$defaultFn(() => new Date())
-      .$onUpdate(() => new Date()),
+    // 발송 저장소가 insert·update마다 명시한다(ClockPort 값 또는 같은 문장의 CURRENT_TIMESTAMP)
+    updatedAt: instant().notNull(),
     userId: text().notNull(),
     variantId: varchar({ length: 100 }),
   },
@@ -365,20 +365,22 @@ export const pushDispatch = pgTable(
 export const pushDispatchOutbox = pgTable(
   "PushDispatchOutbox",
   {
-    availableAt: timestamp({ precision: 3 }).defaultNow().notNull(),
-    createdAt: timestamp({ precision: 3 }).defaultNow().notNull(),
+    availableAt: instant()
+      .default(sql`now()`)
+      .notNull(),
+    createdAt: instant()
+      .default(sql`now()`)
+      .notNull(),
     deliveryMode: pushDeliveryMode().notNull(),
     dispatchId: integer().primaryKey(),
     force: boolean().default(false).notNull(),
     lastError: varchar({ length: 500 }),
-    lockedAt: timestamp({ precision: 3 }),
+    lockedAt: instant(),
     publishAttempts: integer().default(0).notNull(),
-    publishedAt: timestamp({ precision: 3 }),
+    publishedAt: instant(),
     status: pushDispatchOutboxStatus().default("PENDING").notNull(),
-    updatedAt: timestamp({ precision: 3 })
-      .notNull()
-      .$defaultFn(() => new Date())
-      .$onUpdate(() => new Date()),
+    // 발송 저장소가 insert·update마다 명시한다(ClockPort 값 또는 같은 문장의 CURRENT_TIMESTAMP)
+    updatedAt: instant().notNull(),
   },
   (table) => [
     foreignKey({
@@ -406,9 +408,11 @@ export const pushRateLimitReservation = pgTable(
   "PushRateLimitReservation",
   {
     dispatchId: integer().notNull(),
-    localDate: date({ mode: "date" }),
+    localDate: plainDate(),
     phase: pushRateLimitPhase().notNull(),
-    reservedAt: timestamp({ precision: 3 }).defaultNow().notNull(),
+    reservedAt: instant()
+      .default(sql`now()`)
+      .notNull(),
     userId: text().notNull(),
   },
   (table) => [

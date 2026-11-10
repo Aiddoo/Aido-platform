@@ -13,6 +13,8 @@ import {
   pushDispatchOutbox,
   user as userTable,
 } from "#api/platform/database/schema/index";
+import { DateClock } from "#test/doubles/platform/date-clock";
+import { nowInstant } from "#test/fixtures/clock.fixture";
 import { createTransactionHost } from "#test/setup/database-context";
 import type { TestDatabaseClient } from "#test/setup/test-database";
 import { TestDatabase } from "#test/setup/test-database";
@@ -86,7 +88,7 @@ function trackSettlement<T>(promise: Promise<T>): TrackedPromise<T> {
 type DatabaseTransactionHost = TransactionHost<DrizzleTransactionalAdapter>;
 
 function staging(host: DatabaseTransactionHost): DrizzlePushDispatchStagingRepository {
-  return new DrizzlePushDispatchStagingRepository(host);
+  return new DrizzlePushDispatchStagingRepository(host, new DateClock());
 }
 
 function outbox(host: DatabaseTransactionHost): DrizzlePushDeliveryOutboxRepository {
@@ -273,7 +275,7 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
           deliveryMode: "SINGLE",
           force: false,
         });
-        const claimed = await outbox(host).claimByDispatchIds([dispatchId], new Date());
+        const claimed = await outbox(host).claimByDispatchIds([dispatchId], nowInstant());
         if (claimed.length === 0) {
           missed.push(dispatchId);
         }
@@ -301,7 +303,7 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
 
     // When
     const claimed = await inTransaction(() =>
-      outbox(host).claimAvailable({ limit: 10, lockedAt: new Date() }),
+      outbox(host).claimAvailable({ limit: 10, lockedAt: nowInstant() }),
     );
 
     // Then
@@ -318,7 +320,7 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
     const second = await stageNotification({ userId: user.id, suffix: "second" });
     const firstClaimed = deferred();
     const releaseFirst = deferred();
-    const lockedAt = new Date(Date.now() + 1_000);
+    const lockedAt = nowInstant().add({ milliseconds: 1_000 });
 
     const firstTransaction = inTransaction(async () => {
       const claimed = await outbox(host).claimAvailable({ limit: 1, lockedAt });
@@ -343,7 +345,7 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
   it("worker claim이 outbox lock을 먼저 잡으면 stale recovery는 해당 generation을 건너뛴다", async () => {
     const user = await createUser("OWNCLM01");
     const staged = await stageNotification({ userId: user.id, suffix: "claim-first" });
-    const staleLockedAt = new Date("2026-08-29T00:00:00.000Z");
+    const staleLockedAt = Temporal.Instant.from("2026-08-29T00:00:00.000Z");
     const publication = await inTransaction(() =>
       outbox(host).claimByDispatchIds([staged.dispatchId], staleLockedAt),
     );
@@ -354,7 +356,7 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
         publications: publication,
         processingJobId: "general-claim-first",
         processingJobAttempt: 1,
-        startedAt: new Date("2026-08-29T00:20:00.000Z"),
+        startedAt: Temporal.Instant.from("2026-08-29T00:20:00.000Z"),
       });
       claimOwnsRows.resolve();
       await releaseClaim.promise;
@@ -365,7 +367,7 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
     try {
       await waitUntilTransactionHoldsLock(claimOwnsRows, claimTransaction, "general claim");
       recovered = await inTransaction(() =>
-        outbox(host).recoverStaleProcessing(new Date("2026-08-29T00:15:00.000Z")),
+        outbox(host).recoverStaleProcessing(Temporal.Instant.from("2026-08-29T00:15:00.000Z")),
       );
     } finally {
       releaseClaim.resolve();
@@ -384,13 +386,16 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
     const user = await createUser("OWNRCV01");
     const staged = await stageNotification({ userId: user.id, suffix: "recovery-first" });
     const publication = await inTransaction(() =>
-      outbox(host).claimByDispatchIds([staged.dispatchId], new Date("2026-08-29T00:00:00.000Z")),
+      outbox(host).claimByDispatchIds(
+        [staged.dispatchId],
+        Temporal.Instant.from("2026-08-29T00:00:00.000Z"),
+      ),
     );
     const recoveryOwnsOutbox = deferred();
     const releaseRecovery = deferred();
     const recoveryTransaction = inTransaction(async () => {
       const recovered = await outbox(host).recoverStaleProcessing(
-        new Date("2026-08-29T00:15:00.000Z"),
+        Temporal.Instant.from("2026-08-29T00:15:00.000Z"),
       );
       recoveryOwnsOutbox.resolve();
       await releaseRecovery.promise;
@@ -410,7 +415,7 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
           publications: publication,
           processingJobId: "general-recovery-first",
           processingJobAttempt: 1,
-          startedAt: new Date("2026-08-29T00:20:00.000Z"),
+          startedAt: Temporal.Instant.from("2026-08-29T00:20:00.000Z"),
         });
       }),
     );
@@ -437,7 +442,7 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
     const user = await createUser("OWNDEF01");
     const staged = await stageNotification({ userId: user.id, suffix: "claim-before-defer" });
     const publication = await inTransaction(() =>
-      outbox(host).claimByDispatchIds([staged.dispatchId], new Date()),
+      outbox(host).claimByDispatchIds([staged.dispatchId], nowInstant()),
     );
     const claimOwnsRows = deferred();
     const releaseClaim = deferred();
@@ -446,7 +451,7 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
         publications: publication,
         processingJobId: "general-claim-before-defer",
         processingJobAttempt: 1,
-        startedAt: new Date(),
+        startedAt: nowInstant(),
       });
       claimOwnsRows.resolve();
       await releaseClaim.promise;
@@ -460,7 +465,7 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
         deferStarted.resolve();
         return outbox(host).defer({
           publications: publication,
-          availableAt: new Date(Date.now() + 60_000),
+          availableAt: nowInstant().add({ milliseconds: 60_000 }),
           error: "ambiguous enqueue result",
         });
       }),
@@ -488,14 +493,14 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
     const user = await createUser("OWNDEF02");
     const staged = await stageNotification({ userId: user.id, suffix: "defer-before-claim" });
     const publication = await inTransaction(() =>
-      outbox(host).claimByDispatchIds([staged.dispatchId], new Date()),
+      outbox(host).claimByDispatchIds([staged.dispatchId], nowInstant()),
     );
     const deferOwnsOutbox = deferred();
     const releaseDefer = deferred();
     const deferTransaction = inTransaction(async () => {
       const deferredCount = await outbox(host).defer({
         publications: publication,
-        availableAt: new Date(Date.now() + 60_000),
+        availableAt: nowInstant().add({ milliseconds: 60_000 }),
         error: "queue rejected enqueue",
       });
       deferOwnsOutbox.resolve();
@@ -512,7 +517,7 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
           publications: publication,
           processingJobId: "general-defer-before-claim",
           processingJobAttempt: 1,
-          startedAt: new Date(),
+          startedAt: nowInstant(),
         });
       }),
     );
@@ -542,15 +547,15 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
       suffix: "terminal-first",
     });
     const terminalPublication = await inTransaction(() =>
-      outbox(host).claimByDispatchIds([terminalFirst.dispatchId], new Date()),
+      outbox(host).claimByDispatchIds([terminalFirst.dispatchId], nowInstant()),
     );
-    await inTransaction(() => outbox(host).markPublished(terminalPublication, new Date()));
+    await inTransaction(() => outbox(host).markPublished(terminalPublication, nowInstant()));
     const [terminalInitialClaim] = await inTransaction(() =>
       lifecycle(host).claim({
         publications: terminalPublication,
         processingJobId: "terminal-first-job",
         processingJobAttempt: 1,
-        startedAt: new Date(),
+        startedAt: nowInstant(),
       }),
     );
     if (!terminalInitialClaim) {
@@ -563,7 +568,7 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
       const finalized = await lifecycle(host).finalizeSkipped([
         {
           fence: terminalInitialClaim.fence,
-          context: { timezone: "UTC", localDate: new Date("2026-08-29T00:00:00Z") },
+          context: { timezone: "UTC", localDate: Temporal.PlainDate.from("2026-08-29") },
           reason: "NO_ACTIVE_TOKEN",
         },
       ]);
@@ -580,7 +585,7 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
           publications: terminalPublication,
           processingJobId: "terminal-first-job",
           processingJobAttempt: 2,
-          startedAt: new Date(),
+          startedAt: nowInstant(),
         });
       }),
     );
@@ -603,15 +608,15 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
 
     const claimFirst = await stageNotification({ userId: user.id, suffix: "claim-first" });
     const claimPublication = await inTransaction(() =>
-      outbox(host).claimByDispatchIds([claimFirst.dispatchId], new Date()),
+      outbox(host).claimByDispatchIds([claimFirst.dispatchId], nowInstant()),
     );
-    await inTransaction(() => outbox(host).markPublished(claimPublication, new Date()));
+    await inTransaction(() => outbox(host).markPublished(claimPublication, nowInstant()));
     const [claimInitialLease] = await inTransaction(() =>
       lifecycle(host).claim({
         publications: claimPublication,
         processingJobId: "claim-first-job",
         processingJobAttempt: 1,
-        startedAt: new Date(),
+        startedAt: nowInstant(),
       }),
     );
     if (!claimInitialLease) {
@@ -625,7 +630,7 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
         publications: claimPublication,
         processingJobId: "claim-first-job",
         processingJobAttempt: 2,
-        startedAt: new Date(),
+        startedAt: nowInstant(),
       });
       retryOwnsRows.resolve();
       await releaseRetry.promise;
@@ -639,7 +644,7 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
         return lifecycle(host).finalizeSkipped([
           {
             fence: claimInitialLease.fence,
-            context: { timezone: "UTC", localDate: new Date("2026-08-29T00:00:00Z") },
+            context: { timezone: "UTC", localDate: Temporal.PlainDate.from("2026-08-29") },
             reason: "NO_ACTIVE_TOKEN",
           },
         ]);
@@ -677,7 +682,10 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
       force: true,
     });
     const claimedOutbox = await inTransaction(() =>
-      outbox(host).claimByDispatchIds([staged.dispatchId], new Date(Date.now() + 1_000)),
+      outbox(host).claimByDispatchIds(
+        [staged.dispatchId],
+        nowInstant().add({ milliseconds: 1_000 }),
+      ),
     );
     expect(claimedOutbox).toEqual([
       { dispatchId: staged.dispatchId, publishAttempt: 1, lane: "TRANSACTIONAL" },
@@ -686,12 +694,12 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
       inTransaction(() =>
         outbox(host).markPublished(
           [{ dispatchId: staged.dispatchId, publishAttempt: 99 }],
-          new Date(),
+          nowInstant(),
         ),
       ),
     ).resolves.toBe(0);
     await expect(
-      inTransaction(() => outbox(host).markPublished(claimedOutbox, new Date())),
+      inTransaction(() => outbox(host).markPublished(claimedOutbox, nowInstant())),
     ).resolves.toBe(1);
 
     const claimedDelivery = await inTransaction(() =>
@@ -699,7 +707,7 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
         publications: claimedOutbox,
         processingJobId: "delivery-job-1",
         processingJobAttempt: 1,
-        startedAt: new Date(),
+        startedAt: nowInstant(),
       }),
     );
     expect(claimedDelivery).toHaveLength(1);
@@ -712,7 +720,7 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
           publications: claimedOutbox,
           processingJobId: "duplicate-job",
           processingJobAttempt: 1,
-          startedAt: new Date(),
+          startedAt: nowInstant(),
         }),
       ),
     ).resolves.toEqual([]);
@@ -729,7 +737,7 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
             fence: active.fence,
             context: {
               timezone: "Asia/Seoul",
-              localDate: new Date("2026-08-29T00:00:00Z"),
+              localDate: Temporal.PlainDate.from("2026-08-29"),
             },
             reason: "NO_ACTIVE_TOKEN",
           },
@@ -743,7 +751,7 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
             fence: active.fence,
             error: "stale worker",
             reopenOutbox: false,
-            availableAt: new Date("2026-08-29T00:00:00Z"),
+            availableAt: Temporal.Instant.from("2026-08-29T00:00:00Z"),
           },
         ]),
       ),
@@ -759,15 +767,15 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
     const user = await createUser("RECLAIM1");
     const staged = await stageNotification({ userId: user.id, suffix: "reclaim" });
     const firstPublication = await inTransaction(() =>
-      outbox(host).claimByDispatchIds([staged.dispatchId], new Date()),
+      outbox(host).claimByDispatchIds([staged.dispatchId], nowInstant()),
     );
-    await inTransaction(() => outbox(host).markPublished(firstPublication, new Date()));
+    await inTransaction(() => outbox(host).markPublished(firstPublication, nowInstant()));
     const firstClaim = await inTransaction(() =>
       lifecycle(host).claim({
         publications: firstPublication,
         processingJobId: "stable-runtime-job",
         processingJobAttempt: 1,
-        startedAt: new Date(),
+        startedAt: nowInstant(),
       }),
     );
     const first = firstClaim[0];
@@ -781,7 +789,7 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
             fence: first.fence,
             error: "simulated release commit failure",
             reopenOutbox: false,
-            availableAt: new Date(),
+            availableAt: nowInstant(),
           },
         ]);
         throw new Error("release transaction rolled back");
@@ -805,7 +813,7 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
           publications: firstPublication,
           processingJobId: "different-runtime-job",
           processingJobAttempt: 2,
-          startedAt: new Date(),
+          startedAt: nowInstant(),
         }),
       ),
     ).resolves.toEqual([]);
@@ -814,7 +822,7 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
         publications: firstPublication,
         processingJobId: "stable-runtime-job",
         processingJobAttempt: 2,
-        startedAt: new Date(),
+        startedAt: nowInstant(),
       }),
     );
     const retry = retryClaim[0];
@@ -829,7 +837,7 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
             fence: first.fence,
             context: {
               timezone: "Asia/Seoul",
-              localDate: new Date("2026-08-29T00:00:00Z"),
+              localDate: Temporal.PlainDate.from("2026-08-29"),
             },
             reason: "NO_ACTIVE_TOKEN",
           },
@@ -839,7 +847,7 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
 
     await expect(
       inTransaction(() =>
-        lifecycle(host).markRateLimitReserved([{ fence: retry.fence, reservedAt: new Date() }]),
+        lifecycle(host).markRateLimitReserved([{ fence: retry.fence, reservedAt: nowInstant() }]),
       ),
     ).resolves.toEqual([staged.dispatchId]);
     await expect(
@@ -849,7 +857,7 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
             fence: retry.fence,
             error: "runtime retries exhausted",
             reopenOutbox: true,
-            availableAt: new Date(0),
+            availableAt: Temporal.Instant.fromEpochMilliseconds(0),
           },
         ]),
       ),
@@ -861,7 +869,7 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
     ).resolves.toEqual(expect.objectContaining({ status: "PENDING", publishAttempts: 1 }));
 
     const secondPublication = await inTransaction(() =>
-      outbox(host).claimAvailable({ limit: 1, lockedAt: new Date() }),
+      outbox(host).claimAvailable({ limit: 1, lockedAt: nowInstant() }),
     );
     expect(secondPublication).toEqual([
       { dispatchId: staged.dispatchId, publishAttempt: 2, lane: "TRANSACTIONAL" },
@@ -871,7 +879,7 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
         publications: secondPublication,
         processingJobId: "next-generation-job",
         processingJobAttempt: 1,
-        startedAt: new Date(),
+        startedAt: nowInstant(),
       }),
     );
     expect(nextGenerationClaim[0]?.rateLimitReservation).toEqual({ status: "reserved" });
@@ -881,22 +889,27 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
     const user = await createUser("STALE001");
     const staged = await stageNotification({ userId: user.id, suffix: "stale" });
     const publication = await inTransaction(() =>
-      outbox(host).claimByDispatchIds([staged.dispatchId], new Date("2026-08-29T00:00:00Z")),
+      outbox(host).claimByDispatchIds(
+        [staged.dispatchId],
+        Temporal.Instant.from("2026-08-29T00:00:00Z"),
+      ),
     );
     await inTransaction(() =>
-      outbox(host).markPublished(publication, new Date("2026-08-29T00:00:01Z")),
+      outbox(host).markPublished(publication, Temporal.Instant.from("2026-08-29T00:00:01Z")),
     );
     await inTransaction(() =>
       lifecycle(host).claim({
         publications: publication,
         processingJobId: "final-attempt-release-failed",
         processingJobAttempt: 6,
-        startedAt: new Date("2026-08-29T00:00:02Z"),
+        startedAt: Temporal.Instant.from("2026-08-29T00:00:02Z"),
       }),
     );
 
     await expect(
-      inTransaction(() => lifecycle(host).recoverStaleProcessing(new Date("2026-08-29T00:15:03Z"))),
+      inTransaction(() =>
+        lifecycle(host).recoverStaleProcessing(Temporal.Instant.from("2026-08-29T00:15:03Z")),
+      ),
     ).resolves.toBe(1);
     await expect(
       db.query.pushDispatch
@@ -910,7 +923,10 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
     ).resolves.toEqual(expect.objectContaining({ status: "PENDING", publishAttempts: 1 }));
     await expect(
       inTransaction(() =>
-        outbox(host).claimAvailable({ limit: 1, lockedAt: new Date("2026-08-29T00:15:04Z") }),
+        outbox(host).claimAvailable({
+          limit: 1,
+          lockedAt: Temporal.Instant.from("2026-08-29T00:15:04Z"),
+        }),
       ),
     ).resolves.toEqual([
       { dispatchId: staged.dispatchId, publishAttempt: 2, lane: "TRANSACTIONAL" },
@@ -924,22 +940,22 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
     const publications = await inTransaction(() =>
       outbox(host).claimByDispatchIds(
         [first.dispatchId, terminal.dispatchId],
-        new Date("2026-08-29T00:00:00Z"),
+        Temporal.Instant.from("2026-08-29T00:00:00Z"),
       ),
     );
     await inTransaction(() =>
-      outbox(host).markPublished(publications, new Date("2026-08-29T00:00:01Z")),
+      outbox(host).markPublished(publications, Temporal.Instant.from("2026-08-29T00:00:01Z")),
     );
     await db
       .update(pushDispatch)
-      .set({ status: "SENT", sentAt: new Date() })
+      .set({ status: "SENT", sentAt: nowInstant() })
       .where(eq(pushDispatch.id, terminal.dispatchId));
 
     await expect(
       inTransaction(async () => {
         const recovered = await lifecycle(host).reopenAfterFinalClaimFailure({
           publications,
-          availableAt: new Date(),
+          availableAt: nowInstant(),
           error: "claim unavailable",
         });
         if (recovered !== publications.length) {
@@ -955,7 +971,7 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
       inTransaction(() =>
         lifecycle(host).reopenFailedPublications({
           publications,
-          availableAt: new Date(),
+          availableAt: nowInstant(),
           error: "dead-letter recovery",
         }),
       ),
@@ -964,7 +980,7 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
       inTransaction(() =>
         lifecycle(host).reopenFailedPublications({
           publications: [{ dispatchId: terminal.dispatchId, publishAttempt: 999 }],
-          availableAt: new Date(),
+          availableAt: nowInstant(),
           error: "stale generation",
         }),
       ),

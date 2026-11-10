@@ -30,16 +30,15 @@ export function isReceiptFailureRatioHigh(input: {
 }
 
 export interface PushReceiptCheckWindow {
-  readonly acceptedAfter: Date;
-  readonly acceptedBefore: Date;
-  readonly checkedBefore: Date;
+  readonly acceptedAfter: Temporal.Instant;
+  readonly acceptedBefore: Temporal.Instant;
+  readonly checkedBefore: Temporal.Instant;
 }
 
-export function pushReceiptCheckWindow(now: Date): PushReceiptCheckWindow {
-  const nowMs = now.getTime();
+export function pushReceiptCheckWindow(now: Temporal.Instant): PushReceiptCheckWindow {
   return {
-    acceptedAfter: new Date(nowMs - PUSH_RECEIPT_POLICY.availabilityWindowMs),
-    acceptedBefore: new Date(nowMs - PUSH_RECEIPT_POLICY.firstCheckDelayMs),
-    checkedBefore: new Date(nowMs - PUSH_RECEIPT_POLICY.recheckIntervalMs),
+    acceptedAfter: now.subtract({ milliseconds: PUSH_RECEIPT_POLICY.availabilityWindowMs }),
+    acceptedBefore: now.subtract({ milliseconds: PUSH_RECEIPT_POLICY.firstCheckDelayMs }),
+    checkedBefore: now.subtract({ milliseconds: PUSH_RECEIPT_POLICY.recheckIntervalMs }),
   };
 }

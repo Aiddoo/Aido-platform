@@ -9,7 +9,6 @@ import {
 } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { notification, pushDispatch } from "#api/platform/database/schema/index";
-import { instantToDate } from "#api/shared/domain/time/instant";
 import { plainDateFromDate } from "#api/shared/domain/time/plain-date";
 
 import type { CreateNotificationData } from "../../application/ports/notification-draft.port.js";
@@ -141,7 +140,7 @@ export class DrizzleNotificationRepository implements NotificationRepositoryPort
     if (updated.length > 0) {
       await this.#db
         .update(pushDispatch)
-        .set({ openedAt: instantToDate(now) })
+        .set({ openedAt: now, updatedAt: now })
         .where(
           and(
             eq(pushDispatch.notificationId, id),

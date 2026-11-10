@@ -30,7 +30,7 @@ class StubReceiptRepository implements ReceiptRepository {
   invalidByTicketId = new Map<string, InvalidPushToken>();
   readonly recorded: string[][] = [];
   readonly windows: PushReceiptCheckWindow[] = [];
-  readonly expiredBefore: Date[] = [];
+  readonly expiredBefore: Temporal.Instant[] = [];
   expiredCount = 0;
 
   async findPendingTicketIds(window: PushReceiptCheckWindow, limit: number): Promise<string[]> {
@@ -51,7 +51,7 @@ class StubReceiptRepository implements ReceiptRepository {
     });
   }
 
-  async expireUnreceipted(acceptedBefore: Date): Promise<number> {
+  async expireUnreceipted(acceptedBefore: Temporal.Instant): Promise<number> {
     this.expiredBefore.push(acceptedBefore);
     return this.expiredCount;
   }
@@ -204,11 +204,11 @@ describe("ReconcilePushReceiptsUseCase — receipt 반영", () => {
 
     // Then
     expect(repository.windows[0]).toEqual({
-      acceptedAfter: new Date("2026-11-09T03:00:00.000Z"),
-      acceptedBefore: new Date("2026-11-10T02:45:00.000Z"),
-      checkedBefore: new Date("2026-11-10T02:45:00.000Z"),
+      acceptedAfter: Temporal.Instant.from("2026-11-09T03:00:00.000Z"),
+      acceptedBefore: Temporal.Instant.from("2026-11-10T02:45:00.000Z"),
+      checkedBefore: Temporal.Instant.from("2026-11-10T02:45:00.000Z"),
     });
-    expect(repository.expiredBefore).toEqual([new Date("2026-11-09T03:00:00.000Z")]);
+    expect(repository.expiredBefore).toEqual([Temporal.Instant.from("2026-11-09T03:00:00.000Z")]);
   });
 });
 

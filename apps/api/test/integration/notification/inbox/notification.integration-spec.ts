@@ -67,6 +67,7 @@ import { OperationalAlertPort } from "#api/shared/application/ports/operational-
 import { UserPreferenceBuilder } from "#test/builders/index";
 import { NoCacheStore } from "#test/doubles/platform/no-cache-store";
 import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";
+import { nowInstant } from "#test/fixtures/clock.fixture";
 import { createInboxNotificationFixture } from "#test/fixtures/notification/notification.fixture";
 import { createReportPushDeviceCommandFixture } from "#test/fixtures/notification/push-device.fixture";
 import { createPushTokenFixture } from "#test/fixtures/notification/push-token.fixture";
@@ -783,6 +784,7 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
         notificationId: unread.id,
         userId: mockUserId,
         purpose: "TRANSACTIONAL",
+        updatedAt: nowInstant(),
       });
 
       // When
@@ -798,7 +800,7 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
       });
       expect(
         await client.query.pushDispatch.findFirst({ where: { notificationId: unread.id } }),
-      ).toMatchObject({ openedAt: expect.any(Date) });
+      ).toMatchObject({ openedAt: expect.any(Temporal.Instant) });
     });
 
     it("서명 토큰으로 광고성 푸시 동의를 철회해야 함", async () => {

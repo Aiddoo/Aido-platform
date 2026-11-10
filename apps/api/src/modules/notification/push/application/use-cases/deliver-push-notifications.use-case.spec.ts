@@ -41,12 +41,11 @@ import type {
 } from "./evaluate-push-delivery-eligibility.use-case.js";
 
 const NOW = Temporal.Instant.from("2026-08-29T03:00:00.000Z");
-const NOW_DATE = new Date(NOW.epochMilliseconds);
 const PROCESSING_JOB_ID = "push-delivery-job-20260829";
 const LOCAL_DATE = "2026-08-29";
 const LOCAL_DATE_CONTEXT = {
   timezone: "Asia/Seoul",
-  localDate: new Date("2026-08-29T00:00:00.000Z"),
+  localDate: Temporal.PlainDate.from("2026-08-29"),
 };
 
 type SingleEvaluateInput = Parameters<EvaluatePushDeliveryEligibilityUseCase["evaluateSingle"]>;
@@ -407,7 +406,7 @@ describe("DeliverPushNotificationsUseCase — 저장된 Push 발송 처리", () 
         processingJobId: input.processingJobId,
         processingJobAttempt: input.processingJobAttempt,
         publications: input.publications,
-        startedAt: NOW_DATE,
+        startedAt: NOW,
       },
     ]);
     expect(lifecycle.operations).toEqual(["claim"]);
@@ -635,7 +634,7 @@ describe("DeliverPushNotificationsUseCase — 저장된 Push 발송 처리", () 
           fence: claimed.fence,
           error: expect.any(String),
           reopenOutbox: false,
-          availableAt: NOW_DATE,
+          availableAt: NOW,
         },
       ],
     ]);
@@ -713,7 +712,7 @@ describe("DeliverPushNotificationsUseCase — 저장된 Push 발송 처리", () 
         fence,
         error: providerError.message,
         reopenOutbox: true,
-        availableAt: expect.any(Date),
+        availableAt: expect.any(Temporal.Instant),
       })),
     ]);
     expect(fixture.observations.at(-1)).toEqual({ operation: "release", transactionDepth: 1 });
@@ -754,7 +753,7 @@ describe("DeliverPushNotificationsUseCase — 저장된 Push 발송 처리", () 
           fence: claimed.fence,
           error: finalizeResultsError.message,
           reopenOutbox: false,
-          availableAt: NOW_DATE,
+          availableAt: NOW,
         },
       ],
     ]);
@@ -823,7 +822,7 @@ describe("DeliverPushNotificationsUseCase — 저장된 Push 발송 처리", () 
     // Then
     await expect(result).rejects.toBe(claimError);
     expect(fixture.lifecycle.reopenAfterFinalClaimFailureInputs).toEqual([
-      { publications: input.publications, availableAt: NOW_DATE, error: claimError.message },
+      { publications: input.publications, availableAt: NOW, error: claimError.message },
     ]);
     fixture.expectPersistenceInsideUnitOfWork();
   });

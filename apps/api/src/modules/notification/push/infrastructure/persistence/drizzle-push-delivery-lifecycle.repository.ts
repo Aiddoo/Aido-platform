@@ -11,7 +11,6 @@ import {
   pushDispatchOutbox,
   pushToken,
 } from "#api/platform/database/schema/index";
-import { toDateString } from "#api/shared/domain/date/utils/format";
 import { plainDateToDate } from "#api/shared/domain/time/plain-date";
 
 import type {
@@ -353,7 +352,7 @@ export class DrizzlePushDeliveryLifecycleRepository implements PushDeliveryLifec
 				${input.fence.processingJobId}::VARCHAR(255),
 				${input.fence.deliveryAttemptCount}::INTEGER,
 				${input.context.timezone}::VARCHAR(50),
-				${toDateString(input.context.localDate)}::DATE,
+				${input.context.localDate.toString()}::DATE,
 				${input.reason}::VARCHAR(100)
 			)`,
     );
@@ -430,7 +429,7 @@ export class DrizzlePushDeliveryLifecycleRepository implements PushDeliveryLifec
 				${input.fence.processingJobId}::VARCHAR(255),
 				${input.fence.deliveryAttemptCount}::INTEGER,
 				${input.context.timezone}::VARCHAR(50),
-				${toDateString(input.context.localDate)}::DATE,
+				${input.context.localDate.toString()}::DATE,
 				${sent ? "SENT" : "FAILED"}::"PushDispatchStatus",
 				${sent || firstFailure?.status !== "rejected" ? null : firstFailure.failure.kind}::VARCHAR(500)
 			)`;
@@ -503,6 +502,7 @@ export class DrizzlePushDeliveryLifecycleRepository implements PushDeliveryLifec
             pushTokenId,
             tokenFingerprint: pushTokenFingerprint(result.token),
             ...toAttemptOutcome(result),
+            updatedAt: sql`CURRENT_TIMESTAMP`,
           },
         ];
       });
@@ -521,6 +521,7 @@ export class DrizzlePushDeliveryLifecycleRepository implements PushDeliveryLifec
             errorCode: excluded(pushDeliveryAttempt.errorCode),
             errorMessage: excluded(pushDeliveryAttempt.errorMessage),
             receiptCheckedAt: null,
+            updatedAt: sql`CURRENT_TIMESTAMP`,
           },
         });
     }
@@ -639,7 +640,7 @@ export class DrizzlePushDeliveryLifecycleRepository implements PushDeliveryLifec
     return released.length;
   }
 
-  async recoverStaleProcessing(startedBefore: Date): Promise<number> {
+  async recoverStaleProcessing(startedBefore: Temporal.Instant): Promise<number> {
     return (
       (
         await this.#db.execute<Record<string, unknown>>(sql`
@@ -737,6 +738,7 @@ export class DrizzlePushDeliveryLifecycleRepository implements PushDeliveryLifec
         lockedAt: null,
         publishedAt: null,
         lastError: input.error.slice(0, 500),
+        updatedAt: sql`CURRENT_TIMESTAMP`,
       })
       .where(
         and(
