@@ -3,6 +3,7 @@ import type { OAUTH_PROVIDERS } from "@aido/api/vocabulary";
 
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
+import type { ClockPort } from "#api/shared/application/ports/clock.port";
 
 import { AuthLogEvent } from "../auth.log-events.js";
 import type { AuthOAuthStateRepositoryPort } from "../ports/auth-oauth-state.repository.port.js";
@@ -32,6 +33,7 @@ interface CompleteOAuthAuthorizationDependencies {
     "findByState" | "generateExchangeCode" | "saveExchangeData" | "saveLinkingData"
   >;
   readonly loginWithOAuthToken: Pick<LoginWithOAuthTokenUseCase, "execute">;
+  readonly clock: ClockPort;
   readonly logger: ApplicationLoggerPort;
 }
 
@@ -53,7 +55,10 @@ export class CompleteOAuthAuthorizationUseCase {
         reason: `Unsupported provider: ${provider}`,
       });
     }
-    const authorization = await this.#dependencies.oauthStateRepository.findByState(state);
+    const authorization = await this.#dependencies.oauthStateRepository.findByState(
+      state,
+      this.#dependencies.clock.now(),
+    );
     if (authorization == null) {
       this.#dependencies.logger.warn({ event: AuthLogEvent.OAUTH_STATE_REJECTED });
       throw new ApplicationException(ErrorCode.USER_0602);
@@ -67,14 +72,14 @@ export class CompleteOAuthAuthorizationUseCase {
     if (authorization.mode === "link") {
       const profile = await strategy.verifyToken(exchanged.token);
       const exchangeCode = this.#dependencies.oauthStateRepository.generateExchangeCode();
-      await this.#dependencies.oauthStateRepository.saveLinkingData(authorization.id, {
+      await this.#dependencies.oauthStateRepository.saveLinkingData(authorization.id.value, {
         exchangeCode,
         provider: authorization.provider,
         providerAccountId: profile.id,
       });
       this.#dependencies.logger.debug({
         event: AuthLogEvent.OAUTH_EXCHANGE_CREATED,
-        oauthStateId: authorization.id,
+        oauthStateId: authorization.id.value,
         mode: "link",
         provider: authorization.provider,
       });
@@ -86,7 +91,7 @@ export class CompleteOAuthAuthorizationUseCase {
       metadata,
     });
     const exchangeCode = this.#dependencies.oauthStateRepository.generateExchangeCode();
-    await this.#dependencies.oauthStateRepository.saveExchangeData(authorization.id, {
+    await this.#dependencies.oauthStateRepository.saveExchangeData(authorization.id.value, {
       exchangeCode,
       accessToken: loginResult.tokens.accessToken,
       refreshToken: loginResult.tokens.refreshToken,
@@ -98,7 +103,7 @@ export class CompleteOAuthAuthorizationUseCase {
     });
     this.#dependencies.logger.debug({
       event: AuthLogEvent.OAUTH_EXCHANGE_CREATED,
-      oauthStateId: authorization.id,
+      oauthStateId: authorization.id.value,
       mode: "login",
       userId: loginResult.userId,
     });

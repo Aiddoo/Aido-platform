@@ -80,6 +80,7 @@ export class RefreshTokensUseCase {
     const revokedSessionIds = await this.#dependencies.sessionRepository.revokeByTokenFamily(
       authSession.tokenFamily,
       REVOKE_REASON.TOKEN_REUSE_DETECTED,
+      this.#dependencies.clock.now(),
     );
     await Promise.all(
       revokedSessionIds.map((id) => this.#dependencies.cacheService.invalidateSession(id)),

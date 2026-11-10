@@ -6,20 +6,19 @@ import {
   accountAlreadyExists,
   AuthPersistenceConflict,
 } from "#api/modules/identity/auth/application/auth.errors";
-import { AuthAccountRepositoryPort } from "#api/modules/identity/auth/application/ports/auth-account.repository.port";
 import {
-  isUniqueConstraintViolation,
-  requireRecord,
-} from "#api/platform/database/database-error.util";
+  type AuthAccountRecord,
+  AuthAccountRepositoryPort,
+  type NewOAuthAccount,
+} from "#api/modules/identity/auth/application/ports/auth-account.repository.port";
+import type { AccountProvider } from "#api/modules/identity/auth/domain/auth.constants";
+import type { IdentityAccounts } from "#api/modules/identity/auth/domain/identity-accounts.aggregate";
+import { isUniqueConstraintViolation } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { account } from "#api/platform/database/schema/index";
 import { EncryptionService } from "#api/platform/encryption/index";
 
-type AccountRow = typeof account.$inferSelect;
-type AccountProvider = AccountRow["provider"];
-
-import type { IdentityAccounts } from "../../domain/identity-accounts.aggregate.js";
-import { toIdentityAccounts } from "./auth-row.mapper.js";
+import { toAuthAccountRecord, toIdentityAccounts } from "./auth-row.mapper.js";
 
 @Injectable()
 export class DrizzleAccountRepository extends AuthAccountRepositoryPort {
@@ -42,31 +41,45 @@ export class DrizzleAccountRepository extends AuthAccountRepositoryPort {
   async findByUserIdAndProvider(
     userId: string,
     provider: AccountProvider,
-  ): Promise<AccountRow | null> {
+  ): Promise<AuthAccountRecord | null> {
     const row = await this.#db.query.account.findFirst({ where: { userId, provider } });
-    return row ?? null;
+    return row == null ? null : toAuthAccountRecord(row);
   }
 
   async findByProviderAccountId(
     provider: AccountProvider,
     providerAccountId: string,
-  ): Promise<AccountRow | null> {
+  ): Promise<AuthAccountRecord | null> {
     const row = await this.#db.query.account.findFirst({ where: { provider, providerAccountId } });
-    return row ?? null;
+    return row == null ? null : toAuthAccountRecord(row);
   }
 
-  async createCredentialAccount(userId: string, hashedPassword: string): Promise<AccountRow> {
+  async findAllByUserId(userId: string): Promise<AuthAccountRecord[]> {
+    const rows = await this.#db.query.account.findMany({
+      where: { userId },
+      orderBy: { id: "asc" },
+    });
+    return rows.map(toAuthAccountRecord);
+  }
+
+  async findIdentityAccounts(userId: string): Promise<IdentityAccounts> {
+    const rows = await this.#db.query.account.findMany({
+      columns: { id: true, provider: true, providerAccountId: true, createdAt: true },
+      where: { userId },
+      orderBy: { id: "asc" },
+    });
+    return toIdentityAccounts(userId, rows);
+  }
+
+  async createCredentialAccount(userId: string, hashedPassword: string): Promise<void> {
     try {
-      const [row] = await this.#db
-        .insert(account)
-        .values({
-          userId,
-          provider: "CREDENTIAL",
-          providerAccountId: userId, // userId를 사용하여 unique constraint 보장
-          password: hashedPassword,
-        })
-        .returning();
-      return requireRecord(row);
+      await this.#db.insert(account).values({
+        userId,
+        provider: "CREDENTIAL",
+        // 이메일 계정은 공급자 계정 id가 없어 userId로 유일 제약을 채운다
+        providerAccountId: userId,
+        password: hashedPassword,
+      });
     } catch (error) {
       // Account_userId_provider_key·Account_provider_providerAccountId_key: 필터의 옛 제약 표와 같은 USER_0604
       if (isUniqueConstraintViolation(error)) {
@@ -76,13 +89,11 @@ export class DrizzleAccountRepository extends AuthAccountRepositoryPort {
     }
   }
 
-  async updatePassword(userId: string, hashedPassword: string): Promise<AccountRow> {
-    const [row] = await this.#db
+  async updatePassword(userId: string, hashedPassword: string): Promise<void> {
+    await this.#db
       .update(account)
       .set({ password: hashedPassword })
-      .where(and(eq(account.userId, userId), eq(account.provider, "CREDENTIAL")))
-      .returning();
-    return requireRecord(row);
+      .where(and(eq(account.userId, userId), eq(account.provider, "CREDENTIAL")));
   }
 
   async updatePasswordIfUnchanged(
@@ -104,33 +115,17 @@ export class DrizzleAccountRepository extends AuthAccountRepositoryPort {
     return updated.length === 1;
   }
 
-  async createOAuthAccount(data: {
-    userId: string;
-    provider: AccountProvider;
-    providerAccountId: string;
-    accessToken?: string;
-    refreshToken?: string;
-    accessTokenExpiresAt?: Date;
-    scope?: string;
-  }): Promise<AccountRow> {
+  async createOAuthAccount(newAccount: NewOAuthAccount): Promise<void> {
     try {
-      const [row] = await this.#db
-        .insert(account)
-        .values({
-          userId: data.userId,
-          provider: data.provider,
-          providerAccountId: data.providerAccountId,
-          accessToken: data.accessToken
-            ? this.#encryptionService.encrypt(data.accessToken)
-            : undefined,
-          refreshToken: data.refreshToken
-            ? this.#encryptionService.encrypt(data.refreshToken)
-            : undefined,
-          accessTokenExpiresAt: data.accessTokenExpiresAt,
-          scope: data.scope,
-        })
-        .returning();
-      return requireRecord(row);
+      await this.#db.insert(account).values({
+        userId: newAccount.userId,
+        provider: newAccount.provider,
+        providerAccountId: newAccount.providerAccountId,
+        refreshToken:
+          newAccount.refreshToken == null || newAccount.refreshToken === ""
+            ? undefined
+            : this.#encryptionService.encrypt(newAccount.refreshToken),
+      });
     } catch (error) {
       if (isUniqueConstraintViolation(error)) {
         throw new AuthPersistenceConflict("OAUTH_ACCOUNT_ALREADY_LINKED");
@@ -139,23 +134,9 @@ export class DrizzleAccountRepository extends AuthAccountRepositoryPort {
     }
   }
 
-  async deleteAccount(userId: string, provider: AccountProvider): Promise<AccountRow> {
-    const [row] = await this.#db
+  async deleteAccount(userId: string, provider: AccountProvider): Promise<void> {
+    await this.#db
       .delete(account)
-      .where(and(eq(account.userId, userId), eq(account.provider, provider)))
-      .returning();
-    return requireRecord(row);
-  }
-
-  async findAllByUserId(userId: string): Promise<AccountRow[]> {
-    return this.#db.query.account.findMany({ where: { userId } });
-  }
-
-  async findIdentityAccounts(userId: string): Promise<IdentityAccounts> {
-    const rows = await this.#db.query.account.findMany({
-      columns: { id: true, provider: true, providerAccountId: true, createdAt: true },
-      where: { userId },
-    });
-    return toIdentityAccounts(userId, rows);
+      .where(and(eq(account.userId, userId), eq(account.provider, provider)));
   }
 }

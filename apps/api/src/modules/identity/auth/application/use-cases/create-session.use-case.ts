@@ -2,6 +2,7 @@ import type { UserRole } from "@aido/api/vocabulary";
 
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 
+import { AuthSession } from "../../domain/auth-session.aggregate.js";
 import type { AuthTokenIssuerPort, TokenPair } from "../ports/auth-crypto.port.js";
 import type { AuthSessionRepositoryPort } from "../ports/auth-session.repository.port.js";
 
@@ -21,7 +22,7 @@ export interface CreatedSession {
 }
 
 export interface CreateSessionDependencies {
-  readonly sessionRepository: Pick<AuthSessionRepositoryPort, "create" | "updateRefreshTokenHash">;
+  readonly sessionRepository: Pick<AuthSessionRepositoryPort, "nextId" | "save">;
   readonly tokenService: Pick<
     AuthTokenIssuerPort,
     | "generateTokenFamily"
@@ -42,33 +43,31 @@ export class CreateSessionUseCase {
 
   async execute(command: CreateSessionCommand): Promise<CreatedSession> {
     const { sessionRepository, tokenService, clock } = this.#dependencies;
+    const now = clock.now();
+    const sessionId = await sessionRepository.nextId();
     const tokenFamily = tokenService.generateTokenFamily();
-    const expiresAt = clock.now().add({ seconds: tokenService.getRefreshTokenExpiresInSeconds() });
-
-    const session = await sessionRepository.create({
-      userId: command.userId,
-      tokenFamily,
-      tokenVersion: 1,
-      deviceFingerprint: command.deviceFingerprint,
-      userAgent: command.userAgent,
-      ipAddress: command.ipAddress,
-      expiresAt,
-    });
-
-    // refresh 토큰은 세션 id를 담아야 해서 세션을 먼저 만든 뒤 hash를 채운다
     const tokens = await tokenService.generateTokenPair(
       command.userId,
       command.email,
-      session.id,
+      sessionId.value,
       command.role,
       tokenFamily,
       1,
     );
-    await sessionRepository.updateRefreshTokenHash(
-      session.id,
-      tokenService.hashRefreshToken(tokens.refreshToken),
-    );
 
-    return { sessionId: session.id, tokens, tokenFamily };
+    const session = AuthSession.create({
+      id: sessionId,
+      userId: command.userId,
+      refreshTokenHash: tokenService.hashRefreshToken(tokens.refreshToken),
+      tokenFamily,
+      deviceFingerprint: command.deviceFingerprint,
+      userAgent: command.userAgent,
+      ipAddress: command.ipAddress,
+      expiresAt: now.add({ seconds: tokenService.getRefreshTokenExpiresInSeconds() }),
+      now,
+    });
+    await sessionRepository.save(session);
+
+    return { sessionId: sessionId.value, tokens, tokenFamily };
   }
 }

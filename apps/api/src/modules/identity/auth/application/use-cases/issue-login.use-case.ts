@@ -2,6 +2,7 @@ import type { UserRole } from "@aido/api/vocabulary";
 import { SECURITY_EVENT } from "@aido/api/vocabulary";
 
 import type { AccountProvider } from "#api/modules/identity/auth/domain/auth.constants";
+import type { ClockPort } from "#api/shared/application/ports/clock.port";
 
 import type { TokenPair } from "../ports/auth-crypto.port.js";
 import { type AuthLoginAttemptRepositoryPort } from "../ports/auth-login-attempt.repository.port.js";
@@ -42,6 +43,7 @@ interface IssueLoginDependencies {
   readonly loginAttemptRepository: Pick<AuthLoginAttemptRepositoryPort, "create">;
   readonly securityLogRepository: Pick<AuthSecurityLogRepositoryPort, "create">;
   readonly userRepository: Pick<AuthUserRepositoryPort, "findByIdWithProfile">;
+  readonly clock: ClockPort;
 }
 
 export class IssueLoginUseCase {
@@ -67,6 +69,7 @@ export class IssueLoginUseCase {
       ipAddress: input.ip,
       userAgent: input.userAgent,
       success: true,
+      attemptedAt: this.#dependencies.clock.now(),
     });
 
     await this.#dependencies.securityLogRepository.create({

@@ -1,6 +1,4 @@
-import type { AccountProvider } from "../../domain/auth.constants.js";
-
-export type OAuthMode = "login" | "link";
+import type { AccountProvider, OAuthMode } from "../../domain/auth.constants.js";
 
 /** 공급자 토큰을 검증해 얻은 프로필. 공급자 응답 모양은 어댑터의 wire schema가 안다 */
 export interface VerifiedProfile {

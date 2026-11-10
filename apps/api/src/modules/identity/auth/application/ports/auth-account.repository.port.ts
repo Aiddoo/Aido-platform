@@ -2,12 +2,19 @@ import type { AccountProvider } from "../../domain/auth.constants.js";
 import type { IdentityAccounts } from "../../domain/identity-accounts.aggregate.js";
 
 export interface AuthAccountRecord {
-  id: number;
-  userId: string;
-  provider: AccountProvider;
-  providerAccountId: string;
-  password: string | null;
-  createdAt: Date;
+  readonly id: number;
+  readonly userId: string;
+  readonly provider: AccountProvider;
+  readonly providerAccountId: string;
+  readonly password: string | null;
+  readonly createdAt: Temporal.Instant;
+}
+
+export interface NewOAuthAccount {
+  readonly userId: string;
+  readonly provider: AccountProvider;
+  readonly providerAccountId: string;
+  readonly refreshToken?: string;
 }
 
 export abstract class AuthAccountRepositoryPort {
@@ -21,21 +28,16 @@ export abstract class AuthAccountRepositoryPort {
   ): Promise<AuthAccountRecord | null>;
   abstract findAllByUserId(userId: string): Promise<AuthAccountRecord[]>;
   abstract findIdentityAccounts(userId: string): Promise<IdentityAccounts>;
-  abstract createCredentialAccount(userId: string, hashedPassword: string): Promise<unknown>;
-  abstract updatePassword(userId: string, hashedPassword: string): Promise<unknown>;
+  /** 같은 사용자에게 이메일 계정이 이미 있으면 USER_0604로 거절한다 */
+  abstract createCredentialAccount(userId: string, hashedPassword: string): Promise<void>;
+  abstract updatePassword(userId: string, hashedPassword: string): Promise<void>;
+  /** 저장된 hash가 기대한 값일 때만 바꾼다. 그 사이 바뀌었으면 false다 */
   abstract updatePasswordIfUnchanged(
     userId: string,
     expectedPasswordHash: string,
     passwordHash: string,
   ): Promise<boolean>;
-  abstract createOAuthAccount(data: {
-    userId: string;
-    provider: AccountProvider;
-    providerAccountId: string;
-    accessToken?: string;
-    refreshToken?: string;
-    accessTokenExpiresAt?: Date;
-    scope?: string;
-  }): Promise<unknown>;
-  abstract deleteAccount(userId: string, provider: AccountProvider): Promise<unknown>;
+  /** 같은 공급자 계정이 이미 연결돼 있으면 AuthPersistenceConflict(OAUTH_ACCOUNT_ALREADY_LINKED)다 */
+  abstract createOAuthAccount(account: NewOAuthAccount): Promise<void>;
+  abstract deleteAccount(userId: string, provider: AccountProvider): Promise<void>;
 }

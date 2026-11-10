@@ -2,11 +2,11 @@ import type { SupportedLocale } from "#api/shared/domain/locale";
 
 /** 회원가입 시딩할 초기 약관 동의 값. */
 export interface ProvisioningConsent {
-  termsAgreedAt?: Date;
-  privacyAgreedAt?: Date;
-  agreedTermsVersion?: string;
-  marketingAgreedAt?: Date;
-  marketingPushAgreedAt?: Date;
+  readonly termsAgreedAt?: Temporal.Instant;
+  readonly privacyAgreedAt?: Temporal.Instant;
+  readonly agreedTermsVersion?: string;
+  readonly marketingAgreedAt?: Temporal.Instant;
+  readonly marketingPushAgreedAt?: Temporal.Instant;
 }
 
 /**

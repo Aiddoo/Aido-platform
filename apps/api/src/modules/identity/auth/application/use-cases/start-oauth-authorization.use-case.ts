@@ -3,14 +3,13 @@ import type { OAUTH_PROVIDERS } from "@aido/api/vocabulary";
 
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
+import type { ClockPort } from "#api/shared/application/ports/clock.port";
 
+import { OAUTH_STATE_EXPIRY_MINUTES, type OAuthMode } from "../../domain/auth.constants.js";
 import { AuthLogEvent } from "../auth.log-events.js";
 import type { AuthRuntimeConfigPort } from "../ports/auth-collaboration.port.js";
 import type { AuthOAuthStateRepositoryPort } from "../ports/auth-oauth-state.repository.port.js";
-import type {
-  OAuthIdentityProviderRegistryPort,
-  OAuthMode,
-} from "../ports/oauth-identity-provider.port.js";
+import type { OAuthIdentityProviderRegistryPort } from "../ports/oauth-identity-provider.port.js";
 
 export interface StartOAuthAuthorizationCommand {
   readonly provider: Exclude<(typeof OAUTH_PROVIDERS)[number], "APPLE">;
@@ -24,6 +23,7 @@ interface StartOAuthAuthorizationDependencies {
   readonly registry: Pick<OAuthIdentityProviderRegistryPort, "get">;
   readonly oauthStateRepository: Pick<AuthOAuthStateRepositoryPort, "create">;
   readonly configService: Pick<AuthRuntimeConfigPort, "isDevelopment">;
+  readonly clock: ClockPort;
   readonly logger: ApplicationLoggerPort;
 }
 
@@ -48,7 +48,14 @@ export class StartOAuthAuthorizationUseCase {
       mode: input.mode,
       initiatingUserId: input.initiatingUserId,
       persistState: (provider, redirectUri, options) =>
-        this.#dependencies.oauthStateRepository.create(input.state, provider, redirectUri, options),
+        this.#dependencies.oauthStateRepository.create({
+          state: input.state,
+          provider,
+          redirectUri,
+          mode: options.mode,
+          initiatingUserId: options.initiatingUserId,
+          expiresAt: this.#dependencies.clock.now().add({ minutes: OAUTH_STATE_EXPIRY_MINUTES }),
+        }),
     });
     if (url == null || url === "") {
       throw new ApplicationException(ErrorCode.USER_0602);

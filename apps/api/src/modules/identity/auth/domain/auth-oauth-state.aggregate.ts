@@ -1,6 +1,6 @@
 import { AggregateRoot } from "#api/shared/domain/model/aggregate-root";
 
-import type { AccountProvider } from "./auth.constants.js";
+import type { AccountProvider, AUTH_OAUTH_STATE_VALIDITIES } from "./auth.constants.js";
 import { OAuthStateId } from "./oauth-state-id.vo.js";
 
 export interface AuthOAuthStatePrimitives {
@@ -27,7 +27,7 @@ type AuthOAuthStateProps = Omit<
   "id"
 >;
 
-export type AuthOAuthStateValidity = "valid" | "expired" | "exchanged";
+export type AuthOAuthStateValidity = (typeof AUTH_OAUTH_STATE_VALIDITIES)[number];
 
 /** 앱 로그인 토큰을 넘기는 일회용 교환 코드. 웹 OAuth 콜백이 저장하고 앱이 한 번 교환한다 */
 export interface OAuthLoginExchange {

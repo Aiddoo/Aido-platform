@@ -3,7 +3,7 @@ import type { SubscriptionStatus, UserRole } from "@aido/api/vocabulary";
 import type { AccountProvider, UserStatus } from "../../domain/auth.constants.js";
 import type { IdentityUser } from "../../domain/identity-user.aggregate.js";
 
-export interface AuthUserRecord {
+interface AuthUserRecord {
   id: string;
   email: string;
   userTag: string;
@@ -25,16 +25,17 @@ export abstract class AuthUserRepositoryPort {
   abstract findByEmail(email: string): Promise<IdentityUser | null>;
   abstract findById(id: string): Promise<IdentityUser | null>;
   abstract findByIdWithProfile(id: string): Promise<AuthUserProfileRecord | null>;
+  /** 이메일이 이미 있으면 AuthPersistenceConflict(EMAIL_ALREADY_EXISTS)다 */
   abstract create(data: {
-    email: string;
-    status: UserStatus;
-    emailVerifiedAt?: Date;
+    readonly email: string;
+    readonly status: UserStatus;
+    readonly emailVerifiedAt?: Temporal.Instant;
   }): Promise<IdentityUser>;
   abstract createProfile(
     userId: string,
     data: { name?: string; profileImage?: string },
   ): Promise<void>;
-  abstract markEmailVerified(id: string): Promise<unknown>;
+  abstract markEmailVerified(id: string, now: Temporal.Instant): Promise<void>;
   abstract updateProfile(
     userId: string,
     data: { name?: string | null; profileImage?: string | null },

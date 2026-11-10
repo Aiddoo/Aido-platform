@@ -3,6 +3,7 @@ import { REVOKE_REASON, SECURITY_EVENT } from "@aido/api/vocabulary";
 
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
+import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { AUTH_DEFAULTS } from "../../domain/auth.constants.js";
@@ -24,6 +25,7 @@ interface LogoutDependencies {
   readonly securityLogRepository: Pick<AuthSecurityLogRepositoryPort, "create">;
   readonly cacheService: Pick<AuthCachePort, "invalidateSession">;
   readonly pushDevices: Pick<SessionPushDeviceReleaserPort, "releaseSessions">;
+  readonly clock: ClockPort;
   readonly logger: ApplicationLoggerPort;
 }
 
@@ -44,7 +46,11 @@ export class LogoutUseCase {
       throw new ApplicationException(ErrorCode.SESSION_0702, { sessionId: undefined });
     }
 
-    await this.#dependencies.sessionRepository.revoke(input.sessionId, REVOKE_REASON.USER_LOGOUT);
+    await this.#dependencies.sessionRepository.revoke(
+      input.sessionId,
+      REVOKE_REASON.USER_LOGOUT,
+      this.#dependencies.clock.now(),
+    );
     await this.#dependencies.cacheService.invalidateSession(input.sessionId);
     await this.#dependencies.pushDevices.releaseSessions([input.sessionId]);
     await this.#dependencies.securityLogRepository.create({

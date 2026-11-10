@@ -14,7 +14,6 @@ import { ApplicationException } from "#api/shared/application/application.except
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
-import { now } from "#api/shared/domain/date/utils/core";
 import type { SupportedLocale } from "#api/shared/domain/locale";
 
 import { AuthLogEvent } from "../auth.log-events.js";
@@ -47,8 +46,10 @@ export interface LoginWithOAuthTokenCommand {
 
 interface LoginWithOAuthTokenDependencies {
   readonly registry: Pick<OAuthIdentityProviderRegistryPort, "get">;
-  readonly userRepository: Pick<AuthUserRepositoryPort, "findById" | "findByEmail"> &
-    AuthUserRepositoryPort;
+  readonly userRepository: Pick<
+    AuthUserRepositoryPort,
+    "findById" | "findByEmail" | "findByIdForUpdate"
+  >;
   readonly accountRepository: Pick<
     AuthAccountRepositoryPort,
     "findByProviderAccountId" | "createOAuthAccount"
@@ -95,6 +96,7 @@ export class LoginWithOAuthTokenUseCase {
         userAgent: input.metadata?.userAgent ?? AUTH_DEFAULTS.UNKNOWN_USER_AGENT,
         success: false,
         failureReason: LOGIN_FAILURE_REASON.OAUTH_TOKEN_INVALID,
+        attemptedAt: this.#dependencies.clock.now(),
       });
       throw error;
     }
@@ -208,12 +210,12 @@ export class LoginWithOAuthTokenUseCase {
       const effectiveName = data.userName
         ? data.userName.slice(0, maximumNameLength)
         : generateRandomName();
-      const currentTime = now();
+      const currentTime = this.#dependencies.clock.now();
 
       const user = await this.#dependencies.provisionUserUseCase.execute({
         email: data.email,
         status: "ACTIVE",
-        emailVerifiedAt: now(),
+        emailVerifiedAt: currentTime,
         account: {
           kind: "oauth",
           provider: data.provider,

@@ -1,4 +1,6 @@
-export type SessionValidity = "valid" | "revoked" | "expired";
+import type { SESSION_VALIDITIES } from "./auth.constants.js";
+
+export type SessionValidity = (typeof SESSION_VALIDITIES)[number];
 
 export function getSessionValidity(params: {
   readonly expiresAt: Temporal.Instant;

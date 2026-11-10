@@ -81,11 +81,11 @@ export class DeleteAccountUseCase {
     identityUser.requestDeletion(deletedAt);
     const revokedSessionIds = await this.#dependencies.unitOfWork.run(async () => {
       await this.#dependencies.userRepository.saveAccountStatus(identityUser);
-      const revokedSessionIds = await this.#dependencies.sessionRepository.revokeAllByUserId(
-        identityUser.id.value,
-        REVOKE_REASON.ACCOUNT_DELETION,
-        undefined,
-      );
+      const revokedSessionIds = await this.#dependencies.sessionRepository.revokeAllByUserId({
+        userId: identityUser.id.value,
+        reason: REVOKE_REASON.ACCOUNT_DELETION,
+        now: deletedAt,
+      });
       await this.#dependencies.securityLogRepository.create({
         userId: identityUser.id.value,
         event: SECURITY_EVENT.ACCOUNT_DELETION_REQUESTED,

@@ -1,4 +1,5 @@
-import { toISOString } from "#api/shared/domain/date/utils/format";
+import type { ClockPort } from "#api/shared/application/ports/clock.port";
+import { toIsoString } from "#api/shared/domain/time/instant";
 
 import type { AuthSessionRepositoryPort } from "../ports/auth-session.repository.port.js";
 
@@ -19,7 +20,8 @@ export interface ListActiveSessionsQuery {
 }
 
 interface ListActiveSessionsDependencies {
-  readonly sessionRepository: Pick<AuthSessionRepositoryPort, "findActiveByUserId">;
+  readonly sessionRepository: Pick<AuthSessionRepositoryPort, "listActiveByUserId">;
+  readonly clock: ClockPort;
 }
 
 export class ListActiveSessionsUseCase {
@@ -30,15 +32,18 @@ export class ListActiveSessionsUseCase {
   }
 
   async execute(input: ListActiveSessionsQuery): Promise<ActiveSession[]> {
-    const sessions = await this.#dependencies.sessionRepository.findActiveByUserId(input.userId);
+    const sessions = await this.#dependencies.sessionRepository.listActiveByUserId(
+      input.userId,
+      this.#dependencies.clock.now(),
+    );
     return sessions.map((session) => ({
-      id: session.id,
+      id: session.id.value,
       deviceName: null,
       deviceType: null,
       ipAddress: session.ipAddress,
       userAgent: session.userAgent,
-      lastActiveAt: toISOString(session.lastUsedAt),
-      createdAt: toISOString(session.createdAt),
+      lastActiveAt: toIsoString(session.lastUsedAt),
+      createdAt: toIsoString(session.createdAt),
       isCurrent: false,
     }));
   }

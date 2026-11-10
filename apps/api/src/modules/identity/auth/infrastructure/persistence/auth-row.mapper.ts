@@ -5,15 +5,16 @@ import type {
   user as userTable,
   verification as verificationTable,
 } from "#api/platform/database/schema/index";
-import { instantFromDate } from "#api/shared/domain/time/instant";
+import { instantFromDate, instantToDate } from "#api/shared/domain/time/instant";
 
+import type { AuthAccountRecord } from "../../application/ports/auth-account.repository.port.js";
 import { AuthOAuthState } from "../../domain/auth-oauth-state.aggregate.js";
 import { AuthSession } from "../../domain/auth-session.aggregate.js";
 import { AuthVerification } from "../../domain/auth-verification.aggregate.js";
 import { IdentityAccounts } from "../../domain/identity-accounts.aggregate.js";
 import { IdentityUser } from "../../domain/identity-user.aggregate.js";
 
-// 인증 테이블은 아직 timestamp(mode: date)라 행의 Date를 여기서 Temporal로 바꾼다
+// Session·User·Account는 아직 timestamp(mode: date)라 행의 Date를 여기서 Temporal로 바꾼다
 function instantOrNull(date: Date | null): Temporal.Instant | null {
   return date == null ? null : instantFromDate(date);
 }
@@ -47,6 +48,7 @@ export function toAuthSession(row: SessionRow): AuthSession {
     previousTokenHash: row.previousTokenHash,
     tokenFamily: row.tokenFamily,
     tokenVersion: row.tokenVersion,
+    deviceFingerprint: row.deviceFingerprint,
     ipAddress: row.ipAddress,
     userAgent: row.userAgent,
     lastUsedAt: instantFromDate(row.lastUsedAt),
@@ -62,9 +64,10 @@ export function toAuthVerification(row: VerificationRow): AuthVerification {
     userId: row.userId,
     type: row.type,
     tokenHash: row.token,
-    expiresAt: instantFromDate(row.expiresAt),
+    expiresAt: row.expiresAt,
     attempts: row.attempts,
-    usedAt: instantOrNull(row.usedAt),
+    usedAt: row.usedAt,
+    createdAt: row.createdAt,
   });
 }
 
@@ -84,9 +87,27 @@ export function toAuthOAuthState(row: OAuthStateRow): AuthOAuthState {
     profileImage: row.profileImage,
     accountRestored: row.accountRestored,
     isNewUser: row.isNewUser,
-    expiresAt: instantFromDate(row.expiresAt),
-    exchangedAt: instantOrNull(row.exchangedAt),
+    expiresAt: row.expiresAt,
+    exchangedAt: row.exchangedAt,
   });
+}
+
+export function toAuthSessionRow(session: AuthSession): typeof sessionTable.$inferInsert {
+  const primitives = session.toPrimitives();
+  return {
+    ...primitives,
+    lastUsedAt: instantToDate(primitives.lastUsedAt),
+    createdAt: instantToDate(primitives.createdAt),
+    expiresAt: instantToDate(primitives.expiresAt),
+    revokedAt: primitives.revokedAt == null ? null : instantToDate(primitives.revokedAt),
+  };
+}
+
+export function toVerificationRow(
+  verification: AuthVerification,
+): typeof verificationTable.$inferInsert {
+  const { tokenHash, ...primitives } = verification.toPrimitives();
+  return { ...primitives, token: tokenHash };
 }
 
 export function toIdentityUser(row: UserRow): IdentityUser {
@@ -102,6 +123,22 @@ export function toIdentityUser(row: UserRow): IdentityUser {
     createdAt: instantFromDate(row.createdAt),
     deletedAt: instantOrNull(row.deletedAt),
   });
+}
+
+export function toAuthAccountRecord(
+  row: Pick<
+    typeof accountTable.$inferSelect,
+    "id" | "userId" | "provider" | "providerAccountId" | "password" | "createdAt"
+  >,
+): AuthAccountRecord {
+  return {
+    id: row.id,
+    userId: row.userId,
+    provider: row.provider,
+    providerAccountId: row.providerAccountId,
+    password: row.password,
+    createdAt: instantFromDate(row.createdAt),
+  };
 }
 
 export function toIdentityAccounts(userId: string, rows: readonly AccountRow[]): IdentityAccounts {

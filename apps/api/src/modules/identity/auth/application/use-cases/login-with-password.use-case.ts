@@ -15,7 +15,6 @@ import { ApplicationException } from "#api/shared/application/application.except
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
-import { instantToDate } from "#api/shared/domain/time/instant";
 
 import { AuthLogEvent } from "../auth.log-events.js";
 import type { AuthAccountRepositoryPort } from "../ports/auth-account.repository.port.js";
@@ -69,9 +68,9 @@ export class LoginWithPasswordUseCase {
     const userAgent = metadata?.userAgent ?? AUTH_DEFAULTS.UNKNOWN_USER_AGENT;
     const attemptContext = { email, ipAddress: ip, userAgent };
 
-    const lockoutSince = instantToDate(
-      this.#dependencies.clock.now().subtract({ minutes: LOGIN_ATTEMPT.LOCKOUT_MINUTES }),
-    );
+    const lockoutSince = this.#dependencies.clock
+      .now()
+      .subtract({ minutes: LOGIN_ATTEMPT.LOCKOUT_MINUTES });
     const recentFailures =
       await this.#dependencies.loginAttemptRepository.countRecentFailuresByEmail(
         email,
@@ -229,6 +228,7 @@ export class LoginWithPasswordUseCase {
       ...input,
       provider: "CREDENTIAL",
       success: false,
+      attemptedAt: this.#dependencies.clock.now(),
     });
   }
 }

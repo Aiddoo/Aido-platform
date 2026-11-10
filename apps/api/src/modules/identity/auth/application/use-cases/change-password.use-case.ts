@@ -6,6 +6,7 @@ import type { RequestMetadata } from "#api/modules/identity/auth/application/rea
 import { AUTH_DEFAULTS } from "#api/modules/identity/auth/domain/auth.constants";
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
+import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
 
 import { AuthLogEvent } from "../auth.log-events.js";
@@ -37,6 +38,7 @@ interface ChangePasswordDependencies {
   readonly securityLogRepository: Pick<AuthSecurityLogRepositoryPort, "create">;
   readonly unitOfWork: UnitOfWorkPort;
   readonly pushDevices: Pick<SessionPushDeviceReleaserPort, "releaseSessions">;
+  readonly clock: ClockPort;
   readonly logger: ApplicationLoggerPort;
 }
 
@@ -81,11 +83,12 @@ export class ChangePasswordUseCase {
     const revokedSessionIds = await this.#dependencies.unitOfWork.run(async () => {
       await this.#dependencies.accountRepository.updatePassword(userId, hashedPassword);
 
-      const revokedSessionIds = await this.#dependencies.sessionRepository.revokeAllByUserId(
+      const revokedSessionIds = await this.#dependencies.sessionRepository.revokeAllByUserId({
         userId,
-        REVOKE_REASON.PASSWORD_CHANGED,
-        currentSessionId,
-      );
+        reason: REVOKE_REASON.PASSWORD_CHANGED,
+        now: this.#dependencies.clock.now(),
+        exceptSessionId: currentSessionId,
+      });
 
       await this.#dependencies.securityLogRepository.create({
         userId,

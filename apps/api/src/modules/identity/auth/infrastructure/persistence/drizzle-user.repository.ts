@@ -25,25 +25,12 @@ import { now } from "#api/shared/domain/date/utils/core";
 import { startOfDayInTimezone } from "#api/shared/domain/date/utils/timezone";
 import { instantToDate } from "#api/shared/domain/time/instant";
 
+import type { UserStatus } from "../../domain/auth.constants.js";
 import type { IdentityUser } from "../../domain/identity-user.aggregate.js";
 import { generateUserTag } from "../adapters/user-tag.adapter.js";
 import { toIdentityUser } from "./auth-row.mapper.js";
 
-type UserRow = typeof user.$inferSelect;
 type UserInsert = typeof user.$inferInsert;
-type UserStatus = UserRow["status"];
-
-export interface UserWithAccount {
-  id: string;
-  email: string;
-  status: UserStatus;
-  emailVerifiedAt: Date | null;
-  accounts: {
-    id: number;
-    provider: string;
-    password: string | null;
-  }[];
-}
 
 export interface UserWithProfile extends AuthUserProfileRecord {
   lastLoginAt: Date | null;
@@ -69,20 +56,6 @@ export class DrizzleUserRepository extends AuthUserRepositoryPort {
   async findByEmail(email: string): Promise<IdentityUser | null> {
     const row = await this.#db.query.user.findFirst({ where: { email } });
     return row == null ? null : toIdentityUser(row);
-  }
-
-  async findByEmailWithCredential(email: string): Promise<UserWithAccount | null> {
-    const row = await this.#db.query.user.findFirst({
-      columns: { id: true, email: true, status: true, emailVerifiedAt: true },
-      where: { email },
-      with: {
-        accounts: {
-          columns: { id: true, provider: true, password: true },
-          where: { provider: "CREDENTIAL" },
-        },
-      },
-    });
-    return row ?? null;
   }
 
   async findById(id: string): Promise<IdentityUser | null> {
@@ -114,19 +87,23 @@ export class DrizzleUserRepository extends AuthUserRepositoryPort {
     return row ?? null;
   }
 
-  async existsByEmail(email: string): Promise<boolean> {
-    const count = await this.#db.$count(user, eq(user.email, email));
-    return count > 0;
-  }
-
-  // userTag가 없으면 자동 생성 (중복 시 재시도)
-  async create(data: Omit<UserInsert, "userTag"> & { userTag?: string }): Promise<IdentityUser> {
-    const userTag = data.userTag ?? (await this.#generateUniqueUserTag());
+  async create(data: {
+    readonly email: string;
+    readonly status: UserStatus;
+    readonly emailVerifiedAt?: Temporal.Instant;
+  }): Promise<IdentityUser> {
+    const userTag = await this.#generateUniqueUserTag();
 
     try {
       const [row] = await this.#db
         .insert(user)
-        .values({ ...data, userTag })
+        .values({
+          email: data.email,
+          status: data.status,
+          emailVerifiedAt:
+            data.emailVerifiedAt == null ? undefined : instantToDate(data.emailVerifiedAt),
+          userTag,
+        })
         .returning();
       return toIdentityUser(requireRecord(row));
     } catch (error) {
@@ -157,12 +134,8 @@ export class DrizzleUserRepository extends AuthUserRepositoryPort {
     });
   }
 
-  async updateStatus(id: string, status: UserStatus): Promise<UserRow> {
-    return this.#update(id, { status });
-  }
-
-  async markEmailVerified(id: string): Promise<UserRow> {
-    return this.#update(id, { emailVerifiedAt: now(), status: "ACTIVE" });
+  async markEmailVerified(id: string, now: Temporal.Instant): Promise<void> {
+    await this.#update(id, { emailVerifiedAt: instantToDate(now), status: "ACTIVE" });
   }
 
   async findActiveAccounts(userIds: readonly string[]): Promise<readonly UserActivity[]> {
@@ -310,8 +283,12 @@ export class DrizzleUserRepository extends AuthUserRepositoryPort {
     requireRecord(deleted[0]);
   }
 
-  async #update(id: string, patch: Partial<UserInsert>): Promise<UserRow> {
-    const [row] = await this.#db.update(user).set(patch).where(eq(user.id, id)).returning();
-    return requireRecord(row);
+  async #update(id: string, patch: Partial<UserInsert>): Promise<void> {
+    const [row] = await this.#db
+      .update(user)
+      .set(patch)
+      .where(eq(user.id, id))
+      .returning({ id: user.id });
+    requireRecord(row);
   }
 }

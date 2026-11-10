@@ -1,3 +1,5 @@
+import type { ClockPort } from "#api/shared/application/ports/clock.port";
+
 import type { AuthOAuthStateRepositoryPort } from "../ports/auth-oauth-state.repository.port.js";
 
 export interface GetOAuthRedirectUriQuery {
@@ -6,6 +8,7 @@ export interface GetOAuthRedirectUriQuery {
 
 interface GetOAuthRedirectUriDependencies {
   readonly oauthStateRepository: Pick<AuthOAuthStateRepositoryPort, "findByState">;
+  readonly clock: ClockPort;
 }
 
 export class GetOAuthRedirectUriUseCase {
@@ -16,7 +19,10 @@ export class GetOAuthRedirectUriUseCase {
   }
 
   async execute(input: GetOAuthRedirectUriQuery): Promise<string | null> {
-    const state = await this.#dependencies.oauthStateRepository.findByState(input.state);
+    const state = await this.#dependencies.oauthStateRepository.findByState(
+      input.state,
+      this.#dependencies.clock.now(),
+    );
     return state?.redirectUri ?? null;
   }
 }

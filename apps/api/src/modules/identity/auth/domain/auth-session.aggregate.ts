@@ -1,6 +1,7 @@
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { AggregateRoot } from "#api/shared/domain/model/aggregate-root";
 
+import { AUTH_DEFAULTS, type DeviceFingerprint } from "./auth.constants.js";
 import { SessionId } from "./session-id.vo.js";
 import { getSessionValidity, type SessionValidity } from "./session-validity.domain-service.js";
 
@@ -11,6 +12,7 @@ export interface AuthSessionPrimitives {
   readonly previousTokenHash: string | null;
   readonly tokenFamily: string;
   readonly tokenVersion: number;
+  readonly deviceFingerprint: DeviceFingerprint;
   readonly ipAddress: string;
   readonly userAgent: string;
   readonly lastUsedAt: Temporal.Instant;
@@ -19,19 +21,9 @@ export interface AuthSessionPrimitives {
   readonly revokedAt: Temporal.Instant | null;
 }
 
-interface AuthSessionProps {
+type AuthSessionProps = Omit<AuthSessionPrimitives, "id" | "userId"> & {
   readonly userId: UserId;
-  readonly refreshTokenHash: string;
-  readonly previousTokenHash: string | null;
-  readonly tokenFamily: string;
-  readonly tokenVersion: number;
-  readonly ipAddress: string;
-  readonly userAgent: string;
-  readonly lastUsedAt: Temporal.Instant;
-  readonly createdAt: Temporal.Instant;
-  readonly expiresAt: Temporal.Instant;
-  readonly revokedAt: Temporal.Instant | null;
-}
+};
 
 /** refresh 토큰 회전 계획. 저장소가 expectedTokenVersion을 조건으로 원자적으로 바꾼다 */
 export interface AuthSessionRotation {
@@ -44,19 +36,42 @@ export interface AuthSessionRotation {
 
 /** refresh 토큰 회전·재사용 탐지·소유 규칙을 가진 로그인 세션 */
 export class AuthSession extends AggregateRoot<SessionId, AuthSessionProps> {
+  // refresh 토큰이 세션 id를 담아 id를 먼저 받고 발급한 토큰의 hash로 만든다
+  static create(params: {
+    readonly id: SessionId;
+    readonly userId: string;
+    readonly refreshTokenHash: string;
+    readonly tokenFamily: string;
+    readonly deviceFingerprint: DeviceFingerprint;
+    readonly userAgent: string;
+    readonly ipAddress: string;
+    readonly expiresAt: Temporal.Instant;
+    readonly now: Temporal.Instant;
+  }): AuthSession {
+    return new AuthSession(params.id, {
+      userId: UserId.reconstitute(params.userId),
+      refreshTokenHash: params.refreshTokenHash,
+      previousTokenHash: null,
+      tokenFamily: params.tokenFamily,
+      tokenVersion: 1,
+      deviceFingerprint: params.deviceFingerprint.substring(
+        0,
+        AUTH_DEFAULTS.MAX_DEVICE_FINGERPRINT_LENGTH,
+      ),
+      ipAddress: params.ipAddress,
+      userAgent: params.userAgent,
+      lastUsedAt: params.now,
+      createdAt: params.now,
+      expiresAt: params.expiresAt,
+      revokedAt: null,
+    });
+  }
+
   static reconstitute(primitives: AuthSessionPrimitives): AuthSession {
-    return new AuthSession(SessionId.reconstitute(primitives.id), {
-      userId: UserId.reconstitute(primitives.userId),
-      refreshTokenHash: primitives.refreshTokenHash,
-      previousTokenHash: primitives.previousTokenHash,
-      tokenFamily: primitives.tokenFamily,
-      tokenVersion: primitives.tokenVersion,
-      ipAddress: primitives.ipAddress,
-      userAgent: primitives.userAgent,
-      lastUsedAt: primitives.lastUsedAt,
-      createdAt: primitives.createdAt,
-      expiresAt: primitives.expiresAt,
-      revokedAt: primitives.revokedAt,
+    const { id, userId, ...props } = primitives;
+    return new AuthSession(SessionId.reconstitute(id), {
+      ...props,
+      userId: UserId.reconstitute(userId),
     });
   }
 
@@ -82,6 +97,22 @@ export class AuthSession extends AggregateRoot<SessionId, AuthSessionProps> {
 
   get revokedAt(): Temporal.Instant | null {
     return this.props.revokedAt;
+  }
+
+  get ipAddress(): string {
+    return this.props.ipAddress;
+  }
+
+  get userAgent(): string {
+    return this.props.userAgent;
+  }
+
+  get lastUsedAt(): Temporal.Instant {
+    return this.props.lastUsedAt;
+  }
+
+  get createdAt(): Temporal.Instant {
+    return this.props.createdAt;
   }
 
   isOwnedBy(userId: UserId): boolean {
@@ -125,19 +156,6 @@ export class AuthSession extends AggregateRoot<SessionId, AuthSessionProps> {
   }
 
   toPrimitives(): AuthSessionPrimitives {
-    return {
-      id: this.id.value,
-      userId: this.props.userId.value,
-      refreshTokenHash: this.props.refreshTokenHash,
-      previousTokenHash: this.props.previousTokenHash,
-      tokenFamily: this.props.tokenFamily,
-      tokenVersion: this.props.tokenVersion,
-      ipAddress: this.props.ipAddress,
-      userAgent: this.props.userAgent,
-      lastUsedAt: this.props.lastUsedAt,
-      createdAt: this.props.createdAt,
-      expiresAt: this.props.expiresAt,
-      revokedAt: this.props.revokedAt,
-    };
+    return { id: this.id.value, ...this.props, userId: this.props.userId.value };
   }
 }

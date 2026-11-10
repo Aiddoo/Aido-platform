@@ -6,7 +6,10 @@ import type { SupportedLocale } from "#api/shared/domain/locale";
 import { type AuthAccountRepositoryPort } from "../ports/auth-account.repository.port.js";
 import { type AuthUserRepositoryPort } from "../ports/auth-user.repository.port.js";
 import { type RetentionEnrollerPort } from "../ports/retention-enroller.port.js";
-import { type UserProvisioningSeederPort } from "../ports/user-provisioning-seeder.port.js";
+import type {
+  ProvisioningConsent,
+  UserProvisioningSeederPort,
+} from "../ports/user-provisioning-seeder.port.js";
 
 /** 신원 계정 유형 — 크레덴셜(이메일) 또는 소셜(OAuth) */
 type ProvisionAccount =
@@ -21,18 +24,12 @@ type ProvisionAccount =
 export interface ProvisionUserCommand {
   email: string;
   status: UserStatus;
-  /** 소셜은 즉시 인증됨(now()), 크레덴셜은 미설정(이메일 인증 대기) */
-  emailVerifiedAt?: Date;
+  /** 소셜은 가입 시각에 인증됨, 크레덴셜은 비운다(이메일 인증 대기) */
+  emailVerifiedAt?: Temporal.Instant;
   account: ProvisionAccount;
   profile: { name?: string; profileImage?: string };
-  consent: {
-    termsAgreedAt?: Date;
-    privacyAgreedAt?: Date;
-    /** 동의한 약관 버전(TERMS_VERSION.CURRENT). 약관에 동의하지 않았으면 비운다. */
-    agreedTermsVersion?: string;
-    marketingAgreedAt?: Date;
-    marketingPushAgreedAt?: Date;
-  };
+  /** 동의한 약관 버전(TERMS_VERSION.CURRENT)은 약관에 동의하지 않았으면 비운다 */
+  consent: ProvisioningConsent;
   /** 가입 요청의 앱 언어. 기본 카테고리 이름에 쓴다. */
   locale?: SupportedLocale;
 }

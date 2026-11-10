@@ -1,6 +1,7 @@
 import { REVOKE_REASON, SECURITY_EVENT } from "@aido/api/vocabulary";
 
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
+import type { ClockPort } from "#api/shared/application/ports/clock.port";
 
 import { AUTH_DEFAULTS } from "../../domain/auth.constants.js";
 import { AuthLogEvent } from "../auth.log-events.js";
@@ -20,6 +21,7 @@ interface LogoutAllDependencies {
   readonly securityLogRepository: Pick<AuthSecurityLogRepositoryPort, "create">;
   readonly cacheService: Pick<AuthCachePort, "invalidateSession">;
   readonly pushDevices: Pick<SessionPushDeviceReleaserPort, "releaseSessions">;
+  readonly clock: ClockPort;
   readonly logger: ApplicationLoggerPort;
 }
 
@@ -31,10 +33,11 @@ export class LogoutAllUseCase {
   }
 
   async execute(input: LogoutAllCommand): Promise<{ message: string; revokedCount: number }> {
-    const revokedSessionIds = await this.#dependencies.sessionRepository.revokeAllByUserId(
-      input.userId,
-      REVOKE_REASON.USER_LOGOUT_ALL,
-    );
+    const revokedSessionIds = await this.#dependencies.sessionRepository.revokeAllByUserId({
+      userId: input.userId,
+      reason: REVOKE_REASON.USER_LOGOUT_ALL,
+      now: this.#dependencies.clock.now(),
+    });
     await Promise.all(
       revokedSessionIds.map((sessionId) =>
         this.#dependencies.cacheService.invalidateSession(sessionId),

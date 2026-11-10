@@ -1,48 +1,33 @@
+import type { RevokeReason } from "@aido/api/vocabulary";
+
 import type { AuthSession, AuthSessionRotation } from "../../domain/auth-session.aggregate.js";
-import type { DeviceFingerprint } from "../../domain/auth.constants.js";
-
-export interface AuthSessionRecord {
-  id: string;
-  userId: string;
-  refreshTokenHash: string;
-  previousTokenHash: string | null;
-  tokenFamily: string;
-  tokenVersion: number;
-  ipAddress: string;
-  userAgent: string;
-  lastUsedAt: Date;
-  createdAt: Date;
-  expiresAt: Date;
-  revokedAt: Date | null;
-}
-
-export interface NewAuthSession {
-  readonly userId: string;
-  readonly tokenFamily: string;
-  readonly tokenVersion: number;
-  readonly deviceFingerprint: DeviceFingerprint;
-  readonly userAgent: string;
-  readonly ipAddress: string;
-  readonly expiresAt: Temporal.Instant;
-}
+import type { SessionId } from "../../domain/session-id.vo.js";
 
 export abstract class AuthSessionRepositoryPort {
-  abstract create(data: NewAuthSession): Promise<AuthSessionRecord>;
-  abstract updateRefreshTokenHash(id: string, refreshTokenHash: string): Promise<unknown>;
-  abstract findById(id: string): Promise<AuthSession | null>;
-  abstract findByRefreshTokenHash(hash: string): Promise<AuthSession | null>;
-  abstract findActiveByUserId(userId: string): Promise<AuthSessionRecord[]>;
+  abstract nextId(): Promise<SessionId>;
+  abstract findById(sessionId: string): Promise<AuthSession | null>;
+  abstract findByRefreshTokenHash(refreshTokenHash: string): Promise<AuthSession | null>;
+  /** 폐기되지 않고 만료 전인 세션을 최근 사용 순으로 준다 */
+  abstract listActiveByUserId(userId: string, now: Temporal.Instant): Promise<AuthSession[]>;
+  abstract save(session: AuthSession): Promise<void>;
   /** 버전이 그대로이고 폐기되지 않았을 때만 바꾼다. 경합에 지면 false다 */
   abstract rotateToken(
-    id: string,
+    sessionId: string,
     rotation: AuthSessionRotation,
     now: Temporal.Instant,
   ): Promise<boolean>;
-  abstract revoke(id: string, reason: string): Promise<unknown>;
-  abstract revokeByTokenFamily(tokenFamily: string, reason: string): Promise<readonly string[]>;
-  abstract revokeAllByUserId(
-    userId: string,
-    reason: string,
-    excludeSessionId?: string,
+  abstract revoke(sessionId: string, reason: RevokeReason, now: Temporal.Instant): Promise<void>;
+  /** 아직 폐기되지 않은 세션만 폐기하고 그 id를 준다 */
+  abstract revokeByTokenFamily(
+    tokenFamily: string,
+    reason: RevokeReason,
+    now: Temporal.Instant,
   ): Promise<readonly string[]>;
+  /** 아직 폐기되지 않은 세션만 폐기하고 그 id를 준다 */
+  abstract revokeAllByUserId(params: {
+    readonly userId: string;
+    readonly reason: RevokeReason;
+    readonly now: Temporal.Instant;
+    readonly exceptSessionId?: string;
+  }): Promise<readonly string[]>;
 }
