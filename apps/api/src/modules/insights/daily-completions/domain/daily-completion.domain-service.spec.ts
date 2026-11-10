@@ -72,6 +72,26 @@ describe("일일 완료 집계", () => {
     ]);
   });
 
+  it("카테고리 색은 중복 없이 문자열 오름차순으로 준다(앱 정렬과 같은 순서)", () => {
+    // Given
+    const groups = ["#FFB3B3", "#00AA00", "#FF6B43", "#00AA00"].map((categoryColor) => ({
+      startDate: calendarDate("2028-02-15"),
+      completed: false,
+      categoryColor,
+      todoCount: 1,
+    }));
+
+    // When
+    const [completion] = tallyDailyCompletions({
+      userId: USER,
+      range: createDateRangeFixture("2028-02-01", "2028-02-29"),
+      groups,
+    });
+
+    // Then
+    expect(completion?.categoryColors).toEqual(["#00AA00", "#FF6B43", "#FFB3B3"]);
+  });
+
   it("완료일 수는 할 일을 모두 끝낸 날만 센다", () => {
     // Given
     const completions = [

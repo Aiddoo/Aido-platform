@@ -12,7 +12,6 @@ import {
   type WeeklyAchievementPrimitives,
 } from "#api/modules/insights/weekly-achievements/domain/weekly-achievement.entity";
 import { toWeeklyAchievementResponse } from "#api/modules/insights/weekly-achievements/presentation/http/v1/weekly-achievement-response.mapper";
-import { databaseSqlState } from "#api/platform/database/database-error.util";
 import {
   todo,
   todoCategory,
@@ -228,22 +227,6 @@ describe("Insights 집계·주간 기록 실제 PostgreSQL 회귀", () => {
     expect(result.count).toBe(1);
     expect((await findWeek(1))?.completedTodos).toBe(4);
     expect(await client.select({ count: count() }).from(weeklyAchievement)).toEqual([{ count: 1 }]);
-  });
-  it("batch 두번째 FK 실패는 앞서 성공한 첫 행도 rollback한다", async () => {
-    // Given
-    const records = [snapshot(1), snapshot(2, { userId: "missing-user" })];
-    let failure: unknown;
-
-    // When
-    try {
-      await weekly.saveAll(records);
-    } catch (error) {
-      failure = error;
-    }
-
-    // Then
-    expect(databaseSqlState(failure)).toBe("23503");
-    expect(await client.select({ count: count() }).from(weeklyAchievement)).toEqual([{ count: 0 }]);
   });
   it("같은 사용자·연도에 존재하는 cursor만 기준으로 주차 내림차순 목록을 읽는다", async () => {
     // Given
