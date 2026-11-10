@@ -27,7 +27,7 @@ export class InMemoryBroadcastCampaignRepository extends BroadcastCampaignReposi
     return BroadcastCampaignId.reconstitute(`c-new-${this.#sequence}`);
   }
 
-  async createOrFind(
+  async acceptByRequestId(
     campaign: BroadcastCampaign,
   ): Promise<{ readonly campaign: BroadcastCampaign; readonly created: boolean }> {
     const existing = [...this.#campaigns.values()].find(

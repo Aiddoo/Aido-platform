@@ -41,7 +41,10 @@ export interface CreateBroadcastCampaignResult {
 
 export interface CreateBroadcastCampaignDependencies {
   readonly unitOfWork: Pick<UnitOfWorkPort, "run">;
-  readonly campaignRepository: Pick<BroadcastCampaignRepositoryPort, "nextId" | "createOrFind">;
+  readonly campaignRepository: Pick<
+    BroadcastCampaignRepositoryPort,
+    "nextId" | "acceptByRequestId"
+  >;
   readonly userDirectory: Pick<AdminUserDirectoryReaderPort, "countTargets">;
   readonly jobEnqueuer: Pick<BroadcastJobEnqueuerPort, "enqueueFanOut">;
   readonly clock: ClockPort;
@@ -70,16 +73,13 @@ export class CreateBroadcastCampaignUseCase {
       targetFilter: command.targetFilter,
       action: command.action ?? null,
       force: command.force,
-      delivery:
-        command.delivery == null
-          ? BroadcastDelivery.immediate()
-          : BroadcastDelivery.create(command.delivery),
+      delivery: BroadcastDelivery.create(command.delivery ?? { mode: "NOW" }),
       now: clock.now(),
     });
 
     const result = await unitOfWork.run(async () => {
       const targetCount = await userDirectory.countTargets(command.targetFilter);
-      const { campaign, created } = await campaignRepository.createOrFind(draft);
+      const { campaign, created } = await campaignRepository.acceptByRequestId(draft);
       if (!created) {
         if (!campaign.isSameRequest(draft)) {
           throw broadcastRequestConflict(command.requestId);

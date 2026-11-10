@@ -29,7 +29,7 @@ export class DrizzleBroadcastCampaignRepository extends BroadcastCampaignReposit
     return BroadcastCampaignId.reconstitute(createEntityId());
   }
 
-  async createOrFind(
+  async acceptByRequestId(
     campaign: BroadcastCampaign,
   ): Promise<{ readonly campaign: BroadcastCampaign; readonly created: boolean }> {
     const [inserted] = await this.#db

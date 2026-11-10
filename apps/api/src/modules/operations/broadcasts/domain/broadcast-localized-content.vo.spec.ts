@@ -21,9 +21,7 @@ describe("BroadcastLocalizedContent — 언어별 문구", () => {
   it("없거나 비어 있으면 아무 언어도 담지 않는다", () => {
     expect(BroadcastLocalizedContent.create(undefined).isEmpty).toBe(true);
     expect(BroadcastLocalizedContent.create({}).isEmpty).toBe(true);
-    expect(BroadcastLocalizedContent.none().equals(BroadcastLocalizedContent.create(null))).toBe(
-      true,
-    );
+    expect(BroadcastLocalizedContent.create(null).isEmpty).toBe(true);
   });
 
   it("언어별 제목이나 본문이 비어 있으면 SYS_0002로 거부한다", () => {

@@ -19,7 +19,7 @@ describe("resolveRecipientStartAfter — 수신자 현지 시각 발송", () => 
   it("지금 발송이면 바로 보낸다(null)", () => {
     expect(
       resolveRecipientStartAfter({
-        delivery: BroadcastDelivery.immediate(),
+        delivery: BroadcastDelivery.create({ mode: "NOW" }),
         timeZone: SEOUL,
         now,
       }),

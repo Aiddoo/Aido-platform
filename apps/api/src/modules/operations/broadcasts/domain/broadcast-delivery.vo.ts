@@ -26,13 +26,9 @@ export type BroadcastDeliveryValue =
 
 // NOW는 접수 직후, RECIPIENT_LOCAL_TIME은 수신자 저장 시간대의 그 날짜·시각에 보낸다
 export class BroadcastDelivery extends ValueObject<BroadcastDeliveryValue> {
-  static immediate(): BroadcastDelivery {
-    return new BroadcastDelivery({ mode: "NOW" });
-  }
-
   static create(input: BroadcastDeliveryPrimitives): BroadcastDelivery {
     return match(input)
-      .with({ mode: "NOW" }, () => BroadcastDelivery.immediate())
+      .with({ mode: "NOW" }, () => new BroadcastDelivery({ mode: "NOW" }))
       .with({ mode: "RECIPIENT_LOCAL_TIME" }, (local) => {
         try {
           return new BroadcastDelivery({
@@ -49,7 +45,7 @@ export class BroadcastDelivery extends ValueObject<BroadcastDeliveryValue> {
 
   // 저장값은 접수할 때 이미 검증했다. 컬럼이 비어 있으면 이 기능 전에 접수한 캠페인이라 NOW다
   static reconstitute(input: BroadcastDeliveryPrimitives | null): BroadcastDelivery {
-    return input == null ? BroadcastDelivery.immediate() : BroadcastDelivery.create(input);
+    return BroadcastDelivery.create(input ?? { mode: "NOW" });
   }
 
   toPrimitives(): BroadcastDeliveryPrimitives {

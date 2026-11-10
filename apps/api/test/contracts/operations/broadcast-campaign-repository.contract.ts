@@ -43,7 +43,7 @@ export function describeBroadcastCampaignRepositoryContract(
       });
 
       // When
-      const result = await repository.createOrFind(campaign);
+      const result = await repository.acceptByRequestId(campaign);
       const found = await repository.findById(campaign.id);
 
       // Then
@@ -58,7 +58,7 @@ export function describeBroadcastCampaignRepositoryContract(
       const campaign = await createCampaign(repository);
 
       // When
-      await repository.createOrFind(campaign);
+      await repository.acceptByRequestId(campaign);
       const found = await repository.findById(campaign.id);
 
       // Then
@@ -72,11 +72,11 @@ export function describeBroadcastCampaignRepositoryContract(
       // Given
       const repository = await createRepository();
       const first = await createCampaign(repository);
-      await repository.createOrFind(first);
+      await repository.acceptByRequestId(first);
       const replay = await createCampaign(repository, { body: "바뀐 본문" });
 
       // When
-      const result = await repository.createOrFind(replay);
+      const result = await repository.acceptByRequestId(replay);
 
       // Then
       expect(result.created).toBe(false);
@@ -99,7 +99,7 @@ export function describeBroadcastCampaignRepositoryContract(
       // Given
       const repository = await createRepository();
       const created = await createCampaign(repository);
-      await repository.createOrFind(created);
+      await repository.acceptByRequestId(created);
       const campaign = await repository.findByIdForUpdate(created.id);
       campaign?.start(LATER);
       campaign?.recordPage(
@@ -130,10 +130,10 @@ export function describeBroadcastCampaignRepositoryContract(
     it("다른 요청 ID는 별개 캠페인이다", async () => {
       // Given
       const repository = await createRepository();
-      await repository.createOrFind(await createCampaign(repository));
+      await repository.acceptByRequestId(await createCampaign(repository));
 
       // When
-      const second = await repository.createOrFind(
+      const second = await repository.acceptByRequestId(
         await createCampaign(repository, { requestId: OTHER_REQUEST_ID }),
       );
 

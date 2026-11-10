@@ -8,10 +8,6 @@ export type BroadcastLocalizedCopy = Readonly<Partial<Record<SupportedLocale, Br
 
 // 언어별 문구. 없는 언어는 캠페인의 기본 title·body로 되돌아가므로 일부 언어만 담을 수 있다
 export class BroadcastLocalizedContent extends ValueObject<BroadcastLocalizedCopy> {
-  static none(): BroadcastLocalizedContent {
-    return new BroadcastLocalizedContent({});
-  }
-
   static create(input: BroadcastLocalizedCopy | null | undefined): BroadcastLocalizedContent {
     return new BroadcastLocalizedContent(normalize(input, (copy) => BroadcastContent.create(copy)));
   }
