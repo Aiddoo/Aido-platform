@@ -1,6 +1,6 @@
 import { Module } from "@nestjs/common";
 
-import { AccessModule } from "#api/modules/access/access-quota.public";
+import { AccessQuotasModule } from "#api/modules/access/quotas/access-quotas.public";
 import { IdentitySettingsModule } from "#api/modules/identity/identity-settings.public";
 import { PlanningCategoriesModule } from "#api/modules/planning/categories/planning-categories.public";
 import { PlanningTodosModule } from "#api/modules/planning/todos/planning-todos.public";
@@ -14,7 +14,7 @@ import { AiController } from "./presentation/http/v1/ai.controller.js";
 /** 글·메모를 할 일로 바꾸는 AI 파싱. 동의 guard와 사용량 정산은 같은 한도를 쓰는 voice도 쓴다. */
 @Module({
   imports: [
-    AccessModule,
+    AccessQuotasModule,
     AiAssistanceGenerationModule,
     IdentitySettingsModule,
     PlanningCategoriesModule,

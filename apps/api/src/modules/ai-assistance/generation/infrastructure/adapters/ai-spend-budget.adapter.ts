@@ -2,10 +2,9 @@ import { AI_PROVIDER_IDS } from "@aido/api/vocabulary";
 import { Inject, Injectable, Logger, type OnModuleInit } from "@nestjs/common";
 
 import {
-  ENTITLEMENT_READER,
-  type EntitlementReaderPort,
-  isExemptFromUserSpendLimit,
-} from "#api/modules/access/access-entitlement.public";
+  EntitlementReaderPort,
+  isUnlimitedSubject,
+} from "#api/modules/access/entitlements/access-entitlements.public";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
 import {
   USAGE_METER,
@@ -67,8 +66,7 @@ export class AiSpendBudgetAdapter implements OnModuleInit {
     config: TypedConfigService,
     @Inject(USAGE_METER) meter: Pick<UsageMeterPort, "add" | "read">,
     @Inject(OPERATIONAL_ALERT) alert: OperationalAlertPort,
-    @Inject(ENTITLEMENT_READER)
-    access: Pick<EntitlementReaderPort, "getAccessSnapshot">,
+    @Inject(EntitlementReaderPort) access: Pick<EntitlementReaderPort, "getAccessSnapshot">,
   ) {
     this.#config = config;
     this.#meter = meter;
@@ -143,11 +141,14 @@ export class AiSpendBudgetAdapter implements OnModuleInit {
     }
   }
 
-  /** 예산을 넘긴 사용자만 등급을 읽어 평소 요청에 조회를 더하지 않는다. 못 읽으면 제한을 유지한다. */
+  /**
+   * 사용자 비용 예산(이 어댑터)은 사용자 횟수 한도(access 원장)와 다른 상한이다. 무제한 주체만 예외이고
+   * 전역 예산·킬 스위치는 그대로다. 예산을 넘긴 사용자만 등급을 읽고, 못 읽으면 제한을 유지한다.
+   */
   async #isExemptFromUserLimit(userId: string): Promise<boolean> {
     try {
       const { tier } = await this.#access.getAccessSnapshot(userId);
-      return isExemptFromUserSpendLimit(tier);
+      return isUnlimitedSubject({ tier });
     } catch (error) {
       this.#logger.error({
         event: AiGuardLogEvent.SPEND_READ_FAILED,

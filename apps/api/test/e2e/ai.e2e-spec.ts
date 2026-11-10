@@ -5,7 +5,7 @@ import { eq } from "drizzle-orm";
 import request from "supertest";
 import { assert } from "vitest";
 
-import { QUOTA_LEDGER, type QuotaLedgerPort } from "#api/modules/access/access-quota.public";
+import { QuotaLedgerPort } from "#api/modules/access/quotas/access-quotas.public";
 import { AiGeneratorPort } from "#api/modules/ai-assistance/generation/ai-assistance-generation.public";
 /**
  * AI 모듈 E2E 테스트
@@ -177,11 +177,9 @@ describe("AI E2E", () => {
       it("확정 뒤 한도를 읽지 못해도 파싱 결과를 주고 featureQuota만 뺀다", async () => {
         // Given
         fakeAiGenerator.setResponse({ title: "회의", date: onDate(2025, 1, 26) });
-        const ledger = ctx.module.get<QuotaLedgerPort>(QUOTA_LEDGER);
-        const read = ledger.read.bind(ledger);
-        vi.spyOn(ledger, "read")
-          .mockImplementationOnce(read)
-          .mockRejectedValueOnce(new TypeError("db down"));
+        // 남은 횟수 선검사(@RequireQuota)는 원장 read를 거치지 않아 확정 뒤 읽기만 실패시킨다
+        const ledger = ctx.module.get(QuotaLedgerPort);
+        vi.spyOn(ledger, "read").mockRejectedValueOnce(new TypeError("db down"));
 
         // When
         const response = await request(ctx.app.getHttpServer())
@@ -554,7 +552,7 @@ describe("AI E2E", () => {
       it("환불이 저장되지 않으면 같은 코드만 주고 차감 없음 상세를 싣지 않는다", async () => {
         // Given
         fakeAiGenerator.setAvailable(false);
-        const ledger = ctx.module.get<QuotaLedgerPort>(QUOTA_LEDGER);
+        const ledger = ctx.module.get(QuotaLedgerPort);
         vi.spyOn(ledger, "refund").mockResolvedValueOnce(false);
 
         // When

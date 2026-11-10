@@ -6,7 +6,6 @@ export {
   assertEntitled,
   calculateRemainingLimit,
   isExemptFromDormancy,
-  isExemptFromUserSpendLimit,
   premiumFeatureDenied,
   type AccessSnapshot,
   type EntitlementReaderPort,

@@ -158,14 +158,6 @@ export function resolveQuotaLimit(params: {
   return { limit: definition.fairUse.premium, isFairUse: true };
 }
 
-/**
- * 사용량 기록과 전역 예산·킬 스위치·입력 상한은 등급과 상관없이 그대로다.
- * ai가 isUnlimitedSubject로 옮기면 지운다.
- */
-export function isExemptFromUserSpendLimit(tier: AccessTier): boolean {
-  return isUnlimitedSubject({ tier });
-}
-
 /** 유료·ADMIN은 앱을 열지 않아도 활성으로 다룬다. 휴면으로 멈추는 등급은 FREE뿐이다. */
 export function isExemptFromDormancy(tier: AccessTier): boolean {
   return tier !== "FREE";

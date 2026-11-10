@@ -9,6 +9,7 @@ import { Body, Controller, Get, HttpCode, HttpStatus, Post, UseGuards } from "@n
 import { ApiBearerAuth, ApiHeader, ApiTags } from "@nestjs/swagger";
 import { Throttle } from "@nestjs/throttler";
 
+import { RequireQuota } from "#api/modules/access/quotas/access-quotas.public";
 import {
   CurrentUser,
   type CurrentUserPayload,
@@ -32,7 +33,6 @@ import { GetAiUsageUseCase } from "../../../application/use-cases/get-ai-usage.u
 import { ParseMemoUseCase } from "../../../application/use-cases/parse-memo.use-case.js";
 import { ParseTodoUseCase } from "../../../application/use-cases/parse-todo.use-case.js";
 import { AiDataSharingConsentGuard } from "../guards/ai-data-sharing-consent.guard.js";
-import { AiUsageGuard } from "../guards/ai-usage.guard.js";
 import { toAiUsageData } from "./ai-usage-response.mapper.js";
 import {
   AiUsageResponseDto,
@@ -98,7 +98,9 @@ export class AiController {
    */
   @Post("parse-todo")
   @HttpCode(HttpStatus.OK)
-  @UseGuards(AiDataSharingConsentGuard, AiUsageGuard)
+  // 데코레이터는 아래부터 붙으므로 동의 확인이 남은 횟수 확인보다 먼저 돈다
+  @RequireQuota("AI_PLAN")
+  @UseGuards(AiDataSharingConsentGuard)
   // 유료 사용자는 월 한도가 없어 IP를 바꿔 가며 유료 모델 호출을 반복하지 못하게 사용자 기준으로 센다.
   @ThrottleByUser()
   @Throttle({ default: AI_PARSE_THROTTLE.TODO })
@@ -310,7 +312,9 @@ if (confirmed) {
    */
   @Post("parse-memo")
   @HttpCode(HttpStatus.OK)
-  @UseGuards(AiDataSharingConsentGuard, AiUsageGuard)
+  // 데코레이터는 아래부터 붙으므로 동의 확인이 남은 횟수 확인보다 먼저 돈다
+  @RequireQuota("AI_PLAN")
+  @UseGuards(AiDataSharingConsentGuard)
   // 유료 사용자는 월 한도가 없어 IP를 바꿔 가며 유료 모델 호출을 반복하지 못하게 사용자 기준으로 센다.
   @ThrottleByUser()
   @Throttle({ default: AI_PARSE_THROTTLE.MEMO })

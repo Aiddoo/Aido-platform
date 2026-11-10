@@ -14,7 +14,7 @@ import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/inde
 const AT = new Date("2026-04-12T12:00:00.000Z");
 const MONTH_RESET = "2026-04-30T15:00:00.000Z";
 
-// 공개 데코레이터를 소비 Context의 라우트처럼 붙여 본다. ai가 AiUsageGuard를 옮기기 전까지 실제 라우트가 없다
+// 공개 데코레이터를 소비 Context의 라우트처럼 붙여 본다
 @Controller("test-require-quota")
 class RequireQuotaProbeController {
   @Post("ai-plan")
