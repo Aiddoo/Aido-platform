@@ -8,6 +8,8 @@ import {
 import { createReportAiResponse } from "#test/fixtures/ai-response.fixture";
 import { createAiGenerationError } from "#test/mocks/fake-ai.generator";
 
+import { AiReport } from "../../domain/ai-report.aggregate.js";
+
 describe("GenerateReportUseCase", () => {
   it.each([
     {
@@ -247,7 +249,7 @@ describe("GenerateReportUseCase", () => {
           locale,
         });
         // Then - 이전 기간과 저장 결과 확인
-        expect(result?.id).toBe(1);
+        expect(result?.id.value).toBe(1);
         expect(f.reportRepository.saved[0]).toMatchObject({
           type,
           year: 2026,
@@ -280,7 +282,7 @@ describe("GenerateReportUseCase", () => {
         type: "WEEKLY",
       });
       // Then - 유료 역할 예외 유지
-      expect(report?.id).toBe(1);
+      expect(report?.id.value).toBe(1);
       expect(f.reportRepository.saved).toHaveLength(1);
     }));
 
@@ -572,29 +574,32 @@ describe("GenerateReportUseCase", () => {
     withAiAssistanceTime(async () => {
       // Given - 지난 리포트는 ko, 이번 생성은 en
       const f = useReportResponse(createAiAssistanceFixture(), "en");
-      await f.reportRepository.create({
-        userId: f.userId,
-        type: "WEEKLY",
-        year: 2026,
-        period: 1,
-        stats: {
-          totalTodos: 1,
-          completedTodos: 1,
-          completionRate: 100,
-          prevCompletionRate: null,
-          streakDays: 1,
-        },
-        categoryBreakdown: [],
-        dayPatterns: [],
-        timePatterns: [],
-        aiSummary: "요약",
-        aiTips: ["지난 한국어 팁"],
-        locale: "ko",
-        hasActivity: true,
-        generatedAt: new Date("2026-01-05T00:00:00Z"),
-        contentSource: "AI",
-        promptVersion: "report@v2.1",
-      });
+      f.reportRepository.seed(
+        AiReport.reconstitute({
+          id: 99,
+          userId: f.userId,
+          type: "WEEKLY",
+          year: 2026,
+          period: 1,
+          stats: {
+            totalTodos: 1,
+            completedTodos: 1,
+            completionRate: 100,
+            prevCompletionRate: null,
+            streakDays: 1,
+          },
+          categoryBreakdown: [],
+          dayPatterns: [],
+          timePatterns: [],
+          aiSummary: "요약",
+          aiTips: ["지난 한국어 팁"],
+          locale: "ko",
+          hasActivity: true,
+          generatedAt: Temporal.Instant.from("2026-01-05T00:00:00Z"),
+          contentSource: "AI",
+          promptVersion: "report@v2.1",
+        }),
+      );
       // When
       await f.generateReport.execute({
         userId: f.userId,

@@ -15,6 +15,7 @@ import type { TodoSummaryForAnalysis } from "#api/modules/ai-assistance/suggesti
 import { InMemoryAiReportRepository } from "#test/doubles/ai-assistance/in-memory-ai-report.repository";
 import { InMemorySuggestionRepository } from "#test/doubles/ai-assistance/in-memory-suggestion.repository";
 import { createSpyApplicationLogger } from "#test/doubles/ai-assistance/spy-application-logger";
+import { StubLatestReportStatsReader } from "#test/doubles/ai-assistance/stub-latest-report-stats.reader";
 import { StubSuggestionActivityReader } from "#test/doubles/ai-assistance/stub-suggestion-activity.reader";
 import { DateClock } from "#test/doubles/platform/date-clock";
 import { FakeAiGenerator } from "#test/mocks/fake-ai.generator";
@@ -83,7 +84,7 @@ export function createAiAssistanceFixture() {
   const reportRepository = new InMemoryAiReportRepository();
   const todoStatsReader = new StubAiTodoStatsReader();
   const weatherForecastReader = new StubAiWeatherForecastReader();
-  const latestReportStats = { findLatestWeekly: async () => null };
+  const latestReportStats = new StubLatestReportStatsReader();
   const generator = new GatedFakeAiGenerator();
   const aiDataSharingConsent = new StubAiDataSharingConsent();
   const clientAppVersion = new StubAiClientAppVersion();
@@ -185,7 +186,7 @@ export function seedPendingSuggestion(
   fixture: ReturnType<typeof createAiAssistanceFixture>,
   id = 1,
 ) {
-  return fixture.repository.save(
+  fixture.repository.seed(
     Suggestion.reconstitute({
       id,
       userId: fixture.userId,

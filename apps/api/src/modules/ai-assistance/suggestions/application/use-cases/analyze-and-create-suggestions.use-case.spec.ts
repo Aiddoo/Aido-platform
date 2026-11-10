@@ -12,6 +12,8 @@ import {
 import { weatherForecastFixture } from "#test/fixtures/weather.fixture";
 import { createAiGenerationError } from "#test/mocks/fake-ai.generator";
 
+import { Suggestion } from "../../domain/suggestion.aggregate.js";
+
 const SEOUL_GRID = { gridX: 60, gridY: 127, lat: 37.5, lon: 127 };
 
 // 고정 기록: "책 읽기 10분"(독서, 카테고리 7)을 2026-03-02·09·16(월) 세 번 완료
@@ -29,25 +31,30 @@ describe("AnalyzeAndCreateSuggestionsUseCase", () => {
         seedPendingSuggestion(f);
         seedPendingSuggestion(f, 2);
         seedPendingSuggestion(f, 3);
-        const respondedSuggestion = f.repository.rows.get(2);
-        const expiredSuggestion = f.repository.rows.get(3);
+        const respondedSuggestion = f.repository.primitivesOf(2);
+        const expiredSuggestion = f.repository.primitivesOf(3);
         assert.exists(respondedSuggestion);
         assert.exists(expiredSuggestion);
-        f.repository.rows.set(2, { ...respondedSuggestion, status: "ACCEPTED" });
-        f.repository.rows.set(3, { ...expiredSuggestion, expiresAt: new Date("2026-03-01") });
+        f.repository.seed(Suggestion.reconstitute({ ...respondedSuggestion, status: "ACCEPTED" }));
+        f.repository.seed(
+          Suggestion.reconstitute({
+            ...expiredSuggestion,
+            expiresAt: Temporal.Instant.from("2026-03-01T00:00:00Z"),
+          }),
+        );
         // When
-        const count = await f.analyze.execute(f.userId, "Asia/Seoul");
+        const count = await f.analyze.execute({ userId: f.userId, timezone: "Asia/Seoul" });
         // Then
         expect(count).toBe(1);
-        expect(f.repository.saved[0]).toMatchObject({
+        expect(f.repository.created[0]).toMatchObject({
           title: "책 읽기 10분",
           suggestedCategoryId: 7,
           scheduledTime: null,
-          expiresAt: new Date("2026-04-05T12:00:00Z"),
+          expiresAt: Temporal.Instant.from("2026-04-05T12:00:00Z"),
         });
-        expect(f.repository.rows.has(1)).toBe(false);
-        expect(f.repository.rows.get(2)?.status).toBe("ACCEPTED");
-        expect(f.repository.rows.has(3)).toBe(false);
+        expect(f.repository.primitivesOf(1) != null).toBe(false);
+        expect(f.repository.primitivesOf(2)?.status).toBe("ACCEPTED");
+        expect(f.repository.primitivesOf(3) != null).toBe(false);
         expect(f.generator.getCallCount()).toBe(1);
         expect(f.access.reads).toEqual([
           { inUnitOfWork: false, eligible: true },
@@ -68,10 +75,10 @@ describe("AnalyzeAndCreateSuggestionsUseCase", () => {
         }),
       ]);
       // When
-      const count = await f.analyze.execute(f.userId, "Asia/Seoul");
+      const count = await f.analyze.execute({ userId: f.userId, timezone: "Asia/Seoul" });
       // Then
       expect(count).toBe(1);
-      expect(f.repository.saved[0]).toMatchObject({
+      expect(f.repository.created[0]).toMatchObject({
         title: "책 읽기 10분",
         daysOfWeek: ["MON"],
         scheduledTime: null,
@@ -95,12 +102,12 @@ describe("AnalyzeAndCreateSuggestionsUseCase", () => {
       f.aiDataSharingConsent.decision = "DECLINED";
       seedPendingSuggestion(f);
       // When
-      const count = await f.analyze.execute(f.userId, "Asia/Seoul");
+      const count = await f.analyze.execute({ userId: f.userId, timezone: "Asia/Seoul" });
       // Then
       expect(count).toBe(0);
       expect(f.generator.getCallCount()).toBe(0);
       expect(f.repository.writes).toEqual([]);
-      expect(f.repository.rows.get(1)?.status).toBe("PENDING");
+      expect(f.repository.primitivesOf(1)?.status).toBe("PENDING");
     }));
 
   it("1.13.0 이상 앱을 쓰는 사용자는 동의해야 반복 제안을 분석한다", () =>
@@ -112,8 +119,11 @@ describe("AnalyzeAndCreateSuggestionsUseCase", () => {
       agreed.clientAppVersion.latestAppVersion = "1.13.0";
       agreed.aiDataSharingConsent.decision = "AGREED";
       // When
-      const skipped = await undecided.analyze.execute(undecided.userId, "Asia/Seoul");
-      await agreed.analyze.execute(agreed.userId, "Asia/Seoul");
+      const skipped = await undecided.analyze.execute({
+        userId: undecided.userId,
+        timezone: "Asia/Seoul",
+      });
+      await agreed.analyze.execute({ userId: agreed.userId, timezone: "Asia/Seoul" });
       // Then
       expect(skipped).toBe(0);
       expect(undecided.generator.getCallCount()).toBe(0);
@@ -124,15 +134,15 @@ describe("AnalyzeAndCreateSuggestionsUseCase", () => {
     withAiAssistanceTime(async () => {
       // Given
       const f = createAiAssistanceFixture();
-      f.repository.todos = [];
+      f.activityReader.todos = [];
       seedPendingSuggestion(f);
       // When
-      const count = await f.analyze.execute(f.userId, "Asia/Seoul");
+      const count = await f.analyze.execute({ userId: f.userId, timezone: "Asia/Seoul" });
       // Then
       expect(count).toBe(0);
       expect(f.generator.getCallCount()).toBe(0);
       expect(f.repository.writes).toEqual([]);
-      expect(f.repository.rows.get(1)?.status).toBe("PENDING");
+      expect(f.repository.primitivesOf(1)?.status).toBe("PENDING");
     }));
 
   it.each(["FREE", "EXPIRED", "deleted"])(
@@ -149,12 +159,12 @@ describe("AnalyzeAndCreateSuggestionsUseCase", () => {
           f.access.subscriptionStatus = state;
         }
         // When
-        const count = await f.analyze.execute(f.userId, "Asia/Seoul");
+        const count = await f.analyze.execute({ userId: f.userId, timezone: "Asia/Seoul" });
         // Then
         expect(count).toBe(0);
         expect(f.generator.getCallCount()).toBe(0);
         expect(f.repository.writes).toEqual([]);
-        expect(f.repository.rows.has(1)).toBe(true);
+        expect(f.repository.primitivesOf(1) != null).toBe(true);
       }),
   );
 
@@ -166,7 +176,7 @@ describe("AnalyzeAndCreateSuggestionsUseCase", () => {
         const f = usePickResponse(createAiAssistanceFixture());
         seedPendingSuggestion(f);
         const gate = pauseAiResponse(f.generator);
-        const pending = f.analyze.execute(f.userId, "Asia/Seoul");
+        const pending = f.analyze.execute({ userId: f.userId, timezone: "Asia/Seoul" });
         // When
         try {
           await gate.entered;
@@ -185,7 +195,7 @@ describe("AnalyzeAndCreateSuggestionsUseCase", () => {
         expect(await pending).toBe(0);
         expect(f.generator.getCallCount()).toBe(1);
         expect(f.repository.writes).toEqual([]);
-        expect(f.repository.rows.has(1)).toBe(true);
+        expect(f.repository.primitivesOf(1) != null).toBe(true);
         expect(f.access.locks).toEqual([true]);
       }),
   );
@@ -203,11 +213,11 @@ describe("AnalyzeAndCreateSuggestionsUseCase", () => {
       seedPendingSuggestion(f);
       f.generator.setRawResponse(raw);
       // When
-      const result = f.analyze.execute(f.userId, "Asia/Seoul");
+      const result = f.analyze.execute({ userId: f.userId, timezone: "Asia/Seoul" });
       // Then
       await expect(result).rejects.toThrow();
       expect(f.repository.writes).toEqual([]);
-      expect(f.repository.rows.has(1)).toBe(true);
+      expect(f.repository.primitivesOf(1) != null).toBe(true);
     }),
   );
 
@@ -220,11 +230,11 @@ describe("AnalyzeAndCreateSuggestionsUseCase", () => {
         seedPendingSuggestion(f);
         f.generator.setInvalidResponse(createAiGenerationError(kind));
         // When
-        const count = await f.analyze.execute(f.userId, "Asia/Seoul");
+        const count = await f.analyze.execute({ userId: f.userId, timezone: "Asia/Seoul" });
         // Then
         expect(count).toBe(0);
         expect(f.repository.writes).toEqual([]);
-        expect(f.repository.rows.get(1)?.status).toBe("PENDING");
+        expect(f.repository.primitivesOf(1)?.status).toBe("PENDING");
       }),
   );
 
@@ -236,7 +246,7 @@ describe("AnalyzeAndCreateSuggestionsUseCase", () => {
         const f = createAiAssistanceFixture();
         f.generator.setInvalidResponse(createAiGenerationError(kind));
         // When
-        const count = await f.analyze.execute(f.userId, "Asia/Seoul");
+        const count = await f.analyze.execute({ userId: f.userId, timezone: "Asia/Seoul" });
         // Then
         expect(count).toBe(0);
         expect(f.repository.writes).toEqual([]);
@@ -251,7 +261,7 @@ describe("AnalyzeAndCreateSuggestionsUseCase", () => {
         const f = createAiAssistanceFixture();
         f.generator.setInvalidResponse(createAiGenerationError(kind));
         // When
-        const result = f.analyze.execute(f.userId, "Asia/Seoul");
+        const result = f.analyze.execute({ userId: f.userId, timezone: "Asia/Seoul" });
         // Then
         await expect(result).rejects.toMatchObject({ kind });
         expect(f.repository.writes).toEqual([]);
@@ -267,12 +277,12 @@ describe("AnalyzeAndCreateSuggestionsUseCase", () => {
       ]);
       seedPendingSuggestion(f);
       // When
-      const count = await f.analyze.execute(f.userId, "Asia/Seoul");
+      const count = await f.analyze.execute({ userId: f.userId, timezone: "Asia/Seoul" });
       // Then
       expect(count).toBe(0);
-      expect(f.repository.saved).toEqual([]);
+      expect(f.repository.created).toEqual([]);
       expect(f.repository.writes).toEqual([]);
-      expect(f.repository.rows.get(1)?.status).toBe("PENDING");
+      expect(f.repository.primitivesOf(1)?.status).toBe("PENDING");
     }));
 
   it("없는 후보 id는 버리고 근거 밖 수치의 사유는 서버 문장으로 바꾼다", () =>
@@ -283,10 +293,10 @@ describe("AnalyzeAndCreateSuggestionsUseCase", () => {
         createSuggestionPick({ reason: "10주 연속으로 읽었어요." }),
       ]);
       // When
-      await f.analyze.execute(f.userId, "Asia/Seoul");
+      await f.analyze.execute({ userId: f.userId, timezone: "Asia/Seoul" });
       // Then
-      expect(f.repository.saved).toHaveLength(1);
-      expect(f.repository.saved[0]?.reason).toBe(
+      expect(f.repository.created).toHaveLength(1);
+      expect(f.repository.created[0]?.reason).toBe(
         "최근 '책 읽기 10분' 활동을 3번 기록하고 3번 완료했어요. 월요일에 반복으로 등록해두면 매번 다시 입력하지 않아도 돼요.",
       );
     }));
@@ -303,11 +313,15 @@ describe("AnalyzeAndCreateSuggestionsUseCase", () => {
           f.weatherForecastReader.forecasts.set("60:127", weatherForecastFixture());
         }
         // When
-        const count = await f.analyze.execute(f.userId, "Asia/Seoul", SEOUL_GRID);
+        const count = await f.analyze.execute({
+          userId: f.userId,
+          timezone: "Asia/Seoul",
+          weatherGrid: SEOUL_GRID,
+        });
         // Then
         expect(count).toBe(1);
-        expect(f.repository.saved[0]?.reason).not.toContain("비");
-        expect(f.repository.saved[0]?.reason).toContain("3번 기록");
+        expect(f.repository.created[0]?.reason).not.toContain("비");
+        expect(f.repository.created[0]?.reason).toContain("3번 기록");
       }),
   );
 
@@ -317,7 +331,11 @@ describe("AnalyzeAndCreateSuggestionsUseCase", () => {
       const f = usePickResponse(createAiAssistanceFixture(), []);
       f.weatherForecastReader.forecasts.set("60:127", weatherForecastFixture());
       // When
-      await f.analyze.execute(f.userId, "Asia/Seoul", SEOUL_GRID);
+      await f.analyze.execute({
+        userId: f.userId,
+        timezone: "Asia/Seoul",
+        weatherGrid: SEOUL_GRID,
+      });
       // Then
       const prompt = f.generator.getLastPrompt() ?? "";
       expect(prompt).toContain('"candidates"');
@@ -338,17 +356,22 @@ describe("AnalyzeAndCreateSuggestionsUseCase", () => {
           }),
         ]);
         // When
-        const count = await f.analyze.execute(f.userId, "America/Los_Angeles", null, locale);
+        const count = await f.analyze.execute({
+          userId: f.userId,
+          timezone: "America/Los_Angeles",
+          weatherGrid: null,
+          locale: locale,
+        });
         // Then
         expect(count).toBe(1);
-        expect(f.repository.saved[0]).toMatchObject({
+        expect(f.repository.created[0]).toMatchObject({
           title: "책 읽기 10분",
           daysOfWeek: ["MON"],
           scheduledTime: null,
         });
-        expect(f.repository.saved[0]?.reason).not.toContain("Sunday");
-        expect(f.repository.saved[0]?.reason).not.toContain("08:00");
-        expect(f.repository.saved[0]?.reason).toContain("3");
+        expect(f.repository.created[0]?.reason).not.toContain("Sunday");
+        expect(f.repository.created[0]?.reason).not.toContain("08:00");
+        expect(f.repository.created[0]?.reason).toContain("3");
       }),
   );
 
@@ -358,27 +381,27 @@ describe("AnalyzeAndCreateSuggestionsUseCase", () => {
       const timed = usePickResponse(createAiAssistanceFixture(), [
         createSuggestionPick({ useRecordedTime: true }),
       ]);
-      timed.repository.todos = timed.repository.todos.map((todo) => ({
+      timed.activityReader.todos = timed.activityReader.todos.map((todo) => ({
         ...todo,
         scheduledTime: "19:30",
       }));
       const declined = usePickResponse(createAiAssistanceFixture(), [
         createSuggestionPick({ useRecordedTime: false }),
       ]);
-      declined.repository.todos = timed.repository.todos;
+      declined.activityReader.todos = timed.activityReader.todos;
       // When
-      await timed.analyze.execute(timed.userId, "Asia/Seoul");
-      await declined.analyze.execute(declined.userId, "Asia/Seoul");
+      await timed.analyze.execute({ userId: timed.userId, timezone: "Asia/Seoul" });
+      await declined.analyze.execute({ userId: declined.userId, timezone: "Asia/Seoul" });
       // Then
-      expect(timed.repository.saved[0]?.scheduledTime).toBe("19:30");
-      expect(declined.repository.saved[0]?.scheduledTime).toBeNull();
+      expect(timed.repository.created[0]?.scheduledTime).toBe("19:30");
+      expect(declined.repository.created[0]?.scheduledTime).toBeNull();
     }));
 
   it("실제 반복 행동 여섯 개와 중복 선택 중 서로 다른 다섯 개만 저장한다", () =>
     withAiAssistanceTime(async () => {
       // Given
       const f = createAiAssistanceFixture();
-      f.repository.todos = Array.from({ length: 6 }, (_, n) =>
+      f.activityReader.todos = Array.from({ length: 6 }, (_, n) =>
         ["2026-03-02", "2026-03-09", "2026-03-16"].map((startDate) =>
           createAnalysisTodo({ title: `행동${n} 읽기`, startDate }),
         ),
@@ -390,10 +413,10 @@ describe("AnalyzeAndCreateSuggestionsUseCase", () => {
         ),
       );
       // When
-      const count = await f.analyze.execute(f.userId, "Asia/Seoul");
+      const count = await f.analyze.execute({ userId: f.userId, timezone: "Asia/Seoul" });
       // Then
       expect(count).toBe(5);
-      expect(f.repository.saved.map((row) => row.title)).toEqual(
+      expect(f.repository.created.map((row) => row.title)).toEqual(
         Array.from({ length: 5 }, (_, n) => `행동${n} 읽기`),
       );
       expect(f.generator.getCallCount()).toBe(1);
@@ -403,7 +426,7 @@ describe("AnalyzeAndCreateSuggestionsUseCase", () => {
     withAiAssistanceTime(async () => {
       // Given
       const f = createAiAssistanceFixture();
-      f.repository.todos = [
+      f.activityReader.todos = [
         createAnalysisTodo({ title: "책 읽기", startDate: "2026-03-09" }),
         createAnalysisTodo({ title: "책 읽기", startDate: "2026-03-16" }),
         createAnalysisTodo({ title: "스트레칭", startDate: "2026-03-16" }),
@@ -413,10 +436,10 @@ describe("AnalyzeAndCreateSuggestionsUseCase", () => {
         createSuggestionPick({ candidateId: "a2" }),
       ]);
       // When
-      const count = await f.analyze.execute(f.userId, "Asia/Seoul");
+      const count = await f.analyze.execute({ userId: f.userId, timezone: "Asia/Seoul" });
       // Then
       expect(count).toBe(1);
-      expect(f.repository.saved[0]).toMatchObject({
+      expect(f.repository.created[0]).toMatchObject({
         title: "책 읽기",
         confidence: 0.65,
         suggestedCategoryId: 7,
@@ -429,15 +452,15 @@ describe("AnalyzeAndCreateSuggestionsUseCase", () => {
       withAiAssistanceTime(async () => {
         // Given
         const f = usePickResponse(createAiAssistanceFixture());
-        f.repository.history = [{ title: "책 읽기 10분", status }];
+        f.activityReader.history = [{ title: "책 읽기 10분", status }];
         seedPendingSuggestion(f);
         // When
-        const count = await f.analyze.execute(f.userId, "Asia/Seoul");
+        const count = await f.analyze.execute({ userId: f.userId, timezone: "Asia/Seoul" });
         // Then
         expect(count).toBe(0);
-        expect(f.repository.saved).toEqual([]);
+        expect(f.repository.created).toEqual([]);
         expect(f.repository.writes).toEqual([]);
-        expect(f.repository.rows.get(1)?.status).toBe("PENDING");
+        expect(f.repository.primitivesOf(1)?.status).toBe("PENDING");
       }),
   );
 
@@ -453,21 +476,26 @@ describe("AnalyzeAndCreateSuggestionsUseCase", () => {
         const f = usePickResponse(createAiAssistanceFixture(), [
           createSuggestionPick({ daysOfWeek: ["MON", "FRI"], useRecordedTime: true }),
         ]);
-        f.repository.todos = [createAnalysisTodo({ title, startDate: "2026-03-18" })];
+        f.activityReader.todos = [createAnalysisTodo({ title, startDate: "2026-03-18" })];
         // When
-        const count = await f.analyze.execute(f.userId, "Asia/Seoul", null, locale);
+        const count = await f.analyze.execute({
+          userId: f.userId,
+          timezone: "Asia/Seoul",
+          weatherGrid: null,
+          locale: locale,
+        });
         // Then
         expect(count).toBe(1);
-        expect(f.repository.saved[0]).toMatchObject({
+        expect(f.repository.created[0]).toMatchObject({
           title,
           daysOfWeek: ["WED"],
           scheduledTime: null,
           confidence: 0.55,
           matchedTodos: [],
         });
-        expect(f.repository.saved[0]?.reason).toContain(starter);
-        expect(f.repository.saved[0]?.reason).toContain(title);
-        expect(f.repository.saved[0]?.reason).toContain(day);
+        expect(f.repository.created[0]?.reason).toContain(starter);
+        expect(f.repository.created[0]?.reason).toContain(title);
+        expect(f.repository.created[0]?.reason).toContain(day);
         expect(f.generator.getCallCount()).toBe(1);
       }),
   );
@@ -476,7 +504,7 @@ describe("AnalyzeAndCreateSuggestionsUseCase", () => {
     withAiAssistanceTime(async () => {
       // Given
       const f = createAiAssistanceFixture();
-      f.repository.todos = [
+      f.activityReader.todos = [
         createAnalysisTodo({ title: "산책", startDate: "2026-03-17" }),
         createAnalysisTodo({ title: "스트레칭", startDate: "2026-03-18" }),
       ];
@@ -487,25 +515,25 @@ describe("AnalyzeAndCreateSuggestionsUseCase", () => {
         ),
       );
       // When
-      await f.analyze.execute(f.userId, "Asia/Seoul");
+      await f.analyze.execute({ userId: f.userId, timezone: "Asia/Seoul" });
       // Then
-      expect(f.repository.saved.map((row) => row.confidence)).toEqual([0.55, 0.55]);
-      expect(f.repository.saved.every((row) => row.matchedTodos.length === 0)).toBe(true);
+      expect(f.repository.created.map((row) => row.confidence)).toEqual([0.55, 0.55]);
+      expect(f.repository.created.every((row) => row.matchedTodos.length === 0)).toBe(true);
     }));
 
   it("다른 활동의 기록 시각을 시작 제안에 붙이지 않는다", () =>
     withAiAssistanceTime(async () => {
       // Given
       const f = createAiAssistanceFixture();
-      f.repository.todos = [
+      f.activityReader.todos = [
         createAnalysisTodo({ title: "러닝", startDate: "2026-03-18" }),
         createAnalysisTodo({ title: "독서", scheduledTime: "19:30" }),
       ];
       usePickResponse(f, [createSuggestionPick({ candidateId: "a2", useRecordedTime: true })]);
       // When
-      await f.analyze.execute(f.userId, "Asia/Seoul");
+      await f.analyze.execute({ userId: f.userId, timezone: "Asia/Seoul" });
       // Then
-      expect(f.repository.saved[0]).toMatchObject({ title: "러닝", scheduledTime: null });
+      expect(f.repository.created[0]).toMatchObject({ title: "러닝", scheduledTime: null });
     }));
 
   it("보낼 수 있는 AI 업체가 없으면 제안을 저장하지 않고 건너뛴다", () =>
@@ -514,7 +542,7 @@ describe("AnalyzeAndCreateSuggestionsUseCase", () => {
       const f = createAiAssistanceFixture();
       f.generator.setAvailable(false);
       // When
-      const count = await f.analyze.execute(f.userId, "Asia/Seoul");
+      const count = await f.analyze.execute({ userId: f.userId, timezone: "Asia/Seoul" });
       // Then
       expect(count).toBe(0);
       expect(f.repository.writes).toEqual([]);

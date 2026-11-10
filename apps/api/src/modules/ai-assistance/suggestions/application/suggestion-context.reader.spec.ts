@@ -12,24 +12,22 @@ describe("SuggestionContextReader", () => {
     withAiAssistanceTime(async () => {
       // Given - 상태 Stub에 실제 읽기 프로젝션이 있음
       const f = createAiAssistanceFixture();
-      f.repository.history = [{ title: "이전 제안", status: "DISMISSED" }];
+      f.activityReader.history = [{ title: "이전 제안", status: "DISMISSED" }];
       f.weatherForecastReader.forecasts.set(
         "60:127",
         weatherForecastFixture({ temperatureMin: 5, temperatureMax: 15 }),
       );
-      f.reportReader.report = {
-        stats: {
-          totalTodos: 5,
-          completedTodos: 4,
-          completionRate: 80,
-          prevCompletionRate: null,
-          streakDays: 3,
-        },
+      f.latestReportStats.stats = {
+        totalTodos: 5,
+        completedTodos: 4,
+        completionRate: 80,
+        prevCompletionRate: null,
+        streakDays: 3,
       };
       // When - 실제 builder 수집
       const result = await f.contextBuilder.build(f.userId, "Asia/Seoul", grid);
       // Then - 통계 수치·언어·근거 기록을 보존
-      expect(result.todos).toEqual(f.repository.todos);
+      expect(result.todos).toEqual(f.activityReader.todos);
       expect(result.recordedActivities).toEqual([
         {
           title: "책 읽기 10분",
@@ -44,7 +42,7 @@ describe("SuggestionContextReader", () => {
       expect(result.streak).toContain("3일");
       expect(result.weather).toBe("맑음, 5~15°C");
       expect(result.weeklyReportInsight).toContain("80%");
-      expect(result.suggestionHistory).toEqual(f.repository.history);
+      expect(result.suggestionHistory).toEqual(f.activityReader.history);
       expect(result.currentDate).toContain("2026-03-22");
     }));
 
@@ -59,17 +57,17 @@ describe("SuggestionContextReader", () => {
       const result = await f.contextBuilder.build(f.userId, "Asia/Seoul", grid);
       // Then - 통계는 보존하고 날씨만 null
       expect(result.weather).toBeNull();
-      expect(result.todos).toEqual(f.repository.todos);
+      expect(result.todos).toEqual(f.activityReader.todos);
       expect(f.weatherForecastReader.calls).toBe(1);
     }),
   );
 
   it("위치·스트릭·유효한 보고서가 없으면 해당 컨텍스트만 폴백한다", () =>
     withAiAssistanceTime(async () => {
-      // Given - 위치 없음, streak 없음, 무효 report stats
+      // Given - 위치 없음, streak 없음, 주간 리포트 없음
       const f = createAiAssistanceFixture();
-      f.repository.streak = null;
-      f.reportReader.report = { stats: {} };
+      f.activityReader.streak = null;
+      f.latestReportStats.stats = null;
       // When - 실제 수집
       const result = await f.contextBuilder.build(f.userId, "Asia/Seoul", null);
       // Then - 불필요한 weather 조회 없음
@@ -98,7 +96,7 @@ describe("SuggestionContextReader", () => {
       withAiAssistanceTime(async () => {
         // Given - 이번 ISO 주 기록 없이 지난 두 월요일만 존재
         const f = createAiAssistanceFixture();
-        f.repository.todos = ["2026-03-02", "2026-03-09"].map((startDate) =>
+        f.activityReader.todos = ["2026-03-02", "2026-03-09"].map((startDate) =>
           createAnalysisTodo({ startDate }),
         );
         // When - 실제 누락 계산
@@ -106,7 +104,7 @@ describe("SuggestionContextReader", () => {
         // Then - 해당 locale 누락 문구, 한 번만 등장한 행동은 없음
         expect(context.missingRoutines).toHaveLength(1);
         expect(context.missingRoutines[0]).toContain("책 읽기 10분");
-        f.repository.todos = [createAnalysisTodo({ startDate: "2026-03-09" })];
+        f.activityReader.todos = [createAnalysisTodo({ startDate: "2026-03-09" })];
         expect(
           (await f.contextBuilder.build(f.userId, "Asia/Seoul", null, locale)).missingRoutines,
         ).toEqual([]);

@@ -1,13 +1,19 @@
 import { SuggestionRepositoryPort } from "#api/modules/ai-assistance/suggestions/application/ports/suggestion.repository.port";
 import { SuggestionId } from "#api/modules/ai-assistance/suggestions/domain/suggestion-id.vo";
-import { Suggestion } from "#api/modules/ai-assistance/suggestions/domain/suggestion.aggregate";
+import {
+  Suggestion,
+  type SuggestionPrimitives,
+} from "#api/modules/ai-assistance/suggestions/domain/suggestion.aggregate";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 function copyOf(suggestion: Suggestion): Suggestion {
   return Suggestion.reconstitute(suggestion.toPrimitives());
 }
 
+// writes·created는 "저장 없이 끝났다"·"새로 만든 제안"을 확인하는 테스트용 기록이다
 export class InMemorySuggestionRepository extends SuggestionRepositoryPort {
+  readonly writes: string[] = [];
+  readonly created: SuggestionPrimitives[] = [];
   readonly #suggestions = new Map<number, Suggestion>();
   #sequence: number;
 
@@ -23,6 +29,16 @@ export class InMemorySuggestionRepository extends SuggestionRepositoryPort {
     return [...this.#suggestions.values()].map(copyOf);
   }
 
+  /** 테스트 준비용 저장. writes에 남기지 않는다 */
+  seed(suggestion: Suggestion): void {
+    this.#suggestions.set(suggestion.id.value, copyOf(suggestion));
+    this.#sequence = Math.max(this.#sequence, suggestion.id.value);
+  }
+
+  primitivesOf(id: number): SuggestionPrimitives | null {
+    return this.#suggestions.get(id)?.toPrimitives() ?? null;
+  }
+
   async nextIds(count: number): Promise<SuggestionId[]> {
     return Array.from({ length: count }, () => {
       this.#sequence += 1;
@@ -31,12 +47,15 @@ export class InMemorySuggestionRepository extends SuggestionRepositoryPort {
   }
 
   async saveMany(suggestions: readonly Suggestion[]): Promise<void> {
+    this.writes.push("createMany");
     for (const suggestion of suggestions) {
-      await this.save(suggestion);
+      this.created.push(suggestion.toPrimitives());
+      this.#suggestions.set(suggestion.id.value, copyOf(suggestion));
     }
   }
 
   async save(suggestion: Suggestion): Promise<void> {
+    this.writes.push("save");
     this.#suggestions.set(suggestion.id.value, copyOf(suggestion));
   }
 
@@ -60,12 +79,14 @@ export class InMemorySuggestionRepository extends SuggestionRepositoryPort {
   }
 
   async deletePendingByUserId(userId: UserId): Promise<number> {
+    this.writes.push("deletePending");
     return this.#deleteWhere(
       (suggestion) => suggestion.userId.equals(userId) && suggestion.status === "PENDING",
     );
   }
 
   async deleteExpiredByUserId(userId: UserId, now: Temporal.Instant): Promise<number> {
+    this.writes.push("deleteExpired");
     return this.#deleteWhere(
       (suggestion) =>
         suggestion.userId.equals(userId) &&

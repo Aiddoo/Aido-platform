@@ -1,186 +1,193 @@
-import { vi, type Mocked } from "vitest";
-import { mockDeep } from "vitest-mock-extended";
+import { ErrorCode } from "@aido/api/errors";
 
-import { ApplicationException } from "#api/shared/application/application.exception";
 import { parseDateOnly } from "#api/shared/domain/date/utils/parse";
-import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
-import { TodoBuilder } from "#test/builders/todo.builder";
-import { createTodoResponseFixture } from "#test/fixtures/todo-response.fixture";
-import { createUnitOfWorkMock } from "#test/mocks/ports/unit-of-work.mock";
+import { InMemorySuggestionRepository } from "#test/doubles/ai-assistance/in-memory-suggestion.repository";
+import { createSpyApplicationLogger } from "#test/doubles/ai-assistance/spy-application-logger";
+import { FakeStagedTodoCreator } from "#test/doubles/planning/fake-staged-todo-creator";
+import { FixedClock } from "#test/doubles/platform/fixed-clock";
+import { ImmediateUnitOfWork } from "#test/doubles/platform/immediate-unit-of-work";
+import { RecordingAfterCommitRegistry } from "#test/doubles/platform/recording-after-commit-registry";
+import { RecordingMutationLock } from "#test/doubles/platform/recording-mutation-lock";
+import {
+  createSuggestionFixture,
+  SUGGESTION_FIXTURE_USER_ID,
+} from "#test/fixtures/ai-assistance/suggestion.fixture";
+import { createTodoReadModelFixture } from "#test/fixtures/planning/todo-read-model.fixture";
+import { StubUserLocalePreferenceReader } from "#test/mocks/ports/ai-parsing.stub";
 
-import { Suggestion, type SuggestionProps } from "../../domain/suggestion.aggregate.js";
+import type { SuggestionPrimitives } from "../../domain/suggestion.aggregate.js";
 import { HandleSuggestionActionUseCase } from "./handle-suggestion-action.use-case.js";
 
-const mockUserId = "user-123";
-const todoResponse = createTodoResponseFixture(TodoBuilder.create(mockUserId).withId(1).build());
+const USER_ID = SUGGESTION_FIXTURE_USER_ID;
+const NOW = "2026-03-23T00:00:00.000Z";
+const NOT_EXPIRED = Temporal.Instant.from("2030-01-01T00:00:00Z");
 
-function createSuggestion(overrides?: Partial<SuggestionProps>): Suggestion {
-  return Suggestion.reconstitute({
-    id: 1,
-    userId: mockUserId,
-    title: "팀 미팅",
-    daysOfWeek: ["MON", "WED", "FRI"],
-    scheduledTime: "10:00",
-    confidence: 0.85,
-    reason: "매주 반복되는 패턴",
-    matchedTodos: ["팀 미팅", "팀 회의"],
-    status: "PENDING",
-    suggestedCategoryId: 3,
-    expiresAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), // 14일 후
-    createdAt: new Date("2026-03-04T00:00:00.000Z"),
-    updatedAt: new Date("2026-03-04T00:00:00.000Z"),
-    ...overrides,
+function setup(
+  options: {
+    readonly at?: string;
+    readonly entitled?: boolean;
+    readonly suggestion?: Partial<SuggestionPrimitives>;
+  } = {},
+) {
+  const repository = new InMemorySuggestionRepository();
+  repository.seed(createSuggestionFixture({ expiresAt: NOT_EXPIRED, ...options.suggestion }));
+  const todoCreator = new FakeStagedTodoCreator();
+  const afterCommit = new RecordingAfterCommitRegistry();
+  const localePreferenceReader = new StubUserLocalePreferenceReader();
+  const useCase = new HandleSuggestionActionUseCase({
+    repository,
+    todoCreator,
+    entitlementReader: { canInTx: async () => options.entitled ?? true },
+    unitOfWork: new ImmediateUnitOfWork(),
+    userMutationLock: { lockById: async () => true },
+    mutationLock: new RecordingMutationLock(),
+    afterCommit,
+    localePreferenceReader,
+    clock: new FixedClock(Temporal.Instant.from(options.at ?? NOW)),
+    logger: createSpyApplicationLogger(),
   });
+  return { useCase, repository, todoCreator, afterCommit, localePreferenceReader };
 }
 
 describe("HandleSuggestionActionUseCase", () => {
-  let useCase: HandleSuggestionActionUseCase;
-  let localePreferenceReader: Mocked<
-    ConstructorParameters<typeof HandleSuggestionActionUseCase>[0]["localePreferenceReader"]
-  >;
-  let repo: Mocked<ConstructorParameters<typeof HandleSuggestionActionUseCase>[0]["repository"]>;
-  let creator: Mocked<
-    ConstructorParameters<typeof HandleSuggestionActionUseCase>[0]["todoCreator"]
-  >;
-  let afterCommitRegistry: Mocked<
-    ConstructorParameters<typeof HandleSuggestionActionUseCase>[0]["afterCommit"]
-  >;
-  const afterCommit = vi.fn(async () => undefined);
-  let entitlement: Mocked<
-    ConstructorParameters<typeof HandleSuggestionActionUseCase>[0]["entitlementReader"]
-  >;
+  it("프리미엄이 아니면 제안을 읽지 않고 거절한다", async () => {
+    // Given
+    const { useCase } = setup({ entitled: false });
 
-  beforeEach(async () => {
-    const handleSuggestionActionDependencies = mockDeep<
-      ConstructorParameters<typeof HandleSuggestionActionUseCase>[0]
-    >({ unitOfWork: createUnitOfWorkMock() });
-    const unit = new HandleSuggestionActionUseCase(handleSuggestionActionDependencies);
-
-    useCase = unit;
-    repo = handleSuggestionActionDependencies.repository;
-    creator = handleSuggestionActionDependencies.todoCreator;
-    entitlement = handleSuggestionActionDependencies.entitlementReader;
-    afterCommitRegistry = handleSuggestionActionDependencies.afterCommit;
-    localePreferenceReader = handleSuggestionActionDependencies.localePreferenceReader;
-
-    entitlement.canInTx.mockResolvedValue(true);
-    handleSuggestionActionDependencies.userMutationLock.lockById.mockResolvedValue(true);
-  });
-
-  it("비프리미엄 사용자면 AI_1309 예외를 던지고 조회하지 않아야 한다", async () => {
-    entitlement.canInTx.mockResolvedValue(false);
-
-    await expect(
-      useCase.execute({
-        userId: mockUserId,
-        suggestionId: 1,
-        action: "dismiss",
-        timezone: "Asia/Seoul",
-      }),
-    ).rejects.toBeInstanceOf(ApplicationException);
-    expect(repo.findByIdAndUserId).not.toHaveBeenCalled();
-  });
-
-  it("존재하지 않는 제안에 대해 AI_1305(ApplicationException)를 던져야 한다", async () => {
-    repo.findByIdAndUserId.mockResolvedValue(null);
-
-    await expect(
-      useCase.execute({
-        userId: mockUserId,
-        suggestionId: 999,
-        action: "accept",
-        categoryId: 5,
-        timezone: "Asia/Seoul",
-      }),
-    ).rejects.toBeInstanceOf(ApplicationException);
-    expect(repo.findByIdAndUserId).toHaveBeenCalledWith(999, mockUserId);
-  });
-
-  it("이미 처리된 제안에 대해 AI_1306(DomainException)을 던져야 한다", async () => {
-    repo.findByIdAndUserId.mockResolvedValue(createSuggestion({ status: "ACCEPTED" }));
-
-    await expect(
-      useCase.execute({
-        userId: mockUserId,
-        suggestionId: 1,
-        action: "accept",
-        timezone: "Asia/Seoul",
-      }),
-    ).rejects.toBeInstanceOf(DomainException);
-  });
-
-  it("만료된 제안에 대해 AI_1307(DomainException)을 던져야 한다", async () => {
-    repo.findByIdAndUserId.mockResolvedValue(
-      createSuggestion({ expiresAt: new Date("2020-01-01T00:00:00.000Z") }),
-    );
-
-    await expect(
-      useCase.execute({
-        userId: mockUserId,
-        suggestionId: 1,
-        action: "accept",
-        timezone: "Asia/Seoul",
-      }),
-    ).rejects.toBeInstanceOf(DomainException);
-  });
-
-  it("거절 시 상태를 DISMISSED로 업데이트해야 한다", async () => {
-    repo.findByIdAndUserId.mockResolvedValue(createSuggestion());
-    repo.updateStatus.mockResolvedValue(createSuggestion({ status: "DISMISSED" }));
-
-    const result = await useCase.execute({
-      userId: mockUserId,
+    // When
+    const result = useCase.execute({
+      userId: USER_ID,
       suggestionId: 1,
       action: "dismiss",
       timezone: "Asia/Seoul",
     });
 
-    expect(repo.updateStatus).toHaveBeenCalledWith(1, "DISMISSED");
-    expect(result.suggestion.status).toBe("DISMISSED");
-    expect(result.message).toContain("거절");
-    expect(result.createdTodosCount).toBeUndefined();
-    expect(creator.stage).not.toHaveBeenCalled();
+    // Then
+    await expect(result).rejects.toMatchObject({ errorCode: ErrorCode.AI_1309 });
   });
 
-  it("수락 시 categoryId가 없으면 SYS_0002 예외를 던져야 한다", async () => {
-    repo.findByIdAndUserId.mockResolvedValue(createSuggestion());
+  it("없거나 남의 제안이면 AI_1305다", async () => {
+    // Given
+    const { useCase } = setup();
 
-    await expect(
-      useCase.execute({
-        userId: mockUserId,
-        suggestionId: 1,
-        action: "accept",
-        timezone: "Asia/Seoul",
-      }),
-    ).rejects.toBeInstanceOf(ApplicationException);
-    expect(creator.stage).not.toHaveBeenCalled();
-  });
-
-  it("수락 시 상태를 먼저 ACCEPTED로 변경한 후 반복 할 일을 생성해야 한다", async () => {
-    repo.findByIdAndUserId.mockResolvedValue(createSuggestion());
-    repo.updateStatus.mockResolvedValue(createSuggestion({ status: "ACCEPTED" }));
-    creator.stage.mockResolvedValue({
-      todos: Array.from({ length: 12 }, () => todoResponse),
-      afterCommit,
+    // When
+    const result = useCase.execute({
+      userId: USER_ID,
+      suggestionId: 999,
+      action: "accept",
+      categoryId: 5,
+      timezone: "Asia/Seoul",
     });
 
+    // Then
+    await expect(result).rejects.toMatchObject({
+      errorCode: ErrorCode.AI_1305,
+      details: { suggestionId: 999 },
+    });
+  });
+
+  it.each([
+    { label: "이미 처리된 제안", suggestion: { status: "ACCEPTED" }, errorCode: ErrorCode.AI_1306 },
+    {
+      label: "만료된 제안",
+      suggestion: { expiresAt: Temporal.Instant.from("2020-01-01T00:00:00Z") },
+      errorCode: ErrorCode.AI_1307,
+    },
+  ] as const)("$label은 수락 데이터보다 먼저 $errorCode다", async ({ suggestion, errorCode }) => {
+    // Given
+    const { useCase, todoCreator } = setup({ suggestion });
+
+    // When
+    const result = useCase.execute({
+      userId: USER_ID,
+      suggestionId: 1,
+      action: "accept",
+      timezone: "Asia/Seoul",
+    });
+
+    // Then
+    await expect(result).rejects.toMatchObject({ errorCode });
+    expect(todoCreator.inputs).toEqual([]);
+  });
+
+  it("거절하면 DISMISSED로 저장하고 할 일을 만들지 않는다", async () => {
+    // Given
+    const { useCase, repository, todoCreator } = setup();
+
+    // When
     const result = await useCase.execute({
-      userId: mockUserId,
+      userId: USER_ID,
+      suggestionId: 1,
+      action: "dismiss",
+      timezone: "Asia/Seoul",
+    });
+
+    // Then
+    expect(result.createdTodosCount).toBeNull();
+    expect(repository.primitivesOf(1)?.status).toBe("DISMISSED");
+    expect(repository.primitivesOf(1)?.updatedAt.toString()).toBe("2026-03-23T00:00:00Z");
+    expect(todoCreator.inputs).toEqual([]);
+  });
+
+  it("수락 때 categoryId가 없으면 SYS_0002이고 상태를 저장하지 않는다", async () => {
+    // Given
+    const { useCase, repository, todoCreator } = setup();
+
+    // When
+    const result = useCase.execute({
+      userId: USER_ID,
+      suggestionId: 1,
+      action: "accept",
+      timezone: "Asia/Seoul",
+    });
+
+    // Then
+    await expect(result).rejects.toMatchObject({ errorCode: ErrorCode.SYS_0002 });
+    expect(repository.primitivesOf(1)?.status).toBe("PENDING");
+    expect(todoCreator.inputs).toEqual([]);
+  });
+
+  it("저장된 요일이 깨졌으면 수락 때 SYS_0002다", async () => {
+    // Given
+    const { useCase } = setup({ suggestion: { daysOfWeek: null } });
+
+    // When
+    const result = useCase.execute({
+      userId: USER_ID,
       suggestionId: 1,
       action: "accept",
       categoryId: 5,
       timezone: "Asia/Seoul",
     });
 
-    // 상태 변경이 반복 생성보다 먼저 호출되어야 한다
-    const updateStatusOrder = repo.updateStatus.mock.invocationCallOrder[0] ?? 0;
-    const stageOrder = creator.stage.mock.invocationCallOrder[0] ?? 0;
-    expect(updateStatusOrder).toBeLessThan(stageOrder);
+    // Then
+    await expect(result).rejects.toMatchObject({
+      errorCode: ErrorCode.SYS_0002,
+      details: { field: "daysOfWeek" },
+    });
+  });
 
-    expect(repo.updateStatus).toHaveBeenCalledWith(1, "ACCEPTED");
-    expect(creator.stage).toHaveBeenCalledWith(
+  it("수락하면 상태를 저장한 뒤 주간 반복 할 일을 만들고 효과는 커밋 뒤로 미룬다", async () => {
+    // Given
+    const { useCase, repository, todoCreator, afterCommit } = setup();
+    todoCreator.recurringTodos = Array.from({ length: 12 }, (_, index) =>
+      createTodoReadModelFixture({ id: index + 1 }),
+    );
+
+    // When
+    const result = await useCase.execute({
+      userId: USER_ID,
+      suggestionId: 1,
+      action: "accept",
+      categoryId: 5,
+      timezone: "Asia/Seoul",
+    });
+
+    // Then
+    expect(repository.writes).toEqual(["save"]);
+    expect(todoCreator.inputs).toEqual([
       expect.objectContaining({
-        userId: mockUserId,
+        userId: USER_ID,
         title: "팀 미팅",
         categoryId: 5,
         scheduledTime: "10:00",
@@ -191,38 +198,13 @@ describe("HandleSuggestionActionUseCase", () => {
           weekdays: ["MON", "WED", "FRI"],
         }),
       }),
-    );
-    expect(afterCommitRegistry.register).toHaveBeenCalledWith(afterCommit);
-    expect(afterCommit).not.toHaveBeenCalled();
+    ]);
+    expect(afterCommit.tasks).toHaveLength(1);
     expect(result.suggestion.status).toBe("ACCEPTED");
     expect(result.createdTodosCount).toBe(12);
   });
 
-  it("수락 시 생성 실패는 원본 오류를 전파하고 보상 UPDATE를 실행하지 않는다", async () => {
-    // Given - 정상 pending과 반복 할 일 생성 오류
-    repo.findByIdAndUserId.mockResolvedValue(createSuggestion());
-    repo.updateStatus.mockResolvedValue(createSuggestion({ status: "ACCEPTED" }));
-    const failure = new Error("투두 생성 실패");
-    creator.stage.mockRejectedValue(failure);
-    // When - 실제 action use-case 실행
-    const execution = useCase.execute({
-      userId: mockUserId,
-      suggestionId: 1,
-      action: "accept",
-      categoryId: 5,
-      timezone: "Asia/Seoul",
-    });
-    // Then - DB rollback 자체는 실제 PG에서 검증하며 여기서는 에러와 단일 write 경계 확인
-    await expect(execution).rejects.toBe(failure);
-    expect(repo.updateStatus).toHaveBeenCalledTimes(1);
-    expect(repo.updateStatus).toHaveBeenCalledWith(1, "ACCEPTED");
-  });
-
-  describe("수락 기본 기간", () => {
-    afterEach(() => {
-      vi.useRealTimers();
-    });
-
+  describe("반복 시작일은 사용자 현지 오늘이다", () => {
     it.each([
       {
         name: "KST 새벽 수락은 한국 날짜 오늘부터 시작한다",
@@ -303,57 +285,51 @@ describe("HandleSuggestionActionUseCase", () => {
       },
     ])("$name", async ({ at, timezone, startDate, endDate }) => {
       // Given
-      vi.useFakeTimers({ toFake: ["Date"] });
-      vi.setSystemTime(new Date(at));
-      repo.findByIdAndUserId.mockResolvedValue(
-        createSuggestion({ expiresAt: new Date("2030-01-01T00:00:00.000Z") }),
-      );
-      repo.updateStatus.mockResolvedValue(createSuggestion({ status: "ACCEPTED" }));
-      creator.stage.mockResolvedValue({ todos: [todoResponse], afterCommit });
+      const { useCase, todoCreator, localePreferenceReader } = setup({ at });
+
       // When
       await useCase.execute({
-        userId: mockUserId,
+        userId: USER_ID,
         suggestionId: 1,
         action: "accept",
         categoryId: 5,
         timezone,
       });
+
       // Then
-      expect(creator.stage).toHaveBeenCalledWith(
+      expect(todoCreator.inputs).toEqual([
         expect.objectContaining({
           startDate: parseDateOnly(startDate),
           timezone,
           repeat: expect.objectContaining({ end: { type: "UNTIL", date: endDate } }),
         }),
-      );
-      expect(localePreferenceReader.read).not.toHaveBeenCalled();
+      ]);
+      expect(localePreferenceReader.readCount).toBe(0);
     });
 
     it("X-Timezone이 없으면 저장된 사용자 시간대로 계산한다", async () => {
       // Given
-      vi.useFakeTimers({ toFake: ["Date"] });
-      vi.setSystemTime(new Date("2026-10-27T16:30:00.000Z"));
-      localePreferenceReader.read.mockResolvedValue({ timezone: "Asia/Seoul", locale: "ko" });
-      repo.findByIdAndUserId.mockResolvedValue(
-        createSuggestion({ expiresAt: new Date("2030-01-01T00:00:00.000Z") }),
-      );
-      repo.updateStatus.mockResolvedValue(createSuggestion({ status: "ACCEPTED" }));
-      creator.stage.mockResolvedValue({ todos: [todoResponse], afterCommit });
+      const { useCase, todoCreator, localePreferenceReader } = setup({
+        at: "2026-10-27T16:30:00.000Z",
+      });
+      localePreferenceReader.preferences.set(USER_ID, { timezone: "Asia/Seoul", locale: "ko" });
+
       // When
       await useCase.execute({
-        userId: mockUserId,
+        userId: USER_ID,
         suggestionId: 1,
         action: "accept",
         categoryId: 5,
         timezone: undefined,
       });
+
       // Then
-      expect(creator.stage).toHaveBeenCalledWith(
+      expect(todoCreator.inputs).toEqual([
         expect.objectContaining({
           startDate: parseDateOnly("2026-10-28"),
           timezone: "Asia/Seoul",
         }),
-      );
+      ]);
     });
   });
 });

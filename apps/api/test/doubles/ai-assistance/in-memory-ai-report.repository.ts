@@ -1,7 +1,10 @@
 import { AiReportRepositoryPort } from "#api/modules/ai-assistance/reports/application/ports/ai-report.repository.port";
 import { DuplicateAiReportError } from "#api/modules/ai-assistance/reports/application/reports.errors";
 import { AiReportId } from "#api/modules/ai-assistance/reports/domain/ai-report-id.vo";
-import { AiReport } from "#api/modules/ai-assistance/reports/domain/ai-report.aggregate";
+import {
+  AiReport,
+  type AiReportPrimitives,
+} from "#api/modules/ai-assistance/reports/domain/ai-report.aggregate";
 import type { ReportType } from "#api/modules/ai-assistance/reports/domain/ai-report.constants";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
@@ -19,7 +22,10 @@ function compareLatestFirst(left: AiReport, right: AiReport): number {
   );
 }
 
+// duplicate·saved는 "같은 주기를 다른 실행이 먼저 저장했다"·"저장한 리포트"를 확인하는 테스트용이다
 export class InMemoryAiReportRepository extends AiReportRepositoryPort {
+  duplicate = false;
+  readonly saved: AiReportPrimitives[] = [];
   readonly #reports = new Map<number, AiReport>();
   #sequence = 0;
 
@@ -31,8 +37,10 @@ export class InMemoryAiReportRepository extends AiReportRepositoryPort {
     this.#sequence = Math.max(0, ...this.#reports.keys());
   }
 
-  get saved(): readonly AiReport[] {
-    return [...this.#reports.values()].map(copyOf);
+  /** 테스트 준비용 저장. saved에 남기지 않는다 */
+  seed(report: AiReport): void {
+    this.#reports.set(report.id.value, copyOf(report));
+    this.#sequence = Math.max(this.#sequence, report.id.value);
   }
 
   async nextId(): Promise<AiReportId> {
@@ -55,6 +63,7 @@ export class InMemoryAiReportRepository extends AiReportRepositoryPort {
     if (duplicate) {
       throw new DuplicateAiReportError();
     }
+    this.saved.push(saved);
     this.#reports.set(saved.id, copyOf(report));
   }
 
@@ -90,14 +99,17 @@ export class InMemoryAiReportRepository extends AiReportRepositoryPort {
     readonly year: number;
     readonly period: number;
   }): Promise<boolean> {
-    return [...this.#reports.values()].some((report) => {
-      const primitives = report.toPrimitives();
-      return (
-        primitives.userId === params.userId.value &&
-        primitives.type === params.type &&
-        primitives.year === params.year &&
-        primitives.period === params.period
-      );
-    });
+    return (
+      this.duplicate ||
+      [...this.#reports.values()].some((report) => {
+        const primitives = report.toPrimitives();
+        return (
+          primitives.userId === params.userId.value &&
+          primitives.type === params.type &&
+          primitives.year === params.year &&
+          primitives.period === params.period
+        );
+      })
+    );
   }
 }
