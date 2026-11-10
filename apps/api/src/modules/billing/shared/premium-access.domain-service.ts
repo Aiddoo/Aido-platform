@@ -109,7 +109,7 @@ export function premiumGrantEndsAt(startsAt: Instant, durationDays: number): Ins
 }
 
 /** 기간의 실제 길이(ms). 끊고 남은 기간은 일 단위로 올리지 않은 정확한 길이다. */
-export function premiumGrantDurationMs(
+function premiumGrantDurationMs(
   grant: Pick<PremiumGrantTerm, "durationDays" | "durationMs">,
 ): number {
   return grant.durationMs ?? grant.durationDays * DAY_MS;

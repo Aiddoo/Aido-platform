@@ -75,22 +75,22 @@ export interface SubscriptionBillingIssueEvent extends StoreChainEventBase {
   readonly gracePeriodEndsAt: Temporal.Instant | null;
 }
 
-export interface SubscriptionProductChangeScheduledEvent extends StoreChainEventBase {
+interface SubscriptionProductChangeScheduledEvent extends StoreChainEventBase {
   readonly kind: "PRODUCT_CHANGE_SCHEDULED";
   /** 다음 갱신에 적용될 상품. 공급자가 알려 주지 않으면 비운다. */
   readonly newProductId?: string;
 }
 
-export interface SubscriptionUncancelledEvent extends StoreChainEventBase {
+interface SubscriptionUncancelledEvent extends StoreChainEventBase {
   readonly kind: "UNCANCELLED";
 }
 
-export interface SubscriptionExtendedEvent extends StoreChainEventBase {
+interface SubscriptionExtendedEvent extends StoreChainEventBase {
   readonly kind: "EXTENDED";
 }
 
 /** 처리하지 않는 공급자 이벤트. 사용자를 찾지 않고 로그만 남긴다. */
-export interface SubscriptionIgnoredEvent extends StoreChainEventBase {
+interface SubscriptionIgnoredEvent extends StoreChainEventBase {
   readonly kind: "IGNORED";
 }
 
