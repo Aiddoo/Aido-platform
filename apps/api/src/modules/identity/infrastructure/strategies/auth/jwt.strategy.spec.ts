@@ -21,6 +21,7 @@ import { DrizzleSessionRepository } from "#api/modules/identity/infrastructure/p
 import { DrizzleUserRepository } from "#api/modules/identity/infrastructure/persistence/auth/drizzle-user.repository";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { ApplicationException } from "#api/shared/application/application.exception";
+import { authenticateBearer, signJwtWithAlgorithm } from "#test/fixtures/jwt-token.fixture";
 import { asDep, asMock } from "#test/mocks/index";
 
 import {
@@ -277,5 +278,54 @@ describe("JwtStrategy — JWT 전략", () => {
       // When & Then
       await expect(strategy.validate(validPayload)).rejects.toThrow(ApplicationException);
     });
+  });
+});
+
+describe("JwtStrategy — 서명 알고리즘", () => {
+  const secret = "test-jwt-secret-at-least-32-chars";
+  let strategy: JwtStrategy;
+
+  beforeEach(async () => {
+    const { unit, unitRef } = await TestBed.solitary(JwtStrategy)
+      .mock(TypedConfigService)
+      .final({ jwtSecret: secret })
+      .compile();
+    strategy = unit;
+    const cache: Mocked<AuthCachePort> = unitRef.get(AUTH_CACHE);
+    asMock(cache.getSession).mockResolvedValue({
+      userId: "user-123",
+      expiresAt: new Date(Date.now() + 86_400_000),
+      revokedAt: null,
+    });
+  });
+
+  const payload = {
+    sub: "user-123",
+    email: "test@example.com",
+    sessionId: "session-456",
+    role: "USER",
+    type: "access",
+  };
+
+  it("HS256 access 토큰은 통과한다", async () => {
+    // Given
+    const token = signJwtWithAlgorithm(payload, secret, "HS256");
+
+    // When
+    const outcome = await authenticateBearer(strategy, token);
+
+    // Then
+    expect(outcome).toBe("success");
+  });
+
+  it.each(["none", "HS512", "RS256"] as const)("%s access 토큰은 거절한다", async (algorithm) => {
+    // Given
+    const token = signJwtWithAlgorithm(payload, secret, algorithm);
+
+    // When
+    const outcome = await authenticateBearer(strategy, token);
+
+    // Then
+    expect(outcome).toBe("fail");
   });
 });

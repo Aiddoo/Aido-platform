@@ -16,6 +16,7 @@ import { vi } from "vitest";
 import type { JwtPayload } from "#api/modules/identity/infrastructure/adapters/auth/token.service";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { ApplicationException } from "#api/shared/application/application.exception";
+import { authenticateBearer, signJwtWithAlgorithm } from "#test/fixtures/jwt-token.fixture";
 import { asDep, mockOf } from "#test/mocks/index";
 
 import { JwtRefreshStrategy } from "./jwt-refresh.strategy.js";
@@ -90,5 +91,40 @@ describe("JwtRefreshStrategy — JWT 리프레시 전략", () => {
 
     // When & Then
     await expect(strategy.validate(req, validPayload)).rejects.toThrow(ApplicationException);
+  });
+
+  describe("서명 알고리즘", () => {
+    const secret = "test-refresh-secret-at-least-32-chars";
+
+    it("HS256 refresh 토큰은 통과한다", async () => {
+      // Given
+      const refreshStrategy = new JwtRefreshStrategy(
+        asDep<TypedConfigService>({ jwtRefreshSecret: secret }),
+      );
+      const token = signJwtWithAlgorithm(validPayload, secret, "HS256");
+
+      // When
+      const outcome = await authenticateBearer(refreshStrategy, token);
+
+      // Then
+      expect(outcome).toBe("success");
+    });
+
+    it.each(["none", "HS512", "RS256"] as const)(
+      "%s refresh 토큰은 거절한다",
+      async (algorithm) => {
+        // Given
+        const refreshStrategy = new JwtRefreshStrategy(
+          asDep<TypedConfigService>({ jwtRefreshSecret: secret }),
+        );
+        const token = signJwtWithAlgorithm(validPayload, secret, algorithm);
+
+        // When
+        const outcome = await authenticateBearer(refreshStrategy, token);
+
+        // Then
+        expect(outcome).toBe("fail");
+      },
+    );
   });
 });

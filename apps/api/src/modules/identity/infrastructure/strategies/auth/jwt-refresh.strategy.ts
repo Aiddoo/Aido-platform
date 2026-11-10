@@ -5,7 +5,10 @@ import { PassportStrategy } from "@nestjs/passport";
 import type { Request } from "express";
 import { ExtractJwt, Strategy } from "passport-jwt";
 
-import type { JwtPayload } from "#api/modules/identity/infrastructure/adapters/auth/token.service";
+import {
+  JWT_ALGORITHM,
+  type JwtPayload,
+} from "#api/modules/identity/infrastructure/adapters/auth/token.service";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { ApplicationException } from "#api/shared/application/application.exception";
 
@@ -32,6 +35,7 @@ export class JwtRefreshStrategy extends PassportStrategy(Strategy, "jwt-refresh"
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
       secretOrKey: configService.jwtRefreshSecret,
+      algorithms: [JWT_ALGORITHM],
       passReqToCallback: true,
     });
   }

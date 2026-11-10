@@ -31,6 +31,11 @@ export type TokenVerifyResult<T> =
   | { success: true; payload: T }
   | { success: false; error: TokenVerifyError };
 
+export const JWT_ALGORITHM = "HS256";
+// 배포 전 토큰에는 iss·aud가 없어 검증 강제는 7일 refresh가 모두 바뀐 다음 릴리스부터다.
+const JWT_ISSUER = "aido-api";
+const JWT_AUDIENCE = "aido-app";
+
 // Access Token (15분) + Refresh Token (7일) 발급 및 검증, Token Rotation 지원
 @Injectable()
 export class TokenService {
@@ -87,6 +92,9 @@ export class TokenService {
     return this.jwtService.signAsync(payload, {
       secret: this.configService.jwtSecret,
       expiresIn: this.#getAccessTokenExpiresInSeconds(),
+      algorithm: JWT_ALGORITHM,
+      issuer: JWT_ISSUER,
+      audience: JWT_AUDIENCE,
     });
   }
 
@@ -111,6 +119,9 @@ export class TokenService {
     return this.jwtService.signAsync(payload, {
       secret: this.configService.jwtRefreshSecret,
       expiresIn: this.getRefreshTokenExpiresInSeconds(),
+      algorithm: JWT_ALGORITHM,
+      issuer: JWT_ISSUER,
+      audience: JWT_AUDIENCE,
     });
   }
 
@@ -123,6 +134,7 @@ export class TokenService {
     try {
       const payload = await this.jwtService.verifyAsync<JwtPayload>(token, {
         secret: this.configService.jwtSecret,
+        algorithms: [JWT_ALGORITHM],
       });
 
       if (payload.type !== "access") {
@@ -144,6 +156,7 @@ export class TokenService {
     try {
       const payload = await this.jwtService.verifyAsync<JwtPayload>(token, {
         secret: this.configService.jwtRefreshSecret,
+        algorithms: [JWT_ALGORITHM],
       });
 
       if (payload.type !== "refresh") {

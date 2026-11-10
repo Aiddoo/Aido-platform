@@ -5,7 +5,10 @@ import { PassportStrategy } from "@nestjs/passport";
 import { ExtractJwt, Strategy } from "passport-jwt";
 
 import { SessionService } from "#api/modules/identity/application/services/auth/session.service";
-import type { JwtPayload } from "#api/modules/identity/infrastructure/adapters/auth/token.service";
+import {
+  JWT_ALGORITHM,
+  type JwtPayload,
+} from "#api/modules/identity/infrastructure/adapters/auth/token.service";
 import { IdentityInfraLogEvent } from "#api/modules/identity/infrastructure/observability/auth/identity-infra-log.events";
 import { DrizzleSessionRepository } from "#api/modules/identity/infrastructure/persistence/auth/drizzle-session.repository";
 import { DrizzleUserRepository } from "#api/modules/identity/infrastructure/persistence/auth/drizzle-user.repository";
@@ -41,6 +44,7 @@ export class JwtStrategy extends PassportStrategy(Strategy, "jwt") {
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
       secretOrKey: configService.jwtSecret,
+      algorithms: [JWT_ALGORITHM],
     });
   }
 
