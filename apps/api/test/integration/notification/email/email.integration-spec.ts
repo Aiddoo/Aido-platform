@@ -27,6 +27,13 @@ import {
 } from "#test/mocks/resend-http.stub";
 import { suppressLogger } from "#test/setup/suppress-logger";
 
+const FIXTURE_EMAIL_CONFIG = notificationEmailConfig.parse({
+  NODE_ENV: "test",
+  EMAIL_PROVIDER: "resend",
+  RESEND_API_KEY: "fixture-api-key",
+  EMAIL_FROM: "noreply@integration-test.com",
+  EMAIL_FROM_NAME: "Integration Test",
+});
 const recipient = "private@example.com";
 const code = "987654";
 const expiryMinutes = 15;
@@ -82,12 +89,7 @@ describe("이메일 발송 큐 통합 테스트 — 운영 NotificationEmailModu
       imports: [PlatformStubModule, NotificationEmailModule],
     })
       .overrideProvider(notificationEmailConfig.KEY)
-      .useValue({
-        provider: "resend",
-        apiKey: "fixture-api-key",
-        from: "noreply@integration-test.com",
-        fromName: "Integration Test",
-      })
+      .useValue(FIXTURE_EMAIL_CONFIG)
       .compile();
     sender = module.get(SendTransactionalEmailUseCase);
     processor = module.get(EmailDeliveryQueueProcessor);

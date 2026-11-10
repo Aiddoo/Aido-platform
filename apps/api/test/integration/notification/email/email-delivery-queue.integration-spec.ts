@@ -28,6 +28,13 @@ import { createDatabaseTransactionFixture } from "#test/setup/database-context";
 import { suppressLogger } from "#test/setup/suppress-logger";
 import { TestDatabase } from "#test/setup/test-database";
 
+const FIXTURE_EMAIL_CONFIG = notificationEmailConfig.parse({
+  NODE_ENV: "test",
+  EMAIL_PROVIDER: "resend",
+  RESEND_API_KEY: "fixture-api-key",
+  EMAIL_FROM: "noreply@integration-test.com",
+  EMAIL_FROM_NAME: "Integration Test",
+});
 const SCHEMA = "pgboss";
 const recipient = "private@example.com";
 const reportOf = (reportId: string) => ({
@@ -132,12 +139,7 @@ describe("이메일 발송 큐 (실제 pg-boss + PostgreSQL)", () => {
       imports: [PlatformStubModule, NotificationEmailModule],
     })
       .overrideProvider(notificationEmailConfig.KEY)
-      .useValue({
-        provider: "resend",
-        apiKey: "fixture-api-key",
-        from: "noreply@integration-test.com",
-        fromName: "Integration Test",
-      })
+      .useValue(FIXTURE_EMAIL_CONFIG)
       .compile();
     await module.init();
     sender = module.get(SendTransactionalEmailUseCase);

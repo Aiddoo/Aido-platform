@@ -113,3 +113,21 @@ describe("HTTP 로그 — 공식 Pino 연동과 인증 정보 비노출", () => 
     expect(logs).toEqual([]);
   });
 });
+
+describe("로그 형식과 기본 레벨 — 실행 방식별", () => {
+  it.each([
+    { nodeEnv: "development", pretty: true, level: "debug" },
+    { nodeEnv: "test", pretty: false, level: "silent" },
+    { nodeEnv: "production", pretty: false, level: "info" },
+  ] as const)(
+    "NODE_ENV=$nodeEnv는 pretty=$pretty·레벨 $level로 기록한다",
+    ({ nodeEnv, pretty, level }) => {
+      // When
+      const options = createLoggerOptions({ nodeEnv, level: undefined });
+
+      // Then
+      expect(options.pinoHttp.transport != null).toBe(pretty);
+      expect(options.pinoHttp.level).toBe(level);
+    },
+  );
+});

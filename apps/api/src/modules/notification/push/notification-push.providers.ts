@@ -77,7 +77,7 @@ import { HmacMarketingPushOptOutTokenAdapter } from "./infrastructure/adapters/h
 import { NotificationDedupLockAdapter } from "./infrastructure/adapters/notification-dedup-lock.adapter.js";
 import { NotificationDedupAdapter } from "./infrastructure/adapters/notification-dedup.adapter.js";
 import { PushNotificationPayloadMapper } from "./infrastructure/adapters/push-notification-payload.mapper.js";
-import { createPushRateLimiter } from "./infrastructure/adapters/push-rate-limiter-factory.adapter.js";
+import { selectPushRateLimiter } from "./infrastructure/adapters/push-rate-limiter-factory.adapter.js";
 import { UserNotificationSettingsAdapter } from "./infrastructure/adapters/user-notification-settings.adapter.js";
 import { PushDeliveryQueueAdapter } from "./infrastructure/jobs/push-delivery-queue.adapter.js";
 import { DrizzleClientAppVersionReader } from "./infrastructure/persistence/drizzle-client-app-version.reader.js";
@@ -100,8 +100,7 @@ const pushRateLimiterProvider = {
     database: Database,
     redis?: Redis,
   ): PushRateLimiterPort =>
-    createPushRateLimiter({
-      backend: config.rateLimitBackend,
+    selectPushRateLimiter(config.rateLimitBackend, {
       database,
       ...(redis && { redis }),
     }),

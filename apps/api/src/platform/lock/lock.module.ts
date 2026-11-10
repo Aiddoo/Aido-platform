@@ -2,7 +2,7 @@ import { type DynamicModule, Global, Module, type Provider } from "@nestjs/commo
 import type { ConfigType } from "@nestjs/config";
 import type { Redis } from "ioredis";
 
-import { cacheConfig } from "../config/cache.config.js";
+import { cacheConfig, selectSharedRedis } from "../config/cache.config.js";
 import { REDIS_COMMAND_CLIENT } from "../redis/redis.constants.js";
 import { InMemoryLockAdapter } from "./adapters/in-memory-lock.adapter.js";
 import { RedisLockAdapter } from "./adapters/redis-lock.adapter.js";
@@ -35,13 +35,8 @@ export class LockModule {
     const lockProvider: Provider = {
       provide: LOCK_PROVIDER,
       useFactory: (cache: ConfigType<typeof cacheConfig>, redis?: Redis): ILockProvider => {
-        const cacheType = cache.type;
-
-        if (cacheType === "redis" && redis) {
-          return new RedisLockAdapter(redis);
-        }
-
-        return new InMemoryLockAdapter();
+        const shared = selectSharedRedis(cache, redis);
+        return shared == null ? new InMemoryLockAdapter() : new RedisLockAdapter(shared);
       },
       inject: [cacheConfig.KEY, { token: REDIS_COMMAND_CLIENT, optional: true }],
     };

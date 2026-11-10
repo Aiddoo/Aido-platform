@@ -2,7 +2,7 @@ import { type DynamicModule, Global, Module, type Provider } from "@nestjs/commo
 import type { ConfigType } from "@nestjs/config";
 import type { Redis } from "ioredis";
 
-import { cacheConfig } from "../config/cache.config.js";
+import { cacheConfig, selectSharedRedis } from "../config/cache.config.js";
 import { REDIS_COMMAND_CLIENT } from "../redis/redis.constants.js";
 import { InMemoryCacheStore } from "./adapters/in-memory-cache.store.js";
 import { RedisCacheStore } from "./adapters/redis-cache.store.js";
@@ -23,10 +23,12 @@ export class CacheModule {
   static forRoot(): DynamicModule {
     const storeProvider: Provider = {
       provide: CacheStorePort,
-      useFactory: (cache: ConfigType<typeof cacheConfig>, redis?: Redis | null): CacheStorePort =>
-        cache.type === "redis" && redis != null
-          ? new RedisCacheStore(redis, cache.defaultTtlMs)
-          : new InMemoryCacheStore({ defaultTtlMs: cache.defaultTtlMs, maxItems: cache.maxItems }),
+      useFactory: (cache: ConfigType<typeof cacheConfig>, redis?: Redis | null): CacheStorePort => {
+        const shared = selectSharedRedis(cache, redis);
+        return shared == null
+          ? new InMemoryCacheStore({ defaultTtlMs: cache.defaultTtlMs, maxItems: cache.maxItems })
+          : new RedisCacheStore(shared, cache.defaultTtlMs);
+      },
       inject: [cacheConfig.KEY, { token: REDIS_COMMAND_CLIENT, optional: true }],
     };
 
