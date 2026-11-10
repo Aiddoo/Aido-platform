@@ -4,6 +4,7 @@ import type {
   ApplicationLoggerPort,
   ApplicationLogMessage,
 } from "#api/shared/application/ports/application-logger.port";
+import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { PushDeviceReportFixture } from "#test/fixtures/index";
 import { InMemoryPushDeviceStore } from "#test/mocks/in-memory-push-device.store";
 import { createUnitOfWorkMock } from "#test/mocks/ports/index";
@@ -16,6 +17,7 @@ import {
 } from "./report-push-device.use-case.js";
 
 const VALID_TOKEN = "ExponentPushToken[device-a]";
+const NOW = Temporal.Instant.from("2026-11-10T03:00:00.000Z");
 
 class RecordingSettings implements Pick<
   UserNotificationSettingsPort,
@@ -81,6 +83,7 @@ function setup() {
     pushProvider: { validateToken: (token) => token.startsWith("ExponentPushToken[") },
     userSettings: settings,
     cache,
+    clock: new FixedClock(NOW),
     logger,
   });
   return { store, settings, cache, logger, useCase };
@@ -96,6 +99,7 @@ describe("ReportPushDeviceUseCase — 푸시 기기 보고", () => {
 
     // Then
     expect(report).toMatchObject({ platform: "ANDROID", hasActiveToken: true });
+    expect(report.reportedAt.equals(NOW)).toBe(true);
     expect(store.tokens.get("user-a:android_device-a")).toMatchObject({
       token: VALID_TOKEN,
       platform: "ANDROID",

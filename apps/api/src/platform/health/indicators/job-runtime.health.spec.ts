@@ -54,14 +54,9 @@ describe("JobRuntimeHealthIndicator — 영속 job runtime 상태 확인", () =>
       "ai-report-generation.v1",
       "email-delivery.v1",
       "todo-reminder.v1",
-      "notification.v1",
-      "notification-dead-letter.v1",
-      "push-delivery.v1",
-      "push-delivery-dead-letter.v1",
       "retention.v1",
       "quota-abandoned-refund.v1",
       "account-purge.v1",
-      "notification.marketing-consent-reconfirm.v1",
       "timezone-reminder.v1",
       "invite-reward.v1",
       "invite-maintenance.v1",
@@ -110,7 +105,7 @@ describe("JobRuntimeHealthIndicator — 영속 job runtime 상태 확인", () =>
 
     // Then
     const [queueNames] = jobRuntime.health.mock.calls[0] ?? [];
-    expect(queueNames).toHaveLength(19);
+    expect(queueNames).toHaveLength(14);
     expect(queueNames?.slice(-2)).toEqual(["sample.v1", "sample-dead-letter.v1"]);
   });
 

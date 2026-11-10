@@ -140,12 +140,16 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
     return requireRecord(created);
   }
 
-  async function createNotification(userId: string, suffix: string) {
+  async function createNotification(
+    userId: string,
+    suffix: string,
+    type: "SYSTEM_NOTICE" | "ADMIN_BROADCAST" = "SYSTEM_NOTICE",
+  ) {
     const [created] = await db
       .insert(notificationTable)
       .values({
         userId,
-        type: "SYSTEM_NOTICE",
+        type,
         title: `title-${suffix}`,
         body: `body-${suffix}`,
       })
@@ -158,12 +162,14 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
     readonly suffix: string;
     readonly deliveryMode?: "SINGLE" | "BATCH";
     readonly force?: boolean;
+    readonly purpose?: "TRANSACTIONAL" | "ENGAGEMENT";
+    readonly type?: "SYSTEM_NOTICE" | "ADMIN_BROADCAST";
   }) {
-    const notification = await createNotification(input.userId, input.suffix);
+    const notification = await createNotification(input.userId, input.suffix, input.type);
     return staging(db).stage({
       notificationId: notification.id,
       userId: input.userId,
-      purpose: "TRANSACTIONAL",
+      purpose: input.purpose ?? "TRANSACTIONAL",
       deliveryMode: input.deliveryMode ?? "SINGLE",
       force: input.force ?? false,
     });
@@ -251,6 +257,34 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
       0,
     );
     await expect(db.$count(pushDispatchOutbox)).resolves.toBe(1);
+  });
+
+  it("claim은 dispatch purpose와 알림 타입으로 발송 차선을 함께 돌려준다", async () => {
+    // Given
+    const user = await createUser("LANES001");
+    const reminder = await stageNotification({ userId: user.id, suffix: "reminder" });
+    const engagement = await stageNotification({
+      userId: user.id,
+      suffix: "engagement",
+      purpose: "ENGAGEMENT",
+    });
+    const broadcast = await stageNotification({
+      userId: user.id,
+      suffix: "broadcast",
+      type: "ADMIN_BROADCAST",
+    });
+
+    // When
+    const claimed = await db.transaction((tx) =>
+      outbox(tx).claimAvailable({ limit: 10, lockedAt: new Date() }),
+    );
+
+    // Then
+    expect(Object.fromEntries(claimed.map(({ dispatchId, lane }) => [dispatchId, lane]))).toEqual({
+      [reminder.dispatchId]: "TRANSACTIONAL",
+      [engagement.dispatchId]: "MARKETING",
+      [broadcast.dispatchId]: "MARKETING",
+    });
   });
 
   it("동시 relay claim은 SKIP LOCKED로 같은 outbox를 중복 소유하지 않는다", async () => {
@@ -620,7 +654,9 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
     const claimedOutbox = await db.transaction((tx) =>
       outbox(tx).claimByDispatchIds([staged.dispatchId], new Date(Date.now() + 1_000)),
     );
-    expect(claimedOutbox).toEqual([{ dispatchId: staged.dispatchId, publishAttempt: 1 }]);
+    expect(claimedOutbox).toEqual([
+      { dispatchId: staged.dispatchId, publishAttempt: 1, lane: "TRANSACTIONAL" },
+    ]);
     await expect(
       db.transaction((tx) =>
         outbox(tx).markPublished(
@@ -802,7 +838,9 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
     const secondPublication = await db.transaction((tx) =>
       outbox(tx).claimAvailable({ limit: 1, lockedAt: new Date() }),
     );
-    expect(secondPublication).toEqual([{ dispatchId: staged.dispatchId, publishAttempt: 2 }]);
+    expect(secondPublication).toEqual([
+      { dispatchId: staged.dispatchId, publishAttempt: 2, lane: "TRANSACTIONAL" },
+    ]);
     const nextGenerationClaim = await db.transaction((tx) =>
       lifecycle(tx).claim({
         publications: secondPublication,
@@ -851,7 +889,9 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
       db.transaction((tx) =>
         outbox(tx).claimAvailable({ limit: 1, lockedAt: new Date("2026-08-29T00:15:04Z") }),
       ),
-    ).resolves.toEqual([{ dispatchId: staged.dispatchId, publishAttempt: 2 }]);
+    ).resolves.toEqual([
+      { dispatchId: staged.dispatchId, publishAttempt: 2, lane: "TRANSACTIONAL" },
+    ]);
   });
 
   it("final claim recovery는 matching PENDING generation만 CAS하고 partial exact recovery를 rollback한다", async () => {

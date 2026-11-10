@@ -32,6 +32,8 @@ export const NotificationFixture = {
       type: overrides.type ?? "SYSTEM_NOTICE",
       title: overrides.title ?? `Notification ${id}`,
       body: overrides.body ?? `This is notification body ${id}`,
+      copyKey: overrides.copyKey ?? null,
+      copyFacts: overrides.copyFacts ?? null,
       isRead: overrides.isRead ?? false,
       todoId: overrides.todoId ?? null,
       friendId: overrides.friendId ?? null,
@@ -78,7 +80,7 @@ export const NotificationFixture = {
 export const PushTokenFixture = {
   create: (overrides: Partial<PushToken> = {}): PushToken => {
     const id = ++pushTokenCounter;
-    const now = new Date();
+    const now = Temporal.Now.instant();
 
     return {
       id: overrides.id ?? id,

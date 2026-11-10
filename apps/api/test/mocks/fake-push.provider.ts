@@ -1,12 +1,12 @@
 import type {
   PushPayload,
-  PushProvider,
+  PushProviderPort,
   PushReceiptResult,
   PushResult,
 } from "#api/modules/notification/push/application/ports/push-provider.port";
 
 /** 실제 Expo를 부르지 않고 보낸 payload를 메모리에 남긴다. */
-export class FakePushProvider implements PushProvider {
+export class FakePushProvider implements PushProviderPort {
   readonly name = "fake";
   #sentPayloads: PushPayload[] = [];
   #ticketSequence = 0;

@@ -18,3 +18,7 @@ export const PUSH_DELIVERY_ATTEMPT_STATUSES = [
 ] as const;
 
 export type PushDeliveryAttemptStatus = (typeof PUSH_DELIVERY_ATTEMPT_STATUSES)[number];
+
+export const PUSH_DELIVERY_MODES = ["SINGLE", "BATCH"] as const;
+
+export type PushDeliveryMode = (typeof PUSH_DELIVERY_MODES)[number];

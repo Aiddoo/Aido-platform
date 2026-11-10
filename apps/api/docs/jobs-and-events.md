@@ -29,7 +29,7 @@
 
 ## 큐 정의
 
-`defineQueue({ name, payloadSchema, retry, deadLetter, worker: { localConcurrency, pollingIntervalSeconds, batchSize, minPriority, maxPriority }, schedules })`가 큐 하나의 정의다(`shared/application/ports/job-queue.port.ts`). producer·consumer·Health·스케줄이 같은 정의를 `JobQueuePort`에 넘긴다.
+`defineQueue({ name, payloadSchema, retry, deadLetter, worker: { localConcurrency, pollingIntervalSeconds, batchSize, burstWhenBatchFull, isolateJobFailures, minPriority, maxPriority }, schedules })`가 큐 하나의 정의다(`shared/application/ports/job-queue.port.ts`). producer·consumer·Health·스케줄이 같은 정의를 `JobQueuePort`에 넘긴다.
 
 ```ts
 export const DOCUMENT_QUEUE = defineQueue({
@@ -55,16 +55,16 @@ await jobQueue.work(DOCUMENT_QUEUE, async (jobs) => {
 await jobQueue.registerSchedules(DOCUMENT_QUEUE); // schedules를 key별로 upsert
 ```
 
-| 규칙         | 내용                                                                                                                                      |
-| ------------ | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| payload      | enqueue는 schema 타입으로 검사하고 소비 때 `parse`한다. 맞지 않는 작업은 handler에 오지 않고 그 작업만 실패한다(`perJobResults`)          |
-| 멱등         | at-least-once라 handler는 같은 payload 재실행에 멱등이다(`singletonKey`, 유니크 키, 상태 fence, `boolean` 전이)                           |
-| 이름         | `teamSize` 대신 pg-boss 12 용어 `localConcurrency`                                                                                        |
-| 묶음         | 발송량이 많은 큐는 `batchSize`. handler가 throw하면 묶음 전체가 재시도되므로 상태 fence로 멱등을 보장한다                                 |
-| Health       | `JobQueuePort`에 넘긴 정의(와 DLQ)는 `JobQueueRegistry`가 모아 Health에 더한다. 옮기지 않은 큐는 `job-runtime.health.ts`의 옛 목록에 있다 |
-| 연결 예산    | 앱 풀 10 + pg-boss 3 = 13. 늘리지 않는다                                                                                                  |
-| `startAfter` | 포트는 `Temporal.Instant`를 받고 어댑터가 Date로 바꿔 pg-boss에 넘긴다                                                                    |
-| 우선순위     | 거래성(리마인더·소셜) `priority: 10`, 마케팅 `0`. 거래성 worker는 `minPriority: 10`([알림](notifications.md))                             |
+| 규칙         | 내용                                                                                                                                                                                                                                                          |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| payload      | enqueue는 schema 타입으로 검사하고 소비 때 `parse`한다. 맞지 않는 작업은 handler에 오지 않고 그 작업만 실패한다(`perJobResults`)                                                                                                                              |
+| 멱등         | at-least-once라 handler는 같은 payload 재실행에 멱등이다(`singletonKey`, 유니크 키, 상태 fence, `boolean` 전이)                                                                                                                                               |
+| 이름         | `teamSize` 대신 pg-boss 12 용어 `localConcurrency`                                                                                                                                                                                                            |
+| 묶음         | 발송량이 많은 큐는 `batchSize`(+`burstWhenBatchFull`). handler가 throw하면 묶음 전체가 재시도되므로 상태 fence로 멱등을 보장한다. 다시 실행하면 한 번 더 보내는 작업이 섞인 큐는 `isolateJobFailures`로 작업마다 끝낸다(`notification.v1`·`push-delivery.v1`) |
+| Health       | `JobQueuePort`에 넘긴 정의(와 DLQ)는 `JobQueueRegistry`가 모아 Health에 더한다. 옮기지 않은 큐는 `job-runtime.health.ts`의 옛 목록에 있다                                                                                                                     |
+| 연결 예산    | 앱 풀 10 + pg-boss 3 = 13. 늘리지 않는다                                                                                                                                                                                                                      |
+| `startAfter` | 포트는 `Temporal.Instant`를 받고 어댑터가 Date로 바꿔 pg-boss에 넘긴다                                                                                                                                                                                        |
+| 우선순위     | 거래성(리마인더·소셜) `priority: 10`, 마케팅 `0`. 거래성 worker는 `minPriority: 10`([알림](notifications.md)). 같은 큐의 두 번째 worker는 `{ ...QUEUE, worker }`로 정의를 하나 더 둔다                                                                        |
 
 - `JobQueuePort`(`PgBossJobQueueAdapter`)와 옛 `JobRuntimePort`(`PgBossJobRuntimeAdapter`)는 메서드 이름이 겹쳐 클래스가 나뉘지만 같은 pg-boss client와 시작·종료를 쓴다.
 - E2E 앱은 `JobQueuePort`를 `test/doubles/platform/in-memory-job-queue.ts`로 바꾼다.

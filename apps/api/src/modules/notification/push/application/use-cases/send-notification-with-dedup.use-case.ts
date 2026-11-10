@@ -1,5 +1,6 @@
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
-import { subtractMilliseconds } from "#api/shared/domain/date/utils/arithmetic";
+import type { ClockPort } from "#api/shared/application/ports/clock.port";
+import { instantToDate } from "#api/shared/domain/time/instant";
 
 import type { CreateNotificationData } from "../../../inbox/application/ports/notification-draft.port.js";
 import { type NotificationHistoryReaderPort } from "../../../inbox/application/ports/notification-history.reader.port.js";
@@ -28,6 +29,7 @@ interface SendNotificationWithDedupDependencies {
     NotificationHistoryReaderPort,
     "existsRecentNotification"
   >;
+  readonly clock: ClockPort;
   readonly logger: Pick<ApplicationLoggerPort, "debug">;
 }
 
@@ -58,7 +60,9 @@ export class SendNotificationWithDedupUseCase {
     }
 
     try {
-      const since = subtractMilliseconds(strategy.windowMs);
+      const since = instantToDate(
+        this.#dependencies.clock.now().subtract({ milliseconds: strategy.windowMs }),
+      );
       const contextFields = buildDedupContextFields(data, strategy);
       const params = {
         userId: data.userId,

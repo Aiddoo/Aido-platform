@@ -4,14 +4,22 @@ import { and, asc, eq, inArray, lte, type SQL, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
-import { pushDispatch, pushDispatchOutbox } from "#api/platform/database/schema/index";
+import {
+  notification,
+  pushDispatch,
+  pushDispatchOutbox,
+} from "#api/platform/database/schema/index";
 
 import type {
   ClaimPushDeliveryOutboxInput,
   DeferPushDeliveryPublicationsInput,
   PushDeliveryOutboxRepositoryPort,
 } from "../../application/ports/push-delivery-outbox.repository.port.js";
-import type { PushDeliveryPublication } from "../../application/read-models/push-delivery.read-model.js";
+import type {
+  ClaimedPushDeliveryPublication,
+  PushDeliveryPublication,
+} from "../../application/read-models/push-delivery.read-model.js";
+import { pushDeliveryLaneOf } from "../../domain/push-delivery-lane.domain-service.js";
 import {
   lockPublicationGenerations,
   matchesPublicationGeneration,
@@ -34,7 +42,7 @@ export class DrizzlePushDeliveryOutboxRepository implements PushDeliveryOutboxRe
   claimByDispatchIds(
     dispatchIds: readonly number[],
     lockedAt: Date,
-  ): Promise<readonly PushDeliveryPublication[]> {
+  ): Promise<readonly ClaimedPushDeliveryPublication[]> {
     if (dispatchIds.length === 0) {
       return Promise.resolve([]);
     }
@@ -45,7 +53,9 @@ export class DrizzlePushDeliveryOutboxRepository implements PushDeliveryOutboxRe
     });
   }
 
-  claimAvailable(input: ClaimPushDeliveryOutboxInput): Promise<readonly PushDeliveryPublication[]> {
+  claimAvailable(
+    input: ClaimPushDeliveryOutboxInput,
+  ): Promise<readonly ClaimedPushDeliveryPublication[]> {
     if (input.limit <= 0) {
       return Promise.resolve([]);
     }
@@ -143,7 +153,7 @@ export class DrizzlePushDeliveryOutboxRepository implements PushDeliveryOutboxRe
     readonly limit: number;
     readonly lockedAt: Date;
     readonly dispatchFilter?: SQL;
-  }): Promise<readonly PushDeliveryPublication[]> {
+  }): Promise<readonly ClaimedPushDeliveryPublication[]> {
     const candidates = this.#db
       .select({ dispatchId: candidate.dispatchId })
       .from(candidate)
@@ -158,7 +168,7 @@ export class DrizzlePushDeliveryOutboxRepository implements PushDeliveryOutboxRe
       .limit(input.limit)
       .for("update", { skipLocked: true });
 
-    return this.#db
+    const claimed = await this.#db
       .update(pushDispatchOutbox)
       .set({
         status: "PROCESSING",
@@ -173,5 +183,37 @@ export class DrizzlePushDeliveryOutboxRepository implements PushDeliveryOutboxRe
         dispatchId: pushDispatchOutbox.dispatchId,
         publishAttempt: pushDispatchOutbox.publishAttempts,
       });
+    return this.#withLanes(claimed);
+  }
+
+  async #withLanes(
+    publications: readonly PushDeliveryPublication[],
+  ): Promise<readonly ClaimedPushDeliveryPublication[]> {
+    if (publications.length === 0) {
+      return [];
+    }
+    const sources = await this.#db
+      .select({
+        dispatchId: pushDispatch.id,
+        purpose: pushDispatch.purpose,
+        type: notification.type,
+      })
+      .from(pushDispatch)
+      .innerJoin(notification, eq(notification.id, pushDispatch.notificationId))
+      .where(
+        inArray(
+          pushDispatch.id,
+          publications.map(({ dispatchId }) => dispatchId),
+        ),
+      );
+    const sourceByDispatchId = new Map(sources.map((source) => [source.dispatchId, source]));
+    return publications.map((publication) => {
+      const source = sourceByDispatchId.get(publication.dispatchId);
+      // outbox 행을 잡은 같은 트랜잭션이라 dispatch가 사라질 수 없다. 그래도 없으면 늦지 않게 거래성으로 보낸다
+      return {
+        ...publication,
+        lane: source == null ? "TRANSACTIONAL" : pushDeliveryLaneOf(source),
+      };
+    });
   }
 }

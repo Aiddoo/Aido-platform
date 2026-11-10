@@ -1,16 +1,24 @@
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
+import type { ClockPort } from "#api/shared/application/ports/clock.port";
 
 import { NotificationDeliveryLogEvent } from "../../../push/application/notification-delivery.log-events.js";
-import { type NotificationCachePort } from "../ports/notification-cache.port.js";
-import { type NotificationRepositoryPort } from "../ports/notification.repository.port.js";
+import { NotificationId } from "../../domain/notification-id.vo.js";
+import type { NotificationCachePort } from "../ports/notification-cache.port.js";
+import type { NotificationRepositoryPort } from "../ports/notification.repository.port.js";
 
-/** 푸시 탭을 멱등 기록하고 알림 센터 상태도 즉시 읽음으로 맞춘다. */
-interface MarkNotificationOpenedDependencies {
+export interface MarkNotificationOpenedCommand {
+  readonly userId: string;
+  readonly notificationId: number;
+}
+
+export interface MarkNotificationOpenedDependencies {
   readonly notificationRepository: Pick<NotificationRepositoryPort, "markAsOpened">;
   readonly cache: Pick<NotificationCachePort, "invalidateUnreadCount">;
+  readonly clock: ClockPort;
   readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
 
+// 푸시 탭은 재시도될 수 있어 처음 연 기록만 남기고, 남의 알림·없는 알림도 오류 없이 false다
 export class MarkNotificationOpenedUseCase {
   readonly #dependencies: MarkNotificationOpenedDependencies;
 
@@ -18,19 +26,21 @@ export class MarkNotificationOpenedUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(userId: string, notificationId: number): Promise<boolean> {
-    const opened = await this.#dependencies.notificationRepository.markAsOpened(
-      notificationId,
-      userId,
+  async execute(command: MarkNotificationOpenedCommand): Promise<boolean> {
+    const { notificationRepository, cache, clock, logger } = this.#dependencies;
+    const isOpened = await notificationRepository.markAsOpened(
+      NotificationId.reconstitute(command.notificationId),
+      command.userId,
+      clock.now(),
     );
-    if (opened) {
-      await this.#dependencies.cache.invalidateUnreadCount(userId);
-      this.#dependencies.logger.log({
+    if (isOpened) {
+      await cache.invalidateUnreadCount(command.userId);
+      logger.log({
         event: NotificationDeliveryLogEvent.MARK_NOTIFICATION_OPENED_OPENED,
-        userId,
-        notificationId,
+        userId: command.userId,
+        notificationId: command.notificationId,
       });
     }
-    return opened;
+    return isOpened;
   }
 }

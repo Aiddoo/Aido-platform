@@ -2,6 +2,7 @@ import type { Mocked } from "vitest";
 import { vi } from "vitest";
 import { mockDeep } from "vitest-mock-extended";
 
+import { DateClock } from "#test/doubles/platform/date-clock";
 import { createNotificationRecipientPreferenceReaderMock } from "#test/mocks/ports/notification.mock";
 
 import { type NotificationDeliveryPreference } from "../ports/user-notification-settings.port.js";
@@ -66,9 +67,13 @@ describe("EvaluatePushDeliveryEligibilityUseCase", () => {
     const pushDeliveryEligibilityServiceDependencies = mockDeep<
       ConstructorParameters<typeof EvaluatePushDeliveryEligibilityUseCase>[0]
     >({ recipientPreferenceReader: createNotificationRecipientPreferenceReaderMock() });
-    const unit = new EvaluatePushDeliveryEligibilityUseCase(
-      pushDeliveryEligibilityServiceDependencies,
-    );
+    const unit = new EvaluatePushDeliveryEligibilityUseCase({
+      userSettings: pushDeliveryEligibilityServiceDependencies.userSettings,
+      rateLimiter: pushDeliveryEligibilityServiceDependencies.rateLimiter,
+      recipientPreferenceReader:
+        pushDeliveryEligibilityServiceDependencies.recipientPreferenceReader,
+      clock: new DateClock(),
+    });
     service = unit;
     settings = pushDeliveryEligibilityServiceDependencies.userSettings;
     rateLimiter = pushDeliveryEligibilityServiceDependencies.rateLimiter;

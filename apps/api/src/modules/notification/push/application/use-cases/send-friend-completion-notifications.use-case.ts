@@ -1,11 +1,13 @@
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
-import { type UnitOfWorkPort } from "#api/shared/application/ports/index";
-import { toDateString } from "#api/shared/domain/date/utils/format";
-import { todayInTimezone } from "#api/shared/domain/date/utils/timezone";
-import { DEFAULT_LOCALE, toSupportedLocale } from "#api/shared/domain/locale";
+import type { ClockPort } from "#api/shared/application/ports/clock.port";
+import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
+import { parseDateOnly } from "#api/shared/domain/date/utils/parse";
+import { localDateInTimezone } from "#api/shared/domain/date/utils/timezone";
+import { instantToDate } from "#api/shared/domain/time/instant";
 
 import type { NotificationHistoryReader } from "../../../inbox/application/notification-history.reader.js";
 import { DuplicateNotificationError } from "../../../inbox/application/ports/notification.repository.port.js";
+import { resolveRecipientLocale } from "../../domain/recipient-locale.domain-service.js";
 import { TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY } from "../../domain/transactional-notification-campaign.constants.js";
 import { createFriendCompletedNotificationMessage } from "../messages/notification.messages.js";
 import { NotificationDeliveryLogEvent } from "../notification-delivery.log-events.js";
@@ -30,6 +32,7 @@ interface SendFriendCompletionNotificationsDependencies {
     UserNotificationSettingsPort,
     "getPreferenceRecordsByUserIds"
   >;
+  readonly clock: ClockPort;
   readonly logger: Pick<ApplicationLoggerPort, "debug" | "log">;
 }
 
@@ -48,8 +51,11 @@ export class SendFriendCompletionNotificationsUseCase {
       return;
     }
 
-    const notificationDate = todayInTimezone(input.timezone);
-    const localDate = toDateString(notificationDate);
+    const localDate = localDateInTimezone(
+      instantToDate(this.#dependencies.clock.now()),
+      input.timezone,
+    );
+    const notificationDate = parseDateOnly(localDate);
     const alreadyNotifiedUserIds =
       await this.#dependencies.notificationHistoryReader.findAlreadyNotifiedUserIds({
         userIds: input.notifyUserIds,
@@ -73,8 +79,8 @@ export class SendFriendCompletionNotificationsUseCase {
       await this.#dependencies.userNotificationSettings.getPreferenceRecordsByUserIds(
         recipientUserIds,
       );
-    const localeByUserId = new Map(
-      preferences.map((preference) => [preference.userId, toSupportedLocale(preference.locale)]),
+    const storedLocaleByUserId = new Map(
+      preferences.map((preference) => [preference.userId, preference.locale]),
     );
     const notifications = recipientUserIds.map((userId) => {
       const variantContext = {
@@ -84,7 +90,10 @@ export class SendFriendCompletionNotificationsUseCase {
       };
       const message = createFriendCompletedNotificationMessage({
         friendName: input.friendName,
-        locale: localeByUserId.get(userId) ?? DEFAULT_LOCALE,
+        locale: resolveRecipientLocale({
+          storedLocale: storedLocaleByUserId.get(userId) ?? null,
+          lastRequestLocale: null,
+        }),
         variantContext,
       });
       return {

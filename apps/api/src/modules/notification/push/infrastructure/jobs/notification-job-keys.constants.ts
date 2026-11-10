@@ -8,10 +8,7 @@ import { toDateString } from "#api/shared/domain/date/utils/format";
 import { resolveTimezone } from "#api/shared/domain/date/utils/timezone";
 
 import type { PushDeliveryPublication } from "../../application/read-models/push-delivery.read-model.js";
-import {
-  NotificationJobName,
-  type NotificationRuntimeJob,
-} from "./notification-queue.constants.js";
+import { NotificationJobName, type NotificationRuntimeJob } from "./notification.queue.js";
 
 /**
  * pg-boss는 같은 key의 작업을 결정적 id로 한 번만 저장한다. key는 원인 이벤트 하나를 가리켜

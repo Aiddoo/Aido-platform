@@ -6,10 +6,16 @@ import {
   RETENTION_QUEUE,
   RetentionJobName,
 } from "#api/modules/notification/infrastructure/jobs/retention/retention-queue.constants";
+import { PublishNotificationUseCase } from "#api/modules/notification/push/application/use-cases/publish-notification.use-case";
 import {
   NOTIFICATION_QUEUE,
   NotificationJobName,
-} from "#api/modules/notification/push/infrastructure/jobs/notification-queue.constants";
+} from "#api/modules/notification/push/infrastructure/jobs/notification.queue";
+import { PushDeliveryQueueProcessor } from "#api/modules/notification/push/infrastructure/jobs/push-delivery-queue.processor";
+import {
+  PUSH_DELIVERY_QUEUE,
+  PushDeliveryRuntimeJobSchema,
+} from "#api/modules/notification/push/infrastructure/jobs/push-delivery.queue";
 import { CreateBroadcastCampaignUseCase } from "#api/modules/operations/broadcasts/application/use-cases/create-broadcast-campaign.use-case";
 import { BROADCAST_FAN_OUT_QUEUE } from "#api/modules/operations/broadcasts/infrastructure/jobs/broadcast-fan-out.queue";
 import { pushDispatch, pushToken, user, userPreference } from "#api/platform/database/schema/index";
@@ -75,7 +81,7 @@ describe("핵심 큐 프로세서 컴포넌트 테스트 (실제 PostgreSQL + pg
     });
 
     // When
-    const jobId = await harness.runtime.enqueue(
+    const jobId = await harness.jobQueue.enqueue(
       NOTIFICATION_QUEUE,
       {
         name: NotificationJobName.FRIEND_COMPLETED,
@@ -86,7 +92,7 @@ describe("핵심 큐 프로세서 컴포넌트 테스트 (실제 PostgreSQL + pg
           timezone: "Asia/Seoul",
         },
       },
-      { ...JOB_OPTIONS, idempotencyKey: `friend-completed:${friend.id}` },
+      { idempotencyKey: `friend-completed:${friend.id}` },
     );
 
     // Then
@@ -102,7 +108,7 @@ describe("핵심 큐 프로세서 컴포넌트 테스트 (실제 PostgreSQL + pg
         harness.client.query.pushDeliveryAttempt.findMany({
           where: { dispatch: { notification: friendCompleted } },
         }),
-        harness.boss.findJobs(NOTIFICATION_QUEUE, {
+        harness.boss.findJobs(NOTIFICATION_QUEUE.name, {
           id: jobId ?? undefined,
         }),
       ]);
@@ -124,6 +130,67 @@ describe("핵심 큐 프로세서 컴포넌트 테스트 (실제 PostgreSQL + pg
         .map(({ token }) => token)
         .sort(),
     ).toEqual(["fake-queue-en-token", "fake-queue-ko-token"]);
+  });
+
+  it("거래성 푸시는 우선순위 10, 마케팅 푸시는 0으로 발송 작업에 오르고 같은 작업을 다시 처리해도 한 번만 보낸다", async () => {
+    // Given
+    const recipient = await createPushReadyUser(harness.client, {
+      email: "queue-lane@example.com",
+      userTag: "QLANE001",
+      name: "차선 수신자",
+      locale: "ko",
+      token: "fake-lane-token",
+      timezone: harness.daytimeTimezone,
+    });
+    const publisher = harness.module.get(PublishNotificationUseCase);
+
+    // When
+    await publisher.publish({
+      userId: recipient.id,
+      type: "SYSTEM_NOTICE",
+      title: "결제 확인",
+      body: "결제 수단을 확인해 주세요",
+    });
+    await publisher.publish({
+      userId: recipient.id,
+      type: "SYSTEM_NOTICE",
+      title: "새 기능",
+      body: "새 기능을 써 보세요",
+      purpose: "ENGAGEMENT",
+    });
+
+    // Then
+    let deliveryJobs: Awaited<ReturnType<typeof harness.boss.findJobs>> = [];
+    await harness.eventually(async () => {
+      const dispatches = await harness.client.query.pushDispatch.findMany({
+        where: { userId: recipient.id },
+      });
+      expect(dispatches.map(({ status }) => status)).toEqual(["SENT", "SENT"]);
+      deliveryJobs = (await harness.boss.findJobs(PUSH_DELIVERY_QUEUE.name)).filter(
+        (job) =>
+          job.state === "completed" &&
+          PushDeliveryRuntimeJobSchema.safeParse(job.data).data?.name === "deliver-dispatches",
+      );
+      expect(deliveryJobs).toHaveLength(2);
+    });
+    expect(deliveryJobs.map(({ priority }) => priority).sort()).toEqual([0, 10]);
+    expect(harness.pushProvider.getSentPayloads()).toHaveLength(2);
+
+    // When: at-least-once 재전달처럼 끝난 작업을 같은 id·attempt로 다시 처리한다
+    const processor = harness.module.get(PushDeliveryQueueProcessor);
+    for (const job of deliveryJobs) {
+      const payload = PushDeliveryRuntimeJobSchema.parse(job.data);
+      await processor.process(job.id, job.retryCount + 1, payload);
+      await processor.process(job.id, job.retryCount + 2, payload);
+    }
+
+    // Then: dispatch 상태 fence가 다시 claim하지 않아 기기마다 한 번만 보낸다
+    expect(harness.pushProvider.getSentPayloads()).toHaveLength(2);
+    await expect(
+      harness.client.query.pushDeliveryAttempt.findMany({
+        where: { dispatch: { userId: recipient.id } },
+      }),
+    ).resolves.toHaveLength(2);
   });
 
   it(
@@ -259,6 +326,7 @@ async function seedPushReadyUsers(client: TestDatabaseClient, count: number): Pr
         token: `fake-broadcast-${id}`,
         deviceId: `broadcast-device-${id}`,
         platform: "IOS" as const,
+        updatedAt: Temporal.Now.instant(),
       })),
     );
   }
@@ -292,6 +360,7 @@ async function createPushReadyUser(
         deviceId: `${input.userTag}-device`,
         platform: "IOS",
         appVersion: "1.8.0",
+        updatedAt: Temporal.Now.instant(),
       },
     },
   );

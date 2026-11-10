@@ -11,53 +11,37 @@ import { ReadUserPreferencesUseCase } from "#api/modules/identity/preferences/ap
 import { UserSettingsCacheAdapter } from "#api/modules/identity/preferences/infrastructure/adapters/user-settings-cache.adapter";
 import { DrizzleUserConsentRepository } from "#api/modules/identity/preferences/infrastructure/persistence/drizzle-user-consent.repository";
 import { DrizzleUserPreferenceRepository } from "#api/modules/identity/preferences/infrastructure/persistence/drizzle-user-preference.repository";
-import { NOTIFICATION_CACHE } from "#api/modules/notification/inbox/application/ports/notification-cache.port";
-import { NOTIFICATION_HISTORY_READER } from "#api/modules/notification/inbox/application/ports/notification-history.reader.port";
-import { NOTIFICATION_INBOX_READER } from "#api/modules/notification/inbox/application/ports/notification-inbox.reader.port";
-import { NOTIFICATION_REPOSITORY } from "#api/modules/notification/inbox/application/ports/notification.repository.port";
+import { NotificationRepositoryPort } from "#api/modules/notification/inbox/application/ports/notification.repository.port";
 import { GetUnreadNotificationCountUseCase } from "#api/modules/notification/inbox/application/use-cases/get-unread-notification-count.use-case";
 import { ListNotificationsUseCase } from "#api/modules/notification/inbox/application/use-cases/list-notifications.use-case";
 import { MarkAllNotificationsReadUseCase } from "#api/modules/notification/inbox/application/use-cases/mark-all-notifications-read.use-case";
 import { MarkNotificationOpenedUseCase } from "#api/modules/notification/inbox/application/use-cases/mark-notification-opened.use-case";
 import { MarkNotificationReadUseCase } from "#api/modules/notification/inbox/application/use-cases/mark-notification-read.use-case";
-import { NotificationCacheAdapter } from "#api/modules/notification/inbox/infrastructure/cache/notification-cache.adapter";
-import { DrizzleNotificationReader } from "#api/modules/notification/inbox/infrastructure/persistence/drizzle-notification.reader";
 import { DrizzleNotificationRepository } from "#api/modules/notification/inbox/infrastructure/persistence/drizzle-notification.repository";
+import { NOTIFICATION_INBOX_PROVIDERS } from "#api/modules/notification/inbox/notification-inbox.providers";
 import { PublishNotificationUseCase } from "#api/modules/notification/notification-delivery.public";
 import {
   createMorningNoTodoNotificationMessage,
   createMorningReminderNotificationMessage,
 } from "#api/modules/notification/push/application/messages/notification.messages";
-import { ACTIVE_PUSH_TOKEN_READER } from "#api/modules/notification/push/application/ports/active-push-token.reader.port";
-import { MARKETING_PUSH_OPT_OUT_TOKEN } from "#api/modules/notification/push/application/ports/marketing-push-opt-out-token.port";
-import {
-  NOTIFICATION_DEDUP,
-  NOTIFICATION_DEDUP_LOCK,
-} from "#api/modules/notification/push/application/ports/notification-dedup.port";
-import { NOTIFICATION_RECIPIENT_LOCALE_READER } from "#api/modules/notification/push/application/ports/notification-recipient-locale.reader.port";
-import { NOTIFICATION_RECIPIENT_PREFERENCE_READER } from "#api/modules/notification/push/application/ports/notification-recipient-preference.reader.port";
-import { PUSH_DEVICE_REPOSITORY } from "#api/modules/notification/push/application/ports/push-device.repository.port";
-import {
-  PUSH_DISPATCH_STAGING,
-  type PushDispatchStagingRepositoryPort,
-} from "#api/modules/notification/push/application/ports/push-dispatch-staging.repository.port";
-import { PUSH_PROVIDER } from "#api/modules/notification/push/application/ports/push-provider.port";
-import { PUSH_RATE_LIMITER } from "#api/modules/notification/push/application/ports/push-rate-limiter.port";
-import { PUSH_RECEIPT_REPOSITORY } from "#api/modules/notification/push/application/ports/push-receipt.repository.port";
-import { PUSH_TOKEN_REPOSITORY } from "#api/modules/notification/push/application/ports/push-token.repository.port";
-import { USER_NOTIFICATION_SETTINGS } from "#api/modules/notification/push/application/ports/user-notification-settings.port";
+import { MarketingConsentReconfirmPort } from "#api/modules/notification/push/application/ports/marketing-consent-reconfirm.port";
+import { MarketingPushOptOutTokenPort } from "#api/modules/notification/push/application/ports/marketing-push-opt-out-token.port";
+import { NotificationDedupPort } from "#api/modules/notification/push/application/ports/notification-dedup.port";
+import { PushDeliveryJobEnqueuerPort } from "#api/modules/notification/push/application/ports/push-delivery-job-enqueuer.port";
+import { PushDispatchStagingRepositoryPort } from "#api/modules/notification/push/application/ports/push-dispatch-staging.repository.port";
+import { PushProviderPort } from "#api/modules/notification/push/application/ports/push-provider.port";
+import { PushRateLimiterPort } from "#api/modules/notification/push/application/ports/push-rate-limiter.port";
+import { UserNotificationSettingsPort } from "#api/modules/notification/push/application/ports/user-notification-settings.port";
 import { OptOutMarketingPushUseCase } from "#api/modules/notification/push/application/use-cases/opt-out-marketing-push.use-case";
 import { PublishPushDeliveryAfterCommitUseCase } from "#api/modules/notification/push/application/use-cases/publish-push-delivery-after-commit.use-case";
 import { ReportPushDeviceUseCase } from "#api/modules/notification/push/application/use-cases/report-push-device.use-case";
 import { SendBatchNotificationUseCase } from "#api/modules/notification/push/application/use-cases/send-batch-notification.use-case";
 import { SendNotificationWithDedupUseCase } from "#api/modules/notification/push/application/use-cases/send-notification-with-dedup.use-case";
 import { SendNotificationUseCase } from "#api/modules/notification/push/application/use-cases/send-notification.use-case";
-import { CachedActivePushTokenReaderAdapter } from "#api/modules/notification/push/infrastructure/adapters/cached-active-push-token-reader.adapter";
-import { CachedNotificationRecipientPreferenceAdapter } from "#api/modules/notification/push/infrastructure/adapters/cached-notification-recipient-preference.adapter";
-import { NotificationDedupLockAdapter } from "#api/modules/notification/push/infrastructure/adapters/notification-dedup-lock.adapter";
-import { DrizzlePushDeviceRepository } from "#api/modules/notification/push/infrastructure/persistence/drizzle-push-device.repository";
-import { DrizzlePushReceiptRepository } from "#api/modules/notification/push/infrastructure/persistence/drizzle-push-receipt.repository";
-import { DrizzlePushTokenRepository } from "#api/modules/notification/push/infrastructure/persistence/drizzle-push-token.repository";
+import {
+  NOTIFICATION_PUSH_PERSISTENCE_PROVIDERS,
+  NOTIFICATION_PUSH_USE_CASE_PROVIDERS,
+} from "#api/modules/notification/push/notification-push.providers";
 import { CacheService } from "#api/platform/cache/cache.service";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
 import {
@@ -70,11 +54,13 @@ import {
 } from "#api/platform/database/schema/index";
 import { DEDUP_PROVIDER } from "#api/platform/dedup/interfaces/dedup.interface";
 import { LOCK_PROVIDER } from "#api/platform/lock/interfaces/lock.interface";
+import { SystemClock } from "#api/platform/time/system-clock";
+import { ClockPort } from "#api/shared/application/ports/clock.port";
 import {
   AFTER_COMMIT_TASK_REGISTRY,
-  type AfterCommitTaskRegistryPort,
+  AfterCommitTaskRegistryPort,
   UNIT_OF_WORK,
-  type UnitOfWorkPort,
+  UnitOfWorkPort,
 } from "#api/shared/application/ports/index";
 import { NotificationBuilder, PushTokenBuilder, UserPreferenceBuilder } from "#test/builders/index";
 import { PushDeviceReportFixture } from "#test/fixtures/index";
@@ -84,22 +70,6 @@ import { suppressLogger } from "#test/setup/suppress-logger";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 import type { Notification, UserPreference } from "#test/types/database-rows";
 
-import {
-  finalizeBatchNotificationUseCaseProvider,
-  notificationHistoryReaderProvider,
-  listNotificationsUseCaseProvider,
-  getUnreadNotificationCountUseCaseProvider,
-  markAllNotificationsReadUseCaseProvider,
-  markNotificationReadUseCaseProvider,
-  markNotificationOpenedUseCaseProvider,
-  optOutMarketingPushUseCaseProvider,
-  persistBatchNotificationUseCaseProvider,
-  reportPushDeviceUseCaseProvider,
-  sendBatchNotificationUseCaseProvider,
-  sendNotificationUseCaseProvider,
-  sendNotificationWithDedupUseCaseProvider,
-  unregisterPushDeviceUseCaseProvider,
-} from "../../src/modules/notification/push/notification-push.providers.js";
 import { paginationServiceProvider } from "../../src/platform/pagination/pagination.providers.js";
 
 function buildNotificationTestApi(module: TestingModule) {
@@ -123,10 +93,14 @@ function buildNotificationTestApi(module: TestingModule) {
     publishBatch: publisher.publishBatch.bind(publisher),
     reportPushDevice: reportPushDeviceUseCase.execute.bind(reportPushDeviceUseCase),
     getNotifications: getNotificationsUseCase.execute.bind(getNotificationsUseCase),
-    getUnreadCount: getUnreadCountUseCase.execute.bind(getUnreadCountUseCase),
-    markAsRead: markAsReadUseCase.execute.bind(markAsReadUseCase),
-    markOpened: markNotificationOpenedUseCase.execute.bind(markNotificationOpenedUseCase),
-    markAllAsRead: markAllAsReadUseCase.execute.bind(markAllAsReadUseCase),
+    getUnreadCount: (userId: string, appVersion?: string) =>
+      getUnreadCountUseCase.execute({ userId, appVersion }),
+    markAsRead: (userId: string, notificationId: number) =>
+      markAsReadUseCase.execute({ userId, notificationId }),
+    markOpened: (userId: string, notificationId: number) =>
+      markNotificationOpenedUseCase.execute({ userId, notificationId }),
+    markAllAsRead: (userId: string, appVersion?: string) =>
+      markAllAsReadUseCase.execute({ userId, appVersion }),
     optOutMarketingPush: optOutMarketingPushUseCase.execute.bind(optOutMarketingPushUseCase),
   };
 }
@@ -136,7 +110,7 @@ const GRANTED_PERMISSION = { status: "GRANTED", canAskAgain: false } as const;
 describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
   let module: TestingModule;
   let facade: ReturnType<typeof buildNotificationTestApi>;
-  let repository: DrizzleNotificationRepository;
+  let repository: NotificationRepositoryPort;
   let testDatabase: TestDatabase;
   let client: TestDatabaseClient;
   const mockPushProvider = {
@@ -174,28 +148,25 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
 
     module = await Test.createTestingModule({
       providers: [
-        DrizzleNotificationRepository,
+        ...NOTIFICATION_INBOX_PROVIDERS,
+        { provide: ClockPort, useClass: SystemClock },
+        ...NOTIFICATION_PUSH_PERSISTENCE_PROVIDERS,
+        ...NOTIFICATION_PUSH_USE_CASE_PROVIDERS,
         {
-          provide: NOTIFICATION_REPOSITORY,
-          useExisting: DrizzleNotificationRepository,
-        },
-        DrizzleNotificationReader,
-        { provide: NOTIFICATION_INBOX_READER, useExisting: DrizzleNotificationReader },
-        { provide: NOTIFICATION_HISTORY_READER, useExisting: DrizzleNotificationReader },
-        DrizzlePushDeviceRepository,
-        { provide: PUSH_DEVICE_REPOSITORY, useExisting: DrizzlePushDeviceRepository },
-        DrizzlePushTokenRepository,
-        { provide: PUSH_TOKEN_REPOSITORY, useExisting: DrizzlePushTokenRepository },
-        DrizzlePushReceiptRepository,
-        { provide: PUSH_RECEIPT_REPOSITORY, useExisting: DrizzlePushReceiptRepository },
-        {
-          provide: PUSH_DISPATCH_STAGING,
+          provide: PushDispatchStagingRepositoryPort,
           useValue: mockPushDispatchStaging,
+        },
+        // 이 테스트는 outbox 발행을 막아 두고 알림 행·토큰 저장만 본다
+        { provide: PushDeliveryJobEnqueuerPort, useValue: { enqueueDeliveries: vi.fn() } },
+        {
+          provide: MarketingConsentReconfirmPort,
+          useValue: { findMarketingReconfirmTargets: vi.fn(), claimMarketingReconfirm: vi.fn() },
         },
         {
           provide: UNIT_OF_WORK,
           useValue: transaction.uow satisfies UnitOfWorkPort,
         },
+        { provide: UnitOfWorkPort, useExisting: UNIT_OF_WORK },
         {
           provide: AFTER_COMMIT_TASK_REGISTRY,
           useValue: {
@@ -204,14 +175,10 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
             },
           } satisfies AfterCommitTaskRegistryPort,
         },
+        { provide: AfterCommitTaskRegistryPort, useExisting: AFTER_COMMIT_TASK_REGISTRY },
         {
           provide: PublishPushDeliveryAfterCommitUseCase,
           useValue: mockAfterCommitPublisher,
-        },
-        CachedActivePushTokenReaderAdapter,
-        {
-          provide: ACTIVE_PUSH_TOKEN_READER,
-          useExisting: CachedActivePushTokenReaderAdapter,
         },
         {
           provide: USER_PREFERENCE_READER,
@@ -225,52 +192,23 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
             }),
           inject: [DrizzleUserPreferenceRepository, CacheService],
         },
-        CachedNotificationRecipientPreferenceAdapter,
-        {
-          provide: NOTIFICATION_RECIPIENT_PREFERENCE_READER,
-          useExisting: CachedNotificationRecipientPreferenceAdapter,
-        },
-        {
-          provide: NOTIFICATION_RECIPIENT_LOCALE_READER,
-          useExisting: CachedNotificationRecipientPreferenceAdapter,
-        },
         UserSettingsCacheAdapter,
         { provide: USER_SETTINGS_CACHE, useExisting: UserSettingsCacheAdapter },
-        { provide: NOTIFICATION_CACHE, useClass: NotificationCacheAdapter },
         {
-          provide: NOTIFICATION_DEDUP,
+          provide: NotificationDedupPort,
           useValue: {
             recordNotifiedUsers: vi.fn().mockResolvedValue(undefined),
           },
         },
-        NotificationDedupLockAdapter,
         {
-          provide: NOTIFICATION_DEDUP_LOCK,
-          useExisting: NotificationDedupLockAdapter,
-        },
-        listNotificationsUseCaseProvider,
-        getUnreadNotificationCountUseCaseProvider,
-        markNotificationReadUseCaseProvider,
-        markNotificationOpenedUseCaseProvider,
-        markAllNotificationsReadUseCaseProvider,
-        reportPushDeviceUseCaseProvider,
-        unregisterPushDeviceUseCaseProvider,
-        optOutMarketingPushUseCaseProvider,
-        sendNotificationUseCaseProvider,
-        sendNotificationWithDedupUseCaseProvider,
-        persistBatchNotificationUseCaseProvider,
-        finalizeBatchNotificationUseCaseProvider,
-        sendBatchNotificationUseCaseProvider,
-        notificationHistoryReaderProvider,
-        {
-          provide: MARKETING_PUSH_OPT_OUT_TOKEN,
+          provide: MarketingPushOptOutTokenPort,
           useValue: mockMarketingPushOptOutToken,
         },
         paginationServiceProvider,
         DrizzleUserPreferenceRepository,
         DrizzleUserConsentRepository,
         {
-          provide: USER_NOTIFICATION_SETTINGS,
+          provide: UserNotificationSettingsPort,
           useFactory: (
             preferenceRepository: DrizzleUserPreferenceRepository,
             consentRepository: DrizzleUserConsentRepository,
@@ -303,7 +241,7 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
           },
         },
         {
-          provide: PUSH_PROVIDER,
+          provide: PushProviderPort,
           useValue: mockPushProvider,
         },
         {
@@ -331,21 +269,20 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
           },
         },
         {
-          provide: PUSH_RATE_LIMITER,
+          provide: PushRateLimiterPort,
           useValue: {
             reserveGeneral: vi.fn().mockResolvedValue(false),
             reserveEngagement: vi.fn().mockResolvedValue(false),
             reserveBatch: vi
               .fn()
               .mockImplementation(async (requests: unknown[]) => requests.map(() => false)),
-            destroy: vi.fn(),
           },
         },
       ],
     }).compile();
 
     facade = buildNotificationTestApi(module);
-    repository = module.get(DrizzleNotificationRepository);
+    repository = module.get(NotificationRepositoryPort);
   });
 
   afterAll(async () => {

@@ -2,13 +2,14 @@ import type { PushPermissionStatus } from "@aido/api/vocabulary";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
 import { and, eq, gte, inArray, ne } from "drizzle-orm";
-import { groupBy, mapValues } from "es-toolkit";
+import { groupBy, mapValues, omit } from "es-toolkit";
 
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { pushDevice } from "#api/platform/database/schema/index";
 
-import type { PushDeviceRepositoryPort } from "../../application/ports/push-device.repository.port.js";
+import { PushDeviceRepositoryPort } from "../../application/ports/push-device.repository.port.js";
 import type { PushDevice } from "../../domain/push-device.aggregate.js";
+import { toPushDeviceRow } from "./push-device-row.mapper.js";
 
 @Injectable()
 export class DrizzlePushDeviceRepository implements PushDeviceRepositoryPort {
@@ -34,19 +35,14 @@ export class DrizzlePushDeviceRepository implements PushDeviceRepositoryPort {
   }
 
   async savePushDevice(device: PushDevice): Promise<void> {
-    const values = {
-      platform: device.platform,
-      sessionId: device.sessionId,
-      permissionStatus: device.permission.status,
-      permissionCanAskAgain: device.permission.canAskAgain,
-      deviceModel: device.deviceModel,
-      osVersion: device.osVersion,
-      reportedAt: device.reportedAt,
-    };
+    const row = toPushDeviceRow(device);
     await this.#db
       .insert(pushDevice)
-      .values({ userId: device.userId, deviceId: device.deviceId, ...values })
-      .onConflictDoUpdate({ target: [pushDevice.userId, pushDevice.deviceId], set: values });
+      .values(row)
+      .onConflictDoUpdate({
+        target: [pushDevice.userId, pushDevice.deviceId],
+        set: omit(row, ["userId", "deviceId"]),
+      });
   }
 
   async deletePushDevice(userId: string, deviceId: string): Promise<void> {
@@ -71,7 +67,7 @@ export class DrizzlePushDeviceRepository implements PushDeviceRepositoryPort {
 
   async findPermissionStatusesByUsers(
     userIds: readonly string[],
-    reportedSince: Date,
+    reportedSince: Temporal.Instant,
   ): Promise<ReadonlyMap<string, readonly PushPermissionStatus[]>> {
     if (userIds.length === 0) {
       return new Map();

@@ -1,18 +1,16 @@
+import type { NOTIFICATION_PURPOSES, NotificationActionType } from "@aido/api/vocabulary";
+
 import type { NotificationType } from "../../domain/notification-type.constants.js";
 
-/**
- * 알림 읽기 레코드 (조회 projection).
- *
- * DB `Notification` 행이 구조적으로 이 인터페이스를 만족한다
- * (metadata는 불투명 `unknown`, 날짜는 `Date`). 어댑터는 DB 행을 그대로
- * 반환하고, 애플리케이션/도메인은 `@/generated` 결합 없이 이 레코드로 다룬다.
- */
+// Notification 행이 그대로 이 모양을 만족한다. metadata·copyFacts는 알림마다 모양이 달라 unknown이다
 export interface InboxNotification {
   readonly id: number;
   readonly userId: string;
   readonly type: NotificationType;
   readonly title: string;
   readonly body: string;
+  readonly copyKey: string | null;
+  readonly copyFacts: unknown;
   readonly isRead: boolean;
   readonly todoId: number | null;
   readonly friendId: string | null;
@@ -22,10 +20,10 @@ export interface InboxNotification {
   readonly metadata: unknown;
   readonly createdAt: Date;
   readonly readAt: Date | null;
-  readonly actionType: "DEEP_LINK" | "BROWSER" | "WEBVIEW" | "NONE";
+  readonly actionType: NotificationActionType;
   readonly actionUrl: string | null;
   readonly campaignKey: string | null;
   readonly variantId: string | null;
-  readonly purpose: "TRANSACTIONAL" | "SCHEDULED_SERVICE" | "ENGAGEMENT";
+  readonly purpose: (typeof NOTIFICATION_PURPOSES)[number];
   readonly openedAt: Date | null;
 }

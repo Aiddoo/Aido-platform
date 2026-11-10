@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm";
 import request from "supertest";
 
-import { PUSH_DELIVERY_QUEUE } from "#api/modules/notification/notification-delivery-jobs.public";
+import { PUSH_DELIVERY_QUEUE } from "#api/modules/notification/push/infrastructure/jobs/push-delivery.queue";
 import { BROADCAST_DELIVERY_QUEUE } from "#api/modules/operations/broadcasts/infrastructure/jobs/broadcast-delivery.queue";
 import { BROADCAST_FAN_OUT_QUEUE } from "#api/modules/operations/broadcasts/infrastructure/jobs/broadcast-fan-out.queue";
 import { DRIZZLE, type Database } from "#api/platform/database/database.client";
@@ -147,21 +147,11 @@ describe("관리자 E2E", () => {
       return ctx.module.get<typeof JobQueuePort, InMemoryJobQueue>(JobQueuePort);
     }
 
-    // 분배·현지 시각 발송 작업은 새 큐 포트(메모리)에서, 푸시 발송 작업은 옛 런타임에서 돌린다
+    // 분배·현지 시각 발송·푸시 발송 작업을 모두 새 큐 포트(메모리)에서 돌린다
     async function runQueued(queue: QueueDefinition<object>): Promise<number> {
       const count = jobQueue().jobsIn(queue).length;
       await jobQueue().drain(queue);
       return count;
-    }
-
-    async function runEnqueued(queue: string): Promise<number> {
-      const runtime = jobRuntime();
-      const jobs = runtime.enqueueCalls.filter((call) => call.queue === queue);
-      runtime.enqueueCalls.splice(0, runtime.enqueueCalls.length);
-      for (const job of jobs) {
-        await runtime.run(queue, job.data);
-      }
-      return jobs.length;
     }
 
     async function registerRecipient(email: string, deviceId: string, acceptLanguage = "ko-KR") {
@@ -194,7 +184,7 @@ describe("관리자 E2E", () => {
         .set("Authorization", `Bearer ${admin.accessToken}`)
         .expect(200);
       expect(await runQueued(BROADCAST_FAN_OUT_QUEUE)).toBe(1);
-      await runEnqueued(PUSH_DELIVERY_QUEUE);
+      await runQueued(PUSH_DELIVERY_QUEUE);
       const delivered = await request(ctx.app.getHttpServer())
         .get(`/v2/admin/notifications/broadcasts/${accepted.body.data.campaignId}`)
         .set("Authorization", `Bearer ${admin.accessToken}`)

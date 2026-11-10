@@ -4,6 +4,7 @@ import { datetimeSchema, nullableDatetimeSchema } from "../../../common/datetime
 import { PUSH_DEVICE_PLATFORM } from "../../../vocabulary/notification.constants.js";
 import { notificationTypeSchema } from "./notification.common.js";
 import { notificationBodySchema, notificationTitleSchema } from "./notification.content.js";
+import { notificationNavigationSchema } from "./notification.navigation.js";
 import { notificationActionSchema, notificationContextSchema } from "./notification.payload.js";
 import { pushPermissionSchema } from "./notification.request.js";
 
@@ -94,6 +95,11 @@ export type NotificationListResponse = z.infer<typeof notificationListResponseSc
 
 export const notificationInboxItemSchema = notificationSchema.extend({
   type: notificationTypeSchema,
+  // 모양이 맞지 않으면 navigation만 버려 type·action으로 이동하던 기존 경로를 잃지 않는다
+  navigation: notificationNavigationSchema
+    .optional()
+    .catch(undefined)
+    .describe("푸시 data의 navigation과 같은 목적지. 계산할 수 없으면 싣지 않는다"),
 });
 export type NotificationInboxItem = z.infer<typeof notificationInboxItemSchema>;
 

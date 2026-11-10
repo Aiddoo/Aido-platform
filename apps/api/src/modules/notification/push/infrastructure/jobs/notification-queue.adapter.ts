@@ -1,7 +1,9 @@
-import { Inject, Injectable, Logger, type OnModuleDestroy } from "@nestjs/common";
+import { Injectable, Logger, type OnModuleDestroy } from "@nestjs/common";
 import { retry } from "es-toolkit";
 
-import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
+import { ClockPort } from "#api/shared/application/ports/clock.port";
+import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
+import { instantToDate } from "#api/shared/domain/time/instant";
 
 import { NotificationProviderLogEvent } from "../adapters/notification-provider.log-events.js";
 import { notificationEventJobKey } from "./notification-job-keys.constants.js";
@@ -13,12 +15,11 @@ import {
   type FriendCompletedJobData,
   type MilestoneReachedJobData,
   NOTIFICATION_ENQUEUE_RETRY,
-  NOTIFICATION_EVENT_JOB_POLICY,
   NOTIFICATION_QUEUE,
   NotificationJobName,
   type NotificationRuntimeJob,
   type NudgeSentJobData,
-} from "./notification-queue.constants.js";
+} from "./notification.queue.js";
 
 type NotificationEventJob = Exclude<
   NotificationRuntimeJob,
@@ -34,10 +35,12 @@ export class NotificationQueueAdapter implements OnModuleDestroy {
   readonly #logger = new Logger(NotificationQueueAdapter.name);
   readonly #inFlight = new Set<Promise<void>>();
 
-  readonly #runtime: JobRuntimePort;
+  readonly #jobQueue: JobQueuePort;
+  readonly #clock: ClockPort;
 
-  constructor(@Inject(JOB_RUNTIME) runtime: JobRuntimePort) {
-    this.#runtime = runtime;
+  constructor(jobQueue: JobQueuePort, clock: ClockPort) {
+    this.#jobQueue = jobQueue;
+    this.#clock = clock;
   }
 
   enqueueFollowNew(data: FollowNewJobData): void {
@@ -75,15 +78,14 @@ export class NotificationQueueAdapter implements OnModuleDestroy {
   }
 
   async #enqueue(job: NotificationEventJob, occurredAt: Date): Promise<void> {
-    await this.#runtime.enqueue(NOTIFICATION_QUEUE, job, {
-      ...NOTIFICATION_EVENT_JOB_POLICY,
+    await this.#jobQueue.enqueue(NOTIFICATION_QUEUE, job, {
       idempotencyKey: notificationEventJobKey(job, occurredAt),
     });
     this.#logger.debug({ event: NotificationProviderLogEvent.JOB_ENQUEUED, jobName: job.name });
   }
 
   #enqueueDetached(job: NotificationEventJob): void {
-    const occurredAt = new Date();
+    const occurredAt = instantToDate(this.#clock.now());
     const pending = retry(() => this.#enqueue(job, occurredAt), {
       retries: NOTIFICATION_ENQUEUE_RETRY.retries,
       delay: NOTIFICATION_ENQUEUE_RETRY.delayMs,

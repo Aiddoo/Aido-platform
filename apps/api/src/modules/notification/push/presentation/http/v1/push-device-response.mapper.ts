@@ -1,7 +1,7 @@
-import { toISOString } from "#api/shared/domain/date/utils/format";
+import { toIsoString } from "#api/shared/domain/time/instant";
 
-import type { PushDeviceResponseDto } from "../../../../inbox/presentation/http/v1/notification.dto.js";
 import type { PushDeviceReport } from "../../../application/use-cases/report-push-device.use-case.js";
+import type { PushDeviceResponseDto } from "./push-device.dto.js";
 
 export const PushDeviceMapper = {
   toDto(report: PushDeviceReport): PushDeviceResponseDto {
@@ -10,7 +10,7 @@ export const PushDeviceMapper = {
       platform: report.platform,
       permission: report.permission,
       hasActiveToken: report.hasActiveToken,
-      reportedAt: toISOString(report.reportedAt),
+      reportedAt: toIsoString(report.reportedAt),
     };
   },
 };

@@ -3,7 +3,7 @@ import {
   pushDeliveryJobKey,
   todoReminderJobKey,
 } from "./notification-job-keys.constants.js";
-import { NotificationJobName } from "./notification-queue.constants.js";
+import { NotificationJobName } from "./notification.queue.js";
 
 describe("알림 작업 key", () => {
   const occurredAt = new Date("2026-11-03T15:30:00.000Z");

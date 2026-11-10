@@ -6,13 +6,15 @@ import type { DrizzleTransactionalAdapter } from "#api/platform/database/databas
 import { notification } from "#api/platform/database/schema/index";
 
 import type { NotificationMilestone } from "../../../push/domain/notification-milestone.constants.js";
-import type { FindNotificationsParams } from "../../application/ports/notification-draft.port.js";
 import type {
   ExistsRecentNotificationQuery,
   FindAlreadyNotifiedUserIdsQuery,
   NotificationHistoryReaderPort,
 } from "../../application/ports/notification-history.reader.port.js";
-import type { NotificationInboxReaderPort } from "../../application/ports/notification-inbox.reader.port.js";
+import type {
+  ListInboxNotificationsQuery,
+  NotificationInboxReaderPort,
+} from "../../application/ports/notification-inbox.reader.port.js";
 import type { InboxNotification } from "../../application/read-models/inbox-notification.read-model.js";
 import type { NotificationType } from "../../domain/notification-type.constants.js";
 
@@ -30,21 +32,16 @@ export class DrizzleNotificationReader
     return this.#txHost.tx;
   }
 
-  async findNotificationById(id: number): Promise<InboxNotification | null> {
-    const row = await this.#db.query.notification.findFirst({ where: { id } });
-    return row ?? null;
-  }
-
-  async findNotificationsByUser(params: FindNotificationsParams): Promise<InboxNotification[]> {
-    const { userId, cursor, size, unreadOnly, types } = params;
+  async listByUser(query: ListInboxNotificationsQuery): Promise<InboxNotification[]> {
+    const { userId, afterNotificationId, limit, unreadOnly, types } = query;
     const anchor =
-      cursor == null
+      afterNotificationId == null
         ? undefined
         : await this.#db.query.notification.findFirst({
             columns: { id: true, createdAt: true },
-            where: { id: cursor },
+            where: { id: afterNotificationId },
           });
-    if (cursor != null && anchor == null) {
+    if (afterNotificationId != null && anchor == null) {
       return [];
     }
 
@@ -54,7 +51,7 @@ export class DrizzleNotificationReader
       .where(
         and(
           eq(notification.userId, userId),
-          unreadOnly === true ? eq(notification.isRead, false) : undefined,
+          unreadOnly ? eq(notification.isRead, false) : undefined,
           types != null ? inArray(notification.type, [...types]) : undefined,
           anchor &&
             or(
@@ -64,7 +61,7 @@ export class DrizzleNotificationReader
         ),
       )
       .orderBy(desc(notification.createdAt), desc(notification.id))
-      .limit(size + 1);
+      .limit(limit);
   }
 
   countUnread(userId: string, types?: readonly NotificationType[]): Promise<number> {

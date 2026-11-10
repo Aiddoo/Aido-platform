@@ -115,6 +115,9 @@ export class PgBossJobQueueAdapter extends JobQueuePort {
         localConcurrency: worker.localConcurrency,
         pollingIntervalSeconds: worker.pollingIntervalSeconds,
         ...(worker.batchSize != null && { batchSize: worker.batchSize }),
+        ...(worker.burstWhenBatchFull != null && {
+          burstWhenBatchFull: worker.burstWhenBatchFull,
+        }),
         ...(worker.minPriority != null && { minPriority: worker.minPriority }),
         ...(worker.maxPriority != null && { maxPriority: worker.maxPriority }),
       },
@@ -167,9 +170,13 @@ export class PgBossJobQueueAdapter extends JobQueuePort {
       });
     }
 
-    if (accepted.length > 0) {
-      await handler(accepted);
+    if (accepted.length === 0) {
+      return results;
     }
+    if (queue.worker.isolateJobFailures === true) {
+      return [...results, ...(await settleEachJob(accepted, handler))];
+    }
+    await handler(accepted);
     return [...results, ...accepted.map(({ id }) => ({ id, status: "completed" as const }))];
   }
 
@@ -181,6 +188,23 @@ export class PgBossJobQueueAdapter extends JobQueuePort {
     }
     await this.#queues.ensure(queue.name, queue.retry);
   }
+}
+
+async function settleEachJob<TPayload extends object>(
+  jobs: readonly JobEnvelope<TPayload>[],
+  handler: (jobs: readonly JobEnvelope<TPayload>[]) => Promise<void>,
+): Promise<JobResult[]> {
+  const results: JobResult[] = [];
+  for (const job of jobs) {
+    try {
+      await handler([job]);
+      results.push({ id: job.id, status: "completed" });
+    } catch (error) {
+      // pg-boss가 handler throw를 기록할 때와 같이 오류 객체를 실패 출력으로 남긴다
+      results.push({ id: job.id, status: "failed", output: error });
+    }
+  }
+  return results;
 }
 
 function toEnqueueJobOptions(queue: QueueDefinition<object>, timing: JobTiming): EnqueueJobOptions {

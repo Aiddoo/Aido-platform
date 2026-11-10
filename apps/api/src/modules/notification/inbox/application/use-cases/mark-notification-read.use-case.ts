@@ -1,60 +1,52 @@
-import { ErrorCode } from "@aido/api/errors";
-
-import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
+import type { ClockPort } from "#api/shared/application/ports/clock.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { NotificationDeliveryLogEvent } from "../../../push/application/notification-delivery.log-events.js";
-import { Notification } from "../../domain/notification.aggregate.js";
-import { type NotificationCachePort } from "../ports/notification-cache.port.js";
-import { type NotificationInboxReaderPort } from "../ports/notification-inbox.reader.port.js";
-import { type NotificationRepositoryPort } from "../ports/notification.repository.port.js";
+import { NotificationId } from "../../domain/notification-id.vo.js";
+import { notificationNotFound } from "../inbox.errors.js";
+import type { NotificationCachePort } from "../ports/notification-cache.port.js";
+import type { NotificationRepositoryPort } from "../ports/notification.repository.port.js";
 
-/**
- * 단일 알림 읽음 처리 유스케이스.
- *
- * 대상 부재는 NOTIFICATION_1004, 소유권 위반은 애그리게잇이 NOTIFICATION_1005로
- * 차단한다. 이미 읽은 알림은 무동작(멱등).
- */
-interface MarkAsReadDependencies {
-  readonly notificationInboxReader: Pick<NotificationInboxReaderPort, "findNotificationById">;
-  readonly notificationRepository: Pick<NotificationRepositoryPort, "markAsRead">;
+export interface MarkNotificationReadCommand {
+  readonly userId: string;
+  readonly notificationId: number;
+}
+
+export interface MarkNotificationReadDependencies {
+  readonly notificationRepository: Pick<NotificationRepositoryPort, "findById" | "markAsRead">;
   readonly cache: Pick<NotificationCachePort, "invalidateUnreadCount">;
+  readonly clock: ClockPort;
   readonly logger: Pick<ApplicationLoggerPort, "debug">;
 }
 
 export class MarkNotificationReadUseCase {
-  readonly #dependencies: MarkAsReadDependencies;
+  readonly #dependencies: MarkNotificationReadDependencies;
 
-  constructor(dependencies: MarkAsReadDependencies) {
+  constructor(dependencies: MarkNotificationReadDependencies) {
     this.#dependencies = dependencies;
   }
 
-  async execute(userId: string, notificationId: number): Promise<void> {
-    const record =
-      await this.#dependencies.notificationInboxReader.findNotificationById(notificationId);
+  async execute(command: MarkNotificationReadCommand): Promise<void> {
+    const { notificationRepository, cache, clock, logger } = this.#dependencies;
+    const notificationId = NotificationId.reconstitute(command.notificationId);
 
-    if (record == null) {
-      throw new ApplicationException(ErrorCode.NOTIFICATION_1004, {
-        notificationId,
-      });
+    const notification = await notificationRepository.findById(notificationId);
+    if (notification == null) {
+      throw notificationNotFound(notificationId);
     }
-
-    const notification = Notification.reconstitute(record);
-    if (!notification.planMarkRead(userId)) {
+    if (!notification.markRead(UserId.reconstitute(command.userId), clock.now())) {
       return;
     }
 
-    const changed = await this.#dependencies.notificationRepository.markAsRead(
-      notificationId,
-      userId,
-    );
-    if (changed) {
-      await this.#dependencies.cache.invalidateUnreadCount(userId);
+    const isChanged = await notificationRepository.markAsRead(notification);
+    if (isChanged) {
+      await cache.invalidateUnreadCount(command.userId);
     }
 
-    this.#dependencies.logger.debug({
+    logger.debug({
       event: NotificationDeliveryLogEvent.MARK_AS_READ_READ_PROCESSED,
-      notificationId,
+      notificationId: command.notificationId,
     });
   }
 }

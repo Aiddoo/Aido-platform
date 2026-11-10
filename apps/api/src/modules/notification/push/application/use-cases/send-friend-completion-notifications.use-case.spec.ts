@@ -1,6 +1,8 @@
 import type { Mocked } from "vitest";
 import { mock, mockDeep } from "vitest-mock-extended";
 
+import { DateClock } from "#test/doubles/platform/date-clock";
+
 import { DuplicateNotificationError } from "../../../inbox/application/ports/notification.repository.port.js";
 import { SendFriendCompletionNotificationsUseCase } from "./send-friend-completion-notifications.use-case.js";
 
@@ -49,6 +51,7 @@ describe("SendFriendCompletionNotificationsUseCase", () => {
             typeof SendFriendCompletionNotificationsUseCase
           >[0]["userNotificationSettings"]
         >(),
+      clock: new DateClock(),
     });
     const unit = new SendFriendCompletionNotificationsUseCase(
       sendFriendCompletionNotificationsDependencies,

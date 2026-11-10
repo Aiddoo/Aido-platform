@@ -2,6 +2,7 @@ import type { Mocked } from "vitest";
 import { vi } from "vitest";
 import { mockDeep } from "vitest-mock-extended";
 
+import { DateClock } from "#test/doubles/platform/date-clock";
 import { createUnitOfWorkMock } from "#test/mocks/ports/unit-of-work.mock";
 
 import { type PushDeliveryLifecycleRepositoryPort } from "../ports/push-delivery-lifecycle.repository.port.js";
@@ -48,6 +49,7 @@ describe("RelayPushDeliveryOutboxUseCase — stale recovery와 relay", () => {
       outbox: createOutboxMock(),
       lifecycle: createLifecycleMock(),
       unitOfWork: createUnitOfWorkMock(),
+      clock: new DateClock(),
     });
     const unit = new RelayPushDeliveryOutboxUseCase(relayPushDeliveryOutboxDependencies);
 

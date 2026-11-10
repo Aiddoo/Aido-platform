@@ -192,6 +192,38 @@ describe("PgBossJobQueueAdapter 통합 테스트 (실제 PostgreSQL)", () => {
     expect(marketing.map(({ data }) => data)).toHaveLength(3);
   });
 
+  it("isolateJobFailures worker는 묶음에서 실패한 작업만 실패로 남기고 나머지는 한 번만 처리한다", async () => {
+    // Given
+    const queue = documentQueue("integration-queue-isolated", {
+      batchSize: 3,
+      burstWhenBatchFull: true,
+      isolateJobFailures: true,
+    });
+    const ids = await Promise.all(
+      [20, 21, 22].map((documentId) => jobQueue.enqueue(queue, { documentId, locale: "ko" })),
+    );
+    const handled: number[] = [];
+
+    // When
+    await jobQueue.work(queue, async (jobs) => {
+      for (const { data } of jobs) {
+        handled.push(data.documentId);
+        if (data.documentId === 21) {
+          throw new Error("document 21 failed");
+        }
+      }
+    });
+
+    // Then
+    await eventually(async () => {
+      const states = await Promise.all(
+        ids.map(async (id) => (await boss.findJobs(queue.name, { id: id ?? undefined }))[0]?.state),
+      );
+      expect(states).toEqual(["completed", "failed", "completed"]);
+    });
+    expect(handled.sort()).toEqual([20, 21, 22]);
+  });
+
   it("스케줄은 정의의 missed 정책과 key로 등록한다", async () => {
     // Given
     const queue = defineQueue({

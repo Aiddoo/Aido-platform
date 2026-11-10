@@ -1,6 +1,7 @@
-import type { PushDeliveryPublication } from "../read-models/push-delivery.read-model.js";
-
-export const PUSH_DELIVERY_OUTBOX_REPOSITORY = Symbol("PUSH_DELIVERY_OUTBOX_REPOSITORY");
+import type {
+  ClaimedPushDeliveryPublication,
+  PushDeliveryPublication,
+} from "../read-models/push-delivery.read-model.js";
 
 export interface ClaimPushDeliveryOutboxInput {
   readonly limit: number;
@@ -13,20 +14,19 @@ export interface DeferPushDeliveryPublicationsInput {
   readonly error: string;
 }
 
-/**
- * 일반 알림 outbox의 claim generation과 relay 상태 전이를 원자적으로 저장한다.
- * 상태 변경 메서드는 정렬된 row lock을 유지하도록 UNIT_OF_WORK 안에서 호출한다.
- */
-export interface PushDeliveryOutboxRepositoryPort {
-  claimByDispatchIds(
+// 일반 알림 outbox의 claim generation과 relay 상태 전이를 원자적으로 저장한다. 상태 변경은 정렬된 row lock을 지키도록 UnitOfWork 안에서 호출한다
+export abstract class PushDeliveryOutboxRepositoryPort {
+  abstract claimByDispatchIds(
     dispatchIds: readonly number[],
     lockedAt: Date,
-  ): Promise<readonly PushDeliveryPublication[]>;
-  claimAvailable(input: ClaimPushDeliveryOutboxInput): Promise<readonly PushDeliveryPublication[]>;
-  markPublished(
+  ): Promise<readonly ClaimedPushDeliveryPublication[]>;
+  abstract claimAvailable(
+    input: ClaimPushDeliveryOutboxInput,
+  ): Promise<readonly ClaimedPushDeliveryPublication[]>;
+  abstract markPublished(
     publications: readonly PushDeliveryPublication[],
     publishedAt: Date,
   ): Promise<number>;
-  defer(input: DeferPushDeliveryPublicationsInput): Promise<number>;
-  recoverStaleProcessing(lockedBefore: Date): Promise<number>;
+  abstract defer(input: DeferPushDeliveryPublicationsInput): Promise<number>;
+  abstract recoverStaleProcessing(lockedBefore: Date): Promise<number>;
 }

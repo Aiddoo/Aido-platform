@@ -17,6 +17,10 @@ export interface QueueWorkerOptions {
   readonly localConcurrency: number;
   readonly pollingIntervalSeconds: number;
   readonly batchSize?: number;
+  // 묶음이 가득 차 돌아오는 동안 폴링을 기다리지 않고 바로 다음 묶음을 가져온다
+  readonly burstWhenBatchFull?: boolean;
+  // true면 묶음의 작업을 하나씩 handler에 넘겨 실패한 작업만 재시도한다. 멱등하지 않은 작업이 섞인 큐에 쓴다
+  readonly isolateJobFailures?: boolean;
   readonly minPriority?: number;
   readonly maxPriority?: number;
 }

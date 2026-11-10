@@ -18,6 +18,7 @@ import type { UserNotificationSettingsPort } from "#api/modules/notification/pus
 
 export function createNotificationRepositoryMock(): NotificationRepositoryPort {
   return {
+    findById: vi.fn(),
     createNotification: vi.fn(),
     createManyNotificationsAndReturn: vi.fn(),
     markAsRead: vi.fn(),
@@ -29,8 +30,7 @@ export function createNotificationRepositoryMock(): NotificationRepositoryPort {
 
 export function createNotificationInboxReaderMock(): NotificationInboxReaderPort {
   return {
-    findNotificationById: vi.fn(),
-    findNotificationsByUser: vi.fn(),
+    listByUser: vi.fn(),
     countUnread: vi.fn(),
   };
 }

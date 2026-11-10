@@ -32,6 +32,8 @@ export class NotificationBuilder {
       type: "FOLLOW_NEW",
       title: "새로운 알림",
       body: "알림 내용입니다",
+      copyKey: null,
+      copyFacts: null,
       isRead: false,
       todoId: null,
       friendId: null,

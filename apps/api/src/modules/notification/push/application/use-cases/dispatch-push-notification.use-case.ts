@@ -2,7 +2,7 @@ import { isSemanticVersionAtLeast } from "@aido/api";
 import { groupBy, uniq } from "es-toolkit";
 
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
-import { subtractDays } from "#api/shared/domain/date/utils/arithmetic";
+import type { ClockPort } from "#api/shared/application/ports/clock.port";
 
 import { type NotificationCachePort } from "../../../inbox/application/ports/notification-cache.port.js";
 import type { CreateNotificationData } from "../../../inbox/application/ports/notification-draft.port.js";
@@ -25,7 +25,7 @@ import { type ActivePushTokenReaderPort } from "../ports/active-push-token.reade
 import type { PushDeviceRepositoryPort } from "../ports/push-device.repository.port.js";
 import {
   type PushPayload,
-  type PushProvider,
+  type PushProviderPort,
   type PushResult,
 } from "../ports/push-provider.port.js";
 import { type PushTokenRepositoryPort } from "../ports/push-token.repository.port.js";
@@ -85,9 +85,10 @@ interface PushNotificationDeliveryServiceDependencies {
     "deactivateInvalidTokens" | "findActivePushTokensByUsers" | "findPushTokensByUser"
   >;
   readonly pushDeviceRepository: Pick<PushDeviceRepositoryPort, "findPermissionStatusesByUsers">;
-  readonly pushProvider: Pick<PushProvider, "sendBatch">;
+  readonly pushProvider: Pick<PushProviderPort, "sendBatch">;
   readonly activePushTokenReader: Pick<ActivePushTokenReaderPort, "findByUserId" | "findByUserIds">;
   readonly notificationCache: Pick<NotificationCachePort, "invalidatePushTokens">;
+  readonly clock: ClockPort;
   readonly logger: Pick<ApplicationLoggerPort, "debug" | "warn">;
 }
 
@@ -112,7 +113,10 @@ export class DispatchPushNotificationUseCase {
     );
     const revokedTokens = tokensToRevoke(results);
     if (revokedTokens.length > 0) {
-      await this.#dependencies.pushTokenRepository.deactivateInvalidTokens(revokedTokens);
+      await this.#dependencies.pushTokenRepository.deactivateInvalidTokens(
+        revokedTokens,
+        this.#dependencies.clock.now(),
+      );
       await this.#dependencies.notificationCache.invalidatePushTokens(input.data.userId);
       this.#dependencies.logger.warn({
         event: NotificationDeliveryLogEvent.PUSH_NOTIFICATION_DELIVERY_INVALID_TOKENS_DEACTIVATED,
@@ -231,7 +235,10 @@ export class DispatchPushNotificationUseCase {
     const results = await this.#dependencies.pushProvider.sendBatch(prepared.providerPayloads);
     const revokedTokens = tokensToRevoke(results);
     if (revokedTokens.length > 0) {
-      await this.#dependencies.pushTokenRepository.deactivateInvalidTokens(revokedTokens);
+      await this.#dependencies.pushTokenRepository.deactivateInvalidTokens(
+        revokedTokens,
+        this.#dependencies.clock.now(),
+      );
       await Promise.all(
         prepared.recipientUserIds.map((userId) =>
           this.#dependencies.notificationCache.invalidatePushTokens(userId),
@@ -310,7 +317,7 @@ export class DispatchPushNotificationUseCase {
     const statusesByUser =
       await this.#dependencies.pushDeviceRepository.findPermissionStatusesByUsers(
         userIds,
-        subtractDays(PUSH_DEVICE_STALE_AFTER_DAYS),
+        this.#dependencies.clock.now().subtract({ hours: 24 * PUSH_DEVICE_STALE_AFTER_DAYS }),
       );
     return new Map(
       userIds.map((userId) => [userId, noActiveTokenSkipReason(statusesByUser.get(userId) ?? [])]),

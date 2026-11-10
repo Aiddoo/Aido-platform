@@ -6,8 +6,6 @@ import type {
 import type { PushDeliveryMode } from "./push-dispatch-staging.repository.port.js";
 import type { PushResult } from "./push-provider.port.js";
 
-export const PUSH_DELIVERY_LIFECYCLE_REPOSITORY = Symbol("PUSH_DELIVERY_LIFECYCLE_REPOSITORY");
-
 export interface PushDeliveryFence {
   readonly dispatchId: number;
   readonly publishAttempt: number;
@@ -61,24 +59,28 @@ export interface FinalizePushDeliveryResultsInput {
 export interface ReleasePushDeliveryInput {
   readonly fence: PushDeliveryFence;
   readonly error: string;
-  /** JobRuntime의 마지막 attempt일 때만 새 publication generation을 열어 둔다. */
+  // JobRuntime의 마지막 attempt일 때만 새 publication generation을 열어 둔다.
   readonly reopenOutbox: boolean;
   readonly availableAt: Date;
 }
 
-/** PushDispatch worker lease를 job ID와 증가 attempt로 fencing한다. */
-export interface PushDeliveryLifecycleRepositoryPort {
-  /** Outbox ownership과 dispatch lease를 함께 rollback할 수 있도록 UNIT_OF_WORK 안에서 호출한다. */
-  claim(input: ClaimPushDeliveriesInput): Promise<readonly ClaimedPushDelivery[]>;
-  /** Generation row lock 뒤 최신 dispatch 상태를 재검사하므로 UNIT_OF_WORK 안에서 호출한다. */
-  reopenAfterFinalClaimFailure(input: ReopenPushDeliveriesAfterClaimFailureInput): Promise<number>;
-  /** DLQ에서 현재 generation 중 안전하게 재발행 가능한 subset만 UNIT_OF_WORK 안에서 연다. */
-  reopenFailedPublications(input: ReopenPushDeliveriesAfterClaimFailureInput): Promise<number>;
-  markRateLimitReserved(
+// PushDispatch worker lease를 job ID와 증가 attempt로 fencing한다.
+export abstract class PushDeliveryLifecycleRepositoryPort {
+  // Outbox ownership과 dispatch lease를 함께 rollback할 수 있도록 UNIT_OF_WORK 안에서 호출한다.
+  abstract claim(input: ClaimPushDeliveriesInput): Promise<readonly ClaimedPushDelivery[]>;
+  // Generation row lock 뒤 최신 dispatch 상태를 재검사하므로 UNIT_OF_WORK 안에서 호출한다.
+  abstract reopenAfterFinalClaimFailure(
+    input: ReopenPushDeliveriesAfterClaimFailureInput,
+  ): Promise<number>;
+  // DLQ에서 현재 generation 중 안전하게 재발행 가능한 subset만 UNIT_OF_WORK 안에서 연다.
+  abstract reopenFailedPublications(
+    input: ReopenPushDeliveriesAfterClaimFailureInput,
+  ): Promise<number>;
+  abstract markRateLimitReserved(
     inputs: readonly ReservePushDeliveryRateLimitInput[],
   ): Promise<readonly number[]>;
-  finalizeSkipped(inputs: readonly FinalizeSkippedPushDeliveryInput[]): Promise<number>;
-  finalizeResults(inputs: readonly FinalizePushDeliveryResultsInput[]): Promise<number>;
-  release(inputs: readonly ReleasePushDeliveryInput[]): Promise<number>;
-  recoverStaleProcessing(startedBefore: Date): Promise<number>;
+  abstract finalizeSkipped(inputs: readonly FinalizeSkippedPushDeliveryInput[]): Promise<number>;
+  abstract finalizeResults(inputs: readonly FinalizePushDeliveryResultsInput[]): Promise<number>;
+  abstract release(inputs: readonly ReleasePushDeliveryInput[]): Promise<number>;
+  abstract recoverStaleProcessing(startedBefore: Date): Promise<number>;
 }

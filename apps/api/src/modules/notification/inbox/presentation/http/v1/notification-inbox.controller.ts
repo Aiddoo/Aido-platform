@@ -6,22 +6,26 @@ import {
   CurrentUser,
   type CurrentUserPayload,
 } from "#api/modules/identity/identity-auth-http.public";
-import { AppVersion } from "#api/platform/http/request-client/index";
+import { CurrentRequestClient, type RequestClient } from "#api/platform/http/request-client/index";
 import {
   ApiDoc,
   ApiSuccessResponse,
   ApiUnauthorizedError,
   SWAGGER_TAGS,
 } from "#api/platform/http/swagger/index";
+import { DEFAULT_LOCALE } from "#api/shared/domain/locale";
 
 import { GetUnreadNotificationCountUseCase } from "../../../application/use-cases/get-unread-notification-count.use-case.js";
 import { ListNotificationsUseCase } from "../../../application/use-cases/list-notifications.use-case.js";
 import { MarkAllNotificationsReadUseCase } from "../../../application/use-cases/mark-all-notifications-read.use-case.js";
-import { NotificationInboxResponseDto } from "./notification-inbox-response.dto.js";
-import { NotificationMapper } from "./notification-response.mapper.js";
+import {
+  NOTIFICATION_RESPONSE_MESSAGES,
+  toNotificationInboxResponse,
+} from "./notification-response.mapper.js";
 import {
   GetNotificationsQueryDto,
   MarkReadResponseDto,
+  NotificationInboxResponseDto,
   UnreadCountResponseDto,
 } from "./notification.dto.js";
 
@@ -34,18 +38,18 @@ import {
 })
 @Controller("notifications/inbox")
 export class NotificationInboxController {
-  readonly #getNotificationsUseCase: ListNotificationsUseCase;
-  readonly #getUnreadCountUseCase: GetUnreadNotificationCountUseCase;
-  readonly #markAllAsReadUseCase: MarkAllNotificationsReadUseCase;
+  readonly #listNotifications: ListNotificationsUseCase;
+  readonly #getUnreadNotificationCount: GetUnreadNotificationCountUseCase;
+  readonly #markAllNotificationsRead: MarkAllNotificationsReadUseCase;
 
   constructor(
-    getNotificationsUseCase: ListNotificationsUseCase,
-    getUnreadCountUseCase: GetUnreadNotificationCountUseCase,
-    markAllAsReadUseCase: MarkAllNotificationsReadUseCase,
+    listNotifications: ListNotificationsUseCase,
+    getUnreadNotificationCount: GetUnreadNotificationCountUseCase,
+    markAllNotificationsRead: MarkAllNotificationsReadUseCase,
   ) {
-    this.#getNotificationsUseCase = getNotificationsUseCase;
-    this.#getUnreadCountUseCase = getUnreadCountUseCase;
-    this.#markAllAsReadUseCase = markAllAsReadUseCase;
+    this.#listNotifications = listNotifications;
+    this.#getUnreadNotificationCount = getUnreadNotificationCount;
+    this.#markAllNotificationsRead = markAllNotificationsRead;
   }
 
   @Get()
@@ -56,10 +60,11 @@ export class NotificationInboxController {
   async getInbox(
     @CurrentUser() user: CurrentUserPayload,
     @Query({ schema: GetNotificationsQueryDto }) query: GetNotificationsQueryDto,
-    @AppVersion() appVersion?: string,
+    @CurrentRequestClient() client: RequestClient,
   ): Promise<NotificationInboxResponseDto> {
+    const appVersion = client.appVersion ?? undefined;
     const [page, unreadCount] = await Promise.all([
-      this.#getNotificationsUseCase.execute({
+      this.#listNotifications.execute({
         userId: user.userId,
         cursor: query.cursor,
         size: query.limit,
@@ -67,14 +72,9 @@ export class NotificationInboxController {
         category: query.category,
         appVersion,
       }),
-      this.#getUnreadCountUseCase.execute(user.userId, appVersion),
+      this.#getUnreadNotificationCount.execute({ userId: user.userId, appVersion }),
     ]);
-    return {
-      notifications: NotificationMapper.toDtoList(page.items),
-      unreadCount,
-      hasMore: page.pagination.hasNext,
-      nextCursor: page.pagination.nextCursor,
-    };
+    return toNotificationInboxResponse(page, unreadCount, client.locale ?? DEFAULT_LOCALE);
   }
 
   @Get("unread-count")
@@ -84,9 +84,13 @@ export class NotificationInboxController {
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
   async getUnreadCount(
     @CurrentUser() user: CurrentUserPayload,
-    @AppVersion() appVersion?: string,
+    @CurrentRequestClient() client: RequestClient,
   ): Promise<UnreadCountResponseDto> {
-    return { unreadCount: await this.#getUnreadCountUseCase.execute(user.userId, appVersion) };
+    const unreadCount = await this.#getUnreadNotificationCount.execute({
+      userId: user.userId,
+      appVersion: client.appVersion ?? undefined,
+    });
+    return { unreadCount };
   }
 
   @Patch("read-all")
@@ -96,9 +100,12 @@ export class NotificationInboxController {
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
   async markAllAsRead(
     @CurrentUser() user: CurrentUserPayload,
-    @AppVersion() appVersion?: string,
+    @CurrentRequestClient() client: RequestClient,
   ): Promise<MarkReadResponseDto> {
-    const result = await this.#markAllAsReadUseCase.execute(user.userId, appVersion);
-    return { message: "모든 알림을 읽음 처리했습니다.", readCount: result.count };
+    const result = await this.#markAllNotificationsRead.execute({
+      userId: user.userId,
+      appVersion: client.appVersion ?? undefined,
+    });
+    return { message: NOTIFICATION_RESPONSE_MESSAGES.READ_ALL, readCount: result.count };
   }
 }

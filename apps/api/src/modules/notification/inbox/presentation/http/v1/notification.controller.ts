@@ -1,276 +1,63 @@
 import { ErrorCode } from "@aido/api/errors";
-import {
-  NOTIFICATION_CATEGORY,
-  PUSH_DEVICE_PLATFORM,
-  PUSH_PERMISSION_STATUS,
-} from "@aido/api/vocabulary";
-import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  HttpCode,
-  HttpStatus,
-  Logger,
-  Param,
-  Patch,
-  Post,
-  Put,
-  Query,
-} from "@nestjs/common";
-import { ApiBearerAuth, ApiHeader, ApiParam, ApiQuery, ApiTags } from "@nestjs/swagger";
-import { match } from "ts-pattern";
+import { NOTIFICATION_CATEGORY } from "@aido/api/vocabulary";
+import { Controller, Get, HttpCode, HttpStatus, Param, Patch, Post, Query } from "@nestjs/common";
+import { ApiBearerAuth, ApiParam, ApiQuery, ApiTags } from "@nestjs/swagger";
 
 import {
   CurrentUser,
   type CurrentUserPayload,
-  Public,
 } from "#api/modules/identity/identity-auth-http.public";
 import { CurrentRequestClient, type RequestClient } from "#api/platform/http/request-client/index";
 import {
-  ApiCreatedResponse,
-  ApiBadRequestError,
   ApiDoc,
-  ApiErrorCodesResponse,
   ApiForbiddenError,
   ApiNotFoundError,
   ApiSuccessResponse,
   ApiUnauthorizedError,
   SWAGGER_TAGS,
 } from "#api/platform/http/swagger/index";
-import { ThrottleByUser } from "#api/platform/throttle/index";
+import { DEFAULT_LOCALE } from "#api/shared/domain/locale";
 
-import { OptOutMarketingPushUseCase } from "../../../../push/application/use-cases/opt-out-marketing-push.use-case.js";
-import { ReportPushDeviceUseCase } from "../../../../push/application/use-cases/report-push-device.use-case.js";
-import { UnregisterPushDeviceUseCase } from "../../../../push/application/use-cases/unregister-push-device.use-case.js";
-import { PushDeviceMapper } from "../../../../push/presentation/http/v1/push-device-response.mapper.js";
 import { GetUnreadNotificationCountUseCase } from "../../../application/use-cases/get-unread-notification-count.use-case.js";
 import { ListNotificationsUseCase } from "../../../application/use-cases/list-notifications.use-case.js";
 import { MarkAllNotificationsReadUseCase } from "../../../application/use-cases/mark-all-notifications-read.use-case.js";
 import { MarkNotificationOpenedUseCase } from "../../../application/use-cases/mark-notification-opened.use-case.js";
 import { MarkNotificationReadUseCase } from "../../../application/use-cases/mark-notification-read.use-case.js";
-import { NotificationMapper } from "./notification-response.mapper.js";
+import {
+  NOTIFICATION_RESPONSE_MESSAGES,
+  toNotificationInboxResponse,
+} from "./notification-response.mapper.js";
 import {
   GetNotificationsQueryDto,
-  MarketingPushOptOutDto,
-  MarketingPushOptOutResponseDto,
   MarkReadResponseDto,
   NotificationIdParamDto,
   NotificationListResponseDto,
   NotificationOpenedResponseDto,
-  PushDeviceParamDto,
-  PushDeviceResponseDto,
-  RegisterPushTokenDto,
-  RegisterTokenResponseDto,
-  ReportPushDeviceDto,
   UnreadCountResponseDto,
-  UnregisterPushTokenQueryDto,
 } from "./notification.dto.js";
-
-/** 1.14.1 이하 앱이 deviceId 없이 등록할 때 쓰던 값. */
-const LEGACY_DEFAULT_DEVICE_ID = "default";
-
-function pushDeviceContext(client: RequestClient) {
-  return {
-    deviceModel: client.deviceName,
-    osVersion: client.osVersion,
-    timezone: client.timezone,
-    locale: client.locale,
-  };
-}
-
-/** 1.14.1 이하 앱은 deviceId 없이 등록할 수 있어 X-Device-Type으로만 플랫폼을 알 수 있다. */
-function legacyPlatformHint(client: RequestClient) {
-  return match(client.platform)
-    .with(PUSH_DEVICE_PLATFORM.IOS, PUSH_DEVICE_PLATFORM.ANDROID, (platform) => platform)
-    .otherwise(() => undefined);
-}
 
 @ApiTags(SWAGGER_TAGS.NOTIFICATIONS)
 @ApiBearerAuth()
 @Controller("notifications")
 export class NotificationController {
-  readonly #logger = new Logger(NotificationController.name);
-
-  readonly #getNotificationsUseCase: ListNotificationsUseCase;
-  readonly #getUnreadCountUseCase: GetUnreadNotificationCountUseCase;
-  readonly #markAsReadUseCase: MarkNotificationReadUseCase;
-  readonly #markNotificationOpenedUseCase: MarkNotificationOpenedUseCase;
-  readonly #markAllAsReadUseCase: MarkAllNotificationsReadUseCase;
-  readonly #reportPushDeviceUseCase: ReportPushDeviceUseCase;
-  readonly #unregisterPushDeviceUseCase: UnregisterPushDeviceUseCase;
-  readonly #optOutMarketingPushUseCase: OptOutMarketingPushUseCase;
+  readonly #listNotifications: ListNotificationsUseCase;
+  readonly #getUnreadNotificationCount: GetUnreadNotificationCountUseCase;
+  readonly #markNotificationRead: MarkNotificationReadUseCase;
+  readonly #markNotificationOpened: MarkNotificationOpenedUseCase;
+  readonly #markAllNotificationsRead: MarkAllNotificationsReadUseCase;
 
   constructor(
-    getNotificationsUseCase: ListNotificationsUseCase,
-    getUnreadCountUseCase: GetUnreadNotificationCountUseCase,
-    markAsReadUseCase: MarkNotificationReadUseCase,
-    markNotificationOpenedUseCase: MarkNotificationOpenedUseCase,
-    markAllAsReadUseCase: MarkAllNotificationsReadUseCase,
-    reportPushDeviceUseCase: ReportPushDeviceUseCase,
-    unregisterPushDeviceUseCase: UnregisterPushDeviceUseCase,
-    optOutMarketingPushUseCase: OptOutMarketingPushUseCase,
+    listNotifications: ListNotificationsUseCase,
+    getUnreadNotificationCount: GetUnreadNotificationCountUseCase,
+    markNotificationRead: MarkNotificationReadUseCase,
+    markNotificationOpened: MarkNotificationOpenedUseCase,
+    markAllNotificationsRead: MarkAllNotificationsReadUseCase,
   ) {
-    this.#getNotificationsUseCase = getNotificationsUseCase;
-    this.#getUnreadCountUseCase = getUnreadCountUseCase;
-    this.#markAsReadUseCase = markAsReadUseCase;
-    this.#markNotificationOpenedUseCase = markNotificationOpenedUseCase;
-    this.#markAllAsReadUseCase = markAllAsReadUseCase;
-    this.#reportPushDeviceUseCase = reportPushDeviceUseCase;
-    this.#unregisterPushDeviceUseCase = unregisterPushDeviceUseCase;
-    this.#optOutMarketingPushUseCase = optOutMarketingPushUseCase;
-  }
-
-  @Post("marketing-push/opt-out")
-  @Public()
-  @HttpCode(HttpStatus.OK)
-  @ApiDoc({
-    summary: "광고성 앱 푸시 수신 철회",
-    operationId: "optOutMarketingPush",
-    description:
-      "푸시 액션에 포함된 서명 토큰으로 로그인 없이 수신을 철회합니다. 응답의 marketingPushWithdrawnAt(1.15.0+)은 처리한 서버 시각이며, 토큰 유효 여부와 상관없이 항상 줍니다.",
-  })
-  @ApiSuccessResponse({ type: MarketingPushOptOutResponseDto })
-  async optOutMarketingPush(
-    @Body({ schema: MarketingPushOptOutDto }) dto: MarketingPushOptOutDto,
-  ): Promise<MarketingPushOptOutResponseDto> {
-    const { processedAt } = await this.#optOutMarketingPushUseCase.execute(dto.token);
-    // 토큰 유효 여부를 노출하지 않아 사용자 열거/토큰 탐색을 방지한다. 처리 시각도 항상 같은 모양으로 준다
-    return { optedOut: true, marketingPushWithdrawnAt: processedAt.toISOString() };
-  }
-
-  @Put("push-devices/:deviceId")
-  @HttpCode(HttpStatus.OK)
-  @ThrottleByUser()
-  @ApiParam({
-    name: "deviceId",
-    description: "앱이 만든 기기 식별자. ios_ 또는 android_로 시작",
-    schema: { type: "string", maxLength: 100 },
-    example: "ios_5F2C1E7A-0B9D-4C3E-8A11-2D4F6B8C9E01",
-  })
-  @ApiDoc({
-    summary: "푸시 기기 보고",
-    operationId: "reportPushDevice",
-    description: `기기 하나의 알림 권한과 Expo 푸시 토큰을 보고합니다. 1.14.2 이상 앱이 로그인 직후·앱 복귀·토큰 변경·언어 변경 때 보냅니다.
-
-- 권한이 GRANTED·PROVISIONAL이고 \`token\`이 있으면 이 기기로 푸시를 보냅니다.
-- 권한이 없거나 \`token\`이 null이면 이 기기의 토큰을 지우고 권한 상태만 저장합니다.
-- 다른 계정이 쓰던 같은 기기·토큰은 이 사용자로 옮깁니다.
-- 플랫폼은 deviceId 접두어로, 시간대·언어는 헤더로 정합니다. 같은 값을 다시 보내도 결과는 같습니다.`,
-  })
-  @ApiHeader({
-    name: "X-Timezone",
-    description: '푸시 발송 시간대로 쓸 IANA 시간대 (e.g. "Asia/Seoul"). 없으면 저장된 값을 유지',
-    required: false,
-    example: "Asia/Seoul",
-  })
-  @ApiHeader({
-    name: "Accept-Language",
-    description: '푸시 알림 언어 ("ko" | "en"). 없으면 저장된 값을 유지, 지원하지 않는 언어는 ko',
-    required: false,
-    example: "ko",
-  })
-  @ApiHeader({
-    name: "X-App-Version",
-    description: "토큰과 함께 저장해 앱 버전별 푸시 형식을 고를 때 쓰는 앱 버전",
-    required: false,
-    example: "1.14.2",
-  })
-  @ApiSuccessResponse({ type: PushDeviceResponseDto })
-  @ApiUnauthorizedError(ErrorCode.AUTH_0107)
-  @ApiErrorCodesResponse(HttpStatus.BAD_REQUEST, [
-    ErrorCode.NOTIFICATION_1001,
-    ErrorCode.NOTIFICATION_1006,
-  ])
-  async reportPushDevice(
-    @CurrentUser() user: CurrentUserPayload,
-    @Param({ schema: PushDeviceParamDto }) params: PushDeviceParamDto,
-    @Body({ schema: ReportPushDeviceDto }) dto: ReportPushDeviceDto,
-    @CurrentRequestClient() client: RequestClient,
-  ): Promise<PushDeviceResponseDto> {
-    const report = await this.#reportPushDeviceUseCase.execute({
-      ...pushDeviceContext(client),
-      userId: user.userId,
-      sessionId: user.sessionId,
-      deviceId: params.deviceId,
-      permission: dto.permission,
-      token: dto.token,
-      payloadVersion: dto.payloadVersion,
-      appVersion: client.appVersion,
-    });
-    return PushDeviceMapper.toDto(report);
-  }
-
-  @Post("token")
-  @ApiDoc({
-    summary: "푸시 토큰 등록 (1.14.1 이하 앱)",
-    operationId: "registerPushToken",
-    deprecated: true,
-    description: `1.14.1 이하 앱이 권한을 허용한 뒤 토큰을 등록합니다. 새 앱은 \`PUT /v1/notifications/push-devices/{deviceId}\`를 씁니다.
-
-권한은 허용(GRANTED)으로 저장하고, 플랫폼은 deviceId 접두어나 \`X-Device-Type\` 헤더로 정합니다. 둘 다 없으면 400 NOTIFICATION_1006입니다(출시된 앱은 항상 접두어를 보냅니다). 같은 deviceId의 토큰은 갱신됩니다. 최소 지원 버전이 1.14.2가 되면 제거합니다.`,
-  })
-  @ApiHeader({
-    name: "X-Timezone",
-    description: '푸시 발송 시간대로 쓸 IANA 시간대 (e.g. "Asia/Seoul"). 없으면 저장된 값을 유지',
-    required: false,
-    example: "Asia/Seoul",
-  })
-  @ApiHeader({
-    name: "Accept-Language",
-    description: '푸시 알림 언어 ("ko" | "en"). 없으면 저장된 값을 유지, 지원하지 않는 언어는 ko',
-    required: false,
-    example: "ko",
-  })
-  @ApiCreatedResponse({ type: RegisterTokenResponseDto })
-  @ApiUnauthorizedError(ErrorCode.AUTH_0107)
-  @ApiBadRequestError(ErrorCode.NOTIFICATION_1001)
-  async registerToken(
-    @CurrentUser() user: CurrentUserPayload,
-    @Body({ schema: RegisterPushTokenDto }) dto: RegisterPushTokenDto,
-    @CurrentRequestClient() client: RequestClient,
-  ): Promise<RegisterTokenResponseDto> {
-    await this.#reportPushDeviceUseCase.execute({
-      ...pushDeviceContext(client),
-      userId: user.userId,
-      sessionId: user.sessionId,
-      deviceId: dto.deviceId ?? LEGACY_DEFAULT_DEVICE_ID,
-      platformHint: legacyPlatformHint(client),
-      permission: { status: PUSH_PERMISSION_STATUS.GRANTED, canAskAgain: false },
-      token: dto.token,
-      payloadVersion: dto.payloadVersion,
-      appVersion: dto.appVersion ?? client.appVersion,
-    });
-
-    return {
-      message: "푸시 토큰이 등록되었습니다.",
-      registered: true,
-    };
-  }
-
-  @Delete("token")
-  @HttpCode(HttpStatus.OK)
-  @ApiDoc({
-    summary: "푸시 기기 해제",
-    operationId: "unregisterPushToken",
-    description: `로그아웃한 기기를 푸시 대상에서 뺍니다. 기기의 토큰과 권한 기록을 함께 지웁니다.
-
-**쿼리 파라미터**
-- \`deviceId\` (선택): 이 기기만 해제. 없으면 사용자의 모든 기기를 해제
-- 등록되지 않은 기기여도 성공으로 응답합니다.`,
-  })
-  @ApiSuccessResponse({ type: RegisterTokenResponseDto })
-  @ApiUnauthorizedError(ErrorCode.AUTH_0107)
-  async unregisterToken(
-    @CurrentUser() user: CurrentUserPayload,
-    @Query({ schema: UnregisterPushTokenQueryDto }) query: UnregisterPushTokenQueryDto,
-  ): Promise<RegisterTokenResponseDto> {
-    await this.#unregisterPushDeviceUseCase.execute(user.userId, query.deviceId);
-
-    return {
-      message: "푸시 토큰이 해제되었습니다.",
-      registered: false,
-    };
+    this.#listNotifications = listNotifications;
+    this.#getUnreadNotificationCount = getUnreadNotificationCount;
+    this.#markNotificationRead = markNotificationRead;
+    this.#markNotificationOpened = markNotificationOpened;
+    this.#markAllNotificationsRead = markAllNotificationsRead;
   }
 
   @Get()
@@ -309,26 +96,22 @@ export class NotificationController {
   async getNotifications(
     @CurrentUser() user: CurrentUserPayload,
     @Query({ schema: GetNotificationsQueryDto }) query: GetNotificationsQueryDto,
+    @CurrentRequestClient() client: RequestClient,
   ): Promise<NotificationListResponseDto> {
-    this.#logger.debug(`알림 목록 조회: userId=${user.userId}, category=${query.category}`);
-
-    const [result, unreadCount] = await Promise.all([
-      this.#getNotificationsUseCase.execute({
+    const [page, unreadCount] = await Promise.all([
+      this.#listNotifications.execute({
         userId: user.userId,
         cursor: query.cursor,
         size: query.limit,
         unreadOnly: query.unreadOnly,
         category: query.category,
       }),
-      this.#getUnreadCountUseCase.execute(user.userId),
+      this.#getUnreadNotificationCount.execute({ userId: user.userId }),
     ]);
-
-    return NotificationListResponseDto.parse({
-      notifications: NotificationMapper.toDtoList(result.items),
-      unreadCount,
-      hasMore: result.pagination.hasNext,
-      nextCursor: result.pagination.nextCursor ?? null,
-    });
+    // 옛 앱 계약이라 알림함 전용 필드(navigation)와 새 타입은 parse가 걸러 낸다
+    return NotificationListResponseDto.parse(
+      toNotificationInboxResponse(page, unreadCount, client.locale ?? DEFAULT_LOCALE),
+    );
   }
 
   @Get("unread-count")
@@ -340,9 +123,7 @@ export class NotificationController {
   @ApiSuccessResponse({ type: UnreadCountResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
   async getUnreadCount(@CurrentUser() user: CurrentUserPayload): Promise<UnreadCountResponseDto> {
-    const unreadCount = await this.#getUnreadCountUseCase.execute(user.userId);
-
-    return { unreadCount };
+    return { unreadCount: await this.#getUnreadNotificationCount.execute({ userId: user.userId }) };
   }
 
   @Patch(":id/read")
@@ -366,14 +147,8 @@ export class NotificationController {
     @CurrentUser() user: CurrentUserPayload,
     @Param({ schema: NotificationIdParamDto }) params: NotificationIdParamDto,
   ): Promise<MarkReadResponseDto> {
-    this.#logger.debug(`알림 읽음 처리: userId=${user.userId}, id=${params.id}`);
-
-    await this.#markAsReadUseCase.execute(user.userId, params.id);
-
-    return {
-      message: "알림을 읽음 처리했습니다.",
-      readCount: 1,
-    };
+    await this.#markNotificationRead.execute({ userId: user.userId, notificationId: params.id });
+    return { message: NOTIFICATION_RESPONSE_MESSAGES.READ, readCount: 1 };
   }
 
   @Post(":id/opened")
@@ -389,7 +164,10 @@ export class NotificationController {
     @CurrentUser() user: CurrentUserPayload,
     @Param({ schema: NotificationIdParamDto }) params: NotificationIdParamDto,
   ): Promise<NotificationOpenedResponseDto> {
-    const opened = await this.#markNotificationOpenedUseCase.execute(user.userId, params.id);
+    const opened = await this.#markNotificationOpened.execute({
+      userId: user.userId,
+      notificationId: params.id,
+    });
     return { opened };
   }
 
@@ -403,13 +181,7 @@ export class NotificationController {
   @ApiSuccessResponse({ type: MarkReadResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
   async markAllAsRead(@CurrentUser() user: CurrentUserPayload): Promise<MarkReadResponseDto> {
-    this.#logger.debug(`모든 알림 읽음 처리: userId=${user.userId}`);
-
-    const result = await this.#markAllAsReadUseCase.execute(user.userId);
-
-    return {
-      message: "모든 알림을 읽음 처리했습니다.",
-      readCount: result.count,
-    };
+    const result = await this.#markAllNotificationsRead.execute({ userId: user.userId });
+    return { message: NOTIFICATION_RESPONSE_MESSAGES.READ_ALL, readCount: result.count };
   }
 }

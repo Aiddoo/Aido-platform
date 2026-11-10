@@ -1,135 +1,147 @@
-/**
- * NotificationMapper 매퍼 단위 테스트
- *
- * @description
- * NotificationMapper의 변환 로직을 테스트합니다.
- *
- * 실행 명령:
- * ```bash
- * pnpm --filter @aido/server test notification.mapper
- * ```
- */
 import { NotificationBuilder } from "#test/builders/index";
 
-import { NotificationMapper } from "./notification-response.mapper.js";
+import {
+  toNotificationInboxResponse,
+  toNotificationResponse,
+} from "./notification-response.mapper.js";
 
-describe("NotificationMapper — 알림 매퍼", () => {
-  describe("toDto", () => {
-    it("기본 알림을 DTO로 변환한다", () => {
+describe("notification-response.mapper — 알림 응답", () => {
+  describe("toNotificationResponse", () => {
+    it("기본 알림을 응답으로 바꾼다", () => {
       // Given
       const notification = NotificationBuilder.create("user-1").build();
 
       // When
-      const result = NotificationMapper.toDto(notification);
+      const result = toNotificationResponse(notification, "ko");
 
       // Then
-      expect(result.id).toBe(notification.id);
-      expect(result.userId).toBe("user-1");
-      expect(result.type).toBe(notification.type);
-      expect(result.title).toBe(notification.title);
-      expect(result.body).toBe(notification.body);
-      expect(result.isRead).toBe(false);
-      expect(typeof result.createdAt).toBe("string");
-      expect(result.readAt).toBeNull();
+      expect(result).toMatchObject({
+        id: notification.id,
+        userId: "user-1",
+        type: notification.type,
+        title: notification.title,
+        body: notification.body,
+        isRead: false,
+        createdAt: notification.createdAt.toISOString(),
+        readAt: null,
+      });
     });
 
-    it("todoId가 있으면 context에 포함한다", () => {
+    it.each([
+      ["todoId", NotificationBuilder.create("user-1").withTodoId(42), { todoId: 42 }],
+      [
+        "nudgeId",
+        NotificationBuilder.create("user-1").asNudgeReceived("friend-1", 7),
+        { friendId: "friend-1", nudgeId: 7 },
+      ],
+      [
+        "cheerId",
+        NotificationBuilder.create("user-1").asCheerReceived("friend-1", 3),
+        { friendId: "friend-1", cheerId: 3 },
+      ],
+    ])("%s가 있으면 context에 싣는다", (_field, builder, context) => {
       // Given
-      const notification = NotificationBuilder.create("user-1").withTodoId(42).build();
+      const notification = builder.build();
 
       // When
-      const result = NotificationMapper.toDto(notification);
+      const result = toNotificationResponse(notification, "ko");
 
       // Then
-      expect(result.context).toBeDefined();
-      expect(result.context?.todoId).toBe(42);
+      expect(result.context).toEqual(context);
     });
 
-    it("nudgeId가 있으면 context에 포함한다", () => {
-      // Given
-      const notification = NotificationBuilder.create("user-1")
-        .asNudgeReceived("friend-1", 7)
-        .build();
-
-      // When
-      const result = NotificationMapper.toDto(notification);
-
-      // Then
-      expect(result.context).toBeDefined();
-      expect(result.context?.nudgeId).toBe(7);
-    });
-
-    it("cheerId가 있으면 context에 포함한다", () => {
-      // Given
-      const notification = NotificationBuilder.create("user-1")
-        .asCheerReceived("friend-1", 3)
-        .build();
-
-      // When
-      const result = NotificationMapper.toDto(notification);
-
-      // Then
-      expect(result.context).toBeDefined();
-      expect(result.context?.cheerId).toBe(3);
-    });
-
-    it("context 필드가 모두 null이면 context를 포함하지 않는다", () => {
+    it("context 재료가 모두 null이면 context를 싣지 않는다", () => {
       // Given
       const notification = NotificationBuilder.create("user-1").build();
-      notification.todoId = null;
-      notification.friendId = null;
-      notification.nudgeId = null;
-      notification.cheerId = null;
 
       // When
-      const result = NotificationMapper.toDto(notification);
+      const result = toNotificationResponse(notification, "ko");
 
       // Then
-      expect(result.context).toBeUndefined();
+      expect(result).not.toHaveProperty("context");
     });
 
-    it("객체가 아닌 legacy metadata는 null로 정규화한다", () => {
+    it("객체가 아닌 legacy metadata는 null로 바꾼다", () => {
       // Given
-      const notification = NotificationBuilder.create("user-1").build();
-      notification.metadata = "legacy-value";
+      const notification = { ...NotificationBuilder.create("user-1").build(), metadata: "legacy" };
 
       // When
-      const result = NotificationMapper.toDto(notification);
+      const result = toNotificationResponse(notification, "ko");
 
       // Then
       expect(result.metadata).toBeNull();
     });
 
-    it("action URL이 있으면 action에 포함한다", () => {
+    it("action URL이 있으면 action에 싣는다", () => {
       // Given
-      const notification = NotificationBuilder.create("user-1").build();
-      notification.actionUrl = "https://aido.app/notice";
+      const notification = {
+        ...NotificationBuilder.create("user-1").asSystemNotice().build(),
+        actionType: "BROWSER" as const,
+        actionUrl: "https://aido.app/notice",
+      };
 
       // When
-      const result = NotificationMapper.toDto(notification);
+      const result = toNotificationResponse(notification, "ko");
 
       // Then
-      expect(result.action).toEqual({
-        type: notification.actionType,
-        url: notification.actionUrl,
+      expect(result.action).toEqual({ type: "BROWSER", url: "https://aido.app/notice" });
+    });
+
+    it("푸시 data와 같은 navigation을 싣는다", () => {
+      // Given
+      const nudge = NotificationBuilder.create("user-1")
+        .asNudgeReceived("friend-1", 7)
+        .withTodoId(42)
+        .build();
+      const browserNotice = {
+        ...NotificationBuilder.create("user-1").asSystemNotice().build(),
+        actionType: "BROWSER" as const,
+        actionUrl: "https://aido.app/notice",
+      };
+
+      // When
+      const nudgeResult = toNotificationResponse(nudge, "ko");
+      const noticeResult = toNotificationResponse(browserNotice, "ko");
+
+      // Then
+      expect(nudgeResult.navigation).toEqual({ kind: "NUDGE", nudgeId: 7 });
+      expect(noticeResult.navigation).toEqual({
+        kind: "EXTERNAL_URL",
+        url: "https://aido.app/notice",
+        presentation: "BROWSER",
       });
+    });
+
+    it("계약을 통과하지 못하는 navigation은 싣지 않는다", () => {
+      // Given
+      const notification = {
+        ...NotificationBuilder.create("user-1").withType("FOLLOW_ACCEPTED").build(),
+        friendId: "x".repeat(65),
+      };
+
+      // When
+      const result = toNotificationResponse(notification, "ko");
+
+      // Then
+      expect(result).not.toHaveProperty("navigation");
     });
   });
 
-  describe("toDtoList", () => {
-    it("알림 배열을 DTO 배열로 변환한다", () => {
+  describe("toNotificationInboxResponse", () => {
+    it("페이지 항목과 미읽음 수·다음 커서를 함께 싣는다", () => {
       // Given
-      const notifications = [
-        NotificationBuilder.create("user-1").withId(1).build(),
-        NotificationBuilder.create("user-1").withId(2).build(),
-        NotificationBuilder.create("user-1").withId(3).build(),
-      ];
+      const items = [1, 2, 3].map((id) => NotificationBuilder.create("user-1").withId(id).build());
 
       // When
-      const result = NotificationMapper.toDtoList(notifications);
+      const result = toNotificationInboxResponse(
+        { items, pagination: { hasNext: true, nextCursor: 3, size: 3 } },
+        5,
+        "ko",
+      );
 
       // Then
-      expect(result).toHaveLength(3);
+      expect(result.notifications).toHaveLength(3);
+      expect(result).toMatchObject({ unreadCount: 5, hasMore: true, nextCursor: 3 });
     });
   });
 });

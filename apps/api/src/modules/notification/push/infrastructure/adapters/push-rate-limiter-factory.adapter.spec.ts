@@ -33,6 +33,8 @@ describe("createPushRateLimiter", () => {
   it("memory는 명시적으로 선택한 개발·테스트 환경에서만 생성한다", () => {
     const limiter = createPushRateLimiter({ backend: "memory", database });
     expect(limiter).toBeInstanceOf(InMemoryPushRateLimiterAdapter);
-    limiter.destroy?.();
+    if (limiter instanceof InMemoryPushRateLimiterAdapter) {
+      limiter.destroy();
+    }
   });
 });

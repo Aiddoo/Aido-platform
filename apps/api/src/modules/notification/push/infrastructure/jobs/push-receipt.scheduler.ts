@@ -1,30 +1,19 @@
-import { Inject, Injectable, type OnModuleInit } from "@nestjs/common";
+import { Injectable, type OnModuleInit } from "@nestjs/common";
 
-import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/index";
+import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
 
-import {
-  NOTIFICATION_JOB_POLICY,
-  NOTIFICATION_QUEUE,
-  NotificationJobName,
-  PUSH_RECEIPT_SCHEDULE,
-} from "./notification-queue.constants.js";
+import { PUSH_RECEIPTS_SCHEDULE_QUEUE } from "./notification.queue.js";
 
-/** Owns the recurring receipt-reconciliation schedule, independently of event publishing. */
+// 이벤트 발행과 따로 receipt 정리 예약을 소유한다
 @Injectable()
 export class PushReceiptScheduler implements OnModuleInit {
-  readonly #runtime: JobRuntimePort;
+  readonly #jobQueue: JobQueuePort;
 
-  constructor(@Inject(JOB_RUNTIME) runtime: JobRuntimePort) {
-    this.#runtime = runtime;
+  constructor(jobQueue: JobQueuePort) {
+    this.#jobQueue = jobQueue;
   }
 
   async onModuleInit(): Promise<void> {
-    await this.#runtime.schedule(
-      PUSH_RECEIPT_SCHEDULE.key,
-      PUSH_RECEIPT_SCHEDULE.cron,
-      NOTIFICATION_QUEUE,
-      { name: NotificationJobName.PUSH_RECEIPTS, data: {} },
-      NOTIFICATION_JOB_POLICY,
-    );
+    await this.#jobQueue.registerSchedules(PUSH_RECEIPTS_SCHEDULE_QUEUE);
   }
 }

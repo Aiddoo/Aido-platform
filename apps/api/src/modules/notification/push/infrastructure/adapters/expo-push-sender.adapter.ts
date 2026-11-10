@@ -10,7 +10,7 @@ import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy
 import type {
   PushFailure,
   PushPayload,
-  PushProvider,
+  PushProviderPort,
   PushReceiptResult,
   PushResult,
 } from "../../application/ports/push-provider.port.js";
@@ -53,7 +53,7 @@ interface SendableMessage {
 
 /** @see https://docs.expo.dev/push-notifications/sending-notifications/ */
 @Injectable()
-export class ExpoPushSenderAdapter implements PushProvider {
+export class ExpoPushSenderAdapter implements PushProviderPort {
   readonly name = "expo";
   readonly #logger = new Logger(ExpoPushSenderAdapter.name);
   readonly #expo: Expo;

@@ -1,39 +1,45 @@
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
+import type { ClockPort } from "#api/shared/application/ports/clock.port";
 
 import { NotificationDeliveryLogEvent } from "../../../push/application/notification-delivery.log-events.js";
 import { visibleNotificationTypes } from "../../../push/domain/notification-client-capability.domain-service.js";
-import { type NotificationCachePort } from "../ports/notification-cache.port.js";
-import { type NotificationRepositoryPort } from "../ports/notification.repository.port.js";
+import type { NotificationCachePort } from "../ports/notification-cache.port.js";
+import type { NotificationRepositoryPort } from "../ports/notification.repository.port.js";
 
-/**
- * 모든 알림 읽음 처리 유스케이스.
- */
-interface MarkAllAsReadDependencies {
+export interface MarkAllNotificationsReadCommand {
+  readonly userId: string;
+  readonly appVersion?: string;
+}
+
+export interface MarkAllNotificationsReadDependencies {
   readonly notificationRepository: Pick<NotificationRepositoryPort, "markAllAsRead">;
   readonly cache: Pick<NotificationCachePort, "invalidateUnreadCount">;
+  readonly clock: ClockPort;
   readonly logger: Pick<ApplicationLoggerPort, "debug">;
 }
 
 export class MarkAllNotificationsReadUseCase {
-  readonly #dependencies: MarkAllAsReadDependencies;
+  readonly #dependencies: MarkAllNotificationsReadDependencies;
 
-  constructor(dependencies: MarkAllAsReadDependencies) {
+  constructor(dependencies: MarkAllNotificationsReadDependencies) {
     this.#dependencies = dependencies;
   }
 
-  async execute(userId: string, appVersion?: string): Promise<{ count: number }> {
-    const result = await this.#dependencies.notificationRepository.markAllAsRead(
-      userId,
-      visibleNotificationTypes(appVersion),
+  async execute(command: MarkAllNotificationsReadCommand): Promise<{ count: number }> {
+    const { notificationRepository, cache, clock, logger } = this.#dependencies;
+    // 이 앱이 볼 수 없는 알림은 읽음으로 바꾸지 않는다(새 앱으로 올리면 미읽음으로 보인다)
+    const result = await notificationRepository.markAllAsRead(
+      command.userId,
+      visibleNotificationTypes(command.appVersion),
+      clock.now(),
     );
-    await this.#dependencies.cache.invalidateUnreadCount(userId);
+    await cache.invalidateUnreadCount(command.userId);
 
-    this.#dependencies.logger.debug({
+    logger.debug({
       event: NotificationDeliveryLogEvent.MARK_ALL_AS_READ_READ_ALL_PROCESSED,
-      userId,
+      userId: command.userId,
       count: result.count,
     });
-
     return result;
   }
 }

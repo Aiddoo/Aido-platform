@@ -23,10 +23,7 @@ import {
   NOTIFICATION_CACHE,
   type NotificationCachePort,
 } from "#api/modules/notification/inbox/application/ports/notification-cache.port";
-import {
-  PUSH_DISPATCH_STAGING,
-  type PushDispatchStagingRepositoryPort,
-} from "#api/modules/notification/push/application/ports/push-dispatch-staging.repository.port";
+import { PushDispatchStagingRepositoryPort } from "#api/modules/notification/push/application/ports/push-dispatch-staging.repository.port";
 import { PublishPushDeliveryAfterCommitUseCase } from "#api/modules/notification/push/application/use-cases/publish-push-delivery-after-commit.use-case";
 import { PublishPushDeliveryOutboxUseCase } from "#api/modules/notification/push/application/use-cases/publish-push-delivery-outbox.use-case";
 import { databaseSqlState } from "#api/platform/database/database-error.util";
@@ -388,7 +385,7 @@ describe("Engagement 댓글 실제 PostgreSQL 회귀", () => {
     }
     const txHost =
       context.module.get<TransactionHost<DrizzleTransactionalAdapter>>(TransactionHost);
-    const staging = context.module.get<PushDispatchStagingRepositoryPort>(PUSH_DISPATCH_STAGING);
+    const staging = context.module.get(PushDispatchStagingRepositoryPort);
     const stage = staging.stage.bind(staging);
     const publication = vi.spyOn(context.module.get(PublishPushDeliveryOutboxUseCase), "execute");
     let stagedNotificationCount = 0;

@@ -4,51 +4,36 @@ import { Test, type TestingModule } from "@nestjs/testing";
 import { vi, type Mocked, type MockedFunction } from "vitest";
 
 import { NotificationHistoryReader } from "#api/modules/notification/inbox/application/notification-history.reader";
-import {
-  NOTIFICATION_CACHE,
-  type NotificationCachePort,
-} from "#api/modules/notification/inbox/application/ports/notification-cache.port";
+import { NotificationCachePort } from "#api/modules/notification/inbox/application/ports/notification-cache.port";
 import type { CreateNotificationData } from "#api/modules/notification/inbox/application/ports/notification-draft.port";
-import {
-  NOTIFICATION_REPOSITORY,
-  type NotificationRepositoryPort,
-} from "#api/modules/notification/inbox/application/ports/notification.repository.port";
+import { NotificationRepositoryPort } from "#api/modules/notification/inbox/application/ports/notification.repository.port";
 import type { InboxNotification } from "#api/modules/notification/inbox/application/read-models/inbox-notification.read-model";
+import { NotificationDedupPort } from "#api/modules/notification/push/application/ports/notification-dedup.port";
 import {
-  NOTIFICATION_DEDUP,
-  type NotificationDedupPort,
-} from "#api/modules/notification/push/application/ports/notification-dedup.port";
-import {
-  PUSH_DISPATCH_STAGING,
-  type PushDispatchStagingRepositoryPort,
+  PushDispatchStagingRepositoryPort,
   type StagePushDispatchInput,
 } from "#api/modules/notification/push/application/ports/push-dispatch-staging.repository.port";
-import {
-  USER_NOTIFICATION_SETTINGS,
-  type UserNotificationSettingsPort,
-} from "#api/modules/notification/push/application/ports/user-notification-settings.port";
+import { UserNotificationSettingsPort } from "#api/modules/notification/push/application/ports/user-notification-settings.port";
+import { FinalizeBatchNotificationUseCase } from "#api/modules/notification/push/application/use-cases/finalize-batch-notification.use-case";
 import { PersistBatchNotificationUseCase } from "#api/modules/notification/push/application/use-cases/persist-batch-notification.use-case";
+import { PublishPushDeliveryAfterCommitUseCase } from "#api/modules/notification/push/application/use-cases/publish-push-delivery-after-commit.use-case";
 import {
   PublishPushDeliveryOutboxUseCase,
   type PublishPushDeliveryOutboxInput,
 } from "#api/modules/notification/push/application/use-cases/publish-push-delivery-outbox.use-case";
 import { SendFriendCompletionNotificationsUseCase } from "#api/modules/notification/push/application/use-cases/send-friend-completion-notifications.use-case";
+import { NOTIFICATION_PUSH_USE_CASE_PROVIDERS } from "#api/modules/notification/push/notification-push.providers";
+import { SystemClock } from "#api/platform/time/system-clock";
+import { ClockPort } from "#api/shared/application/ports/clock.port";
 import {
-  AFTER_COMMIT_TASK_REGISTRY,
-  UNIT_OF_WORK,
   type AfterCommitTask,
-  type AfterCommitTaskRegistryPort,
-  type UnitOfWorkPort,
+  AfterCommitTaskRegistryPort,
+  UnitOfWorkPort,
 } from "#api/shared/application/ports/index";
 import { createNotificationCacheMock } from "#test/mocks/ports/notification-cache.mock";
 import { createNotificationRepositoryMock } from "#test/mocks/ports/notification.mock";
 
-import {
-  finalizeBatchNotificationUseCaseProvider,
-  persistBatchNotificationUseCaseProvider,
-  publishPushDeliveryAfterCommitUseCaseProvider,
-  sendFriendCompletionNotificationsUseCaseProvider,
-} from "../../src/modules/notification/push/notification-push.providers.js";
+import { pickProviders } from "./helpers/pick-providers.js";
 
 interface TransactionContext {
   closed: boolean;
@@ -101,6 +86,8 @@ function toNotificationRecord(data: CreateNotificationData, index: number): Inbo
     type: data.type,
     title: data.title,
     body: data.body,
+    copyKey: data.copyKey ?? null,
+    copyFacts: data.copyFacts ?? null,
     isRead: false,
     todoId: data.todoId ?? null,
     friendId: data.friendId ?? null,
@@ -188,18 +175,21 @@ describe("친구 완료 알림의 commit 후 영속 발행 (컴포넌트)", () =
 
     module = await Test.createTestingModule({
       providers: [
-        sendFriendCompletionNotificationsUseCaseProvider,
-        persistBatchNotificationUseCaseProvider,
-        finalizeBatchNotificationUseCaseProvider,
-        publishPushDeliveryAfterCommitUseCaseProvider,
+        ...pickProviders(NOTIFICATION_PUSH_USE_CASE_PROVIDERS, [
+          SendFriendCompletionNotificationsUseCase,
+          PersistBatchNotificationUseCase,
+          FinalizeBatchNotificationUseCase,
+          PublishPushDeliveryAfterCommitUseCase,
+        ]),
         { provide: NotificationHistoryReader, useValue: notificationHistoryReader },
-        { provide: NOTIFICATION_REPOSITORY, useValue: repository },
-        { provide: PUSH_DISPATCH_STAGING, useValue: staging },
-        { provide: NOTIFICATION_CACHE, useValue: cache },
-        { provide: NOTIFICATION_DEDUP, useValue: notificationDedup },
-        { provide: USER_NOTIFICATION_SETTINGS, useValue: userSettings },
-        { provide: UNIT_OF_WORK, useValue: unitOfWork },
-        { provide: AFTER_COMMIT_TASK_REGISTRY, useValue: unitOfWork },
+        { provide: NotificationRepositoryPort, useValue: repository },
+        { provide: PushDispatchStagingRepositoryPort, useValue: staging },
+        { provide: NotificationCachePort, useValue: cache },
+        { provide: NotificationDedupPort, useValue: notificationDedup },
+        { provide: UserNotificationSettingsPort, useValue: userSettings },
+        { provide: UnitOfWorkPort, useValue: unitOfWork },
+        { provide: AfterCommitTaskRegistryPort, useValue: unitOfWork },
+        { provide: ClockPort, useClass: SystemClock },
         { provide: PublishPushDeliveryOutboxUseCase, useValue: { execute: executePublish } },
       ],
     }).compile();

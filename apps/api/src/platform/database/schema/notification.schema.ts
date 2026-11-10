@@ -17,6 +17,7 @@ import {
   check,
 } from "drizzle-orm/pg-core";
 
+import { instant } from "../columns/temporal-columns.js";
 import { createEntityId } from "../entity-id.js";
 import {
   notificationActionType,
@@ -43,6 +44,8 @@ export const notification = pgTable(
     body: varchar({ length: 500 }).notNull(),
     campaignKey: varchar({ length: 100 }),
     cheerId: integer(),
+    copyFacts: jsonb(),
+    copyKey: varchar({ length: 150 }),
     createdAt: timestamp({ precision: 3 }).defaultNow().notNull(),
     friendId: text(),
     id: serial().primaryKey(),
@@ -127,7 +130,9 @@ export const notification = pgTable(
 export const pushDevice = pgTable(
   "PushDevice",
   {
-    createdAt: timestamp({ precision: 3 }).defaultNow().notNull(),
+    createdAt: instant()
+      .default(sql`now()`)
+      .notNull(),
     deviceId: varchar({ length: 255 }).notNull(),
     deviceModel: varchar({ length: 40 }),
     id: text().primaryKey().$defaultFn(createEntityId),
@@ -135,12 +140,10 @@ export const pushDevice = pgTable(
     permissionCanAskAgain: boolean().notNull(),
     permissionStatus: pushPermissionStatus().notNull(),
     platform: platform().notNull(),
-    reportedAt: timestamp({ precision: 3 }).notNull(),
+    reportedAt: instant().notNull(),
     sessionId: text(),
-    updatedAt: timestamp({ precision: 3 })
-      .notNull()
-      .$defaultFn(() => new Date())
-      .$onUpdate(() => new Date()),
+    // 저장소가 보고 시각(ClockPort)으로 채운다
+    updatedAt: instant().notNull(),
     userId: text().notNull(),
   },
   (table) => [
@@ -168,19 +171,21 @@ export const pushToken = pgTable(
   "PushToken",
   {
     appVersion: varchar({ length: 30 }),
-    createdAt: timestamp({ precision: 3 }).defaultNow().notNull(),
+    createdAt: instant()
+      .default(sql`now()`)
+      .notNull(),
     deviceId: varchar({ length: 255 }).notNull(),
     id: serial().primaryKey(),
     isActive: boolean().default(true).notNull(),
-    lastUsedAt: timestamp({ precision: 3 }).defaultNow().notNull(),
+    lastUsedAt: instant()
+      .default(sql`now()`)
+      .notNull(),
     payloadVersion: integer().default(1).notNull(),
     platform: platform().notNull(),
     sessionId: text(),
     token: varchar({ length: 255 }).notNull(),
-    updatedAt: timestamp({ precision: 3 })
-      .notNull()
-      .$defaultFn(() => new Date())
-      .$onUpdate(() => new Date()),
+    // 등록·비활성화 때 저장소가 ClockPort 시각을 명시한다
+    updatedAt: instant().notNull(),
     userId: text().notNull(),
   },
   (table) => [

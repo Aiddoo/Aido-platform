@@ -9,7 +9,7 @@ import {
 } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { notification, pushDispatch } from "#api/platform/database/schema/index";
-import { now } from "#api/shared/domain/date/utils/core";
+import { instantToDate } from "#api/shared/domain/time/instant";
 
 import type { CreateNotificationData } from "../../application/ports/notification-draft.port.js";
 import {
@@ -17,7 +17,10 @@ import {
   type NotificationRepositoryPort,
 } from "../../application/ports/notification.repository.port.js";
 import type { InboxNotification } from "../../application/read-models/inbox-notification.read-model.js";
+import type { NotificationId } from "../../domain/notification-id.vo.js";
 import type { NotificationType } from "../../domain/notification-type.constants.js";
+import type { Notification } from "../../domain/notification.aggregate.js";
+import { toNotification } from "./notification-row.mapper.js";
 
 type NotificationInsert = typeof notification.$inferInsert;
 
@@ -27,6 +30,8 @@ function toNotificationInsert(data: CreateNotificationData): NotificationInsert 
     type: data.type,
     title: data.title,
     body: data.body,
+    copyKey: data.copyKey,
+    copyFacts: data.copyFacts,
     todoId: data.todoId,
     friendId: data.friendId,
     nudgeId: data.nudgeId,
@@ -52,6 +57,13 @@ export class DrizzleNotificationRepository implements NotificationRepositoryPort
 
   get #db() {
     return this.#txHost.tx;
+  }
+
+  async findById(notificationId: NotificationId): Promise<Notification | null> {
+    const row = await this.#db.query.notification.findFirst({
+      where: { id: notificationId.value },
+    });
+    return row == null ? null : toNotification(row);
   }
 
   async createNotification(data: CreateNotificationData): Promise<InboxNotification> {
@@ -90,10 +102,11 @@ export class DrizzleNotificationRepository implements NotificationRepositoryPort
     }
   }
 
-  async markAsRead(id: number, userId: string): Promise<boolean> {
+  async markAsRead(target: Notification): Promise<boolean> {
+    const { id, userId, isRead, readAt } = target.toPrimitives();
     const updated = await this.#db
       .update(notification)
-      .set({ isRead: true, readAt: now() })
+      .set({ isRead, readAt: readAt == null ? null : instantToDate(readAt) })
       .where(
         and(
           eq(notification.id, id),
@@ -105,8 +118,13 @@ export class DrizzleNotificationRepository implements NotificationRepositoryPort
     return updated.length > 0;
   }
 
-  async markAsOpened(id: number, userId: string): Promise<boolean> {
-    const openedAt = now();
+  async markAsOpened(
+    notificationId: NotificationId,
+    userId: string,
+    now: Temporal.Instant,
+  ): Promise<boolean> {
+    const id = notificationId.value;
+    const openedAt = instantToDate(now);
     const updated = await this.#db
       .update(notification)
       .set({ openedAt, isRead: true, readAt: openedAt })
@@ -135,11 +153,12 @@ export class DrizzleNotificationRepository implements NotificationRepositoryPort
 
   async markAllAsRead(
     userId: string,
-    types?: readonly NotificationType[],
+    types: readonly NotificationType[] | undefined,
+    now: Temporal.Instant,
   ): Promise<{ count: number }> {
     const updated = await this.#db
       .update(notification)
-      .set({ isRead: true, readAt: now() })
+      .set({ isRead: true, readAt: instantToDate(now) })
       .where(
         and(
           eq(notification.userId, userId),

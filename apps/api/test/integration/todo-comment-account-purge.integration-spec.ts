@@ -20,11 +20,9 @@ import { AuthUserRepositoryPort } from "#api/modules/identity/auth/application/p
 import { DrizzleSecurityLogRepository } from "#api/modules/identity/auth/infrastructure/persistence/drizzle-security-log.repository";
 import { PurgeDeletedAccountsUseCase } from "#api/modules/identity/users/application/use-cases/purge-deleted-accounts.use-case";
 import { DrizzleUserRepository } from "#api/modules/identity/users/infrastructure/persistence/drizzle-user.repository";
-import {
-  NOTIFICATION_CACHE,
-  type NotificationCachePort,
-} from "#api/modules/notification/inbox/application/ports/notification-cache.port";
-import { NOTIFICATION_REPOSITORY } from "#api/modules/notification/inbox/application/ports/notification.repository.port";
+import { NotificationCachePort } from "#api/modules/notification/inbox/application/ports/notification-cache.port";
+import { NotificationRepositoryPort } from "#api/modules/notification/inbox/application/ports/notification.repository.port";
+import { DeleteActorNotificationsUseCase } from "#api/modules/notification/inbox/application/use-cases/delete-actor-notifications.use-case";
 import { DrizzleNotificationRepository } from "#api/modules/notification/inbox/infrastructure/persistence/drizzle-notification.repository";
 import { ClsUnitOfWork } from "#api/platform/database/cls-unit-of-work";
 import { databaseConstraint, databaseSqlState } from "#api/platform/database/database-error.util";
@@ -38,6 +36,7 @@ import {
   todoCommentLike,
   user as userTable,
 } from "#api/platform/database/schema/index";
+import { loggerFor, provideUseCase } from "#api/platform/di/provide-use-case";
 import { DrizzleUsageMeterAdapter } from "#api/platform/metering/adapters/drizzle-usage-meter.adapter";
 import { USAGE_METER } from "#api/platform/metering/interfaces/usage-meter.interface";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
@@ -54,7 +53,6 @@ import {
   accountUsageCleanupProvider,
   purgeDeletedAccountsProvider,
 } from "../../src/modules/identity/users/identity-users.providers.js";
-import { deleteActorNotificationsUseCaseProvider } from "../../src/modules/notification/push/notification-push.providers.js";
 import { TestDatabase } from "../setup/test-database.js";
 
 const NOW = new Date("2026-08-26T00:00:00.000Z");
@@ -235,10 +233,13 @@ describe("댓글 계정 purge (실제 PostgreSQL)", () => {
         },
         todoCommentAccountCleanupProvider,
         { provide: TODO_COMMENT_ACCOUNT_CLEANUP, useExisting: TodoCommentAccountCleanup },
-        DrizzleNotificationRepository,
-        { provide: NOTIFICATION_REPOSITORY, useExisting: DrizzleNotificationRepository },
-        deleteActorNotificationsUseCaseProvider,
-        { provide: NOTIFICATION_CACHE, useValue: notificationCache },
+        { provide: NotificationRepositoryPort, useClass: DrizzleNotificationRepository },
+        provideUseCase(DeleteActorNotificationsUseCase, {
+          repository: NotificationRepositoryPort,
+          cache: NotificationCachePort,
+          logger: loggerFor(DeleteActorNotificationsUseCase),
+        }),
+        { provide: NotificationCachePort, useValue: notificationCache },
         { provide: TODO_VIEW_CACHE, useValue: todoViewCache },
         DrizzleUserRepository,
         DrizzleSecurityLogRepository,

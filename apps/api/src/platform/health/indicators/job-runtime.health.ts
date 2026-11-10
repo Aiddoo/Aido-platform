@@ -6,13 +6,6 @@ import { QUOTA_ABANDONED_REFUND_QUEUE } from "#api/modules/access/access-quota-j
 import { AI_REPORT_QUEUE } from "#api/modules/ai-assistance/ai-assistance-reports.public";
 import { AI_SUGGESTION_QUEUE } from "#api/modules/ai-assistance/ai-assistance-suggestions.public";
 import { ACCOUNT_PURGE_QUEUE } from "#api/modules/identity/users/identity-users.public";
-import {
-  MARKETING_CONSENT_RECONFIRM_QUEUE,
-  NOTIFICATION_DEAD_LETTER_QUEUE,
-  NOTIFICATION_QUEUE,
-  PUSH_DELIVERY_DEAD_LETTER_QUEUE,
-  PUSH_DELIVERY_QUEUE,
-} from "#api/modules/notification/notification-delivery-jobs.public";
 import { EMAIL_DELIVERY_QUEUE } from "#api/modules/notification/notification-email-jobs.public";
 import { TIMEZONE_REMINDER_QUEUE } from "#api/modules/notification/notification-reminders-jobs.public";
 import { TODO_REMINDER_QUEUE } from "#api/modules/notification/notification-reminders.public";
@@ -33,14 +26,9 @@ const LEGACY_MONITORED_QUEUES = [
   AI_REPORT_QUEUE,
   EMAIL_DELIVERY_QUEUE,
   TODO_REMINDER_QUEUE,
-  NOTIFICATION_QUEUE,
-  NOTIFICATION_DEAD_LETTER_QUEUE,
-  PUSH_DELIVERY_QUEUE,
-  PUSH_DELIVERY_DEAD_LETTER_QUEUE,
   RETENTION_QUEUE,
   QUOTA_ABANDONED_REFUND_QUEUE,
   ACCOUNT_PURGE_QUEUE,
-  MARKETING_CONSENT_RECONFIRM_QUEUE,
   TIMEZONE_REMINDER_QUEUE,
   INVITE_REWARD_QUEUE,
   INVITE_MAINTENANCE_QUEUE,

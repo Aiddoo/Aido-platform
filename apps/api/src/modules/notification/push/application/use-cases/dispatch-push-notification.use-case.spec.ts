@@ -1,6 +1,8 @@
 import type { Mocked } from "vitest";
 import { mockDeep } from "vitest-mock-extended";
 
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { InMemoryPushDeviceStore } from "#test/mocks/in-memory-push-device.store";
 import { createNotificationCacheMock } from "#test/mocks/ports/notification-cache.mock";
 import {
@@ -8,6 +10,7 @@ import {
   createPushTokenRepositoryMock,
 } from "#test/mocks/ports/notification.mock";
 
+import { PushDeviceId } from "../../domain/push-device-id.vo.js";
 import { PushDevice } from "../../domain/push-device.aggregate.js";
 import { PushPermission } from "../../domain/push-permission.vo.js";
 import { RetryablePushProviderTransportError } from "../ports/push-provider.port.js";
@@ -15,7 +18,8 @@ import type { BatchPushNotificationPayload } from "../push-notification-payload.
 import type { PushTokenRecord } from "../read-models/push-token.read-model.js";
 import { DispatchPushNotificationUseCase } from "./dispatch-push-notification.use-case.js";
 
-const TOKEN_DATE = new Date("2026-07-01T00:00:00.000Z");
+const TOKEN_DATE = Temporal.Instant.from("2026-07-01T00:00:00.000Z");
+const NOW = Temporal.Instant.from("2026-11-10T00:00:00.000Z");
 
 function pushToken(input: {
   userId: string;
@@ -58,18 +62,18 @@ function batchPayload(input: {
 function reportedDevice(input: {
   userId: string;
   status: PushPermission["status"];
-  reportedAt?: Date;
+  reportedAt?: Temporal.Instant;
 }): PushDevice {
-  return PushDevice.report({
-    userId: input.userId,
+  return PushDevice.create({
+    id: PushDeviceId.reconstitute(`ios_${input.userId}`),
+    userId: UserId.reconstitute(input.userId),
     sessionId: null,
-    deviceId: `ios_${input.userId}`,
     platform: "IOS",
-    permission: PushPermission.of({ status: input.status, canAskAgain: false }),
+    permission: PushPermission.create({ status: input.status, canAskAgain: false }),
     token: null,
     deviceModel: null,
     osVersion: null,
-    reportedAt: input.reportedAt ?? new Date(),
+    now: input.reportedAt ?? NOW,
   });
 }
 
@@ -104,6 +108,7 @@ describe("DispatchPushNotificationUseCase", () => {
       pushProvider: pushNotificationDeliveryServiceDependencies.pushProvider,
       activePushTokenReader: pushNotificationDeliveryServiceDependencies.activePushTokenReader,
       notificationCache: pushNotificationDeliveryServiceDependencies.notificationCache,
+      clock: new FixedClock(NOW),
       logger: pushNotificationDeliveryServiceDependencies.logger,
     });
     service = unit;
@@ -137,7 +142,7 @@ describe("DispatchPushNotificationUseCase", () => {
       reportedDevice({
         userId: "user-3",
         status: "DENIED",
-        reportedAt: new Date(Date.now() - 91 * 24 * 60 * 60 * 1000),
+        reportedAt: NOW.subtract({ hours: 91 * 24 }),
       }),
     );
 
@@ -331,7 +336,7 @@ describe("DispatchPushNotificationUseCase", () => {
       status: "sent",
       results: [{ token: "invalid-token", status: "rejected" }],
     });
-    expect(tokenRepository.deactivateInvalidTokens).toHaveBeenCalledWith(["invalid-token"]);
+    expect(tokenRepository.deactivateInvalidTokens).toHaveBeenCalledWith(["invalid-token"], NOW);
     expect(notificationCache.invalidatePushTokens).toHaveBeenCalledWith("user-1");
     expect(pushProvider.sendBatch).toHaveBeenCalledWith([
       {
@@ -428,7 +433,7 @@ describe("DispatchPushNotificationUseCase", () => {
     }
     await service.sendPreparedBatch(prepared);
 
-    expect(tokenRepository.deactivateInvalidTokens).toHaveBeenCalledWith(["invalid-token"]);
+    expect(tokenRepository.deactivateInvalidTokens).toHaveBeenCalledWith(["invalid-token"], NOW);
     expect(notificationCache.invalidatePushTokens).toHaveBeenCalledTimes(2);
     expect(notificationCache.invalidatePushTokens).toHaveBeenCalledWith("user-1");
     expect(notificationCache.invalidatePushTokens).toHaveBeenCalledWith("user-2");

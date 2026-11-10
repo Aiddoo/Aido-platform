@@ -1,92 +1,111 @@
-import { TestBed } from "@suites/unit";
 import { vi } from "vitest";
-import type { Mocked } from "vitest";
 
-import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/index";
+import type { JobEnvelope, QueueDefinition } from "#api/shared/application/ports/index";
+import { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
 
-import { DeliverPushNotificationsUseCase } from "../../application/use-cases/deliver-push-notifications.use-case.js";
-import { RecoverFailedPushDeliveriesUseCase } from "../../application/use-cases/recover-failed-push-deliveries.use-case.js";
-import { RelayPushDeliveryOutboxUseCase } from "../../application/use-cases/relay-push-delivery-outbox.use-case.js";
+import { PushDeliveryQueueProcessor } from "./push-delivery-queue.processor.js";
 import {
   PUSH_DELIVERY_DEAD_LETTER_QUEUE,
-  PUSH_DELIVERY_DEAD_LETTER_WORKER_POLICY,
   PUSH_DELIVERY_QUEUE,
+  PUSH_DELIVERY_TRANSACTIONAL_QUEUE,
   PushDeliveryJobName,
-} from "./push-delivery-queue.constants.js";
-import { PushDeliveryQueueProcessor } from "./push-delivery-queue.processor.js";
+} from "./push-delivery.queue.js";
+
+interface RegisteredWorker {
+  readonly queue: QueueDefinition<object>;
+  readonly handler: (jobs: readonly JobEnvelope<object>[]) => Promise<void>;
+}
+
+// 같은 큐에 붙은 worker 정의를 모두 보려고 등록만 기록한다
+class RecordingJobQueue extends InMemoryJobQueue {
+  readonly workers: RegisteredWorker[] = [];
+
+  override async work<TPayload extends object>(
+    queue: QueueDefinition<TPayload>,
+    handler: (jobs: readonly JobEnvelope<TPayload>[]) => Promise<void>,
+  ): Promise<void> {
+    this.workers.push({
+      queue,
+      handler: async (jobs) =>
+        handler(jobs.map((job) => ({ ...job, data: queue.payloadSchema.parse(job.data) }))),
+    });
+    await super.work(queue, handler);
+  }
+}
+
+async function setup() {
+  const relayOutbox = { execute: vi.fn<() => Promise<void>>().mockResolvedValue(undefined) };
+  const deliverPushNotifications = {
+    execute: vi.fn<(input: unknown) => Promise<void>>().mockResolvedValue(undefined),
+  };
+  const recoverFailedDeliveries = {
+    execute: vi.fn<(input: unknown) => Promise<number>>().mockResolvedValue(1),
+  };
+  const jobQueue = new RecordingJobQueue();
+  const processor = new PushDeliveryQueueProcessor(
+    relayOutbox,
+    deliverPushNotifications,
+    recoverFailedDeliveries,
+    jobQueue,
+  );
+  await processor.onModuleInit();
+  return { relayOutbox, deliverPushNotifications, recoverFailedDeliveries, jobQueue };
+}
 
 describe("PushDeliveryQueueProcessor — 영속 Push 큐 라우팅", () => {
-  let processor: PushDeliveryQueueProcessor;
-  let relayOutbox: Mocked<RelayPushDeliveryOutboxUseCase>;
-  let deliverPushNotifications: Mocked<DeliverPushNotificationsUseCase>;
-  let recoverFailedDeliveries: Mocked<RecoverFailedPushDeliveriesUseCase>;
-  let runtime: Mocked<JobRuntimePort>;
+  it("일반 worker와 우선순위 10 이상만 가져가는 거래성 worker를 같은 큐에 등록한다", async () => {
+    // Given / When
+    const { jobQueue } = await setup();
 
-  beforeEach(async () => {
-    const { unit, unitRef } = await TestBed.solitary(PushDeliveryQueueProcessor)
-      .mock<JobRuntimePort>(JOB_RUNTIME)
-      .impl(() => ({
-        start: vi.fn(),
-        stop: vi.fn(),
-        enqueue: vi.fn(),
-        schedule: vi.fn(),
-        unschedule: vi.fn(),
-        cancel: vi.fn(),
-        work: vi.fn().mockResolvedValue(undefined),
-        health: vi.fn(),
-      }))
-      .compile();
-
-    processor = unit;
-    relayOutbox = unitRef.get(RelayPushDeliveryOutboxUseCase);
-    deliverPushNotifications = unitRef.get(DeliverPushNotificationsUseCase);
-    recoverFailedDeliveries = unitRef.get(RecoverFailedPushDeliveriesUseCase);
-    runtime = unitRef.get(JOB_RUNTIME);
+    // Then
+    expect(
+      jobQueue.workers.map(({ queue }) => ({ name: queue.name, worker: queue.worker })),
+    ).toEqual([
+      { name: "push-delivery.v1", worker: PUSH_DELIVERY_QUEUE.worker },
+      {
+        name: "push-delivery.v1",
+        worker: expect.objectContaining({ minPriority: 10 }),
+      },
+      { name: "push-delivery-dead-letter.v1", worker: PUSH_DELIVERY_DEAD_LETTER_QUEUE.worker },
+    ]);
+    expect(PUSH_DELIVERY_QUEUE.worker.minPriority).toBeUndefined();
+    expect(PUSH_DELIVERY_TRANSACTIONAL_QUEUE.deadLetter).toEqual(PUSH_DELIVERY_QUEUE.deadLetter);
   });
 
   it("전용 DLQ worker는 strict delivery publication을 DB recovery use case로 전달한다", async () => {
-    await processor.onModuleInit();
-    const deadLetterWorker = runtime.work.mock.calls.find(
-      ([queue]) => queue === PUSH_DELIVERY_DEAD_LETTER_QUEUE,
-    )?.[1];
+    // Given
+    const units = await setup();
     const publications = [{ dispatchId: 88, publishAttempt: 4 }];
+    await units.jobQueue.enqueue(PUSH_DELIVERY_DEAD_LETTER_QUEUE, {
+      name: PushDeliveryJobName.DELIVER_DISPATCHES,
+      data: publications,
+    });
 
-    await deadLetterWorker?.([
-      {
-        id: "dead-letter-job",
-        name: PUSH_DELIVERY_DEAD_LETTER_QUEUE,
-        data: { name: PushDeliveryJobName.DELIVER_DISPATCHES, data: publications },
-        attempt: 2,
-      },
-    ]);
+    // When
+    await units.jobQueue.drain(PUSH_DELIVERY_DEAD_LETTER_QUEUE);
 
-    expect(recoverFailedDeliveries.execute).toHaveBeenCalledWith({ publications });
-    expect(runtime.work).toHaveBeenCalledWith(
-      PUSH_DELIVERY_DEAD_LETTER_QUEUE,
-      expect.any(Function),
-      PUSH_DELIVERY_DEAD_LETTER_WORKER_POLICY,
-    );
+    // Then
+    expect(units.recoverFailedDeliveries.execute).toHaveBeenCalledWith({ publications });
   });
 
-  it("runtime의 실제 JobEnvelope.id를 delivery fencing ID로 전달한다", async () => {
-    // Given - 등록된 worker와 pg-boss가 전달한 실제 job envelope
-    await processor.onModuleInit();
-    const worker = runtime.work.mock.calls[0]?.[1];
+  it("큐의 실제 JobEnvelope.id와 attempt를 delivery fencing으로 전달한다", async () => {
+    // Given
+    const units = await setup();
+    const transactionalWorker = units.jobQueue.workers[1];
     const publications = [{ dispatchId: 31, publishAttempt: 5 }];
-    expect(worker).toBeDefined();
 
-    // When - runtime worker가 job을 처리
-    await worker?.([
+    // When
+    await transactionalWorker?.handler([
       {
         id: "pg-boss-job-7f9c",
-        name: PUSH_DELIVERY_QUEUE,
+        name: PUSH_DELIVERY_QUEUE.name,
         data: { name: PushDeliveryJobName.DELIVER_DISPATCHES, data: publications },
         attempt: 3,
       },
     ]);
 
-    // Then - transport에서 새 ID를 만들지 않고 실제 envelope ID와 generation을 전달
-    expect(deliverPushNotifications.execute).toHaveBeenCalledWith({
+    // Then
+    expect(units.deliverPushNotifications.execute).toHaveBeenCalledWith({
       processingJobId: "pg-boss-job-7f9c",
       processingJobAttempt: 3,
       publications,
@@ -95,26 +114,39 @@ describe("PushDeliveryQueueProcessor — 영속 Push 큐 라우팅", () => {
   });
 
   it("relay job은 delivery use case와 분리해 outbox relay로 라우팅한다", async () => {
-    // Given - strict relay payload
-    const relayJob = { name: PushDeliveryJobName.RELAY_OUTBOX, data: {} };
+    // Given
+    const units = await setup();
+    await units.jobQueue.enqueue(PUSH_DELIVERY_QUEUE, {
+      name: PushDeliveryJobName.RELAY_OUTBOX,
+      data: {},
+    });
 
-    // When - relay job 처리
-    await processor.process("relay-job-1", 1, relayJob);
+    // When
+    await units.jobQueue.drain(PUSH_DELIVERY_QUEUE);
 
-    // Then - relay 책임만 실행
-    expect(relayOutbox.execute).toHaveBeenCalledWith();
-    expect(deliverPushNotifications.execute).not.toHaveBeenCalled();
+    // Then
+    expect(units.relayOutbox.execute).toHaveBeenCalledWith();
+    expect(units.deliverPushNotifications.execute).not.toHaveBeenCalled();
   });
 
   it("retryLimit 이후 마지막 attempt를 outbox reopen 신호로 전달한다", async () => {
+    // Given
+    const units = await setup();
+    const worker = units.jobQueue.workers[0];
     const publications = [{ dispatchId: 32, publishAttempt: 6 }];
 
-    await processor.process("final-job", 6, {
-      name: PushDeliveryJobName.DELIVER_DISPATCHES,
-      data: publications,
-    });
+    // When
+    await worker?.handler([
+      {
+        id: "final-job",
+        name: PUSH_DELIVERY_QUEUE.name,
+        data: { name: PushDeliveryJobName.DELIVER_DISPATCHES, data: publications },
+        attempt: 6,
+      },
+    ]);
 
-    expect(deliverPushNotifications.execute).toHaveBeenCalledWith({
+    // Then
+    expect(units.deliverPushNotifications.execute).toHaveBeenCalledWith({
       processingJobId: "final-job",
       processingJobAttempt: 6,
       publications,

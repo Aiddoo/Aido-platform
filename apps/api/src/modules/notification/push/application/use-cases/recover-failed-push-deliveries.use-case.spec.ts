@@ -1,5 +1,6 @@
 import { mockDeep } from "vitest-mock-extended";
 
+import { DateClock } from "#test/doubles/platform/date-clock";
 import { createUnitOfWorkMock } from "#test/mocks/ports/index";
 
 import { RecoverFailedPushDeliveriesUseCase } from "./recover-failed-push-deliveries.use-case.js";
@@ -10,6 +11,7 @@ describe("RecoverFailedPushDeliveriesUseCase", () => {
       ConstructorParameters<typeof RecoverFailedPushDeliveriesUseCase>[0]
     >({
       unitOfWork: createUnitOfWorkMock(),
+      clock: new DateClock(),
     });
     recoverFailedPushDeliveriesDependencies.lifecycle.reopenFailedPublications.mockResolvedValue(1);
     const unit = new RecoverFailedPushDeliveriesUseCase(recoverFailedPushDeliveriesDependencies);

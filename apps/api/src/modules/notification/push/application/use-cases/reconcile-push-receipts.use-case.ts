@@ -1,7 +1,9 @@
 import { uniq } from "es-toolkit";
 
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
-import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
+import type { ClockPort } from "#api/shared/application/ports/clock.port";
+import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
+import { instantToDate } from "#api/shared/domain/time/instant";
 
 import type { NotificationCachePort } from "../../../inbox/application/ports/notification-cache.port.js";
 import {
@@ -9,7 +11,7 @@ import {
   pushReceiptCheckWindow,
 } from "../../domain/push-receipt.domain-service.js";
 import { NotificationDeliveryLogEvent } from "../notification-delivery.log-events.js";
-import type { PushProvider } from "../ports/push-provider.port.js";
+import type { PushProviderPort } from "../ports/push-provider.port.js";
 import type {
   InvalidPushToken,
   PushReceiptRepositoryPort,
@@ -22,13 +24,14 @@ interface ReconcilePushReceiptsDependencies {
     "expireUnreceipted" | "findPendingTicketIds" | "recordPushReceipts"
   >;
   readonly pushTokenRepository: Pick<PushTokenRepositoryPort, "deactivateInvalidTokens">;
-  readonly pushProvider: Pick<PushProvider, "getReceipts">;
+  readonly pushProvider: Pick<PushProviderPort, "getReceipts">;
   readonly cache: Pick<NotificationCachePort, "invalidatePushTokens">;
   readonly unitOfWork: Pick<UnitOfWorkPort, "run">;
+  readonly clock: ClockPort;
   readonly logger: Pick<ApplicationLoggerPort, "log" | "warn">;
 }
 
-/** 실행 예산 안에서 확인할 ticket이 남지 않을 때까지 receipt를 이어서 반영한다. */
+// 실행 예산 안에서 확인할 ticket이 남지 않을 때까지 receipt를 이어서 반영한다
 export class ReconcilePushReceiptsUseCase {
   readonly #dependencies: ReconcilePushReceiptsDependencies;
 
@@ -37,17 +40,17 @@ export class ReconcilePushReceiptsUseCase {
   }
 
   async execute(): Promise<void> {
-    const startedAt = Date.now();
+    const startedAt = this.#dependencies.clock.now();
     const expired = await this.#dependencies.unitOfWork.run(() =>
       this.#dependencies.pushReceiptRepository.expireUnreceipted(
-        pushReceiptCheckWindow(new Date(startedAt)).acceptedAfter,
+        pushReceiptCheckWindow(instantToDate(startedAt)).acceptedAfter,
         PUSH_RECEIPT_POLICY.expireBatchSize,
       ),
     );
     const totals = { requested: 0, received: 0, invalidCount: 0, batches: 0 };
     for (;;) {
       const ticketIds = await this.#dependencies.pushReceiptRepository.findPendingTicketIds(
-        pushReceiptCheckWindow(new Date()),
+        pushReceiptCheckWindow(this.#now()),
         PUSH_RECEIPT_POLICY.batchSize,
       );
       if (ticketIds.length === 0) {
@@ -59,7 +62,8 @@ export class ReconcilePushReceiptsUseCase {
       totals.received += received.received;
       totals.invalidCount += received.invalidCount;
       const hasMore = ticketIds.length === PUSH_RECEIPT_POLICY.batchSize;
-      if (!hasMore || Date.now() - startedAt >= PUSH_RECEIPT_POLICY.runBudgetMs) {
+      const elapsedMs = this.#dependencies.clock.now().since(startedAt).total("milliseconds");
+      if (!hasMore || elapsedMs >= PUSH_RECEIPT_POLICY.runBudgetMs) {
         break;
       }
     }
@@ -79,17 +83,22 @@ export class ReconcilePushReceiptsUseCase {
       const invalid = await this.#dependencies.pushReceiptRepository.recordPushReceipts({
         requestedTicketIds: ticketIds,
         results: receipts,
-        checkedAt: new Date(),
+        checkedAt: this.#now(),
       });
       if (invalid.length > 0) {
         await this.#dependencies.pushTokenRepository.deactivateInvalidTokens(
           invalid.map(({ token }) => token),
+          this.#dependencies.clock.now(),
         );
       }
       return invalid;
     });
     await this.#settleTokenCache(invalidTokens);
     return { received: receipts.length, invalidCount: invalidTokens.length };
+  }
+
+  #now(): Date {
+    return instantToDate(this.#dependencies.clock.now());
   }
 
   async #settleTokenCache(invalidTokens: readonly InvalidPushToken[]): Promise<void> {

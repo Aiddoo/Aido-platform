@@ -1,6 +1,11 @@
 import { resolveDeliveryTimezone } from "#api/shared/domain/date/utils/timezone";
+import { instantFromDate } from "#api/shared/domain/time/instant";
+import { TimeZone } from "#api/shared/domain/time/time-zone.vo";
 
-import { isNightTime } from "../domain/night-time.domain-service.js";
+import {
+  isWithinQuietHours,
+  PUSH_QUIET_HOURS_WINDOW,
+} from "../domain/quiet-hours.domain-service.js";
 import type { PushQuietHoursReaderPort } from "./ports/push-quiet-hours.reader.port.js";
 import type { UserNotificationSettingsPort } from "./ports/user-notification-settings.port.js";
 
@@ -8,7 +13,7 @@ interface PushQuietHoursReaderDependencies {
   readonly userSettings: Pick<UserNotificationSettingsPort, "getPreferenceRecordsByUserIds">;
 }
 
-/** 발송 경로와 같은 배송 시간대 해석과 야간 판정으로 사용자를 한 번에 고른다. */
+// 발송 경로와 같은 배송 시간대 해석과 야간 판정으로 사용자를 한 번에 고른다
 export class PushQuietHoursReader implements PushQuietHoursReaderPort {
   readonly #dependencies: PushQuietHoursReaderDependencies;
 
@@ -27,8 +32,15 @@ export class PushQuietHoursReader implements PushQuietHoursReaderPort {
     const timezones = new Map(
       preferences.map((preference) => [preference.userId, preference.timezone]),
     );
+    const instant = instantFromDate(at);
     return new Set(
-      userIds.filter((userId) => isNightTime(resolveDeliveryTimezone(timezones.get(userId)), at)),
+      userIds.filter((userId) =>
+        isWithinQuietHours({
+          instant,
+          timeZone: TimeZone.reconstitute(resolveDeliveryTimezone(timezones.get(userId))),
+          window: PUSH_QUIET_HOURS_WINDOW,
+        }),
+      ),
     );
   }
 }

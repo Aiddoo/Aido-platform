@@ -6,28 +6,28 @@ export {
 } from "./push/application/use-cases/publish-notification.use-case.js";
 export {
   CLIENT_APP_VERSION_READER,
-  type ClientAppVersionReaderPort,
+  ClientAppVersionReaderPort,
 } from "./push/application/ports/client-app-version.reader.port.js";
 export {
   NOTIFICATION_RECIPIENT_LOCALE_READER,
-  type NotificationRecipientLocaleReaderPort,
+  NotificationRecipientLocaleReaderPort,
 } from "./push/application/ports/notification-recipient-locale.reader.port.js";
 export {
   PUSH_CAMPAIGN_OUTCOME_READER,
   type PushCampaignOutcome,
-  type PushCampaignOutcomeReaderPort,
+  PushCampaignOutcomeReaderPort,
 } from "./push/application/ports/push-campaign-outcome.reader.port.js";
 export {
   SESSION_PUSH_DEVICE_RELEASE,
-  type SessionPushDeviceReleasePort,
+  SessionPushDeviceReleasePort,
 } from "./push/application/ports/session-push-device-release.port.js";
 export {
   NOTIFICATION_RECIPIENT_TIMEZONE_READER,
-  type NotificationRecipientTimezoneReaderPort,
+  NotificationRecipientTimezoneReaderPort,
 } from "./push/application/ports/notification-recipient-timezone.reader.port.js";
 export {
   PUSH_QUIET_HOURS_READER,
-  type PushQuietHoursReaderPort,
+  PushQuietHoursReaderPort,
 } from "./push/application/ports/push-quiet-hours.reader.port.js";
 export {
   DeleteActorNotificationsUseCase,

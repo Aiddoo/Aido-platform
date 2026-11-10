@@ -20,7 +20,7 @@ export class PushTokenBuilder {
   private static idCounter = 0;
 
   private constructor(userId: string) {
-    const now = new Date();
+    const now = Temporal.Now.instant();
     PushTokenBuilder.idCounter += 1;
     this.data = {
       id: PushTokenBuilder.idCounter,
@@ -87,12 +87,12 @@ export class PushTokenBuilder {
     return this;
   }
 
-  withCreatedAt(date: Date): PushTokenBuilder {
+  withCreatedAt(date: Temporal.Instant): PushTokenBuilder {
     this.data.createdAt = date;
     return this;
   }
 
-  withLastUsedAt(date: Date): PushTokenBuilder {
+  withLastUsedAt(date: Temporal.Instant): PushTokenBuilder {
     this.data.lastUsedAt = date;
     return this;
   }

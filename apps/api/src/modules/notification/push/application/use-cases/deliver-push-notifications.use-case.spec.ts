@@ -9,6 +9,8 @@ import { vi } from "vitest";
 import type { Mocked } from "vitest";
 import { mockDeep } from "vitest-mock-extended";
 
+import { DateClock } from "#test/doubles/platform/date-clock";
+
 import type { CreateNotificationData } from "../../../inbox/application/ports/notification-draft.port.js";
 import { InMemoryPushRateLimiterAdapter } from "../../infrastructure/adapters/in-memory-push-rate-limiter.adapter.js";
 import {
@@ -203,6 +205,7 @@ describe("DeliverPushNotificationsUseCase — 저장된 Push 발송 처리", () 
         }),
       },
       unitOfWork: { run },
+      clock: new DateClock(),
     });
     const unit = new DeliverPushNotificationsUseCase(deliverPushNotificationsDependencies);
 

@@ -1,70 +1,72 @@
-import { Inject, Injectable, type OnModuleInit, Optional } from "@nestjs/common";
+import { Inject, Injectable, type OnModuleInit } from "@nestjs/common";
 import { match } from "ts-pattern";
+import type { z } from "zod";
 
-import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/index";
+import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
+import type { JobEnvelope } from "#api/shared/application/ports/job-runtime.port";
 
 import { DeliverPushNotificationsUseCase } from "../../application/use-cases/deliver-push-notifications.use-case.js";
 import { RecoverFailedPushDeliveriesUseCase } from "../../application/use-cases/recover-failed-push-deliveries.use-case.js";
 import { RelayPushDeliveryOutboxUseCase } from "../../application/use-cases/relay-push-delivery-outbox.use-case.js";
 import {
-  PUSH_DELIVERY_QUEUE,
   PUSH_DELIVERY_DEAD_LETTER_QUEUE,
-  PUSH_DELIVERY_DEAD_LETTER_WORKER_POLICY,
-  PUSH_DELIVERY_JOB_POLICY,
-  PUSH_DELIVERY_WORKER_POLICY,
-  PushDeliveryJobName,
+  PUSH_DELIVERY_QUEUE,
+  PUSH_DELIVERY_TRANSACTIONAL_QUEUE,
   PushDeliveryDeadLetterJobSchema,
+  PushDeliveryJobName,
   PushDeliveryRuntimeJobSchema,
-} from "./push-delivery-queue.constants.js";
+} from "./push-delivery.queue.js";
 
-/** Queue transport parser/router. Delivery policy and state transitions remain in application. */
+type PushDeliveryJob = z.output<typeof PushDeliveryRuntimeJobSchema>;
+type PushDeliveryDeadLetterJob = z.output<typeof PushDeliveryDeadLetterJobSchema>;
+
+// 큐 입력을 UseCase로 나누기만 한다. 발송 정책과 상태 전이는 application에 있다
 @Injectable()
 export class PushDeliveryQueueProcessor implements OnModuleInit {
-  readonly #relayOutbox: RelayPushDeliveryOutboxUseCase;
-  readonly #deliverPushNotifications: DeliverPushNotificationsUseCase;
-  readonly #recoverFailedDeliveries: RecoverFailedPushDeliveriesUseCase;
-  readonly #runtime: JobRuntimePort | undefined;
+  readonly #relayOutbox: Pick<RelayPushDeliveryOutboxUseCase, "execute">;
+  readonly #deliverPushNotifications: Pick<DeliverPushNotificationsUseCase, "execute">;
+  readonly #recoverFailedDeliveries: Pick<RecoverFailedPushDeliveriesUseCase, "execute">;
+  readonly #jobQueue: JobQueuePort;
 
   constructor(
-    relayOutbox: RelayPushDeliveryOutboxUseCase,
-    deliverPushNotifications: DeliverPushNotificationsUseCase,
-    recoverFailedDeliveries: RecoverFailedPushDeliveriesUseCase,
-    @Optional()
-    @Inject(JOB_RUNTIME)
-    runtime?: JobRuntimePort,
+    @Inject(RelayPushDeliveryOutboxUseCase) relayOutbox: Pick<
+      RelayPushDeliveryOutboxUseCase,
+      "execute"
+    >,
+    @Inject(DeliverPushNotificationsUseCase) deliverPushNotifications: Pick<
+      DeliverPushNotificationsUseCase,
+      "execute"
+    >,
+    @Inject(RecoverFailedPushDeliveriesUseCase) recoverFailedDeliveries: Pick<
+      RecoverFailedPushDeliveriesUseCase,
+      "execute"
+    >,
+    jobQueue: JobQueuePort,
   ) {
     this.#relayOutbox = relayOutbox;
     this.#deliverPushNotifications = deliverPushNotifications;
     this.#recoverFailedDeliveries = recoverFailedDeliveries;
-    this.#runtime = runtime;
+    this.#jobQueue = jobQueue;
   }
 
   async onModuleInit(): Promise<void> {
-    if (!this.#runtime) {
-      return;
-    }
-    await this.#runtime.work(
-      PUSH_DELIVERY_QUEUE,
-      async (jobs) => {
-        for (const job of jobs) {
-          await this.process(job.id, job.attempt, job.data);
-        }
-      },
-      PUSH_DELIVERY_WORKER_POLICY,
-    );
-    await this.#runtime.work(
-      PUSH_DELIVERY_DEAD_LETTER_QUEUE,
-      async (jobs) => {
-        for (const job of jobs) {
-          await this.processDeadLetter(job.data);
-        }
-      },
-      PUSH_DELIVERY_DEAD_LETTER_WORKER_POLICY,
-    );
+    const handleDeliveries = async (
+      jobs: readonly JobEnvelope<PushDeliveryJob>[],
+    ): Promise<void> => {
+      for (const job of jobs) {
+        await this.process(job.id, job.attempt, job.data);
+      }
+    };
+    await this.#jobQueue.work(PUSH_DELIVERY_QUEUE, handleDeliveries);
+    await this.#jobQueue.work(PUSH_DELIVERY_TRANSACTIONAL_QUEUE, handleDeliveries);
+    await this.#jobQueue.work(PUSH_DELIVERY_DEAD_LETTER_QUEUE, async (jobs) => {
+      for (const job of jobs) {
+        await this.processDeadLetter(job.data);
+      }
+    });
   }
 
-  async process(processingJobId: string, jobAttempt: number, untrustedJob: unknown): Promise<void> {
-    const job = PushDeliveryRuntimeJobSchema.parse(untrustedJob);
+  async process(processingJobId: string, jobAttempt: number, job: PushDeliveryJob): Promise<void> {
     return match(job)
       .with({ name: PushDeliveryJobName.RELAY_OUTBOX }, () => this.#relayOutbox.execute())
       .with({ name: PushDeliveryJobName.DELIVER_DISPATCHES }, ({ data }) =>
@@ -72,15 +74,14 @@ export class PushDeliveryQueueProcessor implements OnModuleInit {
           processingJobId,
           processingJobAttempt: jobAttempt,
           publications: data,
-          // JobRuntime은 pg-boss의 attempt를 1-based로 정규화한다.
-          isFinalAttempt: jobAttempt > PUSH_DELIVERY_JOB_POLICY.retryLimit,
+          // JobQueuePort는 pg-boss의 attempt를 1부터 센다
+          isFinalAttempt: jobAttempt > PUSH_DELIVERY_QUEUE.retry.retryLimit,
         }),
       )
       .exhaustive();
   }
 
-  async processDeadLetter(untrustedJob: unknown): Promise<void> {
-    const job = PushDeliveryDeadLetterJobSchema.parse(untrustedJob);
+  async processDeadLetter(job: PushDeliveryDeadLetterJob): Promise<void> {
     await this.#recoverFailedDeliveries.execute({ publications: job.data });
   }
 }

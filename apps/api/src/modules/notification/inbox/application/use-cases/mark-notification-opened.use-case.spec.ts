@@ -1,50 +1,80 @@
-import type { Mocked } from "vitest";
-import { mockDeep } from "vitest-mock-extended";
+import { NotificationBuilder } from "#test/builders/index";
+import { InMemoryNotificationRepository } from "#test/doubles/notification/in-memory-notification.repository";
+import { PassThroughNotificationCache } from "#test/doubles/notification/pass-through-notification-cache";
+import { FixedClock } from "#test/doubles/platform/fixed-clock";
+import { SilentLogger } from "#test/doubles/platform/silent-logger";
 
-import { createNotificationCacheMock } from "#test/mocks/ports/notification-cache.mock";
-import { createNotificationRepositoryMock } from "#test/mocks/ports/notification.mock";
+import {
+  type MarkNotificationOpenedDependencies,
+  MarkNotificationOpenedUseCase,
+} from "./mark-notification-opened.use-case.js";
 
-import { MarkNotificationOpenedUseCase } from "./mark-notification-opened.use-case.js";
+const USER_ID = "user-1";
+const NOW = Temporal.Instant.from("2026-11-10T09:00:00Z");
 
-describe("MarkNotificationOpenedUseCase", () => {
-  let useCase: MarkNotificationOpenedUseCase;
-  let repository: Mocked<
-    ConstructorParameters<typeof MarkNotificationOpenedUseCase>[0]["notificationRepository"]
-  >;
-  let cache: Mocked<ConstructorParameters<typeof MarkNotificationOpenedUseCase>[0]["cache"]>;
-
-  const mockUserId = "user-1";
-  const mockNotificationId = 42;
-
-  beforeEach(async () => {
-    const markNotificationOpenedDependencies = mockDeep<
-      ConstructorParameters<typeof MarkNotificationOpenedUseCase>[0]
-    >({
-      notificationRepository: createNotificationRepositoryMock(),
-      cache: createNotificationCacheMock(),
-    });
-    const unit = new MarkNotificationOpenedUseCase(markNotificationOpenedDependencies);
-    useCase = unit;
-    repository = markNotificationOpenedDependencies.notificationRepository;
-    cache = markNotificationOpenedDependencies.cache;
+function createMarkNotificationOpenedUseCase(
+  overrides: Partial<MarkNotificationOpenedDependencies> = {},
+) {
+  return new MarkNotificationOpenedUseCase({
+    notificationRepository: new InMemoryNotificationRepository(),
+    cache: new PassThroughNotificationCache(),
+    clock: new FixedClock(NOW),
+    logger: new SilentLogger(),
+    ...overrides,
   });
+}
 
-  it("열림 기록에 성공하면 미읽음 카운트를 무효화하고 true를 반환한다", async () => {
-    repository.markAsOpened.mockResolvedValue(true);
+describe("MarkNotificationOpenedUseCase — 푸시 열기 기록", () => {
+  it("처음 열면 열린 시각과 읽음을 기록하고 미읽음 캐시를 비운 뒤 true를 준다", async () => {
+    // Given
+    const notification = NotificationBuilder.create(USER_ID).withId(42).asUnread().build();
+    const notificationRepository = new InMemoryNotificationRepository([notification]);
+    const cache = new PassThroughNotificationCache();
+    const useCase = createMarkNotificationOpenedUseCase({ notificationRepository, cache });
 
-    const result = await useCase.execute(mockUserId, mockNotificationId);
+    // When
+    const result = await useCase.execute({ userId: USER_ID, notificationId: 42 });
 
+    // Then
+    const openedAt = new Date(NOW.epochMilliseconds);
     expect(result).toBe(true);
-    expect(repository.markAsOpened).toHaveBeenCalledWith(mockNotificationId, mockUserId);
-    expect(cache.invalidateUnreadCount).toHaveBeenCalledWith(mockUserId);
+    expect(notificationRepository.rowOf(42)).toMatchObject({
+      openedAt,
+      isRead: true,
+      readAt: openedAt,
+    });
+    expect(cache.invalidatedUnreadCountUserIds).toEqual([USER_ID]);
   });
 
-  it("열림 기록이 없으면(이미 열림/타 사용자/부재) 캐시를 무효화하지 않고 false를 반환한다", async () => {
-    repository.markAsOpened.mockResolvedValue(false);
+  it.each([
+    ["이미 연 알림", NotificationBuilder.create(USER_ID).withId(42).build(), true],
+    ["남의 알림", NotificationBuilder.create("other-user").withId(42).build(), false],
+  ])("%s은 캐시를 두고 false를 준다", async (_case, notification, isOpened) => {
+    // Given
+    const row = isOpened
+      ? { ...notification, openedAt: new Date("2026-11-01T00:00:00Z") }
+      : notification;
+    const notificationRepository = new InMemoryNotificationRepository([row]);
+    const cache = new PassThroughNotificationCache();
+    const useCase = createMarkNotificationOpenedUseCase({ notificationRepository, cache });
 
-    const result = await useCase.execute(mockUserId, mockNotificationId);
+    // When
+    const result = await useCase.execute({ userId: USER_ID, notificationId: 42 });
 
+    // Then
     expect(result).toBe(false);
-    expect(cache.invalidateUnreadCount).not.toHaveBeenCalled();
+    expect(notificationRepository.rowOf(42)).toEqual(row);
+    expect(cache.invalidatedUnreadCountUserIds).toEqual([]);
+  });
+
+  it("없는 알림도 오류 없이 false를 준다", async () => {
+    // Given
+    const useCase = createMarkNotificationOpenedUseCase();
+
+    // When
+    const result = await useCase.execute({ userId: USER_ID, notificationId: 999 });
+
+    // Then
+    expect(result).toBe(false);
   });
 });

@@ -1,18 +1,24 @@
 import { uniq } from "es-toolkit";
 
-import { now } from "#api/shared/domain/date/utils/core";
+import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import {
   localDateInTimezone,
   resolveDeliveryTimezone,
+  resolveTimezone,
 } from "#api/shared/domain/date/utils/timezone";
+import { instantToDate } from "#api/shared/domain/time/instant";
+import { TimeZone } from "#api/shared/domain/time/time-zone.vo";
 
 import type { CreateNotificationData } from "../../../inbox/application/ports/notification-draft.port.js";
-import { isNightTime } from "../../domain/night-time.domain-service.js";
 import {
   isAutomatedEngagementNotification,
   isMarketingNotification,
   isNightExemptNotification,
 } from "../../domain/push-eligibility.domain-service.js";
+import {
+  isWithinQuietHours,
+  PUSH_QUIET_HOURS_WINDOW,
+} from "../../domain/quiet-hours.domain-service.js";
 import { type NotificationRecipientPreferenceReaderPort } from "../ports/notification-recipient-preference.reader.port.js";
 import {
   type PushRateLimitRequest,
@@ -56,7 +62,6 @@ interface PushDeliveryCandidate {
   readonly rateLimitDispatchId: number;
 }
 
-/** 푸시 수신 설정·동의·야간 시간·빈도 제한 판단을 한곳에서 수행한다. */
 interface PushDeliveryEligibilityServiceDependencies {
   readonly userSettings: Pick<
     UserNotificationSettingsPort,
@@ -70,7 +75,10 @@ interface PushDeliveryEligibilityServiceDependencies {
     NotificationRecipientPreferenceReaderPort,
     "getPreference"
   >;
+  readonly clock: ClockPort;
 }
+
+// 푸시 수신 설정·동의·야간 시간·빈도 제한 판단을 한곳에서 한다
 
 export class EvaluatePushDeliveryEligibilityUseCase {
   readonly #dependencies: PushDeliveryEligibilityServiceDependencies;
@@ -86,7 +94,7 @@ export class EvaluatePushDeliveryEligibilityUseCase {
       userId,
       preference,
       timezone,
-      localDate: localDateInTimezone(now(), timezone),
+      localDate: localDateInTimezone(this.#now(), timezone),
     };
   }
 
@@ -114,7 +122,7 @@ export class EvaluatePushDeliveryEligibilityUseCase {
             preference,
             consent: consentByUserId.get(userId),
             timezone,
-            localDate: localDateInTimezone(now(), timezone),
+            localDate: localDateInTimezone(this.#now(), timezone),
           },
         ];
       }),
@@ -147,12 +155,12 @@ export class EvaluatePushDeliveryEligibilityUseCase {
       data.purpose === "ENGAGEMENT" || isAutomatedEngagementNotification(data.type);
     const isMarketing = data.purpose === "ENGAGEMENT" || isMarketingNotification(data.type);
 
-    if (isNightTime(recipient.timezone) && isMarketing) {
+    if (this.#isQuietHours(recipient.timezone) && isMarketing) {
       return this.#skipped(data, "MARKETING_QUIET_HOURS");
     }
 
     if (
-      isNightTime(recipient.timezone) &&
+      this.#isQuietHours(recipient.timezone) &&
       !preference.nightPushEnabled &&
       !isNightExemptNotification(data.type)
     ) {
@@ -230,11 +238,11 @@ export class EvaluatePushDeliveryEligibilityUseCase {
     }
 
     const isMarketing = data.purpose === "ENGAGEMENT" || isMarketingNotification(data.type);
-    if (isNightTime(recipient.timezone) && isMarketing) {
+    if (this.#isQuietHours(recipient.timezone) && isMarketing) {
       return "MARKETING_QUIET_HOURS";
     }
     if (
-      isNightTime(recipient.timezone) &&
+      this.#isQuietHours(recipient.timezone) &&
       !recipient.preference.nightPushEnabled &&
       !isNightExemptNotification(data.type)
     ) {
@@ -259,9 +267,24 @@ export class EvaluatePushDeliveryEligibilityUseCase {
       ...(isEngagement && {
         engagementLocalDate:
           recipient?.localDate ??
-          localDateInTimezone(now(), resolveDeliveryTimezone(recipient?.preference?.timezone)),
+          localDateInTimezone(
+            this.#now(),
+            resolveDeliveryTimezone(recipient?.preference?.timezone),
+          ),
       }),
     };
+  }
+
+  #now(): Date {
+    return instantToDate(this.#dependencies.clock.now());
+  }
+
+  #isQuietHours(timezone: string): boolean {
+    return isWithinQuietHours({
+      instant: this.#dependencies.clock.now(),
+      timeZone: TimeZone.reconstitute(resolveTimezone(timezone)),
+      window: PUSH_QUIET_HOURS_WINDOW,
+    });
   }
 
   #skipped<TCandidate>(

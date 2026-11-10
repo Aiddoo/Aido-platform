@@ -1,4 +1,7 @@
+import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { StubPushTokenCache } from "#test/mocks/stub-push-token-cache";
+
+const NOW = Temporal.Instant.from("2026-11-10T03:00:00.000Z");
 
 import { PUSH_RECEIPT_POLICY } from "../../domain/push-receipt.domain-service.js";
 import type { PushReceiptResult } from "../ports/push-provider.port.js";
@@ -69,6 +72,7 @@ function setup(options: { readonly deactivate?: () => Promise<{ count: number }>
         }
       },
     },
+    clock: new FixedClock(NOW),
     logger: { log: (entry) => logs.push(entry), warn: (entry) => logs.push(entry) },
   });
   return { useCase, repository, cache, deactivated, transactionEvents, logs };
@@ -79,10 +83,6 @@ function ticketIds(count: number): string[] {
 }
 
 describe("ReconcilePushReceiptsUseCase — receipt 반영", () => {
-  afterEach(() => {
-    vi.useRealTimers();
-  });
-
   it("한 실행 안에서 남은 ticket을 배치 단위로 모두 반영한다", async () => {
     // Given: 한 배치보다 많은 ticket이 밀려 있다
     const { useCase, repository, logs } = setup();
@@ -106,11 +106,11 @@ describe("ReconcilePushReceiptsUseCase — receipt 반영", () => {
 
   it("실행 예산을 넘기면 남은 ticket은 다음 실행에 맡긴다", async () => {
     // Given
-    vi.useFakeTimers({ toFake: ["Date"] });
+    const clock = new FixedClock(NOW);
     const repository = new StubReceiptRepository();
     repository.pendingTicketIds = ticketIds(PUSH_RECEIPT_POLICY.batchSize * 3);
     const getReceipts = vi.fn(async (ids: readonly string[]) => {
-      vi.setSystemTime(Date.now() + PUSH_RECEIPT_POLICY.runBudgetMs);
+      clock.advanceBy({ milliseconds: PUSH_RECEIPT_POLICY.runBudgetMs });
       return ids.map((ticketId) => ({ ticketId, status: "delivered" as const }));
     });
     const budgeted = new ReconcilePushReceiptsUseCase({
@@ -119,6 +119,7 @@ describe("ReconcilePushReceiptsUseCase — receipt 반영", () => {
       pushProvider: { getReceipts },
       cache: new StubPushTokenCache(),
       unitOfWork: { run: (work) => work() },
+      clock,
       logger: { log: () => undefined, warn: () => undefined },
     });
 

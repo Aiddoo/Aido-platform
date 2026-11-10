@@ -45,6 +45,7 @@ describe("사용자 앱 버전 조회 (실제 PostgreSQL)", () => {
       platform: "IOS",
       isActive,
       appVersion,
+      updatedAt: Temporal.Now.instant(),
     });
   }
 

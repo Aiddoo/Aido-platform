@@ -70,7 +70,8 @@ describe("CachedNotificationRecipientPreferenceAdapter - 수신자 언어와 공
   it.each([
     ["ko", "ko"],
     ["en", "en"],
-    ["fr", "ko"],
+    // 지원하지 않는 언어는 앱처럼 영어로 보낸다
+    ["fr", "en"],
   ])("저장 언어 %s를 지원 언어 %s로 읽는다", async (storedLocale, expectedLocale) => {
     // Given
     const fixture = createFixture();

@@ -10,12 +10,12 @@
 
 ## 발송 우선순위
 
-| pg-boss 기능                       | 쓰는 곳                                  |
-| ---------------------------------- | ---------------------------------------- |
-| `priority`                         | 거래성(리마인더·소셜) `10`, 마케팅 `0`   |
-| `minPriority: 10` 전용 worker      | 대량 마케팅이 리마인더를 밀어내지 않는다 |
-| `batchSize` + `burstWhenBatchFull` | 밀린 작업을 폴링 지연 없이 처리          |
-| `group` + `groupConcurrency`       | 캠페인 하나가 worker를 독점하지 않는다   |
+| pg-boss 기능                       | 쓰는 곳                                                                                                                                                                         |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `priority`                         | `push-delivery.v1` 작업 하나는 한 차선만 담는다. 거래성(리마인더·소셜·결제·시스템) `10`, 마케팅(`purpose=ENGAGEMENT`·마케팅 타입·관리자 브로드캐스트) `0`(`pushDeliveryLaneOf`) |
+| `minPriority: 10` 전용 worker      | 대량 마케팅이 리마인더를 밀어내지 않는다                                                                                                                                        |
+| `batchSize` + `burstWhenBatchFull` | 밀린 작업을 폴링 지연 없이 처리                                                                                                                                                 |
+| `group` + `groupConcurrency`       | 캠페인 하나가 worker를 독점하지 않는다                                                                                                                                          |
 
 Nest 공식 큐 문서의 BullMQ는 Redis가 필요해 쓰지 않는다. pg-boss Nest 래퍼는 데코레이터가 pg-boss에 묶여 교체성을 해치므로 쓰지 않고 `JobQueuePort` + `defineQueue`를 쓴다([작업과 이벤트](jobs-and-events.md)).
 

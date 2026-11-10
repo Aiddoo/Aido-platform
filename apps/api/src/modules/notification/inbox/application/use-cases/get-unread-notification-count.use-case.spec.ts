@@ -1,66 +1,65 @@
-import type { Mocked } from "vitest";
-import { mockDeep } from "vitest-mock-extended";
-
-import { createNotificationCacheMock } from "#test/mocks/ports/index";
+import { NotificationBuilder } from "#test/builders/index";
+import { InMemoryNotificationRepository } from "#test/doubles/notification/in-memory-notification.repository";
+import { PassThroughNotificationCache } from "#test/doubles/notification/pass-through-notification-cache";
 
 import { GetUnreadNotificationCountUseCase } from "./get-unread-notification-count.use-case.js";
 
-describe("GetUnreadNotificationCountUseCase", () => {
-  let useCase: GetUnreadNotificationCountUseCase;
-  let notificationRepo: Mocked<
-    ConstructorParameters<typeof GetUnreadNotificationCountUseCase>[0]["notificationInboxReader"]
-  >;
-  let cache: Mocked<ConstructorParameters<typeof GetUnreadNotificationCountUseCase>[0]["cache"]>;
+const USER_ID = "user-1";
 
-  const mockUserId = "user-1";
+function seedNotifications() {
+  return [
+    NotificationBuilder.create(USER_ID).withId(1).withType("NUDGE_RECEIVED").build(),
+    NotificationBuilder.create(USER_ID).withId(2).withType("NUDGE_REPLIED").build(),
+    NotificationBuilder.create(USER_ID).withId(3).withType("NUDGE_THANKED").build(),
+    NotificationBuilder.create(USER_ID).withId(4).asRead().build(),
+    NotificationBuilder.create("other-user").withId(5).build(),
+  ];
+}
 
-  beforeEach(async () => {
-    const getUnreadCountDependencies = mockDeep<
-      ConstructorParameters<typeof GetUnreadNotificationCountUseCase>[0]
-    >({
-      cache: createNotificationCacheMock(),
-    });
-    const unit = new GetUnreadNotificationCountUseCase(getUnreadCountDependencies);
-    useCase = unit;
-    notificationRepo = getUnreadCountDependencies.notificationInboxReader;
-    cache = getUnreadCountDependencies.cache;
-
-    cache.wrapUnreadCount.mockImplementation((_userId, factory) => factory());
-  });
-
-  it("캐시를 통해 읽지 않은 알림 수를 반환해야 한다", async () => {
-    notificationRepo.countUnread.mockResolvedValue(5);
-
-    const result = await useCase.execute(mockUserId);
-
-    expect(cache.wrapUnreadCount).toHaveBeenCalledWith(mockUserId, expect.any(Function), "legacy");
-    expect(result).toBe(5);
-  });
-
-  it("최신 앱의 미읽음 수는 기존 앱과 분리된 캐시에서 모든 알림을 센다", async () => {
+describe("GetUnreadNotificationCountUseCase — 미읽음 알림 수", () => {
+  it("버전을 보내지 않은 앱은 legacy 캐시 범위에서 답장·감사 알림을 빼고 센다", async () => {
     // Given
-    notificationRepo.countUnread.mockResolvedValue(7);
+    const cache = new PassThroughNotificationCache();
+    const useCase = new GetUnreadNotificationCountUseCase({
+      notificationInboxReader: new InMemoryNotificationRepository(seedNotifications()),
+      cache,
+    });
 
     // When
-    const result = await useCase.execute(mockUserId, "1.13.0");
+    const result = await useCase.execute({ userId: USER_ID });
 
     // Then
-    expect(cache.wrapUnreadCount).toHaveBeenCalledWith(mockUserId, expect.any(Function), "all");
-    expect(notificationRepo.countUnread).toHaveBeenCalledWith(mockUserId, undefined);
-    expect(result).toBe(7);
+    expect(result).toBe(1);
+    expect(cache.readScopes).toEqual(["legacy"]);
+  });
+
+  it("최신 앱은 기존 앱과 분리된 캐시 범위에서 모든 미읽음 알림을 센다", async () => {
+    // Given
+    const cache = new PassThroughNotificationCache();
+    const useCase = new GetUnreadNotificationCountUseCase({
+      notificationInboxReader: new InMemoryNotificationRepository(seedNotifications()),
+      cache,
+    });
+
+    // When
+    const result = await useCase.execute({ userId: USER_ID, appVersion: "1.13.0" });
+
+    // Then
+    expect(result).toBe(3);
+    expect(cache.readScopes).toEqual(["all"]);
   });
 
   it("기존 앱의 미읽음 수에는 답장·감사 알림을 포함하지 않는다", async () => {
     // Given
-    notificationRepo.countUnread.mockResolvedValue(3);
+    const useCase = new GetUnreadNotificationCountUseCase({
+      notificationInboxReader: new InMemoryNotificationRepository(seedNotifications()),
+      cache: new PassThroughNotificationCache(),
+    });
 
     // When
-    await useCase.execute(mockUserId, "1.10.1");
+    const result = await useCase.execute({ userId: USER_ID, appVersion: "1.10.1" });
 
     // Then
-    const types = notificationRepo.countUnread.mock.calls[0]?.[1];
-    expect(types).toContain("NUDGE_RECEIVED");
-    expect(types).not.toContain("NUDGE_REPLIED");
-    expect(types).not.toContain("NUDGE_THANKED");
+    expect(result).toBe(1);
   });
 });

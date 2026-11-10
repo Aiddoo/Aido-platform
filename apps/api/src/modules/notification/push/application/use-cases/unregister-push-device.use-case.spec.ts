@@ -1,3 +1,4 @@
+import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { PushDeviceReportFixture } from "#test/fixtures/index";
 import { InMemoryPushDeviceStore } from "#test/mocks/in-memory-push-device.store";
 import { createUnitOfWorkMock } from "#test/mocks/ports/index";
@@ -23,6 +24,7 @@ async function setup() {
       invalidatePushTokens: async () => undefined,
       invalidateUserPreference: async () => undefined,
     },
+    clock: new FixedClock(Temporal.Instant.from("2026-11-10T00:00:00.000Z")),
     logger,
   });
   for (const deviceId of ["ios_phone", "android_tablet"]) {

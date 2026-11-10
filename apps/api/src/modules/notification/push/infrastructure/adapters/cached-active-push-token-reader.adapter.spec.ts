@@ -1,6 +1,6 @@
-import { TestBed } from "@suites/unit";
 import type { Mocked } from "vitest";
 
+import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
 import { CacheService } from "#api/platform/cache/cache.service";
 import { PushTokenBuilder } from "#test/builders/index";
 import { createPushTokenRepositoryMock } from "#test/mocks/ports/notification.mock";
@@ -9,10 +9,7 @@ import {
   NOTIFICATION_CACHE_TTL_MS,
   NotificationCacheKey,
 } from "../../../inbox/infrastructure/cache/notification-cache.keyspace.js";
-import {
-  PUSH_TOKEN_REPOSITORY,
-  type PushTokenRepositoryPort,
-} from "../../application/ports/push-token.repository.port.js";
+import type { PushTokenRepositoryPort } from "../../application/ports/push-token.repository.port.js";
 import { CachedActivePushTokenReaderAdapter } from "./cached-active-push-token-reader.adapter.js";
 
 describe("CachedActivePushTokenReaderAdapter - 활성 푸시 토큰 cache-aside", () => {
@@ -20,17 +17,16 @@ describe("CachedActivePushTokenReaderAdapter - 활성 푸시 토큰 cache-aside"
   let pushTokenRepository: Mocked<PushTokenRepositoryPort>;
   let cacheService: Mocked<CacheService>;
 
-  beforeEach(async () => {
+  beforeEach(() => {
     PushTokenBuilder.resetIdCounter();
 
-    const { unit, unitRef } = await TestBed.solitary(CachedActivePushTokenReaderAdapter)
-      .mock<PushTokenRepositoryPort>(PUSH_TOKEN_REPOSITORY)
-      .impl(() => createPushTokenRepositoryMock())
-      .compile();
-
-    reader = unit;
-    pushTokenRepository = unitRef.get(PUSH_TOKEN_REPOSITORY);
-    cacheService = unitRef.get(CacheService);
+    const cache = new CacheService(new InMemoryCacheStore({ defaultTtlMs: 60_000, maxItems: 100 }));
+    vi.spyOn(cache, "wrap");
+    vi.spyOn(cache, "mget");
+    vi.spyOn(cache, "mset");
+    cacheService = vi.mocked(cache);
+    pushTokenRepository = vi.mocked(createPushTokenRepositoryMock());
+    reader = new CachedActivePushTokenReaderAdapter(pushTokenRepository, cacheService);
   });
 
   it("단건 캐시 미스는 활성 토큰만 저장소에서 읽는 loader를 실행한다", async () => {

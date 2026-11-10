@@ -1,34 +1,43 @@
-import { mockDeep } from "vitest-mock-extended";
-
-import {
-  createNotificationCacheMock,
-  createNotificationRepositoryMock,
-} from "#test/mocks/ports/index";
+import { NotificationBuilder } from "#test/builders/index";
+import { InMemoryNotificationRepository } from "#test/doubles/notification/in-memory-notification.repository";
+import { PassThroughNotificationCache } from "#test/doubles/notification/pass-through-notification-cache";
+import { SilentLogger } from "#test/doubles/platform/silent-logger";
 
 import { DeleteActorNotificationsUseCase } from "./delete-actor-notifications.use-case.js";
 
-describe("DeleteActorNotificationsUseCase", () => {
-  it("bounded context 저장소에 actor 개인정보 정리를 위임한다", async () => {
-    const notificationAccountCleanupDependencies = mockDeep<
-      ConstructorParameters<typeof DeleteActorNotificationsUseCase>[0]
-    >({ repository: createNotificationRepositoryMock(), cache: createNotificationCacheMock() });
-    const unit = new DeleteActorNotificationsUseCase(notificationAccountCleanupDependencies);
-    const repository = notificationAccountCleanupDependencies.repository;
-    const cache = notificationAccountCleanupDependencies.cache;
-    repository.deleteNotificationsByActorId.mockResolvedValue({
-      count: 3,
-      affectedUserIds: ["recipient-1", "recipient-2"],
-    });
+const ACTOR_ID = "user-1";
 
-    const result = await unit.cleanupInTransaction("user-1");
+describe("DeleteActorNotificationsUseCase — 탈퇴한 사람이 남긴 알림 정리", () => {
+  it("트랜잭션 안에서는 지우기만 하고, 커밋 뒤 받은 사람별 캐시 정리는 실패해도 계속한다", async () => {
+    // Given
+    const repository = new InMemoryNotificationRepository([
+      NotificationBuilder.create("recipient-1").withId(1).withFriendId(ACTOR_ID).build(),
+      NotificationBuilder.create("recipient-2")
+        .withId(2)
+        .withMetadata({ senderId: ACTOR_ID })
+        .build(),
+      NotificationBuilder.create("recipient-3").withId(3).withFriendId("someone-else").build(),
+    ]);
+    const cache = new PassThroughNotificationCache();
+    const logger = new SilentLogger();
+    const useCase = new DeleteActorNotificationsUseCase({ repository, cache, logger });
+
+    // When
+    const result = await useCase.cleanupInTransaction(ACTOR_ID);
+
+    // Then
     expect(result).toEqual({ affectedUserIds: ["recipient-1", "recipient-2"] });
-    expect(repository.deleteNotificationsByActorId).toHaveBeenCalledWith("user-1");
-    expect(cache.invalidateUnreadCount).not.toHaveBeenCalled();
+    expect(repository.rowOf(1)).toBeUndefined();
+    expect(repository.rowOf(2)).toBeUndefined();
+    expect(repository.rowOf(3)).toBeDefined();
+    expect(cache.invalidatedUnreadCountUserIds).toEqual([]);
 
-    cache.invalidateUnreadCount.mockRejectedValueOnce(new Error("캐시 연결 오류"));
-    await expect(unit.settleAfterCommit(result)).resolves.toBeUndefined();
-    expect(cache.invalidateUnreadCount).toHaveBeenCalledTimes(2);
-    expect(cache.invalidateUnreadCount).toHaveBeenCalledWith("recipient-1");
-    expect(cache.invalidateUnreadCount).toHaveBeenCalledWith("recipient-2");
+    // When
+    cache.failUnreadCountInvalidationFor.add("recipient-1");
+    await expect(useCase.settleAfterCommit(result)).resolves.toBeUndefined();
+
+    // Then
+    expect(cache.invalidatedUnreadCountUserIds).toEqual(["recipient-1", "recipient-2"]);
+    expect(logger.messages).toEqual([expect.objectContaining({ userId: "recipient-1" })]);
   });
 });

@@ -1,53 +1,51 @@
-import { Inject, Injectable, Logger, type OnModuleInit } from "@nestjs/common";
+import { Injectable, Logger, type OnModuleInit } from "@nestjs/common";
 
 import { runInBackground } from "#api/platform/jobs/non-blocking-init";
-import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/index";
+import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
 
 import type { PushDeliveryJobEnqueuerPort } from "../../application/ports/push-delivery-job-enqueuer.port.js";
 import type { PushDeliveryPublication } from "../../application/read-models/push-delivery.read-model.js";
+import type { PushDeliveryLane } from "../../domain/push-delivery-lane.domain-service.js";
 import { pushDeliveryJobKey } from "./notification-job-keys.constants.js";
 import {
-  PUSH_DELIVERY_DISPATCH_JOB_POLICY,
-  PUSH_DELIVERY_JOB_POLICY,
+  PUSH_DELIVERY_PRIORITY,
   PUSH_DELIVERY_QUEUE,
-  PUSH_DELIVERY_RELAY_SCHEDULE,
+  PUSH_DELIVERY_RELAY_SCHEDULE_QUEUE,
   PushDeliveryJobName,
-} from "./push-delivery-queue.constants.js";
+} from "./push-delivery.queue.js";
 
 @Injectable()
 export class PushDeliveryQueueAdapter implements PushDeliveryJobEnqueuerPort, OnModuleInit {
   readonly #logger = new Logger(PushDeliveryQueueAdapter.name);
   schedulerRegistration: Promise<void> = Promise.resolve();
 
-  readonly #runtime: JobRuntimePort;
+  readonly #jobQueue: JobQueuePort;
 
-  constructor(@Inject(JOB_RUNTIME) runtime: JobRuntimePort) {
-    this.#runtime = runtime;
+  constructor(jobQueue: JobQueuePort) {
+    this.#jobQueue = jobQueue;
   }
 
   onModuleInit(): void {
     this.schedulerRegistration = runInBackground(
       this.#logger,
       "Push delivery outbox relay scheduler registration",
-      () =>
-        this.#runtime.schedule(
-          PUSH_DELIVERY_RELAY_SCHEDULE.key,
-          PUSH_DELIVERY_RELAY_SCHEDULE.cron,
-          PUSH_DELIVERY_QUEUE,
-          { name: PushDeliveryJobName.RELAY_OUTBOX, data: {} },
-          PUSH_DELIVERY_JOB_POLICY,
-        ),
+      () => this.#jobQueue.registerSchedules(PUSH_DELIVERY_RELAY_SCHEDULE_QUEUE),
     );
   }
 
-  async enqueueDeliveries(publications: readonly PushDeliveryPublication[]): Promise<void> {
-    await this.#runtime.enqueue(
+  async enqueueDeliveries(
+    publications: readonly PushDeliveryPublication[],
+    lane: PushDeliveryLane,
+  ): Promise<void> {
+    // strict payload schema가 받는 필드만 싣는다
+    const data = publications.map(({ dispatchId, publishAttempt }) => ({
+      dispatchId,
+      publishAttempt,
+    }));
+    await this.#jobQueue.enqueue(
       PUSH_DELIVERY_QUEUE,
-      { name: PushDeliveryJobName.DELIVER_DISPATCHES, data: publications },
-      {
-        ...PUSH_DELIVERY_DISPATCH_JOB_POLICY,
-        idempotencyKey: pushDeliveryJobKey(publications),
-      },
+      { name: PushDeliveryJobName.DELIVER_DISPATCHES, data },
+      { idempotencyKey: pushDeliveryJobKey(data), priority: PUSH_DELIVERY_PRIORITY[lane] },
     );
   }
 }

@@ -1,3 +1,4 @@
+import type { SupportedLocale } from "@aido/api/vocabulary";
 import { Inject, Injectable } from "@nestjs/common";
 import { uniq } from "es-toolkit";
 
@@ -6,16 +7,16 @@ import {
   type UserPreferenceReaderPort,
 } from "#api/modules/identity/identity-settings.public";
 import { resolveDeliveryTimezone } from "#api/shared/domain/date/utils/timezone";
-import { DEFAULT_LOCALE, type SupportedLocale, toSupportedLocale } from "#api/shared/domain/locale";
+import { DEFAULT_LOCALE } from "#api/shared/domain/locale";
 
-import { type NotificationRecipientLocaleReaderPort } from "../../application/ports/notification-recipient-locale.reader.port.js";
-import { type NotificationRecipientPreferenceReaderPort } from "../../application/ports/notification-recipient-preference.reader.port.js";
-import { type NotificationRecipientTimezoneReaderPort } from "../../application/ports/notification-recipient-timezone.reader.port.js";
+import type { NotificationRecipientLocaleReaderPort } from "../../application/ports/notification-recipient-locale.reader.port.js";
+import type { NotificationRecipientPreferenceReaderPort } from "../../application/ports/notification-recipient-preference.reader.port.js";
+import type { NotificationRecipientTimezoneReaderPort } from "../../application/ports/notification-recipient-timezone.reader.port.js";
 import {
-  USER_NOTIFICATION_SETTINGS,
   type NotificationDeliveryPreference,
-  type UserNotificationSettingsPort,
+  UserNotificationSettingsPort,
 } from "../../application/ports/user-notification-settings.port.js";
+import { resolveRecipientLocale } from "../../domain/recipient-locale.domain-service.js";
 
 @Injectable()
 export class CachedNotificationRecipientPreferenceAdapter
@@ -28,7 +29,6 @@ export class CachedNotificationRecipientPreferenceAdapter
   readonly #preferenceReader: UserPreferenceReaderPort;
 
   constructor(
-    @Inject(USER_NOTIFICATION_SETTINGS)
     userSettings: UserNotificationSettingsPort,
     @Inject(USER_PREFERENCE_READER)
     preferenceReader: UserPreferenceReaderPort,
@@ -46,8 +46,12 @@ export class CachedNotificationRecipientPreferenceAdapter
   }
 
   async getLocale(userId: string): Promise<SupportedLocale> {
-    const preference = await this.getPreference(userId);
-    return toSupportedLocale(preference.locale);
+    const preference = await this.#preferenceReader.read(userId);
+    // 마지막 요청 언어는 아직 어디에도 저장하지 않는다
+    return resolveRecipientLocale({
+      storedLocale: preference.locale ?? null,
+      lastRequestLocale: null,
+    });
   }
 
   async getLocales(userIds: readonly string[]): Promise<ReadonlyMap<string, SupportedLocale>> {
@@ -56,10 +60,18 @@ export class CachedNotificationRecipientPreferenceAdapter
       return new Map();
     }
     const preferences = await this.#userSettings.getPreferenceRecordsByUserIds(uniqueUserIds);
-    const locales = new Map(
-      preferences.map((preference) => [preference.userId, toSupportedLocale(preference.locale)]),
+    const storedLocales = new Map(
+      preferences.map((preference) => [preference.userId, preference.locale]),
     );
-    return new Map(uniqueUserIds.map((userId) => [userId, locales.get(userId) ?? DEFAULT_LOCALE]));
+    return new Map(
+      uniqueUserIds.map((userId) => [
+        userId,
+        resolveRecipientLocale({
+          storedLocale: storedLocales.get(userId) ?? null,
+          lastRequestLocale: null,
+        }),
+      ]),
+    );
   }
 
   async getTimezones(userIds: readonly string[]): Promise<ReadonlyMap<string, string>> {

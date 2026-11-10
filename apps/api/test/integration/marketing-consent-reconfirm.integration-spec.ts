@@ -1,9 +1,6 @@
 import { and, eq, sql } from "drizzle-orm";
 
-import {
-  MARKETING_CONSENT_RECONFIRM_ACCESS,
-  type MarketingConsentReconfirmPort,
-} from "#api/modules/notification/push/application/ports/marketing-consent-reconfirm.port";
+import { MarketingConsentReconfirmPort } from "#api/modules/notification/push/application/ports/marketing-consent-reconfirm.port";
 import { ReconfirmMarketingConsentsUseCase } from "#api/modules/notification/push/application/use-cases/reconfirm-marketing-consents.use-case";
 import { createEntityId } from "#api/platform/database/entity-id";
 import {
@@ -40,7 +37,7 @@ describe("광고성 수신 동의 2년 재확인 (실제 PostgreSQL)", () => {
     client = await database.start();
     context = await createE2eApp({ testDatabase: database });
     reconfirm = context.module.get(ReconfirmMarketingConsentsUseCase);
-    access = context.module.get(MARKETING_CONSENT_RECONFIRM_ACCESS);
+    access = context.module.get(MarketingConsentReconfirmPort);
     unitOfWork = context.module.get(UNIT_OF_WORK);
   });
 

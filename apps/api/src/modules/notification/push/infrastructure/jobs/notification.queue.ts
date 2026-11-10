@@ -1,11 +1,12 @@
 import { z } from "zod";
 
-import { JOB_POLLING_SECONDS } from "#api/shared/application/ports/index";
+import {
+  defineQueue,
+  JOB_POLLING_SECONDS,
+  type JobRetryPolicy,
+} from "#api/shared/application/ports/index";
 
 import { NOTIFICATION_MILESTONES } from "../../domain/notification-milestone.constants.js";
-
-export const NOTIFICATION_QUEUE = "notification.v1";
-export const NOTIFICATION_DEAD_LETTER_QUEUE = "notification-dead-letter.v1";
 
 export const NotificationJobName = {
   FOLLOW_NEW: "follow-new",
@@ -20,49 +21,30 @@ export const NotificationJobName = {
 
 const DAY_SECONDS = 24 * 60 * 60;
 
-export const NOTIFICATION_JOB_POLICY = {
+export const NOTIFICATION_RETRY = {
   retryLimit: 2,
   retryDelaySeconds: 1,
   retryBackoff: true,
   expireInSeconds: 5 * 60,
   retentionSeconds: 7 * DAY_SECONDS,
   deleteAfterSeconds: DAY_SECONDS,
-} as const;
+} as const satisfies JobRetryPolicy;
 
-/** 재시도를 다 쓴 이벤트는 사람이 원인을 확인할 수 있게 더 오래 보관한다. */
-export const NOTIFICATION_DEAD_LETTER_JOB_POLICY = {
-  ...NOTIFICATION_JOB_POLICY,
+// 재시도를 다 쓴 이벤트는 사람이 원인을 확인할 수 있게 더 오래 보관한다
+export const NOTIFICATION_DEAD_LETTER_RETRY = {
+  ...NOTIFICATION_RETRY,
   retryLimit: 0,
   retentionSeconds: 14 * DAY_SECONDS,
   deleteAfterSeconds: 14 * DAY_SECONDS,
-} as const;
+} as const satisfies JobRetryPolicy;
 
-export const NOTIFICATION_EVENT_JOB_POLICY = {
-  ...NOTIFICATION_JOB_POLICY,
-  deadLetter: {
-    queue: NOTIFICATION_DEAD_LETTER_QUEUE,
-    jobPolicy: NOTIFICATION_DEAD_LETTER_JOB_POLICY,
-  },
-} as const;
-
-/** 호출자는 커밋 뒤 결과를 기다리지 않으므로 일시적인 DB 오류만 짧게 다시 시도한다. */
+// 호출자는 커밋 뒤 결과를 기다리지 않으므로 일시적인 DB 오류만 짧게 다시 시도한다
 export const NOTIFICATION_ENQUEUE_RETRY = {
   retries: 3,
   delayMs: 200,
 } as const;
 
-export const NOTIFICATION_WORKER_POLICY = {
-  teamSize: 5,
-  pollingIntervalSeconds: JOB_POLLING_SECONDS.INTERACTIVE,
-} as const;
-
-export const NOTIFICATION_DEAD_LETTER_WORKER_POLICY = {
-  teamSize: 1,
-  pollingIntervalSeconds: JOB_POLLING_SECONDS.BACKGROUND,
-  queuePolicy: NOTIFICATION_DEAD_LETTER_JOB_POLICY,
-} as const;
-
-/** receipt 정리는 실행 예산(45초) 안에서 끝나므로 1분마다 돌려도 겹치지 않는다. */
+// receipt 정리는 실행 예산(45초) 안에서 끝나므로 1분마다 돌려도 겹치지 않는다
 export const PUSH_RECEIPT_SCHEDULE = {
   key: "push-receipts-scheduler",
   cron: "* * * * *",
@@ -167,3 +149,46 @@ export type FriendCompletedJobData = NotificationJobData<
 export type MilestoneReachedJobData = NotificationJobData<
   typeof NotificationJobName.MILESTONE_REACHED
 >;
+
+// 늦은 소셜 알림은 의미가 없어 다시 보내지 않고 기록만 한다
+export const NOTIFICATION_DEAD_LETTER_QUEUE = defineQueue({
+  name: "notification-dead-letter.v1",
+  payloadSchema: NotificationRuntimeJobSchema,
+  retry: NOTIFICATION_DEAD_LETTER_RETRY,
+  worker: { localConcurrency: 1, pollingIntervalSeconds: JOB_POLLING_SECONDS.BACKGROUND },
+});
+
+// 결제 문제 알림은 다시 실행하면 한 번 더 보내므로 묶음으로 가져와도 작업마다 따로 끝낸다
+export const NOTIFICATION_QUEUE = defineQueue({
+  name: "notification.v1",
+  payloadSchema: NotificationRuntimeJobSchema,
+  retry: NOTIFICATION_RETRY,
+  deadLetter: {
+    queue: NOTIFICATION_DEAD_LETTER_QUEUE.name,
+    jobPolicy: NOTIFICATION_DEAD_LETTER_RETRY,
+  },
+  worker: {
+    localConcurrency: 3,
+    pollingIntervalSeconds: JOB_POLLING_SECONDS.INTERACTIVE,
+    batchSize: 5,
+    burstWhenBatchFull: true,
+    isolateJobFailures: true,
+  },
+});
+
+// 예약 receipt 작업은 DLQ 없이 다음 실행이 이어 받는다. 이벤트 정의와 이름·재시도만 같게 둔다
+export const PUSH_RECEIPTS_SCHEDULE_QUEUE = defineQueue({
+  name: NOTIFICATION_QUEUE.name,
+  payloadSchema: NotificationRuntimeJobSchema,
+  retry: NOTIFICATION_RETRY,
+  worker: NOTIFICATION_QUEUE.worker,
+  schedules: [
+    {
+      key: PUSH_RECEIPT_SCHEDULE.key,
+      cron: PUSH_RECEIPT_SCHEDULE.cron,
+      timezone: "UTC",
+      missed: "skip",
+      payload: { name: NotificationJobName.PUSH_RECEIPTS, data: {} },
+    },
+  ],
+});

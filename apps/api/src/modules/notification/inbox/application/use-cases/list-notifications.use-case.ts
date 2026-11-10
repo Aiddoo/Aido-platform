@@ -1,7 +1,6 @@
 import type { NotificationCategory } from "@aido/api/vocabulary";
 
-import type { CursorPaginatedResponse } from "#api/shared/application/pagination/index";
-import type { PaginationService } from "#api/shared/application/pagination/index";
+import { clampPageSize, type CursorPage, toCursorPage } from "#api/shared/application/cursor-page";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 
 import { NotificationDeliveryLogEvent } from "../../../push/application/notification-delivery.log-events.js";
@@ -9,75 +8,55 @@ import {
   notificationTypesOfCategory,
   visibleNotificationTypes,
 } from "../../../push/domain/notification-client-capability.domain-service.js";
-import type { NotificationType } from "../../domain/notification-type.constants.js";
-import { type NotificationInboxReaderPort } from "../ports/notification-inbox.reader.port.js";
+import type { NotificationInboxReaderPort } from "../ports/notification-inbox.reader.port.js";
 import type { InboxNotification } from "../read-models/inbox-notification.read-model.js";
 
-export interface GetNotificationsInput {
-  userId: string;
-  cursor?: number;
-  size?: number;
-  unreadOnly?: boolean;
-  category?: NotificationCategory;
-  appVersion?: string;
+export interface ListNotificationsQuery {
+  readonly userId: string;
+  readonly cursor?: number;
+  readonly size?: number;
+  readonly unreadOnly?: boolean;
+  readonly category?: NotificationCategory;
+  readonly appVersion?: string;
 }
 
-/**
- * 알림 목록 조회 유스케이스 (커서 기반 페이지네이션).
- *
- * 카테고리 필터를 알림 타입 목록으로 변환하고, DTO 매핑은 프레젠테이션에 위임한다.
- */
-interface GetNotificationsDependencies {
-  readonly notificationInboxReader: Pick<NotificationInboxReaderPort, "findNotificationsByUser">;
-  readonly paginationService: Pick<
-    PaginationService,
-    "createCursorPaginatedResponse" | "normalizeCursorPagination"
-  >;
+export interface ListNotificationsDependencies {
+  readonly notificationInboxReader: Pick<NotificationInboxReaderPort, "listByUser">;
   readonly logger: Pick<ApplicationLoggerPort, "debug">;
 }
 
 export class ListNotificationsUseCase {
-  readonly #dependencies: GetNotificationsDependencies;
+  readonly #dependencies: ListNotificationsDependencies;
 
-  constructor(dependencies: GetNotificationsDependencies) {
+  constructor(dependencies: ListNotificationsDependencies) {
     this.#dependencies = dependencies;
   }
 
-  async execute(
-    input: GetNotificationsInput,
-  ): Promise<CursorPaginatedResponse<InboxNotification, number>> {
-    const { cursor, size } = this.#dependencies.paginationService.normalizeCursorPagination<number>(
-      {
-        cursor: input.cursor,
-        size: input.size,
-      },
-    );
+  async execute(query: ListNotificationsQuery): Promise<CursorPage<InboxNotification, number>> {
+    const { notificationInboxReader, logger } = this.#dependencies;
+    const size = clampPageSize(query.size);
+    const categoryTypes =
+      query.category == null || query.category === "ALL"
+        ? undefined
+        : notificationTypesOfCategory(query.category);
 
-    const types: NotificationType[] | undefined =
-      input.category && input.category !== "ALL"
-        ? notificationTypesOfCategory(input.category)
-        : undefined;
-
-    const notifications = await this.#dependencies.notificationInboxReader.findNotificationsByUser({
-      userId: input.userId,
-      cursor,
-      size,
-      unreadOnly: input.unreadOnly,
-      types: visibleNotificationTypes(input.appVersion, types),
+    const notifications = await notificationInboxReader.listByUser({
+      userId: query.userId,
+      afterNotificationId: query.cursor ?? null,
+      limit: size + 1,
+      unreadOnly: query.unreadOnly === true,
+      types: visibleNotificationTypes(query.appVersion, categoryTypes),
     });
 
-    this.#dependencies.logger.debug({
+    logger.debug({
       event: NotificationDeliveryLogEvent.GET_NOTIFICATIONS_LISTED,
-      userId: input.userId,
+      userId: query.userId,
       count: notifications.length,
     });
-
-    return this.#dependencies.paginationService.createCursorPaginatedResponse<
-      InboxNotification,
-      number
-    >({
-      items: notifications,
+    return toCursorPage({
+      rows: notifications,
       size,
+      toCursor: (notification) => notification.id,
     });
   }
 }

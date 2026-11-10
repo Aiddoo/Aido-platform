@@ -8,11 +8,13 @@ import {
 import { DrizzlePushDeviceRepository } from "#api/modules/notification/push/infrastructure/persistence/drizzle-push-device.repository";
 import { DrizzlePushTokenRepository } from "#api/modules/notification/push/infrastructure/persistence/drizzle-push-token.repository";
 import { pushDevice, pushToken, session, user } from "#api/platform/database/schema/index";
+import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { PushDeviceReportFixture, SessionFixture, UserFixture } from "#test/fixtures/index";
 import { createDatabaseTransactionFixture, createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
 const TOKEN = "ExponentPushToken[concurrent-registration]";
+const REPORTED_AT = Temporal.Instant.from("2026-11-10T03:00:00.000Z");
 
 describe("푸시 기기 보고 (실제 PostgreSQL)", () => {
   let database: TestDatabase;
@@ -52,6 +54,7 @@ describe("푸시 기기 보고 (실제 PostgreSQL)", () => {
       pushProvider: { validateToken: () => true },
       userSettings: { upsertPushLocale: async () => {}, upsertPushTimezone: async () => {} },
       cache: { invalidatePushTokens: async () => {}, invalidateUserPreference: async () => {} },
+      clock: new FixedClock(REPORTED_AT),
       logger: {
         log() {},
         warn(message) {
@@ -91,6 +94,12 @@ describe("푸시 기기 보고 (실제 PostgreSQL)", () => {
         permissionStatus: "DENIED",
         permissionCanAskAgain: true,
       }),
+    ]);
+    const times = await client
+      .select({ reportedAt: pushDevice.reportedAt, updatedAt: pushDevice.updatedAt })
+      .from(pushDevice);
+    expect(times.map((row) => [row.reportedAt.toString(), row.updatedAt.toString()])).toEqual([
+      [REPORTED_AT.toString(), REPORTED_AT.toString()],
     ]);
   });
 
@@ -147,6 +156,7 @@ describe("푸시 기기 보고 (실제 PostgreSQL)", () => {
             token: TOKEN,
             deviceId: "ios_first",
             platform: "IOS",
+            updatedAt: REPORTED_AT,
           });
         }
         return released;

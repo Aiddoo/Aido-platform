@@ -24,10 +24,7 @@ import { eq } from "drizzle-orm";
 import request from "supertest";
 
 import { UpcomingRenewalNotifierPort } from "#api/modules/billing/subscriptions/application/ports/upcoming-renewal-notifier.port";
-import {
-  MARKETING_PUSH_OPT_OUT_TOKEN,
-  type MarketingPushOptOutTokenPort,
-} from "#api/modules/notification/push/application/ports/marketing-push-opt-out-token.port";
+import { MarketingPushOptOutTokenPort } from "#api/modules/notification/push/application/ports/marketing-push-opt-out-token.port";
 import { SendBillingIssueNotificationUseCase } from "#api/modules/notification/push/application/use-cases/send-billing-issue-notification.use-case";
 import { requireRecord } from "#api/platform/database/database-error.util";
 import {
@@ -1034,7 +1031,7 @@ describe("알림 E2E", () => {
           target: userConsent.userId,
           set: { marketingPushAgreedAt: new Date() },
         });
-      const tokenPort = ctx.app.get<MarketingPushOptOutTokenPort>(MARKETING_PUSH_OPT_OUT_TOKEN);
+      const tokenPort = ctx.app.get(MarketingPushOptOutTokenPort);
 
       const response = await request(ctx.app.getHttpServer())
         .post("/v1/notifications/marketing-push/opt-out")

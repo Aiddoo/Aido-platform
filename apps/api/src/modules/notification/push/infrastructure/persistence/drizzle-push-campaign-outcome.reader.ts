@@ -1,4 +1,3 @@
-import { PUSH_DISPATCH_SKIP_REASON, type PushDispatchSkipReason } from "@aido/api/vocabulary";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
 import { and, count, eq, isNotNull } from "drizzle-orm";
@@ -10,6 +9,7 @@ import type {
   PushCampaignOutcome,
   PushCampaignOutcomeReaderPort,
 } from "../../application/ports/push-campaign-outcome.reader.port.js";
+import { toSkippedByReason } from "./push-dispatch-skip-reason.mapper.js";
 
 @Injectable()
 export class DrizzlePushCampaignOutcomeReader implements PushCampaignOutcomeReaderPort {
@@ -51,17 +51,7 @@ export class DrizzlePushCampaignOutcomeReader implements PushCampaignOutcomeRead
     return {
       dispatches: new Map(dispatchRows.map((row) => [row.status, row.total])),
       attempts: new Map(attemptRows.map((row) => [row.status, row.total])),
-      skippedByReason: new Map(
-        skipRows.flatMap((row) =>
-          isPushDispatchSkipReason(row.reason) ? [[row.reason, row.total] as const] : [],
-        ),
-      ),
+      skippedByReason: toSkippedByReason(skipRows),
     };
   }
-}
-
-const SKIP_REASONS: ReadonlySet<string> = new Set(Object.values(PUSH_DISPATCH_SKIP_REASON));
-
-function isPushDispatchSkipReason(reason: string | null): reason is PushDispatchSkipReason {
-  return reason != null && SKIP_REASONS.has(reason);
 }

@@ -21,8 +21,7 @@ import { LastActiveInterceptor } from "#api/modules/identity/users/identity-user
 import { InsightsDailyCompletionsModule } from "#api/modules/insights/insights-daily-completions.public";
 import { InsightsWeeklyAchievementsModule } from "#api/modules/insights/insights-weekly-achievements.public";
 import { NotesModule } from "#api/modules/notes/notes.module";
-import { NotificationPushModule } from "#api/modules/notification/notification-delivery.public";
-import { NotificationRemindersModule } from "#api/modules/notification/notification-reminders.public";
+import { NotificationModule } from "#api/modules/notification/notification.module";
 import { OperationsModule } from "#api/modules/operations/operations.module";
 import { PlanningModule } from "#api/modules/planning/planning.module";
 import { SocialBlocksModule } from "#api/modules/social/social-blocks.public";
@@ -136,12 +135,11 @@ import { AppService } from "./app.service.js";
     HealthModule,
     SupportModule,
     NotesModule,
-    NotificationPushModule,
+    NotificationModule,
     SocialNudgesModule,
     SocialInvitesModule,
     SocialReportsModule,
     SocialReportsAdminModule,
-    NotificationRemindersModule,
     BillingModule,
     PlanningModule,
     EngagementCommentsModule,

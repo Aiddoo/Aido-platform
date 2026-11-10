@@ -1,45 +1,93 @@
 import { ErrorCode } from "@aido/api/errors";
 
 import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
-import { AggregateRoot } from "#api/shared/domain/index";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { AggregateRoot } from "#api/shared/domain/model/aggregate-root";
 
-/**
- * 알림 애그리게잇.
- *
- * 읽음 처리 시 소유권 불변식(타 사용자 알림 접근 금지 → NOTIFICATION_1005)과
- * 멱등성(이미 읽은 알림은 무동작)을 소유한다.
- */
-interface NotificationProps {
-  id: number;
-  userId: string;
-  isRead: boolean;
+import { NotificationId } from "./notification-id.vo.js";
+import type { NotificationType } from "./notification-type.constants.js";
+
+export interface NotificationPrimitives {
+  readonly id: number;
+  readonly userId: string;
+  readonly type: NotificationType;
+  readonly title: string;
+  readonly body: string;
+  readonly copyKey: string | null;
+  readonly copyFacts: Readonly<Record<string, unknown>> | null;
+  readonly isRead: boolean;
+  readonly readAt: Temporal.Instant | null;
+  readonly openedAt: Temporal.Instant | null;
+  readonly createdAt: Temporal.Instant;
 }
 
-export class Notification extends AggregateRoot<NotificationProps> {
-  static reconstitute(record: Readonly<NotificationProps>): Notification {
-    return new Notification({ ...record });
+interface NotificationProps {
+  readonly userId: UserId;
+  readonly type: NotificationType;
+  readonly title: string;
+  readonly body: string;
+  readonly copyKey: string | null;
+  readonly copyFacts: Readonly<Record<string, unknown>> | null;
+  isRead: boolean;
+  readAt: Temporal.Instant | null;
+  readonly openedAt: Temporal.Instant | null;
+  readonly createdAt: Temporal.Instant;
+}
+
+export class Notification extends AggregateRoot<NotificationId, NotificationProps> {
+  static reconstitute(primitives: NotificationPrimitives): Notification {
+    return new Notification(NotificationId.reconstitute(primitives.id), {
+      userId: UserId.reconstitute(primitives.userId),
+      type: primitives.type,
+      title: primitives.title,
+      body: primitives.body,
+      copyKey: primitives.copyKey,
+      copyFacts: primitives.copyFacts,
+      isRead: primitives.isRead,
+      readAt: primitives.readAt,
+      openedAt: primitives.openedAt,
+      createdAt: primitives.createdAt,
+    });
   }
 
-  get id(): number {
-    return this.props.id;
+  get userId(): UserId {
+    return this.props.userId;
   }
 
-  /**
-   * 읽음 처리 계획.
-   *
-   * @returns 저장소 갱신이 필요하면 true, 이미 읽은 상태면 false
-   * @throws {DomainException} NOTIFICATION_1005 — 다른 사용자의 알림
-   */
-  planMarkRead(requesterId: string): boolean {
-    if (this.props.userId !== requesterId) {
-      throw new DomainException(ErrorCode.NOTIFICATION_1005, {
-        notificationId: this.props.id,
-      });
+  get isRead(): boolean {
+    return this.props.isRead;
+  }
+
+  get readAt(): Temporal.Instant | null {
+    return this.props.readAt;
+  }
+
+  // 이미 읽은 알림이어도 남의 알림이면 소유권 오류가 먼저다
+  markRead(requesterId: UserId, now: Temporal.Instant): boolean {
+    if (!this.props.userId.equals(requesterId)) {
+      throw new DomainException(ErrorCode.NOTIFICATION_1005, { notificationId: this.id.value });
     }
     if (this.props.isRead) {
       return false;
     }
     this.props.isRead = true;
+    this.props.readAt = now;
     return true;
+  }
+
+  toPrimitives(): NotificationPrimitives {
+    return {
+      id: this.id.value,
+      userId: this.props.userId.value,
+      type: this.props.type,
+      title: this.props.title,
+      body: this.props.body,
+      copyKey: this.props.copyKey,
+      copyFacts: this.props.copyFacts,
+      isRead: this.props.isRead,
+      readAt: this.props.readAt,
+      openedAt: this.props.openedAt,
+      createdAt: this.props.createdAt,
+    };
   }
 }

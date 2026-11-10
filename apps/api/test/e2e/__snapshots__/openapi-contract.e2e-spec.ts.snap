@@ -10826,6 +10826,412 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
                 },
                 "type": "object",
               },
+              "navigation": {
+                "description": "푸시 data의 navigation과 같은 목적지. 계산할 수 없으면 싣지 않는다",
+                "oneOf": [
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "kind": {
+                        "enum": [
+                          "NONE",
+                        ],
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "kind",
+                    ],
+                    "type": "object",
+                  },
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "kind": {
+                        "enum": [
+                          "EXTERNAL_URL",
+                        ],
+                        "type": "string",
+                      },
+                      "presentation": {
+                        "enum": [
+                          "BROWSER",
+                          "WEBVIEW",
+                        ],
+                        "type": "string",
+                      },
+                      "url": {
+                        "format": "uri",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "kind",
+                      "url",
+                      "presentation",
+                    ],
+                    "type": "object",
+                  },
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "kind": {
+                        "enum": [
+                          "FEED",
+                        ],
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "kind",
+                    ],
+                    "type": "object",
+                  },
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "friendId": {
+                        "maxLength": 64,
+                        "minLength": 1,
+                        "type": "string",
+                      },
+                      "kind": {
+                        "enum": [
+                          "FRIEND_FEED",
+                        ],
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "kind",
+                      "friendId",
+                    ],
+                    "type": "object",
+                  },
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "kind": {
+                        "enum": [
+                          "FRIENDS",
+                        ],
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "kind",
+                    ],
+                    "type": "object",
+                  },
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "kind": {
+                        "enum": [
+                          "FRIEND_REQUESTS",
+                        ],
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "kind",
+                    ],
+                    "type": "object",
+                  },
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "kind": {
+                        "enum": [
+                          "TODO",
+                        ],
+                        "type": "string",
+                      },
+                      "todoDate": {
+                        "format": "date",
+                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+                        "type": "string",
+                      },
+                      "todoId": {
+                        "exclusiveMinimum": true,
+                        "maximum": 9007199254740991,
+                        "minimum": 0,
+                        "type": "integer",
+                      },
+                      "todoOwnerId": {
+                        "maxLength": 64,
+                        "minLength": 1,
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "kind",
+                      "todoId",
+                    ],
+                    "type": "object",
+                  },
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "activityKind": {
+                        "enum": [
+                          "COMMENT",
+                          "REPLY",
+                          "LIKE",
+                        ],
+                        "type": "string",
+                      },
+                      "commentId": {
+                        "description": "댓글 ID (CUID)",
+                        "format": "cuid",
+                        "pattern": "^[cC][0-9a-z]{6,}$",
+                        "type": "string",
+                      },
+                      "kind": {
+                        "enum": [
+                          "TODO_COMMENT",
+                        ],
+                        "type": "string",
+                      },
+                      "threadCommentId": {
+                        "description": "대화의 머리 댓글 ID (댓글은 두 단계)",
+                        "format": "cuid",
+                        "pattern": "^[cC][0-9a-z]{6,}$",
+                        "type": "string",
+                      },
+                      "todoDate": {
+                        "format": "date",
+                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+                        "type": "string",
+                      },
+                      "todoId": {
+                        "exclusiveMinimum": true,
+                        "maximum": 9007199254740991,
+                        "minimum": 0,
+                        "type": "integer",
+                      },
+                      "todoOwnerId": {
+                        "maxLength": 64,
+                        "minLength": 1,
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "kind",
+                      "todoId",
+                      "commentId",
+                      "threadCommentId",
+                      "activityKind",
+                    ],
+                    "type": "object",
+                  },
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "kind": {
+                        "enum": [
+                          "NUDGE",
+                        ],
+                        "type": "string",
+                      },
+                      "nudgeId": {
+                        "exclusiveMinimum": true,
+                        "maximum": 9007199254740991,
+                        "minimum": 0,
+                        "type": "integer",
+                      },
+                    },
+                    "required": [
+                      "kind",
+                      "nudgeId",
+                    ],
+                    "type": "object",
+                  },
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "cheerId": {
+                        "exclusiveMinimum": true,
+                        "maximum": 9007199254740991,
+                        "minimum": 0,
+                        "type": "integer",
+                      },
+                      "friendId": {
+                        "maxLength": 64,
+                        "minLength": 1,
+                        "type": "string",
+                      },
+                      "kind": {
+                        "enum": [
+                          "CHEER",
+                        ],
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "kind",
+                      "cheerId",
+                      "friendId",
+                    ],
+                    "type": "object",
+                  },
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "kind": {
+                        "enum": [
+                          "WEATHER",
+                        ],
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "kind",
+                    ],
+                    "type": "object",
+                  },
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "kind": {
+                        "enum": [
+                          "WEATHER_RESCHEDULE",
+                        ],
+                        "type": "string",
+                      },
+                      "reason": {
+                        "enum": [
+                          "rain",
+                          "heat",
+                        ],
+                        "type": "string",
+                      },
+                      "todoIds": {
+                        "items": {
+                          "exclusiveMinimum": true,
+                          "maximum": 9007199254740991,
+                          "minimum": 0,
+                          "type": "integer",
+                        },
+                        "maxItems": 50,
+                        "minItems": 1,
+                        "type": "array",
+                      },
+                    },
+                    "required": [
+                      "kind",
+                      "todoIds",
+                      "reason",
+                    ],
+                    "type": "object",
+                  },
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "kind": {
+                        "enum": [
+                          "ACHIEVEMENTS",
+                        ],
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "kind",
+                    ],
+                    "type": "object",
+                  },
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "kind": {
+                        "enum": [
+                          "REPORTS",
+                        ],
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "kind",
+                    ],
+                    "type": "object",
+                  },
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "kind": {
+                        "enum": [
+                          "SUGGESTIONS",
+                        ],
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "kind",
+                    ],
+                    "type": "object",
+                  },
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "kind": {
+                        "enum": [
+                          "INVITE",
+                        ],
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "kind",
+                    ],
+                    "type": "object",
+                  },
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "kind": {
+                        "enum": [
+                          "SUBSCRIPTION",
+                        ],
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "kind",
+                    ],
+                    "type": "object",
+                  },
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "kind": {
+                        "enum": [
+                          "NOTIFICATIONS",
+                        ],
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "kind",
+                    ],
+                    "type": "object",
+                  },
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "kind": {
+                        "enum": [
+                          "NOTIFICATION_SETTINGS",
+                        ],
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "kind",
+                    ],
+                    "type": "object",
+                  },
+                ],
+              },
               "readAt": {
                 "description": "읽은 시각 (ISO 8601 UTC, 예: 2026-01-17T10:30:00.000Z, 미읽음 시 null)",
                 "format": "date-time",

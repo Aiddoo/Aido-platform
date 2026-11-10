@@ -41,7 +41,7 @@ import { TodoReminderQueueProcessor } from "#api/modules/notification/infrastruc
 import { RetentionQueueProcessor } from "#api/modules/notification/infrastructure/jobs/retention/retention-queue.processor";
 import { RetentionQueueService } from "#api/modules/notification/infrastructure/jobs/retention/retention-queue.service";
 import { TransactionalEmailSender } from "#api/modules/notification/notification-email.public";
-import { PUSH_PROVIDER } from "#api/modules/notification/push/application/ports/push-provider.port";
+import { PushProviderPort } from "#api/modules/notification/push/application/ports/push-provider.port";
 import { NotificationQueueProcessor } from "#api/modules/notification/push/infrastructure/jobs/notification-queue.processor";
 import { AdminNotifierPort } from "#api/modules/operations/admin-notices/application/ports/admin-notifier.port";
 import { AdminNotificationProcessor } from "#api/modules/operations/admin-notices/infrastructure/jobs/admin-notification.processor";
@@ -262,7 +262,7 @@ export async function createE2eApp(options?: E2eAppOptions): Promise<E2eTestCont
     })
     .overrideProvider(AdminNotifierPort)
     .useValue(fakeAdminNotifier)
-    .overrideProvider(PUSH_PROVIDER)
+    .overrideProvider(PushProviderPort)
     .useValue(fakePushProvider)
     .overrideProvider(AI_GENERATOR)
     .useValue(fakeAiGenerator)

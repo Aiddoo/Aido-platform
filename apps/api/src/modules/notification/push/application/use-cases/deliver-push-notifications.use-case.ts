@@ -1,12 +1,13 @@
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
-import { type UnitOfWorkPort } from "#api/shared/application/ports/index";
+import type { ClockPort } from "#api/shared/application/ports/clock.port";
+import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { addMilliseconds } from "#api/shared/domain/date/utils/arithmetic";
-import { now } from "#api/shared/domain/date/utils/core";
 import { parseDateOnly } from "#api/shared/domain/date/utils/parse";
-import { toSupportedLocale } from "#api/shared/domain/locale";
+import { instantToDate } from "#api/shared/domain/time/instant";
 
 import type { CreateNotificationData } from "../../../inbox/application/ports/notification-draft.port.js";
 import { pushDeliveryOutboxRetryDelayMs } from "../../domain/push-delivery-outbox-retry.domain-service.js";
+import { resolveRecipientLocale } from "../../domain/recipient-locale.domain-service.js";
 import { NotificationDeliveryLogEvent } from "../notification-delivery.log-events.js";
 import {
   type ClaimedPushDelivery,
@@ -88,6 +89,7 @@ interface DeliverPushNotificationsDependencies {
     DispatchPushNotificationUseCase,
     "deliverSingle" | "prepareBatchDelivery" | "sendPreparedBatch"
   >;
+  readonly clock: ClockPort;
   readonly logger: Pick<ApplicationLoggerPort, "debug" | "error">;
 }
 
@@ -139,7 +141,10 @@ export class DeliverPushNotificationsUseCase {
         data,
         notificationId: claimed.item.notificationId,
         dispatchId: claimed.fence.dispatchId,
-        locale: toSupportedLocale(recipient.preference.locale),
+        locale: resolveRecipientLocale({
+          storedLocale: recipient.preference.locale,
+          lastRequestLocale: null,
+        }),
       }),
     });
     if (delivery.status === "skipped") {
@@ -204,7 +209,10 @@ export class DeliverPushNotificationsUseCase {
           data: candidate.data,
           notificationId: candidate.claimed.item.notificationId,
           dispatchId: candidate.dispatchId,
-          locale: toSupportedLocale(recipients.get(candidate.data.userId)?.preference?.locale),
+          locale: resolveRecipientLocale({
+            storedLocale: recipients.get(candidate.data.userId)?.preference?.locale ?? null,
+            lastRequestLocale: null,
+          }),
         }),
       ),
     );
@@ -264,7 +272,7 @@ export class DeliverPushNotificationsUseCase {
     if (claimedDeliveries.length === 0) {
       return new Set();
     }
-    const reservedAt = now();
+    const reservedAt = this.#now();
     const reserved = await this.#dependencies.unitOfWork.run(async () => {
       const reservedDispatchIds = await this.#dependencies.lifecycle.markRateLimitReserved(
         claimedDeliveries.map((claimed) => ({
@@ -292,7 +300,7 @@ export class DeliverPushNotificationsUseCase {
           publications: input.publications,
           processingJobId: input.processingJobId,
           processingJobAttempt: input.processingJobAttempt,
-          startedAt: now(),
+          startedAt: this.#now(),
         }),
       );
     } catch (claimError) {
@@ -312,7 +320,7 @@ export class DeliverPushNotificationsUseCase {
       await this.#dependencies.unitOfWork.run(async () => {
         const recovered = await this.#dependencies.lifecycle.reopenAfterFinalClaimFailure({
           publications: input.publications,
-          availableAt: now(),
+          availableAt: this.#now(),
           error: message,
         });
         if (recovered !== input.publications.length) {
@@ -372,13 +380,17 @@ export class DeliverPushNotificationsUseCase {
     });
   }
 
+  #now(): Date {
+    return instantToDate(this.#dependencies.clock.now());
+  }
+
   async #release(
     claimed: readonly ClaimedPushDelivery[],
     error: unknown,
     isFinalAttempt: boolean,
   ): Promise<void> {
     const message = error instanceof Error ? error.message : String(error);
-    const at = now();
+    const at = this.#now();
     try {
       await this.#dependencies.unitOfWork.run(() =>
         this.#dependencies.lifecycle.release(

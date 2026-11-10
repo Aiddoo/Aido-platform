@@ -1,6 +1,7 @@
 import type { Mocked } from "vitest";
 import { mockDeep } from "vitest-mock-extended";
 
+import { DateClock } from "#test/doubles/platform/date-clock";
 import {
   createMarketingPushOptOutTokenMock,
   createUserNotificationSettingsMock,
@@ -19,6 +20,7 @@ describe("OptOutMarketingPushUseCase", () => {
     >({
       tokens: createMarketingPushOptOutTokenMock(),
       settings: createUserNotificationSettingsMock(),
+      clock: new DateClock(),
     });
     const unit = new OptOutMarketingPushUseCase(optOutMarketingPushDependencies);
     useCase = unit;

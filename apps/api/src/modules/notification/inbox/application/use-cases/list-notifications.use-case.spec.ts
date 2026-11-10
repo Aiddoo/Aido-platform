@@ -1,154 +1,158 @@
-import type { Mocked } from "vitest";
-import { mockDeep } from "vitest-mock-extended";
-
 import { NotificationBuilder } from "#test/builders/index";
+import { InMemoryNotificationRepository } from "#test/doubles/notification/in-memory-notification.repository";
+import { SilentLogger } from "#test/doubles/platform/silent-logger";
 
 import { ListNotificationsUseCase } from "./list-notifications.use-case.js";
 
-describe("ListNotificationsUseCase", () => {
-  let useCase: ListNotificationsUseCase;
-  let notificationRepo: Mocked<
-    ConstructorParameters<typeof ListNotificationsUseCase>[0]["notificationInboxReader"]
-  >;
-  let paginationService: Mocked<
-    ConstructorParameters<typeof ListNotificationsUseCase>[0]["paginationService"]
-  >;
+const USER_ID = "user-1";
 
-  const mockUserId = "user-1";
+function minutesAfterBase(minutes: number): Date {
+  return new Date(Date.UTC(2026, 10, 10, 0, minutes));
+}
 
-  beforeEach(async () => {
-    NotificationBuilder.resetIdCounter();
+function createListNotificationsUseCase(notificationInboxReader: InMemoryNotificationRepository) {
+  return new ListNotificationsUseCase({ notificationInboxReader, logger: new SilentLogger() });
+}
 
-    const getNotificationsDependencies = mockDeep<
-      ConstructorParameters<typeof ListNotificationsUseCase>[0]
-    >({});
-    const unit = new ListNotificationsUseCase(getNotificationsDependencies);
-    useCase = unit;
-    notificationRepo = getNotificationsDependencies.notificationInboxReader;
-    paginationService = getNotificationsDependencies.paginationService;
+describe("ListNotificationsUseCase — 알림 목록", () => {
+  it("내 알림만 최신순으로 size만큼 주고 다음 커서를 마지막 알림 id로 준다", async () => {
+    // Given
+    const reader = new InMemoryNotificationRepository([
+      NotificationBuilder.create(USER_ID).withId(1).withCreatedAt(minutesAfterBase(1)).build(),
+      NotificationBuilder.create(USER_ID).withId(2).withCreatedAt(minutesAfterBase(2)).build(),
+      NotificationBuilder.create(USER_ID).withId(3).withCreatedAt(minutesAfterBase(3)).build(),
+      NotificationBuilder.create("other-user").withId(4).withCreatedAt(minutesAfterBase(4)).build(),
+    ]);
 
-    paginationService.normalizeCursorPagination.mockReturnValue({
-      cursor: undefined,
-      size: 20,
-      take: 21,
-    });
-    paginationService.createCursorPaginatedResponse.mockImplementation((params) => {
-      const { items, size } = params;
-      const hasNext = items.length > size;
-      const actualItems = hasNext ? items.slice(0, size) : items;
-      return {
-        items: actualItems,
-        pagination: {
-          hasNext,
-          nextCursor: null,
-          size,
-        },
-      };
-    });
+    // When
+    const page = await createListNotificationsUseCase(reader).execute({ userId: USER_ID, size: 2 });
+
+    // Then
+    expect(page.items.map((item) => item.id)).toEqual([3, 2]);
+    expect(page.pagination).toEqual({ hasNext: true, nextCursor: 2, size: 2 });
   });
 
-  it("알림 목록을 페이지네이션으로 조회해야 한다", async () => {
-    const notifications = [
-      NotificationBuilder.create(mockUserId).withId(1).build(),
-      NotificationBuilder.create(mockUserId).withId(2).build(),
-    ];
-    notificationRepo.findNotificationsByUser.mockResolvedValue(notifications);
+  it("커서 다음 알림부터 주고 마지막 페이지는 nextCursor가 null이다", async () => {
+    // Given
+    const reader = new InMemoryNotificationRepository([
+      NotificationBuilder.create(USER_ID).withId(1).withCreatedAt(minutesAfterBase(1)).build(),
+      NotificationBuilder.create(USER_ID).withId(2).withCreatedAt(minutesAfterBase(2)).build(),
+      NotificationBuilder.create(USER_ID).withId(3).withCreatedAt(minutesAfterBase(3)).build(),
+    ]);
 
-    const result = await useCase.execute({ userId: mockUserId, size: 20, appVersion: "1.13.0" });
-
-    expect(paginationService.normalizeCursorPagination).toHaveBeenCalledWith({
-      cursor: undefined,
+    // When
+    const page = await createListNotificationsUseCase(reader).execute({
+      userId: USER_ID,
+      cursor: 2,
       size: 20,
     });
-    expect(notificationRepo.findNotificationsByUser).toHaveBeenCalledWith({
-      userId: mockUserId,
-      cursor: undefined,
-      size: 20,
-      unreadOnly: undefined,
-      types: undefined,
+
+    // Then
+    expect(page.items.map((item) => item.id)).toEqual([1]);
+    expect(page.pagination).toEqual({ hasNext: false, nextCursor: null, size: 20 });
+  });
+
+  it("unreadOnly면 읽은 알림을 뺀다", async () => {
+    // Given
+    const reader = new InMemoryNotificationRepository([
+      NotificationBuilder.create(USER_ID).withId(1).asRead().build(),
+      NotificationBuilder.create(USER_ID).withId(2).asUnread().build(),
+    ]);
+
+    // When
+    const page = await createListNotificationsUseCase(reader).execute({
+      userId: USER_ID,
+      unreadOnly: true,
     });
-    expect(result.items).toHaveLength(2);
+
+    // Then
+    expect(page.items.map((item) => item.id)).toEqual([2]);
   });
 
-  it("unreadOnly 필터를 전달해야 한다", async () => {
-    notificationRepo.findNotificationsByUser.mockResolvedValue([]);
-
-    await useCase.execute({ userId: mockUserId, unreadOnly: true });
-
-    expect(notificationRepo.findNotificationsByUser).toHaveBeenCalledWith(
-      expect.objectContaining({ unreadOnly: true }),
+  it.each([
+    [
+      "SOCIAL",
+      ["FOLLOW_NEW", "NUDGE_RECEIVED", "CHEER_RECEIVED"],
+      ["SYSTEM_NOTICE", "TODO_REMINDER"],
+    ],
+    [
+      "NOTICE",
+      ["SYSTEM_NOTICE", "ADMIN_BROADCAST", "ADMIN_TARGETED"],
+      ["FOLLOW_NEW", "TODO_REMINDER"],
+    ],
+  ] as const)("category %s는 그 분류의 타입만 준다", async (category, included, excluded) => {
+    // Given
+    const types = [...included, ...excluded];
+    const reader = new InMemoryNotificationRepository(
+      types.map((type, index) =>
+        NotificationBuilder.create(USER_ID)
+          .withId(index + 1)
+          .withType(type)
+          .build(),
+      ),
     );
+
+    // When
+    const page = await createListNotificationsUseCase(reader).execute({
+      userId: USER_ID,
+      category,
+      appVersion: "1.13.0",
+    });
+
+    // Then
+    expect(page.items.map((item) => item.type).toSorted()).toEqual([...included].toSorted());
   });
 
-  it("category가 'SOCIAL'이면 소셜 타입 배열을 전달해야 한다", async () => {
-    notificationRepo.findNotificationsByUser.mockResolvedValue([]);
+  it("최신 앱의 전체 목록은 모든 알림 타입을 준다", async () => {
+    // Given
+    const reader = new InMemoryNotificationRepository([
+      NotificationBuilder.create(USER_ID).withId(1).withType("NUDGE_RECEIVED").build(),
+      NotificationBuilder.create(USER_ID).withId(2).withType("NUDGE_REPLIED").build(),
+    ]);
 
-    await useCase.execute({ userId: mockUserId, category: "SOCIAL" });
+    // When
+    const page = await createListNotificationsUseCase(reader).execute({
+      userId: USER_ID,
+      category: "ALL",
+      appVersion: "1.13.0",
+    });
 
-    expect(notificationRepo.findNotificationsByUser).toHaveBeenCalledWith(
-      expect.objectContaining({
-        types: expect.arrayContaining([
-          "FOLLOW_NEW",
-          "FOLLOW_ACCEPTED",
-          "NUDGE_RECEIVED",
-          "CHEER_RECEIVED",
-          "FRIEND_COMPLETED",
-        ]),
-      }),
-    );
-  });
-
-  it("category가 'NOTICE'이면 공지 타입 배열을 전달해야 한다", async () => {
-    notificationRepo.findNotificationsByUser.mockResolvedValue([]);
-
-    await useCase.execute({ userId: mockUserId, category: "NOTICE" });
-
-    expect(notificationRepo.findNotificationsByUser).toHaveBeenCalledWith(
-      expect.objectContaining({
-        types: expect.arrayContaining(["SYSTEM_NOTICE", "ADMIN_BROADCAST", "ADMIN_TARGETED"]),
-      }),
-    );
-  });
-
-  it("최신 앱의 전체 목록은 모든 알림 타입을 조회한다", async () => {
-    notificationRepo.findNotificationsByUser.mockResolvedValue([]);
-
-    await useCase.execute({ userId: mockUserId, category: "ALL", appVersion: "1.13.0" });
-
-    expect(notificationRepo.findNotificationsByUser).toHaveBeenCalledWith(
-      expect.objectContaining({ types: undefined }),
-    );
+    // Then
+    expect(page.items).toHaveLength(2);
   });
 
   it.each([undefined, "1.10.0", "1.10.1"])(
-    "앱 버전 %s의 목록 조회에서 새 알림은 페이지네이션 전에 제외한다",
+    "앱 버전 %s의 목록에서 새 알림은 페이지를 나누기 전에 뺀다",
     async (appVersion) => {
       // Given
-      notificationRepo.findNotificationsByUser.mockResolvedValue([]);
+      const reader = new InMemoryNotificationRepository([
+        NotificationBuilder.create(USER_ID)
+          .withId(1)
+          .withType("NUDGE_RECEIVED")
+          .withCreatedAt(minutesAfterBase(1))
+          .build(),
+        NotificationBuilder.create(USER_ID)
+          .withId(2)
+          .withType("NUDGE_REPLIED")
+          .withCreatedAt(minutesAfterBase(2))
+          .build(),
+        NotificationBuilder.create(USER_ID)
+          .withId(3)
+          .withType("NUDGE_THANKED")
+          .withCreatedAt(minutesAfterBase(3))
+          .build(),
+      ]);
 
       // When
-      await useCase.execute({ userId: mockUserId, appVersion, cursor: 5 });
+      const page = await createListNotificationsUseCase(reader).execute({
+        userId: USER_ID,
+        appVersion,
+        size: 1,
+      });
 
       // Then
-      const types = notificationRepo.findNotificationsByUser.mock.calls[0]?.[0].types;
-      expect(types).toContain("NUDGE_RECEIVED");
-      expect(types).not.toContain("NUDGE_REPLIED");
-      expect(types).not.toContain("NUDGE_THANKED");
+      expect(page.items.map((item) => item.type)).toEqual(["NUDGE_RECEIVED"]);
+      expect(page.pagination.hasNext).toBe(false);
     },
   );
-
-  it("커서를 전달해야 한다", async () => {
-    paginationService.normalizeCursorPagination.mockReturnValue({
-      cursor: 5,
-      size: 20,
-      take: 21,
-    });
-    notificationRepo.findNotificationsByUser.mockResolvedValue([]);
-
-    await useCase.execute({ userId: mockUserId, cursor: 5, size: 20 });
-
-    expect(notificationRepo.findNotificationsByUser).toHaveBeenCalledWith(
-      expect.objectContaining({ cursor: 5 }),
-    );
-  });
 });

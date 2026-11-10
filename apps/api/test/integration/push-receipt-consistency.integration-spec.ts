@@ -17,11 +17,13 @@ import {
   pushDispatch,
   user as userTable,
 } from "#api/platform/database/schema/index";
+import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { UserFixture } from "#test/fixtures/user.fixture";
 import { createDatabaseTransactionFixture } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
 const AT = new Date("2026-10-08T03:00:00.000Z");
+const AT_INSTANT = Temporal.Instant.from(AT.toISOString());
 const ACCEPTED_AT = new Date("2026-10-08T02:40:00.000Z");
 const fingerprint = (token: string) => createHash("sha256").update(token).digest("hex");
 const unregistered = (ticketId: string): PushReceiptResult => ({
@@ -72,6 +74,7 @@ describe("receipt 정합성 (실제 PostgreSQL)", () => {
       sessionId: null,
       payloadVersion: 1,
       appVersion: null,
+      registeredAt: AT_INSTANT,
     });
     const [notification] = await client
       .insert(notificationTable)
@@ -139,11 +142,15 @@ describe("receipt 정합성 (실제 PostgreSQL)", () => {
       sessionId: null,
       payloadVersion: 1,
       appVersion: null,
+      registeredAt: AT_INSTANT,
     });
 
     // When
     const invalid = await record(f, [unregistered(f.ticketId)]);
-    await f.tokens.deactivateInvalidTokens(invalid.map((item) => item.token));
+    await f.tokens.deactivateInvalidTokens(
+      invalid.map((item) => item.token),
+      AT_INSTANT,
+    );
 
     // Then
     expect(invalid).toEqual([]);
@@ -163,7 +170,10 @@ describe("receipt 정합성 (실제 PostgreSQL)", () => {
 
     // When
     const invalid = await record(f, [unregistered(f.ticketId)]);
-    await f.tokens.deactivateInvalidTokens(invalid.map((item) => item.token));
+    await f.tokens.deactivateInvalidTokens(
+      invalid.map((item) => item.token),
+      AT_INSTANT,
+    );
 
     // Then
     expect(invalid).toEqual([{ userId: f.user.id, token: f.token.token }]);
@@ -186,8 +196,12 @@ describe("receipt 정합성 (실제 PostgreSQL)", () => {
       sessionId: null,
       payloadVersion: 1,
       appVersion: null,
+      registeredAt: AT_INSTANT,
     });
-    const result = await f.tokens.deactivateInvalidTokens(invalid.map((item) => item.token));
+    const result = await f.tokens.deactivateInvalidTokens(
+      invalid.map((item) => item.token),
+      AT_INSTANT,
+    );
 
     // Then
     expect(result.count).toBe(0);
@@ -363,7 +377,7 @@ describe("receipt 정합성 (실제 PostgreSQL)", () => {
     const reconciler = new ReconcilePushReceiptsUseCase({
       pushReceiptRepository: f.receipts,
       pushTokenRepository: {
-        async deactivateInvalidTokens(tokens) {
+        async deactivateInvalidTokens(tokens, deactivatedAt) {
           if (failOnce) {
             failOnce = false;
             await f.txHost.tx.insert(notificationTable).values({
@@ -373,7 +387,7 @@ describe("receipt 정합성 (실제 PostgreSQL)", () => {
               body: "fixture",
             });
           }
-          return f.tokens.deactivateInvalidTokens(tokens);
+          return f.tokens.deactivateInvalidTokens(tokens, deactivatedAt);
         },
       },
       pushProvider: {
@@ -384,6 +398,7 @@ describe("receipt 정합성 (실제 PostgreSQL)", () => {
       },
       unitOfWork: f.uow,
       cache: { async invalidatePushTokens() {} },
+      clock: new FixedClock(AT_INSTANT),
       logger: { log() {}, warn() {} },
     });
 

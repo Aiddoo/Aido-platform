@@ -2,6 +2,8 @@ import type { Mocked } from "vitest";
 import { vi } from "vitest";
 import { mockDeep } from "vitest-mock-extended";
 
+import { DateClock } from "#test/doubles/platform/date-clock";
+
 import type { CreateNotificationData } from "../../../inbox/application/ports/notification-draft.port.js";
 import { SendNotificationWithDedupUseCase } from "./send-notification-with-dedup.use-case.js";
 
@@ -37,7 +39,7 @@ describe("SendNotificationWithDedupUseCase", () => {
   beforeEach(async () => {
     const sendNotificationWithDedupDependencies = mockDeep<
       ConstructorParameters<typeof SendNotificationWithDedupUseCase>[0]
-    >({});
+    >({ clock: new DateClock() });
     const unit = new SendNotificationWithDedupUseCase(sendNotificationWithDedupDependencies);
     useCase = unit;
     sendNotification = sendNotificationWithDedupDependencies.sendNotification;

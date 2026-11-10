@@ -1,10 +1,6 @@
 import type { NotificationDeliveryPreference } from "./user-notification-settings.port.js";
 
-export const NOTIFICATION_RECIPIENT_PREFERENCE_READER = Symbol(
-  "NOTIFICATION_RECIPIENT_PREFERENCE_READER",
-);
-
-/** 단건 알림 전달에 필요한 수신자 설정의 기본값·캐시 일관성을 제공한다. */
-export interface NotificationRecipientPreferenceReaderPort {
-  getPreference(userId: string): Promise<NotificationDeliveryPreference>;
+// 단건 알림 전달에 쓰는 수신자 설정(기본값·캐시 일관성 포함)
+export abstract class NotificationRecipientPreferenceReaderPort {
+  abstract getPreference(userId: string): Promise<NotificationDeliveryPreference>;
 }

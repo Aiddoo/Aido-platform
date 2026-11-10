@@ -1,4 +1,4 @@
-import { Inject, Injectable } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 import { z } from "zod";
 
 import { CacheService } from "#api/platform/cache/cache.service";
@@ -7,11 +7,8 @@ import {
   NOTIFICATION_CACHE_TTL_MS,
   NotificationCacheKey,
 } from "../../../inbox/infrastructure/cache/notification-cache.keyspace.js";
-import { type ActivePushTokenReaderPort } from "../../application/ports/active-push-token.reader.port.js";
-import {
-  PUSH_TOKEN_REPOSITORY,
-  type PushTokenRepositoryPort,
-} from "../../application/ports/push-token.repository.port.js";
+import type { ActivePushTokenReaderPort } from "../../application/ports/active-push-token.reader.port.js";
+import { PushTokenRepositoryPort } from "../../application/ports/push-token.repository.port.js";
 
 const PUSH_TOKENS_SCHEMA = z.array(z.string());
 
@@ -20,11 +17,7 @@ export class CachedActivePushTokenReaderAdapter implements ActivePushTokenReader
   readonly #pushTokenRepository: PushTokenRepositoryPort;
   readonly #cacheService: CacheService;
 
-  constructor(
-    @Inject(PUSH_TOKEN_REPOSITORY)
-    pushTokenRepository: PushTokenRepositoryPort,
-    cacheService: CacheService,
-  ) {
+  constructor(pushTokenRepository: PushTokenRepositoryPort, cacheService: CacheService) {
     this.#pushTokenRepository = pushTokenRepository;
     this.#cacheService = cacheService;
   }

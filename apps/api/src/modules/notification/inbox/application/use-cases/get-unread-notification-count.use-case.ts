@@ -2,33 +2,37 @@ import {
   resolveNotificationInboxScope,
   visibleNotificationTypes,
 } from "../../../push/domain/notification-client-capability.domain-service.js";
-import { type NotificationCachePort } from "../ports/notification-cache.port.js";
-import { type NotificationInboxReaderPort } from "../ports/notification-inbox.reader.port.js";
+import type { NotificationCachePort } from "../ports/notification-cache.port.js";
+import type { NotificationInboxReaderPort } from "../ports/notification-inbox.reader.port.js";
 
-/**
- * 읽지 않은 알림 수 조회 유스케이스 (2분 캐시).
- */
-interface GetUnreadCountDependencies {
+export interface GetUnreadNotificationCountQuery {
+  readonly userId: string;
+  readonly appVersion?: string;
+}
+
+export interface GetUnreadNotificationCountDependencies {
   readonly notificationInboxReader: Pick<NotificationInboxReaderPort, "countUnread">;
   readonly cache: Pick<NotificationCachePort, "wrapUnreadCount">;
 }
 
 export class GetUnreadNotificationCountUseCase {
-  readonly #dependencies: GetUnreadCountDependencies;
+  readonly #dependencies: GetUnreadNotificationCountDependencies;
 
-  constructor(dependencies: GetUnreadCountDependencies) {
+  constructor(dependencies: GetUnreadNotificationCountDependencies) {
     this.#dependencies = dependencies;
   }
 
-  async execute(userId: string, appVersion?: string): Promise<number> {
-    return this.#dependencies.cache.wrapUnreadCount(
-      userId,
+  execute(query: GetUnreadNotificationCountQuery): Promise<number> {
+    const { notificationInboxReader, cache } = this.#dependencies;
+    // 앱 버전마다 보이는 타입이 달라 캐시도 버전 범위별로 나눈다
+    return cache.wrapUnreadCount(
+      query.userId,
       () =>
-        this.#dependencies.notificationInboxReader.countUnread(
-          userId,
-          visibleNotificationTypes(appVersion),
+        notificationInboxReader.countUnread(
+          query.userId,
+          visibleNotificationTypes(query.appVersion),
         ),
-      resolveNotificationInboxScope(appVersion),
+      resolveNotificationInboxScope(query.appVersion),
     );
   }
 }

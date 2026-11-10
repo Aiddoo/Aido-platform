@@ -10,13 +10,11 @@ import {
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { pushToken } from "#api/platform/database/schema/index";
 
-import type {
-  FindPushTokensParams,
-  RegisterPushTokenData,
-} from "../../../inbox/application/ports/notification-draft.port.js";
 import {
+  type FindPushTokensParams,
   PushTokenRegistrationConflictError,
   type PushTokenRepositoryPort,
+  type RegisterPushTokenData,
 } from "../../application/ports/push-token.repository.port.js";
 import type { PushTokenRecord } from "../../application/read-models/push-token.read-model.js";
 
@@ -60,7 +58,16 @@ export class DrizzlePushTokenRepository implements PushTokenRepositoryPort {
   }
 
   async registerPushToken(data: RegisterPushTokenData): Promise<PushTokenRecord> {
-    const { userId, token, deviceId, platform, sessionId, payloadVersion, appVersion } = data;
+    const {
+      userId,
+      token,
+      deviceId,
+      platform,
+      sessionId,
+      payloadVersion,
+      appVersion,
+      registeredAt,
+    } = data;
     try {
       const [row] = await this.#db
         .insert(pushToken)
@@ -73,10 +80,19 @@ export class DrizzlePushTokenRepository implements PushTokenRepositoryPort {
           isActive: true,
           payloadVersion,
           appVersion,
+          updatedAt: registeredAt,
         })
         .onConflictDoUpdate({
           target: [pushToken.userId, pushToken.deviceId],
-          set: { token, platform, sessionId, isActive: true, payloadVersion, appVersion },
+          set: {
+            token,
+            platform,
+            sessionId,
+            isActive: true,
+            payloadVersion,
+            appVersion,
+            updatedAt: registeredAt,
+          },
         })
         .returning();
       return requireRecord(row);
@@ -137,10 +153,13 @@ export class DrizzlePushTokenRepository implements PushTokenRepositoryPort {
     return { userIds: deleted.map((row) => row.userId) };
   }
 
-  async deactivateInvalidTokens(tokens: string[]): Promise<{ count: number }> {
+  async deactivateInvalidTokens(
+    tokens: string[],
+    deactivatedAt: Temporal.Instant,
+  ): Promise<{ count: number }> {
     const updated = await this.#db
       .update(pushToken)
-      .set({ isActive: false })
+      .set({ isActive: false, updatedAt: deactivatedAt })
       .where(inArray(pushToken.token, tokens))
       .returning({ id: pushToken.id });
     return { count: updated.length };

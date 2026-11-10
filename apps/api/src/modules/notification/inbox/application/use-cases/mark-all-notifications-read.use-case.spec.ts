@@ -1,54 +1,67 @@
-import type { Mocked } from "vitest";
-import { mockDeep } from "vitest-mock-extended";
-
-import { createNotificationCacheMock } from "#test/mocks/ports/index";
+import { NotificationBuilder } from "#test/builders/index";
+import { InMemoryNotificationRepository } from "#test/doubles/notification/in-memory-notification.repository";
+import { PassThroughNotificationCache } from "#test/doubles/notification/pass-through-notification-cache";
+import { FixedClock } from "#test/doubles/platform/fixed-clock";
+import { SilentLogger } from "#test/doubles/platform/silent-logger";
 
 import { MarkAllNotificationsReadUseCase } from "./mark-all-notifications-read.use-case.js";
 
-describe("MarkAllNotificationsReadUseCase", () => {
-  let useCase: MarkAllNotificationsReadUseCase;
-  let notificationRepo: Mocked<
-    ConstructorParameters<typeof MarkAllNotificationsReadUseCase>[0]["notificationRepository"]
-  >;
-  let cache: Mocked<ConstructorParameters<typeof MarkAllNotificationsReadUseCase>[0]["cache"]>;
+const USER_ID = "user-1";
+const NOW = Temporal.Instant.from("2026-11-10T09:00:00Z");
 
-  const mockUserId = "user-1";
+function seedNotifications() {
+  return [
+    NotificationBuilder.create(USER_ID).withId(1).withType("NUDGE_RECEIVED").build(),
+    NotificationBuilder.create(USER_ID).withId(2).withType("NUDGE_REPLIED").build(),
+    NotificationBuilder.create(USER_ID).withId(3).withType("NUDGE_THANKED").build(),
+    NotificationBuilder.create("other-user").withId(4).build(),
+  ];
+}
 
-  beforeEach(async () => {
-    const markAllAsReadDependencies = mockDeep<
-      ConstructorParameters<typeof MarkAllNotificationsReadUseCase>[0]
-    >({
-      cache: createNotificationCacheMock(),
-    });
-    const unit = new MarkAllNotificationsReadUseCase(markAllAsReadDependencies);
-    useCase = unit;
-    notificationRepo = markAllAsReadDependencies.notificationRepository;
-    cache = markAllAsReadDependencies.cache;
-  });
-
-  it("모든 알림을 읽음 처리하고 캐시를 무효화해야 한다", async () => {
-    notificationRepo.markAllAsRead.mockResolvedValue({ count: 5 });
-
-    const result = await useCase.execute(mockUserId, "1.13.0");
-
-    expect(notificationRepo.markAllAsRead).toHaveBeenCalledWith(mockUserId, undefined);
-    expect(cache.invalidateUnreadCount).toHaveBeenCalledWith(mockUserId);
-    expect(result.count).toBe(5);
-  });
-
-  it("기존 앱의 전체 읽음 처리는 표시할 수 있는 알림만 변경한다", async () => {
+describe("MarkAllNotificationsReadUseCase — 모든 알림 읽음", () => {
+  it("최신 앱은 내 미읽음 알림을 모두 읽음 처리하고 미읽음 캐시를 비운다", async () => {
     // Given
-    notificationRepo.markAllAsRead.mockResolvedValue({ count: 2 });
+    const notificationRepository = new InMemoryNotificationRepository(seedNotifications());
+    const cache = new PassThroughNotificationCache();
+    const useCase = new MarkAllNotificationsReadUseCase({
+      notificationRepository,
+      cache,
+      clock: new FixedClock(NOW),
+      logger: new SilentLogger(),
+    });
 
     // When
-    const result = await useCase.execute(mockUserId, "1.10.1");
+    const result = await useCase.execute({ userId: USER_ID, appVersion: "1.13.0" });
 
     // Then
-    const types = notificationRepo.markAllAsRead.mock.calls[0]?.[1];
-    expect(types).toContain("NUDGE_RECEIVED");
-    expect(types).not.toContain("NUDGE_REPLIED");
-    expect(types).not.toContain("NUDGE_THANKED");
-    expect(result.count).toBe(2);
-    expect(cache.invalidateUnreadCount).toHaveBeenCalledWith(mockUserId);
+    expect(result.count).toBe(3);
+    expect(notificationRepository.rowOf(2)).toMatchObject({
+      isRead: true,
+      readAt: new Date(NOW.epochMilliseconds),
+    });
+    expect(notificationRepository.rowOf(4)?.isRead).toBe(false);
+    expect(cache.invalidatedUnreadCountUserIds).toEqual([USER_ID]);
+  });
+
+  it("기존 앱은 표시할 수 있는 알림만 읽음 처리하고 답장·감사 알림은 미읽음으로 둔다", async () => {
+    // Given
+    const notificationRepository = new InMemoryNotificationRepository(seedNotifications());
+    const cache = new PassThroughNotificationCache();
+    const useCase = new MarkAllNotificationsReadUseCase({
+      notificationRepository,
+      cache,
+      clock: new FixedClock(NOW),
+      logger: new SilentLogger(),
+    });
+
+    // When
+    const result = await useCase.execute({ userId: USER_ID, appVersion: "1.10.1" });
+
+    // Then
+    expect(result.count).toBe(1);
+    expect(notificationRepository.rowOf(1)?.isRead).toBe(true);
+    expect(notificationRepository.rowOf(2)?.isRead).toBe(false);
+    expect(notificationRepository.rowOf(3)?.isRead).toBe(false);
+    expect(cache.invalidatedUnreadCountUserIds).toEqual([USER_ID]);
   });
 });

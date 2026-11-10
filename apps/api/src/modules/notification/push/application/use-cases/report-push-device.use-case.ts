@@ -4,16 +4,19 @@ import { uniq } from "es-toolkit";
 
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
-import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
+import type { ClockPort } from "#api/shared/application/ports/clock.port";
+import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { normalizeIanaTimezone } from "#api/shared/domain/date/utils/timezone";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { NotificationCachePort } from "../../../inbox/application/ports/notification-cache.port.js";
+import { PushDeviceId } from "../../domain/push-device-id.vo.js";
 import { PushDevice } from "../../domain/push-device.aggregate.js";
 import { platformFromDeviceId } from "../../domain/push-device.domain-service.js";
 import { PushPermission } from "../../domain/push-permission.vo.js";
 import { NotificationDeliveryLogEvent } from "../notification-delivery.log-events.js";
 import type { PushDeviceRepositoryPort } from "../ports/push-device.repository.port.js";
-import type { PushProvider } from "../ports/push-provider.port.js";
+import type { PushProviderPort } from "../ports/push-provider.port.js";
 import {
   PushTokenRegistrationConflictError,
   type PushTokenRepositoryPort,
@@ -42,7 +45,7 @@ export interface PushDeviceReport {
   readonly platform: PushDevicePlatform;
   readonly permission: { readonly status: PushPermissionStatus; readonly canAskAgain: boolean };
   readonly hasActiveToken: boolean;
-  readonly reportedAt: Date;
+  readonly reportedAt: Temporal.Instant;
 }
 
 interface ReportPushDeviceDependencies {
@@ -55,12 +58,13 @@ interface ReportPushDeviceDependencies {
     "releasePushTokenHeldElsewhere" | "registerPushToken" | "deletePushTokensByDevice"
   >;
   readonly unitOfWork: Pick<UnitOfWorkPort, "run">;
-  readonly pushProvider: Pick<PushProvider, "validateToken">;
+  readonly pushProvider: Pick<PushProviderPort, "validateToken">;
   readonly userSettings: Pick<
     UserNotificationSettingsPort,
     "upsertPushLocale" | "upsertPushTimezone"
   >;
   readonly cache: Pick<NotificationCachePort, "invalidatePushTokens" | "invalidateUserPreference">;
+  readonly clock: ClockPort;
   readonly logger: Pick<ApplicationLoggerPort, "log" | "warn">;
 }
 
@@ -82,16 +86,16 @@ export class ReportPushDeviceUseCase {
       throw new ApplicationException(ErrorCode.NOTIFICATION_1001);
     }
 
-    const device = PushDevice.report({
-      userId: command.userId,
+    const device = PushDevice.create({
+      id: PushDeviceId.reconstitute(command.deviceId),
+      userId: UserId.reconstitute(command.userId),
       sessionId: command.sessionId,
-      deviceId: command.deviceId,
       platform: platformFromDeviceId(command.deviceId) ?? command.platformHint ?? null,
-      permission: PushPermission.of(command.permission),
+      permission: PushPermission.create(command.permission),
       token: command.token,
       deviceModel: command.deviceModel,
       osVersion: command.osVersion,
-      reportedAt: new Date(),
+      now: this.#dependencies.clock.now(),
     });
 
     const releasedUserIds = await this.#saveWithSingleRetry(device, command);
@@ -121,7 +125,7 @@ export class ReportPushDeviceUseCase {
     });
 
     return {
-      deviceId: device.deviceId,
+      deviceId: device.id.value,
       platform: device.platform,
       permission: { status: device.permission.status, canAskAgain: device.permission.canAskAgain },
       hasActiveToken,
@@ -149,7 +153,8 @@ export class ReportPushDeviceUseCase {
 
   #save(device: PushDevice, command: ReportPushDeviceCommand): Promise<readonly string[]> {
     const { pushDeviceRepository, pushTokenRepository } = this.#dependencies;
-    const { userId, deviceId } = device;
+    const userId = device.userId.value;
+    const deviceId = device.id.value;
     const token = device.deliverableToken;
 
     return this.#dependencies.unitOfWork.run(async () => {
@@ -171,6 +176,7 @@ export class ReportPushDeviceUseCase {
           sessionId: device.sessionId,
           payloadVersion: command.payloadVersion,
           appVersion: command.appVersion,
+          registeredAt: device.reportedAt,
         });
       }
       return [...devices.userIds, ...tokens.userIds];

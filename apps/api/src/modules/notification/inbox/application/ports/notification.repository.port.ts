@@ -1,8 +1,10 @@
+import type { NotificationId } from "../../domain/notification-id.vo.js";
 import type { NotificationType } from "../../domain/notification-type.constants.js";
+import type { Notification } from "../../domain/notification.aggregate.js";
 import type { InboxNotification } from "../read-models/inbox-notification.read-model.js";
 import type { CreateNotificationData } from "./notification-draft.port.js";
 
-/** 알림 저장소 포트 (DI 토큰) */
+// 옛 Symbol 토큰. 아직 Symbol로 주입하는 곳이 있어 같은 인스턴스로 묶어 둔다
 export const NOTIFICATION_REPOSITORY = Symbol("NOTIFICATION_REPOSITORY");
 
 export class DuplicateNotificationError extends Error {
@@ -12,20 +14,26 @@ export class DuplicateNotificationError extends Error {
   }
 }
 
-/**
- * 알림 영속 상태 변경 포트.
- *
- * 어댑터는 CLS TransactionHost 기반으로 활성 트랜잭션에 참여한다.
- */
-export interface NotificationRepositoryPort {
-  createNotification(data: CreateNotificationData): Promise<InboxNotification>;
-  createManyNotificationsAndReturn(
+export abstract class NotificationRepositoryPort {
+  abstract findById(notificationId: NotificationId): Promise<Notification | null>;
+  abstract createNotification(data: CreateNotificationData): Promise<InboxNotification>;
+  abstract createManyNotificationsAndReturn(
     dataList: CreateNotificationData[],
   ): Promise<InboxNotification[]>;
-  markAsRead(id: number, userId: string): Promise<boolean>;
-  markAsOpened(id: number, userId: string): Promise<boolean>;
-  markAllAsRead(userId: string, types?: readonly NotificationType[]): Promise<{ count: number }>;
-  deleteNotificationsByActorId(
+  // 아직 읽지 않은 행에만 읽음을 반영한다. 동시 요청이 먼저 바꿨으면 false다
+  abstract markAsRead(notification: Notification): Promise<boolean>;
+  // 처음 연 기록만 남기고 읽음도 맞춘다. 남의 알림·없는 알림·이미 연 알림은 false다
+  abstract markAsOpened(
+    notificationId: NotificationId,
+    userId: string,
+    now: Temporal.Instant,
+  ): Promise<boolean>;
+  abstract markAllAsRead(
+    userId: string,
+    types: readonly NotificationType[] | undefined,
+    now: Temporal.Instant,
+  ): Promise<{ count: number }>;
+  abstract deleteNotificationsByActorId(
     actorId: string,
   ): Promise<{ count: number; affectedUserIds: string[] }>;
 }

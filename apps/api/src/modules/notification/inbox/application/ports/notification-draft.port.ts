@@ -6,14 +6,6 @@ import type { NotificationType } from "../../domain/notification-type.constants.
 /** 알림 메타데이터 입력 (DB jsonb 컬럼에 저장) */
 export type NotificationMetadataInput = Record<string, unknown>;
 
-export interface FindNotificationsParams {
-  userId: string;
-  cursor?: number;
-  size: number;
-  unreadOnly?: boolean;
-  types?: NotificationType[];
-}
-
 export interface FindPushTokensParams {
   userId: string;
   activeOnly?: boolean;
@@ -126,6 +118,10 @@ export interface CreateNotificationData {
   title: string;
 
   body: string;
+
+  // 요청 언어로 다시 그릴 카피 키와 재료. 없으면 저장한 title·body를 그대로 보여 준다
+  copyKey?: string;
+  copyFacts?: Record<string, unknown>;
 
   /**
    * 푸시 알림 액션 (선택)

@@ -1,10 +1,10 @@
 import type { PushPermissionStatus } from "@aido/api/vocabulary";
 
-import type { RegisterPushTokenData } from "#api/modules/notification/inbox/application/ports/notification-draft.port";
 import type { PushDeviceRepositoryPort } from "#api/modules/notification/push/application/ports/push-device.repository.port";
 import {
   PushTokenRegistrationConflictError,
   type PushTokenRepositoryPort,
+  type RegisterPushTokenData,
 } from "#api/modules/notification/push/application/ports/push-token.repository.port";
 import type { PushTokenRecord } from "#api/modules/notification/push/application/read-models/push-token.read-model";
 import type { PushDevice } from "#api/modules/notification/push/domain/push-device.aggregate";
@@ -15,7 +15,7 @@ function keyOf(userId: string, deviceId: string): DeviceKey {
   return `${userId}:${deviceId}`;
 }
 
-/** 기기 기록과 토큰을 메모리에 두는 대역. 저장 결과와 소유권 이전을 상태로 확인한다. */
+// 기기 기록과 토큰을 메모리에 두는 대역. 저장 결과와 소유권 이전을 상태로 확인한다
 export class InMemoryPushDeviceStore
   implements
     PushDeviceRepositoryPort,
@@ -35,16 +35,16 @@ export class InMemoryPushDeviceStore
 
   async releasePushDeviceHeldElsewhere(userId: string, deviceId: string) {
     const released = [...this.devices.values()].filter(
-      (device) => device.deviceId === deviceId && device.userId !== userId,
+      (device) => device.id.value === deviceId && device.userId.value !== userId,
     );
     for (const device of released) {
-      this.devices.delete(keyOf(device.userId, device.deviceId));
+      this.devices.delete(keyOf(device.userId.value, device.id.value));
     }
-    return { userIds: released.map((device) => device.userId) };
+    return { userIds: released.map((device) => device.userId.value) };
   }
 
   async savePushDevice(device: PushDevice): Promise<void> {
-    this.devices.set(keyOf(device.userId, device.deviceId), device);
+    this.devices.set(keyOf(device.userId.value, device.id.value), device);
   }
 
   async deletePushDevice(userId: string, deviceId: string): Promise<void> {
@@ -53,8 +53,8 @@ export class InMemoryPushDeviceStore
 
   async deleteAllPushDevicesByUser(userId: string): Promise<void> {
     for (const device of this.devices.values()) {
-      if (device.userId === userId) {
-        this.devices.delete(keyOf(device.userId, device.deviceId));
+      if (device.userId.value === userId) {
+        this.devices.delete(keyOf(device.userId.value, device.id.value));
       }
     }
   }
@@ -83,7 +83,7 @@ export class InMemoryPushDeviceStore
       throw new PushTokenRegistrationConflictError();
     }
     this.tokens.set(keyOf(data.userId, data.deviceId), data);
-    const now = new Date("2026-11-04T00:00:00.000Z");
+    const now = data.registeredAt;
     return {
       id: this.registerCalls,
       userId: data.userId,
@@ -117,9 +117,9 @@ export class InMemoryPushDeviceStore
       (device) => device.sessionId != null && sessionIds.includes(device.sessionId),
     );
     for (const device of released) {
-      this.devices.delete(keyOf(device.userId, device.deviceId));
+      this.devices.delete(keyOf(device.userId.value, device.id.value));
     }
-    return { userIds: released.map((device) => device.userId) };
+    return { userIds: released.map((device) => device.userId.value) };
   }
 
   async deletePushTokensBySessions(sessionIds: readonly string[]) {
@@ -132,12 +132,16 @@ export class InMemoryPushDeviceStore
     return { userIds: released.map((row) => row.userId) };
   }
 
-  async findPermissionStatusesByUsers(userIds: readonly string[], reportedSince: Date) {
+  async findPermissionStatusesByUsers(userIds: readonly string[], reportedSince: Temporal.Instant) {
     const statusesByUser = new Map<string, PushPermissionStatus[]>();
     for (const device of this.devices.values()) {
-      if (userIds.includes(device.userId) && device.reportedAt >= reportedSince) {
-        statusesByUser.set(device.userId, [
-          ...(statusesByUser.get(device.userId) ?? []),
+      const userId = device.userId.value;
+      if (
+        userIds.includes(userId) &&
+        Temporal.Instant.compare(device.reportedAt, reportedSince) >= 0
+      ) {
+        statusesByUser.set(userId, [
+          ...(statusesByUser.get(userId) ?? []),
           device.permission.status,
         ]);
       }

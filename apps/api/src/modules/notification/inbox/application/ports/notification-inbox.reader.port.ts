@@ -1,12 +1,19 @@
 import type { NotificationType } from "../../domain/notification-type.constants.js";
 import type { InboxNotification } from "../read-models/inbox-notification.read-model.js";
-import type { FindNotificationsParams } from "./notification-draft.port.js";
 
+// 옛 Symbol 토큰. 아직 Symbol로 주입하는 곳이 있어 같은 인스턴스로 묶어 둔다
 export const NOTIFICATION_INBOX_READER = Symbol("NOTIFICATION_INBOX_READER");
 
-/** 알림함 화면과 읽음 처리에 필요한 조회 projection 포트. */
-export interface NotificationInboxReaderPort {
-  findNotificationById(id: number): Promise<InboxNotification | null>;
-  findNotificationsByUser(params: FindNotificationsParams): Promise<InboxNotification[]>;
-  countUnread(userId: string, types?: readonly NotificationType[]): Promise<number>;
+export interface ListInboxNotificationsQuery {
+  readonly userId: string;
+  readonly afterNotificationId: number | null;
+  readonly limit: number;
+  readonly unreadOnly: boolean;
+  readonly types: readonly NotificationType[] | undefined;
+}
+
+export abstract class NotificationInboxReaderPort {
+  // 최신순(createdAt·id 내림차순)이다. after 알림 뒤부터 주고 그 알림이 없으면 빈 목록이다
+  abstract listByUser(query: ListInboxNotificationsQuery): Promise<InboxNotification[]>;
+  abstract countUnread(userId: string, types?: readonly NotificationType[]): Promise<number>;
 }
