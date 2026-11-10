@@ -93,6 +93,18 @@ await jobQueue.registerSchedules(DOCUMENT_QUEUE); // schedules를 key별로 upse
 
 **워터마크 따라잡기**: 마지막 성공 시각(`ScheduledSweepCursor` 행)부터 지금까지의 분(최대 15분)을 모두 처리한다. 중복은 기존 일간 dedup 유니크가 막는다. 15분 넘게 늦은 리마인더는 보내지 않고 사유를 남긴다.
 
+```ts
+const lastCompletedAt = await sweepCursor.findLastCompletedAt("tz-reminder-sweep");
+for (const minute of minutesToSweep({ lastCompletedAt, now: clock.now(), maxCatchUpMinutes: 15 })) {
+  await sweepMinute(minute);
+  await sweepCursor.markCompleted("tz-reminder-sweep", minute); // 더 이른 시각으로는 되돌리지 않는다
+}
+```
+
+- `SweepCursorPort`(`shared/application/ports`)는 활성 UoW 트랜잭션에 쓰므로 분 처리와 커서 갱신을 같은 UoW에 넣으면 함께 커밋된다.
+- `minutesToSweep`(`shared/application/minutes-to-sweep.ts`)은 처음이면 지금 분만, 시계가 거꾸로 가면 지금 분만, 이미 지금 분을 끝냈으면 빈 목록을 준다.
+- key는 스케줄 key와 같게 둔다. 실제 sweep 전환은 notification Context가 옮길 때 한다.
+
 ## 배포 중 내구성
 
 블루그린이 없어 `compose up` 동안 API와 worker가 잠깐 멈춘다.

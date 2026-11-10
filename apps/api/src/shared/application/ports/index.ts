@@ -5,4 +5,5 @@ export * from "./job-runtime.port.js";
 export * from "./mutation-lock.port.js";
 export * from "./operational-alert.port.js";
 export * from "./savepoint-runner.port.js";
+export * from "./sweep-cursor.port.js";
 export * from "./unit-of-work.port.js";

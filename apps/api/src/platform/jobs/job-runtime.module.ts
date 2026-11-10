@@ -9,7 +9,9 @@ import {
 
 import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
 import { JOB_RUNTIME, JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
+import { SweepCursorPort } from "#api/shared/application/ports/sweep-cursor.port";
 
+import { DrizzleSweepCursorAdapter } from "./drizzle-sweep-cursor.adapter.js";
 import { JobQueueRegistry } from "./job-queue.registry.js";
 import { PgBossJobQueueAdapter } from "./pg-boss-job-queue.adapter.js";
 import { PgBossJobRuntimeAdapter, pgBossClientProvider } from "./pg-boss-job-runtime.adapter.js";
@@ -44,8 +46,9 @@ export class JobRuntimeLifecycle implements OnApplicationBootstrap, BeforeApplic
     PgBossJobQueueAdapter,
     { provide: JobQueuePort, useExisting: PgBossJobQueueAdapter },
     JobQueueRegistry,
+    { provide: SweepCursorPort, useClass: DrizzleSweepCursorAdapter },
     JobRuntimeLifecycle,
   ],
-  exports: [JOB_RUNTIME, JobRuntimePort, JobQueuePort, JobQueueRegistry],
+  exports: [JOB_RUNTIME, JobRuntimePort, JobQueuePort, JobQueueRegistry, SweepCursorPort],
 })
 export class JobRuntimeModule {}
