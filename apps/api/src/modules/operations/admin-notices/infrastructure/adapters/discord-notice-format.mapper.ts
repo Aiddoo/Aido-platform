@@ -1,9 +1,3 @@
-import {
-  calendarDaysBetween,
-  localDateInTimezone,
-  toLocalTimeString,
-} from "#api/shared/domain/date/utils/timezone";
-
 /** 운영자가 한국에서 보므로 시각은 KST로 적는다. */
 const OPERATOR_TIMEZONE = "Asia/Seoul";
 const DAY_MS = 24 * 60 * 60 * 1_000;
@@ -41,9 +35,16 @@ export function field(name: string, value: string | undefined, inline = true): D
   };
 }
 
-function dateOf(iso: string): Date | null {
-  const date = new Date(iso);
-  return Number.isNaN(date.getTime()) ? null : date;
+function instantOf(iso: string): Temporal.Instant | null {
+  try {
+    return Temporal.Instant.from(iso);
+  } catch {
+    return null;
+  }
+}
+
+function operatorLocalOf(instant: Temporal.Instant): Temporal.ZonedDateTime {
+  return instant.toZonedDateTimeISO(OPERATOR_TIMEZONE);
 }
 
 /** `2026-12-10 09:00 KST`. 읽을 수 없는 값은 원문 그대로 둔다. */
@@ -51,40 +52,42 @@ export function formatKst(iso: string | undefined): string | undefined {
   if (iso == null) {
     return undefined;
   }
-  const date = dateOf(iso);
-  if (date == null) {
+  const instant = instantOf(iso);
+  if (instant == null) {
     return iso;
   }
-  return `${localDateInTimezone(date, OPERATOR_TIMEZONE)} ${toLocalTimeString(date, OPERATOR_TIMEZONE)} KST`;
+  const local = operatorLocalOf(instant);
+  return `${local.toPlainDate().toString()} ${local.toPlainTime().toString({ smallestUnit: "minute" })} KST`;
 }
 
 /** KST 시각 뒤에 Discord 상대 시각(`3일 후`)을 붙인다. 상대 시각은 보는 사람의 앱이 그린다. */
 export function formatKstWithRelative(iso: string | undefined): string | undefined {
   const kst = formatKst(iso);
-  const date = iso == null ? null : dateOf(iso);
-  return date == null ? kst : `${kst} · <t:${Math.floor(date.getTime() / 1_000)}:R>`;
+  const instant = iso == null ? null : instantOf(iso);
+  return instant == null ? kst : `${kst} · <t:${Math.floor(instant.epochMilliseconds / 1_000)}:R>`;
 }
 
 /** 가입일과 가입 뒤 지난 날(KST 달력). 예: `2026-10-01 (D+40)` */
 export function formatJoined(joinedAt: string | undefined, at: string): string | undefined {
-  const joined = joinedAt == null ? null : dateOf(joinedAt);
-  const now = dateOf(at);
+  const joined = joinedAt == null ? null : instantOf(joinedAt);
+  const now = instantOf(at);
   if (joined == null || now == null) {
     return joinedAt;
   }
-  const days = calendarDaysBetween(joined, now, OPERATOR_TIMEZONE);
-  const date = localDateInTimezone(joined, OPERATOR_TIMEZONE);
+  const joinedDate = operatorLocalOf(joined).toPlainDate();
+  const days = joinedDate.until(operatorLocalOf(now).toPlainDate(), { largestUnit: "day" }).days;
+  const date = joinedDate.toString();
   return days <= 0 ? `${date} (D+0, 오늘 가입)` : `${date} (D+${days})`;
 }
 
 /** 지금부터 끝나는 시각까지 남은 날. 하루가 안 남았어도 1일로 센다. */
 export function daysUntil(endsAt: string, at: string): number | null {
-  const end = dateOf(endsAt);
-  const now = dateOf(at);
+  const end = instantOf(endsAt);
+  const now = instantOf(at);
   if (end == null || now == null) {
     return null;
   }
-  return Math.max(0, Math.ceil((end.getTime() - now.getTime()) / DAY_MS));
+  return Math.max(0, Math.ceil((end.epochMilliseconds - now.epochMilliseconds) / DAY_MS));
 }
 
 /** 통화 기호를 붙인 금액. 모르는 통화 코드는 숫자 뒤에 코드를 적는다. 웹훅 값(음수 포함)을 그대로 쓴다. */
