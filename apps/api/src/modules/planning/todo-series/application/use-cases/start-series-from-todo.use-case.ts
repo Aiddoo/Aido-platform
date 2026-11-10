@@ -5,11 +5,12 @@ import { ErrorCode } from "@aido/api/errors";
 import { TODO_SERIES_LIMITS } from "@aido/api/vocabulary";
 
 import { ApplicationException } from "#api/shared/application/application.exception";
+import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { MutationLockKeys, type MutationLockPort } from "#api/shared/application/ports/index";
-import { now } from "#api/shared/domain/date/utils/core";
-import { toDateString } from "#api/shared/domain/date/utils/format";
+import { instantToDate } from "#api/shared/domain/time/instant";
 
-import { resolveScheduledInstant } from "../../../shared/domain/todo-schedule.vo.js";
+import { dateKeyOf } from "../../../shared/domain/todo-calendar.domain-service.js";
+import { resolveScheduledInstant } from "../../../shared/domain/todo-calendar.domain-service.js";
 import type { TodoReminderSchedulerPort } from "../../../todos/application/ports/todo-reminder-scheduler.port.js";
 import type {
   CreatedOccurrence,
@@ -40,6 +41,7 @@ interface StartSeriesFromTodoDependencies {
   readonly todoReminder: Pick<TodoReminderSchedulerPort, "cancelReminders" | "scheduleReminders">;
   readonly effects: Pick<PublishTodoCreationUseCase, "publishSeriesStarted">;
   readonly mutationLock: MutationLockPort;
+  readonly clock: ClockPort;
 }
 
 /** 단일 할 일에 반복을 더한다. 그 할 일이 첫 회차가 되어 id·댓글·진행을 유지한다. */
@@ -89,8 +91,8 @@ export class StartSeriesFromTodoUseCase {
     }
     const snapshot = todo.toPersistence();
     const scheduledLocalTime = todo.getLocalTimeIn(timezone);
-    const at = now();
-    const startDate = toDateString(snapshot.startDate);
+    const at = instantToDate(this.#dependencies.clock.now());
+    const startDate = dateKeyOf(snapshot.startDate);
     const series = TodoSeries.planCreation({
       id: randomUUID(),
       userId,

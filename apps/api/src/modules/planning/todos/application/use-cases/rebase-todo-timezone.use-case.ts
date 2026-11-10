@@ -1,13 +1,13 @@
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
+import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import {
   MutationLockKeys,
   type MutationLockPort,
   type UnitOfWorkPort,
 } from "#api/shared/application/ports/index";
-import { now } from "#api/shared/domain/date/utils/core";
 import { resolveWallClockTimezone } from "#api/shared/domain/date/utils/timezone";
 
-import { resolveScheduledInstant } from "../../../shared/domain/todo-schedule.vo.js";
+import { resolveScheduledInstant } from "../../../shared/domain/todo-calendar.domain-service.js";
 import type { TodoSeriesRepositoryPort } from "../../../todo-series/application/ports/todo-series.repository.port.js";
 import type { TodoCachePort } from "../ports/todo-cache.port.js";
 import type { TodoOwnerTimezonePort } from "../ports/todo-owner-timezone.port.js";
@@ -46,6 +46,7 @@ interface RebaseTodoTimezoneDependencies {
   readonly todoCache: Pick<TodoCachePort, "invalidateFriendTodos">;
   readonly unitOfWork: UnitOfWorkPort;
   readonly mutationLock: MutationLockPort;
+  readonly clock: ClockPort;
   readonly logger: Pick<ApplicationLoggerPort, "log">;
   readonly batchSize?: number;
 }
@@ -68,7 +69,7 @@ export class RebaseTodoTimezoneUseCase {
 
   async execute(input: RebaseTodoTimezoneInput): Promise<RebaseTodoTimezoneResult> {
     const { userId } = input;
-    const startedAt = Date.now();
+    const startedAt = performance.now();
     const stored = await this.#dependencies.ownerTimezone.findTimezone(userId);
     const timezone = stored == null ? null : resolveWallClockTimezone(stored);
     const result =
@@ -82,7 +83,7 @@ export class RebaseTodoTimezoneUseCase {
       event: TodoLogEvent.TIMEZONE_REBASED,
       userId,
       timezone,
-      durationMs: Date.now() - startedAt,
+      durationMs: performance.now() - startedAt,
       ...result,
     });
     return result;
@@ -137,7 +138,7 @@ export class RebaseTodoTimezoneUseCase {
     });
     const rebased = candidates.flatMap((candidate) => rebaseInstant(candidate, timezone));
     await todoRepository.updateRebasedInstants(rebased);
-    const nowMs = now().getTime();
+    const nowMs = this.#dependencies.clock.now().epochMilliseconds;
     const reminders = rebased.filter((row) => hasPendingReminder(row, nowMs));
     // 행과 함께 커밋한다. 실패하면 행도 그대로라 재시도가 같은 행을 다시 본다.
     await todoReminder.cancelReminders(reminders.map(({ todoId }) => todoId));

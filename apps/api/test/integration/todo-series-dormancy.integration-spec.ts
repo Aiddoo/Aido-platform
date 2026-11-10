@@ -30,6 +30,7 @@ import {
   userPreference,
 } from "#api/platform/database/schema/index";
 import type { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
+import { DateClock } from "#test/doubles/platform/date-clock";
 import { TodoCategoryFixture, UserFixture } from "#test/fixtures/index";
 import { FakeJobRuntime } from "#test/mocks/fake-job-runtime";
 import { createDatabaseTransactionFixture, createTestClient } from "#test/setup/database-context";
@@ -109,6 +110,7 @@ describe("반복 할 일 휴면·복귀 (실제 PostgreSQL)", () => {
   function dueRunner() {
     const todoRepository = new DrizzleTodoRepository(fixture.txHost);
     return new MaterializeTodoSeriesUseCase({
+      clock: new DateClock(),
       seriesRepository: new DrizzleTodoSeriesRepository(fixture.txHost),
       materializer: new MaterializeTodoOccurrencesUseCase({
         todoRepository,
@@ -143,6 +145,7 @@ describe("반복 할 일 휴면·복귀 (실제 PostgreSQL)", () => {
   /** 서버 프로세스 하나. 메모리 캐시는 프로세스마다 따로다. */
   function catchUp() {
     return new CatchUpTodoSeriesUseCase({
+      clock: new DateClock(),
       seriesRepository: new DrizzleTodoSeriesRepository(fixture.txHost),
       seriesOwner: seriesOwner(),
       dueRunner: dueRunner(),
@@ -152,6 +155,7 @@ describe("반복 할 일 휴면·복귀 (실제 PostgreSQL)", () => {
 
   function job() {
     return new MaterializeDueTodoSeriesUseCase({
+      clock: new DateClock(),
       seriesRepository: new DrizzleTodoSeriesRepository(fixture.txHost),
       seriesOwner: seriesOwner(),
       dueRunner: dueRunner(),
@@ -509,6 +513,7 @@ describe("반복 할 일 휴면·복귀 (실제 PostgreSQL)", () => {
       // Given
       const id = await seedStaleSeries();
       const broken = new CatchUpTodoSeriesUseCase({
+        clock: new DateClock(),
         seriesRepository: new DrizzleTodoSeriesRepository(fixture.txHost),
         seriesOwner: seriesOwner(),
         dueRunner: {

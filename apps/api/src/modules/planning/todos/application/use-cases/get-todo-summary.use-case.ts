@@ -1,6 +1,6 @@
 import { computeEffectiveStreak } from "#api/modules/identity/identity-settings.public";
-import { toDateString } from "#api/shared/domain/date/utils/format";
 
+import { dateKeyOf } from "../../../shared/domain/todo-calendar.domain-service.js";
 import type { CatchUpTodoSeriesUseCase } from "../../../todo-series/application/use-cases/catch-up-todo-series.use-case.js";
 import { summarizeCompletion } from "../../domain/todo-completion.domain-service.js";
 import { resolveTodoSummaryDate } from "../../domain/todo-summary-date.domain-service.js";
@@ -76,7 +76,7 @@ export class GetTodoSummaryUseCase {
     });
 
     return {
-      date: toDateString(date),
+      date: dateKeyOf(date),
       totalTodos: stats.total,
       completedTodos: stats.completed,
       completionRate,

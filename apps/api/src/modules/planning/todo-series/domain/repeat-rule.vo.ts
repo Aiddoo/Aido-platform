@@ -7,12 +7,11 @@ import {
   type TodoRepeatFrequency,
   type TodoRepeatInterval,
 } from "@aido/api/vocabulary";
-import dayjs from "dayjs";
 import { match } from "ts-pattern";
 
-import { DATE_FORMAT } from "#api/shared/domain/date/constants/date.constant";
-import { addDaysToDateKey } from "#api/shared/domain/date/utils/arithmetic";
 import { DomainException, ValueObject } from "#api/shared/domain/index";
+
+import { addDaysToKey } from "../../shared/domain/todo-calendar.domain-service.js";
 
 export type RepeatEnd =
   | { readonly type: "NEVER" }
@@ -148,20 +147,20 @@ export class RepeatRule extends ValueObject<RepeatRuleProps> {
   /** date 이후(포함) 첫 회차. 끝났으면 null이다. */
   firstOnOrAfter(seriesStart: string, date: string, generatedCount = 0): string | null {
     const lower = date < seriesStart ? seriesStart : date;
-    const window = addDaysToDateKey(lower, NEXT_OCCURRENCE_SEARCH_DAYS);
+    const window = addDaysToKey(lower, NEXT_OCCURRENCE_SEARCH_DAYS);
     return this.occurrencesBetween(seriesStart, lower, window, generatedCount).at(0) ?? null;
   }
 
   /** date 전까지 만들어졌어야 할 회차 수. 이 할 일만 지운 날짜도 센다. */
   countBefore(seriesStart: string, date: string): number {
-    return this.occurrencesBetween(seriesStart, seriesStart, addDaysToDateKey(date, -1)).length;
+    return this.occurrencesBetween(seriesStart, seriesStart, addDaysToKey(date, -1)).length;
   }
 
   /** 분할할 때 앞쪽 규칙이 pivot 전날로 끝나도록 종료만 바꾼다. */
   endingBefore(date: string): RepeatRule {
     return new RepeatRule({
       ...this.value,
-      end: { type: "UNTIL", date: addDaysToDateKey(date, -1) },
+      end: { type: "UNTIL", date: addDaysToKey(date, -1) },
     });
   }
 
@@ -187,9 +186,18 @@ export class RepeatRule extends ValueObject<RepeatRuleProps> {
 }
 
 function* walkDaily(lower: string, upper: string): Generator<string> {
-  for (let date = lower; date <= upper; date = addDaysToDateKey(date, 1)) {
-    yield date;
+  const last = Temporal.PlainDate.from(upper);
+  for (
+    let date = Temporal.PlainDate.from(lower);
+    Temporal.PlainDate.compare(date, last) <= 0;
+    date = date.add({ days: 1 })
+  ) {
+    yield date.toString();
   }
+}
+
+function mondayOf(date: Temporal.PlainDate): Temporal.PlainDate {
+  return date.subtract({ days: date.dayOfWeek - 1 });
 }
 
 /** 격주 기준 주는 시작일이 속한 주(월요일 시작)다. */
@@ -200,22 +208,24 @@ function* walkWeekly(
   interval: TodoRepeatInterval,
   weekdays: readonly DayOfWeek[],
 ): Generator<string> {
-  const anchorMonday = dayjs.utc(seriesStart).startOf("isoWeek");
-  const weeksToLower = dayjs.utc(lower).startOf("isoWeek").diff(anchorMonday, "week");
+  const first = Temporal.PlainDate.from(lower);
+  const last = Temporal.PlainDate.from(upper);
+  const anchorMonday = mondayOf(Temporal.PlainDate.from(seriesStart));
+  const weeksToLower = Math.trunc(anchorMonday.until(mondayOf(first)).days / DAYS_PER_WEEK);
   const offsets = weekdays.map((weekday) => DAY_OF_WEEK_ORDER.indexOf(weekday));
   for (
     let week = weeksToLower - (weeksToLower % interval);
-    anchorMonday.add(week, "week").format(DATE_FORMAT.DATE_ONLY) <= upper;
+    Temporal.PlainDate.compare(anchorMonday.add({ weeks: week }), last) <= 0;
     week += interval
   ) {
-    const monday = anchorMonday.add(week * DAYS_PER_WEEK, "day");
+    const monday = anchorMonday.add({ weeks: week });
     for (const offset of offsets) {
-      const date = monday.add(offset, "day").format(DATE_FORMAT.DATE_ONLY);
-      if (date > upper) {
+      const date = monday.add({ days: offset });
+      if (Temporal.PlainDate.compare(date, last) > 0) {
         return;
       }
-      if (date >= lower) {
-        yield date;
+      if (Temporal.PlainDate.compare(date, first) >= 0) {
+        yield date.toString();
       }
     }
   }
@@ -223,17 +233,19 @@ function* walkWeekly(
 
 /** 그 날이 없는 달은 말일로 맞춘다. */
 function* walkMonthly(lower: string, upper: string, monthDay: number): Generator<string> {
+  const first = Temporal.PlainDate.from(lower);
+  const last = Temporal.PlainDate.from(upper);
   for (
-    let month = dayjs.utc(lower).startOf("month");
-    month.format(DATE_FORMAT.DATE_ONLY) <= upper;
-    month = month.add(1, "month")
+    let month = first.toPlainYearMonth();
+    Temporal.PlainDate.compare(month.toPlainDate({ day: 1 }), last) <= 0;
+    month = month.add({ months: 1 })
   ) {
-    const date = month.date(Math.min(monthDay, month.daysInMonth())).format(DATE_FORMAT.DATE_ONLY);
-    if (date > upper) {
+    const date = month.toPlainDate({ day: Math.min(monthDay, month.daysInMonth) });
+    if (Temporal.PlainDate.compare(date, last) > 0) {
       return;
     }
-    if (date >= lower) {
-      yield date;
+    if (Temporal.PlainDate.compare(date, first) >= 0) {
+      yield date.toString();
     }
   }
 }

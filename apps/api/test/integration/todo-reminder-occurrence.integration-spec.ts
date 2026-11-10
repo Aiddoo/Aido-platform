@@ -39,11 +39,11 @@ import {
   userPreference,
 } from "#api/platform/database/schema/index";
 import { PgBossJobRuntimeAdapter } from "#api/platform/jobs/pg-boss-job-runtime.adapter";
-import { SystemClock } from "#api/platform/time/system-clock";
 import { addDaysToDateKey } from "#api/shared/domain/date/utils/arithmetic";
 import { toDateString } from "#api/shared/domain/date/utils/format";
 import { parseDateOnly } from "#api/shared/domain/date/utils/parse";
 import { parseLocalDateTime, todayInTimezone } from "#api/shared/domain/date/utils/timezone";
+import { DateClock } from "#test/doubles/platform/date-clock";
 import { TodoCategoryFixture, TodoFixture, UserFixture } from "#test/fixtures/index";
 import { createDatabaseTransactionFixture, createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
@@ -118,6 +118,7 @@ describe("할 일 알림 회차 중복 방지 (실제 PostgreSQL·pg-boss)", () 
     const todoCache = { invalidateFriendTodos: async () => undefined };
     const todoRepository = new DrizzleTodoRepository(txHost);
     rebase = new RebaseTodoTimezoneUseCase({
+      clock: new DateClock(),
       todoRepository,
       seriesRepository: new DrizzleTodoSeriesRepository(txHost),
       ownerTimezone,
@@ -138,7 +139,7 @@ describe("할 일 알림 회차 중복 방지 (실제 PostgreSQL·pg-boss)", () 
       applyTodoEvents: new ApplyTodoEventsUseCase({
         reminderScheduler: reminderAdapter,
         eventPublisher,
-        clock: new SystemClock(),
+        clock: new DateClock(),
       }),
       eventPublisher,
       logger: silentLogger,

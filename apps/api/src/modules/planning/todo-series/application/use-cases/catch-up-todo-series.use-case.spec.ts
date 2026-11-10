@@ -1,5 +1,6 @@
 import { vi } from "vitest";
 
+import { DateClock } from "#test/doubles/platform/date-clock";
 import { createPlanningTodoFixture } from "#test/fixtures/planning-todo.fixture";
 
 import { RepeatRule } from "../../domain/repeat-rule.vo.js";
@@ -24,6 +25,7 @@ describe("복귀 회차 채우기", () => {
     vi.setSystemTime(AT);
     fixture = createPlanningTodoFixture();
     dueRunner = new MaterializeTodoSeriesUseCase({
+      clock: new DateClock(),
       seriesRepository: fixture.todoSeriesRepository,
       materializer: fixture.occurrenceMaterializer,
       effects: new PublishTodoCreationUseCase(fixture),
@@ -37,6 +39,7 @@ describe("복귀 회차 채우기", () => {
 
   function catchUp(overrides: { deadlineMs?: number } = {}) {
     return new CatchUpTodoSeriesUseCase({
+      clock: new DateClock(),
       seriesRepository: fixture.todoSeriesRepository,
       seriesOwner: fixture.seriesOwner,
       dueRunner,

@@ -5,6 +5,7 @@ import type { TodoVisibility } from "@aido/api/vocabulary";
 
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
+import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import {
   MutationLockKeys,
   type MutationLockPort,
@@ -12,6 +13,7 @@ import {
   type UnitOfWorkPort,
 } from "#api/shared/application/ports/index";
 import type { DomainEvent } from "#api/shared/domain/aggregate-root";
+import { instantToDate } from "#api/shared/domain/time/instant";
 
 import type {
   TodoDetailsPatch,
@@ -59,6 +61,7 @@ interface UpdateTodoDependencies {
   readonly unitOfWork: UnitOfWorkPort;
   readonly applyTodoEvents: Pick<ApplyTodoEventsUseCase, "execute">;
   readonly mutationLock: MutationLockPort;
+  readonly clock: ClockPort;
   readonly categoryOwnership: Pick<CategoryOwnershipPort, "validateOwnership">;
   readonly todoCache: Pick<TodoCachePort, "invalidateTodoCategories" | "invalidateFriendTodos">;
   readonly eventPublisher: DomainEventPublisherPort;
@@ -111,7 +114,7 @@ export class UpdateTodoUseCase {
     const wasCompleted = todo.isCompleted();
     const { scheduledTime: scheduledLocalTime, ...details } = data;
     const patchDetails: TodoDetailsPatch = { ...details, scheduledLocalTime };
-    todo.updateDetails(patchDetails, timezone);
+    todo.updateDetails(patchDetails, timezone, instantToDate(this.#dependencies.clock.now()));
     const snapshot = todo.toPersistence();
 
     const patch: TodoUpdatePatch = {};

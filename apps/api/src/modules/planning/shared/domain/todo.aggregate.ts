@@ -1,7 +1,6 @@
 import { ErrorCode } from "@aido/api/errors";
 import { TODO_ITEM_LIMITS, type TodoVisibility } from "@aido/api/vocabulary";
 
-import { now } from "#api/shared/domain/date/utils/core";
 import { AggregateRoot, DomainException } from "#api/shared/domain/index";
 
 import { TodoCategoryChangedEvent } from "./todo-category-changed.event.js";
@@ -135,13 +134,13 @@ export class Todo extends AggregateRoot<TodoProps> {
   }
 
   /** timezone은 스트릭의 "오늘" 경계다. */
-  toggleComplete(completed: boolean, timezone: string): boolean {
+  toggleComplete(completed: boolean, timezone: string, at: Date): boolean {
     if (this.props.completed === completed) {
       return false;
     }
 
     this.props.completed = completed;
-    this.props.completedAt = completed ? now() : null;
+    this.props.completedAt = completed ? new Date(at) : null;
 
     this.raise(
       new TodoToggledEvent(this.props.id.getValue(), this.props.userId, completed, timezone),
@@ -170,7 +169,7 @@ export class Todo extends AggregateRoot<TodoProps> {
     );
   }
 
-  updateDetails(patch: TodoDetailsPatch, timezone: string): void {
+  updateDetails(patch: TodoDetailsPatch, timezone: string, at: Date): void {
     // nullish-strict: PATCH에서 null(비우기)도 변경이다
     if (Object.values(patch).every((value) => value === undefined)) {
       return;
@@ -213,7 +212,7 @@ export class Todo extends AggregateRoot<TodoProps> {
     if (patch.visibility != null) {
       this.props.visibility = patch.visibility;
     }
-    const reopened = this.#applyCompletionPatch(patch.completed);
+    const reopened = this.#applyCompletionPatch(patch.completed, at);
 
     this.raise(
       new TodoUpdatedEvent(this.props.id.getValue(), this.props.userId, this.props.completed),
@@ -236,13 +235,13 @@ export class Todo extends AggregateRoot<TodoProps> {
   }
 
   /** 완료를 되돌렸으면 true다. */
-  #applyCompletionPatch(requestedCompletion: boolean | undefined): boolean {
+  #applyCompletionPatch(requestedCompletion: boolean | undefined, at: Date): boolean {
     if (requestedCompletion == null || requestedCompletion === this.props.completed) {
       return false;
     }
 
     this.props.completed = requestedCompletion;
-    this.props.completedAt = requestedCompletion ? now() : null;
+    this.props.completedAt = requestedCompletion ? new Date(at) : null;
     return !requestedCompletion;
   }
 
@@ -294,8 +293,8 @@ export class Todo extends AggregateRoot<TodoProps> {
   }
 
   /** 끝낸 일에 항목을 더하면 남은 일이 생긴 것이라 완료를 유지하면 "완료 + 0/N"이 된다(QA #37). */
-  reopenForAddedItem(timezone: string): boolean {
-    return this.toggleComplete(false, timezone);
+  reopenForAddedItem(timezone: string, at: Date): boolean {
+    return this.toggleComplete(false, timezone, at);
   }
 
   updateItem(itemId: number, patch: { title?: string; completed?: boolean }): TodoItem {

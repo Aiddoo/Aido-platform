@@ -10,9 +10,9 @@ import {
 } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { todo, todoItem, todoSeries } from "#api/platform/database/schema/index";
-import { toDateString } from "#api/shared/domain/date/utils/format";
-import { parseDateOnly } from "#api/shared/domain/date/utils/parse";
+import { nextSequenceValues } from "#api/platform/database/sequence";
 
+import { dateKeyOf, utcMidnightOf } from "../../../shared/domain/todo-calendar.domain-service.js";
 import type { TodoScheduleProps } from "../../../shared/domain/todo-schedule.vo.js";
 import type { Todo, TodoCreationPlan } from "../../../shared/domain/todo.aggregate.js";
 import type {
@@ -86,13 +86,16 @@ export class DrizzleTodoRepository implements TodoRepositoryPort {
     if (plans.length === 0) {
       return [];
     }
+    // 회차 id를 한 문장으로 먼저 받는다. 이미 있는 날짜는 건너뛰어 그 id는 쓰이지 않고 비어도 된다
+    const ids = await nextSequenceValues(this.#db, todo.id, plans.length);
     const rows = await this.#db
       .insert(todo)
       .values(
-        plans.map((plan) => ({
+        plans.map((plan, index) => ({
           ...plan,
+          id: ids[index],
           seriesId,
-          occurrenceDate: parseDateOnly(plan.occurrenceDate),
+          occurrenceDate: utcMidnightOf(plan.occurrenceDate),
         })),
       )
       .onConflictDoNothing({
@@ -130,15 +133,15 @@ export class DrizzleTodoRepository implements TodoRepositoryPort {
       .where(
         and(
           inArray(todo.seriesId, [...seriesIds]),
-          gte(todo.occurrenceDate, parseDateOnly(fromDate)),
+          gte(todo.occurrenceDate, utcMidnightOf(fromDate)),
         ),
       )
       .orderBy(asc(todo.occurrenceDate));
     return rows.map((row) => ({
       todoId: row.todoId,
       seriesId: requireRecord(row.seriesId),
-      occurrenceDate: toDateString(requireRecord(row.occurrenceDate)),
-      startDate: toDateString(row.startDate),
+      occurrenceDate: dateKeyOf(requireRecord(row.occurrenceDate)),
+      startDate: dateKeyOf(row.startDate),
       completed: row.completed,
     }));
   }
@@ -158,7 +161,7 @@ export class DrizzleTodoRepository implements TodoRepositoryPort {
       .where(
         and(
           eq(todo.seriesId, seriesId),
-          gte(todo.occurrenceDate, parseDateOnly(fromDate)),
+          gte(todo.occurrenceDate, utcMidnightOf(fromDate)),
           eq(todo.completed, false),
         ),
       );
@@ -209,7 +212,7 @@ export class DrizzleTodoRepository implements TodoRepositoryPort {
   }
 
   async moveOccurrence(todoId: number, occurrence: TodoOccurrenceAttachment): Promise<void> {
-    const date = parseDateOnly(occurrence.occurrenceDate);
+    const date = utcMidnightOf(occurrence.occurrenceDate);
     await this.#updateTodoRow(todoId, {
       occurrenceDate: date,
       startDate: date,
@@ -240,7 +243,7 @@ export class DrizzleTodoRepository implements TodoRepositoryPort {
       .for("update");
     return rows.map((row) => ({
       ...row,
-      startDate: toDateString(row.startDate),
+      startDate: dateKeyOf(row.startDate),
       scheduledTime: requireRecord(row.scheduledTime),
     }));
   }
@@ -272,7 +275,7 @@ export class DrizzleTodoRepository implements TodoRepositoryPort {
     seriesId: string,
     occurrence: TodoOccurrenceAttachment,
   ): Promise<void> {
-    const date = parseDateOnly(occurrence.occurrenceDate);
+    const date = utcMidnightOf(occurrence.occurrenceDate);
     await this.#updateTodoRow(todoId, {
       seriesId,
       occurrenceDate: date,
@@ -299,7 +302,7 @@ export class DrizzleTodoRepository implements TodoRepositoryPort {
           inArray(todo.seriesId, [...query.seriesIds]),
           query.fromDate == null
             ? undefined
-            : gte(todo.occurrenceDate, parseDateOnly(query.fromDate)),
+            : gte(todo.occurrenceDate, utcMidnightOf(query.fromDate)),
           query.includeCompleted ? undefined : eq(todo.completed, false),
         ),
       )

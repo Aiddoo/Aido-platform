@@ -1,8 +1,8 @@
 import { ErrorCode } from "@aido/api/errors";
 
-import { toDateString } from "#api/shared/domain/date/utils/format";
-import { parseLocalDateTime, toLocalTimeString } from "#api/shared/domain/date/utils/timezone";
 import { DomainException, ValueObject } from "#api/shared/domain/index";
+
+import { dateKeyOf, localTimeIn, resolveScheduledInstant } from "./todo-calendar.domain-service.js";
 
 export interface TodoScheduleProps {
   startDate: Date;
@@ -26,15 +26,6 @@ export type TodoSchedulePatch = Partial<
   Pick<TodoScheduleProps, "startDate" | "endDate" | "scheduledLocalTime" | "isAllDay">
 >;
 
-/** 할 일의 순간을 만드는 유일한 함수다. 경로마다 시간대를 해석하지 않는다. */
-export function resolveScheduledInstant(
-  date: string,
-  localTime: string | null,
-  timezone: string,
-): Date | null {
-  return localTime == null ? null : parseLocalDateTime(date, localTime, timezone);
-}
-
 export class TodoSchedule extends ValueObject<TodoScheduleProps> {
   constructor(props: TodoScheduleProps) {
     super({
@@ -53,7 +44,7 @@ export class TodoSchedule extends ValueObject<TodoScheduleProps> {
       endDate: input.endDate,
       scheduledLocalTime: input.scheduledLocalTime,
       scheduledTime: resolveScheduledInstant(
-        toDateString(input.startDate),
+        dateKeyOf(input.startDate),
         input.scheduledLocalTime,
         input.timezone,
       ),
@@ -101,7 +92,7 @@ export class TodoSchedule extends ValueObject<TodoScheduleProps> {
       endDate: partial.endDate !== undefined ? partial.endDate : this.getEndDate(),
       scheduledLocalTime: rederives ? scheduledLocalTime : this.value.scheduledLocalTime,
       scheduledTime: rederives
-        ? resolveScheduledInstant(toDateString(startDate), scheduledLocalTime, timezone)
+        ? resolveScheduledInstant(dateKeyOf(startDate), scheduledLocalTime, timezone)
         : this.getScheduledTime(),
       // 시간을 건드린 PATCH만 맞춘다. 저장된 옛 행은 사용자가 고칠 때까지 그대로 읽는다.
       isAllDay:
@@ -121,7 +112,7 @@ export class TodoSchedule extends ValueObject<TodoScheduleProps> {
     if (scheduledTime == null) {
       return null;
     }
-    return scheduledLocalTime ?? toLocalTimeString(scheduledTime, timezone);
+    return scheduledLocalTime ?? localTimeIn(scheduledTime, timezone);
   }
 
   getStartDate(): Date {

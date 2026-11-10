@@ -6,9 +6,8 @@ import { match } from "ts-pattern";
 import { requireRecord } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { todoSeries } from "#api/platform/database/schema/index";
-import { toDateString, toDateStringOrNull } from "#api/shared/domain/date/utils/format";
-import { parseDateOnly } from "#api/shared/domain/date/utils/parse";
 
+import { dateKeyOf, utcMidnightOf } from "../../../shared/domain/todo-calendar.domain-service.js";
 import type {
   DueTodoSeriesQuery,
   TodoSeriesRef,
@@ -30,9 +29,9 @@ function toDomain(row: TodoSeriesRow): TodoSeries {
     scheduledLocalTime: row.scheduledLocalTime,
     timezone: row.timezone,
     rule: toRepeatRule(row),
-    startDate: toDateString(row.startDate),
+    startDate: dateKeyOf(row.startDate),
     checklistTemplate: row.checklistTemplate,
-    nextOccurrenceDate: toDateStringOrNull(row.nextOccurrenceDate),
+    nextOccurrenceDate: row.nextOccurrenceDate == null ? null : dateKeyOf(row.nextOccurrenceDate),
     generatedCount: row.generatedCount,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
@@ -45,7 +44,7 @@ function toRow(series: TodoSeries): typeof todoSeries.$inferInsert {
   const { repeatUntil, repeatCount } = match(end)
     .with({ type: "NEVER" }, () => ({ repeatUntil: null, repeatCount: null }))
     .with({ type: "UNTIL" }, ({ date }) => ({
-      repeatUntil: parseDateOnly(date),
+      repeatUntil: utcMidnightOf(date),
       repeatCount: null,
     }))
     .with({ type: "COUNT" }, ({ count }) => ({ repeatUntil: null, repeatCount: count }))
@@ -63,12 +62,12 @@ function toRow(series: TodoSeries): typeof todoSeries.$inferInsert {
     repeatInterval: interval,
     repeatWeekdays: weekdays == null ? null : [...weekdays],
     repeatMonthDay: monthDay,
-    startDate: parseDateOnly(snapshot.startDate),
+    startDate: utcMidnightOf(snapshot.startDate),
     repeatUntil,
     repeatCount,
     checklistTemplate: [...snapshot.checklistTemplate],
     nextOccurrenceDate:
-      snapshot.nextOccurrenceDate == null ? null : parseDateOnly(snapshot.nextOccurrenceDate),
+      snapshot.nextOccurrenceDate == null ? null : utcMidnightOf(snapshot.nextOccurrenceDate),
     generatedCount: snapshot.generatedCount,
     createdAt: snapshot.createdAt,
   };
@@ -134,7 +133,7 @@ export class DrizzleTodoSeriesRepository implements TodoSeriesRepositoryPort {
         and(
           eq(todoSeries.userId, series.getUserId()),
           eq(todoSeries.originSeriesId, series.getOriginSeriesId()),
-          gte(todoSeries.startDate, parseDateOnly(series.getStartDate())),
+          gte(todoSeries.startDate, utcMidnightOf(series.getStartDate())),
           ne(todoSeries.id, series.getId()),
         ),
       )
@@ -173,7 +172,7 @@ export class DrizzleTodoSeriesRepository implements TodoSeriesRepositoryPort {
       .where(
         and(
           isNotNull(todoSeries.nextOccurrenceDate),
-          lte(todoSeries.nextOccurrenceDate, parseDateOnly(query.through)),
+          lte(todoSeries.nextOccurrenceDate, utcMidnightOf(query.through)),
           query.afterId == null ? undefined : gt(todoSeries.id, query.afterId),
         ),
       )
@@ -188,7 +187,7 @@ export class DrizzleTodoSeriesRepository implements TodoSeriesRepositoryPort {
       .where(
         and(
           eq(todoSeries.userId, userId),
-          lte(todoSeries.nextOccurrenceDate, parseDateOnly(through)),
+          lte(todoSeries.nextOccurrenceDate, utcMidnightOf(through)),
         ),
       );
     return rows.map((row) => row.id);

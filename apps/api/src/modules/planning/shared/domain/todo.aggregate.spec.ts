@@ -198,7 +198,7 @@ describe("Todo — 할 일 애그리게잇", () => {
       const todo = Todo.reconstitute(buildProps({ completed: false }));
 
       // When - 완료로 토글하면
-      const changed = todo.toggleComplete(true, "Asia/Seoul");
+      const changed = todo.toggleComplete(true, "Asia/Seoul", new Date());
 
       // Then - 상태가 완료로 전이되고 이벤트가 쌓인다
       expect(changed).toBe(true);
@@ -222,7 +222,7 @@ describe("Todo — 할 일 애그리게잇", () => {
       const todo = Todo.reconstitute(buildProps({ completed: true, completedAt: new Date() }));
 
       // When - 미완료로 토글하면
-      const changed = todo.toggleComplete(false, "UTC");
+      const changed = todo.toggleComplete(false, "UTC", new Date());
 
       // Then - 상태가 미완료로 전이된다
       expect(changed).toBe(true);
@@ -244,7 +244,7 @@ describe("Todo — 할 일 애그리게잇", () => {
       );
 
       // When - 동일 값(true)으로 재토글
-      const changed = todo.toggleComplete(true, "UTC");
+      const changed = todo.toggleComplete(true, "UTC", new Date());
 
       // Then - 전이 없음 + completedAt 불변 + 이벤트 미적립
       expect(changed).toBe(false);
@@ -286,7 +286,7 @@ describe("Todo — 할 일 애그리게잇", () => {
       const todo = Todo.reconstitute(buildProps({ title: "이전 제목" }));
 
       // When - 제목만 부분 수정하면
-      todo.updateDetails({ title: "새 제목" }, "UTC");
+      todo.updateDetails({ title: "새 제목" }, "UTC", new Date());
 
       // Then - 제목만 바뀌고 이벤트에는 전이 후 완료 상태(false, 사실)가 실린다
       expect(todo.toPersistence().title).toBe("새 제목");
@@ -307,7 +307,7 @@ describe("Todo — 할 일 애그리게잇", () => {
       const todo = Todo.reconstitute(buildProps({ completed: true, completedAt: new Date() }));
 
       // When - 완료 필드 없이 제목만 수정
-      todo.updateDetails({ title: "새 제목" }, "UTC");
+      todo.updateDetails({ title: "새 제목" }, "UTC", new Date());
 
       // Then - 이벤트에는 전이 후 완료 상태(true)가 실린다
       const event = todo.pullDomainEvents()[0];
@@ -322,7 +322,7 @@ describe("Todo — 할 일 애그리게잇", () => {
       const todo = Todo.reconstitute(buildProps({ title: "이전 제목" }));
 
       // When - 빈 패치로 수정 요청
-      todo.updateDetails({}, "UTC");
+      todo.updateDetails({}, "UTC", new Date());
 
       // Then - 상태·이벤트 모두 변화 없음
       expect(todo.toPersistence().title).toBe("이전 제목");
@@ -334,7 +334,7 @@ describe("Todo — 할 일 애그리게잇", () => {
       const todo = Todo.reconstitute(buildProps({ completed: false }));
 
       // When
-      todo.updateDetails({ completed: true }, "UTC");
+      todo.updateDetails({ completed: true }, "UTC", new Date());
 
       // Then
       expect(todo.isCompleted()).toBe(true);
@@ -346,7 +346,7 @@ describe("Todo — 할 일 애그리게잇", () => {
       const todo = Todo.reconstitute(buildProps({ completed: true, completedAt: new Date() }));
 
       // When
-      todo.updateDetails({ completed: false }, "UTC");
+      todo.updateDetails({ completed: false }, "UTC", new Date());
 
       // Then
       expect(todo.isCompleted()).toBe(false);
@@ -361,7 +361,7 @@ describe("Todo — 할 일 애그리게잇", () => {
       );
 
       // When - 동일 값(true)으로 재요청
-      todo.updateDetails({ completed: true }, "UTC");
+      todo.updateDetails({ completed: true }, "UTC", new Date());
 
       // Then - completedAt 불변
       expect(todo.getCompletedAt()).toEqual(originalCompletedAt);
@@ -372,7 +372,7 @@ describe("Todo — 할 일 애그리게잇", () => {
       const todo = Todo.reconstitute(buildProps());
 
       // When & Then - 도메인 불변식 위반
-      expect(() => todo.updateDetails({ title: "가".repeat(201) }, "UTC")).toThrow(
+      expect(() => todo.updateDetails({ title: "가".repeat(201) }, "UTC", new Date())).toThrow(
         "제목은 1~200자여야 합니다.",
       );
     });
@@ -384,7 +384,8 @@ describe("Todo — 할 일 애그리게잇", () => {
           schedule: buildSchedule({ startDate: new Date("2026-02-22") }),
         }),
       );
-      const update = () => todo.updateDetails({ endDate: new Date("2026-02-20") }, "UTC");
+      const update = () =>
+        todo.updateDetails({ endDate: new Date("2026-02-20") }, "UTC", new Date());
 
       // When & Then - 머지된 일정 불변식 위반 + 상태·이벤트 변화 없음
       expect(update).toThrow(DomainException);
@@ -416,6 +417,7 @@ describe("Todo — 할 일 애그리게잇", () => {
             startDate: new Date("2026-03-01"),
           },
           "UTC",
+          new Date(),
         ),
       ).toThrow(DomainException);
       expect(todo.toPersistence().title).toBe("이전 제목");

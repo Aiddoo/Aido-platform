@@ -1,8 +1,8 @@
 import { DAYS_OF_WEEK, type DayOfWeek, type TodoRepeatInterval } from "@aido/api/vocabulary";
 
 import type { todoSeries } from "#api/platform/database/schema/index";
-import { toDateString } from "#api/shared/domain/date/utils/format";
 
+import { dateKeyOf } from "../../../shared/domain/todo-calendar.domain-service.js";
 import { RepeatRule, type RepeatEnd } from "../../domain/repeat-rule.vo.js";
 
 export type RepeatRuleRow = Pick<
@@ -17,7 +17,7 @@ export type RepeatRuleRow = Pick<
 
 function toRepeatEnd(row: RepeatRuleRow): RepeatEnd {
   if (row.repeatUntil != null) {
-    return { type: "UNTIL", date: toDateString(row.repeatUntil) };
+    return { type: "UNTIL", date: dateKeyOf(row.repeatUntil) };
   }
   if (row.repeatCount != null) {
     return { type: "COUNT", count: row.repeatCount };

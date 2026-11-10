@@ -4,9 +4,8 @@ import { ErrorCode } from "@aido/api/errors";
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { CursorPaginatedResponse } from "#api/shared/application/pagination/index";
 import type { PaginationService } from "#api/shared/application/pagination/index";
-import { isAfter } from "#api/shared/domain/date/utils/compare";
-import { toDateString } from "#api/shared/domain/date/utils/format";
 
+import { dateKeyOf } from "../../../shared/domain/todo-calendar.domain-service.js";
 import { type FriendPort } from "../ports/friend.port.js";
 import { type TodoCachePort } from "../ports/todo-cache.port.js";
 import { type TodoReadRepositoryPort } from "../ports/todo-read.repository.port.js";
@@ -46,7 +45,7 @@ export class ListFriendTodosUseCase {
     if (
       input.startDate != null &&
       input.endDate != null &&
-      isAfter(input.startDate, input.endDate)
+      input.startDate.getTime() > input.endDate.getTime()
     ) {
       throw new ApplicationException(ErrorCode.SYS_0002, {
         message: "startDate must be less than or equal to endDate",
@@ -70,8 +69,8 @@ export class ListFriendTodosUseCase {
     );
 
     const isFirstPage = cursor == null;
-    const startDateKey = input.startDate != null ? toDateString(input.startDate) : "-";
-    const endDateKey = input.endDate != null ? toDateString(input.endDate) : "-";
+    const startDateKey = input.startDate != null ? dateKeyOf(input.startDate) : "-";
+    const endDateKey = input.endDate != null ? dateKeyOf(input.endDate) : "-";
     let cacheGeneration: string | undefined;
 
     if (isFirstPage) {

@@ -2,12 +2,14 @@ import { ErrorCode } from "@aido/api/errors";
 import { RECURRING_TODO_LIMITS, TODO_ITEM_LIMITS, type TodoVisibility } from "@aido/api/vocabulary";
 import { isEqual } from "es-toolkit";
 
-import { addDaysToDateKey } from "#api/shared/domain/date/utils/arithmetic";
-import { parseDateOnly } from "#api/shared/domain/date/utils/parse";
-import { localDateInTimezone } from "#api/shared/domain/date/utils/timezone";
 import { AggregateRoot, DomainException } from "#api/shared/domain/index";
 
-import { resolveScheduledInstant } from "../../shared/domain/todo-schedule.vo.js";
+import {
+  addDaysToKey,
+  localDateKeyIn,
+  utcMidnightOf,
+} from "../../shared/domain/todo-calendar.domain-service.js";
+import { resolveScheduledInstant } from "../../shared/domain/todo-calendar.domain-service.js";
 import { TodoTitle } from "../../shared/domain/todo-title.vo.js";
 import type { TodoCreationDraft } from "../../shared/domain/todo.aggregate.js";
 import type { RepeatRule } from "./repeat-rule.vo.js";
@@ -117,9 +119,7 @@ export class TodoSeries extends AggregateRoot<TodoSeriesProps> {
   /** 새로 시작하는 규칙만 확인한다. 분할은 이미 있던 규칙을 잇는 것이라 지난 회차 수와 상관없다. */
   assertWithinPastLimit(at: Date): void {
     const { rule, startDate, timezone } = this.props;
-    if (
-      rule.countBefore(startDate, localDateInTimezone(at, timezone)) > MAX_PAST_OCCURRENCES_ON_START
-    ) {
+    if (rule.countBefore(startDate, localDateKeyIn(at, timezone)) > MAX_PAST_OCCURRENCES_ON_START) {
       throw new DomainException(ErrorCode.TODO_0845, { field: "startDate" });
     }
   }
@@ -152,7 +152,7 @@ export class TodoSeries extends AggregateRoot<TodoSeriesProps> {
     this.props.generatedCount = generatedCount + dates.length;
     this.props.nextOccurrenceDate = rule.firstOnOrAfter(
       startDate,
-      addDaysToDateKey(last, 1),
+      addDaysToKey(last, 1),
       this.props.generatedCount,
     );
     return dates.map((date) => this.#draftOn(date));
@@ -165,7 +165,7 @@ export class TodoSeries extends AggregateRoot<TodoSeriesProps> {
    */
   skipDormantGap(at: Date): boolean {
     const { nextOccurrenceDate, generatedCount, rule, startDate, timezone } = this.props;
-    const today = localDateInTimezone(at, timezone);
+    const today = localDateKeyIn(at, timezone);
     if (nextOccurrenceDate == null || nextOccurrenceDate >= today) {
       return false;
     }
@@ -185,7 +185,7 @@ export class TodoSeries extends AggregateRoot<TodoSeriesProps> {
       categoryId,
       title,
       visibility,
-      startDate: parseDateOnly(date),
+      startDate: utcMidnightOf(date),
       endDate: null,
       scheduledLocalTime,
       // DST로 오프셋이 달라지므로 회차 날짜마다 규칙 시간대로 다시 해석한다.
@@ -209,7 +209,7 @@ export class TodoSeries extends AggregateRoot<TodoSeriesProps> {
       return false;
     }
     if (!ruleEnded) {
-      this.props.rule = this.props.rule.endingBefore(addDaysToDateKey(lastDate, 1));
+      this.props.rule = this.props.rule.endingBefore(addDaysToKey(lastDate, 1));
     }
     this.props.nextOccurrenceDate = null;
     return true;
@@ -217,7 +217,7 @@ export class TodoSeries extends AggregateRoot<TodoSeriesProps> {
 
   #isEndedAfter(date: string): boolean {
     const { rule, startDate } = this.props;
-    const next = addDaysToDateKey(date, 1);
+    const next = addDaysToKey(date, 1);
     return rule.firstOnOrAfter(startDate, next, rule.countBefore(startDate, next)) == null;
   }
 
@@ -241,7 +241,7 @@ export class TodoSeries extends AggregateRoot<TodoSeriesProps> {
       checklistTemplate: changes.checklistTemplate ?? checklistTemplate,
       at,
     });
-    this.stopAfter(addDaysToDateKey(pivotDate, -1));
+    this.stopAfter(addDaysToKey(pivotDate, -1));
     return next;
   }
 

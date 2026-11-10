@@ -1,9 +1,9 @@
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
+import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
-import { addDaysToDateKey } from "#api/shared/domain/date/utils/arithmetic";
-import { now } from "#api/shared/domain/date/utils/core";
-import { toDateString } from "#api/shared/domain/date/utils/format";
+import { instantToDate } from "#api/shared/domain/time/instant";
 
+import { addDaysToKey, dateKeyOf } from "../../../shared/domain/todo-calendar.domain-service.js";
 import type { TodoSeriesOwnerPort } from "../ports/todo-series-owner.port.js";
 import type { TodoSeriesRepositoryPort } from "../ports/todo-series.repository.port.js";
 import { TodoSeriesLogEvent } from "../todo-series.log-events.js";
@@ -19,6 +19,7 @@ export const TODO_SERIES_CATCH_UP_BUDGET = {
 interface TodoSeriesCatchUpDependencies {
   readonly seriesRepository: Pick<TodoSeriesRepositoryPort, "findIdsBehind">;
   readonly seriesOwner: Pick<TodoSeriesOwnerPort, "findOperatingOwners">;
+  readonly clock: ClockPort;
   readonly dueRunner: Pick<MaterializeTodoSeriesUseCase, "execute">;
   readonly logger: Pick<ApplicationLoggerPort, "log" | "warn">;
   readonly deadlineMs?: number;
@@ -43,8 +44,8 @@ export class CatchUpTodoSeriesUseCase {
   }
 
   execute(userId: string): Promise<void> {
-    const at = now();
-    const today = toDateString(at);
+    const at = instantToDate(this.#dependencies.clock.now());
+    const today = dateKeyOf(at);
     if (today !== this.#checkedDate) {
       this.#checkedDate = today;
       this.#nextCheckAt.clear();
@@ -56,7 +57,7 @@ export class CatchUpTodoSeriesUseCase {
     if ((this.#nextCheckAt.get(userId) ?? 0) > at.getTime()) {
       return Promise.resolve();
     }
-    const run = this.#catchUp(userId, addDaysToDateKey(today, 1)).finally(() => {
+    const run = this.#catchUp(userId, addDaysToKey(today, 1)).finally(() => {
       this.#inFlight.delete(userId);
     });
     this.#inFlight.set(userId, run);
@@ -64,7 +65,7 @@ export class CatchUpTodoSeriesUseCase {
   }
 
   async #catchUp(userId: string, through: string): Promise<void> {
-    const startedAt = Date.now();
+    const startedAt = performance.now();
     const { seriesRepository, seriesOwner, logger } = this.#dependencies;
     try {
       const behindIds = await seriesRepository.findIdsBehind(userId, through);
@@ -79,7 +80,8 @@ export class CatchUpTodoSeriesUseCase {
         userId,
         settled
           ? Number.POSITIVE_INFINITY
-          : Date.now() + TODO_SERIES_CATCH_UP_BUDGET.RETRY_AFTER_MS,
+          : this.#dependencies.clock.now().epochMilliseconds +
+              TODO_SERIES_CATCH_UP_BUDGET.RETRY_AFTER_MS,
       );
       if (seriesIds.length > 0) {
         logger.log({
@@ -89,11 +91,15 @@ export class CatchUpTodoSeriesUseCase {
           createdCount,
           failedCount,
           timedOut,
-          durationMs: Date.now() - startedAt,
+          durationMs: performance.now() - startedAt,
         });
       }
     } catch (error) {
-      this.#nextCheckAt.set(userId, Date.now() + TODO_SERIES_CATCH_UP_BUDGET.RETRY_AFTER_MS);
+      this.#nextCheckAt.set(
+        userId,
+        this.#dependencies.clock.now().epochMilliseconds +
+          TODO_SERIES_CATCH_UP_BUDGET.RETRY_AFTER_MS,
+      );
       logger.warn({
         event: TodoSeriesLogEvent.CATCH_UP_FAILED,
         userId,
@@ -105,11 +111,11 @@ export class CatchUpTodoSeriesUseCase {
   async #materializeAll(userId: string, seriesIds: readonly string[]) {
     const { dueRunner, logger } = this.#dependencies;
     const deadlineMs = this.#dependencies.deadlineMs ?? TODO_SERIES_CATCH_UP_BUDGET.DEADLINE_MS;
-    const startedAt = Date.now();
+    const startedAt = performance.now();
     let createdCount = 0;
     let failedCount = 0;
     for (const id of seriesIds) {
-      if (Date.now() - startedAt >= deadlineMs) {
+      if (performance.now() - startedAt >= deadlineMs) {
         return { createdCount, failedCount, timedOut: true };
       }
       try {

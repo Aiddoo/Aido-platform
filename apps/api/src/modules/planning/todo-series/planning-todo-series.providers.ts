@@ -1,6 +1,7 @@
 import type { Provider } from "@nestjs/common";
 
 import { loggerFor, provideUseCase } from "#api/platform/di/provide-use-case";
+import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { DomainEventPublisherPort } from "#api/shared/application/ports/domain-event-publisher.port";
 import { MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
 import { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
@@ -48,6 +49,7 @@ export const PLANNING_TODO_SERIES_PROVIDERS = [
     applyTodoEvents: ApplyTodoEventsUseCase,
   }),
   provideUseCase(MaterializeTodoSeriesUseCase, {
+    clock: ClockPort,
     seriesRepository: TodoSeriesRepositoryPort,
     materializer: MaterializeTodoOccurrencesUseCase,
     effects: PublishTodoCreationUseCase,
@@ -55,12 +57,14 @@ export const PLANNING_TODO_SERIES_PROVIDERS = [
     mutationLock: MutationLockPort,
   }),
   provideUseCase(CatchUpTodoSeriesUseCase, {
+    clock: ClockPort,
     seriesRepository: TodoSeriesRepositoryPort,
     seriesOwner: TodoSeriesOwnerPort,
     dueRunner: MaterializeTodoSeriesUseCase,
     logger: loggerFor(CatchUpTodoSeriesUseCase),
   }),
   provideUseCase(MaterializeDueTodoSeriesUseCase, {
+    clock: ClockPort,
     seriesRepository: TodoSeriesRepositoryPort,
     seriesOwner: TodoSeriesOwnerPort,
     dueRunner: MaterializeTodoSeriesUseCase,
@@ -78,6 +82,7 @@ export const PLANNING_TODO_SERIES_PROVIDERS = [
     logger: loggerFor(StopTodoSeriesUseCase),
   }),
   provideUseCase(StartSeriesFromTodoUseCase, {
+    clock: ClockPort,
     todoRepository: TodoRepositoryPort,
     seriesRepository: TodoSeriesRepositoryPort,
     materializer: MaterializeTodoOccurrencesUseCase,
@@ -86,6 +91,7 @@ export const PLANNING_TODO_SERIES_PROVIDERS = [
     mutationLock: MutationLockPort,
   }),
   provideUseCase(UpdateFollowingTodosUseCase, {
+    clock: ClockPort,
     todoRepository: TodoRepositoryPort,
     todoReadRepository: TodoReadRepositoryPort,
     seriesRepository: TodoSeriesRepositoryPort,

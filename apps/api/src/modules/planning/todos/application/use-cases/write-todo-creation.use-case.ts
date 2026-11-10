@@ -4,9 +4,10 @@ import { ErrorCode } from "@aido/api/errors";
 import { TODO_LIMITS, TODO_SERIES_LIMITS } from "@aido/api/vocabulary";
 
 import { ApplicationException } from "#api/shared/application/application.exception";
-import { now } from "#api/shared/domain/date/utils/core";
-import { toDateString } from "#api/shared/domain/date/utils/format";
+import type { ClockPort } from "#api/shared/application/ports/clock.port";
+import { instantToDate } from "#api/shared/domain/time/instant";
 
+import { dateKeyOf } from "../../../shared/domain/todo-calendar.domain-service.js";
 import { TodoCreatedEvent } from "../../../shared/domain/todo-created.event.js";
 import { Todo, type TodoCreationDraft } from "../../../shared/domain/todo.aggregate.js";
 import type { TodoSeriesRepositoryPort } from "../../../todo-series/application/ports/todo-series.repository.port.js";
@@ -48,6 +49,7 @@ interface TodoCreationWriterDependencies {
     "planFirstRun" | "persist"
   >;
   readonly categoryOwnership: Pick<CategoryOwnershipPort, "validateOwnership">;
+  readonly clock: ClockPort;
   readonly applyTodoEvents: Pick<ApplyTodoEventsUseCase, "execute">;
 }
 
@@ -94,7 +96,7 @@ export class WriteTodoCreationUseCase {
     if (input.endDate != null) {
       throw new ApplicationException(ErrorCode.TODO_0845, { field: "endDate" });
     }
-    const at = now();
+    const at = instantToDate(this.#dependencies.clock.now());
     const series = TodoSeries.planCreation({
       id: randomUUID(),
       userId,
@@ -104,7 +106,7 @@ export class WriteTodoCreationUseCase {
       scheduledLocalTime: input.scheduledTime ?? null,
       timezone: input.timezone,
       rule: RepeatRule.from(repeat),
-      startDate: toDateString(input.startDate),
+      startDate: dateKeyOf(input.startDate),
       checklistTemplate: input.items ?? [],
       at,
     });

@@ -44,6 +44,7 @@ import {
   todayInTimezone,
   toLocalTimeString,
 } from "#api/shared/domain/date/utils/timezone";
+import { DateClock } from "#test/doubles/platform/date-clock";
 import { TodoCategoryFixture, TodoFixture, UserFixture } from "#test/fixtures/index";
 import { createDatabaseTransactionFixture, createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
@@ -100,6 +101,7 @@ describe("시간대 재계산 (실제 PostgreSQL·pg-boss)", () => {
     reminderAdapter = new ReminderSchedulerAdapter(new TodoReminderSchedulerAdapter(runtime));
     queue = new TodoTimezoneRebaseQueueService(runtime);
     useCase = new RebaseTodoTimezoneUseCase({
+      clock: new DateClock(),
       todoRepository: new DrizzleTodoRepository(transaction.txHost),
       seriesRepository: new DrizzleTodoSeriesRepository(transaction.txHost),
       ownerTimezone: {
@@ -337,6 +339,7 @@ describe("시간대 재계산 (실제 PostgreSQL·pg-boss)", () => {
     const transaction = createDatabaseTransactionFixture(client);
     let failed = false;
     const flaky = new RebaseTodoTimezoneUseCase({
+      clock: new DateClock(),
       todoRepository: new DrizzleTodoRepository(transaction.txHost),
       seriesRepository: new DrizzleTodoSeriesRepository(transaction.txHost),
       ownerTimezone: { findTimezone: async () => NEW_YORK },

@@ -2,6 +2,7 @@ import { vi } from "vitest";
 import { mock } from "vitest-mock-extended";
 
 import type { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
+import { DateClock } from "#test/doubles/platform/date-clock";
 import { createPlanningTodoFixture } from "#test/fixtures/planning-todo.fixture";
 
 import { RepeatRule } from "../../domain/repeat-rule.vo.js";
@@ -29,9 +30,11 @@ describe("회차 채우기", () => {
 
   function useCase(overrides: { deadlineMs?: number; batchSize?: number } = {}) {
     return new MaterializeDueTodoSeriesUseCase({
+      clock: new DateClock(),
       seriesRepository: fixture.todoSeriesRepository,
       seriesOwner: fixture.seriesOwner,
       dueRunner: new MaterializeTodoSeriesUseCase({
+        clock: new DateClock(),
         seriesRepository: fixture.todoSeriesRepository,
         materializer: fixture.occurrenceMaterializer,
         effects: new PublishTodoCreationUseCase(fixture),

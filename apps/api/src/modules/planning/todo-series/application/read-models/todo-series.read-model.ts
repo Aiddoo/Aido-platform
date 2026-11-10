@@ -1,8 +1,6 @@
 import type { TodoRepeat, TodoSeriesResponse } from "@aido/api";
 import { match } from "ts-pattern";
 
-import { toISOString } from "#api/shared/domain/date/utils/format";
-
 import type { RepeatRule } from "../../domain/repeat-rule.vo.js";
 import type { TodoSeries } from "../../domain/todo-series.aggregate.js";
 
@@ -29,7 +27,7 @@ export function toTodoSeriesResponse(series: TodoSeries): TodoSeriesResponse {
     nextOccurrenceDate: snapshot.nextOccurrenceDate,
     isActive: series.isActive(),
     checklist: series.getChecklistTemplate(),
-    createdAt: toISOString(snapshot.createdAt),
-    updatedAt: toISOString(snapshot.updatedAt),
+    createdAt: snapshot.createdAt.toISOString(),
+    updatedAt: snapshot.updatedAt.toISOString(),
   };
 }

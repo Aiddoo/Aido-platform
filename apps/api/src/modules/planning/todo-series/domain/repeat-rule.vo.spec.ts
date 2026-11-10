@@ -229,3 +229,60 @@ describe("RepeatRule — 반복 규칙", () => {
     });
   });
 });
+
+describe("RepeatRule — Temporal 달력 경계", () => {
+  it("매월 31일은 짧은 달과 윤년 2월의 말일로 맞춘다", () => {
+    // Given
+    const rule = RepeatRule.monthly(31, { type: "NEVER" });
+
+    // When
+    const dates = rule.occurrencesBetween("2028-01-01", "2028-01-01", "2028-04-30");
+
+    // Then
+    expect(dates).toEqual(["2028-01-31", "2028-02-29", "2028-03-31", "2028-04-30"]);
+  });
+
+  it("매월 29일은 평년 2월의 말일(28일)로 맞춘다", () => {
+    // Given
+    const rule = RepeatRule.monthly(29, { type: "NEVER" });
+
+    // When
+    const dates = rule.occurrencesBetween("2027-01-01", "2027-02-01", "2027-03-31");
+
+    // Then
+    expect(dates).toEqual(["2027-02-28", "2027-03-29"]);
+  });
+
+  it("격주는 ISO 53주(2026-12-28 주)를 기준 주로 세고 해를 넘겨도 간격을 지킨다", () => {
+    // Given
+    const rule = RepeatRule.weekly(["MON"], 2, { type: "NEVER" });
+
+    // When
+    const dates = rule.occurrencesBetween("2026-12-28", "2026-12-28", "2027-01-31");
+
+    // Then
+    expect(dates).toEqual(["2026-12-28", "2027-01-11", "2027-01-25"]);
+  });
+
+  it("53주 일요일에 시작한 격주 일요일은 그 주 월요일을 기준으로 센다", () => {
+    // Given
+    const rule = RepeatRule.weekly(["SUN"], 2, { type: "NEVER" });
+
+    // When
+    const dates = rule.occurrencesBetween("2027-01-03", "2027-01-03", "2027-01-31");
+
+    // Then
+    expect(dates).toEqual(["2027-01-03", "2027-01-17", "2027-01-31"]);
+  });
+
+  it("횟수 종료는 이미 만든 회차를 빼고 남은 날짜만 준다", () => {
+    // Given
+    const rule = RepeatRule.daily({ type: "COUNT", count: 3 });
+
+    // When
+    const dates = rule.occurrencesBetween("2026-12-30", "2027-01-01", "2027-01-10", 1);
+
+    // Then
+    expect(dates).toEqual(["2027-01-01", "2027-01-02"]);
+  });
+});

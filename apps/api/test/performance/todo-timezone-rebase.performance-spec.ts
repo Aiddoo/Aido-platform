@@ -17,6 +17,7 @@ import {
   userPreference,
 } from "#api/platform/database/schema/index";
 import { PgBossJobRuntimeAdapter } from "#api/platform/jobs/pg-boss-job-runtime.adapter";
+import { DateClock } from "#test/doubles/platform/date-clock";
 import { TodoCategoryFixture, UserFixture } from "#test/fixtures/index";
 import { createDatabaseTransactionFixture, createTestClient } from "#test/setup/database-context";
 import { TestDatabase } from "#test/setup/test-database";
@@ -118,6 +119,7 @@ describe("시간대 재계산 규모 측정", () => {
         await client.execute(sql`ANALYZE "Todo"`);
         const reminders = new ReminderSchedulerAdapter(new TodoReminderSchedulerAdapter(runtime));
         const useCase = new RebaseTodoTimezoneUseCase({
+          clock: new DateClock(),
           todoRepository: new DrizzleTodoRepository(transaction.txHost),
           seriesRepository: new DrizzleTodoSeriesRepository(transaction.txHost),
           ownerTimezone: {

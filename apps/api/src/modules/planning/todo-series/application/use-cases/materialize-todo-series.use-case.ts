@@ -1,9 +1,10 @@
+import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import {
   MutationLockKeys,
   type MutationLockPort,
   type UnitOfWorkPort,
 } from "#api/shared/application/ports/index";
-import { now } from "#api/shared/domain/date/utils/core";
+import { instantToDate } from "#api/shared/domain/time/instant";
 
 import type {
   TodoSeriesRef,
@@ -18,6 +19,7 @@ interface TodoSeriesDueRunnerDependencies {
   readonly effects: Pick<PublishTodoCreationUseCase, "publishOccurrences">;
   readonly unitOfWork: UnitOfWorkPort;
   readonly mutationLock: MutationLockPort;
+  readonly clock: ClockPort;
 }
 
 /** 규칙 하나를 지금 시각까지 채운다. 밤 작업과 복귀 경로가 같은 잠금 순서·저장 규칙을 쓴다. */
@@ -40,7 +42,7 @@ export class MaterializeTodoSeriesUseCase {
         return null;
       }
       const cursorBefore = series.getNextOccurrenceDate();
-      const drafts = materializer.planDueRun(series, now());
+      const drafts = materializer.planDueRun(series, instantToDate(this.#dependencies.clock.now()));
       if (series.getNextOccurrenceDate() === cursorBefore) {
         return null;
       }

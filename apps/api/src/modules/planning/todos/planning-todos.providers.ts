@@ -2,6 +2,7 @@ import type { Provider } from "@nestjs/common";
 
 import { loggerFor, provideUseCase } from "#api/platform/di/provide-use-case";
 import { PaginationService } from "#api/shared/application/pagination/index";
+import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { DomainEventPublisherPort } from "#api/shared/application/ports/domain-event-publisher.port";
 import { MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
 import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
@@ -74,6 +75,7 @@ export const PLANNING_TODOS_PROVIDERS = [
   { provide: StreakPort, useClass: StreakAdapter },
   { provide: TodoNotificationPort, useClass: TodoNotificationAdapter },
   provideUseCase(WriteTodoCreationUseCase, {
+    clock: ClockPort,
     todoRepository: TodoRepositoryPort,
     todoSeriesRepository: TodoSeriesRepositoryPort,
     occurrenceMaterializer: MaterializeTodoOccurrencesUseCase,
@@ -107,6 +109,7 @@ export const PLANNING_TODOS_PROVIDERS = [
     logger: loggerFor(DeleteTodoUseCase),
   }),
   provideUseCase(UpdateTodoUseCase, {
+    clock: ClockPort,
     todoRepository: TodoRepositoryPort,
     todoReadRepository: TodoReadRepositoryPort,
     ...MUTATION,
@@ -127,6 +130,7 @@ export const PLANNING_TODOS_PROVIDERS = [
     applyTodoEvents: ApplyTodoEventsUseCase,
   }),
   provideUseCase(AddTodoItemUseCase, {
+    clock: ClockPort,
     todoRepository: TodoRepositoryPort,
     todoReadRepository: TodoReadRepositoryPort,
     ...MUTATION,
@@ -167,6 +171,7 @@ export const PLANNING_TODOS_PROVIDERS = [
     logger: loggerFor(ReorderTodoItemsUseCase),
   }),
   provideUseCase(SetTodoCompletedUseCase, {
+    clock: ClockPort,
     todoRepository: TodoRepositoryPort,
     todoReadRepository: TodoReadRepositoryPort,
     ...MUTATION,
@@ -211,6 +216,7 @@ export const PLANNING_TODOS_PROVIDERS = [
     logger: loggerFor(UpdateTodoVisibilityUseCase),
   }),
   provideUseCase(RebaseTodoTimezoneUseCase, {
+    clock: ClockPort,
     todoRepository: TodoRepositoryPort,
     seriesRepository: TodoSeriesRepositoryPort,
     ownerTimezone: TodoOwnerTimezonePort,

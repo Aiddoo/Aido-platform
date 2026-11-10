@@ -4,7 +4,6 @@ import { ErrorCode } from "@aido/api/errors";
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { CursorPaginatedResponse } from "#api/shared/application/pagination/index";
 import type { PaginationService } from "#api/shared/application/pagination/index";
-import { isAfter } from "#api/shared/domain/date/utils/compare";
 
 import type { CatchUpTodoSeriesUseCase } from "../../../todo-series/application/use-cases/catch-up-todo-series.use-case.js";
 import { type TodoReadRepositoryPort } from "../ports/todo-read.repository.port.js";
@@ -39,7 +38,7 @@ export class ListTodosUseCase {
     if (
       input.startDate != null &&
       input.endDate != null &&
-      isAfter(input.startDate, input.endDate)
+      input.startDate.getTime() > input.endDate.getTime()
     ) {
       throw new ApplicationException(ErrorCode.SYS_0002, {
         message: "startDate must be less than or equal to endDate",

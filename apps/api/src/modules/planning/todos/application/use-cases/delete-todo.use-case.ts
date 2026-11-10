@@ -10,9 +10,8 @@ import {
   type DomainEventPublisherPort,
   type UnitOfWorkPort,
 } from "#api/shared/application/ports/index";
-import { addDaysToDateKey } from "#api/shared/domain/date/utils/arithmetic";
-import { toDateString } from "#api/shared/domain/date/utils/format";
 
+import { addDaysToKey, dateKeyOf } from "../../../shared/domain/todo-calendar.domain-service.js";
 import type { TodoSeriesRepositoryPort } from "../../../todo-series/application/ports/todo-series.repository.port.js";
 import type { PublishTodoSeriesEditUseCase } from "../../../todo-series/application/use-cases/publish-todo-series-edit.use-case.js";
 import { TodoOccurrencesChangedEvent } from "../../../todo-series/domain/todo-occurrences-changed.event.js";
@@ -135,7 +134,7 @@ export class DeleteTodoUseCase {
           if (occurrenceDate == null) {
             throw new ApplicationException(ErrorCode.TODO_0844, { todoId: id, scope });
           }
-          const pivot = toDateString(occurrenceDate);
+          const pivot = dateKeyOf(occurrenceDate);
           const following =
             series == null ? [] : await seriesRepository.lockFollowingSegments(series);
           const ids = await todoRepository.deleteOccurrences({
@@ -145,7 +144,7 @@ export class DeleteTodoUseCase {
             includeCompleted: false,
           });
           for (const segment of series == null ? [] : [series, ...following]) {
-            if (segment.stopAfter(addDaysToDateKey(pivot, -1))) {
+            if (segment.stopAfter(addDaysToKey(pivot, -1))) {
               await seriesRepository.update(segment);
             }
           }

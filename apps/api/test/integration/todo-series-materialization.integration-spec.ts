@@ -30,6 +30,7 @@ import {
   user as userTable,
 } from "#api/platform/database/schema/index";
 import type { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
+import { DateClock } from "#test/doubles/platform/date-clock";
 import { TodoCategoryFixture, TodoFixture, UserFixture } from "#test/fixtures/index";
 import { createDatabaseTransactionFixture, createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
@@ -97,12 +98,14 @@ describe("회차 채우기 작업 (실제 PostgreSQL)", () => {
     const entitlements = mock<EntitlementReaderPort>();
     entitlements.getAccessSnapshot.mockResolvedValue(mock<AccessSnapshot>({ tier: "FREE" }));
     return new MaterializeDueTodoSeriesUseCase({
+      clock: new DateClock(),
       seriesRepository,
       seriesOwner: new TodoSeriesOwnerAdapter(
         new DrizzleUserRepository(fixture.txHost),
         entitlements,
       ),
       dueRunner: new MaterializeTodoSeriesUseCase({
+        clock: new DateClock(),
         seriesRepository,
         materializer: new MaterializeTodoOccurrencesUseCase({
           todoRepository,

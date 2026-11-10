@@ -94,6 +94,7 @@ describe("할 일 리마인더를 같은 트랜잭션에서 예약·취소한다
       logger: new SilentLogger(),
     });
     setCompleted = new SetTodoCompletedUseCase({
+      clock: new FixedClock(Temporal.Instant.from("2026-11-10T00:00:00Z")),
       todoRepository,
       todoReadRepository,
       unitOfWork: uow,

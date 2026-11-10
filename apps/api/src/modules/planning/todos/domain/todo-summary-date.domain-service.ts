@@ -1,9 +1,8 @@
 import { ErrorCode } from "@aido/api/errors";
 
-import { addDays } from "#api/shared/domain/date/utils/arithmetic";
-import { isSameDay } from "#api/shared/domain/date/utils/compare";
-import { toDateString } from "#api/shared/domain/date/utils/format";
 import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
+
+import { addDaysToKey, dateKeyOf } from "../../shared/domain/todo-calendar.domain-service.js";
 
 /**
  * 요약 대상 날짜를 사용자 시간대의 오늘 또는 내일로 제한합니다.
@@ -16,12 +15,14 @@ export function resolveTodoSummaryDate(today: Date, requestedDate?: Date): Date 
     return today;
   }
 
-  const tomorrow = addDays(1, today);
-  if (!isSameDay(requestedDate, today) && !isSameDay(requestedDate, tomorrow)) {
+  const todayKey = dateKeyOf(today);
+  const tomorrowKey = addDaysToKey(todayKey, 1);
+  const requestedKey = dateKeyOf(requestedDate);
+  if (requestedKey !== todayKey && requestedKey !== tomorrowKey) {
     throw new DomainException(ErrorCode.SYS_0002, {
       field: "date",
-      value: toDateString(requestedDate),
-      allowed: [toDateString(today), toDateString(tomorrow)],
+      value: requestedKey,
+      allowed: [todayKey, tomorrowKey],
     });
   }
 

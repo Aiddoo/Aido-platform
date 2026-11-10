@@ -2,12 +2,12 @@ import { TODO_SERIES_LIMITS } from "@aido/api/vocabulary";
 import { uniq } from "es-toolkit";
 
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
+import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
-import { addDaysToDateKey } from "#api/shared/domain/date/utils/arithmetic";
-import { now } from "#api/shared/domain/date/utils/core";
-import { toDateString } from "#api/shared/domain/date/utils/format";
+import { instantToDate } from "#api/shared/domain/time/instant";
 
+import { addDaysToKey, dateKeyOf } from "../../../shared/domain/todo-calendar.domain-service.js";
 import { isSeriesOwnerDormant } from "../../domain/series-dormancy.domain-service.js";
 import type { TodoSeriesOwnerPort } from "../ports/todo-series-owner.port.js";
 import type {
@@ -40,6 +40,7 @@ interface MaterializeDueTodoSeriesDependencies {
   readonly seriesOwner: TodoSeriesOwnerPort;
   readonly dueRunner: Pick<MaterializeTodoSeriesUseCase, "execute">;
   readonly alert: OperationalAlertPort;
+  readonly clock: ClockPort;
   readonly logger: Pick<ApplicationLoggerPort, "log" | "warn">;
   readonly batchSize?: number;
   readonly deadlineMs?: number;
@@ -64,9 +65,9 @@ export class MaterializeDueTodoSeriesUseCase {
     const batchSize = this.#dependencies.batchSize ?? TODO_SERIES_MATERIALIZATION_BUDGET.BATCH_SIZE;
     const deadlineMs =
       this.#dependencies.deadlineMs ?? TODO_SERIES_MATERIALIZATION_BUDGET.DEADLINE_MS;
-    const startedAt = Date.now();
-    const through = addDaysToDateKey(
-      toDateString(now()),
+    const startedAt = performance.now();
+    const through = addDaysToKey(
+      dateKeyOf(instantToDate(this.#dependencies.clock.now())),
       TODO_SERIES_MATERIALIZATION_BUDGET.DUE_SCAN_AHEAD_DAYS,
     );
     let afterId: string | null = null;
@@ -86,7 +87,7 @@ export class MaterializeDueTodoSeriesUseCase {
         uniq(dueBatch.map(({ userId }) => userId)),
       );
       for (const due of dueBatch) {
-        if (Date.now() - startedAt >= deadlineMs) {
+        if (performance.now() - startedAt >= deadlineMs) {
           timedOut = true;
           break;
         }
@@ -95,7 +96,7 @@ export class MaterializeDueTodoSeriesUseCase {
           continue;
         }
         if (
-          isSeriesOwnerDormant(owner, now()) &&
+          isSeriesOwnerDormant(owner, instantToDate(this.#dependencies.clock.now())) &&
           !(await seriesOwner.isExemptFromDormancy(due.userId))
         ) {
           dormantCount += 1;
@@ -120,7 +121,7 @@ export class MaterializeDueTodoSeriesUseCase {
       }
     }
 
-    const durationMs = Date.now() - startedAt;
+    const durationMs = performance.now() - startedAt;
     logger.log({
       event: TodoSeriesLogEvent.MATERIALIZED,
       processedCount,

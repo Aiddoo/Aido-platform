@@ -1,8 +1,7 @@
 import { ErrorCode } from "@aido/api/errors";
 import { TODO_ITEM_LIMITS } from "@aido/api/vocabulary";
 
-import { addDaysToDateKey } from "#api/shared/domain/date/utils/arithmetic";
-
+import { addDaysToKey } from "../../shared/domain/todo-calendar.domain-service.js";
 import { RepeatRule } from "./repeat-rule.vo.js";
 import { TodoSeries, type TodoSeriesStartInput } from "./todo-series.aggregate.js";
 
@@ -189,7 +188,7 @@ describe("TodoSeries — 반복 할 일", () => {
       ({ rule }) => {
         // Given
         const series = start({ rule });
-        const dayBeforeStart = addDaysToDateKey(series.getStartDate(), -1);
+        const dayBeforeStart = addDaysToKey(series.getStartDate(), -1);
         // When
         const first = series.stopAfter(dayBeforeStart);
         const second = series.stopAfter(dayBeforeStart);

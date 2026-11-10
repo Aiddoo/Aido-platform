@@ -3,12 +3,14 @@ import { ErrorCode } from "@aido/api/errors";
 
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
+import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import {
   MutationLockKeys,
   type MutationLockPort,
   type DomainEventPublisherPort,
   type UnitOfWorkPort,
 } from "#api/shared/application/ports/index";
+import { instantToDate } from "#api/shared/domain/time/instant";
 
 import { type TodoCachePort } from "../ports/todo-cache.port.js";
 import { type TodoReadRepositoryPort } from "../ports/todo-read.repository.port.js";
@@ -30,6 +32,7 @@ interface ToggleTodoCompleteDependencies {
   readonly unitOfWork: UnitOfWorkPort;
   readonly applyTodoEvents: Pick<ApplyTodoEventsUseCase, "execute">;
   readonly mutationLock: MutationLockPort;
+  readonly clock: ClockPort;
   readonly todoCache: Pick<TodoCachePort, "invalidateFriendTodos">;
   readonly eventPublisher: DomainEventPublisherPort;
   readonly logger: ApplicationLoggerPort;
@@ -52,7 +55,11 @@ export class SetTodoCompletedUseCase {
         throw new ApplicationException(ErrorCode.TODO_0801, { todoId: id });
       }
 
-      const changed = todo.toggleComplete(completed, timezone);
+      const changed = todo.toggleComplete(
+        completed,
+        timezone,
+        instantToDate(this.#dependencies.clock.now()),
+      );
       if (!changed) {
         return [];
       }

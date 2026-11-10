@@ -8,9 +8,8 @@ import { ApplyTodoEventsUseCase } from "#api/modules/planning/todos/application/
 import { ResolveTodoTimezoneUseCase } from "#api/modules/planning/todos/application/use-cases/resolve-todo-timezone.use-case";
 import { PaginationService } from "#api/shared/application/pagination/index";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
-import { instantFromDate } from "#api/shared/domain/time/instant";
 import { TodoBuilder } from "#test/builders/index";
-import { FixedClock } from "#test/doubles/platform/fixed-clock";
+import { DateClock } from "#test/doubles/platform/date-clock";
 import type { PlanningTodoRecord } from "#test/fixtures/todo-response.fixture";
 import {
   StubPlanningTodoRepository,
@@ -54,10 +53,11 @@ export function createPlanningTodoFixture(
   const todoSeriesRepository = new StubPlanningTodoSeriesRepository(seriesStore);
   const seriesOwner = new StubPlanningTodoSeriesOwner();
   const todoReminder = new StubPlanningTodoReminder();
+  const clock = new DateClock();
   const applyTodoEvents = new ApplyTodoEventsUseCase({
     reminderScheduler: todoReminder,
     eventPublisher,
-    clock: new FixedClock(instantFromDate(PLANNING_TIME)),
+    clock,
   });
   const occurrenceMaterializer = new MaterializeTodoOccurrencesUseCase({
     todoRepository,
@@ -102,6 +102,7 @@ export function createPlanningTodoFixture(
     todoSeriesRepository,
     todoReminder,
     applyTodoEvents,
+    clock,
     seriesRepository: todoSeriesRepository,
     seriesOwner,
     seriesEffects,

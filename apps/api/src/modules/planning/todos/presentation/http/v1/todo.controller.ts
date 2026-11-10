@@ -33,10 +33,10 @@ import {
   SWAGGER_TAGS,
 } from "#api/platform/http/swagger/index";
 import { ApplicationException } from "#api/shared/application/application.exception";
-import { parseDateOnly } from "#api/shared/domain/date/utils/parse";
 import { todayInTimezone } from "#api/shared/domain/date/utils/timezone";
 import { DomainException } from "#api/shared/domain/index";
 
+import { utcMidnightOf } from "../../../../shared/domain/todo-calendar.domain-service.js";
 import { AddTodoItemUseCase } from "../../../application/use-cases/add-todo-item.use-case.js";
 import { ChangeTodoCategoryUseCase } from "../../../application/use-cases/change-todo-category.use-case.js";
 import { CreateTodoUseCase } from "../../../application/use-cases/create-todo.use-case.js";
@@ -209,7 +209,7 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
     return this.#getTodoSummaryUseCase.execute({
       userId: user.userId,
       today: todayInTimezone(timezone),
-      requestedDate: query.date == null ? undefined : parseDateOnly(query.date),
+      requestedDate: query.date == null ? undefined : utcMidnightOf(query.date),
     });
   }
 
@@ -283,8 +283,8 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
       userId: user.userId,
       title: dto.title,
       categoryId: dto.categoryId,
-      startDate: parseDateOnly(dto.startDate),
-      endDate: dto.endDate == null ? undefined : parseDateOnly(dto.endDate),
+      startDate: utcMidnightOf(dto.startDate),
+      endDate: dto.endDate == null ? undefined : utcMidnightOf(dto.endDate),
       scheduledTime: dto.scheduledTime,
       timezone,
       isAllDay: dto.isAllDay,
@@ -350,7 +350,7 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
         userId: user.userId,
         title: dto.title,
         categoryId: dto.categoryId,
-        startDate: parseDateOnly(dto.startDate),
+        startDate: utcMidnightOf(dto.startDate),
         scheduledTime: dto.scheduledTime,
         timezone,
         isAllDay: dto.isAllDay,
@@ -521,8 +521,8 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
       completed: query.completed,
       categoryId: query.categoryId,
       // DATE 타입 필드는 시간 정보가 없으므로 parseDateOnly 사용
-      startDate: query.startDate == null ? undefined : parseDateOnly(query.startDate),
-      endDate: query.endDate == null ? undefined : parseDateOnly(query.endDate),
+      startDate: query.startDate == null ? undefined : utcMidnightOf(query.startDate),
+      endDate: query.endDate == null ? undefined : utcMidnightOf(query.endDate),
     });
 
     return {
@@ -603,8 +603,8 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
       cursor: query.cursor,
       size: query.size,
       // DATE 타입 필드는 시간 정보가 없으므로 parseDateOnly 사용
-      startDate: query.startDate == null ? undefined : parseDateOnly(query.startDate),
-      endDate: query.endDate == null ? undefined : parseDateOnly(query.endDate),
+      startDate: query.startDate == null ? undefined : utcMidnightOf(query.startDate),
+      endDate: query.endDate == null ? undefined : utcMidnightOf(query.endDate),
     });
 
     return {
@@ -664,14 +664,14 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
       data: {
         title: dto.title,
         categoryId: dto.categoryId,
-        startDate: dto.startDate == null ? undefined : parseDateOnly(dto.startDate),
+        startDate: dto.startDate == null ? undefined : utcMidnightOf(dto.startDate),
         // nullish-strict: PATCH라 undefined는 유지, null은 종료일 지우기다
         endDate:
           dto.endDate === undefined
             ? undefined
             : dto.endDate === null
               ? null
-              : parseDateOnly(dto.endDate),
+              : utcMidnightOf(dto.endDate),
         scheduledTime: dto.scheduledTime,
         isAllDay: dto.isAllDay,
         visibility: dto.visibility,
@@ -818,8 +818,8 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
       id: params.id,
       userId: user.userId,
       schedule: {
-        startDate: parseDateOnly(dto.startDate),
-        endDate: dto.endDate == null ? null : parseDateOnly(dto.endDate),
+        startDate: utcMidnightOf(dto.startDate),
+        endDate: dto.endDate == null ? null : utcMidnightOf(dto.endDate),
         scheduledTime: dto.scheduledTime ?? null,
         isAllDay: dto.isAllDay ?? true,
       },

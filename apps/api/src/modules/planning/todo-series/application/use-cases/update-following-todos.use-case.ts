@@ -7,16 +7,16 @@ import { isEqual, sortBy, uniq, uniqBy } from "es-toolkit";
 
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
+import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import {
   MutationLockKeys,
   type MutationLockPort,
   type UnitOfWorkPort,
 } from "#api/shared/application/ports/index";
-import { addDaysToDateKey } from "#api/shared/domain/date/utils/arithmetic";
-import { now } from "#api/shared/domain/date/utils/core";
-import { toDateString } from "#api/shared/domain/date/utils/format";
+import { instantToDate } from "#api/shared/domain/time/instant";
 
-import { resolveScheduledInstant } from "../../../shared/domain/todo-schedule.vo.js";
+import { addDaysToKey, dateKeyOf } from "../../../shared/domain/todo-calendar.domain-service.js";
+import { resolveScheduledInstant } from "../../../shared/domain/todo-calendar.domain-service.js";
 import type { CategoryOwnershipPort } from "../../../todos/application/ports/category-ownership.port.js";
 import type { TodoReadRepositoryPort } from "../../../todos/application/ports/todo-read.repository.port.js";
 import type {
@@ -84,6 +84,7 @@ interface UpdateFollowingTodosDependencies {
   readonly effects: Pick<PublishTodoSeriesEditUseCase, "execute">;
   readonly unitOfWork: UnitOfWorkPort;
   readonly mutationLock: MutationLockPort;
+  readonly clock: ClockPort;
   readonly applyTodoEvents: Pick<ApplyTodoEventsUseCase, "execute">;
   readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
@@ -148,7 +149,7 @@ export class UpdateFollowingTodosUseCase {
     if (occurrenceDate == null) {
       throw new ApplicationException(ErrorCode.TODO_0801, { todoId: id });
     }
-    return this.#applyTo(input, series, toDateString(occurrenceDate));
+    return this.#applyTo(input, series, dateKeyOf(occurrenceDate));
   }
 
   async publish(edited: AppliedFollowingEdit, userId: string): Promise<void> {
@@ -172,7 +173,7 @@ export class UpdateFollowingTodosUseCase {
     pivot: string,
   ): Promise<AppliedFollowingEdit> {
     const { todoRepository, seriesRepository, materializer, todoReminder } = this.#dependencies;
-    const at = now();
+    const at = instantToDate(this.#dependencies.clock.now());
     const rule = input.repeat == null ? null : RepeatRule.from(input.repeat);
     const ruleChanged = rule != null && !rule.equals(series.getRule());
     const checklistChanged =
@@ -266,7 +267,7 @@ export class UpdateFollowingTodosUseCase {
     }
     for (const segment of following) {
       if (ruleChanged) {
-        segment.stopAfter(addDaysToDateKey(pivot, -1));
+        segment.stopAfter(addDaysToKey(pivot, -1));
       } else if (checklistChanged) {
         segment.replaceChecklist(input.checklist ?? []);
       }

@@ -1,11 +1,11 @@
 import { vi } from "vitest";
 
-import { toLocalTimeString } from "#api/shared/domain/date/utils/timezone";
 import {
   createPlanningTodoFixture,
   createPlanningTodo,
 } from "#test/fixtures/planning-todo.fixture";
 
+import { localTimeIn } from "../../../shared/domain/todo-calendar.domain-service.js";
 import { RepeatRule } from "../../../todo-series/domain/repeat-rule.vo.js";
 import { TodoSeries } from "../../../todo-series/domain/todo-series.aggregate.js";
 import { RebaseTodoTimezoneUseCase } from "./rebase-todo-timezone.use-case.js";
@@ -186,7 +186,7 @@ describe("시간대 재계산", () => {
     await useCase.execute({ userId: "planning-user" });
     // Then
     const instant = fixture.records.get(1)?.scheduledTime;
-    expect(instant == null ? null : toLocalTimeString(instant, NEW_YORK)).toBe("10:00");
+    expect(instant == null ? null : localTimeIn(instant, NEW_YORK)).toBe("10:00");
   });
 
   it("서쪽으로 가서 다시 앞으로가 된 어제 날짜 회차만 예약 대상으로 넘긴다", async () => {

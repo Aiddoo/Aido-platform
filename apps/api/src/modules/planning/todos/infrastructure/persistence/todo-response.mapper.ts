@@ -3,12 +3,12 @@ import { sumBy } from "es-toolkit";
 
 import { requireRecord } from "#api/platform/database/database-error.util";
 import {
-  toDateString,
   toDateStringOrNull,
   toISOString,
   toISOStringOrNull,
 } from "#api/shared/domain/date/utils/format";
 
+import { dateKeyOf } from "../../../shared/domain/todo-calendar.domain-service.js";
 import { toTodoRepeat } from "../../../todo-series/application/read-models/todo-series.read-model.js";
 import { toRepeatRule } from "../../../todo-series/infrastructure/persistence/repeat-rule-row.mapper.js";
 import type { TodoWithCategory, TodoWithSeries } from "./todo-row.mapper.js";
@@ -33,7 +33,7 @@ export const TodoMapper = {
       sortOrder: entity.sortOrder,
       completed: entity.completed,
       completedAt: toISOStringOrNull(entity.completedAt),
-      startDate: toDateString(entity.startDate),
+      startDate: dateKeyOf(entity.startDate),
       endDate: toDateStringOrNull(entity.endDate),
       scheduledTime: toISOStringOrNull(entity.scheduledTime),
       // 옛 서버가 시간을 지운 행은 칸이 낡았을 수 있다. 칸이 빈 행은 앱이 순간에서 읽는다.

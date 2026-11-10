@@ -7,8 +7,8 @@ import { sumBy } from "es-toolkit";
 import { requireRecord } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { todo, todoCategory, todoSeries } from "#api/platform/database/schema/index";
-import { toDateString } from "#api/shared/domain/date/utils/format";
 
+import { dateKeyOf } from "../../../shared/domain/todo-calendar.domain-service.js";
 import type {
   TodoPlanReaderPort,
   UpcomingTodoView,
@@ -238,7 +238,7 @@ export class DrizzleTodoReadRepository implements TodoReadRepositoryPort, TodoPl
     return rows.map((row) => ({
       id: row.id,
       title: row.title,
-      startDate: toDateString(row.startDate),
+      startDate: dateKeyOf(row.startDate),
       isRepeating: row.seriesId != null,
     }));
   }
