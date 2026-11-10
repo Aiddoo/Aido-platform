@@ -119,6 +119,15 @@ pnpm --filter @aido/server exec vitest run --project integration test/integratio
 
 DB 프로젝트는 파일을 직렬로 돌리고 순서를 섞는다. 결과에는 파일·seed·실행 수를 남기고, 수집 오류로 0개가 돈 결과를 통과로 적지 않는다. 정본은 [vitest.config.ts](../vitest.config.ts)다.
 
+### 메모리
+
+- 프로세스 안 저장소·타이머를 바꾸면 [메모리 소크](../test/performance/memory-soak.performance-spec.ts)를 혼자 돌린다. 실제 pg-boss로 띄운 앱에 주요 경로 5천 번·큐 작업 1천 건을 보내고 `global.gc()` 뒤 힙 증가가 4MB 미만인지 본다. 기본 `test`·CI에는 없다.
+- [종료 handle 검사](../test/e2e/app-shutdown-handles.e2e-spec.ts)는 E2E에 있다. `app.close()` 뒤 stdio 말고 남은 타이머·소켓이 없어야 한다.
+
+```sh
+AIDO_TEST_DB_WORKERS=2 pnpm --filter @aido/server exec vitest run --project performance test/performance/memory-soak.performance-spec.ts
+```
+
 ## 전환 중
 
 옛 spec 일부가 아직 `test/mocks`·`test/builders`, `createUnitOfWorkMock()`을 쓴다. 기존 테스트를 일괄 교체하지 않고 그 spec을 고칠 때 위 구조로 옮긴다. 마지막에 `test/builders`를 fixtures로, `test/mocks`를 doubles로 합친다. mock 라이브러리 의존성은 지웠다. 옮긴 Context는 `apps/api/architecture.ratchet.json`의 `migratedContexts`에 있다.

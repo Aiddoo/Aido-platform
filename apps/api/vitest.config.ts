@@ -68,6 +68,9 @@ export default defineConfig({
           maxWorkers: 1,
           include: ["test/performance/**/*.performance-spec.ts"],
           testTimeout: 180_000,
+          // 메모리 소크가 global.gc()로 쓰레기를 치운 뒤 잰다. 시작 때만 쓴 bytecode가 소크 중에 비워져(약 10MB)
+          // 실제 증가를 가리지 않도록 bytecode flushing을 끈다
+          execArgv: ["--expose-gc", "--no-flush-bytecode"],
         },
       },
       {
