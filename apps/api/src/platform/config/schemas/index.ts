@@ -9,7 +9,7 @@ import {
 import { type AppConfig, appSchema } from "./app.schema.js";
 import { type CacheEnvConfig, cacheSchema } from "./cache.schema.js";
 import { type DatabaseConfig, databaseSchema } from "./database.schema.js";
-import { type EmailConfig, emailSchema, validateEmailForProduction } from "./email.schema.js";
+import { type EmailConfig, emailSchema } from "./email.schema.js";
 import {
   type ExternalConfig,
   externalSchema,
@@ -24,7 +24,8 @@ import { type InviteConfig, inviteSchema, validateInviteConfig } from "./invite.
 import { type JobConfig, jobSchema } from "./job.schema.js";
 import { type JwtConfig, jwtSchema } from "./jwt.schema.js";
 import { type NudgeConfig, nudgeSchema } from "./nudge.schema.js";
-import { type OAuthConfig, oauthSchema, validateOAuthForProduction } from "./oauth.schema.js";
+import { type OAuthConfig, oauthSchema } from "./oauth.schema.js";
+import { validateProductionReadiness } from "./production-readiness.js";
 import { type PushConfig, pushSchema } from "./push.schema.js";
 import { type RetentionConfig, retentionSchema } from "./retention.schema.js";
 import { type SecurityConfig, securitySchema } from "./security.schema.js";
@@ -98,12 +99,15 @@ export type EnvConfig = AppConfig &
   FeatureDiscoveryConfig &
   InviteConfig;
 
+/** 시작 검증. 스키마 위에 운영에서 위험한 조합을 거부하는 규칙을 더한다. */
+const startupEnvSchema = envSchema.check(validateProductionReadiness);
+
 /**
- * 환경변수 검증 함수
- * @nestjs/config의 validate 옵션에 전달
+ * 환경변수 검증 함수. @nestjs/config의 validate 옵션에 전달한다.
+ * 오류는 키 이름과 규칙만 모아 한 번에 알리고 값은 싣지 않는다.
  */
 export function validateEnv(config: Record<string, unknown>): EnvConfig {
-  const result = envSchema.safeParse(config);
+  const result = startupEnvSchema.safeParse(config);
 
   if (!result.success) {
     const errors = result.error.issues
@@ -113,22 +117,5 @@ export function validateEnv(config: Record<string, unknown>): EnvConfig {
     throw new Error(`Environment validation failed:\n${errors}`);
   }
 
-  const validatedConfig = result.data;
-
-  // Production 환경에서 OAuth 및 이메일 검증
-  if (validatedConfig.NODE_ENV === "production") {
-    if (!validateOAuthForProduction(validatedConfig)) {
-      throw new Error(
-        "Production environment requires at least one OAuth provider configured (Google, Apple, Kakao, or Naver)",
-      );
-    }
-
-    if (!validateEmailForProduction(validatedConfig)) {
-      throw new Error(
-        "Production environment requires EMAIL_PROVIDER=resend and RESEND_API_KEY for email verification",
-      );
-    }
-  }
-
-  return validatedConfig;
+  return result.data;
 }

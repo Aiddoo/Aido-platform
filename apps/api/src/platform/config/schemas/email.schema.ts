@@ -35,10 +35,3 @@ export const emailSchema = z.object({
 });
 
 export type EmailConfig = z.infer<typeof emailSchema>;
-
-/**
- * Production 환경에서는 실제로 발송하는 어댑터와 그 키가 필수
- */
-export function validateEmailForProduction(config: EmailConfig): boolean {
-  return (config.EMAIL_PROVIDER ?? "resend") === "resend" && !!config.RESEND_API_KEY;
-}

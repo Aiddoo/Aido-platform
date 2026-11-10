@@ -20,6 +20,12 @@ describe("envSchema — WeatherKit 자격", () => {
     ["개발에서 네 값이 모두 있으면 통과한다", "development", weatherKit, true],
     ["운영에서 네 값이 모두 있으면 통과한다", "production", weatherKit, true],
     ["운영에서 네 값이 없으면 기동을 막는다", "production", {}, false],
+    [
+      "배포된 개발서버(production 빌드 + APP_ENV=development)는 네 값이 없어도 통과한다",
+      "production",
+      { APP_ENV: "development" },
+      true,
+    ],
   ])("%s", (_case, nodeEnv, values, expected) => {
     // Given
     const environment = { ...requiredEnvironment, NODE_ENV: nodeEnv, ...values };
