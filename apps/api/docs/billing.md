@@ -22,7 +22,7 @@ RevenueCat 웹훅(`POST /v1/webhooks/revenuecat`)과 보상 기간이 프리미�
 | 결제 복구(`RENEWAL`)             | 유예를 지우고 새 만료 시각까지 프리미엄. 보상은 시작한 적이 없어 다시 쌓거나 일수를 올리지 않는다                                         |
 | 유예 끝(`EXPIRATION` 또는 sweep) | 쌓아 둔 보상이 유예 끝 시각부터 한 번 시작한다. `EXPIRATION`은 유예를 지우고 만료 시각을 유예가 실제로 끝난 시각으로 남긴다               |
 
-TS 판단(Billing `isStoreEntitlementValid`, Access `resolvePremiumAccessDeadline`)과 SQL(`validStoreEntitlementCondition`)은 같은 규칙(`storeEntitlementEndsAt`)을 쓴다.
+TS 판단(Billing `isStoreEntitlementValid`, Access `resolvePaidAccessDeadline`)과 SQL(`validStoreEntitlementCondition`)은 같은 규칙(`storeEntitlementEndsAt`)을 쓴다.
 
 ## 끊은 보상 기간
 

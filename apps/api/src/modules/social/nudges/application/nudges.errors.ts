@@ -3,7 +3,7 @@ import { ErrorCode } from "@aido/api/errors";
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import type { DailySendQuota } from "../../cheers/application/ports/daily-send-usage.reader.port.js";
+import type { DailySendFeatureQuota } from "../../cheers/application/ports/daily-send-usage.reader.port.js";
 import type { NudgeId } from "../domain/nudge-id.vo.js";
 
 export function cannotNudgeSelf(): ApplicationException {
@@ -23,7 +23,7 @@ export function nudgeTodoNotActiveToday(todoId: number): ApplicationException {
   return new ApplicationException(ErrorCode.NUDGE_1106, { todoId });
 }
 
-export function nudgeDailyLimitReached(featureQuota: DailySendQuota): ApplicationException {
+export function nudgeDailyLimitReached(featureQuota: DailySendFeatureQuota): ApplicationException {
   return new ApplicationException(ErrorCode.NUDGE_1101, { charged: false, featureQuota });
 }
 

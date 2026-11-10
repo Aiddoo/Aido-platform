@@ -1,10 +1,14 @@
 import type { AccessTier } from "@aido/api/vocabulary";
 
 import type {
-  AccessSnapshot,
   EntitlementReaderPort,
-} from "#api/modules/access/access-entitlement.public";
-import type { MeteredFeatureQuota, QuotaLedgerPort } from "#api/modules/access/access-quota.public";
+  UserEntitlements,
+} from "#api/modules/access/entitlements/access-entitlements.public";
+import { planOfTier } from "#api/modules/access/entitlements/domain/entitlement.domain-service";
+import type {
+  MeteredFeatureQuota,
+  QuotaLedgerPort,
+} from "#api/modules/access/quotas/access-quotas.public";
 import type {
   PremiumAccess,
   PremiumAccessReaderPort,
@@ -29,7 +33,7 @@ import { InMemoryAuthVerificationRepository } from "#test/doubles/identity/in-me
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { ImmediateUnitOfWork } from "#test/doubles/platform/immediate-unit-of-work";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
-import { createFeatureAccessFixture } from "#test/fixtures/access/access-user.fixture";
+import { createFeatureEntitlementsFixture } from "#test/fixtures/access/access-user.fixture";
 import { FakeEmailService } from "#test/mocks/fake-email.service";
 import {
   StubAuthPasswordHasher,
@@ -159,16 +163,17 @@ export function createAuthCredentialFixture(
 }
 
 /** 사용자별 권한 주체를 정해 두는 대역. 기능 권한은 실제 Access 정책으로 계산한다. */
-export class StubCurrentUserAccess implements Pick<EntitlementReaderPort, "getAccessSnapshot"> {
+export class StubCurrentUserAccess implements Pick<EntitlementReaderPort, "getEntitlements"> {
   readonly tiers = new Map<string, AccessTier>();
   readonly activeSubscriptionUserIds = new Set<string>();
 
-  async getAccessSnapshot(userId: string): Promise<AccessSnapshot> {
+  async getEntitlements(userId: string): Promise<UserEntitlements> {
     const tier = this.tiers.get(userId) ?? "FREE";
     return {
       tier,
+      plan: planOfTier(tier),
       isPremium: this.activeSubscriptionUserIds.has(userId),
-      features: createFeatureAccessFixture(tier),
+      features: createFeatureEntitlementsFixture(tier),
     };
   }
 }

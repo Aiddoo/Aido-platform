@@ -2,8 +2,7 @@ import type { RevenueCatWebhookPayload } from "@aido/api";
 import { eq, sql } from "drizzle-orm";
 import { sortBy } from "es-toolkit";
 
-import { ENTITLEMENT_READER } from "#api/modules/access/access-entitlement.public";
-import type { EntitlementReaderPort } from "#api/modules/access/access-entitlement.public";
+import { EntitlementReaderPort } from "#api/modules/access/entitlements/access-entitlements.public";
 import { StoreEntitlementReaderPort } from "#api/modules/billing/premium-grants/application/ports/store-entitlement.reader.port";
 import { UserSubscriptionProjectionRepositoryPort } from "#api/modules/billing/premium-grants/application/ports/user-subscription-projection.repository.port";
 import { SubscriptionEventNotifierPort } from "#api/modules/billing/subscriptions/application/ports/subscription-event-notifier.port";
@@ -79,7 +78,7 @@ describe("구독 이벤트 처리 원장과 상태 전이 (실제 PostgreSQL)", 
     projection = context.module.get(UserSubscriptionProjectionRepositoryPort);
     entitlementReader = context.module.get(StoreEntitlementReaderPort);
     useCase = context.module.get(RevenueCatWebhookReceiver);
-    entitlement = context.module.get<EntitlementReaderPort>(ENTITLEMENT_READER);
+    entitlement = context.module.get(EntitlementReaderPort);
     receipts = context.module.get(SubscriptionEventReceiptRepositoryPort);
     unitOfWork = context.module.get(UNIT_OF_WORK);
   });

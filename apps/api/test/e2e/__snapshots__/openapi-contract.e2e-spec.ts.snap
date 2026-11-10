@@ -7140,7 +7140,7 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
           "type": "object",
         },
         "isPremium": {
-          "description": "지금 유효한 스토어 구독이나 보상 기간이 있는지입니다. 만료 시각과 자동 갱신 유예(3시간)를 반영하므로 subscriptionStatus가 ACTIVE여도 false일 수 있습니다. ADMIN role은 반영하지 않으며 ADMIN의 무제한은 entitlements가 나타냅니다. 구버전 서버는 생략합니다.",
+          "description": "지금 유효한 스토어 구독이나 보상 기간이 있는지입니다. 만료 시각과 자동 갱신 유예(3시간)를 반영하므로 subscriptionStatus가 ACTIVE여도 false일 수 있습니다. ADMIN role은 반영하지 않으며 ADMIN이 받는 프리미엄 한도는 entitlements가 나타냅니다. 구버전 서버는 생략합니다.",
           "type": "boolean",
         },
         "name": {
@@ -7186,7 +7186,7 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
           "type": "string",
         },
         "premiumSource": {
-          "description": "프리미엄 출처입니다. STORE는 스토어 구독(RevenueCat 프로모션 포함), GRANT는 초대 등 서버가 준 보상 기간, 둘 다 없으면 null입니다. ADMIN은 role로 모든 기능이 무제한이고 이 필드는 스토어·보상 기간만 반영합니다. 구버전 서버는 생략합니다.",
+          "description": "프리미엄 출처입니다. STORE는 스토어 구독(RevenueCat 프로모션 포함), GRANT는 초대 등 서버가 준 보상 기간, 둘 다 없으면 null입니다. ADMIN은 role로 프리미엄과 같은 기능·한도를 받고 이 필드는 스토어·보상 기간만 반영합니다. 구버전 서버는 생략합니다.",
           "enum": [
             "STORE",
             "GRANT",
@@ -7606,7 +7606,7 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
                   "type": "boolean",
                 },
                 "limit": {
-                  "description": "서버가 실제로 막는 한도입니다. 프리미엄의 넉넉한 한도도 숫자로 오고(isFairUse=true), null은 정말 무제한(ADMIN, flag)일 때만입니다.",
+                  "description": "서버가 실제로 막는 한도입니다. 프리미엄의 넉넉한 한도도 숫자로 오고(isFairUse=true), null은 flag나 상한 없는 기능처럼 정말 무제한일 때만입니다.",
                   "maximum": 9007199254740991,
                   "minimum": 0,
                   "nullable": true,
@@ -7724,7 +7724,7 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
                   "type": "boolean",
                 },
                 "limit": {
-                  "description": "서버가 실제로 막는 한도입니다. 프리미엄의 넉넉한 한도도 숫자로 오고(isFairUse=true), null은 정말 무제한(ADMIN, flag)일 때만입니다.",
+                  "description": "서버가 실제로 막는 한도입니다. 프리미엄의 넉넉한 한도도 숫자로 오고(isFairUse=true), null은 flag나 상한 없는 기능처럼 정말 무제한일 때만입니다.",
                   "maximum": 9007199254740991,
                   "minimum": 0,
                   "nullable": true,
@@ -7842,7 +7842,7 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
                   "type": "boolean",
                 },
                 "limit": {
-                  "description": "서버가 실제로 막는 한도입니다. 프리미엄의 넉넉한 한도도 숫자로 오고(isFairUse=true), null은 정말 무제한(ADMIN, flag)일 때만입니다.",
+                  "description": "서버가 실제로 막는 한도입니다. 프리미엄의 넉넉한 한도도 숫자로 오고(isFairUse=true), null은 flag나 상한 없는 기능처럼 정말 무제한일 때만입니다.",
                   "maximum": 9007199254740991,
                   "minimum": 0,
                   "nullable": true,
@@ -7960,7 +7960,7 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
                   "type": "boolean",
                 },
                 "limit": {
-                  "description": "서버가 실제로 막는 한도입니다. 프리미엄의 넉넉한 한도도 숫자로 오고(isFairUse=true), null은 정말 무제한(ADMIN, flag)일 때만입니다.",
+                  "description": "서버가 실제로 막는 한도입니다. 프리미엄의 넉넉한 한도도 숫자로 오고(isFairUse=true), null은 flag나 상한 없는 기능처럼 정말 무제한일 때만입니다.",
                   "maximum": 9007199254740991,
                   "minimum": 0,
                   "nullable": true,
@@ -8078,7 +8078,7 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
                   "type": "boolean",
                 },
                 "limit": {
-                  "description": "서버가 실제로 막는 한도입니다. 프리미엄의 넉넉한 한도도 숫자로 오고(isFairUse=true), null은 정말 무제한(ADMIN, flag)일 때만입니다.",
+                  "description": "서버가 실제로 막는 한도입니다. 프리미엄의 넉넉한 한도도 숫자로 오고(isFairUse=true), null은 flag나 상한 없는 기능처럼 정말 무제한일 때만입니다.",
                   "maximum": 9007199254740991,
                   "minimum": 0,
                   "nullable": true,
@@ -8196,7 +8196,7 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
                   "type": "boolean",
                 },
                 "limit": {
-                  "description": "서버가 실제로 막는 한도입니다. 프리미엄의 넉넉한 한도도 숫자로 오고(isFairUse=true), null은 정말 무제한(ADMIN, flag)일 때만입니다.",
+                  "description": "서버가 실제로 막는 한도입니다. 프리미엄의 넉넉한 한도도 숫자로 오고(isFairUse=true), null은 flag나 상한 없는 기능처럼 정말 무제한일 때만입니다.",
                   "maximum": 9007199254740991,
                   "minimum": 0,
                   "nullable": true,
@@ -8314,7 +8314,7 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
                   "type": "boolean",
                 },
                 "limit": {
-                  "description": "서버가 실제로 막는 한도입니다. 프리미엄의 넉넉한 한도도 숫자로 오고(isFairUse=true), null은 정말 무제한(ADMIN, flag)일 때만입니다.",
+                  "description": "서버가 실제로 막는 한도입니다. 프리미엄의 넉넉한 한도도 숫자로 오고(isFairUse=true), null은 flag나 상한 없는 기능처럼 정말 무제한일 때만입니다.",
                   "maximum": 9007199254740991,
                   "minimum": 0,
                   "nullable": true,
@@ -8432,7 +8432,7 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
                   "type": "boolean",
                 },
                 "limit": {
-                  "description": "서버가 실제로 막는 한도입니다. 프리미엄의 넉넉한 한도도 숫자로 오고(isFairUse=true), null은 정말 무제한(ADMIN, flag)일 때만입니다.",
+                  "description": "서버가 실제로 막는 한도입니다. 프리미엄의 넉넉한 한도도 숫자로 오고(isFairUse=true), null은 flag나 상한 없는 기능처럼 정말 무제한일 때만입니다.",
                   "maximum": 9007199254740991,
                   "minimum": 0,
                   "nullable": true,
@@ -8550,7 +8550,7 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
                   "type": "boolean",
                 },
                 "limit": {
-                  "description": "서버가 실제로 막는 한도입니다. 프리미엄의 넉넉한 한도도 숫자로 오고(isFairUse=true), null은 정말 무제한(ADMIN, flag)일 때만입니다.",
+                  "description": "서버가 실제로 막는 한도입니다. 프리미엄의 넉넉한 한도도 숫자로 오고(isFairUse=true), null은 flag나 상한 없는 기능처럼 정말 무제한일 때만입니다.",
                   "maximum": 9007199254740991,
                   "minimum": 0,
                   "nullable": true,
@@ -8668,7 +8668,7 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
                   "type": "boolean",
                 },
                 "limit": {
-                  "description": "서버가 실제로 막는 한도입니다. 프리미엄의 넉넉한 한도도 숫자로 오고(isFairUse=true), null은 정말 무제한(ADMIN, flag)일 때만입니다.",
+                  "description": "서버가 실제로 막는 한도입니다. 프리미엄의 넉넉한 한도도 숫자로 오고(isFairUse=true), null은 flag나 상한 없는 기능처럼 정말 무제한일 때만입니다.",
                   "maximum": 9007199254740991,
                   "minimum": 0,
                   "nullable": true,
@@ -8764,7 +8764,7 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
           "type": "boolean",
         },
         "tier": {
-          "description": "권한 주체 (FREE: 무료, PREMIUM: 구독·보상 기간, ADMIN: 모든 기능 무제한)",
+          "description": "권한 주체 (FREE: 무료, PREMIUM: 구독·보상 기간, ADMIN: 관리자. ADMIN의 기능·한도는 PREMIUM과 같다)",
           "enum": [
             "FREE",
             "PREMIUM",
@@ -12679,7 +12679,7 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
               "type": "boolean",
             },
             "limit": {
-              "description": "서버가 실제로 막는 한도입니다. 프리미엄의 넉넉한 한도도 숫자로 오고(isFairUse=true), null은 정말 무제한(ADMIN, flag)일 때만입니다.",
+              "description": "서버가 실제로 막는 한도입니다. 프리미엄의 넉넉한 한도도 숫자로 오고(isFairUse=true), null은 flag나 상한 없는 기능처럼 정말 무제한일 때만입니다.",
               "maximum": 9007199254740991,
               "minimum": 0,
               "nullable": true,
@@ -13260,7 +13260,7 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
               "type": "boolean",
             },
             "limit": {
-              "description": "서버가 실제로 막는 한도입니다. 프리미엄의 넉넉한 한도도 숫자로 오고(isFairUse=true), null은 정말 무제한(ADMIN, flag)일 때만입니다.",
+              "description": "서버가 실제로 막는 한도입니다. 프리미엄의 넉넉한 한도도 숫자로 오고(isFairUse=true), null은 flag나 상한 없는 기능처럼 정말 무제한일 때만입니다.",
               "maximum": 9007199254740991,
               "minimum": 0,
               "nullable": true,
@@ -13664,7 +13664,7 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
               "type": "boolean",
             },
             "limit": {
-              "description": "서버가 실제로 막는 한도입니다. 프리미엄의 넉넉한 한도도 숫자로 오고(isFairUse=true), null은 정말 무제한(ADMIN, flag)일 때만입니다.",
+              "description": "서버가 실제로 막는 한도입니다. 프리미엄의 넉넉한 한도도 숫자로 오고(isFairUse=true), null은 flag나 상한 없는 기능처럼 정말 무제한일 때만입니다.",
               "maximum": 9007199254740991,
               "minimum": 0,
               "nullable": true,
@@ -24198,7 +24198,7 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
               "type": "boolean",
             },
             "limit": {
-              "description": "서버가 실제로 막는 한도입니다. 프리미엄의 넉넉한 한도도 숫자로 오고(isFairUse=true), null은 정말 무제한(ADMIN, flag)일 때만입니다.",
+              "description": "서버가 실제로 막는 한도입니다. 프리미엄의 넉넉한 한도도 숫자로 오고(isFairUse=true), null은 flag나 상한 없는 기능처럼 정말 무제한일 때만입니다.",
               "maximum": 9007199254740991,
               "minimum": 0,
               "nullable": true,
@@ -40568,6 +40568,8 @@ GET /daily-completions/friends/{userId}?startDate=2026-01-01&endDate=2026-01-31
       "description": "PLAN_CATALOG 모든 기능의 현재 권한과 한도·사용량을 서버가 계산해 돌려줍니다. 앱은 이 값을 그대로 보여 주고 직접 계산하지 않습니다.
 
 ## 📋 기능별 플랜
+ADMIN 주체도 프리미엄 열의 값을 받습니다.
+
 | 기능 | 종류 | 무료 | 프리미엄 |
 |------|------|------|----------|
 | \`AI_PARSE\` | quota | 월 10회 | 넉넉하게(월 1,000회까지) |
@@ -40582,7 +40584,7 @@ GET /daily-completions/friends/{userId}?startDate=2026-01-01&endDate=2026-01-31
 | \`VOICE_NOTE\` | quota | 월 3회 | 넉넉하게(월 100회까지) |
 
 ## 📊 featureQuota
-- \`limit\`: 서버가 실제로 막는 한도입니다. 프리미엄의 넉넉한 한도도 숫자로 오고 \`isFairUse=true\`입니다(앱은 "넉넉하게(월 N회까지)"로 보여 줍니다). \`null\`은 ADMIN·flag처럼 정말 무제한일 때만입니다.
+- \`limit\`: 서버가 실제로 막는 한도입니다. 프리미엄의 넉넉한 한도도 숫자로 오고 \`isFairUse=true\`입니다(앱은 "넉넉하게(월 N회까지)"로 보여 줍니다). \`null\`은 flag나 상한 없는 기능처럼 정말 무제한일 때만입니다.
 - \`used\`·\`remaining\`: 횟수 기능은 이번 창에서 쓴 횟수와 남은 횟수입니다. 개수 기능(FRIEND·TODO_CATEGORY)은 지금 가진 개수와 남은 자리이고, 친구 맺기·카테고리 만들기가 막는 값과 같습니다(친구는 초대 보상 자리 포함). 무제한 개수 기능과 flag는 null입니다. \`remaining=0\`이면 앱은 입력을 받기 전에 막습니다.
 - \`resetsAt\`: 횟수 기능만 있습니다(resource·flag는 null). 월간(AI_PARSE·VOICE_NOTE)은 KST 매월 1일 00:00, 일간(CHEER·NUDGE)은 \`X-Timezone\` 자정에 0으로 돌아갑니다.
 - \`perUse\`: 한 번 쓸 때의 길이 상한(말로 메모하기, VOICE_NOTE)입니다.

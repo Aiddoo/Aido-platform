@@ -7,7 +7,7 @@ import { z } from "zod";
 import {
   freeAccessCondition,
   premiumAccessCondition,
-} from "#api/modules/access/access-entitlement-sql.public";
+} from "#api/modules/access/entitlements/access-entitlements.public";
 import {
   ReminderCacheKey,
   REMINDER_CACHE_TTL_MS,

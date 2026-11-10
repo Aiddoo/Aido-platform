@@ -4,9 +4,6 @@ import type { QuotaRefundReason } from "../../domain/quotas.constants.js";
 import type { MeteredFeatureQuota } from "../read-models/metered-feature-quota.read-model.js";
 import type { QuotaReservation } from "../read-models/quota-reservation.read-model.js";
 
-// 옛 Symbol 토큰. ai·voice·identity가 클래스 토큰으로 옮길 때까지 같은 인스턴스를 가리키는 별칭으로 남긴다
-export const QUOTA_LEDGER = Symbol("QUOTA_LEDGER");
-
 export interface QuotaReserveInput {
   readonly userId: string;
   readonly feature: MeteredFeatureKey;

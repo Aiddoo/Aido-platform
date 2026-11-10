@@ -134,8 +134,8 @@ describe("사용자 차단 (실제 PostgreSQL)", () => {
       followRepository,
       profileReader,
       limitReader: {
-        readMaxFriendCountInTx: async () => null,
-        readQuotaInTx: async () => {
+        readLimitInTx: async () => null,
+        readFeatureQuotaInTx: async () => {
           throw new Error("친구 한도가 없으면 한도 오류 featureQuota를 읽지 않는다");
         },
       },

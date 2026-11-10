@@ -201,7 +201,7 @@ export const currentUserSchema = z
       .nullable()
       .optional()
       .describe(
-        "프리미엄 출처입니다. STORE는 스토어 구독(RevenueCat 프로모션 포함), GRANT는 초대 등 서버가 준 보상 기간, 둘 다 없으면 null입니다. ADMIN은 role로 모든 기능이 무제한이고 이 필드는 스토어·보상 기간만 반영합니다. 구버전 서버는 생략합니다.",
+        "프리미엄 출처입니다. STORE는 스토어 구독(RevenueCat 프로모션 포함), GRANT는 초대 등 서버가 준 보상 기간, 둘 다 없으면 null입니다. ADMIN은 role로 프리미엄과 같은 기능·한도를 받고 이 필드는 스토어·보상 기간만 반영합니다. 구버전 서버는 생략합니다.",
       ),
     premiumEndsAt: nullableDatetimeSchema
       .optional()
@@ -248,7 +248,7 @@ export const currentUserSchema = z
       .boolean()
       .optional()
       .describe(
-        "지금 유효한 스토어 구독이나 보상 기간이 있는지입니다. 만료 시각과 자동 갱신 유예(3시간)를 반영하므로 subscriptionStatus가 ACTIVE여도 false일 수 있습니다. ADMIN role은 반영하지 않으며 ADMIN의 무제한은 entitlements가 나타냅니다. 구버전 서버는 생략합니다.",
+        "지금 유효한 스토어 구독이나 보상 기간이 있는지입니다. 만료 시각과 자동 갱신 유예(3시간)를 반영하므로 subscriptionStatus가 ACTIVE여도 false일 수 있습니다. ADMIN role은 반영하지 않으며 ADMIN이 받는 프리미엄 한도는 entitlements가 나타냅니다. 구버전 서버는 생략합니다.",
       ),
     entitlements: premiumEntitlementsSchema
       .optional()

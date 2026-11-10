@@ -1,10 +1,9 @@
 import { Inject, Injectable } from "@nestjs/common";
 
 import {
-  ENTITLEMENT_READER,
+  EntitlementReaderPort,
   isExemptFromDormancy,
-  type EntitlementReaderPort,
-} from "#api/modules/access/access-entitlement.public";
+} from "#api/modules/access/entitlements/access-entitlements.public";
 import { UserActivityReaderPort } from "#api/modules/identity/identity-user-access.public";
 import { isSeriesOwnerDormant } from "#api/modules/planning/todo-series/planning-todo-series-dormancy.public";
 import { now } from "#api/shared/domain/date/utils/core";
@@ -17,11 +16,14 @@ import { TodoSeriesOwnerDormancyPort } from "../../application/ports/todo-series
 @Injectable()
 export class TodoSeriesOwnerDormancyAdapter extends TodoSeriesOwnerDormancyPort {
   readonly #activityReader: UserActivityReaderPort;
-  readonly #entitlementReader: EntitlementReaderPort;
+  readonly #entitlementReader: Pick<EntitlementReaderPort, "getEntitlements">;
 
   constructor(
     @Inject(UserActivityReaderPort) activityReader: UserActivityReaderPort,
-    @Inject(ENTITLEMENT_READER) entitlementReader: EntitlementReaderPort,
+    @Inject(EntitlementReaderPort) entitlementReader: Pick<
+      EntitlementReaderPort,
+      "getEntitlements"
+    >,
   ) {
     super();
     this.#activityReader = activityReader;
@@ -42,7 +44,7 @@ export class TodoSeriesOwnerDormancyAdapter extends TodoSeriesOwnerDormancyPort 
     if (!isSeriesOwnerDormant(owner, now())) {
       return null;
     }
-    const { tier } = await this.#entitlementReader.getAccessSnapshot(userId);
-    return isExemptFromDormancy(tier) ? null : toDateString(owner.lastActiveAt ?? owner.signedUpAt);
+    const { plan } = await this.#entitlementReader.getEntitlements(userId);
+    return isExemptFromDormancy(plan) ? null : toDateString(owner.lastActiveAt ?? owner.signedUpAt);
   }
 }

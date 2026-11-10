@@ -1,6 +1,6 @@
 import { Module } from "@nestjs/common";
 
-import { AccessModule } from "#api/modules/access/access-entitlement.public";
+import { AccessQuotasModule } from "#api/modules/access/quotas/access-quotas.public";
 import { BillingSubscriptionsModule } from "#api/modules/billing/subscriptions/billing-subscriptions.public";
 import { EngagementCommentsModule } from "#api/modules/engagement/comments/engagement-comments.public";
 import { NotificationDeliveryModule } from "#api/modules/notification/notification-delivery.public";
@@ -20,7 +20,7 @@ import { UserAccountController } from "./presentation/http/v1/user-account.contr
   imports: [
     IdentityAuthModule,
     IdentityUserAccessModule,
-    AccessModule,
+    AccessQuotasModule,
     BillingSubscriptionsModule,
     EngagementCommentsModule,
     NotificationDeliveryModule,

@@ -1,5 +1,4 @@
-import { ENTITLEMENT_READER } from "#api/modules/access/access-entitlement.public";
-import type { EntitlementReaderPort } from "#api/modules/access/access-entitlement.public";
+import { EntitlementReaderPort } from "#api/modules/access/entitlements/access-entitlements.public";
 import { SweepPremiumGrantsUseCase } from "#api/modules/billing/premium-grants/application/use-cases/sweep-premium-grants.use-case";
 import { STORE_RENEWAL_GRACE_MS } from "#api/modules/billing/shared/store-renewal-grace.domain-service";
 import {
@@ -42,7 +41,7 @@ describe("결제 구독과 보상 기간 결합 타임라인 QA (실제 PostgreS
     client = await database.start();
     context = await createE2eApp({ testDatabase: database });
     granter = context.module.get<PremiumGranterPort>(PremiumGranterPort);
-    entitlement = context.module.get<EntitlementReaderPort>(ENTITLEMENT_READER);
+    entitlement = context.module.get(EntitlementReaderPort);
   });
 
   beforeEach(async () => {

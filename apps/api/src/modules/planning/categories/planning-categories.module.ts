@@ -1,6 +1,6 @@
 import { Module } from "@nestjs/common";
 
-import { AccessModule } from "#api/modules/access/access-entitlement.public";
+import { AccessEntitlementsModule } from "#api/modules/access/entitlements/access-entitlements.public";
 
 import { TodoCategoryCountReaderPort } from "./application/ports/todo-category-count.reader.port.js";
 import { TodoCategoryProvisionerPort } from "./application/ports/todo-category-provisioner.port.js";
@@ -9,7 +9,7 @@ import { PLANNING_CATEGORIES_PROVIDERS } from "./planning-categories.providers.j
 import { TodoCategoryController } from "./presentation/http/v1/todo-category.controller.js";
 
 @Module({
-  imports: [AccessModule],
+  imports: [AccessEntitlementsModule],
   controllers: [TodoCategoryController],
   providers: [...PLANNING_CATEGORIES_PROVIDERS],
   exports: [TodoCategoryReaderPort, TodoCategoryCountReaderPort, TodoCategoryProvisionerPort],

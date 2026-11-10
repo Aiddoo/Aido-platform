@@ -1,10 +1,9 @@
 import { Inject, Injectable } from "@nestjs/common";
 
 import {
-  ENTITLEMENT_READER,
+  EntitlementReaderPort,
   isExemptFromDormancy,
-  type EntitlementReaderPort,
-} from "#api/modules/access/access-entitlement.public";
+} from "#api/modules/access/entitlements/access-entitlements.public";
 import { UserActivityReaderPort } from "#api/modules/identity/identity-user-access.public";
 import { instantToDate } from "#api/shared/domain/time/instant";
 
@@ -14,11 +13,14 @@ import type { SeriesOwnerActivity } from "../../domain/series-dormancy.domain-se
 @Injectable()
 export class TodoSeriesOwnerAdapter implements TodoSeriesOwnerPort {
   readonly #activityReader: UserActivityReaderPort;
-  readonly #entitlementReader: Pick<EntitlementReaderPort, "getAccessSnapshot">;
+  readonly #entitlementReader: Pick<EntitlementReaderPort, "getEntitlements">;
 
   constructor(
     @Inject(UserActivityReaderPort) activityReader: UserActivityReaderPort,
-    @Inject(ENTITLEMENT_READER) entitlementReader: Pick<EntitlementReaderPort, "getAccessSnapshot">,
+    @Inject(EntitlementReaderPort) entitlementReader: Pick<
+      EntitlementReaderPort,
+      "getEntitlements"
+    >,
   ) {
     this.#activityReader = activityReader;
     this.#entitlementReader = entitlementReader;
@@ -42,7 +44,7 @@ export class TodoSeriesOwnerAdapter implements TodoSeriesOwnerPort {
   }
 
   async isExemptFromDormancy(userId: string): Promise<boolean> {
-    const { tier } = await this.#entitlementReader.getAccessSnapshot(userId);
-    return isExemptFromDormancy(tier);
+    const { plan } = await this.#entitlementReader.getEntitlements(userId);
+    return isExemptFromDormancy(plan);
   }
 }

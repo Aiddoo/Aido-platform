@@ -1,10 +1,6 @@
 import { AI_PROVIDER_IDS } from "@aido/api/vocabulary";
 import { Inject, Injectable, Logger, type OnModuleInit } from "@nestjs/common";
 
-import {
-  EntitlementReaderPort,
-  isUnlimitedSubject,
-} from "#api/modules/access/entitlements/access-entitlements.public";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
 import {
   USAGE_METER,
@@ -45,7 +41,8 @@ interface GlobalSnapshot {
 }
 
 /**
- * 전역 일·월, 사용자 일 추정 비용을 OutboundUsage로 세고 생성 전에 예산을 확인한다.
+ * 전역 일·월, 사용자 일 추정 비용을 OutboundUsage로 세고 생성 전에 예산을 확인한다. 사용자 일 예산은 모든
+ * 요금제(ADMIN 포함)에 같고 access 횟수 한도와 다른 상한이다.
  * 판단은 프로세스 메모리 스냅샷으로 하고, 요청이 끝날 때 세 행을 한 번에 더한 RETURNING 값으로 갱신한다.
  * 진행 중인 호출은 끝난 뒤에 더해지므로 상한은 그만큼 넘을 수 있다. 계량 오류는 생성을 막지 않는다.
  */
@@ -60,18 +57,15 @@ export class AiSpendBudgetAdapter implements OnModuleInit {
   readonly #config: TypedConfigService;
   readonly #meter: Pick<UsageMeterPort, "add" | "read">;
   readonly #alert: OperationalAlertPort;
-  readonly #access: Pick<EntitlementReaderPort, "getAccessSnapshot">;
 
   constructor(
     config: TypedConfigService,
     @Inject(USAGE_METER) meter: Pick<UsageMeterPort, "add" | "read">,
     @Inject(OPERATIONAL_ALERT) alert: OperationalAlertPort,
-    @Inject(EntitlementReaderPort) access: Pick<EntitlementReaderPort, "getAccessSnapshot">,
   ) {
     this.#config = config;
     this.#meter = meter;
     this.#alert = alert;
-    this.#access = access;
   }
 
   /** 가격표에 없는 모델은 호출마다 최고 단가로 잡혀 예산이 빠르게 닳는다. 전체 중단 전에 기동 때 알린다. */
@@ -97,21 +91,12 @@ export class AiSpendBudgetAdapter implements OnModuleInit {
     const { ai } = this.#config;
     const enabled = ai.enabled[input.taskClass];
     const spend = enabled ? await this.#readSpend(input.userId) : EMPTY_SPEND;
-    const decision = decideAiSpend({
+    return decideAiSpend({
       taskClass: input.taskClass,
       isEnabled: enabled,
       spend,
       limits: ai.budget,
     });
-    // 전역 판단을 모두 통과한 뒤의 결과이므로 면제 대상이면 그대로 허용한다.
-    if (
-      decision.type === "user-limited" &&
-      input.userId != null &&
-      (await this.#isExemptFromUserLimit(input.userId))
-    ) {
-      return { type: "allowed" };
-    }
-    return decision;
   }
 
   async record(userId: string | null, microUsd: number): Promise<void> {
@@ -138,23 +123,6 @@ export class AiSpendBudgetAdapter implements OnModuleInit {
         microUsd,
         errorType: toErrorType(error),
       });
-    }
-  }
-
-  /**
-   * 사용자 비용 예산(이 어댑터)은 사용자 횟수 한도(access 원장)와 다른 상한이다. 무제한 주체만 예외이고
-   * 전역 예산·킬 스위치는 그대로다. 예산을 넘긴 사용자만 등급을 읽고, 못 읽으면 제한을 유지한다.
-   */
-  async #isExemptFromUserLimit(userId: string): Promise<boolean> {
-    try {
-      const { tier } = await this.#access.getAccessSnapshot(userId);
-      return isUnlimitedSubject({ tier });
-    } catch (error) {
-      this.#logger.error({
-        event: AiGuardLogEvent.SPEND_READ_FAILED,
-        errorType: toErrorType(error),
-      });
-      return false;
     }
   }
 

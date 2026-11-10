@@ -51,7 +51,7 @@ export interface SendFriendRequestDependencies {
     | "save"
   >;
   readonly profileReader: Pick<FriendProfileReaderPort, "existsActiveUser" | "findDisplayName">;
-  readonly limitReader: Pick<FriendLimitReaderPort, "readMaxFriendCountInTx" | "readQuotaInTx">;
+  readonly limitReader: Pick<FriendLimitReaderPort, "readLimitInTx" | "readFeatureQuotaInTx">;
   readonly blockReader: Pick<UserBlockReaderPort, "findRelation">;
   readonly cache: FriendshipCacheInvalidator;
   readonly notifier: Pick<FollowNotifierPort, "notifyFollowNew" | "notifyFollowMutual">;
@@ -98,14 +98,14 @@ export class SendFriendRequestUseCase {
   async #assertBelowFriendLimit(userId: UserId): Promise<void> {
     const { followRepository, limitReader } = this.#dependencies;
     const [maxFriendCount, friendCount] = await Promise.all([
-      limitReader.readMaxFriendCountInTx(userId),
+      limitReader.readLimitInTx(userId),
       followRepository.countMutualFriends(userId),
     ]);
     if (hasReachedFriendLimit({ maxFriendCount, friendCount })) {
       throw friendLimitReached({
         friendCount,
         maxFriendCount,
-        featureQuota: await limitReader.readQuotaInTx(userId, friendCount),
+        featureQuota: await limitReader.readFeatureQuotaInTx(userId, friendCount),
       });
     }
   }

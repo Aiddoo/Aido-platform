@@ -3,10 +3,18 @@ export const PLAN_QUOTA_PERIODS = ["day", "month"] as const;
 
 export type PlanQuotaPeriod = (typeof PLAN_QUOTA_PERIODS)[number];
 
-/** 권한 주체. ADMIN은 서버 정책이 모든 기능을 무제한으로 연다. */
+/**
+ * 권한 주체(누구인가). 출시 앱이 표시에 쓴다. 기능 값은 주체가 아니라 요금제(PLANS)로 정하고, ADMIN 주체는
+ * premium 요금제를 받는다(무제한이 아니다).
+ */
 export const ACCESS_TIERS = ["FREE", "PREMIUM", "ADMIN"] as const;
 
 export type AccessTier = (typeof ACCESS_TIERS)[number];
+
+/** 기능 값을 정하는 요금제. PLAN_CATALOG 기능마다 이 키로 값을 둔다. */
+export const PLANS = ["free", "premium"] as const;
+
+export type Plan = (typeof PLANS)[number];
 
 /** 서버가 원장(QuotaUsage·QuotaCharge)으로 세는 사용량 계량기 */
 export const QUOTA_METERS = ["AI_PLAN", "VOICE_NOTE"] as const;
@@ -21,11 +29,8 @@ export const QUOTA_CHARGE_STATUSES = ["RESERVED", "COMMITTED", "REFUNDED"] as co
 
 export type QuotaChargeStatus = (typeof QUOTA_CHARGE_STATUSES)[number];
 
-/** 등급별 값. 무료와 프리미엄 둘이고 ADMIN은 서버 정책이 무제한으로 연다. */
-interface PlanTierValues<T> {
-  readonly free: T;
-  readonly premium: T;
-}
+/** 요금제별 값 */
+type PlanValues<T> = { readonly [TPlan in Plan]: T };
 
 /**
  * 기간마다 쓸 수 있는 횟수. premium null은 사용자에게 무제한으로 보이는 한도다.
@@ -40,12 +45,12 @@ interface PlanQuotaFeature {
   readonly fairUse?: { readonly premium: number };
   /** 한 번 쓸 때의 길이 상한. 앱 타이머가 초로 먼저 막고 서버는 확인할 수 있는 글자 수로 다시 막는다. */
   readonly perUse?: {
-    readonly maxSeconds: PlanTierValues<number>;
-    readonly maxCharacters: PlanTierValues<number>;
+    readonly maxSeconds: PlanValues<number>;
+    readonly maxCharacters: PlanValues<number>;
   };
 }
 
-/** 동시에 가질 수 있는 개수. null은 무제한이다. 보상으로 받은 자리는 서버가 더한다. */
+/** 동시에 가질 수 있는 개수. null은 무제한이다. 받은 자리(GRANTABLE_FEATURE_KEYS)는 서버가 더한다. */
 interface PlanResourceFeature {
   readonly kind: "resource";
   readonly free: number;
@@ -105,7 +110,7 @@ export const PREMIUM_FEATURES = {
 
 /**
  * 플랜·한도의 유일한 수정 지점. 서버 판단, GET /v1/entitlements, Swagger·오류 문구가 모두 여기서 나온다.
- * 등급은 무료(free)와 프리미엄(premium) 둘이고, ADMIN은 서버 정책이 모든 기능을 무제한으로 연다.
+ * 요금제는 무료(free)와 프리미엄(premium) 둘이고, ADMIN 주체도 premium 값을 받는다.
  */
 export const PLAN_CATALOG = {
   ...PREMIUM_FEATURES,
@@ -145,3 +150,13 @@ export type MeteredFeatureKey = {
 
 /** 출시 앱의 /me.entitlements에 있는 횟수·개수 기능 */
 export type PremiumLimitFeatureKey = Extract<PlanLimitFeatureKey, PremiumFeature>;
+
+/**
+ * 보상(초대)으로 한도를 늘릴 수 있는 resource 기능. 받은 자리는 요금제 한도에 더하고 무제한 한도는 그대로다.
+ * DB enum ResourceType이 이 튜플이라 값·순서를 바꾸지 않고 끝에만 더한다(마이그레이션 필요).
+ */
+export const GRANTABLE_FEATURE_KEYS = [
+  "FRIEND",
+] as const satisfies readonly PlanResourceFeatureKey[];
+
+export type GrantableFeature = (typeof GRANTABLE_FEATURE_KEYS)[number];

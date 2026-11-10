@@ -1,6 +1,6 @@
 import { Module } from "@nestjs/common";
 
-import { AccessModule } from "#api/modules/access/access-entitlement.public";
+import { AccessEntitlementsModule } from "#api/modules/access/entitlements/access-entitlements.public";
 import { IdentityUserAccessModule } from "#api/modules/identity/identity-user-access.public";
 
 import { PlanningTodoPortsModule } from "../todos/planning-todo-ports.module.js";
@@ -16,7 +16,7 @@ import { PLANNING_TODO_SERIES_PROVIDERS } from "./planning-todo-series.providers
 import { TodoSeriesController } from "./presentation/http/v1/todo-series.controller.js";
 
 @Module({
-  imports: [PlanningTodoPortsModule, AccessModule, IdentityUserAccessModule],
+  imports: [PlanningTodoPortsModule, AccessEntitlementsModule, IdentityUserAccessModule],
   controllers: [TodoSeriesController],
   providers: [...PLANNING_TODO_SERIES_PROVIDERS],
   exports: [

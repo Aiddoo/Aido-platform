@@ -1,7 +1,6 @@
 import { and, eq } from "drizzle-orm";
 
-import { ENTITLEMENT_READER } from "#api/modules/access/access-entitlement.public";
-import type { EntitlementReaderPort } from "#api/modules/access/access-entitlement.public";
+import { EntitlementReaderPort } from "#api/modules/access/entitlements/access-entitlements.public";
 import { PremiumGrantEndingNoticeRepositoryPort } from "#api/modules/billing/premium-grants/application/ports/premium-grant-ending-notice.repository.port";
 import { UserSubscriptionProjectionRepositoryPort } from "#api/modules/billing/premium-grants/application/ports/user-subscription-projection.repository.port";
 import { NotifyEndingPremiumGrantsUseCase } from "#api/modules/billing/premium-grants/application/use-cases/notify-ending-premium-grants.use-case";
@@ -56,7 +55,7 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
     granter = context.module.get<PremiumGranterPort>(PremiumGranterPort);
     subscriptions = context.module.get(SubscriptionRepositoryPort);
     projection = context.module.get(UserSubscriptionProjectionRepositoryPort);
-    entitlement = context.module.get<EntitlementReaderPort>(ENTITLEMENT_READER);
+    entitlement = context.module.get(EntitlementReaderPort);
   });
 
   beforeEach(async () => {
@@ -805,7 +804,7 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
       ?.role;
   }
 
-  it("ADMIN도 보상 기간을 기록하고 종료 안내를 받지만 role과 무제한 한도는 그대로다", async () => {
+  it("ADMIN도 보상 기간을 기록하고 종료 안내를 받지만 role과 프리미엄 한도는 그대로다", async () => {
     // Given
     await client.update(userTable).set({ role: "ADMIN" }).where(eq(userTable.id, userId));
     const notify = context.module.get(NotifyEndingPremiumGrantsUseCase);
@@ -837,7 +836,7 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
       subscriptionExpiresAt: null,
     });
     expect(await entitlement.canInTx(userId, "AI_REPORT")).toBe(true);
-    expect(await entitlement.getLimitInTx(userId, "FRIEND")).toBeNull();
+    expect(await entitlement.getFeatureLimitInTx(userId, "FRIEND")).toBeNull();
   });
 
   it.each([

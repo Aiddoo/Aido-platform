@@ -1,7 +1,7 @@
 import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 
-import { AccessModule } from "#api/modules/access/access-entitlement.public";
+import { AccessEntitlementsModule } from "#api/modules/access/entitlements/access-entitlements.public";
 import { BillingSubscriptionsModule } from "#api/modules/billing/subscriptions/billing-subscriptions.public";
 import { NotificationDeliveryModule } from "#api/modules/notification/notification-delivery.public";
 import { SocialBlocksModule } from "#api/modules/social/blocks/social-blocks.public";
@@ -24,7 +24,7 @@ import { SOCIAL_INVITES_PROVIDERS } from "./social-invites.providers.js";
     SocialBlocksModule,
     SocialFriendsModule,
     NotificationDeliveryModule,
-    AccessModule,
+    AccessEntitlementsModule,
     BillingSubscriptionsModule,
     ConfigModule.forFeature(socialInvitesConfig),
   ],

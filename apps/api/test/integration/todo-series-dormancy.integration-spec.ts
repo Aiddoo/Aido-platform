@@ -2,7 +2,7 @@ import { Logger } from "@nestjs/common";
 import { eq, inArray, sql } from "drizzle-orm";
 import { omit } from "es-toolkit";
 
-import type { EntitlementReaderPort } from "#api/modules/access/access-entitlement.public";
+import type { EntitlementReaderPort } from "#api/modules/access/entitlements/access-entitlements.public";
 import { DrizzleUserRepository } from "#api/modules/identity/users/infrastructure/persistence/drizzle-user.repository";
 import { TodoSeriesOwnerDormancyAdapter } from "#api/modules/notification/reminders/infrastructure/adapters/todo-series-owner-dormancy.adapter";
 import { TodoReminderSchedulerAdapter } from "#api/modules/notification/reminders/infrastructure/jobs/todo-reminder-scheduler.adapter";
@@ -53,16 +53,16 @@ class StubTierEntitlementReader extends StubCurrentUserAccess implements Entitle
     throw new Error("휴면 판정은 canInTx를 부르지 않는다");
   }
 
-  async getLimit(): Promise<number | null> {
-    throw new Error("휴면 판정은 getLimit을 부르지 않는다");
+  async getFeatureLimit(): Promise<number | null> {
+    throw new Error("휴면 판정은 getFeatureLimit을 부르지 않는다");
   }
 
-  async getLimitInTx(): Promise<number | null> {
-    throw new Error("휴면 판정은 getLimitInTx를 부르지 않는다");
+  async getFeatureLimitInTx(): Promise<number | null> {
+    throw new Error("휴면 판정은 getFeatureLimitInTx를 부르지 않는다");
   }
 
-  async readFeatureQuotaInTx(): ReturnType<EntitlementReaderPort["readFeatureQuotaInTx"]> {
-    throw new Error("휴면 판정은 readFeatureQuotaInTx를 부르지 않는다");
+  async getFeatureQuotaInTx(): ReturnType<EntitlementReaderPort["getFeatureQuotaInTx"]> {
+    throw new Error("휴면 판정은 getFeatureQuotaInTx를 부르지 않는다");
   }
 }
 

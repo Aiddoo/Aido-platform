@@ -164,7 +164,7 @@ describe("유효 프리미엄 SQL 조건과 스케줄러 대상 (실제 PostgreS
     );
   });
 
-  it("SQL 조건은 모든 경우에 EntitlementReaderAdapter의 프리미엄 판단과 같다", async () => {
+  it("SQL 조건은 모든 경우(ADMIN·스토어 유예 포함)에 EntitlementReaderAdapter의 premium 요금제 판단과 같다", async () => {
     // When
     const freeIds = await reader.findFreeRecipientIds(Object.values(userIds));
     const decisions = await Promise.all(
@@ -172,12 +172,16 @@ describe("유효 프리미엄 SQL 조건과 스케줄러 대상 (실제 PostgreS
         scenario,
         sql: !freeIds.has(id),
         service: await entitlement.canInTx(id, "AI_REPORT"),
+        plan: (await entitlement.getEntitlements(id)).plan === "premium",
       })),
     );
 
     // Then
     for (const decision of decisions) {
-      expect(decision.sql, decision.scenario).toBe(decision.service);
+      expect([decision.service, decision.plan], decision.scenario).toEqual([
+        decision.sql,
+        decision.sql,
+      ]);
     }
   });
 
@@ -197,7 +201,7 @@ describe("유효 프리미엄 SQL 조건과 스케줄러 대상 (실제 PostgreS
           scenario,
           sql: sqlPaid.get(id),
           ts: state != null && hasPaidAccess({ state, now: instantFromDate(at) }),
-          isPremium: (await entitlement.getAccessSnapshot(id)).isPremium,
+          isPremium: (await entitlement.getEntitlements(id)).isPremium,
         };
       }),
     );

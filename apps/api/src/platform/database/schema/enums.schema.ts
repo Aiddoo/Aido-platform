@@ -2,6 +2,7 @@ import {
   AI_REPORT_TYPES,
   AI_SUGGESTION_STATUSES,
   FOLLOW_STATUSES,
+  GRANTABLE_FEATURE_KEYS,
   NOTIFICATION_ACTION_TYPE,
   NOTIFICATION_PURPOSES,
   NUDGE_REPLY_KINDS,
@@ -30,7 +31,6 @@ import {
 import { pgEnum } from "drizzle-orm/pg-core";
 
 // drizzle-kit은 #api 별칭을 못 따라가므로 상대 경로로 둔다
-import { BONUS_RESOURCES } from "../../../modules/access/entitlements/domain/entitlements.constants.js";
 import {
   INVITE_STATUSES,
   REWARD_CLAIM_KINDS,
@@ -142,7 +142,8 @@ export const inviteRejectionReason = pgEnum("InviteRejectionReason", REDEMPTION_
 export const inviteStatus = pgEnum("InviteStatus", INVITE_STATUSES);
 export const premiumGrantSource = pgEnum("PremiumGrantSource", PREMIUM_GRANT_SOURCES);
 export const premiumGrantStatus = pgEnum("PremiumGrantStatus", PREMIUM_GRANT_STATUSES);
-export const resourceType = pgEnum("ResourceType", BONUS_RESOURCES);
+// 테이블·enum 이름(ResourceBonus·ResourceType)은 배포된 DB 이름이다. 코드에서는 기능 자리(grant)다
+export const resourceType = pgEnum("ResourceType", GRANTABLE_FEATURE_KEYS);
 export const rewardClaimKind = pgEnum("RewardClaimKind", REWARD_CLAIM_KINDS);
 export const rewardGrantStatus = pgEnum("RewardGrantStatus", REWARD_GRANT_STATUSES);
 export const rewardSourceType = pgEnum("RewardSourceType", REWARD_SOURCE_TYPES);

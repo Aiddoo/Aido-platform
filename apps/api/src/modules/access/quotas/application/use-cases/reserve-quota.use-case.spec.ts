@@ -106,24 +106,71 @@ describe("ReserveQuotaUseCase — 횟수 예약", () => {
       expect(fixture.logger.messages).toContainEqual({
         event: "access.quota.exhausted",
         meter: "AI_PLAN",
-        tier: "FREE",
+        plan: "free",
       });
     });
 
-    it("ADMIN은 공정 사용 상한도 넘어 예약할 수 있다", async () => {
-      // Given
-      const fixture = setup({ role: "ADMIN", aiUsageCount: AI_FAIR_USE });
+    it.each([
+      { case: "구독 없는 ADMIN", user: { role: "ADMIN" } },
+      { case: "구독 중인 ADMIN", user: { role: "ADMIN", subscriptionStatus: "ACTIVE" } },
+      {
+        case: "구독이 지금 끝난 ADMIN",
+        user: { role: "ADMIN", subscriptionStatus: "ACTIVE", accessDeadline: ACCESS_FIXTURE_NOW },
+      },
+      {
+        case: "구독이 1ms 전에 끝난 ADMIN",
+        user: {
+          role: "ADMIN",
+          subscriptionStatus: "ACTIVE",
+          accessDeadline: ACCESS_FIXTURE_NOW.subtract({ milliseconds: 1 }),
+        },
+      },
+    ] as const)(
+      "$case도 프리미엄과 같은 AI·녹음 공정 사용 상한에서 같은 오류로 막힌다",
+      async ({ user }) => {
+        // Given
+        const voiceFairUse = PLAN_CATALOG.VOICE_NOTE.fairUse.premium;
+        const fixture = setup({ ...user, aiUsageCount: AI_FAIR_USE - 1 });
+        fixture.quotaUsageRepository.setUsage({
+          userId: fixture.userId,
+          meter: "VOICE_NOTE",
+          periodKey: "2026-M04",
+          used: voiceFairUse,
+        });
 
-      // When
-      await fixture.reserve();
+        // When
+        await fixture.reserve();
+        const aiExhausted = fixture.reserve();
+        const voiceExhausted = fixture.reserve({ feature: "VOICE_NOTE", reason: "voice-note" });
 
-      // Then
-      expect(await fixture.ledger.read(fixture.userId, "AI_PARSE")).toMatchObject({
-        used: AI_FAIR_USE + 1,
-        limit: null,
-        remaining: null,
-      });
-    });
+        // Then
+        await expect(aiExhausted).rejects.toMatchObject({
+          errorCode: ErrorCode.AI_1303,
+          details: {
+            charged: false,
+            featureQuota: {
+              limit: AI_FAIR_USE,
+              used: AI_FAIR_USE,
+              remaining: 0,
+              isFairUse: true,
+              resetsAt: NEXT_MONTH.toString({ fractionalSecondDigits: 3 }),
+            },
+          },
+        });
+        await expect(voiceExhausted).rejects.toMatchObject({
+          errorCode: ErrorCode.AI_1313,
+          details: {
+            charged: false,
+            featureQuota: {
+              limit: voiceFairUse,
+              used: voiceFairUse,
+              remaining: 0,
+              isFairUse: true,
+            },
+          },
+        });
+      },
+    );
 
     it("프리미엄은 무료 한도를 넘어 쓰고 공정 사용 상한에서 AI_1303으로 막힌다", async () => {
       // Given

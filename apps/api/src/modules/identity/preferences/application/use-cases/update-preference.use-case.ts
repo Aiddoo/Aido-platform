@@ -1,6 +1,6 @@
 import { ErrorCode } from "@aido/api/errors";
 
-import { assertEntitled } from "#api/modules/access/access-entitlement.public";
+import { assertEntitled } from "#api/modules/access/entitlements/access-entitlements.public";
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";

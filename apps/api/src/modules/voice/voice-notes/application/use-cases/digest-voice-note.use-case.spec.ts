@@ -235,7 +235,7 @@ describe("DigestVoiceNoteUseCase", () => {
     it.each([
       { tier: "FREE", input: FREE, limit: PLAN_CATALOG.VOICE_NOTE.free },
       { tier: "PREMIUM", input: PREMIUM, limit: PLAN_CATALOG.VOICE_NOTE.fairUse.premium },
-      { tier: "ADMIN", input: ADMIN, limit: null },
+      { tier: "ADMIN", input: ADMIN, limit: PLAN_CATALOG.VOICE_NOTE.fairUse.premium },
     ])("$tier은 할 일 없는 정리도 사용량에 기록한다", async ({ input, limit }) => {
       // Given
       const { aiGenerator, execute, used } = setup(input);
@@ -413,10 +413,10 @@ describe("DigestVoiceNoteUseCase", () => {
         blocked: true,
       },
       {
-        tier: "ADMIN",
+        tier: "ADMIN 공정 사용 상한",
         input: ADMIN,
         count: PLAN_CATALOG.VOICE_NOTE.fairUse.premium,
-        blocked: false,
+        blocked: true,
       },
     ])("$tier: $count회 쓴 뒤 막힘=$blocked", async ({ input, count, blocked }) => {
       // Given

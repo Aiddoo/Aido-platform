@@ -41,7 +41,7 @@ export interface EstablishFriendshipDependencies {
     | "save"
   >;
   readonly profileReader: Pick<FriendProfileReaderPort, "findDisplayName">;
-  readonly limitReader: Pick<FriendLimitReaderPort, "readMaxFriendCountInTx">;
+  readonly limitReader: Pick<FriendLimitReaderPort, "readLimitInTx">;
   readonly cache: FriendshipCacheInvalidator;
   readonly notifier: Pick<FollowNotifierPort, "notifyFollowNew" | "notifyFollowMutual">;
   readonly checkFirstFriendMilestone: Pick<CheckFirstFriendMilestoneUseCase, "execute">;
@@ -103,7 +103,7 @@ export class EstablishFriendshipUseCase {
   async #isAtFriendLimit(userId: UserId): Promise<boolean> {
     const { followRepository, limitReader } = this.#dependencies;
     const [maxFriendCount, friendCount] = await Promise.all([
-      limitReader.readMaxFriendCountInTx(userId),
+      limitReader.readLimitInTx(userId),
       followRepository.countMutualFriends(userId),
     ]);
     return hasReachedFriendLimit({ maxFriendCount, friendCount });

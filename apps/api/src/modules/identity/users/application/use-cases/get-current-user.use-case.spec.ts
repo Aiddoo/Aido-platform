@@ -1,5 +1,5 @@
 import { ErrorCode } from "@aido/api/errors";
-import { PREMIUM_FEATURE_KEYS } from "@aido/api/vocabulary";
+import { PLAN_CATALOG, PREMIUM_FEATURE_KEYS } from "@aido/api/vocabulary";
 
 import { createAuthCredentialFixture } from "#test/fixtures/auth-credential.fixture";
 
@@ -179,25 +179,27 @@ describe("GetCurrentUser — 현재 사용자 조회", () => {
     ]);
   });
 
-  it("ADMIN은 isPremium이 아니어도 모든 기능 권한이 무제한이다", async () => {
+  it("ADMIN은 isPremium이 아니어도 프리미엄과 같은 /me 권한을 받는다(카테고리 30개)", async () => {
     // Given
-    const fixture = given();
-    fixture.entitlementReader.tiers.set(fixture.user.id, "ADMIN");
+    const admin = given();
+    admin.entitlementReader.tiers.set(admin.user.id, "ADMIN");
+    const premium = given();
+    premium.entitlementReader.tiers.set(premium.user.id, "PREMIUM");
+    premium.entitlementReader.activeSubscriptionUserIds.add(premium.user.id);
+    const input = { sessionId: "session-1", timezone: "Asia/Seoul" };
 
     // When
-    const result = await fixture.useCase.execute({
-      userId: fixture.user.id,
-      sessionId: "session-1",
-      timezone: "Asia/Seoul",
-    });
+    const adminResult = await admin.useCase.execute({ ...input, userId: admin.user.id });
+    const premiumResult = await premium.useCase.execute({ ...input, userId: premium.user.id });
 
     // Then
-    expect(result.isPremium).toBe(false);
-    expect(
-      PREMIUM_FEATURE_KEYS.every((feature) => {
-        const access = result.entitlements?.[feature];
-        return access?.allowed === true && access.limit == null;
-      }),
-    ).toBe(true);
+    expect(adminResult.isPremium).toBe(false);
+    expect(Object.keys(adminResult.entitlements ?? {})).toEqual([...PREMIUM_FEATURE_KEYS]);
+    expect(adminResult.entitlements).toEqual(premiumResult.entitlements);
+    expect(adminResult.entitlements?.TODO_CATEGORY).toEqual({
+      allowed: true,
+      limit: PLAN_CATALOG.TODO_CATEGORY.premium,
+    });
+    expect(adminResult.entitlements?.AI_PARSE).toMatchObject({ allowed: true, limit: null });
   });
 });

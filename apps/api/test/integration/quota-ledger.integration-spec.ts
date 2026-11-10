@@ -2,15 +2,11 @@ import { ErrorCode } from "@aido/api/errors";
 import { PLAN_CATALOG } from "@aido/api/vocabulary";
 import { and, eq, sql } from "drizzle-orm";
 
+import { EntitlementReaderPort } from "#api/modules/access/entitlements/access-entitlements.public";
 import {
-  ENTITLEMENT_READER,
-  type EntitlementReaderPort,
-} from "#api/modules/access/access-entitlement.public";
-import {
-  QUOTA_LEDGER,
-  type QuotaLedgerPort,
+  QuotaLedgerPort,
   type QuotaReserveInput,
-} from "#api/modules/access/access-quota.public";
+} from "#api/modules/access/quotas/access-quotas.public";
 import { QuotaUsageRepositoryPort } from "#api/modules/access/quotas/application/ports/quota-usage.repository.port";
 import { RefundAbandonedQuotaReservationsUseCase } from "#api/modules/access/quotas/application/use-cases/refund-abandoned-quota-reservations.use-case";
 import { QuotaWindow } from "#api/modules/access/quotas/domain/quota-window.vo";
@@ -60,13 +56,13 @@ describe("QuotaLedger 원장·카운터·멱등 (실제 PostgreSQL)", () => {
     database = new TestDatabase({ createClient: (url) => createTestClient(url, { max: 6 }) });
     client = await database.start();
     context = await createE2eApp({ testDatabase: database });
-    ledger = context.module.get(QUOTA_LEDGER);
+    ledger = context.module.get(QuotaLedgerPort);
     refundAbandoned = context.module.get(RefundAbandonedQuotaReservationsUseCase, {
       strict: false,
     });
     usageRepository = context.module.get(QuotaUsageRepositoryPort, { strict: false });
     unitOfWork = context.module.get(UNIT_OF_WORK);
-    entitlement = context.module.get(ENTITLEMENT_READER);
+    entitlement = context.module.get(EntitlementReaderPort);
   });
   beforeEach(async () => {
     await context.reset();
@@ -790,7 +786,7 @@ describe("QuotaLedger 원장·카운터·멱등 (실제 PostgreSQL)", () => {
           .update(userTable)
           .set({ role, subscriptionStatus, aiUsageCount: FREE_AI_LIMIT })
           .where(eq(userTable.id, userId));
-        expect(await entitlement.getLimit(userId, "AI_PARSE")).toBeNull();
+        expect(await entitlement.getFeatureLimit(userId, "AI_PARSE")).toBeNull();
         await client
           .update(userTable)
           .set({ role: "USER", subscriptionStatus: "FREE" })

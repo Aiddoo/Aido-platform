@@ -1,4 +1,4 @@
-import type { EntitlementReaderPort } from "#api/modules/access/access-entitlement.public";
+import type { EntitlementReaderPort } from "#api/modules/access/entitlements/access-entitlements.public";
 
 // identity가 읽는 공개 모양이라 resetsAt은 아직 Date다
 export interface DailySendUsage {
@@ -18,4 +18,6 @@ export interface DailySendQuotaUsage {
 }
 
 // 한도 오류 details에 그대로 싣는 서버 계산 featureQuota. 모양은 access가 소유한다
-export type DailySendQuota = Awaited<ReturnType<EntitlementReaderPort["readFeatureQuotaInTx"]>>;
+export type DailySendFeatureQuota = Awaited<
+  ReturnType<EntitlementReaderPort["getFeatureQuotaInTx"]>
+>;

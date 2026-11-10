@@ -3,7 +3,7 @@ import type { TodoCategoryRepositoryPort } from "../ports/todo-category.reposito
 
 interface GetTodoCategoryResourceLimitDependencies {
   readonly repository: Pick<TodoCategoryRepositoryPort, "countByUserId">;
-  readonly limitReader: Pick<TodoCategoryLimitReaderPort, "getMaxCount">;
+  readonly limitReader: Pick<TodoCategoryLimitReaderPort, "readLimit">;
 }
 
 export class GetTodoCategoryResourceLimitUseCase {
@@ -17,7 +17,7 @@ export class GetTodoCategoryResourceLimitUseCase {
     readonly userId: string;
   }): Promise<{ categoryCount: number; maxCount: number | null }> {
     const [maxCount, categoryCount] = await Promise.all([
-      this.#dependencies.limitReader.getMaxCount(input.userId),
+      this.#dependencies.limitReader.readLimit(input.userId),
       this.#dependencies.repository.countByUserId(input.userId),
     ]);
     return { categoryCount, maxCount };

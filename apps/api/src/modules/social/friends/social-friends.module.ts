@@ -1,6 +1,6 @@
 import { Module } from "@nestjs/common";
 
-import { AccessModule } from "#api/modules/access/access-entitlement.public";
+import { AccessEntitlementsModule } from "#api/modules/access/entitlements/access-entitlements.public";
 import { NotificationDeliveryModule } from "#api/modules/notification/notification-delivery.public";
 import { SocialBlocksModule } from "#api/modules/social/blocks/social-blocks.public";
 
@@ -11,7 +11,7 @@ import { FollowController } from "./presentation/http/v1/follow.controller.js";
 import { SOCIAL_FRIENDS_PROVIDERS } from "./social-friends.providers.js";
 
 @Module({
-  imports: [AccessModule, NotificationDeliveryModule, SocialBlocksModule],
+  imports: [AccessEntitlementsModule, NotificationDeliveryModule, SocialBlocksModule],
   controllers: [FollowController],
   providers: [...SOCIAL_FRIENDS_PROVIDERS],
   exports: [FollowReaderPort, FriendCountReaderPort, FriendshipEstablisherPort],

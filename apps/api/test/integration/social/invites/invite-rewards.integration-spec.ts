@@ -1,8 +1,7 @@
 import { Logger } from "@nestjs/common";
 import { and, count, eq, inArray } from "drizzle-orm";
 
-import { ENTITLEMENT_READER } from "#api/modules/access/access-entitlement.public";
-import type { EntitlementReaderPort } from "#api/modules/access/access-entitlement.public";
+import { EntitlementReaderPort } from "#api/modules/access/entitlements/access-entitlements.public";
 import { PremiumAccessReaderPort } from "#api/modules/billing/subscriptions/billing-subscriptions.public";
 import { RevenueCatWebhookReceiver } from "#api/modules/billing/subscriptions/infrastructure/adapters/revenuecat/revenuecat-webhook-receiver.adapter";
 import { InviteConfigPort } from "#api/modules/social/invites/application/ports/invite-config.port";
@@ -246,8 +245,8 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
     expect(await premiumGrantsOf(inviterId)).toEqual([
       { durationDays: 7, status: "ACTIVE", endsAt: new Date("2028-03-06T03:00:00.000Z") },
     ]);
-    const entitlement = context.module.get<EntitlementReaderPort>(ENTITLEMENT_READER);
-    expect(await entitlement.getLimitInTx(inviterId, "FRIEND")).toBeNull();
+    const entitlement = context.module.get(EntitlementReaderPort);
+    expect(await entitlement.getFeatureLimitInTx(inviterId, "FRIEND")).toBeNull();
     const repository = context.module.get(InviteRedemptionRepositoryPort);
     expect(await repository.summarizeByInviterId(UserId.reconstitute(inviterId))).toEqual({
       joinedCount: 0,
@@ -382,7 +381,7 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
     );
 
     // Then
-    const entitlement = context.module.get<EntitlementReaderPort>(ENTITLEMENT_READER);
+    const entitlement = context.module.get(EntitlementReaderPort);
     const reader = context.module.get<PremiumAccessReaderPort>(PremiumAccessReaderPort);
     for (const { inviterId } of scenarios) {
       expect(await reader.getPremiumAccess(inviterId)).toMatchObject({
@@ -446,7 +445,7 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
     expect(remainingPremiumDays(summary)).toBe(0);
   });
 
-  it("ADMIN이 초대한 사람이어도 보상 기간·친구 자리·보상 알림을 받고 role과 무제한 한도는 그대로다", async () => {
+  it("ADMIN이 초대한 사람이어도 보상 기간·친구 자리·보상 알림을 받고 role과 프리미엄 한도(친구 무제한)는 그대로다", async () => {
     // Given
     const { inviterId, redemptionId } = await qualified("ADMININV", "ADMINVTE");
     await client.update(userTable).set({ role: "ADMIN" }).where(eq(userTable.id, inviterId));
@@ -469,8 +468,8 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
       (await client.query.user.findFirst({ where: { id: inviterId }, columns: { role: true } }))
         ?.role,
     ).toBe("ADMIN");
-    const entitlement = context.module.get<EntitlementReaderPort>(ENTITLEMENT_READER);
-    expect(await entitlement.getLimitInTx(inviterId, "FRIEND")).toBeNull();
+    const entitlement = context.module.get(EntitlementReaderPort);
+    expect(await entitlement.getFeatureLimitInTx(inviterId, "FRIEND")).toBeNull();
   });
 
   it("정비 작업은 마감이 지난 수락만 거절하고 남은 지급이 있는 수락의 작업을 다시 만든다", async () => {

@@ -5,13 +5,13 @@ import type { DrizzleTransactionalAdapter } from "#api/platform/database/databas
 import { createEntityId } from "#api/platform/database/entity-id";
 import { resourceBonus } from "#api/platform/database/schema/access.schema";
 
-import { ResourceBonusRepositoryPort } from "../../application/ports/resource-bonus.repository.port.js";
-import { ResourceBonusId } from "../../domain/resource-bonus-id.vo.js";
-import type { ResourceBonus } from "../../domain/resource-bonus.aggregate.js";
-import { toResourceBonusRow } from "./resource-bonus-row.mapper.js";
+import { FeatureGrantRepositoryPort } from "../../application/ports/feature-grant.repository.port.js";
+import { FeatureGrantId } from "../../domain/feature-grant-id.vo.js";
+import type { FeatureGrant } from "../../domain/feature-grant.aggregate.js";
+import { toFeatureGrantRow } from "./feature-grant-row.mapper.js";
 
 @Injectable()
-export class DrizzleResourceBonusRepository extends ResourceBonusRepositoryPort {
+export class DrizzleFeatureGrantRepository extends FeatureGrantRepositoryPort {
   readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
 
   constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>) {
@@ -19,15 +19,15 @@ export class DrizzleResourceBonusRepository extends ResourceBonusRepositoryPort 
     this.#txHost = txHost;
   }
 
-  async nextId(): Promise<ResourceBonusId> {
-    return ResourceBonusId.reconstitute(createEntityId());
+  async nextId(): Promise<FeatureGrantId> {
+    return FeatureGrantId.reconstitute(createEntityId());
   }
 
-  async saveIfAbsent(bonus: ResourceBonus): Promise<boolean> {
+  async saveIfAbsent(grant: FeatureGrant): Promise<boolean> {
     // ResourceBonus_sourceKey_key 충돌은 같은 보상의 재지급이라 오류가 아니라 false다
     const inserted = await this.#txHost.tx
       .insert(resourceBonus)
-      .values(toResourceBonusRow(bonus))
+      .values(toFeatureGrantRow(grant))
       .onConflictDoNothing({ target: resourceBonus.sourceKey })
       .returning({ id: resourceBonus.id });
     return inserted.length === 1;

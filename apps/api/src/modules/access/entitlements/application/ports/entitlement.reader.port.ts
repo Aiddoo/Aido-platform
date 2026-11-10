@@ -1,14 +1,15 @@
 import type {
   AccessTier,
   MeteredFeatureKey,
+  Plan,
   PlanFeature,
   PlanLimitFeatureKey,
 } from "@aido/api/vocabulary";
 
-import type { FeatureAccess } from "../../domain/entitlement.domain-service.js";
+import type { FeatureEntitlement } from "../../domain/entitlement.domain-service.js";
 import type { FeatureQuotaDetails } from "../read-models/feature-quota.read-model.js";
 
-export type { FeatureAccess };
+export type { FeatureEntitlement };
 
 /** 소유 Context가 사용량·개수를 세는 한도 기능 (CHEER·NUDGE·FRIEND·TODO_CATEGORY) */
 export type UnmeteredLimitFeatureKey = Exclude<PlanLimitFeatureKey, MeteredFeatureKey>;
@@ -20,15 +21,15 @@ export interface ReportedFeatureUsage {
 }
 
 /** 판단 시각의 권한 전체. 만료·자동 갱신 유예를 반영한다. */
-export interface AccessSnapshot {
+export interface UserEntitlements {
+  /** 누구인가(출시 앱 표시). 기능 판단에는 plan을 쓴다. */
   readonly tier: AccessTier;
-  /** 유효한 스토어 구독이나 보상 기간이 있는지. ADMIN role은 반영하지 않는다(tier·features가 반영한다). */
+  /** 기능 값을 정한 요금제. ADMIN은 premium이다. */
+  readonly plan: Plan;
+  /** 유효한 스토어 구독이나 보상 기간이 있는지(결제 사실). ADMIN role은 반영하지 않는다. */
   readonly isPremium: boolean;
-  readonly features: Readonly<Record<PlanFeature, FeatureAccess>>;
+  readonly features: Readonly<Record<PlanFeature, FeatureEntitlement>>;
 }
-
-// 옛 Symbol 토큰. ai·identity·planning·social·notification이 클래스 토큰으로 옮길 때까지 별칭으로 남긴다
-export const ENTITLEMENT_READER = Symbol("ENTITLEMENT_READER");
 
 /** 다른 Context가 권한을 묻는 문. 역할·구독 상태가 허용하는 것은 access 도메인 서비스가 판단한다. */
 export abstract class EntitlementReaderPort {
@@ -36,17 +37,20 @@ export abstract class EntitlementReaderPort {
   abstract can(userId: string, feature: PlanFeature): Promise<boolean>;
   /** 활성 UoW에서 캐시 없이 최신 상태로 다시 판단한다. 잠금 뒤 재확인에 쓴다. */
   abstract canInTx(userId: string, feature: PlanFeature): Promise<boolean>;
-  /** quota·resource 표시 한도(보너스 자리 포함). null은 무제한이다. */
-  abstract getLimit(userId: string, feature: PlanLimitFeatureKey): Promise<number | null>;
-  abstract getLimitInTx(userId: string, feature: PlanLimitFeatureKey): Promise<number | null>;
+  /** quota·resource 표시 한도(받은 자리 포함). null은 무제한이다. */
+  abstract getFeatureLimit(userId: string, feature: PlanLimitFeatureKey): Promise<number | null>;
+  abstract getFeatureLimitInTx(
+    userId: string,
+    feature: PlanLimitFeatureKey,
+  ): Promise<number | null>;
   /**
    * 한도 오류 details에 싣는 서버 계산 featureQuota. 활성 UoW에서 캐시 없이 최신 권한으로 계산한다.
    * usage는 소유 Context가 센 값이다(일간 quota는 X-Timezone 하루 사용량, resource는 현재 개수).
    */
-  abstract readFeatureQuotaInTx(
+  abstract getFeatureQuotaInTx(
     userId: string,
     feature: UnmeteredLimitFeatureKey,
     usage: ReportedFeatureUsage,
   ): Promise<FeatureQuotaDetails>;
-  abstract getAccessSnapshot(userId: string): Promise<AccessSnapshot>;
+  abstract getEntitlements(userId: string): Promise<UserEntitlements>;
 }

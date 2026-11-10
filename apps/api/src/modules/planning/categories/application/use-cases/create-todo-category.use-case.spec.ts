@@ -11,7 +11,7 @@ import { TODO_FIXTURE_NOW, TODO_FIXTURE_USER_ID } from "#test/fixtures/planning/
 
 import type { TodoCategory } from "../../domain/todo-category.aggregate.js";
 import {
-  type CategoryFeatureQuota,
+  type TodoCategoryFeatureQuota,
   TodoCategoryLimitReaderPort,
 } from "../ports/todo-category-limit.reader.port.js";
 import { CreateTodoCategoryUseCase } from "./create-todo-category.use-case.js";
@@ -20,18 +20,18 @@ const USER_ID = TODO_FIXTURE_USER_ID;
 
 class StubTodoCategoryLimitReader extends TodoCategoryLimitReaderPort {
   maxCount: number | null = null;
-  quota: CategoryFeatureQuota = {};
+  quota: TodoCategoryFeatureQuota = {};
   readonly quotaReads: [string, number][] = [];
 
-  async getMaxCount(): Promise<number | null> {
+  async readLimit(): Promise<number | null> {
     return this.maxCount;
   }
 
-  async getMaxCountInTx(): Promise<number | null> {
+  async readLimitInTx(): Promise<number | null> {
     return this.maxCount;
   }
 
-  async readQuotaInTx(userId: string, count: number): Promise<CategoryFeatureQuota> {
+  async readFeatureQuotaInTx(userId: string, count: number): Promise<TodoCategoryFeatureQuota> {
     this.quotaReads.push([userId, count]);
     return this.quota;
   }
@@ -161,7 +161,7 @@ describe("카테고리 생성", () => {
       }
     }
     class OrderedLimitReader extends StubTodoCategoryLimitReader {
-      override async getMaxCountInTx(): Promise<number | null> {
+      override async readLimitInTx(): Promise<number | null> {
         events.push("entitlement");
         return 3;
       }

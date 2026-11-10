@@ -136,7 +136,7 @@ describe("/me 유효 프리미엄과 기능별 권한 (실제 PostgreSQL)", () =
     expect(body.entitlements?.CUSTOM_REMINDER_TIME).toEqual({ allowed: false, limit: null });
   });
 
-  it("ADMIN은 isPremium이 아니어도 모든 기능을 한도 없이 쓸 수 있다", async () => {
+  it("ADMIN은 isPremium이 아니어도 모든 기능을 프리미엄 표시 한도로 쓸 수 있다", async () => {
     // Given
     const admin = await context.helpers.createVerifiedUser("me-admin@test.com", "Test1234!");
     await updateUser(admin.userId, { role: "ADMIN" });
@@ -148,7 +148,10 @@ describe("/me 유효 프리미엄과 기능별 권한 (실제 PostgreSQL)", () =
     expect(body.role).toBe("ADMIN");
     expect(body.isPremium).toBe(false);
     for (const feature of PREMIUM_FEATURE_KEYS) {
-      expect(body.entitlements?.[feature], feature).toMatchObject({ allowed: true, limit: null });
+      const definition = PLAN_CATALOG[feature];
+      const limit = definition.kind === "flag" ? null : definition.premium;
+      expect(body.entitlements?.[feature], feature).toMatchObject({ allowed: true, limit });
     }
+    expect(body.entitlements?.TODO_CATEGORY.limit).toBe(PLAN_CATALOG.TODO_CATEGORY.premium);
   });
 });

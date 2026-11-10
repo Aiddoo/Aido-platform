@@ -161,7 +161,7 @@ export class ReserveQuotaUseCase {
     if (added) {
       return;
     }
-    logger.warn({ event: QuotaLogEvent.EXHAUSTED, meter: allowance.meter, tier: allowance.tier });
+    logger.warn({ event: QuotaLogEvent.EXHAUSTED, meter: allowance.meter, plan: allowance.plan });
     throw quotaExhausted(
       allowance.feature,
       toFeatureQuotaDetails(await this.#featureQuota(decision)),

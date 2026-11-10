@@ -53,12 +53,15 @@ export class CreateTodoCategoryUseCase {
     const created = await this.#dependencies.unitOfWork.run(async () => {
       await this.#dependencies.mutationLock.acquire([TodoCategoryLockKeys.userCategories(userId)]);
 
-      const maxCount = await this.#dependencies.limitReader.getMaxCountInTx(userId);
+      const maxCount = await this.#dependencies.limitReader.readLimitInTx(userId);
       const categoryCount = await this.#dependencies.repository.countByUserId(userId);
       if (maxCount != null && categoryCount >= maxCount) {
         throw new ApplicationException(ErrorCode.TODO_CATEGORY_0857, {
           charged: false,
-          featureQuota: await this.#dependencies.limitReader.readQuotaInTx(userId, categoryCount),
+          featureQuota: await this.#dependencies.limitReader.readFeatureQuotaInTx(
+            userId,
+            categoryCount,
+          ),
         });
       }
 

@@ -2,8 +2,8 @@ import { ErrorCode } from "@aido/api/errors";
 import { PREMIUM_FEATURE_KEYS } from "@aido/api/vocabulary";
 import { pick } from "es-toolkit";
 
-import type { EntitlementReaderPort } from "#api/modules/access/access-entitlement.public";
-import type { QuotaLedgerPort } from "#api/modules/access/access-quota.public";
+import type { EntitlementReaderPort } from "#api/modules/access/entitlements/access-entitlements.public";
+import type { QuotaLedgerPort } from "#api/modules/access/quotas/access-quotas.public";
 import type { PremiumAccessReaderPort } from "#api/modules/billing/subscriptions/billing-subscriptions.public";
 import type { DailySendUsageReaderPort } from "#api/modules/social/cheers/social-cheers.public";
 import { ApplicationException } from "#api/shared/application/application.exception";
@@ -28,7 +28,7 @@ interface GetCurrentUserDependencies {
   readonly userRepository: Pick<AuthUserRepositoryPort, "findByIdWithProfile">;
   readonly cacheService: Pick<AuthCachePort, "wrapUserProfile">;
   readonly premiumAccessReader: Pick<PremiumAccessReaderPort, "getPremiumAccess">;
-  readonly entitlementReader: Pick<EntitlementReaderPort, "getAccessSnapshot">;
+  readonly entitlementReader: Pick<EntitlementReaderPort, "getEntitlements">;
   readonly quotaLedger: Pick<QuotaLedgerPort, "read">;
   readonly cheerUsageReader: Pick<DailySendUsageReaderPort, "readDailyUsage">;
   readonly nudgeUsageReader: Pick<DailySendUsageReaderPort, "readDailyUsage">;
@@ -119,16 +119,16 @@ export class GetCurrentUserUseCase {
   ): Promise<{ isPremium: boolean; entitlements: CurrentUserEntitlements }> {
     const { entitlementReader, quotaLedger, cheerUsageReader, nudgeUsageReader } =
       this.#dependencies;
-    const [snapshot, aiUsage, cheerUsage, nudgeUsage] = await Promise.all([
-      entitlementReader.getAccessSnapshot(userId),
+    const [userEntitlements, aiUsage, cheerUsage, nudgeUsage] = await Promise.all([
+      entitlementReader.getEntitlements(userId),
       quotaLedger.read(userId, "AI_PARSE"),
       cheerUsageReader.readDailyUsage(userId, timezone),
       nudgeUsageReader.readDailyUsage(userId, timezone),
     ]);
     // 출시 앱 /me.entitlements 계약의 기능만 담는다. 1.15.0부터 더한 기능은 GET /v1/entitlements가 준다.
-    const features = pick(snapshot.features, PREMIUM_FEATURE_KEYS);
+    const features = pick(userEntitlements.features, PREMIUM_FEATURE_KEYS);
     return {
-      isPremium: snapshot.isPremium,
+      isPremium: userEntitlements.isPremium,
       entitlements: {
         ...features,
         AI_PARSE: { ...features.AI_PARSE, used: aiUsage.used, resetsAt: aiUsage.resetsAt },

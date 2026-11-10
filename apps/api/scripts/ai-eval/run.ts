@@ -410,10 +410,7 @@ function createGenerator(task: GoldenTask, provider: string | undefined) {
       config,
       new AiProviderCatalog(adapters),
       new OutboundPolicyRegistry(alert),
-      // eval은 userId가 null이라 사용자 예산·등급을 읽지 않는다.
-      new AiSpendBudgetAdapter(config, new InMemoryUsageMeterAdapter(), alert, {
-        getAccessSnapshot: () => Promise.reject(new Error("eval has no user")),
-      }),
+      new AiSpendBudgetAdapter(config, new InMemoryUsageMeterAdapter(), alert),
     ),
     available,
     thinking: config.ai.tasks[task].thinking,

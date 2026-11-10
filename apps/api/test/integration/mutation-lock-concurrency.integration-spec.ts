@@ -8,7 +8,7 @@ import { and, asc, eq, sql } from "drizzle-orm";
 import { ClsModule, ClsServiceManager } from "nestjs-cls";
 import { vi } from "vitest";
 
-import { ENTITLEMENT_READER } from "#api/modules/access/access-entitlement.public";
+import { EntitlementReaderPort } from "#api/modules/access/entitlements/access-entitlements.public";
 import { AccessStateReaderPort } from "#api/modules/access/entitlements/application/ports/access-state.reader.port";
 import { EntitlementCachePort } from "#api/modules/access/entitlements/application/ports/entitlement-cache.port";
 import { GetResolvedAccessUseCase } from "#api/modules/access/entitlements/application/use-cases/get-resolved-access.use-case";
@@ -551,26 +551,26 @@ function fixedDailyQuota(
 
 function createCheerLimitReader(
   limit: number | null,
-): Pick<CheerLimitReaderPort, "readDailyLimitInTx" | "readDailyQuotaInTx"> {
+): Pick<CheerLimitReaderPort, "readLimitInTx" | "readFeatureQuotaInTx"> {
   return {
-    readDailyLimitInTx: async () => limit,
-    readDailyQuotaInTx: async (_userId, usage) => fixedDailyQuota("CHEER", limit, usage),
+    readLimitInTx: async () => limit,
+    readFeatureQuotaInTx: async (_userId, usage) => fixedDailyQuota("CHEER", limit, usage),
   };
 }
 
 function createNudgeLimitReader(
   limit: number | null,
-): Pick<NudgeLimitReaderPort, "readDailyLimitInTx" | "readDailyQuotaInTx"> {
+): Pick<NudgeLimitReaderPort, "readLimitInTx" | "readFeatureQuotaInTx"> {
   return {
-    readDailyLimitInTx: async () => limit,
-    readDailyQuotaInTx: async (_userId, usage) => fixedDailyQuota("NUDGE", limit, usage),
+    readLimitInTx: async () => limit,
+    readFeatureQuotaInTx: async (_userId, usage) => fixedDailyQuota("NUDGE", limit, usage),
   };
 }
 
 function createDailyLimitReader(
   dailyLimit: number,
-): Pick<CheerLimitReaderPort | NudgeLimitReaderPort, "readDailyLimit"> {
-  return { readDailyLimit: async () => dailyLimit };
+): Pick<CheerLimitReaderPort | NudgeLimitReaderPort, "readLimit"> {
+  return { readLimit: async () => dailyLimit };
 }
 
 function createTodoCategoryCache(): TodoCategoryCachePort {
@@ -665,7 +665,7 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
         ClsUnitOfWork,
         DrizzleTodoCategoryRepository,
         PostgresMutationLockAdapter,
-        { provide: ENTITLEMENT_READER, useClass: EntitlementReaderAdapter },
+        { provide: EntitlementReaderPort, useClass: EntitlementReaderAdapter },
         { provide: EntitlementCachePort, useClass: EntitlementCacheAdapter },
         { provide: AccessStateReaderPort, useClass: DrizzleAccessStateReader },
         { provide: ClockPort, useValue: new DateClock() },

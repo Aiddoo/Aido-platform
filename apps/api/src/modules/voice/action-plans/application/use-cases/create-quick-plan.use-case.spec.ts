@@ -366,9 +366,16 @@ describe("CreateQuickPlanUseCase", () => {
       {
         tier: "ADMIN",
         input: { role: "ADMIN", subscriptionStatus: "FREE", accessDeadline: null },
-        usedBefore: FAIR_USE_LIMIT + 10,
-        limit: null,
+        usedBefore: FAIR_USE_LIMIT - 1,
+        limit: FAIR_USE_LIMIT,
         blocked: false,
+      },
+      {
+        tier: "ADMIN 공정 사용 상한",
+        input: { role: "ADMIN", subscriptionStatus: "FREE", accessDeadline: null },
+        usedBefore: FAIR_USE_LIMIT,
+        limit: FAIR_USE_LIMIT,
+        blocked: true,
       },
     ] as const)(
       "$tier: 사용량 $usedBefore에서 막힘=$blocked, 사용량은 등급과 상관없이 기록한다",
