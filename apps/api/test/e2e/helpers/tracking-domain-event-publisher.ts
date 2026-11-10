@@ -1,7 +1,7 @@
 import { Logger } from "@nestjs/common";
 import type { EventEmitter2 } from "@nestjs/event-emitter";
 
-import { PlatformLogEvent } from "#api/platform/logging/platform-log.events";
+import { PlatformLogEvent } from "#api/platform/logging/platform.log-events";
 import type {
   DomainEventPublisherPort,
   PublishedDomainEvent,

@@ -1,3 +1,5 @@
+import { DrizzleQueryError } from "drizzle-orm/errors";
+
 import { postgresError, sqlQueryError } from "#test/mocks/drizzle.mock";
 
 import {
@@ -176,5 +178,44 @@ describe("classifyDatabaseError — SQLSTATE 분류", () => {
 
     // Then
     expect(classified).toBe("unknown");
+  });
+});
+
+describe("classifyDatabaseError — SQLSTATE 없는 연결 문제", () => {
+  const networkError = (address: string) =>
+    Object.assign(new Error(`connect ECONNREFUSED ${address}`), { code: "ECONNREFUSED" });
+
+  it.each([
+    {
+      name: "풀 대기 초과(pg-pool)",
+      error: new Error("timeout exceeded when trying to connect"),
+      kind: "pool-timeout",
+    },
+    {
+      name: "쿼리 중 풀 대기 초과",
+      error: new DrizzleQueryError(
+        "SELECT 1",
+        [],
+        new Error("timeout exceeded when trying to connect"),
+      ),
+      kind: "pool-timeout",
+    },
+    {
+      name: "연결이 끊긴 쿼리",
+      error: new DrizzleQueryError("SELECT 1", [], new Error("Connection terminated unexpectedly")),
+      kind: "connection",
+    },
+    {
+      name: "DB 쿼리의 네트워크 오류",
+      error: new DrizzleQueryError("SELECT 1", [], networkError("127.0.0.1:5432")),
+      kind: "connection",
+    },
+    { name: "DB와 무관한 네트워크 오류", error: networkError("10.0.0.1:443"), kind: "unknown" },
+  ])("$name → $kind", ({ error, kind }) => {
+    // When
+    const classified = classifyDatabaseError(error);
+
+    // Then
+    expect(classified).toBe(kind);
   });
 });

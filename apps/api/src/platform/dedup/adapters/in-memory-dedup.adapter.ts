@@ -1,6 +1,6 @@
 import { Injectable, Logger, type OnModuleDestroy, type OnModuleInit } from "@nestjs/common";
 
-import { PlatformLogEvent } from "#api/platform/logging/platform-log.events";
+import { PlatformLogEvent } from "#api/platform/logging/platform.log-events";
 
 import type { IDedupProvider } from "../interfaces/dedup.interface.js";
 

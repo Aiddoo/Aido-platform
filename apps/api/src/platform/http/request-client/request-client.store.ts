@@ -1,10 +1,9 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 
 import { Injectable } from "@nestjs/common";
-import * as Sentry from "@sentry/nestjs";
 import { type ClsMiddlewareOptions, ClsService, ClsServiceManager } from "nestjs-cls";
 
-import { SENTRY_TAG } from "#api/platform/observability/sentry-keys";
+import { tagRequestId } from "#api/platform/observability/sentry-scope";
 
 import { parseRequestClient, type RequestClient } from "./request-client.js";
 import { assignRequestId } from "./request-id.js";
@@ -20,7 +19,7 @@ export const REQUEST_CLIENT_CLS_MIDDLEWARE: ClsMiddlewareOptions = {
   setup: (cls: ClsService, request: IncomingMessage, response: ServerResponse) => {
     const requestId = assignRequestId(request, response);
     storeRequestClient(cls, parseRequestClient(request.headers, requestId));
-    Sentry.setTag(SENTRY_TAG.REQUEST_ID, requestId);
+    tagRequestId(requestId);
   },
 };
 

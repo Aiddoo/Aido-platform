@@ -3,7 +3,7 @@ import { Inject, Injectable, Logger } from "@nestjs/common";
 import { sql, type SQL } from "drizzle-orm";
 import { ClsService } from "nestjs-cls";
 
-import { PlatformLogEvent } from "#api/platform/logging/platform-log.events";
+import { PlatformLogEvent } from "#api/platform/logging/platform.log-events";
 import type {
   AfterCommitTask,
   AfterCommitTaskRegistryPort,

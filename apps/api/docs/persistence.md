@@ -68,14 +68,14 @@ Repository·Reader·스키마·마이그레이션·DB 오류 번역을 바꿀 �
 
 ## DB 오류 번역
 
-| SQLSTATE                | 분류                     | 처리                                                                                     |
-| ----------------------- | ------------------------ | ---------------------------------------------------------------------------------------- |
-| `23505`·`23503`·`23514` | unique·FK·check          | 저장소가 `isUniqueConstraintViolation(error, "<제약>")`으로 자기 제약만 업무 오류로 번역 |
-| `40001`·`40P01`         | 직렬화·교착              | 멱등한 UoW만 `run(work, { retryOnConflict: true })`로 1회 재실행                         |
-| `55P03`·`57014`         | lock·statement 시간 초과 | `TransientInfrastructureError` → 409 `SYS_0004` 또는 503                                 |
-| `08***`·`57P01`         | 연결                     | 같음                                                                                     |
+| SQLSTATE                                | 분류                     | 처리                                                                                       |
+| --------------------------------------- | ------------------------ | ------------------------------------------------------------------------------------------ |
+| `23505`·`23503`·`23514`                 | unique·FK·check          | 저장소가 `isUniqueConstraintViolation(error, "<제약>")`으로 자기 제약만 업무 오류로 번역   |
+| `40001`·`40P01`                         | 직렬화·교착              | 멱등한 UoW만 `run(work, { retryOnConflict: true })`로 1회 재실행                           |
+| `55P03`·`57014`                         | lock·statement 시간 초과 | 503 `SYS_0005`(잠시 후 다시 시도)                                                          |
+| `08***`·`57P01`, 풀 대기 초과·연결 끊김 | 연결                     | 같음. SQLSTATE가 없는 pg·pg-pool 고정 문구와 Drizzle 쿼리 아래 네트워크 오류도 연결로 본다 |
 
-- 분류표는 `platform/database/database-error.ts` 한 곳이다. `GlobalExceptionFilter`는 제약 이름을 모르고 SQLSTATE 폴백만 한다. 미지의 unique는 409 `SYS_0004`에 `OPERATIONAL_ALERT`를 올린다.
+- 분류표는 [classifyDatabaseError](../src/platform/database/database-error.util.ts) 한 곳이다. `GlobalExceptionFilter`는 이 분류로 응답을 정하고, 미지의 unique는 409 `SYS_0004`에 경보(`database.unique-constraint.unknown`)를 올린다.
 - 단건 변경 결과가 없으면 부재 오류를 낸다. 잠금·CAS·rollback은 실제 PostgreSQL integration으로 확인한다.
 
 ## 마이그레이션
@@ -91,4 +91,4 @@ Repository·Reader·스키마·마이그레이션·DB 오류 번역을 바꿀 �
 
 ## 전환 중
 
-아직 옮기지 않은 Context의 저장소는 `mode: "date"`(`date`는 UTC 자정 `Date`), `$onUpdate`, raw SQL(LATERAL·윈도 집계·`FOR UPDATE SKIP LOCKED`), 필터의 제약 이름 map을 그대로 쓴다. customType·`$onUpdate` 제거·raw SQL 정리는 각 Context를 옮길 때 자기 테이블과 그 테이블을 읽는 다른 Context reader를 함께 바꾼다. 옮긴 Context는 `apps/api/architecture.ratchet.json`의 `migratedContexts`에 있다.
+아직 옮기지 않은 Context의 저장소는 `mode: "date"`(`date`는 UTC 자정 `Date`), `$onUpdate`, raw SQL(LATERAL·윈도 집계·`FOR UPDATE SKIP LOCKED`), 필터의 옛 제약 이름 map([LEGACY_CONSTRAINT_ERRORS](../src/platform/filters/legacy-constraint-errors.ts))을 그대로 쓴다. 저장소가 자기 제약을 번역하면 그 항목을 지운다. customType·`$onUpdate` 제거·raw SQL 정리는 각 Context를 옮길 때 자기 테이블과 그 테이블을 읽는 다른 Context reader를 함께 바꾼다. 옮긴 Context는 `apps/api/architecture.ratchet.json`의 `migratedContexts`에 있다.

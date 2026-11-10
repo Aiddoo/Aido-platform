@@ -42,6 +42,8 @@ export const ErrorCode = {
   SYS_0002: "SYS_0002",
   SYS_0003: "SYS_0003",
   SYS_0004: "SYS_0004",
+  /** DB 연결·풀 대기·문장/잠금 시간 초과처럼 잠시 뒤 다시 하면 되는 일시적 과부하 */
+  SYS_0005: "SYS_0005",
 
   // 인증/JWT (AUTH_0100-0199)
   AUTH_0101: "AUTH_0101",
@@ -331,6 +333,13 @@ export const Errors: Record<ErrorCodeType, ErrorDefinition> = {
     message: "동시 수정으로 인한 충돌이 발생했습니다. 다시 시도해주세요.",
     description: "동시성 충돌이 발생했습니다.",
     httpStatus: HttpStatus.CONFLICT,
+  },
+  [ErrorCode.SYS_0005]: {
+    code: "SYS_0005",
+    message: "요청이 많아 잠시 처리하지 못했습니다. 잠시 후 다시 시도해주세요.",
+    description:
+      "DB 연결·풀 대기·쿼리 시간 초과로 요청을 처리하지 못했습니다. 잠시 후 다시 시도합니다.",
+    httpStatus: HttpStatus.SERVICE_UNAVAILABLE,
   },
 
   // 인증/JWT (AUTH_0100-0199)

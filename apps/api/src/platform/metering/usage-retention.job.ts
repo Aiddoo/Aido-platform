@@ -10,7 +10,7 @@ import {
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import { subtractDays } from "#api/shared/domain/date/utils/arithmetic";
 
-import { PlatformLogEvent } from "../logging/platform-log.events.js";
+import { PlatformLogEvent } from "../logging/platform.log-events.js";
 import { USAGE_METER, type UsageMeterPort } from "./interfaces/usage-meter.interface.js";
 
 export const USAGE_RETENTION_QUEUE = "outbound-usage-retention.v1";

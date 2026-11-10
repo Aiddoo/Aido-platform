@@ -14,7 +14,7 @@ import { Redis, type RedisOptions } from "ioredis";
 
 import { cacheConfig } from "../config/cache.config.js";
 import { redisConfig } from "../config/redis.config.js";
-import { PlatformLogEvent } from "../logging/platform-log.events.js";
+import { PlatformLogEvent } from "../logging/platform.log-events.js";
 import { buildCommandRedisOptions, type RedisConnectionSettings } from "./redis-client.factory.js";
 import { REDIS_COMMAND_CLIENT } from "./redis.constants.js";
 

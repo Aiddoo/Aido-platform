@@ -1,7 +1,7 @@
 import { Logger } from "@nestjs/common";
 import type { Redis } from "ioredis";
 
-import { PlatformLogEvent } from "#api/platform/logging/platform-log.events";
+import { PlatformLogEvent } from "#api/platform/logging/platform.log-events";
 
 import { RedisErrorLogSampler } from "../../redis/redis-error-log-sampler.js";
 import { CacheSingleflight } from "../cache-singleflight.js";

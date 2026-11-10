@@ -4,6 +4,7 @@
   "SYS_0002": "Invalid request",
   "SYS_0003": "This was changed somewhere else. Please try again.",
   "SYS_0004": "This was changed somewhere else at the same time. Please try again.",
+  "SYS_0005": "We're handling a lot of requests right now. Please try again in a moment.",
   "AUTH_LOGIN_CANCELLED": "Sign-in was canceled",
   "AUTH_PROVIDER_ERROR": "Couldn't verify your social account",
   "AUTH_NO_CODE_RECEIVED": "No authorization code received",

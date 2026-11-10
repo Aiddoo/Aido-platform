@@ -1,7 +1,7 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { EventEmitter2 } from "@nestjs/event-emitter";
 
-import { PlatformLogEvent } from "#api/platform/logging/platform-log.events";
+import { PlatformLogEvent } from "#api/platform/logging/platform.log-events";
 import type { DomainEventPublisherPort } from "#api/shared/application/ports/index";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import type { DomainEvent } from "#api/shared/domain/aggregate-root";

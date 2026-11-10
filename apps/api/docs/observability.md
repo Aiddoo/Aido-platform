@@ -47,7 +47,7 @@
 
 운영 경보는 Sentry 이슈로만 남고 사람에게 자동 전달되지 않는다. Sentry 알림 규칙에서 태그 `alert.key`가 다음인 이슈를 Discord·Slack·이메일로 보낸다. 새 key를 만들면 이 목록과 알림 규칙에 함께 더한다.
 
-`notification.email.*`, `billing.subscription.webhook.processing-failed`, `billing.subscription.webhook.invalid`, `billing.subscription.reconcile.failed`, `operations.admin-notification.rejected`, `ai.*`(예산 초과·결제 회로·가격표 없는 모델), `weather.*`(WeatherKit 호출량), `access.quota.*`(돌려주지 못한 예약), `planning.todo-series.*`(회차 채우기 실패), `planning.todo-timezone-rebase-failed`, `social.invite-reward.*`(초대 보상 재시도 소진).
+`notification.email.*`, `billing.subscription.webhook.processing-failed`, `billing.subscription.webhook.invalid`, `billing.subscription.reconcile.failed`, `operations.admin-notification.rejected`, `ai.*`(예산 초과·결제 회로·가격표 없는 모델), `weather.*`(WeatherKit 호출량), `access.quota.*`(돌려주지 못한 예약), `planning.todo-series.*`(회차 채우기 실패), `planning.todo-timezone-rebase-failed`, `social.invite-reward.*`(초대 보상 재시도 소진), `database.unique-constraint.unknown`(저장소가 번역하지 않은 unique 충돌), `runtime.*`(풀 대기 지속·이벤트 루프 지연·힙 사용률).
 
 결제 웹훅 실패를 Discord로 보내는 규칙은 표시할 tag에 `storeEnvironment`를 넣어 SANDBOX와 PRODUCTION을 구분한다.
 
@@ -73,4 +73,6 @@
 
 ## 전환 중
 
-아직 옮기지 않은 Context는 `application/observability/<slice>/*.events.ts`·`*-alerts.ts`와 Nest Logger 연결 factory를 쓴다. `GlobalExceptionFilter`·`request-client.store`·`main.ts`의 직접 Sentry 호출과 `runtime-stats`는 platform 정리 때 포트 뒤로 옮긴다. 옮긴 Context는 `apps/api/architecture.ratchet.json`의 `migratedContexts`에 있다.
+- Sentry 직접 호출은 `platform/observability/sentry-*`(경보·예외 보고 어댑터, 요청 ID 태그·종료 flush)와 `instrument.ts`에만 있다. `app.module`의 `SentryModule.forRoot()`는 SDK 설정 모듈이라 그대로 둔다.
+- [runtime-stats](../src/platform/observability/runtime-stats.ts)는 60초마다 표본을 재서 `/health`의 `runtime` 상세(항상 up)에 싣고, 판정은 순수 함수 `evaluateRuntimeSample`이다. Swagger 설명은 계약 지문 때문에 바꾸지 않았다.
+- platform 로그 이벤트 상수는 [platform.log-events.ts](../src/platform/logging/platform.log-events.ts)다. 아직 옮기지 않은 Context는 `application/observability/<slice>/*.events.ts`·`*-alerts.ts`와 Nest Logger 연결 factory를 쓴다. 옮긴 Context는 `apps/api/architecture.ratchet.json`의 `migratedContexts`에 있다.

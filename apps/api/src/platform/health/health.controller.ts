@@ -13,6 +13,7 @@ import { ApiDoc, SWAGGER_TAGS } from "#api/platform/http/swagger/index";
 import { DatabaseHealthIndicator } from "./indicators/database.health.js";
 import { JobRuntimeHealthIndicator } from "./indicators/job-runtime.health.js";
 import { OutboundHealthIndicator } from "./indicators/outbound.health.js";
+import { RuntimeStatsHealthIndicator } from "./indicators/runtime-stats.health.js";
 
 function describeHealthResponse(status: "ok" | "error"): SchemaObject {
   const indicator: SchemaObject = {
@@ -43,6 +44,7 @@ export class HealthController {
     private readonly databaseHealth: DatabaseHealthIndicator,
     private readonly jobRuntimeHealth: JobRuntimeHealthIndicator,
     private readonly outboundHealth: OutboundHealthIndicator,
+    private readonly runtimeStatsHealth: RuntimeStatsHealthIndicator,
     config: TypedConfigService,
   ) {
     this.#instanceId = config.instanceId ?? randomUUID().slice(0, 8);
@@ -125,6 +127,7 @@ curl https://api.aido.com/health
       () => this.databaseHealth.isHealthy("database"),
       () => this.jobRuntimeHealth.isHealthy("queues"),
       () => this.outboundHealth.isHealthy("outbound"),
+      () => this.runtimeStatsHealth.isHealthy("runtime"),
     ]);
     return { ...result, instanceId: this.#instanceId };
   }

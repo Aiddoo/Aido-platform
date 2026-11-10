@@ -1,7 +1,7 @@
 import type koErrors from "../../i18n/ko/errors.json";
 
 /** 기준 언어 ko 카탈로그 모양. 없는 키·빠진 `count`는 컴파일 오류가 된다. */
-export interface Translations {
+interface Translations {
   readonly errors: typeof koErrors;
 }
 

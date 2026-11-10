@@ -20,7 +20,7 @@ import {
 
 import { TypedConfigService } from "#api/platform/config/services/config.service";
 import type { Database } from "#api/platform/database/database.client";
-import { PlatformLogEvent } from "#api/platform/logging/platform-log.events";
+import { PlatformLogEvent } from "#api/platform/logging/platform.log-events";
 import type {
   DeadLetterQueue,
   EnqueueJobOptions,

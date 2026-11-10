@@ -3,7 +3,7 @@ import { Inject, Injectable, Logger } from "@nestjs/common";
 import type { JobResult, JobWithMetadata } from "pg-boss";
 
 import type { Database } from "#api/platform/database/database.client";
-import { PlatformLogEvent } from "#api/platform/logging/platform-log.events";
+import { PlatformLogEvent } from "#api/platform/logging/platform.log-events";
 import {
   JobQueuePort,
   resolveDeadLetterJobPolicy,

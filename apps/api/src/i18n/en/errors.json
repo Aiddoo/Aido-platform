@@ -3,6 +3,7 @@
   "SYS_0002": "Invalid request",
   "SYS_0003": "This was changed somewhere else. Please try again.",
   "SYS_0004": "This was changed somewhere else at the same time. Please try again.",
+  "SYS_0005": "We're handling a lot of requests right now. Please try again in a moment.",
   "AUTH_0101": "Your sign-in info is invalid. Please sign in again.",
   "AUTH_0102": "Your session has expired. Please sign in again.",
   "AUTH_0103": "Your sign-in info is invalid. Please sign in again.",

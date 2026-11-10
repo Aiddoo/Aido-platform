@@ -5,7 +5,7 @@ import {
   type OperationalAlertPort,
 } from "#api/shared/application/ports/operational-alert.port";
 
-import { PlatformLogEvent } from "../logging/platform-log.events.js";
+import { PlatformLogEvent } from "../logging/platform.log-events.js";
 import {
   type OutboundCircuitEvent,
   OutboundPolicy,

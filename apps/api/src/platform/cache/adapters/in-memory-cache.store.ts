@@ -2,7 +2,7 @@ import { Logger } from "@nestjs/common";
 import { escapeRegExp } from "es-toolkit";
 import { LRUCache } from "lru-cache";
 
-import { PlatformLogEvent } from "#api/platform/logging/platform-log.events";
+import { PlatformLogEvent } from "#api/platform/logging/platform.log-events";
 
 import { CacheSingleflight } from "../cache-singleflight.js";
 import {

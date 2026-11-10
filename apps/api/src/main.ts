@@ -1,7 +1,6 @@
 import "./shared/domain/date/dayjs.setup.js";
 import { NestFactory } from "@nestjs/core";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
-import * as Sentry from "@sentry/nestjs";
 import { Logger } from "nestjs-pino";
 
 import { OperationsAdminModule } from "#api/modules/operations/operations-admin.public";
@@ -10,7 +9,8 @@ import { processEnv } from "#api/platform/config/env";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { configureApplication } from "#api/platform/http/configure-application";
 import { SWAGGER_TAG_DESCRIPTIONS, SWAGGER_TAGS } from "#api/platform/http/swagger/index";
-import { PlatformLogEvent } from "#api/platform/logging/platform-log.events";
+import { PlatformLogEvent } from "#api/platform/logging/platform.log-events";
+import { flushExceptionReports } from "#api/platform/observability/sentry-scope";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 
 import { AppModule } from "./app.module.js";
@@ -233,7 +233,7 @@ async function bootstrap() {
       });
       process.exitCode = 1;
     } finally {
-      await Sentry.close(2000);
+      await flushExceptionReports(2000);
     }
   };
   process.once("SIGTERM", () => {

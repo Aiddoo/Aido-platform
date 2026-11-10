@@ -23,7 +23,8 @@
 test/
   fixtures/<context>/<noun>.fixture.ts        # create<Noun>Fixture(overrides), DB seed는 insert<Noun>(db, overrides)
   doubles/<context>/in-memory-<noun>.repository.ts | fake-<capability>.ts | stub-<capability>.ts
-  doubles/platform/{fixed-clock,immediate-unit-of-work,recording-mutation-lock,silent-logger}.ts
+  doubles/platform/{fixed-clock,immediate-unit-of-work,recording-mutation-lock,recording-exception-reporter,recording-operational-alert,silent-logger}.ts
+  contracts/platform/cache-store.contract.ts
   contracts/<context>/<noun>-repository.contract.ts
   integration/<context>/<slice>/*.integration-spec.ts
   e2e/<context>/*.e2e-spec.ts, e2e/fixtures/released-*-openapi-contract.ts (불변)

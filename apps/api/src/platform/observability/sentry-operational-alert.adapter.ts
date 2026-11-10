@@ -7,7 +7,7 @@ import type {
 } from "#api/shared/application/ports/operational-alert.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 
-import { PlatformLogEvent } from "../logging/platform-log.events.js";
+import { PlatformLogEvent } from "../logging/platform.log-events.js";
 import { SENTRY_TAG } from "./sentry-keys.js";
 
 /**
