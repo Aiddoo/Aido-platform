@@ -9,8 +9,8 @@ import { eq } from "drizzle-orm";
 import request from "supertest";
 import { z } from "zod";
 
-import { RebaseTodoTimezone } from "#api/modules/planning/application/use-cases/todos/rebase-todo-timezone.use-case";
-import { TODO_TIMEZONE_REBASE_QUEUE } from "#api/modules/planning/infrastructure/jobs/todos/todo-timezone-rebase-queue.constants";
+import { RebaseTodoTimezone } from "#api/modules/planning/todos/application/use-cases/rebase-todo-timezone.use-case";
+import { TODO_TIMEZONE_REBASE_QUEUE } from "#api/modules/planning/todos/infrastructure/jobs/todo-timezone-rebase.queue";
 import { createEntityId } from "#api/platform/database/entity-id";
 import { todoSeries, userPreference } from "#api/platform/database/schema/index";
 import { JOB_RUNTIME } from "#api/shared/application/ports/index";

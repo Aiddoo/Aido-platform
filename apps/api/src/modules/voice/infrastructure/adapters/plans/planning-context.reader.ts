@@ -11,7 +11,7 @@ import {
 import {
   TODO_PLAN_READER,
   type TodoPlanReaderPort,
-} from "#api/modules/planning/planning-todos.public";
+} from "#api/modules/planning/todos/planning-todos.public";
 import { todayInTimezone } from "#api/shared/domain/date/utils/timezone";
 
 import type {

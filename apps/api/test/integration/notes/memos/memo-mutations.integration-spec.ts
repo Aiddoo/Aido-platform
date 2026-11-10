@@ -11,7 +11,7 @@ import { CreateMemoUseCase } from "#api/modules/notes/memos/application/use-case
 import { ReorderMemoUseCase } from "#api/modules/notes/memos/application/use-cases/reorder-memo.use-case";
 import { UpdateMemoUseCase } from "#api/modules/notes/memos/application/use-cases/update-memo.use-case";
 import { MemoId } from "#api/modules/notes/memos/domain/memo-id.vo";
-import { TodoCreatedEvent } from "#api/modules/planning/domain/events/todos/todo-created.event";
+import { TodoCreatedEvent } from "#api/modules/planning/shared/domain/todo-created.event";
 import {
   DatabaseRecordNotFoundError,
   databaseSqlState,

@@ -8,7 +8,7 @@ import {
   USER_LOCALE_PREFERENCE_READER,
 } from "#api/modules/ai-assistance/ai-assistance-parsing.public";
 import { USER_MUTATION_LOCK } from "#api/modules/identity/identity-user-access.public";
-import { STAGED_TODO_CREATOR } from "#api/modules/planning/planning-todos.public";
+import { STAGED_TODO_CREATOR } from "#api/modules/planning/todos/planning-todos.public";
 import { WEATHER_FORECAST_READER } from "#api/modules/weather/weather-forecast.public";
 import {
   AFTER_COMMIT_TASK_REGISTRY,

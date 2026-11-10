@@ -1,7 +1,7 @@
 import { Module } from "@nestjs/common";
 
 import { NotificationDeliveryModule } from "#api/modules/notification/notification-delivery.public";
-import { PlanningTodosModule } from "#api/modules/planning/planning-todos.public";
+import { PlanningTodosModule } from "#api/modules/planning/todos/planning-todos.public";
 import { SocialBlocksModule, USER_BLOCK_READER } from "#api/modules/social/social-blocks.public";
 
 import { TODO_COMMENT_ACCOUNT_CLEANUP } from "./application/ports/comments/todo-comment-account-cleanup.port.js";

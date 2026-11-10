@@ -3,26 +3,35 @@ import { ErrorCode } from "@aido/api/errors";
 import type { TodoVisibility } from "@aido/api/vocabulary";
 import { isUndefined, omitBy } from "es-toolkit";
 
-import type {
-  FindFriendTodosParams,
-  FindTodosParams,
-} from "#api/modules/planning/application/models/todos/todo.types";
-import type { TodoSeriesOwnerPort } from "#api/modules/planning/application/ports/series/todo-series-owner.port";
+import { TodoId } from "#api/modules/planning/shared/domain/todo-id.vo";
+import { TodoItem } from "#api/modules/planning/shared/domain/todo-item.entity";
+import {
+  TodoSchedule,
+  type TodoScheduleProps,
+} from "#api/modules/planning/shared/domain/todo-schedule.vo";
+import { Todo, type TodoCreationPlan } from "#api/modules/planning/shared/domain/todo.aggregate";
+import type { TodoSeriesOwnerPort } from "#api/modules/planning/todo-series/application/ports/todo-series-owner.port";
 import type {
   TodoSeriesRef,
   DueTodoSeriesQuery,
   TodoSeriesRepositoryPort,
-} from "#api/modules/planning/application/ports/series/todo-series.repository.port";
-import type { TodoCachePort } from "#api/modules/planning/application/ports/todos/todo-cache.port";
-import type { TodoOwnerTimezonePort } from "#api/modules/planning/application/ports/todos/todo-owner-timezone.port";
+} from "#api/modules/planning/todo-series/application/ports/todo-series.repository.port";
+import type { SeriesOwnerActivity } from "#api/modules/planning/todo-series/domain/series-dormancy.domain-service";
+import { TodoSeries } from "#api/modules/planning/todo-series/domain/todo-series.aggregate";
+import type { TodoCachePort } from "#api/modules/planning/todos/application/ports/todo-cache.port";
+import type { TodoOwnerTimezonePort } from "#api/modules/planning/todos/application/ports/todo-owner-timezone.port";
+import type {
+  FindFriendTodosParams,
+  FindTodosParams,
+} from "#api/modules/planning/todos/application/ports/todo-read.repository.port";
 import type {
   TodoReadRepositoryPort,
   TodaySummaryTodoRow,
-} from "#api/modules/planning/application/ports/todos/todo-read.repository.port";
+} from "#api/modules/planning/todos/application/ports/todo-read.repository.port";
 import type {
   TodoReminderPort,
   TodoReminderSchedule,
-} from "#api/modules/planning/application/ports/todos/todo-reminder.port";
+} from "#api/modules/planning/todos/application/ports/todo-reminder-scheduler.port";
 import type {
   CreatedOccurrence,
   OccurrencePatch,
@@ -35,19 +44,7 @@ import type {
   TodoOccurrencePlan,
   TodoRepositoryPort,
   TodoUpdatePatch,
-} from "#api/modules/planning/application/ports/todos/todo.repository.port";
-import { TodoSeries } from "#api/modules/planning/domain/aggregates/series/todo-series.aggregate";
-import {
-  Todo,
-  type TodoCreationPlan,
-} from "#api/modules/planning/domain/aggregates/todos/todo.aggregate";
-import { TodoItem } from "#api/modules/planning/domain/entities/todos/todo-item.entity";
-import type { SeriesOwnerActivity } from "#api/modules/planning/domain/policies/series/series-dormancy.policy";
-import { TodoId } from "#api/modules/planning/domain/value-objects/todos/todo-id.vo";
-import {
-  TodoSchedule,
-  type TodoScheduleProps,
-} from "#api/modules/planning/domain/value-objects/todos/todo-schedule.vo";
+} from "#api/modules/planning/todos/application/ports/todo.repository.port";
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { CursorPaginatedResponse } from "#api/shared/application/pagination/index";
 import type {

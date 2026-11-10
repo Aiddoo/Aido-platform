@@ -2,7 +2,7 @@ import type {
   CreateTodoData,
   StagedTodoCreation,
   StagedTodoCreatorPort,
-} from "#api/modules/planning/planning-todos.public";
+} from "#api/modules/planning/todos/planning-todos.public";
 import type { AfterCommitTaskRegistryPort } from "#api/shared/application/ports/after-commit-task.registry.port";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import {

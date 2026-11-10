@@ -4,7 +4,7 @@ import {
   type CreateTodoData,
   type StagedTodoCreation,
   StagedTodoCreatorPort,
-} from "#api/modules/planning/planning-todos.public";
+} from "#api/modules/planning/todos/planning-todos.public";
 import { TodoBuilder } from "#test/builders/todo.builder";
 import { createTodoResponseFixture } from "#test/fixtures/todo-response.fixture";
 

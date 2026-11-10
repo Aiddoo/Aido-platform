@@ -1,6 +1,6 @@
 import type { Provider } from "@nestjs/common";
 
-import { StagedTodoCreatorPort } from "#api/modules/planning/planning-todos.public";
+import { StagedTodoCreatorPort } from "#api/modules/planning/todos/planning-todos.public";
 import { loggerFor, provideUseCase } from "#api/platform/di/provide-use-case";
 import { AfterCommitTaskRegistryPort } from "#api/shared/application/ports/after-commit-task.registry.port";
 import { ClockPort } from "#api/shared/application/ports/clock.port";

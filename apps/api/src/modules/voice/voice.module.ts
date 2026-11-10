@@ -7,7 +7,7 @@ import { AiAssistanceParsingModule } from "#api/modules/ai-assistance/ai-assista
 import { AiAssistancePlanningModule } from "#api/modules/ai-assistance/ai-assistance-planning.public";
 import { NotesMemosModule } from "#api/modules/notes/memos/notes-memos.public";
 import { PlanningCategoriesModule } from "#api/modules/planning/planning-categories.public";
-import { PlanningTodosModule } from "#api/modules/planning/planning-todos.public";
+import { PlanningTodosModule } from "#api/modules/planning/todos/planning-todos.public";
 import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
 
 import { PLAN_APPLICATION_REPOSITORY } from "./application/ports/plans/plan-application.repository.port.js";

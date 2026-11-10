@@ -20,15 +20,15 @@ import { Test, type TestingModule } from "@nestjs/testing";
 import { vi } from "vitest";
 
 import { USER_STREAK_ACCESS } from "#api/modules/identity/identity-settings.public";
-import { STREAK_PORT } from "#api/modules/planning/application/ports/todos/streak.port";
-import { TODO_READ_REPOSITORY } from "#api/modules/planning/application/ports/todos/todo-read.repository.port";
-import { TodoSeriesCatchUp } from "#api/modules/planning/application/services/series/todo-series-catch-up.service";
-import { GetTodoSummary } from "#api/modules/planning/application/use-cases/todos/get-todo-summary.use-case";
-import { StreakAdapter } from "#api/modules/planning/infrastructure/adapters/todos/streak.adapter";
+import { TodoSeriesCatchUp } from "#api/modules/planning/todo-series/application/use-cases/catch-up-todo-series.use-case";
+import { STREAK_PORT } from "#api/modules/planning/todos/application/ports/streak.port";
+import { TODO_READ_REPOSITORY } from "#api/modules/planning/todos/application/ports/todo-read.repository.port";
+import { GetTodoSummary } from "#api/modules/planning/todos/application/use-cases/get-todo-summary.use-case";
+import { StreakAdapter } from "#api/modules/planning/todos/infrastructure/adapters/streak.adapter";
 import { createTodoReadRepositoryMock } from "#test/mocks/ports/index";
 import { suppressLogger } from "#test/setup/suppress-logger";
 
-import { getTodoSummaryProvider } from "../../src/modules/planning/planning-todos-application.providers.js";
+import { getTodoSummaryProvider } from "../../src/modules/planning/todos/planning-todos-application.providers.js";
 
 describe("GetTodoSummary 통합 테스트 (Mock DB)", () => {
   let module: TestingModule;

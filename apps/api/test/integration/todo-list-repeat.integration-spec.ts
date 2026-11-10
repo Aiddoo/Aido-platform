@@ -1,6 +1,6 @@
 import { omit } from "es-toolkit";
 
-import { DrizzleTodoReadRepository } from "#api/modules/planning/infrastructure/persistence/todos/drizzle-todo-read.repository";
+import { DrizzleTodoReadRepository } from "#api/modules/planning/todos/infrastructure/persistence/drizzle-todo-read.repository";
 import { createEntityId } from "#api/platform/database/entity-id";
 import {
   todo,

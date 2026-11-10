@@ -3,7 +3,7 @@ import { Inject, Injectable } from "@nestjs/common";
 import {
   TODO_VIEW_CACHE_INVALIDATOR,
   type TodoViewCacheInvalidatorPort,
-} from "#api/modules/planning/planning-todos.public";
+} from "#api/modules/planning/todos/planning-todos.public";
 
 import type { TodoViewCachePort } from "../../../application/ports/comments/todo-view-cache.port.js";
 

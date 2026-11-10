@@ -25,7 +25,7 @@ import { GetAiDataSharingConsentUseCase } from "#api/modules/identity/preference
 import { DrizzleUserConsentRepository } from "#api/modules/identity/preferences/infrastructure/persistence/drizzle-user-consent.repository";
 import { DrizzleUserRepository } from "#api/modules/identity/users/infrastructure/persistence/drizzle-user.repository";
 import { DrizzleClientAppVersionReader } from "#api/modules/notification/infrastructure/persistence/delivery/drizzle-client-app-version.reader";
-import type { StagedTodoCreatorPort } from "#api/modules/planning/application/ports/todos/staged-todo-creator.port";
+import type { StagedTodoCreatorPort } from "#api/modules/planning/todos/application/ports/staged-todo-creator.port";
 import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
 import { CacheService } from "#api/platform/cache/cache.service";
 import { databaseSqlState, requireRecord } from "#api/platform/database/database-error.util";

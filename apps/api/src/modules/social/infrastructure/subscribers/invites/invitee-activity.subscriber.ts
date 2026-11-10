@@ -1,7 +1,10 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import { OnEvent } from "@nestjs/event-emitter";
 
-import { TODO_EVENTS, type TodoToggledEvent } from "#api/modules/planning/planning-todos.public";
+import {
+  TODO_EVENTS,
+  type TodoToggledEvent,
+} from "#api/modules/planning/todos/planning-todos.public";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import { now } from "#api/shared/domain/date/utils/core";
 

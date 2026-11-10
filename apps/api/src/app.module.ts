@@ -25,7 +25,7 @@ import { NotificationDeliveryModule } from "#api/modules/notification/notificati
 import { NotificationRemindersModule } from "#api/modules/notification/notification-reminders.public";
 import { OperationsModule } from "#api/modules/operations/operations.module";
 import { PlanningCategoriesModule } from "#api/modules/planning/planning-categories.public";
-import { PlanningTodosModule } from "#api/modules/planning/planning-todos.public";
+import { PlanningTodosModule } from "#api/modules/planning/todos/planning-todos.public";
 import { SocialBlocksModule } from "#api/modules/social/social-blocks.public";
 import { SocialCheersModule } from "#api/modules/social/social-cheers.public";
 import { SocialFriendsModule } from "#api/modules/social/social-friends.public";

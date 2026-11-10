@@ -17,7 +17,7 @@ import {
   type TodoToggledEvent,
   type TodoUpdatedEvent,
   type TodoVisibilityChangedEvent,
-} from "#api/modules/planning/planning-todos.public";
+} from "#api/modules/planning/todos/planning-todos.public";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 
 import { InsightsLogEvent } from "../../../application/observability/insights-log.events.js";

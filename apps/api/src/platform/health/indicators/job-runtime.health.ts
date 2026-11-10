@@ -17,8 +17,8 @@ import { EMAIL_DELIVERY_QUEUE } from "#api/modules/notification/notification-ema
 import { TIMEZONE_REMINDER_QUEUE } from "#api/modules/notification/notification-reminders-jobs.public";
 import { TODO_REMINDER_QUEUE } from "#api/modules/notification/notification-reminders.public";
 import { RETENTION_QUEUE } from "#api/modules/notification/notification-retention-jobs.public";
-import { TODO_SERIES_MATERIALIZATION_QUEUE } from "#api/modules/planning/planning-todo-series-jobs.public";
-import { TODO_TIMEZONE_REBASE_QUEUE } from "#api/modules/planning/planning-todo-timezone-jobs.public";
+import { TODO_SERIES_MATERIALIZATION_QUEUE } from "#api/modules/planning/todo-series/planning-todo-series-jobs.public";
+import { TODO_TIMEZONE_REBASE_QUEUE } from "#api/modules/planning/todos/planning-todo-timezone-jobs.public";
 import {
   INVITE_MAINTENANCE_QUEUE,
   INVITE_REWARD_QUEUE,

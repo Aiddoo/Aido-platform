@@ -30,7 +30,7 @@ import {
 import {
   TODO_CACHE_TTL_MS,
   TodoCacheKey,
-} from "#api/modules/planning/infrastructure/cache/todos/todo-cache.keyspace";
+} from "#api/modules/planning/todos/infrastructure/cache/todo-cache.keyspace";
 import {
   FollowCacheKey,
   FOLLOW_CACHE_TTL_MS,

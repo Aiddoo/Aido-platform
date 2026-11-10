@@ -3,7 +3,7 @@ import { Module } from "@nestjs/common";
 import { AccessModule } from "#api/modules/access/access-entitlement.public";
 import { NotificationQueueModule } from "#api/modules/notification/notification-delivery-jobs.public";
 import { TimezoneReminderQueueModule } from "#api/modules/notification/notification-reminders-jobs.public";
-import { TodoTimezoneRebaseQueueModule } from "#api/modules/planning/planning-todo-timezone-jobs.public";
+import { TodoTimezoneRebaseQueueModule } from "#api/modules/planning/todos/planning-todo-timezone-jobs.public";
 
 import {
   AI_DATA_SHARING_CONSENT_READER,

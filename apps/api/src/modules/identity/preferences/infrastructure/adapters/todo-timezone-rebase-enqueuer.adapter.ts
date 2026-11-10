@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 
-import { TodoTimezoneRebaseQueueService } from "#api/modules/planning/planning-todo-timezone-jobs.public";
+import { TodoTimezoneRebaseQueueService } from "#api/modules/planning/todos/planning-todo-timezone-jobs.public";
 
 import type { TodoTimezoneRebaseEnqueuerPort } from "../../application/ports/todo-timezone-rebase-enqueuer.port.js";
 

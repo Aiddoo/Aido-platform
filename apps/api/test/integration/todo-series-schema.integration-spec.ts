@@ -4,9 +4,9 @@ import { join } from "node:path";
 import { and, eq, sql } from "drizzle-orm";
 import { omit } from "es-toolkit";
 
-import { TodoSeries } from "#api/modules/planning/domain/aggregates/series/todo-series.aggregate";
-import { RepeatRule } from "#api/modules/planning/domain/value-objects/series/repeat-rule.vo";
-import { DrizzleTodoSeriesRepository } from "#api/modules/planning/infrastructure/persistence/series/drizzle-todo-series.repository";
+import { RepeatRule } from "#api/modules/planning/todo-series/domain/repeat-rule.vo";
+import { TodoSeries } from "#api/modules/planning/todo-series/domain/todo-series.aggregate";
+import { DrizzleTodoSeriesRepository } from "#api/modules/planning/todo-series/infrastructure/persistence/drizzle-todo-series.repository";
 import { createEntityId } from "#api/platform/database/entity-id";
 import {
   todo,

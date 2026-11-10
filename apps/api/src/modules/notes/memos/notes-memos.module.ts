@@ -1,6 +1,6 @@
 import { Module } from "@nestjs/common";
 
-import { PlanningTodosModule } from "#api/modules/planning/planning-todos.public";
+import { PlanningTodosModule } from "#api/modules/planning/todos/planning-todos.public";
 
 import { PlanMemoWriterPort } from "./application/ports/plan-memo-writer.port.js";
 import { NOTES_MEMOS_PROVIDERS } from "./notes-memos.providers.js";

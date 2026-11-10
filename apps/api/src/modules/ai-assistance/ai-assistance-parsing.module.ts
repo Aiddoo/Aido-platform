@@ -9,7 +9,7 @@ import { IdentityUserAccessModule } from "#api/modules/identity/identity-user-ac
 import { NotificationDeliveryModule } from "#api/modules/notification/notification-delivery.public";
 
 import { PlanningCategoriesModule } from "../planning/planning-categories.public.js";
-import { PlanningTodosModule } from "../planning/planning-todos.public.js";
+import { PlanningTodosModule } from "../planning/todos/planning-todos.public.js";
 import { AiAssistanceGenerationModule } from "./ai-assistance-generation.module.js";
 import { AI_PARSING_PROVIDERS } from "./ai-assistance-parsing.providers.js";
 import { AI_DATA_SHARING_CONSENT_DECISION_READER } from "./application/ports/parsing/ai-data-sharing-consent.reader.port.js";

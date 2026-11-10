@@ -9,7 +9,7 @@ import {
   USER_ACTIVITY_READER,
   type UserActivityReaderPort,
 } from "#api/modules/identity/identity-user-access.public";
-import { isSeriesOwnerDormant } from "#api/modules/planning/planning-todo-series-dormancy.public";
+import { isSeriesOwnerDormant } from "#api/modules/planning/todo-series/planning-todo-series-dormancy.public";
 import { now } from "#api/shared/domain/date/utils/core";
 import { toDateString } from "#api/shared/domain/date/utils/format";
 

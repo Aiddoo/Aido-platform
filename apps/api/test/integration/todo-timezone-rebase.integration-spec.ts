@@ -9,20 +9,20 @@ import { RefreshPushTimezoneUseCase } from "#api/modules/identity/preferences/ap
 import { DrizzleUserPreferenceRepository } from "#api/modules/identity/preferences/infrastructure/persistence/drizzle-user-preference.repository";
 import { TODO_REMINDER_QUEUE } from "#api/modules/notification/infrastructure/jobs/reminders/todo-reminder-queue.constants";
 import { TodoReminderSchedulerAdapter } from "#api/modules/notification/infrastructure/jobs/reminders/todo-reminder-scheduler.adapter";
-import { TodoSeriesDueRunner } from "#api/modules/planning/application/services/series/todo-series-due-runner.service";
-import { MaterializeDueTodoSeries } from "#api/modules/planning/application/use-cases/series/materialize-due-todo-series.use-case";
-import { CreateTodo } from "#api/modules/planning/application/use-cases/todos/create-todo.use-case";
-import { EditTodo } from "#api/modules/planning/application/use-cases/todos/edit-todo.use-case";
-import { RebaseTodoTimezone } from "#api/modules/planning/application/use-cases/todos/rebase-todo-timezone.use-case";
-import { TodoReminderAdapter } from "#api/modules/planning/infrastructure/adapters/todos/todo-reminder.adapter";
+import { MaterializeDueTodoSeries } from "#api/modules/planning/todo-series/application/use-cases/materialize-due-todo-series.use-case";
+import { TodoSeriesDueRunner } from "#api/modules/planning/todo-series/application/use-cases/materialize-todo-series.use-case";
+import { DrizzleTodoSeriesRepository } from "#api/modules/planning/todo-series/infrastructure/persistence/drizzle-todo-series.repository";
+import { CreateTodo } from "#api/modules/planning/todos/application/use-cases/create-todo.use-case";
+import { EditTodo } from "#api/modules/planning/todos/application/use-cases/edit-todo.use-case";
+import { RebaseTodoTimezone } from "#api/modules/planning/todos/application/use-cases/rebase-todo-timezone.use-case";
+import { TodoReminderAdapter } from "#api/modules/planning/todos/infrastructure/adapters/todo-reminder-scheduler.adapter";
+import { TodoTimezoneRebaseQueueService } from "#api/modules/planning/todos/infrastructure/jobs/todo-timezone-rebase-enqueuer.adapter";
 import {
   TODO_TIMEZONE_REBASE_QUEUE,
   TODO_TIMEZONE_REBASE_WINDOW_MS,
   todoTimezoneRebaseJobSchema,
-} from "#api/modules/planning/infrastructure/jobs/todos/todo-timezone-rebase-queue.constants";
-import { TodoTimezoneRebaseQueueService } from "#api/modules/planning/infrastructure/jobs/todos/todo-timezone-rebase-queue.service";
-import { DrizzleTodoSeriesRepository } from "#api/modules/planning/infrastructure/persistence/series/drizzle-todo-series.repository";
-import { DrizzleTodoRepository } from "#api/modules/planning/infrastructure/persistence/todos/drizzle-todo.repository";
+} from "#api/modules/planning/todos/infrastructure/jobs/todo-timezone-rebase.queue";
+import { DrizzleTodoRepository } from "#api/modules/planning/todos/infrastructure/persistence/drizzle-todo.repository";
 import { createEntityId } from "#api/platform/database/entity-id";
 import { PostgresMutationLockAdapter } from "#api/platform/database/postgres-mutation-lock.adapter";
 import {

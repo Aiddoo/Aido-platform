@@ -4,18 +4,18 @@ import { TODO_SERIES_LIMITS } from "@aido/api/vocabulary";
 import { eq, sql } from "drizzle-orm";
 import { omit } from "es-toolkit";
 
-import type { StagedTodoCreatorPort } from "#api/modules/planning/application/ports/todos/staged-todo-creator.port";
+import { DeleteTodoCategory } from "#api/modules/planning/application/use-cases/categories/delete-todo-category.use-case";
+import { TodoToggledEvent } from "#api/modules/planning/shared/domain/todo-toggled.event";
+import type { StagedTodoCreatorPort } from "#api/modules/planning/todos/application/ports/staged-todo-creator.port";
 import {
   TODO_REPOSITORY,
   type TodoRepositoryPort,
-} from "#api/modules/planning/application/ports/todos/todo.repository.port";
-import { DeleteTodoCategory } from "#api/modules/planning/application/use-cases/categories/delete-todo-category.use-case";
-import { AddTodoItem } from "#api/modules/planning/application/use-cases/todos/add-todo-item.use-case";
-import { CreateTodo } from "#api/modules/planning/application/use-cases/todos/create-todo.use-case";
-import { ReorderTodoItems } from "#api/modules/planning/application/use-cases/todos/reorder-todo-items.use-case";
-import { ToggleTodoComplete } from "#api/modules/planning/application/use-cases/todos/toggle-todo-complete.use-case";
-import { TodoToggledEvent } from "#api/modules/planning/domain/events/todos/todo-toggled.event";
-import { STAGED_TODO_CREATOR } from "#api/modules/planning/planning-todos.public";
+} from "#api/modules/planning/todos/application/ports/todo.repository.port";
+import { AddTodoItem } from "#api/modules/planning/todos/application/use-cases/add-todo-item.use-case";
+import { CreateTodo } from "#api/modules/planning/todos/application/use-cases/create-todo.use-case";
+import { ReorderTodoItems } from "#api/modules/planning/todos/application/use-cases/reorder-todo-items.use-case";
+import { ToggleTodoComplete } from "#api/modules/planning/todos/application/use-cases/toggle-todo-complete.use-case";
+import { STAGED_TODO_CREATOR } from "#api/modules/planning/todos/planning-todos.public";
 import { DatabaseRecordNotFoundError } from "#api/platform/database/database-error.util";
 import { createEntityId } from "#api/platform/database/entity-id";
 import {

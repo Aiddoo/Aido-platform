@@ -11,18 +11,18 @@ import {
   type TodoSeriesOwnerDormancyPort,
 } from "#api/modules/notification/application/ports/reminders/todo-series-owner-dormancy.port";
 import { DeleteTodoCategory } from "#api/modules/planning/application/use-cases/categories/delete-todo-category.use-case";
-import { MaterializeDueTodoSeries } from "#api/modules/planning/application/use-cases/series/materialize-due-todo-series.use-case";
+import { MaterializeDueTodoSeries } from "#api/modules/planning/todo-series/application/use-cases/materialize-due-todo-series.use-case";
 import {
   UpdateFollowingTodos,
   type UpdateFollowingTodosInput,
-} from "#api/modules/planning/application/use-cases/series/update-following-todos.use-case";
-import { CreateTodo } from "#api/modules/planning/application/use-cases/todos/create-todo.use-case";
-import { DeleteTodo } from "#api/modules/planning/application/use-cases/todos/delete-todo.use-case";
+} from "#api/modules/planning/todo-series/application/use-cases/update-following-todos.use-case";
+import { CreateTodo } from "#api/modules/planning/todos/application/use-cases/create-todo.use-case";
+import { DeleteTodo } from "#api/modules/planning/todos/application/use-cases/delete-todo.use-case";
 import {
   EditTodo,
   type EditTodoInput,
-} from "#api/modules/planning/application/use-cases/todos/edit-todo.use-case";
-import { UpdateTodo } from "#api/modules/planning/application/use-cases/todos/update-todo.use-case";
+} from "#api/modules/planning/todos/application/use-cases/edit-todo.use-case";
+import { UpdateTodo } from "#api/modules/planning/todos/application/use-cases/update-todo.use-case";
 import { createEntityId } from "#api/platform/database/entity-id";
 import {
   todo,

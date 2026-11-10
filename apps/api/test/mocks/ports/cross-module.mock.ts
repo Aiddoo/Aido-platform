@@ -1,10 +1,10 @@
 import { vi } from "vitest";
 
-import type { CategoryOwnershipPort } from "#api/modules/planning/application/ports/todos/category-ownership.port";
-import type { FriendPort } from "#api/modules/planning/application/ports/todos/friend.port";
-import type { StreakPort } from "#api/modules/planning/application/ports/todos/streak.port";
-import type { TodoCachePort } from "#api/modules/planning/application/ports/todos/todo-cache.port";
-import type { TodoNotificationPort } from "#api/modules/planning/application/ports/todos/todo-notification.port";
+import type { CategoryOwnershipPort } from "#api/modules/planning/todos/application/ports/category-ownership.port";
+import type { FriendPort } from "#api/modules/planning/todos/application/ports/friend.port";
+import type { StreakPort } from "#api/modules/planning/todos/application/ports/streak.port";
+import type { TodoCachePort } from "#api/modules/planning/todos/application/ports/todo-cache.port";
+import type { TodoNotificationPort } from "#api/modules/planning/todos/application/ports/todo-notification.port";
 
 /**
  * 크로스모듈 포트 mock 팩토리 모음

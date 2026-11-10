@@ -1,10 +1,10 @@
 import type { Todo as TodoResponse } from "@aido/api";
 import { mock } from "vitest-mock-extended";
 
-import { TodoOccurrenceMaterializer } from "#api/modules/planning/application/services/series/todo-occurrence-materializer.service";
-import { TodoSeriesEditEffects } from "#api/modules/planning/application/services/series/todo-series-edit-effects.service";
-import { TodoTimezoneResolver } from "#api/modules/planning/application/services/todos/todo-timezone-resolver.service";
-import type { TodoSeries } from "#api/modules/planning/domain/aggregates/series/todo-series.aggregate";
+import { TodoOccurrenceMaterializer } from "#api/modules/planning/todo-series/application/use-cases/materialize-todo-occurrences.use-case";
+import { TodoSeriesEditEffects } from "#api/modules/planning/todo-series/application/use-cases/publish-todo-series-edit.use-case";
+import type { TodoSeries } from "#api/modules/planning/todo-series/domain/todo-series.aggregate";
+import { TodoTimezoneResolver } from "#api/modules/planning/todos/application/use-cases/resolve-todo-timezone.use-case";
 import { PaginationService } from "#api/shared/application/pagination/index";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { TodoBuilder } from "#test/builders/index";

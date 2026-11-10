@@ -10,16 +10,16 @@ import type {
 import { DrizzleUserRepository } from "#api/modules/identity/users/infrastructure/persistence/drizzle-user.repository";
 import { TodoSeriesOwnerDormancyAdapter } from "#api/modules/notification/infrastructure/adapters/reminders/todo-series-owner-dormancy.adapter";
 import { TodoReminderSchedulerAdapter } from "#api/modules/notification/infrastructure/jobs/reminders/todo-reminder-scheduler.adapter";
-import { TodoOccurrenceMaterializer } from "#api/modules/planning/application/services/series/todo-occurrence-materializer.service";
-import { TodoSeriesCatchUp } from "#api/modules/planning/application/services/series/todo-series-catch-up.service";
-import { TodoSeriesDueRunner } from "#api/modules/planning/application/services/series/todo-series-due-runner.service";
-import { TodoCreationEffects } from "#api/modules/planning/application/services/todos/todo-creation-effects.service";
-import { MaterializeDueTodoSeries } from "#api/modules/planning/application/use-cases/series/materialize-due-todo-series.use-case";
-import { TodoSeries } from "#api/modules/planning/domain/aggregates/series/todo-series.aggregate";
-import { RepeatRule } from "#api/modules/planning/domain/value-objects/series/repeat-rule.vo";
-import { TodoSeriesOwnerAdapter } from "#api/modules/planning/infrastructure/adapters/series/todo-series-owner.adapter";
-import { DrizzleTodoSeriesRepository } from "#api/modules/planning/infrastructure/persistence/series/drizzle-todo-series.repository";
-import { DrizzleTodoRepository } from "#api/modules/planning/infrastructure/persistence/todos/drizzle-todo.repository";
+import { TodoSeriesCatchUp } from "#api/modules/planning/todo-series/application/use-cases/catch-up-todo-series.use-case";
+import { MaterializeDueTodoSeries } from "#api/modules/planning/todo-series/application/use-cases/materialize-due-todo-series.use-case";
+import { TodoOccurrenceMaterializer } from "#api/modules/planning/todo-series/application/use-cases/materialize-todo-occurrences.use-case";
+import { TodoSeriesDueRunner } from "#api/modules/planning/todo-series/application/use-cases/materialize-todo-series.use-case";
+import { TodoCreationEffects } from "#api/modules/planning/todo-series/application/use-cases/publish-todo-creation.use-case";
+import { RepeatRule } from "#api/modules/planning/todo-series/domain/repeat-rule.vo";
+import { TodoSeries } from "#api/modules/planning/todo-series/domain/todo-series.aggregate";
+import { TodoSeriesOwnerAdapter } from "#api/modules/planning/todo-series/infrastructure/adapters/todo-series-owner.adapter";
+import { DrizzleTodoSeriesRepository } from "#api/modules/planning/todo-series/infrastructure/persistence/drizzle-todo-series.repository";
+import { DrizzleTodoRepository } from "#api/modules/planning/todos/infrastructure/persistence/drizzle-todo.repository";
 import { createEntityId } from "#api/platform/database/entity-id";
 import { PostgresMutationLockAdapter } from "#api/platform/database/postgres-mutation-lock.adapter";
 import {

@@ -3,7 +3,7 @@ import { Inject, Injectable } from "@nestjs/common";
 import {
   TODO_PLAN_READER,
   type TodoPlanReaderPort,
-} from "#api/modules/planning/planning-todos.public";
+} from "#api/modules/planning/todos/planning-todos.public";
 import { todayInTimezone } from "#api/shared/domain/date/utils/timezone";
 
 import type { UpcomingTodoReaderPort } from "../../../application/ports/parsing/upcoming-todo-reader.port.js";

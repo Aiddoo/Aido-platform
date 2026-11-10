@@ -5,10 +5,10 @@ import { omit } from "es-toolkit";
 import { PgBoss } from "pg-boss";
 
 import { TodoReminderSchedulerAdapter } from "#api/modules/notification/infrastructure/jobs/reminders/todo-reminder-scheduler.adapter";
-import { RebaseTodoTimezone } from "#api/modules/planning/application/use-cases/todos/rebase-todo-timezone.use-case";
-import { TodoReminderAdapter } from "#api/modules/planning/infrastructure/adapters/todos/todo-reminder.adapter";
-import { DrizzleTodoSeriesRepository } from "#api/modules/planning/infrastructure/persistence/series/drizzle-todo-series.repository";
-import { DrizzleTodoRepository } from "#api/modules/planning/infrastructure/persistence/todos/drizzle-todo.repository";
+import { DrizzleTodoSeriesRepository } from "#api/modules/planning/todo-series/infrastructure/persistence/drizzle-todo-series.repository";
+import { RebaseTodoTimezone } from "#api/modules/planning/todos/application/use-cases/rebase-todo-timezone.use-case";
+import { TodoReminderAdapter } from "#api/modules/planning/todos/infrastructure/adapters/todo-reminder-scheduler.adapter";
+import { DrizzleTodoRepository } from "#api/modules/planning/todos/infrastructure/persistence/drizzle-todo.repository";
 import { createEntityId } from "#api/platform/database/entity-id";
 import { PostgresMutationLockAdapter } from "#api/platform/database/postgres-mutation-lock.adapter";
 import {

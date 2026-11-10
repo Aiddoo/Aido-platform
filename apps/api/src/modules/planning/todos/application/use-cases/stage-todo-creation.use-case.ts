@@ -1,0 +1,78 @@
+import { ErrorCode } from "@aido/api/errors";
+
+import { ApplicationException } from "#api/shared/application/application.exception";
+
+import { toTodoSeriesResponse } from "../../../todo-series/application/read-models/todo-series.read-model.js";
+import type { TodoCreationEffects } from "../../../todo-series/application/use-cases/publish-todo-creation.use-case.js";
+import type { CreateTodoData, ResolvedCreateTodoData } from "../ports/staged-todo-creator.port.js";
+import type {
+  StagedTodoCreation,
+  StagedTodoCreatorPort,
+} from "../ports/staged-todo-creator.port.js";
+import type { TodoReadRepositoryPort } from "../ports/todo-read.repository.port.js";
+import type { TodoTimezoneResolver } from "./resolve-todo-timezone.use-case.js";
+import { planTodoCreation, type TodoCreationWriter } from "./write-todo-creation.use-case.js";
+
+interface StagedTodoCreatorDependencies {
+  readonly writer: Pick<TodoCreationWriter, "createSingle" | "startSeries">;
+  readonly effects: Pick<TodoCreationEffects, "publishSingle" | "publishSeriesStarted">;
+  readonly todoReadRepository: Pick<
+    TodoReadRepositoryPort,
+    "findByIdAndUserId" | "findManyBySeriesId"
+  >;
+  readonly timezoneResolver: Pick<TodoTimezoneResolver, "resolve">;
+}
+
+export class StagedTodoCreator implements StagedTodoCreatorPort {
+  readonly #dependencies: StagedTodoCreatorDependencies;
+
+  constructor(dependencies: StagedTodoCreatorDependencies) {
+    this.#dependencies = dependencies;
+  }
+
+  async stage(input: CreateTodoData): Promise<StagedTodoCreation> {
+    const timezone = await this.#dependencies.timezoneResolver.resolve(
+      input.userId,
+      input.timezone,
+    );
+    const resolved = { ...input, timezone };
+    return resolved.repeat == null
+      ? this.#stageSingle(resolved)
+      : this.#stageSeries(resolved, resolved.repeat);
+  }
+
+  async #stageSingle(input: ResolvedCreateTodoData): Promise<StagedTodoCreation> {
+    const created = await this.#dependencies.writer.createSingle(
+      planTodoCreation(input),
+      input.items,
+    );
+    const response = await this.#dependencies.todoReadRepository.findByIdAndUserId(
+      created.getId().getValue(),
+      input.userId,
+    );
+    if (response == null) {
+      throw new ApplicationException(ErrorCode.TODO_0801, { todoId: created.getId().getValue() });
+    }
+    return {
+      todos: [response],
+      series: null,
+      afterCommit: () => this.#dependencies.effects.publishSingle(created, input.userId),
+    };
+  }
+
+  async #stageSeries(
+    input: ResolvedCreateTodoData,
+    repeat: NonNullable<CreateTodoData["repeat"]>,
+  ): Promise<StagedTodoCreation> {
+    const { series, occurrences } = await this.#dependencies.writer.startSeries(input, repeat);
+    const todos = await this.#dependencies.todoReadRepository.findManyBySeriesId(
+      input.userId,
+      series.getId(),
+    );
+    return {
+      todos,
+      series: toTodoSeriesResponse(series),
+      afterCommit: () => this.#dependencies.effects.publishSeriesStarted(series, occurrences),
+    };
+  }
+}

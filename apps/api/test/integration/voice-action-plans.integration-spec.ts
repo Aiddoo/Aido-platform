@@ -7,7 +7,7 @@ import { AI_GENERATOR } from "#api/modules/ai-assistance/ai-assistance-generatio
 import {
   TODO_PLAN_READER,
   type TodoPlanReaderPort,
-} from "#api/modules/planning/planning-todos.public";
+} from "#api/modules/planning/todos/planning-todos.public";
 import { DigestVoiceNote } from "#api/modules/voice/application/use-cases/notes/digest-voice-note.use-case";
 import { ApplyActionPlan } from "#api/modules/voice/application/use-cases/plans/apply-action-plan.use-case";
 import { PurgePlanApplications } from "#api/modules/voice/application/use-cases/plans/purge-plan-applications.use-case";
