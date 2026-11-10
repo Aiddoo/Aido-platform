@@ -1,32 +1,18 @@
-import type { PaginationService } from "#api/shared/application/pagination/index";
+import { clampPageSize, toCursorPage } from "#api/shared/application/cursor-page";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import type {
-  BlockedUserRecord,
-  UserBlockRepositoryPort,
-} from "../ports/user-block.repository.port.js";
+import { UserBlockId } from "../../domain/user-block-id.vo.js";
+import type { BlockedUserReaderPort } from "../ports/blocked-user.reader.port.js";
+import type { BlockedUserListReadModel } from "../read-models/blocked-user.read-model.js";
 
-export interface GetBlockedUsersInput {
+export interface GetBlockedUsersQuery {
   readonly blockerId: string;
   readonly cursor?: string;
   readonly size?: number;
 }
 
-export interface GetBlockedUsersResult {
-  readonly items: BlockedUserRecord[];
-  readonly totalCount: number;
-  readonly hasMore: boolean;
-  readonly nextCursor: string | null;
-}
-
-interface GetBlockedUsersDependencies {
-  readonly userBlockRepository: Pick<
-    UserBlockRepositoryPort,
-    "findBlockedUsers" | "countBlockedUsers"
-  >;
-  readonly paginationService: Pick<
-    PaginationService,
-    "normalizeCursorPagination" | "createCursorPaginatedResponse"
-  >;
+export interface GetBlockedUsersDependencies {
+  readonly blockedUserReader: Pick<BlockedUserReaderPort, "listByBlockerId" | "countByBlockerId">;
 }
 
 export class GetBlockedUsersUseCase {
@@ -36,27 +22,21 @@ export class GetBlockedUsersUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: GetBlockedUsersInput): Promise<GetBlockedUsersResult> {
-    const { cursor, size } = this.#dependencies.paginationService.normalizeCursorPagination<string>(
-      { cursor: input.cursor, size: input.size },
-    );
-    const [items, totalCount] = await Promise.all([
-      this.#dependencies.userBlockRepository.findBlockedUsers({
-        blockerId: input.blockerId,
-        cursor,
-        size,
+  async execute(query: GetBlockedUsersQuery): Promise<BlockedUserListReadModel> {
+    const { blockedUserReader } = this.#dependencies;
+    const size = clampPageSize(query.size);
+    const blockerId = UserId.reconstitute(query.blockerId);
+    const [rows, totalCount] = await Promise.all([
+      blockedUserReader.listByBlockerId({
+        blockerId,
+        afterBlockId: query.cursor == null ? null : UserBlockId.reconstitute(query.cursor),
+        limit: size + 1,
       }),
-      this.#dependencies.userBlockRepository.countBlockedUsers(input.blockerId),
+      blockedUserReader.countByBlockerId(blockerId),
     ]);
-    const page = this.#dependencies.paginationService.createCursorPaginatedResponse<
-      BlockedUserRecord,
-      string
-    >({ items, size });
     return {
-      items: page.items,
+      page: toCursorPage({ rows, size, toCursor: (blockedUser) => blockedUser.blockId }),
       totalCount,
-      hasMore: page.pagination.hasNext,
-      nextCursor: page.pagination.nextCursor,
     };
   }
 }

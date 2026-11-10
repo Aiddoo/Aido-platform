@@ -17,6 +17,7 @@ import {
   CurrentUser,
   type CurrentUserPayload,
 } from "#api/modules/identity/identity-auth-http.public";
+import { API_VERSION } from "#api/platform/http/api-versioning";
 import { UserIdParamDto } from "#api/platform/http/dtos/index";
 import { AppVersion } from "#api/platform/http/request-client/index";
 import {
@@ -29,12 +30,15 @@ import {
   SWAGGER_TAGS,
 } from "#api/platform/http/swagger/index";
 import { THROTTLED_DESCRIPTION, ThrottleByUser } from "#api/platform/throttle/index";
-import { toISOString } from "#api/shared/domain/date/utils/format";
 
 import { BlockUserUseCase } from "../../../application/use-cases/block-user.use-case.js";
 import { GetBlockedUsersUseCase } from "../../../application/use-cases/get-blocked-users.use-case.js";
 import { UnblockUserUseCase } from "../../../application/use-cases/unblock-user.use-case.js";
-import { UserBlockMapper } from "./user-block-response.mapper.js";
+import {
+  toBlockedUsersResponse,
+  toBlockUserResponse,
+  toUnblockUserResponse,
+} from "./user-block-response.mapper.js";
 import {
   BlockedUsersResponseDto,
   BlockUserResponseDto,
@@ -52,7 +56,7 @@ const BLOCK_THROTTLE = { ttl: 60_000, limit: 30 } as const;
 
 @ApiTags(SWAGGER_TAGS.BLOCKS)
 @ApiBearerAuth()
-@Controller("blocks")
+@Controller({ path: "blocks", version: API_VERSION.V1 })
 export class UserBlockController {
   readonly #blockUserUseCase: BlockUserUseCase;
   readonly #unblockUserUseCase: UnblockUserUseCase;
@@ -92,16 +96,11 @@ export class UserBlockController {
     @CurrentUser() user: CurrentUserPayload,
     @Param({ schema: UserIdParamDto }) params: UserIdParamDto,
   ): Promise<BlockUserResponseDto> {
-    const result = await this.#blockUserUseCase.execute({
+    const block = await this.#blockUserUseCase.execute({
       blockerId: user.userId,
       blockedId: params.userId,
     });
-
-    return {
-      message: "사용자를 차단했습니다.",
-      blockedUserId: result.block.blockedId,
-      blockedAt: toISOString(result.block.createdAt),
-    };
+    return toBlockUserResponse(block);
   }
 
   @Delete(":userId")
@@ -128,8 +127,7 @@ export class UserBlockController {
       blockerId: user.userId,
       blockedId: params.userId,
     });
-
-    return { message: "차단을 해제했습니다." };
+    return toUnblockUserResponse();
   }
 
   @Get()
@@ -155,17 +153,11 @@ export class UserBlockController {
     @Query({ schema: GetBlockedUsersQueryDto }) query: GetBlockedUsersQueryDto,
     @AppVersion() appVersion?: string,
   ): Promise<BlockedUsersResponseDto> {
-    const result = await this.#getBlockedUsersUseCase.execute({
+    const list = await this.#getBlockedUsersUseCase.execute({
       blockerId: user.userId,
       cursor: query.cursor,
       size: query.limit,
     });
-
-    return {
-      items: result.items.map((item) => UserBlockMapper.toBlockedUser(item, appVersion)),
-      totalCount: result.totalCount,
-      hasMore: result.hasMore,
-      nextCursor: result.nextCursor,
-    };
+    return toBlockedUsersResponse(list, appVersion);
   }
 }

@@ -7,6 +7,7 @@ import {
   CurrentUser,
   type CurrentUserPayload,
 } from "#api/modules/identity/identity-auth-http.public";
+import { API_VERSION } from "#api/platform/http/api-versioning";
 import {
   ApiBadRequestError,
   ApiCreatedResponse,
@@ -16,10 +17,10 @@ import {
   ApiUnauthorizedError,
   SWAGGER_TAGS,
 } from "#api/platform/http/swagger/index";
-import { toISOString } from "#api/shared/domain/date/utils/format";
 
 import { ResolveUserReportUseCase } from "../../../application/use-cases/resolve-user-report.use-case.js";
 import { RESOLVE_USER_REPORT_OPERATION_ID } from "./admin-user-report.constants.js";
+import { toResolveUserReportResponse } from "./user-report-response.mapper.js";
 import {
   ResolveUserReportDto,
   ResolveUserReportParamDto,
@@ -28,7 +29,7 @@ import {
 
 @ApiTags(SWAGGER_TAGS.ADMIN_REPORTS)
 @ApiBearerAuth()
-@Controller("admin/reports")
+@Controller({ path: "admin/reports", version: API_VERSION.V1 })
 export class AdminUserReportController {
   readonly #resolveUserReportUseCase: ResolveUserReportUseCase;
 
@@ -65,17 +66,6 @@ export class AdminUserReportController {
       adminId: admin.userId,
       note: dto.note,
     });
-    const { resolvedAt } = report;
-
-    return {
-      message: "신고를 처리 완료로 바꿨습니다.",
-      report: {
-        id: report.id,
-        status: report.status,
-        createdAt: toISOString(report.createdAt),
-        resolvedAt: resolvedAt == null ? null : toISOString(resolvedAt),
-        resolutionNote: report.resolutionNote,
-      },
-    };
+    return toResolveUserReportResponse(report);
   }
 }

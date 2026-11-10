@@ -1,55 +1,45 @@
-import { Logger, type FactoryProvider } from "@nestjs/common";
+import type { Provider } from "@nestjs/common";
 
-import { PaginationService } from "#api/shared/application/pagination/index";
-import { MUTATION_LOCK, UNIT_OF_WORK } from "#api/shared/application/ports/index";
+import { loggerFor, provideUseCase } from "#api/platform/di/provide-use-case";
+import { ClockPort } from "#api/shared/application/ports/clock.port";
+import { MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
+import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 
 import { FollowCachePort } from "../friends/application/ports/follow-cache.port.js";
-import { USER_BLOCK_REPOSITORY } from "./application/ports/user-block.repository.port.js";
+import { FollowCacheAdapter } from "../friends/infrastructure/adapters/follow-cache.adapter.js";
+import { BlockedUserReaderPort } from "./application/ports/blocked-user.reader.port.js";
+import {
+  USER_BLOCK_READER,
+  UserBlockReaderPort,
+} from "./application/ports/user-block.reader.port.js";
+import { UserBlockRepositoryPort } from "./application/ports/user-block.repository.port.js";
 import { BlockUserUseCase } from "./application/use-cases/block-user.use-case.js";
 import { GetBlockedUsersUseCase } from "./application/use-cases/get-blocked-users.use-case.js";
 import { UnblockUserUseCase } from "./application/use-cases/unblock-user.use-case.js";
+import { DrizzleBlockedUserReader } from "./infrastructure/persistence/drizzle-blocked-user.reader.js";
+import { DrizzleUserBlockRepository } from "./infrastructure/persistence/drizzle-user-block.repository.js";
 
-export const blockUserProvider: FactoryProvider<BlockUserUseCase> = {
-  provide: BlockUserUseCase,
-  inject: [USER_BLOCK_REPOSITORY, UNIT_OF_WORK, MUTATION_LOCK, FollowCachePort],
-  useFactory: (
-    userBlockRepository: ConstructorParameters<typeof BlockUserUseCase>[0]["userBlockRepository"],
-    unitOfWork: ConstructorParameters<typeof BlockUserUseCase>[0]["unitOfWork"],
-    mutationLock: ConstructorParameters<typeof BlockUserUseCase>[0]["mutationLock"],
-    friendshipCache: ConstructorParameters<typeof BlockUserUseCase>[0]["friendshipCache"],
-  ) =>
-    new BlockUserUseCase({
-      userBlockRepository,
-      unitOfWork,
-      mutationLock,
-      friendshipCache,
-      logger: new Logger(BlockUserUseCase.name),
-    }),
-};
-
-export const unblockUserProvider: FactoryProvider<UnblockUserUseCase> = {
-  provide: UnblockUserUseCase,
-  inject: [USER_BLOCK_REPOSITORY, UNIT_OF_WORK, MUTATION_LOCK],
-  useFactory: (
-    userBlockRepository: ConstructorParameters<typeof UnblockUserUseCase>[0]["userBlockRepository"],
-    unitOfWork: ConstructorParameters<typeof UnblockUserUseCase>[0]["unitOfWork"],
-    mutationLock: ConstructorParameters<typeof UnblockUserUseCase>[0]["mutationLock"],
-  ) =>
-    new UnblockUserUseCase({
-      userBlockRepository,
-      unitOfWork,
-      mutationLock,
-      logger: new Logger(UnblockUserUseCase.name),
-    }),
-};
-
-export const getBlockedUsersProvider: FactoryProvider<GetBlockedUsersUseCase> = {
-  provide: GetBlockedUsersUseCase,
-  inject: [USER_BLOCK_REPOSITORY, PaginationService],
-  useFactory: (
-    userBlockRepository: ConstructorParameters<
-      typeof GetBlockedUsersUseCase
-    >[0]["userBlockRepository"],
-    paginationService: ConstructorParameters<typeof GetBlockedUsersUseCase>[0]["paginationService"],
-  ) => new GetBlockedUsersUseCase({ userBlockRepository, paginationService }),
-};
+export const SOCIAL_BLOCKS_PROVIDERS = [
+  DrizzleUserBlockRepository,
+  { provide: UserBlockRepositoryPort, useExisting: DrizzleUserBlockRepository },
+  { provide: UserBlockReaderPort, useExisting: DrizzleUserBlockRepository },
+  { provide: USER_BLOCK_READER, useExisting: UserBlockReaderPort },
+  { provide: BlockedUserReaderPort, useClass: DrizzleBlockedUserReader },
+  // 차단과 함께 끊는 친구 관계의 캐시는 friends와 같은 keyspace 어댑터로 비운다
+  { provide: FollowCachePort, useClass: FollowCacheAdapter },
+  provideUseCase(BlockUserUseCase, {
+    unitOfWork: UnitOfWorkPort,
+    mutationLock: MutationLockPort,
+    userBlockRepository: UserBlockRepositoryPort,
+    friendshipCache: FollowCachePort,
+    clock: ClockPort,
+    logger: loggerFor(BlockUserUseCase),
+  }),
+  provideUseCase(UnblockUserUseCase, {
+    unitOfWork: UnitOfWorkPort,
+    mutationLock: MutationLockPort,
+    userBlockRepository: UserBlockRepositoryPort,
+    logger: loggerFor(UnblockUserUseCase),
+  }),
+  provideUseCase(GetBlockedUsersUseCase, { blockedUserReader: BlockedUserReaderPort }),
+] satisfies Provider[];

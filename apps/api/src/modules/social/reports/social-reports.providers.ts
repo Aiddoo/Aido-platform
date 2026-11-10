@@ -1,39 +1,35 @@
-import { Logger, type FactoryProvider } from "@nestjs/common";
+import type { Provider } from "@nestjs/common";
 
-import { MUTATION_LOCK, UNIT_OF_WORK } from "#api/shared/application/ports/index";
+import { loggerFor, provideUseCase } from "#api/platform/di/provide-use-case";
+import { ClockPort } from "#api/shared/application/ports/clock.port";
+import { MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
+import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 
-import { USER_REPORT_NOTIFIER } from "./application/ports/user-report-notifier.port.js";
-import { USER_REPORT_REPOSITORY } from "./application/ports/user-report.repository.port.js";
+import { UserReportNotifierPort } from "./application/ports/user-report-notifier.port.js";
+import { UserReportRepositoryPort } from "./application/ports/user-report.repository.port.js";
 import { ReportContentUseCase } from "./application/use-cases/report-content.use-case.js";
 import { ResolveUserReportUseCase } from "./application/use-cases/resolve-user-report.use-case.js";
+import { EmailUserReportNotifierAdapter } from "./infrastructure/adapters/email-user-report-notifier.adapter.js";
+import { DrizzleUserReportRepository } from "./infrastructure/persistence/drizzle-user-report.repository.js";
 
-export const reportContentProvider: FactoryProvider<ReportContentUseCase> = {
-  provide: ReportContentUseCase,
-  inject: [USER_REPORT_REPOSITORY, USER_REPORT_NOTIFIER, UNIT_OF_WORK, MUTATION_LOCK],
-  useFactory: (
-    userReportRepository: ConstructorParameters<
-      typeof ReportContentUseCase
-    >[0]["userReportRepository"],
-    notifier: ConstructorParameters<typeof ReportContentUseCase>[0]["notifier"],
-    unitOfWork: ConstructorParameters<typeof ReportContentUseCase>[0]["unitOfWork"],
-    mutationLock: ConstructorParameters<typeof ReportContentUseCase>[0]["mutationLock"],
-  ) =>
-    new ReportContentUseCase({
-      userReportRepository,
-      notifier,
-      unitOfWork,
-      mutationLock,
-      logger: new Logger(ReportContentUseCase.name),
-    }),
-};
+export const SOCIAL_REPORTS_PROVIDERS = [
+  { provide: UserReportRepositoryPort, useClass: DrizzleUserReportRepository },
+  { provide: UserReportNotifierPort, useClass: EmailUserReportNotifierAdapter },
+  provideUseCase(ReportContentUseCase, {
+    unitOfWork: UnitOfWorkPort,
+    mutationLock: MutationLockPort,
+    userReportRepository: UserReportRepositoryPort,
+    notifier: UserReportNotifierPort,
+    clock: ClockPort,
+    logger: loggerFor(ReportContentUseCase),
+  }),
+] satisfies Provider[];
 
-export const resolveUserReportProvider: FactoryProvider<ResolveUserReportUseCase> = {
-  provide: ResolveUserReportUseCase,
-  inject: [USER_REPORT_REPOSITORY, UNIT_OF_WORK],
-  useFactory: (
-    userReportRepository: ConstructorParameters<
-      typeof ResolveUserReportUseCase
-    >[0]["userReportRepository"],
-    unitOfWork: ConstructorParameters<typeof ResolveUserReportUseCase>[0]["unitOfWork"],
-  ) => new ResolveUserReportUseCase({ userReportRepository, unitOfWork }),
-};
+export const SOCIAL_REPORTS_ADMIN_PROVIDERS = [
+  { provide: UserReportRepositoryPort, useClass: DrizzleUserReportRepository },
+  provideUseCase(ResolveUserReportUseCase, {
+    unitOfWork: UnitOfWorkPort,
+    userReportRepository: UserReportRepositoryPort,
+    clock: ClockPort,
+  }),
+] satisfies Provider[];

@@ -1,11 +1,9 @@
-import { ErrorCode } from "@aido/api/errors";
 import type { UserReportReason, UserReportTargetType } from "@aido/api/vocabulary";
 
-import { UserReportLockKeys } from "#api/modules/social/reports/application/reports.lock-keys";
-import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
-import { type MutationLockPort, type UnitOfWorkPort } from "#api/shared/application/ports/index";
-import { now } from "#api/shared/domain/date/utils/core";
+import type { ClockPort } from "#api/shared/application/ports/clock.port";
+import type { MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
+import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import {
@@ -14,13 +12,15 @@ import {
   hasReachedDailyReportLimit,
 } from "../../domain/user-report-submission.domain-service.js";
 import { UserReportTarget } from "../../domain/user-report-target.vo.js";
-import { UserReport, type UserReportCreationPlan } from "../../domain/user-report.aggregate.js";
-import { type UserReportNotifierPort } from "../ports/user-report-notifier.port.js";
-import { type UserReportRepositoryPort } from "../ports/user-report.repository.port.js";
+import { UserReport } from "../../domain/user-report.aggregate.js";
+import type { UserReportNotifierPort } from "../ports/user-report-notifier.port.js";
+import type { UserReportRepositoryPort } from "../ports/user-report.repository.port.js";
+import { toUserReportSubmission } from "../read-models/user-report-submission.read-model.js";
+import { dailyReportLimitReached, reportTargetUserNotFound } from "../reports.errors.js";
+import { UserReportLockKeys } from "../reports.lock-keys.js";
 import { UserReportLogEvent } from "../reports.log-events.js";
-import { buildUserReportSubmission } from "../user-report-submission.mapper.js";
 
-export interface ReportContentInput {
+export interface ReportContentCommand {
   readonly reporterId: string;
   readonly targetUserId: string;
   readonly targetType: UserReportTargetType;
@@ -29,29 +29,30 @@ export interface ReportContentInput {
   readonly detail?: string;
 }
 
-export interface ReportContentResult {
-  readonly report: UserReport;
-  /** 24시간 안에 같은 대상을 이미 신고해 새로 접수하지 않았으면 true */
-  readonly isDuplicate: boolean;
-}
-
-interface ReportContentDependencies {
-  readonly userReportRepository: Pick<
-    UserReportRepositoryPort,
-    "userExists" | "findRecentByTarget" | "countByReporterSince" | "create" | "findUserTags"
-  >;
-  readonly notifier: Pick<UserReportNotifierPort, "notifyOperators">;
+export interface ReportContentDependencies {
   readonly unitOfWork: UnitOfWorkPort;
   readonly mutationLock: MutationLockPort;
+  readonly userReportRepository: Pick<
+    UserReportRepositoryPort,
+    | "nextId"
+    | "existsActiveUser"
+    | "findRecentByTarget"
+    | "countByReporterSince"
+    | "save"
+    | "findUserTags"
+  >;
+  readonly notifier: Pick<UserReportNotifierPort, "notifyOperators">;
+  readonly clock: ClockPort;
   readonly logger: Pick<ApplicationLoggerPort, "log" | "warn">;
 }
 
-/**
- * 프로필·콘텐츠 신고를 접수하고 운영자에게 알린다.
- *
- * 같은 대상을 24시간 안에 다시 신고하면 기존 접수를 돌려줘 운영자 알림이 쌓이지 않게 한다.
- * 알림은 commit 뒤에 보내고, 실패해도 저장한 신고는 남겨 운영자가 DB에서 확인할 수 있게 한다.
- */
+interface Submission {
+  readonly report: UserReport;
+  readonly isDuplicate: boolean;
+}
+
+// 같은 대상을 24시간 안에 다시 신고하면 기존 접수를 돌려줘 운영자 알림이 쌓이지 않게 한다.
+// 알림은 커밋 뒤에 보내고, 실패해도 저장한 신고는 남겨 운영자가 DB에서 확인할 수 있게 한다
 export class ReportContentUseCase {
   readonly #dependencies: ReportContentDependencies;
 
@@ -59,96 +60,97 @@ export class ReportContentUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: ReportContentInput): Promise<ReportContentResult> {
-    const submittedAt = now();
-    const plan = UserReport.planCreation({
-      reporterId: input.reporterId,
-      targetUserId: input.targetUserId,
-      target: UserReportTarget.of(input.targetType, input.targetId ?? null),
-      reason: input.reason,
-      detail: input.detail,
-      createdAt: submittedAt,
+  async execute(command: ReportContentCommand): Promise<UserReport> {
+    const { unitOfWork, userReportRepository, clock, logger } = this.#dependencies;
+    // 대상 형식을 자기 신고보다 먼저 거부한다(출시 앱이 받는 오류 우선순위)
+    const target = UserReportTarget.create({
+      type: command.targetType,
+      contentId: command.targetId ?? null,
+    });
+    const created = UserReport.create({
+      id: await userReportRepository.nextId(),
+      reporterId: UserId.reconstitute(command.reporterId),
+      targetUserId: UserId.reconstitute(command.targetUserId),
+      target,
+      reason: command.reason,
+      detail: command.detail,
+      now: clock.now(),
     });
 
-    const result = await this.#dependencies.unitOfWork.run(() => this.#submit(plan));
+    const { report, isDuplicate } = await unitOfWork.run(() => this.#submit(created));
 
-    if (result.isDuplicate) {
-      this.#dependencies.logger.log({
+    if (isDuplicate) {
+      logger.log({
         event: UserReportLogEvent.DUPLICATE_IGNORED,
-        userId: input.reporterId,
-        reportId: result.report.id,
+        userId: command.reporterId,
+        reportId: report.id.value,
       });
-      return result;
+      return report;
     }
 
-    this.#dependencies.logger.log({
+    logger.log({
       event: UserReportLogEvent.SUBMITTED,
-      userId: input.reporterId,
-      targetUserId: input.targetUserId,
-      reportId: result.report.id,
-      targetType: input.targetType,
-      reason: input.reason,
+      userId: command.reporterId,
+      targetUserId: command.targetUserId,
+      reportId: report.id.value,
+      targetType: command.targetType,
+      reason: command.reason,
     });
-    await this.#notifyOperators(result.report);
-    return result;
+    await this.#notifyOperators(report);
+    return report;
   }
 
-  async #submit(plan: UserReportCreationPlan): Promise<ReportContentResult> {
-    // 같은 신고자의 연속 요청을 직렬화해 중복 판정과 하루 한도가 동시에 새지 않게 한다.
-    await this.#dependencies.mutationLock.acquire([
-      UserReportLockKeys.reporter(UserId.reconstitute(plan.reporterId)),
-    ]);
+  async #submit(report: UserReport): Promise<Submission> {
+    const { mutationLock, userReportRepository } = this.#dependencies;
+    // 같은 신고자의 연속 요청을 직렬화해 중복 판정과 하루 한도가 동시에 새지 않게 한다
+    await mutationLock.acquire([UserReportLockKeys.reporter(report.reporterId)]);
 
-    const isTargetActive = await this.#dependencies.userReportRepository.userExists(
-      plan.targetUserId,
-    );
-    if (!isTargetActive) {
-      throw new ApplicationException(ErrorCode.REPORT_2252, { targetUserId: plan.targetUserId });
+    if (!(await userReportRepository.existsActiveUser(report.targetUserId))) {
+      throw reportTargetUserNotFound(report.targetUserId);
     }
 
-    const duplicate = await this.#dependencies.userReportRepository.findRecentByTarget({
-      reporterId: plan.reporterId,
-      targetUserId: plan.targetUserId,
-      target: plan.target,
-      since: duplicateReportWindowStart(plan.createdAt),
+    const duplicate = await userReportRepository.findRecentByTarget({
+      reporterId: report.reporterId,
+      targetUserId: report.targetUserId,
+      target: report.target,
+      since: duplicateReportWindowStart(report.createdAt),
     });
     if (duplicate != null) {
       return { report: duplicate, isDuplicate: true };
     }
 
-    const recentCount = await this.#dependencies.userReportRepository.countByReporterSince(
-      plan.reporterId,
-      dailyReportWindowStart(plan.createdAt),
+    const recentCount = await userReportRepository.countByReporterSince(
+      report.reporterId,
+      dailyReportWindowStart(report.createdAt),
     );
     if (hasReachedDailyReportLimit(recentCount)) {
-      throw new ApplicationException(ErrorCode.REPORT_2254, { current: recentCount });
+      throw dailyReportLimitReached(recentCount);
     }
 
-    const report = await this.#dependencies.userReportRepository.create(plan);
+    await userReportRepository.save(report);
     return { report, isDuplicate: false };
   }
 
   async #notifyOperators(report: UserReport): Promise<void> {
+    const { userReportRepository, notifier, logger } = this.#dependencies;
     try {
-      const userTags = await this.#dependencies.userReportRepository.findUserTags([
+      const userTags = await userReportRepository.findUserTags([
         report.reporterId,
         report.targetUserId,
       ]);
-      const delivery = await this.#dependencies.notifier.notifyOperators(
-        buildUserReportSubmission(report, userTags),
-      );
+      const delivery = await notifier.notifyOperators(toUserReportSubmission(report, userTags));
       if (delivery.status === "rejected") {
-        this.#dependencies.logger.warn({
+        logger.warn({
           event: UserReportLogEvent.OPERATOR_NOTIFY_FAILED,
-          reportId: report.id,
+          reportId: report.id.value,
           errorType: "delivery-rejected",
           reason: delivery.reason,
         });
       }
     } catch {
-      this.#dependencies.logger.warn({
+      logger.warn({
         event: UserReportLogEvent.OPERATOR_NOTIFY_FAILED,
-        reportId: report.id,
+        reportId: report.id.value,
         errorType: "delivery-error",
       });
     }

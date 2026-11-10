@@ -1,83 +1,111 @@
 import { ErrorCode } from "@aido/api/errors";
-import type { UserReportReason, UserReportStatus } from "@aido/api/vocabulary";
+import type {
+  UserReportReason,
+  UserReportStatus,
+  UserReportTargetType,
+} from "@aido/api/vocabulary";
 
-import { AggregateRoot, DomainException } from "#api/shared/domain/index";
+import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { AggregateRoot } from "#api/shared/domain/model/aggregate-root";
 
 import { UserReportDetail } from "./user-report-detail.vo.js";
+import { UserReportId } from "./user-report-id.vo.js";
 import { UserReportResolutionNote } from "./user-report-resolution-note.vo.js";
-import type { UserReportTarget } from "./user-report-target.vo.js";
+import { UserReportTarget } from "./user-report-target.vo.js";
 
-export interface UserReportProps {
-  id: string;
-  reporterId: string;
-  targetUserId: string;
-  target: UserReportTarget;
-  reason: UserReportReason;
-  detail: string | null;
-  status: UserReportStatus;
-  createdAt: Date;
-  resolvedAt: Date | null;
-  resolvedById: string | null;
-  resolutionNote: string | null;
-}
-
-export interface UserReportResolutionInput {
-  readonly resolvedById: string;
-  readonly note: string;
-  readonly resolvedAt: Date;
-}
-
-export interface UserReportCreationInput {
+export interface UserReportPrimitives {
+  readonly id: string;
   readonly reporterId: string;
   readonly targetUserId: string;
+  readonly targetType: UserReportTargetType;
+  readonly targetId: string | null;
+  readonly reason: UserReportReason;
+  readonly detail: string | null;
+  readonly status: UserReportStatus;
+  readonly createdAt: Temporal.Instant;
+  readonly resolvedAt: Temporal.Instant | null;
+  readonly resolvedById: string | null;
+  readonly resolutionNote: string | null;
+}
+
+interface UserReportProps {
+  readonly reporterId: UserId;
+  readonly targetUserId: UserId;
+  readonly target: UserReportTarget;
+  readonly reason: UserReportReason;
+  readonly detail: UserReportDetail;
+  status: UserReportStatus;
+  readonly createdAt: Temporal.Instant;
+  resolvedAt: Temporal.Instant | null;
+  resolvedById: UserId | null;
+  resolutionNote: UserReportResolutionNote | null;
+}
+
+interface CreateUserReportParams {
+  readonly id: UserReportId;
+  readonly reporterId: UserId;
+  readonly targetUserId: UserId;
   readonly target: UserReportTarget;
   readonly reason: UserReportReason;
   readonly detail?: string;
-  readonly createdAt: Date;
+  readonly now: Temporal.Instant;
 }
 
-export type UserReportCreationPlan = Omit<
-  UserReportProps,
-  "id" | "status" | "resolvedAt" | "resolvedById" | "resolutionNote"
->;
+interface ResolveUserReportParams {
+  readonly resolvedById: UserId;
+  readonly note: UserReportResolutionNote;
+  readonly now: Temporal.Instant;
+}
 
-/** 사용자가 다른 사용자의 프로필·콘텐츠를 운영자에게 알린 기록. 운영자가 확인하면 RESOLVED가 된다. */
-export class UserReport extends AggregateRoot<UserReportProps> {
-  constructor(props: UserReportProps) {
-    super(props);
-  }
-
-  static planCreation(input: UserReportCreationInput): UserReportCreationPlan {
-    if (input.reporterId === input.targetUserId) {
+// 사용자가 다른 사용자의 프로필·콘텐츠를 운영자에게 알린 기록. 운영자가 조치를 남기면 RESOLVED가 된다
+export class UserReport extends AggregateRoot<UserReportId, UserReportProps> {
+  static create(params: CreateUserReportParams): UserReport {
+    // 자기 신고를 상세 내용 검증보다 먼저 거부한다(출시 앱이 받는 오류 우선순위)
+    if (params.reporterId.equals(params.targetUserId)) {
       throw new DomainException(ErrorCode.REPORT_2251);
     }
-    return {
-      reporterId: input.reporterId,
-      targetUserId: input.targetUserId,
-      target: input.target,
-      reason: input.reason,
-      detail: UserReportDetail.of(input.detail).value,
-      createdAt: new Date(input.createdAt),
-    };
-  }
-
-  static reconstitute(props: UserReportProps): UserReport {
-    return new UserReport({
-      ...props,
-      createdAt: new Date(props.createdAt),
-      resolvedAt: props.resolvedAt == null ? null : new Date(props.resolvedAt),
+    return new UserReport(params.id, {
+      reporterId: params.reporterId,
+      targetUserId: params.targetUserId,
+      target: params.target,
+      reason: params.reason,
+      detail: UserReportDetail.create(params.detail),
+      status: "OPEN",
+      createdAt: params.now,
+      resolvedAt: null,
+      resolvedById: null,
+      resolutionNote: null,
     });
   }
 
-  get id(): string {
-    return this.props.id;
+  static reconstitute(primitives: UserReportPrimitives): UserReport {
+    return new UserReport(UserReportId.reconstitute(primitives.id), {
+      reporterId: UserId.reconstitute(primitives.reporterId),
+      targetUserId: UserId.reconstitute(primitives.targetUserId),
+      target: UserReportTarget.reconstitute({
+        type: primitives.targetType,
+        contentId: primitives.targetId,
+      }),
+      reason: primitives.reason,
+      detail: UserReportDetail.reconstitute(primitives.detail),
+      status: primitives.status,
+      createdAt: primitives.createdAt,
+      resolvedAt: primitives.resolvedAt,
+      resolvedById:
+        primitives.resolvedById == null ? null : UserId.reconstitute(primitives.resolvedById),
+      resolutionNote:
+        primitives.resolutionNote == null
+          ? null
+          : UserReportResolutionNote.reconstitute(primitives.resolutionNote),
+    });
   }
 
-  get reporterId(): string {
+  get reporterId(): UserId {
     return this.props.reporterId;
   }
 
-  get targetUserId(): string {
+  get targetUserId(): UserId {
     return this.props.targetUserId;
   }
 
@@ -89,7 +117,7 @@ export class UserReport extends AggregateRoot<UserReportProps> {
     return this.props.reason;
   }
 
-  get detail(): string | null {
+  get detail(): UserReportDetail {
     return this.props.detail;
   }
 
@@ -97,36 +125,48 @@ export class UserReport extends AggregateRoot<UserReportProps> {
     return this.props.status;
   }
 
-  get createdAt(): Date {
-    return new Date(this.props.createdAt);
+  get createdAt(): Temporal.Instant {
+    return this.props.createdAt;
   }
 
-  isOpen(): boolean {
-    return this.props.status === "OPEN";
+  get resolvedAt(): Temporal.Instant | null {
+    return this.props.resolvedAt;
   }
 
-  get resolvedAt(): Date | null {
-    return this.props.resolvedAt == null ? null : new Date(this.props.resolvedAt);
-  }
-
-  get resolvedById(): string | null {
+  get resolvedById(): UserId | null {
     return this.props.resolvedById;
   }
 
-  get resolutionNote(): string | null {
+  get resolutionNote(): UserReportResolutionNote | null {
     return this.props.resolutionNote;
   }
 
-  /** 운영자가 조치를 남기고 처리를 마친다. 이미 처리한 신고는 첫 처리 기록을 유지하고 false를 돌려준다 */
-  resolve(input: UserReportResolutionInput): boolean {
-    const note = UserReportResolutionNote.of(input.note);
-    if (!this.isOpen()) {
+  // 이미 처리한 신고는 첫 처리 기록을 그대로 둔다
+  resolve(params: ResolveUserReportParams): boolean {
+    if (this.props.status !== "OPEN") {
       return false;
     }
     this.props.status = "RESOLVED";
-    this.props.resolvedAt = new Date(input.resolvedAt);
-    this.props.resolvedById = input.resolvedById;
-    this.props.resolutionNote = note.value;
+    this.props.resolvedAt = params.now;
+    this.props.resolvedById = params.resolvedById;
+    this.props.resolutionNote = params.note;
     return true;
+  }
+
+  toPrimitives(): UserReportPrimitives {
+    return {
+      id: this.id.value,
+      reporterId: this.props.reporterId.value,
+      targetUserId: this.props.targetUserId.value,
+      targetType: this.props.target.type,
+      targetId: this.props.target.contentId,
+      reason: this.props.reason,
+      detail: this.props.detail.value,
+      status: this.props.status,
+      createdAt: this.props.createdAt,
+      resolvedAt: this.props.resolvedAt,
+      resolvedById: this.props.resolvedById?.value ?? null,
+      resolutionNote: this.props.resolutionNote?.value ?? null,
+    };
   }
 }

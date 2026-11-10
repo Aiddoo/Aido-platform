@@ -1,94 +1,113 @@
 import { ErrorCode } from "@aido/api/errors";
-import { describe, expect, it } from "vitest";
 
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+
+import { UserReportId } from "./user-report-id.vo.js";
+import { UserReportResolutionNote } from "./user-report-resolution-note.vo.js";
 import { UserReportTarget } from "./user-report-target.vo.js";
 import { UserReport } from "./user-report.aggregate.js";
 
-const createdAt = new Date("2026-10-26T09:00:00.000Z");
-const profileTarget = UserReportTarget.of("PROFILE", null);
+const REPORT_ID = UserReportId.reconstitute("c0123456789abcdef01234567");
+const CREATED_AT = Temporal.Instant.from("2026-10-26T09:00:00Z");
+const RESOLVED_AT = Temporal.Instant.from("2026-10-26T12:00:00Z");
+const PROFILE_TARGET = UserReportTarget.create({ type: "PROFILE", contentId: null });
+
+function createReport(overrides: { reporterId?: string; detail?: string } = {}): UserReport {
+  return UserReport.create({
+    id: REPORT_ID,
+    reporterId: UserId.reconstitute(overrides.reporterId ?? "me"),
+    targetUserId: UserId.reconstitute("other"),
+    target: PROFILE_TARGET,
+    reason: "HARASSMENT",
+    detail: overrides.detail,
+    now: CREATED_AT,
+  });
+}
 
 describe("UserReport", () => {
-  it("자기 자신은 신고할 수 없다", () => {
-    // Given
-    const input = {
-      reporterId: "me",
-      targetUserId: "me",
-      target: profileTarget,
-      reason: "SPAM",
-      createdAt,
-    } as const;
-
+  it("상세 내용 앞뒤 공백을 지우고 접수 상태로 만든다", () => {
     // When
-    const plan = () => UserReport.planCreation(input);
+    const report = createReport({ detail: "  계속 욕설을 해요 " });
 
     // Then
-    expect(plan).toThrow(expect.objectContaining({ errorCode: ErrorCode.REPORT_2251 }));
+    expect(report.toPrimitives()).toEqual({
+      id: REPORT_ID.value,
+      reporterId: "me",
+      targetUserId: "other",
+      targetType: "PROFILE",
+      targetId: null,
+      reason: "HARASSMENT",
+      detail: "계속 욕설을 해요",
+      status: "OPEN",
+      createdAt: CREATED_AT,
+      resolvedAt: null,
+      resolvedById: null,
+      resolutionNote: null,
+    });
   });
 
   it("공백뿐인 상세 내용은 없는 것으로 저장한다", () => {
     // When
-    const plan = UserReport.planCreation({
-      reporterId: "me",
-      targetUserId: "other",
-      target: profileTarget,
-      reason: "OTHER",
-      detail: "   ",
-      createdAt,
-    });
+    const report = createReport({ detail: "   " });
 
     // Then
-    expect(plan.detail).toBeNull();
+    expect(report.detail.value).toBeNull();
   });
 
-  it("처리를 반복해도 첫 처리 기록을 유지한다", () => {
+  it("자기 자신은 너무 긴 상세 내용보다 먼저 REPORT_2251로 거부한다", () => {
+    // When
+    const create = () => createReport({ reporterId: "other", detail: "가".repeat(501) });
+
+    // Then
+    expect(create).toThrow(expect.objectContaining({ errorCode: ErrorCode.REPORT_2251 }));
+  });
+
+  it("너무 긴 상세 내용은 SYS_0002로 거부한다", () => {
+    // When
+    const create = () => createReport({ detail: "가".repeat(501) });
+
+    // Then
+    expect(create).toThrow(
+      expect.objectContaining({ errorCode: ErrorCode.SYS_0002, details: { maxLength: 500 } }),
+    );
+  });
+
+  it("처리를 반복해도 첫 처리 기록을 유지하고 두 번째는 false다", () => {
     // Given
-    const report = createOpenReport();
-    const resolvedAt = new Date("2026-10-26T12:00:00.000Z");
+    const report = createReport();
 
     // When
-    const first = report.resolve({ resolvedById: "admin-1", note: " 댓글 삭제 ", resolvedAt });
+    const first = report.resolve({
+      resolvedById: UserId.reconstitute("admin-1"),
+      note: UserReportResolutionNote.create(" 댓글 삭제 "),
+      now: RESOLVED_AT,
+    });
     const second = report.resolve({
-      resolvedById: "admin-2",
-      note: "다시 처리",
-      resolvedAt: new Date("2026-10-26T13:00:00.000Z"),
+      resolvedById: UserId.reconstitute("admin-2"),
+      note: UserReportResolutionNote.create("다시 처리"),
+      now: RESOLVED_AT.add({ hours: 1 }),
     });
 
     // Then
     expect([first, second]).toEqual([true, false]);
-    expect(report).toMatchObject({
+    expect(report.toPrimitives()).toMatchObject({
       status: "RESOLVED",
-      resolvedAt,
+      resolvedAt: RESOLVED_AT,
       resolvedById: "admin-1",
       resolutionNote: "댓글 삭제",
     });
   });
 
-  it("조치 내용 없이는 처리할 수 없다", () => {
-    // Given
-    const report = createOpenReport();
+  it.each(["   ", "가".repeat(501)])(
+    "조치 내용이 비었거나 너무 길면 SYS_0002로 거부한다",
+    (note) => {
+      // When
+      const create = () => UserReportResolutionNote.create(note);
 
-    // When
-    const resolve = () =>
-      report.resolve({ resolvedById: "admin-1", note: "   ", resolvedAt: createdAt });
-
-    // Then
-    expect(resolve).toThrow(expect.objectContaining({ errorCode: ErrorCode.SYS_0002 }));
-    expect(report.status).toBe("OPEN");
-  });
+      // Then
+      expect(create).toThrow(
+        expect.objectContaining({ errorCode: ErrorCode.SYS_0002, details: { maxLength: 500 } }),
+      );
+    },
+  );
 });
-
-function createOpenReport() {
-  return UserReport.reconstitute({
-    id: "report-1",
-    reporterId: "me",
-    targetUserId: "other",
-    target: profileTarget,
-    reason: "HARASSMENT",
-    detail: null,
-    status: "OPEN",
-    createdAt,
-    resolvedAt: null,
-    resolvedById: null,
-    resolutionNote: null,
-  });
-}

@@ -4,7 +4,7 @@ import {
   resolveUserReportParamSchema,
   resolveUserReportSchema,
   resolveUserReportResponseSchema,
-} from "@aido/api";
+} from "@aido/api/contracts/user-report";
 import type { z } from "zod";
 
 export const CreateUserReportDto = createUserReportSchema.meta({ id: "CreateUserReportDto" });

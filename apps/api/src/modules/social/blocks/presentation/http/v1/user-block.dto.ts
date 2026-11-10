@@ -3,7 +3,7 @@ import {
   blockedUsersResponseSchema,
   blockUserResponseSchema,
   unblockUserResponseSchema,
-} from "@aido/api";
+} from "@aido/api/contracts/user-block";
 import type { z } from "zod";
 
 export const GetBlockedUsersQueryDto = getBlockedUsersQuerySchema.meta({

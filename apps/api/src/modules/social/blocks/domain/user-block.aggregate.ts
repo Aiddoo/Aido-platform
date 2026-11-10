@@ -1,62 +1,70 @@
 import { ErrorCode } from "@aido/api/errors";
 
-import { AggregateRoot, DomainException } from "#api/shared/domain/index";
+import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { AggregateRoot } from "#api/shared/domain/model/aggregate-root";
 
-export interface UserBlockProps {
-  id: string;
-  blockerId: string;
-  blockedId: string;
-  createdAt: Date;
-}
+import { UserBlockId } from "./user-block-id.vo.js";
 
-export interface UserBlockCreationInput {
+export interface UserBlockPrimitives {
+  readonly id: string;
   readonly blockerId: string;
   readonly blockedId: string;
-  readonly createdAt: Date;
+  readonly createdAt: Temporal.Instant;
 }
 
-export type UserBlockCreationPlan = UserBlockCreationInput;
+interface UserBlockProps {
+  readonly blockerId: UserId;
+  readonly blockedId: UserId;
+  readonly createdAt: Temporal.Instant;
+}
 
-/**
- * 한 사용자가 다른 사용자를 차단한 관계.
- *
- * 차단은 방향이 있지만 효과는 양쪽에 같다. 두 사람의 친구 관계·요청이 끊기고 서로의 콘텐츠와
- * 상호작용이 막힌다. 차단당한 사람에게는 알리지 않는다.
- */
-export class UserBlock extends AggregateRoot<UserBlockProps> {
-  constructor(props: UserBlockProps) {
-    super(props);
-  }
+interface CreateUserBlockParams {
+  readonly id: UserBlockId;
+  readonly blockerId: UserId;
+  readonly blockedId: UserId;
+  readonly now: Temporal.Instant;
+}
 
-  static planCreation(input: UserBlockCreationInput): UserBlockCreationPlan {
-    if (input.blockerId === input.blockedId) {
+// 방향은 있지만 효과는 양쪽에 같다. 친구 관계가 끊기고 서로의 콘텐츠·상호작용이 막히며 차단당한 사람에게는 알리지 않는다
+export class UserBlock extends AggregateRoot<UserBlockId, UserBlockProps> {
+  static create(params: CreateUserBlockParams): UserBlock {
+    if (params.blockerId.equals(params.blockedId)) {
       throw new DomainException(ErrorCode.BLOCK_2201);
     }
-    return { ...input, createdAt: new Date(input.createdAt) };
-  }
-
-  static reconstitute(props: UserBlockProps): UserBlock {
-    return new UserBlock({
-      id: props.id,
-      blockerId: props.blockerId,
-      blockedId: props.blockedId,
-      createdAt: new Date(props.createdAt),
+    return new UserBlock(params.id, {
+      blockerId: params.blockerId,
+      blockedId: params.blockedId,
+      createdAt: params.now,
     });
   }
 
-  get id(): string {
-    return this.props.id;
+  static reconstitute(primitives: UserBlockPrimitives): UserBlock {
+    return new UserBlock(UserBlockId.reconstitute(primitives.id), {
+      blockerId: UserId.reconstitute(primitives.blockerId),
+      blockedId: UserId.reconstitute(primitives.blockedId),
+      createdAt: primitives.createdAt,
+    });
   }
 
-  get blockerId(): string {
+  get blockerId(): UserId {
     return this.props.blockerId;
   }
 
-  get blockedId(): string {
+  get blockedId(): UserId {
     return this.props.blockedId;
   }
 
-  get createdAt(): Date {
-    return new Date(this.props.createdAt);
+  get createdAt(): Temporal.Instant {
+    return this.props.createdAt;
+  }
+
+  toPrimitives(): UserBlockPrimitives {
+    return {
+      id: this.id.value,
+      blockerId: this.props.blockerId.value,
+      blockedId: this.props.blockedId.value,
+      createdAt: this.props.createdAt,
+    };
   }
 }

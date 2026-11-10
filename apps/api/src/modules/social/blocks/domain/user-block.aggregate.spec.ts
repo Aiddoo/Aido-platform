@@ -1,32 +1,41 @@
 import { ErrorCode } from "@aido/api/errors";
-import { describe, expect, it } from "vitest";
 
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+
+import { UserBlockId } from "./user-block-id.vo.js";
 import { UserBlock } from "./user-block.aggregate.js";
 
-const createdAt = new Date("2026-10-26T09:00:00.000Z");
+const BLOCK_ID = UserBlockId.reconstitute("c0123456789abcdef01234567");
+const NOW = Temporal.Instant.from("2026-10-26T09:00:00Z");
 
 describe("UserBlock", () => {
-  it("자기 자신을 차단하려 하면 거부한다", () => {
-    // Given
-    const input = { blockerId: "same", blockedId: "same", createdAt };
-
+  it("차단한 사람·차단당한 사람·차단 시각을 담아 만든다", () => {
     // When
-    const plan = () => UserBlock.planCreation(input);
+    const block = UserBlock.create({
+      id: BLOCK_ID,
+      blockerId: UserId.reconstitute("blocker"),
+      blockedId: UserId.reconstitute("blocked"),
+      now: NOW,
+    });
 
     // Then
-    expect(plan).toThrow(expect.objectContaining({ errorCode: ErrorCode.BLOCK_2201 }));
+    expect(block.toPrimitives()).toEqual({
+      id: BLOCK_ID.value,
+      blockerId: "blocker",
+      blockedId: "blocked",
+      createdAt: NOW,
+    });
   });
 
-  it("차단 시각을 바깥 Date와 공유하지 않는다", () => {
+  it("자기 자신을 차단하려 하면 BLOCK_2201로 거부한다", () => {
     // Given
-    const persisted = { id: "block-1", blockerId: "blocker", blockedId: "blocked", createdAt };
-    const block = UserBlock.reconstitute(persisted);
+    const userId = UserId.reconstitute("same");
 
     // When
-    block.createdAt.setUTCFullYear(2000);
-    persisted.createdAt.setUTCFullYear(2001);
+    const create = () =>
+      UserBlock.create({ id: BLOCK_ID, blockerId: userId, blockedId: userId, now: NOW });
 
     // Then
-    expect(block.createdAt).toEqual(new Date("2026-10-26T09:00:00.000Z"));
+    expect(create).toThrow(expect.objectContaining({ errorCode: ErrorCode.BLOCK_2201 }));
   });
 });

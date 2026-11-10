@@ -1,24 +1,25 @@
-import { FriendLockKeys } from "#api/modules/social/friends/application/friends.lock-keys";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
-import { type MutationLockPort, type UnitOfWorkPort } from "#api/shared/application/ports/index";
+import type { MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
+import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
+import { FriendLockKeys } from "../../../friends/application/friends.lock-keys.js";
 import { BlockLogEvent } from "../blocks.log-events.js";
-import { type UserBlockRepositoryPort } from "../ports/user-block.repository.port.js";
+import type { UserBlockRepositoryPort } from "../ports/user-block.repository.port.js";
 
-export interface UnblockUserInput {
+export interface UnblockUserCommand {
   readonly blockerId: string;
   readonly blockedId: string;
 }
 
-interface UnblockUserDependencies {
-  readonly userBlockRepository: Pick<UserBlockRepositoryPort, "delete">;
+export interface UnblockUserDependencies {
   readonly unitOfWork: UnitOfWorkPort;
   readonly mutationLock: MutationLockPort;
-  readonly logger: ApplicationLoggerPort;
+  readonly userBlockRepository: Pick<UserBlockRepositoryPort, "findByPair" | "delete">;
+  readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
 
-/** 차단을 해제한다. 끊긴 친구 관계는 되살리지 않는다. 없던 차단을 해제해도 성공으로 본다. */
+// 끊긴 친구 관계는 되살리지 않는다. 없던 차단을 해제해도 성공이다
 export class UnblockUserUseCase {
   readonly #dependencies: UnblockUserDependencies;
 
@@ -26,20 +27,25 @@ export class UnblockUserUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: UnblockUserInput): Promise<void> {
-    const { blockerId, blockedId } = input;
-    const isUnblocked = await this.#dependencies.unitOfWork.run(async () => {
-      await this.#dependencies.mutationLock.acquire([
-        FriendLockKeys.pair(UserId.reconstitute(blockerId), UserId.reconstitute(blockedId)),
-      ]);
-      return this.#dependencies.userBlockRepository.delete(blockerId, blockedId);
+  async execute(command: UnblockUserCommand): Promise<void> {
+    const { unitOfWork, mutationLock, userBlockRepository, logger } = this.#dependencies;
+    const blockerId = UserId.reconstitute(command.blockerId);
+    const blockedId = UserId.reconstitute(command.blockedId);
+
+    const removed = await unitOfWork.run(async () => {
+      await mutationLock.acquire([FriendLockKeys.pair(blockerId, blockedId)]);
+      const block = await userBlockRepository.findByPair(blockerId, blockedId);
+      if (block != null) {
+        await userBlockRepository.delete(block);
+      }
+      return block;
     });
 
-    if (isUnblocked) {
-      this.#dependencies.logger.log({
+    if (removed != null) {
+      logger.log({
         event: BlockLogEvent.UNBLOCKED,
-        userId: blockerId,
-        targetUserId: blockedId,
+        userId: command.blockerId,
+        targetUserId: command.blockedId,
       });
     }
   }

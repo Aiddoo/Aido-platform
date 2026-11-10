@@ -25,6 +25,8 @@ import {
   userBlock,
 } from "#api/platform/database/schema/index";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { instantFromDate } from "#api/shared/domain/time/instant";
+import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import {
   CheerFixture,
   FollowFixture,
@@ -98,6 +100,7 @@ describe("사용자 차단 (실제 PostgreSQL)", () => {
       unitOfWork: uow,
       mutationLock,
       friendshipCache: cache,
+      clock: new FixedClock(instantFromDate(BLOCK_TIME)),
       logger,
     });
     acceptFriendRequest = new AcceptFriendRequestUseCase({

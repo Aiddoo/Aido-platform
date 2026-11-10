@@ -1,42 +1,37 @@
-import { ErrorCode } from "@aido/api/errors";
-
-import { FriendLockKeys } from "#api/modules/social/friends/application/friends.lock-keys";
-import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
-import { type MutationLockPort, type UnitOfWorkPort } from "#api/shared/application/ports/index";
-import { now } from "#api/shared/domain/date/utils/core";
+import type { ClockPort } from "#api/shared/application/ports/clock.port";
+import type { MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
+import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
+import { FriendLockKeys } from "../../../friends/application/friends.lock-keys.js";
 import {
   type FriendshipCacheInvalidator,
   invalidateFriendshipCaches,
 } from "../../../friends/application/ports/follow-cache.port.js";
-import { UserBlock, type UserBlockCreationPlan } from "../../domain/user-block.aggregate.js";
+import { UserBlock } from "../../domain/user-block.aggregate.js";
+import { blockTargetNotFound } from "../blocks.errors.js";
 import { BlockLogEvent } from "../blocks.log-events.js";
-import { type UserBlockRepositoryPort } from "../ports/user-block.repository.port.js";
+import type { UserBlockRepositoryPort } from "../ports/user-block.repository.port.js";
 
-export interface BlockUserInput {
+export interface BlockUserCommand {
   readonly blockerId: string;
   readonly blockedId: string;
 }
 
-export interface BlockUserResult {
-  readonly block: UserBlock;
-  /** 이번 요청으로 새로 차단했으면 true. 이미 차단한 사용자면 false */
-  readonly isNewlyBlocked: boolean;
-}
-
-interface BlockUserDependencies {
-  readonly userBlockRepository: Pick<
-    UserBlockRepositoryPort,
-    "userExists" | "findByPair" | "create" | "removeFriendshipsBetween"
-  >;
+export interface BlockUserDependencies {
   readonly unitOfWork: UnitOfWorkPort;
   readonly mutationLock: MutationLockPort;
+  readonly userBlockRepository: Pick<
+    UserBlockRepositoryPort,
+    "nextId" | "existsActiveUser" | "findByPair" | "removeFriendshipsBetween" | "save"
+  >;
   readonly friendshipCache: FriendshipCacheInvalidator;
-  readonly logger: ApplicationLoggerPort;
+  readonly clock: ClockPort;
+  readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
 
+// 이미 차단한 사용자를 다시 차단하면 처음 차단을 그대로 돌려준다
 export class BlockUserUseCase {
   readonly #dependencies: BlockUserDependencies;
 
@@ -44,48 +39,56 @@ export class BlockUserUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: BlockUserInput): Promise<BlockUserResult> {
-    const plan = UserBlock.planCreation({ ...input, createdAt: now() });
+  async execute(command: BlockUserCommand): Promise<UserBlock> {
+    const { unitOfWork, mutationLock, userBlockRepository, friendshipCache, clock, logger } =
+      this.#dependencies;
+    const blockerId = UserId.reconstitute(command.blockerId);
+    const blockedId = UserId.reconstitute(command.blockedId);
+    // 자기 자신 차단은 잠금을 잡기 전에 거부한다
+    const created = UserBlock.create({
+      id: await userBlockRepository.nextId(),
+      blockerId,
+      blockedId,
+      now: clock.now(),
+    });
 
-    const result = await this.#dependencies.unitOfWork.run(() => this.#block(plan));
+    const result = await unitOfWork.run(async () => {
+      // 친구 요청·수락과 같은 쌍·목록 잠금을 잡아, 차단 직전에 시작한 요청이 차단 뒤에 친구 관계를 다시 만들지 못하게 한다
+      await mutationLock.acquire([
+        FriendLockKeys.pair(blockerId, blockedId),
+        FriendLockKeys.list(blockerId),
+        FriendLockKeys.list(blockedId),
+      ]);
+      if (!(await userBlockRepository.existsActiveUser(blockedId))) {
+        throw blockTargetNotFound(blockedId);
+      }
+
+      const existing = await userBlockRepository.findByPair(blockerId, blockedId);
+      if (existing == null) {
+        await userBlockRepository.save(created);
+      }
+      const removedFriendshipCount = await userBlockRepository.removeFriendshipsBetween(
+        blockerId,
+        blockedId,
+      );
+      return {
+        block: existing ?? created,
+        isNewlyBlocked: existing == null,
+        removedFriendshipCount,
+      };
+    });
 
     if (result.removedFriendshipCount > 0) {
-      await invalidateFriendshipCaches(
-        this.#dependencies.friendshipCache,
-        input.blockerId,
-        input.blockedId,
-      );
+      await invalidateFriendshipCaches(friendshipCache, blockerId.value, blockedId.value);
     }
     if (result.isNewlyBlocked) {
-      this.#dependencies.logger.log({
+      logger.log({
         event: BlockLogEvent.BLOCKED,
-        userId: input.blockerId,
-        targetUserId: input.blockedId,
+        userId: command.blockerId,
+        targetUserId: command.blockedId,
         removedFriendshipCount: result.removedFriendshipCount,
       });
     }
-    return { block: result.block, isNewlyBlocked: result.isNewlyBlocked };
-  }
-
-  async #block(
-    plan: UserBlockCreationPlan,
-  ): Promise<BlockUserResult & { removedFriendshipCount: number }> {
-    const { blockerId, blockedId } = plan;
-    // 친구 요청·수락과 같은 쌍·목록 잠금을 잡아, 차단 직전에 시작한 요청이 차단 뒤에 친구 관계를 다시 만들지 못하게 한다.
-    await this.#dependencies.mutationLock.acquire([
-      FriendLockKeys.pair(UserId.reconstitute(blockerId), UserId.reconstitute(blockedId)),
-      FriendLockKeys.list(UserId.reconstitute(blockerId)),
-      FriendLockKeys.list(UserId.reconstitute(blockedId)),
-    ]);
-    const isTargetActive = await this.#dependencies.userBlockRepository.userExists(blockedId);
-    if (!isTargetActive) {
-      throw new ApplicationException(ErrorCode.BLOCK_2202, { targetUserId: blockedId });
-    }
-
-    const existing = await this.#dependencies.userBlockRepository.findByPair(blockerId, blockedId);
-    const block = existing ?? (await this.#dependencies.userBlockRepository.create(plan));
-    const removedFriendshipCount =
-      await this.#dependencies.userBlockRepository.removeFriendshipsBetween(blockerId, blockedId);
-    return { block, isNewlyBlocked: existing == null, removedFriendshipCount };
+    return result.block;
   }
 }

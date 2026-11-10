@@ -1,41 +1,23 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
-import {
-  and,
-  eq,
-  notExists,
-  or,
-  sql,
-  type AnyColumn,
-  type SQL,
-  count,
-  inArray,
-  isNull,
-} from "drizzle-orm";
+import { and, eq, inArray, notExists, or, sql, type AnyColumn, type SQL } from "drizzle-orm";
 import { QueryBuilder } from "drizzle-orm/pg-core";
 
-import { requireRecord } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
-import { userBlock, follow, user } from "#api/platform/database/schema/index";
+import { createEntityId } from "#api/platform/database/entity-id";
+import { follow, userBlock } from "#api/platform/database/schema/index";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import { USER_BRIEF_RELATION } from "../../../friends/infrastructure/persistence/user-brief-relation.constants.js";
 import type {
   UserBlockReaderPort,
   UserBlockRelation,
 } from "../../application/ports/user-block.reader.port.js";
-import type {
-  BlockedUserRecord,
-  FindBlockedUsersParams,
-  UserBlockRepositoryPort,
-} from "../../application/ports/user-block.repository.port.js";
-import { UserBlock, type UserBlockCreationPlan } from "../../domain/user-block.aggregate.js";
+import type { UserBlockRepositoryPort } from "../../application/ports/user-block.repository.port.js";
+import { UserBlockId } from "../../domain/user-block-id.vo.js";
+import type { UserBlock } from "../../domain/user-block.aggregate.js";
+import { toUserBlock, toUserBlockRow } from "./user-block-row.mapper.js";
 
-/**
- * 사용자와 viewer 사이에 어느 방향으로든 차단이 없을 때만 참이다.
- *
- * 콕·응원 기록처럼 상대 사용자가 정해진 행을 고를 때 붙여 한 SQL 안의
- * NOT EXISTS로 처리한다. 차단 관계를 행마다 따로 조회하지 않는다.
- */
+// 콕·응원 기록처럼 상대가 정해진 행을 고를 때 붙여 차단 관계를 행마다 따로 읽지 않고 한 SQL의 NOT EXISTS로 거른다
 export function hasNoBlockWith(userId: AnyColumn, viewerId: string): SQL {
   return notExists(
     new QueryBuilder()
@@ -50,8 +32,6 @@ export function hasNoBlockWith(userId: AnyColumn, viewerId: string): SQL {
   );
 }
 
-type UserBlockRow = typeof userBlock.$inferSelect;
-
 @Injectable()
 export class DrizzleUserBlockRepository implements UserBlockRepositoryPort, UserBlockReaderPort {
   readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
@@ -64,91 +44,48 @@ export class DrizzleUserBlockRepository implements UserBlockRepositoryPort, User
     return this.#txHost.tx;
   }
 
-  async userExists(userId: string): Promise<boolean> {
+  async nextId(): Promise<UserBlockId> {
+    return UserBlockId.reconstitute(createEntityId());
+  }
+
+  async existsActiveUser(userId: UserId): Promise<boolean> {
     const found = await this.#db.query.user.findFirst({
       columns: { id: true },
-      where: { id: userId, status: "ACTIVE", deletedAt: { isNull: true } },
+      where: { id: userId.value, status: "ACTIVE", deletedAt: { isNull: true } },
     });
     return found != null;
   }
 
-  async findByPair(blockerId: string, blockedId: string): Promise<UserBlock | null> {
-    const row = await this.#db.query.userBlock.findFirst({ where: { blockerId, blockedId } });
+  async findByPair(blockerId: UserId, blockedId: UserId): Promise<UserBlock | null> {
+    const row = await this.#db.query.userBlock.findFirst({
+      where: { blockerId: blockerId.value, blockedId: blockedId.value },
+    });
     return row == null ? null : toUserBlock(row);
   }
 
-  async create(plan: UserBlockCreationPlan): Promise<UserBlock> {
-    const [row] = await this.#db
-      .insert(userBlock)
-      .values({
-        blockerId: plan.blockerId,
-        blockedId: plan.blockedId,
-        createdAt: plan.createdAt,
-      })
-      .returning();
-    return toUserBlock(requireRecord(row));
-  }
-
-  async delete(blockerId: string, blockedId: string): Promise<boolean> {
-    const deleted = await this.#db
-      .delete(userBlock)
-      .where(and(eq(userBlock.blockerId, blockerId), eq(userBlock.blockedId, blockedId)))
-      .returning({ id: userBlock.id });
-    return deleted.length > 0;
-  }
-
-  async removeFriendshipsBetween(userId: string, otherUserId: string): Promise<number> {
+  async removeFriendshipsBetween(userId: UserId, otherUserId: UserId): Promise<number> {
     const deleted = await this.#db
       .delete(follow)
       .where(
         or(
-          and(eq(follow.followerId, userId), eq(follow.followingId, otherUserId)),
-          and(eq(follow.followerId, otherUserId), eq(follow.followingId, userId)),
+          and(eq(follow.followerId, userId.value), eq(follow.followingId, otherUserId.value)),
+          and(eq(follow.followerId, otherUserId.value), eq(follow.followingId, userId.value)),
         ),
       )
       .returning({ id: follow.id });
     return deleted.length;
   }
 
-  async findBlockedUsers(params: FindBlockedUsersParams): Promise<BlockedUserRecord[]> {
-    const anchor =
-      params.cursor == null
-        ? undefined
-        : await this.#db.query.userBlock.findFirst({
-            columns: { id: true, createdAt: true },
-            where: { id: params.cursor, blockerId: params.blockerId },
-          });
-    if (params.cursor != null && anchor == null) {
-      return [];
-    }
-
-    const rows = await this.#db.query.userBlock.findMany({
-      where: {
-        blockerId: params.blockerId,
-        blocked: { deletedAt: { isNull: true } },
-        ...(anchor != null && {
-          RAW: (block) =>
-            sql`(${block.createdAt}, ${block.id}) < (${sql.param(anchor.createdAt, block.createdAt)}, ${anchor.id})`,
-        }),
-      },
-      with: { blocked: USER_BRIEF_RELATION },
-      orderBy: { createdAt: "desc", id: "desc" },
-      limit: params.size + 1,
-    });
-    return rows.map((row) => ({
-      id: row.id,
-      blockedAt: row.createdAt,
-      user: { id: row.blocked.id, userTag: row.blocked.userTag, profile: row.blocked.profile },
-    }));
+  async save(block: UserBlock): Promise<void> {
+    // 차단은 만든 뒤 바뀌지 않아 같은 id를 다시 저장하면 그대로 둔다
+    await this.#db
+      .insert(userBlock)
+      .values(toUserBlockRow(block))
+      .onConflictDoNothing({ target: userBlock.id });
   }
 
-  async countBlockedUsers(blockerId: string): Promise<number> {
-    const [result] = await this.#db
-      .select({ total: count() })
-      .from(userBlock)
-      .innerJoin(user, eq(user.id, userBlock.blockedId))
-      .where(and(eq(userBlock.blockerId, blockerId), isNull(user.deletedAt)));
-    return result?.total ?? 0;
+  async delete(block: UserBlock): Promise<void> {
+    await this.#db.delete(userBlock).where(eq(userBlock.id, block.id.value));
   }
 
   async findRelation(userId: string, otherUserId: string): Promise<UserBlockRelation> {
@@ -186,13 +123,4 @@ export class DrizzleUserBlockRepository implements UserBlockRepositoryPort, User
       );
     return new Set(rows.map((row) => (row.blockerId === viewerId ? row.blockedId : row.blockerId)));
   }
-}
-
-function toUserBlock(row: UserBlockRow): UserBlock {
-  return UserBlock.reconstitute({
-    id: row.id,
-    blockerId: row.blockerId,
-    blockedId: row.blockedId,
-    createdAt: row.createdAt,
-  });
 }

@@ -7,6 +7,7 @@ import {
   CurrentUser,
   type CurrentUserPayload,
 } from "#api/modules/identity/identity-auth-http.public";
+import { API_VERSION } from "#api/platform/http/api-versioning";
 import {
   ApiBadRequestError,
   ApiCreatedResponse,
@@ -17,16 +18,16 @@ import {
   SWAGGER_TAGS,
 } from "#api/platform/http/swagger/index";
 import { THROTTLED_DESCRIPTION, ThrottleByUser } from "#api/platform/throttle/index";
-import { toISOString } from "#api/shared/domain/date/utils/format";
 
 import { ReportContentUseCase } from "../../../application/use-cases/report-content.use-case.js";
+import { toCreateUserReportResponse } from "./user-report-response.mapper.js";
 import { CreateUserReportDto, CreateUserReportResponseDto } from "./user-report.dto.js";
 
 const REPORT_THROTTLE = { ttl: 60_000, limit: 10 } as const;
 
 @ApiTags(SWAGGER_TAGS.REPORTS)
 @ApiBearerAuth()
-@Controller("reports")
+@Controller({ path: "reports", version: API_VERSION.V1 })
 export class UserReportController {
   readonly #reportContentUseCase: ReportContentUseCase;
 
@@ -67,7 +68,7 @@ export class UserReportController {
     @CurrentUser() user: CurrentUserPayload,
     @Body({ schema: CreateUserReportDto }) dto: CreateUserReportDto,
   ): Promise<CreateUserReportResponseDto> {
-    const { report } = await this.#reportContentUseCase.execute({
+    const report = await this.#reportContentUseCase.execute({
       reporterId: user.userId,
       targetUserId: dto.targetUserId,
       targetType: dto.targetType,
@@ -75,10 +76,6 @@ export class UserReportController {
       reason: dto.reason,
       detail: dto.detail,
     });
-
-    return {
-      message: "신고를 접수했습니다.",
-      report: { id: report.id, status: report.status, createdAt: toISOString(report.createdAt) },
-    };
+    return toCreateUserReportResponse(report);
   }
 }
