@@ -109,7 +109,7 @@ packages/api (Zod 스키마, ErrorCode)
 ### 요구 사항
 
 - Node.js `26.13.0` LTS ([`.nvmrc`](./.nvmrc))
-- pnpm `12.15.0` (`packageManager`, `corepack enable`로 활성화)
+- pnpm `12.15.0` (`packageManager`, Node 25부터 corepack이 번들에서 빠져 `npm i -g corepack && corepack enable`로 활성화)
 - Docker (로컬 PostgreSQL·Redis, integration/e2e 테스트의 Testcontainers)
 
 ### 서버 실행

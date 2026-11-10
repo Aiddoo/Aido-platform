@@ -3,7 +3,8 @@ WORKDIR /app
 ENV TZ=UTC
 ENV COREPACK_HOME=/usr/local/share/corepack
 ENV pnpm_config_verify_deps_before_run=false
-RUN apk upgrade --no-cache && corepack enable && apk add --no-cache openssl
+# Node 25부터 공식 이미지에 corepack이 없어 npm으로 설치한다.
+RUN apk upgrade --no-cache && npm install --global corepack@0.36.0 && corepack enable && apk add --no-cache openssl
 
 FROM base AS pruner
 COPY . .
