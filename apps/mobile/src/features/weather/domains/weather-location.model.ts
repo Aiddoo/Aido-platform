@@ -2,9 +2,11 @@ import { match } from 'ts-pattern';
 import { z } from 'zod';
 
 import { SAVED_LOCATION_REVISION } from '../constants/weather.constants';
-import { type RegisteredLocation, registeredLocationSchema } from './weather-report.model';
+import { registeredLocationSchema } from './weather-report.model';
 
-export type Coordinates = Pick<RegisteredLocation, 'latitude' | 'longitude'>;
+// 기기 위치와 서버에 등록한 위치를 같은 좌표 값으로 비교한다
+const coordinatesSchema = registeredLocationSchema.pick({ latitude: true, longitude: true });
+export type Coordinates = z.infer<typeof coordinatesSchema>;
 
 const revisionSchema = z.int().nonnegative();
 
@@ -83,7 +85,7 @@ function getLocationStatus(reading: LocationReading): WeatherLocationStatus {
 }
 
 /** 권한을 묻는 중이거나 거부한 동안에는 받을 리포트가 없다. 그 밖에는 서버에 저장된 위치로 받는다. */
-function shouldFetchReport({ status }: Pick<WeatherLocationStatus, 'status'>): boolean {
+function shouldFetchReport({ status }: WeatherLocationStatus): boolean {
   return status !== 'needsPermission' && status !== 'denied';
 }
 

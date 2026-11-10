@@ -7,8 +7,8 @@ import {
   WeatherBriefingPolicy,
 } from './weather-briefing.model';
 import type {
-  HourlyForecastEntry,
   RescheduleOption,
+  WeatherReport,
   WeatherReportBriefing,
 } from './weather-report.model';
 
@@ -33,7 +33,7 @@ interface TodoScheduleInput {
 
 /** 후보 시각은 할 일과 같은 날(기기 시간대)이라 날짜는 두고 시각(기기 시간대 HH:mm)만 바꾼다 */
 function getMovedScheduleInput(
-  todo: Pick<TodoScheduleSnapshot, 'startDate' | 'endDate'>,
+  todo: TodoScheduleSnapshot,
   startsAt: Instant,
   timeZone: string,
 ): TodoScheduleInput {
@@ -85,8 +85,9 @@ function getExpiredTargets<TTodo>(
  * 링크가 가리킨 할 일이 아직 영향받으면 그것만, 아니면 브리핑의 전체를 돌려준다. 시트를 연 사이 끝낸 할 일은 뺀다.
  * 서버가 판단하지 못했으면(briefing 없음) 앱이 다시 판단하지 않고 비운다.
  */
-function getRescheduleTodos(
-  report: { hourly: readonly HourlyForecastEntry[]; briefing: WeatherReportBriefing | null },
+// 시트는 예보의 시간별·브리핑 칸만 구독해 Policy 밖 함수로 두고 필요한 칸만 받는다
+export function getRescheduleTodos(
+  report: Pick<WeatherReport, 'hourly' | 'briefing'>,
   todos: readonly BriefingTodo[],
   { now, linkedTodoIds }: { now: Instant; linkedTodoIds: readonly number[] },
 ): AffectedTodo[] {
@@ -112,7 +113,7 @@ function getUpcomingOptions(
 
 /** 시트를 연 채 지난 선택을 바꿀 다음 후보. 서버 후보가 모두 지났으면 null이다. */
 function findNextRescheduleOption(
-  briefing: Pick<WeatherReportBriefing, 'rescheduleOptions'> | null,
+  briefing: WeatherReportBriefing | null,
   { todoId, now }: { todoId: number; now: Instant },
 ): RescheduleOption | null {
   const entry = briefing?.rescheduleOptions.find((candidate) => candidate.todoId === todoId);
@@ -120,7 +121,6 @@ function findNextRescheduleOption(
 }
 
 export const WeatherReschedulePolicy = {
-  getRescheduleTodos,
   getUpcomingOptions,
   findNextRescheduleOption,
   getMovedScheduleInput,
