@@ -38,11 +38,11 @@
 | 남용·비용     | 분당 throttle, `QuotaLedger` 예약·환불, 입력 상한, `maxOutputTokens`, 전역·사용자 예산, 킬 스위치 `AI_GENERATION_MODE`, 회로·bulkhead               |
 | 유해 출력     | Gemini `safetySettings` `BLOCK_ONLY_HIGH`, `content-filter`는 `BLOCKED`로 분류                                                                      |
 
-- Sentry AI 추적은 `instrument.ts`에서 `vercelAIIntegration({ recordInputs: false, recordOutputs: false })`로 명시해 끈다. 기본값에 기대지 않고 AI span에 입출력 속성이 없는지 테스트한다. Sentry `release`는 서버 `package.json` 버전이다.
+- Sentry AI 추적은 `sentryIntegrations()`(`platform/config/utils/sentry-options.ts`)가 `vercelAIIntegration({ recordInputs: false, recordOutputs: false })`로 명시해 끈다. Sentry 11 기본값은 AI span에 입력·system·응답 문장을 싣는다(직접 확인). `sentry-ai-span.spec.ts`가 실제 `generateText` span에 `gen_ai.input.messages`·`gen_ai.output.messages`·`gen_ai.system_instructions`가 없는지 본다. Sentry `release`는 서버 `package.json` 버전(`aido-server@<version>`)이다.
 - 동의 판정은 `AiDataSharingConsent` Entity의 `allowsAiProcessingAt(now, requiredVersion)` 하나로 모은다. HTTP guard·배경 작업·음성 계획이 모두 그것을 쓴다.
 - 공급자 데이터 정책(학습 미사용·보관 설정)은 `AiProviderAdapter.dataHandling` 필드로 선언하고 앱 개인정보 문구(국외 이전)와 맞춘다.
 - 새 라이브러리를 들이지 않는다. 입력 PII 마스킹은 파싱 품질을 떨어뜨리고 동의 범위 안의 본인 데이터라 넣지 않는다.
 
 ## 전환 중
 
-지금 코드는 JWT `algorithms`·`iss`·`aud` 없이 검증하고, `JWT_SECRET`을 커서 HMAC·수신 거부 토큰에도 쓰며, DB TLS를 `rejectUnauthorized: false`로 연결한다. 보안 강화 변경이 들어오기 전까지는 위 표의 "호환" 열을 지키는 순서로만 바꾼다. AI 동의 판정은 guard와 `findScheduledAiConsent`에 나뉘어 있다. 옮긴 Context는 `apps/api/architecture.ratchet.json`의 `migratedContexts`에 있다.
+지금 코드는 JWT `algorithms`·`iss`·`aud` 없이 검증하고, `JWT_SECRET`을 커서 HMAC·수신 거부 토큰에도 쓰며, DB TLS를 `rejectUnauthorized: false`로 연결한다. 보안 강화 변경이 들어오기 전까지는 위 표의 "호환" 열을 지키는 순서로만 바꾼다. 옮긴 Context는 `apps/api/architecture.ratchet.json`의 `migratedContexts`에 있다.

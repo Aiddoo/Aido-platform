@@ -10,6 +10,9 @@
  *   설정되므로 Sentry 서버측 알림 규칙에서도 이중으로 필터 가능하다.
  */
 
+import * as Sentry from "@sentry/nestjs";
+import { z } from "zod";
+
 const APP_ENVIRONMENTS = ["development", "staging", "production"] as const;
 
 export type AppEnvironment = (typeof APP_ENVIRONMENTS)[number];
@@ -35,6 +38,27 @@ const BODYLESS_PATH = /\/(?:ai|quick-plans|voice-notes|action-plans)(?:[/?]|$)/;
 
 export function isRequestBodyIgnored(url: string): boolean {
   return BODYLESS_PATH.test(url);
+}
+
+/**
+ * AI 호출 span에는 모델·토큰·지연만 남긴다. 입력(사용자 할 일·메모 문장, 시스템 지시)과 모델 응답은
+ * 싣지 않는다. 명시값이 Sentry 전역 기본값(dataCollection.genAI)보다 우선한다.
+ */
+const AI_SPAN_RECORDING = { recordInputs: false, recordOutputs: false } as const;
+
+export function sentryIntegrations() {
+  return [
+    Sentry.httpIntegration({ ignoreRequestBody: isRequestBodyIgnored }),
+    Sentry.vercelAIIntegration(AI_SPAN_RECORDING),
+  ];
+}
+
+const packageVersionSchema = z.object({ version: z.string().min(1) });
+
+/** Sentry 릴리스 이름은 `/`를 쓸 수 없어 패키지 이름(@aido/server) 대신 고정 접두사를 쓴다 */
+export function toSentryRelease(packageJson: unknown): string | undefined {
+  const parsed = packageVersionSchema.safeParse(packageJson);
+  return parsed.success ? `aido-server@${parsed.data.version}` : undefined;
 }
 
 export interface SentryInstrumentOptions {
