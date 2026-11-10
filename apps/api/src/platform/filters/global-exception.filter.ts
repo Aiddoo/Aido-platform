@@ -24,13 +24,17 @@ import { ErrorMessageTranslator } from "#api/platform/i18n/error-message.transla
 import { HttpLogEvent, httpRequestPath } from "#api/platform/logging/http-log";
 import { PlatformLogEvent } from "#api/platform/logging/platform.log-events";
 import { SENTRY_EXTRA, SENTRY_TAG } from "#api/platform/observability/sentry-keys";
-import { ApplicationException } from "#api/shared/application/application.exception";
-import { ApplicationExceptions } from "#api/shared/application/exceptions/application-exceptions";
 import { ExceptionReporterPort } from "#api/shared/application/ports/exception-reporter.port";
 import { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 import { ErrorCodedException } from "#api/shared/domain/exceptions/error-coded.exception";
 
 import { LEGACY_CONSTRAINT_ERRORS } from "./legacy-constraint-errors.js";
+import {
+  concurrentModification,
+  internalServerError,
+  invalidParameter,
+  transientDatabaseFailure,
+} from "./system.errors.js";
 
 /**
  * 카탈로그에 상태별 공통 코드가 400(SYS_0002)·500(SYS_0001)뿐이고 출시 앱은 모르는 코드를 SYS_0001로 바꾼다.
@@ -212,7 +216,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
 
   #mapDatabaseError(error: unknown): ErrorCodedException {
     if (isRecordNotFoundError(error)) {
-      return ApplicationExceptions.invalidParameter(
+      return invalidParameter(
         this.#config.isDevelopment ? { reason: "Record to update/delete not found" } : undefined,
       );
     }
@@ -225,7 +229,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
           event: PlatformLogEvent.DATABASE_FOREIGN_KEY_VIOLATED,
           constraint: databaseConstraint(error) ?? "unknown",
         });
-        return ApplicationExceptions.invalidParameter(
+        return invalidParameter(
           this.#config.isDevelopment ? { reason: "Referenced record does not exist" } : undefined,
         );
       case "connection":
@@ -237,19 +241,14 @@ export class GlobalExceptionFilter implements ExceptionFilter {
           kind,
           sqlState: databaseSqlState(error) ?? "none",
         });
-        return new ApplicationException(
-          ErrorCode.SYS_0005,
-          this.#config.isDevelopment ? { kind } : undefined,
-        );
+        return transientDatabaseFailure(this.#config.isDevelopment ? { kind } : undefined);
       default: {
         const sqlState = databaseSqlState(error);
         this.#logger.warn({
           event: PlatformLogEvent.DATABASE_ERROR_UNHANDLED,
           sqlState: sqlState ?? "unknown",
         });
-        return ApplicationExceptions.internalServerError(
-          this.#config.isDevelopment ? { sqlState } : undefined,
-        );
+        return internalServerError(this.#config.isDevelopment ? { sqlState } : undefined);
       }
     }
   }
@@ -270,6 +269,6 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       message: "저장소가 번역하지 않은 unique 제약 충돌",
       tags: { constraint },
     });
-    return ApplicationExceptions.concurrentModification();
+    return concurrentModification();
   }
 }
