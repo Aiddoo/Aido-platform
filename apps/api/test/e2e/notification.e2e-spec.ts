@@ -971,7 +971,7 @@ describe("알림 E2E", () => {
         const persisted = requireRecord(
           await client.query.notification.findFirst({ where: { id: target.id } }),
         );
-        expect(persisted.openedAt).toBeInstanceOf(Date);
+        expect(persisted.openedAt).toBeInstanceOf(Temporal.Instant);
         expect(persisted.isRead).toBe(true);
       });
     });
