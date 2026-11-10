@@ -60,17 +60,20 @@ describe("DrizzleTodoRepository (실제 PostgreSQL)", () => {
     const { todoRepository } = createRepositories();
     const missingId = (await todoRepository.nextId()).value;
 
-    // When
-    const results = [
+    // When - 거절을 모두 받아 두어 먼저 끝난 거절이 처리되지 않은 거절로 남지 않게 한다
+    const results = await Promise.allSettled([
       todoRepository.delete(missingId),
       todoRepository.updateTitle(missingId, "제목"),
       todoRepository.updateItem(missingId, { completed: true }),
       todoRepository.deleteItem(missingId),
-    ];
+    ]);
 
     // Then
     for (const result of results) {
-      await expect(result).rejects.toBeInstanceOf(DatabaseRecordNotFoundError);
+      expect(result).toMatchObject({
+        status: "rejected",
+        reason: expect.any(DatabaseRecordNotFoundError),
+      });
     }
   });
 });
