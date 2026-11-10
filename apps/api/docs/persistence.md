@@ -94,4 +94,4 @@ Repository·Reader·스키마·마이그레이션·DB 오류 번역을 바꿀 �
 
 ## 전환 중
 
-아직 옮기지 않은 Context의 저장소는 `mode: "date"`(`date`는 UTC 자정 `Date`), `$onUpdate`, raw SQL(LATERAL·윈도 집계·`FOR UPDATE SKIP LOCKED`)을 그대로 쓴다. customType·`$onUpdate` 제거·raw SQL 정리는 각 Context를 옮길 때 자기 테이블과 그 테이블을 읽는 다른 Context reader를 함께 바꾼다. 옮긴 Context는 `apps/api/architecture.ratchet.json`의 `migratedContexts`에 있다.
+아직 옮기지 않은 Context의 저장소는 `mode: "date"`(`date`는 UTC 자정 `Date`), `$onUpdate`, raw SQL(LATERAL·윈도 집계·`FOR UPDATE SKIP LOCKED`)을 그대로 쓴다. customType·`$onUpdate` 제거·raw SQL 정리는 각 Context를 옮길 때 자기 테이블과 그 테이블을 읽는 다른 Context reader를 함께 바꾼다.

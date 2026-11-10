@@ -88,4 +88,4 @@ export class Memo extends AggregateRoot<MemoId, MemoProps> {
 
 ## 전환 중
 
-아직 옮기지 않은 Context에는 `domain/{aggregates,entities,value-objects,policies,records}/<slice>/` 폴더, `planCreation`·`of`·`from` 팩토리, Application 복원, 상속하지 않는 VO가 남아 있다. 지금 코드 예시는 [Notification](../src/modules/notification/inbox/domain/notification.aggregate.ts)처럼 옛 경로를 가리킨다. 옮긴 Context는 `apps/api/architecture.ratchet.json`의 `migratedContexts`에 있고 이 문서를 따른다.
+아직 옮기지 않은 Context에는 `domain/{aggregates,entities,value-objects,policies,records}/<slice>/` 폴더, `planCreation`·`of`·`from` 팩토리, Application 복원, 상속하지 않는 VO가 남아 있다. 지금 코드 예시는 [Notification](../src/modules/notification/inbox/domain/notification.aggregate.ts)처럼 옛 경로를 가리킨다.

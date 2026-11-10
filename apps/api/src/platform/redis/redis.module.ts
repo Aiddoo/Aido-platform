@@ -21,6 +21,37 @@ import { REDIS_COMMAND_CLIENT } from "./redis.constants.js";
 /** quit이 오프라인 큐에 걸려 hang할 때 disconnect로 폴백하기까지의 대기 시간 */
 const QUIT_TIMEOUT_MS = 3_000;
 
+const logger = new Logger("RedisModule");
+
+function createRedisClient(
+  settings: RedisConnectionSettings,
+  buildOptions: (settings: RedisConnectionSettings) => RedisOptions,
+  name: string,
+): Redis {
+  const options = buildOptions(settings);
+  const client = settings.url ? new Redis(settings.url, options) : new Redis(options);
+
+  client.on("connect", () => {
+    logger.log({ event: PlatformLogEvent.REDIS_CONNECTED, client: name });
+  });
+
+  client.on("error", (error) => {
+    const code: unknown = Reflect.get(error, "code");
+    logger.error({
+      event: PlatformLogEvent.REDIS_ERRORED,
+      client: name,
+      errorType: error.name,
+      ...(typeof code === "string" && { networkCode: code }),
+    });
+  });
+
+  client.on("close", () => {
+    logger.warn({ event: PlatformLogEvent.REDIS_CLOSED, client: name });
+  });
+
+  return client;
+}
+
 /**
  * 종료 처리에 필요한 최소 클라이언트 계약
  *
@@ -45,19 +76,21 @@ export interface RedisLifecycleClient {
  *
  * @example
  * // 서비스에서 직접 사용 (일반적으로 Lock/Cache 어댑터를 통해 접근)
- * constructor(@Inject(REDIS_COMMAND_CLIENT) private readonly redis: Redis) {}
+ * constructor(@Inject(REDIS_COMMAND_CLIENT) redis: Redis) {}
  */
 @Global()
 @Module({})
 export class RedisModule implements OnApplicationShutdown {
-  private static readonly logger = new Logger(RedisModule.name);
-  private shutdownPromise: Promise<void> | null = null;
+  #shutdownPromise: Promise<void> | null = null;
+  readonly #commandClient: RedisLifecycleClient | null;
 
   constructor(
     @Optional()
     @Inject(REDIS_COMMAND_CLIENT)
-    private readonly commandClient: RedisLifecycleClient | null,
-  ) {}
+    commandClient: RedisLifecycleClient | null,
+  ) {
+    this.#commandClient = commandClient;
+  }
 
   static forRoot(): DynamicModule {
     const commandProvider: Provider = {
@@ -67,7 +100,7 @@ export class RedisModule implements OnApplicationShutdown {
         redis: ConfigType<typeof redisConfig>,
       ): Redis | null =>
         cache.type === "redis"
-          ? RedisModule.createClient(redis, buildCommandRedisOptions, "command")
+          ? createRedisClient(redis, buildCommandRedisOptions, "command")
           : null,
       inject: [cacheConfig.KEY, redisConfig.KEY],
     };
@@ -89,11 +122,11 @@ export class RedisModule implements OnApplicationShutdown {
 
   /** beforeApplicationShutdown에서 worker drain을 마친 뒤 Redis 연결을 닫는다. */
   async onApplicationShutdown(): Promise<void> {
-    this.shutdownPromise ??= this.shutdownClient(this.commandClient, "command");
-    await this.shutdownPromise;
+    this.#shutdownPromise ??= this.#shutdownClient(this.#commandClient, "command");
+    await this.#shutdownPromise;
   }
 
-  private async shutdownClient(client: RedisLifecycleClient | null, name: string): Promise<void> {
+  async #shutdownClient(client: RedisLifecycleClient | null, name: string): Promise<void> {
     if (!client || client.status === "end") {
       return;
     }
@@ -101,39 +134,10 @@ export class RedisModule implements OnApplicationShutdown {
     try {
       // Redis 다운 중 종료 시 quit이 오프라인 큐에 걸려 hang할 수 있다
       await withTimeout(() => client.quit(), QUIT_TIMEOUT_MS);
-      RedisModule.logger.log({ event: PlatformLogEvent.REDIS_DISCONNECTED, client: name });
+      logger.log({ event: PlatformLogEvent.REDIS_DISCONNECTED, client: name });
     } catch {
       client.disconnect();
-      RedisModule.logger.warn({ event: PlatformLogEvent.REDIS_FORCE_DISCONNECTED, client: name });
+      logger.warn({ event: PlatformLogEvent.REDIS_FORCE_DISCONNECTED, client: name });
     }
-  }
-
-  private static createClient(
-    settings: RedisConnectionSettings,
-    buildOptions: (settings: RedisConnectionSettings) => RedisOptions,
-    name: string,
-  ): Redis {
-    const options = buildOptions(settings);
-    const client = settings.url ? new Redis(settings.url, options) : new Redis(options);
-
-    client.on("connect", () => {
-      RedisModule.logger.log({ event: PlatformLogEvent.REDIS_CONNECTED, client: name });
-    });
-
-    client.on("error", (error) => {
-      const code: unknown = Reflect.get(error, "code");
-      RedisModule.logger.error({
-        event: PlatformLogEvent.REDIS_ERRORED,
-        client: name,
-        errorType: error.name,
-        ...(typeof code === "string" && { networkCode: code }),
-      });
-    });
-
-    client.on("close", () => {
-      RedisModule.logger.warn({ event: PlatformLogEvent.REDIS_CLOSED, client: name });
-    });
-
-    return client;
   }
 }

@@ -173,4 +173,4 @@ commit → 캐시 정리
 
 ## 전환 중
 
-아직 옮기지 않은 Context는 옛 구조(`modules/<context>/{domain,application,infrastructure,presentation}/<slice>/`, Symbol 토큰, `*-application.providers.ts`)를 쓴다. 옛 구조 코드는 그대로 동작하지만 새 코드의 사례로 삼지 않는다. 옮긴 Context는 `apps/api/architecture.ratchet.json`의 `migratedContexts`에 있고, 레이어 lint·ls-lint·dependency-cruiser·`#` 검사가 그 Context에만 엄격하게 걸린다. 목록이 모든 Context를 담으면 목록을 지우고 전체에 적용한다.
+모든 Context가 slice 구조다. 레이어 lint·ls-lint·dependency-cruiser·`#` 검사는 `apps/api/src` 전체에 걸린다. 남은 Symbol 토큰은 각 Context 문서의 "전환 중" 절에 적는다.

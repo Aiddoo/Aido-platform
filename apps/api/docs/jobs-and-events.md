@@ -126,4 +126,4 @@ for (const minute of minutesToSweep({ lastCompletedAt, now: clock.now(), maxCatc
 
 ## 전환 중
 
-아직 옮기지 않은 Context는 `JobRuntimePort`·`teamSize`(스케줄 `missed`는 생략 시 `skip`), `*.job.ts`·`*-queue.constants.ts`로 흩어진 큐 정의를 쓴다. 초대 활동 기록은 `social.invitee-activity` 내구성 구독(`social.invitee-activity.v1`), insights 일간 완료 캐시 정리는 planning 이벤트의 `after-commit` 구독이다. 옛 `publishAll`·이벤트 이름 상수·`@OnEvent` 구독은 없다. planning 완료 효과(스트릭·친구 완료 알림·마일스톤)는 소유 Context가 내구성 구독으로 옮기기 전까지 `ApplyTodoCompletionEffectsUseCase`가 커밋 뒤 바로 부른다. 옮긴 Context는 `apps/api/architecture.ratchet.json`의 `migratedContexts`에 있다.
+아직 옮기지 않은 Context는 `JobRuntimePort`·`teamSize`(스케줄 `missed`는 생략 시 `skip`), `*.job.ts`·`*-queue.constants.ts`로 흩어진 큐 정의를 쓴다. 초대 활동 기록은 `social.invitee-activity` 내구성 구독(`social.invitee-activity.v1`), insights 일간 완료 캐시 정리는 planning 이벤트의 `after-commit` 구독이다. 옛 `publishAll`·이벤트 이름 상수·`@OnEvent` 구독은 없다. planning 완료 효과(스트릭·친구 완료 알림·마일스톤)는 소유 Context가 내구성 구독으로 옮기기 전까지 `ApplyTodoCompletionEffectsUseCase`가 커밋 뒤 바로 부른다.

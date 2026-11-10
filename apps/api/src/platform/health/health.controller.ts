@@ -39,15 +39,25 @@ function describeHealthResponse(status: "ok" | "error"): SchemaObject {
 export class HealthController {
   readonly #instanceId: string;
   readonly #exposeDetails: boolean;
+  readonly #health: HealthCheckService;
+  readonly #databaseHealth: DatabaseHealthIndicator;
+  readonly #jobRuntimeHealth: JobRuntimeHealthIndicator;
+  readonly #outboundHealth: OutboundHealthIndicator;
+  readonly #runtimeStatsHealth: RuntimeStatsHealthIndicator;
 
   constructor(
-    private readonly health: HealthCheckService,
-    private readonly databaseHealth: DatabaseHealthIndicator,
-    private readonly jobRuntimeHealth: JobRuntimeHealthIndicator,
-    private readonly outboundHealth: OutboundHealthIndicator,
-    private readonly runtimeStatsHealth: RuntimeStatsHealthIndicator,
+    health: HealthCheckService,
+    databaseHealth: DatabaseHealthIndicator,
+    jobRuntimeHealth: JobRuntimeHealthIndicator,
+    outboundHealth: OutboundHealthIndicator,
+    runtimeStatsHealth: RuntimeStatsHealthIndicator,
     @Inject(appConfig.KEY) app: Pick<AppSettings, "instanceId" | "exposeHealthDetails">,
   ) {
+    this.#health = health;
+    this.#databaseHealth = databaseHealth;
+    this.#jobRuntimeHealth = jobRuntimeHealth;
+    this.#outboundHealth = outboundHealth;
+    this.#runtimeStatsHealth = runtimeStatsHealth;
     this.#instanceId = app.instanceId ?? randomUUID().slice(0, 8);
     this.#exposeDetails = app.exposeHealthDetails;
   }
@@ -127,11 +137,11 @@ curl https://api.aido.com/health
   async check(): Promise<
     Pick<HealthCheckResult, "status"> | (HealthCheckResult & { instanceId: string })
   > {
-    const result = await this.health.check([
-      () => this.databaseHealth.isHealthy("database"),
-      () => this.jobRuntimeHealth.isHealthy("queues"),
-      () => this.outboundHealth.isHealthy("outbound"),
-      () => this.runtimeStatsHealth.isHealthy("runtime"),
+    const result = await this.#health.check([
+      () => this.#databaseHealth.isHealthy("database"),
+      () => this.#jobRuntimeHealth.isHealthy("queues"),
+      () => this.#outboundHealth.isHealthy("outbound"),
+      () => this.#runtimeStatsHealth.isHealthy("runtime"),
     ]);
     // 운영은 공개 응답에 큐 이름·실패 수·런타임 수치를 싣지 않는다. 실패는 지금처럼 503이다
     if (!this.#exposeDetails) {

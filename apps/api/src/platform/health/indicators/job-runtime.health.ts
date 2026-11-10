@@ -28,17 +28,25 @@ const LEGACY_MONITORED_QUEUES = [
  */
 @Injectable()
 export class JobRuntimeHealthIndicator {
+  readonly #healthIndicatorService: HealthIndicatorService;
+  readonly #runtime: JobRuntimePort;
+  readonly #registry: JobQueueRegistry;
+
   constructor(
-    private readonly healthIndicatorService: HealthIndicatorService,
-    @Inject(JOB_RUNTIME) private readonly runtime: JobRuntimePort,
-    private readonly registry: JobQueueRegistry,
-  ) {}
+    healthIndicatorService: HealthIndicatorService,
+    @Inject(JOB_RUNTIME) runtime: JobRuntimePort,
+    registry: JobQueueRegistry,
+  ) {
+    this.#healthIndicatorService = healthIndicatorService;
+    this.#runtime = runtime;
+    this.#registry = registry;
+  }
 
   async isHealthy(key: string): Promise<HealthIndicatorResult> {
-    const indicator = this.healthIndicatorService.check(key);
+    const indicator = this.#healthIndicatorService.check(key);
     try {
       const health = await withTimeout(
-        () => this.runtime.health(this.#monitoredQueues()),
+        () => this.#runtime.health(this.#monitoredQueues()),
         QUEUE_STATS_TIMEOUT_MS,
       );
       return indicator.up({ ...health });
@@ -51,6 +59,6 @@ export class JobRuntimeHealthIndicator {
   }
 
   #monitoredQueues(): readonly string[] {
-    return uniq([...LEGACY_MONITORED_QUEUES, ...this.registry.queueNames()]);
+    return uniq([...LEGACY_MONITORED_QUEUES, ...this.#registry.queueNames()]);
   }
 }

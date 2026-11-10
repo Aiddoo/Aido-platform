@@ -39,13 +39,17 @@ export class UsageRetentionJob implements OnModuleInit {
   readonly #logger = new Logger(UsageRetentionJob.name);
   schedulerRegistration: Promise<void> = Promise.resolve();
 
+  readonly #meter: Pick<UsageMeterPort, "prune">;
+  readonly #runtime: JobRuntimePort;
   readonly #clock: ClockPort;
 
   constructor(
-    @Inject(USAGE_METER) private readonly meter: Pick<UsageMeterPort, "prune">,
-    @Inject(JOB_RUNTIME) private readonly runtime: JobRuntimePort,
+    @Inject(USAGE_METER) meter: Pick<UsageMeterPort, "prune">,
+    @Inject(JOB_RUNTIME) runtime: JobRuntimePort,
     clock: ClockPort,
   ) {
+    this.#meter = meter;
+    this.#runtime = runtime;
     this.#clock = clock;
   }
 
@@ -54,12 +58,12 @@ export class UsageRetentionJob implements OnModuleInit {
       this.#logger,
       "Outbound usage retention scheduler registration",
       async () => {
-        await this.runtime.work(USAGE_RETENTION_QUEUE, async () => this.prune(), {
+        await this.#runtime.work(USAGE_RETENTION_QUEUE, async () => this.prune(), {
           teamSize: 1,
           pollingIntervalSeconds: JOB_POLLING_SECONDS.BACKGROUND,
           queuePolicy: USAGE_RETENTION_JOB_OPTIONS,
         });
-        await this.runtime.schedule(
+        await this.#runtime.schedule(
           USAGE_RETENTION_SCHEDULE.id,
           USAGE_RETENTION_SCHEDULE.cron,
           USAGE_RETENTION_QUEUE,
@@ -74,7 +78,7 @@ export class UsageRetentionJob implements OnModuleInit {
     try {
       // UTC 일수라 일광 절약 없이 24시간 단위다
       const cutoff = this.#clock.now().subtract({ hours: 24 * USAGE_RETENTION_DAYS });
-      const prunedCount = await this.meter.prune(cutoff);
+      const prunedCount = await this.#meter.prune(cutoff);
       this.#logger.log({ event: PlatformLogEvent.METERING_USAGE_PRUNED, prunedCount });
     } catch (error) {
       this.#logger.error({

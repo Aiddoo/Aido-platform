@@ -46,4 +46,4 @@
 
 ## 전환 중
 
-이 문서의 코드 이름·경로는 아직 옮기지 않은 옛 구조(`modules/<context>/<layer>/<slice>`) 기준이다. 해당 Context를 옮기면 경로만 [아키텍처](architecture.md)의 slice 구조로 바뀌고 규칙은 그대로다. 옮긴 Context는 `apps/api/architecture.ratchet.json`의 `migratedContexts`에 있다.
+이 문서의 코드 이름·경로는 아직 옮기지 않은 옛 구조(`modules/<context>/<layer>/<slice>`) 기준이다. 해당 Context를 옮기면 경로만 [아키텍처](architecture.md)의 slice 구조로 바뀌고 규칙은 그대로다.

@@ -83,46 +83,49 @@ export interface PgBossClient {
 type PgBossClientLoader = () => PgBossClient | Promise<PgBossClient>;
 
 export class LazyPgBossClient implements PgBossClient {
-  private client?: PgBossClient;
-  private starting?: Promise<PgBossClient>;
-  private readonly errorListeners = new Set<(error: Error) => void>();
-  private stopped = false;
+  #client?: PgBossClient;
+  #starting?: Promise<PgBossClient>;
+  readonly #errorListeners = new Set<(error: Error) => void>();
+  #stopped = false;
+  readonly #load: PgBossClientLoader;
 
-  constructor(private readonly load: PgBossClientLoader) {}
+  constructor(load: PgBossClientLoader) {
+    this.#load = load;
+  }
 
   async start(): Promise<unknown> {
-    return this.ensureStarted();
+    return this.#ensureStarted();
   }
 
   async stop(options?: StopOptions): Promise<void> {
     // 종료 뒤 늦게 도착한 enqueue가 새 pg-boss(풀·타이머)를 띄워 프로세스 종료를 막지 않게 한다
-    this.stopped = true;
-    const client = this.starting ? await this.starting : this.client;
+    this.#stopped = true;
+    const client = this.#starting ? await this.#starting : this.#client;
     await client?.stop(options);
-    this.client = undefined;
-    this.starting = undefined;
+    this.#client = undefined;
+    this.#starting = undefined;
   }
 
   on(event: "error", listener: (error: Error) => void): unknown {
-    this.errorListeners.add(listener);
-    this.client?.on(event, listener);
+    this.#errorListeners.add(listener);
+    this.#client?.on(event, listener);
     return this;
   }
 
   async createQueue(name: string, options?: QueueOptions): Promise<void> {
-    await (await this.ensureStarted()).createQueue(name, options);
+    await (await this.#ensureStarted()).createQueue(name, options);
   }
 
   async updateQueue(name: string, options: UpdateQueueOptions): Promise<void> {
-    await (await this.ensureStarted()).updateQueue(name, options);
+    await (await this.#ensureStarted()).updateQueue(name, options);
   }
 
   async send(name: string, data: object, options: SendOptions): Promise<string | null> {
-    return (await this.ensureStarted()).send(name, data, options);
+    return (await this.#ensureStarted()).send(name, data, options);
   }
 
   async insert(name: string, jobs: JobInsert[], options: InsertOptions): Promise<string[] | null> {
-    return (await this.ensureStarted()).insert(name, jobs, options);
+    return (await this.#ensureStarted()).insert(name, jobs, options);
   }
 
   async schedule(
@@ -131,15 +134,15 @@ export class LazyPgBossClient implements PgBossClient {
     data: object,
     options: ScheduleOptions,
   ): Promise<void> {
-    await (await this.ensureStarted()).schedule(name, cron, data, options);
+    await (await this.#ensureStarted()).schedule(name, cron, data, options);
   }
 
   async unschedule(name: string, key?: string): Promise<void> {
-    await (await this.ensureStarted()).unschedule(name, key);
+    await (await this.#ensureStarted()).unschedule(name, key);
   }
 
   async deleteJob(name: string, ids: string[], options?: { db?: Db }): Promise<unknown> {
-    return (await this.ensureStarted()).deleteJob(name, ids, options);
+    return (await this.#ensureStarted()).deleteJob(name, ids, options);
   }
 
   async work(
@@ -147,39 +150,39 @@ export class LazyPgBossClient implements PgBossClient {
     options: WorkOptions & { includeMetadata: true },
     handler: (jobs: JobWithMetadata<JobData>[]) => Promise<unknown>,
   ): Promise<string> {
-    return (await this.ensureStarted()).work(name, options, handler);
+    return (await this.#ensureStarted()).work(name, options, handler);
   }
 
   async getQueues(names?: string[]): Promise<PgBossQueueCounts[]> {
-    return (await this.ensureStarted()).getQueues(names);
+    return (await this.#ensureStarted()).getQueues(names);
   }
 
   async getSchedules(): Promise<Schedule[]> {
-    return (await this.ensureStarted()).getSchedules();
+    return (await this.#ensureStarted()).getSchedules();
   }
 
   async previewSchedule(cron: string, options: PreviewScheduleOptions): Promise<Date[]> {
-    return (await this.ensureStarted()).previewSchedule(cron, options);
+    return (await this.#ensureStarted()).previewSchedule(cron, options);
   }
 
-  private async ensureStarted(): Promise<PgBossClient> {
-    if (this.client) {
-      return this.client;
+  async #ensureStarted(): Promise<PgBossClient> {
+    if (this.#client) {
+      return this.#client;
     }
-    if (this.stopped && !this.starting) {
+    if (this.#stopped && !this.#starting) {
       throw new Error("pg-boss client is stopped");
     }
 
-    this.starting ??= this.loadAndStart().catch((error: unknown) => {
-      this.starting = undefined;
+    this.#starting ??= this.#loadAndStart().catch((error: unknown) => {
+      this.#starting = undefined;
       throw error;
     });
-    return this.starting;
+    return this.#starting;
   }
 
-  private async loadAndStart(): Promise<PgBossClient> {
-    const client = await this.load();
-    for (const listener of this.errorListeners) {
+  async #loadAndStart(): Promise<PgBossClient> {
+    const client = await this.#load();
+    for (const listener of this.#errorListeners) {
       client.on("error", listener);
     }
     try {
@@ -195,7 +198,7 @@ export class LazyPgBossClient implements PgBossClient {
       }
       throw startupError;
     }
-    this.client = client;
+    this.#client = client;
     return client;
   }
 }
@@ -226,24 +229,30 @@ export const pgBossClientProvider: FactoryProvider<PgBossClient> = {
 
 @Injectable()
 export class PgBossJobRuntimeAdapter implements JobRuntimePort {
-  private readonly logger = new Logger(PgBossJobRuntimeAdapter.name);
+  readonly #logger = new Logger(PgBossJobRuntimeAdapter.name);
   readonly #queues: PgBossQueueProvisioner;
   readonly #alerts: OperationalAlertPort | null;
+  readonly #boss: PgBossClient;
+  readonly #txHost: JobTransactionSource;
+  readonly #config: Pick<ConfigType<typeof jobConfig>, "shutdownTimeoutMs">;
 
   constructor(
-    @Inject(PG_BOSS_CLIENT) private readonly boss: PgBossClient,
+    @Inject(PG_BOSS_CLIENT) boss: PgBossClient,
     @Inject(TransactionHost)
-    private readonly txHost: JobTransactionSource,
+    txHost: JobTransactionSource,
     @Inject(jobConfig.KEY)
-    private readonly config: Pick<ConfigType<typeof jobConfig>, "shutdownTimeoutMs">,
+    config: Pick<ConfigType<typeof jobConfig>, "shutdownTimeoutMs">,
     // 경보 모듈 없이 직접 조립하는 integration 테스트는 마지막 실패를 로그로만 남긴다
     @Optional() alerts?: OperationalAlertPort,
   ) {
+    this.#boss = boss;
+    this.#txHost = txHost;
+    this.#config = config;
     this.#queues = new PgBossQueueProvisioner(boss);
     this.#alerts = alerts ?? null;
-    this.boss.on("error", (error) => {
+    this.#boss.on("error", (error) => {
       // 오류 종류만 기록한다. 작업 payload나 DB 연결 문자열은 로그에 남기지 않는다.
-      this.logger.error({
+      this.#logger.error({
         event: PlatformLogEvent.JOB_RUNTIME_ERRORED,
         backend: "postgres",
         errorType: error.name,
@@ -252,13 +261,13 @@ export class PgBossJobRuntimeAdapter implements JobRuntimePort {
   }
 
   async start(): Promise<void> {
-    await this.boss.start();
+    await this.#boss.start();
   }
 
   async stop(): Promise<void> {
-    await this.boss.stop({
+    await this.#boss.stop({
       graceful: true,
-      timeout: this.config.shutdownTimeoutMs,
+      timeout: this.#config.shutdownTimeoutMs,
       close: true,
     });
   }
@@ -274,9 +283,9 @@ export class PgBossJobRuntimeAdapter implements JobRuntimePort {
       await this.#queues.ensure(deadLetterQueue, deadLetterJobPolicy);
     }
     await this.#queues.ensure(queue);
-    return this.boss.send(queue, data, {
+    return this.#boss.send(queue, data, {
       ...toPgBossJobOptions(queue, options),
-      db: transactionJobDatabase(this.txHost.tx),
+      db: transactionJobDatabase(this.#txHost.tx),
     });
   }
 
@@ -295,10 +304,10 @@ export class PgBossJobRuntimeAdapter implements JobRuntimePort {
     }
     await this.#queues.ensure(queue);
     // insert는 활성 CLS transaction에서 한 INSERT로 실행되고, 결정적 id 충돌은 send와 같이 무시된다.
-    await this.boss.insert(
+    await this.#boss.insert(
       queue,
       jobs.map(({ data, options }) => ({ ...toPgBossJobOptions(queue, options), data })),
-      { db: transactionJobDatabase(this.txHost.tx) },
+      { db: transactionJobDatabase(this.#txHost.tx) },
     );
   }
 
@@ -319,8 +328,8 @@ export class PgBossJobRuntimeAdapter implements JobRuntimePort {
       db: _transactionDb,
       singletonKey: _idempotencyKey,
       ...persistedOptions
-    } = this.toPgBossOptions(options, transactionJobDatabase(this.txHost.tx));
-    await this.boss.schedule(queue, cron, data, {
+    } = this.#toPgBossOptions(options, transactionJobDatabase(this.#txHost.tx));
+    await this.#boss.schedule(queue, cron, data, {
       ...persistedOptions,
       key: scheduleKey,
       tz: options.timezone,
@@ -329,7 +338,7 @@ export class PgBossJobRuntimeAdapter implements JobRuntimePort {
   }
 
   async unschedule(scheduleKey: string, queue: string): Promise<void> {
-    await this.boss.unschedule(queue, scheduleKey);
+    await this.#boss.unschedule(queue, scheduleKey);
   }
 
   async cancel(queue: string, idempotencyKeys: readonly string[]): Promise<void> {
@@ -339,10 +348,10 @@ export class PgBossJobRuntimeAdapter implements JobRuntimePort {
     await this.#queues.ensure(queue);
     // pg-boss cancel은 행을 cancelled로 남겨 같은 결정적 id의 재등록이 ON CONFLICT로 무시된다.
     // 지우면 상태와 상관없이 id가 비어 재예약이 산다. 끝난 행은 보존 기록일 뿐이라 잃어도 된다.
-    await this.boss.deleteJob(
+    await this.#boss.deleteJob(
       queue,
       idempotencyKeys.map((key) => deterministicJobId(queue, key)),
-      { db: transactionJobDatabase(this.txHost.tx) },
+      { db: transactionJobDatabase(this.#txHost.tx) },
     );
   }
 
@@ -352,7 +361,7 @@ export class PgBossJobRuntimeAdapter implements JobRuntimePort {
     options: WorkJobOptions,
   ): Promise<void> {
     await this.#queues.ensure(queue, options.queuePolicy);
-    await this.boss.work(
+    await this.#boss.work(
       queue,
       {
         includeMetadata: true,
@@ -392,7 +401,7 @@ export class PgBossJobRuntimeAdapter implements JobRuntimePort {
                 retryLimit: job.retryLimit,
                 errorType: toErrorType(error),
               },
-              { logger: this.logger, alerts: this.#alerts },
+              { logger: this.#logger, alerts: this.#alerts },
             );
           }
           throw error;
@@ -403,7 +412,7 @@ export class PgBossJobRuntimeAdapter implements JobRuntimePort {
 
   async health(queueNames: readonly string[]): Promise<JobRuntimeHealth> {
     try {
-      const queues = await this.boss.getQueues([...queueNames]);
+      const queues = await this.#boss.getQueues([...queueNames]);
       const byName = new Map(queues.map((queue) => [queue.name, queue]));
 
       return {
@@ -425,7 +434,7 @@ export class PgBossJobRuntimeAdapter implements JobRuntimePort {
         ),
       };
     } catch (error) {
-      this.logger.error({
+      this.#logger.error({
         event: PlatformLogEvent.JOB_HEALTH_CHECK_FAILED,
         backend: "postgres",
         errorType: toErrorType(error),
@@ -449,7 +458,7 @@ export class PgBossJobRuntimeAdapter implements JobRuntimePort {
     }
   }
 
-  private toPgBossOptions(options: EnqueueJobOptions, db: Db): SendOptions {
+  #toPgBossOptions(options: EnqueueJobOptions, db: Db): SendOptions {
     return {
       db,
       singletonKey: options.idempotencyKey,

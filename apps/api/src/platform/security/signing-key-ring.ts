@@ -41,7 +41,7 @@ export class SigningKeyRing {
   readonly #keys: readonly SigningKey[];
   readonly #legacy: SigningKey;
 
-  private constructor(keys: readonly SigningKey[], legacy: SigningKey) {
+  constructor(keys: readonly SigningKey[], legacy: SigningKey) {
     this.#keys = keys;
     this.#legacy = legacy;
   }

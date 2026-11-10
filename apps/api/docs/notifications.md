@@ -76,4 +76,4 @@ createBroadcastCampaignSchema = broadcastNotificationSchema.extend({
 - notification은 모든 slice(inbox·push·email·reminders·retention)가 새 구조다. 수신자 언어는 push `resolveRecipientLocale`(지원하지 않는 언어 en), 방해 금지는 `isWithinQuietHours`, 우선순위 차선은 `push-delivery.v1` lane(거래성 10·광고성 0, `minPriority: 10` worker)이다.
 - 리마인더도 `resolveRecipientLocale`을 쓴다. 다른 Context(billing·social·engagement·ai)가 만드는 알림은 옮길 때 `copyKey`·`copyFacts`를 넘긴다(그때까지 알림함은 저장 문구).
 - 문구·발송 시각 실험 배정은 retention slice의 `ExperimentAssignerPort`다. 다른 slice가 쓰기 시작하면 Context `shared`로 올린다.
-- 관리자 캠페인의 언어별 문구·수신자 현지 시각 발송·마케팅 우선순위 0 차선은 operations `broadcasts` slice에 있다. 옮긴 Context는 `apps/api/architecture.ratchet.json`의 `migratedContexts`에 있다.
+- 관리자 캠페인의 언어별 문구·수신자 현지 시각 발송·마케팅 우선순위 0 차선은 operations `broadcasts` slice에 있다.

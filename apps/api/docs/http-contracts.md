@@ -90,4 +90,4 @@ Controller·DTO·Zod schema·응답 매퍼·페이지네이션·Swagger·요청 
 
 ## 전환 중
 
-아직 옮기지 않은 Context는 `presentation/{controllers,schemas,mappers}/<slice>/v<n>/`와 엔드포인트마다 DTO 파일 여러 개, Application이 만드는 응답 문구·계약 타입, 6가지 목록 모양을 쓴다. 옮길 때 응답 바이트·component id·operationId를 그대로 두고 구조만 바꾼다. 옮긴 Context는 `apps/api/architecture.ratchet.json`의 `migratedContexts`에 있다.
+아직 옮기지 않은 Context는 `presentation/{controllers,schemas,mappers}/<slice>/v<n>/`와 엔드포인트마다 DTO 파일 여러 개, Application이 만드는 응답 문구·계약 타입, 6가지 목록 모양을 쓴다. 옮길 때 응답 바이트·component id·operationId를 그대로 두고 구조만 바꾼다.

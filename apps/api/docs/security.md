@@ -45,4 +45,4 @@
 
 ## 전환 중
 
-지금 코드는 JWT `algorithms`·`iss`·`aud` 없이 검증하고, `JWT_SECRET`을 커서 HMAC·수신 거부 토큰에도 쓰며, DB TLS를 `rejectUnauthorized: false`로 연결한다. 보안 강화 변경이 들어오기 전까지는 위 표의 "호환" 열을 지키는 순서로만 바꾼다. 옮긴 Context는 `apps/api/architecture.ratchet.json`의 `migratedContexts`에 있다.
+지금 코드는 JWT `algorithms`·`iss`·`aud` 없이 검증하고, `JWT_SECRET`을 커서 HMAC·수신 거부 토큰에도 쓰며, DB TLS를 `rejectUnauthorized: false`로 연결한다. 보안 강화 변경이 들어오기 전까지는 위 표의 "호환" 열을 지키는 순서로만 바꾼다.

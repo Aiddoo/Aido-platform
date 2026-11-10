@@ -18,4 +18,4 @@
 
 ## 전환 중
 
-아직 옮기지 않은 Context는 옛 구조(`modules/<context>/<layer>/<slice>`)라 위 이름·경로가 지금 코드와 같다. 새 구조로 옮긴 Context는 `apps/api/architecture.ratchet.json`의 `migratedContexts`에 있고, 그 Context의 경로·이름은 [아키텍처](architecture.md)와 [이름 사전](conventions.md)을 따른다.
+아직 옮기지 않은 Context는 옛 구조(`modules/<context>/<layer>/<slice>`)라 위 이름·경로가 지금 코드와 같다. 새 구조의 경로·이름은 [아키텍처](architecture.md)와 [이름 사전](conventions.md)을 따른다.

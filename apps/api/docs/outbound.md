@@ -32,4 +32,4 @@
 
 ## 전환 중
 
-지금 정책 상수는 `ai-outbound.policies.ts`·`weather-outbound.policies.ts`·`email-outbound.policy.ts`·`expo-outbound.policy.ts`·`oauth-outbound.policies.ts`·`discord-outbound.policy.ts`처럼 Context infrastructure에 있고, 응답 검증·오류 분류는 공급자마다 다르며 어댑터 테스트는 손으로 쓴 HTTP Stub이다. 각 Context를 옮길 때 위 체크리스트로 맞춘다. 옮긴 Context는 `apps/api/architecture.ratchet.json`의 `migratedContexts`에 있다.
+지금 정책 상수는 `ai-outbound.policies.ts`·`weather-outbound.policies.ts`·`email-outbound.policy.ts`·`expo-outbound.policy.ts`·`oauth-outbound.policies.ts`·`discord-outbound.policy.ts`처럼 Context infrastructure에 있고, 응답 검증·오류 분류는 공급자마다 다르며 어댑터 테스트는 손으로 쓴 HTTP Stub이다. 각 Context를 옮길 때 위 체크리스트로 맞춘다.

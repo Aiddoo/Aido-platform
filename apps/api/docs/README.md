@@ -53,4 +53,4 @@
 
 ## 전환 중
 
-서버는 옛 구조(`modules/<context>/<layer>/<slice>`)에서 slice 우선 구조(`modules/<context>/<slice>/<layer>`)로 Context 단위로 옮기는 중이다. 아직 옮기지 않은 Context는 옛 구조를 그대로 쓰고, 각 문서의 "전환 중" 절이 그 차이를 적는다. 옮긴 Context 목록은 `apps/api/architecture.ratchet.json`의 `migratedContexts`이고, 레이어 lint·이름·경계 검사는 그 목록의 Context에만 엄격하게 걸린다.
+모든 Context가 slice 우선 구조(`modules/<context>/<slice>/<layer>`)로 옮겨졌고, 레이어 lint·이름·경계·관례 검사는 `apps/api/src` 전체에 걸린다. 각 문서의 "전환 중" 절은 아직 남은 옛 이름·저장 방식을 적는다.

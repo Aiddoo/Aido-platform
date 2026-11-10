@@ -122,4 +122,4 @@
 
 ## 전환 중
 
-아직 옮기지 않은 Context에는 옛 이름(`*.policy.ts` 순수 함수, `records/`·`*.model.ts`, `snapshot()`, Symbol 토큰, `private` 키워드, `*.events.ts` 로그 상수)이 남아 있다. 고치는 김에 그 파일만 새 이름으로 바꾸지 않고, Context를 옮길 때 한 번에 바꾼다. 옮긴 Context는 `apps/api/architecture.ratchet.json`의 `migratedContexts`에 있다.
+아직 옮기지 않은 Context에는 옛 이름(`*.policy.ts` 순수 함수, `records/`·`*.model.ts`, `snapshot()`, Symbol 토큰, `private` 키워드, `*.events.ts` 로그 상수)이 남아 있다. 고치는 김에 그 파일만 새 이름으로 바꾸지 않고, Context를 옮길 때 한 번에 바꾼다.

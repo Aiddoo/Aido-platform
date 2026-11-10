@@ -130,4 +130,4 @@ AIDO_TEST_DB_WORKERS=2 pnpm --filter @aido/server exec vitest run --project perf
 
 ## 전환 중
 
-옛 spec 일부가 아직 `test/mocks`·`test/builders`, `createUnitOfWorkMock()`을 쓴다. 기존 테스트를 일괄 교체하지 않고 그 spec을 고칠 때 위 구조로 옮긴다. 마지막에 `test/builders`를 fixtures로, `test/mocks`를 doubles로 합친다. mock 라이브러리 의존성은 지웠다. 옮긴 Context는 `apps/api/architecture.ratchet.json`의 `migratedContexts`에 있다.
+옛 spec 일부가 아직 `test/mocks`·`test/builders`, `createUnitOfWorkMock()`을 쓴다. 기존 테스트를 일괄 교체하지 않고 그 spec을 고칠 때 위 구조로 옮긴다. 마지막에 `test/builders`를 fixtures로, `test/mocks`를 doubles로 합친다. mock 라이브러리 의존성은 지웠다.

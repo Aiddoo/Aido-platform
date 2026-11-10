@@ -21,10 +21,14 @@ export function toSuccessResponse<T>(data: T): SuccessResponse<T> {
  */
 @Injectable()
 export class ResponseTransformInterceptor<T> implements NestInterceptor<T, T | SuccessResponse<T>> {
-  constructor(private readonly reflector: Reflector) {}
+  readonly #reflector: Reflector;
+
+  constructor(reflector: Reflector) {
+    this.#reflector = reflector;
+  }
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<T | SuccessResponse<T>> {
-    if (isRawResponse(this.reflector, context)) {
+    if (isRawResponse(this.#reflector, context)) {
       return next.handle();
     }
 
