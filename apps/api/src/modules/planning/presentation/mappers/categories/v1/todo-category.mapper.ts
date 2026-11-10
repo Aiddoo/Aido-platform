@@ -11,8 +11,8 @@ import { toISOString } from "#api/shared/domain/date/utils/format";
 import type { TodoCategoryWithCountView } from "../../../../application/ports/categories/todo-category.repository.port.js";
 import type { TodoCategory } from "../../../../domain/aggregates/categories/todo-category.aggregate.js";
 
-export abstract class TodoCategoryMapper {
-  static toResponse(category: TodoCategory): TodoCategoryDto {
+export const TodoCategoryMapper = {
+  toResponse(category: TodoCategory): TodoCategoryDto {
     return {
       id: category.id,
       userId: category.userId,
@@ -22,9 +22,9 @@ export abstract class TodoCategoryMapper {
       createdAt: toISOString(category.createdAt),
       updatedAt: toISOString(category.updatedAt),
     };
-  }
+  },
 
-  static toResponseWithCount(view: TodoCategoryWithCountView): TodoCategoryWithCountDto {
+  toResponseWithCount(view: TodoCategoryWithCountView): TodoCategoryWithCountDto {
     return {
       id: view.id,
       userId: view.userId,
@@ -35,9 +35,9 @@ export abstract class TodoCategoryMapper {
       updatedAt: toISOString(view.updatedAt),
       todoCount: view.todoCount,
     };
-  }
+  },
 
-  static toManyResponseWithCount(views: TodoCategoryWithCountView[]): TodoCategoryWithCountDto[] {
+  toManyResponseWithCount(views: TodoCategoryWithCountView[]): TodoCategoryWithCountDto[] {
     return views.map((view) => TodoCategoryMapper.toResponseWithCount(view));
-  }
-}
+  },
+};

@@ -9,8 +9,8 @@ import { toISOString, toISOStringOrNull } from "#api/shared/domain/date/utils/fo
 import type { CheerLimitSnapshot } from "../../../../application/models/cheers/cheer-read.models.js";
 import type { CheerWithRelations } from "../../../../application/ports/cheers/cheer.repository.port.js";
 
-export abstract class CheerMapper {
-  static toDetailDto(cheer: CheerWithRelations, appVersion?: string): CheerDetail {
+export const CheerMapper = {
+  toDetailDto(cheer: CheerWithRelations, appVersion?: string): CheerDetail {
     return {
       id: cheer.id,
       senderId: cheer.senderId,
@@ -25,9 +25,9 @@ export abstract class CheerMapper {
         profileImage: resolveProfileImage(cheer.sender.profile?.profileImage ?? null, appVersion),
       },
     };
-  }
+  },
 
-  static toDto(cheer: CheerWithRelations): Cheer {
+  toDto(cheer: CheerWithRelations): Cheer {
     return {
       id: cheer.id,
       senderId: cheer.senderId,
@@ -36,18 +36,18 @@ export abstract class CheerMapper {
       createdAt: toISOString(cheer.createdAt),
       readAt: toISOStringOrNull(cheer.readAt ?? null),
     };
-  }
+  },
 
-  static toDetailDtoList(cheers: CheerWithRelations[], appVersion?: string): CheerDetail[] {
+  toDetailDtoList(cheers: CheerWithRelations[], appVersion?: string): CheerDetail[] {
     return cheers.map((cheer) => CheerMapper.toDetailDto(cheer, appVersion));
-  }
+  },
 
-  static toLimitInfoDto(limitInfo: CheerLimitSnapshot): CheerLimitInfo {
+  toLimitInfoDto(limitInfo: CheerLimitSnapshot): CheerLimitInfo {
     return {
       dailyLimit: limitInfo.dailyLimit,
       usedToday: limitInfo.used,
       remainingToday: limitInfo.remaining,
       isUnlimited: limitInfo.dailyLimit == null,
     };
-  }
-}
+  },
+};

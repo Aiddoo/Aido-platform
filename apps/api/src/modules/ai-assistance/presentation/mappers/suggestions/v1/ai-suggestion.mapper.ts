@@ -16,11 +16,11 @@ import type { Suggestion } from "../../../../domain/aggregates/suggestions/sugge
  *
  * Suggestion 애그리게잇을 API 응답 형식으로 변환합니다.
  */
-export abstract class AiSuggestionMapper {
+export const AiSuggestionMapper = {
   /**
    * Suggestion 애그리게잇을 API 응답 형식으로 변환
    */
-  static toResponse(suggestion: Suggestion): RecurringSuggestion {
+  toResponse(suggestion: Suggestion): RecurringSuggestion {
     const daysResult = z.array(dayOfWeekSchema).safeParse(suggestion.daysOfWeek);
 
     return {
@@ -35,19 +35,19 @@ export abstract class AiSuggestionMapper {
       createdAt: suggestion.createdAt.toISOString(),
       suggestedCategoryId: suggestion.suggestedCategoryId ?? null,
     };
-  }
+  },
 
   /**
    * 여러 애그리게잇을 API 응답 형식으로 일괄 변환
    */
-  static toManyResponse(suggestions: Suggestion[]): RecurringSuggestion[] {
+  toManyResponse(suggestions: Suggestion[]): RecurringSuggestion[] {
     return suggestions.map((suggestion) => AiSuggestionMapper.toResponse(suggestion));
-  }
+  },
 
   /**
    * 수락/거절 결과를 API 응답 형식으로 변환 (createdTodosCount는 수락 시에만 포함)
    */
-  static toActionResponse(result: SuggestionActionResult): SuggestionActionResponse {
+  toActionResponse(result: SuggestionActionResult): SuggestionActionResponse {
     return {
       message: result.message,
       suggestion: AiSuggestionMapper.toResponse(result.suggestion),
@@ -55,5 +55,5 @@ export abstract class AiSuggestionMapper {
         createdTodosCount: result.createdTodosCount,
       }),
     };
-  }
-}
+  },
+};

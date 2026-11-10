@@ -52,7 +52,7 @@ export class InMemoryPushDeviceStore
   }
 
   async deleteAllPushDevicesByUser(userId: string): Promise<void> {
-    for (const device of [...this.devices.values()]) {
+    for (const device of this.devices.values()) {
       if (device.userId === userId) {
         this.devices.delete(keyOf(device.userId, device.deviceId));
       }

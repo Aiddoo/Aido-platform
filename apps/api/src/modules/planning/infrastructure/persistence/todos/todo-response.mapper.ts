@@ -13,8 +13,8 @@ import { toTodoRepeat } from "../../../application/read-models/series/todo-serie
 import { toRepeatRule } from "../series/repeat-rule-row.mapper.js";
 import type { TodoWithCategory, TodoWithSeries } from "./todo-row.types.js";
 
-export abstract class TodoMapper {
-  static toFriendResponse(entity: TodoWithCategory): FriendTodo {
+export const TodoMapper = {
+  toFriendResponse(entity: TodoWithCategory): FriendTodo {
     const category = requireRecord(entity.category);
     const items = entity.items.map((item) => ({
       id: item.id,
@@ -56,21 +56,21 @@ export abstract class TodoMapper {
       createdAt: toISOString(entity.createdAt),
       updatedAt: toISOString(entity.updatedAt),
     };
-  }
+  },
 
-  static toManyFriendResponse(entities: TodoWithCategory[]): FriendTodo[] {
+  toManyFriendResponse(entities: TodoWithCategory[]): FriendTodo[] {
     return entities.map((entity) => TodoMapper.toFriendResponse(entity));
-  }
+  },
 
-  static toResponse(entity: TodoWithSeries): Todo {
+  toResponse(entity: TodoWithSeries): Todo {
     return {
       ...TodoMapper.toFriendResponse(entity),
       repeat: entity.series == null ? null : toTodoRepeat(toRepeatRule(entity.series)),
       occurrenceDate: toDateStringOrNull(entity.occurrenceDate),
     };
-  }
+  },
 
-  static toManyResponse(entities: TodoWithSeries[]): Todo[] {
+  toManyResponse(entities: TodoWithSeries[]): Todo[] {
     return entities.map((entity) => TodoMapper.toResponse(entity));
-  }
-}
+  },
+};

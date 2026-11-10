@@ -15,6 +15,10 @@ export function createMockExecutionContext(options?: {
   http.getRequest.mockReturnValue(request);
   context.switchToHttp.mockReturnValue(http);
   context.getHandler.mockReturnValue(() => undefined);
-  context.getClass.mockReturnValue(class TestController {});
+  context.getClass.mockReturnValue(
+    class TestController {
+      readonly isTestController = true;
+    },
+  );
   return { context, request };
 }

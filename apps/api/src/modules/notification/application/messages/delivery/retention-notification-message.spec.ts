@@ -54,15 +54,15 @@ describe("createRetentionNotificationMessage", () => {
   });
 
   it("stage와 copyKey의 불가능한 조합은 컴파일되지 않는다", () => {
-    if (false) {
+    const assertCompileError = (): void => {
       // @ts-expect-error D0에는 d7_restart가 존재하지 않는다.
       createRetentionNotificationMessage({
         stage: "D0",
         copyKey: "d7_restart",
         selectionContext: context(1),
       });
-    }
+    };
 
-    expect(true).toBe(true);
+    expect(assertCompileError).toBeTypeOf("function");
   });
 });

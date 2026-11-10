@@ -26,7 +26,7 @@ import { resolveProfileImage } from "#api/platform/http/profile/profile-image.re
  *
  * 인증 관련 서비스 결과를 API 응답 형식으로 변환합니다.
  */
-export abstract class AuthMapper {
+export const AuthMapper = {
   /**
    * 회원가입 결과를 API 응답 형식으로 변환합니다.
    *
@@ -40,13 +40,13 @@ export abstract class AuthMapper {
    * // { message: "...", email: "user@example.com" }
    * ```
    */
-  static toRegisterResponse(result: RegisterResult) {
+  toRegisterResponse(result: RegisterResult) {
     return {
       message: result.message,
       email: result.email,
       emailSent: result.emailSent,
     };
-  }
+  },
 
   /**
    * 이메일 인증 결과를 API 응답 형식으로 변환합니다.
@@ -60,7 +60,7 @@ export abstract class AuthMapper {
    * return AuthMapper.toAuthTokensResponse(result);
    * ```
    */
-  static toAuthTokensResponse(result: VerifyEmailResult | LoginResult, appVersion?: string) {
+  toAuthTokensResponse(result: VerifyEmailResult | LoginResult, appVersion?: string) {
     return {
       userId: result.userId,
       userTag: result.userTag,
@@ -70,22 +70,22 @@ export abstract class AuthMapper {
       profileImage: resolveProfileImage(result.profileImage, appVersion),
       accountRestored: result.accountRestored ?? false,
     };
-  }
+  },
 
   /** 소셜 로그인 결과를 응답으로 바꾼다. 신규 가입이면 `isNewUser: true`를 싣는다. */
-  static toSocialAuthTokensResponse(result: SocialLoginResult, appVersion?: string) {
+  toSocialAuthTokensResponse(result: SocialLoginResult, appVersion?: string) {
     return {
       ...AuthMapper.toAuthTokensResponse(result, appVersion),
       isNewUser: result.isNewUser,
     };
-  }
+  },
 
-  static toRefreshTokensResponse(result: RefreshTokensResult) {
+  toRefreshTokensResponse(result: RefreshTokensResult) {
     return {
       accessToken: result.tokens.accessToken,
       refreshToken: result.tokens.refreshToken,
     };
-  }
+  },
 
   /**
    * 현재 사용자 정보를 API 응답 형식으로 변환합니다.
@@ -99,7 +99,7 @@ export abstract class AuthMapper {
    * return AuthMapper.toCurrentUserResponse(result);
    * ```
    */
-  static toCurrentUserResponse(
+  toCurrentUserResponse(
     result: CurrentUserResult,
     appVersion?: string,
   ): z.input<typeof currentUserSchema> {
@@ -128,7 +128,7 @@ export abstract class AuthMapper {
       isPremium: result.isPremium,
       entitlements: result.entitlements,
     };
-  }
+  },
 
   /**
    * 프로필 수정 결과를 API 응답 형식으로 변환합니다.
@@ -142,13 +142,13 @@ export abstract class AuthMapper {
    * return AuthMapper.toUpdateProfileResponse(result);
    * ```
    */
-  static toUpdateProfileResponse(result: UpdateProfileResult, appVersion?: string) {
+  toUpdateProfileResponse(result: UpdateProfileResult, appVersion?: string) {
     return {
       message: result.message,
       name: result.name,
       profileImage: resolveProfileImage(result.profileImage, appVersion),
     };
-  }
+  },
 
   /**
    * 단순 메시지 응답을 생성합니다.
@@ -161,9 +161,9 @@ export abstract class AuthMapper {
    * return AuthMapper.toMessageResponse("로그아웃되었습니다.");
    * ```
    */
-  static toMessageResponse(message: string) {
+  toMessageResponse(message: string) {
     return { message };
-  }
+  },
 
   /**
    * OAuth 코드 교환 결과를 API 응답 형식으로 변환합니다.
@@ -177,7 +177,7 @@ export abstract class AuthMapper {
    * return AuthMapper.toExchangeCodeResponse(result);
    * ```
    */
-  static toExchangeCodeResponse(result: ExchangeCodeResult, appVersion?: string) {
+  toExchangeCodeResponse(result: ExchangeCodeResult, appVersion?: string) {
     return {
       userId: result.userId,
       accessToken: result.accessToken,
@@ -187,5 +187,5 @@ export abstract class AuthMapper {
       accountRestored: result.accountRestored ?? false,
       isNewUser: result.isNewUser,
     };
-  }
-}
+  },
+};

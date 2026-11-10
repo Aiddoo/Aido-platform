@@ -12,8 +12,8 @@ import type {
   ReminderNudgeWithRelations,
 } from "../../../../application/ports/nudges/nudge.repository.port.js";
 
-export abstract class NudgeMapper {
-  static toDetailDto(nudge: NudgeWithRelations, appVersion?: string): NudgeDetail {
+export const NudgeMapper = {
+  toDetailDto(nudge: NudgeWithRelations, appVersion?: string): NudgeDetail {
     return {
       id: nudge.id,
       senderId: nudge.senderId,
@@ -34,9 +34,9 @@ export abstract class NudgeMapper {
         completed: nudge.todo.completed,
       },
     };
-  }
+  },
 
-  static toDto(nudge: NudgeWithRelations): Nudge {
+  toDto(nudge: NudgeWithRelations): Nudge {
     return {
       id: nudge.id,
       senderId: nudge.senderId,
@@ -46,13 +46,13 @@ export abstract class NudgeMapper {
       createdAt: toISOString(nudge.createdAt),
       readAt: toISOStringOrNull(nudge.readAt ?? null),
     };
-  }
+  },
 
-  static toDetailDtoList(nudges: NudgeWithRelations[], appVersion?: string): NudgeDetail[] {
+  toDetailDtoList(nudges: NudgeWithRelations[], appVersion?: string): NudgeDetail[] {
     return nudges.map((nudge) => NudgeMapper.toDetailDto(nudge, appVersion));
-  }
+  },
 
-  static toRemindNudgeDto(nudge: ReminderNudgeWithRelations): RemindNudge {
+  toRemindNudgeDto(nudge: ReminderNudgeWithRelations): RemindNudge {
     return {
       id: nudge.id,
       senderId: nudge.senderId,
@@ -60,14 +60,14 @@ export abstract class NudgeMapper {
       message: nudge.message,
       createdAt: toISOString(nudge.createdAt),
     };
-  }
+  },
 
-  static toLimitInfoDto(limitInfo: NudgeLimitSnapshot): NudgeLimitInfo {
+  toLimitInfoDto(limitInfo: NudgeLimitSnapshot): NudgeLimitInfo {
     return {
       dailyLimit: limitInfo.dailyLimit,
       usedToday: limitInfo.used,
       remainingToday: limitInfo.remaining,
       isUnlimited: limitInfo.dailyLimit == null,
     };
-  }
-}
+  },
+};
