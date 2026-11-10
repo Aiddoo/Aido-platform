@@ -115,6 +115,7 @@ export function useToggleTodoMutationOptions() {
       toast.error(getUserFacingMessage(error), { fallback: t('todo:toast.changeFailedRetry') });
     },
     onSettled: (_data, error, { todoId, body, date }, context) => {
+      // 주간 달성(목록·상세)은 서버가 주간 알림 때 저장한 값이라 할 일을 바꿔도 바로 다시 계산되지 않는다. 지우기·일정 옮기기도 다시 받지 않는다
       if (date < todayKey) {
         invalidateWeeklyAchievements(queryClient, { year: getIsoWeekYear(date) });
       }
