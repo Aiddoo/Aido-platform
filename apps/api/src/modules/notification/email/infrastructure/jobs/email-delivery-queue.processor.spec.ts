@@ -8,7 +8,7 @@ import type { OperationalAlertPort } from "#api/shared/application/ports/operati
 import { FakeJobRuntime } from "#test/mocks/fake-job-runtime";
 
 import { createVerificationCodeEmail } from "../../application/email-message.mapper.js";
-import type { DeliverEmail } from "../../application/use-cases/deliver-email.use-case.js";
+import type { DeliverEmailUseCase } from "../../application/use-cases/deliver-email.use-case.js";
 import { EmailDeliveryQueueAdapter } from "../adapters/email-delivery-queue.adapter.js";
 import { EmailLogEvent } from "../adapters/email-provider.log-events.js";
 import {
@@ -26,14 +26,14 @@ describe("EmailDeliveryQueueProcessor", () => {
   );
   let runtime: FakeJobRuntime;
   let alert: MockProxy<OperationalAlertPort>;
-  let deliveries: Parameters<DeliverEmail["execute"]>[0][];
+  let deliveries: Parameters<DeliverEmailUseCase["execute"]>[0][];
   let processor: EmailDeliveryQueueProcessor;
 
   beforeEach(() => {
     runtime = new FakeJobRuntime();
     alert = mock<OperationalAlertPort>();
     deliveries = [];
-    const deliverEmail = mock<DeliverEmail>();
+    const deliverEmail = mock<DeliverEmailUseCase>();
     deliverEmail.execute.mockImplementation(async (input) => void deliveries.push(input));
     processor = new EmailDeliveryQueueProcessor(deliverEmail, encryption, alert, runtime);
     vi.spyOn(Logger.prototype, "warn").mockImplementation(() => undefined);

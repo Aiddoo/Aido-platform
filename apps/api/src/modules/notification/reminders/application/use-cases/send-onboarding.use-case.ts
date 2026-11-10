@@ -33,7 +33,7 @@ interface OnboardingStrategyDependencies {
   readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
 
-export class OnboardingStrategy implements TimezoneReminderStrategy {
+export class SendOnboardingUseCase implements TimezoneReminderStrategy {
   readonly #dependencies: OnboardingStrategyDependencies;
 
   constructor(dependencies: OnboardingStrategyDependencies) {

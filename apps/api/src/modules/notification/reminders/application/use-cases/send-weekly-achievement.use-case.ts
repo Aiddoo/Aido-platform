@@ -27,7 +27,7 @@ interface WeeklyAchievementStrategyDependencies {
   readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
 
-export class WeeklyAchievementStrategy implements TimezoneReminderStrategy {
+export class SendWeeklyAchievementUseCase implements TimezoneReminderStrategy {
   readonly #dependencies: WeeklyAchievementStrategyDependencies;
 
   constructor(dependencies: WeeklyAchievementStrategyDependencies) {

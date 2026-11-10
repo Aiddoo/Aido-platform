@@ -5,19 +5,19 @@ import { mockDeep } from "vitest-mock-extended";
 
 import { createMonthlyReportNotificationMessage } from "../../../push/application/messages/notification.messages.js";
 import type { TimezoneContext } from "../../domain/timezone-context.read-model.js";
-import { MonthlyReportStrategy } from "./send-monthly-report.use-case.js";
+import { SendMonthlyReportUseCase } from "./send-monthly-report.use-case.js";
 
-describe("MonthlyReportStrategy — 월간 리포트 전략", () => {
-  let strategy: MonthlyReportStrategy;
-  let reader: Mocked<ConstructorParameters<typeof MonthlyReportStrategy>[0]["reader"]>;
+describe("SendMonthlyReportUseCase — 월간 리포트 전략", () => {
+  let strategy: SendMonthlyReportUseCase;
+  let reader: Mocked<ConstructorParameters<typeof SendMonthlyReportUseCase>[0]["reader"]>;
   let preferenceReader: Mocked<
-    ConstructorParameters<typeof MonthlyReportStrategy>[0]["preferenceReader"]
+    ConstructorParameters<typeof SendMonthlyReportUseCase>[0]["preferenceReader"]
   >;
   let notificationPublisher: Mocked<
-    ConstructorParameters<typeof MonthlyReportStrategy>[0]["notificationPublisher"]
+    ConstructorParameters<typeof SendMonthlyReportUseCase>[0]["notificationPublisher"]
   >;
   let notificationHistoryReader: Mocked<
-    ConstructorParameters<typeof MonthlyReportStrategy>[0]["notificationHistoryReader"]
+    ConstructorParameters<typeof SendMonthlyReportUseCase>[0]["notificationHistoryReader"]
   >;
 
   const TZ = "Asia/Seoul";
@@ -40,9 +40,9 @@ describe("MonthlyReportStrategy — 월간 리포트 전략", () => {
     vi.setSystemTime(FAKE_NOW);
 
     const monthlyReportStrategyDependencies = mockDeep<
-      ConstructorParameters<typeof MonthlyReportStrategy>[0]
+      ConstructorParameters<typeof SendMonthlyReportUseCase>[0]
     >({});
-    const unit = new MonthlyReportStrategy(monthlyReportStrategyDependencies);
+    const unit = new SendMonthlyReportUseCase(monthlyReportStrategyDependencies);
 
     strategy = unit;
     reader = monthlyReportStrategyDependencies.reader;

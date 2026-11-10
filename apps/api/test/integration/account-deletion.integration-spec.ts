@@ -45,7 +45,7 @@ import { DeleteAccountUseCase } from "#api/modules/identity/users/application/us
 import { PurgeDeletedAccountsUseCase } from "#api/modules/identity/users/application/use-cases/purge-deleted-accounts.use-case";
 import { DrizzleUserRepository } from "#api/modules/identity/users/infrastructure/persistence/drizzle-user.repository";
 import { NotificationQueueAdapter } from "#api/modules/notification/notification-delivery-jobs.public";
-import { TransactionalEmailSender } from "#api/modules/notification/notification-email.public";
+import { SendTransactionalEmailUseCase } from "#api/modules/notification/notification-email.public";
 import { AdminEventNotifier } from "#api/modules/operations/operations-notifications.public";
 import { DefaultTodoCategoryProvisionerAdapter } from "#api/modules/planning/categories/infrastructure/adapters/default-todo-category-provisioner.adapter";
 import { CacheService } from "#api/platform/cache/cache.service";
@@ -176,7 +176,7 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
         },
         { provide: AuthPasswordHasherPort, useExisting: Argon2PasswordHasherAdapter },
         { provide: AuthTokenIssuerPort, useExisting: JwtTokenIssuerAdapter },
-        { provide: AuthEmailSenderPort, useExisting: TransactionalEmailSender },
+        { provide: AuthEmailSenderPort, useExisting: SendTransactionalEmailUseCase },
         AuthCacheAdapter,
         { provide: AuthCachePort, useExisting: AuthCacheAdapter },
         {
@@ -213,7 +213,7 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
           useValue: transaction.uow,
         },
         {
-          provide: TransactionalEmailSender,
+          provide: SendTransactionalEmailUseCase,
           useClass: FakeEmailService,
         },
         {

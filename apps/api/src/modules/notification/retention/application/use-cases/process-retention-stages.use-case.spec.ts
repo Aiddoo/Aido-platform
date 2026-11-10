@@ -2,7 +2,7 @@ import { createRetentionRepositoryMock, createUnitOfWorkMock } from "#test/mocks
 
 import type { CreateNotificationData } from "../../../inbox/application/ports/notification-draft.port.js";
 import { type RetentionStageCandidate } from "../ports/retention.repository.port.js";
-import { ProcessRetentionStages } from "./process-retention-stages.use-case.js";
+import { ProcessRetentionStagesUseCase } from "./process-retention-stages.use-case.js";
 
 function candidate(overrides: Partial<RetentionStageCandidate> = {}): RetentionStageCandidate {
   return {
@@ -33,7 +33,7 @@ function setup(stages: readonly RetentionStageCandidate[], options: { claimed?: 
   vi.mocked(repository.markStageOutboxed).mockResolvedValue(options.claimed ?? true);
   vi.mocked(repository.markStageSkipped).mockResolvedValue(true);
   const published: CreateNotificationData[] = [];
-  const useCase = new ProcessRetentionStages({
+  const useCase = new ProcessRetentionStagesUseCase({
     repository,
     notificationPublisher: {
       publish: async (data) => {
@@ -48,7 +48,7 @@ function setup(stages: readonly RetentionStageCandidate[], options: { claimed?: 
   return { useCase, repository, published };
 }
 
-describe("ProcessRetentionStages — 신규 코호트 단계 처리", () => {
+describe("ProcessRetentionStagesUseCase — 신규 코호트 단계 처리", () => {
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(new Date("2026-07-16T10:30:00Z"));

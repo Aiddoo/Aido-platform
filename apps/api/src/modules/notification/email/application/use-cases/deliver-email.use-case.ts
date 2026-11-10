@@ -39,7 +39,7 @@ interface DeliverEmailDependencies {
  * 큐에서 꺼낸 이메일 한 통을 공급자로 보낸다. 예약한 예산은 보내졌거나 다시 시도할 때는 그대로 두고,
  * 보내지 못하고 끝날 때만 돌려준다. 재시도는 큐(pg-boss)가 하므로 여기서는 던지기만 한다.
  */
-export class DeliverEmail {
+export class DeliverEmailUseCase {
   readonly #dependencies: DeliverEmailDependencies;
 
   constructor(dependencies: DeliverEmailDependencies) {

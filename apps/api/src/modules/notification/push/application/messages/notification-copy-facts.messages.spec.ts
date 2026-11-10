@@ -4,7 +4,7 @@ import { computeEffectiveStreak } from "#api/modules/identity/identity-settings.
 import type { SupportedLocale } from "#api/shared/domain/locale";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
 
-import { WeeklyAchievementStrategy } from "../../../reminders/application/use-cases/send-weekly-achievement.use-case.js";
+import { SendWeeklyAchievementUseCase } from "../../../reminders/application/use-cases/send-weekly-achievement.use-case.js";
 import type { TimezoneContext } from "../../../reminders/domain/timezone-context.read-model.js";
 import { SOCIAL_COPY } from "./notification-copy-templates.messages.js";
 import { createMorningReminderNotificationMessage } from "./scheduler-notification.messages.js";
@@ -21,7 +21,7 @@ import {
 } from "./system-notification.messages.js";
 
 type WeeklyAchievementStrategyDependencies = ConstructorParameters<
-  typeof WeeklyAchievementStrategy
+  typeof SendWeeklyAchievementUseCase
 >[0];
 type WeeklyStatsQuery = Parameters<
   WeeklyAchievementStrategyDependencies["reader"]["groupTotalTodosByUser"]
@@ -108,7 +108,7 @@ describe.each(locales)("%s 알림 문구와 실제 정책의 사실 조건", (lo
       },
       logger: new SilentLogger(),
     };
-    const strategy = new WeeklyAchievementStrategy(dependencies);
+    const strategy = new SendWeeklyAchievementUseCase(dependencies);
     const context: TimezoneContext = {
       tz: "Asia/Seoul",
       localHour: 7,

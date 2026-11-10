@@ -30,7 +30,7 @@ interface NudgeSuggestStrategyDependencies {
   readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
 
-export class NudgeSuggestStrategy implements TimezoneReminderStrategy {
+export class SendNudgeSuggestUseCase implements TimezoneReminderStrategy {
   readonly #dependencies: NudgeSuggestStrategyDependencies;
 
   constructor(dependencies: NudgeSuggestStrategyDependencies) {

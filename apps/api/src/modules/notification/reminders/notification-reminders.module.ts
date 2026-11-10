@@ -27,27 +27,27 @@ import { WEATHER_REMINDER_READER } from "./application/ports/weather-reminder-re
 import { WEEKLY_ACHIEVEMENT_STATS_READER } from "./application/ports/weekly-achievement-stats-reader.port.js";
 import { SchedulerDedupAdapter } from "./infrastructure/adapters/scheduler-dedup.adapter.js";
 import { TodoSeriesOwnerDormancyAdapter } from "./infrastructure/adapters/todo-series-owner-dormancy.adapter.js";
-import { TimezoneReminderQueueService } from "./infrastructure/jobs/timezone-reminder-queue.adapter.js";
+import { TimezoneReminderQueueAdapter } from "./infrastructure/jobs/timezone-reminder-queue.adapter.js";
 import { TimezoneReminderQueueModule } from "./infrastructure/jobs/timezone-reminder-queue.module.js";
-import { TimezoneReminderProcessor } from "./infrastructure/jobs/timezone-reminder-queue.processor.js";
+import { TimezoneReminderQueueProcessor } from "./infrastructure/jobs/timezone-reminder-queue.processor.js";
 import { TodoReminderQueueProcessor } from "./infrastructure/jobs/todo-reminder-queue.processor.js";
 import { TodoReminderSchedulerAdapter } from "./infrastructure/jobs/todo-reminder-scheduler.adapter.js";
 import { DrizzleSchedulerReader } from "./infrastructure/persistence/drizzle-scheduler.reader.js";
 import {
-  eveningReminderStrategyProvider,
-  lunchNudgeStrategyProvider,
-  monthlyReportStrategyProvider,
-  morningReminderStrategyProvider,
-  nudgeSuggestStrategyProvider,
-  onboardingStrategyProvider,
-  socialDigestStrategyProvider,
-  streakAtRiskStrategyProvider,
-  timezoneAwareReminderOrchestratorProvider,
-  weatherEveningStrategyProvider,
-  weatherMorningStrategyProvider,
-  weeklyAchievementStrategyProvider,
-  weeklyReportStrategyProvider,
-  winbackStrategyProvider,
+  sendEveningReminderUseCaseProvider,
+  sendLunchNudgeUseCaseProvider,
+  sendMonthlyReportUseCaseProvider,
+  sendMorningReminderUseCaseProvider,
+  sendNudgeSuggestUseCaseProvider,
+  sendOnboardingUseCaseProvider,
+  sendSocialDigestUseCaseProvider,
+  sendStreakAtRiskUseCaseProvider,
+  sweepTimezoneRemindersUseCaseProvider,
+  sendWeatherEveningUseCaseProvider,
+  sendWeatherMorningUseCaseProvider,
+  sendWeeklyAchievementUseCaseProvider,
+  sendWeeklyReportUseCaseProvider,
+  sendWinbackUseCaseProvider,
 } from "./notification-reminders.providers.js";
 
 @Module({
@@ -62,20 +62,20 @@ import {
   ],
   providers: [
     // 오케스트레이터 + 전략 (application)
-    timezoneAwareReminderOrchestratorProvider,
-    morningReminderStrategyProvider,
-    eveningReminderStrategyProvider,
-    onboardingStrategyProvider,
-    weeklyReportStrategyProvider,
-    monthlyReportStrategyProvider,
-    weeklyAchievementStrategyProvider,
-    winbackStrategyProvider,
-    nudgeSuggestStrategyProvider,
-    socialDigestStrategyProvider,
-    lunchNudgeStrategyProvider,
-    streakAtRiskStrategyProvider,
-    weatherMorningStrategyProvider,
-    weatherEveningStrategyProvider,
+    sweepTimezoneRemindersUseCaseProvider,
+    sendMorningReminderUseCaseProvider,
+    sendEveningReminderUseCaseProvider,
+    sendOnboardingUseCaseProvider,
+    sendWeeklyReportUseCaseProvider,
+    sendMonthlyReportUseCaseProvider,
+    sendWeeklyAchievementUseCaseProvider,
+    sendWinbackUseCaseProvider,
+    sendNudgeSuggestUseCaseProvider,
+    sendSocialDigestUseCaseProvider,
+    sendLunchNudgeUseCaseProvider,
+    sendStreakAtRiskUseCaseProvider,
+    sendWeatherMorningUseCaseProvider,
+    sendWeatherEveningUseCaseProvider,
     // 리더 어댑터 (단일 Drizzle 어댑터 → 분리된 리더 포트들에 바인딩)
     DrizzleSchedulerReader,
     SchedulerDedupAdapter,
@@ -104,9 +104,9 @@ import {
     },
     {
       provide: TIMEZONE_REMINDER_ENQUEUER,
-      useExisting: TimezoneReminderQueueService,
+      useExisting: TimezoneReminderQueueAdapter,
     },
-    TimezoneReminderProcessor,
+    TimezoneReminderQueueProcessor,
     TodoReminderQueueProcessor,
     {
       provide: REMINDER_SCHEDULER,

@@ -11,16 +11,16 @@ import {
 } from "../../../push/application/messages/notification.messages.js";
 import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/notification-campaign.constants.js";
 import type { TimezoneContext } from "../../domain/timezone-context.read-model.js";
-import { MorningReminderStrategy } from "./send-morning-reminder.use-case.js";
+import { SendMorningReminderUseCase } from "./send-morning-reminder.use-case.js";
 
-describe("MorningReminderStrategy — 아침 리마인더 전략", () => {
-  let strategy: MorningReminderStrategy;
-  let reader: Mocked<ConstructorParameters<typeof MorningReminderStrategy>[0]["reader"]>;
+describe("SendMorningReminderUseCase — 아침 리마인더 전략", () => {
+  let strategy: SendMorningReminderUseCase;
+  let reader: Mocked<ConstructorParameters<typeof SendMorningReminderUseCase>[0]["reader"]>;
   let notificationPublisher: Mocked<
-    ConstructorParameters<typeof MorningReminderStrategy>[0]["notificationPublisher"]
+    ConstructorParameters<typeof SendMorningReminderUseCase>[0]["notificationPublisher"]
   >;
   let notificationHistoryReader: Mocked<
-    ConstructorParameters<typeof MorningReminderStrategy>[0]["notificationHistoryReader"]
+    ConstructorParameters<typeof SendMorningReminderUseCase>[0]["notificationHistoryReader"]
   >;
 
   const TZ = "Asia/Seoul";
@@ -49,9 +49,9 @@ describe("MorningReminderStrategy — 아침 리마인더 전략", () => {
     vi.spyOn(Math, "random").mockReturnValue(0);
 
     const morningReminderStrategyDependencies = mockDeep<
-      ConstructorParameters<typeof MorningReminderStrategy>[0]
+      ConstructorParameters<typeof SendMorningReminderUseCase>[0]
     >({});
-    const unit = new MorningReminderStrategy(morningReminderStrategyDependencies);
+    const unit = new SendMorningReminderUseCase(morningReminderStrategyDependencies);
 
     strategy = unit;
     reader = morningReminderStrategyDependencies.reader;

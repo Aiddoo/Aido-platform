@@ -9,7 +9,7 @@ interface EnrollRetentionExperimentDependencies {
   readonly config: Pick<RetentionConfigPort, "enabled" | "treatmentPercent">;
 }
 
-export class EnrollRetentionExperiment {
+export class EnrollRetentionExperimentUseCase {
   readonly #dependencies: EnrollRetentionExperimentDependencies;
 
   constructor(dependencies: EnrollRetentionExperimentDependencies) {

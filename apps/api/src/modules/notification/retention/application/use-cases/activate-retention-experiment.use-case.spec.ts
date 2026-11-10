@@ -4,22 +4,22 @@ import { mockDeep } from "vitest-mock-extended";
 
 import { createRetentionRepositoryMock, createUnitOfWorkMock } from "#test/mocks/ports/index";
 
-import { ActivateRetentionExperiment } from "./activate-retention-experiment.use-case.js";
+import { ActivateRetentionExperimentUseCase } from "./activate-retention-experiment.use-case.js";
 
-describe("ActivateRetentionExperiment — 최초 인증 시점 시작", () => {
+describe("ActivateRetentionExperimentUseCase — 최초 인증 시점 시작", () => {
   let repository: Mocked<
-    ConstructorParameters<typeof ActivateRetentionExperiment>[0]["repository"]
+    ConstructorParameters<typeof ActivateRetentionExperimentUseCase>[0]["repository"]
   >;
 
   async function build(enabled: boolean) {
     const activateRetentionExperimentDependencies = mockDeep<
-      ConstructorParameters<typeof ActivateRetentionExperiment>[0]
+      ConstructorParameters<typeof ActivateRetentionExperimentUseCase>[0]
     >({
       repository: createRetentionRepositoryMock(),
       config: { enabled },
       unitOfWork: createUnitOfWorkMock(),
     });
-    const unit = new ActivateRetentionExperiment(activateRetentionExperimentDependencies);
+    const unit = new ActivateRetentionExperimentUseCase(activateRetentionExperimentDependencies);
     repository = activateRetentionExperimentDependencies.repository;
     return unit;
   }

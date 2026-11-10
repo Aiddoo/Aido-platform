@@ -9,7 +9,7 @@ import {
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 
 import { EmailAlertKey } from "../../application/email.alerts.js";
-import { DeliverEmail } from "../../application/use-cases/deliver-email.use-case.js";
+import { DeliverEmailUseCase } from "../../application/use-cases/deliver-email.use-case.js";
 import { EmailMessage } from "../../domain/email-message.vo.js";
 import { EmailLogEvent } from "../adapters/email-provider.log-events.js";
 import {
@@ -26,13 +26,13 @@ import {
 export class EmailDeliveryQueueProcessor implements OnModuleInit {
   readonly #logger = new Logger(EmailDeliveryQueueProcessor.name);
 
-  readonly #deliverEmail: DeliverEmail;
+  readonly #deliverEmail: DeliverEmailUseCase;
   readonly #encryption: EncryptionService;
   readonly #alert: OperationalAlertPort;
   readonly #runtime: JobRuntimePort | undefined;
 
   constructor(
-    deliverEmail: DeliverEmail,
+    deliverEmail: DeliverEmailUseCase,
     encryption: EncryptionService,
     @Inject(OPERATIONAL_ALERT) alert: OperationalAlertPort,
     @Optional()

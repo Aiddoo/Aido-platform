@@ -2,7 +2,7 @@ import type { EmailMessage } from "../../domain/email-message.vo.js";
 import type { EmailBudgetReservation } from "../ports/email-budget.port.js";
 import type { EmailDelivery, EmailDeliveryQueuePort } from "../ports/email-delivery-queue.port.js";
 import type { EmailDeliveryOutcome, EmailQuotaScope } from "../ports/email-sender.port.js";
-import { TransactionalEmailSender } from "./send-transactional-email.use-case.js";
+import { SendTransactionalEmailUseCase } from "./send-transactional-email.use-case.js";
 
 class StubQueue implements EmailDeliveryQueuePort {
   readonly deliveries: EmailDelivery[] = [];
@@ -50,17 +50,17 @@ class StubBudget {
 
 const noopLogger = { log: () => undefined, warn: () => undefined };
 
-describe("TransactionalEmailSender — 트랜잭션 이메일 발송 요청", () => {
+describe("SendTransactionalEmailUseCase — 트랜잭션 이메일 발송 요청", () => {
   let queue: StubQueue;
   let budget: StubBudget;
   let sender: StubSender;
-  let emailSender: TransactionalEmailSender;
+  let emailSender: SendTransactionalEmailUseCase;
 
   beforeEach(() => {
     queue = new StubQueue();
     budget = new StubBudget();
     sender = new StubSender();
-    emailSender = new TransactionalEmailSender({ queue, sender, budget, logger: noopLogger });
+    emailSender = new SendTransactionalEmailUseCase({ queue, sender, budget, logger: noopLogger });
   });
 
   function queuedMessage(): EmailMessage {

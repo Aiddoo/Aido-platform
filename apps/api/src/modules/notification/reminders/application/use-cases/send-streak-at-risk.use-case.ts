@@ -28,7 +28,7 @@ interface StreakAtRiskStrategyDependencies {
   readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
 
-export class StreakAtRiskStrategy implements TimezoneReminderStrategy {
+export class SendStreakAtRiskUseCase implements TimezoneReminderStrategy {
   readonly #dependencies: StreakAtRiskStrategyDependencies;
 
   constructor(dependencies: StreakAtRiskStrategyDependencies) {

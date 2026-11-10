@@ -4,59 +4,53 @@ import { mockDeep } from "vitest-mock-extended";
 
 import { TEST_CUID } from "#test/fixtures/index";
 
-import { TimezoneAwareReminderOrchestrator } from "./sweep-timezone-reminders.use-case.js";
+import { SweepTimezoneRemindersUseCase } from "./sweep-timezone-reminders.use-case.js";
 
-describe("TimezoneAwareReminderOrchestrator — 타임존 리마인더 오케스트레이터", () => {
-  let orchestrator: TimezoneAwareReminderOrchestrator;
+describe("SweepTimezoneRemindersUseCase — 타임존 리마인더 오케스트레이터", () => {
+  let orchestrator: SweepTimezoneRemindersUseCase;
   let preferenceReader: Mocked<
-    ConstructorParameters<typeof TimezoneAwareReminderOrchestrator>[0]["preferenceReader"]
+    ConstructorParameters<typeof SweepTimezoneRemindersUseCase>[0]["preferenceReader"]
   >;
-  let enqueuer: Mocked<
-    ConstructorParameters<typeof TimezoneAwareReminderOrchestrator>[0]["enqueuer"]
-  >;
+  let enqueuer: Mocked<ConstructorParameters<typeof SweepTimezoneRemindersUseCase>[0]["enqueuer"]>;
   let morningReminder: Mocked<
-    ConstructorParameters<typeof TimezoneAwareReminderOrchestrator>[0]["morningReminder"]
+    ConstructorParameters<typeof SweepTimezoneRemindersUseCase>[0]["morningReminder"]
   >;
   let eveningReminder: Mocked<
-    ConstructorParameters<typeof TimezoneAwareReminderOrchestrator>[0]["eveningReminder"]
+    ConstructorParameters<typeof SweepTimezoneRemindersUseCase>[0]["eveningReminder"]
   >;
   let weeklyAchievement: Mocked<
-    ConstructorParameters<typeof TimezoneAwareReminderOrchestrator>[0]["weeklyAchievement"]
+    ConstructorParameters<typeof SweepTimezoneRemindersUseCase>[0]["weeklyAchievement"]
   >;
-  let winback: Mocked<
-    ConstructorParameters<typeof TimezoneAwareReminderOrchestrator>[0]["winback"]
-  >;
+  let winback: Mocked<ConstructorParameters<typeof SweepTimezoneRemindersUseCase>[0]["winback"]>;
   let nudgeSuggest: Mocked<
-    ConstructorParameters<typeof TimezoneAwareReminderOrchestrator>[0]["nudgeSuggest"]
+    ConstructorParameters<typeof SweepTimezoneRemindersUseCase>[0]["nudgeSuggest"]
   >;
   let socialDigest: Mocked<
-    ConstructorParameters<typeof TimezoneAwareReminderOrchestrator>[0]["socialDigest"]
+    ConstructorParameters<typeof SweepTimezoneRemindersUseCase>[0]["socialDigest"]
   >;
   let weeklyReport: Mocked<
-    ConstructorParameters<typeof TimezoneAwareReminderOrchestrator>[0]["weeklyReport"]
+    ConstructorParameters<typeof SweepTimezoneRemindersUseCase>[0]["weeklyReport"]
   >;
   let monthlyReport: Mocked<
-    ConstructorParameters<typeof TimezoneAwareReminderOrchestrator>[0]["monthlyReport"]
+    ConstructorParameters<typeof SweepTimezoneRemindersUseCase>[0]["monthlyReport"]
   >;
   let lunchNudge: Mocked<
-    ConstructorParameters<typeof TimezoneAwareReminderOrchestrator>[0]["lunchNudge"]
+    ConstructorParameters<typeof SweepTimezoneRemindersUseCase>[0]["lunchNudge"]
   >;
   let streakAtRisk: Mocked<
-    ConstructorParameters<typeof TimezoneAwareReminderOrchestrator>[0]["streakAtRisk"]
+    ConstructorParameters<typeof SweepTimezoneRemindersUseCase>[0]["streakAtRisk"]
   >;
   let onboarding: Mocked<
-    ConstructorParameters<typeof TimezoneAwareReminderOrchestrator>[0]["onboarding"]
+    ConstructorParameters<typeof SweepTimezoneRemindersUseCase>[0]["onboarding"]
   >;
 
   beforeEach(async () => {
     vi.useFakeTimers({ toFake: ["Date"] });
 
     const timezoneAwareReminderOrchestratorDependencies = mockDeep<
-      ConstructorParameters<typeof TimezoneAwareReminderOrchestrator>[0]
+      ConstructorParameters<typeof SweepTimezoneRemindersUseCase>[0]
     >({});
-    const unit = new TimezoneAwareReminderOrchestrator(
-      timezoneAwareReminderOrchestratorDependencies,
-    );
+    const unit = new SweepTimezoneRemindersUseCase(timezoneAwareReminderOrchestratorDependencies);
 
     orchestrator = unit;
     preferenceReader = timezoneAwareReminderOrchestratorDependencies.preferenceReader;

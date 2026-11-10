@@ -27,7 +27,7 @@ interface EveningReminderStrategyDependencies {
   readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
 
-export class EveningReminderStrategy implements TimezoneReminderStrategy {
+export class SendEveningReminderUseCase implements TimezoneReminderStrategy {
   readonly #dependencies: EveningReminderStrategyDependencies;
 
   constructor(dependencies: EveningReminderStrategyDependencies) {

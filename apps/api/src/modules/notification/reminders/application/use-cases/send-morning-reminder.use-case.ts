@@ -29,7 +29,7 @@ interface MorningReminderStrategyDependencies {
   readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
 
-export class MorningReminderStrategy implements TimezoneReminderStrategy {
+export class SendMorningReminderUseCase implements TimezoneReminderStrategy {
   readonly #dependencies: MorningReminderStrategyDependencies;
 
   constructor(dependencies: MorningReminderStrategyDependencies) {

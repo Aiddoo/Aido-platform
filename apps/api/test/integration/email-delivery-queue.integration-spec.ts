@@ -9,11 +9,11 @@ import { EmailDeliveryQueueAdapter } from "#api/modules/notification/email/infra
 import { ResendEmailSenderAdapter } from "#api/modules/notification/email/infrastructure/adapters/resend-email-sender.adapter";
 import { EmailDeliveryQueueProcessor } from "#api/modules/notification/email/infrastructure/jobs/email-delivery-queue.processor";
 import {
-  deliverEmailProvider,
+  deliverEmailUseCaseProvider,
   emailBudgetProvider,
-  transactionalEmailSenderProvider,
+  sendTransactionalEmailUseCaseProvider,
 } from "#api/modules/notification/email/notification-email.providers";
-import { TransactionalEmailSender } from "#api/modules/notification/notification-email.public";
+import { SendTransactionalEmailUseCase } from "#api/modules/notification/notification-email.public";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { EncryptionService } from "#api/platform/encryption/encryption.service";
 import { PgBossJobRuntimeAdapter } from "#api/platform/jobs/pg-boss-job-runtime.adapter";
@@ -67,7 +67,7 @@ describe("이메일 발송 큐 (실제 pg-boss + PostgreSQL)", () => {
   let boss: PgBoss;
   let runtime: PgBossJobRuntimeAdapter;
   let module: TestingModule;
-  let sender: TransactionalEmailSender;
+  let sender: SendTransactionalEmailUseCase;
   let http: StubResendHttp;
   const alerts = new RecordingOperationalAlert();
 
@@ -118,8 +118,8 @@ describe("이메일 발송 큐 (실제 pg-boss + PostgreSQL)", () => {
         { provide: OutboundPolicyRegistry, useValue: policies },
         EncryptionService,
         emailBudgetProvider,
-        transactionalEmailSenderProvider,
-        deliverEmailProvider,
+        sendTransactionalEmailUseCaseProvider,
+        deliverEmailUseCaseProvider,
         EmailDeliveryQueueProcessor,
         {
           provide: EMAIL_SENDER,
@@ -142,7 +142,7 @@ describe("이메일 발송 큐 (실제 pg-boss + PostgreSQL)", () => {
         },
       ],
     }).compile();
-    sender = module.get(TransactionalEmailSender);
+    sender = module.get(SendTransactionalEmailUseCase);
     const processor = module.get(EmailDeliveryQueueProcessor);
     await runtime.work(
       "email-delivery.v1",

@@ -20,8 +20,8 @@ const SWEEP_JOB_DATA: SweepRemindersJobData = {};
 import { NotificationProviderLogEvent } from "../../../push/infrastructure/adapters/notification-provider.log-events.js";
 
 @Injectable()
-export class TimezoneReminderQueueService implements TimezoneReminderEnqueuerPort {
-  readonly #logger = new Logger(TimezoneReminderQueueService.name);
+export class TimezoneReminderQueueAdapter implements TimezoneReminderEnqueuerPort {
+  readonly #logger = new Logger(TimezoneReminderQueueAdapter.name);
 
   readonly #runtime: JobRuntimePort;
 

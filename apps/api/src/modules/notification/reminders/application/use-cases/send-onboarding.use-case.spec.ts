@@ -5,19 +5,19 @@ import { mockDeep } from "vitest-mock-extended";
 
 import { createOnboardingNotificationMessage } from "../../../push/application/messages/notification.messages.js";
 import type { TimezoneContext } from "../../domain/timezone-context.read-model.js";
-import { OnboardingStrategy } from "./send-onboarding.use-case.js";
+import { SendOnboardingUseCase } from "./send-onboarding.use-case.js";
 
-describe("OnboardingStrategy — 온보딩 전략", () => {
-  let strategy: OnboardingStrategy;
-  let reader: Mocked<ConstructorParameters<typeof OnboardingStrategy>[0]["reader"]>;
+describe("SendOnboardingUseCase — 온보딩 전략", () => {
+  let strategy: SendOnboardingUseCase;
+  let reader: Mocked<ConstructorParameters<typeof SendOnboardingUseCase>[0]["reader"]>;
   let preferenceReader: Mocked<
-    ConstructorParameters<typeof OnboardingStrategy>[0]["preferenceReader"]
+    ConstructorParameters<typeof SendOnboardingUseCase>[0]["preferenceReader"]
   >;
   let notificationPublisher: Mocked<
-    ConstructorParameters<typeof OnboardingStrategy>[0]["notificationPublisher"]
+    ConstructorParameters<typeof SendOnboardingUseCase>[0]["notificationPublisher"]
   >;
   let notificationHistoryReader: Mocked<
-    ConstructorParameters<typeof OnboardingStrategy>[0]["notificationHistoryReader"]
+    ConstructorParameters<typeof SendOnboardingUseCase>[0]["notificationHistoryReader"]
   >;
 
   const TZ = "Asia/Seoul";
@@ -42,9 +42,9 @@ describe("OnboardingStrategy — 온보딩 전략", () => {
     vi.setSystemTime(FAKE_NOW);
 
     const onboardingStrategyDependencies = mockDeep<
-      ConstructorParameters<typeof OnboardingStrategy>[0]
+      ConstructorParameters<typeof SendOnboardingUseCase>[0]
     >({});
-    const unit = new OnboardingStrategy(onboardingStrategyDependencies);
+    const unit = new SendOnboardingUseCase(onboardingStrategyDependencies);
 
     strategy = unit;
     reader = onboardingStrategyDependencies.reader;

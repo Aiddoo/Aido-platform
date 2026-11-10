@@ -5,7 +5,7 @@ import { mock } from "vitest-mock-extended";
 
 import { EmailDeliveryQueueProcessor } from "#api/modules/notification/email/infrastructure/jobs/email-delivery-queue.processor";
 import { NotificationEmailModule } from "#api/modules/notification/email/notification-email.module";
-import { TransactionalEmailSender } from "#api/modules/notification/notification-email.public";
+import { SendTransactionalEmailUseCase } from "#api/modules/notification/notification-email.public";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { EncryptionService } from "#api/platform/encryption/encryption.service";
 import { USAGE_METER } from "#api/platform/metering/interfaces/usage-meter.interface";
@@ -67,7 +67,7 @@ class PlatformStubModule {}
 
 describe("이메일 발송 큐 통합 테스트 — 운영 NotificationEmailModule 배선 + 실제 Resend SDK + HTTP fixture", () => {
   let module: TestingModule;
-  let sender: TransactionalEmailSender;
+  let sender: SendTransactionalEmailUseCase;
   let processor: EmailDeliveryQueueProcessor;
   let http: StubResendHttp;
 
@@ -81,7 +81,7 @@ describe("이메일 발송 큐 통합 테스트 — 운영 NotificationEmailModu
     module = await Test.createTestingModule({
       imports: [PlatformStubModule, NotificationEmailModule],
     }).compile();
-    sender = module.get(TransactionalEmailSender);
+    sender = module.get(SendTransactionalEmailUseCase);
     processor = module.get(EmailDeliveryQueueProcessor);
   });
 

@@ -35,13 +35,13 @@ import { NaverOAuthIdentityAdapter } from "#api/modules/identity/auth/infrastruc
 import { AccountPurgeProcessor } from "#api/modules/identity/users/infrastructure/jobs/account-purge.processor";
 import { AccountPurgeScheduler } from "#api/modules/identity/users/infrastructure/jobs/account-purge.scheduler";
 import { EmailDeliveryQueueProcessor } from "#api/modules/notification/email/infrastructure/jobs/email-delivery-queue.processor";
-import { TransactionalEmailSender } from "#api/modules/notification/notification-email.public";
+import { SendTransactionalEmailUseCase } from "#api/modules/notification/notification-email.public";
 import { PushProviderPort } from "#api/modules/notification/push/application/ports/push-provider.port";
 import { NotificationQueueProcessor } from "#api/modules/notification/push/infrastructure/jobs/notification-queue.processor";
-import { TimezoneAwareReminderOrchestrator } from "#api/modules/notification/reminders/application/use-cases/sweep-timezone-reminders.use-case";
-import { TimezoneReminderProcessor } from "#api/modules/notification/reminders/infrastructure/jobs/timezone-reminder-queue.processor";
+import { SweepTimezoneRemindersUseCase } from "#api/modules/notification/reminders/application/use-cases/sweep-timezone-reminders.use-case";
+import { TimezoneReminderQueueProcessor } from "#api/modules/notification/reminders/infrastructure/jobs/timezone-reminder-queue.processor";
 import { TodoReminderQueueProcessor } from "#api/modules/notification/reminders/infrastructure/jobs/todo-reminder-queue.processor";
-import { RetentionQueueService } from "#api/modules/notification/retention/infrastructure/jobs/retention-queue.adapter";
+import { RetentionQueueAdapter } from "#api/modules/notification/retention/infrastructure/jobs/retention-queue.adapter";
 import { RetentionQueueProcessor } from "#api/modules/notification/retention/infrastructure/jobs/retention-queue.processor";
 import { AdminNotifierPort } from "#api/modules/operations/admin-notices/application/ports/admin-notifier.port";
 import { AdminNotificationProcessor } from "#api/modules/operations/admin-notices/infrastructure/jobs/admin-notification.processor";
@@ -95,7 +95,7 @@ const BACKGROUND_PROCESSORS = [
   TodoSeriesMaterializationProcessor,
   AdminNotificationProcessor,
   EmailDeliveryQueueProcessor,
-  TimezoneReminderProcessor,
+  TimezoneReminderQueueProcessor,
   TodoReminderQueueProcessor,
   SuggestionAnalysisProcessor,
   ReportGenerationProcessor,
@@ -107,13 +107,13 @@ const BACKGROUND_PROCESSORS = [
 
 const BACKGROUND_JOBS = [
   DailySignupSummaryScheduler,
-  TimezoneAwareReminderOrchestrator,
+  SweepTimezoneRemindersUseCase,
   SuggestionAnalysisJob,
   ReportGenerationJob,
   AccountPurgeScheduler,
   TodoSeriesMaterializationScheduler,
   PlanApplicationCleanupJob,
-  RetentionQueueService,
+  RetentionQueueAdapter,
 ];
 
 export interface E2eTestContext {
@@ -232,7 +232,7 @@ export async function createE2eApp(options?: E2eAppOptions): Promise<E2eTestCont
     .useValue(testDatabase.getClient())
     .overrideProvider(Argon2PasswordHasherAdapter)
     .useClass(FakePasswordHasher)
-    .overrideProvider(TransactionalEmailSender)
+    .overrideProvider(SendTransactionalEmailUseCase)
     .useValue(fakeEmailService)
     .overrideProvider(OAuthIdentityProviderRegistryPort)
     .useFactory({

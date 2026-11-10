@@ -4,7 +4,7 @@ import { match } from "ts-pattern";
 import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
 
 import { NotificationProviderLogEvent } from "../../../push/infrastructure/adapters/notification-provider.log-events.js";
-import { ProcessRetentionStages } from "../../application/use-cases/process-retention-stages.use-case.js";
+import { ProcessRetentionStagesUseCase } from "../../application/use-cases/process-retention-stages.use-case.js";
 import {
   RETENTION_QUEUE,
   RETENTION_WORKER_POLICY,
@@ -16,11 +16,11 @@ import {
 export class RetentionQueueProcessor implements OnModuleInit {
   readonly #logger = new Logger(RetentionQueueProcessor.name);
 
-  readonly #processStages: ProcessRetentionStages;
+  readonly #processStages: ProcessRetentionStagesUseCase;
   readonly #runtime: JobRuntimePort | undefined;
 
   constructor(
-    processStages: ProcessRetentionStages,
+    processStages: ProcessRetentionStagesUseCase,
     @Optional()
     @Inject(JOB_RUNTIME)
     runtime?: JobRuntimePort,

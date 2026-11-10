@@ -11,7 +11,7 @@ import {
 } from "#test/mocks/ports/notification-weather.stub";
 
 import type { TimezoneContext } from "../../domain/timezone-context.read-model.js";
-import { WeatherEveningStrategy } from "./send-weather-evening.use-case.js";
+import { SendWeatherEveningUseCase } from "./send-weather-evening.use-case.js";
 
 const HOUR_MS = 60 * 60_000;
 /** 서울 2026-11-02 20:00 */
@@ -49,13 +49,13 @@ function report({
   };
 }
 
-describe("WeatherEveningStrategy — 저녁 날씨 알림", () => {
+describe("SendWeatherEveningUseCase — 저녁 날씨 알림", () => {
   let reader: StubWeatherReminderReader;
   let publisher: StubNotificationBatchPublisher;
   let history: StubNotificationHistoryReader;
   let weatherReports: StubReminderWeatherReportReader;
   let logger: MockProxy<ApplicationLoggerPort>;
-  let strategy: WeatherEveningStrategy;
+  let strategy: SendWeatherEveningUseCase;
 
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ["Date"] });
@@ -65,7 +65,7 @@ describe("WeatherEveningStrategy — 저녁 날씨 알림", () => {
     history = new StubNotificationHistoryReader();
     weatherReports = new StubReminderWeatherReportReader();
     logger = mock<ApplicationLoggerPort>();
-    strategy = new WeatherEveningStrategy({
+    strategy = new SendWeatherEveningUseCase({
       reader,
       notificationPublisher: publisher,
       notificationHistoryReader: history,

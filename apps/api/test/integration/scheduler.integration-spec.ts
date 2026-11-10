@@ -4,30 +4,30 @@ import { vi } from "vitest";
 import { SCHEDULER_PREFERENCE_READER } from "#api/modules/notification/reminders/application/ports/scheduler-preference-reader.port";
 import { TIMEZONE_REMINDER_ENQUEUER } from "#api/modules/notification/reminders/application/ports/timezone-reminder-enqueuer.port";
 import {
-  EveningReminderStrategy,
-  LunchNudgeStrategy,
-  MonthlyReportStrategy,
-  MorningReminderStrategy,
-  NudgeSuggestStrategy,
-  OnboardingStrategy,
-  SocialDigestStrategy,
-  StreakAtRiskStrategy,
-  WeatherEveningStrategy,
-  WeatherMorningStrategy,
-  WeeklyAchievementStrategy,
-  WeeklyReportStrategy,
-  WinbackStrategy,
+  SendEveningReminderUseCase,
+  SendLunchNudgeUseCase,
+  SendMonthlyReportUseCase,
+  SendMorningReminderUseCase,
+  SendNudgeSuggestUseCase,
+  SendOnboardingUseCase,
+  SendSocialDigestUseCase,
+  SendStreakAtRiskUseCase,
+  SendWeatherEveningUseCase,
+  SendWeatherMorningUseCase,
+  SendWeeklyAchievementUseCase,
+  SendWeeklyReportUseCase,
+  SendWinbackUseCase,
 } from "#api/modules/notification/reminders/application/use-cases/reminder-strategies.constants";
-import { TimezoneAwareReminderOrchestrator } from "#api/modules/notification/reminders/application/use-cases/sweep-timezone-reminders.use-case";
+import { SweepTimezoneRemindersUseCase } from "#api/modules/notification/reminders/application/use-cases/sweep-timezone-reminders.use-case";
 import { NOTIFICATION_SCHEDULE } from "#api/modules/notification/reminders/domain/notification-schedule.domain-service";
 import { TEST_CUID } from "#test/fixtures/index";
 import { suppressLogger } from "#test/setup/suppress-logger";
 
-import { timezoneAwareReminderOrchestratorProvider } from "../../src/modules/notification/reminders/notification-reminders.providers.js";
+import { sweepTimezoneRemindersUseCaseProvider } from "../../src/modules/notification/reminders/notification-reminders.providers.js";
 
-describe("TimezoneAwareReminderOrchestrator 통합 테스트 (Mock 포트)", () => {
+describe("SweepTimezoneRemindersUseCase 통합 테스트 (Mock 포트)", () => {
   let module: TestingModule;
-  let orchestrator: TimezoneAwareReminderOrchestrator;
+  let orchestrator: SweepTimezoneRemindersUseCase;
 
   // ── Strategy mocks ──────────────────────────────────────────────────
   const mockMorningReminder = {
@@ -81,32 +81,32 @@ describe("TimezoneAwareReminderOrchestrator 통합 테스트 (Mock 포트)", () 
 
     module = await Test.createTestingModule({
       providers: [
-        timezoneAwareReminderOrchestratorProvider,
+        sweepTimezoneRemindersUseCaseProvider,
         {
           provide: SCHEDULER_PREFERENCE_READER,
           useValue: mockPreferenceReader,
         },
         { provide: TIMEZONE_REMINDER_ENQUEUER, useValue: mockEnqueuer },
-        { provide: MorningReminderStrategy, useValue: mockMorningReminder },
-        { provide: EveningReminderStrategy, useValue: mockEveningReminder },
-        { provide: OnboardingStrategy, useValue: mockOnboarding },
-        { provide: WeeklyReportStrategy, useValue: mockWeeklyReport },
-        { provide: MonthlyReportStrategy, useValue: mockMonthlyReport },
+        { provide: SendMorningReminderUseCase, useValue: mockMorningReminder },
+        { provide: SendEveningReminderUseCase, useValue: mockEveningReminder },
+        { provide: SendOnboardingUseCase, useValue: mockOnboarding },
+        { provide: SendWeeklyReportUseCase, useValue: mockWeeklyReport },
+        { provide: SendMonthlyReportUseCase, useValue: mockMonthlyReport },
         {
-          provide: WeeklyAchievementStrategy,
+          provide: SendWeeklyAchievementUseCase,
           useValue: mockWeeklyAchievement,
         },
-        { provide: WinbackStrategy, useValue: mockWinback },
-        { provide: NudgeSuggestStrategy, useValue: mockNudgeSuggest },
-        { provide: SocialDigestStrategy, useValue: mockSocialDigest },
-        { provide: LunchNudgeStrategy, useValue: mockLunchNudge },
-        { provide: StreakAtRiskStrategy, useValue: mockStreakAtRisk },
-        { provide: WeatherMorningStrategy, useValue: mockWeatherMorning },
-        { provide: WeatherEveningStrategy, useValue: mockWeatherEvening },
+        { provide: SendWinbackUseCase, useValue: mockWinback },
+        { provide: SendNudgeSuggestUseCase, useValue: mockNudgeSuggest },
+        { provide: SendSocialDigestUseCase, useValue: mockSocialDigest },
+        { provide: SendLunchNudgeUseCase, useValue: mockLunchNudge },
+        { provide: SendStreakAtRiskUseCase, useValue: mockStreakAtRisk },
+        { provide: SendWeatherMorningUseCase, useValue: mockWeatherMorning },
+        { provide: SendWeatherEveningUseCase, useValue: mockWeatherEvening },
       ],
     }).compile();
 
-    orchestrator = module.get<TimezoneAwareReminderOrchestrator>(TimezoneAwareReminderOrchestrator);
+    orchestrator = module.get<SweepTimezoneRemindersUseCase>(SweepTimezoneRemindersUseCase);
   });
 
   afterAll(async () => {

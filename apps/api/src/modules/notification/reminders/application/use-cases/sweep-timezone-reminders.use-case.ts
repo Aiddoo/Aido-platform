@@ -19,19 +19,19 @@ import {
   type TimezoneReminderEnqueuerPort,
 } from "../ports/timezone-reminder-enqueuer.port.js";
 import { NotificationRemindersLogEvent } from "../reminders.log-events.js";
-import type { EveningReminderStrategy } from "./send-evening-reminder.use-case.js";
-import type { LunchNudgeStrategy } from "./send-lunch-nudge.use-case.js";
-import type { MonthlyReportStrategy } from "./send-monthly-report.use-case.js";
-import type { MorningReminderStrategy } from "./send-morning-reminder.use-case.js";
-import type { NudgeSuggestStrategy } from "./send-nudge-suggest.use-case.js";
-import type { OnboardingStrategy } from "./send-onboarding.use-case.js";
-import type { SocialDigestStrategy } from "./send-social-digest.use-case.js";
-import type { StreakAtRiskStrategy } from "./send-streak-at-risk.use-case.js";
-import type { WeatherEveningStrategy } from "./send-weather-evening.use-case.js";
-import type { WeatherMorningStrategy } from "./send-weather-morning.use-case.js";
-import type { WeeklyAchievementStrategy } from "./send-weekly-achievement.use-case.js";
-import type { WeeklyReportStrategy } from "./send-weekly-report.use-case.js";
-import type { WinbackStrategy } from "./send-winback.use-case.js";
+import type { SendEveningReminderUseCase } from "./send-evening-reminder.use-case.js";
+import type { SendLunchNudgeUseCase } from "./send-lunch-nudge.use-case.js";
+import type { SendMonthlyReportUseCase } from "./send-monthly-report.use-case.js";
+import type { SendMorningReminderUseCase } from "./send-morning-reminder.use-case.js";
+import type { SendNudgeSuggestUseCase } from "./send-nudge-suggest.use-case.js";
+import type { SendOnboardingUseCase } from "./send-onboarding.use-case.js";
+import type { SendSocialDigestUseCase } from "./send-social-digest.use-case.js";
+import type { SendStreakAtRiskUseCase } from "./send-streak-at-risk.use-case.js";
+import type { SendWeatherEveningUseCase } from "./send-weather-evening.use-case.js";
+import type { SendWeatherMorningUseCase } from "./send-weather-morning.use-case.js";
+import type { SendWeeklyAchievementUseCase } from "./send-weekly-achievement.use-case.js";
+import type { SendWeeklyReportUseCase } from "./send-weekly-report.use-case.js";
+import type { SendWinbackUseCase } from "./send-winback.use-case.js";
 
 /**
  * 타임존 인식 리마인더 — Every-Minute Sweep 오케스트레이터.
@@ -48,23 +48,23 @@ interface TimezoneAwareReminderOrchestratorDependencies {
     TimezoneReminderEnqueuerPort,
     "enqueueSocialDigest" | "registerSweepScheduler"
   >;
-  readonly morningReminder: Pick<MorningReminderStrategy, "execute">;
-  readonly eveningReminder: Pick<EveningReminderStrategy, "execute">;
-  readonly weeklyReport: Pick<WeeklyReportStrategy, "execute">;
-  readonly monthlyReport: Pick<MonthlyReportStrategy, "execute">;
-  readonly weeklyAchievement: Pick<WeeklyAchievementStrategy, "execute">;
-  readonly winback: Pick<WinbackStrategy, "execute">;
-  readonly nudgeSuggest: Pick<NudgeSuggestStrategy, "execute">;
-  readonly socialDigest: Pick<SocialDigestStrategy, "execute">;
-  readonly lunchNudge: Pick<LunchNudgeStrategy, "execute">;
-  readonly streakAtRisk: Pick<StreakAtRiskStrategy, "execute">;
-  readonly onboarding: Pick<OnboardingStrategy, "execute">;
-  readonly weatherMorning: Pick<WeatherMorningStrategy, "execute">;
-  readonly weatherEvening: Pick<WeatherEveningStrategy, "execute">;
+  readonly morningReminder: Pick<SendMorningReminderUseCase, "execute">;
+  readonly eveningReminder: Pick<SendEveningReminderUseCase, "execute">;
+  readonly weeklyReport: Pick<SendWeeklyReportUseCase, "execute">;
+  readonly monthlyReport: Pick<SendMonthlyReportUseCase, "execute">;
+  readonly weeklyAchievement: Pick<SendWeeklyAchievementUseCase, "execute">;
+  readonly winback: Pick<SendWinbackUseCase, "execute">;
+  readonly nudgeSuggest: Pick<SendNudgeSuggestUseCase, "execute">;
+  readonly socialDigest: Pick<SendSocialDigestUseCase, "execute">;
+  readonly lunchNudge: Pick<SendLunchNudgeUseCase, "execute">;
+  readonly streakAtRisk: Pick<SendStreakAtRiskUseCase, "execute">;
+  readonly onboarding: Pick<SendOnboardingUseCase, "execute">;
+  readonly weatherMorning: Pick<SendWeatherMorningUseCase, "execute">;
+  readonly weatherEvening: Pick<SendWeatherEveningUseCase, "execute">;
   readonly logger: Pick<ApplicationLoggerPort, "error" | "log" | "warn">;
 }
 
-export class TimezoneAwareReminderOrchestrator {
+export class SweepTimezoneRemindersUseCase {
   readonly #dependencies: TimezoneAwareReminderOrchestratorDependencies;
 
   constructor(dependencies: TimezoneAwareReminderOrchestratorDependencies) {

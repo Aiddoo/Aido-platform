@@ -6,22 +6,22 @@ import { mockDeep } from "vitest-mock-extended";
 import { previousIsoWeekRange } from "#api/shared/domain/date/utils/range";
 
 import type { TimezoneContext } from "../../domain/timezone-context.read-model.js";
-import { WeeklyAchievementStrategy } from "./send-weekly-achievement.use-case.js";
+import { SendWeeklyAchievementUseCase } from "./send-weekly-achievement.use-case.js";
 
-describe("WeeklyAchievementStrategy — 주간 성취 전략", () => {
-  let strategy: WeeklyAchievementStrategy;
-  let reader: Mocked<ConstructorParameters<typeof WeeklyAchievementStrategy>[0]["reader"]>;
+describe("SendWeeklyAchievementUseCase — 주간 성취 전략", () => {
+  let strategy: SendWeeklyAchievementUseCase;
+  let reader: Mocked<ConstructorParameters<typeof SendWeeklyAchievementUseCase>[0]["reader"]>;
   let preferenceReader: Mocked<
-    ConstructorParameters<typeof WeeklyAchievementStrategy>[0]["preferenceReader"]
+    ConstructorParameters<typeof SendWeeklyAchievementUseCase>[0]["preferenceReader"]
   >;
   let notificationPublisher: Mocked<
-    ConstructorParameters<typeof WeeklyAchievementStrategy>[0]["notificationPublisher"]
+    ConstructorParameters<typeof SendWeeklyAchievementUseCase>[0]["notificationPublisher"]
   >;
   let notificationHistoryReader: Mocked<
-    ConstructorParameters<typeof WeeklyAchievementStrategy>[0]["notificationHistoryReader"]
+    ConstructorParameters<typeof SendWeeklyAchievementUseCase>[0]["notificationHistoryReader"]
   >;
   let weeklyAchievementWriter: Mocked<
-    ConstructorParameters<typeof WeeklyAchievementStrategy>[0]["weeklyAchievementWriter"]
+    ConstructorParameters<typeof SendWeeklyAchievementUseCase>[0]["weeklyAchievementWriter"]
   >;
 
   const TZ = "Asia/Seoul";
@@ -44,9 +44,9 @@ describe("WeeklyAchievementStrategy — 주간 성취 전략", () => {
     vi.setSystemTime(FAKE_NOW);
 
     const weeklyAchievementStrategyDependencies = mockDeep<
-      ConstructorParameters<typeof WeeklyAchievementStrategy>[0]
+      ConstructorParameters<typeof SendWeeklyAchievementUseCase>[0]
     >({});
-    const unit = new WeeklyAchievementStrategy(weeklyAchievementStrategyDependencies);
+    const unit = new SendWeeklyAchievementUseCase(weeklyAchievementStrategyDependencies);
 
     strategy = unit;
     reader = weeklyAchievementStrategyDependencies.reader;

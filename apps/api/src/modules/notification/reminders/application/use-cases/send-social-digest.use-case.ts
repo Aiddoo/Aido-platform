@@ -29,7 +29,7 @@ interface SocialDigestStrategyDependencies {
   readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
 
-export class SocialDigestStrategy implements TimezoneReminderStrategy {
+export class SendSocialDigestUseCase implements TimezoneReminderStrategy {
   readonly #dependencies: SocialDigestStrategyDependencies;
 
   constructor(dependencies: SocialDigestStrategyDependencies) {

@@ -3,19 +3,19 @@ import { FakeJobRuntime } from "#test/mocks/fake-job-runtime";
 import { flushPromises } from "#test/mocks/index";
 
 import type { ReminderHourChangedJobData } from "../../application/ports/timezone-reminder-enqueuer.port.js";
-import { TimezoneReminderQueueService } from "./timezone-reminder-queue.adapter.js";
+import { TimezoneReminderQueueAdapter } from "./timezone-reminder-queue.adapter.js";
 import {
   TIMEZONE_REMINDER_QUEUE,
   TimezoneReminderJobName,
 } from "./timezone-reminder-queue.constants.js";
 
-describe("TimezoneReminderQueueService — 영속 runtime 연결", () => {
+describe("TimezoneReminderQueueAdapter — 영속 runtime 연결", () => {
   let runtime: FakeJobRuntime;
-  let service: TimezoneReminderQueueService;
+  let service: TimezoneReminderQueueAdapter;
 
   beforeEach(() => {
     runtime = new FakeJobRuntime();
-    service = new TimezoneReminderQueueService(runtime);
+    service = new TimezoneReminderQueueAdapter(runtime);
   });
 
   it("리마인더 시간 변경을 판별 가능한 메시지로 등록한다", async () => {

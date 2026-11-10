@@ -22,7 +22,7 @@ interface MonthlyReportStrategyDependencies {
   readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
 
-export class MonthlyReportStrategy implements TimezoneReminderStrategy {
+export class SendMonthlyReportUseCase implements TimezoneReminderStrategy {
   readonly #dependencies: MonthlyReportStrategyDependencies;
 
   constructor(dependencies: MonthlyReportStrategyDependencies) {

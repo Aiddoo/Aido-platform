@@ -28,7 +28,7 @@ interface LunchNudgeStrategyDependencies {
   readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
 
-export class LunchNudgeStrategy implements TimezoneReminderStrategy {
+export class SendLunchNudgeUseCase implements TimezoneReminderStrategy {
   readonly #dependencies: LunchNudgeStrategyDependencies;
 
   constructor(dependencies: LunchNudgeStrategyDependencies) {

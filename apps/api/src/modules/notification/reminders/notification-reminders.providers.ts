@@ -12,81 +12,73 @@ import { SCHEDULER_PREFERENCE_READER } from "./application/ports/scheduler-prefe
 import { TIMEZONE_REMINDER_ENQUEUER } from "./application/ports/timezone-reminder-enqueuer.port.js";
 import { WEATHER_REMINDER_READER } from "./application/ports/weather-reminder-reader.port.js";
 import { WEEKLY_ACHIEVEMENT_STATS_READER } from "./application/ports/weekly-achievement-stats-reader.port.js";
-import { EveningReminderStrategy } from "./application/use-cases/send-evening-reminder.use-case.js";
-import { LunchNudgeStrategy } from "./application/use-cases/send-lunch-nudge.use-case.js";
-import { MonthlyReportStrategy } from "./application/use-cases/send-monthly-report.use-case.js";
-import { MorningReminderStrategy } from "./application/use-cases/send-morning-reminder.use-case.js";
-import { NudgeSuggestStrategy } from "./application/use-cases/send-nudge-suggest.use-case.js";
-import { OnboardingStrategy } from "./application/use-cases/send-onboarding.use-case.js";
-import { SocialDigestStrategy } from "./application/use-cases/send-social-digest.use-case.js";
-import { StreakAtRiskStrategy } from "./application/use-cases/send-streak-at-risk.use-case.js";
-import { WeatherEveningStrategy } from "./application/use-cases/send-weather-evening.use-case.js";
-import { WeatherMorningStrategy } from "./application/use-cases/send-weather-morning.use-case.js";
-import { WeeklyAchievementStrategy } from "./application/use-cases/send-weekly-achievement.use-case.js";
-import { WeeklyReportStrategy } from "./application/use-cases/send-weekly-report.use-case.js";
-import { WinbackStrategy } from "./application/use-cases/send-winback.use-case.js";
-import { TimezoneAwareReminderOrchestrator } from "./application/use-cases/sweep-timezone-reminders.use-case.js";
+import { SendEveningReminderUseCase } from "./application/use-cases/send-evening-reminder.use-case.js";
+import { SendLunchNudgeUseCase } from "./application/use-cases/send-lunch-nudge.use-case.js";
+import { SendMonthlyReportUseCase } from "./application/use-cases/send-monthly-report.use-case.js";
+import { SendMorningReminderUseCase } from "./application/use-cases/send-morning-reminder.use-case.js";
+import { SendNudgeSuggestUseCase } from "./application/use-cases/send-nudge-suggest.use-case.js";
+import { SendOnboardingUseCase } from "./application/use-cases/send-onboarding.use-case.js";
+import { SendSocialDigestUseCase } from "./application/use-cases/send-social-digest.use-case.js";
+import { SendStreakAtRiskUseCase } from "./application/use-cases/send-streak-at-risk.use-case.js";
+import { SendWeatherEveningUseCase } from "./application/use-cases/send-weather-evening.use-case.js";
+import { SendWeatherMorningUseCase } from "./application/use-cases/send-weather-morning.use-case.js";
+import { SendWeeklyAchievementUseCase } from "./application/use-cases/send-weekly-achievement.use-case.js";
+import { SendWeeklyReportUseCase } from "./application/use-cases/send-weekly-report.use-case.js";
+import { SendWinbackUseCase } from "./application/use-cases/send-winback.use-case.js";
+import { SweepTimezoneRemindersUseCase } from "./application/use-cases/sweep-timezone-reminders.use-case.js";
 
-export const timezoneAwareReminderOrchestratorProvider: FactoryProvider<TimezoneAwareReminderOrchestrator> =
+export const sweepTimezoneRemindersUseCaseProvider: FactoryProvider<SweepTimezoneRemindersUseCase> =
   {
-    provide: TimezoneAwareReminderOrchestrator,
+    provide: SweepTimezoneRemindersUseCase,
     inject: [
       SCHEDULER_PREFERENCE_READER,
       TIMEZONE_REMINDER_ENQUEUER,
-      MorningReminderStrategy,
-      EveningReminderStrategy,
-      WeeklyReportStrategy,
-      MonthlyReportStrategy,
-      WeeklyAchievementStrategy,
-      WinbackStrategy,
-      NudgeSuggestStrategy,
-      SocialDigestStrategy,
-      LunchNudgeStrategy,
-      StreakAtRiskStrategy,
-      OnboardingStrategy,
-      WeatherMorningStrategy,
-      WeatherEveningStrategy,
+      SendMorningReminderUseCase,
+      SendEveningReminderUseCase,
+      SendWeeklyReportUseCase,
+      SendMonthlyReportUseCase,
+      SendWeeklyAchievementUseCase,
+      SendWinbackUseCase,
+      SendNudgeSuggestUseCase,
+      SendSocialDigestUseCase,
+      SendLunchNudgeUseCase,
+      SendStreakAtRiskUseCase,
+      SendOnboardingUseCase,
+      SendWeatherMorningUseCase,
+      SendWeatherEveningUseCase,
     ],
     useFactory: (
       preferenceReader: ConstructorParameters<
-        typeof TimezoneAwareReminderOrchestrator
+        typeof SweepTimezoneRemindersUseCase
       >[0]["preferenceReader"],
-      enqueuer: ConstructorParameters<typeof TimezoneAwareReminderOrchestrator>[0]["enqueuer"],
+      enqueuer: ConstructorParameters<typeof SweepTimezoneRemindersUseCase>[0]["enqueuer"],
       morningReminder: ConstructorParameters<
-        typeof TimezoneAwareReminderOrchestrator
+        typeof SweepTimezoneRemindersUseCase
       >[0]["morningReminder"],
       eveningReminder: ConstructorParameters<
-        typeof TimezoneAwareReminderOrchestrator
+        typeof SweepTimezoneRemindersUseCase
       >[0]["eveningReminder"],
-      weeklyReport: ConstructorParameters<
-        typeof TimezoneAwareReminderOrchestrator
-      >[0]["weeklyReport"],
+      weeklyReport: ConstructorParameters<typeof SweepTimezoneRemindersUseCase>[0]["weeklyReport"],
       monthlyReport: ConstructorParameters<
-        typeof TimezoneAwareReminderOrchestrator
+        typeof SweepTimezoneRemindersUseCase
       >[0]["monthlyReport"],
       weeklyAchievement: ConstructorParameters<
-        typeof TimezoneAwareReminderOrchestrator
+        typeof SweepTimezoneRemindersUseCase
       >[0]["weeklyAchievement"],
-      winback: ConstructorParameters<typeof TimezoneAwareReminderOrchestrator>[0]["winback"],
-      nudgeSuggest: ConstructorParameters<
-        typeof TimezoneAwareReminderOrchestrator
-      >[0]["nudgeSuggest"],
-      socialDigest: ConstructorParameters<
-        typeof TimezoneAwareReminderOrchestrator
-      >[0]["socialDigest"],
-      lunchNudge: ConstructorParameters<typeof TimezoneAwareReminderOrchestrator>[0]["lunchNudge"],
-      streakAtRisk: ConstructorParameters<
-        typeof TimezoneAwareReminderOrchestrator
-      >[0]["streakAtRisk"],
-      onboarding: ConstructorParameters<typeof TimezoneAwareReminderOrchestrator>[0]["onboarding"],
+      winback: ConstructorParameters<typeof SweepTimezoneRemindersUseCase>[0]["winback"],
+      nudgeSuggest: ConstructorParameters<typeof SweepTimezoneRemindersUseCase>[0]["nudgeSuggest"],
+      socialDigest: ConstructorParameters<typeof SweepTimezoneRemindersUseCase>[0]["socialDigest"],
+      lunchNudge: ConstructorParameters<typeof SweepTimezoneRemindersUseCase>[0]["lunchNudge"],
+      streakAtRisk: ConstructorParameters<typeof SweepTimezoneRemindersUseCase>[0]["streakAtRisk"],
+      onboarding: ConstructorParameters<typeof SweepTimezoneRemindersUseCase>[0]["onboarding"],
       weatherMorning: ConstructorParameters<
-        typeof TimezoneAwareReminderOrchestrator
+        typeof SweepTimezoneRemindersUseCase
       >[0]["weatherMorning"],
       weatherEvening: ConstructorParameters<
-        typeof TimezoneAwareReminderOrchestrator
+        typeof SweepTimezoneRemindersUseCase
       >[0]["weatherEvening"],
     ) =>
-      new TimezoneAwareReminderOrchestrator({
+      new SweepTimezoneRemindersUseCase({
         preferenceReader,
         enqueuer,
         morningReminder,
@@ -102,32 +94,32 @@ export const timezoneAwareReminderOrchestratorProvider: FactoryProvider<Timezone
         onboarding,
         weatherMorning,
         weatherEvening,
-        logger: new Logger(TimezoneAwareReminderOrchestrator.name),
+        logger: new Logger(SweepTimezoneRemindersUseCase.name),
       }),
   };
 
-export const eveningReminderStrategyProvider: FactoryProvider<EveningReminderStrategy> = {
-  provide: EveningReminderStrategy,
+export const sendEveningReminderUseCaseProvider: FactoryProvider<SendEveningReminderUseCase> = {
+  provide: SendEveningReminderUseCase,
   inject: [SCHEDULED_REMINDER_READER, PublishNotificationUseCase, NotificationHistoryReader],
   useFactory: (
-    reader: ConstructorParameters<typeof EveningReminderStrategy>[0]["reader"],
+    reader: ConstructorParameters<typeof SendEveningReminderUseCase>[0]["reader"],
     notificationPublisher: ConstructorParameters<
-      typeof EveningReminderStrategy
+      typeof SendEveningReminderUseCase
     >[0]["notificationPublisher"],
     notificationHistoryReader: ConstructorParameters<
-      typeof EveningReminderStrategy
+      typeof SendEveningReminderUseCase
     >[0]["notificationHistoryReader"],
   ) =>
-    new EveningReminderStrategy({
+    new SendEveningReminderUseCase({
       reader,
       notificationPublisher,
       notificationHistoryReader,
-      logger: new Logger(EveningReminderStrategy.name),
+      logger: new Logger(SendEveningReminderUseCase.name),
     }),
 };
 
-export const lunchNudgeStrategyProvider: FactoryProvider<LunchNudgeStrategy> = {
-  provide: LunchNudgeStrategy,
+export const sendLunchNudgeUseCaseProvider: FactoryProvider<SendLunchNudgeUseCase> = {
+  provide: SendLunchNudgeUseCase,
   inject: [
     SCHEDULED_REMINDER_READER,
     SCHEDULER_PREFERENCE_READER,
@@ -135,26 +127,26 @@ export const lunchNudgeStrategyProvider: FactoryProvider<LunchNudgeStrategy> = {
     NotificationHistoryReader,
   ],
   useFactory: (
-    reader: ConstructorParameters<typeof LunchNudgeStrategy>[0]["reader"],
-    preferenceReader: ConstructorParameters<typeof LunchNudgeStrategy>[0]["preferenceReader"],
+    reader: ConstructorParameters<typeof SendLunchNudgeUseCase>[0]["reader"],
+    preferenceReader: ConstructorParameters<typeof SendLunchNudgeUseCase>[0]["preferenceReader"],
     notificationPublisher: ConstructorParameters<
-      typeof LunchNudgeStrategy
+      typeof SendLunchNudgeUseCase
     >[0]["notificationPublisher"],
     notificationHistoryReader: ConstructorParameters<
-      typeof LunchNudgeStrategy
+      typeof SendLunchNudgeUseCase
     >[0]["notificationHistoryReader"],
   ) =>
-    new LunchNudgeStrategy({
+    new SendLunchNudgeUseCase({
       reader,
       preferenceReader,
       notificationPublisher,
       notificationHistoryReader,
-      logger: new Logger(LunchNudgeStrategy.name),
+      logger: new Logger(SendLunchNudgeUseCase.name),
     }),
 };
 
-export const monthlyReportStrategyProvider: FactoryProvider<MonthlyReportStrategy> = {
-  provide: MonthlyReportStrategy,
+export const sendMonthlyReportUseCaseProvider: FactoryProvider<SendMonthlyReportUseCase> = {
+  provide: SendMonthlyReportUseCase,
   inject: [
     SCHEDULED_REMINDER_READER,
     SCHEDULER_PREFERENCE_READER,
@@ -162,46 +154,46 @@ export const monthlyReportStrategyProvider: FactoryProvider<MonthlyReportStrateg
     NotificationHistoryReader,
   ],
   useFactory: (
-    reader: ConstructorParameters<typeof MonthlyReportStrategy>[0]["reader"],
-    preferenceReader: ConstructorParameters<typeof MonthlyReportStrategy>[0]["preferenceReader"],
+    reader: ConstructorParameters<typeof SendMonthlyReportUseCase>[0]["reader"],
+    preferenceReader: ConstructorParameters<typeof SendMonthlyReportUseCase>[0]["preferenceReader"],
     notificationPublisher: ConstructorParameters<
-      typeof MonthlyReportStrategy
+      typeof SendMonthlyReportUseCase
     >[0]["notificationPublisher"],
     notificationHistoryReader: ConstructorParameters<
-      typeof MonthlyReportStrategy
+      typeof SendMonthlyReportUseCase
     >[0]["notificationHistoryReader"],
   ) =>
-    new MonthlyReportStrategy({
+    new SendMonthlyReportUseCase({
       reader,
       preferenceReader,
       notificationPublisher,
       notificationHistoryReader,
-      logger: new Logger(MonthlyReportStrategy.name),
+      logger: new Logger(SendMonthlyReportUseCase.name),
     }),
 };
 
-export const morningReminderStrategyProvider: FactoryProvider<MorningReminderStrategy> = {
-  provide: MorningReminderStrategy,
+export const sendMorningReminderUseCaseProvider: FactoryProvider<SendMorningReminderUseCase> = {
+  provide: SendMorningReminderUseCase,
   inject: [SCHEDULED_REMINDER_READER, PublishNotificationUseCase, NotificationHistoryReader],
   useFactory: (
-    reader: ConstructorParameters<typeof MorningReminderStrategy>[0]["reader"],
+    reader: ConstructorParameters<typeof SendMorningReminderUseCase>[0]["reader"],
     notificationPublisher: ConstructorParameters<
-      typeof MorningReminderStrategy
+      typeof SendMorningReminderUseCase
     >[0]["notificationPublisher"],
     notificationHistoryReader: ConstructorParameters<
-      typeof MorningReminderStrategy
+      typeof SendMorningReminderUseCase
     >[0]["notificationHistoryReader"],
   ) =>
-    new MorningReminderStrategy({
+    new SendMorningReminderUseCase({
       reader,
       notificationPublisher,
       notificationHistoryReader,
-      logger: new Logger(MorningReminderStrategy.name),
+      logger: new Logger(SendMorningReminderUseCase.name),
     }),
 };
 
-export const nudgeSuggestStrategyProvider: FactoryProvider<NudgeSuggestStrategy> = {
-  provide: NudgeSuggestStrategy,
+export const sendNudgeSuggestUseCaseProvider: FactoryProvider<SendNudgeSuggestUseCase> = {
+  provide: SendNudgeSuggestUseCase,
   inject: [
     RE_ENGAGEMENT_READER,
     SCHEDULER_PREFERENCE_READER,
@@ -210,28 +202,28 @@ export const nudgeSuggestStrategyProvider: FactoryProvider<NudgeSuggestStrategy>
     SCHEDULER_DEDUP,
   ],
   useFactory: (
-    reader: ConstructorParameters<typeof NudgeSuggestStrategy>[0]["reader"],
-    preferenceReader: ConstructorParameters<typeof NudgeSuggestStrategy>[0]["preferenceReader"],
+    reader: ConstructorParameters<typeof SendNudgeSuggestUseCase>[0]["reader"],
+    preferenceReader: ConstructorParameters<typeof SendNudgeSuggestUseCase>[0]["preferenceReader"],
     notificationPublisher: ConstructorParameters<
-      typeof NudgeSuggestStrategy
+      typeof SendNudgeSuggestUseCase
     >[0]["notificationPublisher"],
     notificationHistoryReader: ConstructorParameters<
-      typeof NudgeSuggestStrategy
+      typeof SendNudgeSuggestUseCase
     >[0]["notificationHistoryReader"],
-    schedulerDedup: ConstructorParameters<typeof NudgeSuggestStrategy>[0]["schedulerDedup"],
+    schedulerDedup: ConstructorParameters<typeof SendNudgeSuggestUseCase>[0]["schedulerDedup"],
   ) =>
-    new NudgeSuggestStrategy({
+    new SendNudgeSuggestUseCase({
       reader,
       preferenceReader,
       notificationPublisher,
       notificationHistoryReader,
       schedulerDedup,
-      logger: new Logger(NudgeSuggestStrategy.name),
+      logger: new Logger(SendNudgeSuggestUseCase.name),
     }),
 };
 
-export const onboardingStrategyProvider: FactoryProvider<OnboardingStrategy> = {
-  provide: OnboardingStrategy,
+export const sendOnboardingUseCaseProvider: FactoryProvider<SendOnboardingUseCase> = {
+  provide: SendOnboardingUseCase,
   inject: [
     RE_ENGAGEMENT_READER,
     SCHEDULER_PREFERENCE_READER,
@@ -239,26 +231,26 @@ export const onboardingStrategyProvider: FactoryProvider<OnboardingStrategy> = {
     NotificationHistoryReader,
   ],
   useFactory: (
-    reader: ConstructorParameters<typeof OnboardingStrategy>[0]["reader"],
-    preferenceReader: ConstructorParameters<typeof OnboardingStrategy>[0]["preferenceReader"],
+    reader: ConstructorParameters<typeof SendOnboardingUseCase>[0]["reader"],
+    preferenceReader: ConstructorParameters<typeof SendOnboardingUseCase>[0]["preferenceReader"],
     notificationPublisher: ConstructorParameters<
-      typeof OnboardingStrategy
+      typeof SendOnboardingUseCase
     >[0]["notificationPublisher"],
     notificationHistoryReader: ConstructorParameters<
-      typeof OnboardingStrategy
+      typeof SendOnboardingUseCase
     >[0]["notificationHistoryReader"],
   ) =>
-    new OnboardingStrategy({
+    new SendOnboardingUseCase({
       reader,
       preferenceReader,
       notificationPublisher,
       notificationHistoryReader,
-      logger: new Logger(OnboardingStrategy.name),
+      logger: new Logger(SendOnboardingUseCase.name),
     }),
 };
 
-export const socialDigestStrategyProvider: FactoryProvider<SocialDigestStrategy> = {
-  provide: SocialDigestStrategy,
+export const sendSocialDigestUseCaseProvider: FactoryProvider<SendSocialDigestUseCase> = {
+  provide: SendSocialDigestUseCase,
   inject: [
     RE_ENGAGEMENT_READER,
     SCHEDULER_PREFERENCE_READER,
@@ -266,46 +258,46 @@ export const socialDigestStrategyProvider: FactoryProvider<SocialDigestStrategy>
     NotificationHistoryReader,
   ],
   useFactory: (
-    reader: ConstructorParameters<typeof SocialDigestStrategy>[0]["reader"],
-    preferenceReader: ConstructorParameters<typeof SocialDigestStrategy>[0]["preferenceReader"],
+    reader: ConstructorParameters<typeof SendSocialDigestUseCase>[0]["reader"],
+    preferenceReader: ConstructorParameters<typeof SendSocialDigestUseCase>[0]["preferenceReader"],
     notificationPublisher: ConstructorParameters<
-      typeof SocialDigestStrategy
+      typeof SendSocialDigestUseCase
     >[0]["notificationPublisher"],
     notificationHistoryReader: ConstructorParameters<
-      typeof SocialDigestStrategy
+      typeof SendSocialDigestUseCase
     >[0]["notificationHistoryReader"],
   ) =>
-    new SocialDigestStrategy({
+    new SendSocialDigestUseCase({
       reader,
       preferenceReader,
       notificationPublisher,
       notificationHistoryReader,
-      logger: new Logger(SocialDigestStrategy.name),
+      logger: new Logger(SendSocialDigestUseCase.name),
     }),
 };
 
-export const streakAtRiskStrategyProvider: FactoryProvider<StreakAtRiskStrategy> = {
-  provide: StreakAtRiskStrategy,
+export const sendStreakAtRiskUseCaseProvider: FactoryProvider<SendStreakAtRiskUseCase> = {
+  provide: SendStreakAtRiskUseCase,
   inject: [RE_ENGAGEMENT_READER, PublishNotificationUseCase, NotificationHistoryReader],
   useFactory: (
-    reader: ConstructorParameters<typeof StreakAtRiskStrategy>[0]["reader"],
+    reader: ConstructorParameters<typeof SendStreakAtRiskUseCase>[0]["reader"],
     notificationPublisher: ConstructorParameters<
-      typeof StreakAtRiskStrategy
+      typeof SendStreakAtRiskUseCase
     >[0]["notificationPublisher"],
     notificationHistoryReader: ConstructorParameters<
-      typeof StreakAtRiskStrategy
+      typeof SendStreakAtRiskUseCase
     >[0]["notificationHistoryReader"],
   ) =>
-    new StreakAtRiskStrategy({
+    new SendStreakAtRiskUseCase({
       reader,
       notificationPublisher,
       notificationHistoryReader,
-      logger: new Logger(StreakAtRiskStrategy.name),
+      logger: new Logger(SendStreakAtRiskUseCase.name),
     }),
 };
 
-export const weatherEveningStrategyProvider: FactoryProvider<WeatherEveningStrategy> = {
-  provide: WeatherEveningStrategy,
+export const sendWeatherEveningUseCaseProvider: FactoryProvider<SendWeatherEveningUseCase> = {
+  provide: SendWeatherEveningUseCase,
   inject: [
     WEATHER_REMINDER_READER,
     PublishNotificationUseCase,
@@ -313,28 +305,28 @@ export const weatherEveningStrategyProvider: FactoryProvider<WeatherEveningStrat
     REMINDER_WEATHER_REPORT_READER,
   ],
   useFactory: (
-    reader: ConstructorParameters<typeof WeatherEveningStrategy>[0]["reader"],
+    reader: ConstructorParameters<typeof SendWeatherEveningUseCase>[0]["reader"],
     notificationPublisher: ConstructorParameters<
-      typeof WeatherEveningStrategy
+      typeof SendWeatherEveningUseCase
     >[0]["notificationPublisher"],
     notificationHistoryReader: ConstructorParameters<
-      typeof WeatherEveningStrategy
+      typeof SendWeatherEveningUseCase
     >[0]["notificationHistoryReader"],
     weatherReportReader: ConstructorParameters<
-      typeof WeatherEveningStrategy
+      typeof SendWeatherEveningUseCase
     >[0]["weatherReportReader"],
   ) =>
-    new WeatherEveningStrategy({
+    new SendWeatherEveningUseCase({
       reader,
       notificationPublisher,
       notificationHistoryReader,
       weatherReportReader,
-      logger: new Logger(WeatherEveningStrategy.name),
+      logger: new Logger(SendWeatherEveningUseCase.name),
     }),
 };
 
-export const weatherMorningStrategyProvider: FactoryProvider<WeatherMorningStrategy> = {
-  provide: WeatherMorningStrategy,
+export const sendWeatherMorningUseCaseProvider: FactoryProvider<SendWeatherMorningUseCase> = {
+  provide: SendWeatherMorningUseCase,
   inject: [
     WEATHER_REMINDER_READER,
     PublishNotificationUseCase,
@@ -342,28 +334,28 @@ export const weatherMorningStrategyProvider: FactoryProvider<WeatherMorningStrat
     REMINDER_WEATHER_REPORT_READER,
   ],
   useFactory: (
-    reader: ConstructorParameters<typeof WeatherMorningStrategy>[0]["reader"],
+    reader: ConstructorParameters<typeof SendWeatherMorningUseCase>[0]["reader"],
     notificationPublisher: ConstructorParameters<
-      typeof WeatherMorningStrategy
+      typeof SendWeatherMorningUseCase
     >[0]["notificationPublisher"],
     notificationHistoryReader: ConstructorParameters<
-      typeof WeatherMorningStrategy
+      typeof SendWeatherMorningUseCase
     >[0]["notificationHistoryReader"],
     weatherReportReader: ConstructorParameters<
-      typeof WeatherMorningStrategy
+      typeof SendWeatherMorningUseCase
     >[0]["weatherReportReader"],
   ) =>
-    new WeatherMorningStrategy({
+    new SendWeatherMorningUseCase({
       reader,
       notificationPublisher,
       notificationHistoryReader,
       weatherReportReader,
-      logger: new Logger(WeatherMorningStrategy.name),
+      logger: new Logger(SendWeatherMorningUseCase.name),
     }),
 };
 
-export const weeklyAchievementStrategyProvider: FactoryProvider<WeeklyAchievementStrategy> = {
-  provide: WeeklyAchievementStrategy,
+export const sendWeeklyAchievementUseCaseProvider: FactoryProvider<SendWeeklyAchievementUseCase> = {
+  provide: SendWeeklyAchievementUseCase,
   inject: [
     WEEKLY_ACHIEVEMENT_STATS_READER,
     SCHEDULER_PREFERENCE_READER,
@@ -372,32 +364,32 @@ export const weeklyAchievementStrategyProvider: FactoryProvider<WeeklyAchievemen
     WEEKLY_ACHIEVEMENT_WRITER,
   ],
   useFactory: (
-    reader: ConstructorParameters<typeof WeeklyAchievementStrategy>[0]["reader"],
+    reader: ConstructorParameters<typeof SendWeeklyAchievementUseCase>[0]["reader"],
     preferenceReader: ConstructorParameters<
-      typeof WeeklyAchievementStrategy
+      typeof SendWeeklyAchievementUseCase
     >[0]["preferenceReader"],
     notificationPublisher: ConstructorParameters<
-      typeof WeeklyAchievementStrategy
+      typeof SendWeeklyAchievementUseCase
     >[0]["notificationPublisher"],
     notificationHistoryReader: ConstructorParameters<
-      typeof WeeklyAchievementStrategy
+      typeof SendWeeklyAchievementUseCase
     >[0]["notificationHistoryReader"],
     weeklyAchievementWriter: ConstructorParameters<
-      typeof WeeklyAchievementStrategy
+      typeof SendWeeklyAchievementUseCase
     >[0]["weeklyAchievementWriter"],
   ) =>
-    new WeeklyAchievementStrategy({
+    new SendWeeklyAchievementUseCase({
       reader,
       preferenceReader,
       notificationPublisher,
       notificationHistoryReader,
       weeklyAchievementWriter,
-      logger: new Logger(WeeklyAchievementStrategy.name),
+      logger: new Logger(SendWeeklyAchievementUseCase.name),
     }),
 };
 
-export const weeklyReportStrategyProvider: FactoryProvider<WeeklyReportStrategy> = {
-  provide: WeeklyReportStrategy,
+export const sendWeeklyReportUseCaseProvider: FactoryProvider<SendWeeklyReportUseCase> = {
+  provide: SendWeeklyReportUseCase,
   inject: [
     SCHEDULED_REMINDER_READER,
     SCHEDULER_PREFERENCE_READER,
@@ -405,26 +397,26 @@ export const weeklyReportStrategyProvider: FactoryProvider<WeeklyReportStrategy>
     NotificationHistoryReader,
   ],
   useFactory: (
-    reader: ConstructorParameters<typeof WeeklyReportStrategy>[0]["reader"],
-    preferenceReader: ConstructorParameters<typeof WeeklyReportStrategy>[0]["preferenceReader"],
+    reader: ConstructorParameters<typeof SendWeeklyReportUseCase>[0]["reader"],
+    preferenceReader: ConstructorParameters<typeof SendWeeklyReportUseCase>[0]["preferenceReader"],
     notificationPublisher: ConstructorParameters<
-      typeof WeeklyReportStrategy
+      typeof SendWeeklyReportUseCase
     >[0]["notificationPublisher"],
     notificationHistoryReader: ConstructorParameters<
-      typeof WeeklyReportStrategy
+      typeof SendWeeklyReportUseCase
     >[0]["notificationHistoryReader"],
   ) =>
-    new WeeklyReportStrategy({
+    new SendWeeklyReportUseCase({
       reader,
       preferenceReader,
       notificationPublisher,
       notificationHistoryReader,
-      logger: new Logger(WeeklyReportStrategy.name),
+      logger: new Logger(SendWeeklyReportUseCase.name),
     }),
 };
 
-export const winbackStrategyProvider: FactoryProvider<WinbackStrategy> = {
-  provide: WinbackStrategy,
+export const sendWinbackUseCaseProvider: FactoryProvider<SendWinbackUseCase> = {
+  provide: SendWinbackUseCase,
   inject: [
     RE_ENGAGEMENT_READER,
     SCHEDULER_PREFERENCE_READER,
@@ -433,22 +425,22 @@ export const winbackStrategyProvider: FactoryProvider<WinbackStrategy> = {
     SCHEDULER_DEDUP,
   ],
   useFactory: (
-    reader: ConstructorParameters<typeof WinbackStrategy>[0]["reader"],
-    preferenceReader: ConstructorParameters<typeof WinbackStrategy>[0]["preferenceReader"],
+    reader: ConstructorParameters<typeof SendWinbackUseCase>[0]["reader"],
+    preferenceReader: ConstructorParameters<typeof SendWinbackUseCase>[0]["preferenceReader"],
     notificationPublisher: ConstructorParameters<
-      typeof WinbackStrategy
+      typeof SendWinbackUseCase
     >[0]["notificationPublisher"],
     notificationHistoryReader: ConstructorParameters<
-      typeof WinbackStrategy
+      typeof SendWinbackUseCase
     >[0]["notificationHistoryReader"],
-    schedulerDedup: ConstructorParameters<typeof WinbackStrategy>[0]["schedulerDedup"],
+    schedulerDedup: ConstructorParameters<typeof SendWinbackUseCase>[0]["schedulerDedup"],
   ) =>
-    new WinbackStrategy({
+    new SendWinbackUseCase({
       reader,
       preferenceReader,
       notificationPublisher,
       notificationHistoryReader,
       schedulerDedup,
-      logger: new Logger(WinbackStrategy.name),
+      logger: new Logger(SendWinbackUseCase.name),
     }),
 };

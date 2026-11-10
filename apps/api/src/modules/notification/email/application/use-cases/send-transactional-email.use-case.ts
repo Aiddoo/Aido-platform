@@ -42,7 +42,7 @@ interface TransactionalEmailSenderDependencies {
 }
 
 /** 인증·문의·신고 템플릿을 이메일 발송 큐에 올리는 공개 capability. */
-export class TransactionalEmailSender {
+export class SendTransactionalEmailUseCase {
   readonly #dependencies: TransactionalEmailSenderDependencies;
 
   constructor(dependencies: TransactionalEmailSenderDependencies) {

@@ -10,7 +10,7 @@ interface ActivateRetentionExperimentDependencies {
   readonly unitOfWork: Pick<UnitOfWorkPort, "run">;
 }
 
-export class ActivateRetentionExperiment {
+export class ActivateRetentionExperimentUseCase {
   readonly #dependencies: ActivateRetentionExperimentDependencies;
 
   constructor(dependencies: ActivateRetentionExperimentDependencies) {

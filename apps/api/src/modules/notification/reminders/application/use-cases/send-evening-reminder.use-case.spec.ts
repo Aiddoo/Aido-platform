@@ -8,16 +8,16 @@ import { TEST_CUID } from "#test/fixtures/index";
 import { createEveningReminderNotificationMessage } from "../../../push/application/messages/notification.messages.js";
 import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/notification-campaign.constants.js";
 import type { TimezoneContext } from "../../domain/timezone-context.read-model.js";
-import { EveningReminderStrategy } from "./send-evening-reminder.use-case.js";
+import { SendEveningReminderUseCase } from "./send-evening-reminder.use-case.js";
 
-describe("EveningReminderStrategy — 저녁 리마인더 전략", () => {
-  let strategy: EveningReminderStrategy;
-  let reader: Mocked<ConstructorParameters<typeof EveningReminderStrategy>[0]["reader"]>;
+describe("SendEveningReminderUseCase — 저녁 리마인더 전략", () => {
+  let strategy: SendEveningReminderUseCase;
+  let reader: Mocked<ConstructorParameters<typeof SendEveningReminderUseCase>[0]["reader"]>;
   let notificationPublisher: Mocked<
-    ConstructorParameters<typeof EveningReminderStrategy>[0]["notificationPublisher"]
+    ConstructorParameters<typeof SendEveningReminderUseCase>[0]["notificationPublisher"]
   >;
   let notificationHistoryReader: Mocked<
-    ConstructorParameters<typeof EveningReminderStrategy>[0]["notificationHistoryReader"]
+    ConstructorParameters<typeof SendEveningReminderUseCase>[0]["notificationHistoryReader"]
   >;
 
   const TZ = "Asia/Seoul";
@@ -45,9 +45,9 @@ describe("EveningReminderStrategy — 저녁 리마인더 전략", () => {
     vi.setSystemTime(FAKE_NOW);
 
     const eveningReminderStrategyDependencies = mockDeep<
-      ConstructorParameters<typeof EveningReminderStrategy>[0]
+      ConstructorParameters<typeof SendEveningReminderUseCase>[0]
     >({});
-    const unit = new EveningReminderStrategy(eveningReminderStrategyDependencies);
+    const unit = new SendEveningReminderUseCase(eveningReminderStrategyDependencies);
 
     strategy = unit;
     reader = eveningReminderStrategyDependencies.reader;

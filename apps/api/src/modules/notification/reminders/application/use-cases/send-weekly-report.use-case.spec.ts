@@ -5,19 +5,19 @@ import { mockDeep } from "vitest-mock-extended";
 
 import { createWeeklyReportNotificationMessage } from "../../../push/application/messages/notification.messages.js";
 import type { TimezoneContext } from "../../domain/timezone-context.read-model.js";
-import { WeeklyReportStrategy } from "./send-weekly-report.use-case.js";
+import { SendWeeklyReportUseCase } from "./send-weekly-report.use-case.js";
 
-describe("WeeklyReportStrategy — 주간 리포트 전략", () => {
-  let strategy: WeeklyReportStrategy;
-  let reader: Mocked<ConstructorParameters<typeof WeeklyReportStrategy>[0]["reader"]>;
+describe("SendWeeklyReportUseCase — 주간 리포트 전략", () => {
+  let strategy: SendWeeklyReportUseCase;
+  let reader: Mocked<ConstructorParameters<typeof SendWeeklyReportUseCase>[0]["reader"]>;
   let preferenceReader: Mocked<
-    ConstructorParameters<typeof WeeklyReportStrategy>[0]["preferenceReader"]
+    ConstructorParameters<typeof SendWeeklyReportUseCase>[0]["preferenceReader"]
   >;
   let notificationPublisher: Mocked<
-    ConstructorParameters<typeof WeeklyReportStrategy>[0]["notificationPublisher"]
+    ConstructorParameters<typeof SendWeeklyReportUseCase>[0]["notificationPublisher"]
   >;
   let notificationHistoryReader: Mocked<
-    ConstructorParameters<typeof WeeklyReportStrategy>[0]["notificationHistoryReader"]
+    ConstructorParameters<typeof SendWeeklyReportUseCase>[0]["notificationHistoryReader"]
   >;
 
   const TZ = "Asia/Seoul";
@@ -40,9 +40,9 @@ describe("WeeklyReportStrategy — 주간 리포트 전략", () => {
     vi.setSystemTime(FAKE_NOW);
 
     const weeklyReportStrategyDependencies = mockDeep<
-      ConstructorParameters<typeof WeeklyReportStrategy>[0]
+      ConstructorParameters<typeof SendWeeklyReportUseCase>[0]
     >({});
-    const unit = new WeeklyReportStrategy(weeklyReportStrategyDependencies);
+    const unit = new SendWeeklyReportUseCase(weeklyReportStrategyDependencies);
 
     strategy = unit;
     reader = weeklyReportStrategyDependencies.reader;

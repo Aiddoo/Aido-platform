@@ -51,7 +51,7 @@ import {
 import { RETENTION_REPOSITORY } from "#api/modules/notification/retention/application/ports/retention.repository.port";
 import { RetentionQueueProcessor } from "#api/modules/notification/retention/infrastructure/jobs/retention-queue.processor";
 import { DrizzleRetentionRepository } from "#api/modules/notification/retention/infrastructure/persistence/drizzle-retention.repository";
-import { processRetentionStagesProvider } from "#api/modules/notification/retention/notification-retention.providers";
+import { processRetentionStagesUseCaseProvider } from "#api/modules/notification/retention/notification-retention.providers";
 import { AdminBroadcastNotifierPort } from "#api/modules/operations/broadcasts/application/ports/admin-broadcast-notifier.port";
 import { AdminUserDirectoryReaderPort } from "#api/modules/operations/broadcasts/application/ports/admin-user-directory.reader.port";
 import { BroadcastCampaignRepositoryPort } from "#api/modules/operations/broadcasts/application/ports/broadcast-campaign.repository.port";
@@ -318,7 +318,7 @@ function retentionProviders(): Provider[] {
   };
   return [
     RetentionQueueProcessor,
-    processRetentionStagesProvider,
+    processRetentionStagesUseCaseProvider,
     DrizzleRetentionRepository,
     { provide: RETENTION_REPOSITORY, useExisting: DrizzleRetentionRepository },
     { provide: RETENTION_CONFIG, useValue: config },

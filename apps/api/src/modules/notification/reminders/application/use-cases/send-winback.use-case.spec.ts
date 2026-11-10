@@ -6,21 +6,21 @@ import { mockDeep } from "vitest-mock-extended";
 import { createWinbackNotificationMessage } from "../../../push/application/messages/notification.messages.js";
 import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/notification-campaign.constants.js";
 import type { TimezoneContext } from "../../domain/timezone-context.read-model.js";
-import { WinbackStrategy } from "./send-winback.use-case.js";
+import { SendWinbackUseCase } from "./send-winback.use-case.js";
 
-describe("WinbackStrategy — 윈백 전략", () => {
-  let strategy: WinbackStrategy;
-  let reader: Mocked<ConstructorParameters<typeof WinbackStrategy>[0]["reader"]>;
+describe("SendWinbackUseCase — 윈백 전략", () => {
+  let strategy: SendWinbackUseCase;
+  let reader: Mocked<ConstructorParameters<typeof SendWinbackUseCase>[0]["reader"]>;
   let preferenceReader: Mocked<
-    ConstructorParameters<typeof WinbackStrategy>[0]["preferenceReader"]
+    ConstructorParameters<typeof SendWinbackUseCase>[0]["preferenceReader"]
   >;
   let notificationPublisher: Mocked<
-    ConstructorParameters<typeof WinbackStrategy>[0]["notificationPublisher"]
+    ConstructorParameters<typeof SendWinbackUseCase>[0]["notificationPublisher"]
   >;
   let notificationHistoryReader: Mocked<
-    ConstructorParameters<typeof WinbackStrategy>[0]["notificationHistoryReader"]
+    ConstructorParameters<typeof SendWinbackUseCase>[0]["notificationHistoryReader"]
   >;
-  let schedulerDedup: Mocked<ConstructorParameters<typeof WinbackStrategy>[0]["schedulerDedup"]>;
+  let schedulerDedup: Mocked<ConstructorParameters<typeof SendWinbackUseCase>[0]["schedulerDedup"]>;
 
   const TZ = "Asia/Seoul";
 
@@ -41,10 +41,10 @@ describe("WinbackStrategy — 윈백 전략", () => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(FAKE_NOW);
 
-    const winbackStrategyDependencies = mockDeep<ConstructorParameters<typeof WinbackStrategy>[0]>(
-      {},
-    );
-    const unit = new WinbackStrategy(winbackStrategyDependencies);
+    const winbackStrategyDependencies = mockDeep<
+      ConstructorParameters<typeof SendWinbackUseCase>[0]
+    >({});
+    const unit = new SendWinbackUseCase(winbackStrategyDependencies);
 
     strategy = unit;
     reader = winbackStrategyDependencies.reader;

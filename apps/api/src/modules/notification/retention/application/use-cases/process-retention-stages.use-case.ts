@@ -34,7 +34,7 @@ interface ProcessRetentionStagesDependencies {
   readonly logger: Pick<ApplicationLoggerPort, "debug" | "error">;
 }
 
-export class ProcessRetentionStages {
+export class ProcessRetentionStagesUseCase {
   readonly #dependencies: ProcessRetentionStagesDependencies;
 
   constructor(dependencies: ProcessRetentionStagesDependencies) {

@@ -51,7 +51,7 @@ interface WeatherMorningStrategyDependencies {
  * 아침 날씨 알림. 앱 화면과 같은 v2 리포트(칸 캐시 공유)와 오늘 할 일로 아이두 브리핑과 같은 내용을 보낸다.
  * 리포트는 알림 대상(설정 시각·위치 있음·오늘 미발송)만 조회하므로 대상이 아닌 사용자로 공급자를 부르지 않는다.
  */
-export class WeatherMorningStrategy implements TimezoneReminderStrategy {
+export class SendWeatherMorningUseCase implements TimezoneReminderStrategy {
   readonly #dependencies: WeatherMorningStrategyDependencies;
 
   constructor(dependencies: WeatherMorningStrategyDependencies) {

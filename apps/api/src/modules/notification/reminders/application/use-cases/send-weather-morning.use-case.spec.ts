@@ -16,7 +16,7 @@ import {
 import { StubTimezoneResolver, StubWeatherReportProvider } from "#test/mocks/ports/weather.stub";
 
 import type { TimezoneContext } from "../../domain/timezone-context.read-model.js";
-import { WeatherMorningStrategy } from "./send-weather-morning.use-case.js";
+import { SendWeatherMorningUseCase } from "./send-weather-morning.use-case.js";
 
 const HOUR_MS = 60 * 60_000;
 /** 서울 2026-11-02 07:00 */
@@ -62,13 +62,13 @@ function seoulReport(
   };
 }
 
-describe("WeatherMorningStrategy — 아침 날씨 알림", () => {
+describe("SendWeatherMorningUseCase — 아침 날씨 알림", () => {
   let reader: StubWeatherReminderReader;
   let publisher: StubNotificationBatchPublisher;
   let history: StubNotificationHistoryReader;
   let weatherReports: StubReminderWeatherReportReader;
   let logger: MockProxy<ApplicationLoggerPort>;
-  let strategy: WeatherMorningStrategy;
+  let strategy: SendWeatherMorningUseCase;
 
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ["Date"] });
@@ -78,7 +78,7 @@ describe("WeatherMorningStrategy — 아침 날씨 알림", () => {
     history = new StubNotificationHistoryReader();
     weatherReports = new StubReminderWeatherReportReader();
     logger = mock<ApplicationLoggerPort>();
-    strategy = new WeatherMorningStrategy({
+    strategy = new SendWeatherMorningUseCase({
       reader,
       notificationPublisher: publisher,
       notificationHistoryReader: history,
@@ -205,12 +205,12 @@ describe("WeatherMorningStrategy — 아침 날씨 알림", () => {
   });
 });
 
-describe("WeatherMorningStrategy + weather v2 리포트 — 공급자 호출 예산", () => {
+describe("SendWeatherMorningUseCase + weather v2 리포트 — 공급자 호출 예산", () => {
   let memory: InMemoryCacheStore;
   let provider: StubWeatherReportProvider;
   let reader: StubWeatherReminderReader;
   let publisher: StubNotificationBatchPublisher;
-  let strategy: WeatherMorningStrategy;
+  let strategy: SendWeatherMorningUseCase;
 
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ["Date"] });
@@ -220,7 +220,7 @@ describe("WeatherMorningStrategy + weather v2 리포트 — 공급자 호출 예
     provider.report = weatherReportFixture(NOW);
     reader = new StubWeatherReminderReader();
     publisher = new StubNotificationBatchPublisher();
-    strategy = new WeatherMorningStrategy({
+    strategy = new SendWeatherMorningUseCase({
       reader,
       notificationPublisher: publisher,
       notificationHistoryReader: new StubNotificationHistoryReader(),

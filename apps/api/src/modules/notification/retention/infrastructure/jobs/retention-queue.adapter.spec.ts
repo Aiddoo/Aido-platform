@@ -1,17 +1,17 @@
 import { FakeJobRuntime } from "#test/mocks/fake-job-runtime";
 
-import { RetentionQueueService } from "./retention-queue.adapter.js";
+import { RetentionQueueAdapter } from "./retention-queue.adapter.js";
 import {
   RETENTION_QUEUE,
   RETENTION_STAGE_SWEEP_SCHEDULE,
   RetentionJobName,
 } from "./retention-queue.constants.js";
 
-describe("RetentionQueueService — 리텐션 예약", () => {
+describe("RetentionQueueAdapter — 리텐션 예약", () => {
   it("단계 sweep 예약만 등록한다", async () => {
     // Given
     const runtime = new FakeJobRuntime();
-    const service = new RetentionQueueService(runtime);
+    const service = new RetentionQueueAdapter(runtime);
 
     // When
     service.onModuleInit();

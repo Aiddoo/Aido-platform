@@ -5,14 +5,14 @@ import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy
 
 import { EMAIL_DELIVERY_QUEUE_PORT } from "./application/ports/email-delivery-queue.port.js";
 import { EMAIL_SENDER } from "./application/ports/email-sender.port.js";
-import { TransactionalEmailSender } from "./application/use-cases/send-transactional-email.use-case.js";
+import { SendTransactionalEmailUseCase } from "./application/use-cases/send-transactional-email.use-case.js";
 import { EmailDeliveryQueueAdapter } from "./infrastructure/adapters/email-delivery-queue.adapter.js";
 import { createEmailSender } from "./infrastructure/adapters/email-sender-factory.adapter.js";
 import { EmailDeliveryQueueProcessor } from "./infrastructure/jobs/email-delivery-queue.processor.js";
 import {
-  deliverEmailProvider,
+  deliverEmailUseCaseProvider,
   emailBudgetProvider,
-  transactionalEmailSenderProvider,
+  sendTransactionalEmailUseCaseProvider,
 } from "./notification-email.providers.js";
 
 /**
@@ -25,8 +25,8 @@ import {
 @Module({
   providers: [
     emailBudgetProvider,
-    transactionalEmailSenderProvider,
-    deliverEmailProvider,
+    sendTransactionalEmailUseCaseProvider,
+    deliverEmailUseCaseProvider,
     EmailDeliveryQueueProcessor,
     { provide: EMAIL_DELIVERY_QUEUE_PORT, useClass: EmailDeliveryQueueAdapter },
     {
@@ -35,6 +35,6 @@ import {
       inject: [TypedConfigService, OutboundPolicyRegistry],
     },
   ],
-  exports: [TransactionalEmailSender],
+  exports: [SendTransactionalEmailUseCase],
 })
 export class NotificationEmailModule {}

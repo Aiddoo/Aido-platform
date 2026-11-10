@@ -4,7 +4,7 @@ import { match } from "ts-pattern";
 import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
 
 import { NotificationProviderLogEvent } from "../../../push/infrastructure/adapters/notification-provider.log-events.js";
-import { TimezoneAwareReminderOrchestrator } from "../../application/use-cases/sweep-timezone-reminders.use-case.js";
+import { SweepTimezoneRemindersUseCase } from "../../application/use-cases/sweep-timezone-reminders.use-case.js";
 /**
  * 타임존 리마인더 작업 Processor (진입 어댑터).
  *
@@ -24,14 +24,14 @@ import {
 } from "./timezone-reminder-queue.constants.js";
 
 @Injectable()
-export class TimezoneReminderProcessor implements OnModuleInit {
-  readonly #logger = new Logger(TimezoneReminderProcessor.name);
+export class TimezoneReminderQueueProcessor implements OnModuleInit {
+  readonly #logger = new Logger(TimezoneReminderQueueProcessor.name);
 
-  readonly #orchestrator: TimezoneAwareReminderOrchestrator;
+  readonly #orchestrator: SweepTimezoneRemindersUseCase;
   readonly #runtime: JobRuntimePort | undefined;
 
   constructor(
-    orchestrator: TimezoneAwareReminderOrchestrator,
+    orchestrator: SweepTimezoneRemindersUseCase,
     @Optional() @Inject(JOB_RUNTIME) runtime?: JobRuntimePort,
   ) {
     this.#orchestrator = orchestrator;

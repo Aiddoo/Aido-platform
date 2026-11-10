@@ -7,16 +7,16 @@ import { createStreakAtRiskNotificationMessage } from "../../../push/application
 import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/notification-campaign.constants.js";
 import type { TimezoneContext } from "../../domain/timezone-context.read-model.js";
 import type { UserWithTodosAndStreak } from "../read-models/scheduler.read-model.js";
-import { StreakAtRiskStrategy } from "./send-streak-at-risk.use-case.js";
+import { SendStreakAtRiskUseCase } from "./send-streak-at-risk.use-case.js";
 
-describe("StreakAtRiskStrategy — 연속 달성 위험 전략", () => {
-  let strategy: StreakAtRiskStrategy;
-  let reader: Mocked<ConstructorParameters<typeof StreakAtRiskStrategy>[0]["reader"]>;
+describe("SendStreakAtRiskUseCase — 연속 달성 위험 전략", () => {
+  let strategy: SendStreakAtRiskUseCase;
+  let reader: Mocked<ConstructorParameters<typeof SendStreakAtRiskUseCase>[0]["reader"]>;
   let notificationPublisher: Mocked<
-    ConstructorParameters<typeof StreakAtRiskStrategy>[0]["notificationPublisher"]
+    ConstructorParameters<typeof SendStreakAtRiskUseCase>[0]["notificationPublisher"]
   >;
   let notificationHistoryReader: Mocked<
-    ConstructorParameters<typeof StreakAtRiskStrategy>[0]["notificationHistoryReader"]
+    ConstructorParameters<typeof SendStreakAtRiskUseCase>[0]["notificationHistoryReader"]
   >;
 
   const TZ = "Asia/Seoul";
@@ -54,9 +54,9 @@ describe("StreakAtRiskStrategy — 연속 달성 위험 전략", () => {
     vi.spyOn(Math, "random").mockReturnValue(0);
 
     const streakAtRiskStrategyDependencies = mockDeep<
-      ConstructorParameters<typeof StreakAtRiskStrategy>[0]
+      ConstructorParameters<typeof SendStreakAtRiskUseCase>[0]
     >({});
-    const unit = new StreakAtRiskStrategy(streakAtRiskStrategyDependencies);
+    const unit = new SendStreakAtRiskUseCase(streakAtRiskStrategyDependencies);
 
     strategy = unit;
     reader = streakAtRiskStrategyDependencies.reader;

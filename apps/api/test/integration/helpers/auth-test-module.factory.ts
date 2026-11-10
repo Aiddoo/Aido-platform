@@ -36,7 +36,7 @@ import { DrizzleUserConsentRepository } from "#api/modules/identity/preferences/
 import { DrizzleUserPreferenceRepository } from "#api/modules/identity/preferences/infrastructure/persistence/drizzle-user-preference.repository";
 import { DrizzleUserRepository } from "#api/modules/identity/users/infrastructure/persistence/drizzle-user.repository";
 import { NotificationQueueAdapter } from "#api/modules/notification/notification-delivery-jobs.public";
-import { TransactionalEmailSender } from "#api/modules/notification/notification-email.public";
+import { SendTransactionalEmailUseCase } from "#api/modules/notification/notification-email.public";
 import { AdminEventNotifier } from "#api/modules/operations/operations-notifications.public";
 import { DefaultTodoCategoryProvisionerAdapter } from "#api/modules/planning/categories/infrastructure/adapters/default-todo-category-provisioner.adapter";
 import { CacheService } from "#api/platform/cache/cache.service";
@@ -173,7 +173,7 @@ export async function createAuthTestModule(
       },
       { provide: AuthPasswordHasherPort, useExisting: Argon2PasswordHasherAdapter },
       { provide: AuthTokenIssuerPort, useExisting: JwtTokenIssuerAdapter },
-      { provide: AuthEmailSenderPort, useExisting: TransactionalEmailSender },
+      { provide: AuthEmailSenderPort, useExisting: SendTransactionalEmailUseCase },
       AuthCacheAdapter,
       { provide: AuthCachePort, useExisting: AuthCacheAdapter },
       {
@@ -210,7 +210,7 @@ export async function createAuthTestModule(
         },
       },
       {
-        provide: TransactionalEmailSender,
+        provide: SendTransactionalEmailUseCase,
         useValue: fakeEmailService,
       },
       {

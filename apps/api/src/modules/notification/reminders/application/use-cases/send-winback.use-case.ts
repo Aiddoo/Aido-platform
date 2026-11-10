@@ -27,7 +27,7 @@ interface WinbackStrategyDependencies {
   readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
 
-export class WinbackStrategy implements TimezoneReminderStrategy {
+export class SendWinbackUseCase implements TimezoneReminderStrategy {
   readonly #dependencies: WinbackStrategyDependencies;
 
   constructor(dependencies: WinbackStrategyDependencies) {

@@ -4,16 +4,18 @@ import { mockDeep } from "vitest-mock-extended";
 
 import { createRetentionRepositoryMock } from "#test/mocks/ports/index";
 
-import { EnrollRetentionExperiment } from "./enroll-retention-experiment.use-case.js";
+import { EnrollRetentionExperimentUseCase } from "./enroll-retention-experiment.use-case.js";
 
-describe("EnrollRetentionExperiment — 신규 사용자만 등록", () => {
-  let repository: Mocked<ConstructorParameters<typeof EnrollRetentionExperiment>[0]["repository"]>;
+describe("EnrollRetentionExperimentUseCase — 신규 사용자만 등록", () => {
+  let repository: Mocked<
+    ConstructorParameters<typeof EnrollRetentionExperimentUseCase>[0]["repository"]
+  >;
 
   async function build(enabled: boolean) {
     const enrollRetentionExperimentDependencies = mockDeep<
-      ConstructorParameters<typeof EnrollRetentionExperiment>[0]
+      ConstructorParameters<typeof EnrollRetentionExperimentUseCase>[0]
     >({ repository: createRetentionRepositoryMock(), config: { enabled, treatmentPercent: 100 } });
-    const unit = new EnrollRetentionExperiment(enrollRetentionExperimentDependencies);
+    const unit = new EnrollRetentionExperimentUseCase(enrollRetentionExperimentDependencies);
     repository = enrollRetentionExperimentDependencies.repository;
     return unit;
   }

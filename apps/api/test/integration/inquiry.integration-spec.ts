@@ -15,7 +15,7 @@ import { Test, type TestingModule } from "@nestjs/testing";
  */
 import { vi } from "vitest";
 
-import { TransactionalEmailSender } from "#api/modules/notification/notification-email.public";
+import { SendTransactionalEmailUseCase } from "#api/modules/notification/notification-email.public";
 import { EmailInquiryMailerAdapter } from "#api/modules/support/inquiries/infrastructure/adapters/email-inquiry-mailer.adapter";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { suppressLogger } from "#test/setup/suppress-logger";
@@ -44,7 +44,7 @@ describe("Inquiry 어댑터 통합 테스트 (Mock Email)", () => {
     module = await Test.createTestingModule({
       providers: [
         EmailInquiryMailerAdapter,
-        { provide: TransactionalEmailSender, useValue: mockEmailService },
+        { provide: SendTransactionalEmailUseCase, useValue: mockEmailService },
         { provide: TypedConfigService, useValue: mockConfigService },
       ],
     }).compile();

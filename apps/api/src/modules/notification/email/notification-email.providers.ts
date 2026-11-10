@@ -12,8 +12,8 @@ import {
 import { EMAIL_BUDGET_PORT, type EmailBudgetPort } from "./application/ports/email-budget.port.js";
 import { EMAIL_DELIVERY_QUEUE_PORT } from "./application/ports/email-delivery-queue.port.js";
 import { EMAIL_SENDER } from "./application/ports/email-sender.port.js";
-import { DeliverEmail } from "./application/use-cases/deliver-email.use-case.js";
-import { TransactionalEmailSender } from "./application/use-cases/send-transactional-email.use-case.js";
+import { DeliverEmailUseCase } from "./application/use-cases/deliver-email.use-case.js";
+import { SendTransactionalEmailUseCase } from "./application/use-cases/send-transactional-email.use-case.js";
 import { MeteredEmailBudgetAdapter } from "./infrastructure/adapters/metered-email-budget.adapter.js";
 
 export const emailBudgetProvider: FactoryProvider<EmailBudgetPort> = {
@@ -27,28 +27,35 @@ export const emailBudgetProvider: FactoryProvider<EmailBudgetPort> = {
     }),
 };
 
-export const transactionalEmailSenderProvider: FactoryProvider<TransactionalEmailSender> = {
-  provide: TransactionalEmailSender,
-  inject: [EMAIL_DELIVERY_QUEUE_PORT, EMAIL_SENDER, EMAIL_BUDGET_PORT],
-  useFactory: (
-    queue: ConstructorParameters<typeof TransactionalEmailSender>[0]["queue"],
-    sender: ConstructorParameters<typeof TransactionalEmailSender>[0]["sender"],
-    budget: ConstructorParameters<typeof TransactionalEmailSender>[0]["budget"],
-  ) =>
-    new TransactionalEmailSender({
-      queue,
-      sender,
-      budget,
-      logger: new Logger(TransactionalEmailSender.name),
-    }),
-};
+export const sendTransactionalEmailUseCaseProvider: FactoryProvider<SendTransactionalEmailUseCase> =
+  {
+    provide: SendTransactionalEmailUseCase,
+    inject: [EMAIL_DELIVERY_QUEUE_PORT, EMAIL_SENDER, EMAIL_BUDGET_PORT],
+    useFactory: (
+      queue: ConstructorParameters<typeof SendTransactionalEmailUseCase>[0]["queue"],
+      sender: ConstructorParameters<typeof SendTransactionalEmailUseCase>[0]["sender"],
+      budget: ConstructorParameters<typeof SendTransactionalEmailUseCase>[0]["budget"],
+    ) =>
+      new SendTransactionalEmailUseCase({
+        queue,
+        sender,
+        budget,
+        logger: new Logger(SendTransactionalEmailUseCase.name),
+      }),
+  };
 
-export const deliverEmailProvider: FactoryProvider<DeliverEmail> = {
-  provide: DeliverEmail,
+export const deliverEmailUseCaseProvider: FactoryProvider<DeliverEmailUseCase> = {
+  provide: DeliverEmailUseCase,
   inject: [EMAIL_SENDER, EMAIL_BUDGET_PORT, OPERATIONAL_ALERT],
   useFactory: (
-    sender: ConstructorParameters<typeof DeliverEmail>[0]["sender"],
-    budget: ConstructorParameters<typeof DeliverEmail>[0]["budget"],
+    sender: ConstructorParameters<typeof DeliverEmailUseCase>[0]["sender"],
+    budget: ConstructorParameters<typeof DeliverEmailUseCase>[0]["budget"],
     alert: OperationalAlertPort,
-  ) => new DeliverEmail({ sender, budget, alert, logger: new Logger(DeliverEmail.name) }),
+  ) =>
+    new DeliverEmailUseCase({
+      sender,
+      budget,
+      alert,
+      logger: new Logger(DeliverEmailUseCase.name),
+    }),
 };

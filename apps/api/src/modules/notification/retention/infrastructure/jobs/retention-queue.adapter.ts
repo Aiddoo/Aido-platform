@@ -11,8 +11,8 @@ import {
 } from "./retention-queue.constants.js";
 
 @Injectable()
-export class RetentionQueueService implements OnModuleInit {
-  readonly #logger = new Logger(RetentionQueueService.name);
+export class RetentionQueueAdapter implements OnModuleInit {
+  readonly #logger = new Logger(RetentionQueueAdapter.name);
   schedulerRegistration: Promise<void> = Promise.resolve();
 
   readonly #runtime: JobRuntimePort;

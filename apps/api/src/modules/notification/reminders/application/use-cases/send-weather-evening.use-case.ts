@@ -40,7 +40,7 @@ interface WeatherEveningStrategyDependencies {
  * 저녁 날씨 알림. 앱 화면과 같은 v2 리포트(칸 캐시 공유)로 내일 비·눈이 시작하는 때와 쌀쌀함을 알린다.
  * 리포트는 알림 대상(설정 시각·위치 있음·오늘 미발송)만 조회한다.
  */
-export class WeatherEveningStrategy implements TimezoneReminderStrategy {
+export class SendWeatherEveningUseCase implements TimezoneReminderStrategy {
   readonly #dependencies: WeatherEveningStrategyDependencies;
 
   constructor(dependencies: WeatherEveningStrategyDependencies) {

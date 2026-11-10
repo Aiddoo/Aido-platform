@@ -2,7 +2,7 @@ import { RecordingOperationalAlert } from "#test/mocks/recording-operational-ale
 
 import { createVerificationCodeEmail } from "../email-message.mapper.js";
 import type { EmailDeliveryOutcome, EmailQuotaScope } from "../ports/email-sender.port.js";
-import { DeliverEmail, EmailDeliveryRetryableError } from "./deliver-email.use-case.js";
+import { DeliverEmailUseCase, EmailDeliveryRetryableError } from "./deliver-email.use-case.js";
 
 class StubSender {
   sent = 0;
@@ -39,11 +39,11 @@ function setup(outcome: EmailDeliveryOutcome) {
   const sender = new StubSender(outcome);
   const budget = new StubBudget();
   const alert = new RecordingOperationalAlert();
-  const useCase = new DeliverEmail({ sender, budget, alert, logger });
+  const useCase = new DeliverEmailUseCase({ sender, budget, alert, logger });
   return { useCase, sender, budget, alert };
 }
 
-describe("DeliverEmail", () => {
+describe("DeliverEmailUseCase", () => {
   it("보내졌으면 예산을 그대로 두고 경보도 올리지 않는다", async () => {
     // Given
     const { useCase, budget, alert } = setup({ status: "sent", providerMessageId: "id" });
