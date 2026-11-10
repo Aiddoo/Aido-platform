@@ -1,98 +1,50 @@
-import { sql, type SQL } from "drizzle-orm";
-import { alias } from "drizzle-orm/pg-core";
-import { z } from "zod";
-
-import { nullableRawTimestampSchema } from "#api/platform/database/raw-timestamp.schema";
-import { todo, todoComment, user, userProfile } from "#api/platform/database/schema/index";
-import { instantFromDate } from "#api/shared/domain/time/instant";
-
 import type {
+  TodoCommentParticipantAuthorReadModel,
   TodoCommentReadModel,
   TodoCommentRootPosition,
 } from "../../application/read-models/todo-comment.read-model.js";
 
-const authorProfile = alias(userProfile, "author_profile");
-const authorUser = alias(user, "author_user");
-const replyTarget = alias(todoComment, "reply_target");
-const replyTargetProfile = alias(userProfile, "reply_target_profile");
-
-const nullableText = z.string().nullable();
-const nullableInt = z.number().int().nullable();
-
-/** LEFT JOIN LATERAL로 비어 있을 수 있는 행도 같은 스키마로 읽는다. 값이 없으면 commentId가 null이다. */
-export const commentRowSchema = z.object({
-  commentId: nullableText,
-  todoId: nullableInt,
-  threadCommentId: nullableText,
-  replyToCommentId: nullableText,
-  authorId: nullableText,
-  authorName: nullableText,
-  authorUserTag: nullableText,
-  authorProfileImage: nullableText,
-  replyToAuthorId: nullableText,
-  replyToAuthorName: nullableText,
-  todoOwnerId: nullableText,
-  content: nullableText,
-  likeCount: nullableInt,
-  replyCount: nullableInt,
-  deletedAt: nullableRawTimestampSchema,
-  editedAt: nullableRawTimestampSchema,
-  createdAt: nullableRawTimestampSchema,
-});
-type CommentRow = z.infer<typeof commentRowSchema>;
-
-export const rootPositionRowSchema = z.object({
-  rootLikeCount: z.number().int(),
-  rootReplyCount: z.number().int(),
-});
-
-/** `source`는 TodoComment 열을 그대로 가진 FROM 항목(테이블 별칭이나 CTE)이다. */
-export function commentColumns(source: SQL): SQL {
-  return sql`
-		${source}."id" AS "commentId",
-		${source}."todoId",
-		${source}."parentId" AS "threadCommentId",
-		${source}."replyToCommentId",
-		${source}."authorId",
-		${authorProfile.name} AS "authorName",
-		${authorUser.userTag} AS "authorUserTag",
-		${authorProfile.profileImage} AS "authorProfileImage",
-		${replyTarget.authorId} AS "replyToAuthorId",
-		${replyTargetProfile.name} AS "replyToAuthorName",
-		${todo.userId} AS "todoOwnerId",
-		${source}."content",
-		${source}."likeCount",
-		${source}."replyCount",
-		${source}."deletedAt",
-		${source}."editedAt",
-		${source}."createdAt"
-	`;
+/** 조회가 돌려주는 댓글 한 행. LEFT JOIN LATERAL로 비어 있을 수 있어 모든 칸이 null일 수 있다 */
+export interface TodoCommentProjectionRow {
+  readonly commentId: string | null;
+  readonly todoId: number | null;
+  readonly threadCommentId: string | null;
+  readonly replyToCommentId: string | null;
+  readonly authorId: string | null;
+  readonly authorName: string | null;
+  readonly authorUserTag: string | null;
+  readonly authorProfileImage: string | null;
+  readonly replyToAuthorId: string | null;
+  readonly replyToAuthorName: string | null;
+  readonly todoOwnerId: string | null;
+  readonly content: string | null;
+  readonly likeCount: number | null;
+  readonly replyCount: number | null;
+  readonly deletedAt: Temporal.Instant | null;
+  readonly editedAt: Temporal.Instant | null;
+  readonly createdAt: Temporal.Instant | null;
 }
 
-export function commentJoins(source: SQL): SQL {
-  return sql`
-		LEFT JOIN ${todo} ON ${todo.id} = ${source}."todoId"
-		LEFT JOIN ${userProfile} AS ${authorProfile} ON ${authorProfile.userId} = ${source}."authorId"
-		LEFT JOIN ${user} AS ${authorUser} ON ${authorUser.id} = ${source}."authorId"
-		LEFT JOIN ${todoComment} AS ${replyTarget} ON ${replyTarget.id} = ${source}."replyToCommentId"
-		LEFT JOIN ${userProfile} AS ${replyTargetProfile}
-			ON ${replyTargetProfile.userId} = ${replyTarget.authorId}
-	`;
+export interface TodoCommentParticipantRow {
+  readonly participantAuthorId: string | null;
+  readonly participantAuthorName: string | null;
+  readonly participantAuthorUserTag: string | null;
+  readonly participantAuthorProfileImage: string | null;
+  readonly todoOwnerId: string | null;
 }
 
-function requireValue<T>(value: T | null, field: string): T {
+function requireValue<TValue>(value: TValue | null, field: string): TValue {
   if (value == null) {
     throw new Error(`댓글 조회 결과에 ${field} 값이 없습니다.`);
   }
-
   return value;
 }
 
-export function toCommentRecord(row: CommentRow): TodoCommentReadModel | null {
+/** 글 id가 없으면 LEFT JOIN으로 비어 있는 행이다 */
+export function toTodoCommentReadModel(row: TodoCommentProjectionRow): TodoCommentReadModel | null {
   if (row.commentId == null) {
     return null;
   }
-
   return {
     id: row.commentId,
     todoId: requireValue(row.todoId, "todoId"),
@@ -108,14 +60,30 @@ export function toCommentRecord(row: CommentRow): TodoCommentReadModel | null {
     content: row.content,
     likeCount: requireValue(row.likeCount, "likeCount"),
     replyCount: requireValue(row.replyCount, "replyCount"),
-    deletedAt: row.deletedAt == null ? null : instantFromDate(row.deletedAt),
-    editedAt: row.editedAt == null ? null : instantFromDate(row.editedAt),
-    createdAt: instantFromDate(requireValue(row.createdAt, "createdAt")),
+    deletedAt: row.deletedAt,
+    editedAt: row.editedAt,
+    createdAt: requireValue(row.createdAt, "createdAt"),
   };
 }
 
-export function toRootPosition(
-  row: z.infer<typeof rootPositionRowSchema>,
-): TodoCommentRootPosition {
+export function toTodoCommentParticipantAuthor(
+  row: TodoCommentParticipantRow,
+): TodoCommentParticipantAuthorReadModel | null {
+  if (row.participantAuthorId == null) {
+    return null;
+  }
+  return {
+    id: row.participantAuthorId,
+    name: row.participantAuthorName,
+    userTag: row.participantAuthorUserTag,
+    profileImage: row.participantAuthorProfileImage,
+    isTodoOwner: row.participantAuthorId === row.todoOwnerId,
+  };
+}
+
+export function toRootPosition(row: {
+  readonly rootLikeCount: number;
+  readonly rootReplyCount: number;
+}): TodoCommentRootPosition {
   return { rootLikeCount: row.rootLikeCount, rootReplyCount: row.rootReplyCount };
 }
