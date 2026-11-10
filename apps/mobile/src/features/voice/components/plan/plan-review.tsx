@@ -40,7 +40,12 @@ import { ScrollView } from 'react-native';
 import { match } from 'ts-pattern';
 
 import { PlanRequestPolicy } from '../../domains/plan-request.model';
-import { VoicePlanPolicy, type VoicePlan } from '../../domains/voice-plan.model';
+import {
+  getPlanActionGroups,
+  sortPlanActionsByGroup,
+  type VoicePlan,
+  VoicePlanPolicy,
+} from '../../domains/voice-plan.model';
 import { isPlanKeyConflictError, isSourceMemoMissingError } from '../../domains/voice.error';
 import { useApplyActionPlanMutationOptions } from '../../queries/voice.mutations';
 import { type PlanReviewFormValues } from '../../schemas/plan-review-form.schema';
@@ -178,7 +183,7 @@ export function PlanReview({
           nestedScrollEnabled
         >
           <VStack gap={8}>
-            {VoicePlanPolicy.getPlanActionGroups(actions, fallbackCategoryId).map((group) => (
+            {getPlanActionGroups(actions, fallbackCategoryId).map((group) => (
               <VStack key={group.categoryId ?? 'memo'} gap={8}>
                 {group.categoryId != null && (
                   <PlanReview.CategoryHeader categoryId={group.categoryId} />
@@ -251,7 +256,7 @@ function usePlanApply({
 
   const apply = () =>
     form.handleSubmit((values) => {
-      const selected = VoicePlanPolicy.sortPlanActionsByGroup(
+      const selected = sortPlanActionsByGroup(
         VoicePlanPolicy.getSelectedActions(
           { ...plan, actions: toPlannedActions(values) },
           toPlanSelection(values),
