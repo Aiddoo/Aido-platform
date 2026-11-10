@@ -16,6 +16,9 @@ export const TODO_SERIES_LIMITS = {
   VISIBLE_AHEAD_DAYS: 90,
 } as const;
 
+/** 매월 반복에서 이 날짜 이상은 31일이 없는 달에 말일로 당겨질 수 있다. */
+export const TODO_REPEAT_MONTH_DAY_CLAMP_FROM = 29;
+
 export const TODO_ITEM_LIMITS = {
   /** 투두당 최대 하위 항목 수 */
   MAX_PER_TODO: 20,
