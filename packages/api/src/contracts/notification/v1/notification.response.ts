@@ -15,7 +15,7 @@ export type NotificationMetadata = z.infer<typeof notificationMetadataSchema>;
 export const notificationSchema = z
   .object({
     id: z.number().int().positive().describe("알림 ID (양의 정수)"),
-    userId: z.string().describe("사용자 ID (CUID 25자)"),
+    userId: z.string().describe("사용자 ID"),
     type: notificationTypeSchema
       .exclude([
         "NUDGE_REPLIED",

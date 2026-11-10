@@ -4,10 +4,10 @@ import { match } from "ts-pattern";
 import { z } from "zod";
 
 import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
+import { isEntityId } from "#api/shared/domain/model/entity-id";
 import { ValueObject } from "#api/shared/domain/model/value-object";
 
 const positiveIntegerIdSchema = z.string().regex(/^[1-9]\d{0,15}$/);
-const commentIdSchema = z.cuid();
 
 interface UserReportTargetValue {
   readonly type: UserReportTargetType;
@@ -26,7 +26,7 @@ export class UserReportTarget extends ValueObject<UserReportTargetValue> {
         "CHEER_MESSAGE",
         () => positiveIntegerIdSchema.safeParse(contentId).success,
       )
-      .with("COMMENT", () => commentIdSchema.safeParse(contentId).success)
+      .with("COMMENT", () => isEntityId(contentId))
       .exhaustive();
     if (!isValid) {
       throw new DomainException(ErrorCode.REPORT_2253, { targetType: type });

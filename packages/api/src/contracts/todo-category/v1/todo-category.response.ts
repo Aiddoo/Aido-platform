@@ -1,11 +1,12 @@
 import { z } from "zod";
 
 import { datetimeSchema } from "../../../common/datetime.js";
+import { entityIdSchema } from "../../../common/entity-id.js";
 
 export const todoCategorySchema = z
   .object({
     id: z.number().int().describe("카테고리 ID (양의 정수)"),
-    userId: z.cuid().describe("사용자 ID (CUID 25자)"),
+    userId: entityIdSchema.describe("사용자 ID"),
     name: z.string().describe("카테고리 이름 (최대 50자)"),
     color: z.string().describe("카테고리 색상 (HEX 7자, 예: #FFB3B3)"),
     sortOrder: z.number().int().describe("정렬 순서 (작을수록 위)"),
