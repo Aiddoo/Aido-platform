@@ -45,5 +45,6 @@ coverage/
 .worktrees/
 /.claude/*
 !/.claude/commands/
+!/.claude/settings.json
 settings.local.json
 myDocs/
