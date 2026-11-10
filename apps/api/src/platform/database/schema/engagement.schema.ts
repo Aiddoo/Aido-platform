@@ -89,6 +89,10 @@ export const todoComment = pgTable(
       table.createdAt.asc().nullsLast(),
       table.id.asc().nullsLast(),
     ),
+    index("TodoComment_replyToCommentId_idx").using(
+      "btree",
+      table.replyToCommentId.asc().nullsLast(),
+    ),
     unique("TodoComment_authorId_clientRequestId_key").on(table.authorId, table.clientRequestId),
   ],
 );

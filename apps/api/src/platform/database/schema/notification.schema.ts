@@ -275,6 +275,10 @@ export const pushDeliveryAttempt = pgTable(
       table.status.asc().nullsLast(),
       table.createdAt.asc().nullsLast(),
     ),
+    index("PushDeliveryAttempt_pushTokenId_idx").using(
+      "btree",
+      table.pushTokenId.asc().nullsLast(),
+    ),
     unique("PushDeliveryAttempt_dispatchId_pushTokenId_key").on(
       table.dispatchId,
       table.pushTokenId,

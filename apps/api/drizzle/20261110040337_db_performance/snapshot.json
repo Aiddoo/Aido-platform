@@ -1,0 +1,101 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "d64855ee-5a7d-4ede-a1c5-63239b00bb77",
+  "prevIds": [
+    "30935b33-5d97-4135-b75f-1042cce97ec4"
+  ],
+  "footprints": [
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "public",
+        "TodoComment",
+        "TodoComment_replyToCommentId_idx"
+      ],
+      "writes": [
+        "s|idx|public.TodoComment_replyToCommentId_idx",
+        "n|idx|public.TodoComment_replyToCommentId_idx",
+        "e|idx|public.TodoComment_replyToCommentId_idx",
+        "n|rel|public.TodoComment_replyToCommentId_idx"
+      ],
+      "reads": [
+        "n|tbl|public.TodoComment",
+        "n|sch|public",
+        "n|col|public.TodoComment.replyToCommentId"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "public",
+        "PushDeliveryAttempt",
+        "PushDeliveryAttempt_pushTokenId_idx"
+      ],
+      "writes": [
+        "s|idx|public.PushDeliveryAttempt_pushTokenId_idx",
+        "n|idx|public.PushDeliveryAttempt_pushTokenId_idx",
+        "e|idx|public.PushDeliveryAttempt_pushTokenId_idx",
+        "n|rel|public.PushDeliveryAttempt_pushTokenId_idx"
+      ],
+      "reads": [
+        "n|tbl|public.PushDeliveryAttempt",
+        "n|sch|public",
+        "n|col|public.PushDeliveryAttempt.pushTokenId"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "TodoComment",
+        "name": "TodoComment_replyToCommentId_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "replyToCommentId",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "PushDeliveryAttempt",
+        "name": "PushDeliveryAttempt_pushTokenId_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "pushTokenId",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    }
+  ]
+}
