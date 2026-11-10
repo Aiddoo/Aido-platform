@@ -1,14 +1,21 @@
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
-import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
+import type { ClockPort } from "#api/shared/application/ports/clock.port";
+import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 
+import type { BroadcastCampaignId } from "../../domain/broadcast-campaign-id.vo.js";
 import { BroadcastLogEvent } from "../broadcasts.log-events.js";
 import type { BroadcastCampaignRepositoryPort } from "../ports/broadcast-campaign.repository.port.js";
 
 export const BROADCAST_FAN_OUT_EXHAUSTED_REASON = "FAN_OUT_RETRIES_EXHAUSTED";
 
-interface FailBroadcastCampaignDependencies {
-  readonly repository: Pick<BroadcastCampaignRepositoryPort, "findByIdForUpdate" | "save">;
+export interface FailBroadcastCampaignCommand {
+  readonly campaignId: BroadcastCampaignId;
+}
+
+export interface FailBroadcastCampaignDependencies {
   readonly unitOfWork: Pick<UnitOfWorkPort, "run">;
+  readonly campaignRepository: Pick<BroadcastCampaignRepositoryPort, "findByIdForUpdate" | "save">;
+  readonly clock: ClockPort;
   readonly logger: Pick<ApplicationLoggerPort, "error">;
 }
 
@@ -20,19 +27,20 @@ export class FailBroadcastCampaignUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: { readonly campaignId: string }): Promise<boolean> {
-    const failed = await this.#dependencies.unitOfWork.run(async () => {
-      const campaign = await this.#dependencies.repository.findByIdForUpdate(input.campaignId);
-      if (campaign == null || !campaign.fail(BROADCAST_FAN_OUT_EXHAUSTED_REASON, new Date())) {
+  async execute(command: FailBroadcastCampaignCommand): Promise<boolean> {
+    const { unitOfWork, campaignRepository, clock, logger } = this.#dependencies;
+    const failed = await unitOfWork.run(async () => {
+      const campaign = await campaignRepository.findByIdForUpdate(command.campaignId);
+      if (campaign == null || !campaign.fail(BROADCAST_FAN_OUT_EXHAUSTED_REASON, clock.now())) {
         return false;
       }
-      await this.#dependencies.repository.save(campaign);
+      await campaignRepository.save(campaign);
       return true;
     });
     if (failed) {
-      this.#dependencies.logger.error({
+      logger.error({
         event: BroadcastLogEvent.BROADCAST_FAILED,
-        campaignId: input.campaignId,
+        campaignId: command.campaignId.value,
         reason: BROADCAST_FAN_OUT_EXHAUSTED_REASON,
       });
     }

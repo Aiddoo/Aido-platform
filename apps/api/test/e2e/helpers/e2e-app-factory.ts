@@ -43,7 +43,7 @@ import { TodoReminderQueueProcessor } from "#api/modules/notification/infrastruc
 import { RetentionQueueProcessor } from "#api/modules/notification/infrastructure/jobs/retention/retention-queue.processor";
 import { RetentionQueueService } from "#api/modules/notification/infrastructure/jobs/retention/retention-queue.service";
 import { TransactionalEmailSender } from "#api/modules/notification/notification-email.public";
-import { ADMIN_NOTIFIER } from "#api/modules/operations/admin-notices/application/ports/admin-notifier.port";
+import { AdminNotifierPort } from "#api/modules/operations/admin-notices/application/ports/admin-notifier.port";
 import { AdminNotificationProcessor } from "#api/modules/operations/admin-notices/infrastructure/jobs/admin-notification.processor";
 import { DailySignupSummaryScheduler } from "#api/modules/operations/admin-notices/infrastructure/jobs/daily-signup-summary.scheduler";
 import { TodoSeriesMaterializationJob } from "#api/modules/planning/infrastructure/jobs/series/todo-series-materialization.job";
@@ -160,6 +160,7 @@ export async function createE2eApp(options?: E2eAppOptions): Promise<E2eTestCont
   const fakeLifestyleIndexProvider = new FakeLifestyleIndexProvider();
   const fakeSunTimeProvider = new FakeSunTimeProvider();
   const fakeJobRuntime = new FakeJobRuntime();
+  const inMemoryJobQueue = new InMemoryJobQueue();
 
   const redisMock = new RedisMock();
   const cacheAdapter = new InMemoryCacheStore({
@@ -221,7 +222,7 @@ export async function createE2eApp(options?: E2eAppOptions): Promise<E2eTestCont
     .useValue(fakeJobRuntime)
     // E2E 앱이 실제 pg-boss에 연결하지 않게 새 큐 포트도 메모리 구현으로 바꾼다
     .overrideProvider(JobQueuePort)
-    .useValue(new InMemoryJobQueue())
+    .useValue(inMemoryJobQueue)
     // 시각을 옮기는 테스트가 Date 가짜 시계로 ClockPort도 움직이게 한다
     .overrideProvider(ClockPort)
     .useValue(new DateClock())
@@ -259,7 +260,7 @@ export async function createE2eApp(options?: E2eAppOptions): Promise<E2eTestCont
         return fakeOAuthProviderRegistry.registry;
       },
     })
-    .overrideProvider(ADMIN_NOTIFIER)
+    .overrideProvider(AdminNotifierPort)
     .useValue(fakeAdminNotifier)
     .overrideProvider(PUSH_PROVIDER)
     .useValue(fakePushProvider)
@@ -342,6 +343,7 @@ export async function createE2eApp(options?: E2eAppOptions): Promise<E2eTestCont
         () => fakeLifestyleIndexProvider.clear(),
         () => fakeSunTimeProvider.clear(),
         () => fakeJobRuntime.clear(),
+        () => inMemoryJobQueue.clear(),
       ],
       additionalResetters: options?.additionalResetters,
     });

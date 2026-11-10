@@ -1,84 +1,103 @@
-import type { Mocked } from "vitest";
-import { mockDeep } from "vitest-mock-extended";
+import { SilentLogger } from "#test/doubles/platform/silent-logger";
 
-import type { SubscriptionEventPayload } from "#api/modules/billing/subscriptions/billing-subscriptions-events.public";
-import { flushPromises } from "#test/mocks/index";
-
+import type { SubscriptionAlertInput } from "../../application/read-models/subscription-alert.read-model.js";
 import type { UserRegisteredEventPayload } from "../../application/read-models/user-registered.read-model.js";
-import { AdminEventNotifier } from "./admin-event-notifier.adapter.js";
+import { AdminEventNotifierAdapter } from "./admin-event-notifier.adapter.js";
 
-describe("AdminEventNotifier", () => {
-  let adminEventNotifier: AdminEventNotifier;
-  let enqueueUserRegistered: Mocked<
-    ConstructorParameters<typeof AdminEventNotifier>[0]["enqueueUserRegistered"]
-  >;
-  let enqueueSubscriptionEvent: Mocked<
-    ConstructorParameters<typeof AdminEventNotifier>[0]["enqueueSubscriptionEvent"]
-  >;
+const userPayload: UserRegisteredEventPayload = {
+  userId: "user-1",
+  email: "test@example.com",
+  provider: "apple",
+  registeredAt: "2026-03-07T12:00:00.000Z",
+};
 
-  let logger: Mocked<ConstructorParameters<typeof AdminEventNotifier>[0]["logger"]>;
+const subscriptionPayload: SubscriptionAlertInput = {
+  userId: "user-1",
+  email: "test@example.com",
+  kind: "STARTED",
+  store: null,
+  productId: "aido_premium_monthly",
+};
 
-  const userPayload: UserRegisteredEventPayload = {
-    userId: "user-1",
-    email: "test@example.com",
-    provider: "apple",
-    registeredAt: "2026-03-07T12:00:00.000Z",
-  };
+// 등록 호출을 기록하고, 실패를 주면 큐 등록 실패를 흉내 낸다
+class RecordingEnqueue<TPayload> {
+  readonly payloads: TPayload[] = [];
+  failure: Error | null = null;
 
-  const subscriptionPayload: SubscriptionEventPayload = {
-    userId: "user-1",
-    email: "test@example.com",
-    kind: "STARTED",
-    store: null,
-    productId: "aido_premium_monthly",
-  };
+  async execute(payload: TPayload): Promise<void> {
+    this.payloads.push(payload);
+    if (this.failure != null) {
+      throw this.failure;
+    }
+  }
+}
 
-  beforeEach(async () => {
-    const adminEventNotifierDependencies = mockDeep<
-      ConstructorParameters<typeof AdminEventNotifier>[0]
-    >({});
-    const unit = new AdminEventNotifier(adminEventNotifierDependencies);
-    logger = adminEventNotifierDependencies.logger;
-    adminEventNotifier = unit;
-    enqueueUserRegistered = adminEventNotifierDependencies.enqueueUserRegistered;
-    enqueueSubscriptionEvent = adminEventNotifierDependencies.enqueueSubscriptionEvent;
-    enqueueUserRegistered.execute.mockResolvedValue(undefined);
-    enqueueSubscriptionEvent.execute.mockResolvedValue(undefined);
+function setup() {
+  const enqueueUserRegistered = new RecordingEnqueue<UserRegisteredEventPayload>();
+  const enqueueSubscriptionEvent = new RecordingEnqueue<SubscriptionAlertInput>();
+  const logger = new SilentLogger();
+  const notifier = new AdminEventNotifierAdapter({
+    enqueueUserRegistered,
+    enqueueSubscriptionEvent,
+    logger,
   });
+  return { notifier, enqueueUserRegistered, enqueueSubscriptionEvent, logger };
+}
 
-  it("회원가입 이벤트를 비동기로 enqueue한다", async () => {
-    adminEventNotifier.notifyUserRegistered(userPayload);
+const flushPromises = () => new Promise<void>((resolve) => setImmediate(resolve));
+
+describe("AdminEventNotifierAdapter — 격리된 관리자 이벤트 알림", () => {
+  it("회원가입·구독 이벤트를 기다리지 않고 등록한다", async () => {
+    // Given
+    const { notifier, enqueueUserRegistered, enqueueSubscriptionEvent } = setup();
+
+    // When
+    notifier.notifyUserRegistered(userPayload);
+    notifier.notifySubscriptionEvent(subscriptionPayload);
     await flushPromises();
-    expect(enqueueUserRegistered.execute).toHaveBeenCalledWith(userPayload);
+
+    // Then
+    expect(enqueueUserRegistered.payloads).toEqual([userPayload]);
+    expect(enqueueSubscriptionEvent.payloads).toEqual([subscriptionPayload]);
   });
 
-  it("회원가입 enqueue 실패를 호출자에게 전파하지 않는다", async () => {
-    enqueueUserRegistered.execute.mockRejectedValue(new Error("synthetic-private-queue-error"));
-    adminEventNotifier.notifyUserRegistered(userPayload);
-    await expect(flushPromises()).resolves.not.toThrow();
-    expect(logger.error).toHaveBeenCalledWith({
-      event: expect.any(String),
-      userId: "user-1",
-      errorType: "queue-enqueue",
-    });
-    expect(JSON.stringify(logger.error.mock.calls)).not.toContain("synthetic-private-queue-error");
-  });
+  it("회원가입 등록 실패를 호출자에게 전파하지 않고 원문 오류 없이 로그만 남긴다", async () => {
+    // Given
+    const { notifier, enqueueUserRegistered, logger } = setup();
+    enqueueUserRegistered.failure = new Error("synthetic-private-queue-error");
 
-  it("구독 이벤트를 비동기로 enqueue한다", async () => {
-    adminEventNotifier.notifySubscriptionEvent(subscriptionPayload);
+    // When
+    notifier.notifyUserRegistered(userPayload);
     await flushPromises();
-    expect(enqueueSubscriptionEvent.execute).toHaveBeenCalledWith(subscriptionPayload);
+
+    // Then
+    expect(logger.messages).toEqual([
+      {
+        event: "operations.notifications.signup.enqueue-failed",
+        userId: "user-1",
+        errorType: "queue-enqueue",
+      },
+    ]);
+    expect(JSON.stringify(logger.messages)).not.toContain("synthetic-private-queue-error");
   });
 
-  it("구독 enqueue 실패를 호출자에게 전파하지 않는다", async () => {
-    enqueueSubscriptionEvent.execute.mockRejectedValue(new Error("synthetic-private-queue-error"));
-    adminEventNotifier.notifySubscriptionEvent(subscriptionPayload);
-    await expect(flushPromises()).resolves.not.toThrow();
-    expect(logger.error).toHaveBeenCalledWith({
-      event: expect.any(String),
-      userId: "user-1",
-      errorType: "queue-enqueue",
-    });
-    expect(JSON.stringify(logger.error.mock.calls)).not.toContain("synthetic-private-queue-error");
+  it("구독 등록 실패를 호출자에게 전파하지 않고 원문 오류 없이 로그만 남긴다", async () => {
+    // Given
+    const { notifier, enqueueSubscriptionEvent, logger } = setup();
+    enqueueSubscriptionEvent.failure = new Error("synthetic-private-queue-error");
+
+    // When
+    notifier.notifySubscriptionEvent(subscriptionPayload);
+    await flushPromises();
+
+    // Then
+    expect(logger.messages).toEqual([
+      {
+        event: "operations.notifications.subscription.enqueue-failed",
+        userId: "user-1",
+        errorType: "queue-enqueue",
+      },
+    ]);
+    expect(JSON.stringify(logger.messages)).not.toContain("synthetic-private-queue-error");
   });
 });

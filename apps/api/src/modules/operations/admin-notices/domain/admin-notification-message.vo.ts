@@ -1,20 +1,15 @@
 import { ErrorCode } from "@aido/api/errors";
 
 import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
+import { ValueObject } from "#api/shared/domain/model/value-object";
 
-export class AdminNotificationMessage {
-  readonly #title: string;
-  readonly #body: string;
+interface AdminNotificationCopy {
+  readonly title: string;
+  readonly body: string;
+}
 
-  constructor(title: string, body: string) {
-    this.#title = title;
-    this.#body = body;
-  }
-
-  static create(input: {
-    readonly title: string;
-    readonly body: string;
-  }): AdminNotificationMessage {
+export class AdminNotificationMessage extends ValueObject<AdminNotificationCopy> {
+  static create(input: AdminNotificationCopy): AdminNotificationMessage {
     if (input.title.trim().length === 0) {
       throw new DomainException(ErrorCode.SYS_0002, {
         field: "title",
@@ -27,14 +22,14 @@ export class AdminNotificationMessage {
         reason: "관리자 알림 본문은 비어 있을 수 없습니다",
       });
     }
-    return new AdminNotificationMessage(input.title, input.body);
+    return new AdminNotificationMessage({ title: input.title, body: input.body });
   }
 
   get title(): string {
-    return this.#title;
+    return this.value.title;
   }
 
   get body(): string {
-    return this.#body;
+    return this.value.body;
   }
 }

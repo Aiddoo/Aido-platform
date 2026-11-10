@@ -1,10 +1,10 @@
 import type { InquiryCategory } from "@aido/api/vocabulary";
 
-import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { Entity } from "#api/shared/domain/model/entity";
 
-import { InquiryContent } from "./inquiry-content.vo.js";
-import { InquiryId } from "./inquiry-id.vo.js";
+import type { InquiryContent } from "./inquiry-content.vo.js";
+import type { InquiryId } from "./inquiry-id.vo.js";
 
 export interface InquiryPrimitives {
   readonly id: string;

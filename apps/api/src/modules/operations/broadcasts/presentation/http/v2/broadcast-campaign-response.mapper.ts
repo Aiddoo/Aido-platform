@@ -1,40 +1,40 @@
-import { toISOString, toISOStringOrNull } from "#api/shared/domain/date/utils/format";
+import type {
+  BroadcastCampaign as BroadcastCampaignResponse,
+  BroadcastCampaignAccepted,
+} from "@aido/api/contracts/admin";
+
+import { toIsoString } from "#api/shared/domain/time/instant";
 
 import type { GetBroadcastCampaignResult } from "../../../application/use-cases/get-broadcast-campaign.use-case.js";
 import type { BroadcastCampaign } from "../../../domain/broadcast-campaign.aggregate.js";
-import type {
-  BroadcastCampaignAcceptedDto,
-  BroadcastCampaignDto,
-} from "./broadcast-campaign.dto.js";
 
 export function toBroadcastCampaignAcceptedDto(
   campaign: BroadcastCampaign,
-): BroadcastCampaignAcceptedDto {
+): BroadcastCampaignAccepted {
   return {
-    campaignId: campaign.id,
+    campaignId: campaign.id.value,
     requestId: campaign.requestId,
     status: campaign.status,
-    acceptedAt: toISOString(campaign.createdAt),
+    acceptedAt: toIsoString(campaign.createdAt),
   };
 }
 
 export function toBroadcastCampaignDto({
   campaign,
   outcome,
-}: GetBroadcastCampaignResult): BroadcastCampaignDto {
-  const snapshot = campaign.toSnapshot();
+}: GetBroadcastCampaignResult): BroadcastCampaignResponse {
   const dispatches = (status: Parameters<typeof outcome.dispatches.get>[0]) =>
     outcome.dispatches.get(status) ?? 0;
   const attempts = (status: Parameters<typeof outcome.attempts.get>[0]) =>
     outcome.attempts.get(status) ?? 0;
   return {
-    campaignId: snapshot.id,
-    requestId: snapshot.requestId,
-    status: snapshot.status,
-    title: snapshot.title,
-    targetFilter: snapshot.targetFilter,
-    force: snapshot.force,
-    recipients: { processed: snapshot.processedCount, queued: snapshot.queuedCount },
+    campaignId: campaign.id.value,
+    requestId: campaign.requestId,
+    status: campaign.status,
+    title: campaign.title,
+    targetFilter: campaign.targetFilter,
+    force: campaign.force,
+    recipients: { processed: campaign.processedCount, queued: campaign.queuedCount },
     dispatches: {
       pending: dispatches("PENDING"),
       processing: dispatches("PROCESSING"),
@@ -49,9 +49,9 @@ export function toBroadcastCampaignDto({
       failed: attempts("FAILED"),
       unknown: attempts("UNKNOWN"),
     },
-    failureReason: snapshot.failureReason,
-    createdAt: toISOString(snapshot.createdAt),
-    startedAt: toISOStringOrNull(snapshot.startedAt),
-    completedAt: toISOStringOrNull(snapshot.completedAt),
+    failureReason: campaign.failureReason,
+    createdAt: toIsoString(campaign.createdAt),
+    startedAt: campaign.startedAt == null ? null : toIsoString(campaign.startedAt),
+    completedAt: campaign.completedAt == null ? null : toIsoString(campaign.completedAt),
   };
 }

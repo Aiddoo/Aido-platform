@@ -26,6 +26,7 @@ import { NOTIFICATION_HISTORY_READER } from "#api/modules/notification/applicati
 import { NOTIFICATION_INBOX_READER } from "#api/modules/notification/application/ports/delivery/notification-inbox.reader.port";
 import { NOTIFICATION_RECIPIENT_LOCALE_READER } from "#api/modules/notification/application/ports/delivery/notification-recipient-locale.reader.port";
 import { NOTIFICATION_RECIPIENT_PREFERENCE_READER } from "#api/modules/notification/application/ports/delivery/notification-recipient-preference.reader.port";
+import { NOTIFICATION_RECIPIENT_TIMEZONE_READER } from "#api/modules/notification/application/ports/delivery/notification-recipient-timezone.reader.port";
 import { NOTIFICATION_TODO_TARGET_READER } from "#api/modules/notification/application/ports/delivery/notification-todo-target.reader.port";
 import { NOTIFICATION_REPOSITORY } from "#api/modules/notification/application/ports/delivery/notification.repository.port";
 import { PUSH_DELIVERY_JOB_ENQUEUER } from "#api/modules/notification/application/ports/delivery/push-delivery-job-enqueuer.port";
@@ -99,20 +100,23 @@ import {
   sendNotificationProvider,
 } from "#api/modules/notification/notification-delivery-application.providers";
 import { processRetentionStagesProvider } from "#api/modules/notification/notification-retention-application.providers";
-import { ADMIN_BROADCAST_NOTIFIER } from "#api/modules/operations/broadcasts/application/ports/admin-broadcast-notifier.port";
-import { ADMIN_USER_DIRECTORY } from "#api/modules/operations/broadcasts/application/ports/admin-user-directory.reader.port";
-import { BROADCAST_CAMPAIGN_REPOSITORY } from "#api/modules/operations/broadcasts/application/ports/broadcast-campaign.repository.port";
-import { BROADCAST_FAN_OUT_ENQUEUER } from "#api/modules/operations/broadcasts/application/ports/broadcast-fan-out-enqueuer.port";
-import { BroadcastFanOutEnqueuerAdapter } from "#api/modules/operations/broadcasts/infrastructure/adapters/broadcast-fan-out-enqueuer.adapter";
+import { AdminBroadcastNotifierPort } from "#api/modules/operations/broadcasts/application/ports/admin-broadcast-notifier.port";
+import { AdminUserDirectoryReaderPort } from "#api/modules/operations/broadcasts/application/ports/admin-user-directory.reader.port";
+import { BroadcastCampaignRepositoryPort } from "#api/modules/operations/broadcasts/application/ports/broadcast-campaign.repository.port";
+import { BroadcastJobEnqueuerPort } from "#api/modules/operations/broadcasts/application/ports/broadcast-job-enqueuer.port";
+import { BroadcastRecipientReaderPort } from "#api/modules/operations/broadcasts/application/ports/broadcast-recipient.reader.port";
+import { CreateBroadcastCampaignUseCase } from "#api/modules/operations/broadcasts/application/use-cases/create-broadcast-campaign.use-case";
+import { DeliverBroadcastGroupUseCase } from "#api/modules/operations/broadcasts/application/use-cases/deliver-broadcast-group.use-case";
+import { FailBroadcastCampaignUseCase } from "#api/modules/operations/broadcasts/application/use-cases/fail-broadcast-campaign.use-case";
+import { FanOutBroadcastCampaignUseCase } from "#api/modules/operations/broadcasts/application/use-cases/fan-out-broadcast-campaign.use-case";
+import { ReportBroadcastDeliveryExhaustedUseCase } from "#api/modules/operations/broadcasts/application/use-cases/report-broadcast-delivery-exhausted.use-case";
+import { BroadcastJobEnqueuerAdapter } from "#api/modules/operations/broadcasts/infrastructure/adapters/broadcast-job-enqueuer.adapter";
 import { NotificationAdminBroadcastNotifierAdapter } from "#api/modules/operations/broadcasts/infrastructure/adapters/notification-admin-broadcast-notifier.adapter";
+import { NotificationBroadcastRecipientAdapter } from "#api/modules/operations/broadcasts/infrastructure/adapters/notification-broadcast-recipient.adapter";
+import { BroadcastDeliveryProcessor } from "#api/modules/operations/broadcasts/infrastructure/jobs/broadcast-delivery.processor";
 import { BroadcastFanOutProcessor } from "#api/modules/operations/broadcasts/infrastructure/jobs/broadcast-fan-out.processor";
-import { DrizzleAdminUserDirectoryAdapter } from "#api/modules/operations/broadcasts/infrastructure/persistence/drizzle-admin-user-directory.reader";
+import { DrizzleAdminUserDirectoryReader } from "#api/modules/operations/broadcasts/infrastructure/persistence/drizzle-admin-user-directory.reader";
 import { DrizzleBroadcastCampaignRepository } from "#api/modules/operations/broadcasts/infrastructure/persistence/drizzle-broadcast-campaign.repository";
-import {
-  createBroadcastCampaignProvider,
-  failBroadcastCampaignProvider,
-  fanOutBroadcastCampaignProvider,
-} from "#api/modules/operations/broadcasts/operations-broadcasts.providers";
 import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
 import { CacheStorePort } from "#api/platform/cache/cache-store.port";
 import { CacheService } from "#api/platform/cache/cache.service";
@@ -125,13 +129,22 @@ import {
 import { userConsent, userPreference } from "#api/platform/database/schema/index";
 import { InMemoryDedupAdapter } from "#api/platform/dedup/adapters/in-memory-dedup.adapter";
 import { DEDUP_PROVIDER } from "#api/platform/dedup/interfaces/dedup.interface";
+import { loggerFor, provideUseCase } from "#api/platform/di/provide-use-case";
+import { JobQueueRegistry } from "#api/platform/jobs/job-queue.registry";
+import { PgBossJobQueueAdapter } from "#api/platform/jobs/pg-boss-job-queue.adapter";
 import { PgBossJobRuntimeAdapter } from "#api/platform/jobs/pg-boss-job-runtime.adapter";
+import { SystemClock } from "#api/platform/time/system-clock";
+import { ClockPort } from "#api/shared/application/ports/clock.port";
 import {
   AFTER_COMMIT_TASK_REGISTRY,
   JOB_RUNTIME,
+  JobQueuePort,
   type JobRuntimePort,
   UNIT_OF_WORK,
+  UnitOfWorkPort,
 } from "#api/shared/application/ports/index";
+import { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
+import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";
 import { FakePushProvider } from "#test/mocks/fake-push.provider";
 import { suppressLogger } from "#test/setup/suppress-logger";
 import type { TestDatabaseClient } from "#test/setup/test-database";
@@ -214,6 +227,7 @@ export async function createCriticalQueueProcessorHarness(): Promise<CriticalQue
     providers: [
       ClsUnitOfWork,
       { provide: UNIT_OF_WORK, useExisting: ClsUnitOfWork },
+      { provide: UnitOfWorkPort, useExisting: ClsUnitOfWork },
       { provide: AFTER_COMMIT_TASK_REGISTRY, useExisting: ClsUnitOfWork },
       {
         provide: JOB_RUNTIME,
@@ -222,6 +236,15 @@ export async function createCriticalQueueProcessorHarness(): Promise<CriticalQue
           new PgBossJobRuntimeAdapter(boss, txHost, {
             job: { shutdownTimeoutMs: 10_000 },
           }),
+      },
+      JobQueueRegistry,
+      {
+        provide: JobQueuePort,
+        inject: [TransactionHost, JobQueueRegistry],
+        useFactory: (
+          txHost: TransactionHost<DrizzleTransactionalAdapter>,
+          registry: JobQueueRegistry,
+        ) => new PgBossJobQueueAdapter(boss, txHost, registry),
       },
       ...notificationProviders(pushProvider),
       ...retentionProviders(),
@@ -365,6 +388,10 @@ function notificationProviders(pushProvider: FakePushProvider): Provider[] {
       provide: NOTIFICATION_RECIPIENT_LOCALE_READER,
       useExisting: CachedNotificationRecipientPreferenceAdapter,
     },
+    {
+      provide: NOTIFICATION_RECIPIENT_TIMEZONE_READER,
+      useExisting: CachedNotificationRecipientPreferenceAdapter,
+    },
     pushDeliveryEligibilityServiceProvider,
     pushDeliveryAfterCommitPublisherProvider,
     pushNotificationDeliveryServiceProvider,
@@ -395,14 +422,47 @@ function retentionProviders(): Provider[] {
 
 function broadcastProviders(): Provider[] {
   return [
-    createBroadcastCampaignProvider,
-    fanOutBroadcastCampaignProvider,
-    failBroadcastCampaignProvider,
+    { provide: ClockPort, useClass: SystemClock },
+    { provide: OperationalAlertPort, useValue: new RecordingOperationalAlert() },
+    { provide: BroadcastCampaignRepositoryPort, useClass: DrizzleBroadcastCampaignRepository },
+    { provide: BroadcastJobEnqueuerPort, useClass: BroadcastJobEnqueuerAdapter },
+    { provide: AdminUserDirectoryReaderPort, useClass: DrizzleAdminUserDirectoryReader },
+    { provide: AdminBroadcastNotifierPort, useClass: NotificationAdminBroadcastNotifierAdapter },
+    { provide: BroadcastRecipientReaderPort, useClass: NotificationBroadcastRecipientAdapter },
+    provideUseCase(CreateBroadcastCampaignUseCase, {
+      unitOfWork: UnitOfWorkPort,
+      campaignRepository: BroadcastCampaignRepositoryPort,
+      userDirectory: AdminUserDirectoryReaderPort,
+      jobEnqueuer: BroadcastJobEnqueuerPort,
+      clock: ClockPort,
+      logger: loggerFor(CreateBroadcastCampaignUseCase),
+    }),
+    provideUseCase(FanOutBroadcastCampaignUseCase, {
+      unitOfWork: UnitOfWorkPort,
+      campaignRepository: BroadcastCampaignRepositoryPort,
+      userDirectory: AdminUserDirectoryReaderPort,
+      recipientReader: BroadcastRecipientReaderPort,
+      notifier: AdminBroadcastNotifierPort,
+      jobEnqueuer: BroadcastJobEnqueuerPort,
+      clock: ClockPort,
+      logger: loggerFor(FanOutBroadcastCampaignUseCase),
+    }),
+    provideUseCase(DeliverBroadcastGroupUseCase, {
+      unitOfWork: UnitOfWorkPort,
+      campaignRepository: BroadcastCampaignRepositoryPort,
+      recipientReader: BroadcastRecipientReaderPort,
+      notifier: AdminBroadcastNotifierPort,
+      logger: loggerFor(DeliverBroadcastGroupUseCase),
+    }),
+    provideUseCase(FailBroadcastCampaignUseCase, {
+      unitOfWork: UnitOfWorkPort,
+      campaignRepository: BroadcastCampaignRepositoryPort,
+      clock: ClockPort,
+      logger: loggerFor(FailBroadcastCampaignUseCase),
+    }),
+    provideUseCase(ReportBroadcastDeliveryExhaustedUseCase, { alert: OperationalAlertPort }),
     BroadcastFanOutProcessor,
-    { provide: BROADCAST_CAMPAIGN_REPOSITORY, useClass: DrizzleBroadcastCampaignRepository },
-    { provide: BROADCAST_FAN_OUT_ENQUEUER, useClass: BroadcastFanOutEnqueuerAdapter },
-    { provide: ADMIN_USER_DIRECTORY, useClass: DrizzleAdminUserDirectoryAdapter },
-    { provide: ADMIN_BROADCAST_NOTIFIER, useClass: NotificationAdminBroadcastNotifierAdapter },
+    BroadcastDeliveryProcessor,
   ];
 }
 

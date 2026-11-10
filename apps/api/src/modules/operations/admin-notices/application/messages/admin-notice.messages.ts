@@ -1,8 +1,3 @@
-import type {
-  StoreSubscriptionEventKind,
-  SubscriptionLifecycle,
-} from "#api/modules/billing/subscriptions/billing-subscriptions-events.public";
-
 import {
   type AdminNotice,
   type AdminNoticeUser,
@@ -11,7 +6,11 @@ import {
   SUBSCRIPTION_NOTICE_EVENT,
   type SubscriptionNoticeEvent,
 } from "../read-models/admin-notice.read-model.js";
-import type { SubscriptionAlertInput } from "../read-models/subscription-alert.read-model.js";
+import type {
+  SubscriptionAlertInput,
+  SubscriptionAlertKind,
+  SubscriptionAlertLifecycle,
+} from "../read-models/subscription-alert.read-model.js";
 import type { UserRegisteredEventPayload } from "../read-models/user-registered.read-model.js";
 
 const KIND_EVENTS = {
@@ -25,17 +24,14 @@ const KIND_EVENTS = {
   PRODUCT_CHANGE_SCHEDULED: SUBSCRIPTION_NOTICE_EVENT.PRODUCT_CHANGE_SCHEDULED,
   EXTENDED: SUBSCRIPTION_NOTICE_EVENT.EXTENDED,
   TRANSFERRED: SUBSCRIPTION_NOTICE_EVENT.TRANSFERRED,
-} as const satisfies Record<
-  Exclude<StoreSubscriptionEventKind, "IGNORED">,
-  SubscriptionNoticeEvent
->;
+} as const satisfies Record<SubscriptionAlertKind, SubscriptionNoticeEvent>;
 
 const LIFECYCLE_EVENTS = {
   trial_started: SUBSCRIPTION_NOTICE_EVENT.TRIAL_STARTED,
   trial_cancelled: SUBSCRIPTION_NOTICE_EVENT.TRIAL_CANCELLED,
   trial_converted: SUBSCRIPTION_NOTICE_EVENT.TRIAL_CONVERTED,
   trial_expired: SUBSCRIPTION_NOTICE_EVENT.TRIAL_EXPIRED,
-} as const satisfies Record<SubscriptionLifecycle, SubscriptionNoticeEvent>;
+} as const satisfies Record<SubscriptionAlertLifecycle, SubscriptionNoticeEvent>;
 
 const SIGNUP_METHODS_BY_PROVIDER = {
   credential: SIGNUP_METHOD.CREDENTIAL,

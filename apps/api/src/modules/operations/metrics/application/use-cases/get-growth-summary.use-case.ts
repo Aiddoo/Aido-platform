@@ -1,25 +1,22 @@
-import { subtractDays } from "#api/shared/domain/date/utils/arithmetic";
-import { now } from "#api/shared/domain/date/utils/core";
-import { toDateString } from "#api/shared/domain/date/utils/format";
+import type { ClockPort } from "#api/shared/application/ports/clock.port";
 
-import { type AdminGrowthMetricsPort } from "../ports/growth-metrics.reader.port.js";
-import type {
-  AdminGrowthSummary,
-  GrowthSummaryInput,
-} from "../read-models/growth-summary.read-model.js";
+import {
+  calculateStickiness,
+  defaultCohortRange,
+  toCohortMetric,
+  toRetentionMetric,
+} from "../../domain/growth-summary.domain-service.js";
+import type { GrowthMetricsReaderPort } from "../ports/growth-metrics.reader.port.js";
+import type { GrowthSummary } from "../read-models/growth-summary.read-model.js";
 
-const DEFAULT_COHORT_DAYS = 30;
-
-function metric(eligible: number, achieved: number) {
-  return {
-    eligible,
-    achieved,
-    rate: eligible === 0 ? 0 : Math.round((achieved / eligible) * 10_000) / 100,
-  };
+export interface GetGrowthSummaryQuery {
+  readonly cohortFrom?: Temporal.PlainDate;
+  readonly cohortTo?: Temporal.PlainDate;
 }
 
-interface GetGrowthSummaryDependencies {
-  readonly metrics: AdminGrowthMetricsPort;
+export interface GetGrowthSummaryDependencies {
+  readonly metricsReader: Pick<GrowthMetricsReaderPort, "getSummaryCounts">;
+  readonly clock: ClockPort;
 }
 
 export class GetGrowthSummaryUseCase {
@@ -29,45 +26,44 @@ export class GetGrowthSummaryUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: GrowthSummaryInput): Promise<AdminGrowthSummary> {
-    const asOf = now();
-    const defaultTo = subtractDays(1, asOf);
-    const cohortTo = input.cohortTo ?? toDateString(defaultTo);
-    const cohortFrom =
-      input.cohortFrom ?? toDateString(subtractDays(DEFAULT_COHORT_DAYS - 1, defaultTo));
-    const summary = await this.#dependencies.metrics.getSummary({
-      cohortFrom,
-      cohortTo,
-      asOf,
-    });
-    const hasMeasurement = summary.measurementStartedAt != null;
+  async execute(query: GetGrowthSummaryQuery): Promise<GrowthSummary> {
+    const { metricsReader, clock } = this.#dependencies;
+    const asOf = clock.now();
+    const defaults = defaultCohortRange(asOf);
+    const cohortFrom = query.cohortFrom ?? defaults.cohortFrom;
+    const cohortTo = query.cohortTo ?? defaults.cohortTo;
+
+    const counts = await metricsReader.getSummaryCounts({ cohortFrom, cohortTo, asOf });
+    const hasMeasurement = counts.measurementStartedAt != null;
 
     return {
       cohortFrom,
       cohortTo,
-      measurementStartedAt:
-        summary.measurementStartedAt == null ? null : new Date(summary.measurementStartedAt),
-      totalActiveUsers: summary.totalActiveUsers,
-      signups: summary.signups,
-      dau: summary.dau,
-      wau: summary.wau,
-      mau: summary.mau,
-      stickiness: summary.mau === 0 ? 0 : Math.round((summary.dau / summary.mau) * 10_000) / 100,
-      activation24h: metric(summary.activationEligible, summary.activationAchieved),
-      d1:
-        hasMeasurement && summary.d1Eligible > 0
-          ? metric(summary.d1Eligible, summary.d1Achieved)
-          : null,
-      d7:
-        hasMeasurement && summary.d7Eligible > 0
-          ? metric(summary.d7Eligible, summary.d7Achieved)
-          : null,
-      d30:
-        hasMeasurement && summary.d30Eligible > 0
-          ? metric(summary.d30Eligible, summary.d30Achieved)
-          : null,
+      measurementStartedAt: counts.measurementStartedAt,
+      totalActiveUsers: counts.totalActiveUsers,
+      signups: counts.signups,
+      dau: counts.dau,
+      wau: counts.wau,
+      mau: counts.mau,
+      stickiness: calculateStickiness({ dau: counts.dau, mau: counts.mau }),
+      activation24h: toCohortMetric(counts.activationEligible, counts.activationAchieved),
+      d1: toRetentionMetric({
+        hasMeasurement,
+        eligible: counts.d1Eligible,
+        achieved: counts.d1Achieved,
+      }),
+      d7: toRetentionMetric({
+        hasMeasurement,
+        eligible: counts.d7Eligible,
+        achieved: counts.d7Achieved,
+      }),
+      d30: toRetentionMetric({
+        hasMeasurement,
+        eligible: counts.d30Eligible,
+        achieved: counts.d30Achieved,
+      }),
       d7RetainedActivatedUsers:
-        hasMeasurement && summary.d7Eligible > 0 ? summary.d7RetainedActivatedUsers : null,
+        hasMeasurement && counts.d7Eligible > 0 ? counts.d7RetainedActivatedUsers : null,
     };
   }
 }

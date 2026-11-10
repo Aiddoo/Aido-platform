@@ -1,8 +1,5 @@
-/** AdminGrowthMetricsPort DI 토큰 */
-export const ADMIN_GROWTH_METRICS = Symbol("ADMIN_GROWTH_METRICS");
-
-export interface AdminGrowthSummaryCounts {
-  readonly measurementStartedAt: Date | null;
+export interface GrowthSummaryCounts {
+  readonly measurementStartedAt: Temporal.Instant | null;
   readonly totalActiveUsers: number;
   readonly signups: number;
   readonly dau: number;
@@ -19,10 +16,10 @@ export interface AdminGrowthSummaryCounts {
   readonly d7RetainedActivatedUsers: number;
 }
 
-export interface AdminGrowthMetricsPort {
-  getSummary(input: {
-    readonly cohortFrom: string;
-    readonly cohortTo: string;
-    readonly asOf: Date;
-  }): Promise<AdminGrowthSummaryCounts>;
+export abstract class GrowthMetricsReaderPort {
+  abstract getSummaryCounts(params: {
+    readonly cohortFrom: Temporal.PlainDate;
+    readonly cohortTo: Temporal.PlainDate;
+    readonly asOf: Temporal.Instant;
+  }): Promise<GrowthSummaryCounts>;
 }

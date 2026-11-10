@@ -80,6 +80,12 @@ export class InMemoryJobQueue extends JobQueuePort {
     this.scheduledQueues.push(queue.name);
   }
 
+  /** 쌓인 작업과 멱등 key를 비운다. 등록된 worker는 남긴다(E2E가 테스트마다 정리할 때 쓴다). */
+  clear(): void {
+    this.jobs.length = 0;
+    this.#keys.clear();
+  }
+
   jobsIn(queue: QueueDefinition<object>): readonly InMemoryJob[] {
     return this.jobs.filter((job) => job.queue === queue.name);
   }

@@ -21,6 +21,10 @@ import {
 import { BroadcastNotificationUseCase } from "../../../application/use-cases/broadcast-notification.use-case.js";
 import { SendTargetedNotificationUseCase } from "../../../application/use-cases/send-targeted-notification.use-case.js";
 import {
+  toBroadcastResultResponse,
+  toTargetedResultResponse,
+} from "./admin-notification-response.mapper.js";
+import {
   BroadcastNotificationDto,
   BroadcastResultDto,
   TargetedNotificationDto,
@@ -29,7 +33,7 @@ import {
 @ApiTags(SWAGGER_TAGS.ADMIN_NOTIFICATIONS)
 @ApiBearerAuth()
 @Controller("admin/notifications")
-export class AdminController {
+export class AdminNotificationController {
   readonly #broadcastNotification: Pick<BroadcastNotificationUseCase, "execute">;
   readonly #sendTargetedNotification: Pick<SendTargetedNotificationUseCase, "execute">;
 
@@ -66,14 +70,15 @@ v2와 같은 캠페인으로 접수하고 바로 응답합니다. 응답 수는 
     @CurrentUser() _user: CurrentUserPayload,
     @Body({ schema: BroadcastNotificationDto }) dto: BroadcastNotificationDto,
   ): Promise<BroadcastResultDto> {
-    return this.#broadcastNotification.execute({
+    const result = await this.#broadcastNotification.execute({
       requestId: randomUUID(),
       title: dto.title,
       body: dto.body,
       targetFilter: dto.targetFilter,
-      action: dto.action,
+      ...(dto.action != null && { action: dto.action }),
       force: dto.force,
     });
+    return toBroadcastResultResponse(result);
   }
 
   @Post("targeted")
@@ -92,12 +97,13 @@ v2와 같은 캠페인으로 접수하고 바로 응답합니다. 응답 수는 
     @CurrentUser() _user: CurrentUserPayload,
     @Body({ schema: TargetedNotificationDto }) dto: TargetedNotificationDto,
   ): Promise<BroadcastResultDto> {
-    return this.#sendTargetedNotification.execute({
+    const result = await this.#sendTargetedNotification.execute({
       title: dto.title,
       body: dto.body,
       userIds: dto.userIds,
-      action: dto.action,
+      ...(dto.action != null && { action: dto.action }),
       force: dto.force,
     });
+    return toTargetedResultResponse(result);
   }
 }

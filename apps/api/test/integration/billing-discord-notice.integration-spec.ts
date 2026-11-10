@@ -5,7 +5,7 @@
 import type { RevenueCatWebhookPayload } from "@aido/api";
 
 import { RevenueCatWebhookReceiver } from "#api/modules/billing/subscriptions/infrastructure/adapters/revenuecat/revenuecat-webhook-receiver.adapter";
-import { ADMIN_NOTIFIER } from "#api/modules/operations/admin-notices/application/ports/admin-notifier.port";
+import { AdminNotifierPort } from "#api/modules/operations/admin-notices/application/ports/admin-notifier.port";
 import type { AdminNotice } from "#api/modules/operations/admin-notices/application/read-models/admin-notice.read-model";
 import { DispatchDailySignupSummaryUseCase } from "#api/modules/operations/admin-notices/application/use-cases/dispatch-daily-signup-summary.use-case";
 import { SendAdminNotificationUseCase } from "#api/modules/operations/admin-notices/application/use-cases/send-admin-notification.use-case";
@@ -15,11 +15,11 @@ import { ADMIN_NOTIFICATION_QUEUE } from "#api/modules/operations/admin-notices/
 import { DrizzleAdminNoticeUserReader } from "#api/modules/operations/admin-notices/infrastructure/persistence/drizzle-admin-notice-user.reader";
 import { createEntityId } from "#api/platform/database/entity-id";
 import { account, user as userTable, userProfile } from "#api/platform/database/schema/index";
-import { JOB_RUNTIME } from "#api/shared/application/ports/index";
+import { JobQueuePort } from "#api/shared/application/ports/index";
 import { SubscriptionEventBuilder } from "#test/builders/index";
+import type { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
 import { AccountFixture, UserFixture } from "#test/fixtures/user.fixture";
 import type { FakeAdminNotifier } from "#test/mocks/fake-admin-notifier";
-import type { FakeJobRuntime } from "#test/mocks/fake-job-runtime";
 import { createDatabaseTransactionFixture, createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
@@ -40,7 +40,7 @@ describe("결제 웹훅 → Discord 결제 알림 (실제 PostgreSQL)", () => {
   let client: TestDatabaseClient;
   let context: E2eTestContext;
   let receiver: RevenueCatWebhookReceiver;
-  let runtime: FakeJobRuntime;
+  let jobQueue: InMemoryJobQueue;
   let notifier: FakeAdminNotifier;
   let processor: AdminNotificationProcessor;
   let userId: string;
@@ -51,13 +51,15 @@ describe("결제 웹훅 → Discord 결제 알림 (실제 PostgreSQL)", () => {
     client = await database.start();
     context = await createE2eApp({ testDatabase: database });
     receiver = context.module.get(RevenueCatWebhookReceiver);
-    runtime = context.module.get(JOB_RUNTIME);
-    notifier = context.module.get(ADMIN_NOTIFIER);
+    jobQueue = context.module.get<typeof JobQueuePort, InMemoryJobQueue>(JobQueuePort);
+    notifier = context.module.get(AdminNotifierPort);
     // E2E 앱은 백그라운드 작업자를 끈다. 같은 조립의 유스케이스로 작업자를 만들어 큐 payload 검증부터 탄다
     processor = new AdminNotificationProcessor(
+      jobQueue,
       context.module.get(SendAdminNotificationUseCase),
       context.module.get(DispatchDailySignupSummaryUseCase),
     );
+    await processor.onModuleInit();
   });
 
   beforeEach(async () => {
@@ -100,20 +102,10 @@ describe("결제 웹훅 → Discord 결제 알림 (실제 PostgreSQL)", () => {
 
   /** 커밋 뒤 기다리지 않고 넘긴 알림이 큐에 들어올 때까지 기다렸다가 작업자로 처리한다. */
   async function deliverPaymentNotices(count: number): Promise<AdminNotice[]> {
-    await vi.waitFor(
-      () => {
-        const queued = runtime.enqueueCalls.filter(
-          (call) => call.queue === ADMIN_NOTIFICATION_QUEUE,
-        );
-        expect(queued).toHaveLength(count);
-      },
-      { timeout: 5_000 },
-    );
-    for (const call of runtime.enqueueCalls.filter(
-      (queued) => queued.queue === ADMIN_NOTIFICATION_QUEUE,
-    )) {
-      await processor.process(call.data);
-    }
+    await vi.waitFor(() => expect(jobQueue.jobsIn(ADMIN_NOTIFICATION_QUEUE)).toHaveLength(count), {
+      timeout: 5_000,
+    });
+    await jobQueue.drain(ADMIN_NOTIFICATION_QUEUE);
     return notifier.getSent("payment").map((sent) => sent.notice);
   }
 

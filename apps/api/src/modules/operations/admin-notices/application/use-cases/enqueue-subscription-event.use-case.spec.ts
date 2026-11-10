@@ -1,55 +1,13 @@
-import type { SubscriptionEventPayload } from "#api/modules/billing/subscriptions/billing-subscriptions-events.public";
+import { RecordingAdminNotificationQueue } from "#test/doubles/operations/recording-admin-notification-queue";
+import { StubAdminNoticeUserReader } from "#test/doubles/operations/stub-admin-notice-user.reader";
+import { SilentLogger } from "#test/doubles/platform/silent-logger";
 
-import type { AdminNoticeUserReaderPort } from "../ports/admin-notice-user.reader.port.js";
-import type {
-  AdminNotificationQueuePort,
-  EnqueueSendOptions,
-  NotificationChannel,
-} from "../ports/admin-notification-queue.port.js";
-import type { AdminNotice, AdminNoticeUser } from "../read-models/admin-notice.read-model.js";
+import type { AdminNoticeUser } from "../read-models/admin-notice.read-model.js";
+import type { SubscriptionAlertInput } from "../read-models/subscription-alert.read-model.js";
 import { EnqueueSubscriptionEventUseCase } from "./enqueue-subscription-event.use-case.js";
 import { ResolveAdminNoticeUserUseCase } from "./resolve-admin-notice-user.use-case.js";
 
-class RecordingQueue implements AdminNotificationQueuePort {
-  readonly sent: {
-    channel: NotificationChannel;
-    notice: AdminNotice;
-    options?: EnqueueSendOptions;
-  }[] = [];
-
-  async enqueueSend(
-    channel: NotificationChannel,
-    notice: AdminNotice,
-    options?: EnqueueSendOptions,
-  ) {
-    this.sent.push({ channel, notice, ...(options != null && { options }) });
-  }
-}
-
-class StubUserReader implements AdminNoticeUserReaderPort {
-  readonly #result: AdminNoticeUser | null | Error;
-
-  constructor(result: AdminNoticeUser | null | Error) {
-    this.#result = result;
-  }
-
-  async findById(): Promise<AdminNoticeUser | null> {
-    if (this.#result instanceof Error) {
-      throw this.#result;
-    }
-    return this.#result;
-  }
-}
-
-class RecordingLogger {
-  readonly warnings: unknown[] = [];
-
-  warn(entry: unknown): void {
-    this.warnings.push(entry);
-  }
-}
-
-const payload: SubscriptionEventPayload = {
+const payload: SubscriptionAlertInput = {
   userId: "user-1",
   email: "billing@example.com",
   name: "결제 이름",
@@ -76,12 +34,12 @@ const storedUser: AdminNoticeUser = {
   signupMethod: "APPLE",
 };
 
-function setup(reader: StubUserReader) {
-  const queue = new RecordingQueue();
-  const logger = new RecordingLogger();
+function setup(userReader: StubAdminNoticeUserReader) {
+  const queue = new RecordingAdminNotificationQueue();
+  const logger = new SilentLogger();
   const useCase = new EnqueueSubscriptionEventUseCase({
     queue,
-    users: new ResolveAdminNoticeUserUseCase({ reader, logger }),
+    resolveUser: new ResolveAdminNoticeUserUseCase({ userReader, logger }),
   });
   return { useCase, queue, logger };
 }
@@ -89,7 +47,7 @@ function setup(reader: StubUserReader) {
 describe("EnqueueSubscriptionEventUseCase — 결제 알림 등록", () => {
   it("저장된 사용자 블록과 웹훅 결제 값을 결제 채널에 이벤트 ID로 한 번만 등록한다", async () => {
     // Given
-    const { useCase, queue } = setup(new StubUserReader(storedUser));
+    const { useCase, queue } = setup(new StubAdminNoticeUserReader(storedUser));
 
     // When
     await useCase.execute(payload);
@@ -119,7 +77,7 @@ describe("EnqueueSubscriptionEventUseCase — 결제 알림 등록", () => {
 
   it("사용자가 없으면 billing이 준 이메일·이름으로 사용자 블록을 채운다", async () => {
     // Given
-    const { useCase, queue, logger } = setup(new StubUserReader(null));
+    const { useCase, queue, logger } = setup(new StubAdminNoticeUserReader(null));
 
     // When
     await useCase.execute(payload);
@@ -128,13 +86,13 @@ describe("EnqueueSubscriptionEventUseCase — 결제 알림 등록", () => {
     expect(queue.sent[0]?.notice).toMatchObject({
       user: { userId: "user-1", email: "billing@example.com", nickname: "결제 이름" },
     });
-    expect(logger.warnings).toEqual([]);
+    expect(logger.messages).toEqual([]);
   });
 
   it("사용자 조회가 실패해도 알림을 보내고 로그에는 사용자 ID와 오류 종류만 남긴다", async () => {
     // Given
     const { useCase, queue, logger } = setup(
-      new StubUserReader(new Error("billing@example.com connection refused")),
+      new StubAdminNoticeUserReader(new Error("billing@example.com connection refused")),
     );
 
     // When
@@ -142,19 +100,19 @@ describe("EnqueueSubscriptionEventUseCase — 결제 알림 등록", () => {
 
     // Then
     expect(queue.sent).toHaveLength(1);
-    expect(logger.warnings).toEqual([
+    expect(logger.messages).toEqual([
       {
         event: "operations.notifications.user-lookup.failed",
         userId: "user-1",
         errorType: "Error",
       },
     ]);
-    expect(JSON.stringify(logger.warnings)).not.toContain("billing@example.com");
+    expect(JSON.stringify(logger.messages)).not.toContain("billing@example.com");
   });
 
   it("이벤트 ID가 없으면 멱등 키 없이 등록한다", async () => {
     // Given
-    const { useCase, queue } = setup(new StubUserReader(storedUser));
+    const { useCase, queue } = setup(new StubAdminNoticeUserReader(storedUser));
     const { eventId: _eventId, ...withoutEventId } = payload;
 
     // When

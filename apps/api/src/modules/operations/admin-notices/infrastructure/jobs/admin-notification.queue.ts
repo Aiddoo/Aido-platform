@@ -1,7 +1,3 @@
-/**
- * Admin Notification 큐 상수 및 잡 데이터 타입 정의
- */
-
 import {
   PREMIUM_SOURCE,
   STORE_PERIOD_TYPES,
@@ -10,7 +6,7 @@ import {
 } from "@aido/api/vocabulary";
 import { z } from "zod";
 
-import { JOB_POLLING_SECONDS } from "#api/shared/application/ports/index";
+import { defineQueue, JOB_POLLING_SECONDS } from "#api/shared/application/ports/index";
 
 import {
   type AdminNotice,
@@ -24,46 +20,15 @@ import {
   type AdminNotification,
 } from "../../application/read-models/admin-notification.read-model.js";
 
-export const ADMIN_NOTIFICATION_QUEUE = "admin-notification.v1";
-
 export const AdminNotificationJobName = {
   DISPATCH_SUMMARY: "dispatch-signup-summary",
   SEND: "send-notification",
 } as const;
 
-/** 기존 재시도·보관 계약. JobRuntime이 각 backend 옵션으로 변환한다. */
-export const ADMIN_NOTIFICATION_JOB_POLICY = {
-  retryLimit: 2,
-  retryDelaySeconds: 5,
-  retryBackoff: true,
-  expireInSeconds: 5 * 60,
-  retentionSeconds: 24 * 60 * 60,
-  deleteAfterSeconds: 24 * 60 * 60,
-} as const;
-
-export const ADMIN_NOTIFICATION_WORKER_POLICY = {
-  teamSize: 3,
-  pollingIntervalSeconds: JOB_POLLING_SECONDS.SCHEDULED,
-} as const;
-
-export const DAILY_SIGNUP_SUMMARY_SCHEDULE = {
-  key: "daily-signup-summary-scheduler",
-  cron: "10 0 * * *",
-  timezone: "Asia/Seoul",
-  jobPolicy: {
-    retryLimit: 2,
-    retryDelaySeconds: 1,
-    retryBackoff: true,
-    expireInSeconds: 5 * 60,
-    retentionSeconds: 24 * 60 * 60,
-    deleteAfterSeconds: 24 * 60 * 60,
-  },
-} as const;
-
-/** send-notification 잡 데이터 */
-export interface AdminNotificationSendData {
-  channel: "admin" | "payment";
-  notice: AdminNotice;
+/** send-notification 작업 데이터 */
+interface AdminNotificationSendData {
+  readonly channel: "admin" | "payment";
+  readonly notice: AdminNotice;
 }
 
 const NotificationChannelSchema = z.enum(["admin", "payment"]);
@@ -198,7 +163,7 @@ const LegacySendDataSchema = z
     notice: { type: "message", message: notification },
   }));
 
-export const AdminNotificationRuntimeJobSchema = z.discriminatedUnion("name", [
+const adminNotificationJobSchema = z.discriminatedUnion("name", [
   z.object({
     name: z.literal(AdminNotificationJobName.DISPATCH_SUMMARY),
     data: z.object({}),
@@ -211,3 +176,33 @@ export const AdminNotificationRuntimeJobSchema = z.discriminatedUnion("name", [
     ]),
   }),
 ]);
+
+export type AdminNotificationJob = z.output<typeof adminNotificationJobSchema>;
+
+const DAY_SECONDS = 24 * 60 * 60;
+
+// 일시 실패(429·5xx·연결 실패)만 2번 다시 시도한다. 거절은 다시 보내지 않고 운영 경보를 올린다
+export const ADMIN_NOTIFICATION_QUEUE = defineQueue({
+  name: "admin-notification.v1",
+  payloadSchema: adminNotificationJobSchema,
+  retry: {
+    retryLimit: 2,
+    retryDelaySeconds: 5,
+    retryBackoff: true,
+    expireInSeconds: 5 * 60,
+    retentionSeconds: DAY_SECONDS,
+    deleteAfterSeconds: DAY_SECONDS,
+  },
+  worker: { localConcurrency: 3, pollingIntervalSeconds: JOB_POLLING_SECONDS.SCHEDULED },
+  // 일일 가입 요약은 자정 직전 가입 transaction의 지연을 고려해 KST 00:10에 돌고, 집계는 전일 KST 범위다.
+  // 하루 한 번이고 요약 작업 key가 날짜라 놓친 실행은 한 번만 따라잡아도 중복되지 않는다
+  schedules: [
+    {
+      key: "daily-signup-summary-scheduler",
+      cron: "10 0 * * *",
+      timezone: "Asia/Seoul",
+      missed: "once",
+      payload: { name: AdminNotificationJobName.DISPATCH_SUMMARY, data: {} },
+    },
+  ],
+});

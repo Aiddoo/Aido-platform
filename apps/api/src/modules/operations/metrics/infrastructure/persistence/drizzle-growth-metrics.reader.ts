@@ -12,10 +12,11 @@ import {
   userActivityDay,
   userPreference,
 } from "#api/platform/database/schema/index";
+import { instantFromDate, instantToDate } from "#api/shared/domain/time/instant";
 
-import type {
-  AdminGrowthMetricsPort,
-  AdminGrowthSummaryCounts,
+import {
+  GrowthMetricsReaderPort,
+  type GrowthSummaryCounts,
 } from "../../application/ports/growth-metrics.reader.port.js";
 
 const activity = alias(userActivityDay, "activity");
@@ -28,6 +29,10 @@ const accountRow = alias(account, "account");
 const createdTodo = alias(todo, "created_todo");
 const completedTodo = alias(todo, "completed_todo");
 const preference = alias(userPreference, "preference");
+
+function toInstantOrNull(date: Date | null): Temporal.Instant | null {
+  return date == null ? null : instantFromDate(date);
+}
 
 interface GrowthSummaryRow {
   measurementStartedAt: string | null;
@@ -55,20 +60,23 @@ interface GrowthSummaryRow {
  * LATERAL·FILTER·pg_timezone_names를 쓰는 단일 집계라 raw SQL로 유지한다.
  */
 @Injectable()
-export class DrizzleAdminGrowthMetricsAdapter implements AdminGrowthMetricsPort {
+export class DrizzleGrowthMetricsReader extends GrowthMetricsReaderPort {
   readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
 
   constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>) {
+    super();
     this.#txHost = txHost;
   }
 
-  async getSummary(input: {
-    readonly cohortFrom: string;
-    readonly cohortTo: string;
-    readonly asOf: Date;
-  }): Promise<AdminGrowthSummaryCounts> {
-    const { cohortFrom, cohortTo } = input;
-    const asOfTimestamp = sql.param(input.asOf, user.createdAt);
+  async getSummaryCounts(input: {
+    readonly cohortFrom: Temporal.PlainDate;
+    readonly cohortTo: Temporal.PlainDate;
+    readonly asOf: Temporal.Instant;
+  }): Promise<GrowthSummaryCounts> {
+    const cohortFrom = input.cohortFrom.toString();
+    const cohortTo = input.cohortTo.toString();
+    const asOf = instantToDate(input.asOf);
+    const asOfTimestamp = sql.param(asOf, user.createdAt);
 
     const { rows } = await this.#txHost.tx.execute<GrowthSummaryRow>(sql`
       WITH measurement AS (
@@ -108,7 +116,7 @@ export class DrizzleAdminGrowthMetricsAdapter implements AdminGrowthMetricsPort 
               )
           )::DATE AS "signupLocalDate",
           (
-            ${sql.param(input.asOf, user.createdAt)}::TIMESTAMPTZ AT TIME ZONE COALESCE(
+            ${asOfTimestamp}::TIMESTAMPTZ AT TIME ZONE COALESCE(
               valid_activity_timezone.name,
               valid_preference_timezone.name,
               'UTC'
@@ -286,7 +294,9 @@ export class DrizzleAdminGrowthMetricsAdapter implements AdminGrowthMetricsPort 
     }
 
     return {
-      measurementStartedAt: nullableRawTimestampSchema.parse(row.measurementStartedAt),
+      measurementStartedAt: toInstantOrNull(
+        nullableRawTimestampSchema.parse(row.measurementStartedAt),
+      ),
       totalActiveUsers: Number(row.totalActiveUsers),
       signups: Number(row.signups),
       dau: Number(row.dau),

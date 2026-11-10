@@ -1,26 +1,25 @@
 import { sumBy } from "es-toolkit";
 
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
-import { now } from "#api/shared/domain/date/utils/core";
+import type { ClockPort } from "#api/shared/application/ports/clock.port";
 
 import { computePreviousKstDayRange } from "../../domain/signup-report-period.domain-service.js";
 import { AdminNoticeLogEvent } from "../admin-notices.log-events.js";
 import { buildDailySummaryMessage } from "../messages/admin-message.messages.js";
-import { type AdminNotificationQueuePort } from "../ports/admin-notification-queue.port.js";
-import { type SignupStatsReaderPort } from "../ports/signup-stats.reader.port.js";
+import type { AdminNotificationQueuePort } from "../ports/admin-notification-queue.port.js";
+import type { SignupStatsReaderPort } from "../ports/signup-stats.reader.port.js";
 
-/**
- * 일일 가입 요약 발송 유스케이스.
- *
- * 전일(KST) 가입 통계를 집계해 관리자 채널 SEND 잡으로 큐에 등록한다.
- * 스케줄러 트리거(DISPATCH_SUMMARY)로 호출되며, 실패해도 예외를 전파하지 않는다.
- */
-interface DispatchDailySignupSummaryDependencies {
-  readonly reader: Pick<SignupStatsReaderPort, "getSignupStats">;
+export interface DispatchDailySignupSummaryDependencies {
+  readonly statsReader: Pick<SignupStatsReaderPort, "getSignupStats">;
   readonly queue: Pick<AdminNotificationQueuePort, "enqueueSend">;
+  readonly clock: ClockPort;
   readonly logger: Pick<ApplicationLoggerPort, "log" | "error">;
 }
 
+/**
+ * 전일(KST) 가입 통계를 집계해 관리자 채널 SEND 작업으로 등록한다. 스케줄 작업이 불러서
+ * 실패해도 예외를 전파하지 않는다(요약이 한 번 빠질 뿐 다음 날 다시 돈다).
+ */
 export class DispatchDailySignupSummaryUseCase {
   readonly #dependencies: DispatchDailySignupSummaryDependencies;
 
@@ -29,41 +28,28 @@ export class DispatchDailySignupSummaryUseCase {
   }
 
   async execute(): Promise<void> {
-    this.#dependencies.logger.log({ event: AdminNoticeLogEvent.SUMMARY_STARTED });
+    const { statsReader, queue, clock, logger } = this.#dependencies;
+    logger.log({ event: AdminNoticeLogEvent.SUMMARY_STARTED });
 
     try {
-      const { startUtc, endUtc, reportDateStr } = computePreviousKstDayRange(now());
+      const { start, end, reportDate } = computePreviousKstDayRange(clock.now());
+      const { signupsByProvider, totalUsers } = await statsReader.getSignupStats(start, end);
+      const reportDateStr = reportDate.toString();
 
-      const { signupsByProvider, totalUsers } = await this.#dependencies.reader.getSignupStats(
-        startUtc,
-        endUtc,
-      );
-
-      const message = buildDailySummaryMessage({
-        signupsByProvider,
-        totalUsers,
-        reportDateStr,
-      });
-
-      await this.#dependencies.queue.enqueueSend(
+      const message = buildDailySummaryMessage({ signupsByProvider, totalUsers, reportDateStr });
+      await queue.enqueueSend(
         "admin",
         { type: "message", message },
-        {
-          jobId: `signup-summary_${reportDateStr}`,
-        },
+        { jobId: `signup-summary_${reportDateStr}` },
       );
 
-      const previousDayTotal = sumBy(signupsByProvider, (group) => group.count);
-      this.#dependencies.logger.log({
+      logger.log({
         event: AdminNoticeLogEvent.SUMMARY_ENQUEUED,
-        previousDayTotal,
+        previousDayTotal: sumBy(signupsByProvider, (group) => group.count),
         totalUsers,
       });
     } catch {
-      this.#dependencies.logger.error({
-        event: AdminNoticeLogEvent.SUMMARY_FAILED,
-        errorType: "summary-dispatch",
-      });
+      logger.error({ event: AdminNoticeLogEvent.SUMMARY_FAILED, errorType: "summary-dispatch" });
     }
   }
 }

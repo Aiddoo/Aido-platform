@@ -6,17 +6,18 @@ import type { DrizzleTransactionalAdapter } from "#api/platform/database/databas
 import { account, user, userProfile } from "#api/platform/database/schema/index";
 import { toISOString } from "#api/shared/domain/date/utils/format";
 
-import type { AdminNoticeUserReaderPort } from "../../application/ports/admin-notice-user.reader.port.js";
+import { AdminNoticeUserReaderPort } from "../../application/ports/admin-notice-user.reader.port.js";
 import type { AdminNoticeUser } from "../../application/read-models/admin-notice.read-model.js";
 
 /**
  * 관리자 알림 사용자 블록 리더. 가입 방식은 처음 만든 인증 계정의 공급자다(나중에 연결한 계정이 아님).
  */
 @Injectable()
-export class DrizzleAdminNoticeUserReader implements AdminNoticeUserReaderPort {
+export class DrizzleAdminNoticeUserReader extends AdminNoticeUserReaderPort {
   readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
 
   constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>) {
+    super();
     this.#txHost = txHost;
   }
 

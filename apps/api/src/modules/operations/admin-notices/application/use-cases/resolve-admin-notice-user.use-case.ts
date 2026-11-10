@@ -5,8 +5,8 @@ import { AdminNoticeLogEvent } from "../admin-notices.log-events.js";
 import type { AdminNoticeUserReaderPort } from "../ports/admin-notice-user.reader.port.js";
 import type { AdminNoticeUser } from "../read-models/admin-notice.read-model.js";
 
-interface AdminNoticeUserResolverDependencies {
-  readonly reader: Pick<AdminNoticeUserReaderPort, "findById">;
+export interface ResolveAdminNoticeUserDependencies {
+  readonly userReader: Pick<AdminNoticeUserReaderPort, "findById">;
   readonly logger: Pick<ApplicationLoggerPort, "warn">;
 }
 
@@ -15,18 +15,19 @@ interface AdminNoticeUserResolverDependencies {
  * 사용자 조회 때문에 알림을 잃지 않는다.
  */
 export class ResolveAdminNoticeUserUseCase {
-  readonly #dependencies: AdminNoticeUserResolverDependencies;
+  readonly #dependencies: ResolveAdminNoticeUserDependencies;
 
-  constructor(dependencies: AdminNoticeUserResolverDependencies) {
+  constructor(dependencies: ResolveAdminNoticeUserDependencies) {
     this.#dependencies = dependencies;
   }
 
-  async resolve(fallback: AdminNoticeUser): Promise<AdminNoticeUser> {
+  async execute(fallback: AdminNoticeUser): Promise<AdminNoticeUser> {
+    const { userReader, logger } = this.#dependencies;
     try {
-      const found = await this.#dependencies.reader.findById(fallback.userId);
+      const found = await userReader.findById(fallback.userId);
       return found == null ? fallback : { ...fallback, ...found };
     } catch (error) {
-      this.#dependencies.logger.warn({
+      logger.warn({
         event: AdminNoticeLogEvent.USER_LOOKUP_FAILED,
         userId: fallback.userId,
         errorType: toErrorType(error),

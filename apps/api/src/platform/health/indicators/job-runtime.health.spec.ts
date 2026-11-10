@@ -52,7 +52,6 @@ describe("JobRuntimeHealthIndicator — 영속 job runtime 상태 확인", () =>
     expect(jobRuntime.health).toHaveBeenCalledWith([
       "ai-suggestion-analysis.v1",
       "ai-report-generation.v1",
-      "admin-notification.v1",
       "email-delivery.v1",
       "todo-reminder.v1",
       "notification.v1",
@@ -60,8 +59,6 @@ describe("JobRuntimeHealthIndicator — 영속 job runtime 상태 확인", () =>
       "push-delivery.v1",
       "push-delivery-dead-letter.v1",
       "retention.v1",
-      "operations.broadcast-fan-out.v1",
-      "operations.broadcast-fan-out-dead-letter.v1",
       "todo-series-materialization.v1",
       "todo-timezone-rebase.v1",
       "quota-abandoned-refund.v1",
@@ -115,7 +112,7 @@ describe("JobRuntimeHealthIndicator — 영속 job runtime 상태 확인", () =>
 
     // Then
     const [queueNames] = jobRuntime.health.mock.calls[0] ?? [];
-    expect(queueNames).toHaveLength(24);
+    expect(queueNames).toHaveLength(21);
     expect(queueNames?.slice(-2)).toEqual(["sample.v1", "sample-dead-letter.v1"]);
   });
 

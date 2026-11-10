@@ -1,12 +1,10 @@
-import { RecordingOperationalAlert } from "#test/mocks/recording-operational-alert";
+import { StubAdminNotifier } from "#test/doubles/operations/stub-admin-notifier";
+import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";
+import { SilentLogger } from "#test/doubles/platform/silent-logger";
 
-import type { NotificationChannel } from "../ports/admin-notification-queue.port.js";
 import type { AdminNotifyOutcome } from "../ports/admin-notifier.port.js";
 import type { AdminNotice } from "../read-models/admin-notice.read-model.js";
-import {
-  AdminNotificationRetryableError,
-  SendAdminNotificationUseCase,
-} from "./send-admin-notification.use-case.js";
+import { SendAdminNotificationUseCase } from "./send-admin-notification.use-case.js";
 
 const notification: AdminNotice = {
   type: "subscription_event",
@@ -18,41 +16,10 @@ const notification: AdminNotice = {
   subscription: { event: "purchased", price: { usd: 1 } },
 };
 
-class StubNotifier {
-  readonly sent: { channel: NotificationChannel; notification: AdminNotice }[] = [];
-
-  readonly #outcome: AdminNotifyOutcome;
-
-  constructor(outcome: AdminNotifyOutcome) {
-    this.#outcome = outcome;
-  }
-
-  async send(channel: NotificationChannel, sentNotification: AdminNotice) {
-    this.sent.push({ channel, notification: sentNotification });
-    return this.#outcome;
-  }
-}
-
-class RecordingLogger {
-  readonly entries: unknown[] = [];
-
-  debug(entry: unknown): void {
-    this.entries.push(entry);
-  }
-
-  log(entry: unknown): void {
-    this.entries.push(entry);
-  }
-
-  warn(entry: unknown): void {
-    this.entries.push(entry);
-  }
-}
-
 function setup(outcome: AdminNotifyOutcome) {
-  const notifier = new StubNotifier(outcome);
+  const notifier = new StubAdminNotifier(outcome);
   const alert = new RecordingOperationalAlert();
-  const logger = new RecordingLogger();
+  const logger = new SilentLogger();
   const useCase = new SendAdminNotificationUseCase({ notifier, alert, logger });
   return { useCase, notifier, alert, logger };
 }
@@ -65,12 +32,12 @@ describe("SendAdminNotificationUseCase", () => {
       const { useCase, notifier, alert, logger } = setup({ status: "sent" });
 
       // When
-      await useCase.execute(channel, notification);
+      await useCase.execute({ channel, notice: notification });
 
       // Then
-      expect(notifier.sent).toEqual([{ channel, notification }]);
+      expect(notifier.sent).toEqual([{ channel, notice: notification }]);
       expect(alert.alerts).toEqual([]);
-      const logged = JSON.stringify(logger.entries);
+      const logged = JSON.stringify(logger.messages);
       expect(logged).not.toContain("synthetic-private");
       expect(logged).toContain("subscription_event");
     },
@@ -81,7 +48,7 @@ describe("SendAdminNotificationUseCase", () => {
     const { useCase, alert } = setup({ status: "skipped", reason: "not_configured" });
 
     // When
-    const execution = useCase.execute("admin", notification);
+    const execution = useCase.execute({ channel: "admin", notice: notification });
 
     // Then
     await expect(execution).resolves.toBeUndefined();
@@ -93,10 +60,13 @@ describe("SendAdminNotificationUseCase", () => {
     const { useCase, alert } = setup({ status: "failed", retryable: true, statusCode: 503 });
 
     // When
-    const execution = useCase.execute("admin", notification);
+    const execution = useCase.execute({ channel: "admin", notice: notification });
 
     // Then
-    await expect(execution).rejects.toBeInstanceOf(AdminNotificationRetryableError);
+    await expect(execution).rejects.toMatchObject({
+      name: "AdminNotificationRetryableError",
+      message: "Admin notification delivery failed: admin",
+    });
     expect(alert.alerts).toEqual([]);
   });
 
@@ -105,7 +75,7 @@ describe("SendAdminNotificationUseCase", () => {
     const { useCase, alert } = setup({ status: "failed", retryable: false, statusCode: 404 });
 
     // When
-    await useCase.execute("payment", notification);
+    await useCase.execute({ channel: "payment", notice: notification });
 
     // Then
     expect(alert.alerts).toEqual([

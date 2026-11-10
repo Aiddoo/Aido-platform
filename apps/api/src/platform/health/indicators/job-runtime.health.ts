@@ -17,11 +17,6 @@ import { EMAIL_DELIVERY_QUEUE } from "#api/modules/notification/notification-ema
 import { TIMEZONE_REMINDER_QUEUE } from "#api/modules/notification/notification-reminders-jobs.public";
 import { TODO_REMINDER_QUEUE } from "#api/modules/notification/notification-reminders.public";
 import { RETENTION_QUEUE } from "#api/modules/notification/notification-retention-jobs.public";
-import { ADMIN_NOTIFICATION_QUEUE } from "#api/modules/operations/admin-notices/operations-admin-notices-jobs.public";
-import {
-  BROADCAST_FAN_OUT_DEAD_LETTER_QUEUE,
-  BROADCAST_FAN_OUT_QUEUE,
-} from "#api/modules/operations/broadcasts/operations-broadcasts-jobs.public";
 import { TODO_SERIES_MATERIALIZATION_QUEUE } from "#api/modules/planning/planning-todo-series-jobs.public";
 import { TODO_TIMEZONE_REBASE_QUEUE } from "#api/modules/planning/planning-todo-timezone-jobs.public";
 import {
@@ -38,7 +33,6 @@ const QUEUE_STATS_TIMEOUT_MS = 2_000;
 const LEGACY_MONITORED_QUEUES = [
   AI_SUGGESTION_QUEUE,
   AI_REPORT_QUEUE,
-  ADMIN_NOTIFICATION_QUEUE,
   EMAIL_DELIVERY_QUEUE,
   TODO_REMINDER_QUEUE,
   NOTIFICATION_QUEUE,
@@ -46,8 +40,6 @@ const LEGACY_MONITORED_QUEUES = [
   PUSH_DELIVERY_QUEUE,
   PUSH_DELIVERY_DEAD_LETTER_QUEUE,
   RETENTION_QUEUE,
-  BROADCAST_FAN_OUT_QUEUE,
-  BROADCAST_FAN_OUT_DEAD_LETTER_QUEUE,
   TODO_SERIES_MATERIALIZATION_QUEUE,
   TODO_TIMEZONE_REBASE_QUEUE,
   QUOTA_ABANDONED_REFUND_QUEUE,

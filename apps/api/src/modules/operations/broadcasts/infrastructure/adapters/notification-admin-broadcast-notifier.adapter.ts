@@ -2,19 +2,20 @@ import { Injectable } from "@nestjs/common";
 
 import { NotificationPublisher } from "#api/modules/notification/notification-delivery.public";
 
-import type { AdminBroadcastNotifierPort } from "../../application/ports/admin-broadcast-notifier.port.js";
+import { AdminBroadcastNotifierPort } from "../../application/ports/admin-broadcast-notifier.port.js";
 import type { AdminBroadcastMessage } from "../../application/read-models/broadcast-message.read-model.js";
 
 @Injectable()
-export class NotificationAdminBroadcastNotifierAdapter implements AdminBroadcastNotifierPort {
-  readonly #notificationService: NotificationPublisher;
+export class NotificationAdminBroadcastNotifierAdapter extends AdminBroadcastNotifierPort {
+  readonly #publisher: NotificationPublisher;
 
-  constructor(notificationService: NotificationPublisher) {
-    this.#notificationService = notificationService;
+  constructor(publisher: NotificationPublisher) {
+    super();
+    this.#publisher = publisher;
   }
 
-  sendBatch(messages: AdminBroadcastMessage[]): Promise<{ count: number }> {
-    return this.#notificationService.publishBatch(
+  sendBatch(messages: readonly AdminBroadcastMessage[]): Promise<{ count: number }> {
+    return this.#publisher.publishBatch(
       messages.map((message) => ({
         userId: message.userId,
         type: message.type,

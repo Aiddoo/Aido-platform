@@ -7,55 +7,70 @@ import { match } from "ts-pattern";
 import { activeSubscriptionCondition } from "#api/modules/access/access-entitlement-sql.public";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { pushToken, user } from "#api/platform/database/schema/index";
-import { subtractDays } from "#api/shared/domain/date/utils/arithmetic";
-import { now } from "#api/shared/domain/date/utils/core";
+import { ClockPort } from "#api/shared/application/ports/clock.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { instantToDate } from "#api/shared/domain/time/instant";
 
-import type { AdminUserDirectoryPort } from "../../application/ports/admin-user-directory.reader.port.js";
+import { AdminUserDirectoryReaderPort } from "../../application/ports/admin-user-directory.reader.port.js";
 
 @Injectable()
-export class DrizzleAdminUserDirectoryAdapter implements AdminUserDirectoryPort {
+export class DrizzleAdminUserDirectoryReader extends AdminUserDirectoryReaderPort {
   readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
+  readonly #clock: ClockPort;
 
-  constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>) {
+  constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>, clock: ClockPort) {
+    super();
     this.#txHost = txHost;
+    this.#clock = clock;
   }
 
   get #db() {
     return this.#txHost.tx;
   }
 
-  async findTargetUserIdsAfter(
-    filter: BroadcastTargetFilter,
-    cursorUserId: string | null,
-    limit: number,
-  ): Promise<string[]> {
+  async listTargetUserIdsAfter(params: {
+    readonly filter: BroadcastTargetFilter;
+    readonly cursorUserId: UserId | null;
+    readonly limit: number;
+  }): Promise<UserId[]> {
+    const { filter, cursorUserId, limit } = params;
     const rows = await this.#db
       .select({ id: user.id })
       .from(user)
       .where(
         and(
           this.#targetCondition(filter),
-          cursorUserId == null ? undefined : gt(user.id, cursorUserId),
+          cursorUserId == null ? undefined : gt(user.id, cursorUserId.value),
         ),
       )
       .orderBy(asc(user.id))
       .limit(limit);
-    return rows.map((row) => row.id);
+    return rows.map((row) => UserId.reconstitute(row.id));
   }
 
   countTargets(filter: BroadcastTargetFilter): Promise<number> {
     return this.#db.$count(user, this.#targetCondition(filter));
   }
 
-  async findExistingUserIds(userIds: string[]): Promise<string[]> {
+  async listExistingUserIds(userIds: readonly UserId[]): Promise<UserId[]> {
     const rows = await this.#db
       .select({ id: user.id })
       .from(user)
-      .where(and(inArray(user.id, userIds), isNull(user.deletedAt)));
-    return rows.map((row) => row.id);
+      .where(
+        and(
+          inArray(
+            user.id,
+            userIds.map((userId) => userId.value),
+          ),
+          isNull(user.deletedAt),
+        ),
+      );
+    return rows.map((row) => UserId.reconstitute(row.id));
   }
 
   #targetCondition(filter: BroadcastTargetFilter): SQL | undefined {
+    const now = this.#clock.now();
+    const activeSince = (days: number) => instantToDate(now.subtract({ hours: days * 24 }));
     return and(
       isNull(user.deletedAt),
       eq(user.status, "ACTIVE"),
@@ -70,13 +85,15 @@ export class DrizzleAdminUserDirectoryAdapter implements AdminUserDirectoryPort 
           ),
         )
         .with(BROADCAST_TARGET_FILTER.ACTIVE_LAST_7_DAYS, () =>
-          gte(user.lastLoginAt, subtractDays(7)),
+          gte(user.lastLoginAt, activeSince(7)),
         )
         .with(BROADCAST_TARGET_FILTER.ACTIVE_LAST_30_DAYS, () =>
-          gte(user.lastLoginAt, subtractDays(30)),
+          gte(user.lastLoginAt, activeSince(30)),
         )
         // User projection이 보상 기간도 ACTIVE로 쓰므로 "구독자"에는 초대 보상으로 프리미엄인 사용자도 들어간다
-        .with(BROADCAST_TARGET_FILTER.SUBSCRIBERS, () => activeSubscriptionCondition(user, now()))
+        .with(BROADCAST_TARGET_FILTER.SUBSCRIBERS, () =>
+          activeSubscriptionCondition(user, instantToDate(now)),
+        )
         .exhaustive(),
     );
   }

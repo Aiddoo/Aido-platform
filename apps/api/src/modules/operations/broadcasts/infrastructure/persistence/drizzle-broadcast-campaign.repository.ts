@@ -4,44 +4,20 @@ import { eq } from "drizzle-orm";
 
 import { requireRecord } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
-import { broadcastCampaign } from "#api/platform/database/schema/index";
+import { createEntityId } from "#api/platform/database/entity-id";
+import { broadcastCampaign } from "#api/platform/database/schema/operations.schema";
 
-import type { BroadcastCampaignRepositoryPort } from "../../application/ports/broadcast-campaign.repository.port.js";
-import {
-  BroadcastCampaign,
-  type BroadcastCampaignCreationPlan,
-} from "../../domain/broadcast-campaign.aggregate.js";
-
-type BroadcastCampaignRow = typeof broadcastCampaign.$inferSelect;
-
-function toCampaign(row: BroadcastCampaignRow): BroadcastCampaign {
-  return BroadcastCampaign.reconstitute({
-    id: row.id,
-    requestId: row.requestId,
-    status: row.status,
-    title: row.title,
-    body: row.body,
-    targetFilter: row.targetFilter,
-    action:
-      row.actionType == null
-        ? null
-        : { type: row.actionType, ...(row.actionUrl != null && { url: row.actionUrl }) },
-    force: row.force,
-    cursorUserId: row.cursorUserId,
-    processedCount: row.processedCount,
-    queuedCount: row.queuedCount,
-    failureReason: row.failureReason,
-    createdAt: row.createdAt,
-    startedAt: row.startedAt,
-    completedAt: row.completedAt,
-  });
-}
+import { BroadcastCampaignRepositoryPort } from "../../application/ports/broadcast-campaign.repository.port.js";
+import { BroadcastCampaignId } from "../../domain/broadcast-campaign-id.vo.js";
+import type { BroadcastCampaign } from "../../domain/broadcast-campaign.aggregate.js";
+import { toBroadcastCampaign, toBroadcastCampaignRow } from "./broadcast-campaign-row.mapper.js";
 
 @Injectable()
-export class DrizzleBroadcastCampaignRepository implements BroadcastCampaignRepositoryPort {
+export class DrizzleBroadcastCampaignRepository extends BroadcastCampaignRepositoryPort {
   readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
 
   constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>) {
+    super();
     this.#txHost = txHost;
   }
 
@@ -49,60 +25,58 @@ export class DrizzleBroadcastCampaignRepository implements BroadcastCampaignRepo
     return this.#txHost.tx;
   }
 
+  async nextId(): Promise<BroadcastCampaignId> {
+    return BroadcastCampaignId.reconstitute(createEntityId());
+  }
+
   async createOrFind(
-    plan: BroadcastCampaignCreationPlan,
+    campaign: BroadcastCampaign,
   ): Promise<{ readonly campaign: BroadcastCampaign; readonly created: boolean }> {
     const [inserted] = await this.#db
       .insert(broadcastCampaign)
-      .values({
-        requestId: plan.requestId,
-        title: plan.title,
-        body: plan.body,
-        targetFilter: plan.targetFilter,
-        actionType: plan.action?.type ?? null,
-        actionUrl: plan.action?.url ?? null,
-        force: plan.force,
-        createdAt: plan.createdAt,
-      })
+      .values(toBroadcastCampaignRow(campaign))
       .onConflictDoNothing({ target: broadcastCampaign.requestId })
       .returning();
     if (inserted != null) {
-      return { campaign: toCampaign(inserted), created: true };
+      return { campaign: toBroadcastCampaign(inserted), created: true };
     }
     const existing = await this.#db.query.broadcastCampaign.findFirst({
-      where: { requestId: plan.requestId },
+      where: { requestId: campaign.requestId },
     });
-    return { campaign: toCampaign(requireRecord(existing)), created: false };
+    return { campaign: toBroadcastCampaign(requireRecord(existing)), created: false };
   }
 
-  async findById(campaignId: string): Promise<BroadcastCampaign | null> {
-    const row = await this.#db.query.broadcastCampaign.findFirst({ where: { id: campaignId } });
-    return row == null ? null : toCampaign(row);
+  async findById(campaignId: BroadcastCampaignId): Promise<BroadcastCampaign | null> {
+    const row = await this.#db.query.broadcastCampaign.findFirst({
+      where: { id: campaignId.value },
+    });
+    return row == null ? null : toBroadcastCampaign(row);
   }
 
-  async findByIdForUpdate(campaignId: string): Promise<BroadcastCampaign | null> {
+  async findByIdForUpdate(campaignId: BroadcastCampaignId): Promise<BroadcastCampaign | null> {
     const [row] = await this.#db
       .select()
       .from(broadcastCampaign)
-      .where(eq(broadcastCampaign.id, campaignId))
+      .where(eq(broadcastCampaign.id, campaignId.value))
       .for("update");
-    return row == null ? null : toCampaign(row);
+    return row == null ? null : toBroadcastCampaign(row);
   }
 
   async save(campaign: BroadcastCampaign): Promise<void> {
-    const snapshot = campaign.toSnapshot();
+    const row = toBroadcastCampaignRow(campaign);
     const [saved] = await this.#db
       .update(broadcastCampaign)
       .set({
-        status: snapshot.status,
-        cursorUserId: snapshot.cursorUserId,
-        processedCount: snapshot.processedCount,
-        queuedCount: snapshot.queuedCount,
-        failureReason: snapshot.failureReason,
-        startedAt: snapshot.startedAt,
-        completedAt: snapshot.completedAt,
+        status: row.status,
+        cursorUserId: row.cursorUserId,
+        processedCount: row.processedCount,
+        queuedCount: row.queuedCount,
+        failureReason: row.failureReason,
+        startedAt: row.startedAt,
+        completedAt: row.completedAt,
+        updatedAt: row.updatedAt,
       })
-      .where(eq(broadcastCampaign.id, snapshot.id))
+      .where(eq(broadcastCampaign.id, campaign.id.value))
       .returning({ id: broadcastCampaign.id });
     requireRecord(saved);
   }

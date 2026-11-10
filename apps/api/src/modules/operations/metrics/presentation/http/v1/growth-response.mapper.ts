@@ -1,9 +1,15 @@
-import type { GrowthSummaryResponse } from "@aido/api";
+import type { GrowthSummaryResponse } from "@aido/api/contracts/admin";
 
-import { toISOStringOrNull } from "#api/shared/domain/date/utils/format";
+import { toIsoString } from "#api/shared/domain/time/instant";
 
-import type { AdminGrowthSummary } from "../../../application/read-models/growth-summary.read-model.js";
+import type { GrowthSummary } from "../../../application/read-models/growth-summary.read-model.js";
 
-export function toAdminGrowthResponse(summary: AdminGrowthSummary): GrowthSummaryResponse {
-  return { ...summary, measurementStartedAt: toISOStringOrNull(summary.measurementStartedAt) };
+export function toGrowthSummaryResponse(summary: GrowthSummary): GrowthSummaryResponse {
+  return {
+    ...summary,
+    cohortFrom: summary.cohortFrom.toString(),
+    cohortTo: summary.cohortTo.toString(),
+    measurementStartedAt:
+      summary.measurementStartedAt == null ? null : toIsoString(summary.measurementStartedAt),
+  };
 }

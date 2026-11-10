@@ -1,17 +1,15 @@
 import { ErrorCode } from "@aido/api/errors";
 
 import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
+import { ValueObject } from "#api/shared/domain/model/value-object";
 
-export class BroadcastContent {
-  readonly #title: string;
-  readonly #body: string;
+export interface BroadcastCopy {
+  readonly title: string;
+  readonly body: string;
+}
 
-  constructor(title: string, body: string) {
-    this.#title = title;
-    this.#body = body;
-  }
-
-  static create(input: { readonly title: string; readonly body: string }): BroadcastContent {
+export class BroadcastContent extends ValueObject<BroadcastCopy> {
+  static create(input: BroadcastCopy): BroadcastContent {
     const title = input.title.trim();
     const body = input.body.trim();
     if (title.length === 0 || body.length === 0) {
@@ -19,14 +17,18 @@ export class BroadcastContent {
         reason: "브로드캐스트 제목/본문은 비어 있을 수 없습니다",
       });
     }
-    return new BroadcastContent(title, body);
+    return new BroadcastContent({ title, body });
+  }
+
+  static reconstitute(input: BroadcastCopy): BroadcastContent {
+    return new BroadcastContent({ title: input.title, body: input.body });
   }
 
   get title(): string {
-    return this.#title;
+    return this.value.title;
   }
 
   get body(): string {
-    return this.#body;
+    return this.value.body;
   }
 }

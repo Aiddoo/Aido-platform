@@ -1,25 +1,30 @@
-import type { BroadcastResult, NotificationAction } from "@aido/api";
-import { ErrorCode } from "@aido/api/errors";
-
-import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
+import type { BroadcastAction } from "../../domain/broadcast-campaign.aggregate.js";
 import { BroadcastContent } from "../../domain/broadcast-content.vo.js";
+import { targetedUsersNotFound } from "../broadcasts.errors.js";
 import { BroadcastLogEvent } from "../broadcasts.log-events.js";
-import { buildBroadcastMessages } from "../messages/broadcast-message.messages.js";
+import { buildTargetedMessages } from "../messages/broadcast-message.messages.js";
 import type { AdminBroadcastNotifierPort } from "../ports/admin-broadcast-notifier.port.js";
-import type { AdminUserDirectoryPort } from "../ports/admin-user-directory.reader.port.js";
+import type { AdminUserDirectoryReaderPort } from "../ports/admin-user-directory.reader.port.js";
 
-export interface SendTargetedNotificationInput {
+export interface SendTargetedNotificationCommand {
   readonly title: string;
   readonly body: string;
   readonly userIds: readonly string[];
-  readonly action: NotificationAction | undefined;
+  readonly action?: BroadcastAction;
   readonly force: boolean;
 }
 
-interface SendTargetedNotificationDependencies {
-  readonly userDirectory: Pick<AdminUserDirectoryPort, "findExistingUserIds">;
+export interface SendTargetedNotificationResult {
+  readonly sentCount: number;
+  readonly failedCount: number;
+  readonly targetCount: number;
+}
+
+export interface SendTargetedNotificationDependencies {
+  readonly userDirectory: Pick<AdminUserDirectoryReaderPort, "listExistingUserIds">;
   readonly notifier: Pick<AdminBroadcastNotifierPort, "sendBatch">;
   readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
@@ -31,34 +36,30 @@ export class SendTargetedNotificationUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: SendTargetedNotificationInput): Promise<BroadcastResult> {
-    const content = BroadcastContent.create(input);
-    const userIds = [...input.userIds];
-    const existingUserIds = await this.#dependencies.userDirectory.findExistingUserIds(userIds);
+  async execute(command: SendTargetedNotificationCommand): Promise<SendTargetedNotificationResult> {
+    const { userDirectory, notifier, logger } = this.#dependencies;
+    const content = BroadcastContent.create({ title: command.title, body: command.body });
+    const requestedUserIds = command.userIds.map((userId) => UserId.reconstitute(userId));
+    const existingUserIds = await userDirectory.listExistingUserIds(requestedUserIds);
     if (existingUserIds.length === 0) {
-      throw new ApplicationException(ErrorCode.ADMIN_1402, { requested: userIds.length });
+      throw targetedUsersNotFound(requestedUserIds.length);
     }
-    const { count } = await this.#dependencies.notifier.sendBatch(
-      buildBroadcastMessages(
-        {
-          title: content.title,
-          body: content.body,
-          type: "ADMIN_TARGETED",
-          action: input.action,
-          force: input.force,
-        },
+
+    const { count } = await notifier.sendBatch(
+      buildTargetedMessages(
+        { content, action: command.action ?? null, force: command.force },
         existingUserIds,
       ),
     );
-    this.#dependencies.logger.log({
+    logger.log({
       event: BroadcastLogEvent.TARGETED_COMPLETED,
       count,
       totalTargets: existingUserIds.length,
     });
     return {
-      successCount: count,
-      failCount: existingUserIds.length - count,
-      totalTargets: existingUserIds.length,
+      sentCount: count,
+      failedCount: existingUserIds.length - count,
+      targetCount: existingUserIds.length,
     };
   }
 }

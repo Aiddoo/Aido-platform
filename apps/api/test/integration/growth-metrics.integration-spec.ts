@@ -3,7 +3,7 @@ import { vi } from "vitest";
 import { z } from "zod";
 
 import { DrizzleUserRepository } from "#api/modules/identity/users/infrastructure/persistence/drizzle-user.repository";
-import { DrizzleAdminGrowthMetricsAdapter } from "#api/modules/operations/metrics/infrastructure/persistence/drizzle-growth-metrics.reader";
+import { DrizzleGrowthMetricsReader } from "#api/modules/operations/metrics/infrastructure/persistence/drizzle-growth-metrics.reader";
 import { requireRecord } from "#api/platform/database/database-error.util";
 import {
   account,
@@ -27,14 +27,14 @@ describe("성장 지표 통합 테스트 (실제 DB)", () => {
   let testDb: TestDatabase;
   let client: TestDatabaseClient;
   let activityWriter: DrizzleUserRepository;
-  let growthMetrics: DrizzleAdminGrowthMetricsAdapter;
+  let growthMetrics: DrizzleGrowthMetricsReader;
 
   beforeAll(async () => {
     testDb = new TestDatabase();
     client = await testDb.start();
     const { txHost } = createDatabaseTransactionFixture(client);
     activityWriter = new DrizzleUserRepository(txHost);
-    growthMetrics = new DrizzleAdminGrowthMetricsAdapter(txHost);
+    growthMetrics = new DrizzleGrowthMetricsReader(txHost);
   }, 60_000);
 
   beforeEach(async () => {
@@ -200,15 +200,16 @@ describe("성장 지표 통합 테스트 (실제 DB)", () => {
     await seedGrowthScenario(client);
 
     // When
-    const result = await growthMetrics.getSummary({
-      cohortFrom: "2026-06-01",
-      cohortTo: "2026-07-30",
-      asOf: new Date("2026-07-31T12:00:00.000Z"),
+    const result = await growthMetrics.getSummaryCounts({
+      cohortFrom: Temporal.PlainDate.from("2026-06-01"),
+      cohortTo: Temporal.PlainDate.from("2026-07-30"),
+      asOf: Temporal.Instant.from("2026-07-31T12:00:00Z"),
     });
 
     // Then
-    expect(result).toEqual({
-      measurementStartedAt: new Date("2026-06-01T00:00:00.000Z"),
+    expect(result.measurementStartedAt?.toString()).toBe("2026-06-01T00:00:00Z");
+    expect({ ...result, measurementStartedAt: null }).toEqual({
+      measurementStartedAt: null,
       totalActiveUsers: 4,
       signups: 4,
       dau: 0,
@@ -232,15 +233,16 @@ describe("성장 지표 통합 테스트 (실제 DB)", () => {
     await seedDeletedGrowthUser(client);
 
     // When
-    const result = await growthMetrics.getSummary({
-      cohortFrom: "2026-06-01",
-      cohortTo: "2026-07-30",
-      asOf: new Date("2026-07-31T12:00:00.000Z"),
+    const result = await growthMetrics.getSummaryCounts({
+      cohortFrom: Temporal.PlainDate.from("2026-06-01"),
+      cohortTo: Temporal.PlainDate.from("2026-07-30"),
+      asOf: Temporal.Instant.from("2026-07-31T12:00:00Z"),
     });
 
     // Then
-    expect(result).toEqual({
-      measurementStartedAt: new Date("2026-06-01T00:00:00.000Z"),
+    expect(result.measurementStartedAt?.toString()).toBe("2026-06-01T00:00:00Z");
+    expect({ ...result, measurementStartedAt: null }).toEqual({
+      measurementStartedAt: null,
       totalActiveUsers: 4,
       signups: 4,
       dau: 0,

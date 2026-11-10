@@ -1,18 +1,9 @@
-export interface GrowthSummaryInput {
-  readonly cohortFrom?: string;
-  readonly cohortTo?: string;
-}
+import type { GrowthCohortMetric } from "../../domain/growth-summary.domain-service.js";
 
-export interface GrowthCohortMetric {
-  readonly eligible: number;
-  readonly achieved: number;
-  readonly rate: number;
-}
-
-export interface AdminGrowthSummary {
-  readonly cohortFrom: string;
-  readonly cohortTo: string;
-  readonly measurementStartedAt: Date | null;
+export interface GrowthSummary {
+  readonly cohortFrom: Temporal.PlainDate;
+  readonly cohortTo: Temporal.PlainDate;
+  readonly measurementStartedAt: Temporal.Instant | null;
   readonly totalActiveUsers: number;
   readonly signups: number;
   readonly dau: number;

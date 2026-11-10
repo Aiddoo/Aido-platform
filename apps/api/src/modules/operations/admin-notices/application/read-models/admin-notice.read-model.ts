@@ -5,11 +5,6 @@ import type {
   SubscriptionPlanType,
 } from "@aido/api/vocabulary";
 
-import type {
-  SubscriptionEndReason,
-  SubscriptionStore,
-} from "#api/modules/billing/subscriptions/billing-subscriptions-events.public";
-
 import type { AdminNotification } from "./admin-notification.read-model.js";
 
 /** 가입 방식. 계정 공급자(AccountProvider)와 같은 값이다. */
@@ -59,7 +54,7 @@ export const SUBSCRIPTION_NOTICE_EVENT = {
 export type SubscriptionNoticeEvent =
   (typeof SUBSCRIPTION_NOTICE_EVENT)[keyof typeof SUBSCRIPTION_NOTICE_EVENT];
 
-/** 큐 payload 검증에 쓰는 billing 어휘. billing 값이 늘면 컴파일러가 여기를 가리킨다. */
+/** 큐 payload 검증에 쓰는 결제 어휘. billing 값이 늘면 구독 알림 입력을 넘기는 호출 쪽 컴파일이 가리킨다. */
 export const NOTICE_STORE = {
   APP_STORE: "APP_STORE",
   MAC_APP_STORE: "MAC_APP_STORE",
@@ -68,7 +63,9 @@ export const NOTICE_STORE = {
   WEB_BILLING: "WEB_BILLING",
   AMAZON: "AMAZON",
   PROMOTIONAL: "PROMOTIONAL",
-} as const satisfies { readonly [K in SubscriptionStore]: K };
+} as const;
+
+export type NoticeStore = (typeof NOTICE_STORE)[keyof typeof NOTICE_STORE];
 
 export const NOTICE_END_REASON = {
   UNSUBSCRIBE: "UNSUBSCRIBE",
@@ -78,7 +75,9 @@ export const NOTICE_END_REASON = {
   CUSTOMER_SUPPORT: "CUSTOMER_SUPPORT",
   SUBSCRIPTION_PAUSED: "SUBSCRIPTION_PAUSED",
   UNKNOWN: "UNKNOWN",
-} as const satisfies { readonly [K in SubscriptionEndReason]: K };
+} as const;
+
+export type NoticeEndReason = (typeof NOTICE_END_REASON)[keyof typeof NOTICE_END_REASON];
 
 export interface SubscriptionNoticePrice {
   /** 사용자가 낸 통화의 금액 */
@@ -101,7 +100,7 @@ export interface SubscriptionNoticePremium {
 export interface SubscriptionNotice {
   readonly event: SubscriptionNoticeEvent;
   readonly environment?: SubscriptionEnvironment;
-  readonly store?: SubscriptionStore;
+  readonly store?: NoticeStore;
   readonly productId?: string;
   readonly planType?: SubscriptionPlanType;
   readonly newProductId?: string;
@@ -112,7 +111,7 @@ export interface SubscriptionNotice {
   /** 지금 기간의 끝. 자동 갱신 중이면 다음 갱신, 해지했으면 이용 종료다. */
   readonly expiresAt?: string;
   readonly gracePeriodEndsAt?: string;
-  readonly endReason?: SubscriptionEndReason;
+  readonly endReason?: NoticeEndReason;
   readonly countryCode?: string;
   readonly isFirstPurchase?: boolean;
   readonly premium?: SubscriptionNoticePremium;

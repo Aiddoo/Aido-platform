@@ -2,30 +2,24 @@ import type { ApplicationLoggerPort } from "#api/shared/application/ports/applic
 import type { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 
 import { AdminNoticeAlert } from "../admin-notices.alerts.js";
+import { adminNotificationRetryable } from "../admin-notices.errors.js";
 import { AdminNoticeLogEvent } from "../admin-notices.log-events.js";
 import type { NotificationChannel } from "../ports/admin-notification-queue.port.js";
-import { type AdminNotifierPort } from "../ports/admin-notifier.port.js";
+import type { AdminNotifierPort } from "../ports/admin-notifier.port.js";
 import type { AdminNotice } from "../read-models/admin-notice.read-model.js";
 
-export class AdminNotificationRetryableError extends Error {
+export interface SendAdminNotificationCommand {
   readonly channel: NotificationChannel;
-
-  constructor(channel: NotificationChannel) {
-    super(`Admin notification delivery failed: ${channel}`);
-    this.channel = channel;
-    this.name = AdminNotificationRetryableError.name;
-  }
+  readonly notice: AdminNotice;
 }
 
-interface SendAdminNotificationDependencies {
+export interface SendAdminNotificationDependencies {
   readonly notifier: Pick<AdminNotifierPort, "send">;
-  readonly alert: OperationalAlertPort;
+  readonly alert: Pick<OperationalAlertPort, "raise">;
   readonly logger: Pick<ApplicationLoggerPort, "debug" | "log" | "warn">;
 }
 
 /**
- * 관리자 알림 발송 유스케이스.
- *
  * 일시 실패(재시도 가능)만 던져 큐 재시도를 맡기고, 채널 미설정은 건너뛰며,
  * 재시도해도 안 되는 거절은 운영 경보로 올린다.
  */
@@ -36,25 +30,19 @@ export class SendAdminNotificationUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(channel: NotificationChannel, notice: AdminNotice): Promise<void> {
-    this.#dependencies.logger.debug({
-      event: AdminNoticeLogEvent.SEND_STARTED,
-      channel,
-      noticeType: notice.type,
-    });
+  async execute(command: SendAdminNotificationCommand): Promise<void> {
+    const { notifier, alert, logger } = this.#dependencies;
+    const { channel, notice } = command;
+    logger.debug({ event: AdminNoticeLogEvent.SEND_STARTED, channel, noticeType: notice.type });
 
-    const outcome = await this.#dependencies.notifier.send(channel, notice);
+    const outcome = await notifier.send(channel, notice);
 
     if (outcome.status === "sent") {
-      this.#dependencies.logger.log({
-        event: AdminNoticeLogEvent.SEND_COMPLETED,
-        channel,
-        noticeType: notice.type,
-      });
+      logger.log({ event: AdminNoticeLogEvent.SEND_COMPLETED, channel, noticeType: notice.type });
       return;
     }
     if (outcome.status === "skipped") {
-      this.#dependencies.logger.debug({
+      logger.debug({
         event: AdminNoticeLogEvent.SEND_SKIPPED,
         channel,
         reason: outcome.reason,
@@ -62,15 +50,15 @@ export class SendAdminNotificationUseCase {
       return;
     }
     if (outcome.retryable) {
-      throw new AdminNotificationRetryableError(channel);
+      throw adminNotificationRetryable(channel);
     }
 
-    this.#dependencies.logger.warn({
+    logger.warn({
       event: AdminNoticeLogEvent.SEND_REJECTED,
       channel,
       statusCode: outcome.statusCode,
     });
-    this.#dependencies.alert.raise({
+    alert.raise({
       key: AdminNoticeAlert.ADMIN_NOTIFICATION_REJECTED,
       severity: "warning",
       message: "관리자 알림이 채널에서 거절되었습니다",

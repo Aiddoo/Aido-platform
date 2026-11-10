@@ -1,113 +1,87 @@
-import { Logger, type FactoryProvider } from "@nestjs/common";
+import type { Provider } from "@nestjs/common";
 
-import { UNIT_OF_WORK } from "#api/shared/application/ports/index";
+import { loggerFor, provideUseCase } from "#api/platform/di/provide-use-case";
+import { ClockPort } from "#api/shared/application/ports/clock.port";
+import { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
+import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 
-import { ADMIN_BROADCAST_NOTIFIER } from "./application/ports/admin-broadcast-notifier.port.js";
-import { ADMIN_USER_DIRECTORY } from "./application/ports/admin-user-directory.reader.port.js";
-import { BROADCAST_CAMPAIGN_REPOSITORY } from "./application/ports/broadcast-campaign.repository.port.js";
-import { BROADCAST_DELIVERY_OUTCOME_READER } from "./application/ports/broadcast-delivery-outcome.reader.port.js";
-import { BROADCAST_FAN_OUT_ENQUEUER } from "./application/ports/broadcast-fan-out-enqueuer.port.js";
+import { AdminBroadcastNotifierPort } from "./application/ports/admin-broadcast-notifier.port.js";
+import { AdminUserDirectoryReaderPort } from "./application/ports/admin-user-directory.reader.port.js";
+import { BroadcastCampaignRepositoryPort } from "./application/ports/broadcast-campaign.repository.port.js";
+import { BroadcastDeliveryOutcomeReaderPort } from "./application/ports/broadcast-delivery-outcome.reader.port.js";
+import { BroadcastJobEnqueuerPort } from "./application/ports/broadcast-job-enqueuer.port.js";
+import { BroadcastRecipientReaderPort } from "./application/ports/broadcast-recipient.reader.port.js";
 import { BroadcastNotificationUseCase } from "./application/use-cases/broadcast-notification.use-case.js";
 import { CreateBroadcastCampaignUseCase } from "./application/use-cases/create-broadcast-campaign.use-case.js";
+import { DeliverBroadcastGroupUseCase } from "./application/use-cases/deliver-broadcast-group.use-case.js";
 import { FailBroadcastCampaignUseCase } from "./application/use-cases/fail-broadcast-campaign.use-case.js";
 import { FanOutBroadcastCampaignUseCase } from "./application/use-cases/fan-out-broadcast-campaign.use-case.js";
 import { GetBroadcastCampaignUseCase } from "./application/use-cases/get-broadcast-campaign.use-case.js";
+import { ReportBroadcastDeliveryExhaustedUseCase } from "./application/use-cases/report-broadcast-delivery-exhausted.use-case.js";
 import { SendTargetedNotificationUseCase } from "./application/use-cases/send-targeted-notification.use-case.js";
+import { BroadcastJobEnqueuerAdapter } from "./infrastructure/adapters/broadcast-job-enqueuer.adapter.js";
+import { NotificationAdminBroadcastNotifierAdapter } from "./infrastructure/adapters/notification-admin-broadcast-notifier.adapter.js";
+import { NotificationBroadcastDeliveryOutcomeAdapter } from "./infrastructure/adapters/notification-broadcast-delivery-outcome.adapter.js";
+import { NotificationBroadcastRecipientAdapter } from "./infrastructure/adapters/notification-broadcast-recipient.adapter.js";
+import { BroadcastDeliveryProcessor } from "./infrastructure/jobs/broadcast-delivery.processor.js";
+import { BroadcastFanOutProcessor } from "./infrastructure/jobs/broadcast-fan-out.processor.js";
+import { DrizzleAdminUserDirectoryReader } from "./infrastructure/persistence/drizzle-admin-user-directory.reader.js";
+import { DrizzleBroadcastCampaignRepository } from "./infrastructure/persistence/drizzle-broadcast-campaign.repository.js";
 
-type Dependencies<T extends abstract new (...args: never) => unknown> = ConstructorParameters<T>[0];
-
-export const createBroadcastCampaignProvider: FactoryProvider<CreateBroadcastCampaignUseCase> = {
-  provide: CreateBroadcastCampaignUseCase,
-  inject: [
-    BROADCAST_CAMPAIGN_REPOSITORY,
-    ADMIN_USER_DIRECTORY,
-    BROADCAST_FAN_OUT_ENQUEUER,
-    UNIT_OF_WORK,
-  ],
-  useFactory: (
-    repository: Dependencies<typeof CreateBroadcastCampaignUseCase>["repository"],
-    userDirectory: Dependencies<typeof CreateBroadcastCampaignUseCase>["userDirectory"],
-    fanOutEnqueuer: Dependencies<typeof CreateBroadcastCampaignUseCase>["fanOutEnqueuer"],
-    unitOfWork: Dependencies<typeof CreateBroadcastCampaignUseCase>["unitOfWork"],
-  ) =>
-    new CreateBroadcastCampaignUseCase({
-      repository,
-      userDirectory,
-      fanOutEnqueuer,
-      unitOfWork,
-      logger: new Logger(CreateBroadcastCampaignUseCase.name),
-    }),
-};
-
-export const broadcastNotificationProvider: FactoryProvider<BroadcastNotificationUseCase> = {
-  provide: BroadcastNotificationUseCase,
-  inject: [CreateBroadcastCampaignUseCase],
-  useFactory: (
-    createBroadcastCampaign: Dependencies<
-      typeof BroadcastNotificationUseCase
-    >["createBroadcastCampaign"],
-  ) => new BroadcastNotificationUseCase({ createBroadcastCampaign }),
-};
-
-export const fanOutBroadcastCampaignProvider: FactoryProvider<FanOutBroadcastCampaignUseCase> = {
-  provide: FanOutBroadcastCampaignUseCase,
-  inject: [
-    BROADCAST_CAMPAIGN_REPOSITORY,
-    ADMIN_USER_DIRECTORY,
-    ADMIN_BROADCAST_NOTIFIER,
-    BROADCAST_FAN_OUT_ENQUEUER,
-    UNIT_OF_WORK,
-  ],
-  useFactory: (
-    repository: Dependencies<typeof FanOutBroadcastCampaignUseCase>["repository"],
-    userDirectory: Dependencies<typeof FanOutBroadcastCampaignUseCase>["userDirectory"],
-    notifier: Dependencies<typeof FanOutBroadcastCampaignUseCase>["notifier"],
-    fanOutEnqueuer: Dependencies<typeof FanOutBroadcastCampaignUseCase>["fanOutEnqueuer"],
-    unitOfWork: Dependencies<typeof FanOutBroadcastCampaignUseCase>["unitOfWork"],
-  ) =>
-    new FanOutBroadcastCampaignUseCase({
-      repository,
-      userDirectory,
-      notifier,
-      fanOutEnqueuer,
-      unitOfWork,
-      logger: new Logger(FanOutBroadcastCampaignUseCase.name),
-    }),
-};
-
-export const failBroadcastCampaignProvider: FactoryProvider<FailBroadcastCampaignUseCase> = {
-  provide: FailBroadcastCampaignUseCase,
-  inject: [BROADCAST_CAMPAIGN_REPOSITORY, UNIT_OF_WORK],
-  useFactory: (
-    repository: Dependencies<typeof FailBroadcastCampaignUseCase>["repository"],
-    unitOfWork: Dependencies<typeof FailBroadcastCampaignUseCase>["unitOfWork"],
-  ) =>
-    new FailBroadcastCampaignUseCase({
-      repository,
-      unitOfWork,
-      logger: new Logger(FailBroadcastCampaignUseCase.name),
-    }),
-};
-
-export const getBroadcastCampaignProvider: FactoryProvider<GetBroadcastCampaignUseCase> = {
-  provide: GetBroadcastCampaignUseCase,
-  inject: [BROADCAST_CAMPAIGN_REPOSITORY, BROADCAST_DELIVERY_OUTCOME_READER],
-  useFactory: (
-    repository: Dependencies<typeof GetBroadcastCampaignUseCase>["repository"],
-    outcomeReader: Dependencies<typeof GetBroadcastCampaignUseCase>["outcomeReader"],
-  ) => new GetBroadcastCampaignUseCase({ repository, outcomeReader }),
-};
-
-export const sendTargetedNotificationProvider: FactoryProvider<SendTargetedNotificationUseCase> = {
-  provide: SendTargetedNotificationUseCase,
-  inject: [ADMIN_USER_DIRECTORY, ADMIN_BROADCAST_NOTIFIER],
-  useFactory: (
-    userDirectory: Dependencies<typeof SendTargetedNotificationUseCase>["userDirectory"],
-    notifier: Dependencies<typeof SendTargetedNotificationUseCase>["notifier"],
-  ) =>
-    new SendTargetedNotificationUseCase({
-      userDirectory,
-      notifier,
-      logger: new Logger(SendTargetedNotificationUseCase.name),
-    }),
-};
+export const OPERATIONS_BROADCASTS_PROVIDERS = [
+  { provide: AdminUserDirectoryReaderPort, useClass: DrizzleAdminUserDirectoryReader },
+  { provide: AdminBroadcastNotifierPort, useClass: NotificationAdminBroadcastNotifierAdapter },
+  { provide: BroadcastRecipientReaderPort, useClass: NotificationBroadcastRecipientAdapter },
+  {
+    provide: BroadcastDeliveryOutcomeReaderPort,
+    useClass: NotificationBroadcastDeliveryOutcomeAdapter,
+  },
+  { provide: BroadcastCampaignRepositoryPort, useClass: DrizzleBroadcastCampaignRepository },
+  { provide: BroadcastJobEnqueuerPort, useClass: BroadcastJobEnqueuerAdapter },
+  provideUseCase(CreateBroadcastCampaignUseCase, {
+    unitOfWork: UnitOfWorkPort,
+    campaignRepository: BroadcastCampaignRepositoryPort,
+    userDirectory: AdminUserDirectoryReaderPort,
+    jobEnqueuer: BroadcastJobEnqueuerPort,
+    clock: ClockPort,
+    logger: loggerFor(CreateBroadcastCampaignUseCase),
+  }),
+  provideUseCase(BroadcastNotificationUseCase, {
+    createBroadcastCampaign: CreateBroadcastCampaignUseCase,
+  }),
+  provideUseCase(FanOutBroadcastCampaignUseCase, {
+    unitOfWork: UnitOfWorkPort,
+    campaignRepository: BroadcastCampaignRepositoryPort,
+    userDirectory: AdminUserDirectoryReaderPort,
+    recipientReader: BroadcastRecipientReaderPort,
+    notifier: AdminBroadcastNotifierPort,
+    jobEnqueuer: BroadcastJobEnqueuerPort,
+    clock: ClockPort,
+    logger: loggerFor(FanOutBroadcastCampaignUseCase),
+  }),
+  provideUseCase(DeliverBroadcastGroupUseCase, {
+    unitOfWork: UnitOfWorkPort,
+    campaignRepository: BroadcastCampaignRepositoryPort,
+    recipientReader: BroadcastRecipientReaderPort,
+    notifier: AdminBroadcastNotifierPort,
+    logger: loggerFor(DeliverBroadcastGroupUseCase),
+  }),
+  provideUseCase(FailBroadcastCampaignUseCase, {
+    unitOfWork: UnitOfWorkPort,
+    campaignRepository: BroadcastCampaignRepositoryPort,
+    clock: ClockPort,
+    logger: loggerFor(FailBroadcastCampaignUseCase),
+  }),
+  provideUseCase(ReportBroadcastDeliveryExhaustedUseCase, { alert: OperationalAlertPort }),
+  provideUseCase(GetBroadcastCampaignUseCase, {
+    campaignRepository: BroadcastCampaignRepositoryPort,
+    outcomeReader: BroadcastDeliveryOutcomeReaderPort,
+  }),
+  provideUseCase(SendTargetedNotificationUseCase, {
+    userDirectory: AdminUserDirectoryReaderPort,
+    notifier: AdminBroadcastNotifierPort,
+    logger: loggerFor(SendTargetedNotificationUseCase),
+  }),
+  BroadcastFanOutProcessor,
+  BroadcastDeliveryProcessor,
+] satisfies Provider[];

@@ -1,70 +1,44 @@
-import { TestBed } from "@suites/unit";
-import { vi } from "vitest";
-/**
- * AdminNotificationQueueAdapter 단위 테스트
- *
- * - SEND 잡 등록 + 공통 옵션(재시도) 검증
- * - jobId 병합 검증
- */
-import type { Mocked } from "vitest";
-
-import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
+import { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
 
 import { ADMIN_NOTIFICATION_QUEUE } from "../jobs/admin-notification.queue.js";
 import { AdminNotificationQueueAdapter } from "./admin-notification-queue.adapter.js";
 
-describe("AdminNotificationQueueAdapter", () => {
-  let adapter: AdminNotificationQueueAdapter;
-  let runtime: Mocked<JobRuntimePort>;
+const notice = {
+  type: "message",
+  message: { title: "제목", body: "본문", severity: "info" },
+} as const;
 
-  beforeEach(async () => {
-    const { unit, unitRef } = await TestBed.solitary(AdminNotificationQueueAdapter)
-      .mock<JobRuntimePort>(JOB_RUNTIME)
-      .impl(() => ({ enqueue: vi.fn().mockResolvedValue("job-1") }))
-      .compile();
+describe("AdminNotificationQueueAdapter — 관리자 알림 작업 등록", () => {
+  it("SEND 작업으로 채널과 알림을 큐에 등록한다", async () => {
+    // Given
+    const jobQueue = new InMemoryJobQueue();
+    const adapter = new AdminNotificationQueueAdapter(jobQueue);
 
-    adapter = unit;
-    runtime = unitRef.get(JOB_RUNTIME);
-  });
+    // When
+    await adapter.enqueueSend("admin", notice);
 
-  it("SEND 잡을 공통 재시도 옵션으로 등록한다", async () => {
-    await adapter.enqueueSend("admin", {
-      type: "message",
-      message: { title: "제목", body: "본문", severity: "info" },
-    });
-
-    expect(runtime.enqueue).toHaveBeenCalledWith(
-      ADMIN_NOTIFICATION_QUEUE,
+    // Then
+    expect(jobQueue.jobsIn(ADMIN_NOTIFICATION_QUEUE)).toEqual([
       {
-        name: "send-notification",
-        data: {
-          channel: "admin",
-          notice: {
-            type: "message",
-            message: { title: "제목", body: "본문", severity: "info" },
-          },
-        },
+        queue: "admin-notification.v1",
+        payload: { name: "send-notification", data: { channel: "admin", notice } },
+        options: {},
       },
-      expect.objectContaining({
-        retryLimit: 2,
-        retryDelaySeconds: 5,
-      }),
-    );
+    ]);
   });
 
-  it("jobId 옵션을 공통 옵션에 병합한다", async () => {
-    await adapter.enqueueSend(
-      "admin",
-      { type: "message", message: { title: "제목", body: "본문", severity: "info" } },
-      { jobId: "signup-summary_2026-02-10" },
-    );
+  it("jobId는 멱등 key가 되어 같은 jobId의 두 번째 등록은 큐에 남지 않는다", async () => {
+    // Given
+    const jobQueue = new InMemoryJobQueue();
+    const adapter = new AdminNotificationQueueAdapter(jobQueue);
 
-    const opts = runtime.enqueue.mock.calls[0]?.[2];
-    expect(opts).toEqual(
-      expect.objectContaining({
-        retryLimit: 2,
-        idempotencyKey: "signup-summary_2026-02-10",
-      }),
-    );
+    // When
+    await adapter.enqueueSend("payment", notice, { jobId: "subscription-event_evt-1" });
+    await adapter.enqueueSend("payment", notice, { jobId: "subscription-event_evt-1" });
+
+    // Then
+    expect(jobQueue.jobsIn(ADMIN_NOTIFICATION_QUEUE).map(({ options }) => options)).toEqual([
+      { idempotencyKey: "subscription-event_evt-1" },
+    ]);
   });
 });

@@ -1,25 +1,37 @@
-import type { NotificationAction } from "@aido/api";
-import { ErrorCode } from "@aido/api/errors";
 import type { BroadcastTargetFilter } from "@aido/api/vocabulary";
 
-import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
-import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
+import type { ClockPort } from "#api/shared/application/ports/clock.port";
+import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 
-import { BroadcastCampaign } from "../../domain/broadcast-campaign.aggregate.js";
+import {
+  type BroadcastAction,
+  BroadcastCampaign,
+} from "../../domain/broadcast-campaign.aggregate.js";
 import { BroadcastContent } from "../../domain/broadcast-content.vo.js";
+import {
+  BroadcastDelivery,
+  type BroadcastDeliveryPrimitives,
+} from "../../domain/broadcast-delivery.vo.js";
+import {
+  BroadcastLocalizedContent,
+  type BroadcastLocalizedCopy,
+} from "../../domain/broadcast-localized-content.vo.js";
+import { broadcastRequestConflict, broadcastTargetsEmpty } from "../broadcasts.errors.js";
 import { BroadcastLogEvent } from "../broadcasts.log-events.js";
-import type { AdminUserDirectoryPort } from "../ports/admin-user-directory.reader.port.js";
+import type { AdminUserDirectoryReaderPort } from "../ports/admin-user-directory.reader.port.js";
 import type { BroadcastCampaignRepositoryPort } from "../ports/broadcast-campaign.repository.port.js";
-import type { BroadcastFanOutEnqueuerPort } from "../ports/broadcast-fan-out-enqueuer.port.js";
+import type { BroadcastJobEnqueuerPort } from "../ports/broadcast-job-enqueuer.port.js";
 
-export interface CreateBroadcastCampaignInput {
+export interface CreateBroadcastCampaignCommand {
   readonly requestId: string;
   readonly title: string;
   readonly body: string;
+  readonly localizedContent?: BroadcastLocalizedCopy;
   readonly targetFilter: BroadcastTargetFilter;
-  readonly action: NotificationAction | undefined;
+  readonly action?: BroadcastAction;
   readonly force: boolean;
+  readonly delivery?: BroadcastDeliveryPrimitives;
 }
 
 export interface CreateBroadcastCampaignResult {
@@ -27,11 +39,12 @@ export interface CreateBroadcastCampaignResult {
   readonly targetCount: number;
 }
 
-interface CreateBroadcastCampaignDependencies {
-  readonly repository: Pick<BroadcastCampaignRepositoryPort, "createOrFind">;
-  readonly userDirectory: Pick<AdminUserDirectoryPort, "countTargets">;
-  readonly fanOutEnqueuer: Pick<BroadcastFanOutEnqueuerPort, "enqueueFanOut">;
+export interface CreateBroadcastCampaignDependencies {
   readonly unitOfWork: Pick<UnitOfWorkPort, "run">;
+  readonly campaignRepository: Pick<BroadcastCampaignRepositoryPort, "nextId" | "createOrFind">;
+  readonly userDirectory: Pick<AdminUserDirectoryReaderPort, "countTargets">;
+  readonly jobEnqueuer: Pick<BroadcastJobEnqueuerPort, "enqueueFanOut">;
+  readonly clock: ClockPort;
   readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
 
@@ -46,39 +59,46 @@ export class CreateBroadcastCampaignUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: CreateBroadcastCampaignInput): Promise<CreateBroadcastCampaignResult> {
-    const plan = BroadcastCampaign.planCreation({
-      requestId: input.requestId,
-      content: BroadcastContent.create(input),
-      targetFilter: input.targetFilter,
-      action: input.action,
-      force: input.force,
-      createdAt: new Date(),
+  async execute(command: CreateBroadcastCampaignCommand): Promise<CreateBroadcastCampaignResult> {
+    const { unitOfWork, campaignRepository, userDirectory, jobEnqueuer, clock, logger } =
+      this.#dependencies;
+    const draft = BroadcastCampaign.create({
+      id: await campaignRepository.nextId(),
+      requestId: command.requestId,
+      content: BroadcastContent.create({ title: command.title, body: command.body }),
+      localizedContent: BroadcastLocalizedContent.create(command.localizedContent),
+      targetFilter: command.targetFilter,
+      action: command.action ?? null,
+      force: command.force,
+      delivery:
+        command.delivery == null
+          ? BroadcastDelivery.immediate()
+          : BroadcastDelivery.create(command.delivery),
+      now: clock.now(),
     });
-    const result = await this.#dependencies.unitOfWork.run(async () => {
-      const targetCount = await this.#dependencies.userDirectory.countTargets(input.targetFilter);
-      const { campaign, created } = await this.#dependencies.repository.createOrFind(plan);
+
+    const result = await unitOfWork.run(async () => {
+      const targetCount = await userDirectory.countTargets(command.targetFilter);
+      const { campaign, created } = await campaignRepository.createOrFind(draft);
       if (!created) {
-        if (!campaign.isSameRequest(plan)) {
-          throw new ApplicationException(ErrorCode.ADMIN_1405, { requestId: input.requestId });
+        if (!campaign.isSameRequest(draft)) {
+          throw broadcastRequestConflict(command.requestId);
         }
         return { campaign, targetCount, created };
       }
       if (targetCount === 0) {
-        throw new ApplicationException(ErrorCode.ADMIN_1402, { targetFilter: input.targetFilter });
+        throw broadcastTargetsEmpty(command.targetFilter);
       }
-      await this.#dependencies.fanOutEnqueuer.enqueueFanOut({
-        campaignId: campaign.id,
-        cursorUserId: null,
-      });
+      await jobEnqueuer.enqueueFanOut({ campaignId: campaign.id, cursorUserId: null });
       return { campaign, targetCount, created };
     });
-    this.#dependencies.logger.log({
+
+    logger.log({
       event: result.created
         ? BroadcastLogEvent.BROADCAST_ACCEPTED
         : BroadcastLogEvent.BROADCAST_REPLAYED,
-      campaignId: result.campaign.id,
-      targetFilter: input.targetFilter,
+      campaignId: result.campaign.id.value,
+      targetFilter: command.targetFilter,
       targetCount: result.targetCount,
     });
     return { campaign: result.campaign, targetCount: result.targetCount };

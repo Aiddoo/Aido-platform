@@ -4,9 +4,10 @@ import { and, count, eq, exists, gte, lt, sql } from "drizzle-orm";
 
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { account, user } from "#api/platform/database/schema/index";
+import { instantToDate } from "#api/shared/domain/time/instant";
 
-import type {
-  SignupStats,
+import {
+  type SignupStats,
   SignupStatsReaderPort,
 } from "../../application/ports/signup-stats.reader.port.js";
 
@@ -16,10 +17,11 @@ import type {
  * Account.provider별 가입자 수와 총 사용자 수를 조회한다.
  */
 @Injectable()
-export class DrizzleSignupStatsReader implements SignupStatsReaderPort {
+export class DrizzleSignupStatsReader extends SignupStatsReaderPort {
   readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
 
   constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>) {
+    super();
     this.#txHost = txHost;
   }
 
@@ -27,7 +29,9 @@ export class DrizzleSignupStatsReader implements SignupStatsReaderPort {
     return this.#txHost.tx;
   }
 
-  async getSignupStats(startUtc: Date, endUtc: Date): Promise<SignupStats> {
+  async getSignupStats(start: Temporal.Instant, end: Temporal.Instant): Promise<SignupStats> {
+    const startUtc = instantToDate(start);
+    const endUtc = instantToDate(end);
     const signupsByProvider = await this.#db
       .select({ provider: account.provider, count: count() })
       .from(account)

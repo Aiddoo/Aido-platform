@@ -1,12 +1,14 @@
-import type { BroadcastResult } from "@aido/api";
-
 import type {
+  CreateBroadcastCampaignCommand,
   CreateBroadcastCampaignUseCase,
-  CreateBroadcastCampaignInput,
 } from "./create-broadcast-campaign.use-case.js";
 
-interface BroadcastNotificationDependencies {
+export interface BroadcastNotificationDependencies {
   readonly createBroadcastCampaign: Pick<CreateBroadcastCampaignUseCase, "execute">;
+}
+
+export interface BroadcastNotificationResult {
+  readonly targetCount: number;
 }
 
 /**
@@ -21,8 +23,8 @@ export class BroadcastNotificationUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: CreateBroadcastCampaignInput): Promise<BroadcastResult> {
-    const { targetCount } = await this.#dependencies.createBroadcastCampaign.execute(input);
-    return { successCount: targetCount, failCount: 0, totalTargets: targetCount };
+  async execute(command: CreateBroadcastCampaignCommand): Promise<BroadcastNotificationResult> {
+    const { targetCount } = await this.#dependencies.createBroadcastCampaign.execute(command);
+    return { targetCount };
   }
 }

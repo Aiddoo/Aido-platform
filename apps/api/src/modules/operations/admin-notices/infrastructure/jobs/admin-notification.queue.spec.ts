@@ -1,18 +1,14 @@
 import { JOB_POLLING_SECONDS } from "#api/shared/application/ports/index";
 
-import {
-  ADMIN_NOTIFICATION_JOB_POLICY,
-  ADMIN_NOTIFICATION_QUEUE,
-  ADMIN_NOTIFICATION_WORKER_POLICY,
-  AdminNotificationJobName,
-  AdminNotificationRuntimeJobSchema,
-  DAILY_SIGNUP_SUMMARY_SCHEDULE,
-} from "./admin-notification.queue.js";
+import { ADMIN_NOTIFICATION_QUEUE, AdminNotificationJobName } from "./admin-notification.queue.js";
 
-describe("관리자 알림 큐 계약", () => {
-  it("queue 이름과 운영 정책을 기존 계약으로 유지한다", () => {
-    expect(ADMIN_NOTIFICATION_QUEUE).toBe("admin-notification.v1");
-    expect(ADMIN_NOTIFICATION_JOB_POLICY).toEqual({
+const parse = (job: unknown) => ADMIN_NOTIFICATION_QUEUE.payloadSchema.parse(job);
+const safeParse = (job: unknown) => ADMIN_NOTIFICATION_QUEUE.payloadSchema.safeParse(job);
+
+describe("관리자 알림 큐 정의", () => {
+  it("queue 이름·재시도·worker·스케줄 key를 기존 운영 계약으로 유지한다", () => {
+    expect(ADMIN_NOTIFICATION_QUEUE.name).toBe("admin-notification.v1");
+    expect(ADMIN_NOTIFICATION_QUEUE.retry).toEqual({
       retryLimit: 2,
       retryDelaySeconds: 5,
       retryBackoff: true,
@@ -20,13 +16,20 @@ describe("관리자 알림 큐 계약", () => {
       retentionSeconds: 86_400,
       deleteAfterSeconds: 86_400,
     });
-    expect(ADMIN_NOTIFICATION_WORKER_POLICY).toEqual({
-      teamSize: 3,
-      // 관리자 공지는 사람이 기다리지 않는다 — 폴링은 예약 작업 주기를 따른다.
+    // 관리자 공지는 사람이 기다리지 않는다 — 폴링은 예약 작업 주기를 따른다
+    expect(ADMIN_NOTIFICATION_QUEUE.worker).toEqual({
+      localConcurrency: 3,
       pollingIntervalSeconds: JOB_POLLING_SECONDS.SCHEDULED,
     });
-    expect(DAILY_SIGNUP_SUMMARY_SCHEDULE.key).toBe("daily-signup-summary-scheduler");
-    expect(DAILY_SIGNUP_SUMMARY_SCHEDULE.timezone).toBe("Asia/Seoul");
+    expect(ADMIN_NOTIFICATION_QUEUE.schedules).toEqual([
+      {
+        key: "daily-signup-summary-scheduler",
+        cron: "10 0 * * *",
+        timezone: "Asia/Seoul",
+        missed: "once",
+        payload: { name: AdminNotificationJobName.DISPATCH_SUMMARY, data: {} },
+      },
+    ]);
   });
 
   it("새 형식의 구독 알림 잡을 그대로 받는다", () => {
@@ -50,11 +53,8 @@ describe("관리자 알림 큐 계약", () => {
       },
     };
 
-    // When
-    const parsed = AdminNotificationRuntimeJobSchema.parse(job);
-
     // Then
-    expect(parsed).toEqual(job);
+    expect(parse(job)).toEqual(job);
   });
 
   it("표시용 값이 모르는 값이면 잡을 버리지 않고 그 칸만 비운다", () => {
@@ -71,12 +71,8 @@ describe("관리자 알림 큐 계약", () => {
       },
     };
 
-    // When
-    const parsed = AdminNotificationRuntimeJobSchema.safeParse(job);
-
     // Then
-    expect(parsed.success && parsed.data.name === AdminNotificationJobName.SEND).toBe(true);
-    expect(parsed.data?.data).toEqual({
+    expect(parse(job).data).toEqual({
       channel: "payment",
       notice: {
         type: "subscription_event",
@@ -99,10 +95,7 @@ describe("관리자 알림 큐 계약", () => {
         },
       },
     ]) {
-      expect(
-        AdminNotificationRuntimeJobSchema.safeParse({ name: AdminNotificationJobName.SEND, data })
-          .success,
-      ).toBe(false);
+      expect(safeParse({ name: AdminNotificationJobName.SEND, data }).success).toBe(false);
     }
   });
 
@@ -116,14 +109,10 @@ describe("관리자 알림 큐 계약", () => {
       link: "https://app.revenuecat.com/projects/p/customers/u",
     };
 
-    // When
-    const parsed = AdminNotificationRuntimeJobSchema.parse({
-      name: AdminNotificationJobName.SEND,
-      data: { channel: "payment", notification },
-    });
-
     // Then
-    expect(parsed).toEqual({
+    expect(
+      parse({ name: AdminNotificationJobName.SEND, data: { channel: "payment", notification } }),
+    ).toEqual({
       name: AdminNotificationJobName.SEND,
       data: { channel: "payment", notice: { type: "message", message: notification } },
     });
@@ -144,11 +133,8 @@ describe("관리자 알림 큐 계약", () => {
       },
     };
 
-    // When
-    const parsed = AdminNotificationRuntimeJobSchema.parse(legacy);
-
     // Then
-    expect(parsed).toEqual({
+    expect(parse(legacy)).toEqual({
       name: AdminNotificationJobName.SEND,
       data: {
         channel: "admin",

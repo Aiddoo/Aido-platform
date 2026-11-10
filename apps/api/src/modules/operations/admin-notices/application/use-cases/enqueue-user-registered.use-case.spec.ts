@@ -1,36 +1,11 @@
-import type { AdminNoticeUserReaderPort } from "../ports/admin-notice-user.reader.port.js";
-import type {
-  AdminNotificationQueuePort,
-  NotificationChannel,
-} from "../ports/admin-notification-queue.port.js";
-import type { AdminNotice, AdminNoticeUser } from "../read-models/admin-notice.read-model.js";
+import { RecordingAdminNotificationQueue } from "#test/doubles/operations/recording-admin-notification-queue";
+import { StubAdminNoticeUserReader } from "#test/doubles/operations/stub-admin-notice-user.reader";
+import { SilentLogger } from "#test/doubles/platform/silent-logger";
+
+import type { AdminNoticeUser } from "../read-models/admin-notice.read-model.js";
 import type { UserRegisteredEventPayload } from "../read-models/user-registered.read-model.js";
 import { EnqueueUserRegisteredUseCase } from "./enqueue-user-registered.use-case.js";
 import { ResolveAdminNoticeUserUseCase } from "./resolve-admin-notice-user.use-case.js";
-
-class RecordingQueue implements AdminNotificationQueuePort {
-  readonly sent: { channel: NotificationChannel; notice: AdminNotice }[] = [];
-  failure: Error | null = null;
-
-  async enqueueSend(channel: NotificationChannel, notice: AdminNotice) {
-    if (this.failure != null) {
-      throw this.failure;
-    }
-    this.sent.push({ channel, notice });
-  }
-}
-
-class StubUserReader implements AdminNoticeUserReaderPort {
-  readonly #user: AdminNoticeUser | null;
-
-  constructor(user: AdminNoticeUser | null) {
-    this.#user = user;
-  }
-
-  async findById(): Promise<AdminNoticeUser | null> {
-    return this.#user;
-  }
-}
 
 const payload: UserRegisteredEventPayload = {
   userId: "user-1",
@@ -42,12 +17,12 @@ const payload: UserRegisteredEventPayload = {
 };
 
 function setup(user: AdminNoticeUser | null) {
-  const queue = new RecordingQueue();
+  const queue = new RecordingAdminNotificationQueue();
   const useCase = new EnqueueUserRegisteredUseCase({
     queue,
-    users: new ResolveAdminNoticeUserUseCase({
-      reader: new StubUserReader(user),
-      logger: { warn: () => {} },
+    resolveUser: new ResolveAdminNoticeUserUseCase({
+      userReader: new StubAdminNoticeUserReader(user),
+      logger: new SilentLogger(),
     }),
   });
   return { useCase, queue };

@@ -11,7 +11,7 @@ import {
   RetentionJobName,
 } from "#api/modules/notification/infrastructure/jobs/retention/retention-queue.constants";
 import { CreateBroadcastCampaignUseCase } from "#api/modules/operations/broadcasts/application/use-cases/create-broadcast-campaign.use-case";
-import { BROADCAST_FAN_OUT_QUEUE } from "#api/modules/operations/broadcasts/operations-broadcasts-jobs.public";
+import { BROADCAST_FAN_OUT_QUEUE } from "#api/modules/operations/broadcasts/infrastructure/jobs/broadcast-fan-out.queue";
 import { pushDispatch, pushToken, user, userPreference } from "#api/platform/database/schema/index";
 import type { EnqueueJobOptions } from "#api/shared/application/ports/job-runtime.port";
 import type { TestDatabaseClient } from "#test/setup/test-database";
@@ -190,7 +190,6 @@ describe("핵심 큐 프로세서 컴포넌트 테스트 (실제 PostgreSQL + pg
         title: "새 기능 안내",
         body: "지금 확인해 보세요.",
         targetFilter: "WITH_PUSH_TOKEN",
-        action: undefined,
         force: true,
       } as const;
       const startedAt = performance.now();
@@ -202,10 +201,12 @@ describe("핵심 큐 프로세서 컴포넌트 테스트 (실제 PostgreSQL + pg
       ]);
 
       // Then
-      expect(replay.campaign.id).toBe(first.campaign.id);
+      expect(replay.campaign.id.value).toBe(first.campaign.id.value);
       await harness.eventually(async () => {
         const [campaign, sentDispatches] = await Promise.all([
-          harness.client.query.broadcastCampaign.findFirst({ where: { id: first.campaign.id } }),
+          harness.client.query.broadcastCampaign.findFirst({
+            where: { id: first.campaign.id.value },
+          }),
           harness.client.$count(pushDispatch, eq(pushDispatch.status, "SENT")),
         ]);
         expect(campaign).toMatchObject({
@@ -216,7 +217,7 @@ describe("핵심 큐 프로세서 컴포넌트 테스트 (실제 PostgreSQL + pg
         expect(sentDispatches).toBe(recipientCount);
       }, BROADCAST_TIMEOUT_MS);
       const elapsedMs = Math.round(performance.now() - startedAt);
-      const fanOutJobs = await harness.boss.findJobs(BROADCAST_FAN_OUT_QUEUE);
+      const fanOutJobs = await harness.boss.findJobs(BROADCAST_FAN_OUT_QUEUE.name);
       expect(new Set(harness.pushProvider.getSentPayloads().map(({ token }) => token)).size).toBe(
         recipientCount,
       );

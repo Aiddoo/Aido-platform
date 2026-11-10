@@ -7,9 +7,9 @@ import { now } from "#api/shared/domain/date/utils/core";
 import { toISOString } from "#api/shared/domain/date/utils/format";
 
 import type { NotificationChannel } from "../../application/ports/admin-notification-queue.port.js";
-import type {
+import {
   AdminNotifierPort,
-  AdminNotifyOutcome,
+  type AdminNotifyOutcome,
 } from "../../application/ports/admin-notifier.port.js";
 import type { AdminNotice } from "../../application/read-models/admin-notice.read-model.js";
 import { AdminNoticeInfraLogEvent } from "../admin-notices-infra.log-events.js";
@@ -27,7 +27,7 @@ const HTTP_SERVER_ERROR = 500;
  *
  * @see https://discord.com/developers/docs/resources/webhook#execute-webhook
  */
-export class DiscordAdminNotifierAdapter implements AdminNotifierPort {
+export class DiscordAdminNotifierAdapter extends AdminNotifierPort {
   readonly #logger = new Logger(DiscordAdminNotifierAdapter.name);
   readonly #policy: OutboundPolicy;
 
@@ -39,6 +39,7 @@ export class DiscordAdminNotifierAdapter implements AdminNotifierPort {
     http: HttpClient,
     policies: OutboundPolicyRegistry,
   ) {
+    super();
     this.#webhookUrls = webhookUrls;
     this.#http = http;
     this.#policy = policies.get(DISCORD_WEBHOOK_POLICY);

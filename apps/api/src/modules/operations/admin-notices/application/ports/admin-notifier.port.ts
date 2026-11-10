@@ -10,8 +10,6 @@ export type AdminNotifyOutcome =
  * 관리자 알림 채널(Discord·Slack 등)의 벤더 중립 포트. 결과를 값으로 돌려주며 던지지 않는다.
  * 실패 결과에는 원문 오류를 싣지 않는다.
  */
-export interface AdminNotifierPort {
-  send(channel: NotificationChannel, notice: AdminNotice): Promise<AdminNotifyOutcome>;
+export abstract class AdminNotifierPort {
+  abstract send(channel: NotificationChannel, notice: AdminNotice): Promise<AdminNotifyOutcome>;
 }
-
-export const ADMIN_NOTIFIER = Symbol("ADMIN_NOTIFIER");
