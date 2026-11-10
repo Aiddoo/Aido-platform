@@ -17,7 +17,7 @@ describe('getReportToken', () => {
       REPORTED_TOKEN,
       REPORTED_TOKEN,
     ],
-    ['허용했는데 받은 토큰도 보고한 토큰도 없으면 null', 'PROVISIONAL', null, null, null],
+    ['허용했는데 한 번도 토큰을 받지 못했으면 null', 'PROVISIONAL', null, null, null],
     ['거절했으면 보고한 토큰이 있어도 null', 'DENIED', null, REPORTED_TOKEN, null],
   ] as const)('%s로 보고한다', (_case, status, issuedToken, reportedToken, expected) => {
     // Given

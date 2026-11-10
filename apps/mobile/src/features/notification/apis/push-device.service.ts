@@ -143,10 +143,6 @@ export class PushDeviceService {
         ? await this.#findRegistration()
         : EMPTY_PUSH_REGISTRATION;
     const token = PushRegistrationPolicy.getReportToken(registration, { permission, issuedToken });
-    // 보내지 않은 보고는 다음 복귀·토큰 변경 때 토큰을 다시 받아 보낸다
-    if (!PushPermissionPolicy.shouldReportPushDevice(permission, { token })) {
-      return ok(null);
-    }
     const deviceId = await this.#deviceIdService.get();
     const input = toReportPushDeviceInput({ permission, token });
     const timeZone = this.#getTimeZone();

@@ -195,26 +195,34 @@ describe('PushDeviceService.report', () => {
     );
   });
 
-  it('허용된 기기에서 토큰 발급이 실패하면 서버 토큰을 지우는 token null을 보내지 않고 다음 보고에서 다시 받는다', async () => {
+  it('한 번도 토큰을 받지 못한 허용 기기는 token null로 권한·시간대를 보고하고, 토큰을 받으면 다시 보고한다', async () => {
     // Given
     const gateway = createPushNotificationGatewayStub();
     gateway.getToken.mockRejectedValueOnce(new Error('offline'));
     const { service, httpClient, logger } = setup(gateway);
 
     // When
-    const skipped = await service.report();
+    const reported = await service.report();
     await service.report();
 
     // Then
-    expect(skipped).toEqual({ ok: true, value: null });
+    expect(reported.ok && reported.value).not.toBeNull();
     expect(logger.warn).toHaveBeenCalledWith('notification.push-token.issue-failed', {
       error: 'offline',
     });
-    expect(httpClient.put).toHaveBeenCalledTimes(1);
-    expect(httpClient.put).toHaveBeenCalledWith(
-      `v1/notifications/push-devices/${DEVICE_ID}`,
-      expect.objectContaining({ token: 'ExponentPushToken[device-123]' }),
-    );
+    expect(httpClient.put.mock.calls).toEqual([
+      [
+        `v1/notifications/push-devices/${DEVICE_ID}`,
+        expect.objectContaining({
+          permission: { status: 'GRANTED', canAskAgain: false },
+          token: null,
+        }),
+      ],
+      [
+        `v1/notifications/push-devices/${DEVICE_ID}`,
+        expect.objectContaining({ token: 'ExponentPushToken[device-123]' }),
+      ],
+    ]);
   });
 
   it('토큰 발급이 실패해도 서버에 보고한 토큰이 있으면 그 토큰으로 보고해 시간대를 맞추고 등록은 지킨다', async () => {
@@ -238,7 +246,7 @@ describe('PushDeviceService.report', () => {
     );
   });
 
-  it('업데이트 뒤 첫 실행에 토큰이 늦어도 저장된 기기 id로 같은 토큰을 다시 보고하고 등록을 지우는 요청은 보내지 않는다', async () => {
+  it('업데이트 뒤 첫 실행에 토큰이 늦어도 저장된 기기 id로 보고하고, 토큰을 받으면 같은 기기 id로 다시 보고하며 등록을 지우는 요청은 보내지 않는다', async () => {
     // Given
     // 이전 버전이 저장한 기기 id가 있고, 새 플랫폼 식별자는 다르다
     const deviceIdStore = createMemoryDeviceIdStore('ios_installed-before-upgrade');
@@ -270,7 +278,12 @@ describe('PushDeviceService.report', () => {
     await service.report();
 
     // Then
+    // 1.15.1 서버는 허용 상태의 token null에 이전 버전이 등록한 토큰을 지킨다
     expect(httpClient.put.mock.calls).toEqual([
+      [
+        'v1/notifications/push-devices/ios_installed-before-upgrade',
+        expect.objectContaining({ token: null }),
+      ],
       [
         'v1/notifications/push-devices/ios_installed-before-upgrade',
         expect.objectContaining({ token: 'ExponentPushToken[device-123]' }),

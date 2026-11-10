@@ -131,11 +131,6 @@ function canReceivePush(permission: PushPermission, { pushEnabled }: { pushEnabl
   return isPushDeliverable(permission) && pushEnabled;
 }
 
-/** 허용된 기기의 토큰 없는 보고는 1.15.0 서버가 등록된 토큰을 지워 기존 사용자의 푸시를 끊는다. 거절·미결정은 토큰 없이 권한만 보고한다 */
-function shouldReportPushDevice(permission: PushPermission, { token }: { token: string | null }) {
-  return !isPushDeliverable(permission) || token != null;
-}
-
 /** 알림을 받으려면 사용자가 다음에 무엇을 해야 하는지 정한다. 문구·화면은 컴포넌트가 정한다 */
 function getNextStep(
   permission: PushPermission,
@@ -155,7 +150,6 @@ export const PushPermissionPolicy = {
   isNotDetermined,
   canRequestSystemDialog,
   canReceivePush,
-  shouldReportPushDevice,
   getAskMoment,
   getOnboardingWindowEndsAt,
   getNextStep,
