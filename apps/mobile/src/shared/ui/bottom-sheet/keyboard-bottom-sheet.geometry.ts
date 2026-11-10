@@ -1,4 +1,5 @@
-import { HANDLE_HEIGHT } from './bottom-sheet.constants';
+import { HANDLE_HEIGHT, SHEET_CONTENT_PADDING } from './bottom-sheet.constants';
+import type { SheetHorizontalMargins } from './get-sheet-horizontal-margins';
 import { getSheetMaxHeight } from './get-sheet-layout';
 
 interface KeyboardHiddenHeightInput {
@@ -21,6 +22,13 @@ interface BodyHeightAboveKeyboardInput {
   reservedHeight: number;
 }
 
+interface KeyboardSheetContentPaddingInput {
+  /** 시트 바깥 좌우 여백(`getSheetLayout`) */
+  margins: SheetHorizontalMargins;
+  /** 창의 좌우 safe area */
+  safeAreaInsets: SheetHorizontalMargins;
+}
+
 interface KeyboardSheetTopInsetInput {
   /** 쉬는 시트의 위쪽 한계. 위쪽 safe area와 시트에 겹치는 occlusion 중 아래쪽(`getSheetLayout`) */
   topInset: number;
@@ -38,6 +46,17 @@ export function getKeyboardSheetTopInset({
   safeAreaTop,
 }: KeyboardSheetTopInsetInput): number {
   return Math.min(topInset, safeAreaTop);
+}
+
+/** 내용·footer의 좌우 여백. 시트 면은 레일까지 덮어도 내용은 시트가 덮은 가로 safe area만큼 더 들여, 키보드가 시트를 레일 상태 표시 위로 올려도 입력·버튼이 그 밑에 들지 않는다(접은 Duo 오른쪽 84) */
+export function getKeyboardSheetContentPadding({
+  margins,
+  safeAreaInsets,
+}: KeyboardSheetContentPaddingInput): SheetHorizontalMargins {
+  return {
+    left: SHEET_CONTENT_PADDING + Math.max(0, safeAreaInsets.left - margins.left),
+    right: SHEET_CONTENT_PADDING + Math.max(0, safeAreaInsets.right - margins.right),
+  };
 }
 
 /** 시트가 위쪽 한계에 닿아 바닥이 키보드에 가린 높이. 키보드가 없거나 시트가 키보드 위에 다 들어가면 null */

@@ -118,7 +118,7 @@ iPhone Duo(iOS 27.1)는 접힘·펼침 모두 탭 바와 상태 표시를 좌우
 - 고정 헤더·하단 버튼·빈/오류 상태·가상화 리스트 화면은 그 화면 루트 컨테이너의 `edges`에 `left`/`right`를 더한다.
 - `SafeAreaView`는 가장 가까운 `SafeAreaProvider`의 inset을 쓴다. 같은 축을 중첩하면 두 번 패딩되므로 한 곳에만 둔다. 네이티브 Stack 헤더, `KeyboardAdaptiveButton`, 바텀시트, 토스트는 스스로 처리한다.
 - `AdaptivePane`은 pane마다 provider를 두어 레일에 닿는 pane만 inset을 받는다.
-- 화면 가장자리까지 닿는 가로 스크롤은 레일 밑까지 밀리고 내용만 피한다. 스크롤 뷰를 inset 안에 가두지 않고 내용 앞뒤 여백에 `useSafeAreaInsets()`의 그쪽 inset을 더한다(RTL이면 left·right를 앞뒤로 바꿔 읽는다). 지금은 친구 줄(`FriendStrip`)이다. 페이지 넘김 목록(달력 `calendar-pager`, 결제 혜택 `benefit-carousel`)은 쪽 폭이 칸 폭과 같아야 해 inset 안에 두고, 카드 안 목록(시간별 예보)과 시트 안 칩 줄(`SheetChipRow`, 반복 프리셋)은 카드·시트 가장자리까지라 레일과 닿지 않는다. 시트는 레일을 덮어 그린다(`getSheetLayout`).
+- 화면 가장자리까지 닿는 가로 스크롤은 레일 밑까지 밀리고 내용만 피한다. 스크롤 뷰를 inset 안에 가두지 않고 내용 앞뒤 여백에 `useSafeAreaInsets()`의 그쪽 inset을 더한다(RTL이면 left·right를 앞뒤로 바꿔 읽는다). 지금은 친구 줄(`FriendStrip`)이다. 페이지 넘김 목록(달력 `calendar-pager`, 결제 혜택 `benefit-carousel`)은 쪽 폭이 칸 폭과 같아야 해 inset 안에 두고, 카드 안 목록(시간별 예보)과 시트 안 칩 줄(`SheetChipRow`, 반복 프리셋)은 카드·시트 가장자리까지라 레일과 닿지 않는다. 시트는 레일을 덮어 그리고, 키보드 시트의 내용·footer는 덮은 레일만큼 들인다(`getSheetLayout`, `getKeyboardSheetContentPadding`).
 - 화면 가장자리에 붙는 떠 있는 UI는 inset을 더한다. 토스트·Popover·Menu는 heroui가 `insets.left/right + 12`로 두고, 앱 토스트는 위 inset만 바꾼다. NativeTabs 위에서 `insets.bottom`에 탭 바 높이 상수를 더하지 않는다.
 - 마이 탭 `MyPageStack`은 Stack 바깥에 provider 하나를 두고, 화면 안 두 칸에는 닿는 가장자리의 inset만 `SafeAreaInsetsContext`로 넘긴다. 이 값은 JS context라 네이티브 `SafeAreaView`에는 닿지 않는다. 칸 안에서는 `SafeAreaScrollView`·`useSafeAreaInsets`로 피한다([adaptive-pane.md](../src/shared/ui/adaptive-pane/adaptive-pane.md#칸-안의-safe-area)).
 - Stack 화면 헤더는 네이티브 헤더와 `Stack.Toolbar` 네이티브 버튼을 쓴다. iOS가 레일·가로 바·Split View 바깥쪽으로 배치하고, 커스텀 뷰 버튼은 레일에서 빠진다([stack-header.md](../src/shared/ui/stack-header/stack-header.md)).

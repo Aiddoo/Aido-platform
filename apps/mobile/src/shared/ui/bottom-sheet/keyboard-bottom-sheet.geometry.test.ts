@@ -1,6 +1,7 @@
 import {
   getBodyHeightAboveKeyboard,
   getKeyboardHiddenHeight,
+  getKeyboardSheetContentPadding,
   getKeyboardSheetMaxHeight,
   getKeyboardSheetTopInset,
 } from './keyboard-bottom-sheet.geometry';
@@ -206,5 +207,37 @@ describe('getKeyboardSheetTopInset', () => {
 
     // Then
     expect(keyboardTopInset).toBe(layout.topInset);
+  });
+});
+
+describe('getKeyboardSheetContentPadding', () => {
+  it.each([
+    [
+      '레일을 다 덮은 접은 Duo 시트는 오른쪽에 레일 84만큼 더 들인다',
+      { left: 0, right: 0 },
+      { left: 0, right: 84 },
+      { left: 20, right: 104 },
+    ],
+    [
+      '가로 safe area가 없는 일반 iPhone은 지금처럼 20이다',
+      { left: 0, right: 0 },
+      { left: 0, right: 0 },
+      { left: 20, right: 20 },
+    ],
+    [
+      '레일과 일부만 겹친 가운데 시트는 겹친 만큼만 더 들인다',
+      { left: 70, right: 70 },
+      { left: 0, right: 84 },
+      { left: 20, right: 34 },
+    ],
+  ] as const)('%s', (_case, margins, safeAreaInsets, expected) => {
+    // Given
+    const layout = { margins, safeAreaInsets };
+
+    // When
+    const padding = getKeyboardSheetContentPadding(layout);
+
+    // Then
+    expect(padding).toEqual(expected);
   });
 });
