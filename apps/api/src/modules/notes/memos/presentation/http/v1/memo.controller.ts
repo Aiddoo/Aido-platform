@@ -30,7 +30,7 @@ import {
   ApiUnauthorizedError,
   SWAGGER_TAGS,
 } from "#api/platform/http/swagger/index";
-import { parseDateOnly } from "#api/shared/domain/date/utils/parse";
+import { plainDateToDate } from "#api/shared/domain/time/plain-date";
 
 import { ConvertMemoToTodoUseCase } from "../../../application/use-cases/convert-memo-to-todo.use-case.js";
 import { ConvertMemoToTodosUseCase } from "../../../application/use-cases/convert-memo-to-todos.use-case.js";
@@ -325,8 +325,9 @@ export class MemoController {
       timezone: tz,
       todo: {
         categoryId: dto.categoryId,
-        startDate: parseDateOnly(dto.startDate),
-        endDate: dto.endDate == null ? undefined : parseDateOnly(dto.endDate),
+        startDate: plainDateToDate(Temporal.PlainDate.from(dto.startDate)),
+        endDate:
+          dto.endDate == null ? undefined : plainDateToDate(Temporal.PlainDate.from(dto.endDate)),
         scheduledTime: dto.scheduledTime,
         isAllDay: dto.isAllDay,
         visibility: dto.visibility,
@@ -382,8 +383,9 @@ export class MemoController {
       todos: dto.todos.map((todo) => ({
         title: todo.title,
         categoryId: todo.categoryId,
-        startDate: parseDateOnly(todo.startDate),
-        endDate: todo.endDate == null ? undefined : parseDateOnly(todo.endDate),
+        startDate: plainDateToDate(Temporal.PlainDate.from(todo.startDate)),
+        endDate:
+          todo.endDate == null ? undefined : plainDateToDate(Temporal.PlainDate.from(todo.endDate)),
         scheduledTime: todo.scheduledTime,
         isAllDay: todo.isAllDay,
         visibility: todo.visibility,

@@ -4,8 +4,8 @@ import { isSemanticVersionAtLeast } from "@aido/api";
 import { IDEMPOTENCY_KEY_MAX_LENGTH, resolveSupportedLocale } from "@aido/api/vocabulary";
 import { match } from "ts-pattern";
 
-import { normalizeIanaTimezone } from "#api/shared/domain/date/utils/timezone";
 import { DEFAULT_LOCALE, SUPPORTED_LOCALES, type SupportedLocale } from "#api/shared/domain/locale";
+import { normalizeIanaTimezone } from "#api/shared/domain/time/time-zone-name";
 
 export type RequestClientPlatform = "IOS" | "ANDROID" | "WEB";
 
