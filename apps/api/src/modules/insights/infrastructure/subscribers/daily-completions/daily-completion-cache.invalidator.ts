@@ -5,7 +5,7 @@ import {
   TODO_CATEGORY_EVENTS,
   type TodoCategoryDeletedEvent,
   type TodoCategoryUpdatedEvent,
-} from "#api/modules/planning/planning-categories.public";
+} from "#api/modules/planning/categories/planning-categories.public";
 import {
   TODO_EVENTS,
   type TodoCategoryChangedEvent,

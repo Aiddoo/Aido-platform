@@ -15,7 +15,7 @@ import {
 } from "#api/modules/identity/auth/application/ports/user-provisioning-seeder.port";
 import { DrizzleUserConsentRepository } from "#api/modules/identity/preferences/infrastructure/persistence/drizzle-user-consent.repository";
 import { DrizzleUserPreferenceRepository } from "#api/modules/identity/preferences/infrastructure/persistence/drizzle-user-preference.repository";
-import { DefaultTodoCategorySeeder } from "#api/modules/planning/infrastructure/seeders/categories/default-todo-category.seeder";
+import { DefaultTodoCategoryProvisionerAdapter } from "#api/modules/planning/categories/infrastructure/adapters/default-todo-category-provisioner.adapter";
 import { instantToDate } from "#api/shared/domain/time/instant";
 
 function dateOrUndefined(instant: Temporal.Instant | undefined): Date | undefined {
@@ -27,7 +27,7 @@ export const provisioningSeederTestProvider: Provider = {
   useFactory: (
     consentRepository: DrizzleUserConsentRepository,
     preferenceRepository: DrizzleUserPreferenceRepository,
-    defaultTodoCategorySeeder: DefaultTodoCategorySeeder,
+    defaultTodoCategorySeeder: DefaultTodoCategoryProvisionerAdapter,
   ): UserProvisioningSeederPort => ({
     async seedDefaultSettings(userId: string, consent: ProvisioningConsent): Promise<void> {
       await consentRepository.create(userId, {
@@ -49,6 +49,6 @@ export const provisioningSeederTestProvider: Provider = {
   inject: [
     DrizzleUserConsentRepository,
     DrizzleUserPreferenceRepository,
-    DefaultTodoCategorySeeder,
+    DefaultTodoCategoryProvisionerAdapter,
   ],
 };

@@ -5,16 +5,16 @@ import { omit } from "es-toolkit";
 import {
   TODO_CATEGORY_REPOSITORY,
   type TodoCategoryRepositoryPort,
-} from "#api/modules/planning/application/ports/categories/todo-category.repository.port";
-import { DeleteTodoCategory } from "#api/modules/planning/application/use-cases/categories/delete-todo-category.use-case";
-import { GetTodoCategories } from "#api/modules/planning/application/use-cases/categories/get-todo-categories.use-case";
-import { GetTodoCategoryResourceLimit } from "#api/modules/planning/application/use-cases/categories/get-todo-category-resource-limit.use-case";
-import { GetTodoCategory } from "#api/modules/planning/application/use-cases/categories/get-todo-category.use-case";
-import { UpdateTodoCategory } from "#api/modules/planning/application/use-cases/categories/update-todo-category.use-case";
+} from "#api/modules/planning/categories/application/ports/todo-category.repository.port";
+import { DeleteTodoCategoryUseCase } from "#api/modules/planning/categories/application/use-cases/delete-todo-category.use-case";
+import { GetTodoCategoryResourceLimitUseCase } from "#api/modules/planning/categories/application/use-cases/get-todo-category-resource-limit.use-case";
+import { GetTodoCategoryUseCase } from "#api/modules/planning/categories/application/use-cases/get-todo-category.use-case";
+import { ListTodoCategoriesUseCase } from "#api/modules/planning/categories/application/use-cases/list-todo-categories.use-case";
+import { UpdateTodoCategoryUseCase } from "#api/modules/planning/categories/application/use-cases/update-todo-category.use-case";
 import {
   TODO_CATEGORY_PROVISIONER,
   type TodoCategoryProvisionerPort,
-} from "#api/modules/planning/planning-categories.public";
+} from "#api/modules/planning/categories/planning-categories.public";
 import { createEntityId } from "#api/platform/database/entity-id";
 import { todo, user } from "#api/platform/database/schema/index";
 import { UNIT_OF_WORK, type UnitOfWorkPort } from "#api/shared/application/ports/index";
@@ -31,14 +31,14 @@ const at = new Date("2027-02-01T12:00:00.000Z");
 describe("Planning 카테고리 상태·조회·트랜잭션 (실제 PostgreSQL)", () => {
   let context: E2eTestContext;
   let repository: TodoCategoryRepositoryPort;
-  let update: UpdateTodoCategory;
+  let update: UpdateTodoCategoryUseCase;
   let userId: string;
   let categoryId: number;
 
   beforeAll(async () => {
     context = await createE2eApp();
     repository = context.module.get(TODO_CATEGORY_REPOSITORY);
-    update = context.module.get(UpdateTodoCategory);
+    update = context.module.get(UpdateTodoCategoryUseCase);
   });
 
   beforeEach(async () => {
@@ -71,7 +71,7 @@ describe("Planning 카테고리 상태·조회·트랜잭션 (실제 PostgreSQL)
 
   it("없는 카테고리와 다른 사용자 카테고리는 각각 기존 404·403 업무 오류를 유지한다", async () => {
     // Given
-    const getCategory = context.module.get(GetTodoCategory);
+    const getCategory = context.module.get(GetTodoCategoryUseCase);
 
     // When
     const [missing, foreign] = await Promise.allSettled([
@@ -92,7 +92,7 @@ describe("Planning 카테고리 상태·조회·트랜잭션 (실제 PostgreSQL)
 
   it("이름만 수정하면 색상을 유지하고 warm 목록 캐시도 갱신한다", async () => {
     // Given
-    const getCategories = context.module.get(GetTodoCategories);
+    const getCategories = context.module.get(ListTodoCategoriesUseCase);
     expect((await getCategories.execute({ userId }))[0]?.name).toBe("기존");
 
     // When
@@ -106,7 +106,7 @@ describe("Planning 카테고리 상태·조회·트랜잭션 (실제 PostgreSQL)
 
   it("유효한 이름과 잘못된 색상을 함께 수정하면 DB와 목록 캐시는 이전 상태를 유지한다", async () => {
     // Given
-    const getCategories = context.module.get(GetTodoCategories);
+    const getCategories = context.module.get(ListTodoCategoriesUseCase);
     const before = await getCategories.execute({ userId });
 
     // When
@@ -213,7 +213,7 @@ describe("Planning 카테고리 상태·조회·트랜잭션 (실제 PostgreSQL)
 
     // When
     await context.module
-      .get(DeleteTodoCategory)
+      .get(DeleteTodoCategoryUseCase)
       .execute({ userId, categoryId, moveToCategoryId: target.id });
 
     // Then
@@ -239,13 +239,13 @@ describe("Planning 카테고리 상태·조회·트랜잭션 (실제 PostgreSQL)
     );
     expect(await repository.findByIdAndUserId(categoryId, userId)).toBeNull();
     expect(
-      await context.module.get(GetTodoCategory).execute({ id: target.id, userId }),
+      await context.module.get(GetTodoCategoryUseCase).execute({ id: target.id, userId }),
     ).toMatchObject({ todoCount: 2 });
   });
 
   it("자원 한도 조회는 사용자 카테고리 수와 기존 무료 한도를 반환한다", async () => {
     // Given
-    const getLimit = context.module.get(GetTodoCategoryResourceLimit);
+    const getLimit = context.module.get(GetTodoCategoryResourceLimitUseCase);
 
     // When
     const limit = await getLimit.execute({ userId });

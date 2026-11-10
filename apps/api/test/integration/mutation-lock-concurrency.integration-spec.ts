@@ -19,11 +19,11 @@ import { ENTITLEMENT_CACHE } from "#api/modules/access/application/ports/entitle
 import { ENTITLEMENT_DATABASE } from "#api/modules/access/application/ports/entitlement/entitlement-state.port";
 import { EntitlementCacheAdapter } from "#api/modules/access/infrastructure/adapters/entitlement/entitlement-cache.adapter";
 import { DrizzleEntitlementReader } from "#api/modules/access/infrastructure/persistence/entitlement/drizzle-entitlement.reader";
-import type { TodoCategoryCachePort } from "#api/modules/planning/application/ports/categories/todo-category-cache.port";
-import { CreateTodoCategory } from "#api/modules/planning/application/use-cases/categories/create-todo-category.use-case";
-import { ReorderTodoCategory } from "#api/modules/planning/application/use-cases/categories/reorder-todo-category.use-case";
-import { TodoCategoryLimitReaderAdapter } from "#api/modules/planning/infrastructure/adapters/categories/todo-category-limit-reader.adapter";
-import { DrizzleTodoCategoryRepository } from "#api/modules/planning/infrastructure/persistence/categories/drizzle-todo-category.repository";
+import type { TodoCategoryCachePort } from "#api/modules/planning/categories/application/ports/todo-category-cache.port";
+import { CreateTodoCategoryUseCase } from "#api/modules/planning/categories/application/use-cases/create-todo-category.use-case";
+import { ReorderTodoCategoryUseCase } from "#api/modules/planning/categories/application/use-cases/reorder-todo-category.use-case";
+import { TodoCategoryLimitReaderAdapter } from "#api/modules/planning/categories/infrastructure/adapters/todo-category-limit-reader.adapter";
+import { DrizzleTodoCategoryRepository } from "#api/modules/planning/categories/infrastructure/persistence/drizzle-todo-category.repository";
 import { type CheerLimitReaderPort } from "#api/modules/social/application/ports/cheers/cheer-limit-reader.port";
 import type { CheerNotifierPort } from "#api/modules/social/application/ports/cheers/cheer-notifier.port";
 import type { NudgeLimitReaderPort } from "#api/modules/social/application/ports/nudges/nudge-limit-reader.port";
@@ -1035,13 +1035,13 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
       lockKey,
       CONCURRENCY,
     );
-    const useCase = new CreateTodoCategory({
+    const useCase = new CreateTodoCategoryUseCase({
       repository: categoryRepository,
       cache: createTodoCategoryCache(),
       limitReader: categoryLimitReader,
       mutationLock: coordinatedLock,
       unitOfWork: categoryUow,
-      logger: mock<ConstructorParameters<typeof CreateTodoCategory>[0]["logger"]>(),
+      logger: mock<ConstructorParameters<typeof CreateTodoCategoryUseCase>[0]["logger"]>(),
     });
 
     // When
@@ -1105,12 +1105,12 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
       lockKey,
       CONCURRENCY,
     );
-    const useCase = new ReorderTodoCategory({
+    const useCase = new ReorderTodoCategoryUseCase({
       repository: categoryRepository,
       cache: createTodoCategoryCache(),
       mutationLock: coordinatedLock,
       unitOfWork: categoryUow,
-      logger: mock<ConstructorParameters<typeof ReorderTodoCategory>[0]["logger"]>(),
+      logger: mock<ConstructorParameters<typeof ReorderTodoCategoryUseCase>[0]["logger"]>(),
     });
 
     // When

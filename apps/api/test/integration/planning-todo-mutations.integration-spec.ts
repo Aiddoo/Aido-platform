@@ -4,7 +4,7 @@ import { TODO_SERIES_LIMITS } from "@aido/api/vocabulary";
 import { eq, sql } from "drizzle-orm";
 import { omit } from "es-toolkit";
 
-import { DeleteTodoCategory } from "#api/modules/planning/application/use-cases/categories/delete-todo-category.use-case";
+import { DeleteTodoCategoryUseCase } from "#api/modules/planning/categories/application/use-cases/delete-todo-category.use-case";
 import { TodoId } from "#api/modules/planning/shared/domain/todo-id.vo";
 import { TodoToggledEvent } from "#api/modules/planning/shared/domain/todo-toggled.event";
 import type { StagedTodoCreatorPort } from "#api/modules/planning/todos/application/ports/staged-todo-creator.port";
@@ -441,7 +441,7 @@ describe("Todo 변경 원자성·Drizzle 쿼리 실행 수 (실제 PostgreSQL)",
       const { series } = await startSeries(source, { frequency: "DAILY", end: { type: "NEVER" } });
       // When
       await context.module
-        .get(DeleteTodoCategory)
+        .get(DeleteTodoCategoryUseCase)
         .execute({ userId, categoryId: source, moveToCategoryId: categoryId });
       // Then
       const moved = await client.query.todoSeries.findFirst({ where: { id: series?.id } });
@@ -456,7 +456,7 @@ describe("Todo 변경 원자성·Drizzle 쿼리 실행 수 (실제 PostgreSQL)",
       await client.delete(todo).where(eq(todo.categoryId, source));
       // When
       const outcome = context.module
-        .get(DeleteTodoCategory)
+        .get(DeleteTodoCategoryUseCase)
         .execute({ userId, categoryId: source });
       // Then
       await expect(outcome).rejects.toMatchObject({ errorCode: ErrorCode.TODO_CATEGORY_0855 });
@@ -471,7 +471,7 @@ describe("Todo 변경 원자성·Drizzle 쿼리 실행 수 (실제 PostgreSQL)",
       });
       await client.delete(todo).where(eq(todo.categoryId, source));
       // When
-      await context.module.get(DeleteTodoCategory).execute({ userId, categoryId: source });
+      await context.module.get(DeleteTodoCategoryUseCase).execute({ userId, categoryId: source });
       // Then
       expect(
         await client.query.todoSeries.findFirst({ where: { id: series?.id } }),

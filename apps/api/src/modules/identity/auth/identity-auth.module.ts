@@ -13,7 +13,7 @@ import {
   AdminEventNotifier,
   OperationsNotificationsModule,
 } from "#api/modules/operations/operations-notifications.public";
-import { PlanningCategoriesModule } from "#api/modules/planning/planning-categories.public";
+import { PlanningCategoriesModule } from "#api/modules/planning/categories/planning-categories.public";
 import { jwtConfig } from "#api/platform/config/jwt.config";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
 

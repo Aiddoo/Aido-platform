@@ -8,7 +8,7 @@ import {
 import { IdentityUserAccessModule } from "#api/modules/identity/identity-user-access.public";
 import { NotificationDeliveryModule } from "#api/modules/notification/notification-delivery.public";
 
-import { PlanningCategoriesModule } from "../planning/planning-categories.public.js";
+import { PlanningCategoriesModule } from "../planning/categories/planning-categories.public.js";
 import { PlanningTodosModule } from "../planning/todos/planning-todos.public.js";
 import { AiAssistanceGenerationModule } from "./ai-assistance-generation.module.js";
 import { AI_PARSING_PROVIDERS } from "./ai-assistance-parsing.providers.js";

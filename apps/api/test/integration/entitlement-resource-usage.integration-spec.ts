@@ -3,11 +3,11 @@ import { PLAN_CATALOG } from "@aido/api/vocabulary";
 import { eq } from "drizzle-orm";
 
 import { GetEntitlementSnapshotUseCase } from "#api/modules/identity/users/application/use-cases/get-entitlement-snapshot.use-case";
-import { CreateTodoCategory } from "#api/modules/planning/application/use-cases/categories/create-todo-category.use-case";
+import { CreateTodoCategoryUseCase } from "#api/modules/planning/categories/application/use-cases/create-todo-category.use-case";
 import {
   TODO_CATEGORY_COUNT_READER,
   type TodoCategoryCountReaderPort,
-} from "#api/modules/planning/planning-categories.public";
+} from "#api/modules/planning/categories/planning-categories.public";
 import { SendFriendRequest } from "#api/modules/social/application/use-cases/friends/send-friend-request.use-case";
 import {
   FRIEND_COUNT_READER,
@@ -108,7 +108,7 @@ describe("권한 스냅샷의 친구·카테고리 개수는 한도 검사와 �
     const count = await categoryCountReader.countCategories(userId);
     const { features } = await readSnapshot();
     const creation = context.module
-      .get(CreateTodoCategory)
+      .get(CreateTodoCategoryUseCase)
       .execute({ userId, name: "새 카테고리", color: "#112233" });
 
     // Then

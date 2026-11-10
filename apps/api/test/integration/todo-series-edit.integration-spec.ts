@@ -10,7 +10,7 @@ import {
   TODO_SERIES_OWNER_DORMANCY,
   type TodoSeriesOwnerDormancyPort,
 } from "#api/modules/notification/application/ports/reminders/todo-series-owner-dormancy.port";
-import { DeleteTodoCategory } from "#api/modules/planning/application/use-cases/categories/delete-todo-category.use-case";
+import { DeleteTodoCategoryUseCase } from "#api/modules/planning/categories/application/use-cases/delete-todo-category.use-case";
 import { MaterializeDueTodoSeriesUseCase } from "#api/modules/planning/todo-series/application/use-cases/materialize-due-todo-series.use-case";
 import {
   UpdateFollowingTodosUseCase,
@@ -1420,7 +1420,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
             { timeout: 5000, interval: 10 },
           );
         const deleting = context.module
-          .get(DeleteTodoCategory, { strict: false })
+          .get(DeleteTodoCategoryUseCase, { strict: false })
           .execute({ userId, categoryId, moveToCategoryId });
         await waitForWaiters(1);
         const contending = contender();

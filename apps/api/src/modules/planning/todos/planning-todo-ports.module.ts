@@ -6,7 +6,7 @@ import { provideUseCase } from "#api/platform/di/provide-use-case";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { DomainEventPublisherPort } from "#api/shared/application/ports/domain-event-publisher.port";
 
-import { PlanningCategoriesModule } from "../planning-categories.module.js";
+import { PlanningCategoriesModule } from "../categories/planning-categories.module.js";
 import { CategoryOwnershipPort } from "./application/ports/category-ownership.port.js";
 import { TodoCachePort } from "./application/ports/todo-cache.port.js";
 import { TodoOwnerTimezonePort } from "./application/ports/todo-owner-timezone.port.js";

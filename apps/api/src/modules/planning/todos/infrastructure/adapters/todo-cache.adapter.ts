@@ -4,7 +4,7 @@ import { friendTodoSchema } from "@aido/api";
 import { Injectable } from "@nestjs/common";
 import { z } from "zod";
 
-import { TodoCategoryCacheKey } from "#api/modules/planning/infrastructure/cache/categories/todo-category-cache.keyspace";
+import { TodoCategoryCacheKey } from "#api/modules/planning/categories/infrastructure/cache/todo-category-cache.keyspace";
 import { CacheService } from "#api/platform/cache/cache.service";
 import type { CursorPaginatedResponse } from "#api/shared/application/pagination/index";
 

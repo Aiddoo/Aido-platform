@@ -47,7 +47,7 @@ import { DrizzleUserRepository } from "#api/modules/identity/users/infrastructur
 import { NotificationQueueService } from "#api/modules/notification/notification-delivery-jobs.public";
 import { TransactionalEmailSender } from "#api/modules/notification/notification-email.public";
 import { AdminEventNotifier } from "#api/modules/operations/operations-notifications.public";
-import { DefaultTodoCategorySeeder } from "#api/modules/planning/infrastructure/seeders/categories/default-todo-category.seeder";
+import { DefaultTodoCategoryProvisionerAdapter } from "#api/modules/planning/categories/infrastructure/adapters/default-todo-category-provisioner.adapter";
 import { CacheService } from "#api/platform/cache/cache.service";
 import { CACHE_SERVICE } from "#api/platform/cache/interfaces/cache.interface";
 import { jwtConfig } from "#api/platform/config/jwt.config";
@@ -185,7 +185,7 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
         },
         DrizzleUserConsentRepository,
         DrizzleUserPreferenceRepository,
-        DefaultTodoCategorySeeder,
+        DefaultTodoCategoryProvisionerAdapter,
         provisioningSeederTestProvider,
         retentionEnrollerTestProvider,
         sessionPushDeviceReleaserTestProvider,

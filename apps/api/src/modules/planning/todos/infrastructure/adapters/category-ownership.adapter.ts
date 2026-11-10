@@ -3,7 +3,7 @@ import { Inject, Injectable } from "@nestjs/common";
 import {
   TODO_CATEGORY_READER,
   type TodoCategoryReaderPort,
-} from "#api/modules/planning/planning-categories.public";
+} from "#api/modules/planning/categories/planning-categories.public";
 
 import type { CategoryOwnershipPort } from "../../application/ports/category-ownership.port.js";
 

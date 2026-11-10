@@ -7,7 +7,7 @@ import {
 import {
   TODO_CATEGORY_READER,
   type TodoCategoryReaderPort,
-} from "#api/modules/planning/planning-categories.public";
+} from "#api/modules/planning/categories/planning-categories.public";
 import {
   TODO_PLAN_READER,
   type TodoPlanReaderPort,

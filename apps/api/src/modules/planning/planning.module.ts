@@ -1,6 +1,6 @@
 import { Module } from "@nestjs/common";
 
-import { PlanningCategoriesModule } from "./planning-categories.module.js";
+import { PlanningCategoriesModule } from "./categories/planning-categories.module.js";
 import { PlanningTodoSeriesModule } from "./todo-series/planning-todo-series.module.js";
 import { PlanningTodosModule } from "./todos/planning-todos.module.js";
 

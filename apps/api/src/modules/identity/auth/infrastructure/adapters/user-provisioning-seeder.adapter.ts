@@ -7,7 +7,7 @@ import {
 import {
   TODO_CATEGORY_PROVISIONER,
   type TodoCategoryProvisionerPort,
-} from "#api/modules/planning/planning-categories.public";
+} from "#api/modules/planning/categories/planning-categories.public";
 import type { SupportedLocale } from "#api/shared/domain/locale";
 import { instantToDate } from "#api/shared/domain/time/instant";
 

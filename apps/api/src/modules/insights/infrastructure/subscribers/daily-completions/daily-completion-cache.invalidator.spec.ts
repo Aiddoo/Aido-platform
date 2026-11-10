@@ -2,7 +2,7 @@ import { Logger } from "@nestjs/common";
 import { EventEmitter2, EventEmitterModule } from "@nestjs/event-emitter";
 import { Test, type TestingModule } from "@nestjs/testing";
 
-import { TODO_CATEGORY_EVENTS } from "#api/modules/planning/planning-categories.public";
+import { TODO_CATEGORY_EVENTS } from "#api/modules/planning/categories/planning-categories.public";
 import { TODO_EVENTS, TodoCreatedEvent } from "#api/modules/planning/todos/planning-todos.public";
 import { createInsightsFixture, INSIGHTS_TIME } from "#test/fixtures/insights.fixture";
 
