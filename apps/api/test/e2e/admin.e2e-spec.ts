@@ -370,4 +370,26 @@ describe("관리자 E2E", () => {
       expect(missing.body.error.code).toBe("ADMIN_1404");
     });
   });
+
+  describe("GET /v1/admin/growth/summary — 성장 지표", () => {
+    it("활성 사용자 수와 함께 stickiness(DAU/MAU %)를 돌려준다", async () => {
+      // Given
+      const admin = await createAdminUser("admin-growth@example.com", "Test1234!");
+
+      // When
+      const response = await request(ctx.app.getHttpServer())
+        .get("/v1/admin/growth/summary")
+        .set("Authorization", `Bearer ${admin.accessToken}`)
+        .expect(200);
+
+      // Then
+      expect(response.body.data).toEqual(
+        expect.objectContaining({
+          dau: expect.any(Number),
+          mau: expect.any(Number),
+          stickiness: expect.any(Number),
+        }),
+      );
+    });
+  });
 });
