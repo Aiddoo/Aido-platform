@@ -2,7 +2,6 @@ export { AiAssistanceGenerationModule } from "./ai-assistance-generation.module.
 export { AiGeneratorPort, type AiTaskId } from "./application/ports/ai-generator.port.js";
 export {
   type UserLocalePreference,
-  USER_LOCALE_PREFERENCE_READER,
   UserLocalePreferenceReaderPort,
 } from "./application/ports/user-locale-preference.reader.port.js";
 export { resolveRequestLocale } from "./application/request-locale.reader.js";

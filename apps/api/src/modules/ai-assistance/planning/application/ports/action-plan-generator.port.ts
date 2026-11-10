@@ -90,6 +90,3 @@ export abstract class ActionPlanGeneratorPort {
     input: VoiceNoteDigestGenerationInput,
   ): Promise<VoiceNoteDigestGeneration>;
 }
-
-/** 옛 토큰. voice가 클래스 토큰으로 옮기면 지운다(같은 인스턴스 별칭으로 바인딩) */
-export const ACTION_PLAN_GENERATOR = Symbol("ACTION_PLAN_GENERATOR");

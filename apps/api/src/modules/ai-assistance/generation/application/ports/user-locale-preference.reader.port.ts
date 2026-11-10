@@ -9,6 +9,3 @@ export interface UserLocalePreference {
 export abstract class UserLocalePreferenceReaderPort {
   abstract read(userId: string): Promise<UserLocalePreference>;
 }
-
-/** 옛 토큰. voice가 클래스 토큰으로 옮기면 지운다(같은 인스턴스 별칭으로 바인딩) */
-export const USER_LOCALE_PREFERENCE_READER = Symbol("USER_LOCALE_PREFERENCE_READER");

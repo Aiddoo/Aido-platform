@@ -104,25 +104,3 @@ export class QuotaChargedGenerationAdapter extends ChargedGenerationPort {
     }
   }
 }
-
-// 옛 함수 진입점. voice가 ChargedGenerationPort로 옮기면 지운다
-export function settleChargedGeneration<T>(
-  dependencies: QuotaChargedGenerationDependencies,
-  input: SettleChargedGenerationInput<T>,
-): Promise<ChargedGenerationResult<T>> {
-  return new QuotaChargedGenerationAdapter(dependencies).settle(input);
-}
-
-export function commitOrWarn(
-  dependencies: QuotaChargedGenerationDependencies,
-  input: { readonly reservation: QuotaReservation; readonly task: AiTaskId },
-): Promise<boolean> {
-  return new QuotaChargedGenerationAdapter(dependencies).commit(input);
-}
-
-export function readFeatureQuotaOrNull(
-  dependencies: QuotaChargedGenerationDependencies,
-  input: { readonly userId: string; readonly feature: MeteredFeatureKey; readonly task: AiTaskId },
-): Promise<MeteredFeatureQuota | null> {
-  return new QuotaChargedGenerationAdapter(dependencies).readFeatureQuota(input);
-}

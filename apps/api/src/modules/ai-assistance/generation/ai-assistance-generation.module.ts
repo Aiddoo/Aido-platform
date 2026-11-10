@@ -8,10 +8,7 @@ import { NotificationDeliveryModule } from "#api/modules/notification/notificati
 import { aiAssistanceGenerationConfig } from "./ai-assistance-generation.config.js";
 import { AI_ASSISTANCE_GENERATION_PROVIDERS } from "./ai-assistance-generation.providers.js";
 import { AiGeneratorPort } from "./application/ports/ai-generator.port.js";
-import {
-  USER_LOCALE_PREFERENCE_READER,
-  UserLocalePreferenceReaderPort,
-} from "./application/ports/user-locale-preference.reader.port.js";
+import { UserLocalePreferenceReaderPort } from "./application/ports/user-locale-preference.reader.port.js";
 import { ScheduledAiConsentReader } from "./application/scheduled-ai-consent.reader.js";
 
 /**
@@ -26,11 +23,6 @@ import { ScheduledAiConsentReader } from "./application/scheduled-ai-consent.rea
     NotificationDeliveryModule,
   ],
   providers: [...AI_ASSISTANCE_GENERATION_PROVIDERS],
-  exports: [
-    AiGeneratorPort,
-    UserLocalePreferenceReaderPort,
-    USER_LOCALE_PREFERENCE_READER,
-    ScheduledAiConsentReader,
-  ],
+  exports: [AiGeneratorPort, UserLocalePreferenceReaderPort, ScheduledAiConsentReader],
 })
 export class AiAssistanceGenerationModule {}

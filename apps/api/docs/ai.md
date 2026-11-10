@@ -54,7 +54,7 @@ AI 작업의 프롬프트 버전·설정·평가를 바꿀 때 참고한다. 코
 ### 계획 생성과 적용(voice)
 
 - `ai-assistance-planning.public.ts`의 `ActionPlanGeneratorPort`가 프롬프트·동의 범위·정규화·일정 계산을 맡고, 사용량·겹침 판정·저장은 `modules/voice`(slice `action-plans`·`voice-notes`)가 맡는다. 서버는 녹음도 전사 글자도 저장하지 않는다.
-- 사용량: `ChargedPlanRunnerPort`가 호출 전 `reserve`, 차감 유지면 `commit`, 아니면 `refund`를 부른다. 빠른 계획은 결과가 할 일뿐이라 할 일이 있어야 차감하고 0개면 환불한다. 녹음 정리는 요약이나 핵심 내용도 결과이므로 할 일이 0개여도 VOICE_NOTE 1회를 확정(`charged: true`)하고, 실패·시간 초과·전 업체 장애와 요약·핵심 내용·계획이 모두 빈 결과(AI_1302)만 환불한다. 환불을 마친 실패만 `{ charged: false }`를 싣고, 환불에 실패하면 차감 여부를 말하지 않는다. 성공 응답의 `charged`는 실제 상태다. 확정을 저장하지 못하면 결과는 주되 `charged: false`(`ai.generation.commit-missed`)이고 그 예약은 정리 잡이 돌려준다. 확정 뒤 한도를 읽지 못하면 결과를 살리고 `featureQuota: null`이다. 이 흐름은 파싱과 계획 생성이 `settleChargedGeneration` 하나를 쓴다.
+- 사용량: `ChargedPlanRunnerPort`가 호출 전 `reserve`, 차감 유지면 `commit`, 아니면 `refund`를 부른다. 빠른 계획은 결과가 할 일뿐이라 할 일이 있어야 차감하고 0개면 환불한다. 녹음 정리는 요약이나 핵심 내용도 결과이므로 할 일이 0개여도 VOICE_NOTE 1회를 확정(`charged: true`)하고, 실패·시간 초과·전 업체 장애와 요약·핵심 내용·계획이 모두 빈 결과(AI_1302)만 환불한다. 환불을 마친 실패만 `{ charged: false }`를 싣고, 환불에 실패하면 차감 여부를 말하지 않는다. 성공 응답의 `charged`는 실제 상태다. 확정을 저장하지 못하면 결과는 주되 `charged: false`(`ai.generation.commit-missed`)이고 그 예약은 정리 잡이 돌려준다. 확정 뒤 한도를 읽지 못하면 결과를 살리고 `featureQuota: null`이다. 이 흐름은 파싱과 계획 생성이 `ChargedGenerationPort.settle` 하나를 쓴다.
 - 같은 `Idempotency-Key`: 처리 중이면 AI_1314, 내용(SHA-256 지문)이나 작업이 다르면 AI_1318, 확정된 요청은 AI를 부르지 않고 프로세스 메모리에 10분 둔 결과를 돌려준다. 결과를 Redis·DB에 두지 않으므로 재시작이나 10분 경과(FIFO 200건 초과 포함)로 결과를 잃으면 같은 행을 다시 열어(`reopen`, COMMITTED → RESERVED, 사용량은 그대로) AI를 다시 부른다. 추가 차감은 없다. 동시에 온 재요청은 AI_1314다. 다시 만들기가 실패하거나 빈 결과면 평소처럼 환불해 `{ charged: false }`다. 재생성 비용은 차감되지 않지만 사용자 일 예산(`AI_BUDGET_USER_DAILY_USD`)에 잡힌다. 성공 응답은 `charged: true`다(이번 호출로 더 차감하지 않았어도 이 요청의 차감 1회가 그대로다). 다시 만든 결과가 할 일 0개면(NO_ACTION) 환불해 `charged: false`다. 환불된 키(할 일 0개 NO_ACTION, 빈 결과 AI_1302, 실패)를 같은 키로 다시 보내면 같은 행에서 다시 차감하고 생성하므로 순 차감은 많아야 1회다. 그 사이 한도가 찼으면 차감 없이 AI_1303이다.
 - 메모 나누기(`POST /v1/ai/parse-memo`)의 `Idempotency-Key`는 선택이다. 없으면(출시 앱) 요청마다 차감한다. 있으면 같은 원장 규칙(AI_1314·AI_1318, 추가 차감 없는 `reopen`)을 따르되, 메모 결과를 프로세스 메모리에 두지 않아 확정된 요청의 재시도도 AI를 다시 부른다.
 - 녹음 길이: 앱이 보낸 `durationSeconds`가 등급별 `perUse.maxSeconds` + 30초를 넘으면 1.15.1은 거절하지 않고 운영 경보(`voice.note-digest.duration-over-limit`)만 올린다. 1.15.2부터 거절한다.
@@ -173,4 +173,4 @@ Sentry AI span에는 입력·지시·응답 문장을 싣지 않는다([보안](
 
 ## 전환 중
 
-ai-assistance는 slice 구조로 옮겼다(`architecture.ratchet.json`). 남은 것: 리포트 큐는 아직 `JobRuntimePort`(defineQueue 전), parse-todo·parse-memo의 application 다섯 파일은 정리 결과를 공개 계약(`parsedTodoDataSchema`)으로 검증해 줄 단위 lint 예외가 있다(ParsedTodo read model로 옮길 때 지운다). voice가 클래스 토큰으로 옮길 때까지 옛 Symbol 토큰(`USER_LOCALE_PREFERENCE_READER`·`ACTION_PLAN_GENERATOR`)과 parsing 공개 문의 옛 함수 별칭을 둔다.
+ai-assistance는 slice 구조로 옮겼다(`architecture.ratchet.json`). 남은 것: 리포트 큐는 아직 `JobRuntimePort`(defineQueue 전), parse-todo·parse-memo의 application 다섯 파일은 정리 결과를 공개 계약(`parsedTodoDataSchema`)으로 검증해 줄 단위 lint 예외가 있다(ParsedTodo read model로 옮길 때 지운다).
