@@ -51,7 +51,8 @@ settings.local.json
 # Editors & OS
 .idea/
 .cursor/
-.zed/
+.zed/*
+!.zed/settings.json
 .vscode/*
 !.vscode/extensions.json
 !.vscode/settings.json
