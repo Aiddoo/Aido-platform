@@ -144,7 +144,7 @@ push data의 `navigation`은 알림을 눌렀을 때 열 화면을 `kind`로 판
 
 ## 날씨 알림
 
-`WeatherMorningStrategy`·`WeatherEveningStrategy`는 앱 날씨 화면과 같은 v2(WeatherKit) 리포트를 weather Context의 공개 capability(`WEATHER_REPORT_READER` → notification의 `REMINDER_WEATHER_REPORT_READER`)로 읽는다. v1 KMA 격자 예보는 쓰지 않으므로 격자가 없는 해외 위치(1.14.0+)도 날씨 알림을 받는다.
+`WeatherMorningStrategy`·`WeatherEveningStrategy`는 앱 날씨 화면과 같은 v2(WeatherKit) 리포트를 weather Context의 공개 capability(`WeatherReportReaderPort` → notification의 `ReminderWeatherReportReaderPort`)로 읽는다. v1 KMA 격자 예보는 쓰지 않으므로 격자가 없는 해외 위치(1.14.0+)도 날씨 알림을 받는다.
 
 1. 대상: 설정 시각이 맞고 날씨 알림을 켠 활성 사용자 중 위치가 있고 오늘 같은 알림을 받지 않은 사용자만. 이 단계 뒤에만 리포트·할 일을 조회하므로 대상이 아닌 사용자로 WeatherKit을 부르지 않는다. 날씨 알림은 야간 예외 타입이다.
 2. 리포트: `GetWeatherReport`와 같은 `WeatherReportReader.readReport`(geohash5 칸 캐시 `weather:v2:report:<칸>:<scope>`, `CacheService.wrap` single-flight, 평소 30분·2시간 안 강수 10분 TTL → 실패 시 6시간 latest 스냅샷 → 칸별 1분 공급자 실패 캐시)를 쓴다. 같은 칸·언어 요청은 한 번만 읽고 칸은 4개씩 동시에 읽는다. 화면과 캐시를 공유하므로 **리포트용 WeatherKit `weather` 호출은 칸·scope(특보가 있는 칸만 언어별, 나머지는 공유)마다 리포트 TTL당 최대 1회(프로세스별 single-flight)**이며 알림 사용자 수에 비례하지 않는다. 이와 별도로 가용성 조회는 칸마다 7일, 출처 표기(attribution)는 언어마다 7일 캐시하고, 둘 다 실패하면 1분 동안 다시 부르지 않는다(가용성은 기본 dataset, 표기는 로고 없이 진행).

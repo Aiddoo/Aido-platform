@@ -97,5 +97,5 @@ RevenueCat이 보내는 모양은 `subscriptions/infrastructure/adapters/revenue
 billing은 slice 둘이다. `premium-grants`는 보상 기간 Aggregate와 프리미엄 판단·projection(`ProjectPremiumAccessUseCase`)을 소유하고, `subscriptions`는 스토어 구독 체인·웹훅·RevenueCat ACL·상태 대조·체험/갱신 안내를 소유한다. 두 slice가 함께 쓰는 순수 판단(프리미엄 규칙, 요금제, 안내 기간, 스토어 갱신 유예)은 `billing/shared`에 있다. Nest 모듈은 `subscriptions → premium-grants` 한 방향이다.
 
 - 모든 시각은 `Temporal.Instant`이고 UseCase는 `ClockPort`로 지금을 읽는다. 처리기·스케줄이 시각을 따로 넘기는 UseCase(`Sweep*`·`Reconcile*`·`Revoke*`·안내)는 `now` 명령 필드를 받는다.
-- 다른 Context에 여는 문: `billing-subscriptions.public`(모듈·`PremiumAccessReaderPort`·`PremiumGranterPort`와 옛 Symbol 별칭 `PREMIUM_ACCESS_READER`·`PREMIUM_GRANTER`, 시각은 Date), `billing-subscriptions-entitlement.public`(스토어 엔타이틀먼트 끝 판단과 `STORE_RENEWAL_GRACE_MS`).
+- 다른 Context에 여는 문: `billing-subscriptions.public`(모듈·`PremiumAccessReaderPort`·`PremiumGranterPort`, 시각은 Date), `billing-subscriptions-entitlement.public`(스토어 엔타이틀먼트 끝 판단과 `STORE_RENEWAL_GRACE_MS`).
 - 큐 `premium-grant-sweep.v1`(10분, `missed: skip`)과 `store-subscription-reconcile.v1`은 `defineQueue`로 정의한다. 대조 큐는 스케줄이 없고 웹훅이 넣는다. payload는 배포 순간 쌓인 작업과 같은 `{ name, data }` 모양이다. 형식이 틀린 작업은 큐 어댑터가 그 작업만 실패시킨다.
