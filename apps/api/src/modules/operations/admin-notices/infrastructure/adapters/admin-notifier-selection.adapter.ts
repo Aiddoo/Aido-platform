@@ -1,12 +1,17 @@
 import { type HttpClient } from "@nestjs/http-client";
 
 import type { AdminNotifierProviderId } from "#api/platform/config/schemas/webhook.schema";
-import { TypedConfigService } from "#api/platform/config/services/config.service";
+import type { TypedConfigService } from "#api/platform/config/services/config.service";
 import type { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
 
 import type { AdminNotifierPort } from "../../application/ports/admin-notifier.port.js";
 import { DiscordAdminNotifierAdapter } from "./discord-admin-notifier.adapter.js";
 import { LogAdminNotifierAdapter } from "./log-admin-notifier.adapter.js";
+
+type AdminNotifierConfig = Pick<
+  TypedConfigService,
+  "adminNotifierProvider" | "discordSignupWebhookUrl" | "discordPaymentWebhookUrl"
+>;
 
 /** 어댑터를 더하려면 AdminNotifierProviderId와 이 표에 한 줄씩 더한다. */
 const adapters = {
@@ -20,14 +25,14 @@ const adapters = {
 } satisfies Record<
   AdminNotifierProviderId,
   (
-    config: TypedConfigService,
+    config: AdminNotifierConfig,
     http: HttpClient,
     policies: OutboundPolicyRegistry,
   ) => AdminNotifierPort
 >;
 
 export function createAdminNotifier(
-  config: TypedConfigService,
+  config: AdminNotifierConfig,
   http: HttpClient,
   policies: OutboundPolicyRegistry,
 ): AdminNotifierPort {

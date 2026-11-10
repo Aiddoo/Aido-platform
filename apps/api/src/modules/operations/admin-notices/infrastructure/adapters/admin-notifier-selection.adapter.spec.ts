@@ -1,8 +1,6 @@
 import { HttpClient } from "@nestjs/http-client";
-import { mock } from "vitest-mock-extended";
 
 import type { AdminNotifierProviderId } from "#api/platform/config/schemas/webhook.schema";
-import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
 import { RecordingOperationalAlert } from "#test/mocks/recording-operational-alert";
 
@@ -18,11 +16,11 @@ describe("createAdminNotifier", () => {
     "ADMIN_NOTIFIER_PROVIDER=%s이면 해당 어댑터를 만든다",
     (provider, adapter) => {
       // Given
-      const config = mock<TypedConfigService>({
+      const config = {
         adminNotifierProvider: provider,
         discordSignupWebhookUrl: undefined,
         discordPaymentWebhookUrl: undefined,
-      });
+      };
 
       // When
       const notifier = createAdminNotifier(
