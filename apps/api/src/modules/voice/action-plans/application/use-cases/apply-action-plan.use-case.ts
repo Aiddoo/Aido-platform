@@ -129,6 +129,7 @@ export class ApplyActionPlanUseCase {
   ): Promise<AppliedActionPlan> {
     const { todoCreator, memoWriter, afterCommit, repository, clock } = this.#dependencies;
     const { userId, timezone, source, sourceMemoId, idempotencyKey } = command;
+    const owner = UserId.reconstitute(userId);
     const todos: TodoReadModel[] = [];
     for (const todo of plan.todos) {
       const staged = await todoCreator.stage({
@@ -150,14 +151,14 @@ export class ApplyActionPlanUseCase {
     }
     // 새 메모보다 먼저 지워 원본 메모가 개수 상한을 채우고 있어도 저장할 수 있게 한다.
     if (sourceMemoId != null) {
-      await memoWriter.delete(sourceMemoId, userId);
+      await memoWriter.delete(MemoId.reconstitute(sourceMemoId), owner);
     }
     const { memoContent } = plan;
     const memo =
-      memoContent == null ? null : await memoWriter.create({ userId, content: memoContent });
+      memoContent == null ? null : await memoWriter.create({ userId: owner, content: memoContent });
     await repository.save(
       PlanApplication.create({
-        userId: UserId.reconstitute(userId),
+        userId: owner,
         idempotencyKey,
         requestHash,
         source,
@@ -174,7 +175,10 @@ export class ApplyActionPlanUseCase {
     if (memoId == null) {
       return;
     }
-    if ((await this.#dependencies.memoWriter.findById(memoId, userId)) == null) {
+    const { memoWriter } = this.#dependencies;
+    if (
+      (await memoWriter.findById(MemoId.reconstitute(memoId), UserId.reconstitute(userId))) == null
+    ) {
       throw sourceMemoNotFound(memoId);
     }
   }
@@ -186,7 +190,7 @@ export class ApplyActionPlanUseCase {
     const { memoId } = application;
     const [todos, memo] = await Promise.all([
       todoReader.findManyByIds(userId, application.todoIds),
-      memoId == null ? null : memoWriter.findById(memoId, userId),
+      memoId == null ? null : memoWriter.findById(MemoId.reconstitute(memoId), application.userId),
     ]);
     return { todos, memo };
   }

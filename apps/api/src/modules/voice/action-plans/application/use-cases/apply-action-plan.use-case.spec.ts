@@ -106,13 +106,13 @@ function setup(ownedCategoryIds: readonly number[] = [1]) {
     memoWriter: {
       create: async (input) => {
         order.push("memo");
-        createdMemos.push({ userId: input.userId, content: input.content });
+        createdMemos.push({ userId: input.userId.value, content: input.content });
         return memo;
       },
-      findById: async (memoId) => (memoId === MISSING_MEMO_ID ? null : memo),
+      findById: async (memoId) => (memoId.value === MISSING_MEMO_ID ? null : memo),
       delete: async (memoId) => {
         order.push("deleteMemo");
-        deletedMemoIds.push(memoId);
+        deletedMemoIds.push(memoId.value);
       },
     },
     todoReader: {
