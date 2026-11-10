@@ -133,8 +133,11 @@ describe("댓글 상태 HTTP 회귀", () => {
     // Given
     const owner = await context.helpers.createVerifiedUser("comment-focus@test.com", "Test1234!");
     const todoId = await createTodo(owner.accessToken);
+    // 작성 시각은 ClockPort가 정해 가짜 시계에서도 쓴 순서가 남도록 요청마다 1ms씩 옮긴다
     const rootId = await writeComment(owner.accessToken, todoId, "뿌리 댓글");
+    vi.setSystemTime(new Date(COMMENT_TIME.getTime() + 1));
     const childId = await writeComment(owner.accessToken, todoId, "중간 답글", rootId);
+    vi.setSystemTime(new Date(COMMENT_TIME.getTime() + 2));
     const leafId = await writeComment(owner.accessToken, todoId, "마지막 답글", childId);
     vi.setSystemTime(new Date(COMMENT_TIME.getTime() + 1000));
     const otherRootId = await writeComment(owner.accessToken, todoId, "다른 대화");
