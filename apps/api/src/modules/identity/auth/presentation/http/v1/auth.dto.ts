@@ -36,7 +36,6 @@ import {
   userProfileSchema,
   verifyEmailSchema,
 } from "@aido/api/contracts/auth";
-import { entitlementSnapshotSchema } from "@aido/api/contracts/entitlement";
 import type { z } from "zod";
 
 export const RegisterDto = registerSchema.meta({ id: "RegisterDto" });
@@ -143,7 +142,3 @@ export const DeleteAccountResponseDto = deleteAccountResponseSchema.meta({
   id: "DeleteAccountResponseDto",
 });
 export type DeleteAccountResponseDto = z.infer<typeof DeleteAccountResponseDto>;
-export const EntitlementSnapshotDto = entitlementSnapshotSchema.meta({
-  id: "EntitlementSnapshotDto",
-});
-export type EntitlementSnapshotDto = z.infer<typeof EntitlementSnapshotDto>;

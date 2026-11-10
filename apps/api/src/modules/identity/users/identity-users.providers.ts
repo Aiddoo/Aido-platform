@@ -8,9 +8,7 @@ import {
   type TodoCommentAccountCleanupPort,
 } from "#api/modules/engagement/comments/engagement-comments.public";
 import { NotificationAccountCleanup } from "#api/modules/notification/notification-delivery.public";
-import { TODO_CATEGORY_COUNT_READER } from "#api/modules/planning/categories/planning-categories.public";
 import { CHEER_USAGE_READER } from "#api/modules/social/cheers/social-cheers.public";
-import { FRIEND_COUNT_READER } from "#api/modules/social/friends/social-friends.public";
 import { NUDGE_USAGE_READER } from "#api/modules/social/nudges/social-nudges.public";
 import { loggerFor, provideUseCase } from "#api/platform/di/provide-use-case";
 import {
@@ -34,7 +32,6 @@ import {
 } from "./application/ports/account-cleanup.port.js";
 import { DeleteAccountUseCase } from "./application/use-cases/delete-account.use-case.js";
 import { GetCurrentUserUseCase } from "./application/use-cases/get-current-user.use-case.js";
-import { GetEntitlementSnapshotUseCase } from "./application/use-cases/get-entitlement-snapshot.use-case.js";
 import { PurgeDeletedAccountsUseCase } from "./application/use-cases/purge-deleted-accounts.use-case.js";
 import { UpdateProfileUseCase } from "./application/use-cases/update-profile.use-case.js";
 
@@ -93,34 +90,6 @@ const getCurrentUserProvider: FactoryProvider<GetCurrentUserUseCase> = {
     }),
 };
 
-type GetEntitlementSnapshotDependencies = ConstructorParameters<
-  typeof GetEntitlementSnapshotUseCase
->[0];
-const getEntitlementSnapshotProvider: FactoryProvider<GetEntitlementSnapshotUseCase> = {
-  provide: GetEntitlementSnapshotUseCase,
-  inject: [
-    QUOTA_LEDGER,
-    CHEER_USAGE_READER,
-    NUDGE_USAGE_READER,
-    FRIEND_COUNT_READER,
-    TODO_CATEGORY_COUNT_READER,
-  ],
-  useFactory: (
-    quotaLedger: GetEntitlementSnapshotDependencies["quotaLedger"],
-    cheerUsageReader: GetEntitlementSnapshotDependencies["cheerUsageReader"],
-    nudgeUsageReader: GetEntitlementSnapshotDependencies["nudgeUsageReader"],
-    friendCountReader: GetEntitlementSnapshotDependencies["friendCountReader"],
-    categoryCountReader: GetEntitlementSnapshotDependencies["categoryCountReader"],
-  ) =>
-    new GetEntitlementSnapshotUseCase({
-      quotaLedger,
-      cheerUsageReader,
-      nudgeUsageReader,
-      friendCountReader,
-      categoryCountReader,
-    }),
-};
-
 export const purgeDeletedAccountsProvider = provideUseCase(PurgeDeletedAccountsUseCase, {
   userRepository: AuthUserRepositoryPort,
   unitOfWork: UnitOfWorkPort,
@@ -150,7 +119,6 @@ export const IDENTITY_USERS_PROVIDERS = [
   accountTodoCommentCleanupProvider,
   accountUsageCleanupProvider,
   getCurrentUserProvider,
-  getEntitlementSnapshotProvider,
   purgeDeletedAccountsProvider,
   provideUseCase(UpdateProfileUseCase, {
     userRepository: AuthUserRepositoryPort,

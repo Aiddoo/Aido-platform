@@ -2,7 +2,7 @@ import { ErrorCode } from "@aido/api/errors";
 import { PLAN_CATALOG } from "@aido/api/vocabulary";
 import { eq } from "drizzle-orm";
 
-import { GetEntitlementSnapshotUseCase } from "#api/modules/identity/users/application/use-cases/get-entitlement-snapshot.use-case";
+import { GetEntitlementSnapshotUseCase } from "#api/modules/access/entitlements/application/use-cases/get-entitlement-snapshot.use-case";
 import { CreateTodoCategoryUseCase } from "#api/modules/planning/categories/application/use-cases/create-todo-category.use-case";
 import {
   TODO_CATEGORY_COUNT_READER,

@@ -6,8 +6,7 @@ import { ApiBearerAuth, ApiHeader, ApiTags } from "@nestjs/swagger";
 import {
   CurrentUser,
   type CurrentUserPayload,
-} from "#api/modules/identity/auth/presentation/http/decorators/current-user.decorator";
-import { GetEntitlementSnapshotUseCase } from "#api/modules/identity/users/application/use-cases/get-entitlement-snapshot.use-case";
+} from "#api/modules/identity/identity-auth-http.public";
 import { Timezone } from "#api/platform/http/decorators/index";
 import {
   ApiDoc,
@@ -16,7 +15,8 @@ import {
   SWAGGER_TAGS,
 } from "#api/platform/http/swagger/index";
 
-import { EntitlementSnapshotDto } from "../../../../auth/presentation/http/v1/auth.dto.js";
+import { GetEntitlementSnapshotUseCase } from "../../../application/use-cases/get-entitlement-snapshot.use-case.js";
+import { EntitlementSnapshotDto } from "./entitlement.dto.js";
 
 const PERIOD_LABEL = { day: "하루", month: "월" } as const;
 

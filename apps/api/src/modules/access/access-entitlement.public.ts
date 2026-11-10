@@ -23,4 +23,5 @@ export {
   isExemptFromDormancy,
   isExemptFromUserSpendLimit,
 } from "./entitlements/domain/entitlement.domain-service.js";
-export { AccessModule } from "./access.module.js";
+// 아직 옮기지 않은 소비 Context가 쓰는 옛 이름. 원장 모듈이 권한 모듈까지 다시 내보낸다
+export { AccessQuotasModule as AccessModule } from "./quotas/access-quotas.module.js";

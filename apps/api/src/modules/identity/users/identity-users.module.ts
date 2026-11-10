@@ -4,9 +4,7 @@ import { AccessModule } from "#api/modules/access/access-entitlement.public";
 import { BillingSubscriptionsModule } from "#api/modules/billing/subscriptions/billing-subscriptions.public";
 import { EngagementCommentsModule } from "#api/modules/engagement/comments/engagement-comments.public";
 import { NotificationDeliveryModule } from "#api/modules/notification/notification-delivery.public";
-import { PlanningCategoriesModule } from "#api/modules/planning/categories/planning-categories.public";
 import { SocialCheersModule } from "#api/modules/social/cheers/social-cheers.public";
-import { SocialFriendsModule } from "#api/modules/social/friends/social-friends.public";
 import { SocialNudgesModule } from "#api/modules/social/nudges/social-nudges.public";
 
 import { IdentityAuthModule } from "../auth/identity-auth.module.js";
@@ -15,7 +13,6 @@ import { IDENTITY_USERS_PROVIDERS } from "./identity-users.providers.js";
 import { AccountPurgeProcessor } from "./infrastructure/jobs/account-purge.processor.js";
 import { AccountPurgeScheduler } from "./infrastructure/jobs/account-purge.scheduler.js";
 import { LastActiveInterceptor } from "./presentation/http/interceptors/last-active.interceptor.js";
-import { EntitlementController } from "./presentation/http/v1/entitlement.controller.js";
 import { UserAccountController } from "./presentation/http/v1/user-account.controller.js";
 
 // users → auth 한 방향이다. auth는 이 모듈이 아니라 IdentityUserAccessModule만 import한다
@@ -27,12 +24,10 @@ import { UserAccountController } from "./presentation/http/v1/user-account.contr
     BillingSubscriptionsModule,
     EngagementCommentsModule,
     NotificationDeliveryModule,
-    PlanningCategoriesModule,
     SocialCheersModule,
-    SocialFriendsModule,
     SocialNudgesModule,
   ],
-  controllers: [UserAccountController, EntitlementController],
+  controllers: [UserAccountController],
   providers: [
     ...IDENTITY_USERS_PROVIDERS,
     AccountPurgeScheduler,
