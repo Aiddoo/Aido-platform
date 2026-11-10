@@ -2,6 +2,7 @@ import type { AiDataSharingConsentVersion } from "@aido/api/vocabulary";
 import { Logger } from "@nestjs/common";
 import { z } from "zod";
 
+import { DateClock } from "#test/doubles/platform/date-clock";
 import { ok, status, StubProviderAdapter } from "#test/mocks/ai-provider-adapter.stub";
 import { createAiSdkGenerator, createAiTestConfig } from "#test/mocks/ai-provider-http.stub";
 import { InMemoryUsageMeterAdapter } from "#test/mocks/in-memory-usage-meter.adapter";
@@ -70,7 +71,12 @@ describe("AiSpendBudgetAdapter — 기동 검사", () => {
     // Given
     const config = createAiTestConfig({ AI_MODEL_ANTHROPIC: "claude-unknown-9" });
     const alert = new RecordingOperationalAlert();
-    const guard = new AiSpendBudgetAdapter(config, new InMemoryUsageMeterAdapter(), alert);
+    const guard = new AiSpendBudgetAdapter(
+      config,
+      new InMemoryUsageMeterAdapter(),
+      alert,
+      new DateClock(),
+    );
     // When
     guard.onModuleInit();
     // Then
@@ -89,6 +95,7 @@ describe("AiSpendBudgetAdapter — 기동 검사", () => {
       createAiTestConfig(),
       new InMemoryUsageMeterAdapter(),
       alert,
+      new DateClock(),
     );
     // When
     guard.onModuleInit();

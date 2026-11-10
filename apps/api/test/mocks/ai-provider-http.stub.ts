@@ -14,6 +14,7 @@ import type { EnvConfig } from "#api/platform/config/schemas/index";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
 import type { UsageMeterPort } from "#api/platform/metering/interfaces/usage-meter.interface";
 import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
+import { DateClock } from "#test/doubles/platform/date-clock";
 import { InMemoryUsageMeterAdapter } from "#test/mocks/in-memory-usage-meter.adapter";
 
 import { RecordingOperationalAlert } from "./recording-operational-alert.js";
@@ -79,7 +80,7 @@ export function createAiSdkGenerator(
     config,
     new AiProviderCatalog(adapters),
     registry,
-    new AiSpendBudgetAdapter(config, meter, alert),
+    new AiSpendBudgetAdapter(config, meter, alert, new DateClock()),
   );
   return { generator, alert, meter, registry };
 }

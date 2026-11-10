@@ -47,6 +47,7 @@ import type { NormalizedActionPlan } from "#api/modules/ai-assistance/planning/d
 import { AI_THINKING_LEVELS } from "../../src/platform/config/schemas/ai.schema.js";
 import { TypedConfigService } from "../../src/platform/config/services/config.service.js";
 import { OutboundPolicyRegistry } from "../../src/platform/resilience/outbound-policy.registry.js";
+import { SystemClock } from "../../src/platform/time/system-clock.js";
 import type { OperationalAlertPort } from "../../src/shared/application/ports/operational-alert.port.js";
 import {
   GOLDEN_MEMO_CATEGORY_ID,
@@ -410,7 +411,7 @@ function createGenerator(task: GoldenTask, provider: string | undefined) {
       config,
       new AiProviderCatalog(adapters),
       new OutboundPolicyRegistry(alert),
-      new AiSpendBudgetAdapter(config, new InMemoryUsageMeterAdapter(), alert),
+      new AiSpendBudgetAdapter(config, new InMemoryUsageMeterAdapter(), alert, new SystemClock()),
     ),
     available,
     thinking: config.ai.tasks[task].thinking,

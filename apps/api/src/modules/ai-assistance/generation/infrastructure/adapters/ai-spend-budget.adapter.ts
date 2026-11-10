@@ -9,12 +9,13 @@ import {
   type UsageMeterPort,
 } from "#api/platform/metering/interfaces/usage-meter.interface";
 import { crossedThresholds, usagePeriod } from "#api/platform/metering/usage-period";
+import { ClockPort } from "#api/shared/application/ports/clock.port";
 import {
   OPERATIONAL_ALERT,
   type OperationalAlertPort,
 } from "#api/shared/application/ports/operational-alert.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
-import { now } from "#api/shared/domain/date/utils/core";
+import { instantToDate } from "#api/shared/domain/time/instant";
 
 import { AiAlertKey } from "../../application/ai-generation.alerts.js";
 import {
@@ -57,15 +58,18 @@ export class AiSpendBudgetAdapter implements OnModuleInit {
   readonly #config: TypedConfigService;
   readonly #meter: Pick<UsageMeterPort, "add" | "read">;
   readonly #alert: OperationalAlertPort;
+  readonly #clock: ClockPort;
 
   constructor(
     config: TypedConfigService,
     @Inject(USAGE_METER) meter: Pick<UsageMeterPort, "add" | "read">,
     @Inject(OPERATIONAL_ALERT) alert: OperationalAlertPort,
+    clock: ClockPort,
   ) {
     this.#config = config;
     this.#meter = meter;
     this.#alert = alert;
+    this.#clock = clock;
   }
 
   /** 가격표에 없는 모델은 호출마다 최고 단가로 잡혀 예산이 빠르게 닳는다. 전체 중단 전에 기동 때 알린다. */
@@ -103,7 +107,7 @@ export class AiSpendBudgetAdapter implements OnModuleInit {
     if (microUsd <= 0) {
       return;
     }
-    const at = now();
+    const at = instantToDate(this.#clock.now());
     const day = usagePeriod.day(at);
     const month = usagePeriod.month(at);
     try {
@@ -127,7 +131,7 @@ export class AiSpendBudgetAdapter implements OnModuleInit {
   }
 
   async #readSpend(userId: string | null): Promise<AiSpend> {
-    const at = now();
+    const at = instantToDate(this.#clock.now());
     const day = usagePeriod.day(at);
     const month = usagePeriod.month(at);
     try {

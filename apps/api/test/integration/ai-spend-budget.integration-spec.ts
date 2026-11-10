@@ -9,6 +9,7 @@ import {
   USAGE_SUBJECT_ALL,
   type UsageMeterPort,
 } from "#api/platform/metering/interfaces/usage-meter.interface";
+import { DateClock } from "#test/doubles/platform/date-clock";
 import { UserFixture } from "#test/fixtures/index";
 import { RecordingOperationalAlert } from "#test/mocks/recording-operational-alert";
 import { createTestClient } from "#test/setup/database-context";
@@ -57,7 +58,7 @@ describe("AI 비용 예산 누적 (실제 PostgreSQL)", () => {
   it("동시에 끝난 요청의 비용을 전역 일·월·사용자 일 행에 빠짐없이 더하고 경보는 한 번만 올린다", async () => {
     // Given
     const alert = new RecordingOperationalAlert();
-    const budget = new AiSpendBudgetAdapter(config, meter, alert);
+    const budget = new AiSpendBudgetAdapter(config, meter, alert, new DateClock());
     // When
     await Promise.all(
       Array.from({ length: 20 }, (_, index) =>
@@ -83,11 +84,18 @@ describe("AI 비용 예산 누적 (실제 PostgreSQL)", () => {
 
   it("재시작한 서버도 저장된 사용량으로 예산을 판단한다", async () => {
     // Given
-    await new AiSpendBudgetAdapter(config, meter, new RecordingOperationalAlert()).record(
-      "user-a",
-      250_000,
+    await new AiSpendBudgetAdapter(
+      config,
+      meter,
+      new RecordingOperationalAlert(),
+      new DateClock(),
+    ).record("user-a", 250_000);
+    const restarted = new AiSpendBudgetAdapter(
+      config,
+      meter,
+      new RecordingOperationalAlert(),
+      new DateClock(),
     );
-    const restarted = new AiSpendBudgetAdapter(config, meter, new RecordingOperationalAlert());
     // When
     const limited = await restarted.decide({ taskClass: "interactive", userId: "user-a" });
     const other = await restarted.decide({ taskClass: "interactive", userId: "user-b" });
@@ -98,7 +106,12 @@ describe("AI 비용 예산 누적 (실제 PostgreSQL)", () => {
 
   it("다음 UTC 날짜가 되면 일 예산을 새로 센다", async () => {
     // Given
-    const budget = new AiSpendBudgetAdapter(config, meter, new RecordingOperationalAlert());
+    const budget = new AiSpendBudgetAdapter(
+      config,
+      meter,
+      new RecordingOperationalAlert(),
+      new DateClock(),
+    );
     await budget.record("user-a", 250_000);
     // When
     vi.setSystemTime(new Date("2026-11-06T00:00:01.000Z"));
