@@ -4,7 +4,7 @@ import { mock } from "vitest-mock-extended";
 import type { Database } from "#api/platform/database/database.client";
 
 import {
-  PostgresPushRateLimiter,
+  PostgresPushRateLimiterAdapter,
   transactionRetryDelayMs,
 } from "./postgres-push-rate-limiter.adapter.js";
 
@@ -12,7 +12,7 @@ function sqlQueryError(code: string): DatabaseError {
   return Object.assign(new DatabaseError("database error", 0, "error"), { code });
 }
 
-describe("PostgresPushRateLimiter 재시도", () => {
+describe("PostgresPushRateLimiterAdapter 재시도", () => {
   afterEach(() => {
     vi.useRealTimers();
   });
@@ -35,7 +35,7 @@ describe("PostgresPushRateLimiter 재시도", () => {
     database.transaction
       .mockRejectedValueOnce(sqlQueryError("40001"))
       .mockResolvedValueOnce([false]);
-    const limiter = new PostgresPushRateLimiter(database);
+    const limiter = new PostgresPushRateLimiterAdapter(database);
     // When
     const decision = limiter.reserveGeneral({ dispatchId: 1, userId: "user-1" });
     await vi.advanceTimersByTimeAsync(0);
@@ -52,7 +52,7 @@ describe("PostgresPushRateLimiter 재시도", () => {
     const database = mock<Database>();
     const error = sqlQueryError("23503");
     database.transaction.mockRejectedValueOnce(error);
-    const limiter = new PostgresPushRateLimiter(database);
+    const limiter = new PostgresPushRateLimiterAdapter(database);
     // When
     const decision = limiter.reserveGeneral({ dispatchId: 1, userId: "user-1" });
     // Then

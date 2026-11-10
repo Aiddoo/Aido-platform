@@ -17,7 +17,7 @@ const { GENERAL, ENGAGEMENT } = PUSH_RATE_LIMIT_POLICY;
  * - Map 기반 슬라이딩 윈도우
  * - RATE_LIMIT_WINDOW_MS 주기로 zombie 엔트리 자동 정리
  */
-export class InMemoryPushRateLimiter implements PushRateLimiterPort, OnModuleDestroy {
+export class InMemoryPushRateLimiterAdapter implements PushRateLimiterPort, OnModuleDestroy {
   readonly #pushTimestamps = new Map<string, number[]>();
   readonly #engagementTimestamps = new Map<string, number[]>();
   readonly #generalReservations = new Map<string, Map<string, number>>();

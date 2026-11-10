@@ -11,7 +11,7 @@ import { retentionPushSkipReason } from "../../../domain/services/retention/push
 import { decideRetentionStage } from "../../../domain/services/retention/stage-policy.js";
 import { type RetentionNotificationCopySelection } from "../../../push/application/messages/notification-copy-catalog.messages.js";
 import { createRetentionNotificationMessage } from "../../../push/application/messages/notification.messages.js";
-import type { NotificationPublisher } from "../../../push/application/use-cases/publish-notification.use-case.js";
+import type { PublishNotificationUseCase } from "../../../push/application/use-cases/publish-notification.use-case.js";
 import { NotificationRetentionLogEvent } from "../../observability/retention/notification-retention-log.events.js";
 import { type RetentionConfigPort } from "../../ports/retention/retention-config.port.js";
 import {
@@ -28,7 +28,7 @@ interface ProcessRetentionStagesDependencies {
     | "markStageSkipped"
     | "recordD7Result"
   >;
-  readonly notificationPublisher: Pick<NotificationPublisher, "publish">;
+  readonly notificationPublisher: Pick<PublishNotificationUseCase, "publish">;
   readonly config: Pick<RetentionConfigPort, "enabled">;
   readonly unitOfWork: Pick<UnitOfWorkPort, "run">;
   readonly logger: Pick<ApplicationLoggerPort, "debug" | "error">;

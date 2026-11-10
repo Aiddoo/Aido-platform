@@ -30,8 +30,8 @@ type NotificationEventJob = Exclude<
  * 같은 이벤트는 key로 한 번만 저장하고, 일시적인 저장 실패는 다시 시도한 뒤 오류로 남긴다.
  */
 @Injectable()
-export class NotificationQueueService implements OnModuleDestroy {
-  readonly #logger = new Logger(NotificationQueueService.name);
+export class NotificationQueueAdapter implements OnModuleDestroy {
+  readonly #logger = new Logger(NotificationQueueAdapter.name);
   readonly #inFlight = new Set<Promise<void>>();
 
   readonly #runtime: JobRuntimePort;

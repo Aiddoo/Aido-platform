@@ -1,23 +1,25 @@
 import { vi } from "vitest";
 
 import type { NotificationTodoTargetReaderPort } from "../ports/notification-todo-target.reader.port.js";
-import { NotificationPublisher } from "./publish-notification.use-case.js";
-import type { SendBatchNotification } from "./send-batch-notification.use-case.js";
-import type { SendNotificationWithDedup } from "./send-notification-with-dedup.use-case.js";
-import type { SendNotification } from "./send-notification.use-case.js";
+import { PublishNotificationUseCase } from "./publish-notification.use-case.js";
+import type { SendBatchNotificationUseCase } from "./send-batch-notification.use-case.js";
+import type { SendNotificationWithDedupUseCase } from "./send-notification-with-dedup.use-case.js";
+import type { SendNotificationUseCase } from "./send-notification.use-case.js";
 
 function createPublisher(targets = new Map([[42, { ownerId: "owner-1", date: "2026-10-27" }]])) {
-  const send: Pick<SendNotification, "execute"> = { execute: vi.fn().mockResolvedValue(null) };
-  const sendWithDeduplication: Pick<SendNotificationWithDedup, "execute"> = {
+  const send: Pick<SendNotificationUseCase, "execute"> = {
     execute: vi.fn().mockResolvedValue(null),
   };
-  const sendBatch: Pick<SendBatchNotification, "execute"> = {
+  const sendWithDeduplication: Pick<SendNotificationWithDedupUseCase, "execute"> = {
+    execute: vi.fn().mockResolvedValue(null),
+  };
+  const sendBatch: Pick<SendBatchNotificationUseCase, "execute"> = {
     execute: vi.fn().mockResolvedValue({ count: 1 }),
   };
   const todoTargetReader: Pick<NotificationTodoTargetReaderPort, "findTodoTargets"> = {
     findTodoTargets: vi.fn().mockResolvedValue(targets),
   };
-  const publisher = new NotificationPublisher({
+  const publisher = new PublishNotificationUseCase({
     sendNotification: send,
     sendNotificationWithDeduplication: sendWithDeduplication,
     sendBatchNotification: sendBatch,
@@ -26,7 +28,7 @@ function createPublisher(targets = new Map([[42, { ownerId: "owner-1", date: "20
   return { publisher, send, sendWithDeduplication, sendBatch, todoTargetReader };
 }
 
-describe("NotificationPublisher", () => {
+describe("PublishNotificationUseCase", () => {
   it("할 일이 없는 발행 요청은 그대로 목적별 유스케이스에 위임한다", async () => {
     const { publisher, send, sendWithDeduplication, sendBatch, todoTargetReader } =
       createPublisher();

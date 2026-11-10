@@ -34,7 +34,7 @@ interface PublishPushDeliveryOutboxDependencies {
   readonly logger: Pick<ApplicationLoggerPort, "warn">;
 }
 
-export class PublishPushDeliveryOutbox {
+export class PublishPushDeliveryOutboxUseCase {
   readonly #dependencies: PublishPushDeliveryOutboxDependencies;
 
   constructor(dependencies: PublishPushDeliveryOutboxDependencies) {

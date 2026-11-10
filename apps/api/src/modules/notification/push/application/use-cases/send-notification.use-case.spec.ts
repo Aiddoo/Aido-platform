@@ -14,7 +14,7 @@ import { createUnitOfWorkMock } from "#test/mocks/ports/unit-of-work.mock";
 import type { CreateNotificationData } from "../../../inbox/application/ports/notification-draft.port.js";
 import { DuplicateNotificationError } from "../../../inbox/application/ports/notification.repository.port.js";
 import { type PushDispatchStagingRepositoryPort } from "../ports/push-dispatch-staging.repository.port.js";
-import { SendNotification } from "./send-notification.use-case.js";
+import { SendNotificationUseCase } from "./send-notification.use-case.js";
 
 const data: CreateNotificationData = {
   userId: "user-1",
@@ -31,16 +31,18 @@ function createPushDispatchStagingMock(): PushDispatchStagingRepositoryPort {
   };
 }
 
-describe("SendNotification", () => {
-  let useCase: SendNotification;
+describe("SendNotificationUseCase", () => {
+  let useCase: SendNotificationUseCase;
   let repository: Mocked<
-    ConstructorParameters<typeof SendNotification>[0]["notificationRepository"]
+    ConstructorParameters<typeof SendNotificationUseCase>[0]["notificationRepository"]
   >;
-  let staging: Mocked<ConstructorParameters<typeof SendNotification>[0]["pushDispatchStaging"]>;
-  let cache: Mocked<ConstructorParameters<typeof SendNotification>[0]["cache"]>;
-  let unitOfWork: Mocked<ConstructorParameters<typeof SendNotification>[0]["unitOfWork"]>;
+  let staging: Mocked<
+    ConstructorParameters<typeof SendNotificationUseCase>[0]["pushDispatchStaging"]
+  >;
+  let cache: Mocked<ConstructorParameters<typeof SendNotificationUseCase>[0]["cache"]>;
+  let unitOfWork: Mocked<ConstructorParameters<typeof SendNotificationUseCase>[0]["unitOfWork"]>;
   let afterCommitPublisher: Mocked<
-    ConstructorParameters<typeof SendNotification>[0]["afterCommitPublisher"]
+    ConstructorParameters<typeof SendNotificationUseCase>[0]["afterCommitPublisher"]
   >;
   let afterCommitTasks: AfterCommitTask[];
 
@@ -52,7 +54,7 @@ describe("SendNotification", () => {
     };
 
     const sendNotificationDependencies = mockDeep<
-      ConstructorParameters<typeof SendNotification>[0]
+      ConstructorParameters<typeof SendNotificationUseCase>[0]
     >({
       notificationRepository: createNotificationRepositoryMock(),
       pushDispatchStaging: createPushDispatchStagingMock(),
@@ -60,7 +62,7 @@ describe("SendNotification", () => {
       unitOfWork: createUnitOfWorkMock(),
       afterCommit: afterCommit,
     });
-    const unit = new SendNotification(sendNotificationDependencies);
+    const unit = new SendNotificationUseCase(sendNotificationDependencies);
     useCase = unit;
     repository = sendNotificationDependencies.notificationRepository;
     staging = sendNotificationDependencies.pushDispatchStaging;

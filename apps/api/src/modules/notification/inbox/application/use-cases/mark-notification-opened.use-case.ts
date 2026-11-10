@@ -11,7 +11,7 @@ interface MarkNotificationOpenedDependencies {
   readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
 
-export class MarkNotificationOpened {
+export class MarkNotificationOpenedUseCase {
   readonly #dependencies: MarkNotificationOpenedDependencies;
 
   constructor(dependencies: MarkNotificationOpenedDependencies) {

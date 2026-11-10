@@ -5,9 +5,9 @@ import { vi } from "vitest";
 import { TEST_CUID } from "#test/fixtures/id.fixture";
 import { mockOf } from "#test/mocks/index";
 
-import { RedisPushRateLimiter } from "./redis-push-rate-limiter.adapter.js";
+import { RedisPushRateLimiterAdapter } from "./redis-push-rate-limiter.adapter.js";
 
-describe("RedisPushRateLimiter — batch 발송 한도 정책", () => {
+describe("RedisPushRateLimiterAdapter — batch 발송 한도 정책", () => {
   afterEach(() => {
     vi.useRealTimers();
   });
@@ -16,7 +16,7 @@ describe("RedisPushRateLimiter — batch 발송 한도 정책", () => {
     // Given
     const redis = mockOf<Redis>({ eval: vi.fn() });
     redis.eval.mockResolvedValue([0, 1, 0]);
-    const limiter = new RedisPushRateLimiter(redis);
+    const limiter = new RedisPushRateLimiterAdapter(redis);
 
     // When
     const result = await limiter.reserveBatch([
@@ -34,7 +34,7 @@ describe("RedisPushRateLimiter — batch 발송 한도 정책", () => {
     // Given
     const redis = mockOf<Redis>({ eval: vi.fn() });
     redis.eval.mockResolvedValue([0, "invalid"]);
-    const limiter = new RedisPushRateLimiter(redis);
+    const limiter = new RedisPushRateLimiterAdapter(redis);
 
     // When
     const result = await limiter.reserveBatch([
@@ -49,7 +49,7 @@ describe("RedisPushRateLimiter — batch 발송 한도 정책", () => {
   it("빈 배치는 Redis를 호출하지 않는다", async () => {
     // Given
     const redis = mockOf<Redis>({ eval: vi.fn() });
-    const limiter = new RedisPushRateLimiter(redis);
+    const limiter = new RedisPushRateLimiterAdapter(redis);
 
     // When
     const result = await limiter.reserveBatch([]);
@@ -71,7 +71,7 @@ describe("RedisPushRateLimiter — batch 발송 한도 정책", () => {
       "lastSentAt",
       "0",
     );
-    const limiter = new RedisPushRateLimiter(redis);
+    const limiter = new RedisPushRateLimiterAdapter(redis);
 
     // When
     const result = await limiter.reserveBatch([
@@ -88,7 +88,7 @@ describe("RedisPushRateLimiter — batch 발송 한도 정책", () => {
     vi.useFakeTimers().setSystemTime(new Date("2026-07-16T10:00:00.000Z"));
     const redis = new RedisMock();
     await redis.flushall();
-    const limiter = new RedisPushRateLimiter(redis);
+    const limiter = new RedisPushRateLimiterAdapter(redis);
     const request = {
       userId: TEST_CUID.USER_1,
       engagementLocalDate: "2026-07-16",
@@ -112,7 +112,7 @@ describe("RedisPushRateLimiter — batch 발송 한도 정책", () => {
     vi.useFakeTimers().setSystemTime(new Date("2026-07-16T10:00:00.000Z"));
     const redis = new RedisMock();
     await redis.flushall();
-    const limiter = new RedisPushRateLimiter(redis);
+    const limiter = new RedisPushRateLimiterAdapter(redis);
     const general = { userId: TEST_CUID.USER_1, dispatchId: 601 };
     const engagement = { ...general, localDate: "2026-07-16" };
 
@@ -134,7 +134,7 @@ describe("RedisPushRateLimiter — batch 발송 한도 정책", () => {
     vi.useFakeTimers().setSystemTime(new Date("2026-07-15T23:00:00.000Z"));
     const redis = new RedisMock();
     await redis.flushall();
-    const limiter = new RedisPushRateLimiter(redis);
+    const limiter = new RedisPushRateLimiterAdapter(redis);
     const original = {
       userId: TEST_CUID.USER_1,
       engagementLocalDate: "2026-07-15",
@@ -172,7 +172,7 @@ describe("RedisPushRateLimiter — batch 발송 한도 정책", () => {
     vi.useFakeTimers().setSystemTime(new Date("2026-07-15T23:00:00.000Z"));
     const redis = new RedisMock();
     await redis.flushall();
-    const limiter = new RedisPushRateLimiter(redis);
+    const limiter = new RedisPushRateLimiterAdapter(redis);
     const reserved = { userId: TEST_CUID.USER_1, dispatchId: 801 };
     await expect(limiter.reserveGeneral(reserved)).resolves.toBe(false);
 

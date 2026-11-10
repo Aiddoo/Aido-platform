@@ -2,7 +2,7 @@ import type { Mocked } from "vitest";
 import { mock, mockDeep } from "vitest-mock-extended";
 
 import { DuplicateNotificationError } from "../../../inbox/application/ports/notification.repository.port.js";
-import { SendFriendCompletionNotifications } from "./send-friend-completion-notifications.use-case.js";
+import { SendFriendCompletionNotificationsUseCase } from "./send-friend-completion-notifications.use-case.js";
 
 const input = {
   friendId: "friend-1",
@@ -11,42 +11,46 @@ const input = {
   timezone: "Asia/Seoul",
 };
 
-describe("SendFriendCompletionNotifications", () => {
-  let useCase: SendFriendCompletionNotifications;
+describe("SendFriendCompletionNotificationsUseCase", () => {
+  let useCase: SendFriendCompletionNotificationsUseCase;
   let notificationHistoryReader: Mocked<
-    ConstructorParameters<typeof SendFriendCompletionNotifications>[0]["notificationHistoryReader"]
+    ConstructorParameters<
+      typeof SendFriendCompletionNotificationsUseCase
+    >[0]["notificationHistoryReader"]
   >;
   let persistBatch: Mocked<
-    ConstructorParameters<typeof SendFriendCompletionNotifications>[0]["persistBatch"]
+    ConstructorParameters<typeof SendFriendCompletionNotificationsUseCase>[0]["persistBatch"]
   >;
   let finalizeBatch: Mocked<
-    ConstructorParameters<typeof SendFriendCompletionNotifications>[0]["finalizeBatch"]
+    ConstructorParameters<typeof SendFriendCompletionNotificationsUseCase>[0]["finalizeBatch"]
   >;
   let unitOfWork: Mocked<
-    ConstructorParameters<typeof SendFriendCompletionNotifications>[0]["unitOfWork"]
+    ConstructorParameters<typeof SendFriendCompletionNotificationsUseCase>[0]["unitOfWork"]
   >;
   let userSettings: Mocked<
-    ConstructorParameters<typeof SendFriendCompletionNotifications>[0]["userNotificationSettings"]
+    ConstructorParameters<
+      typeof SendFriendCompletionNotificationsUseCase
+    >[0]["userNotificationSettings"]
   >;
 
   beforeEach(async () => {
     const sendFriendCompletionNotificationsDependencies = mockDeep<
-      ConstructorParameters<typeof SendFriendCompletionNotifications>[0]
+      ConstructorParameters<typeof SendFriendCompletionNotificationsUseCase>[0]
     >({
       notificationHistoryReader:
         mock<
           ConstructorParameters<
-            typeof SendFriendCompletionNotifications
+            typeof SendFriendCompletionNotificationsUseCase
           >[0]["notificationHistoryReader"]
         >(),
       userNotificationSettings:
         mock<
           ConstructorParameters<
-            typeof SendFriendCompletionNotifications
+            typeof SendFriendCompletionNotificationsUseCase
           >[0]["userNotificationSettings"]
         >(),
     });
-    const unit = new SendFriendCompletionNotifications(
+    const unit = new SendFriendCompletionNotificationsUseCase(
       sendFriendCompletionNotificationsDependencies,
     );
     useCase = unit;

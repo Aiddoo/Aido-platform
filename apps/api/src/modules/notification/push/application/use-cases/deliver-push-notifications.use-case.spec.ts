@@ -10,7 +10,7 @@ import type { Mocked } from "vitest";
 import { mockDeep } from "vitest-mock-extended";
 
 import type { CreateNotificationData } from "../../../inbox/application/ports/notification-draft.port.js";
-import { InMemoryPushRateLimiter } from "../../infrastructure/adapters/in-memory-push-rate-limiter.adapter.js";
+import { InMemoryPushRateLimiterAdapter } from "../../infrastructure/adapters/in-memory-push-rate-limiter.adapter.js";
 import {
   type ClaimedPushDelivery,
   type ReservePushDeliveryRateLimitInput,
@@ -20,9 +20,9 @@ import {
   RetryablePushProviderTransportError,
 } from "../ports/push-provider.port.js";
 import { PushDeliveryRateLimitReservationConflictError } from "../push-delivery-rate-limit-reservation-conflict.errors.js";
-import { PushNotificationPayloadFactory } from "../push-notification-payload.mapper.js";
+import { PushNotificationPayloadMapper } from "../push-notification-payload.mapper.js";
 import type { DeliverPushNotificationsInput } from "../read-models/push-delivery.read-model.js";
-import { DeliverPushNotifications } from "./deliver-push-notifications.use-case.js";
+import { DeliverPushNotificationsUseCase } from "./deliver-push-notifications.use-case.js";
 import {
   type BatchPushDeliveryRecipient,
   type SinglePushDeliveryRecipient,
@@ -129,15 +129,21 @@ interface PersistenceObservation {
   readonly transactionDepth: number;
 }
 
-describe("DeliverPushNotifications — 저장된 Push 발송 처리", () => {
-  let useCase: DeliverPushNotifications;
-  let lifecycle: Mocked<ConstructorParameters<typeof DeliverPushNotifications>[0]["lifecycle"]>;
-  let uow: Mocked<ConstructorParameters<typeof DeliverPushNotifications>[0]["unitOfWork"]>;
-  let eligibility: Mocked<ConstructorParameters<typeof DeliverPushNotifications>[0]["eligibility"]>;
-  let payloadFactory: Mocked<
-    ConstructorParameters<typeof DeliverPushNotifications>[0]["payloadFactory"]
+describe("DeliverPushNotificationsUseCase — 저장된 Push 발송 처리", () => {
+  let useCase: DeliverPushNotificationsUseCase;
+  let lifecycle: Mocked<
+    ConstructorParameters<typeof DeliverPushNotificationsUseCase>[0]["lifecycle"]
   >;
-  let delivery: Mocked<ConstructorParameters<typeof DeliverPushNotifications>[0]["delivery"]>;
+  let uow: Mocked<ConstructorParameters<typeof DeliverPushNotificationsUseCase>[0]["unitOfWork"]>;
+  let eligibility: Mocked<
+    ConstructorParameters<typeof DeliverPushNotificationsUseCase>[0]["eligibility"]
+  >;
+  let payloadFactory: Mocked<
+    ConstructorParameters<typeof DeliverPushNotificationsUseCase>[0]["payloadFactory"]
+  >;
+  let delivery: Mocked<
+    ConstructorParameters<typeof DeliverPushNotificationsUseCase>[0]["delivery"]
+  >;
   let claimedDeliveries: readonly ClaimedPushDelivery[];
   let finalizeResultsError: Error | null;
   let transactionDepth: number;
@@ -166,7 +172,7 @@ describe("DeliverPushNotifications — 저장된 Push 발송 처리", () => {
     });
 
     const deliverPushNotificationsDependencies = mockDeep<
-      ConstructorParameters<typeof DeliverPushNotifications>[0]
+      ConstructorParameters<typeof DeliverPushNotificationsUseCase>[0]
     >({
       lifecycle: {
         claim: vi.fn(async () => {
@@ -198,7 +204,7 @@ describe("DeliverPushNotifications — 저장된 Push 발송 처리", () => {
       },
       unitOfWork: { run },
     });
-    const unit = new DeliverPushNotifications(deliverPushNotificationsDependencies);
+    const unit = new DeliverPushNotificationsUseCase(deliverPushNotificationsDependencies);
 
     useCase = unit;
     lifecycle = deliverPushNotificationsDependencies.lifecycle;
@@ -588,7 +594,7 @@ describe("DeliverPushNotifications — 저장된 Push 발송 처리", () => {
   });
 
   it("DB 승인 write 실패 뒤 두 번째 execute도 같은 dispatch rate 예약을 재사용한다", async () => {
-    const limiter = new InMemoryPushRateLimiter();
+    const limiter = new InMemoryPushRateLimiterAdapter();
     const claimed = createClaimedDelivery({
       dispatchId: 270,
       deliveryMode: "BATCH",
@@ -722,7 +728,7 @@ describe("DeliverPushNotifications — 저장된 Push 발송 처리", () => {
     // When - 다음 실행에 다시 claim된 기존 저장 문구를 실제 payload factory로 변환한다.
     // 이 fixture는 DB claim/rollback 자체를 증명하지 않고 재시도 시 문자열 전달 계약을 확인한다.
     finalizeResultsError = null;
-    const actualPayloadFactory = new PushNotificationPayloadFactory({
+    const actualPayloadFactory = new PushNotificationPayloadMapper({
       marketingOptOutTokens: { issue: () => "synthetic-opt-out" },
     });
     payloadFactory.createSingle.mockImplementation((input) =>

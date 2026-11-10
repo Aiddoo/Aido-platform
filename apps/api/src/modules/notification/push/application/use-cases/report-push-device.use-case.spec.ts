@@ -10,7 +10,10 @@ import { createUnitOfWorkMock } from "#test/mocks/ports/index";
 
 import type { NotificationCachePort } from "../../../inbox/application/ports/notification-cache.port.js";
 import type { UserNotificationSettingsPort } from "../ports/user-notification-settings.port.js";
-import { type ReportPushDeviceCommand, ReportPushDevice } from "./report-push-device.use-case.js";
+import {
+  type ReportPushDeviceCommand,
+  ReportPushDeviceUseCase,
+} from "./report-push-device.use-case.js";
 
 const VALID_TOKEN = "ExponentPushToken[device-a]";
 
@@ -71,7 +74,7 @@ function setup() {
   const settings = new RecordingSettings();
   const cache = new RecordingCache();
   const logger = new RecordingLogger();
-  const useCase = new ReportPushDevice({
+  const useCase = new ReportPushDeviceUseCase({
     pushDeviceRepository: store,
     pushTokenRepository: store,
     unitOfWork: createUnitOfWorkMock(),
@@ -83,7 +86,7 @@ function setup() {
   return { store, settings, cache, logger, useCase };
 }
 
-describe("ReportPushDevice — 푸시 기기 보고", () => {
+describe("ReportPushDeviceUseCase — 푸시 기기 보고", () => {
   it("권한이 허용되고 토큰이 있으면 deviceId 접두어의 플랫폼으로 토큰을 등록한다", async () => {
     // Given
     const { store, useCase } = setup();

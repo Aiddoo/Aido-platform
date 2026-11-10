@@ -8,12 +8,12 @@ import { NOTIFICATION_CACHE } from "../inbox/application/ports/notification-cach
 import { NOTIFICATION_HISTORY_READER } from "../inbox/application/ports/notification-history.reader.port.js";
 import { NOTIFICATION_INBOX_READER } from "../inbox/application/ports/notification-inbox.reader.port.js";
 import { NOTIFICATION_REPOSITORY } from "../inbox/application/ports/notification.repository.port.js";
-import { NotificationAccountCleanup } from "../inbox/application/use-cases/delete-actor-notifications.use-case.js";
-import { GetNotifications } from "../inbox/application/use-cases/get-notifications.use-case.js";
-import { GetUnreadCount } from "../inbox/application/use-cases/get-unread-count.use-case.js";
-import { MarkAllAsRead } from "../inbox/application/use-cases/mark-all-as-read.use-case.js";
-import { MarkAsRead } from "../inbox/application/use-cases/mark-as-read.use-case.js";
-import { MarkNotificationOpened } from "../inbox/application/use-cases/mark-notification-opened.use-case.js";
+import { DeleteActorNotificationsUseCase } from "../inbox/application/use-cases/delete-actor-notifications.use-case.js";
+import { GetUnreadNotificationCountUseCase } from "../inbox/application/use-cases/get-unread-notification-count.use-case.js";
+import { ListNotificationsUseCase } from "../inbox/application/use-cases/list-notifications.use-case.js";
+import { MarkAllNotificationsReadUseCase } from "../inbox/application/use-cases/mark-all-notifications-read.use-case.js";
+import { MarkNotificationOpenedUseCase } from "../inbox/application/use-cases/mark-notification-opened.use-case.js";
+import { MarkNotificationReadUseCase } from "../inbox/application/use-cases/mark-notification-read.use-case.js";
 import { ACTIVE_PUSH_TOKEN_READER } from "./application/ports/active-push-token.reader.port.js";
 import { MARKETING_CONSENT_RECONFIRM_ACCESS } from "./application/ports/marketing-consent-reconfirm.port.js";
 import { MARKETING_PUSH_OPT_OUT_TOKEN } from "./application/ports/marketing-push-opt-out-token.port.js";
@@ -35,63 +35,66 @@ import { PUSH_RATE_LIMITER } from "./application/ports/push-rate-limiter.port.js
 import { PUSH_RECEIPT_REPOSITORY } from "./application/ports/push-receipt.repository.port.js";
 import { PUSH_TOKEN_REPOSITORY } from "./application/ports/push-token.repository.port.js";
 import { USER_NOTIFICATION_SETTINGS } from "./application/ports/user-notification-settings.port.js";
-import { PushNotificationPayloadFactory } from "./application/push-notification-payload.mapper.js";
+import { PushNotificationPayloadMapper } from "./application/push-notification-payload.mapper.js";
 import { PushQuietHoursReader } from "./application/push-quiet-hours.reader.js";
-import { DeliverPushNotifications } from "./application/use-cases/deliver-push-notifications.use-case.js";
-import { PushNotificationDeliveryService } from "./application/use-cases/dispatch-push-notification.use-case.js";
-import { PushDeliveryEligibilityService } from "./application/use-cases/evaluate-push-delivery-eligibility.use-case.js";
-import { FinalizeBatchNotification } from "./application/use-cases/finalize-batch-notification.use-case.js";
-import { OptOutMarketingPush } from "./application/use-cases/opt-out-marketing-push.use-case.js";
-import { PersistBatchNotification } from "./application/use-cases/persist-batch-notification.use-case.js";
-import { NotificationPublisher } from "./application/use-cases/publish-notification.use-case.js";
-import { PushDeliveryAfterCommitPublisher } from "./application/use-cases/publish-push-delivery-after-commit.use-case.js";
-import { PublishPushDeliveryOutbox } from "./application/use-cases/publish-push-delivery-outbox.use-case.js";
-import { ReconcilePushReceipts } from "./application/use-cases/reconcile-push-receipts.use-case.js";
-import { ReconfirmMarketingConsents } from "./application/use-cases/reconfirm-marketing-consents.use-case.js";
-import { RecoverFailedPushDeliveries } from "./application/use-cases/recover-failed-push-deliveries.use-case.js";
-import { RelayPushDeliveryOutbox } from "./application/use-cases/relay-push-delivery-outbox.use-case.js";
-import { ReleaseSessionPushDevices } from "./application/use-cases/release-session-push-devices.use-case.js";
-import { ReportPushDevice } from "./application/use-cases/report-push-device.use-case.js";
-import { SendBatchNotification } from "./application/use-cases/send-batch-notification.use-case.js";
-import { SendBillingIssueNotification } from "./application/use-cases/send-billing-issue-notification.use-case.js";
-import { SendCheerNotification } from "./application/use-cases/send-cheer-notification.use-case.js";
-import { SendFollowAcceptedNotification } from "./application/use-cases/send-follow-accepted-notification.use-case.js";
-import { SendFollowRequestNotification } from "./application/use-cases/send-follow-request-notification.use-case.js";
-import { SendFriendCompletionNotifications } from "./application/use-cases/send-friend-completion-notifications.use-case.js";
-import { SendMilestoneNotification } from "./application/use-cases/send-milestone-notification.use-case.js";
-import { SendNotificationWithDedup } from "./application/use-cases/send-notification-with-dedup.use-case.js";
-import { SendNotification } from "./application/use-cases/send-notification.use-case.js";
-import { SendNudgeNotification } from "./application/use-cases/send-nudge-notification.use-case.js";
-import { UnregisterPushDevice } from "./application/use-cases/unregister-push-device.use-case.js";
+import { DeliverPushNotificationsUseCase } from "./application/use-cases/deliver-push-notifications.use-case.js";
+import { DispatchPushNotificationUseCase } from "./application/use-cases/dispatch-push-notification.use-case.js";
+import { EvaluatePushDeliveryEligibilityUseCase } from "./application/use-cases/evaluate-push-delivery-eligibility.use-case.js";
+import { FinalizeBatchNotificationUseCase } from "./application/use-cases/finalize-batch-notification.use-case.js";
+import { OptOutMarketingPushUseCase } from "./application/use-cases/opt-out-marketing-push.use-case.js";
+import { PersistBatchNotificationUseCase } from "./application/use-cases/persist-batch-notification.use-case.js";
+import { PublishNotificationUseCase } from "./application/use-cases/publish-notification.use-case.js";
+import { PublishPushDeliveryAfterCommitUseCase } from "./application/use-cases/publish-push-delivery-after-commit.use-case.js";
+import { PublishPushDeliveryOutboxUseCase } from "./application/use-cases/publish-push-delivery-outbox.use-case.js";
+import { ReconcilePushReceiptsUseCase } from "./application/use-cases/reconcile-push-receipts.use-case.js";
+import { ReconfirmMarketingConsentsUseCase } from "./application/use-cases/reconfirm-marketing-consents.use-case.js";
+import { RecoverFailedPushDeliveriesUseCase } from "./application/use-cases/recover-failed-push-deliveries.use-case.js";
+import { RelayPushDeliveryOutboxUseCase } from "./application/use-cases/relay-push-delivery-outbox.use-case.js";
+import { ReleaseSessionPushDevicesUseCase } from "./application/use-cases/release-session-push-devices.use-case.js";
+import { ReportPushDeviceUseCase } from "./application/use-cases/report-push-device.use-case.js";
+import { SendBatchNotificationUseCase } from "./application/use-cases/send-batch-notification.use-case.js";
+import { SendBillingIssueNotificationUseCase } from "./application/use-cases/send-billing-issue-notification.use-case.js";
+import { SendCheerNotificationUseCase } from "./application/use-cases/send-cheer-notification.use-case.js";
+import { SendFollowAcceptedNotificationUseCase } from "./application/use-cases/send-follow-accepted-notification.use-case.js";
+import { SendFollowRequestNotificationUseCase } from "./application/use-cases/send-follow-request-notification.use-case.js";
+import { SendFriendCompletionNotificationsUseCase } from "./application/use-cases/send-friend-completion-notifications.use-case.js";
+import { SendMilestoneNotificationUseCase } from "./application/use-cases/send-milestone-notification.use-case.js";
+import { SendNotificationWithDedupUseCase } from "./application/use-cases/send-notification-with-dedup.use-case.js";
+import { SendNotificationUseCase } from "./application/use-cases/send-notification.use-case.js";
+import { SendNudgeNotificationUseCase } from "./application/use-cases/send-nudge-notification.use-case.js";
+import { UnregisterPushDeviceUseCase } from "./application/use-cases/unregister-push-device.use-case.js";
 
-export const notificationAccountCleanupProvider: FactoryProvider<NotificationAccountCleanup> = {
-  provide: NotificationAccountCleanup,
-  inject: [NOTIFICATION_REPOSITORY, NOTIFICATION_CACHE],
-  useFactory: (
-    repository: ConstructorParameters<typeof NotificationAccountCleanup>[0]["repository"],
-    cache: ConstructorParameters<typeof NotificationAccountCleanup>[0]["cache"],
-  ) =>
-    new NotificationAccountCleanup({
-      repository,
-      cache,
-      logger: new Logger(NotificationAccountCleanup.name),
-    }),
-};
-
-export const pushDeliveryAfterCommitPublisherProvider: FactoryProvider<PushDeliveryAfterCommitPublisher> =
+export const deleteActorNotificationsUseCaseProvider: FactoryProvider<DeleteActorNotificationsUseCase> =
   {
-    provide: PushDeliveryAfterCommitPublisher,
-    inject: [AFTER_COMMIT_TASK_REGISTRY, PublishPushDeliveryOutbox],
+    provide: DeleteActorNotificationsUseCase,
+    inject: [NOTIFICATION_REPOSITORY, NOTIFICATION_CACHE],
     useFactory: (
-      afterCommit: ConstructorParameters<typeof PushDeliveryAfterCommitPublisher>[0]["afterCommit"],
+      repository: ConstructorParameters<typeof DeleteActorNotificationsUseCase>[0]["repository"],
+      cache: ConstructorParameters<typeof DeleteActorNotificationsUseCase>[0]["cache"],
+    ) =>
+      new DeleteActorNotificationsUseCase({
+        repository,
+        cache,
+        logger: new Logger(DeleteActorNotificationsUseCase.name),
+      }),
+  };
+
+export const publishPushDeliveryAfterCommitUseCaseProvider: FactoryProvider<PublishPushDeliveryAfterCommitUseCase> =
+  {
+    provide: PublishPushDeliveryAfterCommitUseCase,
+    inject: [AFTER_COMMIT_TASK_REGISTRY, PublishPushDeliveryOutboxUseCase],
+    useFactory: (
+      afterCommit: ConstructorParameters<
+        typeof PublishPushDeliveryAfterCommitUseCase
+      >[0]["afterCommit"],
       publishOutbox: ConstructorParameters<
-        typeof PushDeliveryAfterCommitPublisher
+        typeof PublishPushDeliveryAfterCommitUseCase
       >[0]["publishOutbox"],
     ) =>
-      new PushDeliveryAfterCommitPublisher({
+      new PublishPushDeliveryAfterCommitUseCase({
         afterCommit,
         publishOutbox,
-        logger: new Logger(PushDeliveryAfterCommitPublisher.name),
+        logger: new Logger(PublishPushDeliveryAfterCommitUseCase.name),
       }),
   };
 
@@ -103,31 +106,35 @@ export const pushQuietHoursReaderProvider: FactoryProvider<PushQuietHoursReader>
   ) => new PushQuietHoursReader({ userSettings }),
 };
 
-export const pushDeliveryEligibilityServiceProvider: FactoryProvider<PushDeliveryEligibilityService> =
+export const evaluatePushDeliveryEligibilityUseCaseProvider: FactoryProvider<EvaluatePushDeliveryEligibilityUseCase> =
   {
-    provide: PushDeliveryEligibilityService,
+    provide: EvaluatePushDeliveryEligibilityUseCase,
     inject: [
       USER_NOTIFICATION_SETTINGS,
       PUSH_RATE_LIMITER,
       NOTIFICATION_RECIPIENT_PREFERENCE_READER,
     ],
     useFactory: (
-      userSettings: ConstructorParameters<typeof PushDeliveryEligibilityService>[0]["userSettings"],
-      rateLimiter: ConstructorParameters<typeof PushDeliveryEligibilityService>[0]["rateLimiter"],
+      userSettings: ConstructorParameters<
+        typeof EvaluatePushDeliveryEligibilityUseCase
+      >[0]["userSettings"],
+      rateLimiter: ConstructorParameters<
+        typeof EvaluatePushDeliveryEligibilityUseCase
+      >[0]["rateLimiter"],
       recipientPreferenceReader: ConstructorParameters<
-        typeof PushDeliveryEligibilityService
+        typeof EvaluatePushDeliveryEligibilityUseCase
       >[0]["recipientPreferenceReader"],
     ) =>
-      new PushDeliveryEligibilityService({
+      new EvaluatePushDeliveryEligibilityUseCase({
         userSettings,
         rateLimiter,
         recipientPreferenceReader,
       }),
   };
 
-export const pushNotificationDeliveryServiceProvider: FactoryProvider<PushNotificationDeliveryService> =
+export const dispatchPushNotificationUseCaseProvider: FactoryProvider<DispatchPushNotificationUseCase> =
   {
-    provide: PushNotificationDeliveryService,
+    provide: DispatchPushNotificationUseCase,
     inject: [
       PUSH_TOKEN_REPOSITORY,
       PUSH_DEVICE_REPOSITORY,
@@ -137,83 +144,87 @@ export const pushNotificationDeliveryServiceProvider: FactoryProvider<PushNotifi
     ],
     useFactory: (
       pushTokenRepository: ConstructorParameters<
-        typeof PushNotificationDeliveryService
+        typeof DispatchPushNotificationUseCase
       >[0]["pushTokenRepository"],
       pushDeviceRepository: ConstructorParameters<
-        typeof PushNotificationDeliveryService
+        typeof DispatchPushNotificationUseCase
       >[0]["pushDeviceRepository"],
       pushProvider: ConstructorParameters<
-        typeof PushNotificationDeliveryService
+        typeof DispatchPushNotificationUseCase
       >[0]["pushProvider"],
       activePushTokenReader: ConstructorParameters<
-        typeof PushNotificationDeliveryService
+        typeof DispatchPushNotificationUseCase
       >[0]["activePushTokenReader"],
       notificationCache: ConstructorParameters<
-        typeof PushNotificationDeliveryService
+        typeof DispatchPushNotificationUseCase
       >[0]["notificationCache"],
     ) =>
-      new PushNotificationDeliveryService({
+      new DispatchPushNotificationUseCase({
         pushTokenRepository,
         pushDeviceRepository,
         pushProvider,
         activePushTokenReader,
         notificationCache,
-        logger: new Logger(PushNotificationDeliveryService.name),
+        logger: new Logger(DispatchPushNotificationUseCase.name),
       }),
   };
 
-export const pushNotificationPayloadFactoryProvider: FactoryProvider<PushNotificationPayloadFactory> =
+export const pushNotificationPayloadMapperProvider: FactoryProvider<PushNotificationPayloadMapper> =
   {
-    provide: PushNotificationPayloadFactory,
+    provide: PushNotificationPayloadMapper,
     inject: [MARKETING_PUSH_OPT_OUT_TOKEN],
     useFactory: (
       marketingOptOutTokens: ConstructorParameters<
-        typeof PushNotificationPayloadFactory
+        typeof PushNotificationPayloadMapper
       >[0]["marketingOptOutTokens"],
-    ) => new PushNotificationPayloadFactory({ marketingOptOutTokens }),
+    ) => new PushNotificationPayloadMapper({ marketingOptOutTokens }),
   };
 
-export const deliverPushNotificationsProvider: FactoryProvider<DeliverPushNotifications> = {
-  provide: DeliverPushNotifications,
-  inject: [
-    PUSH_DELIVERY_LIFECYCLE_REPOSITORY,
-    UNIT_OF_WORK,
-    PushDeliveryEligibilityService,
-    PushNotificationPayloadFactory,
-    PushNotificationDeliveryService,
-  ],
-  useFactory: (
-    lifecycle: ConstructorParameters<typeof DeliverPushNotifications>[0]["lifecycle"],
-    unitOfWork: ConstructorParameters<typeof DeliverPushNotifications>[0]["unitOfWork"],
-    eligibility: ConstructorParameters<typeof DeliverPushNotifications>[0]["eligibility"],
-    payloadFactory: ConstructorParameters<typeof DeliverPushNotifications>[0]["payloadFactory"],
-    delivery: ConstructorParameters<typeof DeliverPushNotifications>[0]["delivery"],
-  ) =>
-    new DeliverPushNotifications({
-      lifecycle,
-      unitOfWork,
-      eligibility,
-      payloadFactory,
-      delivery,
-      logger: new Logger(DeliverPushNotifications.name),
-    }),
-};
+export const deliverPushNotificationsUseCaseProvider: FactoryProvider<DeliverPushNotificationsUseCase> =
+  {
+    provide: DeliverPushNotificationsUseCase,
+    inject: [
+      PUSH_DELIVERY_LIFECYCLE_REPOSITORY,
+      UNIT_OF_WORK,
+      EvaluatePushDeliveryEligibilityUseCase,
+      PushNotificationPayloadMapper,
+      DispatchPushNotificationUseCase,
+    ],
+    useFactory: (
+      lifecycle: ConstructorParameters<typeof DeliverPushNotificationsUseCase>[0]["lifecycle"],
+      unitOfWork: ConstructorParameters<typeof DeliverPushNotificationsUseCase>[0]["unitOfWork"],
+      eligibility: ConstructorParameters<typeof DeliverPushNotificationsUseCase>[0]["eligibility"],
+      payloadFactory: ConstructorParameters<
+        typeof DeliverPushNotificationsUseCase
+      >[0]["payloadFactory"],
+      delivery: ConstructorParameters<typeof DeliverPushNotificationsUseCase>[0]["delivery"],
+    ) =>
+      new DeliverPushNotificationsUseCase({
+        lifecycle,
+        unitOfWork,
+        eligibility,
+        payloadFactory,
+        delivery,
+        logger: new Logger(DeliverPushNotificationsUseCase.name),
+      }),
+  };
 
-export const finalizeBatchNotificationProvider: FactoryProvider<FinalizeBatchNotification> = {
-  provide: FinalizeBatchNotification,
-  inject: [NOTIFICATION_CACHE, NOTIFICATION_DEDUP],
-  useFactory: (
-    cache: ConstructorParameters<typeof FinalizeBatchNotification>[0]["cache"],
-    notificationDedup: ConstructorParameters<
-      typeof FinalizeBatchNotification
-    >[0]["notificationDedup"],
-  ) =>
-    new FinalizeBatchNotification({
-      cache,
-      notificationDedup,
-      logger: new Logger(FinalizeBatchNotification.name),
-    }),
-};
+export const finalizeBatchNotificationUseCaseProvider: FactoryProvider<FinalizeBatchNotificationUseCase> =
+  {
+    provide: FinalizeBatchNotificationUseCase,
+    inject: [NOTIFICATION_CACHE, NOTIFICATION_DEDUP],
+    useFactory: (
+      cache: ConstructorParameters<typeof FinalizeBatchNotificationUseCase>[0]["cache"],
+      notificationDedup: ConstructorParameters<
+        typeof FinalizeBatchNotificationUseCase
+      >[0]["notificationDedup"],
+    ) =>
+      new FinalizeBatchNotificationUseCase({
+        cache,
+        notificationDedup,
+        logger: new Logger(FinalizeBatchNotificationUseCase.name),
+      }),
+  };
 
 export const notificationHistoryReaderProvider: FactoryProvider<NotificationHistoryReader> = {
   provide: NotificationHistoryReader,
@@ -233,141 +244,152 @@ export const notificationHistoryReaderProvider: FactoryProvider<NotificationHist
     }),
 };
 
-export const getNotificationsProvider: FactoryProvider<GetNotifications> = {
-  provide: GetNotifications,
+export const listNotificationsUseCaseProvider: FactoryProvider<ListNotificationsUseCase> = {
+  provide: ListNotificationsUseCase,
   inject: [NOTIFICATION_INBOX_READER, PaginationService],
   useFactory: (
     notificationInboxReader: ConstructorParameters<
-      typeof GetNotifications
+      typeof ListNotificationsUseCase
     >[0]["notificationInboxReader"],
-    paginationService: ConstructorParameters<typeof GetNotifications>[0]["paginationService"],
+    paginationService: ConstructorParameters<
+      typeof ListNotificationsUseCase
+    >[0]["paginationService"],
   ) =>
-    new GetNotifications({
+    new ListNotificationsUseCase({
       notificationInboxReader,
       paginationService,
-      logger: new Logger(GetNotifications.name),
+      logger: new Logger(ListNotificationsUseCase.name),
     }),
 };
 
-export const getUnreadCountProvider: FactoryProvider<GetUnreadCount> = {
-  provide: GetUnreadCount,
-  inject: [NOTIFICATION_INBOX_READER, NOTIFICATION_CACHE],
-  useFactory: (
-    notificationInboxReader: ConstructorParameters<
-      typeof GetUnreadCount
-    >[0]["notificationInboxReader"],
-    cache: ConstructorParameters<typeof GetUnreadCount>[0]["cache"],
-  ) => new GetUnreadCount({ notificationInboxReader, cache }),
-};
+export const getUnreadNotificationCountUseCaseProvider: FactoryProvider<GetUnreadNotificationCountUseCase> =
+  {
+    provide: GetUnreadNotificationCountUseCase,
+    inject: [NOTIFICATION_INBOX_READER, NOTIFICATION_CACHE],
+    useFactory: (
+      notificationInboxReader: ConstructorParameters<
+        typeof GetUnreadNotificationCountUseCase
+      >[0]["notificationInboxReader"],
+      cache: ConstructorParameters<typeof GetUnreadNotificationCountUseCase>[0]["cache"],
+    ) => new GetUnreadNotificationCountUseCase({ notificationInboxReader, cache }),
+  };
 
-export const markAllAsReadProvider: FactoryProvider<MarkAllAsRead> = {
-  provide: MarkAllAsRead,
-  inject: [NOTIFICATION_REPOSITORY, NOTIFICATION_CACHE],
-  useFactory: (
-    notificationRepository: ConstructorParameters<
-      typeof MarkAllAsRead
-    >[0]["notificationRepository"],
-    cache: ConstructorParameters<typeof MarkAllAsRead>[0]["cache"],
-  ) =>
-    new MarkAllAsRead({
-      notificationRepository,
-      cache,
-      logger: new Logger(MarkAllAsRead.name),
-    }),
-};
+export const markAllNotificationsReadUseCaseProvider: FactoryProvider<MarkAllNotificationsReadUseCase> =
+  {
+    provide: MarkAllNotificationsReadUseCase,
+    inject: [NOTIFICATION_REPOSITORY, NOTIFICATION_CACHE],
+    useFactory: (
+      notificationRepository: ConstructorParameters<
+        typeof MarkAllNotificationsReadUseCase
+      >[0]["notificationRepository"],
+      cache: ConstructorParameters<typeof MarkAllNotificationsReadUseCase>[0]["cache"],
+    ) =>
+      new MarkAllNotificationsReadUseCase({
+        notificationRepository,
+        cache,
+        logger: new Logger(MarkAllNotificationsReadUseCase.name),
+      }),
+  };
 
-export const markAsReadProvider: FactoryProvider<MarkAsRead> = {
-  provide: MarkAsRead,
+export const markNotificationReadUseCaseProvider: FactoryProvider<MarkNotificationReadUseCase> = {
+  provide: MarkNotificationReadUseCase,
   inject: [NOTIFICATION_INBOX_READER, NOTIFICATION_REPOSITORY, NOTIFICATION_CACHE],
   useFactory: (
-    notificationInboxReader: ConstructorParameters<typeof MarkAsRead>[0]["notificationInboxReader"],
-    notificationRepository: ConstructorParameters<typeof MarkAsRead>[0]["notificationRepository"],
-    cache: ConstructorParameters<typeof MarkAsRead>[0]["cache"],
+    notificationInboxReader: ConstructorParameters<
+      typeof MarkNotificationReadUseCase
+    >[0]["notificationInboxReader"],
+    notificationRepository: ConstructorParameters<
+      typeof MarkNotificationReadUseCase
+    >[0]["notificationRepository"],
+    cache: ConstructorParameters<typeof MarkNotificationReadUseCase>[0]["cache"],
   ) =>
-    new MarkAsRead({
+    new MarkNotificationReadUseCase({
       notificationInboxReader,
       notificationRepository,
       cache,
-      logger: new Logger(MarkAsRead.name),
+      logger: new Logger(MarkNotificationReadUseCase.name),
     }),
 };
 
-export const markNotificationOpenedProvider: FactoryProvider<MarkNotificationOpened> = {
-  provide: MarkNotificationOpened,
-  inject: [NOTIFICATION_REPOSITORY, NOTIFICATION_CACHE],
-  useFactory: (
-    notificationRepository: ConstructorParameters<
-      typeof MarkNotificationOpened
-    >[0]["notificationRepository"],
-    cache: ConstructorParameters<typeof MarkNotificationOpened>[0]["cache"],
-  ) =>
-    new MarkNotificationOpened({
-      notificationRepository,
-      cache,
-      logger: new Logger(MarkNotificationOpened.name),
-    }),
-};
+export const markNotificationOpenedUseCaseProvider: FactoryProvider<MarkNotificationOpenedUseCase> =
+  {
+    provide: MarkNotificationOpenedUseCase,
+    inject: [NOTIFICATION_REPOSITORY, NOTIFICATION_CACHE],
+    useFactory: (
+      notificationRepository: ConstructorParameters<
+        typeof MarkNotificationOpenedUseCase
+      >[0]["notificationRepository"],
+      cache: ConstructorParameters<typeof MarkNotificationOpenedUseCase>[0]["cache"],
+    ) =>
+      new MarkNotificationOpenedUseCase({
+        notificationRepository,
+        cache,
+        logger: new Logger(MarkNotificationOpenedUseCase.name),
+      }),
+  };
 
-export const optOutMarketingPushProvider: FactoryProvider<OptOutMarketingPush> = {
-  provide: OptOutMarketingPush,
+export const optOutMarketingPushUseCaseProvider: FactoryProvider<OptOutMarketingPushUseCase> = {
+  provide: OptOutMarketingPushUseCase,
   inject: [MARKETING_PUSH_OPT_OUT_TOKEN, USER_NOTIFICATION_SETTINGS],
   useFactory: (
-    tokens: ConstructorParameters<typeof OptOutMarketingPush>[0]["tokens"],
-    settings: ConstructorParameters<typeof OptOutMarketingPush>[0]["settings"],
+    tokens: ConstructorParameters<typeof OptOutMarketingPushUseCase>[0]["tokens"],
+    settings: ConstructorParameters<typeof OptOutMarketingPushUseCase>[0]["settings"],
   ) =>
-    new OptOutMarketingPush({
+    new OptOutMarketingPushUseCase({
       tokens,
       settings,
-      logger: new Logger(OptOutMarketingPush.name),
+      logger: new Logger(OptOutMarketingPushUseCase.name),
     }),
 };
 
-export const persistBatchNotificationProvider: FactoryProvider<PersistBatchNotification> = {
-  provide: PersistBatchNotification,
-  inject: [
-    NOTIFICATION_REPOSITORY,
-    PUSH_DISPATCH_STAGING,
-    UNIT_OF_WORK,
-    PushDeliveryAfterCommitPublisher,
-  ],
-  useFactory: (
-    notificationRepository: ConstructorParameters<
-      typeof PersistBatchNotification
-    >[0]["notificationRepository"],
-    pushDispatchStaging: ConstructorParameters<
-      typeof PersistBatchNotification
-    >[0]["pushDispatchStaging"],
-    unitOfWork: ConstructorParameters<typeof PersistBatchNotification>[0]["unitOfWork"],
-    afterCommitPublisher: ConstructorParameters<
-      typeof PersistBatchNotification
-    >[0]["afterCommitPublisher"],
-  ) =>
-    new PersistBatchNotification({
-      notificationRepository,
-      pushDispatchStaging,
-      unitOfWork,
-      afterCommitPublisher,
-    }),
-};
+export const persistBatchNotificationUseCaseProvider: FactoryProvider<PersistBatchNotificationUseCase> =
+  {
+    provide: PersistBatchNotificationUseCase,
+    inject: [
+      NOTIFICATION_REPOSITORY,
+      PUSH_DISPATCH_STAGING,
+      UNIT_OF_WORK,
+      PublishPushDeliveryAfterCommitUseCase,
+    ],
+    useFactory: (
+      notificationRepository: ConstructorParameters<
+        typeof PersistBatchNotificationUseCase
+      >[0]["notificationRepository"],
+      pushDispatchStaging: ConstructorParameters<
+        typeof PersistBatchNotificationUseCase
+      >[0]["pushDispatchStaging"],
+      unitOfWork: ConstructorParameters<typeof PersistBatchNotificationUseCase>[0]["unitOfWork"],
+      afterCommitPublisher: ConstructorParameters<
+        typeof PersistBatchNotificationUseCase
+      >[0]["afterCommitPublisher"],
+    ) =>
+      new PersistBatchNotificationUseCase({
+        notificationRepository,
+        pushDispatchStaging,
+        unitOfWork,
+        afterCommitPublisher,
+      }),
+  };
 
-export const publishPushDeliveryOutboxProvider: FactoryProvider<PublishPushDeliveryOutbox> = {
-  provide: PublishPushDeliveryOutbox,
-  inject: [PUSH_DELIVERY_OUTBOX_REPOSITORY, PUSH_DELIVERY_JOB_ENQUEUER, UNIT_OF_WORK],
-  useFactory: (
-    outbox: ConstructorParameters<typeof PublishPushDeliveryOutbox>[0]["outbox"],
-    enqueuer: ConstructorParameters<typeof PublishPushDeliveryOutbox>[0]["enqueuer"],
-    unitOfWork: ConstructorParameters<typeof PublishPushDeliveryOutbox>[0]["unitOfWork"],
-  ) =>
-    new PublishPushDeliveryOutbox({
-      outbox,
-      enqueuer,
-      unitOfWork,
-      logger: new Logger(PublishPushDeliveryOutbox.name),
-    }),
-};
+export const publishPushDeliveryOutboxUseCaseProvider: FactoryProvider<PublishPushDeliveryOutboxUseCase> =
+  {
+    provide: PublishPushDeliveryOutboxUseCase,
+    inject: [PUSH_DELIVERY_OUTBOX_REPOSITORY, PUSH_DELIVERY_JOB_ENQUEUER, UNIT_OF_WORK],
+    useFactory: (
+      outbox: ConstructorParameters<typeof PublishPushDeliveryOutboxUseCase>[0]["outbox"],
+      enqueuer: ConstructorParameters<typeof PublishPushDeliveryOutboxUseCase>[0]["enqueuer"],
+      unitOfWork: ConstructorParameters<typeof PublishPushDeliveryOutboxUseCase>[0]["unitOfWork"],
+    ) =>
+      new PublishPushDeliveryOutboxUseCase({
+        outbox,
+        enqueuer,
+        unitOfWork,
+        logger: new Logger(PublishPushDeliveryOutboxUseCase.name),
+      }),
+  };
 
-export const reconcilePushReceiptsProvider: FactoryProvider<ReconcilePushReceipts> = {
-  provide: ReconcilePushReceipts,
+export const reconcilePushReceiptsUseCaseProvider: FactoryProvider<ReconcilePushReceiptsUseCase> = {
+  provide: ReconcilePushReceiptsUseCase,
   inject: [
     PUSH_RECEIPT_REPOSITORY,
     PUSH_TOKEN_REPOSITORY,
@@ -377,58 +399,60 @@ export const reconcilePushReceiptsProvider: FactoryProvider<ReconcilePushReceipt
   ],
   useFactory: (
     pushReceiptRepository: ConstructorParameters<
-      typeof ReconcilePushReceipts
+      typeof ReconcilePushReceiptsUseCase
     >[0]["pushReceiptRepository"],
     pushTokenRepository: ConstructorParameters<
-      typeof ReconcilePushReceipts
+      typeof ReconcilePushReceiptsUseCase
     >[0]["pushTokenRepository"],
-    pushProvider: ConstructorParameters<typeof ReconcilePushReceipts>[0]["pushProvider"],
-    cache: ConstructorParameters<typeof ReconcilePushReceipts>[0]["cache"],
-    unitOfWork: ConstructorParameters<typeof ReconcilePushReceipts>[0]["unitOfWork"],
+    pushProvider: ConstructorParameters<typeof ReconcilePushReceiptsUseCase>[0]["pushProvider"],
+    cache: ConstructorParameters<typeof ReconcilePushReceiptsUseCase>[0]["cache"],
+    unitOfWork: ConstructorParameters<typeof ReconcilePushReceiptsUseCase>[0]["unitOfWork"],
   ) =>
-    new ReconcilePushReceipts({
+    new ReconcilePushReceiptsUseCase({
       pushReceiptRepository,
       pushTokenRepository,
       pushProvider,
       cache,
       unitOfWork,
-      logger: new Logger(ReconcilePushReceipts.name),
+      logger: new Logger(ReconcilePushReceiptsUseCase.name),
     }),
 };
 
-export const recoverFailedPushDeliveriesProvider: FactoryProvider<RecoverFailedPushDeliveries> = {
-  provide: RecoverFailedPushDeliveries,
-  inject: [PUSH_DELIVERY_LIFECYCLE_REPOSITORY, UNIT_OF_WORK],
-  useFactory: (
-    lifecycle: ConstructorParameters<typeof RecoverFailedPushDeliveries>[0]["lifecycle"],
-    unitOfWork: ConstructorParameters<typeof RecoverFailedPushDeliveries>[0]["unitOfWork"],
-  ) => new RecoverFailedPushDeliveries({ lifecycle, unitOfWork }),
-};
+export const recoverFailedPushDeliveriesUseCaseProvider: FactoryProvider<RecoverFailedPushDeliveriesUseCase> =
+  {
+    provide: RecoverFailedPushDeliveriesUseCase,
+    inject: [PUSH_DELIVERY_LIFECYCLE_REPOSITORY, UNIT_OF_WORK],
+    useFactory: (
+      lifecycle: ConstructorParameters<typeof RecoverFailedPushDeliveriesUseCase>[0]["lifecycle"],
+      unitOfWork: ConstructorParameters<typeof RecoverFailedPushDeliveriesUseCase>[0]["unitOfWork"],
+    ) => new RecoverFailedPushDeliveriesUseCase({ lifecycle, unitOfWork }),
+  };
 
-export const releaseSessionPushDevicesProvider: FactoryProvider<ReleaseSessionPushDevices> = {
-  provide: ReleaseSessionPushDevices,
-  inject: [PUSH_DEVICE_REPOSITORY, PUSH_TOKEN_REPOSITORY, UNIT_OF_WORK, NOTIFICATION_CACHE],
-  useFactory: (
-    pushDeviceRepository: ConstructorParameters<
-      typeof ReleaseSessionPushDevices
-    >[0]["pushDeviceRepository"],
-    pushTokenRepository: ConstructorParameters<
-      typeof ReleaseSessionPushDevices
-    >[0]["pushTokenRepository"],
-    unitOfWork: ConstructorParameters<typeof ReleaseSessionPushDevices>[0]["unitOfWork"],
-    cache: ConstructorParameters<typeof ReleaseSessionPushDevices>[0]["cache"],
-  ) =>
-    new ReleaseSessionPushDevices({
-      pushDeviceRepository,
-      pushTokenRepository,
-      unitOfWork,
-      cache,
-      logger: new Logger(ReleaseSessionPushDevices.name),
-    }),
-};
+export const releaseSessionPushDevicesUseCaseProvider: FactoryProvider<ReleaseSessionPushDevicesUseCase> =
+  {
+    provide: ReleaseSessionPushDevicesUseCase,
+    inject: [PUSH_DEVICE_REPOSITORY, PUSH_TOKEN_REPOSITORY, UNIT_OF_WORK, NOTIFICATION_CACHE],
+    useFactory: (
+      pushDeviceRepository: ConstructorParameters<
+        typeof ReleaseSessionPushDevicesUseCase
+      >[0]["pushDeviceRepository"],
+      pushTokenRepository: ConstructorParameters<
+        typeof ReleaseSessionPushDevicesUseCase
+      >[0]["pushTokenRepository"],
+      unitOfWork: ConstructorParameters<typeof ReleaseSessionPushDevicesUseCase>[0]["unitOfWork"],
+      cache: ConstructorParameters<typeof ReleaseSessionPushDevicesUseCase>[0]["cache"],
+    ) =>
+      new ReleaseSessionPushDevicesUseCase({
+        pushDeviceRepository,
+        pushTokenRepository,
+        unitOfWork,
+        cache,
+        logger: new Logger(ReleaseSessionPushDevicesUseCase.name),
+      }),
+  };
 
-export const reportPushDeviceProvider: FactoryProvider<ReportPushDevice> = {
-  provide: ReportPushDevice,
+export const reportPushDeviceUseCaseProvider: FactoryProvider<ReportPushDeviceUseCase> = {
+  provide: ReportPushDeviceUseCase,
   inject: [
     PUSH_DEVICE_REPOSITORY,
     PUSH_TOKEN_REPOSITORY,
@@ -438,65 +462,74 @@ export const reportPushDeviceProvider: FactoryProvider<ReportPushDevice> = {
     NOTIFICATION_CACHE,
   ],
   useFactory: (
-    pushDeviceRepository: ConstructorParameters<typeof ReportPushDevice>[0]["pushDeviceRepository"],
-    pushTokenRepository: ConstructorParameters<typeof ReportPushDevice>[0]["pushTokenRepository"],
-    unitOfWork: ConstructorParameters<typeof ReportPushDevice>[0]["unitOfWork"],
-    pushProvider: ConstructorParameters<typeof ReportPushDevice>[0]["pushProvider"],
-    userSettings: ConstructorParameters<typeof ReportPushDevice>[0]["userSettings"],
-    cache: ConstructorParameters<typeof ReportPushDevice>[0]["cache"],
+    pushDeviceRepository: ConstructorParameters<
+      typeof ReportPushDeviceUseCase
+    >[0]["pushDeviceRepository"],
+    pushTokenRepository: ConstructorParameters<
+      typeof ReportPushDeviceUseCase
+    >[0]["pushTokenRepository"],
+    unitOfWork: ConstructorParameters<typeof ReportPushDeviceUseCase>[0]["unitOfWork"],
+    pushProvider: ConstructorParameters<typeof ReportPushDeviceUseCase>[0]["pushProvider"],
+    userSettings: ConstructorParameters<typeof ReportPushDeviceUseCase>[0]["userSettings"],
+    cache: ConstructorParameters<typeof ReportPushDeviceUseCase>[0]["cache"],
   ) =>
-    new ReportPushDevice({
+    new ReportPushDeviceUseCase({
       pushDeviceRepository,
       pushTokenRepository,
       unitOfWork,
       pushProvider,
       userSettings,
       cache,
-      logger: new Logger(ReportPushDevice.name),
+      logger: new Logger(ReportPushDeviceUseCase.name),
     }),
 };
 
-export const relayPushDeliveryOutboxProvider: FactoryProvider<RelayPushDeliveryOutbox> = {
-  provide: RelayPushDeliveryOutbox,
-  inject: [
-    PUSH_DELIVERY_OUTBOX_REPOSITORY,
-    PUSH_DELIVERY_LIFECYCLE_REPOSITORY,
-    UNIT_OF_WORK,
-    PublishPushDeliveryOutbox,
-  ],
-  useFactory: (
-    outbox: ConstructorParameters<typeof RelayPushDeliveryOutbox>[0]["outbox"],
-    lifecycle: ConstructorParameters<typeof RelayPushDeliveryOutbox>[0]["lifecycle"],
-    unitOfWork: ConstructorParameters<typeof RelayPushDeliveryOutbox>[0]["unitOfWork"],
-    publishOutbox: ConstructorParameters<typeof RelayPushDeliveryOutbox>[0]["publishOutbox"],
-  ) =>
-    new RelayPushDeliveryOutbox({
-      outbox,
-      lifecycle,
-      unitOfWork,
-      publishOutbox,
-    }),
-};
+export const relayPushDeliveryOutboxUseCaseProvider: FactoryProvider<RelayPushDeliveryOutboxUseCase> =
+  {
+    provide: RelayPushDeliveryOutboxUseCase,
+    inject: [
+      PUSH_DELIVERY_OUTBOX_REPOSITORY,
+      PUSH_DELIVERY_LIFECYCLE_REPOSITORY,
+      UNIT_OF_WORK,
+      PublishPushDeliveryOutboxUseCase,
+    ],
+    useFactory: (
+      outbox: ConstructorParameters<typeof RelayPushDeliveryOutboxUseCase>[0]["outbox"],
+      lifecycle: ConstructorParameters<typeof RelayPushDeliveryOutboxUseCase>[0]["lifecycle"],
+      unitOfWork: ConstructorParameters<typeof RelayPushDeliveryOutboxUseCase>[0]["unitOfWork"],
+      publishOutbox: ConstructorParameters<
+        typeof RelayPushDeliveryOutboxUseCase
+      >[0]["publishOutbox"],
+    ) =>
+      new RelayPushDeliveryOutboxUseCase({
+        outbox,
+        lifecycle,
+        unitOfWork,
+        publishOutbox,
+      }),
+  };
 
-export const sendBatchNotificationProvider: FactoryProvider<SendBatchNotification> = {
-  provide: SendBatchNotification,
+export const sendBatchNotificationUseCaseProvider: FactoryProvider<SendBatchNotificationUseCase> = {
+  provide: SendBatchNotificationUseCase,
   inject: [
-    PersistBatchNotification,
-    FinalizeBatchNotification,
+    PersistBatchNotificationUseCase,
+    FinalizeBatchNotificationUseCase,
     UNIT_OF_WORK,
     AFTER_COMMIT_TASK_REGISTRY,
   ],
   useFactory: (
     persistBatchNotificationUseCase: ConstructorParameters<
-      typeof SendBatchNotification
+      typeof SendBatchNotificationUseCase
     >[0]["persistBatchNotificationUseCase"],
     finalizeBatchNotificationUseCase: ConstructorParameters<
-      typeof SendBatchNotification
+      typeof SendBatchNotificationUseCase
     >[0]["finalizeBatchNotificationUseCase"],
-    unitOfWork: ConstructorParameters<typeof SendBatchNotification>[0]["unitOfWork"],
-    afterCommitTasks: ConstructorParameters<typeof SendBatchNotification>[0]["afterCommitTasks"],
+    unitOfWork: ConstructorParameters<typeof SendBatchNotificationUseCase>[0]["unitOfWork"],
+    afterCommitTasks: ConstructorParameters<
+      typeof SendBatchNotificationUseCase
+    >[0]["afterCommitTasks"],
   ) =>
-    new SendBatchNotification({
+    new SendBatchNotificationUseCase({
       persistBatchNotificationUseCase,
       finalizeBatchNotificationUseCase,
       unitOfWork,
@@ -504,289 +537,309 @@ export const sendBatchNotificationProvider: FactoryProvider<SendBatchNotificatio
     }),
 };
 
-export const reconfirmMarketingConsentsProvider: FactoryProvider<ReconfirmMarketingConsents> = {
-  provide: ReconfirmMarketingConsents,
-  inject: [
-    MARKETING_CONSENT_RECONFIRM_ACCESS,
-    NOTIFICATION_RECIPIENT_LOCALE_READER,
-    NOTIFICATION_RECIPIENT_TIMEZONE_READER,
-    PushQuietHoursReader,
-    NotificationPublisher,
-    UNIT_OF_WORK,
-  ],
-  useFactory: (
-    reconfirmAccess: ConstructorParameters<typeof ReconfirmMarketingConsents>[0]["reconfirmAccess"],
-    localeReader: ConstructorParameters<typeof ReconfirmMarketingConsents>[0]["localeReader"],
-    timezoneReader: ConstructorParameters<typeof ReconfirmMarketingConsents>[0]["timezoneReader"],
-    quietHoursReader: ConstructorParameters<
-      typeof ReconfirmMarketingConsents
-    >[0]["quietHoursReader"],
-    notificationPublisher: ConstructorParameters<
-      typeof ReconfirmMarketingConsents
-    >[0]["notificationPublisher"],
-    unitOfWork: ConstructorParameters<typeof ReconfirmMarketingConsents>[0]["unitOfWork"],
-  ) =>
-    new ReconfirmMarketingConsents({
-      reconfirmAccess,
-      localeReader,
-      timezoneReader,
-      quietHoursReader,
-      notificationPublisher,
-      unitOfWork,
-      logger: new Logger(ReconfirmMarketingConsents.name),
-    }),
-};
-
-export const sendBillingIssueNotificationProvider: FactoryProvider<SendBillingIssueNotification> = {
-  provide: SendBillingIssueNotification,
-  inject: [NotificationPublisher, NOTIFICATION_RECIPIENT_LOCALE_READER],
-  useFactory: (
-    notificationPublisher: ConstructorParameters<
-      typeof SendBillingIssueNotification
-    >[0]["notificationPublisher"],
-    recipientLocaleReader: ConstructorParameters<
-      typeof SendBillingIssueNotification
-    >[0]["recipientLocaleReader"],
-  ) =>
-    new SendBillingIssueNotification({
-      notificationPublisher,
-      recipientLocaleReader,
-      logger: new Logger(SendBillingIssueNotification.name),
-    }),
-};
-
-export const sendCheerNotificationProvider: FactoryProvider<SendCheerNotification> = {
-  provide: SendCheerNotification,
-  inject: [NotificationPublisher, NOTIFICATION_RECIPIENT_LOCALE_READER],
-  useFactory: (
-    notificationPublisher: ConstructorParameters<
-      typeof SendCheerNotification
-    >[0]["notificationPublisher"],
-    recipientLocaleReader: ConstructorParameters<
-      typeof SendCheerNotification
-    >[0]["recipientLocaleReader"],
-  ) =>
-    new SendCheerNotification({
-      notificationPublisher,
-      recipientLocaleReader,
-      logger: new Logger(SendCheerNotification.name),
-    }),
-};
-
-export const sendFollowAcceptedNotificationProvider: FactoryProvider<SendFollowAcceptedNotification> =
+export const reconfirmMarketingConsentsUseCaseProvider: FactoryProvider<ReconfirmMarketingConsentsUseCase> =
   {
-    provide: SendFollowAcceptedNotification,
-    inject: [NotificationPublisher, NOTIFICATION_RECIPIENT_LOCALE_READER],
+    provide: ReconfirmMarketingConsentsUseCase,
+    inject: [
+      MARKETING_CONSENT_RECONFIRM_ACCESS,
+      NOTIFICATION_RECIPIENT_LOCALE_READER,
+      NOTIFICATION_RECIPIENT_TIMEZONE_READER,
+      PushQuietHoursReader,
+      PublishNotificationUseCase,
+      UNIT_OF_WORK,
+    ],
     useFactory: (
+      reconfirmAccess: ConstructorParameters<
+        typeof ReconfirmMarketingConsentsUseCase
+      >[0]["reconfirmAccess"],
+      localeReader: ConstructorParameters<
+        typeof ReconfirmMarketingConsentsUseCase
+      >[0]["localeReader"],
+      timezoneReader: ConstructorParameters<
+        typeof ReconfirmMarketingConsentsUseCase
+      >[0]["timezoneReader"],
+      quietHoursReader: ConstructorParameters<
+        typeof ReconfirmMarketingConsentsUseCase
+      >[0]["quietHoursReader"],
       notificationPublisher: ConstructorParameters<
-        typeof SendFollowAcceptedNotification
+        typeof ReconfirmMarketingConsentsUseCase
       >[0]["notificationPublisher"],
-      recipientLocaleReader: ConstructorParameters<
-        typeof SendFollowAcceptedNotification
-      >[0]["recipientLocaleReader"],
+      unitOfWork: ConstructorParameters<typeof ReconfirmMarketingConsentsUseCase>[0]["unitOfWork"],
     ) =>
-      new SendFollowAcceptedNotification({
+      new ReconfirmMarketingConsentsUseCase({
+        reconfirmAccess,
+        localeReader,
+        timezoneReader,
+        quietHoursReader,
         notificationPublisher,
-        recipientLocaleReader,
-        logger: new Logger(SendFollowAcceptedNotification.name),
+        unitOfWork,
+        logger: new Logger(ReconfirmMarketingConsentsUseCase.name),
       }),
   };
 
-export const sendFollowRequestNotificationProvider: FactoryProvider<SendFollowRequestNotification> =
+export const sendBillingIssueNotificationUseCaseProvider: FactoryProvider<SendBillingIssueNotificationUseCase> =
   {
-    provide: SendFollowRequestNotification,
-    inject: [NotificationPublisher, NOTIFICATION_RECIPIENT_LOCALE_READER],
+    provide: SendBillingIssueNotificationUseCase,
+    inject: [PublishNotificationUseCase, NOTIFICATION_RECIPIENT_LOCALE_READER],
     useFactory: (
       notificationPublisher: ConstructorParameters<
-        typeof SendFollowRequestNotification
+        typeof SendBillingIssueNotificationUseCase
       >[0]["notificationPublisher"],
       recipientLocaleReader: ConstructorParameters<
-        typeof SendFollowRequestNotification
+        typeof SendBillingIssueNotificationUseCase
       >[0]["recipientLocaleReader"],
     ) =>
-      new SendFollowRequestNotification({
+      new SendBillingIssueNotificationUseCase({
         notificationPublisher,
         recipientLocaleReader,
-        logger: new Logger(SendFollowRequestNotification.name),
+        logger: new Logger(SendBillingIssueNotificationUseCase.name),
       }),
   };
 
-export const sendFriendCompletionNotificationsProvider: FactoryProvider<SendFriendCompletionNotifications> =
+export const sendCheerNotificationUseCaseProvider: FactoryProvider<SendCheerNotificationUseCase> = {
+  provide: SendCheerNotificationUseCase,
+  inject: [PublishNotificationUseCase, NOTIFICATION_RECIPIENT_LOCALE_READER],
+  useFactory: (
+    notificationPublisher: ConstructorParameters<
+      typeof SendCheerNotificationUseCase
+    >[0]["notificationPublisher"],
+    recipientLocaleReader: ConstructorParameters<
+      typeof SendCheerNotificationUseCase
+    >[0]["recipientLocaleReader"],
+  ) =>
+    new SendCheerNotificationUseCase({
+      notificationPublisher,
+      recipientLocaleReader,
+      logger: new Logger(SendCheerNotificationUseCase.name),
+    }),
+};
+
+export const sendFollowAcceptedNotificationUseCaseProvider: FactoryProvider<SendFollowAcceptedNotificationUseCase> =
   {
-    provide: SendFriendCompletionNotifications,
+    provide: SendFollowAcceptedNotificationUseCase,
+    inject: [PublishNotificationUseCase, NOTIFICATION_RECIPIENT_LOCALE_READER],
+    useFactory: (
+      notificationPublisher: ConstructorParameters<
+        typeof SendFollowAcceptedNotificationUseCase
+      >[0]["notificationPublisher"],
+      recipientLocaleReader: ConstructorParameters<
+        typeof SendFollowAcceptedNotificationUseCase
+      >[0]["recipientLocaleReader"],
+    ) =>
+      new SendFollowAcceptedNotificationUseCase({
+        notificationPublisher,
+        recipientLocaleReader,
+        logger: new Logger(SendFollowAcceptedNotificationUseCase.name),
+      }),
+  };
+
+export const sendFollowRequestNotificationUseCaseProvider: FactoryProvider<SendFollowRequestNotificationUseCase> =
+  {
+    provide: SendFollowRequestNotificationUseCase,
+    inject: [PublishNotificationUseCase, NOTIFICATION_RECIPIENT_LOCALE_READER],
+    useFactory: (
+      notificationPublisher: ConstructorParameters<
+        typeof SendFollowRequestNotificationUseCase
+      >[0]["notificationPublisher"],
+      recipientLocaleReader: ConstructorParameters<
+        typeof SendFollowRequestNotificationUseCase
+      >[0]["recipientLocaleReader"],
+    ) =>
+      new SendFollowRequestNotificationUseCase({
+        notificationPublisher,
+        recipientLocaleReader,
+        logger: new Logger(SendFollowRequestNotificationUseCase.name),
+      }),
+  };
+
+export const sendFriendCompletionNotificationsUseCaseProvider: FactoryProvider<SendFriendCompletionNotificationsUseCase> =
+  {
+    provide: SendFriendCompletionNotificationsUseCase,
     inject: [
       NotificationHistoryReader,
-      PersistBatchNotification,
-      FinalizeBatchNotification,
+      PersistBatchNotificationUseCase,
+      FinalizeBatchNotificationUseCase,
       UNIT_OF_WORK,
       USER_NOTIFICATION_SETTINGS,
     ],
     useFactory: (
       notificationHistoryReader: ConstructorParameters<
-        typeof SendFriendCompletionNotifications
+        typeof SendFriendCompletionNotificationsUseCase
       >[0]["notificationHistoryReader"],
       persistBatch: ConstructorParameters<
-        typeof SendFriendCompletionNotifications
+        typeof SendFriendCompletionNotificationsUseCase
       >[0]["persistBatch"],
       finalizeBatch: ConstructorParameters<
-        typeof SendFriendCompletionNotifications
+        typeof SendFriendCompletionNotificationsUseCase
       >[0]["finalizeBatch"],
-      unitOfWork: ConstructorParameters<typeof SendFriendCompletionNotifications>[0]["unitOfWork"],
+      unitOfWork: ConstructorParameters<
+        typeof SendFriendCompletionNotificationsUseCase
+      >[0]["unitOfWork"],
       userNotificationSettings: ConstructorParameters<
-        typeof SendFriendCompletionNotifications
+        typeof SendFriendCompletionNotificationsUseCase
       >[0]["userNotificationSettings"],
     ) =>
-      new SendFriendCompletionNotifications({
+      new SendFriendCompletionNotificationsUseCase({
         notificationHistoryReader,
         persistBatch,
         finalizeBatch,
         unitOfWork,
         userNotificationSettings,
-        logger: new Logger(SendFriendCompletionNotifications.name),
+        logger: new Logger(SendFriendCompletionNotificationsUseCase.name),
       }),
   };
 
-export const sendMilestoneNotificationProvider: FactoryProvider<SendMilestoneNotification> = {
-  provide: SendMilestoneNotification,
-  inject: [
-    NotificationPublisher,
-    NOTIFICATION_RECIPIENT_LOCALE_READER,
-    NOTIFICATION_HISTORY_READER,
-    NOTIFICATION_DEDUP_LOCK,
-  ],
-  useFactory: (
-    notificationPublisher: ConstructorParameters<
-      typeof SendMilestoneNotification
-    >[0]["notificationPublisher"],
-    recipientLocaleReader: ConstructorParameters<
-      typeof SendMilestoneNotification
-    >[0]["recipientLocaleReader"],
-    notificationHistoryReader: ConstructorParameters<
-      typeof SendMilestoneNotification
-    >[0]["notificationHistoryReader"],
-    notificationDedupLock: ConstructorParameters<
-      typeof SendMilestoneNotification
-    >[0]["notificationDedupLock"],
-  ) =>
-    new SendMilestoneNotification({
-      notificationPublisher,
-      recipientLocaleReader,
-      notificationHistoryReader,
-      notificationDedupLock,
-      logger: new Logger(SendMilestoneNotification.name),
-    }),
-};
+export const sendMilestoneNotificationUseCaseProvider: FactoryProvider<SendMilestoneNotificationUseCase> =
+  {
+    provide: SendMilestoneNotificationUseCase,
+    inject: [
+      PublishNotificationUseCase,
+      NOTIFICATION_RECIPIENT_LOCALE_READER,
+      NOTIFICATION_HISTORY_READER,
+      NOTIFICATION_DEDUP_LOCK,
+    ],
+    useFactory: (
+      notificationPublisher: ConstructorParameters<
+        typeof SendMilestoneNotificationUseCase
+      >[0]["notificationPublisher"],
+      recipientLocaleReader: ConstructorParameters<
+        typeof SendMilestoneNotificationUseCase
+      >[0]["recipientLocaleReader"],
+      notificationHistoryReader: ConstructorParameters<
+        typeof SendMilestoneNotificationUseCase
+      >[0]["notificationHistoryReader"],
+      notificationDedupLock: ConstructorParameters<
+        typeof SendMilestoneNotificationUseCase
+      >[0]["notificationDedupLock"],
+    ) =>
+      new SendMilestoneNotificationUseCase({
+        notificationPublisher,
+        recipientLocaleReader,
+        notificationHistoryReader,
+        notificationDedupLock,
+        logger: new Logger(SendMilestoneNotificationUseCase.name),
+      }),
+  };
 
-export const sendNotificationProvider: FactoryProvider<SendNotification> = {
-  provide: SendNotification,
+export const sendNotificationUseCaseProvider: FactoryProvider<SendNotificationUseCase> = {
+  provide: SendNotificationUseCase,
   inject: [
     NOTIFICATION_REPOSITORY,
     PUSH_DISPATCH_STAGING,
     NOTIFICATION_CACHE,
     UNIT_OF_WORK,
     AFTER_COMMIT_TASK_REGISTRY,
-    PushDeliveryAfterCommitPublisher,
+    PublishPushDeliveryAfterCommitUseCase,
   ],
   useFactory: (
     notificationRepository: ConstructorParameters<
-      typeof SendNotification
+      typeof SendNotificationUseCase
     >[0]["notificationRepository"],
-    pushDispatchStaging: ConstructorParameters<typeof SendNotification>[0]["pushDispatchStaging"],
-    cache: ConstructorParameters<typeof SendNotification>[0]["cache"],
-    unitOfWork: ConstructorParameters<typeof SendNotification>[0]["unitOfWork"],
-    afterCommit: ConstructorParameters<typeof SendNotification>[0]["afterCommit"],
-    afterCommitPublisher: ConstructorParameters<typeof SendNotification>[0]["afterCommitPublisher"],
+    pushDispatchStaging: ConstructorParameters<
+      typeof SendNotificationUseCase
+    >[0]["pushDispatchStaging"],
+    cache: ConstructorParameters<typeof SendNotificationUseCase>[0]["cache"],
+    unitOfWork: ConstructorParameters<typeof SendNotificationUseCase>[0]["unitOfWork"],
+    afterCommit: ConstructorParameters<typeof SendNotificationUseCase>[0]["afterCommit"],
+    afterCommitPublisher: ConstructorParameters<
+      typeof SendNotificationUseCase
+    >[0]["afterCommitPublisher"],
   ) =>
-    new SendNotification({
+    new SendNotificationUseCase({
       notificationRepository,
       pushDispatchStaging,
       cache,
       unitOfWork,
       afterCommit,
       afterCommitPublisher,
-      logger: new Logger(SendNotification.name),
+      logger: new Logger(SendNotificationUseCase.name),
     }),
 };
 
-export const sendNotificationWithDedupProvider: FactoryProvider<SendNotificationWithDedup> = {
-  provide: SendNotificationWithDedup,
-  inject: [SendNotification, NOTIFICATION_DEDUP_LOCK, NOTIFICATION_HISTORY_READER],
-  useFactory: (
-    sendNotification: ConstructorParameters<
-      typeof SendNotificationWithDedup
-    >[0]["sendNotification"],
-    dedupLock: ConstructorParameters<typeof SendNotificationWithDedup>[0]["dedupLock"],
-    notificationHistoryReader: ConstructorParameters<
-      typeof SendNotificationWithDedup
-    >[0]["notificationHistoryReader"],
-  ) =>
-    new SendNotificationWithDedup({
-      sendNotification,
-      dedupLock,
-      notificationHistoryReader,
-      logger: new Logger(SendNotificationWithDedup.name),
-    }),
-};
+export const sendNotificationWithDedupUseCaseProvider: FactoryProvider<SendNotificationWithDedupUseCase> =
+  {
+    provide: SendNotificationWithDedupUseCase,
+    inject: [SendNotificationUseCase, NOTIFICATION_DEDUP_LOCK, NOTIFICATION_HISTORY_READER],
+    useFactory: (
+      sendNotification: ConstructorParameters<
+        typeof SendNotificationWithDedupUseCase
+      >[0]["sendNotification"],
+      dedupLock: ConstructorParameters<typeof SendNotificationWithDedupUseCase>[0]["dedupLock"],
+      notificationHistoryReader: ConstructorParameters<
+        typeof SendNotificationWithDedupUseCase
+      >[0]["notificationHistoryReader"],
+    ) =>
+      new SendNotificationWithDedupUseCase({
+        sendNotification,
+        dedupLock,
+        notificationHistoryReader,
+        logger: new Logger(SendNotificationWithDedupUseCase.name),
+      }),
+  };
 
-export const sendNudgeNotificationProvider: FactoryProvider<SendNudgeNotification> = {
-  provide: SendNudgeNotification,
-  inject: [NotificationPublisher, NOTIFICATION_RECIPIENT_LOCALE_READER],
+export const sendNudgeNotificationUseCaseProvider: FactoryProvider<SendNudgeNotificationUseCase> = {
+  provide: SendNudgeNotificationUseCase,
+  inject: [PublishNotificationUseCase, NOTIFICATION_RECIPIENT_LOCALE_READER],
   useFactory: (
     notificationPublisher: ConstructorParameters<
-      typeof SendNudgeNotification
+      typeof SendNudgeNotificationUseCase
     >[0]["notificationPublisher"],
     recipientLocaleReader: ConstructorParameters<
-      typeof SendNudgeNotification
+      typeof SendNudgeNotificationUseCase
     >[0]["recipientLocaleReader"],
   ) =>
-    new SendNudgeNotification({
+    new SendNudgeNotificationUseCase({
       notificationPublisher,
       recipientLocaleReader,
-      logger: new Logger(SendNudgeNotification.name),
+      logger: new Logger(SendNudgeNotificationUseCase.name),
     }),
 };
 
-export const unregisterPushDeviceProvider: FactoryProvider<UnregisterPushDevice> = {
-  provide: UnregisterPushDevice,
+export const unregisterPushDeviceUseCaseProvider: FactoryProvider<UnregisterPushDeviceUseCase> = {
+  provide: UnregisterPushDeviceUseCase,
   inject: [PUSH_DEVICE_REPOSITORY, PUSH_TOKEN_REPOSITORY, UNIT_OF_WORK, NOTIFICATION_CACHE],
   useFactory: (
     pushDeviceRepository: ConstructorParameters<
-      typeof UnregisterPushDevice
+      typeof UnregisterPushDeviceUseCase
     >[0]["pushDeviceRepository"],
     pushTokenRepository: ConstructorParameters<
-      typeof UnregisterPushDevice
+      typeof UnregisterPushDeviceUseCase
     >[0]["pushTokenRepository"],
-    unitOfWork: ConstructorParameters<typeof UnregisterPushDevice>[0]["unitOfWork"],
-    cache: ConstructorParameters<typeof UnregisterPushDevice>[0]["cache"],
+    unitOfWork: ConstructorParameters<typeof UnregisterPushDeviceUseCase>[0]["unitOfWork"],
+    cache: ConstructorParameters<typeof UnregisterPushDeviceUseCase>[0]["cache"],
   ) =>
-    new UnregisterPushDevice({
+    new UnregisterPushDeviceUseCase({
       pushDeviceRepository,
       pushTokenRepository,
       unitOfWork,
       cache,
-      logger: new Logger(UnregisterPushDevice.name),
+      logger: new Logger(UnregisterPushDeviceUseCase.name),
     }),
 };
 
-export const notificationPublisherProvider: FactoryProvider<NotificationPublisher> = {
-  provide: NotificationPublisher,
+export const publishNotificationUseCaseProvider: FactoryProvider<PublishNotificationUseCase> = {
+  provide: PublishNotificationUseCase,
   inject: [
-    SendNotification,
-    SendNotificationWithDedup,
-    SendBatchNotification,
+    SendNotificationUseCase,
+    SendNotificationWithDedupUseCase,
+    SendBatchNotificationUseCase,
     NOTIFICATION_TODO_TARGET_READER,
   ],
   useFactory: (
-    sendNotification: ConstructorParameters<typeof NotificationPublisher>[0]["sendNotification"],
+    sendNotification: ConstructorParameters<
+      typeof PublishNotificationUseCase
+    >[0]["sendNotification"],
     sendNotificationWithDeduplication: ConstructorParameters<
-      typeof NotificationPublisher
+      typeof PublishNotificationUseCase
     >[0]["sendNotificationWithDeduplication"],
     sendBatchNotification: ConstructorParameters<
-      typeof NotificationPublisher
+      typeof PublishNotificationUseCase
     >[0]["sendBatchNotification"],
-    todoTargetReader: ConstructorParameters<typeof NotificationPublisher>[0]["todoTargetReader"],
+    todoTargetReader: ConstructorParameters<
+      typeof PublishNotificationUseCase
+    >[0]["todoTargetReader"],
   ) =>
-    new NotificationPublisher({
+    new PublishNotificationUseCase({
       sendNotification,
       sendNotificationWithDeduplication,
       sendBatchNotification,

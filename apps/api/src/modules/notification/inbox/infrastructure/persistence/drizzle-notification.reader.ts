@@ -13,7 +13,7 @@ import type {
   NotificationHistoryReaderPort,
 } from "../../application/ports/notification-history.reader.port.js";
 import type { NotificationInboxReaderPort } from "../../application/ports/notification-inbox.reader.port.js";
-import type { NotificationRecord } from "../../application/read-models/notification.read-model.js";
+import type { InboxNotification } from "../../application/read-models/inbox-notification.read-model.js";
 import type { NotificationType } from "../../domain/notification-type.constants.js";
 
 @Injectable()
@@ -30,12 +30,12 @@ export class DrizzleNotificationReader
     return this.#txHost.tx;
   }
 
-  async findNotificationById(id: number): Promise<NotificationRecord | null> {
+  async findNotificationById(id: number): Promise<InboxNotification | null> {
     const row = await this.#db.query.notification.findFirst({ where: { id } });
     return row ?? null;
   }
 
-  async findNotificationsByUser(params: FindNotificationsParams): Promise<NotificationRecord[]> {
+  async findNotificationsByUser(params: FindNotificationsParams): Promise<InboxNotification[]> {
     const { userId, cursor, size, unreadOnly, types } = params;
     const anchor =
       cursor == null

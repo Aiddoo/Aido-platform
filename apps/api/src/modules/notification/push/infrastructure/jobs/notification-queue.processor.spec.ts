@@ -5,14 +5,14 @@ import type { Mocked } from "vitest";
 
 import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/index";
 
-import { ReconcilePushReceipts } from "../../application/use-cases/reconcile-push-receipts.use-case.js";
-import { SendBillingIssueNotification } from "../../application/use-cases/send-billing-issue-notification.use-case.js";
-import { SendCheerNotification } from "../../application/use-cases/send-cheer-notification.use-case.js";
-import { SendFollowAcceptedNotification } from "../../application/use-cases/send-follow-accepted-notification.use-case.js";
-import { SendFollowRequestNotification } from "../../application/use-cases/send-follow-request-notification.use-case.js";
-import { SendFriendCompletionNotifications } from "../../application/use-cases/send-friend-completion-notifications.use-case.js";
-import { SendMilestoneNotification } from "../../application/use-cases/send-milestone-notification.use-case.js";
-import { SendNudgeNotification } from "../../application/use-cases/send-nudge-notification.use-case.js";
+import { ReconcilePushReceiptsUseCase } from "../../application/use-cases/reconcile-push-receipts.use-case.js";
+import { SendBillingIssueNotificationUseCase } from "../../application/use-cases/send-billing-issue-notification.use-case.js";
+import { SendCheerNotificationUseCase } from "../../application/use-cases/send-cheer-notification.use-case.js";
+import { SendFollowAcceptedNotificationUseCase } from "../../application/use-cases/send-follow-accepted-notification.use-case.js";
+import { SendFollowRequestNotificationUseCase } from "../../application/use-cases/send-follow-request-notification.use-case.js";
+import { SendFriendCompletionNotificationsUseCase } from "../../application/use-cases/send-friend-completion-notifications.use-case.js";
+import { SendMilestoneNotificationUseCase } from "../../application/use-cases/send-milestone-notification.use-case.js";
+import { SendNudgeNotificationUseCase } from "../../application/use-cases/send-nudge-notification.use-case.js";
 import {
   NOTIFICATION_DEAD_LETTER_QUEUE,
   NotificationJobName,
@@ -21,14 +21,14 @@ import { NotificationQueueProcessor } from "./notification-queue.processor.js";
 
 describe("NotificationQueueProcessor", () => {
   let processor: NotificationQueueProcessor;
-  let sendFollowRequest: Mocked<SendFollowRequestNotification>;
-  let sendFollowAccepted: Mocked<SendFollowAcceptedNotification>;
-  let sendNudge: Mocked<SendNudgeNotification>;
-  let sendCheer: Mocked<SendCheerNotification>;
-  let sendBillingIssue: Mocked<SendBillingIssueNotification>;
-  let sendFriendCompletion: Mocked<SendFriendCompletionNotifications>;
-  let sendMilestone: Mocked<SendMilestoneNotification>;
-  let reconcilePushReceipts: Mocked<ReconcilePushReceipts>;
+  let sendFollowRequest: Mocked<SendFollowRequestNotificationUseCase>;
+  let sendFollowAccepted: Mocked<SendFollowAcceptedNotificationUseCase>;
+  let sendNudge: Mocked<SendNudgeNotificationUseCase>;
+  let sendCheer: Mocked<SendCheerNotificationUseCase>;
+  let sendBillingIssue: Mocked<SendBillingIssueNotificationUseCase>;
+  let sendFriendCompletion: Mocked<SendFriendCompletionNotificationsUseCase>;
+  let sendMilestone: Mocked<SendMilestoneNotificationUseCase>;
+  let reconcilePushReceipts: Mocked<ReconcilePushReceiptsUseCase>;
   let runtime: Mocked<JobRuntimePort>;
 
   beforeEach(async () => {
@@ -46,14 +46,14 @@ describe("NotificationQueueProcessor", () => {
       }))
       .compile();
     processor = unit;
-    sendFollowRequest = unitRef.get(SendFollowRequestNotification);
-    sendFollowAccepted = unitRef.get(SendFollowAcceptedNotification);
-    sendNudge = unitRef.get(SendNudgeNotification);
-    sendCheer = unitRef.get(SendCheerNotification);
-    sendBillingIssue = unitRef.get(SendBillingIssueNotification);
-    sendFriendCompletion = unitRef.get(SendFriendCompletionNotifications);
-    sendMilestone = unitRef.get(SendMilestoneNotification);
-    reconcilePushReceipts = unitRef.get(ReconcilePushReceipts);
+    sendFollowRequest = unitRef.get(SendFollowRequestNotificationUseCase);
+    sendFollowAccepted = unitRef.get(SendFollowAcceptedNotificationUseCase);
+    sendNudge = unitRef.get(SendNudgeNotificationUseCase);
+    sendCheer = unitRef.get(SendCheerNotificationUseCase);
+    sendBillingIssue = unitRef.get(SendBillingIssueNotificationUseCase);
+    sendFriendCompletion = unitRef.get(SendFriendCompletionNotificationsUseCase);
+    sendMilestone = unitRef.get(SendMilestoneNotificationUseCase);
+    reconcilePushReceipts = unitRef.get(ReconcilePushReceiptsUseCase);
     runtime = unitRef.get(JOB_RUNTIME);
   });
 

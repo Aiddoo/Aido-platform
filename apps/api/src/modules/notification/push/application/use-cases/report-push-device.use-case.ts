@@ -70,7 +70,7 @@ interface ReportPushDeviceDependencies {
  * 권한이 발송을 허용하고 토큰이 있으면 토큰을 등록하고, 아니면 이 기기의 토큰을 지운다.
  * 같은 토큰을 동시에 등록해 충돌하면 새 트랜잭션에서 한 번만 다시 시도한다.
  */
-export class ReportPushDevice {
+export class ReportPushDeviceUseCase {
   readonly #dependencies: ReportPushDeviceDependencies;
 
   constructor(dependencies: ReportPushDeviceDependencies) {

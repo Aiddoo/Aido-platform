@@ -3,24 +3,24 @@ import { mock } from "vitest-mock-extended";
 
 import type { Database } from "#api/platform/database/database.client";
 
-import { InMemoryPushRateLimiter } from "./in-memory-push-rate-limiter.adapter.js";
-import { PostgresPushRateLimiter } from "./postgres-push-rate-limiter.adapter.js";
+import { InMemoryPushRateLimiterAdapter } from "./in-memory-push-rate-limiter.adapter.js";
+import { PostgresPushRateLimiterAdapter } from "./postgres-push-rate-limiter.adapter.js";
 import { createPushRateLimiter } from "./push-rate-limiter-factory.adapter.js";
-import { RedisPushRateLimiter } from "./redis-push-rate-limiter.adapter.js";
+import { RedisPushRateLimiterAdapter } from "./redis-push-rate-limiter.adapter.js";
 
 describe("createPushRateLimiter", () => {
   const database = mock<Database>();
 
   it("PostgreSQL을 기본 운영 구현으로 생성한다", () => {
     expect(createPushRateLimiter({ backend: "postgres", database })).toBeInstanceOf(
-      PostgresPushRateLimiter,
+      PostgresPushRateLimiterAdapter,
     );
   });
 
   it("Redis/Valkey 호환 command client가 있을 때 Redis 구현을 생성한다", () => {
     const redis = mock<Redis>();
     expect(createPushRateLimiter({ backend: "redis", database, redis })).toBeInstanceOf(
-      RedisPushRateLimiter,
+      RedisPushRateLimiterAdapter,
     );
   });
 
@@ -32,7 +32,7 @@ describe("createPushRateLimiter", () => {
 
   it("memory는 명시적으로 선택한 개발·테스트 환경에서만 생성한다", () => {
     const limiter = createPushRateLimiter({ backend: "memory", database });
-    expect(limiter).toBeInstanceOf(InMemoryPushRateLimiter);
+    expect(limiter).toBeInstanceOf(InMemoryPushRateLimiterAdapter);
     limiter.destroy?.();
   });
 });

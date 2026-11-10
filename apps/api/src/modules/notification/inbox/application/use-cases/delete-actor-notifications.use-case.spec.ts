@@ -5,14 +5,14 @@ import {
   createNotificationRepositoryMock,
 } from "#test/mocks/ports/index";
 
-import { NotificationAccountCleanup } from "./delete-actor-notifications.use-case.js";
+import { DeleteActorNotificationsUseCase } from "./delete-actor-notifications.use-case.js";
 
-describe("NotificationAccountCleanup", () => {
+describe("DeleteActorNotificationsUseCase", () => {
   it("bounded context 저장소에 actor 개인정보 정리를 위임한다", async () => {
     const notificationAccountCleanupDependencies = mockDeep<
-      ConstructorParameters<typeof NotificationAccountCleanup>[0]
+      ConstructorParameters<typeof DeleteActorNotificationsUseCase>[0]
     >({ repository: createNotificationRepositoryMock(), cache: createNotificationCacheMock() });
-    const unit = new NotificationAccountCleanup(notificationAccountCleanupDependencies);
+    const unit = new DeleteActorNotificationsUseCase(notificationAccountCleanupDependencies);
     const repository = notificationAccountCleanupDependencies.repository;
     const cache = notificationAccountCleanupDependencies.cache;
     repository.deleteNotificationsByActorId.mockResolvedValue({

@@ -191,8 +191,8 @@ function isRateLimitResult(value: unknown, expectedLength: number): value is Arr
  * - 멀티 인스턴스 환경에서 rate limit 공유
  * - Redis 장애 시 fail-open (발송 허용)
  */
-export class RedisPushRateLimiter implements PushRateLimiterPort {
-  readonly #logger = new Logger(RedisPushRateLimiter.name);
+export class RedisPushRateLimiterAdapter implements PushRateLimiterPort {
+  readonly #logger = new Logger(RedisPushRateLimiterAdapter.name);
   readonly #redis: Redis;
   readonly #errorSampler = new RedisErrorLogSampler(this.#logger);
 

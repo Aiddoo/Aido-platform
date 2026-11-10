@@ -72,7 +72,7 @@ interface PushDeliveryEligibilityServiceDependencies {
   >;
 }
 
-export class PushDeliveryEligibilityService {
+export class EvaluatePushDeliveryEligibilityUseCase {
   readonly #dependencies: PushDeliveryEligibilityServiceDependencies;
 
   constructor(dependencies: PushDeliveryEligibilityServiceDependencies) {

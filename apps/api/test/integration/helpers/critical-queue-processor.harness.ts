@@ -27,11 +27,11 @@ import { NOTIFICATION_CACHE } from "#api/modules/notification/inbox/application/
 import { NOTIFICATION_HISTORY_READER } from "#api/modules/notification/inbox/application/ports/notification-history.reader.port";
 import { NOTIFICATION_INBOX_READER } from "#api/modules/notification/inbox/application/ports/notification-inbox.reader.port";
 import { NOTIFICATION_REPOSITORY } from "#api/modules/notification/inbox/application/ports/notification.repository.port";
-import { GetNotifications } from "#api/modules/notification/inbox/application/use-cases/get-notifications.use-case";
-import { GetUnreadCount } from "#api/modules/notification/inbox/application/use-cases/get-unread-count.use-case";
-import { MarkAllAsRead } from "#api/modules/notification/inbox/application/use-cases/mark-all-as-read.use-case";
-import { MarkAsRead } from "#api/modules/notification/inbox/application/use-cases/mark-as-read.use-case";
-import { MarkNotificationOpened } from "#api/modules/notification/inbox/application/use-cases/mark-notification-opened.use-case";
+import { GetUnreadNotificationCountUseCase } from "#api/modules/notification/inbox/application/use-cases/get-unread-notification-count.use-case";
+import { ListNotificationsUseCase } from "#api/modules/notification/inbox/application/use-cases/list-notifications.use-case";
+import { MarkAllNotificationsReadUseCase } from "#api/modules/notification/inbox/application/use-cases/mark-all-notifications-read.use-case";
+import { MarkNotificationOpenedUseCase } from "#api/modules/notification/inbox/application/use-cases/mark-notification-opened.use-case";
+import { MarkNotificationReadUseCase } from "#api/modules/notification/inbox/application/use-cases/mark-notification-read.use-case";
 import { NotificationCacheAdapter } from "#api/modules/notification/inbox/infrastructure/cache/notification-cache.adapter";
 import { DrizzleNotificationReader } from "#api/modules/notification/inbox/infrastructure/persistence/drizzle-notification.reader";
 import { DrizzleNotificationRepository } from "#api/modules/notification/inbox/infrastructure/persistence/drizzle-notification.repository";
@@ -58,23 +58,23 @@ import {
   USER_NOTIFICATION_SETTINGS,
   type UserNotificationSettingsPort,
 } from "#api/modules/notification/push/application/ports/user-notification-settings.port";
-import { OptOutMarketingPush } from "#api/modules/notification/push/application/use-cases/opt-out-marketing-push.use-case";
-import { ReconcilePushReceipts } from "#api/modules/notification/push/application/use-cases/reconcile-push-receipts.use-case";
-import { ReportPushDevice } from "#api/modules/notification/push/application/use-cases/report-push-device.use-case";
-import { SendBillingIssueNotification } from "#api/modules/notification/push/application/use-cases/send-billing-issue-notification.use-case";
-import { SendCheerNotification } from "#api/modules/notification/push/application/use-cases/send-cheer-notification.use-case";
-import { SendFollowAcceptedNotification } from "#api/modules/notification/push/application/use-cases/send-follow-accepted-notification.use-case";
-import { SendFollowRequestNotification } from "#api/modules/notification/push/application/use-cases/send-follow-request-notification.use-case";
-import { SendMilestoneNotification } from "#api/modules/notification/push/application/use-cases/send-milestone-notification.use-case";
-import { SendNotificationWithDedup } from "#api/modules/notification/push/application/use-cases/send-notification-with-dedup.use-case";
-import { SendNudgeNotification } from "#api/modules/notification/push/application/use-cases/send-nudge-notification.use-case";
-import { UnregisterPushDevice } from "#api/modules/notification/push/application/use-cases/unregister-push-device.use-case";
+import { OptOutMarketingPushUseCase } from "#api/modules/notification/push/application/use-cases/opt-out-marketing-push.use-case";
+import { ReconcilePushReceiptsUseCase } from "#api/modules/notification/push/application/use-cases/reconcile-push-receipts.use-case";
+import { ReportPushDeviceUseCase } from "#api/modules/notification/push/application/use-cases/report-push-device.use-case";
+import { SendBillingIssueNotificationUseCase } from "#api/modules/notification/push/application/use-cases/send-billing-issue-notification.use-case";
+import { SendCheerNotificationUseCase } from "#api/modules/notification/push/application/use-cases/send-cheer-notification.use-case";
+import { SendFollowAcceptedNotificationUseCase } from "#api/modules/notification/push/application/use-cases/send-follow-accepted-notification.use-case";
+import { SendFollowRequestNotificationUseCase } from "#api/modules/notification/push/application/use-cases/send-follow-request-notification.use-case";
+import { SendMilestoneNotificationUseCase } from "#api/modules/notification/push/application/use-cases/send-milestone-notification.use-case";
+import { SendNotificationWithDedupUseCase } from "#api/modules/notification/push/application/use-cases/send-notification-with-dedup.use-case";
+import { SendNudgeNotificationUseCase } from "#api/modules/notification/push/application/use-cases/send-nudge-notification.use-case";
+import { UnregisterPushDeviceUseCase } from "#api/modules/notification/push/application/use-cases/unregister-push-device.use-case";
 import { CachedActivePushTokenReaderAdapter } from "#api/modules/notification/push/infrastructure/adapters/cached-active-push-token-reader.adapter";
 import { CachedNotificationRecipientPreferenceAdapter } from "#api/modules/notification/push/infrastructure/adapters/cached-notification-recipient-preference.adapter";
-import { InMemoryPushRateLimiter } from "#api/modules/notification/push/infrastructure/adapters/in-memory-push-rate-limiter.adapter";
+import { InMemoryPushRateLimiterAdapter } from "#api/modules/notification/push/infrastructure/adapters/in-memory-push-rate-limiter.adapter";
 import { NotificationDedupAdapter } from "#api/modules/notification/push/infrastructure/adapters/notification-dedup.adapter";
 import { NotificationQueueProcessor } from "#api/modules/notification/push/infrastructure/jobs/notification-queue.processor";
-import { PushDeliveryQueueService } from "#api/modules/notification/push/infrastructure/jobs/push-delivery-queue.adapter";
+import { PushDeliveryQueueAdapter } from "#api/modules/notification/push/infrastructure/jobs/push-delivery-queue.adapter";
 import { PushDeliveryQueueProcessor } from "#api/modules/notification/push/infrastructure/jobs/push-delivery-queue.processor";
 import { DrizzleNotificationTodoTargetReader } from "#api/modules/notification/push/infrastructure/persistence/drizzle-notification-todo-target.reader";
 import { DrizzlePushDeliveryLifecycleRepository } from "#api/modules/notification/push/infrastructure/persistence/drizzle-push-delivery-lifecycle.repository";
@@ -84,21 +84,21 @@ import { DrizzlePushDispatchStagingRepository } from "#api/modules/notification/
 import { DrizzlePushReceiptRepository } from "#api/modules/notification/push/infrastructure/persistence/drizzle-push-receipt.repository";
 import { DrizzlePushTokenRepository } from "#api/modules/notification/push/infrastructure/persistence/drizzle-push-token.repository";
 import {
-  deliverPushNotificationsProvider,
-  finalizeBatchNotificationProvider,
-  notificationPublisherProvider,
+  deliverPushNotificationsUseCaseProvider,
+  finalizeBatchNotificationUseCaseProvider,
+  publishNotificationUseCaseProvider,
   notificationHistoryReaderProvider,
-  persistBatchNotificationProvider,
-  publishPushDeliveryOutboxProvider,
-  pushDeliveryAfterCommitPublisherProvider,
-  pushDeliveryEligibilityServiceProvider,
-  pushNotificationDeliveryServiceProvider,
-  pushNotificationPayloadFactoryProvider,
-  recoverFailedPushDeliveriesProvider,
-  relayPushDeliveryOutboxProvider,
-  sendBatchNotificationProvider,
-  sendFriendCompletionNotificationsProvider,
-  sendNotificationProvider,
+  persistBatchNotificationUseCaseProvider,
+  publishPushDeliveryOutboxUseCaseProvider,
+  publishPushDeliveryAfterCommitUseCaseProvider,
+  evaluatePushDeliveryEligibilityUseCaseProvider,
+  dispatchPushNotificationUseCaseProvider,
+  pushNotificationPayloadMapperProvider,
+  recoverFailedPushDeliveriesUseCaseProvider,
+  relayPushDeliveryOutboxUseCaseProvider,
+  sendBatchNotificationUseCaseProvider,
+  sendFriendCompletionNotificationsUseCaseProvider,
+  sendNotificationUseCaseProvider,
 } from "#api/modules/notification/push/notification-push.providers";
 import { AdminBroadcastNotifierPort } from "#api/modules/operations/broadcasts/application/ports/admin-broadcast-notifier.port";
 import { AdminUserDirectoryReaderPort } from "#api/modules/operations/broadcasts/application/ports/admin-user-directory.reader.port";
@@ -283,32 +283,32 @@ export async function createCriticalQueueProcessorHarness(): Promise<CriticalQue
 function notificationProviders(pushProvider: FakePushProvider): Provider[] {
   return [
     NotificationQueueProcessor,
-    sendFriendCompletionNotificationsProvider,
-    { provide: SendFollowRequestNotification, useValue: unexpectedUseCase },
-    { provide: SendFollowAcceptedNotification, useValue: unexpectedUseCase },
-    { provide: SendNudgeNotification, useValue: unexpectedUseCase },
-    { provide: SendCheerNotification, useValue: unexpectedUseCase },
-    { provide: SendBillingIssueNotification, useValue: unexpectedUseCase },
-    { provide: SendMilestoneNotification, useValue: unexpectedUseCase },
-    { provide: ReconcilePushReceipts, useValue: unexpectedUseCase },
-    notificationPublisherProvider,
+    sendFriendCompletionNotificationsUseCaseProvider,
+    { provide: SendFollowRequestNotificationUseCase, useValue: unexpectedUseCase },
+    { provide: SendFollowAcceptedNotificationUseCase, useValue: unexpectedUseCase },
+    { provide: SendNudgeNotificationUseCase, useValue: unexpectedUseCase },
+    { provide: SendCheerNotificationUseCase, useValue: unexpectedUseCase },
+    { provide: SendBillingIssueNotificationUseCase, useValue: unexpectedUseCase },
+    { provide: SendMilestoneNotificationUseCase, useValue: unexpectedUseCase },
+    { provide: ReconcilePushReceiptsUseCase, useValue: unexpectedUseCase },
+    publishNotificationUseCaseProvider,
     notificationHistoryReaderProvider,
-    persistBatchNotificationProvider,
-    finalizeBatchNotificationProvider,
+    persistBatchNotificationUseCaseProvider,
+    finalizeBatchNotificationUseCaseProvider,
     {
-      provide: GetNotifications,
+      provide: ListNotificationsUseCase,
       useValue: unexpectedUseCase,
     },
-    { provide: GetUnreadCount, useValue: unexpectedUseCase },
-    { provide: MarkAsRead, useValue: unexpectedUseCase },
-    { provide: MarkNotificationOpened, useValue: unexpectedUseCase },
-    { provide: MarkAllAsRead, useValue: unexpectedUseCase },
-    { provide: ReportPushDevice, useValue: unexpectedUseCase },
-    { provide: UnregisterPushDevice, useValue: unexpectedUseCase },
-    { provide: OptOutMarketingPush, useValue: unexpectedUseCase },
-    sendNotificationProvider,
-    { provide: SendNotificationWithDedup, useValue: unexpectedUseCase },
-    sendBatchNotificationProvider,
+    { provide: GetUnreadNotificationCountUseCase, useValue: unexpectedUseCase },
+    { provide: MarkNotificationReadUseCase, useValue: unexpectedUseCase },
+    { provide: MarkNotificationOpenedUseCase, useValue: unexpectedUseCase },
+    { provide: MarkAllNotificationsReadUseCase, useValue: unexpectedUseCase },
+    { provide: ReportPushDeviceUseCase, useValue: unexpectedUseCase },
+    { provide: UnregisterPushDeviceUseCase, useValue: unexpectedUseCase },
+    { provide: OptOutMarketingPushUseCase, useValue: unexpectedUseCase },
+    sendNotificationUseCaseProvider,
+    { provide: SendNotificationWithDedupUseCase, useValue: unexpectedUseCase },
+    sendBatchNotificationUseCaseProvider,
     DrizzleNotificationRepository,
     { provide: NOTIFICATION_REPOSITORY, useExisting: DrizzleNotificationRepository },
     DrizzleNotificationReader,
@@ -335,7 +335,7 @@ function notificationProviders(pushProvider: FakePushProvider): Provider[] {
       useExisting: DrizzlePushDeliveryLifecycleRepository,
     },
     { provide: PUSH_PROVIDER, useValue: pushProvider },
-    { provide: PUSH_RATE_LIMITER, useClass: InMemoryPushRateLimiter },
+    { provide: PUSH_RATE_LIMITER, useClass: InMemoryPushRateLimiterAdapter },
     {
       provide: MARKETING_PUSH_OPT_OUT_TOKEN,
       useValue: {
@@ -392,16 +392,16 @@ function notificationProviders(pushProvider: FakePushProvider): Provider[] {
       provide: NOTIFICATION_RECIPIENT_TIMEZONE_READER,
       useExisting: CachedNotificationRecipientPreferenceAdapter,
     },
-    pushDeliveryEligibilityServiceProvider,
-    pushDeliveryAfterCommitPublisherProvider,
-    pushNotificationDeliveryServiceProvider,
-    pushNotificationPayloadFactoryProvider,
-    deliverPushNotificationsProvider,
-    publishPushDeliveryOutboxProvider,
-    recoverFailedPushDeliveriesProvider,
-    relayPushDeliveryOutboxProvider,
-    PushDeliveryQueueService,
-    { provide: PUSH_DELIVERY_JOB_ENQUEUER, useExisting: PushDeliveryQueueService },
+    evaluatePushDeliveryEligibilityUseCaseProvider,
+    publishPushDeliveryAfterCommitUseCaseProvider,
+    dispatchPushNotificationUseCaseProvider,
+    pushNotificationPayloadMapperProvider,
+    deliverPushNotificationsUseCaseProvider,
+    publishPushDeliveryOutboxUseCaseProvider,
+    recoverFailedPushDeliveriesUseCaseProvider,
+    relayPushDeliveryOutboxUseCaseProvider,
+    PushDeliveryQueueAdapter,
+    { provide: PUSH_DELIVERY_JOB_ENQUEUER, useExisting: PushDeliveryQueueAdapter },
     PushDeliveryQueueProcessor,
   ];
 }

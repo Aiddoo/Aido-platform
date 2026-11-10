@@ -3,22 +3,24 @@ import { mockDeep } from "vitest-mock-extended";
 
 import { TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY } from "../../domain/transactional-notification-campaign.constants.js";
 import { createFollowRequestNotificationMessage } from "../messages/notification.messages.js";
-import { SendFollowRequestNotification } from "./send-follow-request-notification.use-case.js";
+import { SendFollowRequestNotificationUseCase } from "./send-follow-request-notification.use-case.js";
 
-describe("SendFollowRequestNotification", () => {
-  let useCase: SendFollowRequestNotification;
+describe("SendFollowRequestNotificationUseCase", () => {
+  let useCase: SendFollowRequestNotificationUseCase;
   let notificationSender: Mocked<
-    ConstructorParameters<typeof SendFollowRequestNotification>[0]["notificationPublisher"]
+    ConstructorParameters<typeof SendFollowRequestNotificationUseCase>[0]["notificationPublisher"]
   >;
   let recipientLocaleReader: Mocked<
-    ConstructorParameters<typeof SendFollowRequestNotification>[0]["recipientLocaleReader"]
+    ConstructorParameters<typeof SendFollowRequestNotificationUseCase>[0]["recipientLocaleReader"]
   >;
 
   beforeEach(async () => {
     const sendFollowRequestNotificationDependencies = mockDeep<
-      ConstructorParameters<typeof SendFollowRequestNotification>[0]
+      ConstructorParameters<typeof SendFollowRequestNotificationUseCase>[0]
     >({});
-    const unit = new SendFollowRequestNotification(sendFollowRequestNotificationDependencies);
+    const unit = new SendFollowRequestNotificationUseCase(
+      sendFollowRequestNotificationDependencies,
+    );
     useCase = unit;
     notificationSender = sendFollowRequestNotificationDependencies.notificationPublisher;
     recipientLocaleReader = sendFollowRequestNotificationDependencies.recipientLocaleReader;

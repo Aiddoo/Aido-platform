@@ -7,7 +7,7 @@ import { createUnitOfWorkMock } from "#test/mocks/ports/unit-of-work.mock";
 
 import { type PushDeliveryJobEnqueuerPort } from "../ports/push-delivery-job-enqueuer.port.js";
 import { type PushDeliveryOutboxRepositoryPort } from "../ports/push-delivery-outbox.repository.port.js";
-import { PublishPushDeliveryOutbox } from "./publish-push-delivery-outbox.use-case.js";
+import { PublishPushDeliveryOutboxUseCase } from "./publish-push-delivery-outbox.use-case.js";
 
 function createOutboxMock(): PushDeliveryOutboxRepositoryPort {
   return {
@@ -23,20 +23,22 @@ function createEnqueuerMock(): PushDeliveryJobEnqueuerPort {
   return { enqueueDeliveries: vi.fn() };
 }
 
-describe("PublishPushDeliveryOutbox — outbox job 발행", () => {
-  let useCase: PublishPushDeliveryOutbox;
-  let outbox: Mocked<ConstructorParameters<typeof PublishPushDeliveryOutbox>[0]["outbox"]>;
-  let enqueuer: Mocked<ConstructorParameters<typeof PublishPushDeliveryOutbox>[0]["enqueuer"]>;
+describe("PublishPushDeliveryOutboxUseCase — outbox job 발행", () => {
+  let useCase: PublishPushDeliveryOutboxUseCase;
+  let outbox: Mocked<ConstructorParameters<typeof PublishPushDeliveryOutboxUseCase>[0]["outbox"]>;
+  let enqueuer: Mocked<
+    ConstructorParameters<typeof PublishPushDeliveryOutboxUseCase>[0]["enqueuer"]
+  >;
 
   beforeEach(async () => {
     const publishPushDeliveryOutboxDependencies = mockDeep<
-      ConstructorParameters<typeof PublishPushDeliveryOutbox>[0]
+      ConstructorParameters<typeof PublishPushDeliveryOutboxUseCase>[0]
     >({
       outbox: createOutboxMock(),
       enqueuer: createEnqueuerMock(),
       unitOfWork: createUnitOfWorkMock(),
     });
-    const unit = new PublishPushDeliveryOutbox(publishPushDeliveryOutboxDependencies);
+    const unit = new PublishPushDeliveryOutboxUseCase(publishPushDeliveryOutboxDependencies);
 
     useCase = unit;
     outbox = publishPushDeliveryOutboxDependencies.outbox;

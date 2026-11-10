@@ -3,7 +3,7 @@ import { TestBed } from "@suites/unit";
 import { vi, type Mocked } from "vitest";
 
 import {
-  NotificationPublisher,
+  PublishNotificationUseCase,
   NOTIFICATION_RECIPIENT_LOCALE_READER,
   type NotificationRecipientLocaleReaderPort,
 } from "#api/modules/notification/notification-delivery.public";
@@ -45,7 +45,7 @@ describe("TodoReminderQueueProcessor — 할 일 리마인더 프로세서", () 
   let processor: TodoReminderQueueProcessor;
   let reader: Mocked<TodoReminderReaderPort>;
   let seriesOwnerDormancy: Mocked<TodoSeriesOwnerDormancyPort>;
-  let notificationPublisher: Mocked<NotificationPublisher>;
+  let notificationPublisher: Mocked<PublishNotificationUseCase>;
   let recipientLocaleReader: Mocked<NotificationRecipientLocaleReaderPort>;
 
   beforeEach(async () => {
@@ -54,7 +54,7 @@ describe("TodoReminderQueueProcessor — 할 일 리마인더 프로세서", () 
     processor = unit;
     reader = unitRef.get(TODO_REMINDER_READER);
     seriesOwnerDormancy = unitRef.get(TODO_SERIES_OWNER_DORMANCY);
-    notificationPublisher = unitRef.get(NotificationPublisher);
+    notificationPublisher = unitRef.get(PublishNotificationUseCase);
     recipientLocaleReader = unitRef.get(NOTIFICATION_RECIPIENT_LOCALE_READER);
     recipientLocaleReader.getLocale.mockResolvedValue("ko");
   });

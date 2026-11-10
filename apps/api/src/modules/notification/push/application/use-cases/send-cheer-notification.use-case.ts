@@ -4,7 +4,7 @@ import { TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY } from "../../domain/transactio
 import { createCheerReceivedNotificationMessage } from "../messages/notification.messages.js";
 import { NotificationDeliveryLogEvent } from "../notification-delivery.log-events.js";
 import type { NotificationRecipientLocaleReaderPort } from "../ports/notification-recipient-locale.reader.port.js";
-import type { NotificationPublisher } from "./publish-notification.use-case.js";
+import type { PublishNotificationUseCase } from "./publish-notification.use-case.js";
 
 export interface SendCheerNotificationInput {
   readonly cheerId: number;
@@ -15,12 +15,12 @@ export interface SendCheerNotificationInput {
 }
 
 interface SendCheerNotificationDependencies {
-  readonly notificationPublisher: Pick<NotificationPublisher, "publishWithDeduplication">;
+  readonly notificationPublisher: Pick<PublishNotificationUseCase, "publishWithDeduplication">;
   readonly recipientLocaleReader: Pick<NotificationRecipientLocaleReaderPort, "getLocale">;
   readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
 
-export class SendCheerNotification {
+export class SendCheerNotificationUseCase {
   readonly #dependencies: SendCheerNotificationDependencies;
 
   constructor(dependencies: SendCheerNotificationDependencies) {

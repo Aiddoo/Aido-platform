@@ -54,7 +54,7 @@ import {
   accountUsageCleanupProvider,
   purgeDeletedAccountsProvider,
 } from "../../src/modules/identity/users/identity-users.providers.js";
-import { notificationAccountCleanupProvider } from "../../src/modules/notification/push/notification-push.providers.js";
+import { deleteActorNotificationsUseCaseProvider } from "../../src/modules/notification/push/notification-push.providers.js";
 import { TestDatabase } from "../setup/test-database.js";
 
 const NOW = new Date("2026-08-26T00:00:00.000Z");
@@ -237,7 +237,7 @@ describe("댓글 계정 purge (실제 PostgreSQL)", () => {
         { provide: TODO_COMMENT_ACCOUNT_CLEANUP, useExisting: TodoCommentAccountCleanup },
         DrizzleNotificationRepository,
         { provide: NOTIFICATION_REPOSITORY, useExisting: DrizzleNotificationRepository },
-        notificationAccountCleanupProvider,
+        deleteActorNotificationsUseCaseProvider,
         { provide: NOTIFICATION_CACHE, useValue: notificationCache },
         { provide: TODO_VIEW_CACHE, useValue: todoViewCache },
         DrizzleUserRepository,

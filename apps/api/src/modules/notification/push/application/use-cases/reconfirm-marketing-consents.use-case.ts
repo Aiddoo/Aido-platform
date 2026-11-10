@@ -21,7 +21,7 @@ import type {
 import type { NotificationRecipientLocaleReaderPort } from "../ports/notification-recipient-locale.reader.port.js";
 import type { NotificationRecipientTimezoneReaderPort } from "../ports/notification-recipient-timezone.reader.port.js";
 import type { PushQuietHoursReaderPort } from "../ports/push-quiet-hours.reader.port.js";
-import type { NotificationPublisher } from "./publish-notification.use-case.js";
+import type { PublishNotificationUseCase } from "./publish-notification.use-case.js";
 
 export const MARKETING_CONSENT_RECONFIRM = {
   BATCH_SIZE: 500,
@@ -45,7 +45,7 @@ interface ReconfirmMarketingConsentsDependencies {
   readonly localeReader: Pick<NotificationRecipientLocaleReaderPort, "getLocales">;
   readonly timezoneReader: NotificationRecipientTimezoneReaderPort;
   readonly quietHoursReader: Pick<PushQuietHoursReaderPort, "findUsersInQuietHours">;
-  readonly notificationPublisher: Pick<NotificationPublisher, "publishBatch">;
+  readonly notificationPublisher: Pick<PublishNotificationUseCase, "publishBatch">;
   readonly unitOfWork: UnitOfWorkPort;
   readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
@@ -56,7 +56,7 @@ interface ReconfirmMarketingConsentsDependencies {
  * 현지 야간(21:00–08:00)인 사용자는 표시하지 않고 남겨 낮 시간 실행이 보낸다. 표시한 뒤 야간 설정으로
  * 푸시가 빠지면 2년 동안 다시 알리지 않기 때문이다. 표시는 조건부 UPDATE라 두 실행이 겹쳐도 한 번만 보낸다.
  */
-export class ReconfirmMarketingConsents {
+export class ReconfirmMarketingConsentsUseCase {
   readonly #dependencies: ReconfirmMarketingConsentsDependencies;
 
   constructor(dependencies: ReconfirmMarketingConsentsDependencies) {

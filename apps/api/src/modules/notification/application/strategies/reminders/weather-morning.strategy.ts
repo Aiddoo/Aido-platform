@@ -18,7 +18,7 @@ import {
   createWeatherRescheduleAction,
   formatWeatherNotificationTime,
 } from "../../../push/application/messages/notification.messages.js";
-import type { NotificationPublisher } from "../../../push/application/use-cases/publish-notification.use-case.js";
+import type { PublishNotificationUseCase } from "../../../push/application/use-cases/publish-notification.use-case.js";
 import { NotificationRemindersLogEvent } from "../../observability/reminders/notification-reminders-log.events.js";
 import type { ReminderWeatherReportReaderPort } from "../../ports/reminders/reminder-weather-report.reader.port.js";
 import { type WeatherReminderReaderPort } from "../../ports/reminders/weather-reminder-reader.port.js";
@@ -41,7 +41,7 @@ interface WeatherMorningStrategyDependencies {
     | "findWeatherMorningUsersWithLocation"
     | "findScheduledTodosBetween"
   >;
-  readonly notificationPublisher: Pick<NotificationPublisher, "publishBatch">;
+  readonly notificationPublisher: Pick<PublishNotificationUseCase, "publishBatch">;
   readonly notificationHistoryReader: Pick<NotificationHistoryReader, "findAlreadyNotifiedUserIds">;
   readonly weatherReportReader: Pick<ReminderWeatherReportReaderPort, "readReports">;
   readonly logger: Pick<ApplicationLoggerPort, "log">;

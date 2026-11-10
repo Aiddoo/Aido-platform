@@ -11,7 +11,7 @@ import { resolveWinbackStage } from "../../../domain/services/reminders/winback-
 import type { NotificationHistoryReader } from "../../../inbox/application/notification-history.reader.js";
 import type { CreateNotificationData } from "../../../inbox/application/ports/notification-draft.port.js";
 import { createWinbackNotificationMessage } from "../../../push/application/messages/notification.messages.js";
-import type { NotificationPublisher } from "../../../push/application/use-cases/publish-notification.use-case.js";
+import type { PublishNotificationUseCase } from "../../../push/application/use-cases/publish-notification.use-case.js";
 import { NotificationRemindersLogEvent } from "../../observability/reminders/notification-reminders-log.events.js";
 import { type ReEngagementReaderPort } from "../../ports/reminders/re-engagement-reader.port.js";
 import { type SchedulerDedupPort } from "../../ports/reminders/scheduler-dedup.port.js";
@@ -21,7 +21,7 @@ import type { TimezoneReminderStrategy } from "./timezone-reminder.strategy.js";
 interface WinbackStrategyDependencies {
   readonly reader: Pick<ReEngagementReaderPort, "findWinbackUsers">;
   readonly preferenceReader: Pick<SchedulerPreferenceReaderPort, "findUserLocales">;
-  readonly notificationPublisher: Pick<NotificationPublisher, "publishBatch">;
+  readonly notificationPublisher: Pick<PublishNotificationUseCase, "publishBatch">;
   readonly notificationHistoryReader: Pick<NotificationHistoryReader, "findAlreadyNotifiedUserIds">;
   readonly schedulerDedup: Pick<SchedulerDedupPort, "hasWinbackStage" | "recordWinbackStages">;
   readonly logger: Pick<ApplicationLoggerPort, "log">;

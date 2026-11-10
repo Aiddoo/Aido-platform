@@ -12,8 +12,8 @@ import {
 } from "./marketing-consent-reconfirm-queue.constants.js";
 
 @Injectable()
-export class MarketingConsentReconfirmJob implements OnModuleInit {
-  readonly #logger = new Logger(MarketingConsentReconfirmJob.name);
+export class MarketingConsentReconfirmScheduler implements OnModuleInit {
+  readonly #logger = new Logger(MarketingConsentReconfirmScheduler.name);
   schedulerRegistration: Promise<void> = Promise.resolve();
 
   readonly #runtime: JobRuntimePort;

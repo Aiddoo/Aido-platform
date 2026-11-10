@@ -11,7 +11,7 @@ import type { NotificationHistoryReader } from "../../../inbox/application/notif
 import type { CreateNotificationData } from "../../../inbox/application/ports/notification-draft.port.js";
 import { createNudgeSuggestionNotificationMessage } from "../../../push/application/messages/notification.messages.js";
 import { getNotificationFriendFallback } from "../../../push/application/messages/social-notification.messages.js";
-import type { NotificationPublisher } from "../../../push/application/use-cases/publish-notification.use-case.js";
+import type { PublishNotificationUseCase } from "../../../push/application/use-cases/publish-notification.use-case.js";
 import { NotificationRemindersLogEvent } from "../../observability/reminders/notification-reminders-log.events.js";
 import { type ReEngagementReaderPort } from "../../ports/reminders/re-engagement-reader.port.js";
 import { type SchedulerDedupPort } from "../../ports/reminders/scheduler-dedup.port.js";
@@ -24,7 +24,7 @@ interface NudgeSuggestStrategyDependencies {
     "findActiveUsersInTimezone" | "findNudgeSuggestFollows"
   >;
   readonly preferenceReader: Pick<SchedulerPreferenceReaderPort, "findUserLocales">;
-  readonly notificationPublisher: Pick<NotificationPublisher, "publishBatch">;
+  readonly notificationPublisher: Pick<PublishNotificationUseCase, "publishBatch">;
   readonly notificationHistoryReader: Pick<NotificationHistoryReader, "findAlreadyNotifiedUserIds">;
   readonly schedulerDedup: Pick<SchedulerDedupPort, "findSentNudgePairs" | "recordNudgePairs">;
   readonly logger: Pick<ApplicationLoggerPort, "log">;

@@ -4,9 +4,9 @@ import type { Mocked } from "vitest";
 
 import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/index";
 
-import { DeliverPushNotifications } from "../../application/use-cases/deliver-push-notifications.use-case.js";
-import { RecoverFailedPushDeliveries } from "../../application/use-cases/recover-failed-push-deliveries.use-case.js";
-import { RelayPushDeliveryOutbox } from "../../application/use-cases/relay-push-delivery-outbox.use-case.js";
+import { DeliverPushNotificationsUseCase } from "../../application/use-cases/deliver-push-notifications.use-case.js";
+import { RecoverFailedPushDeliveriesUseCase } from "../../application/use-cases/recover-failed-push-deliveries.use-case.js";
+import { RelayPushDeliveryOutboxUseCase } from "../../application/use-cases/relay-push-delivery-outbox.use-case.js";
 import {
   PUSH_DELIVERY_DEAD_LETTER_QUEUE,
   PUSH_DELIVERY_DEAD_LETTER_WORKER_POLICY,
@@ -17,9 +17,9 @@ import { PushDeliveryQueueProcessor } from "./push-delivery-queue.processor.js";
 
 describe("PushDeliveryQueueProcessor — 영속 Push 큐 라우팅", () => {
   let processor: PushDeliveryQueueProcessor;
-  let relayOutbox: Mocked<RelayPushDeliveryOutbox>;
-  let deliverPushNotifications: Mocked<DeliverPushNotifications>;
-  let recoverFailedDeliveries: Mocked<RecoverFailedPushDeliveries>;
+  let relayOutbox: Mocked<RelayPushDeliveryOutboxUseCase>;
+  let deliverPushNotifications: Mocked<DeliverPushNotificationsUseCase>;
+  let recoverFailedDeliveries: Mocked<RecoverFailedPushDeliveriesUseCase>;
   let runtime: Mocked<JobRuntimePort>;
 
   beforeEach(async () => {
@@ -38,9 +38,9 @@ describe("PushDeliveryQueueProcessor — 영속 Push 큐 라우팅", () => {
       .compile();
 
     processor = unit;
-    relayOutbox = unitRef.get(RelayPushDeliveryOutbox);
-    deliverPushNotifications = unitRef.get(DeliverPushNotifications);
-    recoverFailedDeliveries = unitRef.get(RecoverFailedPushDeliveries);
+    relayOutbox = unitRef.get(RelayPushDeliveryOutboxUseCase);
+    deliverPushNotifications = unitRef.get(DeliverPushNotificationsUseCase);
+    recoverFailedDeliveries = unitRef.get(RecoverFailedPushDeliveriesUseCase);
     runtime = unitRef.get(JOB_RUNTIME);
   });
 

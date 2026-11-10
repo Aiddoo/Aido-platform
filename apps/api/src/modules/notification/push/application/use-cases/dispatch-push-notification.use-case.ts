@@ -91,7 +91,7 @@ interface PushNotificationDeliveryServiceDependencies {
   readonly logger: Pick<ApplicationLoggerPort, "debug" | "warn">;
 }
 
-export class PushNotificationDeliveryService {
+export class DispatchPushNotificationUseCase {
   readonly #dependencies: PushNotificationDeliveryServiceDependencies;
 
   constructor(dependencies: PushNotificationDeliveryServiceDependencies) {

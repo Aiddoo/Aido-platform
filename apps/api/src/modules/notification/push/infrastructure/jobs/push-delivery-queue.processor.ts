@@ -3,9 +3,9 @@ import { match } from "ts-pattern";
 
 import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/index";
 
-import { DeliverPushNotifications } from "../../application/use-cases/deliver-push-notifications.use-case.js";
-import { RecoverFailedPushDeliveries } from "../../application/use-cases/recover-failed-push-deliveries.use-case.js";
-import { RelayPushDeliveryOutbox } from "../../application/use-cases/relay-push-delivery-outbox.use-case.js";
+import { DeliverPushNotificationsUseCase } from "../../application/use-cases/deliver-push-notifications.use-case.js";
+import { RecoverFailedPushDeliveriesUseCase } from "../../application/use-cases/recover-failed-push-deliveries.use-case.js";
+import { RelayPushDeliveryOutboxUseCase } from "../../application/use-cases/relay-push-delivery-outbox.use-case.js";
 import {
   PUSH_DELIVERY_QUEUE,
   PUSH_DELIVERY_DEAD_LETTER_QUEUE,
@@ -20,15 +20,15 @@ import {
 /** Queue transport parser/router. Delivery policy and state transitions remain in application. */
 @Injectable()
 export class PushDeliveryQueueProcessor implements OnModuleInit {
-  readonly #relayOutbox: RelayPushDeliveryOutbox;
-  readonly #deliverPushNotifications: DeliverPushNotifications;
-  readonly #recoverFailedDeliveries: RecoverFailedPushDeliveries;
+  readonly #relayOutbox: RelayPushDeliveryOutboxUseCase;
+  readonly #deliverPushNotifications: DeliverPushNotificationsUseCase;
+  readonly #recoverFailedDeliveries: RecoverFailedPushDeliveriesUseCase;
   readonly #runtime: JobRuntimePort | undefined;
 
   constructor(
-    relayOutbox: RelayPushDeliveryOutbox,
-    deliverPushNotifications: DeliverPushNotifications,
-    recoverFailedDeliveries: RecoverFailedPushDeliveries,
+    relayOutbox: RelayPushDeliveryOutboxUseCase,
+    deliverPushNotifications: DeliverPushNotificationsUseCase,
+    recoverFailedDeliveries: RecoverFailedPushDeliveriesUseCase,
     @Optional()
     @Inject(JOB_RUNTIME)
     runtime?: JobRuntimePort,

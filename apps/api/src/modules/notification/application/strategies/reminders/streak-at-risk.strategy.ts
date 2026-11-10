@@ -9,7 +9,7 @@ import { SCHEDULER_CAMPAIGN_KEY } from "../../../domain/services/reminders/notif
 import type { TimezoneContext } from "../../../domain/services/reminders/timezone-context.js";
 import type { NotificationHistoryReader } from "../../../inbox/application/notification-history.reader.js";
 import { createStreakAtRiskNotificationMessage } from "../../../push/application/messages/notification.messages.js";
-import type { NotificationPublisher } from "../../../push/application/use-cases/publish-notification.use-case.js";
+import type { PublishNotificationUseCase } from "../../../push/application/use-cases/publish-notification.use-case.js";
 import { NotificationRemindersLogEvent } from "../../observability/reminders/notification-reminders-log.events.js";
 import { type ReEngagementReaderPort } from "../../ports/reminders/re-engagement-reader.port.js";
 import type { TimezoneReminderStrategy } from "./timezone-reminder.strategy.js";
@@ -23,7 +23,7 @@ import type { TimezoneReminderStrategy } from "./timezone-reminder.strategy.js";
  */
 interface StreakAtRiskStrategyDependencies {
   readonly reader: Pick<ReEngagementReaderPort, "findStreakAtRiskUsers">;
-  readonly notificationPublisher: Pick<NotificationPublisher, "publishBatch">;
+  readonly notificationPublisher: Pick<PublishNotificationUseCase, "publishBatch">;
   readonly notificationHistoryReader: Pick<NotificationHistoryReader, "findAlreadyNotifiedUserIds">;
   readonly logger: Pick<ApplicationLoggerPort, "log">;
 }

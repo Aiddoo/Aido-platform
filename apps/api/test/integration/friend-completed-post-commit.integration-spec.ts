@@ -13,7 +13,7 @@ import {
   NOTIFICATION_REPOSITORY,
   type NotificationRepositoryPort,
 } from "#api/modules/notification/inbox/application/ports/notification.repository.port";
-import type { NotificationRecord } from "#api/modules/notification/inbox/application/read-models/notification.read-model";
+import type { InboxNotification } from "#api/modules/notification/inbox/application/read-models/inbox-notification.read-model";
 import {
   NOTIFICATION_DEDUP,
   type NotificationDedupPort,
@@ -27,12 +27,12 @@ import {
   USER_NOTIFICATION_SETTINGS,
   type UserNotificationSettingsPort,
 } from "#api/modules/notification/push/application/ports/user-notification-settings.port";
-import { PersistBatchNotification } from "#api/modules/notification/push/application/use-cases/persist-batch-notification.use-case";
+import { PersistBatchNotificationUseCase } from "#api/modules/notification/push/application/use-cases/persist-batch-notification.use-case";
 import {
-  PublishPushDeliveryOutbox,
+  PublishPushDeliveryOutboxUseCase,
   type PublishPushDeliveryOutboxInput,
 } from "#api/modules/notification/push/application/use-cases/publish-push-delivery-outbox.use-case";
-import { SendFriendCompletionNotifications } from "#api/modules/notification/push/application/use-cases/send-friend-completion-notifications.use-case";
+import { SendFriendCompletionNotificationsUseCase } from "#api/modules/notification/push/application/use-cases/send-friend-completion-notifications.use-case";
 import {
   AFTER_COMMIT_TASK_REGISTRY,
   UNIT_OF_WORK,
@@ -44,10 +44,10 @@ import { createNotificationCacheMock } from "#test/mocks/ports/notification-cach
 import { createNotificationRepositoryMock } from "#test/mocks/ports/notification.mock";
 
 import {
-  finalizeBatchNotificationProvider,
-  persistBatchNotificationProvider,
-  pushDeliveryAfterCommitPublisherProvider,
-  sendFriendCompletionNotificationsProvider,
+  finalizeBatchNotificationUseCaseProvider,
+  persistBatchNotificationUseCaseProvider,
+  publishPushDeliveryAfterCommitUseCaseProvider,
+  sendFriendCompletionNotificationsUseCaseProvider,
 } from "../../src/modules/notification/push/notification-push.providers.js";
 
 interface TransactionContext {
@@ -94,7 +94,7 @@ class AfterCommitAwareUnitOfWork implements UnitOfWorkPort, AfterCommitTaskRegis
   }
 }
 
-function toNotificationRecord(data: CreateNotificationData, index: number): NotificationRecord {
+function toNotificationRecord(data: CreateNotificationData, index: number): InboxNotification {
   return {
     id: index + 1,
     userId: data.userId,
@@ -128,8 +128,8 @@ const friendCompletionInput = {
 
 describe("친구 완료 알림의 commit 후 영속 발행 (컴포넌트)", () => {
   let module: TestingModule;
-  let useCase: SendFriendCompletionNotifications;
-  let persistBatch: PersistBatchNotification;
+  let useCase: SendFriendCompletionNotificationsUseCase;
+  let persistBatch: PersistBatchNotificationUseCase;
   let unitOfWork: AfterCommitAwareUnitOfWork;
   let repository: Mocked<NotificationRepositoryPort>;
   let staging: Mocked<PushDispatchStagingRepositoryPort>;
@@ -188,10 +188,10 @@ describe("친구 완료 알림의 commit 후 영속 발행 (컴포넌트)", () =
 
     module = await Test.createTestingModule({
       providers: [
-        sendFriendCompletionNotificationsProvider,
-        persistBatchNotificationProvider,
-        finalizeBatchNotificationProvider,
-        pushDeliveryAfterCommitPublisherProvider,
+        sendFriendCompletionNotificationsUseCaseProvider,
+        persistBatchNotificationUseCaseProvider,
+        finalizeBatchNotificationUseCaseProvider,
+        publishPushDeliveryAfterCommitUseCaseProvider,
         { provide: NotificationHistoryReader, useValue: notificationHistoryReader },
         { provide: NOTIFICATION_REPOSITORY, useValue: repository },
         { provide: PUSH_DISPATCH_STAGING, useValue: staging },
@@ -200,12 +200,12 @@ describe("친구 완료 알림의 commit 후 영속 발행 (컴포넌트)", () =
         { provide: USER_NOTIFICATION_SETTINGS, useValue: userSettings },
         { provide: UNIT_OF_WORK, useValue: unitOfWork },
         { provide: AFTER_COMMIT_TASK_REGISTRY, useValue: unitOfWork },
-        { provide: PublishPushDeliveryOutbox, useValue: { execute: executePublish } },
+        { provide: PublishPushDeliveryOutboxUseCase, useValue: { execute: executePublish } },
       ],
     }).compile();
 
-    useCase = module.get(SendFriendCompletionNotifications);
-    persistBatch = module.get(PersistBatchNotification);
+    useCase = module.get(SendFriendCompletionNotificationsUseCase);
+    persistBatch = module.get(PersistBatchNotificationUseCase);
   });
 
   afterEach(async () => {

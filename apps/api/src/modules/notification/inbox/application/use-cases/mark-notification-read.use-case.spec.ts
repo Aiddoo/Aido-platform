@@ -4,27 +4,29 @@ import { mockDeep } from "vitest-mock-extended";
 import { NotificationBuilder } from "#test/builders/index";
 import { createNotificationCacheMock } from "#test/mocks/ports/index";
 
-import { MarkAsRead } from "./mark-as-read.use-case.js";
+import { MarkNotificationReadUseCase } from "./mark-notification-read.use-case.js";
 
-describe("MarkAsRead", () => {
-  let useCase: MarkAsRead;
+describe("MarkNotificationReadUseCase", () => {
+  let useCase: MarkNotificationReadUseCase;
   let notificationReader: Mocked<
-    ConstructorParameters<typeof MarkAsRead>[0]["notificationInboxReader"]
+    ConstructorParameters<typeof MarkNotificationReadUseCase>[0]["notificationInboxReader"]
   >;
   let notificationRepo: Mocked<
-    ConstructorParameters<typeof MarkAsRead>[0]["notificationRepository"]
+    ConstructorParameters<typeof MarkNotificationReadUseCase>[0]["notificationRepository"]
   >;
-  let cache: Mocked<ConstructorParameters<typeof MarkAsRead>[0]["cache"]>;
+  let cache: Mocked<ConstructorParameters<typeof MarkNotificationReadUseCase>[0]["cache"]>;
 
   const mockUserId = "user-1";
 
   beforeEach(async () => {
     NotificationBuilder.resetIdCounter();
 
-    const markAsReadDependencies = mockDeep<ConstructorParameters<typeof MarkAsRead>[0]>({
+    const markAsReadDependencies = mockDeep<
+      ConstructorParameters<typeof MarkNotificationReadUseCase>[0]
+    >({
       cache: createNotificationCacheMock(),
     });
-    const unit = new MarkAsRead(markAsReadDependencies);
+    const unit = new MarkNotificationReadUseCase(markAsReadDependencies);
     useCase = unit;
     notificationReader = markAsReadDependencies.notificationInboxReader;
     notificationRepo = markAsReadDependencies.notificationRepository;

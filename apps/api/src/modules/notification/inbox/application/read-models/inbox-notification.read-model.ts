@@ -7,7 +7,7 @@ import type { NotificationType } from "../../domain/notification-type.constants.
  * (metadata는 불투명 `unknown`, 날짜는 `Date`). 어댑터는 DB 행을 그대로
  * 반환하고, 애플리케이션/도메인은 `@/generated` 결합 없이 이 레코드로 다룬다.
  */
-export interface NotificationRecord {
+export interface InboxNotification {
   readonly id: number;
   readonly userId: string;
   readonly type: NotificationType;

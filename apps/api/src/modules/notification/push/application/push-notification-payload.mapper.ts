@@ -41,7 +41,7 @@ interface PushNotificationPayloadFactoryDependencies {
   readonly marketingOptOutTokens: Pick<MarketingPushOptOutTokenPort, "issue">;
 }
 
-export class PushNotificationPayloadFactory {
+export class PushNotificationPayloadMapper {
   readonly #dependencies: PushNotificationPayloadFactoryDependencies;
 
   constructor(dependencies: PushNotificationPayloadFactoryDependencies) {

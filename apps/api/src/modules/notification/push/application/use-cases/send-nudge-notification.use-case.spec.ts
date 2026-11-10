@@ -2,22 +2,22 @@ import type { Mocked } from "vitest";
 import { mockDeep } from "vitest-mock-extended";
 
 import { TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY } from "../../domain/transactional-notification-campaign.constants.js";
-import { SendNudgeNotification } from "./send-nudge-notification.use-case.js";
+import { SendNudgeNotificationUseCase } from "./send-nudge-notification.use-case.js";
 
-describe("SendNudgeNotification", () => {
-  let useCase: SendNudgeNotification;
+describe("SendNudgeNotificationUseCase", () => {
+  let useCase: SendNudgeNotificationUseCase;
   let notificationSender: Mocked<
-    ConstructorParameters<typeof SendNudgeNotification>[0]["notificationPublisher"]
+    ConstructorParameters<typeof SendNudgeNotificationUseCase>[0]["notificationPublisher"]
   >;
   let recipientLocaleReader: Mocked<
-    ConstructorParameters<typeof SendNudgeNotification>[0]["recipientLocaleReader"]
+    ConstructorParameters<typeof SendNudgeNotificationUseCase>[0]["recipientLocaleReader"]
   >;
 
   beforeEach(async () => {
     const sendNudgeNotificationDependencies = mockDeep<
-      ConstructorParameters<typeof SendNudgeNotification>[0]
+      ConstructorParameters<typeof SendNudgeNotificationUseCase>[0]
     >({});
-    const unit = new SendNudgeNotification(sendNudgeNotificationDependencies);
+    const unit = new SendNudgeNotificationUseCase(sendNudgeNotificationDependencies);
     useCase = unit;
     notificationSender = sendNudgeNotificationDependencies.notificationPublisher;
     recipientLocaleReader = sendNudgeNotificationDependencies.recipientLocaleReader;

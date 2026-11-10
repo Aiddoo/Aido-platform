@@ -1,6 +1,6 @@
 import { Module } from "@nestjs/common";
 
-import { NotificationQueueService } from "./notification-queue.adapter.js";
+import { NotificationQueueAdapter } from "./notification-queue.adapter.js";
 import { PushReceiptScheduler } from "./push-receipt.scheduler.js";
 
 /**
@@ -13,7 +13,7 @@ import { PushReceiptScheduler } from "./push-receipt.scheduler.js";
  * - NotificationModule은 이 모듈을 import하여 Processor와 함께 구성
  */
 @Module({
-  providers: [NotificationQueueService, PushReceiptScheduler],
-  exports: [NotificationQueueService],
+  providers: [NotificationQueueAdapter, PushReceiptScheduler],
+  exports: [NotificationQueueAdapter],
 })
 export class NotificationQueueModule {}

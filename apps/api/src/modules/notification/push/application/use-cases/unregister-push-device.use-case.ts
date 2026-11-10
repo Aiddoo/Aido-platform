@@ -21,7 +21,7 @@ interface UnregisterPushDeviceDependencies {
 }
 
 /** 로그아웃한 기기 하나, 또는 deviceId가 없으면(1.14.1 이하 앱) 사용자의 모든 기기를 푸시 대상에서 뺀다. */
-export class UnregisterPushDevice {
+export class UnregisterPushDeviceUseCase {
   readonly #dependencies: UnregisterPushDeviceDependencies;
 
   constructor(dependencies: UnregisterPushDeviceDependencies) {

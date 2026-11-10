@@ -15,8 +15,8 @@ import {
 } from "./push-delivery-queue.constants.js";
 
 @Injectable()
-export class PushDeliveryQueueService implements PushDeliveryJobEnqueuerPort, OnModuleInit {
-  readonly #logger = new Logger(PushDeliveryQueueService.name);
+export class PushDeliveryQueueAdapter implements PushDeliveryJobEnqueuerPort, OnModuleInit {
+  readonly #logger = new Logger(PushDeliveryQueueAdapter.name);
   schedulerRegistration: Promise<void> = Promise.resolve();
 
   readonly #runtime: JobRuntimePort;

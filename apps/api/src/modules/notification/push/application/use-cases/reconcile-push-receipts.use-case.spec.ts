@@ -3,10 +3,10 @@ import { StubPushTokenCache } from "#test/mocks/stub-push-token-cache";
 import { PUSH_RECEIPT_POLICY } from "../../domain/push-receipt.domain-service.js";
 import type { PushReceiptResult } from "../ports/push-provider.port.js";
 import type { InvalidPushToken } from "../ports/push-receipt.repository.port.js";
-import { ReconcilePushReceipts } from "./reconcile-push-receipts.use-case.js";
+import { ReconcilePushReceiptsUseCase } from "./reconcile-push-receipts.use-case.js";
 
 type ReceiptRepository = ConstructorParameters<
-  typeof ReconcilePushReceipts
+  typeof ReconcilePushReceiptsUseCase
 >[0]["pushReceiptRepository"];
 
 class StubReceiptRepository implements ReceiptRepository {
@@ -43,7 +43,7 @@ function setup(options: { readonly deactivate?: () => Promise<{ count: number }>
   const deactivated: string[][] = [];
   const transactionEvents: string[] = [];
   const logs: unknown[] = [];
-  const useCase = new ReconcilePushReceipts({
+  const useCase = new ReconcilePushReceiptsUseCase({
     pushReceiptRepository: repository,
     pushTokenRepository: {
       deactivateInvalidTokens: async (tokens) => {
@@ -78,7 +78,7 @@ function ticketIds(count: number): string[] {
   return Array.from({ length: count }, (_, index) => `ticket-${index}`);
 }
 
-describe("ReconcilePushReceipts — receipt 반영", () => {
+describe("ReconcilePushReceiptsUseCase — receipt 반영", () => {
   afterEach(() => {
     vi.useRealTimers();
   });
@@ -113,7 +113,7 @@ describe("ReconcilePushReceipts — receipt 반영", () => {
       vi.setSystemTime(Date.now() + PUSH_RECEIPT_POLICY.runBudgetMs);
       return ids.map((ticketId) => ({ ticketId, status: "delivered" as const }));
     });
-    const budgeted = new ReconcilePushReceipts({
+    const budgeted = new ReconcilePushReceiptsUseCase({
       pushReceiptRepository: repository,
       pushTokenRepository: { deactivateInvalidTokens: async () => ({ count: 0 }) },
       pushProvider: { getReceipts },

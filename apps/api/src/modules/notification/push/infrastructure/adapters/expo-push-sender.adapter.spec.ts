@@ -10,7 +10,7 @@ import { RetryablePushProviderTransportError } from "../../application/ports/pus
 import { EXPO_PUSH_PAYLOAD_MAX_BYTE_LENGTH } from "./expo-push-message.mapper.js";
 import {
   EXPO_RATE_EXCEEDED_RETRY_DELAYS_MS,
-  ExpoPushProvider,
+  ExpoPushSenderAdapter,
 } from "./expo-push-sender.adapter.js";
 
 vi.hoisted(() => {
@@ -23,7 +23,7 @@ const body = "notification14-synthetic-private-body";
 const privateMessage = `${credential}; token=${token}; body=${body}`;
 const payload = () => ({ token, title: "fixture notification", body });
 const sendPath = "/--/api/v2/push/send";
-let provider: ExpoPushProvider;
+let provider: ExpoPushSenderAdapter;
 let warn: ReturnType<typeof vi.spyOn>;
 let error: ReturnType<typeof vi.spyOn>;
 let nativeFetch: ReturnType<typeof vi.spyOn>;
@@ -58,7 +58,7 @@ beforeEach(async () => {
     expect(new URL(String(input)).pathname).toBe(expected.path);
     return expected.response;
   });
-  const { unit } = await TestBed.solitary(ExpoPushProvider)
+  const { unit } = await TestBed.solitary(ExpoPushSenderAdapter)
     .mock(TypedConfigService)
     .impl(() => ({ expoAccessToken: credential }))
     .mock(OutboundPolicyRegistry)
@@ -75,7 +75,7 @@ afterEach(() => {
   }
 });
 
-describe("ExpoPushProvider — 설치된 SDK와 차단된 외부 네트워크", () => {
+describe("ExpoPushSenderAdapter — 설치된 SDK와 차단된 외부 네트워크", () => {
   afterEach(() => {
     vi.useRealTimers();
   });

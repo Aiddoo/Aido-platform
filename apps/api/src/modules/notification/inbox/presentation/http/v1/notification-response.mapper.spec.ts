@@ -11,7 +11,7 @@
  */
 import { NotificationBuilder } from "#test/builders/index";
 
-import { NotificationMapper } from "./notification.mapper.js";
+import { NotificationMapper } from "./notification-response.mapper.js";
 
 describe("NotificationMapper — 알림 매퍼", () => {
   describe("toDto", () => {

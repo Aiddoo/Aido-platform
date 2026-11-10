@@ -29,7 +29,7 @@ interface ReconcilePushReceiptsDependencies {
 }
 
 /** 실행 예산 안에서 확인할 ticket이 남지 않을 때까지 receipt를 이어서 반영한다. */
-export class ReconcilePushReceipts {
+export class ReconcilePushReceiptsUseCase {
   readonly #dependencies: ReconcilePushReceiptsDependencies;
 
   constructor(dependencies: ReconcilePushReceiptsDependencies) {

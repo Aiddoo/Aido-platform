@@ -13,7 +13,7 @@ import { PushPermission } from "../../domain/push-permission.vo.js";
 import { RetryablePushProviderTransportError } from "../ports/push-provider.port.js";
 import type { BatchPushNotificationPayload } from "../push-notification-payload.mapper.js";
 import type { PushTokenRecord } from "../read-models/push-token.read-model.js";
-import { PushNotificationDeliveryService } from "./dispatch-push-notification.use-case.js";
+import { DispatchPushNotificationUseCase } from "./dispatch-push-notification.use-case.js";
 
 const TOKEN_DATE = new Date("2026-07-01T00:00:00.000Z");
 
@@ -73,32 +73,32 @@ function reportedDevice(input: {
   });
 }
 
-describe("PushNotificationDeliveryService", () => {
-  let service: PushNotificationDeliveryService;
+describe("DispatchPushNotificationUseCase", () => {
+  let service: DispatchPushNotificationUseCase;
   let deviceStore: InMemoryPushDeviceStore;
   let activeTokenReader: Mocked<
-    ConstructorParameters<typeof PushNotificationDeliveryService>[0]["activePushTokenReader"]
+    ConstructorParameters<typeof DispatchPushNotificationUseCase>[0]["activePushTokenReader"]
   >;
   let tokenRepository: Mocked<
-    ConstructorParameters<typeof PushNotificationDeliveryService>[0]["pushTokenRepository"]
+    ConstructorParameters<typeof DispatchPushNotificationUseCase>[0]["pushTokenRepository"]
   >;
   let pushProvider: Mocked<
-    ConstructorParameters<typeof PushNotificationDeliveryService>[0]["pushProvider"]
+    ConstructorParameters<typeof DispatchPushNotificationUseCase>[0]["pushProvider"]
   >;
   let notificationCache: Mocked<
-    ConstructorParameters<typeof PushNotificationDeliveryService>[0]["notificationCache"]
+    ConstructorParameters<typeof DispatchPushNotificationUseCase>[0]["notificationCache"]
   >;
 
   beforeEach(async () => {
     deviceStore = new InMemoryPushDeviceStore();
     const pushNotificationDeliveryServiceDependencies = mockDeep<
-      ConstructorParameters<typeof PushNotificationDeliveryService>[0]
+      ConstructorParameters<typeof DispatchPushNotificationUseCase>[0]
     >({
       pushTokenRepository: createPushTokenRepositoryMock(),
       activePushTokenReader: createActivePushTokenReaderMock(),
       notificationCache: createNotificationCacheMock(),
     });
-    const unit = new PushNotificationDeliveryService({
+    const unit = new DispatchPushNotificationUseCase({
       pushTokenRepository: pushNotificationDeliveryServiceDependencies.pushTokenRepository,
       pushDeviceRepository: deviceStore,
       pushProvider: pushNotificationDeliveryServiceDependencies.pushProvider,

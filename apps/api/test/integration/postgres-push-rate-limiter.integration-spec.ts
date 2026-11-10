@@ -1,6 +1,6 @@
 import { and, count, eq, type SQL } from "drizzle-orm";
 
-import { PostgresPushRateLimiter } from "#api/modules/notification/push/infrastructure/adapters/postgres-push-rate-limiter.adapter";
+import { PostgresPushRateLimiterAdapter } from "#api/modules/notification/push/infrastructure/adapters/postgres-push-rate-limiter.adapter";
 import {
   notification,
   pushDispatch,
@@ -10,15 +10,15 @@ import {
 import type { TestDatabaseClient } from "#test/setup/test-database";
 import { TestDatabase } from "#test/setup/test-database";
 
-describe("PostgresPushRateLimiter (실제 PostgreSQL)", () => {
+describe("PostgresPushRateLimiterAdapter (실제 PostgreSQL)", () => {
   let testDatabase: TestDatabase;
   let client: TestDatabaseClient;
-  let limiter: PostgresPushRateLimiter;
+  let limiter: PostgresPushRateLimiterAdapter;
 
   beforeAll(async () => {
     testDatabase = new TestDatabase();
     client = await testDatabase.start();
-    limiter = new PostgresPushRateLimiter(client);
+    limiter = new PostgresPushRateLimiterAdapter(client);
   });
 
   afterAll(async () => testDatabase?.stop());
@@ -70,7 +70,7 @@ describe("PostgresPushRateLimiter (실제 PostgreSQL)", () => {
     const dispatchId = await createDispatch(userId, "retry");
 
     await expect(limiter.reserveGeneral({ dispatchId, userId })).resolves.toBe(false);
-    const restarted = new PostgresPushRateLimiter(client);
+    const restarted = new PostgresPushRateLimiterAdapter(client);
     await expect(restarted.reserveGeneral({ dispatchId, userId })).resolves.toBe(false);
 
     await expect(

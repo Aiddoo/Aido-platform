@@ -5,19 +5,19 @@ import type { ApplicationLoggerPort } from "#api/shared/application/ports/applic
 import { createBillingIssueNotificationMessage } from "../messages/notification.messages.js";
 import { NotificationDeliveryLogEvent } from "../notification-delivery.log-events.js";
 import type { NotificationRecipientLocaleReaderPort } from "../ports/notification-recipient-locale.reader.port.js";
-import type { NotificationPublisher } from "./publish-notification.use-case.js";
+import type { PublishNotificationUseCase } from "./publish-notification.use-case.js";
 
 export interface SendBillingIssueNotificationInput {
   readonly userId: string;
 }
 
 interface SendBillingIssueNotificationDependencies {
-  readonly notificationPublisher: Pick<NotificationPublisher, "publish">;
+  readonly notificationPublisher: Pick<PublishNotificationUseCase, "publish">;
   readonly recipientLocaleReader: Pick<NotificationRecipientLocaleReaderPort, "getLocale">;
   readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
 
-export class SendBillingIssueNotification {
+export class SendBillingIssueNotificationUseCase {
   readonly #dependencies: SendBillingIssueNotificationDependencies;
 
   constructor(dependencies: SendBillingIssueNotificationDependencies) {

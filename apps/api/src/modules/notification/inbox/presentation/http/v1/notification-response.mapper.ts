@@ -8,10 +8,10 @@ import {
 import { toISOString, toISOStringOrNull } from "#api/shared/domain/date/utils/format";
 
 import { toWireNotificationType } from "../../../../push/domain/notification-client-capability.domain-service.js";
-import type { NotificationRecord } from "../../../application/read-models/notification.read-model.js";
+import type { InboxNotification } from "../../../application/read-models/inbox-notification.read-model.js";
 
 export const NotificationMapper = {
-  toDto(notification: NotificationRecord): NotificationDto {
+  toDto(notification: InboxNotification): NotificationDto {
     const context: NotificationContext = {};
     if (notification.todoId != null) {
       context.todoId = notification.todoId;
@@ -45,7 +45,7 @@ export const NotificationMapper = {
     };
   },
 
-  toDtoList(notifications: NotificationRecord[]): NotificationDto[] {
+  toDtoList(notifications: InboxNotification[]): NotificationDto[] {
     return notifications.map((notification) => NotificationMapper.toDto(notification));
   },
 };

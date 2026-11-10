@@ -4,7 +4,7 @@ import {
   MARKETING_CONSENT_RECONFIRM_ACCESS,
   type MarketingConsentReconfirmPort,
 } from "#api/modules/notification/push/application/ports/marketing-consent-reconfirm.port";
-import { ReconfirmMarketingConsents } from "#api/modules/notification/push/application/use-cases/reconfirm-marketing-consents.use-case";
+import { ReconfirmMarketingConsentsUseCase } from "#api/modules/notification/push/application/use-cases/reconfirm-marketing-consents.use-case";
 import { createEntityId } from "#api/platform/database/entity-id";
 import {
   notification,
@@ -31,7 +31,7 @@ describe("광고성 수신 동의 2년 재확인 (실제 PostgreSQL)", () => {
   let database: TestDatabase;
   let client: TestDatabaseClient;
   let context: E2eTestContext;
-  let reconfirm: ReconfirmMarketingConsents;
+  let reconfirm: ReconfirmMarketingConsentsUseCase;
   let access: MarketingConsentReconfirmPort;
   let unitOfWork: UnitOfWorkPort;
 
@@ -39,7 +39,7 @@ describe("광고성 수신 동의 2년 재확인 (실제 PostgreSQL)", () => {
     database = new TestDatabase({ createClient: (url) => createTestClient(url, { max: 5 }) });
     client = await database.start();
     context = await createE2eApp({ testDatabase: database });
-    reconfirm = context.module.get(ReconfirmMarketingConsents);
+    reconfirm = context.module.get(ReconfirmMarketingConsentsUseCase);
     access = context.module.get(MARKETING_CONSENT_RECONFIRM_ACCESS);
     unitOfWork = context.module.get(UNIT_OF_WORK);
   });

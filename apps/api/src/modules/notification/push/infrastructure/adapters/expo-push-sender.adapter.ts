@@ -25,7 +25,7 @@ import {
   NotificationProviderLogEvent,
   pushTransportStatusCode,
 } from "./notification-provider.log-events.js";
-import { PushThroughputLimiter } from "./push-throughput-limiter.adapter.js";
+import { PushThroughputLimiterAdapter } from "./push-throughput-limiter.adapter.js";
 
 /** Expo 프로젝트 한도(초당 600건)보다 여유를 둔다. 운영 API는 단일 프로세스다. */
 export const EXPO_PUSH_MESSAGES_PER_SECOND = 500;
@@ -53,11 +53,11 @@ interface SendableMessage {
 
 /** @see https://docs.expo.dev/push-notifications/sending-notifications/ */
 @Injectable()
-export class ExpoPushProvider implements PushProvider {
+export class ExpoPushSenderAdapter implements PushProvider {
   readonly name = "expo";
-  readonly #logger = new Logger(ExpoPushProvider.name);
+  readonly #logger = new Logger(ExpoPushSenderAdapter.name);
   readonly #expo: Expo;
-  readonly #throughput = new PushThroughputLimiter({
+  readonly #throughput = new PushThroughputLimiterAdapter({
     messagesPerSecond: EXPO_PUSH_MESSAGES_PER_SECOND,
   });
 

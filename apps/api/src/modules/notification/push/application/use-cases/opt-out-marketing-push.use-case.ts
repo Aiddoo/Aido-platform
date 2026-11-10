@@ -18,7 +18,7 @@ export interface OptOutMarketingPushResult {
   readonly processedAt: Date;
 }
 
-export class OptOutMarketingPush {
+export class OptOutMarketingPushUseCase {
   readonly #dependencies: OptOutMarketingPushDependencies;
 
   constructor(dependencies: OptOutMarketingPushDependencies) {

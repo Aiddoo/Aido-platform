@@ -16,7 +16,7 @@ import {
   DuplicateNotificationError,
   type NotificationRepositoryPort,
 } from "../../application/ports/notification.repository.port.js";
-import type { NotificationRecord } from "../../application/read-models/notification.read-model.js";
+import type { InboxNotification } from "../../application/read-models/inbox-notification.read-model.js";
 import type { NotificationType } from "../../domain/notification-type.constants.js";
 
 type NotificationInsert = typeof notification.$inferInsert;
@@ -54,7 +54,7 @@ export class DrizzleNotificationRepository implements NotificationRepositoryPort
     return this.#txHost.tx;
   }
 
-  async createNotification(data: CreateNotificationData): Promise<NotificationRecord> {
+  async createNotification(data: CreateNotificationData): Promise<InboxNotification> {
     try {
       const [row] = await this.#db
         .insert(notification)
@@ -71,7 +71,7 @@ export class DrizzleNotificationRepository implements NotificationRepositoryPort
 
   async createManyNotificationsAndReturn(
     dataList: CreateNotificationData[],
-  ): Promise<NotificationRecord[]> {
+  ): Promise<InboxNotification[]> {
     if (dataList.length === 0) {
       return [];
     }

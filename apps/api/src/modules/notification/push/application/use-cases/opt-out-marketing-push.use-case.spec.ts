@@ -6,21 +6,21 @@ import {
   createUserNotificationSettingsMock,
 } from "#test/mocks/ports/notification.mock";
 
-import { OptOutMarketingPush } from "./opt-out-marketing-push.use-case.js";
+import { OptOutMarketingPushUseCase } from "./opt-out-marketing-push.use-case.js";
 
-describe("OptOutMarketingPush", () => {
-  let useCase: OptOutMarketingPush;
-  let tokens: Mocked<ConstructorParameters<typeof OptOutMarketingPush>[0]["tokens"]>;
-  let settings: Mocked<ConstructorParameters<typeof OptOutMarketingPush>[0]["settings"]>;
+describe("OptOutMarketingPushUseCase", () => {
+  let useCase: OptOutMarketingPushUseCase;
+  let tokens: Mocked<ConstructorParameters<typeof OptOutMarketingPushUseCase>[0]["tokens"]>;
+  let settings: Mocked<ConstructorParameters<typeof OptOutMarketingPushUseCase>[0]["settings"]>;
 
   beforeEach(async () => {
     const optOutMarketingPushDependencies = mockDeep<
-      ConstructorParameters<typeof OptOutMarketingPush>[0]
+      ConstructorParameters<typeof OptOutMarketingPushUseCase>[0]
     >({
       tokens: createMarketingPushOptOutTokenMock(),
       settings: createUserNotificationSettingsMock(),
     });
-    const unit = new OptOutMarketingPush(optOutMarketingPushDependencies);
+    const unit = new OptOutMarketingPushUseCase(optOutMarketingPushDependencies);
     useCase = unit;
     tokens = optOutMarketingPushDependencies.tokens;
     settings = optOutMarketingPushDependencies.settings;

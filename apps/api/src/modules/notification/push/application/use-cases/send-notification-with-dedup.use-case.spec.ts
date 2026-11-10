@@ -3,7 +3,7 @@ import { vi } from "vitest";
 import { mockDeep } from "vitest-mock-extended";
 
 import type { CreateNotificationData } from "../../../inbox/application/ports/notification-draft.port.js";
-import { SendNotificationWithDedup } from "./send-notification-with-dedup.use-case.js";
+import { SendNotificationWithDedupUseCase } from "./send-notification-with-dedup.use-case.js";
 
 const followData: CreateNotificationData = {
   userId: "user-1",
@@ -21,22 +21,24 @@ const nudgeData: CreateNotificationData = {
   nudgeId: 1,
 };
 
-describe("SendNotificationWithDedup", () => {
-  let useCase: SendNotificationWithDedup;
+describe("SendNotificationWithDedupUseCase", () => {
+  let useCase: SendNotificationWithDedupUseCase;
   let sendNotification: Mocked<
-    ConstructorParameters<typeof SendNotificationWithDedup>[0]["sendNotification"]
+    ConstructorParameters<typeof SendNotificationWithDedupUseCase>[0]["sendNotification"]
   >;
   let repository: Mocked<
-    ConstructorParameters<typeof SendNotificationWithDedup>[0]["notificationHistoryReader"]
+    ConstructorParameters<typeof SendNotificationWithDedupUseCase>[0]["notificationHistoryReader"]
   >;
-  let dedupLock: Mocked<ConstructorParameters<typeof SendNotificationWithDedup>[0]["dedupLock"]>;
+  let dedupLock: Mocked<
+    ConstructorParameters<typeof SendNotificationWithDedupUseCase>[0]["dedupLock"]
+  >;
   const release = vi.fn().mockResolvedValue(undefined);
 
   beforeEach(async () => {
     const sendNotificationWithDedupDependencies = mockDeep<
-      ConstructorParameters<typeof SendNotificationWithDedup>[0]
+      ConstructorParameters<typeof SendNotificationWithDedupUseCase>[0]
     >({});
-    const unit = new SendNotificationWithDedup(sendNotificationWithDedupDependencies);
+    const unit = new SendNotificationWithDedupUseCase(sendNotificationWithDedupDependencies);
     useCase = unit;
     sendNotification = sendNotificationWithDedupDependencies.sendNotification;
     repository = sendNotificationWithDedupDependencies.notificationHistoryReader;

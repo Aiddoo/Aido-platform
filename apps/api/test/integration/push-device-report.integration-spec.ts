@@ -3,7 +3,7 @@ import { eq } from "drizzle-orm";
 import { NotificationDeliveryLogEvent } from "#api/modules/notification/push/application/notification-delivery.log-events";
 import {
   type ReportPushDeviceCommand,
-  ReportPushDevice,
+  ReportPushDeviceUseCase,
 } from "#api/modules/notification/push/application/use-cases/report-push-device.use-case";
 import { DrizzlePushDeviceRepository } from "#api/modules/notification/push/infrastructure/persistence/drizzle-push-device.repository";
 import { DrizzlePushTokenRepository } from "#api/modules/notification/push/infrastructure/persistence/drizzle-push-token.repository";
@@ -39,11 +39,13 @@ describe("푸시 기기 보고 (실제 PostgreSQL)", () => {
   });
 
   function createReportPushDevice(
-    pushTokenRepository?: ConstructorParameters<typeof ReportPushDevice>[0]["pushTokenRepository"],
+    pushTokenRepository?: ConstructorParameters<
+      typeof ReportPushDeviceUseCase
+    >[0]["pushTokenRepository"],
   ) {
     const { txHost, uow } = createDatabaseTransactionFixture(client);
     const warnings: unknown[] = [];
-    const reportPushDevice = new ReportPushDevice({
+    const reportPushDevice = new ReportPushDeviceUseCase({
       pushDeviceRepository: new DrizzlePushDeviceRepository(txHost),
       pushTokenRepository: pushTokenRepository ?? new DrizzlePushTokenRepository(txHost),
       unitOfWork: uow,
@@ -134,7 +136,7 @@ describe("푸시 기기 보고 (실제 PostgreSQL)", () => {
     const repository = new DrizzlePushTokenRepository(txHost);
     let releaseCalls = 0;
     const racingRepository: ConstructorParameters<
-      typeof ReportPushDevice
+      typeof ReportPushDeviceUseCase
     >[0]["pushTokenRepository"] = {
       async releasePushTokenHeldElsewhere(data) {
         const released = await repository.releasePushTokenHeldElsewhere(data);

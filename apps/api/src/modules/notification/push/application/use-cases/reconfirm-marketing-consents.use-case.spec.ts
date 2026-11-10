@@ -2,7 +2,7 @@ import { createUnitOfWorkMock } from "#test/mocks/ports/unit-of-work.mock";
 
 import type { CreateNotificationData } from "../../../inbox/application/ports/notification-draft.port.js";
 import type { MarketingReconfirmRecipient } from "../ports/marketing-consent-reconfirm.port.js";
-import { ReconfirmMarketingConsents } from "./reconfirm-marketing-consents.use-case.js";
+import { ReconfirmMarketingConsentsUseCase } from "./reconfirm-marketing-consents.use-case.js";
 
 const NOW = new Date("2026-12-01T02:00:00.000Z");
 
@@ -14,7 +14,7 @@ function createReconfirm(
   const reconfirmed = new Set<string>();
   const cutoffs: Date[] = [];
   const sent: CreateNotificationData[] = [];
-  const useCase = new ReconfirmMarketingConsents({
+  const useCase = new ReconfirmMarketingConsentsUseCase({
     reconfirmAccess: {
       findMarketingReconfirmTargets: async (params) => {
         cutoffs.push(params.cutoff);
@@ -53,7 +53,7 @@ function createReconfirm(
   return { useCase, sent, cutoffs };
 }
 
-describe("ReconfirmMarketingConsents — 광고성 수신 동의 2년 재확인", () => {
+describe("ReconfirmMarketingConsentsUseCase — 광고성 수신 동의 2년 재확인", () => {
   it("2년 전 기준으로 고른 사용자에게 처음 동의한 날짜와 함께 한 번만 알린다", async () => {
     // Given
     const { useCase, sent, cutoffs } = createReconfirm([

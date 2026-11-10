@@ -6,7 +6,7 @@ import { createUnitOfWorkMock } from "#test/mocks/ports/unit-of-work.mock";
 
 import { type PushDeliveryLifecycleRepositoryPort } from "../ports/push-delivery-lifecycle.repository.port.js";
 import { type PushDeliveryOutboxRepositoryPort } from "../ports/push-delivery-outbox.repository.port.js";
-import { RelayPushDeliveryOutbox } from "./relay-push-delivery-outbox.use-case.js";
+import { RelayPushDeliveryOutboxUseCase } from "./relay-push-delivery-outbox.use-case.js";
 
 function createOutboxMock(): PushDeliveryOutboxRepositoryPort {
   return {
@@ -31,23 +31,25 @@ function createLifecycleMock(): PushDeliveryLifecycleRepositoryPort {
   };
 }
 
-describe("RelayPushDeliveryOutbox — stale recovery와 relay", () => {
-  let useCase: RelayPushDeliveryOutbox;
-  let outbox: Mocked<ConstructorParameters<typeof RelayPushDeliveryOutbox>[0]["outbox"]>;
-  let lifecycle: Mocked<ConstructorParameters<typeof RelayPushDeliveryOutbox>[0]["lifecycle"]>;
+describe("RelayPushDeliveryOutboxUseCase — stale recovery와 relay", () => {
+  let useCase: RelayPushDeliveryOutboxUseCase;
+  let outbox: Mocked<ConstructorParameters<typeof RelayPushDeliveryOutboxUseCase>[0]["outbox"]>;
+  let lifecycle: Mocked<
+    ConstructorParameters<typeof RelayPushDeliveryOutboxUseCase>[0]["lifecycle"]
+  >;
   let publishOutbox: Mocked<
-    ConstructorParameters<typeof RelayPushDeliveryOutbox>[0]["publishOutbox"]
+    ConstructorParameters<typeof RelayPushDeliveryOutboxUseCase>[0]["publishOutbox"]
   >;
 
   beforeEach(async () => {
     const relayPushDeliveryOutboxDependencies = mockDeep<
-      ConstructorParameters<typeof RelayPushDeliveryOutbox>[0]
+      ConstructorParameters<typeof RelayPushDeliveryOutboxUseCase>[0]
     >({
       outbox: createOutboxMock(),
       lifecycle: createLifecycleMock(),
       unitOfWork: createUnitOfWorkMock(),
     });
-    const unit = new RelayPushDeliveryOutbox(relayPushDeliveryOutboxDependencies);
+    const unit = new RelayPushDeliveryOutboxUseCase(relayPushDeliveryOutboxDependencies);
 
     useCase = unit;
     outbox = relayPushDeliveryOutboxDependencies.outbox;

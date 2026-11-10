@@ -7,7 +7,7 @@ interface PushThroughputLimiterOptions {
 }
 
 /** 공급자 초당 메시지 한도를 넘지 않도록 프로세스 안의 발송을 토큰 버킷으로 직렬화한다. */
-export class PushThroughputLimiter {
+export class PushThroughputLimiterAdapter {
   readonly #capacity: number;
   readonly #tokensPerMs: number;
   readonly #now: () => number;

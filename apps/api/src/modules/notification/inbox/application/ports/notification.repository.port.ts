@@ -1,5 +1,5 @@
 import type { NotificationType } from "../../domain/notification-type.constants.js";
-import type { NotificationRecord } from "../read-models/notification.read-model.js";
+import type { InboxNotification } from "../read-models/inbox-notification.read-model.js";
 import type { CreateNotificationData } from "./notification-draft.port.js";
 
 /** 알림 저장소 포트 (DI 토큰) */
@@ -18,10 +18,10 @@ export class DuplicateNotificationError extends Error {
  * 어댑터는 CLS TransactionHost 기반으로 활성 트랜잭션에 참여한다.
  */
 export interface NotificationRepositoryPort {
-  createNotification(data: CreateNotificationData): Promise<NotificationRecord>;
+  createNotification(data: CreateNotificationData): Promise<InboxNotification>;
   createManyNotificationsAndReturn(
     dataList: CreateNotificationData[],
-  ): Promise<NotificationRecord[]>;
+  ): Promise<InboxNotification[]>;
   markAsRead(id: number, userId: string): Promise<boolean>;
   markAsOpened(id: number, userId: string): Promise<boolean>;
   markAllAsRead(userId: string, types?: readonly NotificationType[]): Promise<{ count: number }>;

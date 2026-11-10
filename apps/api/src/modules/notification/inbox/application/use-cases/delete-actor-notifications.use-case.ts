@@ -15,7 +15,7 @@ interface NotificationAccountCleanupDependencies {
   readonly logger: Pick<ApplicationLoggerPort, "warn">;
 }
 
-export class NotificationAccountCleanup {
+export class DeleteActorNotificationsUseCase {
   readonly #dependencies: NotificationAccountCleanupDependencies;
 
   constructor(dependencies: NotificationAccountCleanupDependencies) {

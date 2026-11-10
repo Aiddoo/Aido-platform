@@ -7,7 +7,7 @@ import { RETENTION_REPOSITORY } from "./application/ports/retention/retention.re
 import { ActivateRetentionExperiment } from "./application/use-cases/retention/activate-retention-experiment.use-case.js";
 import { EnrollRetentionExperiment } from "./application/use-cases/retention/enroll-retention-experiment.use-case.js";
 import { ProcessRetentionStages } from "./application/use-cases/retention/process-retention-stages.use-case.js";
-import { NotificationPublisher } from "./push/application/use-cases/publish-notification.use-case.js";
+import { PublishNotificationUseCase } from "./push/application/use-cases/publish-notification.use-case.js";
 
 export const activateRetentionExperimentProvider: FactoryProvider<ActivateRetentionExperiment> = {
   provide: ActivateRetentionExperiment,
@@ -35,7 +35,7 @@ export const enrollRetentionExperimentProvider: FactoryProvider<EnrollRetentionE
 
 export const processRetentionStagesProvider: FactoryProvider<ProcessRetentionStages> = {
   provide: ProcessRetentionStages,
-  inject: [RETENTION_REPOSITORY, NotificationPublisher, RETENTION_CONFIG, UNIT_OF_WORK],
+  inject: [RETENTION_REPOSITORY, PublishNotificationUseCase, RETENTION_CONFIG, UNIT_OF_WORK],
   useFactory: (
     repository: ConstructorParameters<typeof ProcessRetentionStages>[0]["repository"],
     notificationPublisher: ConstructorParameters<

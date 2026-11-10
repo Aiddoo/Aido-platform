@@ -8,7 +8,7 @@ import { SCHEDULER_CAMPAIGN_KEY } from "../../../domain/services/reminders/notif
 import type { TimezoneContext } from "../../../domain/services/reminders/timezone-context.js";
 import type { NotificationHistoryReader } from "../../../inbox/application/notification-history.reader.js";
 import { createMonthlyReportNotificationMessage } from "../../../push/application/messages/notification.messages.js";
-import type { NotificationPublisher } from "../../../push/application/use-cases/publish-notification.use-case.js";
+import type { PublishNotificationUseCase } from "../../../push/application/use-cases/publish-notification.use-case.js";
 import { NotificationRemindersLogEvent } from "../../observability/reminders/notification-reminders-log.events.js";
 import { type ScheduledReminderReaderPort } from "../../ports/reminders/scheduled-reminder-reader.port.js";
 import { type SchedulerPreferenceReaderPort } from "../../ports/reminders/scheduler-preference-reader.port.js";
@@ -17,7 +17,7 @@ import type { TimezoneReminderStrategy } from "./timezone-reminder.strategy.js";
 interface MonthlyReportStrategyDependencies {
   readonly reader: Pick<ScheduledReminderReaderPort, "findMonthlyReportRecipients">;
   readonly preferenceReader: Pick<SchedulerPreferenceReaderPort, "findUserLocales">;
-  readonly notificationPublisher: Pick<NotificationPublisher, "publishBatch">;
+  readonly notificationPublisher: Pick<PublishNotificationUseCase, "publishBatch">;
   readonly notificationHistoryReader: Pick<NotificationHistoryReader, "findAlreadyNotifiedUserIds">;
   readonly logger: Pick<ApplicationLoggerPort, "log">;
 }

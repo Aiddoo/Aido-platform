@@ -1,5 +1,9 @@
 export type { CreateNotificationData } from "./inbox/application/ports/notification-draft.port.js";
-export { NotificationPublisher } from "./push/application/use-cases/publish-notification.use-case.js";
+// 다른 Context가 옮길 때까지 옛 이름을 같은 클래스로 남긴다
+export {
+  PublishNotificationUseCase,
+  PublishNotificationUseCase as NotificationPublisher,
+} from "./push/application/use-cases/publish-notification.use-case.js";
 export {
   CLIENT_APP_VERSION_READER,
   type ClientAppVersionReaderPort,
@@ -25,7 +29,10 @@ export {
   PUSH_QUIET_HOURS_READER,
   type PushQuietHoursReaderPort,
 } from "./push/application/ports/push-quiet-hours.reader.port.js";
-export { NotificationAccountCleanup } from "./inbox/application/use-cases/delete-actor-notifications.use-case.js";
+export {
+  DeleteActorNotificationsUseCase,
+  DeleteActorNotificationsUseCase as NotificationAccountCleanup,
+} from "./inbox/application/use-cases/delete-actor-notifications.use-case.js";
 export { SCHEDULER_CAMPAIGN_KEY } from "./domain/services/reminders/notification-campaign.js";
 export { TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY } from "./push/domain/transactional-notification-campaign.constants.js";
 export {
@@ -41,4 +48,7 @@ export {
   createPremiumTrialEndingNotificationMessage,
   createTodoCommentNotificationMessage,
 } from "./push/application/messages/notification.messages.js";
-export { NotificationDeliveryModule } from "./push/notification-push.module.js";
+export {
+  NotificationPushModule,
+  NotificationPushModule as NotificationDeliveryModule,
+} from "./push/notification-push.module.js";

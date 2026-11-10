@@ -27,8 +27,8 @@ import {
   PUSH_DISPATCH_STAGING,
   type PushDispatchStagingRepositoryPort,
 } from "#api/modules/notification/push/application/ports/push-dispatch-staging.repository.port";
-import { PushDeliveryAfterCommitPublisher } from "#api/modules/notification/push/application/use-cases/publish-push-delivery-after-commit.use-case";
-import { PublishPushDeliveryOutbox } from "#api/modules/notification/push/application/use-cases/publish-push-delivery-outbox.use-case";
+import { PublishPushDeliveryAfterCommitUseCase } from "#api/modules/notification/push/application/use-cases/publish-push-delivery-after-commit.use-case";
+import { PublishPushDeliveryOutboxUseCase } from "#api/modules/notification/push/application/use-cases/publish-push-delivery-outbox.use-case";
 import { databaseSqlState } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { createEntityId } from "#api/platform/database/entity-id";
@@ -327,8 +327,11 @@ describe("Engagement 댓글 실제 PostgreSQL 회귀", () => {
     const like = context.module.get(LikeTodoComment);
     const txHost =
       context.module.get<TransactionHost<DrizzleTransactionalAdapter>>(TransactionHost);
-    const publication = vi.spyOn(context.module.get(PublishPushDeliveryOutbox), "execute");
-    const registration = vi.spyOn(context.module.get(PushDeliveryAfterCommitPublisher), "register");
+    const publication = vi.spyOn(context.module.get(PublishPushDeliveryOutboxUseCase), "execute");
+    const registration = vi.spyOn(
+      context.module.get(PublishPushDeliveryAfterCommitUseCase),
+      "register",
+    );
     const cache = context.module.get<NotificationCachePort>(NOTIFICATION_CACHE);
     const invalidation = vi.spyOn(cache, "invalidateUnreadCount");
     let stagedCounts: number[] = [];
@@ -387,7 +390,7 @@ describe("Engagement 댓글 실제 PostgreSQL 회귀", () => {
       context.module.get<TransactionHost<DrizzleTransactionalAdapter>>(TransactionHost);
     const staging = context.module.get<PushDispatchStagingRepositoryPort>(PUSH_DISPATCH_STAGING);
     const stage = staging.stage.bind(staging);
-    const publication = vi.spyOn(context.module.get(PublishPushDeliveryOutbox), "execute");
+    const publication = vi.spyOn(context.module.get(PublishPushDeliveryOutboxUseCase), "execute");
     let stagedNotificationCount = 0;
     let stagingSqlState: string | undefined;
     vi.spyOn(staging, "stage").mockImplementationOnce(async (input) => {

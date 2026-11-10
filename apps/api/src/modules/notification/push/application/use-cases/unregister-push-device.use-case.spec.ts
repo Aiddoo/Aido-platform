@@ -3,14 +3,14 @@ import { InMemoryPushDeviceStore } from "#test/mocks/in-memory-push-device.store
 import { createUnitOfWorkMock } from "#test/mocks/ports/index";
 import { StubPushTokenCache } from "#test/mocks/stub-push-token-cache";
 
-import { ReportPushDevice } from "./report-push-device.use-case.js";
-import { UnregisterPushDevice } from "./unregister-push-device.use-case.js";
+import { ReportPushDeviceUseCase } from "./report-push-device.use-case.js";
+import { UnregisterPushDeviceUseCase } from "./unregister-push-device.use-case.js";
 
 async function setup() {
   const store = new InMemoryPushDeviceStore();
   const cache = new StubPushTokenCache();
   const logger = { log: () => undefined, warn: () => undefined };
-  const report = new ReportPushDevice({
+  const report = new ReportPushDeviceUseCase({
     pushDeviceRepository: store,
     pushTokenRepository: store,
     unitOfWork: createUnitOfWorkMock(),
@@ -37,7 +37,7 @@ async function setup() {
       }),
     );
   }
-  const useCase = new UnregisterPushDevice({
+  const useCase = new UnregisterPushDeviceUseCase({
     pushDeviceRepository: store,
     pushTokenRepository: store,
     unitOfWork: createUnitOfWorkMock(),
@@ -47,7 +47,7 @@ async function setup() {
   return { store, cache, useCase };
 }
 
-describe("UnregisterPushDevice — 푸시 기기 해제", () => {
+describe("UnregisterPushDeviceUseCase — 푸시 기기 해제", () => {
   it("deviceId가 있으면 그 기기의 기록과 토큰만 지우고 토큰 캐시를 비운다", async () => {
     // Given 기기 두 대
     const { store, cache, useCase } = await setup();

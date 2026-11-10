@@ -14,7 +14,7 @@ interface MarkAllAsReadDependencies {
   readonly logger: Pick<ApplicationLoggerPort, "debug">;
 }
 
-export class MarkAllAsRead {
+export class MarkAllNotificationsReadUseCase {
   readonly #dependencies: MarkAllAsReadDependencies;
 
   constructor(dependencies: MarkAllAsReadDependencies) {

@@ -4,7 +4,7 @@ import type { Mocked } from "vitest";
 
 import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/index";
 
-import { PushDeliveryQueueService } from "./push-delivery-queue.adapter.js";
+import { PushDeliveryQueueAdapter } from "./push-delivery-queue.adapter.js";
 import {
   PUSH_DELIVERY_DEAD_LETTER_QUEUE,
   PUSH_DELIVERY_DEAD_LETTER_JOB_POLICY,
@@ -13,12 +13,12 @@ import {
   PushDeliveryJobName,
 } from "./push-delivery-queue.constants.js";
 
-describe("PushDeliveryQueueService — durable push queue 발행", () => {
-  let service: PushDeliveryQueueService;
+describe("PushDeliveryQueueAdapter — durable push queue 발행", () => {
+  let service: PushDeliveryQueueAdapter;
   let runtime: Mocked<JobRuntimePort>;
 
   beforeEach(async () => {
-    const { unit, unitRef } = await TestBed.solitary(PushDeliveryQueueService)
+    const { unit, unitRef } = await TestBed.solitary(PushDeliveryQueueAdapter)
       .mock<JobRuntimePort>(JOB_RUNTIME)
       .impl(() => ({
         start: vi.fn(),

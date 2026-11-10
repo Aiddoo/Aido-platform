@@ -7,7 +7,7 @@ import {
 } from "../messages/notification.messages.js";
 import { NotificationDeliveryLogEvent } from "../notification-delivery.log-events.js";
 import type { NotificationRecipientLocaleReaderPort } from "../ports/notification-recipient-locale.reader.port.js";
-import type { NotificationPublisher } from "./publish-notification.use-case.js";
+import type { PublishNotificationUseCase } from "./publish-notification.use-case.js";
 
 export interface SendNudgeNotificationInput {
   readonly nudgeId: number;
@@ -20,12 +20,12 @@ export interface SendNudgeNotificationInput {
 }
 
 interface SendNudgeNotificationDependencies {
-  readonly notificationPublisher: Pick<NotificationPublisher, "publishWithDeduplication">;
+  readonly notificationPublisher: Pick<PublishNotificationUseCase, "publishWithDeduplication">;
   readonly recipientLocaleReader: Pick<NotificationRecipientLocaleReaderPort, "getLocale">;
   readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
 
-export class SendNudgeNotification {
+export class SendNudgeNotificationUseCase {
   readonly #dependencies: SendNudgeNotificationDependencies;
 
   constructor(dependencies: SendNudgeNotificationDependencies) {

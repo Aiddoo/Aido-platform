@@ -3,22 +3,24 @@ import { mockDeep } from "vitest-mock-extended";
 
 import { createNotificationCacheMock } from "#test/mocks/ports/index";
 
-import { GetUnreadCount } from "./get-unread-count.use-case.js";
+import { GetUnreadNotificationCountUseCase } from "./get-unread-notification-count.use-case.js";
 
-describe("GetUnreadCount", () => {
-  let useCase: GetUnreadCount;
+describe("GetUnreadNotificationCountUseCase", () => {
+  let useCase: GetUnreadNotificationCountUseCase;
   let notificationRepo: Mocked<
-    ConstructorParameters<typeof GetUnreadCount>[0]["notificationInboxReader"]
+    ConstructorParameters<typeof GetUnreadNotificationCountUseCase>[0]["notificationInboxReader"]
   >;
-  let cache: Mocked<ConstructorParameters<typeof GetUnreadCount>[0]["cache"]>;
+  let cache: Mocked<ConstructorParameters<typeof GetUnreadNotificationCountUseCase>[0]["cache"]>;
 
   const mockUserId = "user-1";
 
   beforeEach(async () => {
-    const getUnreadCountDependencies = mockDeep<ConstructorParameters<typeof GetUnreadCount>[0]>({
+    const getUnreadCountDependencies = mockDeep<
+      ConstructorParameters<typeof GetUnreadNotificationCountUseCase>[0]
+    >({
       cache: createNotificationCacheMock(),
     });
-    const unit = new GetUnreadCount(getUnreadCountDependencies);
+    const unit = new GetUnreadNotificationCountUseCase(getUnreadCountDependencies);
     useCase = unit;
     notificationRepo = getUnreadCountDependencies.notificationInboxReader;
     cache = getUnreadCountDependencies.cache;

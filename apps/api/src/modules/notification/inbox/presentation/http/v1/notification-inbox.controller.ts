@@ -14,16 +14,16 @@ import {
   SWAGGER_TAGS,
 } from "#api/platform/http/swagger/index";
 
-import { GetNotifications } from "../../../application/use-cases/get-notifications.use-case.js";
-import { GetUnreadCount } from "../../../application/use-cases/get-unread-count.use-case.js";
-import { MarkAllAsRead } from "../../../application/use-cases/mark-all-as-read.use-case.js";
+import { GetUnreadNotificationCountUseCase } from "../../../application/use-cases/get-unread-notification-count.use-case.js";
+import { ListNotificationsUseCase } from "../../../application/use-cases/list-notifications.use-case.js";
+import { MarkAllNotificationsReadUseCase } from "../../../application/use-cases/mark-all-notifications-read.use-case.js";
 import { NotificationInboxResponseDto } from "./notification-inbox-response.dto.js";
+import { NotificationMapper } from "./notification-response.mapper.js";
 import {
   GetNotificationsQueryDto,
   MarkReadResponseDto,
   UnreadCountResponseDto,
 } from "./notification.dto.js";
-import { NotificationMapper } from "./notification.mapper.js";
 
 @ApiTags(SWAGGER_TAGS.NOTIFICATIONS)
 @ApiBearerAuth()
@@ -34,14 +34,14 @@ import { NotificationMapper } from "./notification.mapper.js";
 })
 @Controller("notifications/inbox")
 export class NotificationInboxController {
-  readonly #getNotificationsUseCase: GetNotifications;
-  readonly #getUnreadCountUseCase: GetUnreadCount;
-  readonly #markAllAsReadUseCase: MarkAllAsRead;
+  readonly #getNotificationsUseCase: ListNotificationsUseCase;
+  readonly #getUnreadCountUseCase: GetUnreadNotificationCountUseCase;
+  readonly #markAllAsReadUseCase: MarkAllNotificationsReadUseCase;
 
   constructor(
-    getNotificationsUseCase: GetNotifications,
-    getUnreadCountUseCase: GetUnreadCount,
-    markAllAsReadUseCase: MarkAllAsRead,
+    getNotificationsUseCase: ListNotificationsUseCase,
+    getUnreadCountUseCase: GetUnreadNotificationCountUseCase,
+    markAllAsReadUseCase: MarkAllNotificationsReadUseCase,
   ) {
     this.#getNotificationsUseCase = getNotificationsUseCase;
     this.#getUnreadCountUseCase = getUnreadCountUseCase;

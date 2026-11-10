@@ -3,7 +3,7 @@ import { Logger } from "@nestjs/common";
 import type { EnqueueJobOptions, JobData } from "#api/shared/application/ports/job-runtime.port";
 import { FakeJobRuntime } from "#test/mocks/fake-job-runtime";
 
-import { NotificationQueueService } from "./notification-queue.adapter.js";
+import { NotificationQueueAdapter } from "./notification-queue.adapter.js";
 import {
   NOTIFICATION_DEAD_LETTER_QUEUE,
   NOTIFICATION_QUEUE,
@@ -40,7 +40,7 @@ const nudge = {
   senderName: "보낸 사람",
 };
 
-describe("NotificationQueueService — 알림 이벤트 등록", () => {
+describe("NotificationQueueAdapter — 알림 이벤트 등록", () => {
   afterEach(() => {
     vi.useRealTimers();
   });
@@ -48,7 +48,7 @@ describe("NotificationQueueService — 알림 이벤트 등록", () => {
   it("원인 이벤트별 key와 DLQ 정책으로 등록해 같은 이벤트의 재발행만 하나로 합친다", async () => {
     // Given
     const runtime = new FakeJobRuntime();
-    const service = new NotificationQueueService(runtime);
+    const service = new NotificationQueueAdapter(runtime);
 
     // When
     service.enqueueNudgeSent(nudge);
@@ -72,7 +72,7 @@ describe("NotificationQueueService — 알림 이벤트 등록", () => {
     // Given
     vi.useFakeTimers({ toFake: ["setTimeout"] });
     const runtime = new FlakyJobRuntime(2);
-    const service = new NotificationQueueService(runtime);
+    const service = new NotificationQueueAdapter(runtime);
 
     // When
     service.enqueueCheerSent({
@@ -94,7 +94,7 @@ describe("NotificationQueueService — 알림 이벤트 등록", () => {
     const privateMessage = "private-token-and-body";
     const error = vi.spyOn(Logger.prototype, "error").mockImplementation(() => undefined);
     const runtime = new FlakyJobRuntime(Number.POSITIVE_INFINITY, new Error(privateMessage));
-    const service = new NotificationQueueService(runtime);
+    const service = new NotificationQueueAdapter(runtime);
 
     // When
     service.enqueueNudgeSent(nudge);
@@ -114,7 +114,7 @@ describe("NotificationQueueService — 알림 이벤트 등록", () => {
   it("결제 문제 알림은 호출자의 트랜잭션에 기록하고 실패를 호출자에게 던진다", async () => {
     // Given
     const runtime = new FlakyJobRuntime(Number.POSITIVE_INFINITY, new Error("db down"));
-    const service = new NotificationQueueService(runtime);
+    const service = new NotificationQueueAdapter(runtime);
 
     // When
     const recording = service.enqueueBillingIssue({ userId: "user-1" }, new Date());

@@ -2,19 +2,19 @@ import type { Mocked } from "vitest";
 import { mockDeep } from "vitest-mock-extended";
 
 import { TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY } from "../../domain/transactional-notification-campaign.constants.js";
-import { SendCheerNotification } from "./send-cheer-notification.use-case.js";
+import { SendCheerNotificationUseCase } from "./send-cheer-notification.use-case.js";
 
-describe("SendCheerNotification", () => {
+describe("SendCheerNotificationUseCase", () => {
   it("선택 메시지 메타데이터와 함께 CHEER_RECEIVED 알림을 보낸다", async () => {
     const sendCheerNotificationDependencies = mockDeep<
-      ConstructorParameters<typeof SendCheerNotification>[0]
+      ConstructorParameters<typeof SendCheerNotificationUseCase>[0]
     >({});
-    const unit = new SendCheerNotification(sendCheerNotificationDependencies);
+    const unit = new SendCheerNotificationUseCase(sendCheerNotificationDependencies);
     const notificationSender: Mocked<
-      ConstructorParameters<typeof SendCheerNotification>[0]["notificationPublisher"]
+      ConstructorParameters<typeof SendCheerNotificationUseCase>[0]["notificationPublisher"]
     > = sendCheerNotificationDependencies.notificationPublisher;
     const recipientLocaleReader: Mocked<
-      ConstructorParameters<typeof SendCheerNotification>[0]["recipientLocaleReader"]
+      ConstructorParameters<typeof SendCheerNotificationUseCase>[0]["recipientLocaleReader"]
     > = sendCheerNotificationDependencies.recipientLocaleReader;
     recipientLocaleReader.getLocale.mockResolvedValue("ko");
 

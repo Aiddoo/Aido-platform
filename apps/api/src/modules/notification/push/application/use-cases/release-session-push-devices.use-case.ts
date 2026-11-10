@@ -19,7 +19,7 @@ interface ReleaseSessionPushDevicesDependencies {
  * 로그아웃·전체 로그아웃·비밀번호 변경·토큰 재사용 감지로 폐기된 세션의 기기를 바로 푸시 대상에서 뺀다.
  * 만료돼 지워지는 세션은 FK CASCADE가 정리한다.
  */
-export class ReleaseSessionPushDevices implements SessionPushDeviceReleasePort {
+export class ReleaseSessionPushDevicesUseCase implements SessionPushDeviceReleasePort {
   readonly #dependencies: ReleaseSessionPushDevicesDependencies;
 
   constructor(dependencies: ReleaseSessionPushDevicesDependencies) {

@@ -48,7 +48,7 @@ interface ReservationRecord {
 
 /** Drizzle ORM과 Serializable 트랜잭션으로 구현한 영속 푸시 rate limiter. */
 @Injectable()
-export class PostgresPushRateLimiter implements PushRateLimiterPort {
+export class PostgresPushRateLimiterAdapter implements PushRateLimiterPort {
   readonly #db: Database;
 
   constructor(@Inject(DRIZZLE) db: Database) {

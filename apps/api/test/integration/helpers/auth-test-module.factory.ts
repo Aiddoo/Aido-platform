@@ -35,7 +35,7 @@ import { DrizzleVerificationRepository } from "#api/modules/identity/auth/infras
 import { DrizzleUserConsentRepository } from "#api/modules/identity/preferences/infrastructure/persistence/drizzle-user-consent.repository";
 import { DrizzleUserPreferenceRepository } from "#api/modules/identity/preferences/infrastructure/persistence/drizzle-user-preference.repository";
 import { DrizzleUserRepository } from "#api/modules/identity/users/infrastructure/persistence/drizzle-user.repository";
-import { NotificationQueueService } from "#api/modules/notification/notification-delivery-jobs.public";
+import { NotificationQueueAdapter } from "#api/modules/notification/notification-delivery-jobs.public";
 import { TransactionalEmailSender } from "#api/modules/notification/notification-email.public";
 import { AdminEventNotifier } from "#api/modules/operations/operations-notifications.public";
 import { DefaultTodoCategoryProvisionerAdapter } from "#api/modules/planning/categories/infrastructure/adapters/default-todo-category-provisioner.adapter";
@@ -273,7 +273,7 @@ export async function createAuthTestModule(
         },
       },
       {
-        provide: NotificationQueueService,
+        provide: NotificationQueueAdapter,
         useValue: {
           enqueueFollowNew: () => {},
           enqueueFollowMutual: () => {},

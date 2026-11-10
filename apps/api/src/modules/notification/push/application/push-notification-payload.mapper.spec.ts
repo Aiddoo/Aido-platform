@@ -4,19 +4,19 @@ import { mockDeep } from "vitest-mock-extended";
 
 import { createMarketingPushOptOutTokenMock } from "#test/mocks/ports/notification.mock";
 
-import { PushNotificationPayloadFactory } from "./push-notification-payload.mapper.js";
+import { PushNotificationPayloadMapper } from "./push-notification-payload.mapper.js";
 
-describe("PushNotificationPayloadFactory", () => {
-  let factory: PushNotificationPayloadFactory;
+describe("PushNotificationPayloadMapper", () => {
+  let factory: PushNotificationPayloadMapper;
   let optOutTokens: Mocked<
-    ConstructorParameters<typeof PushNotificationPayloadFactory>[0]["marketingOptOutTokens"]
+    ConstructorParameters<typeof PushNotificationPayloadMapper>[0]["marketingOptOutTokens"]
   >;
 
   beforeEach(async () => {
     const pushNotificationPayloadFactoryDependencies = mockDeep<
-      ConstructorParameters<typeof PushNotificationPayloadFactory>[0]
+      ConstructorParameters<typeof PushNotificationPayloadMapper>[0]
     >({ marketingOptOutTokens: createMarketingPushOptOutTokenMock() });
-    const unit = new PushNotificationPayloadFactory(pushNotificationPayloadFactoryDependencies);
+    const unit = new PushNotificationPayloadMapper(pushNotificationPayloadFactoryDependencies);
     factory = unit;
     optOutTokens = pushNotificationPayloadFactoryDependencies.marketingOptOutTokens;
     optOutTokens.issue.mockReturnValue("signed-opt-out-token");

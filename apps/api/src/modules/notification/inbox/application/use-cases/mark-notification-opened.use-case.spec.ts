@@ -4,26 +4,26 @@ import { mockDeep } from "vitest-mock-extended";
 import { createNotificationCacheMock } from "#test/mocks/ports/notification-cache.mock";
 import { createNotificationRepositoryMock } from "#test/mocks/ports/notification.mock";
 
-import { MarkNotificationOpened } from "./mark-notification-opened.use-case.js";
+import { MarkNotificationOpenedUseCase } from "./mark-notification-opened.use-case.js";
 
-describe("MarkNotificationOpened", () => {
-  let useCase: MarkNotificationOpened;
+describe("MarkNotificationOpenedUseCase", () => {
+  let useCase: MarkNotificationOpenedUseCase;
   let repository: Mocked<
-    ConstructorParameters<typeof MarkNotificationOpened>[0]["notificationRepository"]
+    ConstructorParameters<typeof MarkNotificationOpenedUseCase>[0]["notificationRepository"]
   >;
-  let cache: Mocked<ConstructorParameters<typeof MarkNotificationOpened>[0]["cache"]>;
+  let cache: Mocked<ConstructorParameters<typeof MarkNotificationOpenedUseCase>[0]["cache"]>;
 
   const mockUserId = "user-1";
   const mockNotificationId = 42;
 
   beforeEach(async () => {
     const markNotificationOpenedDependencies = mockDeep<
-      ConstructorParameters<typeof MarkNotificationOpened>[0]
+      ConstructorParameters<typeof MarkNotificationOpenedUseCase>[0]
     >({
       notificationRepository: createNotificationRepositoryMock(),
       cache: createNotificationCacheMock(),
     });
-    const unit = new MarkNotificationOpened(markNotificationOpenedDependencies);
+    const unit = new MarkNotificationOpenedUseCase(markNotificationOpenedDependencies);
     useCase = unit;
     repository = markNotificationOpenedDependencies.notificationRepository;
     cache = markNotificationOpenedDependencies.cache;

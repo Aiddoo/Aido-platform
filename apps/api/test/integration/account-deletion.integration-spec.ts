@@ -44,7 +44,7 @@ import {
 import { DeleteAccountUseCase } from "#api/modules/identity/users/application/use-cases/delete-account.use-case";
 import { PurgeDeletedAccountsUseCase } from "#api/modules/identity/users/application/use-cases/purge-deleted-accounts.use-case";
 import { DrizzleUserRepository } from "#api/modules/identity/users/infrastructure/persistence/drizzle-user.repository";
-import { NotificationQueueService } from "#api/modules/notification/notification-delivery-jobs.public";
+import { NotificationQueueAdapter } from "#api/modules/notification/notification-delivery-jobs.public";
 import { TransactionalEmailSender } from "#api/modules/notification/notification-email.public";
 import { AdminEventNotifier } from "#api/modules/operations/operations-notifications.public";
 import { DefaultTodoCategoryProvisionerAdapter } from "#api/modules/planning/categories/infrastructure/adapters/default-todo-category-provisioner.adapter";
@@ -282,7 +282,7 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
           },
         },
         {
-          provide: NotificationQueueService,
+          provide: NotificationQueueAdapter,
           useValue: {
             enqueueFollowNew: () => {},
             enqueueFollowMutual: () => {},

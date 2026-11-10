@@ -2,17 +2,17 @@ import { mockDeep } from "vitest-mock-extended";
 
 import { createUnitOfWorkMock } from "#test/mocks/ports/index";
 
-import { RecoverFailedPushDeliveries } from "./recover-failed-push-deliveries.use-case.js";
+import { RecoverFailedPushDeliveriesUseCase } from "./recover-failed-push-deliveries.use-case.js";
 
-describe("RecoverFailedPushDeliveries", () => {
+describe("RecoverFailedPushDeliveriesUseCase", () => {
   it("DLQ publication 중 현재 PENDING dispatch와 matching generation subset만 repository에 위임한다", async () => {
     const recoverFailedPushDeliveriesDependencies = mockDeep<
-      ConstructorParameters<typeof RecoverFailedPushDeliveries>[0]
+      ConstructorParameters<typeof RecoverFailedPushDeliveriesUseCase>[0]
     >({
       unitOfWork: createUnitOfWorkMock(),
     });
     recoverFailedPushDeliveriesDependencies.lifecycle.reopenFailedPublications.mockResolvedValue(1);
-    const unit = new RecoverFailedPushDeliveries(recoverFailedPushDeliveriesDependencies);
+    const unit = new RecoverFailedPushDeliveriesUseCase(recoverFailedPushDeliveriesDependencies);
     const lifecycle = recoverFailedPushDeliveriesDependencies.lifecycle;
     const publications = [
       { dispatchId: 11, publishAttempt: 2 },

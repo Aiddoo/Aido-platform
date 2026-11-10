@@ -11,7 +11,7 @@ import {
 } from "../../../push/domain/notification-client-capability.domain-service.js";
 import type { NotificationType } from "../../domain/notification-type.constants.js";
 import { type NotificationInboxReaderPort } from "../ports/notification-inbox.reader.port.js";
-import type { NotificationRecord } from "../read-models/notification.read-model.js";
+import type { InboxNotification } from "../read-models/inbox-notification.read-model.js";
 
 export interface GetNotificationsInput {
   userId: string;
@@ -36,7 +36,7 @@ interface GetNotificationsDependencies {
   readonly logger: Pick<ApplicationLoggerPort, "debug">;
 }
 
-export class GetNotifications {
+export class ListNotificationsUseCase {
   readonly #dependencies: GetNotificationsDependencies;
 
   constructor(dependencies: GetNotificationsDependencies) {
@@ -45,7 +45,7 @@ export class GetNotifications {
 
   async execute(
     input: GetNotificationsInput,
-  ): Promise<CursorPaginatedResponse<NotificationRecord, number>> {
+  ): Promise<CursorPaginatedResponse<InboxNotification, number>> {
     const { cursor, size } = this.#dependencies.paginationService.normalizeCursorPagination<number>(
       {
         cursor: input.cursor,
@@ -73,7 +73,7 @@ export class GetNotifications {
     });
 
     return this.#dependencies.paginationService.createCursorPaginatedResponse<
-      NotificationRecord,
+      InboxNotification,
       number
     >({
       items: notifications,

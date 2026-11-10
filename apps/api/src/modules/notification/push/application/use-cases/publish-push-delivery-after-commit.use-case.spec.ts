@@ -5,7 +5,7 @@ import { mockDeep } from "vitest-mock-extended";
 
 import { type AfterCommitTask } from "#api/shared/application/ports/index";
 
-import { PushDeliveryAfterCommitPublisher } from "./publish-push-delivery-after-commit.use-case.js";
+import { PublishPushDeliveryAfterCommitUseCase } from "./publish-push-delivery-after-commit.use-case.js";
 
 function firstRegisteredTask(tasks: readonly AfterCommitTask[]): AfterCommitTask {
   const task = tasks[0];
@@ -15,20 +15,20 @@ function firstRegisteredTask(tasks: readonly AfterCommitTask[]): AfterCommitTask
   return task;
 }
 
-describe("PushDeliveryAfterCommitPublisher — commit 이후 fast path", () => {
-  let publisher: PushDeliveryAfterCommitPublisher;
+describe("PublishPushDeliveryAfterCommitUseCase — commit 이후 fast path", () => {
+  let publisher: PublishPushDeliveryAfterCommitUseCase;
   let publishOutbox: Mocked<
-    ConstructorParameters<typeof PushDeliveryAfterCommitPublisher>[0]["publishOutbox"]
+    ConstructorParameters<typeof PublishPushDeliveryAfterCommitUseCase>[0]["publishOutbox"]
   >;
   let afterCommit: Mocked<
-    ConstructorParameters<typeof PushDeliveryAfterCommitPublisher>[0]["afterCommit"]
+    ConstructorParameters<typeof PublishPushDeliveryAfterCommitUseCase>[0]["afterCommit"]
   >;
   let registeredTasks: AfterCommitTask[];
 
   beforeEach(async () => {
     registeredTasks = [];
     const pushDeliveryAfterCommitPublisherDependencies = mockDeep<
-      ConstructorParameters<typeof PushDeliveryAfterCommitPublisher>[0]
+      ConstructorParameters<typeof PublishPushDeliveryAfterCommitUseCase>[0]
     >({
       afterCommit: {
         register: vi.fn((task: AfterCommitTask) => {
@@ -36,7 +36,9 @@ describe("PushDeliveryAfterCommitPublisher — commit 이후 fast path", () => {
         }),
       },
     });
-    const unit = new PushDeliveryAfterCommitPublisher(pushDeliveryAfterCommitPublisherDependencies);
+    const unit = new PublishPushDeliveryAfterCommitUseCase(
+      pushDeliveryAfterCommitPublisherDependencies,
+    );
 
     publisher = unit;
     publishOutbox = pushDeliveryAfterCommitPublisherDependencies.publishOutbox;

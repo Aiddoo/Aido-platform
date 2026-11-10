@@ -5,7 +5,7 @@ import { type NotificationRepositoryPort } from "../../../inbox/application/port
 import { withNotificationCopyRevision } from "../messages/notification-copy-revision.messages.js";
 import { type PushDispatchStagingRepositoryPort } from "../ports/push-dispatch-staging.repository.port.js";
 import type { PersistedBatchNotificationResult } from "../read-models/push-delivery.read-model.js";
-import type { PushDeliveryAfterCommitPublisher } from "./publish-push-delivery-after-commit.use-case.js";
+import type { PublishPushDeliveryAfterCommitUseCase } from "./publish-push-delivery-after-commit.use-case.js";
 
 /**
  * 배치 알림과 push dispatch outbox를 원자 저장하고 후속 cache/dedup용 결과를 반환한다.
@@ -19,10 +19,10 @@ interface PersistBatchNotificationDependencies {
   >;
   readonly pushDispatchStaging: Pick<PushDispatchStagingRepositoryPort, "stageMany">;
   readonly unitOfWork: Pick<UnitOfWorkPort, "run">;
-  readonly afterCommitPublisher: Pick<PushDeliveryAfterCommitPublisher, "register">;
+  readonly afterCommitPublisher: Pick<PublishPushDeliveryAfterCommitUseCase, "register">;
 }
 
-export class PersistBatchNotification {
+export class PersistBatchNotificationUseCase {
   readonly #dependencies: PersistBatchNotificationDependencies;
 
   constructor(dependencies: PersistBatchNotificationDependencies) {

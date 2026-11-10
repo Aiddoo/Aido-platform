@@ -13,8 +13,8 @@ import { TODO_REMINDER_QUEUE } from "#api/modules/notification/infrastructure/jo
 import { TodoReminderQueueProcessor } from "#api/modules/notification/infrastructure/jobs/reminders/todo-reminder-queue.processor";
 import { TodoReminderSchedulerAdapter } from "#api/modules/notification/infrastructure/jobs/reminders/todo-reminder-scheduler.adapter";
 import { DrizzleSchedulerReader } from "#api/modules/notification/infrastructure/persistence/reminders/drizzle-scheduler.reader";
-import { NotificationPublisher } from "#api/modules/notification/notification-delivery.public";
-import { SendNotification } from "#api/modules/notification/push/application/use-cases/send-notification.use-case";
+import { PublishNotificationUseCase } from "#api/modules/notification/notification-delivery.public";
+import { SendNotificationUseCase } from "#api/modules/notification/push/application/use-cases/send-notification.use-case";
 import { DrizzleNotificationTodoTargetReader } from "#api/modules/notification/push/infrastructure/persistence/drizzle-notification-todo-target.reader";
 import { DrizzlePushDispatchStagingRepository } from "#api/modules/notification/push/infrastructure/persistence/drizzle-push-dispatch-staging.repository";
 import { DrizzleTodoSeriesRepository } from "#api/modules/planning/todo-series/infrastructure/persistence/drizzle-todo-series.repository";
@@ -145,8 +145,8 @@ describe("할 일 알림 회차 중복 방지 (실제 PostgreSQL·pg-boss)", () 
       eventPublisher,
       logger: silentLogger,
     });
-    const publisher = new NotificationPublisher({
-      sendNotification: new SendNotification({
+    const publisher = new PublishNotificationUseCase({
+      sendNotification: new SendNotificationUseCase({
         notificationRepository: new DrizzleNotificationRepository(txHost),
         pushDispatchStaging: new DrizzlePushDispatchStagingRepository(txHost),
         cache: { invalidateUnreadCount: async () => undefined },

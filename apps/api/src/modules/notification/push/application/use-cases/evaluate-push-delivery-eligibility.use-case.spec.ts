@@ -5,7 +5,7 @@ import { mockDeep } from "vitest-mock-extended";
 import { createNotificationRecipientPreferenceReaderMock } from "#test/mocks/ports/notification.mock";
 
 import { type NotificationDeliveryPreference } from "../ports/user-notification-settings.port.js";
-import { PushDeliveryEligibilityService } from "./evaluate-push-delivery-eligibility.use-case.js";
+import { EvaluatePushDeliveryEligibilityUseCase } from "./evaluate-push-delivery-eligibility.use-case.js";
 
 const DAYTIME = new Date("2026-07-16T03:00:00.000Z");
 const KST_NIGHT = new Date("2026-07-16T14:00:00.000Z");
@@ -47,24 +47,28 @@ const engagement = {
   purpose: "ENGAGEMENT" as const,
 };
 
-describe("PushDeliveryEligibilityService", () => {
-  let service: PushDeliveryEligibilityService;
+describe("EvaluatePushDeliveryEligibilityUseCase", () => {
+  let service: EvaluatePushDeliveryEligibilityUseCase;
   let settings: Mocked<
-    ConstructorParameters<typeof PushDeliveryEligibilityService>[0]["userSettings"]
+    ConstructorParameters<typeof EvaluatePushDeliveryEligibilityUseCase>[0]["userSettings"]
   >;
   let rateLimiter: Mocked<
-    ConstructorParameters<typeof PushDeliveryEligibilityService>[0]["rateLimiter"]
+    ConstructorParameters<typeof EvaluatePushDeliveryEligibilityUseCase>[0]["rateLimiter"]
   >;
   let preferenceReader: Mocked<
-    ConstructorParameters<typeof PushDeliveryEligibilityService>[0]["recipientPreferenceReader"]
+    ConstructorParameters<
+      typeof EvaluatePushDeliveryEligibilityUseCase
+    >[0]["recipientPreferenceReader"]
   >;
 
   beforeEach(async () => {
     vi.useFakeTimers({ toFake: ["Date"] }).setSystemTime(DAYTIME);
     const pushDeliveryEligibilityServiceDependencies = mockDeep<
-      ConstructorParameters<typeof PushDeliveryEligibilityService>[0]
+      ConstructorParameters<typeof EvaluatePushDeliveryEligibilityUseCase>[0]
     >({ recipientPreferenceReader: createNotificationRecipientPreferenceReaderMock() });
-    const unit = new PushDeliveryEligibilityService(pushDeliveryEligibilityServiceDependencies);
+    const unit = new EvaluatePushDeliveryEligibilityUseCase(
+      pushDeliveryEligibilityServiceDependencies,
+    );
     service = unit;
     settings = pushDeliveryEligibilityServiceDependencies.userSettings;
     rateLimiter = pushDeliveryEligibilityServiceDependencies.rateLimiter;

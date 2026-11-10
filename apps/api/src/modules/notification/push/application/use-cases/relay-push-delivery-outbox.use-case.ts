@@ -2,7 +2,7 @@ import { type UnitOfWorkPort } from "#api/shared/application/ports/index";
 
 import { type PushDeliveryLifecycleRepositoryPort } from "../ports/push-delivery-lifecycle.repository.port.js";
 import { type PushDeliveryOutboxRepositoryPort } from "../ports/push-delivery-outbox.repository.port.js";
-import type { PublishPushDeliveryOutbox } from "./publish-push-delivery-outbox.use-case.js";
+import type { PublishPushDeliveryOutboxUseCase } from "./publish-push-delivery-outbox.use-case.js";
 
 const RELAY_BATCH_SIZE = 100;
 const MAX_BATCHES_PER_TRIGGER = 10;
@@ -14,10 +14,10 @@ interface RelayPushDeliveryOutboxDependencies {
   readonly outbox: Pick<PushDeliveryOutboxRepositoryPort, "recoverStaleProcessing">;
   readonly lifecycle: Pick<PushDeliveryLifecycleRepositoryPort, "recoverStaleProcessing">;
   readonly unitOfWork: Pick<UnitOfWorkPort, "run">;
-  readonly publishOutbox: Pick<PublishPushDeliveryOutbox, "execute">;
+  readonly publishOutbox: Pick<PublishPushDeliveryOutboxUseCase, "execute">;
 }
 
-export class RelayPushDeliveryOutbox {
+export class RelayPushDeliveryOutboxUseCase {
   readonly #dependencies: RelayPushDeliveryOutboxDependencies;
 
   constructor(dependencies: RelayPushDeliveryOutboxDependencies) {

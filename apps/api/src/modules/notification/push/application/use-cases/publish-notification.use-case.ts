@@ -1,16 +1,16 @@
 import { uniq } from "es-toolkit";
 
 import type { CreateNotificationData } from "../../../inbox/application/ports/notification-draft.port.js";
-import type { NotificationRecord } from "../../../inbox/application/read-models/notification.read-model.js";
+import type { InboxNotification } from "../../../inbox/application/read-models/inbox-notification.read-model.js";
 import type { NotificationTodoTargetReaderPort } from "../ports/notification-todo-target.reader.port.js";
-import type { SendBatchNotification } from "./send-batch-notification.use-case.js";
-import type { SendNotificationWithDedup } from "./send-notification-with-dedup.use-case.js";
-import type { SendNotification } from "./send-notification.use-case.js";
+import type { SendBatchNotificationUseCase } from "./send-batch-notification.use-case.js";
+import type { SendNotificationWithDedupUseCase } from "./send-notification-with-dedup.use-case.js";
+import type { SendNotificationUseCase } from "./send-notification.use-case.js";
 
 interface NotificationPublisherDependencies {
-  readonly sendNotification: Pick<SendNotification, "execute">;
-  readonly sendNotificationWithDeduplication: Pick<SendNotificationWithDedup, "execute">;
-  readonly sendBatchNotification: Pick<SendBatchNotification, "execute">;
+  readonly sendNotification: Pick<SendNotificationUseCase, "execute">;
+  readonly sendNotificationWithDeduplication: Pick<SendNotificationWithDedupUseCase, "execute">;
+  readonly sendBatchNotification: Pick<SendBatchNotificationUseCase, "execute">;
   readonly todoTargetReader: Pick<NotificationTodoTargetReaderPort, "findTodoTargets">;
 }
 
@@ -21,18 +21,18 @@ interface NotificationPublisherDependencies {
  * metadata는 알림함 응답과 push payload의 routing으로 함께 나가므로, 앱이 펼친 화면에서
  * 그 사람의 그 날짜 피드를 연다. 지워진 할 일은 더하지 않는다.
  */
-export class NotificationPublisher {
+export class PublishNotificationUseCase {
   readonly #dependencies: NotificationPublisherDependencies;
   constructor(dependencies: NotificationPublisherDependencies) {
     this.#dependencies = dependencies;
   }
 
-  async publish(data: CreateNotificationData): Promise<NotificationRecord | null> {
+  async publish(data: CreateNotificationData): Promise<InboxNotification | null> {
     const [withTarget] = await this.#withTodoTargets([data]);
     return this.#dependencies.sendNotification.execute(withTarget ?? data);
   }
 
-  async publishWithDeduplication(data: CreateNotificationData): Promise<NotificationRecord | null> {
+  async publishWithDeduplication(data: CreateNotificationData): Promise<InboxNotification | null> {
     const [withTarget] = await this.#withTodoTargets([data]);
     return this.#dependencies.sendNotificationWithDeduplication.execute(withTarget ?? data);
   }

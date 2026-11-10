@@ -4,25 +4,25 @@ import { mockDeep } from "vitest-mock-extended";
 
 import { createNotificationCacheMock } from "#test/mocks/ports/notification-cache.mock";
 
-import { FinalizeBatchNotification } from "./finalize-batch-notification.use-case.js";
+import { FinalizeBatchNotificationUseCase } from "./finalize-batch-notification.use-case.js";
 
-describe("FinalizeBatchNotification", () => {
-  let useCase: FinalizeBatchNotification;
-  let cache: Mocked<ConstructorParameters<typeof FinalizeBatchNotification>[0]["cache"]>;
+describe("FinalizeBatchNotificationUseCase", () => {
+  let useCase: FinalizeBatchNotificationUseCase;
+  let cache: Mocked<ConstructorParameters<typeof FinalizeBatchNotificationUseCase>[0]["cache"]>;
   let dedup: Mocked<
-    ConstructorParameters<typeof FinalizeBatchNotification>[0]["notificationDedup"]
+    ConstructorParameters<typeof FinalizeBatchNotificationUseCase>[0]["notificationDedup"]
   >;
 
   beforeEach(async () => {
     const finalizeBatchNotificationDependencies = mockDeep<
-      ConstructorParameters<typeof FinalizeBatchNotification>[0]
+      ConstructorParameters<typeof FinalizeBatchNotificationUseCase>[0]
     >({
       cache: createNotificationCacheMock(),
       notificationDedup: {
         recordNotifiedUsers: vi.fn(),
       },
     });
-    const unit = new FinalizeBatchNotification(finalizeBatchNotificationDependencies);
+    const unit = new FinalizeBatchNotificationUseCase(finalizeBatchNotificationDependencies);
     useCase = unit;
     cache = finalizeBatchNotificationDependencies.cache;
     dedup = finalizeBatchNotificationDependencies.notificationDedup;

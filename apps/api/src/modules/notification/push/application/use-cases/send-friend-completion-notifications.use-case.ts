@@ -11,8 +11,8 @@ import { createFriendCompletedNotificationMessage } from "../messages/notificati
 import { NotificationDeliveryLogEvent } from "../notification-delivery.log-events.js";
 import { type UserNotificationSettingsPort } from "../ports/user-notification-settings.port.js";
 import type { PersistedBatchNotificationResult } from "../read-models/push-delivery.read-model.js";
-import type { FinalizeBatchNotification } from "./finalize-batch-notification.use-case.js";
-import type { PersistBatchNotification } from "./persist-batch-notification.use-case.js";
+import type { FinalizeBatchNotificationUseCase } from "./finalize-batch-notification.use-case.js";
+import type { PersistBatchNotificationUseCase } from "./persist-batch-notification.use-case.js";
 
 export interface SendFriendCompletionNotificationsInput {
   readonly friendId: string;
@@ -23,8 +23,8 @@ export interface SendFriendCompletionNotificationsInput {
 
 interface SendFriendCompletionNotificationsDependencies {
   readonly notificationHistoryReader: Pick<NotificationHistoryReader, "findAlreadyNotifiedUserIds">;
-  readonly persistBatch: Pick<PersistBatchNotification, "execute">;
-  readonly finalizeBatch: Pick<FinalizeBatchNotification, "execute">;
+  readonly persistBatch: Pick<PersistBatchNotificationUseCase, "execute">;
+  readonly finalizeBatch: Pick<FinalizeBatchNotificationUseCase, "execute">;
   readonly unitOfWork: Pick<UnitOfWorkPort, "run">;
   readonly userNotificationSettings: Pick<
     UserNotificationSettingsPort,
@@ -33,7 +33,7 @@ interface SendFriendCompletionNotificationsDependencies {
   readonly logger: Pick<ApplicationLoggerPort, "debug" | "log">;
 }
 
-export class SendFriendCompletionNotifications {
+export class SendFriendCompletionNotificationsUseCase {
   readonly #dependencies: SendFriendCompletionNotificationsDependencies;
 
   constructor(dependencies: SendFriendCompletionNotificationsDependencies) {

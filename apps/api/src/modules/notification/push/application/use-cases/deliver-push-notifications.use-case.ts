@@ -16,13 +16,13 @@ import {
 import type { PushResult } from "../ports/push-provider.port.js";
 import { PushDeliveryClaimRecoveryConflictError } from "../push-delivery-claim-recovery-conflict.errors.js";
 import { PushDeliveryRateLimitReservationConflictError } from "../push-delivery-rate-limit-reservation-conflict.errors.js";
-import type { PushNotificationPayloadFactory } from "../push-notification-payload.mapper.js";
+import type { PushNotificationPayloadMapper } from "../push-notification-payload.mapper.js";
 import type {
   DeliverPushNotificationsInput,
   PushDispatchSkipReason,
 } from "../read-models/push-delivery.read-model.js";
-import type { PushNotificationDeliveryService } from "./dispatch-push-notification.use-case.js";
-import type { PushDeliveryEligibilityService } from "./evaluate-push-delivery-eligibility.use-case.js";
+import type { DispatchPushNotificationUseCase } from "./dispatch-push-notification.use-case.js";
+import type { EvaluatePushDeliveryEligibilityUseCase } from "./evaluate-push-delivery-eligibility.use-case.js";
 import {
   type BatchPushDeliveryRecipient,
   type PushDeliveryEligibilityDecision,
@@ -76,22 +76,22 @@ interface DeliverPushNotificationsDependencies {
   >;
   readonly unitOfWork: Pick<UnitOfWorkPort, "run">;
   readonly eligibility: Pick<
-    PushDeliveryEligibilityService,
+    EvaluatePushDeliveryEligibilityUseCase,
     | "evaluateBatchSettings"
     | "evaluateSingle"
     | "loadBatchRecipients"
     | "loadSingleRecipient"
     | "reserveBatch"
   >;
-  readonly payloadFactory: Pick<PushNotificationPayloadFactory, "createBatch" | "createSingle">;
+  readonly payloadFactory: Pick<PushNotificationPayloadMapper, "createBatch" | "createSingle">;
   readonly delivery: Pick<
-    PushNotificationDeliveryService,
+    DispatchPushNotificationUseCase,
     "deliverSingle" | "prepareBatchDelivery" | "sendPreparedBatch"
   >;
   readonly logger: Pick<ApplicationLoggerPort, "debug" | "error">;
 }
 
-export class DeliverPushNotifications {
+export class DeliverPushNotificationsUseCase {
   readonly #dependencies: DeliverPushNotificationsDependencies;
 
   constructor(dependencies: DeliverPushNotificationsDependencies) {

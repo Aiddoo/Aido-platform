@@ -3,14 +3,14 @@ import { match } from "ts-pattern";
 
 import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/index";
 
-import { ReconcilePushReceipts } from "../../application/use-cases/reconcile-push-receipts.use-case.js";
-import { SendBillingIssueNotification } from "../../application/use-cases/send-billing-issue-notification.use-case.js";
-import { SendCheerNotification } from "../../application/use-cases/send-cheer-notification.use-case.js";
-import { SendFollowAcceptedNotification } from "../../application/use-cases/send-follow-accepted-notification.use-case.js";
-import { SendFollowRequestNotification } from "../../application/use-cases/send-follow-request-notification.use-case.js";
-import { SendFriendCompletionNotifications } from "../../application/use-cases/send-friend-completion-notifications.use-case.js";
-import { SendMilestoneNotification } from "../../application/use-cases/send-milestone-notification.use-case.js";
-import { SendNudgeNotification } from "../../application/use-cases/send-nudge-notification.use-case.js";
+import { ReconcilePushReceiptsUseCase } from "../../application/use-cases/reconcile-push-receipts.use-case.js";
+import { SendBillingIssueNotificationUseCase } from "../../application/use-cases/send-billing-issue-notification.use-case.js";
+import { SendCheerNotificationUseCase } from "../../application/use-cases/send-cheer-notification.use-case.js";
+import { SendFollowAcceptedNotificationUseCase } from "../../application/use-cases/send-follow-accepted-notification.use-case.js";
+import { SendFollowRequestNotificationUseCase } from "../../application/use-cases/send-follow-request-notification.use-case.js";
+import { SendFriendCompletionNotificationsUseCase } from "../../application/use-cases/send-friend-completion-notifications.use-case.js";
+import { SendMilestoneNotificationUseCase } from "../../application/use-cases/send-milestone-notification.use-case.js";
+import { SendNudgeNotificationUseCase } from "../../application/use-cases/send-nudge-notification.use-case.js";
 import { NotificationProviderLogEvent } from "../adapters/notification-provider.log-events.js";
 import {
   NOTIFICATION_DEAD_LETTER_QUEUE,
@@ -25,25 +25,25 @@ import {
 export class NotificationQueueProcessor implements OnModuleInit {
   readonly #logger = new Logger(NotificationQueueProcessor.name);
 
-  readonly #sendFollowRequest: SendFollowRequestNotification;
-  readonly #sendFollowAccepted: SendFollowAcceptedNotification;
-  readonly #sendNudge: SendNudgeNotification;
-  readonly #sendCheer: SendCheerNotification;
-  readonly #sendBillingIssue: SendBillingIssueNotification;
-  readonly #sendFriendCompletion: SendFriendCompletionNotifications;
-  readonly #sendMilestone: SendMilestoneNotification;
-  readonly #reconcilePushReceipts: ReconcilePushReceipts;
+  readonly #sendFollowRequest: SendFollowRequestNotificationUseCase;
+  readonly #sendFollowAccepted: SendFollowAcceptedNotificationUseCase;
+  readonly #sendNudge: SendNudgeNotificationUseCase;
+  readonly #sendCheer: SendCheerNotificationUseCase;
+  readonly #sendBillingIssue: SendBillingIssueNotificationUseCase;
+  readonly #sendFriendCompletion: SendFriendCompletionNotificationsUseCase;
+  readonly #sendMilestone: SendMilestoneNotificationUseCase;
+  readonly #reconcilePushReceipts: ReconcilePushReceiptsUseCase;
   readonly #runtime: JobRuntimePort | undefined;
 
   constructor(
-    sendFollowRequest: SendFollowRequestNotification,
-    sendFollowAccepted: SendFollowAcceptedNotification,
-    sendNudge: SendNudgeNotification,
-    sendCheer: SendCheerNotification,
-    sendBillingIssue: SendBillingIssueNotification,
-    sendFriendCompletion: SendFriendCompletionNotifications,
-    sendMilestone: SendMilestoneNotification,
-    reconcilePushReceipts: ReconcilePushReceipts,
+    sendFollowRequest: SendFollowRequestNotificationUseCase,
+    sendFollowAccepted: SendFollowAcceptedNotificationUseCase,
+    sendNudge: SendNudgeNotificationUseCase,
+    sendCheer: SendCheerNotificationUseCase,
+    sendBillingIssue: SendBillingIssueNotificationUseCase,
+    sendFriendCompletion: SendFriendCompletionNotificationsUseCase,
+    sendMilestone: SendMilestoneNotificationUseCase,
+    reconcilePushReceipts: ReconcilePushReceiptsUseCase,
     @Optional()
     @Inject(JOB_RUNTIME)
     runtime?: JobRuntimePort,

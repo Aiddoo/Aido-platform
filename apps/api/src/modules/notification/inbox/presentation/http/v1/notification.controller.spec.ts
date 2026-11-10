@@ -16,23 +16,23 @@ import type { CurrentUserPayload } from "#api/modules/identity/identity-auth-htt
 import { parseRequestClient } from "#api/platform/http/request-client/index";
 import { TEST_REQUEST_ID } from "#test/mocks/request-client";
 
-import { OptOutMarketingPush } from "../../../../push/application/use-cases/opt-out-marketing-push.use-case.js";
-import { ReportPushDevice } from "../../../../push/application/use-cases/report-push-device.use-case.js";
-import { UnregisterPushDevice } from "../../../../push/application/use-cases/unregister-push-device.use-case.js";
-import { GetNotifications } from "../../../application/use-cases/get-notifications.use-case.js";
-import { GetUnreadCount } from "../../../application/use-cases/get-unread-count.use-case.js";
-import { MarkAllAsRead } from "../../../application/use-cases/mark-all-as-read.use-case.js";
-import { MarkAsRead } from "../../../application/use-cases/mark-as-read.use-case.js";
-import { MarkNotificationOpened } from "../../../application/use-cases/mark-notification-opened.use-case.js";
+import { OptOutMarketingPushUseCase } from "../../../../push/application/use-cases/opt-out-marketing-push.use-case.js";
+import { ReportPushDeviceUseCase } from "../../../../push/application/use-cases/report-push-device.use-case.js";
+import { UnregisterPushDeviceUseCase } from "../../../../push/application/use-cases/unregister-push-device.use-case.js";
+import { GetUnreadNotificationCountUseCase } from "../../../application/use-cases/get-unread-notification-count.use-case.js";
+import { ListNotificationsUseCase } from "../../../application/use-cases/list-notifications.use-case.js";
+import { MarkAllNotificationsReadUseCase } from "../../../application/use-cases/mark-all-notifications-read.use-case.js";
+import { MarkNotificationOpenedUseCase } from "../../../application/use-cases/mark-notification-opened.use-case.js";
+import { MarkNotificationReadUseCase } from "../../../application/use-cases/mark-notification-read.use-case.js";
 import { NotificationController } from "./notification.controller.js";
 import type { RegisterPushTokenDto } from "./notification.dto.js";
 
 describe("NotificationController — 알림 컨트롤러", () => {
   let controller: NotificationController;
-  let getUnreadCountUseCase: MockProxy<GetUnreadCount>;
-  let markAllAsReadUseCase: MockProxy<MarkAllAsRead>;
-  let markAsReadUseCase: MockProxy<MarkAsRead>;
-  let reportPushDeviceUseCase: MockProxy<ReportPushDevice>;
+  let getUnreadCountUseCase: MockProxy<GetUnreadNotificationCountUseCase>;
+  let markAllAsReadUseCase: MockProxy<MarkAllNotificationsReadUseCase>;
+  let markAsReadUseCase: MockProxy<MarkNotificationReadUseCase>;
+  let reportPushDeviceUseCase: MockProxy<ReportPushDeviceUseCase>;
 
   const mockUser: CurrentUserPayload = {
     userId: "user-123",
@@ -42,19 +42,19 @@ describe("NotificationController — 알림 컨트롤러", () => {
   };
 
   beforeEach(() => {
-    getUnreadCountUseCase = mock<GetUnreadCount>();
-    markAllAsReadUseCase = mock<MarkAllAsRead>();
-    markAsReadUseCase = mock<MarkAsRead>();
-    reportPushDeviceUseCase = mock<ReportPushDevice>();
+    getUnreadCountUseCase = mock<GetUnreadNotificationCountUseCase>();
+    markAllAsReadUseCase = mock<MarkAllNotificationsReadUseCase>();
+    markAsReadUseCase = mock<MarkNotificationReadUseCase>();
+    reportPushDeviceUseCase = mock<ReportPushDeviceUseCase>();
     controller = new NotificationController(
-      mock<GetNotifications>(),
+      mock<ListNotificationsUseCase>(),
       getUnreadCountUseCase,
       markAsReadUseCase,
-      mock<MarkNotificationOpened>(),
+      mock<MarkNotificationOpenedUseCase>(),
       markAllAsReadUseCase,
       reportPushDeviceUseCase,
-      mock<UnregisterPushDevice>(),
-      mock<OptOutMarketingPush>(),
+      mock<UnregisterPushDeviceUseCase>(),
+      mock<OptOutMarketingPushUseCase>(),
     );
   });
 

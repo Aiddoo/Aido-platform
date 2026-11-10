@@ -11,7 +11,7 @@ import type {
   NotificationMessage,
   NotificationVariantContext,
 } from "../../../push/application/messages/notification-copy-catalog.messages.js";
-import type { NotificationPublisher } from "../../../push/application/use-cases/publish-notification.use-case.js";
+import type { PublishNotificationUseCase } from "../../../push/application/use-cases/publish-notification.use-case.js";
 import type {
   WeatherFallbackUser,
   WeatherReminderUser,
@@ -22,7 +22,7 @@ import type {
 export type WeatherNotificationType = "WEATHER_MORNING" | "WEATHER_EVENING";
 
 export interface WeatherReminderDeliveryDependencies {
-  readonly notificationPublisher: Pick<NotificationPublisher, "publishBatch">;
+  readonly notificationPublisher: Pick<PublishNotificationUseCase, "publishBatch">;
   readonly notificationHistoryReader: Pick<NotificationHistoryReader, "findAlreadyNotifiedUserIds">;
 }
 

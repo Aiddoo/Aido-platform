@@ -15,15 +15,15 @@ import { NOTIFICATION_CACHE } from "#api/modules/notification/inbox/application/
 import { NOTIFICATION_HISTORY_READER } from "#api/modules/notification/inbox/application/ports/notification-history.reader.port";
 import { NOTIFICATION_INBOX_READER } from "#api/modules/notification/inbox/application/ports/notification-inbox.reader.port";
 import { NOTIFICATION_REPOSITORY } from "#api/modules/notification/inbox/application/ports/notification.repository.port";
-import { GetNotifications } from "#api/modules/notification/inbox/application/use-cases/get-notifications.use-case";
-import { GetUnreadCount } from "#api/modules/notification/inbox/application/use-cases/get-unread-count.use-case";
-import { MarkAllAsRead } from "#api/modules/notification/inbox/application/use-cases/mark-all-as-read.use-case";
-import { MarkAsRead } from "#api/modules/notification/inbox/application/use-cases/mark-as-read.use-case";
-import { MarkNotificationOpened } from "#api/modules/notification/inbox/application/use-cases/mark-notification-opened.use-case";
+import { GetUnreadNotificationCountUseCase } from "#api/modules/notification/inbox/application/use-cases/get-unread-notification-count.use-case";
+import { ListNotificationsUseCase } from "#api/modules/notification/inbox/application/use-cases/list-notifications.use-case";
+import { MarkAllNotificationsReadUseCase } from "#api/modules/notification/inbox/application/use-cases/mark-all-notifications-read.use-case";
+import { MarkNotificationOpenedUseCase } from "#api/modules/notification/inbox/application/use-cases/mark-notification-opened.use-case";
+import { MarkNotificationReadUseCase } from "#api/modules/notification/inbox/application/use-cases/mark-notification-read.use-case";
 import { NotificationCacheAdapter } from "#api/modules/notification/inbox/infrastructure/cache/notification-cache.adapter";
 import { DrizzleNotificationReader } from "#api/modules/notification/inbox/infrastructure/persistence/drizzle-notification.reader";
 import { DrizzleNotificationRepository } from "#api/modules/notification/inbox/infrastructure/persistence/drizzle-notification.repository";
-import { NotificationPublisher } from "#api/modules/notification/notification-delivery.public";
+import { PublishNotificationUseCase } from "#api/modules/notification/notification-delivery.public";
 import {
   createMorningNoTodoNotificationMessage,
   createMorningReminderNotificationMessage,
@@ -46,12 +46,12 @@ import { PUSH_RATE_LIMITER } from "#api/modules/notification/push/application/po
 import { PUSH_RECEIPT_REPOSITORY } from "#api/modules/notification/push/application/ports/push-receipt.repository.port";
 import { PUSH_TOKEN_REPOSITORY } from "#api/modules/notification/push/application/ports/push-token.repository.port";
 import { USER_NOTIFICATION_SETTINGS } from "#api/modules/notification/push/application/ports/user-notification-settings.port";
-import { OptOutMarketingPush } from "#api/modules/notification/push/application/use-cases/opt-out-marketing-push.use-case";
-import { PushDeliveryAfterCommitPublisher } from "#api/modules/notification/push/application/use-cases/publish-push-delivery-after-commit.use-case";
-import { ReportPushDevice } from "#api/modules/notification/push/application/use-cases/report-push-device.use-case";
-import { SendBatchNotification } from "#api/modules/notification/push/application/use-cases/send-batch-notification.use-case";
-import { SendNotificationWithDedup } from "#api/modules/notification/push/application/use-cases/send-notification-with-dedup.use-case";
-import { SendNotification } from "#api/modules/notification/push/application/use-cases/send-notification.use-case";
+import { OptOutMarketingPushUseCase } from "#api/modules/notification/push/application/use-cases/opt-out-marketing-push.use-case";
+import { PublishPushDeliveryAfterCommitUseCase } from "#api/modules/notification/push/application/use-cases/publish-push-delivery-after-commit.use-case";
+import { ReportPushDeviceUseCase } from "#api/modules/notification/push/application/use-cases/report-push-device.use-case";
+import { SendBatchNotificationUseCase } from "#api/modules/notification/push/application/use-cases/send-batch-notification.use-case";
+import { SendNotificationWithDedupUseCase } from "#api/modules/notification/push/application/use-cases/send-notification-with-dedup.use-case";
+import { SendNotificationUseCase } from "#api/modules/notification/push/application/use-cases/send-notification.use-case";
 import { CachedActivePushTokenReaderAdapter } from "#api/modules/notification/push/infrastructure/adapters/cached-active-push-token-reader.adapter";
 import { CachedNotificationRecipientPreferenceAdapter } from "#api/modules/notification/push/infrastructure/adapters/cached-notification-recipient-preference.adapter";
 import { NotificationDedupLockAdapter } from "#api/modules/notification/push/infrastructure/adapters/notification-dedup-lock.adapter";
@@ -85,37 +85,37 @@ import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database
 import type { Notification, UserPreference } from "#test/types/database-rows";
 
 import {
-  finalizeBatchNotificationProvider,
+  finalizeBatchNotificationUseCaseProvider,
   notificationHistoryReaderProvider,
-  getNotificationsProvider,
-  getUnreadCountProvider,
-  markAllAsReadProvider,
-  markAsReadProvider,
-  markNotificationOpenedProvider,
-  optOutMarketingPushProvider,
-  persistBatchNotificationProvider,
-  reportPushDeviceProvider,
-  sendBatchNotificationProvider,
-  sendNotificationProvider,
-  sendNotificationWithDedupProvider,
-  unregisterPushDeviceProvider,
+  listNotificationsUseCaseProvider,
+  getUnreadNotificationCountUseCaseProvider,
+  markAllNotificationsReadUseCaseProvider,
+  markNotificationReadUseCaseProvider,
+  markNotificationOpenedUseCaseProvider,
+  optOutMarketingPushUseCaseProvider,
+  persistBatchNotificationUseCaseProvider,
+  reportPushDeviceUseCaseProvider,
+  sendBatchNotificationUseCaseProvider,
+  sendNotificationUseCaseProvider,
+  sendNotificationWithDedupUseCaseProvider,
+  unregisterPushDeviceUseCaseProvider,
 } from "../../src/modules/notification/push/notification-push.providers.js";
 import { paginationServiceProvider } from "../../src/platform/pagination/pagination.providers.js";
 
 function buildNotificationTestApi(module: TestingModule) {
-  const publisher = new NotificationPublisher({
-    sendNotification: module.get(SendNotification),
-    sendNotificationWithDeduplication: module.get(SendNotificationWithDedup),
-    sendBatchNotification: module.get(SendBatchNotification),
+  const publisher = new PublishNotificationUseCase({
+    sendNotification: module.get(SendNotificationUseCase),
+    sendNotificationWithDeduplication: module.get(SendNotificationWithDedupUseCase),
+    sendBatchNotification: module.get(SendBatchNotificationUseCase),
     todoTargetReader: { findTodoTargets: () => Promise.resolve(new Map()) },
   });
-  const getNotificationsUseCase = module.get(GetNotifications);
-  const getUnreadCountUseCase = module.get(GetUnreadCount);
-  const markAsReadUseCase = module.get(MarkAsRead);
-  const markNotificationOpenedUseCase = module.get(MarkNotificationOpened);
-  const markAllAsReadUseCase = module.get(MarkAllAsRead);
-  const reportPushDeviceUseCase = module.get(ReportPushDevice);
-  const optOutMarketingPushUseCase = module.get(OptOutMarketingPush);
+  const getNotificationsUseCase = module.get(ListNotificationsUseCase);
+  const getUnreadCountUseCase = module.get(GetUnreadNotificationCountUseCase);
+  const markAsReadUseCase = module.get(MarkNotificationReadUseCase);
+  const markNotificationOpenedUseCase = module.get(MarkNotificationOpenedUseCase);
+  const markAllAsReadUseCase = module.get(MarkAllNotificationsReadUseCase);
+  const reportPushDeviceUseCase = module.get(ReportPushDeviceUseCase);
+  const optOutMarketingPushUseCase = module.get(OptOutMarketingPushUseCase);
 
   return {
     publish: publisher.publish.bind(publisher),
@@ -205,7 +205,7 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
           } satisfies AfterCommitTaskRegistryPort,
         },
         {
-          provide: PushDeliveryAfterCommitPublisher,
+          provide: PublishPushDeliveryAfterCommitUseCase,
           useValue: mockAfterCommitPublisher,
         },
         CachedActivePushTokenReaderAdapter,
@@ -248,19 +248,19 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
           provide: NOTIFICATION_DEDUP_LOCK,
           useExisting: NotificationDedupLockAdapter,
         },
-        getNotificationsProvider,
-        getUnreadCountProvider,
-        markAsReadProvider,
-        markNotificationOpenedProvider,
-        markAllAsReadProvider,
-        reportPushDeviceProvider,
-        unregisterPushDeviceProvider,
-        optOutMarketingPushProvider,
-        sendNotificationProvider,
-        sendNotificationWithDedupProvider,
-        persistBatchNotificationProvider,
-        finalizeBatchNotificationProvider,
-        sendBatchNotificationProvider,
+        listNotificationsUseCaseProvider,
+        getUnreadNotificationCountUseCaseProvider,
+        markNotificationReadUseCaseProvider,
+        markNotificationOpenedUseCaseProvider,
+        markAllNotificationsReadUseCaseProvider,
+        reportPushDeviceUseCaseProvider,
+        unregisterPushDeviceUseCaseProvider,
+        optOutMarketingPushUseCaseProvider,
+        sendNotificationUseCaseProvider,
+        sendNotificationWithDedupUseCaseProvider,
+        persistBatchNotificationUseCaseProvider,
+        finalizeBatchNotificationUseCaseProvider,
+        sendBatchNotificationUseCaseProvider,
         notificationHistoryReaderProvider,
         {
           provide: MARKETING_PUSH_OPT_OUT_TOKEN,

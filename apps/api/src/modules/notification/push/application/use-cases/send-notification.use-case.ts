@@ -10,11 +10,11 @@ import {
   DuplicateNotificationError,
   type NotificationRepositoryPort,
 } from "../../../inbox/application/ports/notification.repository.port.js";
-import type { NotificationRecord } from "../../../inbox/application/read-models/notification.read-model.js";
+import type { InboxNotification } from "../../../inbox/application/read-models/inbox-notification.read-model.js";
 import { withNotificationCopyRevision } from "../messages/notification-copy-revision.messages.js";
 import { NotificationDeliveryLogEvent } from "../notification-delivery.log-events.js";
 import { type PushDispatchStagingRepositoryPort } from "../ports/push-dispatch-staging.repository.port.js";
-import type { PushDeliveryAfterCommitPublisher } from "./publish-push-delivery-after-commit.use-case.js";
+import type { PublishPushDeliveryAfterCommitUseCase } from "./publish-push-delivery-after-commit.use-case.js";
 
 /** 알림과 일반 push outbox를 한 transaction으로 만들고 부수효과는 commit 뒤 시작한다. */
 interface SendNotificationDependencies {
@@ -23,18 +23,18 @@ interface SendNotificationDependencies {
   readonly cache: Pick<NotificationCachePort, "invalidateUnreadCount">;
   readonly unitOfWork: Pick<UnitOfWorkPort, "run">;
   readonly afterCommit: Pick<AfterCommitTaskRegistryPort, "register">;
-  readonly afterCommitPublisher: Pick<PushDeliveryAfterCommitPublisher, "register">;
+  readonly afterCommitPublisher: Pick<PublishPushDeliveryAfterCommitUseCase, "register">;
   readonly logger: Pick<ApplicationLoggerPort, "debug" | "warn">;
 }
 
-export class SendNotification {
+export class SendNotificationUseCase {
   readonly #dependencies: SendNotificationDependencies;
 
   constructor(dependencies: SendNotificationDependencies) {
     this.#dependencies = dependencies;
   }
 
-  async execute(data: CreateNotificationData): Promise<NotificationRecord | null> {
+  async execute(data: CreateNotificationData): Promise<InboxNotification | null> {
     try {
       return await this.#dependencies.unitOfWork.run(async () => {
         const notification = await this.#dependencies.notificationRepository.createNotification(

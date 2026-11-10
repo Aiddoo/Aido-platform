@@ -6,7 +6,7 @@ import { createMilestoneNotificationMessage } from "../messages/notification.mes
 import { NotificationDeliveryLogEvent } from "../notification-delivery.log-events.js";
 import { type NotificationDedupLockPort } from "../ports/notification-dedup.port.js";
 import type { NotificationRecipientLocaleReaderPort } from "../ports/notification-recipient-locale.reader.port.js";
-import type { NotificationPublisher } from "./publish-notification.use-case.js";
+import type { PublishNotificationUseCase } from "./publish-notification.use-case.js";
 
 export interface SendMilestoneNotificationInput {
   readonly userId: string;
@@ -14,7 +14,7 @@ export interface SendMilestoneNotificationInput {
 }
 
 interface SendMilestoneNotificationDependencies {
-  readonly notificationPublisher: Pick<NotificationPublisher, "publish">;
+  readonly notificationPublisher: Pick<PublishNotificationUseCase, "publish">;
   readonly recipientLocaleReader: Pick<NotificationRecipientLocaleReaderPort, "getLocale">;
   readonly notificationHistoryReader: Pick<
     NotificationHistoryReaderPort,
@@ -24,7 +24,7 @@ interface SendMilestoneNotificationDependencies {
   readonly logger: Pick<ApplicationLoggerPort, "debug" | "log">;
 }
 
-export class SendMilestoneNotification {
+export class SendMilestoneNotificationUseCase {
   readonly #dependencies: SendMilestoneNotificationDependencies;
 
   constructor(dependencies: SendMilestoneNotificationDependencies) {

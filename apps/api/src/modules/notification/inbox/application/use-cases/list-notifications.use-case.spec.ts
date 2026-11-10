@@ -3,15 +3,15 @@ import { mockDeep } from "vitest-mock-extended";
 
 import { NotificationBuilder } from "#test/builders/index";
 
-import { GetNotifications } from "./get-notifications.use-case.js";
+import { ListNotificationsUseCase } from "./list-notifications.use-case.js";
 
-describe("GetNotifications", () => {
-  let useCase: GetNotifications;
+describe("ListNotificationsUseCase", () => {
+  let useCase: ListNotificationsUseCase;
   let notificationRepo: Mocked<
-    ConstructorParameters<typeof GetNotifications>[0]["notificationInboxReader"]
+    ConstructorParameters<typeof ListNotificationsUseCase>[0]["notificationInboxReader"]
   >;
   let paginationService: Mocked<
-    ConstructorParameters<typeof GetNotifications>[0]["paginationService"]
+    ConstructorParameters<typeof ListNotificationsUseCase>[0]["paginationService"]
   >;
 
   const mockUserId = "user-1";
@@ -20,9 +20,9 @@ describe("GetNotifications", () => {
     NotificationBuilder.resetIdCounter();
 
     const getNotificationsDependencies = mockDeep<
-      ConstructorParameters<typeof GetNotifications>[0]
+      ConstructorParameters<typeof ListNotificationsUseCase>[0]
     >({});
-    const unit = new GetNotifications(getNotificationsDependencies);
+    const unit = new ListNotificationsUseCase(getNotificationsDependencies);
     useCase = unit;
     notificationRepo = getNotificationsDependencies.notificationInboxReader;
     paginationService = getNotificationsDependencies.paginationService;

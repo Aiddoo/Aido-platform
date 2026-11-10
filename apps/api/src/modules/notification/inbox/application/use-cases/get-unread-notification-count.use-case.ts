@@ -13,7 +13,7 @@ interface GetUnreadCountDependencies {
   readonly cache: Pick<NotificationCachePort, "wrapUnreadCount">;
 }
 
-export class GetUnreadCount {
+export class GetUnreadNotificationCountUseCase {
   readonly #dependencies: GetUnreadCountDependencies;
 
   constructor(dependencies: GetUnreadCountDependencies) {

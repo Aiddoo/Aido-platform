@@ -8,7 +8,7 @@ import { createUnitOfWorkMock } from "#test/mocks/ports/unit-of-work.mock";
 
 import type { CreateNotificationData } from "../../../inbox/application/ports/notification-draft.port.js";
 import { type PushDispatchStagingRepositoryPort } from "../ports/push-dispatch-staging.repository.port.js";
-import { PersistBatchNotification } from "./persist-batch-notification.use-case.js";
+import { PersistBatchNotificationUseCase } from "./persist-batch-notification.use-case.js";
 
 function createPushDispatchStagingMock(): PushDispatchStagingRepositoryPort {
   return {
@@ -17,29 +17,31 @@ function createPushDispatchStagingMock(): PushDispatchStagingRepositoryPort {
   };
 }
 
-describe("PersistBatchNotification", () => {
-  let useCase: PersistBatchNotification;
+describe("PersistBatchNotificationUseCase", () => {
+  let useCase: PersistBatchNotificationUseCase;
   let repository: Mocked<
-    ConstructorParameters<typeof PersistBatchNotification>[0]["notificationRepository"]
+    ConstructorParameters<typeof PersistBatchNotificationUseCase>[0]["notificationRepository"]
   >;
   let staging: Mocked<
-    ConstructorParameters<typeof PersistBatchNotification>[0]["pushDispatchStaging"]
+    ConstructorParameters<typeof PersistBatchNotificationUseCase>[0]["pushDispatchStaging"]
   >;
-  let unitOfWork: Mocked<ConstructorParameters<typeof PersistBatchNotification>[0]["unitOfWork"]>;
+  let unitOfWork: Mocked<
+    ConstructorParameters<typeof PersistBatchNotificationUseCase>[0]["unitOfWork"]
+  >;
   let afterCommitPublisher: Mocked<
-    ConstructorParameters<typeof PersistBatchNotification>[0]["afterCommitPublisher"]
+    ConstructorParameters<typeof PersistBatchNotificationUseCase>[0]["afterCommitPublisher"]
   >;
 
   beforeEach(async () => {
     NotificationBuilder.resetIdCounter();
     const persistBatchNotificationDependencies = mockDeep<
-      ConstructorParameters<typeof PersistBatchNotification>[0]
+      ConstructorParameters<typeof PersistBatchNotificationUseCase>[0]
     >({
       notificationRepository: createNotificationRepositoryMock(),
       pushDispatchStaging: createPushDispatchStagingMock(),
       unitOfWork: createUnitOfWorkMock(),
     });
-    const unit = new PersistBatchNotification(persistBatchNotificationDependencies);
+    const unit = new PersistBatchNotificationUseCase(persistBatchNotificationDependencies);
     useCase = unit;
     repository = persistBatchNotificationDependencies.notificationRepository;
     staging = persistBatchNotificationDependencies.pushDispatchStaging;

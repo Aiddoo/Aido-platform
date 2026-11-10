@@ -22,7 +22,7 @@ interface MarkAsReadDependencies {
   readonly logger: Pick<ApplicationLoggerPort, "debug">;
 }
 
-export class MarkAsRead {
+export class MarkNotificationReadUseCase {
   readonly #dependencies: MarkAsReadDependencies;
 
   constructor(dependencies: MarkAsReadDependencies) {

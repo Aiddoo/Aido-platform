@@ -13,7 +13,7 @@ import {
   createMorningNoTodoNotificationMessage,
   createMorningReminderNotificationMessage,
 } from "../../../push/application/messages/notification.messages.js";
-import type { NotificationPublisher } from "../../../push/application/use-cases/publish-notification.use-case.js";
+import type { PublishNotificationUseCase } from "../../../push/application/use-cases/publish-notification.use-case.js";
 import { NotificationRemindersLogEvent } from "../../observability/reminders/notification-reminders-log.events.js";
 import { type ScheduledReminderReaderPort } from "../../ports/reminders/scheduled-reminder-reader.port.js";
 import type { ReminderCountUser } from "../../ports/reminders/scheduler-read-models.js";
@@ -24,7 +24,7 @@ interface MorningReminderStrategyDependencies {
     ScheduledReminderReaderPort,
     "findFreeMorningReminderUsers" | "findPremiumMorningReminderUsers"
   >;
-  readonly notificationPublisher: Pick<NotificationPublisher, "publishBatch">;
+  readonly notificationPublisher: Pick<PublishNotificationUseCase, "publishBatch">;
   readonly notificationHistoryReader: Pick<NotificationHistoryReader, "findAlreadyNotifiedUserIds">;
   readonly logger: Pick<ApplicationLoggerPort, "log">;
 }

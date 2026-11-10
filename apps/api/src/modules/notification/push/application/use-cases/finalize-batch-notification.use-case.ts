@@ -16,7 +16,7 @@ interface FinalizeBatchNotificationDependencies {
   readonly logger: Pick<ApplicationLoggerPort, "warn">;
 }
 
-export class FinalizeBatchNotification {
+export class FinalizeBatchNotificationUseCase {
   readonly #dependencies: FinalizeBatchNotificationDependencies;
 
   constructor(dependencies: FinalizeBatchNotificationDependencies) {

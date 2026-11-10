@@ -6,7 +6,7 @@ import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import { now } from "#api/shared/domain/date/utils/core";
 
 import { NotificationDeliveryLogEvent } from "../../application/notification-delivery.log-events.js";
-import { ReconfirmMarketingConsents } from "../../application/use-cases/reconfirm-marketing-consents.use-case.js";
+import { ReconfirmMarketingConsentsUseCase } from "../../application/use-cases/reconfirm-marketing-consents.use-case.js";
 import {
   MARKETING_CONSENT_RECONFIRM_JOB_OPTIONS,
   MARKETING_CONSENT_RECONFIRM_QUEUE,
@@ -16,12 +16,12 @@ import {
 export class MarketingConsentReconfirmProcessor implements OnModuleInit {
   readonly #logger = new Logger(MarketingConsentReconfirmProcessor.name);
 
-  readonly #reconfirmMarketingConsents: Pick<ReconfirmMarketingConsents, "execute">;
+  readonly #reconfirmMarketingConsents: Pick<ReconfirmMarketingConsentsUseCase, "execute">;
   readonly #runtime: JobRuntimePort;
 
   constructor(
-    @Inject(ReconfirmMarketingConsents)
-    reconfirmMarketingConsents: Pick<ReconfirmMarketingConsents, "execute">,
+    @Inject(ReconfirmMarketingConsentsUseCase)
+    reconfirmMarketingConsents: Pick<ReconfirmMarketingConsentsUseCase, "execute">,
     @Inject(JOB_RUNTIME) runtime: JobRuntimePort,
   ) {
     this.#reconfirmMarketingConsents = reconfirmMarketingConsents;

@@ -40,15 +40,16 @@ import {
 } from "#api/platform/http/swagger/index";
 import { ThrottleByUser } from "#api/platform/throttle/index";
 
-import { OptOutMarketingPush } from "../../../../push/application/use-cases/opt-out-marketing-push.use-case.js";
-import { ReportPushDevice } from "../../../../push/application/use-cases/report-push-device.use-case.js";
-import { UnregisterPushDevice } from "../../../../push/application/use-cases/unregister-push-device.use-case.js";
-import { PushDeviceMapper } from "../../../../push/presentation/http/v1/push-device.mapper.js";
-import { GetNotifications } from "../../../application/use-cases/get-notifications.use-case.js";
-import { GetUnreadCount } from "../../../application/use-cases/get-unread-count.use-case.js";
-import { MarkAllAsRead } from "../../../application/use-cases/mark-all-as-read.use-case.js";
-import { MarkAsRead } from "../../../application/use-cases/mark-as-read.use-case.js";
-import { MarkNotificationOpened } from "../../../application/use-cases/mark-notification-opened.use-case.js";
+import { OptOutMarketingPushUseCase } from "../../../../push/application/use-cases/opt-out-marketing-push.use-case.js";
+import { ReportPushDeviceUseCase } from "../../../../push/application/use-cases/report-push-device.use-case.js";
+import { UnregisterPushDeviceUseCase } from "../../../../push/application/use-cases/unregister-push-device.use-case.js";
+import { PushDeviceMapper } from "../../../../push/presentation/http/v1/push-device-response.mapper.js";
+import { GetUnreadNotificationCountUseCase } from "../../../application/use-cases/get-unread-notification-count.use-case.js";
+import { ListNotificationsUseCase } from "../../../application/use-cases/list-notifications.use-case.js";
+import { MarkAllNotificationsReadUseCase } from "../../../application/use-cases/mark-all-notifications-read.use-case.js";
+import { MarkNotificationOpenedUseCase } from "../../../application/use-cases/mark-notification-opened.use-case.js";
+import { MarkNotificationReadUseCase } from "../../../application/use-cases/mark-notification-read.use-case.js";
+import { NotificationMapper } from "./notification-response.mapper.js";
 import {
   GetNotificationsQueryDto,
   MarketingPushOptOutDto,
@@ -65,7 +66,6 @@ import {
   UnreadCountResponseDto,
   UnregisterPushTokenQueryDto,
 } from "./notification.dto.js";
-import { NotificationMapper } from "./notification.mapper.js";
 
 /** 1.14.1 이하 앱이 deviceId 없이 등록할 때 쓰던 값. */
 const LEGACY_DEFAULT_DEVICE_ID = "default";
@@ -92,24 +92,24 @@ function legacyPlatformHint(client: RequestClient) {
 export class NotificationController {
   readonly #logger = new Logger(NotificationController.name);
 
-  readonly #getNotificationsUseCase: GetNotifications;
-  readonly #getUnreadCountUseCase: GetUnreadCount;
-  readonly #markAsReadUseCase: MarkAsRead;
-  readonly #markNotificationOpenedUseCase: MarkNotificationOpened;
-  readonly #markAllAsReadUseCase: MarkAllAsRead;
-  readonly #reportPushDeviceUseCase: ReportPushDevice;
-  readonly #unregisterPushDeviceUseCase: UnregisterPushDevice;
-  readonly #optOutMarketingPushUseCase: OptOutMarketingPush;
+  readonly #getNotificationsUseCase: ListNotificationsUseCase;
+  readonly #getUnreadCountUseCase: GetUnreadNotificationCountUseCase;
+  readonly #markAsReadUseCase: MarkNotificationReadUseCase;
+  readonly #markNotificationOpenedUseCase: MarkNotificationOpenedUseCase;
+  readonly #markAllAsReadUseCase: MarkAllNotificationsReadUseCase;
+  readonly #reportPushDeviceUseCase: ReportPushDeviceUseCase;
+  readonly #unregisterPushDeviceUseCase: UnregisterPushDeviceUseCase;
+  readonly #optOutMarketingPushUseCase: OptOutMarketingPushUseCase;
 
   constructor(
-    getNotificationsUseCase: GetNotifications,
-    getUnreadCountUseCase: GetUnreadCount,
-    markAsReadUseCase: MarkAsRead,
-    markNotificationOpenedUseCase: MarkNotificationOpened,
-    markAllAsReadUseCase: MarkAllAsRead,
-    reportPushDeviceUseCase: ReportPushDevice,
-    unregisterPushDeviceUseCase: UnregisterPushDevice,
-    optOutMarketingPushUseCase: OptOutMarketingPush,
+    getNotificationsUseCase: ListNotificationsUseCase,
+    getUnreadCountUseCase: GetUnreadNotificationCountUseCase,
+    markAsReadUseCase: MarkNotificationReadUseCase,
+    markNotificationOpenedUseCase: MarkNotificationOpenedUseCase,
+    markAllAsReadUseCase: MarkAllNotificationsReadUseCase,
+    reportPushDeviceUseCase: ReportPushDeviceUseCase,
+    unregisterPushDeviceUseCase: UnregisterPushDeviceUseCase,
+    optOutMarketingPushUseCase: OptOutMarketingPushUseCase,
   ) {
     this.#getNotificationsUseCase = getNotificationsUseCase;
     this.#getUnreadCountUseCase = getUnreadCountUseCase;

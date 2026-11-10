@@ -4,17 +4,17 @@ import {
 } from "#api/shared/application/ports/index";
 
 import type { CreateNotificationData } from "../../../inbox/application/ports/notification-draft.port.js";
-import type { FinalizeBatchNotification } from "./finalize-batch-notification.use-case.js";
-import type { PersistBatchNotification } from "./persist-batch-notification.use-case.js";
+import type { FinalizeBatchNotificationUseCase } from "./finalize-batch-notification.use-case.js";
+import type { PersistBatchNotificationUseCase } from "./persist-batch-notification.use-case.js";
 
 interface SendBatchNotificationDependencies {
-  readonly persistBatchNotificationUseCase: Pick<PersistBatchNotification, "execute">;
-  readonly finalizeBatchNotificationUseCase: Pick<FinalizeBatchNotification, "execute">;
+  readonly persistBatchNotificationUseCase: Pick<PersistBatchNotificationUseCase, "execute">;
+  readonly finalizeBatchNotificationUseCase: Pick<FinalizeBatchNotificationUseCase, "execute">;
   readonly unitOfWork: Pick<UnitOfWorkPort, "run">;
   readonly afterCommitTasks: Pick<AfterCommitTaskRegistryPort, "register">;
 }
 
-export class SendBatchNotification {
+export class SendBatchNotificationUseCase {
   readonly #dependencies: SendBatchNotificationDependencies;
 
   constructor(dependencies: SendBatchNotificationDependencies) {

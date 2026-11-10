@@ -1,7 +1,7 @@
 import { Inject, Injectable, Logger, type OnModuleInit, Optional } from "@nestjs/common";
 
 import {
-  NotificationPublisher,
+  PublishNotificationUseCase,
   NOTIFICATION_RECIPIENT_LOCALE_READER,
   type NotificationRecipientLocaleReaderPort,
 } from "#api/modules/notification/notification-delivery.public";
@@ -40,7 +40,7 @@ export class TodoReminderQueueProcessor implements OnModuleInit {
     private readonly reader: TodoReminderReaderPort,
     @Inject(TODO_SERIES_OWNER_DORMANCY)
     private readonly seriesOwnerDormancy: TodoSeriesOwnerDormancyPort,
-    private readonly notificationPublisher: NotificationPublisher,
+    private readonly notificationPublisher: PublishNotificationUseCase,
     @Inject(NOTIFICATION_RECIPIENT_LOCALE_READER)
     private readonly recipientLocaleReader: NotificationRecipientLocaleReaderPort,
     @Optional() @Inject(JOB_RUNTIME) private readonly runtime?: JobRuntimePort,

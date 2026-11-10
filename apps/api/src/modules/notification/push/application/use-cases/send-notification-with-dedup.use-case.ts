@@ -3,7 +3,7 @@ import { subtractMilliseconds } from "#api/shared/domain/date/utils/arithmetic";
 
 import type { CreateNotificationData } from "../../../inbox/application/ports/notification-draft.port.js";
 import { type NotificationHistoryReaderPort } from "../../../inbox/application/ports/notification-history.reader.port.js";
-import type { NotificationRecord } from "../../../inbox/application/read-models/notification.read-model.js";
+import type { InboxNotification } from "../../../inbox/application/read-models/inbox-notification.read-model.js";
 import {
   buildDedupContextFields,
   buildDedupKey,
@@ -11,7 +11,7 @@ import {
 } from "../../domain/notification-dedup.domain-service.js";
 import { NotificationDeliveryLogEvent } from "../notification-delivery.log-events.js";
 import { type NotificationDedupLockPort } from "../ports/notification-dedup.port.js";
-import type { SendNotification } from "./send-notification.use-case.js";
+import type { SendNotificationUseCase } from "./send-notification.use-case.js";
 
 /**
  * 중복 방지가 적용된 알림 생성 및 푸시 발송 유스케이스.
@@ -22,7 +22,7 @@ import type { SendNotification } from "./send-notification.use-case.js";
  * @returns 생성된 Notification 또는 null (중복 스킵 / 잠금 대기 스킵)
  */
 interface SendNotificationWithDedupDependencies {
-  readonly sendNotification: Pick<SendNotification, "execute">;
+  readonly sendNotification: Pick<SendNotificationUseCase, "execute">;
   readonly dedupLock: Pick<NotificationDedupLockPort, "acquire">;
   readonly notificationHistoryReader: Pick<
     NotificationHistoryReaderPort,
@@ -31,14 +31,14 @@ interface SendNotificationWithDedupDependencies {
   readonly logger: Pick<ApplicationLoggerPort, "debug">;
 }
 
-export class SendNotificationWithDedup {
+export class SendNotificationWithDedupUseCase {
   readonly #dependencies: SendNotificationWithDedupDependencies;
 
   constructor(dependencies: SendNotificationWithDedupDependencies) {
     this.#dependencies = dependencies;
   }
 
-  async execute(data: CreateNotificationData): Promise<NotificationRecord | null> {
+  async execute(data: CreateNotificationData): Promise<InboxNotification | null> {
     const strategy = resolveDedupStrategy(data.type);
 
     if (strategy == null) {

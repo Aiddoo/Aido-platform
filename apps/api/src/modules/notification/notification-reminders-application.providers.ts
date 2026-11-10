@@ -25,7 +25,7 @@ import { WeeklyAchievementStrategy } from "./application/strategies/reminders/we
 import { WeeklyReportStrategy } from "./application/strategies/reminders/weekly-report.strategy.js";
 import { WinbackStrategy } from "./application/strategies/reminders/winback.strategy.js";
 import { NotificationHistoryReader } from "./inbox/application/notification-history.reader.js";
-import { NotificationPublisher } from "./push/application/use-cases/publish-notification.use-case.js";
+import { PublishNotificationUseCase } from "./push/application/use-cases/publish-notification.use-case.js";
 
 export const timezoneAwareReminderOrchestratorProvider: FactoryProvider<TimezoneAwareReminderOrchestrator> =
   {
@@ -108,7 +108,7 @@ export const timezoneAwareReminderOrchestratorProvider: FactoryProvider<Timezone
 
 export const eveningReminderStrategyProvider: FactoryProvider<EveningReminderStrategy> = {
   provide: EveningReminderStrategy,
-  inject: [SCHEDULED_REMINDER_READER, NotificationPublisher, NotificationHistoryReader],
+  inject: [SCHEDULED_REMINDER_READER, PublishNotificationUseCase, NotificationHistoryReader],
   useFactory: (
     reader: ConstructorParameters<typeof EveningReminderStrategy>[0]["reader"],
     notificationPublisher: ConstructorParameters<
@@ -131,7 +131,7 @@ export const lunchNudgeStrategyProvider: FactoryProvider<LunchNudgeStrategy> = {
   inject: [
     SCHEDULED_REMINDER_READER,
     SCHEDULER_PREFERENCE_READER,
-    NotificationPublisher,
+    PublishNotificationUseCase,
     NotificationHistoryReader,
   ],
   useFactory: (
@@ -158,7 +158,7 @@ export const monthlyReportStrategyProvider: FactoryProvider<MonthlyReportStrateg
   inject: [
     SCHEDULED_REMINDER_READER,
     SCHEDULER_PREFERENCE_READER,
-    NotificationPublisher,
+    PublishNotificationUseCase,
     NotificationHistoryReader,
   ],
   useFactory: (
@@ -182,7 +182,7 @@ export const monthlyReportStrategyProvider: FactoryProvider<MonthlyReportStrateg
 
 export const morningReminderStrategyProvider: FactoryProvider<MorningReminderStrategy> = {
   provide: MorningReminderStrategy,
-  inject: [SCHEDULED_REMINDER_READER, NotificationPublisher, NotificationHistoryReader],
+  inject: [SCHEDULED_REMINDER_READER, PublishNotificationUseCase, NotificationHistoryReader],
   useFactory: (
     reader: ConstructorParameters<typeof MorningReminderStrategy>[0]["reader"],
     notificationPublisher: ConstructorParameters<
@@ -205,7 +205,7 @@ export const nudgeSuggestStrategyProvider: FactoryProvider<NudgeSuggestStrategy>
   inject: [
     RE_ENGAGEMENT_READER,
     SCHEDULER_PREFERENCE_READER,
-    NotificationPublisher,
+    PublishNotificationUseCase,
     NotificationHistoryReader,
     SCHEDULER_DEDUP,
   ],
@@ -235,7 +235,7 @@ export const onboardingStrategyProvider: FactoryProvider<OnboardingStrategy> = {
   inject: [
     RE_ENGAGEMENT_READER,
     SCHEDULER_PREFERENCE_READER,
-    NotificationPublisher,
+    PublishNotificationUseCase,
     NotificationHistoryReader,
   ],
   useFactory: (
@@ -262,7 +262,7 @@ export const socialDigestStrategyProvider: FactoryProvider<SocialDigestStrategy>
   inject: [
     RE_ENGAGEMENT_READER,
     SCHEDULER_PREFERENCE_READER,
-    NotificationPublisher,
+    PublishNotificationUseCase,
     NotificationHistoryReader,
   ],
   useFactory: (
@@ -286,7 +286,7 @@ export const socialDigestStrategyProvider: FactoryProvider<SocialDigestStrategy>
 
 export const streakAtRiskStrategyProvider: FactoryProvider<StreakAtRiskStrategy> = {
   provide: StreakAtRiskStrategy,
-  inject: [RE_ENGAGEMENT_READER, NotificationPublisher, NotificationHistoryReader],
+  inject: [RE_ENGAGEMENT_READER, PublishNotificationUseCase, NotificationHistoryReader],
   useFactory: (
     reader: ConstructorParameters<typeof StreakAtRiskStrategy>[0]["reader"],
     notificationPublisher: ConstructorParameters<
@@ -308,7 +308,7 @@ export const weatherEveningStrategyProvider: FactoryProvider<WeatherEveningStrat
   provide: WeatherEveningStrategy,
   inject: [
     WEATHER_REMINDER_READER,
-    NotificationPublisher,
+    PublishNotificationUseCase,
     NotificationHistoryReader,
     REMINDER_WEATHER_REPORT_READER,
   ],
@@ -337,7 +337,7 @@ export const weatherMorningStrategyProvider: FactoryProvider<WeatherMorningStrat
   provide: WeatherMorningStrategy,
   inject: [
     WEATHER_REMINDER_READER,
-    NotificationPublisher,
+    PublishNotificationUseCase,
     NotificationHistoryReader,
     REMINDER_WEATHER_REPORT_READER,
   ],
@@ -367,7 +367,7 @@ export const weeklyAchievementStrategyProvider: FactoryProvider<WeeklyAchievemen
   inject: [
     WEEKLY_ACHIEVEMENT_STATS_READER,
     SCHEDULER_PREFERENCE_READER,
-    NotificationPublisher,
+    PublishNotificationUseCase,
     NotificationHistoryReader,
     WEEKLY_ACHIEVEMENT_WRITER,
   ],
@@ -401,7 +401,7 @@ export const weeklyReportStrategyProvider: FactoryProvider<WeeklyReportStrategy>
   inject: [
     SCHEDULED_REMINDER_READER,
     SCHEDULER_PREFERENCE_READER,
-    NotificationPublisher,
+    PublishNotificationUseCase,
     NotificationHistoryReader,
   ],
   useFactory: (
@@ -428,7 +428,7 @@ export const winbackStrategyProvider: FactoryProvider<WinbackStrategy> = {
   inject: [
     RE_ENGAGEMENT_READER,
     SCHEDULER_PREFERENCE_READER,
-    NotificationPublisher,
+    PublishNotificationUseCase,
     NotificationHistoryReader,
     SCHEDULER_DEDUP,
   ],

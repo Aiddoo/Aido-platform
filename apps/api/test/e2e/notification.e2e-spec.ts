@@ -28,7 +28,7 @@ import {
   MARKETING_PUSH_OPT_OUT_TOKEN,
   type MarketingPushOptOutTokenPort,
 } from "#api/modules/notification/push/application/ports/marketing-push-opt-out-token.port";
-import { SendBillingIssueNotification } from "#api/modules/notification/push/application/use-cases/send-billing-issue-notification.use-case";
+import { SendBillingIssueNotificationUseCase } from "#api/modules/notification/push/application/use-cases/send-billing-issue-notification.use-case";
 import { requireRecord } from "#api/platform/database/database-error.util";
 import {
   notification,
@@ -1189,7 +1189,7 @@ describe("알림 E2E", () => {
       const user = await ctx.helpers.createVerifiedUser("notif-billing@test.com", password);
 
       // When
-      await ctx.module.get(SendBillingIssueNotification).execute({ userId: user.userId });
+      await ctx.module.get(SendBillingIssueNotificationUseCase).execute({ userId: user.userId });
       const inbox = await request(ctx.app.getHttpServer())
         .get("/v1/notifications/inbox")
         .set("Authorization", `Bearer ${user.accessToken}`)

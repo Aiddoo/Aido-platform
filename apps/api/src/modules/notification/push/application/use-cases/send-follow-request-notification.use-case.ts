@@ -4,7 +4,7 @@ import { TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY } from "../../domain/transactio
 import { createFollowRequestNotificationMessage } from "../messages/notification.messages.js";
 import { NotificationDeliveryLogEvent } from "../notification-delivery.log-events.js";
 import type { NotificationRecipientLocaleReaderPort } from "../ports/notification-recipient-locale.reader.port.js";
-import type { NotificationPublisher } from "./publish-notification.use-case.js";
+import type { PublishNotificationUseCase } from "./publish-notification.use-case.js";
 
 export interface SendFollowRequestNotificationInput {
   readonly followerId: string;
@@ -13,12 +13,12 @@ export interface SendFollowRequestNotificationInput {
 }
 
 interface SendFollowRequestNotificationDependencies {
-  readonly notificationPublisher: Pick<NotificationPublisher, "publishWithDeduplication">;
+  readonly notificationPublisher: Pick<PublishNotificationUseCase, "publishWithDeduplication">;
   readonly recipientLocaleReader: Pick<NotificationRecipientLocaleReaderPort, "getLocale">;
   readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
 
-export class SendFollowRequestNotification {
+export class SendFollowRequestNotificationUseCase {
   readonly #dependencies: SendFollowRequestNotificationDependencies;
 
   constructor(dependencies: SendFollowRequestNotificationDependencies) {

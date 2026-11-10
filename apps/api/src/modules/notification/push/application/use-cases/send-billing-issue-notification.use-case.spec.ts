@@ -1,19 +1,19 @@
 import type { Mocked } from "vitest";
 import { mockDeep } from "vitest-mock-extended";
 
-import { SendBillingIssueNotification } from "./send-billing-issue-notification.use-case.js";
+import { SendBillingIssueNotificationUseCase } from "./send-billing-issue-notification.use-case.js";
 
-describe("SendBillingIssueNotification", () => {
+describe("SendBillingIssueNotificationUseCase", () => {
   it("수신자 언어로 구독 화면을 여는 SYSTEM_NOTICE를 보내고 실패를 전파한다", async () => {
     const sendBillingIssueNotificationDependencies = mockDeep<
-      ConstructorParameters<typeof SendBillingIssueNotification>[0]
+      ConstructorParameters<typeof SendBillingIssueNotificationUseCase>[0]
     >({});
-    const unit = new SendBillingIssueNotification(sendBillingIssueNotificationDependencies);
+    const unit = new SendBillingIssueNotificationUseCase(sendBillingIssueNotificationDependencies);
     const notificationSender: Mocked<
-      ConstructorParameters<typeof SendBillingIssueNotification>[0]["notificationPublisher"]
+      ConstructorParameters<typeof SendBillingIssueNotificationUseCase>[0]["notificationPublisher"]
     > = sendBillingIssueNotificationDependencies.notificationPublisher;
     const recipientLocaleReader: Mocked<
-      ConstructorParameters<typeof SendBillingIssueNotification>[0]["recipientLocaleReader"]
+      ConstructorParameters<typeof SendBillingIssueNotificationUseCase>[0]["recipientLocaleReader"]
     > = sendBillingIssueNotificationDependencies.recipientLocaleReader;
     recipientLocaleReader.getLocale.mockResolvedValue("en");
 

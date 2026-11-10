@@ -2,29 +2,29 @@ import type { Mocked } from "vitest";
 import { vi, type MockedFunction } from "vitest";
 import { mockDeep } from "vitest-mock-extended";
 
-import { SendMilestoneNotification } from "./send-milestone-notification.use-case.js";
+import { SendMilestoneNotificationUseCase } from "./send-milestone-notification.use-case.js";
 
-describe("SendMilestoneNotification", () => {
-  let useCase: SendMilestoneNotification;
+describe("SendMilestoneNotificationUseCase", () => {
+  let useCase: SendMilestoneNotificationUseCase;
   let publisher: Mocked<
-    ConstructorParameters<typeof SendMilestoneNotification>[0]["notificationPublisher"]
+    ConstructorParameters<typeof SendMilestoneNotificationUseCase>[0]["notificationPublisher"]
   >;
   let localeReader: Mocked<
-    ConstructorParameters<typeof SendMilestoneNotification>[0]["recipientLocaleReader"]
+    ConstructorParameters<typeof SendMilestoneNotificationUseCase>[0]["recipientLocaleReader"]
   >;
   let history: Mocked<
-    ConstructorParameters<typeof SendMilestoneNotification>[0]["notificationHistoryReader"]
+    ConstructorParameters<typeof SendMilestoneNotificationUseCase>[0]["notificationHistoryReader"]
   >;
   let lock: Mocked<
-    ConstructorParameters<typeof SendMilestoneNotification>[0]["notificationDedupLock"]
+    ConstructorParameters<typeof SendMilestoneNotificationUseCase>[0]["notificationDedupLock"]
   >;
   let release: MockedFunction<() => Promise<void>>;
 
   beforeEach(async () => {
     const sendMilestoneNotificationDependencies = mockDeep<
-      ConstructorParameters<typeof SendMilestoneNotification>[0]
+      ConstructorParameters<typeof SendMilestoneNotificationUseCase>[0]
     >({});
-    const unit = new SendMilestoneNotification(sendMilestoneNotificationDependencies);
+    const unit = new SendMilestoneNotificationUseCase(sendMilestoneNotificationDependencies);
     useCase = unit;
     publisher = sendMilestoneNotificationDependencies.notificationPublisher;
     localeReader = sendMilestoneNotificationDependencies.recipientLocaleReader;

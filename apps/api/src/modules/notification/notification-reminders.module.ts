@@ -48,13 +48,13 @@ import {
   weeklyReportStrategyProvider,
   winbackStrategyProvider,
 } from "./notification-reminders-application.providers.js";
-import { NotificationDeliveryModule } from "./push/notification-push.module.js";
+import { NotificationPushModule } from "./push/notification-push.module.js";
 
 @Module({
   imports: [
     TimezoneReminderQueueModule,
     DatabaseModule,
-    NotificationDeliveryModule,
+    NotificationPushModule,
     WeatherForecastModule,
     InsightsWeeklyAchievementsModule,
     AccessModule,

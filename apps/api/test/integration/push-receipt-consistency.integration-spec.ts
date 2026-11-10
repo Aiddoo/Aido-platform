@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 import { vi } from "vitest";
 
 import type { PushReceiptResult } from "#api/modules/notification/push/application/ports/push-provider.port";
-import { ReconcilePushReceipts } from "#api/modules/notification/push/application/use-cases/reconcile-push-receipts.use-case";
+import { ReconcilePushReceiptsUseCase } from "#api/modules/notification/push/application/use-cases/reconcile-push-receipts.use-case";
 import { pushReceiptCheckWindow } from "#api/modules/notification/push/domain/push-receipt.domain-service";
 import { DrizzlePushDeliveryLifecycleRepository } from "#api/modules/notification/push/infrastructure/persistence/drizzle-push-delivery-lifecycle.repository";
 import { DrizzlePushDeliveryOutboxRepository } from "#api/modules/notification/push/infrastructure/persistence/drizzle-push-delivery-outbox.repository";
@@ -360,7 +360,7 @@ describe("receipt 정합성 (실제 PostgreSQL)", () => {
     const f = await fixture("rollback");
     let failOnce = true;
     const requests: string[][] = [];
-    const reconciler = new ReconcilePushReceipts({
+    const reconciler = new ReconcilePushReceiptsUseCase({
       pushReceiptRepository: f.receipts,
       pushTokenRepository: {
         async deactivateInvalidTokens(tokens) {

@@ -5,22 +5,24 @@ import { type AfterCommitTask } from "#api/shared/application/ports/index";
 import { createUnitOfWorkMock } from "#test/mocks/ports/unit-of-work.mock";
 
 import type { CreateNotificationData } from "../../../inbox/application/ports/notification-draft.port.js";
-import { SendBatchNotification } from "./send-batch-notification.use-case.js";
+import { SendBatchNotificationUseCase } from "./send-batch-notification.use-case.js";
 
 describe("배치 알림의 커밋 후 정리", () => {
-  let useCase: SendBatchNotification;
+  let useCase: SendBatchNotificationUseCase;
   let persistBatch: Mocked<
-    ConstructorParameters<typeof SendBatchNotification>[0]["persistBatchNotificationUseCase"]
+    ConstructorParameters<typeof SendBatchNotificationUseCase>[0]["persistBatchNotificationUseCase"]
   >;
   let finalizeBatch: Mocked<
-    ConstructorParameters<typeof SendBatchNotification>[0]["finalizeBatchNotificationUseCase"]
+    ConstructorParameters<
+      typeof SendBatchNotificationUseCase
+    >[0]["finalizeBatchNotificationUseCase"]
   >;
   let afterCommitTasks: AfterCommitTask[];
 
   beforeEach(async () => {
     afterCommitTasks = [];
     const sendBatchNotificationDependencies = mockDeep<
-      ConstructorParameters<typeof SendBatchNotification>[0]
+      ConstructorParameters<typeof SendBatchNotificationUseCase>[0]
     >({
       unitOfWork: createUnitOfWorkMock(),
       afterCommitTasks: {
@@ -29,7 +31,7 @@ describe("배치 알림의 커밋 후 정리", () => {
         }),
       },
     });
-    const unit = new SendBatchNotification(sendBatchNotificationDependencies);
+    const unit = new SendBatchNotificationUseCase(sendBatchNotificationDependencies);
     useCase = unit;
     persistBatch = sendBatchNotificationDependencies.persistBatchNotificationUseCase;
     finalizeBatch = sendBatchNotificationDependencies.finalizeBatchNotificationUseCase;

@@ -2,19 +2,25 @@ import type { Mocked } from "vitest";
 import { mockDeep } from "vitest-mock-extended";
 
 import { TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY } from "../../domain/transactional-notification-campaign.constants.js";
-import { SendFollowAcceptedNotification } from "./send-follow-accepted-notification.use-case.js";
+import { SendFollowAcceptedNotificationUseCase } from "./send-follow-accepted-notification.use-case.js";
 
-describe("SendFollowAcceptedNotification", () => {
+describe("SendFollowAcceptedNotificationUseCase", () => {
   it("친구 요청을 수락한 사용자 정보와 함께 FOLLOW_ACCEPTED를 보낸다", async () => {
     const sendFollowAcceptedNotificationDependencies = mockDeep<
-      ConstructorParameters<typeof SendFollowAcceptedNotification>[0]
+      ConstructorParameters<typeof SendFollowAcceptedNotificationUseCase>[0]
     >({});
-    const unit = new SendFollowAcceptedNotification(sendFollowAcceptedNotificationDependencies);
+    const unit = new SendFollowAcceptedNotificationUseCase(
+      sendFollowAcceptedNotificationDependencies,
+    );
     const notificationSender: Mocked<
-      ConstructorParameters<typeof SendFollowAcceptedNotification>[0]["notificationPublisher"]
+      ConstructorParameters<
+        typeof SendFollowAcceptedNotificationUseCase
+      >[0]["notificationPublisher"]
     > = sendFollowAcceptedNotificationDependencies.notificationPublisher;
     const recipientLocaleReader: Mocked<
-      ConstructorParameters<typeof SendFollowAcceptedNotification>[0]["recipientLocaleReader"]
+      ConstructorParameters<
+        typeof SendFollowAcceptedNotificationUseCase
+      >[0]["recipientLocaleReader"]
     > = sendFollowAcceptedNotificationDependencies.recipientLocaleReader;
     recipientLocaleReader.getLocale.mockResolvedValue("ko");
 

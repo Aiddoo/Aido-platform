@@ -18,7 +18,7 @@ interface RecoverFailedPushDeliveriesDependencies {
   readonly unitOfWork: Pick<UnitOfWorkPort, "run">;
 }
 
-export class RecoverFailedPushDeliveries {
+export class RecoverFailedPushDeliveriesUseCase {
   readonly #dependencies: RecoverFailedPushDeliveriesDependencies;
 
   constructor(dependencies: RecoverFailedPushDeliveriesDependencies) {
