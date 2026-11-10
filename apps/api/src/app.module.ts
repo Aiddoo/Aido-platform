@@ -70,6 +70,7 @@ import {
   ThrottleModule,
   UserAwareThrottlerGuard,
 } from "#api/platform/throttle/index";
+import { TimeModule } from "#api/platform/time/time.module";
 
 import { AppController } from "./app.controller.js";
 import { AppService } from "./app.service.js";
@@ -109,6 +110,7 @@ import { AppService } from "./app.service.js";
     AccessModule,
     LoggerModule.forRootAsync(),
     SharedKernelModule,
+    TimeModule,
     PaginationModule,
     ThrottlerModule.forRootAsync({
       imports: [ThrottleModule.forRoot()],
