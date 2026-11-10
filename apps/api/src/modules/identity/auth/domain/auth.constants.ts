@@ -1,4 +1,4 @@
-import { ACCOUNT_PROVIDERS, type USER_STATUS, type VERIFICATION_TYPE } from "@aido/api/vocabulary";
+import type { ACCOUNT_PROVIDERS, USER_STATUS, VERIFICATION_TYPE } from "@aido/api/vocabulary";
 
 export type AccountProvider = (typeof ACCOUNT_PROVIDERS)[number];
 export type UserStatus = (typeof USER_STATUS)[number];
