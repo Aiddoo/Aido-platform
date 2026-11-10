@@ -1,4 +1,4 @@
-import type { INestApplication } from "@nestjs/common";
+import type { INestApplication, ModuleMetadata } from "@nestjs/common";
 /**
  * E2E 테스트 앱 팩토리
  *
@@ -133,6 +133,8 @@ export interface E2eAppOptions {
   customizeBuilder?: (
     builder: ReturnType<typeof Test.createTestingModule>,
   ) => ReturnType<typeof Test.createTestingModule>;
+  /** AppModule 옆에 붙이는 테스트 전용 모듈(공개 데코레이터·가드를 실제 라우트처럼 검증할 때) */
+  imports?: ModuleMetadata["imports"];
   /** suite에서 추가로 override한 fake의 상태 초기화 함수 */
   additionalResetters?: readonly TestStateResetter[];
   /** @internal 앱 재시작 테스트에서 동일 PostgreSQL을 재사용 */
@@ -210,7 +212,7 @@ export async function createE2eApp(options?: E2eAppOptions): Promise<E2eTestCont
   };
 
   let builder = Test.createTestingModule({
-    imports: [AppModule],
+    imports: [AppModule, ...(options?.imports ?? [])],
   })
     .overrideProvider(REDIS_COMMAND_CLIENT)
     .useValue(redisMock)

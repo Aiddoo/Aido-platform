@@ -10,6 +10,7 @@ import { AccessStateReaderPort } from "../entitlements/application/ports/access-
 import { QuotaChargeRepositoryPort } from "./application/ports/quota-charge.repository.port.js";
 import { QUOTA_LEDGER, QuotaLedgerPort } from "./application/ports/quota-ledger.port.js";
 import { QuotaUsageRepositoryPort } from "./application/ports/quota-usage.repository.port.js";
+import { CheckQuotaRemainingUseCase } from "./application/use-cases/check-quota-remaining.use-case.js";
 import { CommitQuotaReservationUseCase } from "./application/use-cases/commit-quota-reservation.use-case.js";
 import { GetMeteredFeatureQuotaUseCase } from "./application/use-cases/get-metered-feature-quota.use-case.js";
 import { RefundAbandonedQuotaReservationsUseCase } from "./application/use-cases/refund-abandoned-quota-reservations.use-case.js";
@@ -72,6 +73,9 @@ export const ACCESS_QUOTAS_PROVIDERS = [
     accessStateReader: AccessStateReaderPort,
     quotaUsageRepository: QuotaUsageRepositoryPort,
     clock: ClockPort,
+  }),
+  provideUseCase(CheckQuotaRemainingUseCase, {
+    getMeteredFeatureQuota: GetMeteredFeatureQuotaUseCase,
   }),
   QuotaAbandonedRefundProcessor,
   QuotaAbandonedRefundScheduler,

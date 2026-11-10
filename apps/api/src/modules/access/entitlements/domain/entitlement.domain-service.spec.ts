@@ -3,8 +3,6 @@ import { PLAN_CATALOG } from "@aido/api/vocabulary";
 import {
   calculateRemainingLimit,
   isExemptFromDormancy,
-  isExemptFromUserSpendLimit,
-  isUnlimitedSubject,
   resolveAccessTier,
   resolveAllFeatureAccess,
   resolveFeatureAccess,
@@ -30,28 +28,6 @@ describe("isExemptFromDormancy", () => {
 });
 
 describe("권한 정책 — 카탈로그와 접근 주체", () => {
-  it.each([
-    { tier: "FREE", exempt: false },
-    { tier: "PREMIUM", exempt: false },
-    { tier: "ADMIN", exempt: true },
-  ] as const)("$tier 등급의 사용자 비용 예산 면제는 $exempt 이다", ({ tier, exempt }) => {
-    // When
-    const result = isExemptFromUserSpendLimit(tier);
-    // Then
-    expect(result).toBe(exempt);
-  });
-
-  it.each([
-    { tier: "FREE", unlimited: false },
-    { tier: "PREMIUM", unlimited: false },
-    { tier: "ADMIN", unlimited: true },
-  ] as const)("$tier 주체의 무제한 판단은 $unlimited 이다", ({ tier, unlimited }) => {
-    // When
-    const result = isUnlimitedSubject({ tier });
-    // Then
-    expect(result).toBe(unlimited);
-  });
-
   it.each([
     { role: "USER", subscriptionStatus: "ACTIVE", expected: { tier: "PREMIUM", isPremium: true } },
     { role: "USER", subscriptionStatus: "CANCELLED", expected: { tier: "FREE", isPremium: false } },
