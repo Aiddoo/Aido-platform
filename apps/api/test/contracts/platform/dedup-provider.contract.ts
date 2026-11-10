@@ -1,17 +1,17 @@
 import { setTimeout as sleep } from "node:timers/promises";
 
-import type { IDedupProvider } from "#api/platform/dedup/interfaces/dedup.interface";
+import type { DedupProviderPort } from "#api/platform/dedup/dedup-provider.port";
 
 /**
- * 모든 IDedupProvider 구현(in-memory, Redis, Valkey)이 통과해야 하는 계약.
+ * 모든 DedupProviderPort 구현(in-memory, Redis, Valkey)이 통과해야 하는 계약.
  * 저장소를 바꿔도 리마인더·알림 중복 방지가 그대로 동작한다는 증거라 새 구현은 이 suite를 함께 돌린다.
  */
 export function describeDedupProviderContract(context: {
   readonly name: string;
-  readonly createProvider: () => IDedupProvider;
+  readonly createProvider: () => DedupProviderPort;
 }): void {
-  describe(`IDedupProvider 계약 — ${context.name}`, () => {
-    let dedup: IDedupProvider;
+  describe(`DedupProviderPort 계약 — ${context.name}`, () => {
+    let dedup: DedupProviderPort;
 
     beforeEach(() => {
       dedup = context.createProvider();

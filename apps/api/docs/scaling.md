@@ -55,4 +55,3 @@
 ## 전환 중
 
 - 저장소는 [CacheStorePort](../src/platform/cache/cache-store.port.ts)와 `InMemoryCacheStore`(lru-cache)·`RedisCacheStore`로 옮겼다. 캐시·잠금·dedup·throttler 저장소 계약 suite([test/contracts/platform](../test/contracts/platform))는 in-memory와 Redis·Valkey 컨테이너([redis-adapters.integration-spec.ts](../test/integration/platform/redis-adapters.integration-spec.ts))에서 같이 돈다. TTL은 밀리초 숫자만 받고 0이면 저장하지 않는다. `CACHE_CLEANUP_INTERVAL_MS`는 더 쓰지 않지만 운영 env 호환으로 검증만 남겼다.
-- `ioredis-mock`은 푸시 rate limit(`redis-push-rate-limiter.adapter.spec`)만 아직 쓴다. 그 테스트를 Redis 컨테이너로 옮기면 `ioredis-mock`·`@types/ioredis-mock`을 지운다.

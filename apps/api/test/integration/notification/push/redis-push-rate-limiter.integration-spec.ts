@@ -1,18 +1,53 @@
-import RedisMock from "ioredis-mock";
+import { Redis } from "ioredis";
+import { GenericContainer, type StartedTestContainer, Wait } from "testcontainers";
 import { vi } from "vitest";
 
+import { RedisPushRateLimiterAdapter } from "#api/modules/notification/push/infrastructure/adapters/redis-push-rate-limiter.adapter";
 import { TEST_CUID } from "#test/fixtures/id.fixture";
 
-import { RedisPushRateLimiterAdapter } from "./redis-push-rate-limiter.adapter.js";
+const REDIS_PORT = 6379;
 
-describe("RedisPushRateLimiterAdapter — batch 발송 한도 정책", () => {
+describe.each([
+  { name: "Redis", image: "redis:7.4-alpine" },
+  { name: "Valkey", image: "valkey/valkey:8-alpine" },
+])("RedisPushRateLimiterAdapter — batch 발송 한도 정책 ($name 컨테이너)", ({ image }) => {
+  let container: StartedTestContainer;
+  let redis: Redis;
+
+  beforeAll(async () => {
+    container = await new GenericContainer(image)
+      .withExposedPorts(REDIS_PORT)
+      .withWaitStrategy(Wait.forLogMessage(/Ready to accept connections/))
+      .start();
+    redis = new Redis({
+      host: container.getHost(),
+      port: container.getMappedPort(REDIS_PORT),
+      maxRetriesPerRequest: 1,
+    });
+  }, 120_000);
+
+  afterAll(async () => {
+    await redis?.quit();
+    await container?.stop();
+  });
+
+  beforeEach(async () => {
+    await redis.flushdb();
+  });
+
   afterEach(() => {
+    vi.restoreAllMocks();
     vi.useRealTimers();
   });
 
+  // 스크립트가 받는 지금은 Date.now()라 Date만 가짜로 돌리고, 연결 타이머는 실제로 둔다
+  function freezeAt(iso: string): void {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date(iso));
+  }
+
   it("여러 사용자의 일반·참여 유도 제한을 단일 원자적 Redis 호출로 예약한다", async () => {
     // Given
-    const redis = new RedisMock();
     const evaluate = vi.spyOn(redis, "eval").mockResolvedValue([0, 1, 0]);
     const limiter = new RedisPushRateLimiterAdapter(redis);
 
@@ -30,7 +65,6 @@ describe("RedisPushRateLimiterAdapter — batch 발송 한도 정책", () => {
 
   it("Redis가 잘못된 결과를 반환하면 fail-open으로 전체 발송을 허용한다", async () => {
     // Given
-    const redis = new RedisMock();
     vi.spyOn(redis, "eval").mockResolvedValue([0, "invalid"]);
     const limiter = new RedisPushRateLimiterAdapter(redis);
 
@@ -46,7 +80,6 @@ describe("RedisPushRateLimiterAdapter — batch 발송 한도 정책", () => {
 
   it("빈 배치는 Redis를 호출하지 않는다", async () => {
     // Given
-    const redis = new RedisMock();
     const evaluate = vi.spyOn(redis, "eval");
     const limiter = new RedisPushRateLimiterAdapter(redis);
 
@@ -60,9 +93,7 @@ describe("RedisPushRateLimiterAdapter — batch 발송 한도 정책", () => {
 
   it("참여 유도 제한에 걸리면 일반 푸시 quota를 소비하지 않는다", async () => {
     // Given
-    vi.useFakeTimers().setSystemTime(new Date("2026-07-16T10:00:00.000Z"));
-    const redis = new RedisMock();
-    await redis.flushall();
+    freezeAt("2026-07-16T10:00:00.000Z");
     await redis.hset(
       `push-engagement:${TEST_CUID.USER_1}:2026-07-16`,
       "count",
@@ -84,9 +115,7 @@ describe("RedisPushRateLimiterAdapter — batch 발송 한도 정책", () => {
 
   it("같은 dispatch 예약은 재시도와 새 publication generation에서도 quota를 한 번만 소비한다", async () => {
     // Given
-    vi.useFakeTimers().setSystemTime(new Date("2026-07-16T10:00:00.000Z"));
-    const redis = new RedisMock();
-    await redis.flushall();
+    freezeAt("2026-07-16T10:00:00.000Z");
     const limiter = new RedisPushRateLimiterAdapter(redis);
     const request = {
       userId: TEST_CUID.USER_1,
@@ -108,9 +137,7 @@ describe("RedisPushRateLimiterAdapter — batch 발송 한도 정책", () => {
 
   it("단건 일반·engagement 단계도 같은 dispatch 예약을 각각 재사용한다", async () => {
     // Given
-    vi.useFakeTimers().setSystemTime(new Date("2026-07-16T10:00:00.000Z"));
-    const redis = new RedisMock();
-    await redis.flushall();
+    freezeAt("2026-07-16T10:00:00.000Z");
     const limiter = new RedisPushRateLimiterAdapter(redis);
     const general = { userId: TEST_CUID.USER_1, dispatchId: 601 };
     const engagement = { ...general, localDate: "2026-07-16" };
@@ -130,9 +157,7 @@ describe("RedisPushRateLimiterAdapter — batch 발송 한도 정책", () => {
 
   it("batch 예약 marker는 general key 만료와 현지 날짜 변경 뒤에도 같은 dispatch를 재사용한다", async () => {
     // Given
-    vi.useFakeTimers().setSystemTime(new Date("2026-07-15T23:00:00.000Z"));
-    const redis = new RedisMock();
-    await redis.flushall();
+    freezeAt("2026-07-15T23:00:00.000Z");
     const limiter = new RedisPushRateLimiterAdapter(redis);
     const original = {
       userId: TEST_CUID.USER_1,
@@ -142,11 +167,11 @@ describe("RedisPushRateLimiterAdapter — batch 발송 한도 정책", () => {
     await expect(limiter.reserveBatch([original])).resolves.toEqual([false]);
 
     // When
-    vi.advanceTimersByTime(5 * 60 * 60 * 1000);
+    vi.setSystemTime(Date.now() + 5 * 60 * 60 * 1000);
     await expect(
       limiter.reserveBatch([{ ...original, engagementLocalDate: "2026-07-16", dispatchId: 702 }]),
     ).resolves.toEqual([false]);
-    vi.advanceTimersByTime(4 * 60 * 60 * 1000);
+    vi.setSystemTime(Date.now() + 4 * 60 * 60 * 1000);
     await expect(
       limiter.reserveBatch([{ ...original, engagementLocalDate: "2026-07-16", dispatchId: 703 }]),
     ).resolves.toEqual([false]);
@@ -168,15 +193,13 @@ describe("RedisPushRateLimiterAdapter — batch 발송 한도 정책", () => {
 
   it("단건 general 예약 직후 crash한 재시도는 key 만료 뒤에도 quota를 다시 쓰지 않는다", async () => {
     // Given
-    vi.useFakeTimers().setSystemTime(new Date("2026-07-15T23:00:00.000Z"));
-    const redis = new RedisMock();
-    await redis.flushall();
+    freezeAt("2026-07-15T23:00:00.000Z");
     const limiter = new RedisPushRateLimiterAdapter(redis);
     const reserved = { userId: TEST_CUID.USER_1, dispatchId: 801 };
     await expect(limiter.reserveGeneral(reserved)).resolves.toBe(false);
 
     // When
-    vi.advanceTimersByTime(2 * 60 * 60 * 1000);
+    vi.setSystemTime(Date.now() + 2 * 60 * 60 * 1000);
     for (let index = 0; index < 15; index += 1) {
       await expect(
         limiter.reserveGeneral({ userId: TEST_CUID.USER_1, dispatchId: 900 + index }),

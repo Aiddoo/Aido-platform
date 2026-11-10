@@ -1,17 +1,17 @@
 import { setTimeout as sleep } from "node:timers/promises";
 
-import type { ILockProvider } from "#api/platform/lock/interfaces/lock.interface";
+import type { LockProviderPort } from "#api/platform/lock/lock-provider.port";
 
 /**
- * 모든 ILockProvider 구현(in-memory, Redis, Valkey)이 통과해야 하는 계약.
+ * 모든 LockProviderPort 구현(in-memory, Redis, Valkey)이 통과해야 하는 계약.
  * LOCK 설정을 바꿔도 웹훅·알림 처리 잠금이 그대로 동작한다는 증거라 새 구현은 이 suite를 함께 돌린다.
  */
 export function describeLockProviderContract(context: {
   readonly name: string;
-  readonly createProvider: () => ILockProvider;
+  readonly createProvider: () => LockProviderPort;
 }): void {
-  describe(`ILockProvider 계약 — ${context.name}`, () => {
-    let lock: ILockProvider;
+  describe(`LockProviderPort 계약 — ${context.name}`, () => {
+    let lock: LockProviderPort;
 
     beforeEach(() => {
       lock = context.createProvider();
