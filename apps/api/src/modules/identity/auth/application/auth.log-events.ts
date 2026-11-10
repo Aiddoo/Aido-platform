@@ -32,6 +32,7 @@ export const AuthLogEvent = {
   SESSION_REVOKED: "identity.session.revoked",
   SESSION_TOKENS_REFRESHED: "identity.session.tokens-refreshed",
   SESSION_ROTATION_CONFLICT: "identity.session.rotation.conflict",
+  SESSION_REFRESH_ROLE_FALLBACK: "identity.session.refresh-role.fallback",
   SESSION_TOKEN_REUSE_DETECTED: "identity.session.token-reuse.detected",
   VERIFICATION_EMAIL_FAILED: "identity.verification.email.failed",
   OAUTH_REDIRECT_REJECTED: "identity.oauth.redirect.rejected",

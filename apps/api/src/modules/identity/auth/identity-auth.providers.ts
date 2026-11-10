@@ -244,6 +244,7 @@ export const refreshTokensProvider = provideUseCase(RefreshTokensUseCase, {
   pushDevices: SessionPushDeviceReleaserPort,
   sessionRepository: AuthSessionRepositoryPort,
   tokenService: AuthTokenIssuerPort,
+  userRepository: AuthUserRepositoryPort,
   securityLogRepository: AuthSecurityLogRepositoryPort,
   cacheService: AuthCachePort,
   clock: ClockPort,

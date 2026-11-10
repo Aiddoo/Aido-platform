@@ -37,7 +37,7 @@
 역할(USER·ADMIN)을 바꾸는 API는 없다. 잠금 안의 쓰기 판단(`canInTx`·`getFeatureLimitInTx`·원장 예약)과 `GET /v1/entitlements`는 캐시 없이 읽어 바로 새 역할을 따르고, 캐시를 읽는 판단(`can`·`getFeatureLimit`·`getEntitlements`)과 /me는 캐시가 남는 동안 이전 역할을 쓴다. 운영자가 DB에서 `User.role`을 바꾼 뒤:
 
 1. 그 사용자의 권한 캐시 `aido:v1:subscription:status:v2:{userId}`(10분)와 프로필 캐시 `aido:v1:auth:user-profile:{userId}`(5분)를 지운다. `CACHE_TYPE=redis`면 두 키를 `DEL`하고, 운영 기본값 memory는 밖에서 지울 수 없으니 10분을 기다린다(API 재시작은 모든 캐시를 비운다).
-2. ADMIN 가드는 access token의 role claim을 본다. refresh는 refresh token의 claim을 그대로 옮기므로 새 역할은 다시 로그인한 토큰부터다.
+2. ADMIN 가드는 access token의 role claim을 본다. refresh는 DB의 현재 `User.role`을 다시 읽어 새 토큰에 넣으므로, 새 역할은 이미 받은 access token이 끝나는 `JWT_EXPIRES_IN`(기본값·운영 예시 15분) 안에 적용된다. 사용자 행이 없거나 조회가 실패하면 갱신을 막지 않고 claim의 역할로 발급하며 `identity.session.refresh-role.fallback`(warn)을 남긴다. ADMIN을 급히 내릴 때는 그 사용자의 세션도 모두 끊는다. 다른 사용자의 세션을 끊는 API는 없으니 전체 로그아웃(`revokeAllByUserId`)과 같은 갱신을 DB에서 실행한다: `UPDATE "Session" SET "revokedAt" = now() AT TIME ZONE 'UTC', "revokedReason" = 'USER_LOGOUT_ALL', "updatedAt" = now() AT TIME ZONE 'UTC' WHERE "userId" = '<userId>' AND "revokedAt" IS NULL`. 그 뒤 refresh는 SESSION_0703으로 거절되고, 이미 받은 access token도 세션 캐시 `aido:v1:auth:session:{sessionId}`(30초)가 지나면 거절된다.
 
 ## 다운그레이드
 
