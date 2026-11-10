@@ -10,7 +10,7 @@ Turborepo + pnpm 모노레포. AI 할 일 관리 서비스의 API 서버와 모�
 
 ## 스택
 
-NestJS 12 ESM · Drizzle ORM 1.0 RC · PostgreSQL 16 · pg-boss · Expo SDK 58 · React Native 0.88 · React 19 · TypeScript 6.0 · Zod 4 · Oxlint · Oxfmt · Turbo 2 · pnpm 12. 정확한 버전은 `pnpm-workspace.yaml` catalog와 `.nvmrc`가 정본이다. 상세: [README](README.md).
+Node 26.13.0 LTS(EAS 모바일 빌드는 24.22.2) · NestJS 12.4.2 ESM · Drizzle ORM 1.0.0-rc.5 · PostgreSQL 16 · pg-boss 12.38.1 · Expo SDK 58 · React Native 0.88 · React 19 · TypeScript 6.0.3 · Zod 4.6.7 · Oxlint 1.93.0 · Oxfmt 0.78.0 · Turbo 2.11 · pnpm 12.15. 정확한 버전은 `pnpm-workspace.yaml` catalog와 `.nvmrc`가 정본이다. 상세: [README](README.md).
 
 ## 모노레포
 
@@ -25,7 +25,8 @@ docs/           앱·서버 공통 규칙(conventions), 릴리스 기록(release
 ## 명령
 
 - `pnpm install` · `pnpm docker:up`(PostgreSQL) · `pnpm dev` · `pnpm build`
-- `pnpm check`: lint → format:check → typecheck → 관례 검사(커밋 전 한 번)
+- `pnpm check`: lint → format:check → 이름·경계·관례 검사 → typecheck(커밋 전 한 번)
+- 가드레일: `pnpm lint:names`(ls-lint) · `pnpm --filter @aido/server lint:deps`(dependency-cruiser) · `pnpm --filter @aido/server check:conventions` · `pnpm --filter @aido/server check:unused`(knip, 보고만)
 - `pnpm lint` · `pnpm format` · `pnpm format:check` · `pnpm typecheck`
 - `pnpm test` · `pnpm test:integration` · `pnpm test:e2e` · `pnpm --filter @aido/server test:contract`
 - `pnpm db:generate` · `pnpm db:migrate` · `pnpm commit`

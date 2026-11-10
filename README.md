@@ -26,14 +26,14 @@
 
 정확한 버전은 [`pnpm-workspace.yaml`](./pnpm-workspace.yaml)의 catalog와 각 `package.json`을 따른다.
 
-| 영역      | 기술                                                                                             |
-| --------- | ------------------------------------------------------------------------------------------------ |
-| 서버      | NestJS 12.3 (ESM, SWC), Drizzle ORM 1.0 RC, PostgreSQL 16, pg-boss 12, AI SDK 7 (Google)         |
-| 공유 계약 | `@aido/api`: Zod 4.6 스키마·오류 코드·공용 vocabulary                                            |
-| 모바일    | Expo SDK 58.0.x, React Native 0.88, React 19.3, Expo Router, TanStack Query 5, HeroUI Native, Ky |
-| 테스트    | Vitest 5 + Testcontainers(서버·계약), Jest 30 + jest-expo(모바일)                                |
-| 툴링      | Node.js 24.22.2, pnpm 12.15, Turborepo 2.11, TypeScript 6.0, Oxlint 1.91, Oxfmt 0.76             |
-| 인프라    | Docker Compose, GitHub Actions, GHCR, AWS EC2, Expo EAS                                          |
+| 영역      | 기술                                                                                                                |
+| --------- | ------------------------------------------------------------------------------------------------------------------- |
+| 서버      | NestJS 12.4.2 (ESM, SWC), Drizzle ORM 1.0.0-rc.5, PostgreSQL 16, pg-boss 12.38.1, AI SDK 7 (Google)                 |
+| 공유 계약 | `@aido/api`: Zod 4.6.7 스키마·오류 코드·공용 vocabulary                                                             |
+| 모바일    | Expo SDK 58.0.x, React Native 0.88, React 19.3, Expo Router, TanStack Query 5, HeroUI Native, Ky                    |
+| 테스트    | Vitest 5 + Testcontainers(서버·계약), Jest 30 + jest-expo(모바일)                                                   |
+| 툴링      | Node.js 26.13.0 LTS (EAS 빌드는 24.22.2), pnpm 12.15, Turborepo 2.11, TypeScript 6.0.3, Oxlint 1.93.0, Oxfmt 0.78.0 |
+| 인프라    | Docker Compose, GitHub Actions, GHCR, AWS EC2, Expo EAS                                                             |
 
 ## 아키텍처
 
@@ -108,7 +108,7 @@ packages/api (Zod 스키마, ErrorCode)
 
 ### 요구 사항
 
-- Node.js `24.22.2` ([`.nvmrc`](./.nvmrc))
+- Node.js `26.13.0` LTS ([`.nvmrc`](./.nvmrc))
 - pnpm `12.15.0` (`packageManager`, `corepack enable`로 활성화)
 - Docker (로컬 PostgreSQL·Redis, integration/e2e 테스트의 Testcontainers)
 
@@ -149,7 +149,8 @@ pnpm dev
 | `pnpm typecheck`        | 전체 타입 검사                                             |
 | `pnpm lint`             | Oxlint 정적 검사 (`lint:fix`로 자동 수정)                  |
 | `pnpm format`           | Oxfmt 포맷 적용 (`format:check`로 검사만)                  |
-| `pnpm check`            | lint + format:check + typecheck + 모바일 컨벤션 검사       |
+| `pnpm check`            | lint + format:check + 이름·경계·관례 검사 + typecheck      |
+| `pnpm lint:names`       | 서버 slice 폴더·파일 이름 검사 (ls-lint)                   |
 | `pnpm test`             | 전체 unit 테스트                                           |
 | `pnpm test:cov`         | unit 테스트 + 커버리지                                     |
 | `pnpm test:integration` | 서버 PostgreSQL integration 테스트                         |
