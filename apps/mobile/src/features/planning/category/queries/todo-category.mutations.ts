@@ -25,7 +25,12 @@ import type {
   TodoCategoryReorder,
 } from '../schemas/todo-category-request.schema';
 import { getCategoryUpdatedField } from '../utils/todo-category-analytics';
-import { invalidateTodoCategories } from './todo-category-cache';
+import {
+  invalidateTodoCategories,
+  withCategoryAdded,
+  withCategoryChanged,
+  withCategoryRemoved,
+} from './todo-category-cache';
 
 export function useCreateTodoCategoryMutationOptions() {
   const todoCategoryService = useTodoCategoryService();
@@ -57,7 +62,7 @@ export function useCreateTodoCategoryMutationOptions() {
 
       queryClient.setQueryData(
         TODO_CATEGORY_QUERY_KEYS.list(),
-        (old) => old && TodoCategoryPolicy.withCategoryAdded(old, optimisticCategory),
+        (old) => old && withCategoryAdded(old, optimisticCategory),
       );
 
       return { previousData };
@@ -111,7 +116,7 @@ export function useUpdateTodoCategoryMutationOptions() {
 
       queryClient.setQueryData(
         TODO_CATEGORY_QUERY_KEYS.list(),
-        (old) => old && TodoCategoryPolicy.withCategoryChanged(old, id, input),
+        (old) => old && withCategoryChanged(old, id, input),
       );
 
       return { previousData };
@@ -166,7 +171,7 @@ export function useDeleteTodoCategoryMutationOptions() {
 
       queryClient.setQueryData(
         TODO_CATEGORY_QUERY_KEYS.list(),
-        (old) => old && TodoCategoryPolicy.withCategoryRemoved(old, id),
+        (old) => old && withCategoryRemoved(old, id),
       );
 
       return { previousData };

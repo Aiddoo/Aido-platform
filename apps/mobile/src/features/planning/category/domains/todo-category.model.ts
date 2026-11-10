@@ -78,54 +78,7 @@ export function canReorderCategories(categories: readonly Pick<TodoCategory, 'id
   return categories.length >= MIN_REORDERABLE_COUNT;
 }
 
-export function withCategoryAdded(
-  result: TodoCategoriesResult,
-  category: TodoCategoryWithCount,
-): TodoCategoriesResult {
-  return { ...result, categories: [...result.categories, category] };
-}
-
-export function withCategoryChanged(
-  result: TodoCategoriesResult,
-  categoryId: number,
-  change: Partial<Pick<TodoCategory, 'name' | 'color'>>,
-): TodoCategoriesResult {
-  return {
-    ...result,
-    categories: result.categories.map((category) =>
-      category.id === categoryId ? { ...category, ...change } : category,
-    ),
-  };
-}
-
-export function withCategoryRemoved(
-  result: TodoCategoriesResult,
-  categoryId: number,
-): TodoCategoriesResult {
-  return { ...result, categories: result.categories.filter(({ id }) => id !== categoryId) };
-}
-
-/** 할 일을 만들거나 지운 만큼 그 카테고리의 개수만 바꾼다. 개수는 서버가 세는 카테고리의 할 일 수와 같다 */
-export function withTodoCountChanged(
-  result: TodoCategoriesResult,
-  categoryId: number,
-  delta: number,
-): TodoCategoriesResult {
-  return {
-    ...result,
-    categories: result.categories.map((category) =>
-      category.id === categoryId
-        ? { ...category, todoCount: Math.max(0, category.todoCount + delta) }
-        : category,
-    ),
-  };
-}
-
 export const TodoCategoryPolicy = {
-  withCategoryAdded,
-  withCategoryChanged,
-  withCategoryRemoved,
-  withTodoCountChanged,
   isTodoMoveRequired,
   canReorderCategories,
   isOptimisticCategory,

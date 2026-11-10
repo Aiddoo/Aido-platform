@@ -1,6 +1,6 @@
 # Mobile App Architecture Guide
 
-**Version**: 3.1.1 · **Last Updated**: 2026-11-08 · **Owner**: Aido Mobile Team
+**Version**: 3.1.2 · **Last Updated**: 2026-11-11 · **Owner**: Aido Mobile Team
 
 Feature-based Layered Architecture로 만든 React Native/Expo 앱의 규칙이다. 앱에만 해당하는 규칙을 여기에 둔다. 기준 코드는 `features/notes/memo`와 메모 화면이다. 다른 feature와의 차이는 [아직 옮기지 않은 것](#아직-옮기지-않은-것)에 적는다.
 
@@ -1023,7 +1023,7 @@ export function useCreateMemoMutationOptions() {
 
 여러 화면이 같은 값을 보여 주면 캐시로(TanStack "Optimistic Updates"의 via the cache), 그 버튼 하나만 보여 주면 `useMutation`의 `variables`로 그린다. 캐시로 할 때는 순서가 하나다.
 
-1. `onMutate`: 덮어쓸 수 있는 키만 `cancelQueries`(단건은 `exact: true`) → `getQueryData`로 스냅샷 → `setQueryData(key, (old) => old && withX(old, …))` → 스냅샷을 돌려준다. updater는 `domains/*.model.ts` Policy나 `*-cache.ts`의 순수 함수다(`TodoCategoryPolicy.withCategoryAdded`).
+1. `onMutate`: 덮어쓸 수 있는 키만 `cancelQueries`(단건은 `exact: true`) → `getQueryData`로 스냅샷 → `setQueryData(key, (old) => old && withX(old, …))` → 스냅샷을 돌려준다. updater는 `*-cache.ts`의 순수 함수다(`withCategoryAdded`). 업무 규칙이면 `domains/*.model.ts` Policy다.
 2. `onError`: 돌려받은 스냅샷으로 되돌린다. 같은 키를 동시에 쓰는 뮤테이션이 있으면 통째로 덮지 않고 그 변경만 되돌린다.
 3. `onSettled`: 바뀐 키만 무효화한다. 동시에 쓰는 뮤테이션은 `mutationKey`를 두고 `isMutating({ mutationKey }) === 1`일 때만 다시 받는다.
 
@@ -1034,7 +1034,7 @@ onMutate: async ({ id }) => {
   const previousData = queryClient.getQueryData(TODO_CATEGORY_QUERY_KEYS.list());
   queryClient.setQueryData(
     TODO_CATEGORY_QUERY_KEYS.list(),
-    (old) => old && TodoCategoryPolicy.withCategoryRemoved(old, id),
+    (old) => old && withCategoryRemoved(old, id),
   );
   return { previousData };
 },
