@@ -80,4 +80,5 @@ export const NotificationDeliveryLogEvent = {
   UNREGISTER_PUSH_DEVICE_UNREGISTERED: "notification.delivery.unregister-push-device.unregistered",
   UNREGISTER_PUSH_DEVICE_ALL_UNREGISTERED:
     "notification.delivery.unregister-push-device.all-unregistered",
+  PUSH_DEVICE_UNREGISTERED_BY_TOKEN: "notification.push.device.unregistered-by-token",
 } as const;

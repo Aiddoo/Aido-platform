@@ -5,9 +5,11 @@ import {
   type ReportPushDeviceCommand,
   ReportPushDeviceUseCase,
 } from "#api/modules/notification/push/application/use-cases/report-push-device.use-case";
+import { UnregisterPushDeviceByTokenUseCase } from "#api/modules/notification/push/application/use-cases/unregister-push-device-by-token.use-case";
 import { DrizzlePushDeviceRepository } from "#api/modules/notification/push/infrastructure/persistence/drizzle-push-device.repository";
 import { DrizzlePushTokenRepository } from "#api/modules/notification/push/infrastructure/persistence/drizzle-push-token.repository";
 import { pushDevice, pushToken, session, user } from "#api/platform/database/schema/index";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { SessionFixture, UserFixture } from "#test/fixtures/index";
 import { createReportPushDeviceCommandFixture } from "#test/fixtures/notification/push-device.fixture";
@@ -150,25 +152,54 @@ describe("푸시 기기 보고 (실제 PostgreSQL)", () => {
     ]);
   });
 
-  it("로그인 세션이 지워지면(만료 정리) 그 세션의 기기·토큰 행도 함께 지워진다", async () => {
-    // Given 세션에 묶인 기기와 세션 없이 등록된 구 앱 기기
-    const loginSession = SessionFixture.create({ userId: firstUserId });
-    await client.insert(session).values(loginSession);
-    const { reportPushDevice } = createReportPushDevice();
-    await reportPushDevice.execute(command({ sessionId: loginSession.id }));
+  it("세션이 만료돼도 지우는 작업이 없어 그 세션의 기기는 계정 푸시 대상에 남는다", async () => {
+    // Given 갱신 기한(7일)이 지나 앱이 로그인 화면으로 돌아간 세션의 기기
+    const expiredSession = SessionFixture.createExpired({ userId: firstUserId });
+    await client.insert(session).values(expiredSession);
+    const { reportPushDevice, txHost } = createReportPushDevice();
+    await reportPushDevice.execute(command({ sessionId: expiredSession.id }));
+
+    // When 발송 경로가 계정의 활성 토큰을 읽는다
+    const tokens = await new DrizzlePushTokenRepository(txHost).findActivePushTokensByUsers([
+      UserId.reconstitute(firstUserId),
+    ]);
+
+    // Then 재방문 알림을 막지 않으려 세션으로 거르지 않는다. 앱이 공개 해제로 뺀다
+    expect(tokens.map((token) => token.deviceId)).toEqual(["ios_first"]);
+    expect(await client.$count(session, eq(session.id, expiredSession.id))).toBe(1);
+  });
+
+  it("세션이 끝난 기기가 기기 ID와 토큰으로 해제하면 그 기기만 계정 푸시 대상에서 빠진다", async () => {
+    // Given 만료 세션의 휴대폰과 아직 로그인한 태블릿
+    const expiredSession = SessionFixture.createExpired({ userId: firstUserId });
+    const activeSession = SessionFixture.create({ userId: firstUserId });
+    await client.insert(session).values([expiredSession, activeSession]);
+    const { reportPushDevice, txHost } = createReportPushDevice();
+    await reportPushDevice.execute(command({ sessionId: expiredSession.id }));
     await reportPushDevice.execute(
-      command({ deviceId: "android_legacy", token: "ExponentPushToken[legacy]" }),
+      command({
+        sessionId: activeSession.id,
+        deviceId: "android_tablet",
+        token: "ExponentPushToken[tablet]",
+      }),
     );
+    const unregisterByToken = new UnregisterPushDeviceByTokenUseCase({
+      pushDeviceRepository: new DrizzlePushDeviceRepository(txHost),
+      pushTokenRepository: new DrizzlePushTokenRepository(txHost),
+      unitOfWork: createDatabaseTransactionFixture(client).uow,
+      cache: { invalidatePushTokens: async () => {} },
+      logger: { log() {} },
+    });
 
     // When
-    await client.delete(session).where(eq(session.id, loginSession.id));
+    await unregisterByToken.execute({ deviceId: "ios_first", token: TOKEN });
 
     // Then
     expect(await client.select({ deviceId: pushToken.deviceId }).from(pushToken)).toEqual([
-      { deviceId: "android_legacy" },
+      { deviceId: "android_tablet" },
     ]);
     expect(await client.select({ deviceId: pushDevice.deviceId }).from(pushDevice)).toEqual([
-      { deviceId: "android_legacy" },
+      { deviceId: "android_tablet" },
     ]);
   });
 

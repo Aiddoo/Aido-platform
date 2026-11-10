@@ -29,7 +29,7 @@ export type PushTokenChange =
 
 interface PushDeviceProps {
   readonly userId: UserId;
-  // 세션이 끝나면 이 기기는 푸시 대상에서 빠진다
+  // 세션을 폐기하면(로그아웃 등) 이 기기는 푸시 대상에서 빠진다. 만료만으로는 빠지지 않는다
   readonly sessionId: string | null;
   readonly platform: PushDevicePlatform;
   readonly permission: PushPermission;

@@ -356,6 +356,39 @@ export function describePushTokenRepositoryContract(
       });
     });
 
+    it("기기·토큰 해제는 기기 ID와 토큰이 모두 맞는 등록만 지우고 그 주인 ID를 준다", async () => {
+      // Given
+      const repository = await createRepository();
+      await register(repository, {
+        deviceId: PushDeviceId.reconstitute("ios_device-1"),
+        token: "ExponentPushToken[1]",
+      });
+      await register(repository, {
+        deviceId: PushDeviceId.reconstitute("ios_device-2"),
+        token: "ExponentPushToken[2]",
+      });
+      const release = (deviceId: string, token: string) =>
+        repository.deletePushTokenByDeviceAndToken({
+          deviceId: PushDeviceId.reconstitute(deviceId),
+          token,
+        });
+
+      // When
+      const mismatched = await release("ios_device-1", "ExponentPushToken[2]");
+      const matched = await release("ios_device-1", "ExponentPushToken[1]");
+      const repeated = await release("ios_device-1", "ExponentPushToken[1]");
+
+      // Then
+      expect([mismatched, matched, repeated]).toEqual([
+        { userIds: [] },
+        { userIds: [USER_ID] },
+        { userIds: [] },
+      ]);
+      expect(await tokensOf(repository, USER_ID)).toEqual([
+        expect.objectContaining({ deviceId: "ios_device-2", token: "ExponentPushToken[2]" }),
+      ]);
+    });
+
     it("세션 삭제는 그 세션에 묶인 토큰만 지우고 지운 토큰마다 주인 ID를 준다", async () => {
       // Given
       const repository = await createRepository();

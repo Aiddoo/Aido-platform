@@ -175,6 +175,17 @@ export class DrizzlePushTokenRepository implements PushTokenRepositoryPort {
     return { count: deleted.length };
   }
 
+  async deletePushTokenByDeviceAndToken(data: {
+    readonly deviceId: PushDeviceId;
+    readonly token: string;
+  }): Promise<{ readonly userIds: readonly string[] }> {
+    const deleted = await this.#db
+      .delete(pushToken)
+      .where(and(eq(pushToken.token, data.token), eq(pushToken.deviceId, data.deviceId.value)))
+      .returning({ userId: pushToken.userId });
+    return { userIds: deleted.map((row) => row.userId) };
+  }
+
   async deletePushTokensBySessions(
     sessionIds: readonly string[],
   ): Promise<{ readonly userIds: readonly string[] }> {

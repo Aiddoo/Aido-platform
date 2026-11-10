@@ -56,6 +56,11 @@ export abstract class PushTokenRepositoryPort {
     deviceId: PushDeviceId,
   ): Promise<{ count: number }>;
   abstract deleteAllPushTokensByUser(userId: UserId): Promise<{ count: number }>;
+  // 로그인 없는 해제 요청은 기기 ID와 그 기기의 토큰을 함께 아는 것으로 기기를 가졌음을 증명한다. 둘 다 맞는 등록만 지우고 그 주인 ID를 준다
+  abstract deletePushTokenByDeviceAndToken(data: {
+    readonly deviceId: PushDeviceId;
+    readonly token: string;
+  }): Promise<{ readonly userIds: readonly string[] }>;
   // 지운 토큰마다 그 사용자 ID를 하나씩 돌려준다
   abstract deletePushTokensBySessions(
     sessionIds: readonly string[],

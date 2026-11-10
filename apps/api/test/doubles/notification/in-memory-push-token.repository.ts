@@ -149,6 +149,16 @@ export class InMemoryPushTokenRepository extends PushTokenRepositoryPort {
     return { count: this.#delete(deleted).length };
   }
 
+  async deletePushTokenByDeviceAndToken(data: {
+    readonly deviceId: PushDeviceId;
+    readonly token: string;
+  }): Promise<{ readonly userIds: readonly string[] }> {
+    const deleted = [...this.#tokens.values()].filter(
+      (row) => row.token === data.token && row.deviceId === data.deviceId.value,
+    );
+    return { userIds: this.#delete(deleted) };
+  }
+
   async deletePushTokensBySessions(
     sessionIds: readonly string[],
   ): Promise<{ readonly userIds: readonly string[] }> {

@@ -5,6 +5,7 @@ import {
   notificationInboxResponseSchema,
   notificationListResponseSchema,
   pushDeviceResponseSchema,
+  unregisterPushDeviceByTokenResponseSchema,
 } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
 /**
@@ -431,6 +432,96 @@ describe("알림 E2E", () => {
           .expect(400);
 
         expect(response.body.error.code).toBe(ErrorCode.NOTIFICATION_1006);
+      });
+    });
+
+    describe("POST /notifications/push-devices/unregister - 세션이 끝난 기기의 공개 해제", () => {
+      const phoneToken = "ExponentPushToken[unregister-phone]";
+      const tabletToken = "ExponentPushToken[unregister-tablet]";
+
+      async function registerTwoDevices(email: string) {
+        const user = await ctx.helpers.createVerifiedUser(email, password);
+        for (const [deviceId, token] of [
+          ["ios_unregister-phone", phoneToken],
+          ["android_unregister-tablet", tabletToken],
+        ] as const) {
+          await request(ctx.app.getHttpServer())
+            .put(`/v1/notifications/push-devices/${deviceId}`)
+            .set("Authorization", `Bearer ${user.accessToken}`)
+            .send({
+              permission: { status: "GRANTED", canAskAgain: false },
+              token,
+              payloadVersion: 2,
+            })
+            .expect(200);
+        }
+        return user;
+      }
+
+      async function deviceIdsOf(userId: string) {
+        const client = ctx.testDatabase.getClient();
+        const tokens = await client
+          .select({ deviceId: pushToken.deviceId })
+          .from(pushToken)
+          .where(eq(pushToken.userId, userId));
+        const devices = await client
+          .select({ deviceId: pushDevice.deviceId })
+          .from(pushDevice)
+          .where(eq(pushDevice.userId, userId));
+        return {
+          tokens: tokens.map((row) => row.deviceId).toSorted(),
+          devices: devices.map((row) => row.deviceId).toSorted(),
+        };
+      }
+
+      it("로그인 없이 기기 ID와 그 기기의 토큰이 맞으면 그 기기만 해제한다", async () => {
+        // Given 두 기기를 쓰는 사용자
+        const user = await registerTwoDevices("push-unregister-1@test.com");
+
+        // When 세션이 끝난 휴대폰이 인증 헤더 없이 해제한다
+        const response = await request(ctx.app.getHttpServer())
+          .post("/v1/notifications/push-devices/unregister")
+          .send({ deviceId: "ios_unregister-phone", token: phoneToken })
+          .expect(200);
+
+        // Then
+        expect(unregisterPushDeviceByTokenResponseSchema.parse(response.body.data)).toEqual({
+          unregistered: true,
+        });
+        expect(await deviceIdsOf(user.userId)).toEqual({
+          tokens: ["android_unregister-tablet"],
+          devices: ["android_unregister-tablet"],
+        });
+      });
+
+      it.each([
+        ["다른 기기의 토큰", "ios_unregister-phone", tabletToken],
+        ["모르는 기기", "ios_unregister-unknown", phoneToken],
+      ])("%s면 같은 200을 주고 아무것도 지우지 않는다", async (_case, deviceId, token) => {
+        // Given
+        const user = await registerTwoDevices(`push-unregister-${deviceId}@test.com`);
+
+        // When
+        const response = await request(ctx.app.getHttpServer())
+          .post("/v1/notifications/push-devices/unregister")
+          .send({ deviceId, token })
+          .expect(200);
+
+        // Then
+        expect(response.body.data).toEqual({ unregistered: true });
+        expect(await deviceIdsOf(user.userId)).toEqual({
+          tokens: ["android_unregister-tablet", "ios_unregister-phone"],
+          devices: ["android_unregister-tablet", "ios_unregister-phone"],
+        });
+      });
+
+      it("토큰 형식이 Expo 토큰이 아니면 400 SYS_0002를 돌려준다", async () => {
+        const response = await request(ctx.app.getHttpServer())
+          .post("/v1/notifications/push-devices/unregister")
+          .send({ deviceId: "ios_unregister-phone", token: "not-a-token" })
+          .expect(400);
+
+        expect(response.body.error.code).toBe(ErrorCode.SYS_0002);
       });
     });
 

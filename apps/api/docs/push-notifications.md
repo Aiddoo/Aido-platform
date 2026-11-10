@@ -228,15 +228,17 @@ receipt 갱신은 `TICKET_ACCEPTED`에만 원자적으로 적용한다. 이미 D
 
 앱은 기기마다 알림 권한과 Expo 토큰을 서버에 보고한다. 서버는 권한을 해석해 도달 가능 여부와 건너뜀 사유를 정하고, 앱은 OS 권한과 토큰을 읽어 보고만 한다.
 
-| 책임   | 서버                                                                                                                           | 앱                                                                                       |
-| ------ | ------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------- |
-| 권한   | 보고된 `PushPermission`(`GRANTED`·`PROVISIONAL`·`DENIED`·`NOT_DETERMINED`)을 저장한다. `PROVISIONAL`도 발송한다                | OS 권한을 읽어 로그인 직후·앱 복귀·토큰 변경·언어 변경 때 보고한다                       |
-| 플랫폼 | `deviceId` 접두어 `ios_`·`android_`로 정한다(`platformFromDeviceId`). 접두어가 없으면 `X-Device-Type`을 쓰고, 둘 다 없으면 400 | 접두어가 붙은 `deviceId`를 만든다                                                        |
-| 토큰   | 기기·로그인 세션에 묶어 저장하고 `DeviceNotRegistered`면 비활성화하고 소유권 이전·세션 폐기 때 지운다                          | Expo 토큰을 얻어 보고한다. 로그아웃 때 해제 요청을 보내도 서버가 세션 폐기로 다시 지운다 |
-| 사유   | 활성 토큰이 없으면 기기 권한으로 건너뜀 사유를 정한다                                                                          | 사유를 알지 못한다                                                                       |
+| 책임   | 서버                                                                                                                              | 앱                                                                                                                         |
+| ------ | --------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| 권한   | 보고된 `PushPermission`(`GRANTED`·`PROVISIONAL`·`DENIED`·`NOT_DETERMINED`)을 저장한다. `PROVISIONAL`도 발송한다                   | OS 권한을 읽어 로그인 직후·앱 복귀·토큰 변경·언어 변경 때 보고한다                                                         |
+| 플랫폼 | `deviceId` 접두어 `ios_`·`android_`로 정한다(`platformFromDeviceId`). 접두어가 없으면 `X-Device-Type`을 쓰고, 둘 다 없으면 400    | 접두어가 붙은 `deviceId`를 만든다                                                                                          |
+| 토큰   | 기기·로그인 세션에 묶어 저장하고 `DeviceNotRegistered`면 비활성화하고 소유권 이전·세션 폐기·권한 거절 때 지운다(발급 실패는 아래) | Expo 토큰을 얻어 보고한다. 로그아웃 때 해제 요청을 보내도 서버가 세션 폐기로 다시 지운다. 세션이 끝나면 공개 해제를 보낸다 |
+| 사유   | 활성 토큰이 없으면 기기 권한으로 건너뜀 사유를 정한다                                                                             | 사유를 알지 못한다                                                                                                         |
 
-- 엔드포인트: `PUT /v1/notifications/push-devices/{deviceId}`(기기 보고, 1.14.2+). 1.14.1 이하 앱의 `POST`·`DELETE /v1/notifications/token`은 deprecated이며 같은 UseCase(`ReportPushDevice`·`UnregisterPushDevice`)로 위임한다. 이전 앱의 등록은 권한 `GRANTED`로 저장한다.
-- 세션 결속: `PushDevice`·`PushToken`의 `sessionId`는 `Session`을 참조하며 `ON DELETE CASCADE`다. identity가 세션을 폐기하면(로그아웃·전체 로그아웃·비밀번호 변경·재설정·원격 종료·토큰 재사용 감지·탈퇴) `SESSION_PUSH_DEVICE_RELEASER` Port로 notification의 `SESSION_PUSH_DEVICE_RELEASE` capability를 불러 그 세션의 기기와 토큰을 바로 지운다. 해제가 실패해도 세션 폐기는 막지 않고 `identity.session.push-device-release.failed`(warn)만 남긴다. 만료돼 정리되는 세션은 CASCADE로 함께 지워진다. `sessionId`가 없는 1.14.1 이하 등록은 그대로 둔다.
+- 엔드포인트: `PUT /v1/notifications/push-devices/{deviceId}`(기기 보고, 1.14.2+), `POST /v1/notifications/push-devices/unregister`(세션이 끝난 기기의 공개 해제, 1.15.1+). 1.14.1 이하 앱의 `POST`·`DELETE /v1/notifications/token`은 deprecated이며 같은 UseCase(`ReportPushDevice`·`UnregisterPushDevice`)로 위임한다. 이전 앱의 등록은 권한 `GRANTED`로 저장한다.
+- 토큰 발급 실패: 권한이 `GRANTED`·`PROVISIONAL`인데 `token`이 null이면(앱의 발급 15초 제한·오프라인) 한 번의 실패로 보고 기존 토큰 행을 지우지 않는다(`PushDevice.tokenChange`가 `KEEP`). 그 행의 `sessionId`·`payloadVersion`·`appVersion`만 이번 보고로 옮겨 로그아웃 정리가 지금 세션으로 찾게 한다. 응답 `hasActiveToken`은 남은 토큰이 활성인지다. `DENIED`·`NOT_DETERMINED`는 지금처럼 지운다. 출시된 1.13~1.15.0 앱도 서버만으로 고쳐진다.
+- 세션 결속: `PushDevice`·`PushToken`의 `sessionId`는 `Session`을 참조하며 `ON DELETE CASCADE`다. identity가 세션을 폐기하면(로그아웃·전체 로그아웃·비밀번호 변경·재설정·원격 종료·토큰 재사용 감지·탈퇴) `SESSION_PUSH_DEVICE_RELEASER` Port로 notification의 `SESSION_PUSH_DEVICE_RELEASE` capability를 불러 그 세션의 기기와 토큰을 바로 지운다. 해제가 실패해도 세션 폐기는 막지 않고 `identity.session.push-device-release.failed`(warn)만 남긴다. `sessionId`가 없는 1.14.1 이하 등록은 그대로 둔다.
+- 만료된 세션: 세션 행은 만료돼도 지우지 않는다(정리 작업 없음, CASCADE는 탈퇴 때만 돈다). 그래서 갱신 기한(7일)이 지났거나 오프라인 로그아웃의 해제가 24시간 안에 닿지 못한 기기는 계정 푸시를 계속 받는다. 발송을 세션으로 거르면 오래 쉰 사용자의 재방문(`WINBACK`) 알림까지 막히므로 거르지 않는다. 대신 앱이 세션이 끝날 때 공개 해제로 `{ deviceId, token }`을 보낸다. 서버는 둘 다 맞는 등록(`PushToken.token`은 유일)만 그 기기의 토큰·권한 기록과 함께 지우고, 맞지 않아도 같은 200 `{ unregistered: true }`를 줘 등록 여부를 드러내지 않는다. 로그인 전 요청이라 IP마다 분당 20회다. 로그는 `notification.push.device.unregistered-by-token`(주인 ID·지운 수, 토큰 값 없음)이다.
 - 건너뜀 사유: 활성 토큰이 없으면 최근 `PUSH_DEVICE_STALE_AFTER_DAYS`(90일) 안에 보고한 기기의 권한으로 정한다(`noActiveTokenSkipReason`).
 
 | 사유                            | 조건                                                                               |
