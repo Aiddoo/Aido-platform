@@ -58,13 +58,13 @@ createBroadcastCampaignSchema = broadcastNotificationSchema.extend({
 
 ## 지표
 
-| 지표             | 정의                                                                                                    |
-| ---------------- | ------------------------------------------------------------------------------------------------------- |
-| DAU·WAU·MAU      | `UserActivityDay.localDate`(요청 시간대의 달력 날짜, `LastActiveInterceptor`)가 있는 사용자 수          |
-| 활성             | 로그인한 사용자의 앱 요청이 있는 사용자 현지 날짜. 앱을 열지 않는 요청(푸시 기기 보고 등)은 세지 않는다 |
-| D1·D7·D30 리텐션 | 가입 cohort 기준(`drizzle-admin-growth-metrics.adapter.ts`, 한 SQL 집계)                                |
-| stickiness       | DAU/MAU(관리자 API 추가 필드)                                                                           |
-| 푸시 퍼널        | 캠페인·종류별 생성 → 건너뜀(사유별) → 발송 요청 → receipt 성공 → 열람(`readAt`)                         |
+| 지표             | 정의                                                                                           |
+| ---------------- | ---------------------------------------------------------------------------------------------- |
+| DAU·WAU·MAU      | `UserActivityDay.localDate`(요청 시간대의 달력 날짜, `LastActiveInterceptor`)가 있는 사용자 수 |
+| 활성             | 로그인한 사용자의 앱 요청이 있는 사용자 현지 날짜(앱 시작·복귀·푸시 탭 때의 기기 보고 포함)    |
+| D1·D7·D30 리텐션 | 가입 cohort 기준(`drizzle-admin-growth-metrics.adapter.ts`, 한 SQL 집계)                       |
+| stickiness       | DAU/MAU(관리자 API 추가 필드)                                                                  |
+| 푸시 퍼널        | 캠페인·종류별 생성 → 건너뜀(사유별) → 발송 요청 → receipt 성공 → 열람(`readAt`)                |
 
 - 정의는 문서와 타입(`GrowthMetricDefinition`) 두 곳에 고정한다. 관리자 지표는 operations `metrics` slice가 소유한다.
 - 열람이 푸시 탭으로 기록되는지 앱 동작을 먼저 확인하고, 아니면 퍼널은 receipt까지만 둔다.
