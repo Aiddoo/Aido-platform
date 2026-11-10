@@ -44,7 +44,7 @@ export function createQuotaLedgerFixture(
   const userId = ACCESS_FIXTURE_USER_ID;
   const users = new Map<string, InMemoryAccessUser>([[userId, createAccessUserFixture(input)]]);
   const accessStateReader = new InMemoryAccessStateReader(users);
-  accessStateReader.resourceBonuses.set(userId, resourceBonuses);
+  accessStateReader.resourceBonuses.grant(userId, resourceBonuses);
   const quotaChargeRepository = new InMemoryQuotaChargeRepository();
   const quotaUsageRepository = new InMemoryQuotaUsageRepository(users);
   const unitOfWork = new ImmediateUnitOfWork();

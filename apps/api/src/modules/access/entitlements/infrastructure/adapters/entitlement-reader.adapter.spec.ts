@@ -1,5 +1,6 @@
 import { PLAN_CATALOG } from "@aido/api/vocabulary";
 
+import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { createAccessUserFixture } from "#test/fixtures/access/access-user.fixture";
 import { createEntitlementFixture } from "#test/fixtures/access/entitlement.fixture";
 
@@ -197,7 +198,7 @@ describe("EntitlementReaderAdapter", () => {
     it("친구 한도는 초대 보상 자리를 더하고 resource라 resetsAt이 null이다", async () => {
       // Given
       const fixture = createEntitlementFixture({ subscriptionStatus: "FREE" });
-      fixture.accessStateReader.resourceBonuses.set(fixture.userId, { FRIEND: 2 });
+      fixture.accessStateReader.resourceBonuses.grant(fixture.userId, { FRIEND: 2 });
       const limit = PLAN_CATALOG.FRIEND.free + 2;
 
       // When
@@ -256,21 +257,19 @@ describe("EntitlementReaderAdapter", () => {
   });
 
   describe("보상 기간 종료 경계", () => {
-    const ENDS_AT = new Date("2028-03-04T00:00:00.000Z");
-    afterEach(() => vi.useRealTimers());
+    const ENDS_AT = Temporal.Instant.from("2028-03-04T00:00:00.000Z");
 
     it("캐시가 남아 있어도 끝나는 시각부터는 정리 작업 전이라도 프리미엄이 아니다", async () => {
       // Given
-      vi.useFakeTimers({ toFake: ["Date"] });
-      vi.setSystemTime(new Date("2028-03-03T23:59:59.999Z"));
-      const fixture = createEntitlementFixture({
-        subscriptionStatus: "ACTIVE",
-        accessDeadline: ENDS_AT,
-      });
+      const clock = new FixedClock(ENDS_AT.subtract({ milliseconds: 1 }));
+      const fixture = createEntitlementFixture(
+        { subscriptionStatus: "ACTIVE", accessDeadline: ENDS_AT },
+        { clock },
+      );
       const before = await fixture.reader.can(fixture.userId, "AI_REPORT");
 
       // When
-      vi.setSystemTime(ENDS_AT);
+      clock.advanceBy({ milliseconds: 1 });
       const cached = await fixture.reader.can(fixture.userId, "AI_REPORT");
       const fresh = await fixture.reader.canInTx(fixture.userId, "AI_REPORT");
       const limit = await fixture.reader.getLimit(fixture.userId, "AI_PARSE");

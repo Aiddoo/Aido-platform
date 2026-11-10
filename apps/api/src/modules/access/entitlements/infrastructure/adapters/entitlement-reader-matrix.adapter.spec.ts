@@ -2,11 +2,13 @@ import { ErrorCode } from "@aido/api/errors";
 import { PLAN_FEATURE_KEYS } from "@aido/api/vocabulary";
 
 import { ApplicationException } from "#api/shared/application/application.exception";
+import { FixedClock } from "#test/doubles/platform/fixed-clock";
+import type { AccessUserInput } from "#test/fixtures/access/access-user.fixture";
 import { createEntitlementFixture } from "#test/fixtures/access/entitlement.fixture";
 
 import { assertEntitled, assertEntitledInTx } from "../../application/entitlements.errors.js";
 
-const NOW = new Date("2026-11-03T00:00:00.000Z");
+const NOW = Temporal.Instant.from("2026-11-03T00:00:00.000Z");
 const SECOND_MS = 1_000;
 
 const SUBJECTS = {
@@ -14,21 +16,19 @@ const SUBJECTS = {
   PREMIUM: {
     role: "USER",
     subscriptionStatus: "ACTIVE",
-    accessDeadline: new Date(NOW.getTime() + SECOND_MS),
+    accessDeadline: NOW.add({ milliseconds: SECOND_MS }),
   },
   EXPIRED_ACTIVE: {
     role: "USER",
     subscriptionStatus: "ACTIVE",
-    accessDeadline: new Date(NOW.getTime() - SECOND_MS),
+    accessDeadline: NOW.subtract({ milliseconds: SECOND_MS }),
   },
   ADMIN: { role: "ADMIN", subscriptionStatus: "FREE", accessDeadline: null },
 } as const;
 
-beforeEach(() => {
-  vi.useFakeTimers({ toFake: ["Date"] });
-  vi.setSystemTime(NOW);
-});
-afterEach(() => vi.useRealTimers());
+function entitlementAt(input: AccessUserInput) {
+  return createEntitlementFixture(input, { clock: new FixedClock(NOW) });
+}
 
 describe("EntitlementReaderAdapter — 세 주체 × 기능 종류 권한 매트릭스", () => {
   it.each([
@@ -40,7 +40,7 @@ describe("EntitlementReaderAdapter — 세 주체 × 기능 종류 권한 매트
     "$subject는 AI 파싱 한도 $aiParse·친구 한도 $friend·AI 리포트 $aiReport·isPremium $isPremium이다",
     async ({ subject, aiParse, friend, aiReport, isPremium }) => {
       // Given
-      const fixture = createEntitlementFixture(SUBJECTS[subject]);
+      const fixture = entitlementAt(SUBJECTS[subject]);
 
       // When
       const snapshot = await fixture.reader.getAccessSnapshot(fixture.userId);
@@ -65,7 +65,7 @@ describe("EntitlementReaderAdapter — 세 주체 × 기능 종류 권한 매트
 
   it("ADMIN은 카탈로그의 모든 기능을 한도 없이 쓸 수 있다", async () => {
     // Given
-    const fixture = createEntitlementFixture(SUBJECTS.ADMIN);
+    const fixture = entitlementAt(SUBJECTS.ADMIN);
 
     // When
     const { tier, features } = await fixture.reader.getAccessSnapshot(fixture.userId);
@@ -80,9 +80,9 @@ describe("EntitlementReaderAdapter — 세 주체 × 기능 종류 권한 매트
 
   it("프리미엄 카테고리는 무제한이 아니라 30개까지이고 친구 보너스 자리는 무료 한도에만 더한다", async () => {
     // Given
-    const premium = createEntitlementFixture(SUBJECTS.PREMIUM);
-    const free = createEntitlementFixture(SUBJECTS.FREE);
-    free.accessStateReader.resourceBonuses.set(free.userId, { FRIEND: 2 });
+    const premium = entitlementAt(SUBJECTS.PREMIUM);
+    const free = entitlementAt(SUBJECTS.FREE);
+    free.accessStateReader.resourceBonuses.grant(free.userId, { FRIEND: 2 });
 
     // When
     const premiumCategory = await premium.reader.getLimit(premium.userId, "TODO_CATEGORY");
@@ -99,9 +99,9 @@ describe("EntitlementReaderAdapter — 세 주체 × 기능 종류 권한 매트
     { label: "만료 1초 뒤", offsetMs: -SECOND_MS, expected: false },
   ])("$label에는 프리미엄 여부가 $expected다", async ({ offsetMs, expected }) => {
     // Given
-    const fixture = createEntitlementFixture({
+    const fixture = entitlementAt({
       subscriptionStatus: "ACTIVE",
-      accessDeadline: new Date(NOW.getTime() + offsetMs),
+      accessDeadline: NOW.add({ milliseconds: offsetMs }),
     });
 
     // When
@@ -114,19 +114,13 @@ describe("EntitlementReaderAdapter — 세 주체 × 기능 종류 권한 매트
 });
 
 describe("assertEntitled — 기능별 기존 거부 코드", () => {
-  beforeEach(() => {
-    vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(NOW);
-  });
-  afterEach(() => vi.useRealTimers());
-
   it.each([
     { feature: "AI_REPORT", errorCode: ErrorCode.AI_1308 },
     { feature: "AI_SUGGESTION", errorCode: ErrorCode.AI_1309 },
     { feature: "CUSTOM_REMINDER_TIME", errorCode: ErrorCode.PREFERENCE_1701 },
   ] as const)("무료 사용자의 $feature는 $errorCode로 거부한다", async ({ feature, errorCode }) => {
     // Given
-    const fixture = createEntitlementFixture(SUBJECTS.FREE);
+    const fixture = entitlementAt(SUBJECTS.FREE);
 
     // When
     const cached = assertEntitled(fixture.reader, fixture.userId, feature);
@@ -139,8 +133,8 @@ describe("assertEntitled — 기능별 기존 거부 코드", () => {
 
   it("ADMIN과 프리미엄은 거부하지 않는다", async () => {
     // Given
-    const admin = createEntitlementFixture(SUBJECTS.ADMIN);
-    const premium = createEntitlementFixture(SUBJECTS.PREMIUM);
+    const admin = entitlementAt(SUBJECTS.ADMIN);
+    const premium = entitlementAt(SUBJECTS.PREMIUM);
 
     // When / Then
     await expect(assertEntitled(admin.reader, admin.userId, "AI_REPORT")).resolves.toBeUndefined();

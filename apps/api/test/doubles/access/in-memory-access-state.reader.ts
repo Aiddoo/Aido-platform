@@ -2,11 +2,10 @@ import type { SubscriptionStatus, UserRole } from "@aido/api/vocabulary";
 
 import { AccessStateReaderPort } from "#api/modules/access/entitlements/application/ports/access-state.reader.port";
 import type { AccessState } from "#api/modules/access/entitlements/domain/entitlement.domain-service";
-import {
-  NO_RESOURCE_BONUSES,
-  type ResourceBonuses,
-} from "#api/modules/access/entitlements/domain/entitlements.constants";
+import type { ResourceBonuses } from "#api/modules/access/entitlements/domain/entitlements.constants";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+
+import { InMemoryResourceBonusRepository } from "./in-memory-resource-bonus.repository.js";
 
 /** 권한 판단과 AI_PLAN 카운터가 읽는 사용자 행(User). 원장·잠금 대역이 같은 Map을 함께 본다. */
 export interface InMemoryAccessUser {
@@ -22,11 +21,16 @@ export interface InMemoryAccessUser {
 
 export class InMemoryAccessStateReader extends AccessStateReaderPort {
   readonly users: Map<string, InMemoryAccessUser>;
-  readonly resourceBonuses = new Map<string, ResourceBonuses>();
+  /** 보너스 저장소 대역과 같은 행을 읽어 지급한 보너스가 바로 보인다 */
+  readonly resourceBonuses: InMemoryResourceBonusRepository;
 
-  constructor(users: Map<string, InMemoryAccessUser> = new Map()) {
+  constructor(
+    users: Map<string, InMemoryAccessUser> = new Map(),
+    resourceBonuses: InMemoryResourceBonusRepository = new InMemoryResourceBonusRepository(),
+  ) {
     super();
     this.users = users;
+    this.resourceBonuses = resourceBonuses;
   }
 
   async findActiveUserAccessState(userId: UserId): Promise<AccessState | null> {
@@ -40,7 +44,7 @@ export class InMemoryAccessStateReader extends AccessStateReaderPort {
   }
 
   async findResourceBonuses(userId: UserId): Promise<ResourceBonuses> {
-    return { ...(this.resourceBonuses.get(userId.value) ?? NO_RESOURCE_BONUSES) };
+    return this.resourceBonuses.totalFor(userId.value);
   }
 }
 

@@ -192,4 +192,66 @@ describe("GET /v1/entitlements 서버 계산 권한 스냅샷 (실제 PostgreSQL
     expect(response.status).toBe(401);
     expect(response.body.error.code).toBe(ErrorCode.AUTH_0101);
   });
+
+  describe("하루·월 경계 (서울·LA)", () => {
+    // KST 1월 31일 23:00에 AI를 4회 쓴 사용자
+    const LAST_AI_USE = new Date("2027-01-31T14:00:00.000Z");
+
+    async function entitlementsIn(accessToken: string, timeZone: string) {
+      const response = await request(context.app.getHttpServer())
+        .get("/v1/entitlements")
+        .set("Authorization", `Bearer ${accessToken}`)
+        .set("X-Timezone", timeZone)
+        .expect(200);
+      return entitlementSnapshotSchema.parse(response.body.data);
+    }
+
+    it.each([
+      {
+        label: "KST 1월 31일 23:30(LA 1월 31일 06:30)",
+        at: "2027-01-31T14:30:00.000Z",
+        aiUsed: 4,
+        aiResetsAt: "2027-01-31T15:00:00.000Z",
+        seoulDayResetsAt: "2027-01-31T15:00:00.000Z",
+        laDayResetsAt: "2027-02-01T08:00:00.000Z",
+      },
+      {
+        label: "KST 2월 1일 00:30(LA는 아직 1월 31일 07:30)",
+        at: "2027-01-31T15:30:00.000Z",
+        aiUsed: 0,
+        aiResetsAt: "2027-02-28T15:00:00.000Z",
+        seoulDayResetsAt: "2027-02-01T15:00:00.000Z",
+        laDayResetsAt: "2027-02-01T08:00:00.000Z",
+      },
+    ])(
+      "$label: 월간 AI 한도는 시간대와 무관하게 KST 달력 월, 일간 응원 한도는 요청 시간대 자정에 초기화된다",
+      async ({ at, aiUsed, aiResetsAt, seoulDayResetsAt, laDayResetsAt }) => {
+        // Given
+        vi.setSystemTime(new Date(at));
+        const free = await context.helpers.createVerifiedUser("ent-boundary@test.com", "Test1234!");
+        await updateUser(free.userId, { aiUsageCount: 4, aiUsageResetAt: LAST_AI_USE });
+
+        // When
+        const seoul = await entitlementsIn(free.accessToken, "Asia/Seoul");
+        const losAngeles = await entitlementsIn(free.accessToken, "America/Los_Angeles");
+
+        // Then
+        for (const snapshot of [seoul, losAngeles]) {
+          expect(snapshot.features.AI_PARSE).toMatchObject({ used: aiUsed, resetsAt: aiResetsAt });
+          expect(snapshot.features.VOICE_NOTE).toMatchObject({ used: 0, resetsAt: aiResetsAt });
+        }
+        expect(seoul.features.CHEER).toMatchObject({
+          used: 0,
+          period: "day",
+          resetsAt: seoulDayResetsAt,
+        });
+        expect(losAngeles.features.CHEER).toMatchObject({
+          used: 0,
+          period: "day",
+          resetsAt: laDayResetsAt,
+        });
+        expect(losAngeles.features.NUDGE.resetsAt).toBe(laDayResetsAt);
+      },
+    );
+  });
 });

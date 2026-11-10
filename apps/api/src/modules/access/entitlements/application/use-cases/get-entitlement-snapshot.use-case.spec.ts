@@ -51,7 +51,7 @@ function setup(input: {
     [ACCESS_FIXTURE_USER_ID, createAccessUserFixture(input.user)],
   ]);
   const accessStateReader = new InMemoryAccessStateReader(users);
-  accessStateReader.resourceBonuses.set(
+  accessStateReader.resourceBonuses.grant(
     ACCESS_FIXTURE_USER_ID,
     input.resourceBonuses ?? NO_RESOURCE_BONUSES,
   );
