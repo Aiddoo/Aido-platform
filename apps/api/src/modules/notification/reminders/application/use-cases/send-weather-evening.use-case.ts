@@ -75,7 +75,7 @@ export class SendWeatherEveningUseCase implements TimezoneReminderStrategyPort {
 
   async #sendWeatherNotifications(
     ctx: TimezoneContext,
-    today: Date,
+    today: Temporal.PlainDate,
   ): Promise<{ sent: number; unavailable: number }> {
     const rows = await this.#dependencies.reader.findWeatherEveningUsersWithLocation({
       tz: ctx.tz,
@@ -136,7 +136,10 @@ export class SendWeatherEveningUseCase implements TimezoneReminderStrategyPort {
     return { sent: notifications.length, unavailable };
   }
 
-  async #sendFallbackNotifications(ctx: TimezoneContext, today: Date): Promise<number> {
+  async #sendFallbackNotifications(
+    ctx: TimezoneContext,
+    today: Temporal.PlainDate,
+  ): Promise<number> {
     const users = await this.#dependencies.reader.findWeatherEveningFallbackUsers({
       tz: ctx.tz,
       hour: ctx.localHour,

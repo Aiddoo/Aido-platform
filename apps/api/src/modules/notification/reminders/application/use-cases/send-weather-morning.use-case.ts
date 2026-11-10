@@ -6,8 +6,8 @@ import {
 } from "#api/modules/weather/forecasts/weather-forecasts.public";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
-import { dayWindowInTimezone } from "#api/shared/domain/date/utils/timezone";
 import { instantToDate } from "#api/shared/domain/time/instant";
+import { resolveTimezone } from "#api/shared/domain/time/time-zone-name";
 
 import type { NotificationHistoryReader } from "../../../inbox/application/notification-history.reader.js";
 import type { NotificationAction } from "../../../inbox/application/ports/notification-draft.port.js";
@@ -86,7 +86,7 @@ export class SendWeatherMorningUseCase implements TimezoneReminderStrategyPort {
 
   async #sendWeatherNotifications(
     ctx: TimezoneContext,
-    today: Date,
+    today: Temporal.PlainDate,
   ): Promise<{ sent: number; unavailable: number }> {
     const rows = await this.#dependencies.reader.findWeatherMorningUsersWithLocation({
       tz: ctx.tz,
@@ -104,15 +104,17 @@ export class SendWeatherMorningUseCase implements TimezoneReminderStrategyPort {
       return { sent: 0, unavailable: 0 };
     }
 
-    const at = instantToDate(this.#dependencies.clock.now());
-    const day = dayWindowInTimezone(at, ctx.tz);
+    const now = this.#dependencies.clock.now();
+    const at = instantToDate(now);
+    const timeZone = resolveTimezone(ctx.tz);
+    const date = now.toZonedDateTimeISO(timeZone).toPlainDate();
     const [todos, reports] = await Promise.all([
       this.#dependencies.todoReader.listTodayTodos({
         userIds: targets.map((u) => u.id),
-        date: Temporal.PlainDate.from(day.localDate),
+        date,
         timezone: ctx.tz,
         from: at,
-        until: day.endsAt,
+        until: instantToDate(date.add({ days: 1 }).toZonedDateTime(timeZone).toInstant()),
       }),
       this.#dependencies.weatherReportReader.readReports(
         targets.map((user) => ({
@@ -173,7 +175,10 @@ export class SendWeatherMorningUseCase implements TimezoneReminderStrategyPort {
     return { sent: notifications.length, unavailable };
   }
 
-  async #sendFallbackNotifications(ctx: TimezoneContext, today: Date): Promise<number> {
+  async #sendFallbackNotifications(
+    ctx: TimezoneContext,
+    today: Temporal.PlainDate,
+  ): Promise<number> {
     const users = await this.#dependencies.reader.findWeatherMorningFallbackUsers({
       tz: ctx.tz,
       hour: ctx.localHour,

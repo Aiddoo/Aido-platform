@@ -11,7 +11,6 @@ import {
   pushDispatchOutbox,
   pushToken,
 } from "#api/platform/database/schema/index";
-import { plainDateToDate } from "#api/shared/domain/time/plain-date";
 
 import type {
   ClaimedPushDelivery,
@@ -276,10 +275,7 @@ export class DrizzlePushDeliveryLifecycleRepository implements PushDeliveryLifec
               nudgeId: notification.nudgeId,
               cheerId: notification.cheerId,
               metadata: toNotificationMetadata(notification.metadata),
-              notificationDate:
-                notification.notificationDate == null
-                  ? null
-                  : plainDateToDate(notification.notificationDate),
+              notificationDate: notification.notificationDate,
               force: dispatch.outbox.force,
             },
           },

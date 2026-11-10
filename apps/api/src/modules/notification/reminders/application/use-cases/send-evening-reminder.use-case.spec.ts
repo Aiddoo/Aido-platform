@@ -1,4 +1,3 @@
-import { parseDateOnly } from "#api/shared/domain/date/utils/parse";
 import { RecordingNotificationPublisher } from "#test/doubles/notification/recording-notification-publisher";
 import { StubNotificationHistoryReader } from "#test/doubles/notification/stub-notification-history.reader";
 import { StubScheduledReminderReader } from "#test/doubles/notification/stub-scheduled-reminder.reader";
@@ -112,7 +111,7 @@ describe("SendEveningReminderUseCase — 저녁 리마인더 전략", () => {
     reader.premiumEveningUsers = [
       user(TEST_CUID.USER_1, [true, true], {
         currentStreak: 5,
-        lastCompletedDate: parseDateOnly("2024-01-15"),
+        lastCompletedDate: Temporal.PlainDate.from("2024-01-15"),
       }),
     ];
 

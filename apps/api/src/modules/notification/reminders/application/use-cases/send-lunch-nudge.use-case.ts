@@ -1,5 +1,4 @@
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
-import { toDateString } from "#api/shared/domain/date/utils/format";
 import { DEFAULT_LOCALE } from "#api/shared/domain/locale";
 
 import type { NotificationHistoryReader } from "../../../inbox/application/notification-history.reader.js";
@@ -70,7 +69,7 @@ export class SendLunchNudgeUseCase implements TimezoneReminderStrategyPort {
         variantContext: {
           campaignKey: SCHEDULER_CAMPAIGN_KEY.LUNCH_NUDGE,
           recipientId: user.id,
-          occurrenceKey: toDateString(today),
+          occurrenceKey: today.toString(),
         },
       });
       return {

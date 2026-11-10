@@ -43,12 +43,12 @@ describe("NotificationDedupAdapter", () => {
       {
         userId: "u1",
         type: "FRIEND_COMPLETED",
-        notificationDate: new Date("2026-03-09T00:00:00.000Z"),
+        notificationDate: Temporal.PlainDate.from("2026-03-09"),
       },
       {
         userId: "u2",
         type: "FRIEND_COMPLETED",
-        notificationDate: new Date("2026-03-09T00:00:00.000Z"),
+        notificationDate: Temporal.PlainDate.from("2026-03-09"),
       },
     ]);
 

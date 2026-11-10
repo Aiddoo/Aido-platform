@@ -1,7 +1,6 @@
 import { USER_PREFERENCE_DEFAULTS } from "@aido/api/vocabulary";
 
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
-import { toDateString } from "#api/shared/domain/date/utils/format";
 
 import type { NotificationHistoryReader } from "../../../inbox/application/notification-history.reader.js";
 import {
@@ -90,7 +89,7 @@ export class SendMorningReminderUseCase implements TimezoneReminderStrategyPort 
       const variantContext = {
         campaignKey: SCHEDULER_CAMPAIGN_KEY.MORNING_REMINDER,
         recipientId: user.id,
-        occurrenceKey: toDateString(today),
+        occurrenceKey: today.toString(),
       };
       const message =
         count > 0

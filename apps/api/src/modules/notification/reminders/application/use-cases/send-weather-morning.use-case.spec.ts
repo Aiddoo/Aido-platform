@@ -27,8 +27,8 @@ const ctx = (overrides: Partial<TimezoneContext> = {}): TimezoneContext => ({
   localHour: 7,
   localMinute: 0,
   dayOfWeek: 1,
-  today: new Date("2026-11-02T00:00:00.000Z"),
-  tomorrow: new Date("2026-11-03T00:00:00.000Z"),
+  today: Temporal.PlainDate.from("2026-11-02"),
+  tomorrow: Temporal.PlainDate.from("2026-11-03"),
   ...overrides,
 });
 

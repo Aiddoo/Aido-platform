@@ -72,7 +72,7 @@ describe("Bounded Context별 cache keyspace 계약", () => {
     expect(NotificationCacheKey.pushTokens("user-1")).toBe(
       "aido:v1:notification:push-tokens:user-1",
     );
-    expect(notificationDedupKey("MORNING_REMINDER", new Date("2026-01-01T00:00:00.000Z"))).toBe(
+    expect(notificationDedupKey("MORNING_REMINDER", Temporal.PlainDate.from("2026-01-01"))).toBe(
       "aido:v1:notification:dedup-notified:MORNING_REMINDER:2026-01-01",
     );
     expect(SchedulerDedupKey.winbackStages("user-1")).toBe(

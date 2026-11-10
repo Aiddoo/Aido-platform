@@ -20,7 +20,6 @@ import type { NotificationType } from "#api/modules/notification/inbox/domain/no
 import { Notification } from "#api/modules/notification/inbox/domain/notification.aggregate";
 import type { NotificationMilestone } from "#api/modules/notification/push/domain/notification-milestone.constants";
 import { instantFromDate } from "#api/shared/domain/time/instant";
-import { plainDateFromDate } from "#api/shared/domain/time/plain-date";
 
 // Drizzle 저장소와 같은 순서(createdAt·id 내림차순)로 나열한다
 function compareListOrder(left: InboxNotification, right: InboxNotification): number {
@@ -197,7 +196,7 @@ export class InMemoryNotificationRepository
       (row) =>
         row.userId === query.userId &&
         row.type === query.type &&
-        Temporal.Instant.compare(row.createdAt, instantFromDate(query.since)) >= 0 &&
+        Temporal.Instant.compare(row.createdAt, query.since) >= 0 &&
         (query.friendId == null || row.friendId === query.friendId) &&
         (query.todoId == null || row.todoId === query.todoId) &&
         (query.nudgeId == null || row.nudgeId === query.nudgeId) &&
@@ -206,7 +205,7 @@ export class InMemoryNotificationRepository
   }
 
   async findAlreadyNotifiedUserIds(query: FindAlreadyNotifiedUserIdsQuery): Promise<Set<string>> {
-    const notificationDate = plainDateFromDate(query.notificationDate);
+    const { notificationDate } = query;
     return new Set(
       [...this.#rows.values()]
         .filter(
@@ -245,8 +244,7 @@ export class InMemoryNotificationRepository
       friendId: data.friendId ?? null,
       nudgeId: data.nudgeId ?? null,
       cheerId: data.cheerId ?? null,
-      notificationDate:
-        data.notificationDate == null ? null : plainDateFromDate(data.notificationDate),
+      notificationDate: data.notificationDate ?? null,
       metadata: data.metadata ?? null,
       createdAt: instantFromDate(this.#now()),
       readAt: null,

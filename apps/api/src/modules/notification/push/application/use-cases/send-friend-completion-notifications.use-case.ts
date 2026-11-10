@@ -1,9 +1,7 @@
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
-import { parseDateOnly } from "#api/shared/domain/date/utils/parse";
-import { localDateInTimezone } from "#api/shared/domain/date/utils/timezone";
-import { instantToDate } from "#api/shared/domain/time/instant";
+import { localDateIn } from "#api/shared/domain/time/time-zone-name";
 
 import type { NotificationHistoryReader } from "../../../inbox/application/notification-history.reader.js";
 import { DuplicateNotificationError } from "../../../inbox/application/ports/notification.repository.port.js";
@@ -51,11 +49,8 @@ export class SendFriendCompletionNotificationsUseCase {
       return;
     }
 
-    const localDate = localDateInTimezone(
-      instantToDate(this.#dependencies.clock.now()),
-      input.timezone,
-    );
-    const notificationDate = parseDateOnly(localDate);
+    const notificationDate = localDateIn(this.#dependencies.clock.now(), input.timezone);
+    const localDate = notificationDate.toString();
     const alreadyNotifiedUserIds =
       await this.#dependencies.notificationHistoryReader.findAlreadyNotifiedUserIds({
         userIds: input.notifyUserIds,

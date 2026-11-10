@@ -1,4 +1,3 @@
-import { parseDateOnly } from "#api/shared/domain/date/utils/parse";
 import { InMemorySchedulerDedup } from "#test/doubles/notification/in-memory-scheduler-dedup";
 import { InMemorySchedulerPreferenceReader } from "#test/doubles/notification/in-memory-scheduler-preference.reader";
 import { RecordingNotificationPublisher } from "#test/doubles/notification/recording-notification-publisher";
@@ -31,10 +30,14 @@ describe("SendNudgeSuggestUseCase — 찔러보기 제안 전략", () => {
   ): NudgeSuggestFollow => ({
     followerId: userId,
     followingId: friend.id,
-    follower: { id: userId, lastActiveAt: ctx.today, profile: { name: "사용자1" } },
+    follower: {
+      id: userId,
+      lastActiveAt: ctx.today.toZonedDateTime("UTC").toInstant(),
+      profile: { name: "사용자1" },
+    },
     following: {
       id: friend.id,
-      lastActiveAt: parseDateOnly(friend.lastActive),
+      lastActiveAt: Temporal.Instant.from(`${friend.lastActive}T00:00:00Z`),
       profile: { name: friend.name },
     },
   });
@@ -71,8 +74,8 @@ describe("SendNudgeSuggestUseCase — 찔러보기 제안 전략", () => {
       method: "findNudgeSuggestFollows",
       params: {
         candidateIds: ["user-1"],
-        activeSince: parseDateOnly("2024-01-09"),
-        activeUntil: parseDateOnly("2024-01-14"),
+        activeSince: Temporal.Instant.from("2024-01-09T00:00:00Z"),
+        activeUntil: Temporal.Instant.from("2024-01-14T00:00:00Z"),
       },
     });
     const expected = createNudgeSuggestionNotificationMessage({

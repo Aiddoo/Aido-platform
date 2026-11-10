@@ -49,7 +49,7 @@ export class NotificationDedupAdapter implements NotificationDedupPort {
 
   async readKnownRecipients(
     type: NotificationType,
-    notificationDate: Date,
+    notificationDate: Temporal.PlainDate,
     userIds: readonly string[],
   ): Promise<Set<string> | null> {
     const notifiedUsers = await this.#dedupProvider.filterMembers(
@@ -64,7 +64,7 @@ export class NotificationDedupAdapter implements NotificationDedupPort {
 
   warmRecipients(
     type: NotificationType,
-    notificationDate: Date,
+    notificationDate: Temporal.PlainDate,
     userIds: readonly string[],
   ): Promise<void> {
     return this.#dedupProvider.addMembers(

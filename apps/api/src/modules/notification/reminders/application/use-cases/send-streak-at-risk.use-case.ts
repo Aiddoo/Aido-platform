@@ -1,6 +1,6 @@
 import { computeEffectiveStreak } from "#api/modules/identity/identity-settings.public";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
-import { toDateString } from "#api/shared/domain/date/utils/format";
+import { plainDateToDate } from "#api/shared/domain/time/plain-date";
 
 import type { NotificationHistoryReader } from "../../../inbox/application/notification-history.reader.js";
 import { createStreakAtRiskNotificationMessage } from "../../../push/application/messages/notification.messages.js";
@@ -60,10 +60,10 @@ export class SendStreakAtRiskUseCase implements TimezoneReminderStrategyPort {
 
         const { streak, isAtRisk } = computeEffectiveStreak({
           currentStreak: user.preference?.currentStreak ?? 0,
-          lastCompletedDate: user.preference?.lastCompletedDate ?? null,
+          lastCompletedDate: toStreakDate(user.preference?.lastCompletedDate),
           todosCompleted: completed,
           todosTotal: total,
-          today,
+          today: plainDateToDate(today),
         });
 
         return isAtRisk && streak >= 3
@@ -104,7 +104,7 @@ export class SendStreakAtRiskUseCase implements TimezoneReminderStrategyPort {
         variantContext: {
           campaignKey: SCHEDULER_CAMPAIGN_KEY.STREAK_AT_RISK,
           recipientId: user.id,
-          occurrenceKey: toDateString(today),
+          occurrenceKey: today.toString(),
         },
       });
       return {
@@ -129,4 +129,9 @@ export class SendStreakAtRiskUseCase implements TimezoneReminderStrategyPort {
     });
     return { sent: notifications.length };
   }
+}
+
+// identity의 스트릭 판정은 아직 UTC 자정 Date로 계산한다
+function toStreakDate(date: Temporal.PlainDate | null | undefined): Date | null {
+  return date == null ? null : plainDateToDate(date);
 }

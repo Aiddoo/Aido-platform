@@ -15,6 +15,7 @@ import {
   describeWeeklyAchievementStatsReaderContract,
   type WeeklyStatsUserSeed,
 } from "#test/contracts/notification/weekly-achievement-stats-reader.contract";
+import { DateClock } from "#test/doubles/platform/date-clock";
 import { TodoCategoryFixture, TodoFixture, UserFixture } from "#test/fixtures/index";
 import { createDatabaseTransactionFixture } from "#test/setup/database-context";
 import { suppressLogger } from "#test/setup/suppress-logger";
@@ -44,6 +45,7 @@ describe("DrizzleSchedulerReader 주간 달성 집계·설정 조회 (실제 Pos
       createDatabaseTransactionFixture(client).txHost,
       new CacheService(new InMemoryCacheStore({ defaultTtlMs: 60_000, maxItems: 10 })),
       { onboardingV2: { enabled: false, treatmentPercent: 50 } },
+      new DateClock(),
     );
   }
 

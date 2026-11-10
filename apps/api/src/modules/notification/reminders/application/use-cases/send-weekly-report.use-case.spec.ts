@@ -1,4 +1,3 @@
-import { parseDateOnly } from "#api/shared/domain/date/utils/parse";
 import { InMemorySchedulerPreferenceReader } from "#test/doubles/notification/in-memory-scheduler-preference.reader";
 import { RecordingNotificationPublisher } from "#test/doubles/notification/recording-notification-publisher";
 import { StubNotificationHistoryReader } from "#test/doubles/notification/stub-notification-history.reader";
@@ -49,7 +48,7 @@ describe("SendWeeklyReportUseCase — 주간 리포트 전략", () => {
         method: "findWeeklyReportRecipients",
         params: {
           tz: "Asia/Seoul",
-          periodStart: parseDateOnly("2024-01-08"),
+          periodStart: Temporal.PlainDate.from("2024-01-08"),
           periodEnd: ctx.today,
         },
       },

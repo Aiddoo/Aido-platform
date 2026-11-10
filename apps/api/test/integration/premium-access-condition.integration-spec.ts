@@ -20,8 +20,8 @@ import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database
 
 const HOUR_MS = 60 * 60_000;
 const DAY_MS = 24 * HOUR_MS;
-const TODAY = new Date("2026-11-03T00:00:00.000Z");
-const TOMORROW = new Date("2026-11-04T00:00:00.000Z");
+const TODAY = Temporal.PlainDate.from("2026-11-03");
+const TOMORROW = Temporal.PlainDate.from("2026-11-04");
 
 type Scenario =
   | "expiredProjection"
@@ -48,9 +48,12 @@ describe("유효 프리미엄 SQL 조건과 스케줄러 대상 (실제 PostgreS
     client = await database.start();
     memory = new InMemoryCacheStore({ defaultTtlMs: 60_000, maxItems: 10 });
     const { txHost } = createDatabaseTransactionFixture(client);
-    reader = new DrizzleSchedulerReader(txHost, new CacheService(memory), {
-      onboardingV2: { enabled: false, treatmentPercent: 50 },
-    });
+    reader = new DrizzleSchedulerReader(
+      txHost,
+      new CacheService(memory),
+      { onboardingV2: { enabled: false, treatmentPercent: 50 } },
+      new DateClock(),
+    );
     entitlementReader = new DrizzleAccessStateReader(txHost);
     entitlement = new EntitlementReaderAdapter(
       new GetResolvedAccessUseCase({

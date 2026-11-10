@@ -1,7 +1,4 @@
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
-import { subtractDays } from "#api/shared/domain/date/utils/arithmetic";
-import { diffInDays } from "#api/shared/domain/date/utils/compare";
-import { toDateString, toIsoWeekId } from "#api/shared/domain/date/utils/format";
 import { DEFAULT_LOCALE } from "#api/shared/domain/locale";
 
 import type { NotificationHistoryReader } from "../../../inbox/application/notification-history.reader.js";
@@ -10,6 +7,11 @@ import { createNudgeSuggestionNotificationMessage } from "../../../push/applicat
 import { getNotificationFriendFallback } from "../../../push/application/messages/social-notification.messages.js";
 import type { PublishNotificationUseCase } from "../../../push/application/use-cases/publish-notification.use-case.js";
 import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/notification-campaign.constants.js";
+import {
+  elapsedDaysUntil,
+  isoWeekIdOf,
+  utcStartOf,
+} from "../../domain/reminder-day.domain-service.js";
 import type { TimezoneContext } from "../../domain/timezone-context.read-model.js";
 import { type ReEngagementReaderPort } from "../ports/re-engagement-reader.port.js";
 import { type SchedulerDedupPort } from "../ports/scheduler-dedup.port.js";
@@ -38,8 +40,8 @@ export class SendNudgeSuggestUseCase implements TimezoneReminderStrategyPort {
 
   async execute(ctx: TimezoneContext): Promise<{ sent: number }> {
     const { tz, today } = ctx;
-    const weekAgo = subtractDays(7, today);
-    const twoDaysAgo = subtractDays(2, today);
+    const weekAgo = utcStartOf(today.subtract({ days: 7 }));
+    const twoDaysAgo = utcStartOf(today.subtract({ days: 2 }));
 
     // 이 타임존의 활성 유저 목록
     const activeUsers = await this.#dependencies.reader.findActiveUsersInTimezone(tz);
@@ -75,7 +77,7 @@ export class SendNudgeSuggestUseCase implements TimezoneReminderStrategyPort {
     // per-user 친구 맵 생성
     const friendMap = new Map<
       string,
-      Array<{ id: string; name: string | null; lastActiveAt: Date | null }>
+      Array<{ id: string; name: string | null; lastActiveAt: Temporal.Instant | null }>
     >();
     for (const f of allFollows) {
       const userIds = [f.followerId, f.followingId].filter((id) => candidateSet.has(id));
@@ -93,7 +95,7 @@ export class SendNudgeSuggestUseCase implements TimezoneReminderStrategyPort {
     }
 
     // 배치 2: 이번 주 발송 이력을 compound key로 단일 Redis 조회
-    const weekId = toIsoWeekId(today);
+    const weekId = isoWeekIdOf(today);
     // 전체 candidate × friend 조합을 한 번에 빌드
     const allPairs: string[] = [];
     for (const user of candidates) {
@@ -122,8 +124,8 @@ export class SendNudgeSuggestUseCase implements TimezoneReminderStrategyPort {
       const eligibleFriends = friends
         .filter((f) => !sentPairs.has(`${user.id}:${f.id}`))
         .sort((a, b) => {
-          const daysA = a.lastActiveAt != null ? diffInDays(today, a.lastActiveAt) : 0;
-          const daysB = b.lastActiveAt != null ? diffInDays(today, b.lastActiveAt) : 0;
+          const daysA = a.lastActiveAt != null ? elapsedDaysUntil(today, a.lastActiveAt) : 0;
+          const daysB = b.lastActiveAt != null ? elapsedDaysUntil(today, b.lastActiveAt) : 0;
           return daysB - daysA;
         });
 
@@ -140,7 +142,7 @@ export class SendNudgeSuggestUseCase implements TimezoneReminderStrategyPort {
         variantContext: {
           campaignKey: SCHEDULER_CAMPAIGN_KEY.NUDGE_SUGGEST,
           recipientId: user.id,
-          occurrenceKey: toDateString(today),
+          occurrenceKey: today.toString(),
         },
       });
 

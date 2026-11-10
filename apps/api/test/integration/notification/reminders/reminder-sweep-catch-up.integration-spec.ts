@@ -90,6 +90,7 @@ describe("리마인더 sweep 따라잡기 (실제 PostgreSQL)", () => {
       txHost,
       new CacheService(new InMemoryCacheStore({ defaultTtlMs: 60_000, maxItems: 10 })),
       { onboardingV2: { enabled: false, treatmentPercent: 50 } },
+      new DateClock(),
     );
     publisher = new PublishNotificationUseCase({
       sendNotification: new SendNotificationUseCase({

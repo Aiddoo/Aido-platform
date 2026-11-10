@@ -33,7 +33,7 @@ describe("FinalizeBatchNotificationUseCase — 배치 알림 커밋 뒤 정리",
   it("수신자마다 미읽음 캐시를 한 번 비우고 날짜가 있는 알림만 dedup에 기록한다", async () => {
     // Given
     const { cache, notificationDedup, useCase } = createFinalizeUseCase();
-    const notificationDate = new Date("2026-03-09T00:00:00.000Z");
+    const notificationDate = Temporal.PlainDate.from("2026-03-09");
     const sourceData = [
       createNotificationDraftFixture({ userId: "u1", type: "FRIEND_COMPLETED", notificationDate }),
       createNotificationDraftFixture({ userId: "u2", type: "FRIEND_COMPLETED", notificationDate }),

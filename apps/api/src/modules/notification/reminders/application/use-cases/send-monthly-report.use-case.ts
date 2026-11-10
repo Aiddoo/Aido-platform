@@ -1,6 +1,4 @@
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
-import { subtractMonths } from "#api/shared/domain/date/utils/arithmetic";
-import { toDateString } from "#api/shared/domain/date/utils/format";
 import { DEFAULT_LOCALE } from "#api/shared/domain/locale";
 
 import type { NotificationHistoryReader } from "../../../inbox/application/notification-history.reader.js";
@@ -30,7 +28,7 @@ export class SendMonthlyReportUseCase implements TimezoneReminderStrategyPort {
 
   async execute(ctx: TimezoneContext): Promise<{ sent: number }> {
     const { tz, today } = ctx;
-    const monthAgo = subtractMonths(1, today);
+    const monthAgo = today.subtract({ months: 1 });
 
     // 오케스트레이터가 매월 1일 10:00에만 호출 → 프리미엄 유저 대상
     const users = await this.#dependencies.reader.findMonthlyReportRecipients({
@@ -65,7 +63,7 @@ export class SendMonthlyReportUseCase implements TimezoneReminderStrategyPort {
         variantContext: {
           campaignKey: SCHEDULER_CAMPAIGN_KEY.MONTHLY_REPORT,
           recipientId: user.id,
-          occurrenceKey: toDateString(today),
+          occurrenceKey: today.toString(),
         },
       });
       return {

@@ -6,7 +6,7 @@ import { createInboxNotificationFixture } from "#test/fixtures/notification/noti
 import { NotificationHistoryReader } from "./notification-history.reader.js";
 import type { FindAlreadyNotifiedUserIdsQuery } from "./ports/notification-history.reader.port.js";
 
-const NOTIFICATION_DATE = new Date("2026-03-09T00:00:00.000Z");
+const NOTIFICATION_DATE = Temporal.PlainDate.from("2026-03-09");
 
 const query: FindAlreadyNotifiedUserIdsQuery = {
   userIds: ["user-1", "user-2"],
@@ -23,7 +23,7 @@ function setup() {
       userId: "user-2",
       type: "FRIEND_COMPLETED",
       friendId: "friend-1",
-      notificationDate: Temporal.PlainDate.from("2026-03-09"),
+      notificationDate: NOTIFICATION_DATE,
     }),
   ]);
   const reader = new NotificationHistoryReader({

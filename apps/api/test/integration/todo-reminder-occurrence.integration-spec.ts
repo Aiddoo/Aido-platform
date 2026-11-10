@@ -44,6 +44,7 @@ import {
 import { JobQueueRegistry } from "#api/platform/jobs/job-queue.registry";
 import { PgBossJobQueueAdapter } from "#api/platform/jobs/pg-boss-job-queue.adapter";
 import { PgBossJobRuntimeAdapter } from "#api/platform/jobs/pg-boss-job-runtime.adapter";
+import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { addDaysToDateKey } from "#api/shared/domain/date/utils/arithmetic";
 import { toDateString } from "#api/shared/domain/date/utils/format";
 import { parseLocalDateTime, todayInTimezone } from "#api/shared/domain/date/utils/timezone";
@@ -175,6 +176,7 @@ describe("할 일 알림 회차 중복 방지 (실제 PostgreSQL·pg-boss)", () 
         DrizzleSchedulerReader,
         { provide: TransactionHost, useValue: txHost },
         { provide: CacheService, useValue: {} },
+        { provide: ClockPort, useValue: new DateClock() },
         {
           provide: notificationRetentionConfig.KEY,
           useValue: { onboardingV2: { enabled: false, treatmentPercent: 50 } },

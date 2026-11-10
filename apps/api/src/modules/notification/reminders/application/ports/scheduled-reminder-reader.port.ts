@@ -8,22 +8,22 @@ export interface CustomTimeReminderParams {
   readonly tz: string;
   readonly hour: number;
   readonly minute: number;
-  readonly today: Date;
-  readonly tomorrow: Date;
+  readonly today: Temporal.PlainDate;
+  readonly tomorrow: Temporal.PlainDate;
   /** 리마인더 시간을 바꾼 직후 그 사용자만 볼 때 */
   readonly userId?: string;
 }
 
 export interface FixedTimeReminderParams {
   readonly tz: string;
-  readonly today: Date;
-  readonly tomorrow: Date;
+  readonly today: Temporal.PlainDate;
+  readonly tomorrow: Temporal.PlainDate;
 }
 
 export interface PeriodReportParams {
   readonly tz: string;
-  readonly periodStart: Date;
-  readonly periodEnd: Date;
+  readonly periodStart: Temporal.PlainDate;
+  readonly periodEnd: Temporal.PlainDate;
 }
 
 // 유료는 고른 시각, 무료는 고정 시각 쿼리를 따로 두어 전략이 "무료 조회 생략"을 정한다

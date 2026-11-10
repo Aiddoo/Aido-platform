@@ -19,7 +19,7 @@ export interface UserWithTodosAndStreak {
   readonly todos: ReadonlyArray<{ readonly completed: boolean }>;
   readonly preference: {
     readonly currentStreak: number;
-    readonly lastCompletedDate: Date | null;
+    readonly lastCompletedDate: Temporal.PlainDate | null;
     readonly locale: string;
   } | null;
 }
@@ -32,13 +32,13 @@ export interface UserIdRow {
 /** Win-back 대상 (마지막 접속 시각 포함) */
 export interface WinbackUser {
   readonly id: string;
-  readonly lastActiveAt: Date | null;
+  readonly lastActiveAt: Temporal.Instant | null;
 }
 
 /** 온보딩 대상 (가입 시각 포함) */
 export interface OnboardingCandidate {
   readonly id: string;
-  readonly createdAt: Date;
+  readonly createdAt: Temporal.Instant;
 }
 
 /** 유저별 투두 집계 (groupBy 결과) */
@@ -50,7 +50,7 @@ export interface UserTodoCount {
 /** 팔로우 관계에서 조회된 상대 유저 (활동성·프로필명) */
 export interface FollowRelationUser {
   readonly id: string;
-  readonly lastActiveAt: Date | null;
+  readonly lastActiveAt: Temporal.Instant | null;
   readonly profile: { readonly name: string | null } | null;
 }
 

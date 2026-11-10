@@ -1,4 +1,3 @@
-import { parseDateOnly } from "#api/shared/domain/date/utils/parse";
 import { InMemorySchedulerPreferenceReader } from "#test/doubles/notification/in-memory-scheduler-preference.reader";
 import { RecordingNotificationPublisher } from "#test/doubles/notification/recording-notification-publisher";
 import { StubNotificationHistoryReader } from "#test/doubles/notification/stub-notification-history.reader";
@@ -50,7 +49,7 @@ describe("SendMonthlyReportUseCase — 월간 리포트 전략", () => {
         method: "findMonthlyReportRecipients",
         params: {
           tz: "Asia/Seoul",
-          periodStart: parseDateOnly("2024-01-01"),
+          periodStart: Temporal.PlainDate.from("2024-01-01"),
           periodEnd: ctx.today,
         },
       },

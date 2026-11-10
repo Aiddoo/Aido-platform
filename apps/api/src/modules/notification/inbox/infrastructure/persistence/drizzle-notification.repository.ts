@@ -9,7 +9,6 @@ import {
 } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { notification, pushDispatch } from "#api/platform/database/schema/index";
-import { plainDateFromDate } from "#api/shared/domain/time/plain-date";
 
 import type { CreateNotificationData } from "../../application/ports/notification-draft.port.js";
 import {
@@ -37,9 +36,7 @@ function toNotificationInsert(data: CreateNotificationData): NotificationInsert 
     nudgeId: data.nudgeId,
     cheerId: data.cheerId,
     metadata: data.metadata ?? undefined,
-    // 리마인더 쪽은 아직 오늘을 UTC 자정 Date로 넘긴다
-    notificationDate:
-      data.notificationDate == null ? undefined : plainDateFromDate(data.notificationDate),
+    notificationDate: data.notificationDate ?? undefined,
     actionType: data.action?.type ?? "DEEP_LINK",
     actionUrl: data.action?.url,
     campaignKey: data.campaignKey,

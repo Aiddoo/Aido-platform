@@ -1,7 +1,6 @@
 import { groupBy } from "es-toolkit";
 
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
-import { toDateString } from "#api/shared/domain/date/utils/format";
 import { DEFAULT_LOCALE } from "#api/shared/domain/locale";
 
 import type { NotificationHistoryReader } from "../../../inbox/application/notification-history.reader.js";
@@ -141,7 +140,7 @@ export class SendSocialDigestUseCase implements TimezoneReminderStrategyPort {
       const variantContext = {
         campaignKey: SCHEDULER_CAMPAIGN_KEY.SOCIAL_DIGEST,
         recipientId: user.id,
-        occurrenceKey: toDateString(today),
+        occurrenceKey: today.toString(),
       };
       const message =
         completedFriends.length === 1

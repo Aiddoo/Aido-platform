@@ -2,7 +2,7 @@ import { USER_PREFERENCE_DEFAULTS } from "@aido/api/vocabulary";
 
 import { computeEffectiveStreak } from "#api/modules/identity/identity-settings.public";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
-import { toDateString } from "#api/shared/domain/date/utils/format";
+import { plainDateToDate } from "#api/shared/domain/time/plain-date";
 
 import type { NotificationHistoryReader } from "../../../inbox/application/notification-history.reader.js";
 import { createEveningReminderNotificationMessage } from "../../../push/application/messages/notification.messages.js";
@@ -89,10 +89,10 @@ export class SendEveningReminderUseCase implements TimezoneReminderStrategyPort 
       // 스트릭 정보 계산 (StreakService 순수 함수에 위임)
       const { streak, isAtRisk: isStreakAtRisk } = computeEffectiveStreak({
         currentStreak: user.preference?.currentStreak ?? 0,
-        lastCompletedDate: user.preference?.lastCompletedDate ?? null,
+        lastCompletedDate: toStreakDate(user.preference?.lastCompletedDate),
         todosCompleted: completed,
         todosTotal: total,
-        today,
+        today: plainDateToDate(today),
       });
 
       const message = createEveningReminderNotificationMessage({
@@ -107,7 +107,7 @@ export class SendEveningReminderUseCase implements TimezoneReminderStrategyPort 
         variantContext: {
           campaignKey: SCHEDULER_CAMPAIGN_KEY.EVENING_REMINDER,
           recipientId: user.id,
-          occurrenceKey: toDateString(today),
+          occurrenceKey: today.toString(),
         },
       });
 
@@ -138,4 +138,9 @@ export class SendEveningReminderUseCase implements TimezoneReminderStrategyPort 
       recipientUserIds: notifications.map((notification) => notification.userId),
     };
   }
+}
+
+// identity의 스트릭 판정은 아직 UTC 자정 Date로 계산한다
+function toStreakDate(date: Temporal.PlainDate | null | undefined): Date | null {
+  return date == null ? null : plainDateToDate(date);
 }

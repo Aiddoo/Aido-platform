@@ -16,11 +16,9 @@ import { notificationRetentionConfig } from "#api/modules/notification/retention
 import { CacheService } from "#api/platform/cache/cache.service";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { todo, userPreference } from "#api/platform/database/schema/index";
-import { subtractDays } from "#api/shared/domain/date/utils/arithmetic";
-import { now } from "#api/shared/domain/date/utils/core";
-import { normalizeIanaTimezone } from "#api/shared/domain/date/utils/timezone";
-import { instantFromDate, instantToDate } from "#api/shared/domain/time/instant";
-import { plainDateFromDate } from "#api/shared/domain/time/plain-date";
+import { ClockPort } from "#api/shared/application/ports/clock.port";
+import { instantToDate } from "#api/shared/domain/time/instant";
+import { normalizeIanaTimezone } from "#api/shared/domain/time/time-zone-name";
 
 import { resolveRecipientLocale } from "../../../push/domain/recipient-locale.domain-service.js";
 import type {
@@ -62,42 +60,6 @@ import type {
   WinbackUser,
 } from "../../application/read-models/scheduler.read-model.js";
 
-// identity·planning 칸은 Temporal이지만 스케줄러 읽기 모델·조회 조건은 아직 Date다
-function toDateOrNull(instant: Temporal.Instant | null): Date | null {
-  return instant == null ? null : instantToDate(instant);
-}
-
-function toStreakUser<
-  T extends {
-    readonly preference: {
-      readonly currentStreak: number;
-      readonly lastCompletedDate: Temporal.PlainDate | null;
-      readonly locale: string;
-    } | null;
-  },
->(row: T): Omit<T, "preference"> & Pick<UserWithTodosAndStreak, "preference"> {
-  const { preference } = row;
-  return {
-    ...row,
-    preference:
-      preference == null
-        ? null
-        : {
-            ...preference,
-            lastCompletedDate:
-              preference.lastCompletedDate == null
-                ? null
-                : instantToDate(preference.lastCompletedDate.toZonedDateTime("UTC").toInstant()),
-          },
-  };
-}
-
-function toFollowRelationUser<T extends { readonly lastActiveAt: Temporal.Instant | null }>(
-  user: T,
-): Omit<T, "lastActiveAt"> & { readonly lastActiveAt: Date | null } {
-  return { ...user, lastActiveAt: toDateOrNull(user.lastActiveAt) };
-}
-
 /**
  * 스케줄러 리더 어댑터 (Drizzle).
  *
@@ -119,19 +81,27 @@ export class DrizzleSchedulerReader
   readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
   readonly #cacheService: CacheService;
   readonly #retention: RetentionSettings;
+  readonly #clock: ClockPort;
 
   constructor(
     txHost: TransactionHost<DrizzleTransactionalAdapter>,
     cacheService: CacheService,
     @Inject(notificationRetentionConfig.KEY) retention: RetentionSettings,
+    clock: ClockPort,
   ) {
     this.#txHost = txHost;
     this.#cacheService = cacheService;
     this.#retention = retention;
+    this.#clock = clock;
   }
 
   get #db() {
     return this.#txHost.tx;
+  }
+
+  // access 권한 조건은 아직 Date로 받는다
+  #now(): Date {
+    return instantToDate(this.#clock.now());
   }
 
   // ─────────────────────────────────────────────────────────────
@@ -146,7 +116,7 @@ export class DrizzleSchedulerReader
       columns: { id: true },
       where: {
         ...(userId && { id: userId }),
-        RAW: (target) => premiumAccessCondition(target, now()),
+        RAW: (target) => premiumAccessCondition(target, this.#now()),
         preference: { timezone: tz, morningReminderHour: hour, morningReminderMinute: minute },
       },
       with: { preference: { columns: { locale: true } } },
@@ -162,7 +132,7 @@ export class DrizzleSchedulerReader
     const rows = await this.#db.query.user.findMany({
       columns: { id: true },
       where: {
-        RAW: (target) => freeAccessCondition(target, now()),
+        RAW: (target) => freeAccessCondition(target, this.#now()),
         preference: { timezone: tz },
       },
       with: { preference: { columns: { locale: true } } },
@@ -179,19 +149,19 @@ export class DrizzleSchedulerReader
       columns: { id: true },
       where: {
         ...(userId && { id: userId }),
-        RAW: (target) => premiumAccessCondition(target, now()),
+        RAW: (target) => premiumAccessCondition(target, this.#now()),
         preference: { timezone: tz, eveningReminderHour: hour, eveningReminderMinute: minute },
-        todos: { startDate: { gte: plainDateFromDate(today), lt: plainDateFromDate(tomorrow) } },
+        todos: { startDate: { gte: today, lt: tomorrow } },
       },
       with: {
         todos: {
           columns: { completed: true },
-          where: { startDate: { gte: plainDateFromDate(today), lt: plainDateFromDate(tomorrow) } },
+          where: { startDate: { gte: today, lt: tomorrow } },
         },
         preference: { columns: { currentStreak: true, lastCompletedDate: true, locale: true } },
       },
     });
-    return rows.map(toStreakUser);
+    return rows;
   }
 
   async findFreeEveningReminderUsers(
@@ -201,19 +171,19 @@ export class DrizzleSchedulerReader
     const rows = await this.#db.query.user.findMany({
       columns: { id: true },
       where: {
-        RAW: (target) => freeAccessCondition(target, now()),
+        RAW: (target) => freeAccessCondition(target, this.#now()),
         preference: { timezone: tz },
-        todos: { startDate: { gte: plainDateFromDate(today), lt: plainDateFromDate(tomorrow) } },
+        todos: { startDate: { gte: today, lt: tomorrow } },
       },
       with: {
         todos: {
           columns: { completed: true },
-          where: { startDate: { gte: plainDateFromDate(today), lt: plainDateFromDate(tomorrow) } },
+          where: { startDate: { gte: today, lt: tomorrow } },
         },
         preference: { columns: { currentStreak: true, lastCompletedDate: true, locale: true } },
       },
     });
-    return rows.map(toStreakUser);
+    return rows;
   }
 
   findLunchNudgeUsers(params: FixedTimeReminderParams): Promise<UserIdRow[]> {
@@ -226,13 +196,13 @@ export class DrizzleSchedulerReader
           { preference: { timezone: tz } },
           {
             todos: {
-              startDate: { gte: plainDateFromDate(today), lt: plainDateFromDate(tomorrow) },
+              startDate: { gte: today, lt: tomorrow },
             },
           },
           {
             NOT: {
               todos: {
-                startDate: { gte: plainDateFromDate(today), lt: plainDateFromDate(tomorrow) },
+                startDate: { gte: today, lt: tomorrow },
                 completed: true,
               },
             },
@@ -256,9 +226,9 @@ export class DrizzleSchedulerReader
       columns: { id: true },
       where: {
         preference: { timezone: tz },
-        RAW: (target) => premiumAccessCondition(target, now()),
+        RAW: (target) => premiumAccessCondition(target, this.#now()),
         todos: {
-          startDate: { gte: plainDateFromDate(periodStart), lt: plainDateFromDate(periodEnd) },
+          startDate: { gte: periodStart, lt: periodEnd },
         },
       },
     });
@@ -278,19 +248,19 @@ export class DrizzleSchedulerReader
           { preference: { timezone: tz } },
           {
             lastActiveAt: {
-              gte: instantFromDate(inactiveSince),
-              lte: instantFromDate(inactiveUntil),
+              gte: inactiveSince,
+              lte: inactiveUntil,
             },
           },
         ],
       },
     });
-    return rows.map(toFollowRelationUser);
+    return rows;
   }
 
   async findOnboardingCandidates(params: {
     tz: string;
-    createdSince: Date;
+    createdSince: Temporal.Instant;
   }): Promise<OnboardingCandidate[]> {
     const { tz, createdSince } = params;
     const rows = await this.#db.query.user.findMany({
@@ -298,12 +268,12 @@ export class DrizzleSchedulerReader
       where: {
         AND: [
           ...this.#recentTreatmentExclusion(),
-          { createdAt: { gte: instantFromDate(createdSince) } },
+          { createdAt: { gte: createdSince } },
           { preference: { timezone: tz } },
         ],
       },
     });
-    return rows.map((row) => ({ ...row, createdAt: instantToDate(row.createdAt) }));
+    return rows;
   }
 
   countCompletedTodosByUsers(userIds: string[]): Promise<UserTodoCount[]> {
@@ -329,12 +299,12 @@ export class DrizzleSchedulerReader
 
   async findNudgeSuggestFollows(params: {
     candidateIds: string[];
-    activeSince: Date;
-    activeUntil: Date;
+    activeSince: Temporal.Instant;
+    activeUntil: Temporal.Instant;
   }): Promise<NudgeSuggestFollow[]> {
     const { candidateIds, activeSince, activeUntil } = params;
     const activeWindow = {
-      lastActiveAt: { gte: instantFromDate(activeSince), lte: instantFromDate(activeUntil) },
+      lastActiveAt: { gte: activeSince, lte: activeUntil },
     };
     const rows = await this.#db.query.follow.findMany({
       columns: { followerId: true, followingId: true },
@@ -355,11 +325,7 @@ export class DrizzleSchedulerReader
         },
       },
     });
-    return rows.map((row) => ({
-      ...row,
-      follower: toFollowRelationUser(row.follower),
-      following: toFollowRelationUser(row.following),
-    }));
+    return rows;
   }
 
   findSocialDigestCandidates(
@@ -375,7 +341,7 @@ export class DrizzleSchedulerReader
           { preference: { timezone: tz } },
           {
             todos: {
-              startDate: { gte: plainDateFromDate(today), lt: plainDateFromDate(tomorrow) },
+              startDate: { gte: today, lt: tomorrow },
               completed: false,
             },
           },
@@ -384,7 +350,7 @@ export class DrizzleSchedulerReader
       with: {
         todos: {
           columns: { completed: true },
-          where: { startDate: { gte: plainDateFromDate(today), lt: plainDateFromDate(tomorrow) } },
+          where: { startDate: { gte: today, lt: tomorrow } },
         },
       },
     });
@@ -404,21 +370,21 @@ export class DrizzleSchedulerReader
 
   findFriendsWithTodayTodos(params: {
     friendIds: string[];
-    today: Date;
-    tomorrow: Date;
+    today: Temporal.PlainDate;
+    tomorrow: Temporal.PlainDate;
   }): Promise<FriendWithTodos[]> {
     const { friendIds, today, tomorrow } = params;
     return this.#db.query.user.findMany({
       columns: { id: true },
       where: {
         id: { in: friendIds },
-        todos: { startDate: { gte: plainDateFromDate(today), lt: plainDateFromDate(tomorrow) } },
+        todos: { startDate: { gte: today, lt: tomorrow } },
       },
       with: {
         profile: { columns: { name: true } },
         todos: {
           columns: { completed: true },
-          where: { startDate: { gte: plainDateFromDate(today), lt: plainDateFromDate(tomorrow) } },
+          where: { startDate: { gte: today, lt: tomorrow } },
         },
       },
     });
@@ -434,7 +400,7 @@ export class DrizzleSchedulerReader
           { preference: { timezone: tz, currentStreak: { gte: 3 } } },
           {
             todos: {
-              startDate: { gte: plainDateFromDate(today), lt: plainDateFromDate(tomorrow) },
+              startDate: { gte: today, lt: tomorrow },
               completed: false,
             },
           },
@@ -443,12 +409,12 @@ export class DrizzleSchedulerReader
       with: {
         todos: {
           columns: { completed: true },
-          where: { startDate: { gte: plainDateFromDate(today), lt: plainDateFromDate(tomorrow) } },
+          where: { startDate: { gte: today, lt: tomorrow } },
         },
         preference: { columns: { currentStreak: true, lastCompletedDate: true, locale: true } },
       },
     });
-    return rows.map(toStreakUser);
+    return rows;
   }
 
   // ─────────────────────────────────────────────────────────────
@@ -560,8 +526,8 @@ export class DrizzleSchedulerReader
   // 여러 날 할 일은 기간 안에 걸친 날마다 하나로 센다. 끝없이 긴 할 일도 기간 안의 날만 더한다
   #countTodoDaysByUser(params: WeeklyStatsParams, extra?: SQL): Promise<UserTodoCount[]> {
     const { tz, periodStart, periodEnd } = params;
-    const firstDay = sql`${sql.param(plainDateFromDate(periodStart), todo.startDate)}::date`;
-    const lastDay = sql`(${sql.param(plainDateFromDate(periodEnd), todo.startDate)}::date - 1)`;
+    const firstDay = sql`${sql.param(periodStart, todo.startDate)}::date`;
+    const lastDay = sql`(${sql.param(periodEnd, todo.startDate)}::date - 1)`;
     const todoLastDay = sql`coalesce(${todo.endDate}, ${todo.startDate})`;
     const daysInPeriod = sql<number>`sum(greatest(0, least(${todoLastDay}, ${lastDay}) - greatest(${todo.startDate}, ${firstDay}) + 1))::int`;
     return this.#db
@@ -586,7 +552,7 @@ export class DrizzleSchedulerReader
       columns: { id: true },
       where: {
         id: { in: userIds },
-        RAW: (target) => freeAccessCondition(target, now()),
+        RAW: (target) => freeAccessCondition(target, this.#now()),
       },
     });
     return new Set(rows.map((row) => row.id));
@@ -651,12 +617,12 @@ export class DrizzleSchedulerReader
     );
   }
 
-  #todoCount(userId: AnyColumn, today: Date, tomorrow: Date) {
+  #todoCount(userId: AnyColumn, today: Temporal.PlainDate, tomorrow: Temporal.PlainDate) {
     return sql<number>`(
       SELECT count(*)::int FROM ${todo}
       WHERE ${todo.userId} = ${userId}
-        AND ${todo.startDate} >= ${sql.param(plainDateFromDate(today), todo.startDate)}
-        AND ${todo.startDate} < ${sql.param(plainDateFromDate(tomorrow), todo.startDate)}
+        AND ${todo.startDate} >= ${sql.param(today, todo.startDate)}
+        AND ${todo.startDate} < ${sql.param(tomorrow, todo.startDate)}
     )`;
   }
 
@@ -681,7 +647,7 @@ export class DrizzleSchedulerReader
           retentionAssignments: {
             experimentKey: "onboarding_v2_d7",
             variant: "TREATMENT" as const,
-            startedAt: { gte: instantFromDate(subtractDays(8)) },
+            startedAt: { gte: this.#clock.now().subtract({ hours: 8 * 24 }) },
           },
         },
       },

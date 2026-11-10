@@ -1,4 +1,4 @@
-import { previousIsoWeekRange } from "#api/shared/domain/date/utils/range";
+import { previousIsoWeekOf } from "#api/modules/notification/reminders/domain/reminder-day.domain-service";
 import type {
   WeeklyStatsTodoSeed,
   WeeklyStatsUserSeed,
@@ -68,7 +68,7 @@ describe("SendWeeklyAchievementUseCase — 주간 성취 전략", () => {
     await strategy.execute(ctx);
 
     // Then
-    const { isoYear, isoWeek } = previousIsoWeekRange(ctx.today);
+    const { isoYear, isoWeek } = previousIsoWeekOf(ctx.today);
     expect(writer.writes).toEqual([
       [
         {
@@ -77,7 +77,7 @@ describe("SendWeeklyAchievementUseCase — 주간 성취 전략", () => {
           week: isoWeek,
           totalTodos: 3,
           completedTodos: 2,
-          achievedAt: ctx.today,
+          achievedAt: new Date(`${ctx.today.toString()}T00:00:00.000Z`),
         },
       ],
     ]);

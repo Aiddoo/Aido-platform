@@ -406,7 +406,7 @@ export function describeNotificationRepositoryContract(
         const base = {
           userId: USER_ID,
           type: "NUDGE_RECEIVED",
-          since: new Date("2000-01-01T00:00:00Z"),
+          since: Temporal.Instant.from("2000-01-01T00:00:00Z"),
         } as const;
 
         // When
@@ -423,7 +423,7 @@ export function describeNotificationRepositoryContract(
           await historyReader.existsRecentNotification({ ...base, userId: OTHER_USER_ID }),
           await historyReader.existsRecentNotification({
             ...base,
-            since: new Date("2999-01-01T00:00:00Z"),
+            since: Temporal.Instant.from("2999-01-01T00:00:00Z"),
           }),
         ];
 
@@ -434,7 +434,7 @@ export function describeNotificationRepositoryContract(
       it("이미 알린 사용자는 같은 타입·알림 날짜·친구의 알림을 가진 사용자만이다", async () => {
         // Given
         const { repository, historyReader } = await createSubject();
-        const notificationDate = new Date("2026-03-09T00:00:00Z");
+        const notificationDate = Temporal.PlainDate.from("2026-03-09");
         await create(repository, {
           type: "FRIEND_COMPLETED",
           friendId: NOTIFICATION_FIXTURE_ACTOR_ID,
@@ -444,7 +444,7 @@ export function describeNotificationRepositoryContract(
           userId: OTHER_USER_ID,
           type: "FRIEND_COMPLETED",
           friendId: NOTIFICATION_FIXTURE_ACTOR_ID,
-          notificationDate: new Date("2026-03-08T00:00:00Z"),
+          notificationDate: Temporal.PlainDate.from("2026-03-08"),
         });
 
         // When
