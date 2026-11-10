@@ -17,19 +17,28 @@ import {
 } from '@src/shared/errors';
 import { t } from '@src/shared/i18n';
 import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
-import { mutationOptions, useQueryClient } from '@tanstack/react-query';
+import { mutationOptions, type QueryClient, useQueryClient } from '@tanstack/react-query';
 
 import { NOTIFICATION_LOG_EVENT } from '../constants/notification-log-events';
+import { NOTIFICATION_MUTATION_KEYS } from '../constants/notification-mutation-keys';
 import { isPushReportRetryableError } from '../domains/notification.error';
 import {
   invalidateNotifications,
   invalidatePushPermission,
   optimisticallyMarkNotificationsRead,
-  restoreNotificationCache,
+  revertNotificationsRead,
   setCachedPushPermission,
 } from './notification-cache';
 
 const PUSH_OPENED_RETRIES = 3;
+
+/**
+ * 지금 끝나는 읽음 처리가 마지막이면 true. 응답은 읽은 개수만 주어 안 읽은 수를 확정하지 못해 다시 받아야 하는데,
+ * 앞 처리 뒤에 다시 받으면 뒤 처리의 낙관적 수가 덮여 앱 아이콘 배지가 깜빡인다. 마지막만 다시 받는다
+ */
+function isLastNotificationWrite(queryClient: QueryClient) {
+  return queryClient.isMutating({ mutationKey: NOTIFICATION_MUTATION_KEYS.writes() }) === 1;
+}
 
 // 앱 아이콘 배지는 안 읽은 수 캐시를 따라가므로(`useNotificationBadgeSync`) 캐시만 고친다
 export function useMarkAllAsReadMutationOptions() {
@@ -39,22 +48,20 @@ export function useMarkAllAsReadMutationOptions() {
   const queryClient = useQueryClient();
 
   return mutationOptions({
+    mutationKey: NOTIFICATION_MUTATION_KEYS.writes(),
     mutationFn: async () => unwrap(await notificationService.markAllAsRead()),
-    onMutate: async () => {
-      const snapshot = await optimisticallyMarkNotificationsRead(queryClient);
-      return { snapshot };
-    },
+    onMutate: async () => ({ change: await optimisticallyMarkNotificationsRead(queryClient) }),
     onError: (error, _variables, context) => {
-      if (context != null) {
-        restoreNotificationCache(queryClient, context.snapshot);
+      if (context?.change != null) {
+        revertNotificationsRead(queryClient, context.change);
       }
       haptics.notify('error');
       toast.error(getUserFacingMessage(error), {
         fallback: t('notification:list.markAllReadFailed'),
       });
     },
-    // 실패로 되돌린 뒤에도 서버 값으로 맞춘다
-    onSettled: () => invalidateNotifications(queryClient),
+    onSettled: () =>
+      isLastNotificationWrite(queryClient) ? invalidateNotifications(queryClient) : undefined,
   });
 }
 
@@ -64,20 +71,21 @@ export function useMarkAsReadMutationOptions() {
   const queryClient = useQueryClient();
 
   return mutationOptions({
+    mutationKey: NOTIFICATION_MUTATION_KEYS.writes(),
     mutationFn: async (notificationId: number) =>
       unwrap(await notificationService.markAsRead(notificationId)),
-    onMutate: async (notificationId) => {
-      const snapshot = await optimisticallyMarkNotificationsRead(queryClient, notificationId);
-      return { snapshot };
-    },
+    onMutate: async (notificationId) => ({
+      change: await optimisticallyMarkNotificationsRead(queryClient, notificationId),
+    }),
     onError: (_error, _variables, context) => {
-      if (context != null) {
-        restoreNotificationCache(queryClient, context.snapshot);
+      if (context?.change != null) {
+        revertNotificationsRead(queryClient, context.change);
       }
       // 읽음은 다음 탭에 다시 보내므로 이어서 이동한 화면을 토스트로 가리지 않는다
       haptics.notify('error');
     },
-    onSettled: () => invalidateNotifications(queryClient),
+    onSettled: () =>
+      isLastNotificationWrite(queryClient) ? invalidateNotifications(queryClient) : undefined,
   });
 }
 
@@ -162,6 +170,7 @@ export function useRecordPushOpenedMutationOptions() {
   const queryClient = useQueryClient();
 
   return mutationOptions({
+    mutationKey: NOTIFICATION_MUTATION_KEYS.writes(),
     mutationFn: async (notificationId: number) =>
       unwrap(await notificationService.markOpened(notificationId)),
     retry: shouldRetryPushOpened,
@@ -177,13 +186,15 @@ export function useRecordPushOpenedMutationOptions() {
       );
       return { epoch };
     },
-    // onMutate의 수는 느린 망이나 오프라인이면 읽음 처리 전 수다. 서버가 처리한 뒤의 수로 다시 맞춘다
-    onSuccess: (_opened, _notificationId, { epoch }) =>
-      sessionEpoch.current() === epoch ? invalidateNotifications(queryClient) : undefined,
     onError: (error) =>
       logger.warn(NOTIFICATION_LOG_EVENT.OPEN_RECORDING_FAILED, {
         error: getErrorMessage(error),
       }),
+    // onMutate의 수는 느린 망이나 오프라인이면 읽음 처리 전 수다. 서버가 처리한 뒤(실패면 되돌린 뒤)의 수로 다시 맞춘다
+    onSettled: (_opened, _error, _notificationId, context) =>
+      sessionEpoch.current() === context?.epoch && isLastNotificationWrite(queryClient)
+        ? invalidateNotifications(queryClient)
+        : undefined,
   });
 }
 
