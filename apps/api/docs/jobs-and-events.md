@@ -55,16 +55,16 @@ await jobQueue.work(DOCUMENT_QUEUE, async (jobs) => {
 await jobQueue.registerSchedules(DOCUMENT_QUEUE); // schedules를 key별로 upsert
 ```
 
-| 규칙         | 내용                                                                                                                                                                                                                                                          |
-| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| payload      | enqueue는 schema 타입으로 검사하고 소비 때 `parse`한다. 맞지 않는 작업은 handler에 오지 않고 그 작업만 실패한다(`perJobResults`)                                                                                                                              |
-| 멱등         | at-least-once라 handler는 같은 payload 재실행에 멱등이다(`singletonKey`, 유니크 키, 상태 fence, `boolean` 전이)                                                                                                                                               |
-| 이름         | `teamSize` 대신 pg-boss 12 용어 `localConcurrency`                                                                                                                                                                                                            |
-| 묶음         | 발송량이 많은 큐는 `batchSize`(+`burstWhenBatchFull`). handler가 throw하면 묶음 전체가 재시도되므로 상태 fence로 멱등을 보장한다. 다시 실행하면 한 번 더 보내는 작업이 섞인 큐는 `isolateJobFailures`로 작업마다 끝낸다(`notification.v1`·`push-delivery.v1`) |
-| Health       | `JobQueuePort.health()`는 이 프로세스가 정의로 쓴 큐와 그 DLQ(`JobQueueRegistry`)를 본다                                                                                                                                                                      |
-| 연결 예산    | 앱 풀 10 + pg-boss 3 = 13. 늘리지 않는다                                                                                                                                                                                                                      |
-| `startAfter` | 포트는 `Temporal.Instant`를 받고 어댑터가 Date로 바꿔 pg-boss에 넘긴다                                                                                                                                                                                        |
-| 우선순위     | 거래성(리마인더·소셜) `priority: 10`, 마케팅 `0`. 거래성 worker는 `minPriority: 10`([알림](notifications.md)). 같은 큐의 두 번째 worker는 `{ ...QUEUE, worker }`로 정의를 하나 더 둔다                                                                        |
+| 규칙         | 내용                                                                                                                                                                                                                                                                                                  |
+| ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| payload      | enqueue는 schema 타입으로 검사하고 소비 때 `parse`한다. 맞지 않는 작업은 handler에 오지 않고 그 작업만 실패한다(`perJobResults`)                                                                                                                                                                      |
+| 멱등         | at-least-once라 handler는 같은 payload 재실행에 멱등이다(`singletonKey`, 유니크 키, 상태 fence, `boolean` 전이)                                                                                                                                                                                       |
+| 이름         | `teamSize` 대신 pg-boss 12 용어 `localConcurrency`                                                                                                                                                                                                                                                    |
+| 묶음         | 발송량이 많거나 같은 시각에 몰리는 큐는 `batchSize`(+`burstWhenBatchFull`). handler가 throw하면 묶음 전체가 재시도되므로 상태 fence로 멱등을 보장한다. 다시 실행하면 한 번 더 보내는 작업이 섞인 큐는 `isolateJobFailures`로 작업마다 끝낸다(`notification.v1`·`push-delivery.v1`·`todo-reminder.v1`) |
+| Health       | `JobQueuePort.health()`는 이 프로세스가 정의로 쓴 큐와 그 DLQ(`JobQueueRegistry`)를 본다                                                                                                                                                                                                              |
+| 연결 예산    | 앱 풀 10 + pg-boss 3 = 13. 늘리지 않는다                                                                                                                                                                                                                                                              |
+| `startAfter` | 포트는 `Temporal.Instant`를 받고 어댑터가 Date로 바꿔 pg-boss에 넘긴다                                                                                                                                                                                                                                |
+| 우선순위     | 거래성(리마인더·소셜) `priority: 10`, 마케팅 `0`. 거래성 worker는 `minPriority: 10`([알림](notifications.md)). 같은 큐의 두 번째 worker는 `{ ...QUEUE, worker }`로 정의를 하나 더 둔다                                                                                                                |
 
 - 큐 포트는 `JobQueuePort` 하나다. `PgBossJobQueueAdapter`가 등록·소비·스케줄·Health와 시작·종료(`JobQueueLifecycle`)를 맡는다.
 - E2E 앱은 `JobQueuePort`를 `test/doubles/platform/in-memory-job-queue.ts`로 바꾼다.
@@ -104,7 +104,9 @@ for (const minute of minutesToSweep({ lastCompletedAt, now: clock.now(), maxCatc
 - `SweepCursorPort`(`shared/application/ports`)는 활성 UoW 트랜잭션에 쓰므로 분 처리와 커서 갱신을 같은 UoW에 넣으면 함께 커밋된다.
 - `minutesToSweep`(`shared/application/minutes-to-sweep.ts`)은 처음이면 지금 분만, 시계가 거꾸로 가면 지금 분만, 이미 지금 분을 끝냈으면 빈 목록을 준다.
 - 커서 key는 `tz-reminder-sweep`이다. notification reminders의 `SweepTimezoneRemindersUseCase`가 분마다 처리 뒤 커서를 옮기고, 15분을 넘은 분은 `late-over-15m` 사유와 건너뛴 분 수를 남긴다. 검증은 `test/integration/notification/reminders/reminder-sweep-catch-up.integration-spec.ts`다.
-- `todo-reminder.v1` 작업은 의도한 발송 시각(할 일 시각 - 단계 리드)보다 15분 넘게 늦으면 같은 사유로 건너뛴다.
+- `todo-reminder.v1` 작업은 의도한 발송 시각(할 일 시각 - 단계 리드)보다 15분 넘게 늦으면 같은 사유로, 할 일 시각이 됐으면 `todo-started`로 건너뛴다. 마지막 발송 시각은 min(발송 시각 + 15분, 할 일 시각)이라 10분 단계는 10분까지만 늦을 수 있다(`reminderLateSkipReason`).
+
+**같은 분에 몰리는 리마인더**: `batchSize` 없이 15초 폴링이면 프로세스 전체가 분당 4건만 꺼내 같은 분의 60번째쯤부터 늦음 한도에 걸린다. `todo-reminder.v1`은 worker 하나(`localConcurrency: 1`, 앱 풀 연결 하나)가 20건씩 꺼내고 묶음이 차면 쉬지 않고 다음을 꺼낸다. 로컬 Testcontainers PG에서 200건 0.3초, 2,000건 2.9~7.5초(작업당 1.5~3.8ms, 호스트 부하에 따라)였다. 운영 작업당 시간은 재지 않았다. DB 왕복이 10번 안팎이라 작업당 30ms로 잡으면 3,000건이 1분 30초다. 폴링 직후 때가 된 작업은 다음 폴링까지 최대 15초 기다린다. 검증은 `test/integration/notification/reminders/todo-reminder-throughput.integration-spec.ts`(200건이 한 폴링 간격 안에 끝남)다.
 
 **상태 기준 조회**(`retention-stage-sweep`): 단계 후보를 시각 구간이 아니라 `SCHEDULED` 상태와 "결정할 때가 됐는가"(`isRetentionStageDue`와 같은 SQL)로 고르므로 워터마크 커서가 필요 없다. 실행 사이나 놓친 실행 동안 때가 된 단계는 다음 실행이 모두 읽고, 한 실행은 생성 순서 위치로 이어 읽어(200건씩 최대 10묶음) 실패한 단계에 막히지 않는다. 중복은 `SCHEDULED → OUTBOXED/SKIPPED` 조건부 전이가 막는다.
 
@@ -116,7 +118,7 @@ for (const minute of minutesToSweep({ lastCompletedAt, now: clock.now(), maxCatc
 
 | 대상                               | 보장                                                                                                           |
 | ---------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| 할 일 리마인더(`todo-reminder.v1`) | 작업이 PostgreSQL에 남아 늦어질 뿐 유실 없음. 15분을 넘으면 사유와 함께 건너뜀                                 |
+| 할 일 리마인더(`todo-reminder.v1`) | 작업이 PostgreSQL에 남아 늦어질 뿐 유실 없음. 15분을 넘거나 할 일 시각이 지나면 사유와 함께 건너뜀             |
 | 분 단위 sweep                      | 워터마크 따라잡기                                                                                              |
 | 실행 중이던 작업                   | `stop_grace_period` 120초, graceful stop 90초, 넘으면 `expireInSeconds` 뒤 재시도. 상태 fence로 중복 발송 없음 |
 | 푸시 발송                          | 커밋 뒤 즉시 발행이 실패하면 outbox 행을 매분 relay가 리스(15분) 뒤 다시 보낸다                                |
