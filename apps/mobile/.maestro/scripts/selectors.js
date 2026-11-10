@@ -28,9 +28,15 @@ output.ids = {
   },
   category: {
     deleteButton: (categoryId) => 'category-delete-' + categoryId,
-    moveTarget: (categoryId) => 'category-delete-move-target-' + categoryId,
-    deleteWithTodosOption: 'category-delete-with-todos',
+    deleteSheet: 'category-delete-sheet',
+    handlingOption: (todoHandling) => 'category-delete-handling-' + todoHandling,
+    moveTargetRow: 'category-delete-move-target',
+    submitButton: 'category-delete-submit',
     confirmButton: 'category-delete-confirm',
+  },
+  categorySelect: {
+    option: (categoryId) => 'category-select-option-' + categoryId,
+    submitButton: 'category-select-submit',
   },
   memo: {
     createButton: 'memo-create-button',

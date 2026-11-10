@@ -1,5 +1,5 @@
 appId: ${MAESTRO_APP_ID}
-name: 카테고리 설정에서 카테고리의 삭제 대화상자를 연다
+name: 카테고리 설정에서 할 일이 든 카테고리의 삭제 시트를 연다
 # env: CATEGORY_ID
 ---
 - openLink: ${output.config.appScheme}://settings/category-settings
@@ -10,5 +10,5 @@ name: 카테고리 설정에서 카테고리의 삭제 대화상자를 연다
     id: ${output.ids.category.deleteButton(CATEGORY_ID)}
 - extendedWaitUntil:
     visible:
-      id: ${output.ids.category.confirmButton}
+      id: ${output.ids.category.deleteSheet}
     timeout: 10000

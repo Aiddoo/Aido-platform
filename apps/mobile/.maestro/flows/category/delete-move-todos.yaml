@@ -15,22 +15,28 @@ onFlowComplete:
   - evalScript: ${output.main && output.todo && output.main.deleteTodo(output.todo.id)}
   - evalScript: ${output.main && output.main.removeE2eCategories()}
 ---
-# Given: 할 일 하나가 든 테스트 카테고리의 삭제 대화상자를 연다
+# Given: 할 일 하나가 든 테스트 카테고리의 삭제 시트를 연다
 - runFlow:
     file: ../../subflows/auth/sign-in.yaml
     env:
       EMAIL: ${output.main.email}
       PASSWORD: ${output.main.password}
 - runFlow:
-    file: ../../subflows/category/open-delete-dialog.yaml
+    file: ../../subflows/category/open-delete-sheet.yaml
     env:
       CATEGORY_ID: ${output.category.id}
 
-# When: 옮길 카테고리를 고르고 삭제한다
+# When: 옮기기에서 옮길 카테고리를 고르고 삭제한다
 - tapOn:
-    id: ${output.ids.category.moveTarget(output.target.id)}
+    id: ${output.ids.category.handlingOption('move')}
 - tapOn:
-    id: ${output.ids.category.confirmButton}
+    id: ${output.ids.category.moveTargetRow}
+- tapOn:
+    id: ${output.ids.categorySelect.option(output.target.id)}
+- tapOn:
+    id: ${output.ids.categorySelect.submitButton}
+- tapOn:
+    id: ${output.ids.category.submitButton}
 
 # Then: 목록에서 사라지고 할 일은 고른 카테고리로 옮겨진다
 - extendedWaitUntil:
