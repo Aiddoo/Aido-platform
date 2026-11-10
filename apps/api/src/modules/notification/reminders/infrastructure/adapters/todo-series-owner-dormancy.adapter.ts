@@ -4,7 +4,7 @@ import {
   EntitlementReaderPort,
   isExemptFromDormancy,
 } from "#api/modules/access/entitlements/access-entitlements.public";
-import { UserActivityReaderPort } from "#api/modules/identity/identity-user-access.public";
+import { UserActivityReaderPort } from "#api/modules/identity/users/identity-users.public";
 import { isSeriesOwnerDormant } from "#api/modules/planning/todo-series/planning-todo-series-dormancy.public";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";

@@ -4,7 +4,7 @@ import {
   EntitlementReaderPort,
   isExemptFromDormancy,
 } from "#api/modules/access/entitlements/access-entitlements.public";
-import { UserActivityReaderPort } from "#api/modules/identity/identity-user-access.public";
+import { UserActivityReaderPort } from "#api/modules/identity/users/identity-users.public";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { TodoSeriesOwnerPort } from "../../application/ports/todo-series-owner.port.js";
