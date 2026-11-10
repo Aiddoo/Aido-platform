@@ -32,18 +32,11 @@ import {
   useFlingGesture,
 } from 'react-native-gesture-handler';
 
-import { DEMO_PLANNED_TODOS, RELEASE_1_15_0_STEPS } from '../constants/release-1-15-0.constants';
+import { DEMO_PLANNED_TODOS } from '../constants/release-1-15-0.constants';
 import { RELEASE_1_15_0, RELEASES } from '../constants/releases';
 import { WhatsNewPolicy } from '../domains/whats-new.model';
 import { useWhatsNewFlow } from '../hooks/use-whats-new-flow';
 import { useWhatsNewParams } from '../hooks/use-whats-new-params';
-import {
-  findNextStep,
-  getChapterStartStep,
-  getStepPosition,
-  type Release1150Chapter,
-  type Release1150Step,
-} from '../utils/release-1-15-0-steps';
 import { VoiceNoteRecordDemo, VoiceNoteResultDemo } from './voice-note-demo';
 import {
   type DemoPlannedTodoId,
@@ -62,7 +55,34 @@ const FINISH_CAT_SIZE = 140;
 const FEATURE_ICON_CIRCLE_SIZE = 40;
 const FEATURE_ICON_SIZE = 22;
 
+const RELEASE_1_15_0_STEPS = [
+  'intro',
+  'voiceTodoCapture',
+  'voiceTodoReview',
+  'voiceTodoList',
+  'voiceNoteRecord',
+  'voiceNoteResult',
+  'freeQuota',
+  'finish',
+] as const;
+type Release1150Step = (typeof RELEASE_1_15_0_STEPS)[number];
 type Release1150StepMap = Record<Release1150Step, object>;
+
+/** 소개에서 고른 기능의 첫 장면 */
+const CHAPTER_START_STEP = {
+  voiceTodo: 'voiceTodoCapture',
+  voiceNote: 'voiceNoteRecord',
+} as const satisfies Record<string, Release1150Step>;
+type Release1150Chapter = keyof typeof CHAPTER_START_STEP;
+
+/** 소개에서 한 기능으로 건너뛰어도 진행 점은 기록 길이가 아니라 흐름 안의 자리를 가리킨다 */
+function getStepPosition(step: Release1150Step): number {
+  return RELEASE_1_15_0_STEPS.indexOf(step);
+}
+
+function findNextStep(step: Release1150Step): Release1150Step | null {
+  return RELEASE_1_15_0_STEPS[getStepPosition(step) + 1] ?? null;
+}
 
 export function Release1150Steps() {
   const [{ source }] = useWhatsNewParams();
@@ -117,7 +137,7 @@ export function Release1150Steps() {
               <WhatsNewStep
                 media={
                   <IntroMedia
-                    onSelect={(chapter) => history.push(getChapterStartStep(chapter), {})}
+                    onSelect={(chapter) => history.push(CHAPTER_START_STEP[chapter], {})}
                   />
                 }
                 title={t('v1_15_0.intro.title')}
