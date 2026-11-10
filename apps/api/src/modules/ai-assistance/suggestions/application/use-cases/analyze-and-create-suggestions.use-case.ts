@@ -1,7 +1,7 @@
 import { AI_SUGGESTION_LIMITS } from "@aido/api/vocabulary";
 import { orderBy } from "es-toolkit";
 
-import type { EntitlementReaderPort } from "#api/modules/access/access-entitlement.public";
+import type { EntitlementReaderPort } from "#api/modules/access/entitlements/access-entitlements.public";
 import type { UserMutationLockPort } from "#api/modules/identity/identity-user-access.public";
 import type { GridInput } from "#api/modules/weather/forecasts/weather-forecasts.public";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";

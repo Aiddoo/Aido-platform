@@ -1,4 +1,7 @@
-import type { MeteredFeatureQuota, QuotaLedgerPort } from "#api/modules/access/access-quota.public";
+import type {
+  MeteredFeatureQuota,
+  QuotaLedgerPort,
+} from "#api/modules/access/quotas/access-quotas.public";
 
 export interface GetAiUsageQuery {
   readonly userId: string;

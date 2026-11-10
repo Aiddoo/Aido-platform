@@ -3,7 +3,7 @@ import dayjs from "dayjs";
 import {
   assertEntitled,
   type EntitlementReaderPort,
-} from "#api/modules/access/access-entitlement.public";
+} from "#api/modules/access/entitlements/access-entitlements.public";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { parseLocalDateTime } from "#api/shared/domain/date/utils/timezone";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";

@@ -1,7 +1,7 @@
 import {
   type EntitlementReaderPort,
   premiumFeatureDenied,
-} from "#api/modules/access/access-entitlement.public";
+} from "#api/modules/access/entitlements/access-entitlements.public";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";

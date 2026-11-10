@@ -3,7 +3,7 @@ import { Logger } from "@nestjs/common";
 import {
   ENTITLEMENT_READER,
   type EntitlementReaderPort,
-} from "#api/modules/access/access-entitlement.public";
+} from "#api/modules/access/entitlements/access-entitlements.public";
 import { AiSpendBudgetAdapter } from "#api/modules/ai-assistance/generation/infrastructure/adapters/ai-spend-budget.adapter";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { createEntityId } from "#api/platform/database/entity-id";

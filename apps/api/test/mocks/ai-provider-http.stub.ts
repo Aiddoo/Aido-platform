@@ -5,7 +5,7 @@ import { ConfigService } from "@nestjs/config";
 import { generateText, Output } from "ai";
 import { z } from "zod";
 
-import type { EntitlementReaderPort } from "#api/modules/access/access-entitlement.public";
+import type { EntitlementReaderPort } from "#api/modules/access/entitlements/access-entitlements.public";
 import {
   type AiProviderAdapter,
   AiProviderCatalog,

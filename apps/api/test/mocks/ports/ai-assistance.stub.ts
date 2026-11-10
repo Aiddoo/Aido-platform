@@ -1,6 +1,6 @@
 import type { PremiumFeature } from "@aido/api/vocabulary";
 
-import type { EntitlementReaderPort } from "#api/modules/access/access-entitlement.public";
+import type { EntitlementReaderPort } from "#api/modules/access/entitlements/access-entitlements.public";
 import { AiClientAppVersionReaderPort } from "#api/modules/ai-assistance/generation/application/ports/client-app-version.reader.port";
 import { TodoStatsReaderPort } from "#api/modules/ai-assistance/reports/application/ports/todo-stats.reader.port";
 import type {

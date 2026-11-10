@@ -6,7 +6,7 @@ import type {
   MeteredFeatureQuota,
   QuotaLedgerPort,
   QuotaReservation,
-} from "#api/modules/access/access-quota.public";
+} from "#api/modules/access/quotas/access-quotas.public";
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";

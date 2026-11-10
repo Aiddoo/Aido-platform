@@ -1,7 +1,7 @@
 import {
   assertEntitled,
   type EntitlementReaderPort,
-} from "#api/modules/access/access-entitlement.public";
+} from "#api/modules/access/entitlements/access-entitlements.public";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { AiReport } from "../../domain/ai-report.aggregate.js";

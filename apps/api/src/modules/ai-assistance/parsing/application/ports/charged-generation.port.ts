@@ -3,7 +3,7 @@ import type { MeteredFeatureKey } from "@aido/api/vocabulary";
 import type {
   MeteredFeatureQuota,
   QuotaReservation,
-} from "#api/modules/access/access-quota.public";
+} from "#api/modules/access/quotas/access-quotas.public";
 
 import type { AiTaskId } from "../../../generation/application/ports/ai-generator.port.js";
 

@@ -5,7 +5,7 @@ import dayjs from "dayjs";
 import {
   type EntitlementReaderPort,
   premiumFeatureDenied,
-} from "#api/modules/access/access-entitlement.public";
+} from "#api/modules/access/entitlements/access-entitlements.public";
 import type { UserMutationLockPort } from "#api/modules/identity/identity-user-access.public";
 import type { StagedTodoCreatorPort } from "#api/modules/planning/todos/planning-todos.public";
 import { ApplicationException } from "#api/shared/application/application.exception";

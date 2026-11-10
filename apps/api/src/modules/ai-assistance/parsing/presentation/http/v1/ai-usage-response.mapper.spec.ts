@@ -1,6 +1,6 @@
 import { PLAN_CATALOG } from "@aido/api/vocabulary";
 
-import type { MeteredFeatureQuota } from "#api/modules/access/access-quota.public";
+import type { MeteredFeatureQuota } from "#api/modules/access/quotas/access-quotas.public";
 
 import { toAiUsageData } from "./ai-usage-response.mapper.js";
 

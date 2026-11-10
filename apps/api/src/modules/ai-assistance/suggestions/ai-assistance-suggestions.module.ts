@@ -1,6 +1,6 @@
 import { Module } from "@nestjs/common";
 
-import { AccessModule } from "#api/modules/access/access-entitlement.public";
+import { AccessQuotasModule } from "#api/modules/access/quotas/access-quotas.public";
 import { IdentityUserAccessModule } from "#api/modules/identity/identity-user-access.public";
 import { NotificationDeliveryModule } from "#api/modules/notification/notification-delivery.public";
 import { PlanningTodosModule } from "#api/modules/planning/todos/planning-todos.public";
@@ -17,7 +17,7 @@ import { AiSuggestionController } from "./presentation/http/v1/ai-suggestion.con
  */
 @Module({
   imports: [
-    AccessModule,
+    AccessQuotasModule,
     IdentityUserAccessModule,
     AiAssistanceGenerationModule,
     AiAssistanceReportsModule,

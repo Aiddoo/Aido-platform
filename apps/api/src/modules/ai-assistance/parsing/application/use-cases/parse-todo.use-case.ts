@@ -1,6 +1,9 @@
 import type { ParsedTodoData } from "@aido/api";
 
-import type { MeteredFeatureQuota, QuotaLedgerPort } from "#api/modules/access/access-quota.public";
+import type {
+  MeteredFeatureQuota,
+  QuotaLedgerPort,
+} from "#api/modules/access/quotas/access-quotas.public";
 import type { AiDataSharingConsentReaderPort } from "#api/modules/identity/identity-settings.public";
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";

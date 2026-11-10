@@ -1,6 +1,6 @@
 import { Module } from "@nestjs/common";
 
-import { AccessModule } from "#api/modules/access/access-entitlement.public";
+import { AccessQuotasModule } from "#api/modules/access/quotas/access-quotas.public";
 import { IdentitySettingsModule } from "#api/modules/identity/identity-settings.public";
 import { IdentityUserAccessModule } from "#api/modules/identity/identity-user-access.public";
 import { NotificationDeliveryModule } from "#api/modules/notification/notification-delivery.public";
@@ -19,7 +19,7 @@ import { ScheduledAiConsentReader } from "./application/scheduled-ai-consent.rea
  */
 @Module({
   imports: [
-    AccessModule,
+    AccessQuotasModule,
     IdentitySettingsModule,
     IdentityUserAccessModule,
     NotificationDeliveryModule,
