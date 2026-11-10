@@ -1,0 +1,14 @@
+import type { {{camelCase aggregate}} as {{camelCase aggregate}}Table } from "#api/platform/database/schema/index";
+
+import { {{pascalCase aggregate}} } from "../../domain/{{aggregate}}.aggregate.js";
+
+type {{pascalCase aggregate}}Row = typeof {{camelCase aggregate}}Table.$inferSelect;
+type {{pascalCase aggregate}}InsertRow = typeof {{camelCase aggregate}}Table.$inferInsert;
+
+export function to{{pascalCase aggregate}}(row: {{pascalCase aggregate}}Row): {{pascalCase aggregate}} {
+  return {{pascalCase aggregate}}.reconstitute(row);
+}
+
+export function to{{pascalCase aggregate}}Row({{camelCase aggregate}}: {{pascalCase aggregate}}): {{pascalCase aggregate}}InsertRow {
+  return {{camelCase aggregate}}.toPrimitives();
+}

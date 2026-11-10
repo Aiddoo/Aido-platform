@@ -1,0 +1,73 @@
+import type { {{pascalCase aggregate}}RepositoryPort } from "#api/modules/{{context}}/{{slice}}/application/ports/{{aggregate}}.repository.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import {
+  create{{pascalCase aggregate}}Fixture,
+  {{constantCase aggregate}}_FIXTURE_NOW,
+  {{constantCase aggregate}}_FIXTURE_OTHER_USER_ID,
+  {{constantCase aggregate}}_FIXTURE_USER_ID,
+} from "#test/fixtures/{{context}}/{{aggregate}}.fixture";
+
+const USER_ID = UserId.reconstitute({{constantCase aggregate}}_FIXTURE_USER_ID);
+const OTHER_USER_ID = UserId.reconstitute({{constantCase aggregate}}_FIXTURE_OTHER_USER_ID);
+
+export function describe{{pascalCase aggregate}}RepositoryContract(
+  createRepository: () => Promise<{{pascalCase aggregate}}RepositoryPort>,
+): void {
+  describe("{{aggregate}} 저장소 계약", () => {
+    it("nextId는 부를 때마다 다른 id를 준다", async () => {
+      // Given
+      const repository = await createRepository();
+
+      // When
+      const first = await repository.nextId();
+      const second = await repository.nextId();
+
+      // Then
+      expect(first.equals(second)).toBe(false);
+    });
+
+    it("저장한 항목은 주인에게만 보인다", async () => {
+      // Given
+      const repository = await createRepository();
+      const {{camelCase aggregate}} = create{{pascalCase aggregate}}Fixture({ id: (await repository.nextId()).value });
+      await repository.save({{camelCase aggregate}});
+
+      // When
+      const found = [
+        await repository.findByIdAndUserId({{camelCase aggregate}}.id, USER_ID),
+        await repository.findByIdAndUserId({{camelCase aggregate}}.id, OTHER_USER_ID),
+      ];
+
+      // Then
+      expect(found[0]?.toPrimitives()).toEqual({{camelCase aggregate}}.toPrimitives());
+      expect(found[1]).toBeNull();
+    });
+
+    it("최근 생성 순으로 나열하고 after 항목 뒤부터 이어서 준다", async () => {
+      // Given
+      const repository = await createRepository();
+      const saved: {{idTsType}}[] = [];
+      for (const seconds of [0, 1, 2]) {
+        const {{camelCase aggregate}} = create{{pascalCase aggregate}}Fixture({
+          id: (await repository.nextId()).value,
+          createdAt: {{constantCase aggregate}}_FIXTURE_NOW.add({ seconds }),
+        });
+        await repository.save({{camelCase aggregate}});
+        saved.push({{camelCase aggregate}}.id.value);
+      }
+      const [oldest, middle, newest] = saved;
+
+      // When
+      const firstPage = await repository.listByUserId({ userId: USER_ID, after{{pascalCase aggregate}}Id: null, limit: 2 });
+      const lastItem = firstPage.at(-1);
+      const nextPage =
+        lastItem == null
+          ? []
+          : await repository.listByUserId({ userId: USER_ID, after{{pascalCase aggregate}}Id: lastItem.id, limit: 2 });
+
+      // Then
+      expect(firstPage.map((item) => item.id.value)).toEqual([newest, middle]);
+      expect(nextPage.map((item) => item.id.value)).toEqual([oldest]);
+    });
+  });
+}

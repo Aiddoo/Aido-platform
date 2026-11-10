@@ -1,0 +1,44 @@
+import { z } from "zod";
+
+import { datetimeSchema } from "../../../common/datetime.js";
+{{#if isSerial}}
+import { numberCursorPaginationInfoSchema } from "../../../common/pagination.js";
+{{/if}}
+
+export const {{camelCase aggregate}}Schema = z.object({
+{{#if isSerial}}
+  id: z.number().int().positive().describe("ID (양의 정수)"),
+{{else}}
+  id: z.cuid().describe("ID (CUID)"),
+{{/if}}
+  userId: z.cuid().describe("사용자 ID (CUID 25자)"),
+  name: z.string().describe("이름"),
+  createdAt: datetimeSchema.describe("생성 시각 (ISO 8601 UTC)"),
+  updatedAt: datetimeSchema.describe("수정 시각 (ISO 8601 UTC)"),
+});
+
+export type {{pascalCase aggregate}} = z.infer<typeof {{camelCase aggregate}}Schema>;
+
+export const {{camelCase aggregate}}ListResponseSchema = z.object({
+  items: z.array({{camelCase aggregate}}Schema).describe("목록"),
+{{#if isSerial}}
+  pagination: numberCursorPaginationInfoSchema.describe("페이지네이션 정보"),
+{{else}}
+  pagination: z
+    .object({
+      nextCursor: z.cuid().nullable(),
+      hasNext: z.boolean(),
+      size: z.number().int(),
+    })
+    .describe("페이지네이션 정보"),
+{{/if}}
+});
+
+export type {{pascalCase aggregate}}ListResponse = z.infer<typeof {{camelCase aggregate}}ListResponseSchema>;
+
+export const {{camelCase aggregate}}MutationResponseSchema = z.object({
+  message: z.string().describe("결과 메시지"),
+  {{camelCase aggregate}}: {{camelCase aggregate}}Schema,
+});
+
+export type {{pascalCase aggregate}}MutationResponse = z.infer<typeof {{camelCase aggregate}}MutationResponseSchema>;

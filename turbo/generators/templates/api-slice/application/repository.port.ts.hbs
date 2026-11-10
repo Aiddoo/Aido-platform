@@ -1,0 +1,19 @@
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+
+import type { {{pascalCase aggregate}} } from "../../domain/{{aggregate}}.aggregate.js";
+import type { {{pascalCase aggregate}}Id } from "../../domain/{{aggregate}}-id.vo.js";
+
+export abstract class {{pascalCase aggregate}}RepositoryPort {
+  abstract nextId(): Promise<{{pascalCase aggregate}}Id>;
+  abstract findByIdAndUserId(
+    {{camelCase aggregate}}Id: {{pascalCase aggregate}}Id,
+    userId: UserId,
+  ): Promise<{{pascalCase aggregate}} | null>;
+  // 최근 생성 순(createdAt·id 내림차순)이고 after 항목 뒤부터 준다
+  abstract listByUserId(params: {
+    readonly userId: UserId;
+    readonly after{{pascalCase aggregate}}Id: {{pascalCase aggregate}}Id | null;
+    readonly limit: number;
+  }): Promise<{{pascalCase aggregate}}[]>;
+  abstract save({{camelCase aggregate}}: {{pascalCase aggregate}}): Promise<void>;
+}

@@ -1,0 +1,20 @@
+import { ErrorCode } from "@aido/api/errors";
+import { {{constantCase aggregate}}_LIMITS } from "@aido/api/vocabulary";
+
+import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
+import { ValueObject } from "#api/shared/domain/model/value-object";
+
+export class {{pascalCase aggregate}}Name extends ValueObject<string> {
+  static create(raw: string): {{pascalCase aggregate}}Name {
+    const name = raw.trim();
+    const isWithinLimit = 1 <= name.length && name.length <= {{constantCase aggregate}}_LIMITS.NAME_MAX_LENGTH;
+    if (!isWithinLimit) {
+      throw new DomainException(ErrorCode.SYS_0002, { field: "name", length: name.length });
+    }
+    return new {{pascalCase aggregate}}Name(name);
+  }
+
+  static reconstitute(raw: string): {{pascalCase aggregate}}Name {
+    return new {{pascalCase aggregate}}Name(raw);
+  }
+}

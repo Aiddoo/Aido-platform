@@ -5,17 +5,9 @@ import type { ApplicationLoggerPort } from "#api/shared/application/ports/applic
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
+import { ImmediateUnitOfWork } from "#test/doubles/platform/immediate-unit-of-work";
 
 import { type LoggerToken, loggerFor, provideUseCase } from "./provide-use-case.js";
-
-class ImmediateUnitOfWork extends UnitOfWorkPort {
-  runCount = 0;
-
-  run<T>(work: () => Promise<T>): Promise<T> {
-    this.runCount += 1;
-    return work();
-  }
-}
 
 interface StampDependencies {
   readonly unitOfWork: UnitOfWorkPort;

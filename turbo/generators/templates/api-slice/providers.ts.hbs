@@ -1,0 +1,23 @@
+import type { Provider } from "@nestjs/common";
+
+import { loggerFor, provideUseCase } from "#api/platform/di/provide-use-case";
+import { ClockPort } from "#api/shared/application/ports/clock.port";
+import { MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
+import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
+
+import { {{pascalCase aggregate}}RepositoryPort } from "./application/ports/{{aggregate}}.repository.port.js";
+import { Create{{pascalCase aggregate}}UseCase } from "./application/use-cases/create-{{aggregate}}.use-case.js";
+import { List{{pascalCase slice}}UseCase } from "./application/use-cases/list-{{slice}}.use-case.js";
+import { Drizzle{{pascalCase aggregate}}Repository } from "./infrastructure/persistence/drizzle-{{aggregate}}.repository.js";
+
+export const {{constantCase context}}_{{constantCase slice}}_PROVIDERS = [
+  { provide: {{pascalCase aggregate}}RepositoryPort, useClass: Drizzle{{pascalCase aggregate}}Repository },
+  provideUseCase(Create{{pascalCase aggregate}}UseCase, {
+    unitOfWork: UnitOfWorkPort,
+    mutationLock: MutationLockPort,
+    {{camelCase aggregate}}Repository: {{pascalCase aggregate}}RepositoryPort,
+    clock: ClockPort,
+    logger: loggerFor(Create{{pascalCase aggregate}}UseCase),
+  }),
+  provideUseCase(List{{pascalCase slice}}UseCase, { {{camelCase aggregate}}Repository: {{pascalCase aggregate}}RepositoryPort }),
+] satisfies Provider[];

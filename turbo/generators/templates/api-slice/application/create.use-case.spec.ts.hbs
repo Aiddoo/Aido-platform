@@ -1,0 +1,66 @@
+import { ErrorCode } from "@aido/api/errors";
+
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { InMemory{{pascalCase aggregate}}Repository } from "#test/doubles/{{context}}/in-memory-{{aggregate}}.repository";
+import { FixedClock } from "#test/doubles/platform/fixed-clock";
+import { ImmediateUnitOfWork } from "#test/doubles/platform/immediate-unit-of-work";
+import { RecordingMutationLock } from "#test/doubles/platform/recording-mutation-lock";
+import { SilentLogger } from "#test/doubles/platform/silent-logger";
+import {
+  {{constantCase aggregate}}_FIXTURE_NOW,
+  {{constantCase aggregate}}_FIXTURE_USER_ID,
+} from "#test/fixtures/{{context}}/{{aggregate}}.fixture";
+
+import { {{pascalCase aggregate}}LockKeys } from "../{{slice}}.lock-keys.js";
+import {
+  type Create{{pascalCase aggregate}}Dependencies,
+  Create{{pascalCase aggregate}}UseCase,
+} from "./create-{{aggregate}}.use-case.js";
+
+function createUseCase(overrides: Partial<Create{{pascalCase aggregate}}Dependencies> = {}) {
+  const dependencies = {
+    unitOfWork: new ImmediateUnitOfWork(),
+    mutationLock: new RecordingMutationLock(),
+    {{camelCase aggregate}}Repository: new InMemory{{pascalCase aggregate}}Repository(),
+    clock: new FixedClock({{constantCase aggregate}}_FIXTURE_NOW),
+    logger: new SilentLogger(),
+    ...overrides,
+  };
+  return { useCase: new Create{{pascalCase aggregate}}UseCase(dependencies), ...dependencies };
+}
+
+describe("Create{{pascalCase aggregate}}UseCase — {{aggregate}} 만들기", () => {
+  it("이름이 비어 있으면 저장하지 않고 SYS_0002를 던진다", async () => {
+    // Given
+    const {{camelCase aggregate}}Repository = new InMemory{{pascalCase aggregate}}Repository();
+    const { useCase } = createUseCase({ {{camelCase aggregate}}Repository });
+
+    // When
+    const result = useCase.execute({ userId: {{constantCase aggregate}}_FIXTURE_USER_ID, name: "   " });
+
+    // Then
+    await expect(result).rejects.toMatchObject({ errorCode: ErrorCode.SYS_0002 });
+    expect({{camelCase aggregate}}Repository.size).toBe(0);
+  });
+
+  it("사용자 잠금 안에서 만들고 시계 시각을 생성·수정 시각으로 둔다", async () => {
+    // Given
+    const mutationLock = new RecordingMutationLock();
+    const { useCase } = createUseCase({ mutationLock });
+
+    // When
+    const created = await useCase.execute({
+      userId: {{constantCase aggregate}}_FIXTURE_USER_ID,
+      name: " 예시 이름 ",
+    });
+
+    // Then
+    const primitives = created.toPrimitives();
+    expect(primitives.name).toBe("예시 이름");
+    expect(primitives.createdAt.equals({{constantCase aggregate}}_FIXTURE_NOW)).toBe(true);
+    expect(primitives.updatedAt.equals({{constantCase aggregate}}_FIXTURE_NOW)).toBe(true);
+    expect(mutationLock.acquiredKeys).toEqual([
+      [{{pascalCase aggregate}}LockKeys.owner(UserId.reconstitute({{constantCase aggregate}}_FIXTURE_USER_ID))],
+    ]);
+  });
+});
