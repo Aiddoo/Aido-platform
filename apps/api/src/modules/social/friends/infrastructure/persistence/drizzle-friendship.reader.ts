@@ -5,7 +5,6 @@ import { and, eq, sql } from "drizzle-orm";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { follow } from "#api/platform/database/schema/social.schema";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { instantFromDate } from "#api/shared/domain/time/instant";
 
 import { FriendshipReaderPort } from "../../application/ports/friendship.reader.port.js";
 import type {
@@ -31,7 +30,7 @@ function toFriend(row: FollowRow & { following: UserBriefRow }): FriendReadModel
   return {
     friendshipId: row.id,
     user: toFriendUser(row.following),
-    friendsSince: instantFromDate(row.updatedAt),
+    friendsSince: row.updatedAt,
   };
 }
 
@@ -39,7 +38,7 @@ function toFriendRequest(row: FollowRow, counterpart: UserBriefRow): FriendReque
   return {
     friendshipId: row.id,
     user: toFriendUser(counterpart),
-    requestedAt: instantFromDate(row.createdAt),
+    requestedAt: row.createdAt,
   };
 }
 
@@ -170,7 +169,7 @@ export class DrizzleFriendshipReader implements FriendshipReaderPort {
 
   async #findRequestAnchor(
     afterFriendshipId: FriendshipId | null,
-  ): Promise<{ id: string; createdAt: Date } | null> {
+  ): Promise<{ id: string; createdAt: Temporal.Instant } | null> {
     if (afterFriendshipId == null) {
       return null;
     }
@@ -181,7 +180,7 @@ export class DrizzleFriendshipReader implements FriendshipReaderPort {
     return anchor ?? null;
   }
 
-  #isBeforeRequest(table: typeof follow, anchor: { id: string; createdAt: Date }) {
+  #isBeforeRequest(table: typeof follow, anchor: { id: string; createdAt: Temporal.Instant }) {
     return sql`(${table.createdAt}, ${table.id}) < (${sql.param(anchor.createdAt, table.createdAt)}, ${anchor.id})`;
   }
 }

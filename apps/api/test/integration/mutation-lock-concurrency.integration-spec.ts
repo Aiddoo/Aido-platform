@@ -1178,12 +1178,12 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
       {
         senderId,
         receiverId: priorReceiverId,
-        createdAt: new Date("2026-07-25T14:59:59.999Z"),
+        createdAt: Temporal.Instant.from("2026-07-25T14:59:59.999Z"),
       },
       {
         senderId,
         receiverId: currentReceiverId,
-        createdAt: new Date("2026-07-25T15:00:00.001Z"),
+        createdAt: Temporal.Instant.from("2026-07-25T15:00:00.001Z"),
       },
     ]);
     const { txHost } = createTransactionHarness(client);
@@ -1210,13 +1210,13 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
         senderId,
         receiverId,
         todoId,
-        createdAt: new Date("2026-07-25T14:59:59.999Z"),
+        createdAt: Temporal.Instant.from("2026-07-25T14:59:59.999Z"),
       },
       {
         senderId,
         receiverId,
         todoId,
-        createdAt: new Date("2026-07-25T15:00:00.001Z"),
+        createdAt: Temporal.Instant.from("2026-07-25T15:00:00.001Z"),
       },
     ]);
     const { txHost } = createTransactionHarness(client);
@@ -1308,6 +1308,6 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
     // Then
     expect(created.createdAt).toEqual(Temporal.Instant.from("2026-07-26T14:59:59.900Z"));
     const persisted = await client.query.cheer.findFirst({ where: { id: created.id.value } });
-    expect(persisted?.createdAt).toEqual(new Date("2026-07-26T14:59:59.900Z"));
+    expect(persisted?.createdAt).toEqual(Temporal.Instant.from("2026-07-26T14:59:59.900Z"));
   });
 });

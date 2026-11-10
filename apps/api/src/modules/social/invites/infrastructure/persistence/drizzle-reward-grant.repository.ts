@@ -8,7 +8,6 @@ import type { DrizzleTransactionalAdapter } from "#api/platform/database/databas
 import { createEntityId } from "#api/platform/database/entity-id";
 import { rewardGrant } from "#api/platform/database/schema/index";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { instantToDate } from "#api/shared/domain/time/instant";
 
 import {
   type RewardGrantFailure,
@@ -50,7 +49,12 @@ export class DrizzleRewardGrantRepository implements RewardGrantRepositoryPort {
     }
     const inserted = await this.#db
       .insert(rewardGrant)
-      .values(grants.map(toRewardGrantRow))
+      .values(
+        grants.map((grant) => {
+          const row = toRewardGrantRow(grant);
+          return { ...row, updatedAt: row.createdAt };
+        }),
+      )
       .onConflictDoNothing({
         target: [
           rewardGrant.sourceType,
@@ -86,7 +90,7 @@ export class DrizzleRewardGrantRepository implements RewardGrantRepositoryPort {
           quantity: sum(rewardGrant.quantity).mapWith(Number),
         })
         .from(rewardGrant)
-        .where(and(inviterGrants, gt(rewardGrant.createdAt, instantToDate(windowStart))))
+        .where(and(inviterGrants, gt(rewardGrant.createdAt, windowStart)))
         .groupBy(rewardGrant.rewardType),
     ]);
 
@@ -121,7 +125,7 @@ export class DrizzleRewardGrantRepository implements RewardGrantRepositoryPort {
   async markApplied(grantId: RewardGrantId, appliedAt: Temporal.Instant): Promise<boolean> {
     const updated = await this.#db
       .update(rewardGrant)
-      .set({ status: "APPLIED", appliedAt: instantToDate(appliedAt) })
+      .set({ status: "APPLIED", appliedAt, updatedAt: appliedAt })
       .where(
         and(eq(rewardGrant.id, grantId.value), inArray(rewardGrant.status, ["PENDING", "FAILED"])),
       )
@@ -136,7 +140,7 @@ export class DrizzleRewardGrantRepository implements RewardGrantRepositoryPort {
         status: "FAILED",
         attempts: sql`${rewardGrant.attempts} + ${failure.countsAttempt ? 1 : 0}`,
         lastErrorCode: failure.errorCode.slice(0, ERROR_CODE_MAX_LENGTH),
-        updatedAt: instantToDate(failure.failedAt),
+        updatedAt: failure.failedAt,
       })
       .where(and(eq(rewardGrant.id, grantId.value), ne(rewardGrant.status, "APPLIED")))
       .returning({ attempts: rewardGrant.attempts });
@@ -158,7 +162,7 @@ export class DrizzleRewardGrantRepository implements RewardGrantRepositoryPort {
           eq(rewardGrant.sourceType, "INVITE_REDEMPTION"),
           inArray(rewardGrant.status, ["PENDING", "FAILED"]),
           lt(rewardGrant.attempts, params.maxAttempts),
-          lte(rewardGrant.createdAt, instantToDate(params.createdBefore)),
+          lte(rewardGrant.createdAt, params.createdBefore),
           params.afterRedemptionId == null
             ? undefined
             : gt(rewardGrant.sourceId, params.afterRedemptionId.value),

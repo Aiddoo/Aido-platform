@@ -132,7 +132,7 @@ describe("초대 첫날·사용 시작 알림의 중복 방지 (실제 PostgreSQ
     const { inviteeId, redemptionId } = await redeemed("OLDINVTR", "OLDINVTE");
     await client
       .insert(inviteActiveDay)
-      .values({ redemptionId, localDate: new Date("2028-02-28T00:00:00.000Z") });
+      .values({ redemptionId, localDate: Temporal.PlainDate.from("2028-02-28") });
 
     // When
     await recordActivity.execute({
@@ -191,7 +191,7 @@ describe("초대 첫날·사용 시작 알림의 중복 방지 (실제 PostgreSQ
       columns: { qualifyReminderSentAt: true },
       where: { id: due.redemptionId },
     });
-    expect(stored?.qualifyReminderSentAt).toEqual(REMINDER_AT);
+    expect(stored?.qualifyReminderSentAt).toEqual(REMINDER_INSTANT);
     const nextRun = await unitOfWork.run(() =>
       repository.listQualifyReminderCandidates({
         now: REMINDER_INSTANT,

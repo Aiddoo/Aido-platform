@@ -1,7 +1,6 @@
 import { Invite, type InvitePrimitives } from "#api/modules/social/invites/domain/invite.aggregate";
 import type { Database } from "#api/platform/database/database.client";
 import { invite, user, userProfile } from "#api/platform/database/schema/index";
-import { instantToDate } from "#api/shared/domain/time/instant";
 import { UserFixture } from "#test/fixtures/user.fixture";
 
 // 2028-02-28 12:00 KST. 윤년 2월 말이라 날짜 경계 계산이 하루 밀리면 드러난다
@@ -102,7 +101,8 @@ export async function insertInviteFixtureRows(db: Database): Promise<void> {
     // 계약 suite가 쓰는 코드와 겹치지 않게 FK용 초대는 다른 코드다
     code: "ZZZZZZ",
     status: "REVOKED",
-    createdAt: instantToDate(INVITE_FIXTURE_NOW),
-    revokedAt: instantToDate(INVITE_FIXTURE_NOW),
+    createdAt: INVITE_FIXTURE_NOW,
+    revokedAt: INVITE_FIXTURE_NOW,
+    updatedAt: INVITE_FIXTURE_NOW,
   });
 }

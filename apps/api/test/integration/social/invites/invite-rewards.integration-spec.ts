@@ -35,7 +35,7 @@ import {
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { instantFromDate, instantToDate } from "#api/shared/domain/time/instant";
+import { instantFromDate } from "#api/shared/domain/time/instant";
 import { SubscriptionEventBuilder } from "#test/builders/index";
 import { toDateOrNull } from "#test/fixtures/billing/subscription.fixture";
 import { UserFixture } from "#test/fixtures/index";
@@ -307,10 +307,11 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
       inviteeId: earlierInviteeId,
       status: "REWARDED",
       timezone: "Asia/Seoul",
-      joinedAt: JOINED_AT,
-      qualifiedAt: JOINED_AT,
-      rewardedAt: JOINED_AT,
-      expiresAt: JOINED_AT,
+      joinedAt: instantFromDate(JOINED_AT),
+      qualifiedAt: instantFromDate(JOINED_AT),
+      rewardedAt: instantFromDate(JOINED_AT),
+      expiresAt: instantFromDate(JOINED_AT),
+      updatedAt: instantFromDate(JOINED_AT),
     });
     await client.insert(rewardGrant).values({
       recipientId: inviterId,
@@ -319,8 +320,9 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
       rewardType: "PREMIUM_DAYS",
       quantity: 30,
       status: "APPLIED",
-      appliedAt: JOINED_AT,
-      createdAt: JOINED_AT,
+      appliedAt: instantFromDate(JOINED_AT),
+      createdAt: instantFromDate(JOINED_AT),
+      updatedAt: instantFromDate(JOINED_AT),
     });
     await recordActivity.execute({
       inviteeId,
@@ -406,13 +408,17 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
     const now = Temporal.Instant.from("2028-03-15T03:00:00.000Z");
     const windowStart = rewardCapWindowStart(now);
     const grants = [
-      { sourceId: "leap-window-start", quantity: 7, createdAt: instantToDate(windowStart) },
+      { sourceId: "leap-window-start", quantity: 7, createdAt: windowStart },
       {
         sourceId: "leap-window-in",
         quantity: 7,
-        createdAt: instantToDate(windowStart.add({ milliseconds: 1 })),
+        createdAt: windowStart.add({ milliseconds: 1 }),
       },
-      { sourceId: "leap-old", quantity: 76, createdAt: new Date("2027-12-01T00:00:00.000Z") },
+      {
+        sourceId: "leap-old",
+        quantity: 76,
+        createdAt: Temporal.Instant.from("2027-12-01T00:00:00.000Z"),
+      },
     ];
     for (const grant of grants) {
       await client.insert(rewardGrant).values({
@@ -424,6 +430,7 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
         status: "APPLIED",
         appliedAt: grant.createdAt,
         createdAt: grant.createdAt,
+        updatedAt: grant.createdAt,
       });
     }
     const repository = context.module.get(RewardGrantRepositoryPort);

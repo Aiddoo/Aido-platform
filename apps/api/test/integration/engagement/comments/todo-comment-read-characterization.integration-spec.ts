@@ -229,15 +229,15 @@ async function seed(client: TestDatabaseClient): Promise<void> {
       followerId: OWNER_ID,
       followingId: friendId,
       status: "ACCEPTED" as const,
-      createdAt: at(0),
-      updatedAt: at(0),
+      createdAt: instantAt(0),
+      updatedAt: instantAt(0),
     })),
   );
   await client.insert(userBlock).values({
     id: commentId("block"),
     blockerId: FRIEND_A_ID,
     blockedId: FRIEND_C_ID,
-    createdAt: at(0),
+    createdAt: instantAt(0),
   });
   await client.insert(todoCategory).values({
     id: CATEGORY_ID,

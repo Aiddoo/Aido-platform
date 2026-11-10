@@ -79,8 +79,20 @@ describe("Social 일일 한도·쿨다운·조회 쿼리 (실제 PostgreSQL)", (
     todoIds = [];
     for (const [index, receiverId] of receiverIds.entries()) {
       await client.insert(follow).values([
-        { followerId: senderId, followingId: receiverId, status: "ACCEPTED", sortOrder: index },
-        { followerId: receiverId, followingId: senderId, status: "ACCEPTED", sortOrder: 0 },
+        {
+          followerId: senderId,
+          followingId: receiverId,
+          status: "ACCEPTED",
+          sortOrder: index,
+          updatedAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
+        },
+        {
+          followerId: receiverId,
+          followingId: senderId,
+          status: "ACCEPTED",
+          sortOrder: 0,
+          updatedAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
+        },
       ]);
       const [category] = await client
         .insert(todoCategory)
@@ -154,15 +166,19 @@ describe("Social 일일 한도·쿨다운·조회 쿼리 (실제 PostgreSQL)", (
       if (kind === "Cheer") {
         await client
           .insert(cheer)
-          .values({ senderId, receiverId, message: null, createdAt: SEED_AT });
+          .values({ senderId, receiverId, message: null, createdAt: instantFromDate(SEED_AT) });
       } else {
         const todoId = todoIds[index];
         if (todoId === undefined) {
           throw new Error("todo fixture 누락");
         }
-        await client
-          .insert(nudge)
-          .values({ senderId, receiverId, todoId, message: null, createdAt: SEED_AT });
+        await client.insert(nudge).values({
+          senderId,
+          receiverId,
+          todoId,
+          message: null,
+          createdAt: instantFromDate(SEED_AT),
+        });
       }
     }
   }
@@ -251,7 +267,7 @@ describe("Social 일일 한도·쿨다운·조회 쿼리 (실제 PostgreSQL)", (
         senderId,
         receiverId,
         message: "목록",
-        createdAt: SEED_AT,
+        createdAt: instantFromDate(SEED_AT),
       })),
     );
     const listStatements: string[] = [];
@@ -306,9 +322,13 @@ describe("Social 일일 한도·쿨다운·조회 쿼리 (실제 PostgreSQL)", (
       .delete(follow)
       .where(and(eq(follow.followerId, receiverId), eq(follow.followingId, senderId)));
     const missingReverse = await isMutualFriend(senderId, receiverId);
-    await client
-      .insert(follow)
-      .values({ followerId: senderId, followingId: senderId, status: "ACCEPTED", sortOrder: 0 });
+    await client.insert(follow).values({
+      followerId: senderId,
+      followingId: senderId,
+      status: "ACCEPTED",
+      sortOrder: 0,
+      updatedAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
+    });
     const self = await isMutualFriend(senderId, senderId);
     const missingUser = await isMutualFriend(senderId, createEntityId());
 

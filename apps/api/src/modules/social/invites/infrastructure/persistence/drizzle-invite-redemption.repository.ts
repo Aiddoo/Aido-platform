@@ -6,8 +6,8 @@ import { and, count, eq, inArray, lte, sql } from "drizzle-orm";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { createEntityId } from "#api/platform/database/entity-id";
 import { inviteActiveDay, inviteRedemption } from "#api/platform/database/schema/index";
+import { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { instantFromDate, instantToDate } from "#api/shared/domain/time/instant";
 
 import { InviteRedemptionRepositoryPort } from "../../application/ports/invite-redemption.repository.port.js";
 import type { InviteRedemptionSummary } from "../../application/read-models/invite-redemption-summary.read-model.js";
@@ -17,7 +17,6 @@ import { InviteRedemptionId } from "../../domain/invite-redemption-id.vo.js";
 import type { InviteRedemption } from "../../domain/invite-redemption.aggregate.js";
 import {
   INVITE_REDEMPTION_COLUMNS,
-  plainDateToDateColumn,
   toInviteRedemption,
   toInviteRedemptionRow,
 } from "./invite-redemption-row.mapper.js";
@@ -25,9 +24,11 @@ import {
 @Injectable()
 export class DrizzleInviteRedemptionRepository implements InviteRedemptionRepositoryPort {
   readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
+  readonly #clock: ClockPort;
 
-  constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>) {
+  constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>, clock: ClockPort) {
     this.#txHost = txHost;
+    this.#clock = clock;
   }
 
   get #db() {
@@ -46,7 +47,7 @@ export class DrizzleInviteRedemptionRepository implements InviteRedemptionReposi
   async add(redemption: InviteRedemption): Promise<boolean> {
     const inserted = await this.#db
       .insert(inviteRedemption)
-      .values(toInviteRedemptionRow(redemption))
+      .values({ ...toInviteRedemptionRow(redemption), updatedAt: this.#clock.now() })
       .onConflictDoNothing({ target: inviteRedemption.inviteeId })
       .returning({ id: inviteRedemption.id });
     if (inserted.length === 0) {
@@ -67,6 +68,7 @@ export class DrizzleInviteRedemptionRepository implements InviteRedemptionReposi
         rewardedAt: row.rewardedAt,
         rejectedAt: row.rejectedAt,
         qualifyReminderSentAt: row.qualifyReminderSentAt,
+        updatedAt: this.#clock.now(),
       })
       .where(eq(inviteRedemption.id, row.id));
     await this.#addActiveDays(redemption);
@@ -167,18 +169,17 @@ export class DrizzleInviteRedemptionRepository implements InviteRedemptionReposi
       profileImage: row.invitee.profile?.profileImage ?? null,
       status: row.status,
       activeDayCount: row.activeDayCount,
-      joinedAt: instantFromDate(row.joinedAt),
-      qualifiedAt: row.qualifiedAt == null ? null : instantFromDate(row.qualifiedAt),
+      joinedAt: row.joinedAt,
+      qualifiedAt: row.qualifiedAt,
       rejectionReason: row.rejectionReason,
     }));
   }
 
   async expireJoinedBefore(at: Temporal.Instant, limit: number): Promise<number> {
-    const atDate = instantToDate(at);
     const claimed = await this.#db
       .select({ id: inviteRedemption.id })
       .from(inviteRedemption)
-      .where(and(eq(inviteRedemption.status, "JOINED"), lte(inviteRedemption.expiresAt, atDate)))
+      .where(and(eq(inviteRedemption.status, "JOINED"), lte(inviteRedemption.expiresAt, at)))
       .orderBy(inviteRedemption.expiresAt, inviteRedemption.id)
       .limit(limit)
       .for("update", { skipLocked: true });
@@ -188,7 +189,7 @@ export class DrizzleInviteRedemptionRepository implements InviteRedemptionReposi
 
     const expired = await this.#db
       .update(inviteRedemption)
-      .set({ status: "REJECTED", rejectionReason: "EXPIRED", rejectedAt: atDate })
+      .set({ status: "REJECTED", rejectionReason: "EXPIRED", rejectedAt: at, updatedAt: at })
       .where(
         and(
           inArray(
@@ -216,11 +217,11 @@ export class DrizzleInviteRedemptionRepository implements InviteRedemptionReposi
         qualifyReminderSentAt: { isNull: true },
         inviterId: { isNotNull: true },
         inviterRewardEligible: true,
-        expiresAt: { gt: instantToDate(params.now), lte: instantToDate(params.expiresBefore) },
+        expiresAt: { gt: params.now, lte: params.expiresBefore },
         ...(after != null && {
           OR: [
-            { expiresAt: { gt: instantToDate(after.expiresAt) } },
-            { expiresAt: { eq: instantToDate(after.expiresAt) }, id: { gt: after.redemptionId } },
+            { expiresAt: { gt: after.expiresAt } },
+            { expiresAt: { eq: after.expiresAt }, id: { gt: after.redemptionId } },
           ],
         }),
       },
@@ -231,7 +232,7 @@ export class DrizzleInviteRedemptionRepository implements InviteRedemptionReposi
     return rows.map((row) => ({
       redemptionId: row.id,
       timezone: row.timezone,
-      expiresAt: instantFromDate(row.expiresAt),
+      expiresAt: row.expiresAt,
       activeDayCount: row.activeDayCount,
     }));
   }
@@ -246,7 +247,7 @@ export class DrizzleInviteRedemptionRepository implements InviteRedemptionReposi
       .values(
         redemption.activeDays.map((localDate) => ({
           redemptionId: redemption.id.value,
-          localDate: plainDateToDateColumn(localDate),
+          localDate,
         })),
       )
       .onConflictDoNothing({ target: [inviteActiveDay.redemptionId, inviteActiveDay.localDate] });

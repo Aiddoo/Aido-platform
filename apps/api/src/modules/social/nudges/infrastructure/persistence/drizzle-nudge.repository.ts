@@ -30,7 +30,6 @@ import {
 } from "#api/platform/database/schema/index";
 import { nextSequenceValue } from "#api/platform/database/sequence";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { instantFromDate, instantToDate } from "#api/shared/domain/time/instant";
 
 import { hasNoBlockWith } from "../../../blocks/infrastructure/persistence/drizzle-user-block.repository.js";
 import { USER_BRIEF_RELATION } from "../../../friends/infrastructure/persistence/user-brief-relation.constants.js";
@@ -131,8 +130,8 @@ export class DrizzleNudgeRepository implements NudgeRepositoryPort, NudgeReaderP
       nudgeTable,
       and(
         eq(nudgeTable.senderId, senderId.value),
-        gte(nudgeTable.createdAt, instantToDate(window.startsAt)),
-        lt(nudgeTable.createdAt, instantToDate(window.endsAt)),
+        gte(nudgeTable.createdAt, window.startsAt),
+        lt(nudgeTable.createdAt, window.endsAt),
       ),
     );
   }
@@ -166,7 +165,7 @@ export class DrizzleNudgeRepository implements NudgeRepositoryPort, NudgeReaderP
       }
       await this.#db
         .update(nudgeTable)
-        .set({ thankedAt: instantToDate(thankedAt) })
+        .set({ thankedAt })
         .where(
           and(
             inArray(
@@ -357,7 +356,7 @@ export class DrizzleNudgeRepository implements NudgeRepositoryPort, NudgeReaderP
       .select({ lastThankedAt: max(nudgeTable.thankedAt) })
       .from(nudgeTable)
       .where(this.#thankedOnTodo(todoId, receiverId));
-    return row?.lastThankedAt == null ? null : instantFromDate(row.lastThankedAt);
+    return row?.lastThankedAt ?? null;
   }
 
   async listThanksRecipients(

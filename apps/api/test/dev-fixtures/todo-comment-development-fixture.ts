@@ -284,10 +284,10 @@ async function provisionFixtureActor(input: {
     for (const { followerId, followingId } of friendshipDirections) {
       await transaction
         .insert(follow)
-        .values({ followerId, followingId, status: "ACCEPTED" })
+        .values({ followerId, followingId, status: "ACCEPTED", updatedAt: now })
         .onConflictDoUpdate({
           target: [follow.followerId, follow.followingId],
-          set: { status: "ACCEPTED" },
+          set: { status: "ACCEPTED", updatedAt: now },
         });
     }
 

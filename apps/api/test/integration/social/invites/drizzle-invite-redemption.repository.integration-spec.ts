@@ -12,8 +12,8 @@ import {
 } from "#api/platform/database/schema/index";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { instantToDate } from "#api/shared/domain/time/instant";
 import { describeInviteRedemptionRepositoryContract } from "#test/contracts/social/invite-redemption-repository.contract";
+import { DateClock } from "#test/doubles/platform/date-clock";
 import { createInviteRedemptionFixture } from "#test/fixtures/social/invite-redemption.fixture";
 import {
   createInviteFixture,
@@ -61,7 +61,7 @@ describe("DrizzleInviteRedemptionRepository (실제 PostgreSQL)", () => {
   } {
     const { txHost, uow } = createDatabaseTransactionFixture(client);
     return {
-      redemptions: new DrizzleInviteRedemptionRepository(txHost),
+      redemptions: new DrizzleInviteRedemptionRepository(txHost, new DateClock()),
       grants: new DrizzleRewardGrantRepository(txHost),
       unitOfWork: uow,
     };
@@ -98,7 +98,7 @@ describe("DrizzleInviteRedemptionRepository (실제 PostgreSQL)", () => {
       .select({ localDate: inviteActiveDay.localDate })
       .from(inviteActiveDay)
       .where(eq(inviteActiveDay.redemptionId, redemption.id.value));
-    expect(rows).toEqual([{ localDate: new Date("2028-02-29T00:00:00.000Z") }]);
+    expect(rows).toEqual([{ localDate: Temporal.PlainDate.from("2028-02-29") }]);
     const found = await redemptions.findByIdForUpdate(redemption.id);
     expect(found?.activeDays.map(String)).toEqual(["2028-02-29"]);
   });
@@ -197,9 +197,10 @@ describe("DrizzleInviteRedemptionRepository (실제 PostgreSQL)", () => {
       inviteeId,
       status: index % 4 === 0 ? ("QUALIFIED" as const) : ("JOINED" as const),
       timezone: "Asia/Seoul",
-      joinedAt: instantToDate(INVITE_FIXTURE_NOW.add({ seconds: index })),
-      qualifiedAt: index % 4 === 0 ? instantToDate(now) : null,
-      expiresAt: instantToDate(now.add({ hours: 120 })),
+      joinedAt: INVITE_FIXTURE_NOW.add({ seconds: index }),
+      qualifiedAt: index % 4 === 0 ? now : null,
+      expiresAt: now.add({ hours: 120 }),
+      updatedAt: now,
     }));
     await client.insert(inviteRedemption).values(rows);
     await client.insert(rewardGrant).values(
@@ -212,7 +213,8 @@ describe("DrizzleInviteRedemptionRepository (실제 PostgreSQL)", () => {
           rewardType: "FRIEND_SLOT" as const,
           quantity: 1,
           status: "APPLIED" as const,
-          appliedAt: instantToDate(now),
+          appliedAt: now,
+          updatedAt: now,
         })),
     );
     const summarizeMyInvite = new SummarizeMyInviteUseCase({

@@ -32,15 +32,7 @@ export type NudgeRowWithRelations = NudgeRow & {
   readonly todo: InteractionTodoRow;
 };
 
-function toNullableInstant(date: Date | null): Temporal.Instant | null {
-  return date == null ? null : instantFromDate(date);
-}
-
-function toNullableDate(instant: Temporal.Instant | null): Date | null {
-  return instant == null ? null : instantToDate(instant);
-}
-
-// DATE 컬럼은 드라이버가 UTC 자정 Date로 준다
+// planning Todo의 DATE 컬럼은 아직 드라이버가 UTC 자정 Date로 준다
 function toPlainDate(date: Date): Temporal.PlainDate {
   return instantFromDate(date).toZonedDateTimeISO("UTC").toPlainDate();
 }
@@ -50,35 +42,19 @@ export function toDateColumn(date: Temporal.PlainDate): Date {
 }
 
 export function toNudge(row: NudgeRow): Nudge {
-  return Nudge.reconstitute({
-    ...row,
-    readAt: toNullableInstant(row.readAt),
-    createdAt: instantFromDate(row.createdAt),
-    repliedAt: toNullableInstant(row.repliedAt),
-    replyUpdatedAt: toNullableInstant(row.replyUpdatedAt),
-    thankedAt: toNullableInstant(row.thankedAt),
-  });
+  return Nudge.reconstitute(row);
 }
 
 export function toNudgeRow(nudge: Nudge): NudgeInsertRow {
-  const primitives = nudge.toPrimitives();
-  return {
-    ...primitives,
-    readAt: toNullableDate(primitives.readAt),
-    createdAt: instantToDate(primitives.createdAt),
-    repliedAt: toNullableDate(primitives.repliedAt),
-    replyUpdatedAt: toNullableDate(primitives.replyUpdatedAt),
-    thankedAt: toNullableDate(primitives.thankedAt),
-  };
+  return nudge.toPrimitives();
 }
 
 export function toReminderNudge(row: ReminderNudgeRow): ReminderNudge {
-  return ReminderNudge.reconstitute({ ...row, createdAt: instantFromDate(row.createdAt) });
+  return ReminderNudge.reconstitute(row);
 }
 
 export function toReminderNudgeRow(reminder: ReminderNudge): ReminderNudgeInsertRow {
-  const primitives = reminder.toPrimitives();
-  return { ...primitives, createdAt: instantToDate(primitives.createdAt) };
+  return reminder.toPrimitives();
 }
 
 export function toNudgeTargetTodo(
@@ -119,12 +95,12 @@ export function toNudgeListItem(row: NudgeRowWithRelations): NudgeListItem {
     receiverId: row.receiverId,
     todoId: row.todoId,
     message: row.message,
-    readAt: toNullableInstant(row.readAt),
-    createdAt: instantFromDate(row.createdAt),
+    readAt: row.readAt,
+    createdAt: row.createdAt,
     replyKind: row.replyKind,
-    repliedAt: toNullableInstant(row.repliedAt),
-    replyUpdatedAt: toNullableInstant(row.replyUpdatedAt),
-    thankedAt: toNullableInstant(row.thankedAt),
+    repliedAt: row.repliedAt,
+    replyUpdatedAt: row.replyUpdatedAt,
+    thankedAt: row.thankedAt,
     sender: toNudgeUserSummary(row.sender),
     receiver: toNudgeUserSummary(row.receiver),
     todo: toNudgeInteractionTodo(row.todo),
