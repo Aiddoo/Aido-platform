@@ -24,20 +24,36 @@ export function withCategoryAdded(
   return { ...result, categories: [...result.categories, category] };
 }
 
-/** 만들기 응답의 서버 값으로 임시 행을 바꾼다. 새 카테고리라 할 일 수는 그대로(0)다 */
-export function withOptimisticCategorySaved(
+/**
+ * 만들기 응답의 서버 값으로 임시 행을 바꾼다. 새 카테고리라 할 일 수는 그대로(0)다.
+ * 그사이 다시 받아 임시 행이 사라졌으면 서버 행이 없을 때만 끝에 붙인다
+ */
+export function withCategorySaved(
   result: TodoCategoriesResult,
   optimisticCategoryId: number,
   savedCategory: TodoCategory,
 ): TodoCategoriesResult {
-  return {
-    ...result,
-    categories: result.categories.map((category) =>
-      category.id === optimisticCategoryId
-        ? { ...savedCategory, todoCount: category.todoCount }
-        : category,
-    ),
-  };
+  if (result.categories.some(({ id }) => id === optimisticCategoryId)) {
+    return {
+      ...result,
+      categories: result.categories.map((category) =>
+        category.id === optimisticCategoryId
+          ? { ...savedCategory, todoCount: category.todoCount }
+          : category,
+      ),
+    };
+  }
+  if (result.categories.some(({ id }) => id === savedCategory.id)) {
+    return result;
+  }
+  return withCategoryAdded(result, { ...savedCategory, todoCount: 0 });
+}
+
+export function withCategoryRemoved(
+  result: TodoCategoriesResult,
+  categoryId: number,
+): TodoCategoriesResult {
+  return { ...result, categories: result.categories.filter(({ id }) => id !== categoryId) };
 }
 
 export function withCategoryChanged(
@@ -75,10 +91,7 @@ export function withCategoryDeleted(
   categoryId: number,
   deletionResult: TodoCategoryDeletionResult | null,
 ): TodoCategoriesResult {
-  const remaining = {
-    ...result,
-    categories: result.categories.filter(({ id }) => id !== categoryId),
-  };
+  const remaining = withCategoryRemoved(result, categoryId);
 
   if (deletionResult?.todoHandling !== 'move' || deletionResult.moveToCategoryId == null) {
     return remaining;

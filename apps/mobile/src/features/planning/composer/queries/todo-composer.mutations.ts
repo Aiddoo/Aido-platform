@@ -35,6 +35,7 @@ import {
   getTodoExistenceFilters,
   invalidateTodos,
   removeTodoFromList,
+  saveCreatedTodo,
   settleTodoEdit,
   settleTodoWrite,
   syncDailyCompletionWithList,
@@ -124,7 +125,7 @@ export function useCreateTodoMutationOptions() {
       if (optimisticId == null) {
         invalidateTodoCategories(queryClient);
       } else {
-        updateCachedTodo(queryClient, { date: startDate, todoId: optimisticId }, () => saved);
+        saveCreatedTodo(queryClient, { date: startDate, optimisticId }, saved);
         changeCachedCategoryTodoCount(queryClient, { categoryId: saved.category.id, delta: 1 });
       }
       updateCachedTodoExistence(queryClient, withTodoCreated);

@@ -71,6 +71,21 @@ export function withTodoRestored(
   };
 }
 
+/** 만든 할 일 응답으로 임시 행을 바꾼다. 그사이 다시 받아 임시 행이 사라졌으면 서버 행이 없을 때만 끝에 붙인다 */
+export function withTodoSaved(
+  list: TodoListResult,
+  optimisticId: number,
+  saved: Todo,
+): TodoListResult {
+  if (list.todos.some((todo) => todo.id === optimisticId)) {
+    return withTodoUpdated(list, optimisticId, () => saved);
+  }
+  if (list.todos.some((todo) => todo.id === saved.id)) {
+    return list;
+  }
+  return withTodoAdded(list, saved);
+}
+
 export function withTodoCreated(existence: TodoExistence): TodoExistence {
   return existence.hasTodo ? existence : { ...existence, hasTodo: true };
 }
@@ -148,6 +163,17 @@ export function appendTodoToList(queryClient: QueryClient, { date }: { date: str
   queryClient.setQueryData(
     TODO_QUERY_KEYS.listByDate({ date }),
     (old) => old && withTodoAdded(old, todo),
+  );
+}
+
+export function saveCreatedTodo(
+  queryClient: QueryClient,
+  { date, optimisticId }: { date: string; optimisticId: number },
+  saved: Todo,
+) {
+  queryClient.setQueryData(
+    TODO_QUERY_KEYS.listByDate({ date }),
+    (old) => old && withTodoSaved(old, optimisticId, saved),
   );
 }
 
@@ -289,6 +315,11 @@ interface TodoWriteTarget {
 
 function isConcurrentTodoWrite(queryClient: QueryClient) {
   return queryClient.isMutating({ mutationKey: TODO_MUTATION_KEYS.listWrites() }) > 1;
+}
+
+/** 지금 끝나는 쓰기가 마지막이면 true. 앞 쓰기의 응답이 뒤에 바꾼 낙관적 값을 덮지 않게 마지막만 응답을 쓴다 */
+export function isLastTodoWrite(queryClient: QueryClient) {
+  return queryClient.isMutating({ mutationKey: TODO_MUTATION_KEYS.listWrites() }) === 1;
 }
 
 /** 쓰기를 시작한 순번. 먼저 시작해 나중에 끝난 쓰기도 그 사이 다른 쓰기가 있었는지 알 수 있다 */

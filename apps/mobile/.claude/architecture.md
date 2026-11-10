@@ -1022,29 +1022,52 @@ export function useCreateMemoMutationOptions() {
 
 ### 낙관적 갱신
 
-여러 화면이 같은 값을 보여 주면 캐시로(TanStack "Optimistic Updates"의 via the cache), 그 버튼 하나만 보여 주면 `useMutation`의 `variables`로 그린다. 되돌릴 수 없는 삭제(카테고리 삭제)는 미리 빼지 않고 버튼만 불러오는 중으로 둔다. 캐시로 할 때는 순서가 하나다.
+여러 화면이 같은 값을 보여 주면 캐시로(TanStack "Optimistic Updates"의 via the cache), 그 버튼 하나만 보여 주면 `useMutation`의 `variables`로 그린다. 되돌릴 수 없는 삭제(카테고리 삭제)는 미리 빼지 않고 버튼만 불러오는 중으로 둔다. 캐시로 할 때는 순서가 하나고, 같은 캐시를 쓰는 뮤테이션은 함께 진행된다고 보고 짠다(TkDodo "Concurrent Optimistic Updates"). 새 공용 helper를 만들지 않고 아래 순서를 각 옵션에 그대로 쓴다.
 
-1. `onMutate`: 덮어쓸 수 있는 키만 `cancelQueries`(단건은 `exact: true`) → `getQueryData`로 스냅샷 → `setQueryData(key, (old) => old && withX(old, …))` → 스냅샷을 돌려준다. updater는 `*-cache.ts`의 순수 함수다(`withCategoryAdded`). 업무 규칙이면 `domains/*.model.ts` Policy다.
-2. `onError`: 돌려받은 스냅샷으로 되돌린다. 같은 키를 동시에 쓰는 뮤테이션이 있으면 통째로 덮지 않고 그 변경만 되돌린다.
-3. `onSettled`: 바뀐 키만 무효화한다. 동시에 쓰는 뮤테이션은 `mutationKey`를 두고 `isMutating({ mutationKey }) === 1`일 때만 다시 받는다.
+1. `mutationKey`: `{FEATURE}_MUTATION_KEYS.writes()`로 그 캐시를 쓰는 뮤테이션을 한 묶음으로 센다. 하트처럼 댓글마다 세야 하면 뒤에 entity를 붙인다.
+2. `onMutate`: 덮어쓸 수 있는 키만 `cancelQueries`(단건은 `exact: true`) → 이 뮤테이션이 바꾸는 entity·칸만 읽어 둔다(이름·색, 지운 행과 자리) → `setQueryData(key, (old) => old && withX(old, …))`. updater는 `*-cache.ts`의 순수 함수다(`withCategoryChanged`). 업무 규칙이면 `domains/*.model.ts` Policy다.
+3. `onError`: 읽어 둔 값으로 같은 updater를 **지금 캐시**에 다시 적용해 그 entity만 되돌린다. `setQueryData(key, snapshot)`로 통째로 덮지 않는다. 그사이 바뀐 할 일 수·다른 행·다른 하트가 지워진다.
+4. `onSuccess`: 응답이 확정한 칸은 `isMutating({ mutationKey }) === 1`일 때만 쓴다. 앞 응답이 뒤에 누른 값을 덮어 깜빡이지 않게 한다. 만들기는 임시 id를 서버 행으로 바꾸고, 그사이 다시 받아 임시 행이 없으면 서버 행이 없을 때만 붙인다(`withCategorySaved`·`withTodoSaved`).
+5. `onSettled`: 응답이 바뀐 값을 다 담으면 실패하고 마지막일 때만 다시 받는다. 담지 못하면(읽음 처리의 안 읽은 수, 친구 끊기) 마지막일 때만 다시 받는다.
+6. `scope`는 버튼이 잠기지 않는 연타처럼 서버에 보낸 순서가 중요할 때만 둔다(댓글 하트). 기본 `networkMode`라 오프라인에 멈춘 뮤테이션은 낙관적 값을 지키고 마지막 실패에서만 되돌린다.
 
 ```typescript
 // features/planning/category/queries/todo-category.mutations.ts
+mutationKey: TODO_CATEGORY_MUTATION_KEYS.writes(),
 onMutate: async ({ id, input }) => {
   await queryClient.cancelQueries({ queryKey: TODO_CATEGORY_QUERY_KEYS.list(), exact: true });
-  const previousData = queryClient.getQueryData(TODO_CATEGORY_QUERY_KEYS.list());
+  const previous = TodoCategoryPolicy.findCategory(
+    queryClient.getQueryData(TODO_CATEGORY_QUERY_KEYS.list())?.categories ?? [],
+    id,
+  );
   queryClient.setQueryData(
     TODO_CATEGORY_QUERY_KEYS.list(),
     (old) => old && withCategoryChanged(old, id, input),
   );
-  return { previousData };
+  return { previous };
 },
-onError: (_error, _variables, context) => {
-  if (context?.previousData != null) {
-    queryClient.setQueryData(TODO_CATEGORY_QUERY_KEYS.list(), context.previousData);
+onSuccess: (saved, { id }) => {
+  if (isLastCategoryWrite(queryClient)) {
+    queryClient.setQueryData(
+      TODO_CATEGORY_QUERY_KEYS.list(),
+      (old) => old && withCategoryChanged(old, id, pick(saved, ['name', 'color'])),
+    );
   }
 },
-onSettled: () => invalidateTodoCategories(queryClient),
+onError: (_error, { id }, context) => {
+  const previous = context?.previous;
+  if (previous != null) {
+    queryClient.setQueryData(
+      TODO_CATEGORY_QUERY_KEYS.list(),
+      (old) => old && withCategoryChanged(old, id, pick(previous, ['name', 'color'])),
+    );
+  }
+},
+onSettled: (_data, error) => {
+  if (error != null && isLastCategoryWrite(queryClient)) {
+    invalidateTodoCategories(queryClient);
+  }
+},
 ```
 
 ### 할 일 목록의 낙관적 갱신
@@ -1054,12 +1077,12 @@ onSettled: () => invalidateTodoCategories(queryClient),
 - 날짜는 할 일의 `startDate`가 아니라 보고 있는 목록의 `date`다. 여러 날 할 일은 여러 날짜 목록에 있다.
 - `onMutate`: `beginTodoWrite`로 그 목록·상세(달력까지 바꾸면 그날을 담은 완료 범위)만 멈추고, 돌려받은 표를 context에 담는다. `updateCachedTodo`로 목록·상세를 함께 고치고 달력은 `syncDailyCompletionWithList`로 목록에서 다시 계산한다.
 - `onError`: 스냅샷을 통째로 덮지 않고 그 변경만 되돌린다. 통째로 덮으면 함께 진행 중인 다른 변경을 지운다.
-- `onSuccess`: 응답이 확정한 값(만든 할 일, 존재 여부, 카테고리 개수)은 `setQueryData`로 고친다.
+- `onSuccess`: 응답이 확정한 값(만든 할 일, 존재 여부, 카테고리 개수)은 `setQueryData`로 고친다. 체크는 마지막 쓰기(`isLastTodoWrite`)이고 캐시의 완료 값이 응답과 다를 때만 쓴다. `setQueryData`는 낡음 표시를 지워 함께 끝난 다른 쓰기가 표시한 목록을 다시 받지 않게 되기 때문이다.
 - `onSettled`: `mutationKey`에 `TODO_MUTATION_KEYS`를 두고 `settleTodoWrite`만 부른다. 확정된 목록·하루짜리 달력은 다시 받지 않고, 기간 안의 다른 날짜 목록·겹치는 달력 범위·위젯 요약만 낡음(`refetchType: 'none'`)으로 표시한다. 실패했거나 다른 쓰기와 겹쳤으면 고친 목록·상세·달력까지 맞춘다. 마지막 쓰기만 화면에 붙은 낡은 조회를 다시 받아 낙관적 값이 되돌아가지 않는다.
 - 되돌릴 값과 기간은 `findCachedTodo`로 그날 목록 → 상세 → 다른 날짜 목록 순으로 읽는다. 알림으로 연 상세는 그날 목록이 없다.
 - 저장을 기다리는 시트(제목·날짜·시각·카테고리 고치기)는 낙관적으로 쓰지 않는다. 같은 `listWrites` 키로 세고 `onSuccess`에서 `settleTodoEdit`로 고치기 전·후 값의 날짜 목록·위젯 요약, 날짜·색이 바뀌면 달력, 카테고리가 바뀌면 개수만 맞춘다. 반복 범위·규칙을 바꾸면 바뀐 회차를 몰라 `invalidateTodos`다.
 - 하위 항목 진행(막대·"2/4")은 저장하지 않고 `SubTodoPolicy.getSubTodoStats`로 항목 목록에서 센다. 항목 추가는 끝낸 할 일일 때만 완료가 풀려 달력·위젯·존재 여부를 맞춘다.
-- 임시 id는 음수다(`createOptimisticId`). 임시 행은 `TodoPolicy.isOptimisticTodo`·`SubTodoPolicy.isOptimisticSubTodo`로 막고, 응답이 오면 다시 받기 전에 서버 id로 바꾼다.
+- 임시 id는 음수다(`createOptimisticId`). 임시 행은 `TodoPolicy.isOptimisticTodo`·`SubTodoPolicy.isOptimisticSubTodo`로 막고, 응답이 오면 다시 받기 전에 서버 id로 바꾼다. 그사이 다시 받아 임시 행이 없으면 서버 행이 없을 때만 붙인다(`saveCreatedTodo`).
 
 ---
 

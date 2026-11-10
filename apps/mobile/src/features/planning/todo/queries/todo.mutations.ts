@@ -36,6 +36,7 @@ import {
   getUpcomingRepeatFilters,
   invalidateTodoDependentQueries,
   invalidateTodos,
+  isLastTodoWrite,
   removeTodoFromList,
   restoreTodo,
   settleTodoEdit,
@@ -87,7 +88,17 @@ export function useToggleTodoMutationOptions() {
 
       return { ticket, span };
     },
-    onSuccess: (_data, variables) => {
+    onSuccess: (saved, variables) => {
+      const target = { date: variables.date, todoId: variables.todoId };
+      // 그사이 다른 조회가 낡은 완료 값을 썼으면 서버 값으로 고친다. 앞 체크의 응답은 뒤에 누른 체크를 덮지 않게 마지막만 쓰고,
+      // 값이 같으면 쓰지 않는다. 쓰면 함께 끝난 제목 저장이 남긴 낡음 표시가 지워져 그 목록을 다시 받지 않는다
+      if (
+        isLastTodoWrite(queryClient) &&
+        findCachedTodo(queryClient, target)?.completed !== saved.completed
+      ) {
+        updateCachedTodo(queryClient, target, (todo) => ({ ...todo, completed: saved.completed }));
+        syncDailyCompletionWithList(queryClient, { date: variables.date });
+      }
       trackEvent('todo_completed', {
         todo_id: variables.todoId,
         is_completed: variables.body.completed,
