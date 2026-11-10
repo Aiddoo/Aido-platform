@@ -1,4 +1,7 @@
-import { AI_REPORT_QUEUE } from "#api/modules/ai-assistance/reports/infrastructure/jobs/ai-report.queue";
+import {
+  AI_REPORT_QUEUE,
+  AiReportRuntimeJobSchema,
+} from "#api/modules/ai-assistance/reports/infrastructure/jobs/ai-report.queue";
 import { ReportGenerationProcessor } from "#api/modules/ai-assistance/reports/infrastructure/jobs/report-generation.processor";
 import { ReportGenerationScheduler } from "#api/modules/ai-assistance/reports/infrastructure/jobs/report-generation.scheduler";
 import {
@@ -151,24 +154,88 @@ describe("AI 제안·리포트 디스패치 — 사용자 현지 시각 (실제 
     expect(analyzeKeys()).toEqual([`suggestion_${laUserId}_2026-11-01`]);
   });
 
-  it("주간 리포트 디스패치는 서울 월요일 새벽에 첫 페이지부터 서울 사용자만 등록한다", async () => {
-    // Given - 서울 2026-10-12(월) 01:05, LA는 아직 일요일
-    vi.useFakeTimers({ toFake: ["Date"], now: new Date("2026-10-11T16:05:00Z") });
-    const runtime = new FakeJobRuntime();
-    const reports = new ReportGenerationScheduler(
-      createDatabaseTransactionFixture(client).txHost,
-      runtime,
-      new ReportGenerationProcessor({ execute: async () => null }),
-    );
+  describe("리포트", () => {
+    let runtime: FakeJobRuntime;
 
-    // When
-    await reports.dispatchReports("WEEKLY");
+    function reportScheduler() {
+      runtime = new FakeJobRuntime();
+      return new ReportGenerationScheduler(
+        createDatabaseTransactionFixture(client).txHost,
+        runtime,
+        new ReportGenerationProcessor({ execute: async () => null }),
+      );
+    }
 
-    // Then
-    expect(
-      runtime.enqueueCalls
-        .filter((call) => call.queue === AI_REPORT_QUEUE)
-        .map((call) => call.options.idempotencyKey),
-    ).toEqual([`report_WEEKLY_${seoulUserId}_2026-W42`]);
+    function reportJobs(name: "generate-report" | "dispatch-reports" = "generate-report") {
+      return runtime.enqueueCalls.flatMap((call) => {
+        const job = AiReportRuntimeJobSchema.parse(call.data);
+        return call.queue === AI_REPORT_QUEUE && job.name === name
+          ? [{ key: call.options.idempotencyKey, data: job.data }]
+          : [];
+      });
+    }
+
+    it.each([
+      {
+        name: "서울 월요일 01:05(LA는 아직 일요일)에는 서울 사용자만",
+        at: "2026-10-11T16:05:00Z",
+        user: "seoul",
+        week: "2026-W42",
+      },
+      {
+        name: "LA 월요일 00:05(서울은 월요일 오후)에는 LA 사용자만 LA의 지난 주로",
+        at: "2026-10-12T07:05:00Z",
+        user: "la",
+        week: "2026-W42",
+      },
+    ] as const)("주간 리포트는 $name 등록한다", async ({ at, user, week }) => {
+      // Given
+      vi.useFakeTimers({ toFake: ["Date"], now: new Date(at) });
+      const scheduler = reportScheduler();
+      const userId = user === "seoul" ? seoulUserId : laUserId;
+
+      // When
+      await scheduler.dispatchReports("WEEKLY");
+
+      // Then
+      expect(reportJobs().map(({ key }) => key)).toEqual([`report_WEEKLY_${userId}_${week}`]);
+    });
+
+    it("시간대 설정이 없는 사용자는 기본 시간대(서울)·언어(ko)로 월간 창을 판단한다", async () => {
+      // Given - 서울 11월 1일 00:05
+      vi.useFakeTimers({ toFake: ["Date"], now: new Date("2026-10-31T15:05:00Z") });
+      const userId = createEntityId();
+      await client
+        .insert(userTable)
+        .values(UserFixture.create({ id: userId, subscriptionStatus: "ACTIVE" }));
+      const scheduler = reportScheduler();
+
+      // When
+      await scheduler.dispatchReports("MONTHLY");
+
+      // Then
+      expect(reportJobs()).toContainEqual({
+        key: `report_MONTHLY_${userId}_2026-M11`,
+        data: { userId, timezone: "Asia/Seoul", locale: "ko", reportType: "MONTHLY" },
+      });
+    });
+
+    it("재시작하면 놓친 매시 디스패치를 UTC 시각 멱등 키로 한 번만 보정한다", async () => {
+      // Given
+      vi.useFakeTimers({ toFake: ["Date"], now: new Date("2026-10-26T07:40:00Z") });
+      const scheduler = reportScheduler();
+
+      // When - 같은 시각에 두 번 부팅
+      scheduler.onModuleInit();
+      await scheduler.schedulerRegistration;
+      scheduler.onModuleInit();
+      await scheduler.schedulerRegistration;
+
+      // Then
+      expect(reportJobs("dispatch-reports").map(({ key }) => key)).toEqual([
+        "dispatch_WEEKLY_2026-10-26T07",
+        "dispatch_MONTHLY_2026-10-26T07",
+      ]);
+    });
   });
 });
