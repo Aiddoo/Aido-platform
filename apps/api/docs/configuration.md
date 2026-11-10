@@ -5,7 +5,7 @@ env를 더하거나 읽는 위치를 바꿀 때, 운영 env를 준비할 때 읽
 ## 규칙
 
 - `@nestjs/config` 공식 namespace 설정을 쓴다. slice마다 `<context>-<slice>.config.ts`에 `defineConfig("<name>", schema, (env) => ({ ENV_NAME: env.ENV_NAME, … }))`([define-config.ts](../src/platform/config/define-config.ts), `registerAs` + Zod)를 두고, 주입은 `@Inject(memosConfig.KEY)`, 타입은 `ConfigType<typeof memosConfig>`다. 읽기 함수는 schema가 읽는 env 키를 모두 적어야 컴파일된다.
-- 공용 값은 `platform/config`의 `database`·`redis`·`jwt`·`sentry`·`cache` namespace(`*.config.ts`)에 둔다.
+- 공용 값은 `platform/config`의 `app`·`database`·`redis`·`jwt`·`sentry`·`cache`·`encryption`·`job`·`throttle` namespace(`*.config.ts`)에 둔다. 여러 slice가 같은 env(`SUPPORT_EMAIL`, 서명 대체용 `JWT_SECRET`)를 읽으면 각 slice 설정이 같은 schema 조각을 고른다.
 - `process.env`는 `*.config.ts`에서만 읽는다(`node/no-process-env`).
 - env 이름은 운영 계약이라 바꾸지 않는다. 쓰지 않는 env는 코드 사용처가 0인지 확인한 뒤 schema에서 지운다(스키마가 모르는 변수는 버려진다).
 - 설정 값 목록(`CACHE_TYPE` 등)은 config 파일 안의 `as const` 튜플에서 `z.enum`으로 유도한다([공유 값](conventions.md#공유-값은-한-곳에서-선언한다)).
@@ -49,4 +49,4 @@ env를 더하거나 읽는 위치를 바꿀 때, 운영 env를 준비할 때 읽
 
 ## 전환 중
 
-`TypedConfigService`는 옮기지 않은 Context가 아직 쓴다. 공용 섹션(`database`·`redis`·`jwt`·`sentry`·`cache`)은 namespace 설정의 같은 schema·매핑(`config.parse`)으로 읽어 값의 출처가 하나다. platform 모듈(DB·Redis·캐시·잠금·dedup·throttle)은 `xxxConfig.KEY`를 직접 주입받는다. 시작 검증은 지금처럼 `src/platform/config/schemas` 전체 schema가 한 번 한다. Context를 옮길 때 그 Context가 쓰는 값만 소유 slice의 `*.config.ts`로 나누고 env 이름은 그대로 둔다. 안 쓰는 env(`JOB_POLLING_INTERVAL_SECONDS`, `JOB_BACKEND`, `JOB_REDIS_DRAIN_ENABLED`)는 schema에서 지웠다. 배포 env에 남아 있어도 env schema가 모르는 키를 버려 무시된다. 옮긴 Context는 `apps/api/architecture.ratchet.json`의 `migratedContexts`에 있다.
+`TypedConfigService`는 ai-assistance(`ai` 섹션)만 쓴다. ai가 slice 설정으로 옮기면 지운다. 시작 검증은 지금처럼 `src/platform/config/schemas` 전체 schema가 한 번 한다. 안 쓰는 env(`JOB_POLLING_INTERVAL_SECONDS`, `JOB_BACKEND`, `JOB_REDIS_DRAIN_ENABLED`)는 schema에서 지웠다. 배포 env에 남아 있어도 env schema가 모르는 키를 버려 무시된다. 옮긴 Context는 `apps/api/architecture.ratchet.json`의 `migratedContexts`에 있다.
