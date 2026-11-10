@@ -15,7 +15,6 @@ import { DeleteAccountUseCase } from "../users/application/use-cases/delete-acco
 import { GetCurrentUserUseCase } from "../users/application/use-cases/get-current-user.use-case.js";
 import { GetEntitlementSnapshotUseCase } from "../users/application/use-cases/get-entitlement-snapshot.use-case.js";
 import { PurgeDeletedAccountsUseCase } from "../users/application/use-cases/purge-deleted-accounts.use-case.js";
-import { RestoreAccountUseCase } from "../users/application/use-cases/restore-account.use-case.js";
 import { UpdateProfileUseCase } from "../users/application/use-cases/update-profile.use-case.js";
 import {
   AccountNotificationCleanupPort,
@@ -71,6 +70,7 @@ import { RequestPasswordResetUseCase } from "./application/use-cases/request-pas
 import { RequestPasswordSetupCodeUseCase } from "./application/use-cases/request-password-setup-code.use-case.js";
 import { ResendVerificationUseCase } from "./application/use-cases/resend-verification.use-case.js";
 import { ResetPasswordUseCase } from "./application/use-cases/reset-password.use-case.js";
+import { RestoreAccountUseCase } from "./application/use-cases/restore-account.use-case.js";
 import { RevokeSessionUseCase } from "./application/use-cases/revoke-session.use-case.js";
 import { SendVerificationCodeUseCase } from "./application/use-cases/send-verification-code.use-case.js";
 import { SetPasswordUseCase } from "./application/use-cases/set-password.use-case.js";

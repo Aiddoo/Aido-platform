@@ -2,11 +2,11 @@ import { SECURITY_EVENT } from "@aido/api/vocabulary";
 
 import { toIsoString } from "#api/shared/domain/time/instant";
 
-import type { AuthSecurityLogRepositoryPort } from "../../../auth/application/ports/auth-security-log.repository.port.js";
-import type { AuthUserRepositoryPort } from "../../../auth/application/ports/auth-user.repository.port.js";
-import type { RequestMetadata } from "../../../auth/application/read-models/auth-result.read-model.js";
-import { AUTH_DEFAULTS } from "../../../auth/domain/auth.constants.js";
-import type { IdentityUser } from "../../domain/identity-user.aggregate.js";
+import type { IdentityUser } from "../../../users/domain/identity-user.aggregate.js";
+import { AUTH_DEFAULTS } from "../../domain/auth.constants.js";
+import type { AuthSecurityLogRepositoryPort } from "../ports/auth-security-log.repository.port.js";
+import type { AuthUserRepositoryPort } from "../ports/auth-user.repository.port.js";
+import type { RequestMetadata } from "../read-models/auth-result.read-model.js";
 
 export interface RestoreAccountCommand {
   readonly user: IdentityUser;
