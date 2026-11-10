@@ -1,6 +1,5 @@
-import { vi } from "vitest";
-
 import type { EnqueueJobOptions, JobData } from "#api/shared/application/ports/job-runtime.port";
+import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { FakeJobRuntime } from "#test/mocks/fake-job-runtime";
 
 import { AccountPurgeScheduler } from "./account-purge.scheduler.js";
@@ -20,19 +19,15 @@ class ControlledScheduleRuntime extends FakeJobRuntime {
   }
 }
 
-// AccountPurgeScheduler는 ClockPort 없이 dayjs()로 현지 시각을 읽어 Date만 고정한다(vitest.setup이 테스트마다 되돌린다)
-function freezeDateAt(at: string): void {
-  vi.useFakeTimers({ toFake: ["Date"] });
-  vi.setSystemTime(new Date(at));
-}
-
 describe("AccountPurgeJob — 일일 스케줄과 재시작 보정", () => {
   let runtime: ControlledScheduleRuntime;
+  let clock: FixedClock;
   let job: AccountPurgeScheduler;
 
   beforeEach(() => {
     runtime = new ControlledScheduleRuntime();
-    job = new AccountPurgeScheduler(runtime);
+    clock = new FixedClock(Temporal.Instant.from("2026-12-31T00:00:00Z"));
+    job = new AccountPurgeScheduler(runtime, clock);
   });
 
   it.each([
@@ -41,7 +36,8 @@ describe("AccountPurgeJob — 일일 스케줄과 재시작 보정", () => {
     { at: "2027-01-01T14:59:59.999Z", key: "purge_2027-01-01" },
   ])("KST 03:00 경계와 연말 시각 $at에서 기존 스케줄·보정 키를 유지한다", async ({ at, key }) => {
     // Given
-    freezeDateAt(at);
+    clock = new FixedClock(Temporal.Instant.from(at));
+    job = new AccountPurgeScheduler(runtime, clock);
     const options = {
       retryLimit: 2,
       retryDelaySeconds: 5,
@@ -102,7 +98,10 @@ describe("AccountPurgeJob — 일일 스케줄과 재시작 보정", () => {
 
   it("스케줄 등록 실패는 부팅 실패로 전파하지 않고 보정 잡을 만들지 않는다", async () => {
     // Given
-    freezeDateAt("2026-12-31T18:00:00.000Z");
+    job = new AccountPurgeScheduler(
+      runtime,
+      new FixedClock(Temporal.Instant.from("2026-12-31T18:00:00.000Z")),
+    );
     runtime.scheduleOutcome = () => Promise.reject(new Error("Queue unavailable"));
 
     // When

@@ -1,8 +1,8 @@
 import { Inject, Injectable, Logger, type OnModuleInit } from "@nestjs/common";
-import dayjs from "dayjs";
 
 import { AuthLogEvent } from "#api/modules/identity/auth/application/auth.log-events";
 import { runInBackground } from "#api/platform/jobs/non-blocking-init";
+import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
 
 import {
@@ -19,9 +19,11 @@ export class AccountPurgeScheduler implements OnModuleInit {
   schedulerRegistration: Promise<void> = Promise.resolve();
 
   readonly #runtime: JobRuntimePort;
+  readonly #clock: ClockPort;
 
-  constructor(@Inject(JOB_RUNTIME) runtime: JobRuntimePort) {
+  constructor(@Inject(JOB_RUNTIME) runtime: JobRuntimePort, clock: ClockPort) {
     this.#runtime = runtime;
+    this.#clock = clock;
   }
 
   onModuleInit(): void {
@@ -44,12 +46,12 @@ export class AccountPurgeScheduler implements OnModuleInit {
   }
 
   async #catchUpIfNeeded(): Promise<void> {
-    const currentTime = dayjs().tz(ACCOUNT_PURGE_SCHEDULE.timezone);
-    if (currentTime.hour() < ACCOUNT_PURGE_SCHEDULE.catchUpHour) {
+    const currentTime = this.#clock.now().toZonedDateTimeISO(ACCOUNT_PURGE_SCHEDULE.timezone);
+    if (currentTime.hour < ACCOUNT_PURGE_SCHEDULE.catchUpHour) {
       return;
     }
 
-    const localDate = currentTime.format("YYYY-MM-DD");
+    const localDate = currentTime.toPlainDate().toString();
     await this.#runtime.enqueue(
       ACCOUNT_PURGE_QUEUE,
       { name: ACCOUNT_PURGE_JOB_NAME, data: {} },
