@@ -1,3 +1,4 @@
+export * from "./app.config.js";
 export * from "./cache.config.js";
 export * from "./config.module.js";
 export * from "./database.config.js";

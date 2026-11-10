@@ -38,10 +38,12 @@ function purchase(store: string) {
   };
 }
 
-function receiverIn(appEnv: ConfigType<typeof appConfig>["appEnv"]) {
+function receiverIn(environment: ConfigType<typeof appConfig>["environment"]) {
   const applied: StoreSubscriptionEvent[] = [];
   const alert = new RecordingOperationalAlert();
-  const receiver = new RevenueCatWebhookReceiver(recordingApplyUseCase(applied), alert, { appEnv });
+  const receiver = new RevenueCatWebhookReceiver(recordingApplyUseCase(applied), alert, {
+    environment,
+  });
   return { receiver, applied, alert };
 }
 
@@ -85,9 +87,9 @@ describe("RevenueCatWebhookReceiver — Test Store 웹훅", () => {
 
   it.each(["development", "staging"] as const)(
     "%s 서버는 Test Store 구매를 지금처럼 반영한다",
-    async (appEnv) => {
+    async (environment) => {
       // Given
-      const { receiver, applied } = receiverIn(appEnv);
+      const { receiver, applied } = receiverIn(environment);
 
       // When
       await receiver.receive({ body: purchase("TEST_STORE") });

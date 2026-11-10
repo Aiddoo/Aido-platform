@@ -189,7 +189,7 @@ import { SessionController } from "./presentation/http/v1/session.controller.js"
       provide: AuthRuntimeConfigPort,
       inject: [appConfig.KEY],
       useFactory: (app: ConfigType<typeof appConfig>): AuthRuntimeConfigPort => ({
-        isDevelopment: app.isDevelopment,
+        isDevelopment: app.nodeEnv === "development",
       }),
     },
     issueVerificationCodeProvider,

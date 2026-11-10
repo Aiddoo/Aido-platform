@@ -61,20 +61,20 @@ const UNKNOWN_UNIQUE_CONSTRAINT_ALERT_KEY = "database.unique-constraint.unknown"
 @Catch()
 export class GlobalExceptionFilter implements ExceptionFilter {
   readonly #logger: PinoLogger;
-  readonly #config: Pick<ConfigType<typeof appConfig>, "isDevelopment">;
+  readonly #exposeErrorDetails: boolean;
   readonly #messages: ErrorMessageTranslator;
   readonly #exceptionReporter: ExceptionReporterPort;
   readonly #operationalAlert: OperationalAlertPort;
 
   constructor(
     logger: PinoLogger,
-    @Inject(appConfig.KEY) config: Pick<ConfigType<typeof appConfig>, "isDevelopment">,
+    @Inject(appConfig.KEY) app: Pick<ConfigType<typeof appConfig>, "nodeEnv">,
     messages: ErrorMessageTranslator,
     exceptionReporter: ExceptionReporterPort,
     operationalAlert: OperationalAlertPort,
   ) {
     this.#logger = logger;
-    this.#config = config;
+    this.#exposeErrorDetails = app.nodeEnv === "development";
     this.#messages = messages;
     this.#exceptionReporter = exceptionReporter;
     this.#operationalAlert = operationalAlert;
@@ -150,7 +150,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         error: {
           code: ErrorCode.SYS_0001,
           message: this.#messages.translate(ErrorCode.SYS_0001),
-          ...(this.#config.isDevelopment && { details: errorMessage }),
+          ...(this.#exposeErrorDetails && { details: errorMessage }),
         },
         timestamp: Date.now(),
       },
@@ -176,7 +176,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
               ? exceptionResponse.message.join(", ")
               : String(exceptionResponse.message)
             : exception.message,
-          ...(hasMessage && this.#config.isDevelopment && { details: exceptionResponse }),
+          ...(hasMessage && this.#exposeErrorDetails && { details: exceptionResponse }),
         },
         timestamp: Date.now(),
       },
@@ -189,7 +189,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
   } {
     const definition = Errors[exception.errorCode];
     // 운영에서는 앱이 계약으로 쓰는 코드의 검증된 상세만 내보낸다
-    const details = this.#config.isDevelopment
+    const details = this.#exposeErrorDetails
       ? exception.details
       : toPublicErrorDetails(exception.errorCode, exception.details);
     return {
@@ -217,7 +217,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
   #mapDatabaseError(error: unknown): ErrorCodedException {
     if (isRecordNotFoundError(error)) {
       return invalidParameter(
-        this.#config.isDevelopment ? { reason: "Record to update/delete not found" } : undefined,
+        this.#exposeErrorDetails ? { reason: "Record to update/delete not found" } : undefined,
       );
     }
     const kind = classifyDatabaseError(error);
@@ -230,7 +230,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
           constraint: databaseConstraint(error) ?? "unknown",
         });
         return invalidParameter(
-          this.#config.isDevelopment ? { reason: "Referenced record does not exist" } : undefined,
+          this.#exposeErrorDetails ? { reason: "Referenced record does not exist" } : undefined,
         );
       case "connection":
       case "pool-timeout":
@@ -241,14 +241,14 @@ export class GlobalExceptionFilter implements ExceptionFilter {
           kind,
           sqlState: databaseSqlState(error) ?? "none",
         });
-        return transientDatabaseFailure(this.#config.isDevelopment ? { kind } : undefined);
+        return transientDatabaseFailure(this.#exposeErrorDetails ? { kind } : undefined);
       default: {
         const sqlState = databaseSqlState(error);
         this.#logger.warn({
           event: PlatformLogEvent.DATABASE_ERROR_UNHANDLED,
           sqlState: sqlState ?? "unknown",
         });
-        return internalServerError(this.#config.isDevelopment ? { sqlState } : undefined);
+        return internalServerError(this.#exposeErrorDetails ? { sqlState } : undefined);
       }
     }
   }

@@ -90,17 +90,13 @@ describe("resolveSentryOptions — Sentry 환경 게이트", () => {
     expect(options.environment).toBe("staging");
   });
 
-  it("잘못된 APP_ENV 값은 NODE_ENV 폴백을 따른다", () => {
+  it("잘못된 APP_ENV 값은 설정 검증과 같이 거절한다", () => {
     // When
-    const options = resolveSentryOptions({
-      APP_ENV: "prod-typo",
-      NODE_ENV: "production",
-      SENTRY_DSN: DSN,
-    });
+    const resolve = () =>
+      resolveSentryOptions({ APP_ENV: "prod-typo", NODE_ENV: "production", SENTRY_DSN: DSN });
 
     // Then
-    expect(options.environment).toBe("production");
-    expect(options.enabled).toBe(true);
+    expect(resolve).toThrow();
   });
 
   describe("tracePropagationTargets — 외부 API 추적 헤더 차단", () => {

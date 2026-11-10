@@ -1,32 +1,24 @@
-import type { z } from "zod";
-
 import { defineConfig } from "./define-config.js";
-import { appSchema } from "./schemas/app.schema.js";
+import { type AppEnvironment, appSchema } from "./schemas/app.schema.js";
 import { corsSchema } from "./schemas/security.schema.js";
 
-type DeploymentEnv = NonNullable<z.output<typeof appSchema>["APP_ENV"]>;
-
-// 개발서버도 NODE_ENV=production 빌드라 실제 운영 구분은 APP_ENV다. 없으면 NODE_ENV로 정한다(옛 배포 호환)
-function resolveDeploymentEnv(
-  appEnv: DeploymentEnv | undefined,
-  isProduction: boolean,
-): DeploymentEnv {
-  return appEnv ?? (isProduction ? "production" : "development");
-}
-
-/** 프로세스 전체가 쓰는 실행 모드·포트·CORS·로그 수준. */
+/**
+ * 배포 환경의 단일 원본과 프로세스 전체가 쓰는 포트·CORS·로그 수준. 개발서버도 production 빌드(NODE_ENV=production)로
+ * 돌아 APP_ENV가 우선이고, APP_ENV가 없던 기존 운영 배포와 로컬·테스트는 NODE_ENV로 정한다(production이 아니면 development).
+ */
 export const appConfig = defineConfig(
   "app",
   appSchema
     .pick({ NODE_ENV: true, APP_ENV: true, INSTANCE_ID: true, PORT: true, LOG_LEVEL: true })
     .extend(corsSchema.shape)
     .transform((env) => {
-      const isProduction = env.NODE_ENV === "production";
+      const environment: AppEnvironment =
+        env.APP_ENV ?? (env.NODE_ENV === "production" ? "production" : "development");
       return {
         nodeEnv: env.NODE_ENV,
-        appEnv: resolveDeploymentEnv(env.APP_ENV, isProduction),
-        isDevelopment: env.NODE_ENV === "development",
-        isProduction,
+        environment,
+        isProduction: environment === "production",
+        isDevelopment: environment === "development",
         port: env.PORT,
         corsOrigins: env.CORS_ORIGINS,
         instanceId: env.INSTANCE_ID,

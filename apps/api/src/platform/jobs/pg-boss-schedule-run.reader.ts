@@ -1,8 +1,9 @@
 import { Inject, Injectable } from "@nestjs/common";
+import type { ConfigType } from "@nestjs/config";
 import { sql } from "drizzle-orm";
 import { z } from "zod";
 
-import { TypedConfigService } from "#api/platform/config/services/config.service";
+import { jobConfig } from "#api/platform/config/job.config";
 import { type Database, DRIZZLE } from "#api/platform/database/database.client";
 import { instantFromDate, instantToDate, toIsoString } from "#api/shared/domain/time/instant";
 
@@ -40,10 +41,6 @@ const runCountsRowSchema = z.object({
 
 const arrivalsRowSchema = z.object({ arrivals: z.number().int() });
 
-interface JobSchemaSource {
-  readonly job: { readonly schema: string };
-}
-
 /** 감시 작업이 pg-boss의 스케줄·작업 표를 읽는다. 작업 표에는 창 안의 행만 보도록 (name, created_on) 인덱스를 탄다. */
 @Injectable()
 export class PgBossScheduleRunReader {
@@ -54,11 +51,11 @@ export class PgBossScheduleRunReader {
   constructor(
     @Inject(PG_BOSS_CLIENT) boss: PgBossClient,
     @Inject(DRIZZLE) database: Database,
-    @Inject(TypedConfigService) config: JobSchemaSource,
+    @Inject(jobConfig.KEY) job: Pick<ConfigType<typeof jobConfig>, "schema">,
   ) {
     this.#boss = boss;
     this.#database = database;
-    this.#schema = config.job.schema;
+    this.#schema = job.schema;
   }
 
   async listSchedules(): Promise<readonly WatchedSchedule[]> {

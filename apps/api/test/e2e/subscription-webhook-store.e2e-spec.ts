@@ -37,8 +37,8 @@ describe("RevenueCat 웹훅의 스토어·환경별 처리 (실제 PostgreSQL)",
   });
 
   // 배포 환경은 시작할 때 한 번 읽으므로 앱이 받은 설정 값을 테스트마다 바꾼다
-  function deployTo(appEnv: ConfigType<typeof appConfig>["appEnv"]): void {
-    context.module.get<ConfigType<typeof appConfig>>(appConfig.KEY).appEnv = appEnv;
+  function deployTo(environment: ConfigType<typeof appConfig>["environment"]): void {
+    context.module.get<ConfigType<typeof appConfig>>(appConfig.KEY).environment = environment;
   }
 
   beforeEach(async () => {

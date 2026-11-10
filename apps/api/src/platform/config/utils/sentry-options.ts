@@ -1,21 +1,15 @@
 /**
  * Sentry 초기화 옵션 결정 (instrument.ts에서 사용)
  *
- * 배포 환경 구분은 APP_ENV가 단일 진실이다:
- * - 개발서버도 production 빌드(NODE_ENV=production)로 돌기 때문에
- *   NODE_ENV만으로는 "실제 프로덕션"을 구분할 수 없다.
- * - APP_ENV 미설정 시 NODE_ENV로 폴백 — 기존 프로덕션 배포(APP_ENV 없음)의
- *   알림이 인프라 변경 없이 유지된다 (하위호환).
- * - 이벤트 발송(enabled)은 production에서만. environment 태그는 항상
- *   설정되므로 Sentry 서버측 알림 규칙에서도 이중으로 필터 가능하다.
+ * 배포 환경은 appConfig(APP_ENV 우선, 없으면 NODE_ENV)가 정한다. 이벤트 발송(enabled)은
+ * production에서만이고, environment 태그는 항상 설정되므로 Sentry 알림 규칙에서도 다시 거를 수 있다.
  */
 
 import * as Sentry from "@sentry/nestjs";
 import { z } from "zod";
 
-const APP_ENVIRONMENTS = ["development", "staging", "production"] as const;
-
-export type AppEnvironment = (typeof APP_ENVIRONMENTS)[number];
+import { appConfig } from "../app.config.js";
+import type { AppEnvironment } from "../schemas/app.schema.js";
 
 /**
  * 분산 추적 헤더(sentry-trace·baggage)를 붙일 대상 — 우리 서비스로 한정한다.
@@ -72,8 +66,7 @@ export interface SentryInstrumentOptions {
 type SentryEnvSource = Record<string, string | undefined>;
 
 export function resolveSentryOptions(env: SentryEnvSource): SentryInstrumentOptions {
-  const environment = resolveAppEnvironment(env);
-  const isProduction = environment === "production";
+  const { environment, isProduction } = appConfig.parse(env);
 
   return {
     enabled: isProduction && Boolean(env.SENTRY_DSN),
@@ -86,13 +79,4 @@ export function resolveSentryOptions(env: SentryEnvSource): SentryInstrumentOpti
           : 1.0,
     tracePropagationTargets: TRACE_PROPAGATION_TARGETS,
   };
-}
-
-function resolveAppEnvironment(env: SentryEnvSource): AppEnvironment {
-  const appEnv = APP_ENVIRONMENTS.find((value) => value === env.APP_ENV);
-  if (appEnv) {
-    return appEnv;
-  }
-
-  return env.NODE_ENV === "production" ? "production" : "development";
 }

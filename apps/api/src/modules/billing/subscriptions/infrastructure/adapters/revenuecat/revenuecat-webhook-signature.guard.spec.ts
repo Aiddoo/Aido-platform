@@ -17,7 +17,7 @@ function createGuard(config: {
         apiV2SecretKey: undefined,
       },
     },
-    { isProduction: config.isProduction ?? false },
+    { nodeEnv: config.isProduction === true ? "production" : "test" },
   );
 }
 

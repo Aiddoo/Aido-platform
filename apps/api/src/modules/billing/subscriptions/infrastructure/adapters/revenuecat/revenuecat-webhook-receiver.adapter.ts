@@ -18,12 +18,12 @@ export class RevenueCatWebhookReceiver {
   readonly #logger = new Logger(RevenueCatWebhookReceiver.name);
   readonly #applyStoreSubscriptionEvent: Pick<ApplyStoreSubscriptionEventUseCase, "execute">;
   readonly #alert: OperationalAlertPort;
-  readonly #config: Pick<ConfigType<typeof appConfig>, "appEnv">;
+  readonly #config: Pick<ConfigType<typeof appConfig>, "environment">;
 
   constructor(
     applyStoreSubscriptionEvent: ApplyStoreSubscriptionEventUseCase,
     alert: OperationalAlertPort,
-    @Inject(appConfig.KEY) config: Pick<ConfigType<typeof appConfig>, "appEnv">,
+    @Inject(appConfig.KEY) config: Pick<ConfigType<typeof appConfig>, "environment">,
   ) {
     this.#applyStoreSubscriptionEvent = applyStoreSubscriptionEvent;
     this.#alert = alert;
@@ -33,7 +33,7 @@ export class RevenueCatWebhookReceiver {
   async receive({ body }: RevenueCatWebhookInput): Promise<{ received: true }> {
     // 웹훅 연동이 하나라 Test Store 구매도 운영으로 온다. 운영은 결제 없는 구매에 프리미엄을 주지 않는다
     const translation = translateRevenueCatWebhook(body, {
-      acceptsTestStore: this.#config.appEnv !== "production",
+      acceptsTestStore: this.#config.environment !== "production",
     });
     if (translation.status === "skipped") {
       this.#logger.log({

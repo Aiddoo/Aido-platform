@@ -29,10 +29,10 @@ export class RevenueCatWebhookSignatureGuard implements CanActivate {
   constructor(
     @Inject(billingSubscriptionsConfig.KEY)
     billing: Pick<ConfigType<typeof billingSubscriptionsConfig>, "revenuecat">,
-    @Inject(appConfig.KEY) app: Pick<ConfigType<typeof appConfig>, "isProduction">,
+    @Inject(appConfig.KEY) app: Pick<ConfigType<typeof appConfig>, "nodeEnv">,
   ) {
     this.#webhookSecret = billing.revenuecat.webhookSecret;
-    this.#isProduction = app.isProduction;
+    this.#isProduction = app.nodeEnv === "production";
   }
 
   canActivate(context: ExecutionContext): boolean {

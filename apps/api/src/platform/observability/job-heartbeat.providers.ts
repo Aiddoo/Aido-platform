@@ -1,7 +1,9 @@
 import type { FactoryProvider } from "@nestjs/common";
+import type { ConfigType } from "@nestjs/config";
 
-import { TypedConfigService } from "#api/platform/config/services/config.service";
-import type { AppEnvironment } from "#api/platform/config/utils/sentry-options";
+import { appConfig } from "#api/platform/config/app.config";
+import type { AppEnvironment } from "#api/platform/config/schemas/app.schema";
+import { sentryConfig } from "#api/platform/config/sentry.config";
 import { JobHeartbeatPort } from "#api/shared/application/ports/job-heartbeat.port";
 
 import { type JobHeartbeatConfig, jobHeartbeatConfig } from "./job-heartbeat.config.js";
@@ -23,11 +25,15 @@ export function createJobHeartbeat(target: JobHeartbeatTarget): JobHeartbeatPort
 
 export const jobHeartbeatProvider: FactoryProvider<JobHeartbeatPort> = {
   provide: JobHeartbeatPort,
-  inject: [TypedConfigService, jobHeartbeatConfig.KEY],
-  useFactory: (config: TypedConfigService, heartbeat: JobHeartbeatConfig) =>
+  inject: [appConfig.KEY, sentryConfig.KEY, jobHeartbeatConfig.KEY],
+  useFactory: (
+    app: ConfigType<typeof appConfig>,
+    sentry: ConfigType<typeof sentryConfig>,
+    heartbeat: JobHeartbeatConfig,
+  ) =>
     createJobHeartbeat({
-      environment: config.appEnv,
-      hasDsn: (config.sentryDsn ?? "") !== "",
+      environment: app.environment,
+      hasDsn: (sentry.dsn ?? "") !== "",
       monitorSlug: heartbeat.monitorSlug,
     }),
 };

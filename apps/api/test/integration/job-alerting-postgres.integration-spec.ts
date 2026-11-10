@@ -114,7 +114,7 @@ describe("작업 실패 경보 통합 테스트 (실제 PostgreSQL·pg-boss)", (
 
   function watchdogWith(alerts: OperationalAlertPort, registry = new JobQueueRegistry()) {
     const heartbeat = new RecordingJobHeartbeat();
-    const reader = new PgBossScheduleRunReader(boss, database, { job: { schema: SCHEMA } });
+    const reader = new PgBossScheduleRunReader(boss, database, { schema: SCHEMA });
     const watchdog = new ScheduleWatchdogProcessor(
       jobQueueWith(alerts, registry),
       reader,
