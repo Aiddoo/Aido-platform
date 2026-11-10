@@ -154,6 +154,7 @@
   },
   "devDependencies": {
     "@aido/typescript-config": "workspace:*",
+    "@aido/vitest-config": "workspace:*",
     "@react-native/jest-preset": "catalog:expo58",
     "@testing-library/react-native": "14.1.0",
     "@types/d3-shape": "catalog:",
