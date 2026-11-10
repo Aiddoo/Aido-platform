@@ -17,8 +17,6 @@ const broadcastDeliveryJobSchema = z.strictObject({
   }),
 });
 
-export type BroadcastDeliveryJob = z.output<typeof broadcastDeliveryJobSchema>;
-
 const DAY_SECONDS = 24 * 60 * 60;
 
 const BROADCAST_DELIVERY_RETRY = {

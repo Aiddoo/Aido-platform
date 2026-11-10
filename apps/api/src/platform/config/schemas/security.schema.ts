@@ -58,7 +58,4 @@ export const securitySchema = z.object({
   ...tokenSigningSchema.shape,
 });
 
-export type CorsConfig = z.infer<typeof corsSchema>;
-export type ThrottleConfig = z.infer<typeof throttleSchema>;
-export type EncryptionConfig = z.infer<typeof encryptionSchema>;
 export type SecurityConfig = z.infer<typeof securitySchema>;

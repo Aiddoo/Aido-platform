@@ -32,7 +32,7 @@ export function aiProviderErrorResponse(vendor: AiProviderFixtureVendor, fileNam
   return new Response(body, { status, headers: { "content-type": "application/json" } });
 }
 
-export const AI_FIXTURE_KEYS = {
+const AI_FIXTURE_KEYS = {
   ANTHROPIC_API_KEY: `sk-ant-fixture-${"a".repeat(30)}`,
   GOOGLE_GENERATIVE_AI_API_KEY: `fixture-${"g".repeat(30)}`,
   OPENAI_API_KEY: `sk-proj-fixture-${"o".repeat(30)}`,

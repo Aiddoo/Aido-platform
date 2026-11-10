@@ -10,8 +10,6 @@ export const DATE_FORMAT = {
   YEAR_MONTH: "YYYY-MM",
 } as const;
 
-export type DateFormatType = (typeof DATE_FORMAT)[keyof typeof DATE_FORMAT];
-
 /**
  * 시간 단위 밀리초 변환 상수
  */

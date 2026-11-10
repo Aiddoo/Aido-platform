@@ -15,7 +15,7 @@ import { USAGE_METER, type UsageMeterPort } from "./interfaces/usage-meter.inter
 
 export const USAGE_RETENTION_QUEUE = "outbound-usage-retention.v1";
 /** 월 예산·공급자 월 한도를 넘는 기간만 남긴다. */
-export const USAGE_RETENTION_DAYS = 90;
+const USAGE_RETENTION_DAYS = 90;
 
 const USAGE_RETENTION_SCHEDULE = {
   id: "daily-outbound-usage-retention",

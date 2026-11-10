@@ -1,12 +1,12 @@
 import { z } from "zod";
 
 /** 런타임 모드. 개발서버도 production 빌드라 배포 환경 구분에는 쓰지 않는다. */
-export const NODE_ENVIRONMENTS = ["development", "production", "test"] as const;
+const NODE_ENVIRONMENTS = ["development", "production", "test"] as const;
 
 export type NodeEnvironment = (typeof NODE_ENVIRONMENTS)[number];
 
 /** 배포 환경. 판정은 `resolveAppEnvironment` 한 곳이 한다. */
-export const APP_ENVIRONMENTS = ["development", "staging", "production"] as const;
+const APP_ENVIRONMENTS = ["development", "staging", "production"] as const;
 
 export type AppEnvironment = (typeof APP_ENVIRONMENTS)[number];
 

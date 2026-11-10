@@ -20,7 +20,7 @@
     "ai:eval": "tsx --tsconfig tsconfig.json scripts/ai-eval/run.ts",
     "build": "nest build",
     "check:conventions": "node scripts/check-conventions.mjs",
-    "check:unused": "knip --directory ../.. --workspace apps/api --config apps/api/knip.json",
+    "check:unused": "knip --directory ../.. --workspace apps/api --config apps/api/knip.jsonc",
     "clean": "rm -rf dist coverage *.tsbuildinfo",
     "db:check": "drizzle-kit check",
     "db:generate": "drizzle-kit generate",

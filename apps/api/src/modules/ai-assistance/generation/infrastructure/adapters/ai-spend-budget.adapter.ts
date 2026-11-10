@@ -34,7 +34,7 @@ import { hasKnownPricing } from "./ai-model-pricing.constants.js";
 import { AiGuardLogEvent } from "./ai-provider.log-events.js";
 
 /** 추정 비용 누적(micro-USD). subject "*"는 전역, 사용자 id는 사용자 일 예산이다. */
-export const AI_SPEND_METER = "ai.spend";
+const AI_SPEND_METER = "ai.spend";
 
 type SpendBudgetConfig = Pick<AiAssistanceGenerationConfig, "providers" | "enabled" | "budget">;
 

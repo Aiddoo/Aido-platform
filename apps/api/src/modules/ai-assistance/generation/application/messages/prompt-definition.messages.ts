@@ -17,7 +17,7 @@ export interface BuiltPrompt {
 }
 
 /** 지시·정규화가 바뀌면 숫자를 올린다. 관측 로그와 저장된 리포트가 이 값으로 전후를 나눈다. */
-export type PromptVersion = `${AiTaskId}@${number}`;
+type PromptVersion = `${AiTaskId}@${number}`;
 
 /**
  * 작업 하나의 프롬프트 정의. 모델 출력 schema(O, 관대)와 서버 정규화 결과(R)를 한 쌍으로 묶는다.

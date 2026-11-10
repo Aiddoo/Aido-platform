@@ -4,7 +4,7 @@ const DAY_MS = 24 * 60 * 60 * 1_000;
 const FIELD_VALUE_MAX_LENGTH = 1_024;
 const TRANSACTION_ID_MAX_LENGTH = 20;
 
-export const EMPTY = "—";
+const EMPTY = "—";
 
 export interface DiscordEmbedField {
   readonly name: string;

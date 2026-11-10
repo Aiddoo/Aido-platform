@@ -3,9 +3,9 @@ import type { z } from "zod";
 import type { DeadLetterQueue, JobEnvelope, JobRetryPolicy } from "./job-runtime.port.js";
 
 // skip은 배포로 내려간 사이의 실행을 버리고, once는 놓친 실행 중 마지막 하나만 보낸다
-export type ScheduleMissedPolicy = "skip" | "once";
+type ScheduleMissedPolicy = "skip" | "once";
 
-export interface QueueSchedule<TPayload extends object> {
+interface QueueSchedule<TPayload extends object> {
   readonly key: string;
   readonly cron: string;
   readonly timezone: string;
@@ -13,7 +13,7 @@ export interface QueueSchedule<TPayload extends object> {
   readonly payload: TPayload;
 }
 
-export interface QueueWorkerOptions {
+interface QueueWorkerOptions {
   readonly localConcurrency: number;
   readonly pollingIntervalSeconds: number;
   readonly batchSize?: number;

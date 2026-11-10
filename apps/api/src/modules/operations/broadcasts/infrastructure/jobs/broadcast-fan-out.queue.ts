@@ -12,8 +12,6 @@ const broadcastFanOutJobSchema = z.strictObject({
   data: z.strictObject({ campaignId: z.string().min(1) }),
 });
 
-export type BroadcastFanOutJob = z.output<typeof broadcastFanOutJobSchema>;
-
 const DAY_SECONDS = 24 * 60 * 60;
 
 /** 한 실행은 분배 예산(60초) 뒤 다음 cursor 작업을 남기므로 만료는 그보다 넉넉하다. */

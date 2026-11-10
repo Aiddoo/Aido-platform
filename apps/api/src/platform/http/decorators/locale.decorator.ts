@@ -4,12 +4,7 @@ import type { SupportedLocale } from "#api/shared/domain/locale";
 
 import { readRequestClient } from "../request-client/index.js";
 
-export {
-  DEFAULT_LOCALE,
-  SUPPORTED_LOCALES,
-  type SupportedLocale,
-  toSupportedLocale,
-} from "#api/shared/domain/locale";
+export type { SupportedLocale } from "#api/shared/domain/locale";
 
 /**
  * Accept-Language의 지원 로케일. 보내지 않은 요청(1.3.x 구버전)은 undefined라 저장된 locale을

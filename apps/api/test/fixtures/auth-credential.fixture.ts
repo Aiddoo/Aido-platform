@@ -181,7 +181,7 @@ export class StubCurrentUserAccess implements Pick<EntitlementReaderPort, "getEn
   }
 }
 
-export class StubCurrentUserQuotaLedger implements Pick<QuotaLedgerPort, "read"> {
+class StubCurrentUserQuotaLedger implements Pick<QuotaLedgerPort, "read"> {
   used = 0;
   resetsAt = "2026-11-30T15:00:00.000Z";
 
@@ -200,7 +200,7 @@ export class StubCurrentUserQuotaLedger implements Pick<QuotaLedgerPort, "read">
   }
 }
 
-export class StubDailySendUsage implements Pick<DailySendUsageReaderPort, "readDailyUsage"> {
+class StubDailySendUsage implements Pick<DailySendUsageReaderPort, "readDailyUsage"> {
   used = 0;
   resetsAt = new Date("2026-11-03T15:00:00.000Z");
   readonly timezones: string[] = [];
@@ -212,7 +212,7 @@ export class StubDailySendUsage implements Pick<DailySendUsageReaderPort, "readD
 }
 
 /** 사용자별 프리미엄 출처를 정해 두는 대역. 기본값은 프리미엄 아님이다. */
-export class StubPremiumAccessReader implements PremiumAccessReaderPort {
+class StubPremiumAccessReader implements PremiumAccessReaderPort {
   readonly accesses = new Map<string, PremiumAccess>();
   readonly requestedUserIds: string[] = [];
 

@@ -14,7 +14,7 @@ const TEST_DATABASE_NAME_PATTERN = /^aido_test_[a-z0-9]{6,32}$/;
 
 export type ManagedTestDatabaseEnvironment = Readonly<Record<string, string | undefined>>;
 
-export interface ManagedTestDatabaseResource {
+interface ManagedTestDatabaseResource {
   getConnectionUri(): string;
   cloneDatabases(templateName: string, names: readonly string[]): Promise<string[]>;
   stop(): Promise<unknown>;

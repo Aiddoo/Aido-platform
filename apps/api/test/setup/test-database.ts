@@ -138,8 +138,3 @@ export class TestDatabase {
     this.connectionUri = null;
   }
 }
-
-/**
- * 테스트에서 사용할 전역 TestDatabase 인스턴스 생성 헬퍼
- */
-export const createTestDatabase = () => new TestDatabase();

@@ -33,7 +33,7 @@ import { type UserCategoryReaderPort } from "../ports/user-category.reader.port.
 import { type ParseTodoMeta, toParseMeta } from "./parse-todo.use-case.js";
 
 /** parse-todo 메타에 상한을 넘어 만들지 않은 할 일 수를 더한다. */
-export interface ParseMemoMeta extends ParseTodoMeta {
+interface ParseMemoMeta extends ParseTodoMeta {
   omittedTodoCount: number;
 }
 

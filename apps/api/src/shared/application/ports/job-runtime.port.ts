@@ -1,4 +1,4 @@
-export type JobBackend = "postgres";
+type JobBackend = "postgres";
 
 export type JobData = object;
 
@@ -18,7 +18,7 @@ export interface JobRetryPolicy {
   readonly deleteAfterSeconds: number;
 }
 
-export interface DeadLetterQueuePolicy {
+interface DeadLetterQueuePolicy {
   readonly queue: string;
   readonly jobPolicy: JobRetryPolicy;
 }
@@ -65,7 +65,7 @@ export interface WorkJobOptions {
   readonly queuePolicy?: JobRetryPolicy;
 }
 
-export interface JobQueueHealth {
+interface JobQueueHealth {
   readonly waiting: number;
   readonly active: number;
   readonly failed: number;

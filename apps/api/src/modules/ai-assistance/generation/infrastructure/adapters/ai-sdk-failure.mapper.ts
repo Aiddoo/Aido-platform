@@ -35,7 +35,7 @@ const providerErrorBodySchema = z.object({
 
 export type ProviderErrorBody = z.infer<typeof providerErrorBodySchema>["error"];
 
-export function readProviderErrorBody(responseBody: string | undefined): ProviderErrorBody {
+function readProviderErrorBody(responseBody: string | undefined): ProviderErrorBody {
   if (responseBody == null) {
     return {};
   }

@@ -163,18 +163,6 @@ export function toLocalTimeString(date: Date, tz: string = DEFAULT_TIMEZONE): st
   return dayjs(date).tz(resolveTimezone(tz)).format("HH:mm");
 }
 
-/**
- * 지정 타임존의 자정을 실제 UTC timestamp로 반환
- *
- * TIMESTAMPTZ 컬럼 범위 쿼리에 사용합니다. (tz 자정 = UTC 오프셋 적용)
- *
- * @example midnightInTimezone(new Date('2026-02-11T00:00:00+09:00'), 'Asia/Seoul')
- *   // KST 2/11 자정 → 2026-02-10T15:00:00.000Z
- */
-export function midnightInTimezone(date: Date = now(), tz: string = DEFAULT_TIMEZONE): Date {
-  return dayjs(date).tz(resolveTimezone(tz)).startOf("day").utc().toDate();
-}
-
 export interface DayWindowInTimezone {
   /** 로컬 달력 날짜를 UTC 자정 Date로 표현한 DATE 컬럼 비교용 값 */
   date: Date;

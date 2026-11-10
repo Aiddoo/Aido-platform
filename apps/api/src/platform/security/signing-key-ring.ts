@@ -7,7 +7,7 @@ export type SigningKeysParseResult =
   | { readonly success: true; readonly keys: readonly SigningKey[] }
   | { readonly success: false; readonly reason: string };
 
-export const SIGNING_KEY_MIN_SECRET_LENGTH = 32;
+const SIGNING_KEY_MIN_SECRET_LENGTH = 32;
 // kid는 토큰 안에 `.` 구분자와 함께 실리므로 URL에 안전한 문자만 받는다.
 const KID_PATTERN = /^[A-Za-z0-9_-]{1,32}$/;
 const LEGACY_KID = "legacy";

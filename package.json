@@ -5,7 +5,7 @@
   "scripts": {
     "build": "turbo run build",
     "changeset": "changeset",
-    "check": "pnpm lint && pnpm format:check && pnpm lint:names && pnpm --filter @aido/server lint:deps && pnpm --filter @aido/server check:conventions && pnpm typecheck && pnpm --filter @aido/mobile check:conventions",
+    "check": "pnpm lint && pnpm format:check && pnpm lint:names && pnpm --filter @aido/server lint:deps && pnpm --filter @aido/server check:unused && pnpm --filter @aido/server check:conventions && pnpm typecheck && pnpm --filter @aido/mobile check:conventions",
     "clean": "turbo run clean && rm -rf node_modules",
     "commit": "cz",
     "db:check": "pnpm --filter @aido/server db:check",

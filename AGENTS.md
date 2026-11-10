@@ -25,8 +25,8 @@ docs/           앱·서버 공통 규칙(conventions), 릴리스 기록(release
 ## 명령
 
 - `pnpm install` · `pnpm docker:up`(PostgreSQL) · `pnpm dev` · `pnpm build`
-- `pnpm check`: lint → format:check → 이름·경계·관례 검사 → typecheck(커밋 전 한 번)
-- 가드레일: `pnpm lint:names`(ls-lint) · `pnpm --filter @aido/server lint:deps`(dependency-cruiser) · `pnpm --filter @aido/server check:conventions` · `pnpm --filter @aido/server check:unused`(knip, 보고만)
+- `pnpm check`: lint → format:check → 이름·경계·미사용·관례 검사 → typecheck(커밋 전 한 번)
+- 가드레일: `pnpm lint:names`(ls-lint) · `pnpm --filter @aido/server lint:deps`(dependency-cruiser) · `pnpm --filter @aido/server check:conventions` · `pnpm --filter @aido/server check:unused`(knip)
 - `pnpm lint` · `pnpm format` · `pnpm format:check` · `pnpm typecheck`
 - `pnpm test` · `pnpm test:integration` · `pnpm test:e2e` · `pnpm --filter @aido/server test:contract`
 - `pnpm db:generate` · `pnpm db:migrate` · `pnpm commit`

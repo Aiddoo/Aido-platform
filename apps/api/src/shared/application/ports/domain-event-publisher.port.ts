@@ -21,7 +21,7 @@ interface EventSubscriptionBase<TPayload extends object> {
 }
 
 /** 상태를 바꾸는 반응. 발행 트랜잭션에 구독 큐 작업으로 함께 커밋된다. */
-export interface DurableEventSubscription<
+interface DurableEventSubscription<
   TPayload extends object,
 > extends EventSubscriptionBase<TPayload> {
   readonly delivery: "durable";

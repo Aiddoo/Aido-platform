@@ -43,7 +43,7 @@ function matchPattern(value: string | undefined, pattern: RegExp): string | null
 }
 
 /** SemVer 형식인 앱 버전만 남긴다. 헤더가 없거나 형식이 틀리면 null */
-export function normalizeAppVersion(value: unknown): string | null {
+function normalizeAppVersion(value: unknown): string | null {
   return typeof value === "string" &&
     value.length <= MAX_APP_VERSION_LENGTH &&
     isSemanticVersionAtLeast(value, "0.0.0")
