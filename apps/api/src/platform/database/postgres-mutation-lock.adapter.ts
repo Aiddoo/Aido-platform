@@ -15,10 +15,14 @@ import type { DrizzleTransactionalAdapter } from "./database.client.js";
  */
 @Injectable()
 export class PostgresMutationLockAdapter implements MutationLockPort {
-  constructor(private readonly txHost: TransactionHost<DrizzleTransactionalAdapter>) {}
+  readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
+
+  constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>) {
+    this.#txHost = txHost;
+  }
 
   async acquire(keys: readonly string[]): Promise<void> {
-    if (!this.txHost.isTransactionActive()) {
+    if (!this.#txHost.isTransactionActive()) {
       throw new Error("Mutation lock requires an active transaction");
     }
 
@@ -27,7 +31,7 @@ export class PostgresMutationLockAdapter implements MutationLockPort {
       return;
     }
 
-    await this.txHost.tx.execute(sql`
+    await this.#txHost.tx.execute(sql`
       WITH ordered AS MATERIALIZED (
         SELECT requested."key"
         FROM unnest(${sql.param(orderedKeys)}::TEXT[]) AS requested("key")

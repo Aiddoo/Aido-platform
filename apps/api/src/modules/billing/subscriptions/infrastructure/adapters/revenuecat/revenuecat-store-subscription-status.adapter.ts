@@ -22,7 +22,7 @@ import {
 } from "./revenuecat-subscription.wire.js";
 import { RevenueCatLogEvent } from "./revenuecat.log-events.js";
 
-export const REVENUECAT_API_BASE_URL = "https://api.revenuecat.com/v2";
+const REVENUECAT_API_BASE_URL = "https://api.revenuecat.com/v2";
 export const REVENUECAT_HTTP_CLIENT = "revenuecat";
 export const REVENUECAT_TIMEOUT_MS = 10_000;
 

@@ -19,7 +19,7 @@ import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { localDateIn } from "#api/shared/domain/time/time-zone-name";
 
-export const LAST_ACTIVE_THROTTLE_TTL_MS = 60 * 60 * 1000;
+const LAST_ACTIVE_THROTTLE_TTL_MS = 60 * 60 * 1000;
 // 한 시간에 이보다 많은 키가 생기면 가장 오래 안 본 키를 잊는다. 잊힌 사용자는 같은 값을 한 번 더 쓸 뿐이다
 export const LAST_ACTIVE_THROTTLE_MAX_ENTRIES = 10_000;
 

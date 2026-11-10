@@ -6,10 +6,7 @@ export {
   type FeatureEntitlement,
   type UserEntitlements,
 } from "./application/ports/entitlement.reader.port.js";
-export {
-  FeatureGranterPort,
-  type FeatureGrantInput,
-} from "./application/ports/feature-granter.port.js";
+export { FeatureGranterPort } from "./application/ports/feature-granter.port.js";
 export {
   calculateRemainingLimit,
   isExemptFromDormancy,
