@@ -1,44 +1,95 @@
-import type { Mocked } from "vitest";
-import { vi } from "vitest";
-import { mockDeep } from "vitest-mock-extended";
+import { InMemoryRetentionRepository } from "#test/doubles/notification/in-memory-retention.repository";
+import { FixedClock } from "#test/doubles/platform/fixed-clock";
 
-import { createRetentionRepositoryMock } from "#test/mocks/ports/index";
-
+import {
+  ExperimentAssignerPort,
+  type ExperimentAssignment,
+} from "../ports/experiment-assigner.port.js";
 import { EnrollRetentionExperimentUseCase } from "./enroll-retention-experiment.use-case.js";
 
-describe("EnrollRetentionExperimentUseCase — 신규 사용자만 등록", () => {
-  let repository: Mocked<
-    ConstructorParameters<typeof EnrollRetentionExperimentUseCase>[0]["repository"]
-  >;
+const NOW = Temporal.Instant.from("2026-07-15T00:00:00Z");
 
-  async function build(enabled: boolean) {
-    const enrollRetentionExperimentDependencies = mockDeep<
-      ConstructorParameters<typeof EnrollRetentionExperimentUseCase>[0]
-    >({ repository: createRetentionRepositoryMock(), config: { enabled, treatmentPercent: 100 } });
-    const unit = new EnrollRetentionExperimentUseCase(enrollRetentionExperimentDependencies);
-    repository = enrollRetentionExperimentDependencies.repository;
-    return unit;
+// 비중이 있는 첫 실험군을 고르고 받은 배정 요청을 남긴다
+class FirstWeightedExperimentAssigner extends ExperimentAssignerPort {
+  readonly assignments: ExperimentAssignment<string>[] = [];
+
+  assign<TVariant extends string>(assignment: ExperimentAssignment<TVariant>): TVariant {
+    this.assignments.push(assignment);
+    const variant = assignment.variants.find(({ weight }) => weight > 0);
+    if (variant == null) {
+      throw new Error("no weighted variant");
+    }
+    return variant.key;
   }
+}
 
+function setup(config: { readonly enabled: boolean; readonly treatmentPercent: number }) {
+  const repository = new InMemoryRetentionRepository();
+  const experimentAssigner = new FirstWeightedExperimentAssigner();
+  const useCase = new EnrollRetentionExperimentUseCase({
+    repository,
+    config,
+    experimentAssigner,
+    clock: new FixedClock(NOW),
+  });
+  return { useCase, repository, experimentAssigner };
+}
+
+describe("EnrollRetentionExperimentUseCase — 신규 사용자만 등록", () => {
   it("kill switch가 꺼져 있으면 DB를 전혀 변경하지 않는다", async () => {
-    const useCase = await build(false);
+    // Given
+    const { useCase, repository } = setup({ enabled: false, treatmentPercent: 100 });
 
+    // When
     await useCase.execute("existing-or-new-user", false);
 
-    expect(repository.enroll).not.toHaveBeenCalled();
+    // Then
+    expect(repository.enrollments).toEqual([]);
+  });
+
+  it("사용자를 리텐션 실험 key로 처리군이 앞 구간인 비율에 배정한다", async () => {
+    // Given
+    const { useCase, experimentAssigner } = setup({ enabled: true, treatmentPercent: 30 });
+
+    // When
+    await useCase.execute("new-user", false);
+
+    // Then
+    expect(experimentAssigner.assignments).toEqual([
+      {
+        experimentKey: "onboarding_v2_d7",
+        subjectId: "new-user",
+        variants: [
+          { key: "TREATMENT", weight: 30 },
+          { key: "CONTROL", weight: 70 },
+        ],
+      },
+    ]);
   });
 
   it("활성화된 신규 등록 요청은 안정적으로 TREATMENT를 저장한다", async () => {
-    vi.useFakeTimers({ toFake: ["Date"] }).setSystemTime(new Date("2026-07-15T00:00:00Z"));
-    const useCase = await build(true);
+    // Given
+    const { useCase, repository } = setup({ enabled: true, treatmentPercent: 100 });
 
+    // When
     await useCase.execute("new-user", true);
 
-    expect(repository.enroll).toHaveBeenCalledWith({
-      userId: "new-user",
-      variant: "TREATMENT",
-      startedAt: new Date("2026-07-15T00:00:00Z"),
-    });
-    vi.useRealTimers();
+    // Then
+    expect(repository.enrollments).toEqual([
+      { userId: "new-user", variant: "TREATMENT", startedAt: new Date("2026-07-15T00:00:00Z") },
+    ]);
+  });
+
+  it("처리 비율이 0이면 인증 전 사용자도 CONTROL로 시작 시각 없이 등록한다", async () => {
+    // Given
+    const { useCase, repository } = setup({ enabled: true, treatmentPercent: 0 });
+
+    // When
+    await useCase.execute("new-user", false);
+
+    // Then
+    expect(repository.enrollments).toEqual([
+      { userId: "new-user", variant: "CONTROL", startedAt: null },
+    ]);
   });
 });

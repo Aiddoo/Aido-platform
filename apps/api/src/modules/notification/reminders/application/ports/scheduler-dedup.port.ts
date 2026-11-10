@@ -1,8 +1,7 @@
-export const SCHEDULER_DEDUP = Symbol("SCHEDULER_DEDUP");
-
-export interface SchedulerDedupPort {
-  hasWinbackStage(userId: string, stage: string): Promise<boolean>;
-  recordWinbackStages(records: Array<{ userId: string; stage: string }>): Promise<void>;
-  findSentNudgePairs(weekId: string, pairs: string[]): Promise<Set<string>>;
-  recordNudgePairs(weekId: string, pairs: string[]): Promise<void>;
+// 단계·주 단위로 한 번만 보내는 재유입 알림의 발송 기록
+export abstract class SchedulerDedupPort {
+  abstract hasWinbackStage(userId: string, stage: string): Promise<boolean>;
+  abstract recordWinbackStages(records: Array<{ userId: string; stage: string }>): Promise<void>;
+  abstract findSentNudgePairs(weekId: string, pairs: string[]): Promise<Set<string>>;
+  abstract recordNudgePairs(weekId: string, pairs: string[]): Promise<void>;
 }

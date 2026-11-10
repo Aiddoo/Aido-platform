@@ -6,10 +6,8 @@ import { TODO_LIMITS, TODO_SERIES_LIMITS } from "@aido/api/vocabulary";
 import { and, asc, eq, sql } from "drizzle-orm";
 import { omit } from "es-toolkit";
 
-import {
-  TODO_SERIES_OWNER_DORMANCY,
-  type TodoSeriesOwnerDormancyPort,
-} from "#api/modules/notification/reminders/application/ports/todo-series-owner-dormancy.port";
+import { TodoSeriesOwnerDormancyPort } from "#api/modules/notification/reminders/application/ports/todo-series-owner-dormancy.port";
+import { TODO_REMINDER_QUEUE } from "#api/modules/notification/reminders/infrastructure/jobs/todo-reminder.queue";
 import { DeleteTodoCategoryUseCase } from "#api/modules/planning/categories/application/use-cases/delete-todo-category.use-case";
 import { MaterializeDueTodoSeriesUseCase } from "#api/modules/planning/todo-series/application/use-cases/materialize-due-todo-series.use-case";
 import {
@@ -31,11 +29,14 @@ import {
   todoSeries,
   user as userTable,
 } from "#api/platform/database/schema/index";
+import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { MutationLockKeys } from "#api/shared/application/ports/index";
-import { JOB_RUNTIME } from "#api/shared/application/ports/job-runtime.port";
+import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
 import { parseLocalDateTime } from "#api/shared/domain/date/utils/timezone";
+import { toIsoString } from "#api/shared/domain/time/instant";
+import { DateClock } from "#test/doubles/platform/date-clock";
+import type { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
 import { TodoCategoryFixture, TodoFixture, UserFixture } from "#test/fixtures/index";
-import type { FakeJobRuntime } from "#test/mocks/fake-job-runtime";
 import { createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
@@ -64,8 +65,24 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
   beforeAll(async () => {
     database = new TestDatabase({ createClient: (url) => createTestClient(url, { max: 6 }) });
     client = await database.start();
-    context = await createE2eApp({ testDatabase: database });
+    // 테스트가 Date를 옮겨 일정을 만들므로 리마인더 예약 시계도 같은 Date를 따른다
+    context = await createE2eApp({
+      testDatabase: database,
+      customizeBuilder: (builder) => builder.overrideProvider(ClockPort).useValue(new DateClock()),
+    });
   });
+  // 리마인더 큐에 쌓인 작업과 취소한 key를 이 시점부터 본다
+  function watchReminderJobs() {
+    const jobQueue = context.module.get<InMemoryJobQueue>(JobQueuePort);
+    jobQueue.jobs.splice(0);
+    const cancel = vi.spyOn(jobQueue, "cancel");
+    cancel.mockClear();
+    return {
+      jobs: () => jobQueue.jobsIn(TODO_REMINDER_QUEUE),
+      cancelledKeys: () => cancel.mock.calls.flatMap(([, keys]) => [...keys]),
+    };
+  }
+
   beforeEach(async () => {
     await context.reset();
     vi.useFakeTimers({ toFake: ["Date"] });
@@ -239,7 +256,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
         // When
         const result = await context.module.get(MaterializeDueTodoSeriesUseCase).execute();
         const since = await context.module
-          .get<TodoSeriesOwnerDormancyPort>(TODO_SERIES_OWNER_DORMANCY, { strict: false })
+          .get(TodoSeriesOwnerDormancyPort, { strict: false })
           .findDormantSince(userId);
         // Then
         expect(result.dormantCount).toBe(dormantCount);
@@ -352,9 +369,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
         return { seriesId: created.series?.id ?? "" };
       })();
       const rowsBefore = await rowsOf(seriesId);
-      const runtime = context.module.get<FakeJobRuntime>(JOB_RUNTIME);
-      runtime.cancelCalls.length = 0;
-      runtime.enqueueCalls.length = 0;
+      const reminders = watchReminderJobs();
       // When
       await following({ id: rowsBefore[0]?.id ?? 0, scheduledTime: "09:30" });
       // Then
@@ -365,8 +380,8 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
         "2027-03-15T13:30:00.000Z",
       ]);
       expect(rows.every((row) => !row.isAllDay)).toBe(true);
-      expect(runtime.cancelCalls.length).toBeGreaterThan(0);
-      expect(runtime.enqueueCalls.map((call) => call.options.idempotencyKey)).toContain(
+      expect(reminders.cancelledKeys().length).toBeGreaterThan(0);
+      expect(reminders.jobs().map((job) => job.options.idempotencyKey)).toContain(
         `reminder_${rows[0]?.id}_60min`,
       );
     });
@@ -377,15 +392,14 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
         { frequency: "DAILY", end: { type: "COUNT", count: 2 } },
         "09:00",
       );
-      const runtime = context.module.get<FakeJobRuntime>(JOB_RUNTIME);
-      runtime.enqueueCalls.length = 0;
+      const reminders = watchReminderJobs();
       // When
       await following({ id: todos[0]?.id ?? 0, scheduledTime: null });
       // Then
       const rows = await rowsOf(seriesId);
       expect(rows.every((row) => row.isAllDay && row.scheduledTime == null)).toBe(true);
       expect((await seriesRow(seriesId))?.scheduledLocalTime).toBeNull();
-      expect(runtime.enqueueCalls).toEqual([]);
+      expect(reminders.jobs()).toEqual([]);
     });
   });
 
@@ -710,14 +724,13 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
         { frequency: "DAILY", end: { type: "COUNT", count: 2 } },
         "09:00",
       );
-      const runtime = context.module.get<FakeJobRuntime>(JOB_RUNTIME);
-      runtime.cancelCalls.length = 0;
+      const reminders = watchReminderJobs();
       // When
       await context.module
         .get(DeleteTodoUseCase)
         .execute({ id: todos[0]?.id ?? 0, userId, scope: "ALL" });
       // Then
-      const keys = runtime.cancelCalls.map((call) => call.idempotencyKey);
+      const keys = reminders.cancelledKeys();
       expect(keys).toContain(`reminder_${todos[0]?.id}_60min`);
       expect(keys).toContain(`reminder_${todos[1]?.id}_60min`);
     });
@@ -838,12 +851,11 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
       it("뒤 구간 회차의 시간 예약까지 취소한다", async () => {
         // Given
         const { earlier, later } = await startSplit("09:00");
-        const runtime = context.module.get<FakeJobRuntime>(JOB_RUNTIME);
-        runtime.cancelCalls.length = 0;
+        const reminders = watchReminderJobs();
         // When
         await remove(earlier[1]?.id ?? 0);
         // Then
-        const keys = runtime.cancelCalls.map((call) => call.idempotencyKey);
+        const keys = reminders.cancelledKeys();
         expect(keys).toContain(`reminder_${later[0]?.id}_60min`);
         expect(keys).toContain(`reminder_${earlier[1]?.id}_60min`);
       });
@@ -898,8 +910,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
       it("시간은 뒤 구간도 요청 시간대로 다시 계산하고 예약을 다시 잡는다", async () => {
         // Given
         const { laterSeriesId, earlier, later } = await startSplit("09:00");
-        const runtime = context.module.get<FakeJobRuntime>(JOB_RUNTIME);
-        runtime.cancelCalls.length = 0;
+        const reminders = watchReminderJobs();
         // When
         await context.module.get(UpdateFollowingTodosUseCase).execute({
           id: earlier[1]?.id ?? 0,
@@ -917,7 +928,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
           scheduledLocalTime: "10:00",
           timezone: "Asia/Seoul",
         });
-        const keys = runtime.cancelCalls.map((call) => call.idempotencyKey);
+        const keys = reminders.cancelledKeys();
         expect(keys).toContain(`reminder_${later[0]?.id}_60min`);
       });
 
@@ -1231,8 +1242,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
         timezone: "UTC",
       });
       const todoId = todos[0]?.id ?? 0;
-      const runtime = context.module.get<FakeJobRuntime>(JOB_RUNTIME);
-      runtime.clear();
+      const reminders = watchReminderJobs();
       // When
       await edit(todoId, {
         repeat: {
@@ -1244,13 +1254,13 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
         timezone: "UTC",
       });
       // Then
-      expect(runtime.cancelCalls.map((call) => call.idempotencyKey)).toContain(
-        `reminder_${todoId}_60min`,
+      expect(reminders.cancelledKeys()).toContain(`reminder_${todoId}_60min`);
+      const job = reminders
+        .jobs()
+        .find((queued) => queued.options.idempotencyKey === `reminder_${todoId}_60min`);
+      expect(job?.options.startAfter == null ? null : toIsoString(job.options.startAfter)).toBe(
+        "2026-11-06T08:00:00.000Z",
       );
-      const job = runtime.enqueueCalls.find(
-        (call) => call.options.idempotencyKey === `reminder_${todoId}_60min`,
-      );
-      expect(job?.options.startAfter?.toISOString()).toBe("2026-11-06T08:00:00.000Z");
     });
 
     it("전환과 함께 시간을 바꿔도 옮겨진 첫 회차의 예약이 옛 시각으로 덮이지 않는다", async () => {
@@ -1264,8 +1274,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
         timezone: "UTC",
       });
       const todoId = todos[0]?.id ?? 0;
-      const runtime = context.module.get<FakeJobRuntime>(JOB_RUNTIME);
-      runtime.clear();
+      const reminders = watchReminderJobs();
       // When
       await edit(todoId, {
         data: { scheduledTime: "10:00" },
@@ -1277,12 +1286,14 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
         },
       });
       // Then
-      const jobs = runtime.enqueueCalls.filter(
-        (call) => call.options.idempotencyKey === `reminder_${todoId}_60min`,
-      );
-      expect(jobs.map((job) => job.options.startAfter?.toISOString())).toEqual([
-        "2026-11-06T09:00:00.000Z",
-      ]);
+      const jobs = reminders
+        .jobs()
+        .filter((queued) => queued.options.idempotencyKey === `reminder_${todoId}_60min`);
+      expect(
+        jobs.map((job) =>
+          job.options.startAfter == null ? null : toIsoString(job.options.startAfter),
+        ),
+      ).toEqual(["2026-11-06T09:00:00.000Z"]);
     });
 
     it("규칙 상한에 걸리면 함께 보낸 제목도 저장되지 않는다", async () => {

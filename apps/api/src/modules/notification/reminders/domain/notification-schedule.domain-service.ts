@@ -57,6 +57,10 @@ export function isWithinScheduleWindow(
   return nowMinutes >= startMinutes && nowMinutes < startMinutes + graceMinutes;
 }
 
+// 배포로 worker가 멈춘 사이 놓친 리마인더는 이만큼 늦은 것까지만 보내고, 더 늦으면 사유를 남기고 버린다
+export const REMINDER_LATE_LIMIT_MINUTES = 15;
+export const REMINDER_LATE_SKIP_REASON = "late-over-15m";
+
 /** 월요일 여부 (0=일, 1=월) */
 export const MONDAY = 1;
 

@@ -4,7 +4,7 @@ import type { RetentionEnrollmentPort } from "../../application/ports/retention-
 import { ActivateRetentionExperimentUseCase } from "../../application/use-cases/activate-retention-experiment.use-case.js";
 import { EnrollRetentionExperimentUseCase } from "../../application/use-cases/enroll-retention-experiment.use-case.js";
 
-/** 공개 enrollment capability를 리텐션 내부 UseCase에 연결한다. */
+// 공개 enrollment 포트를 리텐션 내부 UseCase에 연결한다
 @Injectable()
 export class RetentionEnrollmentAdapter implements RetentionEnrollmentPort {
   readonly #enrollRetentionExperimentUseCase: EnrollRetentionExperimentUseCase;

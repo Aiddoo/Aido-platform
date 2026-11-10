@@ -1,6 +1,6 @@
+import { createEmailMessageFixture } from "#test/fixtures/notification/email-message.fixture";
 import { RecordingOperationalAlert } from "#test/mocks/recording-operational-alert";
 
-import { createVerificationCodeEmail } from "../email-message.mapper.js";
 import type { EmailDeliveryOutcome, EmailQuotaScope } from "../ports/email-sender.port.js";
 import { DeliverEmailUseCase, EmailDeliveryRetryableError } from "./deliver-email.use-case.js";
 
@@ -33,7 +33,7 @@ class StubBudget {
 }
 
 const logger = { log: () => undefined, warn: () => undefined };
-const message = createVerificationCodeEmail("user@test.com", { code: "123456", expiryMinutes: 10 });
+const message = createEmailMessageFixture();
 
 function setup(outcome: EmailDeliveryOutcome) {
   const sender = new StubSender(outcome);

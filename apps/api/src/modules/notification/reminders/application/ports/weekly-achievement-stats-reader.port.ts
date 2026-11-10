@@ -1,26 +1,16 @@
-/**
- * 주간 달성 집계 조회 포트.
- *
- * 지난 주(월~일) 유저별 전체/완료 투두 수를 타임존 스코프로 집계한다.
- */
 import type { UserTodoCount } from "../read-models/scheduler.read-model.js";
 
-export const WEEKLY_ACHIEVEMENT_STATS_READER = Symbol("WEEKLY_ACHIEVEMENT_STATS_READER");
-
-/** 주간 집계 범위 파라미터 */
+/** [periodStart, periodEnd) 로컬 날짜 범위 */
 export interface WeeklyStatsParams {
   readonly tz: string;
   readonly periodStart: Date;
   readonly periodEnd: Date;
 }
 
-export interface WeeklyAchievementStatsReaderPort {
-  /** 유저별 전체 투두 수 (기간·타임존 스코프) */
-  groupTotalTodosByUser(params: WeeklyStatsParams): Promise<UserTodoCount[]>;
-
-  /** 유저별 완료 투두 수 (기간·타임존 스코프) */
-  groupCompletedTodosByUser(params: WeeklyStatsParams): Promise<UserTodoCount[]>;
-
+// 여러 날 할 일은 기간 안의 날마다 하나로 센다(planning 날짜 겹침 규칙과 같다)
+export abstract class WeeklyAchievementStatsReaderPort {
+  abstract groupTotalTodosByUser(params: WeeklyStatsParams): Promise<UserTodoCount[]>;
+  abstract groupCompletedTodosByUser(params: WeeklyStatsParams): Promise<UserTodoCount[]>;
   /** 주간 달성 푸시 대상인 무료(비구독·비관리자) 사용자 ID */
-  findFreeRecipientIds(userIds: string[]): Promise<Set<string>>;
+  abstract findFreeRecipientIds(userIds: string[]): Promise<Set<string>>;
 }

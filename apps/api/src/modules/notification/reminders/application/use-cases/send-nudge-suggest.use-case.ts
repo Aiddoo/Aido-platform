@@ -2,7 +2,6 @@ import type { ApplicationLoggerPort } from "#api/shared/application/ports/applic
 import { subtractDays } from "#api/shared/domain/date/utils/arithmetic";
 import { diffInDays } from "#api/shared/domain/date/utils/compare";
 import { toDateString, toIsoWeekId } from "#api/shared/domain/date/utils/format";
-import { todayInTimezone } from "#api/shared/domain/date/utils/timezone";
 import { DEFAULT_LOCALE } from "#api/shared/domain/locale";
 
 import type { NotificationHistoryReader } from "../../../inbox/application/notification-history.reader.js";
@@ -15,7 +14,7 @@ import type { TimezoneContext } from "../../domain/timezone-context.read-model.j
 import { type ReEngagementReaderPort } from "../ports/re-engagement-reader.port.js";
 import { type SchedulerDedupPort } from "../ports/scheduler-dedup.port.js";
 import { type SchedulerPreferenceReaderPort } from "../ports/scheduler-preference-reader.port.js";
-import type { TimezoneReminderStrategy } from "../ports/timezone-reminder-strategy.port.js";
+import type { TimezoneReminderStrategyPort } from "../ports/timezone-reminder-strategy.port.js";
 import { NotificationRemindersLogEvent } from "../reminders.log-events.js";
 
 interface NudgeSuggestStrategyDependencies {
@@ -30,7 +29,7 @@ interface NudgeSuggestStrategyDependencies {
   readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
 
-export class SendNudgeSuggestUseCase implements TimezoneReminderStrategy {
+export class SendNudgeSuggestUseCase implements TimezoneReminderStrategyPort {
   readonly #dependencies: NudgeSuggestStrategyDependencies;
 
   constructor(dependencies: NudgeSuggestStrategyDependencies) {
@@ -38,8 +37,7 @@ export class SendNudgeSuggestUseCase implements TimezoneReminderStrategy {
   }
 
   async execute(ctx: TimezoneContext): Promise<{ sent: number }> {
-    const { tz } = ctx;
-    const today = todayInTimezone(tz);
+    const { tz, today } = ctx;
     const weekAgo = subtractDays(7, today);
     const twoDaysAgo = subtractDays(2, today);
 

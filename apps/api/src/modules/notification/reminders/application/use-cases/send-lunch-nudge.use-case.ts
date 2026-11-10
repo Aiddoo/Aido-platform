@@ -1,7 +1,5 @@
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
-import { addDays } from "#api/shared/domain/date/utils/arithmetic";
 import { toDateString } from "#api/shared/domain/date/utils/format";
-import { todayInTimezone } from "#api/shared/domain/date/utils/timezone";
 import { DEFAULT_LOCALE } from "#api/shared/domain/locale";
 
 import type { NotificationHistoryReader } from "../../../inbox/application/notification-history.reader.js";
@@ -11,7 +9,7 @@ import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/notification-campaign.const
 import type { TimezoneContext } from "../../domain/timezone-context.read-model.js";
 import { type ScheduledReminderReaderPort } from "../ports/scheduled-reminder-reader.port.js";
 import { type SchedulerPreferenceReaderPort } from "../ports/scheduler-preference-reader.port.js";
-import type { TimezoneReminderStrategy } from "../ports/timezone-reminder-strategy.port.js";
+import type { TimezoneReminderStrategyPort } from "../ports/timezone-reminder-strategy.port.js";
 import { NotificationRemindersLogEvent } from "../reminders.log-events.js";
 
 /**
@@ -28,7 +26,7 @@ interface LunchNudgeStrategyDependencies {
   readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
 
-export class SendLunchNudgeUseCase implements TimezoneReminderStrategy {
+export class SendLunchNudgeUseCase implements TimezoneReminderStrategyPort {
   readonly #dependencies: LunchNudgeStrategyDependencies;
 
   constructor(dependencies: LunchNudgeStrategyDependencies) {
@@ -36,9 +34,7 @@ export class SendLunchNudgeUseCase implements TimezoneReminderStrategy {
   }
 
   async execute(ctx: TimezoneContext): Promise<{ sent: number }> {
-    const { tz } = ctx;
-    const today = todayInTimezone(tz);
-    const tomorrow = addDays(1, today);
+    const { tz, today, tomorrow } = ctx;
 
     // 오늘 할일이 있지만 완료가 0개인 유저 조회
     const users = await this.#dependencies.reader.findLunchNudgeUsers({

@@ -1,5 +1,6 @@
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
-import { now } from "#api/shared/domain/date/utils/core";
+import type { ClockPort } from "#api/shared/application/ports/clock.port";
+import { instantToDate } from "#api/shared/domain/time/instant";
 
 import type { NotificationHistoryReader } from "../../../inbox/application/notification-history.reader.js";
 import {
@@ -11,7 +12,7 @@ import type { PublishNotificationUseCase } from "../../../push/application/use-c
 import type { TimezoneContext } from "../../domain/timezone-context.read-model.js";
 import { decideEveningWeatherBriefing } from "../../domain/weather-briefing.domain-service.js";
 import type { ReminderWeatherReportReaderPort } from "../ports/reminder-weather-report.reader.port.js";
-import type { TimezoneReminderStrategy } from "../ports/timezone-reminder-strategy.port.js";
+import type { TimezoneReminderStrategyPort } from "../ports/timezone-reminder-strategy.port.js";
 import { type WeatherReminderReaderPort } from "../ports/weather-reminder-reader.port.js";
 import { NotificationRemindersLogEvent } from "../reminders.log-events.js";
 import {
@@ -33,6 +34,7 @@ interface WeatherEveningStrategyDependencies {
   readonly notificationPublisher: Pick<PublishNotificationUseCase, "publishBatch">;
   readonly notificationHistoryReader: Pick<NotificationHistoryReader, "findAlreadyNotifiedUserIds">;
   readonly weatherReportReader: Pick<ReminderWeatherReportReaderPort, "readReports">;
+  readonly clock: Pick<ClockPort, "now">;
   readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
 
@@ -40,7 +42,7 @@ interface WeatherEveningStrategyDependencies {
  * 저녁 날씨 알림. 앱 화면과 같은 v2 리포트(칸 캐시 공유)로 내일 비·눈이 시작하는 때와 쌀쌀함을 알린다.
  * 리포트는 알림 대상(설정 시각·위치 있음·오늘 미발송)만 조회한다.
  */
-export class SendWeatherEveningUseCase implements TimezoneReminderStrategy {
+export class SendWeatherEveningUseCase implements TimezoneReminderStrategyPort {
   readonly #dependencies: WeatherEveningStrategyDependencies;
 
   constructor(dependencies: WeatherEveningStrategyDependencies) {
@@ -91,7 +93,7 @@ export class SendWeatherEveningUseCase implements TimezoneReminderStrategy {
       return { sent: 0, unavailable: 0 };
     }
 
-    const at = now();
+    const at = instantToDate(this.#dependencies.clock.now());
     const reports = await this.#dependencies.weatherReportReader.readReports(
       targets.map((user) => ({
         key: user.id,

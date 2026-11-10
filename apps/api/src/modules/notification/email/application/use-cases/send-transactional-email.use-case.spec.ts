@@ -1,10 +1,12 @@
+import { StubEmailTemplateRenderer } from "#test/doubles/notification/stub-email-template-renderer";
+
 import type { EmailMessage } from "../../domain/email-message.vo.js";
 import type { EmailBudgetReservation } from "../ports/email-budget.port.js";
-import type { EmailDelivery, EmailDeliveryQueuePort } from "../ports/email-delivery-queue.port.js";
+import { type EmailDelivery, EmailDeliveryQueuePort } from "../ports/email-delivery-queue.port.js";
 import type { EmailDeliveryOutcome, EmailQuotaScope } from "../ports/email-sender.port.js";
 import { SendTransactionalEmailUseCase } from "./send-transactional-email.use-case.js";
 
-class StubQueue implements EmailDeliveryQueuePort {
+class StubQueue extends EmailDeliveryQueuePort {
   readonly deliveries: EmailDelivery[] = [];
   failure: Error | null = null;
   result: "queued" | "duplicate" = "queued";
@@ -54,13 +56,21 @@ describe("SendTransactionalEmailUseCase — 트랜잭션 이메일 발송 요청
   let queue: StubQueue;
   let budget: StubBudget;
   let sender: StubSender;
+  let renderer: StubEmailTemplateRenderer;
   let emailSender: SendTransactionalEmailUseCase;
 
   beforeEach(() => {
     queue = new StubQueue();
     budget = new StubBudget();
     sender = new StubSender();
-    emailSender = new SendTransactionalEmailUseCase({ queue, sender, budget, logger: noopLogger });
+    renderer = new StubEmailTemplateRenderer();
+    emailSender = new SendTransactionalEmailUseCase({
+      queue,
+      sender,
+      budget,
+      renderer,
+      logger: noopLogger,
+    });
   });
 
   function queuedMessage(): EmailMessage {
@@ -71,7 +81,7 @@ describe("SendTransactionalEmailUseCase — 트랜잭션 이메일 발송 요청
     return delivery.message;
   }
 
-  it("인증 메시지를 조립해 큐에 담고 critical 예산을 예약한다", async () => {
+  it("인증 메시지를 기본 언어로 렌더해 큐에 담고 critical 예산을 예약한다", async () => {
     // Given
     const data = { code: "123456", expiryMinutes: 10 };
 
@@ -83,7 +93,8 @@ describe("SendTransactionalEmailUseCase — 트랜잭션 이메일 발송 요청
     expect(queue.deliveries).toEqual([
       { deliveryId: expect.any(String), message: queuedMessage() },
     ]);
-    expect(queuedMessage().subject).toBe("[아이두] 이메일 인증 코드");
+    expect(renderer.requests).toEqual([{ template: { kind: "verification", data }, locale: "ko" }]);
+    expect(queuedMessage().subject).toBe("[verification]");
     expect(queuedMessage().tags).toEqual([{ name: "type", value: "verification" }]);
     expect(budget.reserved).toEqual(["critical"]);
   });

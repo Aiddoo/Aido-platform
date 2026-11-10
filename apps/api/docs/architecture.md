@@ -141,7 +141,7 @@ commit → 캐시 정리
 | 포트                                           | 지금 어댑터                     | 바꿀 수 있는 것          | 고르는 곳                              |
 | ---------------------------------------------- | ------------------------------- | ------------------------ | -------------------------------------- |
 | `PushSenderPort`                               | Expo                            | Web Push, FCM/APNs 직접  | `NOTIFICATION_PUSH_PROVIDER` → factory |
-| `EmailSenderPort`                              | Resend, Log                     | SES, Postmark            | `EMAIL_PROVIDER`                       |
+| `EmailSenderPort`                              | `@nestjs/mail`(Resend), Log     | SES, Postmark, SMTP      | `EMAIL_PROVIDER`                       |
 | `AdminNotifierPort`                            | Discord, Log                    | Slack, 이메일            | `ADMIN_NOTIFIER_PROVIDER`              |
 | `StoreSubscriptionStatusReaderPort` + 번역기   | RevenueCat                      | 웹 결제(토스·Stripe)     | `StoreSubscriptionEvent` 판별 유니온   |
 | `AiGeneratorPort`                              | AI SDK(Anthropic·Google·OpenAI) | 다른 모델·게이트웨이     | `AI_PROVIDER_ORDER`([AI](ai.md))       |

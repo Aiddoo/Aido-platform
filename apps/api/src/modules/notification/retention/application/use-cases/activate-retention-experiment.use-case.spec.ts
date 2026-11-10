@@ -1,50 +1,47 @@
-import type { Mocked } from "vitest";
-import { vi } from "vitest";
-import { mockDeep } from "vitest-mock-extended";
-
-import { createRetentionRepositoryMock, createUnitOfWorkMock } from "#test/mocks/ports/index";
+import { InMemoryRetentionRepository } from "#test/doubles/notification/in-memory-retention.repository";
+import { FixedClock } from "#test/doubles/platform/fixed-clock";
+import { ImmediateUnitOfWork } from "#test/doubles/platform/immediate-unit-of-work";
 
 import { ActivateRetentionExperimentUseCase } from "./activate-retention-experiment.use-case.js";
 
+const NOW = Temporal.Instant.from("2026-07-15T00:00:00Z");
+
+async function setup(enabled: boolean) {
+  const repository = new InMemoryRetentionRepository();
+  await repository.enroll({ userId: "new-user", variant: "TREATMENT", startedAt: null });
+  const unitOfWork = new ImmediateUnitOfWork();
+  const useCase = new ActivateRetentionExperimentUseCase({
+    repository,
+    config: { enabled },
+    unitOfWork,
+    clock: new FixedClock(NOW),
+  });
+  return { useCase, repository, unitOfWork };
+}
+
 describe("ActivateRetentionExperimentUseCase — 최초 인증 시점 시작", () => {
-  let repository: Mocked<
-    ConstructorParameters<typeof ActivateRetentionExperimentUseCase>[0]["repository"]
-  >;
-
-  async function build(enabled: boolean) {
-    const activateRetentionExperimentDependencies = mockDeep<
-      ConstructorParameters<typeof ActivateRetentionExperimentUseCase>[0]
-    >({
-      repository: createRetentionRepositoryMock(),
-      config: { enabled },
-      unitOfWork: createUnitOfWorkMock(),
-    });
-    const unit = new ActivateRetentionExperimentUseCase(activateRetentionExperimentDependencies);
-    repository = activateRetentionExperimentDependencies.repository;
-    return unit;
-  }
-
   it("assignment가 있을 수 있는 활성 환경에서만 시작을 요청한다", async () => {
-    vi.useFakeTimers({ toFake: ["Date"] }).setSystemTime(new Date("2026-07-15T00:00:00Z"));
-    try {
-      const useCase = await build(true);
+    // Given
+    const { useCase, repository } = await setup(true);
 
-      await useCase.execute("new-user");
+    // When
+    await useCase.execute("new-user");
 
-      expect(repository.activate).toHaveBeenCalledWith(
-        "new-user",
-        new Date("2026-07-15T00:00:00Z"),
-      );
-    } finally {
-      vi.useRealTimers();
-    }
+    // Then
+    expect(repository.enrollments).toEqual([
+      { userId: "new-user", variant: "TREATMENT", startedAt: new Date("2026-07-15T00:00:00Z") },
+    ]);
   });
 
   it("kill switch가 꺼지면 기존 인증 경로에서 DB를 조회하지 않는다", async () => {
-    const useCase = await build(false);
+    // Given
+    const { useCase, repository, unitOfWork } = await setup(false);
 
+    // When
     await useCase.execute("existing-user");
 
-    expect(repository.activate).not.toHaveBeenCalled();
+    // Then
+    expect(unitOfWork.runCount).toBe(0);
+    expect(repository.enrollments[0]?.startedAt).toBeNull();
   });
 });

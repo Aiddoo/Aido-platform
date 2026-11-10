@@ -38,6 +38,28 @@ export function planReminderJobs(scheduledMs: number, nowMs: number): PlannedRem
   });
 }
 
+/** 단계가 울려야 했던 시각. 알 수 없는 단계는 문구와 같이 가장 이른 단계로 본다 */
+export function reminderFireAt(
+  scheduledAt: Temporal.Instant,
+  stageLabel: string,
+): Temporal.Instant {
+  const stage = REMINDER_STAGES.find(({ label }) => label === stageLabel) ?? REMINDER_STAGES[0];
+  return scheduledAt.subtract({ milliseconds: stage?.leadTimeMs ?? REMINDER_MAX_LEAD_TIME_MS });
+}
+
+/** 울려야 했던 시각보다 limitMinutes를 넘게 늦었으면 true다(보내지 않는다). */
+export function isReminderTooLate(params: {
+  readonly scheduledAt: Temporal.Instant;
+  readonly stageLabel: string;
+  readonly now: Temporal.Instant;
+  readonly limitMinutes: number;
+}): boolean {
+  const deadline = reminderFireAt(params.scheduledAt, params.stageLabel).add({
+    minutes: params.limitMinutes,
+  });
+  return Temporal.Instant.compare(params.now, deadline) > 0;
+}
+
 /** 특정 todoId의 모든 단계 잡 라벨(취소 시 순회용) */
 export function allReminderLabels(): string[] {
   return REMINDER_STAGES.map((stage) => stage.label);

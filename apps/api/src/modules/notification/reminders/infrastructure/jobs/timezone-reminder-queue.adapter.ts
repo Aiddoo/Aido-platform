@@ -1,98 +1,58 @@
-import { Inject, Injectable, Logger } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 
-import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
+import { ClockPort } from "#api/shared/application/ports/clock.port";
+import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
 
-import type {
-  ReminderHourChangedJobData,
-  TargetedSocialDigestJobData,
+import { NotificationProviderLogEvent } from "../../../push/infrastructure/adapters/notification-provider.log-events.js";
+import {
+  type ReminderHourChangedJobData,
+  type TargetedSocialDigestJobData,
   TimezoneReminderEnqueuerPort,
 } from "../../application/ports/timezone-reminder-enqueuer.port.js";
 import { SOCIAL_DIGEST_DELAY_MS } from "../../domain/notification-campaign.constants.js";
 import {
-  type SweepRemindersJobData,
   TIMEZONE_REMINDER_QUEUE,
   TimezoneReminderJobName,
-} from "./timezone-reminder-queue.constants.js";
-
-/** Sweep 잡은 페이로드가 없다 (크론 트리거) */
-const SWEEP_JOB_DATA: SweepRemindersJobData = {};
-
-import { NotificationProviderLogEvent } from "../../../push/infrastructure/adapters/notification-provider.log-events.js";
+  type TimezoneReminderRuntimeJob,
+} from "./timezone-reminder.queue.js";
 
 @Injectable()
-export class TimezoneReminderQueueAdapter implements TimezoneReminderEnqueuerPort {
+export class TimezoneReminderQueueAdapter extends TimezoneReminderEnqueuerPort {
   readonly #logger = new Logger(TimezoneReminderQueueAdapter.name);
+  readonly #jobQueue: JobQueuePort;
+  readonly #clock: ClockPort;
 
-  readonly #runtime: JobRuntimePort;
-
-  constructor(@Inject(JOB_RUNTIME) runtime: JobRuntimePort) {
-    this.#runtime = runtime;
+  constructor(jobQueue: JobQueuePort, clock: ClockPort) {
+    super();
+    this.#jobQueue = jobQueue;
+    this.#clock = clock;
   }
 
-  /**
-   * 매분 sweep 스케줄러 등록 (upsert — 멱등)
-   */
-  async registerSweepScheduler(): Promise<void> {
-    await this.#runtime.schedule(
-      "tz-reminder-sweep-scheduler",
-      "* * * * *",
-      TIMEZONE_REMINDER_QUEUE,
-      { name: TimezoneReminderJobName.SWEEP_REMINDERS, data: SWEEP_JOB_DATA },
-      this.#jobOptions(),
-    );
-    this.#logger.log({
-      event: NotificationProviderLogEvent.SCHEDULE_REGISTERED,
-      jobName: TimezoneReminderJobName.SWEEP_REMINDERS,
-    });
-  }
-
-  /**
-   * 리마인더 시간 변경 catch-up 잡 등록
-   */
   enqueueReminderHourChanged(payload: ReminderHourChangedJobData): void {
-    this.#enqueueAsync(TimezoneReminderJobName.REMINDER_HOUR_CHANGED, payload).catch(() => {
-      this.#logger.error({ event: NotificationProviderLogEvent.ENQUEUE_FAILED });
+    this.#enqueueInBackground({
+      name: TimezoneReminderJobName.REMINDER_HOUR_CHANGED,
+      data: payload,
     });
   }
 
-  /**
-   * Social Digest delayed job 등록 (저녁 리마인더 90분 후)
-   */
   enqueueSocialDigest(payload: TargetedSocialDigestJobData): void {
-    this.#runtime
-      .enqueue(
-        TIMEZONE_REMINDER_QUEUE,
-        { name: TimezoneReminderJobName.SOCIAL_DIGEST, data: payload },
-        {
-          ...this.#jobOptions(),
-          startAfter: new Date(Date.now() + SOCIAL_DIGEST_DELAY_MS),
-        },
-      )
+    this.#enqueueInBackground(
+      {
+        name: TimezoneReminderJobName.SOCIAL_DIGEST,
+        data: { timezone: payload.timezone, recipientUserIds: [...payload.recipientUserIds] },
+      },
+      this.#clock.now().add({ milliseconds: SOCIAL_DIGEST_DELAY_MS }),
+    );
+  }
+
+  #enqueueInBackground(job: TimezoneReminderRuntimeJob, startAfter?: Temporal.Instant): void {
+    this.#jobQueue
+      .enqueue(TIMEZONE_REMINDER_QUEUE, job, startAfter == null ? {} : { startAfter })
       .then(() => {
-        this.#logger.debug({
-          event: NotificationProviderLogEvent.JOB_ENQUEUED,
-          jobName: TimezoneReminderJobName.SOCIAL_DIGEST,
-        });
+        this.#logger.debug({ event: NotificationProviderLogEvent.JOB_ENQUEUED, jobName: job.name });
       })
       .catch(() => {
         this.#logger.error({ event: NotificationProviderLogEvent.ENQUEUE_FAILED });
       });
-  }
-
-  async #enqueueAsync(name: string, data: ReminderHourChangedJobData): Promise<void> {
-    await this.#runtime.enqueue(TIMEZONE_REMINDER_QUEUE, { name, data }, this.#jobOptions());
-    this.#logger.debug({ event: NotificationProviderLogEvent.JOB_ENQUEUED, jobName: name });
-  }
-
-  #jobOptions() {
-    return {
-      retryLimit: 2,
-      retryDelaySeconds: 5,
-      retryBackoff: true,
-      expireInSeconds: 10 * 60,
-      retentionSeconds: 24 * 60 * 60,
-      deleteAfterSeconds: 24 * 60 * 60,
-      timezone: "Asia/Seoul",
-    };
   }
 }

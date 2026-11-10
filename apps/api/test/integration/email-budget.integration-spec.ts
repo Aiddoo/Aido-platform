@@ -5,6 +5,7 @@ import {
   type UsageMeterPort,
 } from "#api/platform/metering/interfaces/usage-meter.interface";
 import { usagePeriod } from "#api/platform/metering/usage-period";
+import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { now } from "#api/shared/domain/date/utils/core";
 import { RecordingOperationalAlert } from "#test/mocks/recording-operational-alert";
 import { createTestClient } from "#test/setup/database-context";
@@ -44,6 +45,7 @@ describe("이메일 발송 예산 (실제 PostgreSQL)", () => {
     budget = new MeteredEmailBudgetAdapter({
       meter,
       alert: alerts,
+      clock: context.module.get(ClockPort),
       logger: { warn: () => undefined },
     });
   });

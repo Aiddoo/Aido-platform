@@ -1,57 +1,59 @@
-import { Logger, type FactoryProvider } from "@nestjs/common";
+import type { Provider } from "@nestjs/common";
 
-import { UNIT_OF_WORK } from "#api/shared/application/ports/index";
+import { loggerFor, provideUseCase } from "#api/platform/di/provide-use-case";
+import { ClockPort } from "#api/shared/application/ports/clock.port";
+import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 
 import { PublishNotificationUseCase } from "../push/application/use-cases/publish-notification.use-case.js";
-import { RETENTION_CONFIG } from "./application/ports/retention-config.port.js";
-import { RETENTION_REPOSITORY } from "./application/ports/retention.repository.port.js";
+import { ExperimentAssignerPort } from "./application/ports/experiment-assigner.port.js";
+import { RetentionConfigPort } from "./application/ports/retention-config.port.js";
+import {
+  RETENTION_ENROLLMENT,
+  RetentionEnrollmentPort,
+} from "./application/ports/retention-enrollment.port.js";
+import { RetentionRepositoryPort } from "./application/ports/retention.repository.port.js";
 import { ActivateRetentionExperimentUseCase } from "./application/use-cases/activate-retention-experiment.use-case.js";
 import { EnrollRetentionExperimentUseCase } from "./application/use-cases/enroll-retention-experiment.use-case.js";
 import { ProcessRetentionStagesUseCase } from "./application/use-cases/process-retention-stages.use-case.js";
+import { DeterministicHashExperimentAssignerAdapter } from "./infrastructure/adapters/deterministic-hash-experiment-assigner.adapter.js";
+import { RetentionConfigAdapter } from "./infrastructure/adapters/retention-config.adapter.js";
+import { RetentionEnrollmentAdapter } from "./infrastructure/adapters/retention-enrollment.adapter.js";
+import { DrizzleRetentionRepository } from "./infrastructure/persistence/drizzle-retention.repository.js";
 
-export const activateRetentionExperimentUseCaseProvider: FactoryProvider<ActivateRetentionExperimentUseCase> =
-  {
-    provide: ActivateRetentionExperimentUseCase,
-    inject: [RETENTION_REPOSITORY, RETENTION_CONFIG, UNIT_OF_WORK],
-    useFactory: (
-      repository: ConstructorParameters<typeof ActivateRetentionExperimentUseCase>[0]["repository"],
-      config: ConstructorParameters<typeof ActivateRetentionExperimentUseCase>[0]["config"],
-      unitOfWork: ConstructorParameters<typeof ActivateRetentionExperimentUseCase>[0]["unitOfWork"],
-    ) =>
-      new ActivateRetentionExperimentUseCase({
-        repository,
-        config,
-        unitOfWork,
-      }),
-  };
+export const NOTIFICATION_RETENTION_PERSISTENCE_PROVIDERS: Provider[] = [
+  DrizzleRetentionRepository,
+  { provide: RetentionRepositoryPort, useExisting: DrizzleRetentionRepository },
+];
 
-export const enrollRetentionExperimentUseCaseProvider: FactoryProvider<EnrollRetentionExperimentUseCase> =
-  {
-    provide: EnrollRetentionExperimentUseCase,
-    inject: [RETENTION_REPOSITORY, RETENTION_CONFIG],
-    useFactory: (
-      repository: ConstructorParameters<typeof EnrollRetentionExperimentUseCase>[0]["repository"],
-      config: ConstructorParameters<typeof EnrollRetentionExperimentUseCase>[0]["config"],
-    ) => new EnrollRetentionExperimentUseCase({ repository, config }),
-  };
+export const NOTIFICATION_RETENTION_USE_CASE_PROVIDERS: Provider[] = [
+  provideUseCase(ActivateRetentionExperimentUseCase, {
+    repository: RetentionRepositoryPort,
+    config: RetentionConfigPort,
+    unitOfWork: UnitOfWorkPort,
+    clock: ClockPort,
+  }),
+  provideUseCase(EnrollRetentionExperimentUseCase, {
+    repository: RetentionRepositoryPort,
+    config: RetentionConfigPort,
+    experimentAssigner: ExperimentAssignerPort,
+    clock: ClockPort,
+  }),
+  provideUseCase(ProcessRetentionStagesUseCase, {
+    repository: RetentionRepositoryPort,
+    notificationPublisher: PublishNotificationUseCase,
+    config: RetentionConfigPort,
+    unitOfWork: UnitOfWorkPort,
+    clock: ClockPort,
+    logger: loggerFor(ProcessRetentionStagesUseCase),
+  }),
+];
 
-export const processRetentionStagesUseCaseProvider: FactoryProvider<ProcessRetentionStagesUseCase> =
-  {
-    provide: ProcessRetentionStagesUseCase,
-    inject: [RETENTION_REPOSITORY, PublishNotificationUseCase, RETENTION_CONFIG, UNIT_OF_WORK],
-    useFactory: (
-      repository: ConstructorParameters<typeof ProcessRetentionStagesUseCase>[0]["repository"],
-      notificationPublisher: ConstructorParameters<
-        typeof ProcessRetentionStagesUseCase
-      >[0]["notificationPublisher"],
-      config: ConstructorParameters<typeof ProcessRetentionStagesUseCase>[0]["config"],
-      unitOfWork: ConstructorParameters<typeof ProcessRetentionStagesUseCase>[0]["unitOfWork"],
-    ) =>
-      new ProcessRetentionStagesUseCase({
-        repository,
-        notificationPublisher,
-        config,
-        unitOfWork,
-        logger: new Logger(ProcessRetentionStagesUseCase.name),
-      }),
-  };
+export const NOTIFICATION_RETENTION_PROVIDERS: Provider[] = [
+  ...NOTIFICATION_RETENTION_PERSISTENCE_PROVIDERS,
+  ...NOTIFICATION_RETENTION_USE_CASE_PROVIDERS,
+  { provide: RetentionConfigPort, useClass: RetentionConfigAdapter },
+  { provide: ExperimentAssignerPort, useClass: DeterministicHashExperimentAssignerAdapter },
+  RetentionEnrollmentAdapter,
+  { provide: RetentionEnrollmentPort, useExisting: RetentionEnrollmentAdapter },
+  { provide: RETENTION_ENROLLMENT, useExisting: RetentionEnrollmentPort },
+];

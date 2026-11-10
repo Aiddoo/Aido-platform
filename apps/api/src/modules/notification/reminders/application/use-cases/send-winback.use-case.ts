@@ -2,7 +2,6 @@ import type { ApplicationLoggerPort } from "#api/shared/application/ports/applic
 import { subtractDays } from "#api/shared/domain/date/utils/arithmetic";
 import { diffInDays } from "#api/shared/domain/date/utils/compare";
 import { toDateString } from "#api/shared/domain/date/utils/format";
-import { todayInTimezone } from "#api/shared/domain/date/utils/timezone";
 import { DEFAULT_LOCALE } from "#api/shared/domain/locale";
 
 import type { NotificationHistoryReader } from "../../../inbox/application/notification-history.reader.js";
@@ -15,7 +14,7 @@ import { resolveWinbackStage } from "../../domain/winback-stage.constants.js";
 import { type ReEngagementReaderPort } from "../ports/re-engagement-reader.port.js";
 import { type SchedulerDedupPort } from "../ports/scheduler-dedup.port.js";
 import { type SchedulerPreferenceReaderPort } from "../ports/scheduler-preference-reader.port.js";
-import type { TimezoneReminderStrategy } from "../ports/timezone-reminder-strategy.port.js";
+import type { TimezoneReminderStrategyPort } from "../ports/timezone-reminder-strategy.port.js";
 import { NotificationRemindersLogEvent } from "../reminders.log-events.js";
 
 interface WinbackStrategyDependencies {
@@ -27,7 +26,7 @@ interface WinbackStrategyDependencies {
   readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
 
-export class SendWinbackUseCase implements TimezoneReminderStrategy {
+export class SendWinbackUseCase implements TimezoneReminderStrategyPort {
   readonly #dependencies: WinbackStrategyDependencies;
 
   constructor(dependencies: WinbackStrategyDependencies) {
@@ -35,8 +34,7 @@ export class SendWinbackUseCase implements TimezoneReminderStrategy {
   }
 
   async execute(ctx: TimezoneContext): Promise<{ sent: number }> {
-    const { tz } = ctx;
-    const today = todayInTimezone(tz);
+    const { tz, today } = ctx;
     const cutoffStart = subtractDays(30, today);
     const cutoffEnd = subtractDays(3, today);
 

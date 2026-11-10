@@ -1,6 +1,5 @@
 import { Global, Module } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
-import { mock } from "vitest-mock-extended";
 import { z } from "zod";
 
 import { PreferenceEntitlementPort } from "#api/modules/identity/preferences/application/ports/preference-entitlement.port";
@@ -23,7 +22,9 @@ import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache
 import { CacheService } from "#api/platform/cache/cache.service";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { UnitOfWorkPort } from "#api/shared/application/ports/index";
-import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
+import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
+import { FixedClock } from "#test/doubles/platform/fixed-clock";
+import { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
 import { createUserSettingsFixture } from "#test/fixtures/user-settings.fixture";
 
 import { ReminderCacheKey, REMINDER_CACHE_TTL_MS } from "../cache/reminder-cache.keyspace.js";
@@ -39,7 +40,6 @@ async function createFixture() {
     maxItems: 10,
   });
   const cache = new CacheService(underlyingCache);
-  const runtime = mock<JobRuntimePort>();
   const settings = createUserSettingsFixture();
   const module = await Test.createTestingModule({
     imports: [
@@ -47,9 +47,13 @@ async function createFixture() {
         module: ReminderCacheDependenciesTestModule,
         providers: [
           { provide: CacheService, useValue: cache },
-          { provide: JOB_RUNTIME, useValue: runtime },
+          { provide: JobQueuePort, useValue: new InMemoryJobQueue() },
+          {
+            provide: ClockPort,
+            useValue: new FixedClock(Temporal.Instant.from("2026-11-10T00:00:00Z")),
+          },
         ],
-        exports: [CacheService, JOB_RUNTIME],
+        exports: [CacheService, JobQueuePort, ClockPort],
       },
       TimezoneReminderQueueModule,
     ],

@@ -1,5 +1,5 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
-import { Inject, Injectable } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 import { and, eq, isNull, sql } from "drizzle-orm";
 import { z } from "zod";
 
@@ -20,24 +20,29 @@ import {
   userConsent,
   userPreference,
 } from "#api/platform/database/schema/index";
-import { UNIT_OF_WORK, type UnitOfWorkPort } from "#api/shared/application/ports/index";
-import { now } from "#api/shared/domain/date/utils/core";
+import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
+import { toSupportedLocale } from "#api/shared/domain/locale";
 
+import type { RetentionRepositoryPort } from "../../application/ports/retention.repository.port.js";
 import type {
-  RetentionRepositoryPort,
   RetentionStageCandidate,
-} from "../../application/ports/retention.repository.port.js";
+  RetentionStageCursor,
+} from "../../application/read-models/retention-stage-candidate.read-model.js";
+import { RETENTION_STAGE_TIMING } from "../../domain/retention-stage.domain-service.js";
 import {
   RETENTION_EXPERIMENT_KEY,
   RETENTION_STAGE_NAMES,
+  RETENTION_VARIANTS,
+  type RetentionVariant,
 } from "../../domain/retention.constants.js";
 
 const stageRowSchema = z.object({
   assignmentId: z.string(),
   stageId: z.string(),
+  stageCreatedAt: rawTimestamptzSchema,
   userId: z.string(),
-  variant: z.enum(["CONTROL", "TREATMENT"]),
-  stage: z.enum(["D0", "D1", "D3", "D7"]),
+  variant: z.enum(RETENTION_VARIANTS),
+  stage: z.enum(RETENTION_STAGE_NAMES),
   startedAt: rawTimestamptzSchema,
   timezone: z.string(),
   locale: z.string(),
@@ -56,10 +61,7 @@ export class DrizzleRetentionRepository implements RetentionRepositoryPort {
   readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
   readonly #uow: UnitOfWorkPort;
 
-  constructor(
-    txHost: TransactionHost<DrizzleTransactionalAdapter>,
-    @Inject(UNIT_OF_WORK) uow: UnitOfWorkPort,
-  ) {
+  constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>, uow: UnitOfWorkPort) {
     this.#txHost = txHost;
     this.#uow = uow;
   }
@@ -70,7 +72,7 @@ export class DrizzleRetentionRepository implements RetentionRepositoryPort {
 
   async enroll(input: {
     userId: string;
-    variant: "CONTROL" | "TREATMENT";
+    variant: RetentionVariant;
     startedAt: Date | null;
   }): Promise<void> {
     await this.#uow.run(async () => {
@@ -123,8 +125,20 @@ export class DrizzleRetentionRepository implements RetentionRepositoryPort {
     return true;
   }
 
-  async findScheduledStages(limit: number): Promise<RetentionStageCandidate[]> {
-    const perStageLimit = Math.max(1, Math.ceil(limit / RETENTION_STAGE_NAMES.length));
+  async findDueStages(params: {
+    readonly dueAt: Date;
+    readonly after?: RetentionStageCursor;
+    readonly limit: number;
+  }): Promise<RetentionStageCandidate[]> {
+    const dueAt = params.dueAt.toISOString();
+    const d0ReadyBefore = new Date(
+      params.dueAt.getTime() - RETENTION_STAGE_TIMING.d0MinWaitMs,
+    ).toISOString();
+    const { targetDay, sendLocalTime } = RETENTION_STAGE_TIMING;
+    const afterCursor =
+      params.after == null
+        ? sql`TRUE`
+        : sql`(stage."createdAt", stage."id") > (${params.after.createdAt.toISOString()}::timestamptz AT TIME ZONE 'UTC', ${params.after.stageId})`;
     const rows = z.array(stageRowSchema).parse(
       (
         await this.#db.execute<Record<string, unknown>>(sql`
@@ -132,31 +146,63 @@ export class DrizzleRetentionRepository implements RetentionRepositoryPort {
 				SELECT timezone.name
 				FROM pg_timezone_names AS timezone
 			),
-			ranked_stages AS (
+			due_stages AS (
+				-- isRetentionStageDue와 같은 기준이다. 아직 기다리는 단계가 묶음 자리를 차지하지 않게 한다
 				SELECT
 					stage."id",
 					stage."assignmentId",
 					stage."stage",
 					stage."createdAt",
-					ROW_NUMBER() OVER (
-						PARTITION BY stage."stage"
-						ORDER BY stage."createdAt" ASC
-					) AS stage_rank
+					stage_clock.timezone
 				FROM ${retentionExperimentStage} AS stage
 				INNER JOIN ${retentionExperimentAssignment} AS assignment
 					ON assignment."id" = stage."assignmentId"
+				LEFT JOIN ${userPreference} AS preference
+					ON preference."userId" = assignment."userId"
+				LEFT JOIN valid_timezones AS valid_timezone
+					ON valid_timezone.name = preference."timezone"
+				CROSS JOIN LATERAL (
+					SELECT COALESCE(valid_timezone.name, 'UTC') AS timezone
+				) AS stage_clock
+				CROSS JOIN LATERAL (
+					SELECT
+						(${dueAt}::timestamptz AT TIME ZONE stage_clock.timezone)::DATE
+							- (assignment."startedAt" AT TIME ZONE 'UTC' AT TIME ZONE stage_clock.timezone)::DATE
+							AS day_difference,
+						(${dueAt}::timestamptz AT TIME ZONE stage_clock.timezone)::TIME AS local_time,
+						CASE stage."stage"
+							WHEN 'D1' THEN ${targetDay.D1}::INT
+							WHEN 'D3' THEN ${targetDay.D3}::INT
+							ELSE ${targetDay.D7}::INT
+						END AS target_day
+				) AS local_clock
 				WHERE stage."status" = 'SCHEDULED'
 					AND assignment."experimentKey" = ${RETENTION_EXPERIMENT_KEY}
 					AND assignment."startedAt" IS NOT NULL
+					AND ${afterCursor}
+					AND CASE
+						WHEN stage."stage" = 'D0' THEN
+							local_clock.day_difference > 0
+							OR assignment."startedAt" <= ${d0ReadyBefore}::timestamptz AT TIME ZONE 'UTC'
+						ELSE
+							local_clock.day_difference > local_clock.target_day
+							OR (
+								local_clock.day_difference = local_clock.target_day
+								AND local_clock.local_time >= MAKE_TIME(${sendLocalTime.hour}::INT, ${sendLocalTime.minute}::INT, 0)
+							)
+					END
+				ORDER BY stage."createdAt" ASC, stage."id" ASC
+				LIMIT ${params.limit}
 			)
 			SELECT
 				assignment."id" AS "assignmentId",
-				ranked."id" AS "stageId",
+				due."id" AS "stageId",
+				due."createdAt" AT TIME ZONE 'UTC' AS "stageCreatedAt",
 				assignment."userId" AS "userId",
 				assignment."variant",
-				ranked."stage",
+				due."stage",
 				assignment."startedAt" AT TIME ZONE 'UTC' AS "startedAt",
-				COALESCE(valid_timezone.name, 'UTC') AS "timezone",
+				due.timezone AS "timezone",
 				COALESCE(preference."locale", 'ko') AS "locale",
 				COALESCE(preference."pushEnabled", FALSE) AS "pushEnabled",
 				COALESCE(preference."nightPushEnabled", FALSE) AS "nightPushEnabled",
@@ -166,15 +212,13 @@ export class DrizzleRetentionRepository implements RetentionRepositoryPort {
 				COALESCE(todo_metrics."todoCount", 0)::INT AS "todoCount",
 				COALESCE(todo_metrics."completedCount", 0)::INT AS "completedCount",
 				COALESCE(todo_metrics."todoActionWithinWindow", FALSE) AS "todoActionWithinWindow"
-			FROM ranked_stages AS ranked
+			FROM due_stages AS due
 			INNER JOIN ${retentionExperimentAssignment} AS assignment
-				ON assignment."id" = ranked."assignmentId"
+				ON assignment."id" = due."assignmentId"
 			INNER JOIN ${user} AS app_user
 				ON app_user."id" = assignment."userId"
 			LEFT JOIN ${userPreference} AS preference
 				ON preference."userId" = app_user."id"
-			LEFT JOIN valid_timezones AS valid_timezone
-				ON valid_timezone.name = preference."timezone"
 			LEFT JOIN ${userConsent} AS consent
 				ON consent."userId" = app_user."id"
 			LEFT JOIN LATERAL (
@@ -189,36 +233,35 @@ export class DrizzleRetentionRepository implements RetentionRepositoryPort {
 					COUNT(*) FILTER (WHERE todo."completed" = TRUE) AS "completedCount",
 					BOOL_OR(
 						(
-							(todo."createdAt" AT TIME ZONE 'UTC' AT TIME ZONE COALESCE(valid_timezone.name, 'UTC'))::DATE
-								> (assignment."startedAt" AT TIME ZONE 'UTC' AT TIME ZONE COALESCE(valid_timezone.name, 'UTC'))::DATE
+							(todo."createdAt" AT TIME ZONE 'UTC' AT TIME ZONE due.timezone)::DATE
+								> (assignment."startedAt" AT TIME ZONE 'UTC' AT TIME ZONE due.timezone)::DATE
 							AND todo."createdAt" < assignment."startedAt" + INTERVAL '8 days'
 						) OR (
 							todo."completedAt" IS NOT NULL
-							AND (todo."completedAt" AT TIME ZONE 'UTC' AT TIME ZONE COALESCE(valid_timezone.name, 'UTC'))::DATE
-								> (assignment."startedAt" AT TIME ZONE 'UTC' AT TIME ZONE COALESCE(valid_timezone.name, 'UTC'))::DATE
+							AND (todo."completedAt" AT TIME ZONE 'UTC' AT TIME ZONE due.timezone)::DATE
+								> (assignment."startedAt" AT TIME ZONE 'UTC' AT TIME ZONE due.timezone)::DATE
 							AND todo."completedAt" < assignment."startedAt" + INTERVAL '8 days'
 						)
 					) AS "todoActionWithinWindow"
 				FROM ${todo} AS todo
 				WHERE todo."userId" = app_user."id"
 			) AS todo_metrics ON TRUE
-			WHERE ranked.stage_rank <= ${perStageLimit}
-			ORDER BY ranked."createdAt" ASC
+			ORDER BY due."createdAt" ASC, due."id" ASC
 		`)
       ).rows,
     );
 
     return rows.map((row) => ({
       ...row,
-      locale: row.locale === "en" ? "en" : "ko",
+      locale: toSupportedLocale(row.locale),
       incompleteCount: row.todoCount - row.completedCount,
     }));
   }
 
-  async markStageSkipped(stageId: string, reason: string): Promise<boolean> {
+  async markStageSkipped(stageId: string, reason: string, processedAt: Date): Promise<boolean> {
     const updated = await this.#db
       .update(retentionExperimentStage)
-      .set({ status: "SKIPPED", skipReason: reason, processedAt: now() })
+      .set({ status: "SKIPPED", skipReason: reason, processedAt })
       .where(
         and(
           eq(retentionExperimentStage.id, stageId),
@@ -229,10 +272,10 @@ export class DrizzleRetentionRepository implements RetentionRepositoryPort {
     return updated.length === 1;
   }
 
-  async markStageOutboxed(stageId: string): Promise<boolean> {
+  async markStageOutboxed(stageId: string, processedAt: Date): Promise<boolean> {
     const claimed = await this.#db
       .update(retentionExperimentStage)
-      .set({ status: "OUTBOXED", processedAt: now() })
+      .set({ status: "OUTBOXED", processedAt })
       .where(
         and(
           eq(retentionExperimentStage.id, stageId),
@@ -253,9 +296,10 @@ export class DrizzleRetentionRepository implements RetentionRepositoryPort {
   }
 
   async recordD7Result(input: {
-    assignmentId: string;
-    returnedWithinD7: boolean;
-    todoActionWithinD7: boolean;
+    readonly assignmentId: string;
+    readonly returnedWithinD7: boolean;
+    readonly todoActionWithinD7: boolean;
+    readonly measuredAt: Date;
   }): Promise<void> {
     await this.#db
       .insert(retentionExperimentResult)
@@ -265,7 +309,7 @@ export class DrizzleRetentionRepository implements RetentionRepositoryPort {
         set: {
           returnedWithinD7: input.returnedWithinD7,
           todoActionWithinD7: input.todoActionWithinD7,
-          measuredAt: now(),
+          measuredAt: input.measuredAt,
         },
       });
   }

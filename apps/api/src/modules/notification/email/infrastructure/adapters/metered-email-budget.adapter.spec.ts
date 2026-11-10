@@ -1,10 +1,9 @@
-import { afterEach, beforeEach, vi } from "vitest";
-
 import {
   USAGE_SUBJECT_ALL,
   type UsageKey,
   type UsageMeterPort,
 } from "#api/platform/metering/interfaces/usage-meter.interface";
+import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { InMemoryUsageMeterAdapter } from "#test/mocks/in-memory-usage-meter.adapter";
 import { RecordingOperationalAlert } from "#test/mocks/recording-operational-alert";
 
@@ -29,22 +28,18 @@ describe("MeteredEmailBudgetAdapter", () => {
   let alert: RecordingOperationalAlert;
   let logger: RecordingLogger;
   let budget: MeteredEmailBudgetAdapter;
+  let clock: FixedClock;
 
   function create(usage: Pick<UsageMeterPort, "tryReserve" | "release" | "read" | "add"> = meter) {
-    return new MeteredEmailBudgetAdapter({ meter: usage, alert, logger });
+    return new MeteredEmailBudgetAdapter({ meter: usage, alert, logger, clock });
   }
 
   beforeEach(() => {
-    vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(new Date("2026-11-05T03:00:00Z"));
+    clock = new FixedClock(Temporal.Instant.from("2026-11-05T03:00:00Z"));
     meter = new InMemoryUsageMeterAdapter();
     alert = new RecordingOperationalAlert();
     logger = new RecordingLogger();
     budget = create();
-  });
-
-  afterEach(() => {
-    vi.useRealTimers();
   });
 
   async function reserveMany(priority: "critical" | "standard", count: number) {

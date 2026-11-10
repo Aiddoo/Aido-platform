@@ -1,38 +1,42 @@
 import { Logger } from "@nestjs/common";
-import { TestBed } from "@suites/unit";
-import { vi, type Mocked } from "vitest";
+import { vi } from "vitest";
 
-import {
-  PublishNotificationUseCase,
-  NOTIFICATION_RECIPIENT_LOCALE_READER,
-  type NotificationRecipientLocaleReaderPort,
-} from "#api/modules/notification/notification-delivery.public";
-import { FakeJobRuntime } from "#test/mocks/fake-job-runtime";
+import { RecordingNotificationPublisher } from "#test/doubles/notification/recording-notification-publisher";
+import { StubNotificationRecipientLocaleReader } from "#test/doubles/notification/stub-notification-recipient-locale.reader";
+import { StubTodoReminderReader } from "#test/doubles/notification/stub-todo-reminder.reader";
+import { StubTodoSeriesOwnerDormancy } from "#test/doubles/notification/stub-todo-series-owner-dormancy";
+import { FixedClock } from "#test/doubles/platform/fixed-clock";
+import { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
 
 import { NotificationProviderLogEvent } from "../../../push/infrastructure/adapters/notification-provider.log-events.js";
-import {
-  TODO_REMINDER_READER,
-  type TodoReminderReaderPort,
-} from "../../application/ports/todo-reminder-reader.port.js";
-import {
-  TODO_SERIES_OWNER_DORMANCY,
-  type TodoSeriesOwnerDormancyPort,
-} from "../../application/ports/todo-series-owner-dormancy.port.js";
+import type { ActiveTodo } from "../../application/read-models/scheduler.read-model.js";
+import { NotificationRemindersLogEvent } from "../../application/reminders.log-events.js";
 import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/notification-campaign.constants.js";
+import { TodoReminderQueueProcessor } from "./todo-reminder-queue.processor.js";
 import {
   type ReminderJobData,
+  type TodoReminderRuntimeJob,
   TODO_REMINDER_JOB_NAME,
   TODO_REMINDER_QUEUE,
   TODO_SERIES_PAUSED_JOB_NAME,
-  TODO_SERIES_PAUSED_JOB_POLICY,
-} from "./todo-reminder-queue.constants.js";
-import { TodoReminderQueueProcessor } from "./todo-reminder-queue.processor.js";
+} from "./todo-reminder.queue.js";
 
 const USER_ID = "user-1";
 const TODO_TITLE = "Test Todo";
-const SCHEDULE = { startDate: "2026-11-05", scheduledLocalTime: "10:00" };
+// 60분 단계가 막 울릴 시각: 할 일은 한 시간 뒤다
+const NOW = Temporal.Instant.from("2026-11-05T00:00:00Z");
 
-const makeJob = (data: Partial<ReminderJobData> = {}) => ({
+const activeTodo = (overrides: Partial<ActiveTodo> = {}): ActiveTodo => ({
+  id: 1,
+  title: TODO_TITLE,
+  seriesId: null,
+  startDate: "2026-11-05",
+  scheduledLocalTime: "10:00",
+  scheduledAt: NOW.add({ minutes: 60 }),
+  ...overrides,
+});
+
+const makeJob = (data: Partial<ReminderJobData> = {}): TodoReminderRuntimeJob => ({
   name: TODO_REMINDER_JOB_NAME,
   data: {
     todoId: data.todoId ?? 1,
@@ -42,56 +46,49 @@ const makeJob = (data: Partial<ReminderJobData> = {}) => ({
 });
 
 describe("TodoReminderQueueProcessor — 할 일 리마인더 프로세서", () => {
+  let reader: StubTodoReminderReader;
+  let seriesOwnerDormancy: StubTodoSeriesOwnerDormancy;
+  let publisher: RecordingNotificationPublisher;
+  let localeReader: StubNotificationRecipientLocaleReader;
+  let jobQueue: InMemoryJobQueue;
+  let clock: FixedClock;
   let processor: TodoReminderQueueProcessor;
-  let reader: Mocked<TodoReminderReaderPort>;
-  let seriesOwnerDormancy: Mocked<TodoSeriesOwnerDormancyPort>;
-  let notificationPublisher: Mocked<PublishNotificationUseCase>;
-  let recipientLocaleReader: Mocked<NotificationRecipientLocaleReaderPort>;
 
-  beforeEach(async () => {
-    const { unit, unitRef } = await TestBed.solitary(TodoReminderQueueProcessor).compile();
-
-    processor = unit;
-    reader = unitRef.get(TODO_REMINDER_READER);
-    seriesOwnerDormancy = unitRef.get(TODO_SERIES_OWNER_DORMANCY);
-    notificationPublisher = unitRef.get(PublishNotificationUseCase);
-    recipientLocaleReader = unitRef.get(NOTIFICATION_RECIPIENT_LOCALE_READER);
-    recipientLocaleReader.getLocale.mockResolvedValue("ko");
+  beforeEach(() => {
+    reader = new StubTodoReminderReader();
+    seriesOwnerDormancy = new StubTodoSeriesOwnerDormancy();
+    publisher = new RecordingNotificationPublisher();
+    localeReader = new StubNotificationRecipientLocaleReader();
+    jobQueue = new InMemoryJobQueue();
+    clock = new FixedClock(NOW);
+    processor = new TodoReminderQueueProcessor(
+      reader,
+      seriesOwnerDormancy,
+      publisher,
+      localeReader,
+      jobQueue,
+      clock,
+    );
+    reader.todos.set(1, activeTodo());
   });
 
-  /** 리더 mock 설정 헬퍼 */
-  const setupMocks = (
-    options: {
-      todoExists?: boolean;
-      todoTitle?: string;
-    } = {},
-  ) => {
-    const { todoExists = true, todoTitle = TODO_TITLE } = options;
-
-    reader.findActiveTodo.mockResolvedValue(
-      todoExists ? { id: 1, title: todoTitle, seriesId: null, ...SCHEDULE } : null,
-    );
-  };
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
 
   describe("반복 회차와 휴면", () => {
     const logSpy = () => vi.spyOn(Logger.prototype, "log").mockImplementation(() => undefined);
 
     it("소유자가 휴면이면 보내지 않고 내용 없이 로그 키로 남긴다", async () => {
       // Given
-      setupMocks();
-      reader.findActiveTodo.mockResolvedValue({
-        id: 1,
-        title: TODO_TITLE,
-        seriesId: "series-1",
-        ...SCHEDULE,
-      });
-      seriesOwnerDormancy.findDormantSince.mockResolvedValue("2026-08-01");
+      reader.todos.set(1, activeTodo({ seriesId: "series-1" }));
+      seriesOwnerDormancy.dormantSince = "2026-08-01";
       const log = logSpy();
       // When
       await processor.process(makeJob({ stageLabel: "10min" }));
       // Then
-      expect(seriesOwnerDormancy.findDormantSince).toHaveBeenCalledWith(USER_ID);
-      expect(notificationPublisher.publish).not.toHaveBeenCalled();
+      expect(seriesOwnerDormancy.askedUserIds).toEqual([USER_ID]);
+      expect(publisher.published).toEqual([]);
       expect(log).toHaveBeenCalledExactlyOnceWith({
         event: NotificationProviderLogEvent.TODO_REMINDER_DORMANT_OWNER_SKIPPED,
         todoId: 1,
@@ -103,37 +100,18 @@ describe("TodoReminderQueueProcessor — 할 일 리마인더 프로세서", () 
 
     it("휴면 기간마다 같은 key로 안내 작업을 하나만 등록한다", async () => {
       // Given
-      const runtime = new FakeJobRuntime();
-      const withRuntime = new TodoReminderQueueProcessor(
-        reader,
-        seriesOwnerDormancy,
-        notificationPublisher,
-        recipientLocaleReader,
-        runtime,
-      );
-      setupMocks();
-      reader.findActiveTodo.mockResolvedValue({
-        id: 1,
-        title: TODO_TITLE,
-        seriesId: "series-1",
-        ...SCHEDULE,
-      });
-      seriesOwnerDormancy.findDormantSince.mockResolvedValue("2026-08-01");
+      reader.todos.set(1, activeTodo({ seriesId: "series-1" }));
+      seriesOwnerDormancy.dormantSince = "2026-08-01";
+      logSpy();
       // When
-      await withRuntime.process(makeJob({ stageLabel: "60min" }));
-      await withRuntime.process(makeJob({ stageLabel: "10min" }));
+      await processor.process(makeJob({ stageLabel: "60min" }));
+      await processor.process(makeJob({ stageLabel: "10min" }));
       // Then
-      expect(runtime.enqueueCalls).toEqual([
+      expect(jobQueue.jobsIn(TODO_REMINDER_QUEUE)).toEqual([
         {
-          queue: TODO_REMINDER_QUEUE,
-          data: {
-            name: TODO_SERIES_PAUSED_JOB_NAME,
-            data: { todoId: 1, userId: USER_ID },
-          },
-          options: {
-            ...TODO_SERIES_PAUSED_JOB_POLICY,
-            idempotencyKey: `series-paused_${USER_ID}_2026-08-01`,
-          },
+          queue: TODO_REMINDER_QUEUE.name,
+          payload: { name: TODO_SERIES_PAUSED_JOB_NAME, data: { todoId: 1, userId: USER_ID } },
+          options: { idempotencyKey: `series-paused_${USER_ID}_2026-08-01` },
         },
       ]);
     });
@@ -149,133 +127,140 @@ describe("TodoReminderQueueProcessor — 할 일 리마인더 프로세서", () 
       "안내 작업은 $locale 문구를 리마인더와 같은 동의로 보낸다",
       async ({ locale, title, body }) => {
         // Given
-        recipientLocaleReader.getLocale.mockResolvedValue(locale);
-        vi.spyOn(Logger.prototype, "log").mockImplementation(() => undefined);
+        localeReader.locale = locale;
+        logSpy();
         // When
         await processor.process({
           name: TODO_SERIES_PAUSED_JOB_NAME,
           data: { todoId: 7, userId: USER_ID },
         });
         // Then
-        expect(notificationPublisher.publish).toHaveBeenCalledExactlyOnceWith(
-          expect.objectContaining({
-            userId: USER_ID,
-            type: "TODO_REMINDER",
-            purpose: "SCHEDULED_SERVICE",
-            campaignKey: "todo_series_paused_v1",
-            todoId: 7,
-            title,
-            body,
-            metadata: { stage: "series-paused" },
-          }),
-        );
+        expect(publisher.published).toEqual([
+          {
+            mode: "publish",
+            data: expect.objectContaining({
+              userId: USER_ID,
+              type: "TODO_REMINDER",
+              purpose: "SCHEDULED_SERVICE",
+              campaignKey: "todo_series_paused_v1",
+              todoId: 7,
+              title,
+              body,
+              metadata: { stage: "series-paused" },
+            }),
+          },
+        ]);
       },
     );
 
     it("소유자가 활동 중이면 반복 회차도 그대로 보낸다", async () => {
       // Given
-      setupMocks();
-      reader.findActiveTodo.mockResolvedValue({
-        id: 1,
-        title: TODO_TITLE,
-        seriesId: "series-1",
-        ...SCHEDULE,
-      });
-      seriesOwnerDormancy.findDormantSince.mockResolvedValue(null);
+      reader.todos.set(1, activeTodo({ seriesId: "series-1" }));
       // When
       await processor.process(makeJob());
       // Then
-      expect(notificationPublisher.publish).toHaveBeenCalledOnce();
+      expect(publisher.published).toHaveLength(1);
     });
 
     it("단일 할 일은 휴면을 묻지 않고 그대로 보낸다", async () => {
       // Given
-      setupMocks();
-      seriesOwnerDormancy.findDormantSince.mockResolvedValue("2026-08-01");
+      seriesOwnerDormancy.dormantSince = "2026-08-01";
       // When
       await processor.process(makeJob());
       // Then
-      expect(seriesOwnerDormancy.findDormantSince).not.toHaveBeenCalled();
-      expect(notificationPublisher.publish).toHaveBeenCalledOnce();
+      expect(seriesOwnerDormancy.askedUserIds).toEqual([]);
+      expect(publisher.published).toHaveLength(1);
     });
   });
 
   describe("정상 처리", () => {
     it("유효한 투두에 대해 알림을 발송한다", async () => {
-      // Given
-      setupMocks({ todoExists: true });
-      notificationPublisher.publish.mockResolvedValue(null);
-
       // When
       await processor.process(makeJob({ todoId: 1, stageLabel: "60min" }));
-
       // Then
-      expect(notificationPublisher.publish).toHaveBeenCalledTimes(1);
-      expect(notificationPublisher.publish).toHaveBeenCalledWith(
-        expect.objectContaining({
-          userId: USER_ID,
-          type: "TODO_REMINDER",
-          campaignKey: SCHEDULER_CAMPAIGN_KEY.TODO_REMINDER,
-          variantId: expect.stringMatching(/^todo_reminder_v4\.60min\.v[1-3]$/),
-          todoId: 1,
-          metadata: { stage: "60min" },
-        }),
-      );
+      expect(publisher.published).toEqual([
+        {
+          mode: "publish",
+          data: expect.objectContaining({
+            userId: USER_ID,
+            type: "TODO_REMINDER",
+            campaignKey: SCHEDULER_CAMPAIGN_KEY.TODO_REMINDER,
+            variantId: expect.stringMatching(/^todo_reminder_v4\.60min\.v[1-3]$/),
+            todoId: 1,
+            metadata: { stage: "60min" },
+          }),
+        },
+      ]);
     });
 
     it("10min 단계 알림을 발송한다", async () => {
       // Given
-      setupMocks({ todoExists: true });
-      notificationPublisher.publish.mockResolvedValue(null);
-
+      reader.todos.set(1, activeTodo({ scheduledAt: NOW.add({ minutes: 10 }) }));
       // When
       await processor.process(makeJob({ stageLabel: "10min" }));
-
       // Then
-      expect(notificationPublisher.publish).toHaveBeenCalledWith(
-        expect.objectContaining({ metadata: { stage: "10min" } }),
-      );
+      expect(publisher.published[0]?.data).toMatchObject({ metadata: { stage: "10min" } });
     });
 
     it("스케줄링 이후 제목이 변경된 경우 DB의 최신 제목으로 알림을 발송한다", async () => {
       // Given — DB에는 변경된 제목
-      setupMocks({
-        todoExists: true,
-        todoTitle: "밥먹고 약먹기",
-      });
-      notificationPublisher.publish.mockResolvedValue(null);
-
+      reader.todos.set(1, activeTodo({ title: "밥먹고 약먹기" }));
       // When
       await processor.process(makeJob({ todoId: 1, stageLabel: "60min" }));
-
       // Then — DB의 최신 제목은 잠금 화면 길이를 보호하는 본문 preview에 사용됨
-      const payload = notificationPublisher.publish.mock.calls[0]?.[0];
+      const payload = publisher.published[0]?.data;
       expect(payload?.body).toContain("밥먹고 약먹기");
       expect(`${payload?.title}${payload?.body}`).not.toContain("{todoTitle}");
     });
   });
 
-  describe("투두 유효성 검증", () => {
-    it("투두가 완료되었으면 알림을 발송하지 않는다", async () => {
-      // Given
-      setupMocks({ todoExists: false });
-
+  describe("늦은 리마인더", () => {
+    it("울려야 했던 시각보다 15분을 넘게 늦으면 보내지 않고 사유를 남긴다", async () => {
+      // Given: 60분 단계가 16분 전에 울렸어야 했다(배포로 worker가 멈춘 사이)
+      reader.todos.set(1, activeTodo({ scheduledAt: NOW.add({ minutes: 44 }) }));
+      const warn = vi.spyOn(Logger.prototype, "warn").mockImplementation(() => undefined);
       // When
-      await processor.process(makeJob());
-
+      await processor.process(makeJob({ stageLabel: "60min" }));
       // Then
-      expect(notificationPublisher.publish).not.toHaveBeenCalled();
+      expect(publisher.published).toEqual([]);
+      expect(warn).toHaveBeenCalledExactlyOnceWith({
+        event: NotificationRemindersLogEvent.TODO_REMINDER_LATE_SKIPPED,
+        todoId: 1,
+        userId: USER_ID,
+        stage: "60min",
+        reason: "late-over-15m",
+        lateMinutes: 16,
+      });
     });
 
-    it("투두가 삭제되었으면 알림을 발송하지 않는다", async () => {
-      // Given — findActiveTodo가 null 반환 (삭제됨)
-      setupMocks({ todoExists: false });
+    it("정확히 15분 늦은 리마인더는 보낸다", async () => {
+      // Given: 10분 단계가 15분 전에 울렸어야 했다
+      reader.todos.set(1, activeTodo({ scheduledAt: NOW.subtract({ minutes: 5 }) }));
+      // When
+      await processor.process(makeJob({ stageLabel: "10min" }));
+      // Then
+      expect(publisher.published).toHaveLength(1);
+    });
 
+    it("시각이 없는 할 일은 늦음을 판단하지 않고 보낸다", async () => {
+      // Given
+      reader.todos.set(1, activeTodo({ scheduledAt: null }));
+      clock.advanceBy({ hours: 3 });
       // When
       await processor.process(makeJob());
-
       // Then
-      expect(notificationPublisher.publish).not.toHaveBeenCalled();
+      expect(publisher.published).toHaveLength(1);
+    });
+  });
+
+  describe("투두 유효성 검증", () => {
+    it("투두가 완료·삭제되었으면 알림을 발송하지 않는다", async () => {
+      // Given — findActiveTodo가 null 반환
+      reader.todos.clear();
+      // When
+      await processor.process(makeJob());
+      // Then
+      expect(publisher.published).toEqual([]);
     });
   });
 
@@ -285,26 +270,18 @@ describe("TodoReminderQueueProcessor — 할 일 리마인더 프로세서", () 
       { name: "벽시계가 빈 행은 날짜만", scheduledLocalTime: null, key: "2026-11-05" },
     ])("$name로 회차를 넘긴다", async ({ scheduledLocalTime, key }) => {
       // Given
-      reader.findActiveTodo.mockResolvedValue({
-        id: 1,
-        title: TODO_TITLE,
-        seriesId: null,
-        startDate: "2026-11-05",
-        scheduledLocalTime,
-      });
-      notificationPublisher.publish.mockResolvedValue(null);
+      reader.todos.set(1, activeTodo({ scheduledLocalTime }));
       // When
       await processor.process(makeJob());
       // Then
-      expect(notificationPublisher.publish).toHaveBeenCalledWith(
-        expect.objectContaining({ reminderOccurrenceKey: key, metadata: { stage: "60min" } }),
-      );
+      expect(publisher.published[0]?.data).toMatchObject({
+        reminderOccurrenceKey: key,
+        metadata: { stage: "60min" },
+      });
     });
 
     it("이미 울린 회차면 건너뛴 것으로 남기고 완료로 세지 않는다", async () => {
-      // Given
-      setupMocks({ todoExists: true });
-      notificationPublisher.publish.mockResolvedValue(null);
+      // Given: 기록 발행기는 이미 울린 회차처럼 null을 돌려준다
       const debug = vi.spyOn(Logger.prototype, "debug").mockImplementation(() => undefined);
       const log = vi.spyOn(Logger.prototype, "log").mockImplementation(() => undefined);
       // When
@@ -323,17 +300,14 @@ describe("TodoReminderQueueProcessor — 할 일 리마인더 프로세서", () 
   describe("에러 처리", () => {
     it("알림 발송 실패 시 에러가 전파된다 (job runtime 재시도)", async () => {
       // Given
-      setupMocks({ todoExists: true });
-      notificationPublisher.publish.mockRejectedValue(new Error("Push failed"));
-
+      publisher.failWith = new Error("Push failed");
       // When & Then
       await expect(processor.process(makeJob())).rejects.toThrow("Push failed");
     });
 
     it("DB 조회 실패 시 에러가 전파된다 (job runtime 재시도)", async () => {
       // Given
-      reader.findActiveTodo.mockRejectedValue(new Error("DB connection failed"));
-
+      reader.failWith = new Error("DB connection failed");
       // When & Then
       await expect(processor.process(makeJob())).rejects.toThrow("DB connection failed");
     });

@@ -1,6 +1,6 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
-import { and, asc, count, eq, gte, inArray, lt, sql, type AnyColumn } from "drizzle-orm";
+import { and, asc, count, eq, gte, inArray, lt, sql, type AnyColumn, type SQL } from "drizzle-orm";
 import { z } from "zod";
 
 import {
@@ -19,8 +19,9 @@ import { subtractDays } from "#api/shared/domain/date/utils/arithmetic";
 import { now } from "#api/shared/domain/date/utils/core";
 import { toDateString } from "#api/shared/domain/date/utils/format";
 import { normalizeIanaTimezone } from "#api/shared/domain/date/utils/timezone";
-import { toSupportedLocale } from "#api/shared/domain/locale";
+import { instantFromDate } from "#api/shared/domain/time/instant";
 
+import { resolveRecipientLocale } from "../../../push/domain/recipient-locale.domain-service.js";
 import type {
   InactiveWindowParams,
   ReEngagementReaderPort,
@@ -500,26 +501,28 @@ export class DrizzleSchedulerReader
   // ─────────────────────────────────────────────────────────────
 
   groupTotalTodosByUser(params: WeeklyStatsParams): Promise<UserTodoCount[]> {
-    const { tz, periodStart, periodEnd } = params;
-    return this.#db
-      .select({ userId: todo.userId, count: count() })
-      .from(todo)
-      .where(
-        and(gte(todo.startDate, periodStart), lt(todo.startDate, periodEnd), this.#inTimezone(tz)),
-      )
-      .groupBy(todo.userId);
+    return this.#countTodoDaysByUser(params);
   }
 
   groupCompletedTodosByUser(params: WeeklyStatsParams): Promise<UserTodoCount[]> {
+    return this.#countTodoDaysByUser(params, eq(todo.completed, true));
+  }
+
+  // 여러 날 할 일은 기간 안에 걸친 날마다 하나로 센다. 끝없이 긴 할 일도 기간 안의 날만 더한다
+  #countTodoDaysByUser(params: WeeklyStatsParams, extra?: SQL): Promise<UserTodoCount[]> {
     const { tz, periodStart, periodEnd } = params;
+    const firstDay = sql`${sql.param(periodStart, todo.startDate)}::date`;
+    const lastDay = sql`(${sql.param(periodEnd, todo.startDate)}::date - 1)`;
+    const todoLastDay = sql`coalesce(${todo.endDate}, ${todo.startDate})`;
+    const daysInPeriod = sql<number>`sum(greatest(0, least(${todoLastDay}, ${lastDay}) - greatest(${todo.startDate}, ${firstDay}) + 1))::int`;
     return this.#db
-      .select({ userId: todo.userId, count: count() })
+      .select({ userId: todo.userId, count: daysInPeriod })
       .from(todo)
       .where(
         and(
-          gte(todo.startDate, periodStart),
-          lt(todo.startDate, periodEnd),
-          eq(todo.completed, true),
+          sql`${todo.startDate} <= ${lastDay}`,
+          sql`${todoLastDay} >= ${firstDay}`,
+          extra,
           this.#inTimezone(tz),
         ),
       )
@@ -552,10 +555,19 @@ export class DrizzleSchedulerReader
         seriesId: true,
         startDate: true,
         scheduledLocalTime: true,
+        scheduledTime: true,
       },
       where: { id: todoId, completed: false },
     });
-    return row == null ? null : { ...row, startDate: toDateString(row.startDate) };
+    if (row == null) {
+      return null;
+    }
+    const { scheduledTime, ...rest } = row;
+    return {
+      ...rest,
+      startDate: toDateString(row.startDate),
+      scheduledAt: scheduledTime == null ? null : instantFromDate(scheduledTime),
+    };
   }
 
   // ─────────────────────────────────────────────────────────────
@@ -587,7 +599,10 @@ export class DrizzleSchedulerReader
       where: { userId: { in: userIds } },
     });
     return new Map(
-      preferences.map((preference) => [preference.userId, toSupportedLocale(preference.locale)]),
+      preferences.map((preference) => [
+        preference.userId,
+        resolveRecipientLocale({ storedLocale: preference.locale, lastRequestLocale: null }),
+      ]),
     );
   }
 

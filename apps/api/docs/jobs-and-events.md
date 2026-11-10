@@ -82,10 +82,10 @@ await jobQueue.registerSchedules(DOCUMENT_QUEUE); // schedules를 key별로 upse
 | 스케줄                                         | 주기                                 | `missed`·보완                         |
 | ---------------------------------------------- | ------------------------------------ | ------------------------------------- |
 | `tz-reminder-sweep`                            | 매분                                 | `once` + 워터마크 따라잡기(최대 15분) |
-| `retention-stage-sweep`                        | 분 정밀도가 필요 없으면 5분          | 같은 워터마크                         |
+| `retention-stage-sweep`                        | 5분(현지 10:30·가입 2시간 뒤 기준)   | `once` + 상태 기준 조회(아래)         |
 | `push-receipts`                                | 5분, 15분 지난 ticket만              | `skip`(다음 실행이 남은 것을 처리)    |
 | `push-delivery-outbox-relay`                   | 매분(복구용)                         | `skip`(스캔 기반)                     |
-| `marketing-consent-reconfirm`                  | 매일 10:00 KST                       | `once`                                |
+| `marketing-consent-reconfirm`                  | 매시 정각(현지 야간이면 낮 실행에서) | `skip`(다음 실행이 같은 조건)         |
 | `daily-suggestion`                             | 매시 정각에 "현지 07시대" 사용자     | `once`                                |
 | 주간·월간 리포트                               | 매시 :05 UTC(사용자 현지 경계)       | `once`                                |
 | `quota-abandoned-refund`·`premium-grant-sweep` | 10분                                 | `skip`                                |
@@ -104,6 +104,10 @@ for (const minute of minutesToSweep({ lastCompletedAt, now: clock.now(), maxCatc
 - `SweepCursorPort`(`shared/application/ports`)는 활성 UoW 트랜잭션에 쓰므로 분 처리와 커서 갱신을 같은 UoW에 넣으면 함께 커밋된다.
 - `minutesToSweep`(`shared/application/minutes-to-sweep.ts`)은 처음이면 지금 분만, 시계가 거꾸로 가면 지금 분만, 이미 지금 분을 끝냈으면 빈 목록을 준다.
 - key는 스케줄 key와 같게 둔다. 실제 sweep 전환은 notification Context가 옮길 때 한다.
+
+**상태 기준 조회**(`retention-stage-sweep`): 단계 후보를 시각 구간이 아니라 `SCHEDULED` 상태와 "결정할 때가 됐는가"(`isRetentionStageDue`와 같은 SQL)로 고르므로 워터마크 커서가 필요 없다. 5분 사이나 놓친 실행 동안 때가 된 단계는 다음 실행이 모두 읽고, 한 실행은 생성 순서 위치로 이어 읽어(200건씩 최대 10묶음) 실패한 단계에 막히지 않는다. 중복은 `SCHEDULED → OUTBOXED/SKIPPED` 조건부 전이가 막는다.
+
+**광고성 동의 재확인을 매일 10:00 KST로 줄이지 않는 이유**: 현지 야간(21:00~08:00) 사용자는 표시하지 않고 다음 실행에 남기는데, 10:00 KST는 유럽·인도·미국 동부(서머타임)의 야간이라 하루 한 번이면 그 사용자들은 영영 알림을 받지 못한다. 대상이 없으면 인덱스 조회 한 번이라 매시 실행이 싸다.
 
 ## 배포 중 내구성
 

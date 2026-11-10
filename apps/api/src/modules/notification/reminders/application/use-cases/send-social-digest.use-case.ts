@@ -1,9 +1,7 @@
 import { groupBy } from "es-toolkit";
 
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
-import { addDays } from "#api/shared/domain/date/utils/arithmetic";
 import { toDateString } from "#api/shared/domain/date/utils/format";
-import { todayInTimezone } from "#api/shared/domain/date/utils/timezone";
 import { DEFAULT_LOCALE } from "#api/shared/domain/locale";
 
 import type { NotificationHistoryReader } from "../../../inbox/application/notification-history.reader.js";
@@ -15,7 +13,7 @@ import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/notification-campaign.const
 import type { TimezoneContext } from "../../domain/timezone-context.read-model.js";
 import { type ReEngagementReaderPort } from "../ports/re-engagement-reader.port.js";
 import { type SchedulerPreferenceReaderPort } from "../ports/scheduler-preference-reader.port.js";
-import type { TimezoneReminderStrategy } from "../ports/timezone-reminder-strategy.port.js";
+import type { TimezoneReminderStrategyPort } from "../ports/timezone-reminder-strategy.port.js";
 import { NotificationRemindersLogEvent } from "../reminders.log-events.js";
 
 interface SocialDigestStrategyDependencies {
@@ -29,7 +27,7 @@ interface SocialDigestStrategyDependencies {
   readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
 
-export class SendSocialDigestUseCase implements TimezoneReminderStrategy {
+export class SendSocialDigestUseCase implements TimezoneReminderStrategyPort {
   readonly #dependencies: SocialDigestStrategyDependencies;
 
   constructor(dependencies: SocialDigestStrategyDependencies) {
@@ -43,9 +41,7 @@ export class SendSocialDigestUseCase implements TimezoneReminderStrategy {
     if (recipientUserIds.length === 0) {
       return { sent: 0 };
     }
-    const { tz } = ctx;
-    const today = todayInTimezone(tz);
-    const tomorrow = addDays(1, today);
+    const { tz, today, tomorrow } = ctx;
 
     // 해당 타임존 + 오늘 투두 미완료인 유저 조회
     const users = await this.#dependencies.reader.findSocialDigestCandidates({

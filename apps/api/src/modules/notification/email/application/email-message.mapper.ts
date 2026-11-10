@@ -1,109 +1,59 @@
 import { createHash } from "node:crypto";
 
-import { EmailMessage } from "../domain/email-message.vo.js";
-import {
-  getInquiryHtml,
-  getInquirySubject,
-  getInquiryText,
-  type InquiryTemplateData,
-} from "./templates/inquiry-template.messages.js";
-import {
-  getPasswordResetHtml,
-  getPasswordResetSubject,
-  getPasswordResetText,
-  type PasswordResetTemplateData,
-} from "./templates/password-reset-template.messages.js";
-import {
-  getPasswordSetupHtml,
-  getPasswordSetupSubject,
-  getPasswordSetupText,
-  type PasswordSetupTemplateData,
-} from "./templates/password-setup-template.messages.js";
-import {
-  getUserReportHtml,
-  getUserReportSubject,
-  getUserReportText,
-  type UserReportTemplateData,
-} from "./templates/user-report-template.messages.js";
-import {
-  getVerificationCodeHtml,
-  getVerificationCodeSubject,
-  getVerificationCodeText,
-  type VerificationCodeTemplateData,
-} from "./templates/verification-code-template.messages.js";
+import { match } from "ts-pattern";
 
-export function createVerificationCodeEmail(
+import { EmailMessage, type EmailTag } from "../domain/email-message.vo.js";
+import type { EmailTemplate, RenderedEmail } from "./ports/email-template-renderer.port.js";
+
+interface EmailEnvelope {
+  readonly tags: readonly EmailTag[];
+  readonly idempotencyKey?: string;
+}
+
+function envelopeOf(to: string, template: EmailTemplate): EmailEnvelope {
+  return match(template)
+    .with({ kind: "inquiry" }, ({ kind, data }) => ({
+      tags: [
+        { name: "type", value: kind },
+        { name: "category", value: data.category },
+      ],
+      // 응답을 못 받은 재전송이 운영자에게 두 번 가지 않게 같은 내용은 공급자가 한 번만 받는다.
+      idempotencyKey: `inquiry:${createHash("sha256")
+        .update(JSON.stringify([to, data.userEmail, data.category, data.content]))
+        .digest("hex")}`,
+    }))
+    .with({ kind: "user-report" }, ({ kind, data }) => ({
+      tags: [
+        { name: "type", value: kind },
+        { name: "reason", value: data.reason },
+      ],
+      // 같은 신고를 다시 보내도 운영자에게 한 번만 가도록 신고 ID를 멱등 키로 쓴다.
+      idempotencyKey: `user-report:${data.reportId}`,
+    }))
+    .with(
+      { kind: "verification" },
+      { kind: "password-reset" },
+      { kind: "password-setup" },
+      ({ kind }) => ({
+        tags: [{ name: "type", value: kind }],
+      }),
+    )
+    .exhaustive();
+}
+
+export function toEmailMessage(
   to: string,
-  data: VerificationCodeTemplateData,
+  template: EmailTemplate,
+  body: RenderedEmail,
 ): EmailMessage {
+  const { tags, idempotencyKey } = envelopeOf(to, template);
   return EmailMessage.create({
-    kind: "verification",
+    kind: template.kind,
     to,
-    subject: getVerificationCodeSubject(),
-    html: getVerificationCodeHtml(data),
-    text: getVerificationCodeText(data),
-    tags: [{ name: "type", value: "verification" }],
-  });
-}
-
-export function createPasswordResetEmail(
-  to: string,
-  data: PasswordResetTemplateData,
-): EmailMessage {
-  return EmailMessage.create({
-    kind: "password-reset",
-    to,
-    subject: getPasswordResetSubject(),
-    html: getPasswordResetHtml(data),
-    text: getPasswordResetText(data),
-    tags: [{ name: "type", value: "password-reset" }],
-  });
-}
-
-export function createPasswordSetupEmail(
-  to: string,
-  data: PasswordSetupTemplateData,
-): EmailMessage {
-  return EmailMessage.create({
-    kind: "password-setup",
-    to,
-    subject: getPasswordSetupSubject(),
-    html: getPasswordSetupHtml(data),
-    text: getPasswordSetupText(data),
-    tags: [{ name: "type", value: "password-setup" }],
-  });
-}
-
-export function createInquiryEmail(to: string, data: InquiryTemplateData): EmailMessage {
-  return EmailMessage.create({
-    kind: "inquiry",
-    to,
-    subject: getInquirySubject(data.categoryLabel),
-    html: getInquiryHtml(data),
-    text: getInquiryText(data),
-    tags: [
-      { name: "type", value: "inquiry" },
-      { name: "category", value: data.category },
-    ],
-    // 응답을 못 받은 재전송이 운영자에게 두 번 가지 않게 같은 내용은 공급자가 한 번만 받는다.
-    idempotencyKey: `inquiry:${createHash("sha256")
-      .update(JSON.stringify([to, data.userEmail, data.category, data.content]))
-      .digest("hex")}`,
-  });
-}
-
-export function createUserReportEmail(to: string, data: UserReportTemplateData): EmailMessage {
-  return EmailMessage.create({
-    kind: "user-report",
-    to,
-    subject: getUserReportSubject(data),
-    html: getUserReportHtml(data),
-    text: getUserReportText(data),
-    tags: [
-      { name: "type", value: "user-report" },
-      { name: "reason", value: data.reason },
-    ],
-    // 같은 신고를 다시 보내도 운영자에게 한 번만 가도록 신고 ID를 멱등 키로 쓴다.
-    idempotencyKey: `user-report:${data.reportId}`,
+    subject: body.subject,
+    html: body.html,
+    text: body.text,
+    tags,
+    ...(idempotencyKey != null && { idempotencyKey }),
   });
 }

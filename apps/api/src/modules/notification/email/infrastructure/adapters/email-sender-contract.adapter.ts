@@ -56,8 +56,8 @@ export interface EmailSenderContractHarness {
 }
 
 /**
- * EmailSenderPort 계약 공유 테스트. 모든 어댑터(Resend·로그·향후 SES)가 같은 시나리오에서
- * 같은 벤더 중립 결과를 내고 던지지 않는다는 것을 증명한다.
+ * EmailSenderPort 계약 공유 테스트. 모든 어댑터(@nestjs/mail 전송·로그)가 같은 시나리오에서
+ * 같은 공급자 중립 결과를 내고 던지지 않는다는 것을 증명한다.
  */
 export function describeEmailSenderContract(harness: EmailSenderContractHarness): void {
   describe("EmailSenderPort 계약", () => {

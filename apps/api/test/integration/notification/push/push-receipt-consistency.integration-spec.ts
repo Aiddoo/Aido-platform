@@ -278,6 +278,38 @@ describe("receipt 정합성 (실제 PostgreSQL)", () => {
     expect(pending).toEqual([ready.ticketId]);
   });
 
+  it("5분마다 도는 receipt 확인은 수락 15분 전 ticket을 묻지 않고 15분이 된 다음 실행에서 묻는다", async () => {
+    // Given: 03:00 실행 10분 전에 수락된 ticket
+    const f = await fixture("cadence", { acceptedAt: new Date("2026-10-08T02:50:00.000Z") });
+    const clock = new FixedClock(AT_INSTANT);
+    const requests: string[][] = [];
+    const reconciler = new ReconcilePushReceiptsUseCase({
+      pushReceiptRepository: f.receipts,
+      pushTokenRepository: f.tokens,
+      pushProvider: {
+        async getReceipts(ticketIds) {
+          requests.push([...ticketIds]);
+          return ticketIds.map(delivered);
+        },
+      },
+      unitOfWork: f.uow,
+      cache: { async invalidatePushTokens() {} },
+      clock,
+      logger: { log() {}, warn() {} },
+    });
+
+    // When
+    await reconciler.execute();
+    const atFirstRun = requests.length;
+    clock.advanceBy({ minutes: 5 });
+    await reconciler.execute();
+
+    // Then
+    expect(atFirstRun).toBe(0);
+    expect(requests).toEqual([[f.ticketId]]);
+    expect((await readAttempt(f.ticketId)).status).toBe("DELIVERED");
+  });
+
   it("아직 결과가 없는 ticket은 확인 시각만 남겨 다른 ticket보다 뒤로 미룬다", async () => {
     // Given: 가장 오래된 ticket의 receipt가 아직 오지 않는다
     const stuck = await fixture("stuck", { acceptedAt: new Date("2026-10-08T01:00:00.000Z") });

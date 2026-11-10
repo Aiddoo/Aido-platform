@@ -1,7 +1,8 @@
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
-import { type UnitOfWorkPort } from "#api/shared/application/ports/index";
-import { now } from "#api/shared/domain/date/utils/core";
+import type { ClockPort } from "#api/shared/application/ports/clock.port";
+import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { localDateInTimezone } from "#api/shared/domain/date/utils/timezone";
+import { instantToDate } from "#api/shared/domain/time/instant";
 
 import { type RetentionNotificationCopySelection } from "../../../push/application/messages/notification-copy-catalog.messages.js";
 import { createRetentionNotificationMessage } from "../../../push/application/messages/notification.messages.js";
@@ -12,17 +13,24 @@ import {
   RETENTION_CAMPAIGN_KEY,
   RETENTION_EXPERIMENT_KEY,
 } from "../../domain/retention.constants.js";
-import { type RetentionConfigPort } from "../ports/retention-config.port.js";
-import {
-  type RetentionRepositoryPort,
-  type RetentionStageCandidate,
-} from "../ports/retention.repository.port.js";
+import type { RetentionConfigPort } from "../ports/retention-config.port.js";
+import type { RetentionRepositoryPort } from "../ports/retention.repository.port.js";
+import type {
+  RetentionStageCandidate,
+  RetentionStageCursor,
+} from "../read-models/retention-stage-candidate.read-model.js";
 import { NotificationRetentionLogEvent } from "../retention.log-events.js";
+
+export const RETENTION_STAGE_SWEEP = {
+  BATCH_SIZE: 200,
+  // job 만료(5분) 안에 끝나도록 상한을 두고 남은 단계는 다음 실행이 이어 받는다
+  MAX_BATCHES_PER_RUN: 10,
+} as const;
 
 interface ProcessRetentionStagesDependencies {
   readonly repository: Pick<
     RetentionRepositoryPort,
-    | "findScheduledStages"
+    | "findDueStages"
     | "linkStageNotification"
     | "markStageOutboxed"
     | "markStageSkipped"
@@ -31,6 +39,7 @@ interface ProcessRetentionStagesDependencies {
   readonly notificationPublisher: Pick<PublishNotificationUseCase, "publish">;
   readonly config: Pick<RetentionConfigPort, "enabled">;
   readonly unitOfWork: Pick<UnitOfWorkPort, "run">;
+  readonly clock: ClockPort;
   readonly logger: Pick<ApplicationLoggerPort, "debug" | "error">;
 }
 
@@ -45,18 +54,40 @@ export class ProcessRetentionStagesUseCase {
     if (!this.#dependencies.config.enabled) {
       return;
     }
-    const candidates = await this.#dependencies.repository.findScheduledStages(200);
-    for (const candidate of candidates) {
-      try {
-        await this.#processCandidate(candidate, now());
-      } catch {
-        this.#dependencies.logger.error({
-          event: NotificationRetentionLogEvent.PROCESS_RETENTION_STAGES_STAGE_FAILED,
-          stageId: candidate.stageId,
-          errorType: "stage-processing",
-        });
+    const dueAt = this.#now();
+    let after: RetentionStageCursor | undefined;
+    for (let batch = 0; batch < RETENTION_STAGE_SWEEP.MAX_BATCHES_PER_RUN; batch++) {
+      const candidates = await this.#dependencies.repository.findDueStages({
+        dueAt,
+        ...(after != null && { after }),
+        limit: RETENTION_STAGE_SWEEP.BATCH_SIZE,
+      });
+      for (const candidate of candidates) {
+        await this.#processSafely(candidate);
       }
+      const last = candidates.at(-1);
+      if (candidates.length < RETENTION_STAGE_SWEEP.BATCH_SIZE || last == null) {
+        return;
+      }
+      // 실패해 SCHEDULED로 남은 단계를 이번 실행에서 다시 읽지 않도록 위치로 이어 읽는다
+      after = { createdAt: last.stageCreatedAt, stageId: last.stageId };
     }
+  }
+
+  async #processSafely(candidate: RetentionStageCandidate): Promise<void> {
+    try {
+      await this.#processCandidate(candidate, this.#now());
+    } catch {
+      this.#dependencies.logger.error({
+        event: NotificationRetentionLogEvent.PROCESS_RETENTION_STAGES_STAGE_FAILED,
+        stageId: candidate.stageId,
+        errorType: "stage-processing",
+      });
+    }
+  }
+
+  #now(): Date {
+    return instantToDate(this.#dependencies.clock.now());
   }
 
   async #processCandidate(candidate: RetentionStageCandidate, now: Date): Promise<void> {
@@ -72,7 +103,7 @@ export class ProcessRetentionStagesUseCase {
     );
 
     if (candidate.variant === "CONTROL" && candidate.stage !== "D7") {
-      await this.#dependencies.repository.markStageSkipped(candidate.stageId, "CONTROL_GROUP");
+      await this.#dependencies.repository.markStageSkipped(candidate.stageId, "CONTROL_GROUP", now);
       return;
     }
 
@@ -97,6 +128,7 @@ export class ProcessRetentionStagesUseCase {
           assignmentId: candidate.assignmentId,
           returnedWithinD7: returnedWithinWindow,
           todoActionWithinD7: candidate.todoActionWithinWindow,
+          measuredAt: now,
         });
       }
 
@@ -104,11 +136,16 @@ export class ProcessRetentionStagesUseCase {
         await this.#dependencies.repository.markStageSkipped(
           candidate.stageId,
           "CONTROL_MEASUREMENT_COMPLETE",
+          now,
         );
         return;
       }
       if (decision.kind === "SKIP" || decision.kind === "EVALUATE_ONLY") {
-        await this.#dependencies.repository.markStageSkipped(candidate.stageId, decision.reason);
+        await this.#dependencies.repository.markStageSkipped(
+          candidate.stageId,
+          decision.reason,
+          now,
+        );
         return;
       }
 
@@ -120,7 +157,7 @@ export class ProcessRetentionStagesUseCase {
         now,
       });
       if (skipReason) {
-        await this.#dependencies.repository.markStageSkipped(candidate.stageId, skipReason);
+        await this.#dependencies.repository.markStageSkipped(candidate.stageId, skipReason, now);
         return;
       }
 
@@ -132,7 +169,7 @@ export class ProcessRetentionStagesUseCase {
           occurrenceKey: localDateInTimezone(now, candidate.timezone),
         },
       });
-      if (!(await this.#dependencies.repository.markStageOutboxed(candidate.stageId))) {
+      if (!(await this.#dependencies.repository.markStageOutboxed(candidate.stageId, now))) {
         return;
       }
       const notification = await this.#dependencies.notificationPublisher.publish({

@@ -4,15 +4,21 @@ import { vi } from "vitest";
 import { mock } from "vitest-mock-extended";
 
 import { EmailDeliveryQueueProcessor } from "#api/modules/notification/email/infrastructure/jobs/email-delivery-queue.processor";
+import { EMAIL_DELIVERY_QUEUE } from "#api/modules/notification/email/infrastructure/jobs/email-delivery.queue";
 import { NotificationEmailModule } from "#api/modules/notification/email/notification-email.module";
 import { SendTransactionalEmailUseCase } from "#api/modules/notification/notification-email.public";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { EncryptionService } from "#api/platform/encryption/encryption.service";
 import { USAGE_METER } from "#api/platform/metering/interfaces/usage-meter.interface";
 import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
-import { JOB_RUNTIME } from "#api/shared/application/ports/job-runtime.port";
-import { OPERATIONAL_ALERT } from "#api/shared/application/ports/operational-alert.port";
-import { FakeJobRuntime } from "#test/mocks/fake-job-runtime";
+import { ClockPort } from "#api/shared/application/ports/clock.port";
+import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
+import {
+  OPERATIONAL_ALERT,
+  OperationalAlertPort,
+} from "#api/shared/application/ports/operational-alert.port";
+import { DateClock } from "#test/doubles/platform/date-clock";
+import { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
 import { InMemoryUsageMeterAdapter } from "#test/mocks/in-memory-usage-meter.adapter";
 import { RecordingOperationalAlert } from "#test/mocks/recording-operational-alert";
 import {
@@ -40,7 +46,7 @@ const config = mock<TypedConfigService>({
   tokenEncryptionKey: "test-token-encryption-key-minimum-32-characters-long",
   tokenEncryptionSalt: undefined,
 });
-const runtime = new FakeJobRuntime();
+const jobQueue = new InMemoryJobQueue();
 const meter = new InMemoryUsageMeterAdapter();
 const alerts = new RecordingOperationalAlert();
 
@@ -48,24 +54,28 @@ const alerts = new RecordingOperationalAlert();
 @Module({
   providers: [
     { provide: TypedConfigService, useValue: config },
-    { provide: JOB_RUNTIME, useValue: runtime },
+    { provide: JobQueuePort, useValue: jobQueue },
     { provide: USAGE_METER, useValue: meter },
     { provide: OPERATIONAL_ALERT, useValue: alerts },
+    { provide: OperationalAlertPort, useValue: alerts },
+    { provide: ClockPort, useClass: DateClock },
     OutboundPolicyRegistry,
     EncryptionService,
   ],
   exports: [
     TypedConfigService,
-    JOB_RUNTIME,
+    JobQueuePort,
     USAGE_METER,
     OPERATIONAL_ALERT,
+    OperationalAlertPort,
+    ClockPort,
     OutboundPolicyRegistry,
     EncryptionService,
   ],
 })
 class PlatformStubModule {}
 
-describe("이메일 발송 큐 통합 테스트 — 운영 NotificationEmailModule 배선 + 실제 Resend SDK + HTTP fixture", () => {
+describe("이메일 발송 큐 통합 테스트 — 운영 NotificationEmailModule 배선 + @nestjs/mail ResendTransport + HTTP fixture", () => {
   let module: TestingModule;
   let sender: SendTransactionalEmailUseCase;
   let processor: EmailDeliveryQueueProcessor;
@@ -74,9 +84,8 @@ describe("이메일 발송 큐 통합 테스트 — 운영 NotificationEmailModu
   beforeEach(async () => {
     suppressLogger();
     vi.spyOn(console, "error").mockImplementation(() => undefined);
-    vi.stubEnv("RESEND_BASE_URL", "https://api.resend.com");
     givenResponses([]);
-    runtime.enqueueCalls.length = 0;
+    jobQueue.clear();
     alerts.alerts.length = 0;
     module = await Test.createTestingModule({
       imports: [PlatformStubModule, NotificationEmailModule],
@@ -92,7 +101,6 @@ describe("이메일 발송 큐 통합 테스트 — 운영 NotificationEmailModu
       expect(http.remainingResponses).toBe(0);
     } finally {
       vi.unstubAllGlobals();
-      vi.unstubAllEnvs();
       vi.restoreAllMocks();
     }
   });
@@ -103,11 +111,11 @@ describe("이메일 발송 큐 통합 테스트 — 운영 NotificationEmailModu
   }
 
   async function runQueuedJob(attempt = 1): Promise<void> {
-    const job = runtime.enqueueCalls.at(-1);
+    const job = jobQueue.jobsIn(EMAIL_DELIVERY_QUEUE).at(-1);
     if (job == null) {
       throw new Error("큐에 담긴 잡이 없습니다");
     }
-    await processor.process(attempt, job.data);
+    await processor.process(attempt, EMAIL_DELIVERY_QUEUE.payloadSchema.parse(job.payload));
   }
 
   it("요청 경로에서는 HTTP 호출 없이 큐에만 담고 queued로 답한다", async () => {
@@ -120,12 +128,13 @@ describe("이메일 발송 큐 통합 테스트 — 운영 NotificationEmailModu
     // Then
     expect(result).toEqual({ status: "queued" });
     expect(http.requests).toHaveLength(0);
-    expect(runtime.enqueueCalls).toHaveLength(1);
-    expect(JSON.stringify(runtime.enqueueCalls[0]?.data)).not.toContain(code);
-    expect(JSON.stringify(runtime.enqueueCalls[0]?.data)).not.toContain(recipient);
+    const queued = jobQueue.jobsIn(EMAIL_DELIVERY_QUEUE);
+    expect(queued).toHaveLength(1);
+    expect(JSON.stringify(queued[0]?.payload)).not.toContain(code);
+    expect(JSON.stringify(queued[0]?.payload)).not.toContain(recipient);
   });
 
-  it("worker가 설정·인증·템플릿을 실제 HTTP 요청에 전달한다", async () => {
+  it("worker가 설정·인증·템플릿 파일로 렌더한 본문을 실제 HTTP 요청에 전달한다", async () => {
     // Given
     givenResponses([success]);
     await sender.sendVerificationCode(recipient, { code, expiryMinutes });
@@ -139,14 +148,10 @@ describe("이메일 발송 큐 통합 테스트 — 운영 NotificationEmailModu
     expect(await http.request().json()).toEqual(
       expect.objectContaining({
         from: "Integration Test <noreply@integration-test.com>",
-        to: recipient,
+        to: [recipient],
         subject: "[아이두] 이메일 인증 코드",
         html: expect.stringContaining(code),
         text: expect.stringContaining(String(expiryMinutes)),
-        tags: [
-          { name: "type", value: "verification" },
-          { name: "environment", value: "test" },
-        ],
       }),
     );
   });
@@ -202,9 +207,9 @@ describe("이메일 발송 큐 통합 테스트 — 운영 NotificationEmailModu
   });
 
   it.each([
-    ["비밀번호 재설정", "sendPasswordResetCode", "password-reset"],
-    ["비밀번호 설정", "sendPasswordSetupCode", "password-setup"],
-  ] as const)("%s 템플릿과 환경 태그를 요청에 전달한다", async (_description, method, type) => {
+    ["비밀번호 재설정", "sendPasswordResetCode", "[아이두] 비밀번호 재설정 코드"],
+    ["비밀번호 설정", "sendPasswordSetupCode", "[아이두] 비밀번호 설정 인증 코드"],
+  ] as const)("%s 템플릿을 요청에 전달한다", async (_description, method, subject) => {
     // Given
     givenResponses([success]);
     await sender[method](recipient, { code, expiryMinutes });
@@ -215,12 +220,9 @@ describe("이메일 발송 큐 통합 테스트 — 운영 NotificationEmailModu
     // Then
     expect(await http.request().json()).toEqual(
       expect.objectContaining({
-        to: recipient,
+        to: [recipient],
+        subject,
         html: expect.stringContaining(code),
-        tags: [
-          { name: "type", value: type },
-          { name: "environment", value: "test" },
-        ],
       }),
     );
   });
@@ -243,10 +245,10 @@ describe("이메일 발송 큐 통합 테스트 — 운영 NotificationEmailModu
 
       // Then
       expect(result).toEqual({ status: "sent" });
-      expect(runtime.enqueueCalls).toHaveLength(0);
+      expect(jobQueue.jobs).toHaveLength(0);
       expect(await http.request().json()).toEqual(
         expect.objectContaining({
-          to: "support@example.com",
+          to: ["support@example.com"],
           subject: expect.stringContaining("기타"),
         }),
       );
@@ -262,7 +264,7 @@ describe("이메일 발송 큐 통합 테스트 — 운영 NotificationEmailModu
       // Then
       expect(result).toEqual({ status: "rejected", reason: "delivery_failed" });
       expect(http.requests).toHaveLength(1);
-      expect(runtime.enqueueCalls).toHaveLength(0);
+      expect(jobQueue.jobs).toHaveLength(0);
     });
   });
 });

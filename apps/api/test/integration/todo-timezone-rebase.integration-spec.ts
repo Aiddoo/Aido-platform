@@ -7,7 +7,7 @@ import { PgBoss } from "pg-boss";
 
 import { RefreshPushTimezoneUseCase } from "#api/modules/identity/preferences/application/use-cases/refresh-push-timezone.use-case";
 import { DrizzleUserPreferenceRepository } from "#api/modules/identity/preferences/infrastructure/persistence/drizzle-user-preference.repository";
-import { TODO_REMINDER_QUEUE } from "#api/modules/notification/reminders/infrastructure/jobs/todo-reminder-queue.constants";
+import { TODO_REMINDER_QUEUE } from "#api/modules/notification/notification-reminders.public";
 import { TodoReminderSchedulerAdapter } from "#api/modules/notification/reminders/infrastructure/jobs/todo-reminder-scheduler.adapter";
 import { MaterializeDueTodoSeriesUseCase } from "#api/modules/planning/todo-series/application/use-cases/materialize-due-todo-series.use-case";
 import { MaterializeTodoSeriesUseCase } from "#api/modules/planning/todo-series/application/use-cases/materialize-todo-series.use-case";
@@ -100,8 +100,10 @@ describe("시간대 재계산 (실제 PostgreSQL·pg-boss)", () => {
       job: { shutdownTimeoutMs: 10_000 },
     });
     await runtime.start();
-    reminderAdapter = new ReminderSchedulerAdapter(new TodoReminderSchedulerAdapter(runtime));
     jobQueue = new PgBossJobQueueAdapter(boss, transaction.txHost, new JobQueueRegistry());
+    reminderAdapter = new ReminderSchedulerAdapter(
+      new TodoReminderSchedulerAdapter(jobQueue, new DateClock()),
+    );
     queue = new TodoTimezoneRebaseQueueService(jobQueue);
     useCase = new RebaseTodoTimezoneUseCase({
       clock: new DateClock(),

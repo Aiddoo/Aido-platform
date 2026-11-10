@@ -1,0 +1,793 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`이메일 템플릿 렌더 결과(ko) > 문의 메일 — HTML 특수문자는 본문에서 이스케이프하고 텍스트는 원문 그대로 싣는다 1`] = `
+{
+  "html": "<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>아이두 문의 접수 알림</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f5f5f5;">
+  <table role="presentation" style="width: 100%; border-collapse: collapse;">
+    <tr>
+      <td align="center" style="padding: 40px 0;">
+        <table role="presentation" style="width: 100%; max-width: 600px; border-collapse: collapse; background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);">
+          <!-- Header -->
+          <tr>
+            <td style="padding: 40px 40px 20px; text-align: center;">
+              <h1 style="margin: 0; font-size: 24px; font-weight: 700; color: #1a1a1a;">
+                아이두
+              </h1>
+              <p style="margin: 8px 0 0; font-size: 13px; color: #666666;">
+                문의 접수 알림
+              </p>
+            </td>
+          </tr>
+
+          <!-- Content -->
+          <tr>
+            <td style="padding: 20px 40px;">
+              <h2 style="margin: 0 0 16px; font-size: 20px; font-weight: 600; color: #1a1a1a; text-align: center;">
+                새로운 문의가 접수되었습니다
+              </h2>
+
+              <!-- Summary -->
+              <div style="background-color: #f8f9fa; border-radius: 8px; padding: 16px 20px; margin-bottom: 20px;">
+                <p style="margin: 0; font-size: 14px; color: #1a1a1a; line-height: 1.6;">
+                  CS 처리 시 아래 정보를 먼저 확인해 주세요.
+                </p>
+              </div>
+
+              <!-- Inquiry Info -->
+              <table style="width: 100%; border-collapse: collapse; margin-bottom: 24px;">
+                <tr>
+                  <td style="padding: 12px; font-size: 14px; color: #666666; border-bottom: 1px solid #eee; width: 120px;">
+                    <strong>사용자 이메일</strong>
+                  </td>
+                  <td style="padding: 12px; font-size: 14px; color: #1a1a1a; border-bottom: 1px solid #eee;">
+                    o&#39;brien+test@example.com
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding: 12px; font-size: 14px; color: #666666; border-bottom: 1px solid #eee;">
+                    <strong>카테고리</strong>
+                  </td>
+                  <td style="padding: 12px; font-size: 14px; color: #1a1a1a; border-bottom: 1px solid #eee;">
+                    결제·구독 &lt;긴급&gt; &amp; &quot;확인&quot;
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding: 12px; font-size: 14px; color: #666666; border-bottom: 1px solid #eee;">
+                    <strong>접수 시각</strong>
+                  </td>
+                  <td style="padding: 12px; font-size: 14px; color: #1a1a1a; border-bottom: 1px solid #eee;">
+                    2026-10-26 10:00 (KST)
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Inquiry Content -->
+              <div style="background-color: #f8f9fa; border-radius: 8px; padding: 24px; margin-bottom: 24px;">
+                <p style="margin: 0 0 8px; font-size: 14px; font-weight: 600; color: #666666;">
+                  문의 내용
+                </p>
+                <p style="margin: 0; font-size: 14px; line-height: 1.8; color: #1a1a1a; white-space: pre-wrap;">&lt;script&gt;alert(&quot;x&quot;) &amp; &#39;y&#39;&lt;/script&gt;
+둘째 줄
+
+  들여쓴 셋째 줄</p>
+              </div>
+
+              <!-- CS Checklist -->
+              <div style="background-color: #fff7e6; border-radius: 8px; padding: 16px 20px; margin-bottom: 24px; border: 1px solid #ffe0a3;">
+                <p style="margin: 0 0 8px; font-size: 13px; font-weight: 700; color: #8a5a00;">
+                  CS 처리 체크리스트
+                </p>
+                <p style="margin: 0; font-size: 13px; line-height: 1.7; color: #8a5a00;">
+                  1) 문의 유형 분류 2) 재현/확인 필요 여부 판단 3) 사용자 회신 문안 작성
+                </p>
+              </div>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="padding: 20px 40px 40px;">
+              <hr style="border: none; border-top: 1px solid #eee; margin: 0 0 20px;" />
+              <p style="margin: 0; font-size: 12px; line-height: 1.6; color: #999999; text-align: center;">
+                이 이메일은 아이두 앱에서 자동으로 발송되었습니다.
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>",
+  "subject": "[아이두 문의접수] [결제·구독 <긴급> & "확인"]",
+  "text": "[아이두 문의접수] [결제·구독 <긴급> & "확인"] o'brien+test@example.com
+
+[접수 정보]
+- 사용자 이메일: o'brien+test@example.com
+- 카테고리: 결제·구독 <긴급> & "확인"
+- 접수 시각: 2026-10-26 10:00 (KST)
+
+[문의 내용]
+<script>alert("x") & 'y'</script>
+둘째 줄
+
+  들여쓴 셋째 줄
+
+[CS 처리 메모]
+- 상태: 신규 접수
+- 우선순위: 미분류
+- 담당자: 미배정
+
+[후속 액션]
+- 유형 분류 및 재현 확인
+- 사용자 회신 초안 작성
+
+이 이메일은 아이두 앱에서 자동으로 발송되었습니다.",
+}
+`;
+
+exports[`이메일 템플릿 렌더 결과(ko) > 문의 메일 — 일반 문의 1`] = `
+{
+  "html": "<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>아이두 문의 접수 알림</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f5f5f5;">
+  <table role="presentation" style="width: 100%; border-collapse: collapse;">
+    <tr>
+      <td align="center" style="padding: 40px 0;">
+        <table role="presentation" style="width: 100%; max-width: 600px; border-collapse: collapse; background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);">
+          <!-- Header -->
+          <tr>
+            <td style="padding: 40px 40px 20px; text-align: center;">
+              <h1 style="margin: 0; font-size: 24px; font-weight: 700; color: #1a1a1a;">
+                아이두
+              </h1>
+              <p style="margin: 8px 0 0; font-size: 13px; color: #666666;">
+                문의 접수 알림
+              </p>
+            </td>
+          </tr>
+
+          <!-- Content -->
+          <tr>
+            <td style="padding: 20px 40px;">
+              <h2 style="margin: 0 0 16px; font-size: 20px; font-weight: 600; color: #1a1a1a; text-align: center;">
+                새로운 문의가 접수되었습니다
+              </h2>
+
+              <!-- Summary -->
+              <div style="background-color: #f8f9fa; border-radius: 8px; padding: 16px 20px; margin-bottom: 20px;">
+                <p style="margin: 0; font-size: 14px; color: #1a1a1a; line-height: 1.6;">
+                  CS 처리 시 아래 정보를 먼저 확인해 주세요.
+                </p>
+              </div>
+
+              <!-- Inquiry Info -->
+              <table style="width: 100%; border-collapse: collapse; margin-bottom: 24px;">
+                <tr>
+                  <td style="padding: 12px; font-size: 14px; color: #666666; border-bottom: 1px solid #eee; width: 120px;">
+                    <strong>사용자 이메일</strong>
+                  </td>
+                  <td style="padding: 12px; font-size: 14px; color: #1a1a1a; border-bottom: 1px solid #eee;">
+                    user@example.com
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding: 12px; font-size: 14px; color: #666666; border-bottom: 1px solid #eee;">
+                    <strong>카테고리</strong>
+                  </td>
+                  <td style="padding: 12px; font-size: 14px; color: #1a1a1a; border-bottom: 1px solid #eee;">
+                    기타
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding: 12px; font-size: 14px; color: #666666; border-bottom: 1px solid #eee;">
+                    <strong>접수 시각</strong>
+                  </td>
+                  <td style="padding: 12px; font-size: 14px; color: #1a1a1a; border-bottom: 1px solid #eee;">
+                    2026-07-11 14:30 (KST)
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Inquiry Content -->
+              <div style="background-color: #f8f9fa; border-radius: 8px; padding: 24px; margin-bottom: 24px;">
+                <p style="margin: 0 0 8px; font-size: 14px; font-weight: 600; color: #666666;">
+                  문의 내용
+                </p>
+                <p style="margin: 0; font-size: 14px; line-height: 1.8; color: #1a1a1a; white-space: pre-wrap;">앱이 멈춰요</p>
+              </div>
+
+              <!-- CS Checklist -->
+              <div style="background-color: #fff7e6; border-radius: 8px; padding: 16px 20px; margin-bottom: 24px; border: 1px solid #ffe0a3;">
+                <p style="margin: 0 0 8px; font-size: 13px; font-weight: 700; color: #8a5a00;">
+                  CS 처리 체크리스트
+                </p>
+                <p style="margin: 0; font-size: 13px; line-height: 1.7; color: #8a5a00;">
+                  1) 문의 유형 분류 2) 재현/확인 필요 여부 판단 3) 사용자 회신 문안 작성
+                </p>
+              </div>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="padding: 20px 40px 40px;">
+              <hr style="border: none; border-top: 1px solid #eee; margin: 0 0 20px;" />
+              <p style="margin: 0; font-size: 12px; line-height: 1.6; color: #999999; text-align: center;">
+                이 이메일은 아이두 앱에서 자동으로 발송되었습니다.
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>",
+  "subject": "[아이두 문의접수] [기타]",
+  "text": "[아이두 문의접수] [기타] user@example.com
+
+[접수 정보]
+- 사용자 이메일: user@example.com
+- 카테고리: 기타
+- 접수 시각: 2026-07-11 14:30 (KST)
+
+[문의 내용]
+앱이 멈춰요
+
+[CS 처리 메모]
+- 상태: 신규 접수
+- 우선순위: 미분류
+- 담당자: 미배정
+
+[후속 액션]
+- 유형 분류 및 재현 확인
+- 사용자 회신 초안 작성
+
+이 이메일은 아이두 앱에서 자동으로 발송되었습니다.",
+}
+`;
+
+exports[`이메일 템플릿 렌더 결과(ko) > 비밀번호 설정 코드 메일 1`] = `
+{
+  "html": "<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>비밀번호 설정</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f5f5f5;">
+  <table role="presentation" style="width: 100%; border-collapse: collapse;">
+    <tr>
+      <td align="center" style="padding: 40px 0;">
+        <table role="presentation" style="width: 100%; max-width: 600px; border-collapse: collapse; background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);">
+          <!-- Header -->
+          <tr>
+            <td style="padding: 40px 40px 20px; text-align: center;">
+              <h1 style="margin: 0; font-size: 24px; font-weight: 700; color: #1a1a1a;">
+                아이두
+              </h1>
+            </td>
+          </tr>
+
+          <!-- Content -->
+          <tr>
+            <td style="padding: 20px 40px;">
+              <h2 style="margin: 0 0 16px; font-size: 20px; font-weight: 600; color: #1a1a1a; text-align: center;">
+                비밀번호 설정
+              </h2>
+              <p style="margin: 0 0 24px; font-size: 16px; line-height: 1.6; color: #666666; text-align: center;">
+                비밀번호 설정을 위해 아래 인증 코드를 입력해주세요.
+              </p>
+
+              <!-- Code Box -->
+              <div style="background-color: #f8f9fa; border-radius: 8px; padding: 24px; text-align: center; margin-bottom: 24px;">
+                <span style="font-size: 32px; font-weight: 700; letter-spacing: 8px; color: #1a1a1a;">
+                  112233
+                </span>
+              </div>
+
+              <p style="margin: 0; font-size: 14px; line-height: 1.6; color: #999999; text-align: center;">
+                이 코드는 <strong>30분</strong> 후에 만료됩니다.
+              </p>
+            </td>
+          </tr>
+
+          <!-- Security Notice -->
+          <tr>
+            <td style="padding: 0 40px 20px;">
+              <div style="background-color: #fff3cd; border-radius: 8px; padding: 16px;">
+                <p style="margin: 0; font-size: 13px; line-height: 1.6; color: #856404;">
+                  ⚠️ 본인이 요청하지 않은 경우, 이 이메일을 무시하셔도 됩니다.
+                </p>
+              </div>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="padding: 20px 40px 40px;">
+              <hr style="border: none; border-top: 1px solid #eee; margin: 0 0 20px;" />
+              <p style="margin: 0; font-size: 12px; line-height: 1.6; color: #999999; text-align: center;">
+                이 이메일은 아이두 계정의 비밀번호 설정 요청으로 발송되었습니다.
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>",
+  "subject": "[아이두] 비밀번호 설정 인증 코드",
+  "text": "[아이두] 비밀번호 설정 인증 코드
+
+비밀번호 설정 인증 코드: 112233
+
+이 코드는 30분 후에 만료됩니다.
+
+⚠️ 본인이 요청하지 않은 경우, 이 이메일을 무시하셔도 됩니다.
+
+이 이메일은 아이두 계정의 비밀번호 설정 요청으로 발송되었습니다.",
+}
+`;
+
+exports[`이메일 템플릿 렌더 결과(ko) > 비밀번호 재설정 코드 메일 1`] = `
+{
+  "html": "<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>비밀번호 재설정</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f5f5f5;">
+  <table role="presentation" style="width: 100%; border-collapse: collapse;">
+    <tr>
+      <td align="center" style="padding: 40px 0;">
+        <table role="presentation" style="width: 100%; max-width: 600px; border-collapse: collapse; background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);">
+          <!-- Header -->
+          <tr>
+            <td style="padding: 40px 40px 20px; text-align: center;">
+              <h1 style="margin: 0; font-size: 24px; font-weight: 700; color: #1a1a1a;">
+                아이두
+              </h1>
+            </td>
+          </tr>
+
+          <!-- Content -->
+          <tr>
+            <td style="padding: 20px 40px;">
+              <h2 style="margin: 0 0 16px; font-size: 20px; font-weight: 600; color: #1a1a1a; text-align: center;">
+                비밀번호 재설정 코드
+              </h2>
+              <p style="margin: 0 0 24px; font-size: 16px; line-height: 1.6; color: #666666; text-align: center;">
+                비밀번호 재설정을 위해 아래 코드를 앱에 입력해주세요.
+              </p>
+
+              <!-- Code Box -->
+              <div style="background-color: #f8f9fa; border-radius: 8px; padding: 24px; text-align: center; margin-bottom: 24px;">
+                <span style="font-size: 32px; font-weight: 700; letter-spacing: 8px; color: #1a1a1a;">
+                  654321
+                </span>
+              </div>
+
+              <p style="margin: 0; font-size: 14px; line-height: 1.6; color: #999999; text-align: center;">
+                이 코드는 <strong>15분</strong> 후에 만료됩니다.
+              </p>
+            </td>
+          </tr>
+
+          <!-- Security Notice -->
+          <tr>
+            <td style="padding: 0 40px 20px;">
+              <div style="background-color: #fff3cd; border-radius: 8px; padding: 16px;">
+                <p style="margin: 0; font-size: 13px; line-height: 1.6; color: #856404;">
+                  ⚠️ 본인이 요청하지 않은 경우, 계정 보안을 위해 비밀번호를 변경해주세요.
+                </p>
+              </div>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="padding: 20px 40px 40px;">
+              <hr style="border: none; border-top: 1px solid #eee; margin: 0 0 20px;" />
+              <p style="margin: 0; font-size: 12px; line-height: 1.6; color: #999999; text-align: center;">
+                이 이메일은 아이두 계정의 비밀번호 재설정 요청으로 발송되었습니다.
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>",
+  "subject": "[아이두] 비밀번호 재설정 코드",
+  "text": "[아이두] 비밀번호 재설정 코드
+
+비밀번호 재설정 코드: 654321
+
+이 코드는 15분 후에 만료됩니다.
+
+⚠️ 본인이 요청하지 않은 경우, 계정 보안을 위해 비밀번호를 변경해주세요.
+
+이 이메일은 아이두 계정의 비밀번호 재설정 요청으로 발송되었습니다.",
+}
+`;
+
+exports[`이메일 템플릿 렌더 결과(ko) > 신고 메일 — 모든 값과 관리자 문서 링크가 있고 HTML 특수문자를 이스케이프한다 1`] = `
+{
+  "html": "<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>아이두 신고 접수 알림</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f5f5f5;">
+  <table role="presentation" style="width: 100%; border-collapse: collapse;">
+    <tr>
+      <td align="center" style="padding: 40px 0;">
+        <table role="presentation" style="width: 100%; max-width: 600px; border-collapse: collapse; background-color: #ffffff; border-radius: 8px;">
+          <tr>
+            <td style="padding: 40px 40px 20px; text-align: center;">
+              <h1 style="margin: 0; font-size: 24px; font-weight: 700; color: #1a1a1a;">아이두</h1>
+              <p style="margin: 8px 0 0; font-size: 13px; color: #666666;">사용자 신고 접수 알림</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 20px 40px;">
+              <h2 style="margin: 0 0 16px; font-size: 20px; font-weight: 600; color: #1a1a1a; text-align: center;">
+                새로운 신고가 접수되었습니다
+              </h2>
+              <table style="width: 100%; border-collapse: collapse; margin-bottom: 24px;">
+                <tr>
+                  <td style="padding: 12px; font-size: 14px; color: #666666; border-bottom: 1px solid #eee; width: 140px;">
+                    <strong>신고 ID</strong>
+                  </td>
+                  <td style="padding: 12px; font-size: 14px; color: #1a1a1a; border-bottom: 1px solid #eee; word-break: break-all;">
+                    clz7x5p8k0123qz0z8z8z8z8z
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding: 12px; font-size: 14px; color: #666666; border-bottom: 1px solid #eee; width: 140px;">
+                    <strong>사유</strong>
+                  </td>
+                  <td style="padding: 12px; font-size: 14px; color: #1a1a1a; border-bottom: 1px solid #eee; word-break: break-all;">
+                    괴롭힘·혐오 (HARASSMENT)
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding: 12px; font-size: 14px; color: #666666; border-bottom: 1px solid #eee; width: 140px;">
+                    <strong>대상 종류</strong>
+                  </td>
+                  <td style="padding: 12px; font-size: 14px; color: #1a1a1a; border-bottom: 1px solid #eee; word-break: break-all;">
+                    댓글 (COMMENT)
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding: 12px; font-size: 14px; color: #666666; border-bottom: 1px solid #eee; width: 140px;">
+                    <strong>콘텐츠 ID</strong>
+                  </td>
+                  <td style="padding: 12px; font-size: 14px; color: #1a1a1a; border-bottom: 1px solid #eee; word-break: break-all;">
+                    clz7x5p8k0099qz0z8z8z8z8z
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding: 12px; font-size: 14px; color: #666666; border-bottom: 1px solid #eee; width: 140px;">
+                    <strong>신고된 사용자</strong>
+                  </td>
+                  <td style="padding: 12px; font-size: 14px; color: #1a1a1a; border-bottom: 1px solid #eee; word-break: break-all;">
+                    TARGET&amp;01 · clz7x5p8k0005qz0z8z8z8z8z
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding: 12px; font-size: 14px; color: #666666; border-bottom: 1px solid #eee; width: 140px;">
+                    <strong>신고한 사용자</strong>
+                  </td>
+                  <td style="padding: 12px; font-size: 14px; color: #1a1a1a; border-bottom: 1px solid #eee; word-break: break-all;">
+                    REPORTER&lt;1&gt; · clz7x5p8k0001qz0z8z8z8z8z
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding: 12px; font-size: 14px; color: #666666; border-bottom: 1px solid #eee; width: 140px;">
+                    <strong>접수 시각</strong>
+                  </td>
+                  <td style="padding: 12px; font-size: 14px; color: #1a1a1a; border-bottom: 1px solid #eee; word-break: break-all;">
+                    2026-10-26 18:00 (KST)
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding: 12px; font-size: 14px; color: #666666; border-bottom: 1px solid #eee; width: 140px;">
+                    <strong>처리 API</strong>
+                  </td>
+                  <td style="padding: 12px; font-size: 14px; color: #1a1a1a; border-bottom: 1px solid #eee; word-break: break-all;">
+                    POST /v1/admin/reports/clz7x5p8k0123qz0z8z8z8z8z/resolution
+                  </td>
+                </tr>
+              </table>
+              <div style="background-color: #f8f9fa; border-radius: 8px; padding: 24px; margin-bottom: 24px;">
+                <p style="margin: 0 0 8px; font-size: 14px; font-weight: 600; color: #666666;">신고 내용</p>
+                <p style="margin: 0; font-size: 14px; line-height: 1.8; color: #1a1a1a; white-space: pre-wrap;">&lt;b&gt;&quot;굵게&quot;&lt;/b&gt; &amp; &#39;quote&#39;
+다음 줄</p>
+              </div>
+              <div style="background-color: #fff7e6; border-radius: 8px; padding: 16px 20px; border: 1px solid #ffe0a3;">
+                <p style="margin: 0 0 8px; font-size: 13px; font-weight: 700; color: #8a5a00;">처리 체크리스트</p>
+                <p style="margin: 0; font-size: 13px; line-height: 1.7; color: #8a5a00;">
+                  1) 콘텐츠 ID로 원문 확인 2) 약관 위반이면 콘텐츠 삭제·계정 제한 3) 처리 API로 조치 내용을 남겨 RESOLVED로 변경
+                </p>
+              </div>
+              <p style="margin: 24px 0 0; text-align: center;">
+                <a href="https://api.aido.kr/api/admin/docs?a=1&amp;b=&quot;2&quot;#/Admin/resolveUserReport" style="display: inline-block; padding: 12px 20px; font-size: 14px; font-weight: 600; color: #ffffff; background-color: #1a1a1a; border-radius: 8px; text-decoration: none;">관리자 문서에서 처리하기</a>
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 20px 40px 40px;">
+              <hr style="border: none; border-top: 1px solid #eee; margin: 0 0 20px;" />
+              <p style="margin: 0; font-size: 12px; line-height: 1.6; color: #999999; text-align: center;">
+                이 이메일은 아이두 앱에서 자동으로 발송되었습니다.
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>",
+  "subject": "[아이두 신고접수] [괴롭힘·혐오] 댓글 · TARGET&01",
+  "text": "[아이두 신고접수] [괴롭힘·혐오] 댓글 · TARGET&01
+
+[접수 정보]
+- 신고 ID: clz7x5p8k0123qz0z8z8z8z8z
+- 사유: 괴롭힘·혐오 (HARASSMENT)
+- 대상 종류: 댓글 (COMMENT)
+- 콘텐츠 ID: clz7x5p8k0099qz0z8z8z8z8z
+- 신고된 사용자: TARGET&01 · clz7x5p8k0005qz0z8z8z8z8z
+- 신고한 사용자: REPORTER<1> · clz7x5p8k0001qz0z8z8z8z8z
+- 접수 시각: 2026-10-26 18:00 (KST)
+- 처리 API: POST /v1/admin/reports/clz7x5p8k0123qz0z8z8z8z8z/resolution
+- 관리자 문서: https://api.aido.kr/api/admin/docs?a=1&b="2"#/Admin/resolveUserReport
+
+[신고 내용]
+<b>"굵게"</b> & 'quote'
+다음 줄
+
+[처리 체크리스트]
+1) 콘텐츠 ID로 원문 확인
+2) 약관 위반이면 콘텐츠 삭제·계정 제한
+3) 처리 API로 조치 내용을 남겨 RESOLVED로 변경
+
+이 이메일은 아이두 앱에서 자동으로 발송되었습니다.",
+}
+`;
+
+exports[`이메일 템플릿 렌더 결과(ko) > 신고 메일 — 콘텐츠 ID·상세 내용·관리자 문서 링크가 없다 1`] = `
+{
+  "html": "<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>아이두 신고 접수 알림</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f5f5f5;">
+  <table role="presentation" style="width: 100%; border-collapse: collapse;">
+    <tr>
+      <td align="center" style="padding: 40px 0;">
+        <table role="presentation" style="width: 100%; max-width: 600px; border-collapse: collapse; background-color: #ffffff; border-radius: 8px;">
+          <tr>
+            <td style="padding: 40px 40px 20px; text-align: center;">
+              <h1 style="margin: 0; font-size: 24px; font-weight: 700; color: #1a1a1a;">아이두</h1>
+              <p style="margin: 8px 0 0; font-size: 13px; color: #666666;">사용자 신고 접수 알림</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 20px 40px;">
+              <h2 style="margin: 0 0 16px; font-size: 20px; font-weight: 600; color: #1a1a1a; text-align: center;">
+                새로운 신고가 접수되었습니다
+              </h2>
+              <table style="width: 100%; border-collapse: collapse; margin-bottom: 24px;">
+                <tr>
+                  <td style="padding: 12px; font-size: 14px; color: #666666; border-bottom: 1px solid #eee; width: 140px;">
+                    <strong>신고 ID</strong>
+                  </td>
+                  <td style="padding: 12px; font-size: 14px; color: #1a1a1a; border-bottom: 1px solid #eee; word-break: break-all;">
+                    clz7x5p8k0123qz0z8z8z8z8z
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding: 12px; font-size: 14px; color: #666666; border-bottom: 1px solid #eee; width: 140px;">
+                    <strong>사유</strong>
+                  </td>
+                  <td style="padding: 12px; font-size: 14px; color: #1a1a1a; border-bottom: 1px solid #eee; word-break: break-all;">
+                    사칭 (IMPERSONATION)
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding: 12px; font-size: 14px; color: #666666; border-bottom: 1px solid #eee; width: 140px;">
+                    <strong>대상 종류</strong>
+                  </td>
+                  <td style="padding: 12px; font-size: 14px; color: #1a1a1a; border-bottom: 1px solid #eee; word-break: break-all;">
+                    프로필·닉네임 (PROFILE)
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding: 12px; font-size: 14px; color: #666666; border-bottom: 1px solid #eee; width: 140px;">
+                    <strong>콘텐츠 ID</strong>
+                  </td>
+                  <td style="padding: 12px; font-size: 14px; color: #1a1a1a; border-bottom: 1px solid #eee; word-break: break-all;">
+                    -
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding: 12px; font-size: 14px; color: #666666; border-bottom: 1px solid #eee; width: 140px;">
+                    <strong>신고된 사용자</strong>
+                  </td>
+                  <td style="padding: 12px; font-size: 14px; color: #1a1a1a; border-bottom: 1px solid #eee; word-break: break-all;">
+                    TARGET01 · clz7x5p8k0005qz0z8z8z8z8z
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding: 12px; font-size: 14px; color: #666666; border-bottom: 1px solid #eee; width: 140px;">
+                    <strong>신고한 사용자</strong>
+                  </td>
+                  <td style="padding: 12px; font-size: 14px; color: #1a1a1a; border-bottom: 1px solid #eee; word-break: break-all;">
+                    REPORTER · clz7x5p8k0001qz0z8z8z8z8z
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding: 12px; font-size: 14px; color: #666666; border-bottom: 1px solid #eee; width: 140px;">
+                    <strong>접수 시각</strong>
+                  </td>
+                  <td style="padding: 12px; font-size: 14px; color: #1a1a1a; border-bottom: 1px solid #eee; word-break: break-all;">
+                    2026-10-26 18:00 (KST)
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding: 12px; font-size: 14px; color: #666666; border-bottom: 1px solid #eee; width: 140px;">
+                    <strong>처리 API</strong>
+                  </td>
+                  <td style="padding: 12px; font-size: 14px; color: #1a1a1a; border-bottom: 1px solid #eee; word-break: break-all;">
+                    POST /v1/admin/reports/clz7x5p8k0123qz0z8z8z8z8z/resolution
+                  </td>
+                </tr>
+              </table>
+              <div style="background-color: #f8f9fa; border-radius: 8px; padding: 24px; margin-bottom: 24px;">
+                <p style="margin: 0 0 8px; font-size: 14px; font-weight: 600; color: #666666;">신고 내용</p>
+                <p style="margin: 0; font-size: 14px; line-height: 1.8; color: #1a1a1a; white-space: pre-wrap;">(상세 내용 없음)</p>
+              </div>
+              <div style="background-color: #fff7e6; border-radius: 8px; padding: 16px 20px; border: 1px solid #ffe0a3;">
+                <p style="margin: 0 0 8px; font-size: 13px; font-weight: 700; color: #8a5a00;">처리 체크리스트</p>
+                <p style="margin: 0; font-size: 13px; line-height: 1.7; color: #8a5a00;">
+                  1) 콘텐츠 ID로 원문 확인 2) 약관 위반이면 콘텐츠 삭제·계정 제한 3) 처리 API로 조치 내용을 남겨 RESOLVED로 변경
+                </p>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 20px 40px 40px;">
+              <hr style="border: none; border-top: 1px solid #eee; margin: 0 0 20px;" />
+              <p style="margin: 0; font-size: 12px; line-height: 1.6; color: #999999; text-align: center;">
+                이 이메일은 아이두 앱에서 자동으로 발송되었습니다.
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>",
+  "subject": "[아이두 신고접수] [사칭] 프로필·닉네임 · TARGET01",
+  "text": "[아이두 신고접수] [사칭] 프로필·닉네임 · TARGET01
+
+[접수 정보]
+- 신고 ID: clz7x5p8k0123qz0z8z8z8z8z
+- 사유: 사칭 (IMPERSONATION)
+- 대상 종류: 프로필·닉네임 (PROFILE)
+- 콘텐츠 ID: -
+- 신고된 사용자: TARGET01 · clz7x5p8k0005qz0z8z8z8z8z
+- 신고한 사용자: REPORTER · clz7x5p8k0001qz0z8z8z8z8z
+- 접수 시각: 2026-10-26 18:00 (KST)
+- 처리 API: POST /v1/admin/reports/clz7x5p8k0123qz0z8z8z8z8z/resolution
+
+[신고 내용]
+(상세 내용 없음)
+
+[처리 체크리스트]
+1) 콘텐츠 ID로 원문 확인
+2) 약관 위반이면 콘텐츠 삭제·계정 제한
+3) 처리 API로 조치 내용을 남겨 RESOLVED로 변경
+
+이 이메일은 아이두 앱에서 자동으로 발송되었습니다.",
+}
+`;
+
+exports[`이메일 템플릿 렌더 결과(ko) > 인증 코드 메일 1`] = `
+{
+  "html": "<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>이메일 인증</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f5f5f5;">
+  <table role="presentation" style="width: 100%; border-collapse: collapse;">
+    <tr>
+      <td align="center" style="padding: 40px 0;">
+        <table role="presentation" style="width: 100%; max-width: 600px; border-collapse: collapse; background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);">
+          <!-- Header -->
+          <tr>
+            <td style="padding: 40px 40px 20px; text-align: center;">
+              <h1 style="margin: 0; font-size: 24px; font-weight: 700; color: #1a1a1a;">
+                아이두
+              </h1>
+            </td>
+          </tr>
+
+          <!-- Content -->
+          <tr>
+            <td style="padding: 20px 40px;">
+              <h2 style="margin: 0 0 16px; font-size: 20px; font-weight: 600; color: #1a1a1a; text-align: center;">
+                이메일 인증 코드
+              </h2>
+              <p style="margin: 0 0 24px; font-size: 16px; line-height: 1.6; color: #666666; text-align: center;">
+                아래 인증 코드를 앱에 입력해주세요.
+              </p>
+
+              <!-- Code Box -->
+              <div style="background-color: #f8f9fa; border-radius: 8px; padding: 24px; text-align: center; margin-bottom: 24px;">
+                <span style="font-size: 32px; font-weight: 700; letter-spacing: 8px; color: #1a1a1a;">
+                  123456
+                </span>
+              </div>
+
+              <p style="margin: 0; font-size: 14px; line-height: 1.6; color: #999999; text-align: center;">
+                이 코드는 <strong>10분</strong> 후에 만료됩니다.
+              </p>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="padding: 20px 40px 40px;">
+              <hr style="border: none; border-top: 1px solid #eee; margin: 0 0 20px;" />
+              <p style="margin: 0; font-size: 12px; line-height: 1.6; color: #999999; text-align: center;">
+                본인이 요청하지 않은 경우, 이 이메일을 무시하셔도 됩니다.
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>",
+  "subject": "[아이두] 이메일 인증 코드",
+  "text": "[아이두] 이메일 인증 코드
+
+인증 코드: 123456
+
+이 코드는 10분 후에 만료됩니다.
+
+본인이 요청하지 않은 경우, 이 이메일을 무시하셔도 됩니다.",
+}
+`;

@@ -6,7 +6,10 @@ import { ImmediateUnitOfWork } from "#test/doubles/platform/immediate-unit-of-wo
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
 import { createPushTokenFixture } from "#test/fixtures/notification/push-token.fixture";
 
-import { PUSH_RECEIPT_POLICY } from "../../domain/push-receipt.domain-service.js";
+import {
+  PUSH_RECEIPT_POLICY,
+  type PushReceiptCheckWindow,
+} from "../../domain/push-receipt.domain-service.js";
 import type { PushReceiptResult } from "../ports/push-provider.port.js";
 import type { InvalidPushToken } from "../ports/push-receipt.repository.port.js";
 import type { PushTokenRepositoryPort } from "../ports/push-token.repository.port.js";
@@ -22,9 +25,12 @@ class StubReceiptRepository implements ReceiptRepository {
   pendingTicketIds: string[] = [];
   invalidByTicketId = new Map<string, InvalidPushToken>();
   readonly recorded: string[][] = [];
+  readonly windows: PushReceiptCheckWindow[] = [];
+  readonly expiredBefore: Date[] = [];
   expiredCount = 0;
 
-  async findPendingTicketIds(_window: unknown, limit: number): Promise<string[]> {
+  async findPendingTicketIds(window: PushReceiptCheckWindow, limit: number): Promise<string[]> {
+    this.windows.push(window);
     return this.pendingTicketIds.slice(0, limit);
   }
 
@@ -41,7 +47,8 @@ class StubReceiptRepository implements ReceiptRepository {
     });
   }
 
-  async expireUnreceipted(): Promise<number> {
+  async expireUnreceipted(acceptedBefore: Date): Promise<number> {
+    this.expiredBefore.push(acceptedBefore);
     return this.expiredCount;
   }
 }
@@ -177,5 +184,22 @@ describe("ReconcilePushReceiptsUseCase — receipt 반영", () => {
     await expect(result).rejects.toThrow("deactivate failed");
     expect(transactionEvents.at(-1)).toBe("rollback");
     expect(cache.invalidatedPushTokenUserIds).toEqual([]);
+  });
+
+  it("수락한 지 15분이 지난 ticket만 조회하고 24시간이 지난 ticket은 결과 미상으로 닫는다", async () => {
+    // Given: 5분마다 도는 실행이라도 Expo 권장(발송 약 15분 뒤)보다 이른 ticket은 묻지 않는다
+    const { useCase, repository } = setup();
+    repository.pendingTicketIds = ["ticket-1"];
+
+    // When
+    await useCase.execute();
+
+    // Then
+    expect(repository.windows[0]).toEqual({
+      acceptedAfter: new Date("2026-11-09T03:00:00.000Z"),
+      acceptedBefore: new Date("2026-11-10T02:45:00.000Z"),
+      checkedBefore: new Date("2026-11-10T02:45:00.000Z"),
+    });
+    expect(repository.expiredBefore).toEqual([new Date("2026-11-09T03:00:00.000Z")]);
   });
 });

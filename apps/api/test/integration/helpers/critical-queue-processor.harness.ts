@@ -44,14 +44,15 @@ import {
   NOTIFICATION_PUSH_PERSISTENCE_PROVIDERS,
   NOTIFICATION_PUSH_USE_CASE_PROVIDERS,
 } from "#api/modules/notification/push/notification-push.providers";
-import {
-  RETENTION_CONFIG,
-  type RetentionConfigPort,
-} from "#api/modules/notification/retention/application/ports/retention-config.port";
-import { RETENTION_REPOSITORY } from "#api/modules/notification/retention/application/ports/retention.repository.port";
+import { ExperimentAssignerPort } from "#api/modules/notification/retention/application/ports/experiment-assigner.port";
+import { RetentionConfigPort } from "#api/modules/notification/retention/application/ports/retention-config.port";
+import { DeterministicHashExperimentAssignerAdapter } from "#api/modules/notification/retention/infrastructure/adapters/deterministic-hash-experiment-assigner.adapter";
 import { RetentionQueueProcessor } from "#api/modules/notification/retention/infrastructure/jobs/retention-queue.processor";
 import { DrizzleRetentionRepository } from "#api/modules/notification/retention/infrastructure/persistence/drizzle-retention.repository";
-import { processRetentionStagesUseCaseProvider } from "#api/modules/notification/retention/notification-retention.providers";
+import {
+  NOTIFICATION_RETENTION_PERSISTENCE_PROVIDERS,
+  NOTIFICATION_RETENTION_USE_CASE_PROVIDERS,
+} from "#api/modules/notification/retention/notification-retention.providers";
 import { AdminBroadcastNotifierPort } from "#api/modules/operations/broadcasts/application/ports/admin-broadcast-notifier.port";
 import { AdminUserDirectoryReaderPort } from "#api/modules/operations/broadcasts/application/ports/admin-user-directory.reader.port";
 import { BroadcastCampaignRepositoryPort } from "#api/modules/operations/broadcasts/application/ports/broadcast-campaign.repository.port";
@@ -318,10 +319,10 @@ function retentionProviders(): Provider[] {
   };
   return [
     RetentionQueueProcessor,
-    processRetentionStagesUseCaseProvider,
-    DrizzleRetentionRepository,
-    { provide: RETENTION_REPOSITORY, useExisting: DrizzleRetentionRepository },
-    { provide: RETENTION_CONFIG, useValue: config },
+    ...NOTIFICATION_RETENTION_PERSISTENCE_PROVIDERS,
+    ...NOTIFICATION_RETENTION_USE_CASE_PROVIDERS,
+    { provide: RetentionConfigPort, useValue: config },
+    { provide: ExperimentAssignerPort, useClass: DeterministicHashExperimentAssignerAdapter },
   ];
 }
 

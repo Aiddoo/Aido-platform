@@ -1,58 +1,44 @@
-import { Inject, Injectable, Logger, type OnModuleInit, Optional } from "@nestjs/common";
-import { match } from "ts-pattern";
+import { Inject, Injectable, type OnModuleInit } from "@nestjs/common";
+import { match, P } from "ts-pattern";
+import type { z } from "zod";
 
-import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
+import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
 
-import { NotificationProviderLogEvent } from "../../../push/infrastructure/adapters/notification-provider.log-events.js";
 import { ProcessRetentionStagesUseCase } from "../../application/use-cases/process-retention-stages.use-case.js";
 import {
   RETENTION_QUEUE,
-  RETENTION_WORKER_POLICY,
+  RETIRED_RETENTION_JOB_NAMES,
   RetentionJobName,
-  RetentionRuntimeJobSchema,
-} from "./retention-queue.constants.js";
+} from "./retention.queue.js";
+
+type RetentionJob = z.output<typeof RETENTION_QUEUE.payloadSchema>;
 
 @Injectable()
 export class RetentionQueueProcessor implements OnModuleInit {
-  readonly #logger = new Logger(RetentionQueueProcessor.name);
-
-  readonly #processStages: ProcessRetentionStagesUseCase;
-  readonly #runtime: JobRuntimePort | undefined;
+  readonly #processStages: Pick<ProcessRetentionStagesUseCase, "execute">;
+  readonly #jobQueue: JobQueuePort;
 
   constructor(
-    processStages: ProcessRetentionStagesUseCase,
-    @Optional()
-    @Inject(JOB_RUNTIME)
-    runtime?: JobRuntimePort,
+    @Inject(ProcessRetentionStagesUseCase)
+    processStages: Pick<ProcessRetentionStagesUseCase, "execute">,
+    jobQueue: JobQueuePort,
   ) {
     this.#processStages = processStages;
-    this.#runtime = runtime;
+    this.#jobQueue = jobQueue;
   }
 
   async onModuleInit(): Promise<void> {
-    if (!this.#runtime) {
-      return;
-    }
-    await this.#runtime.work(
-      RETENTION_QUEUE,
-      async (jobs) => {
-        for (const job of jobs) {
-          await this.process(job.data);
-        }
-      },
-      RETENTION_WORKER_POLICY,
-    );
+    await this.#jobQueue.work(RETENTION_QUEUE, async (jobs) => {
+      for (const job of jobs) {
+        await this.process(job.data);
+      }
+    });
   }
 
-  /** 이전 배포가 남긴 발송·relay 작업은 공용 outbox로 옮겨졌으므로 기록만 하고 완료한다. */
-  async process(untrustedJob: unknown): Promise<void> {
-    const parsedJob = RetentionRuntimeJobSchema.safeParse(untrustedJob);
-    if (!parsedJob.success) {
-      this.#logger.warn({ event: NotificationProviderLogEvent.JOB_INVALID });
-      return;
-    }
-    await match(parsedJob.data)
+  async process(job: RetentionJob): Promise<void> {
+    await match(job)
       .with({ name: RetentionJobName.STAGE_SWEEP }, () => this.#processStages.execute())
+      .with({ name: P.union(...RETIRED_RETENTION_JOB_NAMES) }, async () => undefined)
       .exhaustive();
   }
 }

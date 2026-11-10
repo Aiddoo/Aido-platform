@@ -26,23 +26,15 @@ describe("EmailMessage", () => {
     expect(message.tags).toEqual([{ name: "type", value: "verification" }]);
     expect(message.idempotencyKey).toBe("message-1");
   });
-  it("태그를 붙이면 원본 메시지는 유지된다", () => {
-    const message = EmailMessage.create(props);
-    const tag = { name: "environment", value: "test" };
-    const tagged = message.withTag(tag);
-    tag.value = "changed";
-    expect(message.tags).toHaveLength(1);
-    expect(tagged.tags).toEqual([...props.tags, { name: "environment", value: "test" }]);
-  });
   it("큐에 담을 값에는 멱등 키를 싣지 않고 태그를 복사해 돌려준다", () => {
     // Given
     const message = EmailMessage.create(props);
 
     // When
-    const snapshot = message.toProps();
+    const primitives = message.toPrimitives();
 
     // Then
-    expect(snapshot).toEqual({
+    expect(primitives).toEqual({
       kind: "verification",
       to: props.to,
       subject: props.subject,
@@ -50,6 +42,13 @@ describe("EmailMessage", () => {
       text: props.text,
       tags: props.tags,
     });
-    expect(snapshot.tags).not.toBe(message.tags);
+    expect(primitives.tags).not.toBe(message.tags);
+  });
+  it("큐에서 복원한 메시지는 같은 값의 새 메시지와 같다", () => {
+    // When
+    const restored = EmailMessage.reconstitute(props);
+
+    // Then
+    expect(restored.equals(EmailMessage.create(props))).toBe(true);
   });
 });

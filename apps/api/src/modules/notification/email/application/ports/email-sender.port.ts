@@ -1,15 +1,21 @@
 import type { EmailMessage } from "../../domain/email-message.vo.js";
 
-/** EmailSenderPort DI 토큰 */
-export const EMAIL_SENDER = Symbol("EMAIL_SENDER");
+const EMAIL_QUOTA_SCOPES = ["daily", "monthly"] as const;
+export type EmailQuotaScope = (typeof EMAIL_QUOTA_SCOPES)[number];
 
-export type EmailQuotaScope = "daily" | "monthly";
+const EMAIL_DELIVERY_FAILURE_REASONS = [
+  "rate_limited",
+  "unavailable",
+  "rejected",
+  "not_configured",
+] as const;
+type EmailDeliveryFailureReason = (typeof EMAIL_DELIVERY_FAILURE_REASONS)[number];
 
 export type EmailDeliveryOutcome =
   | { readonly status: "sent"; readonly providerMessageId: string | null }
   | {
       readonly status: "failed";
-      readonly reason: "rate_limited" | "unavailable" | "rejected" | "not_configured";
+      readonly reason: EmailDeliveryFailureReason;
       /** 같은 메시지를 다시 보내면 성공할 수 있는 실패인지 */
       readonly retryable: boolean;
     }
@@ -21,12 +27,9 @@ export type EmailDeliveryOutcome =
     };
 
 /**
- * 이메일 전송 포트(벤더 중립). 메시지 하나를 한 번 시도하고 결과를 값으로 돌려주며 던지지 않는다.
- *
- * 벤더 오류를 위 결과로 옮기는 일, 시도별 제한 시간·회로 같은 호출 보호, 멱등 키 전달은 어댑터가
- * 맡는다. 재시도는 호출하는 큐(pg-boss)의 몫이라 어댑터는 다시 시도하지 않는다. SES 같은 다른
- * 벤더는 어댑터 하나를 더해 바꾼다.
+ * 이메일 전송 포트(공급자 중립). 메시지 하나를 한 번 시도하고 결과를 값으로 돌려주며 던지지 않는다.
+ * 재시도는 호출하는 큐(pg-boss)의 몫이라 어댑터는 다시 시도하지 않는다. 공급자 멱등 키는 message.idempotencyKey다.
  */
-export interface EmailSenderPort {
-  send(message: EmailMessage): Promise<EmailDeliveryOutcome>;
+export abstract class EmailSenderPort {
+  abstract send(message: EmailMessage): Promise<EmailDeliveryOutcome>;
 }

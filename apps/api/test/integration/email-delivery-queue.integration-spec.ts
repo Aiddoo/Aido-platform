@@ -1,25 +1,27 @@
+import { Global, Module } from "@nestjs/common";
 import { Test, type TestingModule } from "@nestjs/testing";
 import { PgBoss } from "pg-boss";
 import { vi } from "vitest";
 import { mock } from "vitest-mock-extended";
 
-import { EMAIL_DELIVERY_QUEUE_PORT } from "#api/modules/notification/email/application/ports/email-delivery-queue.port";
-import { EMAIL_SENDER } from "#api/modules/notification/email/application/ports/email-sender.port";
-import { EmailDeliveryQueueAdapter } from "#api/modules/notification/email/infrastructure/adapters/email-delivery-queue.adapter";
-import { ResendEmailSenderAdapter } from "#api/modules/notification/email/infrastructure/adapters/resend-email-sender.adapter";
-import { EmailDeliveryQueueProcessor } from "#api/modules/notification/email/infrastructure/jobs/email-delivery-queue.processor";
+import { EMAIL_DELIVERY_QUEUE } from "#api/modules/notification/email/infrastructure/jobs/email-delivery.queue";
 import {
-  deliverEmailUseCaseProvider,
-  emailBudgetProvider,
-  sendTransactionalEmailUseCaseProvider,
-} from "#api/modules/notification/email/notification-email.providers";
-import { SendTransactionalEmailUseCase } from "#api/modules/notification/notification-email.public";
+  NotificationEmailModule,
+  SendTransactionalEmailUseCase,
+} from "#api/modules/notification/notification-email.public";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { EncryptionService } from "#api/platform/encryption/encryption.service";
-import { PgBossJobRuntimeAdapter } from "#api/platform/jobs/pg-boss-job-runtime.adapter";
+import { JobQueueRegistry } from "#api/platform/jobs/job-queue.registry";
+import { PgBossJobQueueAdapter } from "#api/platform/jobs/pg-boss-job-queue.adapter";
 import { USAGE_METER } from "#api/platform/metering/interfaces/usage-meter.interface";
 import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
-import { OPERATIONAL_ALERT } from "#api/shared/application/ports/operational-alert.port";
+import { ClockPort } from "#api/shared/application/ports/clock.port";
+import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
+import {
+  OPERATIONAL_ALERT,
+  OperationalAlertPort,
+} from "#api/shared/application/ports/operational-alert.port";
+import { DateClock } from "#test/doubles/platform/date-clock";
 import { InMemoryUsageMeterAdapter } from "#test/mocks/in-memory-usage-meter.adapter";
 import { RecordingOperationalAlert } from "#test/mocks/recording-operational-alert";
 import { resendResponseFixture, StubResendHttp } from "#test/mocks/resend-http.stub";
@@ -65,7 +67,6 @@ async function eventually(assertion: () => Promise<void>, timeoutMs = 30_000): P
 describe("이메일 발송 큐 (실제 pg-boss + PostgreSQL)", () => {
   let testDatabase: TestDatabase;
   let boss: PgBoss;
-  let runtime: PgBossJobRuntimeAdapter;
   let module: TestingModule;
   let sender: SendTransactionalEmailUseCase;
   let http: StubResendHttp;
@@ -91,12 +92,13 @@ describe("이메일 발송 큐 (실제 pg-boss + PostgreSQL)", () => {
       createSchema: false,
       max: 3,
     });
-    runtime = new PgBossJobRuntimeAdapter(boss, createDatabaseTransactionFixture(client).txHost, {
-      job: { shutdownTimeoutMs: 10_000 },
-    });
-    await runtime.start();
+    await boss.start();
+    const jobQueue = new PgBossJobQueueAdapter(
+      boss,
+      createDatabaseTransactionFixture(client).txHost,
+      new JobQueueRegistry(),
+    );
 
-    vi.stubEnv("RESEND_BASE_URL", "https://api.resend.com");
     const config = mock<TypedConfigService>({
       email: {
         provider: "resend",
@@ -109,57 +111,44 @@ describe("이메일 발송 큐 (실제 pg-boss + PostgreSQL)", () => {
       tokenEncryptionKey: "test-token-encryption-key-minimum-32-characters-long",
       tokenEncryptionSalt: undefined,
     });
-    const policies = new OutboundPolicyRegistry(alerts);
-    module = await Test.createTestingModule({
+
+    @Global()
+    @Module({
       providers: [
         { provide: TypedConfigService, useValue: config },
+        { provide: JobQueuePort, useValue: jobQueue },
         { provide: USAGE_METER, useValue: new InMemoryUsageMeterAdapter() },
         { provide: OPERATIONAL_ALERT, useValue: alerts },
-        { provide: OutboundPolicyRegistry, useValue: policies },
+        { provide: OperationalAlertPort, useValue: alerts },
+        { provide: ClockPort, useClass: DateClock },
+        OutboundPolicyRegistry,
         EncryptionService,
-        emailBudgetProvider,
-        sendTransactionalEmailUseCaseProvider,
-        deliverEmailUseCaseProvider,
-        EmailDeliveryQueueProcessor,
-        {
-          provide: EMAIL_SENDER,
-          useFactory: () =>
-            new ResendEmailSenderAdapter(
-              {
-                apiKey: "fixture-api-key",
-                from: "noreply@integration-test.com",
-                fromName: "Integration Test",
-                environment: "test",
-              },
-              policies,
-            ),
-        },
-        {
-          provide: EMAIL_DELIVERY_QUEUE_PORT,
-          useFactory: (encryption: EncryptionService) =>
-            new EmailDeliveryQueueAdapter(runtime, encryption),
-          inject: [EncryptionService],
-        },
       ],
+      exports: [
+        TypedConfigService,
+        JobQueuePort,
+        USAGE_METER,
+        OPERATIONAL_ALERT,
+        OperationalAlertPort,
+        ClockPort,
+        OutboundPolicyRegistry,
+        EncryptionService,
+      ],
+    })
+    class PlatformStubModule {}
+
+    // 운영 배선 그대로 올려 processor가 onModuleInit에서 email-delivery.v1 worker를 등록한다
+    module = await Test.createTestingModule({
+      imports: [PlatformStubModule, NotificationEmailModule],
     }).compile();
+    await module.init();
     sender = module.get(SendTransactionalEmailUseCase);
-    const processor = module.get(EmailDeliveryQueueProcessor);
-    await runtime.work(
-      "email-delivery.v1",
-      async (jobs) => {
-        for (const job of jobs) {
-          await processor.process(job.attempt, job.data);
-        }
-      },
-      { teamSize: 2, pollingIntervalSeconds: 1 },
-    );
   });
 
   afterAll(async () => {
-    await runtime?.stop();
     await module?.close();
+    await boss?.stop({ graceful: false, close: true });
     vi.unstubAllGlobals();
-    vi.unstubAllEnvs();
     await testDatabase?.stop();
   });
 
@@ -180,7 +169,7 @@ describe("이메일 발송 큐 (실제 pg-boss + PostgreSQL)", () => {
     // Then
     expect(dispatch).toEqual({ status: "queued" });
     await eventually(async () => {
-      const jobs = await boss.findJobs("email-delivery.v1");
+      const jobs = await boss.findJobs(EMAIL_DELIVERY_QUEUE.name);
       expect(http.requests).toHaveLength(1);
       expect(jobs.every((job) => job.state === "completed")).toBe(true);
       expect(JSON.stringify(jobs.map((job) => job.data))).not.toContain(code);
@@ -189,7 +178,7 @@ describe("이메일 발송 큐 (실제 pg-boss + PostgreSQL)", () => {
     expect(http.requests).toHaveLength(1);
     expect(http.request().headers.get("idempotency-key")).toEqual(expect.any(String));
     expect(await http.request().json()).toEqual(
-      expect.objectContaining({ to: recipient, text: expect.stringContaining(code) }),
+      expect.objectContaining({ to: [recipient], text: expect.stringContaining(code) }),
     );
   });
 
@@ -207,7 +196,7 @@ describe("이메일 발송 큐 (실제 pg-boss + PostgreSQL)", () => {
     // Then
     expect(results).toEqual([{ status: "queued" }, { status: "queued" }]);
     await eventually(async () => {
-      const jobs = await boss.findJobs("email-delivery.v1", {
+      const jobs = await boss.findJobs(EMAIL_DELIVERY_QUEUE.name, {
         key: "user-report:delivery-duplicate",
       });
       expect(jobs).toHaveLength(1);
@@ -229,7 +218,9 @@ describe("이메일 발송 큐 (실제 pg-boss + PostgreSQL)", () => {
 
     // Then
     await eventually(async () => {
-      const [job] = await boss.findJobs("email-delivery.v1", { key: "user-report:delivery-retry" });
+      const [job] = await boss.findJobs(EMAIL_DELIVERY_QUEUE.name, {
+        key: "user-report:delivery-retry",
+      });
       expect(job?.state).toBe("completed");
     });
     expect(http.requests).toHaveLength(2);

@@ -1,12 +1,12 @@
 export const NotificationRemindersLogEvent = {
-  TIMEZONE_AWARE_REMINDER_REGISTRATION_FAILED:
-    "notification.reminders.timezone-aware-reminder.registration-failed",
   TIMEZONE_AWARE_REMINDER_SWEEP_STARTED:
     "notification.reminders.timezone-aware-reminder.sweep-started",
   TIMEZONE_AWARE_REMINDER_TIMEZONE_FAILED:
     "notification.reminders.timezone-aware-reminder.timezone-failed",
   TIMEZONE_AWARE_REMINDER_SWEEP_COMPLETED:
     "notification.reminders.timezone-aware-reminder.sweep-completed",
+  TIMEZONE_AWARE_REMINDER_MINUTES_SKIPPED:
+    "notification.reminders.timezone-aware-reminder.minutes-skipped",
   TIMEZONE_AWARE_REMINDER_SWEEP_FAILED:
     "notification.reminders.timezone-aware-reminder.sweep-failed",
   TIMEZONE_AWARE_REMINDER_CATCH_UP_MORNING:
@@ -31,5 +31,6 @@ export const NotificationRemindersLogEvent = {
   WEATHER_MORNING_SENT: "notification.reminders.weather-morning.sent",
   WEEKLY_ACHIEVEMENT_SENT: "notification.reminders.weekly-achievement.sent",
   WEEKLY_REPORT_SENT: "notification.reminders.weekly-report.sent",
+  TODO_REMINDER_LATE_SKIPPED: "notification.reminders.todo-reminder.late-skipped",
   WINBACK_SENT: "notification.reminders.winback.sent",
 } as const;

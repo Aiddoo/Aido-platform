@@ -1,105 +1,118 @@
-import { Inject, Injectable, Logger, type OnModuleInit, Optional } from "@nestjs/common";
+import { Inject, Injectable, Logger, type OnModuleInit } from "@nestjs/common";
 
-import {
-  PublishNotificationUseCase,
-  NOTIFICATION_RECIPIENT_LOCALE_READER,
-  type NotificationRecipientLocaleReaderPort,
-} from "#api/modules/notification/notification-delivery.public";
-import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
+import { ClockPort } from "#api/shared/application/ports/clock.port";
+import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
 
 import {
   createTodoReminderNotificationMessage,
   createTodoSeriesPausedNotificationMessage,
 } from "../../../push/application/messages/notification.messages.js";
+import { NotificationRecipientLocaleReaderPort } from "../../../push/application/ports/notification-recipient-locale.reader.port.js";
+import { PublishNotificationUseCase } from "../../../push/application/use-cases/publish-notification.use-case.js";
 import { NotificationProviderLogEvent } from "../../../push/infrastructure/adapters/notification-provider.log-events.js";
 import { todoSeriesPausedJobKey } from "../../../push/infrastructure/jobs/notification-job-keys.constants.js";
-import {
-  TODO_REMINDER_READER,
-  type TodoReminderReaderPort,
-} from "../../application/ports/todo-reminder-reader.port.js";
-import {
-  TODO_SERIES_OWNER_DORMANCY,
-  type TodoSeriesOwnerDormancyPort,
-} from "../../application/ports/todo-series-owner-dormancy.port.js";
+import { TodoReminderReaderPort } from "../../application/ports/todo-reminder-reader.port.js";
+import { TodoSeriesOwnerDormancyPort } from "../../application/ports/todo-series-owner-dormancy.port.js";
+import { NotificationRemindersLogEvent } from "../../application/reminders.log-events.js";
 import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/notification-campaign.constants.js";
-import { createReminderOccurrenceKey } from "../../domain/reminder-plan.domain-service.js";
 import {
-  todoReminderJobSchema,
+  REMINDER_LATE_LIMIT_MINUTES,
+  REMINDER_LATE_SKIP_REASON,
+} from "../../domain/notification-schedule.domain-service.js";
+import {
+  createReminderOccurrenceKey,
+  isReminderTooLate,
+  reminderFireAt,
+} from "../../domain/reminder-plan.domain-service.js";
+import {
+  type ReminderJobData,
   TODO_REMINDER_QUEUE,
-  TODO_REMINDER_WORKER_POLICY,
   TODO_SERIES_PAUSED_JOB_NAME,
-  TODO_SERIES_PAUSED_JOB_POLICY,
-} from "./todo-reminder-queue.constants.js";
+  TODO_SERIES_PAUSED_QUEUE,
+  type TodoReminderRuntimeJob,
+} from "./todo-reminder.queue.js";
 
 @Injectable()
 export class TodoReminderQueueProcessor implements OnModuleInit {
   readonly #logger = new Logger(TodoReminderQueueProcessor.name);
 
-  readonly #reader: TodoReminderReaderPort;
-  readonly #seriesOwnerDormancy: TodoSeriesOwnerDormancyPort;
-  readonly #notificationPublisher: PublishNotificationUseCase;
-  readonly #recipientLocaleReader: NotificationRecipientLocaleReaderPort;
-  readonly #runtime: JobRuntimePort | undefined;
+  readonly #reader: Pick<TodoReminderReaderPort, "findActiveTodo">;
+  readonly #seriesOwnerDormancy: Pick<TodoSeriesOwnerDormancyPort, "findDormantSince">;
+  readonly #notificationPublisher: Pick<PublishNotificationUseCase, "publish">;
+  readonly #recipientLocaleReader: Pick<NotificationRecipientLocaleReaderPort, "getLocale">;
+  readonly #jobQueue: Pick<JobQueuePort, "enqueue" | "work">;
+  readonly #clock: Pick<ClockPort, "now">;
 
   constructor(
-    @Inject(TODO_REMINDER_READER)
-    reader: TodoReminderReaderPort,
-    @Inject(TODO_SERIES_OWNER_DORMANCY)
-    seriesOwnerDormancy: TodoSeriesOwnerDormancyPort,
-    notificationPublisher: PublishNotificationUseCase,
-    @Inject(NOTIFICATION_RECIPIENT_LOCALE_READER)
-    recipientLocaleReader: NotificationRecipientLocaleReaderPort,
-    @Optional() @Inject(JOB_RUNTIME) runtime?: JobRuntimePort,
+    @Inject(TodoReminderReaderPort) reader: Pick<TodoReminderReaderPort, "findActiveTodo">,
+    @Inject(TodoSeriesOwnerDormancyPort)
+    seriesOwnerDormancy: Pick<TodoSeriesOwnerDormancyPort, "findDormantSince">,
+    @Inject(PublishNotificationUseCase)
+    notificationPublisher: Pick<PublishNotificationUseCase, "publish">,
+    @Inject(NotificationRecipientLocaleReaderPort)
+    recipientLocaleReader: Pick<NotificationRecipientLocaleReaderPort, "getLocale">,
+    @Inject(JobQueuePort) jobQueue: Pick<JobQueuePort, "enqueue" | "work">,
+    @Inject(ClockPort) clock: Pick<ClockPort, "now">,
   ) {
     this.#reader = reader;
     this.#seriesOwnerDormancy = seriesOwnerDormancy;
     this.#notificationPublisher = notificationPublisher;
     this.#recipientLocaleReader = recipientLocaleReader;
-    this.#runtime = runtime;
+    this.#jobQueue = jobQueue;
+    this.#clock = clock;
   }
 
   async onModuleInit(): Promise<void> {
-    if (!this.#runtime) {
-      return;
-    }
-    await this.#runtime.work(
-      TODO_REMINDER_QUEUE,
-      async (jobs) => {
-        for (const job of jobs) {
-          await this.process(job.data);
-        }
-      },
-      TODO_REMINDER_WORKER_POLICY,
-    );
+    await this.#jobQueue.work(TODO_REMINDER_QUEUE, async (jobs) => {
+      for (const job of jobs) {
+        await this.process(job.data);
+      }
+    });
   }
 
-  async process(untrustedJob: unknown): Promise<void> {
-    const parsedJob = todoReminderJobSchema.safeParse(untrustedJob);
-    if (!parsedJob.success) {
-      this.#logger.warn({ event: NotificationProviderLogEvent.JOB_INVALID });
+  async process(job: TodoReminderRuntimeJob): Promise<void> {
+    if (job.name === TODO_SERIES_PAUSED_JOB_NAME) {
+      await this.#sendSeriesPausedNotice(job.data);
       return;
     }
-    if (parsedJob.data.name === TODO_SERIES_PAUSED_JOB_NAME) {
-      await this.#sendSeriesPausedNotice(parsedJob.data.data);
-      return;
-    }
-    const { todoId, userId, stageLabel } = parsedJob.data.data;
+    await this.#sendReminder(job.data);
+  }
 
-    this.#logger.debug({
-      event: NotificationProviderLogEvent.JOB_STARTED,
-      todoId,
-      userId,
-      stage: resolveReminderStage(stageLabel),
-    });
+  async #sendReminder({ todoId, userId, stageLabel }: ReminderJobData): Promise<void> {
+    const stage = resolveReminderStage(stageLabel);
+    this.#logger.debug({ event: NotificationProviderLogEvent.JOB_STARTED, todoId, userId, stage });
 
     const todo = await this.#reader.findActiveTodo(todoId);
-
     if (!todo) {
       this.#logger.debug({
         event: NotificationProviderLogEvent.JOB_SKIPPED,
         todoId,
         userId,
         reason: "TODO_INACTIVE",
+      });
+      return;
+    }
+
+    // 작업에는 울릴 시각이 없어 할 일의 지금 시각에서 단계 리드 타임을 뺀다. 시각을 바꾸면 작업도 다시 등록된다
+    const now = this.#clock.now();
+    if (
+      todo.scheduledAt != null &&
+      isReminderTooLate({
+        scheduledAt: todo.scheduledAt,
+        stageLabel,
+        now,
+        limitMinutes: REMINDER_LATE_LIMIT_MINUTES,
+      })
+    ) {
+      this.#logger.warn({
+        event: NotificationRemindersLogEvent.TODO_REMINDER_LATE_SKIPPED,
+        todoId,
+        userId,
+        stage,
+        reason: REMINDER_LATE_SKIP_REASON,
+        lateMinutes: reminderFireAt(todo.scheduledAt, stageLabel).until(now, {
+          largestUnit: "minutes",
+        }).minutes,
       });
       return;
     }
@@ -112,21 +125,17 @@ export class TodoReminderQueueProcessor implements OnModuleInit {
         event: NotificationProviderLogEvent.TODO_REMINDER_DORMANT_OWNER_SKIPPED,
         todoId,
         userId,
-        stage: resolveReminderStage(stageLabel),
+        stage,
       });
-      await this.#runtime?.enqueue(
-        TODO_REMINDER_QUEUE,
+      await this.#jobQueue.enqueue(
+        TODO_SERIES_PAUSED_QUEUE,
         { name: TODO_SERIES_PAUSED_JOB_NAME, data: { todoId, userId } },
-        {
-          ...TODO_SERIES_PAUSED_JOB_POLICY,
-          idempotencyKey: todoSeriesPausedJobKey(userId, dormantSince),
-        },
+        { idempotencyKey: todoSeriesPausedJobKey(userId, dormantSince) },
       );
       return;
     }
 
     const locale = await this.#recipientLocaleReader.getLocale(userId);
-    const stage = resolveReminderStage(stageLabel);
     const message = createTodoReminderNotificationMessage({
       todoTitle: todo.title,
       stage,

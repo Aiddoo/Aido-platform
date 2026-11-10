@@ -2,6 +2,7 @@ import { mock, type MockProxy } from "vitest-mock-extended";
 
 import type { ReminderWeatherReport } from "#api/modules/notification/reminders/application/ports/reminder-weather-report.reader.port";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
+import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { weatherReportFixture } from "#test/fixtures/weather.fixture";
 import {
   StubNotificationBatchPublisher,
@@ -70,6 +71,7 @@ describe("SendWeatherEveningUseCase — 저녁 날씨 알림", () => {
       notificationPublisher: publisher,
       notificationHistoryReader: history,
       weatherReportReader: weatherReports,
+      clock: new FixedClock(Temporal.Instant.fromEpochMilliseconds(NOW.getTime())),
       logger,
     });
   });

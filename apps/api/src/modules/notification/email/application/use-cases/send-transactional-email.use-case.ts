@@ -1,25 +1,25 @@
 import { randomUUID } from "node:crypto";
 
+import { DEFAULT_LOCALE } from "@aido/api/vocabulary";
+
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 
 import { resolveEmailPriority } from "../../domain/email-budget.domain-service.js";
 import type { EmailMessage } from "../../domain/email-message.vo.js";
-import {
-  createInquiryEmail,
-  createPasswordResetEmail,
-  createPasswordSetupEmail,
-  createUserReportEmail,
-  createVerificationCodeEmail,
-} from "../email-message.mapper.js";
+import { toEmailMessage } from "../email-message.mapper.js";
 import { EmailDeliveryLogEvent } from "../email.log-events.js";
-import { type EmailBudgetPort } from "../ports/email-budget.port.js";
-import { type EmailDeliveryQueuePort } from "../ports/email-delivery-queue.port.js";
-import { type EmailSenderPort } from "../ports/email-sender.port.js";
-import type { InquiryTemplateData } from "../templates/inquiry-template.messages.js";
-import type { PasswordResetTemplateData } from "../templates/password-reset-template.messages.js";
-import type { PasswordSetupTemplateData } from "../templates/password-setup-template.messages.js";
-import type { UserReportTemplateData } from "../templates/user-report-template.messages.js";
-import type { VerificationCodeTemplateData } from "../templates/verification-code-template.messages.js";
+import type { EmailBudgetPort } from "../ports/email-budget.port.js";
+import type { EmailDeliveryQueuePort } from "../ports/email-delivery-queue.port.js";
+import type { EmailSenderPort } from "../ports/email-sender.port.js";
+import type {
+  EmailTemplate,
+  EmailTemplateRendererPort,
+  InquiryTemplateData,
+  PasswordResetTemplateData,
+  PasswordSetupTemplateData,
+  UserReportTemplateData,
+  VerificationCodeTemplateData,
+} from "../ports/email-template-renderer.port.js";
 
 /**
  * 발송 요청의 결과. queued는 발송 큐에 담았다는 뜻이고 실제 발송은 비동기로 끝난다.
@@ -34,40 +34,41 @@ export type EmailSendResult =
   | { readonly status: "sent" }
   | { readonly status: "rejected"; readonly reason: "budget_exhausted" | "delivery_failed" };
 
-interface TransactionalEmailSenderDependencies {
-  readonly queue: EmailDeliveryQueuePort;
-  readonly sender: EmailSenderPort;
+interface SendTransactionalEmailDependencies {
+  readonly queue: Pick<EmailDeliveryQueuePort, "enqueue">;
+  readonly sender: Pick<EmailSenderPort, "send">;
   readonly budget: Pick<EmailBudgetPort, "reserve" | "release" | "settleProviderQuotaExhausted">;
+  readonly renderer: Pick<EmailTemplateRendererPort, "render">;
   readonly logger: Pick<ApplicationLoggerPort, "log" | "warn">;
 }
 
 /** 인증·문의·신고 템플릿을 이메일 발송 큐에 올리는 공개 capability. */
 export class SendTransactionalEmailUseCase {
-  readonly #dependencies: TransactionalEmailSenderDependencies;
+  readonly #dependencies: SendTransactionalEmailDependencies;
 
-  constructor(dependencies: TransactionalEmailSenderDependencies) {
+  constructor(dependencies: SendTransactionalEmailDependencies) {
     this.#dependencies = dependencies;
   }
 
-  sendVerificationCode(
+  async sendVerificationCode(
     to: string,
     templateData: VerificationCodeTemplateData,
   ): Promise<EmailDispatch> {
-    return this.#dispatch(createVerificationCodeEmail(to, templateData));
+    return this.#dispatch(await this.#compose(to, { kind: "verification", data: templateData }));
   }
 
-  sendPasswordResetCode(
+  async sendPasswordResetCode(
     to: string,
     templateData: PasswordResetTemplateData,
   ): Promise<EmailDispatch> {
-    return this.#dispatch(createPasswordResetEmail(to, templateData));
+    return this.#dispatch(await this.#compose(to, { kind: "password-reset", data: templateData }));
   }
 
-  sendPasswordSetupCode(
+  async sendPasswordSetupCode(
     to: string,
     templateData: PasswordSetupTemplateData,
   ): Promise<EmailDispatch> {
-    return this.#dispatch(createPasswordSetupEmail(to, templateData));
+    return this.#dispatch(await this.#compose(to, { kind: "password-setup", data: templateData }));
   }
 
   /**
@@ -75,7 +76,7 @@ export class SendTransactionalEmailUseCase {
    * 사라지므로 요청 안에서 한 번만 보내고, 실패는 그대로 돌려줘 사용자가 다시 보내게 한다.
    */
   async sendInquiry(to: string, templateData: InquiryTemplateData): Promise<EmailSendResult> {
-    const message = createInquiryEmail(to, templateData);
+    const message = await this.#compose(to, { kind: "inquiry", data: templateData });
     const reservation = await this.#dependencies.budget.reserve(resolveEmailPriority(message.kind));
     if (reservation === "exhausted") {
       this.#dependencies.logger.warn({
@@ -103,8 +104,14 @@ export class SendTransactionalEmailUseCase {
     return { status: "rejected", reason: "delivery_failed" };
   }
 
-  sendUserReport(to: string, templateData: UserReportTemplateData): Promise<EmailDispatch> {
-    return this.#dispatch(createUserReportEmail(to, templateData));
+  async sendUserReport(to: string, templateData: UserReportTemplateData): Promise<EmailDispatch> {
+    return this.#dispatch(await this.#compose(to, { kind: "user-report", data: templateData }));
+  }
+
+  // 수신자 언어를 받기 전까지 출시 동작대로 모든 메일을 기본 언어(ko)로 렌더한다
+  async #compose(to: string, template: EmailTemplate): Promise<EmailMessage> {
+    const body = await this.#dependencies.renderer.render(template, DEFAULT_LOCALE);
+    return toEmailMessage(to, template, body);
   }
 
   async #dispatch(message: EmailMessage): Promise<EmailDispatch> {

@@ -1,38 +1,40 @@
-import { mock } from "vitest-mock-extended";
+import { InMemoryMailTransport } from "@nestjs/mail";
 
 import type { EmailProviderId } from "#api/platform/config/schemas/email.schema";
-import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
+import { createTestMailer, type TestMailer } from "#test/doubles/notification/test-mailer";
 import { RecordingOperationalAlert } from "#test/mocks/recording-operational-alert";
 
-import { createEmailSender } from "./email-sender-factory.adapter.js";
+import { selectEmailSender } from "./email-sender-factory.adapter.js";
 import { LogEmailSenderAdapter } from "./log-email-sender.adapter.js";
-import { ResendEmailSenderAdapter } from "./resend-email-sender.adapter.js";
+import { NestMailEmailSenderAdapter } from "./nest-mail-email-sender.adapter.js";
 
-describe("createEmailSender", () => {
+describe("selectEmailSender", () => {
+  let testMailer: TestMailer;
+
+  beforeAll(async () => {
+    testMailer = await createTestMailer(new InMemoryMailTransport());
+  });
+
+  afterAll(async () => {
+    await testMailer.close();
+  });
+
   it.each([
-    ["resend", ResendEmailSenderAdapter],
+    ["resend", NestMailEmailSenderAdapter],
     ["log", LogEmailSenderAdapter],
   ] as const satisfies readonly (readonly [EmailProviderId, unknown])[])(
-    "EMAIL_PROVIDER=%s이면 해당 어댑터를 만든다",
+    "EMAIL_PROVIDER=%s이면 해당 어댑터로 보낸다",
     (provider, adapter) => {
       // Given
-      const config = mock<TypedConfigService>({
-        nodeEnv: "test",
-        email: {
-          provider,
-          apiKey: "key",
-          from: "noreply@example.com",
-          fromName: "Aido",
-          supportEmail: "support@example.com",
-        },
+      const nestMail = new NestMailEmailSenderAdapter({
+        mailer: testMailer.mailer,
+        policies: new OutboundPolicyRegistry(new RecordingOperationalAlert()),
+        isConfigured: true,
       });
 
       // When
-      const sender = createEmailSender(
-        config,
-        new OutboundPolicyRegistry(new RecordingOperationalAlert()),
-      );
+      const sender = selectEmailSender(provider, nestMail);
 
       // Then
       expect(sender).toBeInstanceOf(adapter);

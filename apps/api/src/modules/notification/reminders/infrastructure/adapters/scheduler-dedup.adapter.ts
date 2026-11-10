@@ -5,14 +5,15 @@ import {
   type IDedupProvider,
 } from "#api/platform/dedup/interfaces/dedup.interface";
 
-import type { SchedulerDedupPort } from "../../application/ports/scheduler-dedup.port.js";
+import { SchedulerDedupPort } from "../../application/ports/scheduler-dedup.port.js";
 import { SCHEDULER_DEDUP_TTL_MS, SchedulerDedupKey } from "../cache/scheduler-dedup.keyspace.js";
 
 @Injectable()
-export class SchedulerDedupAdapter implements SchedulerDedupPort {
+export class SchedulerDedupAdapter extends SchedulerDedupPort {
   readonly #dedupProvider: IDedupProvider;
 
   constructor(@Inject(DEDUP_PROVIDER) dedupProvider: IDedupProvider) {
+    super();
     this.#dedupProvider = dedupProvider;
   }
 

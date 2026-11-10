@@ -60,6 +60,7 @@
     "@nestjs/http-client": "catalog:nest12",
     "@nestjs/i18n": "catalog:nest12",
     "@nestjs/jwt": "catalog:nest12",
+    "@nestjs/mail": "catalog:nest12",
     "@nestjs/platform-express": "catalog:nest12",
     "@nestjs/swagger": "catalog:nest12",
     "@nestjs/terminus": "catalog:nest12",
@@ -89,7 +90,6 @@
     "pg-boss": "catalog:",
     "pino": "catalog:",
     "reflect-metadata": "catalog:",
-    "resend": "catalog:",
     "rxjs": "catalog:",
     "ts-pattern": "catalog:",
     "zod": "catalog:"

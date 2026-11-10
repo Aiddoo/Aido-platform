@@ -1,8 +1,9 @@
 import { groupBy } from "es-toolkit";
 
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
-import { now } from "#api/shared/domain/date/utils/core";
+import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { dayWindowInTimezone } from "#api/shared/domain/date/utils/timezone";
+import { instantToDate } from "#api/shared/domain/time/instant";
 
 import type { NotificationHistoryReader } from "../../../inbox/application/notification-history.reader.js";
 import type { NotificationAction } from "../../../inbox/application/ports/notification-draft.port.js";
@@ -20,7 +21,7 @@ import {
   type MorningWeatherBriefing,
 } from "../../domain/weather-briefing.domain-service.js";
 import type { ReminderWeatherReportReaderPort } from "../ports/reminder-weather-report.reader.port.js";
-import type { TimezoneReminderStrategy } from "../ports/timezone-reminder-strategy.port.js";
+import type { TimezoneReminderStrategyPort } from "../ports/timezone-reminder-strategy.port.js";
 import { type WeatherReminderReaderPort } from "../ports/weather-reminder-reader.port.js";
 import { NotificationRemindersLogEvent } from "../reminders.log-events.js";
 import {
@@ -44,6 +45,7 @@ interface WeatherMorningStrategyDependencies {
   readonly notificationPublisher: Pick<PublishNotificationUseCase, "publishBatch">;
   readonly notificationHistoryReader: Pick<NotificationHistoryReader, "findAlreadyNotifiedUserIds">;
   readonly weatherReportReader: Pick<ReminderWeatherReportReaderPort, "readReports">;
+  readonly clock: Pick<ClockPort, "now">;
   readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
 
@@ -51,7 +53,7 @@ interface WeatherMorningStrategyDependencies {
  * 아침 날씨 알림. 앱 화면과 같은 v2 리포트(칸 캐시 공유)와 오늘 할 일로 아이두 브리핑과 같은 내용을 보낸다.
  * 리포트는 알림 대상(설정 시각·위치 있음·오늘 미발송)만 조회하므로 대상이 아닌 사용자로 공급자를 부르지 않는다.
  */
-export class SendWeatherMorningUseCase implements TimezoneReminderStrategy {
+export class SendWeatherMorningUseCase implements TimezoneReminderStrategyPort {
   readonly #dependencies: WeatherMorningStrategyDependencies;
 
   constructor(dependencies: WeatherMorningStrategyDependencies) {
@@ -102,7 +104,7 @@ export class SendWeatherMorningUseCase implements TimezoneReminderStrategy {
       return { sent: 0, unavailable: 0 };
     }
 
-    const at = now();
+    const at = instantToDate(this.#dependencies.clock.now());
     const [todos, reports] = await Promise.all([
       this.#dependencies.reader.findScheduledTodosBetween({
         userIds: targets.map((u) => u.id),

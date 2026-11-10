@@ -1,17 +1,15 @@
 import { computeEffectiveStreak } from "#api/modules/identity/identity-settings.public";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
-import { addDays } from "#api/shared/domain/date/utils/arithmetic";
 import { toDateString } from "#api/shared/domain/date/utils/format";
-import { todayInTimezone } from "#api/shared/domain/date/utils/timezone";
-import { toSupportedLocale } from "#api/shared/domain/locale";
 
 import type { NotificationHistoryReader } from "../../../inbox/application/notification-history.reader.js";
 import { createStreakAtRiskNotificationMessage } from "../../../push/application/messages/notification.messages.js";
 import type { PublishNotificationUseCase } from "../../../push/application/use-cases/publish-notification.use-case.js";
+import { resolveRecipientLocale } from "../../../push/domain/recipient-locale.domain-service.js";
 import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/notification-campaign.constants.js";
 import type { TimezoneContext } from "../../domain/timezone-context.read-model.js";
 import { type ReEngagementReaderPort } from "../ports/re-engagement-reader.port.js";
-import type { TimezoneReminderStrategy } from "../ports/timezone-reminder-strategy.port.js";
+import type { TimezoneReminderStrategyPort } from "../ports/timezone-reminder-strategy.port.js";
 import { NotificationRemindersLogEvent } from "../reminders.log-events.js";
 
 /**
@@ -28,7 +26,7 @@ interface StreakAtRiskStrategyDependencies {
   readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
 
-export class SendStreakAtRiskUseCase implements TimezoneReminderStrategy {
+export class SendStreakAtRiskUseCase implements TimezoneReminderStrategyPort {
   readonly #dependencies: StreakAtRiskStrategyDependencies;
 
   constructor(dependencies: StreakAtRiskStrategyDependencies) {
@@ -36,9 +34,7 @@ export class SendStreakAtRiskUseCase implements TimezoneReminderStrategy {
   }
 
   async execute(ctx: TimezoneContext): Promise<{ sent: number }> {
-    const { tz } = ctx;
-    const today = todayInTimezone(tz);
-    const tomorrow = addDays(1, today);
+    const { tz, today, tomorrow } = ctx;
 
     // 스트릭 3일+ 유저 중 오늘 미완료 할일이 있는 유저 조회
     const users = await this.#dependencies.reader.findStreakAtRiskUsers({
@@ -74,7 +70,10 @@ export class SendStreakAtRiskUseCase implements TimezoneReminderStrategy {
           ? {
               id: user.id,
               effectiveStreak: streak,
-              locale: toSupportedLocale(user.preference?.locale),
+              locale: resolveRecipientLocale({
+                storedLocale: user.preference?.locale ?? null,
+                lastRequestLocale: null,
+              }),
             }
           : null;
       })

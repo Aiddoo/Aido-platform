@@ -13,11 +13,11 @@ import { isSeriesOwnerDormant } from "#api/modules/planning/todo-series/planning
 import { now } from "#api/shared/domain/date/utils/core";
 import { toDateString } from "#api/shared/domain/date/utils/format";
 
-import type { TodoSeriesOwnerDormancyPort } from "../../application/ports/todo-series-owner-dormancy.port.js";
+import { TodoSeriesOwnerDormancyPort } from "../../application/ports/todo-series-owner-dormancy.port.js";
 
 /** planning이 notification을 조립하므로 모듈 대신 순수 정책만 받아 쓴다. */
 @Injectable()
-export class TodoSeriesOwnerDormancyAdapter implements TodoSeriesOwnerDormancyPort {
+export class TodoSeriesOwnerDormancyAdapter extends TodoSeriesOwnerDormancyPort {
   readonly #activityReader: UserActivityReaderPort;
   readonly #entitlementReader: EntitlementReaderPort;
 
@@ -25,6 +25,7 @@ export class TodoSeriesOwnerDormancyAdapter implements TodoSeriesOwnerDormancyPo
     @Inject(USER_ACTIVITY_READER) activityReader: UserActivityReaderPort,
     @Inject(ENTITLEMENT_READER) entitlementReader: EntitlementReaderPort,
   ) {
+    super();
     this.#activityReader = activityReader;
     this.#entitlementReader = entitlementReader;
   }

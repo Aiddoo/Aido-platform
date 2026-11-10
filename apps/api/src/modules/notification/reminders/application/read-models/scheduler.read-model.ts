@@ -113,6 +113,8 @@ export interface ActiveTodo {
   readonly seriesId: string | null;
   readonly startDate: string;
   readonly scheduledLocalTime: string | null;
+  /** 종일 할 일은 null이다. 리마인더가 울려야 했던 시각을 여기서 계산한다 */
+  readonly scheduledAt: Temporal.Instant | null;
 }
 
 /** 유저 ID → 푸시 로케일 매핑 */

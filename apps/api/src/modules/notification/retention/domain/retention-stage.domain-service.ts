@@ -6,12 +6,20 @@ import { resolveTimezone, startOfDayInTimezone } from "#api/shared/domain/date/u
 
 import type { RetentionStageName } from "./retention.constants.js";
 
-const D0_MIN_WAIT_MS = 2 * TIME_UNIT.MS_PER_HOUR;
+// SQL 후보 조회(due 필터)가 같은 기준을 쓰므로 한 곳에 둔다
+export const RETENTION_STAGE_TIMING = {
+  d0MinWaitMs: 2 * TIME_UNIT.MS_PER_HOUR,
+  targetDay: { D1: 1, D3: 3, D7: 7 },
+  sendLocalTime: { hour: 10, minute: 30 },
+} as const;
 
-export interface RetentionStageState {
+export interface RetentionStageTiming {
   readonly startedAt: Date;
   readonly now: Date;
   readonly timezone: string;
+}
+
+export interface RetentionStageState extends RetentionStageTiming {
   readonly todoCount: number;
   readonly completedCount: number;
   readonly incompleteCount: number;
@@ -30,35 +38,48 @@ export type RetentionStageDecision =
     }
   | { readonly kind: "EVALUATE_ONLY"; readonly reason: string };
 
+// false면 아직 결정할 때가 아니다(WAIT). 지난 단계는 처리 시각과 상관없이 결정 대상으로 남는다
+export function isRetentionStageDue(
+  stage: RetentionStageName,
+  timing: RetentionStageTiming,
+): boolean {
+  const day = localDayDifference(timing.startedAt, timing.now, timing.timezone);
+  if (stage === "D0") {
+    return (
+      day > 0 ||
+      timing.now.getTime() - timing.startedAt.getTime() >= RETENTION_STAGE_TIMING.d0MinWaitMs
+    );
+  }
+  const targetDay = RETENTION_STAGE_TIMING.targetDay[stage];
+  const { hour, minute } = RETENTION_STAGE_TIMING.sendLocalTime;
+  return (
+    day > targetDay ||
+    (day === targetDay && isAtOrAfterLocalTime(timing.now, timing.timezone, hour, minute))
+  );
+}
+
 export function decideRetentionStage(
   stage: RetentionStageName,
   state: RetentionStageState,
 ): RetentionStageDecision {
+  if (!isRetentionStageDue(stage, state)) {
+    return { kind: "WAIT" };
+  }
   const day = localDayDifference(state.startedAt, state.now, state.timezone);
 
   if (stage === "D0") {
     if (day > 0) {
       return { kind: "SKIP", reason: "D0_COLLIDES_WITH_D1" };
     }
-    if (state.now.getTime() - state.startedAt.getTime() < D0_MIN_WAIT_MS) {
-      return { kind: "WAIT" };
-    }
     return state.todoCount === 0
       ? { kind: "SEND", route: "/feed", variantId: "d0_no_todo" }
       : { kind: "SKIP", reason: "TODO_ALREADY_CREATED" };
   }
 
-  const targetDay = stage === "D1" ? 1 : stage === "D3" ? 3 : 7;
-  if (day < targetDay) {
-    return { kind: "WAIT" };
-  }
-  if (day > targetDay) {
+  if (day > RETENTION_STAGE_TIMING.targetDay[stage]) {
     return stage === "D7"
       ? { kind: "EVALUATE_ONLY", reason: "D7_SEND_WINDOW_MISSED" }
       : { kind: "SKIP", reason: `${stage}_SEND_WINDOW_MISSED` };
-  }
-  if (!isAtOrAfterLocalTime(state.now, state.timezone, 10, 30)) {
-    return { kind: "WAIT" };
   }
 
   if (stage === "D1") {

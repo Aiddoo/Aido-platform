@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 
-export type HttpResponseStep = () => Response | Promise<Response>;
+export type HttpResponseStep = (request: Request) => Response | Promise<Response>;
 
 export function resendResponseFixture(fileName: string, status = 200): () => Response {
   const body = readFileSync(
@@ -35,7 +35,7 @@ export class StubResendHttp {
       this.unexpectedRequests.push(`${request.method} ${request.url}`);
       throw new Error("준비되지 않은 Resend HTTP 요청입니다.");
     }
-    return response();
+    return response(request);
   };
 
   request(index = 0): Request {

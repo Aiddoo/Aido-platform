@@ -6,6 +6,7 @@ import { WeatherReportCacheAdapter } from "#api/modules/weather/infrastructure/a
 import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
 import { CacheService } from "#api/platform/cache/cache.service";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
+import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { weatherReportFixture } from "#test/fixtures/weather.fixture";
 import {
   StubNotificationBatchPublisher,
@@ -83,6 +84,7 @@ describe("SendWeatherMorningUseCase — 아침 날씨 알림", () => {
       notificationPublisher: publisher,
       notificationHistoryReader: history,
       weatherReportReader: weatherReports,
+      clock: new FixedClock(Temporal.Instant.fromEpochMilliseconds(NOW.getTime())),
       logger,
     });
   });
@@ -210,11 +212,13 @@ describe("SendWeatherMorningUseCase + weather v2 리포트 — 공급자 호출 
   let provider: StubWeatherReportProvider;
   let reader: StubWeatherReminderReader;
   let publisher: StubNotificationBatchPublisher;
+  let clock: FixedClock;
   let strategy: SendWeatherMorningUseCase;
 
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(NOW);
+    clock = new FixedClock(Temporal.Instant.fromEpochMilliseconds(NOW.getTime()));
     memory = new InMemoryCacheStore({ defaultTtlMs: 60_000, maxItems: 100 });
     provider = new StubWeatherReportProvider();
     provider.report = weatherReportFixture(NOW);
@@ -230,6 +234,7 @@ describe("SendWeatherMorningUseCase + weather v2 리포트 — 공급자 호출 
         timezoneResolver: new StubTimezoneResolver(),
         logger: mock<ApplicationLoggerPort>(),
       }),
+      clock,
       logger: mock<ApplicationLoggerPort>(),
     });
   });
@@ -257,6 +262,7 @@ describe("SendWeatherMorningUseCase + weather v2 리포트 — 공급자 호출 
     await strategy.execute(ctx());
     const later = new Date(NOW.getTime() + 2 * HOUR_MS);
     vi.setSystemTime(later);
+    clock.advanceBy({ hours: 2 });
     provider.failure = new Error("weatherkit 503");
     reader.usersWithLocation = [
       { id: "seoul", preference: null, location: SEOUL },

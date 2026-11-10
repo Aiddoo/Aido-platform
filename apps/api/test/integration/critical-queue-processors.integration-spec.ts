@@ -15,11 +15,10 @@ import {
 import {
   RETENTION_QUEUE,
   RetentionJobName,
-} from "#api/modules/notification/retention/infrastructure/jobs/retention-queue.constants";
+} from "#api/modules/notification/retention/infrastructure/jobs/retention.queue";
 import { CreateBroadcastCampaignUseCase } from "#api/modules/operations/broadcasts/application/use-cases/create-broadcast-campaign.use-case";
 import { BROADCAST_FAN_OUT_QUEUE } from "#api/modules/operations/broadcasts/infrastructure/jobs/broadcast-fan-out.queue";
 import { pushDispatch, pushToken, user, userPreference } from "#api/platform/database/schema/index";
-import type { EnqueueJobOptions } from "#api/shared/application/ports/job-runtime.port";
 import type { TestDatabaseClient } from "#test/setup/test-database";
 import { createUserDatabaseFixture } from "#test/setup/user-database-fixture";
 
@@ -27,15 +26,6 @@ import {
   type CriticalQueueProcessorHarness,
   createCriticalQueueProcessorHarness,
 } from "./helpers/critical-queue-processor.harness.js";
-
-const JOB_OPTIONS: EnqueueJobOptions = {
-  retryLimit: 1,
-  retryDelaySeconds: 1,
-  retryBackoff: false,
-  expireInSeconds: 30,
-  retentionSeconds: 60 * 60,
-  deleteAfterSeconds: 60 * 60,
-};
 
 const BROADCAST_TIMEOUT_MS = 180_000;
 /** retention worker는 정해진 시각 작업이라 15초마다 polling한다. */
@@ -212,10 +202,10 @@ describe("핵심 큐 프로세서 컴포넌트 테스트 (실제 PostgreSQL + pg
       });
 
       // When
-      await harness.runtime.enqueue(
+      await harness.jobQueue.enqueue(
         RETENTION_QUEUE,
         { name: RetentionJobName.STAGE_SWEEP, data: {} },
-        { ...JOB_OPTIONS, idempotencyKey: `retention-sweep:${recipient.id}` },
+        { idempotencyKey: `retention-sweep:${recipient.id}` },
       );
 
       // Then

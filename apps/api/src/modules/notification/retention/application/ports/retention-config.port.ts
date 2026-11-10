@@ -1,6 +1,4 @@
-export const RETENTION_CONFIG = Symbol("RETENTION_CONFIG");
-
-export interface RetentionConfigPort {
-  readonly enabled: boolean;
-  readonly treatmentPercent: number;
+export abstract class RetentionConfigPort {
+  abstract readonly enabled: boolean;
+  abstract readonly treatmentPercent: number;
 }

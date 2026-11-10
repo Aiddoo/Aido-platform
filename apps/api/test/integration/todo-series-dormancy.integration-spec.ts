@@ -29,10 +29,10 @@ import {
 } from "#api/platform/database/schema/index";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { DateClock } from "#test/doubles/platform/date-clock";
+import { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
 import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";
 import { StubCurrentUserAccess } from "#test/fixtures/auth-credential.fixture";
 import { TodoCategoryFixture, UserFixture } from "#test/fixtures/index";
-import { FakeJobRuntime } from "#test/mocks/fake-job-runtime";
 import { createDatabaseTransactionFixture, createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
@@ -75,7 +75,7 @@ describe("반복 할 일 휴면·복귀 (실제 PostgreSQL)", () => {
   });
   let client: TestDatabaseClient;
   let fixture: ReturnType<typeof createDatabaseTransactionFixture>;
-  let runtime: FakeJobRuntime;
+  let jobQueue: InMemoryJobQueue;
   let userId: string;
   const premiumUserIds = new Set<string>();
   let categoryId: number;
@@ -89,7 +89,7 @@ describe("반복 할 일 휴면·복귀 (실제 PostgreSQL)", () => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(RETURNED_AT);
     fixture = createDatabaseTransactionFixture(client);
-    runtime = new FakeJobRuntime();
+    jobQueue = new InMemoryJobQueue();
     const seeded = await seedUser("dormant@example.com", "DORMANT1", {
       lastActiveAt: RETURNED_AT,
     });
@@ -137,7 +137,7 @@ describe("반복 할 일 휴면·복귀 (실제 PostgreSQL)", () => {
       seriesRepository: new DrizzleTodoSeriesRepository(fixture.txHost),
       materializer: new MaterializeTodoOccurrencesUseCase({
         todoRepository,
-        todoReminder: new TodoReminderSchedulerAdapter(runtime),
+        todoReminder: new TodoReminderSchedulerAdapter(jobQueue, new DateClock()),
         applyTodoEvents: { execute: async () => undefined },
       }),
       effects: new PublishTodoCreationUseCase({
@@ -490,7 +490,7 @@ describe("반복 할 일 휴면·복귀 (실제 PostgreSQL)", () => {
       const today = await client.query.todo.findFirst({
         where: { seriesId: id, occurrenceDate: { eq: new Date(TODAY) } },
       });
-      const keys = runtime.enqueueCalls.map((call) => call.options.idempotencyKey);
+      const keys = jobQueue.jobs.map((job) => job.options.idempotencyKey);
       expect(today).toBeDefined();
       expect(keys.filter((key) => key?.startsWith(`reminder_${today?.id}_`))).toEqual([]);
       expect(keys).toHaveLength((HORIZON_ROWS - 1) * 2);

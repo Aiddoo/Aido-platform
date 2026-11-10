@@ -1,2 +1,4 @@
-/** 헬스 체크 등 큐 런타임 소비자를 위한 경량 공개 계약. */
-export { EMAIL_DELIVERY_QUEUE } from "./email/infrastructure/jobs/email-delivery-queue.constants.js";
+import { EMAIL_DELIVERY_QUEUE as EMAIL_DELIVERY_QUEUE_DEFINITION } from "./email/infrastructure/jobs/email-delivery.queue.js";
+
+// 헬스 체크가 쓰던 큐 이름 문자열 export다. 정의는 email slice의 email-delivery.queue.ts에 있다
+export const EMAIL_DELIVERY_QUEUE = EMAIL_DELIVERY_QUEUE_DEFINITION.name;

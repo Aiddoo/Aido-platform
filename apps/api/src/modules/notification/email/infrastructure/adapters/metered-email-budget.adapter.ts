@@ -5,15 +5,16 @@ import {
 } from "#api/platform/metering/interfaces/usage-meter.interface";
 import { crossedThresholds, usagePeriod } from "#api/platform/metering/usage-period";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
+import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
-import { now } from "#api/shared/domain/date/utils/core";
+import { instantToDate } from "#api/shared/domain/time/instant";
 
 import { EmailAlertKey } from "../../application/email.alerts.js";
 import { EmailDeliveryLogEvent } from "../../application/email.log-events.js";
-import type {
+import {
   EmailBudgetPort,
-  EmailBudgetReservation,
+  type EmailBudgetReservation,
 } from "../../application/ports/email-budget.port.js";
 import type { EmailQuotaScope } from "../../application/ports/email-sender.port.js";
 import {
@@ -21,28 +22,30 @@ import {
   resolveEmailBudgetLimits,
 } from "../../domain/email-budget.domain-service.js";
 import type { EmailPriority } from "../../domain/email-delivery.constants.js";
-import { RESEND_FREE_PLAN_EMAIL_BUDGET } from "./resend-email-budget.constants.js";
+import { EMAIL_SEND_BUDGET } from "./email-budget.constants.js";
 
 export const EMAIL_SENT_METER = "email.sent";
 const EMAIL_EXHAUSTED_ALERT_METER = "email.alert.exhausted";
-const EMAIL_BUDGET_ALERT_THRESHOLDS = emailBudgetAlertThresholds(RESEND_FREE_PLAN_EMAIL_BUDGET);
+const EMAIL_BUDGET_ALERT_THRESHOLDS = emailBudgetAlertThresholds(EMAIL_SEND_BUDGET);
 
 interface MeteredEmailBudgetDependencies {
   readonly meter: Pick<UsageMeterPort, "tryReserve" | "release" | "read" | "add">;
-  readonly alert: OperationalAlertPort;
+  readonly alert: Pick<OperationalAlertPort, "raise">;
+  readonly clock: Pick<ClockPort, "now">;
   readonly logger: Pick<ApplicationLoggerPort, "warn">;
 }
 
 /** EmailBudgetPort의 사용량 계량기 어댑터. 일·월 건수를 원자적으로 예약한다. */
-export class MeteredEmailBudgetAdapter implements EmailBudgetPort {
+export class MeteredEmailBudgetAdapter extends EmailBudgetPort {
   readonly #dependencies: MeteredEmailBudgetDependencies;
 
   constructor(dependencies: MeteredEmailBudgetDependencies) {
+    super();
     this.#dependencies = dependencies;
   }
 
   async reserve(priority: EmailPriority): Promise<EmailBudgetReservation> {
-    const limits = resolveEmailBudgetLimits(priority, RESEND_FREE_PLAN_EMAIL_BUDGET);
+    const limits = resolveEmailBudgetLimits(priority, EMAIL_SEND_BUDGET);
     const { day, month } = this.#keys();
     try {
       const daily = await this.#dependencies.meter.tryReserve(day, 1, limits.daily);
@@ -89,8 +92,8 @@ export class MeteredEmailBudgetAdapter implements EmailBudgetPort {
     const { day, month } = this.#keys();
     const [key, limit] =
       scope === "daily"
-        ? [day, RESEND_FREE_PLAN_EMAIL_BUDGET.quota.daily]
-        : [month, RESEND_FREE_PLAN_EMAIL_BUDGET.quota.monthly];
+        ? [day, EMAIL_SEND_BUDGET.quota.daily]
+        : [month, EMAIL_SEND_BUDGET.quota.monthly];
     try {
       const [total = 0] = await this.#dependencies.meter.read([key]);
       if (total < limit) {
@@ -108,7 +111,7 @@ export class MeteredEmailBudgetAdapter implements EmailBudgetPort {
   }
 
   #keys(): { day: UsageKey; month: UsageKey } {
-    const at = now();
+    const at = instantToDate(this.#dependencies.clock.now());
     return {
       day: { meter: EMAIL_SENT_METER, periodKey: usagePeriod.day(at), subject: USAGE_SUBJECT_ALL },
       month: {

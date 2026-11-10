@@ -2,18 +2,16 @@ import { USER_PREFERENCE_DEFAULTS } from "@aido/api/vocabulary";
 
 import { computeEffectiveStreak } from "#api/modules/identity/identity-settings.public";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
-import { addDays } from "#api/shared/domain/date/utils/arithmetic";
 import { toDateString } from "#api/shared/domain/date/utils/format";
-import { todayInTimezone } from "#api/shared/domain/date/utils/timezone";
-import { toSupportedLocale } from "#api/shared/domain/locale";
 
 import type { NotificationHistoryReader } from "../../../inbox/application/notification-history.reader.js";
 import { createEveningReminderNotificationMessage } from "../../../push/application/messages/notification.messages.js";
 import type { PublishNotificationUseCase } from "../../../push/application/use-cases/publish-notification.use-case.js";
+import { resolveRecipientLocale } from "../../../push/domain/recipient-locale.domain-service.js";
 import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/notification-campaign.constants.js";
 import type { TimezoneContext } from "../../domain/timezone-context.read-model.js";
 import { type ScheduledReminderReaderPort } from "../ports/scheduled-reminder-reader.port.js";
-import type { TimezoneReminderStrategy } from "../ports/timezone-reminder-strategy.port.js";
+import type { TimezoneReminderStrategyPort } from "../ports/timezone-reminder-strategy.port.js";
 import type { UserWithTodosAndStreak } from "../read-models/scheduler.read-model.js";
 import { NotificationRemindersLogEvent } from "../reminders.log-events.js";
 
@@ -27,7 +25,7 @@ interface EveningReminderStrategyDependencies {
   readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
 
-export class SendEveningReminderUseCase implements TimezoneReminderStrategy {
+export class SendEveningReminderUseCase implements TimezoneReminderStrategyPort {
   readonly #dependencies: EveningReminderStrategyDependencies;
 
   constructor(dependencies: EveningReminderStrategyDependencies) {
@@ -38,9 +36,7 @@ export class SendEveningReminderUseCase implements TimezoneReminderStrategy {
     sent: number;
     recipientUserIds: string[];
   }> {
-    const { tz, localHour, localMinute, userId } = ctx;
-    const today = todayInTimezone(tz);
-    const tomorrow = addDays(1, today);
+    const { tz, localHour, localMinute, userId, today, tomorrow } = ctx;
 
     // 프리미엄 사용자: 커스텀 시간에 리마인더 발송
     const premiumUsers = await this.#dependencies.reader.findPremiumEveningReminderUsers({
@@ -104,7 +100,10 @@ export class SendEveningReminderUseCase implements TimezoneReminderStrategy {
         total,
         streak,
         isStreakAtRisk,
-        locale: toSupportedLocale(user.preference?.locale),
+        locale: resolveRecipientLocale({
+          storedLocale: user.preference?.locale ?? null,
+          lastRequestLocale: null,
+        }),
         variantContext: {
           campaignKey: SCHEDULER_CAMPAIGN_KEY.EVENING_REMINDER,
           recipientId: user.id,

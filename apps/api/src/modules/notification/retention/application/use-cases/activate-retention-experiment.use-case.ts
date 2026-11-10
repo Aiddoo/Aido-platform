@@ -1,13 +1,15 @@
-import { type UnitOfWorkPort } from "#api/shared/application/ports/index";
-import { now } from "#api/shared/domain/date/utils/core";
+import type { ClockPort } from "#api/shared/application/ports/clock.port";
+import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
+import { instantToDate } from "#api/shared/domain/time/instant";
 
-import { type RetentionConfigPort } from "../ports/retention-config.port.js";
-import { type RetentionRepositoryPort } from "../ports/retention.repository.port.js";
+import type { RetentionConfigPort } from "../ports/retention-config.port.js";
+import type { RetentionRepositoryPort } from "../ports/retention.repository.port.js";
 
 interface ActivateRetentionExperimentDependencies {
   readonly repository: Pick<RetentionRepositoryPort, "activate">;
   readonly config: Pick<RetentionConfigPort, "enabled">;
   readonly unitOfWork: Pick<UnitOfWorkPort, "run">;
+  readonly clock: ClockPort;
 }
 
 export class ActivateRetentionExperimentUseCase {
@@ -21,8 +23,9 @@ export class ActivateRetentionExperimentUseCase {
     if (!this.#dependencies.config.enabled) {
       return;
     }
+    const startedAt = instantToDate(this.#dependencies.clock.now());
     await this.#dependencies.unitOfWork.run(() =>
-      this.#dependencies.repository.activate(userId, now()),
+      this.#dependencies.repository.activate(userId, startedAt),
     );
   }
 }

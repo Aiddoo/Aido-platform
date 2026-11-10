@@ -29,9 +29,9 @@ export interface DeliverEmailInput {
 }
 
 interface DeliverEmailDependencies {
-  readonly sender: EmailSenderPort;
+  readonly sender: Pick<EmailSenderPort, "send">;
   readonly budget: Pick<EmailBudgetPort, "release" | "settleProviderQuotaExhausted">;
-  readonly alert: OperationalAlertPort;
+  readonly alert: Pick<OperationalAlertPort, "raise">;
   readonly logger: Pick<ApplicationLoggerPort, "log" | "warn">;
 }
 

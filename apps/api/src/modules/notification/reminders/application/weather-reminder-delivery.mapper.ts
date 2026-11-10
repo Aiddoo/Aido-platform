@@ -1,5 +1,5 @@
 import { toDateString } from "#api/shared/domain/date/utils/format";
-import { type SupportedLocale, toSupportedLocale } from "#api/shared/domain/locale";
+import type { SupportedLocale } from "#api/shared/domain/locale";
 
 import type { NotificationHistoryReader } from "../../inbox/application/notification-history.reader.js";
 import type {
@@ -11,6 +11,7 @@ import type {
   NotificationVariantContext,
 } from "../../push/application/messages/notification-copy-catalog.messages.js";
 import type { PublishNotificationUseCase } from "../../push/application/use-cases/publish-notification.use-case.js";
+import { resolveRecipientLocale } from "../../push/domain/recipient-locale.domain-service.js";
 import { SCHEDULER_CAMPAIGN_KEY } from "../domain/notification-campaign.constants.js";
 import type {
   WeatherFallbackUser,
@@ -32,7 +33,10 @@ interface WeatherReminderRecipient {
 }
 
 export function weatherRecipientLocale(user: WeatherReminderRecipient): SupportedLocale {
-  return toSupportedLocale(user.preference?.locale);
+  return resolveRecipientLocale({
+    storedLocale: user.preference?.locale ?? null,
+    lastRequestLocale: null,
+  });
 }
 
 export function weatherVariantContext(

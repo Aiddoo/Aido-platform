@@ -1,40 +1,28 @@
 import { Module } from "@nestjs/common";
+import { MailModule } from "@nestjs/mail";
 
 import { TypedConfigService } from "#api/platform/config/services/config.service";
-import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
 
-import { EMAIL_DELIVERY_QUEUE_PORT } from "./application/ports/email-delivery-queue.port.js";
-import { EMAIL_SENDER } from "./application/ports/email-sender.port.js";
 import { SendTransactionalEmailUseCase } from "./application/use-cases/send-transactional-email.use-case.js";
-import { EmailDeliveryQueueAdapter } from "./infrastructure/adapters/email-delivery-queue.adapter.js";
-import { createEmailSender } from "./infrastructure/adapters/email-sender-factory.adapter.js";
-import { EmailDeliveryQueueProcessor } from "./infrastructure/jobs/email-delivery-queue.processor.js";
 import {
-  deliverEmailUseCaseProvider,
-  emailBudgetProvider,
-  sendTransactionalEmailUseCaseProvider,
-} from "./notification-email.providers.js";
+  createEmailTemplateEngine,
+  createMailModuleOptions,
+} from "./infrastructure/adapters/nest-mail-module.config.js";
+import { EmailDeliveryQueueProcessor } from "./infrastructure/jobs/email-delivery-queue.processor.js";
+import { NOTIFICATION_EMAIL_PROVIDERS } from "./notification-email.providers.js";
 
-/**
- * 이메일 모듈 (클린아키텍처 capability — 컨트롤러 없음)
- *
- * 트랜잭셔널 이메일(인증·비밀번호·문의·신고)을 `email-delivery.v1` 큐로 비동기 발송한다.
- * 전송 벤더는 EMAIL_SENDER 포트 하나이고 EMAIL_PROVIDER 설정으로 어댑터를 고른다.
- * TransactionalEmailSender를 export하여 소비 모듈이 주입한다.
- */
+// 트랜잭셔널 메일(인증·비밀번호·문의·신고)을 템플릿 파일로 렌더해 email-delivery.v1 큐로 보낸다
 @Module({
-  providers: [
-    emailBudgetProvider,
-    sendTransactionalEmailUseCaseProvider,
-    deliverEmailUseCaseProvider,
-    EmailDeliveryQueueProcessor,
-    { provide: EMAIL_DELIVERY_QUEUE_PORT, useClass: EmailDeliveryQueueAdapter },
-    {
-      provide: EMAIL_SENDER,
-      useFactory: createEmailSender,
-      inject: [TypedConfigService, OutboundPolicyRegistry],
-    },
+  imports: [
+    // Mailer는 이 slice만 쓰므로 전역으로 열지 않는다
+    MailModule.forRootAsync({
+      isGlobal: false,
+      templates: createEmailTemplateEngine(),
+      inject: [TypedConfigService],
+      useFactory: createMailModuleOptions,
+    }),
   ],
+  providers: [...NOTIFICATION_EMAIL_PROVIDERS, EmailDeliveryQueueProcessor],
   exports: [SendTransactionalEmailUseCase],
 })
 export class NotificationEmailModule {}

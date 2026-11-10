@@ -23,6 +23,7 @@ const MarketingConsentReconfirmJobSchema = z.object({
 });
 
 // 야간 사용자는 건너뛰고 남겨 두므로, 어느 시간대든 낮 시간에 한 번은 돌도록 매시 정각에 돈다.
+// 하루 한 번(10:00 KST)이면 그 시각이 현지 야간인 유럽·인도·미국 동부(서머타임) 사용자는 영영 받지 못한다.
 // 대상이 없으면 인덱스 조회 한 번으로 끝나고, 놓친 실행은 다음 실행이 같은 조건으로 이어 받는다
 export const MARKETING_CONSENT_RECONFIRM_QUEUE = defineQueue({
   name: "notification.marketing-consent-reconfirm.v1",

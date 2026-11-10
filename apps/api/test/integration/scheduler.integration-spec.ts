@@ -1,8 +1,8 @@
 import { Test, type TestingModule } from "@nestjs/testing";
 import { vi } from "vitest";
 
-import { SCHEDULER_PREFERENCE_READER } from "#api/modules/notification/reminders/application/ports/scheduler-preference-reader.port";
-import { TIMEZONE_REMINDER_ENQUEUER } from "#api/modules/notification/reminders/application/ports/timezone-reminder-enqueuer.port";
+import { SchedulerPreferenceReaderPort } from "#api/modules/notification/reminders/application/ports/scheduler-preference-reader.port";
+import { TimezoneReminderEnqueuerPort } from "#api/modules/notification/reminders/application/ports/timezone-reminder-enqueuer.port";
 import {
   SendEveningReminderUseCase,
   SendLunchNudgeUseCase,
@@ -20,10 +20,13 @@ import {
 } from "#api/modules/notification/reminders/application/use-cases/reminder-strategies.constants";
 import { SweepTimezoneRemindersUseCase } from "#api/modules/notification/reminders/application/use-cases/sweep-timezone-reminders.use-case";
 import { NOTIFICATION_SCHEDULE } from "#api/modules/notification/reminders/domain/notification-schedule.domain-service";
+import { provideSweepTimezoneRemindersUseCase } from "#api/modules/notification/reminders/notification-reminders.providers";
+import { ClockPort } from "#api/shared/application/ports/clock.port";
+import { SweepCursorPort } from "#api/shared/application/ports/sweep-cursor.port";
+import { InMemorySweepCursor } from "#test/doubles/notification/in-memory-sweep-cursor";
+import { DateClock } from "#test/doubles/platform/date-clock";
 import { TEST_CUID } from "#test/fixtures/index";
 import { suppressLogger } from "#test/setup/suppress-logger";
-
-import { sweepTimezoneRemindersUseCaseProvider } from "../../src/modules/notification/reminders/notification-reminders.providers.js";
 
 describe("SweepTimezoneRemindersUseCase 통합 테스트 (Mock 포트)", () => {
   let module: TestingModule;
@@ -71,22 +74,23 @@ describe("SweepTimezoneRemindersUseCase 통합 테스트 (Mock 포트)", () => {
   };
 
   const mockEnqueuer = {
-    registerSweepScheduler: vi.fn(),
     enqueueReminderHourChanged: vi.fn(),
     enqueueSocialDigest: vi.fn(),
   };
 
-  beforeAll(async () => {
+  beforeAll(() => {
     suppressLogger();
+  });
 
+  // 시각이 테스트마다 앞뒤로 움직이므로 따라잡기 커서를 테스트마다 새로 둔다
+  beforeEach(async () => {
     module = await Test.createTestingModule({
       providers: [
-        sweepTimezoneRemindersUseCaseProvider,
-        {
-          provide: SCHEDULER_PREFERENCE_READER,
-          useValue: mockPreferenceReader,
-        },
-        { provide: TIMEZONE_REMINDER_ENQUEUER, useValue: mockEnqueuer },
+        provideSweepTimezoneRemindersUseCase(),
+        { provide: SchedulerPreferenceReaderPort, useValue: mockPreferenceReader },
+        { provide: TimezoneReminderEnqueuerPort, useValue: mockEnqueuer },
+        { provide: SweepCursorPort, useValue: new InMemorySweepCursor() },
+        { provide: ClockPort, useValue: new DateClock() },
         { provide: SendMorningReminderUseCase, useValue: mockMorningReminder },
         { provide: SendEveningReminderUseCase, useValue: mockEveningReminder },
         { provide: SendOnboardingUseCase, useValue: mockOnboarding },
@@ -109,8 +113,11 @@ describe("SweepTimezoneRemindersUseCase 통합 테스트 (Mock 포트)", () => {
     orchestrator = module.get<SweepTimezoneRemindersUseCase>(SweepTimezoneRemindersUseCase);
   });
 
-  afterAll(async () => {
+  afterEach(async () => {
     await module.close();
+  });
+
+  afterAll(() => {
     vi.restoreAllMocks();
   });
 

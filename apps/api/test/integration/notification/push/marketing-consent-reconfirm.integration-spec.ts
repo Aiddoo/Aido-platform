@@ -143,6 +143,28 @@ describe("광고성 수신 동의 2년 재확인 (실제 PostgreSQL)", () => {
     );
   });
 
+  it("10:00 KST가 현지 야간인 사용자는 남겨 두었다가 현지 낮의 매시 실행에서 알린다", async () => {
+    // Given: 런던은 10:00 KST(01:00Z)에 01:00, 19:00 KST(10:00Z)에 10:00이다
+    const userId = await givenUser("RECONF08", {
+      marketingAgreedAt: new Date("2023-01-01T00:00:00.000Z"),
+    });
+    await client
+      .update(userPreference)
+      .set({ timezone: "Europe/London" })
+      .where(eq(userPreference.userId, userId));
+
+    // When
+    const atTenKst = await reconfirm.execute({ now: new Date("2026-12-01T01:00:00.000Z") });
+    const atLondonMorning = await reconfirm.execute({
+      now: new Date("2026-12-01T10:00:00.000Z"),
+    });
+
+    // Then
+    expect(atTenKst.notifiedCount).toBe(0);
+    expect(atLondonMorning.notifiedCount).toBe(1);
+    expect(await reconfirmNotices(userId)).toHaveLength(1);
+  });
+
   it("두 실행이 같은 사용자를 동시에 표시하면 행 잠금 뒤 한 실행만 얻는다", async () => {
     // Given
     const userId = await givenUser("RECONF07", {

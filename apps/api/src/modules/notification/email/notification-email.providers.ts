@@ -1,61 +1,82 @@
-import { Logger, type FactoryProvider } from "@nestjs/common";
+import { Logger, type Provider } from "@nestjs/common";
+import { Mailer } from "@nestjs/mail";
 
+import { TypedConfigService } from "#api/platform/config/services/config.service";
+import { loggerFor, provideUseCase } from "#api/platform/di/provide-use-case";
 import {
   USAGE_METER,
   type UsageMeterPort,
 } from "#api/platform/metering/interfaces/usage-meter.interface";
-import {
-  OPERATIONAL_ALERT,
-  type OperationalAlertPort,
-} from "#api/shared/application/ports/operational-alert.port";
+import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
+import { ClockPort } from "#api/shared/application/ports/clock.port";
+import { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 
-import { EMAIL_BUDGET_PORT, type EmailBudgetPort } from "./application/ports/email-budget.port.js";
-import { EMAIL_DELIVERY_QUEUE_PORT } from "./application/ports/email-delivery-queue.port.js";
-import { EMAIL_SENDER } from "./application/ports/email-sender.port.js";
+import { EmailBudgetPort } from "./application/ports/email-budget.port.js";
+import { EmailDeliveryQueuePort } from "./application/ports/email-delivery-queue.port.js";
+import { EmailSenderPort } from "./application/ports/email-sender.port.js";
+import { EmailTemplateRendererPort } from "./application/ports/email-template-renderer.port.js";
 import { DeliverEmailUseCase } from "./application/use-cases/deliver-email.use-case.js";
 import { SendTransactionalEmailUseCase } from "./application/use-cases/send-transactional-email.use-case.js";
+import { selectEmailSender } from "./infrastructure/adapters/email-sender-factory.adapter.js";
 import { MeteredEmailBudgetAdapter } from "./infrastructure/adapters/metered-email-budget.adapter.js";
+import { NestMailEmailSenderAdapter } from "./infrastructure/adapters/nest-mail-email-sender.adapter.js";
+import { emailProviderApiKey } from "./infrastructure/adapters/nest-mail-module.config.js";
+import { EmailDeliveryQueueAdapter } from "./infrastructure/jobs/email-delivery-queue.adapter.js";
 
-export const emailBudgetProvider: FactoryProvider<EmailBudgetPort> = {
-  provide: EMAIL_BUDGET_PORT,
-  inject: [USAGE_METER, OPERATIONAL_ALERT],
-  useFactory: (meter: UsageMeterPort, alert: OperationalAlertPort) =>
-    new MeteredEmailBudgetAdapter({
-      meter,
-      alert,
-      logger: new Logger(MeteredEmailBudgetAdapter.name),
-    }),
-};
+const NOTIFICATION_EMAIL_QUEUE_PROVIDERS = [
+  { provide: EmailDeliveryQueuePort, useClass: EmailDeliveryQueueAdapter },
+] satisfies Provider[];
 
-export const sendTransactionalEmailUseCaseProvider: FactoryProvider<SendTransactionalEmailUseCase> =
+// 렌더는 공급자와 상관없이 Mailer가 맡고, 전송 어댑터는 EMAIL_PROVIDER로 고른다
+const NOTIFICATION_EMAIL_EXTERNAL_PROVIDERS = [
   {
-    provide: SendTransactionalEmailUseCase,
-    inject: [EMAIL_DELIVERY_QUEUE_PORT, EMAIL_SENDER, EMAIL_BUDGET_PORT],
-    useFactory: (
-      queue: ConstructorParameters<typeof SendTransactionalEmailUseCase>[0]["queue"],
-      sender: ConstructorParameters<typeof SendTransactionalEmailUseCase>[0]["sender"],
-      budget: ConstructorParameters<typeof SendTransactionalEmailUseCase>[0]["budget"],
-    ) =>
-      new SendTransactionalEmailUseCase({
-        queue,
-        sender,
-        budget,
-        logger: new Logger(SendTransactionalEmailUseCase.name),
+    provide: NestMailEmailSenderAdapter,
+    inject: [Mailer, OutboundPolicyRegistry, TypedConfigService],
+    useFactory: (mailer: Mailer, policies: OutboundPolicyRegistry, config: TypedConfigService) =>
+      new NestMailEmailSenderAdapter({
+        mailer,
+        policies,
+        isConfigured: emailProviderApiKey(config) != null,
       }),
-  };
+  },
+  { provide: EmailTemplateRendererPort, useExisting: NestMailEmailSenderAdapter },
+  {
+    provide: EmailSenderPort,
+    inject: [TypedConfigService, NestMailEmailSenderAdapter],
+    useFactory: (config: TypedConfigService, nestMail: NestMailEmailSenderAdapter) =>
+      selectEmailSender(config.email.provider, nestMail),
+  },
+  {
+    provide: EmailBudgetPort,
+    inject: [USAGE_METER, OperationalAlertPort, ClockPort],
+    useFactory: (meter: UsageMeterPort, alert: OperationalAlertPort, clock: ClockPort) =>
+      new MeteredEmailBudgetAdapter({
+        meter,
+        alert,
+        clock,
+        logger: new Logger(MeteredEmailBudgetAdapter.name),
+      }),
+  },
+] satisfies Provider[];
 
-export const deliverEmailUseCaseProvider: FactoryProvider<DeliverEmailUseCase> = {
-  provide: DeliverEmailUseCase,
-  inject: [EMAIL_SENDER, EMAIL_BUDGET_PORT, OPERATIONAL_ALERT],
-  useFactory: (
-    sender: ConstructorParameters<typeof DeliverEmailUseCase>[0]["sender"],
-    budget: ConstructorParameters<typeof DeliverEmailUseCase>[0]["budget"],
+const NOTIFICATION_EMAIL_USE_CASE_PROVIDERS = [
+  provideUseCase(SendTransactionalEmailUseCase, {
+    queue: EmailDeliveryQueuePort,
+    sender: EmailSenderPort,
+    budget: EmailBudgetPort,
+    renderer: EmailTemplateRendererPort,
+    logger: loggerFor(SendTransactionalEmailUseCase),
+  }),
+  provideUseCase(DeliverEmailUseCase, {
+    sender: EmailSenderPort,
+    budget: EmailBudgetPort,
     alert: OperationalAlertPort,
-  ) =>
-    new DeliverEmailUseCase({
-      sender,
-      budget,
-      alert,
-      logger: new Logger(DeliverEmailUseCase.name),
-    }),
-};
+    logger: loggerFor(DeliverEmailUseCase),
+  }),
+] satisfies Provider[];
+
+export const NOTIFICATION_EMAIL_PROVIDERS = [
+  ...NOTIFICATION_EMAIL_QUEUE_PROVIDERS,
+  ...NOTIFICATION_EMAIL_EXTERNAL_PROVIDERS,
+  ...NOTIFICATION_EMAIL_USE_CASE_PROVIDERS,
+] satisfies Provider[];

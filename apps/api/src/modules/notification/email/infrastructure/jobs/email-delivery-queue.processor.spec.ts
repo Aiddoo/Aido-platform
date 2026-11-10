@@ -1,21 +1,27 @@
-import { Logger } from "@nestjs/common";
-import { vi } from "vitest";
-import { mock, type MockProxy } from "vitest-mock-extended";
+import { mock } from "vitest-mock-extended";
 
 import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { EncryptionService } from "#api/platform/encryption/encryption.service";
-import type { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
-import { FakeJobRuntime } from "#test/mocks/fake-job-runtime";
-
-import { createVerificationCodeEmail } from "../../application/email-message.mapper.js";
-import type { DeliverEmailUseCase } from "../../application/use-cases/deliver-email.use-case.js";
-import { EmailDeliveryQueueAdapter } from "../adapters/email-delivery-queue.adapter.js";
-import { EmailLogEvent } from "../adapters/email-provider.log-events.js";
+import { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
+import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";
 import {
-  EMAIL_DELIVERY_JOB_POLICY,
-  EMAIL_DELIVERY_QUEUE,
-} from "./email-delivery-queue.constants.js";
+  createEmailMessageFixture,
+  EMAIL_MESSAGE_FIXTURE_CODE,
+  EMAIL_MESSAGE_FIXTURE_RECIPIENT,
+} from "#test/fixtures/notification/email-message.fixture";
+
+import type { DeliverEmailInput } from "../../application/use-cases/deliver-email.use-case.js";
+import { EmailDeliveryQueueAdapter } from "./email-delivery-queue.adapter.js";
 import { EmailDeliveryQueueProcessor } from "./email-delivery-queue.processor.js";
+import { EMAIL_DELIVERY_QUEUE, type EmailDeliveryJob } from "./email-delivery.queue.js";
+
+class RecordingDeliverEmail {
+  readonly inputs: DeliverEmailInput[] = [];
+
+  async execute(input: DeliverEmailInput): Promise<void> {
+    this.inputs.push(input);
+  }
+}
 
 describe("EmailDeliveryQueueProcessor", () => {
   const encryption = new EncryptionService(
@@ -24,35 +30,26 @@ describe("EmailDeliveryQueueProcessor", () => {
       tokenEncryptionSalt: undefined,
     }),
   );
-  let runtime: FakeJobRuntime;
-  let alert: MockProxy<OperationalAlertPort>;
-  let deliveries: Parameters<DeliverEmailUseCase["execute"]>[0][];
+  let jobQueue: InMemoryJobQueue;
+  let alert: RecordingOperationalAlert;
+  let deliverEmail: RecordingDeliverEmail;
   let processor: EmailDeliveryQueueProcessor;
 
   beforeEach(() => {
-    runtime = new FakeJobRuntime();
-    alert = mock<OperationalAlertPort>();
-    deliveries = [];
-    const deliverEmail = mock<DeliverEmailUseCase>();
-    deliverEmail.execute.mockImplementation(async (input) => void deliveries.push(input));
-    processor = new EmailDeliveryQueueProcessor(deliverEmail, encryption, alert, runtime);
-    vi.spyOn(Logger.prototype, "warn").mockImplementation(() => undefined);
+    jobQueue = new InMemoryJobQueue();
+    alert = new RecordingOperationalAlert();
+    deliverEmail = new RecordingDeliverEmail();
+    processor = new EmailDeliveryQueueProcessor(deliverEmail, encryption, alert, jobQueue);
   });
 
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
-  async function sealedJob() {
-    const message = createVerificationCodeEmail("user@example.com", {
-      code: "123456",
-      expiryMinutes: 10,
-    });
-    await new EmailDeliveryQueueAdapter(runtime, encryption).enqueue({
+  async function sealedJob(): Promise<EmailDeliveryJob> {
+    await new EmailDeliveryQueueAdapter(jobQueue, encryption).enqueue({
       deliveryId: "delivery-1",
-      message,
+      message: createEmailMessageFixture(),
     });
-    return runtime.enqueueCalls[0]?.data;
+    const parsed = EMAIL_DELIVERY_QUEUE.payloadSchema.parse(jobQueue.jobs.at(-1)?.payload);
+    jobQueue.clear();
+    return parsed;
   }
 
   it("잡을 풀어 같은 메시지를 deliveryId를 멱등 키로 해서 DeliverEmail에 넘긴다", async () => {
@@ -63,11 +60,11 @@ describe("EmailDeliveryQueueProcessor", () => {
     await processor.process(1, job);
 
     // Then
-    const [delivery] = deliveries;
+    const [delivery] = deliverEmail.inputs;
     expect(delivery?.deliveryId).toBe("delivery-1");
     expect(delivery?.message.idempotencyKey).toBe("delivery-1");
-    expect(delivery?.message.to).toBe("user@example.com");
-    expect(delivery?.message.text).toContain("123456");
+    expect(delivery?.message.to).toBe(EMAIL_MESSAGE_FIXTURE_RECIPIENT);
+    expect(delivery?.message.text).toContain(EMAIL_MESSAGE_FIXTURE_CODE);
     expect(delivery?.message.kind).toBe("verification");
     expect(delivery?.isFinalAttempt).toBe(false);
   });
@@ -77,26 +74,14 @@ describe("EmailDeliveryQueueProcessor", () => {
     const job = await sealedJob();
 
     // When
-    await processor.process(EMAIL_DELIVERY_JOB_POLICY.retryLimit, job);
-    await processor.process(EMAIL_DELIVERY_JOB_POLICY.retryLimit + 1, job);
+    await processor.process(EMAIL_DELIVERY_QUEUE.retry.retryLimit, job);
+    await processor.process(EMAIL_DELIVERY_QUEUE.retry.retryLimit + 1, job);
 
     // Then
-    expect(deliveries.map((delivery) => delivery.isFinalAttempt)).toEqual([false, true]);
+    expect(deliverEmail.inputs.map((delivery) => delivery.isFinalAttempt)).toEqual([false, true]);
   });
 
-  it("모양이 틀린 잡은 발송 없이 버리고 경고만 남긴다", async () => {
-    // When
-    await processor.process(1, { deliveryId: "x" });
-
-    // Then
-    expect(deliveries).toEqual([]);
-    expect(Logger.prototype.warn).toHaveBeenCalledExactlyOnceWith({
-      event: EmailLogEvent.JOB_INVALID,
-      queueName: EMAIL_DELIVERY_QUEUE,
-    });
-  });
-
-  it("복호화할 수 없는 잡(키 교체 등)은 다시 시도해도 풀리지 않아 발송 없이 버린다", async () => {
+  it("복호화할 수 없는 잡(키 교체 등)은 다시 시도해도 풀리지 않아 발송 없이 버리고 경보를 올린다", async () => {
     // Given
     const job = await sealedJob();
 
@@ -104,23 +89,27 @@ describe("EmailDeliveryQueueProcessor", () => {
     await processor.process(1, { ...job, sealed: "not:a:sealed-value" });
 
     // Then
-    expect(deliveries).toEqual([]);
-    expect(Logger.prototype.warn).toHaveBeenCalledTimes(1);
-    expect(alert.raise).toHaveBeenCalledExactlyOnceWith(
+    expect(deliverEmail.inputs).toEqual([]);
+    expect(alert.alerts).toEqual([
       expect.objectContaining({
         key: "notification.email.delivery-unseal-failed",
         details: expect.objectContaining({ kind: "verification" }),
       }),
-    );
+    ]);
   });
 
-  it("시작하면 email-delivery.v1 worker를 teamSize 2, 2초 폴링으로 등록한다", async () => {
-    // When
+  it("시작하면 email-delivery.v1 worker를 등록해 담긴 잡을 처리한다", async () => {
+    // Given
     await processor.onModuleInit();
+    await new EmailDeliveryQueueAdapter(jobQueue, encryption).enqueue({
+      deliveryId: "delivery-2",
+      message: createEmailMessageFixture(),
+    });
+
+    // When
+    await jobQueue.drain(EMAIL_DELIVERY_QUEUE);
 
     // Then
-    expect(runtime.workCalls).toEqual([
-      { queue: EMAIL_DELIVERY_QUEUE, options: { teamSize: 2, pollingIntervalSeconds: 2 } },
-    ]);
+    expect(deliverEmail.inputs.map((delivery) => delivery.deliveryId)).toEqual(["delivery-2"]);
   });
 });

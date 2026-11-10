@@ -1,8 +1,6 @@
-import type { WeeklyAchievementWriterPort } from "#api/modules/insights/insights-weekly-achievements.public";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { toDateString } from "#api/shared/domain/date/utils/format";
 import { previousIsoWeekRange } from "#api/shared/domain/date/utils/range";
-import { todayInTimezone } from "#api/shared/domain/date/utils/timezone";
 import { DEFAULT_LOCALE } from "#api/shared/domain/locale";
 
 import type { NotificationHistoryReader } from "../../../inbox/application/notification-history.reader.js";
@@ -11,8 +9,9 @@ import type { PublishNotificationUseCase } from "../../../push/application/use-c
 import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/notification-campaign.constants.js";
 import type { TimezoneContext } from "../../domain/timezone-context.read-model.js";
 import { type SchedulerPreferenceReaderPort } from "../ports/scheduler-preference-reader.port.js";
-import type { TimezoneReminderStrategy } from "../ports/timezone-reminder-strategy.port.js";
+import type { TimezoneReminderStrategyPort } from "../ports/timezone-reminder-strategy.port.js";
 import { type WeeklyAchievementStatsReaderPort } from "../ports/weekly-achievement-stats-reader.port.js";
+import type { WeeklyAchievementWriterPort } from "../ports/weekly-achievement-writer.port.js";
 import { NotificationRemindersLogEvent } from "../reminders.log-events.js";
 
 interface WeeklyAchievementStrategyDependencies {
@@ -27,7 +26,7 @@ interface WeeklyAchievementStrategyDependencies {
   readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
 
-export class SendWeeklyAchievementUseCase implements TimezoneReminderStrategy {
+export class SendWeeklyAchievementUseCase implements TimezoneReminderStrategyPort {
   readonly #dependencies: WeeklyAchievementStrategyDependencies;
 
   constructor(dependencies: WeeklyAchievementStrategyDependencies) {
@@ -35,8 +34,7 @@ export class SendWeeklyAchievementUseCase implements TimezoneReminderStrategy {
   }
 
   async execute(ctx: TimezoneContext): Promise<{ sent: number }> {
-    const { tz } = ctx;
-    const today = todayInTimezone(tz);
+    const { tz, today } = ctx;
 
     // 월요일 실행 → 이전 주(월~일) 집계
     const { start, end, isoYear, isoWeek } = previousIsoWeekRange(today);

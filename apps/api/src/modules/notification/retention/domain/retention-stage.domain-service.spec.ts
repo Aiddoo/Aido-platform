@@ -1,4 +1,4 @@
-import { decideRetentionStage } from "./retention-stage.domain-service.js";
+import { decideRetentionStage, isRetentionStageDue } from "./retention-stage.domain-service.js";
 
 describe("decideRetentionStage — D7 리텐션 단계 정책", () => {
   const base = {
@@ -59,5 +59,36 @@ describe("decideRetentionStage — D7 리텐션 단계 정책", () => {
         activeToday: true,
       }),
     ).toEqual({ kind: "EVALUATE_ONLY", reason: "ACTIVE_ON_D7" });
+  });
+
+  describe("isRetentionStageDue — 결정할 때가 된 단계", () => {
+    const startedAt = new Date("2026-07-15T00:00:00.000Z");
+
+    it.each([
+      ["D0", "2026-07-15T01:59:59.999Z", false],
+      ["D0", "2026-07-15T02:00:00.000Z", true],
+      ["D1", "2026-07-16T01:29:00.000Z", false],
+      ["D1", "2026-07-16T01:30:00.000Z", true],
+      ["D3", "2026-07-17T23:00:00.000Z", false],
+      ["D7", "2026-07-23T00:00:00.000Z", true],
+    ] as const)("Asia/Seoul %s는 %s에 %s다", (stage, now, due) => {
+      expect(
+        isRetentionStageDue(stage, { startedAt, now: new Date(now), timezone: "Asia/Seoul" }),
+      ).toBe(due);
+    });
+
+    it("D0는 2시간 전이라도 현지 날짜가 바뀌었으면 건너뛰도록 결정 대상이다", () => {
+      // Given: 현지 23:30 가입, 30분 뒤 자정을 넘김
+      const lateSignup = new Date("2026-07-15T14:30:00.000Z");
+
+      // When / Then
+      expect(
+        isRetentionStageDue("D0", {
+          startedAt: lateSignup,
+          now: new Date("2026-07-15T15:00:00.000Z"),
+          timezone: "Asia/Seoul",
+        }),
+      ).toBe(true);
+    });
   });
 });

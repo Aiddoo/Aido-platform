@@ -2,7 +2,6 @@ import type { ApplicationLoggerPort } from "#api/shared/application/ports/applic
 import { subtractDays } from "#api/shared/domain/date/utils/arithmetic";
 import { diffInDays } from "#api/shared/domain/date/utils/compare";
 import { toDateString } from "#api/shared/domain/date/utils/format";
-import { todayInTimezone } from "#api/shared/domain/date/utils/timezone";
 import { DEFAULT_LOCALE } from "#api/shared/domain/locale";
 
 import type { NotificationHistoryReader } from "../../../inbox/application/notification-history.reader.js";
@@ -19,7 +18,7 @@ import {
 import type { TimezoneContext } from "../../domain/timezone-context.read-model.js";
 import { type ReEngagementReaderPort } from "../ports/re-engagement-reader.port.js";
 import { type SchedulerPreferenceReaderPort } from "../ports/scheduler-preference-reader.port.js";
-import type { TimezoneReminderStrategy } from "../ports/timezone-reminder-strategy.port.js";
+import type { TimezoneReminderStrategyPort } from "../ports/timezone-reminder-strategy.port.js";
 import { NotificationRemindersLogEvent } from "../reminders.log-events.js";
 
 interface OnboardingStrategyDependencies {
@@ -33,7 +32,7 @@ interface OnboardingStrategyDependencies {
   readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
 
-export class SendOnboardingUseCase implements TimezoneReminderStrategy {
+export class SendOnboardingUseCase implements TimezoneReminderStrategyPort {
   readonly #dependencies: OnboardingStrategyDependencies;
 
   constructor(dependencies: OnboardingStrategyDependencies) {
@@ -41,8 +40,7 @@ export class SendOnboardingUseCase implements TimezoneReminderStrategy {
   }
 
   async execute(ctx: TimezoneContext): Promise<{ sent: number }> {
-    const { tz } = ctx;
-    const today = todayInTimezone(tz);
+    const { tz, today } = ctx;
     const cutoffDate = subtractDays(ONBOARDING_MAX_DAY, today);
 
     // 가입 0~7일 + 해당 timezone 유저 조회

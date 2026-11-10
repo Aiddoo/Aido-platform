@@ -1,22 +1,23 @@
-import dayjs from "dayjs";
-
+import { minutesToSweep } from "#api/shared/application/minutes-to-sweep";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
-import { addDays } from "#api/shared/domain/date/utils/arithmetic";
-import { now } from "#api/shared/domain/date/utils/core";
-import { todayInTimezone } from "#api/shared/domain/date/utils/timezone";
+import type { ClockPort } from "#api/shared/application/ports/clock.port";
+import type { SweepCursorPort } from "#api/shared/application/ports/sweep-cursor.port";
+import { instantToDate } from "#api/shared/domain/time/instant";
 
 import {
   FIRST_DAY_OF_MONTH,
   isWithinScheduleWindow,
   MONDAY,
   NOTIFICATION_SCHEDULE,
+  REMINDER_LATE_LIMIT_MINUTES,
+  REMINDER_LATE_SKIP_REASON,
 } from "../../domain/notification-schedule.domain-service.js";
 import type { TimezoneContext } from "../../domain/timezone-context.read-model.js";
-import { type SchedulerPreferenceReaderPort } from "../ports/scheduler-preference-reader.port.js";
-import {
-  type ReminderHourChangedJobData,
-  type SocialDigestJobData,
-  type TimezoneReminderEnqueuerPort,
+import type { SchedulerPreferenceReaderPort } from "../ports/scheduler-preference-reader.port.js";
+import type {
+  ReminderHourChangedJobData,
+  SocialDigestJobData,
+  TimezoneReminderEnqueuerPort,
 } from "../ports/timezone-reminder-enqueuer.port.js";
 import { NotificationRemindersLogEvent } from "../reminders.log-events.js";
 import type { SendEveningReminderUseCase } from "./send-evening-reminder.use-case.js";
@@ -33,21 +34,14 @@ import type { SendWeeklyAchievementUseCase } from "./send-weekly-achievement.use
 import type { SendWeeklyReportUseCase } from "./send-weekly-report.use-case.js";
 import type { SendWinbackUseCase } from "./send-winback.use-case.js";
 
-/**
- * 타임존 인식 리마인더 — Every-Minute Sweep 오케스트레이터.
- *
- * 매분 실행되어 각 타임존별 로컬 시간(시:분)을 확인하고, 해당 시간에 맞는
- * Strategy를 실행한다. 비즈니스 로직은 각 Strategy에 위임한다.
- *
- * - 활성 타임존 조회는 SchedulerPreferenceReaderPort(캐시 스루)에 위임
- * - 큐 등록/발송은 TimezoneReminderEnqueuerPort에 위임 (DIP)
- */
-interface TimezoneAwareReminderOrchestratorDependencies {
+// 스케줄 key와 따로 두는 커서 key. 바꾸면 따라잡기 기록을 잃는다
+export const TIMEZONE_REMINDER_SWEEP_CURSOR_KEY = "tz-reminder-sweep";
+
+interface SweepTimezoneRemindersDependencies {
   readonly preferenceReader: Pick<SchedulerPreferenceReaderPort, "findActiveTimezones">;
-  readonly enqueuer: Pick<
-    TimezoneReminderEnqueuerPort,
-    "enqueueSocialDigest" | "registerSweepScheduler"
-  >;
+  readonly enqueuer: Pick<TimezoneReminderEnqueuerPort, "enqueueSocialDigest">;
+  readonly sweepCursor: Pick<SweepCursorPort, "findLastCompletedAt" | "markCompleted">;
+  readonly clock: Pick<ClockPort, "now">;
   readonly morningReminder: Pick<SendMorningReminderUseCase, "execute">;
   readonly eveningReminder: Pick<SendEveningReminderUseCase, "execute">;
   readonly weeklyReport: Pick<SendWeeklyReportUseCase, "execute">;
@@ -64,90 +58,65 @@ interface TimezoneAwareReminderOrchestratorDependencies {
   readonly logger: Pick<ApplicationLoggerPort, "error" | "log" | "warn">;
 }
 
+/**
+ * 매분 활성 시간대마다 현지 시:분에 맞는 전략을 실행한다.
+ * 마지막으로 끝낸 분 다음부터 지금 분까지(최대 15분)를 차례로 처리해 worker가 멈춘 사이의 분도 보낸다.
+ */
 export class SweepTimezoneRemindersUseCase {
-  readonly #dependencies: TimezoneAwareReminderOrchestratorDependencies;
+  readonly #dependencies: SweepTimezoneRemindersDependencies;
 
-  constructor(dependencies: TimezoneAwareReminderOrchestratorDependencies) {
+  constructor(dependencies: SweepTimezoneRemindersDependencies) {
     this.#dependencies = dependencies;
   }
 
-  /** 스케줄러 등록 완료 프로미스 (테스트 대기용) — 부팅을 블로킹하지 않는다 */
-  schedulerRegistration: Promise<void> = Promise.resolve();
-
-  onModuleInit(): void {
-    // 작업 저장소 장애 중에도 부팅은 진행한다
-    this.schedulerRegistration = this.#registerSweepScheduler();
-  }
-
-  async #registerSweepScheduler(): Promise<void> {
-    try {
-      await this.#dependencies.enqueuer.registerSweepScheduler();
-    } catch {
-      this.#dependencies.logger.error({
-        event: NotificationRemindersLogEvent.TIMEZONE_AWARE_REMINDER_REGISTRATION_FAILED,
-        errorType: "scheduler-registration",
-      });
-    }
-  }
-
-  /**
-   * 매분 실행 — Every-Minute Sweep 패턴
-   *
-   * 1. 활성화된 고유 타임존 목록 조회 (캐시 스루)
-   * 2. 각 타임존의 현재 로컬 시간(시:분) 확인
-   * 3. 해당 시간에 맞는 Strategy 실행
-   */
   async handleMinuteSweep(): Promise<void> {
-    this.#dependencies.logger.log({
-      event: NotificationRemindersLogEvent.TIMEZONE_AWARE_REMINDER_SWEEP_STARTED,
-    });
+    const { logger, sweepCursor } = this.#dependencies;
+    logger.log({ event: NotificationRemindersLogEvent.TIMEZONE_AWARE_REMINDER_SWEEP_STARTED });
 
     try {
-      const sweptAt = now();
-
-      const tzList = await this.#dependencies.preferenceReader.findActiveTimezones();
-
-      const tasks = tzList.map((tz) => {
-        const local = dayjs(sweptAt).tz(tz);
-        const localHour = local.hour();
-        const localMinute = local.minute();
-        return this.#processTimezone(tz, localHour, localMinute);
+      const lastCompletedAt = await sweepCursor.findLastCompletedAt(
+        TIMEZONE_REMINDER_SWEEP_CURSOR_KEY,
+      );
+      const minutes = minutesToSweep({
+        lastCompletedAt,
+        now: this.#dependencies.clock.now(),
+        maxCatchUpMinutes: REMINDER_LATE_LIMIT_MINUTES,
       });
+      const skippedMinutes = countSkippedMinutes(lastCompletedAt, minutes);
+      if (skippedMinutes > 0) {
+        logger.warn({
+          event: NotificationRemindersLogEvent.TIMEZONE_AWARE_REMINDER_MINUTES_SKIPPED,
+          reason: REMINDER_LATE_SKIP_REASON,
+          skippedMinutes,
+        });
+      }
 
-      const results = await Promise.allSettled(tasks);
-      results.forEach((result, index) => {
-        if (result.status === "rejected") {
-          const tz = tzList[index] ?? "unknown";
-          this.#dependencies.logger.error({
-            event: NotificationRemindersLogEvent.TIMEZONE_AWARE_REMINDER_TIMEZONE_FAILED,
-            timezone: tz,
-            errorType: "strategy-execution",
-          });
-        }
-      });
+      const timezones = await this.#dependencies.preferenceReader.findActiveTimezones();
+      for (const minute of minutes) {
+        await this.#sweepMinute(minute, timezones);
+        // 분을 끝낸 뒤에만 옮겨 중간에 멈추면 그 분부터 다시 처리한다. 다시 보내는 사용자는 일간 중복 방지가 막는다
+        await sweepCursor.markCompleted(TIMEZONE_REMINDER_SWEEP_CURSOR_KEY, minute);
+      }
 
-      this.#dependencies.logger.log({
+      logger.log({
         event: NotificationRemindersLogEvent.TIMEZONE_AWARE_REMINDER_SWEEP_COMPLETED,
-        timezoneCount: tzList.length,
+        timezoneCount: timezones.length,
+        minuteCount: minutes.length,
       });
     } catch {
-      this.#dependencies.logger.error({
+      logger.error({
         event: NotificationRemindersLogEvent.TIMEZONE_AWARE_REMINDER_SWEEP_FAILED,
         errorType: "sweep-execution",
       });
     }
   }
 
-  /**
-   * 리마인더 시간 변경 핸들러 — Catch-up 패턴
-   */
+  /** 바꾼 리마인더 시각이 지금이면 그 사용자에게 바로 보낸다. */
   async handleReminderHourChanged(payload: ReminderHourChangedJobData): Promise<void> {
     try {
-      const local = dayjs(now()).tz(payload.timezone);
-      const localHour = local.hour();
-      const localMinute = local.minute();
-
-      const ctx = this.#buildContext(payload.timezone, localHour, localMinute, payload.userId);
+      const local = this.#dependencies.clock.now().toZonedDateTimeISO(payload.timezone);
+      const ctx = timezoneContextAt(payload.timezone, local, payload.userId);
+      const { localHour, localMinute } = ctx;
 
       const morningMinute = payload.morningReminderMinute ?? 0;
       if (
@@ -196,7 +165,8 @@ export class SweepTimezoneRemindersUseCase {
         });
         return;
       }
-      const ctx = this.#buildContext(payload.timezone, 0, 0);
+      const local = this.#dependencies.clock.now().toZonedDateTimeISO(payload.timezone);
+      const ctx = { ...timezoneContextAt(payload.timezone, local), localHour: 0, localMinute: 0 };
       await this.#dependencies.socialDigest.execute(ctx, payload.recipientUserIds);
     } catch {
       this.#dependencies.logger.error({
@@ -207,10 +177,24 @@ export class SweepTimezoneRemindersUseCase {
     }
   }
 
-  async #processTimezone(tz: string, localHour: number, localMinute: number): Promise<void> {
-    const local = dayjs().tz(tz);
-    const dayOfWeek = local.day(); // 0=일, 1=월
-    const ctx = this.#buildContext(tz, localHour, localMinute);
+  async #sweepMinute(minute: Temporal.Instant, timezones: readonly string[]): Promise<void> {
+    const results = await Promise.allSettled(
+      timezones.map(async (tz) => this.#sweepTimezone(tz, minute.toZonedDateTimeISO(tz))),
+    );
+    results.forEach((result, index) => {
+      if (result.status === "rejected") {
+        this.#dependencies.logger.error({
+          event: NotificationRemindersLogEvent.TIMEZONE_AWARE_REMINDER_TIMEZONE_FAILED,
+          timezone: timezones[index] ?? "unknown",
+          errorType: "strategy-execution",
+        });
+      }
+    });
+  }
+
+  async #sweepTimezone(tz: string, local: Temporal.ZonedDateTime): Promise<void> {
+    const ctx = timezoneContextAt(tz, local);
+    const { localHour, localMinute, dayOfWeek } = ctx;
 
     await this.#dependencies.morningReminder.execute(ctx);
     if (isWithinScheduleWindow(NOTIFICATION_SCHEDULE.ONBOARDING, localHour, localMinute)) {
@@ -218,7 +202,7 @@ export class SweepTimezoneRemindersUseCase {
     }
     const eveningResult = await this.#dependencies.eveningReminder.execute(ctx);
 
-    // 저녁 리마인더 발송 시 90분 후 Social Digest delayed job 등록
+    // 저녁 리마인더를 받은 사용자에게 90분 뒤 소셜 다이제스트를 보낸다
     if (eveningResult.recipientUserIds.length > 0) {
       this.#dependencies.enqueuer.enqueueSocialDigest({
         timezone: tz,
@@ -227,9 +211,8 @@ export class SweepTimezoneRemindersUseCase {
     }
 
     // 11:30 요약 슬롯: 매월 1일은 프리미엄 월간 리포트가 주간 리포트를 대체한다.
-    const dayOfMonth = local.date();
     const isMonthlyReportTime =
-      dayOfMonth === FIRST_DAY_OF_MONTH &&
+      local.day === FIRST_DAY_OF_MONTH &&
       isWithinScheduleWindow(NOTIFICATION_SCHEDULE.MONTHLY_REPORT, localHour, localMinute);
     if (isMonthlyReportTime) {
       await this.#dependencies.monthlyReport.execute(ctx);
@@ -247,48 +230,57 @@ export class SweepTimezoneRemindersUseCase {
     ) {
       await this.#dependencies.weeklyAchievement.execute(ctx);
     }
-
-    // 로컬 16:00: Win-back
     if (isWithinScheduleWindow(NOTIFICATION_SCHEDULE.WINBACK, localHour, localMinute)) {
       await this.#dependencies.winback.execute(ctx);
     }
-
-    // 로컬 15:00: 콕 찌르기 유도
     if (isWithinScheduleWindow(NOTIFICATION_SCHEDULE.NUDGE_SUGGEST, localHour, localMinute)) {
       await this.#dependencies.nudgeSuggest.execute(ctx);
     }
-
-    // 로컬 12:30: 점심 넛지
     if (isWithinScheduleWindow(NOTIFICATION_SCHEDULE.LUNCH_NUDGE, localHour, localMinute)) {
       await this.#dependencies.lunchNudge.execute(ctx);
     }
-
-    // 로컬 20:15: 스트릭 위기 (야간 21:00 시작 전 마지막 넛지)
+    // 야간 21:00 시작 전 마지막 넛지
     if (isWithinScheduleWindow(NOTIFICATION_SCHEDULE.STREAK_AT_RISK, localHour, localMinute)) {
       await this.#dependencies.streakAtRisk.execute(ctx);
     }
-
-    // 날씨 알림: 유저별 커스텀 시간 (내부에서 시:분 매칭)
+    // 날씨 알림은 사용자가 고른 시:분을 전략 안에서 맞춘다
     await this.#dependencies.weatherMorning.execute(ctx);
     await this.#dependencies.weatherEvening.execute(ctx);
   }
+}
 
-  #buildContext(
-    tz: string,
-    localHour: number,
-    localMinute: number,
-    userId?: string,
-  ): TimezoneContext {
-    const local = dayjs().tz(tz);
-    const today = todayInTimezone(tz);
-    return {
-      tz,
-      localHour,
-      localMinute,
-      dayOfWeek: local.day(),
-      today,
-      tomorrow: addDays(1, today),
-      userId,
-    };
+// 처리하는 분의 현지 시각으로 시:분·요일·오늘을 정한다. 늦게 따라잡아도 그 분의 날짜로 보낸다
+function timezoneContextAt(
+  tz: string,
+  local: Temporal.ZonedDateTime,
+  userId?: string,
+): TimezoneContext {
+  const today = local.toPlainDate();
+  return {
+    tz,
+    localHour: local.hour,
+    localMinute: local.minute,
+    // Temporal은 월=1…일=7, 컨텍스트는 일=0
+    dayOfWeek: local.dayOfWeek % 7,
+    today: utcMidnightOf(today),
+    tomorrow: utcMidnightOf(today.add({ days: 1 })),
+    userId,
+  };
+}
+
+function utcMidnightOf(date: Temporal.PlainDate): Date {
+  return instantToDate(date.toZonedDateTime("UTC").toInstant());
+}
+
+// 마지막으로 끝낸 분과 이번에 처음 처리하는 분 사이에서 버린 분의 수
+function countSkippedMinutes(
+  lastCompletedAt: Temporal.Instant | null,
+  minutes: readonly Temporal.Instant[],
+): number {
+  const [first] = minutes;
+  if (lastCompletedAt == null || first == null) {
+    return 0;
   }
+  const last = lastCompletedAt.round({ smallestUnit: "minute", roundingMode: "floor" });
+  return Math.max(0, last.until(first, { largestUnit: "minutes" }).minutes - 1);
 }
