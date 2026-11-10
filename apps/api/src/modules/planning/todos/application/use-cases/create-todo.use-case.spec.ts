@@ -6,7 +6,7 @@ import {
   createPlanningTodoFixture,
   createPlanningTodo,
   PLANNING_TIME,
-} from "#test/fixtures/planning-todo.fixture";
+} from "#test/fixtures/planning/planning-todos.fixture";
 
 import { TodoCreatedEvent } from "../../../shared/domain/todo-created.event.js";
 import { MAX_OCCURRENCES_PER_RUN } from "../../../todo-series/application/use-cases/materialize-todo-occurrences.use-case.js";

@@ -1,12 +1,8 @@
 import { Logger } from "@nestjs/common";
 import { eq, inArray, sql } from "drizzle-orm";
 import { omit } from "es-toolkit";
-import { mock } from "vitest-mock-extended";
 
-import type {
-  AccessSnapshot,
-  EntitlementReaderPort,
-} from "#api/modules/access/access-entitlement.public";
+import type { EntitlementReaderPort } from "#api/modules/access/access-entitlement.public";
 import { DrizzleUserRepository } from "#api/modules/identity/users/infrastructure/persistence/drizzle-user.repository";
 import { TodoSeriesOwnerDormancyAdapter } from "#api/modules/notification/infrastructure/adapters/reminders/todo-series-owner-dormancy.adapter";
 import { TodoReminderSchedulerAdapter } from "#api/modules/notification/infrastructure/jobs/reminders/todo-reminder-scheduler.adapter";
@@ -31,9 +27,10 @@ import {
   user as userTable,
   userPreference,
 } from "#api/platform/database/schema/index";
-import type { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { DateClock } from "#test/doubles/platform/date-clock";
+import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";
+import { StubCurrentUserAccess } from "#test/fixtures/auth-credential.fixture";
 import { TodoCategoryFixture, UserFixture } from "#test/fixtures/index";
 import { FakeJobRuntime } from "#test/mocks/fake-job-runtime";
 import { createDatabaseTransactionFixture, createTestClient } from "#test/setup/database-context";
@@ -44,6 +41,29 @@ const RETURNED_AT = new Date(`${TODAY}T03:00:00.000Z`);
 const LAST_MOVED_AT = new Date("2026-05-01T00:00:00.000Z");
 const STALE_CURSOR = "2026-07-30";
 const HORIZON_ROWS = 91;
+
+// 휴면 판정은 등급만 읽는다. 나머지 권한 조회가 불리면 테스트가 잘못 짠 것이다
+class StubTierEntitlementReader extends StubCurrentUserAccess implements EntitlementReaderPort {
+  async can(): Promise<boolean> {
+    throw new Error("휴면 판정은 can을 부르지 않는다");
+  }
+
+  async canInTx(): Promise<boolean> {
+    throw new Error("휴면 판정은 canInTx를 부르지 않는다");
+  }
+
+  async getLimit(): Promise<number | null> {
+    throw new Error("휴면 판정은 getLimit을 부르지 않는다");
+  }
+
+  async getLimitInTx(): Promise<number | null> {
+    throw new Error("휴면 판정은 getLimitInTx를 부르지 않는다");
+  }
+
+  async readFeatureQuotaInTx(): ReturnType<EntitlementReaderPort["readFeatureQuotaInTx"]> {
+    throw new Error("휴면 판정은 readFeatureQuotaInTx를 부르지 않는다");
+  }
+}
 
 describe("반복 할 일 휴면·복귀 (실제 PostgreSQL)", () => {
   const statements: string[] = [];
@@ -134,10 +154,10 @@ describe("반복 할 일 휴면·복귀 (실제 PostgreSQL)", () => {
   }
 
   function entitlements() {
-    const reader = mock<EntitlementReaderPort>();
-    reader.getAccessSnapshot.mockImplementation(async (id) =>
-      mock<AccessSnapshot>({ tier: premiumUserIds.has(id) ? "PREMIUM" : "FREE" }),
-    );
+    const reader = new StubTierEntitlementReader();
+    for (const id of premiumUserIds) {
+      reader.tiers.set(id, "PREMIUM");
+    }
     return reader;
   }
 
@@ -162,7 +182,7 @@ describe("반복 할 일 휴면·복귀 (실제 PostgreSQL)", () => {
       seriesRepository: new DrizzleTodoSeriesRepository(fixture.txHost),
       seriesOwner: seriesOwner(),
       dueRunner: dueRunner(),
-      alert: mock<OperationalAlertPort>(),
+      alert: new RecordingOperationalAlert(),
       logger: new Logger("DormancyIntegration"),
     });
   }
@@ -524,7 +544,7 @@ describe("반복 할 일 휴면·복귀 (실제 PostgreSQL)", () => {
             throw new Error("쓰기 실패");
           },
         },
-        logger: mock<Logger>(),
+        logger: new Logger("DormancyIntegration"),
       });
       // When
       await expect(broken.execute(userId)).resolves.toBeUndefined();

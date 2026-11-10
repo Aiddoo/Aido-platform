@@ -1,5 +1,3 @@
-import type { Todo as TodoResponse } from "@aido/api";
-import { ErrorCode } from "@aido/api/errors";
 import type { TodoVisibility } from "@aido/api/vocabulary";
 import { isUndefined, omitBy } from "es-toolkit";
 
@@ -8,67 +6,38 @@ import { TodoItemId } from "#api/modules/planning/shared/domain/todo-item-id.vo"
 import type { TodoItem } from "#api/modules/planning/shared/domain/todo-item.entity";
 import type { TodoScheduleProps } from "#api/modules/planning/shared/domain/todo-schedule.vo";
 import { Todo } from "#api/modules/planning/shared/domain/todo.aggregate";
-import type { TodoSeriesOwnerPort } from "#api/modules/planning/todo-series/application/ports/todo-series-owner.port";
-import type {
-  TodoSeriesRef,
-  DueTodoSeriesQuery,
-  TodoSeriesRepositoryPort,
-} from "#api/modules/planning/todo-series/application/ports/todo-series.repository.port";
-import type { SeriesOwnerActivity } from "#api/modules/planning/todo-series/domain/series-dormancy.domain-service";
 import { TodoSeries } from "#api/modules/planning/todo-series/domain/todo-series.aggregate";
-import type { TodoCachePort } from "#api/modules/planning/todos/application/ports/todo-cache.port";
-import type { TodoOwnerTimezonePort } from "#api/modules/planning/todos/application/ports/todo-owner-timezone.port";
-import type {
-  FindFriendTodosParams,
-  FindTodosParams,
-} from "#api/modules/planning/todos/application/ports/todo-read.repository.port";
-import type {
-  TodoReadRepositoryPort,
-  TodaySummaryTodoRow,
-} from "#api/modules/planning/todos/application/ports/todo-read.repository.port";
-import type {
-  TodoReminderSchedulerPort,
-  TodoReminderSchedule,
-} from "#api/modules/planning/todos/application/ports/todo-reminder-scheduler.port";
-import type {
-  CreatedOccurrence,
-  OccurrencePatch,
-  OccurrenceRow,
-  OccurrenceTime,
-  RebaseCandidate,
-  RebaseCandidateQuery,
-  RebasedInstant,
-  TodoOccurrenceAttachment,
-  TodoOccurrencePlan,
+import {
+  type CreatedOccurrence,
+  type OccurrencePatch,
+  type OccurrenceRow,
+  type OccurrenceTime,
+  type RebaseCandidate,
+  type RebaseCandidateQuery,
+  type RebasedInstant,
+  type TodoOccurrenceAttachment,
+  type TodoOccurrencePlan,
   TodoRepositoryPort,
-  TodoUpdatePatch,
+  type TodoUpdatePatch,
 } from "#api/modules/planning/todos/application/ports/todo.repository.port";
-import type {
-  FriendTodoReadModel,
-  TodoReadModel,
-} from "#api/modules/planning/todos/application/read-models/todo.read-model";
-import { ApplicationException } from "#api/shared/application/application.exception";
-import type { CursorPaginatedResponse } from "#api/shared/application/pagination/index";
-import type {
-  DomainEventPublisherPort,
-  MutationLockPort,
-  PublishedDomainEvent,
-} from "#api/shared/application/ports/index";
 import { toDateString } from "#api/shared/domain/date/utils/format";
 import { parseDateOnly } from "#api/shared/domain/date/utils/parse";
-import type { DomainEvent } from "#api/shared/domain/model/domain-event";
 import { instantFromDate, instantToDate } from "#api/shared/domain/time/instant";
 import { TodoBuilder } from "#test/builders/index";
-import {
-  createTodoReadModelFromRecord,
-  type PlanningTodoRecord,
-} from "#test/fixtures/todo-response.fixture";
+import { type PlanningTodoRecord } from "#test/fixtures/todo-response.fixture";
 
-export class StubPlanningTodoRepository implements TodoRepositoryPort {
+export class InMemoryTodoRepository extends TodoRepositoryPort {
+  readonly records: Map<number, PlanningTodoRecord>;
+  readonly seriesStore: Map<string, TodoSeries>;
+
   constructor(
-    readonly records: Map<number, PlanningTodoRecord>,
-    readonly seriesStore: Map<string, TodoSeries> = new Map(),
-  ) {}
+    records: Map<number, PlanningTodoRecord>,
+    seriesStore: Map<string, TodoSeries> = new Map(),
+  ) {
+    super();
+    this.records = records;
+    this.seriesStore = seriesStore;
+  }
 
   async findByIdAndUserId(id: number, userId: string): Promise<Todo | null> {
     const saved = this.records.get(id);
@@ -426,284 +395,4 @@ export class StubPlanningTodoRepository implements TodoRepositoryPort {
     }
     return record;
   }
-}
-
-/** 저장한 규칙을 메모리에 두고 복원해 돌려주는 Fake. 잠금은 흉내 내지 않는다. */
-export class StubPlanningTodoSeriesOwner implements TodoSeriesOwnerPort {
-  /** 비워 두면 소유자가 방금 활동한 것으로 읽는다. */
-  activity: SeriesOwnerActivity | null = null;
-  readonly exemptUserIds = new Set<string>();
-  /** 정지·탈퇴 대기 계정 */
-  readonly suspendedUserIds = new Set<string>();
-  async findOperatingOwners(
-    userIds: readonly string[],
-  ): Promise<ReadonlyMap<string, SeriesOwnerActivity>> {
-    return new Map(
-      userIds
-        .filter((userId) => !this.suspendedUserIds.has(userId))
-        .map((userId) => [
-          userId,
-          this.activity ?? {
-            lastActiveAt: new Date(),
-            signedUpAt: new Date(),
-            timezone: "UTC",
-          },
-        ]),
-    );
-  }
-  async isExemptFromDormancy(userId: string): Promise<boolean> {
-    return this.exemptUserIds.has(userId);
-  }
-}
-
-export class StubPlanningTodoOwnerTimezone implements TodoOwnerTimezonePort {
-  constructor(readonly timezones: Map<string, string> = new Map()) {}
-  async findTimezone(userId: string): Promise<string | null> {
-    return this.timezones.get(userId) ?? null;
-  }
-}
-
-export class StubPlanningTodoSeriesRepository implements TodoSeriesRepositoryPort {
-  constructor(readonly store: Map<string, TodoSeries> = new Map()) {}
-  async updateTimezoneByUserId(userId: string, timezone: string): Promise<number> {
-    const owned = [...this.store.values()].filter(
-      (series) => series.userId.value === userId && series.timezone !== timezone,
-    );
-    for (const series of owned) {
-      series.applyDetails({ timezone });
-    }
-    return owned.length;
-  }
-  async findByIdAndUserId(id: string, userId: string): Promise<TodoSeries | null> {
-    const series = this.store.get(id);
-    return series === undefined || series.userId.value !== userId ? null : this.#copy(series);
-  }
-  async lockForUpdate(id: string): Promise<TodoSeries | null> {
-    const series = this.store.get(id);
-    return series === undefined ? null : this.#copy(series);
-  }
-  async insert(series: TodoSeries): Promise<void> {
-    this.store.set(series.id.value, this.#copy(series));
-  }
-  async update(series: TodoSeries): Promise<void> {
-    this.store.set(series.id.value, this.#copy(series));
-  }
-  async lockFamilyIds(userId: string, originSeriesId: string): Promise<readonly string[]> {
-    return [...this.store.values()]
-      .filter(
-        (series) =>
-          series.userId.value === userId && series.originSeriesId.value === originSeriesId,
-      )
-      .map((series) => series.id.value);
-  }
-  async lockFollowingSegments(series: TodoSeries): Promise<readonly TodoSeries[]> {
-    return [...this.store.values()]
-      .filter(
-        (segment) =>
-          segment.userId.value === series.userId.value &&
-          segment.originSeriesId.value === series.originSeriesId.value &&
-          segment.startDate >= series.startDate &&
-          segment.id.value !== series.id.value,
-      )
-      .map((segment) => this.#copy(segment));
-  }
-  async deleteMany(ids: readonly string[]): Promise<void> {
-    for (const id of ids) {
-      this.store.delete(id);
-    }
-  }
-  async countActiveByUserId(userId: string): Promise<number> {
-    return [...this.store.values()].filter(
-      (series) => series.userId.value === userId && series.isActive,
-    ).length;
-  }
-  async findDueBatch(query: DueTodoSeriesQuery): Promise<readonly TodoSeriesRef[]> {
-    return [...this.store.values()]
-      .filter((series) => {
-        const next = series.nextOccurrenceDate;
-        return (
-          next !== null &&
-          next <= query.through &&
-          (query.afterId === null || series.id.value > query.afterId)
-        );
-      })
-      .map((series) => ({
-        id: series.id.value,
-        userId: series.userId.value,
-      }))
-      .sort((left, right) => left.id.localeCompare(right.id))
-      .slice(0, query.limit);
-  }
-  async findIdsBehind(userId: string, through: string): Promise<readonly string[]> {
-    return [...this.store.values()]
-      .filter((series) => {
-        const next = series.nextOccurrenceDate;
-        return series.userId.value === userId && next !== null && next <= through;
-      })
-      .map((series) => series.id.value);
-  }
-  #copy(series: TodoSeries): TodoSeries {
-    return TodoSeries.reconstitute(series.toPrimitives());
-  }
-}
-
-export class StubPlanningTodoReminder implements TodoReminderSchedulerPort {
-  readonly scheduled: TodoReminderSchedule[] = [];
-  readonly cancelled: number[] = [];
-  async scheduleReminder(todoId: number, scheduledTime: Date, userId: string): Promise<void> {
-    this.scheduled.push({ todoId, scheduledTime, userId });
-  }
-  async scheduleReminders(reminders: readonly TodoReminderSchedule[]): Promise<void> {
-    this.scheduled.push(...reminders);
-  }
-  async cancelReminders(todoIds: readonly number[]): Promise<void> {
-    this.cancelled.push(...todoIds);
-  }
-}
-
-export class StubPlanningTodoReadRepository implements TodoReadRepositoryPort {
-  queryResults: TodoReadModel[] = [];
-  dayStats = { total: 0, completed: 0 };
-  topTodos: TodaySummaryTodoRow[] = [];
-  constructor(
-    readonly records: Map<number, PlanningTodoRecord>,
-    readonly categories: Map<number, TodoResponse["category"]>,
-    readonly seriesStore: Map<string, TodoSeries> = new Map(),
-  ) {}
-  async findByIdAndUserId(id: number, userId: string): Promise<TodoReadModel | null> {
-    const saved = this.records.get(id);
-    if (saved === undefined || saved.userId !== userId) {
-      return null;
-    }
-    const record = structuredClone(saved);
-    record.items.sort((left, right) => left.sortOrder - right.sortOrder);
-    record.category = this.categories.get(record.categoryId) ?? null;
-    return createTodoReadModelFromRecord(record);
-  }
-  async findOwnerId(id: number): Promise<string | null> {
-    return this.records.get(id)?.userId ?? null;
-  }
-  async findManyBySeriesId(userId: string, seriesId: string): Promise<TodoReadModel[]> {
-    const records = [...this.records.values()]
-      .filter((record) => record.userId === userId && record.seriesId === seriesId)
-      .sort((left, right) => left.sortOrder - right.sortOrder);
-    const responses: TodoReadModel[] = [];
-    for (const record of records) {
-      const response = await this.findByIdAndUserId(record.id, userId);
-      if (response !== null) {
-        responses.push(response);
-      }
-    }
-    return responses;
-  }
-  async findManyByUserId(_params: FindTodosParams): Promise<TodoReadModel[]> {
-    return structuredClone(this.queryResults);
-  }
-  async findPublicTodosByUserId(_params: FindFriendTodosParams): Promise<FriendTodoReadModel[]> {
-    return structuredClone(this.queryResults);
-  }
-  async countCategoryUsage(userId: string, categoryId: number): Promise<number> {
-    const activeSeries = [...this.seriesStore.values()].filter(
-      (series) =>
-        series.userId.value === userId && series.categoryId === categoryId && series.isActive,
-    ).length;
-    return (
-      activeSeries +
-      [...this.records.values()].filter(
-        (record) =>
-          record.userId === userId &&
-          record.categoryId === categoryId &&
-          !record.completed &&
-          record.seriesId === null,
-      ).length
-    );
-  }
-  async countCompletedByUser(userId: string): Promise<number> {
-    return [...this.records.values()].filter(
-      (record) => record.userId === userId && record.completed,
-    ).length;
-  }
-  async getTodayTodoStats(
-    _userId: string,
-    _today: Date,
-  ): Promise<{ total: number; completed: number }> {
-    return { ...this.dayStats };
-  }
-  async findTodayTopTodos(
-    _userId: string,
-    _today: Date,
-    _limit: number,
-  ): Promise<TodaySummaryTodoRow[]> {
-    return structuredClone(this.topTodos);
-  }
-}
-
-export class StubPlanningTodoCache implements TodoCachePort {
-  readonly categoryUsers = new Set<string>();
-  readonly pages = new Map<string, CursorPaginatedResponse<FriendTodoReadModel, number>>();
-  readonly generations = new Map<string, number>();
-  async invalidateTodoCategories(userId: string): Promise<void> {
-    this.categoryUsers.delete(userId);
-  }
-  async readFriendTodosFirstPage(userId: string, start: string, end: string, size: number) {
-    const page = this.pages.get(this.#key(userId, start, end, size));
-    return {
-      generation: String(this.generations.get(userId) ?? 0),
-      page: page === undefined ? undefined : structuredClone(page),
-    };
-  }
-  async storeFriendTodosFirstPageIfCurrent(
-    userId: string,
-    start: string,
-    end: string,
-    size: number,
-    generation: string,
-    page: CursorPaginatedResponse<FriendTodoReadModel, number>,
-  ): Promise<void> {
-    if (generation === String(this.generations.get(userId) ?? 0)) {
-      this.pages.set(this.#key(userId, start, end, size), structuredClone(page));
-    }
-  }
-  async invalidateFriendTodos(userId: string): Promise<void> {
-    this.generations.set(userId, (this.generations.get(userId) ?? 0) + 1);
-    for (const key of this.pages.keys()) {
-      if (key.startsWith(`${userId}:`)) {
-        this.pages.delete(key);
-      }
-    }
-  }
-  #key(userId: string, start: string, end: string, size: number): string {
-    return `${userId}:${start}:${end}:${size}`;
-  }
-}
-
-export class StubPlanningEventPublisher implements DomainEventPublisherPort {
-  readonly events: DomainEvent[] = [];
-  readonly publishedEvents: PublishedDomainEvent[] = [];
-  async publishAll(events: readonly DomainEvent[]): Promise<void> {
-    this.events.push(...events);
-  }
-  async publish(events: readonly PublishedDomainEvent[]): Promise<void> {
-    this.publishedEvents.push(...events);
-  }
-}
-
-export class StubPlanningMutationLock implements MutationLockPort {
-  readonly acquired: string[][] = [];
-  async acquire(keys: readonly string[]): Promise<void> {
-    this.acquired.push([...keys]);
-  }
-}
-
-export function createCategoryOwnershipStub(
-  categories: Map<number, TodoResponse["category"]>,
-  owners: Map<number, string>,
-) {
-  return {
-    async validateOwnership(categoryId: number, userId: string): Promise<void> {
-      if (!categories.has(categoryId) || owners.get(categoryId) !== userId) {
-        throw new ApplicationException(ErrorCode.TODO_CATEGORY_0851, { categoryId });
-      }
-    },
-  };
 }

@@ -4,7 +4,7 @@ import { TodoTitle } from "#api/modules/planning/shared/domain/todo-title.vo";
 import { TodoSeriesId } from "#api/modules/planning/todo-series/domain/todo-series-id.vo";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { DateClock } from "#test/doubles/platform/date-clock";
-import { createPlanningTodoFixture } from "#test/fixtures/planning-todo.fixture";
+import { createPlanningTodoFixture } from "#test/fixtures/planning/planning-todos.fixture";
 
 import { RepeatRule } from "../../domain/repeat-rule.vo.js";
 import { TodoSeries } from "../../domain/todo-series.aggregate.js";
@@ -83,7 +83,7 @@ describe("복귀 회차 채우기", () => {
     );
     expect(dates).toContain("2026-11-05");
     expect(dates).not.toContain("2026-11-04");
-    expect(fixture.logger.log).toHaveBeenCalledWith(
+    expect(fixture.logger.messages).toContainEqual(
       expect.objectContaining({
         event: TodoSeriesLogEvent.CATCH_UP_COMPLETED,
         seriesCount: 1,
@@ -104,7 +104,7 @@ describe("복귀 회차 채우기", () => {
     // Then
     expect(findIdsBehind).toHaveBeenCalledOnce();
     expect(fixture.records.size).toBe(0);
-    expect(fixture.logger.log).not.toHaveBeenCalled();
+    expect(fixture.logger.messages).toEqual([]);
   });
 
   it("UTC 날짜가 바뀌면 다시 한 번 조회한다", async () => {
@@ -157,7 +157,7 @@ describe("복귀 회차 채우기", () => {
     // Then
     expect(callsBeforeRetry).toBe(1);
     expect(findIdsBehind).toHaveBeenCalledTimes(2);
-    expect(fixture.logger.warn).toHaveBeenCalledWith(
+    expect(fixture.logger.messages).toContainEqual(
       expect.objectContaining({
         event: TodoSeriesLogEvent.CATCH_UP_FAILED,
         errorType: "Error",
@@ -184,7 +184,7 @@ describe("복귀 회차 채우기", () => {
     // Then
     expect(spy).toHaveBeenCalledTimes(3);
     expect(fixture.records.size).toBe(182);
-    expect(fixture.logger.warn).toHaveBeenCalledWith(
+    expect(fixture.logger.messages).toContainEqual(
       expect.objectContaining({
         event: TodoSeriesLogEvent.CATCH_UP_FAILED,
         seriesId: expect.any(String),
@@ -200,7 +200,7 @@ describe("복귀 회차 채우기", () => {
     await service.execute(fixture.userId);
     // Then
     expect(fixture.records.size).toBe(0);
-    expect(fixture.logger.log).toHaveBeenCalledWith(expect.objectContaining({ timedOut: true }));
+    expect(fixture.logger.messages).toContainEqual(expect.objectContaining({ timedOut: true }));
   });
 
   it("로그에 제목을 남기지 않는다", async () => {
@@ -209,10 +209,7 @@ describe("복귀 회차 채우기", () => {
     // When
     await catchUp().execute(fixture.userId);
     // Then
-    const calls = JSON.stringify([
-      vi.mocked(fixture.logger.log).mock.calls,
-      vi.mocked(fixture.logger.warn).mock.calls,
-    ]);
+    const calls = JSON.stringify(fixture.logger.messages);
     expect(calls).not.toContain("물 마시기");
   });
 });

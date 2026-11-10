@@ -1,12 +1,11 @@
 import { vi } from "vitest";
-import { mock } from "vitest-mock-extended";
 
 import { TodoTitle } from "#api/modules/planning/shared/domain/todo-title.vo";
 import { TodoSeriesId } from "#api/modules/planning/todo-series/domain/todo-series-id.vo";
-import type { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { DateClock } from "#test/doubles/platform/date-clock";
-import { createPlanningTodoFixture } from "#test/fixtures/planning-todo.fixture";
+import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";
+import { createPlanningTodoFixture } from "#test/fixtures/planning/planning-todos.fixture";
 
 import { RepeatRule } from "../../domain/repeat-rule.vo.js";
 import { TodoSeries } from "../../domain/todo-series.aggregate.js";
@@ -19,13 +18,13 @@ const AT = new Date("2026-11-05T00:00:00.000Z");
 
 describe("회차 채우기", () => {
   let fixture: ReturnType<typeof createPlanningTodoFixture>;
-  let alert: ReturnType<typeof mock<OperationalAlertPort>>;
+  let alert: RecordingOperationalAlert;
 
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(AT);
     fixture = createPlanningTodoFixture();
-    alert = mock<OperationalAlertPort>();
+    alert = new RecordingOperationalAlert();
   });
   afterEach(() => {
     vi.useRealTimers();
@@ -77,7 +76,7 @@ describe("회차 채우기", () => {
     expect(first).toMatchObject({ processedCount: 1, createdCount: 3, failedCount: 0 });
     expect(second).toMatchObject({ processedCount: 0, createdCount: 0 });
     expect(fixture.records.size).toBe(3);
-    expect(alert.raise).not.toHaveBeenCalled();
+    expect(alert.alerts).toEqual([]);
   });
 
   it("규칙 하나가 실패해도 다음 규칙을 처리하고 운영 경보를 올린다", async () => {
@@ -97,12 +96,12 @@ describe("회차 채우기", () => {
     const result = await useCase().execute();
     // Then
     expect(result).toMatchObject({ processedCount: 2, createdCount: 3, failedCount: 1 });
-    expect(alert.raise).toHaveBeenCalledWith(
+    expect(alert.alerts).toEqual([
       expect.objectContaining({
         key: TodoSeriesAlertKey.MATERIALIZE_FAILED,
         severity: "error",
       }),
-    );
+    ]);
   });
 
   it("커밋 뒤 효과가 실패해도 회차는 남고 그 규칙만 실패로 센다", async () => {
@@ -126,7 +125,7 @@ describe("회차 채우기", () => {
     // Then
     expect(result).toMatchObject({ processedCount: 0, timedOut: true });
     expect(fixture.records.size).toBe(0);
-    expect(alert.raise).toHaveBeenCalledOnce();
+    expect(alert.alerts).toHaveLength(1);
   });
 
   it("소유자가 휴면이면 건너뛰고 커서를 그대로 둔다", async () => {
@@ -143,8 +142,8 @@ describe("회차 채우기", () => {
     expect(result).toMatchObject({ processedCount: 0, createdCount: 0, dormantCount: 1 });
     expect(fixture.records.size).toBe(0);
     expect(fixture.seriesStore.get("series-1")?.nextOccurrenceDate).toBe("2026-11-05");
-    expect(alert.raise).not.toHaveBeenCalled();
-    expect(fixture.logger.log).toHaveBeenCalledWith(expect.objectContaining({ dormantCount: 1 }));
+    expect(alert.alerts).toEqual([]);
+    expect(fixture.logger.messages).toContainEqual(expect.objectContaining({ dormantCount: 1 }));
   });
 
   it("휴면 기간이어도 휴면 제외 등급의 규칙은 그대로 채운다", async () => {

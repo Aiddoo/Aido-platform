@@ -5,7 +5,7 @@ import {
   createPlanningTodoFixture,
   createPlanningTodo,
   PLANNING_TIME,
-} from "#test/fixtures/planning-todo.fixture";
+} from "#test/fixtures/planning/planning-todos.fixture";
 
 import { TodoDeletedEvent } from "../../../shared/domain/todo-deleted.event.js";
 import { DeleteTodoUseCase } from "./delete-todo.use-case.js";

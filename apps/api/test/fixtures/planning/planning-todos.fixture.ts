@@ -1,5 +1,4 @@
 import type { Todo as TodoResponse } from "@aido/api";
-import { mock } from "vitest-mock-extended";
 
 import { MaterializeTodoOccurrencesUseCase } from "#api/modules/planning/todo-series/application/use-cases/materialize-todo-occurrences.use-case";
 import { PublishTodoSeriesEditUseCase } from "#api/modules/planning/todo-series/application/use-cases/publish-todo-series-edit.use-case";
@@ -7,23 +6,21 @@ import type { TodoSeries } from "#api/modules/planning/todo-series/domain/todo-s
 import { ApplyTodoEventsUseCase } from "#api/modules/planning/todos/application/use-cases/apply-todo-events.use-case";
 import { ResolveTodoTimezoneUseCase } from "#api/modules/planning/todos/application/use-cases/resolve-todo-timezone.use-case";
 import { PaginationService } from "#api/shared/application/pagination/index";
-import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { TodoBuilder } from "#test/builders/index";
+import { FakeTodoCache } from "#test/doubles/planning/fake-todo-cache";
+import { InMemoryTodoReadRepository } from "#test/doubles/planning/in-memory-todo-read.repository";
+import { InMemoryTodoSeriesRepository } from "#test/doubles/planning/in-memory-todo-series.repository";
+import { InMemoryTodoRepository } from "#test/doubles/planning/in-memory-todo.repository";
+import { RecordingDomainEventPublisher } from "#test/doubles/planning/recording-domain-event-publisher";
+import { RecordingTodoReminderScheduler } from "#test/doubles/planning/recording-todo-reminder-scheduler";
+import { createStubCategoryOwnership } from "#test/doubles/planning/stub-category-ownership";
+import { StubTodoOwnerTimezone } from "#test/doubles/planning/stub-todo-owner-timezone";
+import { StubTodoSeriesOwner } from "#test/doubles/planning/stub-todo-series-owner";
 import { DateClock } from "#test/doubles/platform/date-clock";
+import { ImmediateUnitOfWork } from "#test/doubles/platform/immediate-unit-of-work";
+import { RecordingMutationLock } from "#test/doubles/platform/recording-mutation-lock";
+import { SilentLogger } from "#test/doubles/platform/silent-logger";
 import type { PlanningTodoRecord } from "#test/fixtures/todo-response.fixture";
-import {
-  StubPlanningTodoRepository,
-  StubPlanningTodoOwnerTimezone,
-  StubPlanningTodoReadRepository,
-  StubPlanningTodoReminder,
-  StubPlanningTodoSeriesOwner,
-  StubPlanningTodoSeriesRepository,
-  StubPlanningTodoCache,
-  StubPlanningEventPublisher,
-  StubPlanningMutationLock,
-  createCategoryOwnershipStub,
-} from "#test/mocks/ports/planning-todo.stub";
-import { createUnitOfWorkMock } from "#test/mocks/ports/unit-of-work.mock";
 
 export const PLANNING_TIME = new Date("2026-05-15T03:00:00.000Z");
 
@@ -44,15 +41,15 @@ export function createPlanningTodoFixture(
       categoryOwners.set(record.categoryId, record.userId);
     }
   }
-  const todoCache = new StubPlanningTodoCache();
-  const eventPublisher = new StubPlanningEventPublisher();
-  const logger = mock<ApplicationLoggerPort>();
+  const todoCache = new FakeTodoCache();
+  const eventPublisher = new RecordingDomainEventPublisher();
+  const logger = new SilentLogger();
   const seriesStore = new Map<string, TodoSeries>();
-  const todoRepository = new StubPlanningTodoRepository(records, seriesStore);
-  const todoReadRepository = new StubPlanningTodoReadRepository(records, categories, seriesStore);
-  const todoSeriesRepository = new StubPlanningTodoSeriesRepository(seriesStore);
-  const seriesOwner = new StubPlanningTodoSeriesOwner();
-  const todoReminder = new StubPlanningTodoReminder();
+  const todoRepository = new InMemoryTodoRepository(records, seriesStore);
+  const todoReadRepository = new InMemoryTodoReadRepository(records, categories, seriesStore);
+  const todoSeriesRepository = new InMemoryTodoSeriesRepository(seriesStore);
+  const seriesOwner = new StubTodoSeriesOwner();
+  const todoReminder = new RecordingTodoReminderScheduler();
   const clock = new DateClock();
   const applyTodoEvents = new ApplyTodoEventsUseCase({
     reminderScheduler: todoReminder,
@@ -69,10 +66,10 @@ export function createPlanningTodoFixture(
     eventPublisher,
     logger,
   });
-  const mutationLock = new StubPlanningMutationLock();
-  const categoryOwnership = createCategoryOwnershipStub(categories, categoryOwners);
-  const unitOfWork = createUnitOfWorkMock();
-  const ownerTimezone = new StubPlanningTodoOwnerTimezone(new Map([[userId, "Asia/Seoul"]]));
+  const mutationLock = new RecordingMutationLock();
+  const categoryOwnership = createStubCategoryOwnership(categories, categoryOwners);
+  const unitOfWork = new ImmediateUnitOfWork();
+  const ownerTimezone = new StubTodoOwnerTimezone(new Map([[userId, "Asia/Seoul"]]));
   const timezoneResolver = new ResolveTodoTimezoneUseCase({ ownerTimezone });
   const paginationService = new PaginationService();
   const seriesCatchUp = { execute: async (_userId: string) => undefined };

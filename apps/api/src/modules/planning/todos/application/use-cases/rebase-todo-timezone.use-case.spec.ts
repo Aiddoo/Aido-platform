@@ -6,7 +6,7 @@ import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import {
   createPlanningTodoFixture,
   createPlanningTodo,
-} from "#test/fixtures/planning-todo.fixture";
+} from "#test/fixtures/planning/planning-todos.fixture";
 
 import { localTimeIn } from "../../../shared/domain/todo-calendar.domain-service.js";
 import { RepeatRule } from "../../../todo-series/domain/repeat-rule.vo.js";
@@ -373,7 +373,7 @@ describe("시간대 재계산", () => {
     // When
     await useCase.execute({ userId: "planning-user" });
     // Then
-    const logged = JSON.stringify(fixture.logger.log.mock.calls);
+    const logged = JSON.stringify(fixture.logger.messages);
     expect(logged).toContain("planning.todo.timezone-rebase.completed");
     expect(logged).toContain('"rebasedCount":1');
     expect(logged).not.toContain("비밀 제목");

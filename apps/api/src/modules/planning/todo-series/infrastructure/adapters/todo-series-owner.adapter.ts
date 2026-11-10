@@ -16,11 +16,11 @@ import type { SeriesOwnerActivity } from "../../domain/series-dormancy.domain-se
 @Injectable()
 export class TodoSeriesOwnerAdapter implements TodoSeriesOwnerPort {
   readonly #activityReader: UserActivityReaderPort;
-  readonly #entitlementReader: EntitlementReaderPort;
+  readonly #entitlementReader: Pick<EntitlementReaderPort, "getAccessSnapshot">;
 
   constructor(
     @Inject(USER_ACTIVITY_READER) activityReader: UserActivityReaderPort,
-    @Inject(ENTITLEMENT_READER) entitlementReader: EntitlementReaderPort,
+    @Inject(ENTITLEMENT_READER) entitlementReader: Pick<EntitlementReaderPort, "getAccessSnapshot">,
   ) {
     this.#activityReader = activityReader;
     this.#entitlementReader = entitlementReader;

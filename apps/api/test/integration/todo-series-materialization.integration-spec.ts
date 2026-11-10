@@ -4,12 +4,7 @@ import { join } from "node:path";
 import { Logger } from "@nestjs/common";
 import { and, eq, sql } from "drizzle-orm";
 import { omit } from "es-toolkit";
-import { mock } from "vitest-mock-extended";
 
-import type {
-  AccessSnapshot,
-  EntitlementReaderPort,
-} from "#api/modules/access/access-entitlement.public";
 import { DrizzleUserRepository } from "#api/modules/identity/users/infrastructure/persistence/drizzle-user.repository";
 import { TodoTitle } from "#api/modules/planning/shared/domain/todo-title.vo";
 import { MaterializeDueTodoSeriesUseCase } from "#api/modules/planning/todo-series/application/use-cases/materialize-due-todo-series.use-case";
@@ -31,9 +26,10 @@ import {
   todoSeries,
   user as userTable,
 } from "#api/platform/database/schema/index";
-import type { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { DateClock } from "#test/doubles/platform/date-clock";
+import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";
+import { StubCurrentUserAccess } from "#test/fixtures/auth-credential.fixture";
 import { TodoCategoryFixture, TodoFixture, UserFixture } from "#test/fixtures/index";
 import { createDatabaseTransactionFixture, createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
@@ -90,16 +86,16 @@ describe("회차 채우기 작업 (실제 PostgreSQL)", () => {
   ) {
     const { scheduleReminders = async () => undefined, ...budget } = overrides;
     const todoRepository = new DrizzleTodoRepository(fixture.txHost);
-    const effects = mock<Pick<PublishTodoCreationUseCase, "publishOccurrences">>();
-    effects.publishOccurrences.mockImplementation(async (series, occurrences) => {
-      published.push({
-        seriesId: series.id.value,
-        todoIds: occurrences.map((occurrence) => occurrence.todoId),
-      });
-    });
+    const effects: Pick<PublishTodoCreationUseCase, "publishOccurrences"> = {
+      publishOccurrences: async (series, occurrences) => {
+        published.push({
+          seriesId: series.id.value,
+          todoIds: occurrences.map((occurrence) => occurrence.todoId),
+        });
+      },
+    };
     const seriesRepository = new DrizzleTodoSeriesRepository(fixture.txHost);
-    const entitlements = mock<EntitlementReaderPort>();
-    entitlements.getAccessSnapshot.mockResolvedValue(mock<AccessSnapshot>({ tier: "FREE" }));
+    const entitlements = new StubCurrentUserAccess();
     return new MaterializeDueTodoSeriesUseCase({
       clock: new DateClock(),
       seriesRepository,
@@ -119,7 +115,7 @@ describe("회차 채우기 작업 (실제 PostgreSQL)", () => {
         unitOfWork: fixture.uow,
         mutationLock: new PostgresMutationLockAdapter(fixture.txHost),
       }),
-      alert: mock<OperationalAlertPort>(),
+      alert: new RecordingOperationalAlert(),
       logger: new Logger("SeriesJobIntegration"),
       ...budget,
     });

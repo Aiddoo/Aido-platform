@@ -5,7 +5,7 @@ import { mock } from "vitest-mock-extended";
 
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { type MutationLockPort, type UnitOfWorkPort } from "#api/shared/application/ports/index";
-import { PLANNING_TIME } from "#test/fixtures/planning-todo.fixture";
+import { PLANNING_TIME } from "#test/fixtures/planning/planning-todos.fixture";
 import { TodoCategoryFixture } from "#test/fixtures/todo.fixture";
 import { createUnitOfWorkMock } from "#test/mocks/ports/unit-of-work.mock";
 

@@ -5,7 +5,7 @@ import {
   createPlanningTodoFixture,
   createPlanningTodo,
   PLANNING_TIME,
-} from "#test/fixtures/planning-todo.fixture";
+} from "#test/fixtures/planning/planning-todos.fixture";
 
 import { ReorderTodoItemsUseCase } from "./reorder-todo-items.use-case.js";
 

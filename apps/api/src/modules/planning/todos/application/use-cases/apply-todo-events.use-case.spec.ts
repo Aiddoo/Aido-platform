@@ -1,6 +1,6 @@
 import type { PublishedDomainEvent } from "#api/shared/application/ports/domain-event-publisher.port";
+import { RecordingTodoReminderScheduler } from "#test/doubles/planning/recording-todo-reminder-scheduler";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
-import { StubPlanningTodoReminder } from "#test/mocks/ports/planning-todo.stub";
 
 import { TodoCreatedEvent } from "../../../shared/domain/todo-created.event.js";
 import { TodoDeletedEvent } from "../../../shared/domain/todo-deleted.event.js";
@@ -18,7 +18,7 @@ const AT = Temporal.Instant.from("2026-11-10T00:00:00Z");
 const TEN_AM = new Date("2026-11-11T01:00:00.000Z");
 
 function createUseCase() {
-  const reminders = new StubPlanningTodoReminder();
+  const reminders = new RecordingTodoReminderScheduler();
   const published: PublishedDomainEvent[] = [];
   const useCase = new ApplyTodoEventsUseCase({
     reminderScheduler: reminders,

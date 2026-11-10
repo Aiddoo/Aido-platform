@@ -6,9 +6,9 @@ import { mock } from "vitest-mock-extended";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { type MutationLockPort } from "#api/shared/application/ports/index";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
-import { PLANNING_TIME } from "#test/fixtures/planning-todo.fixture";
+import { RecordingDomainEventPublisher } from "#test/doubles/planning/recording-domain-event-publisher";
+import { PLANNING_TIME } from "#test/fixtures/planning/planning-todos.fixture";
 import { TodoCategoryFixture } from "#test/fixtures/todo.fixture";
-import { StubPlanningEventPublisher } from "#test/mocks/ports/planning-todo.stub";
 import { createUnitOfWorkMock } from "#test/mocks/ports/unit-of-work.mock";
 
 import { TodoCategory } from "../../../domain/aggregates/categories/todo-category.aggregate.js";
@@ -26,7 +26,7 @@ const createCategory = (id = 1) =>
   );
 
 describe("카테고리 삭제", () => {
-  let eventPublisher: StubPlanningEventPublisher;
+  let eventPublisher: RecordingDomainEventPublisher;
   let useCase: DeleteTodoCategory;
   let repository: Mocked<ConstructorParameters<typeof DeleteTodoCategory>[0]["repository"]>;
   let cache: Mocked<TodoCategoryCachePort>;
@@ -40,7 +40,7 @@ describe("카테고리 삭제", () => {
     cache = mock<TodoCategoryCachePort>();
     mutationLock = mock<MutationLockPort>();
     unitOfWork = createUnitOfWorkMock();
-    eventPublisher = new StubPlanningEventPublisher();
+    eventPublisher = new RecordingDomainEventPublisher();
     useCase = new DeleteTodoCategory({
       repository,
       cache,

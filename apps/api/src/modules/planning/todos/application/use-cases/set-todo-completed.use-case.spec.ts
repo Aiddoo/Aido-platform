@@ -5,7 +5,7 @@ import {
   createPlanningTodoFixture,
   createPlanningTodo,
   PLANNING_TIME,
-} from "#test/fixtures/planning-todo.fixture";
+} from "#test/fixtures/planning/planning-todos.fixture";
 
 import { TodoRescheduledEvent } from "../../../shared/domain/todo-rescheduled.event.js";
 import { TodoToggledEvent } from "../../../shared/domain/todo-toggled.event.js";

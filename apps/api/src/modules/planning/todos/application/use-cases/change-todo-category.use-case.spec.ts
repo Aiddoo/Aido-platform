@@ -6,7 +6,7 @@ import {
   createPlanningTodoFixture,
   createPlanningTodo,
   PLANNING_TIME,
-} from "#test/fixtures/planning-todo.fixture";
+} from "#test/fixtures/planning/planning-todos.fixture";
 
 import { TodoCategoryChangedEvent } from "../../../shared/domain/todo-category-changed.event.js";
 import { ChangeTodoCategoryUseCase } from "./change-todo-category.use-case.js";

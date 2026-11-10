@@ -5,7 +5,7 @@ import {
   createPlanningTodoFixture,
   createPlanningTodo,
   PLANNING_TIME,
-} from "#test/fixtures/planning-todo.fixture";
+} from "#test/fixtures/planning/planning-todos.fixture";
 
 import { TodoVisibilityChangedEvent } from "../../../shared/domain/todo-visibility-changed.event.js";
 import { UpdateTodoVisibilityUseCase } from "./update-todo-visibility.use-case.js";
