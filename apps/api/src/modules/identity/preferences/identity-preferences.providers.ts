@@ -33,7 +33,7 @@ import { UpsertPushLocaleUseCase } from "./application/use-cases/upsert-push-loc
 import { UpsertPushTimezoneUseCase } from "./application/use-cases/upsert-push-timezone.use-case.js";
 
 // access 권한 판단과 notification 활성 시간대 캐시는 아직 Symbol 토큰이라 이 slice의 포트로 잇는다
-export const PREFERENCE_COLLABORATOR_PROVIDERS = [
+const PREFERENCE_COLLABORATOR_PROVIDERS = [
   { provide: PreferenceEntitlementPort, useExisting: ENTITLEMENT_READER },
   { provide: ReminderTimezoneCachePort, useExisting: REMINDER_TIMEZONE_CACHE },
 ] satisfies Provider[];
