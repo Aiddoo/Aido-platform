@@ -23,6 +23,9 @@ output.ids = {
   feed: {
     screen: 'feed-screen',
   },
+  whatsNew: {
+    screen: 'whats-new-screen',
+  },
   todo: {
     addButton: (categoryId) => 'todo-add-' + categoryId,
     addSheet: 'todo-add-sheet',

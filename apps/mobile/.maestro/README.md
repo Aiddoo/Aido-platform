@@ -101,7 +101,8 @@ maestro check-syntax apps/mobile/.maestro/flows/todo/create-complete-delete.yaml
 ```
 
 iOS 시뮬레이터는 영어 키보드를 첫 번째로 둔다. 병음·한글 입력기가 앞에 있으면 Maestro가 넣은 영문이 조합 중으로 남아 이메일 형식 오류나
-저장되지 않은 메모로 실패한다. 알림 권한은 iOS 시뮬레이터에서 미리 줄 수 없어 새 계정은 로그인 뒤 알림 안내 화면이 뜨고, 로그인 subflow가 닫는다.
+저장되지 않은 메모로 실패한다. 알림 권한은 iOS 시뮬레이터에서 미리 줄 수 없어 새 계정은 로그인 뒤 알림 안내 화면이 뜨고,
+이어서 새로운 기능 소개가 피드를 덮는다. 로그인 subflow가 부르는 `subflows/app/dismiss-hints.yaml`이 둘 다 닫는다.
 
 ```bash
 xcrun simctl spawn <udid> defaults write -g AppleKeyboards -array "en_US@sw=QWERTY;hw=Automatic" "ko_KR@sw=Korean;hw=Automatic" "emoji@sw=Emoji"

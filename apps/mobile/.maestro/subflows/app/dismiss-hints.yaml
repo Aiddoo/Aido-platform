@@ -25,6 +25,22 @@ name: 로그인 직후 뜨는 시스템 창과 처음 쓰는 계정 안내를 �
       - tapOn: ${output.ids.common.headerCloseLabel}
 - extendedWaitUntil:
     visible:
+      id: ${output.ids.whatsNew.screen}
+    timeout: 10000
+    optional: true
+- runFlow:
+    label: 새로운 기능 소개가 자동으로 열리면 닫는다(알림 안내 다음에 피드를 덮고 한 번 뜬다)
+    when:
+      visible:
+        id: ${output.ids.whatsNew.screen}
+    commands:
+      - tapOn: ${output.ids.common.headerCloseLabel}
+      - extendedWaitUntil:
+          notVisible:
+            id: ${output.ids.whatsNew.screen}
+          timeout: 10000
+- extendedWaitUntil:
+    visible:
       id: ${output.ids.common.hintPopover}
     timeout: 3000
     optional: true
