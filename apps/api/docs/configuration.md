@@ -89,4 +89,4 @@ env를 더하거나 읽는 위치를 바꿀 때, 운영 env를 준비할 때 읽
 
 ## 전환 중
 
-`TypedConfigService`는 ai-assistance(`ai` 섹션)만 쓴다. ai가 slice 설정으로 옮기면 지운다. 시작 검증은 지금처럼 `src/platform/config/schemas` 전체 schema가 한 번 한다. 안 쓰는 env(`JOB_POLLING_INTERVAL_SECONDS`, `JOB_BACKEND`, `JOB_REDIS_DRAIN_ENABLED`)는 schema에서 지웠다. 배포 env에 남아 있어도 env schema가 모르는 키를 버려 무시된다. 옮긴 Context는 `apps/api/architecture.ratchet.json`의 `migratedContexts`에 있다.
+설정 값은 모두 namespace 설정(`*.config.ts`)으로만 읽는다. 시작 검증은 지금처럼 `src/platform/config/schemas` 전체 schema가 한 번 한다. 안 쓰는 env(`JOB_POLLING_INTERVAL_SECONDS`, `JOB_BACKEND`, `JOB_REDIS_DRAIN_ENABLED`)는 schema에서 지웠다. 배포 env에 남아 있어도 env schema가 모르는 키를 버려 무시된다. 옮긴 Context는 `apps/api/architecture.ratchet.json`의 `migratedContexts`에 있다.

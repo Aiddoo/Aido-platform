@@ -1,17 +1,18 @@
 import { readFileSync } from "node:fs";
 
-import { ConfigService } from "@nestjs/config";
 import { generateText, Output } from "ai";
 import { z } from "zod";
 
+import {
+  type AiAssistanceGenerationConfig,
+  aiAssistanceGenerationConfig,
+} from "#api/modules/ai-assistance/generation/ai-assistance-generation.config";
 import {
   type AiProviderAdapter,
   AiProviderCatalog,
 } from "#api/modules/ai-assistance/generation/infrastructure/adapters/ai-provider.adapter";
 import { AiSdkGeneratorAdapter } from "#api/modules/ai-assistance/generation/infrastructure/adapters/ai-sdk-generator.adapter";
 import { AiSpendBudgetAdapter } from "#api/modules/ai-assistance/generation/infrastructure/adapters/ai-spend-budget.adapter";
-import type { EnvConfig } from "#api/platform/config/schemas/index";
-import { TypedConfigService } from "#api/platform/config/services/config.service";
 import type { UsageMeterPort } from "#api/platform/metering/interfaces/usage-meter.interface";
 import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
 import { DateClock } from "#test/doubles/platform/date-clock";
@@ -38,8 +39,8 @@ export const AI_FIXTURE_KEYS = {
 } as const;
 
 /** 업체 키와 AI 운영 env만 바꾼 설정. 외부 호출은 테스트가 fetch를 stub해 막는다. */
-export function createAiTestConfig(env: Record<string, string> = {}): TypedConfigService {
-  return new TypedConfigService(new ConfigService<EnvConfig, true>({ ...AI_FIXTURE_KEYS, ...env }));
+export function createAiTestConfig(env: Record<string, string> = {}): AiAssistanceGenerationConfig {
+  return aiAssistanceGenerationConfig.parse({ ...AI_FIXTURE_KEYS, ...env });
 }
 
 /** 실제 업체 SDK로 한 번 호출해(재시도 없음) 던진 오류를 돌려준다. fetch는 테스트가 stub한다. */
@@ -66,7 +67,7 @@ export async function captureProviderError(
  * 회로 레지스트리를 새로 만들므로 생성기마다 회로 상태가 따로다.
  */
 export function createAiSdkGenerator(
-  config: TypedConfigService,
+  config: AiAssistanceGenerationConfig,
   adapters: readonly AiProviderAdapter[],
   options: {
     readonly alert?: RecordingOperationalAlert;

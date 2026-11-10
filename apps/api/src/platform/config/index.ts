@@ -7,4 +7,3 @@ export * from "./jwt.config.js";
 export * from "./redis.config.js";
 export * from "./schemas/index.js";
 export * from "./sentry.config.js";
-export * from "./services/config.service.js";

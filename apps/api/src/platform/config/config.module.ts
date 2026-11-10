@@ -13,7 +13,6 @@ import { redisConfig } from "./redis.config.js";
 import { validateEnv } from "./schemas/index.js";
 import { productionConfigWarnings } from "./schemas/production-readiness.js";
 import { sentryConfig } from "./sentry.config.js";
-import { TypedConfigService } from "./services/config.service.js";
 import { throttleConfig } from "./throttle.config.js";
 
 /**
@@ -48,8 +47,6 @@ import { throttleConfig } from "./throttle.config.js";
       ],
     }),
   ],
-  providers: [TypedConfigService],
-  exports: [TypedConfigService],
 })
 export class AppConfigModule implements OnApplicationBootstrap {
   readonly #logger = new Logger(AppConfigModule.name);

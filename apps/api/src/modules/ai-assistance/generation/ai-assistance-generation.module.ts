@@ -1,9 +1,11 @@
 import { Module } from "@nestjs/common";
+import { ConfigModule } from "@nestjs/config";
 
 import { IdentitySettingsModule } from "#api/modules/identity/identity-settings.public";
 import { IdentityUserAccessModule } from "#api/modules/identity/identity-user-access.public";
 import { NotificationDeliveryModule } from "#api/modules/notification/notification-delivery.public";
 
+import { aiAssistanceGenerationConfig } from "./ai-assistance-generation.config.js";
 import { AI_ASSISTANCE_GENERATION_PROVIDERS } from "./ai-assistance-generation.providers.js";
 import { AiGeneratorPort } from "./application/ports/ai-generator.port.js";
 import {
@@ -17,7 +19,12 @@ import { ScheduledAiConsentReader } from "./application/scheduled-ai-consent.rea
  * 회로·bulkhead는 전역 OutboundPolicyRegistry, 예산 누적은 UsageMeter, 경보는 OperationalAlertPort를 쓴다.
  */
 @Module({
-  imports: [IdentitySettingsModule, IdentityUserAccessModule, NotificationDeliveryModule],
+  imports: [
+    ConfigModule.forFeature(aiAssistanceGenerationConfig),
+    IdentitySettingsModule,
+    IdentityUserAccessModule,
+    NotificationDeliveryModule,
+  ],
   providers: [...AI_ASSISTANCE_GENERATION_PROVIDERS],
   exports: [
     AiGeneratorPort,

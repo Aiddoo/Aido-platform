@@ -19,10 +19,10 @@ import { setTimeout as sleep } from "node:timers/promises";
 import { parseArgs } from "node:util";
 
 import { AI_DATA_SHARING_CONSENT, AI_PROVIDER_IDS } from "@aido/api/vocabulary";
-import { ConfigService } from "@nestjs/config";
 import { omit } from "es-toolkit";
 import { match } from "ts-pattern";
 
+import { aiAssistanceGenerationConfig } from "#api/modules/ai-assistance/generation/ai-assistance-generation.config";
 import { AiGenerationError } from "#api/modules/ai-assistance/generation/application/ai-generation.errors";
 import { generateWithPrompt } from "#api/modules/ai-assistance/generation/application/messages/prompt-definition.messages";
 import type {
@@ -45,7 +45,6 @@ import { voiceNoteDigestPrompt } from "#api/modules/ai-assistance/planning/appli
 import type { NormalizedActionPlan } from "#api/modules/ai-assistance/planning/domain/action-plan-draft.constants";
 
 import { AI_THINKING_LEVELS } from "../../src/platform/config/schemas/ai.schema.js";
-import { TypedConfigService } from "../../src/platform/config/services/config.service.js";
 import { OutboundPolicyRegistry } from "../../src/platform/resilience/outbound-policy.registry.js";
 import { SystemClock } from "../../src/platform/time/system-clock.js";
 import type { OperationalAlertPort } from "../../src/shared/application/ports/operational-alert.port.js";
@@ -388,13 +387,11 @@ const THINKING_ENV = {
 /** --provider·AI_EVAL_THINKING을 운영 설정 env에 덮어 실제 생성 체인을 만든다. */
 function createGenerator(task: GoldenTask, provider: string | undefined) {
   const thinking = AI_THINKING_LEVELS.find((level) => level === process.env.AI_EVAL_THINKING);
-  const config = new TypedConfigService(
-    new ConfigService({
-      ...process.env,
-      ...(provider != null && { AI_PROVIDER_ORDER: provider }),
-      ...(thinking != null && { [THINKING_ENV[task]]: thinking }),
-    }),
-  );
+  const config = aiAssistanceGenerationConfig.parse({
+    ...process.env,
+    ...(provider != null && { AI_PROVIDER_ORDER: provider }),
+    ...(thinking != null && { [THINKING_ENV[task]]: thinking }),
+  });
   const adapters: AiProviderAdapter[] = [
     new AnthropicProviderAdapter(config),
     new GoogleProviderAdapter(config),
@@ -403,7 +400,7 @@ function createGenerator(task: GoldenTask, provider: string | undefined) {
   const alert: OperationalAlertPort = {
     raise: (raised) => console.warn(`alert ${raised.key} ${JSON.stringify(raised.tags ?? {})}`),
   };
-  const available = config.ai.providerOrder.some(
+  const available = config.providerOrder.some(
     (id) => adapters.find((adapter) => adapter.id === id)?.getModel(task) != null,
   );
   return {
@@ -415,7 +412,7 @@ function createGenerator(task: GoldenTask, provider: string | undefined) {
       alert,
     ),
     available,
-    thinking: config.ai.tasks[task].thinking,
+    thinking: config.tasks[task].thinking,
   };
 }
 
