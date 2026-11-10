@@ -12,6 +12,7 @@ const TRANSACTION_ACTIVE = Symbol("TEST_TRANSACTION_ACTIVE");
 
 class FakeTransactionHost {
   commitError: Error | undefined;
+  readonly tx = { execute: async () => [] };
 
   constructor(private readonly cls: ClsService) {}
 

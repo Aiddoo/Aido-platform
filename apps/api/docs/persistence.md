@@ -57,14 +57,14 @@ Repository·Reader·스키마·마이그레이션·DB 오류 번역을 바꿀 �
 
 `platform/database/postgres-pool.ts`의 목표 값이다.
 
-| 설정                                  | 값                                                                 |
-| ------------------------------------- | ------------------------------------------------------------------ |
-| `application_name`                    | `aido-api`                                                         |
-| `statement_timeout`·`lock_timeout`    | 15s · 5s (배치는 작업 정의에서 `SET LOCAL`로 늘린다)               |
-| `idle_in_transaction_session_timeout` | 60s                                                                |
-| `connectionTimeoutMillis`             | 약 5s, 넘으면 503으로 빨리 실패                                    |
-| 크기                                  | 앱 `DATABASE_POOL_MAX` 10 + pg-boss 3. 메모리 때문에 늘리지 않는다 |
-| TLS                                   | `sslmode=verify-full`(RDS CA는 이미지에 있다)                      |
+| 설정                                  | 값                                                                                                      |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `application_name`                    | `aido-api`                                                                                              |
+| `statement_timeout`·`lock_timeout`    | 15s · 5s (배치는 `unitOfWork.run(work, { statementTimeoutMs })`가 그 트랜잭션에만 `SET LOCAL`로 늘린다) |
+| `idle_in_transaction_session_timeout` | 60s                                                                                                     |
+| `connectionTimeoutMillis`             | 약 5s, 넘으면 503으로 빨리 실패                                                                         |
+| 크기                                  | 앱 `DATABASE_POOL_MAX` 10 + pg-boss 3. 메모리 때문에 늘리지 않는다                                      |
+| TLS                                   | `sslmode=verify-full`(RDS CA는 이미지에 있다)                                                           |
 
 ## DB 오류 번역
 
