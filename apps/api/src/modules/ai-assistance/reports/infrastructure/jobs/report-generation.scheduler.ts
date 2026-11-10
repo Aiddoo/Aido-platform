@@ -113,7 +113,8 @@ export class ReportGenerationScheduler implements OnModuleInit {
           columns: { id: true },
           with: { preference: { columns: { timezone: true, locale: true } } },
           where: {
-            id: cursor != null ? { gt: cursor } : undefined,
+            // Drizzle 1.0 RC는 undefined 조건을 거절하므로 첫 페이지에서는 조건을 빼야 한다
+            ...(cursor != null && { id: { gt: cursor } }),
             RAW: (target) => premiumAccessCondition(target, now()),
             status: "ACTIVE",
             deletedAt: { isNull: true },

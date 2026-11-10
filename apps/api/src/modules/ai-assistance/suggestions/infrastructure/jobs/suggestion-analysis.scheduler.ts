@@ -86,7 +86,8 @@ export class SuggestionAnalysisScheduler implements OnModuleInit {
             location: { columns: { gridX: true, gridY: true, latitude: true, longitude: true } },
           },
           where: {
-            id: cursor != null ? { gt: cursor } : undefined,
+            // Drizzle 1.0 RC는 undefined 조건을 거절하므로 첫 페이지에서는 조건을 빼야 한다
+            ...(cursor != null && { id: { gt: cursor } }),
             RAW: (target) => premiumAccessCondition(target, atDate),
             status: "ACTIVE",
             deletedAt: { isNull: true },
