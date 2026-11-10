@@ -8,7 +8,7 @@ import { preparePgBossSchema, useRealJobRuntime } from "./helpers/real-job-runti
 // Vitest fork worker의 stdin·stdout·stderr·IPC 파이프다. 앱과 무관하게 처음부터 열려 있다
 const STDIO_RESOURCES = new Set(["PipeWrap", "TTYWrap"]);
 // app.close()가 끝난 뒤에도 HTTP keep-alive 소켓과 server handle은 다음 tick들에 닫힌다(측정 50ms 안팎)
-const SETTLE_DEADLINE_MS = 1_000;
+const SETTLE_DEADLINE_MS = 1000;
 
 function nonStdioResources(): string[] {
   return process.getActiveResourcesInfo().filter((resource) => !STDIO_RESOURCES.has(resource));

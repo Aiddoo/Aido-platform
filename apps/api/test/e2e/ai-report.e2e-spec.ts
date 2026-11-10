@@ -190,7 +190,7 @@ describe("AI 리포트 E2E", () => {
       })
       .returning();
     assert.exists(category);
-    const lastWeek = new Date(Date.now() - 7 * 24 * 60 * 60 * 1_000);
+    const lastWeek = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
     const seoulDate = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Seoul" });
     const { id: _id, ...row } = TodoFixture.create({
       userId,

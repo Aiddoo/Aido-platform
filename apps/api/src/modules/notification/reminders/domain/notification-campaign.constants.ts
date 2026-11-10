@@ -26,4 +26,4 @@ export const SCHEDULER_CAMPAIGN_KEY = {
 } as const;
 
 /** 저녁 리마인더와 소셜 다이제스트 사이의 피로도 완충 시간. */
-export const SOCIAL_DIGEST_DELAY_MS = 90 * 60 * 1_000;
+export const SOCIAL_DIGEST_DELAY_MS = 90 * 60 * 1000;

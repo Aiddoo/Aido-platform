@@ -53,7 +53,7 @@ async function bootstrap() {
       });
       process.exitCode = 1;
     } finally {
-      await flushExceptionReports(2_000);
+      await flushExceptionReports(2000);
     }
   };
   process.once("SIGTERM", () => {

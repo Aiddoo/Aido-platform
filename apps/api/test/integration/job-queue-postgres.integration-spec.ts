@@ -163,7 +163,7 @@ describe("PgBossJobQueueAdapter 통합 테스트 (실제 PostgreSQL)", () => {
     await eventually(() => {
       expect(received).toEqual([4]);
     });
-    await new Promise((resolve) => setTimeout(resolve, 1_000));
+    await new Promise((resolve) => setTimeout(resolve, 1000));
     expect(received).toEqual([4]);
   });
 

@@ -51,7 +51,7 @@ describe("CacheModule 통합 테스트", () => {
                 cacheConfig.parse({
                   CACHE_TYPE: "memory",
                   CACHE_DEFAULT_TTL_MS: 60_000,
-                  CACHE_MAX_ITEMS: 1_000,
+                  CACHE_MAX_ITEMS: 1000,
                 }),
               ),
             ],
@@ -536,14 +536,14 @@ describe("CacheModule 통합 테스트", () => {
 
       it("ttl로 남은 TTL을 조회한다", async () => {
         // Given
-        await cacheService.set("ttl-test", "value", 5_000);
+        await cacheService.set("ttl-test", "value", 5000);
 
         // When
         const remainingTtl = await cacheService.ttl("ttl-test");
 
         // Then
         expect(remainingTtl).toBeGreaterThan(0);
-        expect(remainingTtl).toBeLessThanOrEqual(5_000);
+        expect(remainingTtl).toBeLessThanOrEqual(5000);
       });
 
       it("ttl이 존재하지 않는 키에 대해 -2를 반환한다", async () => {
@@ -556,7 +556,7 @@ describe("CacheModule 통합 테스트", () => {
 
       it("touch로 TTL을 갱신한다", async () => {
         // Given
-        await cacheService.set("touch-test", "value", 1_000);
+        await cacheService.set("touch-test", "value", 1000);
 
         // When
         const success = await cacheService.touch("touch-test", 10_000);
@@ -564,12 +564,12 @@ describe("CacheModule 통합 테스트", () => {
         // Then
         expect(success).toBe(true);
         const newTtl = await cacheService.ttl("touch-test");
-        expect(newTtl).toBeGreaterThan(5_000); // 새 TTL이 적용됨
+        expect(newTtl).toBeGreaterThan(5000); // 새 TTL이 적용됨
       });
 
       it("touch가 존재하지 않는 키에 대해 false를 반환한다", async () => {
         // When
-        const result = await cacheService.touch("nonexistent", 5_000);
+        const result = await cacheService.touch("nonexistent", 5000);
 
         // Then
         expect(result).toBe(false);

@@ -242,7 +242,7 @@
           "error",
           {
             "number": {
-              "minimumDigits": 4,
+              "minimumDigits": 5,
               "groupLength": 3
             },
             "hexadecimal": {

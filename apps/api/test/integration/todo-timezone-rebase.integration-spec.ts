@@ -62,7 +62,7 @@ import { suppressLogger } from "../setup/suppress-logger.js";
 const SEOUL = "Asia/Seoul";
 const NEW_YORK = "America/New_York";
 const SCHEMA = "pgboss";
-const HOUR_MS = 60 * 60 * 1_000;
+const HOUR_MS = 60 * 60 * 1000;
 
 describe("시간대 재계산 (실제 PostgreSQL·pg-boss)", () => {
   let database: TestDatabase;
@@ -209,7 +209,7 @@ describe("시간대 재계산 (실제 PostgreSQL·pg-boss)", () => {
     expect(await readInstant(id)).toBe(expected.toISOString());
     const starts = await queuedStarts(id, "60min");
     expect(starts).toHaveLength(1);
-    expect(Math.abs((starts[0] ?? 0) - (expected.getTime() - HOUR_MS))).toBeLessThan(5_000);
+    expect(Math.abs((starts[0] ?? 0) - (expected.getTime() - HOUR_MS))).toBeLessThan(5000);
     const row = await client.query.todo.findFirst({ where: { id } });
     expect(row?.scheduledLocalTime).toBe("10:00");
   });
@@ -233,7 +233,7 @@ describe("시간대 재계산 (실제 PostgreSQL·pg-boss)", () => {
 
   it("새 시간대에서 10분 안쪽으로 남으면 바로 보내지 않고 건너뛴다", async () => {
     // Given
-    const soon = new Date(Date.now() + 5 * 60 * 1_000);
+    const soon = new Date(Date.now() + 5 * 60 * 1000);
     const localTime = toLocalTimeString(soon, NEW_YORK);
     const id = await seedTodo(localDateInTimezone(soon, NEW_YORK), localTime, {
       scheduledTime: nowInstant().add({ milliseconds: 5 * HOUR_MS }),
@@ -293,7 +293,7 @@ describe("시간대 재계산 (실제 PostgreSQL·pg-boss)", () => {
     const starts = await queuedStarts(id, "60min");
     expect(starts).toHaveLength(1);
     expect(Math.abs((starts[0] ?? 0) - (seoulInstant.epochMilliseconds - HOUR_MS))).toBeLessThan(
-      5_000,
+      5000,
     );
     expect(await queuedStarts(id, "10min")).toHaveLength(1);
   });
@@ -381,9 +381,9 @@ describe("시간대 재계산 (실제 PostgreSQL·pg-boss)", () => {
   it("같은 구간의 변경은 작업 하나로 묶이고 다음 구간은 새 작업이 된다", async () => {
     // Given
     const windowStart = Math.floor(Date.now() / TODO_TIMEZONE_REBASE_WINDOW_MS);
-    const first = new Date(windowStart * TODO_TIMEZONE_REBASE_WINDOW_MS + 1_000);
+    const first = new Date(windowStart * TODO_TIMEZONE_REBASE_WINDOW_MS + 1000);
     const sameWindow = new Date(windowStart * TODO_TIMEZONE_REBASE_WINDOW_MS + 30_000);
-    const nextWindow = new Date((windowStart + 1) * TODO_TIMEZONE_REBASE_WINDOW_MS + 1_000);
+    const nextWindow = new Date((windowStart + 1) * TODO_TIMEZONE_REBASE_WINDOW_MS + 1000);
     // When
     await queue.enqueueRebase(userId, first);
     await queue.enqueueRebase(userId, sameWindow);
@@ -440,7 +440,7 @@ describe("시간대 재계산 (실제 PostgreSQL·pg-boss)", () => {
       await setStoredTimezone(SEOUL);
       const at = new Date(
         Math.floor(Date.now() / TODO_TIMEZONE_REBASE_WINDOW_MS) * TODO_TIMEZONE_REBASE_WINDOW_MS +
-          1_000,
+          1000,
       );
       const preferenceRepository = new DrizzleUserPreferenceRepository(transaction.txHost);
       const refresh = new RefreshPushTimezoneUseCase({

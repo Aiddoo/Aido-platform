@@ -4,7 +4,7 @@ import type { AuthPasswordHasherPort } from "#api/modules/identity/auth/applicat
 
 const TEST_HASH_OPTIONS: argon2.HashOptions = {
   type: argon2.argon2id,
-  memoryCost: 1_024,
+  memoryCost: 1024,
   timeCost: 1,
   parallelism: 1,
 };

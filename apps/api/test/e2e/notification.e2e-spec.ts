@@ -1217,7 +1217,7 @@ describe("알림 E2E", () => {
               {
                 subscriptionId: 1,
                 userId: user.userId,
-                expiresAt: instantFromDate(new Date(now.getTime() + 7 * 24 * 60 * 60 * 1_000)),
+                expiresAt: instantFromDate(new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000)),
                 isCurrentChain: true,
               },
             ],

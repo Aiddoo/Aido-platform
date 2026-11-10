@@ -8,7 +8,7 @@ describe("databaseConfig — DB 응답 대기 상한", () => {
     const config = databaseConfig.parse({ DATABASE_URL });
 
     // Then
-    expect(config.connectionTimeoutMs).toBe(5_000);
+    expect(config.connectionTimeoutMs).toBe(5000);
     expect(config.queryTimeoutMs).toBe(20_000);
   });
 
@@ -20,6 +20,6 @@ describe("databaseConfig — DB 응답 대기 상한", () => {
     });
 
     // Then
-    expect(config.connectionTimeoutMs).toBe(3_000);
+    expect(config.connectionTimeoutMs).toBe(3000);
   });
 });

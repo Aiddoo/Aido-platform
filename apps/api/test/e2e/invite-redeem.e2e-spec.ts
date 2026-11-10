@@ -210,7 +210,7 @@ describe("초대 수락 HTTP (실제 DB)", () => {
     // Given
     const inviter = await ctx.helpers.createVerifiedUser("store-inviter@test.com", PASSWORD);
     const invitee = await ctx.helpers.createVerifiedUser("store-invitee@test.com", PASSWORD);
-    const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1_000);
+    const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
     const subscriptions = ctx.module.get(SubscriptionRepositoryPort);
     const now = Temporal.Now.instant();
     await subscriptions.save(

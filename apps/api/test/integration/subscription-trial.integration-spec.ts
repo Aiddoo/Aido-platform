@@ -29,7 +29,7 @@ import {
   type E2eTestContext,
 } from "../e2e/helpers/e2e-app-factory.js";
 
-const DAY_MS = 24 * 60 * 60 * 1_000;
+const DAY_MS = 24 * 60 * 60 * 1000;
 // 런던 12:00(낮), 서울 21:00(야간)
 const at = new Date("2027-01-04T12:00:00.000Z");
 const trialStartedAt = new Date("2026-12-07T12:00:00.000Z");

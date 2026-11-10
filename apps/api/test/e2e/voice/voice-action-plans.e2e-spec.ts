@@ -70,7 +70,7 @@ describe("빠른 계획·녹음 정리·계획 적용 E2E", () => {
       durationSeconds: 60,
       segments: [
         { startMs: 0, text: "회의를 했습니다.", isBookmarked: false },
-        { startMs: 4_200, text: "회의록은 제가 보냅니다.", isBookmarked: true },
+        { startMs: 4200, text: "회의록은 제가 보냅니다.", isBookmarked: true },
       ],
     };
   }
@@ -182,7 +182,7 @@ describe("빠른 계획·녹음 정리·계획 적용 E2E", () => {
       // Then
       const parsed = voiceNoteDigestResponseSchema.parse(response.body.data);
       expect(response.body.data).not.toHaveProperty("meta");
-      expect(parsed.keyPoints[0]?.startMs).toBe(4_200);
+      expect(parsed.keyPoints[0]?.startMs).toBe(4200);
       expect(parsed.featureQuota).toMatchObject({
         feature: "VOICE_NOTE",
         used: 1,
@@ -303,7 +303,7 @@ describe("빠른 계획·녹음 정리·계획 적용 E2E", () => {
       });
       aiGenerator.setRawResponse(digestDraft());
       const within = { text: "가".repeat(39_000), durationSeconds: 60, segments: [] };
-      const tooLarge = { text: "a".repeat(257 * 1_024), durationSeconds: 60, segments: [] };
+      const tooLarge = { text: "a".repeat(257 * 1024), durationSeconds: 60, segments: [] };
       // When
       const accepted = await post("/v1/voice-notes/digest", accessToken, within);
       const rejected = await post("/v1/voice-notes/digest", accessToken, tooLarge);
@@ -405,7 +405,7 @@ describe("빠른 계획·녹음 정리·계획 적용 E2E", () => {
       });
       const notOwned = await post("/v1/action-plans/apply", accessToken, {
         source: "VOICE_NOTE",
-        actions: [{ ...action, categoryId: categoryId + 1_000 }],
+        actions: [{ ...action, categoryId: categoryId + 1000 }],
       });
       // Then
       expect(withoutCategory.status).toBe(400);
@@ -413,7 +413,7 @@ describe("빠른 계획·녹음 정리·계획 적용 E2E", () => {
       expect(notOwned.body.error.code).toBe(ErrorCode.AI_1315);
       expect(notOwned.body.error.details).toEqual({
         reason: "CATEGORY_NOT_OWNED",
-        categoryIds: [categoryId + 1_000],
+        categoryIds: [categoryId + 1000],
       });
     });
   });

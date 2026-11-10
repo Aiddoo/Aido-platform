@@ -23,9 +23,9 @@ describe("InMemoryPushRateLimiterAdapter — 참여 알림 발송 한도 정책"
     // When & Then
     expect(await reserve(1)).toBe(false);
     expect(await reserve(2)).toBe(true);
-    vi.advanceTimersByTime(4 * 60 * 60 * 1_000);
+    vi.advanceTimersByTime(4 * 60 * 60 * 1000);
     expect(await reserve(3)).toBe(false);
-    vi.advanceTimersByTime(4 * 60 * 60 * 1_000);
+    vi.advanceTimersByTime(4 * 60 * 60 * 1000);
     expect(await reserve(4)).toBe(true);
   });
 
@@ -35,11 +35,11 @@ describe("InMemoryPushRateLimiterAdapter — 참여 알림 발송 한도 정책"
     const reserve = (dispatchId: number) =>
       limiter.reserveEngagement({ userId: USER_ID, localDate: "2026-07-15", dispatchId });
     expect(await reserve(1)).toBe(false);
-    vi.advanceTimersByTime(4 * 60 * 60 * 1_000);
+    vi.advanceTimersByTime(4 * 60 * 60 * 1000);
     expect(await reserve(2)).toBe(false);
 
     // When
-    vi.advanceTimersByTime(49 * 60 * 60 * 1_000);
+    vi.advanceTimersByTime(49 * 60 * 60 * 1000);
 
     // Then
     expect(await reserve(3)).toBe(false);
@@ -116,11 +116,11 @@ describe("InMemoryPushRateLimiterAdapter — 참여 알림 발송 한도 정책"
     await expect(limiter.reserveBatch([original])).resolves.toEqual([false]);
 
     // When
-    vi.advanceTimersByTime(5 * 60 * 60 * 1_000);
+    vi.advanceTimersByTime(5 * 60 * 60 * 1000);
     await expect(
       limiter.reserveBatch([{ ...original, engagementLocalDate: "2026-07-16", dispatchId: 702 }]),
     ).resolves.toEqual([false]);
-    vi.advanceTimersByTime(4 * 60 * 60 * 1_000);
+    vi.advanceTimersByTime(4 * 60 * 60 * 1000);
     await expect(
       limiter.reserveBatch([{ ...original, engagementLocalDate: "2026-07-16", dispatchId: 703 }]),
     ).resolves.toEqual([false]);
@@ -141,7 +141,7 @@ describe("InMemoryPushRateLimiterAdapter — 참여 알림 발송 한도 정책"
     await expect(limiter.reserveGeneral(reserved)).resolves.toBe(false);
 
     // When
-    vi.advanceTimersByTime(2 * 60 * 60 * 1_000);
+    vi.advanceTimersByTime(2 * 60 * 60 * 1000);
     for (let index = 0; index < 15; index += 1) {
       await expect(
         limiter.reserveGeneral({ userId: USER_ID, dispatchId: 900 + index }),

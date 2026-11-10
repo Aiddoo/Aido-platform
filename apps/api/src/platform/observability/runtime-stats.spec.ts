@@ -5,7 +5,7 @@ import {
   type RuntimeSample,
 } from "./runtime-stats.js";
 
-const MB = 1_024 * 1_024;
+const MB = 1024 * 1024;
 
 function sample(overrides: Partial<RuntimeSample> = {}): RuntimeSample {
   return {
@@ -59,7 +59,7 @@ describe("evaluateRuntimeSample — 런타임 포화 판정", () => {
 
   it("풀 대기가 사라지면 시작 시각을 지운다", () => {
     // When
-    const result = evaluateRuntimeSample(sample(), { poolWaitingSinceMs: 1_000 });
+    const result = evaluateRuntimeSample(sample(), { poolWaitingSinceMs: 1000 });
 
     // Then
     expect(result.poolWaitingSinceMs).toBeNull();

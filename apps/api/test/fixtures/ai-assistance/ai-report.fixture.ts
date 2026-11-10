@@ -12,7 +12,7 @@ export function createAiReportFixture(overrides: Partial<AiReportPrimitives> = {
     id: 1,
     userId: AI_REPORT_FIXTURE_USER_ID,
     type: "WEEKLY",
-    year: 2_026,
+    year: 2026,
     period: 10,
     stats: {
       totalTodos: 10,

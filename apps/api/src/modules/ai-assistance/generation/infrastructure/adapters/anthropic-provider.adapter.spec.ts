@@ -24,7 +24,7 @@ function messageResponse(input: unknown): Response {
     stop_reason: "tool_use",
     stop_sequence: null,
     usage: {
-      input_tokens: 1_000,
+      input_tokens: 1000,
       output_tokens: 200,
       cache_read_input_tokens: 800,
       cache_creation_input_tokens: 100,
@@ -33,8 +33,8 @@ function messageResponse(input: unknown): Response {
 }
 
 const POLICY = {
-  maxOutputTokens: 1_024,
-  deadlineMs: 1_000,
+  maxOutputTokens: 1024,
+  deadlineMs: 1000,
   lastProviderMaxRetries: 1,
   maxModelCalls: 4,
 } as const;
@@ -85,13 +85,13 @@ describe("AnthropicProviderAdapter — 설치된 SDK·기록된 오류 본문, �
     const generator = createAiSdkGenerator(config, [
       new AnthropicProviderAdapter(config),
     ]).generator;
-    const system = "규칙 ".repeat(2_000);
+    const system = "규칙 ".repeat(2000);
     // When
     const result = await generator.generate({
       task: "parse-todo",
       taskClass: "interactive",
       userId: null,
-      maxInputChars: 5_000,
+      maxInputChars: 5000,
       promptVersion: "parse-todo@test",
       system,
       prompt: "독서",
@@ -105,17 +105,17 @@ describe("AnthropicProviderAdapter — 설치된 SDK·기록된 오류 본문, �
       model: "anthropic:claude-haiku-5-5",
       attempts: 1,
       fallbackFrom: null,
-      inputTokens: 1_900,
+      inputTokens: 1900,
       cachedInputTokens: 800,
       cacheWriteInputTokens: 100,
       outputTokens: 200,
-      estimatedCostMicroUsd: Math.round(1_000 * 0.1 + 800 * 0.01 + 100 * 0.125 + 200 * 0.5),
+      estimatedCostMicroUsd: Math.round(1000 * 0.1 + 800 * 0.01 + 100 * 0.125 + 200 * 0.5),
     });
     expect(String(fetchSpy.mock.calls[0]?.[0])).toBe("https://api.anthropic.com/v1/messages");
     const body = JSON.parse(String(fetchSpy.mock.calls[0]?.[1]?.body));
     expect(body).toMatchObject({
       model: "claude-haiku-5-5",
-      max_tokens: 1_024,
+      max_tokens: 1024,
       output_config: { effort: "low" },
       tools: [{ name: "json" }],
       system: [{ type: "text", text: system, cache_control: { type: "ephemeral" } }],

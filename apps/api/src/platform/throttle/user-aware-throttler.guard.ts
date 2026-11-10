@@ -17,7 +17,7 @@ export const ThrottleByUser = (): MethodDecorator & ClassDecorator =>
 
 const DAILY_THROTTLER = "daily";
 const DAILY_THROTTLED_KEY = "aido:throttle-daily";
-const DAY_MS = 24 * 60 * 60 * 1_000;
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 /** 분당 한도와 함께 하루 한도도 세는 라우트. 붙이지 않은 라우트는 하루 한도를 세지 않는다. */
 export const ThrottleDaily = (limit: number): MethodDecorator & ClassDecorator =>

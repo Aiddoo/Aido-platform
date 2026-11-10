@@ -49,7 +49,7 @@ describe("CachedActivePushTokenReaderAdapter - 활성 푸시 토큰 cache-aside"
     const key = NotificationCacheKey.pushTokens(userId);
     expect(result).toEqual(["ExponentPushToken[first]", "ExponentPushToken[second]"]);
     await expect(cache.get(key, TOKENS_SCHEMA)).resolves.toEqual(result);
-    expect(await cache.ttl(key)).toBeGreaterThan(NOTIFICATION_CACHE_TTL_MS.PUSH_TOKENS - 1_000);
+    expect(await cache.ttl(key)).toBeGreaterThan(NOTIFICATION_CACHE_TTL_MS.PUSH_TOKENS - 1000);
     expect(await cache.ttl(key)).toBeLessThanOrEqual(NOTIFICATION_CACHE_TTL_MS.PUSH_TOKENS);
   });
 
@@ -105,7 +105,7 @@ describe("CachedActivePushTokenReaderAdapter - 활성 푸시 토큰 cache-aside"
       [],
     ]);
     for (const key of missedKeys) {
-      expect(await cache.ttl(key)).toBeGreaterThan(NOTIFICATION_CACHE_TTL_MS.PUSH_TOKENS - 1_000);
+      expect(await cache.ttl(key)).toBeGreaterThan(NOTIFICATION_CACHE_TTL_MS.PUSH_TOKENS - 1000);
     }
   });
 

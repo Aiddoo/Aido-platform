@@ -179,7 +179,7 @@ describe("Todo 변경 원자성·Drizzle 쿼리 실행 수 (실제 PostgreSQL)",
         `);
         expect(waiting.rows[0]?.count).toBe(expected);
       },
-      { timeout: 5_000, interval: 10 },
+      { timeout: 5000, interval: 10 },
     );
   }
 

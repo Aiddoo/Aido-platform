@@ -4,8 +4,8 @@ export const getWeeklyAchievementsQuerySchema = z.object({
   year: z.coerce
     .number()
     .int()
-    .min(2_024, "2024년 이후만 조회할 수 있습니다")
-    .max(2_100)
+    .min(2024, "2024년 이후만 조회할 수 있습니다")
+    .max(2100)
     .describe("조회할 연도 (예: 2026)"),
   cursor: z.coerce
     .number()

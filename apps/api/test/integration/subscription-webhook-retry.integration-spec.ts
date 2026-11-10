@@ -86,7 +86,7 @@ describe("구독 웹훅의 일시 실패 재전송 (실제 PostgreSQL)", () => {
       .withOriginalTransactionId(CHAIN)
       .withTransactionId(CHAIN)
       .withEventId(eventId)
-      .withPurchasedAtMs(at.getTime() - 24 * 60 * 60 * 1_000)
+      .withPurchasedAtMs(at.getTime() - 24 * 60 * 60 * 1000)
       .withExpirationAtMs(expiresAt.getTime())
       .build();
   }

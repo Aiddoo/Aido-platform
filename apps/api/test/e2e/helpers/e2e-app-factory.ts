@@ -163,7 +163,7 @@ export async function createE2eApp(options?: E2eAppOptions): Promise<E2eTestCont
   const redisMock = new RedisMock();
   const cacheAdapter = new InMemoryCacheStore({
     defaultTtlMs: 60_000,
-    maxItems: 1_000,
+    maxItems: 1000,
   });
   let fakeOAuthProviderRegistry: FakeOAuthProviderRegistry | undefined;
   let module: TestingModule | undefined;

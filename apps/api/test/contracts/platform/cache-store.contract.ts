@@ -103,16 +103,16 @@ export function describeCacheStoreContract(context: {
 
     it("touch는 있는 키의 TTL만 바꾸고 없는 키에는 false다", async () => {
       // Given
-      await cache.set("contract:key", "value", 1_000);
+      await cache.set("contract:key", "value", 1000);
 
       // When
       const touched = await cache.touch("contract:key", 60_000);
 
       // Then
       expect(touched).toBe(true);
-      expect(await cache.ttl("contract:key")).toBeGreaterThan(1_000);
+      expect(await cache.ttl("contract:key")).toBeGreaterThan(1000);
       expect(await cache.get("contract:key", z.string())).toBe("value");
-      expect(await cache.touch("contract:missing", 1_000)).toBe(false);
+      expect(await cache.touch("contract:missing", 1000)).toBe(false);
     });
 
     it("mset한 값을 mget으로 읽고 없는 키는 undefined로 채운다", async () => {

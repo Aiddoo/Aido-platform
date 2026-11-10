@@ -16,7 +16,7 @@ describe("previousIsoWeekRange", () => {
     const result = previousIsoWeekRange(new Date("2024-01-15T00:00:00.000Z"));
     expect(result.start).toEqual(new Date("2024-01-08T00:00:00.000Z"));
     expect(result.end).toEqual(new Date("2024-01-15T00:00:00.000Z"));
-    expect(result.isoYear).toBe(2_024);
+    expect(result.isoYear).toBe(2024);
     expect(result.isoWeek).toBe(2);
   });
 
@@ -30,7 +30,7 @@ describe("previousIsoWeekRange", () => {
     const result = previousIsoWeekRange(new Date("2024-01-01T00:00:00.000Z"));
     expect(result.start).toEqual(new Date("2023-12-25T00:00:00.000Z"));
     expect(result.end).toEqual(new Date("2024-01-01T00:00:00.000Z"));
-    expect(result.isoYear).toBe(2_023);
+    expect(result.isoYear).toBe(2023);
     expect(result.isoWeek).toBe(52);
   });
 });

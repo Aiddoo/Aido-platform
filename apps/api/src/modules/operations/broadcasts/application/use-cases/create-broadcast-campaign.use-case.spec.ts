@@ -47,7 +47,7 @@ const command: CreateBroadcastCampaignCommand = {
 describe("CreateBroadcastCampaignUseCase — 브로드캐스트 접수", () => {
   it("새 요청은 캠페인을 만들고 첫 분배 작업을 같은 transaction에 등록한다", async () => {
     // Given
-    const { useCase, campaignRepository, jobEnqueuer } = setup({ targets: 1_200 });
+    const { useCase, campaignRepository, jobEnqueuer } = setup({ targets: 1200 });
 
     // When
     const result = await useCase.execute(command);
@@ -57,7 +57,7 @@ describe("CreateBroadcastCampaignUseCase — 브로드캐스트 접수", () => {
     expect(jobEnqueuer.fanOuts).toEqual([
       { campaignId: result.campaign.id.value, cursorUserId: null },
     ]);
-    expect(result).toMatchObject({ targetCount: 1_200, campaign: { status: "QUEUED" } });
+    expect(result).toMatchObject({ targetCount: 1200, campaign: { status: "QUEUED" } });
     expect(result.campaign.toPrimitives()).toMatchObject({
       localizedContent: null,
       delivery: { mode: "NOW" },

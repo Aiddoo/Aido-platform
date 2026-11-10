@@ -564,7 +564,7 @@ describe("OAuth 공급자 어댑터 — 앱이 보낸 공급자 토큰 검증", 
       claims: Record<string, unknown> = {},
       options: { issuer?: string; audience?: string; expiresInSeconds?: number } = {},
     ): Promise<string> {
-      const now = Math.floor(Date.now() / 1_000);
+      const now = Math.floor(Date.now() / 1000);
       const userNumber = key === "first" ? 1 : 2;
 
       return new SignJWT({
@@ -579,7 +579,7 @@ describe("OAuth 공급자 어댑터 — 앱이 보낸 공급자 토큰 검증", 
         .setAudience(options.audience ?? "apple-client-id")
         .setSubject(`apple-user-${userNumber}`)
         .setIssuedAt(now)
-        .setExpirationTime(now + (options.expiresInSeconds ?? 3_600))
+        .setExpirationTime(now + (options.expiresInSeconds ?? 3600))
         .sign(keyPairs[key].privateKey);
     }
 

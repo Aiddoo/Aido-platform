@@ -32,7 +32,7 @@ describe("주간 달성 실제 HTTP·PostgreSQL 계약", () => {
       .values(
         weeks.map((week) => ({
           userId,
-          year: 2_026,
+          year: 2026,
           week,
           totalTodos: 5,
           completedTodos: 5,
@@ -52,13 +52,13 @@ describe("주간 달성 실제 HTTP·PostgreSQL 계약", () => {
     // When
     const first = await request(context.app.getHttpServer())
       .get("/v1/weekly-achievements")
-      .query({ year: 2_026, size: 2 })
+      .query({ year: 2026, size: 2 })
       .set("Authorization", `Bearer ${user.accessToken}`)
       .expect(200);
     const firstData = weeklyAchievementListResponseSchema.parse(first.body.data);
     const second = await request(context.app.getHttpServer())
       .get("/v1/weekly-achievements")
-      .query({ year: 2_026, size: 2, cursor: firstData.pagination.nextCursor })
+      .query({ year: 2026, size: 2, cursor: firstData.pagination.nextCursor })
       .set("Authorization", `Bearer ${user.accessToken}`)
       .expect(200);
     const secondData = weeklyAchievementListResponseSchema.parse(second.body.data);
@@ -87,7 +87,7 @@ describe("주간 달성 실제 HTTP·PostgreSQL 계약", () => {
     // When
     const response = await request(context.app.getHttpServer())
       .get("/v1/weekly-achievements")
-      .query({ year: 2_026 })
+      .query({ year: 2026 })
       .set("Authorization", `Bearer ${user.accessToken}`)
       .expect(200);
     const result = weeklyAchievementListResponseSchema.parse(response.body.data);
@@ -120,7 +120,7 @@ describe("주간 달성 실제 HTTP·PostgreSQL 계약", () => {
         .insert(weeklyAchievement)
         .values({
           userId: user.userId,
-          year: 2_026,
+          year: 2026,
           week: 10,
           totalTodos: 10,
           completedTodos: 7,
@@ -137,7 +137,7 @@ describe("주간 달성 실제 HTTP·PostgreSQL 계약", () => {
 
       // Then
       expect(result).toMatchObject({
-        year: 2_026,
+        year: 2026,
         week: 10,
         weekLabel: label,
         dateRange: { startDate: "2026-03-02", endDate: "2026-03-08" },

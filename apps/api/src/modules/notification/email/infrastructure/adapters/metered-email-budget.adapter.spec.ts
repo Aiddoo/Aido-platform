@@ -67,14 +67,14 @@ describe("MeteredEmailBudgetAdapter", () => {
 
   it("월 예산에서 막히면 이미 예약한 일 건수를 되돌린다", async () => {
     // Given
-    await meter.add([{ key: MONTH, amount: 2_700 }]);
+    await meter.add([{ key: MONTH, amount: 2700 }]);
 
     // When
     const result = await budget.reserve("standard");
 
     // Then
     expect(result).toBe("exhausted");
-    expect(await meter.read([DAY, MONTH])).toEqual([0, 2_700]);
+    expect(await meter.read([DAY, MONTH])).toEqual([0, 2700]);
   });
 
   it("일 80통에 처음 닿을 때 한 번만 경보를 올린다", async () => {
@@ -143,7 +143,7 @@ describe("MeteredEmailBudgetAdapter", () => {
     await budget.settleProviderQuotaExhausted("monthly");
 
     // Then
-    expect(await meter.read([MONTH])).toEqual([3_000]);
+    expect(await meter.read([MONTH])).toEqual([3000]);
   });
 
   it("계량기가 실패해도 인증 메일을 막지 않고 로그만 남긴다", async () => {

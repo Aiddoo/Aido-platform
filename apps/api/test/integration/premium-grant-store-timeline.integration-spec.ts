@@ -27,7 +27,7 @@ import {
 const AT = new Date("2028-02-26T04:00:00.000Z");
 const STORE_EXPIRY = new Date("2028-03-10T04:00:00.000Z");
 const CHAIN = "timeline-store-chain";
-const DAY_MS = 24 * 60 * 60 * 1_000;
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 describe("결제 구독과 보상 기간 결합 타임라인 QA (실제 PostgreSQL)", () => {
   let database: TestDatabase;

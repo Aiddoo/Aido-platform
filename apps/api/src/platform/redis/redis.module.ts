@@ -19,7 +19,7 @@ import { buildCommandRedisOptions, type RedisConnectionSettings } from "./redis-
 import { REDIS_COMMAND_CLIENT } from "./redis.constants.js";
 
 /** quit이 오프라인 큐에 걸려 hang할 때 disconnect로 폴백하기까지의 대기 시간 */
-const QUIT_TIMEOUT_MS = 3_000;
+const QUIT_TIMEOUT_MS = 3000;
 
 const logger = new Logger("RedisModule");
 

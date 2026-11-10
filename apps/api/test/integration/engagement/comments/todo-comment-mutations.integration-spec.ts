@@ -120,7 +120,7 @@ describe("Engagement 댓글 실제 PostgreSQL 회귀", () => {
         clientRequestId: randomUUID(),
         content: `루트 ${index}`,
         replyCount: 2,
-        createdAt: Temporal.Instant.fromEpochMilliseconds(AT.getTime() + index * 1_000),
+        createdAt: Temporal.Instant.fromEpochMilliseconds(AT.getTime() + index * 1000),
         updatedAt: Temporal.Instant.fromEpochMilliseconds(AT.getTime()),
       });
       await client.insert(todoComment).values({
@@ -131,7 +131,7 @@ describe("Engagement 댓글 실제 PostgreSQL 회귀", () => {
         content: `답글 ${index}`,
         parentId: rootId,
         replyToCommentId: rootId,
-        createdAt: Temporal.Instant.fromEpochMilliseconds(AT.getTime() + index * 1_000 + 100),
+        createdAt: Temporal.Instant.fromEpochMilliseconds(AT.getTime() + index * 1000 + 100),
         updatedAt: Temporal.Instant.fromEpochMilliseconds(AT.getTime()),
       });
       await client.insert(todoComment).values({
@@ -142,7 +142,7 @@ describe("Engagement 댓글 실제 PostgreSQL 회귀", () => {
         content: `하위 답글 ${index}`,
         parentId: rootId,
         replyToCommentId: childId,
-        createdAt: Temporal.Instant.fromEpochMilliseconds(AT.getTime() + index * 1_000 + 200),
+        createdAt: Temporal.Instant.fromEpochMilliseconds(AT.getTime() + index * 1000 + 200),
         updatedAt: Temporal.Instant.fromEpochMilliseconds(AT.getTime()),
       });
       if (index === 0) {
@@ -401,7 +401,7 @@ describe("Engagement 댓글 실제 PostgreSQL 회귀", () => {
           );
           expect(rows.at(0)?.count).toBe(1);
         },
-        { timeout: 5_000, interval: 10 },
+        { timeout: 5000, interval: 10 },
       );
     } finally {
       release.resolve();

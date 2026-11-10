@@ -42,7 +42,7 @@ describe("AccountPurgeJob — 일일 스케줄과 재시작 보정", () => {
       retryLimit: 2,
       retryDelaySeconds: 5,
       retryBackoff: true,
-      expireInSeconds: 1_800,
+      expireInSeconds: 1800,
       retentionSeconds: 604_800,
       deleteAfterSeconds: 86_400,
       timezone: "Asia/Seoul",

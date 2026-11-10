@@ -150,7 +150,7 @@ describe("메모 변경 원자성 (실제 PostgreSQL)", () => {
       async () => {
         expect(await countLockWaiters()).toBe(count);
       },
-      { timeout: 5_000, interval: 10 },
+      { timeout: 5000, interval: 10 },
     );
   }
 
@@ -242,7 +242,7 @@ describe("메모 변경 원자성 (실제 PostgreSQL)", () => {
           async () => {
             expect(sourceReads + (await countLockWaiters())).toBeGreaterThanOrEqual(requestCount);
           },
-          { timeout: 5_000, interval: 10 },
+          { timeout: 5000, interval: 10 },
         );
       }
       return found;

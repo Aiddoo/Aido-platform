@@ -47,7 +47,7 @@ function baseHostOptions(settings: RedisConnectionSettings): RedisOptions {
 
   return {
     host: settings.host ?? "localhost",
-    port: settings.port ?? 6_379,
+    port: settings.port ?? 6379,
     password: settings.password,
     db: settings.db ?? 0,
   };

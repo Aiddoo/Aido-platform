@@ -6,7 +6,7 @@ function makeProps(overrides?: Partial<AiReportPrimitives>): AiReportPrimitives 
     id: 42,
     userId: "user-123",
     type: "WEEKLY",
-    year: 2_026,
+    year: 2026,
     period: 10,
     stats: {
       totalTodos: 10,
@@ -40,7 +40,7 @@ describe("toAiReportResponse", () => {
     // Then - 기존 기간·통계·본문·UTC 날짜 계약 보존
     expect(result.id).toBe(42);
     expect(result.type).toBe("WEEKLY");
-    expect(result.year).toBe(2_026);
+    expect(result.year).toBe(2026);
     expect(result.period).toBe(10);
     expect(result.periodLabel).toBe("2026년 10주차");
     expect(result.dateRange.startDate).toMatch(/^\d{4}-\d{2}-\d{2}$/);
@@ -63,7 +63,7 @@ describe("toAiReportResponse", () => {
 
   it("MONTHLY 타입의 periodLabel을 올바르게 생성해야 한다", () => {
     // Given - 월간 한국어 리포트
-    const report = AiReport.reconstitute(makeProps({ type: "MONTHLY", year: 2_026, period: 3 }));
+    const report = AiReport.reconstitute(makeProps({ type: "MONTHLY", year: 2026, period: 3 }));
 
     // When - Application mapper 실행
     const result = toAiReportResponse(report);
@@ -75,7 +75,7 @@ describe("toAiReportResponse", () => {
   it("en 로케일이면 영어 periodLabel을 생성해야 한다", () => {
     // Given - 저장된 en locale
     const report = AiReport.reconstitute(
-      makeProps({ type: "MONTHLY", year: 2_026, period: 3, locale: "en" }),
+      makeProps({ type: "MONTHLY", year: 2026, period: 3, locale: "en" }),
     );
 
     // When - Application mapper 실행

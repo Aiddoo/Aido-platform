@@ -60,7 +60,7 @@ describe("구독 Webhook HTTP 계약과 권한 캐시 (실제 PostgreSQL)", () =
       .withAppUserId(userId)
       .withOriginalTransactionId(transactionId)
       .withEventId(`${transactionId}-purchase`)
-      .withPurchasedAtMs(pastExpiry.getTime() - 30 * 24 * 60 * 60 * 1_000)
+      .withPurchasedAtMs(pastExpiry.getTime() - 30 * 24 * 60 * 60 * 1000)
       .withExpirationAtMs(expiresAt.getTime())
       .build();
   }
@@ -367,7 +367,7 @@ describe("구독 Webhook HTTP 계약과 권한 캐시 (실제 PostgreSQL)", () =
       sourceKey: "invite:ended",
       durationDays: 1,
     });
-    const endsAt = new Date(Date.now() + 24 * 60 * 60 * 1_000);
+    const endsAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
     const authCache = context.module.get<AuthCachePort>(AuthCachePort, { strict: false });
     const meAt = async (time: Date) => {
       vi.setSystemTime(time);
@@ -382,8 +382,8 @@ describe("구독 Webhook HTTP 계약과 권한 캐시 (실제 PostgreSQL)", () =
 
     // When
     const justEnded = await meAt(endsAt);
-    const lastMoment = await meAt(new Date(endsAt.getTime() + 7 * 24 * 60 * 60 * 1_000 - 1));
-    const afterWindow = await meAt(new Date(endsAt.getTime() + 7 * 24 * 60 * 60 * 1_000));
+    const lastMoment = await meAt(new Date(endsAt.getTime() + 7 * 24 * 60 * 60 * 1000 - 1));
+    const afterWindow = await meAt(new Date(endsAt.getTime() + 7 * 24 * 60 * 60 * 1000));
 
     // Then
     expect(justEnded).toMatchObject({

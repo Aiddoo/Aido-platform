@@ -92,7 +92,7 @@ describe("Insights 집계·주간 기록 실제 PostgreSQL 회귀", () => {
     return WeeklyAchievement.reconstitute({
       id: 1_000_000 + nextId,
       userId,
-      year: 2_027,
+      year: 2027,
       week,
       totalTodos: 5,
       completedTodos: 3,
@@ -100,7 +100,7 @@ describe("Insights 집계·주간 기록 실제 PostgreSQL 회귀", () => {
       ...overrides,
     });
   }
-  function findWeek(week: number, year = 2_027) {
+  function findWeek(week: number, year = 2027) {
     return weekly.findByWeek({
       userId: UserId.reconstitute(userId),
       isoWeek: IsoWeek.reconstitute(year, week),
@@ -206,10 +206,10 @@ describe("Insights 집계·주간 기록 실제 PostgreSQL 회귀", () => {
 
     // When
     const first = await measure("weekly-list-no-cursor", () =>
-      useCase.execute({ userId, year: 2_027, cursor: undefined, size: 2 }),
+      useCase.execute({ userId, year: 2027, cursor: undefined, size: 2 }),
     );
     const next = await measure("weekly-list-valid-cursor", () =>
-      useCase.execute({ userId, year: 2_027, cursor: 2, size: 2 }),
+      useCase.execute({ userId, year: 2027, cursor: 2, size: 2 }),
     );
 
     // Then
@@ -236,7 +236,7 @@ describe("Insights 집계·주간 기록 실제 PostgreSQL 회귀", () => {
     await weekly.saveAll([snapshot(1), snapshot(2), snapshot(3), snapshot(4)]);
     const foreign = UserFixture.create();
     await client.insert(userTable).values(foreign);
-    await weekly.saveAll([snapshot(7, { userId: foreign.id }), snapshot(8, { year: 2_026 })]);
+    await weekly.saveAll([snapshot(7, { userId: foreign.id }), snapshot(8, { year: 2026 })]);
     const cases = [
       { name: "valid-anchor", cursor: 4, expected: [3, 2, 1], statements: 2 },
       { name: "no-anchor-input", cursor: undefined, expected: [4, 3, 2], statements: 1 },
@@ -250,7 +250,7 @@ describe("Insights 집계·주간 기록 실제 PostgreSQL 회귀", () => {
       const result = await measure("weekly-cursor-" + item.name, () =>
         weekly.listByYear({
           userId: UserId.reconstitute(userId),
-          year: 2_027,
+          year: 2027,
           afterWeek: item.cursor ?? null,
           limit: 3,
         }),
@@ -260,7 +260,7 @@ describe("Insights 집계·주간 기록 실제 PostgreSQL 회귀", () => {
       expect(result.count).toBe(item.statements);
       expect(result.result.map((row) => row.isoWeek.week)).toEqual(item.expected);
       for (const record of result.result) {
-        expect(record.isoWeek.year).toBe(2_027);
+        expect(record.isoWeek.year).toBe(2027);
         expect(record.achievedAt.equals(AT_INSTANT)).toBe(true);
       }
     }
@@ -271,7 +271,7 @@ describe("Insights 집계·주간 기록 실제 PostgreSQL 회귀", () => {
     const get = context.module.get(GetWeeklyAchievementUseCase);
 
     // When
-    const found = await get.execute({ userId, year: 2_027, week: 1 });
+    const found = await get.execute({ userId, year: 2027, week: 1 });
     const ko = toWeeklyAchievementResponse(found, "ko");
     const en = toWeeklyAchievementResponse(found, "en");
 
@@ -280,7 +280,7 @@ describe("Insights 집계·주간 기록 실제 PostgreSQL 회귀", () => {
     expect(en.achievedAt).toBe(ko.achievedAt);
     expect(ko.weekLabel).not.toBe(en.weekLabel);
     expect(ko.dateRange).toEqual(en.dateRange);
-    await expect(get.execute({ userId, year: 2_027, week: 52 })).rejects.toMatchObject({
+    await expect(get.execute({ userId, year: 2027, week: 52 })).rejects.toMatchObject({
       errorCode: "ACHIEVEMENT_1801",
     });
   });

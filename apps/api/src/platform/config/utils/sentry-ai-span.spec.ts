@@ -52,7 +52,7 @@ describe("Sentry AI span", () => {
     await Sentry.startSpan({ name: "ai-span-test" }, () =>
       generateText({ model, system: SYSTEM_TEXT, prompt: USER_TEXT }),
     );
-    await Sentry.flush(2_000);
+    await Sentry.flush(2000);
 
     // Then - AI span이 실제로 생겼는지 먼저 확인해 빈 통과를 막는다
     expect(aiSpanKeys.length).toBeGreaterThan(0);

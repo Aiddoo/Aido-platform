@@ -3,7 +3,7 @@ import { computeDateRange } from "./report-period.domain-service.js";
 
 describe("computeDateRange", () => {
   it("WEEKLY 타입일 때 월요일 ~ 일요일 범위를 반환해야 한다", () => {
-    const result = computeDateRange("WEEKLY", 2_026, 10);
+    const result = computeDateRange("WEEKLY", 2026, 10);
 
     expect(result.startDate).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     expect(result.endDate).toMatch(/^\d{4}-\d{2}-\d{2}$/);
@@ -11,14 +11,14 @@ describe("computeDateRange", () => {
   });
 
   it("MONTHLY 타입일 때 해당 월 1일 ~ 마지막 날 범위를 반환해야 한다", () => {
-    const result = computeDateRange("MONTHLY", 2_026, 3);
+    const result = computeDateRange("MONTHLY", 2026, 3);
 
     expect(result.startDate).toBe("2026-03-01");
     expect(result.endDate).toBe("2026-03-31");
   });
 
   it("MONTHLY 타입으로 2월 범위를 올바르게 계산해야 한다 (28일/29일)", () => {
-    const result = computeDateRange("MONTHLY", 2_026, 2);
+    const result = computeDateRange("MONTHLY", 2026, 2);
 
     expect(result.startDate).toBe("2026-02-01");
     expect(result.endDate).toBe("2026-02-28");
@@ -40,13 +40,13 @@ describe("computeDateRange — 달력 경계는 호출 시각과 무관하다", 
   ];
 
   it.each([
-    { type: "WEEKLY", year: 2_026, period: 53, start: "2026-12-28", end: "2027-01-03" },
-    { type: "WEEKLY", year: 2_027, period: 1, start: "2027-01-04", end: "2027-01-10" },
-    { type: "WEEKLY", year: 2_026, period: 1, start: "2025-12-29", end: "2026-01-04" },
-    { type: "WEEKLY", year: 2_026, period: 52, start: "2026-12-21", end: "2026-12-27" },
-    { type: "MONTHLY", year: 2_028, period: 2, start: "2028-02-01", end: "2028-02-29" },
-    { type: "MONTHLY", year: 2_027, period: 2, start: "2027-02-01", end: "2027-02-28" },
-    { type: "MONTHLY", year: 2_026, period: 12, start: "2026-12-01", end: "2026-12-31" },
+    { type: "WEEKLY", year: 2026, period: 53, start: "2026-12-28", end: "2027-01-03" },
+    { type: "WEEKLY", year: 2027, period: 1, start: "2027-01-04", end: "2027-01-10" },
+    { type: "WEEKLY", year: 2026, period: 1, start: "2025-12-29", end: "2026-01-04" },
+    { type: "WEEKLY", year: 2026, period: 52, start: "2026-12-21", end: "2026-12-27" },
+    { type: "MONTHLY", year: 2028, period: 2, start: "2028-02-01", end: "2028-02-29" },
+    { type: "MONTHLY", year: 2027, period: 2, start: "2027-02-01", end: "2027-02-28" },
+    { type: "MONTHLY", year: 2026, period: 12, start: "2026-12-01", end: "2026-12-31" },
   ] satisfies { type: ReportType; year: number; period: number; start: string; end: string }[])(
     "Given $year $type $period When 어느 시각에 계산해도 Then $start ~ $end 이다",
     ({ type, year, period, start, end }) => {

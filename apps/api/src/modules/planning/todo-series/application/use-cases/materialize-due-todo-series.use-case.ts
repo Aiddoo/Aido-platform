@@ -24,7 +24,7 @@ export const TODO_SERIES_MATERIALIZATION_BUDGET = {
   /** ID만 읽으므로 배치 메모리는 1MB 미만이다. */
   BATCH_SIZE: 100,
   /** 큐 만료(10분)보다 먼저 멈추고 남은 규칙은 다음 실행이 커서로 이어받는다. */
-  DEADLINE_MS: 4 * 60 * 1_000,
+  DEADLINE_MS: 4 * 60 * 1000,
   /** UTC 오늘 + 91일이면 어떤 시간대의 오늘 + 90일도 포함한다. 시간대별 경계는 규칙마다 다시 잰다. */
   DUE_SCAN_AHEAD_DAYS: TODO_SERIES_LIMITS.VISIBLE_AHEAD_DAYS + 1,
 } as const;

@@ -22,9 +22,9 @@ import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database
 
 // 같은 seed에서 v1·v2 목록·대화 응답과 cursor 문자열을 스냅샷으로 고정한다. 저장소·reader를 다시 써도 바이트가 같아야 한다
 const T0 = Date.parse("2026-08-26T00:00:00.000Z");
-const TODO_ID = 7_001;
-const OTHER_TODO_ID = 7_002;
-const CATEGORY_ID = 9_001;
+const TODO_ID = 7001;
+const OTHER_TODO_ID = 7002;
+const CATEGORY_ID = 9001;
 const SESSION_ID = "cmcharsession000000000001";
 
 const OWNER_ID = "cmcharowner00000000000001";
@@ -77,7 +77,7 @@ const REPLY = {
   r7e: commentId("r7e"),
 };
 const MINUTE_MS = 60_000;
-const SECOND_MS = 1_000;
+const SECOND_MS = 1000;
 
 interface CommentSeed {
   readonly id: string;

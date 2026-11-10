@@ -139,7 +139,7 @@ describe("메모 E2E", () => {
     it("5000자 초과 내용으로 생성 시 400 에러 반환", async () => {
       // Given - 인증된 사용자와 5001자 텍스트
       const user = await ctx.helpers.createVerifiedUser("memo-create-long@test.com", password);
-      const longContent = "가".repeat(5_001);
+      const longContent = "가".repeat(5001);
 
       // When - 긴 내용으로 생성
       const response = await request(ctx.app.getHttpServer())

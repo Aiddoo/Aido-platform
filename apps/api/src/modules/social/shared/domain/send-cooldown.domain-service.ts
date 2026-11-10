@@ -1,4 +1,4 @@
-const MILLISECONDS_PER_SECOND = 1_000;
+const MILLISECONDS_PER_SECOND = 1000;
 
 export interface SendCooldown {
   readonly isActive: boolean;

@@ -12,7 +12,7 @@ import { JobQueueRegistry } from "#api/platform/jobs/job-queue.registry";
 import { USAGE_RETENTION_QUEUE } from "#api/platform/metering/usage-retention.job";
 import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
 
-const QUEUE_STATS_TIMEOUT_MS = 2_000;
+const QUEUE_STATS_TIMEOUT_MS = 2000;
 // defineQueue로 옮긴 큐는 JobQueueRegistry가 알려 주므로 Context를 옮길 때 이 목록에서 뺀다
 const LEGACY_MONITORED_QUEUES = [
   AI_REPORT_QUEUE,

@@ -26,7 +26,7 @@ export class HmacMarketingPushOptOutTokenAdapter implements MarketingPushOptOutT
   }
 
   issue(userId: string): string {
-    const expiresAt = Math.floor(Date.now() / 1_000) + TOKEN_TTL_SECONDS;
+    const expiresAt = Math.floor(Date.now() / 1000) + TOKEN_TTL_SECONDS;
     const payload = Buffer.from(`${userId}.${expiresAt}`).toString("base64url");
     return this.#signer.sign(payload);
   }
@@ -43,7 +43,7 @@ export class HmacMarketingPushOptOutTokenAdapter implements MarketingPushOptOutT
     }
     const userId = decoded.slice(0, separator);
     const expiresAt = Number(decoded.slice(separator + 1));
-    if (!Number.isFinite(expiresAt) || expiresAt < Date.now() / 1_000) {
+    if (!Number.isFinite(expiresAt) || expiresAt < Date.now() / 1000) {
       return null;
     }
     return userId;

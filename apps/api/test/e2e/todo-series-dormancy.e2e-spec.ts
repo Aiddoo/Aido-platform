@@ -8,7 +8,7 @@ import { instantFromDate } from "#api/shared/domain/time/instant";
 import { releasedTodoSchema } from "./fixtures/released-todo-response.schema.js";
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 
-const DAY_MS = 24 * 60 * 60 * 1_000;
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 function dateAfter(days: number): string {
   return new Date(Date.now() + days * DAY_MS).toISOString().slice(0, 10);

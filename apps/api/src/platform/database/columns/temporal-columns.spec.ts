@@ -63,7 +63,7 @@ describe("Temporal column — DB 타입과 값 변환", () => {
     const date = sample.dueDate.mapFromDriverValue(text);
 
     // Then
-    expect(date.equals(new Temporal.PlainDate(2_026, 2, 28))).toBe(true);
+    expect(date.equals(new Temporal.PlainDate(2026, 2, 28))).toBe(true);
     expect(sample.dueDate.mapToDriverValue(date)).toBe(text);
   });
 });

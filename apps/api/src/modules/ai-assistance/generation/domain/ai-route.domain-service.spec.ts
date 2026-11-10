@@ -99,17 +99,17 @@ describe("resolveAttemptTime", () => {
     {
       task: "parse-todo",
       deadlineMs: 12_000,
-      slowestMs: { anthropic: 2_336, google: 1_756, openai: 4_751 },
+      slowestMs: { anthropic: 2336, google: 1756, openai: 4751 },
     },
     {
       task: "quick-plan",
       deadlineMs: 24_000,
-      slowestMs: { anthropic: 4_909, google: 4_929, openai: 5_184 },
+      slowestMs: { anthropic: 4909, google: 4929, openai: 5184 },
     },
     {
       task: "voice-note-digest",
       deadlineMs: 45_000,
-      slowestMs: { anthropic: 5_049, google: 6_822, openai: 6_226 },
+      slowestMs: { anthropic: 5049, google: 6822, openai: 6226 },
     },
   ] as const;
   const SAFETY_MARGIN = 1.2;
@@ -158,7 +158,7 @@ describe("resolveAttemptTime", () => {
       remainingMs: 11_900,
     });
     // Then
-    expect(time).toEqual({ budgetMs: 3_966, hadFullShare: true });
+    expect(time).toEqual({ budgetMs: 3966, hadFullShare: true });
   });
 
   it("회로가 열려 경로가 둘이면 두 업체의 몫으로 나눈다", () => {
@@ -167,7 +167,7 @@ describe("resolveAttemptTime", () => {
     // When
     const attempts = stallThrough(route, 12_000);
     // Then
-    expect(attempts.map((attempt) => attempt.budgetMs)).toEqual([8_000, 4_000]);
+    expect(attempts.map((attempt) => attempt.budgetMs)).toEqual([8000, 4000]);
   });
 
   it("뒤에 시도할 업체가 없으면 경로에 업체가 남아 있어도 남은 시간을 모두 쓴다", () => {
@@ -190,9 +190,9 @@ describe("resolveAttemptTime", () => {
       provider: "google",
       isLast: false,
       deadlineMs: 12_000,
-      remainingMs: 6_000,
+      remainingMs: 6000,
     });
     // Then
-    expect(time).toEqual({ budgetMs: 2_000, hadFullShare: false });
+    expect(time).toEqual({ budgetMs: 2000, hadFullShare: false });
   });
 });

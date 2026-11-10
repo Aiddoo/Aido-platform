@@ -94,7 +94,7 @@ describe("AI 파싱 E2E — 서버 일정 계산", () => {
     fakeAiGenerator.setRawResponse({
       intent: "TASK",
       title: "팀 미팅",
-      date: { kind: "CALENDAR_DATE", year: 2_030, month: 3, day: 5 },
+      date: { kind: "CALENDAR_DATE", year: 2030, month: 3, day: 5 },
       time: { hour: 3, minute: 0, meridiem: "PM" },
       repeat: { pattern: "NONE" },
     });
@@ -155,7 +155,7 @@ describe("AI 파싱 E2E — 서버 일정 계산", () => {
     const draft = (title: string, items: string[] = []) => ({
       intent: "TASK",
       title,
-      date: { kind: "CALENDAR_DATE", year: 2_030, month: 3, day: 5 },
+      date: { kind: "CALENDAR_DATE", year: 2030, month: 3, day: 5 },
       time: null,
       repeat: { pattern: "NONE" },
       categoryId: 999_999,
@@ -215,7 +215,7 @@ describe("AI 파싱 E2E — 서버 일정 계산", () => {
         {
           intent: "TASK",
           title: "치과예약",
-          date: { kind: "CALENDAR_DATE", year: 2_030, month: 3, day: 5 },
+          date: { kind: "CALENDAR_DATE", year: 2030, month: 3, day: 5 },
           time: null,
           repeat: { pattern: "NONE" },
           items: [],

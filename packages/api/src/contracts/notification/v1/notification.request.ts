@@ -150,7 +150,7 @@ export const markNotificationOpenedSchema = z.object({
 export type MarkNotificationOpenedInput = z.infer<typeof markNotificationOpenedSchema>;
 
 export const marketingPushOptOutSchema = z.object({
-  token: z.string().min(1).max(2_048).describe("서명된 광고성 푸시 수신 철회 토큰"),
+  token: z.string().min(1).max(2048).describe("서명된 광고성 푸시 수신 철회 토큰"),
 });
 
 export type MarketingPushOptOutInput = z.infer<typeof marketingPushOptOutSchema>;

@@ -37,8 +37,8 @@ describe("WeatherKit → 공급자 중립 리포트 매핑", () => {
       windSpeed: 4.6,
       windGust: 9.2,
       windDirection: 315,
-      visibility: 8_000,
-      pressure: 1_012.3,
+      visibility: 8000,
+      pressure: 1012.3,
       pressureTrend: "FALLING",
       precipitationIntensity: 1.2,
     });

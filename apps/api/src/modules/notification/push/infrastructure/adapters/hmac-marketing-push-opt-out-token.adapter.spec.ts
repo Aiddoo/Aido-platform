@@ -45,14 +45,14 @@ describe("HmacMarketingPushOptOutTokenAdapter", () => {
 
   it("90일 유효기간이 지난 토큰을 기기 시각과 무관하게 거부한다", () => {
     const token = adapter.issue("user-1");
-    vi.advanceTimersByTime(90 * 24 * 60 * 60 * 1_000 + 1_000);
+    vi.advanceTimersByTime(90 * 24 * 60 * 60 * 1000 + 1000);
 
     expect(adapter.verify(token)).toBeNull();
   });
 
   it("새 서명 키가 없으면 배포 전과 바이트 단위로 같은 토큰을 만든다", () => {
     // Given
-    const expiresAt = Math.floor(Date.now() / 1_000) + 90 * 24 * 60 * 60;
+    const expiresAt = Math.floor(Date.now() / 1000) + 90 * 24 * 60 * 60;
     const payload = Buffer.from(`user-1.${expiresAt}`).toString("base64url");
     const signature = createHmac("sha256", secret)
       .update(`marketing-push-opt-out:${payload}`)

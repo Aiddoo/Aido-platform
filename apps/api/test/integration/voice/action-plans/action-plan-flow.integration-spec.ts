@@ -467,13 +467,13 @@ describe("계획 사용량·멱등 적용 (실제 PostgreSQL)", () => {
 
     it("다른 사용자의 카테고리는 AI_1315로 거절한다", async () => {
       // Given
-      const action = { ...todoAction(), categoryId: categoryId + 1_000 };
+      const action = { ...todoAction(), categoryId: categoryId + 1000 };
       // When
       const failure = runApply([action]);
       // Then
       await expect(failure).rejects.toMatchObject({
         errorCode: ErrorCode.AI_1315,
-        details: { reason: "CATEGORY_NOT_OWNED", categoryIds: [categoryId + 1_000] },
+        details: { reason: "CATEGORY_NOT_OWNED", categoryIds: [categoryId + 1000] },
       });
       expect(await userTodos()).toHaveLength(0);
     });

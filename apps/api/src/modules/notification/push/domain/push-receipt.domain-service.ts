@@ -6,7 +6,7 @@ export const PUSH_RECEIPT_POLICY = {
   recheckIntervalMs: 15 * MINUTE_MS,
   availabilityWindowMs: 24 * 60 * MINUTE_MS,
   batchSize: 900,
-  expireBatchSize: 5_000,
+  expireBatchSize: 5000,
   runBudgetMs: 45_000,
 } as const;
 

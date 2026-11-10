@@ -155,7 +155,7 @@ describe("팔로우 리소스 제한 E2E", () => {
           sourceKey: "invite:limit",
           durationDays: 7,
         });
-        const endsAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1_000);
+        const endsAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
         const maxCountAt = async (at: Date) => {
           vi.setSystemTime(at);
           await ctx.module.get(SweepPremiumGrantsUseCase).execute({ now: instantFromDate(at) });

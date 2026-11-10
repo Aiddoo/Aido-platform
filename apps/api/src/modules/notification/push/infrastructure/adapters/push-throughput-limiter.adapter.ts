@@ -18,7 +18,7 @@ export class PushThroughputLimiterAdapter {
 
   constructor(options: PushThroughputLimiterOptions) {
     this.#capacity = options.messagesPerSecond;
-    this.#tokensPerMs = options.messagesPerSecond / 1_000;
+    this.#tokensPerMs = options.messagesPerSecond / 1000;
     this.#now = options.now ?? Date.now;
     this.#sleep = options.sleep ?? delay;
     this.#tokens = this.#capacity;

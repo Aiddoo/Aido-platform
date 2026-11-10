@@ -7,12 +7,12 @@ describe("toIsoString — 순간 직렬화", () => {
     { label: "1970, ms 70", epochMilliseconds: 70 },
     { label: "1970, ms 700", epochMilliseconds: 700 },
     { label: "1970 이전, ms 999", epochMilliseconds: -1 },
-    { label: "2026-11-10, ms 0", epochMilliseconds: Date.UTC(2_026, 10, 10) },
-    { label: "2026-11-10, ms 7", epochMilliseconds: Date.UTC(2_026, 10, 10, 9, 30, 15, 7) },
-    { label: "2026-11-10, ms 70", epochMilliseconds: Date.UTC(2_026, 10, 10, 23, 59, 59, 70) },
-    { label: "2026-11-10, ms 700", epochMilliseconds: Date.UTC(2_026, 10, 10, 12, 0, 0, 700) },
-    { label: "2038 이후, ms 0", epochMilliseconds: Date.UTC(2_038, 0, 19, 3, 14, 8) },
-    { label: "2038 이후, ms 7", epochMilliseconds: Date.UTC(2_100, 1, 28, 0, 0, 0, 7) },
+    { label: "2026-11-10, ms 0", epochMilliseconds: Date.UTC(2026, 10, 10) },
+    { label: "2026-11-10, ms 7", epochMilliseconds: Date.UTC(2026, 10, 10, 9, 30, 15, 7) },
+    { label: "2026-11-10, ms 70", epochMilliseconds: Date.UTC(2026, 10, 10, 23, 59, 59, 70) },
+    { label: "2026-11-10, ms 700", epochMilliseconds: Date.UTC(2026, 10, 10, 12, 0, 0, 700) },
+    { label: "2038 이후, ms 0", epochMilliseconds: Date.UTC(2038, 0, 19, 3, 14, 8) },
+    { label: "2038 이후, ms 7", epochMilliseconds: Date.UTC(2100, 1, 28, 0, 0, 0, 7) },
     { label: "6자리 연도", epochMilliseconds: Date.UTC(10_000, 0, 1) },
   ])("$label: Date#toISOString과 같은 문자열을 낸다", ({ epochMilliseconds }) => {
     // Given

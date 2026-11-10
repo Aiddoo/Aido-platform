@@ -34,12 +34,12 @@ describe("PLAN_CATALOG — 플랜 카탈로그", () => {
 
   it("무제한으로 보이는 프리미엄 AI 정리·녹음 정리에도 공정 사용 상한이 있다", () => {
     // Then
-    expect(PLAN_CATALOG.AI_PARSE.fairUse.premium).toBe(1_000);
+    expect(PLAN_CATALOG.AI_PARSE.fairUse.premium).toBe(1000);
     expect(PLAN_CATALOG.VOICE_NOTE).toMatchObject({
       free: 3,
       premium: null,
       fairUse: { premium: 100 },
-      perUse: { maxSeconds: { free: 180, premium: 1_800 } },
+      perUse: { maxSeconds: { free: 180, premium: 1800 } },
     });
   });
 

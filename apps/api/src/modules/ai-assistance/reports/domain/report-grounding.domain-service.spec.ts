@@ -1,7 +1,7 @@
 import { keepGroundedSentences } from "./report-grounding.domain-service.js";
 
 const evidence = {
-  numbers: [24, 17, 71, 58, 13, 5, 8, 7, 88, 43, 2_026],
+  numbers: [24, 17, 71, 58, 13, 5, 8, 7, 88, 43, 2026],
   quotedTexts: ["2026년 43주차", "운동", "PT 3회권"],
 };
 

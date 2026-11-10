@@ -111,7 +111,7 @@ describe("결제 웹훅 → Discord 결제 알림 (실제 PostgreSQL)", () => {
   /** 커밋 뒤 기다리지 않고 넘긴 알림이 큐에 들어올 때까지 기다렸다가 작업자로 처리한다. */
   async function deliverPaymentNotices(count: number): Promise<AdminNotice[]> {
     await vi.waitFor(() => expect(jobQueue.jobsIn(ADMIN_NOTIFICATION_QUEUE)).toHaveLength(count), {
-      timeout: 5_000,
+      timeout: 5000,
     });
     await jobQueue.drain(ADMIN_NOTIFICATION_QUEUE);
     return notifier.getSent("payment").map((sent) => sent.notice);
@@ -204,9 +204,9 @@ describe("결제 웹훅 → Discord 결제 알림 (실제 PostgreSQL)", () => {
       .withEventId("evt-discord-monthly")
       .withTransactionId(transactionId)
       .withOriginalTransactionId(transactionId)
-      .withPurchasedAtMs(AT.getTime() - 31 * 24 * 60 * 60 * 1_000)
+      .withPurchasedAtMs(AT.getTime() - 31 * 24 * 60 * 60 * 1000)
       .withExpirationAtMs(AT.getTime() - 60_000)
-      .withPrice(2.99, "KRW", 3_900)
+      .withPrice(2.99, "KRW", 3900)
       .build();
     const expiration = SubscriptionEventBuilder.expiration()
       .withAppUserId(userId)

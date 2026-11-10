@@ -154,7 +154,7 @@ describe("JobRuntimeHealthIndicator — 영속 job runtime 상태 확인", () =>
     );
 
     const pending = indicator.isHealthy("queues");
-    await vi.advanceTimersByTimeAsync(2_000);
+    await vi.advanceTimersByTimeAsync(2000);
     await expect(pending).resolves.toMatchObject({
       queues: { status: "up", degraded: true },
     });

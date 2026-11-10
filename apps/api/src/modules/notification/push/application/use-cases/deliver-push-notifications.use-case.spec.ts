@@ -78,7 +78,7 @@ function createClaimedDelivery(input: {
     force,
     rateLimitReservation: input.rateLimitReservation ?? { status: "pending" },
     item: {
-      notificationId: input.notificationId ?? input.dispatchId + 1_000,
+      notificationId: input.notificationId ?? input.dispatchId + 1000,
       data: createNotificationDraftFixture({
         userId: input.userId,
         type: "FOLLOW_NEW",

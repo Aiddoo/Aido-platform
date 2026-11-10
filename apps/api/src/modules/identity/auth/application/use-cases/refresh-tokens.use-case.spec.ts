@@ -139,7 +139,7 @@ describe("RefreshTokens — 세션 연장과 Refresh Token 재사용 방어", ()
     expect(logs).not.toContain(result.tokens.accessToken);
   });
 
-  it.each([5_000, 10_000])(
+  it.each([5000, 10_000])(
     "로테이션 후 %i ms의 이전 토큰은 네트워크 재시도로 한 번 회전한다",
     async (elapsedMilliseconds) => {
       // Given

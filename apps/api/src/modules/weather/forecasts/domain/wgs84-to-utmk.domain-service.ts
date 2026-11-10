@@ -52,16 +52,16 @@ export function convertToTm(lat: number, lon: number): TmCoordinate {
   const M =
     a *
     ((1 - e2 / 4 - (3 * e4) / 64 - (5 * e6) / 256) * phi -
-      ((3 * e2) / 8 + (3 * e4) / 32 + (45 * e6) / 1_024) * Math.sin(2 * phi) +
-      ((15 * e4) / 256 + (45 * e6) / 1_024) * Math.sin(4 * phi) -
-      ((35 * e6) / 3_072) * Math.sin(6 * phi));
+      ((3 * e2) / 8 + (3 * e4) / 32 + (45 * e6) / 1024) * Math.sin(2 * phi) +
+      ((15 * e4) / 256 + (45 * e6) / 1024) * Math.sin(4 * phi) -
+      ((35 * e6) / 3072) * Math.sin(6 * phi));
 
   const M0 =
     a *
     ((1 - e2 / 4 - (3 * e4) / 64 - (5 * e6) / 256) * TM_CENTRAL.phi0 -
-      ((3 * e2) / 8 + (3 * e4) / 32 + (45 * e6) / 1_024) * Math.sin(2 * TM_CENTRAL.phi0) +
-      ((15 * e4) / 256 + (45 * e6) / 1_024) * Math.sin(4 * TM_CENTRAL.phi0) -
-      ((35 * e6) / 3_072) * Math.sin(6 * TM_CENTRAL.phi0));
+      ((3 * e2) / 8 + (3 * e4) / 32 + (45 * e6) / 1024) * Math.sin(2 * TM_CENTRAL.phi0) +
+      ((15 * e4) / 256 + (45 * e6) / 1024) * Math.sin(4 * TM_CENTRAL.phi0) -
+      ((35 * e6) / 3072) * Math.sin(6 * TM_CENTRAL.phi0));
 
   const A2 = A * A;
   const A3 = A2 * A;

@@ -65,7 +65,7 @@ export class WeatherKitTokenAdapter {
     }
 
     const key = await importPKCS8(credentials.privateKey, "ES256");
-    const issuedAtSeconds = Math.floor(this.#clock.now().epochMilliseconds / 1_000);
+    const issuedAtSeconds = Math.floor(this.#clock.now().epochMilliseconds / 1000);
     const expiresAtSeconds = issuedAtSeconds + TOKEN_LIFETIME_SECONDS;
     const token = await new SignJWT({})
       .setProtectedHeader({
@@ -79,10 +79,10 @@ export class WeatherKitTokenAdapter {
       .setExpirationTime(expiresAtSeconds)
       .sign(key);
 
-    this.#current = { token, refreshAtMs: expiresAtSeconds * 1_000 - REFRESH_MARGIN_MS };
+    this.#current = { token, refreshAtMs: expiresAtSeconds * 1000 - REFRESH_MARGIN_MS };
     this.#logger.debug({
       event: WeatherKitLogEvent.TOKEN_SIGNED,
-      expiresAt: new Date(expiresAtSeconds * 1_000).toISOString(),
+      expiresAt: new Date(expiresAtSeconds * 1000).toISOString(),
     });
     return token;
   }

@@ -25,7 +25,7 @@ export class SubscriptionEventBuilder {
 
   constructor(type: EventData["type"]) {
     const now = Date.now();
-    const thirtyDaysMs = 30 * 24 * 60 * 60 * 1_000;
+    const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
 
     this.#event = {
       id: `evt-${crypto.randomUUID().slice(0, 8)}`,
@@ -65,7 +65,7 @@ export class SubscriptionEventBuilder {
 
   static expiration(): SubscriptionEventBuilder {
     const builder = new SubscriptionEventBuilder("EXPIRATION");
-    builder.#event.expiration_at_ms = Date.now() - 1_000;
+    builder.#event.expiration_at_ms = Date.now() - 1000;
     return builder;
   }
 

@@ -7,7 +7,7 @@ import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import type { PlanResultReplay } from "../../application/ports/plan-result-replay.port.js";
 
 /** 재시도는 몇 분 안에 끝난다. 이 시간이 지나면 잊는다. */
-const PLAN_RESULT_REPLAY_TTL_MS = 10 * 60 * 1_000;
+const PLAN_RESULT_REPLAY_TTL_MS = 10 * 60 * 1000;
 /** 힙 384MiB 안에서 결과 하나가 최악 100KB여도 20MB를 넘지 않는 수다. */
 const PLAN_RESULT_REPLAY_MAX_ITEMS = 200;
 

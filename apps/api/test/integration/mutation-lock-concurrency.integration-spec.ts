@@ -120,7 +120,7 @@ class RequiredParticipantBarrier {
 
   readonly #participants: number;
 
-  constructor(participants: number, timeoutMs = 5_000) {
+  constructor(participants: number, timeoutMs = 5000) {
     this.#participants = participants;
     this.#timer = setTimeout(() => {
       this.#ready.reject(
@@ -295,7 +295,7 @@ class CoordinatedCategoryMutationLock implements MutationLockPort {
     delegate: PostgresMutationLockAdapter,
     expectedKey: string,
     participants: number,
-    timeoutMs = 5_000,
+    timeoutMs = 5000,
   ) {
     this.#txHost = txHost;
     this.#delegate = delegate;
@@ -384,7 +384,7 @@ async function waitForBlockedAdvisoryLock(
       }
       return { waitingCount };
     },
-    { timeout: options.timeoutMs ?? 2_000, interval: LOCK_PROBE_INTERVAL_MS },
+    { timeout: options.timeoutMs ?? 2000, interval: LOCK_PROBE_INTERVAL_MS },
   );
 }
 
@@ -424,7 +424,7 @@ async function waitForCategoryAdvisoryLockState(
       }
       return state;
     },
-    { timeout: 5_000, interval: LOCK_PROBE_INTERVAL_MS },
+    { timeout: 5000, interval: LOCK_PROBE_INTERVAL_MS },
   );
 }
 
@@ -830,7 +830,7 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
         acquire("ascending", ["batch:a", "batch:b"], first.txHost, first.uow),
         acquire("descending", ["batch:b", "batch:a"], second.txHost, second.uow),
       ]),
-      3_000,
+      3000,
     );
 
     // Then

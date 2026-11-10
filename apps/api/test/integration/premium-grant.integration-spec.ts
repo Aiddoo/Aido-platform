@@ -37,7 +37,7 @@ import {
 const AT = new Date("2028-02-26T04:00:00.000Z");
 const STORE_EXPIRY = new Date("2028-03-10T04:00:00.000Z");
 const TRANSACTION_ID = "premium-grant-store-chain";
-const DAY_MS = 24 * 60 * 60 * 1_000;
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 PostgreSQL)", () => {
   let database: TestDatabase;
@@ -552,7 +552,7 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
         sourceKey: "invite:grace",
         status: "ACTIVE",
         startsAt: afterGrace,
-        endsAt: new Date(afterGrace.getTime() + 7 * 24 * 60 * 60 * 1_000),
+        endsAt: new Date(afterGrace.getTime() + 7 * 24 * 60 * 60 * 1000),
       },
     ]);
   });
@@ -593,7 +593,7 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
       durationDays: 7,
     });
     // 받은 순서가 createdAt이라 같은 시각에 받으면 순서가 id로 갈린다. 실제 지급처럼 시각을 띄운다
-    vi.setSystemTime(new Date(AT.getTime() + 1_000));
+    vi.setSystemTime(new Date(AT.getTime() + 1000));
     await granter.grant({
       userId: UserId.reconstitute(userId),
       source: "INVITE",
@@ -729,7 +729,7 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
     const premiumJustBefore = await entitlement.canInTx(UserId.reconstitute(userId), "AI_REPORT");
     vi.setSystemTime(STORE_EXPIRY);
     const premiumAtHandoff = await entitlement.canInTx(UserId.reconstitute(userId), "AI_REPORT");
-    const lateSweepAt = new Date(STORE_EXPIRY.getTime() + 10 * 60 * 1_000);
+    const lateSweepAt = new Date(STORE_EXPIRY.getTime() + 10 * 60 * 1000);
     vi.setSystemTime(lateSweepAt);
     await sweep.execute({ now: instantFromDate(lateSweepAt) });
     const beforeFinalEnd = await notify.execute({

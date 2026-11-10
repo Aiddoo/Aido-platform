@@ -198,7 +198,7 @@ describe("핵심 큐 프로세서 컴포넌트 테스트 (실제 PostgreSQL + pg
       await harness.retentionRepository.enroll({
         userId: recipient.id,
         variant: "TREATMENT",
-        startedAt: Temporal.Instant.fromEpochMilliseconds(Date.now() - 3 * 60 * 60 * 1_000),
+        startedAt: Temporal.Instant.fromEpochMilliseconds(Date.now() - 3 * 60 * 60 * 1000),
       });
 
       // When
@@ -239,7 +239,7 @@ describe("핵심 큐 프로세서 컴포넌트 테스트 (실제 PostgreSQL + pg
     "브로드캐스트는 같은 요청을 한 번만 분배하고 대상 전원에게 발송한다",
     async () => {
       // Given
-      const recipientCount = Number(process.env.BROADCAST_RECIPIENT_COUNT ?? 1_200);
+      const recipientCount = Number(process.env.BROADCAST_RECIPIENT_COUNT ?? 1200);
       await seedPushReadyUsers(harness.client, recipientCount);
       const createCampaign = harness.module.get(CreateBroadcastCampaignUseCase);
       const request = {
@@ -295,7 +295,7 @@ describe("핵심 큐 프로세서 컴포넌트 테스트 (실제 PostgreSQL + pg
 async function seedPushReadyUsers(client: TestDatabaseClient, count: number): Promise<void> {
   for (const page of chunk(
     Array.from({ length: count }, (_, index) => index),
-    1_000,
+    1000,
   )) {
     const users = await client
       .insert(user)

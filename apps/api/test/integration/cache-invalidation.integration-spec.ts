@@ -44,7 +44,7 @@ describe("캐시 무효화 통합 테스트 (Memory adapter)", () => {
               cacheConfig.parse({
                 CACHE_TYPE: "memory",
                 CACHE_DEFAULT_TTL_MS: 60_000,
-                CACHE_MAX_ITEMS: 1_000,
+                CACHE_MAX_ITEMS: 1000,
               }),
             ),
           ],

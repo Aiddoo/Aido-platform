@@ -98,9 +98,9 @@ const REPRESENTATIVE_FACTS: Readonly<Record<string, readonly NotificationCopyFac
   "social.INVITE_QUALIFY_REMINDER": [{ inviterName: longName }],
   "social.INVITE_JOINED": [{ inviteeName: longName }],
   "social.INVITE_REWARDED": [
-    { premiumDays: 9_999, friendSlots: 9_999 },
-    { premiumDays: 9_999, friendSlots: 0 },
-    { premiumDays: 0, friendSlots: 9_999 },
+    { premiumDays: 9999, friendSlots: 9999 },
+    { premiumDays: 9999, friendSlots: 0 },
+    { premiumDays: 0, friendSlots: 9999 },
   ],
   "social.NUDGE_RECEIVED": [
     { senderName: longName, todoTitle },

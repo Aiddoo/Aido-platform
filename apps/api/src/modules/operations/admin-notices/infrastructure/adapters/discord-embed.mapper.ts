@@ -28,7 +28,7 @@ function severityColor(severity: AdminNotificationSeverity): number {
 /** ISO 시각을 Discord 타임스탬프(`<t:unix:f>`)로 바꾼다. 읽을 수 없는 값은 원문 그대로 둔다. */
 function formatDiscordTimestamp(iso: string): string {
   try {
-    return `<t:${Math.floor(Temporal.Instant.from(iso).epochMilliseconds / 1_000)}:f>`;
+    return `<t:${Math.floor(Temporal.Instant.from(iso).epochMilliseconds / 1000)}:f>`;
   } catch {
     return iso;
   }

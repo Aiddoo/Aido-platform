@@ -110,7 +110,7 @@ describe("PgBossJobRuntimeAdapter 통합 테스트 (실제 PostgreSQL)", () => {
       { documentId: 2 },
       options({
         idempotencyKey: "delayed:2",
-        startAfter: new Date(Date.now() + 1_200),
+        startAfter: new Date(Date.now() + 1200),
       }),
     );
     await runtime.work(queue, handled, {

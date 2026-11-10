@@ -156,7 +156,7 @@ describe("QuotaLedger 원장·카운터·멱등 (실제 PostgreSQL)", () => {
           observedWaiters = waiting.rows[0]?.count ?? 0;
           expect(observedWaiters).toBe(2);
         },
-        { timeout: 5_000, interval: 10 },
+        { timeout: 5000, interval: 10 },
       );
     } finally {
       released.resolve();
@@ -248,7 +248,7 @@ describe("QuotaLedger 원장·카운터·멱등 (실제 PostgreSQL)", () => {
       // Given
       const cutoff = stale.toISOString();
       await client.insert(quotaCharge).values(
-        Array.from({ length: 2_000 }, (_, index) => ({
+        Array.from({ length: 2000 }, (_, index) => ({
           userId,
           meter: "VOICE_NOTE" as const,
           idempotencyKey: `settled-${index}`,
@@ -303,7 +303,7 @@ describe("QuotaLedger 원장·카운터·멱등 (실제 PostgreSQL)", () => {
               `);
               expect(waiting.rows[0]?.count).toBe(count);
             },
-            { timeout: 5_000, interval: 10 },
+            { timeout: 5000, interval: 10 },
           );
         const firstOutcome = first();
         await waitForWaiters(1);
@@ -462,7 +462,7 @@ describe("QuotaLedger 원장·카운터·멱등 (실제 PostgreSQL)", () => {
             `);
             expect(waiting.rows[0]?.count).toBe(1);
           },
-          { timeout: 5_000, interval: 10 },
+          { timeout: 5000, interval: 10 },
         );
         await ledger.reserve(input({ userId: UserId.reconstitute(other.id) }));
       } finally {
@@ -818,7 +818,7 @@ describe("QuotaLedger 원장·카운터·멱등 (실제 PostgreSQL)", () => {
         sourceKey: "invite:quota-ledger",
         durationDays: 7,
       });
-      const grantEndsAt = new Date(newMonthAt.getTime() + 7 * 24 * 60 * 60 * 1_000);
+      const grantEndsAt = new Date(newMonthAt.getTime() + 7 * 24 * 60 * 60 * 1000);
       vi.setSystemTime(new Date(grantEndsAt.getTime() - 1));
       const duringGrant = await ledger.read(UserId.reconstitute(userId), "AI_PARSE");
 

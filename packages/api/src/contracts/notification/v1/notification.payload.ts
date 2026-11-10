@@ -105,7 +105,7 @@ export const pushNotificationDataSchema = z.object({
   campaignKey: z.string().max(100).optional(),
   variantId: z.string().max(100).optional(),
   purpose: z.enum(NOTIFICATION_PURPOSES).optional(),
-  marketingOptOutToken: z.string().max(2_048).optional(),
+  marketingOptOutToken: z.string().max(2048).optional(),
 });
 
 export type PushNotificationData = z.infer<typeof pushNotificationDataSchema>;

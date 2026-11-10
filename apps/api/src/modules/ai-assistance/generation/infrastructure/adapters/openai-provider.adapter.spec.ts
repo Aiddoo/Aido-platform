@@ -82,8 +82,8 @@ describe("OpenAiProviderAdapter — 설치된 SDK·기록된 오류 본문, 외�
       // When
       const options = adapter.getProviderOptions({
         thinking,
-        maxOutputTokens: 1_024,
-        deadlineMs: 1_000,
+        maxOutputTokens: 1024,
+        deadlineMs: 1000,
         lastProviderMaxRetries: 1,
         maxModelCalls: 4,
       });
@@ -128,7 +128,7 @@ describe("OpenAiProviderAdapter — 설치된 SDK·기록된 오류 본문, 외�
     expect(body).toMatchObject({
       model: "gpt-6-luna",
       store: false,
-      max_output_tokens: 2_048,
+      max_output_tokens: 2048,
       reasoning: { effort: "low" },
       text: { format: { type: "json_schema", strict: true } },
     });
@@ -150,7 +150,7 @@ describe("OpenAiProviderAdapter — 설치된 SDK·기록된 오류 본문, 외�
         task: "parse-todo",
         taskClass: "interactive",
         userId: null,
-        maxInputChars: 5_000,
+        maxInputChars: 5000,
         promptVersion: "parse-todo@test",
         system: "규칙",
         prompt: "독서",
@@ -177,7 +177,7 @@ describe("OpenAiProviderAdapter — 설치된 SDK·기록된 오류 본문, 외�
         task: "parse-todo",
         taskClass: "interactive",
         userId: null,
-        maxInputChars: 5_000,
+        maxInputChars: 5000,
         promptVersion: "parse-todo@test",
         system: "규칙",
         prompt: "독서",

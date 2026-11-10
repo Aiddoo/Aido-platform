@@ -139,7 +139,7 @@ export function weatherReportFixture(
       windGust: null,
       windDirection: 270,
       visibility: 20_000,
-      pressure: 1_018.2,
+      pressure: 1018.2,
       pressureTrend: "STEADY",
       precipitationIntensity: 0,
     },

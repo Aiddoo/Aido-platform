@@ -119,7 +119,7 @@ describe("초대 수락 동시성 (실제 PostgreSQL)", () => {
       .withTransactionId("redeem-purchase-chain")
       .withEventId("redeem-purchase")
       .withPurchasedAtMs(purchasedAt)
-      .withExpirationAtMs(purchasedAt + 30 * 24 * 60 * 60 * 1_000)
+      .withExpirationAtMs(purchasedAt + 30 * 24 * 60 * 60 * 1000)
       .build();
 
     // When

@@ -128,7 +128,7 @@ describe.each(locales)("%s 알림 문구와 실제 정책의 사실 조건", (lo
       // Then - 실제 조회/저장은 이전 주인데 문장은 이번 주라고 말하면 안 된다
       expect(params?.periodStart.toString()).toBe("2026-07-20");
       expect(params?.periodEnd.toString()).toBe("2026-07-27");
-      expect(record).toMatchObject({ year: 2_026, week: 30, totalTodos: 8, completedTodos: 3 });
+      expect(record).toMatchObject({ year: 2026, week: 30, totalTodos: 8, completedTodos: 3 });
       expect(message).toBeDefined();
       const text = `${message?.title} ${message?.body}`;
       expect(text).toMatch(locale === "ko" ? /지난주/ : /last week/i);

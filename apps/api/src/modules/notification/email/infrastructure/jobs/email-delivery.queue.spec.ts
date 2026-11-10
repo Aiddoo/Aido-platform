@@ -31,8 +31,8 @@ describe("이메일 발송 큐 계약", () => {
       retryDelaySeconds: 5,
       retryBackoff: true,
       expireInSeconds: 600,
-      retentionSeconds: 3_600,
-      deleteAfterSeconds: 3_600,
+      retentionSeconds: 3600,
+      deleteAfterSeconds: 3600,
     });
     expect(EMAIL_DELIVERY_QUEUE.deadLetter).toBeUndefined();
     expect(EMAIL_DELIVERY_QUEUE.worker).toEqual({ localConcurrency: 2, pollingIntervalSeconds: 2 });

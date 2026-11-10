@@ -330,7 +330,7 @@ export const createRecurringTodoSchema = z
     (data) => {
       const diffDays = Math.ceil(
         (new Date(data.endDate).getTime() - new Date(data.startDate).getTime()) /
-          (1_000 * 60 * 60 * 24),
+          (1000 * 60 * 60 * 24),
       );
       return diffDays <= RECURRING_TODO_LIMITS.MAX_DAYS_RANGE;
     },

@@ -4,7 +4,7 @@ import { DATE_FORMAT } from "../constants/date.constant.js";
 import { now } from "./core.js";
 
 const DEFAULT_TIMEZONE = "UTC";
-const MINUTE_MS = 60 * 1_000;
+const MINUTE_MS = 60 * 1000;
 /** 겹치는 구간은 길어야 2시간이라 이만큼 앞선 시점이면 항상 전환 전이다. */
 const OVERLAP_LOOKBACK_MS = 3 * 60 * MINUTE_MS;
 

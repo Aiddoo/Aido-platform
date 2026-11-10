@@ -13,7 +13,7 @@ import type { MaterializeTodoSeriesUseCase } from "./materialize-todo-series.use
 
 export const TODO_SERIES_CATCH_UP_BUDGET = {
   /** 앱 요청 제한(10초) 안에 목록을 돌려주도록 이 시간이 지나면 남은 규칙은 다음 요청이나 밤 작업에 맡긴다. */
-  DEADLINE_MS: 5_000,
+  DEADLINE_MS: 5000,
   /** 실패·시간 초과 뒤 다시 시도할 때까지. 고장 난 규칙이 목록 요청마다 비용을 더하지 않게 한다. */
   RETRY_AFTER_MS: 60_000,
 } as const;

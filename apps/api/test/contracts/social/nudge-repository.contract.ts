@@ -156,7 +156,7 @@ export function describeNudgeRepositoryContract(
 
       // When
       const target = await repository.findTargetTodo(TodoId.reconstitute(todoId));
-      const missing = await repository.findTargetTodo(TodoId.reconstitute(todoId + 1_000));
+      const missing = await repository.findTargetTodo(TodoId.reconstitute(todoId + 1000));
 
       // Then
       expect(target?.value).toEqual({

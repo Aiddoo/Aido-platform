@@ -191,8 +191,8 @@ describe("댓글 v2 묶음·답글 읽기 (실제 PostgreSQL)", () => {
             : null,
         parentId: BUSY_THREAD,
         replyToCommentId: index === 0 ? BUSY_THREAD : busyReplyId(index - 1),
-        createdAt: Temporal.Instant.fromEpochMilliseconds(Date.UTC(2_026, 7, 25, 1, index)),
-        updatedAt: Temporal.Instant.fromEpochMilliseconds(Date.UTC(2_026, 7, 25, 1, index)),
+        createdAt: Temporal.Instant.fromEpochMilliseconds(Date.UTC(2026, 7, 25, 1, index)),
+        updatedAt: Temporal.Instant.fromEpochMilliseconds(Date.UTC(2026, 7, 25, 1, index)),
       })),
     );
     await client.execute(sql`ANALYZE ${todoComment}`);

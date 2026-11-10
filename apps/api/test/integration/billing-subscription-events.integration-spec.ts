@@ -37,8 +37,8 @@ import {
 const at = new Date("2027-01-04T12:00:00.000Z");
 const previousExpiry = new Date("2027-01-03T12:00:00.000Z");
 const nextExpiry = new Date("2027-02-03T12:00:00.000Z");
-const previousEventAt = at.getTime() - 2_000;
-const renewedEventAt = at.getTime() - 1_000;
+const previousEventAt = at.getTime() - 2000;
+const renewedEventAt = at.getTime() - 1000;
 
 const events: SubscriptionEventPayload[] = [];
 const failures: unknown[] = [];

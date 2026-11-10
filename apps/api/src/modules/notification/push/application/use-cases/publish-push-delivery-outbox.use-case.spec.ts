@@ -77,7 +77,7 @@ describe("PublishPushDeliveryOutboxUseCase — outbox job 발행", () => {
     expect(outbox.rowOf(41)).toMatchObject({
       status: "PENDING",
       publishAttempts: 2,
-      availableAt: NOW.add({ milliseconds: 2_000 }),
+      availableAt: NOW.add({ milliseconds: 2000 }),
       lastError: "queue unavailable",
     });
     expect(logger.messages).toContainEqual(

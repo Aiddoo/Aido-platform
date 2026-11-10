@@ -60,7 +60,7 @@ describe("WeatherKitTokenAdapter — ES256 개발자 토큰", () => {
     });
     const claims = decodeJwt(token);
     expect(claims).toMatchObject({ iss: "TEAM123456", sub: "com.example.weatherkit-client" });
-    expect((claims.exp ?? 0) - (claims.iat ?? 0)).toBe(3_600);
+    expect((claims.exp ?? 0) - (claims.iat ?? 0)).toBe(3600);
   });
 
   it("만료 5분 전까지는 같은 토큰을 재사용한다", async () => {

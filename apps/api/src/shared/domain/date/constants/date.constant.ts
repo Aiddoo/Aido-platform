@@ -15,7 +15,7 @@ export const DATE_FORMAT = {
  */
 export const TIME_UNIT = {
   /** 1초 = 1,000ms */
-  MS_PER_SECOND: 1_000,
+  MS_PER_SECOND: 1000,
   /** 1분 = 60,000ms */
   MS_PER_MINUTE: 60_000,
   /** 1시간 = 3,600,000ms */

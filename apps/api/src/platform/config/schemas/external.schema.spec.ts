@@ -79,7 +79,7 @@ describe("envSchema — DB 연결 풀", () => {
     // Then
     expect(config.DATABASE_POOL_MAX).toBe(10);
     expect(config.DATABASE_POOL_IDLE_TIMEOUT_MS).toBeUndefined();
-    expect(config.DATABASE_POOL_CONNECTION_TIMEOUT_MS).toBe(5_000);
+    expect(config.DATABASE_POOL_CONNECTION_TIMEOUT_MS).toBe(5000);
   });
 });
 
