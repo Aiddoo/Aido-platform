@@ -1,15 +1,15 @@
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 
+import type { AdminNotificationChannel } from "../../domain/admin-notices.constants.js";
 import { AdminNoticeAlert } from "../admin-notices.alerts.js";
 import { adminNotificationRetryable } from "../admin-notices.errors.js";
 import { AdminNoticeLogEvent } from "../admin-notices.log-events.js";
-import type { NotificationChannel } from "../ports/admin-notification-queue.port.js";
 import type { AdminNotifierPort } from "../ports/admin-notifier.port.js";
 import type { AdminNotice } from "../read-models/admin-notice.read-model.js";
 
 export interface SendAdminNotificationCommand {
-  readonly channel: NotificationChannel;
+  readonly channel: AdminNotificationChannel;
   readonly notice: AdminNotice;
 }
 

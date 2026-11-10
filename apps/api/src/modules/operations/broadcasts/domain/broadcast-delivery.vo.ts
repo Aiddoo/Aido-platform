@@ -1,21 +1,25 @@
 import { ErrorCode } from "@aido/api/errors";
+import type { BroadcastDeliveryMode } from "@aido/api/vocabulary";
 import { match } from "ts-pattern";
 
 import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
 import { ValueObject } from "#api/shared/domain/model/value-object";
 
+type NowMode = Extract<BroadcastDeliveryMode, "NOW">;
+type LocalTimeMode = Extract<BroadcastDeliveryMode, "RECIPIENT_LOCAL_TIME">;
+
 export type BroadcastDeliveryPrimitives =
-  | { readonly mode: "NOW" }
+  | { readonly mode: NowMode }
   | {
-      readonly mode: "RECIPIENT_LOCAL_TIME";
+      readonly mode: LocalTimeMode;
       readonly localTime: string;
       readonly date: string;
     };
 
 export type BroadcastDeliveryValue =
-  | { readonly mode: "NOW" }
+  | { readonly mode: NowMode }
   | {
-      readonly mode: "RECIPIENT_LOCAL_TIME";
+      readonly mode: LocalTimeMode;
       readonly localTime: Temporal.PlainTime;
       readonly date: Temporal.PlainDate;
     };

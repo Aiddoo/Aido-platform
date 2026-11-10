@@ -5,9 +5,9 @@ import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
 import {
   AdminNotificationQueuePort,
   type EnqueueSendOptions,
-  type NotificationChannel,
 } from "../../application/ports/admin-notification-queue.port.js";
 import type { AdminNotice } from "../../application/read-models/admin-notice.read-model.js";
+import type { AdminNotificationChannel } from "../../domain/admin-notices.constants.js";
 import {
   ADMIN_NOTIFICATION_QUEUE,
   AdminNotificationJobName,
@@ -24,7 +24,7 @@ export class AdminNotificationQueueAdapter extends AdminNotificationQueuePort {
   }
 
   async enqueueSend(
-    channel: NotificationChannel,
+    channel: AdminNotificationChannel,
     notice: AdminNotice,
     options?: EnqueueSendOptions,
   ): Promise<void> {

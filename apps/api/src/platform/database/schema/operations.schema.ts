@@ -1,5 +1,6 @@
 import type {
   BroadcastCampaignStatus,
+  BroadcastDeliveryMode,
   BroadcastTargetFilter,
   SupportedLocale,
 } from "@aido/api/vocabulary";
@@ -27,8 +28,12 @@ export type BroadcastLocalizedContentColumn = Partial<
 
 /** 발송 시점. 컬럼이 null이면 NOW다(이 기능 전에 접수한 캠페인) */
 export type BroadcastDeliveryColumn =
-  | { mode: "NOW" }
-  | { mode: "RECIPIENT_LOCAL_TIME"; localTime: string; date: string };
+  | { mode: Extract<BroadcastDeliveryMode, "NOW"> }
+  | {
+      mode: Extract<BroadcastDeliveryMode, "RECIPIENT_LOCAL_TIME">;
+      localTime: string;
+      date: string;
+    };
 
 export const broadcastCampaign = pgTable(
   "BroadcastCampaign",

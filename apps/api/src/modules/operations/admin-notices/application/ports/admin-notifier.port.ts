@@ -1,5 +1,5 @@
+import type { AdminNotificationChannel } from "../../domain/admin-notices.constants.js";
 import type { AdminNotice } from "../read-models/admin-notice.read-model.js";
-import type { NotificationChannel } from "./admin-notification-queue.port.js";
 
 export type AdminNotifyOutcome =
   | { readonly status: "sent" }
@@ -11,5 +11,8 @@ export type AdminNotifyOutcome =
  * 실패 결과에는 원문 오류를 싣지 않는다.
  */
 export abstract class AdminNotifierPort {
-  abstract send(channel: NotificationChannel, notice: AdminNotice): Promise<AdminNotifyOutcome>;
+  abstract send(
+    channel: AdminNotificationChannel,
+    notice: AdminNotice,
+  ): Promise<AdminNotifyOutcome>;
 }

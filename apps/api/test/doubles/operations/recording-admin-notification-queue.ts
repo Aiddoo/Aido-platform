@@ -1,12 +1,12 @@
 import {
   AdminNotificationQueuePort,
   type EnqueueSendOptions,
-  type NotificationChannel,
 } from "#api/modules/operations/admin-notices/application/ports/admin-notification-queue.port";
 import type { AdminNotice } from "#api/modules/operations/admin-notices/application/read-models/admin-notice.read-model";
+import type { AdminNotificationChannel } from "#api/modules/operations/admin-notices/domain/admin-notices.constants";
 
 export interface RecordedAdminNotice {
-  readonly channel: NotificationChannel;
+  readonly channel: AdminNotificationChannel;
   readonly notice: AdminNotice;
   readonly options?: EnqueueSendOptions;
 }
@@ -16,7 +16,7 @@ export class RecordingAdminNotificationQueue extends AdminNotificationQueuePort 
   failure: Error | null = null;
 
   async enqueueSend(
-    channel: NotificationChannel,
+    channel: AdminNotificationChannel,
     notice: AdminNotice,
     options?: EnqueueSendOptions,
   ): Promise<void> {

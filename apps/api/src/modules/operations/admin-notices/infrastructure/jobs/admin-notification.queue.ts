@@ -1,4 +1,5 @@
 import {
+  DEVICE_TYPES,
   PREMIUM_SOURCE,
   STORE_PERIOD_TYPES,
   SUBSCRIPTION_ENVIRONMENTS,
@@ -19,6 +20,10 @@ import {
   ADMIN_NOTIFICATION_SEVERITIES,
   type AdminNotification,
 } from "../../application/read-models/admin-notification.read-model.js";
+import {
+  ADMIN_NOTIFICATION_CHANNELS,
+  type AdminNotificationChannel,
+} from "../../domain/admin-notices.constants.js";
 
 export const AdminNotificationJobName = {
   DISPATCH_SUMMARY: "dispatch-signup-summary",
@@ -27,11 +32,11 @@ export const AdminNotificationJobName = {
 
 /** send-notification 작업 데이터 */
 interface AdminNotificationSendData {
-  readonly channel: "admin" | "payment";
+  readonly channel: AdminNotificationChannel;
   readonly notice: AdminNotice;
 }
 
-const NotificationChannelSchema = z.enum(["admin", "payment"]);
+const NotificationChannelSchema = z.enum(ADMIN_NOTIFICATION_CHANNELS);
 
 const AdminNotificationSchema = z.object({
   title: z.string(),
@@ -126,7 +131,7 @@ const SubscriptionNoticeSchema = z.object({
 });
 
 const SignupNoticeSchema = z.object({
-  devicePlatform: optionalDisplay(z.enum(["IOS", "ANDROID", "WEB"])),
+  devicePlatform: optionalDisplay(z.enum(DEVICE_TYPES)),
   deviceModel: optionalDisplay(z.string()),
   osVersion: optionalDisplay(z.string()),
   appVersion: optionalDisplay(z.string()),

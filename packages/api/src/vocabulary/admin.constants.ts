@@ -22,6 +22,11 @@ export const BROADCAST_TARGET_FILTER = {
 export type BroadcastTargetFilter =
   (typeof BROADCAST_TARGET_FILTER)[keyof typeof BROADCAST_TARGET_FILTER];
 
+/** 브로드캐스트 발송 시점. NOW는 접수 직후, RECIPIENT_LOCAL_TIME은 수신자 현지 날짜·시각이다. */
+export const BROADCAST_DELIVERY_MODES = ["NOW", "RECIPIENT_LOCAL_TIME"] as const;
+
+export type BroadcastDeliveryMode = (typeof BROADCAST_DELIVERY_MODES)[number];
+
 /**
  * 브로드캐스트 캠페인 진행 상태
  *

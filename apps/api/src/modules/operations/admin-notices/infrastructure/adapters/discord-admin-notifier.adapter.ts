@@ -6,12 +6,12 @@ import type { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-p
 import { now } from "#api/shared/domain/date/utils/core";
 import { toISOString } from "#api/shared/domain/date/utils/format";
 
-import type { NotificationChannel } from "../../application/ports/admin-notification-queue.port.js";
 import {
   AdminNotifierPort,
   type AdminNotifyOutcome,
 } from "../../application/ports/admin-notifier.port.js";
 import type { AdminNotice } from "../../application/read-models/admin-notice.read-model.js";
+import type { AdminNotificationChannel } from "../../domain/admin-notices.constants.js";
 import { AdminNoticeInfraLogEvent } from "../admin-notices-infra.log-events.js";
 import { renderDiscordEmbed } from "./discord-embed.mapper.js";
 import { DISCORD_WEBHOOK_POLICY } from "./discord-outbound.policy.js";
@@ -31,11 +31,11 @@ export class DiscordAdminNotifierAdapter extends AdminNotifierPort {
   readonly #logger = new Logger(DiscordAdminNotifierAdapter.name);
   readonly #policy: OutboundPolicy;
 
-  readonly #webhookUrls: Readonly<Record<NotificationChannel, string | undefined>>;
+  readonly #webhookUrls: Readonly<Record<AdminNotificationChannel, string | undefined>>;
   readonly #http: HttpClient;
 
   constructor(
-    webhookUrls: Readonly<Record<NotificationChannel, string | undefined>>,
+    webhookUrls: Readonly<Record<AdminNotificationChannel, string | undefined>>,
     http: HttpClient,
     policies: OutboundPolicyRegistry,
   ) {
@@ -45,7 +45,7 @@ export class DiscordAdminNotifierAdapter extends AdminNotifierPort {
     this.#policy = policies.get(DISCORD_WEBHOOK_POLICY);
   }
 
-  async send(channel: NotificationChannel, notice: AdminNotice): Promise<AdminNotifyOutcome> {
+  async send(channel: AdminNotificationChannel, notice: AdminNotice): Promise<AdminNotifyOutcome> {
     const webhookUrl = this.#webhookUrls[channel];
     if (webhookUrl == null || webhookUrl === "") {
       this.#logger.debug({

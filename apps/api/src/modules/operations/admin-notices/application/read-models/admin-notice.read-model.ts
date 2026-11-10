@@ -1,4 +1,5 @@
 import type {
+  DeviceType,
   PremiumSource,
   StorePeriodType,
   SubscriptionEnvironment,
@@ -125,7 +126,7 @@ export interface SubscriptionNotice {
 
 /** 가입 요청에서 확인한 기기·앱 정보 */
 export interface SignupNotice {
-  readonly devicePlatform?: "IOS" | "ANDROID" | "WEB";
+  readonly devicePlatform?: DeviceType;
   readonly deviceModel?: string;
   readonly osVersion?: string;
   readonly appVersion?: string;

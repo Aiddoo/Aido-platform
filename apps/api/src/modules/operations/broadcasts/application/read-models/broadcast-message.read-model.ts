@@ -1,6 +1,8 @@
+import type { NotificationType } from "@aido/api/vocabulary";
+
 import type { BroadcastAction } from "../../domain/broadcast-campaign.aggregate.js";
 
-export type AdminBroadcastType = "ADMIN_BROADCAST" | "ADMIN_TARGETED";
+export type AdminBroadcastType = Extract<NotificationType, "ADMIN_BROADCAST" | "ADMIN_TARGETED">;
 
 export interface AdminBroadcastMessage {
   readonly userId: string;

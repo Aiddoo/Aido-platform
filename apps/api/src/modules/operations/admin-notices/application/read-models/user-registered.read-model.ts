@@ -5,15 +5,19 @@
  * AdminNotificationQueue에서 사용됩니다.
  */
 
+import type { DeviceType } from "@aido/api/vocabulary";
+
+import type { SignupEventProvider } from "../../domain/admin-notices.constants.js";
+
 export interface UserRegisteredEventPayload {
   readonly userId: string;
   readonly email: string;
-  readonly provider: "credential" | "apple" | "google" | "kakao" | "naver";
+  readonly provider: SignupEventProvider;
   /** 가입 시각 (ISO string) */
   readonly registeredAt: string;
   readonly name?: string;
   /** 요청에서 확인된 기기 플랫폼 */
-  readonly devicePlatform?: "IOS" | "ANDROID" | "WEB";
+  readonly devicePlatform?: DeviceType;
   /** 요청에서 확인된 기기 모델 */
   readonly deviceModel?: string;
   /** 기기 OS 버전 (X-OS-Version) */
