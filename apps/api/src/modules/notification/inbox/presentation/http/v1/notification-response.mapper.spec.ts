@@ -1,4 +1,4 @@
-import { NotificationBuilder } from "#test/builders/index";
+import { createInboxNotificationFixture } from "#test/fixtures/notification/notification.fixture";
 
 import { createFollowAcceptedNotificationMessage } from "../../../../push/application/messages/notification.messages.js";
 import {
@@ -17,7 +17,7 @@ describe("notification-response.mapper — 알림 응답", () => {
   describe("toNotificationResponse", () => {
     it("기본 알림을 응답으로 바꾼다", () => {
       // Given
-      const notification = NotificationBuilder.create("user-1").build();
+      const notification = createInboxNotificationFixture({ userId: "user-1" });
 
       // When
       const result = toNotificationResponse(notification, "ko");
@@ -36,20 +36,33 @@ describe("notification-response.mapper — 알림 응답", () => {
     });
 
     it.each([
-      ["todoId", NotificationBuilder.create("user-1").withTodoId(42), { todoId: 42 }],
+      ["todoId", createInboxNotificationFixture({ userId: "user-1", todoId: 42 }), { todoId: 42 }],
       [
         "nudgeId",
-        NotificationBuilder.create("user-1").asNudgeReceived("friend-1", 7),
+        createInboxNotificationFixture({
+          userId: "user-1",
+          type: "NUDGE_RECEIVED",
+          friendId: "friend-1",
+          nudgeId: 7,
+          title: "콕 찌르기!",
+          body: "친구가 당신을 찔렀어요",
+        }),
         { friendId: "friend-1", nudgeId: 7 },
       ],
       [
         "cheerId",
-        NotificationBuilder.create("user-1").asCheerReceived("friend-1", 3),
+        createInboxNotificationFixture({
+          userId: "user-1",
+          type: "CHEER_RECEIVED",
+          friendId: "friend-1",
+          cheerId: 3,
+          title: "응원 메시지!",
+          body: "친구가 응원을 보냈어요",
+        }),
         { friendId: "friend-1", cheerId: 3 },
       ],
-    ])("%s가 있으면 context에 싣는다", (_field, builder, context) => {
+    ])("%s가 있으면 context에 싣는다", (_field, notification, context) => {
       // Given
-      const notification = builder.build();
 
       // When
       const result = toNotificationResponse(notification, "ko");
@@ -60,7 +73,7 @@ describe("notification-response.mapper — 알림 응답", () => {
 
     it("context 재료가 모두 null이면 context를 싣지 않는다", () => {
       // Given
-      const notification = NotificationBuilder.create("user-1").build();
+      const notification = createInboxNotificationFixture({ userId: "user-1" });
 
       // When
       const result = toNotificationResponse(notification, "ko");
@@ -71,7 +84,10 @@ describe("notification-response.mapper — 알림 응답", () => {
 
     it("객체가 아닌 legacy metadata는 null로 바꾼다", () => {
       // Given
-      const notification = { ...NotificationBuilder.create("user-1").build(), metadata: "legacy" };
+      const notification = {
+        ...createInboxNotificationFixture({ userId: "user-1" }),
+        metadata: "legacy",
+      };
 
       // When
       const result = toNotificationResponse(notification, "ko");
@@ -83,7 +99,12 @@ describe("notification-response.mapper — 알림 응답", () => {
     it("action URL이 있으면 action에 싣는다", () => {
       // Given
       const notification = {
-        ...NotificationBuilder.create("user-1").asSystemNotice().build(),
+        ...createInboxNotificationFixture({
+          userId: "user-1",
+          type: "SYSTEM_NOTICE",
+          title: "시스템 공지",
+          body: "서비스 점검 예정",
+        }),
         actionType: "BROWSER" as const,
         actionUrl: "https://aido.app/notice",
       };
@@ -97,12 +118,22 @@ describe("notification-response.mapper — 알림 응답", () => {
 
     it("푸시 data와 같은 navigation을 싣는다", () => {
       // Given
-      const nudge = NotificationBuilder.create("user-1")
-        .asNudgeReceived("friend-1", 7)
-        .withTodoId(42)
-        .build();
+      const nudge = createInboxNotificationFixture({
+        userId: "user-1",
+        type: "NUDGE_RECEIVED",
+        friendId: "friend-1",
+        nudgeId: 7,
+        title: "콕 찌르기!",
+        body: "친구가 당신을 찔렀어요",
+        todoId: 42,
+      });
       const browserNotice = {
-        ...NotificationBuilder.create("user-1").asSystemNotice().build(),
+        ...createInboxNotificationFixture({
+          userId: "user-1",
+          type: "SYSTEM_NOTICE",
+          title: "시스템 공지",
+          body: "서비스 점검 예정",
+        }),
         actionType: "BROWSER" as const,
         actionUrl: "https://aido.app/notice",
       };
@@ -123,7 +154,7 @@ describe("notification-response.mapper — 알림 응답", () => {
     it("계약을 통과하지 못하는 navigation은 싣지 않는다", () => {
       // Given
       const notification = {
-        ...NotificationBuilder.create("user-1").withType("FOLLOW_ACCEPTED").build(),
+        ...createInboxNotificationFixture({ userId: "user-1", type: "FOLLOW_ACCEPTED" }),
         friendId: "x".repeat(65),
       };
 
@@ -204,7 +235,7 @@ describe("notification-response.mapper — 알림 응답", () => {
   describe("toNotificationInboxResponse", () => {
     it("페이지 항목과 미읽음 수·다음 커서를 함께 싣는다", () => {
       // Given
-      const items = [1, 2, 3].map((id) => NotificationBuilder.create("user-1").withId(id).build());
+      const items = [1, 2, 3].map((id) => createInboxNotificationFixture({ userId: "user-1", id }));
 
       // When
       const result = toNotificationInboxResponse(

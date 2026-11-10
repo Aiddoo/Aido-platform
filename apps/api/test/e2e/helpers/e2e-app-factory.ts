@@ -67,6 +67,7 @@ import {
   JOB_RUNTIME,
   JobQueuePort,
 } from "#api/shared/application/ports/index";
+import { FakePushProvider } from "#test/doubles/notification/fake-push-provider";
 import { DateClock } from "#test/doubles/platform/date-clock";
 import { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
 import { StubWeatherReportProvider } from "#test/mocks/ports/weather.stub";
@@ -81,7 +82,6 @@ import { FakeLogger } from "../../mocks/fake-logger.service.js";
 import { FakeOAuthProviderRegistry } from "../../mocks/fake-oauth-provider-registry.js";
 import { FakeOAuthTokenVerifierService } from "../../mocks/fake-oauth-token-verifier.service.js";
 import { FakePasswordHasher } from "../../mocks/fake-password-hasher.js";
-import { FakePushProvider } from "../../mocks/fake-push.provider.js";
 import { FakeSunTimeProvider } from "../../mocks/fake-sun-time.provider.js";
 import { FakeWeatherProvider } from "../../mocks/fake-weather.provider.js";
 import { TestDatabase } from "../../setup/test-database.js";

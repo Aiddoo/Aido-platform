@@ -1,25 +1,24 @@
-import type { Mocked } from "vitest";
-import { mockDeep } from "vitest-mock-extended";
+import type { PushPermissionStatus } from "@aido/api/vocabulary";
 
-import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { FakePushProvider } from "#test/doubles/notification/fake-push-provider";
+import { InMemoryPushDeviceRepository } from "#test/doubles/notification/in-memory-push-device.repository";
+import { InMemoryPushTokenRepository } from "#test/doubles/notification/in-memory-push-token.repository";
+import { PassThroughNotificationCache } from "#test/doubles/notification/pass-through-notification-cache";
+import { StubActivePushTokenReader } from "#test/doubles/notification/stub-active-push-token.reader";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
-import { InMemoryPushDeviceStore } from "#test/mocks/in-memory-push-device.store";
-import { createNotificationCacheMock } from "#test/mocks/ports/notification-cache.mock";
-import {
-  createActivePushTokenReaderMock,
-  createPushTokenRepositoryMock,
-} from "#test/mocks/ports/notification.mock";
+import { SilentLogger } from "#test/doubles/platform/silent-logger";
+import { createNotificationDraftFixture } from "#test/fixtures/notification/notification.fixture";
+import { createPushDeviceFixture } from "#test/fixtures/notification/push-device.fixture";
+import { createPushTokenFixture } from "#test/fixtures/notification/push-token.fixture";
 
-import { PushDeviceId } from "../../domain/push-device-id.vo.js";
-import { PushDevice } from "../../domain/push-device.aggregate.js";
-import { PushPermission } from "../../domain/push-permission.vo.js";
+import type { PushDevice } from "../../domain/push-device.aggregate.js";
 import { RetryablePushProviderTransportError } from "../ports/push-provider.port.js";
 import type { BatchPushNotificationPayload } from "../push-notification-payload.mapper.js";
 import type { PushTokenRecord } from "../read-models/push-token.read-model.js";
 import { DispatchPushNotificationUseCase } from "./dispatch-push-notification.use-case.js";
 
-const TOKEN_DATE = Temporal.Instant.from("2026-07-01T00:00:00.000Z");
 const NOW = Temporal.Instant.from("2026-11-10T00:00:00.000Z");
+let tokenSequence = 0;
 
 function pushToken(input: {
   userId: string;
@@ -27,19 +26,12 @@ function pushToken(input: {
   payloadVersion: number;
   appVersion: string | null;
 }): PushTokenRecord {
-  return {
-    id: 1,
-    userId: input.userId,
-    token: input.token,
+  tokenSequence += 1;
+  return createPushTokenFixture({
+    id: tokenSequence,
     deviceId: `device-${input.token}`,
-    platform: "IOS",
-    isActive: true,
-    createdAt: TOKEN_DATE,
-    updatedAt: TOKEN_DATE,
-    lastUsedAt: TOKEN_DATE,
-    payloadVersion: input.payloadVersion,
-    appVersion: input.appVersion,
-  };
+    ...input,
+  });
 }
 
 function batchPayload(input: {
@@ -61,90 +53,79 @@ function batchPayload(input: {
 
 function reportedDevice(input: {
   userId: string;
-  status: PushPermission["status"];
+  status: PushPermissionStatus;
   reportedAt?: Temporal.Instant;
 }): PushDevice {
-  return PushDevice.create({
-    id: PushDeviceId.reconstitute(`ios_${input.userId}`),
-    userId: UserId.reconstitute(input.userId),
-    sessionId: null,
-    platform: "IOS",
-    permission: PushPermission.create({ status: input.status, canAskAgain: false }),
+  return createPushDeviceFixture({
+    deviceId: `ios_${input.userId}`,
+    userId: input.userId,
+    permissionStatus: input.status,
     token: null,
-    deviceModel: null,
-    osVersion: null,
-    now: input.reportedAt ?? NOW,
+    reportedAt: input.reportedAt ?? NOW,
   });
 }
 
-describe("DispatchPushNotificationUseCase", () => {
-  let service: DispatchPushNotificationUseCase;
-  let deviceStore: InMemoryPushDeviceStore;
-  let activeTokenReader: Mocked<
-    ConstructorParameters<typeof DispatchPushNotificationUseCase>[0]["activePushTokenReader"]
-  >;
-  let tokenRepository: Mocked<
-    ConstructorParameters<typeof DispatchPushNotificationUseCase>[0]["pushTokenRepository"]
-  >;
-  let pushProvider: Mocked<
-    ConstructorParameters<typeof DispatchPushNotificationUseCase>[0]["pushProvider"]
-  >;
-  let notificationCache: Mocked<
-    ConstructorParameters<typeof DispatchPushNotificationUseCase>[0]["notificationCache"]
-  >;
-
-  beforeEach(async () => {
-    deviceStore = new InMemoryPushDeviceStore();
-    const pushNotificationDeliveryServiceDependencies = mockDeep<
-      ConstructorParameters<typeof DispatchPushNotificationUseCase>[0]
-    >({
-      pushTokenRepository: createPushTokenRepositoryMock(),
-      activePushTokenReader: createActivePushTokenReaderMock(),
-      notificationCache: createNotificationCacheMock(),
-    });
-    const unit = new DispatchPushNotificationUseCase({
-      pushTokenRepository: pushNotificationDeliveryServiceDependencies.pushTokenRepository,
-      pushDeviceRepository: deviceStore,
-      pushProvider: pushNotificationDeliveryServiceDependencies.pushProvider,
-      activePushTokenReader: pushNotificationDeliveryServiceDependencies.activePushTokenReader,
-      notificationCache: pushNotificationDeliveryServiceDependencies.notificationCache,
-      clock: new FixedClock(NOW),
-      logger: pushNotificationDeliveryServiceDependencies.logger,
-    });
-    service = unit;
-    activeTokenReader = pushNotificationDeliveryServiceDependencies.activePushTokenReader;
-    tokenRepository = pushNotificationDeliveryServiceDependencies.pushTokenRepository;
-    pushProvider = pushNotificationDeliveryServiceDependencies.pushProvider;
-    notificationCache = pushNotificationDeliveryServiceDependencies.notificationCache;
-    activeTokenReader.findByUserId.mockResolvedValue([]);
-    activeTokenReader.findByUserIds.mockResolvedValue(new Map());
-    notificationCache.invalidatePushTokens.mockResolvedValue(undefined);
+function createDispatchUseCase(
+  options: {
+    readonly devices?: readonly PushDevice[];
+    readonly tokens?: readonly PushTokenRecord[];
+    readonly activeTokens?: Iterable<readonly [string, readonly string[]]>;
+  } = {},
+) {
+  const pushTokenRepository = new InMemoryPushTokenRepository(options.tokens);
+  const activePushTokenReader = new StubActivePushTokenReader(options.activeTokens);
+  const pushProvider = new FakePushProvider();
+  const notificationCache = new PassThroughNotificationCache();
+  const service = new DispatchPushNotificationUseCase({
+    pushTokenRepository,
+    pushDeviceRepository: new InMemoryPushDeviceRepository(options.devices),
+    pushProvider,
+    activePushTokenReader,
+    notificationCache,
+    clock: new FixedClock(NOW),
+    logger: new SilentLogger(),
   });
+  return { service, pushTokenRepository, activePushTokenReader, pushProvider, notificationCache };
+}
 
+async function activeTokensOf(
+  repository: InMemoryPushTokenRepository,
+  userIds: string[],
+): Promise<string[]> {
+  const records = await repository.findActivePushTokensByUsers(userIds);
+  return records.map(({ token }) => token).toSorted();
+}
+
+describe("DispatchPushNotificationUseCase — 토큰 선택과 공급자 전달", () => {
   it("일반 단건은 cache-aside reader의 활성 토큰이 없으면 provider를 호출하지 않는다", async () => {
+    // Given
+    const { service, activePushTokenReader, pushProvider } = createDispatchUseCase();
+
+    // When
     const result = await service.deliverSingle({
-      data: { userId: "user-1", type: "FOLLOW_NEW", title: "title", body: "body" },
+      data: createNotificationDraftFixture({ userId: "user-1", title: "title", body: "body" }),
       payload: { title: "title", body: "body" },
     });
 
+    // Then
     expect(result).toEqual({ status: "skipped", reason: "NO_ACTIVE_TOKEN" });
-    expect(activeTokenReader.findByUserId).toHaveBeenCalledWith("user-1");
-    expect(pushProvider.sendBatch).not.toHaveBeenCalled();
+    expect(activePushTokenReader.lookedUpUserIds).toEqual(["user-1"]);
+    expect(pushProvider.sentBatches).toEqual([]);
   });
 
   it("활성 토큰이 없으면 최근 보고한 기기 권한으로 건너뜀 사유를 나눈다", async () => {
-    // Given user-1은 거절, user-2는 아직 묻지 않음, user-3은 90일 넘게 보고가 없다
-    await deviceStore.savePushDevice(reportedDevice({ userId: "user-1", status: "DENIED" }));
-    await deviceStore.savePushDevice(
-      reportedDevice({ userId: "user-2", status: "NOT_DETERMINED" }),
-    );
-    await deviceStore.savePushDevice(
-      reportedDevice({
-        userId: "user-3",
-        status: "DENIED",
-        reportedAt: NOW.subtract({ hours: 91 * 24 }),
-      }),
-    );
+    // Given - user-1은 거절, user-2는 아직 묻지 않음, user-3은 90일 넘게 보고가 없다
+    const { service } = createDispatchUseCase({
+      devices: [
+        reportedDevice({ userId: "user-1", status: "DENIED" }),
+        reportedDevice({ userId: "user-2", status: "NOT_DETERMINED" }),
+        reportedDevice({
+          userId: "user-3",
+          status: "DENIED",
+          reportedAt: NOW.subtract({ hours: 91 * 24 }),
+        }),
+      ],
+    });
 
     // When
     const prepared = await service.prepareBatchDelivery([
@@ -162,81 +143,95 @@ describe("DispatchPushNotificationUseCase", () => {
   });
 
   it("단건도 거절한 기기만 있으면 PUSH_PERMISSION_DENIED로 건너뛴다", async () => {
-    await deviceStore.savePushDevice(reportedDevice({ userId: "user-1", status: "DENIED" }));
+    // Given
+    const { service } = createDispatchUseCase({
+      devices: [reportedDevice({ userId: "user-1", status: "DENIED" })],
+    });
 
+    // When
     const result = await service.deliverSingle({
-      data: { userId: "user-1", type: "FOLLOW_NEW", title: "title", body: "body" },
+      data: createNotificationDraftFixture({ userId: "user-1", title: "title", body: "body" }),
       payload: { title: "title", body: "body" },
     });
 
+    // Then
     expect(result).toEqual({ status: "skipped", reason: "PUSH_PERMISSION_DENIED" });
   });
 
   it("feature-discovery 단건은 활성 토큰과 지원 capability 부재를 구분한다", async () => {
-    tokenRepository.findPushTokensByUser.mockResolvedValue([
-      pushToken({
-        userId: "user-1",
-        token: "legacy-token",
-        payloadVersion: 1,
-        appVersion: "1.9.0",
-      }),
-    ]);
-
-    await expect(
-      service.deliverSingle({
-        data: {
+    // Given
+    const { service, activePushTokenReader } = createDispatchUseCase({
+      tokens: [
+        pushToken({
           userId: "user-1",
-          type: "SYSTEM_NOTICE",
-          title: "title",
-          body: "body",
-          campaignKey: "feature-discovery-2026-08",
-        },
-        payload: { title: "title", body: "body" },
+          token: "legacy-token",
+          payloadVersion: 1,
+          appVersion: "1.9.0",
+        }),
+      ],
+    });
+
+    // When
+    const result = await service.deliverSingle({
+      data: createNotificationDraftFixture({
+        userId: "user-1",
+        type: "SYSTEM_NOTICE",
+        title: "title",
+        body: "body",
+        campaignKey: "feature-discovery-2026-08",
       }),
-    ).resolves.toEqual({ status: "skipped", reason: "UNSUPPORTED_APP_CAPABILITY" });
-    expect(activeTokenReader.findByUserId).not.toHaveBeenCalled();
+      payload: { title: "title", body: "body" },
+    });
+
+    // Then
+    expect(result).toEqual({ status: "skipped", reason: "UNSUPPORTED_APP_CAPABILITY" });
+    expect(activePushTokenReader.lookedUpUserIds).toEqual([]);
   });
 
   it.each(["NUDGE_REPLIED", "NUDGE_THANKED"] as const)(
     "%s 알림은 같은 사용자의 여러 기기 중 1.11.0 이상 기기에만 보낸다",
     async (type) => {
       // Given
-      tokenRepository.findPushTokensByUser.mockResolvedValue([
-        pushToken({
-          userId: "user-1",
-          token: "old-token",
-          payloadVersion: 2,
-          appVersion: "1.10.1",
-        }),
-        pushToken({
-          userId: "user-1",
-          token: "unknown-token",
-          payloadVersion: 2,
-          appVersion: null,
-        }),
-        pushToken({
-          userId: "user-1",
-          token: "new-token",
-          payloadVersion: 2,
-          appVersion: "1.11.0",
-        }),
-      ]);
-      pushProvider.sendBatch.mockResolvedValue([
-        { token: "new-token", status: "accepted", ticketId: "ticket-new" },
-      ]);
+      const { service, activePushTokenReader, pushProvider } = createDispatchUseCase({
+        tokens: [
+          pushToken({
+            userId: "user-1",
+            token: "old-token",
+            payloadVersion: 2,
+            appVersion: "1.10.1",
+          }),
+          pushToken({
+            userId: "user-1",
+            token: "unknown-token",
+            payloadVersion: 2,
+            appVersion: null,
+          }),
+          pushToken({
+            userId: "user-1",
+            token: "new-token",
+            payloadVersion: 2,
+            appVersion: "1.11.0",
+          }),
+        ],
+      });
 
       // When
       const result = await service.deliverSingle({
-        data: { userId: "user-1", type, title: "친구의 답장", body: "곧 시작해요" },
+        data: createNotificationDraftFixture({
+          userId: "user-1",
+          type,
+          title: "친구의 답장",
+          body: "곧 시작해요",
+        }),
         payload: { title: "친구의 답장", body: "곧 시작해요" },
       });
 
       // Then
       expect(result.status).toBe("sent");
-      expect(pushProvider.sendBatch).toHaveBeenCalledWith([
-        { token: "new-token", title: "친구의 답장", body: "곧 시작해요" },
+      expect(pushProvider.sentBatches).toEqual([
+        [{ token: "new-token", title: "친구의 답장", body: "곧 시작해요" }],
       ]);
-      expect(activeTokenReader.findByUserId).not.toHaveBeenCalled();
+      expect(activePushTokenReader.lookedUpUserIds).toEqual([]);
     },
   );
 
@@ -248,55 +243,54 @@ describe("DispatchPushNotificationUseCase", () => {
     "PREMIUM_GRANT_ENDING",
   ] as const)("%s 알림은 1.12.1 기기에는 보내지 않고 1.13.0 이상 기기에만 보낸다", async (type) => {
     // Given
-    tokenRepository.findPushTokensByUser.mockResolvedValue([
-      pushToken({
-        userId: "user-1",
-        token: "released-token",
-        payloadVersion: 2,
-        appVersion: "1.12.1",
-      }),
-      pushToken({
-        userId: "user-1",
-        token: "updated-token",
-        payloadVersion: 2,
-        appVersion: "1.13.0",
-      }),
-    ]);
-    pushProvider.sendBatch.mockResolvedValue([
-      { token: "updated-token", status: "accepted", ticketId: "ticket-updated" },
-    ]);
+    const { service, pushProvider } = createDispatchUseCase({
+      tokens: [
+        pushToken({
+          userId: "user-1",
+          token: "released-token",
+          payloadVersion: 2,
+          appVersion: "1.12.1",
+        }),
+        pushToken({
+          userId: "user-1",
+          token: "updated-token",
+          payloadVersion: 2,
+          appVersion: "1.13.0",
+        }),
+      ],
+    });
 
     // When
     const result = await service.deliverSingle({
-      data: { userId: "user-1", type, title: "초대", body: "본문" },
+      data: createNotificationDraftFixture({ userId: "user-1", type, title: "초대", body: "본문" }),
       payload: { title: "초대", body: "본문" },
     });
 
     // Then
     expect(result.status).toBe("sent");
-    expect(pushProvider.sendBatch).toHaveBeenCalledWith([
-      { token: "updated-token", title: "초대", body: "본문" },
+    expect(pushProvider.sentBatches).toEqual([
+      [{ token: "updated-token", title: "초대", body: "본문" }],
     ]);
   });
 
   it("답장·감사 배치는 기존 알림을 구버전에도 보내고 새 유형만 지원 기기에 제한한다", async () => {
     // Given
-    activeTokenReader.findByUserIds.mockResolvedValue(
-      new Map([
+    const { service } = createDispatchUseCase({
+      activeTokens: [
         ["mixed", ["old-token", "new-token"]],
         ["old-only", ["unsupported-token"]],
-      ]),
-    );
-    tokenRepository.findActivePushTokensByUsers.mockResolvedValue([
-      pushToken({ userId: "mixed", token: "old-token", payloadVersion: 2, appVersion: "1.10.0" }),
-      pushToken({ userId: "mixed", token: "new-token", payloadVersion: 2, appVersion: "1.11.0" }),
-      pushToken({
-        userId: "old-only",
-        token: "unsupported-token",
-        payloadVersion: 2,
-        appVersion: "1.10.1",
-      }),
-    ]);
+      ],
+      tokens: [
+        pushToken({ userId: "mixed", token: "old-token", payloadVersion: 2, appVersion: "1.10.0" }),
+        pushToken({ userId: "mixed", token: "new-token", payloadVersion: 2, appVersion: "1.11.0" }),
+        pushToken({
+          userId: "old-only",
+          token: "unsupported-token",
+          payloadVersion: 2,
+          appVersion: "1.10.1",
+        }),
+      ],
+    });
 
     // When
     const prepared = await service.prepareBatchDelivery([
@@ -322,58 +316,74 @@ describe("DispatchPushNotificationUseCase", () => {
   });
 
   it("단건 provider가 invalid token을 반환하면 저장소 비활성화와 해당 사용자 캐시 무효화를 완료한다", async () => {
-    activeTokenReader.findByUserId.mockResolvedValue(["invalid-token"]);
-    pushProvider.sendBatch.mockResolvedValue([
-      { token: "invalid-token", status: "rejected", failure: { kind: "DEVICE_UNREGISTERED" } },
-    ]);
+    // Given
+    const { service, pushTokenRepository, pushProvider, notificationCache } = createDispatchUseCase(
+      {
+        activeTokens: [["user-1", ["invalid-token"]]],
+        tokens: [
+          pushToken({
+            userId: "user-1",
+            token: "invalid-token",
+            payloadVersion: 2,
+            appVersion: null,
+          }),
+        ],
+      },
+    );
+    pushProvider.nextResults = async (payloads) =>
+      payloads.map((payload) => ({
+        token: payload.token,
+        status: "rejected",
+        failure: { kind: "DEVICE_UNREGISTERED" },
+      }));
 
-    await expect(
-      service.deliverSingle({
-        data: { userId: "user-1", type: "FOLLOW_NEW", title: "title", body: "body" },
-        payload: { title: "title", body: "body", categoryId: "TEST" },
-      }),
-    ).resolves.toMatchObject({
+    // When
+    const result = await service.deliverSingle({
+      data: createNotificationDraftFixture({ userId: "user-1", title: "title", body: "body" }),
+      payload: { title: "title", body: "body", categoryId: "TEST" },
+    });
+
+    // Then
+    expect(result).toMatchObject({
       status: "sent",
       results: [{ token: "invalid-token", status: "rejected" }],
     });
-    expect(tokenRepository.deactivateInvalidTokens).toHaveBeenCalledWith(["invalid-token"], NOW);
-    expect(notificationCache.invalidatePushTokens).toHaveBeenCalledWith("user-1");
-    expect(pushProvider.sendBatch).toHaveBeenCalledWith([
-      {
-        token: "invalid-token",
-        title: "title",
-        body: "body",
-        categoryId: "TEST",
-      },
+    expect(pushProvider.sentBatches).toEqual([
+      [{ token: "invalid-token", title: "title", body: "body", categoryId: "TEST" }],
     ]);
+    expect(await activeTokensOf(pushTokenRepository, ["user-1"])).toEqual([]);
+    expect(pushTokenRepository.tokenOf("user-1", "device-invalid-token")?.updatedAt).toEqual(NOW);
+    expect(notificationCache.invalidatedPushTokenUserIds).toEqual(["user-1"]);
   });
 
   it("배치는 generic·feature 토큰을 각 계약으로 선택하고 dispatch별 결과와 skip 이유를 보존한다", async () => {
-    activeTokenReader.findByUserIds.mockResolvedValue(
-      new Map([
+    // Given
+    const { service, pushProvider } = createDispatchUseCase({
+      activeTokens: [
         ["generic", ["generic-token"]],
         ["feature", ["ignored-generic-token"]],
-      ]),
-    );
-    tokenRepository.findActivePushTokensByUsers.mockResolvedValue([
-      pushToken({
-        userId: "feature",
-        token: "feature-token",
-        payloadVersion: 2,
-        appVersion: "1.8.0",
-      }),
-      pushToken({
-        userId: "unsupported",
-        token: "unsupported-token",
-        payloadVersion: 1,
-        appVersion: "1.9.0",
-      }),
-    ]);
-    pushProvider.sendBatch.mockResolvedValue([
+      ],
+      tokens: [
+        pushToken({
+          userId: "feature",
+          token: "feature-token",
+          payloadVersion: 2,
+          appVersion: "1.8.0",
+        }),
+        pushToken({
+          userId: "unsupported",
+          token: "unsupported-token",
+          payloadVersion: 1,
+          appVersion: "1.9.0",
+        }),
+      ],
+    });
+    pushProvider.nextResults = async () => [
       { token: "generic-token", status: "accepted", ticketId: "ticket-1" },
       { token: "feature-token", status: "accepted", ticketId: "ticket-2" },
-    ]);
+    ];
 
+    // When
     const prepared = await service.prepareBatchDelivery([
       batchPayload({ userId: "generic", dispatchId: 1 }),
       batchPayload({ userId: "feature", dispatchId: 2, requiresFeatureCapability: true }),
@@ -385,19 +395,12 @@ describe("DispatchPushNotificationUseCase", () => {
     }
     const result = await service.sendPreparedBatch(prepared);
 
-    expect(pushProvider.sendBatch).toHaveBeenCalledWith([
-      {
-        token: "generic-token",
-        title: "title-1",
-        body: "body-1",
-        data: { dispatchId: 1 },
-      },
-      {
-        token: "feature-token",
-        title: "title-2",
-        body: "body-2",
-        data: { dispatchId: 2 },
-      },
+    // Then
+    expect(pushProvider.sentBatches).toEqual([
+      [
+        { token: "generic-token", title: "title-1", body: "body-1", data: { dispatchId: 1 } },
+        { token: "feature-token", title: "title-2", body: "body-2", data: { dispatchId: 2 } },
+      ],
     ]);
     expect([...prepared.attemptedDispatchIds]).toEqual([1, 2]);
     expect(result.resultsByDispatch.get(1)).toEqual([
@@ -413,17 +416,33 @@ describe("DispatchPushNotificationUseCase", () => {
   });
 
   it("배치 invalid token은 기존 계약대로 배치 수신자 전체 token cache를 무효화한다", async () => {
-    activeTokenReader.findByUserIds.mockResolvedValue(
-      new Map([
-        ["user-1", ["invalid-token"]],
-        ["user-2", ["valid-token"]],
-      ]),
+    // Given
+    const { service, pushTokenRepository, pushProvider, notificationCache } = createDispatchUseCase(
+      {
+        activeTokens: [
+          ["user-1", ["invalid-token"]],
+          ["user-2", ["valid-token"]],
+        ],
+        tokens: [
+          pushToken({
+            userId: "user-1",
+            token: "invalid-token",
+            payloadVersion: 2,
+            appVersion: null,
+          }),
+          pushToken({
+            userId: "user-2",
+            token: "valid-token",
+            payloadVersion: 2,
+            appVersion: null,
+          }),
+        ],
+      },
     );
-    pushProvider.sendBatch.mockResolvedValue([
+    pushProvider.nextResults = async () => [
       { token: "invalid-token", status: "rejected", failure: { kind: "DEVICE_UNREGISTERED" } },
       { token: "valid-token", status: "accepted", ticketId: "ticket-valid" },
-    ]);
-
+    ];
     const prepared = await service.prepareBatchDelivery([
       batchPayload({ userId: "user-1", dispatchId: 1 }),
       batchPayload({ userId: "user-2", dispatchId: 2 }),
@@ -431,18 +450,31 @@ describe("DispatchPushNotificationUseCase", () => {
     if (prepared.status !== "ready") {
       throw new Error("Expected a prepared batch delivery");
     }
+
+    // When
     await service.sendPreparedBatch(prepared);
 
-    expect(tokenRepository.deactivateInvalidTokens).toHaveBeenCalledWith(["invalid-token"], NOW);
-    expect(notificationCache.invalidatePushTokens).toHaveBeenCalledTimes(2);
-    expect(notificationCache.invalidatePushTokens).toHaveBeenCalledWith("user-1");
-    expect(notificationCache.invalidatePushTokens).toHaveBeenCalledWith("user-2");
+    // Then
+    expect(await activeTokensOf(pushTokenRepository, ["user-1", "user-2"])).toEqual([
+      "valid-token",
+    ]);
+    expect(notificationCache.invalidatedPushTokenUserIds).toEqual(["user-1", "user-2"]);
   });
 
   it("배치 provider transport 오류는 token 상태를 변경하지 않고 같은 오류를 재전파한다", async () => {
     // Given
-    activeTokenReader.findByUserIds.mockResolvedValue(
-      new Map([["user-1", ["ExponentPushToken[user-1]"]]]),
+    const { service, pushTokenRepository, pushProvider, notificationCache } = createDispatchUseCase(
+      {
+        activeTokens: [["user-1", ["ExponentPushToken[user-1]"]]],
+        tokens: [
+          pushToken({
+            userId: "user-1",
+            token: "ExponentPushToken[user-1]",
+            payloadVersion: 2,
+            appVersion: null,
+          }),
+        ],
+      },
     );
     const prepared = await service.prepareBatchDelivery([
       batchPayload({ userId: "user-1", dispatchId: 1 }),
@@ -460,11 +492,18 @@ describe("DispatchPushNotificationUseCase", () => {
       },
       { cause: new Error("network unavailable") },
     );
-    pushProvider.sendBatch.mockRejectedValue(transportError);
+    pushProvider.nextResults = async () => {
+      throw transportError;
+    };
 
-    // When / Then
-    await expect(service.sendPreparedBatch(prepared)).rejects.toBe(transportError);
-    expect(tokenRepository.deactivateInvalidTokens).not.toHaveBeenCalled();
-    expect(notificationCache.invalidatePushTokens).not.toHaveBeenCalled();
+    // When
+    const result = service.sendPreparedBatch(prepared);
+
+    // Then
+    await expect(result).rejects.toBe(transportError);
+    expect(await activeTokensOf(pushTokenRepository, ["user-1"])).toEqual([
+      "ExponentPushToken[user-1]",
+    ]);
+    expect(notificationCache.invalidatedPushTokenUserIds).toEqual([]);
   });
 });

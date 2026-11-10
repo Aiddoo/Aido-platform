@@ -1,6 +1,6 @@
-import { NotificationBuilder } from "#test/builders/index";
 import { InMemoryNotificationRepository } from "#test/doubles/notification/in-memory-notification.repository";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
+import { createInboxNotificationFixture } from "#test/fixtures/notification/notification.fixture";
 
 import { ListNotificationsUseCase } from "./list-notifications.use-case.js";
 
@@ -18,10 +18,14 @@ describe("ListNotificationsUseCase — 알림 목록", () => {
   it("내 알림만 최신순으로 size만큼 주고 다음 커서를 마지막 알림 id로 준다", async () => {
     // Given
     const reader = new InMemoryNotificationRepository([
-      NotificationBuilder.create(USER_ID).withId(1).withCreatedAt(minutesAfterBase(1)).build(),
-      NotificationBuilder.create(USER_ID).withId(2).withCreatedAt(minutesAfterBase(2)).build(),
-      NotificationBuilder.create(USER_ID).withId(3).withCreatedAt(minutesAfterBase(3)).build(),
-      NotificationBuilder.create("other-user").withId(4).withCreatedAt(minutesAfterBase(4)).build(),
+      createInboxNotificationFixture({ userId: USER_ID, id: 1, createdAt: minutesAfterBase(1) }),
+      createInboxNotificationFixture({ userId: USER_ID, id: 2, createdAt: minutesAfterBase(2) }),
+      createInboxNotificationFixture({ userId: USER_ID, id: 3, createdAt: minutesAfterBase(3) }),
+      createInboxNotificationFixture({
+        userId: "other-user",
+        id: 4,
+        createdAt: minutesAfterBase(4),
+      }),
     ]);
 
     // When
@@ -35,9 +39,9 @@ describe("ListNotificationsUseCase — 알림 목록", () => {
   it("커서 다음 알림부터 주고 마지막 페이지는 nextCursor가 null이다", async () => {
     // Given
     const reader = new InMemoryNotificationRepository([
-      NotificationBuilder.create(USER_ID).withId(1).withCreatedAt(minutesAfterBase(1)).build(),
-      NotificationBuilder.create(USER_ID).withId(2).withCreatedAt(minutesAfterBase(2)).build(),
-      NotificationBuilder.create(USER_ID).withId(3).withCreatedAt(minutesAfterBase(3)).build(),
+      createInboxNotificationFixture({ userId: USER_ID, id: 1, createdAt: minutesAfterBase(1) }),
+      createInboxNotificationFixture({ userId: USER_ID, id: 2, createdAt: minutesAfterBase(2) }),
+      createInboxNotificationFixture({ userId: USER_ID, id: 3, createdAt: minutesAfterBase(3) }),
     ]);
 
     // When
@@ -55,8 +59,13 @@ describe("ListNotificationsUseCase — 알림 목록", () => {
   it("unreadOnly면 읽은 알림을 뺀다", async () => {
     // Given
     const reader = new InMemoryNotificationRepository([
-      NotificationBuilder.create(USER_ID).withId(1).asRead().build(),
-      NotificationBuilder.create(USER_ID).withId(2).asUnread().build(),
+      createInboxNotificationFixture({
+        userId: USER_ID,
+        id: 1,
+        isRead: true,
+        readAt: new Date("2026-11-10T00:00:00Z"),
+      }),
+      createInboxNotificationFixture({ userId: USER_ID, id: 2, isRead: false, readAt: null }),
     ]);
 
     // When
@@ -85,10 +94,7 @@ describe("ListNotificationsUseCase — 알림 목록", () => {
     const types = [...included, ...excluded];
     const reader = new InMemoryNotificationRepository(
       types.map((type, index) =>
-        NotificationBuilder.create(USER_ID)
-          .withId(index + 1)
-          .withType(type)
-          .build(),
+        createInboxNotificationFixture({ userId: USER_ID, id: index + 1, type }),
       ),
     );
 
@@ -106,8 +112,8 @@ describe("ListNotificationsUseCase — 알림 목록", () => {
   it("최신 앱의 전체 목록은 모든 알림 타입을 준다", async () => {
     // Given
     const reader = new InMemoryNotificationRepository([
-      NotificationBuilder.create(USER_ID).withId(1).withType("NUDGE_RECEIVED").build(),
-      NotificationBuilder.create(USER_ID).withId(2).withType("NUDGE_REPLIED").build(),
+      createInboxNotificationFixture({ userId: USER_ID, id: 1, type: "NUDGE_RECEIVED" }),
+      createInboxNotificationFixture({ userId: USER_ID, id: 2, type: "NUDGE_REPLIED" }),
     ]);
 
     // When
@@ -126,21 +132,24 @@ describe("ListNotificationsUseCase — 알림 목록", () => {
     async (appVersion) => {
       // Given
       const reader = new InMemoryNotificationRepository([
-        NotificationBuilder.create(USER_ID)
-          .withId(1)
-          .withType("NUDGE_RECEIVED")
-          .withCreatedAt(minutesAfterBase(1))
-          .build(),
-        NotificationBuilder.create(USER_ID)
-          .withId(2)
-          .withType("NUDGE_REPLIED")
-          .withCreatedAt(minutesAfterBase(2))
-          .build(),
-        NotificationBuilder.create(USER_ID)
-          .withId(3)
-          .withType("NUDGE_THANKED")
-          .withCreatedAt(minutesAfterBase(3))
-          .build(),
+        createInboxNotificationFixture({
+          userId: USER_ID,
+          id: 1,
+          type: "NUDGE_RECEIVED",
+          createdAt: minutesAfterBase(1),
+        }),
+        createInboxNotificationFixture({
+          userId: USER_ID,
+          id: 2,
+          type: "NUDGE_REPLIED",
+          createdAt: minutesAfterBase(2),
+        }),
+        createInboxNotificationFixture({
+          userId: USER_ID,
+          id: 3,
+          type: "NUDGE_THANKED",
+          createdAt: minutesAfterBase(3),
+        }),
       ]);
 
       // When

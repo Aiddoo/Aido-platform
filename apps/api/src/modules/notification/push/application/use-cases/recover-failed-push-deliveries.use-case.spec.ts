@@ -1,31 +1,55 @@
-import { mockDeep } from "vitest-mock-extended";
+import { FixedClock } from "#test/doubles/platform/fixed-clock";
+import { ImmediateUnitOfWork } from "#test/doubles/platform/immediate-unit-of-work";
 
-import { DateClock } from "#test/doubles/platform/date-clock";
-import { createUnitOfWorkMock } from "#test/mocks/ports/index";
-
+import type {
+  PushDeliveryLifecycleRepositoryPort,
+  ReopenPushDeliveriesAfterClaimFailureInput,
+} from "../ports/push-delivery-lifecycle.repository.port.js";
 import { RecoverFailedPushDeliveriesUseCase } from "./recover-failed-push-deliveries.use-case.js";
 
-describe("RecoverFailedPushDeliveriesUseCase", () => {
-  it("DLQ publication 중 현재 PENDING dispatch와 matching generation subset만 repository에 위임한다", async () => {
-    const recoverFailedPushDeliveriesDependencies = mockDeep<
-      ConstructorParameters<typeof RecoverFailedPushDeliveriesUseCase>[0]
-    >({
-      unitOfWork: createUnitOfWorkMock(),
-      clock: new DateClock(),
+const NOW = Temporal.Instant.from("2026-08-29T12:00:00.000Z");
+
+class RecordingReopenLifecycle implements Pick<
+  PushDeliveryLifecycleRepositoryPort,
+  "reopenFailedPublications"
+> {
+  readonly reopenInputs: ReopenPushDeliveriesAfterClaimFailureInput[] = [];
+  reopenedCount = 0;
+
+  async reopenFailedPublications(input: ReopenPushDeliveriesAfterClaimFailureInput) {
+    this.reopenInputs.push(input);
+    return this.reopenedCount;
+  }
+}
+
+describe("RecoverFailedPushDeliveriesUseCase — 재시도가 끝난 발송 다시 열기", () => {
+  it("DLQ publication을 한 트랜잭션에서 지금 시각·재시도 소진 사유로 다시 열고 저장소가 연 수를 돌려준다", async () => {
+    // Given
+    const lifecycle = new RecordingReopenLifecycle();
+    lifecycle.reopenedCount = 1;
+    const unitOfWork = new ImmediateUnitOfWork();
+    const useCase = new RecoverFailedPushDeliveriesUseCase({
+      lifecycle,
+      unitOfWork,
+      clock: new FixedClock(NOW),
     });
-    recoverFailedPushDeliveriesDependencies.lifecycle.reopenFailedPublications.mockResolvedValue(1);
-    const unit = new RecoverFailedPushDeliveriesUseCase(recoverFailedPushDeliveriesDependencies);
-    const lifecycle = recoverFailedPushDeliveriesDependencies.lifecycle;
     const publications = [
       { dispatchId: 11, publishAttempt: 2 },
       { dispatchId: 12, publishAttempt: 4 },
     ];
 
-    await expect(unit.execute({ publications })).resolves.toBe(1);
-    expect(lifecycle.reopenFailedPublications).toHaveBeenCalledWith({
-      publications,
-      availableAt: expect.any(Date),
-      error: "DELIVERY_RUNTIME_RETRIES_EXHAUSTED",
-    });
+    // When
+    const reopened = await useCase.execute({ publications });
+
+    // Then
+    expect(reopened).toBe(1);
+    expect(unitOfWork.runCount).toBe(1);
+    expect(lifecycle.reopenInputs).toEqual([
+      {
+        publications,
+        availableAt: new Date(NOW.epochMilliseconds),
+        error: "DELIVERY_RUNTIME_RETRIES_EXHAUSTED",
+      },
+    ]);
   });
 });

@@ -6,7 +6,6 @@
  */
 
 import { CheerFixture, FollowFixture, NudgeFixture } from "./friend.fixture.js";
-import { NotificationFixture, PushTokenFixture } from "./notification.fixture.js";
 import { SessionFixture, VerificationFixture } from "./session.fixture.js";
 import { TodoCategoryFixture, TodoFixture } from "./todo.fixture.js";
 import { AccountFixture, UserFixture } from "./user.fixture.js";
@@ -31,8 +30,6 @@ export function resetAllFixtures(): void {
   TodoCategoryFixture.reset();
   SessionFixture.reset();
   VerificationFixture.reset();
-  NotificationFixture.reset();
-  PushTokenFixture.reset();
   FollowFixture.reset();
   NudgeFixture.reset();
   CheerFixture.reset();

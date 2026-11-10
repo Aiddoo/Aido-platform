@@ -1,81 +1,86 @@
-import { FixedClock } from "#test/doubles/platform/fixed-clock";
-import { PushDeviceReportFixture } from "#test/fixtures/index";
-import { InMemoryPushDeviceStore } from "#test/mocks/in-memory-push-device.store";
-import { createUnitOfWorkMock } from "#test/mocks/ports/index";
-import { StubPushTokenCache } from "#test/mocks/stub-push-token-cache";
+import { InMemoryPushDeviceRepository } from "#test/doubles/notification/in-memory-push-device.repository";
+import { InMemoryPushTokenRepository } from "#test/doubles/notification/in-memory-push-token.repository";
+import { PassThroughNotificationCache } from "#test/doubles/notification/pass-through-notification-cache";
+import { ImmediateUnitOfWork } from "#test/doubles/platform/immediate-unit-of-work";
+import { SilentLogger } from "#test/doubles/platform/silent-logger";
+import { createPushDeviceFixture } from "#test/fixtures/notification/push-device.fixture";
+import { createPushTokenFixture } from "#test/fixtures/notification/push-token.fixture";
 
-import { ReportPushDeviceUseCase } from "./report-push-device.use-case.js";
 import { UnregisterPushDeviceUseCase } from "./unregister-push-device.use-case.js";
 
-async function setup() {
-  const store = new InMemoryPushDeviceStore();
-  const cache = new StubPushTokenCache();
-  const logger = { log: () => undefined, warn: () => undefined };
-  const report = new ReportPushDeviceUseCase({
-    pushDeviceRepository: store,
-    pushTokenRepository: store,
-    unitOfWork: createUnitOfWorkMock(),
-    pushProvider: { validateToken: () => true },
-    userSettings: {
-      upsertPushLocale: async () => undefined,
-      upsertPushTimezone: async () => undefined,
-    },
-    cache: {
-      invalidatePushTokens: async () => undefined,
-      invalidateUserPreference: async () => undefined,
-    },
-    clock: new FixedClock(Temporal.Instant.from("2026-11-10T00:00:00.000Z")),
-    logger,
-  });
-  for (const deviceId of ["ios_phone", "android_tablet"]) {
-    await report.execute(
-      PushDeviceReportFixture.command({
+const DEVICE_IDS = ["ios_phone", "android_tablet"] as const;
+
+// user-a가 두 기기를 쓰고 있다
+function setup() {
+  const devices = new InMemoryPushDeviceRepository(
+    DEVICE_IDS.map((deviceId) =>
+      createPushDeviceFixture({
         userId: "user-a",
-        sessionId: null,
         deviceId,
-        permission: { status: "GRANTED", canAskAgain: false },
-        token: `ExponentPushToken[${deviceId}]`,
-        payloadVersion: 2,
+        platform: deviceId === "ios_phone" ? "IOS" : "ANDROID",
       }),
-    );
-  }
+    ),
+  );
+  const tokens = new InMemoryPushTokenRepository(
+    DEVICE_IDS.map((deviceId, index) =>
+      createPushTokenFixture({
+        id: index + 1,
+        userId: "user-a",
+        deviceId,
+        token: `ExponentPushToken[${deviceId}]`,
+      }),
+    ),
+  );
+  const cache = new PassThroughNotificationCache();
   const useCase = new UnregisterPushDeviceUseCase({
-    pushDeviceRepository: store,
-    pushTokenRepository: store,
-    unitOfWork: createUnitOfWorkMock(),
+    pushDeviceRepository: devices,
+    pushTokenRepository: tokens,
+    unitOfWork: new ImmediateUnitOfWork(),
     cache,
-    logger,
+    logger: new SilentLogger(),
   });
-  return { store, cache, useCase };
+  return { devices, tokens, cache, useCase };
 }
 
 describe("UnregisterPushDeviceUseCase — 푸시 기기 해제", () => {
   it("deviceId가 있으면 그 기기의 기록과 토큰만 지우고 토큰 캐시를 비운다", async () => {
     // Given 기기 두 대
-    const { store, cache, useCase } = await setup();
+    const { devices, tokens, cache, useCase } = setup();
 
     // When
     await useCase.execute("user-a", "ios_phone");
 
     // Then
-    expect(store.deviceOf("user-a", "ios_phone")).toBeUndefined();
-    expect(store.tokenOf("user-a", "ios_phone")).toBeUndefined();
-    expect(store.tokenOf("user-a", "android_tablet")).toBe("ExponentPushToken[android_tablet]");
-    expect(cache.invalidationAttempts).toEqual(["user-a"]);
+    expect(devices.deviceOf("user-a", "ios_phone")).toBeUndefined();
+    expect(tokens.tokenOf("user-a", "ios_phone")).toBeUndefined();
+    expect(devices.deviceOf("user-a", "android_tablet")).toBeDefined();
+    expect(tokens.tokenOf("user-a", "android_tablet")?.token).toBe(
+      "ExponentPushToken[android_tablet]",
+    );
+    expect(cache.invalidatedPushTokenUserIds).toEqual(["user-a"]);
   });
 
   it("deviceId가 없으면(1.14.1 이하 앱) 모든 기기를 지운다", async () => {
-    const { store, useCase } = await setup();
+    // Given
+    const { devices, tokens, useCase } = setup();
 
+    // When
     await useCase.execute("user-a");
 
-    expect(store.devices.size).toBe(0);
-    expect(store.tokens.size).toBe(0);
+    // Then
+    expect(devices.size).toBe(0);
+    expect(tokens.size).toBe(0);
   });
 
-  it("등록되지 않은 기기를 해제해도 오류 없이 끝난다", async () => {
-    const { useCase } = await setup();
+  it("등록되지 않은 기기를 해제해도 오류 없이 끝나고 다른 기기는 남긴다", async () => {
+    // Given
+    const { tokens, useCase } = setup();
 
-    await expect(useCase.execute("user-a", "ios_unknown")).resolves.toBeUndefined();
+    // When
+    const result = useCase.execute("user-a", "ios_unknown");
+
+    // Then
+    await expect(result).resolves.toBeUndefined();
+    expect(tokens.size).toBe(2);
   });
 });

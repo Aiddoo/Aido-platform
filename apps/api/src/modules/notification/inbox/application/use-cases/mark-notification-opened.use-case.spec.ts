@@ -1,8 +1,8 @@
-import { NotificationBuilder } from "#test/builders/index";
 import { InMemoryNotificationRepository } from "#test/doubles/notification/in-memory-notification.repository";
 import { PassThroughNotificationCache } from "#test/doubles/notification/pass-through-notification-cache";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
+import { createInboxNotificationFixture } from "#test/fixtures/notification/notification.fixture";
 
 import {
   type MarkNotificationOpenedDependencies,
@@ -27,7 +27,12 @@ function createMarkNotificationOpenedUseCase(
 describe("MarkNotificationOpenedUseCase — 푸시 열기 기록", () => {
   it("처음 열면 열린 시각과 읽음을 기록하고 미읽음 캐시를 비운 뒤 true를 준다", async () => {
     // Given
-    const notification = NotificationBuilder.create(USER_ID).withId(42).asUnread().build();
+    const notification = createInboxNotificationFixture({
+      userId: USER_ID,
+      id: 42,
+      isRead: false,
+      readAt: null,
+    });
     const notificationRepository = new InMemoryNotificationRepository([notification]);
     const cache = new PassThroughNotificationCache();
     const useCase = createMarkNotificationOpenedUseCase({ notificationRepository, cache });
@@ -47,8 +52,8 @@ describe("MarkNotificationOpenedUseCase — 푸시 열기 기록", () => {
   });
 
   it.each([
-    ["이미 연 알림", NotificationBuilder.create(USER_ID).withId(42).build(), true],
-    ["남의 알림", NotificationBuilder.create("other-user").withId(42).build(), false],
+    ["이미 연 알림", createInboxNotificationFixture({ userId: USER_ID, id: 42 }), true],
+    ["남의 알림", createInboxNotificationFixture({ userId: "other-user", id: 42 }), false],
   ])("%s은 캐시를 두고 false를 준다", async (_case, notification, isOpened) => {
     // Given
     const row = isOpened

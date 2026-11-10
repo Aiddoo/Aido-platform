@@ -1,7 +1,7 @@
-import { DatabaseError } from "pg";
-import { mock } from "vitest-mock-extended";
+import { DatabaseError, Pool } from "pg";
+import { vi } from "vitest";
 
-import type { Database } from "#api/platform/database/database.client";
+import { createDatabase, type Database } from "#api/platform/database/database.client";
 
 import {
   PostgresPushRateLimiterAdapter,
@@ -10,6 +10,11 @@ import {
 
 function sqlQueryError(code: string): DatabaseError {
   return Object.assign(new DatabaseError("database error", 0, "error"), { code });
+}
+
+// 연결하지 않는 pool이다. 트랜잭션은 spec마다 결과를 정해 SQL 없이 재시도 판단만 본다
+function createUnconnectedDatabase(): Database {
+  return createDatabase(new Pool());
 }
 
 describe("PostgresPushRateLimiterAdapter 재시도", () => {
@@ -31,32 +36,33 @@ describe("PostgresPushRateLimiterAdapter 재시도", () => {
   it("Serializable 충돌 뒤 즉시 재시도하지 않고 백오프 후 새 트랜잭션을 연다", async () => {
     // Given
     vi.useFakeTimers();
-    const database = mock<Database>();
-    database.transaction
+    const database = createUnconnectedDatabase();
+    const transaction = vi
+      .spyOn(database, "transaction")
       .mockRejectedValueOnce(sqlQueryError("40001"))
       .mockResolvedValueOnce([false]);
     const limiter = new PostgresPushRateLimiterAdapter(database);
     // When
     const decision = limiter.reserveGeneral({ dispatchId: 1, userId: "user-1" });
     await vi.advanceTimersByTimeAsync(0);
-    const attemptsBeforeBackoff = database.transaction.mock.calls.length;
+    const attemptsBeforeBackoff = transaction.mock.calls.length;
     await vi.advanceTimersByTimeAsync(20);
     // Then
     expect(attemptsBeforeBackoff).toBe(1);
     await expect(decision).resolves.toBe(false);
-    expect(database.transaction).toHaveBeenCalledTimes(2);
+    expect(transaction).toHaveBeenCalledTimes(2);
   });
 
   it("재시도 대상이 아닌 오류는 대기 없이 그대로 올린다", async () => {
     // Given
-    const database = mock<Database>();
+    const database = createUnconnectedDatabase();
     const error = sqlQueryError("23503");
-    database.transaction.mockRejectedValueOnce(error);
+    const transaction = vi.spyOn(database, "transaction").mockRejectedValueOnce(error);
     const limiter = new PostgresPushRateLimiterAdapter(database);
     // When
     const decision = limiter.reserveGeneral({ dispatchId: 1, userId: "user-1" });
     // Then
     await expect(decision).rejects.toBe(error);
-    expect(database.transaction).toHaveBeenCalledTimes(1);
+    expect(transaction).toHaveBeenCalledTimes(1);
   });
 });

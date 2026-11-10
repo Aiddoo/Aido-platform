@@ -1,9 +1,7 @@
-import type { Redis } from "ioredis";
 import RedisMock from "ioredis-mock";
 import { vi } from "vitest";
 
 import { TEST_CUID } from "#test/fixtures/id.fixture";
-import { mockOf } from "#test/mocks/index";
 
 import { RedisPushRateLimiterAdapter } from "./redis-push-rate-limiter.adapter.js";
 
@@ -14,8 +12,8 @@ describe("RedisPushRateLimiterAdapter — batch 발송 한도 정책", () => {
 
   it("여러 사용자의 일반·참여 유도 제한을 단일 원자적 Redis 호출로 예약한다", async () => {
     // Given
-    const redis = mockOf<Redis>({ eval: vi.fn() });
-    redis.eval.mockResolvedValue([0, 1, 0]);
+    const redis = new RedisMock();
+    const evaluate = vi.spyOn(redis, "eval").mockResolvedValue([0, 1, 0]);
     const limiter = new RedisPushRateLimiterAdapter(redis);
 
     // When
@@ -27,13 +25,13 @@ describe("RedisPushRateLimiterAdapter — batch 발송 한도 정책", () => {
 
     // Then
     expect(result).toEqual([false, true, false]);
-    expect(redis.eval).toHaveBeenCalledTimes(1);
+    expect(evaluate).toHaveBeenCalledTimes(1);
   });
 
   it("Redis가 잘못된 결과를 반환하면 fail-open으로 전체 발송을 허용한다", async () => {
     // Given
-    const redis = mockOf<Redis>({ eval: vi.fn() });
-    redis.eval.mockResolvedValue([0, "invalid"]);
+    const redis = new RedisMock();
+    vi.spyOn(redis, "eval").mockResolvedValue([0, "invalid"]);
     const limiter = new RedisPushRateLimiterAdapter(redis);
 
     // When
@@ -48,7 +46,8 @@ describe("RedisPushRateLimiterAdapter — batch 발송 한도 정책", () => {
 
   it("빈 배치는 Redis를 호출하지 않는다", async () => {
     // Given
-    const redis = mockOf<Redis>({ eval: vi.fn() });
+    const redis = new RedisMock();
+    const evaluate = vi.spyOn(redis, "eval");
     const limiter = new RedisPushRateLimiterAdapter(redis);
 
     // When
@@ -56,7 +55,7 @@ describe("RedisPushRateLimiterAdapter — batch 발송 한도 정책", () => {
 
     // Then
     expect(result).toEqual([]);
-    expect(redis.eval).not.toHaveBeenCalled();
+    expect(evaluate).not.toHaveBeenCalled();
   });
 
   it("참여 유도 제한에 걸리면 일반 푸시 quota를 소비하지 않는다", async () => {

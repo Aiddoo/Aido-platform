@@ -7,8 +7,6 @@
  * 개별 메서드 mock API는 spec에서 `vi.mocked(mock.method)`로 접근합니다.
  */
 export * from "./cross-module.mock.js";
-export * from "./notification.mock.js";
-export * from "./notification-cache.mock.js";
 export * from "./retention-repository.mock.js";
 export * from "./todo-read-repository.mock.js";
 export * from "./unit-of-work.mock.js";

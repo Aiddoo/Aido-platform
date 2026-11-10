@@ -1,12 +1,18 @@
+import { FakePushProvider } from "#test/doubles/notification/fake-push-provider";
+import { InMemoryPushTokenRepository } from "#test/doubles/notification/in-memory-push-token.repository";
+import { PassThroughNotificationCache } from "#test/doubles/notification/pass-through-notification-cache";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
-import { StubPushTokenCache } from "#test/mocks/stub-push-token-cache";
-
-const NOW = Temporal.Instant.from("2026-11-10T03:00:00.000Z");
+import { ImmediateUnitOfWork } from "#test/doubles/platform/immediate-unit-of-work";
+import { SilentLogger } from "#test/doubles/platform/silent-logger";
+import { createPushTokenFixture } from "#test/fixtures/notification/push-token.fixture";
 
 import { PUSH_RECEIPT_POLICY } from "../../domain/push-receipt.domain-service.js";
 import type { PushReceiptResult } from "../ports/push-provider.port.js";
 import type { InvalidPushToken } from "../ports/push-receipt.repository.port.js";
+import type { PushTokenRepositoryPort } from "../ports/push-token.repository.port.js";
 import { ReconcilePushReceiptsUseCase } from "./reconcile-push-receipts.use-case.js";
+
+const NOW = Temporal.Instant.from("2026-11-10T03:00:00.000Z");
 
 type ReceiptRepository = ConstructorParameters<
   typeof ReconcilePushReceiptsUseCase
@@ -40,24 +46,24 @@ class StubReceiptRepository implements ReceiptRepository {
   }
 }
 
-function setup(options: { readonly deactivate?: () => Promise<{ count: number }> } = {}) {
+function setup(
+  options: {
+    readonly pushTokenRepository?: Pick<PushTokenRepositoryPort, "deactivateInvalidTokens">;
+  } = {},
+) {
   const repository = new StubReceiptRepository();
-  const cache = new StubPushTokenCache();
-  const deactivated: string[][] = [];
+  const pushTokenRepository = new InMemoryPushTokenRepository([
+    createPushTokenFixture({ id: 1, userId: "user-1", token: "token-1", deviceId: "device-1" }),
+    createPushTokenFixture({ id: 2, userId: "user-1", token: "token-2", deviceId: "device-2" }),
+    createPushTokenFixture({ id: 3, userId: "user-2", token: "token-3", deviceId: "device-3" }),
+  ]);
+  const cache = new PassThroughNotificationCache();
   const transactionEvents: string[] = [];
-  const logs: unknown[] = [];
+  const logger = new SilentLogger();
   const useCase = new ReconcilePushReceiptsUseCase({
     pushReceiptRepository: repository,
-    pushTokenRepository: {
-      deactivateInvalidTokens: async (tokens) => {
-        deactivated.push(tokens);
-        return options.deactivate?.() ?? { count: tokens.length };
-      },
-    },
-    pushProvider: {
-      getReceipts: async (ticketIds) =>
-        ticketIds.map((ticketId) => ({ ticketId, status: "delivered" as const })),
-    },
+    pushTokenRepository: options.pushTokenRepository ?? pushTokenRepository,
+    pushProvider: new FakePushProvider(),
     cache,
     unitOfWork: {
       async run(work) {
@@ -73,9 +79,9 @@ function setup(options: { readonly deactivate?: () => Promise<{ count: number }>
       },
     },
     clock: new FixedClock(NOW),
-    logger: { log: (entry) => logs.push(entry), warn: (entry) => logs.push(entry) },
+    logger,
   });
-  return { useCase, repository, cache, deactivated, transactionEvents, logs };
+  return { useCase, repository, pushTokenRepository, cache, transactionEvents, logger };
 }
 
 function ticketIds(count: number): string[] {
@@ -84,8 +90,8 @@ function ticketIds(count: number): string[] {
 
 describe("ReconcilePushReceiptsUseCase — receipt 반영", () => {
   it("한 실행 안에서 남은 ticket을 배치 단위로 모두 반영한다", async () => {
-    // Given: 한 배치보다 많은 ticket이 밀려 있다
-    const { useCase, repository, logs } = setup();
+    // Given - 한 배치보다 많은 ticket이 밀려 있다
+    const { useCase, repository, logger } = setup();
     repository.pendingTicketIds = ticketIds(PUSH_RECEIPT_POLICY.batchSize * 2 + 10);
     repository.expiredCount = 3;
 
@@ -99,7 +105,7 @@ describe("ReconcilePushReceiptsUseCase — receipt 반영", () => {
       10,
     ]);
     expect(repository.pendingTicketIds).toHaveLength(0);
-    expect(logs).toContainEqual(
+    expect(logger.messages).toContainEqual(
       expect.objectContaining({ expired: 3, requested: PUSH_RECEIPT_POLICY.batchSize * 2 + 10 }),
     );
   });
@@ -109,57 +115,67 @@ describe("ReconcilePushReceiptsUseCase — receipt 반영", () => {
     const clock = new FixedClock(NOW);
     const repository = new StubReceiptRepository();
     repository.pendingTicketIds = ticketIds(PUSH_RECEIPT_POLICY.batchSize * 3);
-    const getReceipts = vi.fn(async (ids: readonly string[]) => {
+    const pushProvider = new FakePushProvider();
+    let receiptRequests = 0;
+    pushProvider.receipts = async (ids) => {
+      receiptRequests += 1;
       clock.advanceBy({ milliseconds: PUSH_RECEIPT_POLICY.runBudgetMs });
-      return ids.map((ticketId) => ({ ticketId, status: "delivered" as const }));
-    });
+      return ids.map((ticketId) => ({ ticketId, status: "delivered" }));
+    };
     const budgeted = new ReconcilePushReceiptsUseCase({
       pushReceiptRepository: repository,
-      pushTokenRepository: { deactivateInvalidTokens: async () => ({ count: 0 }) },
-      pushProvider: { getReceipts },
-      cache: new StubPushTokenCache(),
-      unitOfWork: { run: (work) => work() },
+      pushTokenRepository: new InMemoryPushTokenRepository(),
+      pushProvider,
+      cache: new PassThroughNotificationCache(),
+      unitOfWork: new ImmediateUnitOfWork(),
       clock,
-      logger: { log: () => undefined, warn: () => undefined },
+      logger: new SilentLogger(),
     });
 
     // When
     await budgeted.execute();
 
     // Then
-    expect(getReceipts).toHaveBeenCalledTimes(1);
+    expect(receiptRequests).toBe(1);
     expect(repository.pendingTicketIds).toHaveLength(PUSH_RECEIPT_POLICY.batchSize * 2);
   });
 
   it("무효 토큰을 같은 transaction에서 끄고 commit 뒤 수신자 캐시를 한 번 지운다", async () => {
     // Given
-    const { useCase, repository, cache, deactivated, transactionEvents } = setup();
+    const { useCase, repository, pushTokenRepository, cache, transactionEvents } = setup();
     repository.pendingTicketIds = ["ticket-1", "ticket-2"];
     repository.invalidByTicketId.set("ticket-1", { token: "token-1", userId: "user-1" });
     repository.invalidByTicketId.set("ticket-2", { token: "token-2", userId: "user-1" });
-    cache.entries.set("user-1", ["token-1", "token-2"]);
 
     // When
     await useCase.execute();
 
     // Then
-    expect(deactivated).toEqual([["token-1", "token-2"]]);
+    const tokens = await pushTokenRepository.findActivePushTokensByUsers(["user-1", "user-2"]);
+    expect(tokens.map(({ token }) => token)).toEqual(["token-3"]);
+    expect(pushTokenRepository.tokenOf("user-1", "device-1")?.updatedAt.equals(NOW)).toBe(true);
     expect(transactionEvents).toEqual(["begin", "commit", "begin", "commit"]);
-    expect(cache.entries.has("user-1")).toBe(false);
+    expect(cache.invalidatedPushTokenUserIds).toEqual(["user-1"]);
   });
 
   it("토큰 비활성화가 실패하면 receipt 기록도 rollback되도록 오류를 전파한다", async () => {
     // Given
-    const { useCase, repository, transactionEvents } = setup({
-      deactivate: async () => {
-        throw new Error("deactivate failed");
+    const { useCase, repository, cache, transactionEvents } = setup({
+      pushTokenRepository: {
+        deactivateInvalidTokens: async () => {
+          throw new Error("deactivate failed");
+        },
       },
     });
     repository.pendingTicketIds = ["ticket-1"];
     repository.invalidByTicketId.set("ticket-1", { token: "token-1", userId: "user-1" });
 
-    // When / Then
-    await expect(useCase.execute()).rejects.toThrow("deactivate failed");
+    // When
+    const result = useCase.execute();
+
+    // Then
+    await expect(result).rejects.toThrow("deactivate failed");
     expect(transactionEvents.at(-1)).toBe("rollback");
+    expect(cache.invalidatedPushTokenUserIds).toEqual([]);
   });
 });

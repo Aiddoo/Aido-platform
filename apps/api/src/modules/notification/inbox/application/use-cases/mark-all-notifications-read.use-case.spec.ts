@@ -1,8 +1,8 @@
-import { NotificationBuilder } from "#test/builders/index";
 import { InMemoryNotificationRepository } from "#test/doubles/notification/in-memory-notification.repository";
 import { PassThroughNotificationCache } from "#test/doubles/notification/pass-through-notification-cache";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
+import { createInboxNotificationFixture } from "#test/fixtures/notification/notification.fixture";
 
 import { MarkAllNotificationsReadUseCase } from "./mark-all-notifications-read.use-case.js";
 
@@ -11,10 +11,10 @@ const NOW = Temporal.Instant.from("2026-11-10T09:00:00Z");
 
 function seedNotifications() {
   return [
-    NotificationBuilder.create(USER_ID).withId(1).withType("NUDGE_RECEIVED").build(),
-    NotificationBuilder.create(USER_ID).withId(2).withType("NUDGE_REPLIED").build(),
-    NotificationBuilder.create(USER_ID).withId(3).withType("NUDGE_THANKED").build(),
-    NotificationBuilder.create("other-user").withId(4).build(),
+    createInboxNotificationFixture({ userId: USER_ID, id: 1, type: "NUDGE_RECEIVED" }),
+    createInboxNotificationFixture({ userId: USER_ID, id: 2, type: "NUDGE_REPLIED" }),
+    createInboxNotificationFixture({ userId: USER_ID, id: 3, type: "NUDGE_THANKED" }),
+    createInboxNotificationFixture({ userId: "other-user", id: 4 }),
   ];
 }
 

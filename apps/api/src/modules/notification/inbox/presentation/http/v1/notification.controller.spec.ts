@@ -1,9 +1,9 @@
 import type { CurrentUserPayload } from "#api/modules/identity/identity-auth-http.public";
-import { NotificationBuilder } from "#test/builders/index";
 import { InMemoryNotificationRepository } from "#test/doubles/notification/in-memory-notification.repository";
 import { PassThroughNotificationCache } from "#test/doubles/notification/pass-through-notification-cache";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
+import { createInboxNotificationFixture } from "#test/fixtures/notification/notification.fixture";
 
 import { GetUnreadNotificationCountUseCase } from "../../../application/use-cases/get-unread-notification-count.use-case.js";
 import { ListNotificationsUseCase } from "../../../application/use-cases/list-notifications.use-case.js";
@@ -42,7 +42,9 @@ describe("NotificationController — 알림 컨트롤러", () => {
   it("읽지 않은 알림 수를 준다", async () => {
     // Given
     const repository = new InMemoryNotificationRepository(
-      NotificationBuilder.createMany(USER.userId, 5),
+      Array.from({ length: 5 }, (_, index) =>
+        createInboxNotificationFixture({ id: index + 1, userId: USER.userId }),
+      ),
     );
     const controller = createNotificationController(repository);
 
@@ -67,7 +69,7 @@ describe("NotificationController — 알림 컨트롤러", () => {
   it("단일 알림을 읽음 처리하고 계약 문구와 1건을 준다", async () => {
     // Given
     const repository = new InMemoryNotificationRepository([
-      NotificationBuilder.create(USER.userId).withId(42).asUnread().build(),
+      createInboxNotificationFixture({ userId: USER.userId, id: 42, isRead: false, readAt: null }),
     ]);
     const controller = createNotificationController(repository);
 
@@ -82,7 +84,9 @@ describe("NotificationController — 알림 컨트롤러", () => {
   it("모든 알림을 읽음 처리하고 계약 문구와 처리한 개수를 준다", async () => {
     // Given
     const repository = new InMemoryNotificationRepository(
-      NotificationBuilder.createMany(USER.userId, 3),
+      Array.from({ length: 3 }, (_, index) =>
+        createInboxNotificationFixture({ id: index + 1, userId: USER.userId }),
+      ),
     );
     const controller = createNotificationController(repository);
 

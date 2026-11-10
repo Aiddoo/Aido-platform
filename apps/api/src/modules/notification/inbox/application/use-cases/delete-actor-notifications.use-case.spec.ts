@@ -1,7 +1,7 @@
-import { NotificationBuilder } from "#test/builders/index";
 import { InMemoryNotificationRepository } from "#test/doubles/notification/in-memory-notification.repository";
 import { PassThroughNotificationCache } from "#test/doubles/notification/pass-through-notification-cache";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
+import { createInboxNotificationFixture } from "#test/fixtures/notification/notification.fixture";
 
 import { DeleteActorNotificationsUseCase } from "./delete-actor-notifications.use-case.js";
 
@@ -11,12 +11,13 @@ describe("DeleteActorNotificationsUseCase — 탈퇴한 사람이 남긴 알림 
   it("트랜잭션 안에서는 지우기만 하고, 커밋 뒤 받은 사람별 캐시 정리는 실패해도 계속한다", async () => {
     // Given
     const repository = new InMemoryNotificationRepository([
-      NotificationBuilder.create("recipient-1").withId(1).withFriendId(ACTOR_ID).build(),
-      NotificationBuilder.create("recipient-2")
-        .withId(2)
-        .withMetadata({ senderId: ACTOR_ID })
-        .build(),
-      NotificationBuilder.create("recipient-3").withId(3).withFriendId("someone-else").build(),
+      createInboxNotificationFixture({ userId: "recipient-1", id: 1, friendId: ACTOR_ID }),
+      createInboxNotificationFixture({
+        userId: "recipient-2",
+        id: 2,
+        metadata: { senderId: ACTOR_ID },
+      }),
+      createInboxNotificationFixture({ userId: "recipient-3", id: 3, friendId: "someone-else" }),
     ]);
     const cache = new PassThroughNotificationCache();
     const logger = new SilentLogger();

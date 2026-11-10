@@ -1,22 +1,25 @@
 import { isPlainObject, uniq } from "es-toolkit";
 
+import type { CreateNotificationData } from "#api/modules/notification/inbox/application/ports/notification-draft.port";
+import type {
+  ExistsRecentNotificationQuery,
+  FindAlreadyNotifiedUserIdsQuery,
+  NotificationHistoryReaderPort,
+} from "#api/modules/notification/inbox/application/ports/notification-history.reader.port";
 import type {
   ListInboxNotificationsQuery,
   NotificationInboxReaderPort,
 } from "#api/modules/notification/inbox/application/ports/notification-inbox.reader.port";
-import type { NotificationRepositoryPort } from "#api/modules/notification/inbox/application/ports/notification.repository.port";
+import {
+  DuplicateNotificationError,
+  NotificationRepositoryPort,
+} from "#api/modules/notification/inbox/application/ports/notification.repository.port";
 import type { InboxNotification } from "#api/modules/notification/inbox/application/read-models/inbox-notification.read-model";
 import type { NotificationId } from "#api/modules/notification/inbox/domain/notification-id.vo";
 import type { NotificationType } from "#api/modules/notification/inbox/domain/notification-type.constants";
 import { Notification } from "#api/modules/notification/inbox/domain/notification.aggregate";
+import type { NotificationMilestone } from "#api/modules/notification/push/domain/notification-milestone.constants";
 import { instantFromDate, instantToDate } from "#api/shared/domain/time/instant";
-
-type InboxRepositoryMethods =
-  | "findById"
-  | "markAsRead"
-  | "markAsOpened"
-  | "markAllAsRead"
-  | "deleteNotificationsByActorId";
 
 // Drizzle 저장소와 같은 순서(createdAt·id 내림차순)로 나열한다
 function compareListOrder(left: InboxNotification, right: InboxNotification): number {
@@ -27,26 +30,54 @@ function isOfTypes(row: InboxNotification, types: readonly NotificationType[] | 
   return types == null || types.includes(row.type);
 }
 
-function senderIdOf(row: InboxNotification): unknown {
-  return isPlainObject(row.metadata) ? row.metadata.senderId : undefined;
+function metadataField(row: InboxNotification, key: string): unknown {
+  return isPlainObject(row.metadata) ? row.metadata[key] : undefined;
 }
 
-// 알림함 행과 같은 모양으로 저장해 쓰기 뒤 목록·미읽음 수를 그대로 읽어 볼 수 있게 한다
+function toDateOnly(date: Date): string {
+  return date.toISOString().slice(0, 10);
+}
+
+// Notification_todo_reminder_occurrence_dedup 유니크 인덱스와 같은 키다
+function reminderOccurrenceKeyOf(
+  row: InboxNotification,
+  occurrenceKey: string | null | undefined,
+): string | null {
+  if (row.type !== "TODO_REMINDER" || row.todoId == null) {
+    return null;
+  }
+  return JSON.stringify([row.todoId, metadataField(row, "stage") ?? null, occurrenceKey ?? ""]);
+}
+
+// 알림함 행과 같은 모양으로 저장해 쓰기 뒤 목록·미읽음 수·이력을 그대로 읽어 볼 수 있게 한다
 export class InMemoryNotificationRepository
-  implements
-    Pick<NotificationRepositoryPort, InboxRepositoryMethods>,
-    Pick<NotificationInboxReaderPort, "listByUser" | "countUnread">
+  extends NotificationRepositoryPort
+  implements NotificationInboxReaderPort, NotificationHistoryReaderPort
 {
   readonly #rows = new Map<number, InboxNotification>();
+  readonly #reminderOccurrenceKeys = new Set<string>();
+  readonly #now: () => Date;
+  #sequence: number;
 
-  constructor(rows: readonly InboxNotification[] = []) {
+  constructor(rows: readonly InboxNotification[] = [], now: () => Date = () => new Date()) {
+    super();
     for (const row of rows) {
       this.#rows.set(row.id, row);
     }
+    this.#sequence = Math.max(0, ...this.#rows.keys());
+    this.#now = now;
+  }
+
+  get size(): number {
+    return this.#rows.size;
   }
 
   rowOf(id: number): InboxNotification | undefined {
     return this.#rows.get(id);
+  }
+
+  rows(): InboxNotification[] {
+    return [...this.#rows.values()].toSorted((left, right) => left.id - right.id);
   }
 
   async findById(notificationId: NotificationId): Promise<Notification | null> {
@@ -69,17 +100,34 @@ export class InMemoryNotificationRepository
     });
   }
 
+  async createNotification(data: CreateNotificationData): Promise<InboxNotification> {
+    const created = this.#insert(data);
+    if (created == null) {
+      throw new DuplicateNotificationError();
+    }
+    return created;
+  }
+
+  async createManyNotificationsAndReturn(
+    dataList: CreateNotificationData[],
+  ): Promise<InboxNotification[]> {
+    const created: InboxNotification[] = [];
+    for (const data of dataList) {
+      const row = this.#insert(data);
+      if (row != null) {
+        created.push(row);
+      }
+    }
+    return created;
+  }
+
   async markAsRead(notification: Notification): Promise<boolean> {
-    const { id, userId, readAt } = notification.toPrimitives();
+    const { id, userId, isRead, readAt } = notification.toPrimitives();
     const row = this.#rows.get(id);
     if (row == null || row.userId !== userId || row.isRead) {
       return false;
     }
-    this.#rows.set(id, {
-      ...row,
-      isRead: true,
-      readAt: readAt == null ? null : instantToDate(readAt),
-    });
+    this.#rows.set(id, { ...row, isRead, readAt: readAt == null ? null : instantToDate(readAt) });
     return true;
   }
 
@@ -115,7 +163,7 @@ export class InMemoryNotificationRepository
     actorId: string,
   ): Promise<{ count: number; affectedUserIds: string[] }> {
     const deleted = [...this.#rows.values()].filter(
-      (row) => row.friendId === actorId || senderIdOf(row) === actorId,
+      (row) => row.friendId === actorId || metadataField(row, "senderId") === actorId,
     );
     for (const row of deleted) {
       this.#rows.delete(row.id);
@@ -146,5 +194,81 @@ export class InMemoryNotificationRepository
     return [...this.#rows.values()].filter(
       (row) => row.userId === userId && !row.isRead && isOfTypes(row, types),
     ).length;
+  }
+
+  async existsRecentNotification(query: ExistsRecentNotificationQuery): Promise<boolean> {
+    return [...this.#rows.values()].some(
+      (row) =>
+        row.userId === query.userId &&
+        row.type === query.type &&
+        row.createdAt.getTime() >= query.since.getTime() &&
+        (query.friendId == null || row.friendId === query.friendId) &&
+        (query.todoId == null || row.todoId === query.todoId) &&
+        (query.nudgeId == null || row.nudgeId === query.nudgeId) &&
+        (query.cheerId == null || row.cheerId === query.cheerId),
+    );
+  }
+
+  async findAlreadyNotifiedUserIds(query: FindAlreadyNotifiedUserIdsQuery): Promise<Set<string>> {
+    const notificationDate = toDateOnly(query.notificationDate);
+    return new Set(
+      [...this.#rows.values()]
+        .filter(
+          (row) =>
+            query.userIds.includes(row.userId) &&
+            row.type === query.type &&
+            row.notificationDate != null &&
+            toDateOnly(row.notificationDate) === notificationDate &&
+            (query.friendId == null || row.friendId === query.friendId),
+        )
+        .map((row) => row.userId),
+    );
+  }
+
+  async hasMilestoneNotification(
+    userId: string,
+    milestone: NotificationMilestone,
+  ): Promise<boolean> {
+    return [...this.#rows.values()].some(
+      (row) => row.userId === userId && metadataField(row, "milestone") === milestone,
+    );
+  }
+
+  // 유니크 인덱스에 걸리면 저장하지 않고 null을 준다
+  #insert(data: CreateNotificationData): InboxNotification | null {
+    const row: InboxNotification = {
+      id: this.#sequence + 1,
+      userId: data.userId,
+      type: data.type,
+      title: data.title,
+      body: data.body,
+      copyKey: data.copyKey ?? null,
+      copyFacts: data.copyFacts ?? null,
+      isRead: false,
+      todoId: data.todoId ?? null,
+      friendId: data.friendId ?? null,
+      nudgeId: data.nudgeId ?? null,
+      cheerId: data.cheerId ?? null,
+      notificationDate: data.notificationDate ?? null,
+      metadata: data.metadata ?? null,
+      createdAt: this.#now(),
+      readAt: null,
+      actionType: data.action?.type ?? "DEEP_LINK",
+      actionUrl: data.action?.url ?? null,
+      campaignKey: data.campaignKey ?? null,
+      variantId: data.variantId ?? null,
+      purpose: data.purpose ?? "TRANSACTIONAL",
+      openedAt: null,
+    };
+    const occurrenceKey = reminderOccurrenceKeyOf(row, data.reminderOccurrenceKey);
+    if (occurrenceKey != null) {
+      if (this.#reminderOccurrenceKeys.has(occurrenceKey)) {
+        return null;
+      }
+      this.#reminderOccurrenceKeys.add(occurrenceKey);
+    }
+    this.#sequence = row.id;
+    this.#rows.set(row.id, row);
+    return row;
   }
 }

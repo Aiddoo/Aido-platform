@@ -1,51 +1,58 @@
-import type { Mocked } from "vitest";
-import { mockDeep } from "vitest-mock-extended";
+import { StubMarketingPushOptOutToken } from "#test/doubles/notification/stub-marketing-push-opt-out-token";
+import { FixedClock } from "#test/doubles/platform/fixed-clock";
+import { SilentLogger } from "#test/doubles/platform/silent-logger";
 
-import { DateClock } from "#test/doubles/platform/date-clock";
-import {
-  createMarketingPushOptOutTokenMock,
-  createUserNotificationSettingsMock,
-} from "#test/mocks/ports/notification.mock";
-
+import type { UserNotificationSettingsPort } from "../ports/user-notification-settings.port.js";
 import { OptOutMarketingPushUseCase } from "./opt-out-marketing-push.use-case.js";
 
-describe("OptOutMarketingPushUseCase", () => {
-  let useCase: OptOutMarketingPushUseCase;
-  let tokens: Mocked<ConstructorParameters<typeof OptOutMarketingPushUseCase>[0]["tokens"]>;
-  let settings: Mocked<ConstructorParameters<typeof OptOutMarketingPushUseCase>[0]["settings"]>;
+const NOW = Temporal.Instant.from("2026-11-10T03:00:00Z");
 
-  beforeEach(async () => {
-    const optOutMarketingPushDependencies = mockDeep<
-      ConstructorParameters<typeof OptOutMarketingPushUseCase>[0]
-    >({
-      tokens: createMarketingPushOptOutTokenMock(),
-      settings: createUserNotificationSettingsMock(),
-      clock: new DateClock(),
-    });
-    const unit = new OptOutMarketingPushUseCase(optOutMarketingPushDependencies);
-    useCase = unit;
-    tokens = optOutMarketingPushDependencies.tokens;
-    settings = optOutMarketingPushDependencies.settings;
+class RecordingMarketingConsent implements Pick<
+  UserNotificationSettingsPort,
+  "updateMarketingPushConsent"
+> {
+  readonly consents = new Map<string, boolean>();
+
+  async updateMarketingPushConsent(userId: string, agreed: boolean): Promise<void> {
+    this.consents.set(userId, agreed);
+  }
+}
+
+function setup() {
+  const tokens = new StubMarketingPushOptOutToken();
+  const settings = new RecordingMarketingConsent();
+  const useCase = new OptOutMarketingPushUseCase({
+    tokens,
+    settings,
+    clock: new FixedClock(NOW),
+    logger: new SilentLogger(),
   });
+  return { useCase, tokens, settings };
+}
 
+describe("OptOutMarketingPushUseCase — 광고성 푸시 수신 철회", () => {
   it("유효한 토큰이면 마케팅 푸시 동의를 false로 갱신하고 true를 반환한다", async () => {
-    tokens.verify.mockReturnValue("user-1");
+    // Given
+    const { useCase, tokens, settings } = setup();
+    tokens.register("valid-token", "user-1");
 
+    // When
     const result = await useCase.execute("valid-token");
 
-    expect(result.isOptedOut).toBe(true);
-    expect(result.processedAt).toBeInstanceOf(Date);
-    expect(tokens.verify).toHaveBeenCalledWith("valid-token");
-    expect(settings.updateMarketingPushConsent).toHaveBeenCalledWith("user-1", false);
+    // Then
+    expect(result).toEqual({ isOptedOut: true, processedAt: new Date(NOW.epochMilliseconds) });
+    expect([...settings.consents]).toEqual([["user-1", false]]);
   });
 
-  it("토큰 검증 실패(null)면 설정을 변경하지 않고 false를 반환한다", async () => {
-    tokens.verify.mockReturnValue(null);
+  it("토큰 검증 실패(null)면 설정을 변경하지 않고 처리 시각과 false를 반환한다", async () => {
+    // Given
+    const { useCase, settings } = setup();
 
+    // When
     const result = await useCase.execute("invalid-token");
 
-    expect(result.isOptedOut).toBe(false);
-    expect(result.processedAt).toBeInstanceOf(Date);
-    expect(settings.updateMarketingPushConsent).not.toHaveBeenCalled();
+    // Then
+    expect(result).toEqual({ isOptedOut: false, processedAt: new Date(NOW.epochMilliseconds) });
+    expect(settings.consents.size).toBe(0);
   });
 });

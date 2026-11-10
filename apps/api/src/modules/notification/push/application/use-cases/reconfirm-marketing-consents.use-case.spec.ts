@@ -1,4 +1,4 @@
-import { createUnitOfWorkMock } from "#test/mocks/ports/unit-of-work.mock";
+import { ImmediateUnitOfWork } from "#test/doubles/platform/immediate-unit-of-work";
 
 import type { CreateNotificationData } from "../../../inbox/application/ports/notification-draft.port.js";
 import type { MarketingReconfirmRecipient } from "../ports/marketing-consent-reconfirm.port.js";
@@ -47,7 +47,7 @@ function createReconfirm(
         return { count: notices.length };
       },
     },
-    unitOfWork: createUnitOfWorkMock(),
+    unitOfWork: new ImmediateUnitOfWork(),
     logger: { log: () => {} },
   });
   return { useCase, sent, cutoffs };

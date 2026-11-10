@@ -1,96 +1,86 @@
-import type { Mocked } from "vitest";
-import { vi } from "vitest";
-import { mockDeep } from "vitest-mock-extended";
+import { FixedClock } from "#test/doubles/platform/fixed-clock";
+import { ImmediateUnitOfWork } from "#test/doubles/platform/immediate-unit-of-work";
 
-import { DateClock } from "#test/doubles/platform/date-clock";
-import { createUnitOfWorkMock } from "#test/mocks/ports/unit-of-work.mock";
-
-import { type PushDeliveryLifecycleRepositoryPort } from "../ports/push-delivery-lifecycle.repository.port.js";
-import { type PushDeliveryOutboxRepositoryPort } from "../ports/push-delivery-outbox.repository.port.js";
+import type { PushDeliveryLifecycleRepositoryPort } from "../ports/push-delivery-lifecycle.repository.port.js";
+import type { PushDeliveryOutboxRepositoryPort } from "../ports/push-delivery-outbox.repository.port.js";
+import type {
+  PublishPushDeliveryOutboxInput,
+  PublishPushDeliveryOutboxUseCase,
+} from "./publish-push-delivery-outbox.use-case.js";
 import { RelayPushDeliveryOutboxUseCase } from "./relay-push-delivery-outbox.use-case.js";
 
-function createOutboxMock(): PushDeliveryOutboxRepositoryPort {
-  return {
-    claimByDispatchIds: vi.fn(),
-    claimAvailable: vi.fn(),
-    markPublished: vi.fn(),
-    defer: vi.fn(),
-    recoverStaleProcessing: vi.fn(),
+const NOW = Temporal.Instant.from("2026-08-29T12:00:00.000Z");
+
+// 실행 순서를 한 목록에 남겨 stale 복구가 발행보다 먼저인지 본다
+class RecordingRelaySteps
+  implements
+    Pick<PushDeliveryOutboxRepositoryPort, "recoverStaleProcessing">,
+    Pick<PublishPushDeliveryOutboxUseCase, "execute">
+{
+  readonly steps: string[] = [];
+  readonly publishInputs: PublishPushDeliveryOutboxInput[] = [];
+  publishedPerBatch = 0;
+
+  readonly lifecycle: Pick<PushDeliveryLifecycleRepositoryPort, "recoverStaleProcessing"> = {
+    recoverStaleProcessing: async (startedBefore: Date) => {
+      this.steps.push(`lifecycle-recover:${startedBefore.toISOString()}`);
+      return 0;
+    },
   };
+
+  async recoverStaleProcessing(lockedBefore: Date): Promise<number> {
+    this.steps.push(`outbox-recover:${lockedBefore.toISOString()}`);
+    return 0;
+  }
+
+  async execute(input: PublishPushDeliveryOutboxInput): Promise<number> {
+    this.steps.push("publish");
+    this.publishInputs.push(input);
+    return this.publishedPerBatch;
+  }
 }
 
-function createLifecycleMock(): PushDeliveryLifecycleRepositoryPort {
-  return {
-    claim: vi.fn(),
-    markRateLimitReserved: vi.fn(),
-    reopenAfterFinalClaimFailure: vi.fn(),
-    reopenFailedPublications: vi.fn(),
-    finalizeSkipped: vi.fn(),
-    finalizeResults: vi.fn(),
-    release: vi.fn(),
-    recoverStaleProcessing: vi.fn(),
-  };
+function createRelayUseCase(steps: RecordingRelaySteps) {
+  return new RelayPushDeliveryOutboxUseCase({
+    outbox: steps,
+    lifecycle: steps.lifecycle,
+    unitOfWork: new ImmediateUnitOfWork(),
+    publishOutbox: steps,
+    clock: new FixedClock(NOW),
+  });
 }
 
 describe("RelayPushDeliveryOutboxUseCase — stale recovery와 relay", () => {
-  let useCase: RelayPushDeliveryOutboxUseCase;
-  let outbox: Mocked<ConstructorParameters<typeof RelayPushDeliveryOutboxUseCase>[0]["outbox"]>;
-  let lifecycle: Mocked<
-    ConstructorParameters<typeof RelayPushDeliveryOutboxUseCase>[0]["lifecycle"]
-  >;
-  let publishOutbox: Mocked<
-    ConstructorParameters<typeof RelayPushDeliveryOutboxUseCase>[0]["publishOutbox"]
-  >;
-
-  beforeEach(async () => {
-    const relayPushDeliveryOutboxDependencies = mockDeep<
-      ConstructorParameters<typeof RelayPushDeliveryOutboxUseCase>[0]
-    >({
-      outbox: createOutboxMock(),
-      lifecycle: createLifecycleMock(),
-      unitOfWork: createUnitOfWorkMock(),
-      clock: new DateClock(),
+  it("stale delivery와 outbox lease를 15분 기준으로 먼저 복구한 뒤 available batch를 발행한다", async () => {
+    // Given
+    const steps = new RecordingRelaySteps();
+    const useCase = createRelayUseCase(steps);
+    const processingStaleBefore = NOW.subtract({ minutes: 15 }).toString({
+      fractionalSecondDigits: 3,
     });
-    const unit = new RelayPushDeliveryOutboxUseCase(relayPushDeliveryOutboxDependencies);
 
-    useCase = unit;
-    outbox = relayPushDeliveryOutboxDependencies.outbox;
-    lifecycle = relayPushDeliveryOutboxDependencies.lifecycle;
-    publishOutbox = relayPushDeliveryOutboxDependencies.publishOutbox;
-    lifecycle.recoverStaleProcessing.mockResolvedValue(0);
-    outbox.recoverStaleProcessing.mockResolvedValue(0);
-    publishOutbox.execute.mockResolvedValue(0);
-  });
-
-  afterEach(() => {
-    vi.useRealTimers();
-  });
-
-  it("stale delivery와 outbox lease를 먼저 복구한 뒤 available batch를 발행한다", async () => {
-    // Given - 고정된 relay 실행 시각
-    const now = new Date("2026-08-29T12:00:00.000Z");
-    const processingStaleBefore = new Date(now.getTime() - 15 * 60_000);
-    vi.useFakeTimers({ toFake: ["Date"], now });
-
-    // When - 주기 relay 실행
+    // When
     await useCase.execute();
 
-    // Then - 외부 전송 latency를 고려한 15분 lease만 복구한다.
-    // PUBLISHED generation은 시간 경과만으로 무효화하지 않는다.
-    expect(lifecycle.recoverStaleProcessing).toHaveBeenCalledWith(processingStaleBefore);
-    expect(outbox.recoverStaleProcessing).toHaveBeenCalledWith(processingStaleBefore);
-    expect(publishOutbox.execute).toHaveBeenCalledWith({ kind: "available", limit: 100 });
-    expect(publishOutbox.execute).toHaveBeenCalledTimes(1);
+    // Then - 외부 전송 latency를 고려한 15분 lease만 복구한다. PUBLISHED generation은 시간 경과만으로 무효화하지 않는다
+    expect(steps.steps).toEqual([
+      `lifecycle-recover:${processingStaleBefore}`,
+      `outbox-recover:${processingStaleBefore}`,
+      "publish",
+    ]);
+    expect(steps.publishInputs).toEqual([{ kind: "available", limit: 100 }]);
   });
 
   it("항상 가득 찬 backlog도 trigger당 최대 10개 batch로 제한한다", async () => {
-    // Given - 매번 100개가 발행되는 큰 backlog
-    publishOutbox.execute.mockResolvedValue(100);
+    // Given
+    const steps = new RecordingRelaySteps();
+    steps.publishedPerBatch = 100;
+    const useCase = createRelayUseCase(steps);
 
-    // When - 단일 relay trigger 실행
+    // When
     await useCase.execute();
 
     // Then - 한 worker가 queue를 독점하지 않도록 1,000개에서 양보
-    expect(publishOutbox.execute).toHaveBeenCalledTimes(10);
+    expect(steps.publishInputs).toHaveLength(10);
   });
 });

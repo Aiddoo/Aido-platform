@@ -12,6 +12,7 @@ import { UserSettingsCacheAdapter } from "#api/modules/identity/preferences/infr
 import { DrizzleUserConsentRepository } from "#api/modules/identity/preferences/infrastructure/persistence/drizzle-user-consent.repository";
 import { DrizzleUserPreferenceRepository } from "#api/modules/identity/preferences/infrastructure/persistence/drizzle-user-preference.repository";
 import { NotificationRepositoryPort } from "#api/modules/notification/inbox/application/ports/notification.repository.port";
+import type { InboxNotification } from "#api/modules/notification/inbox/application/read-models/inbox-notification.read-model";
 import { GetUnreadNotificationCountUseCase } from "#api/modules/notification/inbox/application/use-cases/get-unread-notification-count.use-case";
 import { ListNotificationsUseCase } from "#api/modules/notification/inbox/application/use-cases/list-notifications.use-case";
 import { MarkAllNotificationsReadUseCase } from "#api/modules/notification/inbox/application/use-cases/mark-all-notifications-read.use-case";
@@ -54,6 +55,7 @@ import {
 } from "#api/platform/database/schema/index";
 import { DEDUP_PROVIDER } from "#api/platform/dedup/interfaces/dedup.interface";
 import { LOCK_PROVIDER } from "#api/platform/lock/interfaces/lock.interface";
+import { paginationServiceProvider } from "#api/platform/pagination/pagination.providers";
 import { SystemClock } from "#api/platform/time/system-clock";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import {
@@ -62,15 +64,15 @@ import {
   UNIT_OF_WORK,
   UnitOfWorkPort,
 } from "#api/shared/application/ports/index";
-import { NotificationBuilder, PushTokenBuilder, UserPreferenceBuilder } from "#test/builders/index";
-import { PushDeviceReportFixture } from "#test/fixtures/index";
+import { UserPreferenceBuilder } from "#test/builders/index";
+import { createInboxNotificationFixture } from "#test/fixtures/notification/notification.fixture";
+import { createReportPushDeviceCommandFixture } from "#test/fixtures/notification/push-device.fixture";
+import { createPushTokenFixture } from "#test/fixtures/notification/push-token.fixture";
 import { createMockCacheService } from "#test/mocks/cache-test-utils";
 import { createDatabaseTransactionFixture } from "#test/setup/database-context";
 import { suppressLogger } from "#test/setup/suppress-logger";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
-import type { Notification, UserPreference } from "#test/types/database-rows";
-
-import { paginationServiceProvider } from "../../src/platform/pagination/pagination.providers.js";
+import type { UserPreference } from "#test/types/database-rows";
 
 function buildNotificationTestApi(module: TestingModule) {
   const publisher = new PublishNotificationUseCase({
@@ -294,8 +296,6 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
   beforeEach(async () => {
     vi.clearAllMocks();
     await testDatabase.cleanup();
-    NotificationBuilder.resetIdCounter();
-    PushTokenBuilder.resetIdCounter();
     await client.insert(userTable).values(
       [
         mockUserId,
@@ -313,7 +313,7 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
     );
   });
 
-  async function seedNotifications(rows: Notification[]) {
+  async function seedNotifications(rows: InboxNotification[]) {
     const inserted = [];
     for (const row of rows) {
       const { id: _id, ...values } = row;
@@ -327,7 +327,11 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
   }
 
   async function seedPushToken(userId: string, token: string) {
-    const { id: _id, ...values } = PushTokenBuilder.create(userId).withToken(token).build();
+    const { id: _id, ...values } = createPushTokenFixture({
+      userId,
+      token,
+      deviceId: `device-${token}`,
+    });
     await client.insert(pushToken).values(values);
   }
 
@@ -374,7 +378,7 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
 
       // When
       const registration = facade.reportPushDevice(
-        PushDeviceReportFixture.command({
+        createReportPushDeviceCommandFixture({
           permission: GRANTED_PERMISSION,
           payloadVersion: 1,
           userId: mockUserId,
@@ -396,7 +400,7 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
       // Given
       mockPushProvider.validateToken.mockReturnValue(true);
       await facade.reportPushDevice(
-        PushDeviceReportFixture.command({
+        createReportPushDeviceCommandFixture({
           permission: GRANTED_PERMISSION,
           payloadVersion: 1,
           userId: mockUserId,
@@ -408,7 +412,7 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
 
       // When
       await facade.reportPushDevice(
-        PushDeviceReportFixture.command({
+        createReportPushDeviceCommandFixture({
           permission: GRANTED_PERMISSION,
           payloadVersion: 1,
           userId: mockUserId,
@@ -433,7 +437,7 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
       // Given 사용자 A가 등록한 기기에서 A의 해제 요청이 서버에 닿지 않았다
       mockPushProvider.validateToken.mockReturnValue(true);
       await facade.reportPushDevice(
-        PushDeviceReportFixture.command({
+        createReportPushDeviceCommandFixture({
           permission: GRANTED_PERMISSION,
           payloadVersion: 1,
           userId: mockUserId,
@@ -444,7 +448,7 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
 
       // When 같은 기기에서 사용자 B가 로그인해 같은 토큰을 등록한다
       const registration = facade.reportPushDevice(
-        PushDeviceReportFixture.command({
+        createReportPushDeviceCommandFixture({
           permission: GRANTED_PERMISSION,
           payloadVersion: 1,
           userId: "other-user",
@@ -466,7 +470,7 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
       // Given
       mockPushProvider.validateToken.mockReturnValue(true);
       await facade.reportPushDevice(
-        PushDeviceReportFixture.command({
+        createReportPushDeviceCommandFixture({
           permission: GRANTED_PERMISSION,
           payloadVersion: 1,
           userId: mockUserId,
@@ -477,7 +481,7 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
 
       // When
       await facade.reportPushDevice(
-        PushDeviceReportFixture.command({
+        createReportPushDeviceCommandFixture({
           permission: GRANTED_PERMISSION,
           payloadVersion: 1,
           userId: mockUserId,
@@ -497,7 +501,7 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
 
       // When
       const registration = facade.reportPushDevice(
-        PushDeviceReportFixture.command({
+        createReportPushDeviceCommandFixture({
           permission: GRANTED_PERMISSION,
           payloadVersion: 1,
           userId: mockUserId,
@@ -516,8 +520,22 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
     it("알림 목록을 조회해야 함", async () => {
       // Given
       await seedNotifications([
-        NotificationBuilder.create(mockUserId).asNudgeReceived("friend-1", 1).build(),
-        NotificationBuilder.create(mockUserId).asCheerReceived("friend-2", 1).build(),
+        createInboxNotificationFixture({
+          userId: mockUserId,
+          type: "NUDGE_RECEIVED",
+          friendId: "friend-1",
+          nudgeId: 1,
+          title: "콕 찌르기!",
+          body: "친구가 당신을 찔렀어요",
+        }),
+        createInboxNotificationFixture({
+          userId: mockUserId,
+          type: "CHEER_RECEIVED",
+          friendId: "friend-2",
+          cheerId: 1,
+          title: "응원 메시지!",
+          body: "친구가 응원을 보냈어요",
+        }),
       ]);
 
       // When
@@ -531,8 +549,12 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
     it("읽지 않은 알림만 필터링해야 함", async () => {
       // Given
       const [unread] = await seedNotifications([
-        NotificationBuilder.create(mockUserId).asUnread().build(),
-        NotificationBuilder.create(mockUserId).asRead().build(),
+        createInboxNotificationFixture({ userId: mockUserId, isRead: false, readAt: null }),
+        createInboxNotificationFixture({
+          userId: mockUserId,
+          isRead: true,
+          readAt: new Date("2026-11-10T00:00:00Z"),
+        }),
       ]);
 
       // When
@@ -545,11 +567,11 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
     it("category='SOCIAL'이면 소셜 타입 알림만 조회해야 한다", async () => {
       // Given
       await seedNotifications([
-        NotificationBuilder.create("user-1").withType("FOLLOW_NEW").build(),
-        NotificationBuilder.create("user-1").withType("CHEER_RECEIVED").build(),
-        NotificationBuilder.create("user-1").withType("SYSTEM_NOTICE").build(),
-        NotificationBuilder.create("user-1").withType("TODO_REMINDER").build(),
-        NotificationBuilder.create("other-user").withType("FOLLOW_NEW").build(),
+        createInboxNotificationFixture({ userId: "user-1", type: "FOLLOW_NEW" }),
+        createInboxNotificationFixture({ userId: "user-1", type: "CHEER_RECEIVED" }),
+        createInboxNotificationFixture({ userId: "user-1", type: "SYSTEM_NOTICE" }),
+        createInboxNotificationFixture({ userId: "user-1", type: "TODO_REMINDER" }),
+        createInboxNotificationFixture({ userId: "other-user", type: "FOLLOW_NEW" }),
       ]);
 
       // When
@@ -567,9 +589,9 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
       async (appVersion) => {
         // Given
         await seedNotifications([
-          NotificationBuilder.create(mockUserId).withType("FOLLOW_NEW").build(),
-          NotificationBuilder.create(mockUserId).withType("NUDGE_REPLIED").build(),
-          NotificationBuilder.create(mockUserId).withType("INVITE_JOINED").build(),
+          createInboxNotificationFixture({ userId: mockUserId, type: "FOLLOW_NEW" }),
+          createInboxNotificationFixture({ userId: mockUserId, type: "NUDGE_REPLIED" }),
+          createInboxNotificationFixture({ userId: mockUserId, type: "INVITE_JOINED" }),
         ]);
 
         // When
@@ -587,9 +609,9 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
     it("1.13.0의 전체 목록은 모든 알림 타입을 조회한다", async () => {
       // Given
       await seedNotifications([
-        NotificationBuilder.create("user-1").withType("FOLLOW_NEW").build(),
-        NotificationBuilder.create("user-1").withType("NUDGE_REPLIED").build(),
-        NotificationBuilder.create("user-1").withType("INVITE_JOINED").build(),
+        createInboxNotificationFixture({ userId: "user-1", type: "FOLLOW_NEW" }),
+        createInboxNotificationFixture({ userId: "user-1", type: "NUDGE_REPLIED" }),
+        createInboxNotificationFixture({ userId: "user-1", type: "INVITE_JOINED" }),
       ]);
 
       // When
@@ -610,9 +632,24 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
     it("category와 unreadOnly를 함께 사용하면 두 조건을 모두 적용해야 한다", async () => {
       // Given
       const [match] = await seedNotifications([
-        NotificationBuilder.create("user-1").withType("SYSTEM_NOTICE").asUnread().build(),
-        NotificationBuilder.create("user-1").withType("SYSTEM_NOTICE").asRead().build(),
-        NotificationBuilder.create("user-1").withType("FOLLOW_NEW").asUnread().build(),
+        createInboxNotificationFixture({
+          userId: "user-1",
+          type: "SYSTEM_NOTICE",
+          isRead: false,
+          readAt: null,
+        }),
+        createInboxNotificationFixture({
+          userId: "user-1",
+          type: "SYSTEM_NOTICE",
+          isRead: true,
+          readAt: new Date("2026-11-10T00:00:00Z"),
+        }),
+        createInboxNotificationFixture({
+          userId: "user-1",
+          type: "FOLLOW_NEW",
+          isRead: false,
+          readAt: null,
+        }),
       ]);
 
       // When
@@ -629,8 +666,12 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
     it("getNotifications + getUnreadCount 병렬 조회 시 두 결과 모두 정상 반환해야 한다", async () => {
       // Given
       await seedNotifications([
-        NotificationBuilder.create(mockUserId).asUnread().build(),
-        NotificationBuilder.create(mockUserId).asRead().build(),
+        createInboxNotificationFixture({ userId: mockUserId, isRead: false, readAt: null }),
+        createInboxNotificationFixture({
+          userId: mockUserId,
+          isRead: true,
+          readAt: new Date("2026-11-10T00:00:00Z"),
+        }),
       ]);
 
       // When
@@ -648,10 +689,10 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
     it("category + cursor 조합이 DB 쿼리에 함께 적용되어야 한다", async () => {
       // Given
       const rows = await seedNotifications([
-        NotificationBuilder.create(mockUserId).withType("FOLLOW_NEW").build(),
-        NotificationBuilder.create(mockUserId).withType("CHEER_RECEIVED").build(),
-        NotificationBuilder.create(mockUserId).withType("SYSTEM_NOTICE").build(),
-        NotificationBuilder.create(mockUserId).withType("FOLLOW_ACCEPTED").build(),
+        createInboxNotificationFixture({ userId: mockUserId, type: "FOLLOW_NEW" }),
+        createInboxNotificationFixture({ userId: mockUserId, type: "CHEER_RECEIVED" }),
+        createInboxNotificationFixture({ userId: mockUserId, type: "SYSTEM_NOTICE" }),
+        createInboxNotificationFixture({ userId: mockUserId, type: "FOLLOW_ACCEPTED" }),
       ]);
       const cursor = rows[3]?.id;
 
@@ -672,9 +713,13 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
     it("구버전이 지원하는 읽지 않은 알림 수만 반환한다", async () => {
       // Given
       await seedNotifications([
-        ...Array.from({ length: 5 }, () => NotificationBuilder.create(mockUserId).build()),
-        NotificationBuilder.create(mockUserId).withType("NUDGE_REPLIED").build(),
-        NotificationBuilder.create(mockUserId).asRead().build(),
+        ...Array.from({ length: 5 }, () => createInboxNotificationFixture({ userId: mockUserId })),
+        createInboxNotificationFixture({ userId: mockUserId, type: "NUDGE_REPLIED" }),
+        createInboxNotificationFixture({
+          userId: mockUserId,
+          isRead: true,
+          readAt: new Date("2026-11-10T00:00:00Z"),
+        }),
       ]);
 
       // When
@@ -687,9 +732,9 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
     it("1.13.0과 구버전의 읽지 않은 알림 수를 서로 다른 캐시 키로 조회한다", async () => {
       // Given
       await seedNotifications([
-        ...Array.from({ length: 3 }, () => NotificationBuilder.create(mockUserId).build()),
+        ...Array.from({ length: 3 }, () => createInboxNotificationFixture({ userId: mockUserId })),
         ...Array.from({ length: 2 }, () =>
-          NotificationBuilder.create(mockUserId).withType("INVITE_JOINED").build(),
+          createInboxNotificationFixture({ userId: mockUserId, type: "INVITE_JOINED" }),
         ),
       ]);
       const cacheService = module.get(CacheService);
@@ -722,7 +767,7 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
     it("단일 알림을 읽음 처리해야 함", async () => {
       // Given
       const [unread] = await seedNotifications([
-        NotificationBuilder.create(mockUserId).asUnread().build(),
+        createInboxNotificationFixture({ userId: mockUserId, isRead: false, readAt: null }),
       ]);
       if (unread === undefined) {
         throw new Error("notification fixture was not created");
@@ -742,7 +787,7 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
     it("푸시 탭을 멱등 기록하고 읽음 상태로 맞춰야 함", async () => {
       // Given
       const [unread] = await seedNotifications([
-        NotificationBuilder.create(mockUserId).asUnread().build(),
+        createInboxNotificationFixture({ userId: mockUserId, isRead: false, readAt: null }),
       ]);
       if (unread === undefined) {
         throw new Error("notification fixture was not created");
@@ -799,7 +844,9 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
 
     it("다른 사용자의 알림이면 예외를 발생시켜야 함", async () => {
       // Given
-      const [others] = await seedNotifications([NotificationBuilder.create("other-user").build()]);
+      const [others] = await seedNotifications([
+        createInboxNotificationFixture({ userId: "other-user" }),
+      ]);
       if (others === undefined) {
         throw new Error("notification fixture was not created");
       }
@@ -815,8 +862,8 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
     it("구버전에서 전체 읽음 처리해도 신규 답장·고마움 알림은 읽지 않는다", async () => {
       // Given
       const [, , , , , newer] = await seedNotifications([
-        ...Array.from({ length: 5 }, () => NotificationBuilder.create(mockUserId).build()),
-        NotificationBuilder.create(mockUserId).withType("NUDGE_REPLIED").build(),
+        ...Array.from({ length: 5 }, () => createInboxNotificationFixture({ userId: mockUserId })),
+        createInboxNotificationFixture({ userId: mockUserId, type: "NUDGE_REPLIED" }),
       ]);
       if (newer === undefined) {
         throw new Error("notification fixture was not created");
@@ -839,9 +886,9 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
     it("1.13.0은 신규 알림까지 전체 읽음 처리하고 모든 버전 단계의 캐시를 무효화한다", async () => {
       // Given
       await seedNotifications([
-        ...Array.from({ length: 5 }, () => NotificationBuilder.create(mockUserId).build()),
+        ...Array.from({ length: 5 }, () => createInboxNotificationFixture({ userId: mockUserId })),
         ...Array.from({ length: 2 }, () =>
-          NotificationBuilder.create(mockUserId).withType("NUDGE_REPLIED").build(),
+          createInboxNotificationFixture({ userId: mockUserId, type: "NUDGE_REPLIED" }),
         ),
       ]);
       const cacheService = module.get(CacheService);

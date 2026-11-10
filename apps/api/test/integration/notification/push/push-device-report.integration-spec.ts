@@ -9,7 +9,8 @@ import { DrizzlePushDeviceRepository } from "#api/modules/notification/push/infr
 import { DrizzlePushTokenRepository } from "#api/modules/notification/push/infrastructure/persistence/drizzle-push-token.repository";
 import { pushDevice, pushToken, session, user } from "#api/platform/database/schema/index";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
-import { PushDeviceReportFixture, SessionFixture, UserFixture } from "#test/fixtures/index";
+import { SessionFixture, UserFixture } from "#test/fixtures/index";
+import { createReportPushDeviceCommandFixture } from "#test/fixtures/notification/push-device.fixture";
 import { createDatabaseTransactionFixture, createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
@@ -66,7 +67,7 @@ describe("푸시 기기 보고 (실제 PostgreSQL)", () => {
   }
 
   function command(overrides: Partial<ReportPushDeviceCommand>): ReportPushDeviceCommand {
-    return PushDeviceReportFixture.command({
+    return createReportPushDeviceCommandFixture({
       userId: firstUserId,
       deviceId: "ios_first",
       token: TOKEN,

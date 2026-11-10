@@ -1,28 +1,20 @@
 import { pushNotificationDataSchema } from "@aido/api";
-import type { Mocked } from "vitest";
-import { mockDeep } from "vitest-mock-extended";
 
-import { createMarketingPushOptOutTokenMock } from "#test/mocks/ports/notification.mock";
+import { StubMarketingPushOptOutToken } from "#test/doubles/notification/stub-marketing-push-opt-out-token";
 
 import { PushNotificationPayloadMapper } from "./push-notification-payload.mapper.js";
 
-describe("PushNotificationPayloadMapper", () => {
+describe("PushNotificationPayloadMapper — 푸시 payload 조립", () => {
   let factory: PushNotificationPayloadMapper;
-  let optOutTokens: Mocked<
-    ConstructorParameters<typeof PushNotificationPayloadMapper>[0]["marketingOptOutTokens"]
-  >;
+  let optOutTokens: StubMarketingPushOptOutToken;
 
-  beforeEach(async () => {
-    const pushNotificationPayloadFactoryDependencies = mockDeep<
-      ConstructorParameters<typeof PushNotificationPayloadMapper>[0]
-    >({ marketingOptOutTokens: createMarketingPushOptOutTokenMock() });
-    const unit = new PushNotificationPayloadMapper(pushNotificationPayloadFactoryDependencies);
-    factory = unit;
-    optOutTokens = pushNotificationPayloadFactoryDependencies.marketingOptOutTokens;
-    optOutTokens.issue.mockReturnValue("signed-opt-out-token");
+  beforeEach(() => {
+    optOutTokens = new StubMarketingPushOptOutToken();
+    factory = new PushNotificationPayloadMapper({ marketingOptOutTokens: optOutTokens });
   });
 
   it("단건 payload는 기본 액션, context, 댓글 routing과 분석 식별자를 조립한다", () => {
+    // Given
     const commentId = "cmt92zn3n000b7voxx9quc2th";
     const payload = factory.createSingle({
       data: {
@@ -44,6 +36,7 @@ describe("PushNotificationPayloadMapper", () => {
       dispatchId: 202,
     });
 
+    // Then
     expect(payload).toEqual({
       title: "새 댓글",
       body: "본문",
@@ -69,10 +62,11 @@ describe("PushNotificationPayloadMapper", () => {
         dispatchId: 202,
       },
     });
-    expect(optOutTokens.issue).not.toHaveBeenCalled();
+    expect(optOutTokens.issuedUserIds).toEqual([]);
   });
 
   it("마케팅 단건은 opt-out token과 interactive category를 포함한다", () => {
+    // When
     const payload = factory.createSingle({
       data: {
         userId: "user-1",
@@ -85,15 +79,17 @@ describe("PushNotificationPayloadMapper", () => {
       dispatchId: 2,
     });
 
+    // Then
     expect(payload.categoryId).toBe("MARKETING");
     expect(payload.data).toMatchObject({
       purpose: "ENGAGEMENT",
-      marketingOptOutToken: "signed-opt-out-token",
+      marketingOptOutToken: "opt-out:user-1",
     });
-    expect(optOutTokens.issue).toHaveBeenCalledWith("user-1");
+    expect(optOutTokens.issuedUserIds).toEqual(["user-1"]);
   });
 
   it("마케팅 배치도 단건과 같은 interactive category와 opt-out data를 싣는다", () => {
+    // When
     const payload = factory.createBatch({
       data: {
         userId: "user-1",
@@ -107,6 +103,7 @@ describe("PushNotificationPayloadMapper", () => {
       dispatchId: 20,
     });
 
+    // Then
     expect(payload).toMatchObject({
       userId: "user-1",
       dispatchId: 20,
@@ -116,13 +113,14 @@ describe("PushNotificationPayloadMapper", () => {
       data: {
         notificationId: 10,
         dispatchId: 20,
-        marketingOptOutToken: "signed-opt-out-token",
+        marketingOptOutToken: "opt-out:user-1",
       },
     });
     expect(payload.categoryId).toBe("MARKETING");
   });
 
   it("명시 action URL은 타입과 함께 보존한다", () => {
+    // When
     const payload = factory.createSingle({
       data: {
         userId: "user-1",
@@ -135,6 +133,7 @@ describe("PushNotificationPayloadMapper", () => {
       dispatchId: 2,
     });
 
+    // Then
     expect(payload.data).toMatchObject({
       action: { type: "BROWSER", url: "https://aido.kr/notice" },
     });
@@ -196,6 +195,7 @@ describe("PushNotificationPayloadMapper", () => {
       });
     },
   );
+
   describe("광고성 푸시 표기", () => {
     it.each([
       {

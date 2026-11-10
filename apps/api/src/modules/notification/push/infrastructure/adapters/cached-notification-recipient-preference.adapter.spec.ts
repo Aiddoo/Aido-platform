@@ -1,14 +1,53 @@
 import type { PreferenceSnapshot } from "#api/modules/identity/identity-settings.public";
 import { ReadUserPreferencesUseCase } from "#api/modules/identity/preferences/application/use-cases/read-user-preferences.use-case";
 import { createUserSettingsFixture } from "#test/fixtures/user-settings.fixture";
-import { createUserNotificationSettingsMock } from "#test/mocks/ports/notification.mock";
 
+import {
+  type NotificationDeliveryPreference,
+  type NotificationMarketingConsent,
+  UserNotificationSettingsPort,
+} from "../../application/ports/user-notification-settings.port.js";
 import { CachedNotificationRecipientPreferenceAdapter } from "./cached-notification-recipient-preference.adapter.js";
+
+type PreferenceRow = NotificationDeliveryPreference & { readonly userId: string };
+
+// 저장된 설정 행을 돌려주고 단건·batch 조회 요청을 남긴다
+class StubUserNotificationSettings extends UserNotificationSettingsPort {
+  readonly preferenceRows: PreferenceRow[] = [];
+  readonly singleRequests: string[] = [];
+  readonly batchRequests: string[][] = [];
+
+  async upsertPushTimezone(): Promise<void> {}
+
+  async upsertPushLocale(): Promise<void> {}
+
+  async getPreferenceRecord(userId: string): Promise<NotificationDeliveryPreference | null> {
+    this.singleRequests.push(userId);
+    return this.preferenceRows.find((row) => row.userId === userId) ?? null;
+  }
+
+  async getPreferenceRecordsByUserIds(userIds: string[]): Promise<PreferenceRow[]> {
+    this.batchRequests.push([...userIds]);
+    return this.preferenceRows.filter((row) => userIds.includes(row.userId));
+  }
+
+  async getConsentRecord(): Promise<NotificationMarketingConsent | null> {
+    return null;
+  }
+
+  async getConsentRecordsByUserIds(): Promise<
+    (NotificationMarketingConsent & { readonly userId: string })[]
+  > {
+    return [];
+  }
+
+  async updateMarketingPushConsent(): Promise<void> {}
+}
 
 describe("CachedNotificationRecipientPreferenceAdapter - 수신자 언어와 공유 설정 조회", () => {
   function createFixture() {
     const settings = createUserSettingsFixture({ preference: { locale: "en", currentStreak: 17 } });
-    const userSettings = createUserNotificationSettingsMock();
+    const userSettings = new StubUserNotificationSettings();
     const preferenceReader = new ReadUserPreferencesUseCase(settings);
     const reader = new CachedNotificationRecipientPreferenceAdapter(userSettings, preferenceReader);
     return { ...settings, userSettings, reader };
@@ -27,14 +66,14 @@ describe("CachedNotificationRecipientPreferenceAdapter - 수신자 언어와 공
     expect(cached).toEqual(preference);
     expect(cached).not.toHaveProperty("currentStreak");
     expect(cached).not.toHaveProperty("lastCompletedDate");
-    expect(fixture.userSettings.getPreferenceRecord).not.toHaveBeenCalled();
+    expect(fixture.userSettings.singleRequests).toEqual([]);
   });
 
   it("설정이 없는 사용자는 저장된 기본 설정 없이 기본 언어로 조회한다", async () => {
     // Given
     const settings = createUserSettingsFixture({ preference: null });
     const reader = new CachedNotificationRecipientPreferenceAdapter(
-      createUserNotificationSettingsMock(),
+      new StubUserNotificationSettings(),
       new ReadUserPreferencesUseCase(settings),
     );
 
@@ -87,9 +126,11 @@ describe("CachedNotificationRecipientPreferenceAdapter - 수신자 언어와 공
   it("중복 수신자를 제거해 한 번의 batch 조회로 언어를 읽고 없는 설정은 한국어로 채운다", async () => {
     // Given
     const fixture = createFixture();
-    vi.mocked(fixture.userSettings.getPreferenceRecordsByUserIds).mockResolvedValue([
-      { ...fixture.preference, userId: "english" },
-    ]);
+    fixture.userSettings.preferenceRows.push({
+      ...fixture.preference,
+      userId: "english",
+      locale: "en",
+    });
 
     // When
     const locales = await fixture.reader.getLocales(["english", "legacy", "english"]);
@@ -101,11 +142,8 @@ describe("CachedNotificationRecipientPreferenceAdapter - 수신자 언어와 공
         ["legacy", "ko"],
       ]),
     );
-    expect(fixture.userSettings.getPreferenceRecordsByUserIds).toHaveBeenCalledExactlyOnceWith([
-      "english",
-      "legacy",
-    ]);
-    expect(fixture.userSettings.getPreferenceRecord).not.toHaveBeenCalled();
+    expect(fixture.userSettings.batchRequests).toEqual([["english", "legacy"]]);
+    expect(fixture.userSettings.singleRequests).toEqual([]);
   });
 
   it("수신자가 없으면 batch 저장소를 조회하지 않는다", async () => {
@@ -117,6 +155,6 @@ describe("CachedNotificationRecipientPreferenceAdapter - 수신자 언어와 공
 
     // Then
     expect(locales.size).toBe(0);
-    expect(fixture.userSettings.getPreferenceRecordsByUserIds).not.toHaveBeenCalled();
+    expect(fixture.userSettings.batchRequests).toEqual([]);
   });
 });

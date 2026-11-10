@@ -1,10 +1,10 @@
 import { ErrorCode } from "@aido/api/errors";
 
-import { NotificationBuilder } from "#test/builders/index";
 import { InMemoryNotificationRepository } from "#test/doubles/notification/in-memory-notification.repository";
 import { PassThroughNotificationCache } from "#test/doubles/notification/pass-through-notification-cache";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
+import { createInboxNotificationFixture } from "#test/fixtures/notification/notification.fixture";
 
 import {
   type MarkNotificationReadDependencies,
@@ -29,7 +29,12 @@ function createMarkNotificationReadUseCase(
 describe("MarkNotificationReadUseCase — 단일 알림 읽음", () => {
   it("소유한 미읽음 알림을 지금 시각으로 읽음 처리하고 미읽음 캐시를 비운다", async () => {
     // Given
-    const notification = NotificationBuilder.create(USER_ID).withId(1).asUnread().build();
+    const notification = createInboxNotificationFixture({
+      userId: USER_ID,
+      id: 1,
+      isRead: false,
+      readAt: null,
+    });
     const notificationRepository = new InMemoryNotificationRepository([notification]);
     const cache = new PassThroughNotificationCache();
     const useCase = createMarkNotificationReadUseCase({ notificationRepository, cache });
@@ -65,8 +70,12 @@ describe("MarkNotificationReadUseCase — 단일 알림 읽음", () => {
     "남의 알림은 읽음 여부(%s)와 상관없이 NOTIFICATION_1005로 거절하고 그대로 둔다",
     async (isRead) => {
       // Given
-      const builder = NotificationBuilder.create("other-user").withId(1);
-      const notification = (isRead ? builder.asRead() : builder.asUnread()).build();
+      const notification = createInboxNotificationFixture({
+        userId: "other-user",
+        id: 1,
+        isRead,
+        readAt: isRead ? new Date("2026-11-01T00:00:00Z") : null,
+      });
       const notificationRepository = new InMemoryNotificationRepository([notification]);
       const useCase = createMarkNotificationReadUseCase({ notificationRepository });
 
@@ -84,10 +93,12 @@ describe("MarkNotificationReadUseCase — 단일 알림 읽음", () => {
 
   it("이미 읽은 알림은 읽은 시각과 캐시를 그대로 둔다", async () => {
     // Given
-    const notification = NotificationBuilder.create(USER_ID)
-      .withId(1)
-      .asRead(new Date("2026-11-01T00:00:00Z"))
-      .build();
+    const notification = createInboxNotificationFixture({
+      userId: USER_ID,
+      id: 1,
+      isRead: true,
+      readAt: new Date("2026-11-01T00:00:00Z"),
+    });
     const notificationRepository = new InMemoryNotificationRepository([notification]);
     const cache = new PassThroughNotificationCache();
     const useCase = createMarkNotificationReadUseCase({ notificationRepository, cache });

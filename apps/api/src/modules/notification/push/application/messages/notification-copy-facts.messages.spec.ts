@@ -1,8 +1,8 @@
 import { describe, it, expect, vi } from "vitest";
-import { mockDeep } from "vitest-mock-extended";
 
 import { computeEffectiveStreak } from "#api/modules/identity/identity-settings.public";
 import type { SupportedLocale } from "#api/shared/domain/locale";
+import { SilentLogger } from "#test/doubles/platform/silent-logger";
 
 import { WeeklyAchievementStrategy } from "../../../application/strategies/reminders/weekly-achievement.strategy.js";
 import type { TimezoneContext } from "../../../domain/services/reminders/timezone-context.js";
@@ -19,6 +19,19 @@ import {
   createWeeklyReportNotificationMessage,
   createMonthlyReportNotificationMessage,
 } from "./system-notification.messages.js";
+
+type WeeklyAchievementStrategyDependencies = ConstructorParameters<
+  typeof WeeklyAchievementStrategy
+>[0];
+type WeeklyStatsQuery = Parameters<
+  WeeklyAchievementStrategyDependencies["reader"]["groupTotalTodosByUser"]
+>[0];
+type WeeklyAchievementRecords = Parameters<
+  WeeklyAchievementStrategyDependencies["weeklyAchievementWriter"]["execute"]
+>[0]["records"];
+type PublishedBatch = Parameters<
+  WeeklyAchievementStrategyDependencies["notificationPublisher"]["publishBatch"]
+>[0];
 
 const locales: SupportedLocale[] = ["ko", "en"];
 const today = new Date("2026-07-27T00:00:00.000Z");
@@ -67,15 +80,34 @@ describe.each(locales)("%s 알림 문구와 실제 정책의 사실 조건", (lo
 
   it("월요일 실제 전략의 이전 주 집계를 이번 주 성과로 안내하지 않는다", async () => {
     // Given - KST 7/27 월요일, 지난주 전체8/완료3; 외부 I/O는 typed port 대역
-    const dependencies = mockDeep<ConstructorParameters<typeof WeeklyAchievementStrategy>[0]>();
     const userId = "synthetic-notification-user";
-    dependencies.reader.groupTotalTodosByUser.mockResolvedValue([{ userId, count: 8 }]);
-    dependencies.reader.groupCompletedTodosByUser.mockResolvedValue([{ userId, count: 3 }]);
-    dependencies.reader.findFreeRecipientIds.mockResolvedValue(new Set([userId]));
-    dependencies.preferenceReader.findUserLocales.mockResolvedValue(new Map([[userId, locale]]));
-    dependencies.notificationHistoryReader.findAlreadyNotifiedUserIds.mockResolvedValue(new Set());
-    dependencies.weeklyAchievementWriter.execute.mockResolvedValue(undefined);
-    dependencies.notificationPublisher.publishBatch.mockResolvedValue({ count: 1 });
+    const totalQueries: WeeklyStatsQuery[] = [];
+    const writtenRecords: WeeklyAchievementRecords[] = [];
+    const publishedBatches: PublishedBatch[] = [];
+    const dependencies: WeeklyAchievementStrategyDependencies = {
+      reader: {
+        groupTotalTodosByUser: async (query) => {
+          totalQueries.push(query);
+          return [{ userId, count: 8 }];
+        },
+        groupCompletedTodosByUser: async () => [{ userId, count: 3 }],
+        findFreeRecipientIds: async () => new Set([userId]),
+      },
+      preferenceReader: { findUserLocales: async () => new Map([[userId, locale]]) },
+      notificationHistoryReader: { findAlreadyNotifiedUserIds: async () => new Set() },
+      weeklyAchievementWriter: {
+        execute: async (input) => {
+          writtenRecords.push(input.records);
+        },
+      },
+      notificationPublisher: {
+        publishBatch: async (notifications) => {
+          publishedBatches.push(notifications);
+          return { count: notifications.length };
+        },
+      },
+      logger: new SilentLogger(),
+    };
     const strategy = new WeeklyAchievementStrategy(dependencies);
     const context: TimezoneContext = {
       tz: "Asia/Seoul",
@@ -90,9 +122,9 @@ describe.each(locales)("%s 알림 문구와 실제 정책의 사실 조건", (lo
     try {
       // When - 실제 집계 범위와 factory/campaign 변형 선택을 실행
       await strategy.execute(context);
-      const params = dependencies.reader.groupTotalTodosByUser.mock.calls[0]?.[0];
-      const record = dependencies.weeklyAchievementWriter.execute.mock.calls[0]?.[0].records[0];
-      const message = dependencies.notificationPublisher.publishBatch.mock.calls[0]?.[0][0];
+      const params = totalQueries[0];
+      const record = writtenRecords[0]?.[0];
+      const message = publishedBatches[0]?.[0];
       // Then - 실제 조회/저장은 이전 주인데 문장은 이번 주라고 말하면 안 된다
       expect(params?.periodStart.toISOString()).toBe("2026-07-20T00:00:00.000Z");
       expect(params?.periodEnd.toISOString()).toBe("2026-07-27T00:00:00.000Z");

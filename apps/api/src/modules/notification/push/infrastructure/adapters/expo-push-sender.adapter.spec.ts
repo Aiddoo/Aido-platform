@@ -1,10 +1,11 @@
 import { Logger } from "@nestjs/common";
-import { TestBed } from "@suites/unit";
+import { ConfigService } from "@nestjs/config";
 import { vi } from "vitest";
 
+import type { EnvConfig } from "#api/platform/config/schemas/index";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
-import { RecordingOperationalAlert } from "#test/mocks/recording-operational-alert";
+import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";
 
 import { RetryablePushProviderTransportError } from "../../application/ports/push-provider.port.js";
 import { EXPO_PUSH_PAYLOAD_MAX_BYTE_LENGTH } from "./expo-push-message.mapper.js";
@@ -46,7 +47,7 @@ function expectPrivateLogsAbsent() {
   }
 }
 
-beforeEach(async () => {
+beforeEach(() => {
   expectedReplies = [];
   warn = vi.spyOn(Logger.prototype, "warn").mockImplementation(() => undefined);
   error = vi.spyOn(Logger.prototype, "error").mockImplementation(() => undefined);
@@ -58,13 +59,10 @@ beforeEach(async () => {
     expect(new URL(String(input)).pathname).toBe(expected.path);
     return expected.response;
   });
-  const { unit } = await TestBed.solitary(ExpoPushSenderAdapter)
-    .mock(TypedConfigService)
-    .impl(() => ({ expoAccessToken: credential }))
-    .mock(OutboundPolicyRegistry)
-    .final(new OutboundPolicyRegistry(new RecordingOperationalAlert()))
-    .compile();
-  provider = unit;
+  provider = new ExpoPushSenderAdapter(
+    new TypedConfigService(new ConfigService<EnvConfig, true>({ EXPO_ACCESS_TOKEN: credential })),
+    new OutboundPolicyRegistry(new RecordingOperationalAlert()),
+  );
 });
 afterEach(() => {
   try {

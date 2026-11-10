@@ -1,6 +1,6 @@
-import { NotificationBuilder } from "#test/builders/index";
 import { InMemoryNotificationRepository } from "#test/doubles/notification/in-memory-notification.repository";
 import { PassThroughNotificationCache } from "#test/doubles/notification/pass-through-notification-cache";
+import { createInboxNotificationFixture } from "#test/fixtures/notification/notification.fixture";
 
 import { GetUnreadNotificationCountUseCase } from "./get-unread-notification-count.use-case.js";
 
@@ -8,11 +8,16 @@ const USER_ID = "user-1";
 
 function seedNotifications() {
   return [
-    NotificationBuilder.create(USER_ID).withId(1).withType("NUDGE_RECEIVED").build(),
-    NotificationBuilder.create(USER_ID).withId(2).withType("NUDGE_REPLIED").build(),
-    NotificationBuilder.create(USER_ID).withId(3).withType("NUDGE_THANKED").build(),
-    NotificationBuilder.create(USER_ID).withId(4).asRead().build(),
-    NotificationBuilder.create("other-user").withId(5).build(),
+    createInboxNotificationFixture({ userId: USER_ID, id: 1, type: "NUDGE_RECEIVED" }),
+    createInboxNotificationFixture({ userId: USER_ID, id: 2, type: "NUDGE_REPLIED" }),
+    createInboxNotificationFixture({ userId: USER_ID, id: 3, type: "NUDGE_THANKED" }),
+    createInboxNotificationFixture({
+      userId: USER_ID,
+      id: 4,
+      isRead: true,
+      readAt: new Date("2026-11-10T00:00:00Z"),
+    }),
+    createInboxNotificationFixture({ userId: "other-user", id: 5 }),
   ];
 }
 

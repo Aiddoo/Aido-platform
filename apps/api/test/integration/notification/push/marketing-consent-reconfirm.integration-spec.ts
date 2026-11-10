@@ -11,15 +11,14 @@ import {
 } from "#api/platform/database/schema/index";
 import { UNIT_OF_WORK, type UnitOfWorkPort } from "#api/shared/application/ports/index";
 import { UserConsentBuilder, UserPreferenceBuilder } from "#test/builders/index";
-import { UserFixture } from "#test/fixtures/index";
-import { createTestClient } from "#test/setup/database-context";
-import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
-
 import {
   createE2eApp,
   destroyE2eApp,
   type E2eTestContext,
-} from "../e2e/helpers/e2e-app-factory.js";
+} from "#test/e2e/helpers/e2e-app-factory";
+import { UserFixture } from "#test/fixtures/index";
+import { createTestClient } from "#test/setup/database-context";
+import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
 const now = new Date("2026-12-01T02:00:00.000Z");
 const cutoff = new Date("2024-12-01T02:00:00.000Z");

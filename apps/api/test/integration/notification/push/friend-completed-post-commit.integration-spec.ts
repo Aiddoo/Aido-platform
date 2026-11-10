@@ -30,10 +30,9 @@ import {
   AfterCommitTaskRegistryPort,
   UnitOfWorkPort,
 } from "#api/shared/application/ports/index";
-import { createNotificationCacheMock } from "#test/mocks/ports/notification-cache.mock";
-import { createNotificationRepositoryMock } from "#test/mocks/ports/notification.mock";
-
-import { pickProviders } from "./helpers/pick-providers.js";
+import { InMemoryNotificationRepository } from "#test/doubles/notification/in-memory-notification.repository";
+import { PassThroughNotificationCache } from "#test/doubles/notification/pass-through-notification-cache";
+import { pickProviders } from "#test/integration/helpers/pick-providers";
 
 interface TransactionContext {
   closed: boolean;
@@ -79,31 +78,35 @@ class AfterCommitAwareUnitOfWork implements UnitOfWorkPort, AfterCommitTaskRegis
   }
 }
 
-function toNotificationRecord(data: CreateNotificationData, index: number): InboxNotification {
-  return {
-    id: index + 1,
-    userId: data.userId,
-    type: data.type,
-    title: data.title,
-    body: data.body,
-    copyKey: data.copyKey ?? null,
-    copyFacts: data.copyFacts ?? null,
-    isRead: false,
-    todoId: data.todoId ?? null,
-    friendId: data.friendId ?? null,
-    nudgeId: data.nudgeId ?? null,
-    cheerId: data.cheerId ?? null,
-    notificationDate: data.notificationDate ?? null,
-    metadata: data.metadata ?? null,
-    createdAt: new Date("2026-07-26T00:00:00.000Z"),
-    readAt: null,
-    actionType: data.action?.type ?? "DEEP_LINK",
-    actionUrl: data.action?.url ?? null,
-    campaignKey: data.campaignKey ?? null,
-    variantId: data.variantId ?? null,
-    purpose: data.purpose ?? "TRANSACTIONAL",
-    openedAt: null,
-  };
+// 알림 저장이 열린 UoW 안에서 일어났는지와 순서를 남긴다
+class EventRecordingNotificationRepository extends InMemoryNotificationRepository {
+  readonly #onCreateMany: () => void;
+
+  constructor(onCreateMany: () => void) {
+    super([], () => new Date("2026-07-26T00:00:00.000Z"));
+    this.#onCreateMany = onCreateMany;
+  }
+
+  override async createManyNotificationsAndReturn(
+    dataList: CreateNotificationData[],
+  ): Promise<InboxNotification[]> {
+    this.#onCreateMany();
+    return super.createManyNotificationsAndReturn(dataList);
+  }
+}
+
+class EventRecordingNotificationCache extends PassThroughNotificationCache {
+  readonly #events: string[];
+
+  constructor(events: string[]) {
+    super();
+    this.#events = events;
+  }
+
+  override async invalidateUnreadCount(userId: string): Promise<void> {
+    this.#events.push(`invalidate-cache:${userId}`);
+    await super.invalidateUnreadCount(userId);
+  }
 }
 
 const friendCompletionInput = {
@@ -118,20 +121,17 @@ describe("친구 완료 알림의 commit 후 영속 발행 (컴포넌트)", () =
   let useCase: SendFriendCompletionNotificationsUseCase;
   let persistBatch: PersistBatchNotificationUseCase;
   let unitOfWork: AfterCommitAwareUnitOfWork;
-  let repository: Mocked<NotificationRepositoryPort>;
+  let repository: EventRecordingNotificationRepository;
   let staging: Mocked<PushDispatchStagingRepositoryPort>;
-  let cache: Mocked<NotificationCachePort>;
   let executePublish: MockedFunction<(input: PublishPushDeliveryOutboxInput) => Promise<number>>;
   let events: string[];
 
   beforeEach(async () => {
     events = [];
     unitOfWork = new AfterCommitAwareUnitOfWork();
-    repository = vi.mocked(createNotificationRepositoryMock());
-    repository.createManyNotificationsAndReturn.mockImplementation(async (items) => {
+    repository = new EventRecordingNotificationRepository(() => {
       expect(unitOfWork.storage.getStore()?.closed).toBe(false);
       events.push("persist-notifications");
-      return items.map(toNotificationRecord);
     });
     staging = vi.mocked({
       stage: vi.fn(),
@@ -144,10 +144,7 @@ describe("친구 완료 알림의 commit 후 영속 발행 (컴포넌트)", () =
         }));
       }),
     } satisfies PushDispatchStagingRepositoryPort);
-    cache = vi.mocked(createNotificationCacheMock());
-    cache.invalidateUnreadCount.mockImplementation(async (userId) => {
-      events.push(`invalidate-cache:${userId}`);
-    });
+    const cache = new EventRecordingNotificationCache(events);
     const notificationDedup: NotificationDedupPort = {
       recordNotifiedUsers: vi.fn(async () => {
         events.push("record-dedup");
@@ -253,7 +250,9 @@ describe("친구 완료 알림의 commit 후 영속 발행 (컴포넌트)", () =
     ).rejects.toThrow("rollback persistence transaction");
 
     expect(unitOfWork.rootTransactionCount).toBe(1);
-    expect(repository.createManyNotificationsAndReturn).toHaveBeenCalledWith(data);
+    expect(
+      repository.rows().map(({ userId, type, friendId }) => ({ userId, type, friendId })),
+    ).toEqual([{ userId: "user-1", type: "FRIEND_COMPLETED", friendId: "friend-1" }]);
     expect(staging.stageMany).toHaveBeenCalledTimes(1);
     expect(executePublish).not.toHaveBeenCalled();
   });

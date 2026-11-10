@@ -1,27 +1,45 @@
-import { TestBed } from "@suites/unit";
-import { vi } from "vitest";
-import type { Mocked } from "vitest";
-
-import {
-  DEDUP_PROVIDER,
-  type IDedupProvider,
-} from "#api/platform/dedup/interfaces/dedup.interface";
+import type { IDedupProvider } from "#api/platform/dedup/interfaces/dedup.interface";
 
 import { NotificationDedupAdapter } from "./notification-dedup.adapter.js";
 
+interface AddedMembers {
+  readonly setKey: string;
+  readonly members: readonly string[];
+  readonly ttlMs: number;
+}
+
+// Set 키별 멤버와 TTL을 남겨 저장 계약(key·sentinel·TTL)을 상태로 확인한다
+class RecordingDedupProvider implements IDedupProvider {
+  readonly added: AddedMembers[] = [];
+  readonly #sets = new Map<string, Set<string>>();
+
+  async filterMembers(setKey: string, members: string[]): Promise<Set<string>> {
+    const stored = this.#sets.get(setKey) ?? new Set<string>();
+    return new Set(members.filter((member) => stored.has(member)));
+  }
+
+  async isMember(setKey: string, member: string): Promise<boolean> {
+    return this.#sets.get(setKey)?.has(member) ?? false;
+  }
+
+  async addMembers(setKey: string, members: string[], ttlMs: number): Promise<void> {
+    this.added.push({ setKey, members, ttlMs });
+    const stored = this.#sets.get(setKey) ?? new Set<string>();
+    for (const member of members) {
+      stored.add(member);
+    }
+    this.#sets.set(setKey, stored);
+  }
+}
+
 describe("NotificationDedupAdapter", () => {
   it("application dedup records를 인프라 key와 sentinel 계약으로 저장한다", async () => {
-    const { unit, unitRef } = await TestBed.solitary(NotificationDedupAdapter)
-      .mock<IDedupProvider>(DEDUP_PROVIDER)
-      .impl(() => ({
-        filterMembers: vi.fn(),
-        isMember: vi.fn(),
-        addMembers: vi.fn().mockResolvedValue(undefined),
-      }))
-      .compile();
-    const provider: Mocked<IDedupProvider> = unitRef.get(DEDUP_PROVIDER);
+    // Given
+    const provider = new RecordingDedupProvider();
+    const adapter = new NotificationDedupAdapter(provider);
 
-    await unit.recordNotifiedUsers([
+    // When
+    await adapter.recordNotifiedUsers([
       {
         userId: "u1",
         type: "FRIEND_COMPLETED",
@@ -34,10 +52,13 @@ describe("NotificationDedupAdapter", () => {
       },
     ]);
 
-    expect(provider.addMembers).toHaveBeenCalledWith(
-      "aido:v1:notification:dedup-notified:FRIEND_COMPLETED:2026-03-09",
-      ["__init__", "u1", "u2"],
-      90_000_000,
-    );
+    // Then
+    expect(provider.added).toEqual([
+      {
+        setKey: "aido:v1:notification:dedup-notified:FRIEND_COMPLETED:2026-03-09",
+        members: ["__init__", "u1", "u2"],
+        ttlMs: 90_000_000,
+      },
+    ]);
   });
 });

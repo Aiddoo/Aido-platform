@@ -1,87 +1,78 @@
-import type { Mocked } from "vitest";
-import { vi } from "vitest";
-import { mockDeep } from "vitest-mock-extended";
+import { PassThroughNotificationCache } from "#test/doubles/notification/pass-through-notification-cache";
+import { SilentLogger } from "#test/doubles/platform/silent-logger";
+import { createNotificationDraftFixture } from "#test/fixtures/notification/notification.fixture";
 
-import { createNotificationCacheMock } from "#test/mocks/ports/notification-cache.mock";
-
+import { NotificationDeliveryLogEvent } from "../notification-delivery.log-events.js";
+import type {
+  NotificationDedupPort,
+  NotificationDedupRecord,
+} from "../ports/notification-dedup.port.js";
 import { FinalizeBatchNotificationUseCase } from "./finalize-batch-notification.use-case.js";
 
-describe("FinalizeBatchNotificationUseCase", () => {
-  let useCase: FinalizeBatchNotificationUseCase;
-  let cache: Mocked<ConstructorParameters<typeof FinalizeBatchNotificationUseCase>[0]["cache"]>;
-  let dedup: Mocked<
-    ConstructorParameters<typeof FinalizeBatchNotificationUseCase>[0]["notificationDedup"]
-  >;
+class RecordingNotificationDedup implements Pick<NotificationDedupPort, "recordNotifiedUsers"> {
+  readonly records: NotificationDedupRecord[] = [];
+  failure: Error | null = null;
 
-  beforeEach(async () => {
-    const finalizeBatchNotificationDependencies = mockDeep<
-      ConstructorParameters<typeof FinalizeBatchNotificationUseCase>[0]
-    >({
-      cache: createNotificationCacheMock(),
-      notificationDedup: {
-        recordNotifiedUsers: vi.fn(),
-      },
-    });
-    const unit = new FinalizeBatchNotificationUseCase(finalizeBatchNotificationDependencies);
-    useCase = unit;
-    cache = finalizeBatchNotificationDependencies.cache;
-    dedup = finalizeBatchNotificationDependencies.notificationDedup;
-  });
+  async recordNotifiedUsers(records: NotificationDedupRecord[]): Promise<void> {
+    if (this.failure != null) {
+      throw this.failure;
+    }
+    this.records.push(...records);
+  }
+}
 
-  it("미읽음 캐시·날짜 dedup 부수효과를 관찰한다", async () => {
-    const date = new Date("2026-03-09T00:00:00.000Z");
-    const items = [
-      {
-        notificationId: 1,
-        data: {
-          userId: "u1",
-          type: "FRIEND_COMPLETED" as const,
-          title: "t",
-          body: "b",
-        },
-      },
-      {
-        notificationId: 2,
-        data: {
-          userId: "u2",
-          type: "FRIEND_COMPLETED" as const,
-          title: "t",
-          body: "b",
-        },
-      },
+function createFinalizeUseCase() {
+  const cache = new PassThroughNotificationCache();
+  const notificationDedup = new RecordingNotificationDedup();
+  const logger = new SilentLogger();
+  const useCase = new FinalizeBatchNotificationUseCase({ cache, notificationDedup, logger });
+  return { cache, notificationDedup, logger, useCase };
+}
+
+describe("FinalizeBatchNotificationUseCase — 배치 알림 커밋 뒤 정리", () => {
+  it("수신자마다 미읽음 캐시를 한 번 비우고 날짜가 있는 알림만 dedup에 기록한다", async () => {
+    // Given
+    const { cache, notificationDedup, useCase } = createFinalizeUseCase();
+    const notificationDate = new Date("2026-03-09T00:00:00.000Z");
+    const sourceData = [
+      createNotificationDraftFixture({ userId: "u1", type: "FRIEND_COMPLETED", notificationDate }),
+      createNotificationDraftFixture({ userId: "u2", type: "FRIEND_COMPLETED", notificationDate }),
+      createNotificationDraftFixture({ userId: "u2", type: "FOLLOW_NEW" }),
     ];
-    const sourceData = items.map((item) => ({
-      ...item.data,
-      notificationDate: date,
-    }));
 
-    const result = await useCase.execute({ count: 2, sourceData });
+    // When
+    const result = await useCase.execute({ count: 3, sourceData });
 
-    expect(result).toEqual({ count: 2 });
-    expect(cache.invalidateUnreadCount).toHaveBeenCalledTimes(2);
-    expect(dedup.recordNotifiedUsers).toHaveBeenCalledWith([
-      {
-        userId: "u1",
-        type: "FRIEND_COMPLETED",
-        notificationDate: date,
-      },
-      {
-        userId: "u2",
-        type: "FRIEND_COMPLETED",
-        notificationDate: date,
-      },
+    // Then
+    expect(result).toEqual({ count: 3 });
+    expect(cache.invalidatedUnreadCountUserIds).toEqual(["u1", "u2"]);
+    expect(notificationDedup.records).toEqual([
+      { userId: "u1", type: "FRIEND_COMPLETED", notificationDate },
+      { userId: "u2", type: "FRIEND_COMPLETED", notificationDate },
     ]);
   });
 
   it("커밋 후 캐시·dedup 실패를 흡수하여 저장된 알림을 재시도하지 않는다", async () => {
-    cache.invalidateUnreadCount.mockRejectedValue(new Error("cache unavailable"));
-    dedup.recordNotifiedUsers.mockRejectedValue(new Error("dedup unavailable"));
+    // Given
+    const { cache, notificationDedup, logger, useCase } = createFinalizeUseCase();
+    cache.failUnreadCountInvalidationFor.add("u1");
+    notificationDedup.failure = new Error("dedup unavailable");
 
-    await expect(
-      useCase.execute({
-        count: 1,
-        sourceData: [{ userId: "u1", type: "FOLLOW_NEW", title: "t", body: "b" }],
+    // When
+    const result = useCase.execute({
+      count: 1,
+      sourceData: [createNotificationDraftFixture({ userId: "u1" })],
+    });
+
+    // Then
+    await expect(result).resolves.toEqual({ count: 1 });
+    expect(logger.messages).toEqual([
+      expect.objectContaining({
+        event: NotificationDeliveryLogEvent.FINALIZE_BATCH_NOTIFICATION_UNREAD_CACHE_FAILED,
       }),
-    ).resolves.toEqual({ count: 1 });
+      expect.objectContaining({
+        event: NotificationDeliveryLogEvent.FINALIZE_BATCH_NOTIFICATION_DEDUP_RECORD_FAILED,
+      }),
+    ]);
   });
 });

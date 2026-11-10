@@ -99,8 +99,8 @@ import {
   UnitOfWorkPort,
 } from "#api/shared/application/ports/index";
 import { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
+import { FakePushProvider } from "#test/doubles/notification/fake-push-provider";
 import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";
-import { FakePushProvider } from "#test/mocks/fake-push.provider";
 import { suppressLogger } from "#test/setup/suppress-logger";
 import type { TestDatabaseClient } from "#test/setup/test-database";
 import { TestDatabase } from "#test/setup/test-database";

@@ -5,7 +5,10 @@ import type { NotificationInboxScope } from "#api/modules/notification/push/doma
 export class PassThroughNotificationCache extends NotificationCachePort {
   readonly readScopes: Array<NotificationInboxScope | undefined> = [];
   readonly invalidatedUnreadCountUserIds: string[] = [];
+  readonly invalidatedPushTokenUserIds: string[] = [];
+  readonly invalidatedPreferenceUserIds: string[] = [];
   readonly failUnreadCountInvalidationFor = new Set<string>();
+  readonly failPushTokenInvalidationFor = new Set<string>();
 
   wrapUnreadCount(
     _userId: string,
@@ -23,7 +26,14 @@ export class PassThroughNotificationCache extends NotificationCachePort {
     }
   }
 
-  async invalidatePushTokens(): Promise<void> {}
+  async invalidatePushTokens(userId: string): Promise<void> {
+    this.invalidatedPushTokenUserIds.push(userId);
+    if (this.failPushTokenInvalidationFor.has(userId)) {
+      throw new Error("synthetic cache failure");
+    }
+  }
 
-  async invalidateUserPreference(): Promise<void> {}
+  async invalidateUserPreference(userId: string): Promise<void> {
+    this.invalidatedPreferenceUserIds.push(userId);
+  }
 }
