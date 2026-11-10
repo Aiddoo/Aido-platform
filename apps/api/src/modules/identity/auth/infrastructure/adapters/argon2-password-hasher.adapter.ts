@@ -1,7 +1,6 @@
+import { ARGON2_CONFIG } from "@aido/api/vocabulary";
 import { Injectable } from "@nestjs/common";
 import * as argon2 from "argon2";
-
-import { ARGON2_CONFIG } from "#api/modules/identity/auth/domain/auth.constants";
 
 /**
  * Argon2id 기반 비밀번호 해싱 서비스

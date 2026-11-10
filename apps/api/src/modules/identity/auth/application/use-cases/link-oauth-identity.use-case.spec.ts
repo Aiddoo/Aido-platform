@@ -1,12 +1,12 @@
 import { ErrorCode } from "@aido/api/errors";
+import { SECURITY_EVENT } from "@aido/api/vocabulary";
 import { vi } from "vitest";
 
-import { AUTH_DEFAULTS, SECURITY_EVENT } from "#api/modules/identity/auth/domain/auth.constants";
+import { AuthPersistenceConflict } from "#api/modules/identity/auth/application/auth.errors";
+import { AUTH_DEFAULTS } from "#api/modules/identity/auth/domain/auth.constants";
 import { AUTH_CREDENTIAL_TIME } from "#test/fixtures/auth-credential.fixture";
 import { createAuthOAuthFixture } from "#test/fixtures/auth-oauth.fixture";
 import { AccountFixture } from "#test/fixtures/user.fixture";
-
-import { AuthPersistenceConflict } from "../ports/auth-persistence.port.js";
 
 describe("LinkOAuthIdentity — 소셜 신원 연결의 공통 저장 계약", () => {
   beforeEach(() => {

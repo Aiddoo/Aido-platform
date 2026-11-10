@@ -1,11 +1,8 @@
 import { ErrorCode } from "@aido/api/errors";
+import { SECURITY_EVENT, REVOKE_REASON } from "@aido/api/vocabulary";
 
-import { assertNotDeleted } from "#api/modules/identity/auth/application/auth.errors";
-import {
-  AUTH_DEFAULTS,
-  SECURITY_EVENT,
-  REVOKE_REASON,
-} from "#api/modules/identity/auth/domain/auth.constants";
+import { accountDeleted } from "#api/modules/identity/auth/application/auth.errors";
+import { AUTH_DEFAULTS } from "#api/modules/identity/auth/domain/auth.constants";
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
@@ -57,31 +54,37 @@ export class ResetPasswordUseCase {
     if (user == null) {
       throw new ApplicationException(ErrorCode.VERIFY_0751);
     }
-    assertNotDeleted(user);
+    if (user.isDeleted) {
+      throw accountDeleted(user.id.value);
+    }
 
     const account = await this.#dependencies.accountRepository.findByUserIdAndProvider(
-      user.id,
+      user.id.value,
       "CREDENTIAL",
     );
     if (account == null) {
-      throw new ApplicationException(ErrorCode.USER_0613, { userId: user.id });
+      throw new ApplicationException(ErrorCode.USER_0613, { userId: user.id.value });
     }
 
     const hashedPassword = await this.#dependencies.passwordService.hash(newPassword);
 
     const revokedSessionIds = await this.#dependencies.unitOfWork.run(async () => {
-      await this.#dependencies.verificationService.verifyCode(user.id, code, "PASSWORD_RESET");
+      await this.#dependencies.verificationService.verifyCode(
+        user.id.value,
+        code,
+        "PASSWORD_RESET",
+      );
 
-      await this.#dependencies.accountRepository.updatePassword(user.id, hashedPassword);
+      await this.#dependencies.accountRepository.updatePassword(user.id.value, hashedPassword);
 
       const revokedSessionIds = await this.#dependencies.sessionRepository.revokeAllByUserId(
-        user.id,
+        user.id.value,
         REVOKE_REASON.PASSWORD_RESET,
         undefined,
       );
 
       await this.#dependencies.securityLogRepository.create({
-        userId: user.id,
+        userId: user.id.value,
         event: SECURITY_EVENT.PASSWORD_CHANGED,
         ipAddress: AUTH_DEFAULTS.UNKNOWN_IP,
         userAgent: AUTH_DEFAULTS.UNKNOWN_USER_AGENT,
@@ -98,7 +101,7 @@ export class ResetPasswordUseCase {
     await this.#dependencies.pushDevices.releaseSessions(revokedSessionIds);
     this.#dependencies.logger.log({
       event: AuthLogEvent.PASSWORD_RESET_COMPLETED,
-      userId: user.id,
+      userId: user.id.value,
     });
 
     return { message: "비밀번호가 재설정되었습니다. 다시 로그인해주세요." };

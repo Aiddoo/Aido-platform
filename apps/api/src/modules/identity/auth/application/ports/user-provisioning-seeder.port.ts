@@ -15,9 +15,7 @@ export interface ProvisioningConsent {
  * concrete 저장소를 배럴로 주입하지 않고, 이 포트를 통해 시딩 의도만 노출한다.
  * 어댑터가 설정과 기본 카테고리 생성을 위임하며, 호출측이 연 CLS 트랜잭션에 참여한다.
  */
-export interface UserProvisioningSeederPort {
-  seedDefaultSettings(userId: string, consent: ProvisioningConsent): Promise<void>;
-  seedDefaultCategories(userId: string, locale?: SupportedLocale): Promise<void>;
+export abstract class UserProvisioningSeederPort {
+  abstract seedDefaultSettings(userId: string, consent: ProvisioningConsent): Promise<void>;
+  abstract seedDefaultCategories(userId: string, locale?: SupportedLocale): Promise<void>;
 }
-
-export const USER_PROVISIONING_SEEDER = Symbol("USER_PROVISIONING_SEEDER");

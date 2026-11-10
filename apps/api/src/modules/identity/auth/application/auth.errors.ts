@@ -2,13 +2,42 @@ import { ErrorCode } from "@aido/api/errors";
 
 import { ApplicationException } from "#api/shared/application/application.exception";
 
-/**
- * 탈퇴된 사용자인지 확인하고, 탈퇴 상태면 예외를 던집니다.
- *
- * 자격 증명 workflow와 비밀번호 workflow가 공유하는 순수 함수입니다.
- */
-export function assertNotDeleted(user: { deletedAt: Date | null; id: string }): void {
-  if (user.deletedAt) {
-    throw new ApplicationException(ErrorCode.USER_0606, { userId: user.id });
+import type { SessionValidity } from "../domain/session-validity.domain-service.js";
+
+export function accountDeleted(userId: string): ApplicationException {
+  return new ApplicationException(ErrorCode.USER_0606, { userId });
+}
+
+export function sessionNotFound(sessionId?: string): ApplicationException {
+  return new ApplicationException(ErrorCode.SESSION_0701, { sessionId });
+}
+
+/** 세션이 없거나 폐기·만료면 출시 앱이 아는 SESSION_07xx 오류다. 유효하면 null */
+export function sessionRejection(
+  validity: SessionValidity | "missing",
+  sessionId?: string,
+): ApplicationException | null {
+  switch (validity) {
+    case "valid":
+      return null;
+    case "missing":
+      return sessionNotFound(sessionId);
+    case "revoked":
+      return new ApplicationException(ErrorCode.SESSION_0703, { sessionId, reason: undefined });
+    case "expired":
+      return new ApplicationException(ErrorCode.SESSION_0702, { sessionId });
+  }
+}
+
+export type AuthPersistenceConflictKind = "EMAIL_ALREADY_EXISTS" | "OAUTH_ACCOUNT_ALREADY_LINKED";
+
+/** 저장소가 자기 unique 제약 위반을 번역해 던지고 UseCase가 업무 오류로 바꾼다 */
+export class AuthPersistenceConflict extends Error {
+  readonly kind: AuthPersistenceConflictKind;
+
+  constructor(kind: AuthPersistenceConflictKind) {
+    super(kind);
+    this.kind = kind;
+    this.name = AuthPersistenceConflict.name;
   }
 }

@@ -1,6 +1,7 @@
+import { SECURITY_EVENT } from "@aido/api/vocabulary";
 import { vi } from "vitest";
 
-import { AUTH_DEFAULTS, SECURITY_EVENT } from "#api/modules/identity/auth/domain/auth.constants";
+import { AUTH_DEFAULTS } from "#api/modules/identity/auth/domain/auth.constants";
 import {
   AUTH_CREDENTIAL_TIME,
   createAuthCredentialFixture,

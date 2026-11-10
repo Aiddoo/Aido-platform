@@ -2,9 +2,9 @@ import { TransactionHost } from "@nestjs-cls/transactional";
 import { Inject, Injectable } from "@nestjs/common";
 import { and, eq, gt, gte, isNull, lt, sql } from "drizzle-orm";
 
-import type {
+import {
   AuthVerificationRepositoryPort,
-  ConsumeAuthVerificationInput,
+  type ConsumeAuthVerificationInput,
 } from "#api/modules/identity/auth/application/ports/auth-persistence.port";
 import { requireRecord } from "#api/platform/database/database-error.util";
 import {
@@ -14,12 +14,16 @@ import {
 } from "#api/platform/database/database.client";
 import { verification } from "#api/platform/database/schema/index";
 import { now } from "#api/shared/domain/date/utils/core";
+import { instantToDate } from "#api/shared/domain/time/instant";
+
+import type { AuthVerification } from "../../domain/auth-verification.aggregate.js";
+import { toAuthVerification } from "./auth-row.mapper.js";
 
 type VerificationRow = typeof verification.$inferSelect;
 type VerificationType = VerificationRow["type"];
 
 @Injectable()
-export class DrizzleVerificationRepository implements AuthVerificationRepositoryPort {
+export class DrizzleVerificationRepository extends AuthVerificationRepositoryPort {
   readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
   // incrementAttempts는 활성 트랜잭션을 우회해야 하므로 베이스 클라이언트를 별도 주입한다
   readonly #baseDb: Database;
@@ -28,6 +32,7 @@ export class DrizzleVerificationRepository implements AuthVerificationRepository
     txHost: TransactionHost<DrizzleTransactionalAdapter>,
     @Inject(DRIZZLE) baseDb: Database,
   ) {
+    super();
     this.#txHost = txHost;
     this.#baseDb = baseDb;
   }
@@ -57,13 +62,13 @@ export class DrizzleVerificationRepository implements AuthVerificationRepository
   async findValidByUserIdAndType(
     userId: string,
     type: VerificationType,
-    at: Date = now(),
-  ): Promise<VerificationRow | null> {
+    now: Temporal.Instant,
+  ): Promise<AuthVerification | null> {
     const row = await this.#db.query.verification.findFirst({
-      where: { userId, type, usedAt: { isNull: true }, expiresAt: { gt: at } },
+      where: { userId, type, usedAt: { isNull: true }, expiresAt: { gt: instantToDate(now) } },
       orderBy: { createdAt: "desc" },
     });
-    return row ?? null;
+    return row == null ? null : toAuthVerification(row);
   }
 
   /**
@@ -84,7 +89,7 @@ export class DrizzleVerificationRepository implements AuthVerificationRepository
   async consume(input: ConsumeAuthVerificationInput): Promise<boolean> {
     const consumed = await this.#db
       .update(verification)
-      .set({ usedAt: input.at })
+      .set({ usedAt: instantToDate(input.at) })
       .where(
         and(
           eq(verification.id, input.id),
@@ -92,7 +97,7 @@ export class DrizzleVerificationRepository implements AuthVerificationRepository
           eq(verification.userId, input.userId),
           eq(verification.type, input.type),
           isNull(verification.usedAt),
-          gt(verification.expiresAt, input.at),
+          gt(verification.expiresAt, instantToDate(input.at)),
           lt(verification.attempts, input.maxAttempts),
         ),
       )

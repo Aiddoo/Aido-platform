@@ -1,12 +1,15 @@
 import { ErrorCode } from "@aido/api/errors";
+import { SECURITY_EVENT } from "@aido/api/vocabulary";
 import { match } from "ts-pattern";
 
-import { AUTH_DEFAULTS, SECURITY_EVENT } from "#api/modules/identity/auth/domain/auth.constants";
-import type { AccountProvider } from "#api/modules/identity/auth/domain/identity.constants";
+import { AuthPersistenceConflict } from "#api/modules/identity/auth/application/auth.errors";
+import {
+  AUTH_DEFAULTS,
+  type AccountProvider,
+} from "#api/modules/identity/auth/domain/auth.constants";
 import { ApplicationException } from "#api/shared/application/application.exception";
 
 import {
-  AuthPersistenceConflict,
   type AuthAccountRepositoryPort,
   type AuthSecurityLogRepositoryPort,
 } from "../ports/auth-persistence.port.js";

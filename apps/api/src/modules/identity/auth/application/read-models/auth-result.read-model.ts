@@ -2,10 +2,7 @@ import type { PremiumEntitlements } from "@aido/api/contracts/auth";
 import type { SubscriptionStatus, UserRole } from "@aido/api/vocabulary";
 import type { PremiumSource, SubscriptionPlanType } from "@aido/api/vocabulary";
 
-import type {
-  AccountProvider,
-  UserStatus,
-} from "#api/modules/identity/auth/domain/identity.constants";
+import type { AccountProvider, UserStatus } from "#api/modules/identity/auth/domain/auth.constants";
 import type { SupportedLocale } from "#api/shared/domain/locale";
 
 import type { TokenPair } from "../ports/auth-crypto.port.js";

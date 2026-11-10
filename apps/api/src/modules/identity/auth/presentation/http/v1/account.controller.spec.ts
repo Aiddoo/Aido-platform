@@ -140,7 +140,7 @@ describe("AccountController — 계정 컨트롤러", () => {
             provider: "GOOGLE" as const,
             linked: true,
             providerAccountId: "102938475647382910",
-            linkedAt: new Date("2026-01-15T10:30:00.000Z"),
+            linkedAt: Temporal.Instant.from("2026-01-15T10:30:00Z"),
           },
           {
             provider: "KAKAO" as const,
@@ -162,9 +162,10 @@ describe("AccountController — 계정 컨트롤러", () => {
       // When - getLinkedAccounts를 호출하면
       const result = await controller.getLinkedAccounts(mockUser);
 
-      // Then - 서비스에 userId를 전달하고 서비스 결과를 직접 반환해야 한다
+      // Then - 연결 시각은 출시 앱이 받던 ms 3자리 ISO 문자열이다
       expect(listLinkedAccountsQuery.execute).toHaveBeenCalledWith({ userId: mockUser.userId });
-      expect(result).toEqual(serviceResult);
+      expect(result.accounts[1]?.linkedAt).toBe("2026-01-15T10:30:00.000Z");
+      expect(result.canUnlink).toBe(true);
     });
   });
 

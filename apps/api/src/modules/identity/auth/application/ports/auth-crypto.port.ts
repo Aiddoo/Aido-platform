@@ -1,12 +1,9 @@
 import type { UserRole } from "@aido/api/vocabulary";
 
-export const AUTH_PASSWORD_HASHER = Symbol("AUTH_PASSWORD_HASHER");
-export const AUTH_TOKEN_ISSUER = Symbol("AUTH_TOKEN_ISSUER");
-
-export interface AuthPasswordHasherPort {
-  hash(password: string): Promise<string>;
-  verify(hash: string, password: string): Promise<boolean>;
-  needsRehash(hash: string): boolean;
+export abstract class AuthPasswordHasherPort {
+  abstract hash(password: string): Promise<string>;
+  abstract verify(hash: string, password: string): Promise<boolean>;
+  abstract needsRehash(hash: string): boolean;
 }
 
 export interface TokenPair {
@@ -15,8 +12,8 @@ export interface TokenPair {
   expiresIn: number;
 }
 
-export interface AuthTokenIssuerPort {
-  generateTokenPair(
+export abstract class AuthTokenIssuerPort {
+  abstract generateTokenPair(
     userId: string,
     email: string,
     sessionId: string,
@@ -24,7 +21,7 @@ export interface AuthTokenIssuerPort {
     tokenFamily?: string,
     tokenVersion?: number,
   ): Promise<TokenPair>;
-  generateTokenFamily(): string;
-  hashRefreshToken(token: string): string;
-  getRefreshTokenExpiresInSeconds(): number;
+  abstract generateTokenFamily(): string;
+  abstract hashRefreshToken(token: string): string;
+  abstract getRefreshTokenExpiresInSeconds(): number;
 }

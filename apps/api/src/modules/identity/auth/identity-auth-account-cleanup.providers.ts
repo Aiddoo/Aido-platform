@@ -9,28 +9,25 @@ import {
 } from "#api/platform/metering/interfaces/usage-meter.interface";
 
 import {
-  ACCOUNT_NOTIFICATION_CLEANUP,
-  ACCOUNT_TODO_COMMENT_CLEANUP,
-  ACCOUNT_USAGE_CLEANUP,
-  type AccountNotificationCleanupPort,
-  type AccountTodoCommentCleanupPort,
-  type AccountUsageCleanupPort,
+  AccountNotificationCleanupPort,
+  AccountTodoCommentCleanupPort,
+  AccountUsageCleanupPort,
 } from "./application/ports/account-cleanup.port.js";
 
 export const accountNotificationCleanupProvider = {
-  provide: ACCOUNT_NOTIFICATION_CLEANUP,
+  provide: AccountNotificationCleanupPort,
   inject: [NotificationAccountCleanup],
   useFactory: (cleanup: NotificationAccountCleanup): AccountNotificationCleanupPort => cleanup,
 };
 
 export const accountTodoCommentCleanupProvider = {
-  provide: ACCOUNT_TODO_COMMENT_CLEANUP,
+  provide: AccountTodoCommentCleanupPort,
   inject: [TODO_COMMENT_ACCOUNT_CLEANUP],
   useFactory: (cleanup: TodoCommentAccountCleanupPort): AccountTodoCommentCleanupPort => cleanup,
 };
 
 export const accountUsageCleanupProvider = {
-  provide: ACCOUNT_USAGE_CLEANUP,
+  provide: AccountUsageCleanupPort,
   inject: [USAGE_METER],
   useFactory: (meter: Pick<UsageMeterPort, "deleteSubject">): AccountUsageCleanupPort => ({
     cleanupInTransaction: async (userId) => {

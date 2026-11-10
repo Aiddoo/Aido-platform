@@ -1,4 +1,4 @@
-import type { AccountProvider } from "../../domain/identity.constants.js";
+import type { AccountProvider } from "../../domain/auth.constants.js";
 
 export type OAuthMode = "login" | "link";
 

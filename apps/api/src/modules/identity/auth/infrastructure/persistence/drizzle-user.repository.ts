@@ -1,14 +1,14 @@
 import { ErrorCode } from "@aido/api/errors";
+import { ACCOUNT_DELETION } from "@aido/api/vocabulary";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable, Logger } from "@nestjs/common";
 import { and, eq, inArray, isNotNull, isNull, lt, ne, sql } from "drizzle-orm";
 
+import { AuthPersistenceConflict } from "#api/modules/identity/auth/application/auth.errors";
 import { AuthLogEvent } from "#api/modules/identity/auth/application/auth.log-events";
 import {
-  type AuthAccountLifecycleRepositoryPort,
-  AuthPersistenceConflict,
   type AuthUserProfileRecord,
-  type AuthUserRepositoryPort,
+  AuthUserRepositoryPort,
 } from "#api/modules/identity/auth/application/ports/auth-persistence.port";
 import type { UserActivity } from "#api/modules/identity/auth/application/ports/user-activity.reader.port";
 import { requireRecord, uniqueConstraintTargets } from "#api/platform/database/database-error.util";
@@ -23,8 +23,11 @@ import { ApplicationException } from "#api/shared/application/application.except
 import { subtractDays } from "#api/shared/domain/date/utils/arithmetic";
 import { now } from "#api/shared/domain/date/utils/core";
 import { startOfDayInTimezone } from "#api/shared/domain/date/utils/timezone";
+import { instantToDate } from "#api/shared/domain/time/instant";
 
+import type { IdentityUser } from "../../domain/identity-user.aggregate.js";
 import { generateUserTag } from "../adapters/user-tag.adapter.js";
+import { toIdentityUser } from "./auth-row.mapper.js";
 
 type UserRow = typeof user.$inferSelect;
 type UserInsert = typeof user.$inferInsert;
@@ -49,14 +52,13 @@ export interface UserWithProfile extends AuthUserProfileRecord {
 const MAX_USER_TAG_RETRIES = 5;
 
 @Injectable()
-export class DrizzleUserRepository
-  implements AuthUserRepositoryPort, AuthAccountLifecycleRepositoryPort
-{
+export class DrizzleUserRepository extends AuthUserRepositoryPort {
   readonly #logger = new Logger(DrizzleUserRepository.name);
 
   readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
 
   constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>) {
+    super();
     this.#txHost = txHost;
   }
 
@@ -64,9 +66,9 @@ export class DrizzleUserRepository
     return this.#txHost.tx;
   }
 
-  async findByEmail(email: string): Promise<UserRow | null> {
+  async findByEmail(email: string): Promise<IdentityUser | null> {
     const row = await this.#db.query.user.findFirst({ where: { email } });
-    return row ?? null;
+    return row == null ? null : toIdentityUser(row);
   }
 
   async findByEmailWithCredential(email: string): Promise<UserWithAccount | null> {
@@ -83,9 +85,9 @@ export class DrizzleUserRepository
     return row ?? null;
   }
 
-  async findById(id: string): Promise<UserRow | null> {
+  async findById(id: string): Promise<IdentityUser | null> {
     const row = await this.#db.query.user.findFirst({ where: { id } });
-    return row ?? null;
+    return row == null ? null : toIdentityUser(row);
   }
 
   async findByIdWithProfile(id: string): Promise<UserWithProfile | null> {
@@ -118,7 +120,7 @@ export class DrizzleUserRepository
   }
 
   // userTag가 없으면 자동 생성 (중복 시 재시도)
-  async create(data: Omit<UserInsert, "userTag"> & { userTag?: string }): Promise<UserRow> {
+  async create(data: Omit<UserInsert, "userTag"> & { userTag?: string }): Promise<IdentityUser> {
     const userTag = data.userTag ?? (await this.#generateUniqueUserTag());
 
     try {
@@ -126,7 +128,7 @@ export class DrizzleUserRepository
         .insert(user)
         .values({ ...data, userTag })
         .returning();
-      return requireRecord(row);
+      return toIdentityUser(requireRecord(row));
     } catch (error) {
       if (uniqueConstraintTargets(error)?.includes("email")) {
         throw new AuthPersistenceConflict("EMAIL_ALREADY_EXISTS");
@@ -275,37 +277,32 @@ export class DrizzleUserRepository
     return requireRecord(profile);
   }
 
-  async softDelete(id: string, deletedAt: Date = now()): Promise<UserRow> {
-    return this.#update(id, { deletedAt, status: "SUSPENDED" });
+  async saveAccountStatus(identityUser: IdentityUser): Promise<void> {
+    const { status, deletedAt } = identityUser.toPrimitives();
+    await this.#update(identityUser.id.value, {
+      status,
+      deletedAt: deletedAt == null ? null : instantToDate(deletedAt),
+    });
   }
 
-  async restore(id: string): Promise<UserRow> {
-    return this.#update(id, { deletedAt: null, status: "ACTIVE" });
-  }
-
-  async findSoftDeletedForPurge(
-    gracePeriodDays: number,
-    at: Date = now(),
-  ): Promise<{ id: string; email: string; deletedAt: Date }[]> {
-    const cutoff = subtractDays(gracePeriodDays, at);
+  async listPurgeEligible(now: Temporal.Instant): Promise<IdentityUser[]> {
+    const cutoff = subtractDays(ACCOUNT_DELETION.GRACE_PERIOD_DAYS, instantToDate(now));
     const rows = await this.#db
-      .select({ id: user.id, email: user.email, deletedAt: user.deletedAt })
+      .select()
       .from(user)
       .where(and(isNotNull(user.deletedAt), lt(user.deletedAt, cutoff)));
-    return rows.filter(
-      (row): row is { id: string; email: string; deletedAt: Date } => row.deletedAt != null,
-    );
+    return rows.map(toIdentityUser);
   }
 
-  async findByIdForUpdate(id: string) {
+  async findByIdForUpdate(id: string): Promise<IdentityUser | null> {
     // FOR NO KEY UPDATE는 계정 변경을 직렬화하면서 이 User를 참조하는 FK 검사는 막지 않는다.
     const [row] = await this.#db
-      .select({ id: user.id, email: user.email, status: user.status, deletedAt: user.deletedAt })
+      .select()
       .from(user)
       .where(eq(user.id, id))
       .limit(1)
       .for("no key update");
-    return row ?? null;
+    return row == null ? null : toIdentityUser(row);
   }
 
   async hardDelete(id: string): Promise<void> {

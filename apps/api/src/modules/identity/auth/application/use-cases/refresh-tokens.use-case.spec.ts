@@ -1,4 +1,5 @@
 import { ErrorCode } from "@aido/api/errors";
+import { REVOKE_REASON, SECURITY_EVENT } from "@aido/api/vocabulary";
 import { vi } from "vitest";
 import { mock } from "vitest-mock-extended";
 
@@ -12,7 +13,7 @@ import {
   StubAuthTokenIssuer,
 } from "#test/mocks/ports/auth-session.stub";
 
-import { AUTH_DEFAULTS, REVOKE_REASON, SECURITY_EVENT } from "../../domain/auth.constants.js";
+import { AUTH_DEFAULTS } from "../../domain/auth.constants.js";
 import type { VerifiedRefreshPayload } from "../read-models/auth-result.read-model.js";
 import { RefreshTokensUseCase } from "./refresh-tokens.use-case.js";
 
@@ -50,6 +51,7 @@ describe("RefreshTokens — 세션 연장과 Refresh Token 재사용 방어", ()
     const logger = mock<ApplicationLoggerPort>();
     const pushDevices = new StubSessionPushDeviceReleaser();
     const useCase = new RefreshTokensUseCase({
+      clock: { now: () => Temporal.Instant.fromEpochMilliseconds(Date.now()) },
       pushDevices,
       sessionRepository,
       tokenService,

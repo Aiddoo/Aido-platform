@@ -2,13 +2,12 @@ import { ErrorCode } from "@aido/api/errors";
 import { VERIFICATION_CODE } from "@aido/api/vocabulary";
 import { match } from "ts-pattern";
 
-import { AuthVerification } from "#api/modules/identity/auth/domain/auth-verification.aggregate";
-import type { VerificationType } from "#api/modules/identity/auth/domain/identity.constants";
+import type { VerificationType } from "#api/modules/identity/auth/domain/auth.constants";
 import { VerificationCode } from "#api/modules/identity/auth/domain/verification-code.vo";
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
-import { addMinutes, subtractSeconds } from "#api/shared/domain/date/utils/arithmetic";
-import { now } from "#api/shared/domain/date/utils/core";
+import type { ClockPort } from "#api/shared/application/ports/clock.port";
+import { instantToDate } from "#api/shared/domain/time/instant";
 
 import { AuthLogEvent } from "../auth.log-events.js";
 import { type AuthEmailSenderPort } from "../ports/auth-collaboration.port.js";
@@ -24,6 +23,7 @@ interface VerificationServiceDependencies {
   readonly verificationRepository: AuthVerificationRepositoryPort;
   readonly emailSender: AuthEmailSenderPort;
   readonly verificationCodeSecurity: VerificationCodeSecurityPort;
+  readonly clock: ClockPort;
   readonly logger: ApplicationLoggerPort;
 }
 
@@ -135,7 +135,7 @@ export class VerificationService {
   }
 
   async verifyCode(userId: string, code: string, type: VerificationType): Promise<boolean> {
-    const at = now();
+    const at = this.#dependencies.clock.now();
     const verification = await this.#dependencies.verificationRepository.findValidByUserIdAndType(
       userId,
       type,
@@ -146,8 +146,7 @@ export class VerificationService {
       throw new ApplicationException(ErrorCode.VERIFY_0751);
     }
 
-    const challenge = AuthVerification.reconstitute(verification);
-    match(challenge.validityAt(at))
+    match(verification.validityAt(at))
       .with("valid", () => undefined)
       .with("exhausted", () => {
         throw new ApplicationException(ErrorCode.VERIFY_0754);
@@ -159,9 +158,9 @@ export class VerificationService {
 
     const tokenHash = this.#dependencies.verificationCodeSecurity.hash(code);
 
-    if (verification.token !== tokenHash) {
+    if (!verification.matches(tokenHash)) {
       // 호출자 TX가 롤백되어도 실패 횟수가 남도록 base client로 독립 커밋한다.
-      await this.#dependencies.verificationRepository.incrementAttempts(verification.id);
+      await this.#dependencies.verificationRepository.incrementAttempts(verification.id.value);
 
       this.#dependencies.logger.warn({
         event: AuthLogEvent.VERIFICATION_FAILED,
@@ -173,7 +172,7 @@ export class VerificationService {
     }
 
     const consumed = await this.#dependencies.verificationRepository.consume({
-      id: verification.id,
+      id: verification.id.value,
       userId,
       type,
       tokenHash,
@@ -183,7 +182,7 @@ export class VerificationService {
     if (!consumed) {
       throw new ApplicationException(ErrorCode.VERIFY_0751);
     }
-    challenge.consume(at);
+    verification.consume(at);
 
     this.#dependencies.logger.log({
       event: AuthLogEvent.VERIFICATION_CONSUMED,
@@ -194,7 +193,11 @@ export class VerificationService {
   }
 
   async #checkResendCooldown(userId: string, type: VerificationType): Promise<void> {
-    const cooldownSince = subtractSeconds(VERIFICATION_CODE.RESEND_COOLDOWN_SECONDS);
+    const cooldownSince = instantToDate(
+      this.#dependencies.clock
+        .now()
+        .subtract({ seconds: VERIFICATION_CODE.RESEND_COOLDOWN_SECONDS }),
+    );
 
     const recentCount = await this.#dependencies.verificationRepository.countRecentByUserIdAndType(
       userId,
@@ -216,7 +219,9 @@ export class VerificationService {
     const generatedCode = this.#dependencies.verificationCodeSecurity.generate();
     const verificationCode = VerificationCode.create(generatedCode.plaintext, generatedCode.digest);
 
-    const expiresAt = addMinutes(VERIFICATION_CODE.EXPIRY_MINUTES);
+    const expiresAt = instantToDate(
+      this.#dependencies.clock.now().add({ minutes: VERIFICATION_CODE.EXPIRY_MINUTES }),
+    );
 
     await this.#dependencies.verificationRepository.create({
       userId,

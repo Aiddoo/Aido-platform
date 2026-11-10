@@ -10,7 +10,7 @@ import { DrizzleAccountRepository } from "#api/modules/identity/auth/infrastruct
 import { DrizzleVerificationRepository } from "#api/modules/identity/auth/infrastructure/persistence/drizzle-verification.repository";
 import { createEntityId } from "#api/platform/database/entity-id";
 import { user as userTable, verification } from "#api/platform/database/schema/index";
-import { UNIT_OF_WORK, type UnitOfWorkPort } from "#api/shared/application/ports/index";
+import { UnitOfWorkPort } from "#api/shared/application/ports/index";
 import { UserFixture, VerificationFixture } from "#test/fixtures/index";
 import { FakeEmailService } from "#test/mocks/fake-email.service";
 import { createTestClient } from "#test/setup/database-context";
@@ -46,7 +46,7 @@ describe("인증 소비와 credential 저장 (실제 PostgreSQL)", () => {
     service = module.get(VerificationService);
     passwordService = module.get(Argon2PasswordHasherAdapter);
     resetPassword = module.get(ResetPasswordUseCase);
-    unitOfWork = module.get(UNIT_OF_WORK);
+    unitOfWork = module.get(UnitOfWorkPort);
   });
 
   beforeEach(async () => {
@@ -235,7 +235,7 @@ describe("인증 소비와 credential 저장 (실제 PostgreSQL)", () => {
         type: verification.type,
         tokenHash: digest,
         maxAttempts: 5,
-        at,
+        at: Temporal.Instant.fromEpochMilliseconds(at.getTime()),
       };
 
       // When
@@ -259,7 +259,7 @@ describe("인증 소비와 credential 저장 (실제 PostgreSQL)", () => {
       type: verification.type,
       tokenHash: digest,
       maxAttempts: 5,
-      at,
+      at: Temporal.Instant.fromEpochMilliseconds(at.getTime()),
     };
 
     // When

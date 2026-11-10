@@ -1,12 +1,9 @@
 import { ErrorCode } from "@aido/api/errors";
+import { SECURITY_EVENT, REVOKE_REASON } from "@aido/api/vocabulary";
 
-import { assertNotDeleted } from "#api/modules/identity/auth/application/auth.errors";
+import { accountDeleted } from "#api/modules/identity/auth/application/auth.errors";
 import type { RequestMetadata } from "#api/modules/identity/auth/application/read-models/auth-result.read-model";
-import {
-  AUTH_DEFAULTS,
-  SECURITY_EVENT,
-  REVOKE_REASON,
-} from "#api/modules/identity/auth/domain/auth.constants";
+import { AUTH_DEFAULTS } from "#api/modules/identity/auth/domain/auth.constants";
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
@@ -61,7 +58,9 @@ export class ChangePasswordUseCase {
     if (user == null) {
       throw new ApplicationException(ErrorCode.USER_0601, { userId });
     }
-    assertNotDeleted(user);
+    if (user.isDeleted) {
+      throw accountDeleted(user.id.value);
+    }
 
     const account = await this.#dependencies.accountRepository.findByUserIdAndProvider(
       userId,

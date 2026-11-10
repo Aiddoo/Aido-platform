@@ -4,7 +4,7 @@ import {
   type OAuthIdentityProviderPort,
   OAuthIdentityProviderRegistryPort,
 } from "../../application/ports/oauth-identity-provider.port.js";
-import type { AccountProvider } from "../../domain/identity.constants.js";
+import type { AccountProvider } from "../../domain/auth.constants.js";
 import { AppleOAuthIdentityAdapter } from "./apple-oauth-identity.adapter.js";
 import { GoogleOAuthIdentityAdapter } from "./google-oauth-identity.adapter.js";
 import { KakaoOAuthIdentityAdapter } from "./kakao-oauth-identity.adapter.js";

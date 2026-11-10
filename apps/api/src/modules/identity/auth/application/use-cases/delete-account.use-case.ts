@@ -1,19 +1,14 @@
 import { ErrorCode } from "@aido/api/errors";
+import { ACCOUNT_DELETION, REVOKE_REASON, SECURITY_EVENT } from "@aido/api/vocabulary";
 
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
+import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
-import { now } from "#api/shared/domain/date/utils/core";
-import { toISOString } from "#api/shared/domain/date/utils/format";
+import { toIsoString } from "#api/shared/domain/time/instant";
 
-import {
-  ACCOUNT_DELETION,
-  AUTH_DEFAULTS,
-  REVOKE_REASON,
-  SECURITY_EVENT,
-} from "../../domain/auth.constants.js";
-import { IdentityUser } from "../../domain/identity-user.aggregate.js";
-import { assertNotDeleted } from "../auth.errors.js";
+import { AUTH_DEFAULTS } from "../../domain/auth.constants.js";
+import { accountDeleted } from "../auth.errors.js";
 import { AuthLogEvent } from "../auth.log-events.js";
 import type { AuthCachePort } from "../ports/auth-collaboration.port.js";
 import type { AuthPasswordHasherPort } from "../ports/auth-crypto.port.js";
@@ -37,7 +32,7 @@ export interface DeleteAccountCommand {
 }
 
 interface DeleteAccountDependencies {
-  readonly userRepository: Pick<AuthUserRepositoryPort, "findById" | "softDelete">;
+  readonly userRepository: Pick<AuthUserRepositoryPort, "findById" | "saveAccountStatus">;
   readonly accountRepository: Pick<AuthAccountRepositoryPort, "findAllByUserId">;
   readonly sessionRepository: Pick<AuthSessionRepositoryPort, "revokeAllByUserId">;
   readonly passwordService: Pick<AuthPasswordHasherPort, "verify">;
@@ -45,6 +40,7 @@ interface DeleteAccountDependencies {
   readonly unitOfWork: UnitOfWorkPort;
   readonly cacheService: Pick<AuthCachePort, "invalidateSession" | "invalidateUserProfile">;
   readonly pushDevices: Pick<SessionPushDeviceReleaserPort, "releaseSessions">;
+  readonly clock: ClockPort;
   readonly logger: ApplicationLoggerPort;
 }
 
@@ -60,7 +56,9 @@ export class DeleteAccountUseCase {
     if (user == null) {
       throw new ApplicationException(ErrorCode.USER_0601, { userId: input.userId });
     }
-    assertNotDeleted(user);
+    if (user.isDeleted) {
+      throw accountDeleted(user.id.value);
+    }
 
     const accounts = await this.#dependencies.accountRepository.findAllByUserId(input.userId);
     const credentialAccount = accounts.find((account) => account.provider === "CREDENTIAL");
@@ -80,18 +78,18 @@ export class DeleteAccountUseCase {
       }
     }
 
-    const deletedAt = now();
-    const identityUser = IdentityUser.reconstitute(user);
+    const deletedAt = this.#dependencies.clock.now();
+    const identityUser = user;
     identityUser.requestDeletion(deletedAt);
     const revokedSessionIds = await this.#dependencies.unitOfWork.run(async () => {
-      await this.#dependencies.userRepository.softDelete(identityUser.id, deletedAt);
+      await this.#dependencies.userRepository.saveAccountStatus(identityUser);
       const revokedSessionIds = await this.#dependencies.sessionRepository.revokeAllByUserId(
-        identityUser.id,
+        identityUser.id.value,
         REVOKE_REASON.ACCOUNT_DELETION,
         undefined,
       );
       await this.#dependencies.securityLogRepository.create({
-        userId: identityUser.id,
+        userId: identityUser.id.value,
         event: SECURITY_EVENT.ACCOUNT_DELETION_REQUESTED,
         ipAddress: input.metadata?.ip ?? AUTH_DEFAULTS.UNKNOWN_IP,
         userAgent: input.metadata?.userAgent ?? AUTH_DEFAULTS.UNKNOWN_USER_AGENT,
@@ -110,14 +108,14 @@ export class DeleteAccountUseCase {
       ),
     );
     await this.#dependencies.pushDevices.releaseSessions(revokedSessionIds);
-    await this.#dependencies.cacheService.invalidateUserProfile(identityUser.id);
+    await this.#dependencies.cacheService.invalidateUserProfile(identityUser.id.value);
     this.#dependencies.logger.log({
       event: AuthLogEvent.ACCOUNT_DELETION_REQUESTED,
-      userId: identityUser.id,
+      userId: identityUser.id.value,
     });
     return {
       message: `계정이 탈퇴 처리되었습니다. ${ACCOUNT_DELETION.GRACE_PERIOD_DAYS}일 이내에 복구할 수 있습니다.`,
-      deletedAt: toISOString(deletedAt),
+      deletedAt: toIsoString(deletedAt),
       gracePeriodDays: ACCOUNT_DELETION.GRACE_PERIOD_DAYS,
     };
   }

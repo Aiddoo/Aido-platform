@@ -1,5 +1,7 @@
+import { SECURITY_EVENT } from "@aido/api/vocabulary";
+
 import type { RequestMetadata } from "#api/modules/identity/auth/application/read-models/auth-result.read-model";
-import { AUTH_DEFAULTS, SECURITY_EVENT } from "#api/modules/identity/auth/domain/auth.constants";
+import { AUTH_DEFAULTS } from "#api/modules/identity/auth/domain/auth.constants";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 
 import { AuthLogEvent } from "../auth.log-events.js";
@@ -36,10 +38,10 @@ export class RequestPasswordResetUseCase {
     const user = await this.#dependencies.userRepository.findByEmail(email);
 
     if (user != null && user.deletedAt == null) {
-      await this.#dependencies.verificationService.createAndSendPasswordReset(user.id, email);
+      await this.#dependencies.verificationService.createAndSendPasswordReset(user.id.value, email);
 
       await this.#dependencies.securityLogRepository.create({
-        userId: user.id,
+        userId: user.id.value,
         event: SECURITY_EVENT.PASSWORD_RESET_REQUESTED,
         ipAddress: ip,
         userAgent,
@@ -48,7 +50,7 @@ export class RequestPasswordResetUseCase {
 
       this.#dependencies.logger.debug({
         event: AuthLogEvent.PASSWORD_RESET_REQUESTED,
-        userId: user.id,
+        userId: user.id.value,
       });
     } else {
       this.#dependencies.logger.debug({ event: AuthLogEvent.PASSWORD_RESET_REQUEST_SKIPPED });

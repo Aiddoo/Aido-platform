@@ -4,26 +4,26 @@ import { JwtModule } from "@nestjs/jwt";
 import { Test, type TestingModule } from "@nestjs/testing";
 
 import {
-  AUTH_CACHE,
-  AUTH_EMAIL_SENDER,
-  AUTH_RUNTIME_CONFIG,
-  AUTH_REGISTRATION_NOTIFIER,
+  AuthCachePort,
+  AuthEmailSenderPort,
+  AuthRuntimeConfigPort,
+  AuthRegistrationNotifierPort,
 } from "#api/modules/identity/auth/application/ports/auth-collaboration.port";
 import {
-  AUTH_PASSWORD_HASHER,
-  AUTH_TOKEN_ISSUER,
+  AuthPasswordHasherPort,
+  AuthTokenIssuerPort,
 } from "#api/modules/identity/auth/application/ports/auth-crypto.port";
 import {
-  AUTH_ACCOUNT_REPOSITORY,
-  AUTH_LOGIN_ATTEMPT_REPOSITORY,
-  AUTH_OAUTH_STATE_REPOSITORY,
-  AUTH_SECURITY_LOG_REPOSITORY,
-  AUTH_SESSION_REPOSITORY,
-  AUTH_USER_REPOSITORY,
-  AUTH_VERIFICATION_REPOSITORY,
+  AuthAccountRepositoryPort,
+  AuthLoginAttemptRepositoryPort,
+  AuthOAuthStateRepositoryPort,
+  AuthSecurityLogRepositoryPort,
+  AuthSessionRepositoryPort,
+  AuthUserRepositoryPort,
+  AuthVerificationRepositoryPort,
 } from "#api/modules/identity/auth/application/ports/auth-persistence.port";
 import { OAuthIdentityProviderRegistryPort } from "#api/modules/identity/auth/application/ports/oauth-identity-provider.port";
-import { VERIFICATION_CODE_SECURITY } from "#api/modules/identity/auth/application/ports/verification-code-security.port";
+import { VerificationCodeSecurityPort } from "#api/modules/identity/auth/application/ports/verification-code-security.port";
 import { Argon2PasswordHasherAdapter } from "#api/modules/identity/auth/infrastructure/adapters/argon2-password-hasher.adapter";
 import { AuthCacheAdapter } from "#api/modules/identity/auth/infrastructure/adapters/auth-cache.adapter";
 import { JwtTokenIssuerAdapter } from "#api/modules/identity/auth/infrastructure/adapters/jwt-token-issuer.adapter";
@@ -43,10 +43,13 @@ import { AdminEventNotifier } from "#api/modules/operations/operations-notificat
 import { DefaultTodoCategorySeeder } from "#api/modules/planning/infrastructure/seeders/categories/default-todo-category.seeder";
 import { CacheService } from "#api/platform/cache/cache.service";
 import { CACHE_SERVICE } from "#api/platform/cache/interfaces/cache.interface";
+import { jwtConfig } from "#api/platform/config/jwt.config";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { DRIZZLE } from "#api/platform/database/database.client";
 import { EncryptionService } from "#api/platform/encryption/index";
-import { UNIT_OF_WORK } from "#api/shared/application/ports/index";
+import { ClockPort } from "#api/shared/application/ports/clock.port";
+import { UnitOfWorkPort } from "#api/shared/application/ports/index";
+import { DateNowClock } from "#test/doubles/platform/date-now-clock";
 import { createMockCacheService } from "#test/mocks/cache-test-utils";
 import {
   createDatabaseTransactionFixture,
@@ -77,7 +80,7 @@ import {
   restoreAccountProvider,
   issueLoginProvider,
   provisionUserProvider,
-  sessionServiceProvider,
+  createSessionProvider,
   verificationServiceProvider,
 } from "../../../src/modules/identity/auth/identity-auth.providers.js";
 import type { FakeEmailService } from "../../mocks/fake-email.service.js";
@@ -115,8 +118,8 @@ export async function createAuthTestModule(
             startOAuthAuthorizationProvider,
             unlinkOAuthAccountProvider,
             DrizzleOAuthStateRepository,
-            { provide: AUTH_OAUTH_STATE_REPOSITORY, useExisting: DrizzleOAuthStateRepository },
-            { provide: AUTH_RUNTIME_CONFIG, useExisting: TypedConfigService },
+            { provide: AuthOAuthStateRepositoryPort, useExisting: DrizzleOAuthStateRepository },
+            { provide: AuthRuntimeConfigPort, useExisting: TypedConfigService },
             { provide: OAuthIdentityProviderRegistryPort, useValue: options.oauthProviderRegistry },
           ]),
       registerProvider,
@@ -131,11 +134,11 @@ export async function createAuthTestModule(
       issueLoginProvider,
       provisionUserProvider,
       Argon2PasswordHasherAdapter,
-      sessionServiceProvider,
+      createSessionProvider,
       JwtTokenIssuerAdapter,
       verificationServiceProvider,
       {
-        provide: VERIFICATION_CODE_SECURITY,
+        provide: VerificationCodeSecurityPort,
         useClass: NodeVerificationCodeSecurityAdapter,
       },
       {
@@ -151,28 +154,28 @@ export async function createAuthTestModule(
       DrizzleSecurityLogRepository,
       DrizzleLoginAttemptRepository,
       DrizzleVerificationRepository,
-      { provide: AUTH_USER_REPOSITORY, useExisting: DrizzleUserRepository },
-      { provide: AUTH_ACCOUNT_REPOSITORY, useExisting: DrizzleAccountRepository },
-      { provide: AUTH_SESSION_REPOSITORY, useExisting: DrizzleSessionRepository },
+      { provide: AuthUserRepositoryPort, useExisting: DrizzleUserRepository },
+      { provide: AuthAccountRepositoryPort, useExisting: DrizzleAccountRepository },
+      { provide: AuthSessionRepositoryPort, useExisting: DrizzleSessionRepository },
       {
-        provide: AUTH_VERIFICATION_REPOSITORY,
+        provide: AuthVerificationRepositoryPort,
         useExisting: DrizzleVerificationRepository,
       },
       {
-        provide: AUTH_LOGIN_ATTEMPT_REPOSITORY,
+        provide: AuthLoginAttemptRepositoryPort,
         useExisting: DrizzleLoginAttemptRepository,
       },
       {
-        provide: AUTH_SECURITY_LOG_REPOSITORY,
+        provide: AuthSecurityLogRepositoryPort,
         useExisting: DrizzleSecurityLogRepository,
       },
-      { provide: AUTH_PASSWORD_HASHER, useExisting: Argon2PasswordHasherAdapter },
-      { provide: AUTH_TOKEN_ISSUER, useExisting: JwtTokenIssuerAdapter },
-      { provide: AUTH_EMAIL_SENDER, useExisting: TransactionalEmailSender },
+      { provide: AuthPasswordHasherPort, useExisting: Argon2PasswordHasherAdapter },
+      { provide: AuthTokenIssuerPort, useExisting: JwtTokenIssuerAdapter },
+      { provide: AuthEmailSenderPort, useExisting: TransactionalEmailSender },
       AuthCacheAdapter,
-      { provide: AUTH_CACHE, useExisting: AuthCacheAdapter },
+      { provide: AuthCachePort, useExisting: AuthCacheAdapter },
       {
-        provide: AUTH_REGISTRATION_NOTIFIER,
+        provide: AuthRegistrationNotifierPort,
         useExisting: AdminEventNotifier,
       },
       DrizzleUserConsentRepository,
@@ -190,8 +193,19 @@ export async function createAuthTestModule(
         useValue: transaction.txHost,
       },
       {
-        provide: UNIT_OF_WORK,
+        provide: UnitOfWorkPort,
         useValue: transaction.uow,
+      },
+      { provide: ClockPort, useClass: DateNowClock },
+      {
+        provide: jwtConfig.KEY,
+        useValue: {
+          secret: process.env.JWT_SECRET ?? "test-jwt-secret-for-integration",
+          refreshSecret:
+            process.env.JWT_REFRESH_SECRET ?? "test-jwt-refresh-secret-for-integration",
+          expiresIn: process.env.JWT_EXPIRES_IN ?? "15m",
+          refreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN ?? "7d",
+        },
       },
       {
         provide: TransactionalEmailSender,

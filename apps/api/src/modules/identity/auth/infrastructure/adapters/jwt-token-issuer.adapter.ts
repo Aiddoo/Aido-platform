@@ -1,15 +1,17 @@
 import { createHash, randomBytes } from "node:crypto";
 
 import type { UserRole } from "@aido/api/vocabulary";
-import { Injectable } from "@nestjs/common";
+import { Inject, Injectable } from "@nestjs/common";
+import type { ConfigType } from "@nestjs/config";
 import { JwtService, TokenExpiredError } from "@nestjs/jwt";
 
+import { AuthTokenIssuerPort } from "#api/modules/identity/auth/application/ports/auth-crypto.port";
 import {
   AUTH_DEFAULTS,
   TOKEN_VERIFY_ERROR,
   type TokenVerifyError,
 } from "#api/modules/identity/auth/domain/auth.constants";
-import { TypedConfigService } from "#api/platform/config/services/config.service";
+import { jwtConfig } from "#api/platform/config/jwt.config";
 
 export interface JwtPayload {
   sub: string;
@@ -38,13 +40,14 @@ const JWT_AUDIENCE = "aido-app";
 
 // Access Token (15분) + Refresh Token (7일) 발급 및 검증, Token Rotation 지원
 @Injectable()
-export class JwtTokenIssuerAdapter {
+export class JwtTokenIssuerAdapter extends AuthTokenIssuerPort {
   readonly #jwtService: JwtService;
-  readonly #configService: TypedConfigService;
+  readonly #jwt: ConfigType<typeof jwtConfig>;
 
-  constructor(jwtService: JwtService, configService: TypedConfigService) {
+  constructor(jwtService: JwtService, @Inject(jwtConfig.KEY) jwt: ConfigType<typeof jwtConfig>) {
+    super();
     this.#jwtService = jwtService;
-    this.#configService = configService;
+    this.#jwt = jwt;
   }
 
   /**
@@ -93,7 +96,7 @@ export class JwtTokenIssuerAdapter {
     };
 
     return this.#jwtService.signAsync(payload, {
-      secret: this.#configService.jwtSecret,
+      secret: this.#jwt.secret,
       expiresIn: this.#getAccessTokenExpiresInSeconds(),
       algorithm: JWT_ALGORITHM,
       issuer: JWT_ISSUER,
@@ -120,7 +123,7 @@ export class JwtTokenIssuerAdapter {
     };
 
     return this.#jwtService.signAsync(payload, {
-      secret: this.#configService.jwtRefreshSecret,
+      secret: this.#jwt.refreshSecret,
       expiresIn: this.getRefreshTokenExpiresInSeconds(),
       algorithm: JWT_ALGORITHM,
       issuer: JWT_ISSUER,
@@ -136,7 +139,7 @@ export class JwtTokenIssuerAdapter {
   async verifyAccessTokenWithError(token: string): Promise<TokenVerifyResult<JwtPayload>> {
     try {
       const payload = await this.#jwtService.verifyAsync<JwtPayload>(token, {
-        secret: this.#configService.jwtSecret,
+        secret: this.#jwt.secret,
         algorithms: [JWT_ALGORITHM],
       });
 
@@ -158,7 +161,7 @@ export class JwtTokenIssuerAdapter {
   async verifyRefreshTokenWithError(token: string): Promise<TokenVerifyResult<JwtPayload>> {
     try {
       const payload = await this.#jwtService.verifyAsync<JwtPayload>(token, {
-        secret: this.#configService.jwtRefreshSecret,
+        secret: this.#jwt.refreshSecret,
         algorithms: [JWT_ALGORITHM],
       });
 
@@ -198,12 +201,12 @@ export class JwtTokenIssuerAdapter {
   }
 
   #getAccessTokenExpiresInSeconds(): number {
-    const expiresIn = this.#configService.jwtExpiresIn;
+    const expiresIn = this.#jwt.expiresIn;
     return this.#parseExpiresIn(expiresIn);
   }
 
   getRefreshTokenExpiresInSeconds(): number {
-    const expiresIn = this.#configService.jwtRefreshExpiresIn;
+    const expiresIn = this.#jwt.refreshExpiresIn;
     return this.#parseExpiresIn(expiresIn);
   }
 

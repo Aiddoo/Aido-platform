@@ -1,16 +1,15 @@
 import { ErrorCode } from "@aido/api/errors";
 
-import { AuthOAuthState } from "#api/modules/identity/auth/domain/auth-oauth-state.aggregate";
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
+import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
-import { now } from "#api/shared/domain/date/utils/core";
 
 import { AuthLogEvent } from "../auth.log-events.js";
 import type { AuthCachePort } from "../ports/auth-collaboration.port.js";
 import type {
   AuthOAuthStateRepositoryPort,
-  AuthUserLockRepositoryPort,
+  AuthUserRepositoryPort,
 } from "../ports/auth-persistence.port.js";
 import type { RequestMetadata } from "../read-models/auth-result.read-model.js";
 import type { LinkOAuthIdentityUseCase } from "./link-oauth-identity.use-case.js";
@@ -22,7 +21,7 @@ export interface LinkOAuthAccountWithCodeCommand {
 }
 
 interface LinkOAuthAccountWithCodeDependencies {
-  readonly userRepository: AuthUserLockRepositoryPort;
+  readonly userRepository: Pick<AuthUserRepositoryPort, "findByIdForUpdate">;
   readonly oauthStateRepository: Pick<
     AuthOAuthStateRepositoryPort,
     "findByExchangeCode" | "consumeExchangeCode"
@@ -30,6 +29,7 @@ interface LinkOAuthAccountWithCodeDependencies {
   readonly linkOAuthIdentity: Pick<LinkOAuthIdentityUseCase, "execute">;
   readonly unitOfWork: UnitOfWorkPort;
   readonly cacheService: Pick<AuthCachePort, "invalidateUserProfile">;
+  readonly clock: ClockPort;
   readonly logger: ApplicationLoggerPort;
 }
 
@@ -43,24 +43,20 @@ export class LinkOAuthAccountWithCodeUseCase {
   async execute(input: LinkOAuthAccountWithCodeCommand): Promise<{ message: string }> {
     const result = await this.#dependencies.unitOfWork.run(async () => {
       await this.#dependencies.userRepository.findByIdForUpdate(input.userId);
-      const at = now();
+      const at = this.#dependencies.clock.now();
       const state = await this.#dependencies.oauthStateRepository.findByExchangeCode(
         input.code,
         at,
       );
-      if (state == null) {
+      if (state == null || state.validityAt(at) !== "valid" || !state.canLinkFor(input.userId)) {
         throw this.#invalidCode();
       }
-      const authorization = AuthOAuthState.reconstitute(state);
-      if (authorization.validityAt(at) !== "valid" || !authorization.canLinkFor(input.userId)) {
-        throw this.#invalidCode();
-      }
-      const providerAccountId = state.userId;
-      if (providerAccountId == null || providerAccountId === "") {
+      const providerAccountId = state.linkedProviderAccountId();
+      if (providerAccountId == null) {
         throw this.#invalidCode();
       }
       const consumed = await this.#dependencies.oauthStateRepository.consumeExchangeCode({
-        id: state.id,
+        id: state.id.value,
         exchangeCode: input.code,
         at,
         purpose: "link",
@@ -69,7 +65,7 @@ export class LinkOAuthAccountWithCodeUseCase {
       if (!consumed) {
         throw this.#invalidCode();
       }
-      authorization.consume(at);
+      state.consume(at);
       return this.#dependencies.linkOAuthIdentity.execute({
         userId: input.userId,
         provider: state.provider,

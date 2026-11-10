@@ -11,10 +11,7 @@ import type { Request } from "express";
 import type { Observable } from "rxjs";
 
 import { AuthLogEvent } from "#api/modules/identity/auth/application/auth.log-events";
-import {
-  AUTH_USER_ACTIVITY_WRITER,
-  type AuthUserActivityWriterPort,
-} from "#api/modules/identity/auth/application/ports/auth-collaboration.port";
+import { AuthUserActivityWriterPort } from "#api/modules/identity/auth/application/ports/auth-collaboration.port";
 import { RequestClientReader, requestTimezoneOrUtc } from "#api/platform/http/request-client/index";
 import { readRequestUserId } from "#api/platform/http/request-user-id";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
@@ -41,7 +38,7 @@ export class LastActiveInterceptor implements NestInterceptor, OnModuleDestroy {
   static readonly THROTTLE_MS = 60 * 60 * 1000; // 1시간
 
   constructor(
-    @Inject(AUTH_USER_ACTIVITY_WRITER)
+    @Inject(AuthUserActivityWriterPort)
     private readonly userActivityWriter: AuthUserActivityWriterPort,
     private readonly requestClientReader: RequestClientReader,
   ) {

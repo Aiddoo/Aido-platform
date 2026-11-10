@@ -1,7 +1,5 @@
 import { OAUTH_PROVIDERS } from "@aido/api/vocabulary";
 
-import { IdentityAccounts } from "#api/modules/identity/auth/domain/identity-accounts.aggregate";
-
 import type { AuthAccountRepositoryPort } from "../ports/auth-persistence.port.js";
 
 export interface ListLinkedAccountsQuery {
@@ -13,13 +11,13 @@ export interface ListLinkedAccountsResult {
     provider: (typeof OAUTH_PROVIDERS)[number];
     linked: boolean;
     providerAccountId: string | null;
-    linkedAt: Date | null;
+    linkedAt: Temporal.Instant | null;
   }>;
   canUnlink: boolean;
 }
 
 interface ListLinkedAccountsDependencies {
-  readonly accountRepository: Pick<AuthAccountRepositoryPort, "findAllByUserId">;
+  readonly accountRepository: Pick<AuthAccountRepositoryPort, "findIdentityAccounts">;
 }
 
 export class ListLinkedAccountsUseCase {
@@ -30,8 +28,12 @@ export class ListLinkedAccountsUseCase {
   }
 
   async execute(input: ListLinkedAccountsQuery): Promise<ListLinkedAccountsResult> {
-    const accounts = await this.#dependencies.accountRepository.findAllByUserId(input.userId);
-    const accountsByProvider = new Map(accounts.map((account) => [account.provider, account]));
+    const identityAccounts = await this.#dependencies.accountRepository.findIdentityAccounts(
+      input.userId,
+    );
+    const accountsByProvider = new Map(
+      identityAccounts.accounts.map((account) => [account.provider, account]),
+    );
     return {
       accounts: OAUTH_PROVIDERS.map((provider) => {
         const account = accountsByProvider.get(provider);
@@ -42,7 +44,7 @@ export class ListLinkedAccountsUseCase {
           linkedAt: account?.createdAt ?? null,
         };
       }),
-      canUnlink: IdentityAccounts.reconstitute({ userId: input.userId, accounts }).canUnlink,
+      canUnlink: identityAccounts.canUnlink,
     };
   }
 }

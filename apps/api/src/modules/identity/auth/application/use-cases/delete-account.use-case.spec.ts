@@ -1,4 +1,5 @@
 import { ErrorCode } from "@aido/api/errors";
+import { ACCOUNT_DELETION, REVOKE_REASON, SECURITY_EVENT } from "@aido/api/vocabulary";
 import { vi } from "vitest";
 import { mock } from "vitest-mock-extended";
 
@@ -17,13 +18,7 @@ import {
 } from "#test/mocks/ports/auth-session.stub";
 import { createUnitOfWorkMock } from "#test/mocks/ports/unit-of-work.mock";
 
-import {
-  ACCOUNT_DELETION,
-  AUTH_DEFAULTS,
-  REVOKE_REASON,
-  SECURITY_EVENT,
-} from "../../domain/auth.constants.js";
-import type { AccountProvider } from "../../domain/identity.constants.js";
+import { AUTH_DEFAULTS, type AccountProvider } from "../../domain/auth.constants.js";
 import { AuthLogEvent } from "../auth.log-events.js";
 import { DeleteAccountUseCase } from "./delete-account.use-case.js";
 
@@ -66,6 +61,7 @@ describe("DeleteAccount — 계정 탈퇴와 모든 기기의 접근 종료", ()
     const logger = mock<ApplicationLoggerPort>();
     const pushDevices = new StubSessionPushDeviceReleaser();
     const useCase = new DeleteAccountUseCase({
+      clock: { now: () => Temporal.Instant.fromEpochMilliseconds(Date.now()) },
       pushDevices,
       userRepository,
       accountRepository,

@@ -1,13 +1,13 @@
-import type { VerifyEmailInput as VerifyEmailBody } from "@aido/api/contracts/auth";
 import { ErrorCode } from "@aido/api/errors";
+import { SECURITY_EVENT } from "@aido/api/vocabulary";
 
-import { assertNotDeleted } from "#api/modules/identity/auth/application/auth.errors";
+import { accountDeleted } from "#api/modules/identity/auth/application/auth.errors";
 import type {
   RequestMetadata,
   VerifyEmailResult,
 } from "#api/modules/identity/auth/application/read-models/auth-result.read-model";
 import { assertStatusAllowsLogin } from "#api/modules/identity/auth/domain/account-status.domain-service";
-import { AUTH_DEFAULTS, SECURITY_EVENT } from "#api/modules/identity/auth/domain/auth.constants";
+import { AUTH_DEFAULTS } from "#api/modules/identity/auth/domain/auth.constants";
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
@@ -18,12 +18,14 @@ import type {
   AuthSecurityLogRepositoryPort,
 } from "../ports/auth-persistence.port.js";
 import type { RetentionEnrollerPort } from "../ports/retention-enroller.port.js";
-import type { SessionService } from "./create-session.use-case.js";
+import type { CreateSessionUseCase } from "./create-session.use-case.js";
 import type { VerificationService } from "./issue-verification-code.use-case.js";
 
-export type VerifyEmailCommand = Readonly<VerifyEmailBody> & {
+export interface VerifyEmailCommand {
+  readonly email: string;
+  readonly code: string;
   readonly metadata?: RequestMetadata;
-};
+}
 
 interface VerifyEmailDependencies {
   readonly userRepository: Pick<
@@ -32,7 +34,7 @@ interface VerifyEmailDependencies {
   >;
   readonly verificationService: Pick<VerificationService, "verifyCode">;
   readonly retentionEnroller: Pick<RetentionEnrollerPort, "activateNewUser">;
-  readonly sessionService: Pick<SessionService, "createSessionWithTokens">;
+  readonly sessionService: Pick<CreateSessionUseCase, "execute">;
   readonly securityLogRepository: Pick<AuthSecurityLogRepositoryPort, "create">;
   readonly unitOfWork: UnitOfWorkPort;
   readonly logger: ApplicationLoggerPort;
@@ -56,7 +58,9 @@ export class VerifyEmailUseCase {
       throw new ApplicationException(ErrorCode.EMAIL_0502, { email });
     }
 
-    assertNotDeleted(user);
+    if (user.isDeleted) {
+      throw accountDeleted(user.id.value);
+    }
 
     if (user.status !== "PENDING_VERIFY") {
       if (user.emailVerifiedAt != null) {
@@ -69,14 +73,14 @@ export class VerifyEmailUseCase {
     }
 
     const result = await this.#dependencies.unitOfWork.run(async () => {
-      await this.#dependencies.verificationService.verifyCode(user.id, code, "EMAIL_VERIFY");
+      await this.#dependencies.verificationService.verifyCode(user.id.value, code, "EMAIL_VERIFY");
 
-      await this.#dependencies.userRepository.markEmailVerified(user.id);
+      await this.#dependencies.userRepository.markEmailVerified(user.id.value);
 
-      await this.#dependencies.retentionEnroller.activateNewUser(user.id);
+      await this.#dependencies.retentionEnroller.activateNewUser(user.id.value);
 
-      const { tokens } = await this.#dependencies.sessionService.createSessionWithTokens({
-        userId: user.id,
+      const { tokens } = await this.#dependencies.sessionService.execute({
+        userId: user.id.value,
         email,
         role: user.role,
         deviceFingerprint: userAgent,
@@ -85,13 +89,15 @@ export class VerifyEmailUseCase {
       });
 
       await this.#dependencies.securityLogRepository.create({
-        userId: user.id,
+        userId: user.id.value,
         event: SECURITY_EVENT.EMAIL_VERIFIED,
         ipAddress: ip,
         userAgent,
       });
 
-      const userWithProfile = await this.#dependencies.userRepository.findByIdWithProfile(user.id);
+      const userWithProfile = await this.#dependencies.userRepository.findByIdWithProfile(
+        user.id.value,
+      );
 
       return {
         tokens,
@@ -100,10 +106,10 @@ export class VerifyEmailUseCase {
       };
     });
 
-    this.#dependencies.logger.log({ event: AuthLogEvent.EMAIL_VERIFIED, userId: user.id });
+    this.#dependencies.logger.log({ event: AuthLogEvent.EMAIL_VERIFIED, userId: user.id.value });
 
     return {
-      userId: user.id,
+      userId: user.id.value,
       userTag: user.userTag,
       tokens: result.tokens,
       name: result.name,

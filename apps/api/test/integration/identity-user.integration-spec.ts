@@ -3,17 +3,18 @@ import { vi } from "vitest";
 import { z } from "zod";
 
 import { PurgeDeletedAccountsUseCase } from "#api/modules/identity/auth/application/use-cases/purge-deleted-accounts.use-case";
-import { IdentityUser } from "#api/modules/identity/auth/domain/identity-user.aggregate";
 import { DrizzleSecurityLogRepository } from "#api/modules/identity/auth/infrastructure/persistence/drizzle-security-log.repository";
 import { DrizzleUserRepository } from "#api/modules/identity/auth/infrastructure/persistence/drizzle-user.repository";
 import { createEntityId } from "#api/platform/database/entity-id";
 import { securityLog, user as userTable } from "#api/platform/database/schema/index";
+import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { UserFixture } from "#test/fixtures/index";
 import { createDatabaseTransactionFixture, createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
 const at = new Date("2027-01-01T00:00:00.000Z");
 const cutoff = new Date("2026-12-02T00:00:00.000Z");
+const now = Temporal.Instant.from("2027-01-01T00:00:00Z");
 
 describe("DrizzleUserRepository 통합 테스트 — 계정 생명주기", () => {
   let testDatabase: TestDatabase;
@@ -56,12 +57,14 @@ describe("DrizzleUserRepository 통합 테스트 — 계정 생명주기", () =>
     // Given
     const fixture = await givenUser();
     await repository.createProfile(fixture.id, { name: "테스트 사용자" });
-    const user = IdentityUser.reconstitute(fixture);
-    user.requestDeletion(at);
+    const user = await repository.findById(fixture.id);
+    user?.requestDeletion(now);
 
     // When
-    await repository.softDelete(user.id, user.deletedAt ?? undefined);
-    const persisted = await repository.findByIdWithProfile(user.id);
+    if (user != null) {
+      await repository.saveAccountStatus(user);
+    }
+    const persisted = await repository.findByIdWithProfile(fixture.id);
 
     // Then
     expect(persisted).toMatchObject({
@@ -79,11 +82,15 @@ describe("DrizzleUserRepository 통합 테스트 — 계정 생명주기", () =>
     await givenUser({ deletedAt: null });
 
     // When
-    const candidates = await repository.findSoftDeletedForPurge(30, at);
+    const candidates = await repository.listPurgeEligible(now);
 
     // Then
-    expect(candidates).toEqual([
-      { id: before.id, email: before.email, deletedAt: new Date(cutoff.getTime() - 1) },
+    expect(candidates.map((user) => user.toPrimitives())).toEqual([
+      expect.objectContaining({
+        id: before.id,
+        email: before.email,
+        deletedAt: Temporal.Instant.fromEpochMilliseconds(cutoff.getTime() - 1),
+      }),
     ]);
   });
 
@@ -93,17 +100,23 @@ describe("DrizzleUserRepository 통합 테스트 — 계정 생명주기", () =>
       status: "SUSPENDED",
       deletedAt: new Date(cutoff.getTime() + 1),
     });
-    const user = IdentityUser.reconstitute(fixture);
-    user.restore(at);
+    const user = await repository.findById(fixture.id);
+    const isRestored = user?.restore(now) ?? false;
 
     // When
-    await repository.restore(user.id);
+    if (user != null) {
+      await repository.saveAccountStatus(user);
+    }
 
     // Then
-    expect(await repository.findById(user.id)).toMatchObject({ status: "ACTIVE", deletedAt: null });
-    expect(await repository.findSoftDeletedForPurge(30, new Date("2027-02-01T00:00:00Z"))).toEqual(
-      [],
-    );
+    expect(isRestored).toBe(true);
+    expect((await repository.findById(fixture.id))?.toPrimitives()).toMatchObject({
+      status: "ACTIVE",
+      deletedAt: null,
+    });
+    expect(
+      await repository.listPurgeEligible(Temporal.Instant.from("2027-02-01T00:00:00Z")),
+    ).toEqual([]);
   });
 
   function givenPurge() {
@@ -126,6 +139,7 @@ describe("DrizzleUserRepository 통합 테스트 — 계정 생명주기", () =>
       todoCommentCleanup,
       usageCleanup: { cleanupInTransaction: async () => undefined },
       unitOfWork: transaction.uow,
+      clock: new FixedClock(now),
       logger,
     };
     return { dependencies, purge: new PurgeDeletedAccountsUseCase(dependencies) };
@@ -141,9 +155,12 @@ describe("DrizzleUserRepository 통합 테스트 — 계정 생명주기", () =>
     const purge = new PurgeDeletedAccountsUseCase({
       ...dependencies,
       userRepository: {
-        findSoftDeletedForPurge: async (graceDays, checkedAt) => {
-          const candidates = await repository.findSoftDeletedForPurge(graceDays, checkedAt);
-          await repository.restore(user.id);
+        listPurgeEligible: async (checkedAt) => {
+          const candidates = await repository.listPurgeEligible(checkedAt);
+          await client
+            .update(userTable)
+            .set({ status: "ACTIVE", deletedAt: null })
+            .where(sql`${userTable.id} = ${user.id}`);
           return candidates;
         },
         findByIdForUpdate: (id) => dependencies.userRepository.findByIdForUpdate(id),
@@ -155,7 +172,10 @@ describe("DrizzleUserRepository 통합 테스트 — 계정 생명주기", () =>
     await purge.execute();
 
     // Then
-    expect(await repository.findById(user.id)).toMatchObject({ status: "ACTIVE", deletedAt: null });
+    expect((await repository.findById(user.id))?.toPrimitives()).toMatchObject({
+      status: "ACTIVE",
+      deletedAt: null,
+    });
     expect(await client.select().from(securityLog)).toEqual([]);
     expect(dependencies.notificationCleanup.settleAfterCommit).not.toHaveBeenCalled();
     expect(dependencies.logger.log).toHaveBeenCalledWith(

@@ -1,49 +1,88 @@
 import { VERIFICATION_CODE } from "@aido/api/vocabulary";
 
-import { AggregateRoot } from "#api/shared/domain/index";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { AggregateRoot } from "#api/shared/domain/model/aggregate-root";
 
-export interface AuthVerificationProps {
-  id: number;
-  expiresAt: Date;
-  usedAt: Date | null;
-  attempts: number;
+import type { VerificationType } from "./auth.constants.js";
+import { VerificationId } from "./verification-id.vo.js";
+
+export interface AuthVerificationPrimitives {
+  readonly id: number;
+  readonly userId: string;
+  readonly type: VerificationType;
+  readonly tokenHash: string;
+  readonly expiresAt: Temporal.Instant;
+  readonly attempts: number;
+  readonly usedAt: Temporal.Instant | null;
+}
+
+interface AuthVerificationProps {
+  readonly userId: UserId;
+  readonly type: VerificationType;
+  readonly tokenHash: string;
+  readonly expiresAt: Temporal.Instant;
+  readonly attempts: number;
+  usedAt: Temporal.Instant | null;
 }
 
 export type AuthVerificationValidity = "valid" | "used" | "expired" | "exhausted";
 
-export class AuthVerification extends AggregateRoot<AuthVerificationProps> {
-  static reconstitute(props: AuthVerificationProps): AuthVerification {
-    return new AuthVerification({
-      id: props.id,
-      expiresAt: new Date(props.expiresAt),
-      usedAt: props.usedAt != null ? new Date(props.usedAt) : null,
-      attempts: props.attempts,
+/** 메일로 보낸 인증 코드 한 건. 코드 원문은 저장하지 않고 hash만 둔다 */
+export class AuthVerification extends AggregateRoot<VerificationId, AuthVerificationProps> {
+  static reconstitute(primitives: AuthVerificationPrimitives): AuthVerification {
+    return new AuthVerification(VerificationId.reconstitute(primitives.id), {
+      userId: UserId.reconstitute(primitives.userId),
+      type: primitives.type,
+      tokenHash: primitives.tokenHash,
+      expiresAt: primitives.expiresAt,
+      attempts: primitives.attempts,
+      usedAt: primitives.usedAt,
     });
   }
 
-  get id(): number {
-    return this.props.id;
+  get type(): VerificationType {
+    return this.props.type;
   }
 
-  get usedAt(): Date | null {
-    return this.props.usedAt != null ? new Date(this.props.usedAt) : null;
+  get tokenHash(): string {
+    return this.props.tokenHash;
   }
 
-  validityAt(at: Date): AuthVerificationValidity {
+  get usedAt(): Temporal.Instant | null {
+    return this.props.usedAt;
+  }
+
+  validityAt(now: Temporal.Instant): AuthVerificationValidity {
     if (this.props.usedAt != null) {
       return "used";
     }
-    if (this.props.expiresAt <= at) {
+    if (Temporal.Instant.compare(this.props.expiresAt, now) <= 0) {
       return "expired";
     }
     return this.props.attempts >= VERIFICATION_CODE.MAX_ATTEMPTS ? "exhausted" : "valid";
   }
 
-  consume(at: Date): boolean {
-    if (this.validityAt(at) !== "valid") {
+  matches(tokenHash: string): boolean {
+    return this.props.tokenHash === tokenHash;
+  }
+
+  consume(now: Temporal.Instant): boolean {
+    if (this.validityAt(now) !== "valid") {
       return false;
     }
-    this.props.usedAt = new Date(at);
+    this.props.usedAt = now;
     return true;
+  }
+
+  toPrimitives(): AuthVerificationPrimitives {
+    return {
+      id: this.id.value,
+      userId: this.props.userId.value,
+      type: this.props.type,
+      tokenHash: this.props.tokenHash,
+      expiresAt: this.props.expiresAt,
+      attempts: this.props.attempts,
+      usedAt: this.props.usedAt,
+    };
   }
 }

@@ -1,12 +1,12 @@
-import type { RegisterInput as RegisterBody } from "@aido/api/contracts/auth";
 import { ErrorCode } from "@aido/api/errors";
-import { TERMS_VERSION } from "@aido/api/vocabulary";
+import { TERMS_VERSION, SECURITY_EVENT } from "@aido/api/vocabulary";
 
+import { AuthPersistenceConflict } from "#api/modules/identity/auth/application/auth.errors";
 import type {
   RegisterResult,
   RequestMetadata,
 } from "#api/modules/identity/auth/application/read-models/auth-result.read-model";
-import { AUTH_DEFAULTS, SECURITY_EVENT } from "#api/modules/identity/auth/domain/auth.constants";
+import { AUTH_DEFAULTS } from "#api/modules/identity/auth/domain/auth.constants";
 import { Email } from "#api/modules/identity/auth/domain/email.vo";
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
@@ -23,12 +23,20 @@ import type { AuthPasswordHasherPort } from "../ports/auth-crypto.port.js";
 import {
   type AuthUserRepositoryPort,
   type AuthSecurityLogRepositoryPort,
-  AuthPersistenceConflict,
 } from "../ports/auth-persistence.port.js";
 import type { VerificationService } from "./issue-verification-code.use-case.js";
 import type { ProvisionUserUseCase } from "./provision-user.use-case.js";
 
-export type RegisterCommand = Readonly<RegisterBody> & { readonly metadata?: RequestMetadata };
+export interface RegisterCommand {
+  readonly email: string;
+  readonly password: string;
+  readonly name?: string;
+  readonly termsAgreed: true;
+  readonly privacyAgreed: true;
+  readonly marketingAgreed?: boolean;
+  readonly marketingPushAgreed?: boolean;
+  readonly metadata?: RequestMetadata;
+}
 
 interface RegisterDependencies {
   readonly userRepository: Pick<AuthUserRepositoryPort, "findByEmail">;

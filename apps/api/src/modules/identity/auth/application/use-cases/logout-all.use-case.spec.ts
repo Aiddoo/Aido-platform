@@ -1,3 +1,4 @@
+import { REVOKE_REASON, SECURITY_EVENT } from "@aido/api/vocabulary";
 import { vi } from "vitest";
 import { mock } from "vitest-mock-extended";
 
@@ -10,7 +11,7 @@ import {
   StubAuthSecurityLogRepository,
 } from "#test/mocks/ports/auth-session.stub";
 
-import { AUTH_DEFAULTS, REVOKE_REASON, SECURITY_EVENT } from "../../domain/auth.constants.js";
+import { AUTH_DEFAULTS } from "../../domain/auth.constants.js";
 import { LogoutAllUseCase } from "./logout-all.use-case.js";
 
 const currentTime = new Date("2026-12-31T23:59:00Z");

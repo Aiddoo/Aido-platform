@@ -8,65 +8,80 @@ import type {
 import type { AuthCachePort } from "#api/modules/identity/auth/application/ports/auth-collaboration.port";
 import type { AuthPasswordHasherPort } from "#api/modules/identity/auth/application/ports/auth-crypto.port";
 import type {
-  AuthAccountLifecycleRepositoryPort,
   AuthAccountRecord,
   AuthAccountRepositoryPort,
   AuthUserRecord,
   AuthUserRepositoryPort,
 } from "#api/modules/identity/auth/application/ports/auth-persistence.port";
+import { IdentityAccounts } from "#api/modules/identity/auth/domain/identity-accounts.aggregate";
+import { IdentityUser } from "#api/modules/identity/auth/domain/identity-user.aggregate";
+import { instantFromDate, instantToDate } from "#api/shared/domain/time/instant";
 import { AccountFixture } from "#test/fixtures/user.fixture";
 
 import { StubAuthSessionCache } from "./auth-session.stub.js";
 
-type PurgeCandidate = Awaited<
-  ReturnType<AuthAccountLifecycleRepositoryPort["findSoftDeletedForPurge"]>
->[number];
+/** 테스트 사용자 기록(Date)을 저장소가 돌려주는 Aggregate로 바꾼다 */
+export function toIdentityUser(record: AuthUserRecord): IdentityUser {
+  return IdentityUser.reconstitute({
+    ...record,
+    emailVerifiedAt:
+      record.emailVerifiedAt == null ? null : instantFromDate(record.emailVerifiedAt),
+    subscriptionExpiresAt:
+      record.subscriptionExpiresAt == null ? null : instantFromDate(record.subscriptionExpiresAt),
+    createdAt: instantFromDate(record.createdAt),
+    deletedAt: record.deletedAt == null ? null : instantFromDate(record.deletedAt),
+  });
+}
 
-export class StubAccountLifecycleRepository
-  implements
-    AuthAccountLifecycleRepositoryPort,
-    Pick<AuthUserRepositoryPort, "softDelete" | "restore">
-{
+export class StubAccountLifecycleRepository implements Pick<
+  AuthUserRepositoryPort,
+  "findById" | "findByIdForUpdate" | "saveAccountStatus" | "listPurgeEligible" | "hardDelete"
+> {
   readonly users: Map<string, AuthUserRecord>;
-  candidateSnapshot: PurgeCandidate[] | null = null;
+  candidateSnapshot: IdentityUser[] | null = null;
 
   constructor(users: readonly AuthUserRecord[] = []) {
     this.users = new Map(users.map((user) => [user.id, { ...user }]));
   }
 
-  async findById(id: string): Promise<AuthUserRecord | null> {
-    return this.users.get(id) ?? null;
+  async findById(id: string): Promise<IdentityUser | null> {
+    const user = this.users.get(id);
+    return user == null ? null : toIdentityUser(user);
   }
 
-  async findByIdForUpdate(id: string): Promise<AuthUserRecord | null> {
+  async findByIdForUpdate(id: string): Promise<IdentityUser | null> {
     return this.findById(id);
   }
 
+  async saveAccountStatus(user: IdentityUser): Promise<void> {
+    const stored = this.#requireUser(user.id.value);
+    const { status, deletedAt } = user.toPrimitives();
+    this.users.set(stored.id, {
+      ...stored,
+      status,
+      deletedAt: deletedAt == null ? null : instantToDate(deletedAt),
+    });
+  }
+
+  async listPurgeEligible(now: Temporal.Instant): Promise<IdentityUser[]> {
+    if (this.candidateSnapshot !== null) {
+      return this.candidateSnapshot;
+    }
+    return [...this.users.values()]
+      .map(toIdentityUser)
+      .filter((user) => user.isPurgeEligibleAt(now));
+  }
+
+  /** 시나리오 준비용: 탈퇴 대기 상태로 둔다 */
   async softDelete(id: string, deletedAt = new Date()): Promise<void> {
     const user = this.#requireUser(id);
     this.users.set(id, { ...user, status: "SUSPENDED", deletedAt: new Date(deletedAt) });
   }
 
+  /** 시나리오 준비용: 탈퇴를 되돌린다 */
   async restore(id: string): Promise<void> {
     const user = this.#requireUser(id);
     this.users.set(id, { ...user, status: "ACTIVE", deletedAt: null });
-  }
-
-  async findSoftDeletedForPurge(
-    gracePeriodDays: number,
-    at = new Date(),
-  ): Promise<PurgeCandidate[]> {
-    if (this.candidateSnapshot !== null) {
-      return this.candidateSnapshot;
-    }
-    const cutoff = at.getTime() - gracePeriodDays * 86_400_000;
-    const candidates: PurgeCandidate[] = [];
-    for (const user of this.users.values()) {
-      if (user.deletedAt !== null && user.deletedAt.getTime() < cutoff) {
-        candidates.push({ id: user.id, email: user.email, deletedAt: new Date(user.deletedAt) });
-      }
-    }
-    return candidates;
   }
 
   async hardDelete(id: string): Promise<void> {
@@ -86,6 +101,7 @@ export class StubAccountLifecycleRepository
 export class StubAccountRepository implements Pick<
   AuthAccountRepositoryPort,
   | "findAllByUserId"
+  | "findIdentityAccounts"
   | "findByUserIdAndProvider"
   | "findByProviderAccountId"
   | "deleteAccount"
@@ -98,6 +114,19 @@ export class StubAccountRepository implements Pick<
 
   constructor(accounts: readonly AuthAccountRecord[] = []) {
     this.accounts = accounts.map((account) => ({ ...account }));
+  }
+
+  async findIdentityAccounts(userId: string): Promise<IdentityAccounts> {
+    const accounts = await this.findAllByUserId(userId);
+    return IdentityAccounts.reconstitute({
+      userId,
+      accounts: accounts.map((account) => ({
+        id: account.id,
+        provider: account.provider,
+        providerAccountId: account.providerAccountId,
+        createdAt: instantFromDate(account.createdAt),
+      })),
+    });
   }
 
   async findAllByUserId(userId: string): Promise<AuthAccountRecord[]> {

@@ -14,7 +14,7 @@ import type {
   PremiumAccess,
   PremiumAccessReaderPort,
 } from "#api/modules/billing/billing-subscriptions.public";
-import { SessionService } from "#api/modules/identity/auth/application/use-cases/create-session.use-case";
+import { CreateSessionUseCase } from "#api/modules/identity/auth/application/use-cases/create-session.use-case";
 import { IssueLoginUseCase } from "#api/modules/identity/auth/application/use-cases/issue-login.use-case";
 import { VerificationService } from "#api/modules/identity/auth/application/use-cases/issue-verification-code.use-case";
 import { ProvisionUserUseCase } from "#api/modules/identity/auth/application/use-cases/provision-user.use-case";
@@ -24,6 +24,7 @@ import type {
   DailySendUsageReaderPort,
 } from "#api/modules/social/social-cheers.public";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
+import { DateNowClock } from "#test/doubles/platform/date-now-clock";
 import { FakeEmailService } from "#test/mocks/fake-email.service";
 import { StubAccountRepository } from "#test/mocks/ports/account-lifecycle.stub";
 import {
@@ -90,11 +91,13 @@ export function createAuthCredentialFixture(
   const seeder = new StubAuthProvisioningSeeder();
   const logger = mock<ApplicationLoggerPort>();
   const unitOfWork = createUnitOfWorkMock();
-  const sessionService = new SessionService({ sessionRepository, tokenService });
+  const clock = new DateNowClock();
+  const sessionService = new CreateSessionUseCase({ sessionRepository, tokenService, clock });
   const verificationService = new VerificationService({
     verificationRepository,
     verificationCodeSecurity,
     emailSender,
+    clock,
     logger,
   });
   const provisionUserUseCase = new ProvisionUserUseCase({
@@ -129,6 +132,7 @@ export function createAuthCredentialFixture(
     seeder,
     logger,
     unitOfWork,
+    clock,
     sessionService,
     verificationService,
     provisionUserUseCase,

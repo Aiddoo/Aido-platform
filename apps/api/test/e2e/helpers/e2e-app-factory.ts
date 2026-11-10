@@ -26,7 +26,7 @@ import {
   type OAuthIdentityProviderPort,
   OAuthIdentityProviderRegistryPort,
 } from "#api/modules/identity/auth/application/ports/oauth-identity-provider.port";
-import type { AccountProvider } from "#api/modules/identity/auth/domain/identity.constants";
+import type { AccountProvider } from "#api/modules/identity/auth/domain/auth.constants";
 import { AppleOAuthIdentityAdapter } from "#api/modules/identity/auth/infrastructure/adapters/apple-oauth-identity.adapter";
 import { Argon2PasswordHasherAdapter } from "#api/modules/identity/auth/infrastructure/adapters/argon2-password-hasher.adapter";
 import { GoogleOAuthIdentityAdapter } from "#api/modules/identity/auth/infrastructure/adapters/google-oauth-identity.adapter";

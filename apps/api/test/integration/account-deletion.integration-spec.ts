@@ -7,28 +7,28 @@ import { eq } from "drizzle-orm";
 import { vi } from "vitest";
 
 import {
-  ACCOUNT_NOTIFICATION_CLEANUP,
-  ACCOUNT_TODO_COMMENT_CLEANUP,
-  ACCOUNT_USAGE_CLEANUP,
+  AccountNotificationCleanupPort,
+  AccountTodoCommentCleanupPort,
+  AccountUsageCleanupPort,
 } from "#api/modules/identity/auth/application/ports/account-cleanup.port";
 import {
-  AUTH_CACHE,
-  AUTH_EMAIL_SENDER,
-  AUTH_REGISTRATION_NOTIFIER,
+  AuthCachePort,
+  AuthEmailSenderPort,
+  AuthRegistrationNotifierPort,
 } from "#api/modules/identity/auth/application/ports/auth-collaboration.port";
 import {
-  AUTH_PASSWORD_HASHER,
-  AUTH_TOKEN_ISSUER,
+  AuthPasswordHasherPort,
+  AuthTokenIssuerPort,
 } from "#api/modules/identity/auth/application/ports/auth-crypto.port";
 import {
-  AUTH_ACCOUNT_REPOSITORY,
-  AUTH_LOGIN_ATTEMPT_REPOSITORY,
-  AUTH_SECURITY_LOG_REPOSITORY,
-  AUTH_SESSION_REPOSITORY,
-  AUTH_USER_REPOSITORY,
-  AUTH_VERIFICATION_REPOSITORY,
+  AuthAccountRepositoryPort,
+  AuthLoginAttemptRepositoryPort,
+  AuthSecurityLogRepositoryPort,
+  AuthSessionRepositoryPort,
+  AuthUserRepositoryPort,
+  AuthVerificationRepositoryPort,
 } from "#api/modules/identity/auth/application/ports/auth-persistence.port";
-import { VERIFICATION_CODE_SECURITY } from "#api/modules/identity/auth/application/ports/verification-code-security.port";
+import { VerificationCodeSecurityPort } from "#api/modules/identity/auth/application/ports/verification-code-security.port";
 import { DeleteAccountUseCase } from "#api/modules/identity/auth/application/use-cases/delete-account.use-case";
 import { LoginWithPasswordUseCase } from "#api/modules/identity/auth/application/use-cases/login-with-password.use-case";
 import { PurgeDeletedAccountsUseCase } from "#api/modules/identity/auth/application/use-cases/purge-deleted-accounts.use-case";
@@ -52,14 +52,17 @@ import { AdminEventNotifier } from "#api/modules/operations/operations-notificat
 import { DefaultTodoCategorySeeder } from "#api/modules/planning/infrastructure/seeders/categories/default-todo-category.seeder";
 import { CacheService } from "#api/platform/cache/cache.service";
 import { CACHE_SERVICE } from "#api/platform/cache/interfaces/cache.interface";
+import { jwtConfig } from "#api/platform/config/jwt.config";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { requireRecord } from "#api/platform/database/database-error.util";
 import { DRIZZLE } from "#api/platform/database/database.client";
 import { account, user as userTable } from "#api/platform/database/schema/index";
 import { EncryptionService } from "#api/platform/encryption/index";
-import { UNIT_OF_WORK } from "#api/shared/application/ports/index";
+import { ClockPort } from "#api/shared/application/ports/clock.port";
+import { UnitOfWorkPort } from "#api/shared/application/ports/index";
 import { subtractDays } from "#api/shared/domain/date/utils/arithmetic";
 import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
+import { DateNowClock } from "#test/doubles/platform/date-now-clock";
 import { createMockCacheService } from "#test/mocks/cache-test-utils";
 import { createDatabaseTransactionFixture } from "#test/setup/database-context";
 import { suppressLogger } from "#test/setup/suppress-logger";
@@ -73,7 +76,7 @@ import {
   issueLoginProvider,
   requestPasswordResetProvider,
   provisionUserProvider,
-  sessionServiceProvider,
+  createSessionProvider,
   verificationServiceProvider,
 } from "../../src/modules/identity/auth/identity-auth.providers.js";
 import { FakeEmailService } from "../mocks/fake-email.service.js";
@@ -113,18 +116,18 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
         purgeDeletedAccountsProvider,
         restoreAccountProvider,
         {
-          provide: ACCOUNT_NOTIFICATION_CLEANUP,
+          provide: AccountNotificationCleanupPort,
           useValue: {
             cleanupInTransaction: async () => ({ affectedUserIds: [] }),
             settleAfterCommit: async () => {},
           },
         },
         {
-          provide: ACCOUNT_USAGE_CLEANUP,
+          provide: AccountUsageCleanupPort,
           useValue: { cleanupInTransaction: async () => undefined },
         },
         {
-          provide: ACCOUNT_TODO_COMMENT_CLEANUP,
+          provide: AccountTodoCommentCleanupPort,
           useValue: {
             cleanupInTransaction: async () => ({ affectedTodoIds: [] }),
             settleAfterCommit: async () => {},
@@ -132,11 +135,11 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
         },
         Argon2PasswordHasherAdapter,
         requestPasswordResetProvider,
-        sessionServiceProvider,
+        createSessionProvider,
         JwtTokenIssuerAdapter,
         verificationServiceProvider,
         {
-          provide: VERIFICATION_CODE_SECURITY,
+          provide: VerificationCodeSecurityPort,
           useClass: NodeVerificationCodeSecurityAdapter,
         },
         {
@@ -152,28 +155,28 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
         DrizzleSecurityLogRepository,
         DrizzleLoginAttemptRepository,
         DrizzleVerificationRepository,
-        { provide: AUTH_USER_REPOSITORY, useExisting: DrizzleUserRepository },
-        { provide: AUTH_ACCOUNT_REPOSITORY, useExisting: DrizzleAccountRepository },
-        { provide: AUTH_SESSION_REPOSITORY, useExisting: DrizzleSessionRepository },
+        { provide: AuthUserRepositoryPort, useExisting: DrizzleUserRepository },
+        { provide: AuthAccountRepositoryPort, useExisting: DrizzleAccountRepository },
+        { provide: AuthSessionRepositoryPort, useExisting: DrizzleSessionRepository },
         {
-          provide: AUTH_VERIFICATION_REPOSITORY,
+          provide: AuthVerificationRepositoryPort,
           useExisting: DrizzleVerificationRepository,
         },
         {
-          provide: AUTH_LOGIN_ATTEMPT_REPOSITORY,
+          provide: AuthLoginAttemptRepositoryPort,
           useExisting: DrizzleLoginAttemptRepository,
         },
         {
-          provide: AUTH_SECURITY_LOG_REPOSITORY,
+          provide: AuthSecurityLogRepositoryPort,
           useExisting: DrizzleSecurityLogRepository,
         },
-        { provide: AUTH_PASSWORD_HASHER, useExisting: Argon2PasswordHasherAdapter },
-        { provide: AUTH_TOKEN_ISSUER, useExisting: JwtTokenIssuerAdapter },
-        { provide: AUTH_EMAIL_SENDER, useExisting: TransactionalEmailSender },
+        { provide: AuthPasswordHasherPort, useExisting: Argon2PasswordHasherAdapter },
+        { provide: AuthTokenIssuerPort, useExisting: JwtTokenIssuerAdapter },
+        { provide: AuthEmailSenderPort, useExisting: TransactionalEmailSender },
         AuthCacheAdapter,
-        { provide: AUTH_CACHE, useExisting: AuthCacheAdapter },
+        { provide: AuthCachePort, useExisting: AuthCacheAdapter },
         {
-          provide: AUTH_REGISTRATION_NOTIFIER,
+          provide: AuthRegistrationNotifierPort,
           useExisting: AdminEventNotifier,
         },
         DrizzleUserConsentRepository,
@@ -190,8 +193,19 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
           provide: TransactionHost,
           useValue: transaction.txHost,
         },
+        { provide: ClockPort, useClass: DateNowClock },
         {
-          provide: UNIT_OF_WORK,
+          provide: jwtConfig.KEY,
+          useValue: {
+            secret: process.env.JWT_SECRET ?? "test-jwt-secret-for-integration",
+            refreshSecret:
+              process.env.JWT_REFRESH_SECRET ?? "test-jwt-refresh-secret-for-integration",
+            expiresIn: process.env.JWT_EXPIRES_IN ?? "15m",
+            refreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN ?? "7d",
+          },
+        },
+        {
+          provide: UnitOfWorkPort,
           useValue: transaction.uow,
         },
         {
@@ -305,7 +319,6 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
     const registerResult = await register.execute({
       email,
       password,
-      passwordConfirm: password,
       termsAgreed: true,
       privacyAgreed: true,
       marketingAgreed: false,

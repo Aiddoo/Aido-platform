@@ -37,7 +37,7 @@ describe("ListLinkedAccounts — 로그인 수단과 소셜 연결 상태", () =
       provider: "GOOGLE",
       linked: true,
       providerAccountId: "google-account",
-      linkedAt: AUTH_CREDENTIAL_TIME,
+      linkedAt: Temporal.Instant.fromEpochMilliseconds(AUTH_CREDENTIAL_TIME.getTime()),
     });
     expect(
       result.accounts

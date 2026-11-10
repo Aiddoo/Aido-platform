@@ -1,13 +1,7 @@
 import type { SubscriptionStatus, UserRole } from "@aido/api/vocabulary";
 import type { PremiumSource, SubscriptionPlanType } from "@aido/api/vocabulary";
 
-import type { AccountProvider, UserStatus } from "../../domain/identity.constants.js";
-
-export const AUTH_CACHE = Symbol("AUTH_CACHE");
-export const AUTH_EMAIL_SENDER = Symbol("AUTH_EMAIL_SENDER");
-export const AUTH_REGISTRATION_NOTIFIER = Symbol("AUTH_REGISTRATION_NOTIFIER");
-export const AUTH_RUNTIME_CONFIG = Symbol("AUTH_RUNTIME_CONFIG");
-export const AUTH_USER_ACTIVITY_WRITER = Symbol("AUTH_USER_ACTIVITY_WRITER");
+import type { AccountProvider, UserStatus } from "../../domain/auth.constants.js";
 
 export interface AuthCachedUserProfile {
   id: string;
@@ -42,12 +36,12 @@ export interface AuthCachedSession {
   readonly userDeletedAt?: string | null;
 }
 
-export interface AuthCachePort {
-  getSession(sessionId: string): Promise<AuthCachedSession | undefined>;
-  setSession(sessionId: string, session: AuthCachedSession): Promise<void>;
-  invalidateSession(sessionId: string): Promise<void>;
-  invalidateUserProfile(userId: string): Promise<void>;
-  wrapUserProfile(
+export abstract class AuthCachePort {
+  abstract getSession(sessionId: string): Promise<AuthCachedSession | undefined>;
+  abstract setSession(sessionId: string, session: AuthCachedSession): Promise<void>;
+  abstract invalidateSession(sessionId: string): Promise<void>;
+  abstract invalidateUserProfile(userId: string): Promise<void>;
+  abstract wrapUserProfile(
     userId: string,
     factory: () => Promise<AuthCachedUserProfile | undefined>,
   ): Promise<AuthCachedUserProfile | undefined>;
@@ -58,16 +52,16 @@ export type AuthEmailDispatch =
   | { readonly status: "queued" }
   | { readonly status: "rejected"; readonly reason: string };
 
-export interface AuthEmailSenderPort {
-  sendVerificationCode(
+export abstract class AuthEmailSenderPort {
+  abstract sendVerificationCode(
     to: string,
     data: { code: string; expiryMinutes: number },
   ): Promise<AuthEmailDispatch>;
-  sendPasswordResetCode(
+  abstract sendPasswordResetCode(
     to: string,
     data: { code: string; expiryMinutes: number },
   ): Promise<AuthEmailDispatch>;
-  sendPasswordSetupCode(
+  abstract sendPasswordSetupCode(
     to: string,
     data: { code: string; expiryMinutes: number },
   ): Promise<AuthEmailDispatch>;
@@ -88,18 +82,18 @@ export interface AuthUserRegisteredNotification {
   timezone?: string;
 }
 
-export interface AuthRegistrationNotifierPort {
-  notifyUserRegistered(payload: AuthUserRegisteredNotification): void;
+export abstract class AuthRegistrationNotifierPort {
+  abstract notifyUserRegistered(payload: AuthUserRegisteredNotification): void;
 }
 
-export interface AuthRuntimeConfigPort {
-  readonly isDevelopment: boolean;
+export abstract class AuthRuntimeConfigPort {
+  abstract readonly isDevelopment: boolean;
 }
 
-export interface AuthUserActivityWriterPort {
+export abstract class AuthUserActivityWriterPort {
   /**
    * 마지막 활동 시각과 활동일을 남긴다. appVersion(SemVer)이 있으면 요청한 앱 버전도 함께 남겨,
    * 요청 헤더가 없는 예약 작업이 사용자의 앱이 지원하는 동작을 고를 수 있게 한다.
    */
-  updateLastActiveAt(userId: string, timezone: string, appVersion?: string): Promise<void>;
+  abstract updateLastActiveAt(userId: string, timezone: string, appVersion?: string): Promise<void>;
 }

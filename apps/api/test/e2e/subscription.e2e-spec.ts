@@ -10,10 +10,7 @@ import {
   PREMIUM_GRANTER,
   type PremiumGranterPort,
 } from "#api/modules/billing/billing-subscriptions.public";
-import {
-  AUTH_CACHE,
-  type AuthCachePort,
-} from "#api/modules/identity/auth/application/ports/auth-collaboration.port";
+import { AuthCachePort } from "#api/modules/identity/auth/application/ports/auth-collaboration.port";
 import { subscription, subscriptionEventReceipt } from "#api/platform/database/schema/index";
 import { SubscriptionEventBuilder } from "#test/builders/subscription-event.builder";
 
@@ -357,7 +354,7 @@ describe("구독 Webhook HTTP 계약과 권한 캐시 (실제 PostgreSQL)", () =
       .get<PremiumGranterPort>(PREMIUM_GRANTER)
       .grant({ userId: user.userId, source: "INVITE", sourceKey: "invite:ended", durationDays: 1 });
     const endsAt = new Date(Date.now() + 24 * 60 * 60 * 1_000);
-    const authCache = context.module.get<AuthCachePort>(AUTH_CACHE, { strict: false });
+    const authCache = context.module.get<AuthCachePort>(AuthCachePort, { strict: false });
     const meAt = async (time: Date) => {
       vi.setSystemTime(time);
       await authCache.invalidateUserProfile(user.userId);

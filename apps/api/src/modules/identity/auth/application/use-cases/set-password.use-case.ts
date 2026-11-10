@@ -1,8 +1,9 @@
 import { ErrorCode } from "@aido/api/errors";
+import { SECURITY_EVENT } from "@aido/api/vocabulary";
 
-import { assertNotDeleted } from "#api/modules/identity/auth/application/auth.errors";
+import { accountDeleted } from "#api/modules/identity/auth/application/auth.errors";
 import type { RequestMetadata } from "#api/modules/identity/auth/application/read-models/auth-result.read-model";
-import { AUTH_DEFAULTS, SECURITY_EVENT } from "#api/modules/identity/auth/domain/auth.constants";
+import { AUTH_DEFAULTS } from "#api/modules/identity/auth/domain/auth.constants";
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
@@ -12,7 +13,6 @@ import type { AuthCachePort } from "../ports/auth-collaboration.port.js";
 import type { AuthPasswordHasherPort } from "../ports/auth-crypto.port.js";
 import type {
   AuthUserRepositoryPort,
-  AuthUserLockRepositoryPort,
   AuthAccountRepositoryPort,
   AuthSecurityLogRepositoryPort,
 } from "../ports/auth-persistence.port.js";
@@ -26,7 +26,8 @@ export interface SetPasswordCommand {
 }
 
 interface SetPasswordDependencies {
-  readonly userRepository: Pick<AuthUserRepositoryPort, "findById"> & AuthUserLockRepositoryPort;
+  readonly userRepository: Pick<AuthUserRepositoryPort, "findById"> &
+    Pick<AuthUserRepositoryPort, "findByIdForUpdate">;
   readonly accountRepository: Pick<
     AuthAccountRepositoryPort,
     "findByUserIdAndProvider" | "createCredentialAccount"
@@ -55,7 +56,9 @@ export class SetPasswordUseCase {
     if (user == null) {
       throw new ApplicationException(ErrorCode.USER_0601, { userId });
     }
-    assertNotDeleted(user);
+    if (user.isDeleted) {
+      throw accountDeleted(user.id.value);
+    }
 
     const existingAccount = await this.#dependencies.accountRepository.findByUserIdAndProvider(
       userId,
@@ -72,7 +75,9 @@ export class SetPasswordUseCase {
       if (lockedUser == null) {
         throw new ApplicationException(ErrorCode.USER_0601, { userId });
       }
-      assertNotDeleted(lockedUser);
+      if (lockedUser.isDeleted) {
+        throw accountDeleted(lockedUser.id.value);
+      }
       const currentAccount = await this.#dependencies.accountRepository.findByUserIdAndProvider(
         userId,
         "CREDENTIAL",

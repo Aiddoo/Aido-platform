@@ -2,10 +2,8 @@ import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
 import { and, eq } from "drizzle-orm";
 
-import {
-  type AuthAccountRepositoryPort,
-  AuthPersistenceConflict,
-} from "#api/modules/identity/auth/application/ports/auth-persistence.port";
+import { AuthPersistenceConflict } from "#api/modules/identity/auth/application/auth.errors";
+import { AuthAccountRepositoryPort } from "#api/modules/identity/auth/application/ports/auth-persistence.port";
 import {
   isUniqueConstraintViolation,
   requireRecord,
@@ -17,8 +15,11 @@ import { EncryptionService } from "#api/platform/encryption/index";
 type AccountRow = typeof account.$inferSelect;
 type AccountProvider = AccountRow["provider"];
 
+import type { IdentityAccounts } from "../../domain/identity-accounts.aggregate.js";
+import { toIdentityAccounts } from "./auth-row.mapper.js";
+
 @Injectable()
-export class DrizzleAccountRepository implements AuthAccountRepositoryPort {
+export class DrizzleAccountRepository extends AuthAccountRepositoryPort {
   readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
   readonly #encryptionService: EncryptionService;
 
@@ -26,6 +27,7 @@ export class DrizzleAccountRepository implements AuthAccountRepositoryPort {
     txHost: TransactionHost<DrizzleTransactionalAdapter>,
     encryptionService: EncryptionService,
   ) {
+    super();
     this.#txHost = txHost;
     this.#encryptionService = encryptionService;
   }
@@ -136,5 +138,13 @@ export class DrizzleAccountRepository implements AuthAccountRepositoryPort {
 
   async findAllByUserId(userId: string): Promise<AccountRow[]> {
     return this.#db.query.account.findMany({ where: { userId } });
+  }
+
+  async findIdentityAccounts(userId: string): Promise<IdentityAccounts> {
+    const rows = await this.#db.query.account.findMany({
+      columns: { id: true, provider: true, providerAccountId: true, createdAt: true },
+      where: { userId },
+    });
+    return toIdentityAccounts(userId, rows);
   }
 }

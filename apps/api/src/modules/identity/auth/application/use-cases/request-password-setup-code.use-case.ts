@@ -1,6 +1,6 @@
 import { ErrorCode } from "@aido/api/errors";
 
-import { assertNotDeleted } from "#api/modules/identity/auth/application/auth.errors";
+import { accountDeleted } from "#api/modules/identity/auth/application/auth.errors";
 import { ApplicationException } from "#api/shared/application/application.exception";
 
 import type {
@@ -32,7 +32,9 @@ export class RequestPasswordSetupCodeUseCase {
     if (user == null) {
       throw new ApplicationException(ErrorCode.USER_0601, { userId });
     }
-    assertNotDeleted(user);
+    if (user.isDeleted) {
+      throw accountDeleted(user.id.value);
+    }
 
     const account = await this.#dependencies.accountRepository.findByUserIdAndProvider(
       userId,

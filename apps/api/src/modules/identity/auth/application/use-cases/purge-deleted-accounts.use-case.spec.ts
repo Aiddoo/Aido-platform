@@ -1,3 +1,4 @@
+import { SECURITY_EVENT } from "@aido/api/vocabulary";
 import { vi } from "vitest";
 import { mock } from "vitest-mock-extended";
 
@@ -8,11 +9,11 @@ import {
   StubAccountNotificationCleanup,
   StubAccountTodoCommentCleanup,
   StubAccountUsageCleanup,
+  toIdentityUser,
 } from "#test/mocks/ports/account-lifecycle.stub";
 import { StubAuthSecurityLogRepository } from "#test/mocks/ports/auth-session.stub";
 import { createUnitOfWorkMock } from "#test/mocks/ports/unit-of-work.mock";
 
-import { SECURITY_EVENT } from "../../domain/auth.constants.js";
 import { AuthLogEvent } from "../auth.log-events.js";
 import { PurgeDeletedAccountsUseCase } from "./purge-deleted-accounts.use-case.js";
 
@@ -36,6 +37,7 @@ describe("PurgeDeletedAccounts — 유예 기간이 지난 계정의 영구 삭�
     const securityLogRepository = new StubAuthSecurityLogRepository();
     const logger = mock<ApplicationLoggerPort>();
     const useCase = new PurgeDeletedAccountsUseCase({
+      clock: { now: () => Temporal.Instant.fromEpochMilliseconds(Date.now()) },
       userRepository,
       notificationCleanup,
       todoCommentCleanup,
@@ -215,7 +217,7 @@ describe("PurgeDeletedAccounts — 유예 기간이 지난 계정의 영구 삭�
     // Given
     const fixture = givenUsers(["restored-user", "recent-user", "missing-user"]);
     fixture.userRepository.candidateSnapshot = [...fixture.userRepository.users.values()].map(
-      (user) => ({ id: user.id, email: user.email, deletedAt }),
+      (user) => toIdentityUser({ ...user, deletedAt }),
     );
     await fixture.userRepository.restore("restored-user");
     await fixture.userRepository.softDelete("recent-user", currentTime);

@@ -1,6 +1,8 @@
-import { toISOString, toISOStringOrNull } from "#api/shared/domain/date/utils/format";
+import { SECURITY_EVENT } from "@aido/api/vocabulary";
 
-import { AUTH_DEFAULTS, SECURITY_EVENT } from "../../domain/auth.constants.js";
+import { toIsoString } from "#api/shared/domain/time/instant";
+
+import { AUTH_DEFAULTS } from "../../domain/auth.constants.js";
 import type { IdentityUser } from "../../domain/identity-user.aggregate.js";
 import type {
   AuthSecurityLogRepositoryPort,
@@ -11,14 +13,15 @@ import type { RequestMetadata } from "../read-models/auth-result.read-model.js";
 export interface RestoreAccountCommand {
   readonly user: IdentityUser;
   readonly metadata?: RequestMetadata;
-  readonly at: Date;
+  readonly at: Temporal.Instant;
 }
 
 interface RestoreAccountDependencies {
-  readonly userRepository: Pick<AuthUserRepositoryPort, "restore">;
+  readonly userRepository: Pick<AuthUserRepositoryPort, "saveAccountStatus">;
   readonly securityLogRepository: Pick<AuthSecurityLogRepositoryPort, "create">;
 }
 
+/** 탈퇴 유예 안의 계정이 다시 로그인하면 되살린다. 호출자가 연 UoW에 함께 커밋된다 */
 export class RestoreAccountUseCase {
   readonly #dependencies: RestoreAccountDependencies;
 
@@ -27,20 +30,19 @@ export class RestoreAccountUseCase {
   }
 
   async execute(input: RestoreAccountCommand): Promise<void> {
-    if (!input.user.requiresRestoration(input.at)) {
+    const deletedAt = input.user.deletedAt;
+    if (!input.user.restore(input.at)) {
       return;
     }
-    const deletedAt = input.user.deletedAt;
-    input.user.restore(input.at);
-    await this.#dependencies.userRepository.restore(input.user.id);
+    await this.#dependencies.userRepository.saveAccountStatus(input.user);
     await this.#dependencies.securityLogRepository.create({
-      userId: input.user.id,
+      userId: input.user.id.value,
       event: SECURITY_EVENT.ACCOUNT_RESTORED,
       ipAddress: input.metadata?.ip ?? AUTH_DEFAULTS.UNKNOWN_IP,
       userAgent: input.metadata?.userAgent ?? AUTH_DEFAULTS.UNKNOWN_USER_AGENT,
       metadata: {
-        deletedAt: toISOStringOrNull(deletedAt),
-        restoredAt: toISOString(input.at),
+        deletedAt: deletedAt == null ? null : toIsoString(deletedAt),
+        restoredAt: toIsoString(input.at),
       },
     });
   }

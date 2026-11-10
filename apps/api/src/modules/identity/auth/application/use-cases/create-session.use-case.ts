@@ -1,36 +1,26 @@
-import { ErrorCode } from "@aido/api/errors";
 import type { UserRole } from "@aido/api/vocabulary";
-import { match } from "ts-pattern";
 
-import { ApplicationException } from "#api/shared/application/application.exception";
-import { addMilliseconds } from "#api/shared/domain/date/utils/arithmetic";
-import { now } from "#api/shared/domain/date/utils/core";
+import type { ClockPort } from "#api/shared/application/ports/clock.port";
 
-import { getSessionValidity } from "../../domain/session-validity.domain-service.js";
-import { type AuthTokenIssuerPort, type TokenPair } from "../ports/auth-crypto.port.js";
-import { type AuthSessionRepositoryPort } from "../ports/auth-persistence.port.js";
+import type { AuthTokenIssuerPort, TokenPair } from "../ports/auth-crypto.port.js";
+import type { AuthSessionRepositoryPort } from "../ports/auth-persistence.port.js";
 
-export interface CreateSessionParams {
-  userId: string;
-  email: string;
-  role: UserRole;
-  deviceFingerprint: string;
-  userAgent: string;
-  ipAddress: string;
+export interface CreateSessionCommand {
+  readonly userId: string;
+  readonly email: string;
+  readonly role: UserRole;
+  readonly deviceFingerprint: string;
+  readonly userAgent: string;
+  readonly ipAddress: string;
 }
 
-export interface CreateSessionResult {
-  sessionId: string;
-  tokens: TokenPair;
-  tokenFamily: string;
+export interface CreatedSession {
+  readonly sessionId: string;
+  readonly tokens: TokenPair;
+  readonly tokenFamily: string;
 }
 
-export interface SessionValidatable {
-  revokedAt: Date | string | null;
-  expiresAt: Date | string;
-}
-
-interface SessionServiceDependencies {
+export interface CreateSessionDependencies {
   readonly sessionRepository: Pick<AuthSessionRepositoryPort, "create" | "updateRefreshTokenHash">;
   readonly tokenService: Pick<
     AuthTokenIssuerPort,
@@ -39,75 +29,46 @@ interface SessionServiceDependencies {
     | "hashRefreshToken"
     | "getRefreshTokenExpiresInSeconds"
   >;
+  readonly clock: ClockPort;
 }
 
-export class SessionService {
-  readonly #dependencies: SessionServiceDependencies;
+/** 새 로그인 세션과 토큰 한 쌍을 만든다. 호출자가 연 UoW에 함께 커밋된다 */
+export class CreateSessionUseCase {
+  readonly #dependencies: CreateSessionDependencies;
 
-  constructor(dependencies: SessionServiceDependencies) {
+  constructor(dependencies: CreateSessionDependencies) {
     this.#dependencies = dependencies;
   }
 
-  // 호출자가 연 UoW에 repository의 CLS transaction이 참여한다.
-  async createSessionWithTokens(params: CreateSessionParams): Promise<CreateSessionResult> {
-    const tokenFamily = this.#dependencies.tokenService.generateTokenFamily();
+  async execute(command: CreateSessionCommand): Promise<CreatedSession> {
+    const { sessionRepository, tokenService, clock } = this.#dependencies;
+    const tokenFamily = tokenService.generateTokenFamily();
+    const expiresAt = clock.now().add({ seconds: tokenService.getRefreshTokenExpiresInSeconds() });
 
-    const expiresInSeconds = this.#dependencies.tokenService.getRefreshTokenExpiresInSeconds();
-    const expiresAt = addMilliseconds(expiresInSeconds * 1000);
-
-    const session = await this.#dependencies.sessionRepository.create({
-      userId: params.userId,
+    const session = await sessionRepository.create({
+      userId: command.userId,
       tokenFamily,
       tokenVersion: 1,
-      deviceFingerprint: params.deviceFingerprint,
-      userAgent: params.userAgent,
-      ipAddress: params.ipAddress,
+      deviceFingerprint: command.deviceFingerprint,
+      userAgent: command.userAgent,
+      ipAddress: command.ipAddress,
       expiresAt,
     });
 
-    const tokens = await this.#dependencies.tokenService.generateTokenPair(
-      params.userId,
-      params.email,
+    // refresh 토큰은 세션 id를 담아야 해서 세션을 먼저 만든 뒤 hash를 채운다
+    const tokens = await tokenService.generateTokenPair(
+      command.userId,
+      command.email,
       session.id,
-      params.role,
+      command.role,
       tokenFamily,
       1,
     );
-
-    const refreshTokenHash = this.#dependencies.tokenService.hashRefreshToken(tokens.refreshToken);
-    await this.#dependencies.sessionRepository.updateRefreshTokenHash(session.id, refreshTokenHash);
-
-    return {
-      sessionId: session.id,
-      tokens,
-      tokenFamily,
-    };
-  }
-
-  assertSessionValid(
-    session: SessionValidatable | null | undefined,
-    sessionId?: string,
-  ): asserts session is SessionValidatable {
-    if (session == null) {
-      throw new ApplicationException(ErrorCode.SESSION_0701, { sessionId });
-    }
-
-    const validity = getSessionValidity(
-      {
-        expiresAt: new Date(session.expiresAt),
-        revokedAt: session.revokedAt == null ? null : new Date(session.revokedAt),
-      },
-      now(),
+    await sessionRepository.updateRefreshTokenHash(
+      session.id,
+      tokenService.hashRefreshToken(tokens.refreshToken),
     );
 
-    match(validity)
-      .with("valid", () => undefined)
-      .with("revoked", () => {
-        throw new ApplicationException(ErrorCode.SESSION_0703, { sessionId, reason: undefined });
-      })
-      .with("expired", () => {
-        throw new ApplicationException(ErrorCode.SESSION_0702, { sessionId });
-      })
-      .exhaustive();
+    return { sessionId: session.id, tokens, tokenFamily };
   }
 }

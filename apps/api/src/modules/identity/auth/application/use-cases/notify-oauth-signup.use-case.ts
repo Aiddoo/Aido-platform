@@ -1,4 +1,4 @@
-import type { AccountProvider } from "#api/modules/identity/auth/domain/identity.constants";
+import type { AccountProvider } from "#api/modules/identity/auth/domain/auth.constants";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import { toISOString } from "#api/shared/domain/date/utils/format";

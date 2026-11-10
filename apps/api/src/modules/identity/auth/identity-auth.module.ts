@@ -26,27 +26,30 @@ import { TypedConfigService } from "#api/platform/config/services/config.service
 
 import { LastActiveInterceptor } from "../presentation/interceptors/auth/last-active.interceptor.js";
 import {
-  AUTH_CACHE,
-  AUTH_EMAIL_SENDER,
-  AUTH_REGISTRATION_NOTIFIER,
-  AUTH_RUNTIME_CONFIG,
-  AUTH_USER_ACTIVITY_WRITER,
+  AuthCachePort,
+  AuthEmailSenderPort,
+  AuthRegistrationNotifierPort,
+  AuthRuntimeConfigPort,
+  AuthUserActivityWriterPort,
 } from "./application/ports/auth-collaboration.port.js";
-import { AUTH_PASSWORD_HASHER, AUTH_TOKEN_ISSUER } from "./application/ports/auth-crypto.port.js";
 import {
-  AUTH_ACCOUNT_REPOSITORY,
-  AUTH_LOGIN_ATTEMPT_REPOSITORY,
-  AUTH_OAUTH_STATE_REPOSITORY,
-  AUTH_SECURITY_LOG_REPOSITORY,
-  AUTH_SESSION_REPOSITORY,
-  AUTH_USER_REPOSITORY,
-  AUTH_VERIFICATION_REPOSITORY,
+  AuthPasswordHasherPort,
+  AuthTokenIssuerPort,
+} from "./application/ports/auth-crypto.port.js";
+import {
+  AuthAccountRepositoryPort,
+  AuthLoginAttemptRepositoryPort,
+  AuthOAuthStateRepositoryPort,
+  AuthSecurityLogRepositoryPort,
+  AuthSessionRepositoryPort,
+  AuthUserRepositoryPort,
+  AuthVerificationRepositoryPort,
 } from "./application/ports/auth-persistence.port.js";
 import { OAuthIdentityProviderRegistryPort } from "./application/ports/oauth-identity-provider.port.js";
-import { RETENTION_ENROLLER } from "./application/ports/retention-enroller.port.js";
-import { SESSION_PUSH_DEVICE_RELEASER } from "./application/ports/session-push-device-releaser.port.js";
-import { USER_PROVISIONING_SEEDER } from "./application/ports/user-provisioning-seeder.port.js";
-import { VERIFICATION_CODE_SECURITY } from "./application/ports/verification-code-security.port.js";
+import { RetentionEnrollerPort } from "./application/ports/retention-enroller.port.js";
+import { SessionPushDeviceReleaserPort } from "./application/ports/session-push-device-releaser.port.js";
+import { UserProvisioningSeederPort } from "./application/ports/user-provisioning-seeder.port.js";
+import { VerificationCodeSecurityPort } from "./application/ports/verification-code-security.port.js";
 import {
   accountNotificationCleanupProvider,
   accountTodoCommentCleanupProvider,
@@ -84,7 +87,7 @@ import {
   resetPasswordProvider,
   revokeSessionProvider,
   authenticateSessionProvider,
-  sessionServiceProvider,
+  createSessionProvider,
   setPasswordProvider,
   startOAuthAuthorizationProvider,
   unlinkOAuthAccountProvider,
@@ -169,58 +172,58 @@ import { SessionController } from "./presentation/http/v1/session.controller.js"
     DrizzleLoginAttemptRepository,
     DrizzleSecurityLogRepository,
     DrizzleOAuthStateRepository,
-    { provide: AUTH_USER_REPOSITORY, useExisting: DrizzleUserRepository },
-    { provide: AUTH_USER_ACTIVITY_WRITER, useExisting: DrizzleUserRepository },
-    { provide: AUTH_ACCOUNT_REPOSITORY, useExisting: DrizzleAccountRepository },
-    { provide: AUTH_SESSION_REPOSITORY, useExisting: DrizzleSessionRepository },
+    { provide: AuthUserRepositoryPort, useExisting: DrizzleUserRepository },
+    { provide: AuthUserActivityWriterPort, useExisting: DrizzleUserRepository },
+    { provide: AuthAccountRepositoryPort, useExisting: DrizzleAccountRepository },
+    { provide: AuthSessionRepositoryPort, useExisting: DrizzleSessionRepository },
     {
-      provide: AUTH_VERIFICATION_REPOSITORY,
+      provide: AuthVerificationRepositoryPort,
       useExisting: DrizzleVerificationRepository,
     },
     {
-      provide: AUTH_LOGIN_ATTEMPT_REPOSITORY,
+      provide: AuthLoginAttemptRepositoryPort,
       useExisting: DrizzleLoginAttemptRepository,
     },
     {
-      provide: AUTH_SECURITY_LOG_REPOSITORY,
+      provide: AuthSecurityLogRepositoryPort,
       useExisting: DrizzleSecurityLogRepository,
     },
     {
-      provide: AUTH_OAUTH_STATE_REPOSITORY,
+      provide: AuthOAuthStateRepositoryPort,
       useExisting: DrizzleOAuthStateRepository,
     },
     // 프로비저닝 시딩 어댑터 (user-settings·todo-category 파사드 위임)
     {
-      provide: USER_PROVISIONING_SEEDER,
+      provide: UserProvisioningSeederPort,
       useClass: UserProvisioningSeederAdapter,
     },
     {
-      provide: RETENTION_ENROLLER,
+      provide: RetentionEnrollerPort,
       useClass: RetentionEnrollerAdapter,
     },
     {
-      provide: SESSION_PUSH_DEVICE_RELEASER,
+      provide: SessionPushDeviceReleaserPort,
       useClass: SessionPushDeviceReleaserAdapter,
     },
     accountNotificationCleanupProvider,
     accountTodoCommentCleanupProvider,
     accountUsageCleanupProvider,
     Argon2PasswordHasherAdapter,
-    sessionServiceProvider,
+    createSessionProvider,
     JwtTokenIssuerAdapter,
-    { provide: AUTH_PASSWORD_HASHER, useExisting: Argon2PasswordHasherAdapter },
-    { provide: AUTH_TOKEN_ISSUER, useExisting: JwtTokenIssuerAdapter },
+    { provide: AuthPasswordHasherPort, useExisting: Argon2PasswordHasherAdapter },
+    { provide: AuthTokenIssuerPort, useExisting: JwtTokenIssuerAdapter },
     AuthCacheAdapter,
-    { provide: AUTH_CACHE, useExisting: AuthCacheAdapter },
-    { provide: AUTH_EMAIL_SENDER, useExisting: TransactionalEmailSender },
+    { provide: AuthCachePort, useExisting: AuthCacheAdapter },
+    { provide: AuthEmailSenderPort, useExisting: TransactionalEmailSender },
     {
-      provide: AUTH_REGISTRATION_NOTIFIER,
+      provide: AuthRegistrationNotifierPort,
       useExisting: AdminEventNotifier,
     },
-    { provide: AUTH_RUNTIME_CONFIG, useExisting: TypedConfigService },
+    { provide: AuthRuntimeConfigPort, useExisting: TypedConfigService },
     verificationServiceProvider,
     {
-      provide: VERIFICATION_CODE_SECURITY,
+      provide: VerificationCodeSecurityPort,
       useClass: NodeVerificationCodeSecurityAdapter,
     },
     linkOAuthIdentityProvider,

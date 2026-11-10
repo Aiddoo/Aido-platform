@@ -1,18 +1,18 @@
 import { ErrorCode } from "@aido/api/errors";
-import { type OAUTH_PROVIDERS, TERMS_VERSION } from "@aido/api/vocabulary";
+import { type OAUTH_PROVIDERS, TERMS_VERSION, SECURITY_EVENT } from "@aido/api/vocabulary";
 
 import { assertStatusAllowsLogin } from "#api/modules/identity/auth/domain/account-status.domain-service";
 import {
   AUTH_DEFAULTS,
   LOGIN_FAILURE_REASON,
-  SECURITY_EVENT,
   TRUSTED_EMAIL_PROVIDERS,
+  type AccountProvider,
 } from "#api/modules/identity/auth/domain/auth.constants";
-import { IdentityUser } from "#api/modules/identity/auth/domain/identity-user.aggregate";
-import type { AccountProvider } from "#api/modules/identity/auth/domain/identity.constants";
+import type { IdentityUser } from "#api/modules/identity/auth/domain/identity-user.aggregate";
 import { generateRandomName } from "#api/modules/identity/auth/domain/random-name.domain-service";
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
+import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
 import { now } from "#api/shared/domain/date/utils/core";
 import type { SupportedLocale } from "#api/shared/domain/locale";
@@ -24,8 +24,6 @@ import type {
   AuthLoginAttemptRepositoryPort,
   AuthSecurityLogRepositoryPort,
   AuthUserRepositoryPort,
-  AuthUserRecord,
-  AuthUserLockRepositoryPort,
 } from "../ports/auth-persistence.port.js";
 import type {
   OAuthIdentityProviderRegistryPort,
@@ -52,7 +50,7 @@ export interface LoginWithOAuthTokenCommand {
 interface LoginWithOAuthTokenDependencies {
   readonly registry: Pick<OAuthIdentityProviderRegistryPort, "get">;
   readonly userRepository: Pick<AuthUserRepositoryPort, "findById" | "findByEmail"> &
-    AuthUserLockRepositoryPort;
+    AuthUserRepositoryPort;
   readonly accountRepository: Pick<
     AuthAccountRepositoryPort,
     "findByProviderAccountId" | "createOAuthAccount"
@@ -64,6 +62,7 @@ interface LoginWithOAuthTokenDependencies {
   readonly issueLoginUseCase: Pick<IssueLoginUseCase, "execute">;
   readonly provisionUserUseCase: Pick<ProvisionUserUseCase, "execute">;
   readonly restoreAccount: Pick<RestoreAccountUseCase, "execute">;
+  readonly clock: ClockPort;
   readonly logger: ApplicationLoggerPort;
 }
 
@@ -138,8 +137,8 @@ export class LoginWithOAuthTokenUseCase {
         throw new ApplicationException(ErrorCode.USER_0601, { userId });
       }
 
-      const restorationAt = now();
-      if (IdentityUser.reconstitute(user).requiresRestoration(restorationAt)) {
+      const restorationAt = this.#dependencies.clock.now();
+      if (user.requiresRestoration(restorationAt)) {
         const loginResult = await this.#restoreAndCreateSession(user, {
           ip,
           userAgent,
@@ -271,27 +270,32 @@ export class LoginWithOAuthTokenUseCase {
   }
 
   async #restoreAndCreateSession(
-    user: Pick<AuthUserRecord, "id" | "email" | "status" | "deletedAt">,
-    options: { ip: string; userAgent: string; provider: AccountProvider; restorationAt: Date },
+    user: IdentityUser,
+    options: {
+      ip: string;
+      userAgent: string;
+      provider: AccountProvider;
+      restorationAt: Temporal.Instant;
+    },
     onLinkInTransaction?: () => Promise<void>,
   ): Promise<LoginResult> {
-    const userRecord = await this.#dependencies.userRepository.findById(user.id);
-
-    if (userRecord == null) {
-      throw new ApplicationException(ErrorCode.USER_0601, { userId: user.id });
+    const userId = user.id.value;
+    // 복구와 발급 사이에 역할이 바뀌었을 수 있어 최신 행의 역할로 토큰을 만든다
+    const latest = await this.#dependencies.userRepository.findById(userId);
+    if (latest == null) {
+      throw new ApplicationException(ErrorCode.USER_0601, { userId });
     }
-
     const result = await this.#dependencies.unitOfWork.run(async () => {
       await this.#dependencies.restoreAccount.execute({
-        user: IdentityUser.reconstitute(user),
+        user,
         metadata: { ip: options.ip, userAgent: options.userAgent },
         at: options.restorationAt,
       });
 
       const outcome = await this.#dependencies.issueLoginUseCase.execute({
-        userId: user.id,
+        userId,
         email: user.email,
-        role: userRecord.role,
+        role: latest.role,
         provider: options.provider,
         ip: options.ip,
         userAgent: options.userAgent,
@@ -304,7 +308,7 @@ export class LoginWithOAuthTokenUseCase {
       }
 
       return {
-        userId: user.id,
+        userId,
         userTag: outcome.userTag,
         tokens: outcome.tokens,
         sessionId: outcome.sessionId,
@@ -313,10 +317,10 @@ export class LoginWithOAuthTokenUseCase {
       };
     });
 
-    await this.#dependencies.cacheService.invalidateUserProfile(user.id);
+    await this.#dependencies.cacheService.invalidateUserProfile(userId);
     this.#dependencies.logger.log({
       event: AuthLogEvent.ACCOUNT_RESTORED,
-      userId: user.id,
+      userId,
       provider: options.provider,
     });
 
@@ -370,12 +374,7 @@ export class LoginWithOAuthTokenUseCase {
   }
 
   async #handleEmailConflict(
-    existingUser: {
-      id: string;
-      email: string;
-      status: AuthUserRecord["status"];
-      deletedAt: Date | null;
-    },
+    existingUser: IdentityUser,
     provider: AccountProvider,
     providerAccountId: string,
     options: {
@@ -384,8 +383,8 @@ export class LoginWithOAuthTokenUseCase {
       userAgent: string;
     },
   ): Promise<LoginResult> {
-    const restorationAt = now();
-    const needsRestore = IdentityUser.reconstitute(existingUser).requiresRestoration(restorationAt);
+    const restorationAt = this.#dependencies.clock.now();
+    const needsRestore = existingUser.requiresRestoration(restorationAt);
 
     const isTrusted = this.#isTrustedProvider(provider);
     const isEmailVerified = options.emailVerified === true;
@@ -393,7 +392,7 @@ export class LoginWithOAuthTokenUseCase {
     if (isTrusted && isEmailVerified) {
       this.#dependencies.logger.log({
         event: AuthLogEvent.OAUTH_ACCOUNT_AUTO_LINKING,
-        userId: existingUser.id,
+        userId: existingUser.id.value,
         provider,
       });
 
@@ -406,7 +405,7 @@ export class LoginWithOAuthTokenUseCase {
           existingUser,
           { ip: options.ip, userAgent: options.userAgent, provider, restorationAt },
           () =>
-            this.#linkOAuthAccount(existingUser.id, provider, providerAccountId, {
+            this.#linkOAuthAccount(existingUser.id.value, provider, providerAccountId, {
               ip: options.ip,
               userAgent: options.userAgent,
             }),
@@ -416,29 +415,29 @@ export class LoginWithOAuthTokenUseCase {
       }
 
       const loginResult = await this.#dependencies.unitOfWork.run(async () => {
-        await this.#linkOAuthAccount(existingUser.id, provider, providerAccountId, {
+        await this.#linkOAuthAccount(existingUser.id.value, provider, providerAccountId, {
           ip: options.ip,
           userAgent: options.userAgent,
         });
 
-        return this.#createSessionAndTokens(existingUser.id, existingUser.email, {
+        return this.#createSessionAndTokens(existingUser.id.value, existingUser.email, {
           ip: options.ip,
           userAgent: options.userAgent,
           provider,
         });
       });
-      await this.#dependencies.cacheService.invalidateUserProfile(existingUser.id);
+      await this.#dependencies.cacheService.invalidateUserProfile(existingUser.id.value);
       return loginResult;
     }
 
     this.#dependencies.logger.warn({
       event: AuthLogEvent.OAUTH_ACCOUNT_LINK_REQUIRED,
-      userId: existingUser.id,
+      userId: existingUser.id.value,
       provider,
     });
 
     await this.#dependencies.securityLogRepository.create({
-      userId: existingUser.id,
+      userId: existingUser.id.value,
       event: SECURITY_EVENT.OAUTH_LINK_REQUIRED,
       ipAddress: options.ip,
       userAgent: options.userAgent,

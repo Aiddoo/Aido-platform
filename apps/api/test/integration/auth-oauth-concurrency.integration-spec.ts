@@ -12,7 +12,7 @@ import { DrizzleSecurityLogRepository } from "#api/modules/identity/auth/infrast
 import { DrizzleUserRepository } from "#api/modules/identity/auth/infrastructure/persistence/drizzle-user.repository";
 import { createEntityId } from "#api/platform/database/entity-id";
 import { oAuthState, user as userTable } from "#api/platform/database/schema/index";
-import { UNIT_OF_WORK, type UnitOfWorkPort } from "#api/shared/application/ports/index";
+import { UnitOfWorkPort } from "#api/shared/application/ports/index";
 import { UserFixture } from "#test/fixtures/index";
 import { OAuthStateFixture } from "#test/fixtures/oauth-state.fixture";
 import { FakeEmailService } from "#test/mocks/fake-email.service";
@@ -53,7 +53,7 @@ describe("OAuth 교환과 로그인 수단 변경 (실제 PostgreSQL)", () => {
     exchange = module.get(ExchangeOAuthCodeUseCase);
     link = module.get(LinkOAuthAccountWithCodeUseCase);
     unlink = module.get(UnlinkOAuthAccountUseCase);
-    unitOfWork = module.get(UNIT_OF_WORK);
+    unitOfWork = module.get(UnitOfWorkPort);
   });
 
   beforeEach(async () => {
@@ -324,7 +324,7 @@ describe("OAuth 교환과 로그인 수단 변경 (실제 PostgreSQL)", () => {
       const consumed = await states.consumeExchangeCode({
         id: state.id,
         exchangeCode: state.exchangeCode ?? "",
-        at,
+        at: Temporal.Instant.fromEpochMilliseconds(at.getTime()),
         purpose: "link",
         actorUserId: userId,
       });
@@ -335,7 +335,7 @@ describe("OAuth 교환과 로그인 수단 변경 (실제 PostgreSQL)", () => {
         await states.consumeExchangeCode({
           id: state.id,
           exchangeCode: state.exchangeCode ?? "",
-          at,
+          at: Temporal.Instant.fromEpochMilliseconds(at.getTime()),
           purpose: "link",
           actorUserId: userId,
         }),
@@ -355,7 +355,7 @@ describe("OAuth 교환과 로그인 수단 변경 (실제 PostgreSQL)", () => {
         await states.consumeExchangeCode({
           id: state.id,
           exchangeCode: state.exchangeCode ?? "",
-          at,
+          at: Temporal.Instant.fromEpochMilliseconds(at.getTime()),
           purpose: "link",
           actorUserId: userId,
         }),

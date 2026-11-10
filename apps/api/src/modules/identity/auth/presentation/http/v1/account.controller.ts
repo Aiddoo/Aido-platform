@@ -24,7 +24,6 @@ import {
   CurrentUser,
   type CurrentUserPayload,
 } from "#api/modules/identity/auth/presentation/http/decorators/current-user.decorator";
-import { AuthMapper } from "#api/modules/identity/auth/presentation/http/v1/auth-response.mapper";
 import { Timezone } from "#api/platform/http/decorators/index";
 import {
   AppVersion,
@@ -43,6 +42,7 @@ import {
 import { ThrottleByUser } from "#api/platform/throttle/index";
 
 import { extractMetadata } from "./auth-request.mapper.js";
+import { AuthMapper, toLinkedAccountsResponse } from "./auth-response.mapper.js";
 import { AUTH_THROTTLE } from "./auth-throttle.constants.js";
 import {
   CurrentUserDto,
@@ -194,7 +194,9 @@ export class AccountController {
   @ApiSuccessResponse({ type: LinkedAccountsResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
   async getLinkedAccounts(@CurrentUser() user: CurrentUserPayload) {
-    return this.#listLinkedAccountsQuery.execute({ userId: user.userId });
+    return toLinkedAccountsResponse(
+      await this.#listLinkedAccountsQuery.execute({ userId: user.userId }),
+    );
   }
 
   @Delete("linked-accounts/:provider")

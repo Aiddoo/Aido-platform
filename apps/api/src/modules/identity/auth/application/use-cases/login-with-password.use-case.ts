@@ -1,6 +1,5 @@
-import { type LoginInput as LoginBody } from "@aido/api/contracts/auth";
 import { ErrorCode } from "@aido/api/errors";
-import { LOGIN_ATTEMPT } from "@aido/api/vocabulary";
+import { LOGIN_ATTEMPT, SECURITY_EVENT } from "@aido/api/vocabulary";
 
 import type {
   LoginResult,
@@ -10,15 +9,13 @@ import { assertStatusAllowsLogin } from "#api/modules/identity/auth/domain/accou
 import {
   AUTH_DEFAULTS,
   LOGIN_FAILURE_REASON,
-  SECURITY_EVENT,
 } from "#api/modules/identity/auth/domain/auth.constants";
 import { Email } from "#api/modules/identity/auth/domain/email.vo";
-import { IdentityUser } from "#api/modules/identity/auth/domain/identity-user.aggregate";
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
+import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
-import { subtractMinutes } from "#api/shared/domain/date/utils/arithmetic";
-import { now } from "#api/shared/domain/date/utils/core";
+import { instantToDate } from "#api/shared/domain/time/instant";
 
 import { AuthLogEvent } from "../auth.log-events.js";
 import type { AuthCachePort } from "../ports/auth-collaboration.port.js";
@@ -32,9 +29,12 @@ import type {
 import type { IssueLoginUseCase } from "./issue-login.use-case.js";
 import type { RestoreAccountUseCase } from "./restore-account.use-case.js";
 
-export type LoginWithPasswordCommand = Readonly<LoginBody> & {
+export interface LoginWithPasswordCommand {
+  readonly email: string;
+  readonly password: string;
+  readonly deviceName?: string;
   readonly metadata?: RequestMetadata;
-};
+}
 
 interface LoginWithPasswordDependencies {
   readonly userRepository: Pick<AuthUserRepositoryPort, "findByEmail">;
@@ -52,6 +52,7 @@ interface LoginWithPasswordDependencies {
   readonly restoreAccount: Pick<RestoreAccountUseCase, "execute">;
   readonly cacheService: Pick<AuthCachePort, "invalidateUserProfile">;
   readonly unitOfWork: UnitOfWorkPort;
+  readonly clock: ClockPort;
   readonly logger: ApplicationLoggerPort;
 }
 
@@ -70,7 +71,9 @@ export class LoginWithPasswordUseCase {
     const userAgent = metadata?.userAgent ?? AUTH_DEFAULTS.UNKNOWN_USER_AGENT;
     const attemptContext = { email, ipAddress: ip, userAgent };
 
-    const lockoutSince = subtractMinutes(LOGIN_ATTEMPT.LOCKOUT_MINUTES);
+    const lockoutSince = instantToDate(
+      this.#dependencies.clock.now().subtract({ minutes: LOGIN_ATTEMPT.LOCKOUT_MINUTES }),
+    );
     const recentFailures =
       await this.#dependencies.loginAttemptRepository.countRecentFailuresByEmail(
         email,
@@ -101,7 +104,7 @@ export class LoginWithPasswordUseCase {
     }
 
     const account = await this.#dependencies.accountRepository.findByUserIdAndProvider(
-      user.id,
+      user.id.value,
       "CREDENTIAL",
     );
     if (account == null || account.password == null || account.password === "") {
@@ -139,7 +142,7 @@ export class LoginWithPasswordUseCase {
         .hash(password)
         .then((passwordHash) =>
           this.#dependencies.accountRepository.updatePasswordIfUnchanged(
-            user.id,
+            user.id.value,
             expectedPasswordHash,
             passwordHash,
           ),
@@ -148,21 +151,21 @@ export class LoginWithPasswordUseCase {
           if (updated) {
             this.#dependencies.logger.debug({
               event: AuthLogEvent.PASSWORD_REHASHED,
-              userId: user.id,
+              userId: user.id.value,
             });
           }
         })
         .catch((error: unknown) =>
           this.#dependencies.logger.error({
             event: AuthLogEvent.PASSWORD_REHASH_FAILED,
-            userId: user.id,
+            userId: user.id.value,
             errorType: error instanceof Error ? error.name : "unknown",
           }),
         );
     }
 
-    const identityUser = IdentityUser.reconstitute(user);
-    const restorationAt = now();
+    const identityUser = user;
+    const restorationAt = this.#dependencies.clock.now();
     const needsRestore = identityUser.requiresRestoration(restorationAt);
 
     if (!needsRestore) {
@@ -182,7 +185,7 @@ export class LoginWithPasswordUseCase {
       }
 
       return this.#dependencies.issueLoginUseCase.execute({
-        userId: user.id,
+        userId: user.id.value,
         email,
         role: user.role,
         provider: "CREDENTIAL",
@@ -193,22 +196,22 @@ export class LoginWithPasswordUseCase {
     });
 
     if (needsRestore) {
-      await this.#dependencies.cacheService.invalidateUserProfile(user.id);
+      await this.#dependencies.cacheService.invalidateUserProfile(user.id.value);
       this.#dependencies.logger.log({
         event: AuthLogEvent.ACCOUNT_RESTORED,
-        userId: user.id,
+        userId: user.id.value,
         provider: "CREDENTIAL",
       });
     }
 
     this.#dependencies.logger.log({
       event: AuthLogEvent.USER_LOGGED_IN,
-      userId: user.id,
+      userId: user.id.value,
       provider: "CREDENTIAL",
     });
 
     return {
-      userId: user.id,
+      userId: user.id.value,
       userTag: user.userTag,
       tokens: result.tokens,
       sessionId: result.sessionId,

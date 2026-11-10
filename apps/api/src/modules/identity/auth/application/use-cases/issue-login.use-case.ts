@@ -1,7 +1,7 @@
 import type { UserRole } from "@aido/api/vocabulary";
+import { SECURITY_EVENT } from "@aido/api/vocabulary";
 
-import { SECURITY_EVENT } from "#api/modules/identity/auth/domain/auth.constants";
-import type { AccountProvider } from "#api/modules/identity/auth/domain/identity.constants";
+import type { AccountProvider } from "#api/modules/identity/auth/domain/auth.constants";
 
 import type { TokenPair } from "../ports/auth-crypto.port.js";
 import {
@@ -9,7 +9,7 @@ import {
   type AuthSecurityLogRepositoryPort,
   type AuthUserRepositoryPort,
 } from "../ports/auth-persistence.port.js";
-import type { SessionService } from "./create-session.use-case.js";
+import type { CreateSessionUseCase } from "./create-session.use-case.js";
 
 export interface IssueLoginCommand {
   userId: string;
@@ -40,7 +40,7 @@ export interface IssueLoginOutcome {
  * 플래그 등 provider별 처리는 호출측이 담당한다.
  */
 interface IssueLoginDependencies {
-  readonly sessionService: Pick<SessionService, "createSessionWithTokens">;
+  readonly sessionService: Pick<CreateSessionUseCase, "execute">;
   readonly loginAttemptRepository: Pick<AuthLoginAttemptRepositoryPort, "create">;
   readonly securityLogRepository: Pick<AuthSecurityLogRepositoryPort, "create">;
   readonly userRepository: Pick<AuthUserRepositoryPort, "findByIdWithProfile">;
@@ -54,7 +54,7 @@ export class IssueLoginUseCase {
   }
 
   async execute(input: IssueLoginCommand): Promise<IssueLoginOutcome> {
-    const { sessionId, tokens } = await this.#dependencies.sessionService.createSessionWithTokens({
+    const { sessionId, tokens } = await this.#dependencies.sessionService.execute({
       userId: input.userId,
       email: input.email,
       role: input.role,

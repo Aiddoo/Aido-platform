@@ -4,24 +4,31 @@ import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
 import { and, eq, isNotNull, isNull, lt, ne, or } from "drizzle-orm";
 
-import type {
+import {
   AuthSessionRepositoryPort,
-  RotateAuthSessionInput,
+  type NewAuthSession,
 } from "#api/modules/identity/auth/application/ports/auth-persistence.port";
-import type { CreateSessionData } from "#api/modules/identity/auth/application/read-models/create-session-data.read-model";
+import type {
+  AuthSession,
+  AuthSessionRotation,
+} from "#api/modules/identity/auth/domain/auth-session.aggregate";
 import { AUTH_DEFAULTS } from "#api/modules/identity/auth/domain/auth.constants";
 import { requireRecord } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { session } from "#api/platform/database/schema/index";
 import { now } from "#api/shared/domain/date/utils/core";
+import { instantToDate } from "#api/shared/domain/time/instant";
+
+import { toAuthSession } from "./auth-row.mapper.js";
 
 type SessionRow = typeof session.$inferSelect;
 
 @Injectable()
-export class DrizzleSessionRepository implements AuthSessionRepositoryPort {
+export class DrizzleSessionRepository extends AuthSessionRepositoryPort {
   readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
 
   constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>) {
+    super();
     this.#txHost = txHost;
   }
 
@@ -29,9 +36,9 @@ export class DrizzleSessionRepository implements AuthSessionRepositoryPort {
     return this.#txHost.tx;
   }
 
-  async create(data: CreateSessionData): Promise<SessionRow> {
+  async create(data: NewAuthSession): Promise<SessionRow> {
     // refreshTokenHash가 없으면 임시 placeholder 생성 (unique 제약 조건 충족)
-    const refreshTokenHash = data.refreshTokenHash ?? `pending_${randomUUID().replace(/-/g, "")}`;
+    const refreshTokenHash = `pending_${randomUUID().replace(/-/g, "")}`;
 
     const [row] = await this.#db
       .insert(session)
@@ -46,7 +53,7 @@ export class DrizzleSessionRepository implements AuthSessionRepositoryPort {
         ),
         userAgent: data.userAgent,
         ipAddress: data.ipAddress,
-        expiresAt: data.expiresAt,
+        expiresAt: instantToDate(data.expiresAt),
       })
       .returning();
     return requireRecord(row);
@@ -61,14 +68,14 @@ export class DrizzleSessionRepository implements AuthSessionRepositoryPort {
     return requireRecord(row);
   }
 
-  async findById(id: string): Promise<SessionRow | null> {
+  async findById(id: string): Promise<AuthSession | null> {
     const row = await this.#db.query.session.findFirst({ where: { id } });
-    return row ?? null;
+    return row == null ? null : toAuthSession(row);
   }
 
-  async findByRefreshTokenHash(hash: string): Promise<SessionRow | null> {
+  async findByRefreshTokenHash(hash: string): Promise<AuthSession | null> {
     const row = await this.#db.query.session.findFirst({ where: { refreshTokenHash: hash } });
-    return row ?? null;
+    return row == null ? null : toAuthSession(row);
   }
 
   async findActiveByUserId(userId: string): Promise<SessionRow[]> {
@@ -79,15 +86,19 @@ export class DrizzleSessionRepository implements AuthSessionRepositoryPort {
   }
 
   // 단건 update의 PK 선조회 대신 version·revoked 조건을 실제 UPDATE에 유지한다.
-  async rotateToken(id: string, data: RotateAuthSessionInput): Promise<SessionRow | null> {
-    const [row] = await this.#db
+  async rotateToken(
+    id: string,
+    data: AuthSessionRotation,
+    now: Temporal.Instant,
+  ): Promise<boolean> {
+    const rotated = await this.#db
       .update(session)
       .set({
         refreshTokenHash: data.refreshTokenHash,
         tokenVersion: data.tokenVersion,
         previousTokenHash: data.previousTokenHash,
-        expiresAt: data.expiresAt,
-        lastUsedAt: now(),
+        expiresAt: instantToDate(data.expiresAt),
+        lastUsedAt: instantToDate(now),
       })
       .where(
         and(
@@ -96,8 +107,8 @@ export class DrizzleSessionRepository implements AuthSessionRepositoryPort {
           isNull(session.revokedAt),
         ),
       )
-      .returning();
-    return row ?? null;
+      .returning({ id: session.id });
+    return rotated.length > 0;
   }
 
   async revoke(id: string, reason: string): Promise<SessionRow> {

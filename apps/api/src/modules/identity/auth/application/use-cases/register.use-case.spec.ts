@@ -1,13 +1,13 @@
 import { ErrorCode } from "@aido/api/errors";
 import { vi } from "vitest";
 
+import { AuthPersistenceConflict } from "#api/modules/identity/auth/application/auth.errors";
 import {
   AUTH_CREDENTIAL_TIME,
   AUTH_CREDENTIAL_PASSWORD,
   createAuthCredentialFixture,
 } from "#test/fixtures/auth-credential.fixture";
 
-import { AuthPersistenceConflict } from "../ports/auth-persistence.port.js";
 import { RegisterUseCase } from "./register.use-case.js";
 
 describe("Register — 이메일 계정 등록", () => {
@@ -44,7 +44,6 @@ describe("Register — 이메일 계정 등록", () => {
   const input = {
     email: "new@example.com",
     password: AUTH_CREDENTIAL_PASSWORD,
-    passwordConfirm: AUTH_CREDENTIAL_PASSWORD,
     name: "신규 사용자",
     termsAgreed: true,
     privacyAgreed: true,

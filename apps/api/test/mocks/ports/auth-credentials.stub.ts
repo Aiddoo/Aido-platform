@@ -11,18 +11,22 @@ import type {
   AuthUserProfileRecord,
   AuthUserRecord,
   AuthUserRepositoryPort,
-  AuthVerificationRecord,
   AuthVerificationRepositoryPort,
 } from "#api/modules/identity/auth/application/ports/auth-persistence.port";
 import type { RetentionEnrollerPort } from "#api/modules/identity/auth/application/ports/retention-enroller.port";
 import type { UserProvisioningSeederPort } from "#api/modules/identity/auth/application/ports/user-provisioning-seeder.port";
 import type { VerificationCodeSecurityPort } from "#api/modules/identity/auth/application/ports/verification-code-security.port";
+import { AuthVerification } from "#api/modules/identity/auth/domain/auth-verification.aggregate";
+import type { VerificationType } from "#api/modules/identity/auth/domain/auth.constants";
+import type { IdentityUser } from "#api/modules/identity/auth/domain/identity-user.aggregate";
+import { instantFromDate, instantToDate } from "#api/shared/domain/time/instant";
 import { UserFixture, VerificationFixture } from "#test/fixtures/index";
 
 import {
   StubAccountLifecycleCache,
   StubAccountLifecycleRepository,
   StubAccountPasswordVerifier,
+  toIdentityUser,
 } from "./account-lifecycle.stub.js";
 
 export class StubAuthUserRepository
@@ -37,7 +41,7 @@ export class StubAuthUserRepository
       | "createProfile"
       | "markEmailVerified"
       | "updateProfile"
-      | "restore"
+      | "saveAccountStatus"
     >
 {
   readonly profiles = new Map<string, AuthUserProfileRecord["profile"]>();
@@ -50,9 +54,9 @@ export class StubAuthUserRepository
     super(users);
   }
 
-  async findByEmail(email: string): Promise<AuthUserRecord | null> {
-    const user = [...this.users.values()].find((user) => user.email === email);
-    return user === undefined ? null : { ...user };
+  async findByEmail(email: string): Promise<IdentityUser | null> {
+    const user = [...this.users.values()].find((candidate) => candidate.email === email);
+    return user === undefined ? null : toIdentityUser(user);
   }
 
   async findByIdWithProfile(id: string): Promise<AuthUserProfileRecord | null> {
@@ -71,10 +75,10 @@ export class StubAuthUserRepository
     };
   }
 
-  async create(input: Parameters<AuthUserRepositoryPort["create"]>[0]): Promise<AuthUserRecord> {
+  async create(input: Parameters<AuthUserRepositoryPort["create"]>[0]): Promise<IdentityUser> {
     const user = UserFixture.create({ ...input, emailVerifiedAt: input.emailVerifiedAt ?? null });
     this.users.set(user.id, user);
-    return user;
+    return toIdentityUser(user);
   }
 
   async createProfile(
@@ -88,8 +92,8 @@ export class StubAuthUserRepository
   }
 
   async markEmailVerified(id: string): Promise<void> {
-    const user = await this.findById(id);
-    if (user === null) {
+    const user = this.users.get(id);
+    if (user === undefined) {
       throw new Error(`사용자가 없습니다: ${id}`);
     }
     this.users.set(id, { ...user, status: "ACTIVE", emailVerifiedAt: new Date() });
@@ -169,6 +173,17 @@ export class StubAuthProfileCache
   }
 }
 
+export interface AuthVerificationRecord {
+  id: number;
+  userId: string;
+  type: VerificationType;
+  token: string;
+  expiresAt: Date;
+  attempts: number;
+  usedAt: Date | null;
+  createdAt: Date;
+}
+
 export class StubAuthVerificationRepository implements AuthVerificationRepositoryPort {
   readonly verifications: Map<number, AuthVerificationRecord>;
 
@@ -185,9 +200,10 @@ export class StubAuthVerificationRepository implements AuthVerificationRepositor
 
   async findValidByUserIdAndType(
     userId: string,
-    type: AuthVerificationRecord["type"],
-    at = new Date(),
-  ): Promise<AuthVerificationRecord | null> {
+    type: VerificationType,
+    now: Temporal.Instant,
+  ): Promise<AuthVerification | null> {
+    const at = instantToDate(now);
     const verification = [...this.verifications.values()]
       .filter(
         (verification) =>
@@ -199,17 +215,28 @@ export class StubAuthVerificationRepository implements AuthVerificationRepositor
       .sort(
         (left, right) => right.createdAt.getTime() - left.createdAt.getTime() || right.id - left.id,
       )[0];
-    return verification === undefined ? null : { ...verification };
+    return verification === undefined
+      ? null
+      : AuthVerification.reconstitute({
+          id: verification.id,
+          userId: verification.userId,
+          type: verification.type,
+          tokenHash: verification.token,
+          expiresAt: instantFromDate(verification.expiresAt),
+          attempts: verification.attempts,
+          usedAt: verification.usedAt == null ? null : instantFromDate(verification.usedAt),
+        });
   }
 
   async consume(input: {
     id: number;
     userId: string;
-    type: AuthVerificationRecord["type"];
+    type: VerificationType;
     tokenHash: string;
     maxAttempts: number;
-    at: Date;
+    at: Temporal.Instant;
   }): Promise<boolean> {
+    const at = instantToDate(input.at);
     const verification = this.verifications.get(input.id);
     if (
       verification === undefined ||
@@ -217,12 +244,12 @@ export class StubAuthVerificationRepository implements AuthVerificationRepositor
       verification.type !== input.type ||
       verification.token !== input.tokenHash ||
       verification.usedAt !== null ||
-      verification.expiresAt <= input.at ||
+      verification.expiresAt <= at ||
       verification.attempts >= input.maxAttempts
     ) {
       return false;
     }
-    this.verifications.set(input.id, { ...verification, usedAt: new Date(input.at) });
+    this.verifications.set(input.id, { ...verification, usedAt: at });
     return true;
   }
 
@@ -234,10 +261,7 @@ export class StubAuthVerificationRepository implements AuthVerificationRepositor
     this.verifications.set(id, { ...verification, attempts: verification.attempts + 1 });
   }
 
-  async invalidateAllByUserIdAndType(
-    userId: string,
-    type: AuthVerificationRecord["type"],
-  ): Promise<number> {
+  async invalidateAllByUserIdAndType(userId: string, type: VerificationType): Promise<number> {
     let count = 0;
     for (const [id, verification] of this.verifications) {
       if (
@@ -256,7 +280,7 @@ export class StubAuthVerificationRepository implements AuthVerificationRepositor
 
   async countRecentByUserIdAndType(
     userId: string,
-    type: AuthVerificationRecord["type"],
+    type: VerificationType,
     since: Date,
   ): Promise<number> {
     return [...this.verifications.values()].filter(

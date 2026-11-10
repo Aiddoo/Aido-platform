@@ -9,7 +9,9 @@ import type {
   SocialLoginOptions,
   VerifiedProfile,
 } from "#api/modules/identity/auth/application/ports/oauth-identity-provider.port";
-import type { AccountProvider } from "#api/modules/identity/auth/domain/identity.constants";
+import { AuthOAuthState } from "#api/modules/identity/auth/domain/auth-oauth-state.aggregate";
+import type { AccountProvider } from "#api/modules/identity/auth/domain/auth.constants";
+import { instantFromDate, instantToDate } from "#api/shared/domain/time/instant";
 import { OAuthStateFixture } from "#test/fixtures/oauth-state.fixture";
 
 export class StubAuthOAuthStateRepository implements AuthOAuthStateRepositoryPort {
@@ -46,12 +48,21 @@ export class StubAuthOAuthStateRepository implements AuthOAuthStateRepositoryPor
     return record === undefined ? null : { ...record };
   }
 
-  async findByExchangeCode(code: string, at = new Date()): Promise<AuthOAuthStateRecord | null> {
+  async findByExchangeCode(code: string, now: Temporal.Instant): Promise<AuthOAuthState | null> {
+    const at = instantToDate(now);
     const record = [...this.states.values()].find(
-      (record) =>
-        record.exchangeCode === code && record.exchangedAt === null && record.expiresAt > at,
+      (candidate) =>
+        candidate.exchangeCode === code &&
+        candidate.exchangedAt === null &&
+        candidate.expiresAt > at,
     );
-    return record === undefined ? null : { ...record };
+    return record === undefined
+      ? null
+      : AuthOAuthState.reconstitute({
+          ...record,
+          expiresAt: instantFromDate(record.expiresAt),
+          exchangedAt: record.exchangedAt == null ? null : instantFromDate(record.exchangedAt),
+        });
   }
 
   async saveExchangeData(
@@ -86,7 +97,7 @@ export class StubAuthOAuthStateRepository implements AuthOAuthStateRepositoryPor
       record === undefined ||
       record.exchangeCode !== input.exchangeCode ||
       record.exchangedAt !== null ||
-      record.expiresAt <= input.at ||
+      record.expiresAt <= instantToDate(input.at) ||
       (input.purpose === "link" &&
         (record.mode !== "link" ||
           (record.initiatingUserId !== null &&
@@ -97,7 +108,7 @@ export class StubAuthOAuthStateRepository implements AuthOAuthStateRepositoryPor
     }
     this.states.set(input.id, {
       ...record,
-      exchangedAt: new Date(input.at),
+      exchangedAt: instantToDate(input.at),
       accessToken: null,
       refreshToken: null,
     });

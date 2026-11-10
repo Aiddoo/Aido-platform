@@ -11,7 +11,7 @@ import { LinkOAuthAccountUseCase } from "#api/modules/identity/auth/application/
 import { ListLinkedAccountsUseCase } from "#api/modules/identity/auth/application/use-cases/list-linked-accounts.use-case";
 import { LoginWithOAuthTokenUseCase } from "#api/modules/identity/auth/application/use-cases/login-with-oauth-token.use-case";
 import { UnlinkOAuthAccountUseCase } from "#api/modules/identity/auth/application/use-cases/unlink-oauth-account.use-case";
-import type { AccountProvider } from "#api/modules/identity/auth/domain/identity.constants";
+import type { AccountProvider } from "#api/modules/identity/auth/domain/auth.constants";
 import { AppleOAuthIdentityAdapter } from "#api/modules/identity/auth/infrastructure/adapters/apple-oauth-identity.adapter";
 import { GoogleOAuthIdentityAdapter } from "#api/modules/identity/auth/infrastructure/adapters/google-oauth-identity.adapter";
 import { KakaoOAuthIdentityAdapter } from "#api/modules/identity/auth/infrastructure/adapters/kakao-oauth-identity.adapter";
@@ -647,7 +647,7 @@ describe("OAuth UseCase 통합 테스트 (실제 PostgreSQL)", () => {
       expect(naverAccount).toBeDefined();
       expect(naverAccount?.linked).toBe(true);
       expect(naverAccount?.providerAccountId).toBe("naver-pid-test");
-      expect(naverAccount?.linkedAt).toBeInstanceOf(Date);
+      expect(naverAccount?.linkedAt).toBeInstanceOf(Temporal.Instant);
     });
 
     it("다른 유저에 연결된 계정을 연동하면 409 에러가 발생해야 한다", async () => {

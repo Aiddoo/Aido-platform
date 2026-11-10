@@ -1,10 +1,11 @@
 import { ErrorCode } from "@aido/api/errors";
+import { REVOKE_REASON, SECURITY_EVENT } from "@aido/api/vocabulary";
 
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import { AuthSession } from "../../domain/auth-session.aggregate.js";
-import { AUTH_DEFAULTS, REVOKE_REASON, SECURITY_EVENT } from "../../domain/auth.constants.js";
+import { AUTH_DEFAULTS } from "../../domain/auth.constants.js";
 import { AuthLogEvent } from "../auth.log-events.js";
 import type { AuthCachePort } from "../ports/auth-collaboration.port.js";
 import type {
@@ -36,12 +37,8 @@ export class LogoutUseCase {
   }
 
   async execute(input: LogoutCommand): Promise<{ message: string }> {
-    const session = await this.#dependencies.sessionRepository.findById(input.sessionId);
-    if (session == null) {
-      throw new ApplicationException(ErrorCode.SESSION_0701, { sessionId: undefined });
-    }
-    const authSession = AuthSession.reconstitute(session);
-    if (!authSession.isOwnedBy(input.userId)) {
+    const authSession = await this.#dependencies.sessionRepository.findById(input.sessionId);
+    if (authSession == null || !authSession.isOwnedBy(UserId.reconstitute(input.userId))) {
       throw new ApplicationException(ErrorCode.SESSION_0701, { sessionId: undefined });
     }
 

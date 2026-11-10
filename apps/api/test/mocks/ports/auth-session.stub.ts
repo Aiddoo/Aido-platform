@@ -9,11 +9,25 @@ import type {
   AuthSecurityLogRepositoryPort,
   AuthSessionRecord,
   AuthSessionRepositoryPort,
-  RotateAuthSessionInput,
+  NewAuthSession,
 } from "#api/modules/identity/auth/application/ports/auth-persistence.port";
 import type { SessionPushDeviceReleaserPort } from "#api/modules/identity/auth/application/ports/session-push-device-releaser.port";
-import type { CreateSessionData } from "#api/modules/identity/auth/application/read-models/create-session-data.read-model";
+import {
+  AuthSession,
+  type AuthSessionRotation,
+} from "#api/modules/identity/auth/domain/auth-session.aggregate";
+import { instantFromDate, instantToDate } from "#api/shared/domain/time/instant";
 import { SessionFixture } from "#test/fixtures/session.fixture";
+
+function toAuthSession(record: AuthSessionRecord): AuthSession {
+  return AuthSession.reconstitute({
+    ...record,
+    lastUsedAt: instantFromDate(record.lastUsedAt),
+    createdAt: instantFromDate(record.createdAt),
+    expiresAt: instantFromDate(record.expiresAt),
+    revokedAt: record.revokedAt == null ? null : instantFromDate(record.revokedAt),
+  });
+}
 
 type SessionOperations = Pick<
   AuthSessionRepositoryPort,
@@ -30,7 +44,7 @@ type SessionOperations = Pick<
 
 export class StubAuthSessionRepository implements SessionOperations {
   readonly sessions: Map<string, AuthSessionRecord>;
-  readonly creations: CreateSessionData[] = [];
+  readonly creations: NewAuthSession[] = [];
   readonly revocationReasons = new Map<string, string>();
   rejectRotation = false;
 
@@ -38,10 +52,10 @@ export class StubAuthSessionRepository implements SessionOperations {
     this.sessions = new Map(sessions.map((session) => [session.id, { ...session }]));
   }
 
-  async create(input: CreateSessionData): Promise<AuthSessionRecord> {
-    const session = SessionFixture.create(input);
-    session.refreshTokenHash = input.refreshTokenHash ?? `pending:${session.id}`;
-    this.creations.push({ ...input, expiresAt: new Date(input.expiresAt) });
+  async create(input: NewAuthSession): Promise<AuthSessionRecord> {
+    const session = SessionFixture.create({ ...input, expiresAt: instantToDate(input.expiresAt) });
+    session.refreshTokenHash = `pending:${session.id}`;
+    this.creations.push(input);
     this.sessions.set(session.id, session);
     return session;
   }
@@ -54,12 +68,16 @@ export class StubAuthSessionRepository implements SessionOperations {
     this.sessions.set(id, { ...session, refreshTokenHash });
   }
 
-  async findById(id: string): Promise<AuthSessionRecord | null> {
-    return this.sessions.get(id) ?? null;
+  async findById(id: string): Promise<AuthSession | null> {
+    const session = this.sessions.get(id);
+    return session == null ? null : toAuthSession(session);
   }
 
-  async findByRefreshTokenHash(hash: string): Promise<AuthSessionRecord | null> {
-    return [...this.sessions.values()].find((session) => session.refreshTokenHash === hash) ?? null;
+  async findByRefreshTokenHash(hash: string): Promise<AuthSession | null> {
+    const session = [...this.sessions.values()].find(
+      (candidate) => candidate.refreshTokenHash === hash,
+    );
+    return session == null ? null : toAuthSession(session);
   }
 
   async findActiveByUserId(userId: string): Promise<AuthSessionRecord[]> {
@@ -71,7 +89,11 @@ export class StubAuthSessionRepository implements SessionOperations {
     );
   }
 
-  async rotateToken(id: string, input: RotateAuthSessionInput): Promise<AuthSessionRecord | null> {
+  async rotateToken(
+    id: string,
+    input: AuthSessionRotation,
+    now: Temporal.Instant,
+  ): Promise<boolean> {
     const session = this.sessions.get(id);
     if (
       this.rejectRotation ||
@@ -79,18 +101,18 @@ export class StubAuthSessionRepository implements SessionOperations {
       session.revokedAt !== null ||
       session.tokenVersion !== input.expectedTokenVersion
     ) {
-      return null;
+      return false;
     }
     const rotated = {
       ...session,
       refreshTokenHash: input.refreshTokenHash,
       previousTokenHash: input.previousTokenHash,
       tokenVersion: input.tokenVersion,
-      expiresAt: new Date(input.expiresAt),
-      lastUsedAt: new Date(),
+      expiresAt: instantToDate(input.expiresAt),
+      lastUsedAt: instantToDate(now),
     };
     this.sessions.set(id, rotated);
-    return rotated;
+    return true;
   }
 
   async revoke(id: string, reason: string): Promise<void> {

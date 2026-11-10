@@ -1,12 +1,13 @@
 import { ErrorCode } from "@aido/api/errors";
+import { SECURITY_EVENT } from "@aido/api/vocabulary";
 import { vi } from "vitest";
 
 import {
   AUTH_DEFAULTS,
   LOGIN_FAILURE_REASON,
-  SECURITY_EVENT,
+  type AccountProvider,
 } from "#api/modules/identity/auth/domain/auth.constants";
-import type { AccountProvider } from "#api/modules/identity/auth/domain/identity.constants";
+import { IdentityUser } from "#api/modules/identity/auth/domain/identity-user.aggregate";
 import { AUTH_CREDENTIAL_TIME } from "#test/fixtures/auth-credential.fixture";
 import { createAuthOAuthFixture } from "#test/fixtures/auth-oauth.fixture";
 import { SessionFixture } from "#test/fixtures/session.fixture";
@@ -405,7 +406,9 @@ describe("LoginWithOAuthToken — 공급자 인증과 사용자 생명주기", (
       if (user == null) {
         return null;
       }
-      return ++reads === 1 ? user : { ...user, role: "ADMIN" };
+      return ++reads === 1
+        ? user
+        : IdentityUser.reconstitute({ ...user.toPrimitives(), role: "ADMIN" });
     });
     // When
     await fixture.useCase.execute({ provider: "GOOGLE", token: "token", metadata });

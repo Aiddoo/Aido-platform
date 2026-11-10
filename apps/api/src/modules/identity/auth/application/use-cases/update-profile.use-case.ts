@@ -1,5 +1,3 @@
-import type { UpdateProfileInput as UpdateProfileBody } from "@aido/api/contracts/auth";
-
 import type { UpdateProfileResult } from "#api/modules/identity/auth/application/read-models/auth-result.read-model";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 
@@ -7,7 +5,12 @@ import { AuthLogEvent } from "../auth.log-events.js";
 import type { AuthCachePort } from "../ports/auth-collaboration.port.js";
 import type { AuthUserRepositoryPort } from "../ports/auth-persistence.port.js";
 
-export type UpdateProfileCommand = Readonly<UpdateProfileBody> & { readonly userId: string };
+export interface UpdateProfileCommand {
+  readonly userId: string;
+  readonly name?: string;
+  // nullish-strict: PATCH라 undefined는 그대로 두고 null은 지운다
+  readonly profileImage?: string | null;
+}
 
 interface UpdateProfileDependencies {
   readonly userRepository: Pick<AuthUserRepositoryPort, "updateProfile">;

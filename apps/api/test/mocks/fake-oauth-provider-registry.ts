@@ -8,7 +8,7 @@ import {
   type SocialLoginOptions,
   type VerifiedProfile,
 } from "#api/modules/identity/auth/application/ports/oauth-identity-provider.port";
-import type { AccountProvider } from "#api/modules/identity/auth/domain/identity.constants";
+import type { AccountProvider } from "#api/modules/identity/auth/domain/auth.constants";
 import { ApplicationException } from "#api/shared/application/application.exception";
 
 export type OAuthIdentityProviders = ReadonlyMap<AccountProvider, OAuthIdentityProviderPort>;

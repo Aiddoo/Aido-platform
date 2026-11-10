@@ -1,5 +1,5 @@
 /**
- * 통합 테스트용 USER_PROVISIONING_SEEDER 프로바이더.
+ * 통합 테스트용 UserProvisioningSeederPort 프로바이더.
  *
  * 프로덕션에서는 UserProvisioningSeederAdapter가 설정·기본 카테고리 생성 경계에
  * 위임하지만, 통합 테스트는 파사드 전체 그래프를 조립하지 않고 실제 저장소(실 DB)에 직접
@@ -11,15 +11,14 @@ import type { Provider } from "@nestjs/common";
 
 import {
   type ProvisioningConsent,
-  USER_PROVISIONING_SEEDER,
-  type UserProvisioningSeederPort,
+  UserProvisioningSeederPort,
 } from "#api/modules/identity/auth/application/ports/user-provisioning-seeder.port";
 import { DrizzleUserConsentRepository } from "#api/modules/identity/infrastructure/persistence/settings/drizzle-user-consent.repository";
 import { DrizzleUserPreferenceRepository } from "#api/modules/identity/infrastructure/persistence/settings/drizzle-user-preference.repository";
 import { DefaultTodoCategorySeeder } from "#api/modules/planning/infrastructure/seeders/categories/default-todo-category.seeder";
 
 export const provisioningSeederTestProvider: Provider = {
-  provide: USER_PROVISIONING_SEEDER,
+  provide: UserProvisioningSeederPort,
   useFactory: (
     consentRepository: DrizzleUserConsentRepository,
     preferenceRepository: DrizzleUserPreferenceRepository,

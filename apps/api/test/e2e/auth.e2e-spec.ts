@@ -1,4 +1,5 @@
 import { ErrorCode } from "@aido/api/errors";
+import { REVOKE_REASON } from "@aido/api/vocabulary";
 import { eq } from "drizzle-orm";
 import request from "supertest";
 /**
@@ -11,18 +12,9 @@ import request from "supertest";
 import { vi } from "vitest";
 
 import { EntitlementCacheKey } from "#api/modules/access/infrastructure/cache/entitlement/entitlement-cache.keyspace";
-import {
-  AUTH_CACHE,
-  type AuthCachePort,
-} from "#api/modules/identity/auth/application/ports/auth-collaboration.port";
-import {
-  AUTH_TOKEN_ISSUER,
-  type AuthTokenIssuerPort,
-} from "#api/modules/identity/auth/application/ports/auth-crypto.port";
-import {
-  REVOKE_REASON,
-  TOKEN_REUSE_GRACE_PERIOD_MS,
-} from "#api/modules/identity/auth/domain/auth.constants";
+import { AuthCachePort } from "#api/modules/identity/auth/application/ports/auth-collaboration.port";
+import { AuthTokenIssuerPort } from "#api/modules/identity/auth/application/ports/auth-crypto.port";
+import { TOKEN_REUSE_GRACE_PERIOD_MS } from "#api/modules/identity/auth/domain/auth.constants";
 import { CacheService } from "#api/platform/cache/cache.service";
 import { CACHE_SERVICE, type ICacheService } from "#api/platform/cache/interfaces/cache.interface";
 import { requireRecord } from "#api/platform/database/database-error.util";
@@ -809,8 +801,8 @@ describe("인증 E2E", () => {
         .send({ email, password: securityPassword })
         .expect(200);
       const originalRefreshToken: string = login.body.data.refreshToken;
-      const tokenIssuer = ctx.module.get<AuthTokenIssuerPort>(AUTH_TOKEN_ISSUER);
-      const authCache = ctx.module.get<AuthCachePort>(AUTH_CACHE);
+      const tokenIssuer = ctx.module.get<AuthTokenIssuerPort>(AuthTokenIssuerPort);
+      const authCache = ctx.module.get<AuthCachePort>(AuthCachePort);
       const client = ctx.testDatabase.getClient();
       const session = requireRecord(
         await client.query.session.findFirst({
@@ -2300,7 +2292,7 @@ describe("인증 E2E", () => {
         .set("Authorization", `Bearer ${user.accessToken}`)
         .send({ title: "복구 후에도 유지할 할 일", categoryId, startDate: "2024-01-15" })
         .expect(201);
-      const authCache = ctx.module.get<AuthCachePort>(AUTH_CACHE);
+      const authCache = ctx.module.get<AuthCachePort>(AuthCachePort);
       const sessionIds: string[] = [];
       for (const accessToken of accessTokens) {
         const profile = await request(ctx.app.getHttpServer())

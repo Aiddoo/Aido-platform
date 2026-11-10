@@ -1,4 +1,5 @@
 import { ErrorCode } from "@aido/api/errors";
+import { REVOKE_REASON, SECURITY_EVENT } from "@aido/api/vocabulary";
 import { vi } from "vitest";
 import { mock } from "vitest-mock-extended";
 
@@ -11,7 +12,6 @@ import {
   StubAuthSecurityLogRepository,
 } from "#test/mocks/ports/auth-session.stub";
 
-import { REVOKE_REASON, SECURITY_EVENT } from "../../domain/auth.constants.js";
 import { RevokeSessionUseCase } from "./revoke-session.use-case.js";
 
 const currentTime = new Date("2026-12-31T23:59:00Z");

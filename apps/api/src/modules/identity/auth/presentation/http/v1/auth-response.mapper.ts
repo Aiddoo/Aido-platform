@@ -1,4 +1,4 @@
-import type { currentUserSchema } from "@aido/api/contracts/auth";
+import type { currentUserSchema, LinkedAccountsResponse } from "@aido/api/contracts/auth";
 import type { z } from "zod";
 
 import type {
@@ -19,7 +19,9 @@ import type {
  *
  * @module auth.mapper
  */
+import type { ListLinkedAccountsResult } from "#api/modules/identity/auth/application/use-cases/list-linked-accounts.use-case";
 import { resolveProfileImage } from "#api/platform/http/profile/profile-image.resolver";
+import { toIsoString } from "#api/shared/domain/time/instant";
 
 /**
  * Auth 도메인의 Mapper 클래스
@@ -189,3 +191,13 @@ export const AuthMapper = {
     };
   },
 };
+
+export function toLinkedAccountsResponse(result: ListLinkedAccountsResult): LinkedAccountsResponse {
+  return {
+    accounts: result.accounts.map((account) => ({
+      ...account,
+      linkedAt: account.linkedAt == null ? null : toIsoString(account.linkedAt),
+    })),
+    canUnlink: result.canUnlink,
+  };
+}

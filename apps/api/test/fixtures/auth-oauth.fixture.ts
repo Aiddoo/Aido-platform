@@ -1,6 +1,6 @@
 import { LinkOAuthIdentityUseCase } from "#api/modules/identity/auth/application/use-cases/link-oauth-identity.use-case";
 import { NotifyOAuthSignupUseCase } from "#api/modules/identity/auth/application/use-cases/notify-oauth-signup.use-case";
-import type { AccountProvider } from "#api/modules/identity/auth/domain/identity.constants";
+import type { AccountProvider } from "#api/modules/identity/auth/domain/auth.constants";
 import type { OAuthIdentityProviders } from "#test/mocks/fake-oauth-provider-registry";
 import {
   CountingOAuthIdentityProvider,

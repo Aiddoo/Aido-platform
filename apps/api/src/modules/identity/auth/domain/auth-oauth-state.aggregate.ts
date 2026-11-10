@@ -1,41 +1,96 @@
-import { AggregateRoot } from "#api/shared/domain/index";
+import { AggregateRoot } from "#api/shared/domain/model/aggregate-root";
 
-export interface AuthOAuthStateProps {
-  id: number;
-  expiresAt: Date;
-  exchangedAt: Date | null;
-  mode: string | null;
-  initiatingUserId: string | null;
+import type { AccountProvider } from "./auth.constants.js";
+import { OAuthStateId } from "./oauth-state-id.vo.js";
+
+export interface AuthOAuthStatePrimitives {
+  readonly id: number;
+  readonly state: string;
+  readonly provider: AccountProvider;
+  readonly redirectUri: string;
+  readonly mode: string | null;
+  readonly initiatingUserId: string | null;
+  readonly exchangeCode: string | null;
+  readonly accessToken: string | null;
+  readonly refreshToken: string | null;
+  readonly userId: string | null;
+  readonly userName: string | null;
+  readonly profileImage: string | null;
+  readonly accountRestored: boolean | null;
+  readonly isNewUser: boolean | null;
+  readonly expiresAt: Temporal.Instant;
+  readonly exchangedAt: Temporal.Instant | null;
 }
+
+type AuthOAuthStateProps = Omit<
+  { -readonly [K in keyof AuthOAuthStatePrimitives]: AuthOAuthStatePrimitives[K] },
+  "id"
+>;
 
 export type AuthOAuthStateValidity = "valid" | "expired" | "exchanged";
 
-export class AuthOAuthState extends AggregateRoot<AuthOAuthStateProps> {
-  static reconstitute(props: AuthOAuthStateProps): AuthOAuthState {
-    return new AuthOAuthState({
-      id: props.id,
-      expiresAt: new Date(props.expiresAt),
-      exchangedAt: props.exchangedAt == null ? null : new Date(props.exchangedAt),
-      mode: props.mode,
-      initiatingUserId: props.initiatingUserId,
-    });
+/** 앱 로그인 토큰을 넘기는 일회용 교환 코드. 웹 OAuth 콜백이 저장하고 앱이 한 번 교환한다 */
+export interface OAuthLoginExchange {
+  readonly accessToken: string;
+  readonly refreshToken: string;
+  readonly userId: string;
+}
+
+/** 웹 OAuth 흐름의 CSRF state와, 콜백 뒤 앱에 넘길 일회용 교환 결과 */
+export class AuthOAuthState extends AggregateRoot<OAuthStateId, AuthOAuthStateProps> {
+  static reconstitute(primitives: AuthOAuthStatePrimitives): AuthOAuthState {
+    const { id, ...props } = primitives;
+    return new AuthOAuthState(OAuthStateId.reconstitute(id), { ...props });
   }
 
-  get id(): number {
-    return this.props.id;
+  get state(): string {
+    return this.props.state;
   }
 
-  get exchangedAt(): Date | null {
-    return this.props.exchangedAt == null ? null : new Date(this.props.exchangedAt);
+  get provider(): AccountProvider {
+    return this.props.provider;
   }
 
-  validityAt(at: Date): AuthOAuthStateValidity {
+  get redirectUri(): string {
+    return this.props.redirectUri;
+  }
+
+  get mode(): string | null {
+    return this.props.mode;
+  }
+
+  get initiatingUserId(): string | null {
+    return this.props.initiatingUserId;
+  }
+
+  get userName(): string | null {
+    return this.props.userName;
+  }
+
+  get profileImage(): string | null {
+    return this.props.profileImage;
+  }
+
+  get accountRestored(): boolean | null {
+    return this.props.accountRestored;
+  }
+
+  get isNewUser(): boolean | null {
+    return this.props.isNewUser;
+  }
+
+  get exchangedAt(): Temporal.Instant | null {
+    return this.props.exchangedAt;
+  }
+
+  validityAt(now: Temporal.Instant): AuthOAuthStateValidity {
     if (this.props.exchangedAt != null) {
       return "exchanged";
     }
-    return this.props.expiresAt <= at ? "expired" : "valid";
+    return Temporal.Instant.compare(this.props.expiresAt, now) <= 0 ? "expired" : "valid";
   }
 
+  // 옛 state 행은 시작한 사용자가 비어 있을 수 있어 그때는 누구의 연결이든 받는다
   canLinkFor(userId: string): boolean {
     return (
       this.props.mode === "link" &&
@@ -45,11 +100,29 @@ export class AuthOAuthState extends AggregateRoot<AuthOAuthStateProps> {
     );
   }
 
-  consume(at: Date): boolean {
-    if (this.validityAt(at) !== "valid") {
+  /** 로그인 교환에 필요한 토큰이 모두 저장돼 있을 때만 돌려준다 */
+  loginExchange(): OAuthLoginExchange | null {
+    const { accessToken, refreshToken, userId } = this.props;
+    if (!accessToken || !refreshToken || !userId) {
+      return null;
+    }
+    return { accessToken, refreshToken, userId };
+  }
+
+  /** 연결 교환은 공급자 계정 id를 userId 칸에 저장해 왔다 */
+  linkedProviderAccountId(): string | null {
+    return this.props.userId ? this.props.userId : null;
+  }
+
+  consume(now: Temporal.Instant): boolean {
+    if (this.validityAt(now) !== "valid") {
       return false;
     }
-    this.props.exchangedAt = new Date(at);
+    this.props.exchangedAt = now;
     return true;
+  }
+
+  toPrimitives(): AuthOAuthStatePrimitives {
+    return { id: this.id.value, ...this.props };
   }
 }

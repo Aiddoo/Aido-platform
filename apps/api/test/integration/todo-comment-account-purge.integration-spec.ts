@@ -16,8 +16,8 @@ import { TODO_COMMENT_ACCOUNT_CLEANUP } from "#api/modules/engagement/engagement
 import { DrizzleTodoCommentAccountCleanupStore } from "#api/modules/engagement/infrastructure/persistence/comments/drizzle-todo-comment-account-cleanup.store";
 import { DrizzleTodoCommentReader } from "#api/modules/engagement/infrastructure/persistence/comments/drizzle-todo-comment.reader";
 import {
-  AUTH_USER_REPOSITORY,
-  AUTH_SECURITY_LOG_REPOSITORY,
+  AuthUserRepositoryPort,
+  AuthSecurityLogRepositoryPort,
 } from "#api/modules/identity/auth/application/ports/auth-persistence.port";
 import { PurgeDeletedAccountsUseCase } from "#api/modules/identity/auth/application/use-cases/purge-deleted-accounts.use-case";
 import { DrizzleSecurityLogRepository } from "#api/modules/identity/auth/infrastructure/persistence/drizzle-security-log.repository";
@@ -42,8 +42,10 @@ import {
 } from "#api/platform/database/schema/index";
 import { DrizzleUsageMeterAdapter } from "#api/platform/metering/adapters/drizzle-usage-meter.adapter";
 import { USAGE_METER } from "#api/platform/metering/interfaces/usage-meter.interface";
-import { MUTATION_LOCK, UNIT_OF_WORK } from "#api/shared/application/ports/index";
+import { ClockPort } from "#api/shared/application/ports/clock.port";
+import { MUTATION_LOCK, UnitOfWorkPort } from "#api/shared/application/ports/index";
 import { DELETED_COMMENT_AUTHOR, DELETED_COMMENT_AUTHOR_ID } from "#api/shared/domain/system-user";
+import { DateNowClock } from "#test/doubles/platform/date-now-clock";
 import { createDatabaseTransactionFixture } from "#test/setup/database-context";
 import type { TestDatabaseClient } from "#test/setup/test-database";
 
@@ -224,7 +226,8 @@ describe("댓글 계정 purge (실제 PostgreSQL)", () => {
       ],
       providers: [
         ClsUnitOfWork,
-        { provide: UNIT_OF_WORK, useExisting: ClsUnitOfWork },
+        { provide: UnitOfWorkPort, useExisting: ClsUnitOfWork },
+        { provide: ClockPort, useClass: DateNowClock },
         PostgresMutationLockAdapter,
         { provide: MUTATION_LOCK, useExisting: PostgresMutationLockAdapter },
         DrizzleTodoCommentAccountCleanupStore,
@@ -241,8 +244,8 @@ describe("댓글 계정 purge (실제 PostgreSQL)", () => {
         { provide: TODO_VIEW_CACHE, useValue: todoViewCache },
         DrizzleUserRepository,
         DrizzleSecurityLogRepository,
-        { provide: AUTH_USER_REPOSITORY, useExisting: DrizzleUserRepository },
-        { provide: AUTH_SECURITY_LOG_REPOSITORY, useExisting: DrizzleSecurityLogRepository },
+        { provide: AuthUserRepositoryPort, useExisting: DrizzleUserRepository },
+        { provide: AuthSecurityLogRepositoryPort, useExisting: DrizzleSecurityLogRepository },
         accountNotificationCleanupProvider,
         accountTodoCommentCleanupProvider,
         { provide: USAGE_METER, useClass: DrizzleUsageMeterAdapter },

@@ -1,7 +1,7 @@
 import { ErrorCode } from "@aido/api/errors";
+import { REVOKE_REASON, SECURITY_EVENT } from "@aido/api/vocabulary";
 import { vi } from "vitest";
 
-import { REVOKE_REASON, SECURITY_EVENT } from "#api/modules/identity/auth/domain/auth.constants";
 import {
   AUTH_CREDENTIAL_PASSWORD,
   AUTH_CREDENTIAL_TIME,

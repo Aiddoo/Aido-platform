@@ -20,6 +20,7 @@ describe("LoginWithPassword — 이메일 로그인과 계정 보호", () => {
   function given(options: Parameters<typeof createAuthCredentialFixture>[0] = {}) {
     const fixture = createAuthCredentialFixture(options);
     const useCase = new LoginWithPasswordUseCase({
+      clock: fixture.clock,
       userRepository: fixture.userRepository,
       accountRepository: fixture.accountRepository,
       loginAttemptRepository: fixture.loginAttemptRepository,

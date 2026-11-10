@@ -3,16 +3,18 @@ import type { UserRole } from "@aido/api/vocabulary";
 
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
+import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
-import { toISOStringOrNull } from "#api/shared/domain/date/utils/format";
+import { instantFromDate, toIsoString } from "#api/shared/domain/time/instant";
 
+import { getSessionValidity } from "../../domain/session-validity.domain-service.js";
+import { sessionRejection } from "../auth.errors.js";
 import { AuthLogEvent } from "../auth.log-events.js";
 import type { AuthCachedSession, AuthCachePort } from "../ports/auth-collaboration.port.js";
 import type {
   AuthSessionRepositoryPort,
   AuthUserRepositoryPort,
 } from "../ports/auth-persistence.port.js";
-import type { SessionService } from "./create-session.use-case.js";
 
 // 서명·만료를 검증한 access 토큰의 claim. 타입·세션 확인은 이 UseCase가 한다
 export interface AccessTokenClaims {
@@ -33,7 +35,7 @@ export interface AuthenticatedUser {
 export interface AuthenticateSessionDependencies {
   readonly sessionRepository: Pick<AuthSessionRepositoryPort, "findById">;
   readonly userRepository: Pick<AuthUserRepositoryPort, "findById">;
-  readonly sessionValidator: Pick<SessionService, "assertSessionValid">;
+  readonly clock: ClockPort;
   readonly cache: Pick<AuthCachePort, "getSession" | "setSession">;
   readonly logger: Pick<ApplicationLoggerPort, "warn">;
 }
@@ -66,7 +68,14 @@ export class AuthenticateSessionUseCase {
 
     const cachedSession = await this.#readCachedSession(claims.sessionId);
     if (cachedSession != null) {
-      this.#dependencies.sessionValidator.assertSessionValid(cachedSession, claims.sessionId);
+      this.#assertUsable(
+        getSessionValidity({
+          expiresAt: toInstant(cachedSession.expiresAt),
+          revokedAt: cachedSession.revokedAt == null ? null : toInstant(cachedSession.revokedAt),
+          now: this.#dependencies.clock.now(),
+        }),
+        claims.sessionId,
+      );
       if (cachedSession.userStatus) {
         assertUserStatus(cachedSession.userStatus, cachedSession.userDeletedAt);
       }
@@ -74,23 +83,36 @@ export class AuthenticateSessionUseCase {
     }
 
     const session = await sessionRepository.findById(claims.sessionId);
-    this.#dependencies.sessionValidator.assertSessionValid(session, claims.sessionId);
+    this.#assertUsable(
+      session == null ? "missing" : session.validityAt(this.#dependencies.clock.now()),
+      claims.sessionId,
+    );
+    if (session == null) {
+      return authenticated;
+    }
 
-    const user = await userRepository.findById(session.userId);
+    const user = await userRepository.findById(session.userId.value);
     const userStatus = user?.status;
-    const userDeletedAt = toISOStringOrNull(user?.deletedAt ?? null);
+    const userDeletedAt = user?.deletedAt == null ? null : toIsoString(user.deletedAt);
     if (userStatus) {
       assertUserStatus(userStatus, userDeletedAt);
     }
 
     await this.#writeCachedSession(claims.sessionId, {
-      userId: session.userId,
-      expiresAt: session.expiresAt,
-      revokedAt: session.revokedAt,
+      userId: session.userId.value,
+      expiresAt: toIsoString(session.expiresAt),
+      revokedAt: session.revokedAt == null ? null : toIsoString(session.revokedAt),
       userStatus,
       userDeletedAt,
     });
     return authenticated;
+  }
+
+  #assertUsable(validity: Parameters<typeof sessionRejection>[0], sessionId: string): void {
+    const rejection = sessionRejection(validity, sessionId);
+    if (rejection != null) {
+      throw rejection;
+    }
   }
 
   // 인증은 마지막 방어선이라 캐시 장애는 미스로 본다. try 안에는 캐시 I/O만 두어 의도한 401을 삼키지 않는다
@@ -117,6 +139,11 @@ export class AuthenticateSessionUseCase {
       });
     }
   }
+}
+
+// 메모리 캐시는 Date, Redis 캐시는 ISO 문자열을 돌려준다
+function toInstant(value: Date | string): Temporal.Instant {
+  return value instanceof Date ? instantFromDate(value) : Temporal.Instant.from(value);
 }
 
 function assertUserStatus(status: string, deletedAt: string | null | undefined): void {

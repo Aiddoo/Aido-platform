@@ -92,7 +92,6 @@ describe("비밀번호 재설정 통합 테스트 (실제 DB)", () => {
     const registerResult = await register.execute({
       email,
       password,
-      passwordConfirm: password,
       termsAgreed: true,
       privacyAgreed: true,
       marketingAgreed: false,

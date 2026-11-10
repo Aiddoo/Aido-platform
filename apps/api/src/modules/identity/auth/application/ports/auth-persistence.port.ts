@@ -1,20 +1,17 @@
 import type { SubscriptionStatus, UserRole } from "@aido/api/vocabulary";
 
+import type { AuthOAuthState } from "../../domain/auth-oauth-state.aggregate.js";
+import type { AuthSession, AuthSessionRotation } from "../../domain/auth-session.aggregate.js";
+import type { AuthVerification } from "../../domain/auth-verification.aggregate.js";
 import type {
   AccountProvider,
+  DeviceFingerprint,
   UserStatus,
   VerificationType,
-} from "../../domain/identity.constants.js";
-import type { CreateSessionData } from "../read-models/create-session-data.read-model.js";
+} from "../../domain/auth.constants.js";
+import type { IdentityAccounts } from "../../domain/identity-accounts.aggregate.js";
+import type { IdentityUser } from "../../domain/identity-user.aggregate.js";
 import type { OAuthMode } from "./oauth-identity-provider.port.js";
-
-export const AUTH_USER_REPOSITORY = Symbol("AUTH_USER_REPOSITORY");
-export const AUTH_ACCOUNT_REPOSITORY = Symbol("AUTH_ACCOUNT_REPOSITORY");
-export const AUTH_SESSION_REPOSITORY = Symbol("AUTH_SESSION_REPOSITORY");
-export const AUTH_VERIFICATION_REPOSITORY = Symbol("AUTH_VERIFICATION_REPOSITORY");
-export const AUTH_LOGIN_ATTEMPT_REPOSITORY = Symbol("AUTH_LOGIN_ATTEMPT_REPOSITORY");
-export const AUTH_SECURITY_LOG_REPOSITORY = Symbol("AUTH_SECURITY_LOG_REPOSITORY");
-export const AUTH_OAUTH_STATE_REPOSITORY = Symbol("AUTH_OAUTH_STATE_REPOSITORY");
 
 export interface AuthUserRecord {
   id: string;
@@ -34,37 +31,31 @@ export interface AuthUserProfileRecord extends AuthUserRecord {
   accounts: Array<{ provider: AccountProvider }>;
 }
 
-export interface AuthUserRepositoryPort {
-  findByEmail(email: string): Promise<AuthUserRecord | null>;
-  findById(id: string): Promise<AuthUserRecord | null>;
-  findByIdWithProfile(id: string): Promise<AuthUserProfileRecord | null>;
-  create(data: {
+export abstract class AuthUserRepositoryPort {
+  abstract findByEmail(email: string): Promise<IdentityUser | null>;
+  abstract findById(id: string): Promise<IdentityUser | null>;
+  abstract findByIdWithProfile(id: string): Promise<AuthUserProfileRecord | null>;
+  abstract create(data: {
     email: string;
     status: UserStatus;
     emailVerifiedAt?: Date;
-  }): Promise<AuthUserRecord>;
-  createProfile(userId: string, data: { name?: string; profileImage?: string }): Promise<void>;
-  markEmailVerified(id: string): Promise<unknown>;
-  updateProfile(
+  }): Promise<IdentityUser>;
+  abstract createProfile(
+    userId: string,
+    data: { name?: string; profileImage?: string },
+  ): Promise<void>;
+  abstract markEmailVerified(id: string): Promise<unknown>;
+  abstract updateProfile(
     userId: string,
     data: { name?: string | null; profileImage?: string | null },
   ): Promise<{ name: string | null; profileImage: string | null }>;
-  softDelete(id: string, deletedAt?: Date): Promise<unknown>;
-  restore(id: string): Promise<unknown>;
-}
-
-export interface AuthUserLockRepositoryPort {
-  findByIdForUpdate(
-    id: string,
-  ): Promise<Pick<AuthUserRecord, "id" | "email" | "status" | "deletedAt"> | null>;
-}
-
-export interface AuthAccountLifecycleRepositoryPort extends AuthUserLockRepositoryPort {
-  findSoftDeletedForPurge(
-    gracePeriodDays: number,
-    at?: Date,
-  ): Promise<Array<{ id: string; email: string; deletedAt: Date }>>;
-  hardDelete(id: string): Promise<void>;
+  /** 탈퇴 요청·복구로 바뀐 상태(status·deletedAt)만 저장한다 */
+  abstract saveAccountStatus(user: IdentityUser): Promise<void>;
+  /** 계정 변경을 직렬화하려고 사용자 행을 잠그고 읽는다(FOR NO KEY UPDATE) */
+  abstract findByIdForUpdate(id: string): Promise<IdentityUser | null>;
+  /** 탈퇴 유예가 지난 사용자 */
+  abstract listPurgeEligible(now: Temporal.Instant): Promise<IdentityUser[]>;
+  abstract hardDelete(id: string): Promise<void>;
 }
 
 export interface AuthAccountRecord {
@@ -76,24 +67,25 @@ export interface AuthAccountRecord {
   createdAt: Date;
 }
 
-export interface AuthAccountRepositoryPort {
-  findByUserIdAndProvider(
+export abstract class AuthAccountRepositoryPort {
+  abstract findByUserIdAndProvider(
     userId: string,
     provider: AccountProvider,
   ): Promise<AuthAccountRecord | null>;
-  findByProviderAccountId(
+  abstract findByProviderAccountId(
     provider: AccountProvider,
     providerAccountId: string,
   ): Promise<AuthAccountRecord | null>;
-  findAllByUserId(userId: string): Promise<AuthAccountRecord[]>;
-  createCredentialAccount(userId: string, hashedPassword: string): Promise<unknown>;
-  updatePassword(userId: string, hashedPassword: string): Promise<unknown>;
-  updatePasswordIfUnchanged(
+  abstract findAllByUserId(userId: string): Promise<AuthAccountRecord[]>;
+  abstract findIdentityAccounts(userId: string): Promise<IdentityAccounts>;
+  abstract createCredentialAccount(userId: string, hashedPassword: string): Promise<unknown>;
+  abstract updatePassword(userId: string, hashedPassword: string): Promise<unknown>;
+  abstract updatePasswordIfUnchanged(
     userId: string,
     expectedPasswordHash: string,
     passwordHash: string,
   ): Promise<boolean>;
-  createOAuthAccount(data: {
+  abstract createOAuthAccount(data: {
     userId: string;
     provider: AccountProvider;
     providerAccountId: string;
@@ -102,7 +94,7 @@ export interface AuthAccountRepositoryPort {
     accessTokenExpiresAt?: Date;
     scope?: string;
   }): Promise<unknown>;
-  deleteAccount(userId: string, provider: AccountProvider): Promise<unknown>;
+  abstract deleteAccount(userId: string, provider: AccountProvider): Promise<unknown>;
 }
 
 export interface AuthSessionRecord {
@@ -120,39 +112,35 @@ export interface AuthSessionRecord {
   revokedAt: Date | null;
 }
 
-export interface RotateAuthSessionInput {
-  refreshTokenHash: string;
-  tokenVersion: number;
-  previousTokenHash: string;
-  expectedTokenVersion: number;
-  expiresAt: Date;
+export interface NewAuthSession {
+  readonly userId: string;
+  readonly tokenFamily: string;
+  readonly tokenVersion: number;
+  readonly deviceFingerprint: DeviceFingerprint;
+  readonly userAgent: string;
+  readonly ipAddress: string;
+  readonly expiresAt: Temporal.Instant;
 }
 
-export interface AuthSessionRepositoryPort {
-  create(data: CreateSessionData): Promise<AuthSessionRecord>;
-  updateRefreshTokenHash(id: string, refreshTokenHash: string): Promise<unknown>;
-  findById(id: string): Promise<AuthSessionRecord | null>;
-  findByRefreshTokenHash(hash: string): Promise<AuthSessionRecord | null>;
-  findActiveByUserId(userId: string): Promise<AuthSessionRecord[]>;
-  rotateToken(id: string, data: RotateAuthSessionInput): Promise<AuthSessionRecord | null>;
-  revoke(id: string, reason: string): Promise<unknown>;
-  revokeByTokenFamily(tokenFamily: string, reason: string): Promise<readonly string[]>;
-  revokeAllByUserId(
+export abstract class AuthSessionRepositoryPort {
+  abstract create(data: NewAuthSession): Promise<AuthSessionRecord>;
+  abstract updateRefreshTokenHash(id: string, refreshTokenHash: string): Promise<unknown>;
+  abstract findById(id: string): Promise<AuthSession | null>;
+  abstract findByRefreshTokenHash(hash: string): Promise<AuthSession | null>;
+  abstract findActiveByUserId(userId: string): Promise<AuthSessionRecord[]>;
+  /** 버전이 그대로이고 폐기되지 않았을 때만 바꾼다. 경합에 지면 false다 */
+  abstract rotateToken(
+    id: string,
+    rotation: AuthSessionRotation,
+    now: Temporal.Instant,
+  ): Promise<boolean>;
+  abstract revoke(id: string, reason: string): Promise<unknown>;
+  abstract revokeByTokenFamily(tokenFamily: string, reason: string): Promise<readonly string[]>;
+  abstract revokeAllByUserId(
     userId: string,
     reason: string,
     excludeSessionId?: string,
   ): Promise<readonly string[]>;
-}
-
-export interface AuthVerificationRecord {
-  id: number;
-  userId: string;
-  type: VerificationType;
-  token: string;
-  expiresAt: Date;
-  attempts: number;
-  usedAt: Date | null;
-  createdAt: Date;
 }
 
 export interface ConsumeAuthVerificationInput {
@@ -161,29 +149,33 @@ export interface ConsumeAuthVerificationInput {
   type: VerificationType;
   tokenHash: string;
   maxAttempts: number;
-  at: Date;
+  at: Temporal.Instant;
 }
 
-export interface AuthVerificationRepositoryPort {
-  create(data: {
+export abstract class AuthVerificationRepositoryPort {
+  abstract create(data: {
     userId: string;
     type: VerificationType;
     token: string;
     expiresAt: Date;
   }): Promise<unknown>;
-  findValidByUserIdAndType(
+  abstract findValidByUserIdAndType(
     userId: string,
     type: VerificationType,
-    at?: Date,
-  ): Promise<AuthVerificationRecord | null>;
-  consume(input: ConsumeAuthVerificationInput): Promise<boolean>;
-  incrementAttempts(id: number): Promise<unknown>;
-  invalidateAllByUserIdAndType(userId: string, type: VerificationType): Promise<number>;
-  countRecentByUserIdAndType(userId: string, type: VerificationType, since: Date): Promise<number>;
+    now: Temporal.Instant,
+  ): Promise<AuthVerification | null>;
+  abstract consume(input: ConsumeAuthVerificationInput): Promise<boolean>;
+  abstract incrementAttempts(id: number): Promise<unknown>;
+  abstract invalidateAllByUserIdAndType(userId: string, type: VerificationType): Promise<number>;
+  abstract countRecentByUserIdAndType(
+    userId: string,
+    type: VerificationType,
+    since: Date,
+  ): Promise<number>;
 }
 
-export interface AuthLoginAttemptRepositoryPort {
-  create(data: {
+export abstract class AuthLoginAttemptRepositoryPort {
+  abstract create(data: {
     email: string;
     provider?: AccountProvider;
     ipAddress: string;
@@ -191,11 +183,11 @@ export interface AuthLoginAttemptRepositoryPort {
     success: boolean;
     failureReason?: string;
   }): Promise<unknown>;
-  countRecentFailuresByEmail(email: string, since: Date): Promise<number>;
+  abstract countRecentFailuresByEmail(email: string, since: Date): Promise<number>;
 }
 
-export interface AuthSecurityLogRepositoryPort {
-  create(data: {
+export abstract class AuthSecurityLogRepositoryPort {
+  abstract create(data: {
     userId?: string;
     event: string;
     ipAddress: string;
@@ -226,11 +218,11 @@ export interface AuthOAuthStateRecord {
 export type ConsumeAuthOAuthStateInput = {
   id: number;
   exchangeCode: string;
-  at: Date;
+  at: Temporal.Instant;
 } & ({ purpose: "login" } | { purpose: "link"; actorUserId: string });
 
-export interface AuthOAuthStateRepositoryPort {
-  create(
+export abstract class AuthOAuthStateRepositoryPort {
+  abstract create(
     state: string,
     provider: AccountProvider,
     redirectUri: string,
@@ -243,9 +235,12 @@ export interface AuthOAuthStateRepositoryPort {
       initiatingUserId?: string;
     },
   ): Promise<AuthOAuthStateRecord>;
-  findByState(state: string): Promise<AuthOAuthStateRecord | null>;
-  findByExchangeCode(exchangeCode: string, at?: Date): Promise<AuthOAuthStateRecord | null>;
-  saveExchangeData(
+  abstract findByState(state: string): Promise<AuthOAuthStateRecord | null>;
+  abstract findByExchangeCode(
+    exchangeCode: string,
+    now: Temporal.Instant,
+  ): Promise<AuthOAuthState | null>;
+  abstract saveExchangeData(
     id: number,
     data: {
       exchangeCode: string;
@@ -258,7 +253,7 @@ export interface AuthOAuthStateRepositoryPort {
       isNewUser: boolean;
     },
   ): Promise<unknown>;
-  saveLinkingData(
+  abstract saveLinkingData(
     id: number,
     data: {
       exchangeCode: string;
@@ -266,18 +261,6 @@ export interface AuthOAuthStateRepositoryPort {
       providerAccountId: string;
     },
   ): Promise<unknown>;
-  consumeExchangeCode(input: ConsumeAuthOAuthStateInput): Promise<boolean>;
-  generateExchangeCode(): string;
-}
-
-export type AuthPersistenceConflictKind = "EMAIL_ALREADY_EXISTS" | "OAUTH_ACCOUNT_ALREADY_LINKED";
-
-export class AuthPersistenceConflict extends Error {
-  readonly kind: AuthPersistenceConflictKind;
-
-  constructor(kind: AuthPersistenceConflictKind) {
-    super(kind);
-    this.kind = kind;
-    this.name = AuthPersistenceConflict.name;
-  }
+  abstract consumeExchangeCode(input: ConsumeAuthOAuthStateInput): Promise<boolean>;
+  abstract generateExchangeCode(): string;
 }

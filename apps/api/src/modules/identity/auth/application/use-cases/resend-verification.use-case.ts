@@ -50,7 +50,7 @@ export class ResendVerificationUseCase {
     }
 
     const verificationResult = await this.#dependencies.unitOfWork.run(() =>
-      this.#dependencies.verificationService.createEmailVerification(user.id),
+      this.#dependencies.verificationService.createEmailVerification(user.id.value),
     );
 
     try {
@@ -61,12 +61,15 @@ export class ResendVerificationUseCase {
     } catch (error) {
       this.#dependencies.logger.error({
         event: AuthLogEvent.VERIFICATION_EMAIL_FAILED,
-        userId: user.id,
+        userId: user.id.value,
         errorType: error instanceof Error ? error.name : "unknown",
       });
     }
 
-    this.#dependencies.logger.log({ event: AuthLogEvent.VERIFICATION_RESENT, userId: user.id });
+    this.#dependencies.logger.log({
+      event: AuthLogEvent.VERIFICATION_RESENT,
+      userId: user.id.value,
+    });
 
     return {
       message: "인증 코드가 발송되었습니다. 이메일을 확인해주세요.",
