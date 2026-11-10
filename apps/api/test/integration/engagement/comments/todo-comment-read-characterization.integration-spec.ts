@@ -1,8 +1,8 @@
 import type { CurrentUserPayload } from "@aido/api";
 import { eq } from "drizzle-orm";
 
-import { TodoCommentController } from "#api/modules/engagement/presentation/controllers/comments/v1/todo-comment.controller";
-import { TodoCommentV2Controller } from "#api/modules/engagement/presentation/controllers/comments/v2/todo-comment.controller";
+import { TodoCommentController } from "#api/modules/engagement/comments/presentation/http/v1/todo-comment.controller";
+import { TodoCommentV2Controller } from "#api/modules/engagement/comments/presentation/http/v2/todo-comment.controller";
 import {
   follow,
   todo,
@@ -162,7 +162,7 @@ const COMMENTS: readonly CommentSeed[] = [
     parentId: ROOT.r7,
     likeCount: label === "r7c" ? 1 : 0,
     replyToCommentId:
-      index === 0 ? ROOT.r7 : REPLY[["r7a", "r7b", "r7c", "r7d"][index - 1] ?? "r7a"],
+      index === 0 ? ROOT.r7 : REPLY[(["r7a", "r7b", "r7c", "r7d"] as const)[index - 1] ?? "r7a"],
   })),
   { id: ROOT.other, authorId: OWNER_ID, createdAt: at(9 * MINUTE_MS), todoId: OTHER_TODO_ID },
 ];

@@ -2,7 +2,7 @@ import { Module } from "@nestjs/common";
 
 import { AccessModule } from "#api/modules/access/access-entitlement.public";
 import { BillingSubscriptionsModule } from "#api/modules/billing/subscriptions/billing-subscriptions.public";
-import { EngagementCommentsModule } from "#api/modules/engagement/engagement-comments.public";
+import { EngagementCommentsModule } from "#api/modules/engagement/comments/engagement-comments.public";
 import { NotificationDeliveryModule } from "#api/modules/notification/notification-delivery.public";
 import { PlanningCategoriesModule } from "#api/modules/planning/categories/planning-categories.public";
 import { SocialCheersModule } from "#api/modules/social/social-cheers.public";

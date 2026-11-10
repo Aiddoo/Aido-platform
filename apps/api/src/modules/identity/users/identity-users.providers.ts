@@ -6,7 +6,7 @@ import { PREMIUM_ACCESS_READER } from "#api/modules/billing/subscriptions/billin
 import {
   TODO_COMMENT_ACCOUNT_CLEANUP,
   type TodoCommentAccountCleanupPort,
-} from "#api/modules/engagement/engagement-comments.public";
+} from "#api/modules/engagement/comments/engagement-comments.public";
 import { NotificationAccountCleanup } from "#api/modules/notification/notification-delivery.public";
 import { TODO_CATEGORY_COUNT_READER } from "#api/modules/planning/categories/planning-categories.public";
 import { CHEER_USAGE_READER } from "#api/modules/social/social-cheers.public";

@@ -1,5 +1,16 @@
 import { ErrorCode } from "@aido/api/errors";
 
+import type { TodoCommentBlockReaderPort } from "#api/modules/engagement/comments/application/ports/todo-comment-block-reader.port";
+import type {
+  TodoCommentActivityNotificationInput,
+  TodoCommentWrittenInput,
+  TodoCommentNotificationPort,
+} from "#api/modules/engagement/comments/application/ports/todo-comment-notification.port";
+import type { TodoCommentReaderPort } from "#api/modules/engagement/comments/application/ports/todo-comment.reader.port";
+import {
+  TodoCommentIdempotencyConflict,
+  type TodoCommentRepositoryPort,
+} from "#api/modules/engagement/comments/application/ports/todo-comment.repository.port";
 import type {
   CreateTodoCommentChainInput,
   TodoCommentChainCommand,
@@ -12,21 +23,10 @@ import type {
   ListTodoConversationParams,
   ListTodoCommentRepliesParams,
   ListTodoCommentThreadsParams,
-} from "#api/modules/engagement/application/models/comments/todo-comment.types";
-import type { TodoCommentBlockReaderPort } from "#api/modules/engagement/application/ports/comments/todo-comment-block-reader.port";
-import type {
-  TodoCommentActivityNotificationInput,
-  TodoCommentWrittenInput,
-  TodoCommentNotificationPort,
-} from "#api/modules/engagement/application/ports/comments/todo-comment-notification.port";
-import type { TodoCommentReaderPort } from "#api/modules/engagement/application/ports/comments/todo-comment.reader.port";
-import {
-  TodoCommentIdempotencyConflict,
-  type TodoCommentRepositoryPort,
-} from "#api/modules/engagement/application/ports/comments/todo-comment.repository.port";
-import { TodoComment } from "#api/modules/engagement/domain/aggregates/comments/todo-comment.aggregate";
-import type { TodoCommentState } from "#api/modules/engagement/domain/records/comments/todo-comment.record";
-import { CommentPlacement } from "#api/modules/engagement/domain/value-objects/comments/comment-placement.vo";
+} from "#api/modules/engagement/comments/application/read-models/todo-comment.read-model";
+import { CommentPlacement } from "#api/modules/engagement/comments/domain/comment-placement.vo";
+import { TodoComment } from "#api/modules/engagement/comments/domain/todo-comment.aggregate";
+import type { TodoCommentState } from "#api/modules/engagement/comments/domain/todo-comment.aggregate";
 import { ApplicationException } from "#api/shared/application/application.exception";
 
 interface LikeState {

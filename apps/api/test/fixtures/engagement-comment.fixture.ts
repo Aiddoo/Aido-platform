@@ -1,3 +1,5 @@
+import type { TodoCommentCursorCodecPort } from "#api/modules/engagement/comments/application/ports/todo-comment-cursor-codec.port";
+import type { TodoViewCachePort } from "#api/modules/engagement/comments/application/ports/todo-view-cache.port";
 import type {
   TodoCommentRecord,
   TodoConversationRecord,
@@ -5,10 +7,8 @@ import type {
   TodoCommentRepliesCursor,
   TodoCommentThreadCursor,
   TodoCommentViewerContext,
-} from "#api/modules/engagement/application/models/comments/todo-comment.types";
-import type { TodoCommentCursorCodecPort } from "#api/modules/engagement/application/ports/comments/todo-comment-cursor-codec.port";
-import type { TodoViewCachePort } from "#api/modules/engagement/application/ports/comments/todo-view-cache.port";
-import type { TodoCommentState } from "#api/modules/engagement/domain/records/comments/todo-comment.record";
+} from "#api/modules/engagement/comments/application/read-models/todo-comment.read-model";
+import type { TodoCommentState } from "#api/modules/engagement/comments/domain/todo-comment.aggregate";
 import type { MutationLockPort } from "#api/shared/application/ports/index";
 import { FakeLogger } from "#test/mocks/fake-logger.service";
 import {

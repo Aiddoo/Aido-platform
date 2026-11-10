@@ -12,7 +12,7 @@ import request from "supertest";
 import {
   TODO_COMMENT_NOTIFICATION,
   type TodoCommentNotificationPort,
-} from "#api/modules/engagement/application/ports/comments/todo-comment-notification.port";
+} from "#api/modules/engagement/comments/application/ports/todo-comment-notification.port";
 import { notification } from "#api/platform/database/schema/index";
 
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";

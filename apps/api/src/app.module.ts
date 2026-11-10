@@ -13,7 +13,7 @@ import { AiAssistanceReportsModule } from "#api/modules/ai-assistance/ai-assista
 import { AiAssistanceSuggestionsModule } from "#api/modules/ai-assistance/ai-assistance-suggestions.public";
 import { AppConfigModule as AppConfigContextModule } from "#api/modules/app-config/app-config.module";
 import { BillingModule } from "#api/modules/billing/billing.module";
-import { EngagementCommentsModule } from "#api/modules/engagement/engagement-comments.public";
+import { EngagementModule } from "#api/modules/engagement/engagement.module";
 import { JwtAuthGuard } from "#api/modules/identity/auth/identity-auth.public";
 import { TimezoneSelfHealInterceptor } from "#api/modules/identity/identity-settings.public";
 import { IdentityModule } from "#api/modules/identity/identity.module";
@@ -141,7 +141,7 @@ import { AppService } from "./app.service.js";
     SocialReportsAdminModule,
     BillingModule,
     PlanningModule,
-    EngagementCommentsModule,
+    EngagementModule,
     WeatherModule,
   ],
   controllers: [AppController],

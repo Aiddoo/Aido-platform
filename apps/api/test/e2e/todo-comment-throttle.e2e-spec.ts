@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 import { createTodoResponseSchema } from "@aido/api";
 import request from "supertest";
 
-import { TODO_COMMENT_THROTTLE } from "#api/modules/engagement/presentation/controllers/comments/v1/todo-comment.controller";
+import { TODO_COMMENT_THROTTLE } from "#api/modules/engagement/comments/presentation/http/v1/todo-comment.controller";
 
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 

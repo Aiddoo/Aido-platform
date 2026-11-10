@@ -6,15 +6,16 @@ import { eq, inArray } from "drizzle-orm";
 import { ClsModule } from "nestjs-cls";
 import { vi } from "vitest";
 
-import { TODO_COMMENT_ACCOUNT_CLEANUP_STORE } from "#api/modules/engagement/application/ports/comments/todo-comment-account-cleanup.store.port";
+import { TODO_COMMENT_ACCOUNT_CLEANUP_STORE } from "#api/modules/engagement/comments/application/ports/todo-comment-purge.repository.port";
 import {
   TODO_VIEW_CACHE,
   type TodoViewCachePort,
-} from "#api/modules/engagement/application/ports/comments/todo-view-cache.port";
-import { TodoCommentAccountCleanup } from "#api/modules/engagement/application/services/comments/todo-comment-account-cleanup.service";
-import { TODO_COMMENT_ACCOUNT_CLEANUP } from "#api/modules/engagement/engagement-comments.public";
-import { DrizzleTodoCommentAccountCleanupStore } from "#api/modules/engagement/infrastructure/persistence/comments/drizzle-todo-comment-account-cleanup.store";
-import { DrizzleTodoCommentReader } from "#api/modules/engagement/infrastructure/persistence/comments/drizzle-todo-comment.reader";
+} from "#api/modules/engagement/comments/application/ports/todo-view-cache.port";
+import { TodoCommentAccountCleanup } from "#api/modules/engagement/comments/application/use-cases/clean-up-account-todo-comments.use-case";
+import { todoCommentAccountCleanupProvider } from "#api/modules/engagement/comments/engagement-comments.providers";
+import { TODO_COMMENT_ACCOUNT_CLEANUP } from "#api/modules/engagement/comments/engagement-comments.public";
+import { DrizzleTodoCommentAccountCleanupStore } from "#api/modules/engagement/comments/infrastructure/persistence/drizzle-todo-comment-purge.repository";
+import { DrizzleTodoCommentReader } from "#api/modules/engagement/comments/infrastructure/persistence/drizzle-todo-comment.reader";
 import { AuthSecurityLogRepositoryPort } from "#api/modules/identity/auth/application/ports/auth-security-log.repository.port";
 import { AuthUserRepositoryPort } from "#api/modules/identity/auth/application/ports/auth-user.repository.port";
 import { DrizzleSecurityLogRepository } from "#api/modules/identity/auth/infrastructure/persistence/drizzle-security-log.repository";
@@ -46,7 +47,6 @@ import { DateClock } from "#test/doubles/platform/date-clock";
 import { createDatabaseTransactionFixture } from "#test/setup/database-context";
 import type { TestDatabaseClient } from "#test/setup/test-database";
 
-import { todoCommentAccountCleanupProvider } from "../../src/modules/engagement/engagement-comments-application.providers.js";
 import {
   accountNotificationCleanupProvider,
   accountTodoCommentCleanupProvider,

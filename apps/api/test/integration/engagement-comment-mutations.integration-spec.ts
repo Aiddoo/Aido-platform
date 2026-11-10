@@ -7,18 +7,18 @@ import { omit } from "es-toolkit";
 import {
   TODO_COMMENT_NOTIFICATION,
   type TodoCommentNotificationPort,
-} from "#api/modules/engagement/application/ports/comments/todo-comment-notification.port";
+} from "#api/modules/engagement/comments/application/ports/todo-comment-notification.port";
 import {
   TODO_COMMENT_REPOSITORY,
   type TodoCommentRepositoryPort,
-} from "#api/modules/engagement/application/ports/comments/todo-comment.repository.port";
-import { GetTodoCommentThreads } from "#api/modules/engagement/application/use-cases/comments/get-todo-comment-threads.use-case";
-import { GetTodoConversation } from "#api/modules/engagement/application/use-cases/comments/get-todo-conversation.use-case";
-import { GetTodoDetails } from "#api/modules/engagement/application/use-cases/comments/get-todo-details.use-case";
-import { LikeTodoComment } from "#api/modules/engagement/application/use-cases/comments/like-todo-comment.use-case";
-import { UnlikeTodoComment } from "#api/modules/engagement/application/use-cases/comments/unlike-todo-comment.use-case";
-import { WriteTodoCommentChain } from "#api/modules/engagement/application/use-cases/comments/write-todo-comment-chain.use-case";
-import { DrizzleTodoCommentRepository } from "#api/modules/engagement/infrastructure/persistence/comments/drizzle-todo-comment.repository";
+} from "#api/modules/engagement/comments/application/ports/todo-comment.repository.port";
+import { GetTodoCommentThreads } from "#api/modules/engagement/comments/application/use-cases/get-todo-comment-threads.use-case";
+import { GetTodoConversation } from "#api/modules/engagement/comments/application/use-cases/get-todo-conversation.use-case";
+import { GetTodoDetails } from "#api/modules/engagement/comments/application/use-cases/get-todo-details.use-case";
+import { LikeTodoComment } from "#api/modules/engagement/comments/application/use-cases/like-todo-comment.use-case";
+import { UnlikeTodoComment } from "#api/modules/engagement/comments/application/use-cases/unlike-todo-comment.use-case";
+import { WriteTodoCommentChain } from "#api/modules/engagement/comments/application/use-cases/write-todo-comment-chain.use-case";
+import { DrizzleTodoCommentRepository } from "#api/modules/engagement/comments/infrastructure/persistence/drizzle-todo-comment.repository";
 import {
   NOTIFICATION_CACHE,
   type NotificationCachePort,

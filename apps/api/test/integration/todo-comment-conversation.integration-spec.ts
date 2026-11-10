@@ -4,17 +4,17 @@ import { todoConversationConnectionSchema } from "@aido/api";
 import { Test, type TestingModule } from "@nestjs/testing";
 import { eq } from "drizzle-orm";
 
-import type { TodoCommentCursorCodecPort } from "#api/modules/engagement/application/ports/comments/todo-comment-cursor-codec.port";
+import type { TodoCommentCursorCodecPort } from "#api/modules/engagement/comments/application/ports/todo-comment-cursor-codec.port";
 import {
   TodoCommentIdempotencyConflict,
   TodoCommentIdempotencyRace,
-} from "#api/modules/engagement/application/ports/comments/todo-comment.repository.port";
-import { GetTodoCommentThreads } from "#api/modules/engagement/application/use-cases/comments/get-todo-comment-threads.use-case";
-import { GetTodoConversation } from "#api/modules/engagement/application/use-cases/comments/get-todo-conversation.use-case";
-import { CommentPlacement } from "#api/modules/engagement/domain/value-objects/comments/comment-placement.vo";
-import { DrizzleTodoCommentReader } from "#api/modules/engagement/infrastructure/persistence/comments/drizzle-todo-comment.reader";
-import { DrizzleTodoCommentRepository } from "#api/modules/engagement/infrastructure/persistence/comments/drizzle-todo-comment.repository";
-import { HmacTodoCommentCursorCodec } from "#api/modules/engagement/infrastructure/security/comments/hmac-todo-comment-cursor.codec";
+} from "#api/modules/engagement/comments/application/ports/todo-comment.repository.port";
+import { GetTodoCommentThreads } from "#api/modules/engagement/comments/application/use-cases/get-todo-comment-threads.use-case";
+import { GetTodoConversation } from "#api/modules/engagement/comments/application/use-cases/get-todo-conversation.use-case";
+import { CommentPlacement } from "#api/modules/engagement/comments/domain/comment-placement.vo";
+import { HmacTodoCommentCursorCodec } from "#api/modules/engagement/comments/infrastructure/adapters/hmac-todo-comment-cursor-codec.adapter";
+import { DrizzleTodoCommentReader } from "#api/modules/engagement/comments/infrastructure/persistence/drizzle-todo-comment.reader";
+import { DrizzleTodoCommentRepository } from "#api/modules/engagement/comments/infrastructure/persistence/drizzle-todo-comment.repository";
 import { DrizzleUserBlockRepository } from "#api/modules/social/infrastructure/persistence/blocks/drizzle-user-block.repository";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
 import {

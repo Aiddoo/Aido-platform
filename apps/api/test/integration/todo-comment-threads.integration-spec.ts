@@ -2,10 +2,10 @@ import { z } from "@aido/api";
 import { Test, type TestingModule } from "@nestjs/testing";
 import { eq, sql } from "drizzle-orm";
 
-import { GetTodoCommentReplies } from "#api/modules/engagement/application/use-cases/comments/get-todo-comment-replies.use-case";
-import { GetTodoCommentThreads } from "#api/modules/engagement/application/use-cases/comments/get-todo-comment-threads.use-case";
-import { DrizzleTodoCommentReader } from "#api/modules/engagement/infrastructure/persistence/comments/drizzle-todo-comment.reader";
-import { HmacTodoCommentCursorCodec } from "#api/modules/engagement/infrastructure/security/comments/hmac-todo-comment-cursor.codec";
+import { GetTodoCommentReplies } from "#api/modules/engagement/comments/application/use-cases/get-todo-comment-replies.use-case";
+import { GetTodoCommentThreads } from "#api/modules/engagement/comments/application/use-cases/get-todo-comment-threads.use-case";
+import { HmacTodoCommentCursorCodec } from "#api/modules/engagement/comments/infrastructure/adapters/hmac-todo-comment-cursor-codec.adapter";
+import { DrizzleTodoCommentReader } from "#api/modules/engagement/comments/infrastructure/persistence/drizzle-todo-comment.reader";
 import { DrizzleUserBlockRepository } from "#api/modules/social/infrastructure/persistence/blocks/drizzle-user-block.repository";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { todo, todoCategory, todoComment, user } from "#api/platform/database/schema/index";
