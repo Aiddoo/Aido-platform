@@ -1,5 +1,5 @@
-import { UserPreferenceReader } from "#api/modules/identity/application/services/settings/user-preference-reader.service";
 import type { PreferenceSnapshot } from "#api/modules/identity/identity-settings.public";
+import { UserPreferenceReader } from "#api/modules/identity/preferences/application/use-cases/read-user-preferences.use-case";
 import { createUserSettingsFixture } from "#test/fixtures/user-settings.fixture";
 import { createUserNotificationSettingsMock } from "#test/mocks/ports/notification.mock";
 

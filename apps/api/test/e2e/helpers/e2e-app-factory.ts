@@ -32,8 +32,8 @@ import { Argon2PasswordHasherAdapter } from "#api/modules/identity/auth/infrastr
 import { GoogleOAuthIdentityAdapter } from "#api/modules/identity/auth/infrastructure/adapters/google-oauth-identity.adapter";
 import { KakaoOAuthIdentityAdapter } from "#api/modules/identity/auth/infrastructure/adapters/kakao-oauth-identity.adapter";
 import { NaverOAuthIdentityAdapter } from "#api/modules/identity/auth/infrastructure/adapters/naver-oauth-identity.adapter";
-import { AccountPurgeProcessor } from "#api/modules/identity/auth/infrastructure/jobs/account-purge.processor";
-import { AccountPurgeScheduler } from "#api/modules/identity/auth/infrastructure/jobs/account-purge.scheduler";
+import { AccountPurgeProcessor } from "#api/modules/identity/users/infrastructure/jobs/account-purge.processor";
+import { AccountPurgeScheduler } from "#api/modules/identity/users/infrastructure/jobs/account-purge.scheduler";
 import { PUSH_PROVIDER } from "#api/modules/notification/application/ports/delivery/push-provider.port";
 import { TimezoneAwareReminderOrchestrator } from "#api/modules/notification/application/services/reminders/timezone-aware-reminder.orchestrator";
 import { NotificationQueueProcessor } from "#api/modules/notification/infrastructure/jobs/delivery/notification-queue.processor";

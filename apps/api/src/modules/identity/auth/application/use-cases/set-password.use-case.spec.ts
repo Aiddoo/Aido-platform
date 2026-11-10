@@ -13,7 +13,7 @@ import {
   createIdentityUserFixture,
 } from "#test/fixtures/identity/auth-session.fixture";
 
-import { GetCurrentUserUseCase } from "./get-current-user.use-case.js";
+import { GetCurrentUserUseCase } from "../../../users/application/use-cases/get-current-user.use-case.js";
 import { SetPasswordUseCase } from "./set-password.use-case.js";
 
 type CredentialFixture = ReturnType<typeof createAuthCredentialFixture>;

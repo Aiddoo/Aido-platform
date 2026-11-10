@@ -27,9 +27,7 @@ import { AuthSessionRepositoryPort } from "#api/modules/identity/auth/applicatio
 import { AuthUserRepositoryPort } from "#api/modules/identity/auth/application/ports/auth-user.repository.port";
 import { AuthVerificationRepositoryPort } from "#api/modules/identity/auth/application/ports/auth-verification.repository.port";
 import { VerificationCodeSecurityPort } from "#api/modules/identity/auth/application/ports/verification-code-security.port";
-import { DeleteAccountUseCase } from "#api/modules/identity/auth/application/use-cases/delete-account.use-case";
 import { LoginWithPasswordUseCase } from "#api/modules/identity/auth/application/use-cases/login-with-password.use-case";
-import { PurgeDeletedAccountsUseCase } from "#api/modules/identity/auth/application/use-cases/purge-deleted-accounts.use-case";
 import { RegisterUseCase } from "#api/modules/identity/auth/application/use-cases/register.use-case";
 import { RequestPasswordResetUseCase } from "#api/modules/identity/auth/application/use-cases/request-password-reset.use-case";
 import { Argon2PasswordHasherAdapter } from "#api/modules/identity/auth/infrastructure/adapters/argon2-password-hasher.adapter";
@@ -40,10 +38,12 @@ import { DrizzleAccountRepository } from "#api/modules/identity/auth/infrastruct
 import { DrizzleLoginAttemptRepository } from "#api/modules/identity/auth/infrastructure/persistence/drizzle-login-attempt.repository";
 import { DrizzleSecurityLogRepository } from "#api/modules/identity/auth/infrastructure/persistence/drizzle-security-log.repository";
 import { DrizzleSessionRepository } from "#api/modules/identity/auth/infrastructure/persistence/drizzle-session.repository";
-import { DrizzleUserRepository } from "#api/modules/identity/auth/infrastructure/persistence/drizzle-user.repository";
 import { DrizzleVerificationRepository } from "#api/modules/identity/auth/infrastructure/persistence/drizzle-verification.repository";
-import { DrizzleUserConsentRepository } from "#api/modules/identity/infrastructure/persistence/settings/drizzle-user-consent.repository";
-import { DrizzleUserPreferenceRepository } from "#api/modules/identity/infrastructure/persistence/settings/drizzle-user-preference.repository";
+import { DrizzleUserConsentRepository } from "#api/modules/identity/preferences/infrastructure/persistence/drizzle-user-consent.repository";
+import { DrizzleUserPreferenceRepository } from "#api/modules/identity/preferences/infrastructure/persistence/drizzle-user-preference.repository";
+import { DeleteAccountUseCase } from "#api/modules/identity/users/application/use-cases/delete-account.use-case";
+import { PurgeDeletedAccountsUseCase } from "#api/modules/identity/users/application/use-cases/purge-deleted-accounts.use-case";
+import { DrizzleUserRepository } from "#api/modules/identity/users/infrastructure/persistence/drizzle-user.repository";
 import { NotificationQueueService } from "#api/modules/notification/notification-delivery-jobs.public";
 import { TransactionalEmailSender } from "#api/modules/notification/notification-email.public";
 import { AdminEventNotifier } from "#api/modules/operations/operations-notifications.public";

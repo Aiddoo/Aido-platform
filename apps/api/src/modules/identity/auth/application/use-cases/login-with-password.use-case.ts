@@ -5,17 +5,18 @@ import type {
   LoginResult,
   RequestMetadata,
 } from "#api/modules/identity/auth/application/read-models/auth-result.read-model";
-import { assertStatusAllowsLogin } from "#api/modules/identity/auth/domain/account-status.domain-service";
 import {
   AUTH_DEFAULTS,
   LOGIN_FAILURE_REASON,
 } from "#api/modules/identity/auth/domain/auth.constants";
 import { Email } from "#api/modules/identity/auth/domain/email.vo";
+import { assertStatusAllowsLogin } from "#api/modules/identity/users/domain/account-status.domain-service";
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
 
+import type { RestoreAccountUseCase } from "../../../users/application/use-cases/restore-account.use-case.js";
 import { AuthLogEvent } from "../auth.log-events.js";
 import type { AuthAccountRepositoryPort } from "../ports/auth-account.repository.port.js";
 import type { AuthCachePort } from "../ports/auth-collaboration.port.js";
@@ -24,7 +25,6 @@ import type { AuthLoginAttemptRepositoryPort } from "../ports/auth-login-attempt
 import type { AuthSecurityLogRepositoryPort } from "../ports/auth-security-log.repository.port.js";
 import type { AuthUserRepositoryPort } from "../ports/auth-user.repository.port.js";
 import type { IssueLoginUseCase } from "./issue-login.use-case.js";
-import type { RestoreAccountUseCase } from "./restore-account.use-case.js";
 
 export interface LoginWithPasswordCommand {
   readonly email: string;

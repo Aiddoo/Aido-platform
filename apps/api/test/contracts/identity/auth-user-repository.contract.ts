@@ -2,7 +2,7 @@ import { ACCOUNT_DELETION } from "@aido/api/vocabulary";
 
 import { AuthPersistenceConflict } from "#api/modules/identity/auth/application/auth.errors";
 import type { AuthUserRepositoryPort } from "#api/modules/identity/auth/application/ports/auth-user.repository.port";
-import type { IdentityUser } from "#api/modules/identity/auth/domain/identity-user.aggregate";
+import type { IdentityUser } from "#api/modules/identity/users/domain/identity-user.aggregate";
 import { AUTH_FIXTURE_NOW } from "#test/fixtures/identity/auth-session.fixture";
 
 const GRACE_PERIOD = { hours: 24 * ACCOUNT_DELETION.GRACE_PERIOD_DAYS };

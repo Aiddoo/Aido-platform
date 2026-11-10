@@ -17,8 +17,8 @@ import { CreateSessionUseCase } from "#api/modules/identity/auth/application/use
 import { IssueLoginUseCase } from "#api/modules/identity/auth/application/use-cases/issue-login.use-case";
 import { IssueVerificationCodeUseCase } from "#api/modules/identity/auth/application/use-cases/issue-verification-code.use-case";
 import { ProvisionUserUseCase } from "#api/modules/identity/auth/application/use-cases/provision-user.use-case";
-import { RestoreAccountUseCase } from "#api/modules/identity/auth/application/use-cases/restore-account.use-case";
 import { SendVerificationCodeUseCase } from "#api/modules/identity/auth/application/use-cases/send-verification-code.use-case";
+import { RestoreAccountUseCase } from "#api/modules/identity/users/application/use-cases/restore-account.use-case";
 import type {
   DailySendUsage,
   DailySendUsageReaderPort,

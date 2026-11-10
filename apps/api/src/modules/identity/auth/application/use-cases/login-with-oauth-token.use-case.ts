@@ -1,21 +1,22 @@
 import { ErrorCode } from "@aido/api/errors";
 import { type OAUTH_PROVIDERS, TERMS_VERSION, SECURITY_EVENT } from "@aido/api/vocabulary";
 
-import { assertStatusAllowsLogin } from "#api/modules/identity/auth/domain/account-status.domain-service";
 import {
   AUTH_DEFAULTS,
   LOGIN_FAILURE_REASON,
   TRUSTED_EMAIL_PROVIDERS,
   type AccountProvider,
 } from "#api/modules/identity/auth/domain/auth.constants";
-import type { IdentityUser } from "#api/modules/identity/auth/domain/identity-user.aggregate";
 import { generateRandomName } from "#api/modules/identity/auth/domain/random-name.domain-service";
+import { assertStatusAllowsLogin } from "#api/modules/identity/users/domain/account-status.domain-service";
+import type { IdentityUser } from "#api/modules/identity/users/domain/identity-user.aggregate";
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
 import type { SupportedLocale } from "#api/shared/domain/locale";
 
+import type { RestoreAccountUseCase } from "../../../users/application/use-cases/restore-account.use-case.js";
 import { AuthLogEvent } from "../auth.log-events.js";
 import type { AuthAccountRepositoryPort } from "../ports/auth-account.repository.port.js";
 import type { AuthCachePort } from "../ports/auth-collaboration.port.js";
@@ -34,7 +35,6 @@ import type {
 } from "../read-models/auth-result.read-model.js";
 import type { IssueLoginUseCase } from "./issue-login.use-case.js";
 import type { ProvisionUserUseCase } from "./provision-user.use-case.js";
-import type { RestoreAccountUseCase } from "./restore-account.use-case.js";
 
 export interface LoginWithOAuthTokenCommand {
   readonly provider: (typeof OAUTH_PROVIDERS)[number];

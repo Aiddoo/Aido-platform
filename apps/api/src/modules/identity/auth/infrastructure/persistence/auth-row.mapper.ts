@@ -7,12 +7,12 @@ import type {
 } from "#api/platform/database/schema/index";
 import { instantFromDate, instantToDate } from "#api/shared/domain/time/instant";
 
+import { IdentityUser } from "../../../users/domain/identity-user.aggregate.js";
 import type { AuthAccountRecord } from "../../application/ports/auth-account.repository.port.js";
 import { AuthOAuthState } from "../../domain/auth-oauth-state.aggregate.js";
 import { AuthSession } from "../../domain/auth-session.aggregate.js";
 import { AuthVerification } from "../../domain/auth-verification.aggregate.js";
 import { IdentityAccounts } from "../../domain/identity-accounts.aggregate.js";
-import { IdentityUser } from "../../domain/identity-user.aggregate.js";
 
 // Session·User·Account는 아직 timestamp(mode: date)라 행의 Date를 여기서 Temporal로 바꾼다
 function instantOrNull(date: Date | null): Temporal.Instant | null {

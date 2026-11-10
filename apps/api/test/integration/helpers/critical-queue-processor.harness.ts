@@ -5,7 +5,6 @@ import { Test, type TestingModule } from "@nestjs/testing";
 import { ClsModule } from "nestjs-cls";
 import { PgBoss } from "pg-boss";
 
-import { UserPreferenceReader } from "#api/modules/identity/application/services/settings/user-preference-reader.service";
 import type {
   UserConsentRecord,
   UserConsentRecordWithId,
@@ -16,8 +15,9 @@ import {
   USER_PREFERENCE_READER,
   USER_SETTINGS_CACHE,
 } from "#api/modules/identity/identity-settings.public";
-import { UserSettingsCacheAdapter } from "#api/modules/identity/infrastructure/adapters/settings/user-settings-cache.adapter";
-import { DrizzleUserPreferenceRepository } from "#api/modules/identity/infrastructure/persistence/settings/drizzle-user-preference.repository";
+import { UserPreferenceReader } from "#api/modules/identity/preferences/application/use-cases/read-user-preferences.use-case";
+import { UserSettingsCacheAdapter } from "#api/modules/identity/preferences/infrastructure/adapters/user-settings-cache.adapter";
+import { DrizzleUserPreferenceRepository } from "#api/modules/identity/preferences/infrastructure/persistence/drizzle-user-preference.repository";
 import { ACTIVE_PUSH_TOKEN_READER } from "#api/modules/notification/application/ports/delivery/active-push-token.reader.port";
 import { MARKETING_PUSH_OPT_OUT_TOKEN } from "#api/modules/notification/application/ports/delivery/marketing-push-opt-out-token.port";
 import { NOTIFICATION_CACHE } from "#api/modules/notification/application/ports/delivery/notification-cache.port";

@@ -2,33 +2,34 @@ import type { PremiumFeature } from "@aido/api/vocabulary";
 import { USER_PREFERENCE_DEFAULTS } from "@aido/api/vocabulary";
 import { pickBy } from "es-toolkit";
 
-import type { PreferenceEntitlementPort } from "#api/modules/identity/application/ports/settings/preference-entitlement.port";
+import type { PreferenceEntitlementPort } from "#api/modules/identity/preferences/application/ports/preference-entitlement.port";
 import type {
   ReminderHourChangedPayload,
   ReminderScheduleEnqueuerPort,
-} from "#api/modules/identity/application/ports/settings/reminder-schedule.enqueuer.port";
-import type { StreakMilestoneNotifierPort } from "#api/modules/identity/application/ports/settings/streak-milestone.notifier.port";
+} from "#api/modules/identity/preferences/application/ports/reminder-schedule-enqueuer.port";
+import type { StreakMilestoneNotifierPort } from "#api/modules/identity/preferences/application/ports/streak-milestone-notifier.port";
 import type {
   TodoCompletionStats,
   TodoCompletionStatsReaderPort,
-} from "#api/modules/identity/application/ports/settings/todo-completion-stats.reader.port";
-import type { TodoTimezoneRebaseEnqueuerPort } from "#api/modules/identity/application/ports/settings/todo-timezone-rebase.enqueuer.port";
+} from "#api/modules/identity/preferences/application/ports/todo-completion-stats.reader.port";
+import type { TodoTimezoneRebaseEnqueuerPort } from "#api/modules/identity/preferences/application/ports/todo-timezone-rebase-enqueuer.port";
 import type {
   ConsentSeedInput,
   MarketingReconfirmTarget,
   UserConsentRecordWithId,
   UserConsentRepositoryPort,
-} from "#api/modules/identity/application/ports/settings/user-consent.repository.port";
+} from "#api/modules/identity/preferences/application/ports/user-consent.repository.port";
 import type {
   PreferenceWriteInput,
   UserPreferenceRecordWithId,
   UserPreferenceRepositoryPort,
-} from "#api/modules/identity/application/ports/settings/user-preference.repository.port";
-import type { UserSettingsCachePort } from "#api/modules/identity/application/ports/settings/user-settings-cache.port";
-import type { PreferenceSnapshot } from "#api/modules/identity/application/read-models/settings/preference.read-model";
-import type { UserConsentRecord } from "#api/modules/identity/domain/records/settings/user-consent.record";
-import type { UserPreferenceRecord } from "#api/modules/identity/domain/records/settings/user-preference.record";
-import type { StreakState } from "#api/modules/identity/domain/value-objects/settings/streak.vo";
+} from "#api/modules/identity/preferences/application/ports/user-preference.repository.port";
+import type { UserSettingsCachePort } from "#api/modules/identity/preferences/application/ports/user-settings-cache.port";
+import type { PreferenceSnapshot } from "#api/modules/identity/preferences/application/read-models/preference.read-model";
+import type { StreakState } from "#api/modules/identity/preferences/domain/streak.vo";
+import type { UserConsentRecord } from "#api/modules/identity/preferences/domain/user-consent.constants";
+import { UserPreference } from "#api/modules/identity/preferences/domain/user-preference.aggregate";
+import type { UserPreferenceRecord } from "#api/modules/identity/preferences/domain/user-preference.constants";
 import type { ReminderTimezoneCachePort } from "#api/modules/notification/notification-reminders-cache.public";
 import { UserPreferenceBuilder } from "#test/builders/user-preference.builder";
 
@@ -52,6 +53,11 @@ export class StubUserPreferenceRepository implements UserPreferenceRepositoryPor
           lastCompletedDate:
             record.lastCompletedDate === null ? null : new Date(record.lastCompletedDate),
         };
+  }
+
+  async findStreakByUserId(userId: string): Promise<UserPreference | null> {
+    const record = await this.findByUserId(userId);
+    return record == null ? null : UserPreference.reconstitute({ userId, ...record });
   }
 
   async findByUserIds(userIds: readonly string[]): Promise<UserPreferenceRecordWithId[]> {

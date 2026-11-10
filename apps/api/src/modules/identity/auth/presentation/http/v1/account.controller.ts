@@ -15,15 +15,15 @@ import { ApiHeader, ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import { Throttle } from "@nestjs/throttler";
 import type { Request } from "express";
 
-import { DeleteAccountUseCase } from "#api/modules/identity/auth/application/use-cases/delete-account.use-case";
-import { GetCurrentUserUseCase } from "#api/modules/identity/auth/application/use-cases/get-current-user.use-case";
 import { ListLinkedAccountsUseCase } from "#api/modules/identity/auth/application/use-cases/list-linked-accounts.use-case";
 import { UnlinkOAuthAccountUseCase } from "#api/modules/identity/auth/application/use-cases/unlink-oauth-account.use-case";
-import { UpdateProfileUseCase } from "#api/modules/identity/auth/application/use-cases/update-profile.use-case";
 import {
   CurrentUser,
   type CurrentUserPayload,
 } from "#api/modules/identity/auth/presentation/http/decorators/current-user.decorator";
+import { DeleteAccountUseCase } from "#api/modules/identity/users/application/use-cases/delete-account.use-case";
+import { GetCurrentUserUseCase } from "#api/modules/identity/users/application/use-cases/get-current-user.use-case";
+import { UpdateProfileUseCase } from "#api/modules/identity/users/application/use-cases/update-profile.use-case";
 import { Timezone } from "#api/platform/http/decorators/index";
 import {
   AppVersion,

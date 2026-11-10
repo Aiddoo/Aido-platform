@@ -2,9 +2,9 @@ import { sql } from "drizzle-orm";
 import { vi } from "vitest";
 import { z } from "zod";
 
-import { PurgeDeletedAccountsUseCase } from "#api/modules/identity/auth/application/use-cases/purge-deleted-accounts.use-case";
 import { DrizzleSecurityLogRepository } from "#api/modules/identity/auth/infrastructure/persistence/drizzle-security-log.repository";
-import { DrizzleUserRepository } from "#api/modules/identity/auth/infrastructure/persistence/drizzle-user.repository";
+import { PurgeDeletedAccountsUseCase } from "#api/modules/identity/users/application/use-cases/purge-deleted-accounts.use-case";
+import { DrizzleUserRepository } from "#api/modules/identity/users/infrastructure/persistence/drizzle-user.repository";
 import { createEntityId } from "#api/platform/database/entity-id";
 import { securityLog, user as userTable } from "#api/platform/database/schema/index";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";

@@ -33,6 +33,7 @@ ls:
     .controller.ts: kebab-case
     .dto.ts: kebab-case
     .guard.ts: kebab-case
+    .interceptor.ts: kebab-case
     .decorator.ts: kebab-case
     .module.ts: kebab-case
     .providers.ts: kebab-case

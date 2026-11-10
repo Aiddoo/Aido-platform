@@ -41,6 +41,7 @@ const ROLE_SUFFIXES = [
   "controller",
   "dto",
   "guard",
+  "interceptor",
   "decorator",
   "module",
   "providers",

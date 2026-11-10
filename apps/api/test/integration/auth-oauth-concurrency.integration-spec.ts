@@ -9,7 +9,7 @@ import { UnlinkOAuthAccountUseCase } from "#api/modules/identity/auth/applicatio
 import { DrizzleAccountRepository } from "#api/modules/identity/auth/infrastructure/persistence/drizzle-account.repository";
 import { DrizzleOAuthStateRepository } from "#api/modules/identity/auth/infrastructure/persistence/drizzle-oauth-state.repository";
 import { DrizzleSecurityLogRepository } from "#api/modules/identity/auth/infrastructure/persistence/drizzle-security-log.repository";
-import { DrizzleUserRepository } from "#api/modules/identity/auth/infrastructure/persistence/drizzle-user.repository";
+import { DrizzleUserRepository } from "#api/modules/identity/users/infrastructure/persistence/drizzle-user.repository";
 import { createEntityId } from "#api/platform/database/entity-id";
 import { oAuthState, user as userTable } from "#api/platform/database/schema/index";
 import { UnitOfWorkPort } from "#api/shared/application/ports/index";

@@ -3,17 +3,17 @@ import { Test } from "@nestjs/testing";
 import { mock } from "vitest-mock-extended";
 import { z } from "zod";
 
-import { PREFERENCE_ENTITLEMENT } from "#api/modules/identity/application/ports/settings/preference-entitlement.port";
-import { REMINDER_SCHEDULE_ENQUEUER } from "#api/modules/identity/application/ports/settings/reminder-schedule.enqueuer.port";
-import { TODO_TIMEZONE_REBASE_ENQUEUER } from "#api/modules/identity/application/ports/settings/todo-timezone-rebase.enqueuer.port";
-import { USER_PREFERENCE_REPOSITORY } from "#api/modules/identity/application/ports/settings/user-preference.repository.port";
-import { USER_SETTINGS_CACHE } from "#api/modules/identity/application/ports/settings/user-settings-cache.port";
-import { UpsertPushTimezone } from "#api/modules/identity/application/use-cases/settings/upsert-push-timezone.use-case";
+import { PREFERENCE_ENTITLEMENT } from "#api/modules/identity/preferences/application/ports/preference-entitlement.port";
+import { REMINDER_SCHEDULE_ENQUEUER } from "#api/modules/identity/preferences/application/ports/reminder-schedule-enqueuer.port";
+import { TODO_TIMEZONE_REBASE_ENQUEUER } from "#api/modules/identity/preferences/application/ports/todo-timezone-rebase-enqueuer.port";
+import { USER_PREFERENCE_REPOSITORY } from "#api/modules/identity/preferences/application/ports/user-preference.repository.port";
+import { USER_SETTINGS_CACHE } from "#api/modules/identity/preferences/application/ports/user-settings-cache.port";
+import { UpsertPushTimezone } from "#api/modules/identity/preferences/application/use-cases/upsert-push-timezone.use-case";
 import {
   refreshPushTimezoneProvider,
   updatePreferenceProvider,
   upsertPushTimezoneProvider,
-} from "#api/modules/identity/identity-settings-application.providers";
+} from "#api/modules/identity/preferences/identity-preferences.providers";
 import {
   REMINDER_TIMEZONE_CACHE,
   type ReminderTimezoneCachePort,

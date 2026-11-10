@@ -6,8 +6,8 @@ import type {
   RequestMetadata,
   VerifyEmailResult,
 } from "#api/modules/identity/auth/application/read-models/auth-result.read-model";
-import { assertStatusAllowsLogin } from "#api/modules/identity/auth/domain/account-status.domain-service";
 import { AUTH_DEFAULTS } from "#api/modules/identity/auth/domain/auth.constants";
+import { assertStatusAllowsLogin } from "#api/modules/identity/users/domain/account-status.domain-service";
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";

@@ -1,8 +1,8 @@
 import { mock } from "vitest-mock-extended";
 
-import { UserPreferenceReader } from "#api/modules/identity/application/services/settings/user-preference-reader.service";
-import type { UserConsentRecord } from "#api/modules/identity/domain/records/settings/user-consent.record";
-import type { UserPreferenceRecord } from "#api/modules/identity/domain/records/settings/user-preference.record";
+import { UserPreferenceReader } from "#api/modules/identity/preferences/application/use-cases/read-user-preferences.use-case";
+import type { UserConsentRecord } from "#api/modules/identity/preferences/domain/user-consent.constants";
+import type { UserPreferenceRecord } from "#api/modules/identity/preferences/domain/user-preference.constants";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { UserConsentBuilder, UserPreferenceBuilder } from "#test/builders/index";
 import { createUnitOfWorkMock } from "#test/mocks/ports/unit-of-work.mock";

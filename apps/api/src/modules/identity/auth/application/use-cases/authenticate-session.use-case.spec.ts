@@ -1,7 +1,7 @@
 import { ErrorCode } from "@aido/api/errors";
 
 import type { AuthSession } from "#api/modules/identity/auth/domain/auth-session.aggregate";
-import type { IdentityUser } from "#api/modules/identity/auth/domain/identity-user.aggregate";
+import type { IdentityUser } from "#api/modules/identity/users/domain/identity-user.aggregate";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
 import {

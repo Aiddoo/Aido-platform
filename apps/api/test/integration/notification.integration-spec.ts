@@ -3,14 +3,14 @@ import { Test, type TestingModule } from "@nestjs/testing";
 import { and, eq } from "drizzle-orm";
 import { vi } from "vitest";
 
-import { UserPreferenceReader } from "#api/modules/identity/application/services/settings/user-preference-reader.service";
 import {
   USER_PREFERENCE_READER,
   USER_SETTINGS_CACHE,
 } from "#api/modules/identity/identity-settings.public";
-import { UserSettingsCacheAdapter } from "#api/modules/identity/infrastructure/adapters/settings/user-settings-cache.adapter";
-import { DrizzleUserConsentRepository } from "#api/modules/identity/infrastructure/persistence/settings/drizzle-user-consent.repository";
-import { DrizzleUserPreferenceRepository } from "#api/modules/identity/infrastructure/persistence/settings/drizzle-user-preference.repository";
+import { UserPreferenceReader } from "#api/modules/identity/preferences/application/use-cases/read-user-preferences.use-case";
+import { UserSettingsCacheAdapter } from "#api/modules/identity/preferences/infrastructure/adapters/user-settings-cache.adapter";
+import { DrizzleUserConsentRepository } from "#api/modules/identity/preferences/infrastructure/persistence/drizzle-user-consent.repository";
+import { DrizzleUserPreferenceRepository } from "#api/modules/identity/preferences/infrastructure/persistence/drizzle-user-preference.repository";
 import {
   createMorningNoTodoNotificationMessage,
   createMorningReminderNotificationMessage,

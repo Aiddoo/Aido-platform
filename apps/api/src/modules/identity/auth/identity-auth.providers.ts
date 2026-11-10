@@ -11,6 +11,12 @@ import { loggerFor, provideUseCase } from "#api/platform/di/provide-use-case";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { UnitOfWorkPort } from "#api/shared/application/ports/index";
 
+import { DeleteAccountUseCase } from "../users/application/use-cases/delete-account.use-case.js";
+import { GetCurrentUserUseCase } from "../users/application/use-cases/get-current-user.use-case.js";
+import { GetEntitlementSnapshotUseCase } from "../users/application/use-cases/get-entitlement-snapshot.use-case.js";
+import { PurgeDeletedAccountsUseCase } from "../users/application/use-cases/purge-deleted-accounts.use-case.js";
+import { RestoreAccountUseCase } from "../users/application/use-cases/restore-account.use-case.js";
+import { UpdateProfileUseCase } from "../users/application/use-cases/update-profile.use-case.js";
 import {
   AccountNotificationCleanupPort,
   AccountTodoCommentCleanupPort,
@@ -43,10 +49,7 @@ import { ChangePasswordUseCase } from "./application/use-cases/change-password.u
 import { CompleteOAuthAuthorizationUseCase } from "./application/use-cases/complete-oauth-authorization.use-case.js";
 import { ConsumeVerificationCodeUseCase } from "./application/use-cases/consume-verification-code.use-case.js";
 import { CreateSessionUseCase } from "./application/use-cases/create-session.use-case.js";
-import { DeleteAccountUseCase } from "./application/use-cases/delete-account.use-case.js";
 import { ExchangeOAuthCodeUseCase } from "./application/use-cases/exchange-oauth-code.use-case.js";
-import { GetCurrentUserUseCase } from "./application/use-cases/get-current-user.use-case.js";
-import { GetEntitlementSnapshotUseCase } from "./application/use-cases/get-entitlement-snapshot.use-case.js";
 import { GetOAuthRedirectUriUseCase } from "./application/use-cases/get-oauth-redirect-uri.use-case.js";
 import { IssueLoginUseCase } from "./application/use-cases/issue-login.use-case.js";
 import { IssueVerificationCodeUseCase } from "./application/use-cases/issue-verification-code.use-case.js";
@@ -62,20 +65,17 @@ import { LogoutAllUseCase } from "./application/use-cases/logout-all.use-case.js
 import { LogoutUseCase } from "./application/use-cases/logout.use-case.js";
 import { NotifyOAuthSignupUseCase } from "./application/use-cases/notify-oauth-signup.use-case.js";
 import { ProvisionUserUseCase } from "./application/use-cases/provision-user.use-case.js";
-import { PurgeDeletedAccountsUseCase } from "./application/use-cases/purge-deleted-accounts.use-case.js";
 import { RefreshTokensUseCase } from "./application/use-cases/refresh-tokens.use-case.js";
 import { RegisterUseCase } from "./application/use-cases/register.use-case.js";
 import { RequestPasswordResetUseCase } from "./application/use-cases/request-password-reset.use-case.js";
 import { RequestPasswordSetupCodeUseCase } from "./application/use-cases/request-password-setup-code.use-case.js";
 import { ResendVerificationUseCase } from "./application/use-cases/resend-verification.use-case.js";
 import { ResetPasswordUseCase } from "./application/use-cases/reset-password.use-case.js";
-import { RestoreAccountUseCase } from "./application/use-cases/restore-account.use-case.js";
 import { RevokeSessionUseCase } from "./application/use-cases/revoke-session.use-case.js";
 import { SendVerificationCodeUseCase } from "./application/use-cases/send-verification-code.use-case.js";
 import { SetPasswordUseCase } from "./application/use-cases/set-password.use-case.js";
 import { StartOAuthAuthorizationUseCase } from "./application/use-cases/start-oauth-authorization.use-case.js";
 import { UnlinkOAuthAccountUseCase } from "./application/use-cases/unlink-oauth-account.use-case.js";
-import { UpdateProfileUseCase } from "./application/use-cases/update-profile.use-case.js";
 import { VerifyEmailUseCase } from "./application/use-cases/verify-email.use-case.js";
 
 // 아직 Symbol 토큰인 다른 Context 포트(billing·access·social)를 받아 provideUseCase 대신 factory로 조립한다

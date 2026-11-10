@@ -1,7 +1,7 @@
 import {
   UserSettingsCacheKey,
   USER_SETTINGS_CACHE_TTL_MS,
-} from "#api/modules/identity/infrastructure/cache/settings/user-settings-cache.keyspace";
+} from "#api/modules/identity/preferences/infrastructure/cache/user-settings-cache.keyspace";
 import {
   DAILY_COMPLETION_CACHE_TTL_MS,
   DailyCompletionCacheKey,

@@ -8,7 +8,7 @@ import {
   type AccountProvider,
   type UserStatus,
 } from "#api/modules/identity/auth/domain/auth.constants";
-import { IdentityUser } from "#api/modules/identity/auth/domain/identity-user.aggregate";
+import { IdentityUser } from "#api/modules/identity/users/domain/identity-user.aggregate";
 import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { toIsoString } from "#api/shared/domain/time/instant";
 import type { FixedClock } from "#test/doubles/platform/fixed-clock";
@@ -19,7 +19,7 @@ import {
   createIdentityUserFixture,
 } from "#test/fixtures/identity/auth-session.fixture";
 
-import { GetCurrentUserUseCase } from "./get-current-user.use-case.js";
+import { GetCurrentUserUseCase } from "../../../users/application/use-cases/get-current-user.use-case.js";
 import { LoginWithOAuthTokenUseCase } from "./login-with-oauth-token.use-case.js";
 
 const providers = ["APPLE", "GOOGLE", "KAKAO", "NAVER"] satisfies Array<

@@ -24,7 +24,11 @@ import { SocialNudgesModule } from "#api/modules/social/social-nudges.public";
 import { jwtConfig } from "#api/platform/config/jwt.config";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
 
-import { LastActiveInterceptor } from "../presentation/interceptors/auth/last-active.interceptor.js";
+import { AccountPurgeProcessor } from "../users/infrastructure/jobs/account-purge.processor.js";
+import { AccountPurgeScheduler } from "../users/infrastructure/jobs/account-purge.scheduler.js";
+import { DrizzleUserRepository } from "../users/infrastructure/persistence/drizzle-user.repository.js";
+import { LastActiveInterceptor } from "../users/presentation/http/interceptors/last-active.interceptor.js";
+import { EntitlementController } from "../users/presentation/http/v1/entitlement.controller.js";
 import { AuthAccountRepositoryPort } from "./application/ports/auth-account.repository.port.js";
 import {
   AuthCachePort,
@@ -108,20 +112,16 @@ import { OAUTH_PROVIDER_TIMEOUT_MS } from "./infrastructure/adapters/oauth-outbo
 import { RetentionEnrollerAdapter } from "./infrastructure/adapters/retention-enroller.adapter.js";
 import { SessionPushDeviceReleaserAdapter } from "./infrastructure/adapters/session-push-device-releaser.adapter.js";
 import { UserProvisioningSeederAdapter } from "./infrastructure/adapters/user-provisioning-seeder.adapter.js";
-import { AccountPurgeProcessor } from "./infrastructure/jobs/account-purge.processor.js";
-import { AccountPurgeScheduler } from "./infrastructure/jobs/account-purge.scheduler.js";
 import { DrizzleAccountRepository } from "./infrastructure/persistence/drizzle-account.repository.js";
 import { DrizzleLoginAttemptRepository } from "./infrastructure/persistence/drizzle-login-attempt.repository.js";
 import { DrizzleOAuthStateRepository } from "./infrastructure/persistence/drizzle-oauth-state.repository.js";
 import { DrizzleSecurityLogRepository } from "./infrastructure/persistence/drizzle-security-log.repository.js";
 import { DrizzleSessionRepository } from "./infrastructure/persistence/drizzle-session.repository.js";
-import { DrizzleUserRepository } from "./infrastructure/persistence/drizzle-user.repository.js";
 import { DrizzleVerificationRepository } from "./infrastructure/persistence/drizzle-verification.repository.js";
 import { JwtAuthGuard } from "./presentation/http/guards/jwt-auth.guard.js";
 import { JwtRefreshGuard } from "./presentation/http/guards/jwt-refresh.guard.js";
 import { AccountController } from "./presentation/http/v1/account.controller.js";
 import { AuthController } from "./presentation/http/v1/auth.controller.js";
-import { EntitlementController } from "./presentation/http/v1/entitlement.controller.js";
 import { OAuthController } from "./presentation/http/v1/oauth.controller.js";
 import { SessionController } from "./presentation/http/v1/session.controller.js";
 

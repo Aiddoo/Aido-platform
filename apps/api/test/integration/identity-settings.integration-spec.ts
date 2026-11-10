@@ -5,19 +5,19 @@ import { vi } from "vitest";
 import {
   STREAK_MILESTONE_NOTIFIER,
   type StreakMilestoneNotifierPort,
-} from "#api/modules/identity/application/ports/settings/streak-milestone.notifier.port";
+} from "#api/modules/identity/preferences/application/ports/streak-milestone-notifier.port";
 import {
   USER_SETTINGS_CACHE,
   type UserSettingsCachePort,
-} from "#api/modules/identity/application/ports/settings/user-settings-cache.port";
-import { GetPreference } from "#api/modules/identity/application/use-cases/settings/get-preference.use-case";
-import { OnTodoToggled } from "#api/modules/identity/application/use-cases/settings/on-todo-toggled.use-case";
-import { RefreshPushTimezone } from "#api/modules/identity/application/use-cases/settings/refresh-push-timezone.use-case";
-import { SeedUserSettings } from "#api/modules/identity/application/use-cases/settings/seed-user-settings.use-case";
-import { UpdatePreference } from "#api/modules/identity/application/use-cases/settings/update-preference.use-case";
-import { UpsertPushTimezone } from "#api/modules/identity/application/use-cases/settings/upsert-push-timezone.use-case";
-import { DrizzleUserConsentRepository } from "#api/modules/identity/infrastructure/persistence/settings/drizzle-user-consent.repository";
-import { DrizzleUserPreferenceRepository } from "#api/modules/identity/infrastructure/persistence/settings/drizzle-user-preference.repository";
+} from "#api/modules/identity/preferences/application/ports/user-settings-cache.port";
+import { GetPreference } from "#api/modules/identity/preferences/application/use-cases/get-preference.use-case";
+import { OnTodoToggled } from "#api/modules/identity/preferences/application/use-cases/on-todo-toggled.use-case";
+import { RefreshPushTimezone } from "#api/modules/identity/preferences/application/use-cases/refresh-push-timezone.use-case";
+import { SeedUserSettings } from "#api/modules/identity/preferences/application/use-cases/seed-user-settings.use-case";
+import { UpdatePreference } from "#api/modules/identity/preferences/application/use-cases/update-preference.use-case";
+import { UpsertPushTimezone } from "#api/modules/identity/preferences/application/use-cases/upsert-push-timezone.use-case";
+import { DrizzleUserConsentRepository } from "#api/modules/identity/preferences/infrastructure/persistence/drizzle-user-consent.repository";
+import { DrizzleUserPreferenceRepository } from "#api/modules/identity/preferences/infrastructure/persistence/drizzle-user-preference.repository";
 import {
   REMINDER_TIMEZONE_CACHE,
   type ReminderTimezoneCachePort,

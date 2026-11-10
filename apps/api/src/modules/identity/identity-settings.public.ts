@@ -1,6 +1,6 @@
-import type { UserSettingsCachePort } from "./application/ports/settings/user-settings-cache.port.js";
+import type { UserSettingsCachePort } from "./preferences/application/ports/user-settings-cache.port.js";
 
-export { USER_SETTINGS_CACHE } from "./application/ports/settings/user-settings-cache.port.js";
+export { USER_SETTINGS_CACHE } from "./preferences/application/ports/user-settings-cache.port.js";
 export type UserPreferenceCacheInvalidatorPort = Pick<
   UserSettingsCachePort,
   "invalidateUserPreference"
@@ -9,18 +9,18 @@ export type UserPreferenceCacheInvalidatorPort = Pick<
 export {
   AI_DATA_SHARING_CONSENT_READER,
   type AiDataSharingConsentReaderPort,
-} from "./application/ports/settings/ai-data-sharing-consent.reader.port.js";
+} from "./preferences/application/ports/ai-data-sharing-consent.reader.port.js";
 export {
   USER_PREFERENCE_READER,
   type UserPreferenceReaderPort,
-} from "./application/ports/settings/user-preference.reader.port.js";
-export type { PreferenceSnapshot } from "./application/read-models/settings/preference.read-model.js";
+} from "./preferences/application/ports/user-preference.reader.port.js";
+export type { PreferenceSnapshot } from "./preferences/application/read-models/preference.read-model.js";
 export type {
   FindMarketingReconfirmTargetsParams,
   MarketingReconfirmTarget,
   UserConsentRecordWithId,
-} from "./application/ports/settings/user-consent.repository.port.js";
-export type { UserPreferenceRecordWithId } from "./application/ports/settings/user-preference.repository.port.js";
+} from "./preferences/application/ports/user-consent.repository.port.js";
+export type { UserPreferenceRecordWithId } from "./preferences/application/ports/user-preference.repository.port.js";
 export {
   USER_NOTIFICATION_SETTINGS_ACCESS,
   USER_SETTINGS_PROVISIONER,
@@ -30,13 +30,13 @@ export {
   type UserSettingsProvisionerPort,
   type UserStreakAccessPort,
   type UserTimezoneReaderPort,
-} from "./application/ports/settings/user-settings-access.port.js";
-export type { UserConsentRecord } from "./domain/records/settings/user-consent.record.js";
-export type { UserPreferenceRecord } from "./domain/records/settings/user-preference.record.js";
-export { computeEffectiveStreak } from "./domain/services/settings/effective-streak.js";
+} from "./preferences/application/ports/user-settings-access.port.js";
+export type { UserConsentRecord } from "./preferences/domain/user-consent.constants.js";
+export type { UserPreferenceRecord } from "./preferences/domain/user-preference.constants.js";
+export { computeEffectiveStreak } from "./preferences/domain/effective-streak.domain-service.js";
 export {
   marketingAgreedSince,
   marketingReconfirmCutoff,
-} from "./domain/services/settings/marketing-consent-policy.js";
-export { TimezoneSelfHealInterceptor } from "./presentation/interceptors/settings/timezone-self-heal.interceptor.js";
-export { IdentitySettingsModule } from "./identity-settings.module.js";
+} from "./preferences/domain/marketing-consent.domain-service.js";
+export { TimezoneSelfHealInterceptor } from "./preferences/presentation/http/interceptors/timezone-self-heal.interceptor.js";
+export { IdentitySettingsModule } from "./preferences/identity-preferences.module.js";

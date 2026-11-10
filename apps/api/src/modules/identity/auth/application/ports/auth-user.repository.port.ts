@@ -1,7 +1,7 @@
 import type { SubscriptionStatus, UserRole } from "@aido/api/vocabulary";
 
+import type { IdentityUser } from "../../../users/domain/identity-user.aggregate.js";
 import type { AccountProvider, UserStatus } from "../../domain/auth.constants.js";
-import type { IdentityUser } from "../../domain/identity-user.aggregate.js";
 
 interface AuthUserRecord {
   id: string;

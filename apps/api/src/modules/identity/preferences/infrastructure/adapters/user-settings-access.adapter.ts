@@ -1,0 +1,130 @@
+import { Inject, Injectable } from "@nestjs/common";
+
+import {
+  type ConsentSeedInput,
+  type FindMarketingReconfirmTargetsParams,
+  type MarketingReconfirmTarget,
+  USER_CONSENT_REPOSITORY,
+  type UserConsentRepositoryPort,
+} from "../../application/ports/user-consent.repository.port.js";
+import type {
+  UserNotificationSettingsAccessPort,
+  UserSettingsProvisionerPort,
+  UserStreakAccessPort,
+  UserTimezoneReaderPort,
+} from "../../application/ports/user-settings-access.port.js";
+import { GetConsentRecord } from "../../application/use-cases/get-consent-record.use-case.js";
+import { GetConsentRecords } from "../../application/use-cases/get-consent-records.use-case.js";
+import { GetPreferenceRecord } from "../../application/use-cases/get-preference-record.use-case.js";
+import { GetPreferenceRecords } from "../../application/use-cases/get-preference-records.use-case.js";
+import { OnTodoToggled } from "../../application/use-cases/on-todo-toggled.use-case.js";
+import { SeedUserSettings } from "../../application/use-cases/seed-user-settings.use-case.js";
+import { UpdateMarketingPushConsent } from "../../application/use-cases/update-marketing-push-consent.use-case.js";
+import { UpsertPushLocale } from "../../application/use-cases/upsert-push-locale.use-case.js";
+import { UpsertPushTimezone } from "../../application/use-cases/upsert-push-timezone.use-case.js";
+
+/** 외부 컨텍스트에 공개한 좁은 capability를 내부 endpoint UseCase에 연결한다. */
+@Injectable()
+export class UserSettingsAccessAdapter
+  implements
+    UserSettingsProvisionerPort,
+    UserStreakAccessPort,
+    UserNotificationSettingsAccessPort,
+    UserTimezoneReaderPort
+{
+  readonly #seedUserSettingsUseCase: SeedUserSettings;
+  readonly #onTodoToggledUseCase: OnTodoToggled;
+  readonly #getPreferenceRecordUseCase: GetPreferenceRecord;
+  readonly #getPreferenceRecordsUseCase: GetPreferenceRecords;
+  readonly #getConsentRecordUseCase: GetConsentRecord;
+  readonly #getConsentRecordsUseCase: GetConsentRecords;
+  readonly #upsertPushTimezoneUseCase: UpsertPushTimezone;
+  readonly #upsertPushLocaleUseCase: UpsertPushLocale;
+  readonly #updateMarketingPushConsentUseCase: UpdateMarketingPushConsent;
+  readonly #consentRepository: Pick<
+    UserConsentRepositoryPort,
+    "findMarketingReconfirmTargets" | "claimMarketingReconfirm"
+  >;
+
+  constructor(
+    seedUserSettingsUseCase: SeedUserSettings,
+    onTodoToggledUseCase: OnTodoToggled,
+    getPreferenceRecordUseCase: GetPreferenceRecord,
+    getPreferenceRecordsUseCase: GetPreferenceRecords,
+    getConsentRecordUseCase: GetConsentRecord,
+    getConsentRecordsUseCase: GetConsentRecords,
+    upsertPushTimezoneUseCase: UpsertPushTimezone,
+    upsertPushLocaleUseCase: UpsertPushLocale,
+    updateMarketingPushConsentUseCase: UpdateMarketingPushConsent,
+    @Inject(USER_CONSENT_REPOSITORY)
+    consentRepository: Pick<
+      UserConsentRepositoryPort,
+      "findMarketingReconfirmTargets" | "claimMarketingReconfirm"
+    >,
+  ) {
+    this.#seedUserSettingsUseCase = seedUserSettingsUseCase;
+    this.#onTodoToggledUseCase = onTodoToggledUseCase;
+    this.#getPreferenceRecordUseCase = getPreferenceRecordUseCase;
+    this.#getPreferenceRecordsUseCase = getPreferenceRecordsUseCase;
+    this.#getConsentRecordUseCase = getConsentRecordUseCase;
+    this.#getConsentRecordsUseCase = getConsentRecordsUseCase;
+    this.#upsertPushTimezoneUseCase = upsertPushTimezoneUseCase;
+    this.#upsertPushLocaleUseCase = upsertPushLocaleUseCase;
+    this.#updateMarketingPushConsentUseCase = updateMarketingPushConsentUseCase;
+    this.#consentRepository = consentRepository;
+  }
+
+  seedDefaults(userId: string, consent: ConsentSeedInput): Promise<void> {
+    return this.#seedUserSettingsUseCase.execute({ userId, consent });
+  }
+
+  recordTodoToggle(userId: string, completed: boolean, timezone: string): Promise<void> {
+    return this.#onTodoToggledUseCase.execute({ userId, completed, timezone });
+  }
+
+  getPreferenceRecord(userId: string) {
+    return this.#getPreferenceRecordUseCase.execute({ userId });
+  }
+
+  async findStoredTimezone(userId: string): Promise<string | null> {
+    const record = await this.#getPreferenceRecordUseCase.execute({ userId });
+    return record?.timezone ?? null;
+  }
+
+  getPreferenceRecordsByUserIds(userIds: string[]) {
+    return this.#getPreferenceRecordsUseCase.execute({ userIds });
+  }
+
+  getConsentRecord(userId: string) {
+    return this.#getConsentRecordUseCase.execute({ userId });
+  }
+
+  getConsentRecordsByUserIds(userIds: string[]) {
+    return this.#getConsentRecordsUseCase.execute({ userIds });
+  }
+
+  upsertPushTimezone(userId: string, timezone: string): Promise<void> {
+    return this.#upsertPushTimezoneUseCase.execute({ userId, timezone });
+  }
+
+  upsertPushLocale(userId: string, locale: string): Promise<void> {
+    return this.#upsertPushLocaleUseCase.execute({ userId, locale });
+  }
+
+  async updateMarketingPushConsent(userId: string, agreed: boolean): Promise<void> {
+    await this.#updateMarketingPushConsentUseCase.execute({ userId, agreed });
+  }
+
+  findMarketingReconfirmTargets(
+    params: FindMarketingReconfirmTargetsParams,
+  ): Promise<MarketingReconfirmTarget[]> {
+    return this.#consentRepository.findMarketingReconfirmTargets(params);
+  }
+
+  claimMarketingReconfirm(
+    userIds: readonly string[],
+    params: { readonly cutoff: Date; readonly at: Date },
+  ): Promise<MarketingReconfirmTarget[]> {
+    return this.#consentRepository.claimMarketingReconfirm(userIds, params);
+  }
+}

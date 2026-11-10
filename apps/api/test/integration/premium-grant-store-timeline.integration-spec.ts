@@ -8,7 +8,7 @@ import {
   type PremiumGranterPort,
 } from "#api/modules/billing/billing-subscriptions.public";
 import { RevenueCatWebhookReceiver } from "#api/modules/billing/infrastructure/revenuecat/revenuecat-webhook.receiver";
-import { GetCurrentUserUseCase } from "#api/modules/identity/auth/application/use-cases/get-current-user.use-case";
+import { GetCurrentUserUseCase } from "#api/modules/identity/users/application/use-cases/get-current-user.use-case";
 import { createEntityId } from "#api/platform/database/entity-id";
 import { user as userTable } from "#api/platform/database/schema/index";
 import { STORE_RENEWAL_GRACE_MS } from "#api/shared/domain/store-renewal-grace";

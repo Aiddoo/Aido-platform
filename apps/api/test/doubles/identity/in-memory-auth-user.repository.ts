@@ -8,7 +8,7 @@ import type { UserStatus } from "#api/modules/identity/auth/domain/auth.constant
 import {
   IdentityUser,
   type IdentityUserPrimitives,
-} from "#api/modules/identity/auth/domain/identity-user.aggregate";
+} from "#api/modules/identity/users/domain/identity-user.aggregate";
 import { instantToDate } from "#api/shared/domain/time/instant";
 
 export const IN_MEMORY_USER_CREATED_AT = Temporal.Instant.from("2026-11-10T00:00:00Z");

@@ -1,5 +1,5 @@
 import { LatestClientAppVersionAdapter } from "#api/modules/ai-assistance/infrastructure/adapters/parsing/latest-client-app-version.adapter";
-import { DrizzleUserRepository } from "#api/modules/identity/auth/infrastructure/persistence/drizzle-user.repository";
+import { DrizzleUserRepository } from "#api/modules/identity/users/infrastructure/persistence/drizzle-user.repository";
 import { DrizzleClientAppVersionReader } from "#api/modules/notification/infrastructure/persistence/delivery/drizzle-client-app-version.reader";
 import { pushToken, user as userTable } from "#api/platform/database/schema/index";
 import { UserFixture } from "#test/fixtures/index";
