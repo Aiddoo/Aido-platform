@@ -13,7 +13,7 @@ import {
 import { type TodoCachePort } from "../ports/todo-cache.port.js";
 import { type TodoReadRepositoryPort } from "../ports/todo-read.repository.port.js";
 import { type TodoRepositoryPort } from "../ports/todo.repository.port.js";
-import { PlanningTodoLogEvent } from "../todos.log-events.js";
+import { TodoLogEvent } from "../todos.log-events.js";
 
 export interface ToggleTodoCompleteInput {
   readonly id: number;
@@ -33,7 +33,7 @@ interface ToggleTodoCompleteDependencies {
   readonly logger: ApplicationLoggerPort;
 }
 
-export class ToggleTodoComplete {
+export class SetTodoCompletedUseCase {
   readonly #dependencies: ToggleTodoCompleteDependencies;
 
   constructor(dependencies: ToggleTodoCompleteDependencies) {
@@ -62,7 +62,7 @@ export class ToggleTodoComplete {
       });
 
       this.#dependencies.logger.log({
-        event: PlanningTodoLogEvent.COMPLETION_CHANGED,
+        event: TodoLogEvent.COMPLETION_CHANGED,
         todoId: id,
         userId,
         completed,

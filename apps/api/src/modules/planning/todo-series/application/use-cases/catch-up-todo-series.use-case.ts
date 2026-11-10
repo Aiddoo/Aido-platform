@@ -6,8 +6,8 @@ import { toDateString } from "#api/shared/domain/date/utils/format";
 
 import type { TodoSeriesOwnerPort } from "../ports/todo-series-owner.port.js";
 import type { TodoSeriesRepositoryPort } from "../ports/todo-series.repository.port.js";
-import { PlanningTodoSeriesLogEvent } from "../todo-series.log-events.js";
-import type { TodoSeriesDueRunner } from "./materialize-todo-series.use-case.js";
+import { TodoSeriesLogEvent } from "../todo-series.log-events.js";
+import type { MaterializeTodoSeriesUseCase } from "./materialize-todo-series.use-case.js";
 
 export const TODO_SERIES_CATCH_UP_BUDGET = {
   /** 앱 요청 제한(10초) 안에 목록을 돌려주도록 이 시간이 지나면 남은 규칙은 다음 요청이나 밤 작업에 맡긴다. */
@@ -19,7 +19,7 @@ export const TODO_SERIES_CATCH_UP_BUDGET = {
 interface TodoSeriesCatchUpDependencies {
   readonly seriesRepository: Pick<TodoSeriesRepositoryPort, "findIdsBehind">;
   readonly seriesOwner: Pick<TodoSeriesOwnerPort, "findOperatingOwners">;
-  readonly dueRunner: Pick<TodoSeriesDueRunner, "materialize">;
+  readonly dueRunner: Pick<MaterializeTodoSeriesUseCase, "execute">;
   readonly logger: Pick<ApplicationLoggerPort, "log" | "warn">;
   readonly deadlineMs?: number;
 }
@@ -31,7 +31,7 @@ interface TodoSeriesCatchUpDependencies {
  * 사용자·UTC 날짜마다 한 번만 조회하고 그 뒤 요청은 메모리만 본다. 프로세스가 바뀌어도 커서를 다시 읽을 뿐이다.
  * 조회 상한을 UTC 내일로 잡아 어떤 시간대의 오늘도 포함한다. 어떤 실패도 요청으로 전파하지 않으며 밤 작업이 이어받는다.
  */
-export class TodoSeriesCatchUp {
+export class CatchUpTodoSeriesUseCase {
   readonly #dependencies: TodoSeriesCatchUpDependencies;
   /** userId → 다음에 조회해도 되는 시각(ms). 날짜가 바뀌면 통째로 비워 활동 사용자 수만큼만 남는다. */
   readonly #nextCheckAt = new Map<string, number>();
@@ -42,7 +42,7 @@ export class TodoSeriesCatchUp {
     this.#dependencies = dependencies;
   }
 
-  ensureCaughtUp(userId: string): Promise<void> {
+  execute(userId: string): Promise<void> {
     const at = now();
     const today = toDateString(at);
     if (today !== this.#checkedDate) {
@@ -83,7 +83,7 @@ export class TodoSeriesCatchUp {
       );
       if (seriesIds.length > 0) {
         logger.log({
-          event: PlanningTodoSeriesLogEvent.CATCH_UP_COMPLETED,
+          event: TodoSeriesLogEvent.CATCH_UP_COMPLETED,
           userId,
           seriesCount: seriesIds.length,
           createdCount,
@@ -95,7 +95,7 @@ export class TodoSeriesCatchUp {
     } catch (error) {
       this.#nextCheckAt.set(userId, Date.now() + TODO_SERIES_CATCH_UP_BUDGET.RETRY_AFTER_MS);
       logger.warn({
-        event: PlanningTodoSeriesLogEvent.CATCH_UP_FAILED,
+        event: TodoSeriesLogEvent.CATCH_UP_FAILED,
         userId,
         errorType: toErrorType(error),
       });
@@ -114,11 +114,11 @@ export class TodoSeriesCatchUp {
       }
       try {
         // 다른 기기의 복귀가 먼저 잡았으면 기다려야 이 요청의 목록에도 오늘 회차가 있다.
-        createdCount += await dueRunner.materialize({ id, userId }, { skipLocked: false });
+        createdCount += await dueRunner.execute({ id, userId }, { skipLocked: false });
       } catch (error) {
         failedCount += 1;
         logger.warn({
-          event: PlanningTodoSeriesLogEvent.CATCH_UP_FAILED,
+          event: TodoSeriesLogEvent.CATCH_UP_FAILED,
           userId,
           seriesId: id,
           errorType: toErrorType(error),

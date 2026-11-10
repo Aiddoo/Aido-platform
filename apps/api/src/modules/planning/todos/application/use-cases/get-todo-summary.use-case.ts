@@ -1,7 +1,7 @@
 import { computeEffectiveStreak } from "#api/modules/identity/identity-settings.public";
 import { toDateString } from "#api/shared/domain/date/utils/format";
 
-import type { TodoSeriesCatchUp } from "../../../todo-series/application/use-cases/catch-up-todo-series.use-case.js";
+import type { CatchUpTodoSeriesUseCase } from "../../../todo-series/application/use-cases/catch-up-todo-series.use-case.js";
 import { summarizeCompletion } from "../../domain/todo-completion.domain-service.js";
 import { resolveTodoSummaryDate } from "../../domain/todo-summary-date.domain-service.js";
 import { type StreakPort } from "../ports/streak.port.js";
@@ -40,10 +40,10 @@ interface GetTodoSummaryDependencies {
     "getTodayTodoStats" | "findTodayTopTodos"
   >;
   readonly streakPort: Pick<StreakPort, "getStreakContext">;
-  readonly seriesCatchUp: Pick<TodoSeriesCatchUp, "ensureCaughtUp">;
+  readonly seriesCatchUp: Pick<CatchUpTodoSeriesUseCase, "execute">;
 }
 
-export class GetTodoSummary {
+export class GetTodoSummaryUseCase {
   readonly #dependencies: GetTodoSummaryDependencies;
 
   constructor(dependencies: GetTodoSummaryDependencies) {
@@ -56,7 +56,7 @@ export class GetTodoSummary {
     const date = resolveTodoSummaryDate(input.today, input.requestedDate);
 
     // 앱이 목록과 나란히 부르므로 같은 복귀를 기다려야 위젯·요약이 0개로 남지 않는다.
-    await this.#dependencies.seriesCatchUp.ensureCaughtUp(userId);
+    await this.#dependencies.seriesCatchUp.execute(userId);
 
     const [stats, topTodos, streakContext] = await Promise.all([
       this.#dependencies.todoReadRepository.getTodayTodoStats(userId, date),

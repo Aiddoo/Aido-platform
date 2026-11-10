@@ -21,7 +21,7 @@ import { type CategoryOwnershipPort } from "../ports/category-ownership.port.js"
 import { type TodoCachePort } from "../ports/todo-cache.port.js";
 import { type TodoReadRepositoryPort } from "../ports/todo-read.repository.port.js";
 import { type TodoRepositoryPort, type TodoUpdatePatch } from "../ports/todo.repository.port.js";
-import { PlanningTodoLogEvent } from "../todos.log-events.js";
+import { TodoLogEvent } from "../todos.log-events.js";
 
 export interface UpdateTodoData {
   readonly title?: string;
@@ -38,7 +38,7 @@ export interface UpdateTodoInput {
   readonly id: number;
   readonly userId: string;
   readonly data: UpdateTodoData;
-  /** 해석이 끝난 시간대. EditTodo가 TodoTimezoneResolver로 정해 넘긴다. */
+  /** 해석이 끝난 시간대. EditTodoUseCase가 ResolveTodoTimezoneUseCase로 정해 넘긴다. */
   readonly timezone: string;
   /** 명시했는데 반복이 아니면 TODO_0844다. 회차 하나만 고쳐도 원래 회차 날짜는 그대로다. */
   readonly scope?: TodoUpdateScope;
@@ -63,7 +63,7 @@ interface UpdateTodoDependencies {
   readonly logger: ApplicationLoggerPort;
 }
 
-export class UpdateTodo {
+export class UpdateTodoUseCase {
   readonly #dependencies: UpdateTodoDependencies;
 
   constructor(dependencies: UpdateTodoDependencies) {
@@ -81,7 +81,7 @@ export class UpdateTodo {
     return response;
   }
 
-  /** 활성 UoW 안에서 호출한다. 다른 수정과 한 트랜잭션으로 묶을 때 EditTodo가 부른다. */
+  /** 활성 UoW 안에서 호출한다. 다른 수정과 한 트랜잭션으로 묶을 때 EditTodoUseCase가 부른다. */
   async apply(input: UpdateTodoInput): Promise<AppliedTodoUpdate> {
     const { id, userId, data, timezone } = input;
     await this.#dependencies.mutationLock.acquire([
@@ -149,7 +149,7 @@ export class UpdateTodo {
 
   async publish(applied: AppliedTodoUpdate): Promise<void> {
     const { id, userId, hasCategoryChanged, events } = applied;
-    this.#dependencies.logger.log({ event: PlanningTodoLogEvent.UPDATED, todoId: id, userId });
+    this.#dependencies.logger.log({ event: TodoLogEvent.UPDATED, todoId: id, userId });
 
     if (hasCategoryChanged) {
       await this.#dependencies.todoCache.invalidateTodoCategories(userId);

@@ -6,10 +6,10 @@ import { createPlanningTodoFixture } from "#test/fixtures/planning-todo.fixture"
 
 import { RepeatRule } from "../../domain/repeat-rule.vo.js";
 import { TodoSeries } from "../../domain/todo-series.aggregate.js";
-import { PlanningTodoSeriesAlertKey } from "../todo-series.alerts.js";
-import { MaterializeDueTodoSeries } from "./materialize-due-todo-series.use-case.js";
-import { TodoSeriesDueRunner } from "./materialize-todo-series.use-case.js";
-import { TodoCreationEffects } from "./publish-todo-creation.use-case.js";
+import { TodoSeriesAlertKey } from "../todo-series.alerts.js";
+import { MaterializeDueTodoSeriesUseCase } from "./materialize-due-todo-series.use-case.js";
+import { MaterializeTodoSeriesUseCase } from "./materialize-todo-series.use-case.js";
+import { PublishTodoCreationUseCase } from "./publish-todo-creation.use-case.js";
 
 const AT = new Date("2026-11-05T00:00:00.000Z");
 
@@ -28,13 +28,13 @@ describe("회차 채우기", () => {
   });
 
   function useCase(overrides: { deadlineMs?: number; batchSize?: number } = {}) {
-    return new MaterializeDueTodoSeries({
+    return new MaterializeDueTodoSeriesUseCase({
       seriesRepository: fixture.todoSeriesRepository,
       seriesOwner: fixture.seriesOwner,
-      dueRunner: new TodoSeriesDueRunner({
+      dueRunner: new MaterializeTodoSeriesUseCase({
         seriesRepository: fixture.todoSeriesRepository,
         materializer: fixture.occurrenceMaterializer,
-        effects: new TodoCreationEffects(fixture),
+        effects: new PublishTodoCreationUseCase(fixture),
         unitOfWork: fixture.unitOfWork,
         mutationLock: fixture.mutationLock,
       }),
@@ -93,7 +93,7 @@ describe("회차 채우기", () => {
     expect(result).toMatchObject({ processedCount: 2, createdCount: 3, failedCount: 1 });
     expect(alert.raise).toHaveBeenCalledWith(
       expect.objectContaining({
-        key: PlanningTodoSeriesAlertKey.MATERIALIZE_FAILED,
+        key: TodoSeriesAlertKey.MATERIALIZE_FAILED,
         severity: "error",
       }),
     );

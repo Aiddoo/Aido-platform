@@ -13,14 +13,14 @@ interface TodoTimezoneResolverDependencies {
  * 할 일 쓰기가 벽시계를 해석할 시간대를 정한다. 요청 → 저장값 → 기본값 순서이고 규칙은 여기 하나다.
  * 앱은 늘 헤더를 보내므로 DB를 읽는 일은 헤더가 없거나 잘못된 요청뿐이다.
  */
-export class TodoTimezoneResolver {
+export class ResolveTodoTimezoneUseCase {
   readonly #dependencies: TodoTimezoneResolverDependencies;
 
   constructor(dependencies: TodoTimezoneResolverDependencies) {
     this.#dependencies = dependencies;
   }
 
-  async resolve(userId: string, requested: string | undefined): Promise<string> {
+  async execute(userId: string, requested: string | undefined): Promise<string> {
     const timezone = normalizeIanaTimezone(requested);
     if (timezone != null) {
       return timezone;

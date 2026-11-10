@@ -12,7 +12,7 @@ import {
 import { type TodoCachePort } from "../ports/todo-cache.port.js";
 import { type TodoReadRepositoryPort } from "../ports/todo-read.repository.port.js";
 import { type TodoRepositoryPort } from "../ports/todo.repository.port.js";
-import { PlanningTodoLogEvent } from "../todos.log-events.js";
+import { TodoLogEvent } from "../todos.log-events.js";
 
 export interface DeleteTodoItemInput {
   readonly todoId: number;
@@ -29,7 +29,7 @@ interface DeleteTodoItemDependencies {
   readonly logger: ApplicationLoggerPort;
 }
 
-export class DeleteTodoItem {
+export class DeleteTodoItemUseCase {
   readonly #dependencies: DeleteTodoItemDependencies;
 
   constructor(dependencies: DeleteTodoItemDependencies) {
@@ -52,7 +52,7 @@ export class DeleteTodoItem {
     });
 
     this.#dependencies.logger.log({
-      event: PlanningTodoLogEvent.ITEM_DELETED,
+      event: TodoLogEvent.ITEM_DELETED,
       todoId,
       itemId,
       userId,

@@ -2,14 +2,14 @@ import { mock } from "vitest-mock-extended";
 
 import type { JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
 
-import type { RebaseTodoTimezone } from "../../application/use-cases/rebase-todo-timezone.use-case.js";
+import type { RebaseTodoTimezoneUseCase } from "../../application/use-cases/rebase-todo-timezone.use-case.js";
 import { TodoTimezoneRebaseProcessor } from "./todo-timezone-rebase.processor.js";
 import { TODO_TIMEZONE_REBASE_JOB_POLICY } from "./todo-timezone-rebase.queue.js";
 
 const JOB = { name: "rebase-todo-timezone", data: { userId: "user-1" } };
 const LAST_ATTEMPT = TODO_TIMEZONE_REBASE_JOB_POLICY.retryLimit + 1;
 
-function createProcessor(execute = vi.fn<RebaseTodoTimezone["execute"]>()) {
+function createProcessor(execute = vi.fn<RebaseTodoTimezoneUseCase["execute"]>()) {
   const raise = vi.fn();
   const processor = new TodoTimezoneRebaseProcessor({ execute }, { raise }, mock<JobRuntimePort>());
   return { processor, execute, raise };

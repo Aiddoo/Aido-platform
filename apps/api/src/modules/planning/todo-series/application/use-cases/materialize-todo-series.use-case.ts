@@ -9,19 +9,19 @@ import type {
   TodoSeriesRef,
   TodoSeriesRepositoryPort,
 } from "../ports/todo-series.repository.port.js";
-import type { TodoOccurrenceMaterializer } from "./materialize-todo-occurrences.use-case.js";
-import type { TodoCreationEffects } from "./publish-todo-creation.use-case.js";
+import type { MaterializeTodoOccurrencesUseCase } from "./materialize-todo-occurrences.use-case.js";
+import type { PublishTodoCreationUseCase } from "./publish-todo-creation.use-case.js";
 
 interface TodoSeriesDueRunnerDependencies {
   readonly seriesRepository: Pick<TodoSeriesRepositoryPort, "lockForUpdate" | "update">;
-  readonly materializer: Pick<TodoOccurrenceMaterializer, "planDueRun" | "persist">;
-  readonly effects: Pick<TodoCreationEffects, "publishOccurrences">;
+  readonly materializer: Pick<MaterializeTodoOccurrencesUseCase, "planDueRun" | "persist">;
+  readonly effects: Pick<PublishTodoCreationUseCase, "publishOccurrences">;
   readonly unitOfWork: UnitOfWorkPort;
   readonly mutationLock: MutationLockPort;
 }
 
 /** 규칙 하나를 지금 시각까지 채운다. 밤 작업과 복귀 경로가 같은 잠금 순서·저장 규칙을 쓴다. */
-export class TodoSeriesDueRunner {
+export class MaterializeTodoSeriesUseCase {
   readonly #dependencies: TodoSeriesDueRunnerDependencies;
 
   constructor(dependencies: TodoSeriesDueRunnerDependencies) {
@@ -29,10 +29,7 @@ export class TodoSeriesDueRunner {
   }
 
   /** 만든 회차 수를 돌려준다. skipLocked면 다른 트랜잭션이 잡은 규칙을 기다리지 않는다. */
-  async materialize(
-    due: TodoSeriesRef,
-    options: { readonly skipLocked: boolean },
-  ): Promise<number> {
+  async execute(due: TodoSeriesRef, options: { readonly skipLocked: boolean }): Promise<number> {
     const { unitOfWork, seriesRepository, mutationLock, materializer, effects } =
       this.#dependencies;
     const materialized = await unitOfWork.run(async () => {

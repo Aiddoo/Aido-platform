@@ -12,7 +12,7 @@ import {
 import { type TodoCachePort } from "../ports/todo-cache.port.js";
 import { type TodoReadRepositoryPort } from "../ports/todo-read.repository.port.js";
 import { type TodoRepositoryPort } from "../ports/todo.repository.port.js";
-import { PlanningTodoLogEvent } from "../todos.log-events.js";
+import { TodoLogEvent } from "../todos.log-events.js";
 
 export interface ReorderTodoItemsInput {
   readonly todoId: number;
@@ -29,7 +29,7 @@ interface ReorderTodoItemsDependencies {
   readonly logger: ApplicationLoggerPort;
 }
 
-export class ReorderTodoItems {
+export class ReorderTodoItemsUseCase {
   readonly #dependencies: ReorderTodoItemsDependencies;
 
   constructor(dependencies: ReorderTodoItemsDependencies) {
@@ -51,7 +51,7 @@ export class ReorderTodoItems {
       await this.#dependencies.todoRepository.reorderItems(itemIds);
     });
 
-    this.#dependencies.logger.log({ event: PlanningTodoLogEvent.ITEMS_REORDERED, todoId, userId });
+    this.#dependencies.logger.log({ event: TodoLogEvent.ITEMS_REORDERED, todoId, userId });
 
     await this.#dependencies.todoCache.invalidateFriendTodos(userId);
 

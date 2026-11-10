@@ -16,14 +16,14 @@ interface TodoSeriesEditEffectsDependencies {
 }
 
 /** 범위 수정·삭제의 커밋 뒤 효과. 리마인더는 UoW 안에서 처리하고 이벤트는 규칙당 하나다. */
-export class TodoSeriesEditEffects {
+export class PublishTodoSeriesEditUseCase {
   readonly #dependencies: TodoSeriesEditEffectsDependencies;
 
   constructor(dependencies: TodoSeriesEditEffectsDependencies) {
     this.#dependencies = dependencies;
   }
 
-  async publish(effect: TodoSeriesEditEffect): Promise<void> {
+  async execute(effect: TodoSeriesEditEffect): Promise<void> {
     const { todoCache, eventPublisher } = this.#dependencies;
     await todoCache.invalidateTodoCategories(effect.userId);
     await todoCache.invalidateFriendTodos(effect.userId);

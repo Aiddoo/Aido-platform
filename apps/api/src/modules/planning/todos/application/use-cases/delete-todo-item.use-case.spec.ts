@@ -7,16 +7,16 @@ import {
   PLANNING_TIME,
 } from "#test/fixtures/planning-todo.fixture";
 
-import { DeleteTodoItem } from "./delete-todo-item.use-case.js";
+import { DeleteTodoItemUseCase } from "./delete-todo-item.use-case.js";
 
 describe("하위 항목 삭제", () => {
   let fixture: ReturnType<typeof createPlanningTodoFixture>;
-  let useCase: DeleteTodoItem;
+  let useCase: DeleteTodoItemUseCase;
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(PLANNING_TIME);
     fixture = createPlanningTodoFixture({ todos: [createPlanningTodo()] });
-    useCase = new DeleteTodoItem(fixture);
+    useCase = new DeleteTodoItemUseCase(fixture);
   });
   afterEach(() => {
     vi.useRealTimers();

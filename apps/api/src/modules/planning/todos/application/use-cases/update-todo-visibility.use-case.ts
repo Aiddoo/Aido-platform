@@ -14,7 +14,7 @@ import {
 import { type TodoCachePort } from "../ports/todo-cache.port.js";
 import { type TodoReadRepositoryPort } from "../ports/todo-read.repository.port.js";
 import { type TodoRepositoryPort } from "../ports/todo.repository.port.js";
-import { PlanningTodoLogEvent } from "../todos.log-events.js";
+import { TodoLogEvent } from "../todos.log-events.js";
 
 export interface UpdateTodoVisibilityInput {
   readonly id: number;
@@ -32,7 +32,7 @@ interface UpdateTodoVisibilityDependencies {
   readonly logger: ApplicationLoggerPort;
 }
 
-export class UpdateTodoVisibility {
+export class UpdateTodoVisibilityUseCase {
   readonly #dependencies: UpdateTodoVisibilityDependencies;
 
   constructor(dependencies: UpdateTodoVisibilityDependencies) {
@@ -55,7 +55,7 @@ export class UpdateTodoVisibility {
     });
 
     this.#dependencies.logger.log({
-      event: PlanningTodoLogEvent.VISIBILITY_UPDATED,
+      event: TodoLogEvent.VISIBILITY_UPDATED,
       todoId: id,
       userId,
       visibility,

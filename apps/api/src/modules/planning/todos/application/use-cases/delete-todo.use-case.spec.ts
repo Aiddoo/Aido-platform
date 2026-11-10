@@ -8,16 +8,16 @@ import {
 } from "#test/fixtures/planning-todo.fixture";
 
 import { TodoDeletedEvent } from "../../../shared/domain/todo-deleted.event.js";
-import { DeleteTodo } from "./delete-todo.use-case.js";
+import { DeleteTodoUseCase } from "./delete-todo.use-case.js";
 
 describe("할 일 삭제", () => {
   let fixture: ReturnType<typeof createPlanningTodoFixture>;
-  let useCase: DeleteTodo;
+  let useCase: DeleteTodoUseCase;
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(PLANNING_TIME);
     fixture = createPlanningTodoFixture({ todos: [createPlanningTodo()] });
-    useCase = new DeleteTodo(fixture);
+    useCase = new DeleteTodoUseCase(fixture);
   });
   afterEach(() => {
     vi.useRealTimers();

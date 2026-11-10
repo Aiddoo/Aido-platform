@@ -19,7 +19,7 @@ interface CreateTodoDependencies {
   readonly mutationLock: MutationLockPort;
 }
 
-export class CreateTodo {
+export class CreateTodoUseCase {
   readonly #dependencies: CreateTodoDependencies;
 
   constructor(dependencies: CreateTodoDependencies) {

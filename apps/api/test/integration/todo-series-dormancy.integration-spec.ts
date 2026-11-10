@@ -10,11 +10,11 @@ import type {
 import { DrizzleUserRepository } from "#api/modules/identity/users/infrastructure/persistence/drizzle-user.repository";
 import { TodoSeriesOwnerDormancyAdapter } from "#api/modules/notification/infrastructure/adapters/reminders/todo-series-owner-dormancy.adapter";
 import { TodoReminderSchedulerAdapter } from "#api/modules/notification/infrastructure/jobs/reminders/todo-reminder-scheduler.adapter";
-import { TodoSeriesCatchUp } from "#api/modules/planning/todo-series/application/use-cases/catch-up-todo-series.use-case";
-import { MaterializeDueTodoSeries } from "#api/modules/planning/todo-series/application/use-cases/materialize-due-todo-series.use-case";
-import { TodoOccurrenceMaterializer } from "#api/modules/planning/todo-series/application/use-cases/materialize-todo-occurrences.use-case";
-import { TodoSeriesDueRunner } from "#api/modules/planning/todo-series/application/use-cases/materialize-todo-series.use-case";
-import { TodoCreationEffects } from "#api/modules/planning/todo-series/application/use-cases/publish-todo-creation.use-case";
+import { CatchUpTodoSeriesUseCase } from "#api/modules/planning/todo-series/application/use-cases/catch-up-todo-series.use-case";
+import { MaterializeDueTodoSeriesUseCase } from "#api/modules/planning/todo-series/application/use-cases/materialize-due-todo-series.use-case";
+import { MaterializeTodoOccurrencesUseCase } from "#api/modules/planning/todo-series/application/use-cases/materialize-todo-occurrences.use-case";
+import { MaterializeTodoSeriesUseCase } from "#api/modules/planning/todo-series/application/use-cases/materialize-todo-series.use-case";
+import { PublishTodoCreationUseCase } from "#api/modules/planning/todo-series/application/use-cases/publish-todo-creation.use-case";
 import { RepeatRule } from "#api/modules/planning/todo-series/domain/repeat-rule.vo";
 import { TodoSeries } from "#api/modules/planning/todo-series/domain/todo-series.aggregate";
 import { TodoSeriesOwnerAdapter } from "#api/modules/planning/todo-series/infrastructure/adapters/todo-series-owner.adapter";
@@ -108,13 +108,13 @@ describe("반복 할 일 휴면·복귀 (실제 PostgreSQL)", () => {
 
   function dueRunner() {
     const todoRepository = new DrizzleTodoRepository(fixture.txHost);
-    return new TodoSeriesDueRunner({
+    return new MaterializeTodoSeriesUseCase({
       seriesRepository: new DrizzleTodoSeriesRepository(fixture.txHost),
-      materializer: new TodoOccurrenceMaterializer({
+      materializer: new MaterializeTodoOccurrencesUseCase({
         todoRepository,
         todoReminder: new TodoReminderSchedulerAdapter(runtime),
       }),
-      effects: new TodoCreationEffects({
+      effects: new PublishTodoCreationUseCase({
         todoCache: {
           invalidateTodoCategories: async () => undefined,
           invalidateFriendTodos: async () => undefined,
@@ -141,7 +141,7 @@ describe("반복 할 일 휴면·복귀 (실제 PostgreSQL)", () => {
 
   /** 서버 프로세스 하나. 메모리 캐시는 프로세스마다 따로다. */
   function catchUp() {
-    return new TodoSeriesCatchUp({
+    return new CatchUpTodoSeriesUseCase({
       seriesRepository: new DrizzleTodoSeriesRepository(fixture.txHost),
       seriesOwner: seriesOwner(),
       dueRunner: dueRunner(),
@@ -150,7 +150,7 @@ describe("반복 할 일 휴면·복귀 (실제 PostgreSQL)", () => {
   }
 
   function job() {
-    return new MaterializeDueTodoSeries({
+    return new MaterializeDueTodoSeriesUseCase({
       seriesRepository: new DrizzleTodoSeriesRepository(fixture.txHost),
       seriesOwner: seriesOwner(),
       dueRunner: dueRunner(),
@@ -288,7 +288,7 @@ describe("반복 할 일 휴면·복귀 (실제 PostgreSQL)", () => {
       // Given
       const id = await seedStaleSeries();
       // When
-      await catchUp().ensureCaughtUp(userId);
+      await catchUp().execute(userId);
       // Then
       const dates = await occurrenceDates(id);
       expect(dates).toHaveLength(HORIZON_ROWS);
@@ -313,7 +313,7 @@ describe("반복 할 일 휴면·복귀 (실제 PostgreSQL)", () => {
         .set({ updatedAt: new Date("2024-01-01T00:00:00.000Z") })
         .where(eq(todoSeries.id, id));
       // When
-      await catchUp().ensureCaughtUp(userId);
+      await catchUp().execute(userId);
       // Then
       const dates = await occurrenceDates(id);
       expect(dates.at(0)).toBe(TODAY);
@@ -326,7 +326,7 @@ describe("반복 할 일 휴면·복귀 (실제 PostgreSQL)", () => {
       const seoulId = await seedStaleSeries({ timezone: "Asia/Seoul" });
       const newYorkId = await seedStaleSeries({ timezone: "America/New_York" });
       // When
-      await catchUp().ensureCaughtUp(userId);
+      await catchUp().execute(userId);
       // Then
       expect((await occurrenceDates(seoulId)).at(0)).toBe("2026-11-06");
       expect((await occurrenceDates(newYorkId)).at(0)).toBe(TODAY);
@@ -336,7 +336,7 @@ describe("반복 할 일 휴면·복귀 (실제 PostgreSQL)", () => {
       // Given
       const id = await seedStaleSeries({ nextOccurrenceDate: "2026-11-07" });
       // When
-      await catchUp().ensureCaughtUp(userId);
+      await catchUp().execute(userId);
       // Then
       expect(await cursorOf(id)).toBe("2026-11-07");
       expect(await occurrenceDates(id)).toHaveLength(0);
@@ -353,7 +353,7 @@ describe("반복 할 일 휴면·복귀 (실제 PostgreSQL)", () => {
       });
       const before = await client.$count(todoSeries);
       // When
-      await catchUp().ensureCaughtUp(userId);
+      await catchUp().execute(userId);
       // Then
       expect(await cursorOf(untilId)).toBeNull();
       expect(await cursorOf(countId)).toBeNull();
@@ -369,7 +369,7 @@ describe("반복 할 일 휴면·복귀 (실제 PostgreSQL)", () => {
         ids.push(await seedStaleSeries({ scheduledLocalTime: "23:00" }));
       }
       // When
-      await catchUp().ensureCaughtUp(userId);
+      await catchUp().execute(userId);
       // Then
       const counts = await client
         .select({
@@ -398,12 +398,12 @@ describe("반복 할 일 휴면·복귀 (실제 PostgreSQL)", () => {
       // When
       await Promise.all([
         catchUp()
-          .ensureCaughtUp(userId)
+          .execute(userId)
           .then(async () => {
             seenByFirst = await countToday();
           }),
         catchUp()
-          .ensureCaughtUp(userId)
+          .execute(userId)
           .then(async () => {
             seenBySecond = await countToday();
           }),
@@ -422,7 +422,7 @@ describe("반복 할 일 휴면·복귀 (실제 PostgreSQL)", () => {
       // Given
       const ids = [await seedStaleSeries(), await seedStaleSeries(), await seedStaleSeries()];
       // When
-      await Promise.all([job().execute(), catchUp().ensureCaughtUp(userId)]);
+      await Promise.all([job().execute(), catchUp().execute(userId)]);
       await job().execute();
       // Then
       for (const id of ids) {
@@ -444,7 +444,7 @@ describe("반복 할 일 휴면·복귀 (실제 PostgreSQL)", () => {
       });
       await held.promise;
       // When
-      const pending = catchUp().ensureCaughtUp(userId);
+      const pending = catchUp().execute(userId);
       release.resolve();
       await holder;
       await pending;
@@ -457,7 +457,7 @@ describe("반복 할 일 휴면·복귀 (실제 PostgreSQL)", () => {
       vi.setSystemTime(new Date(`${TODAY}T15:00:00.000Z`));
       const id = await seedStaleSeries({ scheduledLocalTime: "09:00" });
       // When
-      await catchUp().ensureCaughtUp(userId);
+      await catchUp().execute(userId);
       // Then
       const today = await client.query.todo.findFirst({
         where: { seriesId: id, occurrenceDate: { eq: new Date(TODAY) } },
@@ -491,7 +491,7 @@ describe("반복 할 일 휴면·복귀 (실제 PostgreSQL)", () => {
       });
       const warn = vi.spyOn(Logger.prototype, "warn").mockImplementation(() => undefined);
       // When
-      await expect(catchUp().ensureCaughtUp(userId)).resolves.toBeUndefined();
+      await expect(catchUp().execute(userId)).resolves.toBeUndefined();
       // Then
       expect(await cursorOf(goneId)).toBe(STALE_CURSOR);
       expect(await occurrenceDates(goneId)).toEqual([]);
@@ -507,18 +507,18 @@ describe("반복 할 일 휴면·복귀 (실제 PostgreSQL)", () => {
     it("복귀가 실패해도 트랜잭션이 되돌아가고 밤 작업이 오늘부터 채운다", async () => {
       // Given
       const id = await seedStaleSeries();
-      const broken = new TodoSeriesCatchUp({
+      const broken = new CatchUpTodoSeriesUseCase({
         seriesRepository: new DrizzleTodoSeriesRepository(fixture.txHost),
         seriesOwner: seriesOwner(),
         dueRunner: {
-          materialize: async () => {
+          execute: async () => {
             throw new Error("쓰기 실패");
           },
         },
         logger: mock<Logger>(),
       });
       // When
-      await expect(broken.ensureCaughtUp(userId)).resolves.toBeUndefined();
+      await expect(broken.execute(userId)).resolves.toBeUndefined();
       const afterFailure = await cursorOf(id);
       await job().execute();
       // Then
@@ -536,10 +536,10 @@ describe("반복 할 일 휴면·복귀 (실제 PostgreSQL)", () => {
       const service = catchUp();
       statements.length = 0;
       // When
-      await service.ensureCaughtUp(userId);
+      await service.execute(userId);
       const first = statements.length;
-      await service.ensureCaughtUp(userId);
-      await service.ensureCaughtUp(userId);
+      await service.execute(userId);
+      await service.execute(userId);
       // Then
       expect(first).toBe(1);
       expect(statements).toHaveLength(1);

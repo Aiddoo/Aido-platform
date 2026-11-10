@@ -9,16 +9,16 @@ import {
 
 import { TodoRescheduledEvent } from "../../../shared/domain/todo-rescheduled.event.js";
 import { TodoToggledEvent } from "../../../shared/domain/todo-toggled.event.js";
-import { ToggleTodoComplete } from "./toggle-todo-complete.use-case.js";
+import { SetTodoCompletedUseCase } from "./set-todo-completed.use-case.js";
 
 describe("할 일 완료 상태 전이", () => {
   let fixture: ReturnType<typeof createPlanningTodoFixture>;
-  let useCase: ToggleTodoComplete;
+  let useCase: SetTodoCompletedUseCase;
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(PLANNING_TIME);
     fixture = createPlanningTodoFixture({ todos: [createPlanningTodo()] });
-    useCase = new ToggleTodoComplete(fixture);
+    useCase = new SetTodoCompletedUseCase(fixture);
   });
   afterEach(() => {
     vi.useRealTimers();
@@ -79,7 +79,7 @@ describe("할 일 완료 상태 전이", () => {
         },
       ],
     });
-    useCase = new ToggleTodoComplete(fixture);
+    useCase = new SetTodoCompletedUseCase(fixture);
     // When
     const result = await useCase.execute({
       id: 1,

@@ -4,10 +4,10 @@ import type { DomainEventPublisherPort } from "#api/shared/application/ports/ind
 import type { Todo } from "../../../shared/domain/todo.aggregate.js";
 import type { TodoCachePort } from "../../../todos/application/ports/todo-cache.port.js";
 import type { CreatedOccurrence } from "../../../todos/application/ports/todo.repository.port.js";
-import { PlanningTodoLogEvent } from "../../../todos/application/todos.log-events.js";
+import { TodoLogEvent } from "../../../todos/application/todos.log-events.js";
 import { TodoOccurrencesCreatedEvent } from "../../domain/todo-occurrences-created.event.js";
 import type { TodoSeries } from "../../domain/todo-series.aggregate.js";
-import { PlanningTodoSeriesLogEvent } from "../todo-series.log-events.js";
+import { TodoSeriesLogEvent } from "../todo-series.log-events.js";
 
 interface TodoCreationEffectsDependencies {
   readonly todoCache: Pick<TodoCachePort, "invalidateTodoCategories" | "invalidateFriendTodos">;
@@ -15,7 +15,7 @@ interface TodoCreationEffectsDependencies {
   readonly logger: ApplicationLoggerPort;
 }
 
-export class TodoCreationEffects {
+export class PublishTodoCreationUseCase {
   readonly #dependencies: TodoCreationEffectsDependencies;
 
   constructor(dependencies: TodoCreationEffectsDependencies) {
@@ -24,7 +24,7 @@ export class TodoCreationEffects {
 
   async publishSingle(created: Todo, userId: string): Promise<void> {
     this.#dependencies.logger.log({
-      event: PlanningTodoLogEvent.CREATED,
+      event: TodoLogEvent.CREATED,
       todoId: created.getId().getValue(),
       userId,
     });
@@ -38,7 +38,7 @@ export class TodoCreationEffects {
     occurrences: readonly CreatedOccurrence[],
   ): Promise<void> {
     this.#dependencies.logger.log({
-      event: PlanningTodoSeriesLogEvent.STARTED,
+      event: TodoSeriesLogEvent.STARTED,
       seriesId: series.getId(),
       userId: series.getUserId(),
       createdCount: occurrences.length,

@@ -14,16 +14,16 @@ import {
   SWAGGER_TAGS,
 } from "#api/platform/http/swagger/index";
 
-import { GetTodoSeries } from "../../../application/use-cases/get-todo-series.use-case.js";
+import { GetTodoSeriesUseCase } from "../../../application/use-cases/get-todo-series.use-case.js";
 import { TodoSeriesIdParamDto, TodoSeriesResponseDto } from "./todo-series.dto.js";
 
 @ApiTags(SWAGGER_TAGS.TODOS)
 @ApiBearerAuth()
 @Controller("todo-series")
 export class TodoSeriesController {
-  readonly #getTodoSeriesUseCase: GetTodoSeries;
+  readonly #getTodoSeriesUseCase: GetTodoSeriesUseCase;
 
-  constructor(getTodoSeriesUseCase: GetTodoSeries) {
+  constructor(getTodoSeriesUseCase: GetTodoSeriesUseCase) {
     this.#getTodoSeriesUseCase = getTodoSeriesUseCase;
   }
 

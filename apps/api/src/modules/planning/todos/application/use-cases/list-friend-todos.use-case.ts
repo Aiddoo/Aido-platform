@@ -33,7 +33,7 @@ interface GetFriendTodosDependencies {
   >;
 }
 
-export class GetFriendTodos {
+export class ListFriendTodosUseCase {
   readonly #dependencies: GetFriendTodosDependencies;
 
   constructor(dependencies: GetFriendTodosDependencies) {

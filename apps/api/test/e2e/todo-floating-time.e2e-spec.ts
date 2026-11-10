@@ -9,7 +9,7 @@ import { eq } from "drizzle-orm";
 import request from "supertest";
 import { z } from "zod";
 
-import { RebaseTodoTimezone } from "#api/modules/planning/todos/application/use-cases/rebase-todo-timezone.use-case";
+import { RebaseTodoTimezoneUseCase } from "#api/modules/planning/todos/application/use-cases/rebase-todo-timezone.use-case";
 import { TODO_TIMEZONE_REBASE_QUEUE } from "#api/modules/planning/todos/infrastructure/jobs/todo-timezone-rebase.queue";
 import { createEntityId } from "#api/platform/database/entity-id";
 import { todoSeries, userPreference } from "#api/platform/database/schema/index";
@@ -243,7 +243,7 @@ describe("떠 있는 시각 E2E", () => {
     };
     const rebaseTo = async (timezone: string) => {
       await storeTimezone(timezone);
-      await ctx.module.get(RebaseTodoTimezone).execute({ userId });
+      await ctx.module.get(RebaseTodoTimezoneUseCase).execute({ userId });
     };
     // When
     await rebaseTo(NEW_YORK);
@@ -435,7 +435,7 @@ describe("떠 있는 시각 표 (시간대 × 할 일 종류)", () => {
       .set({ timezone: zone })
       .where(eq(userPreference.userId, owner.userId));
     // When
-    await ctx.module.get(RebaseTodoTimezone).execute({ userId: owner.userId });
+    await ctx.module.get(RebaseTodoTimezoneUseCase).execute({ userId: owner.userId });
     const ownerRows = await request(server)
       .get(`/v1/todos?startDate=${past}&endDate=${addDaysToDateKey(future, 3)}&size=50`)
       .set("Authorization", `Bearer ${owner.accessToken}`)

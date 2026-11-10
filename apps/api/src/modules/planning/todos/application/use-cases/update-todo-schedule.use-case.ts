@@ -14,8 +14,8 @@ import { TodoSchedule } from "../../../shared/domain/todo-schedule.vo.js";
 import { type TodoCachePort } from "../ports/todo-cache.port.js";
 import { type TodoReadRepositoryPort } from "../ports/todo-read.repository.port.js";
 import { type TodoRepositoryPort } from "../ports/todo.repository.port.js";
-import { PlanningTodoLogEvent } from "../todos.log-events.js";
-import type { TodoTimezoneResolver } from "./resolve-todo-timezone.use-case.js";
+import { TodoLogEvent } from "../todos.log-events.js";
+import type { ResolveTodoTimezoneUseCase } from "./resolve-todo-timezone.use-case.js";
 
 export interface UpdateTodoScheduleInput {
   readonly id: number;
@@ -36,13 +36,13 @@ interface UpdateTodoScheduleDependencies {
   readonly todoReadRepository: Pick<TodoReadRepositoryPort, "findByIdAndUserId">;
   readonly unitOfWork: UnitOfWorkPort;
   readonly mutationLock: MutationLockPort;
-  readonly timezoneResolver: Pick<TodoTimezoneResolver, "resolve">;
+  readonly timezoneResolver: Pick<ResolveTodoTimezoneUseCase, "execute">;
   readonly todoCache: Pick<TodoCachePort, "invalidateFriendTodos">;
   readonly eventPublisher: DomainEventPublisherPort;
   readonly logger: ApplicationLoggerPort;
 }
 
-export class UpdateTodoSchedule {
+export class UpdateTodoScheduleUseCase {
   readonly #dependencies: UpdateTodoScheduleDependencies;
 
   constructor(dependencies: UpdateTodoScheduleDependencies) {
@@ -51,7 +51,7 @@ export class UpdateTodoSchedule {
 
   async execute(input: UpdateTodoScheduleInput): Promise<TodoResponse> {
     const { id, userId, schedule } = input;
-    const timezone = await this.#dependencies.timezoneResolver.resolve(userId, input.timezone);
+    const timezone = await this.#dependencies.timezoneResolver.execute(userId, input.timezone);
 
     const events = await this.#dependencies.unitOfWork.run(async () => {
       await this.#dependencies.mutationLock.acquire([MutationLockKeys.todo(id)]);
@@ -82,7 +82,7 @@ export class UpdateTodoSchedule {
     });
 
     this.#dependencies.logger.log({
-      event: PlanningTodoLogEvent.SCHEDULE_UPDATED,
+      event: TodoLogEvent.SCHEDULE_UPDATED,
       todoId: id,
       userId,
     });

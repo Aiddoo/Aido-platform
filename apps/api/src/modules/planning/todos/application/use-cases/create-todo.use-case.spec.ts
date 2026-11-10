@@ -10,25 +10,25 @@ import {
 
 import { TodoCreatedEvent } from "../../../shared/domain/todo-created.event.js";
 import { MAX_OCCURRENCES_PER_RUN } from "../../../todo-series/application/use-cases/materialize-todo-occurrences.use-case.js";
-import { TodoCreationEffects } from "../../../todo-series/application/use-cases/publish-todo-creation.use-case.js";
+import { PublishTodoCreationUseCase } from "../../../todo-series/application/use-cases/publish-todo-creation.use-case.js";
 import { TodoOccurrencesCreatedEvent } from "../../../todo-series/domain/todo-occurrences-created.event.js";
-import { CreateTodo, type CreateTodoInput } from "./create-todo.use-case.js";
-import { StagedTodoCreator } from "./stage-todo-creation.use-case.js";
-import { TodoCreationWriter } from "./write-todo-creation.use-case.js";
+import { CreateTodoUseCase, type CreateTodoInput } from "./create-todo.use-case.js";
+import { StageTodoCreationUseCase } from "./stage-todo-creation.use-case.js";
+import { WriteTodoCreationUseCase } from "./write-todo-creation.use-case.js";
 
 describe("할 일 생성", () => {
   let fixture: ReturnType<typeof createPlanningTodoFixture>;
-  let useCase: CreateTodo;
+  let useCase: CreateTodoUseCase;
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(PLANNING_TIME);
     fixture = createPlanningTodoFixture({ todos: [createPlanningTodo()] });
-    useCase = new CreateTodo({
+    useCase = new CreateTodoUseCase({
       ...fixture,
-      todoCreator: new StagedTodoCreator({
+      todoCreator: new StageTodoCreationUseCase({
         ...fixture,
-        writer: new TodoCreationWriter(fixture),
-        effects: new TodoCreationEffects(fixture),
+        writer: new WriteTodoCreationUseCase(fixture),
+        effects: new PublishTodoCreationUseCase(fixture),
       }),
     });
   });

@@ -3,17 +3,17 @@ import { Inject, Injectable, type OnModuleInit } from "@nestjs/common";
 import { JOB_POLLING_SECONDS } from "#api/shared/application/ports/index";
 import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
 
-import { MaterializeDueTodoSeries } from "../../application/use-cases/materialize-due-todo-series.use-case.js";
+import { MaterializeDueTodoSeriesUseCase } from "../../application/use-cases/materialize-due-todo-series.use-case.js";
 import { TODO_SERIES_MATERIALIZATION_QUEUE } from "./todo-series-materialization.queue.js";
 
 @Injectable()
 export class TodoSeriesMaterializationProcessor implements OnModuleInit {
   readonly #runtime: JobRuntimePort;
 
-  readonly #materializeDueTodoSeries: Pick<MaterializeDueTodoSeries, "execute">;
+  readonly #materializeDueTodoSeries: Pick<MaterializeDueTodoSeriesUseCase, "execute">;
   constructor(
-    @Inject(MaterializeDueTodoSeries)
-    materializeDueTodoSeries: Pick<MaterializeDueTodoSeries, "execute">,
+    @Inject(MaterializeDueTodoSeriesUseCase)
+    materializeDueTodoSeries: Pick<MaterializeDueTodoSeriesUseCase, "execute">,
     @Inject(JOB_RUNTIME) runtime: JobRuntimePort,
   ) {
     this.#materializeDueTodoSeries = materializeDueTodoSeries;

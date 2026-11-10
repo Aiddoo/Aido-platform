@@ -11,18 +11,18 @@ import {
   type TodoSeriesOwnerDormancyPort,
 } from "#api/modules/notification/application/ports/reminders/todo-series-owner-dormancy.port";
 import { DeleteTodoCategory } from "#api/modules/planning/application/use-cases/categories/delete-todo-category.use-case";
-import { MaterializeDueTodoSeries } from "#api/modules/planning/todo-series/application/use-cases/materialize-due-todo-series.use-case";
+import { MaterializeDueTodoSeriesUseCase } from "#api/modules/planning/todo-series/application/use-cases/materialize-due-todo-series.use-case";
 import {
-  UpdateFollowingTodos,
+  UpdateFollowingTodosUseCase,
   type UpdateFollowingTodosInput,
 } from "#api/modules/planning/todo-series/application/use-cases/update-following-todos.use-case";
-import { CreateTodo } from "#api/modules/planning/todos/application/use-cases/create-todo.use-case";
-import { DeleteTodo } from "#api/modules/planning/todos/application/use-cases/delete-todo.use-case";
+import { CreateTodoUseCase } from "#api/modules/planning/todos/application/use-cases/create-todo.use-case";
+import { DeleteTodoUseCase } from "#api/modules/planning/todos/application/use-cases/delete-todo.use-case";
 import {
-  EditTodo,
+  EditTodoUseCase,
   type EditTodoInput,
 } from "#api/modules/planning/todos/application/use-cases/edit-todo.use-case";
-import { UpdateTodo } from "#api/modules/planning/todos/application/use-cases/update-todo.use-case";
+import { UpdateTodoUseCase } from "#api/modules/planning/todos/application/use-cases/update-todo.use-case";
 import { createEntityId } from "#api/platform/database/entity-id";
 import {
   todo,
@@ -94,7 +94,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
   });
 
   async function start(repeat: TodoRepeat = DAILY_NEVER, scheduledTime: string | null = null) {
-    const { series, todos } = await context.module.get(CreateTodo).execute({
+    const { series, todos } = await context.module.get(CreateTodoUseCase).execute({
       userId,
       categoryId,
       title: "원래 제목",
@@ -124,7 +124,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
 
   function following(input: Omit<UpdateFollowingTodosInput, "userId" | "timezone">) {
     return context.module
-      .get(UpdateFollowingTodos)
+      .get(UpdateFollowingTodosUseCase)
       .execute({ userId, timezone: "America/New_York", ...input });
   }
 
@@ -136,7 +136,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
     },
   ) {
     return context.module
-      .get(EditTodo)
+      .get(EditTodoUseCase)
       .execute({ id, userId, timezone: "UTC", data: {}, ...change });
   }
 
@@ -178,7 +178,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
       const moved = todos[1];
       const before = await rowsOf(seriesId);
       // When
-      await context.module.get(UpdateTodo).execute({
+      await context.module.get(UpdateTodoUseCase).execute({
         id: moved?.id ?? 0,
         userId,
         timezone: "UTC",
@@ -186,7 +186,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
         data: { startDate: new Date("2026-11-20T00:00:00.000Z"), title: "이것만" },
       });
       vi.setSystemTime(new Date("2026-11-03T00:00:00.000Z"));
-      await context.module.get(MaterializeDueTodoSeries).execute();
+      await context.module.get(MaterializeDueTodoSeriesUseCase).execute();
       // Then
       const row = await client.query.todo.findFirst({ where: { id: moved?.id } });
       expect(dateOf(row?.occurrenceDate)).toBe("2026-11-03");
@@ -207,8 +207,8 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
         end: { type: "COUNT", count: 3 },
       });
       // When
-      await context.module.get(DeleteTodo).execute({ id: todos[1]?.id ?? 0, userId });
-      await context.module.get(MaterializeDueTodoSeries).execute();
+      await context.module.get(DeleteTodoUseCase).execute({ id: todos[1]?.id ?? 0, userId });
+      await context.module.get(MaterializeDueTodoSeriesUseCase).execute();
       // Then
       const rows = await rowsOf(seriesId);
       expect(rows.map((row) => dateOf(row.occurrenceDate))).toEqual(["2026-11-02", "2026-11-04"]);
@@ -237,7 +237,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
           .where(eq(userTable.id, userId));
         vi.setSystemTime(new Date("2027-01-05T00:00:00.000Z"));
         // When
-        const result = await context.module.get(MaterializeDueTodoSeries).execute();
+        const result = await context.module.get(MaterializeDueTodoSeriesUseCase).execute();
         const since = await context.module
           .get<TodoSeriesOwnerDormancyPort>(TODO_SERIES_OWNER_DORMANCY, { strict: false })
           .findDormantSince(userId);
@@ -251,7 +251,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
   describe("지난 시작일", () => {
     it("지난 회차가 상한을 넘는 새 반복은 만들지 않는다", async () => {
       // When
-      const outcome = context.module.get(CreateTodo).execute({
+      const outcome = context.module.get(CreateTodoUseCase).execute({
         userId,
         categoryId,
         title: "먼 과거",
@@ -271,7 +271,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
       // Given
       const startDate = new Date("2025-11-02T00:00:00.000Z");
       // When
-      const { series } = await context.module.get(CreateTodo).execute({
+      const { series } = await context.module.get(CreateTodoUseCase).execute({
         userId,
         categoryId,
         title: "1년 전 시작",
@@ -280,7 +280,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
         repeat: DAILY_NEVER,
       });
       vi.setSystemTime(new Date("2026-11-03T00:00:00.000Z"));
-      await context.module.get(MaterializeDueTodoSeries).execute();
+      await context.module.get(MaterializeDueTodoSeriesUseCase).execute();
       // Then
       const rows = await rowsOf(series?.id ?? "");
       expect(dateOf(rows[0]?.occurrenceDate)).toBe("2025-11-02");
@@ -289,7 +289,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
 
     it("출시 앱의 /recurring이 보내는 366일 범위는 시작일이 오래돼도 그대로 만든다", async () => {
       // When
-      const { todos } = await context.module.get(CreateTodo).execute({
+      const { todos } = await context.module.get(CreateTodoUseCase).execute({
         userId,
         categoryId,
         title: "옛 앱",
@@ -340,7 +340,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
       // Given
       vi.setSystemTime(new Date("2027-03-12T00:00:00.000Z"));
       const { seriesId } = await (async () => {
-        const created = await context.module.get(CreateTodo).execute({
+        const created = await context.module.get(CreateTodoUseCase).execute({
           userId,
           categoryId,
           title: "DST",
@@ -497,7 +497,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
       const { seriesId, todos } = await start();
       const removed = todos[5];
       await context.module
-        .get(DeleteTodo)
+        .get(DeleteTodoUseCase)
         .execute({ id: removed?.id ?? 0, userId, scope: "THIS_ONLY" });
       const before = await rowsOf(seriesId);
       // When
@@ -595,14 +595,14 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
       const before = await rowsOf(seriesId);
       // When
       vi.setSystemTime(new Date("2026-11-10T00:00:00.000Z"));
-      await context.module.get(MaterializeDueTodoSeries).execute();
+      await context.module.get(MaterializeDueTodoSeriesUseCase).execute();
       // Then
       expect(await rowsOf(seriesId)).toHaveLength(before.length);
     });
 
     it("반복이 아니면 TODO_0844다", async () => {
       // Given
-      const { todos } = await context.module.get(CreateTodo).execute({
+      const { todos } = await context.module.get(CreateTodoUseCase).execute({
         userId,
         categoryId,
         title: "단일",
@@ -623,7 +623,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
       await complete(todos[3]?.id ?? 0);
       // When
       await context.module
-        .get(DeleteTodo)
+        .get(DeleteTodoUseCase)
         .execute({ id: todos[1]?.id ?? 0, userId, scope: "THIS_AND_FOLLOWING" });
       // Then
       const rows = await rowsOf(seriesId);
@@ -636,7 +636,9 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
       const { seriesId, todos } = await start();
       await complete(todos[3]?.id ?? 0);
       // When
-      await context.module.get(DeleteTodo).execute({ id: todos[1]?.id ?? 0, userId, scope: "ALL" });
+      await context.module
+        .get(DeleteTodoUseCase)
+        .execute({ id: todos[1]?.id ?? 0, userId, scope: "ALL" });
       // Then
       expect(await rowsOf(seriesId)).toEqual([]);
       expect(await seriesRow(seriesId)).toBeUndefined();
@@ -647,7 +649,9 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
       const { seriesId, todos } = await start();
       await following({ id: todos[3]?.id ?? 0, repeat: WEEKLY_MON });
       // When
-      await context.module.get(DeleteTodo).execute({ id: todos[0]?.id ?? 0, userId, scope: "ALL" });
+      await context.module
+        .get(DeleteTodoUseCase)
+        .execute({ id: todos[0]?.id ?? 0, userId, scope: "ALL" });
       // Then
       expect(await client.$count(todo, eq(todo.userId, userId))).toBe(0);
       expect(await client.$count(todoSeries, eq(todoSeries.userId, userId))).toBe(0);
@@ -664,7 +668,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
         repeat: { frequency: "WEEKLY", interval: 1, weekdays: ["TUE"], end: { type: "NEVER" } },
       });
       // When
-      await context.module.get(DeleteTodo).execute({ id: second.id, userId, scope: "ALL" });
+      await context.module.get(DeleteTodoUseCase).execute({ id: second.id, userId, scope: "ALL" });
       // Then
       expect(await client.$count(todo, eq(todo.userId, userId))).toBe(0);
       expect(await client.$count(todoSeries, eq(todoSeries.userId, userId))).toBe(0);
@@ -682,7 +686,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
         .insert(todoCategory)
         .values(omit(TodoCategoryFixture.create({ userId: other.id, sortOrder: 0 }), ["id"]))
         .returning();
-      const otherTodos = await context.module.get(CreateTodo).execute({
+      const otherTodos = await context.module.get(CreateTodoUseCase).execute({
         userId: other.id,
         categoryId: otherCategory?.id ?? 0,
         title: "남의 반복",
@@ -692,7 +696,9 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
       });
       const { todos } = await start();
       // When
-      await context.module.get(DeleteTodo).execute({ id: todos[0]?.id ?? 0, userId, scope: "ALL" });
+      await context.module
+        .get(DeleteTodoUseCase)
+        .execute({ id: todos[0]?.id ?? 0, userId, scope: "ALL" });
       // Then
       expect(await client.$count(todo, eq(todo.userId, other.id))).toBe(otherTodos.todos.length);
       expect(await client.$count(todoSeries, eq(todoSeries.userId, other.id))).toBe(1);
@@ -707,7 +713,9 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
       const runtime = context.module.get<FakeJobRuntime>(JOB_RUNTIME);
       runtime.cancelCalls.length = 0;
       // When
-      await context.module.get(DeleteTodo).execute({ id: todos[0]?.id ?? 0, userId, scope: "ALL" });
+      await context.module
+        .get(DeleteTodoUseCase)
+        .execute({ id: todos[0]?.id ?? 0, userId, scope: "ALL" });
       // Then
       const keys = runtime.cancelCalls.map((call) => call.idempotencyKey);
       expect(keys).toContain(`reminder_${todos[0]?.id}_60min`);
@@ -718,7 +726,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
       "반복이 아닌 할 일에 %s를 주면 TODO_0844다",
       async (scope) => {
         // Given
-        const { todos } = await context.module.get(CreateTodo).execute({
+        const { todos } = await context.module.get(CreateTodoUseCase).execute({
           userId,
           categoryId,
           title: "단일",
@@ -727,7 +735,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
         });
         // When
         const outcome = context.module
-          .get(DeleteTodo)
+          .get(DeleteTodoUseCase)
           .execute({ id: todos[0]?.id ?? 0, userId, scope });
         // Then
         await expect(outcome).rejects.toMatchObject({ errorCode: ErrorCode.TODO_0844 });
@@ -744,7 +752,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
       end: { type: "NEVER" },
     };
     const remove = (id: number, scope: "THIS_AND_FOLLOWING" | "ALL" = "THIS_AND_FOLLOWING") =>
-      context.module.get(DeleteTodo).execute({ id, userId, scope });
+      context.module.get(DeleteTodoUseCase).execute({ id, userId, scope });
 
     /** 매일 반복의 넷째 회차부터 매주 월요일로 나눈다. 앞 구간은 11-02~11-04, 뒤 구간은 11-09부터다. */
     async function startSplit(scheduledTime: string | null = null) {
@@ -779,7 +787,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
         await remove(earlier[1]?.id ?? 0);
         // When
         vi.setSystemTime(new Date("2027-03-01T00:00:00.000Z"));
-        await context.module.get(MaterializeDueTodoSeries).execute();
+        await context.module.get(MaterializeDueTodoSeriesUseCase).execute();
         // Then
         expect(await rowsOf(laterSeriesId)).toEqual([]);
       });
@@ -881,7 +889,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
         await following({ id: earlier[1]?.id ?? 0, title: "새 제목" });
         // When
         vi.setSystemTime(new Date("2027-03-01T00:00:00.000Z"));
-        await context.module.get(MaterializeDueTodoSeries).execute();
+        await context.module.get(MaterializeDueTodoSeriesUseCase).execute();
         // Then
         const rows = await rowsOf(laterSeriesId);
         expect(rows.at(-1)?.title).toBe("새 제목");
@@ -893,7 +901,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
         const runtime = context.module.get<FakeJobRuntime>(JOB_RUNTIME);
         runtime.cancelCalls.length = 0;
         // When
-        await context.module.get(UpdateFollowingTodos).execute({
+        await context.module.get(UpdateFollowingTodosUseCase).execute({
           id: earlier[1]?.id ?? 0,
           userId,
           timezone: "Asia/Seoul",
@@ -961,7 +969,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
       it("이 할 일만 지운 뒤 구간 회차가 되살아나지 않는다", async () => {
         // Given
         const { laterSeriesId, earlier, later } = await startSplit();
-        await context.module.get(DeleteTodo).execute({ id: later[1]?.id ?? 0, userId });
+        await context.module.get(DeleteTodoUseCase).execute({ id: later[1]?.id ?? 0, userId });
         // When
         await following({ id: earlier[1]?.id ?? 0, title: "새 제목" });
         // Then
@@ -1109,7 +1117,9 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
       const rows = await seedRulelessGroup("orphan");
       const other = await seedRulelessGroup("other-orphan");
       // When
-      await context.module.get(DeleteTodo).execute({ id: rows[1]?.id ?? 0, userId, scope: "ALL" });
+      await context.module
+        .get(DeleteTodoUseCase)
+        .execute({ id: rows[1]?.id ?? 0, userId, scope: "ALL" });
       // Then
       expect(await rowsOf("orphan")).toEqual([]);
       expect(await client.$count(todo, eq(todo.seriesId, "other-orphan"))).toBe(other.length);
@@ -1120,7 +1130,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
       const rows = await seedRulelessGroup("orphan");
       // When
       const outcome = context.module
-        .get(DeleteTodo)
+        .get(DeleteTodoUseCase)
         .execute({ id: rows[1]?.id ?? 0, userId, scope: "THIS_AND_FOLLOWING" });
       // Then
       await expect(outcome).rejects.toMatchObject({ errorCode: ErrorCode.TODO_0844 });
@@ -1135,7 +1145,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
       await complete(todos[2]?.id ?? 0);
       // When
       await context.module
-        .get(DeleteTodo)
+        .get(DeleteTodoUseCase)
         .execute({ id: todos[0]?.id ?? 0, userId, scope: "THIS_AND_FOLLOWING" });
       // Then
       const rule = await seriesRow(seriesId);
@@ -1148,7 +1158,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
   describe("단일 → 반복 전환", () => {
     it("그 할 일을 첫 회차로 삼아 id·댓글을 유지하고 체크리스트를 템플릿으로 쓴다", async () => {
       // Given
-      const { todos } = await context.module.get(CreateTodo).execute({
+      const { todos } = await context.module.get(CreateTodoUseCase).execute({
         userId,
         categoryId,
         title: "전환",
@@ -1188,7 +1198,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
 
     it("시작일이 규칙에 맞지 않으면 다음 맞는 날로 옮긴다", async () => {
       // Given
-      const { todos } = await context.module.get(CreateTodo).execute({
+      const { todos } = await context.module.get(CreateTodoUseCase).execute({
         userId,
         categoryId,
         title: "전환",
@@ -1212,7 +1222,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
 
     it("첫 회차가 옮겨지면 옛 시각의 예약을 지우고 새 날짜로 다시 잡는다", async () => {
       // Given
-      const { todos } = await context.module.get(CreateTodo).execute({
+      const { todos } = await context.module.get(CreateTodoUseCase).execute({
         userId,
         categoryId,
         title: "전환",
@@ -1245,7 +1255,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
 
     it("전환과 함께 시간을 바꿔도 옮겨진 첫 회차의 예약이 옛 시각으로 덮이지 않는다", async () => {
       // Given
-      const { todos } = await context.module.get(CreateTodo).execute({
+      const { todos } = await context.module.get(CreateTodoUseCase).execute({
         userId,
         categoryId,
         title: "전환",
@@ -1277,7 +1287,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
 
     it("규칙 상한에 걸리면 함께 보낸 제목도 저장되지 않는다", async () => {
       // Given
-      const { todos } = await context.module.get(CreateTodo).execute({
+      const { todos } = await context.module.get(CreateTodoUseCase).execute({
         userId,
         categoryId,
         title: "원래 제목",
@@ -1319,7 +1329,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
 
     it("아주 오래된 단일 할 일을 매일 반복으로 바꾸면 지난 회차가 너무 많아 TODO_0845다", async () => {
       // Given
-      const { todos } = await context.module.get(CreateTodo).execute({
+      const { todos } = await context.module.get(CreateTodoUseCase).execute({
         userId,
         categoryId,
         title: "오래된 할 일",
@@ -1369,12 +1379,12 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
       let skipped;
       try {
         // When
-        skipped = await context.module.get(MaterializeDueTodoSeries).execute();
+        skipped = await context.module.get(MaterializeDueTodoSeriesUseCase).execute();
       } finally {
         release.resolve();
         await holder;
       }
-      const resumed = await context.module.get(MaterializeDueTodoSeries).execute();
+      const resumed = await context.module.get(MaterializeDueTodoSeriesUseCase).execute();
       // Then
       expect(skipped.createdCount).toBe(0);
       expect(resumed.createdCount).toBe(1);
@@ -1433,13 +1443,13 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
           name: "이후 삭제",
           contender: (todoId: number) =>
             context.module
-              .get(DeleteTodo)
+              .get(DeleteTodoUseCase)
               .execute({ id: todoId, userId, scope: "THIS_AND_FOLLOWING" }),
         },
         {
           name: "회차 채우기",
           contender: async () => {
-            const result = await context.module.get(MaterializeDueTodoSeries).execute();
+            const result = await context.module.get(MaterializeDueTodoSeriesUseCase).execute();
             expect(result).toMatchObject({ failedCount: 0, createdCount: 1 });
           },
         },

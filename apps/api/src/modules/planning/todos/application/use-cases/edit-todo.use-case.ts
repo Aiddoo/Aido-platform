@@ -10,13 +10,13 @@ import {
 } from "#api/shared/application/ports/index";
 
 import { TodoRescheduledEvent } from "../../../shared/domain/todo-rescheduled.event.js";
-import type { StartSeriesFromTodo } from "../../../todo-series/application/use-cases/start-series-from-todo.use-case.js";
-import type { StopTodoSeries } from "../../../todo-series/application/use-cases/stop-todo-series.use-case.js";
-import type { UpdateFollowingTodos } from "../../../todo-series/application/use-cases/update-following-todos.use-case.js";
+import type { StartSeriesFromTodoUseCase } from "../../../todo-series/application/use-cases/start-series-from-todo.use-case.js";
+import type { StopTodoSeriesUseCase } from "../../../todo-series/application/use-cases/stop-todo-series.use-case.js";
+import type { UpdateFollowingTodosUseCase } from "../../../todo-series/application/use-cases/update-following-todos.use-case.js";
 import type { TodoReadRepositoryPort } from "../ports/todo-read.repository.port.js";
-import type { TodoTimezoneResolver } from "./resolve-todo-timezone.use-case.js";
+import type { ResolveTodoTimezoneUseCase } from "./resolve-todo-timezone.use-case.js";
 import type { UpdateTodoData } from "./update-todo.use-case.js";
-import type { UpdateTodo } from "./update-todo.use-case.js";
+import type { UpdateTodoUseCase } from "./update-todo.use-case.js";
 
 export interface EditTodoInput {
   readonly id: number;
@@ -31,14 +31,17 @@ export interface EditTodoInput {
 }
 
 interface EditTodoDependencies {
-  readonly updateTodo: Pick<UpdateTodo, "execute" | "apply" | "publish">;
-  readonly updateFollowingTodos: Pick<UpdateFollowingTodos, "execute" | "apply" | "publish">;
-  readonly startSeriesFromTodo: Pick<StartSeriesFromTodo, "assertCanStart" | "apply" | "publish">;
-  readonly stopTodoSeries: Pick<StopTodoSeries, "apply" | "publish">;
+  readonly updateTodo: Pick<UpdateTodoUseCase, "execute" | "apply" | "publish">;
+  readonly updateFollowingTodos: Pick<UpdateFollowingTodosUseCase, "execute" | "apply" | "publish">;
+  readonly startSeriesFromTodo: Pick<
+    StartSeriesFromTodoUseCase,
+    "assertCanStart" | "apply" | "publish"
+  >;
+  readonly stopTodoSeries: Pick<StopTodoSeriesUseCase, "apply" | "publish">;
   readonly todoReadRepository: Pick<TodoReadRepositoryPort, "findByIdAndUserId">;
   readonly unitOfWork: UnitOfWorkPort;
   readonly mutationLock: MutationLockPort;
-  readonly timezoneResolver: Pick<TodoTimezoneResolver, "resolve">;
+  readonly timezoneResolver: Pick<ResolveTodoTimezoneUseCase, "execute">;
 }
 
 interface ResolvedEditTodoInput extends EditTodoInput {
@@ -49,7 +52,7 @@ interface ResolvedEditTodoInput extends EditTodoInput {
  * PATCH /todos/:id 하나를 한 트랜잭션으로 처리한다. 요청 모양으로 경로를 고르고, 여러 변경이
  * 함께 오면 한 UoW에서 저장해 일부만 반영되는 일이 없게 한다. 효과는 커밋 뒤에 낸다.
  */
-export class EditTodo {
+export class EditTodoUseCase {
   readonly #dependencies: EditTodoDependencies;
 
   constructor(dependencies: EditTodoDependencies) {
@@ -57,7 +60,7 @@ export class EditTodo {
   }
 
   async execute(request: EditTodoInput): Promise<TodoResponse> {
-    const timezone = await this.#dependencies.timezoneResolver.resolve(
+    const timezone = await this.#dependencies.timezoneResolver.execute(
       request.userId,
       request.timezone,
     );

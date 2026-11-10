@@ -10,16 +10,16 @@ import {
 
 import { TodoRescheduledEvent } from "../../../shared/domain/todo-rescheduled.event.js";
 import { TodoUpdatedEvent } from "../../../shared/domain/todo-updated.event.js";
-import { UpdateTodo } from "./update-todo.use-case.js";
+import { UpdateTodoUseCase } from "./update-todo.use-case.js";
 
 describe("할 일 부분 수정", () => {
   let fixture: ReturnType<typeof createPlanningTodoFixture>;
-  let useCase: UpdateTodo;
+  let useCase: UpdateTodoUseCase;
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(PLANNING_TIME);
     fixture = createPlanningTodoFixture({ todos: [createPlanningTodo()] });
-    useCase = new UpdateTodo(fixture);
+    useCase = new UpdateTodoUseCase(fixture);
   });
   afterEach(() => {
     vi.useRealTimers();

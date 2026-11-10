@@ -8,16 +8,16 @@ import {
 } from "#test/fixtures/planning-todo.fixture";
 
 import { TodoUpdatedEvent } from "../../../shared/domain/todo-updated.event.js";
-import { UpdateTodoTitle } from "./update-todo-title.use-case.js";
+import { UpdateTodoTitleUseCase } from "./update-todo-title.use-case.js";
 
 describe("할 일 제목 수정", () => {
   let fixture: ReturnType<typeof createPlanningTodoFixture>;
-  let useCase: UpdateTodoTitle;
+  let useCase: UpdateTodoTitleUseCase;
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(PLANNING_TIME);
     fixture = createPlanningTodoFixture({ todos: [createPlanningTodo()] });
-    useCase = new UpdateTodoTitle(fixture);
+    useCase = new UpdateTodoTitleUseCase(fixture);
   });
   afterEach(() => {
     vi.useRealTimers();

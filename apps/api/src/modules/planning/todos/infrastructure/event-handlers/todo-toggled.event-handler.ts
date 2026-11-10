@@ -20,7 +20,7 @@ import {
   TODO_REMINDER,
   type TodoReminderPort,
 } from "../../application/ports/todo-reminder-scheduler.port.js";
-import { PlanningTodoLogEvent } from "../../application/todos.log-events.js";
+import { TodoLogEvent } from "../../application/todos.log-events.js";
 import {
   isAllCompletedToday,
   milestoneForCount,
@@ -97,7 +97,7 @@ export class TodoToggledHandler {
       await this.#streakPort.recordTodoToggle(userId, completed, timezone);
     } catch (error) {
       this.#logger.error({
-        event: PlanningTodoLogEvent.STREAK_RECORD_FAILED,
+        event: TodoLogEvent.STREAK_RECORD_FAILED,
         userId,
         errorType: toErrorType(error),
       });
@@ -127,7 +127,7 @@ export class TodoToggledHandler {
           });
 
           this.#logger.log({
-            event: PlanningTodoLogEvent.FRIEND_COMPLETED_ENQUEUED,
+            event: TodoLogEvent.FRIEND_COMPLETED_ENQUEUED,
             userId,
             count: friendIds.length,
           });
@@ -135,7 +135,7 @@ export class TodoToggledHandler {
       }
     } catch (error) {
       this.#logger.error({
-        event: PlanningTodoLogEvent.FRIEND_COMPLETED_FAILED,
+        event: TodoLogEvent.FRIEND_COMPLETED_FAILED,
         userId,
         errorType: toErrorType(error),
       });
@@ -155,7 +155,7 @@ export class TodoToggledHandler {
       });
     } catch (error) {
       this.#logger.error({
-        event: PlanningTodoLogEvent.MILESTONE_CHECK_FAILED,
+        event: TodoLogEvent.MILESTONE_CHECK_FAILED,
         userId,
         errorType: toErrorType(error),
       });

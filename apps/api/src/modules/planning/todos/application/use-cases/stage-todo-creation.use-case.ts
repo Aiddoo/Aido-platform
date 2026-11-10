@@ -3,27 +3,27 @@ import { ErrorCode } from "@aido/api/errors";
 import { ApplicationException } from "#api/shared/application/application.exception";
 
 import { toTodoSeriesResponse } from "../../../todo-series/application/read-models/todo-series.read-model.js";
-import type { TodoCreationEffects } from "../../../todo-series/application/use-cases/publish-todo-creation.use-case.js";
+import type { PublishTodoCreationUseCase } from "../../../todo-series/application/use-cases/publish-todo-creation.use-case.js";
 import type { CreateTodoData, ResolvedCreateTodoData } from "../ports/staged-todo-creator.port.js";
 import type {
   StagedTodoCreation,
   StagedTodoCreatorPort,
 } from "../ports/staged-todo-creator.port.js";
 import type { TodoReadRepositoryPort } from "../ports/todo-read.repository.port.js";
-import type { TodoTimezoneResolver } from "./resolve-todo-timezone.use-case.js";
-import { planTodoCreation, type TodoCreationWriter } from "./write-todo-creation.use-case.js";
+import type { ResolveTodoTimezoneUseCase } from "./resolve-todo-timezone.use-case.js";
+import { planTodoCreation, type WriteTodoCreationUseCase } from "./write-todo-creation.use-case.js";
 
 interface StagedTodoCreatorDependencies {
-  readonly writer: Pick<TodoCreationWriter, "createSingle" | "startSeries">;
-  readonly effects: Pick<TodoCreationEffects, "publishSingle" | "publishSeriesStarted">;
+  readonly writer: Pick<WriteTodoCreationUseCase, "createSingle" | "startSeries">;
+  readonly effects: Pick<PublishTodoCreationUseCase, "publishSingle" | "publishSeriesStarted">;
   readonly todoReadRepository: Pick<
     TodoReadRepositoryPort,
     "findByIdAndUserId" | "findManyBySeriesId"
   >;
-  readonly timezoneResolver: Pick<TodoTimezoneResolver, "resolve">;
+  readonly timezoneResolver: Pick<ResolveTodoTimezoneUseCase, "execute">;
 }
 
-export class StagedTodoCreator implements StagedTodoCreatorPort {
+export class StageTodoCreationUseCase implements StagedTodoCreatorPort {
   readonly #dependencies: StagedTodoCreatorDependencies;
 
   constructor(dependencies: StagedTodoCreatorDependencies) {
@@ -31,7 +31,7 @@ export class StagedTodoCreator implements StagedTodoCreatorPort {
   }
 
   async stage(input: CreateTodoData): Promise<StagedTodoCreation> {
-    const timezone = await this.#dependencies.timezoneResolver.resolve(
+    const timezone = await this.#dependencies.timezoneResolver.execute(
       input.userId,
       input.timezone,
     );

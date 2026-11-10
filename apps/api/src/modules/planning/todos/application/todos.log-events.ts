@@ -1,4 +1,4 @@
-export const PlanningTodoLogEvent = {
+export const TodoLogEvent = {
   CREATED: "planning.todo.created",
   DELETED: "planning.todo.deleted",
   CATEGORY_CHANGED: "planning.todo.category.changed",

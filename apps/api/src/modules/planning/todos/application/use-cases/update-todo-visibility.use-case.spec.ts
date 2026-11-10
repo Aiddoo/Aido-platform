@@ -8,16 +8,16 @@ import {
 } from "#test/fixtures/planning-todo.fixture";
 
 import { TodoVisibilityChangedEvent } from "../../../shared/domain/todo-visibility-changed.event.js";
-import { UpdateTodoVisibility } from "./update-todo-visibility.use-case.js";
+import { UpdateTodoVisibilityUseCase } from "./update-todo-visibility.use-case.js";
 
 describe("할 일 공개 범위 수정", () => {
   let fixture: ReturnType<typeof createPlanningTodoFixture>;
-  let useCase: UpdateTodoVisibility;
+  let useCase: UpdateTodoVisibilityUseCase;
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(PLANNING_TIME);
     fixture = createPlanningTodoFixture({ todos: [createPlanningTodo()] });
-    useCase = new UpdateTodoVisibility(fixture);
+    useCase = new UpdateTodoVisibilityUseCase(fixture);
   });
   afterEach(() => {
     vi.useRealTimers();

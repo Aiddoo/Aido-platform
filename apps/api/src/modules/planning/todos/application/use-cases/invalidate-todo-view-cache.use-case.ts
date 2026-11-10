@@ -7,7 +7,7 @@ interface TodoViewCacheInvalidatorDependencies {
   readonly cache: Pick<TodoCachePort, "invalidateFriendTodos">;
 }
 
-export class TodoViewCacheInvalidator implements TodoViewCacheInvalidatorPort {
+export class InvalidateTodoViewCacheUseCase implements TodoViewCacheInvalidatorPort {
   readonly #dependencies: TodoViewCacheInvalidatorDependencies;
 
   constructor(dependencies: TodoViewCacheInvalidatorDependencies) {

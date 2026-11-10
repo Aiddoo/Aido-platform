@@ -13,7 +13,7 @@ import {
 import { type TodoCachePort } from "../ports/todo-cache.port.js";
 import { type TodoReadRepositoryPort } from "../ports/todo-read.repository.port.js";
 import { type TodoRepositoryPort } from "../ports/todo.repository.port.js";
-import { PlanningTodoLogEvent } from "../todos.log-events.js";
+import { TodoLogEvent } from "../todos.log-events.js";
 
 export interface UpdateTodoTitleInput {
   readonly id: number;
@@ -31,7 +31,7 @@ interface UpdateTodoTitleDependencies {
   readonly logger: ApplicationLoggerPort;
 }
 
-export class UpdateTodoTitle {
+export class UpdateTodoTitleUseCase {
   readonly #dependencies: UpdateTodoTitleDependencies;
 
   constructor(dependencies: UpdateTodoTitleDependencies) {
@@ -54,7 +54,7 @@ export class UpdateTodoTitle {
     });
 
     this.#dependencies.logger.log({
-      event: PlanningTodoLogEvent.TITLE_UPDATED,
+      event: TodoLogEvent.TITLE_UPDATED,
       todoId: id,
       userId,
     });

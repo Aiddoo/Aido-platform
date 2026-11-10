@@ -9,7 +9,7 @@ import { toDateString } from "#api/shared/domain/date/utils/format";
 
 import { Todo, type TodoCreationDraft } from "../../../shared/domain/todo.aggregate.js";
 import type { TodoSeriesRepositoryPort } from "../../../todo-series/application/ports/todo-series.repository.port.js";
-import type { TodoOccurrenceMaterializer } from "../../../todo-series/application/use-cases/materialize-todo-occurrences.use-case.js";
+import type { MaterializeTodoOccurrencesUseCase } from "../../../todo-series/application/use-cases/materialize-todo-occurrences.use-case.js";
 import { RepeatRule, type RepeatSpec } from "../../../todo-series/domain/repeat-rule.vo.js";
 import { TodoSeries } from "../../../todo-series/domain/todo-series.aggregate.js";
 import type { CategoryOwnershipPort } from "../ports/category-ownership.port.js";
@@ -41,11 +41,14 @@ interface TodoCreationWriterDependencies {
     "countCategoryUsage" | "getMaxSortOrder" | "create" | "createInlineItems"
   >;
   readonly todoSeriesRepository: Pick<TodoSeriesRepositoryPort, "countActiveByUserId" | "insert">;
-  readonly occurrenceMaterializer: Pick<TodoOccurrenceMaterializer, "planFirstRun" | "persist">;
+  readonly occurrenceMaterializer: Pick<
+    MaterializeTodoOccurrencesUseCase,
+    "planFirstRun" | "persist"
+  >;
   readonly categoryOwnership: Pick<CategoryOwnershipPort, "validateOwnership">;
 }
 
-export class TodoCreationWriter {
+export class WriteTodoCreationUseCase {
   readonly #dependencies: TodoCreationWriterDependencies;
 
   constructor(dependencies: TodoCreationWriterDependencies) {

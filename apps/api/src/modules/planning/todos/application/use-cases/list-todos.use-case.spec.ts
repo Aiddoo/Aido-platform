@@ -8,16 +8,16 @@ import {
 } from "#test/fixtures/planning-todo.fixture";
 import { createTodoResponseFixture } from "#test/fixtures/todo-response.fixture";
 
-import { GetTodos } from "./get-todos.use-case.js";
+import { ListTodosUseCase } from "./list-todos.use-case.js";
 
 describe("할 일 목록 조회", () => {
   let fixture: ReturnType<typeof createPlanningTodoFixture>;
-  let useCase: GetTodos;
+  let useCase: ListTodosUseCase;
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(PLANNING_TIME);
     fixture = createPlanningTodoFixture({ todos: [createPlanningTodo()] });
-    useCase = new GetTodos(fixture);
+    useCase = new ListTodosUseCase(fixture);
   });
   afterEach(() => {
     vi.useRealTimers();
@@ -27,7 +27,7 @@ describe("할 일 목록 조회", () => {
   it("복귀 처리가 끝난 뒤 목록을 읽는다", async () => {
     // Given
     const order: string[] = [];
-    vi.spyOn(fixture.seriesCatchUp, "ensureCaughtUp").mockImplementation(async () => {
+    vi.spyOn(fixture.seriesCatchUp, "execute").mockImplementation(async () => {
       order.push("catch-up");
     });
     vi.spyOn(fixture.todoReadRepository, "findManyByUserId").mockImplementation(async () => {

@@ -4,26 +4,29 @@ import { createPlanningTodoFixture } from "#test/fixtures/planning-todo.fixture"
 
 import { RepeatRule } from "../../domain/repeat-rule.vo.js";
 import { TodoSeries } from "../../domain/todo-series.aggregate.js";
-import { PlanningTodoSeriesLogEvent } from "../todo-series.log-events.js";
-import { TODO_SERIES_CATCH_UP_BUDGET, TodoSeriesCatchUp } from "./catch-up-todo-series.use-case.js";
-import { TodoSeriesDueRunner } from "./materialize-todo-series.use-case.js";
-import { TodoCreationEffects } from "./publish-todo-creation.use-case.js";
+import { TodoSeriesLogEvent } from "../todo-series.log-events.js";
+import {
+  TODO_SERIES_CATCH_UP_BUDGET,
+  CatchUpTodoSeriesUseCase,
+} from "./catch-up-todo-series.use-case.js";
+import { MaterializeTodoSeriesUseCase } from "./materialize-todo-series.use-case.js";
+import { PublishTodoCreationUseCase } from "./publish-todo-creation.use-case.js";
 
 const AT = new Date("2026-11-05T03:00:00.000Z");
 const LAST_MOVED_AT = new Date("2026-06-01T00:00:00.000Z");
 
 describe("복귀 회차 채우기", () => {
   let fixture: ReturnType<typeof createPlanningTodoFixture>;
-  let dueRunner: TodoSeriesDueRunner;
+  let dueRunner: MaterializeTodoSeriesUseCase;
 
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(AT);
     fixture = createPlanningTodoFixture();
-    dueRunner = new TodoSeriesDueRunner({
+    dueRunner = new MaterializeTodoSeriesUseCase({
       seriesRepository: fixture.todoSeriesRepository,
       materializer: fixture.occurrenceMaterializer,
-      effects: new TodoCreationEffects(fixture),
+      effects: new PublishTodoCreationUseCase(fixture),
       unitOfWork: fixture.unitOfWork,
       mutationLock: fixture.mutationLock,
     });
@@ -33,7 +36,7 @@ describe("복귀 회차 채우기", () => {
   });
 
   function catchUp(overrides: { deadlineMs?: number } = {}) {
-    return new TodoSeriesCatchUp({
+    return new CatchUpTodoSeriesUseCase({
       seriesRepository: fixture.todoSeriesRepository,
       seriesOwner: fixture.seriesOwner,
       dueRunner,
@@ -66,7 +69,7 @@ describe("복귀 회차 채우기", () => {
     // Given
     await seedStale("series-1");
     // When
-    await catchUp().ensureCaughtUp(fixture.userId);
+    await catchUp().execute(fixture.userId);
     // Then
     expect(fixture.records.size).toBe(91);
     const dates = [...fixture.records.values()].map((todo) =>
@@ -76,7 +79,7 @@ describe("복귀 회차 채우기", () => {
     expect(dates).not.toContain("2026-11-04");
     expect(fixture.logger.log).toHaveBeenCalledWith(
       expect.objectContaining({
-        event: PlanningTodoSeriesLogEvent.CATCH_UP_COMPLETED,
+        event: TodoSeriesLogEvent.CATCH_UP_COMPLETED,
         seriesCount: 1,
         createdCount: 91,
       }),
@@ -89,9 +92,9 @@ describe("복귀 회차 채우기", () => {
     const findIdsBehind = vi.spyOn(fixture.todoSeriesRepository, "findIdsBehind");
     const service = catchUp();
     // When
-    await service.ensureCaughtUp(fixture.userId);
-    await service.ensureCaughtUp(fixture.userId);
-    await service.ensureCaughtUp(fixture.userId);
+    await service.execute(fixture.userId);
+    await service.execute(fixture.userId);
+    await service.execute(fixture.userId);
     // Then
     expect(findIdsBehind).toHaveBeenCalledOnce();
     expect(fixture.records.size).toBe(0);
@@ -102,10 +105,10 @@ describe("복귀 회차 채우기", () => {
     // Given
     const findIdsBehind = vi.spyOn(fixture.todoSeriesRepository, "findIdsBehind");
     const service = catchUp();
-    await service.ensureCaughtUp(fixture.userId);
+    await service.execute(fixture.userId);
     vi.setSystemTime(new Date("2026-11-06T00:00:00.000Z"));
     // When
-    await service.ensureCaughtUp(fixture.userId);
+    await service.execute(fixture.userId);
     // Then
     expect(findIdsBehind).toHaveBeenCalledTimes(2);
     expect(findIdsBehind).toHaveBeenLastCalledWith(fixture.userId, "2026-11-07");
@@ -116,7 +119,7 @@ describe("복귀 회차 채우기", () => {
     vi.setSystemTime(new Date("2026-11-04T16:00:00.000Z"));
     const findIdsBehind = vi.spyOn(fixture.todoSeriesRepository, "findIdsBehind");
     // When
-    await catchUp().ensureCaughtUp(fixture.userId);
+    await catchUp().execute(fixture.userId);
     // Then
     expect(findIdsBehind).toHaveBeenCalledWith(fixture.userId, "2026-11-05");
   });
@@ -124,13 +127,10 @@ describe("복귀 회차 채우기", () => {
   it("같은 사용자의 동시 요청은 한 번의 복귀를 함께 기다린다", async () => {
     // Given
     await seedStale("series-1");
-    const materialize = vi.spyOn(dueRunner, "materialize");
+    const materialize = vi.spyOn(dueRunner, "execute");
     const service = catchUp();
     // When
-    await Promise.all([
-      service.ensureCaughtUp(fixture.userId),
-      service.ensureCaughtUp(fixture.userId),
-    ]);
+    await Promise.all([service.execute(fixture.userId), service.execute(fixture.userId)]);
     // Then
     expect(materialize).toHaveBeenCalledOnce();
     expect(fixture.records.size).toBe(91);
@@ -143,17 +143,17 @@ describe("복귀 회차 채우기", () => {
       .mockRejectedValueOnce(new Error("연결 실패"));
     const service = catchUp();
     // When
-    await expect(service.ensureCaughtUp(fixture.userId)).resolves.toBeUndefined();
-    await service.ensureCaughtUp(fixture.userId);
+    await expect(service.execute(fixture.userId)).resolves.toBeUndefined();
+    await service.execute(fixture.userId);
     const callsBeforeRetry = findIdsBehind.mock.calls.length;
     vi.setSystemTime(new Date(AT.getTime() + TODO_SERIES_CATCH_UP_BUDGET.RETRY_AFTER_MS + 1));
-    await service.ensureCaughtUp(fixture.userId);
+    await service.execute(fixture.userId);
     // Then
     expect(callsBeforeRetry).toBe(1);
     expect(findIdsBehind).toHaveBeenCalledTimes(2);
     expect(fixture.logger.warn).toHaveBeenCalledWith(
       expect.objectContaining({
-        event: PlanningTodoSeriesLogEvent.CATCH_UP_FAILED,
+        event: TodoSeriesLogEvent.CATCH_UP_FAILED,
         errorType: "Error",
       }),
     );
@@ -172,15 +172,15 @@ describe("복귀 회차 채우기", () => {
       .mockImplementation(persist);
     const service = catchUp();
     // When
-    await service.ensureCaughtUp(fixture.userId);
+    await service.execute(fixture.userId);
     vi.setSystemTime(new Date(AT.getTime() + TODO_SERIES_CATCH_UP_BUDGET.RETRY_AFTER_MS + 1));
-    await service.ensureCaughtUp(fixture.userId);
+    await service.execute(fixture.userId);
     // Then
     expect(spy).toHaveBeenCalledTimes(3);
     expect(fixture.records.size).toBe(182);
     expect(fixture.logger.warn).toHaveBeenCalledWith(
       expect.objectContaining({
-        event: PlanningTodoSeriesLogEvent.CATCH_UP_FAILED,
+        event: TodoSeriesLogEvent.CATCH_UP_FAILED,
         seriesId: expect.any(String),
       }),
     );
@@ -191,7 +191,7 @@ describe("복귀 회차 채우기", () => {
     await seedStale("series-1");
     const service = catchUp({ deadlineMs: 0 });
     // When
-    await service.ensureCaughtUp(fixture.userId);
+    await service.execute(fixture.userId);
     // Then
     expect(fixture.records.size).toBe(0);
     expect(fixture.logger.log).toHaveBeenCalledWith(expect.objectContaining({ timedOut: true }));
@@ -201,7 +201,7 @@ describe("복귀 회차 채우기", () => {
     // Given
     await seedStale("series-1");
     // When
-    await catchUp().ensureCaughtUp(fixture.userId);
+    await catchUp().execute(fixture.userId);
     // Then
     const calls = JSON.stringify([
       vi.mocked(fixture.logger.log).mock.calls,

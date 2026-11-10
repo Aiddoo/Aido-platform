@@ -14,11 +14,11 @@ import { addDaysToDateKey } from "#api/shared/domain/date/utils/arithmetic";
 import { toDateString } from "#api/shared/domain/date/utils/format";
 
 import type { TodoSeriesRepositoryPort } from "../../../todo-series/application/ports/todo-series.repository.port.js";
-import type { TodoSeriesEditEffects } from "../../../todo-series/application/use-cases/publish-todo-series-edit.use-case.js";
+import type { PublishTodoSeriesEditUseCase } from "../../../todo-series/application/use-cases/publish-todo-series-edit.use-case.js";
 import { type TodoCachePort } from "../ports/todo-cache.port.js";
 import type { TodoReminderPort } from "../ports/todo-reminder-scheduler.port.js";
 import { type TodoRepositoryPort } from "../ports/todo.repository.port.js";
-import { PlanningTodoLogEvent } from "../todos.log-events.js";
+import { TodoLogEvent } from "../todos.log-events.js";
 
 export interface DeleteTodoInput {
   readonly id: number;
@@ -36,7 +36,7 @@ interface DeleteTodoDependencies {
     TodoSeriesRepositoryPort,
     "lockForUpdate" | "update" | "lockFamilyIds" | "lockFollowingSegments" | "deleteMany"
   >;
-  readonly seriesEffects: Pick<TodoSeriesEditEffects, "publish">;
+  readonly seriesEffects: Pick<PublishTodoSeriesEditUseCase, "execute">;
   readonly todoReminder: Pick<TodoReminderPort, "cancelReminders">;
   readonly todoCache: Pick<TodoCachePort, "invalidateTodoCategories" | "invalidateFriendTodos">;
   readonly unitOfWork: UnitOfWorkPort;
@@ -45,7 +45,7 @@ interface DeleteTodoDependencies {
   readonly logger: ApplicationLoggerPort;
 }
 
-export class DeleteTodo {
+export class DeleteTodoUseCase {
   readonly #dependencies: DeleteTodoDependencies;
 
   constructor(dependencies: DeleteTodoDependencies) {
@@ -83,7 +83,7 @@ export class DeleteTodo {
     await this.#dependencies.todoCache.invalidateTodoCategories(userId);
     await this.#dependencies.todoCache.invalidateFriendTodos(userId);
 
-    this.#dependencies.logger.log({ event: PlanningTodoLogEvent.DELETED, todoId: id, userId });
+    this.#dependencies.logger.log({ event: TodoLogEvent.DELETED, todoId: id, userId });
   }
 
   async #deleteOccurrences(
@@ -151,12 +151,12 @@ export class DeleteTodo {
       return { seriesId, deletedTodoIds };
     });
 
-    await this.#dependencies.seriesEffects.publish({
+    await this.#dependencies.seriesEffects.execute({
       seriesId: deleted.seriesId,
       userId,
     });
     this.#dependencies.logger.log({
-      event: PlanningTodoLogEvent.DELETED,
+      event: TodoLogEvent.DELETED,
       todoId: id,
       userId,
       scope,

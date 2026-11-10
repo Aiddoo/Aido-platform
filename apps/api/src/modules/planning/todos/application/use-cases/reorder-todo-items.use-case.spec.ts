@@ -7,16 +7,16 @@ import {
   PLANNING_TIME,
 } from "#test/fixtures/planning-todo.fixture";
 
-import { ReorderTodoItems } from "./reorder-todo-items.use-case.js";
+import { ReorderTodoItemsUseCase } from "./reorder-todo-items.use-case.js";
 
 describe("하위 항목 순서 변경", () => {
   let fixture: ReturnType<typeof createPlanningTodoFixture>;
-  let useCase: ReorderTodoItems;
+  let useCase: ReorderTodoItemsUseCase;
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(PLANNING_TIME);
     fixture = createPlanningTodoFixture({ todos: [createPlanningTodo()] });
-    useCase = new ReorderTodoItems(fixture);
+    useCase = new ReorderTodoItemsUseCase(fixture);
   });
   afterEach(() => {
     vi.useRealTimers();

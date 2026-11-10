@@ -13,7 +13,7 @@ import {
 import { type TodoCachePort } from "../ports/todo-cache.port.js";
 import { type TodoReadRepositoryPort } from "../ports/todo-read.repository.port.js";
 import { type TodoRepositoryPort } from "../ports/todo.repository.port.js";
-import { PlanningTodoLogEvent } from "../todos.log-events.js";
+import { TodoLogEvent } from "../todos.log-events.js";
 
 export interface AddTodoItemInput {
   readonly todoId: number;
@@ -36,7 +36,7 @@ interface AddTodoItemDependencies {
   readonly logger: ApplicationLoggerPort;
 }
 
-export class AddTodoItem {
+export class AddTodoItemUseCase {
   readonly #dependencies: AddTodoItemDependencies;
 
   constructor(dependencies: AddTodoItemDependencies) {
@@ -65,7 +65,7 @@ export class AddTodoItem {
         completedAt: snapshot.completedAt,
       });
       this.#dependencies.logger.log({
-        event: PlanningTodoLogEvent.COMPLETION_CHANGED,
+        event: TodoLogEvent.COMPLETION_CHANGED,
         todoId,
         userId,
         completed: snapshot.completed,
@@ -73,7 +73,7 @@ export class AddTodoItem {
       return todo.pullDomainEvents();
     });
 
-    this.#dependencies.logger.log({ event: PlanningTodoLogEvent.ITEM_ADDED, todoId, userId });
+    this.#dependencies.logger.log({ event: TodoLogEvent.ITEM_ADDED, todoId, userId });
 
     await this.#dependencies.eventPublisher.publishAll(events);
 

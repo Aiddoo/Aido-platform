@@ -10,16 +10,16 @@ import { OPERATIONAL_ALERT } from "#api/shared/application/ports/operational-ale
 
 import { TODO_SERIES_OWNER } from "../todo-series/application/ports/todo-series-owner.port.js";
 import { TODO_SERIES_REPOSITORY } from "../todo-series/application/ports/todo-series.repository.port.js";
-import { TodoSeriesCatchUp } from "../todo-series/application/use-cases/catch-up-todo-series.use-case.js";
-import { GetTodoSeries } from "../todo-series/application/use-cases/get-todo-series.use-case.js";
-import { MaterializeDueTodoSeries } from "../todo-series/application/use-cases/materialize-due-todo-series.use-case.js";
-import { TodoOccurrenceMaterializer } from "../todo-series/application/use-cases/materialize-todo-occurrences.use-case.js";
-import { TodoSeriesDueRunner } from "../todo-series/application/use-cases/materialize-todo-series.use-case.js";
-import { TodoCreationEffects } from "../todo-series/application/use-cases/publish-todo-creation.use-case.js";
-import { TodoSeriesEditEffects } from "../todo-series/application/use-cases/publish-todo-series-edit.use-case.js";
-import { StartSeriesFromTodo } from "../todo-series/application/use-cases/start-series-from-todo.use-case.js";
-import { StopTodoSeries } from "../todo-series/application/use-cases/stop-todo-series.use-case.js";
-import { UpdateFollowingTodos } from "../todo-series/application/use-cases/update-following-todos.use-case.js";
+import { CatchUpTodoSeriesUseCase } from "../todo-series/application/use-cases/catch-up-todo-series.use-case.js";
+import { GetTodoSeriesUseCase } from "../todo-series/application/use-cases/get-todo-series.use-case.js";
+import { MaterializeDueTodoSeriesUseCase } from "../todo-series/application/use-cases/materialize-due-todo-series.use-case.js";
+import { MaterializeTodoOccurrencesUseCase } from "../todo-series/application/use-cases/materialize-todo-occurrences.use-case.js";
+import { MaterializeTodoSeriesUseCase } from "../todo-series/application/use-cases/materialize-todo-series.use-case.js";
+import { PublishTodoCreationUseCase } from "../todo-series/application/use-cases/publish-todo-creation.use-case.js";
+import { PublishTodoSeriesEditUseCase } from "../todo-series/application/use-cases/publish-todo-series-edit.use-case.js";
+import { StartSeriesFromTodoUseCase } from "../todo-series/application/use-cases/start-series-from-todo.use-case.js";
+import { StopTodoSeriesUseCase } from "../todo-series/application/use-cases/stop-todo-series.use-case.js";
+import { UpdateFollowingTodosUseCase } from "../todo-series/application/use-cases/update-following-todos.use-case.js";
 import { CATEGORY_OWNERSHIP } from "./application/ports/category-ownership.port.js";
 import { FRIEND_PORT } from "./application/ports/friend.port.js";
 import { STREAK_PORT } from "./application/ports/streak.port.js";
@@ -28,40 +28,40 @@ import { TODO_OWNER_TIMEZONE } from "./application/ports/todo-owner-timezone.por
 import { TODO_READ_REPOSITORY } from "./application/ports/todo-read.repository.port.js";
 import { TODO_REMINDER } from "./application/ports/todo-reminder-scheduler.port.js";
 import { TODO_REPOSITORY } from "./application/ports/todo.repository.port.js";
-import { AddTodoItem } from "./application/use-cases/add-todo-item.use-case.js";
-import { ChangeTodoCategory } from "./application/use-cases/change-todo-category.use-case.js";
-import { CreateTodo } from "./application/use-cases/create-todo.use-case.js";
-import { DeleteTodoItem } from "./application/use-cases/delete-todo-item.use-case.js";
-import { DeleteTodo } from "./application/use-cases/delete-todo.use-case.js";
-import { EditTodo } from "./application/use-cases/edit-todo.use-case.js";
-import { GetFriendTodos } from "./application/use-cases/get-friend-todos.use-case.js";
-import { GetTodoById } from "./application/use-cases/get-todo-by-id.use-case.js";
-import { GetTodoResourceLimit } from "./application/use-cases/get-todo-resource-limit.use-case.js";
-import { GetTodoSummary } from "./application/use-cases/get-todo-summary.use-case.js";
-import { GetTodos } from "./application/use-cases/get-todos.use-case.js";
-import { RebaseTodoTimezone } from "./application/use-cases/rebase-todo-timezone.use-case.js";
-import { ReorderTodoItems } from "./application/use-cases/reorder-todo-items.use-case.js";
-import { ReorderTodo } from "./application/use-cases/reorder-todo.use-case.js";
-import { TodoTimezoneResolver } from "./application/use-cases/resolve-todo-timezone.use-case.js";
-import { StagedTodoCreator } from "./application/use-cases/stage-todo-creation.use-case.js";
-import { ToggleTodoComplete } from "./application/use-cases/toggle-todo-complete.use-case.js";
-import { UpdateTodoItem } from "./application/use-cases/update-todo-item.use-case.js";
-import { UpdateTodoSchedule } from "./application/use-cases/update-todo-schedule.use-case.js";
-import { UpdateTodoTitle } from "./application/use-cases/update-todo-title.use-case.js";
-import { UpdateTodoVisibility } from "./application/use-cases/update-todo-visibility.use-case.js";
-import { UpdateTodo } from "./application/use-cases/update-todo.use-case.js";
-import { TodoCreationWriter } from "./application/use-cases/write-todo-creation.use-case.js";
+import { AddTodoItemUseCase } from "./application/use-cases/add-todo-item.use-case.js";
+import { ChangeTodoCategoryUseCase } from "./application/use-cases/change-todo-category.use-case.js";
+import { CreateTodoUseCase } from "./application/use-cases/create-todo.use-case.js";
+import { DeleteTodoItemUseCase } from "./application/use-cases/delete-todo-item.use-case.js";
+import { DeleteTodoUseCase } from "./application/use-cases/delete-todo.use-case.js";
+import { EditTodoUseCase } from "./application/use-cases/edit-todo.use-case.js";
+import { GetTodoResourceLimitUseCase } from "./application/use-cases/get-todo-resource-limit.use-case.js";
+import { GetTodoSummaryUseCase } from "./application/use-cases/get-todo-summary.use-case.js";
+import { GetTodoUseCase } from "./application/use-cases/get-todo.use-case.js";
+import { ListFriendTodosUseCase } from "./application/use-cases/list-friend-todos.use-case.js";
+import { ListTodosUseCase } from "./application/use-cases/list-todos.use-case.js";
+import { RebaseTodoTimezoneUseCase } from "./application/use-cases/rebase-todo-timezone.use-case.js";
+import { ReorderTodoItemsUseCase } from "./application/use-cases/reorder-todo-items.use-case.js";
+import { ReorderTodoUseCase } from "./application/use-cases/reorder-todo.use-case.js";
+import { ResolveTodoTimezoneUseCase } from "./application/use-cases/resolve-todo-timezone.use-case.js";
+import { SetTodoCompletedUseCase } from "./application/use-cases/set-todo-completed.use-case.js";
+import { StageTodoCreationUseCase } from "./application/use-cases/stage-todo-creation.use-case.js";
+import { UpdateTodoItemUseCase } from "./application/use-cases/update-todo-item.use-case.js";
+import { UpdateTodoScheduleUseCase } from "./application/use-cases/update-todo-schedule.use-case.js";
+import { UpdateTodoTitleUseCase } from "./application/use-cases/update-todo-title.use-case.js";
+import { UpdateTodoVisibilityUseCase } from "./application/use-cases/update-todo-visibility.use-case.js";
+import { UpdateTodoUseCase } from "./application/use-cases/update-todo.use-case.js";
+import { WriteTodoCreationUseCase } from "./application/use-cases/write-todo-creation.use-case.js";
 
-export const todoTimezoneResolverProvider: FactoryProvider<TodoTimezoneResolver> = {
-  provide: TodoTimezoneResolver,
+export const todoTimezoneResolverProvider: FactoryProvider<ResolveTodoTimezoneUseCase> = {
+  provide: ResolveTodoTimezoneUseCase,
   inject: [TODO_OWNER_TIMEZONE],
   useFactory: (
-    ownerTimezone: ConstructorParameters<typeof TodoTimezoneResolver>[0]["ownerTimezone"],
-  ) => new TodoTimezoneResolver({ ownerTimezone }),
+    ownerTimezone: ConstructorParameters<typeof ResolveTodoTimezoneUseCase>[0]["ownerTimezone"],
+  ) => new ResolveTodoTimezoneUseCase({ ownerTimezone }),
 };
 
-export const rebaseTodoTimezoneProvider: FactoryProvider<RebaseTodoTimezone> = {
-  provide: RebaseTodoTimezone,
+export const rebaseTodoTimezoneProvider: FactoryProvider<RebaseTodoTimezoneUseCase> = {
+  provide: RebaseTodoTimezoneUseCase,
   inject: [
     TODO_REPOSITORY,
     TODO_SERIES_REPOSITORY,
@@ -72,15 +72,17 @@ export const rebaseTodoTimezoneProvider: FactoryProvider<RebaseTodoTimezone> = {
     MUTATION_LOCK,
   ],
   useFactory: (
-    todoRepository: ConstructorParameters<typeof RebaseTodoTimezone>[0]["todoRepository"],
-    seriesRepository: ConstructorParameters<typeof RebaseTodoTimezone>[0]["seriesRepository"],
-    ownerTimezone: ConstructorParameters<typeof RebaseTodoTimezone>[0]["ownerTimezone"],
-    todoReminder: ConstructorParameters<typeof RebaseTodoTimezone>[0]["todoReminder"],
-    todoCache: ConstructorParameters<typeof RebaseTodoTimezone>[0]["todoCache"],
-    unitOfWork: ConstructorParameters<typeof RebaseTodoTimezone>[0]["unitOfWork"],
-    mutationLock: ConstructorParameters<typeof RebaseTodoTimezone>[0]["mutationLock"],
+    todoRepository: ConstructorParameters<typeof RebaseTodoTimezoneUseCase>[0]["todoRepository"],
+    seriesRepository: ConstructorParameters<
+      typeof RebaseTodoTimezoneUseCase
+    >[0]["seriesRepository"],
+    ownerTimezone: ConstructorParameters<typeof RebaseTodoTimezoneUseCase>[0]["ownerTimezone"],
+    todoReminder: ConstructorParameters<typeof RebaseTodoTimezoneUseCase>[0]["todoReminder"],
+    todoCache: ConstructorParameters<typeof RebaseTodoTimezoneUseCase>[0]["todoCache"],
+    unitOfWork: ConstructorParameters<typeof RebaseTodoTimezoneUseCase>[0]["unitOfWork"],
+    mutationLock: ConstructorParameters<typeof RebaseTodoTimezoneUseCase>[0]["mutationLock"],
   ) =>
-    new RebaseTodoTimezone({
+    new RebaseTodoTimezoneUseCase({
       todoRepository,
       seriesRepository,
       ownerTimezone,
@@ -88,73 +90,90 @@ export const rebaseTodoTimezoneProvider: FactoryProvider<RebaseTodoTimezone> = {
       todoCache,
       unitOfWork,
       mutationLock,
-      logger: new Logger(RebaseTodoTimezone.name),
+      logger: new Logger(RebaseTodoTimezoneUseCase.name),
     }),
 };
 
-export const todoSeriesDueRunnerProvider: FactoryProvider<TodoSeriesDueRunner> = {
-  provide: TodoSeriesDueRunner,
+export const todoSeriesDueRunnerProvider: FactoryProvider<MaterializeTodoSeriesUseCase> = {
+  provide: MaterializeTodoSeriesUseCase,
   inject: [
     TODO_SERIES_REPOSITORY,
-    TodoOccurrenceMaterializer,
-    TodoCreationEffects,
+    MaterializeTodoOccurrencesUseCase,
+    PublishTodoCreationUseCase,
     UNIT_OF_WORK,
     MUTATION_LOCK,
   ],
   useFactory: (
-    seriesRepository: ConstructorParameters<typeof TodoSeriesDueRunner>[0]["seriesRepository"],
-    materializer: ConstructorParameters<typeof TodoSeriesDueRunner>[0]["materializer"],
-    effects: ConstructorParameters<typeof TodoSeriesDueRunner>[0]["effects"],
-    unitOfWork: ConstructorParameters<typeof TodoSeriesDueRunner>[0]["unitOfWork"],
-    mutationLock: ConstructorParameters<typeof TodoSeriesDueRunner>[0]["mutationLock"],
+    seriesRepository: ConstructorParameters<
+      typeof MaterializeTodoSeriesUseCase
+    >[0]["seriesRepository"],
+    materializer: ConstructorParameters<typeof MaterializeTodoSeriesUseCase>[0]["materializer"],
+    effects: ConstructorParameters<typeof MaterializeTodoSeriesUseCase>[0]["effects"],
+    unitOfWork: ConstructorParameters<typeof MaterializeTodoSeriesUseCase>[0]["unitOfWork"],
+    mutationLock: ConstructorParameters<typeof MaterializeTodoSeriesUseCase>[0]["mutationLock"],
   ) =>
-    new TodoSeriesDueRunner({ seriesRepository, materializer, effects, unitOfWork, mutationLock }),
-};
-
-export const todoSeriesCatchUpProvider: FactoryProvider<TodoSeriesCatchUp> = {
-  provide: TodoSeriesCatchUp,
-  inject: [TODO_SERIES_REPOSITORY, TODO_SERIES_OWNER, TodoSeriesDueRunner],
-  useFactory: (
-    seriesRepository: ConstructorParameters<typeof TodoSeriesCatchUp>[0]["seriesRepository"],
-    seriesOwner: ConstructorParameters<typeof TodoSeriesCatchUp>[0]["seriesOwner"],
-    dueRunner: ConstructorParameters<typeof TodoSeriesCatchUp>[0]["dueRunner"],
-  ) =>
-    new TodoSeriesCatchUp({
+    new MaterializeTodoSeriesUseCase({
       seriesRepository,
-      seriesOwner,
-      dueRunner,
-      logger: new Logger(TodoSeriesCatchUp.name),
+      materializer,
+      effects,
+      unitOfWork,
+      mutationLock,
     }),
 };
 
-export const materializeDueTodoSeriesProvider: FactoryProvider<MaterializeDueTodoSeries> = {
-  provide: MaterializeDueTodoSeries,
-  inject: [TODO_SERIES_REPOSITORY, TODO_SERIES_OWNER, TodoSeriesDueRunner, OPERATIONAL_ALERT],
+export const todoSeriesCatchUpProvider: FactoryProvider<CatchUpTodoSeriesUseCase> = {
+  provide: CatchUpTodoSeriesUseCase,
+  inject: [TODO_SERIES_REPOSITORY, TODO_SERIES_OWNER, MaterializeTodoSeriesUseCase],
   useFactory: (
-    seriesRepository: ConstructorParameters<typeof MaterializeDueTodoSeries>[0]["seriesRepository"],
-    seriesOwner: ConstructorParameters<typeof MaterializeDueTodoSeries>[0]["seriesOwner"],
-    dueRunner: ConstructorParameters<typeof MaterializeDueTodoSeries>[0]["dueRunner"],
-    alert: ConstructorParameters<typeof MaterializeDueTodoSeries>[0]["alert"],
+    seriesRepository: ConstructorParameters<typeof CatchUpTodoSeriesUseCase>[0]["seriesRepository"],
+    seriesOwner: ConstructorParameters<typeof CatchUpTodoSeriesUseCase>[0]["seriesOwner"],
+    dueRunner: ConstructorParameters<typeof CatchUpTodoSeriesUseCase>[0]["dueRunner"],
   ) =>
-    new MaterializeDueTodoSeries({
+    new CatchUpTodoSeriesUseCase({
+      seriesRepository,
+      seriesOwner,
+      dueRunner,
+      logger: new Logger(CatchUpTodoSeriesUseCase.name),
+    }),
+};
+
+export const materializeDueTodoSeriesProvider: FactoryProvider<MaterializeDueTodoSeriesUseCase> = {
+  provide: MaterializeDueTodoSeriesUseCase,
+  inject: [
+    TODO_SERIES_REPOSITORY,
+    TODO_SERIES_OWNER,
+    MaterializeTodoSeriesUseCase,
+    OPERATIONAL_ALERT,
+  ],
+  useFactory: (
+    seriesRepository: ConstructorParameters<
+      typeof MaterializeDueTodoSeriesUseCase
+    >[0]["seriesRepository"],
+    seriesOwner: ConstructorParameters<typeof MaterializeDueTodoSeriesUseCase>[0]["seriesOwner"],
+    dueRunner: ConstructorParameters<typeof MaterializeDueTodoSeriesUseCase>[0]["dueRunner"],
+    alert: ConstructorParameters<typeof MaterializeDueTodoSeriesUseCase>[0]["alert"],
+  ) =>
+    new MaterializeDueTodoSeriesUseCase({
       seriesRepository,
       seriesOwner,
       dueRunner,
       alert,
-      logger: new Logger(MaterializeDueTodoSeries.name),
+      logger: new Logger(MaterializeDueTodoSeriesUseCase.name),
     }),
 };
 
-export const getFriendTodosProvider: FactoryProvider<GetFriendTodos> = {
-  provide: GetFriendTodos,
+export const getFriendTodosProvider: FactoryProvider<ListFriendTodosUseCase> = {
+  provide: ListFriendTodosUseCase,
   inject: [TODO_READ_REPOSITORY, PaginationService, FRIEND_PORT, TODO_CACHE],
   useFactory: (
-    todoReadRepository: ConstructorParameters<typeof GetFriendTodos>[0]["todoReadRepository"],
-    paginationService: ConstructorParameters<typeof GetFriendTodos>[0]["paginationService"],
-    friendPort: ConstructorParameters<typeof GetFriendTodos>[0]["friendPort"],
-    todoCache: ConstructorParameters<typeof GetFriendTodos>[0]["todoCache"],
+    todoReadRepository: ConstructorParameters<
+      typeof ListFriendTodosUseCase
+    >[0]["todoReadRepository"],
+    paginationService: ConstructorParameters<typeof ListFriendTodosUseCase>[0]["paginationService"],
+    friendPort: ConstructorParameters<typeof ListFriendTodosUseCase>[0]["friendPort"],
+    todoCache: ConstructorParameters<typeof ListFriendTodosUseCase>[0]["todoCache"],
   ) =>
-    new GetFriendTodos({
+    new ListFriendTodosUseCase({
       todoReadRepository,
       paginationService,
       friendPort,
@@ -162,49 +181,53 @@ export const getFriendTodosProvider: FactoryProvider<GetFriendTodos> = {
     }),
 };
 
-export const getTodoByIdProvider: FactoryProvider<GetTodoById> = {
-  provide: GetTodoById,
+export const getTodoByIdProvider: FactoryProvider<GetTodoUseCase> = {
+  provide: GetTodoUseCase,
   inject: [TODO_READ_REPOSITORY],
   useFactory: (
-    todoReadRepository: ConstructorParameters<typeof GetTodoById>[0]["todoReadRepository"],
-  ) => new GetTodoById({ todoReadRepository }),
+    todoReadRepository: ConstructorParameters<typeof GetTodoUseCase>[0]["todoReadRepository"],
+  ) => new GetTodoUseCase({ todoReadRepository }),
 };
 
-export const getTodoResourceLimitProvider: FactoryProvider<GetTodoResourceLimit> = {
-  provide: GetTodoResourceLimit,
+export const getTodoResourceLimitProvider: FactoryProvider<GetTodoResourceLimitUseCase> = {
+  provide: GetTodoResourceLimitUseCase,
   inject: [TODO_READ_REPOSITORY],
   useFactory: (
-    todoReadRepository: ConstructorParameters<typeof GetTodoResourceLimit>[0]["todoReadRepository"],
-  ) => new GetTodoResourceLimit({ todoReadRepository }),
+    todoReadRepository: ConstructorParameters<
+      typeof GetTodoResourceLimitUseCase
+    >[0]["todoReadRepository"],
+  ) => new GetTodoResourceLimitUseCase({ todoReadRepository }),
 };
 
-export const getTodoSummaryProvider: FactoryProvider<GetTodoSummary> = {
-  provide: GetTodoSummary,
-  inject: [TODO_READ_REPOSITORY, STREAK_PORT, TodoSeriesCatchUp],
+export const getTodoSummaryProvider: FactoryProvider<GetTodoSummaryUseCase> = {
+  provide: GetTodoSummaryUseCase,
+  inject: [TODO_READ_REPOSITORY, STREAK_PORT, CatchUpTodoSeriesUseCase],
   useFactory: (
-    todoReadRepository: ConstructorParameters<typeof GetTodoSummary>[0]["todoReadRepository"],
-    streakPort: ConstructorParameters<typeof GetTodoSummary>[0]["streakPort"],
-    seriesCatchUp: ConstructorParameters<typeof GetTodoSummary>[0]["seriesCatchUp"],
-  ) => new GetTodoSummary({ todoReadRepository, streakPort, seriesCatchUp }),
+    todoReadRepository: ConstructorParameters<
+      typeof GetTodoSummaryUseCase
+    >[0]["todoReadRepository"],
+    streakPort: ConstructorParameters<typeof GetTodoSummaryUseCase>[0]["streakPort"],
+    seriesCatchUp: ConstructorParameters<typeof GetTodoSummaryUseCase>[0]["seriesCatchUp"],
+  ) => new GetTodoSummaryUseCase({ todoReadRepository, streakPort, seriesCatchUp }),
 };
 
-export const getTodosProvider: FactoryProvider<GetTodos> = {
-  provide: GetTodos,
-  inject: [TODO_READ_REPOSITORY, PaginationService, TodoSeriesCatchUp],
+export const getTodosProvider: FactoryProvider<ListTodosUseCase> = {
+  provide: ListTodosUseCase,
+  inject: [TODO_READ_REPOSITORY, PaginationService, CatchUpTodoSeriesUseCase],
   useFactory: (
-    todoReadRepository: ConstructorParameters<typeof GetTodos>[0]["todoReadRepository"],
-    paginationService: ConstructorParameters<typeof GetTodos>[0]["paginationService"],
-    seriesCatchUp: ConstructorParameters<typeof GetTodos>[0]["seriesCatchUp"],
+    todoReadRepository: ConstructorParameters<typeof ListTodosUseCase>[0]["todoReadRepository"],
+    paginationService: ConstructorParameters<typeof ListTodosUseCase>[0]["paginationService"],
+    seriesCatchUp: ConstructorParameters<typeof ListTodosUseCase>[0]["seriesCatchUp"],
   ) =>
-    new GetTodos({
+    new ListTodosUseCase({
       todoReadRepository,
       paginationService,
       seriesCatchUp,
     }),
 };
 
-export const addTodoItemProvider: FactoryProvider<AddTodoItem> = {
-  provide: AddTodoItem,
+export const addTodoItemProvider: FactoryProvider<AddTodoItemUseCase> = {
+  provide: AddTodoItemUseCase,
   inject: [
     TODO_REPOSITORY,
     TODO_READ_REPOSITORY,
@@ -214,26 +237,26 @@ export const addTodoItemProvider: FactoryProvider<AddTodoItem> = {
     DOMAIN_EVENT_PUBLISHER,
   ],
   useFactory: (
-    todoRepository: ConstructorParameters<typeof AddTodoItem>[0]["todoRepository"],
-    todoReadRepository: ConstructorParameters<typeof AddTodoItem>[0]["todoReadRepository"],
-    unitOfWork: ConstructorParameters<typeof AddTodoItem>[0]["unitOfWork"],
-    mutationLock: ConstructorParameters<typeof AddTodoItem>[0]["mutationLock"],
-    todoCache: ConstructorParameters<typeof AddTodoItem>[0]["todoCache"],
-    eventPublisher: ConstructorParameters<typeof AddTodoItem>[0]["eventPublisher"],
+    todoRepository: ConstructorParameters<typeof AddTodoItemUseCase>[0]["todoRepository"],
+    todoReadRepository: ConstructorParameters<typeof AddTodoItemUseCase>[0]["todoReadRepository"],
+    unitOfWork: ConstructorParameters<typeof AddTodoItemUseCase>[0]["unitOfWork"],
+    mutationLock: ConstructorParameters<typeof AddTodoItemUseCase>[0]["mutationLock"],
+    todoCache: ConstructorParameters<typeof AddTodoItemUseCase>[0]["todoCache"],
+    eventPublisher: ConstructorParameters<typeof AddTodoItemUseCase>[0]["eventPublisher"],
   ) =>
-    new AddTodoItem({
+    new AddTodoItemUseCase({
       todoRepository,
       todoReadRepository,
       unitOfWork,
       mutationLock,
       todoCache,
       eventPublisher,
-      logger: new Logger(AddTodoItem.name),
+      logger: new Logger(AddTodoItemUseCase.name),
     }),
 };
 
-export const changeTodoCategoryProvider: FactoryProvider<ChangeTodoCategory> = {
-  provide: ChangeTodoCategory,
+export const changeTodoCategoryProvider: FactoryProvider<ChangeTodoCategoryUseCase> = {
+  provide: ChangeTodoCategoryUseCase,
   inject: [
     TODO_REPOSITORY,
     TODO_READ_REPOSITORY,
@@ -244,15 +267,19 @@ export const changeTodoCategoryProvider: FactoryProvider<ChangeTodoCategory> = {
     DOMAIN_EVENT_PUBLISHER,
   ],
   useFactory: (
-    todoRepository: ConstructorParameters<typeof ChangeTodoCategory>[0]["todoRepository"],
-    todoReadRepository: ConstructorParameters<typeof ChangeTodoCategory>[0]["todoReadRepository"],
-    unitOfWork: ConstructorParameters<typeof ChangeTodoCategory>[0]["unitOfWork"],
-    mutationLock: ConstructorParameters<typeof ChangeTodoCategory>[0]["mutationLock"],
-    categoryOwnership: ConstructorParameters<typeof ChangeTodoCategory>[0]["categoryOwnership"],
-    todoCache: ConstructorParameters<typeof ChangeTodoCategory>[0]["todoCache"],
-    eventPublisher: ConstructorParameters<typeof ChangeTodoCategory>[0]["eventPublisher"],
+    todoRepository: ConstructorParameters<typeof ChangeTodoCategoryUseCase>[0]["todoRepository"],
+    todoReadRepository: ConstructorParameters<
+      typeof ChangeTodoCategoryUseCase
+    >[0]["todoReadRepository"],
+    unitOfWork: ConstructorParameters<typeof ChangeTodoCategoryUseCase>[0]["unitOfWork"],
+    mutationLock: ConstructorParameters<typeof ChangeTodoCategoryUseCase>[0]["mutationLock"],
+    categoryOwnership: ConstructorParameters<
+      typeof ChangeTodoCategoryUseCase
+    >[0]["categoryOwnership"],
+    todoCache: ConstructorParameters<typeof ChangeTodoCategoryUseCase>[0]["todoCache"],
+    eventPublisher: ConstructorParameters<typeof ChangeTodoCategoryUseCase>[0]["eventPublisher"],
   ) =>
-    new ChangeTodoCategory({
+    new ChangeTodoCategoryUseCase({
       todoRepository,
       todoReadRepository,
       unitOfWork,
@@ -260,33 +287,45 @@ export const changeTodoCategoryProvider: FactoryProvider<ChangeTodoCategory> = {
       categoryOwnership,
       todoCache,
       eventPublisher,
-      logger: new Logger(ChangeTodoCategory.name),
+      logger: new Logger(ChangeTodoCategoryUseCase.name),
     }),
 };
 
-export const todoOccurrenceMaterializerProvider: FactoryProvider<TodoOccurrenceMaterializer> = {
-  provide: TodoOccurrenceMaterializer,
-  inject: [TODO_REPOSITORY, TODO_REMINDER],
-  useFactory: (
-    todoRepository: ConstructorParameters<typeof TodoOccurrenceMaterializer>[0]["todoRepository"],
-    todoReminder: ConstructorParameters<typeof TodoOccurrenceMaterializer>[0]["todoReminder"],
-  ) => new TodoOccurrenceMaterializer({ todoRepository, todoReminder }),
-};
+export const todoOccurrenceMaterializerProvider: FactoryProvider<MaterializeTodoOccurrencesUseCase> =
+  {
+    provide: MaterializeTodoOccurrencesUseCase,
+    inject: [TODO_REPOSITORY, TODO_REMINDER],
+    useFactory: (
+      todoRepository: ConstructorParameters<
+        typeof MaterializeTodoOccurrencesUseCase
+      >[0]["todoRepository"],
+      todoReminder: ConstructorParameters<
+        typeof MaterializeTodoOccurrencesUseCase
+      >[0]["todoReminder"],
+    ) => new MaterializeTodoOccurrencesUseCase({ todoRepository, todoReminder }),
+  };
 
-export const todoCreationWriterProvider: FactoryProvider<TodoCreationWriter> = {
-  provide: TodoCreationWriter,
-  inject: [TODO_REPOSITORY, TODO_SERIES_REPOSITORY, TodoOccurrenceMaterializer, CATEGORY_OWNERSHIP],
+export const todoCreationWriterProvider: FactoryProvider<WriteTodoCreationUseCase> = {
+  provide: WriteTodoCreationUseCase,
+  inject: [
+    TODO_REPOSITORY,
+    TODO_SERIES_REPOSITORY,
+    MaterializeTodoOccurrencesUseCase,
+    CATEGORY_OWNERSHIP,
+  ],
   useFactory: (
-    todoRepository: ConstructorParameters<typeof TodoCreationWriter>[0]["todoRepository"],
+    todoRepository: ConstructorParameters<typeof WriteTodoCreationUseCase>[0]["todoRepository"],
     todoSeriesRepository: ConstructorParameters<
-      typeof TodoCreationWriter
+      typeof WriteTodoCreationUseCase
     >[0]["todoSeriesRepository"],
     occurrenceMaterializer: ConstructorParameters<
-      typeof TodoCreationWriter
+      typeof WriteTodoCreationUseCase
     >[0]["occurrenceMaterializer"],
-    categoryOwnership: ConstructorParameters<typeof TodoCreationWriter>[0]["categoryOwnership"],
+    categoryOwnership: ConstructorParameters<
+      typeof WriteTodoCreationUseCase
+    >[0]["categoryOwnership"],
   ) =>
-    new TodoCreationWriter({
+    new WriteTodoCreationUseCase({
       todoRepository,
       todoSeriesRepository,
       occurrenceMaterializer,
@@ -294,47 +333,54 @@ export const todoCreationWriterProvider: FactoryProvider<TodoCreationWriter> = {
     }),
 };
 
-export const todoCreationEffectsProvider: FactoryProvider<TodoCreationEffects> = {
-  provide: TodoCreationEffects,
+export const todoCreationEffectsProvider: FactoryProvider<PublishTodoCreationUseCase> = {
+  provide: PublishTodoCreationUseCase,
   inject: [TODO_CACHE, DOMAIN_EVENT_PUBLISHER],
   useFactory: (
-    todoCache: ConstructorParameters<typeof TodoCreationEffects>[0]["todoCache"],
-    eventPublisher: ConstructorParameters<typeof TodoCreationEffects>[0]["eventPublisher"],
+    todoCache: ConstructorParameters<typeof PublishTodoCreationUseCase>[0]["todoCache"],
+    eventPublisher: ConstructorParameters<typeof PublishTodoCreationUseCase>[0]["eventPublisher"],
   ) =>
-    new TodoCreationEffects({
+    new PublishTodoCreationUseCase({
       todoCache,
       eventPublisher,
-      logger: new Logger(TodoCreationEffects.name),
+      logger: new Logger(PublishTodoCreationUseCase.name),
     }),
 };
 
-export const stagedTodoCreatorProvider: FactoryProvider<StagedTodoCreator> = {
-  provide: StagedTodoCreator,
-  inject: [TodoCreationWriter, TodoCreationEffects, TODO_READ_REPOSITORY, TodoTimezoneResolver],
+export const stagedTodoCreatorProvider: FactoryProvider<StageTodoCreationUseCase> = {
+  provide: StageTodoCreationUseCase,
+  inject: [
+    WriteTodoCreationUseCase,
+    PublishTodoCreationUseCase,
+    TODO_READ_REPOSITORY,
+    ResolveTodoTimezoneUseCase,
+  ],
   useFactory: (
-    writer: ConstructorParameters<typeof StagedTodoCreator>[0]["writer"],
-    effects: ConstructorParameters<typeof StagedTodoCreator>[0]["effects"],
-    todoReadRepository: ConstructorParameters<typeof StagedTodoCreator>[0]["todoReadRepository"],
-    timezoneResolver: ConstructorParameters<typeof StagedTodoCreator>[0]["timezoneResolver"],
-  ) => new StagedTodoCreator({ writer, effects, todoReadRepository, timezoneResolver }),
+    writer: ConstructorParameters<typeof StageTodoCreationUseCase>[0]["writer"],
+    effects: ConstructorParameters<typeof StageTodoCreationUseCase>[0]["effects"],
+    todoReadRepository: ConstructorParameters<
+      typeof StageTodoCreationUseCase
+    >[0]["todoReadRepository"],
+    timezoneResolver: ConstructorParameters<typeof StageTodoCreationUseCase>[0]["timezoneResolver"],
+  ) => new StageTodoCreationUseCase({ writer, effects, todoReadRepository, timezoneResolver }),
 };
 
-export const createTodoProvider: FactoryProvider<CreateTodo> = {
-  provide: CreateTodo,
-  inject: [StagedTodoCreator, UNIT_OF_WORK, MUTATION_LOCK],
+export const createTodoProvider: FactoryProvider<CreateTodoUseCase> = {
+  provide: CreateTodoUseCase,
+  inject: [StageTodoCreationUseCase, UNIT_OF_WORK, MUTATION_LOCK],
   useFactory: (
-    todoCreator: ConstructorParameters<typeof CreateTodo>[0]["todoCreator"],
-    unitOfWork: ConstructorParameters<typeof CreateTodo>[0]["unitOfWork"],
-    mutationLock: ConstructorParameters<typeof CreateTodo>[0]["mutationLock"],
-  ) => new CreateTodo({ todoCreator, unitOfWork, mutationLock }),
+    todoCreator: ConstructorParameters<typeof CreateTodoUseCase>[0]["todoCreator"],
+    unitOfWork: ConstructorParameters<typeof CreateTodoUseCase>[0]["unitOfWork"],
+    mutationLock: ConstructorParameters<typeof CreateTodoUseCase>[0]["mutationLock"],
+  ) => new CreateTodoUseCase({ todoCreator, unitOfWork, mutationLock }),
 };
 
-export const deleteTodoProvider: FactoryProvider<DeleteTodo> = {
-  provide: DeleteTodo,
+export const deleteTodoProvider: FactoryProvider<DeleteTodoUseCase> = {
+  provide: DeleteTodoUseCase,
   inject: [
     TODO_REPOSITORY,
     TODO_SERIES_REPOSITORY,
-    TodoSeriesEditEffects,
+    PublishTodoSeriesEditUseCase,
     TODO_REMINDER,
     TODO_CACHE,
     UNIT_OF_WORK,
@@ -342,16 +388,16 @@ export const deleteTodoProvider: FactoryProvider<DeleteTodo> = {
     DOMAIN_EVENT_PUBLISHER,
   ],
   useFactory: (
-    todoRepository: ConstructorParameters<typeof DeleteTodo>[0]["todoRepository"],
-    seriesRepository: ConstructorParameters<typeof DeleteTodo>[0]["seriesRepository"],
-    seriesEffects: ConstructorParameters<typeof DeleteTodo>[0]["seriesEffects"],
-    todoReminder: ConstructorParameters<typeof DeleteTodo>[0]["todoReminder"],
-    todoCache: ConstructorParameters<typeof DeleteTodo>[0]["todoCache"],
-    unitOfWork: ConstructorParameters<typeof DeleteTodo>[0]["unitOfWork"],
-    mutationLock: ConstructorParameters<typeof DeleteTodo>[0]["mutationLock"],
-    eventPublisher: ConstructorParameters<typeof DeleteTodo>[0]["eventPublisher"],
+    todoRepository: ConstructorParameters<typeof DeleteTodoUseCase>[0]["todoRepository"],
+    seriesRepository: ConstructorParameters<typeof DeleteTodoUseCase>[0]["seriesRepository"],
+    seriesEffects: ConstructorParameters<typeof DeleteTodoUseCase>[0]["seriesEffects"],
+    todoReminder: ConstructorParameters<typeof DeleteTodoUseCase>[0]["todoReminder"],
+    todoCache: ConstructorParameters<typeof DeleteTodoUseCase>[0]["todoCache"],
+    unitOfWork: ConstructorParameters<typeof DeleteTodoUseCase>[0]["unitOfWork"],
+    mutationLock: ConstructorParameters<typeof DeleteTodoUseCase>[0]["mutationLock"],
+    eventPublisher: ConstructorParameters<typeof DeleteTodoUseCase>[0]["eventPublisher"],
   ) =>
-    new DeleteTodo({
+    new DeleteTodoUseCase({
       todoRepository,
       seriesRepository,
       seriesEffects,
@@ -360,77 +406,79 @@ export const deleteTodoProvider: FactoryProvider<DeleteTodo> = {
       unitOfWork,
       mutationLock,
       eventPublisher,
-      logger: new Logger(DeleteTodo.name),
+      logger: new Logger(DeleteTodoUseCase.name),
     }),
 };
 
-export const todoSeriesEditEffectsProvider: FactoryProvider<TodoSeriesEditEffects> = {
-  provide: TodoSeriesEditEffects,
+export const todoSeriesEditEffectsProvider: FactoryProvider<PublishTodoSeriesEditUseCase> = {
+  provide: PublishTodoSeriesEditUseCase,
   inject: [TODO_CACHE, DOMAIN_EVENT_PUBLISHER],
   useFactory: (
-    todoCache: ConstructorParameters<typeof TodoSeriesEditEffects>[0]["todoCache"],
-    eventPublisher: ConstructorParameters<typeof TodoSeriesEditEffects>[0]["eventPublisher"],
+    todoCache: ConstructorParameters<typeof PublishTodoSeriesEditUseCase>[0]["todoCache"],
+    eventPublisher: ConstructorParameters<typeof PublishTodoSeriesEditUseCase>[0]["eventPublisher"],
   ) =>
-    new TodoSeriesEditEffects({
+    new PublishTodoSeriesEditUseCase({
       todoCache,
       eventPublisher,
-      logger: new Logger(TodoSeriesEditEffects.name),
+      logger: new Logger(PublishTodoSeriesEditUseCase.name),
     }),
 };
 
-export const getTodoSeriesProvider: FactoryProvider<GetTodoSeries> = {
-  provide: GetTodoSeries,
+export const getTodoSeriesProvider: FactoryProvider<GetTodoSeriesUseCase> = {
+  provide: GetTodoSeriesUseCase,
   inject: [TODO_SERIES_REPOSITORY],
   useFactory: (
-    seriesRepository: ConstructorParameters<typeof GetTodoSeries>[0]["seriesRepository"],
-  ) => new GetTodoSeries({ seriesRepository }),
+    seriesRepository: ConstructorParameters<typeof GetTodoSeriesUseCase>[0]["seriesRepository"],
+  ) => new GetTodoSeriesUseCase({ seriesRepository }),
 };
 
-export const stopTodoSeriesProvider: FactoryProvider<StopTodoSeries> = {
-  provide: StopTodoSeries,
+export const stopTodoSeriesProvider: FactoryProvider<StopTodoSeriesUseCase> = {
+  provide: StopTodoSeriesUseCase,
   inject: [
     TODO_REPOSITORY,
     TODO_SERIES_REPOSITORY,
     TODO_REMINDER,
-    TodoSeriesEditEffects,
+    PublishTodoSeriesEditUseCase,
     MUTATION_LOCK,
   ],
   useFactory: (
-    todoRepository: ConstructorParameters<typeof StopTodoSeries>[0]["todoRepository"],
-    seriesRepository: ConstructorParameters<typeof StopTodoSeries>[0]["seriesRepository"],
-    todoReminder: ConstructorParameters<typeof StopTodoSeries>[0]["todoReminder"],
-    effects: ConstructorParameters<typeof StopTodoSeries>[0]["effects"],
-    mutationLock: ConstructorParameters<typeof StopTodoSeries>[0]["mutationLock"],
+    todoRepository: ConstructorParameters<typeof StopTodoSeriesUseCase>[0]["todoRepository"],
+    seriesRepository: ConstructorParameters<typeof StopTodoSeriesUseCase>[0]["seriesRepository"],
+    todoReminder: ConstructorParameters<typeof StopTodoSeriesUseCase>[0]["todoReminder"],
+    effects: ConstructorParameters<typeof StopTodoSeriesUseCase>[0]["effects"],
+    mutationLock: ConstructorParameters<typeof StopTodoSeriesUseCase>[0]["mutationLock"],
   ) =>
-    new StopTodoSeries({
+    new StopTodoSeriesUseCase({
       todoRepository,
       seriesRepository,
       todoReminder,
       effects,
       mutationLock,
-      logger: new Logger(StopTodoSeries.name),
+      logger: new Logger(StopTodoSeriesUseCase.name),
     }),
 };
 
-export const startSeriesFromTodoProvider: FactoryProvider<StartSeriesFromTodo> = {
-  provide: StartSeriesFromTodo,
+export const startSeriesFromTodoProvider: FactoryProvider<StartSeriesFromTodoUseCase> = {
+  provide: StartSeriesFromTodoUseCase,
   inject: [
     TODO_REPOSITORY,
     TODO_SERIES_REPOSITORY,
-    TodoOccurrenceMaterializer,
+    MaterializeTodoOccurrencesUseCase,
     TODO_REMINDER,
-    TodoCreationEffects,
+    PublishTodoCreationUseCase,
     MUTATION_LOCK,
   ],
   useFactory: (
-    todoRepository: ConstructorParameters<typeof StartSeriesFromTodo>[0]["todoRepository"],
-    seriesRepository: ConstructorParameters<typeof StartSeriesFromTodo>[0]["seriesRepository"],
-    materializer: ConstructorParameters<typeof StartSeriesFromTodo>[0]["materializer"],
-    todoReminder: ConstructorParameters<typeof StartSeriesFromTodo>[0]["todoReminder"],
-    effects: ConstructorParameters<typeof StartSeriesFromTodo>[0]["effects"],
-    mutationLock: ConstructorParameters<typeof StartSeriesFromTodo>[0]["mutationLock"],
+    todoRepository: ConstructorParameters<typeof StartSeriesFromTodoUseCase>[0]["todoRepository"],
+    seriesRepository: ConstructorParameters<
+      typeof StartSeriesFromTodoUseCase
+    >[0]["seriesRepository"],
+    materializer: ConstructorParameters<typeof StartSeriesFromTodoUseCase>[0]["materializer"],
+    todoReminder: ConstructorParameters<typeof StartSeriesFromTodoUseCase>[0]["todoReminder"],
+    effects: ConstructorParameters<typeof StartSeriesFromTodoUseCase>[0]["effects"],
+    mutationLock: ConstructorParameters<typeof StartSeriesFromTodoUseCase>[0]["mutationLock"],
   ) =>
-    new StartSeriesFromTodo({
+    new StartSeriesFromTodoUseCase({
       todoRepository,
       seriesRepository,
       materializer,
@@ -440,31 +488,37 @@ export const startSeriesFromTodoProvider: FactoryProvider<StartSeriesFromTodo> =
     }),
 };
 
-export const updateFollowingTodosProvider: FactoryProvider<UpdateFollowingTodos> = {
-  provide: UpdateFollowingTodos,
+export const updateFollowingTodosProvider: FactoryProvider<UpdateFollowingTodosUseCase> = {
+  provide: UpdateFollowingTodosUseCase,
   inject: [
     TODO_REPOSITORY,
     TODO_READ_REPOSITORY,
     TODO_SERIES_REPOSITORY,
     CATEGORY_OWNERSHIP,
-    TodoOccurrenceMaterializer,
+    MaterializeTodoOccurrencesUseCase,
     TODO_REMINDER,
-    TodoSeriesEditEffects,
+    PublishTodoSeriesEditUseCase,
     UNIT_OF_WORK,
     MUTATION_LOCK,
   ],
   useFactory: (
-    todoRepository: ConstructorParameters<typeof UpdateFollowingTodos>[0]["todoRepository"],
-    todoReadRepository: ConstructorParameters<typeof UpdateFollowingTodos>[0]["todoReadRepository"],
-    seriesRepository: ConstructorParameters<typeof UpdateFollowingTodos>[0]["seriesRepository"],
-    categoryOwnership: ConstructorParameters<typeof UpdateFollowingTodos>[0]["categoryOwnership"],
-    materializer: ConstructorParameters<typeof UpdateFollowingTodos>[0]["materializer"],
-    todoReminder: ConstructorParameters<typeof UpdateFollowingTodos>[0]["todoReminder"],
-    effects: ConstructorParameters<typeof UpdateFollowingTodos>[0]["effects"],
-    unitOfWork: ConstructorParameters<typeof UpdateFollowingTodos>[0]["unitOfWork"],
-    mutationLock: ConstructorParameters<typeof UpdateFollowingTodos>[0]["mutationLock"],
+    todoRepository: ConstructorParameters<typeof UpdateFollowingTodosUseCase>[0]["todoRepository"],
+    todoReadRepository: ConstructorParameters<
+      typeof UpdateFollowingTodosUseCase
+    >[0]["todoReadRepository"],
+    seriesRepository: ConstructorParameters<
+      typeof UpdateFollowingTodosUseCase
+    >[0]["seriesRepository"],
+    categoryOwnership: ConstructorParameters<
+      typeof UpdateFollowingTodosUseCase
+    >[0]["categoryOwnership"],
+    materializer: ConstructorParameters<typeof UpdateFollowingTodosUseCase>[0]["materializer"],
+    todoReminder: ConstructorParameters<typeof UpdateFollowingTodosUseCase>[0]["todoReminder"],
+    effects: ConstructorParameters<typeof UpdateFollowingTodosUseCase>[0]["effects"],
+    unitOfWork: ConstructorParameters<typeof UpdateFollowingTodosUseCase>[0]["unitOfWork"],
+    mutationLock: ConstructorParameters<typeof UpdateFollowingTodosUseCase>[0]["mutationLock"],
   ) =>
-    new UpdateFollowingTodos({
+    new UpdateFollowingTodosUseCase({
       todoRepository,
       todoReadRepository,
       seriesRepository,
@@ -474,72 +528,76 @@ export const updateFollowingTodosProvider: FactoryProvider<UpdateFollowingTodos>
       effects,
       unitOfWork,
       mutationLock,
-      logger: new Logger(UpdateFollowingTodos.name),
+      logger: new Logger(UpdateFollowingTodosUseCase.name),
     }),
 };
 
-export const deleteTodoItemProvider: FactoryProvider<DeleteTodoItem> = {
-  provide: DeleteTodoItem,
+export const deleteTodoItemProvider: FactoryProvider<DeleteTodoItemUseCase> = {
+  provide: DeleteTodoItemUseCase,
   inject: [TODO_REPOSITORY, TODO_READ_REPOSITORY, UNIT_OF_WORK, MUTATION_LOCK, TODO_CACHE],
   useFactory: (
-    todoRepository: ConstructorParameters<typeof DeleteTodoItem>[0]["todoRepository"],
-    todoReadRepository: ConstructorParameters<typeof DeleteTodoItem>[0]["todoReadRepository"],
-    unitOfWork: ConstructorParameters<typeof DeleteTodoItem>[0]["unitOfWork"],
-    mutationLock: ConstructorParameters<typeof DeleteTodoItem>[0]["mutationLock"],
-    todoCache: ConstructorParameters<typeof DeleteTodoItem>[0]["todoCache"],
+    todoRepository: ConstructorParameters<typeof DeleteTodoItemUseCase>[0]["todoRepository"],
+    todoReadRepository: ConstructorParameters<
+      typeof DeleteTodoItemUseCase
+    >[0]["todoReadRepository"],
+    unitOfWork: ConstructorParameters<typeof DeleteTodoItemUseCase>[0]["unitOfWork"],
+    mutationLock: ConstructorParameters<typeof DeleteTodoItemUseCase>[0]["mutationLock"],
+    todoCache: ConstructorParameters<typeof DeleteTodoItemUseCase>[0]["todoCache"],
   ) =>
-    new DeleteTodoItem({
+    new DeleteTodoItemUseCase({
       todoRepository,
       todoReadRepository,
       unitOfWork,
       mutationLock,
       todoCache,
-      logger: new Logger(DeleteTodoItem.name),
+      logger: new Logger(DeleteTodoItemUseCase.name),
     }),
 };
 
-export const reorderTodoProvider: FactoryProvider<ReorderTodo> = {
-  provide: ReorderTodo,
+export const reorderTodoProvider: FactoryProvider<ReorderTodoUseCase> = {
+  provide: ReorderTodoUseCase,
   inject: [TODO_REPOSITORY, TODO_READ_REPOSITORY, UNIT_OF_WORK, MUTATION_LOCK, TODO_CACHE],
   useFactory: (
-    todoRepository: ConstructorParameters<typeof ReorderTodo>[0]["todoRepository"],
-    todoReadRepository: ConstructorParameters<typeof ReorderTodo>[0]["todoReadRepository"],
-    unitOfWork: ConstructorParameters<typeof ReorderTodo>[0]["unitOfWork"],
-    mutationLock: ConstructorParameters<typeof ReorderTodo>[0]["mutationLock"],
-    todoCache: ConstructorParameters<typeof ReorderTodo>[0]["todoCache"],
+    todoRepository: ConstructorParameters<typeof ReorderTodoUseCase>[0]["todoRepository"],
+    todoReadRepository: ConstructorParameters<typeof ReorderTodoUseCase>[0]["todoReadRepository"],
+    unitOfWork: ConstructorParameters<typeof ReorderTodoUseCase>[0]["unitOfWork"],
+    mutationLock: ConstructorParameters<typeof ReorderTodoUseCase>[0]["mutationLock"],
+    todoCache: ConstructorParameters<typeof ReorderTodoUseCase>[0]["todoCache"],
   ) =>
-    new ReorderTodo({
+    new ReorderTodoUseCase({
       todoRepository,
       todoReadRepository,
       unitOfWork,
       mutationLock,
       todoCache,
-      logger: new Logger(ReorderTodo.name),
+      logger: new Logger(ReorderTodoUseCase.name),
     }),
 };
 
-export const reorderTodoItemsProvider: FactoryProvider<ReorderTodoItems> = {
-  provide: ReorderTodoItems,
+export const reorderTodoItemsProvider: FactoryProvider<ReorderTodoItemsUseCase> = {
+  provide: ReorderTodoItemsUseCase,
   inject: [TODO_REPOSITORY, TODO_READ_REPOSITORY, UNIT_OF_WORK, MUTATION_LOCK, TODO_CACHE],
   useFactory: (
-    todoRepository: ConstructorParameters<typeof ReorderTodoItems>[0]["todoRepository"],
-    todoReadRepository: ConstructorParameters<typeof ReorderTodoItems>[0]["todoReadRepository"],
-    unitOfWork: ConstructorParameters<typeof ReorderTodoItems>[0]["unitOfWork"],
-    mutationLock: ConstructorParameters<typeof ReorderTodoItems>[0]["mutationLock"],
-    todoCache: ConstructorParameters<typeof ReorderTodoItems>[0]["todoCache"],
+    todoRepository: ConstructorParameters<typeof ReorderTodoItemsUseCase>[0]["todoRepository"],
+    todoReadRepository: ConstructorParameters<
+      typeof ReorderTodoItemsUseCase
+    >[0]["todoReadRepository"],
+    unitOfWork: ConstructorParameters<typeof ReorderTodoItemsUseCase>[0]["unitOfWork"],
+    mutationLock: ConstructorParameters<typeof ReorderTodoItemsUseCase>[0]["mutationLock"],
+    todoCache: ConstructorParameters<typeof ReorderTodoItemsUseCase>[0]["todoCache"],
   ) =>
-    new ReorderTodoItems({
+    new ReorderTodoItemsUseCase({
       todoRepository,
       todoReadRepository,
       unitOfWork,
       mutationLock,
       todoCache,
-      logger: new Logger(ReorderTodoItems.name),
+      logger: new Logger(ReorderTodoItemsUseCase.name),
     }),
 };
 
-export const toggleTodoCompleteProvider: FactoryProvider<ToggleTodoComplete> = {
-  provide: ToggleTodoComplete,
+export const toggleTodoCompleteProvider: FactoryProvider<SetTodoCompletedUseCase> = {
+  provide: SetTodoCompletedUseCase,
   inject: [
     TODO_REPOSITORY,
     TODO_READ_REPOSITORY,
@@ -549,47 +607,49 @@ export const toggleTodoCompleteProvider: FactoryProvider<ToggleTodoComplete> = {
     DOMAIN_EVENT_PUBLISHER,
   ],
   useFactory: (
-    todoRepository: ConstructorParameters<typeof ToggleTodoComplete>[0]["todoRepository"],
-    todoReadRepository: ConstructorParameters<typeof ToggleTodoComplete>[0]["todoReadRepository"],
-    unitOfWork: ConstructorParameters<typeof ToggleTodoComplete>[0]["unitOfWork"],
-    mutationLock: ConstructorParameters<typeof ToggleTodoComplete>[0]["mutationLock"],
-    todoCache: ConstructorParameters<typeof ToggleTodoComplete>[0]["todoCache"],
-    eventPublisher: ConstructorParameters<typeof ToggleTodoComplete>[0]["eventPublisher"],
+    todoRepository: ConstructorParameters<typeof SetTodoCompletedUseCase>[0]["todoRepository"],
+    todoReadRepository: ConstructorParameters<
+      typeof SetTodoCompletedUseCase
+    >[0]["todoReadRepository"],
+    unitOfWork: ConstructorParameters<typeof SetTodoCompletedUseCase>[0]["unitOfWork"],
+    mutationLock: ConstructorParameters<typeof SetTodoCompletedUseCase>[0]["mutationLock"],
+    todoCache: ConstructorParameters<typeof SetTodoCompletedUseCase>[0]["todoCache"],
+    eventPublisher: ConstructorParameters<typeof SetTodoCompletedUseCase>[0]["eventPublisher"],
   ) =>
-    new ToggleTodoComplete({
+    new SetTodoCompletedUseCase({
       todoRepository,
       todoReadRepository,
       unitOfWork,
       mutationLock,
       todoCache,
       eventPublisher,
-      logger: new Logger(ToggleTodoComplete.name),
+      logger: new Logger(SetTodoCompletedUseCase.name),
     }),
 };
 
-export const editTodoProvider: FactoryProvider<EditTodo> = {
-  provide: EditTodo,
+export const editTodoProvider: FactoryProvider<EditTodoUseCase> = {
+  provide: EditTodoUseCase,
   inject: [
-    UpdateTodo,
-    UpdateFollowingTodos,
-    StartSeriesFromTodo,
-    StopTodoSeries,
+    UpdateTodoUseCase,
+    UpdateFollowingTodosUseCase,
+    StartSeriesFromTodoUseCase,
+    StopTodoSeriesUseCase,
     TODO_READ_REPOSITORY,
     UNIT_OF_WORK,
     MUTATION_LOCK,
-    TodoTimezoneResolver,
+    ResolveTodoTimezoneUseCase,
   ],
   useFactory: (
-    updateTodo: ConstructorParameters<typeof EditTodo>[0]["updateTodo"],
-    updateFollowingTodos: ConstructorParameters<typeof EditTodo>[0]["updateFollowingTodos"],
-    startSeriesFromTodo: ConstructorParameters<typeof EditTodo>[0]["startSeriesFromTodo"],
-    stopTodoSeries: ConstructorParameters<typeof EditTodo>[0]["stopTodoSeries"],
-    todoReadRepository: ConstructorParameters<typeof EditTodo>[0]["todoReadRepository"],
-    unitOfWork: ConstructorParameters<typeof EditTodo>[0]["unitOfWork"],
-    mutationLock: ConstructorParameters<typeof EditTodo>[0]["mutationLock"],
-    timezoneResolver: ConstructorParameters<typeof EditTodo>[0]["timezoneResolver"],
+    updateTodo: ConstructorParameters<typeof EditTodoUseCase>[0]["updateTodo"],
+    updateFollowingTodos: ConstructorParameters<typeof EditTodoUseCase>[0]["updateFollowingTodos"],
+    startSeriesFromTodo: ConstructorParameters<typeof EditTodoUseCase>[0]["startSeriesFromTodo"],
+    stopTodoSeries: ConstructorParameters<typeof EditTodoUseCase>[0]["stopTodoSeries"],
+    todoReadRepository: ConstructorParameters<typeof EditTodoUseCase>[0]["todoReadRepository"],
+    unitOfWork: ConstructorParameters<typeof EditTodoUseCase>[0]["unitOfWork"],
+    mutationLock: ConstructorParameters<typeof EditTodoUseCase>[0]["mutationLock"],
+    timezoneResolver: ConstructorParameters<typeof EditTodoUseCase>[0]["timezoneResolver"],
   ) =>
-    new EditTodo({
+    new EditTodoUseCase({
       updateTodo,
       updateFollowingTodos,
       startSeriesFromTodo,
@@ -601,8 +661,8 @@ export const editTodoProvider: FactoryProvider<EditTodo> = {
     }),
 };
 
-export const updateTodoProvider: FactoryProvider<UpdateTodo> = {
-  provide: UpdateTodo,
+export const updateTodoProvider: FactoryProvider<UpdateTodoUseCase> = {
+  provide: UpdateTodoUseCase,
   inject: [
     TODO_REPOSITORY,
     TODO_READ_REPOSITORY,
@@ -613,15 +673,15 @@ export const updateTodoProvider: FactoryProvider<UpdateTodo> = {
     DOMAIN_EVENT_PUBLISHER,
   ],
   useFactory: (
-    todoRepository: ConstructorParameters<typeof UpdateTodo>[0]["todoRepository"],
-    todoReadRepository: ConstructorParameters<typeof UpdateTodo>[0]["todoReadRepository"],
-    unitOfWork: ConstructorParameters<typeof UpdateTodo>[0]["unitOfWork"],
-    mutationLock: ConstructorParameters<typeof UpdateTodo>[0]["mutationLock"],
-    categoryOwnership: ConstructorParameters<typeof UpdateTodo>[0]["categoryOwnership"],
-    todoCache: ConstructorParameters<typeof UpdateTodo>[0]["todoCache"],
-    eventPublisher: ConstructorParameters<typeof UpdateTodo>[0]["eventPublisher"],
+    todoRepository: ConstructorParameters<typeof UpdateTodoUseCase>[0]["todoRepository"],
+    todoReadRepository: ConstructorParameters<typeof UpdateTodoUseCase>[0]["todoReadRepository"],
+    unitOfWork: ConstructorParameters<typeof UpdateTodoUseCase>[0]["unitOfWork"],
+    mutationLock: ConstructorParameters<typeof UpdateTodoUseCase>[0]["mutationLock"],
+    categoryOwnership: ConstructorParameters<typeof UpdateTodoUseCase>[0]["categoryOwnership"],
+    todoCache: ConstructorParameters<typeof UpdateTodoUseCase>[0]["todoCache"],
+    eventPublisher: ConstructorParameters<typeof UpdateTodoUseCase>[0]["eventPublisher"],
   ) =>
-    new UpdateTodo({
+    new UpdateTodoUseCase({
       todoRepository,
       todoReadRepository,
       unitOfWork,
@@ -629,32 +689,34 @@ export const updateTodoProvider: FactoryProvider<UpdateTodo> = {
       categoryOwnership,
       todoCache,
       eventPublisher,
-      logger: new Logger(UpdateTodo.name),
+      logger: new Logger(UpdateTodoUseCase.name),
     }),
 };
 
-export const updateTodoItemProvider: FactoryProvider<UpdateTodoItem> = {
-  provide: UpdateTodoItem,
+export const updateTodoItemProvider: FactoryProvider<UpdateTodoItemUseCase> = {
+  provide: UpdateTodoItemUseCase,
   inject: [TODO_REPOSITORY, TODO_READ_REPOSITORY, UNIT_OF_WORK, MUTATION_LOCK, TODO_CACHE],
   useFactory: (
-    todoRepository: ConstructorParameters<typeof UpdateTodoItem>[0]["todoRepository"],
-    todoReadRepository: ConstructorParameters<typeof UpdateTodoItem>[0]["todoReadRepository"],
-    unitOfWork: ConstructorParameters<typeof UpdateTodoItem>[0]["unitOfWork"],
-    mutationLock: ConstructorParameters<typeof UpdateTodoItem>[0]["mutationLock"],
-    todoCache: ConstructorParameters<typeof UpdateTodoItem>[0]["todoCache"],
+    todoRepository: ConstructorParameters<typeof UpdateTodoItemUseCase>[0]["todoRepository"],
+    todoReadRepository: ConstructorParameters<
+      typeof UpdateTodoItemUseCase
+    >[0]["todoReadRepository"],
+    unitOfWork: ConstructorParameters<typeof UpdateTodoItemUseCase>[0]["unitOfWork"],
+    mutationLock: ConstructorParameters<typeof UpdateTodoItemUseCase>[0]["mutationLock"],
+    todoCache: ConstructorParameters<typeof UpdateTodoItemUseCase>[0]["todoCache"],
   ) =>
-    new UpdateTodoItem({
+    new UpdateTodoItemUseCase({
       todoRepository,
       todoReadRepository,
       unitOfWork,
       mutationLock,
       todoCache,
-      logger: new Logger(UpdateTodoItem.name),
+      logger: new Logger(UpdateTodoItemUseCase.name),
     }),
 };
 
-export const updateTodoScheduleProvider: FactoryProvider<UpdateTodoSchedule> = {
-  provide: UpdateTodoSchedule,
+export const updateTodoScheduleProvider: FactoryProvider<UpdateTodoScheduleUseCase> = {
+  provide: UpdateTodoScheduleUseCase,
   inject: [
     TODO_REPOSITORY,
     TODO_READ_REPOSITORY,
@@ -662,18 +724,22 @@ export const updateTodoScheduleProvider: FactoryProvider<UpdateTodoSchedule> = {
     MUTATION_LOCK,
     TODO_CACHE,
     DOMAIN_EVENT_PUBLISHER,
-    TodoTimezoneResolver,
+    ResolveTodoTimezoneUseCase,
   ],
   useFactory: (
-    todoRepository: ConstructorParameters<typeof UpdateTodoSchedule>[0]["todoRepository"],
-    todoReadRepository: ConstructorParameters<typeof UpdateTodoSchedule>[0]["todoReadRepository"],
-    unitOfWork: ConstructorParameters<typeof UpdateTodoSchedule>[0]["unitOfWork"],
-    mutationLock: ConstructorParameters<typeof UpdateTodoSchedule>[0]["mutationLock"],
-    todoCache: ConstructorParameters<typeof UpdateTodoSchedule>[0]["todoCache"],
-    eventPublisher: ConstructorParameters<typeof UpdateTodoSchedule>[0]["eventPublisher"],
-    timezoneResolver: ConstructorParameters<typeof UpdateTodoSchedule>[0]["timezoneResolver"],
+    todoRepository: ConstructorParameters<typeof UpdateTodoScheduleUseCase>[0]["todoRepository"],
+    todoReadRepository: ConstructorParameters<
+      typeof UpdateTodoScheduleUseCase
+    >[0]["todoReadRepository"],
+    unitOfWork: ConstructorParameters<typeof UpdateTodoScheduleUseCase>[0]["unitOfWork"],
+    mutationLock: ConstructorParameters<typeof UpdateTodoScheduleUseCase>[0]["mutationLock"],
+    todoCache: ConstructorParameters<typeof UpdateTodoScheduleUseCase>[0]["todoCache"],
+    eventPublisher: ConstructorParameters<typeof UpdateTodoScheduleUseCase>[0]["eventPublisher"],
+    timezoneResolver: ConstructorParameters<
+      typeof UpdateTodoScheduleUseCase
+    >[0]["timezoneResolver"],
   ) =>
-    new UpdateTodoSchedule({
+    new UpdateTodoScheduleUseCase({
       todoRepository,
       todoReadRepository,
       unitOfWork,
@@ -681,12 +747,12 @@ export const updateTodoScheduleProvider: FactoryProvider<UpdateTodoSchedule> = {
       todoCache,
       eventPublisher,
       timezoneResolver,
-      logger: new Logger(UpdateTodoSchedule.name),
+      logger: new Logger(UpdateTodoScheduleUseCase.name),
     }),
 };
 
-export const updateTodoTitleProvider: FactoryProvider<UpdateTodoTitle> = {
-  provide: UpdateTodoTitle,
+export const updateTodoTitleProvider: FactoryProvider<UpdateTodoTitleUseCase> = {
+  provide: UpdateTodoTitleUseCase,
   inject: [
     TODO_REPOSITORY,
     TODO_READ_REPOSITORY,
@@ -696,26 +762,28 @@ export const updateTodoTitleProvider: FactoryProvider<UpdateTodoTitle> = {
     DOMAIN_EVENT_PUBLISHER,
   ],
   useFactory: (
-    todoRepository: ConstructorParameters<typeof UpdateTodoTitle>[0]["todoRepository"],
-    todoReadRepository: ConstructorParameters<typeof UpdateTodoTitle>[0]["todoReadRepository"],
-    unitOfWork: ConstructorParameters<typeof UpdateTodoTitle>[0]["unitOfWork"],
-    mutationLock: ConstructorParameters<typeof UpdateTodoTitle>[0]["mutationLock"],
-    todoCache: ConstructorParameters<typeof UpdateTodoTitle>[0]["todoCache"],
-    eventPublisher: ConstructorParameters<typeof UpdateTodoTitle>[0]["eventPublisher"],
+    todoRepository: ConstructorParameters<typeof UpdateTodoTitleUseCase>[0]["todoRepository"],
+    todoReadRepository: ConstructorParameters<
+      typeof UpdateTodoTitleUseCase
+    >[0]["todoReadRepository"],
+    unitOfWork: ConstructorParameters<typeof UpdateTodoTitleUseCase>[0]["unitOfWork"],
+    mutationLock: ConstructorParameters<typeof UpdateTodoTitleUseCase>[0]["mutationLock"],
+    todoCache: ConstructorParameters<typeof UpdateTodoTitleUseCase>[0]["todoCache"],
+    eventPublisher: ConstructorParameters<typeof UpdateTodoTitleUseCase>[0]["eventPublisher"],
   ) =>
-    new UpdateTodoTitle({
+    new UpdateTodoTitleUseCase({
       todoRepository,
       todoReadRepository,
       unitOfWork,
       mutationLock,
       todoCache,
       eventPublisher,
-      logger: new Logger(UpdateTodoTitle.name),
+      logger: new Logger(UpdateTodoTitleUseCase.name),
     }),
 };
 
-export const updateTodoVisibilityProvider: FactoryProvider<UpdateTodoVisibility> = {
-  provide: UpdateTodoVisibility,
+export const updateTodoVisibilityProvider: FactoryProvider<UpdateTodoVisibilityUseCase> = {
+  provide: UpdateTodoVisibilityUseCase,
   inject: [
     TODO_REPOSITORY,
     TODO_READ_REPOSITORY,
@@ -725,20 +793,22 @@ export const updateTodoVisibilityProvider: FactoryProvider<UpdateTodoVisibility>
     DOMAIN_EVENT_PUBLISHER,
   ],
   useFactory: (
-    todoRepository: ConstructorParameters<typeof UpdateTodoVisibility>[0]["todoRepository"],
-    todoReadRepository: ConstructorParameters<typeof UpdateTodoVisibility>[0]["todoReadRepository"],
-    unitOfWork: ConstructorParameters<typeof UpdateTodoVisibility>[0]["unitOfWork"],
-    mutationLock: ConstructorParameters<typeof UpdateTodoVisibility>[0]["mutationLock"],
-    todoCache: ConstructorParameters<typeof UpdateTodoVisibility>[0]["todoCache"],
-    eventPublisher: ConstructorParameters<typeof UpdateTodoVisibility>[0]["eventPublisher"],
+    todoRepository: ConstructorParameters<typeof UpdateTodoVisibilityUseCase>[0]["todoRepository"],
+    todoReadRepository: ConstructorParameters<
+      typeof UpdateTodoVisibilityUseCase
+    >[0]["todoReadRepository"],
+    unitOfWork: ConstructorParameters<typeof UpdateTodoVisibilityUseCase>[0]["unitOfWork"],
+    mutationLock: ConstructorParameters<typeof UpdateTodoVisibilityUseCase>[0]["mutationLock"],
+    todoCache: ConstructorParameters<typeof UpdateTodoVisibilityUseCase>[0]["todoCache"],
+    eventPublisher: ConstructorParameters<typeof UpdateTodoVisibilityUseCase>[0]["eventPublisher"],
   ) =>
-    new UpdateTodoVisibility({
+    new UpdateTodoVisibilityUseCase({
       todoRepository,
       todoReadRepository,
       unitOfWork,
       mutationLock,
       todoCache,
       eventPublisher,
-      logger: new Logger(UpdateTodoVisibility.name),
+      logger: new Logger(UpdateTodoVisibilityUseCase.name),
     }),
 };

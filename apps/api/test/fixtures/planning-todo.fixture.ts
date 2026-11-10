@@ -1,10 +1,10 @@
 import type { Todo as TodoResponse } from "@aido/api";
 import { mock } from "vitest-mock-extended";
 
-import { TodoOccurrenceMaterializer } from "#api/modules/planning/todo-series/application/use-cases/materialize-todo-occurrences.use-case";
-import { TodoSeriesEditEffects } from "#api/modules/planning/todo-series/application/use-cases/publish-todo-series-edit.use-case";
+import { MaterializeTodoOccurrencesUseCase } from "#api/modules/planning/todo-series/application/use-cases/materialize-todo-occurrences.use-case";
+import { PublishTodoSeriesEditUseCase } from "#api/modules/planning/todo-series/application/use-cases/publish-todo-series-edit.use-case";
 import type { TodoSeries } from "#api/modules/planning/todo-series/domain/todo-series.aggregate";
-import { TodoTimezoneResolver } from "#api/modules/planning/todos/application/use-cases/resolve-todo-timezone.use-case";
+import { ResolveTodoTimezoneUseCase } from "#api/modules/planning/todos/application/use-cases/resolve-todo-timezone.use-case";
 import { PaginationService } from "#api/shared/application/pagination/index";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { TodoBuilder } from "#test/builders/index";
@@ -51,8 +51,11 @@ export function createPlanningTodoFixture(
   const todoSeriesRepository = new StubPlanningTodoSeriesRepository(seriesStore);
   const seriesOwner = new StubPlanningTodoSeriesOwner();
   const todoReminder = new StubPlanningTodoReminder();
-  const occurrenceMaterializer = new TodoOccurrenceMaterializer({ todoRepository, todoReminder });
-  const seriesEffects = new TodoSeriesEditEffects({
+  const occurrenceMaterializer = new MaterializeTodoOccurrencesUseCase({
+    todoRepository,
+    todoReminder,
+  });
+  const seriesEffects = new PublishTodoSeriesEditUseCase({
     todoCache,
     eventPublisher,
     logger,
@@ -61,9 +64,9 @@ export function createPlanningTodoFixture(
   const categoryOwnership = createCategoryOwnershipStub(categories, categoryOwners);
   const unitOfWork = createUnitOfWorkMock();
   const ownerTimezone = new StubPlanningTodoOwnerTimezone(new Map([[userId, "Asia/Seoul"]]));
-  const timezoneResolver = new TodoTimezoneResolver({ ownerTimezone });
+  const timezoneResolver = new ResolveTodoTimezoneUseCase({ ownerTimezone });
   const paginationService = new PaginationService();
-  const seriesCatchUp = { ensureCaughtUp: async (_userId: string) => undefined };
+  const seriesCatchUp = { execute: async (_userId: string) => undefined };
   const friendIds = new Set<string>();
   const friendPort = {
     async isMutualFriend(_userId: string, friendUserId: string) {

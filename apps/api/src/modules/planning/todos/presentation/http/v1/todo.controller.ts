@@ -37,24 +37,24 @@ import { parseDateOnly } from "#api/shared/domain/date/utils/parse";
 import { todayInTimezone } from "#api/shared/domain/date/utils/timezone";
 import { DomainException } from "#api/shared/domain/index";
 
-import { AddTodoItem } from "../../../application/use-cases/add-todo-item.use-case.js";
-import { ChangeTodoCategory } from "../../../application/use-cases/change-todo-category.use-case.js";
-import { CreateTodo } from "../../../application/use-cases/create-todo.use-case.js";
-import { DeleteTodoItem } from "../../../application/use-cases/delete-todo-item.use-case.js";
-import { DeleteTodo } from "../../../application/use-cases/delete-todo.use-case.js";
-import { EditTodo } from "../../../application/use-cases/edit-todo.use-case.js";
-import { GetFriendTodos } from "../../../application/use-cases/get-friend-todos.use-case.js";
-import { GetTodoById } from "../../../application/use-cases/get-todo-by-id.use-case.js";
-import { GetTodoResourceLimit } from "../../../application/use-cases/get-todo-resource-limit.use-case.js";
-import { GetTodoSummary } from "../../../application/use-cases/get-todo-summary.use-case.js";
-import { GetTodos } from "../../../application/use-cases/get-todos.use-case.js";
-import { ReorderTodoItems } from "../../../application/use-cases/reorder-todo-items.use-case.js";
-import { ReorderTodo } from "../../../application/use-cases/reorder-todo.use-case.js";
-import { ToggleTodoComplete } from "../../../application/use-cases/toggle-todo-complete.use-case.js";
-import { UpdateTodoItem } from "../../../application/use-cases/update-todo-item.use-case.js";
-import { UpdateTodoSchedule } from "../../../application/use-cases/update-todo-schedule.use-case.js";
-import { UpdateTodoTitle } from "../../../application/use-cases/update-todo-title.use-case.js";
-import { UpdateTodoVisibility } from "../../../application/use-cases/update-todo-visibility.use-case.js";
+import { AddTodoItemUseCase } from "../../../application/use-cases/add-todo-item.use-case.js";
+import { ChangeTodoCategoryUseCase } from "../../../application/use-cases/change-todo-category.use-case.js";
+import { CreateTodoUseCase } from "../../../application/use-cases/create-todo.use-case.js";
+import { DeleteTodoItemUseCase } from "../../../application/use-cases/delete-todo-item.use-case.js";
+import { DeleteTodoUseCase } from "../../../application/use-cases/delete-todo.use-case.js";
+import { EditTodoUseCase } from "../../../application/use-cases/edit-todo.use-case.js";
+import { GetTodoResourceLimitUseCase } from "../../../application/use-cases/get-todo-resource-limit.use-case.js";
+import { GetTodoSummaryUseCase } from "../../../application/use-cases/get-todo-summary.use-case.js";
+import { GetTodoUseCase } from "../../../application/use-cases/get-todo.use-case.js";
+import { ListFriendTodosUseCase } from "../../../application/use-cases/list-friend-todos.use-case.js";
+import { ListTodosUseCase } from "../../../application/use-cases/list-todos.use-case.js";
+import { ReorderTodoItemsUseCase } from "../../../application/use-cases/reorder-todo-items.use-case.js";
+import { ReorderTodoUseCase } from "../../../application/use-cases/reorder-todo.use-case.js";
+import { SetTodoCompletedUseCase } from "../../../application/use-cases/set-todo-completed.use-case.js";
+import { UpdateTodoItemUseCase } from "../../../application/use-cases/update-todo-item.use-case.js";
+import { UpdateTodoScheduleUseCase } from "../../../application/use-cases/update-todo-schedule.use-case.js";
+import { UpdateTodoTitleUseCase } from "../../../application/use-cases/update-todo-title.use-case.js";
+import { UpdateTodoVisibilityUseCase } from "../../../application/use-cases/update-todo-visibility.use-case.js";
 import {
   ChangeTodoCategoryDto,
   CreateRecurringTodoDto,
@@ -91,44 +91,44 @@ import {
 @ApiBearerAuth()
 @Controller("todos")
 export class TodoController {
-  readonly #getTodoResourceLimitUseCase: GetTodoResourceLimit;
-  readonly #getTodoSummaryUseCase: GetTodoSummary;
-  readonly #getTodosUseCase: GetTodos;
-  readonly #getTodoByIdUseCase: GetTodoById;
-  readonly #getFriendTodosUseCase: GetFriendTodos;
-  readonly #createTodoUseCase: CreateTodo;
-  readonly #editTodoUseCase: EditTodo;
-  readonly #toggleTodoCompleteUseCase: ToggleTodoComplete;
-  readonly #updateTodoVisibilityUseCase: UpdateTodoVisibility;
-  readonly #changeTodoCategoryUseCase: ChangeTodoCategory;
-  readonly #updateTodoScheduleUseCase: UpdateTodoSchedule;
-  readonly #updateTodoTitleUseCase: UpdateTodoTitle;
-  readonly #reorderTodoUseCase: ReorderTodo;
-  readonly #deleteTodoUseCase: DeleteTodo;
-  readonly #addTodoItemUseCase: AddTodoItem;
-  readonly #reorderTodoItemsUseCase: ReorderTodoItems;
-  readonly #updateTodoItemUseCase: UpdateTodoItem;
-  readonly #deleteTodoItemUseCase: DeleteTodoItem;
+  readonly #getTodoResourceLimitUseCase: GetTodoResourceLimitUseCase;
+  readonly #getTodoSummaryUseCase: GetTodoSummaryUseCase;
+  readonly #getTodosUseCase: ListTodosUseCase;
+  readonly #getTodoByIdUseCase: GetTodoUseCase;
+  readonly #getFriendTodosUseCase: ListFriendTodosUseCase;
+  readonly #createTodoUseCase: CreateTodoUseCase;
+  readonly #editTodoUseCase: EditTodoUseCase;
+  readonly #toggleTodoCompleteUseCase: SetTodoCompletedUseCase;
+  readonly #updateTodoVisibilityUseCase: UpdateTodoVisibilityUseCase;
+  readonly #changeTodoCategoryUseCase: ChangeTodoCategoryUseCase;
+  readonly #updateTodoScheduleUseCase: UpdateTodoScheduleUseCase;
+  readonly #updateTodoTitleUseCase: UpdateTodoTitleUseCase;
+  readonly #reorderTodoUseCase: ReorderTodoUseCase;
+  readonly #deleteTodoUseCase: DeleteTodoUseCase;
+  readonly #addTodoItemUseCase: AddTodoItemUseCase;
+  readonly #reorderTodoItemsUseCase: ReorderTodoItemsUseCase;
+  readonly #updateTodoItemUseCase: UpdateTodoItemUseCase;
+  readonly #deleteTodoItemUseCase: DeleteTodoItemUseCase;
 
   constructor(
-    getTodoResourceLimitUseCase: GetTodoResourceLimit,
-    getTodoSummaryUseCase: GetTodoSummary,
-    getTodosUseCase: GetTodos,
-    getTodoByIdUseCase: GetTodoById,
-    getFriendTodosUseCase: GetFriendTodos,
-    createTodoUseCase: CreateTodo,
-    editTodoUseCase: EditTodo,
-    toggleTodoCompleteUseCase: ToggleTodoComplete,
-    updateTodoVisibilityUseCase: UpdateTodoVisibility,
-    changeTodoCategoryUseCase: ChangeTodoCategory,
-    updateTodoScheduleUseCase: UpdateTodoSchedule,
-    updateTodoTitleUseCase: UpdateTodoTitle,
-    reorderTodoUseCase: ReorderTodo,
-    deleteTodoUseCase: DeleteTodo,
-    addTodoItemUseCase: AddTodoItem,
-    reorderTodoItemsUseCase: ReorderTodoItems,
-    updateTodoItemUseCase: UpdateTodoItem,
-    deleteTodoItemUseCase: DeleteTodoItem,
+    getTodoResourceLimitUseCase: GetTodoResourceLimitUseCase,
+    getTodoSummaryUseCase: GetTodoSummaryUseCase,
+    getTodosUseCase: ListTodosUseCase,
+    getTodoByIdUseCase: GetTodoUseCase,
+    getFriendTodosUseCase: ListFriendTodosUseCase,
+    createTodoUseCase: CreateTodoUseCase,
+    editTodoUseCase: EditTodoUseCase,
+    toggleTodoCompleteUseCase: SetTodoCompletedUseCase,
+    updateTodoVisibilityUseCase: UpdateTodoVisibilityUseCase,
+    changeTodoCategoryUseCase: ChangeTodoCategoryUseCase,
+    updateTodoScheduleUseCase: UpdateTodoScheduleUseCase,
+    updateTodoTitleUseCase: UpdateTodoTitleUseCase,
+    reorderTodoUseCase: ReorderTodoUseCase,
+    deleteTodoUseCase: DeleteTodoUseCase,
+    addTodoItemUseCase: AddTodoItemUseCase,
+    reorderTodoItemsUseCase: ReorderTodoItemsUseCase,
+    updateTodoItemUseCase: UpdateTodoItemUseCase,
+    deleteTodoItemUseCase: DeleteTodoItemUseCase,
   ) {
     this.#getTodoResourceLimitUseCase = getTodoResourceLimitUseCase;
     this.#getTodoSummaryUseCase = getTodoSummaryUseCase;

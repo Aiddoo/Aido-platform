@@ -30,8 +30,8 @@ import {
 import { TODO_REMINDER } from "./application/ports/todo-reminder-scheduler.port.js";
 import { TODO_VIEW_CACHE_INVALIDATOR } from "./application/ports/todo-view-cache-invalidator.port.js";
 import { TODO_REPOSITORY } from "./application/ports/todo.repository.port.js";
-import { TodoViewCacheInvalidator } from "./application/use-cases/invalidate-todo-view-cache.use-case.js";
-import { StagedTodoCreator } from "./application/use-cases/stage-todo-creation.use-case.js";
+import { InvalidateTodoViewCacheUseCase } from "./application/use-cases/invalidate-todo-view-cache.use-case.js";
+import { StageTodoCreationUseCase } from "./application/use-cases/stage-todo-creation.use-case.js";
 import { CategoryOwnershipAdapter } from "./infrastructure/adapters/category-ownership.adapter.js";
 import { FriendAdapter } from "./infrastructure/adapters/friend.adapter.js";
 import { StreakAdapter } from "./infrastructure/adapters/streak.adapter.js";
@@ -71,17 +71,17 @@ import { TodoController } from "./presentation/http/v1/todo.controller.js";
     { provide: TODO_REMINDER, useClass: TodoReminderAdapter },
     { provide: TODO_OWNER_TIMEZONE, useClass: TodoOwnerTimezoneAdapter },
     ...TODO_PROVIDERS,
-    { provide: STAGED_TODO_CREATOR, useExisting: StagedTodoCreator },
-    { provide: StagedTodoCreatorPort, useExisting: StagedTodoCreator },
+    { provide: STAGED_TODO_CREATOR, useExisting: StageTodoCreationUseCase },
+    { provide: StagedTodoCreatorPort, useExisting: StageTodoCreationUseCase },
     {
-      provide: TodoViewCacheInvalidator,
+      provide: InvalidateTodoViewCacheUseCase,
       inject: [TODO_READ_REPOSITORY, TODO_CACHE],
       useFactory: (readRepository: TodoReadRepositoryPort, cache: TodoCachePort) =>
-        new TodoViewCacheInvalidator({ todoReadRepository: readRepository, cache }),
+        new InvalidateTodoViewCacheUseCase({ todoReadRepository: readRepository, cache }),
     },
     {
       provide: TODO_VIEW_CACHE_INVALIDATOR,
-      useExisting: TodoViewCacheInvalidator,
+      useExisting: InvalidateTodoViewCacheUseCase,
     },
   ],
   exports: [

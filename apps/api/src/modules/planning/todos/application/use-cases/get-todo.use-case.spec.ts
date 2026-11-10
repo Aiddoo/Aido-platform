@@ -7,16 +7,16 @@ import {
   PLANNING_TIME,
 } from "#test/fixtures/planning-todo.fixture";
 
-import { GetTodoById } from "./get-todo-by-id.use-case.js";
+import { GetTodoUseCase } from "./get-todo.use-case.js";
 
 describe("할 일 상세 조회", () => {
   let fixture: ReturnType<typeof createPlanningTodoFixture>;
-  let useCase: GetTodoById;
+  let useCase: GetTodoUseCase;
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(PLANNING_TIME);
     fixture = createPlanningTodoFixture({ todos: [createPlanningTodo()] });
-    useCase = new GetTodoById(fixture);
+    useCase = new GetTodoUseCase(fixture);
   });
   afterEach(() => {
     vi.useRealTimers();

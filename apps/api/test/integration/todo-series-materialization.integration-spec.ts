@@ -11,10 +11,10 @@ import type {
   EntitlementReaderPort,
 } from "#api/modules/access/access-entitlement.public";
 import { DrizzleUserRepository } from "#api/modules/identity/users/infrastructure/persistence/drizzle-user.repository";
-import { MaterializeDueTodoSeries } from "#api/modules/planning/todo-series/application/use-cases/materialize-due-todo-series.use-case";
-import { TodoOccurrenceMaterializer } from "#api/modules/planning/todo-series/application/use-cases/materialize-todo-occurrences.use-case";
-import { TodoSeriesDueRunner } from "#api/modules/planning/todo-series/application/use-cases/materialize-todo-series.use-case";
-import type { TodoCreationEffects } from "#api/modules/planning/todo-series/application/use-cases/publish-todo-creation.use-case";
+import { MaterializeDueTodoSeriesUseCase } from "#api/modules/planning/todo-series/application/use-cases/materialize-due-todo-series.use-case";
+import { MaterializeTodoOccurrencesUseCase } from "#api/modules/planning/todo-series/application/use-cases/materialize-todo-occurrences.use-case";
+import { MaterializeTodoSeriesUseCase } from "#api/modules/planning/todo-series/application/use-cases/materialize-todo-series.use-case";
+import type { PublishTodoCreationUseCase } from "#api/modules/planning/todo-series/application/use-cases/publish-todo-creation.use-case";
 import { RepeatRule } from "#api/modules/planning/todo-series/domain/repeat-rule.vo";
 import { TodoSeries } from "#api/modules/planning/todo-series/domain/todo-series.aggregate";
 import { TodoSeriesOwnerAdapter } from "#api/modules/planning/todo-series/infrastructure/adapters/todo-series-owner.adapter";
@@ -86,7 +86,7 @@ describe("회차 채우기 작업 (실제 PostgreSQL)", () => {
   ) {
     const { scheduleReminders = async () => undefined, ...budget } = overrides;
     const todoRepository = new DrizzleTodoRepository(fixture.txHost);
-    const effects = mock<Pick<TodoCreationEffects, "publishOccurrences">>();
+    const effects = mock<Pick<PublishTodoCreationUseCase, "publishOccurrences">>();
     effects.publishOccurrences.mockImplementation(async (series, occurrences) => {
       published.push({
         seriesId: series.getId(),
@@ -96,15 +96,15 @@ describe("회차 채우기 작업 (실제 PostgreSQL)", () => {
     const seriesRepository = new DrizzleTodoSeriesRepository(fixture.txHost);
     const entitlements = mock<EntitlementReaderPort>();
     entitlements.getAccessSnapshot.mockResolvedValue(mock<AccessSnapshot>({ tier: "FREE" }));
-    return new MaterializeDueTodoSeries({
+    return new MaterializeDueTodoSeriesUseCase({
       seriesRepository,
       seriesOwner: new TodoSeriesOwnerAdapter(
         new DrizzleUserRepository(fixture.txHost),
         entitlements,
       ),
-      dueRunner: new TodoSeriesDueRunner({
+      dueRunner: new MaterializeTodoSeriesUseCase({
         seriesRepository,
-        materializer: new TodoOccurrenceMaterializer({
+        materializer: new MaterializeTodoOccurrencesUseCase({
           todoRepository,
           todoReminder: { scheduleReminders },
         }),

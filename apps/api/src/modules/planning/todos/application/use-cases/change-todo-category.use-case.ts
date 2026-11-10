@@ -15,7 +15,7 @@ import { type CategoryOwnershipPort } from "../ports/category-ownership.port.js"
 import { type TodoCachePort } from "../ports/todo-cache.port.js";
 import { type TodoReadRepositoryPort } from "../ports/todo-read.repository.port.js";
 import { type TodoRepositoryPort } from "../ports/todo.repository.port.js";
-import { PlanningTodoLogEvent } from "../todos.log-events.js";
+import { TodoLogEvent } from "../todos.log-events.js";
 
 export interface ChangeTodoCategoryInput {
   readonly id: number;
@@ -37,7 +37,7 @@ interface ChangeTodoCategoryDependencies {
   readonly logger: ApplicationLoggerPort;
 }
 
-export class ChangeTodoCategory {
+export class ChangeTodoCategoryUseCase {
   readonly #dependencies: ChangeTodoCategoryDependencies;
 
   constructor(dependencies: ChangeTodoCategoryDependencies) {
@@ -85,7 +85,7 @@ export class ChangeTodoCategory {
     await this.#dependencies.todoCache.invalidateFriendTodos(userId);
 
     this.#dependencies.logger.log({
-      event: PlanningTodoLogEvent.CATEGORY_CHANGED,
+      event: TodoLogEvent.CATEGORY_CHANGED,
       todoId: id,
       userId,
       categoryId,

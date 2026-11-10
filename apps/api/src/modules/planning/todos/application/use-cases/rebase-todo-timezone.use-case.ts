@@ -13,7 +13,7 @@ import type { TodoCachePort } from "../ports/todo-cache.port.js";
 import type { TodoOwnerTimezonePort } from "../ports/todo-owner-timezone.port.js";
 import type { TodoReminderPort } from "../ports/todo-reminder-scheduler.port.js";
 import type { RebaseCandidate, TodoRepositoryPort } from "../ports/todo.repository.port.js";
-import { PlanningTodoLogEvent } from "../todos.log-events.js";
+import { TodoLogEvent } from "../todos.log-events.js";
 
 export const TODO_TIMEZONE_REBASE_BUDGET = {
   /** 한 트랜잭션에 잡는 할 일 수. 사용자 잠금을 짧게 쥐어 앱 요청을 오래 막지 않는다. */
@@ -59,7 +59,7 @@ interface RebaseTodoTimezoneDependencies {
  * pg-boss는 at-least-once라 중간 실패 뒤 재시도도 남은 행만 바꾼다. 묶음마다 최신 시간대를 다시 읽어
  * 시간대가 또 바뀌었으면 멈춘다. 그 변경이 등록한 다음 작업이 끝까지 다시 계산한다.
  */
-export class RebaseTodoTimezone {
+export class RebaseTodoTimezoneUseCase {
   readonly #dependencies: RebaseTodoTimezoneDependencies;
 
   constructor(dependencies: RebaseTodoTimezoneDependencies) {
@@ -79,7 +79,7 @@ export class RebaseTodoTimezone {
       await this.#dependencies.todoCache.invalidateFriendTodos(userId);
     }
     this.#dependencies.logger.log({
-      event: PlanningTodoLogEvent.TIMEZONE_REBASED,
+      event: TodoLogEvent.TIMEZONE_REBASED,
       userId,
       timezone,
       durationMs: Date.now() - startedAt,

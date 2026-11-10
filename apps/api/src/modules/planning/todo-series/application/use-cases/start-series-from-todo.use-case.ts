@@ -18,8 +18,8 @@ import type {
 import { RepeatRule } from "../../domain/repeat-rule.vo.js";
 import { TodoSeries } from "../../domain/todo-series.aggregate.js";
 import type { TodoSeriesRepositoryPort } from "../ports/todo-series.repository.port.js";
-import type { TodoOccurrenceMaterializer } from "./materialize-todo-occurrences.use-case.js";
-import type { TodoCreationEffects } from "./publish-todo-creation.use-case.js";
+import type { MaterializeTodoOccurrencesUseCase } from "./materialize-todo-occurrences.use-case.js";
+import type { PublishTodoCreationUseCase } from "./publish-todo-creation.use-case.js";
 
 export interface StartSeriesFromTodoInput {
   readonly todoId: number;
@@ -36,14 +36,14 @@ export interface StartedSeriesFromTodo {
 interface StartSeriesFromTodoDependencies {
   readonly todoRepository: Pick<TodoRepositoryPort, "findByIdAndUserId" | "attachToSeries">;
   readonly seriesRepository: Pick<TodoSeriesRepositoryPort, "countActiveByUserId" | "insert">;
-  readonly materializer: Pick<TodoOccurrenceMaterializer, "planFirstRun" | "persist">;
+  readonly materializer: Pick<MaterializeTodoOccurrencesUseCase, "planFirstRun" | "persist">;
   readonly todoReminder: Pick<TodoReminderPort, "cancelReminders" | "scheduleReminders">;
-  readonly effects: Pick<TodoCreationEffects, "publishSeriesStarted">;
+  readonly effects: Pick<PublishTodoCreationUseCase, "publishSeriesStarted">;
   readonly mutationLock: MutationLockPort;
 }
 
 /** 단일 할 일에 반복을 더한다. 그 할 일이 첫 회차가 되어 id·댓글·진행을 유지한다. */
-export class StartSeriesFromTodo {
+export class StartSeriesFromTodoUseCase {
   readonly #dependencies: StartSeriesFromTodoDependencies;
 
   constructor(dependencies: StartSeriesFromTodoDependencies) {

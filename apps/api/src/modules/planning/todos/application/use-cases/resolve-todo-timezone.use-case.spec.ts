@@ -1,8 +1,11 @@
-import { TodoTimezoneResolver } from "./resolve-todo-timezone.use-case.js";
+import { ResolveTodoTimezoneUseCase } from "./resolve-todo-timezone.use-case.js";
 
 function resolverWith(stored: string | null) {
   const findTimezone = vi.fn(async () => stored);
-  return { resolver: new TodoTimezoneResolver({ ownerTimezone: { findTimezone } }), findTimezone };
+  return {
+    resolver: new ResolveTodoTimezoneUseCase({ ownerTimezone: { findTimezone } }),
+    findTimezone,
+  };
 }
 
 describe("할 일 쓰기의 시간대", () => {
@@ -42,7 +45,7 @@ describe("할 일 쓰기의 시간대", () => {
     // Given
     const { resolver } = resolverWith(stored);
     // When
-    const timezone = await resolver.resolve("user", requested);
+    const timezone = await resolver.execute("user", requested);
     // Then
     expect(timezone).toBe(resolved);
   });
@@ -51,7 +54,7 @@ describe("할 일 쓰기의 시간대", () => {
     // Given
     const { resolver, findTimezone } = resolverWith("Asia/Seoul");
     // When
-    await resolver.resolve("user", "Asia/Seoul");
+    await resolver.execute("user", "Asia/Seoul");
     // Then
     expect(findTimezone).not.toHaveBeenCalled();
   });

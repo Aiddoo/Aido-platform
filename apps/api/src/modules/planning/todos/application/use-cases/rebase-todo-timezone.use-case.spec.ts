@@ -8,7 +8,7 @@ import {
 
 import { RepeatRule } from "../../../todo-series/domain/repeat-rule.vo.js";
 import { TodoSeries } from "../../../todo-series/domain/todo-series.aggregate.js";
-import { RebaseTodoTimezone } from "./rebase-todo-timezone.use-case.js";
+import { RebaseTodoTimezoneUseCase } from "./rebase-todo-timezone.use-case.js";
 
 const NOW = new Date("2026-11-05T12:00:00.000Z");
 const SEOUL = "Asia/Seoul";
@@ -30,7 +30,7 @@ describe("시간대 재계산", () => {
   const setUp = (todos: ReturnType<typeof timedTodo>[], timezone: string, batchSize?: number) => {
     fixture = createPlanningTodoFixture({ todos });
     fixture.ownerTimezone.timezones.set(fixture.userId, timezone);
-    return new RebaseTodoTimezone({ ...fixture, batchSize });
+    return new RebaseTodoTimezoneUseCase({ ...fixture, batchSize });
   };
   const readInstant = (id: number) => fixture.records.get(id)?.scheduledTime?.toISOString();
 

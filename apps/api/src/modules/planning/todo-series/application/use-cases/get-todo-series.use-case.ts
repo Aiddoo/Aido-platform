@@ -15,7 +15,7 @@ interface GetTodoSeriesDependencies {
   readonly seriesRepository: Pick<TodoSeriesRepositoryPort, "findByIdAndUserId">;
 }
 
-export class GetTodoSeries {
+export class GetTodoSeriesUseCase {
   readonly #dependencies: GetTodoSeriesDependencies;
 
   constructor(dependencies: GetTodoSeriesDependencies) {

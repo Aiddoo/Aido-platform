@@ -9,12 +9,12 @@ import { RefreshPushTimezoneUseCase } from "#api/modules/identity/preferences/ap
 import { DrizzleUserPreferenceRepository } from "#api/modules/identity/preferences/infrastructure/persistence/drizzle-user-preference.repository";
 import { TODO_REMINDER_QUEUE } from "#api/modules/notification/infrastructure/jobs/reminders/todo-reminder-queue.constants";
 import { TodoReminderSchedulerAdapter } from "#api/modules/notification/infrastructure/jobs/reminders/todo-reminder-scheduler.adapter";
-import { MaterializeDueTodoSeries } from "#api/modules/planning/todo-series/application/use-cases/materialize-due-todo-series.use-case";
-import { TodoSeriesDueRunner } from "#api/modules/planning/todo-series/application/use-cases/materialize-todo-series.use-case";
+import { MaterializeDueTodoSeriesUseCase } from "#api/modules/planning/todo-series/application/use-cases/materialize-due-todo-series.use-case";
+import { MaterializeTodoSeriesUseCase } from "#api/modules/planning/todo-series/application/use-cases/materialize-todo-series.use-case";
 import { DrizzleTodoSeriesRepository } from "#api/modules/planning/todo-series/infrastructure/persistence/drizzle-todo-series.repository";
-import { CreateTodo } from "#api/modules/planning/todos/application/use-cases/create-todo.use-case";
-import { EditTodo } from "#api/modules/planning/todos/application/use-cases/edit-todo.use-case";
-import { RebaseTodoTimezone } from "#api/modules/planning/todos/application/use-cases/rebase-todo-timezone.use-case";
+import { CreateTodoUseCase } from "#api/modules/planning/todos/application/use-cases/create-todo.use-case";
+import { EditTodoUseCase } from "#api/modules/planning/todos/application/use-cases/edit-todo.use-case";
+import { RebaseTodoTimezoneUseCase } from "#api/modules/planning/todos/application/use-cases/rebase-todo-timezone.use-case";
 import { TodoReminderAdapter } from "#api/modules/planning/todos/infrastructure/adapters/todo-reminder-scheduler.adapter";
 import { TodoTimezoneRebaseQueueService } from "#api/modules/planning/todos/infrastructure/jobs/todo-timezone-rebase-enqueuer.adapter";
 import {
@@ -65,7 +65,7 @@ describe("시간대 재계산 (실제 PostgreSQL·pg-boss)", () => {
   let client: TestDatabaseClient;
   let boss: PgBoss;
   let runtime: PgBossJobRuntimeAdapter;
-  let useCase: RebaseTodoTimezone;
+  let useCase: RebaseTodoTimezoneUseCase;
   let queue: TodoTimezoneRebaseQueueService;
   let reminderAdapter: TodoReminderAdapter;
   let userId: string;
@@ -99,7 +99,7 @@ describe("시간대 재계산 (실제 PostgreSQL·pg-boss)", () => {
     await runtime.start();
     reminderAdapter = new TodoReminderAdapter(new TodoReminderSchedulerAdapter(runtime));
     queue = new TodoTimezoneRebaseQueueService(runtime);
-    useCase = new RebaseTodoTimezone({
+    useCase = new RebaseTodoTimezoneUseCase({
       todoRepository: new DrizzleTodoRepository(transaction.txHost),
       seriesRepository: new DrizzleTodoSeriesRepository(transaction.txHost),
       ownerTimezone: {
@@ -336,7 +336,7 @@ describe("시간대 재계산 (실제 PostgreSQL·pg-boss)", () => {
     const ids = [await seedTodo(date, "10:00"), await seedTodo(date, "11:00")];
     const transaction = createDatabaseTransactionFixture(client);
     let failed = false;
-    const flaky = new RebaseTodoTimezone({
+    const flaky = new RebaseTodoTimezoneUseCase({
       todoRepository: new DrizzleTodoRepository(transaction.txHost),
       seriesRepository: new DrizzleTodoSeriesRepository(transaction.txHost),
       ownerTimezone: { findTimezone: async () => NEW_YORK },
@@ -689,7 +689,7 @@ describe("시간대 재계산 동시성 (실제 PostgreSQL 잠금)", () => {
   });
 
   async function createDailySeries(time: string) {
-    const { series, todos } = await context.module.get(CreateTodo).execute({
+    const { series, todos } = await context.module.get(CreateTodoUseCase).execute({
       userId,
       title: "회차",
       categoryId,
@@ -724,10 +724,10 @@ describe("시간대 재계산 동시성 (실제 PostgreSQL 잠금)", () => {
     const { todos } = await createDailySeries("09:00");
     await createDailySeries("18:00");
     const target = todos[3];
-    const rebase = context.module.get(RebaseTodoTimezone);
-    const edit = context.module.get(EditTodo);
-    const create = context.module.get(CreateTodo);
-    const materialize = context.module.get(MaterializeDueTodoSeries);
+    const rebase = context.module.get(RebaseTodoTimezoneUseCase);
+    const edit = context.module.get(EditTodoUseCase);
+    const create = context.module.get(CreateTodoUseCase);
+    const materialize = context.module.get(MaterializeDueTodoSeriesUseCase);
     // When
     const outcomes = await Promise.allSettled([
       rebase.execute({ userId }),
@@ -761,7 +761,7 @@ describe("시간대 재계산 동시성 (실제 PostgreSQL 잠금)", () => {
   it("단건 수정과 겹쳐도 수정한 벽시계로 계산된다", async () => {
     // Given
     const date = addDaysToDateKey(today, 2);
-    const { todos } = await context.module.get(CreateTodo).execute({
+    const { todos } = await context.module.get(CreateTodoUseCase).execute({
       userId,
       title: "단건",
       categoryId,
@@ -771,8 +771,8 @@ describe("시간대 재계산 동시성 (실제 PostgreSQL 잠금)", () => {
       isAllDay: false,
     });
     const id = todos[0]?.id ?? 0;
-    const rebase = context.module.get(RebaseTodoTimezone);
-    const edit = context.module.get(EditTodo);
+    const rebase = context.module.get(RebaseTodoTimezoneUseCase);
+    const edit = context.module.get(EditTodoUseCase);
     // When
     const outcomes = await Promise.allSettled([
       rebase.execute({ userId }),
@@ -808,8 +808,8 @@ describe("시간대 재계산 동시성 (실제 PostgreSQL 잠금)", () => {
         ),
       );
     // When
-    await context.module.get(RebaseTodoTimezone).execute({ userId });
-    await context.module.get(TodoSeriesDueRunner).materialize(
+    await context.module.get(RebaseTodoTimezoneUseCase).execute({ userId });
+    await context.module.get(MaterializeTodoSeriesUseCase).execute(
       { id: seriesId, userId },
       {
         skipLocked: false,

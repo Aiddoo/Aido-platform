@@ -6,7 +6,7 @@ import type { CursorPaginatedResponse } from "#api/shared/application/pagination
 import type { PaginationService } from "#api/shared/application/pagination/index";
 import { isAfter } from "#api/shared/domain/date/utils/compare";
 
-import type { TodoSeriesCatchUp } from "../../../todo-series/application/use-cases/catch-up-todo-series.use-case.js";
+import type { CatchUpTodoSeriesUseCase } from "../../../todo-series/application/use-cases/catch-up-todo-series.use-case.js";
 import { type TodoReadRepositoryPort } from "../ports/todo-read.repository.port.js";
 import type { FindTodosParams } from "../ports/todo-read.repository.port.js";
 
@@ -25,10 +25,10 @@ export type GetTodosInput = GetTodosParams;
 interface GetTodosDependencies {
   readonly todoReadRepository: Pick<TodoReadRepositoryPort, "findManyByUserId">;
   readonly paginationService: PaginationService;
-  readonly seriesCatchUp: Pick<TodoSeriesCatchUp, "ensureCaughtUp">;
+  readonly seriesCatchUp: Pick<CatchUpTodoSeriesUseCase, "execute">;
 }
 
-export class GetTodos {
+export class ListTodosUseCase {
   readonly #dependencies: GetTodosDependencies;
 
   constructor(dependencies: GetTodosDependencies) {
@@ -48,7 +48,7 @@ export class GetTodos {
       });
     }
 
-    await this.#dependencies.seriesCatchUp.ensureCaughtUp(input.userId);
+    await this.#dependencies.seriesCatchUp.execute(input.userId);
 
     const { cursor, size } = this.#dependencies.paginationService.normalizeCursorPagination<number>(
       {

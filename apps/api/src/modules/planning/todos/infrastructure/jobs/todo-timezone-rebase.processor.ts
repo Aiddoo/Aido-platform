@@ -7,9 +7,9 @@ import {
 } from "#api/shared/application/ports/operational-alert.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 
-import { PlanningTodoAlertKey } from "../../application/todos.alerts.js";
-import { PlanningTodoLogEvent } from "../../application/todos.log-events.js";
-import { RebaseTodoTimezone } from "../../application/use-cases/rebase-todo-timezone.use-case.js";
+import { TodoAlertKey } from "../../application/todos.alerts.js";
+import { TodoLogEvent } from "../../application/todos.log-events.js";
+import { RebaseTodoTimezoneUseCase } from "../../application/use-cases/rebase-todo-timezone.use-case.js";
 import {
   TODO_TIMEZONE_REBASE_JOB_POLICY,
   TODO_TIMEZONE_REBASE_QUEUE,
@@ -24,10 +24,10 @@ export class TodoTimezoneRebaseProcessor implements OnModuleInit {
   readonly #alert: OperationalAlertPort;
   readonly #runtime: JobRuntimePort;
 
-  readonly #rebaseTodoTimezone: Pick<RebaseTodoTimezone, "execute">;
+  readonly #rebaseTodoTimezone: Pick<RebaseTodoTimezoneUseCase, "execute">;
   constructor(
-    @Inject(RebaseTodoTimezone)
-    rebaseTodoTimezone: Pick<RebaseTodoTimezone, "execute">,
+    @Inject(RebaseTodoTimezoneUseCase)
+    rebaseTodoTimezone: Pick<RebaseTodoTimezoneUseCase, "execute">,
     @Inject(OPERATIONAL_ALERT) alert: OperationalAlertPort,
     @Inject(JOB_RUNTIME) runtime: JobRuntimePort,
   ) {
@@ -51,7 +51,7 @@ export class TodoTimezoneRebaseProcessor implements OnModuleInit {
   async process(untrustedJob: unknown, attempt: number): Promise<void> {
     const parsed = todoTimezoneRebaseJobSchema.safeParse(untrustedJob);
     if (!parsed.success) {
-      this.#logger.warn({ event: PlanningTodoLogEvent.TIMEZONE_REBASE_INVALID });
+      this.#logger.warn({ event: TodoLogEvent.TIMEZONE_REBASE_INVALID });
       return;
     }
     const { userId } = parsed.data.data;
@@ -60,7 +60,7 @@ export class TodoTimezoneRebaseProcessor implements OnModuleInit {
     } catch (error) {
       const errorType = toErrorType(error);
       this.#logger.warn({
-        event: PlanningTodoLogEvent.TIMEZONE_REBASE_FAILED,
+        event: TodoLogEvent.TIMEZONE_REBASE_FAILED,
         userId,
         attempt,
         errorType,
@@ -68,7 +68,7 @@ export class TodoTimezoneRebaseProcessor implements OnModuleInit {
       if (attempt > TODO_TIMEZONE_REBASE_JOB_POLICY.retryLimit) {
         // 재시도가 끝났다. 알림이 옛 시각으로 울리므로 사람이 봐야 한다.
         this.#alert.raise({
-          key: PlanningTodoAlertKey.TIMEZONE_REBASE_FAILED,
+          key: TodoAlertKey.TIMEZONE_REBASE_FAILED,
           severity: "error",
           message: "할 일 시간대 재계산이 재시도 뒤에도 실패했습니다.",
           details: { userId, attempt, errorType },

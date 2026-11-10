@@ -8,16 +8,16 @@ import {
 } from "#test/fixtures/planning-todo.fixture";
 import { createTodoResponseFixture } from "#test/fixtures/todo-response.fixture";
 
-import { GetFriendTodos } from "./get-friend-todos.use-case.js";
+import { ListFriendTodosUseCase } from "./list-friend-todos.use-case.js";
 
 describe("친구 할 일 목록 조회", () => {
   let fixture: ReturnType<typeof createPlanningTodoFixture>;
-  let useCase: GetFriendTodos;
+  let useCase: ListFriendTodosUseCase;
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(PLANNING_TIME);
     fixture = createPlanningTodoFixture({ todos: [createPlanningTodo()] });
-    useCase = new GetFriendTodos(fixture);
+    useCase = new ListFriendTodosUseCase(fixture);
   });
   afterEach(() => {
     vi.useRealTimers();

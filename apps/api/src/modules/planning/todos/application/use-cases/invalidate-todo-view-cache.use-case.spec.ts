@@ -2,15 +2,18 @@ import { vi } from "vitest";
 
 import { createTodoCacheMock, createTodoReadRepositoryMock } from "#test/mocks/ports/index";
 
-import { TodoViewCacheInvalidator } from "./invalidate-todo-view-cache.use-case.js";
+import { InvalidateTodoViewCacheUseCase } from "./invalidate-todo-view-cache.use-case.js";
 
-describe("TodoViewCacheInvalidator", () => {
+describe("InvalidateTodoViewCacheUseCase", () => {
   it("할 일의 소유자를 찾아 그 사람의 친구 목록 캐시를 버린다", async () => {
     // Given - 캐시 키는 소유자 기준이므로 todoId만으로는 지울 수 없다
     const readRepository = createTodoReadRepositoryMock();
     const cache = createTodoCacheMock();
     vi.mocked(readRepository.findOwnerId).mockResolvedValue("owner-1");
-    const invalidator = new TodoViewCacheInvalidator({ todoReadRepository: readRepository, cache });
+    const invalidator = new InvalidateTodoViewCacheUseCase({
+      todoReadRepository: readRepository,
+      cache,
+    });
 
     // When
     await invalidator.invalidateForTodo(42);
@@ -25,7 +28,10 @@ describe("TodoViewCacheInvalidator", () => {
     const readRepository = createTodoReadRepositoryMock();
     const cache = createTodoCacheMock();
     vi.mocked(readRepository.findOwnerId).mockResolvedValue(null);
-    const invalidator = new TodoViewCacheInvalidator({ todoReadRepository: readRepository, cache });
+    const invalidator = new InvalidateTodoViewCacheUseCase({
+      todoReadRepository: readRepository,
+      cache,
+    });
 
     // When
     await invalidator.invalidateForTodo(42);

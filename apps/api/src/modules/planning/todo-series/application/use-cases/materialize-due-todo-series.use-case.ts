@@ -14,9 +14,9 @@ import type {
   TodoSeriesRef,
   TodoSeriesRepositoryPort,
 } from "../ports/todo-series.repository.port.js";
-import { PlanningTodoSeriesAlertKey } from "../todo-series.alerts.js";
-import { PlanningTodoSeriesLogEvent } from "../todo-series.log-events.js";
-import type { TodoSeriesDueRunner } from "./materialize-todo-series.use-case.js";
+import { TodoSeriesAlertKey } from "../todo-series.alerts.js";
+import { TodoSeriesLogEvent } from "../todo-series.log-events.js";
+import type { MaterializeTodoSeriesUseCase } from "./materialize-todo-series.use-case.js";
 
 export const TODO_SERIES_MATERIALIZATION_BUDGET = {
   /** ID만 읽으므로 배치 메모리는 1MB 미만이다. */
@@ -38,7 +38,7 @@ export interface MaterializeDueTodoSeriesResult {
 interface MaterializeDueTodoSeriesDependencies {
   readonly seriesRepository: Pick<TodoSeriesRepositoryPort, "findDueBatch">;
   readonly seriesOwner: TodoSeriesOwnerPort;
-  readonly dueRunner: Pick<TodoSeriesDueRunner, "materialize">;
+  readonly dueRunner: Pick<MaterializeTodoSeriesUseCase, "execute">;
   readonly alert: OperationalAlertPort;
   readonly logger: Pick<ApplicationLoggerPort, "log" | "warn">;
   readonly batchSize?: number;
@@ -52,7 +52,7 @@ interface MaterializeDueTodoSeriesDependencies {
  * 소유자가 휴면이면 규칙을 건너뛰고 커서를 그대로 둔다. 돌아오면 복귀 경로나 다음 실행이 이어받는다.
  * 유료·ADMIN은 앱을 안 열어도 휴면으로 보지 않는다. 정지·탈퇴 대기 계정은 복구될 때까지 건너뛴다.
  */
-export class MaterializeDueTodoSeries {
+export class MaterializeDueTodoSeriesUseCase {
   readonly #dependencies: MaterializeDueTodoSeriesDependencies;
 
   constructor(dependencies: MaterializeDueTodoSeriesDependencies) {
@@ -104,11 +104,11 @@ export class MaterializeDueTodoSeries {
         processedCount += 1;
         try {
           // 사용자 수정이나 다른 실행이 규칙 행을 잡고 있으면 기다리지 않는다. 다음 실행이 커서로 이어받는다.
-          createdCount += await dueRunner.materialize(due, { skipLocked: true });
+          createdCount += await dueRunner.execute(due, { skipLocked: true });
         } catch (error) {
           failedCount += 1;
           logger.warn({
-            event: PlanningTodoSeriesLogEvent.MATERIALIZE_FAILED,
+            event: TodoSeriesLogEvent.MATERIALIZE_FAILED,
             seriesId: due.id,
             errorType: toErrorType(error),
           });
@@ -122,7 +122,7 @@ export class MaterializeDueTodoSeries {
 
     const durationMs = Date.now() - startedAt;
     logger.log({
-      event: PlanningTodoSeriesLogEvent.MATERIALIZED,
+      event: TodoSeriesLogEvent.MATERIALIZED,
       processedCount,
       createdCount,
       failedCount,
@@ -132,7 +132,7 @@ export class MaterializeDueTodoSeries {
     });
     if (failedCount > 0 || timedOut) {
       alert.raise({
-        key: PlanningTodoSeriesAlertKey.MATERIALIZE_FAILED,
+        key: TodoSeriesAlertKey.MATERIALIZE_FAILED,
         severity: "error",
         message: "반복 할 일 회차 채우기가 일부 끝나지 않았습니다.",
         details: { processedCount, createdCount, failedCount, timedOut, durationMs },

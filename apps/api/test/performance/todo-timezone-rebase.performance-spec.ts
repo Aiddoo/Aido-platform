@@ -6,7 +6,7 @@ import { PgBoss } from "pg-boss";
 
 import { TodoReminderSchedulerAdapter } from "#api/modules/notification/infrastructure/jobs/reminders/todo-reminder-scheduler.adapter";
 import { DrizzleTodoSeriesRepository } from "#api/modules/planning/todo-series/infrastructure/persistence/drizzle-todo-series.repository";
-import { RebaseTodoTimezone } from "#api/modules/planning/todos/application/use-cases/rebase-todo-timezone.use-case";
+import { RebaseTodoTimezoneUseCase } from "#api/modules/planning/todos/application/use-cases/rebase-todo-timezone.use-case";
 import { TodoReminderAdapter } from "#api/modules/planning/todos/infrastructure/adapters/todo-reminder-scheduler.adapter";
 import { DrizzleTodoRepository } from "#api/modules/planning/todos/infrastructure/persistence/drizzle-todo.repository";
 import { createEntityId } from "#api/platform/database/entity-id";
@@ -117,7 +117,7 @@ describe("시간대 재계산 규모 측정", () => {
         }
         await client.execute(sql`ANALYZE "Todo"`);
         const reminders = new TodoReminderAdapter(new TodoReminderSchedulerAdapter(runtime));
-        const useCase = new RebaseTodoTimezone({
+        const useCase = new RebaseTodoTimezoneUseCase({
           todoRepository: new DrizzleTodoRepository(transaction.txHost),
           seriesRepository: new DrizzleTodoSeriesRepository(transaction.txHost),
           ownerTimezone: {

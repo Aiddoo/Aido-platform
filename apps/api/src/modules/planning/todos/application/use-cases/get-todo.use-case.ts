@@ -14,7 +14,7 @@ interface GetTodoByIdDependencies {
   readonly todoReadRepository: Pick<TodoReadRepositoryPort, "findByIdAndUserId">;
 }
 
-export class GetTodoById {
+export class GetTodoUseCase {
   readonly #dependencies: GetTodoByIdDependencies;
 
   constructor(dependencies: GetTodoByIdDependencies) {

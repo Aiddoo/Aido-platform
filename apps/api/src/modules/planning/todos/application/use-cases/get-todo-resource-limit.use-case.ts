@@ -16,7 +16,7 @@ interface GetTodoResourceLimitDependencies {
   readonly todoReadRepository: Pick<TodoReadRepositoryPort, "countCategoryUsage">;
 }
 
-export class GetTodoResourceLimit {
+export class GetTodoResourceLimitUseCase {
   readonly #dependencies: GetTodoResourceLimitDependencies;
 
   constructor(dependencies: GetTodoResourceLimitDependencies) {

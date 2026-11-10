@@ -11,10 +11,10 @@ import {
   TODO_REPOSITORY,
   type TodoRepositoryPort,
 } from "#api/modules/planning/todos/application/ports/todo.repository.port";
-import { AddTodoItem } from "#api/modules/planning/todos/application/use-cases/add-todo-item.use-case";
-import { CreateTodo } from "#api/modules/planning/todos/application/use-cases/create-todo.use-case";
-import { ReorderTodoItems } from "#api/modules/planning/todos/application/use-cases/reorder-todo-items.use-case";
-import { ToggleTodoComplete } from "#api/modules/planning/todos/application/use-cases/toggle-todo-complete.use-case";
+import { AddTodoItemUseCase } from "#api/modules/planning/todos/application/use-cases/add-todo-item.use-case";
+import { CreateTodoUseCase } from "#api/modules/planning/todos/application/use-cases/create-todo.use-case";
+import { ReorderTodoItemsUseCase } from "#api/modules/planning/todos/application/use-cases/reorder-todo-items.use-case";
+import { SetTodoCompletedUseCase } from "#api/modules/planning/todos/application/use-cases/set-todo-completed.use-case";
 import { STAGED_TODO_CREATOR } from "#api/modules/planning/todos/planning-todos.public";
 import { DatabaseRecordNotFoundError } from "#api/platform/database/database-error.util";
 import { createEntityId } from "#api/platform/database/entity-id";
@@ -190,7 +190,7 @@ describe("Todo 변경 원자성·Drizzle 쿼리 실행 수 (실제 PostgreSQL)",
   it("19개 item에 동시 추가하면 하나만 성공하고 20개·고유 sortOrder를 유지한다", async () => {
     // Given
     await createItems(19);
-    const add = context.module.get(AddTodoItem);
+    const add = context.module.get(AddTodoItemUseCase);
 
     // When
     const outcomes = await contend(
@@ -216,7 +216,7 @@ describe("Todo 변경 원자성·Drizzle 쿼리 실행 수 (실제 PostgreSQL)",
     // Given
     const publisher = context.module.get<DomainEventPublisherPort>(DOMAIN_EVENT_PUBLISHER);
     const publishAll = vi.spyOn(publisher, "publishAll");
-    const toggle = context.module.get(ToggleTodoComplete);
+    const toggle = context.module.get(SetTodoCompletedUseCase);
 
     // When
     const outcomes = await contend(
@@ -254,7 +254,7 @@ describe("Todo 변경 원자성·Drizzle 쿼리 실행 수 (실제 PostgreSQL)",
   it("한 Todo의 잠금 대기는 같은 사용자의 다른 Todo item 추가를 막지 않는다", async () => {
     // Given
     const otherTodoId = await createTodo();
-    const add = context.module.get(AddTodoItem);
+    const add = context.module.get(AddTodoItemUseCase);
     const release = await holdTodoRow();
     const blocked = add.execute({ todoId, userId, title: "대기 중", timezone: "UTC" });
 
@@ -335,7 +335,7 @@ describe("Todo 변경 원자성·Drizzle 쿼리 실행 수 (실제 PostgreSQL)",
 
     // When
     const response = await context.module
-      .get(ReorderTodoItems)
+      .get(ReorderTodoItemsUseCase)
       .execute({ todoId, userId, itemIds });
     recording = null;
 
@@ -359,7 +359,7 @@ describe("Todo 변경 원자성·Drizzle 쿼리 실행 수 (실제 PostgreSQL)",
     recording = statements;
 
     // When
-    const response = await context.module.get(CreateTodo).execute({
+    const response = await context.module.get(CreateTodoUseCase).execute({
       userId,
       categoryId,
       title: "반복 생성",
@@ -392,7 +392,7 @@ describe("Todo 변경 원자성·Drizzle 쿼리 실행 수 (실제 PostgreSQL)",
     const statements: string[] = [];
     recording = statements;
     // When
-    const response = await context.module.get(CreateTodo).execute({
+    const response = await context.module.get(CreateTodoUseCase).execute({
       userId,
       categoryId,
       title: "매일 반복",
@@ -426,7 +426,7 @@ describe("Todo 변경 원자성·Drizzle 쿼리 실행 수 (실제 PostgreSQL)",
     }
 
     function startSeries(target: number, repeat: TodoRepeat) {
-      return context.module.get(CreateTodo).execute({
+      return context.module.get(CreateTodoUseCase).execute({
         userId,
         categoryId: target,
         title: "카테고리 반복",

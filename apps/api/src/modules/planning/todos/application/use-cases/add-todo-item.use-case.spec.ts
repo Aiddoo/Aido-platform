@@ -8,18 +8,18 @@ import {
   PLANNING_TIME,
 } from "#test/fixtures/planning-todo.fixture";
 
-import { AddTodoItem } from "./add-todo-item.use-case.js";
+import { AddTodoItemUseCase } from "./add-todo-item.use-case.js";
 
 const TIMEZONE = "Asia/Seoul";
 
 describe("하위 항목 추가", () => {
   let fixture: ReturnType<typeof createPlanningTodoFixture>;
-  let useCase: AddTodoItem;
+  let useCase: AddTodoItemUseCase;
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(PLANNING_TIME);
     fixture = createPlanningTodoFixture({ todos: [createPlanningTodo()] });
-    useCase = new AddTodoItem(fixture);
+    useCase = new AddTodoItemUseCase(fixture);
   });
   afterEach(() => {
     vi.useRealTimers();

@@ -19,9 +19,9 @@ import { DrizzleSchedulerReader } from "#api/modules/notification/infrastructure
 import { NotificationPublisher } from "#api/modules/notification/notification-delivery.public";
 import { TodoRescheduledEvent } from "#api/modules/planning/shared/domain/todo-rescheduled.event";
 import { DrizzleTodoSeriesRepository } from "#api/modules/planning/todo-series/infrastructure/persistence/drizzle-todo-series.repository";
-import { RebaseTodoTimezone } from "#api/modules/planning/todos/application/use-cases/rebase-todo-timezone.use-case";
-import { TodoTimezoneResolver } from "#api/modules/planning/todos/application/use-cases/resolve-todo-timezone.use-case";
-import { UpdateTodoSchedule } from "#api/modules/planning/todos/application/use-cases/update-todo-schedule.use-case";
+import { RebaseTodoTimezoneUseCase } from "#api/modules/planning/todos/application/use-cases/rebase-todo-timezone.use-case";
+import { ResolveTodoTimezoneUseCase } from "#api/modules/planning/todos/application/use-cases/resolve-todo-timezone.use-case";
+import { UpdateTodoScheduleUseCase } from "#api/modules/planning/todos/application/use-cases/update-todo-schedule.use-case";
 import { TodoReminderAdapter } from "#api/modules/planning/todos/infrastructure/adapters/todo-reminder-scheduler.adapter";
 import { TodoRescheduledHandler } from "#api/modules/planning/todos/infrastructure/event-handlers/todo-rescheduled.event-handler";
 import { DrizzleTodoReadRepository } from "#api/modules/planning/todos/infrastructure/persistence/drizzle-todo-read.repository";
@@ -75,8 +75,8 @@ describe("할 일 알림 회차 중복 방지 (실제 PostgreSQL·pg-boss)", () 
   let boss: PgBoss;
   let runtime: PgBossJobRuntimeAdapter;
   let reminderAdapter: TodoReminderAdapter;
-  let rebase: RebaseTodoTimezone;
-  let updateSchedule: UpdateTodoSchedule;
+  let rebase: RebaseTodoTimezoneUseCase;
+  let updateSchedule: UpdateTodoScheduleUseCase;
   let processor: TodoReminderQueueProcessor;
   let userId: string;
   let categoryId: number;
@@ -117,7 +117,7 @@ describe("할 일 알림 회차 중복 방지 (실제 PostgreSQL·pg-boss)", () 
     const mutationLock = new PostgresMutationLockAdapter(txHost);
     const todoCache = { invalidateFriendTodos: async () => undefined };
     const todoRepository = new DrizzleTodoRepository(txHost);
-    rebase = new RebaseTodoTimezone({
+    rebase = new RebaseTodoTimezoneUseCase({
       todoRepository,
       seriesRepository: new DrizzleTodoSeriesRepository(txHost),
       ownerTimezone,
@@ -128,12 +128,12 @@ describe("할 일 알림 회차 중복 방지 (실제 PostgreSQL·pg-boss)", () 
       logger: silentLogger,
     });
     const rescheduled = new TodoRescheduledHandler(reminderAdapter);
-    updateSchedule = new UpdateTodoSchedule({
+    updateSchedule = new UpdateTodoScheduleUseCase({
       todoRepository,
       todoReadRepository: new DrizzleTodoReadRepository(txHost),
       unitOfWork: uow,
       mutationLock,
-      timezoneResolver: new TodoTimezoneResolver({ ownerTimezone }),
+      timezoneResolver: new ResolveTodoTimezoneUseCase({ ownerTimezone }),
       todoCache,
       eventPublisher: {
         publishAll: async (events) => {

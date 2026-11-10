@@ -21,7 +21,7 @@ interface TodoOccurrenceMaterializerDependencies {
  * 규칙의 커서부터 미리 만드는 기간까지 회차를 실제 행으로 만든다. 저장은 활성 UoW 안에서 한다.
  * 커서가 앞으로 가면 다음 실행은 같은 회차를 다시 만들지 않으므로 리마인더 작업도 행과 함께 커밋한다.
  */
-export class TodoOccurrenceMaterializer {
+export class MaterializeTodoOccurrencesUseCase {
   readonly #dependencies: TodoOccurrenceMaterializerDependencies;
 
   constructor(dependencies: TodoOccurrenceMaterializerDependencies) {

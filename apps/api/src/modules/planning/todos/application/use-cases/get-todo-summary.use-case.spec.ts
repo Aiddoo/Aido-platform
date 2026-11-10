@@ -6,16 +6,16 @@ import {
   PLANNING_TIME,
 } from "#test/fixtures/planning-todo.fixture";
 
-import { GetTodoSummary } from "./get-todo-summary.use-case.js";
+import { GetTodoSummaryUseCase } from "./get-todo-summary.use-case.js";
 
 describe("오늘의 할 일 요약", () => {
   let fixture: ReturnType<typeof createPlanningTodoFixture>;
-  let useCase: GetTodoSummary;
+  let useCase: GetTodoSummaryUseCase;
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(PLANNING_TIME);
     fixture = createPlanningTodoFixture({ todos: [createPlanningTodo()] });
-    useCase = new GetTodoSummary(fixture);
+    useCase = new GetTodoSummaryUseCase(fixture);
   });
   afterEach(() => {
     vi.useRealTimers();

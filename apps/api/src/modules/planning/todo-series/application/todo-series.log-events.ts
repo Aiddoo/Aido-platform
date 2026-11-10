@@ -1,4 +1,4 @@
-export const PlanningTodoSeriesLogEvent = {
+export const TodoSeriesLogEvent = {
   STARTED: "planning.todo-series.started",
   STOPPED: "planning.todo-series.stopped",
   SPLIT: "planning.todo-series.split",

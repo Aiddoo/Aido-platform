@@ -4,7 +4,7 @@ import dayjs from "dayjs";
 import { runInBackground } from "#api/platform/jobs/non-blocking-init";
 import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
 
-import { PlanningTodoSeriesLogEvent } from "../../application/todo-series.log-events.js";
+import { TodoSeriesLogEvent } from "../../application/todo-series.log-events.js";
 import {
   TODO_SERIES_MATERIALIZATION_JOB_NAME,
   TODO_SERIES_MATERIALIZATION_JOB_OPTIONS,
@@ -37,7 +37,7 @@ export class TodoSeriesMaterializationJob implements OnModuleInit {
           { name: TODO_SERIES_MATERIALIZATION_JOB_NAME, data: {} },
           TODO_SERIES_MATERIALIZATION_JOB_OPTIONS,
         );
-        this.#logger.log({ event: PlanningTodoSeriesLogEvent.MATERIALIZE_SCHEDULER_REGISTERED });
+        this.#logger.log({ event: TodoSeriesLogEvent.MATERIALIZE_SCHEDULER_REGISTERED });
         await this.#catchUpIfNeeded();
       },
     );
@@ -61,7 +61,7 @@ export class TodoSeriesMaterializationJob implements OnModuleInit {
       },
     );
     this.#logger.log({
-      event: PlanningTodoSeriesLogEvent.MATERIALIZE_CATCH_UP_DISPATCHED,
+      event: TodoSeriesLogEvent.MATERIALIZE_CATCH_UP_DISPATCHED,
       localDate,
     });
   }

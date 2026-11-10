@@ -32,9 +32,9 @@ import { occurrenceHorizon } from "../../domain/occurrence-horizon.domain-servic
 import { RepeatRule } from "../../domain/repeat-rule.vo.js";
 import type { TodoSeries, TodoSeriesChanges } from "../../domain/todo-series.aggregate.js";
 import type { TodoSeriesRepositoryPort } from "../ports/todo-series.repository.port.js";
-import { PlanningTodoSeriesLogEvent } from "../todo-series.log-events.js";
-import type { TodoOccurrenceMaterializer } from "./materialize-todo-occurrences.use-case.js";
-import type { TodoSeriesEditEffects } from "./publish-todo-series-edit.use-case.js";
+import { TodoSeriesLogEvent } from "../todo-series.log-events.js";
+import type { MaterializeTodoOccurrencesUseCase } from "./materialize-todo-occurrences.use-case.js";
+import type { PublishTodoSeriesEditUseCase } from "./publish-todo-series-edit.use-case.js";
 
 export interface UpdateFollowingTodosInput {
   readonly id: number;
@@ -77,9 +77,9 @@ interface UpdateFollowingTodosDependencies {
     "lockForUpdate" | "lockFollowingSegments" | "insert" | "update" | "countActiveByUserId"
   >;
   readonly categoryOwnership: Pick<CategoryOwnershipPort, "validateOwnership">;
-  readonly materializer: Pick<TodoOccurrenceMaterializer, "planFirstRun" | "persist">;
+  readonly materializer: Pick<MaterializeTodoOccurrencesUseCase, "planFirstRun" | "persist">;
   readonly todoReminder: Pick<TodoReminderPort, "cancelReminders" | "scheduleReminders">;
-  readonly effects: Pick<TodoSeriesEditEffects, "publish">;
+  readonly effects: Pick<PublishTodoSeriesEditUseCase, "execute">;
   readonly unitOfWork: UnitOfWorkPort;
   readonly mutationLock: MutationLockPort;
   readonly logger: Pick<ApplicationLoggerPort, "log">;
@@ -91,7 +91,7 @@ interface UpdateFollowingTodosDependencies {
  * 사용자에게는 한 반복이라 나뉜 뒤 구간까지 닿는다. 규칙을 바꾸면 뒤 구간을 끝내고 새 규칙 하나로 합친다.
  * 완료한 회차의 내용은 건드리지 않는다.
  */
-export class UpdateFollowingTodos {
+export class UpdateFollowingTodosUseCase {
   readonly #dependencies: UpdateFollowingTodosDependencies;
 
   constructor(dependencies: UpdateFollowingTodosDependencies) {
@@ -113,7 +113,7 @@ export class UpdateFollowingTodos {
     return response;
   }
 
-  /** 활성 UoW 안에서 호출한다. 이 회차의 날짜·완료 변경과 한 트랜잭션으로 묶을 때 EditTodo가 부른다. */
+  /** 활성 UoW 안에서 호출한다. 이 회차의 날짜·완료 변경과 한 트랜잭션으로 묶을 때 EditTodoUseCase가 부른다. */
   async apply(input: UpdateFollowingTodosInput): Promise<AppliedFollowingEdit> {
     const { id, userId } = input;
     const { todoRepository, seriesRepository, mutationLock } = this.#dependencies;
@@ -149,13 +149,13 @@ export class UpdateFollowingTodos {
   }
 
   async publish(edited: AppliedFollowingEdit, userId: string): Promise<void> {
-    await this.#dependencies.effects.publish({
+    await this.#dependencies.effects.execute({
       seriesId: edited.target.getId(),
       userId,
     });
     if (edited.isSplit) {
       this.#dependencies.logger.log({
-        event: PlanningTodoSeriesLogEvent.SPLIT,
+        event: TodoSeriesLogEvent.SPLIT,
         seriesId: edited.source.getId(),
         newSeriesId: edited.target.getId(),
         userId,

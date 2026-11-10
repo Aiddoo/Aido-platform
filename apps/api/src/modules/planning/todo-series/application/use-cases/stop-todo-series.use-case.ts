@@ -10,8 +10,8 @@ import type { TodoReminderPort } from "../../../todos/application/ports/todo-rem
 import type { TodoRepositoryPort } from "../../../todos/application/ports/todo.repository.port.js";
 import type { TodoSeries } from "../../domain/todo-series.aggregate.js";
 import type { TodoSeriesRepositoryPort } from "../ports/todo-series.repository.port.js";
-import { PlanningTodoSeriesLogEvent } from "../todo-series.log-events.js";
-import type { TodoSeriesEditEffects } from "./publish-todo-series-edit.use-case.js";
+import { TodoSeriesLogEvent } from "../todo-series.log-events.js";
+import type { PublishTodoSeriesEditUseCase } from "./publish-todo-series-edit.use-case.js";
 
 export interface StopTodoSeriesInput {
   readonly todoId: number;
@@ -31,13 +31,13 @@ interface StopTodoSeriesDependencies {
     "lockForUpdate" | "lockFollowingSegments" | "update"
   >;
   readonly todoReminder: Pick<TodoReminderPort, "cancelReminders">;
-  readonly effects: Pick<TodoSeriesEditEffects, "publish">;
+  readonly effects: Pick<PublishTodoSeriesEditUseCase, "execute">;
   readonly mutationLock: MutationLockPort;
   readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
 
 /** 이 회차 뒤로 반복을 끝낸다. 나뉜 뒤 구간까지 끝내고, 이 회차와 완료한 회차는 남고 뒤의 미완료 회차만 지운다. */
-export class StopTodoSeries {
+export class StopTodoSeriesUseCase {
   readonly #dependencies: StopTodoSeriesDependencies;
 
   constructor(dependencies: StopTodoSeriesDependencies) {
@@ -87,12 +87,12 @@ export class StopTodoSeries {
 
   async publish(stopped: StoppedSeries): Promise<void> {
     const { series, userId, deletedTodoIds } = stopped;
-    await this.#dependencies.effects.publish({
+    await this.#dependencies.effects.execute({
       seriesId: series.getId(),
       userId,
     });
     this.#dependencies.logger.log({
-      event: PlanningTodoSeriesLogEvent.STOPPED,
+      event: TodoSeriesLogEvent.STOPPED,
       seriesId: series.getId(),
       userId,
       deletedCount: deletedTodoIds.length,
