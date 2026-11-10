@@ -7,10 +7,7 @@ import { omit } from "es-toolkit";
 import { DeleteTodoCategory } from "#api/modules/planning/application/use-cases/categories/delete-todo-category.use-case";
 import { TodoToggledEvent } from "#api/modules/planning/shared/domain/todo-toggled.event";
 import type { StagedTodoCreatorPort } from "#api/modules/planning/todos/application/ports/staged-todo-creator.port";
-import {
-  TODO_REPOSITORY,
-  type TodoRepositoryPort,
-} from "#api/modules/planning/todos/application/ports/todo.repository.port";
+import { TodoRepositoryPort } from "#api/modules/planning/todos/application/ports/todo.repository.port";
 import { AddTodoItemUseCase } from "#api/modules/planning/todos/application/use-cases/add-todo-item.use-case";
 import { CreateTodoUseCase } from "#api/modules/planning/todos/application/use-cases/create-todo.use-case";
 import { ReorderTodoItemsUseCase } from "#api/modules/planning/todos/application/use-cases/reorder-todo-items.use-case";
@@ -284,7 +281,7 @@ describe("Todo 변경 원자성·Drizzle 쿼리 실행 수 (실제 PostgreSQL)",
     if (first === undefined) {
       throw new Error("item fixture 누락");
     }
-    const repository = context.module.get<TodoRepositoryPort>(TODO_REPOSITORY);
+    const repository = context.module.get(TodoRepositoryPort);
     const unitOfWork = context.module.get<UnitOfWorkPort>(UNIT_OF_WORK);
 
     // When
@@ -297,7 +294,7 @@ describe("Todo 변경 원자성·Drizzle 쿼리 실행 수 (실제 PostgreSQL)",
 
   it("부분 수정은 명시적 null·false를 저장하고 undefined는 이전 값을 유지한다", async () => {
     // Given
-    const repository = context.module.get<TodoRepositoryPort>(TODO_REPOSITORY);
+    const repository = context.module.get(TodoRepositoryPort);
     const unitOfWork = context.module.get<UnitOfWorkPort>(UNIT_OF_WORK);
     await unitOfWork.run(() =>
       repository.updateDetails(todoId, {
@@ -484,7 +481,7 @@ describe("Todo 변경 원자성·Drizzle 쿼리 실행 수 (실제 PostgreSQL)",
       await startSeries(categoryId, { frequency: "DAILY", end: { type: "NEVER" } });
       // When
       const usage = await context.module
-        .get<TodoRepositoryPort>(TODO_REPOSITORY)
+        .get(TodoRepositoryPort)
         .countCategoryUsage(userId, categoryId);
       // Then
       expect(usage).toBe(2);
@@ -542,7 +539,7 @@ describe("Todo 변경 원자성·Drizzle 쿼리 실행 수 (실제 PostgreSQL)",
 
   it("반복 item 저장이 실패하면 부모 bulk 생성도 rollback한다", async () => {
     // Given
-    const repository = context.module.get<TodoRepositoryPort>(TODO_REPOSITORY);
+    const repository = context.module.get(TodoRepositoryPort);
     const unitOfWork = context.module.get<UnitOfWorkPort>(UNIT_OF_WORK);
     const before = await client.query.todo.findMany({ columns: { id: true }, where: { userId } });
 

@@ -6,7 +6,7 @@ import {
 } from "#api/modules/notification/notification-reminders.public";
 
 import type {
-  TodoReminderPort,
+  TodoReminderSchedulerPort,
   TodoReminderSchedule,
 } from "../../application/ports/todo-reminder-scheduler.port.js";
 
@@ -14,7 +14,7 @@ import type {
  * Todo 리마인더 포트 어댑터 — scheduler의 IReminderScheduler에 위임
  */
 @Injectable()
-export class TodoReminderAdapter implements TodoReminderPort {
+export class ReminderSchedulerAdapter implements TodoReminderSchedulerPort {
   readonly #reminderScheduler: IReminderScheduler;
 
   constructor(

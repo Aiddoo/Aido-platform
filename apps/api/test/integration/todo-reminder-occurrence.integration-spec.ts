@@ -17,13 +17,12 @@ import { DrizzleNotificationRepository } from "#api/modules/notification/infrast
 import { DrizzlePushDispatchStagingRepository } from "#api/modules/notification/infrastructure/persistence/delivery/drizzle-push-dispatch-staging.repository";
 import { DrizzleSchedulerReader } from "#api/modules/notification/infrastructure/persistence/reminders/drizzle-scheduler.reader";
 import { NotificationPublisher } from "#api/modules/notification/notification-delivery.public";
-import { TodoRescheduledEvent } from "#api/modules/planning/shared/domain/todo-rescheduled.event";
 import { DrizzleTodoSeriesRepository } from "#api/modules/planning/todo-series/infrastructure/persistence/drizzle-todo-series.repository";
+import { ApplyTodoEventsUseCase } from "#api/modules/planning/todos/application/use-cases/apply-todo-events.use-case";
 import { RebaseTodoTimezoneUseCase } from "#api/modules/planning/todos/application/use-cases/rebase-todo-timezone.use-case";
 import { ResolveTodoTimezoneUseCase } from "#api/modules/planning/todos/application/use-cases/resolve-todo-timezone.use-case";
 import { UpdateTodoScheduleUseCase } from "#api/modules/planning/todos/application/use-cases/update-todo-schedule.use-case";
-import { TodoReminderAdapter } from "#api/modules/planning/todos/infrastructure/adapters/todo-reminder-scheduler.adapter";
-import { TodoRescheduledHandler } from "#api/modules/planning/todos/infrastructure/event-handlers/todo-rescheduled.event-handler";
+import { ReminderSchedulerAdapter } from "#api/modules/planning/todos/infrastructure/adapters/todo-reminder-scheduler.adapter";
 import { DrizzleTodoReadRepository } from "#api/modules/planning/todos/infrastructure/persistence/drizzle-todo-read.repository";
 import { DrizzleTodoRepository } from "#api/modules/planning/todos/infrastructure/persistence/drizzle-todo.repository";
 import { CacheService } from "#api/platform/cache/cache.service";
@@ -40,6 +39,7 @@ import {
   userPreference,
 } from "#api/platform/database/schema/index";
 import { PgBossJobRuntimeAdapter } from "#api/platform/jobs/pg-boss-job-runtime.adapter";
+import { SystemClock } from "#api/platform/time/system-clock";
 import { addDaysToDateKey } from "#api/shared/domain/date/utils/arithmetic";
 import { toDateString } from "#api/shared/domain/date/utils/format";
 import { parseDateOnly } from "#api/shared/domain/date/utils/parse";
@@ -74,7 +74,7 @@ describe("할 일 알림 회차 중복 방지 (실제 PostgreSQL·pg-boss)", () 
   let client: TestDatabaseClient;
   let boss: PgBoss;
   let runtime: PgBossJobRuntimeAdapter;
-  let reminderAdapter: TodoReminderAdapter;
+  let reminderAdapter: ReminderSchedulerAdapter;
   let rebase: RebaseTodoTimezoneUseCase;
   let updateSchedule: UpdateTodoScheduleUseCase;
   let processor: TodoReminderQueueProcessor;
@@ -104,7 +104,7 @@ describe("할 일 알림 회차 중복 방지 (실제 PostgreSQL·pg-boss)", () 
     const { txHost, uow } = createDatabaseTransactionFixture(client);
     runtime = new PgBossJobRuntimeAdapter(boss, txHost, { job: { shutdownTimeoutMs: 10_000 } });
     await runtime.start();
-    reminderAdapter = new TodoReminderAdapter(new TodoReminderSchedulerAdapter(runtime));
+    reminderAdapter = new ReminderSchedulerAdapter(new TodoReminderSchedulerAdapter(runtime));
     const ownerTimezone = {
       findTimezone: async (id: string) => {
         const row = await txHost.tx.query.userPreference.findFirst({
@@ -127,7 +127,7 @@ describe("할 일 알림 회차 중복 방지 (실제 PostgreSQL·pg-boss)", () 
       mutationLock,
       logger: silentLogger,
     });
-    const rescheduled = new TodoRescheduledHandler(reminderAdapter);
+    const eventPublisher = { publishAll: async () => undefined, publish: async () => undefined };
     updateSchedule = new UpdateTodoScheduleUseCase({
       todoRepository,
       todoReadRepository: new DrizzleTodoReadRepository(txHost),
@@ -135,16 +135,12 @@ describe("할 일 알림 회차 중복 방지 (실제 PostgreSQL·pg-boss)", () 
       mutationLock,
       timezoneResolver: new ResolveTodoTimezoneUseCase({ ownerTimezone }),
       todoCache,
-      eventPublisher: {
-        publishAll: async (events) => {
-          for (const event of events) {
-            if (event instanceof TodoRescheduledEvent) {
-              await rescheduled.handle(event);
-            }
-          }
-        },
-        publish: async () => undefined,
-      },
+      applyTodoEvents: new ApplyTodoEventsUseCase({
+        reminderScheduler: reminderAdapter,
+        eventPublisher,
+        clock: new SystemClock(),
+      }),
+      eventPublisher,
       logger: silentLogger,
     });
     const publisher = new NotificationPublisher({

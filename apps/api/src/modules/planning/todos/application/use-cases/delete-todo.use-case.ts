@@ -15,10 +15,12 @@ import { toDateString } from "#api/shared/domain/date/utils/format";
 
 import type { TodoSeriesRepositoryPort } from "../../../todo-series/application/ports/todo-series.repository.port.js";
 import type { PublishTodoSeriesEditUseCase } from "../../../todo-series/application/use-cases/publish-todo-series-edit.use-case.js";
+import { TodoOccurrencesChangedEvent } from "../../../todo-series/domain/todo-occurrences-changed.event.js";
 import { type TodoCachePort } from "../ports/todo-cache.port.js";
-import type { TodoReminderPort } from "../ports/todo-reminder-scheduler.port.js";
+import type { TodoReminderSchedulerPort } from "../ports/todo-reminder-scheduler.port.js";
 import { type TodoRepositoryPort } from "../ports/todo.repository.port.js";
 import { TodoLogEvent } from "../todos.log-events.js";
+import type { ApplyTodoEventsUseCase } from "./apply-todo-events.use-case.js";
 
 export interface DeleteTodoInput {
   readonly id: number;
@@ -37,9 +39,10 @@ interface DeleteTodoDependencies {
     "lockForUpdate" | "update" | "lockFamilyIds" | "lockFollowingSegments" | "deleteMany"
   >;
   readonly seriesEffects: Pick<PublishTodoSeriesEditUseCase, "execute">;
-  readonly todoReminder: Pick<TodoReminderPort, "cancelReminders">;
+  readonly todoReminder: Pick<TodoReminderSchedulerPort, "cancelReminders">;
   readonly todoCache: Pick<TodoCachePort, "invalidateTodoCategories" | "invalidateFriendTodos">;
   readonly unitOfWork: UnitOfWorkPort;
+  readonly applyTodoEvents: Pick<ApplyTodoEventsUseCase, "execute">;
   readonly mutationLock: MutationLockPort;
   readonly eventPublisher: DomainEventPublisherPort;
   readonly logger: ApplicationLoggerPort;
@@ -75,7 +78,9 @@ export class DeleteTodoUseCase {
       await this.#dependencies.todoRepository.delete(id);
 
       todo.markDeleted();
-      return todo.pullDomainEvents();
+      const events = todo.pullDomainEvents();
+      await this.#dependencies.applyTodoEvents.execute(events);
+      return events;
     });
 
     await this.#dependencies.eventPublisher.publishAll(events);
@@ -148,6 +153,9 @@ export class DeleteTodoUseCase {
         })
         .exhaustive();
       await todoReminder.cancelReminders(deletedTodoIds);
+      await this.#dependencies.applyTodoEvents.execute([
+        new TodoOccurrencesChangedEvent(seriesId, userId),
+      ]);
       return { seriesId, deletedTodoIds };
     });
 

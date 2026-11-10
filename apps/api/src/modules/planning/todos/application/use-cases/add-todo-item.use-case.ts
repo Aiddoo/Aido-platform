@@ -14,6 +14,7 @@ import { type TodoCachePort } from "../ports/todo-cache.port.js";
 import { type TodoReadRepositoryPort } from "../ports/todo-read.repository.port.js";
 import { type TodoRepositoryPort } from "../ports/todo.repository.port.js";
 import { TodoLogEvent } from "../todos.log-events.js";
+import type { ApplyTodoEventsUseCase } from "./apply-todo-events.use-case.js";
 
 export interface AddTodoItemInput {
   readonly todoId: number;
@@ -30,6 +31,7 @@ interface AddTodoItemDependencies {
   >;
   readonly todoReadRepository: Pick<TodoReadRepositoryPort, "findByIdAndUserId">;
   readonly unitOfWork: UnitOfWorkPort;
+  readonly applyTodoEvents: Pick<ApplyTodoEventsUseCase, "execute">;
   readonly mutationLock: MutationLockPort;
   readonly todoCache: Pick<TodoCachePort, "invalidateFriendTodos">;
   readonly eventPublisher: DomainEventPublisherPort;
@@ -70,7 +72,9 @@ export class AddTodoItemUseCase {
         userId,
         completed: snapshot.completed,
       });
-      return todo.pullDomainEvents();
+      const events = todo.pullDomainEvents();
+      await this.#dependencies.applyTodoEvents.execute(events);
+      return events;
     });
 
     this.#dependencies.logger.log({ event: TodoLogEvent.ITEM_ADDED, todoId, userId });

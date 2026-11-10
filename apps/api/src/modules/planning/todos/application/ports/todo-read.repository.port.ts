@@ -18,8 +18,6 @@ export interface FindFriendTodosParams {
   readonly endDate?: Date;
 }
 
-export const TODO_READ_REPOSITORY = Symbol("TODO_READ_REPOSITORY");
-
 /**
  * Todo 읽기 리포지토리 포트 (조회 측)
  *
@@ -34,29 +32,36 @@ export interface TodaySummaryTodoRow {
   categoryColor: string;
 }
 
-export interface TodoReadRepositoryPort {
-  findByIdAndUserId(id: number, userId: string): Promise<TodoResponse | null>;
+export abstract class TodoReadRepositoryPort {
+  abstract findByIdAndUserId(id: number, userId: string): Promise<TodoResponse | null>;
 
   /** 소유자만 알면 되는 자리 — 목록 캐시 키가 소유자 기준이라 이 한 컬럼이면 충분하다. */
-  findOwnerId(id: number): Promise<string | null>;
+  abstract findOwnerId(id: number): Promise<string | null>;
 
   /** 반복 할 일의 회차 전체 (sortOrder asc — 생성 순서와 동일) */
-  findManyBySeriesId(userId: string, seriesId: string): Promise<TodoResponse[]>;
+  abstract findManyBySeriesId(userId: string, seriesId: string): Promise<TodoResponse[]>;
 
-  findManyByUserId(params: FindTodosParams): Promise<TodoResponse[]>;
+  abstract findManyByUserId(params: FindTodosParams): Promise<TodoResponse[]>;
 
-  findPublicTodosByUserId(params: FindFriendTodosParams): Promise<FriendTodo[]>;
+  abstract findPublicTodosByUserId(params: FindFriendTodosParams): Promise<FriendTodo[]>;
 
   /** 카테고리 한도에 세는 수: 반복 아닌 미완료 + 진행 중 규칙 1개당 1 */
-  countCategoryUsage(userId: string, categoryId: number): Promise<number>;
+  abstract countCategoryUsage(userId: string, categoryId: number): Promise<number>;
 
-  countCompletedByUser(userId: string): Promise<number>;
+  abstract countCompletedByUser(userId: string): Promise<number>;
 
-  getTodayTodoStats(userId: string, today: Date): Promise<{ total: number; completed: number }>;
+  abstract getTodayTodoStats(
+    userId: string,
+    today: Date,
+  ): Promise<{ total: number; completed: number }>;
 
   /**
    * 오늘 할 일 상위 목록 (홈 위젯용) — 미완료 우선, 이후 카테고리/정렬 순.
    * 단일 쿼리 + 필요한 컬럼만 조회한다 (전체 read model 대비 경량).
    */
-  findTodayTopTodos(userId: string, today: Date, limit: number): Promise<TodaySummaryTodoRow[]>;
+  abstract findTodayTopTodos(
+    userId: string,
+    today: Date,
+    limit: number,
+  ): Promise<TodaySummaryTodoRow[]>;
 }

@@ -4,10 +4,10 @@ import { ApplicationException } from "#api/shared/application/application.except
 
 import { toTodoSeriesResponse } from "../../../todo-series/application/read-models/todo-series.read-model.js";
 import type { PublishTodoCreationUseCase } from "../../../todo-series/application/use-cases/publish-todo-creation.use-case.js";
-import type { CreateTodoData, ResolvedCreateTodoData } from "../ports/staged-todo-creator.port.js";
 import type {
+  CreateTodoData,
+  ResolvedCreateTodoData,
   StagedTodoCreation,
-  StagedTodoCreatorPort,
 } from "../ports/staged-todo-creator.port.js";
 import type { TodoReadRepositoryPort } from "../ports/todo-read.repository.port.js";
 import type { ResolveTodoTimezoneUseCase } from "./resolve-todo-timezone.use-case.js";
@@ -23,14 +23,14 @@ interface StagedTodoCreatorDependencies {
   readonly timezoneResolver: Pick<ResolveTodoTimezoneUseCase, "execute">;
 }
 
-export class StageTodoCreationUseCase implements StagedTodoCreatorPort {
+export class StageTodoCreationUseCase {
   readonly #dependencies: StagedTodoCreatorDependencies;
 
   constructor(dependencies: StagedTodoCreatorDependencies) {
     this.#dependencies = dependencies;
   }
 
-  async stage(input: CreateTodoData): Promise<StagedTodoCreation> {
+  async execute(input: CreateTodoData): Promise<StagedTodoCreation> {
     const timezone = await this.#dependencies.timezoneResolver.execute(
       input.userId,
       input.timezone,

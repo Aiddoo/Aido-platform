@@ -11,7 +11,7 @@ import { resolveScheduledInstant } from "../../../shared/domain/todo-schedule.vo
 import type { TodoSeriesRepositoryPort } from "../../../todo-series/application/ports/todo-series.repository.port.js";
 import type { TodoCachePort } from "../ports/todo-cache.port.js";
 import type { TodoOwnerTimezonePort } from "../ports/todo-owner-timezone.port.js";
-import type { TodoReminderPort } from "../ports/todo-reminder-scheduler.port.js";
+import type { TodoReminderSchedulerPort } from "../ports/todo-reminder-scheduler.port.js";
 import type { RebaseCandidate, TodoRepositoryPort } from "../ports/todo.repository.port.js";
 import { TodoLogEvent } from "../todos.log-events.js";
 
@@ -42,7 +42,7 @@ interface RebaseTodoTimezoneDependencies {
   >;
   readonly seriesRepository: Pick<TodoSeriesRepositoryPort, "updateTimezoneByUserId">;
   readonly ownerTimezone: Pick<TodoOwnerTimezonePort, "findTimezone">;
-  readonly todoReminder: Pick<TodoReminderPort, "cancelReminders" | "scheduleReminders">;
+  readonly todoReminder: Pick<TodoReminderSchedulerPort, "cancelReminders" | "scheduleReminders">;
   readonly todoCache: Pick<TodoCachePort, "invalidateFriendTodos">;
   readonly unitOfWork: UnitOfWorkPort;
   readonly mutationLock: MutationLockPort;

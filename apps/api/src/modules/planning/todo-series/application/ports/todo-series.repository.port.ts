@@ -1,7 +1,5 @@
 import type { TodoSeries } from "../../domain/todo-series.aggregate.js";
 
-export const TODO_SERIES_REPOSITORY = Symbol("TODO_SERIES_REPOSITORY");
-
 export interface DueTodoSeriesQuery {
   /** nextOccurrenceDate가 이 날짜 이하인 규칙 */
   readonly through: string;
@@ -16,34 +14,37 @@ export interface TodoSeriesRef {
   readonly userId: string;
 }
 
-export interface TodoSeriesRepositoryPort {
-  findByIdAndUserId(id: string, userId: string): Promise<TodoSeries | null>;
+export abstract class TodoSeriesRepositoryPort {
+  abstract findByIdAndUserId(id: string, userId: string): Promise<TodoSeries | null>;
 
   /** 규칙 행을 잠그고 최신 상태를 읽는다. 다른 트랜잭션이 잡고 있으면 건너뛰어 null이다. */
-  lockForUpdate(id: string, options?: { readonly skipLocked: boolean }): Promise<TodoSeries | null>;
+  abstract lockForUpdate(
+    id: string,
+    options?: { readonly skipLocked: boolean },
+  ): Promise<TodoSeries | null>;
 
-  insert(series: TodoSeries): Promise<void>;
+  abstract insert(series: TodoSeries): Promise<void>;
 
-  update(series: TodoSeries): Promise<void>;
+  abstract update(series: TodoSeries): Promise<void>;
 
   /** 분할로 이어진 규칙을 모두 잠그고 id를 돌려준다. 원본 id가 같은 규칙이 한 묶음이다. */
-  lockFamilyIds(userId: string, originSeriesId: string): Promise<readonly string[]>;
+  abstract lockFamilyIds(userId: string, originSeriesId: string): Promise<readonly string[]>;
 
   /** 같은 원본에서 이 구간 뒤로 나뉜 구간을 잠그고 읽는다. "이후 모두"가 닿는 범위다. */
-  lockFollowingSegments(series: TodoSeries): Promise<readonly TodoSeries[]>;
+  abstract lockFollowingSegments(series: TodoSeries): Promise<readonly TodoSeries[]>;
 
-  deleteMany(ids: readonly string[]): Promise<void>;
+  abstract deleteMany(ids: readonly string[]): Promise<void>;
 
-  countActiveByUserId(userId: string): Promise<number>;
+  abstract countActiveByUserId(userId: string): Promise<number>;
 
   /**
    * 이 사용자의 규칙 시간대를 한 문장으로 바꾸고 바뀐 수를 돌려준다. 끝난 규칙도 바꾼다.
    * 규칙을 바꿔 다시 진행하면 그 시간대로 회차를 만들기 때문이다.
    */
-  updateTimezoneByUserId(userId: string, timezone: string): Promise<number>;
+  abstract updateTimezoneByUserId(userId: string, timezone: string): Promise<number>;
 
-  findDueBatch(query: DueTodoSeriesQuery): Promise<readonly TodoSeriesRef[]>;
+  abstract findDueBatch(query: DueTodoSeriesQuery): Promise<readonly TodoSeriesRef[]>;
 
   /** 커서가 through 이하인 이 사용자의 규칙. */
-  findIdsBehind(userId: string, through: string): Promise<readonly string[]>;
+  abstract findIdsBehind(userId: string, through: string): Promise<readonly string[]>;
 }

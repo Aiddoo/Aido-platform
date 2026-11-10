@@ -15,7 +15,7 @@ import { DrizzleTodoSeriesRepository } from "#api/modules/planning/todo-series/i
 import { CreateTodoUseCase } from "#api/modules/planning/todos/application/use-cases/create-todo.use-case";
 import { EditTodoUseCase } from "#api/modules/planning/todos/application/use-cases/edit-todo.use-case";
 import { RebaseTodoTimezoneUseCase } from "#api/modules/planning/todos/application/use-cases/rebase-todo-timezone.use-case";
-import { TodoReminderAdapter } from "#api/modules/planning/todos/infrastructure/adapters/todo-reminder-scheduler.adapter";
+import { ReminderSchedulerAdapter } from "#api/modules/planning/todos/infrastructure/adapters/todo-reminder-scheduler.adapter";
 import { TodoTimezoneRebaseQueueService } from "#api/modules/planning/todos/infrastructure/jobs/todo-timezone-rebase-enqueuer.adapter";
 import {
   TODO_TIMEZONE_REBASE_QUEUE,
@@ -67,7 +67,7 @@ describe("시간대 재계산 (실제 PostgreSQL·pg-boss)", () => {
   let runtime: PgBossJobRuntimeAdapter;
   let useCase: RebaseTodoTimezoneUseCase;
   let queue: TodoTimezoneRebaseQueueService;
-  let reminderAdapter: TodoReminderAdapter;
+  let reminderAdapter: ReminderSchedulerAdapter;
   let userId: string;
   let categoryId: number;
   let today: string;
@@ -97,7 +97,7 @@ describe("시간대 재계산 (실제 PostgreSQL·pg-boss)", () => {
       job: { shutdownTimeoutMs: 10_000 },
     });
     await runtime.start();
-    reminderAdapter = new TodoReminderAdapter(new TodoReminderSchedulerAdapter(runtime));
+    reminderAdapter = new ReminderSchedulerAdapter(new TodoReminderSchedulerAdapter(runtime));
     queue = new TodoTimezoneRebaseQueueService(runtime);
     useCase = new RebaseTodoTimezoneUseCase({
       todoRepository: new DrizzleTodoRepository(transaction.txHost),

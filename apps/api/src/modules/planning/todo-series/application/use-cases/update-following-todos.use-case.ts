@@ -20,7 +20,7 @@ import { resolveScheduledInstant } from "../../../shared/domain/todo-schedule.vo
 import type { CategoryOwnershipPort } from "../../../todos/application/ports/category-ownership.port.js";
 import type { TodoReadRepositoryPort } from "../../../todos/application/ports/todo-read.repository.port.js";
 import type {
-  TodoReminderPort,
+  TodoReminderSchedulerPort,
   TodoReminderSchedule,
 } from "../../../todos/application/ports/todo-reminder-scheduler.port.js";
 import type {
@@ -28,8 +28,10 @@ import type {
   OccurrenceTime,
   TodoRepositoryPort,
 } from "../../../todos/application/ports/todo.repository.port.js";
+import type { ApplyTodoEventsUseCase } from "../../../todos/application/use-cases/apply-todo-events.use-case.js";
 import { occurrenceHorizon } from "../../domain/occurrence-horizon.domain-service.js";
 import { RepeatRule } from "../../domain/repeat-rule.vo.js";
+import { TodoOccurrencesChangedEvent } from "../../domain/todo-occurrences-changed.event.js";
 import type { TodoSeries, TodoSeriesChanges } from "../../domain/todo-series.aggregate.js";
 import type { TodoSeriesRepositoryPort } from "../ports/todo-series.repository.port.js";
 import { TodoSeriesLogEvent } from "../todo-series.log-events.js";
@@ -78,10 +80,11 @@ interface UpdateFollowingTodosDependencies {
   >;
   readonly categoryOwnership: Pick<CategoryOwnershipPort, "validateOwnership">;
   readonly materializer: Pick<MaterializeTodoOccurrencesUseCase, "planFirstRun" | "persist">;
-  readonly todoReminder: Pick<TodoReminderPort, "cancelReminders" | "scheduleReminders">;
+  readonly todoReminder: Pick<TodoReminderSchedulerPort, "cancelReminders" | "scheduleReminders">;
   readonly effects: Pick<PublishTodoSeriesEditUseCase, "execute">;
   readonly unitOfWork: UnitOfWorkPort;
   readonly mutationLock: MutationLockPort;
+  readonly applyTodoEvents: Pick<ApplyTodoEventsUseCase, "execute">;
   readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
 
@@ -273,6 +276,9 @@ export class UpdateFollowingTodosUseCase {
     // 지운 회차와 시각이 바뀐 회차의 예약을 지우고 새 시각으로 다시 잡는다. 행과 함께 커밋한다.
     await todoReminder.cancelReminders(uniq(cancelledTodoIds));
     await todoReminder.scheduleReminders(uniqBy(reminders, ({ todoId }) => todoId));
+    await this.#dependencies.applyTodoEvents.execute([
+      new TodoOccurrencesChangedEvent(target.getId(), target.getUserId()),
+    ]);
 
     return { source: series, target, isSplit: split, responseTodoId };
   }

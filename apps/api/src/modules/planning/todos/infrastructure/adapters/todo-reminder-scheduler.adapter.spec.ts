@@ -2,11 +2,11 @@ import { vi } from "vitest";
 
 import type { IReminderScheduler } from "#api/modules/notification/notification-reminders.public";
 
-import { TodoReminderAdapter } from "./todo-reminder-scheduler.adapter.js";
+import { ReminderSchedulerAdapter } from "./todo-reminder-scheduler.adapter.js";
 
-describe("TodoReminderAdapter — scheduler 경계 위임", () => {
+describe("ReminderSchedulerAdapter — scheduler 경계 위임", () => {
   let scheduler: IReminderScheduler;
-  let adapter: TodoReminderAdapter;
+  let adapter: ReminderSchedulerAdapter;
 
   beforeEach(() => {
     scheduler = {
@@ -14,7 +14,7 @@ describe("TodoReminderAdapter — scheduler 경계 위임", () => {
       scheduleReminders: vi.fn(),
       cancelReminders: vi.fn(),
     };
-    adapter = new TodoReminderAdapter(scheduler);
+    adapter = new ReminderSchedulerAdapter(scheduler);
   });
 
   it("scheduler의 schedule 완료 Promise를 그대로 기다린다", async () => {

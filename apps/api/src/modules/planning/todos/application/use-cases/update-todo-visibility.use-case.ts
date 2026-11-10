@@ -15,6 +15,7 @@ import { type TodoCachePort } from "../ports/todo-cache.port.js";
 import { type TodoReadRepositoryPort } from "../ports/todo-read.repository.port.js";
 import { type TodoRepositoryPort } from "../ports/todo.repository.port.js";
 import { TodoLogEvent } from "../todos.log-events.js";
+import type { ApplyTodoEventsUseCase } from "./apply-todo-events.use-case.js";
 
 export interface UpdateTodoVisibilityInput {
   readonly id: number;
@@ -26,6 +27,7 @@ interface UpdateTodoVisibilityDependencies {
   readonly todoRepository: Pick<TodoRepositoryPort, "findByIdAndUserId" | "updateVisibility">;
   readonly todoReadRepository: Pick<TodoReadRepositoryPort, "findByIdAndUserId">;
   readonly unitOfWork: UnitOfWorkPort;
+  readonly applyTodoEvents: Pick<ApplyTodoEventsUseCase, "execute">;
   readonly mutationLock: MutationLockPort;
   readonly todoCache: Pick<TodoCachePort, "invalidateFriendTodos">;
   readonly eventPublisher: DomainEventPublisherPort;
@@ -51,7 +53,9 @@ export class UpdateTodoVisibilityUseCase {
 
       todo.changeVisibility(visibility);
       await this.#dependencies.todoRepository.updateVisibility(id, todo.toPersistence().visibility);
-      return todo.pullDomainEvents();
+      const events = todo.pullDomainEvents();
+      await this.#dependencies.applyTodoEvents.execute(events);
+      return events;
     });
 
     this.#dependencies.logger.log({

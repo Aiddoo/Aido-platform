@@ -7,6 +7,7 @@ import { ApplicationException } from "#api/shared/application/application.except
 import { now } from "#api/shared/domain/date/utils/core";
 import { toDateString } from "#api/shared/domain/date/utils/format";
 
+import { TodoCreatedEvent } from "../../../shared/domain/todo-created.event.js";
 import { Todo, type TodoCreationDraft } from "../../../shared/domain/todo.aggregate.js";
 import type { TodoSeriesRepositoryPort } from "../../../todo-series/application/ports/todo-series.repository.port.js";
 import type { MaterializeTodoOccurrencesUseCase } from "../../../todo-series/application/use-cases/materialize-todo-occurrences.use-case.js";
@@ -15,6 +16,7 @@ import { TodoSeries } from "../../../todo-series/domain/todo-series.aggregate.js
 import type { CategoryOwnershipPort } from "../ports/category-ownership.port.js";
 import type { ResolvedCreateTodoData } from "../ports/staged-todo-creator.port.js";
 import type { CreatedOccurrence, TodoRepositoryPort } from "../ports/todo.repository.port.js";
+import type { ApplyTodoEventsUseCase } from "./apply-todo-events.use-case.js";
 
 export function planTodoCreation(input: ResolvedCreateTodoData): TodoCreationDraft {
   return Todo.planCreation({
@@ -46,6 +48,7 @@ interface TodoCreationWriterDependencies {
     "planFirstRun" | "persist"
   >;
   readonly categoryOwnership: Pick<CategoryOwnershipPort, "validateOwnership">;
+  readonly applyTodoEvents: Pick<ApplyTodoEventsUseCase, "execute">;
 }
 
 export class WriteTodoCreationUseCase {
@@ -78,6 +81,10 @@ export class WriteTodoCreationUseCase {
     if (items != null && items.length > 0) {
       await this.#dependencies.todoRepository.createInlineItems(created.getId().getValue(), items);
     }
+    // 리마인더 예약과 planning.todo.created는 행과 함께 커밋한다. 옛 todo.created는 커밋 뒤 따로 나간다
+    await this.#dependencies.applyTodoEvents.execute([
+      new TodoCreatedEvent(created.getId().getValue(), draft.userId, draft.scheduledTime),
+    ]);
     return created;
   }
 

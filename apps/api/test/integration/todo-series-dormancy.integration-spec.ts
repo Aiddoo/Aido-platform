@@ -113,6 +113,7 @@ describe("반복 할 일 휴면·복귀 (실제 PostgreSQL)", () => {
       materializer: new MaterializeTodoOccurrencesUseCase({
         todoRepository,
         todoReminder: new TodoReminderSchedulerAdapter(runtime),
+        applyTodoEvents: { execute: async () => undefined },
       }),
       effects: new PublishTodoCreationUseCase({
         todoCache: {

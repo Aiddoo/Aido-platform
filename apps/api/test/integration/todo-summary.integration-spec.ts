@@ -21,14 +21,13 @@ import { vi } from "vitest";
 
 import { USER_STREAK_ACCESS } from "#api/modules/identity/identity-settings.public";
 import { CatchUpTodoSeriesUseCase } from "#api/modules/planning/todo-series/application/use-cases/catch-up-todo-series.use-case";
-import { STREAK_PORT } from "#api/modules/planning/todos/application/ports/streak.port";
-import { TODO_READ_REPOSITORY } from "#api/modules/planning/todos/application/ports/todo-read.repository.port";
+import { StreakPort } from "#api/modules/planning/todos/application/ports/streak.port";
+import { TodoReadRepositoryPort } from "#api/modules/planning/todos/application/ports/todo-read.repository.port";
 import { GetTodoSummaryUseCase } from "#api/modules/planning/todos/application/use-cases/get-todo-summary.use-case";
 import { StreakAdapter } from "#api/modules/planning/todos/infrastructure/adapters/streak.adapter";
+import { provideUseCase } from "#api/platform/di/provide-use-case";
 import { createTodoReadRepositoryMock } from "#test/mocks/ports/index";
 import { suppressLogger } from "#test/setup/suppress-logger";
-
-import { getTodoSummaryProvider } from "../../src/modules/planning/todos/planning-todos-application.providers.js";
 
 describe("GetTodoSummaryUseCase 통합 테스트 (Mock DB)", () => {
   let module: TestingModule;
@@ -47,9 +46,13 @@ describe("GetTodoSummaryUseCase 통합 테스트 (Mock DB)", () => {
 
     module = await Test.createTestingModule({
       providers: [
-        getTodoSummaryProvider,
-        { provide: TODO_READ_REPOSITORY, useValue: mockReadRepository },
-        { provide: STREAK_PORT, useClass: StreakAdapter },
+        provideUseCase(GetTodoSummaryUseCase, {
+          todoReadRepository: TodoReadRepositoryPort,
+          streakPort: StreakPort,
+          seriesCatchUp: CatchUpTodoSeriesUseCase,
+        }),
+        { provide: TodoReadRepositoryPort, useValue: mockReadRepository },
+        { provide: StreakPort, useClass: StreakAdapter },
         { provide: USER_STREAK_ACCESS, useValue: mockUserStreakAccess },
         { provide: CatchUpTodoSeriesUseCase, useValue: { execute: vi.fn() } },
       ],

@@ -1,7 +1,5 @@
 import type { TodoCompletionMilestone } from "../../domain/todo-completion.domain-service.js";
 
-export const TODO_NOTIFICATION = Symbol("TODO_NOTIFICATION");
-
 export type { TodoCompletionMilestone };
 
 /**
@@ -36,7 +34,7 @@ export interface MilestoneReachedPayload {
  * 페이로드 계약은 이 포트가 소유하며, notification의 JobData와의
  * 구조 매핑은 인프라 어댑터가 담당합니다.
  */
-export interface TodoNotificationPort {
-  enqueueFriendCompleted(payload: FriendCompletedPayload): void;
-  enqueueMilestoneReached(payload: MilestoneReachedPayload): void;
+export abstract class TodoNotificationPort {
+  abstract enqueueFriendCompleted(payload: FriendCompletedPayload): void;
+  abstract enqueueMilestoneReached(payload: MilestoneReachedPayload): void;
 }

@@ -14,6 +14,7 @@ import { type TodoCachePort } from "../ports/todo-cache.port.js";
 import { type TodoReadRepositoryPort } from "../ports/todo-read.repository.port.js";
 import { type TodoRepositoryPort } from "../ports/todo.repository.port.js";
 import { TodoLogEvent } from "../todos.log-events.js";
+import type { ApplyTodoEventsUseCase } from "./apply-todo-events.use-case.js";
 
 export interface ToggleTodoCompleteInput {
   readonly id: number;
@@ -27,6 +28,7 @@ interface ToggleTodoCompleteDependencies {
   readonly todoRepository: Pick<TodoRepositoryPort, "findByIdAndUserId" | "updateDetails">;
   readonly todoReadRepository: Pick<TodoReadRepositoryPort, "findByIdAndUserId">;
   readonly unitOfWork: UnitOfWorkPort;
+  readonly applyTodoEvents: Pick<ApplyTodoEventsUseCase, "execute">;
   readonly mutationLock: MutationLockPort;
   readonly todoCache: Pick<TodoCachePort, "invalidateFriendTodos">;
   readonly eventPublisher: DomainEventPublisherPort;
@@ -67,7 +69,9 @@ export class SetTodoCompletedUseCase {
         userId,
         completed,
       });
-      return todo.pullDomainEvents();
+      const events = todo.pullDomainEvents();
+      await this.#dependencies.applyTodoEvents.execute(events);
+      return events;
     });
 
     await this.#dependencies.eventPublisher.publishAll(events);

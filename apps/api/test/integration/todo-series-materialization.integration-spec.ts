@@ -19,7 +19,7 @@ import { RepeatRule } from "#api/modules/planning/todo-series/domain/repeat-rule
 import { TodoSeries } from "#api/modules/planning/todo-series/domain/todo-series.aggregate";
 import { TodoSeriesOwnerAdapter } from "#api/modules/planning/todo-series/infrastructure/adapters/todo-series-owner.adapter";
 import { DrizzleTodoSeriesRepository } from "#api/modules/planning/todo-series/infrastructure/persistence/drizzle-todo-series.repository";
-import type { TodoReminderPort } from "#api/modules/planning/todos/application/ports/todo-reminder-scheduler.port";
+import type { TodoReminderSchedulerPort } from "#api/modules/planning/todos/application/ports/todo-reminder-scheduler.port";
 import { DrizzleTodoRepository } from "#api/modules/planning/todos/infrastructure/persistence/drizzle-todo.repository";
 import { createEntityId } from "#api/platform/database/entity-id";
 import { PostgresMutationLockAdapter } from "#api/platform/database/postgres-mutation-lock.adapter";
@@ -81,7 +81,7 @@ describe("회차 채우기 작업 (실제 PostgreSQL)", () => {
   function useCase(
     overrides: {
       batchSize?: number;
-      scheduleReminders?: TodoReminderPort["scheduleReminders"];
+      scheduleReminders?: TodoReminderSchedulerPort["scheduleReminders"];
     } = {},
   ) {
     const { scheduleReminders = async () => undefined, ...budget } = overrides;
@@ -107,6 +107,7 @@ describe("회차 채우기 작업 (실제 PostgreSQL)", () => {
         materializer: new MaterializeTodoOccurrencesUseCase({
           todoRepository,
           todoReminder: { scheduleReminders },
+          applyTodoEvents: { execute: async () => undefined },
         }),
         effects,
         unitOfWork: fixture.uow,

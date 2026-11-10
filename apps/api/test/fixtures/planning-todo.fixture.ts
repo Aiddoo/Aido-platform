@@ -4,10 +4,13 @@ import { mock } from "vitest-mock-extended";
 import { MaterializeTodoOccurrencesUseCase } from "#api/modules/planning/todo-series/application/use-cases/materialize-todo-occurrences.use-case";
 import { PublishTodoSeriesEditUseCase } from "#api/modules/planning/todo-series/application/use-cases/publish-todo-series-edit.use-case";
 import type { TodoSeries } from "#api/modules/planning/todo-series/domain/todo-series.aggregate";
+import { ApplyTodoEventsUseCase } from "#api/modules/planning/todos/application/use-cases/apply-todo-events.use-case";
 import { ResolveTodoTimezoneUseCase } from "#api/modules/planning/todos/application/use-cases/resolve-todo-timezone.use-case";
 import { PaginationService } from "#api/shared/application/pagination/index";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
+import { instantFromDate } from "#api/shared/domain/time/instant";
 import { TodoBuilder } from "#test/builders/index";
+import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import type { PlanningTodoRecord } from "#test/fixtures/todo-response.fixture";
 import {
   StubPlanningTodoRepository,
@@ -51,9 +54,15 @@ export function createPlanningTodoFixture(
   const todoSeriesRepository = new StubPlanningTodoSeriesRepository(seriesStore);
   const seriesOwner = new StubPlanningTodoSeriesOwner();
   const todoReminder = new StubPlanningTodoReminder();
+  const applyTodoEvents = new ApplyTodoEventsUseCase({
+    reminderScheduler: todoReminder,
+    eventPublisher,
+    clock: new FixedClock(instantFromDate(PLANNING_TIME)),
+  });
   const occurrenceMaterializer = new MaterializeTodoOccurrencesUseCase({
     todoRepository,
     todoReminder,
+    applyTodoEvents,
   });
   const seriesEffects = new PublishTodoSeriesEditUseCase({
     todoCache,
@@ -92,6 +101,7 @@ export function createPlanningTodoFixture(
     todoReadRepository,
     todoSeriesRepository,
     todoReminder,
+    applyTodoEvents,
     seriesRepository: todoSeriesRepository,
     seriesOwner,
     seriesEffects,

@@ -10,7 +10,7 @@ import { now } from "#api/shared/domain/date/utils/core";
 import { toDateString } from "#api/shared/domain/date/utils/format";
 
 import { resolveScheduledInstant } from "../../../shared/domain/todo-schedule.vo.js";
-import type { TodoReminderPort } from "../../../todos/application/ports/todo-reminder-scheduler.port.js";
+import type { TodoReminderSchedulerPort } from "../../../todos/application/ports/todo-reminder-scheduler.port.js";
 import type {
   CreatedOccurrence,
   TodoRepositoryPort,
@@ -37,7 +37,7 @@ interface StartSeriesFromTodoDependencies {
   readonly todoRepository: Pick<TodoRepositoryPort, "findByIdAndUserId" | "attachToSeries">;
   readonly seriesRepository: Pick<TodoSeriesRepositoryPort, "countActiveByUserId" | "insert">;
   readonly materializer: Pick<MaterializeTodoOccurrencesUseCase, "planFirstRun" | "persist">;
-  readonly todoReminder: Pick<TodoReminderPort, "cancelReminders" | "scheduleReminders">;
+  readonly todoReminder: Pick<TodoReminderSchedulerPort, "cancelReminders" | "scheduleReminders">;
   readonly effects: Pick<PublishTodoCreationUseCase, "publishSeriesStarted">;
   readonly mutationLock: MutationLockPort;
 }

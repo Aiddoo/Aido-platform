@@ -6,8 +6,10 @@ import { MutationLockKeys, type MutationLockPort } from "#api/shared/application
 import { addDaysToDateKey } from "#api/shared/domain/date/utils/arithmetic";
 import { toDateString } from "#api/shared/domain/date/utils/format";
 
-import type { TodoReminderPort } from "../../../todos/application/ports/todo-reminder-scheduler.port.js";
+import type { TodoReminderSchedulerPort } from "../../../todos/application/ports/todo-reminder-scheduler.port.js";
 import type { TodoRepositoryPort } from "../../../todos/application/ports/todo.repository.port.js";
+import type { ApplyTodoEventsUseCase } from "../../../todos/application/use-cases/apply-todo-events.use-case.js";
+import { TodoOccurrencesChangedEvent } from "../../domain/todo-occurrences-changed.event.js";
 import type { TodoSeries } from "../../domain/todo-series.aggregate.js";
 import type { TodoSeriesRepositoryPort } from "../ports/todo-series.repository.port.js";
 import { TodoSeriesLogEvent } from "../todo-series.log-events.js";
@@ -30,9 +32,10 @@ interface StopTodoSeriesDependencies {
     TodoSeriesRepositoryPort,
     "lockForUpdate" | "lockFollowingSegments" | "update"
   >;
-  readonly todoReminder: Pick<TodoReminderPort, "cancelReminders">;
+  readonly todoReminder: Pick<TodoReminderSchedulerPort, "cancelReminders">;
   readonly effects: Pick<PublishTodoSeriesEditUseCase, "execute">;
   readonly mutationLock: MutationLockPort;
+  readonly applyTodoEvents: Pick<ApplyTodoEventsUseCase, "execute">;
   readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
 
@@ -82,6 +85,9 @@ export class StopTodoSeriesUseCase {
       includeCompleted: false,
     });
     await todoReminder.cancelReminders(deletedTodoIds);
+    await this.#dependencies.applyTodoEvents.execute([
+      new TodoOccurrencesChangedEvent(seriesId, userId),
+    ]);
     return { series, userId, deletedTodoIds };
   }
 

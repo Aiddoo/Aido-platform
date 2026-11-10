@@ -24,8 +24,7 @@ import { NotesModule } from "#api/modules/notes/notes.module";
 import { NotificationDeliveryModule } from "#api/modules/notification/notification-delivery.public";
 import { NotificationRemindersModule } from "#api/modules/notification/notification-reminders.public";
 import { OperationsModule } from "#api/modules/operations/operations.module";
-import { PlanningCategoriesModule } from "#api/modules/planning/planning-categories.public";
-import { PlanningTodosModule } from "#api/modules/planning/todos/planning-todos.public";
+import { PlanningModule } from "#api/modules/planning/planning.module";
 import { SocialBlocksModule } from "#api/modules/social/social-blocks.public";
 import { SocialCheersModule } from "#api/modules/social/social-cheers.public";
 import { SocialFriendsModule } from "#api/modules/social/social-friends.public";
@@ -144,9 +143,8 @@ import { AppService } from "./app.service.js";
     SocialReportsAdminModule,
     NotificationRemindersModule,
     BillingModule,
-    PlanningTodosModule,
+    PlanningModule,
     EngagementCommentsModule,
-    PlanningCategoriesModule,
     WeatherForecastModule,
     InsightsWeeklyAchievementsModule,
   ],

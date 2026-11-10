@@ -2,8 +2,6 @@ import type { FriendTodo } from "@aido/api";
 
 import type { CursorPaginatedResponse } from "#api/shared/application/pagination/index";
 
-export const TODO_CACHE = Symbol("TODO_CACHE");
-
 export interface FriendTodosFirstPageCacheRead {
   /**
    * 조회와 저장 사이에 무효화가 있었는지 판별하는 불투명 토큰.
@@ -22,14 +20,14 @@ export interface FriendTodosFirstPageCacheRead {
  * 이벤트 기반이 아닌 명시적 무효화(invalidateFriendTodos)가 필요합니다 —
  * 모든 쓰기 use-case가 TX 커밋 후 직접 호출합니다.
  */
-export interface TodoCachePort {
-  invalidateTodoCategories(userId: string): Promise<void>;
+export abstract class TodoCachePort {
+  abstract invalidateTodoCategories(userId: string): Promise<void>;
 
   /**
    * 친구 공개 투두 첫 페이지 조회.
    * 날짜 세그먼트는 YYYY-MM-DD 또는 "-"(미지정).
    */
-  readFriendTodosFirstPage(
+  abstract readFriendTodosFirstPage(
     ownerUserId: string,
     startDate: string,
     endDate: string,
@@ -40,7 +38,7 @@ export interface TodoCachePort {
    * 친구 공개 투두 첫 페이지 저장.
    * 캐시 값은 소유자의 PUBLIC 첫 페이지(뷰어 무관 공유).
    */
-  storeFriendTodosFirstPageIfCurrent(
+  abstract storeFriendTodosFirstPageIfCurrent(
     ownerUserId: string,
     startDate: string,
     endDate: string,
@@ -50,5 +48,5 @@ export interface TodoCachePort {
   ): Promise<void>;
 
   /** 소유자의 친구 공개 투두 캐시 전체 무효화 (모든 날짜 범위·size 변형 포함). */
-  invalidateFriendTodos(ownerUserId: string): Promise<void>;
+  abstract invalidateFriendTodos(ownerUserId: string): Promise<void>;
 }

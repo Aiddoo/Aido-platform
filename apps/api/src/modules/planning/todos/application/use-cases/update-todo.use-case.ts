@@ -22,6 +22,7 @@ import { type TodoCachePort } from "../ports/todo-cache.port.js";
 import { type TodoReadRepositoryPort } from "../ports/todo-read.repository.port.js";
 import { type TodoRepositoryPort, type TodoUpdatePatch } from "../ports/todo.repository.port.js";
 import { TodoLogEvent } from "../todos.log-events.js";
+import type { ApplyTodoEventsUseCase } from "./apply-todo-events.use-case.js";
 
 export interface UpdateTodoData {
   readonly title?: string;
@@ -56,6 +57,7 @@ interface UpdateTodoDependencies {
   readonly todoRepository: Pick<TodoRepositoryPort, "findByIdAndUserId" | "updateDetails">;
   readonly todoReadRepository: Pick<TodoReadRepositoryPort, "findByIdAndUserId">;
   readonly unitOfWork: UnitOfWorkPort;
+  readonly applyTodoEvents: Pick<ApplyTodoEventsUseCase, "execute">;
   readonly mutationLock: MutationLockPort;
   readonly categoryOwnership: Pick<CategoryOwnershipPort, "validateOwnership">;
   readonly todoCache: Pick<TodoCachePort, "invalidateTodoCategories" | "invalidateFriendTodos">;
@@ -72,7 +74,11 @@ export class UpdateTodoUseCase {
 
   async execute(input: UpdateTodoInput): Promise<TodoResponse> {
     const { id, userId } = input;
-    const applied = await this.#dependencies.unitOfWork.run(() => this.apply(input));
+    const applied = await this.#dependencies.unitOfWork.run(async () => {
+      const updated = await this.apply(input);
+      await this.#dependencies.applyTodoEvents.execute(updated.events);
+      return updated;
+    });
     await this.publish(applied);
     const response = await this.#dependencies.todoReadRepository.findByIdAndUserId(id, userId);
     if (response == null) {
@@ -81,7 +87,7 @@ export class UpdateTodoUseCase {
     return response;
   }
 
-  /** 활성 UoW 안에서 호출한다. 다른 수정과 한 트랜잭션으로 묶을 때 EditTodoUseCase가 부른다. */
+  /** 활성 UoW 안에서 호출한다. 다른 수정과 한 트랜잭션으로 묶을 때 EditTodoUseCase가 부르고, 리마인더·이벤트 반영은 호출자가 고른다. */
   async apply(input: UpdateTodoInput): Promise<AppliedTodoUpdate> {
     const { id, userId, data, timezone } = input;
     await this.#dependencies.mutationLock.acquire([

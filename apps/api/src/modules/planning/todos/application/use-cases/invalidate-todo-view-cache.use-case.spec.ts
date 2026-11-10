@@ -16,7 +16,7 @@ describe("InvalidateTodoViewCacheUseCase", () => {
     });
 
     // When
-    await invalidator.invalidateForTodo(42);
+    await invalidator.execute(42);
 
     // Then
     expect(readRepository.findOwnerId).toHaveBeenCalledWith(42);
@@ -34,7 +34,7 @@ describe("InvalidateTodoViewCacheUseCase", () => {
     });
 
     // When
-    await invalidator.invalidateForTodo(42);
+    await invalidator.execute(42);
 
     // Then
     expect(cache.invalidateFriendTodos).not.toHaveBeenCalled();

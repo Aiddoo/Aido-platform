@@ -1,9 +1,11 @@
-import type { TodoReminderPort } from "../../../todos/application/ports/todo-reminder-scheduler.port.js";
+import type { TodoReminderSchedulerPort } from "../../../todos/application/ports/todo-reminder-scheduler.port.js";
 import type {
   CreatedOccurrence,
   TodoRepositoryPort,
 } from "../../../todos/application/ports/todo.repository.port.js";
+import type { ApplyTodoEventsUseCase } from "../../../todos/application/use-cases/apply-todo-events.use-case.js";
 import { occurrenceHorizon } from "../../domain/occurrence-horizon.domain-service.js";
+import { TodoOccurrencesCreatedEvent } from "../../domain/todo-occurrences-created.event.js";
 import type { TodoSeries, TodoOccurrenceDraft } from "../../domain/todo-series.aggregate.js";
 
 /**
@@ -14,7 +16,8 @@ export const MAX_OCCURRENCES_PER_RUN = 400;
 
 interface TodoOccurrenceMaterializerDependencies {
   readonly todoRepository: Pick<TodoRepositoryPort, "getMaxSortOrder" | "insertOccurrences">;
-  readonly todoReminder: Pick<TodoReminderPort, "scheduleReminders">;
+  readonly todoReminder: Pick<TodoReminderSchedulerPort, "scheduleReminders">;
+  readonly applyTodoEvents: Pick<ApplyTodoEventsUseCase, "execute">;
 }
 
 /**
@@ -65,6 +68,11 @@ export class MaterializeTodoOccurrencesUseCase {
         scheduledTime == null ? [] : [{ todoId, scheduledTime, userId }],
       ),
     );
+    if (created.length > 0) {
+      await this.#dependencies.applyTodoEvents.execute([
+        new TodoOccurrencesCreatedEvent(series.getId(), userId, created.length),
+      ]);
+    }
     return created;
   }
 }

@@ -29,7 +29,7 @@ import type {
   TodaySummaryTodoRow,
 } from "#api/modules/planning/todos/application/ports/todo-read.repository.port";
 import type {
-  TodoReminderPort,
+  TodoReminderSchedulerPort,
   TodoReminderSchedule,
 } from "#api/modules/planning/todos/application/ports/todo-reminder-scheduler.port";
 import type {
@@ -502,7 +502,7 @@ export class StubPlanningTodoSeriesRepository implements TodoSeriesRepositoryPor
   }
 }
 
-export class StubPlanningTodoReminder implements TodoReminderPort {
+export class StubPlanningTodoReminder implements TodoReminderSchedulerPort {
   readonly scheduled: TodoReminderSchedule[] = [];
   readonly cancelled: number[] = [];
   async scheduleReminder(todoId: number, scheduledTime: Date, userId: string): Promise<void> {
