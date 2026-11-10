@@ -15,7 +15,6 @@ import {
   useCallback,
   useEffect,
   useLayoutEffect,
-  useMemo,
   useRef,
   useState,
 } from 'react';
@@ -27,9 +26,10 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { GestureDetector, useTapGesture } from 'react-native-gesture-handler';
 import { useKeyboardContext } from 'react-native-keyboard-controller';
 import Animated, {
+  useAnimatedReaction,
   useAnimatedStyle,
   useDerivedValue,
   useSharedValue,
@@ -95,6 +95,8 @@ export function KeyboardBottomSheet({
   const portalTarget = usePortalTarget();
   const sheetRef = useRef<ComponentRef<typeof GorhomBottomSheet> | null>(null);
   const animatedPosition = useSharedValue(0);
+  const animatedIndex = useSharedValue<number>(SHEET_INDEX.CLOSED);
+  const isBackdropTouchable = useSharedValue(false);
   const isClosingRef = useRef(false);
   const hasNotifiedCloseRef = useRef(false);
   const prevIsOpenRef = useRef(isOpen);
@@ -354,15 +356,25 @@ export function KeyboardBottomSheet({
     isClosingRef.current = false;
   };
 
-  // gorhom 기본 press 동작(close/collapse)은 forceClose와 겹치므로 탭은 requestDismiss만 실행한다.
-  const backdropTapGesture = useMemo(
-    () =>
-      // oxlint-disable-next-line react/refs -- 탭 제스처가 끝날 때만 불리고 렌더 중에는 실행되지 않는다
-      Gesture.Tap().onEnd(() => {
-        scheduleOnRN(requestDismiss);
-      }),
-    [requestDismiss],
+  // 새 GestureDetector는 Android에서 자식이 터치를 받지 않아도 탭을 받는다. gorhom이 닫힌 시트의 backdrop 터치를 끄는 index에서 탭도 꺼 뒤 화면의 탭을 가로채지 않는다
+  useAnimatedReaction(
+    () => animatedIndex.get() > SHEET_INDEX.CLOSED,
+    (isTouchable) => {
+      if (isTouchable !== isBackdropTouchable.get()) {
+        isBackdropTouchable.set(isTouchable);
+      }
+    },
   );
+
+  // gorhom 기본 press 동작(close/collapse)은 forceClose와 겹치므로 탭은 requestDismiss만 실행한다.
+  const backdropTapGesture = useTapGesture({
+    testID: 'keyboard-sheet-backdrop-tap',
+    enabled: isBackdropTouchable,
+    onDeactivate: () => {
+      'worklet';
+      scheduleOnRN(requestDismiss);
+    },
+  });
 
   const renderBackdrop = useCallback(
     (props: BottomSheetBackdropProps) => (
@@ -404,6 +416,7 @@ export function KeyboardBottomSheet({
           <SheetFooterContext value={footer}>
             <GorhomBottomSheet
               ref={sheetRef}
+              animatedIndex={animatedIndex}
               animatedPosition={animatedPosition}
               accessible={false}
               animationConfigs={animationConfigs}
