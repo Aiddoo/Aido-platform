@@ -1,15 +1,19 @@
-import type { InviterRewardMilestone } from "@aido/api";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import { InviteRedemption } from "./invite-redemption.aggregate.js";
+import { InviteRedemptionId } from "./invite-redemption-id.vo.js";
 import {
   capRewards,
-  InviteRewardPolicy,
+  type InviterRewardMilestone,
   isMilestoneReachedAt,
+  nextInviteMilestone,
   nextMilestoneQualifiedCount,
+  planInviteeRewards,
+  planInviterRewards,
   premiumCapState,
   remainingPremiumDays,
   rewardCapWindowStart,
   rewardsAtQualifiedCount,
+  summarizeInviterRewards,
 } from "./invite-reward.domain-service.js";
 
 const MILESTONES = [
@@ -25,7 +29,7 @@ const MILESTONES = [
   { qualifiedCount: 5, repeatEvery: 5, rewards: [{ rewardType: "FRIEND_SLOT", quantity: 2 }] },
 ] as const satisfies readonly InviterRewardMilestone[];
 
-describe("InviteRewardPolicy", () => {
+describe("invite-reward — 초대 보상 계산", () => {
   describe("isMilestoneReachedAt", () => {
     it.each([
       { count: 4, expected: false },
@@ -50,7 +54,7 @@ describe("InviteRewardPolicy", () => {
       const qualifiedCount = 2;
 
       // When
-      const next = InviteRewardPolicy.nextMilestone(qualifiedCount, MILESTONES);
+      const next = nextInviteMilestone(qualifiedCount, MILESTONES);
 
       // Then
       expect(next).toEqual({
@@ -93,7 +97,7 @@ describe("InviteRewardPolicy", () => {
       ];
 
       // When
-      const summary = InviteRewardPolicy.summarize(totals);
+      const summary = summarizeInviterRewards(totals);
 
       // Then
       expect(summary).toEqual({
@@ -105,10 +109,10 @@ describe("InviteRewardPolicy", () => {
 
     it("받은 보상이 없으면 0과 빈 목록이다", () => {
       // Given
-      const totals: Parameters<typeof InviteRewardPolicy.summarize>[0] = [];
+      const totals: Parameters<typeof summarizeInviterRewards>[0] = [];
 
       // When
-      const summary = InviteRewardPolicy.summarize(totals);
+      const summary = summarizeInviterRewards(totals);
 
       // Then
       expect(summary).toEqual({ premiumDaysInWindow: 0, totalPremiumDays: 0, rewardsEarned: [] });
@@ -118,13 +122,13 @@ describe("InviteRewardPolicy", () => {
   describe("rewardCapWindowStart", () => {
     it("윤년 2월을 지나 3월 15일의 30일 전은 2월 14일이다", () => {
       // Given
-      const now = new Date("2028-03-15T00:00:00.000Z");
+      const now = Temporal.Instant.from("2028-03-15T00:00:00Z");
 
       // When
       const start = rewardCapWindowStart(now);
 
       // Then
-      expect(start).toEqual(new Date("2028-02-14T00:00:00.000Z"));
+      expect(start.toString()).toBe("2028-02-14T00:00:00Z");
     });
   });
 
@@ -179,27 +183,13 @@ describe("InviteRewardPolicy", () => {
   });
 
   describe("planInviterRewards", () => {
-    const redemption = InviteRedemption.reconstitute({
-      id: "redemption-9",
-      inviteId: "invite-1",
-      inviterId: "inviter-1",
-      inviteeId: "invitee-9",
-      status: "JOINED",
-      rejectionReason: null,
-      timezone: "Asia/Seoul",
-      inviterRewardEligible: true,
-      activeDays: ["2028-03-14", "2028-03-15"],
-      joinedAt: new Date("2028-03-10T00:00:00.000Z"),
-      qualifiedAt: null,
-      rewardedAt: null,
-      rejectedAt: null,
-      expiresAt: new Date("2028-03-24T00:00:00.000Z"),
-      qualifyReminderSentAt: null,
-    });
+    const redemptionId = InviteRedemptionId.reconstitute("redemption-9");
+    const inviterId = UserId.reconstitute("inviter-1");
 
     function plan(premiumDaysInWindow: number, totalPremiumDays: number) {
-      return InviteRewardPolicy.planInviterRewards(redemption, {
-        inviterId: "inviter-1",
+      return planInviterRewards({
+        redemptionId,
+        inviterId,
         summary: { premiumDaysInWindow, totalPremiumDays, rewardsEarned: [] },
         priorQualifiedCount: 4,
       });
@@ -215,14 +205,14 @@ describe("InviteRewardPolicy", () => {
       // Then
       expect(plans).toEqual([
         {
-          recipientId: "inviter-1",
+          recipientId: inviterId,
           sourceType: "INVITE_REDEMPTION",
           sourceId: "redemption-9",
           rewardType: "PREMIUM_DAYS",
           quantity: 2,
         },
         {
-          recipientId: "inviter-1",
+          recipientId: inviterId,
           sourceType: "INVITE_REDEMPTION",
           sourceId: "redemption-9",
           rewardType: "FRIEND_SLOT",
@@ -273,6 +263,33 @@ describe("InviteRewardPolicy", () => {
       // Then
       expect(capped).toEqual(expected);
     });
+  });
+
+  describe("planInviteeRewards", () => {
+    it.each([
+      { isRewardClaimed: true, expectedPlans: [["PREMIUM_DAYS", 7]] },
+      { isRewardClaimed: false, expectedPlans: [] },
+    ])(
+      "같은 기기·신원으로 처음 받는지가 $isRewardClaimed이면 초대받은 사람 보상은 $expectedPlans다",
+      ({ isRewardClaimed, expectedPlans }) => {
+        // Given
+        const inviteeId = UserId.reconstitute("invitee-9");
+
+        // When
+        const { rewards, plans } = planInviteeRewards({
+          redemptionId: InviteRedemptionId.reconstitute("redemption-9"),
+          inviteeId,
+          isRewardClaimed,
+        });
+
+        // Then
+        expect(plans.map((plan) => [plan.rewardType, plan.quantity])).toEqual(expectedPlans);
+        expect(rewards.map((reward) => [reward.rewardType, reward.quantity])).toEqual(
+          expectedPlans,
+        );
+        expect(plans.every((plan) => plan.recipientId.equals(inviteeId))).toBe(true);
+      },
+    );
   });
 
   describe("rewardsAtQualifiedCount", () => {

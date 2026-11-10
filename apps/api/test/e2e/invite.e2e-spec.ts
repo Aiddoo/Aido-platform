@@ -7,7 +7,7 @@ import {
 import { ErrorCode } from "@aido/api/errors";
 import request from "supertest";
 
-import { INVITE_CONFIG } from "#api/modules/social/invites/application/ports/invite-config.port";
+import { InviteConfigPort } from "#api/modules/social/invites/application/ports/invite-config.port";
 import { inviteRedemption } from "#api/platform/database/schema/index";
 
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
@@ -21,7 +21,7 @@ describe("친구 초대 HTTP 계약 (실제 DB)", () => {
     beforeAll(async () => {
       ctx = await createE2eApp({
         customizeBuilder: (builder) =>
-          builder.overrideProvider(INVITE_CONFIG).useValue({ isEnabled: true }),
+          builder.overrideProvider(InviteConfigPort).useValue({ isEnabled: true }),
       });
     }, 60_000);
 
@@ -210,7 +210,7 @@ describe("친구 초대 HTTP 계약 (실제 DB)", () => {
     beforeAll(async () => {
       ctx = await createE2eApp({
         customizeBuilder: (builder) =>
-          builder.overrideProvider(INVITE_CONFIG).useValue({ isEnabled: false }),
+          builder.overrideProvider(InviteConfigPort).useValue({ isEnabled: false }),
       });
     }, 60_000);
 

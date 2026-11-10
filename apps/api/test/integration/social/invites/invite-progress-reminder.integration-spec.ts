@@ -1,10 +1,7 @@
 import { eq } from "drizzle-orm";
 
-import { INVITE_CONFIG } from "#api/modules/social/invites/application/ports/invite-config.port";
-import {
-  INVITE_REDEMPTION_REPOSITORY,
-  type InviteRedemptionRepositoryPort,
-} from "#api/modules/social/invites/application/ports/invite-redemption.repository.port";
+import { InviteConfigPort } from "#api/modules/social/invites/application/ports/invite-config.port";
+import { InviteRedemptionRepositoryPort } from "#api/modules/social/invites/application/ports/invite-redemption.repository.port";
 import { GetMyInviteUseCase } from "#api/modules/social/invites/application/use-cases/get-my-invite.use-case";
 import { RecordInviteeActivityUseCase } from "#api/modules/social/invites/application/use-cases/record-invitee-activity.use-case";
 import { RedeemInviteUseCase } from "#api/modules/social/invites/application/use-cases/redeem-invite.use-case";
@@ -12,7 +9,8 @@ import { SendInviteQualifyReminderUseCase } from "#api/modules/social/invites/ap
 import { qualifyReminderExpiresBefore } from "#api/modules/social/invites/domain/invite-qualify-reminder.domain-service";
 import { createEntityId } from "#api/platform/database/entity-id";
 import { inviteActiveDay, inviteRedemption, user } from "#api/platform/database/schema/index";
-import { UNIT_OF_WORK, type UnitOfWorkPort } from "#api/shared/application/ports/index";
+import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
+import { instantFromDate } from "#api/shared/domain/time/instant";
 import { UserFixture } from "#test/fixtures/index";
 import { createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
@@ -21,12 +19,13 @@ import {
   createE2eApp,
   destroyE2eApp,
   type E2eTestContext,
-} from "../e2e/helpers/e2e-app-factory.js";
+} from "../../../e2e/helpers/e2e-app-factory.js";
 
 // 2028-02-28 12:00 KST 수락 → 2028-03-13 12:00 KST 마감
 const JOINED_AT = new Date("2028-02-28T03:00:00.000Z");
 // 마감 1일 18시간 전, 18:00 KST
 const REMINDER_AT = new Date("2028-03-11T09:00:00.000Z");
+const REMINDER_INSTANT = instantFromDate(REMINDER_AT);
 
 describe("초대 첫날·사용 시작 알림의 중복 방지 (실제 PostgreSQL)", () => {
   let database: TestDatabase;
@@ -45,14 +44,14 @@ describe("초대 첫날·사용 시작 알림의 중복 방지 (실제 PostgreSQ
     context = await createE2eApp({
       testDatabase: database,
       customizeBuilder: (builder) =>
-        builder.overrideProvider(INVITE_CONFIG).useValue({ isEnabled: true }),
+        builder.overrideProvider(InviteConfigPort).useValue({ isEnabled: true }),
     });
     redeemInvite = context.module.get(RedeemInviteUseCase);
     getMyInvite = context.module.get(GetMyInviteUseCase);
     recordActivity = context.module.get(RecordInviteeActivityUseCase);
     sendReminder = context.module.get(SendInviteQualifyReminderUseCase);
-    repository = context.module.get<InviteRedemptionRepositoryPort>(INVITE_REDEMPTION_REPOSITORY);
-    unitOfWork = context.module.get<UnitOfWorkPort>(UNIT_OF_WORK);
+    repository = context.module.get(InviteRedemptionRepositoryPort);
+    unitOfWork = context.module.get(UnitOfWorkPort);
   });
 
   beforeEach(async () => {
@@ -113,10 +112,16 @@ describe("초대 첫날·사용 시작 알림의 중복 방지 (실제 PostgreSQ
 
     // When
     await Promise.all([
-      recordActivity.execute({ inviteeId, occurredAt: JOINED_AT }),
-      recordActivity.execute({ inviteeId, occurredAt: new Date("2028-02-28T04:00:00.000Z") }),
+      recordActivity.execute({ inviteeId, occurredAt: instantFromDate(JOINED_AT) }),
+      recordActivity.execute({
+        inviteeId,
+        occurredAt: Temporal.Instant.from("2028-02-28T04:00:00.000Z"),
+      }),
     ]);
-    await recordActivity.execute({ inviteeId, occurredAt: new Date("2028-02-28T05:00:00.000Z") });
+    await recordActivity.execute({
+      inviteeId,
+      occurredAt: Temporal.Instant.from("2028-02-28T05:00:00.000Z"),
+    });
 
     // Then
     expect(await noticesOf("INVITE_PROGRESS")).toEqual([{ userId: inviterId }]);
@@ -130,7 +135,10 @@ describe("초대 첫날·사용 시작 알림의 중복 방지 (실제 PostgreSQ
       .values({ redemptionId, localDate: new Date("2028-02-28T00:00:00.000Z") });
 
     // When
-    await recordActivity.execute({ inviteeId, occurredAt: new Date("2028-02-29T03:00:00.000Z") });
+    await recordActivity.execute({
+      inviteeId,
+      occurredAt: Temporal.Instant.from("2028-02-29T03:00:00.000Z"),
+    });
 
     // Then
     expect(await noticesOf("INVITE_PROGRESS")).toEqual([]);
@@ -142,7 +150,7 @@ describe("초대 첫날·사용 시작 알림의 중복 방지 (실제 PostgreSQ
     const notStarted = await redeemed("NEWINVTR", "NEWINVTE");
     const ineligible = await redeemed("INEINVTR", "INEINVTE");
     for (const { inviteeId } of [due, ineligible]) {
-      await recordActivity.execute({ inviteeId, occurredAt: JOINED_AT });
+      await recordActivity.execute({ inviteeId, occurredAt: instantFromDate(JOINED_AT) });
     }
     await client
       .update(inviteRedemption)
@@ -151,16 +159,20 @@ describe("초대 첫날·사용 시작 알림의 중복 방지 (실제 PostgreSQ
     vi.setSystemTime(REMINDER_AT);
 
     // When
-    const candidates = await repository.findQualifyReminderCandidates({
-      now: REMINDER_AT,
-      expiresBefore: qualifyReminderExpiresBefore(REMINDER_AT),
+    const candidates = await repository.listQualifyReminderCandidates({
+      now: REMINDER_INSTANT,
+      expiresBefore: qualifyReminderExpiresBefore(REMINDER_INSTANT),
+      after: null,
       limit: 10,
     });
     const results = await Promise.all([
-      sendReminder.execute({ redemptionId: due.redemptionId, now: REMINDER_AT }),
-      sendReminder.execute({ redemptionId: due.redemptionId, now: REMINDER_AT }),
+      sendReminder.execute({ redemptionId: due.redemptionId, now: REMINDER_INSTANT }),
+      sendReminder.execute({ redemptionId: due.redemptionId, now: REMINDER_INSTANT }),
     ]);
-    const rerun = await sendReminder.execute({ redemptionId: due.redemptionId, now: REMINDER_AT });
+    const rerun = await sendReminder.execute({
+      redemptionId: due.redemptionId,
+      now: REMINDER_INSTANT,
+    });
 
     // Then
     expect(
@@ -181,9 +193,10 @@ describe("초대 첫날·사용 시작 알림의 중복 방지 (실제 PostgreSQ
     });
     expect(stored?.qualifyReminderSentAt).toEqual(REMINDER_AT);
     const nextRun = await unitOfWork.run(() =>
-      repository.findQualifyReminderCandidates({
-        now: REMINDER_AT,
-        expiresBefore: qualifyReminderExpiresBefore(REMINDER_AT),
+      repository.listQualifyReminderCandidates({
+        now: REMINDER_INSTANT,
+        expiresBefore: qualifyReminderExpiresBefore(REMINDER_INSTANT),
+        after: null,
         limit: 10,
       }),
     );

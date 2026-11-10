@@ -8,34 +8,22 @@ import {
   type PremiumAccessReaderPort,
 } from "#api/modules/billing/subscriptions/billing-subscriptions.public";
 import { RevenueCatWebhookReceiver } from "#api/modules/billing/subscriptions/infrastructure/adapters/revenuecat/revenuecat-webhook-receiver.adapter";
-import { INVITE_CONFIG } from "#api/modules/social/invites/application/ports/invite-config.port";
-import {
-  INVITE_NOTIFIER,
-  type InviteNotifierPort,
-} from "#api/modules/social/invites/application/ports/invite-notifier.port";
-import {
-  INVITE_REDEMPTION_REPOSITORY,
-  type InviteRedemptionRepositoryPort,
-} from "#api/modules/social/invites/application/ports/invite-redemption.repository.port";
-import {
-  REWARD_APPLIERS,
-  type RewardApplierRegistry,
-} from "#api/modules/social/invites/application/ports/reward-applier.port";
-import {
-  REWARD_GRANT_REPOSITORY,
-  type RewardGrantRepositoryPort,
-} from "#api/modules/social/invites/application/ports/reward-grant.repository.port";
+import { InviteConfigPort } from "#api/modules/social/invites/application/ports/invite-config.port";
+import { InviteNotifierPort } from "#api/modules/social/invites/application/ports/invite-notifier.port";
+import { InviteRedemptionRepositoryPort } from "#api/modules/social/invites/application/ports/invite-redemption.repository.port";
+import { RewardApplierPort } from "#api/modules/social/invites/application/ports/reward-applier.port";
+import { RewardGrantRepositoryPort } from "#api/modules/social/invites/application/ports/reward-grant.repository.port";
 import { ExpireStaleRedemptionsUseCase } from "#api/modules/social/invites/application/use-cases/expire-stale-redemptions.use-case";
 import { GetMyInviteUseCase } from "#api/modules/social/invites/application/use-cases/get-my-invite.use-case";
 import { GrantInviteRewardsUseCase } from "#api/modules/social/invites/application/use-cases/grant-invite-rewards.use-case";
 import { RecordInviteeActivityUseCase } from "#api/modules/social/invites/application/use-cases/record-invitee-activity.use-case";
 import { RedeemInviteUseCase } from "#api/modules/social/invites/application/use-cases/redeem-invite.use-case";
 import {
-  InviteRewardPolicy,
   remainingPremiumDays,
   rewardCapWindowStart,
+  summarizeInviterRewards,
 } from "#api/modules/social/invites/domain/invite-reward.domain-service";
-import { INVITE_REWARD_MAX_ATTEMPTS } from "#api/modules/social/invites/domain/reward-grant.constants";
+import { INVITE_REWARD_MAX_ATTEMPTS } from "#api/modules/social/invites/domain/invites.constants";
 import { InviteeActivityEventHandler } from "#api/modules/social/invites/infrastructure/event-handlers/invitee-activity.event-handler";
 import { createEntityId } from "#api/platform/database/entity-id";
 import {
@@ -47,7 +35,10 @@ import {
   rewardGrant,
   user as userTable,
 } from "#api/platform/database/schema/index";
-import { UNIT_OF_WORK, type UnitOfWorkPort } from "#api/shared/application/ports/index";
+import { ClockPort } from "#api/shared/application/ports/clock.port";
+import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { instantToDate } from "#api/shared/domain/time/instant";
 import { SubscriptionEventBuilder } from "#test/builders/index";
 import { toDateOrNull } from "#test/fixtures/billing/subscription.fixture";
 import { UserFixture } from "#test/fixtures/index";
@@ -58,7 +49,7 @@ import {
   createE2eApp,
   destroyE2eApp,
   type E2eTestContext,
-} from "../e2e/helpers/e2e-app-factory.js";
+} from "../../../e2e/helpers/e2e-app-factory.js";
 
 const JOINED_AT = new Date("2028-02-28T03:00:00.000Z");
 
@@ -77,7 +68,7 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
     context = await createE2eApp({
       testDatabase: database,
       customizeBuilder: (builder) =>
-        builder.overrideProvider(INVITE_CONFIG).useValue({ isEnabled: true }),
+        builder.overrideProvider(InviteConfigPort).useValue({ isEnabled: true }),
     });
     redeemInvite = context.module.get(RedeemInviteUseCase);
     getMyInvite = context.module.get(GetMyInviteUseCase);
@@ -135,31 +126,27 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
     readonly isEnabled?: boolean;
     readonly exhausted?: string[];
   }) {
-    const appliers = context.module.get<RewardApplierRegistry>(REWARD_APPLIERS);
+    const rewardApplier = context.module.get(RewardApplierPort);
     return new GrantInviteRewardsUseCase({
-      rewardGrantRepository: context.module.get<RewardGrantRepositoryPort>(REWARD_GRANT_REPOSITORY),
-      inviteRedemptionRepository: context.module.get<InviteRedemptionRepositoryPort>(
-        INVITE_REDEMPTION_REPOSITORY,
-      ),
-      rewardAppliers: {
-        ...appliers,
-        PREMIUM_DAYS: {
-          async apply(grant) {
-            if (overrides.failing?.() === true) {
-              throw new Error("billing unavailable");
-            }
-            await appliers.PREMIUM_DAYS.apply(grant);
-          },
+      unitOfWork: context.module.get(UnitOfWorkPort),
+      rewardGrantRepository: context.module.get(RewardGrantRepositoryPort),
+      inviteRedemptionRepository: context.module.get(InviteRedemptionRepositoryPort),
+      rewardApplier: {
+        async apply(grant) {
+          if (grant.rewardType === "PREMIUM_DAYS" && overrides.failing?.() === true) {
+            throw new Error("billing unavailable");
+          }
+          await rewardApplier.apply(grant);
         },
       },
-      notifier: context.module.get<InviteNotifierPort>(INVITE_NOTIFIER),
+      notifier: context.module.get(InviteNotifierPort),
       alert: {
         raise: (alert) => {
           overrides.exhausted?.push(String(alert.details?.grantId));
         },
       },
       inviteConfig: { isEnabled: overrides.isEnabled ?? true },
-      unitOfWork: context.module.get<UnitOfWorkPort>(UNIT_OF_WORK),
+      clock: context.module.get(ClockPort),
       logger: new Logger("GrantInviteRewardsTest"),
     });
   }
@@ -169,11 +156,11 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
     await grantInviteRewards.execute({ redemptionId: ids.redemptionId, countsAttempt: true });
     await recordActivity.execute({
       inviteeId: ids.inviteeId,
-      occurredAt: new Date("2028-02-28T03:00:00.000Z"),
+      occurredAt: Temporal.Instant.from("2028-02-28T03:00:00.000Z"),
     });
     await recordActivity.execute({
       inviteeId: ids.inviteeId,
-      occurredAt: new Date("2028-02-29T03:00:00.000Z"),
+      occurredAt: Temporal.Instant.from("2028-02-29T03:00:00.000Z"),
     });
     return ids;
   }
@@ -247,13 +234,13 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
     const { inviterId, inviteeId, redemptionId } = await redeemed("QUALINVR", "QUALINVE");
     await recordActivity.execute({
       inviteeId,
-      occurredAt: new Date("2028-02-28T14:59:00.000Z"),
+      occurredAt: Temporal.Instant.from("2028-02-28T14:59:00.000Z"),
     });
 
     // When
     const qualified = await recordActivity.execute({
       inviteeId,
-      occurredAt: new Date("2028-02-28T15:01:00.000Z"),
+      occurredAt: Temporal.Instant.from("2028-02-28T15:01:00.000Z"),
     });
     await grantInviteRewards.execute({ redemptionId, countsAttempt: true });
 
@@ -264,10 +251,8 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
     ]);
     const entitlement = context.module.get<EntitlementReaderPort>(ENTITLEMENT_READER);
     expect(await entitlement.getLimitInTx(inviterId, "FRIEND")).toBeNull();
-    const repository = context.module.get<InviteRedemptionRepositoryPort>(
-      INVITE_REDEMPTION_REPOSITORY,
-    );
-    expect(await repository.summarizeByInviterId(inviterId)).toEqual({
+    const repository = context.module.get(InviteRedemptionRepositoryPort);
+    expect(await repository.summarizeByInviterId(UserId.reconstitute(inviterId))).toEqual({
       joinedCount: 0,
       qualifiedCount: 0,
       rewardedCount: 1,
@@ -287,30 +272,8 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
   it("적용이 실패하면 FAILED와 시도 횟수를 남기고 다음 실행에서 한 번만 적용한다", async () => {
     // Given
     const { inviterId, redemptionId } = await qualified("FAILINVR", "FAILINVE");
-    const appliers = context.module.get<RewardApplierRegistry>(REWARD_APPLIERS);
     let shouldFail = true;
-    const flaky = new GrantInviteRewardsUseCase({
-      rewardGrantRepository: context.module.get<RewardGrantRepositoryPort>(REWARD_GRANT_REPOSITORY),
-      inviteRedemptionRepository: context.module.get<InviteRedemptionRepositoryPort>(
-        INVITE_REDEMPTION_REPOSITORY,
-      ),
-      rewardAppliers: {
-        ...appliers,
-        PREMIUM_DAYS: {
-          async apply(grant) {
-            if (shouldFail) {
-              throw new Error("billing unavailable");
-            }
-            await appliers.PREMIUM_DAYS.apply(grant);
-          },
-        },
-      },
-      notifier: context.module.get<InviteNotifierPort>(INVITE_NOTIFIER),
-      alert: { raise: () => {} },
-      inviteConfig: { isEnabled: true },
-      unitOfWork: context.module.get<UnitOfWorkPort>(UNIT_OF_WORK),
-      logger: new Logger("GrantInviteRewardsTest"),
-    });
+    const flaky = grantRewardsWith({ failing: () => shouldFail });
 
     // When
     const failed = flaky.execute({ redemptionId, countsAttempt: true });
@@ -364,13 +327,13 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
     });
     await recordActivity.execute({
       inviteeId,
-      occurredAt: new Date("2028-02-28T03:00:00.000Z"),
+      occurredAt: Temporal.Instant.from("2028-02-28T03:00:00.000Z"),
     });
 
     // When
     const qualified = await recordActivity.execute({
       inviteeId,
-      occurredAt: new Date("2028-02-29T03:00:00.000Z"),
+      occurredAt: Temporal.Instant.from("2028-02-29T03:00:00.000Z"),
     });
     await grantInviteRewards.execute({ redemptionId, countsAttempt: true });
 
@@ -387,10 +350,8 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
         .where(and(eq(rewardGrant.recipientId, inviterId), eq(rewardGrant.sourceId, redemptionId))),
     ).toEqual([{ rewardType: "FRIEND_SLOT", quantity: 1, status: "APPLIED" }]);
     expect(await premiumGrantsOf(inviterId)).toEqual([]);
-    const repository = context.module.get<InviteRedemptionRepositoryPort>(
-      INVITE_REDEMPTION_REPOSITORY,
-    );
-    expect(await repository.summarizeByInviterId(inviterId)).toMatchObject({
+    const repository = context.module.get(InviteRedemptionRepositoryPort);
+    expect(await repository.summarizeByInviterId(UserId.reconstitute(inviterId))).toMatchObject({
       rewardedCount: 2,
       rejectedCount: 0,
     });
@@ -443,11 +404,15 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
   it("윤년 2월을 지나는 최근 30일 상한은 기간 시작 시각 기록을 빼고 1ms 뒤 기록부터 세며 누적 90일이면 더 주지 않는다", async () => {
     // Given
     const inviterId = await createUser("CAPLEAP1");
-    const now = new Date("2028-03-15T03:00:00.000Z");
+    const now = Temporal.Instant.from("2028-03-15T03:00:00.000Z");
     const windowStart = rewardCapWindowStart(now);
     const grants = [
-      { sourceId: "leap-window-start", quantity: 7, createdAt: windowStart },
-      { sourceId: "leap-window-in", quantity: 7, createdAt: new Date(windowStart.getTime() + 1) },
+      { sourceId: "leap-window-start", quantity: 7, createdAt: instantToDate(windowStart) },
+      {
+        sourceId: "leap-window-in",
+        quantity: 7,
+        createdAt: instantToDate(windowStart.add({ milliseconds: 1 })),
+      },
       { sourceId: "leap-old", quantity: 76, createdAt: new Date("2027-12-01T00:00:00.000Z") },
     ];
     for (const grant of grants) {
@@ -462,15 +427,15 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
         createdAt: grant.createdAt,
       });
     }
-    const repository = context.module.get<RewardGrantRepositoryPort>(REWARD_GRANT_REPOSITORY);
+    const repository = context.module.get(RewardGrantRepositoryPort);
 
     // When
-    const summary = InviteRewardPolicy.summarize(
-      await repository.summarizeInviterRewards(inviterId, windowStart),
+    const summary = summarizeInviterRewards(
+      await repository.summarizeInviterRewards(UserId.reconstitute(inviterId), windowStart),
     );
 
     // Then
-    expect(windowStart).toEqual(new Date("2028-02-14T03:00:00.000Z"));
+    expect(windowStart.equals(Temporal.Instant.from("2028-02-14T03:00:00.000Z"))).toBe(true);
     expect(summary).toMatchObject({ premiumDaysInWindow: 7, totalPremiumDays: 90 });
     expect(remainingPremiumDays(summary)).toBe(0);
   });
@@ -510,8 +475,8 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
 
     // When
     const result = await maintenance.execute({
-      now: new Date("2028-03-20T00:00:00.000Z"),
-      runDate: "2028-03-20",
+      now: Temporal.Instant.from("2028-03-20T00:00:00.000Z"),
+      runDate: Temporal.PlainDate.from("2028-03-20"),
     });
 
     // Then
@@ -577,13 +542,13 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
     });
     await recordActivity.execute({
       inviteeId: secondId,
-      occurredAt: new Date("2028-02-28T03:00:00.000Z"),
+      occurredAt: Temporal.Instant.from("2028-02-28T03:00:00.000Z"),
     });
 
     // When
     const result = await recordActivity.execute({
       inviteeId: secondId,
-      occurredAt: new Date("2028-02-29T03:00:00.000Z"),
+      occurredAt: Temporal.Instant.from("2028-02-29T03:00:00.000Z"),
     });
 
     // Then
@@ -609,8 +574,8 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
 
     // When
     const maintenance = await context.module.get(ExpireStaleRedemptionsUseCase).execute({
-      now: new Date("2028-03-01T00:00:00.000Z"),
-      runDate: "2028-03-01",
+      now: Temporal.Instant.from("2028-03-01T00:00:00.000Z"),
+      runDate: Temporal.PlainDate.from("2028-03-01"),
     });
     await grantInviteRewards.execute({ redemptionId, countsAttempt: true });
 
@@ -674,20 +639,24 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
     // When
     await expect(failing.execute({ redemptionId, countsAttempt: true })).rejects.toThrow();
     const retryable = await context.module
-      .get<RewardGrantRepositoryPort>(REWARD_GRANT_REPOSITORY)
-      .findRetryableSourceIds({
+      .get(RewardGrantRepositoryPort)
+      .listRetryableRedemptionIds({
         maxAttempts: INVITE_REWARD_MAX_ATTEMPTS,
-        createdBefore: new Date("2028-03-10T00:00:00.000Z"),
+        createdBefore: Temporal.Instant.from("2028-03-10T00:00:00.000Z"),
+        afterRedemptionId: null,
         limit: 10,
       });
     const totals = await context.module
-      .get<RewardGrantRepositoryPort>(REWARD_GRANT_REPOSITORY)
-      .summarizeInviterRewards(inviterId, new Date("2028-02-01T00:00:00.000Z"));
+      .get(RewardGrantRepositoryPort)
+      .summarizeInviterRewards(
+        UserId.reconstitute(inviterId),
+        Temporal.Instant.from("2028-02-01T00:00:00.000Z"),
+      );
 
     // Then
     expect(afterQueueRetry).toEqual({ attempts: 1 });
     expect(exhausted).toHaveLength(1);
-    expect(retryable).not.toContain(redemptionId);
+    expect(retryable.map((id) => id.value)).not.toContain(redemptionId);
     expect(totals.find((total) => total.rewardType === "PREMIUM_DAYS")).toBeUndefined();
   });
 });

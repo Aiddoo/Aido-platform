@@ -4,7 +4,7 @@ import { count, eq } from "drizzle-orm";
 import { PgBoss } from "pg-boss";
 
 import { TodoToggledEvent } from "#api/modules/planning/todos/planning-todos.public";
-import { INVITE_CONFIG } from "#api/modules/social/invites/application/ports/invite-config.port";
+import { InviteConfigPort } from "#api/modules/social/invites/application/ports/invite-config.port";
 import { GetMyInviteUseCase } from "#api/modules/social/invites/application/use-cases/get-my-invite.use-case";
 import { RecordInviteeActivityUseCase } from "#api/modules/social/invites/application/use-cases/record-invitee-activity.use-case";
 import { RedeemInviteUseCase } from "#api/modules/social/invites/application/use-cases/redeem-invite.use-case";
@@ -73,7 +73,7 @@ describe("초대 사용 시작 기록의 내구성 구독 (실제 PostgreSQL·pg
     context = await createE2eApp({
       testDatabase: database,
       customizeBuilder: (builder) =>
-        builder.overrideProvider(INVITE_CONFIG).useValue({ isEnabled: true }),
+        builder.overrideProvider(InviteConfigPort).useValue({ isEnabled: true }),
     });
     unitOfWork = context.module.get(UnitOfWorkPort);
     const jobQueue = new PgBossJobQueueAdapter(

@@ -6,7 +6,7 @@ import {
   type PremiumAccessReaderPort,
 } from "#api/modules/billing/subscriptions/billing-subscriptions.public";
 import { RevenueCatWebhookReceiver } from "#api/modules/billing/subscriptions/infrastructure/adapters/revenuecat/revenuecat-webhook-receiver.adapter";
-import { INVITE_CONFIG } from "#api/modules/social/invites/application/ports/invite-config.port";
+import { InviteConfigPort } from "#api/modules/social/invites/application/ports/invite-config.port";
 import { GetMyInviteUseCase } from "#api/modules/social/invites/application/use-cases/get-my-invite.use-case";
 import { RedeemInviteUseCase } from "#api/modules/social/invites/application/use-cases/redeem-invite.use-case";
 import { RotateInviteCodeUseCase } from "#api/modules/social/invites/application/use-cases/rotate-invite-code.use-case";
@@ -28,7 +28,7 @@ import {
   createE2eApp,
   destroyE2eApp,
   type E2eTestContext,
-} from "../e2e/helpers/e2e-app-factory.js";
+} from "../../../e2e/helpers/e2e-app-factory.js";
 
 describe("초대 수락 동시성 (실제 PostgreSQL)", () => {
   let database: TestDatabase;
@@ -43,7 +43,7 @@ describe("초대 수락 동시성 (실제 PostgreSQL)", () => {
     context = await createE2eApp({
       testDatabase: database,
       customizeBuilder: (builder) =>
-        builder.overrideProvider(INVITE_CONFIG).useValue({ isEnabled: true }),
+        builder.overrideProvider(InviteConfigPort).useValue({ isEnabled: true }),
     });
     redeemInvite = context.module.get(RedeemInviteUseCase);
     getMyInvite = context.module.get(GetMyInviteUseCase);

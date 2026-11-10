@@ -1,6 +1,5 @@
-import { mock } from "vitest-mock-extended";
-
-import type { JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
+import { FixedClock } from "#test/doubles/platform/fixed-clock";
+import { FakeJobRuntime } from "#test/mocks/fake-job-runtime";
 
 import { InviteMaintenanceProcessor } from "./invite-maintenance.processor.js";
 import {
@@ -8,12 +7,15 @@ import {
   INVITE_QUALIFY_REMINDER_JOB_NAME,
 } from "./invite-reward.queue.js";
 
+// 2028-03-01 03:30 KST에 도는 정비. UTC로는 아직 2월 29일이다
+const NOW = Temporal.Instant.from("2028-02-29T18:30:00Z");
+
 function createProcessor() {
   const calls: string[] = [];
   const processor = new InviteMaintenanceProcessor(
     {
-      execute: async () => {
-        calls.push("expire");
+      execute: async ({ runDate }) => {
+        calls.push(`expire:${runDate.toString()}`);
         return { expiredCount: 0, retriedCount: 0 };
       },
     },
@@ -29,12 +31,13 @@ function createProcessor() {
         return { status: "sent" };
       },
     },
-    mock<JobRuntimePort>(),
+    new FakeJobRuntime(),
+    new FixedClock(NOW),
   );
   return { processor, calls };
 }
 
-describe("InviteMaintenanceProcessor", () => {
+describe("InviteMaintenanceProcessor — 초대 정비 큐 소비", () => {
   it("사용 시작 알림 작업은 그 수락의 알림만 보내고 정비를 다시 돌리지 않는다", async () => {
     // Given
     const { processor, calls } = createProcessor();
@@ -51,7 +54,7 @@ describe("InviteMaintenanceProcessor", () => {
   it.each([
     { label: "등록된 일정", data: { name: INVITE_MAINTENANCE_JOB_NAME, data: {} } },
     { label: "알 수 없는 payload", data: {} },
-  ])("$label은 정비 실행으로 마감 처리 뒤 알림을 예약한다", async ({ data }) => {
+  ])("$label은 서울 날짜로 마감 처리한 뒤 알림을 예약한다", async ({ data }) => {
     // Given
     const { processor, calls } = createProcessor();
 
@@ -59,6 +62,6 @@ describe("InviteMaintenanceProcessor", () => {
     await processor.handle({ data });
 
     // Then
-    expect(calls).toEqual(["expire", "schedule-reminders"]);
+    expect(calls).toEqual(["expire:2028-03-01", "schedule-reminders"]);
   });
 });

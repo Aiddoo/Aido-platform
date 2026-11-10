@@ -12,7 +12,7 @@ import { UserSubscriptionProjectionRepositoryPort } from "#api/modules/billing/p
 import { SubscriptionRepositoryPort } from "#api/modules/billing/subscriptions/application/ports/subscription.repository.port";
 import { StoreSubscriptionId } from "#api/modules/billing/subscriptions/domain/store-subscription-id.vo";
 import { Subscription } from "#api/modules/billing/subscriptions/domain/subscription.aggregate";
-import { INVITE_CONFIG } from "#api/modules/social/invites/application/ports/invite-config.port";
+import { InviteConfigPort } from "#api/modules/social/invites/application/ports/invite-config.port";
 import {
   follow,
   notification,
@@ -35,7 +35,7 @@ describe("초대 수락 HTTP (실제 DB)", () => {
   beforeAll(async () => {
     ctx = await createE2eApp({
       customizeBuilder: (builder) =>
-        builder.overrideProvider(INVITE_CONFIG).useValue({ isEnabled: true }),
+        builder.overrideProvider(InviteConfigPort).useValue({ isEnabled: true }),
     });
   }, 60_000);
 
