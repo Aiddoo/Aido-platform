@@ -39,6 +39,7 @@ ls:
     .public.ts: kebab-case
     .config.ts: kebab-case
     .spec.ts: kebab-case
+    .integration-spec.ts: kebab-case
 
 ignore:
   - apps/api/src/modules/*/domain

@@ -9,6 +9,52 @@ const apiRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const repoRoot = resolve(apiRoot, "../..");
 const SOURCE_ROOTS = ["apps/api/src", "packages/api/src"];
 const JUNK_FILE = /(?:^|\/)(?:\.DS_Store|\.gitkeep)$/;
+// 이름 사전의 역할 접미사. .ls-lint.yml의 확장자 목록과 같아야 하며 checkLsLintSync가 어긋나면 실패시킨다.
+// ls-lint는 모르는 다중 점 접미사(`memo.record.ts`)를 조용히 통과시키므로 여기서 허용 목록으로 막는다.
+const ROLE_SUFFIXES = [
+  "aggregate",
+  "entity",
+  "vo",
+  "event",
+  "domain-service",
+  "constants",
+  "use-case",
+  "port",
+  "read-model",
+  "lock-keys",
+  "log-events",
+  "alerts",
+  "errors",
+  "messages",
+  "repository",
+  "reader",
+  "mapper",
+  "adapter",
+  "wire",
+  "policy",
+  "queue",
+  "processor",
+  "scheduler",
+  "cache",
+  "keyspace",
+  "event-handler",
+  "controller",
+  "dto",
+  "guard",
+  "decorator",
+  "module",
+  "providers",
+  "public",
+  "config",
+];
+const TEST_SUFFIXES = ["spec", "integration-spec"];
+const KEBAB = "[a-z0-9]+(?:-[a-z0-9]+)*";
+const STEM_PATTERNS = {
+  // memo.repository.port.ts처럼 Port는 대상 역할을 한 번 더 적는다.
+  port: new RegExp(`^${KEBAB}(?:\\.(?:repository|reader))?$`),
+  policy: new RegExp(`^${KEBAB}-outbound$`),
+};
+const DEFAULT_STEM = new RegExp(`^${KEBAB}$`);
 const LEGACY_LAYERS = new Set(["domain", "application", "infrastructure", "presentation"]);
 // 접근 제어자는 static·readonly·override·abstract·declare 같은 한정자와 어떤 순서로 와도 잡는다.
 const MEMBER_KEYWORD =
@@ -42,6 +88,48 @@ function isStrictPath(rel) {
   return segments.length >= 5 && !LEGACY_LAYERS.has(segments[3]);
 }
 
+function checkRoleSuffix(rel, violations) {
+  const allowed = ROLE_SUFFIXES.map((suffix) => `.${suffix}`).join(" ");
+  const base = rel.slice(rel.lastIndexOf("/") + 1).replace(/\.ts$/, "");
+  const testSuffix = TEST_SUFFIXES.find((suffix) => base.endsWith(`.${suffix}`));
+  const withoutTest = testSuffix == null ? base : base.slice(0, -(testSuffix.length + 1));
+  const roleStart = withoutTest.lastIndexOf(".");
+  const role = roleStart === -1 ? null : withoutTest.slice(roleStart + 1);
+  if (role == null || !ROLE_SUFFIXES.includes(role)) {
+    violations.push(
+      `${rel}: 역할 접미사가 사전에 없다(.spec.ts·.integration-spec.ts는 역할 접미사 뒤에만). 허용: ${allowed}`,
+    );
+    return;
+  }
+  const stem = withoutTest.slice(0, roleStart);
+  if (!(STEM_PATTERNS[role] ?? DEFAULT_STEM).test(stem)) {
+    violations.push(
+      `${rel}: '${stem}'는 .${role}.ts 앞 이름으로 맞지 않는다. kebab-case 이름 하나 뒤에 역할 접미사 하나만 붙인다.`,
+    );
+  }
+}
+
+// .ls-lint.yml과 ROLE_SUFFIXES가 같은 목록인지 본다. 한쪽만 고치면 가드가 갈라진다.
+function checkLsLintSync(violations) {
+  const yml = readFileSync(join(repoRoot, ".ls-lint.yml"), "utf8");
+  const declared = new Set(
+    [...yml.matchAll(/^ {4}\.([a-z][a-z.-]*)\.ts:/gm)].map((match) => match[1]),
+  );
+  const expected = new Set([...ROLE_SUFFIXES, ...TEST_SUFFIXES]);
+  for (const suffix of expected) {
+    if (!declared.has(suffix)) {
+      violations.push(
+        `.ls-lint.yml: '.${suffix}.ts' 규칙이 없다. check-conventions.mjs 목록과 맞춘다.`,
+      );
+    }
+  }
+  for (const suffix of declared) {
+    if (!expected.has(suffix)) {
+      violations.push(`.ls-lint.yml: '.${suffix}.ts'가 check-conventions.mjs 목록에 없다.`);
+    }
+  }
+}
+
 function isEnumSchemaPath(rel) {
   return /^src\/platform\/database\/schema\/[^/]+\.ts$/.test(rel);
 }
@@ -69,6 +157,9 @@ function findTemplateLiteralLines(lines) {
 function checkFile(rel, violations, warnings) {
   const text = readFileSync(join(apiRoot, rel), "utf8");
   const strict = isStrictPath(rel);
+  if (strict && !rel.endsWith(".d.ts")) {
+    checkRoleSuffix(rel, violations);
+  }
   const lines = text.split("\n");
   const templateLines = findTemplateLiteralLines(lines);
 
@@ -174,6 +265,7 @@ for (const rel of files) {
 }
 
 if (singleFile == null) {
+  checkLsLintSync(violations);
   findEmptyDirectories(repoFiles, violations);
   findTrackedJunkFiles(violations);
 }

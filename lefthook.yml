@@ -8,11 +8,11 @@ pre-commit:
   jobs:
     # 수정 도구가 먼저 staged 파일을 고치고 다시 stage한 뒤 검사가 그 결과를 본다.
     - name: oxlint
-      glob: '*.{js,jsx,ts,tsx,mjs,cjs,mts,cts}'
+      glob: '**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts}'
       run: pnpm exec oxlint --fix {staged_files}
       stage_fixed: true
     - name: oxfmt
-      glob: '*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,json,jsonc,json5,css,scss,md,mdx,yaml,yml,toml}'
+      glob: '**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,json,jsonc,json5,css,scss,md,mdx,yaml,yml,toml}'
       run: pnpm exec oxfmt --write --no-error-on-unmatched-pattern {staged_files}
       stage_fixed: true
     - name: ci-policy
