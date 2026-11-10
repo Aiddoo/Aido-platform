@@ -6,6 +6,8 @@ import { Test, type TestingModule } from "@nestjs/testing";
 import { eq } from "drizzle-orm";
 import { vi } from "vitest";
 
+import { EntitlementCacheInvalidatorPort } from "#api/modules/access/entitlements/access-entitlements.public";
+import { EntitlementCacheAdapter } from "#api/modules/access/entitlements/infrastructure/adapters/entitlement-cache.adapter";
 import { AuthAccountRepositoryPort } from "#api/modules/identity/auth/application/ports/auth-account.repository.port";
 import {
   AuthCachePort,
@@ -182,6 +184,7 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
         { provide: AuthEmailSenderPort, useExisting: SendTransactionalEmailUseCase },
         AuthCacheAdapter,
         { provide: AuthCachePort, useExisting: AuthCacheAdapter },
+        { provide: EntitlementCacheInvalidatorPort, useClass: EntitlementCacheAdapter },
         {
           provide: AuthRegistrationNotifierPort,
           useExisting: AdminEventNotifierPort,

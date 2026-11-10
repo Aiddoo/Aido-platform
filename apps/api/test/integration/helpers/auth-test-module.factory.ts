@@ -3,6 +3,8 @@ import { ConfigService } from "@nestjs/config";
 import { JwtModule } from "@nestjs/jwt";
 import { Test, type TestingModule } from "@nestjs/testing";
 
+import { EntitlementCacheInvalidatorPort } from "#api/modules/access/entitlements/access-entitlements.public";
+import { EntitlementCacheAdapter } from "#api/modules/access/entitlements/infrastructure/adapters/entitlement-cache.adapter";
 import { AuthAccountRepositoryPort } from "#api/modules/identity/auth/application/ports/auth-account.repository.port";
 import {
   AuthCachePort,
@@ -174,6 +176,7 @@ export async function createAuthTestModule(
       { provide: AuthEmailSenderPort, useExisting: SendTransactionalEmailUseCase },
       AuthCacheAdapter,
       { provide: AuthCachePort, useExisting: AuthCacheAdapter },
+      { provide: EntitlementCacheInvalidatorPort, useClass: EntitlementCacheAdapter },
       {
         provide: AuthRegistrationNotifierPort,
         useExisting: AdminEventNotifierPort,

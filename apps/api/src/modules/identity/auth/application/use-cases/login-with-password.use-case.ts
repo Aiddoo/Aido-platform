@@ -1,6 +1,7 @@
 import { ErrorCode } from "@aido/api/errors";
 import { LOGIN_ATTEMPT, SECURITY_EVENT } from "@aido/api/vocabulary";
 
+import type { EntitlementCacheInvalidatorPort } from "#api/modules/access/entitlements/access-entitlements.public";
 import type {
   LoginResult,
   RequestMetadata,
@@ -48,6 +49,8 @@ interface LoginWithPasswordDependencies {
   readonly issueLoginUseCase: Pick<IssueLoginUseCase, "execute">;
   readonly restoreAccount: Pick<RestoreAccountUseCase, "execute">;
   readonly cacheService: Pick<AuthCachePort, "invalidateUserProfile">;
+  // 탈퇴 유예 중에는 권한을 무료로 캐시하므로 되살리면 함께 비운다
+  readonly entitlementCache: Pick<EntitlementCacheInvalidatorPort, "invalidateEntitlements">;
   readonly unitOfWork: UnitOfWorkPort;
   readonly clock: ClockPort;
   readonly logger: ApplicationLoggerPort;
@@ -193,7 +196,10 @@ export class LoginWithPasswordUseCase {
     });
 
     if (needsRestore) {
-      await this.#dependencies.cacheService.invalidateUserProfile(user.id);
+      await Promise.all([
+        this.#dependencies.cacheService.invalidateUserProfile(user.id),
+        this.#dependencies.entitlementCache.invalidateEntitlements(user.id),
+      ]);
       this.#dependencies.logger.log({
         event: AuthLogEvent.ACCOUNT_RESTORED,
         userId: user.id.value,
