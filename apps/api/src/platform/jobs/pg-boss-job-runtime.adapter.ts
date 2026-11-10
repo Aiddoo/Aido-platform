@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 
 import { TransactionHost } from "@nestjs-cls/transactional";
-import { Inject, Injectable, Logger, type FactoryProvider } from "@nestjs/common";
+import { Inject, Injectable, Logger, Optional, type FactoryProvider } from "@nestjs/common";
 import type { ConfigType } from "@nestjs/config";
 import { uniqBy } from "es-toolkit";
 import {
@@ -38,9 +38,11 @@ import {
   resolveDeadLetterJobPolicy,
   resolveDeadLetterQueue,
 } from "#api/shared/application/ports/job-runtime.port";
+import { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 
 import { transactionJobDatabase } from "./drizzle-pg-boss.database.js";
+import { jobKindOf, reportFailedJobAttempt } from "./jobs.alerts.js";
 import { PgBossQueueProvisioner } from "./pg-boss-queue-provisioner.js";
 
 export const PG_BOSS_CLIENT = Symbol("PG_BOSS_CLIENT");
@@ -208,6 +210,7 @@ export const pgBossClientProvider: FactoryProvider<PgBossClient> = {
 export class PgBossJobRuntimeAdapter implements JobRuntimePort {
   private readonly logger = new Logger(PgBossJobRuntimeAdapter.name);
   readonly #queues: PgBossQueueProvisioner;
+  readonly #alerts: OperationalAlertPort | null;
 
   constructor(
     @Inject(PG_BOSS_CLIENT) private readonly boss: PgBossClient,
@@ -215,8 +218,11 @@ export class PgBossJobRuntimeAdapter implements JobRuntimePort {
     private readonly txHost: JobTransactionSource,
     @Inject(jobConfig.KEY)
     private readonly config: Pick<ConfigType<typeof jobConfig>, "shutdownTimeoutMs">,
+    // 경보 모듈 없이 직접 조립하는 integration 테스트는 마지막 실패를 로그로만 남긴다
+    @Optional() alerts?: OperationalAlertPort,
   ) {
     this.#queues = new PgBossQueueProvisioner(boss);
+    this.#alerts = alerts ?? null;
     this.boss.on("error", (error) => {
       // 오류 종류만 기록한다. 작업 payload나 DB 연결 문자열은 로그에 남기지 않는다.
       this.logger.error({
@@ -335,15 +341,33 @@ export class PgBossJobRuntimeAdapter implements JobRuntimePort {
         localConcurrency: options.teamSize,
         pollingIntervalSeconds: options.pollingIntervalSeconds,
       },
-      async (jobs) =>
-        handler(
-          jobs.map(({ id, name, data, retryCount }) => ({
-            id,
-            name,
-            data,
-            attempt: retryCount + 1,
-          })),
-        ),
+      async (jobs) => {
+        try {
+          await handler(
+            jobs.map(({ id, name, data, retryCount }) => ({
+              id,
+              name,
+              data,
+              attempt: retryCount + 1,
+            })),
+          );
+        } catch (error) {
+          for (const job of jobs) {
+            reportFailedJobAttempt(
+              {
+                queue,
+                jobId: job.id,
+                jobKind: jobKindOf(job.data),
+                attempt: job.retryCount + 1,
+                retryLimit: job.retryLimit,
+                errorType: toErrorType(error),
+              },
+              { logger: this.logger, alerts: this.#alerts },
+            );
+          }
+          throw error;
+        }
+      },
     );
   }
 

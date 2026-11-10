@@ -1,11 +1,12 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
-import { Inject, Injectable, Logger } from "@nestjs/common";
+import { Inject, Injectable, Logger, Optional } from "@nestjs/common";
 import type { JobResult, JobWithMetadata } from "pg-boss";
 
 import type { Database } from "#api/platform/database/database.client";
 import { PlatformLogEvent } from "#api/platform/logging/platform.log-events";
 import {
   JobQueuePort,
+  OperationalAlertPort,
   resolveDeadLetterJobPolicy,
   resolveDeadLetterQueue,
   type EnqueueJobOptions,
@@ -14,10 +15,16 @@ import {
   type JobEnvelope,
   type QueueDefinition,
 } from "#api/shared/application/ports/index";
+import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import { instantToDate } from "#api/shared/domain/time/instant";
 
 import { transactionJobDatabase } from "./drizzle-pg-boss.database.js";
 import { JobQueueRegistry } from "./job-queue.registry.js";
+import {
+  INVALID_JOB_PAYLOAD_ERROR_TYPE,
+  jobKindOf,
+  reportFailedJobAttempt,
+} from "./jobs.alerts.js";
 import {
   deterministicJobId,
   PG_BOSS_CLIENT,
@@ -42,17 +49,21 @@ export class PgBossJobQueueAdapter extends JobQueuePort {
   readonly #txHost: JobTransactionSource;
   readonly #registry: JobQueueRegistry;
   readonly #queues: PgBossQueueProvisioner;
+  readonly #alerts: OperationalAlertPort | null;
 
   constructor(
     @Inject(PG_BOSS_CLIENT) boss: PgBossClient,
     @Inject(TransactionHost) txHost: JobTransactionSource,
     registry: JobQueueRegistry,
+    // 경보 모듈 없이 직접 조립하는 integration 테스트는 마지막 실패를 로그로만 남긴다
+    @Optional() alerts?: OperationalAlertPort,
   ) {
     super();
     this.#boss = boss;
     this.#txHost = txHost;
     this.#registry = registry;
     this.#queues = new PgBossQueueProvisioner(boss);
+    this.#alerts = alerts ?? null;
   }
 
   async enqueue<TPayload extends object>(
@@ -159,6 +170,7 @@ export class PgBossJobQueueAdapter extends JobQueuePort {
           jobId: job.id,
           paths: parsed.error.issues.map((issue) => issue.path.join(".")),
         });
+        this.#reportFailure(queue, job, INVALID_JOB_PAYLOAD_ERROR_TYPE);
         results.push({ id: job.id, status: "failed", output: { reason: "invalid_payload" } });
         continue;
       }
@@ -173,11 +185,43 @@ export class PgBossJobQueueAdapter extends JobQueuePort {
     if (accepted.length === 0) {
       return results;
     }
+    const jobsById = new Map(jobs.map((job) => [job.id, job]));
+    const reportFailure = (envelope: JobEnvelope<TPayload>, error: unknown): void => {
+      const job = jobsById.get(envelope.id);
+      if (job != null) {
+        this.#reportFailure(queue, job, toErrorType(error));
+      }
+    };
     if (queue.worker.isolateJobFailures === true) {
-      return [...results, ...(await settleEachJob(accepted, handler))];
+      return [...results, ...(await settleEachJob(accepted, handler, reportFailure))];
     }
-    await handler(accepted);
+    try {
+      await handler(accepted);
+    } catch (error) {
+      for (const envelope of accepted) {
+        reportFailure(envelope, error);
+      }
+      throw error;
+    }
     return [...results, ...accepted.map(({ id }) => ({ id, status: "completed" as const }))];
+  }
+
+  #reportFailure(
+    queue: QueueDefinition<object>,
+    job: JobWithMetadata<object>,
+    errorType: string,
+  ): void {
+    reportFailedJobAttempt(
+      {
+        queue: queue.name,
+        jobId: job.id,
+        jobKind: jobKindOf(job.data),
+        attempt: job.retryCount + 1,
+        retryLimit: job.retryLimit,
+        errorType,
+      },
+      { logger: this.#logger, alerts: this.#alerts },
+    );
   }
 
   async #ensure(queue: QueueDefinition<object>): Promise<void> {
@@ -193,6 +237,7 @@ export class PgBossJobQueueAdapter extends JobQueuePort {
 async function settleEachJob<TPayload extends object>(
   jobs: readonly JobEnvelope<TPayload>[],
   handler: (jobs: readonly JobEnvelope<TPayload>[]) => Promise<void>,
+  onFailure: (job: JobEnvelope<TPayload>, error: unknown) => void,
 ): Promise<JobResult[]> {
   const results: JobResult[] = [];
   for (const job of jobs) {
@@ -200,6 +245,7 @@ async function settleEachJob<TPayload extends object>(
       await handler([job]);
       results.push({ id: job.id, status: "completed" });
     } catch (error) {
+      onFailure(job, error);
       // pg-boss가 handler throw를 기록할 때와 같이 오류 객체를 실패 출력으로 남긴다
       results.push({ id: job.id, status: "failed", output: error });
     }

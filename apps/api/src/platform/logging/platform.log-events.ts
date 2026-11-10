@@ -20,6 +20,8 @@ export const PlatformLogEvent = {
   JOB_WORKER_FORCE_CLOSED: "jobs.worker.force-closed",
   JOB_DEAD_LETTER_MOVE_FAILED: "jobs.dead-letter.move.failed",
   JOB_PAYLOAD_INVALID: "jobs.payload.invalid",
+  JOB_ATTEMPT_FAILED: "jobs.attempt.failed",
+  JOB_FAILED: "jobs.job.failed",
   CACHE_INITIALIZED: "cache.adapter.initialized",
   CACHE_ENTRY_READ: "cache.entry.read",
   CACHE_ENTRY_WRITTEN: "cache.entry.written",
