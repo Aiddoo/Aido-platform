@@ -19,7 +19,13 @@ import { useWhatsNewFeed } from './use-whats-new-feed';
 
 const LAUNCHED_AT = toInstant('2026-11-05T00:00:00.000Z');
 
-async function renderFeed({ signedUpAt }: { signedUpAt: string }) {
+async function renderFeed({
+  signedUpAt,
+  isOnboardingSettled = true,
+}: {
+  signedUpAt: string;
+  isOnboardingSettled?: boolean;
+}) {
   const queryClient = createTestQueryClient({
     defaultOptions: { queries: { staleTime: Infinity } },
   });
@@ -32,14 +38,28 @@ async function renderFeed({ signedUpAt }: { signedUpAt: string }) {
     autoOpen: true,
   };
   queryClient.setQueryData(FEATURE_CAMPAIGN_QUERY_KEYS.config(), config);
-  return renderUiHook(() => useWhatsNewFeed({ isStable: true, isInviteAvailable: true }), {
-    queryClient,
-    withLocalDate: true,
-    di: {
-      authSessionStore: createAuthSessionStoreStub('authenticated'),
-      syncStorage: createMemoryObservableSyncStorage(),
+  const onboarding = { isSettled: isOnboardingSettled };
+  const hook = await renderUiHook(
+    () =>
+      useWhatsNewFeed({
+        isStable: true,
+        isInviteAvailable: true,
+        isOnboardingSettled: onboarding.isSettled,
+      }),
+    {
+      queryClient,
+      withLocalDate: true,
+      di: {
+        authSessionStore: createAuthSessionStoreStub('authenticated'),
+        syncStorage: createMemoryObservableSyncStorage(),
+      },
     },
-  });
+  );
+  const settleOnboarding = () => {
+    onboarding.isSettled = true;
+    hook.rerender({});
+  };
+  return { ...hook, settleOnboarding };
 }
 
 describe('useWhatsNewFeed — 업데이트 후 첫 피드', () => {
@@ -80,5 +100,21 @@ describe('useWhatsNewFeed — 업데이트 후 첫 피드', () => {
     // Then
     await new Promise((resolve) => setImmediate(resolve));
     expect(router.push).not.toHaveBeenCalled();
+  });
+
+  it('알림 화면을 열지 말지 정해지기 전에는 기다렸다가 정해진 뒤에 한 번만 연다', async () => {
+    // Given
+    const { settleOnboarding } = await renderFeed({
+      signedUpAt: '2026-10-01T00:00:00.000Z',
+      isOnboardingSettled: false,
+    });
+    await new Promise((resolve) => setImmediate(resolve));
+    expect(router.push).not.toHaveBeenCalled();
+
+    // When
+    settleOnboarding();
+
+    // Then
+    await waitFor(() => expect(router.push).toHaveBeenCalledTimes(1));
   });
 });

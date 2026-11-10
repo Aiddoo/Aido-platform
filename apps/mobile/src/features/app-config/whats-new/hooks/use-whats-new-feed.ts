@@ -16,10 +16,16 @@ import { WhatsNewPolicy } from '../domains/whats-new.model';
 interface WhatsNewFeedInput {
   isStable: boolean;
   isInviteAvailable: boolean;
+  /** 가입 직후 안내(알림 화면)를 열 차례가 아니라고 정해졌다. 정해지기 전에 열면 그 화면과 겹치거나 순서가 바뀐다 */
+  isOnboardingSettled: boolean;
 }
 
 /** 업데이트한 기존 사용자에게 서버가 켠 캠페인을 첫 피드에서 한 번 자동으로 열고, 피드 카드로 다시 열게 한다 */
-export function useWhatsNewFeed({ isStable, isInviteAvailable }: WhatsNewFeedInput) {
+export function useWhatsNewFeed({
+  isStable,
+  isInviteAvailable,
+  isOnboardingSettled,
+}: WhatsNewFeedInput) {
   const status = useAuthStatus();
   const isAuthenticated = status === 'authenticated';
   const { data: config } = useQuery({
@@ -72,7 +78,13 @@ export function useWhatsNewFeed({ isStable, isInviteAvailable }: WhatsNewFeedInp
     });
 
   useEffect(() => {
-    if (!shouldAutoOpen || !isStable || identity == null || release == null) {
+    if (
+      !shouldAutoOpen ||
+      !isStable ||
+      !isOnboardingSettled ||
+      identity == null ||
+      release == null
+    ) {
       return;
     }
 
@@ -83,7 +95,7 @@ export function useWhatsNewFeed({ isStable, isInviteAvailable }: WhatsNewFeedInp
     });
 
     return () => cancelIdleCallback(task);
-  }, [shouldAutoOpen, identity, isStable, push, release, repository]);
+  }, [shouldAutoOpen, identity, isStable, isOnboardingSettled, push, release, repository]);
 
   const isReentryVisible =
     identity != null && WhatsNewPolicy.shouldShowReentry(reentryOpenedAt, now);

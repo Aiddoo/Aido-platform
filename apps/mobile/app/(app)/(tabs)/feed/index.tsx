@@ -15,6 +15,7 @@ import { PushPermissionNotice } from '@src/features/notification/components/push
 import { useIsPushReminderOff } from '@src/features/notification/hooks/use-is-push-reminder-off';
 import { useHasPendingNotificationEntry } from '@src/features/notification/hooks/use-notification-entry';
 import { useOpenPushOnboarding } from '@src/features/notification/hooks/use-open-push-onboarding';
+import { useIsPushOnboardingGuardClosed } from '@src/features/notification/hooks/use-push-onboarding-guard';
 import { AddTodoRequestEntry } from '@src/features/planning/todo/components/add-todo-request-entry';
 import { Calendar } from '@src/features/planning/todo/components/calendar/calendar';
 import { FriendCalendar } from '@src/features/planning/todo/components/calendar/friend-calendar';
@@ -163,9 +164,14 @@ function MyFeed({
     hasPendingNavigation,
   });
   useOpenPushOnboarding({ isStable });
+  const isPushOnboardingSettled = useIsPushOnboardingGuardClosed();
   const isReminderOff = useIsPushReminderOff();
   const isInviteAvailable = useIsInviteAvailable();
-  const whatsNew = useWhatsNewFeed({ isStable, isInviteAvailable });
+  const whatsNew = useWhatsNewFeed({
+    isStable,
+    isInviteAvailable,
+    isOnboardingSettled: isPushOnboardingSettled,
+  });
   const [isRefreshing, handleRefresh] = useRefresh(() =>
     Promise.all([invalidateFeedTodos(queryClient), invalidateWeather(queryClient)]),
   );

@@ -21,10 +21,19 @@
 | 계정·캠페인별 한 번     | `aido_feature_discovery_seen_v1:{userId}:{campaignId}`. 동기 claim                                          |
 | 기존 가입자만 자동      | `WhatsNewPolicy.shouldAutoOpen`: `user.createdAt < launchedAt`, 지원 버전, 안 봄, 서버 `enabled`·`autoOpen` |
 | 다른 안내와 겹치지 않음 | `useStableFeedForeground`(피드가 앞에 자리 잡은 뒤). 날씨 위치는 자동으로 묻지 않는다                       |
+| 알림 화면 다음에 연다   | 피드가 `useIsPushOnboardingGuardClosed()`를 `isOnboardingSettled`로 넘긴다. 아래 순서를 따른다              |
 | 다시 열기               | 피드 카드 14일(`aido_feature_discovery_reentry_v1:{userId}:{campaignId}`), 마이 메뉴 상시                   |
 | 안 본 출시 점           | 최신 출시만 본다. 지난 출시까지 세면 점이 오래 사라지지 않는다                                              |
 | 버전 표시               | 목록 줄은 `v1.15.0 · 11월 10일 업데이트`, Steps 머리는 `v1.15.0`. 읽기 라벨은 "버전 1.15.0"이다             |
 | 오프라인, 서버 실패     | 목록과 Steps는 번들이라 그대로 열린다. 설정을 못 받으면 자동으로 열지 않는다                                |
+
+## 첫 피드의 자동 화면 순서
+
+피드가 앞에 자리 잡은 뒤(`isStable`) 자동 화면은 한 번에 하나만 연다. 다른 route·시트·overlay가 위에 있으면 피드가 앞에 있지 않아 기다린다.
+
+1. **알림 화면** `/onboarding/notifications`: `(app)/_layout`의 `usePushOnboardingGuard`가 내 정보와 OS 권한을 읽고 정한다. 읽기 전에는 guard 값이 `null`이라 어느 자동 화면도 열지 않는다. 권한을 읽지 못하면 알림 화면을 띄울 수 없으므로 열 차례가 아닌 것(`false`)으로 정한다.
+2. **새로운 기능** `/whats-new`: guard가 `false`로 그려진 뒤에만 연다. 알림 화면에 답하면 guard가 닫혀 화면이 빠지고, 피드가 다시 앞에 자리 잡을 때 연다. 열기 직전에 본 기록을 claim하므로 닫은 뒤 다시 자동으로 열리지 않는다.
+3. **말풍선**: 피드에 포커스가 있을 때 450ms 뒤에 뜨므로 위 두 화면을 닫은 뒤에 보인다.
 
 ## 키 정리
 
