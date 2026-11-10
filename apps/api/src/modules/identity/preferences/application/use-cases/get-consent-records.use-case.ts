@@ -3,7 +3,7 @@ import type {
   UserConsentRecordWithId,
 } from "../ports/user-consent.repository.port.js";
 
-export interface GetConsentRecordsInput {
+export interface GetConsentRecordsQuery {
   readonly userIds: readonly string[];
 }
 
@@ -11,14 +11,14 @@ interface GetConsentRecordsDependencies {
   readonly consentRepository: Pick<UserConsentRepositoryPort, "findByUserIds">;
 }
 
-export class GetConsentRecords {
+export class GetConsentRecordsUseCase {
   readonly #dependencies: GetConsentRecordsDependencies;
 
   constructor(dependencies: GetConsentRecordsDependencies) {
     this.#dependencies = dependencies;
   }
 
-  execute(input: GetConsentRecordsInput): Promise<UserConsentRecordWithId[]> {
+  execute(input: GetConsentRecordsQuery): Promise<UserConsentRecordWithId[]> {
     return this.#dependencies.consentRepository.findByUserIds(input.userIds);
   }
 }

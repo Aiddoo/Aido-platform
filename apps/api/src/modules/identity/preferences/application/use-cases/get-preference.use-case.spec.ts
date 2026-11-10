@@ -2,7 +2,7 @@ import { USER_PREFERENCE_DEFAULTS } from "@aido/api/vocabulary";
 
 import { createUserSettingsFixture } from "#test/fixtures/user-settings.fixture";
 
-import { GetPreference } from "./get-preference.use-case.js";
+import { GetPreferenceUseCase } from "./get-preference.use-case.js";
 
 describe("GetPreference — 원본 캐시와 요청 시점의 프리미엄 게이팅", () => {
   it("같은 원본 캐시에서도 구독 변경을 즉시 반영하고 저장된 시간·다른 필드를 보존한다", async () => {
@@ -18,7 +18,7 @@ describe("GetPreference — 원본 캐시와 요청 시점의 프리미엄 게�
         timeFormat: "TWENTY_FOUR_HOUR",
       },
     });
-    const useCase = new GetPreference(fixture);
+    const useCase = new GetPreferenceUseCase(fixture);
     // When
     const free = await useCase.execute({ userId: fixture.userId });
     fixture.preferenceRepository.records.delete(fixture.userId);
@@ -52,7 +52,7 @@ describe("GetPreference — 원본 캐시와 요청 시점의 프리미엄 게�
     // Given
     const fixture = createUserSettingsFixture({ preference: null, consent: null, premium: true });
     // When
-    const result = await new GetPreference(fixture).execute({ userId: fixture.userId });
+    const result = await new GetPreferenceUseCase(fixture).execute({ userId: fixture.userId });
     // Then
     expect(result).toMatchObject({
       pushEnabled: USER_PREFERENCE_DEFAULTS.PUSH_ENABLED,

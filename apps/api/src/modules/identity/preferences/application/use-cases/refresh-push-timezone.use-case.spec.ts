@@ -1,17 +1,17 @@
 import { createUserSettingsFixture } from "#test/fixtures/user-settings.fixture";
 
-import { GetPreference } from "./get-preference.use-case.js";
-import { RefreshPushTimezone } from "./refresh-push-timezone.use-case.js";
+import { GetPreferenceUseCase } from "./get-preference.use-case.js";
+import { RefreshPushTimezoneUseCase } from "./refresh-push-timezone.use-case.js";
 
 describe("RefreshPushTimezone — 실제 변경에만 설정 캐시 갱신", () => {
   it("캐시된 UTC를 새 timezone으로 갱신해 이후 설정 조회와 DB가 일치한다", async () => {
     // Given
     const fixture = createUserSettingsFixture();
-    const query = new GetPreference(fixture);
+    const query = new GetPreferenceUseCase(fixture);
     expect((await query.execute({ userId: fixture.userId })).timezone).toBe("UTC");
     fixture.reminderTimezoneCache.activeTimezones.add("UTC");
     // When
-    await new RefreshPushTimezone(fixture).execute({
+    await new RefreshPushTimezoneUseCase(fixture).execute({
       userId: fixture.userId,
       timezone: "Asia/Seoul",
     });
@@ -32,7 +32,10 @@ describe("RefreshPushTimezone — 실제 변경에만 설정 캐시 갱신", () 
       const cached = fixture.cache.snapshots.get(fixture.userId);
       fixture.reminderTimezoneCache.activeTimezones.add("UTC");
       // When
-      await new RefreshPushTimezone(fixture).execute({ userId: fixture.userId, timezone: "UTC" });
+      await new RefreshPushTimezoneUseCase(fixture).execute({
+        userId: fixture.userId,
+        timezone: "UTC",
+      });
       // Then
       expect(fixture.preferenceRepository.records.size).toBe(existing ? 1 : 0);
       expect(fixture.cache.snapshots.get(fixture.userId)).toEqual(cached);
@@ -47,7 +50,7 @@ describe("RefreshPushTimezone — 실제 변경에만 설정 캐시 갱신", () 
     const failure = new Error("queue unavailable");
     vi.spyOn(fixture.todoTimezoneRebase, "enqueueRebase").mockRejectedValueOnce(failure);
     // When
-    const refresh = new RefreshPushTimezone(fixture).execute({
+    const refresh = new RefreshPushTimezoneUseCase(fixture).execute({
       userId: fixture.userId,
       timezone: "Asia/Seoul",
     });
@@ -64,7 +67,10 @@ describe("RefreshPushTimezone — 실제 변경에만 설정 캐시 갱신", () 
     );
     // When/Then: 기존 실패를 전달하고 이미 저장된 변경·설정 캐시 갱신은 유지한다.
     await expect(
-      new RefreshPushTimezone(fixture).execute({ userId: fixture.userId, timezone: "Asia/Seoul" }),
+      new RefreshPushTimezoneUseCase(fixture).execute({
+        userId: fixture.userId,
+        timezone: "Asia/Seoul",
+      }),
     ).rejects.toBe(failure);
     expect(fixture.preferenceRepository.records.get(fixture.userId)).toMatchObject({
       timezone: "Asia/Seoul",

@@ -1,6 +1,6 @@
 import { createUserSettingsFixture, SETTINGS_TIME } from "#test/fixtures/user-settings.fixture";
 
-import { GetPreferenceRecords } from "./get-preference-records.use-case.js";
+import { GetPreferenceRecordsUseCase } from "./get-preference-records.use-case.js";
 
 describe("GetPreferenceRecords — 알림 발송 대상의 설정 배치 조회", () => {
   it("단건 반복 없이 요청한 사용자만 조회하고 누락 행·순서와 무관하게 ID로 결과를 구분한다", async () => {
@@ -14,7 +14,7 @@ describe("GetPreferenceRecords — 알림 발송 대상의 설정 배치 조회"
     });
     fixture.preferenceRepository.records.set("excluded-user", fixture.preference);
     // When
-    const records = await new GetPreferenceRecords(fixture).execute({
+    const records = await new GetPreferenceRecordsUseCase(fixture).execute({
       userIds: ["other-user", "missing-user", fixture.userId],
     });
     // Then

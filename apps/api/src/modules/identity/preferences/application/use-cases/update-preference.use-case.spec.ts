@@ -3,8 +3,8 @@ import { vi } from "vitest";
 
 import { createUserSettingsFixture, SETTINGS_TIME } from "#test/fixtures/user-settings.fixture";
 
-import { GetPreference } from "./get-preference.use-case.js";
-import { UpdatePreference } from "./update-preference.use-case.js";
+import { GetPreferenceUseCase } from "./get-preference.use-case.js";
+import { UpdatePreferenceUseCase } from "./update-preference.use-case.js";
 
 describe("UpdatePreference — 부분 수정과 리마인더 즉시 반영", () => {
   beforeEach(() => {
@@ -24,11 +24,11 @@ describe("UpdatePreference — 부분 수정과 리마인더 즉시 반영", () 
         lastCompletedDate: SETTINGS_TIME,
       },
     });
-    const query = new GetPreference(fixture);
+    const query = new GetPreferenceUseCase(fixture);
     await query.execute({ userId: fixture.userId });
     fixture.reminderTimezoneCache.activeTimezones.add("UTC");
     // When
-    const result = await new UpdatePreference(fixture).execute({
+    const result = await new UpdatePreferenceUseCase(fixture).execute({
       userId: fixture.userId,
       pushEnabled: false,
       weatherMorningMinute: 0,
@@ -58,7 +58,7 @@ describe("UpdatePreference — 부분 수정과 리마인더 즉시 반영", () 
     });
     await fixture.preferenceReader.read(fixture.userId);
     // When
-    const result = await new UpdatePreference(fixture).execute({
+    const result = await new UpdatePreferenceUseCase(fixture).execute({
       userId: fixture.userId,
       morningReminderHour: 7,
       morningReminderMinute: 0,
@@ -98,7 +98,7 @@ describe("UpdatePreference — 부분 수정과 리마인더 즉시 반영", () 
       weatherEveningMinute: 43,
     };
     // When
-    const result = await new UpdatePreference(fixture).execute({
+    const result = await new UpdatePreferenceUseCase(fixture).execute({
       userId: fixture.userId,
       ...changes,
     });
@@ -140,7 +140,10 @@ describe("UpdatePreference — 부분 수정과 리마인더 즉시 반영", () 
       await fixture.preferenceReader.read(fixture.userId);
       const snapshot = fixture.cache.snapshots.get(fixture.userId);
       // When
-      const pending = new UpdatePreference(fixture).execute({ userId: fixture.userId, ...changes });
+      const pending = new UpdatePreferenceUseCase(fixture).execute({
+        userId: fixture.userId,
+        ...changes,
+      });
       // Then
       await expect(pending).rejects.toMatchObject({ errorCode });
       expect(fixture.preferenceRepository.records.get(fixture.userId)).toEqual(fixture.preference);
@@ -151,10 +154,13 @@ describe("UpdatePreference — 부분 수정과 리마인더 즉시 반영", () 
   it("IANA 별칭은 정규 timezone으로 저장하고 새 응답에 반영한다", async () => {
     // Given
     const fixture = createUserSettingsFixture({ preference: { timezone: "Asia/Seoul" } });
-    const query = new GetPreference(fixture);
+    const query = new GetPreferenceUseCase(fixture);
     await query.execute({ userId: fixture.userId });
     // When
-    await new UpdatePreference(fixture).execute({ userId: fixture.userId, timezone: "Etc/UTC" });
+    await new UpdatePreferenceUseCase(fixture).execute({
+      userId: fixture.userId,
+      timezone: "Etc/UTC",
+    });
     // Then
     expect(fixture.preferenceRepository.records.get(fixture.userId)?.timezone).toBe("UTC");
     expect((await query.execute({ userId: fixture.userId })).timezone).toBe("UTC");
@@ -169,7 +175,7 @@ describe("UpdatePreference — 부분 수정과 리마인더 즉시 반영", () 
     );
     // When/Then: 기존 실패를 전달하고 이미 저장된 변경·설정 캐시 갱신은 유지한다.
     await expect(
-      new UpdatePreference(fixture).execute({ userId: fixture.userId, pushEnabled: false }),
+      new UpdatePreferenceUseCase(fixture).execute({ userId: fixture.userId, pushEnabled: false }),
     ).rejects.toBe(failure);
     expect(fixture.preferenceRepository.records.get(fixture.userId)).toMatchObject({
       pushEnabled: false,
@@ -187,7 +193,7 @@ describe("UpdatePreference — 부분 수정과 리마인더 즉시 반영", () 
       return deletion.promise;
     });
     // When: 저장 흐름이 목록 삭제에 도달한다.
-    const execution = new UpdatePreference(fixture).execute({
+    const execution = new UpdatePreferenceUseCase(fixture).execute({
       userId: fixture.userId,
       timezone: "Asia/Seoul",
     });
@@ -212,7 +218,7 @@ describe("UpdatePreference — 부분 수정과 리마인더 즉시 반영", () 
     // Given
     const fixture = createUserSettingsFixture();
     // When
-    await new UpdatePreference(fixture).execute({ userId: fixture.userId, timezone });
+    await new UpdatePreferenceUseCase(fixture).execute({ userId: fixture.userId, timezone });
     // Then
     expect(fixture.todoTimezoneRebase.enqueued).toHaveLength(enqueued);
   });

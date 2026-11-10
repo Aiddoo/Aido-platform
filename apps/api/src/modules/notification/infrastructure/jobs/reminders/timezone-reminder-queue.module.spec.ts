@@ -8,7 +8,7 @@ import { REMINDER_SCHEDULE_ENQUEUER } from "#api/modules/identity/preferences/ap
 import { TODO_TIMEZONE_REBASE_ENQUEUER } from "#api/modules/identity/preferences/application/ports/todo-timezone-rebase-enqueuer.port";
 import { USER_PREFERENCE_REPOSITORY } from "#api/modules/identity/preferences/application/ports/user-preference.repository.port";
 import { USER_SETTINGS_CACHE } from "#api/modules/identity/preferences/application/ports/user-settings-cache.port";
-import { UpsertPushTimezone } from "#api/modules/identity/preferences/application/use-cases/upsert-push-timezone.use-case";
+import { UpsertPushTimezoneUseCase } from "#api/modules/identity/preferences/application/use-cases/upsert-push-timezone.use-case";
 import {
   refreshPushTimezoneProvider,
   updatePreferenceProvider,
@@ -69,7 +69,7 @@ async function createFixture() {
   return {
     cache,
     settings,
-    upsertTimezone: module.get(UpsertPushTimezone),
+    upsertTimezone: module.get(UpsertPushTimezoneUseCase),
     timezoneCache: module.get<ReminderTimezoneCachePort>(REMINDER_TIMEZONE_CACHE),
     close: () => module.close(),
   };

@@ -9,7 +9,7 @@ interface AiDataSharingConsentReaderDependencies {
   readonly consentRepository: Pick<UserConsentRepositoryPort, "findByUserId">;
 }
 
-export class AiDataSharingConsentReader implements AiDataSharingConsentReaderPort {
+export class GetAiDataSharingConsentUseCase implements AiDataSharingConsentReaderPort {
   readonly #dependencies: AiDataSharingConsentReaderDependencies;
 
   constructor(dependencies: AiDataSharingConsentReaderDependencies) {

@@ -2,7 +2,7 @@ import { vi } from "vitest";
 
 import { createUserSettingsFixture, SETTINGS_TIME } from "#test/fixtures/user-settings.fixture";
 
-import { UpdateMarketingPushConsent } from "./update-marketing-push-consent.use-case.js";
+import { UpdateMarketingPushConsentUseCase } from "./update-marketing-push-consent.use-case.js";
 
 describe("UpdateMarketingPushConsent — 광고성 푸시 선택 동의", () => {
   beforeEach(() => {
@@ -13,7 +13,7 @@ describe("UpdateMarketingPushConsent — 광고성 푸시 선택 동의", () => 
   it("활성화·철회는 광고성 푸시 동의만 바꾸고 일반 마케팅 동의를 보존한다", async () => {
     // Given
     const fixture = createUserSettingsFixture({ consent: { marketingAgreedAt: SETTINGS_TIME } });
-    const useCase = new UpdateMarketingPushConsent(fixture);
+    const useCase = new UpdateMarketingPushConsentUseCase(fixture);
     // When
     const agreed = await useCase.execute({ userId: fixture.userId, agreed: true });
     const revoked = await useCase.execute({ userId: fixture.userId, agreed: false });
@@ -29,7 +29,10 @@ describe("UpdateMarketingPushConsent — 광고성 푸시 선택 동의", () => 
     // Given
     const fixture = createUserSettingsFixture({ consent: null });
     // When
-    await new UpdateMarketingPushConsent(fixture).execute({ userId: fixture.userId, agreed: true });
+    await new UpdateMarketingPushConsentUseCase(fixture).execute({
+      userId: fixture.userId,
+      agreed: true,
+    });
     // Then
     expect(fixture.consentRepository.records.get(fixture.userId)).toEqual({
       termsAgreedAt: null,

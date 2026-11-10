@@ -14,8 +14,8 @@ import { RequestClientReader } from "#api/platform/http/request-client/index";
 import { createMockExecutionContext } from "#test/mocks/execution-context.mock";
 import { createRequestClientReader, runWithRequestHeaders } from "#test/mocks/request-client";
 
-import { IdentitySettingsLogEvent } from "../../../application/preferences.log-events.js";
-import { RefreshPushTimezone } from "../../../application/use-cases/refresh-push-timezone.use-case.js";
+import { PreferenceLogEvent } from "../../../application/preferences.log-events.js";
+import { RefreshPushTimezoneUseCase } from "../../../application/use-cases/refresh-push-timezone.use-case.js";
 import { TimezoneSelfHealInterceptor } from "./timezone-self-heal.interceptor.js";
 
 const nextHandler: CallHandler = { handle: () => of("ok") };
@@ -34,7 +34,7 @@ function contextFor(
 
 describe("TimezoneSelfHealInterceptor", () => {
   let interceptor: TimezoneSelfHealInterceptor;
-  let refreshPushTimezoneUseCase: Mocked<RefreshPushTimezone>;
+  let refreshPushTimezoneUseCase: Mocked<RefreshPushTimezoneUseCase>;
 
   beforeEach(async () => {
     vi.useFakeTimers();
@@ -45,7 +45,7 @@ describe("TimezoneSelfHealInterceptor", () => {
       .final(createRequestClientReader())
       .compile();
     interceptor = unit;
-    refreshPushTimezoneUseCase = unitRef.get(RefreshPushTimezone);
+    refreshPushTimezoneUseCase = unitRef.get(RefreshPushTimezoneUseCase);
     refreshPushTimezoneUseCase.execute.mockResolvedValue(undefined);
   });
 
@@ -129,7 +129,7 @@ describe("TimezoneSelfHealInterceptor", () => {
     // Then
     expect(refreshPushTimezoneUseCase.execute).toHaveBeenCalledTimes(2);
     expect(Logger.prototype.error).toHaveBeenCalledWith({
-      event: IdentitySettingsLogEvent.TIMEZONE_HEAL_FAILED,
+      event: PreferenceLogEvent.TIMEZONE_HEAL_FAILED,
       userId: "u1",
       timezone: "Asia/Seoul",
       errorType: "Error",

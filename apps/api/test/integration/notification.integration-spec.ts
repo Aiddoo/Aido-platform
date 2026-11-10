@@ -7,7 +7,7 @@ import {
   USER_PREFERENCE_READER,
   USER_SETTINGS_CACHE,
 } from "#api/modules/identity/identity-settings.public";
-import { UserPreferenceReader } from "#api/modules/identity/preferences/application/use-cases/read-user-preferences.use-case";
+import { ReadUserPreferencesUseCase } from "#api/modules/identity/preferences/application/use-cases/read-user-preferences.use-case";
 import { UserSettingsCacheAdapter } from "#api/modules/identity/preferences/infrastructure/adapters/user-settings-cache.adapter";
 import { DrizzleUserConsentRepository } from "#api/modules/identity/preferences/infrastructure/persistence/drizzle-user-consent.repository";
 import { DrizzleUserPreferenceRepository } from "#api/modules/identity/preferences/infrastructure/persistence/drizzle-user-preference.repository";
@@ -219,7 +219,7 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
             preferenceRepository: DrizzleUserPreferenceRepository,
             cache: CacheService,
           ) =>
-            new UserPreferenceReader({
+            new ReadUserPreferencesUseCase({
               preferenceRepository,
               cache: new UserSettingsCacheAdapter(cache),
             }),

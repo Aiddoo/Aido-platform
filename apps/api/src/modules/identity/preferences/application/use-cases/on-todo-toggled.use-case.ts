@@ -9,11 +9,11 @@ import type { UserPreference } from "../../domain/user-preference.aggregate.js";
 import type { StreakMilestoneNotifierPort } from "../ports/streak-milestone-notifier.port.js";
 import type { TodoCompletionStatsReaderPort } from "../ports/todo-completion-stats.reader.port.js";
 import type { UserPreferenceRepositoryPort } from "../ports/user-preference.repository.port.js";
-import { IdentitySettingsLogEvent } from "../preferences.log-events.js";
+import { PreferenceLogEvent } from "../preferences.log-events.js";
 
 const MAX_STREAK_UPDATE_ATTEMPTS = 3;
 
-export interface OnTodoToggledInput {
+export interface OnTodoToggledCommand {
   readonly userId: string;
   readonly completed: boolean;
   readonly timezone?: string;
@@ -29,14 +29,14 @@ interface OnTodoToggledDependencies {
   readonly logger: ApplicationLoggerPort;
 }
 
-export class OnTodoToggled {
+export class OnTodoToggledUseCase {
   readonly #dependencies: OnTodoToggledDependencies;
 
   constructor(dependencies: OnTodoToggledDependencies) {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: OnTodoToggledInput): Promise<void> {
+  async execute(input: OnTodoToggledCommand): Promise<void> {
     try {
       const today = todayInTimezone(input.timezone ?? "UTC");
       for (let attempt = 0; attempt < MAX_STREAK_UPDATE_ATTEMPTS; attempt += 1) {
@@ -72,8 +72,8 @@ export class OnTodoToggled {
         }
         this.#dependencies.logger.log({
           event: allCompleted
-            ? IdentitySettingsLogEvent.STREAK_UPDATED
-            : IdentitySettingsLogEvent.STREAK_RECALCULATED,
+            ? PreferenceLogEvent.STREAK_UPDATED
+            : PreferenceLogEvent.STREAK_RECALCULATED,
           userId: input.userId,
           currentStreak: plan.nextState.currentStreak,
           longestStreak: plan.nextState.longestStreak,
@@ -82,14 +82,14 @@ export class OnTodoToggled {
       }
 
       this.#dependencies.logger.warn({
-        event: IdentitySettingsLogEvent.STREAK_UPDATE_CONFLICT,
+        event: PreferenceLogEvent.STREAK_UPDATE_CONFLICT,
         userId: input.userId,
         attempts: MAX_STREAK_UPDATE_ATTEMPTS,
       });
     } catch (error) {
       // Todo의 커밋된 변경은 스트릭 갱신 실패로 되돌리지 않는다.
       this.#dependencies.logger.error({
-        event: IdentitySettingsLogEvent.STREAK_UPDATE_FAILED,
+        event: PreferenceLogEvent.STREAK_UPDATE_FAILED,
         userId: input.userId,
         errorType: toErrorType(error),
       });

@@ -1,5 +1,5 @@
 import type { PreferenceSnapshot } from "#api/modules/identity/identity-settings.public";
-import { UserPreferenceReader } from "#api/modules/identity/preferences/application/use-cases/read-user-preferences.use-case";
+import { ReadUserPreferencesUseCase } from "#api/modules/identity/preferences/application/use-cases/read-user-preferences.use-case";
 import { createUserSettingsFixture } from "#test/fixtures/user-settings.fixture";
 import { createUserNotificationSettingsMock } from "#test/mocks/ports/notification.mock";
 
@@ -9,7 +9,7 @@ describe("CachedNotificationRecipientPreferenceAdapter - 수신자 언어와 공
   function createFixture() {
     const settings = createUserSettingsFixture({ preference: { locale: "en", currentStreak: 17 } });
     const userSettings = createUserNotificationSettingsMock();
-    const preferenceReader = new UserPreferenceReader(settings);
+    const preferenceReader = new ReadUserPreferencesUseCase(settings);
     const reader = new CachedNotificationRecipientPreferenceAdapter(userSettings, preferenceReader);
     return { ...settings, userSettings, reader };
   }
@@ -35,7 +35,7 @@ describe("CachedNotificationRecipientPreferenceAdapter - 수신자 언어와 공
     const settings = createUserSettingsFixture({ preference: null });
     const reader = new CachedNotificationRecipientPreferenceAdapter(
       createUserNotificationSettingsMock(),
-      new UserPreferenceReader(settings),
+      new ReadUserPreferencesUseCase(settings),
     );
 
     // When

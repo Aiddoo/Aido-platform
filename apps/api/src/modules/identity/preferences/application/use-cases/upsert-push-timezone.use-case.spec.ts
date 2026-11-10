@@ -1,7 +1,7 @@
 import { createUserSettingsFixture } from "#test/fixtures/user-settings.fixture";
 
-import { GetPreference } from "./get-preference.use-case.js";
-import { UpsertPushTimezone } from "./upsert-push-timezone.use-case.js";
+import { GetPreferenceUseCase } from "./get-preference.use-case.js";
+import { UpsertPushTimezoneUseCase } from "./upsert-push-timezone.use-case.js";
 
 describe("UpsertPushTimezone — 토큰 등록의 timezone 동기화", () => {
   it.each([true, false])(
@@ -11,11 +11,11 @@ describe("UpsertPushTimezone — 토큰 등록의 timezone 동기화", () => {
       const fixture = createUserSettingsFixture(
         existing ? { preference: { currentStreak: 7 } } : { preference: null },
       );
-      const query = new GetPreference(fixture);
+      const query = new GetPreferenceUseCase(fixture);
       expect((await query.execute({ userId: fixture.userId })).timezone).toBe("UTC");
       fixture.reminderTimezoneCache.activeTimezones.add("UTC");
       // When
-      await new UpsertPushTimezone(fixture).execute({
+      await new UpsertPushTimezoneUseCase(fixture).execute({
         userId: fixture.userId,
         timezone: "America/New_York",
       });
@@ -36,7 +36,7 @@ describe("UpsertPushTimezone — 토큰 등록의 timezone 동기화", () => {
     // Given
     const fixture = createUserSettingsFixture({ preference: { timezone: "Asia/Seoul" } });
     // When
-    await new UpsertPushTimezone(fixture).execute({
+    await new UpsertPushTimezoneUseCase(fixture).execute({
       userId: fixture.userId,
       timezone: "Asia/Seoul",
     });
@@ -53,7 +53,10 @@ describe("UpsertPushTimezone — 토큰 등록의 timezone 동기화", () => {
     );
     // When/Then: 기존 실패를 전달하고 이미 저장된 변경·설정 캐시 갱신은 유지한다.
     await expect(
-      new UpsertPushTimezone(fixture).execute({ userId: fixture.userId, timezone: "Asia/Seoul" }),
+      new UpsertPushTimezoneUseCase(fixture).execute({
+        userId: fixture.userId,
+        timezone: "Asia/Seoul",
+      }),
     ).rejects.toBe(failure);
     expect(fixture.preferenceRepository.records.get(fixture.userId)).toMatchObject({
       timezone: "Asia/Seoul",

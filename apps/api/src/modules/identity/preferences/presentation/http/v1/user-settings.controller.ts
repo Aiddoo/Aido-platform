@@ -15,12 +15,12 @@ import {
   SWAGGER_TAGS,
 } from "#api/platform/http/swagger/index";
 
-import { GetConsent } from "../../../application/use-cases/get-consent.use-case.js";
-import { GetPreference } from "../../../application/use-cases/get-preference.use-case.js";
-import { UpdateAiDataSharingConsent } from "../../../application/use-cases/update-ai-data-sharing-consent.use-case.js";
-import { UpdateMarketingConsent } from "../../../application/use-cases/update-marketing-consent.use-case.js";
-import { UpdateMarketingPushConsent } from "../../../application/use-cases/update-marketing-push-consent.use-case.js";
-import { UpdatePreference } from "../../../application/use-cases/update-preference.use-case.js";
+import { GetConsentUseCase } from "../../../application/use-cases/get-consent.use-case.js";
+import { GetPreferenceUseCase } from "../../../application/use-cases/get-preference.use-case.js";
+import { UpdateAiDataSharingConsentUseCase } from "../../../application/use-cases/update-ai-data-sharing-consent.use-case.js";
+import { UpdateMarketingConsentUseCase } from "../../../application/use-cases/update-marketing-consent.use-case.js";
+import { UpdateMarketingPushConsentUseCase } from "../../../application/use-cases/update-marketing-push-consent.use-case.js";
+import { UpdatePreferenceUseCase } from "../../../application/use-cases/update-preference.use-case.js";
 import {
   UpdateAiDataSharingConsentDto,
   UpdateMarketingConsentDto,
@@ -40,20 +40,20 @@ import {
 @ApiBearerAuth()
 @Controller("auth")
 export class SettingsController {
-  readonly #getPreferenceUseCase: GetPreference;
-  readonly #updatePreferenceUseCase: UpdatePreference;
-  readonly #getConsentUseCase: GetConsent;
-  readonly #updateMarketingConsentUseCase: UpdateMarketingConsent;
-  readonly #updateMarketingPushConsentUseCase: UpdateMarketingPushConsent;
-  readonly #updateAiDataSharingConsentUseCase: UpdateAiDataSharingConsent;
+  readonly #getPreferenceUseCase: GetPreferenceUseCase;
+  readonly #updatePreferenceUseCase: UpdatePreferenceUseCase;
+  readonly #getConsentUseCase: GetConsentUseCase;
+  readonly #updateMarketingConsentUseCase: UpdateMarketingConsentUseCase;
+  readonly #updateMarketingPushConsentUseCase: UpdateMarketingPushConsentUseCase;
+  readonly #updateAiDataSharingConsentUseCase: UpdateAiDataSharingConsentUseCase;
 
   constructor(
-    getPreferenceUseCase: GetPreference,
-    updatePreferenceUseCase: UpdatePreference,
-    getConsentUseCase: GetConsent,
-    updateMarketingConsentUseCase: UpdateMarketingConsent,
-    updateMarketingPushConsentUseCase: UpdateMarketingPushConsent,
-    updateAiDataSharingConsentUseCase: UpdateAiDataSharingConsent,
+    getPreferenceUseCase: GetPreferenceUseCase,
+    updatePreferenceUseCase: UpdatePreferenceUseCase,
+    getConsentUseCase: GetConsentUseCase,
+    updateMarketingConsentUseCase: UpdateMarketingConsentUseCase,
+    updateMarketingPushConsentUseCase: UpdateMarketingPushConsentUseCase,
+    updateAiDataSharingConsentUseCase: UpdateAiDataSharingConsentUseCase,
   ) {
     this.#getPreferenceUseCase = getPreferenceUseCase;
     this.#updatePreferenceUseCase = updatePreferenceUseCase;

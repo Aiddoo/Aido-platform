@@ -10,12 +10,12 @@ import {
   USER_SETTINGS_CACHE,
   type UserSettingsCachePort,
 } from "#api/modules/identity/preferences/application/ports/user-settings-cache.port";
-import { GetPreference } from "#api/modules/identity/preferences/application/use-cases/get-preference.use-case";
-import { OnTodoToggled } from "#api/modules/identity/preferences/application/use-cases/on-todo-toggled.use-case";
-import { RefreshPushTimezone } from "#api/modules/identity/preferences/application/use-cases/refresh-push-timezone.use-case";
-import { SeedUserSettings } from "#api/modules/identity/preferences/application/use-cases/seed-user-settings.use-case";
-import { UpdatePreference } from "#api/modules/identity/preferences/application/use-cases/update-preference.use-case";
-import { UpsertPushTimezone } from "#api/modules/identity/preferences/application/use-cases/upsert-push-timezone.use-case";
+import { GetPreferenceUseCase } from "#api/modules/identity/preferences/application/use-cases/get-preference.use-case";
+import { OnTodoToggledUseCase } from "#api/modules/identity/preferences/application/use-cases/on-todo-toggled.use-case";
+import { RefreshPushTimezoneUseCase } from "#api/modules/identity/preferences/application/use-cases/refresh-push-timezone.use-case";
+import { SeedUserSettingsUseCase } from "#api/modules/identity/preferences/application/use-cases/seed-user-settings.use-case";
+import { UpdatePreferenceUseCase } from "#api/modules/identity/preferences/application/use-cases/update-preference.use-case";
+import { UpsertPushTimezoneUseCase } from "#api/modules/identity/preferences/application/use-cases/upsert-push-timezone.use-case";
 import { DrizzleUserConsentRepository } from "#api/modules/identity/preferences/infrastructure/persistence/drizzle-user-consent.repository";
 import { DrizzleUserPreferenceRepository } from "#api/modules/identity/preferences/infrastructure/persistence/drizzle-user-preference.repository";
 import {
@@ -158,7 +158,9 @@ describe("사용자 설정 저장·캐시·동시 스트릭 (실제 PostgreSQL)"
       }
 
       // When
-      const response = await context.module.get(UpdatePreference).execute({ userId, ...weather });
+      const response = await context.module
+        .get(UpdatePreferenceUseCase)
+        .execute({ userId, ...weather });
       const saved = await preferences.findByUserId(userId);
 
       // Then
@@ -172,18 +174,22 @@ describe("사용자 설정 저장·캐시·동시 스트릭 (실제 PostgreSQL)"
   it("캐시에 저장된 설정도 timezone 자가치유와 upsert 직후 최신 값을 반환한다", async () => {
     // Given
     await preferences.create(userId, { timezone: "UTC" });
-    const get = context.module.get(GetPreference);
+    const get = context.module.get(GetPreferenceUseCase);
     expect((await get.execute({ userId })).timezone).toBe("UTC");
 
     // When
-    await context.module.get(RefreshPushTimezone).execute({ userId, timezone: "Asia/Seoul" });
+    await context.module
+      .get(RefreshPushTimezoneUseCase)
+      .execute({ userId, timezone: "Asia/Seoul" });
 
     // Then
     expect((await preferences.findByUserId(userId))?.timezone).toBe("Asia/Seoul");
     expect((await get.execute({ userId })).timezone).toBe("Asia/Seoul");
 
     // When
-    await context.module.get(UpsertPushTimezone).execute({ userId, timezone: "America/New_York" });
+    await context.module
+      .get(UpsertPushTimezoneUseCase)
+      .execute({ userId, timezone: "America/New_York" });
 
     // Then
     expect((await preferences.findByUserId(userId))?.timezone).toBe("America/New_York");
@@ -197,7 +203,7 @@ describe("사용자 설정 저장·캐시·동시 스트릭 (실제 PostgreSQL)"
     const reminderTimezoneCache =
       context.module.get<ReminderTimezoneCachePort>(REMINDER_TIMEZONE_CACHE);
     const invalidateTimezones = vi.spyOn(reminderTimezoneCache, "invalidateActiveTimezones");
-    const refresh = context.module.get(RefreshPushTimezone);
+    const refresh = context.module.get(RefreshPushTimezoneUseCase);
 
     // When
     await refresh.execute({ userId, timezone: "UTC" });
@@ -248,7 +254,7 @@ describe("사용자 설정 저장·캐시·동시 스트릭 (실제 PostgreSQL)"
         .where(eq(userPreference.userId, userId))
         .for("update"),
     );
-    const useCase = context.module.get(OnTodoToggled);
+    const useCase = context.module.get(OnTodoToggledUseCase);
     const requests = Promise.allSettled([
       useCase.execute({ userId, completed: true }),
       useCase.execute({ userId, completed: true }),
@@ -280,7 +286,7 @@ describe("사용자 설정 저장·캐시·동시 스트릭 (실제 PostgreSQL)"
     await givenCompletedTodos();
 
     // When
-    await context.module.get(OnTodoToggled).execute({ userId, completed: false });
+    await context.module.get(OnTodoToggledUseCase).execute({ userId, completed: false });
 
     // Then
     expect(await preferences.findByUserId(userId)).toEqual(
@@ -391,7 +397,7 @@ describe("사용자 설정 저장·캐시·동시 스트릭 (실제 PostgreSQL)"
       email: "settings-rollback@example.com",
       userTag: "SETPG002",
     });
-    const seed = context.module.get(SeedUserSettings);
+    const seed = context.module.get(SeedUserSettingsUseCase);
 
     // When
     const provision = unitOfWork.run(async () => {

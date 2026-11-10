@@ -21,8 +21,8 @@ import {
   USER_TIMEZONE_READER,
 } from "./application/ports/user-settings-access.port.js";
 import { USER_SETTINGS_CACHE } from "./application/ports/user-settings-cache.port.js";
-import { AiDataSharingConsentReader } from "./application/use-cases/get-ai-data-sharing-consent.use-case.js";
-import { UserPreferenceReader } from "./application/use-cases/read-user-preferences.use-case.js";
+import { GetAiDataSharingConsentUseCase } from "./application/use-cases/get-ai-data-sharing-consent.use-case.js";
+import { ReadUserPreferencesUseCase } from "./application/use-cases/read-user-preferences.use-case.js";
 import {
   userPreferenceReaderProvider,
   getConsentRecordsProvider,
@@ -64,7 +64,7 @@ import { SettingsController } from "./presentation/http/v1/user-settings.control
   providers: [
     UserSettingsAccessAdapter,
     userPreferenceReaderProvider,
-    { provide: USER_PREFERENCE_READER, useExisting: UserPreferenceReader },
+    { provide: USER_PREFERENCE_READER, useExisting: ReadUserPreferencesUseCase },
     { provide: PREFERENCE_ENTITLEMENT, useExisting: ENTITLEMENT_READER },
     getPreferenceProvider,
     updatePreferenceProvider,
@@ -73,7 +73,7 @@ import { SettingsController } from "./presentation/http/v1/user-settings.control
     updateMarketingPushConsentProvider,
     updateAiDataSharingConsentProvider,
     aiDataSharingConsentReaderProvider,
-    { provide: AI_DATA_SHARING_CONSENT_READER, useExisting: AiDataSharingConsentReader },
+    { provide: AI_DATA_SHARING_CONSENT_READER, useExisting: GetAiDataSharingConsentUseCase },
     onTodoToggledProvider,
     seedUserSettingsProvider,
     upsertPushTimezoneProvider,

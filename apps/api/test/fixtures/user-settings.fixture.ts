@@ -1,6 +1,6 @@
 import { mock } from "vitest-mock-extended";
 
-import { UserPreferenceReader } from "#api/modules/identity/preferences/application/use-cases/read-user-preferences.use-case";
+import { ReadUserPreferencesUseCase } from "#api/modules/identity/preferences/application/use-cases/read-user-preferences.use-case";
 import type { UserConsentRecord } from "#api/modules/identity/preferences/domain/user-consent.constants";
 import type { UserPreferenceRecord } from "#api/modules/identity/preferences/domain/user-preference.constants";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
@@ -39,7 +39,7 @@ export function createUserSettingsFixture(
   );
   const cache = new StubUserSettingsCache();
   const reminderTimezoneCache = new StubReminderTimezoneCache();
-  const preferenceReader = new UserPreferenceReader({ preferenceRepository, cache });
+  const preferenceReader = new ReadUserPreferencesUseCase({ preferenceRepository, cache });
   const entitlement = new StubPreferenceEntitlement();
   if (input.premium) {
     entitlement.premiumUserIds.add(userId);

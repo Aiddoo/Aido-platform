@@ -12,8 +12,8 @@ import type { Observable } from "rxjs";
 import { RequestClientReader } from "#api/platform/http/request-client/index";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 
-import { IdentitySettingsLogEvent } from "../../../application/preferences.log-events.js";
-import { RefreshPushTimezone } from "../../../application/use-cases/refresh-push-timezone.use-case.js";
+import { PreferenceLogEvent } from "../../../application/preferences.log-events.js";
+import { RefreshPushTimezoneUseCase } from "../../../application/use-cases/refresh-push-timezone.use-case.js";
 
 @Injectable()
 export class TimezoneSelfHealInterceptor implements NestInterceptor, OnModuleDestroy {
@@ -25,11 +25,11 @@ export class TimezoneSelfHealInterceptor implements NestInterceptor, OnModuleDes
 
   static readonly THROTTLE_MS = 60 * 60 * 1000;
 
-  readonly #refreshPushTimezoneUseCase: RefreshPushTimezone;
+  readonly #refreshPushTimezoneUseCase: RefreshPushTimezoneUseCase;
   readonly #requestClientReader: RequestClientReader;
 
   constructor(
-    refreshPushTimezoneUseCase: RefreshPushTimezone,
+    refreshPushTimezoneUseCase: RefreshPushTimezoneUseCase,
     requestClientReader: RequestClientReader,
   ) {
     this.#refreshPushTimezoneUseCase = refreshPushTimezoneUseCase;
@@ -73,7 +73,7 @@ export class TimezoneSelfHealInterceptor implements NestInterceptor, OnModuleDes
         this.#seen.delete(userId);
       }
       this.#logger.error({
-        event: IdentitySettingsLogEvent.TIMEZONE_HEAL_FAILED,
+        event: PreferenceLogEvent.TIMEZONE_HEAL_FAILED,
         userId,
         timezone,
         errorType: toErrorType(error),
@@ -94,7 +94,7 @@ export class TimezoneSelfHealInterceptor implements NestInterceptor, OnModuleDes
 
     if (cleaned > 0) {
       this.#logger.debug({
-        event: IdentitySettingsLogEvent.TIMEZONE_HEAL_CLEANED,
+        event: PreferenceLogEvent.TIMEZONE_HEAL_CLEANED,
         removedCount: cleaned,
       });
     }

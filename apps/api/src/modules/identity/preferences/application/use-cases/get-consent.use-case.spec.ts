@@ -2,7 +2,7 @@ import { vi } from "vitest";
 
 import { createUserSettingsFixture, SETTINGS_TIME } from "#test/fixtures/user-settings.fixture";
 
-import { GetConsent } from "./get-consent.use-case.js";
+import { GetConsentUseCase } from "./get-consent.use-case.js";
 
 describe("GetConsent — 약관과 선택 동의의 nullable 응답", () => {
   beforeEach(() => {
@@ -14,7 +14,7 @@ describe("GetConsent — 약관과 선택 동의의 nullable 응답", () => {
     // Given
     const fixture = createUserSettingsFixture({ consent: null });
     // When
-    const result = await new GetConsent(fixture).execute({ userId: fixture.userId });
+    const result = await new GetConsentUseCase(fixture).execute({ userId: fixture.userId });
     // Then
     expect(result).toEqual({
       termsAgreedAt: null,
@@ -34,7 +34,7 @@ describe("GetConsent — 약관과 선택 동의의 nullable 응답", () => {
       consent: { marketingPushAgreedAt: SETTINGS_TIME },
     });
     // When
-    const result = await new GetConsent(fixture).execute({ userId: fixture.userId });
+    const result = await new GetConsentUseCase(fixture).execute({ userId: fixture.userId });
     // Then
     expect(result).toEqual({
       termsAgreedAt: SETTINGS_TIME.toISOString(),

@@ -6,7 +6,7 @@ import type { TodoTimezoneRebaseEnqueuerPort } from "../ports/todo-timezone-reba
 import type { UserPreferenceRepositoryPort } from "../ports/user-preference.repository.port.js";
 import type { UserSettingsCachePort } from "../ports/user-settings-cache.port.js";
 
-export interface UpsertPushTimezoneInput {
+export interface UpsertPushTimezoneCommand {
   readonly userId: string;
   readonly timezone: string;
 }
@@ -19,14 +19,14 @@ interface UpsertPushTimezoneDependencies {
   readonly unitOfWork: UnitOfWorkPort;
 }
 
-export class UpsertPushTimezone {
+export class UpsertPushTimezoneUseCase {
   readonly #dependencies: UpsertPushTimezoneDependencies;
 
   constructor(dependencies: UpsertPushTimezoneDependencies) {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: UpsertPushTimezoneInput): Promise<void> {
+  async execute(input: UpsertPushTimezoneCommand): Promise<void> {
     const { userId, timezone } = input;
     await this.#dependencies.unitOfWork.run(async () => {
       if (await this.#dependencies.preferenceRepository.upsertTimezone(userId, timezone)) {

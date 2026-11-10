@@ -2,8 +2,8 @@ import { vi } from "vitest";
 
 import { createUserSettingsFixture, SETTINGS_TIME } from "#test/fixtures/user-settings.fixture";
 
-import { IdentitySettingsLogEvent } from "../preferences.log-events.js";
-import { OnTodoToggled } from "./on-todo-toggled.use-case.js";
+import { PreferenceLogEvent } from "../preferences.log-events.js";
+import { OnTodoToggledUseCase } from "./on-todo-toggled.use-case.js";
 
 const today = new Date("2026-01-16T00:00:00.000Z");
 const yesterday = new Date("2026-01-15T00:00:00.000Z");
@@ -20,7 +20,7 @@ describe("OnTodoToggled — 최신 완료 현황과 streak CAS", () => {
       preference: { currentStreak: 2, longestStreak: 5, lastCompletedDate: yesterday },
     });
     fixture.statsReader.days.set(`${fixture.userId}/2026-01-16`, { total: 2, completed: 2 });
-    return { ...fixture, useCase: new OnTodoToggled(fixture) };
+    return { ...fixture, useCase: new OnTodoToggledUseCase(fixture) };
   }
 
   it("전체 완료를 한 번 반영하고 같은 날 재요청에도 3일 마일스톤은 한 번만 등록한다", async () => {
@@ -182,7 +182,7 @@ describe("OnTodoToggled — 최신 완료 현황과 streak CAS", () => {
     expect(fixture.preferenceRepository.records.get(fixture.userId)).toEqual(fixture.preference);
     expect(fixture.milestoneNotifier.userIds).toEqual([]);
     expect(fixture.logger.warn).toHaveBeenCalledWith({
-      event: IdentitySettingsLogEvent.STREAK_UPDATE_CONFLICT,
+      event: PreferenceLogEvent.STREAK_UPDATE_CONFLICT,
       userId: fixture.userId,
       attempts: 3,
     });
@@ -201,7 +201,7 @@ describe("OnTodoToggled — 최신 완료 현황과 streak CAS", () => {
     expect(fixture.preferenceRepository.records.get(fixture.userId)).toEqual(fixture.preference);
     expect(fixture.milestoneNotifier.userIds).toEqual([]);
     expect(fixture.logger.error).toHaveBeenCalledWith({
-      event: IdentitySettingsLogEvent.STREAK_UPDATE_FAILED,
+      event: PreferenceLogEvent.STREAK_UPDATE_FAILED,
       userId: fixture.userId,
       errorType: "Error",
     });
@@ -238,7 +238,11 @@ describe("OnTodoToggled — 최신 완료 현황과 streak CAS", () => {
     const fixture = createUserSettingsFixture();
     fixture.statsReader.days.set(`${fixture.userId}/${date}`, { total: 1, completed: 1 });
     // When
-    await new OnTodoToggled(fixture).execute({ userId: fixture.userId, completed: true, timezone });
+    await new OnTodoToggledUseCase(fixture).execute({
+      userId: fixture.userId,
+      completed: true,
+      timezone,
+    });
     // Then
     const expectedDay = new Date(`${date}T00:00:00.000Z`);
     expect(fixture.preferenceRepository.records.get(fixture.userId)?.lastCompletedDate).toEqual(
@@ -279,7 +283,7 @@ describe("OnTodoToggled — 최신 완료 현황과 streak CAS", () => {
         },
       });
       fixture.statsReader.days.set(`${fixture.userId}/${date}`, { total: 1, completed: 1 });
-      const useCase = new OnTodoToggled(fixture);
+      const useCase = new OnTodoToggledUseCase(fixture);
       const input = { userId: fixture.userId, completed: true, timezone: "America/New_York" };
       // When
       vi.setSystemTime(new Date(first));

@@ -5,10 +5,10 @@ import { now } from "#api/shared/domain/date/utils/core";
 
 import { resolveAiDataSharingAgreement } from "../../domain/ai-data-sharing-consent.domain-service.js";
 import type { UserConsentRepositoryPort } from "../ports/user-consent.repository.port.js";
-import { IdentitySettingsLogEvent } from "../preferences.log-events.js";
+import { PreferenceLogEvent } from "../preferences.log-events.js";
 import { buildAiDataSharingConsentView } from "../read-models/consent.read-model.js";
 
-export interface UpdateAiDataSharingConsentInput {
+export interface UpdateAiDataSharingConsentCommand {
   readonly userId: string;
   readonly agreed: boolean;
   /** 사용자가 읽고 답한 안내 버전. 요청 검증이 현재 버전만 받는다. */
@@ -21,7 +21,7 @@ interface UpdateAiDataSharingConsentDependencies {
 }
 
 /** AI 데이터 처리(Google Gemini 전송)에 동의하거나 거부·철회한다. 거부해도 AI 외 기능은 그대로다. */
-export class UpdateAiDataSharingConsent {
+export class UpdateAiDataSharingConsentUseCase {
   readonly #dependencies: UpdateAiDataSharingConsentDependencies;
 
   constructor(dependencies: UpdateAiDataSharingConsentDependencies) {
@@ -29,14 +29,14 @@ export class UpdateAiDataSharingConsent {
   }
 
   async execute(
-    input: UpdateAiDataSharingConsentInput,
+    input: UpdateAiDataSharingConsentCommand,
   ): Promise<UpdateAiDataSharingConsentResponse> {
     const updated = await this.#dependencies.consentRepository.upsertAiDataSharingConsent(
       input.userId,
       { agreedAt: resolveAiDataSharingAgreement(input.agreed, now()), version: input.version },
     );
     this.#dependencies.logger.log({
-      event: IdentitySettingsLogEvent.AI_DATA_SHARING_CONSENT_UPDATED,
+      event: PreferenceLogEvent.AI_DATA_SHARING_CONSENT_UPDATED,
       userId: input.userId,
       agreed: input.agreed,
       version: input.version,

@@ -2,7 +2,7 @@ import { vi } from "vitest";
 
 import { createUserSettingsFixture } from "#test/fixtures/user-settings.fixture";
 
-import { UpsertPushLocale } from "./upsert-push-locale.use-case.js";
+import { UpsertPushLocaleUseCase } from "./upsert-push-locale.use-case.js";
 
 describe("UpsertPushLocale — 푸시 언어 저장 경계", () => {
   it.each(["ko", "en-US"])(
@@ -14,7 +14,7 @@ describe("UpsertPushLocale — 푸시 언어 저장 경계", () => {
       });
       await fixture.preferenceReader.read(fixture.userId);
       // When
-      await new UpsertPushLocale(fixture).execute({ userId: fixture.userId, locale });
+      await new UpsertPushLocaleUseCase(fixture).execute({ userId: fixture.userId, locale });
       // Then
       expect(fixture.preferenceRepository.records.get(fixture.userId)).toEqual({
         ...fixture.preference,
@@ -32,7 +32,10 @@ describe("UpsertPushLocale — 푸시 언어 저장 경계", () => {
     const storageError = new Error("locale 저장 실패");
     vi.spyOn(fixture.preferenceRepository, "upsertLocale").mockRejectedValueOnce(storageError);
     // When
-    const pending = new UpsertPushLocale(fixture).execute({ userId: fixture.userId, locale: "ja" });
+    const pending = new UpsertPushLocaleUseCase(fixture).execute({
+      userId: fixture.userId,
+      locale: "ja",
+    });
     // Then
     await expect(pending).rejects.toBe(storageError);
     expect(fixture.cache.snapshots.get(fixture.userId)).toEqual(cached);

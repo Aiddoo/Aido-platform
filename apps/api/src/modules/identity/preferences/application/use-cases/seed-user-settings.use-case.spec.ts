@@ -2,7 +2,7 @@ import { vi } from "vitest";
 
 import { createUserSettingsFixture, SETTINGS_TIME } from "#test/fixtures/user-settings.fixture";
 
-import { SeedUserSettings } from "./seed-user-settings.use-case.js";
+import { SeedUserSettingsUseCase } from "./seed-user-settings.use-case.js";
 
 describe("SeedUserSettings — 가입 시 필수 동의와 기본 푸시 설정", () => {
   beforeEach(() => {
@@ -19,7 +19,7 @@ describe("SeedUserSettings — 가입 시 필수 동의와 기본 푸시 설정"
       agreedTermsVersion: "2.0",
     };
     // When
-    await new SeedUserSettings(fixture).execute({ userId: fixture.userId, consent });
+    await new SeedUserSettingsUseCase(fixture).execute({ userId: fixture.userId, consent });
     // Then
     expect(fixture.consentRepository.records.get(fixture.userId)).toEqual({
       ...consent,
@@ -40,7 +40,7 @@ describe("SeedUserSettings — 가입 시 필수 동의와 기본 푸시 설정"
     // Given
     const fixture = createUserSettingsFixture({ preference: null, consent: null });
     // When
-    await new SeedUserSettings(fixture).execute({ userId: fixture.userId, consent: {} });
+    await new SeedUserSettingsUseCase(fixture).execute({ userId: fixture.userId, consent: {} });
     // Then
     expect(fixture.consentRepository.records.get(fixture.userId)).toEqual({
       termsAgreedAt: null,

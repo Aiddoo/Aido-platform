@@ -21,7 +21,7 @@ import { DrizzleTodoStatsReader } from "#api/modules/ai-assistance/infrastructur
 import { DrizzleAiSuggestionRepository } from "#api/modules/ai-assistance/infrastructure/persistence/suggestions/drizzle-ai-suggestion.repository";
 import { ReportGenerationProcessor } from "#api/modules/ai-assistance/infrastructure/processors/reports/report-generation.processor";
 import { SuggestionAnalysisProcessor } from "#api/modules/ai-assistance/infrastructure/processors/suggestions/suggestion-analysis.processor";
-import { AiDataSharingConsentReader } from "#api/modules/identity/preferences/application/use-cases/get-ai-data-sharing-consent.use-case";
+import { GetAiDataSharingConsentUseCase } from "#api/modules/identity/preferences/application/use-cases/get-ai-data-sharing-consent.use-case";
 import { DrizzleUserConsentRepository } from "#api/modules/identity/preferences/infrastructure/persistence/drizzle-user-consent.repository";
 import { DrizzleUserRepository } from "#api/modules/identity/users/infrastructure/persistence/drizzle-user.repository";
 import { DrizzleClientAppVersionReader } from "#api/modules/notification/infrastructure/persistence/delivery/drizzle-client-app-version.reader";
@@ -137,7 +137,7 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
 
   function generation(provider: FakeAiGenerator, repository = suggestions) {
     const logger = new Logger("AiGenerationIntegration");
-    const consentReader = new AiDataSharingConsentReader({
+    const consentReader = new GetAiDataSharingConsentUseCase({
       consentRepository: new DrizzleUserConsentRepository(fixture.txHost),
     });
     const contextBuilder = new SuggestionContextBuilder({

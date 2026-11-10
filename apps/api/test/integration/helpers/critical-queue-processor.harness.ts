@@ -15,7 +15,7 @@ import {
   USER_PREFERENCE_READER,
   USER_SETTINGS_CACHE,
 } from "#api/modules/identity/identity-settings.public";
-import { UserPreferenceReader } from "#api/modules/identity/preferences/application/use-cases/read-user-preferences.use-case";
+import { ReadUserPreferencesUseCase } from "#api/modules/identity/preferences/application/use-cases/read-user-preferences.use-case";
 import { UserSettingsCacheAdapter } from "#api/modules/identity/preferences/infrastructure/adapters/user-settings-cache.adapter";
 import { DrizzleUserPreferenceRepository } from "#api/modules/identity/preferences/infrastructure/persistence/drizzle-user-preference.repository";
 import { ACTIVE_PUSH_TOKEN_READER } from "#api/modules/notification/application/ports/delivery/active-push-token.reader.port";
@@ -350,7 +350,7 @@ function notificationProviders(pushProvider: FakePushProvider): Provider[] {
     {
       provide: USER_PREFERENCE_READER,
       useFactory: (preferenceRepository: DrizzleUserPreferenceRepository, cache: CacheService) =>
-        new UserPreferenceReader({
+        new ReadUserPreferencesUseCase({
           preferenceRepository,
           cache: new UserSettingsCacheAdapter(cache),
         }),

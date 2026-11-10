@@ -18,10 +18,10 @@ import { type ReminderScheduleEnqueuerPort } from "../ports/reminder-schedule-en
 import type { TodoTimezoneRebaseEnqueuerPort } from "../ports/todo-timezone-rebase-enqueuer.port.js";
 import { type UserPreferenceRepositoryPort } from "../ports/user-preference.repository.port.js";
 import { type UserSettingsCachePort } from "../ports/user-settings-cache.port.js";
-import { IdentitySettingsLogEvent } from "../preferences.log-events.js";
+import { PreferenceLogEvent } from "../preferences.log-events.js";
 import { buildUpdatedPreferenceView } from "../read-models/preference.read-model.js";
 
-export type UpdatePreferenceInput = Readonly<PreferenceChanges> & {
+export type UpdatePreferenceCommand = Readonly<PreferenceChanges> & {
   readonly userId: string;
 };
 
@@ -36,14 +36,14 @@ interface UpdatePreferenceDependencies {
   readonly logger: ApplicationLoggerPort;
 }
 
-export class UpdatePreference {
+export class UpdatePreferenceUseCase {
   readonly #dependencies: UpdatePreferenceDependencies;
 
   constructor(dependencies: UpdatePreferenceDependencies) {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: UpdatePreferenceInput): Promise<UpdatePreferenceResponse> {
+  async execute(input: UpdatePreferenceCommand): Promise<UpdatePreferenceResponse> {
     const { userId } = input;
     const changesReminder =
       input.morningReminderHour != null ||
@@ -97,7 +97,7 @@ export class UpdatePreference {
     }
 
     this.#dependencies.logger.log({
-      event: IdentitySettingsLogEvent.PREFERENCE_UPDATED,
+      event: PreferenceLogEvent.PREFERENCE_UPDATED,
       userId,
       pushEnabled: updated.pushEnabled,
       nightPushEnabled: updated.nightPushEnabled,

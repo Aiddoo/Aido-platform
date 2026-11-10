@@ -2,7 +2,7 @@ import { vi } from "vitest";
 
 import { createUserSettingsFixture, SETTINGS_TIME } from "#test/fixtures/user-settings.fixture";
 
-import { UpdateMarketingConsent } from "./update-marketing-consent.use-case.js";
+import { UpdateMarketingConsentUseCase } from "./update-marketing-consent.use-case.js";
 
 describe("UpdateMarketingConsent — 일반 마케팅 동의 변경", () => {
   beforeEach(() => {
@@ -15,7 +15,7 @@ describe("UpdateMarketingConsent — 일반 마케팅 동의 변경", () => {
     const fixture = createUserSettingsFixture({
       consent: { marketingPushAgreedAt: SETTINGS_TIME },
     });
-    const useCase = new UpdateMarketingConsent(fixture);
+    const useCase = new UpdateMarketingConsentUseCase(fixture);
     // When
     const agreed = await useCase.execute({ userId: fixture.userId, agreed: true });
     vi.setSystemTime(SETTINGS_TIME.getTime() + 60_000);
@@ -36,7 +36,10 @@ describe("UpdateMarketingConsent — 일반 마케팅 동의 변경", () => {
     // Given
     const fixture = createUserSettingsFixture({ consent: null });
     // When
-    await new UpdateMarketingConsent(fixture).execute({ userId: fixture.userId, agreed: true });
+    await new UpdateMarketingConsentUseCase(fixture).execute({
+      userId: fixture.userId,
+      agreed: true,
+    });
     // Then
     expect(fixture.consentRepository.records.get(fixture.userId)).toEqual({
       termsAgreedAt: null,
@@ -52,7 +55,7 @@ describe("UpdateMarketingConsent — 일반 마케팅 동의 변경", () => {
   it("철회 응답에는 처리한 서버 시각을, 동의 응답에는 null을 싣는다", async () => {
     // Given
     const fixture = createUserSettingsFixture({ consent: { marketingAgreedAt: SETTINGS_TIME } });
-    const useCase = new UpdateMarketingConsent(fixture);
+    const useCase = new UpdateMarketingConsentUseCase(fixture);
     const withdrawAt = new Date(SETTINGS_TIME.getTime() + 60_000);
 
     // When

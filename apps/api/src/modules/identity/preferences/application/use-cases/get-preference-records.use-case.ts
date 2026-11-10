@@ -3,7 +3,7 @@ import type {
   UserPreferenceRecordWithId,
 } from "../ports/user-preference.repository.port.js";
 
-export interface GetPreferenceRecordsInput {
+export interface GetPreferenceRecordsQuery {
   readonly userIds: readonly string[];
 }
 
@@ -11,14 +11,14 @@ interface GetPreferenceRecordsDependencies {
   readonly preferenceRepository: Pick<UserPreferenceRepositoryPort, "findByUserIds">;
 }
 
-export class GetPreferenceRecords {
+export class GetPreferenceRecordsUseCase {
   readonly #dependencies: GetPreferenceRecordsDependencies;
 
   constructor(dependencies: GetPreferenceRecordsDependencies) {
     this.#dependencies = dependencies;
   }
 
-  execute(input: GetPreferenceRecordsInput): Promise<UserPreferenceRecordWithId[]> {
+  execute(input: GetPreferenceRecordsQuery): Promise<UserPreferenceRecordWithId[]> {
     return this.#dependencies.preferenceRepository.findByUserIds(input.userIds);
   }
 }

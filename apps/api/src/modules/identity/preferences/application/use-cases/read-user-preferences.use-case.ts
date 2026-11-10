@@ -12,7 +12,7 @@ interface UserPreferenceReaderDependencies {
   readonly cache: Pick<UserSettingsCachePort, "wrapUserPreference">;
 }
 
-export class UserPreferenceReader implements UserPreferenceReaderPort {
+export class ReadUserPreferencesUseCase implements UserPreferenceReaderPort {
   readonly #dependencies: UserPreferenceReaderDependencies;
 
   constructor(dependencies: UserPreferenceReaderDependencies) {

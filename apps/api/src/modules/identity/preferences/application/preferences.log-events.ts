@@ -1,4 +1,4 @@
-export const IdentitySettingsLogEvent = {
+export const PreferenceLogEvent = {
   TIMEZONE_HEAL_FAILED: "identity.settings.timezone.heal.failed",
   TIMEZONE_HEAL_CLEANED: "identity.settings.timezone.heal.cleaned",
   PREFERENCE_UPDATED: "identity.settings.preference.updated",

@@ -5,7 +5,7 @@ import { and, eq, gte, sql } from "drizzle-orm";
 import { omit } from "es-toolkit";
 import { PgBoss } from "pg-boss";
 
-import { RefreshPushTimezone } from "#api/modules/identity/preferences/application/use-cases/refresh-push-timezone.use-case";
+import { RefreshPushTimezoneUseCase } from "#api/modules/identity/preferences/application/use-cases/refresh-push-timezone.use-case";
 import { DrizzleUserPreferenceRepository } from "#api/modules/identity/preferences/infrastructure/persistence/drizzle-user-preference.repository";
 import { TODO_REMINDER_QUEUE } from "#api/modules/notification/infrastructure/jobs/reminders/todo-reminder-queue.constants";
 import { TodoReminderSchedulerAdapter } from "#api/modules/notification/infrastructure/jobs/reminders/todo-reminder-scheduler.adapter";
@@ -427,7 +427,7 @@ describe("시간대 재계산 (실제 PostgreSQL·pg-boss)", () => {
           1_000,
       );
       const preferenceRepository = new DrizzleUserPreferenceRepository(transaction.txHost);
-      const refresh = new RefreshPushTimezone({
+      const refresh = new RefreshPushTimezoneUseCase({
         preferenceRepository,
         cache: { invalidateUserPreference: async () => undefined },
         reminderTimezoneCache: { invalidateActiveTimezones: async () => undefined },

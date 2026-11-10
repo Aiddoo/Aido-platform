@@ -5,10 +5,10 @@ import { now } from "#api/shared/domain/date/utils/core";
 
 import { resolveMarketingAgreement } from "../../domain/marketing-consent.domain-service.js";
 import type { UserConsentRepositoryPort } from "../ports/user-consent.repository.port.js";
-import { IdentitySettingsLogEvent } from "../preferences.log-events.js";
+import { PreferenceLogEvent } from "../preferences.log-events.js";
 import { buildMarketingPushConsentView } from "../read-models/consent.read-model.js";
 
-export interface UpdateMarketingPushConsentInput {
+export interface UpdateMarketingPushConsentCommand {
   readonly userId: string;
   readonly agreed: boolean;
 }
@@ -18,7 +18,7 @@ interface UpdateMarketingPushConsentDependencies {
   readonly logger: ApplicationLoggerPort;
 }
 
-export class UpdateMarketingPushConsent {
+export class UpdateMarketingPushConsentUseCase {
   readonly #dependencies: UpdateMarketingPushConsentDependencies;
 
   constructor(dependencies: UpdateMarketingPushConsentDependencies) {
@@ -26,7 +26,7 @@ export class UpdateMarketingPushConsent {
   }
 
   async execute(
-    input: UpdateMarketingPushConsentInput,
+    input: UpdateMarketingPushConsentCommand,
   ): Promise<UpdateMarketingPushConsentResponse> {
     const processedAt = now();
     const updated = await this.#dependencies.consentRepository.upsertMarketingPushConsent(
@@ -36,7 +36,7 @@ export class UpdateMarketingPushConsent {
       },
     );
     this.#dependencies.logger.log({
-      event: IdentitySettingsLogEvent.MARKETING_PUSH_CONSENT_UPDATED,
+      event: PreferenceLogEvent.MARKETING_PUSH_CONSENT_UPDATED,
       userId: input.userId,
       agreed: input.agreed,
     });

@@ -14,10 +14,10 @@ import type { Mocked } from "vitest";
 
 import type { CurrentUserPayload } from "#api/modules/identity/auth/presentation/http/decorators/current-user.decorator";
 
-import { GetConsent } from "../../../application/use-cases/get-consent.use-case.js";
-import { GetPreference } from "../../../application/use-cases/get-preference.use-case.js";
-import { UpdateMarketingConsent } from "../../../application/use-cases/update-marketing-consent.use-case.js";
-import { UpdatePreference } from "../../../application/use-cases/update-preference.use-case.js";
+import { GetConsentUseCase } from "../../../application/use-cases/get-consent.use-case.js";
+import { GetPreferenceUseCase } from "../../../application/use-cases/get-preference.use-case.js";
+import { UpdateMarketingConsentUseCase } from "../../../application/use-cases/update-marketing-consent.use-case.js";
+import { UpdatePreferenceUseCase } from "../../../application/use-cases/update-preference.use-case.js";
 import { SettingsController } from "./user-settings.controller.js";
 
 const WEATHER_DEFAULTS = {
@@ -31,10 +31,10 @@ const WEATHER_DEFAULTS = {
 
 describe("SettingsController — 사용자 설정 컨트롤러", () => {
   let controller: SettingsController;
-  let getPreferenceUseCase: Mocked<GetPreference>;
-  let updatePreferenceUseCase: Mocked<UpdatePreference>;
-  let getConsentUseCase: Mocked<GetConsent>;
-  let updateMarketingConsentUseCase: Mocked<UpdateMarketingConsent>;
+  let getPreferenceUseCase: Mocked<GetPreferenceUseCase>;
+  let updatePreferenceUseCase: Mocked<UpdatePreferenceUseCase>;
+  let getConsentUseCase: Mocked<GetConsentUseCase>;
+  let updateMarketingConsentUseCase: Mocked<UpdateMarketingConsentUseCase>;
 
   const mockUser: CurrentUserPayload = {
     userId: "user-123",
@@ -47,10 +47,10 @@ describe("SettingsController — 사용자 설정 컨트롤러", () => {
     const { unit, unitRef } = await TestBed.solitary(SettingsController).compile();
 
     controller = unit;
-    getPreferenceUseCase = unitRef.get(GetPreference);
-    updatePreferenceUseCase = unitRef.get(UpdatePreference);
-    getConsentUseCase = unitRef.get(GetConsent);
-    updateMarketingConsentUseCase = unitRef.get(UpdateMarketingConsent);
+    getPreferenceUseCase = unitRef.get(GetPreferenceUseCase);
+    updatePreferenceUseCase = unitRef.get(UpdatePreferenceUseCase);
+    getConsentUseCase = unitRef.get(GetConsentUseCase);
+    updateMarketingConsentUseCase = unitRef.get(UpdateMarketingConsentUseCase);
   });
 
   describe("getPreference", () => {

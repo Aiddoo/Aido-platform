@@ -13,15 +13,15 @@ import type {
   UserStreakAccessPort,
   UserTimezoneReaderPort,
 } from "../../application/ports/user-settings-access.port.js";
-import { GetConsentRecord } from "../../application/use-cases/get-consent-record.use-case.js";
-import { GetConsentRecords } from "../../application/use-cases/get-consent-records.use-case.js";
-import { GetPreferenceRecord } from "../../application/use-cases/get-preference-record.use-case.js";
-import { GetPreferenceRecords } from "../../application/use-cases/get-preference-records.use-case.js";
-import { OnTodoToggled } from "../../application/use-cases/on-todo-toggled.use-case.js";
-import { SeedUserSettings } from "../../application/use-cases/seed-user-settings.use-case.js";
-import { UpdateMarketingPushConsent } from "../../application/use-cases/update-marketing-push-consent.use-case.js";
-import { UpsertPushLocale } from "../../application/use-cases/upsert-push-locale.use-case.js";
-import { UpsertPushTimezone } from "../../application/use-cases/upsert-push-timezone.use-case.js";
+import { GetConsentRecordUseCase } from "../../application/use-cases/get-consent-record.use-case.js";
+import { GetConsentRecordsUseCase } from "../../application/use-cases/get-consent-records.use-case.js";
+import { GetPreferenceRecordUseCase } from "../../application/use-cases/get-preference-record.use-case.js";
+import { GetPreferenceRecordsUseCase } from "../../application/use-cases/get-preference-records.use-case.js";
+import { OnTodoToggledUseCase } from "../../application/use-cases/on-todo-toggled.use-case.js";
+import { SeedUserSettingsUseCase } from "../../application/use-cases/seed-user-settings.use-case.js";
+import { UpdateMarketingPushConsentUseCase } from "../../application/use-cases/update-marketing-push-consent.use-case.js";
+import { UpsertPushLocaleUseCase } from "../../application/use-cases/upsert-push-locale.use-case.js";
+import { UpsertPushTimezoneUseCase } from "../../application/use-cases/upsert-push-timezone.use-case.js";
 
 /** 외부 컨텍스트에 공개한 좁은 capability를 내부 endpoint UseCase에 연결한다. */
 @Injectable()
@@ -32,30 +32,30 @@ export class UserSettingsAccessAdapter
     UserNotificationSettingsAccessPort,
     UserTimezoneReaderPort
 {
-  readonly #seedUserSettingsUseCase: SeedUserSettings;
-  readonly #onTodoToggledUseCase: OnTodoToggled;
-  readonly #getPreferenceRecordUseCase: GetPreferenceRecord;
-  readonly #getPreferenceRecordsUseCase: GetPreferenceRecords;
-  readonly #getConsentRecordUseCase: GetConsentRecord;
-  readonly #getConsentRecordsUseCase: GetConsentRecords;
-  readonly #upsertPushTimezoneUseCase: UpsertPushTimezone;
-  readonly #upsertPushLocaleUseCase: UpsertPushLocale;
-  readonly #updateMarketingPushConsentUseCase: UpdateMarketingPushConsent;
+  readonly #seedUserSettingsUseCase: SeedUserSettingsUseCase;
+  readonly #onTodoToggledUseCase: OnTodoToggledUseCase;
+  readonly #getPreferenceRecordUseCase: GetPreferenceRecordUseCase;
+  readonly #getPreferenceRecordsUseCase: GetPreferenceRecordsUseCase;
+  readonly #getConsentRecordUseCase: GetConsentRecordUseCase;
+  readonly #getConsentRecordsUseCase: GetConsentRecordsUseCase;
+  readonly #upsertPushTimezoneUseCase: UpsertPushTimezoneUseCase;
+  readonly #upsertPushLocaleUseCase: UpsertPushLocaleUseCase;
+  readonly #updateMarketingPushConsentUseCase: UpdateMarketingPushConsentUseCase;
   readonly #consentRepository: Pick<
     UserConsentRepositoryPort,
     "findMarketingReconfirmTargets" | "claimMarketingReconfirm"
   >;
 
   constructor(
-    seedUserSettingsUseCase: SeedUserSettings,
-    onTodoToggledUseCase: OnTodoToggled,
-    getPreferenceRecordUseCase: GetPreferenceRecord,
-    getPreferenceRecordsUseCase: GetPreferenceRecords,
-    getConsentRecordUseCase: GetConsentRecord,
-    getConsentRecordsUseCase: GetConsentRecords,
-    upsertPushTimezoneUseCase: UpsertPushTimezone,
-    upsertPushLocaleUseCase: UpsertPushLocale,
-    updateMarketingPushConsentUseCase: UpdateMarketingPushConsent,
+    seedUserSettingsUseCase: SeedUserSettingsUseCase,
+    onTodoToggledUseCase: OnTodoToggledUseCase,
+    getPreferenceRecordUseCase: GetPreferenceRecordUseCase,
+    getPreferenceRecordsUseCase: GetPreferenceRecordsUseCase,
+    getConsentRecordUseCase: GetConsentRecordUseCase,
+    getConsentRecordsUseCase: GetConsentRecordsUseCase,
+    upsertPushTimezoneUseCase: UpsertPushTimezoneUseCase,
+    upsertPushLocaleUseCase: UpsertPushLocaleUseCase,
+    updateMarketingPushConsentUseCase: UpdateMarketingPushConsentUseCase,
     @Inject(USER_CONSENT_REPOSITORY)
     consentRepository: Pick<
       UserConsentRepositoryPort,

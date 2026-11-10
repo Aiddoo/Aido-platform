@@ -1,6 +1,6 @@
 import { createUserSettingsFixture, SETTINGS_TIME } from "#test/fixtures/user-settings.fixture";
 
-import { GetConsentRecords } from "./get-consent-records.use-case.js";
+import { GetConsentRecordsUseCase } from "./get-consent-records.use-case.js";
 
 describe("GetConsentRecords — 알림 수신 동의의 배치 조회", () => {
   it("요청한 사용자만 한 번의 배치 조회로 구분하고 광고성 푸시 동의·철회 상태를 유지한다", async () => {
@@ -12,7 +12,7 @@ describe("GetConsentRecords — 알림 수신 동의의 배치 조회", () => {
     });
     fixture.consentRepository.records.set("excluded-user", fixture.consent);
     // When
-    const records = await new GetConsentRecords(fixture).execute({
+    const records = await new GetConsentRecordsUseCase(fixture).execute({
       userIds: ["other-user", "missing-user", fixture.userId],
     });
     // Then

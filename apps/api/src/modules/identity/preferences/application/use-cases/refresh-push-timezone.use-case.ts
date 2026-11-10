@@ -6,7 +6,7 @@ import type { TodoTimezoneRebaseEnqueuerPort } from "../ports/todo-timezone-reba
 import type { UserPreferenceRepositoryPort } from "../ports/user-preference.repository.port.js";
 import type { UserSettingsCachePort } from "../ports/user-settings-cache.port.js";
 
-export interface RefreshPushTimezoneInput {
+export interface RefreshPushTimezoneCommand {
   readonly userId: string;
   readonly timezone: string;
 }
@@ -19,14 +19,14 @@ interface RefreshPushTimezoneDependencies {
   readonly unitOfWork: UnitOfWorkPort;
 }
 
-export class RefreshPushTimezone {
+export class RefreshPushTimezoneUseCase {
   readonly #dependencies: RefreshPushTimezoneDependencies;
 
   constructor(dependencies: RefreshPushTimezoneDependencies) {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: RefreshPushTimezoneInput): Promise<void> {
+  async execute(input: RefreshPushTimezoneCommand): Promise<void> {
     const { userId, timezone } = input;
     const changed = await this.#dependencies.unitOfWork.run(async () => {
       const count = await this.#dependencies.preferenceRepository.refreshTimezoneIfChanged(

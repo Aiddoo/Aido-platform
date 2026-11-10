@@ -11,106 +11,112 @@ import { TODO_TIMEZONE_REBASE_ENQUEUER } from "./application/ports/todo-timezone
 import { USER_CONSENT_REPOSITORY } from "./application/ports/user-consent.repository.port.js";
 import { USER_PREFERENCE_REPOSITORY } from "./application/ports/user-preference.repository.port.js";
 import { USER_SETTINGS_CACHE } from "./application/ports/user-settings-cache.port.js";
-import { AiDataSharingConsentReader } from "./application/use-cases/get-ai-data-sharing-consent.use-case.js";
-import { GetConsentRecord } from "./application/use-cases/get-consent-record.use-case.js";
-import { GetConsentRecords } from "./application/use-cases/get-consent-records.use-case.js";
-import { GetConsent } from "./application/use-cases/get-consent.use-case.js";
-import { GetPreferenceRecord } from "./application/use-cases/get-preference-record.use-case.js";
-import { GetPreferenceRecords } from "./application/use-cases/get-preference-records.use-case.js";
-import { GetPreference } from "./application/use-cases/get-preference.use-case.js";
-import { OnTodoToggled } from "./application/use-cases/on-todo-toggled.use-case.js";
-import { UserPreferenceReader } from "./application/use-cases/read-user-preferences.use-case.js";
-import { RefreshPushTimezone } from "./application/use-cases/refresh-push-timezone.use-case.js";
-import { SeedUserSettings } from "./application/use-cases/seed-user-settings.use-case.js";
-import { UpdateAiDataSharingConsent } from "./application/use-cases/update-ai-data-sharing-consent.use-case.js";
-import { UpdateMarketingConsent } from "./application/use-cases/update-marketing-consent.use-case.js";
-import { UpdateMarketingPushConsent } from "./application/use-cases/update-marketing-push-consent.use-case.js";
-import { UpdatePreference } from "./application/use-cases/update-preference.use-case.js";
-import { UpsertPushLocale } from "./application/use-cases/upsert-push-locale.use-case.js";
-import { UpsertPushTimezone } from "./application/use-cases/upsert-push-timezone.use-case.js";
+import { GetAiDataSharingConsentUseCase } from "./application/use-cases/get-ai-data-sharing-consent.use-case.js";
+import { GetConsentRecordUseCase } from "./application/use-cases/get-consent-record.use-case.js";
+import { GetConsentRecordsUseCase } from "./application/use-cases/get-consent-records.use-case.js";
+import { GetConsentUseCase } from "./application/use-cases/get-consent.use-case.js";
+import { GetPreferenceRecordUseCase } from "./application/use-cases/get-preference-record.use-case.js";
+import { GetPreferenceRecordsUseCase } from "./application/use-cases/get-preference-records.use-case.js";
+import { GetPreferenceUseCase } from "./application/use-cases/get-preference.use-case.js";
+import { OnTodoToggledUseCase } from "./application/use-cases/on-todo-toggled.use-case.js";
+import { ReadUserPreferencesUseCase } from "./application/use-cases/read-user-preferences.use-case.js";
+import { RefreshPushTimezoneUseCase } from "./application/use-cases/refresh-push-timezone.use-case.js";
+import { SeedUserSettingsUseCase } from "./application/use-cases/seed-user-settings.use-case.js";
+import { UpdateAiDataSharingConsentUseCase } from "./application/use-cases/update-ai-data-sharing-consent.use-case.js";
+import { UpdateMarketingConsentUseCase } from "./application/use-cases/update-marketing-consent.use-case.js";
+import { UpdateMarketingPushConsentUseCase } from "./application/use-cases/update-marketing-push-consent.use-case.js";
+import { UpdatePreferenceUseCase } from "./application/use-cases/update-preference.use-case.js";
+import { UpsertPushLocaleUseCase } from "./application/use-cases/upsert-push-locale.use-case.js";
+import { UpsertPushTimezoneUseCase } from "./application/use-cases/upsert-push-timezone.use-case.js";
 
-export const userPreferenceReaderProvider: FactoryProvider<UserPreferenceReader> = {
-  provide: UserPreferenceReader,
+export const userPreferenceReaderProvider: FactoryProvider<ReadUserPreferencesUseCase> = {
+  provide: ReadUserPreferencesUseCase,
   inject: [USER_PREFERENCE_REPOSITORY, USER_SETTINGS_CACHE],
   useFactory: (
     preferenceRepository: ConstructorParameters<
-      typeof UserPreferenceReader
+      typeof ReadUserPreferencesUseCase
     >[0]["preferenceRepository"],
-    cache: ConstructorParameters<typeof UserPreferenceReader>[0]["cache"],
-  ) => new UserPreferenceReader({ preferenceRepository, cache }),
+    cache: ConstructorParameters<typeof ReadUserPreferencesUseCase>[0]["cache"],
+  ) => new ReadUserPreferencesUseCase({ preferenceRepository, cache }),
 };
 
-export const getConsentProvider: FactoryProvider<GetConsent> = {
-  provide: GetConsent,
+export const getConsentProvider: FactoryProvider<GetConsentUseCase> = {
+  provide: GetConsentUseCase,
   inject: [USER_CONSENT_REPOSITORY],
   useFactory: (
-    consentRepository: ConstructorParameters<typeof GetConsent>[0]["consentRepository"],
-  ) => new GetConsent({ consentRepository }),
+    consentRepository: ConstructorParameters<typeof GetConsentUseCase>[0]["consentRepository"],
+  ) => new GetConsentUseCase({ consentRepository }),
 };
 
-export const getConsentRecordProvider: FactoryProvider<GetConsentRecord> = {
-  provide: GetConsentRecord,
+export const getConsentRecordProvider: FactoryProvider<GetConsentRecordUseCase> = {
+  provide: GetConsentRecordUseCase,
   inject: [USER_CONSENT_REPOSITORY],
   useFactory: (
-    consentRepository: ConstructorParameters<typeof GetConsentRecord>[0]["consentRepository"],
-  ) => new GetConsentRecord({ consentRepository }),
+    consentRepository: ConstructorParameters<
+      typeof GetConsentRecordUseCase
+    >[0]["consentRepository"],
+  ) => new GetConsentRecordUseCase({ consentRepository }),
 };
 
-export const getConsentRecordsProvider: FactoryProvider<GetConsentRecords> = {
-  provide: GetConsentRecords,
+export const getConsentRecordsProvider: FactoryProvider<GetConsentRecordsUseCase> = {
+  provide: GetConsentRecordsUseCase,
   inject: [USER_CONSENT_REPOSITORY],
   useFactory: (
-    consentRepository: ConstructorParameters<typeof GetConsentRecords>[0]["consentRepository"],
-  ) => new GetConsentRecords({ consentRepository }),
+    consentRepository: ConstructorParameters<
+      typeof GetConsentRecordsUseCase
+    >[0]["consentRepository"],
+  ) => new GetConsentRecordsUseCase({ consentRepository }),
 };
 
-export const getPreferenceProvider: FactoryProvider<GetPreference> = {
-  provide: GetPreference,
-  inject: [UserPreferenceReader, PREFERENCE_ENTITLEMENT],
+export const getPreferenceProvider: FactoryProvider<GetPreferenceUseCase> = {
+  provide: GetPreferenceUseCase,
+  inject: [ReadUserPreferencesUseCase, PREFERENCE_ENTITLEMENT],
   useFactory: (
-    preferenceReader: ConstructorParameters<typeof GetPreference>[0]["preferenceReader"],
-    entitlement: ConstructorParameters<typeof GetPreference>[0]["entitlement"],
-  ) => new GetPreference({ preferenceReader, entitlement }),
+    preferenceReader: ConstructorParameters<typeof GetPreferenceUseCase>[0]["preferenceReader"],
+    entitlement: ConstructorParameters<typeof GetPreferenceUseCase>[0]["entitlement"],
+  ) => new GetPreferenceUseCase({ preferenceReader, entitlement }),
 };
 
-export const getPreferenceRecordProvider: FactoryProvider<GetPreferenceRecord> = {
-  provide: GetPreferenceRecord,
+export const getPreferenceRecordProvider: FactoryProvider<GetPreferenceRecordUseCase> = {
+  provide: GetPreferenceRecordUseCase,
   inject: [USER_PREFERENCE_REPOSITORY],
   useFactory: (
     preferenceRepository: ConstructorParameters<
-      typeof GetPreferenceRecord
+      typeof GetPreferenceRecordUseCase
     >[0]["preferenceRepository"],
-  ) => new GetPreferenceRecord({ preferenceRepository }),
+  ) => new GetPreferenceRecordUseCase({ preferenceRepository }),
 };
 
-export const getPreferenceRecordsProvider: FactoryProvider<GetPreferenceRecords> = {
-  provide: GetPreferenceRecords,
+export const getPreferenceRecordsProvider: FactoryProvider<GetPreferenceRecordsUseCase> = {
+  provide: GetPreferenceRecordsUseCase,
   inject: [USER_PREFERENCE_REPOSITORY],
   useFactory: (
     preferenceRepository: ConstructorParameters<
-      typeof GetPreferenceRecords
+      typeof GetPreferenceRecordsUseCase
     >[0]["preferenceRepository"],
-  ) => new GetPreferenceRecords({ preferenceRepository }),
+  ) => new GetPreferenceRecordsUseCase({ preferenceRepository }),
 };
 
-export const onTodoToggledProvider: FactoryProvider<OnTodoToggled> = {
-  provide: OnTodoToggled,
+export const onTodoToggledProvider: FactoryProvider<OnTodoToggledUseCase> = {
+  provide: OnTodoToggledUseCase,
   inject: [USER_PREFERENCE_REPOSITORY, TODO_COMPLETION_STATS_READER, STREAK_MILESTONE_NOTIFIER],
   useFactory: (
-    preferenceRepository: ConstructorParameters<typeof OnTodoToggled>[0]["preferenceRepository"],
-    statsReader: ConstructorParameters<typeof OnTodoToggled>[0]["statsReader"],
-    milestoneNotifier: ConstructorParameters<typeof OnTodoToggled>[0]["milestoneNotifier"],
+    preferenceRepository: ConstructorParameters<
+      typeof OnTodoToggledUseCase
+    >[0]["preferenceRepository"],
+    statsReader: ConstructorParameters<typeof OnTodoToggledUseCase>[0]["statsReader"],
+    milestoneNotifier: ConstructorParameters<typeof OnTodoToggledUseCase>[0]["milestoneNotifier"],
   ) =>
-    new OnTodoToggled({
+    new OnTodoToggledUseCase({
       preferenceRepository,
       statsReader,
       milestoneNotifier,
-      logger: new Logger(OnTodoToggled.name),
+      logger: new Logger(OnTodoToggledUseCase.name),
     }),
 };
 
-export const refreshPushTimezoneProvider: FactoryProvider<RefreshPushTimezone> = {
-  provide: RefreshPushTimezone,
+export const refreshPushTimezoneProvider: FactoryProvider<RefreshPushTimezoneUseCase> = {
+  provide: RefreshPushTimezoneUseCase,
   inject: [
     USER_PREFERENCE_REPOSITORY,
     USER_SETTINGS_CACHE,
@@ -120,16 +126,18 @@ export const refreshPushTimezoneProvider: FactoryProvider<RefreshPushTimezone> =
   ],
   useFactory: (
     preferenceRepository: ConstructorParameters<
-      typeof RefreshPushTimezone
+      typeof RefreshPushTimezoneUseCase
     >[0]["preferenceRepository"],
-    cache: ConstructorParameters<typeof RefreshPushTimezone>[0]["cache"],
+    cache: ConstructorParameters<typeof RefreshPushTimezoneUseCase>[0]["cache"],
     reminderTimezoneCache: ConstructorParameters<
-      typeof RefreshPushTimezone
+      typeof RefreshPushTimezoneUseCase
     >[0]["reminderTimezoneCache"],
-    todoTimezoneRebase: ConstructorParameters<typeof RefreshPushTimezone>[0]["todoTimezoneRebase"],
-    unitOfWork: ConstructorParameters<typeof RefreshPushTimezone>[0]["unitOfWork"],
+    todoTimezoneRebase: ConstructorParameters<
+      typeof RefreshPushTimezoneUseCase
+    >[0]["todoTimezoneRebase"],
+    unitOfWork: ConstructorParameters<typeof RefreshPushTimezoneUseCase>[0]["unitOfWork"],
   ) =>
-    new RefreshPushTimezone({
+    new RefreshPushTimezoneUseCase({
       preferenceRepository,
       cache,
       reminderTimezoneCache,
@@ -138,71 +146,79 @@ export const refreshPushTimezoneProvider: FactoryProvider<RefreshPushTimezone> =
     }),
 };
 
-export const seedUserSettingsProvider: FactoryProvider<SeedUserSettings> = {
-  provide: SeedUserSettings,
+export const seedUserSettingsProvider: FactoryProvider<SeedUserSettingsUseCase> = {
+  provide: SeedUserSettingsUseCase,
   inject: [USER_CONSENT_REPOSITORY, USER_PREFERENCE_REPOSITORY],
   useFactory: (
-    consentRepository: ConstructorParameters<typeof SeedUserSettings>[0]["consentRepository"],
-    preferenceRepository: ConstructorParameters<typeof SeedUserSettings>[0]["preferenceRepository"],
+    consentRepository: ConstructorParameters<
+      typeof SeedUserSettingsUseCase
+    >[0]["consentRepository"],
+    preferenceRepository: ConstructorParameters<
+      typeof SeedUserSettingsUseCase
+    >[0]["preferenceRepository"],
   ) =>
-    new SeedUserSettings({
+    new SeedUserSettingsUseCase({
       consentRepository,
       preferenceRepository,
     }),
 };
 
-export const aiDataSharingConsentReaderProvider: FactoryProvider<AiDataSharingConsentReader> = {
-  provide: AiDataSharingConsentReader,
+export const aiDataSharingConsentReaderProvider: FactoryProvider<GetAiDataSharingConsentUseCase> = {
+  provide: GetAiDataSharingConsentUseCase,
   inject: [USER_CONSENT_REPOSITORY],
   useFactory: (
     consentRepository: ConstructorParameters<
-      typeof AiDataSharingConsentReader
+      typeof GetAiDataSharingConsentUseCase
     >[0]["consentRepository"],
-  ) => new AiDataSharingConsentReader({ consentRepository }),
+  ) => new GetAiDataSharingConsentUseCase({ consentRepository }),
 };
 
-export const updateAiDataSharingConsentProvider: FactoryProvider<UpdateAiDataSharingConsent> = {
-  provide: UpdateAiDataSharingConsent,
+export const updateAiDataSharingConsentProvider: FactoryProvider<UpdateAiDataSharingConsentUseCase> =
+  {
+    provide: UpdateAiDataSharingConsentUseCase,
+    inject: [USER_CONSENT_REPOSITORY],
+    useFactory: (
+      consentRepository: ConstructorParameters<
+        typeof UpdateAiDataSharingConsentUseCase
+      >[0]["consentRepository"],
+    ) =>
+      new UpdateAiDataSharingConsentUseCase({
+        consentRepository,
+        logger: new Logger(UpdateAiDataSharingConsentUseCase.name),
+      }),
+  };
+
+export const updateMarketingConsentProvider: FactoryProvider<UpdateMarketingConsentUseCase> = {
+  provide: UpdateMarketingConsentUseCase,
   inject: [USER_CONSENT_REPOSITORY],
   useFactory: (
     consentRepository: ConstructorParameters<
-      typeof UpdateAiDataSharingConsent
+      typeof UpdateMarketingConsentUseCase
     >[0]["consentRepository"],
   ) =>
-    new UpdateAiDataSharingConsent({
+    new UpdateMarketingConsentUseCase({
       consentRepository,
-      logger: new Logger(UpdateAiDataSharingConsent.name),
+      logger: new Logger(UpdateMarketingConsentUseCase.name),
     }),
 };
 
-export const updateMarketingConsentProvider: FactoryProvider<UpdateMarketingConsent> = {
-  provide: UpdateMarketingConsent,
-  inject: [USER_CONSENT_REPOSITORY],
-  useFactory: (
-    consentRepository: ConstructorParameters<typeof UpdateMarketingConsent>[0]["consentRepository"],
-  ) =>
-    new UpdateMarketingConsent({
-      consentRepository,
-      logger: new Logger(UpdateMarketingConsent.name),
-    }),
-};
+export const updateMarketingPushConsentProvider: FactoryProvider<UpdateMarketingPushConsentUseCase> =
+  {
+    provide: UpdateMarketingPushConsentUseCase,
+    inject: [USER_CONSENT_REPOSITORY],
+    useFactory: (
+      consentRepository: ConstructorParameters<
+        typeof UpdateMarketingPushConsentUseCase
+      >[0]["consentRepository"],
+    ) =>
+      new UpdateMarketingPushConsentUseCase({
+        consentRepository,
+        logger: new Logger(UpdateMarketingPushConsentUseCase.name),
+      }),
+  };
 
-export const updateMarketingPushConsentProvider: FactoryProvider<UpdateMarketingPushConsent> = {
-  provide: UpdateMarketingPushConsent,
-  inject: [USER_CONSENT_REPOSITORY],
-  useFactory: (
-    consentRepository: ConstructorParameters<
-      typeof UpdateMarketingPushConsent
-    >[0]["consentRepository"],
-  ) =>
-    new UpdateMarketingPushConsent({
-      consentRepository,
-      logger: new Logger(UpdateMarketingPushConsent.name),
-    }),
-};
-
-export const updatePreferenceProvider: FactoryProvider<UpdatePreference> = {
-  provide: UpdatePreference,
+export const updatePreferenceProvider: FactoryProvider<UpdatePreferenceUseCase> = {
+  provide: UpdatePreferenceUseCase,
   inject: [
     USER_PREFERENCE_REPOSITORY,
     PREFERENCE_ENTITLEMENT,
@@ -213,17 +229,21 @@ export const updatePreferenceProvider: FactoryProvider<UpdatePreference> = {
     UNIT_OF_WORK,
   ],
   useFactory: (
-    preferenceRepository: ConstructorParameters<typeof UpdatePreference>[0]["preferenceRepository"],
-    entitlement: ConstructorParameters<typeof UpdatePreference>[0]["entitlement"],
-    cache: ConstructorParameters<typeof UpdatePreference>[0]["cache"],
+    preferenceRepository: ConstructorParameters<
+      typeof UpdatePreferenceUseCase
+    >[0]["preferenceRepository"],
+    entitlement: ConstructorParameters<typeof UpdatePreferenceUseCase>[0]["entitlement"],
+    cache: ConstructorParameters<typeof UpdatePreferenceUseCase>[0]["cache"],
     reminderTimezoneCache: ConstructorParameters<
-      typeof UpdatePreference
+      typeof UpdatePreferenceUseCase
     >[0]["reminderTimezoneCache"],
-    reminderEnqueuer: ConstructorParameters<typeof UpdatePreference>[0]["reminderEnqueuer"],
-    todoTimezoneRebase: ConstructorParameters<typeof UpdatePreference>[0]["todoTimezoneRebase"],
-    unitOfWork: ConstructorParameters<typeof UpdatePreference>[0]["unitOfWork"],
+    reminderEnqueuer: ConstructorParameters<typeof UpdatePreferenceUseCase>[0]["reminderEnqueuer"],
+    todoTimezoneRebase: ConstructorParameters<
+      typeof UpdatePreferenceUseCase
+    >[0]["todoTimezoneRebase"],
+    unitOfWork: ConstructorParameters<typeof UpdatePreferenceUseCase>[0]["unitOfWork"],
   ) =>
-    new UpdatePreference({
+    new UpdatePreferenceUseCase({
       preferenceRepository,
       entitlement,
       cache,
@@ -231,21 +251,23 @@ export const updatePreferenceProvider: FactoryProvider<UpdatePreference> = {
       reminderEnqueuer,
       todoTimezoneRebase,
       unitOfWork,
-      logger: new Logger(UpdatePreference.name),
+      logger: new Logger(UpdatePreferenceUseCase.name),
     }),
 };
 
-export const upsertPushLocaleProvider: FactoryProvider<UpsertPushLocale> = {
-  provide: UpsertPushLocale,
+export const upsertPushLocaleProvider: FactoryProvider<UpsertPushLocaleUseCase> = {
+  provide: UpsertPushLocaleUseCase,
   inject: [USER_PREFERENCE_REPOSITORY, USER_SETTINGS_CACHE],
   useFactory: (
-    preferenceRepository: ConstructorParameters<typeof UpsertPushLocale>[0]["preferenceRepository"],
-    cache: ConstructorParameters<typeof UpsertPushLocale>[0]["cache"],
-  ) => new UpsertPushLocale({ preferenceRepository, cache }),
+    preferenceRepository: ConstructorParameters<
+      typeof UpsertPushLocaleUseCase
+    >[0]["preferenceRepository"],
+    cache: ConstructorParameters<typeof UpsertPushLocaleUseCase>[0]["cache"],
+  ) => new UpsertPushLocaleUseCase({ preferenceRepository, cache }),
 };
 
-export const upsertPushTimezoneProvider: FactoryProvider<UpsertPushTimezone> = {
-  provide: UpsertPushTimezone,
+export const upsertPushTimezoneProvider: FactoryProvider<UpsertPushTimezoneUseCase> = {
+  provide: UpsertPushTimezoneUseCase,
   inject: [
     USER_PREFERENCE_REPOSITORY,
     USER_SETTINGS_CACHE,
@@ -255,16 +277,18 @@ export const upsertPushTimezoneProvider: FactoryProvider<UpsertPushTimezone> = {
   ],
   useFactory: (
     preferenceRepository: ConstructorParameters<
-      typeof UpsertPushTimezone
+      typeof UpsertPushTimezoneUseCase
     >[0]["preferenceRepository"],
-    cache: ConstructorParameters<typeof UpsertPushTimezone>[0]["cache"],
+    cache: ConstructorParameters<typeof UpsertPushTimezoneUseCase>[0]["cache"],
     reminderTimezoneCache: ConstructorParameters<
-      typeof UpsertPushTimezone
+      typeof UpsertPushTimezoneUseCase
     >[0]["reminderTimezoneCache"],
-    todoTimezoneRebase: ConstructorParameters<typeof UpsertPushTimezone>[0]["todoTimezoneRebase"],
-    unitOfWork: ConstructorParameters<typeof UpsertPushTimezone>[0]["unitOfWork"],
+    todoTimezoneRebase: ConstructorParameters<
+      typeof UpsertPushTimezoneUseCase
+    >[0]["todoTimezoneRebase"],
+    unitOfWork: ConstructorParameters<typeof UpsertPushTimezoneUseCase>[0]["unitOfWork"],
   ) =>
-    new UpsertPushTimezone({
+    new UpsertPushTimezoneUseCase({
       preferenceRepository,
       cache,
       reminderTimezoneCache,
