@@ -1,5 +1,5 @@
+import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";
 import { createEmailMessageFixture } from "#test/fixtures/notification/email-message.fixture";
-import { RecordingOperationalAlert } from "#test/mocks/recording-operational-alert";
 
 import type { EmailDeliveryOutcome, EmailQuotaScope } from "../ports/email-sender.port.js";
 import { DeliverEmailUseCase, EmailDeliveryRetryableError } from "./deliver-email.use-case.js";

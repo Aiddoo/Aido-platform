@@ -1,165 +1,124 @@
-import dayjs from "dayjs";
-import type { Mocked } from "vitest";
-import { vi } from "vitest";
-import { mockDeep } from "vitest-mock-extended";
+import type { SupportedLocale } from "#api/shared/domain/locale";
+import { InMemorySchedulerPreferenceReader } from "#test/doubles/notification/in-memory-scheduler-preference.reader";
+import { RecordingNotificationPublisher } from "#test/doubles/notification/recording-notification-publisher";
+import { StubNotificationHistoryReader } from "#test/doubles/notification/stub-notification-history.reader";
+import { StubScheduledReminderReader } from "#test/doubles/notification/stub-scheduled-reminder.reader";
+import { SilentLogger } from "#test/doubles/platform/silent-logger";
+import { createTimezoneContextFixture } from "#test/fixtures/notification/timezone-context.fixture";
 
 import { createLunchNudgeNotificationMessage } from "../../../push/application/messages/notification.messages.js";
 import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/notification-campaign.constants.js";
-import type { TimezoneContext } from "../../domain/timezone-context.read-model.js";
 import { SendLunchNudgeUseCase } from "./send-lunch-nudge.use-case.js";
 
 describe("SendLunchNudgeUseCase — 점심 찔러보기 전략", () => {
+  let reader: StubScheduledReminderReader;
+  let preferences: InMemorySchedulerPreferenceReader;
+  let publisher: RecordingNotificationPublisher;
+  let history: StubNotificationHistoryReader;
   let strategy: SendLunchNudgeUseCase;
-  let reader: Mocked<ConstructorParameters<typeof SendLunchNudgeUseCase>[0]["reader"]>;
-  let preferenceReader: Mocked<
-    ConstructorParameters<typeof SendLunchNudgeUseCase>[0]["preferenceReader"]
-  >;
-  let notificationPublisher: Mocked<
-    ConstructorParameters<typeof SendLunchNudgeUseCase>[0]["notificationPublisher"]
-  >;
-  let notificationHistoryReader: Mocked<
-    ConstructorParameters<typeof SendLunchNudgeUseCase>[0]["notificationHistoryReader"]
-  >;
 
-  const TZ = "Asia/Seoul";
+  const ctx = createTimezoneContextFixture({ date: "2024-01-16", localHour: 12, localMinute: 30 });
+  const sent = () => publisher.published.map(({ data }) => data);
 
-  /** KST 2024-01-16 12:30 = UTC 2024-01-16T03:30:00Z */
-  const FAKE_NOW = new Date("2024-01-16T03:30:00Z");
-
-  const makeCtx = (overrides?: Partial<TimezoneContext>): TimezoneContext => ({
-    tz: TZ,
-    localHour: 12,
-    localMinute: 30,
-    dayOfWeek: 2,
-    today: dayjs.utc("2024-01-16").startOf("day").toDate(),
-    tomorrow: dayjs.utc("2024-01-17").startOf("day").toDate(),
-    ...overrides,
+  beforeEach(() => {
+    reader = new StubScheduledReminderReader();
+    preferences = new InMemorySchedulerPreferenceReader();
+    publisher = new RecordingNotificationPublisher();
+    history = new StubNotificationHistoryReader();
+    strategy = new SendLunchNudgeUseCase({
+      reader,
+      preferenceReader: preferences,
+      notificationPublisher: publisher,
+      notificationHistoryReader: history,
+      logger: new SilentLogger(),
+    });
   });
 
-  beforeEach(async () => {
-    vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(FAKE_NOW);
-
-    const lunchNudgeStrategyDependencies = mockDeep<
-      ConstructorParameters<typeof SendLunchNudgeUseCase>[0]
-    >({});
-    const unit = new SendLunchNudgeUseCase(lunchNudgeStrategyDependencies);
-
-    strategy = unit;
-    reader = lunchNudgeStrategyDependencies.reader;
-    preferenceReader = lunchNudgeStrategyDependencies.preferenceReader;
-    notificationPublisher = lunchNudgeStrategyDependencies.notificationPublisher;
-    notificationHistoryReader = lunchNudgeStrategyDependencies.notificationHistoryReader;
-
-    // 기본 mock 설정
-    reader.findLunchNudgeUsers.mockResolvedValue([]);
-    preferenceReader.findUserLocales.mockResolvedValue(new Map());
-    notificationHistoryReader.findAlreadyNotifiedUserIds.mockResolvedValue(new Set());
-    notificationPublisher.publishBatch.mockResolvedValue({ count: 0 });
-  });
-
-  afterEach(() => {
-    vi.useRealTimers();
-  });
-
-  it("오늘 할일이 있지만 완료가 0개인 유저에게 점심 넛지를 발송한다", async () => {
+  it("오늘 할 일이 있지만 하나도 끝내지 않은 사용자에게 점심 넛지를 발송한다", async () => {
     // Given
-    const ctx = makeCtx();
-
-    reader.findLunchNudgeUsers.mockResolvedValue([{ id: "user-1" }, { id: "user-2" }]);
+    reader.lunchNudgeUsers = [{ id: "user-1" }, { id: "user-2" }];
 
     // When
     const result = await strategy.execute(ctx);
 
     // Then
     expect(result).toEqual({ sent: 2 });
-    expect(notificationPublisher.publishBatch).toHaveBeenCalledTimes(1);
-
-    const notifications = notificationPublisher.publishBatch.mock.calls[0]?.[0];
-    expect(notifications).toHaveLength(2);
-    expect(notifications?.[0]).toMatchObject({
-      userId: "user-1",
-      type: "LUNCH_NUDGE",
-    });
-    expect(notifications?.[1]).toMatchObject({
-      userId: "user-2",
-      type: "LUNCH_NUDGE",
-    });
+    expect(reader.queries).toEqual([
+      {
+        method: "findLunchNudgeUsers",
+        params: { tz: "Asia/Seoul", today: ctx.today, tomorrow: ctx.tomorrow },
+      },
+    ]);
+    expect(sent()).toEqual([
+      expect.objectContaining({ userId: "user-1", type: "LUNCH_NUDGE", purpose: "ENGAGEMENT" }),
+      expect.objectContaining({ userId: "user-2", type: "LUNCH_NUDGE", purpose: "ENGAGEMENT" }),
+    ]);
   });
 
-  it("createLunchNudgeNotificationMessage() 메시지를 사용한다", async () => {
+  it("설정이 없으면 한국어, 있으면 저장한 언어의 점심 넛지 문구와 변형을 쓴다", async () => {
     // Given
-    const ctx = makeCtx();
-
-    reader.findLunchNudgeUsers.mockResolvedValue([{ id: "user-1" }]);
+    reader.lunchNudgeUsers = [{ id: "user-1" }, { id: "user-2" }];
+    await preferences.givenPreference({ timezone: "Asia/Seoul", locale: "en" }, "user-2");
 
     // When
     await strategy.execute(ctx);
 
     // Then
-    const notifications = notificationPublisher.publishBatch.mock.calls[0]?.[0];
-    const expected = createLunchNudgeNotificationMessage({
-      locale: "ko",
-      variantContext: {
+    const expectedFor = (recipientId: string, locale: SupportedLocale) =>
+      createLunchNudgeNotificationMessage({
+        locale,
+        variantContext: {
+          campaignKey: SCHEDULER_CAMPAIGN_KEY.LUNCH_NUDGE,
+          recipientId,
+          occurrenceKey: "2024-01-16",
+        },
+      });
+    const korean = expectedFor("user-1", "ko");
+    const english = expectedFor("user-2", "en");
+    expect(sent()).toEqual([
+      expect.objectContaining({
+        title: korean.title,
+        body: korean.body,
         campaignKey: SCHEDULER_CAMPAIGN_KEY.LUNCH_NUDGE,
-        recipientId: "user-1",
-        occurrenceKey: "2024-01-16",
-      },
-    });
-    expect(notifications?.[0]).toMatchObject({
-      title: expected.title,
-      body: expected.body,
-      campaignKey: SCHEDULER_CAMPAIGN_KEY.LUNCH_NUDGE,
-      variantId: expected.variantId,
-    });
+        variantId: korean.variantId,
+      }),
+      expect.objectContaining({ title: english.title, body: english.body }),
+    ]);
   });
 
-  it("이미 알림 받은 사용자를 제외한다", async () => {
+  it("오늘 이미 점심 넛지를 받은 사용자를 제외한다", async () => {
     // Given
-    const ctx = makeCtx();
-
-    reader.findLunchNudgeUsers.mockResolvedValue([{ id: "user-1" }, { id: "user-2" }]);
-
-    notificationHistoryReader.findAlreadyNotifiedUserIds.mockResolvedValue(new Set(["user-1"]));
+    reader.lunchNudgeUsers = [{ id: "user-1" }, { id: "user-2" }];
+    history.notified("LUNCH_NUDGE", ["user-1"], ctx.today);
 
     // When
     const result = await strategy.execute(ctx);
 
     // Then
     expect(result).toEqual({ sent: 1 });
-    const notifications = notificationPublisher.publishBatch.mock.calls[0]?.[0];
-    expect(notifications).toHaveLength(1);
-    expect(notifications?.[0]?.userId).toBe("user-2");
+    expect(sent().map(({ userId }) => userId)).toEqual(["user-2"]);
   });
 
-  it("모든 유저가 이미 알림을 받았으면 발송하지 않는다", async () => {
+  it("모든 사용자가 이미 받았으면 발송하지 않는다", async () => {
     // Given
-    const ctx = makeCtx();
-
-    reader.findLunchNudgeUsers.mockResolvedValue([{ id: "user-1" }]);
-
-    notificationHistoryReader.findAlreadyNotifiedUserIds.mockResolvedValue(new Set(["user-1"]));
+    reader.lunchNudgeUsers = [{ id: "user-1" }];
+    history.notified("LUNCH_NUDGE", ["user-1"], ctx.today);
 
     // When
     const result = await strategy.execute(ctx);
 
     // Then
     expect(result).toEqual({ sent: 0 });
-    expect(notificationPublisher.publishBatch).not.toHaveBeenCalled();
+    expect(publisher.published).toEqual([]);
   });
 
-  it("대상이 없으면 publishBatch를 호출하지 않는다", async () => {
-    // Given
-    const ctx = makeCtx();
-
-    reader.findLunchNudgeUsers.mockResolvedValue([]);
-
+  it("대상이 없으면 발송 이력도 조회하지 않는다", async () => {
     // When
     const result = await strategy.execute(ctx);
 
     // Then
     expect(result).toEqual({ sent: 0 });
-    expect(notificationPublisher.publishBatch).not.toHaveBeenCalled();
-    expect(notificationHistoryReader.findAlreadyNotifiedUserIds).not.toHaveBeenCalled();
+    expect(publisher.published).toEqual([]);
+    expect(history.queries).toEqual([]);
   });
 });

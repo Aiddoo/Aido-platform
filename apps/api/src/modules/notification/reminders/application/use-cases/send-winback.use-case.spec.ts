@@ -1,279 +1,169 @@
-import dayjs from "dayjs";
-import type { Mocked } from "vitest";
-import { vi } from "vitest";
-import { mockDeep } from "vitest-mock-extended";
+import { parseDateOnly } from "#api/shared/domain/date/utils/parse";
+import { InMemorySchedulerDedup } from "#test/doubles/notification/in-memory-scheduler-dedup";
+import { InMemorySchedulerPreferenceReader } from "#test/doubles/notification/in-memory-scheduler-preference.reader";
+import { RecordingNotificationPublisher } from "#test/doubles/notification/recording-notification-publisher";
+import { StubNotificationHistoryReader } from "#test/doubles/notification/stub-notification-history.reader";
+import { StubReEngagementReader } from "#test/doubles/notification/stub-re-engagement.reader";
+import { SilentLogger } from "#test/doubles/platform/silent-logger";
+import { createTimezoneContextFixture } from "#test/fixtures/notification/timezone-context.fixture";
 
 import { createWinbackNotificationMessage } from "../../../push/application/messages/notification.messages.js";
 import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/notification-campaign.constants.js";
-import type { TimezoneContext } from "../../domain/timezone-context.read-model.js";
 import { SendWinbackUseCase } from "./send-winback.use-case.js";
 
 describe("SendWinbackUseCase — 윈백 전략", () => {
+  let reader: StubReEngagementReader;
+  let preferences: InMemorySchedulerPreferenceReader;
+  let publisher: RecordingNotificationPublisher;
+  let history: StubNotificationHistoryReader;
+  let dedup: InMemorySchedulerDedup;
   let strategy: SendWinbackUseCase;
-  let reader: Mocked<ConstructorParameters<typeof SendWinbackUseCase>[0]["reader"]>;
-  let preferenceReader: Mocked<
-    ConstructorParameters<typeof SendWinbackUseCase>[0]["preferenceReader"]
-  >;
-  let notificationPublisher: Mocked<
-    ConstructorParameters<typeof SendWinbackUseCase>[0]["notificationPublisher"]
-  >;
-  let notificationHistoryReader: Mocked<
-    ConstructorParameters<typeof SendWinbackUseCase>[0]["notificationHistoryReader"]
-  >;
-  let schedulerDedup: Mocked<ConstructorParameters<typeof SendWinbackUseCase>[0]["schedulerDedup"]>;
 
-  const TZ = "Asia/Seoul";
+  const ctx = createTimezoneContextFixture({ date: "2024-01-16", localHour: 12 });
+  const sent = () => publisher.published.map(({ data }) => data);
 
-  /** KST 2024-01-16 12:00 = UTC 2024-01-16T03:00:00Z */
-  const FAKE_NOW = new Date("2024-01-16T03:00:00Z");
-
-  const makeCtx = (overrides?: Partial<TimezoneContext>): TimezoneContext => ({
-    tz: TZ,
-    localHour: 12,
-    localMinute: 0,
-    dayOfWeek: 2,
-    today: dayjs.utc("2024-01-16").startOf("day").toDate(),
-    tomorrow: dayjs.utc("2024-01-17").startOf("day").toDate(),
-    ...overrides,
+  beforeEach(() => {
+    reader = new StubReEngagementReader();
+    preferences = new InMemorySchedulerPreferenceReader();
+    publisher = new RecordingNotificationPublisher();
+    history = new StubNotificationHistoryReader();
+    dedup = new InMemorySchedulerDedup();
+    strategy = new SendWinbackUseCase({
+      reader,
+      preferenceReader: preferences,
+      notificationPublisher: publisher,
+      notificationHistoryReader: history,
+      schedulerDedup: dedup,
+      logger: new SilentLogger(),
+    });
   });
 
-  beforeEach(async () => {
-    vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(FAKE_NOW);
-
-    const winbackStrategyDependencies = mockDeep<
-      ConstructorParameters<typeof SendWinbackUseCase>[0]
-    >({});
-    const unit = new SendWinbackUseCase(winbackStrategyDependencies);
-
-    strategy = unit;
-    reader = winbackStrategyDependencies.reader;
-    preferenceReader = winbackStrategyDependencies.preferenceReader;
-    notificationPublisher = winbackStrategyDependencies.notificationPublisher;
-    notificationHistoryReader = winbackStrategyDependencies.notificationHistoryReader;
-    schedulerDedup = winbackStrategyDependencies.schedulerDedup;
-
-    // 기본 mock 설정
-    reader.findWinbackUsers.mockResolvedValue([]);
-    preferenceReader.findUserLocales.mockResolvedValue(new Map());
-    notificationHistoryReader.findAlreadyNotifiedUserIds.mockResolvedValue(new Set());
-    notificationPublisher.publishBatch.mockResolvedValue({ count: 0 });
-    schedulerDedup.hasWinbackStage.mockResolvedValue(false);
-    schedulerDedup.recordWinbackStages.mockResolvedValue(undefined);
-  });
-
-  afterEach(() => {
-    vi.useRealTimers();
-  });
-
-  it("7일 미접속 유저에게 day7 Win-back을 발송한다", async () => {
-    // Given
-    const ctx = makeCtx();
-    const sevenDaysAgo = dayjs.utc("2024-01-09").startOf("day").toDate();
-
-    reader.findWinbackUsers.mockResolvedValueOnce([{ id: "user-1", lastActiveAt: sevenDaysAgo }]);
-
+  it("3~30일 미접속 구간으로 대상을 조회한다", async () => {
     // When
-    const result = await strategy.execute(ctx);
+    await strategy.execute(ctx);
 
     // Then
-    expect(result).toEqual({ sent: 1 });
+    expect(reader.queries).toEqual([
+      {
+        method: "findWinbackUsers",
+        params: {
+          tz: "Asia/Seoul",
+          inactiveSince: parseDateOnly("2023-12-17"),
+          inactiveUntil: parseDateOnly("2024-01-13"),
+        },
+      },
+    ]);
+  });
 
-    const notifications = notificationPublisher.publishBatch.mock.calls[0]?.[0];
+  it.each([
+    { lastActive: "2024-01-13", inactiveDays: 3, stage: "day3" },
+    { lastActive: "2024-01-09", inactiveDays: 7, stage: "day7" },
+    { lastActive: "2024-01-02", inactiveDays: 14, stage: "day14" },
+    { lastActive: "2023-12-26", inactiveDays: 21, stage: "day21" },
+    { lastActive: "2023-12-17", inactiveDays: 30, stage: "day30" },
+  ])(
+    "$inactiveDays일 미접속 사용자에게 $stage 단계 Win-back을 보내고 그 단계를 기록한다",
+    async ({ lastActive, inactiveDays, stage }) => {
+      // Given
+      reader.winbackUsers = [{ id: "user-1", lastActiveAt: parseDateOnly(lastActive) }];
+
+      // When
+      const result = await strategy.execute(ctx);
+
+      // Then
+      expect(result).toEqual({ sent: 1 });
+      const expected = createWinbackNotificationMessage({
+        inactiveDays,
+        locale: "ko",
+        variantContext: {
+          campaignKey: `${SCHEDULER_CAMPAIGN_KEY.WINBACK}.${stage}`,
+          recipientId: "user-1",
+          occurrenceKey: "2024-01-16",
+        },
+      });
+      expect(sent()).toEqual([
+        expect.objectContaining({
+          userId: "user-1",
+          type: "WINBACK",
+          purpose: "ENGAGEMENT",
+          title: expected.title,
+          body: expected.body,
+          campaignKey: SCHEDULER_CAMPAIGN_KEY.WINBACK,
+          variantId: expected.variantId,
+          metadata: { stage },
+        }),
+      ]);
+      await vi.waitFor(async () => {
+        expect(await dedup.hasWinbackStage("user-1", stage)).toBe(true);
+      });
+    },
+  );
+
+  it("저장한 언어로 보내고 지원하지 않는 언어는 영어로 보낸다", async () => {
+    // Given
+    reader.winbackUsers = [{ id: "user-1", lastActiveAt: parseDateOnly("2024-01-09") }];
+    await preferences.givenPreference({ timezone: "Asia/Seoul", locale: "fr" }, "user-1");
+
+    // When
+    await strategy.execute(ctx);
+
+    // Then
     const expected = createWinbackNotificationMessage({
       inactiveDays: 7,
-      locale: "ko",
+      locale: "en",
       variantContext: {
         campaignKey: `${SCHEDULER_CAMPAIGN_KEY.WINBACK}.day7`,
         recipientId: "user-1",
         occurrenceKey: "2024-01-16",
       },
     });
-    expect(notifications?.[0]).toMatchObject({
-      userId: "user-1",
-      type: "WINBACK",
-      title: expected.title,
-      body: expected.body,
-      campaignKey: SCHEDULER_CAMPAIGN_KEY.WINBACK,
-      variantId: expected.variantId,
-      metadata: { stage: "day7" },
-    });
+    expect(sent()[0]).toMatchObject({ title: expected.title, body: expected.body });
   });
 
-  it("14일 미접속 유저에게 day14 Win-back을 발송한다", async () => {
+  it("이미 같은 단계를 보낸 사용자는 건너뛴다", async () => {
     // Given
-    const ctx = makeCtx();
-    const fourteenDaysAgo = dayjs.utc("2024-01-02").startOf("day").toDate();
-
-    reader.findWinbackUsers.mockResolvedValueOnce([
-      { id: "user-1", lastActiveAt: fourteenDaysAgo },
-    ]);
-
-    // When
-    const result = await strategy.execute(ctx);
-
-    // Then
-    expect(result).toEqual({ sent: 1 });
-
-    const notifications = notificationPublisher.publishBatch.mock.calls[0]?.[0];
-    const expected = createWinbackNotificationMessage({
-      inactiveDays: 14,
-      locale: "ko",
-      variantContext: {
-        campaignKey: `${SCHEDULER_CAMPAIGN_KEY.WINBACK}.day14`,
-        recipientId: "user-1",
-        occurrenceKey: "2024-01-16",
-      },
-    });
-    expect(notifications?.[0]).toMatchObject({
-      metadata: { stage: "day14" },
-      title: expected.title,
-      body: expected.body,
-    });
-  });
-
-  it("21일 미접속 유저에게 day21 Win-back을 발송한다", async () => {
-    // Given
-    const ctx = makeCtx();
-    const twentyOneDaysAgo = dayjs.utc("2023-12-26").startOf("day").toDate();
-
-    reader.findWinbackUsers.mockResolvedValueOnce([
-      { id: "user-1", lastActiveAt: twentyOneDaysAgo },
-    ]);
-
-    // When
-    const result = await strategy.execute(ctx);
-
-    // Then
-    expect(result).toEqual({ sent: 1 });
-
-    const notifications = notificationPublisher.publishBatch.mock.calls[0]?.[0];
-    const expected = createWinbackNotificationMessage({
-      inactiveDays: 21,
-      locale: "ko",
-      variantContext: {
-        campaignKey: `${SCHEDULER_CAMPAIGN_KEY.WINBACK}.day21`,
-        recipientId: "user-1",
-        occurrenceKey: "2024-01-16",
-      },
-    });
-    expect(notifications?.[0]).toMatchObject({
-      userId: "user-1",
-      type: "WINBACK",
-      title: expected.title,
-      body: expected.body,
-      metadata: { stage: "day21" },
-    });
-  });
-
-  it("30일 미접속 유저에게 day30 Win-back을 발송한다", async () => {
-    // Given
-    const ctx = makeCtx();
-    const thirtyDaysAgo = dayjs.utc("2023-12-17").startOf("day").toDate();
-
-    reader.findWinbackUsers.mockResolvedValueOnce([{ id: "user-1", lastActiveAt: thirtyDaysAgo }]);
-
-    // When
-    const result = await strategy.execute(ctx);
-
-    // Then
-    expect(result).toEqual({ sent: 1 });
-
-    const notifications = notificationPublisher.publishBatch.mock.calls[0]?.[0];
-    const expected = createWinbackNotificationMessage({
-      inactiveDays: 30,
-      locale: "ko",
-      variantContext: {
-        campaignKey: `${SCHEDULER_CAMPAIGN_KEY.WINBACK}.day30`,
-        recipientId: "user-1",
-        occurrenceKey: "2024-01-16",
-      },
-    });
-    expect(notifications?.[0]).toMatchObject({
-      userId: "user-1",
-      type: "WINBACK",
-      title: expected.title,
-      body: expected.body,
-      metadata: { stage: "day30" },
-    });
-  });
-
-  it("3일 미접속 유저에게 day3 Win-back을 발송한다", async () => {
-    // Given
-    const ctx = makeCtx();
-    const threeDaysAgo = dayjs.utc("2024-01-13").startOf("day").toDate();
-
-    reader.findWinbackUsers.mockResolvedValueOnce([{ id: "user-1", lastActiveAt: threeDaysAgo }]);
-
-    // When
-    const result = await strategy.execute(ctx);
-
-    // Then
-    expect(result).toEqual({ sent: 1 });
-
-    const notifications = notificationPublisher.publishBatch.mock.calls[0]?.[0];
-    const expected = createWinbackNotificationMessage({
-      inactiveDays: 3,
-      locale: "ko",
-      variantContext: {
-        campaignKey: `${SCHEDULER_CAMPAIGN_KEY.WINBACK}.day3`,
-        recipientId: "user-1",
-        occurrenceKey: "2024-01-16",
-      },
-    });
-    expect(notifications?.[0]).toMatchObject({
-      metadata: { stage: "day3" },
-      title: expected.title,
-      body: expected.body,
-    });
-  });
-
-  it("이미 같은 단계를 발송했으면 스킵한다", async () => {
-    // Given
-    const ctx = makeCtx();
-    const sevenDaysAgo = dayjs.utc("2024-01-09").startOf("day").toDate();
-
-    reader.findWinbackUsers.mockResolvedValueOnce([{ id: "user-1", lastActiveAt: sevenDaysAgo }]);
-
-    // 이미 day7 단계 발송 이력 (Redis)
-    schedulerDedup.hasWinbackStage.mockResolvedValueOnce(true);
+    reader.winbackUsers = [{ id: "user-1", lastActiveAt: parseDateOnly("2024-01-09") }];
+    await dedup.recordWinbackStages([{ userId: "user-1", stage: "day7" }]);
 
     // When
     const result = await strategy.execute(ctx);
 
     // Then
     expect(result).toEqual({ sent: 0 });
-    expect(notificationPublisher.publishBatch).not.toHaveBeenCalled();
+    expect(publisher.published).toEqual([]);
   });
 
-  it("오늘 이미 WINBACK을 받은 유저는 제외한다", async () => {
+  it("마지막 접속 기록이 없는 사용자는 단계를 정할 수 없어 보내지 않는다", async () => {
     // Given
-    const ctx = makeCtx();
-    const sevenDaysAgo = dayjs.utc("2024-01-09").startOf("day").toDate();
-
-    reader.findWinbackUsers.mockResolvedValueOnce([{ id: "user-1", lastActiveAt: sevenDaysAgo }]);
-
-    notificationHistoryReader.findAlreadyNotifiedUserIds.mockResolvedValue(new Set(["user-1"]));
+    reader.winbackUsers = [{ id: "user-1", lastActiveAt: null }];
 
     // When
     const result = await strategy.execute(ctx);
 
     // Then
     expect(result).toEqual({ sent: 0 });
-    expect(notificationPublisher.publishBatch).not.toHaveBeenCalled();
+    expect(publisher.published).toEqual([]);
   });
 
-  it("대상이 없으면 publishBatch를 호출하지 않는다", async () => {
-    // Given — beforeEach 기본 설정
-    const ctx = makeCtx();
-
-    reader.findWinbackUsers.mockResolvedValueOnce([]);
+  it("오늘 이미 WINBACK을 받은 사용자는 제외한다", async () => {
+    // Given
+    reader.winbackUsers = [{ id: "user-1", lastActiveAt: parseDateOnly("2024-01-09") }];
+    history.notified("WINBACK", ["user-1"], ctx.today);
 
     // When
     const result = await strategy.execute(ctx);
 
     // Then
     expect(result).toEqual({ sent: 0 });
-    expect(notificationPublisher.publishBatch).not.toHaveBeenCalled();
+    expect(publisher.published).toEqual([]);
+  });
+
+  it("대상이 없으면 발송하지 않는다", async () => {
+    // When
+    const result = await strategy.execute(ctx);
+
+    // Then
+    expect(result).toEqual({ sent: 0 });
+    expect(publisher.published).toEqual([]);
   });
 });

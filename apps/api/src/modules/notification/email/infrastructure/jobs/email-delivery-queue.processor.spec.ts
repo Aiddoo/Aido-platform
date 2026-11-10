@@ -1,5 +1,6 @@
-import { mock } from "vitest-mock-extended";
+import { ConfigService } from "@nestjs/config";
 
+import type { EnvConfig } from "#api/platform/config/schemas/index";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { EncryptionService } from "#api/platform/encryption/encryption.service";
 import { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
@@ -25,10 +26,11 @@ class RecordingDeliverEmail {
 
 describe("EmailDeliveryQueueProcessor", () => {
   const encryption = new EncryptionService(
-    mock<TypedConfigService>({
-      tokenEncryptionKey: "test-token-encryption-key-minimum-32-characters-long",
-      tokenEncryptionSalt: undefined,
-    }),
+    new TypedConfigService(
+      new ConfigService<EnvConfig, true>({
+        TOKEN_ENCRYPTION_KEY: "test-token-encryption-key-minimum-32-characters-long",
+      }),
+    ),
   );
   let jobQueue: InMemoryJobQueue;
   let alert: RecordingOperationalAlert;

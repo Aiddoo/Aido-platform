@@ -1,192 +1,165 @@
-import dayjs from "dayjs";
-import type { Mocked } from "vitest";
-import { vi } from "vitest";
-import { mockDeep } from "vitest-mock-extended";
+import { parseDateOnly } from "#api/shared/domain/date/utils/parse";
+import { InMemorySchedulerPreferenceReader } from "#test/doubles/notification/in-memory-scheduler-preference.reader";
+import { RecordingNotificationPublisher } from "#test/doubles/notification/recording-notification-publisher";
+import { StubNotificationHistoryReader } from "#test/doubles/notification/stub-notification-history.reader";
+import { StubReEngagementReader } from "#test/doubles/notification/stub-re-engagement.reader";
+import { SilentLogger } from "#test/doubles/platform/silent-logger";
+import { createTimezoneContextFixture } from "#test/fixtures/notification/timezone-context.fixture";
 
 import { createOnboardingNotificationMessage } from "../../../push/application/messages/notification.messages.js";
-import type { TimezoneContext } from "../../domain/timezone-context.read-model.js";
+import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/notification-campaign.constants.js";
 import { SendOnboardingUseCase } from "./send-onboarding.use-case.js";
 
 describe("SendOnboardingUseCase — 온보딩 전략", () => {
+  let reader: StubReEngagementReader;
+  let preferences: InMemorySchedulerPreferenceReader;
+  let publisher: RecordingNotificationPublisher;
+  let history: StubNotificationHistoryReader;
   let strategy: SendOnboardingUseCase;
-  let reader: Mocked<ConstructorParameters<typeof SendOnboardingUseCase>[0]["reader"]>;
-  let preferenceReader: Mocked<
-    ConstructorParameters<typeof SendOnboardingUseCase>[0]["preferenceReader"]
-  >;
-  let notificationPublisher: Mocked<
-    ConstructorParameters<typeof SendOnboardingUseCase>[0]["notificationPublisher"]
-  >;
-  let notificationHistoryReader: Mocked<
-    ConstructorParameters<typeof SendOnboardingUseCase>[0]["notificationHistoryReader"]
-  >;
 
-  const TZ = "Asia/Seoul";
+  const ctx = createTimezoneContextFixture({ date: "2024-01-16", localHour: 8 });
+  const sent = () => publisher.published.map(({ data }) => data);
 
-  /** KST 2024-01-16 08:00 = UTC 2024-01-15T23:00:00Z */
-  const FAKE_NOW = new Date("2024-01-15T23:00:00Z");
-
-  const TODAY = dayjs.utc("2024-01-16").startOf("day").toDate();
-
-  const makeCtx = (overrides?: Partial<TimezoneContext>): TimezoneContext => ({
-    tz: TZ,
-    localHour: 8,
-    localMinute: 0,
-    dayOfWeek: 2,
-    today: TODAY,
-    tomorrow: dayjs.utc("2024-01-17").startOf("day").toDate(),
-    ...overrides,
+  const variantContext = (day: number, recipientId = "user-1") => ({
+    campaignKey: `${SCHEDULER_CAMPAIGN_KEY.ONBOARDING}.day_${day}`,
+    recipientId,
+    occurrenceKey: "2024-01-16",
   });
 
-  beforeEach(async () => {
-    vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(FAKE_NOW);
-
-    const onboardingStrategyDependencies = mockDeep<
-      ConstructorParameters<typeof SendOnboardingUseCase>[0]
-    >({});
-    const unit = new SendOnboardingUseCase(onboardingStrategyDependencies);
-
-    strategy = unit;
-    reader = onboardingStrategyDependencies.reader;
-    preferenceReader = onboardingStrategyDependencies.preferenceReader;
-    notificationPublisher = onboardingStrategyDependencies.notificationPublisher;
-    notificationHistoryReader = onboardingStrategyDependencies.notificationHistoryReader;
-
-    // 기본 mock 설정
-    reader.findOnboardingCandidates.mockResolvedValue([]);
-    reader.countCompletedTodosByUsers.mockResolvedValue([]);
-    preferenceReader.findUserLocales.mockResolvedValue(new Map());
-    notificationHistoryReader.findAlreadyNotifiedUserIds.mockResolvedValue(new Set());
-    notificationPublisher.publishBatch.mockResolvedValue({ count: 0 });
-  });
-
-  afterEach(() => {
-    vi.useRealTimers();
-  });
-
-  it("Day 0 가입 유저에게 온보딩 알림을 발송한다", async () => {
-    // Given: 오늘 가입한 유저가 있다
-    const ctx = makeCtx();
-
-    reader.findOnboardingCandidates.mockResolvedValueOnce([{ id: "user-1", createdAt: TODAY }]);
-
-    // When: 온보딩 전략을 실행한다
-    const result = await strategy.execute(ctx);
-
-    // Then: 1건의 알림이 발송된다
-    expect(result).toEqual({ sent: 1 });
-    expect(notificationPublisher.publishBatch).toHaveBeenCalledTimes(1);
-
-    const notifications = notificationPublisher.publishBatch.mock.calls[0]?.[0];
-    const expected = createOnboardingNotificationMessage({ day: 0 });
-    expect(notifications?.[0]).toMatchObject({
-      userId: "user-1",
-      type: "SYSTEM_NOTICE",
-      // 사용법 안내는 서비스 알림이라 광고성 동의가 없어도 받는다
-      purpose: "SCHEDULED_SERVICE",
-      title: expected?.title,
-      body: expected?.body,
-      action: { type: "DEEP_LINK", url: "/feed" },
-      metadata: { onboardingDay: 0 },
+  beforeEach(() => {
+    reader = new StubReEngagementReader();
+    preferences = new InMemorySchedulerPreferenceReader();
+    publisher = new RecordingNotificationPublisher();
+    history = new StubNotificationHistoryReader();
+    strategy = new SendOnboardingUseCase({
+      reader,
+      preferenceReader: preferences,
+      notificationPublisher: publisher,
+      notificationHistoryReader: history,
+      logger: new SilentLogger(),
     });
   });
 
-  it("Day 5에서 completedCount가 포함된 메시지를 발송한다", async () => {
-    // Given: 5일 전 가입한 유저가 있고, 완료한 todo가 3개이다
-    const ctx = makeCtx();
-    const fiveDaysAgo = dayjs.utc("2024-01-11").startOf("day").toDate();
+  it("Day 0 가입 사용자에게 사용법 안내를 서비스 알림으로 보낸다", async () => {
+    // Given 오늘 가입한 사용자
+    reader.onboardingCandidates = [{ id: "user-1", createdAt: ctx.today }];
 
-    reader.findOnboardingCandidates.mockResolvedValueOnce([
-      { id: "user-1", createdAt: fiveDaysAgo },
-    ]);
-
-    reader.countCompletedTodosByUsers.mockResolvedValueOnce([{ userId: "user-1", count: 3 }]);
-
-    // When: 온보딩 전략을 실행한다
+    // When
     const result = await strategy.execute(ctx);
 
-    // Then: completedCount=3이 포함된 알림이 발송된다
+    // Then 사용법 안내는 서비스 알림이라 광고성 동의가 없어도 받는다
     expect(result).toEqual({ sent: 1 });
-
-    const notifications = notificationPublisher.publishBatch.mock.calls[0]?.[0];
-    const expected = createOnboardingNotificationMessage({ day: 5, completedCount: 3 });
-    expect(notifications?.[0]).toMatchObject({
-      userId: "user-1",
-      type: "SYSTEM_NOTICE",
-      title: expected?.title,
-      body: expected?.body,
-      action: { type: "DEEP_LINK", url: "/achievements" },
-      metadata: { onboardingDay: 5 },
+    const expected = createOnboardingNotificationMessage({
+      day: 0,
+      locale: "ko",
+      variantContext: variantContext(0),
     });
+    expect(sent()).toEqual([
+      expect.objectContaining({
+        userId: "user-1",
+        type: "SYSTEM_NOTICE",
+        purpose: "SCHEDULED_SERVICE",
+        title: expected.title,
+        body: expected.body,
+        action: { type: "DEEP_LINK", url: "/feed" },
+        metadata: { onboardingDay: 0 },
+      }),
+    ]);
   });
 
-  it("Day 4에서는 알림을 발송하지 않는다", async () => {
-    // Given: 4일 전 가입한 유저가 있다
-    const ctx = makeCtx();
-    const fourDaysAgo = dayjs.utc("2024-01-12").startOf("day").toDate();
+  it("Day 5에는 완료한 할 일 수를 담아 보낸다", async () => {
+    // Given 5일 전 가입, 완료한 할 일 3개
+    reader.onboardingCandidates = [{ id: "user-1", createdAt: parseDateOnly("2024-01-11") }];
+    reader.completedTodoCounts = [{ userId: "user-1", count: 3 }];
 
-    reader.findOnboardingCandidates.mockResolvedValueOnce([
-      { id: "user-1", createdAt: fourDaysAgo },
-    ]);
-
-    // When: 온보딩 전략을 실행한다
+    // When
     const result = await strategy.execute(ctx);
 
-    // Then: 알림이 발송되지 않는다
-    expect(result).toEqual({ sent: 0 });
-    expect(notificationPublisher.publishBatch).not.toHaveBeenCalled();
-  });
-
-  it("Day 8 이상 유저는 무시한다", async () => {
-    // Given: 10일 전 가입한 유저가 있다
-    const ctx = makeCtx();
-    const tenDaysAgo = dayjs.utc("2024-01-06").startOf("day").toDate();
-
-    reader.findOnboardingCandidates.mockResolvedValueOnce([
-      { id: "user-1", createdAt: tenDaysAgo },
-    ]);
-
-    // When: 온보딩 전략을 실행한다
-    const result = await strategy.execute(ctx);
-
-    // Then: 알림이 발송되지 않는다
-    expect(result).toEqual({ sent: 0 });
-    expect(notificationPublisher.publishBatch).not.toHaveBeenCalled();
-  });
-
-  it("이미 오늘 알림을 받은 유저는 스킵한다", async () => {
-    // Given: 오늘 가입한 유저 2명 중 1명은 이미 알림을 받았다
-    const ctx = makeCtx();
-
-    reader.findOnboardingCandidates.mockResolvedValueOnce([
-      { id: "user-1", createdAt: TODAY },
-      { id: "user-2", createdAt: TODAY },
-    ]);
-
-    notificationHistoryReader.findAlreadyNotifiedUserIds.mockResolvedValue(new Set(["user-1"]));
-
-    // When: 온보딩 전략을 실행한다
-    const result = await strategy.execute(ctx);
-
-    // Then: user-2에게만 알림이 발송된다
+    // Then
     expect(result).toEqual({ sent: 1 });
-
-    const notifications = notificationPublisher.publishBatch.mock.calls[0]?.[0];
-    expect(notifications).toHaveLength(1);
-    expect(notifications?.[0]?.userId).toBe("user-2");
+    const expected = createOnboardingNotificationMessage({
+      day: 5,
+      completedCount: 3,
+      locale: "ko",
+      variantContext: variantContext(5),
+    });
+    expect(sent()).toEqual([
+      expect.objectContaining({
+        userId: "user-1",
+        type: "SYSTEM_NOTICE",
+        title: expected.title,
+        body: expected.body,
+        action: { type: "DEEP_LINK", url: "/achievements" },
+        metadata: { onboardingDay: 5 },
+      }),
+    ]);
   });
 
-  it("대상이 없으면 publishBatch를 호출하지 않는다", async () => {
-    // Given: 해당 타임존에 신규 유저가 없다
-    const ctx = makeCtx();
+  it("완료 수가 필요 없는 날에는 완료 수를 조회하지 않는다", async () => {
+    // Given
+    reader.onboardingCandidates = [{ id: "user-1", createdAt: ctx.today }];
 
-    reader.findOnboardingCandidates.mockResolvedValueOnce([]);
+    // When
+    await strategy.execute(ctx);
 
-    // When: 온보딩 전략을 실행한다
+    // Then
+    expect(reader.queriedMethods()).not.toContain("countCompletedTodosByUsers");
+  });
+
+  it("저장한 언어로 보낸다", async () => {
+    // Given
+    reader.onboardingCandidates = [{ id: "user-1", createdAt: ctx.today }];
+    await preferences.givenPreference({ timezone: "Asia/Seoul", locale: "en" }, "user-1");
+
+    // When
+    await strategy.execute(ctx);
+
+    // Then
+    const expected = createOnboardingNotificationMessage({
+      day: 0,
+      locale: "en",
+      variantContext: variantContext(0),
+    });
+    expect(sent()[0]).toMatchObject({ title: expected.title, body: expected.body });
+  });
+
+  it.each([
+    { name: "Day 4", createdAt: "2024-01-12" },
+    { name: "Day 8 이상", createdAt: "2024-01-06" },
+  ])("$name 사용자에게는 보내지 않는다", async ({ createdAt }) => {
+    // Given
+    reader.onboardingCandidates = [{ id: "user-1", createdAt: parseDateOnly(createdAt) }];
+
+    // When
     const result = await strategy.execute(ctx);
 
-    // Then: 알림이 발송되지 않는다
+    // Then
     expect(result).toEqual({ sent: 0 });
-    expect(notificationPublisher.publishBatch).not.toHaveBeenCalled();
+    expect(publisher.published).toEqual([]);
+  });
+
+  it("오늘 이미 안내를 받은 사용자는 건너뛴다", async () => {
+    // Given 오늘 가입한 두 명 중 한 명은 이미 받았다
+    reader.onboardingCandidates = [
+      { id: "user-1", createdAt: ctx.today },
+      { id: "user-2", createdAt: ctx.today },
+    ];
+    history.notified("SYSTEM_NOTICE", ["user-1"], ctx.today);
+
+    // When
+    const result = await strategy.execute(ctx);
+
+    // Then
+    expect(result).toEqual({ sent: 1 });
+    expect(sent().map(({ userId }) => userId)).toEqual(["user-2"]);
+  });
+
+  it("대상이 없으면 발송하지 않는다", async () => {
+    // When
+    const result = await strategy.execute(ctx);
+
+    // Then
+    expect(result).toEqual({ sent: 0 });
+    expect(publisher.published).toEqual([]);
   });
 });

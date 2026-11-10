@@ -4,8 +4,12 @@ import type {
   RetentionStageCursor,
 } from "#api/modules/notification/retention/application/read-models/retention-stage-candidate.read-model";
 import { isRetentionStageDue } from "#api/modules/notification/retention/domain/retention-stage.domain-service";
-import type { RetentionVariant } from "#api/modules/notification/retention/domain/retention.constants";
+import {
+  RETENTION_STAGE_NAMES,
+  type RetentionVariant,
+} from "#api/modules/notification/retention/domain/retention.constants";
 import type { retentionExperimentStageStatus } from "#api/platform/database/schema/index";
+import { createRetentionStageCandidateFixture } from "#test/fixtures/notification/retention-stage-candidate.fixture";
 
 type StageStatus = (typeof retentionExperimentStageStatus.enumValues)[number];
 
@@ -40,7 +44,15 @@ function byCreation(left: StoredRetentionStage, right: StoredRetentionStage): nu
   return diff === 0 ? left.candidate.stageId.localeCompare(right.candidate.stageId) : diff;
 }
 
-// Drizzle처럼 SCHEDULED이고 결정할 때가 된 단계만 생성 순서로 돌려주고 상태 전이는 한 번만 성공한다
+export type RetentionUserProfile = Partial<
+  Omit<
+    RetentionStageCandidate,
+    "assignmentId" | "stageId" | "stageCreatedAt" | "userId" | "variant" | "stage" | "startedAt"
+  >
+>;
+
+// Drizzle처럼 SCHEDULED이고 결정할 때가 된 단계만 생성 순서로 돌려주고 상태 전이는 한 번만 성공한다.
+// 등록·활성화로 만든 단계의 사용자 정보(시간대·언어 등)는 givenUser로 넣은 값, 없으면 fixture 기본값이다
 export class InMemoryRetentionRepository extends RetentionRepositoryPort {
   readonly stages: StoredRetentionStage[];
   readonly enrollments: RetentionEnrollment[] = [];
@@ -48,9 +60,17 @@ export class InMemoryRetentionRepository extends RetentionRepositoryPort {
   readonly dueQueries: Date[] = [];
   // 이 단계를 표시하려 하면 실패한다(발행 도중 오류를 흉내 낸다)
   failingStageIds = new Set<string>();
+  readonly #profiles = new Map<string, RetentionUserProfile>();
+  readonly #assignmentIdByUser = new Map<string, string>();
+  readonly #now: () => Date;
+  #sequence = 0;
 
-  constructor(candidates: readonly RetentionStageCandidate[] = []) {
+  constructor(
+    candidates: readonly RetentionStageCandidate[] = [],
+    now: () => Date = () => new Date(),
+  ) {
     super();
+    this.#now = now;
     this.stages = candidates.map((candidate) => ({
       candidate,
       status: "SCHEDULED",
@@ -69,6 +89,15 @@ export class InMemoryRetentionRepository extends RetentionRepositoryPort {
       return;
     }
     this.enrollments.push({ ...input });
+    this.#sequence += 1;
+    this.#assignmentIdByUser.set(input.userId, `retention-assignment-${this.#sequence}`);
+    if (input.startedAt != null) {
+      this.#createStages(input.userId, input.variant, input.startedAt);
+    }
+  }
+
+  givenUser(userId: string, profile: RetentionUserProfile = {}): void {
+    this.#profiles.set(userId, profile);
   }
 
   async activate(userId: string, startedAt: Date): Promise<boolean> {
@@ -77,6 +106,7 @@ export class InMemoryRetentionRepository extends RetentionRepositoryPort {
       return false;
     }
     enrollment.startedAt = startedAt;
+    this.#createStages(userId, enrollment.variant, startedAt);
     return true;
   }
 
@@ -143,6 +173,31 @@ export class InMemoryRetentionRepository extends RetentionRepositoryPort {
     }
     Object.assign(stage, next);
     return true;
+  }
+
+  // 한 번에 만든 네 단계는 생성 시각이 같고 ID 순서가 생성 순서다
+  #createStages(userId: string, variant: RetentionVariant, startedAt: Date): void {
+    const assignmentId = this.#assignmentIdByUser.get(userId) ?? userId;
+    const stageCreatedAt = this.#now();
+    for (const stage of RETENTION_STAGE_NAMES) {
+      this.#sequence += 1;
+      this.stages.push({
+        candidate: createRetentionStageCandidateFixture({
+          ...this.#profiles.get(userId),
+          assignmentId,
+          stageId: `retention-stage-${String(this.#sequence).padStart(6, "0")}`,
+          stageCreatedAt,
+          userId,
+          variant,
+          stage,
+          startedAt,
+        }),
+        status: "SCHEDULED",
+        skipReason: null,
+        processedAt: null,
+        notificationId: null,
+      });
+    }
   }
 
   #require(stageId: string): StoredRetentionStage {

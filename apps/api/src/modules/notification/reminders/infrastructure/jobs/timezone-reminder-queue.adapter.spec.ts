@@ -1,7 +1,6 @@
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
 import { TEST_CUID } from "#test/fixtures/index";
-import { flushPromises } from "#test/mocks/index";
 
 import type { ReminderHourChangedJobData } from "../../application/ports/timezone-reminder-enqueuer.port.js";
 import { TimezoneReminderQueueAdapter } from "./timezone-reminder-queue.adapter.js";
@@ -30,22 +29,25 @@ describe("TimezoneReminderQueueAdapter — 리마인더 큐 등록", () => {
 
     // When
     service.enqueueReminderHourChanged(payload);
-    await flushPromises();
 
     // Then
-    expect(jobQueue.jobsIn(TIMEZONE_REMINDER_QUEUE)).toEqual([
-      expect.objectContaining({
-        payload: { name: TimezoneReminderJobName.REMINDER_HOUR_CHANGED, data: payload },
-      }),
-    ]);
+    await vi.waitFor(() => {
+      expect(jobQueue.jobsIn(TIMEZONE_REMINDER_QUEUE)).toEqual([
+        expect.objectContaining({
+          payload: { name: TimezoneReminderJobName.REMINDER_HOUR_CHANGED, data: payload },
+        }),
+      ]);
+    });
   });
 
   it("social digest를 90분 뒤 시작하도록 등록한다", async () => {
     // When
     service.enqueueSocialDigest({ timezone: "Asia/Seoul", recipientUserIds: [TEST_CUID.USER_1] });
-    await flushPromises();
 
     // Then
+    await vi.waitFor(() => {
+      expect(jobQueue.jobsIn(TIMEZONE_REMINDER_QUEUE)).toHaveLength(1);
+    });
     const [job] = jobQueue.jobsIn(TIMEZONE_REMINDER_QUEUE);
     expect(job?.payload).toMatchObject({ name: TimezoneReminderJobName.SOCIAL_DIGEST });
     expect(job?.options.startAfter).toEqual(NOW.add({ minutes: 90 }));

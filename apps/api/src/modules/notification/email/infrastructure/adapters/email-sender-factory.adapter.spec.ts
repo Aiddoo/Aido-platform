@@ -3,7 +3,7 @@ import { InMemoryMailTransport } from "@nestjs/mail";
 import type { EmailProviderId } from "#api/platform/config/schemas/email.schema";
 import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
 import { createTestMailer, type TestMailer } from "#test/doubles/notification/test-mailer";
-import { RecordingOperationalAlert } from "#test/mocks/recording-operational-alert";
+import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";
 
 import { selectEmailSender } from "./email-sender-factory.adapter.js";
 import { LogEmailSenderAdapter } from "./log-email-sender.adapter.js";

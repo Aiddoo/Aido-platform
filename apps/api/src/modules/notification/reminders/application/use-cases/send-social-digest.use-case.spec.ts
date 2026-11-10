@@ -1,259 +1,208 @@
-import dayjs from "dayjs";
-import type { Mocked } from "vitest";
-import { vi } from "vitest";
-import { mockDeep } from "vitest-mock-extended";
-
+import { InMemorySchedulerPreferenceReader } from "#test/doubles/notification/in-memory-scheduler-preference.reader";
+import { RecordingNotificationPublisher } from "#test/doubles/notification/recording-notification-publisher";
+import { StubNotificationHistoryReader } from "#test/doubles/notification/stub-notification-history.reader";
+import { StubReEngagementReader } from "#test/doubles/notification/stub-re-engagement.reader";
+import { SilentLogger } from "#test/doubles/platform/silent-logger";
 import { TEST_CUID } from "#test/fixtures/index";
+import { createTimezoneContextFixture } from "#test/fixtures/notification/timezone-context.fixture";
 
 import { createSocialDigestNotificationMessage } from "../../../push/application/messages/notification.messages.js";
 import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/notification-campaign.constants.js";
-import type { TimezoneContext } from "../../domain/timezone-context.read-model.js";
 import { SendSocialDigestUseCase } from "./send-social-digest.use-case.js";
 
 describe("SendSocialDigestUseCase — 소셜 다이제스트 전략", () => {
+  let reader: StubReEngagementReader;
+  let preferences: InMemorySchedulerPreferenceReader;
+  let publisher: RecordingNotificationPublisher;
+  let history: StubNotificationHistoryReader;
   let strategy: SendSocialDigestUseCase;
-  let reader: Mocked<ConstructorParameters<typeof SendSocialDigestUseCase>[0]["reader"]>;
-  let preferenceReader: Mocked<
-    ConstructorParameters<typeof SendSocialDigestUseCase>[0]["preferenceReader"]
-  >;
-  let notificationPublisher: Mocked<
-    ConstructorParameters<typeof SendSocialDigestUseCase>[0]["notificationPublisher"]
-  >;
-  let notificationHistoryReader: Mocked<
-    ConstructorParameters<typeof SendSocialDigestUseCase>[0]["notificationHistoryReader"]
-  >;
 
-  const TZ = "Asia/Seoul";
+  const ctx = createTimezoneContextFixture({ date: "2024-01-16", localHour: 20 });
+  const VARIANT_CONTEXT = {
+    campaignKey: SCHEDULER_CAMPAIGN_KEY.SOCIAL_DIGEST,
+    recipientId: TEST_CUID.USER_1,
+    occurrenceKey: "2024-01-16",
+  } as const;
+  const sent = () => publisher.published.map(({ data }) => data);
 
-  /** KST 2024-01-16 20:00 = UTC 2024-01-16T11:00:00Z */
-  const FAKE_NOW = new Date("2024-01-16T11:00:00Z");
-
-  const makeCtx = (overrides?: Partial<TimezoneContext>): TimezoneContext => ({
-    tz: TZ,
-    localHour: 20,
-    localMinute: 0,
-    dayOfWeek: 2,
-    today: dayjs.utc("2024-01-16").startOf("day").toDate(),
-    tomorrow: dayjs.utc("2024-01-17").startOf("day").toDate(),
-    ...overrides,
+  beforeEach(() => {
+    reader = new StubReEngagementReader();
+    preferences = new InMemorySchedulerPreferenceReader();
+    publisher = new RecordingNotificationPublisher();
+    history = new StubNotificationHistoryReader();
+    strategy = new SendSocialDigestUseCase({
+      reader,
+      preferenceReader: preferences,
+      notificationPublisher: publisher,
+      notificationHistoryReader: history,
+      logger: new SilentLogger(),
+    });
   });
 
-  beforeEach(async () => {
-    vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(FAKE_NOW);
-
-    const socialDigestStrategyDependencies = mockDeep<
-      ConstructorParameters<typeof SendSocialDigestUseCase>[0]
-    >({});
-    const unit = new SendSocialDigestUseCase(socialDigestStrategyDependencies);
-
-    strategy = unit;
-    reader = socialDigestStrategyDependencies.reader;
-    preferenceReader = socialDigestStrategyDependencies.preferenceReader;
-    notificationPublisher = socialDigestStrategyDependencies.notificationPublisher;
-    notificationHistoryReader = socialDigestStrategyDependencies.notificationHistoryReader;
-
-    // 기본 mock 설정
-    reader.findSocialDigestCandidates.mockResolvedValue([]);
-    reader.findAcceptedFollows.mockResolvedValue([]);
-    reader.findFriendsWithTodayTodos.mockResolvedValue([]);
-    preferenceReader.findUserLocales.mockResolvedValue(new Map());
-    notificationHistoryReader.findAlreadyNotifiedUserIds.mockResolvedValue(new Set());
-    notificationPublisher.publishBatch.mockResolvedValue({ count: 0 });
-  });
-
-  afterEach(() => {
-    vi.useRealTimers();
-  });
-
-  it("본인 미완료 + 완료 친구 1명일 때 Social Digest를 발송한다", async () => {
+  it("직전 저녁 리마인더 수신자 중 본인 미완료이고 모두 끝낸 친구가 1명이면 그 친구 이름으로 보낸다", async () => {
     // Given
-    const ctx = makeCtx();
-
-    // 미완료 투두가 있는 유저
-    reader.findSocialDigestCandidates.mockResolvedValue([
-      {
-        id: TEST_CUID.USER_1,
-        todos: [{ completed: false }, { completed: true }],
-      },
-    ]);
-
-    // 친구의 투두 완료 현황
-    reader.findFriendsWithTodayTodos.mockResolvedValue([
+    reader.socialDigestCandidates = [
+      { id: TEST_CUID.USER_1, todos: [{ completed: false }, { completed: true }] },
+    ];
+    reader.acceptedFollows = [{ followerId: TEST_CUID.USER_1, followingId: TEST_CUID.USER_2 }];
+    reader.friendsWithTodayTodos = [
       {
         id: TEST_CUID.USER_2,
         profile: { name: "친구1" },
         todos: [{ completed: true }, { completed: true }],
       },
-    ]);
-
-    // 팔로우 관계
-    reader.findAcceptedFollows.mockResolvedValue([
-      { followerId: TEST_CUID.USER_1, followingId: TEST_CUID.USER_2 },
-    ]);
+    ];
 
     // When
     const result = await strategy.execute(ctx, [TEST_CUID.USER_1]);
 
     // Then
     expect(result).toEqual({ sent: 1 });
-    expect(reader.findSocialDigestCandidates).toHaveBeenCalledWith(
-      expect.objectContaining({ recipientUserIds: [TEST_CUID.USER_1] }),
-    );
-
-    const notifications = notificationPublisher.publishBatch.mock.calls[0]?.[0];
+    expect(reader.queries[0]).toEqual({
+      method: "findSocialDigestCandidates",
+      params: {
+        tz: "Asia/Seoul",
+        today: ctx.today,
+        tomorrow: ctx.tomorrow,
+        recipientUserIds: [TEST_CUID.USER_1],
+      },
+    });
     const expected = createSocialDigestNotificationMessage({
       kind: "single",
       friendName: "친구1",
       locale: "ko",
-      variantContext: {
+      variantContext: VARIANT_CONTEXT,
+    });
+    expect(sent()).toEqual([
+      expect.objectContaining({
+        userId: TEST_CUID.USER_1,
+        type: "SOCIAL_DIGEST",
+        title: expected.title,
+        body: expected.body,
         campaignKey: SCHEDULER_CAMPAIGN_KEY.SOCIAL_DIGEST,
-        recipientId: TEST_CUID.USER_1,
-        occurrenceKey: "2024-01-16",
-      },
-    });
-    expect(notifications?.[0]).toMatchObject({
-      userId: TEST_CUID.USER_1,
-      type: "SOCIAL_DIGEST",
-      title: expected.title,
-      body: expected.body,
-      campaignKey: SCHEDULER_CAMPAIGN_KEY.SOCIAL_DIGEST,
-      variantId: expected.variantId,
-    });
+        variantId: expected.variantId,
+      }),
+    ]);
   });
 
-  it("본인 미완료 + 완료 친구 2명 이상일 때 다른 메시지를 발송한다", async () => {
+  it("모두 끝낸 친구가 2명 이상이면 인원 수로 보낸다", async () => {
     // Given
-    const ctx = makeCtx();
-
-    reader.findSocialDigestCandidates.mockResolvedValue([
-      {
-        id: TEST_CUID.USER_1,
-        todos: [{ completed: false }],
-      },
-    ]);
-
-    reader.findFriendsWithTodayTodos.mockResolvedValue([
-      {
-        id: TEST_CUID.USER_2,
-        profile: { name: "친구1" },
-        todos: [{ completed: true }],
-      },
-      {
-        id: TEST_CUID.USER_3,
-        profile: { name: "친구2" },
-        todos: [{ completed: true }],
-      },
-    ]);
-
-    reader.findAcceptedFollows.mockResolvedValue([
+    reader.socialDigestCandidates = [{ id: TEST_CUID.USER_1, todos: [{ completed: false }] }];
+    reader.acceptedFollows = [
       { followerId: TEST_CUID.USER_1, followingId: TEST_CUID.USER_2 },
-      { followerId: TEST_CUID.USER_1, followingId: TEST_CUID.USER_3 },
-    ]);
+      { followerId: TEST_CUID.USER_3, followingId: TEST_CUID.USER_1 },
+    ];
+    reader.friendsWithTodayTodos = [
+      { id: TEST_CUID.USER_2, profile: { name: "친구1" }, todos: [{ completed: true }] },
+      { id: TEST_CUID.USER_3, profile: { name: "친구2" }, todos: [{ completed: true }] },
+    ];
 
     // When
     const result = await strategy.execute(ctx, [TEST_CUID.USER_1]);
 
     // Then
     expect(result).toEqual({ sent: 1 });
-
-    const notifications = notificationPublisher.publishBatch.mock.calls[0]?.[0];
     const expected = createSocialDigestNotificationMessage({
       kind: "multiple",
       completedFriendCount: 2,
       locale: "ko",
-      variantContext: {
-        campaignKey: SCHEDULER_CAMPAIGN_KEY.SOCIAL_DIGEST,
-        recipientId: TEST_CUID.USER_1,
-        occurrenceKey: "2024-01-16",
-      },
+      variantContext: VARIANT_CONTEXT,
     });
-    expect(notifications?.[0]).toMatchObject({
-      title: expected.title,
-      body: expected.body,
-    });
+    expect(sent()[0]).toMatchObject({ title: expected.title, body: expected.body });
   });
 
-  it("본인이 전체 완료이면 발송하지 않는다", async () => {
+  it("아직 다 끝내지 못한 친구는 세지 않는다", async () => {
     // Given
-    const ctx = makeCtx();
-
-    // 쿼리에서 completed: false인 투두가 있는 유저만 조회하므로
-    // 전체 완료 유저는 쿼리 결과에 포함되지 않음
-    reader.findSocialDigestCandidates.mockResolvedValue([]);
-
-    // When
-    const result = await strategy.execute(ctx, [TEST_CUID.USER_1]);
-
-    // Then
-    expect(result).toEqual({ sent: 0 });
-    expect(notificationPublisher.publishBatch).not.toHaveBeenCalled();
-  });
-
-  it("친구가 없으면 발송하지 않는다", async () => {
-    // Given
-    const ctx = makeCtx();
-
-    reader.findSocialDigestCandidates.mockResolvedValue([
+    reader.socialDigestCandidates = [{ id: TEST_CUID.USER_1, todos: [{ completed: false }] }];
+    reader.acceptedFollows = [{ followerId: TEST_CUID.USER_1, followingId: TEST_CUID.USER_2 }];
+    reader.friendsWithTodayTodos = [
       {
-        id: TEST_CUID.USER_1,
-        todos: [{ completed: false }],
+        id: TEST_CUID.USER_2,
+        profile: { name: "친구1" },
+        todos: [{ completed: true }, { completed: false }],
       },
-    ]);
-
-    // 친구 투두 현황 조회 불필요 (allFriendIds.size === 0으로 조기 반환)
-    reader.findFriendsWithTodayTodos.mockResolvedValue([]);
-
-    // 팔로우 관계 없음
-    reader.findAcceptedFollows.mockResolvedValue([]);
+    ];
 
     // When
     const result = await strategy.execute(ctx, [TEST_CUID.USER_1]);
 
     // Then
     expect(result).toEqual({ sent: 0 });
-    expect(notificationPublisher.publishBatch).not.toHaveBeenCalled();
+    expect(publisher.published).toEqual([]);
   });
 
-  it("이미 알림 받은 사용자를 제외한다", async () => {
+  it("본인이 오늘 할 일을 모두 끝냈으면 보내지 않는다", async () => {
     // Given
-    const ctx = makeCtx();
-
-    reader.findSocialDigestCandidates.mockResolvedValue([
-      {
-        id: TEST_CUID.USER_1,
-        todos: [{ completed: false }],
-      },
-    ]);
-
-    notificationHistoryReader.findAlreadyNotifiedUserIds.mockResolvedValue(
-      new Set([TEST_CUID.USER_1]),
-    );
+    reader.socialDigestCandidates = [{ id: TEST_CUID.USER_1, todos: [{ completed: true }] }];
+    reader.acceptedFollows = [{ followerId: TEST_CUID.USER_1, followingId: TEST_CUID.USER_2 }];
+    reader.friendsWithTodayTodos = [
+      { id: TEST_CUID.USER_2, profile: { name: "친구1" }, todos: [{ completed: true }] },
+    ];
 
     // When
     const result = await strategy.execute(ctx, [TEST_CUID.USER_1]);
 
     // Then
     expect(result).toEqual({ sent: 0 });
-    expect(notificationPublisher.publishBatch).not.toHaveBeenCalled();
+    expect(publisher.published).toEqual([]);
+  });
+
+  it("직전 저녁 리마인더 수신자가 없으면 아무것도 조회하지 않는다", async () => {
+    // Given
+    reader.socialDigestCandidates = [{ id: TEST_CUID.USER_1, todos: [{ completed: false }] }];
+
+    // When
+    const result = await strategy.execute(ctx, []);
+
+    // Then
+    expect(result).toEqual({ sent: 0 });
+    expect(reader.queries).toEqual([]);
+  });
+
+  it("친구가 없으면 보내지 않는다", async () => {
+    // Given
+    reader.socialDigestCandidates = [{ id: TEST_CUID.USER_1, todos: [{ completed: false }] }];
+
+    // When
+    const result = await strategy.execute(ctx, [TEST_CUID.USER_1]);
+
+    // Then
+    expect(result).toEqual({ sent: 0 });
+    expect(publisher.published).toEqual([]);
+    expect(reader.queriedMethods()).not.toContain("findFriendsWithTodayTodos");
+  });
+
+  it("오늘 이미 소셜 다이제스트를 받은 사용자를 제외한다", async () => {
+    // Given
+    reader.socialDigestCandidates = [{ id: TEST_CUID.USER_1, todos: [{ completed: false }] }];
+    reader.acceptedFollows = [{ followerId: TEST_CUID.USER_1, followingId: TEST_CUID.USER_2 }];
+    reader.friendsWithTodayTodos = [
+      { id: TEST_CUID.USER_2, profile: { name: "친구1" }, todos: [{ completed: true }] },
+    ];
+    history.notified("SOCIAL_DIGEST", [TEST_CUID.USER_1], ctx.today);
+
+    // When
+    const result = await strategy.execute(ctx, [TEST_CUID.USER_1]);
+
+    // Then
+    expect(result).toEqual({ sent: 0 });
+    expect(publisher.published).toEqual([]);
   });
 
   it("같은 날 스트릭 위기 알림을 받은 사용자는 소셜 다이제스트에서 제외한다", async () => {
-    const ctx = makeCtx();
-    reader.findSocialDigestCandidates.mockResolvedValue([
-      { id: TEST_CUID.USER_1, todos: [{ completed: false }] },
-    ]);
-    notificationHistoryReader.findAlreadyNotifiedUserIds
-      .mockResolvedValueOnce(new Set())
-      .mockResolvedValueOnce(new Set([TEST_CUID.USER_1]));
+    // Given
+    reader.socialDigestCandidates = [{ id: TEST_CUID.USER_1, todos: [{ completed: false }] }];
+    reader.acceptedFollows = [{ followerId: TEST_CUID.USER_1, followingId: TEST_CUID.USER_2 }];
+    reader.friendsWithTodayTodos = [
+      { id: TEST_CUID.USER_2, profile: { name: "친구1" }, todos: [{ completed: true }] },
+    ];
+    history.notified("STREAK_AT_RISK", [TEST_CUID.USER_1], ctx.today);
 
+    // When
     const result = await strategy.execute(ctx, [TEST_CUID.USER_1]);
 
+    // Then
     expect(result).toEqual({ sent: 0 });
-    expect(notificationHistoryReader.findAlreadyNotifiedUserIds).toHaveBeenNthCalledWith(
-      2,
-      expect.objectContaining({ type: "STREAK_AT_RISK" }),
-    );
-    expect(notificationPublisher.publishBatch).not.toHaveBeenCalled();
+    expect(publisher.published).toEqual([]);
   });
 });

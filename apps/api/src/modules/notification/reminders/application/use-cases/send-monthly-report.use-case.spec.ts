@@ -1,123 +1,98 @@
-import dayjs from "dayjs";
-import type { Mocked } from "vitest";
-import { vi } from "vitest";
-import { mockDeep } from "vitest-mock-extended";
+import { parseDateOnly } from "#api/shared/domain/date/utils/parse";
+import { InMemorySchedulerPreferenceReader } from "#test/doubles/notification/in-memory-scheduler-preference.reader";
+import { RecordingNotificationPublisher } from "#test/doubles/notification/recording-notification-publisher";
+import { StubNotificationHistoryReader } from "#test/doubles/notification/stub-notification-history.reader";
+import { StubScheduledReminderReader } from "#test/doubles/notification/stub-scheduled-reminder.reader";
+import { SilentLogger } from "#test/doubles/platform/silent-logger";
+import { createTimezoneContextFixture } from "#test/fixtures/notification/timezone-context.fixture";
 
 import { createMonthlyReportNotificationMessage } from "../../../push/application/messages/notification.messages.js";
-import type { TimezoneContext } from "../../domain/timezone-context.read-model.js";
+import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/notification-campaign.constants.js";
 import { SendMonthlyReportUseCase } from "./send-monthly-report.use-case.js";
 
 describe("SendMonthlyReportUseCase — 월간 리포트 전략", () => {
+  let reader: StubScheduledReminderReader;
+  let preferences: InMemorySchedulerPreferenceReader;
+  let publisher: RecordingNotificationPublisher;
+  let history: StubNotificationHistoryReader;
   let strategy: SendMonthlyReportUseCase;
-  let reader: Mocked<ConstructorParameters<typeof SendMonthlyReportUseCase>[0]["reader"]>;
-  let preferenceReader: Mocked<
-    ConstructorParameters<typeof SendMonthlyReportUseCase>[0]["preferenceReader"]
-  >;
-  let notificationPublisher: Mocked<
-    ConstructorParameters<typeof SendMonthlyReportUseCase>[0]["notificationPublisher"]
-  >;
-  let notificationHistoryReader: Mocked<
-    ConstructorParameters<typeof SendMonthlyReportUseCase>[0]["notificationHistoryReader"]
-  >;
 
-  const TZ = "Asia/Seoul";
+  /** 매월 1일 10:00 */
+  const ctx = createTimezoneContextFixture({ date: "2024-02-01", localHour: 10 });
+  const sent = () => publisher.published.map(({ data }) => data);
 
-  /** KST 2024-02-01 (목요일) 10:00 = UTC 2024-02-01T01:00:00Z */
-  const FAKE_NOW = new Date("2024-02-01T01:00:00Z");
-
-  const makeCtx = (overrides?: Partial<TimezoneContext>): TimezoneContext => ({
-    tz: TZ,
-    localHour: 10,
-    localMinute: 0,
-    dayOfWeek: 4,
-    today: dayjs.utc("2024-02-01").startOf("day").toDate(),
-    tomorrow: dayjs.utc("2024-02-02").startOf("day").toDate(),
-    ...overrides,
-  });
-
-  beforeEach(async () => {
-    vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(FAKE_NOW);
-
-    const monthlyReportStrategyDependencies = mockDeep<
-      ConstructorParameters<typeof SendMonthlyReportUseCase>[0]
-    >({});
-    const unit = new SendMonthlyReportUseCase(monthlyReportStrategyDependencies);
-
-    strategy = unit;
-    reader = monthlyReportStrategyDependencies.reader;
-    preferenceReader = monthlyReportStrategyDependencies.preferenceReader;
-    notificationPublisher = monthlyReportStrategyDependencies.notificationPublisher;
-    notificationHistoryReader = monthlyReportStrategyDependencies.notificationHistoryReader;
-
-    // 기본 mock 설정
-    reader.findMonthlyReportRecipients.mockResolvedValue([]);
-    preferenceReader.findUserLocales.mockResolvedValue(new Map());
-    notificationHistoryReader.findAlreadyNotifiedUserIds.mockResolvedValue(new Set());
-    notificationPublisher.publishBatch.mockResolvedValue({ count: 0 });
-  });
-
-  afterEach(() => {
-    vi.useRealTimers();
-  });
-
-  it("프리미엄 유저 전체에게 월간 리포트를 발송한다", async () => {
-    // Given
-    const ctx = makeCtx();
-
-    reader.findMonthlyReportRecipients.mockResolvedValue([{ id: "user-1" }]);
-
-    // When
-    const result = await strategy.execute(ctx);
-
-    // Then
-    expect(result).toEqual({ sent: 1 });
-
-    // AI 리포트는 유료 기능 → 프리미엄 유저만 조회 (push 여부는 PushDeliveryService가 판단)
-    expect(reader.findMonthlyReportRecipients).toHaveBeenCalledTimes(1);
-    expect(reader.findMonthlyReportRecipients).toHaveBeenCalledWith(
-      expect.objectContaining({ tz: TZ }),
-    );
-
-    const notifications = notificationPublisher.publishBatch.mock.calls[0]?.[0];
-    const expected = createMonthlyReportNotificationMessage();
-    expect(notifications?.[0]).toMatchObject({
-      userId: "user-1",
-      type: "MONTHLY_REPORT",
-      title: expected.title,
-      body: expected.body,
+  beforeEach(() => {
+    reader = new StubScheduledReminderReader();
+    preferences = new InMemorySchedulerPreferenceReader();
+    publisher = new RecordingNotificationPublisher();
+    history = new StubNotificationHistoryReader();
+    strategy = new SendMonthlyReportUseCase({
+      reader,
+      preferenceReader: preferences,
+      notificationPublisher: publisher,
+      notificationHistoryReader: history,
+      logger: new SilentLogger(),
     });
   });
 
-  it("이미 알림 받은 사용자를 제외한다", async () => {
+  it("지난 한 달 리포트 대상(프리미엄)에게 저장한 언어로 월간 리포트를 발송한다", async () => {
     // Given
-    const ctx = makeCtx();
+    reader.monthlyReportRecipients = [{ id: "user-1" }];
+    await preferences.givenPreference({ timezone: "Asia/Seoul", locale: "en" }, "user-1");
 
-    reader.findMonthlyReportRecipients.mockResolvedValue([{ id: "user-1" }, { id: "user-2" }]);
+    // When
+    const result = await strategy.execute(ctx);
 
-    notificationHistoryReader.findAlreadyNotifiedUserIds.mockResolvedValue(new Set(["user-1"]));
+    // Then — AI 리포트는 유료 기능이라 대상 조회가 프리미엄만 고르고, 푸시 여부는 발송 단계가 정한다
+    expect(result).toEqual({ sent: 1 });
+    expect(reader.queries).toEqual([
+      {
+        method: "findMonthlyReportRecipients",
+        params: {
+          tz: "Asia/Seoul",
+          periodStart: parseDateOnly("2024-01-01"),
+          periodEnd: ctx.today,
+        },
+      },
+    ]);
+    const expected = createMonthlyReportNotificationMessage({
+      locale: "en",
+      variantContext: {
+        campaignKey: SCHEDULER_CAMPAIGN_KEY.MONTHLY_REPORT,
+        recipientId: "user-1",
+        occurrenceKey: "2024-02-01",
+      },
+    });
+    expect(sent()).toEqual([
+      expect.objectContaining({
+        userId: "user-1",
+        type: "MONTHLY_REPORT",
+        title: expected.title,
+        body: expected.body,
+        variantId: expected.variantId,
+      }),
+    ]);
+  });
+
+  it("오늘 이미 월간 리포트 알림을 받은 사용자를 제외한다", async () => {
+    // Given
+    reader.monthlyReportRecipients = [{ id: "user-1" }, { id: "user-2" }];
+    history.notified("MONTHLY_REPORT", ["user-1"], ctx.today);
 
     // When
     const result = await strategy.execute(ctx);
 
     // Then
     expect(result).toEqual({ sent: 1 });
-    const notifications = notificationPublisher.publishBatch.mock.calls[0]?.[0];
-    expect(notifications).toHaveLength(1);
-    expect(notifications?.[0]?.userId).toBe("user-2");
+    expect(sent().map(({ userId }) => userId)).toEqual(["user-2"]);
   });
 
-  it("대상이 없으면 publishBatch를 호출하지 않는다", async () => {
-    // Given — beforeEach 기본 설정
-    const ctx = makeCtx();
-
-    reader.findMonthlyReportRecipients.mockResolvedValue([]);
-
+  it("대상이 없으면 발송하지 않는다", async () => {
     // When
     const result = await strategy.execute(ctx);
 
     // Then
     expect(result).toEqual({ sent: 0 });
-    expect(notificationPublisher.publishBatch).not.toHaveBeenCalled();
+    expect(publisher.published).toEqual([]);
   });
 });

@@ -7,15 +7,14 @@ import {
 import { usagePeriod } from "#api/platform/metering/usage-period";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { now } from "#api/shared/domain/date/utils/core";
-import { RecordingOperationalAlert } from "#test/mocks/recording-operational-alert";
-import { createTestClient } from "#test/setup/database-context";
-import { TestDatabase } from "#test/setup/test-database";
-
 import {
   createE2eApp,
   destroyE2eApp,
   type E2eTestContext,
-} from "../e2e/helpers/e2e-app-factory.js";
+} from "#test/e2e/helpers/e2e-app-factory";
+import { RecordingOperationalAlert } from "#test/mocks/recording-operational-alert";
+import { createTestClient } from "#test/setup/database-context";
+import { TestDatabase } from "#test/setup/test-database";
 
 describe("이메일 발송 예산 (실제 PostgreSQL)", () => {
   let database: TestDatabase;

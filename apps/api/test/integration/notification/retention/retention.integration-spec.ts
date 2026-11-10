@@ -5,14 +5,13 @@ import { isRetentionStageDue } from "#api/modules/notification/retention/domain/
 import { DrizzleRetentionRepository } from "#api/modules/notification/retention/infrastructure/persistence/drizzle-retention.repository";
 import { createEntityId } from "#api/platform/database/entity-id";
 import { todo, todoCategory, userPreference } from "#api/platform/database/schema/index";
+import { describeRetentionRepositoryContract } from "#test/contracts/notification/retention-repository.contract";
 import { RecordingNotificationPublisher } from "#test/doubles/notification/recording-notification-publisher";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
 import { createDatabaseTransactionFixture } from "#test/setup/database-context";
-import type { TestDatabaseClient } from "#test/setup/test-database";
+import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 import { createUserDatabaseFixture } from "#test/setup/user-database-fixture";
-
-import { TestDatabase } from "../setup/test-database.js";
 
 describe("신규 사용자 리텐션 V2 통합 테스트 (실제 DB)", () => {
   let testDb: TestDatabase;
@@ -74,6 +73,27 @@ describe("신규 사용자 리텐션 V2 통합 테스트 (실제 DB)", () => {
 
   const ALL_DUE_AT = new Date("2026-08-01T00:00:00.000Z");
 
+  describeRetentionRepositoryContract(async () => ({
+    repository,
+    givenUser: async ({ timezone, locale }) => {
+      const userId = await createUser(`${createEntityId().slice(-8)}@example.com`, { timezone });
+      await db.update(userPreference).set({ locale }).where(eq(userPreference.userId, userId));
+      return userId;
+    },
+    d7ResultOf: async (assignmentId) => {
+      const result = await db.query.retentionExperimentResult.findFirst({
+        where: { assignmentId },
+      });
+      return result == null
+        ? null
+        : {
+            returnedWithinD7: result.returnedWithinD7,
+            todoActionWithinD7: result.todoActionWithinD7,
+            measuredAt: result.measuredAt,
+          };
+    },
+  }));
+
   it("기존 사용자는 migration 이후에도 assignment가 자동 생성되지 않는다", async () => {
     const userId = await createUser("legacy01@example.com");
 
@@ -82,22 +102,6 @@ describe("신규 사용자 리텐션 V2 통합 테스트 (실제 DB)", () => {
     });
 
     expect(assignmentCount).toHaveLength(0);
-  });
-
-  it("신규 등록은 한 assignment와 네 단계만 멱등 생성한다", async () => {
-    const userId = await createUser("newuser1@example.com");
-    const startedAt = new Date("2026-07-15T00:00:00Z");
-
-    await repository.enroll({ userId, variant: "TREATMENT", startedAt });
-    await repository.enroll({ userId, variant: "CONTROL", startedAt });
-
-    const assignments = await db.query.retentionExperimentAssignment.findMany({
-      where: { userId },
-      with: { stages: true },
-    });
-    expect(assignments).toHaveLength(1);
-    expect(assignments[0]?.variant).toBe("TREATMENT");
-    expect(assignments[0]?.stages).toHaveLength(4);
   });
 
   it("stage 후보를 N+1 없이 집계 projection으로 조회한다", async () => {
@@ -296,40 +300,6 @@ describe("신규 사용자 리텐션 V2 통합 테스트 (실제 DB)", () => {
 
     // Then
     expect(mismatches).toEqual([]);
-  });
-
-  it("묶음 위치 다음부터 생성 순서로 이어 읽는다", async () => {
-    // Given
-    const userIds = [
-      await createUser("cursor01@example.com"),
-      await createUser("cursor02@example.com"),
-    ];
-    for (const userId of userIds) {
-      await repository.enroll({ userId, variant: "TREATMENT", startedAt: ALL_DUE_AT });
-    }
-    const dueAt = new Date(ALL_DUE_AT.getTime() + 30 * 24 * 60 * 60_000);
-    const all = await repository.findDueStages({ dueAt, limit: 200 });
-
-    // When
-    const pages = [];
-    let after: { createdAt: Date; stageId: string } | undefined;
-    for (;;) {
-      const page = await repository.findDueStages({
-        dueAt,
-        limit: 3,
-        ...(after != null && { after }),
-      });
-      pages.push(...page.map(({ stageId }) => stageId));
-      const last = page.at(-1);
-      if (page.length < 3 || last == null) {
-        break;
-      }
-      after = { createdAt: last.stageCreatedAt, stageId: last.stageId };
-    }
-
-    // Then
-    expect(all).toHaveLength(8);
-    expect(pages).toEqual(all.map(({ stageId }) => stageId));
   });
 
   it("5분마다 도는 sweep이 실행 사이와 놓친 실행 동안 결정할 때가 된 사용자를 모두 처리한다", async () => {

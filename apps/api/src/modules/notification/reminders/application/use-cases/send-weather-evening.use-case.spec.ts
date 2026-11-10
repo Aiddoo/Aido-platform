@@ -1,15 +1,11 @@
-import { mock, type MockProxy } from "vitest-mock-extended";
-
 import type { ReminderWeatherReport } from "#api/modules/notification/reminders/application/ports/reminder-weather-report.reader.port";
-import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
+import { RecordingNotificationPublisher } from "#test/doubles/notification/recording-notification-publisher";
+import { StubNotificationHistoryReader } from "#test/doubles/notification/stub-notification-history.reader";
+import { StubReminderWeatherReportReader } from "#test/doubles/notification/stub-reminder-weather-report.reader";
+import { StubWeatherReminderReader } from "#test/doubles/notification/stub-weather-reminder.reader";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
+import { SilentLogger } from "#test/doubles/platform/silent-logger";
 import { weatherReportFixture } from "#test/fixtures/weather.fixture";
-import {
-  StubNotificationBatchPublisher,
-  StubNotificationHistoryReader,
-  StubReminderWeatherReportReader,
-  StubWeatherReminderReader,
-} from "#test/mocks/ports/notification-weather.stub";
 
 import type { TimezoneContext } from "../../domain/timezone-context.read-model.js";
 import { SendWeatherEveningUseCase } from "./send-weather-evening.use-case.js";
@@ -52,31 +48,26 @@ function report({
 
 describe("SendWeatherEveningUseCase — 저녁 날씨 알림", () => {
   let reader: StubWeatherReminderReader;
-  let publisher: StubNotificationBatchPublisher;
+  let publisher: RecordingNotificationPublisher;
   let history: StubNotificationHistoryReader;
   let weatherReports: StubReminderWeatherReportReader;
-  let logger: MockProxy<ApplicationLoggerPort>;
   let strategy: SendWeatherEveningUseCase;
 
+  const sent = () => publisher.published.map(({ data }) => data);
+
   beforeEach(() => {
-    vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(NOW);
     reader = new StubWeatherReminderReader();
-    publisher = new StubNotificationBatchPublisher();
+    publisher = new RecordingNotificationPublisher();
     history = new StubNotificationHistoryReader();
     weatherReports = new StubReminderWeatherReportReader();
-    logger = mock<ApplicationLoggerPort>();
     strategy = new SendWeatherEveningUseCase({
       reader,
       notificationPublisher: publisher,
       notificationHistoryReader: history,
       weatherReportReader: weatherReports,
       clock: new FixedClock(Temporal.Instant.fromEpochMilliseconds(NOW.getTime())),
-      logger,
+      logger: new SilentLogger(),
     });
-  });
-  afterEach(() => {
-    vi.useRealTimers();
   });
 
   it("내일 비가 시작하는 때와 쌀쌀함을 알린다", async () => {
@@ -87,7 +78,7 @@ describe("SendWeatherEveningUseCase — 저녁 날씨 알림", () => {
     const result = await strategy.execute(ctx());
     // Then
     expect(result).toEqual({ sent: 1 });
-    expect(publisher.published[0]).toMatchObject({
+    expect(sent()[0]).toMatchObject({
       type: "WEATHER_EVENING",
       title: "내일 오전부터 비 소식이 있어요 ☔",
       body: "아침엔 6°C로 쌀쌀해요. 우산과 겉옷을 챙겨주세요",
@@ -102,7 +93,7 @@ describe("SendWeatherEveningUseCase — 저녁 날씨 알림", () => {
     // When
     await strategy.execute(ctx());
     // Then
-    expect(publisher.published[0]?.title).toBe("Partly cloudy tomorrow, 12–16°C 🌙");
+    expect(sent()[0]?.title).toBe("Partly cloudy tomorrow, 12–16°C 🌙");
   });
 
   it("예보를 받지 못하면 안내 알림을 보낸다", async () => {
@@ -111,13 +102,13 @@ describe("SendWeatherEveningUseCase — 저녁 날씨 알림", () => {
     // When
     await strategy.execute(ctx());
     // Then
-    expect(publisher.published[0]?.title).toBe("내일 날씨를 미리 확인해보세요 🌙");
+    expect(sent()[0]?.title).toBe("내일 날씨를 미리 확인해보세요 🌙");
   });
 
   it("오늘 이미 받은 사용자로는 날씨를 조회하지 않는다", async () => {
     // Given
     reader.usersWithLocation = [{ id: "u1", preference: null, location: TOKYO }];
-    history.alreadyNotified = new Set(["u1"]);
+    history.notified("WEATHER_EVENING", ["u1"]);
     // When
     const result = await strategy.execute(ctx());
     // Then
@@ -132,6 +123,6 @@ describe("SendWeatherEveningUseCase — 저녁 날씨 알림", () => {
     await strategy.execute(ctx());
     // Then
     expect(weatherReports.requests).toEqual([]);
-    expect(publisher.published[0]?.title).toBe("내일 날씨도 미리 챙겨보세요 🌙");
+    expect(sent()[0]?.title).toBe("내일 날씨도 미리 챙겨보세요 🌙");
   });
 });

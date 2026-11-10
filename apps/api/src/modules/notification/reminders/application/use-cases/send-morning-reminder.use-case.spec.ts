@@ -1,9 +1,9 @@
-import dayjs from "dayjs";
-import type { Mocked } from "vitest";
-import { vi } from "vitest";
-import { mockDeep } from "vitest-mock-extended";
-
+import { RecordingNotificationPublisher } from "#test/doubles/notification/recording-notification-publisher";
+import { StubNotificationHistoryReader } from "#test/doubles/notification/stub-notification-history.reader";
+import { StubScheduledReminderReader } from "#test/doubles/notification/stub-scheduled-reminder.reader";
+import { SilentLogger } from "#test/doubles/platform/silent-logger";
 import { TEST_CUID } from "#test/fixtures/index";
+import { createTimezoneContextFixture } from "#test/fixtures/notification/timezone-context.fixture";
 
 import {
   createMorningNoTodoNotificationMessage,
@@ -14,205 +14,172 @@ import type { TimezoneContext } from "../../domain/timezone-context.read-model.j
 import { SendMorningReminderUseCase } from "./send-morning-reminder.use-case.js";
 
 describe("SendMorningReminderUseCase — 아침 리마인더 전략", () => {
+  let reader: StubScheduledReminderReader;
+  let publisher: RecordingNotificationPublisher;
+  let history: StubNotificationHistoryReader;
   let strategy: SendMorningReminderUseCase;
-  let reader: Mocked<ConstructorParameters<typeof SendMorningReminderUseCase>[0]["reader"]>;
-  let notificationPublisher: Mocked<
-    ConstructorParameters<typeof SendMorningReminderUseCase>[0]["notificationPublisher"]
-  >;
-  let notificationHistoryReader: Mocked<
-    ConstructorParameters<typeof SendMorningReminderUseCase>[0]["notificationHistoryReader"]
-  >;
 
-  const TZ = "Asia/Seoul";
   const VARIANT_CONTEXT = {
     campaignKey: SCHEDULER_CAMPAIGN_KEY.MORNING_REMINDER,
     recipientId: TEST_CUID.USER_1,
     occurrenceKey: "2024-01-16",
   } as const;
 
-  /** KST 2024-01-16 08:00 = UTC 2024-01-15T23:00:00Z */
-  const FAKE_NOW = new Date("2024-01-15T23:00:00Z");
+  const makeCtx = (overrides: Partial<TimezoneContext> = {}): TimezoneContext =>
+    createTimezoneContextFixture({ date: "2024-01-16", localHour: 8, ...overrides });
 
-  const makeCtx = (overrides?: Partial<TimezoneContext>): TimezoneContext => ({
-    tz: TZ,
-    localHour: 8,
-    localMinute: 0,
-    dayOfWeek: 2,
-    today: dayjs.utc("2024-01-16").startOf("day").toDate(),
-    tomorrow: dayjs.utc("2024-01-17").startOf("day").toDate(),
-    ...overrides,
+  const sent = () => publisher.published.map(({ data }) => data);
+
+  beforeEach(() => {
+    reader = new StubScheduledReminderReader();
+    publisher = new RecordingNotificationPublisher();
+    history = new StubNotificationHistoryReader();
+    strategy = new SendMorningReminderUseCase({
+      reader,
+      notificationPublisher: publisher,
+      notificationHistoryReader: history,
+      logger: new SilentLogger(),
+    });
   });
 
-  beforeEach(async () => {
-    vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(FAKE_NOW);
-    vi.spyOn(Math, "random").mockReturnValue(0);
-
-    const morningReminderStrategyDependencies = mockDeep<
-      ConstructorParameters<typeof SendMorningReminderUseCase>[0]
-    >({});
-    const unit = new SendMorningReminderUseCase(morningReminderStrategyDependencies);
-
-    strategy = unit;
-    reader = morningReminderStrategyDependencies.reader;
-    notificationPublisher = morningReminderStrategyDependencies.notificationPublisher;
-    notificationHistoryReader = morningReminderStrategyDependencies.notificationHistoryReader;
-
-    // 기본 mock 설정
-    reader.findPremiumMorningReminderUsers.mockResolvedValue([]);
-    reader.findFreeMorningReminderUsers.mockResolvedValue([]);
-    notificationHistoryReader.findAlreadyNotifiedUserIds.mockResolvedValue(new Set());
-    notificationPublisher.publishBatch.mockResolvedValue({ count: 0 });
-  });
-
-  afterEach(() => {
-    vi.useRealTimers();
-    vi.restoreAllMocks();
-  });
-
-  it("프리미엄 사용자에게 커스텀 시간에 아침 리마인더를 발송한다", async () => {
+  it("프리미엄 사용자에게 고른 시각에 아침 리마인더를 발송한다", async () => {
     // Given
     const ctx = makeCtx({ localHour: 9, localMinute: 30 });
-
-    reader.findPremiumMorningReminderUsers.mockResolvedValue([
-      { id: TEST_CUID.USER_1, preference: null, _count: { todos: 3 } },
-    ]);
+    reader.premiumMorningUsers = [{ id: TEST_CUID.USER_1, preference: null, _count: { todos: 3 } }];
 
     // When
     const result = await strategy.execute(ctx);
 
     // Then
     expect(result).toEqual({ sent: 1 });
-    expect(notificationPublisher.publishBatch).toHaveBeenCalledTimes(1);
-
-    const notifications = notificationPublisher.publishBatch.mock.calls[0]?.[0];
-    expect(notifications).toHaveLength(1);
-    expect(notifications?.[0]).toMatchObject({
-      userId: TEST_CUID.USER_1,
-      type: "MORNING_REMINDER",
-    });
+    expect(reader.queries[0]?.params).toMatchObject({ tz: "Asia/Seoul", hour: 9, minute: 30 });
+    expect(sent()).toEqual([
+      expect.objectContaining({
+        userId: TEST_CUID.USER_1,
+        type: "MORNING_REMINDER",
+        notificationDate: ctx.today,
+      }),
+    ]);
   });
 
-  it("무료 사용자에게 08:00에 아침 리마인더를 발송한다", async () => {
+  it("무료 사용자에게는 08:00에 아침 리마인더를 발송한다", async () => {
     // Given
     const ctx = makeCtx({ localHour: 8, localMinute: 0 });
-
-    reader.findFreeMorningReminderUsers.mockResolvedValue([
-      { id: TEST_CUID.USER_2, preference: null, _count: { todos: 2 } },
-    ]);
+    reader.freeMorningUsers = [{ id: TEST_CUID.USER_2, preference: null, _count: { todos: 2 } }];
 
     // When
     const result = await strategy.execute(ctx);
 
     // Then
     expect(result).toEqual({ sent: 1 });
-    expect(reader.findPremiumMorningReminderUsers).toHaveBeenCalledTimes(1);
-    expect(reader.findFreeMorningReminderUsers).toHaveBeenCalledTimes(1);
+    expect(reader.queriedMethods()).toEqual([
+      "findPremiumMorningReminderUsers",
+      "findFreeMorningReminderUsers",
+    ]);
+    expect(sent().map(({ userId }) => userId)).toEqual([TEST_CUID.USER_2]);
   });
 
-  it("무료 사용자는 비고정 시간에 리마인더를 발송하지 않는다", async () => {
+  it("무료 사용자는 08:00이 아니면 조회하지도 보내지도 않는다", async () => {
     // Given
     const ctx = makeCtx({ localHour: 9, localMinute: 30 });
+    reader.freeMorningUsers = [{ id: TEST_CUID.USER_2, preference: null, _count: { todos: 2 } }];
 
     // When
     const result = await strategy.execute(ctx);
 
     // Then
     expect(result).toEqual({ sent: 0 });
-    // 프리미엄 쿼리만 호출, 무료 사용자 쿼리 스킵
-    expect(reader.findPremiumMorningReminderUsers).toHaveBeenCalledTimes(1);
-    expect(reader.findFreeMorningReminderUsers).not.toHaveBeenCalled();
+    expect(reader.queriedMethods()).toEqual(["findPremiumMorningReminderUsers"]);
   });
 
-  it("catch-up(userId) 시 무료 사용자 쿼리를 스킵한다", async () => {
+  it("특정 사용자만 다시 보는 catch-up에서는 08:00이어도 무료 사용자를 조회하지 않는다", async () => {
     // Given
-    const ctx = makeCtx({
-      localHour: 8,
-      localMinute: 0,
-      userId: TEST_CUID.USER_1,
-    });
+    const ctx = makeCtx({ localHour: 8, localMinute: 0, userId: TEST_CUID.USER_1 });
+    reader.freeMorningUsers = [{ id: TEST_CUID.USER_2, preference: null, _count: { todos: 2 } }];
 
     // When
     const result = await strategy.execute(ctx);
 
     // Then
     expect(result).toEqual({ sent: 0 });
-    // userId가 있으므로 무료 사용자 쿼리 스킵
-    expect(reader.findPremiumMorningReminderUsers).toHaveBeenCalledTimes(1);
-    expect(reader.findFreeMorningReminderUsers).not.toHaveBeenCalled();
+    expect(reader.queries).toEqual([
+      {
+        method: "findPremiumMorningReminderUsers",
+        params: expect.objectContaining({ userId: TEST_CUID.USER_1 }),
+      },
+    ]);
   });
 
-  it("할일이 있는 사용자에게 morningReminder(count) 메시지를 발송한다", async () => {
+  it("할 일이 있는 사용자에게 개수를 담은 아침 메시지를 발송한다", async () => {
     // Given
     const ctx = makeCtx();
-
-    reader.findPremiumMorningReminderUsers.mockResolvedValue([
-      { id: TEST_CUID.USER_1, preference: null, _count: { todos: 5 } },
-    ]);
+    reader.premiumMorningUsers = [{ id: TEST_CUID.USER_1, preference: null, _count: { todos: 5 } }];
 
     // When
     await strategy.execute(ctx);
 
     // Then
-    const notifications = notificationPublisher.publishBatch.mock.calls[0]?.[0];
     const expected = createMorningReminderNotificationMessage({
       count: 5,
       locale: "ko",
       variantContext: VARIANT_CONTEXT,
     });
-    expect(notifications?.[0]).toMatchObject({
-      title: expected.title,
-      body: expected.body,
-    });
+    expect(sent()[0]).toMatchObject({ title: expected.title, body: expected.body });
   });
 
-  it("할일이 없는 사용자에게 morningNoTodo 메시지를 발송한다", async () => {
+  it("할 일이 없는 사용자에게 할 일 없음 메시지를 발송한다", async () => {
     // Given
     const ctx = makeCtx();
-
-    reader.findPremiumMorningReminderUsers.mockResolvedValue([
-      { id: TEST_CUID.USER_1, preference: null, _count: { todos: 0 } },
-    ]);
+    reader.premiumMorningUsers = [{ id: TEST_CUID.USER_1, preference: null, _count: { todos: 0 } }];
 
     // When
     await strategy.execute(ctx);
 
     // Then
-    const notifications = notificationPublisher.publishBatch.mock.calls[0]?.[0];
     const expected = createMorningNoTodoNotificationMessage({
       locale: "ko",
       variantContext: VARIANT_CONTEXT,
     });
-    expect(notifications?.[0]).toMatchObject({
-      title: expected.title,
-      body: expected.body,
-    });
+    expect(sent()[0]).toMatchObject({ title: expected.title, body: expected.body });
   });
 
-  it("이미 알림 받은 사용자를 제외한다", async () => {
+  it("저장한 언어로 보내고 지원하지 않는 언어는 영어로 보낸다", async () => {
     // Given
     const ctx = makeCtx();
+    reader.premiumMorningUsers = [
+      { id: TEST_CUID.USER_1, preference: { locale: "ja" }, _count: { todos: 5 } },
+    ];
 
-    reader.findPremiumMorningReminderUsers.mockResolvedValue([
+    // When
+    await strategy.execute(ctx);
+
+    // Then
+    const expected = createMorningReminderNotificationMessage({
+      count: 5,
+      locale: "en",
+      variantContext: VARIANT_CONTEXT,
+    });
+    expect(sent()[0]).toMatchObject({ title: expected.title, body: expected.body });
+  });
+
+  it("오늘 이미 아침 리마인더를 받은 사용자를 제외한다", async () => {
+    // Given
+    const ctx = makeCtx();
+    reader.premiumMorningUsers = [
       { id: TEST_CUID.USER_1, preference: null, _count: { todos: 3 } },
       { id: TEST_CUID.USER_2, preference: null, _count: { todos: 2 } },
-    ]);
-
-    notificationHistoryReader.findAlreadyNotifiedUserIds.mockResolvedValue(
-      new Set([TEST_CUID.USER_1]),
-    );
+    ];
+    history.notified("MORNING_REMINDER", [TEST_CUID.USER_1], ctx.today);
 
     // When
     const result = await strategy.execute(ctx);
 
     // Then
     expect(result).toEqual({ sent: 1 });
-    const notifications = notificationPublisher.publishBatch.mock.calls[0]?.[0];
-    expect(notifications).toHaveLength(1);
-    expect(notifications?.[0]?.userId).toBe(TEST_CUID.USER_2);
+    expect(sent().map(({ userId }) => userId)).toEqual([TEST_CUID.USER_2]);
   });
 
-  it("대상이 없으면 publishBatch를 호출하지 않는다", async () => {
+  it("대상이 없으면 발송하지 않는다", async () => {
     // Given
     const ctx = makeCtx();
 
@@ -221,6 +188,6 @@ describe("SendMorningReminderUseCase — 아침 리마인더 전략", () => {
 
     // Then
     expect(result).toEqual({ sent: 0 });
-    expect(notificationPublisher.publishBatch).not.toHaveBeenCalled();
+    expect(publisher.published).toEqual([]);
   });
 });

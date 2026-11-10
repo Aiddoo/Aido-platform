@@ -1,107 +1,80 @@
-import dayjs from "dayjs";
-import type { Mocked } from "vitest";
-import { vi } from "vitest";
-import { mockDeep } from "vitest-mock-extended";
+import { parseDateOnly } from "#api/shared/domain/date/utils/parse";
+import { InMemorySchedulerDedup } from "#test/doubles/notification/in-memory-scheduler-dedup";
+import { InMemorySchedulerPreferenceReader } from "#test/doubles/notification/in-memory-scheduler-preference.reader";
+import { RecordingNotificationPublisher } from "#test/doubles/notification/recording-notification-publisher";
+import { StubNotificationHistoryReader } from "#test/doubles/notification/stub-notification-history.reader";
+import { StubReEngagementReader } from "#test/doubles/notification/stub-re-engagement.reader";
+import { SilentLogger } from "#test/doubles/platform/silent-logger";
+import { createTimezoneContextFixture } from "#test/fixtures/notification/timezone-context.fixture";
 
 import { createNudgeSuggestionNotificationMessage } from "../../../push/application/messages/notification.messages.js";
 import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/notification-campaign.constants.js";
-import type { TimezoneContext } from "../../domain/timezone-context.read-model.js";
+import type { NudgeSuggestFollow } from "../read-models/scheduler.read-model.js";
 import { SendNudgeSuggestUseCase } from "./send-nudge-suggest.use-case.js";
 
 describe("SendNudgeSuggestUseCase — 찔러보기 제안 전략", () => {
+  let reader: StubReEngagementReader;
+  let preferences: InMemorySchedulerPreferenceReader;
+  let publisher: RecordingNotificationPublisher;
+  let history: StubNotificationHistoryReader;
+  let dedup: InMemorySchedulerDedup;
   let strategy: SendNudgeSuggestUseCase;
-  let reader: Mocked<ConstructorParameters<typeof SendNudgeSuggestUseCase>[0]["reader"]>;
-  let preferenceReader: Mocked<
-    ConstructorParameters<typeof SendNudgeSuggestUseCase>[0]["preferenceReader"]
-  >;
-  let notificationPublisher: Mocked<
-    ConstructorParameters<typeof SendNudgeSuggestUseCase>[0]["notificationPublisher"]
-  >;
-  let notificationHistoryReader: Mocked<
-    ConstructorParameters<typeof SendNudgeSuggestUseCase>[0]["notificationHistoryReader"]
-  >;
-  let schedulerDedup: Mocked<
-    ConstructorParameters<typeof SendNudgeSuggestUseCase>[0]["schedulerDedup"]
-  >;
 
-  const TZ = "Asia/Seoul";
+  const ctx = createTimezoneContextFixture({ date: "2024-01-16", localHour: 14 });
+  // 2024-01-16의 ISO 주
+  const WEEK_ID = "2024-W03";
+  const sent = () => publisher.published.map(({ data }) => data);
 
-  /** KST 2024-01-16 14:00 = UTC 2024-01-16T05:00:00Z */
-  const FAKE_NOW = new Date("2024-01-16T05:00:00Z");
-
-  const makeCtx = (overrides?: Partial<TimezoneContext>): TimezoneContext => ({
-    tz: TZ,
-    localHour: 14,
-    localMinute: 0,
-    dayOfWeek: 2,
-    today: dayjs.utc("2024-01-16").startOf("day").toDate(),
-    tomorrow: dayjs.utc("2024-01-17").startOf("day").toDate(),
-    ...overrides,
+  const follow = (
+    userId: string,
+    friend: { id: string; name: string | null; lastActive: string },
+  ): NudgeSuggestFollow => ({
+    followerId: userId,
+    followingId: friend.id,
+    follower: { id: userId, lastActiveAt: ctx.today, profile: { name: "사용자1" } },
+    following: {
+      id: friend.id,
+      lastActiveAt: parseDateOnly(friend.lastActive),
+      profile: { name: friend.name },
+    },
   });
 
-  beforeEach(async () => {
-    vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(FAKE_NOW);
-
-    const nudgeSuggestStrategyDependencies = mockDeep<
-      ConstructorParameters<typeof SendNudgeSuggestUseCase>[0]
-    >({});
-    const unit = new SendNudgeSuggestUseCase(nudgeSuggestStrategyDependencies);
-
-    strategy = unit;
-    reader = nudgeSuggestStrategyDependencies.reader;
-    preferenceReader = nudgeSuggestStrategyDependencies.preferenceReader;
-    notificationPublisher = nudgeSuggestStrategyDependencies.notificationPublisher;
-    notificationHistoryReader = nudgeSuggestStrategyDependencies.notificationHistoryReader;
-    schedulerDedup = nudgeSuggestStrategyDependencies.schedulerDedup;
-
-    // 기본 mock 설정
-    reader.findActiveUsersInTimezone.mockResolvedValue([]);
-    reader.findNudgeSuggestFollows.mockResolvedValue([]);
-    preferenceReader.findUserLocales.mockResolvedValue(new Map());
-    notificationHistoryReader.findAlreadyNotifiedUserIds.mockResolvedValue(new Set());
-    notificationPublisher.publishBatch.mockResolvedValue({ count: 0 });
-    schedulerDedup.findSentNudgePairs.mockResolvedValue(new Set());
-    schedulerDedup.recordNudgePairs.mockResolvedValue(undefined);
+  beforeEach(() => {
+    reader = new StubReEngagementReader();
+    preferences = new InMemorySchedulerPreferenceReader();
+    publisher = new RecordingNotificationPublisher();
+    history = new StubNotificationHistoryReader();
+    dedup = new InMemorySchedulerDedup();
+    strategy = new SendNudgeSuggestUseCase({
+      reader,
+      preferenceReader: preferences,
+      notificationPublisher: publisher,
+      notificationHistoryReader: history,
+      schedulerDedup: dedup,
+      logger: new SilentLogger(),
+    });
   });
 
-  afterEach(() => {
-    vi.useRealTimers();
-  });
-
-  it("비활성 친구가 있으면 Nudge Suggest를 발송한다", async () => {
+  it("2~7일 쉰 맞팔 친구가 있으면 찔러보기를 제안하고 이번 주 쌍으로 기록한다", async () => {
     // Given
-    const ctx = makeCtx();
-    const threeDaysAgo = dayjs.utc("2024-01-13").startOf("day").toDate();
-
-    // activeUsers
-    reader.findActiveUsersInTimezone.mockResolvedValue([{ id: "user-1" }]);
-
-    // allFollows: user-1 → friend-1 (비활성 친구)
-    reader.findNudgeSuggestFollows.mockResolvedValue([
-      {
-        followerId: "user-1",
-        followingId: "friend-1",
-        follower: {
-          id: "user-1",
-          lastActiveAt: FAKE_NOW,
-          profile: { name: "사용자1" },
-        },
-        following: {
-          id: "friend-1",
-          lastActiveAt: threeDaysAgo,
-          profile: { name: "친구1" },
-        },
-      },
-    ]);
+    reader.activeUsers = [{ id: "user-1" }];
+    reader.nudgeSuggestFollows = [
+      follow("user-1", { id: "friend-1", name: "친구1", lastActive: "2024-01-13" }),
+    ];
 
     // When
     const result = await strategy.execute(ctx);
 
     // Then
     expect(result).toEqual({ sent: 1 });
-
-    const notifications = notificationPublisher.publishBatch.mock.calls[0]?.[0];
+    expect(reader.queries).toContainEqual({
+      method: "findNudgeSuggestFollows",
+      params: {
+        candidateIds: ["user-1"],
+        activeSince: parseDateOnly("2024-01-09"),
+        activeUntil: parseDateOnly("2024-01-14"),
+      },
+    });
     const expected = createNudgeSuggestionNotificationMessage({
       friendName: "친구1",
       locale: "ko",
@@ -111,80 +84,87 @@ describe("SendNudgeSuggestUseCase — 찔러보기 제안 전략", () => {
         occurrenceKey: "2024-01-16",
       },
     });
-    expect(notifications?.[0]).toMatchObject({
-      userId: "user-1",
-      type: "NUDGE_SUGGEST",
-      title: expected.title,
-      body: expected.body,
-      campaignKey: SCHEDULER_CAMPAIGN_KEY.NUDGE_SUGGEST,
-      variantId: expected.variantId,
-      friendId: "friend-1",
+    expect(sent()).toEqual([
+      expect.objectContaining({
+        userId: "user-1",
+        type: "NUDGE_SUGGEST",
+        title: expected.title,
+        body: expected.body,
+        campaignKey: SCHEDULER_CAMPAIGN_KEY.NUDGE_SUGGEST,
+        variantId: expected.variantId,
+        friendId: "friend-1",
+      }),
+    ]);
+    await vi.waitFor(() => {
+      expect(dedup.nudgePairsOf(WEEK_ID)).toEqual(["user-1:friend-1"]);
     });
   });
 
-  it("이미 이번 주 같은 친구에게 발송했으면 스킵한다", async () => {
+  it("친구가 여럿이면 가장 오래 쉰 친구를 고른다", async () => {
     // Given
-    const ctx = makeCtx();
-    const threeDaysAgo = dayjs.utc("2024-01-13").startOf("day").toDate();
-
-    reader.findActiveUsersInTimezone.mockResolvedValue([{ id: "user-1" }]);
-
-    reader.findNudgeSuggestFollows.mockResolvedValue([
-      {
-        followerId: "user-1",
-        followingId: "friend-1",
-        follower: {
-          id: "user-1",
-          lastActiveAt: FAKE_NOW,
-          profile: { name: "사용자1" },
-        },
-        following: {
-          id: "friend-1",
-          lastActiveAt: threeDaysAgo,
-          profile: { name: "친구1" },
-        },
-      },
-    ]);
-
-    // 이번 주 이미 friend-1에게 발송 이력 (Redis)
-    schedulerDedup.findSentNudgePairs.mockResolvedValue(new Set(["user-1:friend-1"]));
+    reader.activeUsers = [{ id: "user-1" }];
+    reader.nudgeSuggestFollows = [
+      follow("user-1", { id: "friend-1", name: "친구1", lastActive: "2024-01-13" }),
+      follow("user-1", { id: "friend-2", name: "친구2", lastActive: "2024-01-10" }),
+    ];
 
     // When
-    const result = await strategy.execute(ctx);
+    await strategy.execute(ctx);
 
     // Then
-    expect(result).toEqual({ sent: 0 });
-    expect(notificationPublisher.publishBatch).not.toHaveBeenCalled();
+    expect(sent().map(({ friendId }) => friendId)).toEqual(["friend-2"]);
   });
 
-  it("친구가 없으면 Nudge Suggest를 발송하지 않는다", async () => {
+  it("이번 주에 이미 같은 친구로 제안했으면 건너뛴다", async () => {
     // Given
-    const ctx = makeCtx();
-
-    reader.findActiveUsersInTimezone.mockResolvedValue([{ id: "user-1" }]);
-
-    // 비활성 친구 없음
-    reader.findNudgeSuggestFollows.mockResolvedValue([]);
+    reader.activeUsers = [{ id: "user-1" }];
+    reader.nudgeSuggestFollows = [
+      follow("user-1", { id: "friend-1", name: "친구1", lastActive: "2024-01-13" }),
+    ];
+    await dedup.recordNudgePairs(WEEK_ID, ["user-1:friend-1"]);
 
     // When
     const result = await strategy.execute(ctx);
 
     // Then
     expect(result).toEqual({ sent: 0 });
-    expect(notificationPublisher.publishBatch).not.toHaveBeenCalled();
+    expect(publisher.published).toEqual([]);
   });
 
-  it("대상이 없으면 publishBatch를 호출하지 않는다", async () => {
-    // Given — beforeEach 기본 설정
-    const ctx = makeCtx();
-
-    reader.findActiveUsersInTimezone.mockResolvedValue([]);
+  it("오늘 이미 제안을 받은 사용자는 제외한다", async () => {
+    // Given
+    reader.activeUsers = [{ id: "user-1" }];
+    reader.nudgeSuggestFollows = [
+      follow("user-1", { id: "friend-1", name: "친구1", lastActive: "2024-01-13" }),
+    ];
+    history.notified("NUDGE_SUGGEST", ["user-1"], ctx.today);
 
     // When
     const result = await strategy.execute(ctx);
 
     // Then
     expect(result).toEqual({ sent: 0 });
-    expect(notificationPublisher.publishBatch).not.toHaveBeenCalled();
+    expect(publisher.published).toEqual([]);
+  });
+
+  it("쉬고 있는 친구가 없으면 제안하지 않는다", async () => {
+    // Given
+    reader.activeUsers = [{ id: "user-1" }];
+
+    // When
+    const result = await strategy.execute(ctx);
+
+    // Then
+    expect(result).toEqual({ sent: 0 });
+    expect(publisher.published).toEqual([]);
+  });
+
+  it("이 시간대에 활성 사용자가 없으면 발송하지 않는다", async () => {
+    // When
+    const result = await strategy.execute(ctx);
+
+    // Then
+    expect(result).toEqual({ sent: 0 });
+    expect(publisher.published).toEqual([]);
   });
 });

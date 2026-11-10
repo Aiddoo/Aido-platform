@@ -4,8 +4,8 @@ import {
   type UsageMeterPort,
 } from "#api/platform/metering/interfaces/usage-meter.interface";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
+import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";
 import { InMemoryUsageMeterAdapter } from "#test/mocks/in-memory-usage-meter.adapter";
-import { RecordingOperationalAlert } from "#test/mocks/recording-operational-alert";
 
 import { EMAIL_SENT_METER, MeteredEmailBudgetAdapter } from "./metered-email-budget.adapter.js";
 

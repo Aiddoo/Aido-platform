@@ -14,9 +14,8 @@ import { PgBossJobQueueAdapter } from "#api/platform/jobs/pg-boss-job-queue.adap
 import { PgBossJobRuntimeAdapter } from "#api/platform/jobs/pg-boss-job-runtime.adapter";
 import { DateClock } from "#test/doubles/platform/date-clock";
 import { createDatabaseTransactionFixture } from "#test/setup/database-context";
-
-import { suppressLogger } from "../setup/suppress-logger.js";
-import { TestDatabase } from "../setup/test-database.js";
+import { suppressLogger } from "#test/setup/suppress-logger";
+import { TestDatabase } from "#test/setup/test-database";
 
 const SCHEMA = "pgboss";
 const USER_ID = "user-reminder";

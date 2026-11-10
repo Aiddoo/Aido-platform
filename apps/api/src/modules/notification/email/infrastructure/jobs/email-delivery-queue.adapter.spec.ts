@@ -1,5 +1,6 @@
-import { mock } from "vitest-mock-extended";
+import { ConfigService } from "@nestjs/config";
 
+import type { EnvConfig } from "#api/platform/config/schemas/index";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { EncryptionService } from "#api/platform/encryption/encryption.service";
 import { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
@@ -14,10 +15,11 @@ import { EMAIL_DELIVERY_QUEUE } from "./email-delivery.queue.js";
 
 describe("EmailDeliveryQueueAdapter", () => {
   const encryption = new EncryptionService(
-    mock<TypedConfigService>({
-      tokenEncryptionKey: "test-token-encryption-key-minimum-32-characters-long",
-      tokenEncryptionSalt: undefined,
-    }),
+    new TypedConfigService(
+      new ConfigService<EnvConfig, true>({
+        TOKEN_ENCRYPTION_KEY: "test-token-encryption-key-minimum-32-characters-long",
+      }),
+    ),
   );
 
   it("메시지를 암호화해 email-delivery.v1에 담고 평문 코드·수신자는 잡 데이터에 남기지 않는다", async () => {
