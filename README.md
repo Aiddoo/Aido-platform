@@ -185,12 +185,12 @@ pnpm dev
 flowchart LR
   Hook[로컬 lefthook<br/>unit · integration · 계약] --> PR[PR to main / main push]
   PR --> Gate[CI Scope<br/>변경 범위 계산]
-  Gate --> Verify[Lint, Type Check & Build]
+  Gate --> Verify[Lint, Test & Build<br/>원격 캐시 재사용]
   Verify --> Img[Build & Push Image<br/>main 전용, GHCR]
   Img --> Deploy[Deploy to EC2<br/>SSH · migrate → API · health]
 ```
 
-- **테스트**: GitHub Actions에서 돌리지 않는다. [lefthook](./lefthook.yml) pre-commit은 lint·format만 하고, pre-push가 단위 테스트·typecheck·build, 통합 테스트, 배포된 앱의 OpenAPI 계약 게이트(`test:contract`)를 실행한다. 전체 e2e는 로컬 `pnpm test:e2e`로 확인한다.
+- **테스트**: [lefthook](./lefthook.yml) pre-commit은 lint·format만 하고, pre-push가 단위 테스트·typecheck·build, 통합 테스트, 배포된 앱의 OpenAPI 계약 게이트(`test:contract`)를 turbo로 실행해 결과를 팀 원격 캐시에 올린다. tip CI는 같은 캐시로 단위·통합 테스트를 다시 확인하고 놓친 작업만 실제로 돈다. 전체 e2e는 로컬 `pnpm test:e2e`로 확인한다.
 - **보안**: 워크플로 권한은 job 단위 최소 권한이고, 액션은 SHA로 고정한다. PR은 Dependency Review, main 이미지는 출처 증명(attestation)과 Trivy, 저장소는 CodeQL로 검사한다.
 - **변경 범위**: `CI Scope` job이 diff로 API·모바일·공유 계약 범위를 계산해 필요한 job만 실행한다. 문서만 바뀌면 heavy job을 건너뛴다.
 - **Stack PR**: 의존하는 PR은 같은 `stack:<release>` 라벨을 달고, 맨 위 tip 하나에만 `ci:stack-tip`을 단다. 중간 PR과 draft의 heavy job은 미루고, tip이 base와 모든 ancestor를 포함한 누적 diff를 한 번 검증한다. PR은 main을 향하고, 같은 Git tree가 main에 올라가면 tip 또는 일반 PR의 성공 결과를 재사용한다.
