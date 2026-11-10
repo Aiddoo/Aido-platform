@@ -90,11 +90,11 @@ Expo Router 권장대로 루트 레이아웃의 관찰 훅 하나가 `getLastNot
 | 모르는 타입, `navigation` 없음   | 알림 목록으로 연다                                                                                                                                                    |
 | 서버의 새 kind, 틀린 모양        | 계약이 `navigation`만 버려 구 필드로 간다                                                                                                                             |
 | 수신 거부 버튼                   | 인증 없이 공개 API로 보낸다. 다음 탭에 밀리지 않게 슬롯을 따로 두고 실패하면 포그라운드 복귀 때 다시 보낸다(10분)                                                     |
-| 알림함 항목                      | DTO에 `navigation`이 없어 영구히 구 필드로 간다                                                                                                                       |
+| 알림함 항목                      | 서버(1.15.1+)가 푸시와 같은 계산으로 싣는 `navigation`을 따른다. 서버가 고르지 못한 항목은 구 필드로 간다                                                             |
 
 ### 목적지 대조
 
-구 필드 경로는 알림함이 영구히 쓰므로 지우지 않는다. `packages/api/test-fixtures/notification-navigation.cases.json`(`dist`에 들어가지 않음)을 서버 spec과 앱 test가 함께 읽어 31개 타입과 19개 kind를 묶는다. 앱은 compact·medium·expanded와 보는 사람 없음·주인·다른 사람 조합에서 두 경로가 같은 곳으로 가는지 본다.
+구 필드 경로는 `navigation`이 없는 푸시와 서버가 목적지를 고르지 못한 알림함 항목이 쓰므로 지우지 않는다. `packages/api/test-fixtures/notification-navigation.cases.json`(`dist`에 들어가지 않음)을 서버 spec과 앱 test가 함께 읽어 31개 타입과 19개 kind를 묶는다. 앱은 compact·medium·expanded와 보는 사람 없음·주인·다른 사람 조합에서 두 경로가 같은 곳으로 가는지 본다.
 
 서버가 만들지 않는 입력에서만 나는 차이는 `knownDifference`로 적고, 실제로 다른지 테스트한다.
 

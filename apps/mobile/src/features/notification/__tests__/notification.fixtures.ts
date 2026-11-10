@@ -1,6 +1,12 @@
-import type { NotificationListResponse, PushDeviceResponse, UnreadCountResponse } from '@aido/api';
+import type {
+  NotificationInboxItem,
+  NotificationListResponse,
+  PushDeviceResponse,
+  UnreadCountResponse,
+} from '@aido/api';
 import {
   markReadResponseSchema,
+  notificationInboxResponseSchema,
   notificationListResponseSchema,
   pushDeviceResponseSchema,
   unreadCountResponseSchema,
@@ -51,6 +57,15 @@ export function createNotificationListResponseDto(
   return notificationListResponseSchema.parse({
     ...generateNotificationListResponseDto(),
     ...overrides,
+  });
+}
+
+export function createNotificationInboxResponseDto(notifications: NotificationInboxItem[]) {
+  return notificationInboxResponseSchema.parse({
+    notifications,
+    unreadCount: 0,
+    hasMore: false,
+    nextCursor: null,
   });
 }
 

@@ -14,7 +14,10 @@ import {
   MARKETING_OPT_OUT_ACTION,
   NOTIFICATION_TYPE_TRAITS,
 } from '../constants/notification.constants';
-import type { PushNotificationPayload } from '../schemas/push-notification-payload.schema';
+import type {
+  NotificationNavigation,
+  PushNotificationPayload,
+} from '../schemas/push-notification-payload.schema';
 
 const notificationTypeSchema = z.enum(NOTIFICATION_TYPE);
 export type NotificationType = z.infer<typeof notificationTypeSchema>;
@@ -109,6 +112,8 @@ const notificationSchema = z.object({
   routing: notificationRoutingSchema.optional(),
   context: notificationContextSchema.optional(),
   action: notificationActionSchema.optional(),
+  // 서버(1.15.1+)가 푸시와 같은 계산으로 고른 목적지. 옛 항목·옛 서버에는 없어 구 필드로 간다
+  navigation: z.custom<NotificationNavigation>().optional(),
   createdAt: instantSchema,
   readAt: instantSchema.nullable(),
 });

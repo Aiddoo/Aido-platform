@@ -31,7 +31,7 @@ export interface NotificationDestinationSource {
   context?: NotificationContext;
   routing?: NotificationRouting;
   action?: NotificationAction;
-  /** 서버가 고른 목적지. 푸시에만 있고 알림함 항목은 영구히 구 필드로 간다 */
+  /** 서버가 고른 목적지. 없으면(옛 푸시·옛 알림함 항목) 구 필드로 고른다 */
   navigation?: NotificationNavigation;
 }
 

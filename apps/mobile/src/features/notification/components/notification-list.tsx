@@ -185,6 +185,7 @@ function useOpenNotification() {
         context: notification.context,
         routing: notification.routing,
         action: notification.action,
+        navigation: notification.navigation,
       },
       { shouldOpenToday: true, windowSizeClass, viewerId: getCachedMe(queryClient)?.id },
     );
