@@ -20,7 +20,7 @@
 
 ## Stack
 
-- 의존하는 PR은 같은 `stack:<release>` 라벨(예: `stack:1.13.0`)을 단다. 맨 위 tip 하나만 `ci:stack-tip`을 달고, 그 tip이 누적 diff를 검증한다([CI](../server/ci.md#실행-범위), [stack-policy](../../scripts/ci/stack-policy.mjs)). 중간 PR에 `ci:stack-tip`을 달지 않는다.
+- 의존하는 PR은 같은 `stack:<release>` 라벨(예: `stack:1.13.0`)을 단다. 맨 위 tip 하나만 `ci:stack-tip`을 달고, 그 tip이 누적 diff를 검증한다([CI](../../apps/api/docs/ci.md#실행-범위), [stack-policy](../../scripts/ci/stack-policy.mjs)). 중간 PR에 `ci:stack-tip`을 달지 않는다.
 - 공유 브랜치의 이력을 바꾸는 rebase·force push는 그 stack의 담당 범위에서만 한다.
 
 ## 버전

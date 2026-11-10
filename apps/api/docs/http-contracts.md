@@ -1,0 +1,83 @@
+# HTTP 계약
+
+Controller·DTO·Zod schema·응답 매퍼·페이지네이션·Swagger·요청 헤더를 바꿀 때 읽는다. 공유 계약의 정본은 [packages/api](../../../packages/api/README.md), 응답·오류 envelope는 [오류 규칙](../../../docs/conventions/errors.md), 출시 앱 호환 범위는 [호환](../../../docs/conventions/compatibility.md)이다.
+
+## 경계와 소유
+
+| 경계                   | 소유                                                                   |
+| ---------------------- | ---------------------------------------------------------------------- |
+| `@aido/api`            | 요청·응답 Zod schema, inferred type, 성공 envelope, `cursorPageSchema` |
+| `@aido/api/errors`     | 안정된 오류 code·HTTP 오류 계약·공개 details                           |
+| `@aido/api/vocabulary` | Zod·HTTP·ORM 없는 순수 상수·튜플                                       |
+| presentation           | DTO 검증, DTO → Command 변환(문자열 → Temporal 포함), 응답 매핑·문구   |
+| Application·Domain     | 계약 타입을 모른다(lint로 막는다)                                      |
+
+## Controller
+
+- Controller는 guard·Swagger·DTO 검증, 원시값의 Command 변환, 결과의 HTTP 매핑만 한다. Repository·SDK·트랜잭션·업무 판단을 두지 않는다. UseCase를 직접 주입한다.
+- `@Controller({ path, version: API_VERSION.V1 })`처럼 v1도 명시한다. v2는 계약이 갈라질 때만 `http/v2/`에 둔다.
+- 공용 데코레이터(`@CurrentUser`·`@Timezone`·`@Locale`·`@AppVersion`·`@CurrentRequestClient`·`@IdempotencyKey`·`@RawResponse`)는 `platform/http/decorators`, Context 전용(`@Admin`)은 그 slice의 `http/decorators`에 둔다.
+
+## 요청 헤더와 throttle
+
+앱 헤더는 요청마다 한 번 `RequestClient`(`#api/platform/http/request-client`)로 정규화한다. Controller에서 `@Headers("x-…")`를 쓰지 않는다. 새 헤더는 `RequestClient`에 정규화 규칙과 함께 더한다.
+
+| 필요한 값                     | 사용                                                                                  |
+| ----------------------------- | ------------------------------------------------------------------------------------- |
+| 앱 버전(SemVer, 없으면 구 앱) | `@AppVersion()`. 비교는 `isSemanticVersionAtLeast`                                    |
+| 플랫폼·빌드·OS·기기명·언어    | `@CurrentRequestClient()`, `@Locale()`([다국어](i18n.md))                             |
+| 시간대                        | `@Timezone()`([날짜 규칙](../../../docs/conventions/dates.md#2-오늘과-시간대의-출처)) |
+| Controller 밖(guard 등)       | `RequestClientReader.current()`                                                       |
+
+- `X-Request-Id`는 UUID면 그대로, 아니면 새 UUID를 쓰고 응답 헤더로 돌려준다([관측](observability.md)).
+- throttle은 전역 `UserAwareThrottlerGuard`다. 한도는 Controller 파일의 이름 있는 상수(`AUTH_THROTTLE.LOGIN`처럼 `{ ttl, limit }`)이고, 인증 전은 IP, 사용자별은 `@ThrottleByUser()` + `@Throttle`이다. 출시된 endpoint의 새 한도는 `@ApiDoc` description 문장으로 적는다.
+
+## Schema와 DTO
+
+- `packages/api/src/contracts/<resource>/v<n>/`의 `*.request.ts`·`*.response.ts`·`*.common.ts`가 schema를 소유한다. 타입은 `z.infer`로만 얻는다.
+- 서버 DTO는 `http/v1/<noun>.dto.ts` 한 파일에 그 컨트롤러의 `X = schema.meta({ id: "XDto" })`와 타입을 모은다. Swagger component id는 바꾸지 않는다. 파일을 합칠 때 옛 파일을 같은 커밋에서 지운다(같은 id가 두 번 등록되면 `toJSONSchema`가 실패한다).
+- Zod 4 문법: 조합은 `.pick`/`.omit`/`.extend`/`.partial`만(`.merge` 금지). 외부 원문은 `z.looseObject`, 내부 계약은 `z.object`, 닫힌 내부 payload는 `z.strictObject`. 오류 옵션은 `{ error }`다.
+- `.describe()`·`.meta()`는 공개 Swagger 계약이다. 새 필드는 단위·시점·nullable 의미를 적는다.
+- required/optional/nullable/default와 검증 메시지는 계약이다. 리팩터링 중 바꾸지 않는다. 기존 한국어 검증 문구도 유지한다(앱은 `SYS_0002`로 현지화).
+
+## 응답
+
+- 응답 envelope(`{ success, data, timestamp }`)와 오류 envelope는 그대로다.
+- 서버가 계산한 값을 싣는다. AI 응답과 한도 오류는 `featureQuota`를 준다. 앱이 읽지 않는 값은 새 응답에 넣지 않는다(출시 뒤에는 뺄 수 없다). 그런 값은 서버 로그에 남긴다.
+- 날짜는 `YYYY-MM-DD`, 순간은 ISO datetime(ms 3자리, `toIsoString`), 벽시계는 `HH:mm`이다. 변환은 응답 매퍼 한 곳이다.
+- 변경 응답의 `message`는 출시 계약이라 유지하되 문구는 presentation 매퍼 상수에 두고 Swagger에 `deprecated`로 표시한다. 새 응답에는 넣지 않는다.
+- 운영 응답에 실을 details는 `PUBLIC_ERROR_DETAILS`에 코드별 Zod로 등록한다.
+
+## 페이지네이션
+
+- 새 endpoint는 `cursorPageSchema(item, cursor)`의 `{ items, pagination: { nextCursor, hasNext, size } }`만 쓴다. 페이지 크기 이름은 `size`다.
+- 다른 모양의 출시 계약(알림·친구·응원·찌르기·초대)은 그대로 두고, 서버 내부는 `CursorPage`로 통일한 뒤 매퍼가 옛 모양을 만든다.
+- 커서는 `platform/http/cursor`의 서명 codec 하나(key ring, [보안](security.md))다. 숫자 커서 계약은 숫자를 유지한다.
+
+## 타입 안전 체크리스트
+
+| 경계              | 보장                                                                                                                              |
+| ----------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| HTTP 입력         | 공유 Zod + Nest `StandardSchemaValidationPipe`(전역). 인자 타입은 `z.infer`                                                       |
+| HTTP 출력         | 반환 타입이 계약 DTO 타입. dev·test는 `ResponseContractInterceptor`가 `@ApiDoc` 응답 schema로 실제 body를 `parse`. E2E도 `.parse` |
+| 외부 API          | `*.wire.ts` Zod `parse`([외부 호출](outbound.md))                                                                                 |
+| 큐·이벤트 payload | `defineQueue`·이벤트 schema([작업과 이벤트](jobs-and-events.md))                                                                  |
+| 환경변수          | slice `registerAs` + Zod([설정](configuration.md))                                                                                |
+| DB 행             | `$inferSelect`/`$inferInsert` + customType, 행 → 도메인은 매퍼 한 곳                                                              |
+| DI                | abstract class 토큰 + `provideUseCase`                                                                                            |
+| 분기              | 유니온은 ts-pattern `.exhaustive()`                                                                                               |
+| 금지              | `as`(`as const` 제외)·`any`·`!`·`@ts-*`. 예외는 `provideUseCase` 내부 1곳(사유 주석)                                              |
+
+## 출시 앱 호환 절차
+
+출시된 operation의 상태 코드·필수 입력·기존 필드는 바꾸지 않는다(released OpenAPI fixture가 막는다). 필드·파라미터를 더해야 하면:
+
+1. 생략했을 때 동작이 지금과 정확히 같은 optional만 더한다.
+2. fixture의 `pre…Fingerprint`에 이전 값과 사유 주석을 남기고 현재 지문을 갱신한다.
+3. 출시 앱 요청 모양으로 보낸 E2E로 동작을 증명한다.
+
+고정된 released fixture를 현재 schema로 재생성하지 않는다. `packages/api`를 바꾸면 서버 타입 검사 전에 `pnpm --filter @aido/api build`를 돌린다(서버는 dist 타입을 읽는다). Swagger 설명은 지문에서 빠지므로 코드와 다른 설명(정렬 방향 등)은 바로 고친다.
+
+## 전환 중
+
+아직 옮기지 않은 Context는 `presentation/{controllers,schemas,mappers}/<slice>/v<n>/`와 엔드포인트마다 DTO 파일 여러 개, Application이 만드는 응답 문구·계약 타입, 6가지 목록 모양을 쓴다. 옮길 때 응답 바이트·component id·operationId를 그대로 두고 구조만 바꾼다. 옮긴 Context는 `apps/api/architecture.ratchet.json`의 `migratedContexts`에 있다.

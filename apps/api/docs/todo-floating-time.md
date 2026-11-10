@@ -1,6 +1,6 @@
 # 할 일 떠 있는 시각
 
-한국에서 만든 오전 10시는 미국에서도 오전 10시이고 알림도 현지 10시에 울린다. 값의 의미와 시간대 규칙은 [날짜·시간·언어 5절](../conventions/dates.md#5-떠-있는-시각)이 정본이고, 이 문서는 서버 구현과 운영을 적는다.
+한국에서 만든 오전 10시는 미국에서도 오전 10시이고 알림도 현지 10시에 울린다. 값의 의미와 시간대 규칙은 [날짜·시간·언어 5절](../../../docs/conventions/dates.md#5-떠-있는-시각)이 정본이고, 이 문서는 서버 구현과 운영을 적는다.
 
 코드 정본은 `modules/planning/domain/value-objects/todos/todo-schedule.vo.ts`(`resolveScheduledInstant`), `application/services/todos/todo-timezone-resolver.service.ts`, `application/use-cases/todos/rebase-todo-timezone.use-case.ts`, `infrastructure/jobs/todos/`다.
 
@@ -102,3 +102,7 @@ worker → 규칙 시간대 변경 → 500행씩: 잠금 → 최신 시간대 �
 - **집에 둔 기기**: 다른 시간대의 기기를 앞에 띄우면 그 기기가 기준이 된다. 그 시간대로 알림이 옮겨 가고 원래 기기를 다시 띄우면 돌아온다.
 - 날씨 푸시 문구는 순간을 알림 시간대로 적는다. 재계산 뒤에는 벽시계와 같다. 서머타임으로 없는 시각(뉴욕 02:30)만 전환 뒤 시각(03:30)으로 적힌다.
 - 재계산 전 잠깐(최대 약 1~2분) 출시 앱에는 옛 시간대의 순간이 보인다. 새 앱은 벽시계를 보여 주므로 어긋나지 않는다.
+
+## 전환 중
+
+이 문서의 코드 이름·경로는 아직 옮기지 않은 옛 구조(`modules/<context>/<layer>/<slice>`) 기준이다. 해당 Context를 옮기면 경로만 [아키텍처](architecture.md)의 slice 구조로 바뀌고 규칙은 그대로다. 옮긴 Context는 `apps/api/architecture.ratchet.json`의 `migratedContexts`에 있다.

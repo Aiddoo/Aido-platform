@@ -536,7 +536,10 @@ describe("Todo.scheduledLocalTime 이관과 재배포 SQL (실제 PostgreSQL)", 
   }
 
   function readRedeploySql(): string {
-    const document = readFileSync(join(process.cwd(), "DEPLOYMENT.md"), "utf8");
+    const document = readFileSync(
+      join(process.cwd(), "../../docs/releases/1.15.0/server-rollback.md"),
+      "utf8",
+    );
     const section = document.slice(document.indexOf("다시 채우는 SQL"));
     const body = /```sql\n([\s\S]*?)```/.exec(section)?.[1];
     return body ?? "";
