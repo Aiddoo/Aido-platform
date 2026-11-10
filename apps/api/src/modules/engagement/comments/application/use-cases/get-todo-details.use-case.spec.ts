@@ -9,11 +9,11 @@ import {
 } from "#test/fixtures/engagement-comment.fixture";
 import { createTodoResponseFixture } from "#test/fixtures/todo-response.fixture";
 
-import { GetTodoDetails } from "./get-todo-details.use-case.js";
+import { GetTodoDetailsUseCase } from "./get-todo-details.use-case.js";
 
-describe("GetTodoDetails — 할 일 상세 조회와 방문 기록", () => {
+describe("GetTodoDetailsUseCase — 할 일 상세 조회와 방문 기록", () => {
   let fixture: ReturnType<typeof createEngagementCommentFixture>;
-  let useCase: GetTodoDetails;
+  let useCase: GetTodoDetailsUseCase;
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(ENGAGEMENT_TIME);
@@ -28,7 +28,7 @@ describe("GetTodoDetails — 할 일 상세 조회와 방문 기록", () => {
       isOwner: false,
     });
     fixture.repository.viewCounts.set(1, 7);
-    useCase = new GetTodoDetails({
+    useCase = new GetTodoDetailsUseCase({
       todoCommentReader: fixture.reader,
       todoCommentRepository: fixture.repository,
       unitOfWork: fixture.unitOfWork,

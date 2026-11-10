@@ -14,9 +14,9 @@ import type {
 import { resolveProfileImage } from "#api/platform/http/profile/profile-image.resolver";
 
 import type {
-  TodoCommentRecord,
-  TodoCommentThreadsResult,
-  TodoCommentViewerContext,
+  TodoCommentReadModel,
+  TodoCommentThreadsPage,
+  TodoCommentViewer,
 } from "../../../application/read-models/todo-comment.read-model.js";
 import {
   toTodoCommentParticipantAuthor,
@@ -37,8 +37,8 @@ export function toTodoCommentAuthorResponse(author: TodoCommentV2Author): TodoCo
 
 /** 1.14.0 이하 앱은 parentId·depth로 들여쓰기를 그린다. 2단계라 parentId는 묶음 머리다. */
 export function toTodoCommentResponse(
-  record: TodoCommentRecord,
-  viewer: TodoCommentViewerContext,
+  record: TodoCommentReadModel,
+  viewer: TodoCommentViewer,
 ): TodoComment {
   const view = toTodoCommentView(record, viewer);
 
@@ -62,7 +62,7 @@ export function toTodoCommentResponse(
 }
 
 export function toTodoCommentOverviewResponse(
-  result: TodoCommentThreadsResult,
+  result: TodoCommentThreadsPage,
 ): TodoCommentOverviewResponse {
   return {
     items: result.items.map((item) => {
@@ -89,7 +89,7 @@ export function toTodoCommentOverviewResponse(
   };
 }
 
-function toVisualDepth(record: TodoCommentRecord): 0 | 1 {
+function toVisualDepth(record: TodoCommentReadModel): 0 | 1 {
   return record.threadCommentId == null ? 0 : 1;
 }
 
@@ -98,8 +98,8 @@ function toVisualDepth(record: TodoCommentRecord): 0 | 1 {
  * 다음 행이 같은 묶음의 답글이면 lane이 이어진다.
  */
 function toConversationConnection(
-  record: TodoCommentRecord,
-  nextRecord: TodoCommentRecord | null | undefined,
+  record: TodoCommentReadModel,
+  nextRecord: TodoCommentReadModel | null | undefined,
 ): TodoConversationConnection {
   const visualDepth = toVisualDepth(record);
   const threadCommentId = record.threadCommentId ?? record.id;
@@ -114,10 +114,10 @@ function toConversationConnection(
 }
 
 export function toTodoConversationItems(input: {
-  records: readonly TodoCommentRecord[];
-  nextRecord: TodoCommentRecord | null;
+  records: readonly TodoCommentReadModel[];
+  nextRecord: TodoCommentReadModel | null;
   focusCommentId: string | null;
-  viewer: TodoCommentViewerContext;
+  viewer: TodoCommentViewer;
 }): TodoConversationItem[] {
   return input.records.map((record, index) => ({
     comment: toTodoCommentResponse(record, input.viewer),
@@ -131,8 +131,8 @@ export function toTodoConversationItems(input: {
 
 /** focus 답글 앞에 따로 싣는 묶음 머리. 아래 lane만 열어 focus 쪽으로 이어진다. */
 export function toTodoConversationAncestorItems(input: {
-  records: readonly TodoCommentRecord[];
-  viewer: TodoCommentViewerContext;
+  records: readonly TodoCommentReadModel[];
+  viewer: TodoCommentViewer;
 }): TodoConversationItem[] {
   return input.records.map((record) => ({
     comment: toTodoCommentResponse(record, input.viewer),

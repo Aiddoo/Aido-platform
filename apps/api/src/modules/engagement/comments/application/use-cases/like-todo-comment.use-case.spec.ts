@@ -7,10 +7,10 @@ import {
   ENGAGEMENT_VIEWER_ID,
 } from "#test/fixtures/engagement-comment.fixture";
 
-import { LikeTodoComment } from "./like-todo-comment.use-case.js";
-import { UnlikeTodoComment } from "./unlike-todo-comment.use-case.js";
+import { LikeTodoCommentUseCase } from "./like-todo-comment.use-case.js";
+import { UnlikeTodoCommentUseCase } from "./unlike-todo-comment.use-case.js";
 
-describe("LikeTodoComment — 댓글 사용자 상태", () => {
+describe("LikeTodoCommentUseCase — 댓글 사용자 상태", () => {
   let fixture: ReturnType<typeof createEngagementCommentFixture>;
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ["Date"] });
@@ -23,7 +23,7 @@ describe("LikeTodoComment — 댓글 사용자 상태", () => {
     // Given
     const comment = fixture.addComment({ content: "알림에 포함하면 안 되는 원문" });
     // When
-    const result = await new LikeTodoComment(fixture).execute({
+    const result = await new LikeTodoCommentUseCase(fixture).execute({
       todoId: 1,
       commentId: comment.id,
       userId: ENGAGEMENT_VIEWER_ID,
@@ -51,7 +51,7 @@ describe("LikeTodoComment — 댓글 사용자 상태", () => {
     fixture.blockReader.block(ENGAGEMENT_OWNER_ID, ENGAGEMENT_VIEWER_ID);
     // When / Then
     await expect(
-      new LikeTodoComment(fixture).execute({
+      new LikeTodoCommentUseCase(fixture).execute({
         todoId: 1,
         commentId: comment.id,
         userId: ENGAGEMENT_VIEWER_ID,
@@ -72,7 +72,7 @@ describe("LikeTodoComment — 댓글 사용자 상태", () => {
       return notify(input);
     });
     // When
-    const outcome = new LikeTodoComment(fixture).execute({
+    const outcome = new LikeTodoCommentUseCase(fixture).execute({
       todoId: 1,
       commentId: comment.id,
       userId: ENGAGEMENT_VIEWER_ID,
@@ -98,7 +98,7 @@ describe("LikeTodoComment — 댓글 사용자 상태", () => {
       .spyOn(fixture.notification, "notifyCommentLiked")
       .mockRejectedValueOnce(new Error("private provider message"));
     const warning = vi.spyOn(fixture.logger, "warn");
-    const useCase = new LikeTodoComment(fixture);
+    const useCase = new LikeTodoCommentUseCase(fixture);
     // When
     const first = await useCase.execute({
       todoId: 1,
@@ -123,10 +123,10 @@ describe("LikeTodoComment — 댓글 사용자 상태", () => {
   it("이미 알린 좋아요는 취소 후 재설정해도 다시 알리지 않는다", async () => {
     // Given
     const comment = fixture.addComment();
-    const useCase = new LikeTodoComment(fixture);
+    const useCase = new LikeTodoCommentUseCase(fixture);
     await useCase.execute({ todoId: 1, commentId: comment.id, userId: ENGAGEMENT_VIEWER_ID });
     // When
-    await new UnlikeTodoComment(fixture).execute({
+    await new UnlikeTodoCommentUseCase(fixture).execute({
       todoId: 1,
       commentId: comment.id,
       userId: ENGAGEMENT_VIEWER_ID,
@@ -148,7 +148,7 @@ describe("LikeTodoComment — 댓글 사용자 상태", () => {
       return work();
     };
     // When
-    await new LikeTodoComment(fixture).execute({
+    await new LikeTodoCommentUseCase(fixture).execute({
       todoId: 1,
       commentId: comment.id,
       userId: ENGAGEMENT_VIEWER_ID,

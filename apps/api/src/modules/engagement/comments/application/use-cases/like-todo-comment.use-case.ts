@@ -3,22 +3,19 @@ import { ErrorCode } from "@aido/api/errors";
 
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
-import {
-  MutationLockKeys,
-  type MutationLockPort,
-  type UnitOfWorkPort,
-} from "#api/shared/application/ports/index";
+import { type MutationLockPort, type UnitOfWorkPort } from "#api/shared/application/ports/index";
 
 import { assertNotBlocked } from "../comments.errors.js";
 import { assertTodoCommentAccess } from "../comments.errors.js";
-import { EngagementCommentLogEvent } from "../comments.log-events.js";
+import { TodoCommentLockKeys } from "../comments.lock-keys.js";
+import { TodoCommentLogEvent } from "../comments.log-events.js";
 import { settleAfterCommit } from "../comments.log-events.js";
 import { type TodoCommentBlockReaderPort } from "../ports/todo-comment-block-reader.port.js";
 import { type TodoCommentNotificationPort } from "../ports/todo-comment-notification.port.js";
 import { type TodoCommentReaderPort } from "../ports/todo-comment.reader.port.js";
 import { type TodoCommentRepositoryPort } from "../ports/todo-comment.repository.port.js";
 
-export interface LikeTodoCommentInput {
+export interface LikeTodoCommentCommand {
   readonly todoId: number;
   readonly commentId: string;
   readonly userId: string;
@@ -37,18 +34,16 @@ interface LikeTodoCommentDependencies {
   readonly logger: ApplicationLoggerPort;
 }
 
-export class LikeTodoComment {
+export class LikeTodoCommentUseCase {
   readonly #dependencies: LikeTodoCommentDependencies;
 
   constructor(dependencies: LikeTodoCommentDependencies) {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: LikeTodoCommentInput): Promise<TodoCommentLikeResponse> {
+  async execute(input: LikeTodoCommentCommand): Promise<TodoCommentLikeResponse> {
     const likeOutcome = await this.#dependencies.unitOfWork.run(async () => {
-      await this.#dependencies.mutationLock.acquire([
-        MutationLockKeys.todoComment(input.commentId),
-      ]);
+      await this.#dependencies.mutationLock.acquire([TodoCommentLockKeys.comment(input.commentId)]);
       await assertTodoCommentAccess(this.#dependencies.reader, input.todoId, input.userId);
       const comment = await this.#dependencies.repository.findComment(
         input.todoId,
@@ -73,7 +68,7 @@ export class LikeTodoComment {
     if (!likeOutcome.transition.wasEverNotified) {
       await settleAfterCommit(this.#dependencies.logger, [
         {
-          failureEvent: EngagementCommentLogEvent.LIKE_NOTIFICATION_FAILED,
+          failureEvent: TodoCommentLogEvent.LIKE_NOTIFICATION_FAILED,
           context: { todoId: input.todoId, commentId: input.commentId, userId: input.userId },
           run: () => this.#notifyLiked(input, likeOutcome.senderName),
         },
@@ -87,11 +82,9 @@ export class LikeTodoComment {
     };
   }
 
-  async #notifyLiked(input: LikeTodoCommentInput, senderName: string | null): Promise<void> {
+  async #notifyLiked(input: LikeTodoCommentCommand, senderName: string | null): Promise<void> {
     await this.#dependencies.unitOfWork.run(async () => {
-      await this.#dependencies.mutationLock.acquire([
-        MutationLockKeys.todoComment(input.commentId),
-      ]);
+      await this.#dependencies.mutationLock.acquire([TodoCommentLockKeys.comment(input.commentId)]);
       const pending = await this.#dependencies.repository.findPendingLikeNotification(
         input.todoId,
         input.commentId,

@@ -7,9 +7,9 @@ import {
   ENGAGEMENT_VIEWER_ID,
 } from "#test/fixtures/engagement-comment.fixture";
 
-import { UpdateTodoComment } from "./update-todo-comment.use-case.js";
+import { UpdateTodoCommentUseCase } from "./update-todo-comment.use-case.js";
 
-describe("UpdateTodoComment — 댓글 사용자 상태", () => {
+describe("UpdateTodoCommentUseCase — 댓글 사용자 상태", () => {
   let fixture: ReturnType<typeof createEngagementCommentFixture>;
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ["Date"] });
@@ -27,7 +27,7 @@ describe("UpdateTodoComment — 댓글 사용자 상태", () => {
     });
     vi.setSystemTime(new Date(ENGAGEMENT_TIME.getTime() + 1000));
     // When
-    const result = await new UpdateTodoComment(fixture).execute({
+    const result = await new UpdateTodoCommentUseCase(fixture).execute({
       todoId: 1,
       commentId: comment.id,
       userId: ENGAGEMENT_OWNER_ID,
@@ -46,7 +46,7 @@ describe("UpdateTodoComment — 댓글 사용자 상태", () => {
     const comment = fixture.addComment();
     // When / Then
     await expect(
-      new UpdateTodoComment(fixture).execute({
+      new UpdateTodoCommentUseCase(fixture).execute({
         todoId: 1,
         commentId: comment.id,
         userId: ENGAGEMENT_VIEWER_ID,
@@ -60,7 +60,7 @@ describe("UpdateTodoComment — 댓글 사용자 상태", () => {
     fixture.reader.accessiblePairs.delete(`1:${ENGAGEMENT_VIEWER_ID}`);
     // When / Then
     await expect(
-      new UpdateTodoComment(fixture).execute({
+      new UpdateTodoCommentUseCase(fixture).execute({
         todoId: 1,
         commentId: "missing",
         userId: ENGAGEMENT_VIEWER_ID,

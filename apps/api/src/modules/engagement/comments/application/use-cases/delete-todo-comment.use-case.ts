@@ -4,21 +4,18 @@ import { uniq } from "es-toolkit";
 
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
-import {
-  MutationLockKeys,
-  type MutationLockPort,
-  type UnitOfWorkPort,
-} from "#api/shared/application/ports/index";
+import { type MutationLockPort, type UnitOfWorkPort } from "#api/shared/application/ports/index";
 import { now } from "#api/shared/domain/date/utils/core";
 
 import { assertTodoCommentAccess } from "../comments.errors.js";
-import { EngagementCommentLogEvent } from "../comments.log-events.js";
+import { TodoCommentLockKeys } from "../comments.lock-keys.js";
+import { TodoCommentLogEvent } from "../comments.log-events.js";
 import { settleAfterCommit } from "../comments.log-events.js";
 import { type TodoCommentReaderPort } from "../ports/todo-comment.reader.port.js";
 import { type TodoCommentRepositoryPort } from "../ports/todo-comment.repository.port.js";
 import { type TodoViewCachePort } from "../ports/todo-view-cache.port.js";
 
-export interface DeleteTodoCommentInput {
+export interface DeleteTodoCommentCommand {
   readonly todoId: number;
   readonly commentId: string;
   readonly userId: string;
@@ -36,14 +33,14 @@ interface DeleteTodoCommentDependencies {
   readonly logger: ApplicationLoggerPort;
 }
 
-export class DeleteTodoComment {
+export class DeleteTodoCommentUseCase {
   readonly #dependencies: DeleteTodoCommentDependencies;
 
   constructor(dependencies: DeleteTodoCommentDependencies) {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: DeleteTodoCommentInput): Promise<DeleteTodoCommentResponse> {
+  async execute(input: DeleteTodoCommentCommand): Promise<DeleteTodoCommentResponse> {
     const outcome = await this.#dependencies.unitOfWork.run(async () => {
       const todoOwnerId = await assertTodoCommentAccess(
         this.#dependencies.reader,
@@ -61,7 +58,7 @@ export class DeleteTodoComment {
 
       // 답글 수가 바뀌는 묶음 머리까지 작성과 같은 순서로 한 번에 잠근다. 묶음 머리는 바뀌지 않는다.
       await this.#dependencies.mutationLock.acquire(
-        uniq([input.commentId, snapshot.threadCommentId]).map(MutationLockKeys.todoComment),
+        uniq([input.commentId, snapshot.threadCommentId]).map(TodoCommentLockKeys.comment),
       );
       const comment = await this.#dependencies.repository.findComment(
         input.todoId,
@@ -93,7 +90,7 @@ export class DeleteTodoComment {
     if (outcome) {
       await settleAfterCommit(this.#dependencies.logger, [
         {
-          failureEvent: EngagementCommentLogEvent.VIEW_CACHE_INVALIDATION_FAILED,
+          failureEvent: TodoCommentLogEvent.VIEW_CACHE_INVALIDATION_FAILED,
           context: { todoId: input.todoId, commentId: input.commentId, userId: input.userId },
           run: () => this.#dependencies.todoViewCache.invalidateForTodo(input.todoId),
         },

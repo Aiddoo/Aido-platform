@@ -1,6 +1,5 @@
 import { vi } from "vitest";
 
-import { MutationLockKeys } from "#api/shared/application/ports/index";
 import {
   createEngagementCommentFixture,
   ENGAGEMENT_TIME,
@@ -8,17 +7,18 @@ import {
   ENGAGEMENT_VIEWER_ID,
 } from "#test/fixtures/engagement-comment.fixture";
 
-import { EngagementCommentLogEvent } from "../comments.log-events.js";
+import { TodoCommentLockKeys } from "../comments.lock-keys.js";
+import { TodoCommentLogEvent } from "../comments.log-events.js";
 import {
   TodoCommentIdempotencyConflict,
   TodoCommentIdempotencyRace,
 } from "../ports/todo-comment.repository.port.js";
 import {
-  WriteTodoCommentChain,
-  type WriteTodoCommentChainInput,
+  WriteTodoCommentChainUseCase,
+  type WriteTodoCommentChainCommand,
 } from "./write-todo-comment-chain.use-case.js";
 
-describe("WriteTodoCommentChain — 댓글 작성과 멱등성", () => {
+describe("WriteTodoCommentChainUseCase — 댓글 작성과 멱등성", () => {
   let fixture: ReturnType<typeof createEngagementCommentFixture>;
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ["Date"] });
@@ -27,7 +27,7 @@ describe("WriteTodoCommentChain — 댓글 작성과 멱등성", () => {
   });
   afterEach(() => vi.useRealTimers());
 
-  function input(): WriteTodoCommentChainInput {
+  function input(): WriteTodoCommentChainCommand {
     return {
       todoId: 1,
       authorId: ENGAGEMENT_VIEWER_ID,
@@ -40,7 +40,7 @@ describe("WriteTodoCommentChain — 댓글 작성과 멱등성", () => {
 
   it("원문을 정규화해 저장하고 알림 경계에는 원문 없이 작성 정보만 전달한다", async () => {
     // Given
-    const useCase = new WriteTodoCommentChain(fixture);
+    const useCase = new WriteTodoCommentChainUseCase(fixture);
     // When
     const result = await useCase.execute(input());
     // Then
@@ -78,7 +78,7 @@ describe("WriteTodoCommentChain — 댓글 작성과 멱등성", () => {
     };
 
     // When
-    const result = await new WriteTodoCommentChain(fixture).execute(chain);
+    const result = await new WriteTodoCommentChainUseCase(fixture).execute(chain);
 
     // Then
     const [first, second, third] = result.comments;
@@ -111,7 +111,7 @@ describe("WriteTodoCommentChain — 댓글 작성과 멱등성", () => {
     };
 
     // When
-    const result = await new WriteTodoCommentChain(fixture).execute(chain);
+    const result = await new WriteTodoCommentChainUseCase(fixture).execute(chain);
 
     // Then
     const [first, second] = result.comments;
@@ -129,16 +129,10 @@ describe("WriteTodoCommentChain — 댓글 작성과 멱등성", () => {
     expect(fixture.repository.comments.get(comment.id)?.replyCount).toBe(3);
     expect(fixture.repository.comments.get(reply.id)?.replyCount).toBe(0);
     expect(lock).toHaveBeenCalledWith([
-      MutationLockKeys.todoCommentRequest(
-        ENGAGEMENT_VIEWER_ID,
-        chain.items[0]?.clientRequestId ?? "",
-      ),
-      MutationLockKeys.todoCommentRequest(
-        ENGAGEMENT_VIEWER_ID,
-        chain.items[1]?.clientRequestId ?? "",
-      ),
-      MutationLockKeys.todoComment(reply.id),
-      MutationLockKeys.todoComment(comment.id),
+      TodoCommentLockKeys.request(ENGAGEMENT_VIEWER_ID, chain.items[0]?.clientRequestId ?? ""),
+      TodoCommentLockKeys.request(ENGAGEMENT_VIEWER_ID, chain.items[1]?.clientRequestId ?? ""),
+      TodoCommentLockKeys.comment(reply.id),
+      TodoCommentLockKeys.comment(comment.id),
     ]);
     expect(fixture.notification.written).toEqual([
       expect.objectContaining({
@@ -158,7 +152,7 @@ describe("WriteTodoCommentChain — 댓글 작성과 멱등성", () => {
       deletedAt: ENGAGEMENT_TIME,
     });
     const reply = fixture.addComment({ parentId: comment.id, replyToCommentId: comment.id });
-    const useCase = new WriteTodoCommentChain(fixture);
+    const useCase = new WriteTodoCommentChainUseCase(fixture);
 
     // When
     await useCase.execute({ ...input(), parentId: reply.id });
@@ -180,7 +174,7 @@ describe("WriteTodoCommentChain — 댓글 작성과 멱등성", () => {
     fixture.blockReader.block(ENGAGEMENT_VIEWER_ID, ENGAGEMENT_OWNER_ID);
     // When / Then
     await expect(
-      new WriteTodoCommentChain(fixture).execute({ ...input(), parentId: parent.id }),
+      new WriteTodoCommentChainUseCase(fixture).execute({ ...input(), parentId: parent.id }),
     ).rejects.toMatchObject({ errorCode: "BLOCK_2204" });
     expect(fixture.repository.comments.size).toBe(1);
     expect(fixture.notification.written).toEqual([]);
@@ -192,7 +186,7 @@ describe("WriteTodoCommentChain — 댓글 작성과 멱등성", () => {
       new Error("push down"),
     );
     // When
-    const result = await new WriteTodoCommentChain(fixture).execute(input());
+    const result = await new WriteTodoCommentChainUseCase(fixture).execute(input());
     // Then
     expect(result.comments).toHaveLength(1);
     expect(fixture.repository.comments.size).toBe(1);
@@ -207,7 +201,7 @@ describe("WriteTodoCommentChain — 댓글 작성과 멱등성", () => {
     });
     const warning = vi.spyOn(fixture.logger, "warn");
     // When
-    const result = await new WriteTodoCommentChain(fixture).execute(input());
+    const result = await new WriteTodoCommentChainUseCase(fixture).execute(input());
     // Then
     expect(result.comments).toHaveLength(1);
     expect(fixture.notification.written).toHaveLength(1);
@@ -215,7 +209,7 @@ describe("WriteTodoCommentChain — 댓글 작성과 멱등성", () => {
     expect(warning).toHaveBeenCalledTimes(1);
     expect(JSON.stringify(warning.mock.calls)).not.toContain("private cache error content");
     expect(warning.mock.calls[0]?.[0]).toEqual({
-      event: EngagementCommentLogEvent.VIEW_CACHE_INVALIDATION_FAILED,
+      event: TodoCommentLogEvent.VIEW_CACHE_INVALIDATION_FAILED,
       todoId: 1,
       userId: ENGAGEMENT_VIEWER_ID,
       errorType: "Error",
@@ -239,7 +233,7 @@ describe("WriteTodoCommentChain — 댓글 작성과 멱등성", () => {
       return result;
     };
     // When
-    const outcome = new WriteTodoCommentChain(fixture).execute(input());
+    const outcome = new WriteTodoCommentChainUseCase(fixture).execute(input());
     await Promise.race([
       prepared.promise,
       outcome.then(() => {
@@ -260,7 +254,7 @@ describe("WriteTodoCommentChain — 댓글 작성과 멱등성", () => {
 
   it("정확한 replay는 원래 댓글과 viewer 좋아요를 반환하고 count·알림을 다시 변경하지 않는다", async () => {
     // Given
-    const useCase = new WriteTodoCommentChain(fixture);
+    const useCase = new WriteTodoCommentChainUseCase(fixture);
     const original = await useCase.execute(input());
     const commentId = original.comments[0]?.id;
     if (commentId == null) {
@@ -280,7 +274,7 @@ describe("WriteTodoCommentChain — 댓글 작성과 멱등성", () => {
 
   it("같은 멱등 키의 다른 명령은 SYS_0002로 거부하고 원래 댓글을 유지한다", async () => {
     // Given
-    const useCase = new WriteTodoCommentChain(fixture);
+    const useCase = new WriteTodoCommentChainUseCase(fixture);
     await useCase.execute(input());
     // When / Then
     await expect(
@@ -302,7 +296,7 @@ describe("WriteTodoCommentChain — 댓글 작성과 멱등성", () => {
     });
     const run = vi.spyOn(fixture.unitOfWork, "run");
     // When
-    const result = await new WriteTodoCommentChain(fixture).execute(input());
+    const result = await new WriteTodoCommentChainUseCase(fixture).execute(input());
     // Then
     expect(result.comments).toHaveLength(1);
     expect(fixture.repository.comments.size).toBe(1);
@@ -321,7 +315,7 @@ describe("WriteTodoCommentChain — 댓글 작성과 멱등성", () => {
       new TodoCommentIdempotencyRace(),
     );
     // When / Then
-    await expect(new WriteTodoCommentChain(fixture).execute(input())).rejects.toMatchObject({
+    await expect(new WriteTodoCommentChainUseCase(fixture).execute(input())).rejects.toMatchObject({
       errorCode: "SYS_0002",
     });
     expect(replay).toHaveBeenCalledTimes(2);
@@ -337,7 +331,7 @@ describe("WriteTodoCommentChain — 댓글 작성과 멱등성", () => {
       throw new TodoCommentIdempotencyRace();
     });
     // When / Then
-    await expect(new WriteTodoCommentChain(fixture).execute(input())).rejects.toMatchObject({
+    await expect(new WriteTodoCommentChainUseCase(fixture).execute(input())).rejects.toMatchObject({
       errorCode: "TODO_0801",
     });
     expect(fixture.repository.comments.size).toBe(1);

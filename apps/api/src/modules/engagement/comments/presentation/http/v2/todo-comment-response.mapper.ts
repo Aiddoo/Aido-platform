@@ -9,12 +9,12 @@ import type {
 import { resolveProfileImage } from "#api/platform/http/profile/profile-image.resolver";
 
 import type {
-  TodoCommentParticipantAuthorRecord,
-  TodoCommentRecord,
-  TodoCommentRepliesResult,
-  TodoCommentThreadItemRecord,
-  TodoCommentThreadsResult,
-  TodoCommentViewerContext,
+  TodoCommentParticipantAuthorReadModel,
+  TodoCommentReadModel,
+  TodoCommentRepliesPage,
+  TodoCommentThreadItemReadModel,
+  TodoCommentThreadsPage,
+  TodoCommentViewer,
 } from "../../../application/read-models/todo-comment.read-model.js";
 import { getTodoCommentViewerPermissions } from "../../../domain/todo-comment-permission.domain-service.js";
 
@@ -23,8 +23,8 @@ import { getTodoCommentViewerPermissions } from "../../../domain/todo-comment-pe
  * isAuthorBlocked를 모르는 구 앱도 삭제된 댓글로 그려 차단한 사람의 이름·내용이 보이지 않는다.
  */
 export function toTodoCommentView(
-  record: TodoCommentRecord,
-  viewer: TodoCommentViewerContext,
+  record: TodoCommentReadModel,
+  viewer: TodoCommentViewer,
 ): TodoCommentV2 {
   const isAuthorBlocked = viewer.blockedAuthorIds.has(record.authorId);
   const isHidden = record.deletedAt != null || isAuthorBlocked;
@@ -71,15 +71,15 @@ export function toTodoCommentView(
 
 /** 차단 관계인 작성자의 답글은 가린 묘비로 보이므로 대표 답글로 내보내지 않는다. */
 export function toVisiblePreviewReply(
-  item: TodoCommentThreadItemRecord,
-  viewer: TodoCommentViewerContext,
-): TodoCommentRecord | null {
+  item: TodoCommentThreadItemReadModel,
+  viewer: TodoCommentViewer,
+): TodoCommentReadModel | null {
   const preview = item.previewReply;
   return preview == null || viewer.blockedAuthorIds.has(preview.authorId) ? null : preview;
 }
 
 export function toTodoCommentParticipantAuthor(
-  record: TodoCommentParticipantAuthorRecord,
+  record: TodoCommentParticipantAuthorReadModel,
 ): TodoCommentV2Author {
   return {
     id: record.id,
@@ -91,13 +91,13 @@ export function toTodoCommentParticipantAuthor(
 }
 
 /** 응답에 실릴 수 있는 작성자 ID. 차단 관계를 한 번에 조회하는 후보로 쓴다. */
-export function collectCommentAuthorIds(records: readonly TodoCommentRecord[]): string[] {
+export function collectCommentAuthorIds(records: readonly TodoCommentReadModel[]): string[] {
   return records.flatMap((record) =>
     record.replyToAuthorId == null ? [record.authorId] : [record.authorId, record.replyToAuthorId],
   );
 }
 
-export function collectCommentIds(records: readonly TodoCommentRecord[]): string[] {
+export function collectCommentIds(records: readonly TodoCommentReadModel[]): string[] {
   return records.map((record) => record.id);
 }
 
@@ -118,7 +118,7 @@ export function toTodoCommentCursorPagination(input: {
 }
 
 export function toTodoCommentThreadsResponse(
-  result: TodoCommentThreadsResult,
+  result: TodoCommentThreadsPage,
 ): TodoCommentThreadsResponse {
   return {
     items: result.items.map((item) => {
@@ -142,7 +142,7 @@ export function toTodoCommentThreadsResponse(
 }
 
 export function toTodoCommentRepliesResponse(
-  result: TodoCommentRepliesResult,
+  result: TodoCommentRepliesPage,
 ): TodoCommentRepliesResponse {
   return {
     items: result.items.map((record) => toTodoCommentView(record, result.viewer)),

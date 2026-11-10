@@ -1,13 +1,14 @@
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
-import { MutationLockKeys, type MutationLockPort } from "#api/shared/application/ports/index";
+import { type MutationLockPort } from "#api/shared/application/ports/index";
 
-import { EngagementCommentLogEvent } from "../comments.log-events.js";
+import { TodoCommentLockKeys } from "../comments.lock-keys.js";
+import { TodoCommentLogEvent } from "../comments.log-events.js";
 import { settleAfterCommit } from "../comments.log-events.js";
 import type {
   TodoCommentAccountCleanupPort,
   TodoCommentAccountCleanupResult,
 } from "../ports/todo-comment-account-cleanup.port.js";
-import { type TodoCommentAccountCleanupStorePort } from "../ports/todo-comment-purge.repository.port.js";
+import { type TodoCommentPurgeRepositoryPort } from "../ports/todo-comment-purge.repository.port.js";
 import { type TodoViewCachePort } from "../ports/todo-view-cache.port.js";
 
 /**
@@ -16,17 +17,17 @@ import { type TodoViewCachePort } from "../ports/todo-view-cache.port.js";
  * cleanupInTransaction은 호출자가 연 UoW에 참여합니다. 계정 삭제보다 먼저 댓글 데이터와
  * counter를 정리해야 User FK의 RESTRICT가 마지막 안전망으로 동작합니다.
  */
-interface TodoCommentAccountCleanupDependencies {
-  readonly store: TodoCommentAccountCleanupStorePort;
+interface CleanUpAccountTodoCommentsDependencies {
+  readonly store: TodoCommentPurgeRepositoryPort;
   readonly todoViewCache: TodoViewCachePort;
   readonly mutationLock: MutationLockPort;
   readonly logger: ApplicationLoggerPort;
 }
 
-export class TodoCommentAccountCleanup implements TodoCommentAccountCleanupPort {
-  readonly #dependencies: TodoCommentAccountCleanupDependencies;
+export class CleanUpAccountTodoCommentsUseCase implements TodoCommentAccountCleanupPort {
+  readonly #dependencies: CleanUpAccountTodoCommentsDependencies;
 
-  constructor(dependencies: TodoCommentAccountCleanupDependencies) {
+  constructor(dependencies: CleanUpAccountTodoCommentsDependencies) {
     this.#dependencies = dependencies;
   }
 
@@ -35,7 +36,7 @@ export class TodoCommentAccountCleanup implements TodoCommentAccountCleanupPort 
 
     if (plan.commentIdsToLock.length > 0) {
       await this.#dependencies.mutationLock.acquire(
-        plan.commentIdsToLock.map(MutationLockKeys.todoComment),
+        plan.commentIdsToLock.map(TodoCommentLockKeys.comment),
       );
     }
 
@@ -48,7 +49,7 @@ export class TodoCommentAccountCleanup implements TodoCommentAccountCleanupPort 
     await settleAfterCommit(
       this.#dependencies.logger,
       result.affectedTodoIds.map((todoId) => ({
-        failureEvent: EngagementCommentLogEvent.ACCOUNT_CLEANUP_CACHE_INVALIDATION_FAILED,
+        failureEvent: TodoCommentLogEvent.ACCOUNT_CLEANUP_CACHE_INVALIDATION_FAILED,
         context: { todoId },
         run: () => this.#dependencies.todoViewCache.invalidateForTodo(todoId),
       })),

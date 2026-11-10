@@ -11,12 +11,12 @@ import type { TodoCommentCursorCodecPort } from "../../application/ports/todo-co
 import {
   TODO_COMMENT_PAGE_DIRECTION,
   type TodoCommentPageDirection,
-  type TodoCommentRecord,
+  type TodoCommentReadModel,
   type TodoCommentRepliesCursor,
   type TodoCommentThreadCursor,
-  type TodoCommentThreadRecord,
+  type TodoCommentThreadReadModel,
   type TodoConversationCursor,
-  type TodoConversationRecord,
+  type TodoConversationReadModel,
   type TodoConversationScope,
 } from "../../application/read-models/todo-comment.read-model.js";
 
@@ -63,7 +63,7 @@ function invalidCursor(): ApplicationException {
 }
 
 @Injectable()
-export class HmacTodoCommentCursorCodec implements TodoCommentCursorCodecPort {
+export class HmacTodoCommentCursorCodecAdapter implements TodoCommentCursorCodecPort {
   readonly #signer: HmacTokenSigner;
 
   constructor(config: TypedConfigService) {
@@ -85,7 +85,7 @@ export class HmacTodoCommentCursorCodec implements TodoCommentCursorCodecPort {
   }
 
   encodeConversation(
-    record: TodoConversationRecord,
+    record: TodoConversationReadModel,
     sort: TodoCommentSort,
     scope: TodoConversationScope = "TODO",
   ): string {
@@ -112,7 +112,7 @@ export class HmacTodoCommentCursorCodec implements TodoCommentCursorCodecPort {
   }
 
   encodeThreads(
-    record: TodoCommentThreadRecord,
+    record: TodoCommentThreadReadModel,
     sort: TodoCommentSort,
     direction: TodoCommentPageDirection,
   ): string {
@@ -141,7 +141,7 @@ export class HmacTodoCommentCursorCodec implements TodoCommentCursorCodecPort {
     return parsedCursor.data;
   }
 
-  encodeReplies(record: TodoCommentRecord, direction: TodoCommentPageDirection): string {
+  encodeReplies(record: TodoCommentReadModel, direction: TodoCommentPageDirection): string {
     if (record.threadCommentId == null) {
       throw invalidCursor();
     }

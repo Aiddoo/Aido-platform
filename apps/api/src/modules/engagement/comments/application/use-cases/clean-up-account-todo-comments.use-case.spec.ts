@@ -6,10 +6,10 @@ import {
   ENGAGEMENT_OWNER_ID,
 } from "#test/fixtures/engagement-comment.fixture";
 
-import type { TodoCommentAccountCleanupStorePort } from "../ports/todo-comment-purge.repository.port.js";
-import { TodoCommentAccountCleanup } from "./clean-up-account-todo-comments.use-case.js";
+import type { TodoCommentPurgeRepositoryPort } from "../ports/todo-comment-purge.repository.port.js";
+import { CleanUpAccountTodoCommentsUseCase } from "./clean-up-account-todo-comments.use-case.js";
 
-describe("TodoCommentAccountCleanup — 계정 정리 경계", () => {
+describe("CleanUpAccountTodoCommentsUseCase — 계정 정리 경계", () => {
   let fixture: ReturnType<typeof createEngagementCommentFixture>;
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ["Date"] });
@@ -27,7 +27,7 @@ describe("TodoCommentAccountCleanup — 계정 정리 경계", () => {
       lockKeys.push(...keys);
     };
     let cleanedUserId: string | undefined;
-    const store: TodoCommentAccountCleanupStorePort = {
+    const store: TodoCommentPurgeRepositoryPort = {
       async plan(_userId) {
         return structuredClone(plan);
       },
@@ -38,9 +38,10 @@ describe("TodoCommentAccountCleanup — 계정 정리 경계", () => {
       },
     };
     // When
-    const result = await new TodoCommentAccountCleanup({ ...fixture, store }).cleanupInTransaction(
-      ENGAGEMENT_OWNER_ID,
-    );
+    const result = await new CleanUpAccountTodoCommentsUseCase({
+      ...fixture,
+      store,
+    }).cleanupInTransaction(ENGAGEMENT_OWNER_ID);
     // Then
     expect(cleanedUserId).toBe(ENGAGEMENT_OWNER_ID);
     expect(result).toEqual({ affectedTodoIds: [8, 13] });
@@ -50,7 +51,7 @@ describe("TodoCommentAccountCleanup — 계정 정리 경계", () => {
     // Given
     const lock = vi.spyOn(fixture.mutationLock, "acquire");
     let cleaned = false;
-    const store: TodoCommentAccountCleanupStorePort = {
+    const store: TodoCommentPurgeRepositoryPort = {
       async plan() {
         return { affectedTodoIds: [], commentIdsToLock: [] };
       },
@@ -59,9 +60,10 @@ describe("TodoCommentAccountCleanup — 계정 정리 경계", () => {
       },
     };
     // When
-    const result = await new TodoCommentAccountCleanup({ ...fixture, store }).cleanupInTransaction(
-      ENGAGEMENT_OWNER_ID,
-    );
+    const result = await new CleanUpAccountTodoCommentsUseCase({
+      ...fixture,
+      store,
+    }).cleanupInTransaction(ENGAGEMENT_OWNER_ID);
     // Then
     expect(cleaned).toBe(true);
     expect(result.affectedTodoIds).toEqual([]);
@@ -78,13 +80,13 @@ describe("TodoCommentAccountCleanup — 계정 정리 경계", () => {
       return invalidate(todoId);
     });
     const warning = vi.spyOn(fixture.logger, "warn");
-    const store: TodoCommentAccountCleanupStorePort = {
+    const store: TodoCommentPurgeRepositoryPort = {
       async plan() {
         return { affectedTodoIds: [], commentIdsToLock: [] };
       },
       async cleanup() {},
     };
-    const cleanup = new TodoCommentAccountCleanup({ ...fixture, store });
+    const cleanup = new CleanUpAccountTodoCommentsUseCase({ ...fixture, store });
     // When / Then
     await expect(cleanup.settleAfterCommit({ affectedTodoIds: [8, 13] })).resolves.toBeUndefined();
     expect(fixture.invalidatedTodoIds).toEqual([13]);

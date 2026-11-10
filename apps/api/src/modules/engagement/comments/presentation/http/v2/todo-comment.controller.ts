@@ -17,11 +17,11 @@ import {
   SWAGGER_TAGS,
 } from "#api/platform/http/swagger/index";
 
-import { GetTodoCommentReplies } from "../../../application/use-cases/get-todo-comment-replies.use-case.js";
+import { ListTodoCommentRepliesUseCase } from "../../../application/use-cases/list-todo-comment-replies.use-case.js";
 import {
-  GetTodoCommentThreads,
-  type GetTodoCommentThreadsPage,
-} from "../../../application/use-cases/get-todo-comment-threads.use-case.js";
+  ListTodoCommentThreadsUseCase,
+  type TodoCommentThreadsPageRequest,
+} from "../../../application/use-cases/list-todo-comment-threads.use-case.js";
 import { TodoCommentIdParamDto, TodoDetailsParamDto } from "../v1/todo-comment.dto.js";
 import {
   toTodoCommentRepliesResponse,
@@ -35,7 +35,7 @@ import {
   TodoCommentThreadsResponseDto,
 } from "./todo-comment.dto.js";
 
-function toThreadsPage(query: GetTodoCommentThreadsQueryDto): GetTodoCommentThreadsPage {
+function toThreadsPage(query: GetTodoCommentThreadsQueryDto): TodoCommentThreadsPageRequest {
   if (query.cursor != null) {
     return { kind: "CURSOR", cursor: query.cursor };
   }
@@ -51,12 +51,12 @@ function toThreadsPage(query: GetTodoCommentThreadsQueryDto): GetTodoCommentThre
 @ApiBearerAuth()
 @Controller({ path: "todos/:todoId/comments", version: API_VERSION.V2 })
 export class TodoCommentV2Controller {
-  readonly #getTodoCommentThreads: GetTodoCommentThreads;
-  readonly #getTodoCommentReplies: GetTodoCommentReplies;
+  readonly #getTodoCommentThreads: ListTodoCommentThreadsUseCase;
+  readonly #getTodoCommentReplies: ListTodoCommentRepliesUseCase;
 
   constructor(
-    getTodoCommentThreads: GetTodoCommentThreads,
-    getTodoCommentReplies: GetTodoCommentReplies,
+    getTodoCommentThreads: ListTodoCommentThreadsUseCase,
+    getTodoCommentReplies: ListTodoCommentRepliesUseCase,
   ) {
     this.#getTodoCommentThreads = getTodoCommentThreads;
     this.#getTodoCommentReplies = getTodoCommentReplies;

@@ -14,10 +14,10 @@ import { type TodoCommentReaderPort } from "../ports/todo-comment.reader.port.js
 import {
   TODO_COMMENT_PAGE_DIRECTION,
   type ListTodoCommentRepliesParams,
-  type TodoCommentRepliesResult,
+  type TodoCommentRepliesPage,
 } from "../read-models/todo-comment.read-model.js";
 
-export interface GetTodoCommentRepliesInput {
+export interface ListTodoCommentRepliesQuery {
   readonly todoId: number;
   readonly viewerId: string;
   readonly threadCommentId: string;
@@ -26,7 +26,7 @@ export interface GetTodoCommentRepliesInput {
   readonly aroundReplyId?: string;
 }
 
-interface GetTodoCommentRepliesDependencies {
+interface ListTodoCommentRepliesDependencies {
   readonly reader: Pick<
     TodoCommentReaderPort,
     "findAccessibleTodoOwnerId" | "findCommentRecord" | "listReplies" | "findLikedCommentIds"
@@ -35,14 +35,14 @@ interface GetTodoCommentRepliesDependencies {
   readonly cursorCodec: Pick<TodoCommentCursorCodecPort, "decodeReplies" | "encodeReplies">;
 }
 
-export class GetTodoCommentReplies {
-  readonly #dependencies: GetTodoCommentRepliesDependencies;
+export class ListTodoCommentRepliesUseCase {
+  readonly #dependencies: ListTodoCommentRepliesDependencies;
 
-  constructor(dependencies: GetTodoCommentRepliesDependencies) {
+  constructor(dependencies: ListTodoCommentRepliesDependencies) {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: GetTodoCommentRepliesInput): Promise<TodoCommentRepliesResult> {
+  async execute(input: ListTodoCommentRepliesQuery): Promise<TodoCommentRepliesPage> {
     await assertTodoCommentAccess(this.#dependencies.reader, input.todoId, input.viewerId);
     const thread = await this.#dependencies.reader.findCommentRecord(
       input.todoId,
@@ -97,7 +97,7 @@ export class GetTodoCommentReplies {
     };
   }
 
-  #toParams(input: GetTodoCommentRepliesInput): ListTodoCommentRepliesParams {
+  #toParams(input: ListTodoCommentRepliesQuery): ListTodoCommentRepliesParams {
     const base = { todoId: input.todoId, threadCommentId: input.threadCommentId, size: input.size };
 
     if (input.cursor != null) {

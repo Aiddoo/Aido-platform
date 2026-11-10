@@ -14,14 +14,14 @@ import type {
   ListTodoCommentRepliesParams,
   ListTodoCommentThreadsParams,
   ListTodoConversationParams,
-  TodoCommentParticipantAuthorRecord,
-  TodoCommentRecord,
-  TodoCommentThreadItemRecord,
-  TodoCommentThreadRecord,
+  TodoCommentParticipantAuthorReadModel,
+  TodoCommentReadModel,
+  TodoCommentThreadItemReadModel,
+  TodoCommentThreadReadModel,
   TodoCommentWindow,
-  TodoConversationRecord,
+  TodoConversationReadModel,
   TodoConversationWindow,
-  TodoDetailsRecord,
+  TodoDetailsReadModel,
 } from "../../application/read-models/todo-comment.read-model.js";
 import {
   commentColumns,
@@ -64,8 +64,8 @@ const threadSummaryRowSchema = commentRowSchema.extend({
 type ThreadSummaryRow = z.infer<typeof threadSummaryRowSchema>;
 
 interface ThreadSummary {
-  previewReply: TodoCommentRecord | null;
-  participantAuthors: TodoCommentParticipantAuthorRecord[];
+  previewReply: TodoCommentReadModel | null;
+  participantAuthors: TodoCommentParticipantAuthorReadModel[];
 }
 
 function toMarkedRecords<Row extends { marker: TodoCommentRowMarker }, T>(
@@ -78,17 +78,17 @@ function toMarkedRecords<Row extends { marker: TodoCommentRowMarker }, T>(
   });
 }
 
-function toThreadRecord(row: MarkedRootRow): TodoCommentThreadRecord | null {
+function toThreadRecord(row: MarkedRootRow): TodoCommentThreadReadModel | null {
   const record = toCommentRecord(row);
   return record == null ? null : { ...record, threadPosition: toRootPosition(row) };
 }
 
-function toConversationRecord(row: MarkedRootRow): TodoConversationRecord | null {
+function toConversationRecord(row: MarkedRootRow): TodoConversationReadModel | null {
   const record = toCommentRecord(row);
   return record == null ? null : { ...record, conversationPosition: toRootPosition(row) };
 }
 
-function toParticipantAuthor(row: ThreadSummaryRow): TodoCommentParticipantAuthorRecord | null {
+function toParticipantAuthor(row: ThreadSummaryRow): TodoCommentParticipantAuthorReadModel | null {
   if (row.participantAuthorId == null) {
     return null;
   }
@@ -167,7 +167,7 @@ export class DrizzleTodoCommentReader implements TodoCommentReaderPort {
   async findAccessibleTodoDetails(
     todoId: number,
     viewerId: string,
-  ): Promise<TodoDetailsRecord | null> {
+  ): Promise<TodoDetailsReadModel | null> {
     const row = await this.#db.query.todo.findFirst({
       where: { id: todoId },
       with: {
@@ -203,7 +203,7 @@ export class DrizzleTodoCommentReader implements TodoCommentReaderPort {
     };
   }
 
-  async findCommentRecord(todoId: number, commentId: string): Promise<TodoCommentRecord | null> {
+  async findCommentRecord(todoId: number, commentId: string): Promise<TodoCommentReadModel | null> {
     const [record] = await this.findCommentRecords(todoId, [commentId]);
     return record ?? null;
   }
@@ -211,7 +211,7 @@ export class DrizzleTodoCommentReader implements TodoCommentReaderPort {
   async findCommentRecords(
     todoId: number,
     commentIds: readonly string[],
-  ): Promise<TodoCommentRecord[]> {
+  ): Promise<TodoCommentReadModel[]> {
     if (commentIds.length === 0) {
       return [];
     }
@@ -245,7 +245,7 @@ export class DrizzleTodoCommentReader implements TodoCommentReaderPort {
   /** 묶음 머리 keyset을 읽고, 고른 묶음마다 대표 답글과 참여자를 LATERAL로 한 번에 붙인다. */
   async listThreads(
     params: ListTodoCommentThreadsParams,
-  ): Promise<TodoCommentWindow<TodoCommentThreadItemRecord> | null> {
+  ): Promise<TodoCommentWindow<TodoCommentThreadItemReadModel> | null> {
     const window = await this.#listThreadComments(params);
     if (window == null) {
       return null;
@@ -273,7 +273,7 @@ export class DrizzleTodoCommentReader implements TodoCommentReaderPort {
 
   async #listThreadComments(
     params: ListTodoCommentThreadsParams,
-  ): Promise<TodoCommentWindow<TodoCommentThreadRecord> | null> {
+  ): Promise<TodoCommentWindow<TodoCommentThreadReadModel> | null> {
     if (params.mode !== "INITIAL" && params.anchorCommentId == null) {
       return null;
     }
@@ -487,7 +487,7 @@ export class DrizzleTodoCommentReader implements TodoCommentReaderPort {
   /** 묶음 하나의 답글을 작성 순서로 읽는다. 지운 답글은 목록에서 빠지지만 cursor 위치로는 남는다. */
   async listReplies(
     params: ListTodoCommentRepliesParams,
-  ): Promise<TodoCommentWindow<TodoCommentRecord> | null> {
+  ): Promise<TodoCommentWindow<TodoCommentReadModel> | null> {
     if (params.mode !== "INITIAL" && params.anchorReplyId == null) {
       return null;
     }

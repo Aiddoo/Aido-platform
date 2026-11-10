@@ -5,84 +5,91 @@ import { UNIT_OF_WORK, MUTATION_LOCK } from "#api/shared/application/ports/index
 import { TODO_COMMENT_BLOCK_READER } from "./application/ports/todo-comment-block-reader.port.js";
 import { TODO_COMMENT_CURSOR_CODEC } from "./application/ports/todo-comment-cursor-codec.port.js";
 import { TODO_COMMENT_NOTIFICATION } from "./application/ports/todo-comment-notification.port.js";
-import { TODO_COMMENT_ACCOUNT_CLEANUP_STORE } from "./application/ports/todo-comment-purge.repository.port.js";
+import { TODO_COMMENT_PURGE_REPOSITORY } from "./application/ports/todo-comment-purge.repository.port.js";
 import { TODO_COMMENT_READER } from "./application/ports/todo-comment.reader.port.js";
 import { TODO_COMMENT_REPOSITORY } from "./application/ports/todo-comment.repository.port.js";
 import { TODO_VIEW_CACHE } from "./application/ports/todo-view-cache.port.js";
-import { TodoCommentAccountCleanup } from "./application/use-cases/clean-up-account-todo-comments.use-case.js";
-import { DeleteTodoComment } from "./application/use-cases/delete-todo-comment.use-case.js";
-import { GetTodoCommentReplies } from "./application/use-cases/get-todo-comment-replies.use-case.js";
-import { GetTodoCommentThreads } from "./application/use-cases/get-todo-comment-threads.use-case.js";
-import { GetTodoConversation } from "./application/use-cases/get-todo-conversation.use-case.js";
-import { GetTodoDetails } from "./application/use-cases/get-todo-details.use-case.js";
-import { LikeTodoComment } from "./application/use-cases/like-todo-comment.use-case.js";
-import { UnlikeTodoComment } from "./application/use-cases/unlike-todo-comment.use-case.js";
-import { UpdateTodoComment } from "./application/use-cases/update-todo-comment.use-case.js";
-import { WriteTodoCommentChain } from "./application/use-cases/write-todo-comment-chain.use-case.js";
+import { CleanUpAccountTodoCommentsUseCase } from "./application/use-cases/clean-up-account-todo-comments.use-case.js";
+import { DeleteTodoCommentUseCase } from "./application/use-cases/delete-todo-comment.use-case.js";
+import { GetTodoConversationUseCase } from "./application/use-cases/get-todo-conversation.use-case.js";
+import { GetTodoDetailsUseCase } from "./application/use-cases/get-todo-details.use-case.js";
+import { LikeTodoCommentUseCase } from "./application/use-cases/like-todo-comment.use-case.js";
+import { ListTodoCommentRepliesUseCase } from "./application/use-cases/list-todo-comment-replies.use-case.js";
+import { ListTodoCommentThreadsUseCase } from "./application/use-cases/list-todo-comment-threads.use-case.js";
+import { UnlikeTodoCommentUseCase } from "./application/use-cases/unlike-todo-comment.use-case.js";
+import { UpdateTodoCommentUseCase } from "./application/use-cases/update-todo-comment.use-case.js";
+import { WriteTodoCommentChainUseCase } from "./application/use-cases/write-todo-comment-chain.use-case.js";
 
-export const getTodoCommentThreadsProvider: FactoryProvider<GetTodoCommentThreads> = {
-  provide: GetTodoCommentThreads,
+export const getTodoCommentThreadsProvider: FactoryProvider<ListTodoCommentThreadsUseCase> = {
+  provide: ListTodoCommentThreadsUseCase,
   inject: [TODO_COMMENT_READER, TODO_COMMENT_CURSOR_CODEC, TODO_COMMENT_BLOCK_READER],
   useFactory: (
-    reader: ConstructorParameters<typeof GetTodoCommentThreads>[0]["reader"],
-    cursorCodec: ConstructorParameters<typeof GetTodoCommentThreads>[0]["cursorCodec"],
-    blockReader: ConstructorParameters<typeof GetTodoCommentThreads>[0]["blockReader"],
-  ) => new GetTodoCommentThreads({ reader, cursorCodec, blockReader }),
+    reader: ConstructorParameters<typeof ListTodoCommentThreadsUseCase>[0]["reader"],
+    cursorCodec: ConstructorParameters<typeof ListTodoCommentThreadsUseCase>[0]["cursorCodec"],
+    blockReader: ConstructorParameters<typeof ListTodoCommentThreadsUseCase>[0]["blockReader"],
+  ) => new ListTodoCommentThreadsUseCase({ reader, cursorCodec, blockReader }),
 };
 
-export const getTodoCommentRepliesProvider: FactoryProvider<GetTodoCommentReplies> = {
-  provide: GetTodoCommentReplies,
+export const getTodoCommentRepliesProvider: FactoryProvider<ListTodoCommentRepliesUseCase> = {
+  provide: ListTodoCommentRepliesUseCase,
   inject: [TODO_COMMENT_READER, TODO_COMMENT_CURSOR_CODEC, TODO_COMMENT_BLOCK_READER],
   useFactory: (
-    reader: ConstructorParameters<typeof GetTodoCommentReplies>[0]["reader"],
-    cursorCodec: ConstructorParameters<typeof GetTodoCommentReplies>[0]["cursorCodec"],
-    blockReader: ConstructorParameters<typeof GetTodoCommentReplies>[0]["blockReader"],
-  ) => new GetTodoCommentReplies({ reader, cursorCodec, blockReader }),
+    reader: ConstructorParameters<typeof ListTodoCommentRepliesUseCase>[0]["reader"],
+    cursorCodec: ConstructorParameters<typeof ListTodoCommentRepliesUseCase>[0]["cursorCodec"],
+    blockReader: ConstructorParameters<typeof ListTodoCommentRepliesUseCase>[0]["blockReader"],
+  ) => new ListTodoCommentRepliesUseCase({ reader, cursorCodec, blockReader }),
 };
 
-export const getTodoConversationProvider: FactoryProvider<GetTodoConversation> = {
-  provide: GetTodoConversation,
+export const getTodoConversationProvider: FactoryProvider<GetTodoConversationUseCase> = {
+  provide: GetTodoConversationUseCase,
   inject: [TODO_COMMENT_READER, TODO_COMMENT_CURSOR_CODEC, TODO_COMMENT_BLOCK_READER],
   useFactory: (
-    reader: ConstructorParameters<typeof GetTodoConversation>[0]["reader"],
-    cursorCodec: ConstructorParameters<typeof GetTodoConversation>[0]["cursorCodec"],
-    blockReader: ConstructorParameters<typeof GetTodoConversation>[0]["blockReader"],
-  ) => new GetTodoConversation({ reader, cursorCodec, blockReader }),
+    reader: ConstructorParameters<typeof GetTodoConversationUseCase>[0]["reader"],
+    cursorCodec: ConstructorParameters<typeof GetTodoConversationUseCase>[0]["cursorCodec"],
+    blockReader: ConstructorParameters<typeof GetTodoConversationUseCase>[0]["blockReader"],
+  ) => new GetTodoConversationUseCase({ reader, cursorCodec, blockReader }),
 };
 
-export const getTodoDetailsProvider: FactoryProvider<GetTodoDetails> = {
-  provide: GetTodoDetails,
+export const getTodoDetailsProvider: FactoryProvider<GetTodoDetailsUseCase> = {
+  provide: GetTodoDetailsUseCase,
   inject: [TODO_COMMENT_READER, TODO_COMMENT_REPOSITORY, UNIT_OF_WORK],
   useFactory: (
-    todoCommentReader: ConstructorParameters<typeof GetTodoDetails>[0]["todoCommentReader"],
-    todoCommentRepository: ConstructorParameters<typeof GetTodoDetails>[0]["todoCommentRepository"],
-    unitOfWork: ConstructorParameters<typeof GetTodoDetails>[0]["unitOfWork"],
+    todoCommentReader: ConstructorParameters<typeof GetTodoDetailsUseCase>[0]["todoCommentReader"],
+    todoCommentRepository: ConstructorParameters<
+      typeof GetTodoDetailsUseCase
+    >[0]["todoCommentRepository"],
+    unitOfWork: ConstructorParameters<typeof GetTodoDetailsUseCase>[0]["unitOfWork"],
   ) =>
-    new GetTodoDetails({
+    new GetTodoDetailsUseCase({
       todoCommentReader,
       todoCommentRepository,
       unitOfWork,
     }),
 };
 
-export const todoCommentAccountCleanupProvider: FactoryProvider<TodoCommentAccountCleanup> = {
-  provide: TodoCommentAccountCleanup,
-  inject: [TODO_COMMENT_ACCOUNT_CLEANUP_STORE, TODO_VIEW_CACHE, MUTATION_LOCK],
-  useFactory: (
-    store: ConstructorParameters<typeof TodoCommentAccountCleanup>[0]["store"],
-    todoViewCache: ConstructorParameters<typeof TodoCommentAccountCleanup>[0]["todoViewCache"],
-    mutationLock: ConstructorParameters<typeof TodoCommentAccountCleanup>[0]["mutationLock"],
-  ) =>
-    new TodoCommentAccountCleanup({
-      store,
-      todoViewCache,
-      mutationLock,
-      logger: new Logger(TodoCommentAccountCleanup.name),
-    }),
-};
+export const todoCommentAccountCleanupProvider: FactoryProvider<CleanUpAccountTodoCommentsUseCase> =
+  {
+    provide: CleanUpAccountTodoCommentsUseCase,
+    inject: [TODO_COMMENT_PURGE_REPOSITORY, TODO_VIEW_CACHE, MUTATION_LOCK],
+    useFactory: (
+      store: ConstructorParameters<typeof CleanUpAccountTodoCommentsUseCase>[0]["store"],
+      todoViewCache: ConstructorParameters<
+        typeof CleanUpAccountTodoCommentsUseCase
+      >[0]["todoViewCache"],
+      mutationLock: ConstructorParameters<
+        typeof CleanUpAccountTodoCommentsUseCase
+      >[0]["mutationLock"],
+    ) =>
+      new CleanUpAccountTodoCommentsUseCase({
+        store,
+        todoViewCache,
+        mutationLock,
+        logger: new Logger(CleanUpAccountTodoCommentsUseCase.name),
+      }),
+  };
 
-export const deleteTodoCommentProvider: FactoryProvider<DeleteTodoComment> = {
-  provide: DeleteTodoComment,
+export const deleteTodoCommentProvider: FactoryProvider<DeleteTodoCommentUseCase> = {
+  provide: DeleteTodoCommentUseCase,
   inject: [
     TODO_COMMENT_READER,
     TODO_COMMENT_REPOSITORY,
@@ -91,24 +98,24 @@ export const deleteTodoCommentProvider: FactoryProvider<DeleteTodoComment> = {
     UNIT_OF_WORK,
   ],
   useFactory: (
-    reader: ConstructorParameters<typeof DeleteTodoComment>[0]["reader"],
-    repository: ConstructorParameters<typeof DeleteTodoComment>[0]["repository"],
-    todoViewCache: ConstructorParameters<typeof DeleteTodoComment>[0]["todoViewCache"],
-    mutationLock: ConstructorParameters<typeof DeleteTodoComment>[0]["mutationLock"],
-    unitOfWork: ConstructorParameters<typeof DeleteTodoComment>[0]["unitOfWork"],
+    reader: ConstructorParameters<typeof DeleteTodoCommentUseCase>[0]["reader"],
+    repository: ConstructorParameters<typeof DeleteTodoCommentUseCase>[0]["repository"],
+    todoViewCache: ConstructorParameters<typeof DeleteTodoCommentUseCase>[0]["todoViewCache"],
+    mutationLock: ConstructorParameters<typeof DeleteTodoCommentUseCase>[0]["mutationLock"],
+    unitOfWork: ConstructorParameters<typeof DeleteTodoCommentUseCase>[0]["unitOfWork"],
   ) =>
-    new DeleteTodoComment({
+    new DeleteTodoCommentUseCase({
       reader,
       repository,
       todoViewCache,
       mutationLock,
       unitOfWork,
-      logger: new Logger(DeleteTodoComment.name),
+      logger: new Logger(DeleteTodoCommentUseCase.name),
     }),
 };
 
-export const likeTodoCommentProvider: FactoryProvider<LikeTodoComment> = {
-  provide: LikeTodoComment,
+export const likeTodoCommentProvider: FactoryProvider<LikeTodoCommentUseCase> = {
+  provide: LikeTodoCommentUseCase,
   inject: [
     TODO_COMMENT_READER,
     TODO_COMMENT_REPOSITORY,
@@ -118,34 +125,34 @@ export const likeTodoCommentProvider: FactoryProvider<LikeTodoComment> = {
     UNIT_OF_WORK,
   ],
   useFactory: (
-    reader: ConstructorParameters<typeof LikeTodoComment>[0]["reader"],
-    repository: ConstructorParameters<typeof LikeTodoComment>[0]["repository"],
-    notification: ConstructorParameters<typeof LikeTodoComment>[0]["notification"],
-    blockReader: ConstructorParameters<typeof LikeTodoComment>[0]["blockReader"],
-    mutationLock: ConstructorParameters<typeof LikeTodoComment>[0]["mutationLock"],
-    unitOfWork: ConstructorParameters<typeof LikeTodoComment>[0]["unitOfWork"],
+    reader: ConstructorParameters<typeof LikeTodoCommentUseCase>[0]["reader"],
+    repository: ConstructorParameters<typeof LikeTodoCommentUseCase>[0]["repository"],
+    notification: ConstructorParameters<typeof LikeTodoCommentUseCase>[0]["notification"],
+    blockReader: ConstructorParameters<typeof LikeTodoCommentUseCase>[0]["blockReader"],
+    mutationLock: ConstructorParameters<typeof LikeTodoCommentUseCase>[0]["mutationLock"],
+    unitOfWork: ConstructorParameters<typeof LikeTodoCommentUseCase>[0]["unitOfWork"],
   ) =>
-    new LikeTodoComment({
+    new LikeTodoCommentUseCase({
       reader,
       repository,
       notification,
       blockReader,
       mutationLock,
       unitOfWork,
-      logger: new Logger(LikeTodoComment.name),
+      logger: new Logger(LikeTodoCommentUseCase.name),
     }),
 };
 
-export const unlikeTodoCommentProvider: FactoryProvider<UnlikeTodoComment> = {
-  provide: UnlikeTodoComment,
+export const unlikeTodoCommentProvider: FactoryProvider<UnlikeTodoCommentUseCase> = {
+  provide: UnlikeTodoCommentUseCase,
   inject: [TODO_COMMENT_READER, TODO_COMMENT_REPOSITORY, MUTATION_LOCK, UNIT_OF_WORK],
   useFactory: (
-    reader: ConstructorParameters<typeof UnlikeTodoComment>[0]["reader"],
-    repository: ConstructorParameters<typeof UnlikeTodoComment>[0]["repository"],
-    mutationLock: ConstructorParameters<typeof UnlikeTodoComment>[0]["mutationLock"],
-    unitOfWork: ConstructorParameters<typeof UnlikeTodoComment>[0]["unitOfWork"],
+    reader: ConstructorParameters<typeof UnlikeTodoCommentUseCase>[0]["reader"],
+    repository: ConstructorParameters<typeof UnlikeTodoCommentUseCase>[0]["repository"],
+    mutationLock: ConstructorParameters<typeof UnlikeTodoCommentUseCase>[0]["mutationLock"],
+    unitOfWork: ConstructorParameters<typeof UnlikeTodoCommentUseCase>[0]["unitOfWork"],
   ) =>
-    new UnlikeTodoComment({
+    new UnlikeTodoCommentUseCase({
       reader,
       repository,
       mutationLock,
@@ -153,16 +160,16 @@ export const unlikeTodoCommentProvider: FactoryProvider<UnlikeTodoComment> = {
     }),
 };
 
-export const updateTodoCommentProvider: FactoryProvider<UpdateTodoComment> = {
-  provide: UpdateTodoComment,
+export const updateTodoCommentProvider: FactoryProvider<UpdateTodoCommentUseCase> = {
+  provide: UpdateTodoCommentUseCase,
   inject: [TODO_COMMENT_READER, TODO_COMMENT_REPOSITORY, MUTATION_LOCK, UNIT_OF_WORK],
   useFactory: (
-    reader: ConstructorParameters<typeof UpdateTodoComment>[0]["reader"],
-    repository: ConstructorParameters<typeof UpdateTodoComment>[0]["repository"],
-    mutationLock: ConstructorParameters<typeof UpdateTodoComment>[0]["mutationLock"],
-    unitOfWork: ConstructorParameters<typeof UpdateTodoComment>[0]["unitOfWork"],
+    reader: ConstructorParameters<typeof UpdateTodoCommentUseCase>[0]["reader"],
+    repository: ConstructorParameters<typeof UpdateTodoCommentUseCase>[0]["repository"],
+    mutationLock: ConstructorParameters<typeof UpdateTodoCommentUseCase>[0]["mutationLock"],
+    unitOfWork: ConstructorParameters<typeof UpdateTodoCommentUseCase>[0]["unitOfWork"],
   ) =>
-    new UpdateTodoComment({
+    new UpdateTodoCommentUseCase({
       reader,
       repository,
       mutationLock,
@@ -170,8 +177,8 @@ export const updateTodoCommentProvider: FactoryProvider<UpdateTodoComment> = {
     }),
 };
 
-export const writeTodoCommentChainProvider: FactoryProvider<WriteTodoCommentChain> = {
-  provide: WriteTodoCommentChain,
+export const writeTodoCommentChainProvider: FactoryProvider<WriteTodoCommentChainUseCase> = {
+  provide: WriteTodoCommentChainUseCase,
   inject: [
     TODO_COMMENT_READER,
     TODO_COMMENT_REPOSITORY,
@@ -182,15 +189,15 @@ export const writeTodoCommentChainProvider: FactoryProvider<WriteTodoCommentChai
     UNIT_OF_WORK,
   ],
   useFactory: (
-    reader: ConstructorParameters<typeof WriteTodoCommentChain>[0]["reader"],
-    repository: ConstructorParameters<typeof WriteTodoCommentChain>[0]["repository"],
-    notification: ConstructorParameters<typeof WriteTodoCommentChain>[0]["notification"],
-    blockReader: ConstructorParameters<typeof WriteTodoCommentChain>[0]["blockReader"],
-    todoViewCache: ConstructorParameters<typeof WriteTodoCommentChain>[0]["todoViewCache"],
-    mutationLock: ConstructorParameters<typeof WriteTodoCommentChain>[0]["mutationLock"],
-    unitOfWork: ConstructorParameters<typeof WriteTodoCommentChain>[0]["unitOfWork"],
+    reader: ConstructorParameters<typeof WriteTodoCommentChainUseCase>[0]["reader"],
+    repository: ConstructorParameters<typeof WriteTodoCommentChainUseCase>[0]["repository"],
+    notification: ConstructorParameters<typeof WriteTodoCommentChainUseCase>[0]["notification"],
+    blockReader: ConstructorParameters<typeof WriteTodoCommentChainUseCase>[0]["blockReader"],
+    todoViewCache: ConstructorParameters<typeof WriteTodoCommentChainUseCase>[0]["todoViewCache"],
+    mutationLock: ConstructorParameters<typeof WriteTodoCommentChainUseCase>[0]["mutationLock"],
+    unitOfWork: ConstructorParameters<typeof WriteTodoCommentChainUseCase>[0]["unitOfWork"],
   ) =>
-    new WriteTodoCommentChain({
+    new WriteTodoCommentChainUseCase({
       reader,
       repository,
       notification,
@@ -198,6 +205,6 @@ export const writeTodoCommentChainProvider: FactoryProvider<WriteTodoCommentChai
       todoViewCache,
       mutationLock,
       unitOfWork,
-      logger: new Logger(WriteTodoCommentChain.name),
+      logger: new Logger(WriteTodoCommentChainUseCase.name),
     }),
 };

@@ -35,17 +35,17 @@ import {
 import { THROTTLED_DESCRIPTION, ThrottleByUser } from "#api/platform/throttle/index";
 
 import { TODO_COMMENT_PAGE_DIRECTION } from "../../../application/read-models/todo-comment.read-model.js";
-import { DeleteTodoComment } from "../../../application/use-cases/delete-todo-comment.use-case.js";
+import { DeleteTodoCommentUseCase } from "../../../application/use-cases/delete-todo-comment.use-case.js";
+import { GetTodoConversationUseCase } from "../../../application/use-cases/get-todo-conversation.use-case.js";
+import { GetTodoDetailsUseCase } from "../../../application/use-cases/get-todo-details.use-case.js";
+import { LikeTodoCommentUseCase } from "../../../application/use-cases/like-todo-comment.use-case.js";
 import {
-  GetTodoCommentThreads,
-  type GetTodoCommentThreadsPage,
-} from "../../../application/use-cases/get-todo-comment-threads.use-case.js";
-import { GetTodoConversation } from "../../../application/use-cases/get-todo-conversation.use-case.js";
-import { GetTodoDetails } from "../../../application/use-cases/get-todo-details.use-case.js";
-import { LikeTodoComment } from "../../../application/use-cases/like-todo-comment.use-case.js";
-import { UnlikeTodoComment } from "../../../application/use-cases/unlike-todo-comment.use-case.js";
-import { UpdateTodoComment } from "../../../application/use-cases/update-todo-comment.use-case.js";
-import { WriteTodoCommentChain } from "../../../application/use-cases/write-todo-comment-chain.use-case.js";
+  ListTodoCommentThreadsUseCase,
+  type TodoCommentThreadsPageRequest,
+} from "../../../application/use-cases/list-todo-comment-threads.use-case.js";
+import { UnlikeTodoCommentUseCase } from "../../../application/use-cases/unlike-todo-comment.use-case.js";
+import { UpdateTodoCommentUseCase } from "../../../application/use-cases/update-todo-comment.use-case.js";
+import { WriteTodoCommentChainUseCase } from "../../../application/use-cases/write-todo-comment-chain.use-case.js";
 import { toTodoCommentOverviewResponse } from "./todo-comment-response.mapper.js";
 import { TodoCommentMapper } from "./todo-comment-response.mapper.js";
 import {
@@ -77,24 +77,24 @@ const DEPRECATED_READ_DESCRIPTION =
 @ApiBearerAuth()
 @Controller("todos/:todoId")
 export class TodoCommentController {
-  readonly #getTodoDetails: GetTodoDetails;
-  readonly #getTodoCommentThreads: GetTodoCommentThreads;
-  readonly #getTodoConversation: GetTodoConversation;
-  readonly #writeTodoCommentChain: WriteTodoCommentChain;
-  readonly #updateTodoComment: UpdateTodoComment;
-  readonly #deleteTodoComment: DeleteTodoComment;
-  readonly #likeTodoComment: LikeTodoComment;
-  readonly #unlikeTodoComment: UnlikeTodoComment;
+  readonly #getTodoDetails: GetTodoDetailsUseCase;
+  readonly #getTodoCommentThreads: ListTodoCommentThreadsUseCase;
+  readonly #getTodoConversation: GetTodoConversationUseCase;
+  readonly #writeTodoCommentChain: WriteTodoCommentChainUseCase;
+  readonly #updateTodoComment: UpdateTodoCommentUseCase;
+  readonly #deleteTodoComment: DeleteTodoCommentUseCase;
+  readonly #likeTodoComment: LikeTodoCommentUseCase;
+  readonly #unlikeTodoComment: UnlikeTodoCommentUseCase;
 
   constructor(
-    getTodoDetails: GetTodoDetails,
-    getTodoCommentThreads: GetTodoCommentThreads,
-    getTodoConversation: GetTodoConversation,
-    writeTodoCommentChain: WriteTodoCommentChain,
-    updateTodoComment: UpdateTodoComment,
-    deleteTodoComment: DeleteTodoComment,
-    likeTodoComment: LikeTodoComment,
-    unlikeTodoComment: UnlikeTodoComment,
+    getTodoDetails: GetTodoDetailsUseCase,
+    getTodoCommentThreads: ListTodoCommentThreadsUseCase,
+    getTodoConversation: GetTodoConversationUseCase,
+    writeTodoCommentChain: WriteTodoCommentChainUseCase,
+    updateTodoComment: UpdateTodoCommentUseCase,
+    deleteTodoComment: DeleteTodoCommentUseCase,
+    likeTodoComment: LikeTodoCommentUseCase,
+    unlikeTodoComment: UnlikeTodoCommentUseCase,
   ) {
     this.#getTodoDetails = getTodoDetails;
     this.#getTodoCommentThreads = getTodoCommentThreads;
@@ -355,7 +355,7 @@ export class TodoCommentController {
   }
 }
 
-function toOverviewPage(query: GetTodoCommentOverviewQueryDto): GetTodoCommentThreadsPage {
+function toOverviewPage(query: GetTodoCommentOverviewQueryDto): TodoCommentThreadsPageRequest {
   if (query.before != null) {
     return { kind: "CURSOR", cursor: query.before, direction: TODO_COMMENT_PAGE_DIRECTION.BEFORE };
   }

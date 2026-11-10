@@ -6,15 +6,15 @@ import { eq, inArray } from "drizzle-orm";
 import { ClsModule } from "nestjs-cls";
 import { vi } from "vitest";
 
-import { TODO_COMMENT_ACCOUNT_CLEANUP_STORE } from "#api/modules/engagement/comments/application/ports/todo-comment-purge.repository.port";
+import { TODO_COMMENT_PURGE_REPOSITORY } from "#api/modules/engagement/comments/application/ports/todo-comment-purge.repository.port";
 import {
   TODO_VIEW_CACHE,
   type TodoViewCachePort,
 } from "#api/modules/engagement/comments/application/ports/todo-view-cache.port";
-import { TodoCommentAccountCleanup } from "#api/modules/engagement/comments/application/use-cases/clean-up-account-todo-comments.use-case";
+import { CleanUpAccountTodoCommentsUseCase } from "#api/modules/engagement/comments/application/use-cases/clean-up-account-todo-comments.use-case";
 import { todoCommentAccountCleanupProvider } from "#api/modules/engagement/comments/engagement-comments.providers";
 import { TODO_COMMENT_ACCOUNT_CLEANUP } from "#api/modules/engagement/comments/engagement-comments.public";
-import { DrizzleTodoCommentAccountCleanupStore } from "#api/modules/engagement/comments/infrastructure/persistence/drizzle-todo-comment-purge.repository";
+import { DrizzleTodoCommentPurgeRepository } from "#api/modules/engagement/comments/infrastructure/persistence/drizzle-todo-comment-purge.repository";
 import { DrizzleTodoCommentReader } from "#api/modules/engagement/comments/infrastructure/persistence/drizzle-todo-comment.reader";
 import { AuthSecurityLogRepositoryPort } from "#api/modules/identity/auth/application/ports/auth-security-log.repository.port";
 import { AuthUserRepositoryPort } from "#api/modules/identity/auth/application/ports/auth-user.repository.port";
@@ -226,13 +226,13 @@ describe("댓글 계정 purge (실제 PostgreSQL)", () => {
         { provide: ClockPort, useClass: DateClock },
         PostgresMutationLockAdapter,
         { provide: MUTATION_LOCK, useExisting: PostgresMutationLockAdapter },
-        DrizzleTodoCommentAccountCleanupStore,
+        DrizzleTodoCommentPurgeRepository,
         {
-          provide: TODO_COMMENT_ACCOUNT_CLEANUP_STORE,
-          useExisting: DrizzleTodoCommentAccountCleanupStore,
+          provide: TODO_COMMENT_PURGE_REPOSITORY,
+          useExisting: DrizzleTodoCommentPurgeRepository,
         },
         todoCommentAccountCleanupProvider,
-        { provide: TODO_COMMENT_ACCOUNT_CLEANUP, useExisting: TodoCommentAccountCleanup },
+        { provide: TODO_COMMENT_ACCOUNT_CLEANUP, useExisting: CleanUpAccountTodoCommentsUseCase },
         { provide: NotificationRepositoryPort, useClass: DrizzleNotificationRepository },
         provideUseCase(DeleteActorNotificationsUseCase, {
           repository: NotificationRepositoryPort,

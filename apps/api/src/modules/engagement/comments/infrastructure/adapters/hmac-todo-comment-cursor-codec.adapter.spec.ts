@@ -6,12 +6,12 @@ import type { TypedConfigService } from "#api/platform/config/services/config.se
 import { asDep } from "#test/mocks/index";
 
 import type {
-  TodoCommentThreadRecord,
-  TodoConversationRecord,
+  TodoCommentThreadReadModel,
+  TodoConversationReadModel,
 } from "../../application/read-models/todo-comment.read-model.js";
-import { HmacTodoCommentCursorCodec } from "./hmac-todo-comment-cursor-codec.adapter.js";
+import { HmacTodoCommentCursorCodecAdapter } from "./hmac-todo-comment-cursor-codec.adapter.js";
 
-const record: TodoConversationRecord = {
+const record: TodoConversationReadModel = {
   id: "cm1todoacomment00000000001",
   todoId: 1,
   threadCommentId: null,
@@ -31,7 +31,7 @@ const record: TodoConversationRecord = {
   createdAt: "2026-08-14T00:00:00.000Z",
   conversationPosition: { rootLikeCount: 3, rootReplyCount: 2 },
 };
-const threadComment: TodoCommentThreadRecord = {
+const threadComment: TodoCommentThreadReadModel = {
   ...record,
   threadPosition: record.conversationPosition,
 };
@@ -64,8 +64,8 @@ const previousKey = "previous-cursor-key-at-least-32-characters";
 function createCodec(config: {
   readonly jwtSecret: string;
   readonly cursorSigningKeys?: string;
-}): HmacTodoCommentCursorCodec {
-  return new HmacTodoCommentCursorCodec(
+}): HmacTodoCommentCursorCodecAdapter {
+  return new HmacTodoCommentCursorCodecAdapter(
     asDep<TypedConfigService>({ cursorSigningKeys: undefined, ...config }),
   );
 }
@@ -76,8 +76,8 @@ function signLegacy(payload: string): string {
     .digest("base64url");
 }
 
-describe("HmacTodoCommentCursorCodec", () => {
-  let codec: HmacTodoCommentCursorCodec;
+describe("HmacTodoCommentCursorCodecAdapter", () => {
+  let codec: HmacTodoCommentCursorCodecAdapter;
 
   beforeEach(() => {
     codec = createCodec({ jwtSecret: secret });
@@ -271,7 +271,7 @@ describe("HmacTodoCommentCursorCodec", () => {
 
   it("답글을 묶음 cursor로 만들지 않고, 댓글을 답글 cursor로 만들지 않는다", () => {
     // Given
-    const reply: TodoCommentThreadRecord = {
+    const reply: TodoCommentThreadReadModel = {
       ...threadComment,
       id: "cm1todoacomment00000000002",
       threadCommentId: threadComment.id,

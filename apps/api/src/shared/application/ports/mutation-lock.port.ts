@@ -61,10 +61,4 @@ export const MutationLockKeys = {
   memoSortOrder(userId: string): string {
     return `${MUTATION_KEY_PREFIX}:memo-sort-order:${userId}`;
   },
-  todoComment(commentId: string): string {
-    return `${MUTATION_KEY_PREFIX}:todo-comment:${commentId}`;
-  },
-  todoCommentRequest(authorId: string, clientRequestId: string): string {
-    return `${MUTATION_KEY_PREFIX}:todo-comment-request:${authorId}:${clientRequestId}`;
-  },
 };

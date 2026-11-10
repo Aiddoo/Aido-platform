@@ -9,15 +9,17 @@ import {
 } from "#test/fixtures/engagement-comment.fixture";
 import { StubTodoCommentBlockReader } from "#test/mocks/ports/engagement-comment.stub";
 
-import type { TodoConversationRecord } from "../read-models/todo-comment.read-model.js";
-import { GetTodoConversation } from "./get-todo-conversation.use-case.js";
+import type { TodoConversationReadModel } from "../read-models/todo-comment.read-model.js";
+import { GetTodoConversationUseCase } from "./get-todo-conversation.use-case.js";
 
 const TODO_ID = 1;
 const VIEWER_ID = "cm1viewer0000000000000001";
 const ROOT_ID = "cm1rootcomment000000000001";
 const CHILD_ID = "cm1childcomment00000000001";
 
-function createRecord(overrides: Partial<TodoConversationRecord> = {}): TodoConversationRecord {
+function createRecord(
+  overrides: Partial<TodoConversationReadModel> = {},
+): TodoConversationReadModel {
   return createConversationRecordFixture({
     id: ROOT_ID,
     todoId: TODO_ID,
@@ -27,7 +29,7 @@ function createRecord(overrides: Partial<TodoConversationRecord> = {}): TodoConv
   });
 }
 
-describe("GetTodoConversation", () => {
+describe("GetTodoConversationUseCase", () => {
   it("페이지 경계 밖 같은 묶음 답글로 이어지는 lane과 양방향 cursor를 서버가 확정한다", async () => {
     // Given
     const reader = createEngagementCommentReader();
@@ -53,7 +55,7 @@ describe("GetTodoConversation", () => {
     };
     reader.likedCommentIds = new Set([CHILD_ID]);
     cursorCodec.encodedConversations = ["previous", "next"];
-    const useCase = new GetTodoConversation({
+    const useCase = new GetTodoConversationUseCase({
       reader: reader,
       cursorCodec: cursorCodec,
       blockReader: new StubTodoCommentBlockReader(),
@@ -123,7 +125,7 @@ describe("GetTodoConversation", () => {
       hasNext: false,
     };
     reader.likedCommentIds = new Set();
-    const useCase = new GetTodoConversation({
+    const useCase = new GetTodoConversationUseCase({
       reader: reader,
       cursorCodec: cursorCodec,
       blockReader: new StubTodoCommentBlockReader(),
@@ -184,7 +186,7 @@ describe("GetTodoConversation", () => {
       hasNext: false,
     };
     reader.likedCommentIds = new Set();
-    const useCase = new GetTodoConversation({
+    const useCase = new GetTodoConversationUseCase({
       reader: reader,
       cursorCodec: cursorCodec,
       blockReader: new StubTodoCommentBlockReader(),
@@ -225,7 +227,7 @@ describe("GetTodoConversation", () => {
 
     const cursorCodec = new StubEngagementCursorCodec();
     reader.accessiblePairs.add(`${TODO_ID}:${VIEWER_ID}`);
-    const useCase = new GetTodoConversation({
+    const useCase = new GetTodoConversationUseCase({
       reader: reader,
       cursorCodec: cursorCodec,
       blockReader: new StubTodoCommentBlockReader(),
@@ -288,7 +290,7 @@ describe("GetTodoConversation", () => {
       hasNext: false,
     };
     reader.likedCommentIds = new Set();
-    const useCase = new GetTodoConversation({
+    const useCase = new GetTodoConversationUseCase({
       reader: reader,
       cursorCodec: cursorCodec,
       blockReader: new StubTodoCommentBlockReader(),
@@ -323,7 +325,7 @@ describe("GetTodoConversation", () => {
     const cursorCodec = new StubEngagementCursorCodec();
     reader.accessiblePairs.add(`${TODO_ID}:${VIEWER_ID}`);
     reader.conversationWindow = null;
-    const useCase = new GetTodoConversation({
+    const useCase = new GetTodoConversationUseCase({
       reader: reader,
       cursorCodec: cursorCodec,
       blockReader: new StubTodoCommentBlockReader(),
@@ -379,7 +381,7 @@ describe("GetTodoConversation", () => {
       hasNext: false,
     };
     reader.likedCommentIds = new Set();
-    const useCase = new GetTodoConversation({
+    const useCase = new GetTodoConversationUseCase({
       reader: reader,
       cursorCodec: cursorCodec,
       blockReader: new StubTodoCommentBlockReader(),

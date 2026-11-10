@@ -8,7 +8,7 @@ import { getTodoDetailsPermissions } from "../../domain/todo-comment-permission.
 import { type TodoCommentReaderPort } from "../ports/todo-comment.reader.port.js";
 import { type TodoCommentRepositoryPort } from "../ports/todo-comment.repository.port.js";
 
-export interface GetTodoDetailsInput {
+export interface GetTodoDetailsQuery {
   readonly todoId: number;
   readonly viewerId: string;
 }
@@ -19,14 +19,14 @@ interface GetTodoDetailsDependencies {
   readonly unitOfWork: UnitOfWorkPort;
 }
 
-export class GetTodoDetails {
+export class GetTodoDetailsUseCase {
   readonly #dependencies: GetTodoDetailsDependencies;
 
   constructor(dependencies: GetTodoDetailsDependencies) {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: GetTodoDetailsInput): Promise<TodoDetailsResponse> {
+  async execute(input: GetTodoDetailsQuery): Promise<TodoDetailsResponse> {
     return this.#dependencies.unitOfWork.run(async () => {
       const todoDetails = await this.#dependencies.todoCommentReader.findAccessibleTodoDetails(
         input.todoId,

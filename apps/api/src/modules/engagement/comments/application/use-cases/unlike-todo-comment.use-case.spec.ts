@@ -6,9 +6,9 @@ import {
   ENGAGEMENT_VIEWER_ID,
 } from "#test/fixtures/engagement-comment.fixture";
 
-import { UnlikeTodoComment } from "./unlike-todo-comment.use-case.js";
+import { UnlikeTodoCommentUseCase } from "./unlike-todo-comment.use-case.js";
 
-describe("UnlikeTodoComment — 댓글 사용자 상태", () => {
+describe("UnlikeTodoCommentUseCase — 댓글 사용자 상태", () => {
   let fixture: ReturnType<typeof createEngagementCommentFixture>;
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ["Date"] });
@@ -25,7 +25,7 @@ describe("UnlikeTodoComment — 댓글 사용자 상태", () => {
       wasEverNotified: true,
     });
     fixture.repository.likeCounts.set(comment.id, 1);
-    const useCase = new UnlikeTodoComment(fixture);
+    const useCase = new UnlikeTodoCommentUseCase(fixture);
     // When
     await useCase.execute({ todoId: 1, commentId: comment.id, userId: ENGAGEMENT_VIEWER_ID });
     const result = await useCase.execute({
@@ -46,7 +46,7 @@ describe("UnlikeTodoComment — 댓글 사용자 상태", () => {
     const comment = fixture.addComment({ deletedAt: ENGAGEMENT_TIME, content: null });
     // When / Then
     await expect(
-      new UnlikeTodoComment(fixture).execute({
+      new UnlikeTodoCommentUseCase(fixture).execute({
         todoId: 1,
         commentId: comment.id,
         userId: ENGAGEMENT_VIEWER_ID,

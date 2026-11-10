@@ -14,12 +14,12 @@ import {
 import type {
   CreateTodoCommentChainInput,
   TodoCommentChainCommand,
-  TodoCommentRecord,
+  TodoCommentReadModel,
   TodoCommentLikeTransition,
   TodoConversationWindow,
-  TodoCommentThreadItemRecord,
+  TodoCommentThreadItemReadModel,
   TodoCommentWindow,
-  TodoDetailsRecord,
+  TodoDetailsReadModel,
   ListTodoConversationParams,
   ListTodoCommentRepliesParams,
   ListTodoCommentThreadsParams,
@@ -220,10 +220,10 @@ export class StubEngagementCommentReader implements TodoCommentReaderPort {
   readonly accessiblePairs = new Set<string>();
   readonly names = new Map<string, string | null>();
   readonly todoOwners = new Map<number, string>();
-  readonly details = new Map<number, TodoDetailsRecord>();
+  readonly details = new Map<number, TodoDetailsReadModel>();
   conversationWindow: TodoConversationWindow | null = null;
-  threadsWindow: TodoCommentWindow<TodoCommentThreadItemRecord> | null = null;
-  repliesWindow: TodoCommentWindow<TodoCommentRecord> | null = null;
+  threadsWindow: TodoCommentWindow<TodoCommentThreadItemReadModel> | null = null;
+  repliesWindow: TodoCommentWindow<TodoCommentReadModel> | null = null;
   likedCommentIds: Set<string> | undefined;
   constructor(readonly repository: StubEngagementCommentRepository) {}
   async findAccessibleTodoOwnerId(todoId: number, viewerId: string) {
@@ -238,7 +238,7 @@ export class StubEngagementCommentReader implements TodoCommentReaderPort {
       ? { ...structuredClone(record), isOwner: record.owner.id === viewerId }
       : null;
   }
-  async findCommentRecord(todoId: number, commentId: string): Promise<TodoCommentRecord | null> {
+  async findCommentRecord(todoId: number, commentId: string): Promise<TodoCommentReadModel | null> {
     const comment = this.repository.comments.get(commentId);
     if (comment?.todoId !== todoId) {
       return null;

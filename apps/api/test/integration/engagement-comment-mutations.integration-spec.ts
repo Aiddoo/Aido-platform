@@ -12,12 +12,12 @@ import {
   TODO_COMMENT_REPOSITORY,
   type TodoCommentRepositoryPort,
 } from "#api/modules/engagement/comments/application/ports/todo-comment.repository.port";
-import { GetTodoCommentThreads } from "#api/modules/engagement/comments/application/use-cases/get-todo-comment-threads.use-case";
-import { GetTodoConversation } from "#api/modules/engagement/comments/application/use-cases/get-todo-conversation.use-case";
-import { GetTodoDetails } from "#api/modules/engagement/comments/application/use-cases/get-todo-details.use-case";
-import { LikeTodoComment } from "#api/modules/engagement/comments/application/use-cases/like-todo-comment.use-case";
-import { UnlikeTodoComment } from "#api/modules/engagement/comments/application/use-cases/unlike-todo-comment.use-case";
-import { WriteTodoCommentChain } from "#api/modules/engagement/comments/application/use-cases/write-todo-comment-chain.use-case";
+import { GetTodoConversationUseCase } from "#api/modules/engagement/comments/application/use-cases/get-todo-conversation.use-case";
+import { GetTodoDetailsUseCase } from "#api/modules/engagement/comments/application/use-cases/get-todo-details.use-case";
+import { LikeTodoCommentUseCase } from "#api/modules/engagement/comments/application/use-cases/like-todo-comment.use-case";
+import { ListTodoCommentThreadsUseCase } from "#api/modules/engagement/comments/application/use-cases/list-todo-comment-threads.use-case";
+import { UnlikeTodoCommentUseCase } from "#api/modules/engagement/comments/application/use-cases/unlike-todo-comment.use-case";
+import { WriteTodoCommentChainUseCase } from "#api/modules/engagement/comments/application/use-cases/write-todo-comment-chain.use-case";
 import { DrizzleTodoCommentRepository } from "#api/modules/engagement/comments/infrastructure/persistence/drizzle-todo-comment.repository";
 import {
   NOTIFICATION_CACHE,
@@ -177,7 +177,7 @@ describe("Engagement 댓글 실제 PostgreSQL 회귀", () => {
   }
   it("묶음이 1개든 3개든 목록은 같은 수의 쿼리로 읽는다", async () => {
     // Given
-    const threads = context.module.get(GetTodoCommentThreads);
+    const threads = context.module.get(ListTodoCommentThreadsUseCase);
 
     // When
     const one = await measure(() =>
@@ -208,7 +208,7 @@ describe("Engagement 댓글 실제 PostgreSQL 회귀", () => {
 
   it("대화와 답글의 답글 focus 조회도 전체 작성자와 좋아요를 일괄 조회한다", async () => {
     // Given
-    const conversation = context.module.get(GetTodoConversation);
+    const conversation = context.module.get(GetTodoConversationUseCase);
 
     // When
     const normal = await measure(() =>
@@ -239,7 +239,7 @@ describe("Engagement 댓글 실제 PostgreSQL 회귀", () => {
 
   it("할 일 소유자 상세는 관계를 쿼리 1번으로 읽는다", async () => {
     // Given
-    const getDetails = context.module.get(GetTodoDetails);
+    const getDetails = context.module.get(GetTodoDetailsUseCase);
 
     // When
     const measured = await measure(() => getDetails.execute({ todoId, viewerId: userId }));
@@ -321,7 +321,7 @@ describe("Engagement 댓글 실제 PostgreSQL 회귀", () => {
     if (commentId === undefined) {
       throw new Error("root fixture missing");
     }
-    const like = context.module.get(LikeTodoComment);
+    const like = context.module.get(LikeTodoCommentUseCase);
     const txHost =
       context.module.get<TransactionHost<DrizzleTransactionalAdapter>>(TransactionHost);
     const publication = vi.spyOn(context.module.get(PublishPushDeliveryOutboxUseCase), "execute");
@@ -401,7 +401,9 @@ describe("Engagement 댓글 실제 PostgreSQL 회귀", () => {
     });
 
     // When
-    const result = await context.module.get(LikeTodoComment).execute({ todoId, commentId, userId });
+    const result = await context.module
+      .get(LikeTodoCommentUseCase)
+      .execute({ todoId, commentId, userId });
 
     // Then
     expect(stagedNotificationCount).toBe(1);
@@ -431,7 +433,7 @@ describe("Engagement 댓글 실제 PostgreSQL 회귀", () => {
         await release.promise;
         await notify(input);
       });
-    const like = context.module.get(LikeTodoComment);
+    const like = context.module.get(LikeTodoCommentUseCase);
     const first = like.execute({ todoId, commentId, userId });
     await Promise.race([
       entered.promise,
@@ -442,7 +444,7 @@ describe("Engagement 댓글 실제 PostgreSQL 회귀", () => {
 
     // When
     const cancellation = context.module
-      .get(UnlikeTodoComment)
+      .get(UnlikeTodoCommentUseCase)
       .execute({ todoId, commentId, userId });
     try {
       await vi.waitFor(
@@ -500,7 +502,7 @@ describe("Engagement 댓글 실제 PostgreSQL 회귀", () => {
     });
 
     // When
-    const outcome = context.module.get(WriteTodoCommentChain).execute({
+    const outcome = context.module.get(WriteTodoCommentChainUseCase).execute({
       todoId,
       authorId,
       parentId: null,

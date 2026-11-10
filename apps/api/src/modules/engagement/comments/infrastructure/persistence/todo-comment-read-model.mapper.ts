@@ -7,7 +7,7 @@ import { todo, todoComment, user, userProfile } from "#api/platform/database/sch
 import { toISOString, toISOStringOrNull } from "#api/shared/domain/date/utils/format";
 
 import type {
-  TodoCommentRecord,
+  TodoCommentReadModel,
   TodoCommentRootPosition,
 } from "../../application/read-models/todo-comment.read-model.js";
 
@@ -88,7 +88,7 @@ function requireValue<T>(value: T | null, field: string): T {
   return value;
 }
 
-export function toCommentRecord(row: CommentRow): TodoCommentRecord | null {
+export function toCommentRecord(row: CommentRow): TodoCommentReadModel | null {
   if (row.commentId == null) {
     return null;
   }

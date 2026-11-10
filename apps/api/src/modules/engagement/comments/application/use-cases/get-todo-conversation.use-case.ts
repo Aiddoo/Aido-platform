@@ -18,14 +18,14 @@ import { type TodoCommentCursorCodecPort } from "../ports/todo-comment-cursor-co
 import { type TodoCommentReaderPort } from "../ports/todo-comment.reader.port.js";
 import type {
   ConversationPageMode,
-  TodoCommentRecord,
+  TodoCommentReadModel,
   TodoCommentRootPosition,
-  TodoCommentViewerContext,
+  TodoCommentViewer,
   TodoConversationCursor,
   TodoConversationScope,
 } from "../read-models/todo-comment.read-model.js";
 
-export interface GetTodoConversationInput {
+export interface GetTodoConversationQuery {
   readonly todoId: number;
   readonly viewerId: string;
   readonly sort: TodoCommentSort;
@@ -59,7 +59,7 @@ function decodeCursor(
 }
 
 function getAnchor(
-  input: GetTodoConversationInput,
+  input: GetTodoConversationQuery,
   cursorCodec: Pick<TodoCommentCursorCodecPort, "decodeConversation">,
 ): ConversationAnchor {
   if (input.focusCommentId != null) {
@@ -103,14 +103,14 @@ interface GetTodoConversationDependencies {
   >;
 }
 
-export class GetTodoConversation {
+export class GetTodoConversationUseCase {
   readonly #dependencies: GetTodoConversationDependencies;
 
   constructor(dependencies: GetTodoConversationDependencies) {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: GetTodoConversationInput): Promise<TodoConversationResponse> {
+  async execute(input: GetTodoConversationQuery): Promise<TodoConversationResponse> {
     await assertTodoCommentAccess(this.#dependencies.reader, input.todoId, input.viewerId);
     const anchor = getAnchor(input, this.#dependencies.cursorCodec);
     const window = await this.#dependencies.reader.listConversation({
@@ -197,10 +197,10 @@ export class GetTodoConversation {
   }
 
   #getFocusRecord(
-    items: readonly TodoCommentRecord[],
+    items: readonly TodoCommentReadModel[],
     anchorIndex: number | null,
     anchor: ConversationAnchor,
-  ): TodoCommentRecord | null {
+  ): TodoCommentReadModel | null {
     if (anchor.mode !== "FOCUS") {
       return null;
     }
@@ -231,9 +231,9 @@ export class GetTodoConversation {
   /** 1.14.0 이하 앱은 focus 답글 앞에 묶음 머리가 보여야 대화를 이어 그린다. */
   async #findPrecedingThreadComment(
     todoId: number,
-    focusRecord: TodoCommentRecord | null,
-    pageRecords: readonly TodoCommentRecord[],
-  ): Promise<TodoCommentRecord[]> {
+    focusRecord: TodoCommentReadModel | null,
+    pageRecords: readonly TodoCommentReadModel[],
+  ): Promise<TodoCommentReadModel[]> {
     const threadCommentId = focusRecord?.threadCommentId;
     if (threadCommentId == null || pageRecords.some((record) => record.id === threadCommentId)) {
       return [];
@@ -243,10 +243,10 @@ export class GetTodoConversation {
   }
 
   #toFocusResponse(
-    focusRecord: TodoCommentRecord | null,
+    focusRecord: TodoCommentReadModel | null,
     itemIndex: number | null,
-    precedingThreadComments: readonly TodoCommentRecord[],
-    viewer: TodoCommentViewerContext,
+    precedingThreadComments: readonly TodoCommentReadModel[],
+    viewer: TodoCommentViewer,
   ): TodoConversationFocus | null {
     if (focusRecord == null || itemIndex == null) {
       return null;

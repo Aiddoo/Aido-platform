@@ -8,7 +8,7 @@ import {
 } from "#test/fixtures/engagement-comment.fixture";
 import { StubTodoCommentBlockReader } from "#test/mocks/ports/engagement-comment.stub";
 
-import { GetTodoCommentReplies } from "./get-todo-comment-replies.use-case.js";
+import { ListTodoCommentRepliesUseCase } from "./list-todo-comment-replies.use-case.js";
 
 const TODO_ID = 1;
 const VIEWER_ID = "cm1viewer0000000000000001";
@@ -34,7 +34,7 @@ function setup() {
     hasPrevious: false,
     hasNext: true,
   };
-  const useCase = new GetTodoCommentReplies({
+  const useCase = new ListTodoCommentRepliesUseCase({
     reader,
     cursorCodec,
     blockReader: new StubTodoCommentBlockReader(),
@@ -44,7 +44,7 @@ function setup() {
 
 const baseInput = { todoId: TODO_ID, viewerId: VIEWER_ID, threadCommentId: COMMENT_ID, size: 10 };
 
-describe("GetTodoCommentReplies", () => {
+describe("ListTodoCommentRepliesUseCase", () => {
   it("묶음 머리의 답글 첫 페이지와 다음 cursor를 돌려준다", async () => {
     // Given
     const { reader, useCase } = setup();

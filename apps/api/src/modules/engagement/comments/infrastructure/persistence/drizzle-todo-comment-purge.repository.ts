@@ -8,12 +8,12 @@ import { todo, todoComment, todoCommentLike } from "#api/platform/database/schem
 import { DELETED_COMMENT_AUTHOR_ID } from "#api/shared/domain/system-user";
 
 import type {
-  TodoCommentAccountCleanupPlan,
-  TodoCommentAccountCleanupStorePort,
+  TodoCommentPurgePlan,
+  TodoCommentPurgeRepositoryPort,
 } from "../../application/ports/todo-comment-purge.repository.port.js";
 
 @Injectable()
-export class DrizzleTodoCommentAccountCleanupStore implements TodoCommentAccountCleanupStorePort {
+export class DrizzleTodoCommentPurgeRepository implements TodoCommentPurgeRepositoryPort {
   readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
 
   constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>) {
@@ -33,7 +33,7 @@ export class DrizzleTodoCommentAccountCleanupStore implements TodoCommentAccount
       .orderBy(asc(todoComment.id));
   }
 
-  async plan(userId: string): Promise<TodoCommentAccountCleanupPlan> {
+  async plan(userId: string): Promise<TodoCommentPurgePlan> {
     const affectedTodoRows = await this.#db
       .selectDistinct({ todoId: todoComment.todoId })
       .from(todoComment)
@@ -68,7 +68,7 @@ export class DrizzleTodoCommentAccountCleanupStore implements TodoCommentAccount
     };
   }
 
-  async cleanup(userId: string, plan: TodoCommentAccountCleanupPlan): Promise<void> {
+  async cleanup(userId: string, plan: TodoCommentPurgePlan): Promise<void> {
     if (plan.affectedTodoIds.length === 0) {
       return;
     }

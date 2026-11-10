@@ -2,12 +2,12 @@ import type { TodoCommentSort } from "@aido/api/vocabulary";
 
 import type {
   TodoCommentPageDirection,
-  TodoCommentRecord,
+  TodoCommentReadModel,
   TodoCommentRepliesCursor,
   TodoCommentThreadCursor,
-  TodoCommentThreadRecord,
+  TodoCommentThreadReadModel,
   TodoConversationCursor,
-  TodoConversationRecord,
+  TodoConversationReadModel,
   TodoConversationScope,
 } from "../read-models/todo-comment.read-model.js";
 
@@ -20,16 +20,16 @@ export const TODO_COMMENT_CURSOR_CODEC = Symbol("TODO_COMMENT_CURSOR_CODEC");
 export interface TodoCommentCursorCodecPort {
   decodeConversation(cursor: string, sort: TodoCommentSort): TodoConversationCursor;
   encodeConversation(
-    record: TodoConversationRecord,
+    record: TodoConversationReadModel,
     sort: TodoCommentSort,
     scope?: TodoConversationScope,
   ): string;
   decodeThreads(cursor: string, sort: TodoCommentSort): TodoCommentThreadCursor;
   encodeThreads(
-    record: TodoCommentThreadRecord,
+    record: TodoCommentThreadReadModel,
     sort: TodoCommentSort,
     direction: TodoCommentPageDirection,
   ): string;
   decodeReplies(cursor: string): TodoCommentRepliesCursor;
-  encodeReplies(record: TodoCommentRecord, direction: TodoCommentPageDirection): string;
+  encodeReplies(record: TodoCommentReadModel, direction: TodoCommentPageDirection): string;
 }

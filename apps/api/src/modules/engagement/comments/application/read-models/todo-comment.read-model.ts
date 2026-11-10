@@ -8,7 +8,7 @@ import type {
 import type { CommentPlacement } from "../../domain/comment-placement.vo.js";
 
 /** 댓글 응답을 만드는 데 필요한 저장소 독립 읽기 모델. */
-export interface TodoCommentRecord {
+export interface TodoCommentReadModel {
   id: string;
   todoId: number;
   /** 답글이 속한 묶음의 머리 댓글. 댓글이면 null */
@@ -32,7 +32,7 @@ export interface TodoCommentRecord {
   createdAt: string;
 }
 
-export interface TodoDetailsRecord {
+export interface TodoDetailsReadModel {
   todo: Todo;
   owner: TodoDetailsResponse["owner"];
   viewCount: number;
@@ -54,7 +54,7 @@ export interface TodoCommentRootPosition {
 export type TodoConversationScope = "TODO" | "THREAD";
 
 /** 대화 reader만 만드는 행. 일반 댓글 projection에는 정렬 내부 값을 섞지 않는다. */
-export interface TodoConversationRecord extends TodoCommentRecord {
+export interface TodoConversationReadModel extends TodoCommentReadModel {
   conversationPosition: TodoCommentRootPosition;
 }
 
@@ -113,10 +113,10 @@ export interface ListTodoConversationParams {
 
 /** 저장소가 앞뒤 경계 한 행까지 읽은 뒤 돌려주는 대화 창. */
 export interface TodoConversationWindow {
-  items: TodoConversationRecord[];
+  items: TodoConversationReadModel[];
   anchorIndex: number | null;
-  previousRecord: TodoConversationRecord | null;
-  nextRecord: TodoConversationRecord | null;
+  previousRecord: TodoConversationReadModel | null;
+  nextRecord: TodoConversationReadModel | null;
   hasPrevious: boolean;
   hasNext: boolean;
 }
@@ -133,11 +133,11 @@ export interface ListTodoCommentThreadsParams {
 }
 
 /** 묶음 머리 댓글만 가지는 keyset 위치. 일반 댓글 projection에는 노출하지 않는다. */
-export interface TodoCommentThreadRecord extends TodoCommentRecord {
+export interface TodoCommentThreadReadModel extends TodoCommentReadModel {
   threadPosition: TodoCommentRootPosition;
 }
 
-export interface TodoCommentParticipantAuthorRecord {
+export interface TodoCommentParticipantAuthorReadModel {
   id: string;
   name: string | null;
   userTag: string | null;
@@ -145,11 +145,11 @@ export interface TodoCommentParticipantAuthorRecord {
   isTodoOwner: boolean;
 }
 
-export interface TodoCommentThreadItemRecord {
-  comment: TodoCommentThreadRecord;
-  previewReply: TodoCommentRecord | null;
+export interface TodoCommentThreadItemReadModel {
+  comment: TodoCommentThreadReadModel;
+  previewReply: TodoCommentReadModel | null;
   totalCount: number;
-  participantAuthors: TodoCommentParticipantAuthorRecord[];
+  participantAuthors: TodoCommentParticipantAuthorReadModel[];
 }
 
 export interface TodoCommentWindow<T> {
@@ -167,27 +167,27 @@ export interface ListTodoCommentRepliesParams {
 }
 
 /** 버전과 무관한 읽기 결과. v1·v2 presenter가 각자 응답 모양으로 바꾼다. */
-export interface TodoCommentViewerContext {
+export interface TodoCommentViewer {
   viewerId: string;
   likedCommentIds: ReadonlySet<string>;
   blockedAuthorIds: ReadonlySet<string>;
 }
 
-export interface TodoCommentThreadAnchorRecord {
+export interface TodoCommentThreadAnchorReadModel {
   threadCommentId: string;
   replyId: string | null;
 }
 
-export interface TodoCommentThreadsResult {
-  items: TodoCommentThreadItemRecord[];
-  viewer: TodoCommentViewerContext;
+export interface TodoCommentThreadsPage {
+  items: TodoCommentThreadItemReadModel[];
+  viewer: TodoCommentViewer;
   pagination: TodoCommentCursorPagination;
-  anchor: TodoCommentThreadAnchorRecord | null;
+  anchor: TodoCommentThreadAnchorReadModel | null;
 }
 
-export interface TodoCommentRepliesResult {
-  items: TodoCommentRecord[];
-  viewer: TodoCommentViewerContext;
+export interface TodoCommentRepliesPage {
+  items: TodoCommentReadModel[];
+  viewer: TodoCommentViewer;
   pagination: TodoCommentCursorPagination;
 }
 

@@ -1,12 +1,12 @@
 import type { TodoCommentCursorCodecPort } from "#api/modules/engagement/comments/application/ports/todo-comment-cursor-codec.port";
 import type { TodoViewCachePort } from "#api/modules/engagement/comments/application/ports/todo-view-cache.port";
 import type {
-  TodoCommentRecord,
-  TodoConversationRecord,
+  TodoCommentReadModel,
+  TodoConversationReadModel,
   TodoConversationCursor,
   TodoCommentRepliesCursor,
   TodoCommentThreadCursor,
-  TodoCommentViewerContext,
+  TodoCommentViewer,
 } from "#api/modules/engagement/comments/application/read-models/todo-comment.read-model";
 import type { TodoCommentState } from "#api/modules/engagement/comments/domain/todo-comment.aggregate";
 import type { MutationLockPort } from "#api/shared/application/ports/index";
@@ -24,8 +24,8 @@ export const ENGAGEMENT_OWNER_ID = "cmowner000000000000000001";
 export const ENGAGEMENT_VIEWER_ID = "cmviewer00000000000000001";
 
 export function createCommentRecordFixture(
-  overrides: Partial<TodoCommentRecord> = {},
-): TodoCommentRecord {
+  overrides: Partial<TodoCommentReadModel> = {},
+): TodoCommentReadModel {
   return {
     id: "cm1rootcomment000000000001",
     todoId: 1,
@@ -48,8 +48,8 @@ export function createCommentRecordFixture(
   };
 }
 export function createConversationRecordFixture(
-  overrides: Partial<TodoConversationRecord> = {},
-): TodoConversationRecord {
+  overrides: Partial<TodoConversationReadModel> = {},
+): TodoConversationReadModel {
   return {
     ...createCommentRecordFixture(overrides),
     conversationPosition: { rootLikeCount: 0, rootReplyCount: 0 },
@@ -58,8 +58,8 @@ export function createConversationRecordFixture(
 }
 
 export function createViewerContextFixture(
-  overrides: Partial<TodoCommentViewerContext> = {},
-): TodoCommentViewerContext {
+  overrides: Partial<TodoCommentViewer> = {},
+): TodoCommentViewer {
   return {
     viewerId: ENGAGEMENT_VIEWER_ID,
     likedCommentIds: new Set(),

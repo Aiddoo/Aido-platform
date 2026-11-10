@@ -9,10 +9,10 @@ import {
   TodoCommentIdempotencyConflict,
   TodoCommentIdempotencyRace,
 } from "#api/modules/engagement/comments/application/ports/todo-comment.repository.port";
-import { GetTodoCommentThreads } from "#api/modules/engagement/comments/application/use-cases/get-todo-comment-threads.use-case";
-import { GetTodoConversation } from "#api/modules/engagement/comments/application/use-cases/get-todo-conversation.use-case";
+import { GetTodoConversationUseCase } from "#api/modules/engagement/comments/application/use-cases/get-todo-conversation.use-case";
+import { ListTodoCommentThreadsUseCase } from "#api/modules/engagement/comments/application/use-cases/list-todo-comment-threads.use-case";
 import { CommentPlacement } from "#api/modules/engagement/comments/domain/comment-placement.vo";
-import { HmacTodoCommentCursorCodec } from "#api/modules/engagement/comments/infrastructure/adapters/hmac-todo-comment-cursor-codec.adapter";
+import { HmacTodoCommentCursorCodecAdapter } from "#api/modules/engagement/comments/infrastructure/adapters/hmac-todo-comment-cursor-codec.adapter";
 import { DrizzleTodoCommentReader } from "#api/modules/engagement/comments/infrastructure/persistence/drizzle-todo-comment.reader";
 import { DrizzleTodoCommentRepository } from "#api/modules/engagement/comments/infrastructure/persistence/drizzle-todo-comment.repository";
 import { DrizzleUserBlockRepository } from "#api/modules/social/infrastructure/persistence/blocks/drizzle-user-block.repository";
@@ -67,14 +67,14 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
     repository = new DrizzleTodoCommentRepository(txHost);
     cursorModule = await Test.createTestingModule({
       providers: [
-        HmacTodoCommentCursorCodec,
+        HmacTodoCommentCursorCodecAdapter,
         {
           provide: TypedConfigService,
           useValue: { jwtSecret: "integration-jwt-secret-at-least-32-characters" },
         },
       ],
     }).compile();
-    cursorCodec = cursorModule.get(HmacTodoCommentCursorCodec);
+    cursorCodec = cursorModule.get(HmacTodoCommentCursorCodecAdapter);
   }, 60_000);
 
   async function updateComment(id: string, values: Partial<typeof todoComment.$inferInsert>) {
@@ -340,7 +340,7 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
       // Given
       await updateComment(ROOT_A, { likeCount: 3 });
       await updateComment(ROOT_B, { likeCount: 2 });
-      const useCase = new GetTodoCommentThreads({
+      const useCase = new ListTodoCommentThreadsUseCase({
         reader: reader,
         cursorCodec: cursorCodec,
         blockReader: blockRepository,
@@ -375,7 +375,7 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
 
   it("개요 cursor의 루트가 삭제 처리되어도 바뀌지 않는 루트 위치로 계속 읽는다", async () => {
     // Given
-    const useCase = new GetTodoCommentThreads({
+    const useCase = new ListTodoCommentThreadsUseCase({
       reader: reader,
       cursorCodec: cursorCodec,
       blockReader: blockRepository,
@@ -735,7 +735,7 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
   it("삭제된 답글로 열어도 묘비로 focus를 채우고 1.14.0 이하 앱의 대화 계약을 지킨다", async () => {
     // Given
     await softDeleteComment(CHILD_A, new Date("2026-08-26T04:00:00.000Z"));
-    const useCase = new GetTodoConversation({
+    const useCase = new GetTodoConversationUseCase({
       reader: reader,
       cursorCodec: cursorCodec,
       blockReader: blockRepository,
@@ -766,7 +766,7 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
 
   it("답글에 단 답글 focus는 같은 묶음 안에서 머리 lane과 @대상을 그린다", async () => {
     // Given
-    const useCase = new GetTodoConversation({
+    const useCase = new GetTodoConversationUseCase({
       reader: reader,
       cursorCodec: cursorCodec,
       blockReader: blockRepository,
@@ -804,7 +804,7 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
   it("답글 없는 삭제 댓글 focus는 다른 묶음으로 대체하지 않고 묘비 하나만 돌려준다", async () => {
     // Given
     await softDeleteComment(ROOT_B, new Date("2026-08-26T04:00:00.000Z"));
-    const useCase = new GetTodoConversation({
+    const useCase = new GetTodoConversationUseCase({
       reader: reader,
       cursorCodec: cursorCodec,
       blockReader: blockRepository,

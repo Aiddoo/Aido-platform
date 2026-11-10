@@ -10,10 +10,10 @@ import {
 import { StubTodoCommentBlockReader } from "#test/mocks/ports/engagement-comment.stub";
 
 import type {
-  TodoCommentThreadItemRecord,
-  TodoCommentThreadRecord,
+  TodoCommentThreadItemReadModel,
+  TodoCommentThreadReadModel,
 } from "../read-models/todo-comment.read-model.js";
-import { GetTodoCommentThreads } from "./get-todo-comment-threads.use-case.js";
+import { ListTodoCommentThreadsUseCase } from "./list-todo-comment-threads.use-case.js";
 
 const TODO_ID = 1;
 const VIEWER_ID = "cm1viewer0000000000000001";
@@ -22,8 +22,8 @@ const REPLY_ID = "cm1replycomment00000000001";
 const PARTICIPANT_ID = "cm1participant00000000001";
 
 function createThreadComment(
-  overrides: Partial<TodoCommentThreadRecord> = {},
-): TodoCommentThreadRecord {
+  overrides: Partial<TodoCommentThreadReadModel> = {},
+): TodoCommentThreadReadModel {
   return {
     ...createCommentRecordFixture({ id: COMMENT_ID, todoId: TODO_ID, likeCount: 3, replyCount: 2 }),
     threadPosition: { rootLikeCount: 3, rootReplyCount: 2 },
@@ -31,7 +31,7 @@ function createThreadComment(
   };
 }
 
-function createThreadItem(): TodoCommentThreadItemRecord {
+function createThreadItem(): TodoCommentThreadItemReadModel {
   const comment = createThreadComment();
   return {
     comment,
@@ -54,7 +54,7 @@ function setup() {
   reader.accessiblePairs.add(`${TODO_ID}:${VIEWER_ID}`);
   reader.likedCommentIds = new Set();
   reader.threadsWindow = { items: [createThreadItem()], hasPrevious: false, hasNext: false };
-  const useCase = new GetTodoCommentThreads({ reader, cursorCodec, blockReader });
+  const useCase = new ListTodoCommentThreadsUseCase({ reader, cursorCodec, blockReader });
   return { reader, cursorCodec, blockReader, useCase };
 }
 
@@ -65,7 +65,7 @@ const baseInput = {
   size: 10,
 } as const;
 
-describe("GetTodoCommentThreads", () => {
+describe("ListTodoCommentThreadsUseCase", () => {
   it("묶음 머리·대표 답글·참여자의 좋아요와 차단을 한 번씩 모으고 양방향 cursor를 만든다", async () => {
     // Given
     const { reader, blockReader, cursorCodec, useCase } = setup();

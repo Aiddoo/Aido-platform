@@ -9,7 +9,7 @@ import {
   createViewerContextFixture,
 } from "#test/fixtures/engagement-comment.fixture";
 
-import type { TodoCommentRecord } from "../../../application/read-models/todo-comment.read-model.js";
+import type { TodoCommentReadModel } from "../../../application/read-models/todo-comment.read-model.js";
 import {
   TodoCommentMapper,
   toTodoCommentResponse,
@@ -62,7 +62,7 @@ const OTHER_COMMENT_ID = "cm1todoacomment00000000009";
 function createRecord(
   id: string,
   placement: { threadCommentId: string; replyToCommentId: string } | null = null,
-): TodoCommentRecord {
+): TodoCommentReadModel {
   return {
     id,
     todoId: 1,
@@ -84,7 +84,7 @@ function createRecord(
   };
 }
 
-function toItems(records: TodoCommentRecord[], nextRecord: TodoCommentRecord | null = null) {
+function toItems(records: TodoCommentReadModel[], nextRecord: TodoCommentReadModel | null = null) {
   return toTodoConversationItems({
     records,
     nextRecord,

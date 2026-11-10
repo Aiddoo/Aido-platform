@@ -16,12 +16,12 @@ import {
   TODO_COMMENT_PAGE_DIRECTION,
   type ListTodoCommentThreadsParams,
   type TodoCommentPageDirection,
-  type TodoCommentThreadAnchorRecord,
-  type TodoCommentThreadsResult,
+  type TodoCommentThreadAnchorReadModel,
+  type TodoCommentThreadsPage,
 } from "../read-models/todo-comment.read-model.js";
 
 /** v1은 before/after로 방향을 주고, v2는 cursor에 담긴 방향을 쓴다. */
-export type GetTodoCommentThreadsPage =
+export type TodoCommentThreadsPageRequest =
   | { readonly kind: "FIRST" }
   | {
       readonly kind: "CURSOR";
@@ -30,15 +30,15 @@ export type GetTodoCommentThreadsPage =
     }
   | { readonly kind: "ANCHOR"; readonly commentId: string };
 
-export interface GetTodoCommentThreadsInput {
+export interface ListTodoCommentThreadsQuery {
   readonly todoId: number;
   readonly viewerId: string;
   readonly sort: TodoCommentSort;
   readonly size: number;
-  readonly page: GetTodoCommentThreadsPage;
+  readonly page: TodoCommentThreadsPageRequest;
 }
 
-interface GetTodoCommentThreadsDependencies {
+interface ListTodoCommentThreadsDependencies {
   readonly reader: Pick<
     TodoCommentReaderPort,
     "findAccessibleTodoOwnerId" | "findCommentRecord" | "listThreads" | "findLikedCommentIds"
@@ -49,17 +49,17 @@ interface GetTodoCommentThreadsDependencies {
 
 interface ResolvedPage {
   readonly params: ListTodoCommentThreadsParams;
-  readonly anchor: TodoCommentThreadAnchorRecord | null;
+  readonly anchor: TodoCommentThreadAnchorReadModel | null;
 }
 
-export class GetTodoCommentThreads {
-  readonly #dependencies: GetTodoCommentThreadsDependencies;
+export class ListTodoCommentThreadsUseCase {
+  readonly #dependencies: ListTodoCommentThreadsDependencies;
 
-  constructor(dependencies: GetTodoCommentThreadsDependencies) {
+  constructor(dependencies: ListTodoCommentThreadsDependencies) {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: GetTodoCommentThreadsInput): Promise<TodoCommentThreadsResult> {
+  async execute(input: ListTodoCommentThreadsQuery): Promise<TodoCommentThreadsPage> {
     await assertTodoCommentAccess(this.#dependencies.reader, input.todoId, input.viewerId);
     const page = await this.#resolvePage(input);
     const anchoredWindow = await this.#dependencies.reader.listThreads(page.params);
@@ -113,7 +113,7 @@ export class GetTodoCommentThreads {
     };
   }
 
-  async #resolvePage(input: GetTodoCommentThreadsInput): Promise<ResolvedPage> {
+  async #resolvePage(input: ListTodoCommentThreadsQuery): Promise<ResolvedPage> {
     const base = { todoId: input.todoId, sort: input.sort, size: input.size };
 
     switch (input.page.kind) {

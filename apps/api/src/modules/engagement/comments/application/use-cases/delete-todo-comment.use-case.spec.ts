@@ -1,6 +1,5 @@
 import { vi } from "vitest";
 
-import { MutationLockKeys } from "#api/shared/application/ports/index";
 import {
   createEngagementCommentFixture,
   ENGAGEMENT_TIME,
@@ -8,9 +7,10 @@ import {
   ENGAGEMENT_VIEWER_ID,
 } from "#test/fixtures/engagement-comment.fixture";
 
-import { DeleteTodoComment } from "./delete-todo-comment.use-case.js";
+import { TodoCommentLockKeys } from "../comments.lock-keys.js";
+import { DeleteTodoCommentUseCase } from "./delete-todo-comment.use-case.js";
 
-describe("DeleteTodoComment — 댓글 사용자 상태", () => {
+describe("DeleteTodoCommentUseCase — 댓글 사용자 상태", () => {
   let fixture: ReturnType<typeof createEngagementCommentFixture>;
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ["Date"] });
@@ -25,7 +25,7 @@ describe("DeleteTodoComment — 댓글 사용자 상태", () => {
     fixture.addComment({ parentId: comment.id, replyToCommentId: comment.id });
     const reply = fixture.addComment({ parentId: comment.id, replyToCommentId: comment.id });
     const lock = vi.spyOn(fixture.mutationLock, "acquire");
-    const useCase = new DeleteTodoComment(fixture);
+    const useCase = new DeleteTodoCommentUseCase(fixture);
 
     // When
     const result = await useCase.execute({
@@ -46,8 +46,8 @@ describe("DeleteTodoComment — 댓글 사용자 상태", () => {
     expect(fixture.repository.commentCounts.get(1)).toBe(2);
     expect(fixture.invalidatedTodoIds).toEqual([1]);
     expect(lock).toHaveBeenCalledWith([
-      MutationLockKeys.todoComment(reply.id),
-      MutationLockKeys.todoComment(comment.id),
+      TodoCommentLockKeys.comment(reply.id),
+      TodoCommentLockKeys.comment(comment.id),
     ]);
   });
 
@@ -58,7 +58,7 @@ describe("DeleteTodoComment — 댓글 사용자 상태", () => {
     const lock = vi.spyOn(fixture.mutationLock, "acquire");
 
     // When
-    await new DeleteTodoComment(fixture).execute({
+    await new DeleteTodoCommentUseCase(fixture).execute({
       todoId: 1,
       commentId: comment.id,
       userId: ENGAGEMENT_OWNER_ID,
@@ -70,14 +70,14 @@ describe("DeleteTodoComment — 댓글 사용자 상태", () => {
       deletedAt: ENGAGEMENT_TIME,
       replyCount: 1,
     });
-    expect(lock).toHaveBeenCalledWith([MutationLockKeys.todoComment(comment.id)]);
+    expect(lock).toHaveBeenCalledWith([TodoCommentLockKeys.comment(comment.id)]);
   });
 
   it("할 일 주인은 자기 할 일에 친구가 단 댓글을 모두에게서 지운다", async () => {
     // Given
     const comment = fixture.addComment({ authorId: ENGAGEMENT_VIEWER_ID });
     // When
-    const result = await new DeleteTodoComment(fixture).execute({
+    const result = await new DeleteTodoCommentUseCase(fixture).execute({
       todoId: 1,
       commentId: comment.id,
       userId: ENGAGEMENT_OWNER_ID,
@@ -96,7 +96,7 @@ describe("DeleteTodoComment — 댓글 사용자 상태", () => {
     const comment = fixture.addComment();
     // When / Then
     await expect(
-      new DeleteTodoComment(fixture).execute({
+      new DeleteTodoCommentUseCase(fixture).execute({
         todoId: 1,
         commentId: comment.id,
         userId: ENGAGEMENT_VIEWER_ID,

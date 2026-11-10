@@ -2,19 +2,16 @@ import type { TodoCommentMutationResponse } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
 
 import { ApplicationException } from "#api/shared/application/application.exception";
-import {
-  MutationLockKeys,
-  type MutationLockPort,
-  type UnitOfWorkPort,
-} from "#api/shared/application/ports/index";
+import { type MutationLockPort, type UnitOfWorkPort } from "#api/shared/application/ports/index";
 import { now } from "#api/shared/domain/date/utils/core";
 
 import { toTodoCommentResponse } from "../../presentation/http/v1/todo-comment-response.mapper.js";
 import { assertTodoCommentAccess } from "../comments.errors.js";
+import { TodoCommentLockKeys } from "../comments.lock-keys.js";
 import { type TodoCommentReaderPort } from "../ports/todo-comment.reader.port.js";
 import { type TodoCommentRepositoryPort } from "../ports/todo-comment.repository.port.js";
 
-export interface UpdateTodoCommentInput {
+export interface UpdateTodoCommentCommand {
   readonly todoId: number;
   readonly commentId: string;
   readonly userId: string;
@@ -31,18 +28,16 @@ interface UpdateTodoCommentDependencies {
   readonly unitOfWork: UnitOfWorkPort;
 }
 
-export class UpdateTodoComment {
+export class UpdateTodoCommentUseCase {
   readonly #dependencies: UpdateTodoCommentDependencies;
 
   constructor(dependencies: UpdateTodoCommentDependencies) {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: UpdateTodoCommentInput): Promise<TodoCommentMutationResponse> {
+  async execute(input: UpdateTodoCommentCommand): Promise<TodoCommentMutationResponse> {
     return this.#dependencies.unitOfWork.run(async () => {
-      await this.#dependencies.mutationLock.acquire([
-        MutationLockKeys.todoComment(input.commentId),
-      ]);
+      await this.#dependencies.mutationLock.acquire([TodoCommentLockKeys.comment(input.commentId)]);
       await assertTodoCommentAccess(this.#dependencies.reader, input.todoId, input.userId);
       const comment = await this.#dependencies.repository.findComment(
         input.todoId,

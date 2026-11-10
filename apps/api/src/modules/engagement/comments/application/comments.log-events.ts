@@ -1,6 +1,6 @@
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 
-export const EngagementCommentLogEvent = {
+export const TodoCommentLogEvent = {
   VIEW_CACHE_INVALIDATION_FAILED: "engagement.comment.view-cache.invalidation.failed",
   WRITE_NOTIFICATION_FAILED: "engagement.comment.write.notification.failed",
   LIKE_NOTIFICATION_FAILED: "engagement.comment.like.notification.failed",
@@ -8,11 +8,11 @@ export const EngagementCommentLogEvent = {
     "engagement.comment.account-cleanup.cache.invalidation.failed",
 } as const;
 
-export type EngagementCommentFailureEvent =
-  (typeof EngagementCommentLogEvent)[keyof typeof EngagementCommentLogEvent];
+export type TodoCommentFailureEvent =
+  (typeof TodoCommentLogEvent)[keyof typeof TodoCommentLogEvent];
 
 interface AfterCommitTask {
-  readonly failureEvent: EngagementCommentFailureEvent;
+  readonly failureEvent: TodoCommentFailureEvent;
   readonly context: {
     readonly todoId: number;
     readonly commentId?: string;

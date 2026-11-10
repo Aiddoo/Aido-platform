@@ -2,9 +2,9 @@ import { z } from "@aido/api";
 import { Test, type TestingModule } from "@nestjs/testing";
 import { eq, sql } from "drizzle-orm";
 
-import { GetTodoCommentReplies } from "#api/modules/engagement/comments/application/use-cases/get-todo-comment-replies.use-case";
-import { GetTodoCommentThreads } from "#api/modules/engagement/comments/application/use-cases/get-todo-comment-threads.use-case";
-import { HmacTodoCommentCursorCodec } from "#api/modules/engagement/comments/infrastructure/adapters/hmac-todo-comment-cursor-codec.adapter";
+import { ListTodoCommentRepliesUseCase } from "#api/modules/engagement/comments/application/use-cases/list-todo-comment-replies.use-case";
+import { ListTodoCommentThreadsUseCase } from "#api/modules/engagement/comments/application/use-cases/list-todo-comment-threads.use-case";
+import { HmacTodoCommentCursorCodecAdapter } from "#api/modules/engagement/comments/infrastructure/adapters/hmac-todo-comment-cursor-codec.adapter";
 import { DrizzleTodoCommentReader } from "#api/modules/engagement/comments/infrastructure/persistence/drizzle-todo-comment.reader";
 import { DrizzleUserBlockRepository } from "#api/modules/social/infrastructure/persistence/blocks/drizzle-user-block.repository";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
@@ -54,8 +54,8 @@ function busyReplyId(index: number): string {
 describe("댓글 v2 묶음·답글 읽기 (실제 PostgreSQL)", () => {
   let testDatabase: TestDatabase;
   let client: TestDatabaseClient;
-  let threads: GetTodoCommentThreads;
-  let replies: GetTodoCommentReplies;
+  let threads: ListTodoCommentThreadsUseCase;
+  let replies: ListTodoCommentRepliesUseCase;
   let cursorModule: TestingModule;
   let todoId: number;
   let recording: { sql: string; params: unknown[] }[] | null = null;
@@ -73,16 +73,16 @@ describe("댓글 v2 묶음·답글 읽기 (실제 PostgreSQL)", () => {
     const blockReader = new DrizzleUserBlockRepository(txHost);
     cursorModule = await Test.createTestingModule({
       providers: [
-        HmacTodoCommentCursorCodec,
+        HmacTodoCommentCursorCodecAdapter,
         {
           provide: TypedConfigService,
           useValue: { jwtSecret: "integration-jwt-secret-at-least-32-characters" },
         },
       ],
     }).compile();
-    const cursorCodec = cursorModule.get(HmacTodoCommentCursorCodec);
-    threads = new GetTodoCommentThreads({ reader, cursorCodec, blockReader });
-    replies = new GetTodoCommentReplies({ reader, cursorCodec, blockReader });
+    const cursorCodec = cursorModule.get(HmacTodoCommentCursorCodecAdapter);
+    threads = new ListTodoCommentThreadsUseCase({ reader, cursorCodec, blockReader });
+    replies = new ListTodoCommentRepliesUseCase({ reader, cursorCodec, blockReader });
 
     await testDatabase.cleanup();
     await client.insert(user).values([

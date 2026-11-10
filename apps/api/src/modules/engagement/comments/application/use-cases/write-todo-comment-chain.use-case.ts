@@ -4,11 +4,7 @@ import { uniq } from "es-toolkit";
 
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
-import {
-  MutationLockKeys,
-  type MutationLockPort,
-  type UnitOfWorkPort,
-} from "#api/shared/application/ports/index";
+import { type MutationLockPort, type UnitOfWorkPort } from "#api/shared/application/ports/index";
 
 import { CommentPlacement } from "../../domain/comment-placement.vo.js";
 import { TodoCommentContent } from "../../domain/todo-comment-content.vo.js";
@@ -16,7 +12,8 @@ import type { TodoComment } from "../../domain/todo-comment.aggregate.js";
 import { toTodoCommentResponse } from "../../presentation/http/v1/todo-comment-response.mapper.js";
 import { assertNotBlocked } from "../comments.errors.js";
 import { assertTodoCommentAccess } from "../comments.errors.js";
-import { EngagementCommentLogEvent } from "../comments.log-events.js";
+import { TodoCommentLockKeys } from "../comments.lock-keys.js";
+import { TodoCommentLogEvent } from "../comments.log-events.js";
 import { settleAfterCommit } from "../comments.log-events.js";
 import { type TodoCommentBlockReaderPort } from "../ports/todo-comment-block-reader.port.js";
 import {
@@ -32,10 +29,10 @@ import {
 import { type TodoViewCachePort } from "../ports/todo-view-cache.port.js";
 import type {
   TodoCommentChainCommand,
-  TodoCommentRecord,
+  TodoCommentReadModel,
 } from "../read-models/todo-comment.read-model.js";
 
-export interface WriteTodoCommentChainInput {
+export interface WriteTodoCommentChainCommand {
   readonly todoId: number;
   readonly authorId: string;
   readonly parentId: string | null;
@@ -43,7 +40,7 @@ export interface WriteTodoCommentChainInput {
 }
 
 interface WriteOutcome {
-  readonly written: readonly TodoCommentRecord[];
+  readonly written: readonly TodoCommentReadModel[];
   readonly likedCommentIds: ReadonlySet<string>;
   readonly addedCount: number;
   readonly recipientId: string;
@@ -51,7 +48,7 @@ interface WriteOutcome {
   readonly replyTarget: TodoCommentWrittenInput["replyTarget"];
 }
 
-function normalizeCommand(input: WriteTodoCommentChainInput): TodoCommentChainCommand {
+function normalizeCommand(input: WriteTodoCommentChainCommand): TodoCommentChainCommand {
   if (input.items.length === 0) {
     throw new ApplicationException(ErrorCode.SYS_0002);
   }
@@ -75,7 +72,7 @@ function toReplyTargetKind(replyTarget: TodoComment | null): WriteOutcome["reply
   return replyTarget.placement.kind;
 }
 
-function requireFirst(records: readonly TodoCommentRecord[]): TodoCommentRecord {
+function requireFirst(records: readonly TodoCommentReadModel[]): TodoCommentReadModel {
   const first = records[0];
   if (first == null) {
     throw new ApplicationException(ErrorCode.SYS_0003);
@@ -113,14 +110,14 @@ interface WriteTodoCommentChainDependencies {
   readonly logger: ApplicationLoggerPort;
 }
 
-export class WriteTodoCommentChain {
+export class WriteTodoCommentChainUseCase {
   readonly #dependencies: WriteTodoCommentChainDependencies;
 
   constructor(dependencies: WriteTodoCommentChainDependencies) {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: WriteTodoCommentChainInput): Promise<TodoCommentChainResponse> {
+  async execute(input: WriteTodoCommentChainCommand): Promise<TodoCommentChainResponse> {
     const command = normalizeCommand(input);
     const outcome = await this.#resolveWrite(command);
 
@@ -128,12 +125,12 @@ export class WriteTodoCommentChain {
       const first = requireFirst(outcome.written);
       await settleAfterCommit(this.#dependencies.logger, [
         {
-          failureEvent: EngagementCommentLogEvent.VIEW_CACHE_INVALIDATION_FAILED,
+          failureEvent: TodoCommentLogEvent.VIEW_CACHE_INVALIDATION_FAILED,
           context: { todoId: input.todoId, userId: input.authorId },
           run: () => this.#dependencies.todoViewCache.invalidateForTodo(input.todoId),
         },
         {
-          failureEvent: EngagementCommentLogEvent.WRITE_NOTIFICATION_FAILED,
+          failureEvent: TodoCommentLogEvent.WRITE_NOTIFICATION_FAILED,
           context: { todoId: input.todoId, userId: input.authorId },
           run: () =>
             this.#dependencies.notification.notifyCommentsWritten({
@@ -180,7 +177,7 @@ export class WriteTodoCommentChain {
   #write(command: TodoCommentChainCommand): Promise<WriteOutcome> {
     return this.#dependencies.unitOfWork.run(async () => {
       const lockKeys = command.items.map((item) =>
-        MutationLockKeys.todoCommentRequest(command.authorId, item.clientRequestId),
+        TodoCommentLockKeys.request(command.authorId, item.clientRequestId),
       );
       // 답글 수를 바꾸는 묶음 머리까지 삭제와 같은 순서로 한 번에 잠근다. 묶음 머리는 바뀌지 않는다.
       const target =
@@ -192,7 +189,7 @@ export class WriteTodoCommentChain {
       }
       if (target != null) {
         lockKeys.push(
-          ...uniq([target.id.getValue(), target.threadCommentId]).map(MutationLockKeys.todoComment),
+          ...uniq([target.id.getValue(), target.threadCommentId]).map(TodoCommentLockKeys.comment),
         );
       }
 
