@@ -1,0 +1,44 @@
+import { Module } from "@nestjs/common";
+
+import { AccessModule } from "#api/modules/access/access-entitlement.public";
+import { NotificationDeliveryModule } from "#api/modules/notification/notification-delivery.public";
+import { SocialFriendsModule } from "#api/modules/social/friends/social-friends.public";
+
+import { CHEER_LIMIT_READER } from "./application/ports/cheer-limit.reader.port.js";
+import { CHEER_NOTIFIER } from "./application/ports/cheer-notifier.port.js";
+import { CHEER_REPOSITORY } from "./application/ports/cheer.repository.port.js";
+import { CHEER_USAGE_READER } from "./application/ports/daily-send-usage.reader.port.js";
+import { CheerLimitReaderAdapter } from "./infrastructure/adapters/cheer-limit-reader.adapter.js";
+import { CheerNotifierAdapter } from "./infrastructure/adapters/cheer-notifier.adapter.js";
+import { DrizzleCheerRepository } from "./infrastructure/persistence/drizzle-cheer.repository.js";
+import { CheerController } from "./presentation/http/v1/cheer.controller.js";
+import {
+  getReceivedCheersProvider,
+  getSentCheersProvider,
+  getCheerLimitProvider,
+  getCheerCooldownProvider,
+  markCheerReadProvider,
+  markManyCheersReadProvider,
+  sendCheerProvider,
+  cheerUsageReaderProvider,
+} from "./social-cheers.providers.js";
+
+@Module({
+  imports: [AccessModule, SocialFriendsModule, NotificationDeliveryModule],
+  controllers: [CheerController],
+  providers: [
+    cheerUsageReaderProvider,
+    { provide: CHEER_REPOSITORY, useClass: DrizzleCheerRepository },
+    { provide: CHEER_NOTIFIER, useClass: CheerNotifierAdapter },
+    { provide: CHEER_LIMIT_READER, useClass: CheerLimitReaderAdapter },
+    getReceivedCheersProvider,
+    getSentCheersProvider,
+    getCheerLimitProvider,
+    getCheerCooldownProvider,
+    sendCheerProvider,
+    markCheerReadProvider,
+    markManyCheersReadProvider,
+  ],
+  exports: [CHEER_USAGE_READER],
+})
+export class SocialCheersModule {}

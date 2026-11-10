@@ -5,9 +5,9 @@ import { BillingSubscriptionsModule } from "#api/modules/billing/subscriptions/b
 import { EngagementCommentsModule } from "#api/modules/engagement/comments/engagement-comments.public";
 import { NotificationDeliveryModule } from "#api/modules/notification/notification-delivery.public";
 import { PlanningCategoriesModule } from "#api/modules/planning/categories/planning-categories.public";
-import { SocialCheersModule } from "#api/modules/social/social-cheers.public";
-import { SocialFriendsModule } from "#api/modules/social/social-friends.public";
-import { SocialNudgesModule } from "#api/modules/social/social-nudges.public";
+import { SocialCheersModule } from "#api/modules/social/cheers/social-cheers.public";
+import { SocialFriendsModule } from "#api/modules/social/friends/social-friends.public";
+import { SocialNudgesModule } from "#api/modules/social/nudges/social-nudges.public";
 
 import { IdentityAuthModule } from "../auth/identity-auth.module.js";
 import { IdentityUserAccessModule } from "./identity-user-access.module.js";

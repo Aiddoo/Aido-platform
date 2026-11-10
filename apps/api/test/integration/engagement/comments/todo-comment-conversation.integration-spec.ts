@@ -17,7 +17,7 @@ import { HmacTodoCommentCursorCodecAdapter } from "#api/modules/engagement/comme
 import { DrizzleTodoCommentReader } from "#api/modules/engagement/comments/infrastructure/persistence/drizzle-todo-comment.reader";
 import { DrizzleTodoCommentRepository } from "#api/modules/engagement/comments/infrastructure/persistence/drizzle-todo-comment.repository";
 import { toTodoConversationResponse } from "#api/modules/engagement/comments/presentation/http/v1/todo-comment-response.mapper";
-import { DrizzleUserBlockRepository } from "#api/modules/social/infrastructure/persistence/blocks/drizzle-user-block.repository";
+import { DrizzleUserBlockRepository } from "#api/modules/social/blocks/infrastructure/persistence/drizzle-user-block.repository";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
 import {
   todo,

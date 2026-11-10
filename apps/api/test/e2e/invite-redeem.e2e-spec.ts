@@ -12,7 +12,7 @@ import { UserSubscriptionProjectionRepositoryPort } from "#api/modules/billing/p
 import { SubscriptionRepositoryPort } from "#api/modules/billing/subscriptions/application/ports/subscription.repository.port";
 import { StoreSubscriptionId } from "#api/modules/billing/subscriptions/domain/store-subscription-id.vo";
 import { Subscription } from "#api/modules/billing/subscriptions/domain/subscription.aggregate";
-import { INVITE_CONFIG } from "#api/modules/social/application/ports/invites/invite.config.port";
+import { INVITE_CONFIG } from "#api/modules/social/invites/application/ports/invite-config.port";
 import {
   follow,
   notification,

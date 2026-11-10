@@ -7,7 +7,7 @@ import {
 import { ErrorCode } from "@aido/api/errors";
 import request from "supertest";
 
-import { INVITE_CONFIG } from "#api/modules/social/application/ports/invites/invite.config.port";
+import { INVITE_CONFIG } from "#api/modules/social/invites/application/ports/invite-config.port";
 import { inviteRedemption } from "#api/platform/database/schema/index";
 
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";

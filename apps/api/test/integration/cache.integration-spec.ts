@@ -25,7 +25,7 @@ import {
 import {
   FollowCacheKey,
   FOLLOW_CACHE_TTL_MS,
-} from "#api/modules/social/infrastructure/cache/friends/follow-cache.keyspace";
+} from "#api/modules/social/friends/infrastructure/cache/follow-cache.keyspace";
 import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
 import { CacheModule } from "#api/platform/cache/cache.module";
 import { CacheService } from "#api/platform/cache/cache.service";

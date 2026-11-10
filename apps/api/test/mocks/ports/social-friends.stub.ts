@@ -1,12 +1,12 @@
 import { ErrorCode } from "@aido/api/errors";
 
-import type { FollowCachePort } from "#api/modules/social/application/ports/friends/follow-cache.port";
+import type { FollowCachePort } from "#api/modules/social/friends/application/ports/follow-cache.port";
 import type {
   FollowNotifierPort,
   FollowNewNotification,
   FollowMutualNotification,
   FirstFriendMilestoneNotification,
-} from "#api/modules/social/application/ports/friends/follow-notifier.port";
+} from "#api/modules/social/friends/application/ports/follow-notifier.port";
 import type {
   FollowRepositoryPort,
   FollowRecord,
@@ -16,8 +16,8 @@ import type {
   CreateFollowInput,
   UpdateFollowInput,
   UserSearchResult,
-} from "#api/modules/social/application/ports/friends/follow.repository.port";
-import { Friendship } from "#api/modules/social/domain/aggregates/friends/friendship.aggregate";
+} from "#api/modules/social/friends/application/ports/follow.repository.port";
+import { Friendship } from "#api/modules/social/friends/domain/friendship.aggregate";
 import { ApplicationException } from "#api/shared/application/application.exception";
 import { now } from "#api/shared/domain/date/utils/core";
 import { FollowFixture } from "#test/fixtures/friend.fixture";

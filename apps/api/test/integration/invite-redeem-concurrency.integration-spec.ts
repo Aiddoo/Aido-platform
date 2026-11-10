@@ -6,10 +6,10 @@ import {
   type PremiumAccessReaderPort,
 } from "#api/modules/billing/subscriptions/billing-subscriptions.public";
 import { RevenueCatWebhookReceiver } from "#api/modules/billing/subscriptions/infrastructure/adapters/revenuecat/revenuecat-webhook-receiver.adapter";
-import { INVITE_CONFIG } from "#api/modules/social/application/ports/invites/invite.config.port";
-import { GetMyInvite } from "#api/modules/social/application/use-cases/invites/get-my-invite.use-case";
-import { RedeemInvite } from "#api/modules/social/application/use-cases/invites/redeem-invite.use-case";
-import { RotateInviteCode } from "#api/modules/social/application/use-cases/invites/rotate-invite-code.use-case";
+import { INVITE_CONFIG } from "#api/modules/social/invites/application/ports/invite-config.port";
+import { GetMyInvite } from "#api/modules/social/invites/application/use-cases/get-my-invite.use-case";
+import { RedeemInvite } from "#api/modules/social/invites/application/use-cases/redeem-invite.use-case";
+import { RotateInviteCode } from "#api/modules/social/invites/application/use-cases/rotate-invite-code.use-case";
 import { createEntityId } from "#api/platform/database/entity-id";
 import {
   follow,

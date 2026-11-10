@@ -2,16 +2,16 @@ import { ErrorCode } from "@aido/api/errors";
 import { sql } from "drizzle-orm";
 import { omit } from "es-toolkit";
 
-import type { FollowCachePort } from "#api/modules/social/application/ports/friends/follow-cache.port";
-import type { FollowNotifierPort } from "#api/modules/social/application/ports/friends/follow-notifier.port";
-import { FriendshipEffects } from "#api/modules/social/application/services/friends/friendship-effects.service";
-import { BlockUser } from "#api/modules/social/application/use-cases/blocks/block-user.use-case";
-import { AcceptFriendRequest } from "#api/modules/social/application/use-cases/friends/accept-friend-request.use-case";
-import { SendFriendRequest } from "#api/modules/social/application/use-cases/friends/send-friend-request.use-case";
-import { DrizzleUserBlockRepository } from "#api/modules/social/infrastructure/persistence/blocks/drizzle-user-block.repository";
-import { DrizzleCheerRepository } from "#api/modules/social/infrastructure/persistence/cheers/drizzle-cheer.repository";
-import { DrizzleFollowRepository } from "#api/modules/social/infrastructure/persistence/friends/drizzle-follow.repository";
-import { DrizzleNudgeRepository } from "#api/modules/social/infrastructure/persistence/nudges/drizzle-nudge.repository";
+import { BlockUser } from "#api/modules/social/blocks/application/use-cases/block-user.use-case";
+import { DrizzleUserBlockRepository } from "#api/modules/social/blocks/infrastructure/persistence/drizzle-user-block.repository";
+import { DrizzleCheerRepository } from "#api/modules/social/cheers/infrastructure/persistence/drizzle-cheer.repository";
+import type { FollowCachePort } from "#api/modules/social/friends/application/ports/follow-cache.port";
+import type { FollowNotifierPort } from "#api/modules/social/friends/application/ports/follow-notifier.port";
+import { AcceptFriendRequest } from "#api/modules/social/friends/application/use-cases/accept-friend-request.use-case";
+import { FriendshipEffects } from "#api/modules/social/friends/application/use-cases/friendship-effects.use-case";
+import { SendFriendRequest } from "#api/modules/social/friends/application/use-cases/send-friend-request.use-case";
+import { DrizzleFollowRepository } from "#api/modules/social/friends/infrastructure/persistence/drizzle-follow.repository";
+import { DrizzleNudgeRepository } from "#api/modules/social/nudges/infrastructure/persistence/drizzle-nudge.repository";
 import { requireRecord } from "#api/platform/database/database-error.util";
 import { PostgresMutationLockAdapter } from "#api/platform/database/postgres-mutation-lock.adapter";
 import {

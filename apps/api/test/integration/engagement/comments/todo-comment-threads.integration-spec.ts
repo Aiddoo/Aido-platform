@@ -6,7 +6,7 @@ import { ListTodoCommentRepliesUseCase } from "#api/modules/engagement/comments/
 import { ListTodoCommentThreadsUseCase } from "#api/modules/engagement/comments/application/use-cases/list-todo-comment-threads.use-case";
 import { HmacTodoCommentCursorCodecAdapter } from "#api/modules/engagement/comments/infrastructure/adapters/hmac-todo-comment-cursor-codec.adapter";
 import { DrizzleTodoCommentReader } from "#api/modules/engagement/comments/infrastructure/persistence/drizzle-todo-comment.reader";
-import { DrizzleUserBlockRepository } from "#api/modules/social/infrastructure/persistence/blocks/drizzle-user-block.repository";
+import { DrizzleUserBlockRepository } from "#api/modules/social/blocks/infrastructure/persistence/drizzle-user-block.repository";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { todo, todoCategory, todoComment, user } from "#api/platform/database/schema/index";
 import { createDatabaseTransactionFixture, createTestClient } from "#test/setup/database-context";

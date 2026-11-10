@@ -22,7 +22,7 @@ import {
 import {
   FollowCacheKey,
   FOLLOW_CACHE_TTL_MS,
-} from "#api/modules/social/infrastructure/cache/friends/follow-cache.keyspace";
+} from "#api/modules/social/friends/infrastructure/cache/follow-cache.keyspace";
 import { CacheModule } from "#api/platform/cache/cache.module";
 import { CacheService } from "#api/platform/cache/cache.service";
 import { cachePattern } from "#api/platform/cache/keyspace/cache-key";

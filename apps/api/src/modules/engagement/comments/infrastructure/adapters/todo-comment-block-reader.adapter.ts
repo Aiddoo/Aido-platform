@@ -3,7 +3,7 @@ import { Inject, Injectable } from "@nestjs/common";
 import {
   USER_BLOCK_READER,
   type UserBlockReaderPort,
-} from "#api/modules/social/social-blocks.public";
+} from "#api/modules/social/blocks/social-blocks.public";
 
 import { TodoCommentBlockReaderPort } from "../../application/ports/todo-comment-block-reader.port.js";
 

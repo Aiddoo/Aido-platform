@@ -23,15 +23,15 @@ import { NotesModule } from "#api/modules/notes/notes.module";
 import { NotificationModule } from "#api/modules/notification/notification.module";
 import { OperationsModule } from "#api/modules/operations/operations.module";
 import { PlanningModule } from "#api/modules/planning/planning.module";
-import { SocialBlocksModule } from "#api/modules/social/social-blocks.public";
-import { SocialCheersModule } from "#api/modules/social/social-cheers.public";
-import { SocialFriendsModule } from "#api/modules/social/social-friends.public";
-import { SocialInvitesModule } from "#api/modules/social/social-invites.public";
-import { SocialNudgesModule } from "#api/modules/social/social-nudges.public";
+import { SocialBlocksModule } from "#api/modules/social/blocks/social-blocks.public";
+import { SocialCheersModule } from "#api/modules/social/cheers/social-cheers.public";
+import { SocialFriendsModule } from "#api/modules/social/friends/social-friends.public";
+import { SocialInvitesModule } from "#api/modules/social/invites/social-invites.public";
+import { SocialNudgesModule } from "#api/modules/social/nudges/social-nudges.public";
 import {
   SocialReportsAdminModule,
   SocialReportsModule,
-} from "#api/modules/social/social-reports.public";
+} from "#api/modules/social/reports/social-reports.public";
 import { SupportModule } from "#api/modules/support/support.module";
 import { VoiceModule } from "#api/modules/voice/voice.public";
 import { WeatherModule } from "#api/modules/weather/weather.module";

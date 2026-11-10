@@ -1,5 +1,5 @@
-import type { CheerLimitReaderPort } from "#api/modules/social/application/ports/cheers/cheer-limit-reader.port";
-import type { NudgeLimitReaderPort } from "#api/modules/social/application/ports/nudges/nudge-limit-reader.port";
+import type { CheerLimitReaderPort } from "#api/modules/social/cheers/application/ports/cheer-limit.reader.port";
+import type { NudgeLimitReaderPort } from "#api/modules/social/nudges/application/ports/nudge-limit.reader.port";
 import { createSocialFriendFixture } from "#test/fixtures/social-friends.fixture";
 import { TodoFixture } from "#test/fixtures/todo.fixture";
 import {

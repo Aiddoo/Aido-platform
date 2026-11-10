@@ -1,15 +1,15 @@
 import { eq } from "drizzle-orm";
 
+import { INVITE_CONFIG } from "#api/modules/social/invites/application/ports/invite-config.port";
 import {
   INVITE_REDEMPTION_REPOSITORY,
   type InviteRedemptionRepositoryPort,
-} from "#api/modules/social/application/ports/invites/invite-redemption.repository.port";
-import { INVITE_CONFIG } from "#api/modules/social/application/ports/invites/invite.config.port";
-import { GetMyInvite } from "#api/modules/social/application/use-cases/invites/get-my-invite.use-case";
-import { RecordInviteeActivity } from "#api/modules/social/application/use-cases/invites/record-invitee-activity.use-case";
-import { RedeemInvite } from "#api/modules/social/application/use-cases/invites/redeem-invite.use-case";
-import { SendInviteQualifyReminder } from "#api/modules/social/application/use-cases/invites/send-invite-qualify-reminder.use-case";
-import { qualifyReminderExpiresBefore } from "#api/modules/social/domain/policies/invites/invite-qualify-reminder.policy";
+} from "#api/modules/social/invites/application/ports/invite-redemption.repository.port";
+import { GetMyInvite } from "#api/modules/social/invites/application/use-cases/get-my-invite.use-case";
+import { RecordInviteeActivity } from "#api/modules/social/invites/application/use-cases/record-invitee-activity.use-case";
+import { RedeemInvite } from "#api/modules/social/invites/application/use-cases/redeem-invite.use-case";
+import { SendInviteQualifyReminder } from "#api/modules/social/invites/application/use-cases/send-invite-qualify-reminder.use-case";
+import { qualifyReminderExpiresBefore } from "#api/modules/social/invites/domain/invite-qualify-reminder.domain-service";
 import { createEntityId } from "#api/platform/database/entity-id";
 import { inviteActiveDay, inviteRedemption, user } from "#api/platform/database/schema/index";
 import { UNIT_OF_WORK, type UnitOfWorkPort } from "#api/shared/application/ports/index";

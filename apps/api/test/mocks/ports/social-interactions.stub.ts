@@ -1,20 +1,21 @@
 import type {
   CheerNotifierPort,
   CheerSentNotification,
-} from "#api/modules/social/application/ports/cheers/cheer-notifier.port";
+} from "#api/modules/social/cheers/application/ports/cheer-notifier.port";
 import type {
   CheerRepositoryPort,
   CheerRecord,
   CheerWithRelations,
   CreateCheerInput,
   FindCheersParams,
-} from "#api/modules/social/application/ports/cheers/cheer.repository.port";
-import type { FollowUserBrief } from "#api/modules/social/application/ports/friends/follow.repository.port";
+} from "#api/modules/social/cheers/application/ports/cheer.repository.port";
+import { Cheer } from "#api/modules/social/cheers/domain/cheer.aggregate";
+import type { FollowUserBrief } from "#api/modules/social/friends/application/ports/follow.repository.port";
 import type {
   NudgeNotifierPort,
   NudgeSentNotification,
   NudgeInteractionNotification,
-} from "#api/modules/social/application/ports/nudges/nudge-notifier.port";
+} from "#api/modules/social/nudges/application/ports/nudge-notifier.port";
 import type {
   NudgeRepositoryPort,
   TargetTodoRecord,
@@ -28,16 +29,12 @@ import type {
   FindNudgeThanksCandidatesInput,
   NudgeThanksCandidatePage,
   NudgeThanksSummary,
-} from "#api/modules/social/application/ports/nudges/nudge.repository.port";
-import { Cheer } from "#api/modules/social/domain/aggregates/cheers/cheer.aggregate";
-import {
-  Nudge,
-  type NudgeProps,
-} from "#api/modules/social/domain/aggregates/nudges/nudge.aggregate";
+} from "#api/modules/social/nudges/application/ports/nudge.repository.port";
+import { Nudge, type NudgeProps } from "#api/modules/social/nudges/domain/nudge.aggregate";
 import {
   ReminderNudge,
   type ReminderNudgeProps,
-} from "#api/modules/social/domain/aggregates/nudges/reminder-nudge.aggregate";
+} from "#api/modules/social/nudges/domain/reminder-nudge.aggregate";
 import { now } from "#api/shared/domain/date/utils/core";
 import { CheerFixture, NudgeFixture } from "#test/fixtures/friend.fixture";
 

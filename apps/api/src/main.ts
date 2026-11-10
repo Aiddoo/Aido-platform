@@ -5,7 +5,7 @@ import { Logger } from "nestjs-pino";
 
 import { OperationsBroadcastsModule } from "#api/modules/operations/broadcasts/operations-broadcasts.public";
 import { OperationsMetricsModule } from "#api/modules/operations/metrics/operations-metrics.public";
-import { SocialReportsAdminModule } from "#api/modules/social/social-reports.public";
+import { SocialReportsAdminModule } from "#api/modules/social/reports/social-reports.public";
 import { processEnv } from "#api/platform/config/env";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { configureApplication } from "#api/platform/http/configure-application";

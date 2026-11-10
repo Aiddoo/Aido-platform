@@ -3,14 +3,14 @@ import { eq, sql } from "drizzle-orm";
 import { sortBy } from "es-toolkit";
 import { z } from "zod";
 
-import { MyInviteReader } from "#api/modules/social/application/services/invites/my-invite.reader";
-import { InviteRedemption } from "#api/modules/social/domain/aggregates/invites/invite-redemption.aggregate";
-import { InviteCode } from "#api/modules/social/domain/value-objects/invites/invite-code.vo";
-import { DrizzleInviteRedemptionRepository } from "#api/modules/social/infrastructure/persistence/invites/drizzle-invite-redemption.repository";
-import { DrizzleInviteRepository } from "#api/modules/social/infrastructure/persistence/invites/drizzle-invite.repository";
-import { DrizzleRewardClaimRepository } from "#api/modules/social/infrastructure/persistence/invites/drizzle-reward-claim.repository";
-import { DrizzleRewardGrantRepository } from "#api/modules/social/infrastructure/persistence/invites/drizzle-reward-grant.repository";
-import { InviteCodeGenerator } from "#api/modules/social/infrastructure/persistence/invites/invite-code.generator";
+import { MyInviteReader } from "#api/modules/social/invites/application/my-invite.reader";
+import { InviteCode } from "#api/modules/social/invites/domain/invite-code.vo";
+import { InviteRedemption } from "#api/modules/social/invites/domain/invite-redemption.aggregate";
+import { InviteCodeGenerator } from "#api/modules/social/invites/infrastructure/adapters/invite-code-generator.adapter";
+import { DrizzleInviteRedemptionRepository } from "#api/modules/social/invites/infrastructure/persistence/drizzle-invite-redemption.repository";
+import { DrizzleInviteRepository } from "#api/modules/social/invites/infrastructure/persistence/drizzle-invite.repository";
+import { DrizzleRewardClaimRepository } from "#api/modules/social/invites/infrastructure/persistence/drizzle-reward-claim.repository";
+import { DrizzleRewardGrantRepository } from "#api/modules/social/invites/infrastructure/persistence/drizzle-reward-grant.repository";
 import { isUniqueConstraintViolation } from "#api/platform/database/database-error.util";
 import { createEntityId } from "#api/platform/database/entity-id";
 import {

@@ -14,11 +14,11 @@ import { and, count, eq, isNotNull, type SQL } from "drizzle-orm";
 import request from "supertest";
 
 import { NOTIFICATION_COPY_REVISION } from "#api/modules/notification/push/application/messages/notification-copy-revision.messages";
-import { NUDGE_INTERACTION_CONFIG } from "#api/modules/social/application/ports/nudges/nudge-interaction.config.port";
+import { NUDGE_INTERACTION_CONFIG } from "#api/modules/social/nudges/application/ports/nudge-interaction-config.port";
 import {
   NUDGE_NOTIFIER,
   type NudgeNotifierPort,
-} from "#api/modules/social/application/ports/nudges/nudge-notifier.port";
+} from "#api/modules/social/nudges/application/ports/nudge-notifier.port";
 import {
   notification,
   nudge as nudgeTable,

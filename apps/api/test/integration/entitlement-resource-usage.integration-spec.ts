@@ -8,11 +8,11 @@ import {
   TODO_CATEGORY_COUNT_READER,
   type TodoCategoryCountReaderPort,
 } from "#api/modules/planning/categories/planning-categories.public";
-import { SendFriendRequest } from "#api/modules/social/application/use-cases/friends/send-friend-request.use-case";
+import { SendFriendRequest } from "#api/modules/social/friends/application/use-cases/send-friend-request.use-case";
 import {
   FRIEND_COUNT_READER,
   type FriendCountReaderPort,
-} from "#api/modules/social/social-friends.public";
+} from "#api/modules/social/friends/social-friends.public";
 import { follow, resourceBonus, todoCategory, user } from "#api/platform/database/schema/index";
 import { FollowFixture, UserFixture } from "#test/fixtures/index";
 

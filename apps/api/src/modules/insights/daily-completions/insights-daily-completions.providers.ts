@@ -1,6 +1,6 @@
 import type { Provider } from "@nestjs/common";
 
-import { FOLLOW_READER } from "#api/modules/social/social-friends.public";
+import { FOLLOW_READER } from "#api/modules/social/friends/social-friends.public";
 import { loggerFor, provideUseCase } from "#api/platform/di/provide-use-case";
 
 import { DailyCompletionCachePort } from "./application/ports/daily-completion-cache.port.js";

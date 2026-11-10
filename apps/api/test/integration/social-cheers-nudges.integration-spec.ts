@@ -5,19 +5,19 @@ import { Pool } from "pg";
 import {
   CHEER_REPOSITORY,
   type CheerRepositoryPort,
-} from "#api/modules/social/application/ports/cheers/cheer.repository.port";
+} from "#api/modules/social/cheers/application/ports/cheer.repository.port";
+import { MarkCheerRead } from "#api/modules/social/cheers/application/use-cases/mark-cheer-read.use-case";
+import { SendCheer } from "#api/modules/social/cheers/application/use-cases/send-cheer.use-case";
 import {
   FOLLOW_REPOSITORY,
   type FollowRepositoryPort,
-} from "#api/modules/social/application/ports/friends/follow.repository.port";
+} from "#api/modules/social/friends/application/ports/follow.repository.port";
+import { normalizeUserSearchQuery } from "#api/modules/social/friends/domain/user-search-query.domain-service";
 import {
   NUDGE_REPOSITORY,
   type NudgeRepositoryPort,
-} from "#api/modules/social/application/ports/nudges/nudge.repository.port";
-import { MarkCheerRead } from "#api/modules/social/application/use-cases/cheers/mark-cheer-read.use-case";
-import { SendCheer } from "#api/modules/social/application/use-cases/cheers/send-cheer.use-case";
-import { SendNudge } from "#api/modules/social/application/use-cases/nudges/send-nudge.use-case";
-import { normalizeUserSearchQuery } from "#api/modules/social/domain/policies/friends/user-search-query.policy";
+} from "#api/modules/social/nudges/application/ports/nudge.repository.port";
+import { SendNudge } from "#api/modules/social/nudges/application/use-cases/send-nudge.use-case";
 import { createEntityId } from "#api/platform/database/entity-id";
 import {
   cheer,

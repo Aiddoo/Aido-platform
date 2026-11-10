@@ -1,17 +1,17 @@
 import type {
   UserBlockReaderPort,
   UserBlockRelation,
-} from "#api/modules/social/application/ports/blocks/user-block-reader.port";
+} from "#api/modules/social/blocks/application/ports/user-block.reader.port";
 import type {
   BlockedUserRecord,
   FindBlockedUsersParams,
   UserBlockRepositoryPort,
-} from "#api/modules/social/application/ports/blocks/user-block.repository.port";
+} from "#api/modules/social/blocks/application/ports/user-block.repository.port";
 import {
   UserBlock,
   type UserBlockCreationPlan,
   type UserBlockProps,
-} from "#api/modules/social/domain/aggregates/blocks/user-block.aggregate";
+} from "#api/modules/social/blocks/domain/user-block.aggregate";
 
 import type { StubFollowRepository } from "./social-friends.stub.js";
 

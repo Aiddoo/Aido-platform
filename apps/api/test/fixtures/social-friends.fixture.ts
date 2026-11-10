@@ -1,6 +1,6 @@
 import { EntitlementService } from "#api/modules/access/application/services/entitlement/entitlement.service";
-import { FollowReader } from "#api/modules/social/application/services/friends/follow.reader";
-import { FriendshipEffects } from "#api/modules/social/application/services/friends/friendship-effects.service";
+import { FollowReader } from "#api/modules/social/friends/application/follow.reader";
+import { FriendshipEffects } from "#api/modules/social/friends/application/use-cases/friendship-effects.use-case";
 import { PaginationService } from "#api/shared/application/pagination/index";
 import type { UnitOfWorkPort, MutationLockPort } from "#api/shared/application/ports/index";
 import { UserFixture } from "#test/fixtures/user.fixture";

@@ -22,7 +22,7 @@ import { SendVerificationCodeUseCase } from "#api/modules/identity/auth/applicat
 import type {
   DailySendUsage,
   DailySendUsageReaderPort,
-} from "#api/modules/social/social-cheers.public";
+} from "#api/modules/social/cheers/social-cheers.public";
 import { InMemoryAuthAccountRepository } from "#test/doubles/identity/in-memory-auth-account.repository";
 import { InMemoryAuthLoginAttemptRepository } from "#test/doubles/identity/in-memory-auth-login-attempt.repository";
 import { InMemoryAuthSecurityLogRepository } from "#test/doubles/identity/in-memory-auth-security-log.repository";

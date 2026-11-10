@@ -1,11 +1,11 @@
 import { ErrorCode } from "@aido/api/errors";
 import { eq, sql } from "drizzle-orm";
 
-import type { FollowCachePort } from "#api/modules/social/application/ports/friends/follow-cache.port";
-import type { FollowNotifierPort } from "#api/modules/social/application/ports/friends/follow-notifier.port";
-import { FriendshipEffects } from "#api/modules/social/application/services/friends/friendship-effects.service";
-import { AcceptFriendRequest } from "#api/modules/social/application/use-cases/friends/accept-friend-request.use-case";
-import { DrizzleFollowRepository } from "#api/modules/social/infrastructure/persistence/friends/drizzle-follow.repository";
+import type { FollowCachePort } from "#api/modules/social/friends/application/ports/follow-cache.port";
+import type { FollowNotifierPort } from "#api/modules/social/friends/application/ports/follow-notifier.port";
+import { AcceptFriendRequest } from "#api/modules/social/friends/application/use-cases/accept-friend-request.use-case";
+import { FriendshipEffects } from "#api/modules/social/friends/application/use-cases/friendship-effects.use-case";
+import { DrizzleFollowRepository } from "#api/modules/social/friends/infrastructure/persistence/drizzle-follow.repository";
 import { PostgresMutationLockAdapter } from "#api/platform/database/postgres-mutation-lock.adapter";
 import { follow, user } from "#api/platform/database/schema/index";
 import { UserFixture, FollowFixture } from "#test/fixtures/index";

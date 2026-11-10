@@ -9,7 +9,7 @@ import { ACCOUNT_PURGE_QUEUE } from "#api/modules/identity/users/identity-users.
 import {
   INVITE_MAINTENANCE_QUEUE,
   INVITE_REWARD_QUEUE,
-} from "#api/modules/social/social-invites.public";
+} from "#api/modules/social/invites/social-invites.public";
 import { PLAN_APPLICATION_CLEANUP_QUEUE } from "#api/modules/voice/voice.public";
 import { JobQueueRegistry } from "#api/platform/jobs/job-queue.registry";
 import { USAGE_RETENTION_QUEUE } from "#api/platform/metering/usage-retention.job";

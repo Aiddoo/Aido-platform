@@ -9,35 +9,35 @@ import {
 } from "#api/modules/billing/subscriptions/billing-subscriptions.public";
 import { RevenueCatWebhookReceiver } from "#api/modules/billing/subscriptions/infrastructure/adapters/revenuecat/revenuecat-webhook-receiver.adapter";
 import { TodoToggledEvent } from "#api/modules/planning/todos/planning-todos.public";
+import { INVITE_CONFIG } from "#api/modules/social/invites/application/ports/invite-config.port";
 import {
   INVITE_NOTIFIER,
   type InviteNotifierPort,
-} from "#api/modules/social/application/ports/invites/invite-notifier.port";
+} from "#api/modules/social/invites/application/ports/invite-notifier.port";
 import {
   INVITE_REDEMPTION_REPOSITORY,
   type InviteRedemptionRepositoryPort,
-} from "#api/modules/social/application/ports/invites/invite-redemption.repository.port";
-import { INVITE_CONFIG } from "#api/modules/social/application/ports/invites/invite.config.port";
+} from "#api/modules/social/invites/application/ports/invite-redemption.repository.port";
 import {
   REWARD_APPLIERS,
   type RewardApplierRegistry,
-} from "#api/modules/social/application/ports/invites/reward-applier.port";
+} from "#api/modules/social/invites/application/ports/reward-applier.port";
 import {
   REWARD_GRANT_REPOSITORY,
   type RewardGrantRepositoryPort,
-} from "#api/modules/social/application/ports/invites/reward-grant.repository.port";
-import { ExpireStaleRedemptions } from "#api/modules/social/application/use-cases/invites/expire-stale-redemptions.use-case";
-import { GetMyInvite } from "#api/modules/social/application/use-cases/invites/get-my-invite.use-case";
-import { GrantInviteRewards } from "#api/modules/social/application/use-cases/invites/grant-invite-rewards.use-case";
-import { RecordInviteeActivity } from "#api/modules/social/application/use-cases/invites/record-invitee-activity.use-case";
-import { RedeemInvite } from "#api/modules/social/application/use-cases/invites/redeem-invite.use-case";
+} from "#api/modules/social/invites/application/ports/reward-grant.repository.port";
+import { ExpireStaleRedemptions } from "#api/modules/social/invites/application/use-cases/expire-stale-redemptions.use-case";
+import { GetMyInvite } from "#api/modules/social/invites/application/use-cases/get-my-invite.use-case";
+import { GrantInviteRewards } from "#api/modules/social/invites/application/use-cases/grant-invite-rewards.use-case";
+import { RecordInviteeActivity } from "#api/modules/social/invites/application/use-cases/record-invitee-activity.use-case";
+import { RedeemInvite } from "#api/modules/social/invites/application/use-cases/redeem-invite.use-case";
 import {
   InviteRewardPolicy,
   remainingPremiumDays,
   rewardCapWindowStart,
-} from "#api/modules/social/domain/policies/invites/invite-reward.policy";
-import { INVITE_REWARD_MAX_ATTEMPTS } from "#api/modules/social/domain/types/invites/reward-grant.types";
-import { InviteeActivitySubscriber } from "#api/modules/social/infrastructure/subscribers/invites/invitee-activity.subscriber";
+} from "#api/modules/social/invites/domain/invite-reward.domain-service";
+import { INVITE_REWARD_MAX_ATTEMPTS } from "#api/modules/social/invites/domain/reward-grant.constants";
+import { InviteeActivitySubscriber } from "#api/modules/social/invites/infrastructure/event-handlers/invitee-activity.event-handler";
 import { createEntityId } from "#api/platform/database/entity-id";
 import {
   inviteActiveDay,

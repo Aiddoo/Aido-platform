@@ -9,9 +9,9 @@ import {
 } from "#api/modules/engagement/comments/engagement-comments.public";
 import { NotificationAccountCleanup } from "#api/modules/notification/notification-delivery.public";
 import { TODO_CATEGORY_COUNT_READER } from "#api/modules/planning/categories/planning-categories.public";
-import { CHEER_USAGE_READER } from "#api/modules/social/social-cheers.public";
-import { FRIEND_COUNT_READER } from "#api/modules/social/social-friends.public";
-import { NUDGE_USAGE_READER } from "#api/modules/social/social-nudges.public";
+import { CHEER_USAGE_READER } from "#api/modules/social/cheers/social-cheers.public";
+import { FRIEND_COUNT_READER } from "#api/modules/social/friends/social-friends.public";
+import { NUDGE_USAGE_READER } from "#api/modules/social/nudges/social-nudges.public";
 import { loggerFor, provideUseCase } from "#api/platform/di/provide-use-case";
 import {
   USAGE_METER,

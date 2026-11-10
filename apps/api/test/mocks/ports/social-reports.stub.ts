@@ -1,16 +1,16 @@
 import type {
   UserReportDeliveryResult,
   UserReportNotifierPort,
-} from "#api/modules/social/application/ports/reports/user-report-notifier.port";
+} from "#api/modules/social/reports/application/ports/user-report-notifier.port";
 import type {
   FindRecentUserReportParams,
   UserReportRepositoryPort,
-} from "#api/modules/social/application/ports/reports/user-report.repository.port";
-import type { UserReportSubmission } from "#api/modules/social/application/read-models/reports/user-report-submission.read-model";
+} from "#api/modules/social/reports/application/ports/user-report.repository.port";
+import type { UserReportSubmission } from "#api/modules/social/reports/application/read-models/user-report-submission.read-model";
 import {
   UserReport,
   type UserReportCreationPlan,
-} from "#api/modules/social/domain/aggregates/reports/user-report.aggregate";
+} from "#api/modules/social/reports/domain/user-report.aggregate";
 
 export class StubUserReportRepository implements UserReportRepositoryPort {
   readonly userTags = new Map<string, string>();

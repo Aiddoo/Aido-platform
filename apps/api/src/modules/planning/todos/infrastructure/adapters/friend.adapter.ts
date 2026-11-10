@@ -1,6 +1,9 @@
 import { Inject, Injectable } from "@nestjs/common";
 
-import { FOLLOW_READER, type FollowReaderPort } from "#api/modules/social/social-friends.public";
+import {
+  FOLLOW_READER,
+  type FollowReaderPort,
+} from "#api/modules/social/friends/social-friends.public";
 
 import type { FriendPort } from "../../application/ports/friend.port.js";
 

@@ -22,7 +22,7 @@
  *   .buildWithRelations();
  * ```
  */
-import type { NudgeInteractionRecord } from "#api/modules/social/application/ports/nudges/nudge.repository.port";
+import type { NudgeInteractionRecord } from "#api/modules/social/nudges/application/ports/nudge.repository.port";
 import type { Nudge } from "#test/types/database-rows";
 
 /**

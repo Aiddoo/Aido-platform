@@ -2,8 +2,8 @@ import type { EntitlementSnapshot } from "@aido/api/contracts/entitlement";
 
 import type { QuotaLedgerPort } from "#api/modules/access/access-quota.public";
 import type { TodoCategoryCountReaderPort } from "#api/modules/planning/categories/planning-categories.public";
-import type { DailySendUsageReaderPort } from "#api/modules/social/social-cheers.public";
-import type { FriendCountReaderPort } from "#api/modules/social/social-friends.public";
+import type { DailySendUsageReaderPort } from "#api/modules/social/cheers/social-cheers.public";
+import type { FriendCountReaderPort } from "#api/modules/social/friends/social-friends.public";
 
 export interface GetEntitlementSnapshotQuery {
   readonly userId: string;
