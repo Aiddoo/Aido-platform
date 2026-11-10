@@ -28,8 +28,7 @@ play-store-service-account.json
 # Firebase Admin SDK
 *-firebase-adminsdk-*.json
 
-# Maestro 실행 산출물 (--test-output-dir 로컬 출력)
-.maestro/
+# Maestro 실행 산출물 (.maestro/는 흐름이라 커밋한다. 계정은 루트 .env* 규칙이 막는다)
 maestro-output/
 # heroui-agents-md
 .heroui-docs/

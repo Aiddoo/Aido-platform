@@ -1,0 +1,12 @@
+# Maestro 작업 공간. flows/만 테스트로 찾고 subflows/·scripts/·store-screenshots/는 찾지 않는다.
+# docs: https://docs.maestro.dev/reference/workspace-configuration
+flows:
+  - flows/**
+executionOrder:
+  # 각 흐름은 onFlowStart에서 자기 데이터를 준비하므로 하나가 실패해도 나머지를 계속 돈다
+  continueOnFailure: true
+  # 초대 수락 기록은 되돌릴 수 없어(pnpm e2e:accounts reset만 지운다) 기록을 남기는 수락 흐름을 뒤에 둔다.
+  # 태그로 고른 묶음에 뒤 흐름만 있고 앞 흐름이 없으면 Maestro가 실행을 거부하므로 두 흐름의 태그를 똑같이 둔다
+  flowsOrder:
+    - invite-code-already-friends
+    - invite-code-happy-path

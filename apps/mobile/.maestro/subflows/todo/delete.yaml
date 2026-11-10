@@ -1,0 +1,11 @@
+appId: ${MAESTRO_APP_ID}
+name: 할 일의 더보기에서 지운다
+# env: TODO_ID, TODO_TITLE
+---
+- tapOn:
+    id: ${output.ids.todo.moreButton(TODO_ID)}
+- tapOn:
+    id: ${output.ids.todo.deleteAction}
+- extendedWaitUntil:
+    notVisible: ${TODO_TITLE}
+    timeout: 10000

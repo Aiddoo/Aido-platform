@@ -1,0 +1,41 @@
+appId: ${MAESTRO_APP_ID}
+name: 메모를 만들고 내용을 고쳐 저장한다
+tags:
+  - smoke
+  - memo
+onFlowStart:
+  - runFlow: ../../subflows/app/load-helpers.yaml
+  - evalScript: ${output.main = output.api.signIn('main')}
+  - evalScript: ${output.memoText = 'E2E memo ' + output.config.runId}
+  - evalScript: ${output.editedText = 'E2E memo edited ' + output.config.runId}
+  - runFlow: ../../subflows/app/launch-fresh.yaml
+onFlowComplete:
+  - evalScript: ${output.main && output.main.deleteMemosContaining('E2E memo')}
+---
+# Given: 로그인했다
+- runFlow:
+    file: ../../subflows/auth/sign-in.yaml
+    env:
+      EMAIL: ${output.main.email}
+      PASSWORD: ${output.main.password}
+
+# When: 새 메모를 저장한다
+- runFlow:
+    file: ../../subflows/memo/create.yaml
+    env:
+      MEMO_TEXT: ${output.memoText}
+# Then: 서버에 저장된다
+- evalScript: ${output.memo = output.main.waitForMemo(output.memoText)}
+
+# When: 그 메모를 열어 내용을 바꿔 저장한다
+- runFlow:
+    file: ../../subflows/memo/edit.yaml
+    env:
+      MEMO_ID: ${output.memo.id}
+      MEMO_TEXT: ${output.editedText}
+# Then: 서버와 메모 목록에 바뀐 내용이 보인다
+- evalScript: ${output.main.waitForMemo(output.editedText)}
+- openLink: ${output.config.appScheme}://memo
+- extendedWaitUntil:
+    visible: ${output.editedText}
+    timeout: 10000

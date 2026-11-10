@@ -1,0 +1,60 @@
+appId: ${MAESTRO_APP_ID}
+name: 오프라인이면 앱 오류 대신 오프라인 안내가 보이고 다시 연결되면 다시 불러온다
+tags:
+  - regression
+  - network
+  - android-only
+onFlowStart:
+  - runFlow: ../../subflows/app/load-helpers.yaml
+  - runFlow: ../../subflows/app/launch-fresh.yaml
+onFlowComplete:
+  - setAirplaneMode: disabled
+---
+# setAirplaneMode는 Android 전용이다. iOS는 README의 수동 확인 목록으로 본다
+- runFlow:
+    label: Android에서만 비행기 모드로 확인한다
+    when:
+      platform: Android
+    commands:
+      # Given: 로그인해 피드를 연다
+      - runFlow:
+          file: ../../subflows/auth/sign-in.yaml
+          env:
+            EMAIL: ${output.config.accounts.main.email}
+            PASSWORD: ${output.config.accounts.main.password}
+
+      # When: 비행기 모드를 켜고 아직 불러오지 않은 알림함을 연다
+      - setAirplaneMode: enabled
+      - openLink: ${output.config.appScheme}://notifications
+      # Then: 앱 오류 화면 없이 오프라인 안내와 알림함 자리가 보인다
+      - extendedWaitUntil:
+          visible:
+            id: ${output.ids.app.offlineBanner}
+          timeout: 15000
+      - assertVisible:
+          id: ${output.ids.notification.inbox}
+      - assertNotVisible:
+          id: ${output.ids.app.rootError}
+
+      # When: 비행기 모드를 끄고, 조회 오류 카드가 남았으면 다시 시도한다
+      - setAirplaneMode: disabled
+      - extendedWaitUntil:
+          notVisible:
+            id: ${output.ids.app.offlineBanner}
+          timeout: 30000
+      - runFlow:
+          when:
+            visible:
+              id: ${output.ids.app.queryErrorRetry}
+          commands:
+            - tapOn:
+                id: ${output.ids.app.queryErrorRetry}
+      # Then: 오류 카드 없이 알림함이 다시 불러와진다
+      - extendedWaitUntil:
+          notVisible:
+            id: ${output.ids.app.queryErrorRetry}
+          timeout: 15000
+      - assertVisible:
+          id: ${output.ids.notification.inbox}
+      - assertNotVisible:
+          id: ${output.ids.app.rootError}

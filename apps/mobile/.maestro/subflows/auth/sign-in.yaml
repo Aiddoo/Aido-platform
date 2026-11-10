@@ -1,0 +1,19 @@
+appId: ${MAESTRO_APP_ID}
+name: 로그인 화면에서 이메일로 로그인해 피드를 연다
+# env: EMAIL, PASSWORD
+---
+- tapOn:
+    id: ${output.ids.auth.emailEntry}
+- tapOn:
+    id: ${output.ids.auth.emailInput}
+- inputText: ${EMAIL}
+- tapOn:
+    id: ${output.ids.auth.passwordInput}
+- inputText: ${PASSWORD}
+- hideKeyboard
+- tapOn:
+    id: ${output.ids.auth.submitButton}
+- extendedWaitUntil:
+    visible:
+      id: ${output.ids.feed.screen}
+    timeout: 30000

@@ -1,0 +1,54 @@
+appId: ${MAESTRO_APP_ID}
+name: 초대 코드를 직접 입력해 수락하면 초대한 사람과 친구가 된다
+tags:
+  - regression
+  - friends
+  - needs-second-account
+onFlowStart:
+  - runFlow: ../../subflows/app/load-helpers.yaml
+  - evalScript: ${output.main = output.api.signIn('main')}
+  - evalScript: ${output.second = output.api.signIn('second')}
+  - evalScript: ${output.second.unfollow(output.main.userId)}
+  - evalScript: ${output.main.unfollow(output.second.userId)}
+  - evalScript: ${output.inviteCode = output.main.inviteCode()}
+  - runFlow: ../../subflows/app/launch-fresh.yaml
+onFlowComplete:
+  - evalScript: ${output.second && output.main && output.second.unfollow(output.main.userId)}
+  - evalScript: ${output.second && output.main && output.main.unfollow(output.second.userId)}
+---
+# Given: 아직 초대를 수락한 적 없는 두 번째 계정으로 로그인했다
+- assertTrue:
+    condition: ${!output.main.hasInvited(output.second.userId)}
+    label: 두 번째 계정의 초대 수락 기록이 없다 (있으면 pnpm e2e:accounts reset)
+- runFlow:
+    file: ../../subflows/auth/sign-in.yaml
+    env:
+      EMAIL: ${output.second.email}
+      PASSWORD: ${output.second.password}
+
+# When: 주 계정의 초대 코드를 입력하고 초대 카드에서 수락한다
+- openLink: ${output.config.appScheme}://invite
+- tapOn:
+    id: ${output.ids.invite.codeInput}
+- inputText: ${output.inviteCode}
+- hideKeyboard
+- tapOn:
+    id: ${output.ids.invite.codeSubmit}
+- extendedWaitUntil:
+    visible:
+      id: ${output.ids.invite.redeemButton}
+    timeout: 15000
+- assertVisible: ${'.*' + output.main.name + '.*'}
+- tapOn:
+    id: ${output.ids.invite.redeemButton}
+
+# Then: 환영 시트가 열리고 두 사람이 친구가 된다
+- extendedWaitUntil:
+    visible:
+      id: ${output.ids.invite.welcomeSheet}
+    timeout: 20000
+- tapOn:
+    id: ${output.ids.invite.welcomeLater}
+- assertTrue:
+    condition: ${output.main.isFriendOf(output.second.userId)}
+    label: 서버에서 친구가 됐다

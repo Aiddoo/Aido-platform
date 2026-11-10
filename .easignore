@@ -9,7 +9,8 @@ dist/
 
 # Tests & coverage
 coverage/
-/apps/mobile/maestro/
+/apps/mobile/.maestro/
+/apps/mobile/maestro-output/
 
 # Environment & secrets
 .env*

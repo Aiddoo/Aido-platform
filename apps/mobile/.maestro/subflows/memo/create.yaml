@@ -1,0 +1,15 @@
+appId: ${MAESTRO_APP_ID}
+name: 메모 탭에서 새 메모를 저장한다
+# env: MEMO_TEXT
+---
+- openLink: ${output.config.appScheme}://memo
+- tapOn:
+    id: ${output.ids.memo.createButton}
+- tapOn:
+    id: ${output.ids.memo.createInput}
+- inputText: ${MEMO_TEXT}
+# 헤더 저장 버튼은 네이티브 툴바라 testID를 받지 않는다
+- tapOn: ${output.labels.save}
+- extendedWaitUntil:
+    visible: ${MEMO_TEXT}
+    timeout: 10000
