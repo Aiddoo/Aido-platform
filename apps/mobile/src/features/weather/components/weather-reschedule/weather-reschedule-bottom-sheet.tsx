@@ -20,7 +20,7 @@ import {
   VStack,
 } from '@src/shared/ui';
 import { useSuspenseQueries } from '@tanstack/react-query';
-import { keyBy, range } from 'es-toolkit';
+import { range } from 'es-toolkit';
 import { Separator } from 'heroui-native';
 import { Fragment, Suspense } from 'react';
 import { useForm, type UseFormReturn } from 'react-hook-form';
@@ -106,7 +106,7 @@ function RescheduleTodoList({
   onEmpty: () => void;
 }) {
   const { t } = useTranslation('weather');
-  const [{ todoIds, reason }, setParams] = useWeatherRescheduleParams();
+  const [{ todoIds, reason: linkReason }, setParams] = useWeatherRescheduleParams();
   const todayKey = useTodayKey();
   const { timeZone } = useDateFormatContext();
   const [{ data: report }, { data: todoList }, { data: preference }] = useSuspenseQueries({
@@ -117,23 +117,16 @@ function RescheduleTodoList({
     ],
   });
   const now = useMinuteNow();
-  const copy = RESCHEDULE_COPY_KEYS[reason];
-  const todosById = keyBy(todoList.todos, (todo) => todo.id);
   const affectedTodos = WeatherReschedulePolicy.getRescheduleTodos(
     report,
-    todoIds.flatMap((todoId) => {
-      const todo = todosById[todoId];
-      return todo == null
-        ? []
-        : [
-            WeatherBriefingPolicy.toBriefingTodo(todo, {
-              date: todayKey,
-              timeZone,
-            }),
-          ];
-    }),
-    { now, reason },
+    todoList.todos.map((todo) =>
+      WeatherBriefingPolicy.toBriefingTodo(todo, { date: todayKey, timeZone }),
+    ),
+    { now, linkedTodoIds: todoIds },
   );
+  // 링크의 이유가 지금 브리핑과 다르면 지금 브리핑의 이유로 문구를 고른다
+  const reason = report.briefing?.reason ?? linkReason;
+  const copy = RESCHEDULE_COPY_KEYS[reason];
 
   const handleExclude = (todoId: number) => {
     const remaining = affectedTodos.flatMap((todo) =>

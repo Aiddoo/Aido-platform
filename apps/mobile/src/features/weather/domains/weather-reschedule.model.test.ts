@@ -34,11 +34,11 @@ describe('getRescheduleTodos', () => {
     createBriefingTodo({ id: 2, scheduledAt: toInstant('2026-11-02T08:30:00.000Z') }),
   ];
 
-  it('시트 링크의 할 일 중 서버가 같은 이유로 고른 할 일만 서버 후보와 함께 돌려준다', () => {
+  it('링크가 가리킨 할 일 중 서버가 고른 할 일만 서버 후보와 함께 돌려준다', () => {
     // When
     const affected = WeatherReschedulePolicy.getRescheduleTodos(report, todos, {
       now: NOW,
-      reason: 'rain',
+      linkedTodoIds: [1, 2],
     });
 
     // Then
@@ -50,6 +50,54 @@ describe('getRescheduleTodos', () => {
     ]);
   });
 
+  it('링크의 이유나 할 일이 지금 브리핑과 달라도 지금 브리핑의 영향받는 할 일을 보여 준다', () => {
+    // Given
+    const heatReport = createWeatherReport({
+      hourly: HOURLY,
+      briefing: { ...SERVER_BRIEFING, reason: 'heat' },
+    });
+
+    // When
+    const affected = WeatherReschedulePolicy.getRescheduleTodos(heatReport, todos, {
+      now: NOW,
+      linkedTodoIds: [2],
+    });
+
+    // Then
+    expect(affected.map((todo) => todo.todoId)).toEqual([1]);
+  });
+
+  it('지금 브리핑에 영향받는 할 일이 없으면 비운다', () => {
+    // Given
+    const emptyReport = createWeatherReport({
+      hourly: HOURLY,
+      briefing: createBriefingDto({ reason: null, affectedTodoIds: [], rescheduleOptions: [] }),
+    });
+
+    // When
+    const affected = WeatherReschedulePolicy.getRescheduleTodos(emptyReport, todos, {
+      now: NOW,
+      linkedTodoIds: [1],
+    });
+
+    // Then
+    expect(affected).toEqual([]);
+  });
+
+  it('서버가 판단하지 못한 리포트로는 할 일을 다시 고르지 않는다', () => {
+    // Given
+    const noBriefing = createWeatherReport({ hourly: HOURLY, briefing: undefined });
+
+    // When
+    const affected = WeatherReschedulePolicy.getRescheduleTodos(noBriefing, todos, {
+      now: NOW,
+      linkedTodoIds: [1],
+    });
+
+    // Then
+    expect(affected).toEqual([]);
+  });
+
   it('시트를 연 사이 끝낸 할 일은 옮기지 않는다', () => {
     // Given
     const completed = [createBriefingTodo({ id: 1, completed: true })];
@@ -57,27 +105,7 @@ describe('getRescheduleTodos', () => {
     // When
     const affected = WeatherReschedulePolicy.getRescheduleTodos(report, completed, {
       now: NOW,
-      reason: 'rain',
-    });
-
-    // Then
-    expect(affected).toEqual([]);
-  });
-
-  it.each([
-    { title: '서버가 판단하지 못한 리포트', briefing: undefined },
-    {
-      title: '서버가 지금은 더위로 판단한 리포트',
-      briefing: { ...SERVER_BRIEFING, reason: 'heat' },
-    },
-  ] as const)('$title로는 비를 피해 옮길 할 일을 다시 고르지 않는다', ({ briefing }) => {
-    // Given
-    const otherReport = createWeatherReport({ hourly: HOURLY, briefing });
-
-    // When
-    const affected = WeatherReschedulePolicy.getRescheduleTodos(otherReport, todos, {
-      now: NOW,
-      reason: 'rain',
+      linkedTodoIds: [1],
     });
 
     // Then

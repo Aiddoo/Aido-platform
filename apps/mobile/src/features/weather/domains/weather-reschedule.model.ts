@@ -1,4 +1,3 @@
-import { type WeatherRescheduleReason } from '@aido/api/vocabulary';
 import { type Instant, toEpochMs, toHHmm } from '@src/shared/date/instant';
 import { keyBy } from 'es-toolkit';
 
@@ -82,22 +81,25 @@ function getExpiredTargets<TTodo>(
 }
 
 /**
- * 시트 링크의 할 일 중 서버가 지금도 같은 이유로 영향받는다고 본 할 일. 시트를 연 사이 끝낸 할 일은 뺀다.
- * 서버가 판단하지 못했거나(briefing 없음) 이유가 바뀌었으면 앱이 다시 판단하지 않고 옮기지 않는다.
+ * 지금 서버 브리핑이 영향받는다고 본 할 일. 링크의 이유가 달라졌거나 낡아도 지금 브리핑을 따르고,
+ * 링크가 가리킨 할 일이 아직 영향받으면 그것만, 아니면 브리핑의 전체를 돌려준다. 시트를 연 사이 끝낸 할 일은 뺀다.
+ * 서버가 판단하지 못했으면(briefing 없음) 앱이 다시 판단하지 않고 비운다.
  */
 function getRescheduleTodos(
   report: { hourly: readonly HourlyForecastEntry[]; briefing: WeatherReportBriefing | null },
   todos: readonly BriefingTodo[],
-  { now, reason }: { now: Instant; reason: WeatherRescheduleReason },
+  { now, linkedTodoIds }: { now: Instant; linkedTodoIds: readonly number[] },
 ): AffectedTodo[] {
   const { briefing } = report;
-  if (briefing == null || briefing.reason !== reason) {
+  if (briefing == null) {
     return [];
   }
   const forecastTodos = WeatherBriefingPolicy.getForecastTodos(report.hourly, todos, now);
-  return WeatherBriefingPolicy.getAffectedTodos(briefing, forecastTodos).filter(
+  const affected = WeatherBriefingPolicy.getAffectedTodos(briefing, forecastTodos).filter(
     (todo) => !todo.completed,
   );
+  const linked = affected.filter((todo) => linkedTodoIds.includes(todo.todoId));
+  return linked.length > 0 ? linked : affected;
 }
 
 /** 서버가 고른 후보 중 아직 지나지 않은 시각. 리포트를 받은 뒤 정시를 넘기면 지난 후보가 빠진다. */
