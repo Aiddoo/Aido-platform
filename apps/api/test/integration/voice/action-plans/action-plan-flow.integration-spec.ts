@@ -593,7 +593,7 @@ describe("계획 사용량·멱등 적용 (실제 PostgreSQL)", () => {
       ]);
       // When
       const upcoming = await todoPlanReader.findUpcoming(UserId.reconstitute(userId), {
-        fromDate: new Date("2027-01-04T00:00:00.000Z"),
+        fromDate: Temporal.PlainDate.from("2027-01-04"),
         limit: 3,
       });
       // Then

@@ -119,7 +119,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
       userId: UserId.reconstitute(userId),
       categoryId: TodoCategoryId.reconstitute(categoryId),
       title: "원래 제목",
-      startDate: AT,
+      startDate: plainDateFromDate(AT),
       scheduledTime,
       timezone: "America/New_York",
       items: [{ title: "항목" }],
@@ -280,7 +280,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
         userId: UserId.reconstitute(userId),
         categoryId: TodoCategoryId.reconstitute(categoryId),
         title: "먼 과거",
-        startDate: new Date("2000-01-01T00:00:00.000Z"),
+        startDate: Temporal.PlainDate.from("2000-01-01"),
         timezone: "UTC",
         repeat: DAILY_NEVER,
       });
@@ -294,7 +294,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
 
     it("상한 안의 지난 시작일은 빠짐없이 만들고 다음 날 작업이 이어 채운다", async () => {
       // Given
-      const startDate = new Date("2025-11-02T00:00:00.000Z");
+      const startDate = Temporal.PlainDate.from("2025-11-02");
       // When
       const { series } = await context.module.get(CreateTodoUseCase).execute({
         userId: UserId.reconstitute(userId),
@@ -318,7 +318,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
         userId: UserId.reconstitute(userId),
         categoryId: TodoCategoryId.reconstitute(categoryId),
         title: "옛 앱",
-        startDate: new Date("2000-01-03T00:00:00.000Z"),
+        startDate: Temporal.PlainDate.from("2000-01-03"),
         timezone: "UTC",
         repeat: {
           frequency: "WEEKLY",
@@ -369,7 +369,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
           userId: UserId.reconstitute(userId),
           categoryId: TodoCategoryId.reconstitute(categoryId),
           title: "DST",
-          startDate: new Date("2027-03-13T00:00:00.000Z"),
+          startDate: Temporal.PlainDate.from("2027-03-13"),
           scheduledTime: "08:00",
           timezone: "America/New_York",
           repeat: { frequency: "DAILY", end: { type: "COUNT", count: 3 } },
@@ -631,7 +631,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
         userId: UserId.reconstitute(userId),
         categoryId: TodoCategoryId.reconstitute(categoryId),
         title: "단일",
-        startDate: AT,
+        startDate: plainDateFromDate(AT),
         timezone: "UTC",
       });
       // When
@@ -715,7 +715,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
         userId: UserId.reconstitute(other.id),
         categoryId: TodoCategoryId.reconstitute(otherCategory?.id ?? 0),
         title: "남의 반복",
-        startDate: AT,
+        startDate: plainDateFromDate(AT),
         timezone: "UTC",
         repeat: { frequency: "DAILY", end: { type: "COUNT", count: 2 } },
       });
@@ -754,7 +754,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
           userId: UserId.reconstitute(userId),
           categoryId: TodoCategoryId.reconstitute(categoryId),
           title: "단일",
-          startDate: AT,
+          startDate: plainDateFromDate(AT),
           timezone: "UTC",
         });
         // When
@@ -1187,7 +1187,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
         userId: UserId.reconstitute(userId),
         categoryId: TodoCategoryId.reconstitute(categoryId),
         title: "전환",
-        startDate: AT,
+        startDate: plainDateFromDate(AT),
         scheduledTime: "09:00",
         timezone: "Asia/Seoul",
         items: [{ title: "준비물" }],
@@ -1228,7 +1228,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
         userId: UserId.reconstitute(userId),
         categoryId: TodoCategoryId.reconstitute(categoryId),
         title: "전환",
-        startDate: AT,
+        startDate: plainDateFromDate(AT),
         timezone: "UTC",
       });
       // When
@@ -1252,7 +1252,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
         userId: UserId.reconstitute(userId),
         categoryId: TodoCategoryId.reconstitute(categoryId),
         title: "전환",
-        startDate: AT,
+        startDate: plainDateFromDate(AT),
         scheduledTime: "09:00",
         timezone: "UTC",
       });
@@ -1284,7 +1284,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
         userId: UserId.reconstitute(userId),
         categoryId: TodoCategoryId.reconstitute(categoryId),
         title: "전환",
-        startDate: AT,
+        startDate: plainDateFromDate(AT),
         scheduledTime: "09:00",
         timezone: "UTC",
       });
@@ -1317,7 +1317,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
         userId: UserId.reconstitute(userId),
         categoryId: TodoCategoryId.reconstitute(categoryId),
         title: "원래 제목",
-        startDate: AT,
+        startDate: plainDateFromDate(AT),
         timezone: "UTC",
       });
       const todoId = todos[0]?.id ?? 0;
@@ -1359,7 +1359,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
         userId: UserId.reconstitute(userId),
         categoryId: TodoCategoryId.reconstitute(categoryId),
         title: "오래된 할 일",
-        startDate: new Date("2000-01-01T00:00:00.000Z"),
+        startDate: Temporal.PlainDate.from("2000-01-01"),
         timezone: "UTC",
       });
       // When

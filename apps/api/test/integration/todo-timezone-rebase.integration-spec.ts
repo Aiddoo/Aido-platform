@@ -39,7 +39,6 @@ import { PgBossJobRuntimeAdapter } from "#api/platform/jobs/pg-boss-job-runtime.
 import { SystemClock } from "#api/platform/time/system-clock";
 import { addDaysToDateKey } from "#api/shared/domain/date/utils/arithmetic";
 import { toDateString } from "#api/shared/domain/date/utils/format";
-import { parseDateOnly } from "#api/shared/domain/date/utils/parse";
 import {
   localDateInTimezone,
   parseLocalDateTime,
@@ -660,7 +659,7 @@ describe("시간대 재계산 동시성 (실제 PostgreSQL 잠금)", () => {
       userId: UserId.reconstitute(userId),
       title: "회차",
       categoryId: TodoCategoryId.reconstitute(categoryId),
-      startDate: parseDateOnly(addDaysToDateKey(today, 1)),
+      startDate: Temporal.PlainDate.from(addDaysToDateKey(today, 1)),
       scheduledTime: time,
       timezone: SEOUL,
       isAllDay: false,
@@ -710,7 +709,7 @@ describe("시간대 재계산 동시성 (실제 PostgreSQL 잠금)", () => {
         userId: UserId.reconstitute(userId),
         title: "새 할 일",
         categoryId: TodoCategoryId.reconstitute(categoryId),
-        startDate: parseDateOnly(addDaysToDateKey(today, 2)),
+        startDate: Temporal.PlainDate.from(addDaysToDateKey(today, 2)),
         scheduledTime: "07:15",
         timezone: NEW_YORK,
         isAllDay: false,
@@ -732,7 +731,7 @@ describe("시간대 재계산 동시성 (실제 PostgreSQL 잠금)", () => {
       userId: UserId.reconstitute(userId),
       title: "단건",
       categoryId: TodoCategoryId.reconstitute(categoryId),
-      startDate: parseDateOnly(date),
+      startDate: Temporal.PlainDate.from(date),
       scheduledTime: "09:00",
       timezone: SEOUL,
       isAllDay: false,

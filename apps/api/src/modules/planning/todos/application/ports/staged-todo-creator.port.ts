@@ -16,9 +16,8 @@ export interface CreateTodoData {
   readonly userId: UserId;
   readonly title: string;
   readonly categoryId: TodoCategoryId;
-  // 메모·음성·AI가 아직 날짜를 UTC 자정 Date로 넘겨 이 경계에서만 Date로 받는다
-  readonly startDate: Date;
-  readonly endDate?: Date | null;
+  readonly startDate: Temporal.PlainDate;
+  readonly endDate?: Temporal.PlainDate | null;
   readonly scheduledTime?: string | null;
   /** 요청의 시간대. 없거나 잘못되면 저장된 사용자 시간대로 해석한다. */
   readonly timezone: string | undefined;

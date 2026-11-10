@@ -36,7 +36,6 @@ import { ApplicationException } from "#api/shared/application/application.except
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { DomainException } from "#api/shared/domain/index";
-import { plainDateToDate } from "#api/shared/domain/time/plain-date";
 
 import { TodoCategoryId } from "../../../../categories/domain/todo-category-id.vo.js";
 import { localDateAt } from "../../../../shared/domain/todo-calendar.domain-service.js";
@@ -290,9 +289,8 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
       userId: UserId.reconstitute(user.userId),
       title: dto.title,
       categoryId: TodoCategoryId.reconstitute(dto.categoryId),
-      startDate: plainDateToDate(Temporal.PlainDate.from(dto.startDate)),
-      endDate:
-        dto.endDate == null ? undefined : plainDateToDate(Temporal.PlainDate.from(dto.endDate)),
+      startDate: Temporal.PlainDate.from(dto.startDate),
+      endDate: dto.endDate == null ? undefined : Temporal.PlainDate.from(dto.endDate),
       scheduledTime: dto.scheduledTime,
       timezone,
       isAllDay: dto.isAllDay,
@@ -358,7 +356,7 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
         userId: UserId.reconstitute(user.userId),
         title: dto.title,
         categoryId: TodoCategoryId.reconstitute(dto.categoryId),
-        startDate: plainDateToDate(Temporal.PlainDate.from(dto.startDate)),
+        startDate: Temporal.PlainDate.from(dto.startDate),
         scheduledTime: dto.scheduledTime,
         timezone,
         isAllDay: dto.isAllDay,

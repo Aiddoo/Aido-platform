@@ -13,10 +13,9 @@ export interface UpcomingTodoView {
 
 /** 다른 Context가 계획을 세우고 적용 결과를 다시 돌려줄 때 읽는 할 일 */
 export abstract class TodoPlanReaderPort {
-  // 음성·AI가 아직 오늘을 UTC 자정 Date로 넘긴다
   abstract findUpcoming(
     userId: UserId,
-    input: { readonly fromDate: Date; readonly limit: number },
+    input: { readonly fromDate: Temporal.PlainDate; readonly limit: number },
   ): Promise<UpcomingTodoView[]>;
   abstract findManyByIds(userId: UserId, ids: readonly TodoId[]): Promise<TodoReadModel[]>;
 }

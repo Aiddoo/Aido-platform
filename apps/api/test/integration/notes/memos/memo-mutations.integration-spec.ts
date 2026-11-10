@@ -450,7 +450,7 @@ describe("메모 변경 원자성 (실제 PostgreSQL)", () => {
       .returning();
     const categoryId = requireRecord(category).id;
     const publish = vi.spyOn(context.module.get(DomainEventPublisherPort), "publish");
-    const startDate = new Date("2027-01-08T00:00:00.000Z");
+    const startDate = Temporal.PlainDate.from("2027-01-08");
 
     // When
     recording = [];

@@ -21,7 +21,6 @@ import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { plainDateToDate } from "#api/shared/domain/time/plain-date";
 
 import type { UserLocalePreferenceReaderPort } from "../../../generation/application/ports/user-locale-preference.reader.port.js";
 import { localDateAt } from "../../../shared/domain/user-calendar.domain-service.js";
@@ -145,7 +144,7 @@ export class HandleSuggestionActionUseCase {
       userId: UserId.reconstitute(command.userId),
       title: suggestion.title,
       categoryId: TodoCategoryId.reconstitute(command.categoryId),
-      startDate: plainDateToDate(Temporal.PlainDate.from(startDate)),
+      startDate: Temporal.PlainDate.from(startDate),
       scheduledTime: suggestion.scheduledTime,
       timezone: at.timezone,
       repeat: {

@@ -3,6 +3,7 @@ import { type DayOfWeek, TODO_LIMITS, TODO_SERIES_LIMITS } from "@aido/api/vocab
 import { vi } from "vitest";
 
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { plainDateFromDate } from "#api/shared/domain/time/plain-date";
 import { copyTodoRecord } from "#test/doubles/planning/in-memory-todo.repository";
 import {
   createPlanningTodoFixture,
@@ -54,7 +55,7 @@ describe("할 일 생성", () => {
       userId: UserId.reconstitute(fixture.userId),
       title: "시간 맞춤",
       categoryId: TodoCategoryId.reconstitute(1),
-      startDate: new Date("2026-05-16T00:00:00Z"),
+      startDate: Temporal.PlainDate.from("2026-05-16"),
       scheduledTime,
       isAllDay,
       timezone: "Asia/Seoul",
@@ -73,7 +74,7 @@ describe("할 일 생성", () => {
       userId: UserId.reconstitute(fixture.userId),
       title: "새 할 일",
       categoryId: TodoCategoryId.reconstitute(1),
-      startDate: new Date("2026-05-16T00:00:00Z"),
+      startDate: Temporal.PlainDate.from("2026-05-16"),
       timezone: "UTC",
       items: [{ title: "첫 항목" }, { title: "둘째 항목" }],
     });
@@ -108,7 +109,7 @@ describe("할 일 생성", () => {
       userId: UserId.reconstitute(fixture.userId),
       title: "새 할 일",
       categoryId: TodoCategoryId.reconstitute(1),
-      startDate: PLANNING_TIME,
+      startDate: plainDateFromDate(PLANNING_TIME),
       timezone: "UTC",
     };
     // When / Then
@@ -132,7 +133,7 @@ describe("할 일 생성", () => {
         userId: UserId.reconstitute(fixture.userId),
         title: "초과 할 일",
         categoryId: TodoCategoryId.reconstitute(1),
-        startDate: PLANNING_TIME,
+        startDate: plainDateFromDate(PLANNING_TIME),
         timezone: "UTC",
       }),
     ).rejects.toMatchObject({ errorCode: ErrorCode.TODO_0811 });
@@ -153,7 +154,7 @@ describe("할 일 생성", () => {
           userId: UserId.reconstitute(fixture.userId),
           title: "새 할 일",
           categoryId: TodoCategoryId.reconstitute(1),
-          startDate: PLANNING_TIME,
+          startDate: plainDateFromDate(PLANNING_TIME),
           timezone: "UTC",
         }),
       ).rejects.toBe(failure);
@@ -173,7 +174,7 @@ describe("할 일 생성", () => {
         userId: UserId.reconstitute(fixture.userId),
         title: "반복 할 일",
         categoryId: TodoCategoryId.reconstitute(1),
-        startDate: new Date("2026-05-18T00:00:00Z"),
+        startDate: Temporal.PlainDate.from("2026-05-18"),
         timezone: "UTC",
         repeat: { frequency: "DAILY", end: { type: "NEVER" } },
         ...overrides,
@@ -205,7 +206,7 @@ describe("할 일 생성", () => {
 
     it("계속 반복은 규칙 시간대 오늘+90일(포함)까지만 만들고 다음 회차를 커서에 남긴다", async () => {
       // Given
-      const startDate = new Date("2026-05-15T00:00:00Z");
+      const startDate = Temporal.PlainDate.from("2026-05-15");
       // When
       const { todos, series } = await useCase.execute(seriesInput({ startDate }));
       // Then
@@ -226,7 +227,7 @@ describe("할 일 생성", () => {
 
     it("90일 너머에서 시작해도 첫 회차는 바로 만든다", async () => {
       // Given
-      const startDate = new Date("2027-01-01T00:00:00Z");
+      const startDate = Temporal.PlainDate.from("2027-01-01");
       // When
       const { todos, series } = await useCase.execute(seriesInput({ startDate }));
       // Then
@@ -236,7 +237,7 @@ describe("할 일 생성", () => {
 
     it("상한 안의 지난 시작일도 한 번에 상한까지만 만들고 나머지는 커서에 남긴다", async () => {
       // Given
-      const startDate = new Date("2025-05-15T00:00:00Z");
+      const startDate = Temporal.PlainDate.from("2025-05-15");
       // When
       const { todos, series } = await useCase.execute(seriesInput({ startDate }));
       // Then
@@ -285,7 +286,7 @@ describe("할 일 생성", () => {
         // When
         const { todos, series } = await useCase.execute(
           seriesInput({
-            startDate: new Date(`${startDate}T00:00:00Z`),
+            startDate: Temporal.PlainDate.from(startDate),
             scheduledTime: "09:00",
             timezone,
             repeat: { frequency: "DAILY", end: { type: "UNTIL", date: until } },
@@ -312,7 +313,7 @@ describe("할 일 생성", () => {
 
     it("반복과 기간 종료일을 함께 보내면 TODO_0845다", async () => {
       // Given
-      const endDate = new Date("2026-05-20T00:00:00Z");
+      const endDate = Temporal.PlainDate.from("2026-05-20");
       // When / Then
       await expect(useCase.execute(seriesInput({ endDate }))).rejects.toMatchObject({
         errorCode: ErrorCode.TODO_0845,
@@ -324,7 +325,7 @@ describe("할 일 생성", () => {
       // Given
       const limit = TODO_SERIES_LIMITS.MAX_ACTIVE_PER_USER;
       for (let index = 0; index < limit; index++) {
-        await useCase.execute(seriesInput({ startDate: new Date("2027-01-01T00:00:00Z") }));
+        await useCase.execute(seriesInput({ startDate: Temporal.PlainDate.from("2027-01-01") }));
       }
       const finished = { frequency: "DAILY", end: { type: "COUNT", count: 1 } } as const;
       // When / Then

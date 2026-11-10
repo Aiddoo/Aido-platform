@@ -48,8 +48,7 @@ export class PlanningContextReaderAdapter extends PlanningContextReaderPort {
     const [categories, upcomingTodos] = await Promise.all([
       this.#categoryReader.listForUser(userId),
       this.#todoReader.findUpcoming(userId, {
-        // planning 조회 포트는 아직 날짜를 UTC 자정 Date로 받는다
-        fromDate: new Date(today.toZonedDateTime("UTC").epochMilliseconds),
+        fromDate: today,
         limit: PLANNING_UPCOMING_TODO_LIMIT,
       }),
     ]);

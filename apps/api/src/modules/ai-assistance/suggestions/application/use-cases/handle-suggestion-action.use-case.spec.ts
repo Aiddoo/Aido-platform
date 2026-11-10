@@ -300,7 +300,7 @@ describe("HandleSuggestionActionUseCase", () => {
       // Then
       expect(todoCreator.inputs).toEqual([
         expect.objectContaining({
-          startDate: new Date(`${startDate}T00:00:00.000Z`),
+          startDate: Temporal.PlainDate.from(startDate),
           timezone,
           repeat: expect.objectContaining({ end: { type: "UNTIL", date: endDate } }),
         }),
@@ -327,7 +327,7 @@ describe("HandleSuggestionActionUseCase", () => {
       // Then
       expect(todoCreator.inputs).toEqual([
         expect.objectContaining({
-          startDate: new Date("2026-10-28T00:00:00.000Z"),
+          startDate: Temporal.PlainDate.from("2026-10-28"),
           timezone: "Asia/Seoul",
         }),
       ]);

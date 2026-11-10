@@ -32,11 +32,6 @@ import { ActionPlanLogEvent } from "../action-plans.log-events.js";
 import type { PlanApplicationRepositoryPort } from "../ports/plan-application.repository.port.js";
 import type { PlanningContextReaderPort } from "../ports/planning-context.reader.port.js";
 
-// planning 할 일 생성 포트는 아직 날짜를 UTC 자정 Date로 받는다
-function toUtcMidnight(date: string): Date {
-  return new Date(Temporal.PlainDate.from(date).toZonedDateTime("UTC").epochMilliseconds);
-}
-
 export interface ApplyActionPlanCommand {
   readonly userId: string;
   readonly timezone: string | undefined;
@@ -140,8 +135,8 @@ export class ApplyActionPlanUseCase {
         userId: owner,
         title: todo.title,
         categoryId: TodoCategoryId.reconstitute(todo.categoryId),
-        startDate: toUtcMidnight(todo.startDate),
-        endDate: todo.endDate == null ? null : toUtcMidnight(todo.endDate),
+        startDate: Temporal.PlainDate.from(todo.startDate),
+        endDate: todo.endDate == null ? null : Temporal.PlainDate.from(todo.endDate),
         scheduledTime: todo.scheduledTime,
         timezone,
         isAllDay: todo.scheduledTime == null,

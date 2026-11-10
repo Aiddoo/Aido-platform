@@ -7,7 +7,6 @@ import { requireRecord } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { todo, todoCategory, todoSeries } from "#api/platform/database/schema/index";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { plainDateFromDate } from "#api/shared/domain/time/plain-date";
 
 import type { TodoCategoryId } from "../../../categories/domain/todo-category-id.vo.js";
 import type { TodoId } from "../../../shared/domain/todo-id.vo.js";
@@ -225,9 +224,9 @@ export class DrizzleTodoReadRepository implements TodoReadRepositoryPort, TodoPl
 
   async findUpcoming(
     userId: UserId,
-    input: { readonly fromDate: Date; readonly limit: number },
+    input: { readonly fromDate: Temporal.PlainDate; readonly limit: number },
   ): Promise<UpcomingTodoView[]> {
-    const fromDate = plainDateFromDate(input.fromDate);
+    const { fromDate } = input;
     // 반복 할 일은 회차가 수십 개라도 다음 회차 하나만 맥락에 넣는다.
     const groupKey = sql`coalesce(${todo.seriesId}, ${todo.id}::text)`;
     const upcoming = this.#db

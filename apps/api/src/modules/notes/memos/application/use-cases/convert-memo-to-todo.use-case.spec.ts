@@ -20,7 +20,7 @@ import {
 } from "./convert-memo-to-todo.use-case.js";
 
 const USER_ID = UserId.reconstitute(MEMO_FIXTURE_USER_ID);
-const START_DATE = new Date("2026-11-10T00:00:00.000Z");
+const START_DATE = Temporal.PlainDate.from("2026-11-10");
 
 function createConvertMemoToTodoUseCase(overrides: Partial<ConvertMemoToTodoDependencies> = {}) {
   return new ConvertMemoToTodoUseCase({
