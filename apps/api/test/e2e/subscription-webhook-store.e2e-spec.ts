@@ -1,8 +1,11 @@
 import { currentUserSchema } from "@aido/api";
 import { Logger } from "@nestjs/common";
+import type { ConfigType } from "@nestjs/config";
 import request from "supertest";
 import { z } from "zod";
 
+import { billingSubscriptionsConfig } from "#api/modules/billing/subscriptions/billing-subscriptions.config";
+import { appConfig } from "#api/platform/config/app.config";
 import { subscription, subscriptionEventReceipt } from "#api/platform/database/schema/index";
 import { OPERATIONAL_ALERT } from "#api/shared/application/ports/operational-alert.port";
 import { SubscriptionEventBuilder } from "#test/builders/subscription-event.builder";
@@ -21,14 +24,25 @@ describe("RevenueCat 웹훅의 스토어·환경별 처리 (실제 PostgreSQL)",
 
   beforeAll(async () => {
     context = await createE2eApp({
-      customizeBuilder: (builder) => builder.overrideProvider(OPERATIONAL_ALERT).useValue(alert),
+      customizeBuilder: (builder) =>
+        builder
+          .overrideProvider(OPERATIONAL_ALERT)
+          .useValue(alert)
+          .overrideProvider(billingSubscriptionsConfig.KEY)
+          .useValue({
+            revenuecat: { webhookSecret, projectId: undefined, apiV2SecretKey: undefined },
+          }),
       additionalResetters: [() => alert.alerts.splice(0)],
     });
   });
 
+  // 배포 환경은 시작할 때 한 번 읽으므로 앱이 받은 설정 값을 테스트마다 바꾼다
+  function deployTo(appEnv: ConfigType<typeof appConfig>["appEnv"]): void {
+    context.module.get<ConfigType<typeof appConfig>>(appConfig.KEY).appEnv = appEnv;
+  }
+
   beforeEach(async () => {
-    vi.stubEnv("REVENUECAT_WEBHOOK_SECRET", webhookSecret);
-    vi.stubEnv("APP_ENV", "production");
+    deployTo("production");
     vi.spyOn(Logger.prototype, "log").mockImplementation(() => undefined);
     await context.reset();
     vi.useFakeTimers({ toFake: ["Date"] });
@@ -204,7 +218,7 @@ describe("RevenueCat 웹훅의 스토어·환경별 처리 (실제 PostgreSQL)",
 
   it("운영이 아닌 서버는 Test Store 구매를 지금처럼 반영한다", async () => {
     // Given
-    vi.stubEnv("APP_ENV", "development");
+    deployTo("development");
     const user = await context.helpers.createVerifiedUser("local@example.com", "Test1234!");
 
     // When

@@ -2,6 +2,7 @@ import { currentUserSchema, type RevenueCatWebhookPayload } from "@aido/api";
 import request from "supertest";
 
 import { STORE_RENEWAL_GRACE_MS } from "#api/modules/billing/shared/store-renewal-grace.domain-service";
+import { billingSubscriptionsConfig } from "#api/modules/billing/subscriptions/billing-subscriptions.config";
 import { PremiumGranterPort } from "#api/modules/billing/subscriptions/billing-subscriptions.public";
 import { subscription } from "#api/platform/database/schema/index";
 import { SubscriptionEventBuilder } from "#test/builders/subscription-event.builder";
@@ -24,11 +25,15 @@ describe("무료 체험 중 받은 초대 보상과 체험 종료 뒤 /me (실�
   let context: E2eTestContext;
 
   beforeAll(async () => {
-    context = await createE2eApp();
+    context = await createE2eApp({
+      customizeBuilder: (builder) =>
+        builder.overrideProvider(billingSubscriptionsConfig.KEY).useValue({
+          revenuecat: { webhookSecret, projectId: undefined, apiV2SecretKey: undefined },
+        }),
+    });
   });
 
   beforeEach(async () => {
-    vi.stubEnv("REVENUECAT_WEBHOOK_SECRET", webhookSecret);
     await context.reset();
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(TRIAL_STARTED_AT);

@@ -3,6 +3,7 @@ import { ErrorCode } from "@aido/api/errors";
 import request from "supertest";
 
 import { SubscriptionWebhookLockPort } from "#api/modules/billing/subscriptions/application/ports/subscription-webhook-lock.port";
+import { billingSubscriptionsConfig } from "#api/modules/billing/subscriptions/billing-subscriptions.config";
 import { PremiumGranterPort } from "#api/modules/billing/subscriptions/billing-subscriptions.public";
 import { AuthCachePort } from "#api/modules/identity/auth/application/ports/auth-collaboration.port";
 import { subscription, subscriptionEventReceipt } from "#api/platform/database/schema/index";
@@ -20,11 +21,16 @@ describe("구독 Webhook HTTP 계약과 권한 캐시 (실제 PostgreSQL)", () =
   let context: E2eTestContext;
 
   beforeAll(async () => {
-    context = await createE2eApp();
+    // 웹훅 비밀은 시작할 때 한 번 읽으므로 앱을 만들 때 넣는다
+    context = await createE2eApp({
+      customizeBuilder: (builder) =>
+        builder.overrideProvider(billingSubscriptionsConfig.KEY).useValue({
+          revenuecat: { webhookSecret, projectId: undefined, apiV2SecretKey: undefined },
+        }),
+    });
   });
 
   beforeEach(async () => {
-    vi.stubEnv("REVENUECAT_WEBHOOK_SECRET", webhookSecret);
     await context.reset();
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(at);
