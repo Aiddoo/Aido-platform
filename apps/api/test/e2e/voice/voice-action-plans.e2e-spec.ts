@@ -15,7 +15,7 @@ import { user } from "#api/platform/database/schema/index";
 import { digestDraft, memoActionDraft, todoActionDraft } from "#test/fixtures/voice-plan.fixture";
 import { createAiGenerationError, FakeAiGenerator } from "#test/mocks/fake-ai.generator";
 
-import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
+import { createE2eApp, destroyE2eApp, type E2eTestContext } from "../helpers/index.js";
 
 const { maxCharacters } = PLAN_CATALOG.VOICE_NOTE.perUse;
 

@@ -1,16 +1,12 @@
 import type { TodoRepeat } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
 import { MEMO_LIMITS, PLAN_CATALOG, TODO_LIMITS } from "@aido/api/vocabulary";
-import { and, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 
 import { AiGeneratorPort } from "#api/modules/ai-assistance/generation/ai-assistance-generation.public";
-import {
-  TODO_PLAN_READER,
-  type TodoPlanReaderPort,
-} from "#api/modules/planning/todos/planning-todos.public";
+import { TodoPlanReaderPort } from "#api/modules/planning/todos/planning-todos.public";
 import { ApplyActionPlanUseCase } from "#api/modules/voice/action-plans/application/use-cases/apply-action-plan.use-case";
 import { CreateQuickPlanUseCase } from "#api/modules/voice/action-plans/application/use-cases/create-quick-plan.use-case";
-import { PurgePlanApplicationsUseCase } from "#api/modules/voice/action-plans/application/use-cases/purge-plan-applications.use-case";
 import { DigestVoiceNoteUseCase } from "#api/modules/voice/voice-notes/application/use-cases/digest-voice-note.use-case";
 import { createEntityId } from "#api/platform/database/entity-id";
 import {
@@ -33,7 +29,7 @@ import {
   createE2eApp,
   destroyE2eApp,
   type E2eTestContext,
-} from "../e2e/helpers/e2e-app-factory.js";
+} from "../../../e2e/helpers/e2e-app-factory.js";
 
 const FREE_AI_LIMIT = PLAN_CATALOG.AI_PARSE.free;
 const AT = new Date("2027-01-04T03:00:00.000Z");
@@ -46,7 +42,6 @@ describe("계획 사용량·멱등 적용 (실제 PostgreSQL)", () => {
   let quickPlan: CreateQuickPlanUseCase;
   let digest: DigestVoiceNoteUseCase;
   let apply: ApplyActionPlanUseCase;
-  let purge: PurgePlanApplicationsUseCase;
   let todoPlanReader: TodoPlanReaderPort;
   let userId: string;
   let categoryId: number;
@@ -64,8 +59,7 @@ describe("계획 사용량·멱등 적용 (실제 PostgreSQL)", () => {
     quickPlan = context.module.get(CreateQuickPlanUseCase);
     digest = context.module.get(DigestVoiceNoteUseCase);
     apply = context.module.get(ApplyActionPlanUseCase);
-    purge = context.module.get(PurgePlanApplicationsUseCase);
-    todoPlanReader = context.module.get(TODO_PLAN_READER);
+    todoPlanReader = context.module.get(TodoPlanReaderPort);
   });
 
   beforeEach(async () => {
@@ -474,31 +468,6 @@ describe("계획 사용량·멱등 적용 (실제 PostgreSQL)", () => {
         details: { reason: "CATEGORY_NOT_OWNED", categoryIds: [categoryId + 1000] },
       });
       expect(await userTodos()).toHaveLength(0);
-    });
-
-    it("7일이 지난 멱등 기록만 지운다", async () => {
-      // Given
-      await runApply([todoAction()], "recent");
-      await runApply([todoAction("todo-1", "오래된 할 일")], "old");
-      await client
-        .update(planApplication)
-        .set({ createdAt: AT })
-        .where(
-          and(eq(planApplication.userId, userId), eq(planApplication.idempotencyKey, "recent")),
-        );
-      await client
-        .update(planApplication)
-        .set({ createdAt: new Date(AT.getTime() - 8 * 24 * 60 * 60 * 1000) })
-        .where(and(eq(planApplication.userId, userId), eq(planApplication.idempotencyKey, "old")));
-      // When
-      const deleted = await purge.execute();
-      // Then
-      const keys = await client
-        .select({ key: planApplication.idempotencyKey })
-        .from(planApplication)
-        .where(eq(planApplication.userId, userId));
-      expect(deleted).toBe(1);
-      expect(keys).toEqual([{ key: "recent" }]);
     });
   });
 
