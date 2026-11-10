@@ -17,17 +17,19 @@ import {
   CurrentUser,
   type CurrentUserPayload,
 } from "#api/modules/identity/identity-auth-http.public";
+import { SWAGGER_TAGS } from "#api/platform/http/swagger/constants/swagger.constant";
 import {
   ApiConflictError,
-  ApiCreatedResponse,
-  ApiDoc,
   ApiErrorCodesResponse,
   ApiForbiddenError,
   ApiNotFoundError,
-  ApiSuccessResponse,
   ApiUnauthorizedError,
-  SWAGGER_TAGS,
-} from "#api/platform/http/swagger/index";
+} from "#api/platform/http/swagger/decorators/api-error.decorator";
+import { ApiDoc } from "#api/platform/http/swagger/decorators/api-operation.decorator";
+import {
+  ApiCreatedResponse,
+  ApiSuccessResponse,
+} from "#api/platform/http/swagger/decorators/api-response.decorator";
 
 import { CreateTodoCategoryUseCase } from "../../../application/use-cases/create-todo-category.use-case.js";
 import { DeleteTodoCategoryUseCase } from "../../../application/use-cases/delete-todo-category.use-case.js";

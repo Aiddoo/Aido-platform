@@ -1,3 +1,4 @@
+import type { PushDispatchSkipReason } from "@aido/api/vocabulary";
 import { uniq } from "es-toolkit";
 
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
@@ -29,7 +30,6 @@ import {
   type NotificationMarketingConsent,
   type UserNotificationSettingsPort,
 } from "../ports/user-notification-settings.port.js";
-import type { PushDispatchSkipReason } from "../read-models/push-delivery.read-model.js";
 
 export interface SinglePushDeliveryRecipient {
   readonly userId: string;

@@ -157,6 +157,72 @@ function findTemplateLiteralLines(lines) {
   return inside;
 }
 
+// 다른 Context의 진입점(*.public.ts)과 drizzle-kit·relations가 읽는 schema 묶음만 다시 내보낸다
+const RE_EXPORT_ALLOWED = new Set([
+  "src/platform/database/schema/index.ts",
+  "src/platform/database/schema/tables.schema.ts",
+]);
+const RE_EXPORT_FROM =
+  /^\s*export\s+(?:type\s+)?(?:\*(?:\s+as\s+\w+)?|\{[^}]*\})\s*from\s*["'][^"']+["']/gm;
+const LOCAL_EXPORT_LIST = /^\s*export\s+(?:type\s+)?\{([^}]*)\}\s*;/gm;
+const IMPORT_BINDINGS =
+  /^\s*import\s+(?:type\s+)?(?:(\w+)\s*,?\s*)?(?:\{([^}]*)\}|\*\s+as\s+(\w+))?\s*from\s*["'][^"']+["']/gm;
+
+function importedNames(text) {
+  const names = new Set();
+  for (const match of text.matchAll(IMPORT_BINDINGS)) {
+    const [, defaultName, named, namespace] = match;
+    for (const name of [defaultName, namespace]) {
+      if (name != null) {
+        names.add(name);
+      }
+    }
+    for (const item of (named ?? "").split(",")) {
+      const local = item
+        .trim()
+        .replace(/^type\s+/, "")
+        .split(/\s+as\s+/)
+        .pop();
+      if (local) {
+        names.add(local);
+      }
+    }
+  }
+  return names;
+}
+
+// 경로를 바꾸면 import를 정의 파일로 옮겨야 해 결합만 늘리는 barrel·재수출을 막는다
+function checkReExports(rel, text, violations) {
+  if (!rel.startsWith("src/") || rel.endsWith(".public.ts") || RE_EXPORT_ALLOWED.has(rel)) {
+    return;
+  }
+  const reason =
+    "다시 내보내지 않는다. 쓰는 곳이 정의 파일을 import한다(다른 Context는 *.public.ts만).";
+  if (rel.endsWith("/index.ts")) {
+    violations.push(`${rel}: barrel(index.ts)을 두지 않는다. ${reason}`);
+    return;
+  }
+  for (const match of text.matchAll(RE_EXPORT_FROM)) {
+    violations.push(`${rel}:${lineOf(text, match.index)}: ${reason}`);
+  }
+  const imported = importedNames(text);
+  for (const match of text.matchAll(LOCAL_EXPORT_LIST)) {
+    const reExported = match[1]
+      .split(",")
+      .map(
+        (item) =>
+          item
+            .trim()
+            .replace(/^type\s+/, "")
+            .split(/\s+as\s+/)[0],
+      )
+      .filter((name) => name !== "" && imported.has(name));
+    if (reExported.length > 0) {
+      violations.push(`${rel}:${lineOf(text, match.index)}: ${reExported.join(", ")}를 ${reason}`);
+    }
+  }
+}
+
 function checkFile(rel, violations, literalEnums) {
   const text = readFileSync(join(apiRoot, rel), "utf8");
   if (isContextPath(rel) && !rel.endsWith(".d.ts")) {
@@ -180,6 +246,8 @@ function checkFile(rel, violations, literalEnums) {
       );
     }
   });
+
+  checkReExports(rel, text, violations);
 
   if (isEnumSchemaPath(rel)) {
     for (const match of text.matchAll(PG_ENUM_LITERAL)) {

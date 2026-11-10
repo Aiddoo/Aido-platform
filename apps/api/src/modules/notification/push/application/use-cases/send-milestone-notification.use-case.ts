@@ -3,7 +3,7 @@ import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { type NotificationHistoryReaderPort } from "../../../inbox/application/ports/notification-history.reader.port.js";
 import type { NotificationMilestone } from "../../domain/notification-milestone.constants.js";
-import { createMilestoneNotificationMessage } from "../messages/notification.messages.js";
+import { createMilestoneNotificationMessage } from "../messages/system-notification.messages.js";
 import { NotificationDeliveryLogEvent } from "../notification-delivery.log-events.js";
 import { type NotificationDedupLockPort } from "../ports/notification-dedup.port.js";
 import type { NotificationRecipientLocaleReaderPort } from "../ports/notification-recipient-locale.reader.port.js";

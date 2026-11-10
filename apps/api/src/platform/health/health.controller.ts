@@ -8,7 +8,8 @@ import { SkipThrottle } from "@nestjs/throttler";
 
 import { Public } from "#api/modules/identity/identity-auth-http.public";
 import { appConfig, type AppSettings } from "#api/platform/config/app.config";
-import { ApiDoc, SWAGGER_TAGS } from "#api/platform/http/swagger/index";
+import { SWAGGER_TAGS } from "#api/platform/http/swagger/constants/swagger.constant";
+import { ApiDoc } from "#api/platform/http/swagger/decorators/api-operation.decorator";
 
 import { DatabaseHealthIndicator } from "./indicators/database.health.js";
 import { JobQueueHealthIndicator } from "./indicators/job-queue.health.js";

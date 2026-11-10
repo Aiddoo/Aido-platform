@@ -6,7 +6,9 @@ import {
   type CurrentUserPayload,
 } from "#api/modules/identity/identity-auth-http.public";
 import { API_VERSION } from "#api/platform/http/api-versioning";
-import { ApiDoc, ApiSuccessResponse, SWAGGER_TAGS } from "#api/platform/http/swagger/index";
+import { SWAGGER_TAGS } from "#api/platform/http/swagger/constants/swagger.constant";
+import { ApiDoc } from "#api/platform/http/swagger/decorators/api-operation.decorator";
+import { ApiSuccessResponse } from "#api/platform/http/swagger/decorators/api-response.decorator";
 
 import { UpsertUserLocationUseCase } from "../../../application/use-cases/upsert-user-location.use-case.js";
 import { LocationResponseDto, UpdateLocationDto } from "./weather-location.dto.js";

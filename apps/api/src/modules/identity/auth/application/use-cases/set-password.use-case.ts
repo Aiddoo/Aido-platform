@@ -6,7 +6,7 @@ import type { RequestMetadata } from "#api/modules/identity/auth/application/rea
 import { AUTH_DEFAULTS } from "#api/modules/identity/auth/domain/auth.constants";
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
-import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
+import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { AuthLogEvent } from "../auth.log-events.js";

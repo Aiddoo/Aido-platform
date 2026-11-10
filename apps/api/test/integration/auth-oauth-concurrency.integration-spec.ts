@@ -15,7 +15,7 @@ import { DrizzleSecurityLogRepository } from "#api/modules/identity/auth/infrast
 import { DrizzleUserRepository } from "#api/modules/identity/users/infrastructure/persistence/drizzle-user.repository";
 import { createEntityId } from "#api/platform/database/entity-id";
 import { oAuthState, user as userTable } from "#api/platform/database/schema/index";
-import { UnitOfWorkPort } from "#api/shared/application/ports/index";
+import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { UserFixture } from "#test/fixtures/index";
 import { FakeEmailService } from "#test/mocks/fake-email.service";

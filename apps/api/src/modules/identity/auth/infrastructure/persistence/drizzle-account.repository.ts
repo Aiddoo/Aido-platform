@@ -16,7 +16,7 @@ import type { IdentityAccounts } from "#api/modules/identity/auth/domain/identit
 import { isUniqueConstraintViolation } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { account } from "#api/platform/database/schema/index";
-import { EncryptionService } from "#api/platform/encryption/index";
+import { EncryptionService } from "#api/platform/encryption/encryption.service";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 

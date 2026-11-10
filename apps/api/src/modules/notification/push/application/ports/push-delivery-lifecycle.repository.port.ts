@@ -1,9 +1,10 @@
+import type { PushDispatchSkipReason } from "@aido/api/vocabulary";
+
+import type { PushDeliveryMode } from "../../domain/push-delivery-status.constants.js";
 import type {
   PushDeliveryItem,
   PushDeliveryPublication,
-  PushDispatchSkipReason,
 } from "../read-models/push-delivery.read-model.js";
-import type { PushDeliveryMode } from "./push-dispatch-staging.repository.port.js";
 import type { PushResult } from "./push-provider.port.js";
 
 interface PushDeliveryFence {

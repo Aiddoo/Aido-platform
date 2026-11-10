@@ -32,23 +32,6 @@ import { type SecurityConfig, securitySchema } from "./security.schema.js";
 import { type WebhookConfig, webhookSchema } from "./webhook.schema.js";
 
 // 스키마 재export
-export * from "./ai.schema.js";
-export * from "./app.schema.js";
-export * from "./app-version.schema.js";
-export * from "./cache.schema.js";
-export * from "./database.schema.js";
-export * from "./email.schema.js";
-export * from "./external.schema.js";
-export * from "./feature-discovery.schema.js";
-export * from "./invite.schema.js";
-export * from "./job.schema.js";
-export * from "./jwt.schema.js";
-export * from "./nudge.schema.js";
-export * from "./oauth.schema.js";
-export * from "./push.schema.js";
-export * from "./retention.schema.js";
-export * from "./security.schema.js";
-export * from "./webhook.schema.js";
 
 /**
  * 통합 환경변수 스키마

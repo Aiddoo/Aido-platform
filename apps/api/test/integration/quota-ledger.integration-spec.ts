@@ -18,7 +18,7 @@ import { PremiumGranterPort } from "#api/modules/billing/premium-grants/billing-
 import { isUniqueConstraintViolation } from "#api/platform/database/database-error.util";
 import { createEntityId } from "#api/platform/database/entity-id";
 import { quotaCharge, quotaUsage, user as userTable } from "#api/platform/database/schema/index";
-import { UnitOfWorkPort } from "#api/shared/application/ports/index";
+import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantFromDate, instantToDate } from "#api/shared/domain/time/instant";
 import { UserFixture } from "#test/fixtures/index";

@@ -8,7 +8,7 @@ import type { NotificationHistoryReader } from "../../../inbox/application/notif
 import { DuplicateNotificationError } from "../../../inbox/application/ports/notification.repository.port.js";
 import { resolveRecipientLocale } from "../../domain/recipient-locale.domain-service.js";
 import { TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY } from "../../domain/transactional-notification-campaign.constants.js";
-import { createFriendCompletedNotificationMessage } from "../messages/notification.messages.js";
+import { createFriendCompletedNotificationMessage } from "../messages/social-notification.messages.js";
 import { NotificationDeliveryLogEvent } from "../notification-delivery.log-events.js";
 import { type UserNotificationSettingsPort } from "../ports/user-notification-settings.port.js";
 import type { PersistedBatchNotificationResult } from "../read-models/push-delivery.read-model.js";

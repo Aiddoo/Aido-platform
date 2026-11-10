@@ -10,11 +10,9 @@ import { databaseSqlState } from "#api/platform/database/database-error.util";
 import { DRIZZLE, type DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { DatabaseModule } from "#api/platform/database/database.module";
 import { memo, user } from "#api/platform/database/schema/index";
-import {
-  AfterCommitTaskRegistryPort,
-  SavepointRunnerPort,
-  UnitOfWorkPort,
-} from "#api/shared/application/ports/index";
+import { AfterCommitTaskRegistryPort } from "#api/shared/application/ports/after-commit-task.registry.port";
+import { SavepointRunnerPort } from "#api/shared/application/ports/savepoint-runner.port";
+import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserFixture } from "#test/fixtures/index";
 import { createTestClient } from "#test/setup/database-context";
 import { TestDatabase } from "#test/setup/test-database";

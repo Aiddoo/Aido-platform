@@ -14,7 +14,7 @@ import { assertStatusAllowsLogin } from "#api/modules/identity/users/domain/acco
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
-import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
+import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 
 import { AuthLogEvent } from "../auth.log-events.js";
 import type { AuthAccountRepositoryPort } from "../ports/auth-account.repository.port.js";

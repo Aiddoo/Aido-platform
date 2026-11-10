@@ -44,7 +44,7 @@ import {
   todoCategory,
   user as userTable,
 } from "#api/platform/database/schema/index";
-import type { AfterCommitTask } from "#api/shared/application/ports/index";
+import type { AfterCommitTask } from "#api/shared/application/ports/after-commit-task.registry.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantFromDate } from "#api/shared/domain/time/instant";
 import { DateClock } from "#test/doubles/platform/date-clock";

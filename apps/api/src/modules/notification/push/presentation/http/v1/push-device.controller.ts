@@ -19,17 +19,20 @@ import {
   type CurrentUserPayload,
   Public,
 } from "#api/modules/identity/identity-auth-http.public";
-import { CurrentRequestClient, type RequestClient } from "#api/platform/http/request-client/index";
+import { type RequestClient } from "#api/platform/http/request-client/request-client";
+import { CurrentRequestClient } from "#api/platform/http/request-client/request-client.decorator";
+import { SWAGGER_TAGS } from "#api/platform/http/swagger/constants/swagger.constant";
 import {
   ApiBadRequestError,
-  ApiCreatedResponse,
-  ApiDoc,
   ApiErrorCodesResponse,
-  ApiSuccessResponse,
   ApiUnauthorizedError,
-  SWAGGER_TAGS,
-} from "#api/platform/http/swagger/index";
-import { ThrottleByUser } from "#api/platform/throttle/index";
+} from "#api/platform/http/swagger/decorators/api-error.decorator";
+import { ApiDoc } from "#api/platform/http/swagger/decorators/api-operation.decorator";
+import {
+  ApiCreatedResponse,
+  ApiSuccessResponse,
+} from "#api/platform/http/swagger/decorators/api-response.decorator";
+import { ThrottleByUser } from "#api/platform/throttle/user-aware-throttler.guard";
 
 import { OptOutMarketingPushUseCase } from "../../../application/use-cases/opt-out-marketing-push.use-case.js";
 import { ReportPushDeviceUseCase } from "../../../application/use-cases/report-push-device.use-case.js";

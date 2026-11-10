@@ -10,7 +10,7 @@ import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import {
   createTodoReminderNotificationMessage,
   createTodoSeriesPausedNotificationMessage,
-} from "../../../push/application/messages/notification.messages.js";
+} from "../../../push/application/messages/scheduler-notification.messages.js";
 import { NotificationRecipientLocaleReaderPort } from "../../../push/application/ports/notification-recipient-locale.reader.port.js";
 import { PublishNotificationUseCase } from "../../../push/application/use-cases/publish-notification.use-case.js";
 import { NotificationProviderLogEvent } from "../../../push/infrastructure/adapters/notification-provider.log-events.js";

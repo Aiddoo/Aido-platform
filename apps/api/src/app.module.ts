@@ -26,34 +26,33 @@ import { SocialModule } from "#api/modules/social/social.module";
 import { SupportModule } from "#api/modules/support/support.module";
 import { VoiceModule } from "#api/modules/voice/voice.module";
 import { WeatherModule } from "#api/modules/weather/weather.module";
-import { CacheModule } from "#api/platform/cache/index";
-import { AppConfigModule } from "#api/platform/config/index";
+import { CacheModule } from "#api/platform/cache/cache.module";
+import { AppConfigModule } from "#api/platform/config/config.module";
 import { throttleConfig } from "#api/platform/config/throttle.config";
-import { DatabaseModule, DRIZZLE } from "#api/platform/database/index";
-import { DedupModule } from "#api/platform/dedup/index";
-import { EncryptionModule } from "#api/platform/encryption/index";
-import { DomainEventsModule } from "#api/platform/events/index";
-import { HealthModule } from "#api/platform/health/index";
-import {
-  REQUEST_CLIENT_CLS_MIDDLEWARE,
-  RequestClientModule,
-} from "#api/platform/http/request-client/index";
+import { DRIZZLE } from "#api/platform/database/database.client";
+import { DatabaseModule } from "#api/platform/database/database.module";
+import { DedupModule } from "#api/platform/dedup/dedup.module";
+import { EncryptionModule } from "#api/platform/encryption/encryption.module";
+import { DomainEventsModule } from "#api/platform/events/domain-events.module";
+import { HealthModule } from "#api/platform/health/health.module";
+import { RequestClientModule } from "#api/platform/http/request-client/request-client.module";
+import { REQUEST_CLIENT_CLS_MIDDLEWARE } from "#api/platform/http/request-client/request-client.store";
 import { AppI18nModule } from "#api/platform/i18n/i18n.module";
 import { JobQueueModule } from "#api/platform/jobs/job-queue.module";
-import { LockModule } from "#api/platform/lock/index";
-import { LoggerModule } from "#api/platform/logging/index";
-import { MeteringModule } from "#api/platform/metering/index";
+import { LockModule } from "#api/platform/lock/lock.module";
+import { LoggerModule } from "#api/platform/logging/logger.module";
+import { MeteringModule } from "#api/platform/metering/metering.module";
 import { AlertingModule } from "#api/platform/observability/alerting.module";
 import { PaginationModule } from "#api/platform/pagination/pagination.module";
-import { RedisModule } from "#api/platform/redis/index";
-import { ResilienceModule } from "#api/platform/resilience/index";
+import { RedisModule } from "#api/platform/redis/redis.module";
+import { ResilienceModule } from "#api/platform/resilience/resilience.module";
 import { SharedKernelModule } from "#api/platform/shared-kernel.module";
+import { THROTTLER_STORAGE } from "#api/platform/throttle/throttle.constants";
+import { ThrottleModule } from "#api/platform/throttle/throttle.module";
 import {
   DAILY_THROTTLER_OPTIONS,
-  THROTTLER_STORAGE,
-  ThrottleModule,
   UserAwareThrottlerGuard,
-} from "#api/platform/throttle/index";
+} from "#api/platform/throttle/user-aware-throttler.guard";
 import { TimeModule } from "#api/platform/time/time.module";
 
 import { AppController } from "./app.controller.js";

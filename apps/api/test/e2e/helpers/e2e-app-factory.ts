@@ -55,7 +55,7 @@ import { WeatherForecastProviderPort } from "#api/modules/weather/forecasts/appl
 import { WeatherReportProviderPort } from "#api/modules/weather/forecasts/application/ports/weather-report-provider.port";
 import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
 import { CacheStorePort } from "#api/platform/cache/cache-store.port";
-import { DRIZZLE } from "#api/platform/database/index";
+import { DRIZZLE } from "#api/platform/database/database.client";
 import { configureApplication } from "#api/platform/http/configure-application";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";

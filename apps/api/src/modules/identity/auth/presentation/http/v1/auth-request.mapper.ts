@@ -1,7 +1,7 @@
 import type { Request } from "express";
 
 import type { RequestMetadata } from "#api/modules/identity/auth/application/read-models/auth-result.read-model";
-import type { RequestClient } from "#api/platform/http/request-client/index";
+import type { RequestClient } from "#api/platform/http/request-client/request-client";
 import { ErrorCodedException } from "#api/shared/domain/exceptions/error-coded.exception";
 
 import { resolveRequestDevice } from "./request-device.mapper.js";

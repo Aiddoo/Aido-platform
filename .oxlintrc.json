@@ -257,6 +257,23 @@
           }
         ]
       }
+    },
+    {
+      "files": ["apps/api/src/**/*.ts"],
+      "excludeFiles": [
+        "apps/api/src/**/*.public.ts",
+        "apps/api/src/platform/database/schema/index.ts",
+        "apps/api/src/platform/database/schema/tables.schema.ts"
+      ],
+      "plugins": ["oxc"],
+      "rules": {
+        "oxc/no-barrel-file": [
+          "error",
+          {
+            "threshold": 0
+          }
+        ]
+      }
     }
   ]
 }

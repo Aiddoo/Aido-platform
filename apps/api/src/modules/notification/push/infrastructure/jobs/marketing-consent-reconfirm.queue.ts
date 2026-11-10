@@ -4,7 +4,7 @@ import {
   defineQueue,
   JOB_POLLING_SECONDS,
   type JobRetryPolicy,
-} from "#api/shared/application/ports/index";
+} from "#api/shared/application/ports/job-queue.port";
 
 const MARKETING_CONSENT_RECONFIRM_JOB_NAME = "reconfirm-marketing-consents";
 

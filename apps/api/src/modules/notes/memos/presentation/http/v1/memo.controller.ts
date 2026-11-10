@@ -20,17 +20,19 @@ import {
 } from "#api/modules/identity/identity-auth-http.public";
 import { TodoCategoryId } from "#api/modules/planning/categories/planning-categories.public";
 import { API_VERSION } from "#api/platform/http/api-versioning";
-import { Timezone } from "#api/platform/http/decorators/index";
+import { Timezone } from "#api/platform/http/decorators/timezone.decorator";
+import { SWAGGER_TAGS } from "#api/platform/http/swagger/constants/swagger.constant";
 import {
-  ApiCreatedResponse,
-  ApiDoc,
   ApiErrorCodesResponse,
   ApiForbiddenError,
   ApiNotFoundError,
-  ApiSuccessResponse,
   ApiUnauthorizedError,
-  SWAGGER_TAGS,
-} from "#api/platform/http/swagger/index";
+} from "#api/platform/http/swagger/decorators/api-error.decorator";
+import { ApiDoc } from "#api/platform/http/swagger/decorators/api-operation.decorator";
+import {
+  ApiCreatedResponse,
+  ApiSuccessResponse,
+} from "#api/platform/http/swagger/decorators/api-response.decorator";
 
 import { ConvertMemoToTodoUseCase } from "../../../application/use-cases/convert-memo-to-todo.use-case.js";
 import { ConvertMemoToTodosUseCase } from "../../../application/use-cases/convert-memo-to-todos.use-case.js";

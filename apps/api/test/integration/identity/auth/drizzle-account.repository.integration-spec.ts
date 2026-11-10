@@ -1,6 +1,6 @@
 import { DrizzleAccountRepository } from "#api/modules/identity/auth/infrastructure/persistence/drizzle-account.repository";
 import { account, user } from "#api/platform/database/schema/index";
-import { EncryptionService } from "#api/platform/encryption/index";
+import { EncryptionService } from "#api/platform/encryption/encryption.service";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { describeAuthAccountRepositoryContract } from "#test/contracts/identity/auth-account-repository.contract";
 import { DateClock } from "#test/doubles/platform/date-clock";

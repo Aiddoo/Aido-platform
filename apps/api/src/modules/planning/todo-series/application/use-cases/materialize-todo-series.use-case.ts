@@ -1,5 +1,6 @@
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
-import { type MutationLockPort, type UnitOfWorkPort } from "#api/shared/application/ports/index";
+import { type MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
+import { type UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 
 import { TodoLockKeys } from "../../../todos/application/todos.lock-keys.js";
 import { TodoSeriesId } from "../../domain/todo-series-id.vo.js";

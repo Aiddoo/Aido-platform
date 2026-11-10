@@ -1,5 +1,5 @@
 import type { CurrentUserPayload } from "#api/modules/identity/identity-auth-http.public";
-import { parseRequestClient } from "#api/platform/http/request-client/index";
+import { parseRequestClient } from "#api/platform/http/request-client/request-client";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { FakePushProvider } from "#test/doubles/notification/fake-push-provider";
 import { InMemoryPushDeviceRepository } from "#test/doubles/notification/in-memory-push-device.repository";

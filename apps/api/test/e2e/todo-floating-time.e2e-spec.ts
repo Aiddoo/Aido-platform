@@ -13,7 +13,7 @@ import { RebaseTodoTimezoneUseCase } from "#api/modules/planning/todos/applicati
 import { TODO_TIMEZONE_REBASE_QUEUE } from "#api/modules/planning/todos/infrastructure/jobs/todo-timezone-rebase.queue";
 import { createEntityId } from "#api/platform/database/entity-id";
 import { todoSeries, userPreference } from "#api/platform/database/schema/index";
-import { JobQueuePort } from "#api/shared/application/ports/index";
+import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
 import { addDaysToDateKey } from "#api/shared/domain/date/utils/arithmetic";
 import { toDateString } from "#api/shared/domain/date/utils/format";
 import {

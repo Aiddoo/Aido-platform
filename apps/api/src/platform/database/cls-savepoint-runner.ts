@@ -1,7 +1,7 @@
 import { Propagation, TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
 
-import type { SavepointRunnerPort } from "#api/shared/application/ports/index";
+import type { SavepointRunnerPort } from "#api/shared/application/ports/savepoint-runner.port";
 
 import type { DrizzleTransactionalAdapter } from "./database.client.js";
 

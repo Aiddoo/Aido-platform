@@ -6,7 +6,7 @@ import { z } from "zod";
 
 import { TodoCategoryCacheKey } from "#api/modules/planning/categories/infrastructure/cache/todo-category-cache.keyspace";
 import { CacheStorePort } from "#api/platform/cache/cache-store.port";
-import type { CursorPaginatedResponse } from "#api/shared/application/pagination/index";
+import type { CursorPaginatedResponse } from "#api/shared/application/pagination/interfaces/pagination.interface";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type {

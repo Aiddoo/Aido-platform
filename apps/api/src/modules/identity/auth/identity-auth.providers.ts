@@ -1,7 +1,7 @@
 import { loggerFor, provideUseCase } from "#api/platform/di/provide-use-case";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
-import { UnitOfWorkPort } from "#api/shared/application/ports/index";
 import { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
+import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 
 import { AuthAccountRepositoryPort } from "./application/ports/auth-account.repository.port.js";
 import {

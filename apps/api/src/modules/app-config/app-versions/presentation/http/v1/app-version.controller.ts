@@ -3,8 +3,8 @@ import { Controller, Get, Header } from "@nestjs/common";
 import { ApiExtraModels, ApiResponse, ApiTags } from "@nestjs/swagger";
 
 import { Public } from "#api/modules/identity/identity-auth-http.public";
-import { RawResponse } from "#api/platform/http/decorators/index";
-import { ApiDoc } from "#api/platform/http/swagger/index";
+import { RawResponse } from "#api/platform/http/decorators/raw-response.decorator";
+import { ApiDoc } from "#api/platform/http/swagger/decorators/api-operation.decorator";
 
 import { GetAppVersionUseCase } from "../../../application/use-cases/get-app-version.use-case.js";
 import { toAppVersionResponse } from "./app-version-response.mapper.js";

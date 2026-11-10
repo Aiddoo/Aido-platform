@@ -12,13 +12,13 @@ import { resolveTimezone } from "#api/shared/domain/time/time-zone-name";
 
 import type { NotificationHistoryReader } from "../../../inbox/application/notification-history.reader.js";
 import type { NotificationAction } from "../../../inbox/application/ports/notification-draft.port.js";
+import { formatWeatherNotificationTime } from "../../../push/application/messages/notification-copy-format.messages.js";
 import {
   createWeatherMorningFallbackNotificationMessage,
   createWeatherMorningNotificationMessage,
   createWeatherMorningUnavailableNotificationMessage,
   createWeatherRescheduleAction,
-  formatWeatherNotificationTime,
-} from "../../../push/application/messages/notification.messages.js";
+} from "../../../push/application/messages/weather-notification.messages.js";
 import type { PublishNotificationUseCase } from "../../../push/application/use-cases/publish-notification.use-case.js";
 import type { TimezoneContext } from "../../domain/timezone-context.read-model.js";
 import type { ReminderWeatherReportReaderPort } from "../ports/reminder-weather-report.reader.port.js";

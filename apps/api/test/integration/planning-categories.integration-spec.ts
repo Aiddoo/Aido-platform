@@ -13,7 +13,7 @@ import type { TodoCategory } from "#api/modules/planning/categories/domain/todo-
 import { TodoCategoryProvisionerPort } from "#api/modules/planning/categories/planning-categories.public";
 import { createEntityId } from "#api/platform/database/entity-id";
 import { todo, user } from "#api/platform/database/schema/index";
-import { UnitOfWorkPort } from "#api/shared/application/ports/index";
+import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantFromDate } from "#api/shared/domain/time/instant";
 import { TodoFixture, UserFixture } from "#test/fixtures/index";

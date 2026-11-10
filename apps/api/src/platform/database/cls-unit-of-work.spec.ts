@@ -4,7 +4,7 @@ import { Logger } from "@nestjs/common";
 import { ClsService } from "nestjs-cls";
 import { vi } from "vitest";
 
-import type { AfterCommitTaskRegistryPort } from "#api/shared/application/ports/index";
+import type { AfterCommitTaskRegistryPort } from "#api/shared/application/ports/after-commit-task.registry.port";
 
 import { ClsUnitOfWork } from "./cls-unit-of-work.js";
 

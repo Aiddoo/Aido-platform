@@ -18,8 +18,8 @@ import { ReminderTimezoneCachePort } from "#api/modules/notification/notificatio
 import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
 import { CacheStorePort } from "#api/platform/cache/cache-store.port";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
-import { UnitOfWorkPort } from "#api/shared/application/ports/index";
 import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
+import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
 import { createUserSettingsFixture } from "#test/fixtures/user-settings.fixture";

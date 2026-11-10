@@ -4,7 +4,7 @@ import {
   defineQueue,
   JOB_POLLING_SECONDS,
   type JobRetryPolicy,
-} from "#api/shared/application/ports/index";
+} from "#api/shared/application/ports/job-queue.port";
 
 export const TODO_REMINDER_JOB_NAME = "send-reminder";
 export const TODO_SERIES_PAUSED_JOB_NAME = "send-series-paused-notice";

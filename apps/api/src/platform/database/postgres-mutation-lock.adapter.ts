@@ -3,7 +3,7 @@ import { Injectable } from "@nestjs/common";
 import { sql } from "drizzle-orm";
 import { uniq } from "es-toolkit";
 
-import type { MutationLockPort } from "#api/shared/application/ports/index";
+import type { MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
 
 import type { DrizzleTransactionalAdapter } from "./database.client.js";
 

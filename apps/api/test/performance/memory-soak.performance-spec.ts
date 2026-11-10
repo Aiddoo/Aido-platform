@@ -5,7 +5,7 @@ import request from "supertest";
 import { z } from "zod";
 
 import { todo } from "#api/platform/database/schema/index";
-import { defineQueue, JobQueuePort } from "#api/shared/application/ports/index";
+import { defineQueue, JobQueuePort } from "#api/shared/application/ports/job-queue.port";
 import {
   createE2eApp,
   destroyE2eApp,

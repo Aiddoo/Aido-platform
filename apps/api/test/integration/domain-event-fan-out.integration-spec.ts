@@ -16,13 +16,13 @@ import { EventSubscriptionCatalog } from "#api/platform/events/event-subscriptio
 import { FanOutDomainEventPublisher } from "#api/platform/events/fan-out-domain-event.publisher";
 import { JobQueueRegistry } from "#api/platform/jobs/job-queue.registry";
 import { PgBossJobQueueAdapter } from "#api/platform/jobs/pg-boss-job-queue.adapter";
+import { AfterCommitTaskRegistryPort } from "#api/shared/application/ports/after-commit-task.registry.port";
 import {
-  AfterCommitTaskRegistryPort,
   defineEventSubscription,
-  defineQueue,
-  UnitOfWorkPort,
   type PublishedDomainEvent,
-} from "#api/shared/application/ports/index";
+} from "#api/shared/application/ports/domain-event-publisher.port";
+import { defineQueue } from "#api/shared/application/ports/job-queue.port";
+import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { TestDatabase } from "#test/setup/test-database";
 
 const SCHEMA = "pgboss";

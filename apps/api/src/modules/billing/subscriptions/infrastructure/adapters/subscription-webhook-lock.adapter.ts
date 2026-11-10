@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
 
-import { cacheKey } from "#api/platform/cache/index";
-import { LockProviderPort } from "#api/platform/lock/index";
+import { cacheKey } from "#api/platform/cache/keyspace/cache-key";
+import { LockProviderPort } from "#api/platform/lock/lock-provider.port";
 
 import { SubscriptionWebhookLockPort } from "../../application/ports/subscription-webhook-lock.port.js";
 

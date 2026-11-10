@@ -84,14 +84,15 @@ presentation → application → domain        infrastructure → application(po
 다른 Context → <context>-<slice>.public.ts 만         shared/* → 어떤 module도 모름
 ```
 
-| 규칙                                                                                             | 강제                                                             |
-| ------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------- |
-| Domain은 Nest·ORM·SDK·`@aido/api` 계약을 모른다. `@aido/api/vocabulary`·`/errors`만 허용         | oxlint `no-restricted-imports` overrides                         |
-| Application은 infrastructure·presentation·SDK·`@aido/api` 루트와 `/contracts`·`/common`을 모른다 | 같음                                                             |
-| 다른 Context는 `*.public.ts`로만 import한다                                                      | dependency-cruiser                                               |
-| 파일·Module 순환 금지, `forwardRef(` 0건                                                         | `import/no-cycle` + dependency-cruiser `no-circular` + 관례 검사 |
-| 폴더·파일 접미사. 역할 접미사는 사전의 하나만(`.spec`은 그 뒤에만)                               | ls-lint + 관례 검사(`ROLE_SUFFIXES`)                             |
-| 안 쓰는 파일·export·의존성                                                                       | knip                                                             |
+| 규칙                                                                                                                | 강제                                                             |
+| ------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| Domain은 Nest·ORM·SDK·`@aido/api` 계약을 모른다. `@aido/api/vocabulary`·`/errors`만 허용                            | oxlint `no-restricted-imports` overrides                         |
+| Application은 infrastructure·presentation·SDK·`@aido/api` 루트와 `/contracts`·`/common`을 모른다                    | 같음                                                             |
+| 다른 Context는 `*.public.ts`로만 import한다                                                                         | dependency-cruiser                                               |
+| 파일·Module 순환 금지, `forwardRef(` 0건                                                                            | `import/no-cycle` + dependency-cruiser `no-circular` + 관례 검사 |
+| 폴더·파일 접미사. 역할 접미사는 사전의 하나만(`.spec`은 그 뒤에만)                                                  | ls-lint + 관례 검사(`ROLE_SUFFIXES`)                             |
+| 안 쓰는 파일·export·의존성                                                                                          | knip                                                             |
+| 다시 내보내기는 `*.public.ts`와 Drizzle schema 묶음(`schema/index.ts`·`tables.schema.ts`)만. `index.ts` barrel 금지 | oxlint `oxc/no-barrel-file` + 관례 검사(`checkReExports`)        |
 
 - 양방향 Module 의존이 필요해 보이면 소유 Context가 좁은 Port를 public으로 열고, 반대 방향은 [이벤트](jobs-and-events.md)로 바꾼다.
 - 포트가 abstract class라 런타임 import가 생긴다. ESM에서는 순환이 부팅 실패로 드러나므로 앱 부팅 E2E(Health)로 확인한다.

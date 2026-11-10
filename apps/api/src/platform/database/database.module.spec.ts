@@ -4,7 +4,8 @@ import { Test } from "@nestjs/testing";
 import { ClsModule } from "nestjs-cls";
 
 import { databaseConfig } from "#api/platform/config/database.config";
-import { AfterCommitTaskRegistryPort, UnitOfWorkPort } from "#api/shared/application/ports/index";
+import { AfterCommitTaskRegistryPort } from "#api/shared/application/ports/after-commit-task.registry.port";
+import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 
 import { ClsUnitOfWork } from "./cls-unit-of-work.js";
 import { DatabaseModule } from "./database.module.js";

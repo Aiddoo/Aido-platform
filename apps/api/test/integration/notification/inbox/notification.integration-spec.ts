@@ -24,7 +24,7 @@ import { PublishNotificationUseCase } from "#api/modules/notification/notificati
 import {
   createMorningNoTodoNotificationMessage,
   createMorningReminderNotificationMessage,
-} from "#api/modules/notification/push/application/messages/notification.messages";
+} from "#api/modules/notification/push/application/messages/scheduler-notification.messages";
 import { MarketingConsentReconfirmPort } from "#api/modules/notification/push/application/ports/marketing-consent-reconfirm.port";
 import { MarketingPushOptOutTokenPort } from "#api/modules/notification/push/application/ports/marketing-push-opt-out-token.port";
 import { NotificationDedupPort } from "#api/modules/notification/push/application/ports/notification-dedup.port";
@@ -56,9 +56,10 @@ import { DedupProviderPort } from "#api/platform/dedup/dedup-provider.port";
 import { LockProviderPort } from "#api/platform/lock/lock-provider.port";
 import { paginationServiceProvider } from "#api/platform/pagination/pagination.providers";
 import { SystemClock } from "#api/platform/time/system-clock";
+import { AfterCommitTaskRegistryPort } from "#api/shared/application/ports/after-commit-task.registry.port";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
-import { AfterCommitTaskRegistryPort, UnitOfWorkPort } from "#api/shared/application/ports/index";
 import { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
+import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { UserPreferenceBuilder } from "#test/builders/index";
 import { NoCacheStore } from "#test/doubles/platform/no-cache-store";

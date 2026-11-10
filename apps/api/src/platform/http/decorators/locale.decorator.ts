@@ -2,9 +2,7 @@ import { createParamDecorator } from "@nestjs/common";
 
 import type { SupportedLocale } from "#api/shared/domain/locale";
 
-import { readRequestClient } from "../request-client/index.js";
-
-export type { SupportedLocale } from "#api/shared/domain/locale";
+import { readRequestClient } from "../request-client/request-client.store.js";
 
 /**
  * Accept-Language의 지원 로케일. 보내지 않은 요청은 undefined라 저장된 locale을

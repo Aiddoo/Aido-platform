@@ -8,7 +8,7 @@ import {
   type JobEnvelope,
   type JobRetryPolicy,
   type QueueDefinition,
-} from "#api/shared/application/ports/index";
+} from "#api/shared/application/ports/job-queue.port";
 import { createDatabaseTransactionFixture } from "#test/setup/database-context";
 import { TestDatabase } from "#test/setup/test-database";
 

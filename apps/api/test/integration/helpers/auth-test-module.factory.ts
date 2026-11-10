@@ -42,9 +42,9 @@ import { DefaultTodoCategoryProvisionerAdapter } from "#api/modules/planning/cat
 import { CacheStorePort } from "#api/platform/cache/cache-store.port";
 import { jwtConfig } from "#api/platform/config/jwt.config";
 import { DRIZZLE } from "#api/platform/database/database.client";
-import { EncryptionService } from "#api/platform/encryption/index";
+import { EncryptionService } from "#api/platform/encryption/encryption.service";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
-import { UnitOfWorkPort } from "#api/shared/application/ports/index";
+import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { DateClock } from "#test/doubles/platform/date-clock";
 import { NoCacheStore } from "#test/doubles/platform/no-cache-store";
 import {

@@ -24,7 +24,7 @@ import { eq } from "drizzle-orm";
 import request from "supertest";
 
 import { UpcomingRenewalNotifierPort } from "#api/modules/billing/subscriptions/application/ports/upcoming-renewal-notifier.port";
-import { createBillingIssueNotificationMessage } from "#api/modules/notification/push/application/messages/notification.messages";
+import { createBillingIssueNotificationMessage } from "#api/modules/notification/push/application/messages/system-notification.messages";
 import { MarketingPushOptOutTokenPort } from "#api/modules/notification/push/application/ports/marketing-push-opt-out-token.port";
 import { SendBillingIssueNotificationUseCase } from "#api/modules/notification/push/application/use-cases/send-billing-issue-notification.use-case";
 import { requireRecord } from "#api/platform/database/database-error.util";
@@ -34,7 +34,7 @@ import {
   pushToken,
   userConsent,
 } from "#api/platform/database/schema/index";
-import { UnitOfWorkPort } from "#api/shared/application/ports/index";
+import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { instantFromDate } from "#api/shared/domain/time/instant";
 
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";

@@ -1,6 +1,6 @@
 import type { TodoVisibility } from "@aido/api/vocabulary";
 
-import type { AfterCommitTask } from "#api/shared/application/ports/index";
+import type { AfterCommitTask } from "#api/shared/application/ports/after-commit-task.registry.port";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { TodoCategoryId } from "../../../categories/domain/todo-category-id.vo.js";

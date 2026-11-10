@@ -14,15 +14,17 @@ export { SCHEDULER_CAMPAIGN_KEY } from "./reminders/domain/notification-campaign
 export { TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY } from "./push/domain/transactional-notification-campaign.constants.js";
 export {
   createAiSuggestionNotificationMessage,
+  createPremiumGrantEndingNotificationMessage,
+  createPremiumRenewalUpcomingNotificationMessage,
+  createPremiumTrialEndingNotificationMessage,
+} from "./push/application/messages/system-notification.messages.js";
+export {
   createInviteJoinedNotificationMessage,
   createInviteProgressNotificationMessage,
   createInviteQualifyReminderNotificationMessage,
   createInviteRewardedNotificationMessage,
   createNudgeReplyNotificationMessage,
   createNudgeThanksNotificationMessage,
-  createPremiumGrantEndingNotificationMessage,
-  createPremiumRenewalUpcomingNotificationMessage,
-  createPremiumTrialEndingNotificationMessage,
   createTodoCommentNotificationMessage,
-} from "./push/application/messages/notification.messages.js";
+} from "./push/application/messages/social-notification.messages.js";
 export { NotificationPushModule } from "./push/notification-push.module.js";

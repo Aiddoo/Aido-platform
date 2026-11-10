@@ -33,6 +33,3 @@ export const CurrentUser = createParamDecorator(
     return data ? parsedUser.data[data] : parsedUser.data;
   },
 );
-
-// 타입 재export (이름 변경으로 충돌 방지)
-export type { CurrentUserPayload };

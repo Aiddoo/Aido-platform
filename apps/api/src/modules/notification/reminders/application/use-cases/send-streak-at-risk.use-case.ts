@@ -3,7 +3,7 @@ import type { ApplicationLoggerPort } from "#api/shared/application/ports/applic
 import { plainDateToDate } from "#api/shared/domain/time/plain-date";
 
 import type { NotificationHistoryReader } from "../../../inbox/application/notification-history.reader.js";
-import { createStreakAtRiskNotificationMessage } from "../../../push/application/messages/notification.messages.js";
+import { createStreakAtRiskNotificationMessage } from "../../../push/application/messages/scheduler-notification.messages.js";
 import type { PublishNotificationUseCase } from "../../../push/application/use-cases/publish-notification.use-case.js";
 import { resolveRecipientLocale } from "../../../push/domain/recipient-locale.domain-service.js";
 import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/notification-campaign.constants.js";

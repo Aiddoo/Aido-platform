@@ -1,4 +1,5 @@
 import { isSemanticVersionAtLeast } from "@aido/api/vocabulary";
+import type { PushDispatchSkipReason } from "@aido/api/vocabulary";
 import { groupBy, uniq } from "es-toolkit";
 
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
@@ -31,7 +32,6 @@ import {
   type PushResult,
 } from "../ports/push-provider.port.js";
 import { type PushTokenRepositoryPort } from "../ports/push-token.repository.port.js";
-import type { PushDispatchSkipReason } from "../read-models/push-delivery.read-model.js";
 
 function tokensToRevoke(results: readonly PushResult[]): string[] {
   return results.flatMap((result) =>

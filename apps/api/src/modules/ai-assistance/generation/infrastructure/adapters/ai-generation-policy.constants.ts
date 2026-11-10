@@ -1,6 +1,7 @@
 import type { AiTaskSettings, AiThinking } from "#api/platform/config/schemas/ai.schema";
 
-import type { AiTaskClass, AiTaskId } from "../../application/ports/ai-generator.port.js";
+import type { AiTaskId } from "../../application/ports/ai-generator.port.js";
+import type { AiTaskClass } from "../../domain/ai-spend.domain-service.js";
 
 /** 한 요청의 생성 정책. maxOutputTokens는 사고 토큰을 포함한 상한이다. */
 export interface AiGenerationPolicy {

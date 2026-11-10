@@ -8,7 +8,7 @@ import type { z } from "zod";
 
 import { PG_BOSS_CLIENT, type PgBossClient, pgBossClientProvider } from "../jobs/pg-boss-client.js";
 import type { NamespaceConfig } from "./define-config.js";
-import { envSchema, validateEnv } from "./schemas/index.js";
+import { envSchema, validateEnv } from "./schemas/env.schema.js";
 
 type Env = Readonly<Record<string, string | undefined>>;
 type AnyNamespaceConfig = NamespaceConfig<z.ZodType<Record<string, unknown>>>;

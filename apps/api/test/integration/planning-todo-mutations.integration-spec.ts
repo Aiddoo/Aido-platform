@@ -26,11 +26,9 @@ import {
   todoSeries,
   user as userTable,
 } from "#api/platform/database/schema/index";
-import {
-  AfterCommitTaskRegistryPort,
-  DomainEventPublisherPort,
-  UnitOfWorkPort,
-} from "#api/shared/application/ports/index";
+import { AfterCommitTaskRegistryPort } from "#api/shared/application/ports/after-commit-task.registry.port";
+import { DomainEventPublisherPort } from "#api/shared/application/ports/domain-event-publisher.port";
+import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantFromDate } from "#api/shared/domain/time/instant";
 import { plainDateFromDate } from "#api/shared/domain/time/plain-date";

@@ -3,7 +3,7 @@ import { TODO_SERIES_LIMITS } from "@aido/api/vocabulary";
 
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
-import { type MutationLockPort } from "#api/shared/application/ports/index";
+import { type MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { TodoCategoryLockKeys } from "../../../categories/application/categories.lock-keys.js";
