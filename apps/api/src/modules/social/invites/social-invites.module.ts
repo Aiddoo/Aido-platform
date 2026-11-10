@@ -1,4 +1,5 @@
 import { Module } from "@nestjs/common";
+import { ConfigModule } from "@nestjs/config";
 
 import { AccessModule } from "#api/modules/access/access-entitlement.public";
 import { BillingSubscriptionsModule } from "#api/modules/billing/subscriptions/billing-subscriptions.public";
@@ -15,6 +16,7 @@ import { InviteMaintenanceProcessor } from "./infrastructure/jobs/invite-mainten
 import { InviteMaintenanceScheduler } from "./infrastructure/jobs/invite-maintenance.scheduler.js";
 import { InviteRewardProcessor } from "./infrastructure/jobs/invite-reward.processor.js";
 import { InviteController } from "./presentation/http/v1/invite.controller.js";
+import { socialInvitesConfig } from "./social-invites.config.js";
 import { SOCIAL_INVITES_PROVIDERS } from "./social-invites.providers.js";
 
 @Module({
@@ -24,6 +26,7 @@ import { SOCIAL_INVITES_PROVIDERS } from "./social-invites.providers.js";
     NotificationDeliveryModule,
     AccessModule,
     BillingSubscriptionsModule,
+    ConfigModule.forFeature(socialInvitesConfig),
   ],
   controllers: [InviteController],
   providers: [
