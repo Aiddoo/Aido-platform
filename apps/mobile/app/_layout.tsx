@@ -50,7 +50,7 @@ export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
 
   useEffect(() => {
     SplashScreen.hideAsync().catch(noop);
-    rootErrorReporter.captureException(error, { feature: 'error_boundary' });
+    rootErrorReporter.captureException(error, { feature: 'root_error_boundary' });
   }, [error]);
 
   return (
