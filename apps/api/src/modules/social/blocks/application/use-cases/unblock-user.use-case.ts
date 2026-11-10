@@ -1,9 +1,7 @@
+import { FriendLockKeys } from "#api/modules/social/friends/application/friends.lock-keys";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
-import {
-  MutationLockKeys,
-  type MutationLockPort,
-  type UnitOfWorkPort,
-} from "#api/shared/application/ports/index";
+import { type MutationLockPort, type UnitOfWorkPort } from "#api/shared/application/ports/index";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { BlockLogEvent } from "../blocks.log-events.js";
 import { type UserBlockRepositoryPort } from "../ports/user-block.repository.port.js";
@@ -32,7 +30,7 @@ export class UnblockUserUseCase {
     const { blockerId, blockedId } = input;
     const isUnblocked = await this.#dependencies.unitOfWork.run(async () => {
       await this.#dependencies.mutationLock.acquire([
-        MutationLockKeys.friendPair(blockerId, blockedId),
+        FriendLockKeys.pair(UserId.reconstitute(blockerId), UserId.reconstitute(blockedId)),
       ]);
       return this.#dependencies.userBlockRepository.delete(blockerId, blockedId);
     });

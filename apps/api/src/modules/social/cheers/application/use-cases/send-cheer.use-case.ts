@@ -1,15 +1,13 @@
 import { ErrorCode } from "@aido/api/errors";
 
+import { CheerLockKeys } from "#api/modules/social/cheers/application/cheers.lock-keys";
 import type { FollowReaderPort } from "#api/modules/social/friends/social-friends.public";
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
-import {
-  MutationLockKeys,
-  type MutationLockPort,
-  type UnitOfWorkPort,
-} from "#api/shared/application/ports/index";
+import { type MutationLockPort, type UnitOfWorkPort } from "#api/shared/application/ports/index";
 import { now } from "#api/shared/domain/date/utils/core";
 import { dayWindowInTimezone } from "#api/shared/domain/date/utils/timezone";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { evaluateCheerCooldown } from "../../domain/cheer-cooldown.domain-service.js";
 import { CheerMessage } from "../../domain/cheer-message.vo.js";
@@ -68,8 +66,8 @@ export class SendCheerUseCase {
 
     const cheer = await this.#dependencies.unitOfWork.run(async () => {
       await this.#dependencies.mutationLock.acquire([
-        MutationLockKeys.cheerDailyQuota(senderId),
-        MutationLockKeys.cheerCooldown(senderId, receiverId),
+        CheerLockKeys.dailyQuota(UserId.reconstitute(senderId)),
+        CheerLockKeys.cooldown(UserId.reconstitute(senderId), UserId.reconstitute(receiverId)),
       ]);
 
       const dailyLimit = await this.#dependencies.limitReader.getDailyLimitInTx(senderId);

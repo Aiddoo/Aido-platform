@@ -1,14 +1,12 @@
 import { ErrorCode } from "@aido/api/errors";
 import type { UserReportReason, UserReportTargetType } from "@aido/api/vocabulary";
 
+import { UserReportLockKeys } from "#api/modules/social/reports/application/reports.lock-keys";
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
-import {
-  MutationLockKeys,
-  type MutationLockPort,
-  type UnitOfWorkPort,
-} from "#api/shared/application/ports/index";
+import { type MutationLockPort, type UnitOfWorkPort } from "#api/shared/application/ports/index";
 import { now } from "#api/shared/domain/date/utils/core";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import {
   dailyReportWindowStart,
@@ -97,7 +95,9 @@ export class ReportContentUseCase {
 
   async #submit(plan: UserReportCreationPlan): Promise<ReportContentResult> {
     // 같은 신고자의 연속 요청을 직렬화해 중복 판정과 하루 한도가 동시에 새지 않게 한다.
-    await this.#dependencies.mutationLock.acquire([MutationLockKeys.userReport(plan.reporterId)]);
+    await this.#dependencies.mutationLock.acquire([
+      UserReportLockKeys.reporter(UserId.reconstitute(plan.reporterId)),
+    ]);
 
     const isTargetActive = await this.#dependencies.userReportRepository.userExists(
       plan.targetUserId,

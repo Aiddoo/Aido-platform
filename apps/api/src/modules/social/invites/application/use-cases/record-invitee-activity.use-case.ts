@@ -1,10 +1,8 @@
+import { InviteLockKeys } from "#api/modules/social/invites/application/invites.lock-keys";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
-import {
-  MutationLockKeys,
-  type MutationLockPort,
-  type UnitOfWorkPort,
-} from "#api/shared/application/ports/index";
+import { type MutationLockPort, type UnitOfWorkPort } from "#api/shared/application/ports/index";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import {
   InviteQualificationPolicy,
@@ -192,7 +190,9 @@ export class RecordInviteeActivityUseCase {
     at: Date,
   ): Promise<RecordedActivity> {
     // 같은 초대한 사람의 상한을 여러 초대받은 사람이 동시에 읽지 않도록 잠근다
-    await this.#dependencies.mutationLock.acquire([MutationLockKeys.inviteRewardLedger(inviterId)]);
+    await this.#dependencies.mutationLock.acquire([
+      InviteLockKeys.rewardLedger(UserId.reconstitute(inviterId)),
+    ]);
     const [rewardTotals, summary] = await Promise.all([
       this.#dependencies.rewardGrantRepository.summarizeInviterRewards(
         inviterId,

@@ -4,7 +4,7 @@ import { PREMIUM_GRANTER } from "#api/modules/billing/subscriptions/billing-subs
 import { USER_BLOCK_READER } from "#api/modules/social/blocks/social-blocks.public";
 import {
   FOLLOW_READER,
-  FRIENDSHIP_ESTABLISHER,
+  FriendshipEstablisherPort,
 } from "#api/modules/social/friends/social-friends.public";
 import {
   MUTATION_LOCK,
@@ -123,7 +123,7 @@ export const redeemInviteProvider: FactoryProvider<RedeemInviteUseCase> = {
     REWARD_GRANT_REPOSITORY,
     FOLLOW_READER,
     USER_BLOCK_READER,
-    FRIENDSHIP_ESTABLISHER,
+    FriendshipEstablisherPort,
     CLAIM_HASHER,
     INVITE_NOTIFIER,
     INVITE_REWARD_SCHEDULER,

@@ -1,13 +1,14 @@
 import { INVITE_FRIENDSHIP, REDEEM_OUTCOME } from "@aido/api/vocabulary";
 
 import type { EntitlementReaderPort } from "#api/modules/access/access-entitlement.public";
+import { FriendLockKeys } from "#api/modules/social/friends/application/friends.lock-keys";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import {
   type AfterCommitTaskRegistryPort,
-  MutationLockKeys,
   type MutationLockPort,
   type UnitOfWorkPort,
 } from "#api/shared/application/ports/index";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { hasReachedFriendLimit } from "../../domain/friend-limit.domain-service.js";
 import type { Friendship } from "../../domain/friendship.aggregate.js";
@@ -61,9 +62,9 @@ export class EstablishFriendshipUseCase implements FriendshipEstablisherPort {
 
     return this.#dependencies.unitOfWork.run(async () => {
       await this.#dependencies.mutationLock.acquire([
-        MutationLockKeys.friendPair(requesterId, targetUserId),
-        MutationLockKeys.friendList(requesterId),
-        MutationLockKeys.friendList(targetUserId),
+        FriendLockKeys.pair(UserId.reconstitute(requesterId), UserId.reconstitute(targetUserId)),
+        FriendLockKeys.list(UserId.reconstitute(requesterId)),
+        FriendLockKeys.list(UserId.reconstitute(targetUserId)),
       ]);
       const [forward, reverse] = await Promise.all([
         this.#dependencies.followRepository.findByFollowerAndFollowing(requesterId, targetUserId),

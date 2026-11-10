@@ -1,15 +1,13 @@
 import { ErrorCode } from "@aido/api/errors";
 
 import type { FollowReaderPort } from "#api/modules/social/friends/social-friends.public";
+import { NudgeLockKeys } from "#api/modules/social/nudges/application/nudges.lock-keys";
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
-import {
-  MutationLockKeys,
-  type MutationLockPort,
-  type UnitOfWorkPort,
-} from "#api/shared/application/ports/index";
+import { type MutationLockPort, type UnitOfWorkPort } from "#api/shared/application/ports/index";
 import { now } from "#api/shared/domain/date/utils/core";
 import { dayWindowInTimezone } from "#api/shared/domain/date/utils/timezone";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { evaluateNudgeCooldown } from "../../domain/nudge-cooldown.domain-service.js";
 import { NudgeMessage } from "../../domain/nudge-message.vo.js";
@@ -71,8 +69,8 @@ export class SendNudgeUseCase {
 
     const nudge = await this.#dependencies.unitOfWork.run(async () => {
       await this.#dependencies.mutationLock.acquire([
-        MutationLockKeys.nudgeDailyQuota(senderId),
-        MutationLockKeys.nudgeCooldown(senderId, todoId),
+        NudgeLockKeys.dailyQuota(UserId.reconstitute(senderId)),
+        NudgeLockKeys.cooldown(UserId.reconstitute(senderId), todoId),
       ]);
 
       const todoRow = await this.#dependencies.nudgeRepository.findTargetTodo(todoId);

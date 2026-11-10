@@ -5,6 +5,7 @@ import { omit } from "es-toolkit";
 import { BlockUserUseCase } from "#api/modules/social/blocks/application/use-cases/block-user.use-case";
 import { DrizzleUserBlockRepository } from "#api/modules/social/blocks/infrastructure/persistence/drizzle-user-block.repository";
 import { DrizzleCheerRepository } from "#api/modules/social/cheers/infrastructure/persistence/drizzle-cheer.repository";
+import { FriendLockKeys } from "#api/modules/social/friends/application/friends.lock-keys";
 import type { FollowCachePort } from "#api/modules/social/friends/application/ports/follow-cache.port";
 import type { FollowNotifierPort } from "#api/modules/social/friends/application/ports/follow-notifier.port";
 import { AcceptFriendRequestUseCase } from "#api/modules/social/friends/application/use-cases/accept-friend-request.use-case";
@@ -23,7 +24,7 @@ import {
   user,
   userBlock,
 } from "#api/platform/database/schema/index";
-import { MutationLockKeys } from "#api/shared/application/ports/index";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import {
   CheerFixture,
   FollowFixture,
@@ -144,7 +145,7 @@ describe("사용자 차단 (실제 PostgreSQL)", () => {
   async function compete(first: () => Promise<unknown>, second: () => Promise<unknown>) {
     const acquired = Promise.withResolvers<void>();
     const released = Promise.withResolvers<void>();
-    const pairKey = MutationLockKeys.friendPair(meId, otherId);
+    const pairKey = FriendLockKeys.pair(UserId.reconstitute(meId), UserId.reconstitute(otherId));
     const holding = client.transaction(async (tx) => {
       await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtextextended(${pairKey}, 0))`);
       acquired.resolve();

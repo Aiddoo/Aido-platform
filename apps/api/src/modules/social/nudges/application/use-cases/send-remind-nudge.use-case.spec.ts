@@ -1,4 +1,5 @@
-import { MutationLockKeys } from "#api/shared/application/ports/index";
+import { NudgeLockKeys } from "#api/modules/social/nudges/application/nudges.lock-keys";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { SOCIAL_TIME } from "#test/fixtures/social-friends.fixture";
 import { createSocialInteractionFixture } from "#test/fixtures/social-interactions.fixture";
 
@@ -114,7 +115,12 @@ describe("할 일이 없는 친구에게 리마인드 콕 보내기", () => {
     // Then
     expect(events).toEqual(["lock", "today"]);
     expect(fixture.lockCalls).toEqual([
-      [MutationLockKeys.remindNudgeCooldown("sender", "receiver")],
+      [
+        NudgeLockKeys.remindCooldown(
+          UserId.reconstitute("sender"),
+          UserId.reconstitute("receiver"),
+        ),
+      ],
     ]);
   });
 });

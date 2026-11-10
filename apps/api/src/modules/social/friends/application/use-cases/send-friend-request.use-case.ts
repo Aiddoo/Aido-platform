@@ -1,13 +1,11 @@
 import { ErrorCode } from "@aido/api/errors";
 
 import type { EntitlementReaderPort } from "#api/modules/access/access-entitlement.public";
+import { FriendLockKeys } from "#api/modules/social/friends/application/friends.lock-keys";
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
-import {
-  MutationLockKeys,
-  type MutationLockPort,
-  type UnitOfWorkPort,
-} from "#api/shared/application/ports/index";
+import { type MutationLockPort, type UnitOfWorkPort } from "#api/shared/application/ports/index";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { type UserBlockReaderPort } from "../../../blocks/application/ports/user-block.reader.port.js";
 import { hasReachedFriendLimit } from "../../domain/friend-limit.domain-service.js";
@@ -65,9 +63,9 @@ export class SendFriendRequestUseCase {
 
     const result = await this.#dependencies.unitOfWork.run(async () => {
       await this.#dependencies.mutationLock.acquire([
-        MutationLockKeys.friendPair(userId, targetUserId),
-        MutationLockKeys.friendList(userId),
-        MutationLockKeys.friendList(targetUserId),
+        FriendLockKeys.pair(UserId.reconstitute(userId), UserId.reconstitute(targetUserId)),
+        FriendLockKeys.list(UserId.reconstitute(userId)),
+        FriendLockKeys.list(UserId.reconstitute(targetUserId)),
       ]);
       const [friendLimit, friendCount] = await Promise.all([
         this.#dependencies.entitlementReader.getLimitInTx(userId, "FRIEND"),

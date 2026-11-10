@@ -16,9 +16,7 @@ export type FriendshipEstablishment =
   | typeof REDEEM_OUTCOME.ALREADY_FRIENDS
   | "UNAVAILABLE";
 
-export const FRIENDSHIP_ESTABLISHER = Symbol("FRIENDSHIP_ESTABLISHER");
-
 /** 친구 요청·수락 없이 바로 친구를 맺는다. 호출자의 UoW에 참여하고 알림은 커밋 뒤 보낸다. */
-export interface FriendshipEstablisherPort {
-  establish(input: EstablishFriendshipInput): Promise<FriendshipEstablishment>;
+export abstract class FriendshipEstablisherPort {
+  abstract establish(input: EstablishFriendshipInput): Promise<FriendshipEstablishment>;
 }

@@ -1,12 +1,10 @@
 import { ErrorCode } from "@aido/api/errors";
 
+import { FriendLockKeys } from "#api/modules/social/friends/application/friends.lock-keys";
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
-import {
-  MutationLockKeys,
-  type MutationLockPort,
-  type UnitOfWorkPort,
-} from "#api/shared/application/ports/index";
+import { type MutationLockPort, type UnitOfWorkPort } from "#api/shared/application/ports/index";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { ReorderPlan, ReorderPosition } from "../../domain/friend-reorder.domain-service.js";
 import { FriendLogEvent } from "../friends.log-events.js";
@@ -44,7 +42,9 @@ export class ReorderFriendUseCase {
     const { followId, userId, targetFollowId, position } = input;
 
     return this.#dependencies.unitOfWork.run(async () => {
-      await this.#dependencies.mutationLock.acquire([MutationLockKeys.friendList(userId)]);
+      await this.#dependencies.mutationLock.acquire([
+        FriendLockKeys.list(UserId.reconstitute(userId)),
+      ]);
       const follow = await this.#dependencies.followRepository.findAcceptedByIdAndFollowerId(
         followId,
         userId,

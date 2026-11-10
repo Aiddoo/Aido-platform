@@ -14,38 +14,6 @@ export abstract class MutationLockPort {
 export const MUTATION_KEY_PREFIX = "mutation:v1";
 
 export const MutationLockKeys = {
-  friendPair(userId: string, targetUserId: string): string {
-    const [smallerId, largerId] =
-      userId < targetUserId ? [userId, targetUserId] : [targetUserId, userId];
-    return `${MUTATION_KEY_PREFIX}:friend:pair:${smallerId}:${largerId}`;
-  },
-  friendList(userId: string): string {
-    return `${MUTATION_KEY_PREFIX}:friend:list:${userId}`;
-  },
-  invite(inviterId: string): string {
-    return `${MUTATION_KEY_PREFIX}:invite:${inviterId}`;
-  },
-  inviteRewardLedger(inviterId: string): string {
-    return `${MUTATION_KEY_PREFIX}:invite-reward-ledger:${inviterId}`;
-  },
-  cheerDailyQuota(senderId: string): string {
-    return `${MUTATION_KEY_PREFIX}:cheer:daily-quota:${senderId}`;
-  },
-  nudgeDailyQuota(senderId: string): string {
-    return `${MUTATION_KEY_PREFIX}:nudge:daily-quota:${senderId}`;
-  },
-  cheerCooldown(senderId: string, receiverId: string): string {
-    return `${MUTATION_KEY_PREFIX}:cheer:cooldown:${senderId}:${receiverId}`;
-  },
-  nudgeCooldown(senderId: string, todoId: number): string {
-    return `${MUTATION_KEY_PREFIX}:nudge:cooldown:${senderId}:${todoId}`;
-  },
-  remindNudgeCooldown(senderId: string, receiverId: string): string {
-    return `${MUTATION_KEY_PREFIX}:remind-nudge:cooldown:${senderId}:${receiverId}`;
-  },
-  userReport(reporterId: string): string {
-    return `${MUTATION_KEY_PREFIX}:user-report:${reporterId}`;
-  },
   todoCategory(userId: string): string {
     return `${MUTATION_KEY_PREFIX}:todo-category:${userId}`;
   },

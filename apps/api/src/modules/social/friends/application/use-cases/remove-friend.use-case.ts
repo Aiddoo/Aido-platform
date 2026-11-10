@@ -1,12 +1,10 @@
 import { ErrorCode } from "@aido/api/errors";
 
+import { FriendLockKeys } from "#api/modules/social/friends/application/friends.lock-keys";
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
-import {
-  MutationLockKeys,
-  type MutationLockPort,
-  type UnitOfWorkPort,
-} from "#api/shared/application/ports/index";
+import { type MutationLockPort, type UnitOfWorkPort } from "#api/shared/application/ports/index";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { FriendLogEvent } from "../friends.log-events.js";
 import { type FollowRepositoryPort } from "../ports/follow.repository.port.js";
@@ -37,9 +35,9 @@ export class RemoveFriendUseCase {
 
     await this.#dependencies.unitOfWork.run(async () => {
       await this.#dependencies.mutationLock.acquire([
-        MutationLockKeys.friendPair(userId, targetUserId),
-        MutationLockKeys.friendList(userId),
-        MutationLockKeys.friendList(targetUserId),
+        FriendLockKeys.pair(UserId.reconstitute(userId), UserId.reconstitute(targetUserId)),
+        FriendLockKeys.list(UserId.reconstitute(userId)),
+        FriendLockKeys.list(UserId.reconstitute(targetUserId)),
       ]);
       const myFollow = await this.#dependencies.followRepository.findByFollowerAndFollowing(
         userId,

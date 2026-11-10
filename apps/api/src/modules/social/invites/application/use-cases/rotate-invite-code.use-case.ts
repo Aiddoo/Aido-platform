@@ -1,10 +1,8 @@
+import { InviteLockKeys } from "#api/modules/social/invites/application/invites.lock-keys";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
-import {
-  MutationLockKeys,
-  type MutationLockPort,
-  type UnitOfWorkPort,
-} from "#api/shared/application/ports/index";
+import { type MutationLockPort, type UnitOfWorkPort } from "#api/shared/application/ports/index";
 import { now } from "#api/shared/domain/date/utils/core";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { assertInviteEnabled } from "../invites.errors.js";
 import { InviteLogEvent } from "../invites.log-events.js";
@@ -42,7 +40,9 @@ export class RotateInviteCodeUseCase {
 
     const capturedAt = now();
     const { invite, revokedInviteId } = await this.#dependencies.unitOfWork.run(async () => {
-      await this.#dependencies.mutationLock.acquire([MutationLockKeys.invite(input.inviterId)]);
+      await this.#dependencies.mutationLock.acquire([
+        InviteLockKeys.invite(UserId.reconstitute(input.inviterId)),
+      ]);
       const current = await this.#dependencies.inviteRepository.findActiveByInviterId(
         input.inviterId,
       );

@@ -1,13 +1,11 @@
 import { ErrorCode } from "@aido/api/errors";
 
+import { FriendLockKeys } from "#api/modules/social/friends/application/friends.lock-keys";
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
-import {
-  MutationLockKeys,
-  type MutationLockPort,
-  type UnitOfWorkPort,
-} from "#api/shared/application/ports/index";
+import { type MutationLockPort, type UnitOfWorkPort } from "#api/shared/application/ports/index";
 import { now } from "#api/shared/domain/date/utils/core";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import {
   type FriendshipCacheInvalidator,
@@ -75,9 +73,9 @@ export class BlockUserUseCase {
     const { blockerId, blockedId } = plan;
     // 친구 요청·수락과 같은 쌍·목록 잠금을 잡아, 차단 직전에 시작한 요청이 차단 뒤에 친구 관계를 다시 만들지 못하게 한다.
     await this.#dependencies.mutationLock.acquire([
-      MutationLockKeys.friendPair(blockerId, blockedId),
-      MutationLockKeys.friendList(blockerId),
-      MutationLockKeys.friendList(blockedId),
+      FriendLockKeys.pair(UserId.reconstitute(blockerId), UserId.reconstitute(blockedId)),
+      FriendLockKeys.list(UserId.reconstitute(blockerId)),
+      FriendLockKeys.list(UserId.reconstitute(blockedId)),
     ]);
     const isTargetActive = await this.#dependencies.userBlockRepository.userExists(blockedId);
     if (!isTargetActive) {

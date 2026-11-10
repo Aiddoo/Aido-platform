@@ -1,8 +1,11 @@
 import { Module } from "@nestjs/common";
 
-import { FOLLOW_CACHE } from "../friends/application/ports/follow-cache.port.js";
+import { FollowCachePort } from "../friends/application/ports/follow-cache.port.js";
 import { FollowCacheAdapter } from "../friends/infrastructure/adapters/follow-cache.adapter.js";
-import { USER_BLOCK_READER } from "./application/ports/user-block.reader.port.js";
+import {
+  USER_BLOCK_READER,
+  UserBlockReaderPort,
+} from "./application/ports/user-block.reader.port.js";
 import { USER_BLOCK_REPOSITORY } from "./application/ports/user-block.repository.port.js";
 import { DrizzleUserBlockRepository } from "./infrastructure/persistence/drizzle-user-block.repository.js";
 import { UserBlockController } from "./presentation/http/v1/user-block.controller.js";
@@ -24,12 +27,13 @@ import {
   providers: [
     DrizzleUserBlockRepository,
     { provide: USER_BLOCK_REPOSITORY, useExisting: DrizzleUserBlockRepository },
-    { provide: USER_BLOCK_READER, useExisting: DrizzleUserBlockRepository },
-    { provide: FOLLOW_CACHE, useClass: FollowCacheAdapter },
+    { provide: UserBlockReaderPort, useExisting: DrizzleUserBlockRepository },
+    { provide: USER_BLOCK_READER, useExisting: UserBlockReaderPort },
+    { provide: FollowCachePort, useClass: FollowCacheAdapter },
     blockUserProvider,
     unblockUserProvider,
     getBlockedUsersProvider,
   ],
-  exports: [USER_BLOCK_READER],
+  exports: [UserBlockReaderPort, USER_BLOCK_READER],
 })
 export class SocialBlocksModule {}

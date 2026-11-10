@@ -24,6 +24,7 @@ import { CreateTodoCategoryUseCase } from "#api/modules/planning/categories/appl
 import { ReorderTodoCategoryUseCase } from "#api/modules/planning/categories/application/use-cases/reorder-todo-category.use-case";
 import { TodoCategoryLimitReaderAdapter } from "#api/modules/planning/categories/infrastructure/adapters/todo-category-limit-reader.adapter";
 import { DrizzleTodoCategoryRepository } from "#api/modules/planning/categories/infrastructure/persistence/drizzle-todo-category.repository";
+import { CheerLockKeys } from "#api/modules/social/cheers/application/cheers.lock-keys";
 import { type CheerLimitReaderPort } from "#api/modules/social/cheers/application/ports/cheer-limit.reader.port";
 import type { CheerNotifierPort } from "#api/modules/social/cheers/application/ports/cheer-notifier.port";
 import type { DailySendUsage } from "#api/modules/social/cheers/application/ports/daily-send-usage.reader.port";
@@ -54,6 +55,7 @@ import {
   type MutationLockPort,
   type UnitOfWorkPort,
 } from "#api/shared/application/ports/index";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { DateClock } from "#test/doubles/platform/date-clock";
 import { createTestClient } from "#test/setup/database-context";
 import type { TestDatabaseClient } from "#test/setup/test-database";
@@ -1220,7 +1222,7 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
     const receiverId = await createUser(client, 1);
     const held = createDeferred();
     const release = createDeferred();
-    const dailyKey = MutationLockKeys.cheerDailyQuota(senderId);
+    const dailyKey = CheerLockKeys.dailyQuota(UserId.reconstitute(senderId));
     const blocker = client.transaction(async (tx) => {
       await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtextextended(${dailyKey}, 0))::text`);
       held.resolve();

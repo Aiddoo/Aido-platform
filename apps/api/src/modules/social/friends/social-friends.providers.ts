@@ -10,7 +10,7 @@ import {
 
 import { USER_BLOCK_READER } from "../blocks/application/ports/user-block.reader.port.js";
 import { FollowReader } from "./application/follow.reader.js";
-import { FOLLOW_CACHE } from "./application/ports/follow-cache.port.js";
+import { FollowCachePort } from "./application/ports/follow-cache.port.js";
 import { FOLLOW_NOTIFIER } from "./application/ports/follow-notifier.port.js";
 import { FOLLOW_REPOSITORY } from "./application/ports/follow.repository.port.js";
 import { AcceptFriendRequestUseCase } from "./application/use-cases/accept-friend-request.use-case.js";
@@ -29,7 +29,7 @@ import { SendFriendRequestUseCase } from "./application/use-cases/send-friend-re
 
 export const followReaderProvider: FactoryProvider<FollowReader> = {
   provide: FollowReader,
-  inject: [FOLLOW_REPOSITORY, FOLLOW_CACHE],
+  inject: [FOLLOW_REPOSITORY, FollowCachePort],
   useFactory: (
     followRepository: ConstructorParameters<typeof FollowReader>[0]["followRepository"],
     cache: ConstructorParameters<typeof FollowReader>[0]["cache"],
@@ -42,7 +42,7 @@ export const followReaderProvider: FactoryProvider<FollowReader> = {
 
 export const friendshipEffectsProvider: FactoryProvider<FriendshipEffects> = {
   provide: FriendshipEffects,
-  inject: [FOLLOW_REPOSITORY, FOLLOW_CACHE, FOLLOW_NOTIFIER],
+  inject: [FOLLOW_REPOSITORY, FollowCachePort, FOLLOW_NOTIFIER],
   useFactory: (
     followRepository: ConstructorParameters<typeof FriendshipEffects>[0]["followRepository"],
     cache: ConstructorParameters<typeof FriendshipEffects>[0]["cache"],

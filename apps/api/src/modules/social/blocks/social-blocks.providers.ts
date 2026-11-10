@@ -3,7 +3,7 @@ import { Logger, type FactoryProvider } from "@nestjs/common";
 import { PaginationService } from "#api/shared/application/pagination/index";
 import { MUTATION_LOCK, UNIT_OF_WORK } from "#api/shared/application/ports/index";
 
-import { FOLLOW_CACHE } from "../friends/application/ports/follow-cache.port.js";
+import { FollowCachePort } from "../friends/application/ports/follow-cache.port.js";
 import { USER_BLOCK_REPOSITORY } from "./application/ports/user-block.repository.port.js";
 import { BlockUserUseCase } from "./application/use-cases/block-user.use-case.js";
 import { GetBlockedUsersUseCase } from "./application/use-cases/get-blocked-users.use-case.js";
@@ -11,7 +11,7 @@ import { UnblockUserUseCase } from "./application/use-cases/unblock-user.use-cas
 
 export const blockUserProvider: FactoryProvider<BlockUserUseCase> = {
   provide: BlockUserUseCase,
-  inject: [USER_BLOCK_REPOSITORY, UNIT_OF_WORK, MUTATION_LOCK, FOLLOW_CACHE],
+  inject: [USER_BLOCK_REPOSITORY, UNIT_OF_WORK, MUTATION_LOCK, FollowCachePort],
   useFactory: (
     userBlockRepository: ConstructorParameters<typeof BlockUserUseCase>[0]["userBlockRepository"],
     unitOfWork: ConstructorParameters<typeof BlockUserUseCase>[0]["unitOfWork"],

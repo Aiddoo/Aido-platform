@@ -1,7 +1,8 @@
 import { PLAN_CATALOG } from "@aido/api/vocabulary";
 import { assert } from "vitest";
 
-import { MutationLockKeys } from "#api/shared/application/ports/index";
+import { NudgeLockKeys } from "#api/modules/social/nudges/application/nudges.lock-keys";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { SOCIAL_TIME } from "#test/fixtures/social-friends.fixture";
 import { createSocialInteractionFixture } from "#test/fixtures/social-interactions.fixture";
 
@@ -182,8 +183,8 @@ describe("친구의 할 일에 콕 보내기", () => {
     expect(events).toEqual(["lock", "target"]);
     expect(fixture.lockCalls).toEqual([
       [
-        MutationLockKeys.nudgeDailyQuota("sender"),
-        MutationLockKeys.nudgeCooldown("sender", todo.id),
+        NudgeLockKeys.dailyQuota(UserId.reconstitute("sender")),
+        NudgeLockKeys.cooldown(UserId.reconstitute("sender"), todo.id),
       ],
     ]);
     expect(count).toHaveBeenCalledWith(

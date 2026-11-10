@@ -1,6 +1,7 @@
 import { PLAN_CATALOG } from "@aido/api/vocabulary";
 
-import { MutationLockKeys } from "#api/shared/application/ports/index";
+import { CheerLockKeys } from "#api/modules/social/cheers/application/cheers.lock-keys";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { SOCIAL_TIME } from "#test/fixtures/social-friends.fixture";
 import { createSocialInteractionFixture } from "#test/fixtures/social-interactions.fixture";
 
@@ -161,8 +162,8 @@ describe("친구에게 응원 보내기", () => {
     // Then
     expect(fixture.lockCalls).toEqual([
       [
-        MutationLockKeys.cheerDailyQuota("sender"),
-        MutationLockKeys.cheerCooldown("sender", "receiver"),
+        CheerLockKeys.dailyQuota(UserId.reconstitute("sender")),
+        CheerLockKeys.cooldown(UserId.reconstitute("sender"), UserId.reconstitute("receiver")),
       ],
     ]);
     expect(count).toHaveBeenCalledWith(

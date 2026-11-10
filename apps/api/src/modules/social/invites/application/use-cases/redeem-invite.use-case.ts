@@ -9,20 +9,19 @@ import {
 import { match } from "ts-pattern";
 
 import type { PremiumGranterPort } from "#api/modules/billing/subscriptions/billing-subscriptions.public";
+import { FriendLockKeys } from "#api/modules/social/friends/application/friends.lock-keys";
 import type {
   FollowReaderPort,
   FriendshipEstablisherPort,
   FriendshipEstablishment,
 } from "#api/modules/social/friends/social-friends.public";
+import { InviteLockKeys } from "#api/modules/social/invites/application/invites.lock-keys";
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
-import {
-  MutationLockKeys,
-  type MutationLockPort,
-  type UnitOfWorkPort,
-} from "#api/shared/application/ports/index";
+import { type MutationLockPort, type UnitOfWorkPort } from "#api/shared/application/ports/index";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import { now } from "#api/shared/domain/date/utils/core";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { UserBlockReaderPort } from "../../../blocks/application/ports/user-block.reader.port.js";
 import {
@@ -133,10 +132,13 @@ export class RedeemInviteUseCase {
 
       // 친구 요청과 같은 키로 동시 수락·친구 한도를, 초대 키로 재발급과의 경합을 직렬화한다
       await this.#dependencies.mutationLock.acquire([
-        MutationLockKeys.invite(candidate.invite.inviterId),
-        MutationLockKeys.friendPair(candidate.invite.inviterId, input.inviteeId),
-        MutationLockKeys.friendList(candidate.invite.inviterId),
-        MutationLockKeys.friendList(input.inviteeId),
+        InviteLockKeys.invite(UserId.reconstitute(candidate.invite.inviterId)),
+        FriendLockKeys.pair(
+          UserId.reconstitute(candidate.invite.inviterId),
+          UserId.reconstitute(input.inviteeId),
+        ),
+        FriendLockKeys.list(UserId.reconstitute(candidate.invite.inviterId)),
+        FriendLockKeys.list(UserId.reconstitute(input.inviteeId)),
       ]);
       // 잠금을 기다리는 동안 재발급됐을 수 있어 최신 상태로 다시 읽는다
       const found = await this.#dependencies.inviteRepository.findByCodeWithInviter(code);
