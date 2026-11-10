@@ -113,6 +113,7 @@
     "expo-notifications": "catalog:expo58",
     "expo-quick-actions": "6.0.2",
     "expo-router": "catalog:expo58",
+    "expo-screen-orientation": "catalog:expo58",
     "expo-secure-store": "catalog:expo58",
     "expo-sharing": "catalog:expo58",
     "expo-speech-recognition": "58.0.1",

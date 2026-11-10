@@ -463,6 +463,9 @@ catalogs:
     expo-router:
       specifier: ~58.0.30
       version: 58.0.30
+    expo-screen-orientation:
+      specifier: ~58.0.4
+      version: 58.0.4
     expo-secure-store:
       specifier: ~58.0.2
       version: 58.0.2
@@ -1031,6 +1034,9 @@ importers:
       expo-router:
         specifier: catalog:expo58
         version: 58.0.30(02897adac41441c7d4fe783aa346dac7)
+      expo-screen-orientation:
+        specifier: catalog:expo58
+        version: 58.0.4(expo@58.0.23)(react-native@0.88.1(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.88.1(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))
       expo-secure-store:
         specifier: catalog:expo58
         version: 58.0.2(expo@58.0.23)
@@ -8096,6 +8102,12 @@ packages:
         optional: true
       react-server-dom-webpack:
         optional: true
+
+  expo-screen-orientation@58.0.4:
+    resolution: {integrity: sha512-PN3nGluAC6vBY7Zs9jA9guZrKth7ynVHZjZNJZhrJrV7X+6rlvpr7LzktTNJveb2HZJUU94FySkKGrWePkkE2A==}
+    peerDependencies:
+      expo: '*'
+      react-native: '*'
 
   expo-secure-store@58.0.2:
     resolution: {integrity: sha512-VupWWEuQF6IiQ06McSymtn7/tehs8ifThhFwAU4UK8poomZcaa2S0UVt/y7G2XozBdkI3xpiPSx+r0pS2zsuYQ==}
@@ -18856,6 +18868,11 @@ snapshots:
     transitivePeerDependencies:
       - '@types/react'
       - '@types/react-dom'
+
+  expo-screen-orientation@58.0.4(expo@58.0.23)(react-native@0.88.1(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.88.1(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1)):
+    dependencies:
+      expo: 58.0.23(242f0aa21754af1c2cfc4967f16dcb86)
+      react-native: 0.88.1(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.88.1(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1)
 
   expo-secure-store@58.0.2(expo@58.0.23):
     dependencies:

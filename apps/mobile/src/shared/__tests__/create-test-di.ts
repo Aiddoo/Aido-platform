@@ -119,6 +119,7 @@ import { createNativeApplicationMetadataGatewayStub } from './create-native-appl
 import { createNetworkStatusGatewayStub } from './create-network-status-gateway-stub';
 import { createPurchasesGatewayStub } from './create-purchases-gateway-stub';
 import { createPushNotificationGatewayStub } from './create-push-notification-gateway-stub';
+import { createScreenOrientationGatewayStub } from './create-screen-orientation-gateway-stub';
 import { createSocialAuthGatewayStub } from './create-social-auth-gateway-stub';
 import { createSocialShareGatewayStub } from './create-social-share-gateway-stub';
 import { createSpeechRecognizerStub } from './create-speech-recognizer-stub';
@@ -386,6 +387,7 @@ export function createTestDi({
     networkStatus: createNetworkStatusGatewayStub(),
     appLifecycle: createAppLifecycleGatewayStub(),
     viewCapture: createViewCaptureGatewayStub(),
+    screenOrientation: createScreenOrientationGatewayStub(),
     widgetSyncService: new WidgetSyncService(
       widgetBridge,
       errorReporter,

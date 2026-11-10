@@ -6,6 +6,7 @@ import type { NativeApplicationMetadataGateway } from '@src/core/ports/native-ap
 import type { NetworkStatusGateway } from '@src/core/ports/network-status-gateway';
 import type { PurchasesGateway } from '@src/core/ports/purchases-gateway';
 import type { PushNotificationGateway } from '@src/core/ports/push-notification-gateway';
+import type { ScreenOrientationGateway } from '@src/core/ports/screen-orientation-gateway';
 import type { SocialAuthGateway } from '@src/core/ports/social-auth-gateway';
 import type { SpeechRecognizer } from '@src/core/ports/speech-recognizer';
 import type { Storage } from '@src/core/ports/storage';
@@ -83,6 +84,7 @@ export interface DIContainer extends SharedDependencies {
   appStoreListing: AppStoreListingGateway;
   networkStatus: NetworkStatusGateway;
   viewCapture: ViewCaptureGateway;
+  screenOrientation: ScreenOrientationGateway;
   idGenerator: IdGenerator;
   speechRecognizer: SpeechRecognizer;
   /** 스토어 결제 SDK. 화면은 SubscriptionService로만 쓴다 */
@@ -214,6 +216,9 @@ export function useClipboard() {
 }
 export function useViewCapture() {
   return useDI().viewCapture;
+}
+export function useScreenOrientation() {
+  return useDI().screenOrientation;
 }
 export function useNetworkStatus() {
   return useDI().networkStatus;

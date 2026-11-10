@@ -129,6 +129,7 @@ Mapper의 DTO는 계약 스키마로 검증해 만든다(`memo.mapper.test.ts`�
 | `Analytics`                            | `createAnalyticsStub()`                                                                                        |
 | `ErrorReporter`                        | `createErrorReporterStub()`                                                                                    |
 | `HapticsGateway`                       | `createHapticsGatewayStub()`                                                                                   |
+| `ScreenOrientationGateway`             | `createScreenOrientationGatewayStub()`                                                                         |
 | `IdGenerator`                          | `createIdGeneratorStub()` (호출마다 다른 id)                                                                   |
 | `HttpClient`                           | `createHttpClientStub()`                                                                                       |
 | `Storage`                              | `createMemoryStorage()` (`jest.Mocked`, 메모리에 JSON으로 왕복)                                                |

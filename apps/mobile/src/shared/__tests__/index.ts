@@ -40,6 +40,7 @@ export {
 } from './create-push-notification-gateway-stub';
 export { createPurchasesGatewayStub } from './create-purchases-gateway-stub';
 export { createRouteParamsFake } from './create-route-params-fake';
+export { createScreenOrientationGatewayStub } from './create-screen-orientation-gateway-stub';
 export { createSocialAuthGatewayStub } from './create-social-auth-gateway-stub';
 export { createSocialShareGatewayStub } from './create-social-share-gateway-stub';
 export { createSpeechRecognizerStub } from './create-speech-recognizer-stub';

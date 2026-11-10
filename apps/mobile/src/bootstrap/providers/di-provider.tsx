@@ -111,6 +111,7 @@ import { createExpoNetworkStatusGateway } from '@src/shared/infra/network/expo-n
 import { createExpoPushNotificationGateway } from '@src/shared/infra/notification/expo-push-notification-gateway';
 import { createEnvironmentAnalytics } from '@src/shared/infra/observability/observability-env';
 import { createRevenueCatPurchasesGateway } from '@src/shared/infra/purchases/revenuecat-purchases-gateway';
+import { expoScreenOrientationGateway } from '@src/shared/infra/screen-orientation/expo-screen-orientation-gateway';
 import { expoSystemShareGateway } from '@src/shared/infra/share/expo-system-share-gateway';
 import { expoSocialAuthGateway } from '@src/shared/infra/social-auth/expo-social-auth-gateway';
 import { expoSpeechRecognizer } from '@src/shared/infra/speech/expo-speech-recognizer';
@@ -475,6 +476,7 @@ export function DIProvider({
       networkStatus: createExpoNetworkStatusGateway(logger),
       appLifecycle: reactNativeAppLifecycleGateway,
       viewCapture: viewShotViewCaptureGateway,
+      screenOrientation: expoScreenOrientationGateway,
       widgetSyncService,
       widgetNavigationRepository,
       logOutDeviceService: new LogOutDeviceService({
