@@ -96,6 +96,7 @@ export function createAuthSession({
     registrationRepository: createPushRegistrationRepository(createMemoryStorage()),
     logger: createLoggerStub(),
     getTimeZone: () => 'Asia/Seoul',
+    getLanguage: () => 'ko',
     sessionEpoch,
   });
   const sessionCleanupService = new SessionCleanupService({

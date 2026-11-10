@@ -28,6 +28,7 @@ function setup(
   gateway = createPushNotificationGatewayStub(),
   getTimeZone = () => 'Asia/Seoul',
   storage = createMemoryStorage(),
+  getLanguage = () => 'ko',
 ) {
   const sessionEpoch = createSessionEpoch();
   const httpClient = createHttpClientStub();
@@ -44,6 +45,7 @@ function setup(
     registrationRepository,
     logger,
     getTimeZone,
+    getLanguage,
     sessionEpoch,
   });
   return {
@@ -71,6 +73,23 @@ describe('PushDeviceService.report', () => {
 
     // Then
     expect(httpClient.put).toHaveBeenCalledTimes(2);
+  });
+
+  it('앱이 뒤에 있는 사이 바뀐 언어의 보고가 실패해도 다음 복귀 때 한 번 다시 보낸다', async () => {
+    // Given
+    let language = 'ko';
+    const { service, httpClient } = setup(undefined, undefined, undefined, () => language);
+    await service.report();
+    language = 'en';
+    httpClient.put.mockResolvedValueOnce({ ok: false, error: createNotificationApiError() });
+    await service.report({ force: true });
+
+    // When
+    await service.report();
+    await service.report();
+
+    // Then
+    expect(httpClient.put).toHaveBeenCalledTimes(3);
   });
 
   it('시간대 보고가 실패하면 다음 복귀 때 다시 보낸다', async () => {
@@ -242,6 +261,7 @@ describe('PushDeviceService.report', () => {
       registrationRepository: createPushRegistrationRepository(createMemoryStorage()),
       logger: createLoggerStub(),
       getTimeZone: () => 'Asia/Seoul',
+      getLanguage: () => 'ko',
       sessionEpoch: createSessionEpoch(),
     });
 

@@ -252,6 +252,7 @@ export function createTestDi({
     registrationRepository: createPushRegistrationRepository(storage),
     logger,
     getTimeZone: getDeviceTimezone,
+    getLanguage: () => 'ko',
     sessionEpoch,
   });
   const purchasesSession = new PurchasesSession({

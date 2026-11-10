@@ -32,10 +32,11 @@ interface ReportedPushDevice {
   deviceId: string;
   input: ReportPushDeviceInput;
   timeZone: string;
+  language: string;
   device: PushDevice;
 }
 
-type PushDeviceReport = Pick<ReportedPushDevice, 'deviceId' | 'input' | 'timeZone'>;
+type PushDeviceReport = Pick<ReportedPushDevice, 'deviceId' | 'input' | 'timeZone' | 'language'>;
 
 interface PushDeviceServicePorts {
   gateway: PushNotificationGateway;
@@ -46,6 +47,8 @@ interface PushDeviceServicePorts {
   registrationRepository: PushRegistrationRepository;
   logger: Logger;
   getTimeZone: () => string;
+  /** 서버는 푸시 문구 언어를 요청 헤더에서 읽어 언어가 바뀌면 다시 보낸다 */
+  getLanguage: () => string;
   sessionEpoch: Pick<SessionEpoch, 'current'>;
 }
 
@@ -57,6 +60,7 @@ export class PushDeviceService {
   readonly #registrationRepository: PushRegistrationRepository;
   readonly #logger: Logger;
   readonly #getTimeZone: () => string;
+  readonly #getLanguage: () => string;
   readonly #sessionEpoch: Pick<SessionEpoch, 'current'>;
   #lastReported: ReportedPushDevice | null = null;
   #pendingSend: {
@@ -77,6 +81,7 @@ export class PushDeviceService {
     registrationRepository,
     logger,
     getTimeZone,
+    getLanguage,
     sessionEpoch,
   }: PushDeviceServicePorts) {
     this.#gateway = gateway;
@@ -86,6 +91,7 @@ export class PushDeviceService {
     this.#registrationRepository = registrationRepository;
     this.#logger = logger;
     this.#getTimeZone = getTimeZone;
+    this.#getLanguage = getLanguage;
     this.#sessionEpoch = sessionEpoch;
   }
 
@@ -144,8 +150,9 @@ export class PushDeviceService {
     const deviceId = await this.#deviceIdService.get();
     const input = toReportPushDeviceInput({ permission, token });
     const timeZone = this.#getTimeZone();
+    const language = this.#getLanguage();
 
-    const report: PushDeviceReport = { deviceId, input, timeZone };
+    const report: PushDeviceReport = { deviceId, input, timeZone, language };
 
     const lastReported = this.#lastReported;
     if (
@@ -155,6 +162,7 @@ export class PushDeviceService {
         deviceId: lastReported.deviceId,
         input: lastReported.input,
         timeZone: lastReported.timeZone,
+        language: lastReported.language,
       })
     ) {
       return ok(lastReported.device);
@@ -188,7 +196,7 @@ export class PushDeviceService {
   };
 
   #send = async (
-    { deviceId, input, timeZone }: PushDeviceReport,
+    { deviceId, input, timeZone, language }: PushDeviceReport,
     { permission, hasToken }: { permission: PushPermission; hasToken: boolean },
   ): Promise<Result<PushDevice | null, ApiError>> => {
     const result = parseApiResponse(
@@ -202,7 +210,7 @@ export class PushDeviceService {
     }
 
     const device = result.value;
-    this.#lastReported = { deviceId, input, timeZone, device };
+    this.#lastReported = { deviceId, input, timeZone, language, device };
     await this.#updateRegistration((registration) =>
       PushRegistrationPolicy.recordReported(registration, input.token),
     ).catch((error: unknown) =>

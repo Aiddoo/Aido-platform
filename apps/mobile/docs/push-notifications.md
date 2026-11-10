@@ -44,7 +44,7 @@ PushNotificationGateway (core/ports) ← createExpoPushNotificationGateway (shar
 | 권한 요청 직후             | 바뀐 권한을 바로 보고한다. 실패해도 요청 결과는 그대로 돌려준다        |
 
 - 보고 중에 다시 불리면 끝난 뒤 한 번만 더 보낸다.
-- 권한·토큰이 같아도 시간대가 다르면 다시 보낸다. 요청이 없는 화면에 돌아와도 서버 시간대가 바로 바뀐다. 보고가 성공하면 `useTimezoneChangeNotice`가 처음 알아챈 변경을 한 번 안내한다.
+- 권한·토큰이 같아도 마지막으로 보고한 시간대·언어와 다르면 다시 보낸다. 앱이 뒤에 있는 사이 바뀐 언어의 보고가 실패해도 다음 복귀 때 한 번 다시 보낸다. 시간대·언어는 계정 하나에 마지막으로 보고한 기기 값을 쓴다(기기별 값은 1.15.2에서 다룬다). 요청이 없는 화면에 돌아와도 서버 시간대가 바로 바뀐다. 보고가 성공하면 `useTimezoneChangeNotice`가 처음 알아챈 변경을 한 번 안내한다.
 - 요청 헤더(`X-Request-Id`·`X-Timezone`·`Accept-Language`)는 `shared/infra/http/request-headers.ts`가 요청마다 붙인다.
 
 ## 권한 묻기

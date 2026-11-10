@@ -75,6 +75,7 @@ import { getNowInstant } from '@src/shared/date/instant';
 import { createDraftRepository } from '@src/shared/draft/draft.repository';
 import { DraftService } from '@src/shared/draft/draft.service';
 import { getErrorMessage, isKeychainLockedError, toError } from '@src/shared/errors';
+import { i18n } from '@src/shared/i18n';
 import { expoAppIconGateway } from '@src/shared/infra/app-icon/expo-app-icon-gateway';
 import { reactNativeAppLifecycleGateway } from '@src/shared/infra/app-lifecycle/react-native-app-lifecycle-gateway';
 import { expoAppStoreListingGateway } from '@src/shared/infra/app-store/expo-app-store-listing-gateway';
@@ -296,6 +297,8 @@ export function DIProvider({
       registrationRepository: createPushRegistrationRepository(storage),
       logger,
       getTimeZone: getDeviceTimezone,
+      // 요청 헤더(Accept-Language)와 같은 값이다
+      getLanguage: () => i18n.language,
       sessionEpoch,
     });
     const deviceTimezoneService = new DeviceTimezoneService(

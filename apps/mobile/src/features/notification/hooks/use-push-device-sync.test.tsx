@@ -61,6 +61,7 @@ describe('usePushDeviceSync', () => {
       registrationRepository: createPushRegistrationRepository(createMemoryStorage()),
       logger: createLoggerStub(),
       getTimeZone: () => timeZone.current,
+      getLanguage: () => 'ko',
       sessionEpoch: createSessionEpoch(),
     });
     const container = createTestDi({
