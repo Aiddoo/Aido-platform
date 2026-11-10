@@ -1,12 +1,15 @@
 import type { CurrentUserPayload } from "@aido/api";
 import type { AiDataSharingDecision } from "@aido/api/vocabulary";
 
+import { StubAiDataSharingConsentReader } from "#test/doubles/ai-assistance/stub-ai-data-sharing-consent.reader";
+import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { createMockExecutionContext } from "#test/mocks/index";
-import { StubAiDataSharingConsent } from "#test/mocks/ports/ai-assistance.stub";
 import { createRequestClientReader, runWithRequestHeaders } from "#test/mocks/request-client";
 
 import { canShareWithAi } from "../../../../shared/domain/ai-data-sharing-consent.domain-service.js";
 import { AiDataSharingConsentGuard } from "./ai-data-sharing-consent.guard.js";
+
+const NOW = Temporal.Instant.from("2026-11-10T00:00:00Z");
 
 const user: CurrentUserPayload = {
   userId: "user",
@@ -16,9 +19,13 @@ const user: CurrentUserPayload = {
 };
 
 function createGuard(decision: AiDataSharingDecision) {
-  const consentReader = new StubAiDataSharingConsent();
+  const consentReader = new StubAiDataSharingConsentReader();
   consentReader.decision = decision;
-  return new AiDataSharingConsentGuard(consentReader, createRequestClientReader());
+  return new AiDataSharingConsentGuard(
+    consentReader,
+    createRequestClientReader(),
+    new FixedClock(NOW),
+  );
 }
 
 function canActivateFor(guard: AiDataSharingConsentGuard, appVersion: string) {
@@ -65,6 +72,7 @@ describe("AiDataSharingConsentGuard", () => {
     async (header) => {
       // Given
       const guard = createGuard("UNDECIDED");
+      const consent = await new StubAiDataSharingConsentReader().findAiDataSharingConsent("user");
 
       // When
       const allowed = await canActivateFor(guard, header).then(
@@ -73,7 +81,7 @@ describe("AiDataSharingConsentGuard", () => {
       );
 
       // Then
-      expect(allowed).toBe(canShareWithAi("UNDECIDED", header));
+      expect(allowed).toBe(canShareWithAi({ consent, appVersion: header, now: NOW }));
     },
   );
 });

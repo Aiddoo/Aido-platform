@@ -9,99 +9,120 @@ import type {
 } from "#api/modules/access/access-quota.public";
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
+import { toErrorType } from "#api/shared/application/utils/error-message.util";
 
-import {
-  readFeatureQuotaOrNull,
-  withoutChargedClaim,
-} from "../../../generation/application/ai-generation-failure.mapper.js";
 import { AiGenerationLogEvent } from "../../../generation/application/ai-generation.log-events.js";
 import type { AiTaskId } from "../../../generation/application/ports/ai-generator.port.js";
+import {
+  type ChargedGeneration,
+  type ChargedGenerationResult,
+  ChargedGenerationPort,
+  type SettleChargedGenerationInput,
+} from "../../application/ports/charged-generation.port.js";
 
-/** 결과를 준 뒤의 차감: 확정(CHARGE), 줄 결과는 있지만 환불(NO_ACTION), 줄 결과가 없어 AI_1302(EMPTY). */
-export type ChargeOutcome = "CHARGE" | "NO_ACTION" | "EMPTY";
-
-export interface ChargedGeneration<T> {
-  readonly result: T;
-  readonly outcome: ChargeOutcome;
-}
-
-export interface ChargedGenerationResult<T> {
-  readonly result: T;
-  /** 끝난 뒤에도 횟수가 차감된 상태인지. 환불·확정을 마치지 못했으면 실제 상태에 맞춰 답한다. */
-  readonly charged: boolean;
-  /** 결과를 준 뒤 한도를 읽지 못했으면 null이다. 차감한 결과를 잃지 않으려고 오류로 바꾸지 않는다. */
-  readonly featureQuota: MeteredFeatureQuota | null;
-}
-
-interface ChargedGenerationDependencies {
+interface QuotaChargedGenerationDependencies {
   readonly quota: Pick<QuotaLedgerPort, "commit" | "refund" | "read">;
   readonly logger: Pick<ApplicationLoggerPort, "warn">;
 }
 
-/**
- * 돈이 드는 AI 작업의 예약 뒤 흐름 하나: 생성 → 실패·빈 결과면 환불, 결과가 있으면 확정.
- * 환불을 마친 실패만 charged:false를 주장하고, 확정하지 못하면 charged:false로 답한다.
- * 그 예약은 정리 잡이 돌려주므로 결과를 준 뒤에도 차감으로 남지 않는다.
- */
-export async function settleChargedGeneration<T>(
-  dependencies: ChargedGenerationDependencies,
-  input: {
+/** 환불하지 못한 요청은 차감 여부를 보장할 수 없으므로 details의 charged:false를 떼고 같은 코드로 던진다. */
+function withoutChargedClaim(error: unknown): unknown {
+  return error instanceof ApplicationException ? new ApplicationException(error.errorCode) : error;
+}
+
+/** access의 사용량 원장(QuotaLedger)으로 AI 생성의 예약을 확정·환불한다. 그 예약은 정리 잡이 돌려준다. */
+export class QuotaChargedGenerationAdapter extends ChargedGenerationPort {
+  readonly #dependencies: QuotaChargedGenerationDependencies;
+
+  constructor(dependencies: QuotaChargedGenerationDependencies) {
+    super();
+    this.#dependencies = dependencies;
+  }
+
+  async settle<T>(input: SettleChargedGenerationInput<T>): Promise<ChargedGenerationResult<T>> {
+    const { quota } = this.#dependencies;
+    const { reservation, generate, beforeCommit } = input;
+    let generated: ChargedGeneration<T>;
+    try {
+      generated = await generate();
+    } catch (error) {
+      const refunded = await quota.refund(reservation, "FAILED");
+      throw refunded ? error : withoutChargedClaim(error);
+    }
+    const { result, outcome } = generated;
+    return match(outcome)
+      .with("EMPTY", async () => {
+        const refunded = await quota.refund(reservation, "NO_ACTION");
+        const empty = new ApplicationException(ErrorCode.AI_1302, { charged: false });
+        throw refunded ? empty : withoutChargedClaim(empty);
+      })
+      .with("NO_ACTION", async () => {
+        const refunded = await quota.refund(reservation, "NO_ACTION");
+        return { result, charged: !refunded, featureQuota: await this.readFeatureQuota(input) };
+      })
+      .with("CHARGE", async () => {
+        await beforeCommit?.(result);
+        return {
+          result,
+          charged: await this.commit(input),
+          featureQuota: await this.readFeatureQuota(input),
+        };
+      })
+      .exhaustive();
+  }
+
+  async commit(input: {
     readonly reservation: QuotaReservation;
+    readonly task: AiTaskId;
+  }): Promise<boolean> {
+    const committed = await this.#dependencies.quota.commit(input.reservation);
+    if (!committed) {
+      this.#dependencies.logger.warn({
+        event: AiGenerationLogEvent.COMMIT_MISSED,
+        task: input.task,
+        chargeId: input.reservation.chargeId,
+      });
+    }
+    return committed;
+  }
+
+  async readFeatureQuota(input: {
     readonly userId: string;
     readonly feature: MeteredFeatureKey;
     readonly task: AiTaskId;
-    readonly generate: () => Promise<ChargedGeneration<T>>;
-    /** 확정 직전에 부른다. 사이에 온 재요청은 처리 중(AI_1314)으로 답한다. */
-    readonly beforeCommit?: (result: T) => Promise<void>;
-  },
-): Promise<ChargedGenerationResult<T>> {
-  const { quota } = dependencies;
-  const { reservation, generate, beforeCommit } = input;
-  let generated: ChargedGeneration<T>;
-  try {
-    generated = await generate();
-  } catch (error) {
-    const refunded = await quota.refund(reservation, "FAILED");
-    throw refunded ? error : withoutChargedClaim(error);
+  }): Promise<MeteredFeatureQuota | null> {
+    try {
+      return await this.#dependencies.quota.read(input.userId, input.feature);
+    } catch (error) {
+      this.#dependencies.logger.warn({
+        event: AiGenerationLogEvent.QUOTA_READ_FAILED,
+        feature: input.feature,
+        task: input.task,
+        errorType: toErrorType(error),
+      });
+      return null;
+    }
   }
-  const { result, outcome } = generated;
-  return match(outcome)
-    .with("EMPTY", async () => {
-      const refunded = await quota.refund(reservation, "NO_ACTION");
-      const empty = new ApplicationException(ErrorCode.AI_1302, { charged: false });
-      throw refunded ? empty : withoutChargedClaim(empty);
-    })
-    .with("NO_ACTION", async () => {
-      const refunded = await quota.refund(reservation, "NO_ACTION");
-      return {
-        result,
-        charged: !refunded,
-        featureQuota: await readFeatureQuotaOrNull(dependencies, input),
-      };
-    })
-    .with("CHARGE", async () => {
-      await beforeCommit?.(result);
-      return {
-        result,
-        charged: await commitOrWarn(dependencies, input),
-        featureQuota: await readFeatureQuotaOrNull(dependencies, input),
-      };
-    })
-    .exhaustive();
 }
 
-/** 이미 있는 결과를 돌려주며 그 결과의 예약을 확정한다. */
-export async function commitOrWarn(
-  dependencies: ChargedGenerationDependencies,
+// 옛 함수 진입점. voice가 ChargedGenerationPort로 옮기면 지운다
+export function settleChargedGeneration<T>(
+  dependencies: QuotaChargedGenerationDependencies,
+  input: SettleChargedGenerationInput<T>,
+): Promise<ChargedGenerationResult<T>> {
+  return new QuotaChargedGenerationAdapter(dependencies).settle(input);
+}
+
+export function commitOrWarn(
+  dependencies: QuotaChargedGenerationDependencies,
   input: { readonly reservation: QuotaReservation; readonly task: AiTaskId },
 ): Promise<boolean> {
-  const committed = await dependencies.quota.commit(input.reservation);
-  if (!committed) {
-    dependencies.logger.warn({
-      event: AiGenerationLogEvent.COMMIT_MISSED,
-      task: input.task,
-      chargeId: input.reservation.chargeId,
-    });
-  }
-  return committed;
+  return new QuotaChargedGenerationAdapter(dependencies).commit(input);
+}
+
+export function readFeatureQuotaOrNull(
+  dependencies: QuotaChargedGenerationDependencies,
+  input: { readonly userId: string; readonly feature: MeteredFeatureKey; readonly task: AiTaskId },
+): Promise<MeteredFeatureQuota | null> {
+  return new QuotaChargedGenerationAdapter(dependencies).readFeatureQuota(input);
 }

@@ -1,41 +1,12 @@
 import type { PremiumFeature } from "@aido/api/vocabulary";
-import {
-  AI_DATA_SHARING_CONSENT,
-  type AiDataSharingConsentVersion,
-  type AiDataSharingDecision,
-} from "@aido/api/vocabulary";
 
 import type { EntitlementReaderPort } from "#api/modules/access/access-entitlement.public";
-import type {
-  AiDataSharingConsent,
-  AiDataSharingConsentDecisionReaderPort,
-} from "#api/modules/ai-assistance/generation/application/ports/ai-data-sharing-consent.reader.port";
-import type { AiClientAppVersionReaderPort } from "#api/modules/ai-assistance/generation/application/ports/client-app-version.reader.port";
-import type {
-  AiReportRepositoryPort,
-  CreateAiReportInput,
-  FindReportsParams,
-} from "#api/modules/ai-assistance/reports/application/ports/ai-report.repository.port";
-import type { TodoStatsReaderPort } from "#api/modules/ai-assistance/reports/application/ports/todo-stats.reader.port";
+import { AiClientAppVersionReaderPort } from "#api/modules/ai-assistance/generation/application/ports/client-app-version.reader.port";
+import { TodoStatsReaderPort } from "#api/modules/ai-assistance/reports/application/ports/todo-stats.reader.port";
 import type {
   AggregateParams,
   AggregationInputs,
 } from "#api/modules/ai-assistance/reports/domain/ai-report.constants";
-import { AiReport } from "#api/modules/ai-assistance/reports/domain/ai-report.entity";
-import type {
-  SuggestionRepositoryPort,
-  CreateSuggestionInput,
-} from "#api/modules/ai-assistance/suggestions/application/ports/suggestion.repository.port";
-import type { WeeklyReportReaderPort } from "#api/modules/ai-assistance/suggestions/application/ports/weekly-report.reader.port";
-import {
-  Suggestion,
-  type SuggestionProps,
-  type SuggestionStatus,
-} from "#api/modules/ai-assistance/suggestions/domain/suggestion.aggregate";
-import type {
-  TodoSummaryForAnalysis,
-  SuggestionHistoryItem,
-} from "#api/modules/ai-assistance/suggestions/domain/suggestion.constants";
 import type { UserMutationLockPort } from "#api/modules/identity/identity-user-access.public";
 import type {
   WeatherForecastReaderPort,
@@ -85,132 +56,7 @@ export class StubAiGenerationAccess
   }
 }
 
-export class StubAiSuggestionRepository implements SuggestionRepositoryPort {
-  readonly rows = new Map<number, SuggestionProps>();
-  todos: TodoSummaryForAnalysis[] = [];
-  streak: { currentStreak: number; longestStreak: number } | null = {
-    currentStreak: 3,
-    longestStreak: 5,
-  };
-  history: SuggestionHistoryItem[] = [];
-  readonly writes: string[] = [];
-  readonly saved: CreateSuggestionInput[] = [];
-  private nextId = 100;
-  async findPendingByUserId(userId: string) {
-    return [...this.rows.values()]
-      .filter(
-        (row) => row.userId === userId && row.status === "PENDING" && row.expiresAt >= new Date(),
-      )
-      .map((row) => Suggestion.reconstitute(row));
-  }
-  async findByIdAndUserId(id: number, userId: string) {
-    const row = this.rows.get(id);
-    return row?.userId === userId ? Suggestion.reconstitute(row) : null;
-  }
-  async updateStatus(id: number, status: SuggestionStatus) {
-    const row = this.rows.get(id);
-    if (!row) {
-      throw new Error("존재하지 않는 제안");
-    }
-    const updated = { ...row, status };
-    this.rows.set(id, updated);
-    this.writes.push("updateStatus");
-    return Suggestion.reconstitute(updated);
-  }
-  async createMany(data: CreateSuggestionInput[]) {
-    this.writes.push("createMany");
-    this.saved.push(...structuredClone(data));
-    for (const input of data) {
-      const id = this.nextId++;
-      this.rows.set(id, {
-        ...structuredClone(input),
-        id,
-        status: "PENDING",
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      });
-    }
-    return { count: data.length };
-  }
-  async deletePending(userId: string) {
-    this.writes.push("deletePending");
-    return this.remove((row) => row.userId === userId && row.status === "PENDING");
-  }
-  async deleteExpired(userId: string) {
-    this.writes.push("deleteExpired");
-    return this.remove((row) => row.userId === userId && row.expiresAt < new Date());
-  }
-  private remove(predicate: (row: SuggestionProps) => boolean) {
-    let count = 0;
-    for (const [id, row] of this.rows) {
-      if (predicate(row)) {
-        this.rows.delete(id);
-        count += 1;
-      }
-    }
-    return { count };
-  }
-  async findRecentTodos() {
-    return structuredClone(this.todos);
-  }
-  async findDayCompletionRates() {
-    return [{ day: "MON" as const, total: 5, completed: 4 }];
-  }
-  async findTimeCompletionRates() {
-    return { morning: { count: 5, rate: 80 }, afternoon: { count: 0, rate: 0 } };
-  }
-  async findCategoryCompletionRates() {
-    return [{ name: "독서", total: 5, completed: 4, rate: 80 }];
-  }
-  async findUserStreakInfo() {
-    return this.streak;
-  }
-  async findRecentResponded() {
-    return structuredClone(this.history);
-  }
-}
-
-export class StubAiReportRepository implements AiReportRepositoryPort {
-  readonly saved: CreateAiReportInput[] = [];
-  readonly rows = new Map<number, AiReport>();
-  duplicate = false;
-  async create(input: CreateAiReportInput) {
-    this.saved.push(structuredClone(input));
-    const id = this.rows.size + 1;
-    const report = AiReport.reconstitute({ id, ...structuredClone(input) });
-    this.rows.set(id, report);
-    return report;
-  }
-  async findByIdAndUserId(id: number, userId: string) {
-    const row = this.rows.get(id);
-    return row?.snapshot.userId === userId ? row : null;
-  }
-  async findLatest(userId: string, type: "WEEKLY" | "MONTHLY") {
-    return (
-      [...this.rows.values()].find((row) => row.snapshot.userId === userId && row.type === type) ??
-      null
-    );
-  }
-  async findMany(params: FindReportsParams) {
-    return [...this.rows.values()]
-      .filter(
-        (row) =>
-          row.snapshot.userId === params.userId && (!params.type || row.type === params.type),
-      )
-      .slice(0, params.limit);
-  }
-  async exists(userId: string, type: "WEEKLY" | "MONTHLY", year: number, period: number) {
-    return (
-      this.duplicate ||
-      this.saved.some(
-        (row) =>
-          row.userId === userId && row.type === type && row.year === year && row.period === period,
-      )
-    );
-  }
-}
-
-export class StubAiTodoStatsReader implements TodoStatsReaderPort {
+export class StubAiTodoStatsReader extends TodoStatsReaderPort {
   readonly calls: AggregateParams[] = [];
   inputs: AggregationInputs = {
     dailyTotalGroups: [],
@@ -228,13 +74,6 @@ export class StubAiTodoStatsReader implements TodoStatsReaderPort {
   }
 }
 
-export class StubAiWeeklyReportReader implements WeeklyReportReaderPort {
-  report: Awaited<ReturnType<WeeklyReportReaderPort["findLatestWeekly"]>> = null;
-  async findLatestWeekly() {
-    return this.report;
-  }
-}
-
 export class StubAiWeatherForecastReader implements WeatherForecastReaderPort {
   forecasts = new Map<string, WeatherForecast>();
   failure: Error | null = null;
@@ -248,25 +87,13 @@ export class StubAiWeatherForecastReader implements WeatherForecastReaderPort {
   }
 }
 
-/** 사용자의 AI 데이터 처리 동의 상태를 테스트에서 바꿀 수 있는 reader */
-export class StubAiDataSharingConsent implements AiDataSharingConsentDecisionReaderPort {
-  decision: AiDataSharingDecision = "UNDECIDED";
-  /** AGREED일 때 동의한 안내 버전 */
-  agreedVersion: AiDataSharingConsentVersion = AI_DATA_SHARING_CONSENT.VERSION;
-
-  async findAiDataSharingConsent(): Promise<AiDataSharingConsent> {
-    return {
-      decision: this.decision,
-      agreedVersion: this.decision === "AGREED" ? this.agreedVersion : null,
-    };
-  }
-}
-
 /** 예약 작업이 읽는 사용자의 앱 버전. 기본은 버전을 알 수 없는 사용자(오래된 앱과 같게 처리)다 */
-export class StubAiClientAppVersion implements AiClientAppVersionReaderPort {
+export class StubAiClientAppVersion extends AiClientAppVersionReaderPort {
   latestAppVersion: string | null = null;
 
   async findLatestAppVersion(): Promise<string | null> {
     return this.latestAppVersion;
   }
 }
+
+export { StubAiDataSharingConsentReader as StubAiDataSharingConsent } from "#test/doubles/ai-assistance/stub-ai-data-sharing-consent.reader";

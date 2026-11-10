@@ -18,7 +18,10 @@ import {
 
 import { HandleSuggestionActionUseCase } from "../../../application/use-cases/handle-suggestion-action.use-case.js";
 import { ListPendingSuggestionsUseCase } from "../../../application/use-cases/list-pending-suggestions.use-case.js";
-import { AiSuggestionResponseMapper } from "./ai-suggestion-response.mapper.js";
+import {
+  toSuggestionActionResponse,
+  toSuggestionResponse,
+} from "./ai-suggestion-response.mapper.js";
 import {
   SuggestionActionDto,
   SuggestionActionResponseDto,
@@ -225,9 +228,9 @@ export class AiSuggestionController {
   async getPendingSuggestions(
     @CurrentUser() user: CurrentUserPayload,
   ): Promise<SuggestionListResponseDto> {
-    const suggestions = await this.#getPendingSuggestionsUseCase.execute(user.userId);
+    const suggestions = await this.#getPendingSuggestionsUseCase.execute({ userId: user.userId });
 
-    return { suggestions: AiSuggestionResponseMapper.toManyResponse(suggestions) };
+    return { suggestions: suggestions.map(toSuggestionResponse) };
   }
 
   @Patch(":id")
@@ -282,6 +285,6 @@ export class AiSuggestionController {
       timezone: tz,
     });
 
-    return AiSuggestionResponseMapper.toActionResponse(result);
+    return toSuggestionActionResponse(result);
   }
 }

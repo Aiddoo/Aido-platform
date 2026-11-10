@@ -1,113 +1,84 @@
-import type { Mocked } from "vitest";
-import { mock, mockDeep } from "vitest-mock-extended";
+import { RecordingNotificationPublisher } from "#test/doubles/notification/recording-notification-publisher";
+import { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
+import { StubUserLocalePreferenceReader } from "#test/mocks/ports/ai-parsing.stub";
 
-import { NotificationPublisher } from "#api/modules/notification/notification-delivery.public";
-import type { Database } from "#api/platform/database/database.client";
-import { createMockDrizzleTransactionHost } from "#test/mocks/drizzle.mock";
-/**
- * SuggestionAnalysisProcessor 단위 테스트
- *
- * Suites + GWT 패턴 적용
- * - 서비스 위임 검증
- * - 패턴 감지 여부에 따른 알림 발송 검증
- */
-
-import { AnalyzeAndCreateSuggestionsUseCase } from "../../application/use-cases/analyze-and-create-suggestions.use-case.js";
+import type { AnalyzeAndCreateSuggestionsCommand } from "../../application/use-cases/analyze-and-create-suggestions.use-case.js";
 import { AiSuggestionJobName } from "./ai-suggestion.queue.js";
 import { SuggestionAnalysisProcessor } from "./suggestion-analysis.processor.js";
 
-describe("SuggestionAnalysisProcessor — AI 제안 분석 프로세서", () => {
-  let processor: SuggestionAnalysisProcessor;
-  let analyzeAndCreateSuggestionsUseCase: Mocked<AnalyzeAndCreateSuggestionsUseCase>;
-  let mockNotificationService: Mocked<NotificationPublisher>;
+function setup(createdCount: number) {
+  const commands: AnalyzeAndCreateSuggestionsCommand[] = [];
+  const publisher = new RecordingNotificationPublisher();
+  const localePreferenceReader = new StubUserLocalePreferenceReader();
+  localePreferenceReader.preferences.set("user-1", {
+    timezone: "America/Los_Angeles",
+    locale: "en",
+  });
+  let dispatched = 0;
+  const processor = new SuggestionAnalysisProcessor(
+    {
+      execute: async (command) => {
+        commands.push(command);
+        return createdCount;
+      },
+    },
+    publisher,
+    localePreferenceReader,
+    {
+      dispatchAnalysis: async () => {
+        dispatched += 1;
+      },
+    },
+    new InMemoryJobQueue(),
+  );
+  return { processor, commands, publisher, dispatched: () => dispatched };
+}
 
-  beforeEach(async () => {
-    const database = mockDeep<Database>();
-    database.query.userPreference.findFirst.mockResolvedValue(undefined);
-    analyzeAndCreateSuggestionsUseCase = mock<AnalyzeAndCreateSuggestionsUseCase>();
-    mockNotificationService = mock<NotificationPublisher>();
-    processor = new SuggestionAnalysisProcessor(
-      analyzeAndCreateSuggestionsUseCase,
-      mockNotificationService,
-      createMockDrizzleTransactionHost(database).host,
-    );
+const analyzeJob = {
+  name: AiSuggestionJobName.ANALYZE,
+  data: { userId: "user-1", timezone: "America/Los_Angeles", weatherGrid: null },
+} as const;
+
+describe("SuggestionAnalysisProcessor", () => {
+  it("새 제안이 생기면 저장 언어로 분석하고 알림함이 요청 언어로 다시 그릴 문구 키를 함께 보낸다", async () => {
+    // Given
+    const { processor, commands, publisher } = setup(2);
+
+    // When
+    await processor.process(analyzeJob);
+
+    // Then
+    expect(commands).toEqual([
+      { userId: "user-1", timezone: "America/Los_Angeles", weatherGrid: null, locale: "en" },
+    ]);
+    expect(publisher.published).toHaveLength(1);
+    expect(publisher.published[0]?.data).toMatchObject({
+      userId: "user-1",
+      type: "AI_SUGGESTION",
+      campaignKey: "ai_suggestion_v2",
+      copyKey: expect.any(String),
+    });
   });
 
-  describe("onStalled", () => {
-    it("stalled 발생 시 에러 없이 처리해야 한다", () => {
-      // When & Then: 에러 없이 호출되어야 한다
-      expect(() => processor.onStalled("test-job-id")).not.toThrow();
-    });
+  it("새 제안이 없으면 알림을 보내지 않는다", async () => {
+    // Given
+    const { processor, publisher } = setup(0);
+
+    // When
+    await processor.process(analyzeJob);
+
+    // Then
+    expect(publisher.published).toEqual([]);
   });
 
-  describe("서비스 위임", () => {
-    it("서비스에 userId와 timezone을 전달해야 한다", async () => {
-      // Given -분석 대상 사용자
-      analyzeAndCreateSuggestionsUseCase.execute.mockResolvedValue(0);
+  it("디스패치 작업은 현지 07시대 사용자를 고르는 디스패처에 넘긴다", async () => {
+    // Given
+    const { processor, dispatched } = setup(0);
 
-      // When -process를 호출하면
-      await processor.process({
-        name: AiSuggestionJobName.ANALYZE,
-        data: {
-          userId: "user-123",
-          timezone: "Asia/Seoul",
-          weatherGrid: null,
-        },
-      });
+    // When
+    await processor.process({ name: AiSuggestionJobName.DISPATCH, data: {} });
 
-      // Then -서비스에 올바른 파라미터를 전달해야 한다
-      expect(analyzeAndCreateSuggestionsUseCase.execute).toHaveBeenCalledWith(
-        "user-123",
-        "Asia/Seoul",
-        null,
-        "ko",
-      );
-    });
-  });
-
-  describe("알림 발송", () => {
-    it("패턴 감지 시 알림을 발송해야 한다", async () => {
-      // Given -제안이 3개 생성된 상황
-      analyzeAndCreateSuggestionsUseCase.execute.mockResolvedValue(3);
-      mockNotificationService.publish.mockResolvedValue(null);
-
-      // When -process를 호출하면
-      await processor.process({
-        name: AiSuggestionJobName.ANALYZE,
-        data: {
-          userId: "user-123",
-          timezone: "Asia/Seoul",
-          weatherGrid: null,
-        },
-      });
-
-      // Then -알림이 발송되어야 한다
-      expect(mockNotificationService.publish).toHaveBeenCalledWith(
-        expect.objectContaining({
-          userId: "user-123",
-          type: "AI_SUGGESTION",
-          campaignKey: "ai_suggestion_v2",
-          variantId: "default",
-        }),
-      );
-    });
-
-    it("패턴 미감지 시 알림을 발송하지 않아야 한다", async () => {
-      // Given -제안이 생성되지 않은 상황
-      analyzeAndCreateSuggestionsUseCase.execute.mockResolvedValue(0);
-
-      // When -process를 호출하면
-      await processor.process({
-        name: AiSuggestionJobName.ANALYZE,
-        data: {
-          userId: "user-123",
-          timezone: "Asia/Seoul",
-          weatherGrid: null,
-        },
-      });
-
-      // Then -알림이 발송되지 않아야 한다
-      expect(mockNotificationService.publish).not.toHaveBeenCalled();
-    });
+    // Then
+    expect(dispatched()).toBe(1);
   });
 });

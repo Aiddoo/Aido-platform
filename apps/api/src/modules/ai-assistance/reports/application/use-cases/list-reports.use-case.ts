@@ -1,38 +1,38 @@
-import type { AiReport as AiReportDto } from "@aido/api";
-
 import {
   assertEntitled,
   type EntitlementReaderPort,
 } from "#api/modules/access/access-entitlement.public";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
+import type { AiReport } from "../../domain/ai-report.aggregate.js";
 import type { ReportType } from "../../domain/ai-report.constants.js";
-import { type AiReportRepositoryPort } from "../ports/ai-report.repository.port.js";
-import { toAiReportView } from "../read-models/ai-report.read-model.js";
+import type { AiReportRepositoryPort } from "../ports/ai-report.repository.port.js";
 
-interface GetReportsDependencies {
-  readonly aiReportRepository: Pick<AiReportRepositoryPort, "findMany">;
+export interface ListReportsQuery {
+  readonly userId: string;
+  readonly type?: ReportType;
+  readonly limit: number;
+}
+
+interface ListReportsDependencies {
+  readonly aiReportRepository: Pick<AiReportRepositoryPort, "listByUserId">;
   readonly entitlementReader: Pick<EntitlementReaderPort, "can">;
 }
 
 export class ListReportsUseCase {
-  readonly #dependencies: GetReportsDependencies;
+  readonly #dependencies: ListReportsDependencies;
 
-  constructor(dependencies: GetReportsDependencies) {
+  constructor(dependencies: ListReportsDependencies) {
     this.#dependencies = dependencies;
   }
 
-  async execute(
-    userId: string,
-    params: { type?: ReportType; limit: number },
-  ): Promise<AiReportDto[]> {
-    await assertEntitled(this.#dependencies.entitlementReader, userId, "AI_REPORT");
+  async execute(query: ListReportsQuery): Promise<AiReport[]> {
+    await assertEntitled(this.#dependencies.entitlementReader, query.userId, "AI_REPORT");
 
-    const reports = await this.#dependencies.aiReportRepository.findMany({
-      userId,
-      type: params.type,
-      limit: params.limit,
+    return this.#dependencies.aiReportRepository.listByUserId({
+      userId: UserId.reconstitute(query.userId),
+      type: query.type ?? null,
+      limit: query.limit,
     });
-
-    return reports.map((report) => toAiReportView(report));
   }
 }

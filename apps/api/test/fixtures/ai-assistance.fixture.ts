@@ -1,28 +1,30 @@
 import { vi } from "vitest";
-import { mock } from "vitest-mock-extended";
 
 import type {
   AiGenerationRequest,
   AiGenerationResult,
   AiGeneratorPort,
 } from "#api/modules/ai-assistance/generation/application/ports/ai-generator.port";
+import { ScheduledAiConsentReader } from "#api/modules/ai-assistance/generation/application/scheduled-ai-consent.reader";
 import { GenerateReportUseCase } from "#api/modules/ai-assistance/reports/application/use-cases/generate-report.use-case";
 import { SuggestionContextReader } from "#api/modules/ai-assistance/suggestions/application/suggestion-context.reader";
 import { AnalyzeAndCreateSuggestionsUseCase } from "#api/modules/ai-assistance/suggestions/application/use-cases/analyze-and-create-suggestions.use-case";
 import type { SuggestionPick } from "#api/modules/ai-assistance/suggestions/domain/suggestion-candidates.domain-service";
+import { Suggestion } from "#api/modules/ai-assistance/suggestions/domain/suggestion.aggregate";
 import type { TodoSummaryForAnalysis } from "#api/modules/ai-assistance/suggestions/domain/suggestion.constants";
-import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
+import { InMemoryAiReportRepository } from "#test/doubles/ai-assistance/in-memory-ai-report.repository";
+import { InMemorySuggestionRepository } from "#test/doubles/ai-assistance/in-memory-suggestion.repository";
+import { createSpyApplicationLogger } from "#test/doubles/ai-assistance/spy-application-logger";
+import { StubSuggestionActivityReader } from "#test/doubles/ai-assistance/stub-suggestion-activity.reader";
+import { DateClock } from "#test/doubles/platform/date-clock";
 import { FakeAiGenerator } from "#test/mocks/fake-ai.generator";
 import {
   StubAiDataSharingConsent,
   StubAiClientAppVersion,
   StubAiGenerationAccess,
   StubAiGenerationUnitOfWork,
-  StubAiReportRepository,
-  StubAiSuggestionRepository,
   StubAiTodoStatsReader,
   StubAiWeatherForecastReader,
-  StubAiWeeklyReportReader,
 } from "#test/mocks/ports/ai-assistance.stub";
 
 import { createReportAiResponse } from "./ai-response.fixture.js";
@@ -73,31 +75,39 @@ export function createAiAssistanceFixture() {
   const userId = "ai-fixture-user";
   const unitOfWork = new StubAiGenerationUnitOfWork();
   const access = new StubAiGenerationAccess(unitOfWork);
-  const repository = new StubAiSuggestionRepository();
-  repository.todos = ["2026-03-02", "2026-03-09", "2026-03-16"].map((startDate) =>
+  const repository = new InMemorySuggestionRepository();
+  const activityReader = new StubSuggestionActivityReader();
+  activityReader.todos = ["2026-03-02", "2026-03-09", "2026-03-16"].map((startDate) =>
     createAnalysisTodo({ startDate }),
   );
-  const reportRepository = new StubAiReportRepository();
+  const reportRepository = new InMemoryAiReportRepository();
   const todoStatsReader = new StubAiTodoStatsReader();
   const weatherForecastReader = new StubAiWeatherForecastReader();
-  const reportReader = new StubAiWeeklyReportReader();
+  const latestReportStats = { findLatestWeekly: async () => null };
   const generator = new GatedFakeAiGenerator();
   const aiDataSharingConsent = new StubAiDataSharingConsent();
   const clientAppVersion = new StubAiClientAppVersion();
-  const logger = mock<ApplicationLoggerPort>();
+  const logger = createSpyApplicationLogger();
+  const clock = new DateClock();
+  const scheduledAiConsent = new ScheduledAiConsentReader({
+    consentReader: aiDataSharingConsent,
+    clientAppVersion,
+    clock,
+  });
   const contextBuilder = new SuggestionContextReader({
-    repository,
+    activityReader,
     weatherForecastReader,
-    reportReader,
+    latestReportStats,
+    clock,
     logger,
   });
   const analyze = new AnalyzeAndCreateSuggestionsUseCase({
     repository,
     generator,
-    aiDataSharingConsent,
-    clientAppVersion,
+    scheduledAiConsent,
     unitOfWork,
     contextBuilder,
+    clock,
     logger,
     entitlementReader: access,
     userMutationLock: access,
@@ -106,8 +116,8 @@ export function createAiAssistanceFixture() {
     aiReportRepository: reportRepository,
     todoStatsReader,
     generator,
-    aiDataSharingConsent,
-    clientAppVersion,
+    scheduledAiConsent,
+    clock,
     logger,
     entitlementReader: access,
     unitOfWork,
@@ -118,10 +128,11 @@ export function createAiAssistanceFixture() {
     access,
     unitOfWork,
     repository,
+    activityReader,
     reportRepository,
     todoStatsReader,
     weatherForecastReader,
-    reportReader,
+    latestReportStats,
     generator,
     aiDataSharingConsent,
     clientAppVersion,
@@ -174,21 +185,23 @@ export function seedPendingSuggestion(
   fixture: ReturnType<typeof createAiAssistanceFixture>,
   id = 1,
 ) {
-  fixture.repository.rows.set(id, {
-    id,
-    userId: fixture.userId,
-    title: "이전 제안",
-    daysOfWeek: ["MON"],
-    scheduledTime: null,
-    confidence: 0.8,
-    reason: "이전 근거",
-    matchedTodos: [],
-    suggestedCategoryId: 7,
-    status: "PENDING",
-    expiresAt: new Date("2026-04-05T12:00:00Z"),
-    createdAt: new Date(AI_ASSISTANCE_TIME),
-    updatedAt: new Date(AI_ASSISTANCE_TIME),
-  });
+  return fixture.repository.save(
+    Suggestion.reconstitute({
+      id,
+      userId: fixture.userId,
+      title: "이전 제안",
+      daysOfWeek: ["MON"],
+      scheduledTime: null,
+      confidence: 0.8,
+      reason: "이전 근거",
+      matchedTodos: [],
+      suggestedCategoryId: 7,
+      status: "PENDING",
+      expiresAt: Temporal.Instant.from("2026-04-05T12:00:00Z"),
+      createdAt: Temporal.Instant.from(AI_ASSISTANCE_TIME.toISOString()),
+      updatedAt: Temporal.Instant.from(AI_ASSISTANCE_TIME.toISOString()),
+    }),
+  );
 }
 
 export async function withAiAssistanceTime<T>(

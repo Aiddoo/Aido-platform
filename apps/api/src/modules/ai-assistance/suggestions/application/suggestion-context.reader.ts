@@ -1,19 +1,15 @@
-import {
-  AI_SUGGESTION_LIMITS,
-  type DayOfWeek,
-  dayIndexToDayOfWeek,
-  reportStatsSchema,
-} from "@aido/api";
+import { AI_SUGGESTION_LIMITS, type DayOfWeek, dayIndexToDayOfWeek } from "@aido/api/vocabulary";
 import dayjs from "dayjs";
 
 import type { WeatherForecastReaderPort } from "#api/modules/weather/forecasts/weather-forecasts.public";
 import { type GridInput } from "#api/modules/weather/forecasts/weather-forecasts.public";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
-import { subtractDays } from "#api/shared/domain/date/utils/arithmetic";
-import { now } from "#api/shared/domain/date/utils/core";
+import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { parseLocalDateTime } from "#api/shared/domain/date/utils/timezone";
 import type { SupportedLocale } from "#api/shared/domain/locale";
+import { instantToDate } from "#api/shared/domain/time/instant";
 
+import type { LatestReportStatsReaderPort } from "../../reports/application/ports/latest-report-stats.reader.port.js";
 import { collectRecordedActivities } from "../domain/recorded-activity-evidence.domain-service.js";
 import type {
   SuggestionHistoryItem,
@@ -21,8 +17,7 @@ import type {
 } from "../domain/suggestion.constants.js";
 import { AiSuggestionLogEvent } from "./ai-suggestion.log-events.js";
 import { suggestionContextTranslations } from "./messages/suggestion-context.messages.js";
-import { type SuggestionRepositoryPort } from "./ports/suggestion.repository.port.js";
-import { type WeeklyReportReaderPort } from "./ports/weekly-report.reader.port.js";
+import type { SuggestionActivityReaderPort } from "./ports/suggestion-activity.reader.port.js";
 import type { SuggestionContext } from "./read-models/suggestion-context.read-model.js";
 
 /**
@@ -31,8 +26,8 @@ import type { SuggestionContext } from "./read-models/suggestion-context.read-mo
  * 통계 분석을 서버에서 수행하여 AI에게 사전 계산된 인사이트를 제공합니다.
  */
 interface SuggestionContextBuilderDependencies {
-  readonly repository: Pick<
-    SuggestionRepositoryPort,
+  readonly activityReader: Pick<
+    SuggestionActivityReaderPort,
     | "findRecentTodos"
     | "findDayCompletionRates"
     | "findTimeCompletionRates"
@@ -41,7 +36,8 @@ interface SuggestionContextBuilderDependencies {
     | "findRecentResponded"
   >;
   readonly weatherForecastReader: Pick<WeatherForecastReaderPort, "getForecastsByGridBatch">;
-  readonly reportReader: Pick<WeeklyReportReaderPort, "findLatestWeekly">;
+  readonly latestReportStats: Pick<LatestReportStatsReaderPort, "findLatestWeekly">;
+  readonly clock: ClockPort;
   readonly logger: Pick<ApplicationLoggerPort, "debug">;
 }
 
@@ -63,12 +59,13 @@ export class SuggestionContextReader {
     weatherGrid: GridInput | null,
     locale: SupportedLocale = "ko",
   ): Promise<SuggestionContext> {
-    const currentDate = dayjs.utc(now());
+    const at = instantToDate(this.#dependencies.clock.now());
+    const currentDate = dayjs.utc(at);
     const analysisFrom = currentDate.subtract(AI_SUGGESTION_LIMITS.ANALYSIS_WEEKS, "week").toDate();
     const contextFrom = currentDate.subtract(AI_SUGGESTION_LIMITS.CONTEXT_WEEKS, "week").toDate();
     const to = currentDate.toDate();
 
-    const historySince = subtractDays(30);
+    const historySince = currentDate.subtract(30, "day").toDate();
 
     const [
       todos,
@@ -80,14 +77,19 @@ export class SuggestionContextReader {
       weeklyReport,
       respondedSuggestions,
     ] = await Promise.all([
-      this.#dependencies.repository.findRecentTodos(userId, analysisFrom, to, timezone),
-      this.#dependencies.repository.findDayCompletionRates(userId, contextFrom, to, timezone),
-      this.#dependencies.repository.findTimeCompletionRates(userId, contextFrom, to, timezone),
-      this.#dependencies.repository.findCategoryCompletionRates(userId, contextFrom, to, timezone),
-      this.#dependencies.repository.findUserStreakInfo(userId),
+      this.#dependencies.activityReader.findRecentTodos(userId, analysisFrom, to, timezone),
+      this.#dependencies.activityReader.findDayCompletionRates(userId, contextFrom, to, timezone),
+      this.#dependencies.activityReader.findTimeCompletionRates(userId, contextFrom, to, timezone),
+      this.#dependencies.activityReader.findCategoryCompletionRates(
+        userId,
+        contextFrom,
+        to,
+        timezone,
+      ),
+      this.#dependencies.activityReader.findUserStreakInfo(userId),
       this.#fetchWeatherByGrid(weatherGrid, to, locale),
-      this.#dependencies.reportReader.findLatestWeekly(userId),
-      this.#dependencies.repository.findRecentResponded(userId, historySince),
+      this.#dependencies.latestReportStats.findLatestWeekly(userId),
+      this.#dependencies.activityReader.findRecentResponded(userId, historySince),
     ]);
 
     const missingRoutines = this.detectMissingRoutines(todos, timezone, locale);
@@ -95,13 +97,10 @@ export class SuggestionContextReader {
     // 보고서 인사이트 추출
     let weeklyReportInsight: string | null = null;
     if (weeklyReport != null) {
-      const stats = reportStatsSchema.safeParse(weeklyReport.stats);
-      if (stats.success) {
-        weeklyReportInsight = suggestionContextTranslations[locale].reportInsight(
-          stats.data.completionRate,
-          stats.data.streakDays,
-        );
-      }
+      weeklyReportInsight = suggestionContextTranslations[locale].reportInsight(
+        weeklyReport.completionRate,
+        weeklyReport.streakDays,
+      );
     }
 
     // 수락/거절 이력 (포트가 이미 SuggestionHistoryItem 형태로 반환)
@@ -132,7 +131,7 @@ export class SuggestionContextReader {
     timezone: string,
     locale: SupportedLocale = "ko",
   ): string[] {
-    const currentDate = dayjs.utc(now()).tz(timezone);
+    const currentDate = dayjs.utc(instantToDate(this.#dependencies.clock.now())).tz(timezone);
     const weekStart = currentDate.startOf("isoWeek");
 
     // 제목+요일별 등장 횟수 집계 (이번 주 제외)

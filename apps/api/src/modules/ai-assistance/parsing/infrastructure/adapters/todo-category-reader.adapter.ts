@@ -1,23 +1,18 @@
-import { Inject, Injectable } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
+
+import { TodoCategoryReaderPort } from "#api/modules/planning/categories/planning-categories.public";
 
 import {
-  TODO_CATEGORY_READER,
-  type TodoCategoryReaderPort,
-} from "#api/modules/planning/categories/planning-categories.public";
-
-import type {
-  UserCategory,
+  type UserCategory,
   UserCategoryReaderPort,
 } from "../../application/ports/user-category.reader.port.js";
 
 @Injectable()
-export class TodoCategoryReaderAdapter implements UserCategoryReaderPort {
+export class TodoCategoryReaderAdapter extends UserCategoryReaderPort {
   readonly #categoryReader: Pick<TodoCategoryReaderPort, "listForUser">;
 
-  constructor(
-    @Inject(TODO_CATEGORY_READER)
-    categoryReader: Pick<TodoCategoryReaderPort, "listForUser">,
-  ) {
+  constructor(categoryReader: TodoCategoryReaderPort) {
+    super();
     this.#categoryReader = categoryReader;
   }
 

@@ -1,135 +1,88 @@
-import type { Mocked } from "vitest";
-import { vi } from "vitest";
-import { mockDeep } from "vitest-mock-extended";
-
 import { ApplicationException } from "#api/shared/application/application.exception";
+import { InMemoryAiReportRepository } from "#test/doubles/ai-assistance/in-memory-ai-report.repository";
+import { FixedClock } from "#test/doubles/platform/fixed-clock";
+import { createAiReportFixture } from "#test/fixtures/ai-assistance/ai-report.fixture";
+import { StubUserLocalePreferenceReader } from "#test/mocks/ports/ai-parsing.stub";
 
-import type { ReportType } from "../../domain/ai-report.constants.js";
-import { AiReport } from "../../domain/ai-report.entity.js";
 import { GetReportStatusUseCase } from "./get-report-status.use-case.js";
 
-const makeReport = (type: ReportType): AiReport =>
-  AiReport.reconstitute({
-    id: 1,
-    userId: "user-123",
-    type,
-    year: 2026,
-    period: 10,
-    stats: {
-      totalTodos: 10,
-      completedTodos: 8,
-      completionRate: 80,
-      prevCompletionRate: 70,
-      streakDays: 3,
-    },
-    categoryBreakdown: [],
-    dayPatterns: [],
-    timePatterns: [],
-    aiSummary: "요약",
-    aiTips: [],
-    locale: "ko",
-    hasActivity: true,
-    generatedAt: new Date("2026-03-09T07:00:00.000Z"),
+const USER_ID = "clz7x5p8k0001qz0z8z8z8z8z";
+
+function setup(at: string, options: { readonly entitled?: boolean } = {}) {
+  const aiReportRepository = new InMemoryAiReportRepository([
+    createAiReportFixture({ userId: USER_ID, type: "WEEKLY" }),
+  ]);
+  const localePreferenceReader = new StubUserLocalePreferenceReader();
+  const useCase = new GetReportStatusUseCase({
+    aiReportRepository,
+    entitlementReader: { can: async () => options.entitled ?? true },
+    localePreferenceReader,
+    clock: new FixedClock(Temporal.Instant.from(at)),
   });
+  return { useCase, localePreferenceReader };
+}
 
 describe("GetReportStatusUseCase", () => {
-  let useCase: GetReportStatusUseCase;
-  let mockRepository: Mocked<
-    ConstructorParameters<typeof GetReportStatusUseCase>[0]["aiReportRepository"]
-  >;
-  let mockEntitlement: Mocked<
-    ConstructorParameters<typeof GetReportStatusUseCase>[0]["entitlementReader"]
-  >;
-  let mockPreference: Mocked<
-    ConstructorParameters<typeof GetReportStatusUseCase>[0]["localePreferenceReader"]
-  >;
+  it("프리미엄이 아니면 리포트를 읽지 않고 거절한다", async () => {
+    // Given
+    const { useCase } = setup("2026-03-08T14:00:00Z", { entitled: false });
 
-  const tz = "Asia/Seoul";
+    // When
+    const status = useCase.execute({ userId: USER_ID, timezone: "Asia/Seoul" });
 
-  beforeEach(async () => {
-    const getReportStatusDependencies = mockDeep<
-      ConstructorParameters<typeof GetReportStatusUseCase>[0]
-    >({});
-    const unit = new GetReportStatusUseCase(getReportStatusDependencies);
-    useCase = unit;
-    mockRepository = getReportStatusDependencies.aiReportRepository;
-    mockEntitlement = getReportStatusDependencies.entitlementReader;
-    mockPreference = getReportStatusDependencies.localePreferenceReader;
-    mockEntitlement.can.mockResolvedValue(true);
-    mockRepository.findLatest.mockResolvedValue(null);
+    // Then
+    await expect(status).rejects.toBeInstanceOf(ApplicationException);
   });
 
-  it("비프리미엄이면 조회 없이 예외를 전파해야 한다", async () => {
-    mockEntitlement.can.mockResolvedValue(false);
+  it("남은 날은 시간이 아니라 사용자 달력 날짜로 센다", async () => {
+    // Given - 일요일 23:00 KST
+    const { useCase } = setup("2026-03-08T14:00:00Z");
 
-    await expect(useCase.execute("user-123", tz)).rejects.toBeInstanceOf(ApplicationException);
-    expect(mockRepository.findLatest).not.toHaveBeenCalled();
+    // When
+    const status = await useCase.execute({ userId: USER_ID, timezone: "Asia/Seoul" });
+
+    // Then
+    expect(status.daysUntilWeekly).toBe(1);
+    expect(status.latestWeekly?.id.value).toBe(1);
+    expect(status.latestMonthly).toBeNull();
   });
 
-  it("daysUntil은 시간이 아닌 날짜(calendar day) 기준으로 계산해야 한다", async () => {
-    // 일요일 23:00 KST (= 14:00 UTC) → 다음 월요일까지 D-1
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date("2026-03-08T14:00:00Z"));
+  it("LA 일요일 저녁에는 LA 월요일 08:00을 다음 주간 리포트로 안내한다", async () => {
+    // Given - LA 2026-10-25(일) 18:00, 서울은 이미 월요일 10:00
+    const { useCase } = setup("2026-10-26T01:00:00Z");
 
-    const result = await useCase.execute("user-123", tz);
+    // When
+    const status = await useCase.execute({ userId: USER_ID, timezone: "America/Los_Angeles" });
 
-    expect(result.daysUntilWeekly).toBe(1);
-
-    vi.useRealTimers();
+    // Then
+    expect(status.nextWeeklyAt.toString()).toBe("2026-10-26T15:00:00Z");
+    expect(status.daysUntilWeekly).toBe(1);
+    expect(status.nextMonthlyAt.toString()).toBe("2026-11-01T16:00:00Z");
+    expect(status.daysUntilMonthly).toBe(7);
   });
 
-  it("최신 리포트를 반환하고 findLatest를 2회 호출해야 한다", async () => {
-    mockRepository.findLatest.mockImplementation(async (_userId: string, type: ReportType) =>
-      type === "WEEKLY" ? makeReport("WEEKLY") : null,
-    );
+  it("서머타임이 끝난 뒤의 월요일 08:00은 PST 오프셋으로 계산한다", async () => {
+    // Given - LA 2026-11-01(일) 12:00 PST
+    const { useCase } = setup("2026-11-01T20:00:00Z");
 
-    const result = await useCase.execute("user-123", tz);
+    // When
+    const status = await useCase.execute({ userId: USER_ID, timezone: "America/Los_Angeles" });
 
-    expect(result.nextWeeklyAt).toBeDefined();
-    expect(result.nextMonthlyAt).toBeDefined();
-    expect(result.daysUntilWeekly).toBeGreaterThanOrEqual(0);
-    expect(result.daysUntilMonthly).toBeGreaterThanOrEqual(0);
-    expect(result.latestWeekly).not.toBeNull();
-    expect(result.latestMonthly).toBeNull();
-    expect(mockRepository.findLatest).toHaveBeenCalledTimes(2);
+    // Then
+    expect(status.nextWeeklyAt.toString()).toBe("2026-11-02T16:00:00Z");
+    expect(status.nextMonthlyAt.toString()).toBe("2026-12-01T16:00:00Z");
   });
 
-  describe("사용자 시간대 기준 예정 시각", () => {
-    afterEach(() => {
-      vi.useRealTimers();
-    });
+  it("X-Timezone이 없으면 저장된 사용자 시간대를 쓴다", async () => {
+    // Given - 서울 2026-10-26(월) 07:00
+    const { useCase, localePreferenceReader } = setup("2026-10-25T22:00:00Z");
+    localePreferenceReader.preferences.set(USER_ID, { timezone: "Asia/Seoul", locale: "ko" });
 
-    it("LA 일요일 저녁에는 LA 월요일 08:00을 다음 주간 리포트로 안내한다", async () => {
-      // Given - LA 2026-10-25(일) 18:00, 서울은 이미 월요일 10:00
-      vi.useFakeTimers({ toFake: ["Date"], now: new Date("2026-10-26T01:00:00Z") });
-      // When
-      const result = await useCase.execute("user-123", "America/Los_Angeles");
-      // Then
-      expect(result.nextWeeklyAt).toBe("2026-10-26T15:00:00.000Z");
-      expect(result.daysUntilWeekly).toBe(1);
-      expect(result.nextMonthlyAt).toBe("2026-11-01T16:00:00.000Z");
-      expect(result.daysUntilMonthly).toBe(7);
-    });
+    // When
+    const status = await useCase.execute({ userId: USER_ID, timezone: undefined });
 
-    it("서머타임이 끝난 뒤의 월요일 08:00은 PST 오프셋으로 계산한다", async () => {
-      // Given - LA 2026-11-01(일) 12:00 PST
-      vi.useFakeTimers({ toFake: ["Date"], now: new Date("2026-11-01T20:00:00Z") });
-      // When
-      const result = await useCase.execute("user-123", "America/Los_Angeles");
-      // Then
-      expect(result.nextWeeklyAt).toBe("2026-11-02T16:00:00.000Z");
-      expect(result.nextMonthlyAt).toBe("2026-12-01T16:00:00.000Z");
-    });
-
-    it("X-Timezone이 없으면 저장된 사용자 시간대를 쓴다", async () => {
-      // Given - 서울 2026-10-26(월) 07:00
-      vi.useFakeTimers({ toFake: ["Date"], now: new Date("2026-10-25T22:00:00Z") });
-      mockPreference.read.mockResolvedValue({ timezone: "Asia/Seoul", locale: "ko" });
-      // When
-      const result = await useCase.execute("user-123", undefined);
-      // Then
-      expect(result.nextWeeklyAt).toBe("2026-10-25T23:00:00.000Z");
-      expect(result.daysUntilWeekly).toBe(0);
-    });
+    // Then
+    expect(status.nextWeeklyAt.toString()).toBe("2026-10-25T23:00:00Z");
+    expect(status.daysUntilWeekly).toBe(0);
   });
 });

@@ -1,69 +1,21 @@
-import type { DayOfWeek } from "@aido/api/vocabulary";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import type { Suggestion, SuggestionStatus } from "../../domain/suggestion.aggregate.js";
-import type {
-  CategoryCompletionRate,
-  DayCompletionRate,
-  SuggestionHistoryItem,
-  TimeCompletionRate,
-  TodoSummaryForAnalysis,
-  UserStreakInfo,
-} from "../../domain/suggestion.constants.js";
+import type { SuggestionId } from "../../domain/suggestion-id.vo.js";
+import type { Suggestion } from "../../domain/suggestion.aggregate.js";
 
-export const SUGGESTION_REPOSITORY = Symbol("SUGGESTION_REPOSITORY");
-
-/** 제안 일괄 생성 입력 — daysOfWeek/matchedTodos의 Json 직렬화는 어댑터 경계가 담당한다 */
-export interface CreateSuggestionInput {
-  userId: string;
-  title: string;
-  daysOfWeek: DayOfWeek[];
-  scheduledTime: string | null;
-  confidence: number;
-  reason: string;
-  matchedTodos: string[];
-  expiresAt: Date;
-  suggestedCategoryId: number | null;
-}
-
-/**
- * AI 반복 제안 저장소 포트.
- *
- * RecurringSuggestion 애그리게잇의 쓰기·단건 조회는 Suggestion 도메인 엔티티를,
- * 분석용 통계 읽기는 도메인 읽기 프로젝션을 반환한다. 트랜잭션은 CLS로 전파된다.
- */
-export interface SuggestionRepositoryPort {
-  findPendingByUserId(userId: string): Promise<Suggestion[]>;
-  findByIdAndUserId(id: number, userId: string): Promise<Suggestion | null>;
-  updateStatus(id: number, status: SuggestionStatus): Promise<Suggestion>;
-  createMany(data: CreateSuggestionInput[]): Promise<{ count: number }>;
-  deletePending(userId: string): Promise<{ count: number }>;
-  deleteExpired(userId: string): Promise<{ count: number }>;
-
-  // ── 분석용 통계 읽기 프로젝션 ──────────────────────────────
-  findDayCompletionRates(
-    userId: string,
-    from: Date,
-    to: Date,
-    timezone: string,
-  ): Promise<DayCompletionRate[]>;
-  findTimeCompletionRates(
-    userId: string,
-    from: Date,
-    to: Date,
-    timezone: string,
-  ): Promise<TimeCompletionRate>;
-  findCategoryCompletionRates(
-    userId: string,
-    from: Date,
-    to: Date,
-    timezone?: string,
-  ): Promise<CategoryCompletionRate[]>;
-  findUserStreakInfo(userId: string): Promise<UserStreakInfo | null>;
-  findRecentTodos(
-    userId: string,
-    from: Date,
-    to: Date,
-    timezone: string,
-  ): Promise<TodoSummaryForAnalysis[]>;
-  findRecentResponded(userId: string, since: Date): Promise<SuggestionHistoryItem[]>;
+/** RecurringSuggestion 저장소. 트랜잭션은 CLS로 전파된다. */
+export abstract class SuggestionRepositoryPort {
+  abstract nextIds(count: number): Promise<SuggestionId[]>;
+  abstract saveMany(suggestions: readonly Suggestion[]): Promise<void>;
+  abstract save(suggestion: Suggestion): Promise<void>;
+  abstract findByIdAndUserId(
+    suggestionId: SuggestionId,
+    userId: UserId,
+  ): Promise<Suggestion | null>;
+  /** now에 만료되지 않은 대기 제안. 만든 시각 내림차순 */
+  abstract listPendingByUserId(userId: UserId, now: Temporal.Instant): Promise<Suggestion[]>;
+  /** 지운 수 */
+  abstract deletePendingByUserId(userId: UserId): Promise<number>;
+  /** now 전에 만료된 제안을 상태와 상관없이 지운다. 지운 수 */
+  abstract deleteExpiredByUserId(userId: UserId, now: Temporal.Instant): Promise<number>;
 }

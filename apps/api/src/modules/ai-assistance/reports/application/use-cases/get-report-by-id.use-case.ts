@@ -1,14 +1,18 @@
-import type { AiReport as AiReportDto } from "@aido/api";
-import { ErrorCode } from "@aido/api/errors";
-
 import {
   assertEntitled,
   type EntitlementReaderPort,
 } from "#api/modules/access/access-entitlement.public";
-import { ApplicationException } from "#api/shared/application/application.exception";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import { type AiReportRepositoryPort } from "../ports/ai-report.repository.port.js";
-import { toAiReportView } from "../read-models/ai-report.read-model.js";
+import { AiReportId } from "../../domain/ai-report-id.vo.js";
+import type { AiReport } from "../../domain/ai-report.aggregate.js";
+import type { AiReportRepositoryPort } from "../ports/ai-report.repository.port.js";
+import { aiReportNotFound } from "../reports.errors.js";
+
+export interface GetReportByIdQuery {
+  readonly userId: string;
+  readonly reportId: number;
+}
 
 interface GetReportByIdDependencies {
   readonly aiReportRepository: Pick<AiReportRepositoryPort, "findByIdAndUserId">;
@@ -22,15 +26,17 @@ export class GetReportByIdUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(userId: string, id: number): Promise<AiReportDto> {
-    await assertEntitled(this.#dependencies.entitlementReader, userId, "AI_REPORT");
+  async execute(query: GetReportByIdQuery): Promise<AiReport> {
+    await assertEntitled(this.#dependencies.entitlementReader, query.userId, "AI_REPORT");
 
-    const report = await this.#dependencies.aiReportRepository.findByIdAndUserId(id, userId);
-
+    const reportId = AiReportId.reconstitute(query.reportId);
+    const report = await this.#dependencies.aiReportRepository.findByIdAndUserId(
+      reportId,
+      UserId.reconstitute(query.userId),
+    );
     if (report == null) {
-      throw new ApplicationException(ErrorCode.AI_1304, { reportId: id });
+      throw aiReportNotFound(reportId);
     }
-
-    return toAiReportView(report);
+    return report;
   }
 }

@@ -1,7 +1,6 @@
-import type { ReportStats } from "@aido/api";
+import type { ReportStats } from "../../domain/ai-report.constants.js";
 
-export const LATEST_REPORT_STATS_READER = Symbol("LATEST_REPORT_STATS_READER");
-
-export interface LatestReportStatsReaderPort {
-  findLatestWeekly(userId: string): Promise<ReportStats | null>;
+/** 반복 제안 문맥에 넣는 최신 주간 리포트 통계 */
+export abstract class LatestReportStatsReaderPort {
+  abstract findLatestWeekly(userId: string): Promise<ReportStats | null>;
 }

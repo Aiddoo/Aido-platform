@@ -1,24 +1,20 @@
 export { AiAssistanceParsingModule } from "./ai-assistance-parsing.module.js";
 export {
-  commitOrWarn,
-  settleChargedGeneration,
   type ChargedGeneration,
   type ChargedGenerationResult,
+  ChargedGenerationPort,
   type ChargeOutcome,
+} from "./application/ports/charged-generation.port.js";
+export { AiDataSharingConsentGuard } from "./presentation/http/guards/ai-data-sharing-consent.guard.js";
+// 옛 진입점. voice가 generation public·ChargedGenerationPort로 옮기면 지운다
+export {
+  commitOrWarn,
+  readFeatureQuotaOrNull,
+  settleChargedGeneration,
 } from "./infrastructure/adapters/quota-charged-generation.adapter.js";
 export {
+  fingerprintRequest,
+  resolveRequestLocale,
   USER_LOCALE_PREFERENCE_READER,
   type UserLocalePreferenceReaderPort,
-} from "../generation/application/ports/user-locale-preference.reader.port.js";
-export { readFeatureQuotaOrNull } from "../generation/application/ai-generation-failure.mapper.js";
-export { fingerprintRequest } from "../shared/domain/request-fingerprint.domain-service.js";
-export { resolveRequestLocale } from "../generation/application/request-locale.reader.js";
-export {
-  AI_DATA_SHARING_CONSENT_DECISION_READER,
-  type AiDataSharingConsentDecisionReaderPort,
-} from "../generation/application/ports/ai-data-sharing-consent.reader.port.js";
-export {
-  AI_CLIENT_APP_VERSION_READER,
-  type AiClientAppVersionReaderPort,
-} from "../generation/application/ports/client-app-version.reader.port.js";
-export { AiDataSharingConsentGuard } from "./presentation/http/guards/ai-data-sharing-consent.guard.js";
+} from "../generation/ai-assistance-generation.public.js";

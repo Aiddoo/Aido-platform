@@ -1,6 +1,6 @@
-import { mock } from "vitest-mock-extended";
-
-import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
+import { QuotaChargedGenerationAdapter } from "#api/modules/ai-assistance/parsing/infrastructure/adapters/quota-charged-generation.adapter";
+import { createSpyApplicationLogger } from "#test/doubles/ai-assistance/spy-application-logger";
+import { DateClock } from "#test/doubles/platform/date-clock";
 import { FakeAiGenerator } from "#test/mocks/fake-ai.generator";
 import { StubAiDataSharingConsent } from "#test/mocks/ports/ai-assistance.stub";
 import {
@@ -17,10 +17,13 @@ export function createAiParsingFixture(input: AccessUserInput = {}) {
   const ledgerFixture = createQuotaLedgerFixture(input);
   const categoryReader = new StubAiUserCategoryReader();
   categoryReader.categories.set(ledgerFixture.userId, [{ id: 7, name: "업무" }]);
+  const logger = createSpyApplicationLogger();
   return {
     ...ledgerFixture,
     quota: ledgerFixture.ledger,
-    logger: mock<ApplicationLoggerPort>(),
+    chargedGeneration: new QuotaChargedGenerationAdapter({ quota: ledgerFixture.ledger, logger }),
+    clock: new DateClock(),
+    logger,
     categoryReader,
     upcomingTodoReader: new StubUpcomingTodoReader(),
     generator: new FakeAiGenerator(),

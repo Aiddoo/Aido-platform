@@ -7,10 +7,11 @@ import { TypedConfigService } from "#api/platform/config/services/config.service
 
 import type { AiFailureKind } from "../../application/ai-generation.errors.js";
 import type { AiGenerationPolicy } from "./ai-generation-policy.constants.js";
-import type {
+import {
   AiProviderAdapter,
-  AiProviderModel,
-  AiProviderOptions,
+  type AiProviderDataHandling,
+  type AiProviderModel,
+  type AiProviderOptions,
 } from "./ai-provider.adapter.js";
 import { classifyAiSdkError, type ProviderErrorBody } from "./ai-sdk-failure.mapper.js";
 
@@ -38,11 +39,17 @@ function hasRefusal(responseBody: string | undefined): boolean {
 
 /** OpenAI(Responses API). 3순위. 크레딧 소진도 429로 오므로 code insufficient_quota로 구분한다. */
 @Injectable()
-export class OpenAiProviderAdapter implements AiProviderAdapter {
+export class OpenAiProviderAdapter extends AiProviderAdapter {
   readonly id = "openai";
+  readonly dataHandling: AiProviderDataHandling = {
+    trainsOnUserData: false,
+    disablesResponseStorage: true,
+    basis: "OpenAI API 기본값: API 입력·출력을 모델 학습에 쓰지 않는다",
+  };
   readonly #model: AiProviderModel | null;
 
   constructor(config: TypedConfigService) {
+    super();
     const { apiKey, model } = config.ai.providers.openai;
     this.#model =
       apiKey == null ? null : { id: `${this.id}:${model}`, model: createOpenAI({ apiKey })(model) };
@@ -61,8 +68,8 @@ export class OpenAiProviderAdapter implements AiProviderAdapter {
           .with("low", () => "low" as const)
           .with("medium", () => "medium" as const)
           .exhaustive(),
-        // 사용자 글자를 OpenAI 응답 저장소에 남기지 않는다.
-        store: false,
+        // 사용자 글자를 OpenAI 응답 저장소에 남기지 않는다(dataHandling 선언과 같은 값).
+        store: !this.dataHandling.disablesResponseStorage,
         // 출력 schema는 업체 공통 규칙(모든 칸 required, 없을 수 있으면 null)을 따르므로 strict로 강제한다.
         strictJsonSchema: true,
       } satisfies OpenAILanguageModelResponsesOptions,

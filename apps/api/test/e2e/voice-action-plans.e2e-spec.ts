@@ -9,7 +9,7 @@ import { PLAN_CATALOG } from "@aido/api/vocabulary";
 import { eq } from "drizzle-orm";
 import request from "supertest";
 
-import { AI_GENERATOR } from "#api/modules/ai-assistance/generation/ai-assistance-generation.public";
+import { AiGeneratorPort } from "#api/modules/ai-assistance/generation/ai-assistance-generation.public";
 import { VOICE_NOTE_THROTTLE } from "#api/modules/voice/voice-notes/presentation/http/v1/voice-note.controller";
 import { user } from "#api/platform/database/schema/index";
 import { digestDraft, memoActionDraft, todoActionDraft } from "#test/fixtures/voice-plan.fixture";
@@ -27,7 +27,8 @@ describe("빠른 계획·녹음 정리·계획 적용 E2E", () => {
   beforeAll(async () => {
     aiGenerator = new FakeAiGenerator();
     ctx = await createE2eApp({
-      customizeBuilder: (builder) => builder.overrideProvider(AI_GENERATOR).useValue(aiGenerator),
+      customizeBuilder: (builder) =>
+        builder.overrideProvider(AiGeneratorPort).useValue(aiGenerator),
       additionalResetters: [() => aiGenerator.clear()],
     });
   });
@@ -418,7 +419,8 @@ describe("녹음 정리 요청 제한 E2E (실제 throttler, 직렬 실행)", ()
     aiGenerator = new FakeAiGenerator();
     ctx = await createE2eApp({
       withRealThrottler: true,
-      customizeBuilder: (builder) => builder.overrideProvider(AI_GENERATOR).useValue(aiGenerator),
+      customizeBuilder: (builder) =>
+        builder.overrideProvider(AiGeneratorPort).useValue(aiGenerator),
     });
   }, 60_000);
 

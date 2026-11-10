@@ -1,53 +1,23 @@
-import {
-  AI_SUGGESTION_LIMITS,
-  DAY_OF_WEEK_ORDER,
-  type DayOfWeek,
-  dayIndexToDayOfWeek,
-} from "@aido/api/vocabulary";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
-import dayjs from "dayjs";
-import { and, eq, lt } from "drizzle-orm";
-import { compact, countBy, groupBy, sumBy } from "es-toolkit";
+import { and, eq, lt, sql } from "drizzle-orm";
 
-import { requireRecord } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
-import { recurringSuggestion } from "#api/platform/database/schema/index";
-import { now } from "#api/shared/domain/date/utils/core";
-import { toDateString } from "#api/shared/domain/date/utils/format";
-import { startOfDayInTimezone, toLocalTimeString } from "#api/shared/domain/date/utils/timezone";
+import { recurringSuggestion } from "#api/platform/database/schema/ai-assistance.schema";
+import { nextSequenceValues } from "#api/platform/database/sequence";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import type {
-  SuggestionRepositoryPort,
-  CreateSuggestionInput,
-} from "../../application/ports/suggestion.repository.port.js";
-import { Suggestion, type SuggestionStatus } from "../../domain/suggestion.aggregate.js";
-import type {
-  CategoryCompletionRate,
-  DayCompletionRate,
-  SuggestionHistoryItem,
-  TimeCompletionRate,
-  TodoSummaryForAnalysis,
-  UserStreakInfo,
-} from "../../domain/suggestion.constants.js";
+import { SuggestionRepositoryPort } from "../../application/ports/suggestion.repository.port.js";
+import { SuggestionId } from "../../domain/suggestion-id.vo.js";
+import type { Suggestion } from "../../domain/suggestion.aggregate.js";
+import { toSuggestion, toSuggestionRow } from "./suggestion-row.mapper.js";
 
-type RecurringSuggestionRow = typeof recurringSuggestion.$inferSelect;
-
-function localDay(value: Date, timezone: string): Date {
-  return startOfDayInTimezone(value, timezone);
-}
-
-/**
- * SuggestionRepositoryPort의 Drizzle 어댑터.
- *
- * RecurringSuggestion의 쓰기·단건 조회는 Suggestion 애그리게잇으로 재구성하고,
- * 분석용 통계 읽기는 도메인 프로젝션으로 반환한다. 트랜잭션은 CLS(TransactionHost.tx)로 전파된다.
- */
 @Injectable()
-export class DrizzleSuggestionRepository implements SuggestionRepositoryPort {
+export class DrizzleSuggestionRepository extends SuggestionRepositoryPort {
   readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
 
   constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>) {
+    super();
     this.#txHost = txHost;
   }
 
@@ -55,237 +25,70 @@ export class DrizzleSuggestionRepository implements SuggestionRepositoryPort {
     return this.#txHost.tx;
   }
 
-  static toEntity(row: RecurringSuggestionRow): Suggestion {
-    return Suggestion.reconstitute({
-      id: row.id,
-      userId: row.userId,
-      title: row.title,
-      daysOfWeek: row.daysOfWeek,
-      scheduledTime: row.scheduledTime,
-      confidence: row.confidence,
-      reason: row.reason,
-      matchedTodos: row.matchedTodos,
-      suggestedCategoryId: row.suggestedCategoryId,
-      status: row.status,
-      expiresAt: row.expiresAt,
-      createdAt: row.createdAt,
-      updatedAt: row.updatedAt,
-    });
+  async nextIds(count: number): Promise<SuggestionId[]> {
+    const ids = await nextSequenceValues(this.#db, recurringSuggestion.id, count);
+    return ids.map((id) => SuggestionId.reconstitute(id));
   }
 
-  async findPendingByUserId(userId: string): Promise<Suggestion[]> {
-    const rows = await this.#db.query.recurringSuggestion.findMany({
-      where: { userId, status: "PENDING", expiresAt: { gt: now() } },
-      orderBy: { createdAt: "desc" },
-    });
-    return rows.map((row) => DrizzleSuggestionRepository.toEntity(row));
-  }
-
-  async findByIdAndUserId(id: number, userId: string): Promise<Suggestion | null> {
-    const row = await this.#db.query.recurringSuggestion.findFirst({ where: { id, userId } });
-    return row == null ? null : DrizzleSuggestionRepository.toEntity(row);
-  }
-
-  async updateStatus(id: number, status: SuggestionStatus): Promise<Suggestion> {
-    const [row] = await this.#db
-      .update(recurringSuggestion)
-      .set({ status })
-      .where(eq(recurringSuggestion.id, id))
-      .returning();
-    return DrizzleSuggestionRepository.toEntity(requireRecord(row));
-  }
-
-  async createMany(data: CreateSuggestionInput[]): Promise<{ count: number }> {
-    if (data.length === 0) {
-      return { count: 0 };
+  async saveMany(suggestions: readonly Suggestion[]): Promise<void> {
+    if (suggestions.length === 0) {
+      return;
     }
-    const created = await this.#db
+    await this.#db
       .insert(recurringSuggestion)
-      .values(data)
-      .returning({ id: recurringSuggestion.id });
-    return { count: created.length };
+      .values(suggestions.map(toSuggestionRow))
+      .onConflictDoUpdate({
+        target: recurringSuggestion.id,
+        set: {
+          status: sql`excluded."status"`,
+          updatedAt: sql`excluded."updatedAt"`,
+        },
+      });
   }
 
-  async deletePending(userId: string): Promise<{ count: number }> {
-    const deleted = await this.#db
-      .delete(recurringSuggestion)
-      .where(and(eq(recurringSuggestion.userId, userId), eq(recurringSuggestion.status, "PENDING")))
-      .returning({ id: recurringSuggestion.id });
-    return { count: deleted.length };
+  async save(suggestion: Suggestion): Promise<void> {
+    const row = toSuggestionRow(suggestion);
+    await this.#db
+      .insert(recurringSuggestion)
+      .values(row)
+      .onConflictDoUpdate({ target: recurringSuggestion.id, set: row });
   }
 
-  async deleteExpired(userId: string): Promise<{ count: number }> {
-    const deleted = await this.#db
-      .delete(recurringSuggestion)
-      .where(and(eq(recurringSuggestion.userId, userId), lt(recurringSuggestion.expiresAt, now())))
-      .returning({ id: recurringSuggestion.id });
-    return { count: deleted.length };
-  }
-
-  async findDayCompletionRates(
-    userId: string,
-    from: Date,
-    to: Date,
-    timezone: string,
-  ): Promise<DayCompletionRate[]> {
-    const completions = await this.#db.query.dailyCompletion.findMany({
-      columns: { date: true, totalTodos: true, completedTodos: true },
-      where: {
-        userId,
-        date: { gte: localDay(from, timezone), lte: localDay(to, timezone) },
-      },
+  async findByIdAndUserId(suggestionId: SuggestionId, userId: UserId): Promise<Suggestion | null> {
+    const row = await this.#db.query.recurringSuggestion.findFirst({
+      where: { id: suggestionId.value, userId: userId.value },
     });
-
-    const completionsByDay: Partial<Record<DayOfWeek, typeof completions>> = groupBy(
-      completions,
-      (c) => dayIndexToDayOfWeek(dayjs.utc(c.date).day()),
-    );
-
-    return DAY_OF_WEEK_ORDER.map((day) => {
-      const dayCompletions = completionsByDay[day] ?? [];
-      return {
-        day,
-        total: sumBy(dayCompletions, (c) => c.totalTodos),
-        completed: sumBy(dayCompletions, (c) => c.completedTodos),
-      };
-    });
+    return row == null ? null : toSuggestion(row);
   }
 
-  async findTimeCompletionRates(
-    userId: string,
-    from: Date,
-    to: Date,
-    timezone: string,
-  ): Promise<TimeCompletionRate> {
-    const todos = await this.#db.query.todo.findMany({
-      columns: { completedAt: true },
-      where: {
-        userId,
-        completed: true,
-        completedAt: { isNotNull: true },
-        startDate: { gte: localDay(from, timezone), lte: localDay(to, timezone) },
-      },
-    });
-
-    const { morning = 0, afternoon = 0 } = countBy(
-      compact(todos.map((t) => t.completedAt)),
-      (completedAt) => (dayjs(completedAt).tz(timezone).hour() < 12 ? "morning" : "afternoon"),
-    );
-
-    const total = morning + afternoon;
-    return {
-      morning: {
-        count: morning,
-        rate: total > 0 ? Math.round((morning / total) * 100) : 0,
-      },
-      afternoon: {
-        count: afternoon,
-        rate: total > 0 ? Math.round((afternoon / total) * 100) : 0,
-      },
-    };
-  }
-
-  async findCategoryCompletionRates(
-    userId: string,
-    from: Date,
-    to: Date,
-    timezone = "UTC",
-  ): Promise<CategoryCompletionRate[]> {
-    const todos = await this.#db.query.todo.findMany({
-      columns: { completed: true },
-      with: { category: { columns: { name: true } } },
-      where: {
-        userId,
-        startDate: { gte: localDay(from, timezone), lte: localDay(to, timezone) },
-      },
-    });
-
-    const categoryMap = new Map<string, { total: number; completed: number }>();
-
-    for (const t of todos) {
-      const name = requireRecord(t.category).name;
-      const entry = categoryMap.get(name) ?? { total: 0, completed: 0 };
-      entry.total++;
-      if (t.completed) {
-        entry.completed++;
-      }
-      categoryMap.set(name, entry);
-    }
-
-    return [...categoryMap.entries()]
-      .map(([name, stats]) => ({
-        name,
-        total: stats.total,
-        completed: stats.completed,
-        rate: stats.total > 0 ? Math.round((stats.completed / stats.total) * 100) : 0,
-      }))
-      .sort((a, b) => b.total - a.total);
-  }
-
-  async findUserStreakInfo(userId: string): Promise<UserStreakInfo | null> {
-    const pref = await this.#db.query.userPreference.findFirst({
-      columns: { currentStreak: true, longestStreak: true },
-      where: { userId },
-    });
-
-    if (pref == null) {
-      return null;
-    }
-
-    return {
-      currentStreak: pref.currentStreak,
-      longestStreak: pref.longestStreak,
-    };
-  }
-
-  async findRecentTodos(
-    userId: string,
-    from: Date,
-    to: Date,
-    timezone: string,
-  ): Promise<TodoSummaryForAnalysis[]> {
-    const todos = await this.#db.query.todo.findMany({
-      columns: {
-        title: true,
-        startDate: true,
-        scheduledLocalTime: true,
-        scheduledTime: true,
-        categoryId: true,
-        completed: true,
-      },
-      with: { category: { columns: { name: true } } },
-      where: {
-        userId,
-        seriesId: { isNull: true },
-        startDate: { gte: localDay(from, timezone), lte: localDay(to, timezone) },
-      },
-      // 최근 기록부터 상한까지만 읽고, 기존 소비 순서(날짜 오름차순)로 되돌린다.
-      orderBy: { startDate: "desc" },
-      limit: AI_SUGGESTION_LIMITS.MAX_ANALYSIS_TODOS,
-    });
-
-    return todos.toReversed().map((t) => ({
-      title: t.title,
-      startDate: toDateString(t.startDate),
-      scheduledTime:
-        t.scheduledTime == null
-          ? null
-          : (t.scheduledLocalTime ?? toLocalTimeString(t.scheduledTime, timezone)),
-      categoryId: t.categoryId,
-      completed: t.completed,
-      categoryName: requireRecord(t.category).name,
-    }));
-  }
-
-  async findRecentResponded(userId: string, since: Date): Promise<SuggestionHistoryItem[]> {
+  async listPendingByUserId(userId: UserId, now: Temporal.Instant): Promise<Suggestion[]> {
     const rows = await this.#db.query.recurringSuggestion.findMany({
-      columns: { title: true, status: true },
-      where: { userId, status: { in: ["ACCEPTED", "DISMISSED"] }, updatedAt: { gte: since } },
+      where: { userId: userId.value, status: "PENDING", expiresAt: { gt: now } },
+      orderBy: { createdAt: "desc", id: "desc" },
     });
+    return rows.map(toSuggestion);
+  }
 
-    return rows.map((row) => ({
-      title: row.title,
-      status: row.status === "ACCEPTED" ? "ACCEPTED" : "DISMISSED",
-    }));
+  async deletePendingByUserId(userId: UserId): Promise<number> {
+    const deleted = await this.#db
+      .delete(recurringSuggestion)
+      .where(
+        and(
+          eq(recurringSuggestion.userId, userId.value),
+          eq(recurringSuggestion.status, "PENDING"),
+        ),
+      )
+      .returning({ id: recurringSuggestion.id });
+    return deleted.length;
+  }
+
+  async deleteExpiredByUserId(userId: UserId, now: Temporal.Instant): Promise<number> {
+    const deleted = await this.#db
+      .delete(recurringSuggestion)
+      .where(
+        and(eq(recurringSuggestion.userId, userId.value), lt(recurringSuggestion.expiresAt, now)),
+      )
+      .returning({ id: recurringSuggestion.id });
+    return deleted.length;
   }
 }

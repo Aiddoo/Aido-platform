@@ -1,8 +1,9 @@
 import { ErrorCode } from "@aido/api/errors";
 import { ACTION_PLAN_LIMITS, PLAN_CATALOG } from "@aido/api/vocabulary";
-import { mock } from "vitest-mock-extended";
 
-import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
+import { createSpyApplicationLogger } from "#test/doubles/ai-assistance/spy-application-logger";
+import { StubAiDataSharingConsentReader } from "#test/doubles/ai-assistance/stub-ai-data-sharing-consent.reader";
+import { DateClock } from "#test/doubles/platform/date-clock";
 import { digestDraft, memoActionDraft, todoActionDraft } from "#test/fixtures/voice-plan.fixture";
 import { createAiGenerationError, FakeAiGenerator } from "#test/mocks/fake-ai.generator";
 
@@ -14,12 +15,8 @@ import { quickPlanPrompt } from "../../application/messages/quick-plan-prompt.me
 import { voiceNoteDigestPrompt } from "../../application/messages/voice-note-digest-prompt.messages.js";
 import { AiActionPlanGeneratorAdapter } from "./ai-action-plan-generator.adapter.js";
 
-const consentReader = {
-  findAiDataSharingConsent: async () => ({
-    decision: "AGREED" as const,
-    agreedVersion: "2026-11-04" as const,
-  }),
-};
+const consentReader = new StubAiDataSharingConsentReader();
+consentReader.decision = "AGREED";
 
 const planningInput = {
   userId: "user-1",
@@ -42,11 +39,16 @@ const fullUpcomingTodos = Array.from({ length: PLANNING_UPCOMING_TODO_LIMIT }, (
 
 function setup() {
   const aiGenerator = new FakeAiGenerator();
-  const logger = mock<ApplicationLoggerPort>();
+  const logger = createSpyApplicationLogger();
   return {
     aiGenerator,
     logger,
-    generator: new AiActionPlanGeneratorAdapter({ generator: aiGenerator, consentReader, logger }),
+    generator: new AiActionPlanGeneratorAdapter({
+      generator: aiGenerator,
+      consentReader,
+      clock: new DateClock(),
+      logger,
+    }),
   };
 }
 

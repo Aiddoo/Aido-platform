@@ -19,6 +19,7 @@ import {
 import { GetReportByIdUseCase } from "../../../application/use-cases/get-report-by-id.use-case.js";
 import { GetReportStatusUseCase } from "../../../application/use-cases/get-report-status.use-case.js";
 import { ListReportsUseCase } from "../../../application/use-cases/list-reports.use-case.js";
+import { toAiReportResponse, toReportStatusResponse } from "./ai-report-response.mapper.js";
 import {
   AiReportIdParamDto,
   AiReportListResponseDto,
@@ -132,9 +133,12 @@ America/Los_Angeles 사용자는 같은 규칙을 LA 시각으로 적용합니�
     @CurrentUser() user: CurrentUserPayload,
     @Timezone({ preserveIfMissing: true }) tz: string | undefined,
   ): Promise<ReportStatusResponseDto> {
-    const status = await this.#getReportStatusUseCase.execute(user.userId, tz);
+    const status = await this.#getReportStatusUseCase.execute({
+      userId: user.userId,
+      timezone: tz,
+    });
 
-    return { status };
+    return { status: toReportStatusResponse(status) };
   }
 
   /**
@@ -169,12 +173,13 @@ GET /ai/reports?limit=20              → 주간+월간 합쳐서 최근 20개
     @CurrentUser() user: CurrentUserPayload,
     @Query({ schema: GetAiReportsQueryDto }) query: GetAiReportsQueryDto,
   ): Promise<AiReportListResponseDto> {
-    const reports = await this.#getReportsUseCase.execute(user.userId, {
+    const reports = await this.#getReportsUseCase.execute({
+      userId: user.userId,
       type: query.type,
       limit: query.limit,
     });
 
-    return { reports };
+    return { reports: reports.map(toAiReportResponse) };
   }
 
   /**
@@ -212,8 +217,11 @@ GET /ai/reports?limit=20              → 주간+월간 합쳐서 최근 20개
     @CurrentUser() user: CurrentUserPayload,
     @Param({ schema: AiReportIdParamDto }) params: AiReportIdParamDto,
   ): Promise<AiReportResponseDto> {
-    const report = await this.#getReportByIdUseCase.execute(user.userId, params.id);
+    const report = await this.#getReportByIdUseCase.execute({
+      userId: user.userId,
+      reportId: params.id,
+    });
 
-    return { report };
+    return { report: toAiReportResponse(report) };
   }
 }

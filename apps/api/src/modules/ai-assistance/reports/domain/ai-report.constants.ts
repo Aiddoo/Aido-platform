@@ -1,4 +1,4 @@
-import type { DayOfWeek } from "@aido/api/vocabulary";
+import type { AI_REPORT_TYPES, DayOfWeek } from "@aido/api/vocabulary";
 
 export interface ReportStats {
   readonly totalTodos: number;
@@ -25,10 +25,8 @@ export interface TimePatternItem {
   readonly count: number;
 }
 
-/**
- * 리포트 타입 — DB ReportType과 동일한 리터럴(도메인은 persistence 스키마를 참조하지 않는다)
- */
-export type ReportType = "WEEKLY" | "MONTHLY";
+/** 리포트 타입. DB ReportType enum과 같은 vocabulary 튜플에서 유도한다 */
+export type ReportType = (typeof AI_REPORT_TYPES)[number];
 
 /**
  * 집계된 리포트 데이터
@@ -64,7 +62,9 @@ export interface AggregateParams {
  * 저장된 요약·팁의 출처. AI 실패로 저장한 폴백, 활동 없음 템플릿, 사용자가 AI 데이터 처리를
  * 거부해 AI 없이 만든 요약을 구분해 재생성·분석에 쓴다.
  */
-export type ReportContentSource = "AI" | "FALLBACK" | "TEMPLATE" | "NO_AI_CONSENT";
+export const REPORT_CONTENT_SOURCES = ["AI", "FALLBACK", "TEMPLATE", "NO_AI_CONSENT"] as const;
+
+export type ReportContentSource = (typeof REPORT_CONTENT_SOURCES)[number];
 
 /**
  * AI가 생성한 리포트 콘텐츠

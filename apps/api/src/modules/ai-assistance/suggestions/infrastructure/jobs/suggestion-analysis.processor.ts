@@ -1,23 +1,21 @@
-import { TransactionHost } from "@nestjs-cls/transactional";
-import { Inject, Injectable, Logger, type OnModuleInit, Optional } from "@nestjs/common";
+import { Inject, Injectable, Logger, type OnModuleInit } from "@nestjs/common";
 
 import {
   createAiSuggestionNotificationMessage,
-  NotificationPublisher,
+  PublishNotificationUseCase,
 } from "#api/modules/notification/notification-delivery.public";
-import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
-import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
-import { toSupportedLocale } from "#api/shared/domain/locale";
+import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
 
+import { UserLocalePreferenceReaderPort } from "../../../generation/application/ports/user-locale-preference.reader.port.js";
 import { AiJobLogEvent } from "../../../reports/infrastructure/jobs/ai-job.log-events.js";
 import { AnalyzeAndCreateSuggestionsUseCase } from "../../application/use-cases/analyze-and-create-suggestions.use-case.js";
-import type { SuggestionDispatcher } from "./ai-suggestion.queue.js";
 import {
   AI_SUGGESTION_QUEUE,
-  AI_SUGGESTION_WORKER_POLICY,
+  type AiSuggestionAnalyzeData,
+  type AiSuggestionRuntimeJob,
   AiSuggestionJobName,
-  AiSuggestionRuntimeJobSchema,
 } from "./ai-suggestion.queue.js";
+import { SuggestionAnalysisScheduler } from "./suggestion-analysis.scheduler.js";
 
 /** AI 제안 푸시의 카피 성과를 이전 문구와 분리한다. */
 const AI_SUGGESTION_NOTIFICATION_CAMPAIGN_KEY = "ai_suggestion_v2";
@@ -26,99 +24,60 @@ const AI_SUGGESTION_NOTIFICATION_CAMPAIGN_KEY = "ai_suggestion_v2";
 export class SuggestionAnalysisProcessor implements OnModuleInit {
   readonly #logger = new Logger(SuggestionAnalysisProcessor.name);
 
-  #suggestionJob?: SuggestionDispatcher;
-  setSuggestionJob(job: SuggestionDispatcher) {
-    this.#suggestionJob = job;
-  }
-
   readonly #analyzeSuggestions: Pick<AnalyzeAndCreateSuggestionsUseCase, "execute">;
-  readonly #notificationPublisher: Pick<NotificationPublisher, "publish">;
-  readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
-  readonly #runtime: JobRuntimePort | undefined;
+  readonly #notificationPublisher: Pick<PublishNotificationUseCase, "publish">;
+  readonly #localePreferenceReader: Pick<UserLocalePreferenceReaderPort, "read">;
+  readonly #scheduler: Pick<SuggestionAnalysisScheduler, "dispatchAnalysis">;
+  readonly #jobQueue: JobQueuePort;
 
   constructor(
-    @Inject(AnalyzeAndCreateSuggestionsUseCase) analyzeSuggestions: Pick<
-      AnalyzeAndCreateSuggestionsUseCase,
-      "execute"
-    >,
-    @Inject(NotificationPublisher) notificationPublisher: Pick<NotificationPublisher, "publish">,
-    txHost: TransactionHost<DrizzleTransactionalAdapter>,
-    @Optional() @Inject(JOB_RUNTIME) runtime?: JobRuntimePort,
+    @Inject(AnalyzeAndCreateSuggestionsUseCase)
+    analyzeSuggestions: Pick<AnalyzeAndCreateSuggestionsUseCase, "execute">,
+    @Inject(PublishNotificationUseCase)
+    notificationPublisher: Pick<PublishNotificationUseCase, "publish">,
+    @Inject(UserLocalePreferenceReaderPort)
+    localePreferenceReader: Pick<UserLocalePreferenceReaderPort, "read">,
+    @Inject(SuggestionAnalysisScheduler)
+    scheduler: Pick<SuggestionAnalysisScheduler, "dispatchAnalysis">,
+    jobQueue: JobQueuePort,
   ) {
     this.#analyzeSuggestions = analyzeSuggestions;
     this.#notificationPublisher = notificationPublisher;
-    this.#txHost = txHost;
-    this.#runtime = runtime;
+    this.#localePreferenceReader = localePreferenceReader;
+    this.#scheduler = scheduler;
+    this.#jobQueue = jobQueue;
   }
 
   async onModuleInit(): Promise<void> {
-    if (this.#runtime == null) {
-      return;
-    }
-    await this.#runtime.work(
-      AI_SUGGESTION_QUEUE,
-      async (jobs) => {
-        for (const job of jobs) {
-          await this.process(job.data);
-        }
-      },
-      AI_SUGGESTION_WORKER_POLICY,
-    );
-  }
-
-  onStalled(jobId: string): void {
-    this.#logger.warn({ event: AiJobLogEvent.STALLED, queueName: AI_SUGGESTION_QUEUE, jobId });
-  }
-
-  onError(_error: Error): void {
-    this.#logger.error({
-      event: AiJobLogEvent.WORKER_FAILED,
-      queueName: AI_SUGGESTION_QUEUE,
-      errorType: "Error",
+    await this.#jobQueue.work(AI_SUGGESTION_QUEUE, async (jobs) => {
+      for (const job of jobs) {
+        await this.process(job.data);
+      }
     });
   }
 
-  onFailed(job: { readonly id?: string; readonly name?: string } | undefined, _error: Error) {
-    this.#logger.error({
-      event: AiJobLogEvent.FAILED,
-      queueName: AI_SUGGESTION_QUEUE,
-      jobId: job?.id,
-      errorType: "Error",
-    });
-  }
-
-  async process(untrustedJob: unknown): Promise<void> {
-    const parsedJob = AiSuggestionRuntimeJobSchema.safeParse(untrustedJob);
-    if (!parsedJob.success) {
-      this.#logger.warn({ event: AiJobLogEvent.INVALID, queueName: AI_SUGGESTION_QUEUE });
-      return;
-    }
-    const job = parsedJob.data;
+  async process(job: AiSuggestionRuntimeJob): Promise<void> {
     if (job.name === AiSuggestionJobName.DISPATCH) {
-      await this.#suggestionJob?.dispatchAnalysis();
+      await this.#scheduler.dispatchAnalysis();
       return;
     }
+    await this.#analyze(job.data);
+  }
 
-    const { userId, timezone, weatherGrid } = job.data;
-
-    this.#logger.debug({ event: AiJobLogEvent.STARTED, queueName: AI_SUGGESTION_QUEUE, userId });
+  async #analyze({ userId, timezone, weatherGrid }: AiSuggestionAnalyzeData): Promise<void> {
+    const queueName = AI_SUGGESTION_QUEUE.name;
+    this.#logger.debug({ event: AiJobLogEvent.STARTED, queueName, userId });
 
     // 제안 문구(AI 생성)와 푸시 알림이 같은 언어를 쓰도록 분석 전에 locale을 조회한다
-    const preference = await this.#txHost.tx.query.userPreference.findFirst({
-      columns: { locale: true },
-      where: { userId },
-    });
-    const locale = toSupportedLocale(preference?.locale);
-
-    const createdCount = await this.#analyzeSuggestions.execute(
+    const { locale } = await this.#localePreferenceReader.read(userId);
+    const createdCount = await this.#analyzeSuggestions.execute({
       userId,
       timezone,
       weatherGrid,
       locale,
-    );
-
+    });
     if (createdCount === 0) {
-      this.#logger.debug({ event: AiJobLogEvent.SKIPPED, queueName: AI_SUGGESTION_QUEUE, userId });
+      this.#logger.debug({ event: AiJobLogEvent.SKIPPED, queueName, userId });
       return;
     }
 
@@ -131,13 +90,10 @@ export class SuggestionAnalysisProcessor implements OnModuleInit {
       variantId: message.variantId,
       title: message.title,
       body: message.body,
+      copyKey: message.copyKey,
+      copyFacts: message.copyFacts,
     });
 
-    this.#logger.log({
-      event: AiJobLogEvent.COMPLETED,
-      queueName: AI_SUGGESTION_QUEUE,
-      userId,
-      createdCount,
-    });
+    this.#logger.log({ event: AiJobLogEvent.COMPLETED, queueName, userId, createdCount });
   }
 }

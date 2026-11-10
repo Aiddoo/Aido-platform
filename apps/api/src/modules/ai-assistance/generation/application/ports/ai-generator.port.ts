@@ -64,8 +64,6 @@ export type AiGenerationMeta = Omit<AiGenerationResult<unknown>, "output">;
  * 킬 스위치·예산·입력 상한을 먼저 확인하고, 설정 순서·동의 범위·회로 상태로 고른 업체를 차례로
  * 시도해 스키마에 맞는 출력을 만든다.
  */
-export interface AiGeneratorPort {
-  generate<T>(request: AiGenerationRequest<T>): Promise<AiGenerationResult<T>>;
+export abstract class AiGeneratorPort {
+  abstract generate<T>(request: AiGenerationRequest<T>): Promise<AiGenerationResult<T>>;
 }
-
-export const AI_GENERATOR = Symbol("AI_GENERATOR");

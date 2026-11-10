@@ -1,24 +1,25 @@
 import type { ParsedTodoData } from "@aido/api";
 
 import type { MeteredFeatureQuota, QuotaLedgerPort } from "#api/modules/access/access-quota.public";
+import type { AiDataSharingConsentReaderPort } from "#api/modules/identity/identity-settings.public";
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
-import { now } from "#api/shared/domain/date/utils/core";
+import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { SupportedLocale } from "#api/shared/domain/locale";
+import { instantToDate } from "#api/shared/domain/time/instant";
 
-import { describeParsingFailure } from "../../../generation/application/ai-generation-failure.mapper.js";
+import { describeGenerationFailure } from "../../../generation/application/ai-generation-failure.mapper.js";
 import {
   buildGenerationCompletedLog,
   buildGenerationFailedLog,
 } from "../../../generation/application/ai-generation.log-events.js";
 import { generateWithPrompt } from "../../../generation/application/messages/prompt-definition.messages.js";
-import type { AiDataSharingConsentDecisionReaderPort } from "../../../generation/application/ports/ai-data-sharing-consent.reader.port.js";
 import type { AiGeneratorPort } from "../../../generation/application/ports/ai-generator.port.js";
 import type { AiGenerationMeta } from "../../../generation/application/ports/ai-generator.port.js";
 import type { UserLocalePreferenceReaderPort } from "../../../generation/application/ports/user-locale-preference.reader.port.js";
 import { resolveRequestLocale } from "../../../generation/application/request-locale.reader.js";
-import { settleChargedGeneration } from "../../infrastructure/adapters/quota-charged-generation.adapter.js";
 import { parseTodoPrompt } from "../messages/parse-todo-prompt.messages.js";
+import type { ChargedGenerationPort } from "../ports/charged-generation.port.js";
 import { type UserCategoryReaderPort } from "../ports/user-category.reader.port.js";
 
 /** 공개 응답의 토큰 사용량 (사고 토큰은 로그에만 남긴다). */
@@ -79,9 +80,11 @@ type ResolvedParseTodoInput = Omit<ParseTodoCommand, "timezone" | "locale"> & {
  */
 interface ParseTodoDependencies {
   readonly generator: Pick<AiGeneratorPort, "generate">;
-  readonly consentReader: Pick<AiDataSharingConsentDecisionReaderPort, "findAiDataSharingConsent">;
+  readonly consentReader: Pick<AiDataSharingConsentReaderPort, "findAiDataSharingConsent">;
   readonly categoryReader: Pick<UserCategoryReaderPort, "findByUserId">;
-  readonly quota: Pick<QuotaLedgerPort, "reserve" | "commit" | "refund" | "read">;
+  readonly quota: Pick<QuotaLedgerPort, "reserve">;
+  readonly chargedGeneration: Pick<ChargedGenerationPort, "settle">;
+  readonly clock: ClockPort;
   readonly localePreferenceReader: Pick<UserLocalePreferenceReaderPort, "read">;
   readonly logger: Pick<ApplicationLoggerPort, "log" | "warn" | "error">;
 }
@@ -95,7 +98,7 @@ export class ParseTodoUseCase {
 
   async execute(input: ParseTodoCommand): Promise<ParseTodoResult> {
     const { userId } = input;
-    const startTime = Date.now();
+    const startTime = this.#dependencies.clock.now().epochMilliseconds;
 
     const { timezone, locale } = await resolveRequestLocale(
       this.#dependencies.localePreferenceReader,
@@ -109,7 +112,7 @@ export class ParseTodoUseCase {
       idempotencyKey: null,
       reason: "parse-todo",
     });
-    const { result, featureQuota } = await settleChargedGeneration(this.#dependencies, {
+    const { result, featureQuota } = await this.#dependencies.chargedGeneration.settle({
       reservation,
       userId,
       feature: "AI_PARSE",
@@ -128,7 +131,7 @@ export class ParseTodoUseCase {
   ): Promise<ChargedResult<Omit<ParseTodoResult, "featureQuota">>> {
     const { text, userId, timezone, categoryId, locale } = input;
     const definition = parseTodoPrompt;
-    const at = now();
+    const at = instantToDate(this.#dependencies.clock.now());
 
     // 사용자가 카테고리를 고른 요청은 목록을 보내지 않아 토큰을 아낀다.
     const userCategories =
@@ -140,8 +143,8 @@ export class ParseTodoUseCase {
       userId,
     } as const;
 
-    const { agreedVersion } =
-      await this.#dependencies.consentReader.findAiDataSharingConsent(userId);
+    const consent = await this.#dependencies.consentReader.findAiDataSharingConsent(userId);
+    const { agreedVersion } = consent.status();
     try {
       const { value, meta } = await generateWithPrompt(
         this.#dependencies.generator,
@@ -169,18 +172,22 @@ export class ParseTodoUseCase {
       return {
         result: {
           data: value.parsedTodo,
-          meta: toParseMeta(meta, definition.version, Date.now() - startTime),
+          meta: toParseMeta(
+            meta,
+            definition.version,
+            this.#dependencies.clock.now().epochMilliseconds - startTime,
+          ),
         },
         charge,
       };
     } catch (error) {
-      const failure = describeParsingFailure(error);
+      const failure = describeGenerationFailure(error);
       this.#dependencies.logger.error(
         buildGenerationFailedLog({
           ...logBase,
           outcome: "FAILED",
           ...failure,
-          latencyMs: Date.now() - startTime,
+          latencyMs: this.#dependencies.clock.now().epochMilliseconds - startTime,
           quotaCharged: false,
         }),
       );

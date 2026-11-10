@@ -1,32 +1,25 @@
-import { compareSemanticVersions } from "@aido/api";
-import { Inject, Injectable } from "@nestjs/common";
+import { compareSemanticVersions } from "@aido/api/vocabulary";
+import { Injectable } from "@nestjs/common";
 
-import {
-  USER_APP_VERSION_READER,
-  type UserAppVersionReaderPort,
-} from "#api/modules/identity/identity-user-access.public";
-import {
-  CLIENT_APP_VERSION_READER,
-  type ClientAppVersionReaderPort,
-} from "#api/modules/notification/notification-delivery.public";
+import { UserAppVersionReaderPort } from "#api/modules/identity/identity-user-access.public";
+import { ClientAppVersionReaderPort } from "#api/modules/notification/notification-delivery.public";
 
-import type { AiClientAppVersionReaderPort } from "../../application/ports/client-app-version.reader.port.js";
+import { AiClientAppVersionReaderPort } from "../../application/ports/client-app-version.reader.port.js";
 
 /**
  * 사용자가 쓰는 가장 높은 앱 버전. 푸시 토큰에 남은 기기별 버전과, 푸시 권한이 없어도 남는
  * 인증 요청의 마지막 앱 버전 중 높은 쪽을 고른다. 둘 다 없으면 null이다.
  */
 @Injectable()
-export class LatestClientAppVersionAdapter implements AiClientAppVersionReaderPort {
+export class LatestClientAppVersionAdapter extends AiClientAppVersionReaderPort {
   readonly #pushDeviceVersions: Pick<ClientAppVersionReaderPort, "findLatestAppVersion">;
   readonly #requestVersions: Pick<UserAppVersionReaderPort, "findLastSeenAppVersion">;
 
   constructor(
-    @Inject(CLIENT_APP_VERSION_READER)
-    pushDeviceVersions: Pick<ClientAppVersionReaderPort, "findLatestAppVersion">,
-    @Inject(USER_APP_VERSION_READER)
-    requestVersions: Pick<UserAppVersionReaderPort, "findLastSeenAppVersion">,
+    pushDeviceVersions: ClientAppVersionReaderPort,
+    requestVersions: UserAppVersionReaderPort,
   ) {
+    super();
     this.#pushDeviceVersions = pushDeviceVersions;
     this.#requestVersions = requestVersions;
   }

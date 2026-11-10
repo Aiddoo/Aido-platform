@@ -6,7 +6,10 @@ import { generateText, Output } from "ai";
 import { z } from "zod";
 
 import type { EntitlementReaderPort } from "#api/modules/access/access-entitlement.public";
-import type { AiProviderAdapter } from "#api/modules/ai-assistance/generation/infrastructure/adapters/ai-provider.adapter";
+import {
+  type AiProviderAdapter,
+  AiProviderCatalog,
+} from "#api/modules/ai-assistance/generation/infrastructure/adapters/ai-provider.adapter";
 import { AiSdkGeneratorAdapter } from "#api/modules/ai-assistance/generation/infrastructure/adapters/ai-sdk-generator.adapter";
 import { AiSpendBudgetAdapter } from "#api/modules/ai-assistance/generation/infrastructure/adapters/ai-spend-budget.adapter";
 import type { EnvConfig } from "#api/platform/config/schemas/index";
@@ -94,7 +97,7 @@ export function createAiSdkGenerator(
   const registry = new OutboundPolicyRegistry(alert);
   const generator = new AiSdkGeneratorAdapter(
     config,
-    adapters,
+    new AiProviderCatalog(adapters),
     registry,
     new AiSpendBudgetAdapter(config, meter, alert, options.access ?? stubAccessTiers()),
   );

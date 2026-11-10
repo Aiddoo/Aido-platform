@@ -1,14 +1,7 @@
-import type { AiReportProps } from "../../domain/ai-report.entity.js";
-/**
- * AiReport 애그리게잇 단위 테스트
- *
- * - Application mapper의 응답 DTO 직렬화 검증
- *   (periodLabel·dateRange 파생 포함)
- */
-import { AiReport } from "../../domain/ai-report.entity.js";
-import { toAiReportView } from "./ai-report.read-model.js";
+import { AiReport, type AiReportPrimitives } from "../../../domain/ai-report.aggregate.js";
+import { toAiReportResponse } from "./ai-report-response.mapper.js";
 
-function makeProps(overrides?: Partial<AiReportProps>): AiReportProps {
+function makeProps(overrides?: Partial<AiReportPrimitives>): AiReportPrimitives {
   return {
     id: 42,
     userId: "user-123",
@@ -29,18 +22,20 @@ function makeProps(overrides?: Partial<AiReportProps>): AiReportProps {
     aiTips: ["계속 이렇게 해봐!"],
     locale: "ko",
     hasActivity: true,
-    generatedAt: new Date("2026-03-09T07:00:00.000Z"),
+    generatedAt: Temporal.Instant.from("2026-03-09T07:00:00.000Z"),
+    contentSource: "AI",
+    promptVersion: "report@1",
     ...overrides,
   };
 }
 
-describe("toAiReportView", () => {
+describe("toAiReportResponse", () => {
   it("애그리게잇을 올바른 DTO 형식으로 직렬화해야 한다", () => {
     // Given - 저장된 리포트 snapshot
     const report = AiReport.reconstitute(makeProps());
 
     // When - Application read model 변환
-    const result = toAiReportView(report);
+    const result = toAiReportResponse(report);
 
     // Then - 기존 기간·통계·본문·UTC 날짜 계약 보존
     expect(result.id).toBe(42);
@@ -71,7 +66,7 @@ describe("toAiReportView", () => {
     const report = AiReport.reconstitute(makeProps({ type: "MONTHLY", year: 2026, period: 3 }));
 
     // When - Application mapper 실행
-    const result = toAiReportView(report);
+    const result = toAiReportResponse(report);
 
     // Then - 기존 달력 라벨 유지
     expect(result.periodLabel).toBe("2026년 3월");
@@ -84,7 +79,7 @@ describe("toAiReportView", () => {
     );
 
     // When - Application mapper 실행
-    const result = toAiReportView(report);
+    const result = toAiReportResponse(report);
 
     // Then - 영어 기간 라벨 유지
     expect(result.periodLabel).toBe("March 2026");

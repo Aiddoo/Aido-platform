@@ -29,7 +29,10 @@ import type {
   AiGenerationMeta,
   AiGeneratorPort,
 } from "#api/modules/ai-assistance/generation/application/ports/ai-generator.port";
-import type { AiProviderAdapter } from "#api/modules/ai-assistance/generation/infrastructure/adapters/ai-provider.adapter";
+import {
+  type AiProviderAdapter,
+  AiProviderCatalog,
+} from "#api/modules/ai-assistance/generation/infrastructure/adapters/ai-provider.adapter";
 import { AiSdkGeneratorAdapter } from "#api/modules/ai-assistance/generation/infrastructure/adapters/ai-sdk-generator.adapter";
 import { AiSpendBudgetAdapter } from "#api/modules/ai-assistance/generation/infrastructure/adapters/ai-spend-budget.adapter";
 import { AnthropicProviderAdapter } from "#api/modules/ai-assistance/generation/infrastructure/adapters/anthropic-provider.adapter";
@@ -405,7 +408,7 @@ function createGenerator(task: GoldenTask, provider: string | undefined) {
   return {
     generator: new AiSdkGeneratorAdapter(
       config,
-      adapters,
+      new AiProviderCatalog(adapters),
       new OutboundPolicyRegistry(alert),
       // eval은 userId가 null이라 사용자 예산·등급을 읽지 않는다.
       new AiSpendBudgetAdapter(config, new InMemoryUsageMeterAdapter(), alert, {

@@ -3,7 +3,6 @@ import { type HealthIndicatorResult, HealthIndicatorService } from "@nestjs/term
 import { uniq, withTimeout } from "es-toolkit";
 
 import { AI_REPORT_QUEUE } from "#api/modules/ai-assistance/reports/ai-assistance-reports.public";
-import { AI_SUGGESTION_QUEUE } from "#api/modules/ai-assistance/suggestions/ai-assistance-suggestions.public";
 import { ACCOUNT_PURGE_QUEUE } from "#api/modules/identity/users/identity-users.public";
 import {
   INVITE_MAINTENANCE_QUEUE,
@@ -17,7 +16,6 @@ import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/
 const QUEUE_STATS_TIMEOUT_MS = 2_000;
 // defineQueue로 옮긴 큐는 JobQueueRegistry가 알려 주므로 Context를 옮길 때 이 목록에서 뺀다
 const LEGACY_MONITORED_QUEUES = [
-  AI_SUGGESTION_QUEUE,
   AI_REPORT_QUEUE,
   ACCOUNT_PURGE_QUEUE,
   INVITE_REWARD_QUEUE,

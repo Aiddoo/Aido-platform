@@ -5,8 +5,6 @@ import type { SupportedLocale } from "#api/shared/domain/locale";
 import type { AiGenerationMeta } from "../../../generation/application/ports/ai-generator.port.js";
 import type { TranscriptSentence } from "../messages/voice-note-digest-prompt.messages.js";
 
-export const ACTION_PLAN_GENERATOR = Symbol("ACTION_PLAN_GENERATOR");
-
 export interface PlanningCategory {
   readonly id: number;
   readonly name: string;
@@ -86,7 +84,12 @@ export interface VoiceNoteDigestGeneration extends QuickPlanGeneration {
  * 말·글을 실행 계획으로 바꾼다. 동의한 범위의 업체만 쓰고, 생성 실패는 AI_1301·1302·1310으로 던진다.
  * 사용량 환불은 호출자가 소유하므로 오류에 차감 여부를 담지 않는다.
  */
-export interface ActionPlanGeneratorPort {
-  generateQuickPlan(input: QuickPlanGenerationInput): Promise<QuickPlanGeneration>;
-  digestVoiceNote(input: VoiceNoteDigestGenerationInput): Promise<VoiceNoteDigestGeneration>;
+export abstract class ActionPlanGeneratorPort {
+  abstract generateQuickPlan(input: QuickPlanGenerationInput): Promise<QuickPlanGeneration>;
+  abstract digestVoiceNote(
+    input: VoiceNoteDigestGenerationInput,
+  ): Promise<VoiceNoteDigestGeneration>;
 }
+
+/** 옛 토큰. voice가 클래스 토큰으로 옮기면 지운다(같은 인스턴스 별칭으로 바인딩) */
+export const ACTION_PLAN_GENERATOR = Symbol("ACTION_PLAN_GENERATOR");

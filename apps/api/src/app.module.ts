@@ -8,9 +8,7 @@ import { SentryModule } from "@sentry/nestjs/setup";
 import { ClsModule } from "nestjs-cls";
 
 import { AccessModule } from "#api/modules/access/access.module";
-import { AiAssistanceParsingModule } from "#api/modules/ai-assistance/parsing/ai-assistance-parsing.public";
-import { AiAssistanceReportsModule } from "#api/modules/ai-assistance/reports/ai-assistance-reports.public";
-import { AiAssistanceSuggestionsModule } from "#api/modules/ai-assistance/suggestions/ai-assistance-suggestions.public";
+import { AiAssistanceModule } from "#api/modules/ai-assistance/ai-assistance.module";
 import { AppConfigModule as AppConfigContextModule } from "#api/modules/app-config/app-config.module";
 import { BillingModule } from "#api/modules/billing/billing.module";
 import { EngagementModule } from "#api/modules/engagement/engagement.module";
@@ -25,7 +23,7 @@ import { OperationsModule } from "#api/modules/operations/operations.module";
 import { PlanningModule } from "#api/modules/planning/planning.module";
 import { SocialModule } from "#api/modules/social/social.module";
 import { SupportModule } from "#api/modules/support/support.module";
-import { VoiceModule } from "#api/modules/voice/voice.public";
+import { VoiceModule } from "#api/modules/voice/voice.module";
 import { WeatherModule } from "#api/modules/weather/weather.module";
 import { CacheModule } from "#api/platform/cache/index";
 import { AppConfigModule, TypedConfigService } from "#api/platform/config/index";
@@ -114,9 +112,7 @@ import { AppService } from "./app.service.js";
 
     OperationsModule,
     AppConfigContextModule,
-    AiAssistanceParsingModule,
-    AiAssistanceReportsModule,
-    AiAssistanceSuggestionsModule,
+    AiAssistanceModule,
     VoiceModule,
     IdentityModule,
     SocialModule,

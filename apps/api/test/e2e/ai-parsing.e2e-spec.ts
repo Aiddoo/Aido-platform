@@ -1,6 +1,6 @@
 import request from "supertest";
 
-import { AI_GENERATOR } from "#api/modules/ai-assistance/generation/ai-assistance-generation.public";
+import { AiGeneratorPort } from "#api/modules/ai-assistance/generation/ai-assistance-generation.public";
 import { FakeAiGenerator } from "#test/mocks/fake-ai.generator";
 
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
@@ -17,7 +17,7 @@ describe("AI 파싱 E2E — 서버 일정 계산", () => {
     fakeAiGenerator = new FakeAiGenerator();
     ctx = await createE2eApp({
       customizeBuilder: (builder) =>
-        builder.overrideProvider(AI_GENERATOR).useValue(fakeAiGenerator),
+        builder.overrideProvider(AiGeneratorPort).useValue(fakeAiGenerator),
       additionalResetters: [() => fakeAiGenerator.clear()],
     });
   }, 60000);

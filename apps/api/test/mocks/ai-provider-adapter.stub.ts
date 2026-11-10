@@ -5,9 +5,10 @@ import { APICallError } from "ai";
 import { MockLanguageModelV4 } from "ai/test";
 
 import type { AiFailureKind } from "#api/modules/ai-assistance/generation/application/ai-generation.errors";
-import type {
+import {
   AiProviderAdapter,
-  AiProviderModel,
+  type AiProviderDataHandling,
+  type AiProviderModel,
 } from "#api/modules/ai-assistance/generation/infrastructure/adapters/ai-provider.adapter";
 import { classifyAiSdkError } from "#api/modules/ai-assistance/generation/infrastructure/adapters/ai-sdk-failure.mapper";
 
@@ -35,7 +36,12 @@ const USAGE = {
  * 업체 SDK 대신 정해 둔 단계대로 응답하는 업체 전략. 단계가 바닥나면 마지막 단계를 되풀이한다.
  * 모델 ID는 실제 기본 모델이라 단가표로 비용이 계산된다.
  */
-export class StubProviderAdapter implements AiProviderAdapter {
+export class StubProviderAdapter extends AiProviderAdapter {
+  readonly dataHandling: AiProviderDataHandling = {
+    trainsOnUserData: false,
+    disablesResponseStorage: false,
+    basis: "test",
+  };
   readonly model: MockLanguageModelV4;
   readonly #steps: StubModelStep[];
   #last: StubModelStep;
@@ -46,6 +52,7 @@ export class StubProviderAdapter implements AiProviderAdapter {
     private readonly modelId: string,
     private readonly configured = true,
   ) {
+    super();
     this.#steps = [...steps];
     this.#last = steps.at(-1) ?? { type: "ok", text: "{}" };
     this.model = new MockLanguageModelV4({

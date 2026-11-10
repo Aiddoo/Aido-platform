@@ -8,7 +8,7 @@
 import { AI_DATA_SHARING_CONSENT } from "@aido/api/vocabulary";
 import request from "supertest";
 
-import { AI_GENERATOR } from "#api/modules/ai-assistance/generation/ai-assistance-generation.public";
+import { AiGeneratorPort } from "#api/modules/ai-assistance/generation/ai-assistance-generation.public";
 
 import { FakeAiGenerator } from "../mocks/fake-ai.generator.js";
 import {
@@ -27,7 +27,7 @@ describe("AI 데이터 처리 동의 E2E", () => {
     fakeAiGenerator = new FakeAiGenerator();
     ctx = await createE2eApp({
       customizeBuilder: (builder) =>
-        builder.overrideProvider(AI_GENERATOR).useValue(fakeAiGenerator),
+        builder.overrideProvider(AiGeneratorPort).useValue(fakeAiGenerator),
       additionalResetters: [() => fakeAiGenerator.clear()],
     });
   }, 60000);

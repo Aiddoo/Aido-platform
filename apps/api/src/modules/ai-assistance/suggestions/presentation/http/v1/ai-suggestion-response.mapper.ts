@@ -1,59 +1,41 @@
-/**
- * AI 반복 제안 매퍼
- *
- * Suggestion 도메인 애그리게잇을 응답 DTO로 변환하는 Static 메서드를 제공합니다.
- */
-
 import type { RecurringSuggestion, SuggestionActionResponse } from "@aido/api";
-import { dayOfWeekSchema } from "@aido/api";
-import { z } from "zod";
+
+import { toIsoString } from "#api/shared/domain/time/instant";
 
 import type { SuggestionActionResult } from "../../../application/use-cases/handle-suggestion-action.use-case.js";
 import type { Suggestion } from "../../../domain/suggestion.aggregate.js";
 
-/**
- * AI 반복 제안 매퍼 클래스
- *
- * Suggestion 애그리게잇을 API 응답 형식으로 변환합니다.
- */
-export const AiSuggestionResponseMapper = {
-  /**
-   * Suggestion 애그리게잇을 API 응답 형식으로 변환
-   */
-  toResponse(suggestion: Suggestion): RecurringSuggestion {
-    const daysResult = z.array(dayOfWeekSchema).safeParse(suggestion.daysOfWeek);
+// 출시 앱은 표시하지 않지만 응답 계약이라 문구를 그대로 둔다
+const SUGGESTION_ACTION_MESSAGES = {
+  ACCEPTED: "제안이 수락되어 반복 할 일이 생성되었습니다.",
+  DISMISSED: "제안이 거절되었습니다.",
+} as const;
 
-    return {
-      id: suggestion.id,
-      title: suggestion.title,
-      daysOfWeek: daysResult.success ? daysResult.data : [],
-      scheduledTime: suggestion.scheduledTime,
-      confidence: suggestion.confidence,
-      reason: suggestion.reason,
-      status: suggestion.status,
-      expiresAt: suggestion.expiresAt.toISOString(),
-      createdAt: suggestion.createdAt.toISOString(),
-      suggestedCategoryId: suggestion.suggestedCategoryId ?? null,
-    };
-  },
+export function toSuggestionResponse(suggestion: Suggestion): RecurringSuggestion {
+  const primitives = suggestion.toPrimitives();
+  return {
+    id: primitives.id,
+    title: primitives.title,
+    daysOfWeek: primitives.daysOfWeek == null ? [] : [...primitives.daysOfWeek],
+    scheduledTime: primitives.scheduledTime,
+    confidence: primitives.confidence,
+    reason: primitives.reason,
+    status: primitives.status,
+    expiresAt: toIsoString(primitives.expiresAt),
+    createdAt: toIsoString(primitives.createdAt),
+    suggestedCategoryId: primitives.suggestedCategoryId,
+  };
+}
 
-  /**
-   * 여러 애그리게잇을 API 응답 형식으로 일괄 변환
-   */
-  toManyResponse(suggestions: Suggestion[]): RecurringSuggestion[] {
-    return suggestions.map((suggestion) => AiSuggestionResponseMapper.toResponse(suggestion));
-  },
-
-  /**
-   * 수락/거절 결과를 API 응답 형식으로 변환 (createdTodosCount는 수락 시에만 포함)
-   */
-  toActionResponse(result: SuggestionActionResult): SuggestionActionResponse {
-    return {
-      message: result.message,
-      suggestion: AiSuggestionResponseMapper.toResponse(result.suggestion),
-      ...(result.createdTodosCount != null && {
-        createdTodosCount: result.createdTodosCount,
-      }),
-    };
-  },
-};
+export function toSuggestionActionResponse(
+  result: SuggestionActionResult,
+): SuggestionActionResponse {
+  return {
+    message:
+      result.createdTodosCount == null
+        ? SUGGESTION_ACTION_MESSAGES.DISMISSED
+        : SUGGESTION_ACTION_MESSAGES.ACCEPTED,
+    suggestion: toSuggestionResponse(result.suggestion),
+    ...(result.createdTodosCount != null && { createdTodosCount: result.createdTodosCount }),
+  };
+}

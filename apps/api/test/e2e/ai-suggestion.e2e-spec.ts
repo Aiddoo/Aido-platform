@@ -4,7 +4,7 @@ import { eq } from "drizzle-orm";
 import request from "supertest";
 
 import { EntitlementCacheKey } from "#api/modules/access/entitlements/infrastructure/cache/entitlement-cache.keyspace";
-import { AI_GENERATOR } from "#api/modules/ai-assistance/generation/ai-assistance-generation.public";
+import { AiGeneratorPort } from "#api/modules/ai-assistance/generation/ai-assistance-generation.public";
 import type { StagedTodoCreatorPort } from "#api/modules/planning/todos/application/ports/staged-todo-creator.port";
 import { STAGED_TODO_CREATOR } from "#api/modules/planning/todos/planning-todos.public";
 /**
@@ -39,7 +39,7 @@ describe("AI 제안 E2E", () => {
 
     ctx = await createE2eApp({
       customizeBuilder: (builder) =>
-        builder.overrideProvider(AI_GENERATOR).useValue(fakeAiGenerator),
+        builder.overrideProvider(AiGeneratorPort).useValue(fakeAiGenerator),
       additionalResetters: [() => fakeAiGenerator.clear()],
     });
   }, 60000);

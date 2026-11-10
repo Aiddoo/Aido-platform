@@ -1,13 +1,14 @@
-import type { AiReport as AiReportDto } from "@aido/api";
 import dayjs from "dayjs";
 
 import type { EntitlementReaderPort } from "#api/modules/access/access-entitlement.public";
 import type { UserMutationLockPort } from "#api/modules/identity/identity-user-access.public";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
+import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
-import { now } from "#api/shared/domain/date/utils/core";
 import { parseLocalDateTime } from "#api/shared/domain/date/utils/timezone";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import type { SupportedLocale } from "#api/shared/domain/locale";
+import { instantToDate } from "#api/shared/domain/time/instant";
 
 import {
   AiGenerationError,
@@ -21,10 +22,8 @@ import {
 } from "../../../generation/application/ai-generation.log-events.js";
 import { generateWithPrompt } from "../../../generation/application/messages/prompt-definition.messages.js";
 import type { AiGeneratorPort } from "../../../generation/application/ports/ai-generator.port.js";
-import {
-  findScheduledAiConsent,
-  type ScheduledAiConsentReaders,
-} from "../../../generation/application/scheduled-ai-consent.reader.js";
+import type { ScheduledAiConsentReader } from "../../../generation/application/scheduled-ai-consent.reader.js";
+import { AiReport } from "../../domain/ai-report.aggregate.js";
 import type {
   AggregatedReportData,
   AggregateParams,
@@ -42,7 +41,7 @@ import { computePeriodLabel } from "../messages/report-period-label.messages.js"
 import { reportPrompt, type ReportPromptInput } from "../messages/report-prompt.messages.js";
 import { type AiReportRepositoryPort } from "../ports/ai-report.repository.port.js";
 import { type TodoStatsReaderPort } from "../ports/todo-stats.reader.port.js";
-import { toAiReportView } from "../read-models/ai-report.read-model.js";
+import { DuplicateAiReportError } from "../reports.errors.js";
 
 interface ReportWindow {
   year: number;
@@ -63,11 +62,14 @@ interface ReportWindow {
  * 같은 기간 리포트가 이미 존재하면 생성하지 않고 null을 반환한다.
  */
 interface GenerateReportDependencies {
-  readonly aiReportRepository: Pick<AiReportRepositoryPort, "exists" | "findLatest" | "create">;
+  readonly aiReportRepository: Pick<
+    AiReportRepositoryPort,
+    "existsForPeriod" | "findLatest" | "nextId" | "save"
+  >;
   readonly todoStatsReader: Pick<TodoStatsReaderPort, "fetchAggregationInputs">;
   readonly generator: Pick<AiGeneratorPort, "generate">;
-  readonly aiDataSharingConsent: ScheduledAiConsentReaders["aiDataSharingConsent"];
-  readonly clientAppVersion: ScheduledAiConsentReaders["clientAppVersion"];
+  readonly scheduledAiConsent: Pick<ScheduledAiConsentReader, "find">;
+  readonly clock: ClockPort;
   readonly logger: Pick<ApplicationLoggerPort, "log" | "debug" | "warn" | "error">;
   readonly entitlementReader: Pick<EntitlementReaderPort, "canInTx">;
   readonly userMutationLock: Pick<UserMutationLockPort, "lockById">;
@@ -88,7 +90,7 @@ export class GenerateReportUseCase {
     locale?: SupportedLocale;
     /** 잡의 마지막 시도인지. 아니면 AI 일시 오류를 던져 잡이 다시 시도하게 한다. */
     isFinalAttempt?: boolean;
-  }): Promise<AiReportDto | null> {
+  }): Promise<AiReport | null> {
     const { userId, timezone, type, locale = "ko", isFinalAttempt = true } = input;
     if (!(await this.#dependencies.entitlementReader.canInTx(userId, "AI_REPORT"))) {
       this.#dependencies.logger.debug({
@@ -99,19 +101,19 @@ export class GenerateReportUseCase {
       });
       return null;
     }
-    const localNow = dayjs(now()).tz(timezone);
+    const localNow = dayjs(instantToDate(this.#dependencies.clock.now())).tz(timezone);
 
     const window =
       type === "WEEKLY"
         ? this.#weeklyWindow(localNow, timezone)
         : this.#monthlyWindow(localNow, timezone);
 
-    const exists = await this.#dependencies.aiReportRepository.exists(
-      userId,
+    const exists = await this.#dependencies.aiReportRepository.existsForPeriod({
+      userId: UserId.reconstitute(userId),
       type,
-      window.year,
-      window.period,
-    );
+      year: window.year,
+      period: window.period,
+    });
     if (exists) {
       this.#dependencies.logger.debug({
         event: AiReportLogEvent.SKIPPED,
@@ -181,9 +183,9 @@ export class GenerateReportUseCase {
     window: ReportWindow;
     periodLabel: string;
     isFinalAttempt: boolean;
-  }): Promise<AiReportDto | null> {
+  }): Promise<AiReport | null> {
     const { userId, timezone, type, window, periodLabel, locale, isFinalAttempt } = params;
-    const { year, period, startDate, endDate, prevStartDate, prevEndDate } = window;
+    const { startDate, endDate, prevStartDate, prevEndDate } = window;
 
     const [aggregatedData, prevReport] = await Promise.all([
       this.#aggregate({
@@ -194,12 +196,12 @@ export class GenerateReportUseCase {
         prevEndDate,
         timezone,
       }),
-      this.#dependencies.aiReportRepository.findLatest(userId, type),
+      this.#dependencies.aiReportRepository.findLatest(UserId.reconstitute(userId), type),
     ]);
 
     // 다른 언어로 쓰인 지난 팁은 반복 판단 근거가 되지 못하고 언어를 섞게 한다.
     const previousTips =
-      prevReport == null || prevReport.snapshot.locale !== locale ? null : prevReport.aiTips;
+      prevReport == null || prevReport.locale !== locale ? null : prevReport.aiTips;
 
     const content = await this.#generateContent(
       {
@@ -213,40 +215,13 @@ export class GenerateReportUseCase {
     );
 
     // 외부 공급자 호출 뒤에만 transaction을 시작한다.
-    const report = await this.#dependencies.unitOfWork.run(async () => {
-      const { userMutationLock, entitlementReader, aiReportRepository } = this.#dependencies;
-      if (
-        !(await userMutationLock.lockById(userId)) ||
-        !(await entitlementReader.canInTx(userId, "AI_REPORT"))
-      ) {
-        return null;
-      }
-      if (await aiReportRepository.exists(userId, type, year, period)) {
-        return null;
-      }
-      return aiReportRepository.create({
-        userId,
-        type,
-        year,
-        period,
-        stats: {
-          totalTodos: aggregatedData.totalTodos,
-          completedTodos: aggregatedData.completedTodos,
-          completionRate: aggregatedData.completionRate,
-          prevCompletionRate: aggregatedData.prevCompletionRate,
-          streakDays: aggregatedData.streakDays,
-        },
-        categoryBreakdown: aggregatedData.categoryBreakdown,
-        dayPatterns: aggregatedData.dayPatterns,
-        timePatterns: aggregatedData.timePatterns,
-        aiSummary: content.aiSummary,
-        aiTips: content.aiTips,
-        locale,
-        hasActivity: aggregatedData.hasActivity,
-        generatedAt: now(),
-        contentSource: content.contentSource,
-        promptVersion: content.promptVersion,
-      });
+    const report = await this.#saveReport({
+      userId,
+      type,
+      window,
+      aggregatedData,
+      content,
+      locale,
     });
     if (report == null) {
       this.#dependencies.logger.debug({
@@ -259,13 +234,70 @@ export class GenerateReportUseCase {
     }
     this.#dependencies.logger.log({
       event: AiReportLogEvent.SAVED,
-      reportId: report.id,
+      reportId: report.id.value,
       userId,
       type,
       contentSource: content.contentSource,
     });
 
-    return toAiReportView(report);
+    return report;
+  }
+
+  /** 외부 공급자 호출 뒤에만 transaction을 시작한다. 그 사이 권한이 끝났거나 같은 주기를 저장했으면 null */
+  async #saveReport(params: {
+    readonly userId: string;
+    readonly type: ReportType;
+    readonly window: ReportWindow;
+    readonly aggregatedData: AggregatedReportData;
+    readonly content: ReportContent;
+    readonly locale: SupportedLocale;
+  }): Promise<AiReport | null> {
+    const { userId, type, window, aggregatedData, content, locale } = params;
+    const { userMutationLock, entitlementReader, aiReportRepository, unitOfWork, clock } =
+      this.#dependencies;
+    const owner = UserId.reconstitute(userId);
+    try {
+      return await unitOfWork.run(async () => {
+        if (
+          !(await userMutationLock.lockById(userId)) ||
+          !(await entitlementReader.canInTx(userId, "AI_REPORT"))
+        ) {
+          return null;
+        }
+        const period = { userId: owner, type, year: window.year, period: window.period };
+        if (await aiReportRepository.existsForPeriod(period)) {
+          return null;
+        }
+        const report = AiReport.create({
+          id: await aiReportRepository.nextId(),
+          ...period,
+          stats: {
+            totalTodos: aggregatedData.totalTodos,
+            completedTodos: aggregatedData.completedTodos,
+            completionRate: aggregatedData.completionRate,
+            prevCompletionRate: aggregatedData.prevCompletionRate,
+            streakDays: aggregatedData.streakDays,
+          },
+          categoryBreakdown: aggregatedData.categoryBreakdown,
+          dayPatterns: aggregatedData.dayPatterns,
+          timePatterns: aggregatedData.timePatterns,
+          aiSummary: content.aiSummary,
+          aiTips: content.aiTips,
+          locale,
+          hasActivity: aggregatedData.hasActivity,
+          contentSource: content.contentSource,
+          promptVersion: content.promptVersion,
+          now: clock.now(),
+        });
+        await aiReportRepository.save(report);
+        return report;
+      });
+    } catch (error) {
+      if (error instanceof DuplicateAiReportError) {
+        return null;
+      }
+      throw error;
+    }
   }
 
   /**
@@ -278,7 +310,7 @@ export class GenerateReportUseCase {
 
   /**
    * 요약·팁 생성. 활동이 없으면 LLM 없이 템플릿을 쓴다.
-   * 시스템 호출이므로 사용량 제한에 포함되지 않는다(AI_GENERATOR 직접 사용).
+   * 시스템 호출이므로 사용량 제한에 포함되지 않는다(AiGeneratorPort 직접 사용).
    * AI 일시 오류는 마지막 시도 전까지 다시 던지고, 그 밖의 실패만 폴백으로 저장한다.
    */
   async #generateContent(
@@ -290,7 +322,7 @@ export class GenerateReportUseCase {
       return buildNoActivityContent(input, locale);
     }
 
-    const consent = await findScheduledAiConsent(this.#dependencies, userId);
+    const consent = await this.#dependencies.scheduledAiConsent.find(userId);
     if (!consent.allowed) {
       this.#dependencies.logger.debug({ event: AiReportLogEvent.AI_SKIPPED_NO_CONSENT, userId });
       return buildNoAiConsentContent(input, locale);
@@ -303,7 +335,7 @@ export class GenerateReportUseCase {
       userId,
       quotaCharged: false,
     } as const;
-    const startedAt = Date.now();
+    const startedAt = this.#dependencies.clock.now().epochMilliseconds;
     try {
       const { value, meta } = await generateWithPrompt(
         this.#dependencies.generator,
@@ -330,7 +362,7 @@ export class GenerateReportUseCase {
         ...logBase,
         ...failure,
         outcome: retrying ? "RETRYING" : "FALLBACK",
-        latencyMs: Date.now() - startedAt,
+        latencyMs: this.#dependencies.clock.now().epochMilliseconds - startedAt,
       });
       if (retrying) {
         this.#dependencies.logger.warn(failedLog);

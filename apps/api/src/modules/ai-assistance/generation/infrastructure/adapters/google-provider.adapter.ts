@@ -5,10 +5,11 @@ import { TypedConfigService } from "#api/platform/config/services/config.service
 
 import type { AiFailureKind } from "../../application/ai-generation.errors.js";
 import type { AiGenerationPolicy } from "./ai-generation-policy.constants.js";
-import type {
+import {
   AiProviderAdapter,
-  AiProviderModel,
-  AiProviderOptions,
+  type AiProviderDataHandling,
+  type AiProviderModel,
+  type AiProviderOptions,
 } from "./ai-provider.adapter.js";
 import { classifyAiSdkError, type ProviderErrorBody } from "./ai-sdk-failure.mapper.js";
 
@@ -37,11 +38,17 @@ const INVALID_KEY_PATTERN = /api key not valid|API_KEY_INVALID/i;
 
 /** Gemini. 1.13·1.14 동의 사용자가 쓰는 유일한 업체. */
 @Injectable()
-export class GoogleProviderAdapter implements AiProviderAdapter {
+export class GoogleProviderAdapter extends AiProviderAdapter {
   readonly id = "google";
+  readonly dataHandling: AiProviderDataHandling = {
+    trainsOnUserData: false,
+    disablesResponseStorage: false,
+    basis: "Gemini API 유료 등급 키: 프롬프트·응답을 제품 개선(학습)에 쓰지 않는다",
+  };
   readonly #model: AiProviderModel | null;
 
   constructor(config: TypedConfigService) {
+    super();
     const { apiKey, model } = config.ai.providers.google;
     this.#model =
       apiKey == null

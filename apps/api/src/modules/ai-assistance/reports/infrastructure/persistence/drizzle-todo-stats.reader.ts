@@ -6,7 +6,7 @@ import type { Database, DrizzleTransactionalAdapter } from "#api/platform/databa
 import { todo, todoCategory } from "#api/platform/database/schema/index";
 import { startOfDayInTimezone } from "#api/shared/domain/date/utils/timezone";
 
-import type { TodoStatsReaderPort } from "../../application/ports/todo-stats.reader.port.js";
+import { TodoStatsReaderPort } from "../../application/ports/todo-stats.reader.port.js";
 import type { AggregateParams, AggregationInputs } from "../../domain/ai-report.constants.js";
 import { toAggregationInputs } from "./report-aggregation.mapper.js";
 
@@ -60,10 +60,11 @@ function selectCompletedTodos(db: Database, period: ReportPeriod) {
 
 /** 고정된 5개 집계 쿼리를 활성 CLS transaction에서 실행한다. */
 @Injectable()
-export class DrizzleTodoStatsReader implements TodoStatsReaderPort {
+export class DrizzleTodoStatsReader extends TodoStatsReaderPort {
   readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
 
   constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>) {
+    super();
     this.#txHost = txHost;
   }
 

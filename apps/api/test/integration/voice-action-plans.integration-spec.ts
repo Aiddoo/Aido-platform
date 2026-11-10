@@ -3,7 +3,7 @@ import { ErrorCode } from "@aido/api/errors";
 import { MEMO_LIMITS, PLAN_CATALOG, TODO_LIMITS } from "@aido/api/vocabulary";
 import { and, eq } from "drizzle-orm";
 
-import { AI_GENERATOR } from "#api/modules/ai-assistance/generation/ai-assistance-generation.public";
+import { AiGeneratorPort } from "#api/modules/ai-assistance/generation/ai-assistance-generation.public";
 import {
   TODO_PLAN_READER,
   type TodoPlanReaderPort,
@@ -57,7 +57,8 @@ describe("계획 사용량·멱등 적용 (실제 PostgreSQL)", () => {
     aiGenerator = new FakeAiGenerator();
     context = await createE2eApp({
       testDatabase: database,
-      customizeBuilder: (builder) => builder.overrideProvider(AI_GENERATOR).useValue(aiGenerator),
+      customizeBuilder: (builder) =>
+        builder.overrideProvider(AiGeneratorPort).useValue(aiGenerator),
       additionalResetters: [() => aiGenerator.clear()],
     });
     quickPlan = context.module.get(CreateQuickPlanUseCase);

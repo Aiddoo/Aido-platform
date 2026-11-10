@@ -1,24 +1,25 @@
-import { Inject, Injectable } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 
-import {
-  AI_REPORT_REPOSITORY,
-  type AiReportRepositoryPort,
-} from "../../application/ports/ai-report.repository.port.js";
-import type { LatestReportStatsReaderPort } from "../../application/ports/latest-report-stats.reader.port.js";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+
+import { AiReportRepositoryPort } from "../../application/ports/ai-report.repository.port.js";
+import { LatestReportStatsReaderPort } from "../../application/ports/latest-report-stats.reader.port.js";
+import type { ReportStats } from "../../domain/ai-report.constants.js";
 
 @Injectable()
-export class LatestReportStatsReaderAdapter implements LatestReportStatsReaderPort {
-  readonly #aiReportRepository: AiReportRepositoryPort;
+export class LatestReportStatsReaderAdapter extends LatestReportStatsReaderPort {
+  readonly #aiReportRepository: Pick<AiReportRepositoryPort, "findLatest">;
 
-  constructor(
-    @Inject(AI_REPORT_REPOSITORY)
-    aiReportRepository: AiReportRepositoryPort,
-  ) {
+  constructor(aiReportRepository: AiReportRepositoryPort) {
+    super();
     this.#aiReportRepository = aiReportRepository;
   }
 
-  async findLatestWeekly(userId: string) {
-    const latestReport = await this.#aiReportRepository.findLatest(userId, "WEEKLY");
+  async findLatestWeekly(userId: string): Promise<ReportStats | null> {
+    const latestReport = await this.#aiReportRepository.findLatest(
+      UserId.reconstitute(userId),
+      "WEEKLY",
+    );
     return latestReport?.stats ?? null;
   }
 }

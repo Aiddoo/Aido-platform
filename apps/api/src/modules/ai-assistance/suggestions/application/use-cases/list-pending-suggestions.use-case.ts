@@ -3,35 +3,43 @@ import {
   premiumFeatureDenied,
 } from "#api/modules/access/access-entitlement.public";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
+import type { ClockPort } from "#api/shared/application/ports/clock.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { Suggestion } from "../../domain/suggestion.aggregate.js";
 import { AiSuggestionLogEvent } from "../ai-suggestion.log-events.js";
-import { type SuggestionRepositoryPort } from "../ports/suggestion.repository.port.js";
+import type { SuggestionRepositoryPort } from "../ports/suggestion.repository.port.js";
 
-/**
- * 대기 중인 제안 목록 조회 use-case.
- *
- * 프리미엄 접근을 강제한 뒤 PENDING·미만료 제안을 조회한다.
- */
-interface GetPendingSuggestionsDependencies {
-  readonly repository: Pick<SuggestionRepositoryPort, "findPendingByUserId">;
+export interface ListPendingSuggestionsQuery {
+  readonly userId: string;
+}
+
+interface ListPendingSuggestionsDependencies {
+  readonly repository: Pick<SuggestionRepositoryPort, "listPendingByUserId">;
   readonly entitlementReader: Pick<EntitlementReaderPort, "can">;
+  readonly clock: ClockPort;
   readonly logger: Pick<ApplicationLoggerPort, "warn">;
 }
 
+/** 프리미엄 접근을 확인한 뒤 대기 중이고 만료되지 않은 제안을 최신순으로 준다. */
 export class ListPendingSuggestionsUseCase {
-  readonly #dependencies: GetPendingSuggestionsDependencies;
+  readonly #dependencies: ListPendingSuggestionsDependencies;
 
-  constructor(dependencies: GetPendingSuggestionsDependencies) {
+  constructor(dependencies: ListPendingSuggestionsDependencies) {
     this.#dependencies = dependencies;
   }
 
-  async execute(userId: string): Promise<Suggestion[]> {
-    if (!(await this.#dependencies.entitlementReader.can(userId, "AI_SUGGESTION"))) {
-      this.#dependencies.logger.warn({ event: AiSuggestionLogEvent.PREMIUM_DENIED, userId });
+  async execute(query: ListPendingSuggestionsQuery): Promise<Suggestion[]> {
+    if (!(await this.#dependencies.entitlementReader.can(query.userId, "AI_SUGGESTION"))) {
+      this.#dependencies.logger.warn({
+        event: AiSuggestionLogEvent.PREMIUM_DENIED,
+        userId: query.userId,
+      });
       throw premiumFeatureDenied("AI_SUGGESTION");
     }
-
-    return this.#dependencies.repository.findPendingByUserId(userId);
+    return this.#dependencies.repository.listPendingByUserId(
+      UserId.reconstitute(query.userId),
+      this.#dependencies.clock.now(),
+    );
   }
 }

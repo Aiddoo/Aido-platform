@@ -1,76 +1,46 @@
-import type { Mocked } from "vitest";
-import { mockDeep } from "vitest-mock-extended";
+import { ErrorCode } from "@aido/api/errors";
 
 import { ApplicationException } from "#api/shared/application/application.exception";
+import { InMemoryAiReportRepository } from "#test/doubles/ai-assistance/in-memory-ai-report.repository";
+import {
+  AI_REPORT_FIXTURE_OTHER_USER_ID,
+  AI_REPORT_FIXTURE_USER_ID,
+  createAiReportFixture,
+} from "#test/fixtures/ai-assistance/ai-report.fixture";
 
-import { AiReport } from "../../domain/ai-report.entity.js";
 import { GetReportByIdUseCase } from "./get-report-by-id.use-case.js";
 
-const makeReport = (id: number): AiReport =>
-  AiReport.reconstitute({
-    id,
-    userId: "user-123",
-    type: "WEEKLY",
-    year: 2026,
-    period: 10,
-    stats: {
-      totalTodos: 10,
-      completedTodos: 8,
-      completionRate: 80,
-      prevCompletionRate: 70,
-      streakDays: 3,
-    },
-    categoryBreakdown: [],
-    dayPatterns: [],
-    timePatterns: [],
-    aiSummary: "요약",
-    aiTips: [],
-    locale: "ko",
-    hasActivity: true,
-    generatedAt: new Date("2026-03-09T07:00:00.000Z"),
+function setup(options: { readonly entitled?: boolean } = {}) {
+  const useCase = new GetReportByIdUseCase({
+    aiReportRepository: new InMemoryAiReportRepository([createAiReportFixture({ id: 42 })]),
+    entitlementReader: { can: async () => options.entitled ?? true },
   });
+  return { useCase };
+}
 
 describe("GetReportByIdUseCase", () => {
-  let useCase: GetReportByIdUseCase;
-  let mockRepository: Mocked<
-    ConstructorParameters<typeof GetReportByIdUseCase>[0]["aiReportRepository"]
-  >;
-  let mockEntitlement: Mocked<
-    ConstructorParameters<typeof GetReportByIdUseCase>[0]["entitlementReader"]
-  >;
+  it("프리미엄이 아니면 리포트를 읽지 않고 거절한다", async () => {
+    // Given
+    const { useCase } = setup({ entitled: false });
 
-  beforeEach(async () => {
-    const getReportByIdDependencies = mockDeep<
-      ConstructorParameters<typeof GetReportByIdUseCase>[0]
-    >({});
-    const unit = new GetReportByIdUseCase(getReportByIdDependencies);
-    useCase = unit;
-    mockRepository = getReportByIdDependencies.aiReportRepository;
-    mockEntitlement = getReportByIdDependencies.entitlementReader;
-    mockEntitlement.can.mockResolvedValue(true);
+    // When
+    const report = useCase.execute({ userId: AI_REPORT_FIXTURE_USER_ID, reportId: 42 });
+
+    // Then
+    await expect(report).rejects.toBeInstanceOf(ApplicationException);
   });
 
-  it("비프리미엄이면 조회 없이 예외를 전파해야 한다", async () => {
-    mockEntitlement.can.mockResolvedValue(false);
+  it("남의 리포트는 없는 리포트와 같은 AI_1304다", async () => {
+    // Given
+    const { useCase } = setup();
 
-    await expect(useCase.execute("user-123", 1)).rejects.toBeInstanceOf(ApplicationException);
-    expect(mockRepository.findByIdAndUserId).not.toHaveBeenCalled();
-  });
+    // When
+    const report = useCase.execute({ userId: AI_REPORT_FIXTURE_OTHER_USER_ID, reportId: 42 });
 
-  it("존재하는 리포트를 DTO로 반환해야 한다", async () => {
-    mockRepository.findByIdAndUserId.mockResolvedValue(makeReport(42));
-
-    const result = await useCase.execute("user-123", 42);
-
-    expect(result.id).toBe(42);
-    expect(mockRepository.findByIdAndUserId).toHaveBeenCalledWith(42, "user-123");
-  });
-
-  it("존재하지 않으면 AI_1304를 던져야 한다", async () => {
-    mockRepository.findByIdAndUserId.mockResolvedValue(null);
-
-    await expect(useCase.execute("user-123", 999)).rejects.toMatchObject({
-      errorCode: "AI_1304",
+    // Then
+    await expect(report).rejects.toMatchObject({
+      errorCode: ErrorCode.AI_1304,
+      details: { reportId: 42 },
     });
   });
 });

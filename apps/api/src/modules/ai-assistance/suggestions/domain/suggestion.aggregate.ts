@@ -1,51 +1,80 @@
 import { ErrorCode } from "@aido/api/errors";
+import type { AI_SUGGESTION_STATUSES, DayOfWeek } from "@aido/api/vocabulary";
 
 import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
-import { AggregateRoot } from "#api/shared/domain/index";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { AggregateRoot } from "#api/shared/domain/model/aggregate-root";
 
-/** 제안 상태 — PENDING(대기) → ACCEPTED(수락) | DISMISSED(거절) */
-export type SuggestionStatus = "PENDING" | "ACCEPTED" | "DISMISSED";
+import { SuggestionId } from "./suggestion-id.vo.js";
 
-export interface SuggestionProps {
+/** 제안 상태: PENDING(대기) → ACCEPTED(수락) | DISMISSED(거절). DB SuggestionStatus enum과 같은 튜플이다 */
+export type SuggestionStatus = (typeof AI_SUGGESTION_STATUSES)[number];
+
+export interface SuggestionPrimitives {
   readonly id: number;
   readonly userId: string;
   readonly title: string;
-  /** 반복 요일 원본(Json) — 수락 입력 검증과 응답 매핑은 Application/Presentation이 담당한다 */
-  readonly daysOfWeek: unknown;
+  /** 저장된 요일이 요일 목록 모양이 아니면 null. 수락하면 SYS_0002로 거절하고 응답은 빈 목록이다 */
+  readonly daysOfWeek: readonly DayOfWeek[] | null;
   readonly scheduledTime: string | null;
   readonly confidence: number;
   readonly reason: string;
-  readonly matchedTodos: unknown;
+  readonly matchedTodos: readonly string[];
   readonly suggestedCategoryId: number | null;
+  readonly status: SuggestionStatus;
+  readonly expiresAt: Temporal.Instant;
+  readonly createdAt: Temporal.Instant;
+  readonly updatedAt: Temporal.Instant;
+}
+
+type SuggestionProps = Omit<SuggestionPrimitives, "id" | "userId" | "status" | "updatedAt"> & {
+  readonly userId: UserId;
   status: SuggestionStatus;
-  readonly expiresAt: Date;
-  readonly createdAt: Date;
-  updatedAt: Date;
+  updatedAt: Temporal.Instant;
+};
+
+export interface CreateSuggestionParams {
+  readonly id: SuggestionId;
+  readonly userId: UserId;
+  readonly title: string;
+  readonly daysOfWeek: readonly DayOfWeek[];
+  readonly scheduledTime: string | null;
+  readonly confidence: number;
+  readonly reason: string;
+  readonly matchedTodos: readonly string[];
+  readonly suggestedCategoryId: number | null;
+  readonly expiresAt: Temporal.Instant;
+  readonly now: Temporal.Instant;
 }
 
 /**
- * AI 반복 제안 애그리게잇.
- *
- * 제안의 상태 전이 불변식(대기 상태·만료 여부)을 소유한다. 수락/거절 액션은
- * PENDING이면서 만료되지 않은 제안에만 허용되며, 위반 시 DomainException을 던진다.
- * daysOfWeek/matchedTodos는 저장소가 Json으로 보관하므로 원본(unknown)으로 노출하고,
- * 수락 시 요일 검증과 응답 매핑은 Application/Presentation이 담당한다.
+ * AI 반복 제안. 수락·거절은 대기 중이면서 만료되지 않은 제안에만 허용한다.
+ * 이미 처리된 제안은 AI_1306, 만료된 제안은 AI_1307이고 처리 상태 오류가 먼저다(출시 계약 순서).
  */
-export class Suggestion extends AggregateRoot<SuggestionProps> {
-  static reconstitute(props: SuggestionProps): Suggestion {
-    return new Suggestion({
-      ...props,
-      expiresAt: new Date(props.expiresAt),
-      createdAt: new Date(props.createdAt),
-      updatedAt: new Date(props.updatedAt),
+export class Suggestion extends AggregateRoot<SuggestionId, SuggestionProps> {
+  static create(params: CreateSuggestionParams): Suggestion {
+    const { id, now, ...rest } = params;
+    return new Suggestion(id, {
+      ...rest,
+      daysOfWeek: [...rest.daysOfWeek],
+      matchedTodos: [...rest.matchedTodos],
+      status: "PENDING",
+      createdAt: now,
+      updatedAt: now,
     });
   }
 
-  get id(): number {
-    return this.props.id;
+  static reconstitute(primitives: SuggestionPrimitives): Suggestion {
+    const { id, userId, ...rest } = primitives;
+    return new Suggestion(SuggestionId.reconstitute(id), {
+      ...rest,
+      userId: UserId.reconstitute(userId),
+      daysOfWeek: rest.daysOfWeek == null ? null : [...rest.daysOfWeek],
+      matchedTodos: [...rest.matchedTodos],
+    });
   }
 
-  get userId(): string {
+  get userId(): UserId {
     return this.props.userId;
   }
 
@@ -53,7 +82,7 @@ export class Suggestion extends AggregateRoot<SuggestionProps> {
     return this.props.title;
   }
 
-  get daysOfWeek(): unknown {
+  get daysOfWeek(): readonly DayOfWeek[] | null {
     return this.props.daysOfWeek;
   }
 
@@ -61,65 +90,53 @@ export class Suggestion extends AggregateRoot<SuggestionProps> {
     return this.props.scheduledTime;
   }
 
-  get confidence(): number {
-    return this.props.confidence;
-  }
-
-  get reason(): string {
-    return this.props.reason;
-  }
-
-  get suggestedCategoryId(): number | null {
-    return this.props.suggestedCategoryId;
-  }
-
   get status(): SuggestionStatus {
     return this.props.status;
   }
 
-  get expiresAt(): Date {
-    return new Date(this.props.expiresAt);
-  }
-
-  get createdAt(): Date {
-    return new Date(this.props.createdAt);
-  }
-
-  accept(at: Date): void {
-    this.ensureActionable(at);
+  /** 대기 제안을 수락한다. 처리할 수 없으면 던지고, 상태가 바뀌므로 언제나 true다 */
+  accept(now: Temporal.Instant): boolean {
+    this.#ensureActionable(now);
     this.props.status = "ACCEPTED";
-    this.props.updatedAt = new Date(at);
+    this.props.updatedAt = now;
+    return true;
   }
 
-  dismiss(at: Date): void {
-    this.ensureActionable(at);
+  dismiss(now: Temporal.Instant): boolean {
+    this.#ensureActionable(now);
     this.props.status = "DISMISSED";
-    this.props.updatedAt = new Date(at);
+    this.props.updatedAt = now;
+    return true;
   }
 
-  isPending(): boolean {
-    return this.props.status === "PENDING";
+  isPendingAt(now: Temporal.Instant): boolean {
+    return this.props.status === "PENDING" && !this.#isExpiredAt(now);
   }
 
-  isExpired(at: Date): boolean {
-    return this.props.expiresAt < at;
+  toPrimitives(): SuggestionPrimitives {
+    const { userId, ...rest } = this.props;
+    return {
+      ...rest,
+      id: this.id.value,
+      userId: userId.value,
+      daysOfWeek: rest.daysOfWeek == null ? null : [...rest.daysOfWeek],
+      matchedTodos: [...rest.matchedTodos],
+    };
   }
 
-  /**
-   * 수락/거절 액션이 가능한 상태인지 검증한다.
-   * 이미 처리된 제안은 AI_1306, 만료된 제안은 AI_1307을 던진다(레거시 순서 보존).
-   */
-  ensureActionable(at: Date): void {
-    if (!this.isPending()) {
+  #isExpiredAt(now: Temporal.Instant): boolean {
+    return Temporal.Instant.compare(this.props.expiresAt, now) < 0;
+  }
+
+  #ensureActionable(now: Temporal.Instant): void {
+    if (this.props.status !== "PENDING") {
       throw new DomainException(ErrorCode.AI_1306, {
-        suggestionId: this.props.id,
+        suggestionId: this.id.value,
         currentStatus: this.props.status,
       });
     }
-    if (this.isExpired(at)) {
-      throw new DomainException(ErrorCode.AI_1307, {
-        suggestionId: this.props.id,
-      });
+    if (this.#isExpiredAt(now)) {
+      throw new DomainException(ErrorCode.AI_1307, { suggestionId: this.id.value });
     }
   }
 }

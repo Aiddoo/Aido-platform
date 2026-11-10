@@ -8,11 +8,12 @@ export type UserPreferenceCacheInvalidatorPort = Pick<
 
 export {
   AI_DATA_SHARING_CONSENT_READER,
-  type AiDataSharingConsentReaderPort,
+  AiDataSharingConsentReaderPort,
 } from "./preferences/application/ports/ai-data-sharing-consent.reader.port.js";
+export { AiDataSharingConsent } from "./preferences/domain/ai-data-sharing-consent.entity.js";
 export {
   USER_PREFERENCE_READER,
-  type UserPreferenceReaderPort,
+  UserPreferenceReaderPort,
 } from "./preferences/application/ports/user-preference.reader.port.js";
 export type { PreferenceSnapshot } from "./preferences/application/read-models/preference.read-model.js";
 export type {

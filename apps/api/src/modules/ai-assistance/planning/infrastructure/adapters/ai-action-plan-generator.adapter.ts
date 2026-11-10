@@ -1,8 +1,10 @@
+import type { AiDataSharingConsentReaderPort } from "#api/modules/identity/identity-settings.public";
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
-import { now } from "#api/shared/domain/date/utils/core";
+import type { ClockPort } from "#api/shared/application/ports/clock.port";
+import { instantToDate } from "#api/shared/domain/time/instant";
 
-import { describeParsingFailure } from "../../../generation/application/ai-generation-failure.mapper.js";
+import { describeGenerationFailure } from "../../../generation/application/ai-generation-failure.mapper.js";
 import {
   buildGenerationCompletedLog,
   buildGenerationFailedLog,
@@ -13,7 +15,6 @@ import {
   type PromptDefinition,
   type PromptGeneration,
 } from "../../../generation/application/messages/prompt-definition.messages.js";
-import type { AiDataSharingConsentDecisionReaderPort } from "../../../generation/application/ports/ai-data-sharing-consent.reader.port.js";
 import type { AiGeneratorPort } from "../../../generation/application/ports/ai-generator.port.js";
 import {
   resolvePlanSchedule,
@@ -23,19 +24,20 @@ import { isEmptyVoiceNoteDigest } from "../../application/action-plan-draft.mapp
 import { buildWithinLimit } from "../../application/messages/planning-context.messages.js";
 import { quickPlanPrompt } from "../../application/messages/quick-plan-prompt.messages.js";
 import { voiceNoteDigestPrompt } from "../../application/messages/voice-note-digest-prompt.messages.js";
-import type {
+import {
   ActionPlanGeneratorPort,
-  GeneratedActionPlan,
-  QuickPlanGeneration,
-  QuickPlanGenerationInput,
-  VoiceNoteDigestGeneration,
-  VoiceNoteDigestGenerationInput,
+  type GeneratedActionPlan,
+  type QuickPlanGeneration,
+  type QuickPlanGenerationInput,
+  type VoiceNoteDigestGeneration,
+  type VoiceNoteDigestGenerationInput,
 } from "../../application/ports/action-plan-generator.port.js";
 import type { NormalizedActionPlan } from "../../domain/action-plan-draft.constants.js";
 
 interface ActionPlanGeneratorDependencies {
   readonly generator: Pick<AiGeneratorPort, "generate">;
-  readonly consentReader: Pick<AiDataSharingConsentDecisionReaderPort, "findAiDataSharingConsent">;
+  readonly consentReader: Pick<AiDataSharingConsentReaderPort, "findAiDataSharingConsent">;
+  readonly clock: ClockPort;
   readonly logger: Pick<ApplicationLoggerPort, "log" | "error">;
 }
 
@@ -71,15 +73,16 @@ function normalizeContext(input: QuickPlanGenerationInput | VoiceNoteDigestGener
   };
 }
 
-export class AiActionPlanGeneratorAdapter implements ActionPlanGeneratorPort {
+export class AiActionPlanGeneratorAdapter extends ActionPlanGeneratorPort {
   readonly #dependencies: ActionPlanGeneratorDependencies;
 
   constructor(dependencies: ActionPlanGeneratorDependencies) {
+    super();
     this.#dependencies = dependencies;
   }
 
   async generateQuickPlan(input: QuickPlanGenerationInput): Promise<QuickPlanGeneration> {
-    const at = now();
+    const at = instantToDate(this.#dependencies.clock.now());
     const definition = quickPlanPrompt;
     const built = buildWithinLimit(definition, { ...input, now: at }, input.locale);
     const { value, meta } = await this.#generate(
@@ -96,7 +99,7 @@ export class AiActionPlanGeneratorAdapter implements ActionPlanGeneratorPort {
   }
 
   async digestVoiceNote(input: VoiceNoteDigestGenerationInput): Promise<VoiceNoteDigestGeneration> {
-    const at = now();
+    const at = instantToDate(this.#dependencies.clock.now());
     const definition = voiceNoteDigestPrompt;
     const built = buildWithinLimit(definition, { ...input, now: at }, input.locale);
     const { value, meta } = await this.#generate(
@@ -123,10 +126,11 @@ export class AiActionPlanGeneratorAdapter implements ActionPlanGeneratorPort {
     { userId, signal }: { readonly userId: string; readonly signal?: AbortSignal },
     keepsCharge: (result: R) => boolean,
   ): Promise<PromptGeneration<R>> {
-    const { generator, consentReader, logger } = this.#dependencies;
-    const startedAt = Date.now();
+    const { generator, consentReader, clock, logger } = this.#dependencies;
+    const startedAt = clock.now().epochMilliseconds;
     const logBase = { task: definition.id, promptVersion: definition.version, userId };
-    const { agreedVersion } = await consentReader.findAiDataSharingConsent(userId);
+    const consent = await consentReader.findAiDataSharingConsent(userId);
+    const { agreedVersion } = consent.status();
     try {
       const generation = await generateWithPrompt(generator, definition, built, context, {
         agreedConsentVersion: agreedVersion,
@@ -142,13 +146,13 @@ export class AiActionPlanGeneratorAdapter implements ActionPlanGeneratorPort {
       );
       return generation;
     } catch (error) {
-      const failure = describeParsingFailure(error);
+      const failure = describeGenerationFailure(error);
       logger.error(
         buildGenerationFailedLog({
           ...logBase,
           outcome: "FAILED",
           ...failure,
-          latencyMs: Date.now() - startedAt,
+          latencyMs: clock.now().epochMilliseconds - startedAt,
           quotaCharged: false,
         }),
       );

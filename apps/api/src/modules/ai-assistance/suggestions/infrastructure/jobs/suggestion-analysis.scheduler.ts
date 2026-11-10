@@ -1,88 +1,79 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
-import { Inject, Injectable, Logger, type OnModuleInit } from "@nestjs/common";
-import dayjs from "dayjs";
+import { Injectable, Logger, type OnModuleInit } from "@nestjs/common";
 
 import { premiumAccessCondition } from "#api/modules/access/access-entitlement-sql.public";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { forEachBatch } from "#api/platform/database/utils/batch-cursor.util";
 import { runInBackground } from "#api/platform/jobs/non-blocking-init";
-import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
-import { subtractDays } from "#api/shared/domain/date/utils/arithmetic";
-import { now } from "#api/shared/domain/date/utils/core";
-import { DEFAULT_DELIVERY_TIMEZONE } from "#api/shared/domain/date/utils/timezone";
+import { ClockPort } from "#api/shared/application/ports/clock.port";
+import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
+import { DEFAULT_DELIVERY_TIMEZONE, resolveTimezone } from "#api/shared/domain/date/utils/timezone";
+import { instantToDate } from "#api/shared/domain/time/instant";
 
 import { AiJobLogEvent } from "../../../reports/infrastructure/jobs/ai-job.log-events.js";
-import { AiSuggestionQueueMaintenanceService } from "./ai-suggestion-queue-maintenance.scheduler.js";
+import {
+  isInSuggestionDispatchWindow,
+  suggestionDispatchLocalDate,
+} from "../../domain/suggestion-dispatch-window.domain-service.js";
 import {
   AI_SUGGESTION_QUEUE,
   type AiSuggestionAnalyzeData,
-  AiSuggestionJobName,
-  AiSuggestionSchedulerName,
   AiSuggestionJobKey,
+  AiSuggestionJobName,
 } from "./ai-suggestion.queue.js";
-import { SuggestionAnalysisProcessor } from "./suggestion-analysis.processor.js";
 
 /** 잡 enqueue용 배치 크기 (API 호출 없이 큐 적재만 하므로 크게 설정) */
 const ENQUEUE_BATCH_SIZE = 50;
 
-/** 일일 제안 배치는 사용자별 시간대가 아니라 한국 아침 07:30 운영 일정으로 돈다 */
-const DISPATCH_CRON_TZ = "Asia/Seoul";
+/** 분석에 쓰는 최근 기록 기간. 이 안에 단건 할 일이 있는 사용자만 고른다 */
+const RECENT_ACTIVITY_DAYS = 14;
 
+/**
+ * 매시 정각 디스패치가 현지 07시대인 유료 사용자마다 분석 작업을 하나씩 등록한다.
+ * 같은 사용자의 같은 현지 날짜 작업은 멱등 키로 한 번만 등록된다.
+ */
 @Injectable()
 export class SuggestionAnalysisScheduler implements OnModuleInit {
   readonly #logger = new Logger(SuggestionAnalysisScheduler.name);
 
   readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
-  readonly #runtime: JobRuntimePort;
-  readonly #processor: SuggestionAnalysisProcessor;
-  readonly #queueMaintenance: AiSuggestionQueueMaintenanceService;
+  readonly #jobQueue: JobQueuePort;
+  readonly #clock: ClockPort;
 
   constructor(
     txHost: TransactionHost<DrizzleTransactionalAdapter>,
-    @Inject(JOB_RUNTIME) runtime: JobRuntimePort,
-    processor: SuggestionAnalysisProcessor,
-    queueMaintenance: AiSuggestionQueueMaintenanceService,
+    jobQueue: JobQueuePort,
+    clock: ClockPort,
   ) {
     this.#txHost = txHost;
-    this.#runtime = runtime;
-    this.#processor = processor;
-    this.#queueMaintenance = queueMaintenance;
+    this.#jobQueue = jobQueue;
+    this.#clock = clock;
   }
 
   /** 스케줄러 등록 완료 프로미스 (테스트 대기용) — 부팅을 블로킹하지 않는다 */
   schedulerRegistration: Promise<void> = Promise.resolve();
 
   onModuleInit(): void {
-    // Processor에 자신을 등록 (순환 참조 방지)
-    this.#processor.setSuggestionJob(this);
-
     // 작업 저장소 장애 중에도 부팅은 진행한다
     this.schedulerRegistration = runInBackground(
       this.#logger,
       "Suggestion analysis scheduler registration",
       async () => {
-        await this.#runtime.schedule(
-          AiSuggestionSchedulerName.DAILY,
-          "30 7 * * *",
-          AI_SUGGESTION_QUEUE,
-          { name: AiSuggestionJobName.DISPATCH, data: {} },
-          this.#jobOptions(),
-        );
-
-        this.#logger.log({ event: AiJobLogEvent.SCHEDULED, queueName: AI_SUGGESTION_QUEUE });
-
-        await this.#catchUpIfNeeded();
+        await this.#jobQueue.registerSchedules(AI_SUGGESTION_QUEUE);
+        this.#logger.log({ event: AiJobLogEvent.SCHEDULED, queueName: AI_SUGGESTION_QUEUE.name });
       },
     );
   }
 
   async dispatchAnalysis(): Promise<void> {
-    this.#logger.log({ event: AiJobLogEvent.DISPATCH_STARTED, queueName: AI_SUGGESTION_QUEUE });
-    await this.#queueMaintenance.cleanExpiredFailures();
+    this.#logger.log({
+      event: AiJobLogEvent.DISPATCH_STARTED,
+      queueName: AI_SUGGESTION_QUEUE.name,
+    });
 
-    const twoWeeksAgo = subtractDays(14);
-
-    const periodId = this.#getJobDeduplicationId();
+    const at = this.#clock.now();
+    const atDate = instantToDate(at);
+    const recentFrom = instantToDate(at.subtract({ hours: RECENT_ACTIVITY_DAYS * 24 }));
     let totalEnqueued = 0;
 
     await forEachBatch({
@@ -96,11 +87,11 @@ export class SuggestionAnalysisScheduler implements OnModuleInit {
           },
           where: {
             id: cursor != null ? { gt: cursor } : undefined,
-            RAW: (target) => premiumAccessCondition(target, now()),
+            RAW: (target) => premiumAccessCondition(target, atDate),
             status: "ACTIVE",
             deletedAt: { isNull: true },
             todos: {
-              startDate: { gte: twoWeeksAgo },
+              startDate: { gte: recentFrom },
               seriesId: { isNull: true },
             },
           },
@@ -108,65 +99,39 @@ export class SuggestionAnalysisScheduler implements OnModuleInit {
           limit: take,
         }),
       onBatch: async (batch) => {
-        await this.#runtime.enqueueMany(
+        const due = batch.flatMap((user) => {
+          const timeZone = resolveTimezone(user.preference?.timezone ?? DEFAULT_DELIVERY_TIMEZONE);
+          return isInSuggestionDispatchWindow({ at, timeZone }) ? [{ user, timeZone }] : [];
+        });
+        if (due.length === 0) {
+          return;
+        }
+        await this.#jobQueue.enqueueMany(
           AI_SUGGESTION_QUEUE,
-          batch.map((user) => ({
-            data: {
+          due.map(({ user, timeZone }) => ({
+            payload: {
               name: AiSuggestionJobName.ANALYZE,
               data: {
                 userId: user.id,
-                timezone: user.preference?.timezone ?? DEFAULT_DELIVERY_TIMEZONE,
+                timezone: timeZone,
                 weatherGrid: toWeatherGrid(user.location),
               } satisfies AiSuggestionAnalyzeData,
             },
-            options: {
-              ...this.#jobOptions(),
-              idempotencyKey: AiSuggestionJobKey.analyze(user.id, periodId),
-            },
+            idempotencyKey: AiSuggestionJobKey.analyze(
+              user.id,
+              suggestionDispatchLocalDate({ at, timeZone }),
+            ),
           })),
         );
-        totalEnqueued += batch.length;
+        totalEnqueued += due.length;
       },
     });
 
     this.#logger.log({
       event: AiJobLogEvent.DISPATCH_COMPLETED,
-      queueName: AI_SUGGESTION_QUEUE,
+      queueName: AI_SUGGESTION_QUEUE.name,
       enqueuedCount: totalEnqueued,
     });
-  }
-
-  async #catchUpIfNeeded(): Promise<void> {
-    const kstNow = dayjs().tz(DISPATCH_CRON_TZ);
-    const hour = kstNow.hour();
-
-    if (hour > 7 || (hour === 7 && kstNow.minute() >= 30)) {
-      this.#logger.log({ event: AiJobLogEvent.CATCH_UP, queueName: AI_SUGGESTION_QUEUE });
-      await this.#runtime.enqueue(
-        AI_SUGGESTION_QUEUE,
-        { name: AiSuggestionJobName.DISPATCH, data: {} },
-        {
-          ...this.#jobOptions(),
-          idempotencyKey: AiSuggestionJobKey.dispatch(kstNow.format("YYYY-MM-DD")),
-        },
-      );
-    }
-  }
-
-  #getJobDeduplicationId(): string {
-    return dayjs().tz(DISPATCH_CRON_TZ).format("YYYY-MM-DD");
-  }
-
-  #jobOptions() {
-    return {
-      retryLimit: 2,
-      retryDelaySeconds: 5,
-      retryBackoff: true,
-      expireInSeconds: 10 * 60,
-      retentionSeconds: 24 * 60 * 60,
-      deleteAfterSeconds: 7 * 24 * 60 * 60,
-      timezone: DISPATCH_CRON_TZ,
-    };
   }
 }
 

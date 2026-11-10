@@ -13,7 +13,7 @@ import {
   ENTITLEMENT_READER,
   type EntitlementReaderPort,
 } from "#api/modules/access/access-entitlement.public";
-import { AI_GENERATOR } from "#api/modules/ai-assistance/generation/ai-assistance-generation.public";
+import { AiGeneratorPort } from "#api/modules/ai-assistance/generation/ai-assistance-generation.public";
 import type {
   AiGenerationRequest,
   AiGenerationResult,
@@ -75,7 +75,7 @@ describe("Access AI quota HTTP 계약과 사용량 경쟁 (실제 PostgreSQL)", 
   beforeAll(async () => {
     provider = new DeferredAiGenerator();
     context = await createE2eApp({
-      customizeBuilder: (builder) => builder.overrideProvider(AI_GENERATOR).useValue(provider),
+      customizeBuilder: (builder) => builder.overrideProvider(AiGeneratorPort).useValue(provider),
       additionalResetters: [() => provider.clear()],
     });
   });

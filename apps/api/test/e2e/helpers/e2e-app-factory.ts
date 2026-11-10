@@ -17,7 +17,7 @@ import { PinoLogger } from "nestjs-pino";
 import type { App } from "supertest/types.js";
 
 import { AppModule } from "#api/app.module";
-import { AI_GENERATOR } from "#api/modules/ai-assistance/generation/ai-assistance-generation.public";
+import { AiGeneratorPort } from "#api/modules/ai-assistance/generation/ai-assistance-generation.public";
 import { ReportGenerationProcessor } from "#api/modules/ai-assistance/reports/infrastructure/jobs/report-generation.processor";
 import { ReportGenerationScheduler } from "#api/modules/ai-assistance/reports/infrastructure/jobs/report-generation.scheduler";
 import { SuggestionAnalysisProcessor } from "#api/modules/ai-assistance/suggestions/infrastructure/jobs/suggestion-analysis.processor";
@@ -262,7 +262,7 @@ export async function createE2eApp(options?: E2eAppOptions): Promise<E2eTestCont
     .useValue(fakeAdminNotifier)
     .overrideProvider(PushProviderPort)
     .useValue(fakePushProvider)
-    .overrideProvider(AI_GENERATOR)
+    .overrideProvider(AiGeneratorPort)
     .useValue(fakeAiGenerator)
     .overrideProvider(WeatherForecastProviderPort)
     .useValue(fakeWeatherProvider)

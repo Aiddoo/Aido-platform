@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 
 import { AI_PROVIDER_IDS, type AiProviderId } from "@aido/api/vocabulary";
-import { Inject, Injectable, Logger } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 import { generateText, Output } from "ai";
 
 import { TypedConfigService } from "#api/platform/config/services/config.service";
@@ -15,11 +15,11 @@ import {
   type AiUpstreamCause,
   resolveAiFailureRule,
 } from "../../application/ai-generation.errors.js";
-import type {
-  AiGenerationRequest,
-  AiGenerationResult,
+import {
+  type AiGenerationRequest,
+  type AiGenerationResult,
   AiGeneratorPort,
-  AiTaskClass,
+  type AiTaskClass,
 } from "../../application/ports/ai-generator.port.js";
 import { planAiRoute, resolveAttemptTime } from "../../domain/ai-route.domain-service.js";
 import {
@@ -33,8 +33,8 @@ import {
   createAiProviderPolicy,
 } from "./ai-provider-outbound.policy.js";
 import {
-  AI_PROVIDER_ADAPTERS,
   type AiProviderAdapter,
+  AiProviderCatalog,
   type AiProviderModel,
 } from "./ai-provider.adapter.js";
 import { AiGuardLogEvent, AiProviderLogEvent } from "./ai-provider.log-events.js";
@@ -98,9 +98,9 @@ interface ChainContext {
  * 기다린 뒤 넘긴다. 끝나면 이번 요청의 추정 비용을 예산에 한 번 더한다.
  */
 @Injectable()
-export class AiSdkGeneratorAdapter implements AiGeneratorPort {
+export class AiSdkGeneratorAdapter extends AiGeneratorPort {
   readonly #logger = new Logger(AiSdkGeneratorAdapter.name);
-  readonly #adapters: ReadonlyMap<AiProviderId, AiProviderAdapter>;
+  readonly #providers: AiProviderCatalog;
   readonly #providerPolicies: ReadonlyMap<AiProviderId, OutboundPolicy>;
   readonly #classPolicies: Readonly<Record<AiTaskClass, OutboundPolicy>>;
   readonly #inflight = new Map<string, Promise<AiGenerationResult<unknown>>>();
@@ -110,13 +110,14 @@ export class AiSdkGeneratorAdapter implements AiGeneratorPort {
 
   constructor(
     config: TypedConfigService,
-    @Inject(AI_PROVIDER_ADAPTERS) adapters: readonly AiProviderAdapter[],
+    providers: AiProviderCatalog,
     policies: OutboundPolicyRegistry,
     spend: AiSpendBudgetAdapter,
   ) {
+    super();
     this.#config = config;
     this.#spend = spend;
-    this.#adapters = new Map(adapters.map((adapter) => [adapter.id, adapter]));
+    this.#providers = providers;
     this.#providerPolicies = new Map(
       AI_PROVIDER_IDS.map((provider) => [
         provider,
@@ -224,7 +225,8 @@ export class AiSdkGeneratorAdapter implements AiGeneratorPort {
     const routeInput = {
       order: this.#config.ai.providerOrder,
       configured: new Set(
-        [...this.#adapters.values()]
+        this.#providers
+          .list()
           .filter((adapter) => adapter.getModel(request.task) != null)
           .map((adapter) => adapter.id),
       ),
@@ -240,7 +242,7 @@ export class AiSdkGeneratorAdapter implements AiGeneratorPort {
     let last: { provider: AiProviderId; failure: AiFailedAttempt } | null = null;
 
     for (const [index, provider] of route.entries()) {
-      const adapter = this.#adapters.get(provider);
+      const adapter = this.#providers.find(provider);
       const model = adapter?.getModel(request.task);
       if (adapter == null || model == null) {
         continue;

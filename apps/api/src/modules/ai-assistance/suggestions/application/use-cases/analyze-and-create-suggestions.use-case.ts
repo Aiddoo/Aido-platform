@@ -1,13 +1,13 @@
 import { AI_SUGGESTION_LIMITS } from "@aido/api/vocabulary";
-import dayjs from "dayjs";
 import { orderBy } from "es-toolkit";
 
 import type { EntitlementReaderPort } from "#api/modules/access/access-entitlement.public";
 import type { UserMutationLockPort } from "#api/modules/identity/identity-user-access.public";
 import type { GridInput } from "#api/modules/weather/forecasts/weather-forecasts.public";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
+import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { type UnitOfWorkPort } from "#api/shared/application/ports/index";
-import { now } from "#api/shared/domain/date/utils/core";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import type { SupportedLocale } from "#api/shared/domain/locale";
 
 import {
@@ -22,11 +22,9 @@ import {
 } from "../../../generation/application/ai-generation.log-events.js";
 import { generateWithPrompt } from "../../../generation/application/messages/prompt-definition.messages.js";
 import type { AiGeneratorPort } from "../../../generation/application/ports/ai-generator.port.js";
-import {
-  findScheduledAiConsent,
-  type ScheduledAiConsentReaders,
-} from "../../../generation/application/scheduled-ai-consent.reader.js";
+import type { ScheduledAiConsentReader } from "../../../generation/application/scheduled-ai-consent.reader.js";
 import { resolveSuggestedCategoryId } from "../../domain/category-resolver.domain-service.js";
+import { Suggestion } from "../../domain/suggestion.aggregate.js";
 import { AiSuggestionLogEvent } from "../ai-suggestion.log-events.js";
 import { suggestionPrompt } from "../messages/suggestion-prompt.messages.js";
 import { type SuggestionRepositoryPort } from "../ports/suggestion.repository.port.js";
@@ -42,16 +40,24 @@ import type { SuggestionContextReader } from "../suggestion-context.reader.js";
 interface AnalyzeAndCreateSuggestionsDependencies {
   readonly repository: Pick<
     SuggestionRepositoryPort,
-    "deletePending" | "deleteExpired" | "createMany"
+    "deletePendingByUserId" | "deleteExpiredByUserId" | "nextIds" | "saveMany"
   >;
   readonly generator: Pick<AiGeneratorPort, "generate">;
-  readonly aiDataSharingConsent: ScheduledAiConsentReaders["aiDataSharingConsent"];
-  readonly clientAppVersion: ScheduledAiConsentReaders["clientAppVersion"];
+  readonly scheduledAiConsent: Pick<ScheduledAiConsentReader, "find">;
+  readonly clock: ClockPort;
   readonly unitOfWork: Pick<UnitOfWorkPort, "run">;
   readonly contextBuilder: Pick<SuggestionContextReader, "build">;
   readonly logger: Pick<ApplicationLoggerPort, "debug" | "log" | "warn">;
   readonly entitlementReader: Pick<EntitlementReaderPort, "canInTx">;
   readonly userMutationLock: Pick<UserMutationLockPort, "lockById">;
+}
+
+export interface AnalyzeAndCreateSuggestionsCommand {
+  readonly userId: string;
+  readonly timezone: string;
+  /** dispatcher가 미리 조회한 KMA 격자 좌표 (위치 미설정 시 null) */
+  readonly weatherGrid?: GridInput | null;
+  readonly locale?: SupportedLocale;
 }
 
 export class AnalyzeAndCreateSuggestionsUseCase {
@@ -61,12 +67,8 @@ export class AnalyzeAndCreateSuggestionsUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(
-    userId: string,
-    timezone: string,
-    weatherGrid?: GridInput | null,
-    locale: SupportedLocale = "ko",
-  ): Promise<number> {
+  async execute(command: AnalyzeAndCreateSuggestionsCommand): Promise<number> {
+    const { userId, timezone, weatherGrid = null, locale = "ko" } = command;
     if (!(await this.#dependencies.entitlementReader.canInTx(userId, "AI_SUGGESTION"))) {
       this.#dependencies.logger.debug({
         event: AiSuggestionLogEvent.SKIPPED,
@@ -75,7 +77,7 @@ export class AnalyzeAndCreateSuggestionsUseCase {
       });
       return 0;
     }
-    const consent = await findScheduledAiConsent(this.#dependencies, userId);
+    const consent = await this.#dependencies.scheduledAiConsent.find(userId);
     if (!consent.allowed) {
       this.#dependencies.logger.debug({
         event: AiSuggestionLogEvent.SKIPPED,
@@ -108,7 +110,7 @@ export class AnalyzeAndCreateSuggestionsUseCase {
       userId,
       quotaCharged: false,
     } as const;
-    const startedAt = Date.now();
+    const startedAt = this.#dependencies.clock.now().epochMilliseconds;
     const generation = await generateWithPrompt(
       this.#dependencies.generator,
       definition,
@@ -126,7 +128,7 @@ export class AnalyzeAndCreateSuggestionsUseCase {
           ...logBase,
           outcome: settled ? "FAILED" : "RETRYING",
           ...failure,
-          latencyMs: Date.now() - startedAt,
+          latencyMs: this.#dependencies.clock.now().epochMilliseconds - startedAt,
         }),
       );
       // 일시 장애만 잡 재시도로 넘긴다. 출력 오류·차단·잘림은 다시 불러도 같은 비용으로 같게 실패한다.
@@ -158,8 +160,9 @@ export class AnalyzeAndCreateSuggestionsUseCase {
       return 0;
     }
 
-    const currentDate = dayjs.utc(now());
-    const expiresAt = currentDate.add(AI_SUGGESTION_LIMITS.SUGGESTION_EXPIRY_DAYS, "day").toDate();
+    const now = this.#dependencies.clock.now();
+    const expiresAt = now.add({ hours: AI_SUGGESTION_LIMITS.SUGGESTION_EXPIRY_DAYS * 24 });
+    const owner = UserId.reconstitute(userId);
 
     const limitedPatterns = orderBy(patterns, ["confidence"], ["desc"]).slice(
       0,
@@ -174,27 +177,37 @@ export class AnalyzeAndCreateSuggestionsUseCase {
       ) {
         return 0;
       }
-      await this.#dependencies.repository.deletePending(userId);
-      await this.#dependencies.repository.deleteExpired(userId);
+      const { repository } = this.#dependencies;
+      await repository.deletePendingByUserId(owner);
+      await repository.deleteExpiredByUserId(owner, now);
 
-      const { count } = await this.#dependencies.repository.createMany(
-        limitedPatterns.map((pattern) => ({
-          userId,
-          title: pattern.title,
-          daysOfWeek: pattern.daysOfWeek,
-          scheduledTime: pattern.scheduledTime,
-          confidence: pattern.confidence,
-          reason: pattern.reason,
-          matchedTodos: pattern.matchedTitles,
-          expiresAt,
-          suggestedCategoryId: resolveSuggestedCategoryId(
-            pattern.title,
-            pattern.matchedTitles,
-            context.todos,
-          ),
-        })),
-      );
-      return count;
+      const ids = await repository.nextIds(limitedPatterns.length);
+      const suggestions = limitedPatterns.flatMap((pattern, index) => {
+        const id = ids[index];
+        return id == null
+          ? []
+          : [
+              Suggestion.create({
+                id,
+                userId: owner,
+                title: pattern.title,
+                daysOfWeek: pattern.daysOfWeek,
+                scheduledTime: pattern.scheduledTime,
+                confidence: pattern.confidence,
+                reason: pattern.reason,
+                matchedTodos: pattern.matchedTitles,
+                expiresAt,
+                suggestedCategoryId: resolveSuggestedCategoryId(
+                  pattern.title,
+                  pattern.matchedTitles,
+                  context.todos,
+                ),
+                now,
+              }),
+            ];
+      });
+      await repository.saveMany(suggestions);
+      return suggestions.length;
     });
 
     if (createdCount > 0) {

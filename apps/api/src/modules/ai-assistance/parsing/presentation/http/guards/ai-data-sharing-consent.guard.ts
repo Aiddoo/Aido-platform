@@ -1,15 +1,13 @@
 import type { CurrentUserPayload } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
-import { type CanActivate, type ExecutionContext, Inject, Injectable } from "@nestjs/common";
+import { type CanActivate, type ExecutionContext, Injectable } from "@nestjs/common";
 import type { Request } from "express";
 
+import { AiDataSharingConsentReaderPort } from "#api/modules/identity/identity-settings.public";
 import { RequestClientReader } from "#api/platform/http/request-client/index";
 import { ApplicationException } from "#api/shared/application/application.exception";
+import { ClockPort } from "#api/shared/application/ports/clock.port";
 
-import {
-  AI_DATA_SHARING_CONSENT_DECISION_READER,
-  type AiDataSharingConsentDecisionReaderPort,
-} from "../../../../generation/application/ports/ai-data-sharing-consent.reader.port.js";
 import { canShareWithAi } from "../../../../shared/domain/ai-data-sharing-consent.domain-service.js";
 
 interface AuthenticatedRequest extends Request {
@@ -22,16 +20,18 @@ interface AuthenticatedRequest extends Request {
  */
 @Injectable()
 export class AiDataSharingConsentGuard implements CanActivate {
-  readonly #consentReader: AiDataSharingConsentDecisionReaderPort;
+  readonly #consentReader: Pick<AiDataSharingConsentReaderPort, "findAiDataSharingConsent">;
   readonly #requestClientReader: RequestClientReader;
+  readonly #clock: ClockPort;
 
   constructor(
-    @Inject(AI_DATA_SHARING_CONSENT_DECISION_READER)
-    consentReader: AiDataSharingConsentDecisionReaderPort,
+    consentReader: AiDataSharingConsentReaderPort,
     requestClientReader: RequestClientReader,
+    clock: ClockPort,
   ) {
     this.#consentReader = consentReader;
     this.#requestClientReader = requestClientReader;
+    this.#clock = clock;
   }
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -42,9 +42,9 @@ export class AiDataSharingConsentGuard implements CanActivate {
     }
 
     const { appVersion } = this.#requestClientReader.current();
-    const { decision } = await this.#consentReader.findAiDataSharingConsent(user.userId);
-    if (!canShareWithAi(decision, appVersion)) {
-      throw new ApplicationException(ErrorCode.AI_1311, { decision });
+    const consent = await this.#consentReader.findAiDataSharingConsent(user.userId);
+    if (!canShareWithAi({ consent, appVersion, now: this.#clock.now() })) {
+      throw new ApplicationException(ErrorCode.AI_1311, { decision: consent.status().decision });
     }
     return true;
   }

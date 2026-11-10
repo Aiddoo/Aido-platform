@@ -1,25 +1,20 @@
-import { Inject, Injectable } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 
-import {
-  USER_PREFERENCE_READER,
-  type UserPreferenceReaderPort,
-} from "#api/modules/identity/identity-settings.public";
+import { UserPreferenceReaderPort } from "#api/modules/identity/identity-settings.public";
 import { resolveTimezone } from "#api/shared/domain/date/utils/timezone";
 import { toSupportedLocale } from "#api/shared/domain/locale";
 
-import type {
-  UserLocalePreference,
+import {
+  type UserLocalePreference,
   UserLocalePreferenceReaderPort,
 } from "../../application/ports/user-locale-preference.reader.port.js";
 
 @Injectable()
-export class UserLocalePreferenceReaderAdapter implements UserLocalePreferenceReaderPort {
+export class UserLocalePreferenceReaderAdapter extends UserLocalePreferenceReaderPort {
   readonly #preferenceReader: Pick<UserPreferenceReaderPort, "read">;
 
-  constructor(
-    @Inject(USER_PREFERENCE_READER)
-    preferenceReader: Pick<UserPreferenceReaderPort, "read">,
-  ) {
+  constructor(preferenceReader: UserPreferenceReaderPort) {
+    super();
     this.#preferenceReader = preferenceReader;
   }
 

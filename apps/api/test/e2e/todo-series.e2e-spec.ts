@@ -9,7 +9,7 @@ import { TODO_LIMITS, TODO_SERIES_LIMITS } from "@aido/api/vocabulary";
 import { eq, sql } from "drizzle-orm";
 import request from "supertest";
 
-import { AI_GENERATOR } from "#api/modules/ai-assistance/generation/ai-assistance-generation.public";
+import { AiGeneratorPort } from "#api/modules/ai-assistance/generation/ai-assistance-generation.public";
 import { createEntityId } from "#api/platform/database/entity-id";
 import { memo, todo, todoSeries, user as userTable } from "#api/platform/database/schema/index";
 import { FakeAiGenerator } from "#test/mocks/fake-ai.generator";
@@ -40,7 +40,7 @@ describe("반복 할 일 생성 E2E", () => {
     fakeAiGenerator = new FakeAiGenerator();
     ctx = await createE2eApp({
       customizeBuilder: (builder) =>
-        builder.overrideProvider(AI_GENERATOR).useValue(fakeAiGenerator),
+        builder.overrideProvider(AiGeneratorPort).useValue(fakeAiGenerator),
       additionalResetters: [() => fakeAiGenerator.clear()],
     });
   }, 60000);

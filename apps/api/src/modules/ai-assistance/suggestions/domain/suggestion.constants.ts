@@ -1,5 +1,12 @@
 import type { DayOfWeek } from "@aido/api/vocabulary";
 
+import type { SuggestionStatus } from "./suggestion.aggregate.js";
+
+/** 제안에 대한 사용자 응답. 요청 계약 suggestionActionSchema와 같은 값이다 */
+export const SUGGESTION_ACTIONS = ["accept", "dismiss"] as const;
+
+export type SuggestionAction = (typeof SUGGESTION_ACTIONS)[number];
+
 /**
  * AI가 감지한 반복 패턴
  */
@@ -64,7 +71,7 @@ export interface UserStreakInfo {
  */
 export interface SuggestionHistoryItem {
   readonly title: string;
-  readonly status: "ACCEPTED" | "DISMISSED";
+  readonly status: Exclude<SuggestionStatus, "PENDING">;
 }
 
 /** Calendar DATE 기준 실제 기록과 완료 근거. 등록 횟수와 완료 횟수는 구분한다. */

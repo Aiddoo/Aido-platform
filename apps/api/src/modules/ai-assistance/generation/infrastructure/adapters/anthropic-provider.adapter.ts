@@ -6,10 +6,11 @@ import { TypedConfigService } from "#api/platform/config/services/config.service
 
 import type { AiFailureKind } from "../../application/ai-generation.errors.js";
 import type { AiGenerationPolicy } from "./ai-generation-policy.constants.js";
-import type {
+import {
   AiProviderAdapter,
-  AiProviderModel,
-  AiProviderOptions,
+  type AiProviderDataHandling,
+  type AiProviderModel,
+  type AiProviderOptions,
 } from "./ai-provider.adapter.js";
 import { classifyAiSdkError, type ProviderErrorBody } from "./ai-sdk-failure.mapper.js";
 
@@ -25,11 +26,17 @@ const CREDIT_BALANCE_PATTERN = /credit balance is too low/i;
 
 /** Claude. 1순위. 크레딧 소진은 402 billing_error나 400 문구로, 과부하는 529 overloaded_error로 온다. */
 @Injectable()
-export class AnthropicProviderAdapter implements AiProviderAdapter {
+export class AnthropicProviderAdapter extends AiProviderAdapter {
   readonly id = "anthropic";
+  readonly dataHandling: AiProviderDataHandling = {
+    trainsOnUserData: false,
+    disablesResponseStorage: false,
+    basis: "Anthropic API 상업 약관 기본값: API 입력·출력을 모델 학습에 쓰지 않는다",
+  };
   readonly #model: AiProviderModel | null;
 
   constructor(config: TypedConfigService) {
+    super();
     const { apiKey, model } = config.ai.providers.anthropic;
     this.#model =
       apiKey == null

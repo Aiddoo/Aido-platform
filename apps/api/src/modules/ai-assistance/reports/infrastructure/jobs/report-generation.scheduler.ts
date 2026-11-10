@@ -75,14 +75,14 @@ export class ReportGenerationScheduler implements OnModuleInit {
           HOURLY_DISPATCH_CRON,
           AI_REPORT_QUEUE,
           { name: AiReportJobName.DISPATCH, data: { reportType: "WEEKLY" } },
-          this.#jobOptions(),
+          { ...this.#jobOptions(), missed: "once" },
         );
         await this.#runtime.schedule(
           AiReportSchedulerName.MONTHLY,
           HOURLY_DISPATCH_CRON,
           AI_REPORT_QUEUE,
           { name: AiReportJobName.DISPATCH, data: { reportType: "MONTHLY" } },
-          this.#jobOptions(),
+          { ...this.#jobOptions(), missed: "once" },
         );
 
         this.#logger.log({ event: AiJobLogEvent.SCHEDULED, queueName: AI_REPORT_QUEUE });

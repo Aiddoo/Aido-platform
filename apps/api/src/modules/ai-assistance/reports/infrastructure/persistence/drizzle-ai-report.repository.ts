@@ -1,48 +1,27 @@
-import {
-  categoryBreakdownItemSchema,
-  dayPatternItemSchema,
-  reportStatsSchema,
-  timePatternItemSchema,
-} from "@aido/api";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
 import { and, eq } from "drizzle-orm";
-import { z } from "zod";
 
-import { requireRecord } from "#api/platform/database/database-error.util";
+import { isUniqueConstraintViolation } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
-import { aiReport } from "#api/platform/database/schema/index";
-import { toSupportedLocale } from "#api/shared/domain/locale";
+import { aiReport } from "#api/platform/database/schema/ai-assistance.schema";
+import { nextSequenceValue } from "#api/platform/database/sequence";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import type {
-  AiReportRepositoryPort,
-  CreateAiReportInput,
-  FindReportsParams,
-} from "../../application/ports/ai-report.repository.port.js";
+import { AiReportRepositoryPort } from "../../application/ports/ai-report.repository.port.js";
+import { DuplicateAiReportError } from "../../application/reports.errors.js";
+import { AiReportId } from "../../domain/ai-report-id.vo.js";
+import type { AiReport } from "../../domain/ai-report.aggregate.js";
 import type { ReportType } from "../../domain/ai-report.constants.js";
-import { AiReport } from "../../domain/ai-report.entity.js";
+import { toAiReport, toAiReportRow } from "./ai-report-row.mapper.js";
 
-type AiReportRow = typeof aiReport.$inferSelect;
-
-const DEFAULT_STATS = {
-  totalTodos: 0,
-  completedTodos: 0,
-  completionRate: 0,
-  prevCompletionRate: null,
-  streakDays: 0,
-} as const;
-
-/**
- * AI 리포트 저장소 Drizzle 어댑터.
- *
- * 트랜잭션은 CLS로 전파된다 — TransactionHost.tx가 활성 트랜잭션 클라이언트를,
- * 없으면 베이스 클라이언트를 반환한다. jsonb 컬럼의 파싱은 어댑터가 소유한다.
- */
+/** 트랜잭션은 CLS로 전파된다. jsonb 칸의 파싱은 행 매퍼가 소유한다. */
 @Injectable()
-export class DrizzleAiReportRepository implements AiReportRepositoryPort {
+export class DrizzleAiReportRepository extends AiReportRepositoryPort {
   readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
 
   constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>) {
+    super();
     this.#txHost = txHost;
   }
 
@@ -50,82 +29,69 @@ export class DrizzleAiReportRepository implements AiReportRepositoryPort {
     return this.#txHost.tx;
   }
 
-  async create(input: CreateAiReportInput): Promise<AiReport> {
-    const [row] = await this.#db.insert(aiReport).values(input).returning();
-    return DrizzleAiReportRepository.toDomain(requireRecord(row));
+  async nextId(): Promise<AiReportId> {
+    return AiReportId.reconstitute(await nextSequenceValue(this.#db, aiReport.id));
   }
 
-  async findByIdAndUserId(id: number, userId: string): Promise<AiReport | null> {
-    const row = await this.#db.query.aiReport.findFirst({ where: { id, userId } });
-    return row == null ? null : DrizzleAiReportRepository.toDomain(row);
+  async save(report: AiReport): Promise<void> {
+    const row = toAiReportRow(report);
+    try {
+      await this.#db
+        .insert(aiReport)
+        .values(row)
+        .onConflictDoUpdate({ target: aiReport.id, set: row });
+    } catch (error) {
+      // AiReport_userId_type_year_period_key: 같은 주기 리포트를 다른 실행이 먼저 저장했다
+      if (isUniqueConstraintViolation(error)) {
+        throw new DuplicateAiReportError();
+      }
+      throw error;
+    }
   }
 
-  async findLatest(userId: string, type: ReportType): Promise<AiReport | null> {
+  async findByIdAndUserId(reportId: AiReportId, userId: UserId): Promise<AiReport | null> {
     const row = await this.#db.query.aiReport.findFirst({
-      where: { userId, type },
-      orderBy: { generatedAt: "desc" },
+      where: { id: reportId.value, userId: userId.value },
     });
-    return row == null ? null : DrizzleAiReportRepository.toDomain(row);
+    return row == null ? null : toAiReport(row);
   }
 
-  async findMany(params: FindReportsParams): Promise<AiReport[]> {
+  async findLatest(userId: UserId, type: ReportType): Promise<AiReport | null> {
+    const row = await this.#db.query.aiReport.findFirst({
+      where: { userId: userId.value, type },
+      orderBy: { generatedAt: "desc", id: "desc" },
+    });
+    return row == null ? null : toAiReport(row);
+  }
+
+  async listByUserId(params: {
+    readonly userId: UserId;
+    readonly type: ReportType | null;
+    readonly limit: number;
+  }): Promise<AiReport[]> {
     const rows = await this.#db.query.aiReport.findMany({
-      where: { userId: params.userId, ...(params.type == null ? {} : { type: params.type }) },
-      orderBy: { generatedAt: "desc" },
+      where: { userId: params.userId.value, ...(params.type == null ? {} : { type: params.type }) },
+      orderBy: { generatedAt: "desc", id: "desc" },
       limit: params.limit,
     });
-    return rows.map((row) => DrizzleAiReportRepository.toDomain(row));
+    return rows.map(toAiReport);
   }
 
-  async exists(userId: string, type: ReportType, year: number, period: number): Promise<boolean> {
+  async existsForPeriod(params: {
+    readonly userId: UserId;
+    readonly type: ReportType;
+    readonly year: number;
+    readonly period: number;
+  }): Promise<boolean> {
     const count = await this.#db.$count(
       aiReport,
       and(
-        eq(aiReport.userId, userId),
-        eq(aiReport.type, type),
-        eq(aiReport.year, year),
-        eq(aiReport.period, period),
+        eq(aiReport.userId, params.userId.value),
+        eq(aiReport.type, params.type),
+        eq(aiReport.year, params.year),
+        eq(aiReport.period, params.period),
       ),
     );
     return count > 0;
-  }
-
-  /** 행 → AiReport 애그리게잇 (jsonb 파싱 포함) */
-  static toDomain(row: AiReportRow): AiReport {
-    return AiReport.reconstitute({
-      id: row.id,
-      userId: row.userId,
-      type: row.type,
-      year: row.year,
-      period: row.period,
-      stats: DrizzleAiReportRepository.parseStats(row.stats),
-      categoryBreakdown: DrizzleAiReportRepository.parseArray(
-        z.array(categoryBreakdownItemSchema),
-        row.categoryBreakdown,
-      ),
-      dayPatterns: DrizzleAiReportRepository.parseArray(
-        z.array(dayPatternItemSchema),
-        row.dayPatterns,
-      ),
-      timePatterns: DrizzleAiReportRepository.parseArray(
-        z.array(timePatternItemSchema),
-        row.timePatterns,
-      ),
-      aiSummary: row.aiSummary,
-      aiTips: DrizzleAiReportRepository.parseArray(z.array(z.string()), row.aiTips),
-      locale: toSupportedLocale(row.locale),
-      hasActivity: row.hasActivity,
-      generatedAt: row.generatedAt,
-    });
-  }
-
-  static parseStats(raw: unknown) {
-    const result = reportStatsSchema.safeParse(raw);
-    return result.success ? result.data : { ...DEFAULT_STATS };
-  }
-
-  static parseArray<T>(schema: z.ZodType<T[]>, raw: unknown): T[] {
-    const result = schema.safeParse(raw);
-    return result.success ? result.data : [];
   }
 }
