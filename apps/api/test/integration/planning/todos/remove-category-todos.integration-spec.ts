@@ -5,11 +5,19 @@ import { PgBoss } from "pg-boss";
 import { TODO_REMINDER_QUEUE } from "#api/modules/notification/notification-reminders.public";
 import { TodoReminderSchedulerAdapter } from "#api/modules/notification/reminders/infrastructure/jobs/todo-reminder-scheduler.adapter";
 import { TodoCategoryId } from "#api/modules/planning/categories/domain/todo-category-id.vo";
+import { TodoId } from "#api/modules/planning/shared/domain/todo-id.vo";
 import { RemoveCategoryTodosUseCase } from "#api/modules/planning/todos/application/use-cases/remove-category-todos.use-case";
 import { ReminderSchedulerAdapter } from "#api/modules/planning/todos/infrastructure/adapters/todo-reminder-scheduler.adapter";
 import { DrizzleTodoBulkRemoverAdapter } from "#api/modules/planning/todos/infrastructure/persistence/drizzle-todo-bulk-remover.adapter";
+import { DrizzleTodoRepository } from "#api/modules/planning/todos/infrastructure/persistence/drizzle-todo.repository";
+import { DatabaseRecordNotFoundError } from "#api/platform/database/database-error.util";
 import { createEntityId } from "#api/platform/database/entity-id";
-import { todoCategory, todoSeries, user as userTable } from "#api/platform/database/schema/index";
+import {
+  todo,
+  todoCategory,
+  todoSeries,
+  user as userTable,
+} from "#api/platform/database/schema/index";
 import { JobQueueRegistry } from "#api/platform/jobs/job-queue.registry";
 import { PgBossJobQueueAdapter } from "#api/platform/jobs/pg-boss-job-queue.adapter";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
@@ -39,6 +47,7 @@ describe("카테고리의 할 일을 한꺼번에 지운다 (실제 PostgreSQL·
   let reminders: ReminderSchedulerAdapter;
   let uow: UnitOfWorkPort;
   let useCase: RemoveCategoryTodosUseCase;
+  let todoRepository: DrizzleTodoRepository;
   let ownerId: string;
   let removedCategoryId: number;
   let keptCategoryId: number;
@@ -68,6 +77,7 @@ describe("카테고리의 할 일을 한꺼번에 지운다 (실제 PostgreSQL·
       todoCache: new FakeTodoCache(),
       afterCommit: new RecordingAfterCommitRegistry(),
     });
+    todoRepository = new DrizzleTodoRepository(transaction.txHost, new FixedClock(NOW));
   });
 
   beforeEach(async () => {
@@ -186,5 +196,39 @@ describe("카테고리의 할 일을 한꺼번에 지운다 (실제 PostgreSQL·
     expect(await countTodoRows(client, removed.todoIds)).toEqual(before);
     expect(await seriesCountOf(removedCategoryId)).toBe(2);
     expect(await queuedReminderTodoIds()).toEqual(queuedBefore);
+  });
+
+  it("지우는 트랜잭션을 기다린 할 일 수정은 행을 되살리지 못하고 부재 오류로 롤백된다", async () => {
+    // Given - 할 일 수정은 할 일 잠금만 잡아 카테고리 삭제 잠금과 겹치지 않는다. 행 잠금에서 만난다
+    const [targetId = 0] = removed.todoIds;
+    const deleted = Promise.withResolvers<void>();
+    const release = Promise.withResolvers<void>();
+    const removal = uow.run(async () => {
+      await removeCategoryTodos();
+      deleted.resolve();
+      await release.promise;
+    });
+    await deleted.promise;
+
+    // When
+    const update = uow.run(() =>
+      todoRepository.updateTitle(TodoId.reconstitute(targetId), "고친 제목"),
+    );
+    await vi.waitFor(
+      async () => {
+        const waiting = await client.execute<{ count: number }>(sql`
+          SELECT count(*)::int AS count FROM pg_stat_activity
+          WHERE datname = current_database() AND wait_event_type = 'Lock'
+            AND query ILIKE '%UPDATE%' AND query LIKE '%"Todo"%'`);
+        expect(waiting.rows[0]?.count).toBe(1);
+      },
+      { timeout: 10_000 },
+    );
+    release.resolve();
+    await removal;
+
+    // Then
+    await expect(update).rejects.toBeInstanceOf(DatabaseRecordNotFoundError);
+    expect(await client.$count(todo, eq(todo.id, targetId))).toBe(0);
   });
 });
