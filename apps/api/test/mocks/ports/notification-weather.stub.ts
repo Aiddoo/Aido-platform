@@ -1,4 +1,3 @@
-import type { CreateNotificationData } from "#api/modules/notification/application/ports/delivery/notification-data";
 import type {
   ReminderWeatherReport,
   ReminderWeatherReportReaderPort,
@@ -14,7 +13,8 @@ import type {
   WeatherReminderReaderPort,
   WeatherReminderTodoQuery,
 } from "#api/modules/notification/application/ports/reminders/weather-reminder-reader.port";
-import type { NotificationHistoryReader } from "#api/modules/notification/application/readers/delivery/notification-history.reader";
+import type { NotificationHistoryReader } from "#api/modules/notification/inbox/application/notification-history.reader";
+import type { CreateNotificationData } from "#api/modules/notification/inbox/application/ports/notification-draft.port";
 
 /** 아침·저녁 날씨 알림 수신자와 할 일을 고정해 돌려주고 조회 조건을 기록한다. */
 export class StubWeatherReminderReader implements WeatherReminderReaderPort {

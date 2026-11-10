@@ -4,10 +4,10 @@ import { UNIT_OF_WORK } from "#api/shared/application/ports/index";
 
 import { RETENTION_CONFIG } from "./application/ports/retention/retention-config.port.js";
 import { RETENTION_REPOSITORY } from "./application/ports/retention/retention.repository.port.js";
-import { NotificationPublisher } from "./application/publishers/delivery/notification.publisher.js";
 import { ActivateRetentionExperiment } from "./application/use-cases/retention/activate-retention-experiment.use-case.js";
 import { EnrollRetentionExperiment } from "./application/use-cases/retention/enroll-retention-experiment.use-case.js";
 import { ProcessRetentionStages } from "./application/use-cases/retention/process-retention-stages.use-case.js";
+import { NotificationPublisher } from "./push/application/use-cases/publish-notification.use-case.js";
 
 export const activateRetentionExperimentProvider: FactoryProvider<ActivateRetentionExperiment> = {
   provide: ActivateRetentionExperiment,

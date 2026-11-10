@@ -1,9 +1,9 @@
 import { ErrorCode } from "@aido/api/errors";
 import { ConfigService } from "@nestjs/config";
 
-import { NotificationJobName } from "#api/modules/notification/infrastructure/jobs/delivery/notification-queue.constants";
-import { notificationEventJobKey } from "#api/modules/notification/infrastructure/jobs/notification-job-keys";
 import { NotificationQueueService } from "#api/modules/notification/notification-delivery-jobs.public";
+import { notificationEventJobKey } from "#api/modules/notification/push/infrastructure/jobs/notification-job-keys.constants";
+import { NotificationJobName } from "#api/modules/notification/push/infrastructure/jobs/notification-queue.constants";
 import type { EnvConfig } from "#api/platform/config/schemas/index";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { ApplicationException } from "#api/shared/application/application.exception";

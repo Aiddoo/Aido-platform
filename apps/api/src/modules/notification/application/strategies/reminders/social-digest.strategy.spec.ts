@@ -7,7 +7,7 @@ import { TEST_CUID } from "#test/fixtures/index";
 
 import { SCHEDULER_CAMPAIGN_KEY } from "../../../domain/services/reminders/notification-campaign.js";
 import type { TimezoneContext } from "../../../domain/services/reminders/timezone-context.js";
-import { createSocialDigestNotificationMessage } from "../../messages/delivery/notification-messages.js";
+import { createSocialDigestNotificationMessage } from "../../../push/application/messages/notification.messages.js";
 import { SocialDigestStrategy } from "./social-digest.strategy.js";
 
 describe("SocialDigestStrategy — 소셜 다이제스트 전략", () => {

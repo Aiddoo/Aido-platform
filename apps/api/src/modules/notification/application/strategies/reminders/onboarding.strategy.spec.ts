@@ -4,7 +4,7 @@ import { vi } from "vitest";
 import { mockDeep } from "vitest-mock-extended";
 
 import type { TimezoneContext } from "../../../domain/services/reminders/timezone-context.js";
-import { createOnboardingNotificationMessage } from "../../messages/delivery/notification-messages.js";
+import { createOnboardingNotificationMessage } from "../../../push/application/messages/notification.messages.js";
 import { OnboardingStrategy } from "./onboarding.strategy.js";
 
 describe("OnboardingStrategy — 온보딩 전략", () => {

@@ -8,10 +8,6 @@ import {
 import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
 
 import {
-  createTodoReminderNotificationMessage,
-  createTodoSeriesPausedNotificationMessage,
-} from "../../../application/messages/delivery/notification-messages.js";
-import {
   TODO_REMINDER_READER,
   type TodoReminderReaderPort,
 } from "../../../application/ports/reminders/todo-reminder-reader.port.js";
@@ -21,8 +17,12 @@ import {
 } from "../../../application/ports/reminders/todo-series-owner-dormancy.port.js";
 import { SCHEDULER_CAMPAIGN_KEY } from "../../../domain/services/reminders/notification-campaign.js";
 import { createReminderOccurrenceKey } from "../../../domain/services/reminders/reminder-plan.js";
-import { NotificationProviderLogEvent } from "../../observability/delivery/notification-provider-log.events.js";
-import { todoSeriesPausedJobKey } from "../notification-job-keys.js";
+import {
+  createTodoReminderNotificationMessage,
+  createTodoSeriesPausedNotificationMessage,
+} from "../../../push/application/messages/notification.messages.js";
+import { NotificationProviderLogEvent } from "../../../push/infrastructure/adapters/notification-provider.log-events.js";
+import { todoSeriesPausedJobKey } from "../../../push/infrastructure/jobs/notification-job-keys.constants.js";
 import {
   todoReminderJobSchema,
   TODO_REMINDER_QUEUE,

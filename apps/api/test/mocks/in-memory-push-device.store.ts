@@ -1,13 +1,13 @@
 import type { PushPermissionStatus } from "@aido/api/vocabulary";
 
-import type { RegisterPushTokenData } from "#api/modules/notification/application/ports/delivery/notification-data";
-import type { PushDeviceRepositoryPort } from "#api/modules/notification/application/ports/delivery/push-device.repository.port";
+import type { RegisterPushTokenData } from "#api/modules/notification/inbox/application/ports/notification-draft.port";
+import type { PushDeviceRepositoryPort } from "#api/modules/notification/push/application/ports/push-device.repository.port";
 import {
   PushTokenRegistrationConflictError,
   type PushTokenRepositoryPort,
-} from "#api/modules/notification/application/ports/delivery/push-token.repository.port";
-import type { PushTokenRecord } from "#api/modules/notification/application/read-models/delivery/push-token.read-model";
-import type { PushDevice } from "#api/modules/notification/domain/aggregates/delivery/push-device.aggregate";
+} from "#api/modules/notification/push/application/ports/push-token.repository.port";
+import type { PushTokenRecord } from "#api/modules/notification/push/application/read-models/push-token.read-model";
+import type { PushDevice } from "#api/modules/notification/push/domain/push-device.aggregate";
 
 type DeviceKey = `${string}:${string}`;
 

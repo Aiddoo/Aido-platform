@@ -1,0 +1,57 @@
+import {
+  type NotificationContext,
+  type NotificationInboxItem as NotificationDto,
+  type NotificationMetadata,
+  notificationMetadataSchema,
+} from "@aido/api";
+
+import { toISOString, toISOStringOrNull } from "#api/shared/domain/date/utils/format";
+
+import { toWireNotificationType } from "../../../../push/domain/notification-client-capability.domain-service.js";
+import type { NotificationRecord } from "../../../application/read-models/notification.read-model.js";
+
+export const NotificationMapper = {
+  toDto(notification: NotificationRecord): NotificationDto {
+    const context: NotificationContext = {};
+    if (notification.todoId != null) {
+      context.todoId = notification.todoId;
+    }
+    if (notification.friendId != null) {
+      context.friendId = notification.friendId;
+    }
+    if (notification.nudgeId != null) {
+      context.nudgeId = notification.nudgeId;
+    }
+    if (notification.cheerId != null) {
+      context.cheerId = notification.cheerId;
+    }
+    const hasContext = Object.keys(context).length > 0;
+
+    return {
+      id: notification.id,
+      userId: notification.userId,
+      type: toWireNotificationType(notification.type),
+      title: notification.title,
+      body: notification.body,
+      isRead: notification.isRead,
+      metadata: toNotificationMetadata(notification.metadata),
+      ...(hasContext && { context }),
+      action: {
+        type: notification.actionType,
+        ...(notification.actionUrl && { url: notification.actionUrl }),
+      },
+      createdAt: toISOString(notification.createdAt),
+      readAt: toISOStringOrNull(notification.readAt ?? null),
+    };
+  },
+
+  toDtoList(notifications: NotificationRecord[]): NotificationDto[] {
+    return notifications.map((notification) => NotificationMapper.toDto(notification));
+  },
+};
+
+function toNotificationMetadata(metadata: unknown): NotificationMetadata {
+  const result = notificationMetadataSchema.safeParse(metadata);
+
+  return result.success ? result.data : null;
+}

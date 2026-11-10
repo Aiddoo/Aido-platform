@@ -10,7 +10,7 @@ import {
   allReminderLabels,
   planReminderJobs,
 } from "../../../domain/services/reminders/reminder-plan.js";
-import { todoReminderJobKey } from "../notification-job-keys.js";
+import { todoReminderJobKey } from "../../../push/infrastructure/jobs/notification-job-keys.constants.js";
 import {
   TODO_REMINDER_JOB_NAME,
   TODO_REMINDER_JOB_POLICY,

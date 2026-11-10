@@ -5,7 +5,7 @@ import { mockDeep } from "vitest-mock-extended";
 
 import { SCHEDULER_CAMPAIGN_KEY } from "../../../domain/services/reminders/notification-campaign.js";
 import type { TimezoneContext } from "../../../domain/services/reminders/timezone-context.js";
-import { createStreakAtRiskNotificationMessage } from "../../messages/delivery/notification-messages.js";
+import { createStreakAtRiskNotificationMessage } from "../../../push/application/messages/notification.messages.js";
 import type { UserWithTodosAndStreak } from "../../ports/reminders/scheduler-read-models.js";
 import { StreakAtRiskStrategy } from "./streak-at-risk.strategy.js";
 

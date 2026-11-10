@@ -27,8 +27,8 @@ import { UpcomingRenewalNotifierPort } from "#api/modules/billing/subscriptions/
 import {
   MARKETING_PUSH_OPT_OUT_TOKEN,
   type MarketingPushOptOutTokenPort,
-} from "#api/modules/notification/application/ports/delivery/marketing-push-opt-out-token.port";
-import { SendBillingIssueNotification } from "#api/modules/notification/application/use-cases/delivery/send-billing-issue-notification.use-case";
+} from "#api/modules/notification/push/application/ports/marketing-push-opt-out-token.port";
+import { SendBillingIssueNotification } from "#api/modules/notification/push/application/use-cases/send-billing-issue-notification.use-case";
 import { requireRecord } from "#api/platform/database/database-error.util";
 import {
   notification,

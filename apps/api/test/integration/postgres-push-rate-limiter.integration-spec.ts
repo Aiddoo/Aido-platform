@@ -1,6 +1,6 @@
 import { and, count, eq, type SQL } from "drizzle-orm";
 
-import { PostgresPushRateLimiter } from "#api/modules/notification/infrastructure/rate-limiter/delivery/postgres-push-rate-limiter";
+import { PostgresPushRateLimiter } from "#api/modules/notification/push/infrastructure/adapters/postgres-push-rate-limiter.adapter";
 import {
   notification,
   pushDispatch,

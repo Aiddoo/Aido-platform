@@ -3,7 +3,7 @@
  *
  * 타입 안전한 Notification 및 관련 엔티티 테스트 데이터 생성
  */
-import type { ReportPushDeviceCommand } from "#api/modules/notification/application/use-cases/delivery/report-push-device.use-case";
+import type { ReportPushDeviceCommand } from "#api/modules/notification/push/application/use-cases/report-push-device.use-case";
 import type { Notification, NotificationType, PushToken } from "#test/types/database-rows";
 
 let notificationCounter = 0;

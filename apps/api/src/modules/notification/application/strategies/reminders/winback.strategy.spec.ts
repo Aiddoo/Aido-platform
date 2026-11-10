@@ -5,7 +5,7 @@ import { mockDeep } from "vitest-mock-extended";
 
 import { SCHEDULER_CAMPAIGN_KEY } from "../../../domain/services/reminders/notification-campaign.js";
 import type { TimezoneContext } from "../../../domain/services/reminders/timezone-context.js";
-import { createWinbackNotificationMessage } from "../../messages/delivery/notification-messages.js";
+import { createWinbackNotificationMessage } from "../../../push/application/messages/notification.messages.js";
 import { WinbackStrategy } from "./winback.strategy.js";
 
 describe("WinbackStrategy — 윈백 전략", () => {

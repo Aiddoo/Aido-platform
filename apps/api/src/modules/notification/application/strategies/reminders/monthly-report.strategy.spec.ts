@@ -4,7 +4,7 @@ import { vi } from "vitest";
 import { mockDeep } from "vitest-mock-extended";
 
 import type { TimezoneContext } from "../../../domain/services/reminders/timezone-context.js";
-import { createMonthlyReportNotificationMessage } from "../../messages/delivery/notification-messages.js";
+import { createMonthlyReportNotificationMessage } from "../../../push/application/messages/notification.messages.js";
 import { MonthlyReportStrategy } from "./monthly-report.strategy.js";
 
 describe("MonthlyReportStrategy — 월간 리포트 전략", () => {

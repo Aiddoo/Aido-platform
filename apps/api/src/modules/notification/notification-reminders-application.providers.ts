@@ -10,8 +10,6 @@ import { SCHEDULER_PREFERENCE_READER } from "./application/ports/reminders/sched
 import { TIMEZONE_REMINDER_ENQUEUER } from "./application/ports/reminders/timezone-reminder-enqueuer.port.js";
 import { WEATHER_REMINDER_READER } from "./application/ports/reminders/weather-reminder-reader.port.js";
 import { WEEKLY_ACHIEVEMENT_STATS_READER } from "./application/ports/reminders/weekly-achievement-stats-reader.port.js";
-import { NotificationPublisher } from "./application/publishers/delivery/notification.publisher.js";
-import { NotificationHistoryReader } from "./application/readers/delivery/notification-history.reader.js";
 import { TimezoneAwareReminderOrchestrator } from "./application/services/reminders/timezone-aware-reminder.orchestrator.js";
 import { EveningReminderStrategy } from "./application/strategies/reminders/evening-reminder.strategy.js";
 import { LunchNudgeStrategy } from "./application/strategies/reminders/lunch-nudge.strategy.js";
@@ -26,6 +24,8 @@ import { WeatherMorningStrategy } from "./application/strategies/reminders/weath
 import { WeeklyAchievementStrategy } from "./application/strategies/reminders/weekly-achievement.strategy.js";
 import { WeeklyReportStrategy } from "./application/strategies/reminders/weekly-report.strategy.js";
 import { WinbackStrategy } from "./application/strategies/reminders/winback.strategy.js";
+import { NotificationHistoryReader } from "./inbox/application/notification-history.reader.js";
+import { NotificationPublisher } from "./push/application/use-cases/publish-notification.use-case.js";
 
 export const timezoneAwareReminderOrchestratorProvider: FactoryProvider<TimezoneAwareReminderOrchestrator> =
   {

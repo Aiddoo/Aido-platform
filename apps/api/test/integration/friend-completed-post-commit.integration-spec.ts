@@ -3,36 +3,36 @@ import { AsyncLocalStorage } from "node:async_hooks";
 import { Test, type TestingModule } from "@nestjs/testing";
 import { vi, type Mocked, type MockedFunction } from "vitest";
 
+import { NotificationHistoryReader } from "#api/modules/notification/inbox/application/notification-history.reader";
 import {
   NOTIFICATION_CACHE,
   type NotificationCachePort,
-} from "#api/modules/notification/application/ports/delivery/notification-cache.port";
-import type { CreateNotificationData } from "#api/modules/notification/application/ports/delivery/notification-data";
-import {
-  NOTIFICATION_DEDUP,
-  type NotificationDedupPort,
-} from "#api/modules/notification/application/ports/delivery/notification-dedup.port";
+} from "#api/modules/notification/inbox/application/ports/notification-cache.port";
+import type { CreateNotificationData } from "#api/modules/notification/inbox/application/ports/notification-draft.port";
 import {
   NOTIFICATION_REPOSITORY,
   type NotificationRepositoryPort,
-} from "#api/modules/notification/application/ports/delivery/notification.repository.port";
+} from "#api/modules/notification/inbox/application/ports/notification.repository.port";
+import type { NotificationRecord } from "#api/modules/notification/inbox/application/read-models/notification.read-model";
+import {
+  NOTIFICATION_DEDUP,
+  type NotificationDedupPort,
+} from "#api/modules/notification/push/application/ports/notification-dedup.port";
 import {
   PUSH_DISPATCH_STAGING,
   type PushDispatchStagingRepositoryPort,
   type StagePushDispatchInput,
-} from "#api/modules/notification/application/ports/delivery/push-dispatch-staging.repository.port";
+} from "#api/modules/notification/push/application/ports/push-dispatch-staging.repository.port";
 import {
   USER_NOTIFICATION_SETTINGS,
   type UserNotificationSettingsPort,
-} from "#api/modules/notification/application/ports/delivery/user-notification-settings.port";
-import type { NotificationRecord } from "#api/modules/notification/application/read-models/delivery/notification.read-model";
-import { NotificationHistoryReader } from "#api/modules/notification/application/readers/delivery/notification-history.reader";
-import { PersistBatchNotification } from "#api/modules/notification/application/use-cases/delivery/persist-batch-notification.use-case";
+} from "#api/modules/notification/push/application/ports/user-notification-settings.port";
+import { PersistBatchNotification } from "#api/modules/notification/push/application/use-cases/persist-batch-notification.use-case";
 import {
   PublishPushDeliveryOutbox,
   type PublishPushDeliveryOutboxInput,
-} from "#api/modules/notification/application/use-cases/delivery/publish-push-delivery-outbox.use-case";
-import { SendFriendCompletionNotifications } from "#api/modules/notification/application/use-cases/delivery/send-friend-completion-notifications.use-case";
+} from "#api/modules/notification/push/application/use-cases/publish-push-delivery-outbox.use-case";
+import { SendFriendCompletionNotifications } from "#api/modules/notification/push/application/use-cases/send-friend-completion-notifications.use-case";
 import {
   AFTER_COMMIT_TASK_REGISTRY,
   UNIT_OF_WORK,
@@ -48,7 +48,7 @@ import {
   persistBatchNotificationProvider,
   pushDeliveryAfterCommitPublisherProvider,
   sendFriendCompletionNotificationsProvider,
-} from "../../src/modules/notification/notification-delivery-application.providers.js";
+} from "../../src/modules/notification/push/notification-push.providers.js";
 
 interface TransactionContext {
   closed: boolean;

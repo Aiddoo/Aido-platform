@@ -3,9 +3,9 @@ import { eq, sql } from "drizzle-orm";
 import { vi } from "vitest";
 import { mock } from "vitest-mock-extended";
 
-import { DrizzlePushDeliveryLifecycleRepository } from "#api/modules/notification/infrastructure/persistence/delivery/drizzle-push-delivery-lifecycle.repository";
-import { DrizzlePushDeliveryOutboxRepository } from "#api/modules/notification/infrastructure/persistence/delivery/drizzle-push-delivery-outbox.repository";
-import { DrizzlePushDispatchStagingRepository } from "#api/modules/notification/infrastructure/persistence/delivery/drizzle-push-dispatch-staging.repository";
+import { DrizzlePushDeliveryLifecycleRepository } from "#api/modules/notification/push/infrastructure/persistence/drizzle-push-delivery-lifecycle.repository";
+import { DrizzlePushDeliveryOutboxRepository } from "#api/modules/notification/push/infrastructure/persistence/drizzle-push-delivery-outbox.repository";
+import { DrizzlePushDispatchStagingRepository } from "#api/modules/notification/push/infrastructure/persistence/drizzle-push-dispatch-staging.repository";
 import { requireRecord } from "#api/platform/database/database-error.util";
 import type { Database, DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import {

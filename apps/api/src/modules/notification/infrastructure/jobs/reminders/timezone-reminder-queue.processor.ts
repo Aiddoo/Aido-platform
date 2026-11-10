@@ -4,7 +4,7 @@ import { match } from "ts-pattern";
 import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
 
 import { TimezoneAwareReminderOrchestrator } from "../../../application/services/reminders/timezone-aware-reminder.orchestrator.js";
-import { NotificationProviderLogEvent } from "../../observability/delivery/notification-provider-log.events.js";
+import { NotificationProviderLogEvent } from "../../../push/infrastructure/adapters/notification-provider.log-events.js";
 /**
  * 타임존 리마인더 작업 Processor (진입 어댑터).
  *

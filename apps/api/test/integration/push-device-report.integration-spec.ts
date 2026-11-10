@@ -1,12 +1,12 @@
 import { eq } from "drizzle-orm";
 
-import { NotificationDeliveryLogEvent } from "#api/modules/notification/application/observability/delivery/notification-delivery-log.events";
+import { NotificationDeliveryLogEvent } from "#api/modules/notification/push/application/notification-delivery.log-events";
 import {
   type ReportPushDeviceCommand,
   ReportPushDevice,
-} from "#api/modules/notification/application/use-cases/delivery/report-push-device.use-case";
-import { DrizzlePushDeviceRepository } from "#api/modules/notification/infrastructure/persistence/delivery/drizzle-push-device.repository";
-import { DrizzlePushTokenRepository } from "#api/modules/notification/infrastructure/persistence/delivery/drizzle-push-token.repository";
+} from "#api/modules/notification/push/application/use-cases/report-push-device.use-case";
+import { DrizzlePushDeviceRepository } from "#api/modules/notification/push/infrastructure/persistence/drizzle-push-device.repository";
+import { DrizzlePushTokenRepository } from "#api/modules/notification/push/infrastructure/persistence/drizzle-push-token.repository";
 import { pushDevice, pushToken, session, user } from "#api/platform/database/schema/index";
 import { PushDeviceReportFixture, SessionFixture, UserFixture } from "#test/fixtures/index";
 import { createDatabaseTransactionFixture, createTestClient } from "#test/setup/database-context";

@@ -4,7 +4,7 @@ import { match } from "ts-pattern";
 import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
 
 import { ProcessRetentionStages } from "../../../application/use-cases/retention/process-retention-stages.use-case.js";
-import { NotificationProviderLogEvent } from "../../observability/delivery/notification-provider-log.events.js";
+import { NotificationProviderLogEvent } from "../../../push/infrastructure/adapters/notification-provider.log-events.js";
 import {
   RETENTION_QUEUE,
   RETENTION_WORKER_POLICY,

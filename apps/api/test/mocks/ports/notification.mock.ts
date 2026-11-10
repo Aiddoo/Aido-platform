@@ -1,12 +1,12 @@
 import { vi } from "vitest";
 
-import type { ActivePushTokenReaderPort } from "#api/modules/notification/application/ports/delivery/active-push-token.reader.port";
-import type { MarketingPushOptOutTokenPort } from "#api/modules/notification/application/ports/delivery/marketing-push-opt-out-token.port";
-import type { NotificationHistoryReaderPort } from "#api/modules/notification/application/ports/delivery/notification-history.reader.port";
-import type { NotificationInboxReaderPort } from "#api/modules/notification/application/ports/delivery/notification-inbox.reader.port";
-import type { NotificationRepositoryPort } from "#api/modules/notification/application/ports/delivery/notification.repository.port";
-import type { PushTokenRepositoryPort } from "#api/modules/notification/application/ports/delivery/push-token.repository.port";
-import type { UserNotificationSettingsPort } from "#api/modules/notification/application/ports/delivery/user-notification-settings.port";
+import type { NotificationHistoryReaderPort } from "#api/modules/notification/inbox/application/ports/notification-history.reader.port";
+import type { NotificationInboxReaderPort } from "#api/modules/notification/inbox/application/ports/notification-inbox.reader.port";
+import type { NotificationRepositoryPort } from "#api/modules/notification/inbox/application/ports/notification.repository.port";
+import type { ActivePushTokenReaderPort } from "#api/modules/notification/push/application/ports/active-push-token.reader.port";
+import type { MarketingPushOptOutTokenPort } from "#api/modules/notification/push/application/ports/marketing-push-opt-out-token.port";
+import type { PushTokenRepositoryPort } from "#api/modules/notification/push/application/ports/push-token.repository.port";
+import type { UserNotificationSettingsPort } from "#api/modules/notification/push/application/ports/user-notification-settings.port";
 
 /**
  * Notification application 포트 mock 팩토리 모음.
@@ -89,5 +89,5 @@ export function createUserNotificationSettingsMock(): UserNotificationSettingsPo
     updateMarketingPushConsent: vi.fn(),
   };
 }
-import type { NotificationRecipientLocaleReaderPort } from "#api/modules/notification/application/ports/delivery/notification-recipient-locale.reader.port";
-import type { NotificationRecipientPreferenceReaderPort } from "#api/modules/notification/application/ports/delivery/notification-recipient-preference.reader.port";
+import type { NotificationRecipientLocaleReaderPort } from "#api/modules/notification/push/application/ports/notification-recipient-locale.reader.port";
+import type { NotificationRecipientPreferenceReaderPort } from "#api/modules/notification/push/application/ports/notification-recipient-preference.reader.port";

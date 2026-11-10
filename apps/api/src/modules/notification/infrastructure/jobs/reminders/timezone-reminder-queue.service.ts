@@ -17,7 +17,7 @@ import {
 /** Sweep 잡은 페이로드가 없다 (크론 트리거) */
 const SWEEP_JOB_DATA: SweepRemindersJobData = {};
 
-import { NotificationProviderLogEvent } from "../../observability/delivery/notification-provider-log.events.js";
+import { NotificationProviderLogEvent } from "../../../push/infrastructure/adapters/notification-provider.log-events.js";
 
 @Injectable()
 export class TimezoneReminderQueueService implements TimezoneReminderEnqueuerPort {

@@ -5,7 +5,7 @@ import { mockDeep } from "vitest-mock-extended";
 
 import { SCHEDULER_CAMPAIGN_KEY } from "../../../domain/services/reminders/notification-campaign.js";
 import type { TimezoneContext } from "../../../domain/services/reminders/timezone-context.js";
-import { createLunchNudgeNotificationMessage } from "../../messages/delivery/notification-messages.js";
+import { createLunchNudgeNotificationMessage } from "../../../push/application/messages/notification.messages.js";
 import { LunchNudgeStrategy } from "./lunch-nudge.strategy.js";
 
 describe("LunchNudgeStrategy — 점심 찔러보기 전략", () => {

@@ -3,8 +3,8 @@ import { and, eq, sql } from "drizzle-orm";
 import {
   MARKETING_CONSENT_RECONFIRM_ACCESS,
   type MarketingConsentReconfirmPort,
-} from "#api/modules/notification/application/ports/delivery/marketing-consent-reconfirm.port";
-import { ReconfirmMarketingConsents } from "#api/modules/notification/application/use-cases/delivery/reconfirm-marketing-consents.use-case";
+} from "#api/modules/notification/push/application/ports/marketing-consent-reconfirm.port";
+import { ReconfirmMarketingConsents } from "#api/modules/notification/push/application/use-cases/reconfirm-marketing-consents.use-case";
 import { createEntityId } from "#api/platform/database/entity-id";
 import {
   notification,

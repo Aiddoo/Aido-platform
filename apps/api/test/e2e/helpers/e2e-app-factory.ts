@@ -34,15 +34,15 @@ import { KakaoOAuthIdentityAdapter } from "#api/modules/identity/auth/infrastruc
 import { NaverOAuthIdentityAdapter } from "#api/modules/identity/auth/infrastructure/adapters/naver-oauth-identity.adapter";
 import { AccountPurgeProcessor } from "#api/modules/identity/users/infrastructure/jobs/account-purge.processor";
 import { AccountPurgeScheduler } from "#api/modules/identity/users/infrastructure/jobs/account-purge.scheduler";
-import { PUSH_PROVIDER } from "#api/modules/notification/application/ports/delivery/push-provider.port";
 import { TimezoneAwareReminderOrchestrator } from "#api/modules/notification/application/services/reminders/timezone-aware-reminder.orchestrator";
-import { NotificationQueueProcessor } from "#api/modules/notification/infrastructure/jobs/delivery/notification-queue.processor";
 import { EmailDeliveryQueueProcessor } from "#api/modules/notification/infrastructure/jobs/email/email-delivery-queue.processor";
 import { TimezoneReminderProcessor } from "#api/modules/notification/infrastructure/jobs/reminders/timezone-reminder-queue.processor";
 import { TodoReminderQueueProcessor } from "#api/modules/notification/infrastructure/jobs/reminders/todo-reminder-queue.processor";
 import { RetentionQueueProcessor } from "#api/modules/notification/infrastructure/jobs/retention/retention-queue.processor";
 import { RetentionQueueService } from "#api/modules/notification/infrastructure/jobs/retention/retention-queue.service";
 import { TransactionalEmailSender } from "#api/modules/notification/notification-email.public";
+import { PUSH_PROVIDER } from "#api/modules/notification/push/application/ports/push-provider.port";
+import { NotificationQueueProcessor } from "#api/modules/notification/push/infrastructure/jobs/notification-queue.processor";
 import { AdminNotifierPort } from "#api/modules/operations/admin-notices/application/ports/admin-notifier.port";
 import { AdminNotificationProcessor } from "#api/modules/operations/admin-notices/infrastructure/jobs/admin-notification.processor";
 import { DailySignupSummaryScheduler } from "#api/modules/operations/admin-notices/infrastructure/jobs/daily-signup-summary.scheduler";

@@ -1,4 +1,4 @@
-import type { NotificationCachePort } from "#api/modules/notification/application/ports/delivery/notification-cache.port";
+import type { NotificationCachePort } from "#api/modules/notification/inbox/application/ports/notification-cache.port";
 
 /** 수신자별 캐시 상태와 invalidation 실패를 보여 주는 consumer-owned 대역. */
 export class StubPushTokenCache implements Pick<NotificationCachePort, "invalidatePushTokens"> {

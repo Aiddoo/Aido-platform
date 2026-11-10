@@ -6,12 +6,12 @@ import { DEFAULT_LOCALE } from "#api/shared/domain/locale";
 
 import { SCHEDULER_CAMPAIGN_KEY } from "../../../domain/services/reminders/notification-campaign.js";
 import type { TimezoneContext } from "../../../domain/services/reminders/timezone-context.js";
-import { createWeeklyReportNotificationMessage } from "../../messages/delivery/notification-messages.js";
+import type { NotificationHistoryReader } from "../../../inbox/application/notification-history.reader.js";
+import { createWeeklyReportNotificationMessage } from "../../../push/application/messages/notification.messages.js";
+import type { NotificationPublisher } from "../../../push/application/use-cases/publish-notification.use-case.js";
 import { NotificationRemindersLogEvent } from "../../observability/reminders/notification-reminders-log.events.js";
 import { type ScheduledReminderReaderPort } from "../../ports/reminders/scheduled-reminder-reader.port.js";
 import { type SchedulerPreferenceReaderPort } from "../../ports/reminders/scheduler-preference-reader.port.js";
-import type { NotificationPublisher } from "../../publishers/delivery/notification.publisher.js";
-import type { NotificationHistoryReader } from "../../readers/delivery/notification-history.reader.js";
 import type { TimezoneReminderStrategy } from "./timezone-reminder.strategy.js";
 
 interface WeeklyReportStrategyDependencies {

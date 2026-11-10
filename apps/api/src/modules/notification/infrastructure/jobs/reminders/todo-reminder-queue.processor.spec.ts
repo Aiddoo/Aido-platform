@@ -18,7 +18,7 @@ import {
   type TodoSeriesOwnerDormancyPort,
 } from "../../../application/ports/reminders/todo-series-owner-dormancy.port.js";
 import { SCHEDULER_CAMPAIGN_KEY } from "../../../domain/services/reminders/notification-campaign.js";
-import { NotificationProviderLogEvent } from "../../observability/delivery/notification-provider-log.events.js";
+import { NotificationProviderLogEvent } from "../../../push/infrastructure/adapters/notification-provider.log-events.js";
 import {
   type ReminderJobData,
   TODO_REMINDER_JOB_NAME,

@@ -3,7 +3,7 @@ import type {
   PushProvider,
   PushReceiptResult,
   PushResult,
-} from "#api/modules/notification/application/ports/delivery/push-provider.port";
+} from "#api/modules/notification/push/application/ports/push-provider.port";
 
 /** 실제 Expo를 부르지 않고 보낸 payload를 메모리에 남긴다. */
 export class FakePushProvider implements PushProvider {

@@ -1,6 +1,6 @@
 import { createRetentionRepositoryMock, createUnitOfWorkMock } from "#test/mocks/ports/index";
 
-import type { CreateNotificationData } from "../../ports/delivery/notification-data.js";
+import type { CreateNotificationData } from "../../../inbox/application/ports/notification-draft.port.js";
 import { type RetentionStageCandidate } from "../../ports/retention/retention.repository.port.js";
 import { ProcessRetentionStages } from "./process-retention-stages.use-case.js";
 

@@ -23,9 +23,9 @@ import { DrizzleUserRepository } from "#api/modules/identity/users/infrastructur
 import {
   NOTIFICATION_CACHE,
   type NotificationCachePort,
-} from "#api/modules/notification/application/ports/delivery/notification-cache.port";
-import { NOTIFICATION_REPOSITORY } from "#api/modules/notification/application/ports/delivery/notification.repository.port";
-import { DrizzleNotificationRepository } from "#api/modules/notification/infrastructure/persistence/delivery/drizzle-notification.repository";
+} from "#api/modules/notification/inbox/application/ports/notification-cache.port";
+import { NOTIFICATION_REPOSITORY } from "#api/modules/notification/inbox/application/ports/notification.repository.port";
+import { DrizzleNotificationRepository } from "#api/modules/notification/inbox/infrastructure/persistence/drizzle-notification.repository";
 import { ClsUnitOfWork } from "#api/platform/database/cls-unit-of-work";
 import { databaseConstraint, databaseSqlState } from "#api/platform/database/database-error.util";
 import { DRIZZLE } from "#api/platform/database/database.client";
@@ -54,7 +54,7 @@ import {
   accountUsageCleanupProvider,
   purgeDeletedAccountsProvider,
 } from "../../src/modules/identity/users/identity-users.providers.js";
-import { notificationAccountCleanupProvider } from "../../src/modules/notification/notification-delivery-application.providers.js";
+import { notificationAccountCleanupProvider } from "../../src/modules/notification/push/notification-push.providers.js";
 import { TestDatabase } from "../setup/test-database.js";
 
 const NOW = new Date("2026-08-26T00:00:00.000Z");

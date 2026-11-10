@@ -7,7 +7,7 @@ import { TEST_CUID } from "#test/fixtures/index";
 
 import { SCHEDULER_CAMPAIGN_KEY } from "../../../domain/services/reminders/notification-campaign.js";
 import type { TimezoneContext } from "../../../domain/services/reminders/timezone-context.js";
-import { createEveningReminderNotificationMessage } from "../../messages/delivery/notification-messages.js";
+import { createEveningReminderNotificationMessage } from "../../../push/application/messages/notification.messages.js";
 import { EveningReminderStrategy } from "./evening-reminder.strategy.js";
 
 describe("EveningReminderStrategy — 저녁 리마인더 전략", () => {

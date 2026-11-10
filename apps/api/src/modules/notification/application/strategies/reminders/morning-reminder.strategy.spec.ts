@@ -10,7 +10,7 @@ import type { TimezoneContext } from "../../../domain/services/reminders/timezon
 import {
   createMorningNoTodoNotificationMessage,
   createMorningReminderNotificationMessage,
-} from "../../messages/delivery/notification-messages.js";
+} from "../../../push/application/messages/notification.messages.js";
 import { MorningReminderStrategy } from "./morning-reminder.strategy.js";
 
 describe("MorningReminderStrategy — 아침 리마인더 전략", () => {

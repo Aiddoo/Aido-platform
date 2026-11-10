@@ -11,53 +11,53 @@ import { ReadUserPreferencesUseCase } from "#api/modules/identity/preferences/ap
 import { UserSettingsCacheAdapter } from "#api/modules/identity/preferences/infrastructure/adapters/user-settings-cache.adapter";
 import { DrizzleUserConsentRepository } from "#api/modules/identity/preferences/infrastructure/persistence/drizzle-user-consent.repository";
 import { DrizzleUserPreferenceRepository } from "#api/modules/identity/preferences/infrastructure/persistence/drizzle-user-preference.repository";
+import { NOTIFICATION_CACHE } from "#api/modules/notification/inbox/application/ports/notification-cache.port";
+import { NOTIFICATION_HISTORY_READER } from "#api/modules/notification/inbox/application/ports/notification-history.reader.port";
+import { NOTIFICATION_INBOX_READER } from "#api/modules/notification/inbox/application/ports/notification-inbox.reader.port";
+import { NOTIFICATION_REPOSITORY } from "#api/modules/notification/inbox/application/ports/notification.repository.port";
+import { GetNotifications } from "#api/modules/notification/inbox/application/use-cases/get-notifications.use-case";
+import { GetUnreadCount } from "#api/modules/notification/inbox/application/use-cases/get-unread-count.use-case";
+import { MarkAllAsRead } from "#api/modules/notification/inbox/application/use-cases/mark-all-as-read.use-case";
+import { MarkAsRead } from "#api/modules/notification/inbox/application/use-cases/mark-as-read.use-case";
+import { MarkNotificationOpened } from "#api/modules/notification/inbox/application/use-cases/mark-notification-opened.use-case";
+import { NotificationCacheAdapter } from "#api/modules/notification/inbox/infrastructure/cache/notification-cache.adapter";
+import { DrizzleNotificationReader } from "#api/modules/notification/inbox/infrastructure/persistence/drizzle-notification.reader";
+import { DrizzleNotificationRepository } from "#api/modules/notification/inbox/infrastructure/persistence/drizzle-notification.repository";
+import { NotificationPublisher } from "#api/modules/notification/notification-delivery.public";
 import {
   createMorningNoTodoNotificationMessage,
   createMorningReminderNotificationMessage,
-} from "#api/modules/notification/application/messages/delivery/notification-messages";
-import { ACTIVE_PUSH_TOKEN_READER } from "#api/modules/notification/application/ports/delivery/active-push-token.reader.port";
-import { MARKETING_PUSH_OPT_OUT_TOKEN } from "#api/modules/notification/application/ports/delivery/marketing-push-opt-out-token.port";
-import { NOTIFICATION_CACHE } from "#api/modules/notification/application/ports/delivery/notification-cache.port";
+} from "#api/modules/notification/push/application/messages/notification.messages";
+import { ACTIVE_PUSH_TOKEN_READER } from "#api/modules/notification/push/application/ports/active-push-token.reader.port";
+import { MARKETING_PUSH_OPT_OUT_TOKEN } from "#api/modules/notification/push/application/ports/marketing-push-opt-out-token.port";
 import {
   NOTIFICATION_DEDUP,
   NOTIFICATION_DEDUP_LOCK,
-} from "#api/modules/notification/application/ports/delivery/notification-dedup.port";
-import { NOTIFICATION_HISTORY_READER } from "#api/modules/notification/application/ports/delivery/notification-history.reader.port";
-import { NOTIFICATION_INBOX_READER } from "#api/modules/notification/application/ports/delivery/notification-inbox.reader.port";
-import { NOTIFICATION_RECIPIENT_LOCALE_READER } from "#api/modules/notification/application/ports/delivery/notification-recipient-locale.reader.port";
-import { NOTIFICATION_RECIPIENT_PREFERENCE_READER } from "#api/modules/notification/application/ports/delivery/notification-recipient-preference.reader.port";
-import { NOTIFICATION_REPOSITORY } from "#api/modules/notification/application/ports/delivery/notification.repository.port";
-import { PUSH_DEVICE_REPOSITORY } from "#api/modules/notification/application/ports/delivery/push-device.repository.port";
+} from "#api/modules/notification/push/application/ports/notification-dedup.port";
+import { NOTIFICATION_RECIPIENT_LOCALE_READER } from "#api/modules/notification/push/application/ports/notification-recipient-locale.reader.port";
+import { NOTIFICATION_RECIPIENT_PREFERENCE_READER } from "#api/modules/notification/push/application/ports/notification-recipient-preference.reader.port";
+import { PUSH_DEVICE_REPOSITORY } from "#api/modules/notification/push/application/ports/push-device.repository.port";
 import {
   PUSH_DISPATCH_STAGING,
   type PushDispatchStagingRepositoryPort,
-} from "#api/modules/notification/application/ports/delivery/push-dispatch-staging.repository.port";
-import { PUSH_PROVIDER } from "#api/modules/notification/application/ports/delivery/push-provider.port";
-import { PUSH_RATE_LIMITER } from "#api/modules/notification/application/ports/delivery/push-rate-limiter.port";
-import { PUSH_RECEIPT_REPOSITORY } from "#api/modules/notification/application/ports/delivery/push-receipt.repository.port";
-import { PUSH_TOKEN_REPOSITORY } from "#api/modules/notification/application/ports/delivery/push-token.repository.port";
-import { USER_NOTIFICATION_SETTINGS } from "#api/modules/notification/application/ports/delivery/user-notification-settings.port";
-import { PushDeliveryAfterCommitPublisher } from "#api/modules/notification/application/services/delivery/push-delivery-after-commit.publisher";
-import { GetNotifications } from "#api/modules/notification/application/use-cases/delivery/get-notifications.use-case";
-import { GetUnreadCount } from "#api/modules/notification/application/use-cases/delivery/get-unread-count.use-case";
-import { MarkAllAsRead } from "#api/modules/notification/application/use-cases/delivery/mark-all-as-read.use-case";
-import { MarkAsRead } from "#api/modules/notification/application/use-cases/delivery/mark-as-read.use-case";
-import { MarkNotificationOpened } from "#api/modules/notification/application/use-cases/delivery/mark-notification-opened.use-case";
-import { OptOutMarketingPush } from "#api/modules/notification/application/use-cases/delivery/opt-out-marketing-push.use-case";
-import { ReportPushDevice } from "#api/modules/notification/application/use-cases/delivery/report-push-device.use-case";
-import { SendBatchNotification } from "#api/modules/notification/application/use-cases/delivery/send-batch-notification.use-case";
-import { SendNotificationWithDedup } from "#api/modules/notification/application/use-cases/delivery/send-notification-with-dedup.use-case";
-import { SendNotification } from "#api/modules/notification/application/use-cases/delivery/send-notification.use-case";
-import { CachedActivePushTokenReaderAdapter } from "#api/modules/notification/infrastructure/adapters/delivery/cached-active-push-token-reader.adapter";
-import { CachedNotificationRecipientPreferenceAdapter } from "#api/modules/notification/infrastructure/adapters/delivery/cached-notification-recipient-preference.adapter";
-import { NotificationCacheAdapter } from "#api/modules/notification/infrastructure/adapters/delivery/notification-cache.adapter";
-import { NotificationDedupLockAdapter } from "#api/modules/notification/infrastructure/adapters/delivery/notification-dedup-lock.adapter";
-import { DrizzleNotificationReader } from "#api/modules/notification/infrastructure/persistence/delivery/drizzle-notification.reader";
-import { DrizzleNotificationRepository } from "#api/modules/notification/infrastructure/persistence/delivery/drizzle-notification.repository";
-import { DrizzlePushDeviceRepository } from "#api/modules/notification/infrastructure/persistence/delivery/drizzle-push-device.repository";
-import { DrizzlePushReceiptRepository } from "#api/modules/notification/infrastructure/persistence/delivery/drizzle-push-receipt.repository";
-import { DrizzlePushTokenRepository } from "#api/modules/notification/infrastructure/persistence/delivery/drizzle-push-token.repository";
-import { NotificationPublisher } from "#api/modules/notification/notification-delivery.public";
+} from "#api/modules/notification/push/application/ports/push-dispatch-staging.repository.port";
+import { PUSH_PROVIDER } from "#api/modules/notification/push/application/ports/push-provider.port";
+import { PUSH_RATE_LIMITER } from "#api/modules/notification/push/application/ports/push-rate-limiter.port";
+import { PUSH_RECEIPT_REPOSITORY } from "#api/modules/notification/push/application/ports/push-receipt.repository.port";
+import { PUSH_TOKEN_REPOSITORY } from "#api/modules/notification/push/application/ports/push-token.repository.port";
+import { USER_NOTIFICATION_SETTINGS } from "#api/modules/notification/push/application/ports/user-notification-settings.port";
+import { OptOutMarketingPush } from "#api/modules/notification/push/application/use-cases/opt-out-marketing-push.use-case";
+import { PushDeliveryAfterCommitPublisher } from "#api/modules/notification/push/application/use-cases/publish-push-delivery-after-commit.use-case";
+import { ReportPushDevice } from "#api/modules/notification/push/application/use-cases/report-push-device.use-case";
+import { SendBatchNotification } from "#api/modules/notification/push/application/use-cases/send-batch-notification.use-case";
+import { SendNotificationWithDedup } from "#api/modules/notification/push/application/use-cases/send-notification-with-dedup.use-case";
+import { SendNotification } from "#api/modules/notification/push/application/use-cases/send-notification.use-case";
+import { CachedActivePushTokenReaderAdapter } from "#api/modules/notification/push/infrastructure/adapters/cached-active-push-token-reader.adapter";
+import { CachedNotificationRecipientPreferenceAdapter } from "#api/modules/notification/push/infrastructure/adapters/cached-notification-recipient-preference.adapter";
+import { NotificationDedupLockAdapter } from "#api/modules/notification/push/infrastructure/adapters/notification-dedup-lock.adapter";
+import { DrizzlePushDeviceRepository } from "#api/modules/notification/push/infrastructure/persistence/drizzle-push-device.repository";
+import { DrizzlePushReceiptRepository } from "#api/modules/notification/push/infrastructure/persistence/drizzle-push-receipt.repository";
+import { DrizzlePushTokenRepository } from "#api/modules/notification/push/infrastructure/persistence/drizzle-push-token.repository";
 import { CacheService } from "#api/platform/cache/cache.service";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
 import {
@@ -99,7 +99,7 @@ import {
   sendNotificationProvider,
   sendNotificationWithDedupProvider,
   unregisterPushDeviceProvider,
-} from "../../src/modules/notification/notification-delivery-application.providers.js";
+} from "../../src/modules/notification/push/notification-push.providers.js";
 import { paginationServiceProvider } from "../../src/platform/pagination/pagination.providers.js";
 
 function buildNotificationTestApi(module: TestingModule) {

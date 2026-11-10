@@ -3,13 +3,13 @@ import { chunk } from "es-toolkit";
 import { assert } from "vitest";
 
 import {
-  NOTIFICATION_QUEUE,
-  NotificationJobName,
-} from "#api/modules/notification/infrastructure/jobs/delivery/notification-queue.constants";
-import {
   RETENTION_QUEUE,
   RetentionJobName,
 } from "#api/modules/notification/infrastructure/jobs/retention/retention-queue.constants";
+import {
+  NOTIFICATION_QUEUE,
+  NotificationJobName,
+} from "#api/modules/notification/push/infrastructure/jobs/notification-queue.constants";
 import { CreateBroadcastCampaignUseCase } from "#api/modules/operations/broadcasts/application/use-cases/create-broadcast-campaign.use-case";
 import { BROADCAST_FAN_OUT_QUEUE } from "#api/modules/operations/broadcasts/infrastructure/jobs/broadcast-fan-out.queue";
 import { pushDispatch, pushToken, user, userPreference } from "#api/platform/database/schema/index";

@@ -5,7 +5,7 @@ import { mockDeep } from "vitest-mock-extended";
 
 import { SCHEDULER_CAMPAIGN_KEY } from "../../../domain/services/reminders/notification-campaign.js";
 import type { TimezoneContext } from "../../../domain/services/reminders/timezone-context.js";
-import { createNudgeSuggestionNotificationMessage } from "../../messages/delivery/notification-messages.js";
+import { createNudgeSuggestionNotificationMessage } from "../../../push/application/messages/notification.messages.js";
 import { NudgeSuggestStrategy } from "./nudge-suggest.strategy.js";
 
 describe("NudgeSuggestStrategy — 찔러보기 제안 전략", () => {

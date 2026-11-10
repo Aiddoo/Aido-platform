@@ -22,13 +22,13 @@ import { DrizzleTodoCommentRepository } from "#api/modules/engagement/infrastruc
 import {
   NOTIFICATION_CACHE,
   type NotificationCachePort,
-} from "#api/modules/notification/application/ports/delivery/notification-cache.port";
+} from "#api/modules/notification/inbox/application/ports/notification-cache.port";
 import {
   PUSH_DISPATCH_STAGING,
   type PushDispatchStagingRepositoryPort,
-} from "#api/modules/notification/application/ports/delivery/push-dispatch-staging.repository.port";
-import { PushDeliveryAfterCommitPublisher } from "#api/modules/notification/application/services/delivery/push-delivery-after-commit.publisher";
-import { PublishPushDeliveryOutbox } from "#api/modules/notification/application/use-cases/delivery/publish-push-delivery-outbox.use-case";
+} from "#api/modules/notification/push/application/ports/push-dispatch-staging.repository.port";
+import { PushDeliveryAfterCommitPublisher } from "#api/modules/notification/push/application/use-cases/publish-push-delivery-after-commit.use-case";
+import { PublishPushDeliveryOutbox } from "#api/modules/notification/push/application/use-cases/publish-push-delivery-outbox.use-case";
 import { databaseSqlState } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { createEntityId } from "#api/platform/database/entity-id";

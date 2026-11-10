@@ -2,20 +2,20 @@ import { toDateString } from "#api/shared/domain/date/utils/format";
 import { type SupportedLocale, toSupportedLocale } from "#api/shared/domain/locale";
 
 import { SCHEDULER_CAMPAIGN_KEY } from "../../../domain/services/reminders/notification-campaign.js";
-import type {
-  NotificationMessage,
-  NotificationVariantContext,
-} from "../../messages/delivery/notification-copy.types.js";
+import type { NotificationHistoryReader } from "../../../inbox/application/notification-history.reader.js";
 import type {
   CreateNotificationData,
   NotificationAction,
-} from "../../ports/delivery/notification-data.js";
+} from "../../../inbox/application/ports/notification-draft.port.js";
+import type {
+  NotificationMessage,
+  NotificationVariantContext,
+} from "../../../push/application/messages/notification-copy-catalog.messages.js";
+import type { NotificationPublisher } from "../../../push/application/use-cases/publish-notification.use-case.js";
 import type {
   WeatherFallbackUser,
   WeatherReminderUser,
 } from "../../ports/reminders/scheduler-read-models.js";
-import type { NotificationPublisher } from "../../publishers/delivery/notification.publisher.js";
-import type { NotificationHistoryReader } from "../../readers/delivery/notification-history.reader.js";
 
 /** 아침·저녁 날씨 알림이 함께 쓰는 수신자 필터·기록 조립·위치 없음 안내 발송. */
 

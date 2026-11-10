@@ -32,7 +32,6 @@ import { TimezoneReminderQueueService } from "./infrastructure/jobs/reminders/ti
 import { TodoReminderQueueProcessor } from "./infrastructure/jobs/reminders/todo-reminder-queue.processor.js";
 import { TodoReminderSchedulerAdapter } from "./infrastructure/jobs/reminders/todo-reminder-scheduler.adapter.js";
 import { DrizzleSchedulerReader } from "./infrastructure/persistence/reminders/drizzle-scheduler.reader.js";
-import { NotificationDeliveryModule } from "./notification-delivery.module.js";
 import {
   eveningReminderStrategyProvider,
   lunchNudgeStrategyProvider,
@@ -49,6 +48,7 @@ import {
   weeklyReportStrategyProvider,
   winbackStrategyProvider,
 } from "./notification-reminders-application.providers.js";
+import { NotificationDeliveryModule } from "./push/notification-push.module.js";
 
 @Module({
   imports: [

@@ -2,11 +2,11 @@
 export {
   NOTIFICATION_DEAD_LETTER_QUEUE,
   NOTIFICATION_QUEUE,
-} from "./infrastructure/jobs/delivery/notification-queue.constants.js";
+} from "./push/infrastructure/jobs/notification-queue.constants.js";
 export {
   PUSH_DELIVERY_DEAD_LETTER_QUEUE,
   PUSH_DELIVERY_QUEUE,
-} from "./infrastructure/jobs/delivery/push-delivery-queue.constants.js";
-export { NotificationQueueModule } from "./infrastructure/jobs/delivery/notification-queue.module.js";
-export { NotificationQueueService } from "./infrastructure/jobs/delivery/notification-queue.service.js";
-export { MARKETING_CONSENT_RECONFIRM_QUEUE } from "./infrastructure/jobs/delivery/marketing-consent-reconfirm-queue.constants.js";
+} from "./push/infrastructure/jobs/push-delivery-queue.constants.js";
+export { NotificationQueueModule } from "./push/infrastructure/jobs/notification-queue.module.js";
+export { NotificationQueueService } from "./push/infrastructure/jobs/notification-queue.adapter.js";
+export { MARKETING_CONSENT_RECONFIRM_QUEUE } from "./push/infrastructure/jobs/marketing-consent-reconfirm-queue.constants.js";

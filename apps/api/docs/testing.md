@@ -109,7 +109,7 @@ describe("CreateMemoUseCase — 메모 만들기", () => {
 | `performance` | 측정(소크·힙 증가 포함)                     | `test:performance`(수동)                |
 
 ```sh
-pnpm --filter @aido/server exec vitest run --project unit src/modules/notification/application/use-cases/delivery/reconcile-push-receipts.use-case.spec.ts
+pnpm --filter @aido/server exec vitest run --project unit src/modules/notification/push/application/use-cases/reconcile-push-receipts.use-case.spec.ts
 pnpm --filter @aido/server exec vitest run --project integration test/integration/push-receipt-consistency.integration-spec.ts --sequence.seed=101
 ```
 

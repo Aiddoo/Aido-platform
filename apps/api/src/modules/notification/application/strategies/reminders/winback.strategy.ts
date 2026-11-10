@@ -8,14 +8,14 @@ import { DEFAULT_LOCALE } from "#api/shared/domain/locale";
 import { SCHEDULER_CAMPAIGN_KEY } from "../../../domain/services/reminders/notification-campaign.js";
 import type { TimezoneContext } from "../../../domain/services/reminders/timezone-context.js";
 import { resolveWinbackStage } from "../../../domain/services/reminders/winback-stage.js";
-import { createWinbackNotificationMessage } from "../../messages/delivery/notification-messages.js";
+import type { NotificationHistoryReader } from "../../../inbox/application/notification-history.reader.js";
+import type { CreateNotificationData } from "../../../inbox/application/ports/notification-draft.port.js";
+import { createWinbackNotificationMessage } from "../../../push/application/messages/notification.messages.js";
+import type { NotificationPublisher } from "../../../push/application/use-cases/publish-notification.use-case.js";
 import { NotificationRemindersLogEvent } from "../../observability/reminders/notification-reminders-log.events.js";
-import type { CreateNotificationData } from "../../ports/delivery/notification-data.js";
 import { type ReEngagementReaderPort } from "../../ports/reminders/re-engagement-reader.port.js";
 import { type SchedulerDedupPort } from "../../ports/reminders/scheduler-dedup.port.js";
 import { type SchedulerPreferenceReaderPort } from "../../ports/reminders/scheduler-preference-reader.port.js";
-import type { NotificationPublisher } from "../../publishers/delivery/notification.publisher.js";
-import type { NotificationHistoryReader } from "../../readers/delivery/notification-history.reader.js";
 import type { TimezoneReminderStrategy } from "./timezone-reminder.strategy.js";
 
 interface WinbackStrategyDependencies {

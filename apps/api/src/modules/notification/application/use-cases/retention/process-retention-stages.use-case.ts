@@ -9,15 +9,15 @@ import {
 } from "../../../domain/policies/retention/retention.constants.js";
 import { retentionPushSkipReason } from "../../../domain/services/retention/push-eligibility.js";
 import { decideRetentionStage } from "../../../domain/services/retention/stage-policy.js";
-import { type RetentionNotificationCopySelection } from "../../messages/delivery/notification-copy.types.js";
-import { createRetentionNotificationMessage } from "../../messages/delivery/notification-messages.js";
+import { type RetentionNotificationCopySelection } from "../../../push/application/messages/notification-copy-catalog.messages.js";
+import { createRetentionNotificationMessage } from "../../../push/application/messages/notification.messages.js";
+import type { NotificationPublisher } from "../../../push/application/use-cases/publish-notification.use-case.js";
 import { NotificationRetentionLogEvent } from "../../observability/retention/notification-retention-log.events.js";
 import { type RetentionConfigPort } from "../../ports/retention/retention-config.port.js";
 import {
   type RetentionRepositoryPort,
   type RetentionStageCandidate,
 } from "../../ports/retention/retention.repository.port.js";
-import type { NotificationPublisher } from "../../publishers/delivery/notification.publisher.js";
 
 interface ProcessRetentionStagesDependencies {
   readonly repository: Pick<
