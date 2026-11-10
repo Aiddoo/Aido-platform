@@ -2,7 +2,7 @@ import { featureDiscoveryResponseSchema } from "@aido/api";
 import request from "supertest";
 import { vi } from "vitest";
 
-import { GetFeatureDiscovery } from "#api/modules/app-config/feature-discovery/application/use-cases/get-feature-discovery.use-case";
+import { GetFeatureDiscoveryUseCase } from "#api/modules/app-config/feature-discovery/application/use-cases/get-feature-discovery.use-case";
 
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 
@@ -42,7 +42,7 @@ describe("기능 발견 설정 (E2E)", () => {
 
   it("모바일 Zod 계약으로 검증 가능한 활성 응답을 반환한다", async () => {
     // Given - use the real HTTP/interceptor path with an enabled rollout result
-    const getFeatureDiscoveryUseCase = ctx.module.get(GetFeatureDiscovery);
+    const getFeatureDiscoveryUseCase = ctx.module.get(GetFeatureDiscoveryUseCase);
     const response = {
       enabled: true as const,
       campaignId: "feature-discovery-2026-08",

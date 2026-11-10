@@ -2,7 +2,7 @@ import { Logger } from "@nestjs/common";
 
 import type { JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
 
-import { AdminNotificationInfraEvent } from "../admin-notices-infra.log-events.js";
+import { AdminNoticeInfraLogEvent } from "../admin-notices-infra.log-events.js";
 import {
   ADMIN_NOTIFICATION_QUEUE,
   AdminNotificationJobName,
@@ -35,7 +35,7 @@ describe("DailySignupSummaryScheduler registration 실패 격리", () => {
       { ...DAILY_SIGNUP_SUMMARY_SCHEDULE.jobPolicy, timezone: "Asia/Seoul" },
     );
     expect(log).toHaveBeenCalledExactlyOnceWith({
-      event: AdminNotificationInfraEvent.SCHEDULE_REGISTERED,
+      event: AdminNoticeInfraLogEvent.SCHEDULE_REGISTERED,
       queueName: ADMIN_NOTIFICATION_QUEUE,
     });
   });
@@ -53,7 +53,7 @@ describe("DailySignupSummaryScheduler registration 실패 격리", () => {
     // Then
     await expect(scheduler.schedulerRegistration).resolves.toBeUndefined();
     expect(errorLog).toHaveBeenCalledExactlyOnceWith({
-      event: AdminNotificationInfraEvent.SCHEDULE_FAILED,
+      event: AdminNoticeInfraLogEvent.SCHEDULE_FAILED,
       queueName: ADMIN_NOTIFICATION_QUEUE,
       errorType: "schedule",
     });

@@ -16,7 +16,8 @@ import {
 } from "#api/platform/http/swagger/index";
 import { ThrottleByUser } from "#api/platform/throttle/index";
 
-import { CreateInquiry } from "../../../application/use-cases/create-inquiry.use-case.js";
+import { CreateInquiryUseCase } from "../../../application/use-cases/create-inquiry.use-case.js";
+import { toCreateInquiryResponse } from "./inquiry-response.mapper.js";
 import { CreateInquiryDto, CreateInquiryResponseDto } from "./inquiry.dto.js";
 
 const INQUIRY_THROTTLE = { ttl: 60_000, limit: 5 } as const;
@@ -25,9 +26,9 @@ const INQUIRY_THROTTLE = { ttl: 60_000, limit: 5 } as const;
 @ApiBearerAuth()
 @Controller("inquiries")
 export class InquiryController {
-  readonly #createInquiry: CreateInquiry;
+  readonly #createInquiry: CreateInquiryUseCase;
 
-  constructor(createInquiry: CreateInquiry) {
+  constructor(createInquiry: CreateInquiryUseCase) {
     this.#createInquiry = createInquiry;
   }
 
@@ -56,7 +57,7 @@ export class InquiryController {
   async createInquiry(
     @CurrentUser() user: CurrentUserPayload,
     @Body({ schema: CreateInquiryDto }) dto: CreateInquiryDto,
-  ) {
+  ): Promise<CreateInquiryResponseDto> {
     await this.#createInquiry.execute({
       userId: user.userId,
       userEmail: user.email,
@@ -64,6 +65,6 @@ export class InquiryController {
       content: dto.content,
     });
 
-    return { message: "문의가 접수되었습니다." };
+    return toCreateInquiryResponse();
   }
 }

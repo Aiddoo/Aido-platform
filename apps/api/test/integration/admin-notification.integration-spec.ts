@@ -3,7 +3,7 @@ import { Test, type TestingModule } from "@nestjs/testing";
  * AdminNotificationProcessor 통합 테스트
  *
  * @description
- * AdminNotificationProcessor가 use-case(SendAdminNotification·DispatchDailySignupSummary)와
+ * AdminNotificationProcessor가 use-case(SendAdminNotificationUseCase·DispatchDailySignupSummaryUseCase)와
  * 함께 올바르게 작동하는지 검증합니다. 실제 Discord 웹훅·큐 대신 모킹된 포트를 사용합니다.
  *
  * 통합 테스트의 목적:

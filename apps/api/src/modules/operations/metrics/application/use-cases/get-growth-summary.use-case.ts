@@ -22,7 +22,7 @@ interface GetGrowthSummaryDependencies {
   readonly metrics: AdminGrowthMetricsPort;
 }
 
-export class GetGrowthSummary {
+export class GetGrowthSummaryUseCase {
   readonly #dependencies: GetGrowthSummaryDependencies;
 
   constructor(dependencies: GetGrowthSummaryDependencies) {

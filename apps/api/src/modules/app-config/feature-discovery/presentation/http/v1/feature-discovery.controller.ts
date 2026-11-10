@@ -6,7 +6,7 @@ import { Public } from "#api/modules/identity/identity-auth-http.public";
 import { RawResponse } from "#api/platform/http/decorators/index";
 import { ApiDoc } from "#api/platform/http/swagger/index";
 
-import { GetFeatureDiscovery } from "../../../application/use-cases/get-feature-discovery.use-case.js";
+import { GetFeatureDiscoveryUseCase } from "../../../application/use-cases/get-feature-discovery.use-case.js";
 import {
   FeatureDiscoveryDisabledResponseDto,
   FeatureDiscoveryEnabledResponseDto,
@@ -16,9 +16,9 @@ import {
 @ApiTags("App Config")
 @Controller("app-config")
 export class FeatureDiscoveryController {
-  readonly #getFeatureDiscovery: GetFeatureDiscovery;
+  readonly #getFeatureDiscovery: GetFeatureDiscoveryUseCase;
 
-  constructor(getFeatureDiscovery: GetFeatureDiscovery) {
+  constructor(getFeatureDiscovery: GetFeatureDiscoveryUseCase) {
     this.#getFeatureDiscovery = getFeatureDiscovery;
   }
 

@@ -1,7 +1,7 @@
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
 
-import { OperationsAdminLogEvent } from "../broadcasts.log-events.js";
+import { BroadcastLogEvent } from "../broadcasts.log-events.js";
 import type { BroadcastCampaignRepositoryPort } from "../ports/broadcast-campaign.repository.port.js";
 
 export const BROADCAST_FAN_OUT_EXHAUSTED_REASON = "FAN_OUT_RETRIES_EXHAUSTED";
@@ -13,7 +13,7 @@ interface FailBroadcastCampaignDependencies {
 }
 
 /** 분배 작업이 재시도를 다 쓰면 캠페인을 실패로 닫는다. 이미 끝난 캠페인은 바꾸지 않는다. */
-export class FailBroadcastCampaign {
+export class FailBroadcastCampaignUseCase {
   readonly #dependencies: FailBroadcastCampaignDependencies;
 
   constructor(dependencies: FailBroadcastCampaignDependencies) {
@@ -31,7 +31,7 @@ export class FailBroadcastCampaign {
     });
     if (failed) {
       this.#dependencies.logger.error({
-        event: OperationsAdminLogEvent.BROADCAST_FAILED,
+        event: BroadcastLogEvent.BROADCAST_FAILED,
         campaignId: input.campaignId,
         reason: BROADCAST_FAN_OUT_EXHAUSTED_REASON,
       });

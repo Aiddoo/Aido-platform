@@ -18,8 +18,8 @@ import {
   SWAGGER_TAGS,
 } from "#api/platform/http/swagger/index";
 
-import { BroadcastNotification } from "../../../application/use-cases/broadcast-notification.use-case.js";
-import { SendTargetedNotification } from "../../../application/use-cases/send-targeted-notification.use-case.js";
+import { BroadcastNotificationUseCase } from "../../../application/use-cases/broadcast-notification.use-case.js";
+import { SendTargetedNotificationUseCase } from "../../../application/use-cases/send-targeted-notification.use-case.js";
 import {
   BroadcastNotificationDto,
   BroadcastResultDto,
@@ -30,12 +30,12 @@ import {
 @ApiBearerAuth()
 @Controller("admin/notifications")
 export class AdminController {
-  readonly #broadcastNotification: Pick<BroadcastNotification, "execute">;
-  readonly #sendTargetedNotification: Pick<SendTargetedNotification, "execute">;
+  readonly #broadcastNotification: Pick<BroadcastNotificationUseCase, "execute">;
+  readonly #sendTargetedNotification: Pick<SendTargetedNotificationUseCase, "execute">;
 
   constructor(
-    broadcastNotification: BroadcastNotification,
-    sendTargetedNotification: SendTargetedNotification,
+    broadcastNotification: BroadcastNotificationUseCase,
+    sendTargetedNotification: SendTargetedNotificationUseCase,
   ) {
     this.#broadcastNotification = broadcastNotification;
     this.#sendTargetedNotification = sendTargetedNotification;

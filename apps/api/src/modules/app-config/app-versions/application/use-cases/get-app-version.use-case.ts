@@ -5,7 +5,7 @@ interface GetAppVersionDependencies {
   readonly config: AppVersionConfigPort;
 }
 
-export class GetAppVersion {
+export class GetAppVersionUseCase {
   readonly #dependencies: GetAppVersionDependencies;
 
   constructor(dependencies: GetAppVersionDependencies) {

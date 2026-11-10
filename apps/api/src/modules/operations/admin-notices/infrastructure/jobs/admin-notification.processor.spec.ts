@@ -8,9 +8,9 @@ import { TestBed } from "@suites/unit";
  */
 import type { Mocked } from "vitest";
 
-import { DispatchDailySignupSummary } from "../../application/use-cases/dispatch-daily-signup-summary.use-case.js";
-import { SendAdminNotification } from "../../application/use-cases/send-admin-notification.use-case.js";
-import { AdminNotificationInfraEvent } from "../admin-notices-infra.log-events.js";
+import { DispatchDailySignupSummaryUseCase } from "../../application/use-cases/dispatch-daily-signup-summary.use-case.js";
+import { SendAdminNotificationUseCase } from "../../application/use-cases/send-admin-notification.use-case.js";
+import { AdminNoticeInfraLogEvent } from "../admin-notices-infra.log-events.js";
 import { AdminNotificationProcessor } from "./admin-notification.processor.js";
 import {
   AdminNotificationJobName,
@@ -19,14 +19,14 @@ import {
 
 describe("AdminNotificationProcessor — 관리자 알림 프로세서", () => {
   let processor: AdminNotificationProcessor;
-  let sendAdminNotification: Mocked<SendAdminNotification>;
-  let dispatchDailySummary: Mocked<DispatchDailySignupSummary>;
+  let sendAdminNotification: Mocked<SendAdminNotificationUseCase>;
+  let dispatchDailySummary: Mocked<DispatchDailySignupSummaryUseCase>;
 
   beforeEach(async () => {
     const { unit, unitRef } = await TestBed.solitary(AdminNotificationProcessor).compile();
     processor = unit;
-    sendAdminNotification = unitRef.get(SendAdminNotification);
-    dispatchDailySummary = unitRef.get(DispatchDailySignupSummary);
+    sendAdminNotification = unitRef.get(SendAdminNotificationUseCase);
+    dispatchDailySummary = unitRef.get(DispatchDailySignupSummaryUseCase);
   });
 
   function createSendJob(data: AdminNotificationSendData) {
@@ -106,19 +106,19 @@ describe("AdminNotificationProcessor — 관리자 알림 프로세서", () => {
 
     // Then
     expect(errorLog).toHaveBeenCalledWith({
-      event: AdminNotificationInfraEvent.WORKER_FAILED,
+      event: AdminNoticeInfraLogEvent.WORKER_FAILED,
       queueName: "admin-notification.v1",
       errorType: "worker",
     });
     expect(errorLog).toHaveBeenCalledWith({
-      event: AdminNotificationInfraEvent.JOB_FAILED,
+      event: AdminNoticeInfraLogEvent.JOB_FAILED,
       queueName: "admin-notification.v1",
       jobId: "internal-job-1",
       jobName: undefined,
       errorType: "job",
     });
     expect(warnLog).toHaveBeenCalledExactlyOnceWith({
-      event: AdminNotificationInfraEvent.JOB_INVALID,
+      event: AdminNoticeInfraLogEvent.JOB_INVALID,
       queueName: "admin-notification.v1",
     });
     expect(JSON.stringify([...errorLog.mock.calls, ...warnLog.mock.calls])).not.toContain(secret);

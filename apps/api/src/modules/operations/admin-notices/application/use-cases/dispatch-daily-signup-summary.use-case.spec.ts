@@ -2,22 +2,22 @@ import type { Mocked } from "vitest";
 import { vi } from "vitest";
 import { mockDeep } from "vitest-mock-extended";
 
-import { DispatchDailySignupSummary } from "./dispatch-daily-signup-summary.use-case.js";
+import { DispatchDailySignupSummaryUseCase } from "./dispatch-daily-signup-summary.use-case.js";
 
-describe("DispatchDailySignupSummary", () => {
-  let useCase: DispatchDailySignupSummary;
-  let reader: Mocked<ConstructorParameters<typeof DispatchDailySignupSummary>[0]["reader"]>;
-  let queue: Mocked<ConstructorParameters<typeof DispatchDailySignupSummary>[0]["queue"]>;
+describe("DispatchDailySignupSummaryUseCase", () => {
+  let useCase: DispatchDailySignupSummaryUseCase;
+  let reader: Mocked<ConstructorParameters<typeof DispatchDailySignupSummaryUseCase>[0]["reader"]>;
+  let queue: Mocked<ConstructorParameters<typeof DispatchDailySignupSummaryUseCase>[0]["queue"]>;
 
-  let logger: Mocked<ConstructorParameters<typeof DispatchDailySignupSummary>[0]["logger"]>;
+  let logger: Mocked<ConstructorParameters<typeof DispatchDailySignupSummaryUseCase>[0]["logger"]>;
 
   beforeEach(async () => {
     vi.useFakeTimers({ toFake: ["Date"] });
 
     const dispatchDailySignupSummaryDependencies = mockDeep<
-      ConstructorParameters<typeof DispatchDailySignupSummary>[0]
+      ConstructorParameters<typeof DispatchDailySignupSummaryUseCase>[0]
     >({});
-    const unit = new DispatchDailySignupSummary(dispatchDailySignupSummaryDependencies);
+    const unit = new DispatchDailySignupSummaryUseCase(dispatchDailySignupSummaryDependencies);
     logger = dispatchDailySignupSummaryDependencies.logger;
     useCase = unit;
     reader = dispatchDailySignupSummaryDependencies.reader;

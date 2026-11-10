@@ -3,9 +3,9 @@ import { broadcastCampaignFixture } from "#test/fixtures/index";
 import type { BroadcastCampaign } from "../../domain/broadcast-campaign.aggregate.js";
 import { BROADCAST_FAN_OUT_POLICY } from "../../domain/broadcasts.constants.js";
 import type { AdminBroadcastMessage } from "../read-models/broadcast-message.read-model.js";
-import { FanOutBroadcastCampaign } from "./fan-out-broadcast-campaign.use-case.js";
+import { FanOutBroadcastCampaignUseCase } from "./fan-out-broadcast-campaign.use-case.js";
 
-type CampaignStore = ConstructorParameters<typeof FanOutBroadcastCampaign>[0]["repository"];
+type CampaignStore = ConstructorParameters<typeof FanOutBroadcastCampaignUseCase>[0]["repository"];
 
 function userIds(count: number): string[] {
   return Array.from({ length: count }, (_, index) => `user-${String(index).padStart(5, "0")}`);
@@ -37,7 +37,7 @@ function setup(options: {
   const sentPages: AdminBroadcastMessage[][] = [];
   const continuations: Array<{ campaignId: string; cursorUserId: string | null }> = [];
   let page = 0;
-  const useCase = new FanOutBroadcastCampaign({
+  const useCase = new FanOutBroadcastCampaignUseCase({
     repository: store,
     userDirectory: {
       findTargetUserIdsAfter: async (_filter, cursor, limit) =>
@@ -64,7 +64,7 @@ function setup(options: {
   return { useCase, store, sentPages, continuations };
 }
 
-describe("FanOutBroadcastCampaign — 대상 분배", () => {
+describe("FanOutBroadcastCampaignUseCase — 대상 분배", () => {
   afterEach(() => {
     vi.useRealTimers();
   });

@@ -4,7 +4,7 @@ import {
 } from "../messages/admin-notice.messages.js";
 import { type AdminNotificationQueuePort } from "../ports/admin-notification-queue.port.js";
 import type { UserRegisteredEventPayload } from "../read-models/user-registered.read-model.js";
-import type { AdminNoticeUserResolver } from "./resolve-admin-notice-user.use-case.js";
+import type { ResolveAdminNoticeUserUseCase } from "./resolve-admin-notice-user.use-case.js";
 
 /**
  * 회원가입 관리자 알림 등록 유스케이스.
@@ -13,10 +13,10 @@ import type { AdminNoticeUserResolver } from "./resolve-admin-notice-user.use-ca
  */
 interface EnqueueUserRegisteredDependencies {
   readonly queue: Pick<AdminNotificationQueuePort, "enqueueSend">;
-  readonly users: Pick<AdminNoticeUserResolver, "resolve">;
+  readonly users: Pick<ResolveAdminNoticeUserUseCase, "resolve">;
 }
 
-export class EnqueueUserRegistered {
+export class EnqueueUserRegisteredUseCase {
   readonly #dependencies: EnqueueUserRegisteredDependencies;
 
   constructor(dependencies: EnqueueUserRegisteredDependencies) {

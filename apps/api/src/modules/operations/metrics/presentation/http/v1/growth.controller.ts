@@ -14,7 +14,7 @@ import {
   SWAGGER_TAGS,
 } from "#api/platform/http/swagger/index";
 
-import { GetGrowthSummary } from "../../../application/use-cases/get-growth-summary.use-case.js";
+import { GetGrowthSummaryUseCase } from "../../../application/use-cases/get-growth-summary.use-case.js";
 import { toAdminGrowthResponse } from "./growth-response.mapper.js";
 import { GrowthSummaryQueryDto, GrowthSummaryResponseDto } from "./growth.dto.js";
 
@@ -22,9 +22,9 @@ import { GrowthSummaryQueryDto, GrowthSummaryResponseDto } from "./growth.dto.js
 @ApiBearerAuth()
 @Controller("admin/growth")
 export class AdminGrowthController {
-  readonly #getGrowthSummary: Pick<GetGrowthSummary, "execute">;
+  readonly #getGrowthSummary: Pick<GetGrowthSummaryUseCase, "execute">;
 
-  constructor(getGrowthSummary: GetGrowthSummary) {
+  constructor(getGrowthSummary: GetGrowthSummaryUseCase) {
     this.#getGrowthSummary = getGrowthSummary;
   }
 

@@ -17,7 +17,7 @@ interface GetBroadcastCampaignDependencies {
   readonly outcomeReader: Pick<BroadcastDeliveryOutcomeReaderPort, "summarize">;
 }
 
-export class GetBroadcastCampaign {
+export class GetBroadcastCampaignUseCase {
   readonly #dependencies: GetBroadcastCampaignDependencies;
 
   constructor(dependencies: GetBroadcastCampaignDependencies) {

@@ -3,7 +3,7 @@ import { mockDeep } from "vitest-mock-extended";
 
 import type { InquiryDeliveryResult, InquiryMailerPort } from "../ports/inquiry-mailer.port.js";
 import type { InquirySubmission } from "../read-models/inquiry-submission.read-model.js";
-import { type CreateInquiryInput, CreateInquiry } from "./create-inquiry.use-case.js";
+import { type CreateInquiryCommand, CreateInquiryUseCase } from "./create-inquiry.use-case.js";
 
 class StubInquiryMailer implements InquiryMailerPort {
   readonly attempts: InquirySubmission[] = [];
@@ -15,7 +15,7 @@ class StubInquiryMailer implements InquiryMailerPort {
   }
 }
 
-function makeInput(overrides: Partial<CreateInquiryInput> = {}): CreateInquiryInput {
+function makeInput(overrides: Partial<CreateInquiryCommand> = {}): CreateInquiryCommand {
   return {
     userId: "user-123",
     userEmail: "user@example.test",
@@ -27,15 +27,15 @@ function makeInput(overrides: Partial<CreateInquiryInput> = {}): CreateInquiryIn
 
 function setup() {
   const mailer = new StubInquiryMailer();
-  const logger = mockDeep<ConstructorParameters<typeof CreateInquiry>[0]["logger"]>();
-  return { useCase: new CreateInquiry({ mailer, logger }), mailer, logger };
+  const logger = mockDeep<ConstructorParameters<typeof CreateInquiryUseCase>[0]["logger"]>();
+  return { useCase: new CreateInquiryUseCase({ mailer, logger }), mailer, logger };
 }
 
-describe("CreateInquiry — 문의 접수", () => {
+describe("CreateInquiryUseCase — 문의 접수", () => {
   it("라벨·KST 제출 시각을 조립하고 사용자 원문을 그대로 전달한다", async () => {
     // Given
     const { useCase, mailer, logger } = setup();
-    const cases: readonly [CreateInquiryInput["category"], string][] = [
+    const cases: readonly [CreateInquiryCommand["category"], string][] = [
       ["BUG_REPORT", "버그 신고"],
       ["FEATURE_REQUEST", "기능 요청"],
       ["PAYMENT", "결제·구독"],

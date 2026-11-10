@@ -9,7 +9,7 @@ import {
   CONTRACT_NOTICE,
   describeAdminNotifierContract,
 } from "../../../../../../test/contracts/operations/admin-notifier.contract.js";
-import { AdminNotificationInfraEvent } from "../admin-notices-infra.log-events.js";
+import { AdminNoticeInfraLogEvent } from "../admin-notices-infra.log-events.js";
 import {
   DISCORD_WEBHOOK_TIMEOUT_MS,
   DiscordAdminNotifierAdapter,
@@ -143,7 +143,7 @@ describe("DiscordAdminNotifierAdapter 실제 HTTP wire와 로그 경계", () => 
     // Then
     expect(fetch).toHaveBeenCalledTimes(1);
     expect(errorLog).toHaveBeenCalledExactlyOnceWith({
-      event: AdminNotificationInfraEvent.HTTP_FAILED,
+      event: AdminNoticeInfraLogEvent.HTTP_FAILED,
       provider: "discord",
       channel: "admin",
       statusCode: 429,
@@ -169,7 +169,7 @@ describe("DiscordAdminNotifierAdapter 실제 HTTP wire와 로그 경계", () => 
     // Then
     expect(outcome).toEqual({ status: "failed", retryable: true });
     expect(errorLog).toHaveBeenCalledExactlyOnceWith({
-      event: AdminNotificationInfraEvent.REQUEST_FAILED,
+      event: AdminNoticeInfraLogEvent.REQUEST_FAILED,
       provider: "discord",
       channel: "admin",
       errorType: "transport",
@@ -184,7 +184,7 @@ describe("DiscordAdminNotifierAdapter 실제 HTTP wire와 로그 경계", () => 
     expect(outcome).toEqual({ status: "skipped", reason: "not_configured" });
     expect(nativeFetch).not.toHaveBeenCalled();
     expect(debugLog).toHaveBeenCalledExactlyOnceWith({
-      event: AdminNotificationInfraEvent.PROVIDER_NOT_CONFIGURED,
+      event: AdminNoticeInfraLogEvent.PROVIDER_NOT_CONFIGURED,
       provider: "discord",
       channel: "admin",
     });

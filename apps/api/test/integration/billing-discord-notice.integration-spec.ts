@@ -7,8 +7,8 @@ import type { RevenueCatWebhookPayload } from "@aido/api";
 import { RevenueCatWebhookReceiver } from "#api/modules/billing/subscriptions/infrastructure/adapters/revenuecat/revenuecat-webhook-receiver.adapter";
 import { ADMIN_NOTIFIER } from "#api/modules/operations/admin-notices/application/ports/admin-notifier.port";
 import type { AdminNotice } from "#api/modules/operations/admin-notices/application/read-models/admin-notice.read-model";
-import { DispatchDailySignupSummary } from "#api/modules/operations/admin-notices/application/use-cases/dispatch-daily-signup-summary.use-case";
-import { SendAdminNotification } from "#api/modules/operations/admin-notices/application/use-cases/send-admin-notification.use-case";
+import { DispatchDailySignupSummaryUseCase } from "#api/modules/operations/admin-notices/application/use-cases/dispatch-daily-signup-summary.use-case";
+import { SendAdminNotificationUseCase } from "#api/modules/operations/admin-notices/application/use-cases/send-admin-notification.use-case";
 import { renderDiscordEmbed } from "#api/modules/operations/admin-notices/infrastructure/adapters/discord-embed.mapper";
 import { AdminNotificationProcessor } from "#api/modules/operations/admin-notices/infrastructure/jobs/admin-notification.processor";
 import { ADMIN_NOTIFICATION_QUEUE } from "#api/modules/operations/admin-notices/infrastructure/jobs/admin-notification.queue";
@@ -55,8 +55,8 @@ describe("결제 웹훅 → Discord 결제 알림 (실제 PostgreSQL)", () => {
     notifier = context.module.get(ADMIN_NOTIFIER);
     // E2E 앱은 백그라운드 작업자를 끈다. 같은 조립의 유스케이스로 작업자를 만들어 큐 payload 검증부터 탄다
     processor = new AdminNotificationProcessor(
-      context.module.get(SendAdminNotification),
-      context.module.get(DispatchDailySignupSummary),
+      context.module.get(SendAdminNotificationUseCase),
+      context.module.get(DispatchDailySignupSummaryUseCase),
     );
   });
 

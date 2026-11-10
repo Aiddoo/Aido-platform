@@ -7,7 +7,7 @@ interface GetFeatureDiscoveryDependencies {
   readonly config: FeatureDiscoveryConfigPort;
 }
 
-export class GetFeatureDiscovery {
+export class GetFeatureDiscoveryUseCase {
   readonly #dependencies: GetFeatureDiscoveryDependencies;
 
   constructor(dependencies: GetFeatureDiscoveryDependencies) {

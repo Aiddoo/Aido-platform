@@ -103,9 +103,9 @@ import { ADMIN_BROADCAST_NOTIFIER } from "#api/modules/operations/broadcasts/app
 import { ADMIN_USER_DIRECTORY } from "#api/modules/operations/broadcasts/application/ports/admin-user-directory.reader.port";
 import { BROADCAST_CAMPAIGN_REPOSITORY } from "#api/modules/operations/broadcasts/application/ports/broadcast-campaign.repository.port";
 import { BROADCAST_FAN_OUT_ENQUEUER } from "#api/modules/operations/broadcasts/application/ports/broadcast-fan-out-enqueuer.port";
-import { BroadcastFanOutQueueService } from "#api/modules/operations/broadcasts/infrastructure/adapters/broadcast-fan-out-enqueuer.adapter";
+import { BroadcastFanOutEnqueuerAdapter } from "#api/modules/operations/broadcasts/infrastructure/adapters/broadcast-fan-out-enqueuer.adapter";
 import { NotificationAdminBroadcastNotifierAdapter } from "#api/modules/operations/broadcasts/infrastructure/adapters/notification-admin-broadcast-notifier.adapter";
-import { BroadcastFanOutQueueProcessor } from "#api/modules/operations/broadcasts/infrastructure/jobs/broadcast-fan-out.processor";
+import { BroadcastFanOutProcessor } from "#api/modules/operations/broadcasts/infrastructure/jobs/broadcast-fan-out.processor";
 import { DrizzleAdminUserDirectoryAdapter } from "#api/modules/operations/broadcasts/infrastructure/persistence/drizzle-admin-user-directory.reader";
 import { DrizzleBroadcastCampaignRepository } from "#api/modules/operations/broadcasts/infrastructure/persistence/drizzle-broadcast-campaign.repository";
 import {
@@ -398,9 +398,9 @@ function broadcastProviders(): Provider[] {
     createBroadcastCampaignProvider,
     fanOutBroadcastCampaignProvider,
     failBroadcastCampaignProvider,
-    BroadcastFanOutQueueProcessor,
+    BroadcastFanOutProcessor,
     { provide: BROADCAST_CAMPAIGN_REPOSITORY, useClass: DrizzleBroadcastCampaignRepository },
-    { provide: BROADCAST_FAN_OUT_ENQUEUER, useClass: BroadcastFanOutQueueService },
+    { provide: BROADCAST_FAN_OUT_ENQUEUER, useClass: BroadcastFanOutEnqueuerAdapter },
     { provide: ADMIN_USER_DIRECTORY, useClass: DrizzleAdminUserDirectoryAdapter },
     { provide: ADMIN_BROADCAST_NOTIFIER, useClass: NotificationAdminBroadcastNotifierAdapter },
   ];

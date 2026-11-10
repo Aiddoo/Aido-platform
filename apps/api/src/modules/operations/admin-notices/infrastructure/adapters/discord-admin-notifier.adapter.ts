@@ -12,7 +12,7 @@ import type {
   AdminNotifyOutcome,
 } from "../../application/ports/admin-notifier.port.js";
 import type { AdminNotice } from "../../application/read-models/admin-notice.read-model.js";
-import { AdminNotificationInfraEvent } from "../admin-notices-infra.log-events.js";
+import { AdminNoticeInfraLogEvent } from "../admin-notices-infra.log-events.js";
 import { renderDiscordEmbed } from "./discord-embed.mapper.js";
 import { DISCORD_WEBHOOK_POLICY } from "./discord-outbound.policy.js";
 
@@ -48,7 +48,7 @@ export class DiscordAdminNotifierAdapter implements AdminNotifierPort {
     const webhookUrl = this.#webhookUrls[channel];
     if (webhookUrl == null || webhookUrl === "") {
       this.#logger.debug({
-        event: AdminNotificationInfraEvent.PROVIDER_NOT_CONFIGURED,
+        event: AdminNoticeInfraLogEvent.PROVIDER_NOT_CONFIGURED,
         provider: "discord",
         channel,
       });
@@ -75,7 +75,7 @@ export class DiscordAdminNotifierAdapter implements AdminNotifierPort {
         return { status: "sent" };
       }
       this.#logger.error({
-        event: AdminNotificationInfraEvent.HTTP_FAILED,
+        event: AdminNoticeInfraLogEvent.HTTP_FAILED,
         provider: "discord",
         channel,
         statusCode: response.status,
@@ -89,7 +89,7 @@ export class DiscordAdminNotifierAdapter implements AdminNotifierPort {
       };
     } catch {
       this.#logger.error({
-        event: AdminNotificationInfraEvent.REQUEST_FAILED,
+        event: AdminNoticeInfraLogEvent.REQUEST_FAILED,
         provider: "discord",
         channel,
         errorType: "transport",

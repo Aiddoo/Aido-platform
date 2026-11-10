@@ -4,7 +4,7 @@ import type { ApplicationLoggerPort } from "#api/shared/application/ports/applic
 import { now } from "#api/shared/domain/date/utils/core";
 
 import { computePreviousKstDayRange } from "../../domain/signup-report-period.domain-service.js";
-import { OperationsNotificationsLogEvent } from "../admin-notices.log-events.js";
+import { AdminNoticeLogEvent } from "../admin-notices.log-events.js";
 import { buildDailySummaryMessage } from "../messages/admin-message.messages.js";
 import { type AdminNotificationQueuePort } from "../ports/admin-notification-queue.port.js";
 import { type SignupStatsReaderPort } from "../ports/signup-stats.reader.port.js";
@@ -21,7 +21,7 @@ interface DispatchDailySignupSummaryDependencies {
   readonly logger: Pick<ApplicationLoggerPort, "log" | "error">;
 }
 
-export class DispatchDailySignupSummary {
+export class DispatchDailySignupSummaryUseCase {
   readonly #dependencies: DispatchDailySignupSummaryDependencies;
 
   constructor(dependencies: DispatchDailySignupSummaryDependencies) {
@@ -29,7 +29,7 @@ export class DispatchDailySignupSummary {
   }
 
   async execute(): Promise<void> {
-    this.#dependencies.logger.log({ event: OperationsNotificationsLogEvent.SUMMARY_STARTED });
+    this.#dependencies.logger.log({ event: AdminNoticeLogEvent.SUMMARY_STARTED });
 
     try {
       const { startUtc, endUtc, reportDateStr } = computePreviousKstDayRange(now());
@@ -55,13 +55,13 @@ export class DispatchDailySignupSummary {
 
       const previousDayTotal = sumBy(signupsByProvider, (group) => group.count);
       this.#dependencies.logger.log({
-        event: OperationsNotificationsLogEvent.SUMMARY_ENQUEUED,
+        event: AdminNoticeLogEvent.SUMMARY_ENQUEUED,
         previousDayTotal,
         totalUsers,
       });
     } catch {
       this.#dependencies.logger.error({
-        event: OperationsNotificationsLogEvent.SUMMARY_FAILED,
+        event: AdminNoticeLogEvent.SUMMARY_FAILED,
         errorType: "summary-dispatch",
       });
     }

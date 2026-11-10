@@ -5,7 +5,7 @@ import type { AdminNotifyOutcome } from "../ports/admin-notifier.port.js";
 import type { AdminNotice } from "../read-models/admin-notice.read-model.js";
 import {
   AdminNotificationRetryableError,
-  SendAdminNotification,
+  SendAdminNotificationUseCase,
 } from "./send-admin-notification.use-case.js";
 
 const notification: AdminNotice = {
@@ -53,11 +53,11 @@ function setup(outcome: AdminNotifyOutcome) {
   const notifier = new StubNotifier(outcome);
   const alert = new RecordingOperationalAlert();
   const logger = new RecordingLogger();
-  const useCase = new SendAdminNotification({ notifier, alert, logger });
+  const useCase = new SendAdminNotificationUseCase({ notifier, alert, logger });
   return { useCase, notifier, alert, logger };
 }
 
-describe("SendAdminNotification", () => {
+describe("SendAdminNotificationUseCase", () => {
   it.each(["admin", "payment"] as const)(
     "%s 채널로 포트에 그대로 넘기고 내용은 로그에 남기지 않는다",
     async (channel) => {

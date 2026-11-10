@@ -3,7 +3,7 @@ import { ErrorCode } from "@aido/api/errors";
 import { broadcastCampaignFixture } from "#test/fixtures/index";
 
 import type { BroadcastCampaignCreationPlan } from "../../domain/broadcast-campaign.aggregate.js";
-import { CreateBroadcastCampaign } from "./create-broadcast-campaign.use-case.js";
+import { CreateBroadcastCampaignUseCase } from "./create-broadcast-campaign.use-case.js";
 
 const REQUEST_ID = "0f8b8a52-5b0e-4f39-9f8b-6f3b3c1f2a10";
 
@@ -13,7 +13,7 @@ function setup(options: {
 }) {
   const enqueued: Array<{ campaignId: string; cursorUserId: string | null }> = [];
   const created: BroadcastCampaignCreationPlan[] = [];
-  const useCase = new CreateBroadcastCampaign({
+  const useCase = new CreateBroadcastCampaignUseCase({
     repository: {
       createOrFind: async (plan) => {
         if (options.existing != null) {
@@ -44,7 +44,7 @@ const input = {
   force: false,
 } as const;
 
-describe("CreateBroadcastCampaign — 브로드캐스트 접수", () => {
+describe("CreateBroadcastCampaignUseCase — 브로드캐스트 접수", () => {
   it("새 요청은 캠페인을 만들고 첫 분배 작업을 같은 transaction에 등록한다", async () => {
     // Given
     const { useCase, enqueued, created } = setup({ targets: 1200 });

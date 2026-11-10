@@ -14,9 +14,9 @@ import {
   type BroadcastDeliveryOutcomeReaderPort,
 } from "./application/ports/broadcast-delivery-outcome.reader.port.js";
 import { BROADCAST_FAN_OUT_ENQUEUER } from "./application/ports/broadcast-fan-out-enqueuer.port.js";
-import { BroadcastFanOutQueueService } from "./infrastructure/adapters/broadcast-fan-out-enqueuer.adapter.js";
+import { BroadcastFanOutEnqueuerAdapter } from "./infrastructure/adapters/broadcast-fan-out-enqueuer.adapter.js";
 import { NotificationAdminBroadcastNotifierAdapter } from "./infrastructure/adapters/notification-admin-broadcast-notifier.adapter.js";
-import { BroadcastFanOutQueueProcessor } from "./infrastructure/jobs/broadcast-fan-out.processor.js";
+import { BroadcastFanOutProcessor } from "./infrastructure/jobs/broadcast-fan-out.processor.js";
 import { DrizzleAdminUserDirectoryAdapter } from "./infrastructure/persistence/drizzle-admin-user-directory.reader.js";
 import { DrizzleBroadcastCampaignRepository } from "./infrastructure/persistence/drizzle-broadcast-campaign.repository.js";
 import {
@@ -43,7 +43,7 @@ import { AdminBroadcastCampaignController } from "./presentation/http/v2/broadca
       useClass: NotificationAdminBroadcastNotifierAdapter,
     },
     { provide: BROADCAST_CAMPAIGN_REPOSITORY, useClass: DrizzleBroadcastCampaignRepository },
-    { provide: BROADCAST_FAN_OUT_ENQUEUER, useClass: BroadcastFanOutQueueService },
+    { provide: BROADCAST_FAN_OUT_ENQUEUER, useClass: BroadcastFanOutEnqueuerAdapter },
     {
       provide: BROADCAST_DELIVERY_OUTCOME_READER,
       inject: [PUSH_CAMPAIGN_OUTCOME_READER],
@@ -56,7 +56,7 @@ import { AdminBroadcastCampaignController } from "./presentation/http/v2/broadca
     failBroadcastCampaignProvider,
     getBroadcastCampaignProvider,
     sendTargetedNotificationProvider,
-    BroadcastFanOutQueueProcessor,
+    BroadcastFanOutProcessor,
   ],
 })
 export class OperationsBroadcastsModule {}

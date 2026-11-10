@@ -1,20 +1,22 @@
 import type { Mocked } from "vitest";
 import { mockDeep } from "vitest-mock-extended";
 
-import { SendTargetedNotification } from "./send-targeted-notification.use-case.js";
+import { SendTargetedNotificationUseCase } from "./send-targeted-notification.use-case.js";
 
-describe("SendTargetedNotification — 타겟 발송", () => {
-  let useCase: SendTargetedNotification;
+describe("SendTargetedNotificationUseCase — 타겟 발송", () => {
+  let useCase: SendTargetedNotificationUseCase;
   let userDirectory: Mocked<
-    ConstructorParameters<typeof SendTargetedNotification>[0]["userDirectory"]
+    ConstructorParameters<typeof SendTargetedNotificationUseCase>[0]["userDirectory"]
   >;
-  let notifier: Mocked<ConstructorParameters<typeof SendTargetedNotification>[0]["notifier"]>;
+  let notifier: Mocked<
+    ConstructorParameters<typeof SendTargetedNotificationUseCase>[0]["notifier"]
+  >;
 
   beforeEach(async () => {
     const sendTargetedNotificationDependencies = mockDeep<
-      ConstructorParameters<typeof SendTargetedNotification>[0]
+      ConstructorParameters<typeof SendTargetedNotificationUseCase>[0]
     >({});
-    const unit = new SendTargetedNotification(sendTargetedNotificationDependencies);
+    const unit = new SendTargetedNotificationUseCase(sendTargetedNotificationDependencies);
 
     useCase = unit;
     userDirectory = sendTargetedNotificationDependencies.userDirectory;

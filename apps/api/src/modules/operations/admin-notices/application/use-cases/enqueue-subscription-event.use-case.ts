@@ -4,7 +4,7 @@ import {
 } from "../messages/admin-notice.messages.js";
 import { type AdminNotificationQueuePort } from "../ports/admin-notification-queue.port.js";
 import type { SubscriptionAlertInput } from "../read-models/subscription-alert.read-model.js";
-import type { AdminNoticeUserResolver } from "./resolve-admin-notice-user.use-case.js";
+import type { ResolveAdminNoticeUserUseCase } from "./resolve-admin-notice-user.use-case.js";
 
 /**
  * 구독 이벤트 관리자 알림 등록 유스케이스.
@@ -14,10 +14,10 @@ import type { AdminNoticeUserResolver } from "./resolve-admin-notice-user.use-ca
  */
 interface EnqueueSubscriptionEventDependencies {
   readonly queue: Pick<AdminNotificationQueuePort, "enqueueSend">;
-  readonly users: Pick<AdminNoticeUserResolver, "resolve">;
+  readonly users: Pick<ResolveAdminNoticeUserUseCase, "resolve">;
 }
 
-export class EnqueueSubscriptionEvent {
+export class EnqueueSubscriptionEventUseCase {
   readonly #dependencies: EnqueueSubscriptionEventDependencies;
 
   constructor(dependencies: EnqueueSubscriptionEventDependencies) {

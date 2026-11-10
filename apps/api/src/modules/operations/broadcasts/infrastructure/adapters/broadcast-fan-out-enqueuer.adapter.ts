@@ -12,7 +12,7 @@ import {
 } from "../jobs/broadcast-fan-out.queue.js";
 
 @Injectable()
-export class BroadcastFanOutQueueService implements BroadcastFanOutEnqueuerPort {
+export class BroadcastFanOutEnqueuerAdapter implements BroadcastFanOutEnqueuerPort {
   readonly #runtime: JobRuntimePort;
 
   constructor(@Inject(JOB_RUNTIME) runtime: JobRuntimePort) {

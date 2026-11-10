@@ -1,4 +1,4 @@
-export const OperationsNotificationsLogEvent = {
+export const AdminNoticeLogEvent = {
   SEND_STARTED: "operations.notifications.send.started",
   SEND_COMPLETED: "operations.notifications.send.completed",
   SEND_SKIPPED: "operations.notifications.send.skipped",

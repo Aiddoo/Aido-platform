@@ -2,7 +2,7 @@ import { Inject, Injectable, Logger, type OnModuleInit } from "@nestjs/common";
 
 import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
 
-import { AdminNotificationInfraEvent } from "../admin-notices-infra.log-events.js";
+import { AdminNoticeInfraLogEvent } from "../admin-notices-infra.log-events.js";
 import {
   ADMIN_NOTIFICATION_QUEUE,
   AdminNotificationJobName,
@@ -45,12 +45,12 @@ export class DailySignupSummaryScheduler implements OnModuleInit {
         },
       );
       this.#logger.log({
-        event: AdminNotificationInfraEvent.SCHEDULE_REGISTERED,
+        event: AdminNoticeInfraLogEvent.SCHEDULE_REGISTERED,
         queueName: ADMIN_NOTIFICATION_QUEUE,
       });
     } catch {
       this.#logger.error({
-        event: AdminNotificationInfraEvent.SCHEDULE_FAILED,
+        event: AdminNoticeInfraLogEvent.SCHEDULE_FAILED,
         queueName: ADMIN_NOTIFICATION_QUEUE,
         errorType: "schedule",
       });

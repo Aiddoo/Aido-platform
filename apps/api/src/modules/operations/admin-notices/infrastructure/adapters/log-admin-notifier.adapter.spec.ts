@@ -5,7 +5,7 @@ import {
   CONTRACT_NOTICE,
   describeAdminNotifierContract,
 } from "../../../../../../test/contracts/operations/admin-notifier.contract.js";
-import { AdminNotificationInfraEvent } from "../admin-notices-infra.log-events.js";
+import { AdminNoticeInfraLogEvent } from "../admin-notices-infra.log-events.js";
 import { LogAdminNotifierAdapter } from "./log-admin-notifier.adapter.js";
 
 describe("LogAdminNotifierAdapter", () => {
@@ -28,7 +28,7 @@ describe("LogAdminNotifierAdapter", () => {
 
     // Then
     expect(Logger.prototype.debug).toHaveBeenCalledExactlyOnceWith({
-      event: AdminNotificationInfraEvent.DELIVERY_SIMULATED,
+      event: AdminNoticeInfraLogEvent.DELIVERY_SIMULATED,
       channel: "payment",
       noticeType: "message",
     });

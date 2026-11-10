@@ -1,4 +1,4 @@
-export const OperationsAdminLogEvent = {
+export const BroadcastLogEvent = {
   BROADCAST_ACCEPTED: "operations.admin.broadcast.accepted",
   BROADCAST_REPLAYED: "operations.admin.broadcast.replayed",
   BROADCAST_COMPLETED: "operations.admin.broadcast.completed",

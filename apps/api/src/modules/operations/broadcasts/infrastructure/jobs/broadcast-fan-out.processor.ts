@@ -2,8 +2,8 @@ import { Inject, Injectable, type OnModuleInit, Optional } from "@nestjs/common"
 
 import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
 
-import { FailBroadcastCampaign } from "../../application/use-cases/fail-broadcast-campaign.use-case.js";
-import { FanOutBroadcastCampaign } from "../../application/use-cases/fan-out-broadcast-campaign.use-case.js";
+import { FailBroadcastCampaignUseCase } from "../../application/use-cases/fail-broadcast-campaign.use-case.js";
+import { FanOutBroadcastCampaignUseCase } from "../../application/use-cases/fan-out-broadcast-campaign.use-case.js";
 import {
   BROADCAST_FAN_OUT_DEAD_LETTER_QUEUE,
   BROADCAST_FAN_OUT_DEAD_LETTER_WORKER_POLICY,
@@ -13,14 +13,14 @@ import {
 } from "./broadcast-fan-out.queue.js";
 
 @Injectable()
-export class BroadcastFanOutQueueProcessor implements OnModuleInit {
-  readonly #fanOutCampaign: FanOutBroadcastCampaign;
-  readonly #failCampaign: FailBroadcastCampaign;
+export class BroadcastFanOutProcessor implements OnModuleInit {
+  readonly #fanOutCampaign: FanOutBroadcastCampaignUseCase;
+  readonly #failCampaign: FailBroadcastCampaignUseCase;
   readonly #runtime?: JobRuntimePort;
 
   constructor(
-    fanOutCampaign: FanOutBroadcastCampaign,
-    failCampaign: FailBroadcastCampaign,
+    fanOutCampaign: FanOutBroadcastCampaignUseCase,
+    failCampaign: FailBroadcastCampaignUseCase,
     @Optional()
     @Inject(JOB_RUNTIME)
     runtime?: JobRuntimePort,

@@ -10,7 +10,7 @@ import {
   RETENTION_QUEUE,
   RetentionJobName,
 } from "#api/modules/notification/infrastructure/jobs/retention/retention-queue.constants";
-import { CreateBroadcastCampaign } from "#api/modules/operations/broadcasts/application/use-cases/create-broadcast-campaign.use-case";
+import { CreateBroadcastCampaignUseCase } from "#api/modules/operations/broadcasts/application/use-cases/create-broadcast-campaign.use-case";
 import { BROADCAST_FAN_OUT_QUEUE } from "#api/modules/operations/broadcasts/operations-broadcasts-jobs.public";
 import { pushDispatch, pushToken, user, userPreference } from "#api/platform/database/schema/index";
 import type { EnqueueJobOptions } from "#api/shared/application/ports/job-runtime.port";
@@ -184,7 +184,7 @@ describe("핵심 큐 프로세서 컴포넌트 테스트 (실제 PostgreSQL + pg
       // Given
       const recipientCount = Number(process.env.BROADCAST_RECIPIENT_COUNT ?? 1_200);
       await seedPushReadyUsers(harness.client, recipientCount);
-      const createCampaign = harness.module.get(CreateBroadcastCampaign);
+      const createCampaign = harness.module.get(CreateBroadcastCampaignUseCase);
       const request = {
         requestId: "7d3a3f6e-3a0c-4b8e-9d0f-0d6a3c2b1a90",
         title: "새 기능 안내",

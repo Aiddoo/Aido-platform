@@ -6,7 +6,7 @@ import { Public } from "#api/modules/identity/identity-auth-http.public";
 import { RawResponse } from "#api/platform/http/decorators/index";
 import { ApiDoc } from "#api/platform/http/swagger/index";
 
-import { GetAppVersion } from "../../../application/use-cases/get-app-version.use-case.js";
+import { GetAppVersionUseCase } from "../../../application/use-cases/get-app-version.use-case.js";
 import {
   AppVersionDisabledResponseDto,
   AppVersionEnabledResponseDto,
@@ -16,9 +16,9 @@ import {
 @ApiTags("App Config")
 @Controller("app-config")
 export class AppVersionController {
-  readonly #getAppVersion: GetAppVersion;
+  readonly #getAppVersion: GetAppVersionUseCase;
 
-  constructor(getAppVersion: GetAppVersion) {
+  constructor(getAppVersion: GetAppVersionUseCase) {
     this.#getAppVersion = getAppVersion;
   }
 

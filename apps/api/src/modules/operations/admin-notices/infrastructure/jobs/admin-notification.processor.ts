@@ -2,9 +2,9 @@ import { Inject, Injectable, Logger, type OnModuleInit, Optional } from "@nestjs
 
 import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
 
-import { DispatchDailySignupSummary } from "../../application/use-cases/dispatch-daily-signup-summary.use-case.js";
-import { SendAdminNotification } from "../../application/use-cases/send-admin-notification.use-case.js";
-import { AdminNotificationInfraEvent } from "../admin-notices-infra.log-events.js";
+import { DispatchDailySignupSummaryUseCase } from "../../application/use-cases/dispatch-daily-signup-summary.use-case.js";
+import { SendAdminNotificationUseCase } from "../../application/use-cases/send-admin-notification.use-case.js";
+import { AdminNoticeInfraLogEvent } from "../admin-notices-infra.log-events.js";
 import {
   ADMIN_NOTIFICATION_QUEUE,
   ADMIN_NOTIFICATION_WORKER_POLICY,
@@ -15,8 +15,8 @@ import {
 /**
  * 관리자 알림 JobRuntime Processor (진입 어댑터).
  *
- * - dispatch-signup-summary: 스케줄러 트리거 → DispatchDailySignupSummary
- * - send-notification: 관리자 알림 채널 발송 → SendAdminNotification
+ * - dispatch-signup-summary: 스케줄러 트리거 → DispatchDailySignupSummaryUseCase
+ * - send-notification: 관리자 알림 채널 발송 → SendAdminNotificationUseCase
  *
  */
 
@@ -24,13 +24,13 @@ import {
 export class AdminNotificationProcessor implements OnModuleInit {
   readonly #logger = new Logger(AdminNotificationProcessor.name);
 
-  readonly #sendAdminNotification: SendAdminNotification;
-  readonly #dispatchDailySummary: DispatchDailySignupSummary;
+  readonly #sendAdminNotification: SendAdminNotificationUseCase;
+  readonly #dispatchDailySummary: DispatchDailySignupSummaryUseCase;
   readonly #runtime?: JobRuntimePort;
 
   constructor(
-    sendAdminNotification: SendAdminNotification,
-    dispatchDailySummary: DispatchDailySignupSummary,
+    sendAdminNotification: SendAdminNotificationUseCase,
+    dispatchDailySummary: DispatchDailySignupSummaryUseCase,
     @Optional()
     @Inject(JOB_RUNTIME)
     runtime?: JobRuntimePort,
@@ -42,7 +42,7 @@ export class AdminNotificationProcessor implements OnModuleInit {
 
   onStalled(jobId: string) {
     this.#logger.warn({
-      event: AdminNotificationInfraEvent.JOB_STALLED,
+      event: AdminNoticeInfraLogEvent.JOB_STALLED,
       queueName: ADMIN_NOTIFICATION_QUEUE,
       jobId,
     });
@@ -50,7 +50,7 @@ export class AdminNotificationProcessor implements OnModuleInit {
 
   onError(_error: Error) {
     this.#logger.error({
-      event: AdminNotificationInfraEvent.WORKER_FAILED,
+      event: AdminNoticeInfraLogEvent.WORKER_FAILED,
       queueName: ADMIN_NOTIFICATION_QUEUE,
       errorType: "worker",
     });
@@ -58,7 +58,7 @@ export class AdminNotificationProcessor implements OnModuleInit {
 
   onFailed(job: { readonly id?: string; readonly name?: string } | undefined, _error: Error) {
     this.#logger.error({
-      event: AdminNotificationInfraEvent.JOB_FAILED,
+      event: AdminNoticeInfraLogEvent.JOB_FAILED,
       queueName: ADMIN_NOTIFICATION_QUEUE,
       jobId: job?.id,
       jobName:
@@ -89,7 +89,7 @@ export class AdminNotificationProcessor implements OnModuleInit {
     const parsedJob = AdminNotificationRuntimeJobSchema.safeParse(untrustedJob);
     if (!parsedJob.success) {
       this.#logger.warn({
-        event: AdminNotificationInfraEvent.JOB_INVALID,
+        event: AdminNoticeInfraLogEvent.JOB_INVALID,
         queueName: ADMIN_NOTIFICATION_QUEUE,
       });
       return;

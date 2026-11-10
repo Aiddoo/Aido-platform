@@ -1,12 +1,12 @@
 import type { BroadcastResult } from "@aido/api";
 
 import type {
-  CreateBroadcastCampaign,
+  CreateBroadcastCampaignUseCase,
   CreateBroadcastCampaignInput,
 } from "./create-broadcast-campaign.use-case.js";
 
 interface BroadcastNotificationDependencies {
-  readonly createBroadcastCampaign: Pick<CreateBroadcastCampaign, "execute">;
+  readonly createBroadcastCampaign: Pick<CreateBroadcastCampaignUseCase, "execute">;
 }
 
 /**
@@ -14,7 +14,7 @@ interface BroadcastNotificationDependencies {
  * 접수 시점에 대기열에 올릴 대상 수다.
  * TODO: 관리자 도구가 v2 캠페인 API로 옮긴 뒤 v1 broadcast route와 함께 지운다.
  */
-export class BroadcastNotification {
+export class BroadcastNotificationUseCase {
   readonly #dependencies: BroadcastNotificationDependencies;
 
   constructor(dependencies: BroadcastNotificationDependencies) {

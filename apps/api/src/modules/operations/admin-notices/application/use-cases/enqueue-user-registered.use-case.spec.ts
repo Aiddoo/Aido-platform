@@ -5,8 +5,8 @@ import type {
 } from "../ports/admin-notification-queue.port.js";
 import type { AdminNotice, AdminNoticeUser } from "../read-models/admin-notice.read-model.js";
 import type { UserRegisteredEventPayload } from "../read-models/user-registered.read-model.js";
-import { EnqueueUserRegistered } from "./enqueue-user-registered.use-case.js";
-import { AdminNoticeUserResolver } from "./resolve-admin-notice-user.use-case.js";
+import { EnqueueUserRegisteredUseCase } from "./enqueue-user-registered.use-case.js";
+import { ResolveAdminNoticeUserUseCase } from "./resolve-admin-notice-user.use-case.js";
 
 class RecordingQueue implements AdminNotificationQueuePort {
   readonly sent: { channel: NotificationChannel; notice: AdminNotice }[] = [];
@@ -43,9 +43,9 @@ const payload: UserRegisteredEventPayload = {
 
 function setup(user: AdminNoticeUser | null) {
   const queue = new RecordingQueue();
-  const useCase = new EnqueueUserRegistered({
+  const useCase = new EnqueueUserRegisteredUseCase({
     queue,
-    users: new AdminNoticeUserResolver({
+    users: new ResolveAdminNoticeUserUseCase({
       reader: new StubUserReader(user),
       logger: { warn: () => {} },
     }),
@@ -53,7 +53,7 @@ function setup(user: AdminNoticeUser | null) {
   return { useCase, queue };
 }
 
-describe("EnqueueUserRegistered — 가입 알림 등록", () => {
+describe("EnqueueUserRegisteredUseCase — 가입 알림 등록", () => {
   it("결제 알림과 같은 사용자 블록(태그 포함)과 가입 기기 정보를 admin 채널에 등록한다", async () => {
     // Given
     const stored: AdminNoticeUser = {

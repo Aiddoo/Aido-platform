@@ -17,8 +17,8 @@ import {
 } from "#api/platform/http/swagger/index";
 import { ThrottleByUser } from "#api/platform/throttle/index";
 
-import { CreateBroadcastCampaign } from "../../../application/use-cases/create-broadcast-campaign.use-case.js";
-import { GetBroadcastCampaign } from "../../../application/use-cases/get-broadcast-campaign.use-case.js";
+import { CreateBroadcastCampaignUseCase } from "../../../application/use-cases/create-broadcast-campaign.use-case.js";
+import { GetBroadcastCampaignUseCase } from "../../../application/use-cases/get-broadcast-campaign.use-case.js";
 import {
   toBroadcastCampaignAcceptedDto,
   toBroadcastCampaignDto,
@@ -37,12 +37,12 @@ const BROADCAST_CREATION_THROTTLE = { ttl: 60_000, limit: 5 } as const;
 @ApiBearerAuth()
 @Controller({ path: "admin/notifications/broadcasts", version: API_VERSION.V2 })
 export class AdminBroadcastCampaignController {
-  readonly #createBroadcastCampaign: Pick<CreateBroadcastCampaign, "execute">;
-  readonly #getBroadcastCampaign: Pick<GetBroadcastCampaign, "execute">;
+  readonly #createBroadcastCampaign: Pick<CreateBroadcastCampaignUseCase, "execute">;
+  readonly #getBroadcastCampaign: Pick<GetBroadcastCampaignUseCase, "execute">;
 
   constructor(
-    createBroadcastCampaign: CreateBroadcastCampaign,
-    getBroadcastCampaign: GetBroadcastCampaign,
+    createBroadcastCampaign: CreateBroadcastCampaignUseCase,
+    getBroadcastCampaign: GetBroadcastCampaignUseCase,
   ) {
     this.#createBroadcastCampaign = createBroadcastCampaign;
     this.#getBroadcastCampaign = getBroadcastCampaign;

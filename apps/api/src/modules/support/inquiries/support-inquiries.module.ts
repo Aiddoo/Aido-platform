@@ -3,7 +3,7 @@ import { Logger, Module } from "@nestjs/common";
 import { NotificationEmailModule } from "#api/modules/notification/notification-email.public";
 
 import { INQUIRY_MAILER } from "./application/ports/inquiry-mailer.port.js";
-import { CreateInquiry } from "./application/use-cases/create-inquiry.use-case.js";
+import { CreateInquiryUseCase } from "./application/use-cases/create-inquiry.use-case.js";
 import { EmailInquiryMailerAdapter } from "./infrastructure/adapters/email-inquiry-mailer.adapter.js";
 import { InquiryController } from "./presentation/http/v1/inquiry.controller.js";
 
@@ -13,10 +13,10 @@ import { InquiryController } from "./presentation/http/v1/inquiry.controller.js"
   providers: [
     { provide: INQUIRY_MAILER, useClass: EmailInquiryMailerAdapter },
     {
-      provide: CreateInquiry,
+      provide: CreateInquiryUseCase,
       inject: [INQUIRY_MAILER],
-      useFactory: (mailer: ConstructorParameters<typeof CreateInquiry>[0]["mailer"]) =>
-        new CreateInquiry({ mailer, logger: new Logger(CreateInquiry.name) }),
+      useFactory: (mailer: ConstructorParameters<typeof CreateInquiryUseCase>[0]["mailer"]) =>
+        new CreateInquiryUseCase({ mailer, logger: new Logger(CreateInquiryUseCase.name) }),
     },
   ],
 })

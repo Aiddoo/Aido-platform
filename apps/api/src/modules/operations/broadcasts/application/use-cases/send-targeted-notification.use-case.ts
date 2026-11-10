@@ -5,7 +5,7 @@ import { ApplicationException } from "#api/shared/application/application.except
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 
 import { BroadcastContent } from "../../domain/broadcast-content.vo.js";
-import { OperationsAdminLogEvent } from "../broadcasts.log-events.js";
+import { BroadcastLogEvent } from "../broadcasts.log-events.js";
 import { buildBroadcastMessages } from "../messages/broadcast-message.messages.js";
 import type { AdminBroadcastNotifierPort } from "../ports/admin-broadcast-notifier.port.js";
 import type { AdminUserDirectoryPort } from "../ports/admin-user-directory.reader.port.js";
@@ -24,7 +24,7 @@ interface SendTargetedNotificationDependencies {
   readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
 
-export class SendTargetedNotification {
+export class SendTargetedNotificationUseCase {
   readonly #dependencies: SendTargetedNotificationDependencies;
 
   constructor(dependencies: SendTargetedNotificationDependencies) {
@@ -51,7 +51,7 @@ export class SendTargetedNotification {
       ),
     );
     this.#dependencies.logger.log({
-      event: OperationsAdminLogEvent.TARGETED_COMPLETED,
+      event: BroadcastLogEvent.TARGETED_COMPLETED,
       count,
       totalTargets: existingUserIds.length,
     });

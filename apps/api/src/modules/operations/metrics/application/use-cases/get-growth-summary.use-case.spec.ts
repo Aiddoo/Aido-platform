@@ -1,9 +1,9 @@
 import { vi } from "vitest";
 
 import type { AdminGrowthMetricsPort } from "../ports/growth-metrics.reader.port.js";
-import { GetGrowthSummary } from "./get-growth-summary.use-case.js";
+import { GetGrowthSummaryUseCase } from "./get-growth-summary.use-case.js";
 
-describe("GetGrowthSummary — 관리자 성장 지표", () => {
+describe("GetGrowthSummaryUseCase — 관리자 성장 지표", () => {
   it("범위가 없으면 마지막 30개 완료 UTC 날짜를 사용하고 측정 전 리텐션을 null로 반환한다", async () => {
     // Given - 2026-07-26 현재, 아직 활동 측정 행이 없는 저장소
     vi.useFakeTimers({ toFake: ["Date"] });
@@ -27,7 +27,7 @@ describe("GetGrowthSummary — 관리자 성장 지표", () => {
         d7RetainedActivatedUsers: 0,
       }),
     };
-    const query = new GetGrowthSummary({ metrics: metrics });
+    const query = new GetGrowthSummaryUseCase({ metrics: metrics });
 
     try {
       // When - 날짜 입력 없이 성장 요약을 조회하면
@@ -81,7 +81,7 @@ describe("GetGrowthSummary — 관리자 성장 지표", () => {
         d7RetainedActivatedUsers: 0,
       }),
     };
-    const query = new GetGrowthSummary({ metrics: metrics });
+    const query = new GetGrowthSummaryUseCase({ metrics: metrics });
 
     // When - 명시 범위로 조회하면
     const result = await query.execute({
@@ -122,7 +122,7 @@ describe("GetGrowthSummary — 관리자 성장 지표", () => {
         d7RetainedActivatedUsers: 1,
       }),
     };
-    const query = new GetGrowthSummary({ metrics: metrics });
+    const query = new GetGrowthSummaryUseCase({ metrics: metrics });
 
     // When - 성장 지표를 조회하면
     const result = await query.execute({

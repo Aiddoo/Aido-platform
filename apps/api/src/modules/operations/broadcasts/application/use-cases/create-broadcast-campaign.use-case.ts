@@ -8,7 +8,7 @@ import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
 
 import { BroadcastCampaign } from "../../domain/broadcast-campaign.aggregate.js";
 import { BroadcastContent } from "../../domain/broadcast-content.vo.js";
-import { OperationsAdminLogEvent } from "../broadcasts.log-events.js";
+import { BroadcastLogEvent } from "../broadcasts.log-events.js";
 import type { AdminUserDirectoryPort } from "../ports/admin-user-directory.reader.port.js";
 import type { BroadcastCampaignRepositoryPort } from "../ports/broadcast-campaign.repository.port.js";
 import type { BroadcastFanOutEnqueuerPort } from "../ports/broadcast-fan-out-enqueuer.port.js";
@@ -39,7 +39,7 @@ interface CreateBroadcastCampaignDependencies {
  * 캠페인 저장과 첫 분배 작업 등록을 한 transaction으로 커밋한다. 같은 요청 ID의 재요청은
  * 새 캠페인이나 분배 작업을 만들지 않고 처음 접수한 캠페인을 돌려준다.
  */
-export class CreateBroadcastCampaign {
+export class CreateBroadcastCampaignUseCase {
   readonly #dependencies: CreateBroadcastCampaignDependencies;
 
   constructor(dependencies: CreateBroadcastCampaignDependencies) {
@@ -75,8 +75,8 @@ export class CreateBroadcastCampaign {
     });
     this.#dependencies.logger.log({
       event: result.created
-        ? OperationsAdminLogEvent.BROADCAST_ACCEPTED
-        : OperationsAdminLogEvent.BROADCAST_REPLAYED,
+        ? BroadcastLogEvent.BROADCAST_ACCEPTED
+        : BroadcastLogEvent.BROADCAST_REPLAYED,
       campaignId: result.campaign.id,
       targetFilter: input.targetFilter,
       targetCount: result.targetCount,

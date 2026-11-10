@@ -2,7 +2,7 @@ import type { ApplicationLoggerPort } from "#api/shared/application/ports/applic
 import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
 
 import { BROADCAST_FAN_OUT_POLICY } from "../../domain/broadcasts.constants.js";
-import { OperationsAdminLogEvent } from "../broadcasts.log-events.js";
+import { BroadcastLogEvent } from "../broadcasts.log-events.js";
 import { buildBroadcastMessages } from "../messages/broadcast-message.messages.js";
 import type { AdminBroadcastNotifierPort } from "../ports/admin-broadcast-notifier.port.js";
 import type { AdminUserDirectoryPort } from "../ports/admin-user-directory.reader.port.js";
@@ -27,7 +27,7 @@ interface FanOutBroadcastCampaignDependencies {
  * transaction이라 작업이 중간에 죽어도 다음 실행이 마지막으로 커밋된 cursor부터 이어 간다.
  * 공급자 발송은 push-delivery 작업이 commit 뒤 따로 처리하므로 이 transaction은 DB 쓰기만 한다.
  */
-export class FanOutBroadcastCampaign {
+export class FanOutBroadcastCampaignUseCase {
   readonly #dependencies: FanOutBroadcastCampaignDependencies;
 
   constructor(dependencies: FanOutBroadcastCampaignDependencies) {
@@ -49,7 +49,7 @@ export class FanOutBroadcastCampaign {
           cursorUserId: outcome.cursorUserId,
         });
         this.#dependencies.logger.log({
-          event: OperationsAdminLogEvent.BROADCAST_CONTINUED,
+          event: BroadcastLogEvent.BROADCAST_CONTINUED,
           campaignId: input.campaignId,
         });
         return;
@@ -93,7 +93,7 @@ export class FanOutBroadcastCampaign {
     await this.#dependencies.repository.save(campaign);
     if (isLastPage || lastUserId == null) {
       this.#dependencies.logger.log({
-        event: OperationsAdminLogEvent.BROADCAST_COMPLETED,
+        event: BroadcastLogEvent.BROADCAST_COMPLETED,
         campaignId,
         processedCount: campaign.processedCount,
         queuedCount: campaign.queuedCount,

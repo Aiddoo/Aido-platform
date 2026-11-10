@@ -1,7 +1,7 @@
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 
-import { OperationsNotificationsLogEvent } from "../admin-notices.log-events.js";
+import { AdminNoticeLogEvent } from "../admin-notices.log-events.js";
 import type { AdminNoticeUserReaderPort } from "../ports/admin-notice-user.reader.port.js";
 import type { AdminNoticeUser } from "../read-models/admin-notice.read-model.js";
 
@@ -14,7 +14,7 @@ interface AdminNoticeUserResolverDependencies {
  * 알림의 사용자 블록을 채운다. 조회가 실패하거나 사용자가 없으면 호출한 Context가 준 값으로 보내
  * 사용자 조회 때문에 알림을 잃지 않는다.
  */
-export class AdminNoticeUserResolver {
+export class ResolveAdminNoticeUserUseCase {
   readonly #dependencies: AdminNoticeUserResolverDependencies;
 
   constructor(dependencies: AdminNoticeUserResolverDependencies) {
@@ -27,7 +27,7 @@ export class AdminNoticeUserResolver {
       return found == null ? fallback : { ...fallback, ...found };
     } catch (error) {
       this.#dependencies.logger.warn({
-        event: OperationsNotificationsLogEvent.USER_LOOKUP_FAILED,
+        event: AdminNoticeLogEvent.USER_LOOKUP_FAILED,
         userId: fallback.userId,
         errorType: toErrorType(error),
       });

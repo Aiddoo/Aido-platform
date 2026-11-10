@@ -4,14 +4,15 @@ import type { Mocked } from "vitest";
 
 import { IS_ADMIN_KEY } from "#api/modules/identity/auth/presentation/http/decorators/admin.decorator";
 
-import { GetGrowthSummary } from "../../../application/use-cases/get-growth-summary.use-case.js";
+import { GetGrowthSummaryUseCase } from "../../../application/use-cases/get-growth-summary.use-case.js";
 import { AdminGrowthController } from "./growth.controller.js";
 
 describe("AdminGrowthController — 관리자 성장 지표", () => {
   it("관리자 전용 summary 요청을 facade에 위임한다", async () => {
     // Given - 관리자 컨트롤러, facade, 명시 cohort 범위
     const { unit, unitRef } = await TestBed.solitary(AdminGrowthController).compile();
-    const getGrowthSummaryQuery: Mocked<GetGrowthSummary> = unitRef.get(GetGrowthSummary);
+    const getGrowthSummaryQuery: Mocked<GetGrowthSummaryUseCase> =
+      unitRef.get(GetGrowthSummaryUseCase);
     const admin: CurrentUserPayload = {
       userId: "admin-1",
       email: "admin@example.com",

@@ -7,8 +7,8 @@ import type {
   NotificationChannel,
 } from "../ports/admin-notification-queue.port.js";
 import type { AdminNotice, AdminNoticeUser } from "../read-models/admin-notice.read-model.js";
-import { EnqueueSubscriptionEvent } from "./enqueue-subscription-event.use-case.js";
-import { AdminNoticeUserResolver } from "./resolve-admin-notice-user.use-case.js";
+import { EnqueueSubscriptionEventUseCase } from "./enqueue-subscription-event.use-case.js";
+import { ResolveAdminNoticeUserUseCase } from "./resolve-admin-notice-user.use-case.js";
 
 class RecordingQueue implements AdminNotificationQueuePort {
   readonly sent: {
@@ -79,14 +79,14 @@ const storedUser: AdminNoticeUser = {
 function setup(reader: StubUserReader) {
   const queue = new RecordingQueue();
   const logger = new RecordingLogger();
-  const useCase = new EnqueueSubscriptionEvent({
+  const useCase = new EnqueueSubscriptionEventUseCase({
     queue,
-    users: new AdminNoticeUserResolver({ reader, logger }),
+    users: new ResolveAdminNoticeUserUseCase({ reader, logger }),
   });
   return { useCase, queue, logger };
 }
 
-describe("EnqueueSubscriptionEvent — 결제 알림 등록", () => {
+describe("EnqueueSubscriptionEventUseCase — 결제 알림 등록", () => {
   it("저장된 사용자 블록과 웹훅 결제 값을 결제 채널에 이벤트 ID로 한 번만 등록한다", async () => {
     // Given
     const { useCase, queue } = setup(new StubUserReader(storedUser));
