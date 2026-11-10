@@ -51,7 +51,7 @@ function priceFields(
 
 function planFields(
   productId: string | undefined,
-  key: "planType" | "newPlanType",
+  key: keyof Pick<SubscriptionEventPayload, "planType" | "newPlanType">,
 ): Pick<SubscriptionEventPayload, "planType" | "newPlanType"> {
   const planType = productId == null ? null : planTypeOfProduct(productId);
   return planType == null ? {} : { [key]: planType };

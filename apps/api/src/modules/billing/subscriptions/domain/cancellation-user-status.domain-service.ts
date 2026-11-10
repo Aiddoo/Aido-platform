@@ -1,3 +1,5 @@
+import type { SubscriptionStatus } from "@aido/api/vocabulary";
+
 /** 일반 취소 시 clock skew 대응 grace period(60초) */
 const CANCELLATION_CLOCK_SKEW_MS = 60_000;
 
@@ -9,7 +11,7 @@ const CANCELLATION_CLOCK_SKEW_MS = 60_000;
 export function resolveCancellationUserStatus(
   expiresAt: Temporal.Instant | null,
   now: Temporal.Instant,
-): "ACTIVE" | "CANCELLED" {
+): Extract<SubscriptionStatus, "ACTIVE" | "CANCELLED"> {
   return expiresAt != null &&
     Temporal.Instant.compare(
       expiresAt,

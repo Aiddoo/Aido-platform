@@ -23,7 +23,15 @@ export interface StoreLifecycleEvent {
   readonly isTrialConversion: boolean;
 }
 
-type LifecycleEventKind = "PURCHASE" | "RENEWAL" | "CANCELLATION" | "EXPIRATION" | "OTHER";
+const LIFECYCLE_EVENT_KINDS = [
+  "PURCHASE",
+  "RENEWAL",
+  "CANCELLATION",
+  "EXPIRATION",
+  "OTHER",
+] as const;
+
+type LifecycleEventKind = (typeof LIFECYCLE_EVENT_KINDS)[number];
 
 // 환불도 해지의 한 가지라 체험 단계는 해지와 같다(알림은 환불을 먼저 고른다)
 function eventKindOf(event: StoreLifecycleEvent): LifecycleEventKind {

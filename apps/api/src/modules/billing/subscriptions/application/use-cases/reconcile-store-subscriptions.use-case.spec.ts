@@ -1,3 +1,5 @@
+import type { SubscriptionStatus } from "@aido/api/vocabulary";
+
 import { LoadPremiumEntitlementsUseCase } from "#api/modules/billing/premium-grants/application/use-cases/load-premium-entitlements.use-case";
 import { ProjectPremiumAccessUseCase } from "#api/modules/billing/premium-grants/application/use-cases/project-premium-access.use-case";
 import { FakeBillingUserLock } from "#test/doubles/billing/fake-billing-user-lock";
@@ -36,7 +38,10 @@ function storeState(overrides: Partial<StoreSubscriptionState> = {}): StoreSubsc
 }
 
 function setup(
-  options: { status?: "ACTIVE" | "CANCELLED" | "EXPIRED"; states?: StoreSubscriptionState[] } = {},
+  options: {
+    status?: Extract<SubscriptionStatus, "ACTIVE" | "CANCELLED" | "EXPIRED">;
+    states?: StoreSubscriptionState[];
+  } = {},
 ) {
   const subscriptionRepository = new InMemorySubscriptionRepository([
     createSubscriptionFixture({ status: options.status ?? "ACTIVE", expiresAt: EXPIRES_AT }),

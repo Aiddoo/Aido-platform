@@ -1,6 +1,7 @@
 import type { StorePeriodType, SubscriptionEnvironment } from "@aido/api/vocabulary";
 
 import type {
+  StoreSubscriptionEventKind,
   SubscriptionEndReason,
   SubscriptionProvider,
   SubscriptionStore,
@@ -60,7 +61,7 @@ export interface SubscriptionRenewedEvent extends StoreChainEventBase {
 }
 
 export interface SubscriptionCancelledEvent extends StoreChainEventBase {
-  readonly kind: "CANCELLED" | "REFUNDED";
+  readonly kind: Extract<StoreSubscriptionEventKind, "CANCELLED" | "REFUNDED">;
   readonly reason: SubscriptionEndReason | null;
 }
 

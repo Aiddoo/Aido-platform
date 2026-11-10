@@ -86,7 +86,9 @@ export interface StoreSubscriptionState {
 }
 
 /** 스토어 상태와 달라 고친 칸 */
-export type SubscriptionReconcileField = "status" | "expiresAt" | "productId" | "periodType";
+const SUBSCRIPTION_RECONCILE_FIELDS = ["status", "expiresAt", "productId", "periodType"] as const;
+
+export type SubscriptionReconcileField = (typeof SUBSCRIPTION_RECONCILE_FIELDS)[number];
 
 export class Subscription extends AggregateRoot<SubscriptionId, SubscriptionProps> {
   static create(params: CreateSubscriptionParams): Subscription {

@@ -30,6 +30,7 @@ import type {
   SubscriptionTransferredEvent,
 } from "../../domain/store-subscription.event.js";
 import { Subscription } from "../../domain/subscription.aggregate.js";
+import type { StoreSubscriptionEventKind } from "../../domain/subscriptions.constants.js";
 import type { StoreSubscriptionReconcileSchedulerPort } from "../ports/store-subscription-reconcile-scheduler.port.js";
 import type {
   StoreSubscriptionEventFailureContext,
@@ -608,7 +609,10 @@ export class ApplyStoreSubscriptionEventUseCase {
 
   #planTransition(params: {
     readonly user: SubscriptionUser;
-    readonly event: Exclude<ProcessedChainEvent, { kind: "STARTED" | "BILLING_ISSUE" }>;
+    readonly event: Exclude<
+      ProcessedChainEvent,
+      { kind: Extract<StoreSubscriptionEventKind, "STARTED" | "BILLING_ISSUE"> }
+    >;
     readonly storeSubscriptionId: StoreSubscriptionId;
     readonly subscription: Subscription;
     readonly renewalExpiresAt: Instant | undefined;
