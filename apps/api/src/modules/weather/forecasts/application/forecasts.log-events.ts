@@ -9,4 +9,5 @@ export const ForecastLogEvent = {
   REPORT_READ_FAILED: "weather.report.read_failed",
   REPORT_AIR_QUALITY_UNAVAILABLE: "weather.report.air_quality_unavailable",
   REPORT_CACHE_SCOPE_FAILED: "weather.report.cache-scope.failed",
+  REPORT_BRIEFING_TODOS_UNAVAILABLE: "weather.report.briefing_todos_unavailable",
 } as const;

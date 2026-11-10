@@ -9,7 +9,7 @@ import {
   type CurrentUserPayload,
 } from "#api/modules/identity/identity-auth-http.public";
 import { API_VERSION } from "#api/platform/http/api-versioning";
-import { Locale, type SupportedLocale } from "#api/platform/http/decorators/index";
+import { Locale, type SupportedLocale, Timezone } from "#api/platform/http/decorators/index";
 import {
   ApiDoc,
   ApiNotFoundError,
@@ -60,6 +60,7 @@ export class WeatherV2Controller {
 - 칸마다 제공되는 데이터 종류를 7일 캐시하고 그 종류만 요청합니다. 한국은 다음 1시간 강수와 특보를 제공하지 않아 \`nextHour\`는 null, \`alerts\`는 빈 배열입니다.
 - 리포트는 30분 캐시합니다. 지금 강수 중이거나 2시간 안에 강수(확률 50% 이상·다음 1시간 강수 구간)가 예보되면 10분만 캐시합니다. 공급자 호출이 실패하면(429·5xx·인증 거절·4초 시간 초과) 그 칸은 1분 동안 공급자를 부르지 않고, 최근 6시간 안의 마지막 성공 데이터를 돌려줍니다. 이때 \`fetchedAt\`은 공급자가 그 데이터를 읽은 시각입니다.
 - 시간별·일별 예보는 응답 시각을 기준으로 지난 구간을 잘라 냅니다.
+- \`briefing\`은 오늘 남은 시간 중 시각이 정해진 미완료 할 일이 비·눈(없으면 더운 낮)에 걸리는지 서버가 판단한 값입니다. \`affectedTodoIds\`와 옮길 시간 후보 \`rescheduleOptions\`는 날씨 푸시와 같은 기준(강수 확률 50% 이상, 낮 체감 33°C 이상)이고, 오늘은 \`X-Timezone\`(없으면 위치 시간대)의 달력 날짜입니다. 할 일을 읽지 못하면 \`briefing\`만 빠집니다.
 - 대기질은 한국 위치에서만 에어코리아로 조회하고 1시간 캐시합니다. 조회에 실패해도 리포트는 정상 응답하며 \`airQuality\`만 null입니다.
 
 ### 요청 조건
@@ -95,10 +96,12 @@ export class WeatherV2Controller {
   async getReport(
     @CurrentUser() user: CurrentUserPayload,
     @Locale() locale: SupportedLocale | undefined,
+    @Timezone({ preserveIfMissing: true }) timezone: string | undefined,
   ): Promise<WeatherReportResponse> {
     const result = await this.#getWeatherReport.execute({
       userId: user.userId,
       language: resolveWeatherReportLanguage(locale),
+      timezone,
     });
     return toWeatherReportResponse(result);
   }

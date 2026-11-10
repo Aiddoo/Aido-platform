@@ -1,8 +1,13 @@
-import type { WeatherDayPartForecast, WeatherReportResponse } from "@aido/api/contracts/weather";
+import type {
+  WeatherBriefing as WeatherBriefingResponse,
+  WeatherDayPartForecast,
+  WeatherReportResponse,
+} from "@aido/api/contracts/weather";
 
 import { toISOString, toISOStringOrNull } from "#api/shared/domain/date/utils/format";
 
 import type { WeatherReportResult } from "../../../application/use-cases/get-weather-report.use-case.js";
+import type { WeatherBriefing } from "../../../domain/weather-briefing.domain-service.js";
 import type { WeatherReportDayPart } from "../../../domain/weather-report.vo.js";
 
 /** v2 대기질은 한국 위치에서 에어코리아로만 채운다. */
@@ -12,9 +17,20 @@ function toDayPartResponse(part: WeatherReportDayPart | null): WeatherDayPartFor
   return part == null ? null : { ...part };
 }
 
+function toBriefingResponse(briefing: WeatherBriefing): WeatherBriefingResponse {
+  return {
+    reason: briefing.reason,
+    affectedTodoIds: [...briefing.affectedTodoIds],
+    rescheduleOptions: briefing.rescheduleOptions.map(({ todoId, options }) => ({
+      todoId,
+      options: options.map((option) => ({ ...option, startsAt: toISOString(option.startsAt) })),
+    })),
+  };
+}
+
 /** 시각은 UTC ISO 문자열로, 일별 date는 이미 위치 시간대 달력 날짜다. */
 export function toWeatherReportResponse(result: WeatherReportResult): WeatherReportResponse {
-  const { location, report, airQuality, attribution } = result;
+  const { location, report, airQuality, attribution, briefing } = result;
   return {
     location: { ...location },
     current: { ...report.current, observedAt: toISOString(report.current.observedAt) },
@@ -63,5 +79,6 @@ export function toWeatherReportResponse(result: WeatherReportResult): WeatherRep
             },
     },
     fetchedAt: toISOString(report.fetchedAt),
+    briefing: briefing == null ? undefined : toBriefingResponse(briefing),
   };
 }

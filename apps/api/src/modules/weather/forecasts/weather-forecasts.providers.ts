@@ -7,6 +7,7 @@ import { TimezoneResolverPort } from "../locations/application/ports/timezone-re
 import { UserLocationRepositoryPort } from "../locations/application/ports/user-location.repository.port.js";
 import { AirQualityProviderPort } from "./application/ports/air-quality-provider.port.js";
 import { LifestyleIndexProviderPort } from "./application/ports/lifestyle-index-provider.port.js";
+import { ScheduledTodoReaderPort } from "./application/ports/scheduled-todo.reader.port.js";
 import { SunTimeProviderPort } from "./application/ports/sun-time-provider.port.js";
 import { WeatherForecastCachePort } from "./application/ports/weather-forecast-cache.port.js";
 import { WeatherForecastProviderPort } from "./application/ports/weather-forecast-provider.port.js";
@@ -35,6 +36,7 @@ import { WeatherKitTokenAdapter } from "./infrastructure/adapters/weatherkit-tok
 import { WeatherKitUsageMeterAdapter } from "./infrastructure/adapters/weatherkit-usage-meter.adapter.js";
 import { WeatherForecastCache } from "./infrastructure/cache/weather-forecast.cache.js";
 import { WeatherReportCache } from "./infrastructure/cache/weather-report.cache.js";
+import { DrizzleScheduledTodoReader } from "./infrastructure/persistence/drizzle-scheduled-todo.reader.js";
 
 export const WEATHER_FORECASTS_PROVIDERS = [
   { provide: WeatherForecastProviderPort, useClass: KmaWeatherForecastAdapter },
@@ -47,6 +49,7 @@ export const WEATHER_FORECASTS_PROVIDERS = [
   WeatherKitUsageMeterAdapter,
   { provide: WeatherReportProviderPort, useClass: WeatherKitReportAdapter },
   { provide: WeatherReportCachePort, useClass: WeatherReportCache },
+  { provide: ScheduledTodoReaderPort, useClass: DrizzleScheduledTodoReader },
   provideUseCase(WeatherForecastReader, {
     weatherProvider: WeatherForecastProviderPort,
     weatherCache: WeatherForecastCachePort,
@@ -85,6 +88,7 @@ export const WEATHER_FORECASTS_PROVIDERS = [
     weatherReportCache: WeatherReportCachePort,
     timezoneResolver: TimezoneResolverPort,
     airQualityProvider: AirQualityProviderPort,
+    scheduledTodoReader: ScheduledTodoReaderPort,
     logger: loggerFor(GetWeatherReportUseCase),
     clock: ClockPort,
   }),

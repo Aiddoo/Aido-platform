@@ -1,4 +1,4 @@
-import { weatherLocationSchema, weatherReportSchema } from "@aido/api";
+import { createTodoResponseSchema, weatherLocationSchema, weatherReportSchema } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
 import { eq } from "drizzle-orm";
 import request from "supertest";
@@ -174,6 +174,99 @@ describe("날씨 v2 E2E", () => {
         },
       ]);
       expect(airQualityProvider.calls[0]?.lat).not.toBe(SEOUL.latitude);
+    });
+
+    describe("briefing", () => {
+      const SEOUL_ZONE = "Asia/Seoul";
+      const releasedReportSchema = weatherReportSchema.omit({ briefing: true });
+
+      async function createTimedTodo(
+        accessToken: string,
+        params: { at: Date; isAllDay?: boolean },
+      ) {
+        const categoryId = await ctx.helpers.getDefaultCategoryId(accessToken);
+        const zoned = Temporal.Instant.fromEpochMilliseconds(
+          params.at.getTime(),
+        ).toZonedDateTimeISO(SEOUL_ZONE);
+        const response = await request(ctx.app.getHttpServer())
+          .post("/v1/todos")
+          .set("Authorization", `Bearer ${accessToken}`)
+          .set("X-Timezone", SEOUL_ZONE)
+          .send({
+            title: "산책",
+            categoryId,
+            startDate: zoned.toPlainDate().toString(),
+            scheduledTime:
+              params.isAllDay === true
+                ? undefined
+                : zoned.toPlainTime().toString({ smallestUnit: "minute" }),
+            isAllDay: params.isAllDay ?? false,
+          })
+          .expect(201);
+        return {
+          id: createTodoResponseSchema.parse(response.body.data).todo.id,
+          localDate: zoned.toPlainDate(),
+        };
+      }
+
+      it("비 오는 시간에 걸린 오늘 할 일과 옮길 후보를 서버가 골라 준다", async ({ skip }) => {
+        // Given
+        const user = await ctx.helpers.createVerifiedUser("v2-brief@example.com", "Test1234!");
+        await registerLocation(user.accessToken, SEOUL).expect(200);
+        const now = new Date();
+        const base = weatherReportFixture(now);
+        reportProvider.report = {
+          ...base,
+          hourly: base.hourly.map((hour, index) => ({
+            ...hour,
+            precipitationChance: index < 2 ? 80 : 10,
+          })),
+        };
+        const todo = await createTimedTodo(user.accessToken, {
+          at: new Date(now.getTime() + 5 * 60_000),
+        });
+        if (!todo.localDate.equals(Temporal.Now.plainDateISO(SEOUL_ZONE))) {
+          skip("자정 직전이라 오늘 할 일이 아니다");
+        }
+        // When
+        const response = await getReport(user.accessToken)
+          .set("X-Timezone", SEOUL_ZONE)
+          .expect(200);
+        // Then
+        const report = weatherReportSchema.parse(response.body.data);
+        expect(report.briefing?.reason).toBe("rain");
+        expect(report.briefing?.affectedTodoIds).toEqual([todo.id]);
+        const [entry] = report.briefing?.rescheduleOptions ?? [];
+        expect(entry?.todoId).toBe(todo.id);
+        expect(entry?.options.every((option) => option.precipitationChance < 50)).toBe(true);
+        expect(entry?.options.map((option) => option.isRecommended)).toEqual(
+          (entry?.options ?? []).map((_option, index) => index === 0),
+        );
+      });
+
+      it("종일 할 일과 할 일이 없는 날은 빈 브리핑이고 출시 앱 응답 계약도 그대로 읽힌다", async () => {
+        // Given
+        const user = await ctx.helpers.createVerifiedUser(
+          "v2-brief-empty@example.com",
+          "Test1234!",
+        );
+        await registerLocation(user.accessToken, SEOUL).expect(200);
+        const base = weatherReportFixture(new Date());
+        reportProvider.report = {
+          ...base,
+          hourly: base.hourly.map((hour) => ({ ...hour, precipitationChance: 90 })),
+        };
+        await createTimedTodo(user.accessToken, { at: new Date(), isAllDay: true });
+        // When - 출시 앱처럼 X-Timezone 없이 조회한다
+        const response = await getReport(user.accessToken).expect(200);
+        // Then
+        expect(response.body.data.briefing).toEqual({
+          reason: null,
+          affectedTodoIds: [],
+          rescheduleOptions: [],
+        });
+        expect(releasedReportSchema.safeParse(response.body.data).success).toBe(true);
+      });
     });
 
     it("해외 위치는 영어 특보를 받고 대기질은 null이며 키를 빼지 않는다", async () => {
