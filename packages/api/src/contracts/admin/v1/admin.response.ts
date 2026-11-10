@@ -22,6 +22,11 @@ export const growthSummaryResponseSchema = z
     dau: z.number().int().nonnegative().describe("종료 현지 날짜의 순 활동 사용자 수"),
     wau: z.number().int().nonnegative().describe("종료 현지 날짜 포함 최근 7일 순 활동 사용자 수"),
     mau: z.number().int().nonnegative().describe("종료 현지 날짜 포함 최근 30일 순 활동 사용자 수"),
+    stickiness: z
+      .number()
+      .min(0)
+      .max(100)
+      .describe("DAU/MAU 비율 (0-100%, 소수 둘째 자리). MAU가 0이면 0"),
     activation24h: growthCohortMetricSchema.describe("가입 후 24시간 내 Todo 생성 및 완료 지표"),
     d1: growthCohortMetricSchema.nullable().describe("가입 다음 현지 날짜 활동 리텐션"),
     d7: growthCohortMetricSchema.nullable().describe("가입 후 7번째 현지 날짜 활동 리텐션"),
@@ -44,6 +49,7 @@ export const growthSummaryResponseSchema = z
       dau: 35,
       wau: 90,
       mau: 120,
+      stickiness: 29.17,
       activation24h: { eligible: 40, achieved: 22, rate: 55 },
       d1: { eligible: 40, achieved: 18, rate: 45 },
       d7: { eligible: 30, achieved: 9, rate: 30 },

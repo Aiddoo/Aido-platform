@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { semanticVersionPattern } from "../../../common/semantic-version.js";
+import { semanticVersionPattern } from "../../../vocabulary/semantic-version.js";
 
 /** Shared by the Zod API contract and its OpenAPI projection. */
 export const featureDiscoveryMinAppVersionPattern = semanticVersionPattern;

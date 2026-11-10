@@ -21,3 +21,4 @@ export * from "./weather.constants.js";
 export * from "./todo.types.js";
 export * from "./voice.constants.js";
 export * from "./todo-category.types.js";
+export * from "./semantic-version.js";
