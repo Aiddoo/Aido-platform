@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import type { CategoryTodoHandling } from "@aido/api/vocabulary";
 import { match } from "ts-pattern";
 
+import type { AfterCommitTaskRegistryPort } from "#api/shared/application/ports/after-commit-task.registry.port";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { type DomainEventPublisherPort } from "#api/shared/application/ports/domain-event-publisher.port";
@@ -10,6 +11,7 @@ import { type MutationLockPort } from "#api/shared/application/ports/mutation-lo
 import { type UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
+import type { TodoCachePort } from "../../../todos/application/ports/todo-cache.port.js";
 import { TodoLockKeys } from "../../../todos/application/todos.lock-keys.js";
 import type { RemoveCategoryTodosUseCase } from "../../../todos/application/use-cases/remove-category-todos.use-case.js";
 import { CategoryChangedEvent } from "../../domain/category-changed.event.js";
@@ -42,6 +44,9 @@ interface DeleteTodoCategoryDependencies {
   >;
   readonly categoryTodos: Pick<RemoveCategoryTodosUseCase, "execute">;
   readonly cache: TodoCategoryCachePort;
+  // 함께 지우기는 categoryTodos가 지운다. 옮기기는 친구 화면 할 일의 카테고리가 바뀐다
+  readonly todoCache: Pick<TodoCachePort, "invalidateFriendTodos">;
+  readonly afterCommit: Pick<AfterCommitTaskRegistryPort, "register">;
   readonly mutationLock: MutationLockPort;
   readonly unitOfWork: UnitOfWorkPort;
   readonly clock: ClockPort;
@@ -62,8 +67,16 @@ export class DeleteTodoCategoryUseCase {
   }
 
   async execute(input: DeleteTodoCategoryInput): Promise<TodoCategoryDeletionReadModel> {
-    const { repository, categoryTodos, mutationLock, unitOfWork, clock, eventPublisher } =
-      this.#dependencies;
+    const {
+      repository,
+      categoryTodos,
+      todoCache,
+      afterCommit,
+      mutationLock,
+      unitOfWork,
+      clock,
+      eventPublisher,
+    } = this.#dependencies;
     const startedAt = clock.now();
     const userId = UserId.reconstitute(input.userId);
     const categoryId = TodoCategoryId.reconstitute(input.categoryId);
@@ -112,6 +125,7 @@ export class DeleteTodoCategoryUseCase {
             throw todoCategoryNotFound(targetId);
           }
           await repository.moveTodosToCategory(userId, categoryId, targetId);
+          afterCommit.register(() => todoCache.invalidateFriendTodos(userId));
           return { todoHandling: "move" as const, moveToCategoryId: targetId.value };
         })
         .with({ plan: "delete-with-todos" }, async () => {

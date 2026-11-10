@@ -37,6 +37,11 @@ todos slice의 [RemoveCategoryTodosUseCase](../src/modules/planning/todos/applic
 - 날짜별 완료(`GET /v1/daily-completions`)는 할 일 행에서 바로 세므로 함께 지운 완료 할 일은 달력에서 빠진다. 연속 기록(`UserPreference.currentStreak`)과 지난 주간 성취(`WeeklyAchievement`)는 저장된 값이라 바뀌지 않는다. 앱은 미리보기의 `completedTodoCount`로 먼저 알린다.
 - 다른 카테고리로 옮겨 둔 같은 반복의 회차는 남고, 규칙이 없는 묶음(`recurrenceGroupId`만 있는 할 일)이 된다.
 
+## 캐시
+
+- 친구 화면 할 일 캐시(`todo:friend-view-v2:{owner}:{generation}`, 60초)는 할 일마다 카테고리 이름·색·순서를 담고 그 순서로 정렬한다. 이름·색 수정, 재정렬, 옮겨 지우기, 함께 지우기는 같은 트랜잭션에서 `AfterCommitTaskRegistryPort`에 `invalidateFriendTodos`를 등록해 커밋 뒤 지운다. 빈 카테고리 삭제는 친구 화면에 없어 건너뛴다.
+- 카테고리 목록 캐시(`todo-category:list:{userId}`)는 쓰기 use-case가 UoW를 마친 뒤 지운다.
+
 ## 성능
 
 [category-deletion.performance-spec](../test/performance/category-deletion.performance-spec.ts)이 할 일 5,000개(하위 항목 1만·댓글 1천·조회 2,500·찌르기 500·리마인더 작업 5천·반복 20개)와 다른 사용자 2만 행을 넣고 잰다. 로컬 Testcontainers PostgreSQL 16(2026-11-11)에서 옮기기 73~76ms, 함께 지우기 162~174ms, 각 13문장이다. 운영 최대는 카테고리당 419개라 요청 안에서 동기로 끝내고 별도 정리 작업·경보를 두지 않는다.

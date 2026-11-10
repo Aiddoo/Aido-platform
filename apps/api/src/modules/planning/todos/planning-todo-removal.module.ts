@@ -12,7 +12,7 @@ import { TodoCacheAdapter } from "./infrastructure/adapters/todo-cache.adapter.j
 import { ReminderSchedulerAdapter } from "./infrastructure/adapters/todo-reminder-scheduler.adapter.js";
 import { DrizzleTodoBulkRemoverAdapter } from "./infrastructure/persistence/drizzle-todo-bulk-remover.adapter.js";
 
-// 카테고리 slice가 안의 할 일을 함께 지울 때 쓴다. PlanningTodoPortsModule이 카테고리 Module을 import하므로 그 아래층에 따로 둔다
+// 카테고리 slice가 안의 할 일을 함께 지우거나 친구 화면 캐시를 지울 때 쓴다. PlanningTodoPortsModule이 카테고리 Module을 import하므로 그 아래층에 따로 둔다
 @Module({
   imports: [NotificationRemindersModule],
   providers: [
@@ -26,6 +26,6 @@ import { DrizzleTodoBulkRemoverAdapter } from "./infrastructure/persistence/driz
       afterCommit: AfterCommitTaskRegistryPort,
     }),
   ],
-  exports: [RemoveCategoryTodosUseCase],
+  exports: [RemoveCategoryTodosUseCase, TodoCachePort],
 })
 export class PlanningTodoRemovalModule {}

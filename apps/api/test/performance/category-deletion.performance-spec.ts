@@ -81,6 +81,8 @@ describe("카테고리 삭제 규모 측정 (할 일 5,000개)", () => {
         afterCommit: new RecordingAfterCommitRegistry(),
       }),
       cache: new FakeTodoCategoryCache(),
+      todoCache: new FakeTodoCache(),
+      afterCommit: new RecordingAfterCommitRegistry(),
       mutationLock: new PostgresMutationLockAdapter(transaction.txHost),
       unitOfWork: transaction.uow,
       clock: new DateClock(),

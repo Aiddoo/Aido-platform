@@ -59,15 +59,19 @@ function setUp(
   const eventPublisher = new RecordingDomainEventPublisher();
   const mutationLock = input.mutationLock ?? new RecordingMutationLock();
   const reminderScheduler = new RecordingTodoReminderScheduler();
+  const todoCache = new FakeTodoCache();
+  const afterCommit = new RecordingAfterCommitRegistry();
   const useCase = new DeleteTodoCategoryUseCase({
     repository,
     categoryTodos: new RemoveCategoryTodosUseCase({
       bulkRemover: new InMemoryTodoBulkRemover(stores),
       reminderScheduler,
-      todoCache: new FakeTodoCache(),
-      afterCommit: new RecordingAfterCommitRegistry(),
+      todoCache,
+      afterCommit,
     }),
     cache,
+    todoCache,
+    afterCommit,
     mutationLock,
     unitOfWork: input.unitOfWork ?? new ImmediateUnitOfWork(),
     clock: new FixedClock(TODO_FIXTURE_NOW),
@@ -79,6 +83,8 @@ function setUp(
     todoRecords,
     seriesStore,
     cache,
+    todoCache,
+    afterCommit,
     eventPublisher,
     mutationLock,
     reminderScheduler,
@@ -230,6 +236,20 @@ describe("카테고리 삭제", () => {
         { categoryId: 1, userId: USER_ID, occurredAt: "2026-11-10T00:00:00.000Z" },
       ],
     ]);
+  });
+
+  it("할 일을 옮겨 지우면 친구 화면 할 일 캐시를 커밋 뒤에 지운다", async () => {
+    // Given
+    const { todoCache, afterCommit, useCase } = setUp({ todos: [todoIn(10, 1)] });
+
+    // When
+    await useCase.execute({ userId: USER_ID, categoryId: 1, moveToCategoryId: 2 });
+    const beforeCommit = todoCache.generations.get(USER_ID);
+    await afterCommit.runAll();
+
+    // Then
+    expect(beforeCommit).toBeUndefined();
+    expect(todoCache.generations.get(USER_ID)).toBe(1);
   });
 
   it("delete는 할 일·반복 규칙을 함께 지우고 리마인더를 취소하며 카테고리 삭제 사실 하나만 낸다", async () => {

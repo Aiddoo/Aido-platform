@@ -1,11 +1,13 @@
 import type { Provider } from "@nestjs/common";
 
 import { loggerFor, provideUseCase } from "#api/platform/di/provide-use-case";
+import { AfterCommitTaskRegistryPort } from "#api/shared/application/ports/after-commit-task.registry.port";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { DomainEventPublisherPort } from "#api/shared/application/ports/domain-event-publisher.port";
 import { MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
 import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 
+import { TodoCachePort } from "../todos/application/ports/todo-cache.port.js";
 import { RemoveCategoryTodosUseCase } from "../todos/application/use-cases/remove-category-todos.use-case.js";
 import { TodoCategoryCachePort } from "./application/ports/todo-category-cache.port.js";
 import { TodoCategoryCountReaderPort } from "./application/ports/todo-category-count.reader.port.js";
@@ -60,6 +62,8 @@ export const PLANNING_CATEGORIES_PROVIDERS = [
     clock: ClockPort,
     repository: TodoCategoryRepositoryPort,
     cache: TodoCategoryCachePort,
+    todoCache: TodoCachePort,
+    afterCommit: AfterCommitTaskRegistryPort,
     mutationLock: MutationLockPort,
     unitOfWork: UnitOfWorkPort,
     eventPublisher: DomainEventPublisherPort,
@@ -69,6 +73,8 @@ export const PLANNING_CATEGORIES_PROVIDERS = [
     repository: TodoCategoryRepositoryPort,
     categoryTodos: RemoveCategoryTodosUseCase,
     cache: TodoCategoryCachePort,
+    todoCache: TodoCachePort,
+    afterCommit: AfterCommitTaskRegistryPort,
     mutationLock: MutationLockPort,
     unitOfWork: UnitOfWorkPort,
     clock: ClockPort,
@@ -78,6 +84,8 @@ export const PLANNING_CATEGORIES_PROVIDERS = [
   provideUseCase(ReorderTodoCategoryUseCase, {
     repository: TodoCategoryRepositoryPort,
     cache: TodoCategoryCachePort,
+    todoCache: TodoCachePort,
+    afterCommit: AfterCommitTaskRegistryPort,
     mutationLock: MutationLockPort,
     unitOfWork: UnitOfWorkPort,
     logger: loggerFor(ReorderTodoCategoryUseCase),
