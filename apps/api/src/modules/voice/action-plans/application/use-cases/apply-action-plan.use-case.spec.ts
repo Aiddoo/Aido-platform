@@ -4,7 +4,6 @@ import { ErrorCode } from "@aido/api/errors";
 import type { PlanMemo } from "#api/modules/notes/memos/notes-memos.public";
 import type { StagedTodoCreatorPort } from "#api/modules/planning/todos/planning-todos.public";
 import type { TodoReadModel } from "#api/modules/planning/todos/planning-todos.public";
-import { parseDateOnly } from "#api/shared/domain/date/utils/parse";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { ImmediateUnitOfWork } from "#test/doubles/platform/immediate-unit-of-work";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
@@ -180,8 +179,8 @@ describe("ApplyActionPlanUseCase", () => {
       timezone: "Asia/Seoul",
       title: "회의록 보내기",
       categoryId: 1,
-      startDate: parseDateOnly("2027-01-04"),
-      endDate: parseDateOnly("2027-01-06"),
+      startDate: new Date("2027-01-04T00:00:00.000Z"),
+      endDate: new Date("2027-01-06T00:00:00.000Z"),
       scheduledTime: "15:30",
       isAllDay: false,
       visibility: "PRIVATE",

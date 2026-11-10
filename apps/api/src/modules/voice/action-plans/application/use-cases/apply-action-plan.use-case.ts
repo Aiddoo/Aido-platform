@@ -19,7 +19,6 @@ import type { ApplicationLoggerPort } from "#api/shared/application/ports/applic
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
-import { parseDateOnly } from "#api/shared/domain/date/utils/parse";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { ActionPlan, type PlannedAction } from "../../domain/action-plan.vo.js";
@@ -28,6 +27,11 @@ import { planRequestMismatch, sourceMemoNotFound } from "../action-plans.errors.
 import { ActionPlanLogEvent } from "../action-plans.log-events.js";
 import type { PlanApplicationRepositoryPort } from "../ports/plan-application.repository.port.js";
 import type { PlanningContextReaderPort } from "../ports/planning-context.reader.port.js";
+
+// planning 할 일 생성 포트는 아직 날짜를 UTC 자정 Date로 받는다
+function toUtcMidnight(date: string): Date {
+  return new Date(Temporal.PlainDate.from(date).toZonedDateTime("UTC").epochMilliseconds);
+}
 
 export interface ApplyActionPlanCommand {
   readonly userId: string;
@@ -131,8 +135,8 @@ export class ApplyActionPlanUseCase {
         userId,
         title: todo.title,
         categoryId: todo.categoryId,
-        startDate: parseDateOnly(todo.startDate),
-        endDate: todo.endDate == null ? null : parseDateOnly(todo.endDate),
+        startDate: toUtcMidnight(todo.startDate),
+        endDate: todo.endDate == null ? null : toUtcMidnight(todo.endDate),
         scheduledTime: todo.scheduledTime,
         timezone,
         isAllDay: todo.scheduledTime == null,
