@@ -104,10 +104,11 @@ features/{area}/{feature}/   # 서버 모듈 이름의 업무 영역 + 단수 ke
 - **[UI](.claude/ui-components.md)**: heroui-native → `shared/ui` → RN 순서다. 글자·레이아웃은 `shared/ui`가 먼저다. 새 `shared/ui` 컴포넌트는 `{name}.md`를 만들고 [목록](.claude/ui-components.md#shared-ui-컴포넌트-목록)에 추가한다.
 - **[넓은 화면](.claude/architecture.md#넓은-화면과-기기)**: 칸은 화면이 받은 폭(`usePaneSizeClass`, iPad 탭 사이드바 제외)으로, 방향 같은 창 전체 정책은 창 폭(`useWindowSizeClass`)으로 판단한다. 규칙은 `WindowLayoutPolicy`다. 레이아웃을 힌지로 나누지 않는다. 접힘선은 경계 위치만 맞춘다.
 - **[상수·날짜](.claude/architecture.md#상수와-날짜)**: 기존 도구 하나로 쓴다. 새 `Intl` 포매터를 만들지 않는다.
+- **서버 값**: 서버가 계산한 값(여러 날 할 일의 날짜별 완료, 알림함 `navigation`, 날씨 브리핑 `affectedTodoIds`·`rescheduleOptions`, 메모 AI 반복, 한도 오류 `details.limit`)은 다시 계산하지 않고 그대로 그린다. 앱·서버가 함께 아는 상수와 언어 규칙(`resolveSupportedLocale`)은 `@aido/api/vocabulary`에서 가져온다.
 - **[문구](.claude/i18n-guide.md)**: 하드코딩하지 않고 ko·en 카탈로그에 함께 넣는다. 해요체, 앱 이름은 "아이두"/"Aido"다.
 - **[관측](.claude/observability.md)**: Sentry는 `ErrorReporter`·`Logger` 포트, GA는 타입 카탈로그 `useTrack`이다.
 - **인증**: `useAuthStatus()`로 읽고 `useAuthSession()`의 `signIn`, `signOut`으로 쓴다. 토큰은 `TokenStore` 포트(SecureStore)에 둔다. OAuth 클라이언트 ID는 API 서버가 관리한다.
-- **테스트**: 주요 비즈니스 로직(Policy·모델·mutation·캐시·권한·버그 재현)만 쓴다. 늘 무작위 순서로 돈다. fake timer는 `setupFakeTimersPerTest`로만 켜고 끄고, 테스트가 일으킨 비동기 결과(토스트 등)는 기다려 확인한 뒤 끝낸다. 상세: [testing-guide](.claude/testing-guide.md#테스트-격리)
+- **테스트**: 주요 비즈니스 로직(Policy·모델·mutation·캐시·권한·버그 재현)만 쓴다. 늘 무작위 순서로 돈다. fake timer는 `setupFakeTimersPerTest`로만 켜고 끄고, 테스트가 일으킨 비동기 결과(토스트 등)는 기다려 확인한 뒤 끝낸다. Jest worker 수는 `AIDO_TEST_WORKERS`(기본 `50%`)로 줄이고 `workerIdleMemoryLimit`이 자란 worker를 다시 띄운다. 상세: [testing-guide](.claude/testing-guide.md#테스트-격리)
 - **코드 스타일**: `void` 연산자를 쓰지 않는다(Oxlint). 포맷은 Oxfmt다. 린트 설정은 `apps/mobile/.oxlintrc.json`(루트 상속 + correctness, React Hooks·Compiler, Jest 규칙)이다. 규칙을 끌 때는 그 줄에서만 `oxlint-disable-next-line 규칙 -- 이유`로 끈다.
 
 `check:conventions`가 막는 범위는 [이 표](.claude/architecture.md#checkconventions가-막는-것)가 전부다. 그 밖의 규칙은 리뷰로 지킨다.
