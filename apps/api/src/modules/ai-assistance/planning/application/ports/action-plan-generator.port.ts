@@ -1,3 +1,4 @@
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import type { SupportedLocale } from "#api/shared/domain/locale";
 
 import type { AiGenerationMeta } from "../../../generation/application/ports/ai-generator.port.js";
@@ -18,7 +19,7 @@ export interface PlanningUpcomingTodo {
 }
 
 interface PlanGenerationInput {
-  readonly userId: string;
+  readonly userId: UserId;
   readonly timezone: string;
   readonly locale: SupportedLocale;
   readonly categories: readonly PlanningCategory[];

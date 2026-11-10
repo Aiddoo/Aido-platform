@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 
 import { TodoPlanReaderPort } from "#api/modules/planning/todos/planning-todos.public";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { PLANNING_UPCOMING_TODO_LIMIT } from "../../../planning/application/messages/planning-context.constants.js";
 import type { ExistingTodo } from "../../../shared/domain/action-plan-dedupe.domain-service.js";
@@ -19,8 +20,8 @@ export class UpcomingTodoReaderAdapter extends UpcomingTodoReaderPort {
     this.#clock = clock;
   }
 
-  findByUserId(userId: string, timezone: string): Promise<readonly ExistingTodo[]> {
-    return this.#todoReader.findUpcoming(userId, {
+  findByUserId(userId: UserId, timezone: string): Promise<readonly ExistingTodo[]> {
+    return this.#todoReader.findUpcoming(userId.value, {
       fromDate: dateColumnOf(localDateAt(this.#clock.now(), timezone)),
       limit: PLANNING_UPCOMING_TODO_LIMIT,
     });

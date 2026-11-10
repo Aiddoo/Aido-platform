@@ -2,6 +2,7 @@ import type { AiDataSharingConsentVersion } from "@aido/api/vocabulary";
 
 import type { AiDataSharingConsentReaderPort } from "#api/modules/identity/identity-settings.public";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { canShareWithAi } from "../../shared/domain/ai-data-sharing-consent.domain-service.js";
 import type { AiClientAppVersionReaderPort } from "./ports/client-app-version.reader.port.js";
@@ -33,7 +34,7 @@ export class ScheduledAiConsentReader {
     const { consentReader, clientAppVersion, clock } = this.#dependencies;
     const [consent, appVersion] = await Promise.all([
       consentReader.findAiDataSharingConsent(userId),
-      clientAppVersion.findLatestAppVersion(userId),
+      clientAppVersion.findLatestAppVersion(UserId.reconstitute(userId)),
     ]);
     return {
       allowed: canShareWithAi({ consent, appVersion, now: clock.now() }),

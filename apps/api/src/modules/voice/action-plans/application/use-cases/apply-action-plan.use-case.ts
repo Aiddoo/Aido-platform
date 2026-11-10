@@ -106,7 +106,7 @@ export class ApplyActionPlanUseCase {
       }
       await this.#assertSourceMemoExists(userId, sourceMemoId);
       plan.assertCategoriesOwned(
-        await this.#dependencies.contextReader.findOwnedCategoryIds(userId),
+        await this.#dependencies.contextReader.findOwnedCategoryIds(owner),
       );
       return { kind: "applied", applied: await this.#apply(plan, command, requestHash) };
     });

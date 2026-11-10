@@ -2,6 +2,7 @@ import { LatestClientAppVersionAdapter } from "#api/modules/ai-assistance/genera
 import { DrizzleUserRepository } from "#api/modules/identity/users/infrastructure/persistence/drizzle-user.repository";
 import { DrizzleClientAppVersionReader } from "#api/modules/notification/push/infrastructure/persistence/drizzle-client-app-version.reader";
 import { pushToken, user as userTable } from "#api/platform/database/schema/index";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { DateClock } from "#test/doubles/platform/date-clock";
 import { UserFixture } from "#test/fixtures/index";
 import { createDatabaseTransactionFixture, createTestClient } from "#test/setup/database-context";
@@ -101,7 +102,7 @@ describe("사용자 앱 버전 조회 (실제 PostgreSQL)", () => {
     const latest = new LatestClientAppVersionAdapter(reader, users);
 
     // When
-    const version = await latest.findLatestAppVersion(userId);
+    const version = await latest.findLatestAppVersion(UserId.reconstitute(userId));
 
     // Then
     expect(version).toBe("1.13.0");

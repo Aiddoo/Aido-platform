@@ -10,6 +10,7 @@ import type {
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { AiGenerationLogEvent } from "../../../generation/application/ai-generation.log-events.js";
 import type { AiTaskId } from "../../../generation/application/ports/ai-generator.port.js";
@@ -87,12 +88,12 @@ export class QuotaChargedGenerationAdapter extends ChargedGenerationPort {
   }
 
   async readFeatureQuota(input: {
-    readonly userId: string;
+    readonly userId: UserId;
     readonly feature: MeteredFeatureKey;
     readonly task: AiTaskId;
   }): Promise<MeteredFeatureQuota | null> {
     try {
-      return await this.#dependencies.quota.read(input.userId, input.feature);
+      return await this.#dependencies.quota.read(input.userId.value, input.feature);
     } catch (error) {
       this.#dependencies.logger.warn({
         event: AiGenerationLogEvent.QUOTA_READ_FAILED,

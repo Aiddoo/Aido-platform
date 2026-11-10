@@ -5,11 +5,12 @@ import type {
   ChargedGeneration,
   ChargedGenerationResult,
 } from "#api/modules/ai-assistance/parsing/ai-assistance-parsing.public";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { PlanResultReplay } from "./plan-result-replay.port.js";
 
 export interface ChargedPlanRequest<T> {
-  readonly userId: string;
+  readonly userId: UserId;
   readonly feature: MeteredFeatureKey;
   /** 차감한 작업 id. 원장에 남고, 같은 키의 다른 작업을 가린다 */
   readonly reason: AiTaskId;

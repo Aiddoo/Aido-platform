@@ -43,10 +43,10 @@ export class GetReportStatusUseCase {
     readonly timezone: string | undefined;
   }): Promise<ReportStatusReadModel> {
     const { userId, timezone } = query;
+    const owner = UserId.reconstitute(userId);
     await assertEntitled(this.#dependencies.entitlementReader, userId, "AI_REPORT");
 
-    const zone =
-      timezone ?? (await this.#dependencies.localePreferenceReader.read(userId)).timezone;
+    const zone = timezone ?? (await this.#dependencies.localePreferenceReader.read(owner)).timezone;
     const now = this.#dependencies.clock.now();
     const timeZone = toUserTimeZone(zone);
     // 달력 날짜를 먼저 정하고 각 경계를 다시 시간대에 적용해 DST offset을 반영한다.
@@ -62,8 +62,8 @@ export class GetReportStatusUseCase {
     const nextMonthlyDate = isBeforeReady(thisFirst) ? thisFirst : thisFirst.add({ months: 1 });
 
     const [latestWeekly, latestMonthly] = await Promise.all([
-      this.#dependencies.aiReportRepository.findLatest(UserId.reconstitute(userId), "WEEKLY"),
-      this.#dependencies.aiReportRepository.findLatest(UserId.reconstitute(userId), "MONTHLY"),
+      this.#dependencies.aiReportRepository.findLatest(owner, "WEEKLY"),
+      this.#dependencies.aiReportRepository.findLatest(owner, "MONTHLY"),
     ]);
 
     return {

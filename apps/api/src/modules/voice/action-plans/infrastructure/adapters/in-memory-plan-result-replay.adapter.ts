@@ -2,6 +2,7 @@ import type { z } from "zod";
 
 import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
 import type { ICacheService } from "#api/platform/cache/interfaces/cache.interface";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { PlanResultReplay } from "../../application/ports/plan-result-replay.port.js";
 
@@ -31,15 +32,15 @@ export class InMemoryPlanResultReplayAdapter<T> implements PlanResultReplay<T> {
     this.#schema = schema;
   }
 
-  async save(userId: string, idempotencyKey: string, result: T): Promise<void> {
+  async save(userId: UserId, idempotencyKey: string, result: T): Promise<void> {
     await this.#cache.set(this.#key(userId, idempotencyKey), result, PLAN_RESULT_REPLAY_TTL_MS);
   }
 
-  async find(userId: string, idempotencyKey: string): Promise<T | null> {
+  async find(userId: UserId, idempotencyKey: string): Promise<T | null> {
     return (await this.#cache.get(this.#key(userId, idempotencyKey), this.#schema)) ?? null;
   }
 
-  #key(userId: string, idempotencyKey: string): string {
-    return `${this.#namespace}:${userId}:${idempotencyKey}`;
+  #key(userId: UserId, idempotencyKey: string): string {
+    return `${this.#namespace}:${userId.value}:${idempotencyKey}`;
   }
 }

@@ -9,6 +9,7 @@ import type { AiDataSharingConsentReaderPort } from "#api/modules/identity/ident
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import type { SupportedLocale } from "#api/shared/domain/locale";
 import { instantToDate } from "#api/shared/domain/time/instant";
 
@@ -102,11 +103,12 @@ export class ParseTodoUseCase {
 
   async execute(input: ParseTodoCommand): Promise<ParseTodoResult> {
     const { userId } = input;
+    const owner = UserId.reconstitute(userId);
     const startTime = this.#dependencies.clock.now().epochMilliseconds;
 
     const { timezone, locale } = await resolveRequestLocale(
       this.#dependencies.localePreferenceReader,
-      userId,
+      owner,
       input,
     );
     const { quota } = this.#dependencies;
@@ -118,7 +120,7 @@ export class ParseTodoUseCase {
     });
     const { result, featureQuota } = await this.#dependencies.chargedGeneration.settle({
       reservation,
-      userId,
+      userId: owner,
       feature: "AI_PARSE",
       task: parseTodoPrompt.id,
       generate: async () => {
@@ -139,7 +141,9 @@ export class ParseTodoUseCase {
 
     // 사용자가 카테고리를 고른 요청은 목록을 보내지 않아 토큰을 아낀다.
     const userCategories =
-      categoryId == null ? await this.#dependencies.categoryReader.findByUserId(userId) : [];
+      categoryId == null
+        ? await this.#dependencies.categoryReader.findByUserId(UserId.reconstitute(userId))
+        : [];
     const built = definition.build({ text, timezone, now: at, categories: userCategories }, locale);
     const logBase = {
       task: definition.id,

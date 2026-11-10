@@ -2,6 +2,7 @@ import type { AiDataSharingConsentReaderPort } from "#api/modules/identity/ident
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantToDate } from "#api/shared/domain/time/instant";
 
 import { describeGenerationFailure } from "../../../generation/application/ai-generation-failure.mapper.js";
@@ -123,10 +124,11 @@ export class AiActionPlanGeneratorAdapter extends ActionPlanGeneratorPort {
     definition: PromptDefinition<I, O, R, C>,
     built: BuiltPrompt,
     context: C,
-    { userId, signal }: { readonly userId: string; readonly signal?: AbortSignal },
+    { userId: owner, signal }: { readonly userId: UserId; readonly signal?: AbortSignal },
     keepsCharge: (result: R) => boolean,
   ): Promise<PromptGeneration<R>> {
     const { generator, consentReader, clock, logger } = this.#dependencies;
+    const userId = owner.value;
     const startedAt = clock.now().epochMilliseconds;
     const logBase = { task: definition.id, promptVersion: definition.version, userId };
     const consent = await consentReader.findAiDataSharingConsent(userId);

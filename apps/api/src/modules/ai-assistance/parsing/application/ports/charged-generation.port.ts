@@ -4,6 +4,7 @@ import type {
   MeteredFeatureQuota,
   QuotaReservation,
 } from "#api/modules/access/quotas/access-quotas.public";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { AiTaskId } from "../../../generation/application/ports/ai-generator.port.js";
 
@@ -27,7 +28,7 @@ export interface ChargedGenerationResult<T> {
 
 export interface SettleChargedGenerationInput<T> {
   readonly reservation: QuotaReservation;
-  readonly userId: string;
+  readonly userId: UserId;
   readonly feature: MeteredFeatureKey;
   readonly task: AiTaskId;
   readonly generate: () => Promise<ChargedGeneration<T>>;
@@ -48,7 +49,7 @@ export abstract class ChargedGenerationPort {
   }): Promise<boolean>;
   /** 확정·환불 뒤의 한도 읽기. 실패해도 이미 만든 결과를 잃지 않게 null을 돌려준다(응답 칸은 optional이다). */
   abstract readFeatureQuota(input: {
-    readonly userId: string;
+    readonly userId: UserId;
     readonly feature: MeteredFeatureKey;
     readonly task: AiTaskId;
   }): Promise<MeteredFeatureQuota | null>;

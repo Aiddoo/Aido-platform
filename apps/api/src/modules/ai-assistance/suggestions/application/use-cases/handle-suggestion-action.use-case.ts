@@ -71,19 +71,16 @@ export class HandleSuggestionActionUseCase {
   }
 
   async execute(command: HandleSuggestionActionCommand): Promise<SuggestionActionResult> {
+    const owner = UserId.reconstitute(command.userId);
     const timezone =
-      command.timezone ??
-      (await this.#dependencies.localePreferenceReader.read(command.userId)).timezone;
+      command.timezone ?? (await this.#dependencies.localePreferenceReader.read(owner)).timezone;
     const result = await this.#dependencies.unitOfWork.run(async () => {
       if (!(await this.#dependencies.userMutationLock.lockById(command.userId))) {
         throw new ApplicationException(ErrorCode.AI_1309);
       }
       await this.#enforcePremium(command.userId);
       const suggestionId = SuggestionId.reconstitute(command.suggestionId);
-      const suggestion = await this.#dependencies.repository.findByIdAndUserId(
-        suggestionId,
-        UserId.reconstitute(command.userId),
-      );
+      const suggestion = await this.#dependencies.repository.findByIdAndUserId(suggestionId, owner);
       if (suggestion == null) {
         throw suggestionNotFound(suggestionId);
       }

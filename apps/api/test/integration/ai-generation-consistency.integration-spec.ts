@@ -157,11 +157,14 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
   function generation(provider: FakeAiGenerator, repository = suggestions) {
     const logger = new Logger("AiGenerationIntegration");
     const clock = new DateClock();
+    const pushDeviceVersions = new DrizzleClientAppVersionReader(fixture.txHost);
     const scheduledAiConsent = new ScheduledAiConsentReader({
       consentReader: new GetAiDataSharingConsentUseCase({
         consentRepository: new DrizzleUserConsentRepository(fixture.txHost),
       }),
-      clientAppVersion: new DrizzleClientAppVersionReader(fixture.txHost),
+      clientAppVersion: {
+        findLatestAppVersion: (owner) => pushDeviceVersions.findLatestAppVersion(owner.value),
+      },
       clock,
     });
     const contextBuilder = new SuggestionContextReader({
@@ -272,7 +275,7 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
 
     // When
     const rates = await activity.findDayCompletionRates(
-      userId,
+      UserId.reconstitute(userId),
       new Date("2026-10-01T00:00:00Z"),
       CURRENT_TIME,
       "America/Los_Angeles",
@@ -329,11 +332,12 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
       // When
       const start = new Date(from);
       const end = new Date(to);
+      const owner = UserId.reconstitute(userId);
       const [todos, days, times, categories] = await Promise.all([
-        activity.findRecentTodos(userId, start, end, timezone),
-        activity.findDayCompletionRates(userId, start, end, timezone),
-        activity.findTimeCompletionRates(userId, start, end, timezone),
-        activity.findCategoryCompletionRates(userId, start, end, timezone),
+        activity.findRecentTodos(owner, start, end, timezone),
+        activity.findDayCompletionRates(owner, start, end, timezone),
+        activity.findTimeCompletionRates(owner, start, end, timezone),
+        activity.findCategoryCompletionRates(owner, start, end, timezone),
       ]);
 
       // Then
