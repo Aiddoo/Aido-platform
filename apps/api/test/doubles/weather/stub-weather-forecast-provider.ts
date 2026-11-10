@@ -13,11 +13,16 @@ export interface RecordedForecastCall {
 /** 기본 예보를 돌려주고 호출을 기록한다. 좌표별 결과나 실패를 미리 정할 수 있다. */
 export class StubWeatherForecastProvider extends WeatherForecastProviderPort {
   readonly name = "fixture";
-  readonly timeZone = "Asia/Seoul";
+  readonly timeZone: string;
   readonly calls: RecordedForecastCall[] = [];
   readonly results = new Map<string, WeatherForecast | Error>();
   failure: Error | null = null;
   forecast = weatherForecastFixture();
+
+  constructor(timeZone = "Asia/Seoul") {
+    super();
+    this.timeZone = timeZone;
+  }
 
   async getForecast(
     lat: number,
