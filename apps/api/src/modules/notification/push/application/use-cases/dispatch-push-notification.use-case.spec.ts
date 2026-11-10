@@ -35,6 +35,8 @@ function pushToken(input: {
   });
 }
 
+const DELIVERY_OPTIONS = { priority: "high", ttlSeconds: 3600 } as const;
+
 function batchPayload(input: {
   userId: string;
   dispatchId: number;
@@ -49,6 +51,7 @@ function batchPayload(input: {
     title: `title-${input.dispatchId}`,
     body: `body-${input.dispatchId}`,
     data: { dispatchId: input.dispatchId },
+    ...DELIVERY_OPTIONS,
   };
 }
 
@@ -107,7 +110,7 @@ describe("DispatchPushNotificationUseCase — 토큰 선택과 공급자 전달"
     // When
     const result = await service.deliverSingle({
       data: createNotificationDraftFixture({ userId: "user-1", title: "title", body: "body" }),
-      payload: { title: "title", body: "body" },
+      payload: { title: "title", body: "body", ...DELIVERY_OPTIONS },
     });
 
     // Then
@@ -154,7 +157,7 @@ describe("DispatchPushNotificationUseCase — 토큰 선택과 공급자 전달"
     // When
     const result = await service.deliverSingle({
       data: createNotificationDraftFixture({ userId: "user-1", title: "title", body: "body" }),
-      payload: { title: "title", body: "body" },
+      payload: { title: "title", body: "body", ...DELIVERY_OPTIONS },
     });
 
     // Then
@@ -183,7 +186,7 @@ describe("DispatchPushNotificationUseCase — 토큰 선택과 공급자 전달"
         body: "body",
         campaignKey: "feature-discovery-2026-08",
       }),
-      payload: { title: "title", body: "body" },
+      payload: { title: "title", body: "body", ...DELIVERY_OPTIONS },
     });
 
     // Then
@@ -226,13 +229,13 @@ describe("DispatchPushNotificationUseCase — 토큰 선택과 공급자 전달"
           title: "친구의 답장",
           body: "곧 시작해요",
         }),
-        payload: { title: "친구의 답장", body: "곧 시작해요" },
+        payload: { title: "친구의 답장", body: "곧 시작해요", ...DELIVERY_OPTIONS },
       });
 
       // Then
       expect(result.status).toBe("sent");
       expect(pushProvider.sentBatches).toEqual([
-        [{ token: "new-token", title: "친구의 답장", body: "곧 시작해요" }],
+        [{ token: "new-token", title: "친구의 답장", body: "곧 시작해요", ...DELIVERY_OPTIONS }],
       ]);
       expect(activePushTokenReader.lookedUpUserIds).toEqual([]);
     },
@@ -266,13 +269,13 @@ describe("DispatchPushNotificationUseCase — 토큰 선택과 공급자 전달"
     // When
     const result = await service.deliverSingle({
       data: createNotificationDraftFixture({ userId: "user-1", type, title: "초대", body: "본문" }),
-      payload: { title: "초대", body: "본문" },
+      payload: { title: "초대", body: "본문", ...DELIVERY_OPTIONS },
     });
 
     // Then
     expect(result.status).toBe("sent");
     expect(pushProvider.sentBatches).toEqual([
-      [{ token: "updated-token", title: "초대", body: "본문" }],
+      [{ token: "updated-token", title: "초대", body: "본문", ...DELIVERY_OPTIONS }],
     ]);
   });
 
@@ -308,9 +311,27 @@ describe("DispatchPushNotificationUseCase — 토큰 선택과 공급자 전달"
       throw new Error("전송할 알림 배치가 필요합니다");
     }
     expect(prepared.providerPayloads).toEqual([
-      { token: "old-token", title: "title-1", body: "body-1", data: { dispatchId: 1 } },
-      { token: "new-token", title: "title-1", body: "body-1", data: { dispatchId: 1 } },
-      { token: "new-token", title: "title-2", body: "body-2", data: { dispatchId: 2 } },
+      {
+        token: "old-token",
+        title: "title-1",
+        body: "body-1",
+        data: { dispatchId: 1 },
+        ...DELIVERY_OPTIONS,
+      },
+      {
+        token: "new-token",
+        title: "title-1",
+        body: "body-1",
+        data: { dispatchId: 1 },
+        ...DELIVERY_OPTIONS,
+      },
+      {
+        token: "new-token",
+        title: "title-2",
+        body: "body-2",
+        data: { dispatchId: 2 },
+        ...DELIVERY_OPTIONS,
+      },
     ]);
     expect(prepared.skippedDispatches).toEqual([
       { dispatchId: 3, reason: "UNSUPPORTED_APP_CAPABILITY" },
@@ -343,7 +364,7 @@ describe("DispatchPushNotificationUseCase — 토큰 선택과 공급자 전달"
     // When
     const result = await service.deliverSingle({
       data: createNotificationDraftFixture({ userId: "user-1", title: "title", body: "body" }),
-      payload: { title: "title", body: "body", categoryId: "TEST" },
+      payload: { title: "title", body: "body", categoryId: "TEST", ...DELIVERY_OPTIONS },
     });
 
     // Then
@@ -352,7 +373,15 @@ describe("DispatchPushNotificationUseCase — 토큰 선택과 공급자 전달"
       results: [{ token: "invalid-token", status: "rejected" }],
     });
     expect(pushProvider.sentBatches).toEqual([
-      [{ token: "invalid-token", title: "title", body: "body", categoryId: "TEST" }],
+      [
+        {
+          token: "invalid-token",
+          title: "title",
+          body: "body",
+          categoryId: "TEST",
+          ...DELIVERY_OPTIONS,
+        },
+      ],
     ]);
     expect(await activeTokensOf(pushTokenRepository, ["user-1"])).toEqual([]);
     expect(pushTokenRepository.tokenOf("user-1", "device-invalid-token")?.updatedAt).toEqual(NOW);
@@ -401,8 +430,20 @@ describe("DispatchPushNotificationUseCase — 토큰 선택과 공급자 전달"
     // Then
     expect(pushProvider.sentBatches).toEqual([
       [
-        { token: "generic-token", title: "title-1", body: "body-1", data: { dispatchId: 1 } },
-        { token: "feature-token", title: "title-2", body: "body-2", data: { dispatchId: 2 } },
+        {
+          token: "generic-token",
+          title: "title-1",
+          body: "body-1",
+          data: { dispatchId: 1 },
+          ...DELIVERY_OPTIONS,
+        },
+        {
+          token: "feature-token",
+          title: "title-2",
+          body: "body-2",
+          data: { dispatchId: 2 },
+          ...DELIVERY_OPTIONS,
+        },
       ],
     ]);
     expect([...prepared.attemptedDispatchIds]).toEqual([1, 2]);

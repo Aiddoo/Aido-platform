@@ -213,6 +213,18 @@ v1.0.0~v1.4.0이 요구한 푸시 data 필드 `notificationId`, `type`, `action`
 
 공급자 처리량: Expo 프로젝트 한도는 초당 600건이다. Adapter가 프로세스 안에서 초당 500건 토큰 버킷으로 청크(100건) 전송을 직렬화하고, SDK가 HTTP 429를 backoff 재시도하며 동시 요청을 6개로 제한한다. 운영 API는 단일 프로세스라 이 한도가 곧 전체 한도다. 인스턴스를 늘리면 `EXPO_PUSH_MESSAGES_PER_SECOND`를 인스턴스 수로 나눠야 한다.
 
+보관 시간·우선순위: 메시지마다 알림 종류로 정한 `ttl`(초)과 `priority`를 싣는다(`push-delivery-options.constants.ts`의 `pushDeliveryOptions`, 종류 튜플 전체를 `satisfies`로 덮는다). 기기가 꺼져 있으면 FCM·APNs가 `ttl`까지만 보관하고 버리므로 늦게 켠 태블릿에 지난 리마인더가 쌓이지 않는다. 메시지 단위 값이라 등록 토큰에는 영향이 없다.
+
+| 묶음          | `ttl`  | 알림                                                                                                                                  | 이유                                        |
+| ------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------- |
+| REMINDER      | 1시간  | `TODO_REMINDER`                                                                                                                       | 60·10분 전 알림이 일정을 넘겨 닿으면 잡음   |
+| BRIEFING      | 2시간  | `MORNING_REMINDER`, `EVENING_REMINDER`, `WEATHER_MORNING`, `WEATHER_EVENING`                                                          | 몇 시간 지나면 그날 계획에 쓸모없음         |
+| TODAY_ONLY    | 3시간  | `LUNCH_NUDGE`, `STREAK_AT_RISK`, `SOCIAL_DIGEST`, `DAILY_COMPLETE`, `FRIEND_COMPLETED`                                                | 그날 안에만 뜻이 있음(20:15 + 3시간 < 자정) |
+| SOCIAL        | 12시간 | `FOLLOW_NEW`, `FOLLOW_ACCEPTED`, `NUDGE_RECEIVED`, `NUDGE_REPLIED`, `NUDGE_THANKED`, `CHEER_RECEIVED`, `TODO_SHARED`, `INVITE_JOINED` | 반나절 늦어도 읽을 만함, 그 뒤는 알림함     |
+| INFORMATIONAL | 24시간 | 그 밖(`WINBACK`, `AI_SUGGESTION`, `NUDGE_SUGGEST`, `INVITE_*`, 리포트, 공지·관리자 발송, `PREMIUM_*`)                                 | 하루 안에 닿으면 되고 그 뒤는 알림함        |
+
+`priority`는 모두 `high`다. `normal`은 Android Doze에서 몇 시간 늦어져 광고성 알림이 야간에 닿을 수 있다. Android 채널은 출시 앱이 만든 `default` 하나뿐이라 모든 알림을 `default`로 보낸다(이번 릴리스에서 채널을 늘리지 않는다).
+
 receipt 확인은 5분마다 돈다(Expo 권장대로 수락 15분 뒤부터 묻으므로 매분 돌 이유가 없다). 한 실행은 45초 예산 안에서 900건씩 남은 ticket이 없을 때까지 이어서 확인한다. 대상은 수락 뒤 15분~24시간이고 아직 확인하지 않았거나 마지막 확인이 15분 지난 `TICKET_ACCEPTED`이며, 확인 시각이 오래된 순서다. 결과가 아직 없는 ticket은 확인 시각만 남겨 뒤로 보내므로 오래된 ticket이 배치 앞자리를 계속 차지하지 않는다. 24시간이 지나도 결과가 없으면 `UNKNOWN`·`RECEIPT_EXPIRED`로 닫는다.
 
 receipt 갱신은 `TICKET_ACCEPTED`에만 원자적으로 적용한다. 이미 DELIVERED/FAILED인 ticket의 중복 응답은 되돌리지 않는다. 토큰을 끄는 실패는 저장된 발송 token SHA256과 현재 token이 같을 때만 비활성화 대상으로 반환한다. receipt 상태와 token 비활성화는 하나의 UNIT_OF_WORK에서 처리하고 실패 시 함께 rollback한다. commit 뒤 user별 token cache invalidation은 allSettled로 실패를 격리해 기록한다.
