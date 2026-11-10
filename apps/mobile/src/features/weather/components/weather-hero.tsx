@@ -87,7 +87,7 @@ const DEGREE = {
 } as const;
 const HERO_ENTERING = FadeInDown.duration(600)
   .easing(Easing.bezier(0.2, 0.8, 0.2, 1).factory())
-  .withInitialValues({ opacity: 0, transform: [{ translateY: 10 }] })
+  .withInitialValues({ opacity: 0, translateY: 10 })
   .reduceMotion(ReduceMotion.System);
 
 function scaleType(type: typeof PLACE_TYPE, scale: number) {

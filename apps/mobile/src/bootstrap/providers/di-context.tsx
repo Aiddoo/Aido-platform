@@ -167,9 +167,9 @@ interface StaticDIProviderProps extends PropsWithChildren {
 
 export function StaticDIProvider({ container, children }: StaticDIProviderProps) {
   return (
-    <DIContext.Provider value={container}>
-      <SharedDIContext.Provider value={container}>{children}</SharedDIContext.Provider>
-    </DIContext.Provider>
+    <DIContext value={container}>
+      <SharedDIContext value={container}>{children}</SharedDIContext>
+    </DIContext>
   );
 }
 

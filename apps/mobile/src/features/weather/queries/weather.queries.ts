@@ -38,7 +38,7 @@ async function findReportLocation(client: QueryClient, logger: Logger, revision:
   const queryKey = WEATHER_QUERY_KEYS.report({ locationRevision: revision });
   const state = client.getQueryState<WeatherReport>(queryKey);
   if (state?.data == null && state?.fetchStatus === 'fetching') {
-    const report = await client.fetchQuery<WeatherReport>({ queryKey }).catch((error) => {
+    const report = await client.query<WeatherReport>({ queryKey }).catch((error) => {
       logger.info(WEATHER_LOG_EVENT.REPORT_LOCATION_READ_FAILED, {
         error: getErrorMessage(error),
       });
@@ -126,7 +126,10 @@ export function useGetWeatherReportQueryOptions() {
   return queryOptions({
     queryKey: WEATHER_QUERY_KEYS.report({ locationRevision, devOverride }),
     queryFn: async ({ client: queryClient }) =>
-      withDevWeatherOverride(await queryClient.ensureQueryData(reportOptions), devOverride),
+      withDevWeatherOverride(
+        await queryClient.query({ ...reportOptions, staleTime: 'static' }),
+        devOverride,
+      ),
     initialData: cached == null ? undefined : withDevWeatherOverride(cached, devOverride),
     staleTime: REPORT_STALE_TIME_MS,
     retry: shouldRetryReport,

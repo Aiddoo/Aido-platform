@@ -386,7 +386,7 @@ describe('하위 할 일 낙관적 갱신', () => {
     queryClient.setQueryData(LIST_DAY_1, toList([todo]));
     const staleRefetch = createPendingResponse(toList([todo]));
     queryClient
-      .fetchQuery({ queryKey: LIST_DAY_1, queryFn: () => staleRefetch.response })
+      .query({ queryKey: LIST_DAY_1, queryFn: () => staleRefetch.response })
       .catch(() => undefined);
     const pending = respondWith({ id: 1 });
     httpClient.patch.mockReturnValue(pending.response);

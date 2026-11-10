@@ -57,7 +57,7 @@ const ICON_SIZE = 26;
 const COLUMN_WIDTH = { day: 58, icon: 38, low: 46, high: 40 } as const;
 const EXPAND_ENTERING = FadeInDown.duration(600)
   .easing(Easing.bezier(0.2, 0.8, 0.2, 1))
-  .withInitialValues({ opacity: 0, transform: [{ translateY: 10 }] });
+  .withInitialValues({ opacity: 0, translateY: 10 });
 const ROW_LAYOUT = LinearTransition.duration(250);
 
 interface RowFormat {
