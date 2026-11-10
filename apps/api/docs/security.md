@@ -4,18 +4,18 @@
 
 ## 규칙
 
-| 항목           | 규칙                                                                                                                                                                                     | 호환                               |
-| -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- |
-| JWT            | `algorithms: ["HS256"]` 고정. 새 토큰에 `iss`·`aud`를 싣고, 검증 강제는 기존 refresh 토큰(7일)이 모두 바뀐 뒤                                                                            | 배포 전 발급한 access·refresh 유효 |
-| HMAC 서명 키   | 용도별 key ring(`CURSOR_SIGNING_KEYS`, `OPT_OUT_TOKEN_KEYS`, `kid` 포함). 새 서명은 새 키, 검증은 새 키와 기존 `JWT_SECRET`을 모두 받는다. `JWT_SECRET` 대체 검증은 다음 릴리스에 지운다 | 이미 보낸 수신 거부 링크·커서 유효 |
-| PostgreSQL TLS | `sslmode=verify-full`(이미지에 RDS CA가 있다). 배포 전 EC2에서 같은 URL로 `psql "sslmode=verify-full"`을 확인한다                                                                        | 확인 실패면 배포하지 않는다        |
-| 암호화 salt    | 운영에서 기본 salt 상수를 쓰면 부팅 실패. 현재 운영값은 유지한다                                                                                                                         | 기존 암호문 복호 확인              |
-| 예외·경보      | `ExceptionReporterPort`·`OperationalAlertPort`로만 보낸다(Sentry 직접 호출 금지)                                                                                                         | 없음                               |
-| helmet·CORS    | helmet 기본값(JSON API), dev Swagger 경로만 CSP 예외. CORS는 화이트리스트                                                                                                                | 없음                               |
-| 스로틀         | 인스턴스 1대라 메모리 저장소. 2대 이상이면 Redis([확장](scaling.md))                                                                                                                     | 없음                               |
-| 웹훅           | RevenueCat은 정적 Authorization(제공 방식)과 `timingSafeEqual`. receipt 멱등과 계정 잠금을 유지한다                                                                                      | 없음                               |
-| 비밀번호·세션  | argon2id(64MiB/3/4), refresh family 재사용 탐지, 전역 Jwt guard + `@Public`                                                                                                              | 없음                               |
-| 비밀값         | env에만 둔다. 로그·문서·커밋에 쓰지 않는다. redaction에 새 키 이름(`*_KEYS`)을 더한다                                                                                                    | 없음                               |
+| 항목           | 규칙                                                                                                                                                                                              | 호환                               |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- |
+| JWT            | `algorithms: ["HS256"]` 고정. 새 토큰에 `iss`·`aud`를 싣고, 검증 강제는 기존 refresh 토큰(7일)이 모두 바뀐 뒤                                                                                     | 배포 전 발급한 access·refresh 유효 |
+| HMAC 서명 키   | 용도별 key ring(`CURSOR_SIGNING_KEYS`, `OPT_OUT_TOKEN_KEYS`, `kid` 포함). 새 서명은 새 키, 검증은 새 키와 기존 `JWT_SECRET`을 모두 받는다. `JWT_SECRET` 대체 검증은 다음 릴리스에 지운다          | 이미 보낸 수신 거부 링크·커서 유효 |
+| PostgreSQL TLS | `sslmode=verify-full`(이미지에 RDS CA가 있다). 배포 전 EC2에서 같은 URL로 `psql "sslmode=verify-full"`을 확인한다                                                                                 | 확인 실패면 배포하지 않는다        |
+| 암호화 salt    | 운영에서 기본 salt 상수를 쓰면 부팅 실패. 현재 운영값은 유지한다                                                                                                                                  | 기존 암호문 복호 확인              |
+| 예외·경보      | `ExceptionReporterPort`·`OperationalAlertPort`로만 보낸다(Sentry 직접 호출 금지)                                                                                                                  | 없음                               |
+| helmet·CORS    | helmet 기본값(JSON API), dev Swagger 경로만 CSP 예외. CORS는 화이트리스트                                                                                                                         | 없음                               |
+| 스로틀         | 인스턴스 1대라 메모리 저장소. 2대 이상이면 Redis([확장](scaling.md))                                                                                                                              | 없음                               |
+| 웹훅           | RevenueCat은 정적 Authorization(제공 방식)과 `timingSafeEqual`. 비밀이 없으면 개발 환경만 건너뛰고 staging·production은 모두 거절하며 운영은 시작을 거부한다. receipt 멱등과 계정 잠금을 유지한다 | 없음                               |
+| 비밀번호·세션  | argon2id(64MiB/3/4), refresh family 재사용 탐지, 전역 Jwt guard + `@Public`                                                                                                                       | 없음                               |
+| 비밀값         | env에만 둔다. 로그·문서·커밋에 쓰지 않는다. redaction에 새 키 이름(`*_KEYS`)을 더한다                                                                                                             | 없음                               |
 
 - 비밀 하나에 여러 용도를 묶지 않는다. 용도마다 키를 나눠야 하나씩 회전할 수 있다.
 - Passport 없이 공식 `JwtService` 기반 guard로 검증한다. 세션 검증·캐시·상태 검사 동작은 그대로 둔다.

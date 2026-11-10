@@ -96,7 +96,7 @@ workflow 수동 실행은 특정 SHA와 force를 지원한다. 서버의 `script
 
 env 목록과 규칙은 [설정](configuration.md), 운영 경보를 사람에게 보내는 Sentry 규칙은 [관측](observability.md#sentry-무료-플랜-운영)에 있다.
 
-Swagger는 development에서 `/api/docs`, `/api/admin/docs`로만 제공한다. OS push 권한·외부 공급자 도착·LLM 의미 품질은 `/health` 성공만으로 확인되지 않는다.
+Swagger는 개발 도구가 켜진 development 배포 환경(로컬·개발서버)에서만 `/api/docs`, `/api/admin/docs`로 제공한다. OS push 권한·외부 공급자 도착·LLM 의미 품질은 `/health` 성공만으로 확인되지 않는다.
 
 스토어 공개 버전은 API `/v1/app-config/app-version` 설정으로 안내하며 API 접근을 차단하지 않는다. 두 store 공개 후에만 `scripts/update-app-version-env.py`의 `--enabled true --published`를 사용한다. script는 app-version 3개 키만 수정하고 private backup을 만들며 나머지 내용·권한을 보존한다. 실행 예시의 버전은 해당 release의 실제 공개값으로 선택한다.
 

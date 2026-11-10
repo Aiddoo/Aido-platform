@@ -133,7 +133,7 @@ DATABASE_URL=postgresql://postgres:postgres@localhost:5432/aido pnpm db:migrate
 pnpm dev
 ```
 
-- API: `http://localhost:8080`, Swagger UI: `http://localhost:8080/api/docs` (`NODE_ENV=development`에서만)
+- API: `http://localhost:8080`, Swagger UI: `http://localhost:8080/api/docs` (`APP_ENV=development`에서만)
 - 서버만 실행하려면 `pnpm --filter @aido/server dev`
 - API까지 Docker로 실행하려면 `.env.docker.dev.example`을 `.env.docker.dev`로 복사하고 `pnpm docker:dev:up` (DB → migrate → API 순서로 기동)
 - 모바일 환경 변수와 기기 실행은 [apps/mobile/README.md](./apps/mobile/README.md)를 따른다.
