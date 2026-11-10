@@ -150,7 +150,7 @@ Sentry로 나가는 모든 오류(`Logger.error`, `ErrorReporter.captureExceptio
 
 ## Logger
 
-- message는 자유 문자열 대신 기능별 `*_LOG_EVENT` 상수다. 키 형식과 필드(`errorType`·`errorCode`)는 [이벤트 키와 필드](../../api/.claude/logging-guide.md#이벤트-키와-필드-서버앱-공통)를 따른다.
+- message는 자유 문자열 대신 기능별 `*_LOG_EVENT` 상수다. 키 형식과 필드(`errorType`·`errorCode`)는 [이벤트 키와 필드](../../api/docs/observability.md#이벤트-키와-필드-서버앱-공통)를 따른다.
 - 상수는 기능 `constants/<feature>-log-events.ts`, 공용 코드는 쓰는 파일 옆에 둔다(`shared/observability` 폴더는 없다). 예: `NOTIFICATION_LOG_EVENT`.
 - 레벨은 호출부가 정한다. 가변 정보는 message가 아니라 context로 넘긴다.
 - context의 오류는 `{ error: getErrorMessage(error) }` 한 모양이다. 원본 `error` 객체·`toError(error).message`·`instanceof` 분기를 넣지 않는다.

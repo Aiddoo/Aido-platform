@@ -6,10 +6,10 @@
 | ---------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
 | 앱 세부          | [1.15.0 클라이언트](../../../apps/mobile/docs/releases/1.15.0-client.md)                                                                |
 | 서버 변경 목록   | [CHANGELOG](../../../apps/api/CHANGELOG.md)                                                                                             |
-| 배포·되돌리기    | [서버 배포 문서](../../../apps/api/DEPLOYMENT.md)                                                                                       |
-| AI 체인·프롬프트 | [AI 문서](../../server/ai.md)                                                                                                           |
-| 떠 있는 시각     | [서버 설계](../../server/todo-floating-time.md)                                                                                         |
-| 휴면·복귀        | [휴면 규칙](../../server/todo-series-dormancy.md)                                                                                       |
+| 배포·되돌리기    | [1.15.0 되돌리기](server-rollback.md)                                                                                                   |
+| AI 체인·프롬프트 | [AI 문서](../../../apps/api/docs/ai.md)                                                                                                 |
+| 떠 있는 시각     | [서버 설계](../../../apps/api/docs/todo-floating-time.md)                                                                               |
+| 휴면·복귀        | [휴면 규칙](../../../apps/api/docs/todo-series-dormancy.md)                                                                             |
 | 이벤트 정의      | [analytics 측정 계획](../../../apps/mobile/docs/analytics-measurement-plan.md)                                                          |
 | 스토어·심사      | [스토어 문구](store-listing.md), [개인정보 라벨](privacy-label.md), [심사 메모](app-review-notes.ko.md)([영어](app-review-notes.en.md)) |
 
@@ -42,7 +42,7 @@
 
 ## DB 마이그레이션
 
-8개를 이 순서로 적용한다. 오브젝트 스토리지(S3·R2)와 녹음 테이블·볼륨은 만들지 않는다. 되돌리는 SQL과 배포 전 건수 확인은 [서버 배포 문서](../../../apps/api/DEPLOYMENT.md)에 있다.
+8개를 이 순서로 적용한다. 오브젝트 스토리지(S3·R2)와 녹음 테이블·볼륨은 만들지 않는다. 되돌리는 SQL과 배포 전 건수 확인은 [1.15.0 되돌리기](server-rollback.md)에 있다.
 
 | 마이그레이션                       | 내용                                                                |
 | ---------------------------------- | ------------------------------------------------------------------- |
@@ -95,7 +95,7 @@
 - 관리자(ADMIN)는 횟수 한도가 없고 사용량만 장부에 남는다. 성능·안정성 상한(반복 30개, 메모 20개, 하위 할 일 20개, 글자 수)은 등급과 무관하다.
 - 차감은 AI 호출 전에 예약한다. 실패·시간 초과·전 업체 장애·빈 결과면 한 번만 환불한다. 저장(적용)은 차감하지 않는다.
 - 빠른 계획은 할 일 0개면 환불한다. 녹음 정리는 요약이나 핵심 내용이 있으면 할 일 0개여도 차감한다.
-- 같은 `Idempotency-Key`는 한 번만 차감한다. 자세한 규칙은 [AI 문서](../../server/ai.md#계획-생성과-적용voice)에 있다.
+- 같은 `Idempotency-Key`는 한 번만 차감한다. 자세한 규칙은 [AI 문서](../../../apps/api/docs/ai.md#계획-생성과-적용voice)에 있다.
 
 ## 반복 할 일
 
@@ -108,7 +108,7 @@
 
 - Claude(`claude-haiku-5-5`) → Gemini(`gemini-3.1-flash-lite`) → OpenAI(`gpt-6-luna`). 키 등록과 순서 확정은 사용자가 한다.
 - Claude 크레딧이 소진되면(HTTP 402 `billing_error`) 자동으로 Gemini로 넘어간다.
-- 1순위 확정 기준은 `pnpm ai:eval`의 날짜 0.97·제목 0.9·겹침 판정 0.9다. **기준 통과 판단은 측정 전이다.** 업체별 지연 실측은 [AI 문서](../../server/ai.md#업체-체인폴백회로)에 있다.
+- 1순위 확정 기준은 `pnpm ai:eval`의 날짜 0.97·제목 0.9·겹침 판정 0.9다. **기준 통과 판단은 측정 전이다.** 업체별 지연 실측은 [AI 문서](../../../apps/api/docs/ai.md#업체-체인폴백회로)에 있다.
 
 ## 호환
 
@@ -121,7 +121,7 @@
 - **AI 키**: 운영 env에 키 3개를 넣고 `AI_PROVIDER_ORDER`를 정한다. 값은 문서에 쓰지 않는다. Claude 키는 워크스페이스 키로 새로 발급한다.
 - **마이그레이션**: 위 8개를 적용한다. 건수 확인 쿼리는 서버 배포 문서를 따른다.
 - **기능 소개 캠페인**: `FEATURE_DISCOVERY_CAMPAIGN_ID`를 앱에 번들된 `feature-discovery-2026-12`로, `FEATURE_DISCOVERY_MIN_APP_VERSION`을 `1.15.0`으로, `FEATURE_DISCOVERY_LAUNCHED_AT`을 1.15.0 배포 시각으로 맞춘다. `.env.example`의 `FEATURE_DISCOVERY_LAUNCHED_AT`은 예시 값이다.
-- **경보**: [서버 배포 문서](../../../apps/api/DEPLOYMENT.md#환경-설정과-공개-버전)의 태그로 Sentry 알림 규칙을 만든다. 없으면 경보가 사람에게 가지 않는다.
+- **경보**: [관측 문서](../../../apps/api/docs/observability.md#경보-전달)의 태그로 Sentry 알림 규칙을 만든다. 없으면 경보가 사람에게 가지 않는다.
 - **권한**: 최종 Release APK를 `aapt2 dump permissions`로, Production `Info.plist`를 직접 확인한다. `app.config.ts` 평가 결과는 [개인정보 라벨](privacy-label.md#권한-점검)에 있다.
 - **무료 체험**: 앱은 스토어가 준 기간을 그대로 보이므로 콘솔 값이 곧 화면 문구다. 1.14.2 결제창에 고지 없이 체험이 뜨지 않도록 1.15.0 승인 직후에 켠다. 켜기 전에는 앱이 일반 가격만 보인다.
   1. App Store Connect 연간 구독 > 구독 가격 > 소개 혜택: 모든 국가·지역, 종료일 없음, 신규 구독자, 유형 "무료", 기간 "2주".

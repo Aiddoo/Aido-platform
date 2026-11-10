@@ -80,7 +80,7 @@ flowchart LR
 - job은 PostgreSQL(pg-boss)만 쓴다. Redis는 `CACHE_TYPE=redis`·`PUSH_RATE_LIMIT_BACKEND=redis`를 고른 경우의 캐시·rate limit에만 쓴다.
 - 앱 헤더(`X-App-Version`·`X-Timezone`·`X-Request-Id` 등)는 요청마다 한 번 `RequestClient`로 정규화한다. `X-Request-Id`는 응답으로 돌려주고 로그 `reqId`와 Sentry `request_id`가 된다.
 
-상세: [apps/api/.claude/architecture.md](./apps/api/.claude/architecture.md)
+상세: [apps/api/docs/architecture.md](./apps/api/docs/architecture.md)
 
 ### 서버·클라이언트 타입 공유
 
@@ -176,7 +176,7 @@ pnpm dev
 - **실행 방식**: unit은 worker 병렬(`maxWorkers: 50%`)이다. integration·e2e는 worker별 DB로 파일 단위 병렬(기본 2~4, `AIDO_TEST_DB_WORKERS`로 조정) + 무작위 순서(`sequence.shuffle`)로 실행해 순서 의존을 드러낸다. 테스트 사이 정리는 FK 트리거를 끈 `DELETE`로 처리한다.
 - **외부 공급자**: Expo Push·Resend·AI SDK는 Fake 또는 고정 HTTP fixture로 격리한다. 실제 유료 호출(`ai:eval`)과 `test:performance`는 CI 밖에서 별도로 실행한다.
 
-상세: [apps/api/.claude/testing-guide.md](./apps/api/.claude/testing-guide.md), [apps/mobile/.claude/testing-guide.md](./apps/mobile/.claude/testing-guide.md)
+상세: [apps/api/docs/testing.md](./apps/api/docs/testing.md), [apps/mobile/.claude/testing-guide.md](./apps/mobile/.claude/testing-guide.md)
 
 ## CI/CD
 
@@ -197,7 +197,7 @@ flowchart LR
 - **배포**: `Deploy to EC2` workflow가 두 이미지 태그를 확인한 뒤 SSH로 [`scripts/deploy.sh`](./scripts/deploy.sh)를 실행한다. **migrate 컨테이너가 먼저 실행되어** pg-boss·Drizzle 마이그레이션을 끝내야 API 컨테이너를 교체하며, health gate 실패 시 이전 API 이미지로 되돌린다.
 - **모바일**: Expo EAS로 빌드·제출한다 ([apps/mobile/DEPLOYMENT.md](./apps/mobile/DEPLOYMENT.md)).
 
-상세: [docs/server/ci.md](./docs/server/ci.md), [apps/api/DEPLOYMENT.md](./apps/api/DEPLOYMENT.md)
+상세: [apps/api/docs/ci.md](./apps/api/docs/ci.md), [apps/api/docs/deployment.md](./apps/api/docs/deployment.md)
 
 ## 문서
 
@@ -205,12 +205,12 @@ flowchart LR
 | -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 작업 진입점 (사람·AI 공통) | [AGENTS.md](./AGENTS.md), [apps/api/AGENTS.md](./apps/api/AGENTS.md), [apps/mobile/AGENTS.md](./apps/mobile/AGENTS.md)                                                                                            |
 | 공통 컨벤션                | [오류](./docs/conventions/errors.md), [날짜·시간](./docs/conventions/dates.md), [하위 호환](./docs/conventions/compatibility.md), [null 비교](./docs/conventions/nullish.md), [Git·PR](./docs/conventions/git.md) |
-| 서버 문서 안내             | [docs/server/README.md](./docs/server/README.md)                                                                                                                                                                  |
-| 서버 구조·코드 규칙        | [architecture](./apps/api/.claude/architecture.md), [api-conventions](./apps/api/.claude/api-conventions.md), [naming](./docs/server/naming.md)                                                                   |
-| REST 계약·DB               | [rest-contracts](./apps/api/.claude/rest-contracts.md), [drizzle](./apps/api/.claude/drizzle.md)                                                                                                                  |
-| 테스트·로깅                | [testing-guide](./apps/api/.claude/testing-guide.md), [logging-guide](./apps/api/.claude/logging-guide.md)                                                                                                        |
+| 서버 문서 안내             | [apps/api/docs/README.md](./apps/api/docs/README.md)                                                                                                                                                              |
+| 서버 구조·코드 규칙        | [architecture](./apps/api/docs/architecture.md), [conventions](./apps/api/docs/conventions.md), [domain-modeling](./apps/api/docs/domain-modeling.md)                                                             |
+| REST 계약·DB               | [http-contracts](./apps/api/docs/http-contracts.md), [persistence](./apps/api/docs/persistence.md)                                                                                                                |
+| 테스트·로깅                | [testing](./apps/api/docs/testing.md), [observability](./apps/api/docs/observability.md)                                                                                                                          |
 | 모바일 구조·UI             | [apps/mobile/.claude/](./apps/mobile/.claude/)                                                                                                                                                                    |
-| 배포                       | [서버](./apps/api/DEPLOYMENT.md), [모바일](./apps/mobile/DEPLOYMENT.md)                                                                                                                                           |
+| 배포                       | [서버](./apps/api/docs/deployment.md), [모바일](./apps/mobile/DEPLOYMENT.md)                                                                                                                                      |
 
 ## 라이선스
 

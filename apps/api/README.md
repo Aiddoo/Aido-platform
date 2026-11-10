@@ -30,7 +30,7 @@ drizzle/                 # SQL 마이그레이션
 test/                    # integration · e2e · architecture · performance
 ```
 
-의존 방향은 HTTP → Presentation → UseCase → Domain/Port ← Infrastructure다. 상세 규칙은 [.claude/architecture.md](./.claude/architecture.md)에 있다.
+의존 방향은 HTTP → Presentation → UseCase → Domain/Port ← Infrastructure다. 상세 규칙은 [docs/architecture.md](./docs/architecture.md)에 있다.
 
 ## 명령어
 
@@ -60,17 +60,17 @@ test/                    # integration · e2e · architecture · performance
 
 ## 참고 문서
 
-| 작업                 | 문서                                                                                       |
-| -------------------- | ------------------------------------------------------------------------------------------ |
-| 작업 경계·완료 기준  | [AGENTS.md](./AGENTS.md)                                                                   |
-| 레이어·코드 규칙     | [architecture](./.claude/architecture.md), [api-conventions](./.claude/api-conventions.md) |
-| REST 계약·구 앱 호환 | [rest-contracts](./.claude/rest-contracts.md)                                              |
-| DB·마이그레이션      | [drizzle](./.claude/drizzle.md)                                                            |
-| 테스트               | [testing-guide](./.claude/testing-guide.md)                                                |
-| 로그·개인정보        | [logging-guide](./.claude/logging-guide.md)                                                |
-| AI 업체·프롬프트     | [ai](../../docs/server/ai.md)                                                              |
-| 푸시 알림 운영       | [push-notifications](./docs/push-notifications.md)                                         |
-| 관리자 알림          | [admin-notifications](./docs/admin-notifications.md)                                       |
-| 구독·결제 웹훅       | [billing](./docs/billing.md)                                                               |
-| CI·배포·롤백         | [CI](../../docs/server/ci.md), [DEPLOYMENT.md](./DEPLOYMENT.md)                            |
-| 전체 서버 문서 안내  | [docs/server/README.md](../../docs/server/README.md)                                       |
+| 작업                 | 문서                                                                         |
+| -------------------- | ---------------------------------------------------------------------------- |
+| 작업 경계·완료 기준  | [AGENTS.md](./AGENTS.md)                                                     |
+| 레이어·코드 규칙     | [architecture](./docs/architecture.md), [conventions](./docs/conventions.md) |
+| REST 계약·구 앱 호환 | [http-contracts](./docs/http-contracts.md)                                   |
+| DB·마이그레이션      | [persistence](./docs/persistence.md)                                         |
+| 테스트               | [testing](./docs/testing.md)                                                 |
+| 로그·개인정보        | [observability](./docs/observability.md)                                     |
+| AI 업체·프롬프트     | [ai](./docs/ai.md)                                                           |
+| 푸시 알림 운영       | [push-notifications](./docs/push-notifications.md)                           |
+| 관리자 알림          | [admin-notifications](./docs/admin-notifications.md)                         |
+| 구독·결제 웹훅       | [billing](./docs/billing.md)                                                 |
+| CI·배포·롤백         | [CI](./docs/ci.md), [deployment](./docs/deployment.md)                       |
+| 전체 서버 문서 안내  | [docs/README.md](./docs/README.md)                                           |

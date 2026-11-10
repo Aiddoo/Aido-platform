@@ -11,7 +11,7 @@
  *   AI_EVAL_REPORT       case별 결과 JSON을 쓸 경로(키는 담지 않는다)
  *   AI_EVAL_DELAY_MS     호출 사이 대기(기본 500, 분당 호출 상한 보호)
  * 콘솔에는 case id·통과 여부·지연·토큰·비용만 쓰고 입력 원문·전사·키는 쓰지 않는다.
- * 기준: 날짜 0.97, 제목 0.9, 겹침 판정 0.9(계획), NO_ACTION 1(parse-todo). 결과는 docs/server/ai.md에 남긴다.
+ * 기준: 날짜 0.97, 제목 0.9, 겹침 판정 0.9(계획), NO_ACTION 1(parse-todo). 결과는 apps/api/docs/ai.md에 남긴다.
  */
 import "../../src/shared/domain/date/dayjs.setup.js";
 import { writeFileSync } from "node:fs";

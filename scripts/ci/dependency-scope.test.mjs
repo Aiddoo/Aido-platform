@@ -6,7 +6,10 @@ import { dependencyScope } from './dependency-scope.mjs';
 const none = { api: false, mobile: false, shared: false };
 const all = { api: true, mobile: true, shared: true };
 test('documentation never provisions the API test/build runners', () => {
-  assert.deepEqual(dependencyScope(['README.md', 'apps/api/DEPLOYMENT.md', 'docs/api.png']), none);
+  assert.deepEqual(
+    dependencyScope(['README.md', 'apps/api/docs/deployment.md', 'docs/api.png']),
+    none,
+  );
 });
 test('mobile and API have independent scopes', () => {
   assert.deepEqual(dependencyScope(['apps/mobile/src/app.tsx']), { ...none, mobile: true });
