@@ -1,4 +1,6 @@
 import { AuthBootProvider } from '@src/bootstrap/providers/auth-boot-provider';
+import type { AppContainerPorts } from '@src/bootstrap/providers/create-app-container';
+import type { CompositionRoot } from '@src/bootstrap/providers/create-composition-root';
 import { DIProvider } from '@src/bootstrap/providers/di-provider';
 import { GestureHandlerProvider } from '@src/bootstrap/providers/gesture-handler-provider';
 import { HeroUIProvider } from '@src/bootstrap/providers/hero-ui-provider';
@@ -6,8 +8,7 @@ import { NotificationProvider } from '@src/bootstrap/providers/notification-prov
 import { OnlineManagerProvider } from '@src/bootstrap/providers/online-manager-provider';
 import { PurchasesProvider } from '@src/bootstrap/providers/purchases-provider';
 import { QueryProvider } from '@src/bootstrap/providers/query-provider';
-import { createQueryCacheStorage } from '@src/bootstrap/query/query-cache-persistence';
-import type { EncryptedStorageBootstrap } from '@src/shared/infra/storage/encrypted-draft-storage';
+import { toError } from '@src/shared/errors';
 import { FontScaleProvider } from '@src/shared/providers/font-scale-provider';
 import { LanguageProvider } from '@src/shared/providers/language-provider';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
@@ -29,7 +30,42 @@ import { ReservedRegionsProvider } from 'react-native-reserved-regions';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 interface AppProvidersProps extends PropsWithChildren {
-  encryptedStorageBootstrap: EncryptedStorageBootstrap;
+  /** 프로세스 수명 객체의 주인. 운영은 `compositionRoot`, 테스트는 stub 포트로 만든 것 */
+  root: CompositionRoot;
+}
+
+/** 저장소를 열 때까지 null이라 호출부는 스플래시를 유지한다. 이미 열었으면(루트 "다시 시도") 첫 렌더부터 같은 포트를 쓴다 */
+function useAppPorts(root: CompositionRoot): AppContainerPorts | null {
+  const [ports, setPorts] = useState(() => root.getOpenedPorts());
+  const [failure, setFailure] = useState<Error | null>(null);
+
+  useEffect(() => {
+    if (ports != null) {
+      return undefined;
+    }
+    let isCurrent = true;
+    root.openPorts().then(
+      (opened) => {
+        if (isCurrent) {
+          setPorts(opened);
+        }
+      },
+      (error: unknown) => {
+        if (isCurrent) {
+          setFailure(toError(error));
+        }
+      },
+    );
+    return () => {
+      isCurrent = false;
+    };
+  }, [root, ports]);
+
+  // 조립이 실패하면 렌더에서 던져 루트 오류 화면이 받게 한다
+  if (failure != null) {
+    throw failure;
+  }
+  return ports;
 }
 
 /** 이 경계가 그리면 AuthGateLayout이 내려가 있어 스플래시를 내릴 곳이 여기뿐이다 */
@@ -48,11 +84,12 @@ function RouteOverlayProvider({ children }: PropsWithChildren) {
   return <OverlayProvider resetKey={pathname}>{children}</OverlayProvider>;
 }
 
-export function AppProviders({ children, encryptedStorageBootstrap }: AppProvidersProps) {
-  const [queryCacheStorage] = useState(() => {
-    const storage = encryptedStorageBootstrap.queryCacheStorage;
-    return storage == null ? null : createQueryCacheStorage(storage);
-  });
+export function AppProviders({ children, root }: AppProvidersProps) {
+  const ports = useAppPorts(root);
+
+  if (ports == null) {
+    return null;
+  }
 
   return (
     <GestureHandlerProvider>
@@ -61,11 +98,12 @@ export function AppProviders({ children, encryptedStorageBootstrap }: AppProvide
           <LanguageProvider>
             <ThemeProvider>
               <HeroUIProvider>
-                <QueryProvider cacheStorage={queryCacheStorage}>
-                  <DIProvider
-                    encryptedStorageBootstrap={encryptedStorageBootstrap}
-                    queryCacheStorage={queryCacheStorage}
-                  >
+                <QueryProvider
+                  client={ports.queryClient}
+                  cacheStorage={ports.queryCacheStorage}
+                  appLifecycle={ports.appLifecycle}
+                >
+                  <DIProvider ports={ports}>
                     <OnlineManagerProvider>
                       <LocalDateProvider>
                         <AuthBootProvider>

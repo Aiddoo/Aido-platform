@@ -1,7 +1,7 @@
-import { useEncryptedStorageBootstrap } from '@src/bootstrap/hooks/use-encrypted-storage-bootstrap';
 import { AuthGateLayout } from '@src/bootstrap/navigation/auth-gate-layout';
 import { ROOT_ERROR_BOUNDARY_LOG_EVENT } from '@src/bootstrap/navigation/root-error-boundary-log-events';
 import { AppProviders } from '@src/bootstrap/providers/app-providers';
+import { compositionRoot } from '@src/bootstrap/providers/composition-root';
 import { getErrorMessage } from '@src/shared/errors';
 import { useTranslation } from '@src/shared/i18n';
 import { reloadApp } from '@src/shared/infra/application/app-bundle';
@@ -29,14 +29,8 @@ SplashScreen.preventAutoHideAsync().catch(noop);
 const rootErrorReporter = createEnvironmentErrorReporter();
 
 function AppBootstrapLayout() {
-  const encryptedStorageBootstrap = useEncryptedStorageBootstrap();
-
-  if (encryptedStorageBootstrap == null) {
-    return null;
-  }
-
   return (
-    <AppProviders encryptedStorageBootstrap={encryptedStorageBootstrap}>
+    <AppProviders root={compositionRoot}>
       <AuthGateLayout />
     </AppProviders>
   );
