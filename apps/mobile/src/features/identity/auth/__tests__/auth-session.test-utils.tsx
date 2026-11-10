@@ -13,6 +13,7 @@ import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user
 import { UserService } from '@src/features/identity/user/apis/user.service';
 import { createDeviceTimezoneRepository } from '@src/features/notification/apis/device-timezone.repository';
 import { DeviceTimezoneService } from '@src/features/notification/apis/device-timezone.service';
+import { createPushDeviceReleaseRepository } from '@src/features/notification/apis/push-device-release.repository';
 import { PushDeviceService } from '@src/features/notification/apis/push-device.service';
 import { TodoService } from '@src/features/planning/todo/apis/todo.service';
 import { createPendingRedemptionRepository } from '@src/features/social/invite/apis/pending-redemption.repository';
@@ -87,6 +88,16 @@ export function createAuthSession({
     logger: createLoggerStub(),
     now: Date.now,
   });
+  const pushDeviceService = new PushDeviceService({
+    gateway: createPushNotificationGatewayStub(),
+    deviceIdService: { get: async () => 'device-1' },
+    httpClient: authHttp,
+    publicHttpClient: publicHttp,
+    releaseRepository: createPushDeviceReleaseRepository(createMemorySyncStorage()),
+    logger: createLoggerStub(),
+    getTimeZone: () => 'Asia/Seoul',
+    sessionEpoch,
+  });
   const sessionCleanupService = new SessionCleanupService({
     userDeviceData: { clearForUser: clearUserDeviceData },
     queryCache: createSessionQueryCache(queryClient),
@@ -97,6 +108,7 @@ export function createAuthSession({
       createDeviceTimezoneRepository(createMemorySyncStorage()),
     ),
     pendingRedemption,
+    pushDevice: pushDeviceService,
     logger: createLoggerStub(),
   });
 
@@ -107,14 +119,6 @@ export function createAuthSession({
     socialAuthGateway,
     deviceType: 'IOS',
     logger: createLoggerStub(),
-  });
-  const pushDeviceService = new PushDeviceService({
-    gateway: createPushNotificationGatewayStub(),
-    deviceIdService: { get: async () => 'device-1' },
-    httpClient: authHttp,
-    logger: createLoggerStub(),
-    getTimeZone: () => 'Asia/Seoul',
-    sessionEpoch,
   });
 
   const container = createTestDi({

@@ -43,6 +43,7 @@ import { createMarketingPushPromptRepository } from '@src/features/notification/
 import { NotificationBadgeService } from '@src/features/notification/apis/notification-badge.service';
 import { createNotificationEntryStore } from '@src/features/notification/apis/notification-entry.store';
 import { NotificationService } from '@src/features/notification/apis/notification.service';
+import { createPushDeviceReleaseRepository } from '@src/features/notification/apis/push-device-release.repository';
 import { PushDeviceService } from '@src/features/notification/apis/push-device.service';
 import { createPushPermissionPromptRepository } from '@src/features/notification/apis/push-permission-prompt.repository';
 import { TodoCategoryService } from '@src/features/planning/category/apis/todo-category.service';
@@ -291,6 +292,8 @@ export function DIProvider({
       gateway: pushNotification,
       deviceIdService,
       httpClient: authHttpClient,
+      publicHttpClient,
+      releaseRepository: createPushDeviceReleaseRepository(deviceSyncStorage),
       logger,
       getTimeZone: getDeviceTimezone,
       sessionEpoch,
@@ -368,6 +371,7 @@ export function DIProvider({
       voiceNotes: voiceNoteStorageService,
       deviceTimezone: deviceTimezoneService,
       pendingRedemption: pendingRedemptionRepository,
+      pushDevice: pushDeviceService,
       userDeviceData: new UserDeviceDataService({
         repositories: {
           'whats-new': whatsNewRepository,

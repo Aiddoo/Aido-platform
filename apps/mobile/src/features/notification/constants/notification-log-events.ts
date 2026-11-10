@@ -16,6 +16,8 @@ export const NOTIFICATION_LOG_EVENT = {
   PUSH_DEVICE_REPORTED: 'notification.push-device.reported',
   PUSH_DEVICE_REPORT_FAILED: 'notification.push-device.report-failed',
   PUSH_TOKEN_ISSUE_FAILED: 'notification.push-token.issue-failed',
+  PUSH_DEVICE_RELEASE_DEFERRED: 'notification.push-device-release.deferred',
+  PUSH_DEVICE_RELEASE_REJECTED: 'notification.push-device-release.rejected',
   PUSH_PERMISSION_REQUESTED: 'notification.push-permission.requested',
   PUSH_PERMISSION_REQUEST_FAILED: 'notification.push-permission.request-failed',
   PUSH_PERMISSION_SETTINGS_OPEN_FAILED: 'notification.push-permission.settings-open-failed',

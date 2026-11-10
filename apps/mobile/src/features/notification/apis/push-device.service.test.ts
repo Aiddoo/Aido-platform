@@ -4,9 +4,12 @@ import {
   createIdGeneratorStub,
   createLoggerStub,
   createMemoryDeviceIdStore,
+  createMemorySyncStorage,
+  createPendingResponse,
   createPushNotificationGatewayStub,
   createVendorIdGatewayStub,
 } from '@src/shared/__tests__';
+import { NetworkError, ok } from '@src/shared/errors';
 
 import {
   createNotificationApiError,
@@ -15,24 +18,43 @@ import {
   INVALID_DTO,
 } from '../__tests__/notification.fixtures';
 import { DeviceIdService } from './device-id.service';
+import { createPushDeviceReleaseRepository } from './push-device-release.repository';
 import { PushDeviceService } from './push-device.service';
 
 const DEVICE_ID = 'ios_device-123';
+const RELEASE_PATH = 'v1/notifications/push-devices/unregister';
 
-function setup(gateway = createPushNotificationGatewayStub(), getTimeZone = () => 'Asia/Seoul') {
+function setup(
+  gateway = createPushNotificationGatewayStub(),
+  getTimeZone = () => 'Asia/Seoul',
+  storage = createMemorySyncStorage(),
+) {
   const sessionEpoch = createSessionEpoch();
   const httpClient = createHttpClientStub();
   httpClient.put.mockResolvedValue({ ok: true, value: createPushDeviceResponseDto() });
+  const publicHttpClient = createHttpClientStub();
+  publicHttpClient.post.mockResolvedValue({ ok: true, value: { unregistered: true } });
+  const releaseRepository = createPushDeviceReleaseRepository(storage);
   const logger = createLoggerStub();
   const service = new PushDeviceService({
     gateway,
     deviceIdService: { get: async () => DEVICE_ID },
     httpClient,
+    publicHttpClient,
+    releaseRepository,
     logger,
     getTimeZone,
     sessionEpoch,
   });
-  return { service, gateway, httpClient, logger, sessionEpoch };
+  return {
+    service,
+    gateway,
+    httpClient,
+    publicHttpClient,
+    releaseRepository,
+    logger,
+    sessionEpoch,
+  };
 }
 
 describe('PushDeviceService.report', () => {
@@ -195,6 +217,8 @@ describe('PushDeviceService.report', () => {
         platform: 'ios',
       }),
       httpClient,
+      publicHttpClient: createHttpClientStub(),
+      releaseRepository: createPushDeviceReleaseRepository(createMemorySyncStorage()),
       logger: createLoggerStub(),
       getTimeZone: () => 'Asia/Seoul',
       sessionEpoch: createSessionEpoch(),
@@ -497,6 +521,120 @@ describe('PushDeviceService.unregister', () => {
     expect(result).toEqual({ ok: true, value: undefined });
     expect(httpClient.delete).not.toHaveBeenCalled();
     await service.report();
+    expect(httpClient.put).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('PushDeviceService.requestRelease', () => {
+  it('온라인 로그아웃 없이 세션이 끝나면 인증 없이 기기 id와 지금 토큰으로 해제하고, 다음 로그인은 같은 값도 다시 등록한다', async () => {
+    // Given
+    const { service, httpClient, publicHttpClient, releaseRepository } = setup();
+    await service.report();
+
+    // When
+    service.requestRelease();
+    await service.flushRelease();
+    await service.report();
+
+    // Then
+    expect(publicHttpClient.post).toHaveBeenCalledWith(RELEASE_PATH, {
+      deviceId: DEVICE_ID,
+      token: 'ExponentPushToken[device-123]',
+    });
+    expect(httpClient.post).not.toHaveBeenCalled();
+    expect(httpClient.put).toHaveBeenCalledTimes(2);
+    expect(releaseRepository.hasPending()).toBe(false);
+  });
+
+  it('연결이 끊겨 보내지 못한 해제는 앱을 다시 켜도 남아 다음 시도에 보낸다', async () => {
+    // Given
+    const storage = createMemorySyncStorage();
+    const before = setup(undefined, undefined, storage);
+    before.publicHttpClient.post.mockRejectedValueOnce(new NetworkError());
+    before.service.requestRelease();
+    await before.service.flushRelease();
+
+    // When
+    const after = setup(undefined, undefined, storage);
+    await after.service.flushRelease();
+
+    // Then
+    expect(after.publicHttpClient.post).toHaveBeenCalledWith(RELEASE_PATH, {
+      deviceId: DEVICE_ID,
+      token: 'ExponentPushToken[device-123]',
+    });
+    expect(after.releaseRepository.hasPending()).toBe(false);
+  });
+
+  it('해제 API가 없는 이전 서버(404)면 경고 없이 끝내고 다시 보내지 않는다', async () => {
+    // Given
+    const { service, publicHttpClient, logger } = setup();
+    publicHttpClient.post.mockResolvedValue({
+      ok: false,
+      error: createNotificationApiError({ status: 404 }),
+    });
+    service.requestRelease();
+    await service.flushRelease();
+
+    // When
+    await service.flushRelease();
+
+    // Then
+    expect(publicHttpClient.post).toHaveBeenCalledTimes(1);
+    expect(logger.warn).not.toHaveBeenCalled();
+  });
+
+  it('토큰을 받지 못하면 해제를 보내지 않고 남겨 다음 시도에 보낸다', async () => {
+    // Given
+    const gateway = createPushNotificationGatewayStub();
+    gateway.getToken.mockRejectedValueOnce(new Error('offline'));
+    const { service, publicHttpClient, releaseRepository } = setup(gateway);
+    service.requestRelease();
+    await service.flushRelease();
+    expect(publicHttpClient.post).not.toHaveBeenCalled();
+    expect(releaseRepository.hasPending()).toBe(true);
+
+    // When
+    await service.flushRelease();
+
+    // Then
+    expect(publicHttpClient.post).toHaveBeenCalledTimes(1);
+  });
+
+  it('보내지 못한 해제가 남은 채 다시 로그인해 보고하면 끝난 세션의 해제를 버려 새 등록을 지우지 않는다', async () => {
+    // Given
+    const { service, publicHttpClient } = setup();
+    publicHttpClient.post.mockRejectedValueOnce(new NetworkError());
+    service.requestRelease();
+    await service.flushRelease();
+
+    // When
+    await service.report({ force: true });
+    await service.flushRelease();
+
+    // Then
+    expect(publicHttpClient.post).toHaveBeenCalledTimes(1);
+  });
+
+  it('해제가 가는 중에 다시 로그인해 보고하면 해제가 끝난 뒤에 보고해 새 등록이 지워지지 않는다', async () => {
+    // Given
+    const { service, httpClient, publicHttpClient } = setup();
+    const release = createPendingResponse(ok({ unregistered: true }));
+    publicHttpClient.post.mockReturnValueOnce(release.response);
+    service.requestRelease();
+    while (publicHttpClient.post.mock.calls.length === 0) {
+      await Promise.resolve();
+    }
+
+    // When
+    const reporting = service.report({ force: true });
+    await Promise.resolve();
+    const reportedBeforeRelease = httpClient.put.mock.calls.length > 0;
+    release.settle();
+    await reporting;
+
+    // Then
+    expect(reportedBeforeRelease).toBe(false);
     expect(httpClient.put).toHaveBeenCalledTimes(1);
   });
 });
