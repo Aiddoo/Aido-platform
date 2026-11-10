@@ -63,7 +63,7 @@
     "off": "Off",
     "deviceOff": "Off on device",
     "pushLabel": "Push notifications",
-    "pushDescription": "Get to-do and billing alerts on every device signed in to this account",
+    "pushDescription": "Get to-do and billing alerts on every device signed in to this account. Promotions need separate consent",
     "nightPushLabel": "Night push notifications",
     "nightPushDescription": "Get offer and friend alerts from 9 PM to 8 AM too. Reminders you set always arrive on time",
     "marketingLabel": "Marketing communications",

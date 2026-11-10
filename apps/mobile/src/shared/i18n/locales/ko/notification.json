@@ -63,7 +63,7 @@
     "off": "꺼짐",
     "deviceOff": "기기에서 꺼짐",
     "pushLabel": "푸시 알림",
-    "pushDescription": "할 일·결제 알림을 이 계정의 모든 기기에서 받아요",
+    "pushDescription": "할 일·결제 알림을 이 계정의 모든 기기에서 받아요. 광고성 알림은 따로 동의해요",
     "nightPushLabel": "야간 푸시 알림",
     "nightPushDescription": "21:00 - 08:00에도 혜택·친구 알림을 받아요. 직접 정한 리마인드는 꺼도 제시간에 와요",
     "marketingLabel": "마케팅 수신 동의",
