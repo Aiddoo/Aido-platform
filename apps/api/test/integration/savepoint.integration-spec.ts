@@ -11,11 +11,9 @@ import { DRIZZLE, type DrizzleTransactionalAdapter } from "#api/platform/databas
 import { DatabaseModule } from "#api/platform/database/database.module";
 import { memo, user } from "#api/platform/database/schema/index";
 import {
-  AFTER_COMMIT_TASK_REGISTRY,
+  AfterCommitTaskRegistryPort,
   SavepointRunnerPort,
-  UNIT_OF_WORK,
-  type AfterCommitTaskRegistryPort,
-  type UnitOfWorkPort,
+  UnitOfWorkPort,
 } from "#api/shared/application/ports/index";
 import { UserFixture } from "#test/fixtures/index";
 import { createTestClient } from "#test/setup/database-context";
@@ -65,9 +63,9 @@ describe("Drizzle 동일 연결 savepoint (실제 PostgreSQL)", () => {
       .useValue(client)
       .compile();
     await module.init();
-    unitOfWork = module.get<UnitOfWorkPort>(UNIT_OF_WORK);
+    unitOfWork = module.get(UnitOfWorkPort);
     savepointRunner = module.get(SavepointRunnerPort);
-    afterCommitTasks = module.get<AfterCommitTaskRegistryPort>(AFTER_COMMIT_TASK_REGISTRY);
+    afterCommitTasks = module.get(AfterCommitTaskRegistryPort);
     txHost = module.get<TransactionHost<DrizzleTransactionalAdapter>>(TransactionHost);
   });
 

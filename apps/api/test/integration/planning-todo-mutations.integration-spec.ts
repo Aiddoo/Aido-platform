@@ -27,12 +27,9 @@ import {
   user as userTable,
 } from "#api/platform/database/schema/index";
 import {
-  AFTER_COMMIT_TASK_REGISTRY,
-  DOMAIN_EVENT_PUBLISHER,
-  UNIT_OF_WORK,
-  type AfterCommitTaskRegistryPort,
-  type DomainEventPublisherPort,
-  type UnitOfWorkPort,
+  AfterCommitTaskRegistryPort,
+  DomainEventPublisherPort,
+  UnitOfWorkPort,
 } from "#api/shared/application/ports/index";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantFromDate } from "#api/shared/domain/time/instant";
@@ -226,7 +223,7 @@ describe("Todo 변경 원자성·Drizzle 쿼리 실행 수 (실제 PostgreSQL)",
 
   it("동일한 완료 요청 두 개는 모두 응답하되 실제 완료 이벤트는 한 번 발행한다", async () => {
     // Given
-    const publisher = context.module.get<DomainEventPublisherPort>(DOMAIN_EVENT_PUBLISHER);
+    const publisher = context.module.get(DomainEventPublisherPort);
     const publish = vi.spyOn(publisher, "publish");
     const toggle = context.module.get(SetTodoCompletedUseCase);
 
@@ -297,7 +294,7 @@ describe("Todo 변경 원자성·Drizzle 쿼리 실행 수 (실제 PostgreSQL)",
       throw new Error("item fixture 누락");
     }
     const repository = context.module.get(TodoRepositoryPort);
-    const unitOfWork = context.module.get<UnitOfWorkPort>(UNIT_OF_WORK);
+    const unitOfWork = context.module.get(UnitOfWorkPort);
 
     // When
     const result = unitOfWork.run(() =>
@@ -315,7 +312,7 @@ describe("Todo 변경 원자성·Drizzle 쿼리 실행 수 (실제 PostgreSQL)",
   it("부분 수정은 명시적 null·false를 저장하고 undefined는 이전 값을 유지한다", async () => {
     // Given
     const repository = context.module.get(TodoRepositoryPort);
-    const unitOfWork = context.module.get<UnitOfWorkPort>(UNIT_OF_WORK);
+    const unitOfWork = context.module.get(UnitOfWorkPort);
     await unitOfWork.run(() =>
       repository.updateDetails(TodoId.reconstitute(todoId), {
         title: "기존 제목",
@@ -537,8 +534,8 @@ describe("Todo 변경 원자성·Drizzle 쿼리 실행 수 (실제 PostgreSQL)",
 
     function stageInsideUnitOfWork(afterStage: () => Promise<void>) {
       const creator = context.module.get<StagedTodoCreatorPort>(StagedTodoCreatorPort);
-      const unitOfWork = context.module.get<UnitOfWorkPort>(UNIT_OF_WORK);
-      const registry = context.module.get<AfterCommitTaskRegistryPort>(AFTER_COMMIT_TASK_REGISTRY);
+      const unitOfWork = context.module.get(UnitOfWorkPort);
+      const registry = context.module.get(AfterCommitTaskRegistryPort);
       return unitOfWork.run(async () => {
         const staged = await creator.stage({
           userId: UserId.reconstitute(userId),
@@ -584,7 +581,7 @@ describe("Todo 변경 원자성·Drizzle 쿼리 실행 수 (실제 PostgreSQL)",
   it("반복 item 저장이 실패하면 부모 bulk 생성도 rollback한다", async () => {
     // Given
     const repository = context.module.get(TodoRepositoryPort);
-    const unitOfWork = context.module.get<UnitOfWorkPort>(UNIT_OF_WORK);
+    const unitOfWork = context.module.get(UnitOfWorkPort);
     const before = await client.query.todo.findMany({ columns: { id: true }, where: { userId } });
 
     // When

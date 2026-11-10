@@ -10,10 +10,7 @@ import {
 import { crossedThresholds, usagePeriod } from "#api/platform/metering/usage-period";
 import type { AlertDefinition } from "#api/shared/application/alerts/define-alerts";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
-import {
-  OPERATIONAL_ALERT,
-  type OperationalAlertPort,
-} from "#api/shared/application/ports/operational-alert.port";
+import { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import { instantToDate } from "#api/shared/domain/time/instant";
 
@@ -77,7 +74,7 @@ export class AiSpendBudgetAdapter implements OnModuleInit {
   constructor(
     @Inject(aiAssistanceGenerationConfig.KEY) config: SpendBudgetConfig,
     @Inject(USAGE_METER) meter: Pick<UsageMeterPort, "add" | "read">,
-    @Inject(OPERATIONAL_ALERT) alert: OperationalAlertPort,
+    alert: OperationalAlertPort,
     clock: ClockPort,
   ) {
     this.#config = config;

@@ -9,7 +9,7 @@ import {
   userConsent,
   userPreference,
 } from "#api/platform/database/schema/index";
-import { UNIT_OF_WORK, type UnitOfWorkPort } from "#api/shared/application/ports/index";
+import { UnitOfWorkPort } from "#api/shared/application/ports/index";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { UserConsentBuilder, UserPreferenceBuilder } from "#test/builders/index";
 import {
@@ -38,7 +38,7 @@ describe("광고성 수신 동의 2년 재확인 (실제 PostgreSQL)", () => {
     context = await createE2eApp({ testDatabase: database });
     reconfirm = context.module.get(ReconfirmMarketingConsentsUseCase);
     access = context.module.get(MarketingConsentReconfirmPort);
-    unitOfWork = context.module.get(UNIT_OF_WORK);
+    unitOfWork = context.module.get(UnitOfWorkPort);
   });
 
   beforeEach(async () => {

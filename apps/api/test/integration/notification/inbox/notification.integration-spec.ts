@@ -57,12 +57,7 @@ import { LOCK_PROVIDER } from "#api/platform/lock/interfaces/lock.interface";
 import { paginationServiceProvider } from "#api/platform/pagination/pagination.providers";
 import { SystemClock } from "#api/platform/time/system-clock";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
-import {
-  AFTER_COMMIT_TASK_REGISTRY,
-  AfterCommitTaskRegistryPort,
-  UNIT_OF_WORK,
-  UnitOfWorkPort,
-} from "#api/shared/application/ports/index";
+import { AfterCommitTaskRegistryPort, UnitOfWorkPort } from "#api/shared/application/ports/index";
 import { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { UserPreferenceBuilder } from "#test/builders/index";
@@ -169,19 +164,17 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
           useValue: { findMarketingReconfirmTargets: vi.fn(), claimMarketingReconfirm: vi.fn() },
         },
         {
-          provide: UNIT_OF_WORK,
+          provide: UnitOfWorkPort,
           useValue: transaction.uow satisfies UnitOfWorkPort,
         },
-        { provide: UnitOfWorkPort, useExisting: UNIT_OF_WORK },
         {
-          provide: AFTER_COMMIT_TASK_REGISTRY,
+          provide: AfterCommitTaskRegistryPort,
           useValue: {
             register: (task) => {
               task().catch(() => undefined);
             },
           } satisfies AfterCommitTaskRegistryPort,
         },
-        { provide: AfterCommitTaskRegistryPort, useExisting: AFTER_COMMIT_TASK_REGISTRY },
         {
           provide: PublishPushDeliveryAfterCommitUseCase,
           useValue: mockAfterCommitPublisher,

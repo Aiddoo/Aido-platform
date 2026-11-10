@@ -13,7 +13,7 @@ import type { TodoCategory } from "#api/modules/planning/categories/domain/todo-
 import { TodoCategoryProvisionerPort } from "#api/modules/planning/categories/planning-categories.public";
 import { createEntityId } from "#api/platform/database/entity-id";
 import { todo, user } from "#api/platform/database/schema/index";
-import { UNIT_OF_WORK, type UnitOfWorkPort } from "#api/shared/application/ports/index";
+import { UnitOfWorkPort } from "#api/shared/application/ports/index";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantFromDate } from "#api/shared/domain/time/instant";
 import { TodoFixture, UserFixture } from "#test/fixtures/index";
@@ -143,7 +143,7 @@ describe("Planning 카테고리 상태·조회·트랜잭션 (실제 PostgreSQL)
 
   it("상위 UoW가 실패하면 카테고리 변경도 같은 트랜잭션에서 rollback된다", async () => {
     // Given
-    const unitOfWork = context.module.get<UnitOfWorkPort>(UNIT_OF_WORK);
+    const unitOfWork = context.module.get(UnitOfWorkPort);
     const failure = new Error("rollback-category");
 
     // When
@@ -290,7 +290,7 @@ describe("Planning 카테고리 상태·조회·트랜잭션 (실제 PostgreSQL)
 
   it("공개 기본 카테고리 provisioner도 상위 transaction rollback에 참여한다", async () => {
     // Given
-    const unitOfWork = context.module.get<UnitOfWorkPort>(UNIT_OF_WORK);
+    const unitOfWork = context.module.get(UnitOfWorkPort);
     const provisioner = context.module.get<TodoCategoryProvisionerPort>(
       TodoCategoryProvisionerPort,
     );
@@ -313,7 +313,7 @@ describe("Planning 카테고리 상태·조회·트랜잭션 (실제 PostgreSQL)
     { why: "영어로 가입하면 영어", locale: "en", names: ["Important", "To-do"] },
   ] as const)("기본 카테고리 이름은 $why로 만든다", async ({ locale, names }) => {
     // Given
-    const unitOfWork = context.module.get<UnitOfWorkPort>(UNIT_OF_WORK);
+    const unitOfWork = context.module.get(UnitOfWorkPort);
     const provisioner = context.module.get<TodoCategoryProvisionerPort>(
       TodoCategoryProvisionerPort,
     );

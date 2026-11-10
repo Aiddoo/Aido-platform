@@ -16,10 +16,7 @@ import { USAGE_METER } from "#api/platform/metering/interfaces/usage-meter.inter
 import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
-import {
-  OPERATIONAL_ALERT,
-  OperationalAlertPort,
-} from "#api/shared/application/ports/operational-alert.port";
+import { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 import { DateClock } from "#test/doubles/platform/date-clock";
 import { InMemoryUsageMeterAdapter } from "#test/mocks/in-memory-usage-meter.adapter";
 import { RecordingOperationalAlert } from "#test/mocks/recording-operational-alert";
@@ -111,7 +108,6 @@ describe("이메일 발송 큐 (실제 pg-boss + PostgreSQL)", () => {
       providers: [
         { provide: JobQueuePort, useValue: jobQueue },
         { provide: USAGE_METER, useValue: new InMemoryUsageMeterAdapter() },
-        { provide: OPERATIONAL_ALERT, useValue: alerts },
         { provide: OperationalAlertPort, useValue: alerts },
         { provide: ClockPort, useClass: DateClock },
         OutboundPolicyRegistry,
@@ -126,7 +122,6 @@ describe("이메일 발송 큐 (실제 pg-boss + PostgreSQL)", () => {
       exports: [
         JobQueuePort,
         USAGE_METER,
-        OPERATIONAL_ALERT,
         OperationalAlertPort,
         ClockPort,
         OutboundPolicyRegistry,

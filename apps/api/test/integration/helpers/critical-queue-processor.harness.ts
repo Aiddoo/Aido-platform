@@ -89,12 +89,7 @@ import { LOCK_PROVIDER } from "#api/platform/lock/interfaces/lock.interface";
 import { SystemClock } from "#api/platform/time/system-clock";
 import { AfterCommitTaskRegistryPort } from "#api/shared/application/ports/after-commit-task.registry.port";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
-import {
-  AFTER_COMMIT_TASK_REGISTRY,
-  JobQueuePort,
-  UNIT_OF_WORK,
-  UnitOfWorkPort,
-} from "#api/shared/application/ports/index";
+import { JobQueuePort, UnitOfWorkPort } from "#api/shared/application/ports/index";
 import { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 import { FakePushProvider } from "#test/doubles/notification/fake-push-provider";
 import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";
@@ -178,9 +173,7 @@ export async function createCriticalQueueProcessorHarness(): Promise<CriticalQue
     ],
     providers: [
       ClsUnitOfWork,
-      { provide: UNIT_OF_WORK, useExisting: ClsUnitOfWork },
       { provide: UnitOfWorkPort, useExisting: ClsUnitOfWork },
-      { provide: AFTER_COMMIT_TASK_REGISTRY, useExisting: ClsUnitOfWork },
       { provide: AfterCommitTaskRegistryPort, useExisting: ClsUnitOfWork },
       { provide: ClockPort, useClass: SystemClock },
       JobQueueRegistry,

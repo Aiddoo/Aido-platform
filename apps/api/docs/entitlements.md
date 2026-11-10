@@ -10,7 +10,7 @@
 | ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 이 기능을 쓸 수 있나·한도는  | `EntitlementReaderPort`의 `can`/`getFeatureLimit`(잠금 뒤 재확인은 `canInTx`/`getFeatureLimitInTx`), 전체는 `getEntitlements`(tier·plan·isPremium·features), 거부는 `assertEntitled`/`assertEntitledInTx`(기능별 기존 ErrorCode) |
 | 여러 사용자를 SQL로 고를 때  | `access-entitlements.public`의 `premiumAccessCondition`/`freeAccessCondition`/`activeSubscriptionCondition`                                                                                                                      |
-| 프리미엄 출처·기간 표시(/me) | `PremiumAccessReaderPort`(Billing. 옛 Symbol `PREMIUM_ACCESS_READER`는 같은 인스턴스 별칭). 권한 판단에는 쓰지 않는다                                                                                                            |
+| 프리미엄 출처·기간 표시(/me) | `PremiumAccessReaderPort`(Billing). 권한 판단에는 쓰지 않는다                                                                                                                                                                    |
 | 돈이 드는 횟수(AI·녹음 정리) | `QuotaLedgerPort`(`access-quotas.public`)의 `reserve`→`commit`/`refund`, 표시는 `read`가 주는 `featureQuota`. 남은 0을 미리 막을 때는 `@RequireQuota(meter)`                                                                     |
 
 ## 사용 횟수 원장

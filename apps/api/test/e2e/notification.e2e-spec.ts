@@ -34,7 +34,7 @@ import {
   pushToken,
   userConsent,
 } from "#api/platform/database/schema/index";
-import { UNIT_OF_WORK, type UnitOfWorkPort } from "#api/shared/application/ports/index";
+import { UnitOfWorkPort } from "#api/shared/application/ports/index";
 import { instantFromDate } from "#api/shared/domain/time/instant";
 
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
@@ -1211,7 +1211,7 @@ describe("알림 E2E", () => {
         // Given
         const user = await ctx.helpers.createVerifiedUser("notif-renewal@test.com", password);
         const now = new Date();
-        await ctx.module.get<UnitOfWorkPort>(UNIT_OF_WORK).run(() =>
+        await ctx.module.get(UnitOfWorkPort).run(() =>
           ctx.module.get(UpcomingRenewalNotifierPort).notify(
             [
               {

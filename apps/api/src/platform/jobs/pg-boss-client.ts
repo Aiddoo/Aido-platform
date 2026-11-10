@@ -22,7 +22,7 @@ import {
 import { databaseConfig } from "#api/platform/config/database.config";
 import { jobConfig } from "#api/platform/config/job.config";
 
-// pg-boss 인스턴스는 라이브러리 객체라 포트 클래스가 없어 Symbol 토큰으로 주입한다
+// 업무 포트가 아니라 pg-boss 클라이언트 인스턴스라 Symbol 토큰으로 둔다(platform/jobs 어댑터만 주입받는다)
 export const PG_BOSS_CLIENT = Symbol("PG_BOSS_CLIENT");
 
 /** health가 읽는 큐 수만 받는다. */

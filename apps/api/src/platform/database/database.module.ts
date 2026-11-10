@@ -3,14 +3,10 @@ import type { ConfigType } from "@nestjs/config";
 import { DrizzleModule, getDrizzleToken } from "@nestjs/drizzle";
 
 import { databaseConfig } from "#api/platform/config/database.config";
-import {
-  AFTER_COMMIT_TASK_REGISTRY,
-  AfterCommitTaskRegistryPort,
-  MutationLockPort,
-  SavepointRunnerPort,
-  UNIT_OF_WORK,
-  UnitOfWorkPort,
-} from "#api/shared/application/ports/index";
+import { AfterCommitTaskRegistryPort } from "#api/shared/application/ports/after-commit-task.registry.port";
+import { MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
+import { SavepointRunnerPort } from "#api/shared/application/ports/savepoint-runner.port";
+import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 
 import { ClsSavepointRunner } from "./cls-savepoint-runner.js";
 import { ClsUnitOfWork } from "./cls-unit-of-work.js";
@@ -31,23 +27,19 @@ import { createPostgresPool } from "./postgres-pool.js";
   ],
   providers: [
     { provide: DRIZZLE, useExisting: getDrizzleToken() },
+    // 트랜잭션과 커밋 뒤 작업 목록은 같은 CLS 범위를 써야 해 한 인스턴스가 두 포트를 맡는다
     ClsUnitOfWork,
-    { provide: SavepointRunnerPort, useClass: ClsSavepointRunner },
-    { provide: MutationLockPort, useClass: PostgresMutationLockAdapter },
     { provide: UnitOfWorkPort, useExisting: ClsUnitOfWork },
     { provide: AfterCommitTaskRegistryPort, useExisting: ClsUnitOfWork },
-    // notification이 아직 Symbol로 주입받아 같은 인스턴스를 가리킨다. notification이 클래스 토큰으로 옮기면 지운다
-    { provide: UNIT_OF_WORK, useExisting: ClsUnitOfWork },
-    { provide: AFTER_COMMIT_TASK_REGISTRY, useExisting: ClsUnitOfWork },
+    { provide: SavepointRunnerPort, useClass: ClsSavepointRunner },
+    { provide: MutationLockPort, useClass: PostgresMutationLockAdapter },
   ],
   exports: [
     DRIZZLE,
-    UNIT_OF_WORK,
-    AFTER_COMMIT_TASK_REGISTRY,
     UnitOfWorkPort,
     AfterCommitTaskRegistryPort,
-    MutationLockPort,
     SavepointRunnerPort,
+    MutationLockPort,
   ],
 })
 export class DatabaseModule {}

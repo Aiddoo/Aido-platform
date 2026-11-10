@@ -12,10 +12,7 @@ import { USAGE_METER } from "#api/platform/metering/interfaces/usage-meter.inter
 import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
-import {
-  OPERATIONAL_ALERT,
-  OperationalAlertPort,
-} from "#api/shared/application/ports/operational-alert.port";
+import { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 import { DateClock } from "#test/doubles/platform/date-clock";
 import { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
 import { InMemoryUsageMeterAdapter } from "#test/mocks/in-memory-usage-meter.adapter";
@@ -49,7 +46,6 @@ const alerts = new RecordingOperationalAlert();
   providers: [
     { provide: JobQueuePort, useValue: jobQueue },
     { provide: USAGE_METER, useValue: meter },
-    { provide: OPERATIONAL_ALERT, useValue: alerts },
     { provide: OperationalAlertPort, useValue: alerts },
     { provide: ClockPort, useClass: DateClock },
     OutboundPolicyRegistry,
@@ -64,7 +60,6 @@ const alerts = new RecordingOperationalAlert();
   exports: [
     JobQueuePort,
     USAGE_METER,
-    OPERATIONAL_ALERT,
     OperationalAlertPort,
     ClockPort,
     OutboundPolicyRegistry,
