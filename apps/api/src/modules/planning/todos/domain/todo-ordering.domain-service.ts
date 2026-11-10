@@ -5,7 +5,7 @@ import type { ReorderPosition } from "@aido/api/vocabulary";
  *
  * `[from, to]` 구간(to가 null이면 끝까지)의 sortOrder를 delta만큼 이동합니다.
  */
-export interface SortOrderShift {
+interface SortOrderShift {
   from: number;
   to: number | null;
   delta: 1 | -1;

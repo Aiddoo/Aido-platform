@@ -1,6 +1,6 @@
 # 반복 할 일 휴면·복귀
 
-오래 앱을 열지 않은 사용자의 반복 규칙이 회차와 알림을 계속 만들지 않게 멈추고, 돌아오면 앱 변경 없이(구버전 포함) 첫 목록에 오늘 회차를 보여 주는 동작이다. HTTP 응답 모양과 기존 잡 payload는 바뀌지 않으며 이 동작을 위한 마이그레이션은 없다. 코드 정본은 `modules/planning/domain/policies/series/series-dormancy.policy.ts`, `application/services/series/todo-series-{due-run,catch-up}.service.ts`, `TodoSeries.skipDormantGap`이다.
+오래 앱을 열지 않은 사용자의 반복 규칙이 회차와 알림을 계속 만들지 않게 멈추고, 돌아오면 앱 변경 없이(구버전 포함) 첫 목록에 오늘 회차를 보여 주는 동작이다. HTTP 응답 모양과 기존 잡 payload는 바뀌지 않으며 이 동작을 위한 마이그레이션은 없다. 코드 정본은 `modules/planning/todo-series/domain/series-dormancy.domain-service.ts`, `todo-series/application/use-cases/{materialize-todo-series,catch-up-todo-series}.use-case.ts`, `TodoSeries.skipDormantGap`이다.
 
 ## 휴면
 

@@ -6,7 +6,7 @@ import { localDateOf, toZonedInstant } from "#api/shared/domain/time/zoned-time"
 const UTC = "UTC";
 
 // 옛 날짜 함수(resolveTimezone)처럼 알 수 없는 시간대는 요청을 멈추지 않고 UTC로 계산한다
-export function toTodoTimeZone(raw: string): TimeZone {
+function toTodoTimeZone(raw: string): TimeZone {
   try {
     return TimeZone.create(raw);
   } catch {
@@ -14,7 +14,7 @@ export function toTodoTimeZone(raw: string): TimeZone {
   }
 }
 
-export function plainDateOf(date: Date): Temporal.PlainDate {
+function plainDateOf(date: Date): Temporal.PlainDate {
   return Temporal.Instant.fromEpochMilliseconds(date.getTime())
     .toZonedDateTimeISO(UTC)
     .toPlainDate();
@@ -60,11 +60,7 @@ export function resolveScheduledInstant(
   return localTime == null ? null : requireScheduledInstant(dateKey, localTime, timezone);
 }
 
-export function requireScheduledInstant(
-  dateKey: string,
-  localTime: string,
-  timezone: string,
-): Date {
+function requireScheduledInstant(dateKey: string, localTime: string, timezone: string): Date {
   const instant = toZonedInstant({
     date: Temporal.PlainDate.from(dateKey),
     time: Temporal.PlainTime.from(localTime),

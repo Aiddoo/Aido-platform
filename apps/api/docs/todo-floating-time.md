@@ -2,19 +2,19 @@
 
 한국에서 만든 오전 10시는 미국에서도 오전 10시이고 알림도 현지 10시에 울린다. 값의 의미와 시간대 규칙은 [날짜·시간·언어 5절](../../../docs/conventions/dates.md#5-떠-있는-시각)이 정본이고, 이 문서는 서버 구현과 운영을 적는다.
 
-코드 정본은 `modules/planning/domain/value-objects/todos/todo-schedule.vo.ts`(`resolveScheduledInstant`), `application/services/todos/todo-timezone-resolver.service.ts`, `application/use-cases/todos/rebase-todo-timezone.use-case.ts`, `infrastructure/jobs/todos/`다.
+코드 정본은 `modules/planning/shared/domain/todo-calendar.domain-service.ts`(`resolveScheduledInstant`, Temporal), `todos/application/use-cases/resolve-todo-timezone.use-case.ts`, `todos/application/use-cases/rebase-todo-timezone.use-case.ts`, `todos/infrastructure/jobs/`다. 리마인더 예약·취소는 `todos/application/use-cases/apply-todo-events.use-case.ts`가 할 일 변경과 같은 트랜잭션에서 한다.
 
 ## 쓰기
 
 모든 쓰기 경로는 벽시계(`HH:mm`)를 받는다. 출시 앱을 포함해 순간을 보내는 경로는 없다.
 
-| 경로                                                 | 시각을 정하는 곳                                                          |
-| ---------------------------------------------------- | ------------------------------------------------------------------------- |
-| `POST /v1/todos`, 메모 변환, 계획 적용, AI 제안 수락 | `StagedTodoCreator.stage` → `TodoSchedule.create`                         |
-| `POST /v1/todos/recurring`, 회차 채우기              | `TodoSeries`의 회차 초안                                                  |
-| `PATCH /v1/todos/:id`(시간·날짜)                     | `Todo.updateDetails` → `TodoSchedule.patch`                               |
-| `PATCH /v1/todos/:id/schedule`                       | `TodoSchedule.create`                                                     |
-| 이후 모두·규칙 변경·반복 전환                        | `UpdateFollowingTodos`, `StartSeriesFromTodo`의 `resolveScheduledInstant` |
+| 경로                                                 | 시각을 정하는 곳                                                                  |
+| ---------------------------------------------------- | --------------------------------------------------------------------------------- |
+| `POST /v1/todos`, 메모 변환, 계획 적용, AI 제안 수락 | `StagedTodoCreatorPort.stage`(`StageTodoCreationUseCase`) → `TodoSchedule.create` |
+| `POST /v1/todos/recurring`, 회차 채우기              | `TodoSeries`의 회차 초안                                                          |
+| `PATCH /v1/todos/:id`(시간·날짜)                     | `Todo.updateDetails` → `TodoSchedule.patch`                                       |
+| `PATCH /v1/todos/:id/schedule`                       | `TodoSchedule.create`                                                             |
+| 이후 모두·규칙 변경·반복 전환                        | `UpdateFollowingTodos`, `StartSeriesFromTodo`의 `resolveScheduledInstant`         |
 
 날짜·시간을 건드리지 않는 수정(제목·공개·카테고리)과 완료·완료 되돌리기는 순간을 바꾸지 않는다. 순간은 재계산이 맞춘다. 완료를 되돌리면 지금 순간으로 알림만 다시 잡는다.
 

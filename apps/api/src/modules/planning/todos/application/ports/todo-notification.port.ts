@@ -1,7 +1,5 @@
 import type { TodoCompletionMilestone } from "../../domain/todo-completion.domain-service.js";
 
-export type { TodoCompletionMilestone };
-
 /**
  * 친구 할일 전체 완료 알림 페이로드 (todo 컨텍스트 소유 계약)
  */

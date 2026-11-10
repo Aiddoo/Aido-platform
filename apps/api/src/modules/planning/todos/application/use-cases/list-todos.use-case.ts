@@ -9,7 +9,7 @@ import type { CatchUpTodoSeriesUseCase } from "../../../todo-series/application/
 import { type TodoReadRepositoryPort } from "../ports/todo-read.repository.port.js";
 import type { FindTodosParams } from "../ports/todo-read.repository.port.js";
 
-export interface GetTodosParams {
+interface GetTodosParams {
   readonly userId: string;
   readonly cursor?: number;
   readonly size?: number;

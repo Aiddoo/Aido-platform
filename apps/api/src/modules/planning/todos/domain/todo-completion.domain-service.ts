@@ -1,5 +1,7 @@
-/** todo 컨텍스트가 발생시키는 완료 마일스톤 (도메인 소유 어휘) */
-export type TodoCompletionMilestone = "FIRST_COMPLETE" | "COUNT_10" | "COUNT_50" | "COUNT_100";
+// 알림 문구 키와 같아야 해 값은 그대로 둔다
+const TODO_COMPLETION_MILESTONES = ["FIRST_COMPLETE", "COUNT_10", "COUNT_50", "COUNT_100"] as const;
+
+export type TodoCompletionMilestone = (typeof TODO_COMPLETION_MILESTONES)[number];
 
 /** 누적 완료 카운트 → 마일스톤 매핑 (도메인 정책) */
 const COMPLETION_MILESTONES: ReadonlyMap<number, TodoCompletionMilestone> = new Map([
