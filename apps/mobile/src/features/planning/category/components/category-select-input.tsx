@@ -6,7 +6,6 @@ import { PressableFeedback, Skeleton } from 'heroui-native';
 import { useState } from 'react';
 
 import { TodoCategoryPolicy } from '../domains/todo-category.model';
-import { isOptimisticCategory } from '../queries/todo-category-cache';
 import { useGetTodoCategoriesQueryOptions } from '../queries/todo-category.queries';
 
 const LOADING_ROW_COUNT = 3;
@@ -57,7 +56,7 @@ export function CategorySelectInput({
               accessibilityLabel={category.name}
               accessibilityState={{ selected: isSelected }}
               onPress={() => setLocalCategoryId(category.id)}
-              isDisabled={isOptimisticCategory(category)}
+              isDisabled={TodoCategoryPolicy.isOptimisticCategory(category)}
               className="rounded-xl"
             >
               <PressableFeedback.Highlight className="rounded-xl" />

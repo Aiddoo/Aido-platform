@@ -184,6 +184,7 @@ function TodoReorderableList({
     updatedAt,
     isPending: reorderMutation.isPending,
     getItemId: (todo) => todo.id,
+    isOptimistic: TodoPolicy.isOptimisticTodo,
     onReorder: ({ instruction: { movedId, targetId, position } }) => {
       reorderMutation.mutate({
         id: movedId,
@@ -265,6 +266,7 @@ TodoList.Item = function Item({
     updatedAt,
     isPending: reorderSubTodos.isPending,
     getItemId: (subTodo) => subTodo.id,
+    isOptimistic: SubTodoPolicy.isOptimisticSubTodo,
     onReorder: ({ items: reorderedSubTodos }) => {
       reorderSubTodos.mutate({
         todoId: todo.id,
@@ -374,9 +376,6 @@ TodoList.Item = function Item({
         >
           <NestedReorderableList
             {...subTodoReorderableList}
-            dragEnabled={
-              subTodoReorderableList.dragEnabled && SubTodoPolicy.canReorderSubTodos(todo.subTodos)
-            }
             shouldUpdateActiveItem
             scrollEnabled={false}
             keyExtractor={(item) => String(item.id)}

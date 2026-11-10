@@ -40,7 +40,6 @@ import type {
   TodoCategoryWithCount,
 } from '../domains/todo-category.model';
 import { useTodoCategoryId } from '../hooks/use-todo-category-id';
-import { isOptimisticCategory } from '../queries/todo-category-cache';
 import { useDeleteTodoCategoryMutationOptions } from '../queries/todo-category.mutations';
 import {
   useGetTodoCategoriesQueryOptions,
@@ -253,7 +252,9 @@ function TodoHandlingBottomSheet({
   // 서버 id가 없는 임시 행으로는 옮길 수 없다
   const moveTarget = TodoCategoryPolicy.findMoveTarget(
     category,
-    categoriesResult.categories.filter((candidate) => !isOptimisticCategory(candidate)),
+    categoriesResult.categories.filter(
+      (candidate) => !TodoCategoryPolicy.isOptimisticCategory(candidate),
+    ),
     pickedMoveTargetCategoryId,
   );
   const deletionRequest = TodoCategoryDeletionPolicy.toDeletionRequest(preview, {
