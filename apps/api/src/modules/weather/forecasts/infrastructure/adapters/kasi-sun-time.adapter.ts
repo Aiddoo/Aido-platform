@@ -4,8 +4,8 @@ import { HttpClient, InjectHttpClient } from "@nestjs/http-client";
 import { requestVendorJson } from "#api/platform/http/request-vendor-json";
 import type { OutboundPolicy } from "#api/platform/resilience/outbound-policy";
 import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
-import { dayWindowInTimezone } from "#api/shared/domain/date/utils/timezone";
 
+import { localDateAt } from "../../../shared/domain/weather-calendar.domain-service.js";
 import type {
   SunTime,
   SunTimeProviderPort,
@@ -51,7 +51,7 @@ export class KasiSunTimeAdapter implements SunTimeProviderPort {
         return null;
       }
 
-      const locdate = dayWindowInTimezone(date, KMA_TIMEZONE).localDate.replaceAll("-", "");
+      const locdate = localDateAt(date, KMA_TIMEZONE).toString().replaceAll("-", "");
 
       const outcome = await this.#policy.execute((signal) =>
         requestVendorJson(

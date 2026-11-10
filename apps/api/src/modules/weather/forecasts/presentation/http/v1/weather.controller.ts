@@ -8,7 +8,6 @@ import {
 import { API_VERSION } from "#api/platform/http/api-versioning";
 import { ApiDoc, ApiSuccessResponse, SWAGGER_TAGS } from "#api/platform/http/swagger/index";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
-import { parseDateOnly } from "#api/shared/domain/date/utils/parse";
 import { instantToDate } from "#api/shared/domain/time/instant";
 
 import { GetWeatherConditionsUseCase } from "../../../application/use-cases/get-weather-conditions.use-case.js";
@@ -18,6 +17,11 @@ import {
   WeatherConditionsResponseDto,
   WeatherForecastResponseDto,
 } from "./weather.dto.js";
+
+// v1 앱이 보낸 날짜는 그 날 UTC 자정(KST 09:00)으로 해석해 왔다
+function utcMidnightOf(date: string): Date {
+  return new Date(Temporal.PlainDate.from(date).toZonedDateTime("UTC").epochMilliseconds);
+}
 
 @ApiTags(SWAGGER_TAGS.WEATHER_V1)
 @ApiBearerAuth()
@@ -108,7 +112,7 @@ export class WeatherController {
     @CurrentUser() user: CurrentUserPayload,
     @Query({ schema: GetForecastQueryDto }) query: GetForecastQueryDto,
   ) {
-    const date = query.date ? parseDateOnly(query.date) : instantToDate(this.#clock.now());
+    const date = query.date == null ? instantToDate(this.#clock.now()) : utcMidnightOf(query.date);
     const { forecast, location } = await this.#getWeatherForecast.execute({
       userId: user.userId,
       date,
@@ -175,7 +179,7 @@ export class WeatherController {
     @CurrentUser() user: CurrentUserPayload,
     @Query({ schema: GetForecastQueryDto }) query: GetForecastQueryDto,
   ) {
-    const date = query.date ? parseDateOnly(query.date) : instantToDate(this.#clock.now());
+    const date = query.date == null ? instantToDate(this.#clock.now()) : utcMidnightOf(query.date);
     return this.#getWeatherConditions.execute({
       userId: user.userId,
       date,
