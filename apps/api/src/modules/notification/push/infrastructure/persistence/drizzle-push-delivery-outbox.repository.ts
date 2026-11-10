@@ -160,7 +160,8 @@ export class DrizzlePushDeliveryOutboxRepository implements PushDeliveryOutboxRe
       .where(
         and(
           eq(candidate.status, "PENDING"),
-          lte(candidate.availableAt, sql`CURRENT_TIMESTAMP`),
+          // 칸이 timestamp(3)이라 기본값 now()가 ms로 반올림돼 저장된다. 같은 정밀도로 비교해야 방금 stage한 행을 건너뛰지 않는다
+          lte(candidate.availableAt, sql`LOCALTIMESTAMP(3)`),
           input.dispatchFilter,
         ),
       )

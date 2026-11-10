@@ -259,6 +259,37 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
     await expect(db.$count(pushDispatchOutbox)).resolves.toBe(1);
   });
 
+  it("방금 stage한 outbox도 같은 ms 정밀도로 비교해 바로 claim한다", async () => {
+    // Given
+    // availableAt은 timestamp(3)이라 기본값 now()가 ms로 반올림(절반은 올림)되어 저장된다.
+    // 같은 트랜잭션은 now()가 같아 stage 직후 claim하는 가장 짧은 간격을 매번 재현한다
+    const user = await createUser("PRECISE1");
+    const notifications = await Promise.all(
+      Array.from({ length: 200 }, (_, index) => createNotification(user.id, `precise-${index}`)),
+    );
+
+    // When
+    const missed: number[] = [];
+    for (const notification of notifications) {
+      await db.transaction(async (tx) => {
+        const { dispatchId } = await staging(tx).stage({
+          notificationId: notification.id,
+          userId: user.id,
+          purpose: "TRANSACTIONAL",
+          deliveryMode: "SINGLE",
+          force: false,
+        });
+        const claimed = await outbox(tx).claimByDispatchIds([dispatchId], new Date());
+        if (claimed.length === 0) {
+          missed.push(dispatchId);
+        }
+      });
+    }
+
+    // Then
+    expect(missed).toEqual([]);
+  });
+
   it("claim은 dispatch purpose와 알림 타입으로 발송 차선을 함께 돌려준다", async () => {
     // Given
     const user = await createUser("LANES001");
