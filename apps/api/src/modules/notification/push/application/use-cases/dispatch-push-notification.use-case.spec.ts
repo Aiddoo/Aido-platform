@@ -339,6 +339,44 @@ describe("DispatchPushNotificationUseCase — 토큰 선택과 공급자 전달"
     ]);
   });
 
+  it("한 사용자의 기기 셋 중 하나가 미등록으로 실패해도 나머지 둘에 한 번씩 보내고 실패한 기기 토큰만 끈다", async () => {
+    // Given 휴대폰·태블릿·노트북 앱을 함께 쓰는 사용자
+    const deviceTokens = ["phone-token", "tablet-token", "laptop-token"];
+    const { service, pushTokenRepository, pushProvider } = createDispatchUseCase({
+      activeTokens: [["user-1", deviceTokens]],
+      tokens: deviceTokens.map((token) =>
+        pushToken({ userId: "user-1", token, payloadVersion: 2, appVersion: "1.15.0" }),
+      ),
+    });
+    pushProvider.nextResults = async (payloads) =>
+      payloads.map((payload) =>
+        payload.token === "tablet-token"
+          ? { token: payload.token, status: "rejected", failure: { kind: "DEVICE_UNREGISTERED" } }
+          : { token: payload.token, status: "accepted", ticketId: `ticket-${payload.token}` },
+      );
+
+    // When
+    const result = await service.deliverSingle({
+      data: createNotificationDraftFixture({ userId: "user-1", title: "title", body: "body" }),
+      payload: { title: "title", body: "body", ...DELIVERY_OPTIONS },
+    });
+
+    // Then
+    expect(pushProvider.getSentPayloads().map(({ token }) => token)).toEqual(deviceTokens);
+    expect(result).toEqual({
+      status: "sent",
+      results: [
+        { token: "phone-token", status: "accepted", ticketId: "ticket-phone-token" },
+        { token: "tablet-token", status: "rejected", failure: { kind: "DEVICE_UNREGISTERED" } },
+        { token: "laptop-token", status: "accepted", ticketId: "ticket-laptop-token" },
+      ],
+    });
+    expect(await activeTokensOf(pushTokenRepository, ["user-1"])).toEqual([
+      "laptop-token",
+      "phone-token",
+    ]);
+  });
+
   it("단건 provider가 invalid token을 반환하면 저장소 비활성화와 해당 사용자 캐시 무효화를 완료한다", async () => {
     // Given
     const { service, pushTokenRepository, pushProvider, notificationCache } = createDispatchUseCase(
