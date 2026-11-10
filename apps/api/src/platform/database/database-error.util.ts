@@ -89,3 +89,39 @@ export function uniqueConstraintTargets(error: unknown): string[] | undefined {
   const columns = uniqueColumnsByConstraint.get(databaseError.constraint);
   return columns == null ? undefined : [...columns];
 }
+
+export type DatabaseErrorKind =
+  | "unique-violation"
+  | "foreign-key-violation"
+  | "check-violation"
+  | "serialization-failure"
+  | "deadlock"
+  | "lock-timeout"
+  | "statement-timeout"
+  | "connection"
+  | "unknown";
+
+const DATABASE_ERROR_KIND_BY_SQL_STATE: Readonly<Record<string, DatabaseErrorKind>> = {
+  "23505": "unique-violation",
+  "23503": "foreign-key-violation",
+  "23514": "check-violation",
+  "40001": "serialization-failure",
+  "40P01": "deadlock",
+  "55P03": "lock-timeout",
+  "57014": "statement-timeout",
+  "57P01": "connection",
+};
+
+// SQLSTATE 08 계열은 연결 예외 묶음이라 코드 하나하나가 아니라 class로 분류한다
+const CONNECTION_EXCEPTION_CLASS = "08";
+
+export function classifyDatabaseError(error: unknown): DatabaseErrorKind {
+  const sqlState = databaseSqlState(error);
+  if (sqlState == null) {
+    return "unknown";
+  }
+  if (sqlState.startsWith(CONNECTION_EXCEPTION_CLASS)) {
+    return "connection";
+  }
+  return DATABASE_ERROR_KIND_BY_SQL_STATE[sqlState] ?? "unknown";
+}

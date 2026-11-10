@@ -1,6 +1,7 @@
 import { postgresError, sqlQueryError } from "#test/mocks/drizzle.mock";
 
 import {
+  classifyDatabaseError,
   databaseConstraint,
   DatabaseRecordNotFoundError,
   databaseSqlState,
@@ -139,4 +140,41 @@ describe("PostgreSQL 오류 변환 경계", () => {
       expect(databaseSqlState(error)).toBe(state);
     },
   );
+});
+
+describe("classifyDatabaseError — SQLSTATE 분류", () => {
+  it.each([
+    { sqlState: "23505", kind: "unique-violation" },
+    { sqlState: "23503", kind: "foreign-key-violation" },
+    { sqlState: "23514", kind: "check-violation" },
+    { sqlState: "40001", kind: "serialization-failure" },
+    { sqlState: "40P01", kind: "deadlock" },
+    { sqlState: "55P03", kind: "lock-timeout" },
+    { sqlState: "57014", kind: "statement-timeout" },
+    { sqlState: "08000", kind: "connection" },
+    { sqlState: "08006", kind: "connection" },
+    { sqlState: "57P01", kind: "connection" },
+    { sqlState: "23502", kind: "unknown" },
+    { sqlState: "XX000", kind: "unknown" },
+  ])("$sqlState → $kind", ({ sqlState, kind }) => {
+    // Given
+    const error = new Error("wrapped", { cause: sqlQueryError(sqlState) });
+
+    // When
+    const classified = classifyDatabaseError(error);
+
+    // Then
+    expect(classified).toBe(kind);
+  });
+
+  it("PostgreSQL 오류가 아니면 SQLSTATE 모양의 code가 있어도 unknown이다", () => {
+    // Given
+    const error = Object.assign(new Error("plain"), { code: "23505" });
+
+    // When
+    const classified = classifyDatabaseError(error);
+
+    // Then
+    expect(classified).toBe("unknown");
+  });
 });
