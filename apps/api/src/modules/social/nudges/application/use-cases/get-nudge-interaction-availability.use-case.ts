@@ -1,7 +1,11 @@
-import { type NudgeInteractionConfigPort } from "../ports/nudge-interaction-config.port.js";
+import type { NudgeInteractionConfigPort } from "../ports/nudge-interaction-config.port.js";
 
-interface GetNudgeInteractionAvailabilityDependencies {
-  readonly nudgeInteractionConfig: NudgeInteractionConfigPort;
+export interface NudgeInteractionAvailability {
+  readonly enabled: boolean;
+}
+
+export interface GetNudgeInteractionAvailabilityDependencies {
+  readonly interactionConfig: NudgeInteractionConfigPort;
 }
 
 export class GetNudgeInteractionAvailabilityUseCase {
@@ -11,7 +15,7 @@ export class GetNudgeInteractionAvailabilityUseCase {
     this.#dependencies = dependencies;
   }
 
-  execute(): { enabled: boolean } {
-    return { enabled: this.#dependencies.nudgeInteractionConfig.isEnabled };
+  execute(): NudgeInteractionAvailability {
+    return { enabled: this.#dependencies.interactionConfig.isEnabled };
   }
 }

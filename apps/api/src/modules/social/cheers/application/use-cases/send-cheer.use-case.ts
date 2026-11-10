@@ -1,42 +1,45 @@
-import { ErrorCode } from "@aido/api/errors";
-
-import { CheerLockKeys } from "#api/modules/social/cheers/application/cheers.lock-keys";
 import type { FollowReaderPort } from "#api/modules/social/friends/social-friends.public";
-import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
-import { type MutationLockPort, type UnitOfWorkPort } from "#api/shared/application/ports/index";
-import { now } from "#api/shared/domain/date/utils/core";
-import { dayWindowInTimezone } from "#api/shared/domain/date/utils/timezone";
+import type { ClockPort } from "#api/shared/application/ports/clock.port";
+import type { MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
+import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
+import { dailySendWindowAt } from "../../../shared/domain/daily-send-window.domain-service.js";
 import { evaluateCheerCooldown } from "../../domain/cheer-cooldown.domain-service.js";
 import { CheerMessage } from "../../domain/cheer-message.vo.js";
-import { CheerLogEvent } from "../cheers.log-events.js";
-import { type CheerLimitReaderPort } from "../ports/cheer-limit.reader.port.js";
-import { type CheerNotifierPort } from "../ports/cheer-notifier.port.js";
+import { Cheer } from "../../domain/cheer.aggregate.js";
 import {
-  type CheerRepositoryPort,
-  type CheerWithRelations,
-} from "../ports/cheer.repository.port.js";
+  cannotCheerSelf,
+  cheerCooldownActive,
+  cheerDailyLimitReached,
+  cheerTargetNotFriend,
+} from "../cheers.errors.js";
+import { CheerLockKeys } from "../cheers.lock-keys.js";
+import { CheerLogEvent } from "../cheers.log-events.js";
+import type { CheerLimitReaderPort } from "../ports/cheer-limit.reader.port.js";
+import type { CheerNotifierPort } from "../ports/cheer-notifier.port.js";
+import type { CheerRepositoryPort } from "../ports/cheer.repository.port.js";
 
-export interface SendCheerInput {
+export interface SendCheerCommand {
   readonly senderId: string;
   readonly receiverId: string;
   readonly message?: string;
   readonly timezone: string;
 }
 
-interface SendCheerDependencies {
+export interface SendCheerDependencies {
+  readonly unitOfWork: UnitOfWorkPort;
+  readonly mutationLock: MutationLockPort;
   readonly cheerRepository: Pick<
     CheerRepositoryPort,
-    "countSentSince" | "createWithRelations" | "findLastCheerToUser"
+    "nextId" | "countSentBetween" | "findLastSent" | "save"
   >;
-  readonly notifier: Pick<CheerNotifierPort, "notifyCheerSent">;
-  readonly limitReader: CheerLimitReaderPort;
-  readonly mutationLock: MutationLockPort;
-  readonly unitOfWork: UnitOfWorkPort;
-  readonly followReader: Pick<FollowReaderPort, "isMutualFriend">;
-  readonly logger: ApplicationLoggerPort;
+  readonly limitReader: Pick<CheerLimitReaderPort, "readDailyLimitInTx" | "readDailyQuotaInTx">;
+  readonly followReader: Pick<FollowReaderPort, "isMutualFriend" | "getUserDisplayName">;
+  readonly notifier: CheerNotifierPort;
+  readonly clock: ClockPort;
+  readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
 
 export class SendCheerUseCase {
@@ -46,84 +49,79 @@ export class SendCheerUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: SendCheerInput): Promise<CheerWithRelations> {
-    const { senderId, receiverId, message } = input;
+  async execute(command: SendCheerCommand): Promise<Cheer> {
+    const {
+      unitOfWork,
+      mutationLock,
+      cheerRepository,
+      limitReader,
+      followReader,
+      notifier,
+      clock,
+      logger,
+    } = this.#dependencies;
+    const senderId = UserId.reconstitute(command.senderId);
+    const receiverId = UserId.reconstitute(command.receiverId);
 
-    if (senderId === receiverId) {
-      throw new ApplicationException(ErrorCode.CHEER_1204);
+    // 자기 자신 → 친구 아님 → 메시지 → 일간 한도 → 쿨다운 순서는 출시 앱이 받는 오류 우선순위다
+    if (senderId.equals(receiverId)) {
+      throw cannotCheerSelf();
     }
-
-    const isFriend = await this.#dependencies.followReader.isMutualFriend(senderId, receiverId);
-    if (!isFriend) {
-      throw new ApplicationException(ErrorCode.CHEER_1203, {
-        targetUserId: receiverId,
-      });
+    if (!(await followReader.isMutualFriend(senderId.value, receiverId.value))) {
+      throw cheerTargetNotFriend(receiverId);
     }
+    const message = command.message == null ? null : CheerMessage.create(command.message);
+    // 잠금을 기다리다 자정을 넘겨도 요청 시각의 하루와 생성 시각을 쓴다
+    const requestedAt = clock.now();
+    const window = dailySendWindowAt({ now: requestedAt, timeZone: command.timezone });
 
-    const cheerMessage = CheerMessage.of(message);
-    const capturedAt = now();
-    const quotaWindow = dayWindowInTimezone(capturedAt, input.timezone);
-
-    const cheer = await this.#dependencies.unitOfWork.run(async () => {
-      await this.#dependencies.mutationLock.acquire([
-        CheerLockKeys.dailyQuota(UserId.reconstitute(senderId)),
-        CheerLockKeys.cooldown(UserId.reconstitute(senderId), UserId.reconstitute(receiverId)),
+    const { cheer, senderName } = await unitOfWork.run(async () => {
+      await mutationLock.acquire([
+        CheerLockKeys.dailyQuota(senderId),
+        CheerLockKeys.cooldown(senderId, receiverId),
       ]);
 
-      const dailyLimit = await this.#dependencies.limitReader.getDailyLimitInTx(senderId);
-      const used = await this.#dependencies.cheerRepository.countSentSince(
-        senderId,
-        quotaWindow.startsAt,
-        quotaWindow.endsAt,
-      );
+      const dailyLimit = await limitReader.readDailyLimitInTx(senderId);
+      const used = await cheerRepository.countSentBetween(senderId, window);
       if (dailyLimit != null && used >= dailyLimit) {
-        throw new ApplicationException(ErrorCode.CHEER_1201, {
-          charged: false,
-          featureQuota: await this.#dependencies.limitReader.readDailyQuotaInTx(senderId, {
-            used,
-            resetsAt: quotaWindow.endsAt,
-          }),
-        });
+        throw cheerDailyLimitReached(
+          await limitReader.readDailyQuotaInTx(senderId, { used, resetsAt: window.endsAt }),
+        );
       }
 
-      const lastCheer = await this.#dependencies.cheerRepository.findLastCheerToUser(
-        senderId,
-        receiverId,
-      );
-      if (lastCheer != null) {
-        const cooldown = evaluateCheerCooldown(lastCheer.createdAt);
-        if (cooldown.isActive) {
-          throw new ApplicationException(ErrorCode.CHEER_1202, {
-            targetUserId: receiverId,
-            remainingSeconds: cooldown.remainingSeconds,
-          });
-        }
-      }
-
-      return this.#dependencies.cheerRepository.createWithRelations({
-        senderId,
-        receiverId,
-        message: cheerMessage.raw,
-        createdAt: capturedAt,
+      const lastCheer = await cheerRepository.findLastSent(senderId, receiverId);
+      const cooldown = evaluateCheerCooldown({
+        lastSentAt: lastCheer?.createdAt ?? null,
+        now: clock.now(),
       });
+      if (cooldown.isActive) {
+        throw cheerCooldownActive(receiverId, cooldown.remainingSeconds);
+      }
+
+      const created = Cheer.create({
+        id: await cheerRepository.nextId(),
+        senderId,
+        receiverId,
+        message,
+        now: requestedAt,
+      });
+      await cheerRepository.save(created);
+      return { cheer: created, senderName: await followReader.getUserDisplayName(senderId.value) };
     });
 
-    this.#dependencies.logger.log({
+    logger.log({
       event: CheerLogEvent.SENT,
-      cheerId: cheer.id,
-      senderId,
-      receiverId,
+      cheerId: cheer.id.value,
+      senderId: senderId.value,
+      receiverId: receiverId.value,
     });
-
-    const senderName = cheer.sender.profile?.name ?? cheer.sender.userTag;
-    this.#dependencies.notifier.notifyCheerSent({
-      cheerId: cheer.id,
-      senderId,
-      receiverId,
+    notifier.notifyCheerSent({
+      cheerId: cheer.id.value,
+      senderId: senderId.value,
+      receiverId: receiverId.value,
       senderName,
-      message: cheerMessage.raw,
+      message: message?.value,
     });
-
     return cheer;
   }
 }

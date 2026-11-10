@@ -1,40 +1,47 @@
-import { ErrorCode } from "@aido/api/errors";
 import { chunk } from "es-toolkit";
 
 import type { FollowReaderPort } from "#api/modules/social/friends/social-friends.public";
-import { ApplicationException } from "#api/shared/application/application.exception";
-import { type UnitOfWorkPort } from "#api/shared/application/ports/index";
-import { now } from "#api/shared/domain/date/utils/core";
+import type { ClockPort } from "#api/shared/application/ports/clock.port";
+import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import { Nudge } from "../../domain/nudge.aggregate.js";
-import { type NudgeInteractionConfigPort } from "../ports/nudge-interaction-config.port.js";
+import { NudgeId } from "../../domain/nudge-id.vo.js";
+import { NUDGE_THANKS_BATCH_SIZE } from "../../domain/nudges.constants.js";
 import {
-  type NudgeInteractionNotification,
-  type NudgeNotifierPort,
+  nudgeInteractionClosed,
+  nudgeInteractionNotFound,
+  thanksTodoNotCompleted,
+  thanksTodoNotFound,
+} from "../nudges.errors.js";
+import type { NudgeInteractionConfigPort } from "../ports/nudge-interaction-config.port.js";
+import type {
+  NudgeInteractionNotification,
+  NudgeNotifierPort,
 } from "../ports/nudge-notifier.port.js";
-import { type NudgeRepositoryPort } from "../ports/nudge.repository.port.js";
+import type { NudgeReaderPort } from "../ports/nudge.reader.port.js";
+import type { NudgeRepositoryPort } from "../ports/nudge.repository.port.js";
 
-export interface SendNudgeThanksInput {
+export interface SendNudgeThanksCommand {
   readonly userId: string;
   readonly todoId: number;
   readonly throughNudgeId: number;
 }
 
 export interface SendNudgeThanksResult {
-  sentCount: number;
+  readonly sentCount: number;
 }
 
-const THANKS_BATCH_SIZE = 100;
-
-interface SendNudgeThanksDependencies {
+export interface SendNudgeThanksDependencies {
+  readonly unitOfWork: UnitOfWorkPort;
   readonly nudgeRepository: Pick<
     NudgeRepositoryPort,
-    "findInteractionById" | "findThanksCandidates" | "lockInteractionTodo" | "saveThanksBatch"
+    "listThanksCandidates" | "lockInteractionTodo" | "saveThanks"
   >;
-  readonly nudgeInteractionConfig: NudgeInteractionConfigPort;
-  readonly nudgeNotifier: Pick<NudgeNotifierPort, "recordInteractions">;
-  readonly unitOfWork: UnitOfWorkPort;
+  readonly nudgeReader: Pick<NudgeReaderPort, "findInteraction">;
+  readonly interactionConfig: NudgeInteractionConfigPort;
   readonly followReader: Pick<FollowReaderPort, "getCurrentMutualFriendIds">;
+  readonly notifier: Pick<NudgeNotifierPort, "recordInteractions">;
+  readonly clock: ClockPort;
 }
 
 export class SendNudgeThanksUseCase {
@@ -44,71 +51,70 @@ export class SendNudgeThanksUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: SendNudgeThanksInput): Promise<SendNudgeThanksResult> {
-    if (!this.#dependencies.nudgeInteractionConfig.isEnabled) {
-      throw new ApplicationException(ErrorCode.NUDGE_1105);
+  async execute(command: SendNudgeThanksCommand): Promise<SendNudgeThanksResult> {
+    const {
+      unitOfWork,
+      nudgeRepository,
+      nudgeReader,
+      interactionConfig,
+      followReader,
+      notifier,
+      clock,
+    } = this.#dependencies;
+    if (!interactionConfig.isEnabled) {
+      throw nudgeInteractionNotFound();
     }
+    const ownerId = UserId.reconstitute(command.userId);
+    const throughNudgeId = NudgeId.reconstitute(command.throughNudgeId);
 
-    return this.#dependencies.unitOfWork.run(async () => {
-      const todo = await this.#dependencies.nudgeRepository.lockInteractionTodo(
-        input.todoId,
-        input.userId,
-      );
+    return unitOfWork.run(async () => {
+      const todo = await nudgeRepository.lockInteractionTodo(command.todoId, ownerId);
       if (todo == null) {
-        throw new ApplicationException(ErrorCode.TODO_0801);
+        throw thanksTodoNotFound();
       }
       if (!todo.completed) {
-        throw new ApplicationException(ErrorCode.NUDGE_1110);
+        throw thanksTodoNotCompleted();
       }
       if (todo.visibility !== "PUBLIC") {
-        throw new ApplicationException(ErrorCode.NUDGE_1109);
+        throw nudgeInteractionClosed();
       }
 
-      const cutoffNudge = await this.#dependencies.nudgeRepository.findInteractionById(
-        input.throughNudgeId,
-        input.userId,
-      );
+      const cutoff = await nudgeReader.findInteraction(throughNudgeId, ownerId);
       if (
-        cutoffNudge == null ||
-        cutoffNudge.receiverId !== input.userId ||
-        cutoffNudge.todoId !== input.todoId
+        cutoff == null ||
+        cutoff.receiverId !== command.userId ||
+        cutoff.todoId !== command.todoId
       ) {
-        throw new ApplicationException(ErrorCode.NUDGE_1105);
+        throw nudgeInteractionNotFound();
       }
-      const friendIds = await this.#dependencies.followReader.getCurrentMutualFriendIds(
-        input.userId,
-      );
-      const candidates = await this.#dependencies.nudgeRepository.findThanksCandidates({
-        ...input,
-        friendIds,
+      const candidates = await nudgeRepository.listThanksCandidates({
+        ownerId,
+        todoId: command.todoId,
+        throughNudgeId,
+        friendIds: await followReader.getCurrentMutualFriendIds(command.userId),
       });
-      const thankedAt = now();
+      const actorName = cutoff.receiver.name ?? cutoff.receiver.userTag;
+      const thankedAt = clock.now();
       let sentCount = 0;
 
-      for (const records of chunk(candidates, THANKS_BATCH_SIZE)) {
-        const changed = records.flatMap((record) => {
-          const nudge = Nudge.reconstitute(record);
-          return nudge.markThanked(thankedAt) ? [{ nudge, record }] : [];
-        });
-        if (changed.length === 0) {
+      for (const batch of chunk(candidates, NUDGE_THANKS_BATCH_SIZE)) {
+        const thanked = batch.filter((nudge) => nudge.markThanked(thankedAt));
+        if (thanked.length === 0) {
           continue;
         }
-        await this.#dependencies.nudgeRepository.saveThanksBatch(
-          changed.map(({ nudge }) => nudge.id),
-          thankedAt,
-        );
-        await this.#dependencies.nudgeNotifier.recordInteractions(
-          changed.map<NudgeInteractionNotification>(({ nudge, record }) => ({
+        await nudgeRepository.saveThanks(thanked);
+        await notifier.recordInteractions(
+          thanked.map<NudgeInteractionNotification>((nudge) => ({
             kind: "thanks",
-            nudgeId: nudge.id,
+            nudgeId: nudge.id.value,
             todoId: todo.id,
-            actorId: input.userId,
-            recipientId: nudge.senderId,
-            actorName: record.receiver.profile?.name ?? record.receiver.userTag,
+            actorId: command.userId,
+            recipientId: nudge.senderId.value,
+            actorName,
             todoTitle: todo.title,
           })),
         );
-        sentCount += changed.length;
+        sentCount += thanked.length;
       }
 
       return { sentCount };

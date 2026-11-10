@@ -1,33 +1,33 @@
-import { ErrorCode } from "@aido/api/errors";
 import type { NudgeReplyKind } from "@aido/api/vocabulary";
 
 import type { FollowReaderPort } from "#api/modules/social/friends/social-friends.public";
-import { ApplicationException } from "#api/shared/application/application.exception";
-import { type UnitOfWorkPort } from "#api/shared/application/ports/index";
-import { now } from "#api/shared/domain/date/utils/core";
+import type { ClockPort } from "#api/shared/application/ports/clock.port";
+import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import { NudgeInteractionPolicy } from "../../domain/nudge-interaction.domain-service.js";
-import { Nudge } from "../../domain/nudge.aggregate.js";
-import { type NudgeInteractionConfigPort } from "../ports/nudge-interaction-config.port.js";
-import { type NudgeNotifierPort } from "../ports/nudge-notifier.port.js";
-import { type NudgeRepositoryPort } from "../ports/nudge.repository.port.js";
-import type { NudgeInteractionResult } from "../read-models/nudge-interaction.read-model.js";
+import { NudgeId } from "../../domain/nudge-id.vo.js";
+import { isNudgeInteractionAvailable } from "../../domain/nudge-interaction.domain-service.js";
+import { nudgeInteractionClosed, nudgeInteractionNotFound } from "../nudges.errors.js";
+import type { NudgeInteractionConfigPort } from "../ports/nudge-interaction-config.port.js";
+import type { NudgeNotifierPort } from "../ports/nudge-notifier.port.js";
+import type { NudgeReaderPort } from "../ports/nudge.reader.port.js";
+import type { NudgeRepositoryPort } from "../ports/nudge.repository.port.js";
+import type { NudgeInteraction } from "../read-models/nudge-interaction.read-model.js";
 
-export interface ReplyToNudgeInput {
+export interface ReplyToNudgeCommand {
   readonly userId: string;
   readonly nudgeId: number;
   readonly replyKind: NudgeReplyKind;
 }
 
-interface ReplyToNudgeDependencies {
-  readonly nudgeRepository: Pick<
-    NudgeRepositoryPort,
-    "findInteractionById" | "lockInteractionTodo" | "saveReply"
-  >;
-  readonly nudgeInteractionConfig: NudgeInteractionConfigPort;
-  readonly nudgeNotifier: Pick<NudgeNotifierPort, "recordInteraction">;
+export interface ReplyToNudgeDependencies {
   readonly unitOfWork: UnitOfWorkPort;
+  readonly nudgeRepository: Pick<NudgeRepositoryPort, "findById" | "lockInteractionTodo" | "save">;
+  readonly nudgeReader: Pick<NudgeReaderPort, "findInteraction">;
+  readonly interactionConfig: NudgeInteractionConfigPort;
   readonly followReader: Pick<FollowReaderPort, "getCurrentMutualFriendIds">;
+  readonly notifier: Pick<NudgeNotifierPort, "recordInteraction">;
+  readonly clock: ClockPort;
 }
 
 export class ReplyToNudgeUseCase {
@@ -37,74 +37,71 @@ export class ReplyToNudgeUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: ReplyToNudgeInput): Promise<NudgeInteractionResult> {
-    if (!this.#dependencies.nudgeInteractionConfig.isEnabled) {
-      throw new ApplicationException(ErrorCode.NUDGE_1105);
+  async execute(command: ReplyToNudgeCommand): Promise<NudgeInteraction> {
+    const {
+      unitOfWork,
+      nudgeRepository,
+      nudgeReader,
+      interactionConfig,
+      followReader,
+      notifier,
+      clock,
+    } = this.#dependencies;
+    if (!interactionConfig.isEnabled) {
+      throw nudgeInteractionNotFound();
     }
+    const userId = UserId.reconstitute(command.userId);
+    const nudgeId = NudgeId.reconstitute(command.nudgeId);
 
-    return this.#dependencies.unitOfWork.run(async () => {
-      const existingNudge = await this.#dependencies.nudgeRepository.findInteractionById(
-        input.nudgeId,
-        input.userId,
-      );
-      if (existingNudge == null || existingNudge.receiverId !== input.userId) {
-        throw new ApplicationException(ErrorCode.NUDGE_1105);
+    return unitOfWork.run(async () => {
+      const received = await nudgeReader.findInteraction(nudgeId, userId);
+      if (received == null || received.receiverId !== command.userId) {
+        throw nudgeInteractionNotFound();
       }
-
-      const todo = await this.#dependencies.nudgeRepository.lockInteractionTodo(
-        existingNudge.todoId,
-        input.userId,
-      );
+      const todo = await nudgeRepository.lockInteractionTodo(received.todoId, userId);
       if (todo == null) {
-        throw new ApplicationException(ErrorCode.NUDGE_1109);
-      }
-      const record = await this.#dependencies.nudgeRepository.findInteractionById(
-        input.nudgeId,
-        input.userId,
-      );
-      if (record == null || record.receiverId !== input.userId) {
-        throw new ApplicationException(ErrorCode.NUDGE_1105);
-      }
-      const friendIds = await this.#dependencies.followReader.getCurrentMutualFriendIds(
-        input.userId,
-      );
-      if (
-        !NudgeInteractionPolicy.isAvailable(record, {
-          isMutualFriend: friendIds.includes(record.senderId),
-          todoOwnerId: todo.ownerId,
-          todoVisibility: todo.visibility,
-        })
-      ) {
-        throw new ApplicationException(ErrorCode.NUDGE_1109);
+        throw nudgeInteractionClosed();
       }
 
-      const nudge = Nudge.reconstitute(record);
+      // 할 일 행을 잠근 뒤 다시 읽어야 그사이 바뀐 답장·공개 상태로 판단한다
+      const nudge = await nudgeRepository.findById(nudgeId);
+      if (nudge == null || !nudge.isReceivedBy(userId)) {
+        throw nudgeInteractionNotFound();
+      }
+      const friendIds = await followReader.getCurrentMutualFriendIds(command.userId);
+      const isAvailable = isNudgeInteractionAvailable({
+        receiverId: command.userId,
+        isMutualFriend: friendIds.includes(nudge.senderId.value),
+        todoOwnerId: todo.ownerId,
+        todoVisibility: todo.visibility,
+      });
+      if (!isAvailable) {
+        throw nudgeInteractionClosed();
+      }
+
       const isFirstReply = !nudge.hasReplied();
-      if (!nudge.reply(input.replyKind, now())) {
-        return { ...record, isAvailable: true };
-      }
-      await this.#dependencies.nudgeRepository.saveReply(nudge);
-      if (isFirstReply) {
-        await this.#dependencies.nudgeNotifier.recordInteraction({
-          kind: "reply",
-          nudgeId: nudge.id,
-          todoId: todo.id,
-          actorId: input.userId,
-          recipientId: nudge.senderId,
-          actorName: record.receiver.profile?.name ?? record.receiver.userTag,
-          todoTitle: todo.title,
-          replyKind: input.replyKind,
-        });
+      if (nudge.reply(command.replyKind, clock.now())) {
+        await nudgeRepository.save(nudge);
+        // 답장을 바꿀 때는 알림을 반복하지 않는다
+        if (isFirstReply) {
+          await notifier.recordInteraction({
+            kind: "reply",
+            nudgeId: nudge.id.value,
+            todoId: todo.id,
+            actorId: command.userId,
+            recipientId: nudge.senderId.value,
+            actorName: received.receiver.name ?? received.receiver.userTag,
+            todoTitle: todo.title,
+            replyKind: command.replyKind,
+          });
+        }
       }
 
-      const updatedNudge = await this.#dependencies.nudgeRepository.findInteractionById(
-        nudge.id,
-        input.userId,
-      );
-      if (updatedNudge == null) {
-        throw new ApplicationException(ErrorCode.NUDGE_1105);
+      const replied = await nudgeReader.findInteraction(nudgeId, userId);
+      if (replied == null) {
+        throw nudgeInteractionNotFound();
       }
-      return { ...updatedNudge, isAvailable: true };
+      return { ...replied, isAvailable: true };
     });
   }
 }

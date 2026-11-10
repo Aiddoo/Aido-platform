@@ -1,146 +1,53 @@
-import type { Nudge, NudgeProps } from "../../domain/nudge.aggregate.js";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+
+import type { DailySendWindow } from "../../../shared/domain/daily-send-window.domain-service.js";
+import type { NudgeId } from "../../domain/nudge-id.vo.js";
+import type { NudgeTargetTodo } from "../../domain/nudge-target-todo.vo.js";
+import type { Nudge } from "../../domain/nudge.aggregate.js";
+import type { ReminderNudgeId } from "../../domain/reminder-nudge-id.vo.js";
 import type { ReminderNudge } from "../../domain/reminder-nudge.aggregate.js";
+import type { NudgeInteractionTodo } from "../read-models/nudge-interaction.read-model.js";
 
-/** 콕 찌르기 목록/응답에 필요한 사용자 요약 */
-export interface NudgeUserBrief {
-  id: string;
-  userTag: string;
-  profile: { name: string | null; profileImage: string | null } | null;
-}
-
-/** 콕 찌르기 목록/응답에 필요한 할 일 요약 */
-export interface NudgeTodoBrief {
-  id: number;
-  title: string;
-  completed: boolean;
-}
-
-/** 콕 찌르기 읽기 프로젝션의 기본 필드 */
-export interface NudgeRecord {
-  id: number;
-  senderId: string;
-  receiverId: string;
-  todoId: number;
-  message: string | null;
-  readAt: Date | null;
-  createdAt: Date;
-}
-
-/** 사용자·할 일 정보가 포함된 콕 찌르기 읽기 프로젝션 */
-export interface NudgeWithRelations extends NudgeRecord {
-  sender: NudgeUserBrief;
-  receiver: NudgeUserBrief;
-  todo: NudgeTodoBrief;
-}
-
-export interface NudgeInteractionRecord
-  extends
-    NudgeWithRelations,
-    Pick<NudgeProps, "replyKind" | "repliedAt" | "replyUpdatedAt" | "thankedAt"> {
-  todo: NudgeTodoBrief & { ownerId: string; visibility: string };
-}
-
-export interface NudgeInteractionTodo {
-  id: number;
-  ownerId: string;
-  title: string;
-  completed: boolean;
-  visibility: string;
-}
-
-/** 발신자 정보가 포함된 리마인드 콕 찌르기 읽기 프로젝션 */
-export interface ReminderNudgeWithRelations {
-  id: number;
-  senderId: string;
-  receiverId: string;
-  message: string | null;
-  createdAt: Date;
-  sender: NudgeUserBrief;
-}
-
-/** 콕 찌르기 검증용 대상 할 일 프로젝션 */
-export interface TargetTodoRecord {
-  ownerId: string;
-  visibility: string;
-  startDate: Date;
-  endDate: Date | null;
-}
-
-/** 목록 조회 파라미터 */
-export interface FindNudgesParams {
-  userId: string;
-  cursor?: number;
-  size: number;
-}
-
-export interface FindNudgeThanksCandidatesInput {
-  readonly userId: string;
+// 감사 대상: 받은 사람이 소유한 공개 할 일에서 throughNudgeId까지 받은 콕 중
+// 지금 친구이고 아직 감사받지 않은 보낸 사람마다 가장 최근 콕 하나
+export interface NudgeThanksCandidateQuery {
+  readonly ownerId: UserId;
   readonly todoId: number;
-  readonly throughNudgeId: number;
+  readonly throughNudgeId: NudgeId;
   readonly friendIds: readonly string[];
 }
 
-export interface NudgeThanksCandidatePage {
-  items: NudgeInteractionRecord[];
-  totalRecipients: number;
-  nextCursor: number | null;
-  hasNext: boolean;
-}
+export abstract class NudgeRepositoryPort {
+  abstract nextId(): Promise<NudgeId>;
+  abstract findById(nudgeId: NudgeId): Promise<Nudge | null>;
+  // 생성 시각이 가장 늦은 콕
+  abstract findLastSentForTodo(senderId: UserId, todoId: number): Promise<Nudge | null>;
+  abstract findLastSentTo(senderId: UserId, receiverId: UserId): Promise<Nudge | null>;
+  // startsAt 이상 endsAt 미만에 보낸 콕 수(리마인드 콕은 세지 않는다)
+  abstract countSentBetween(
+    senderId: UserId,
+    window: Pick<DailySendWindow, "startsAt" | "endsAt">,
+  ): Promise<number>;
+  // 읽음·감사 시각은 먼저 저장된 값을 덮어쓰지 않는다
+  abstract save(nudge: Nudge): Promise<void>;
+  abstract saveThanks(nudges: readonly Nudge[]): Promise<void>;
+  // id 내림차순
+  abstract listThanksCandidates(query: NudgeThanksCandidateQuery): Promise<Nudge[]>;
 
-export interface NudgeThanksSummary {
-  thankedRecipientCount: number;
-  lastThankedAt: Date | null;
-}
+  // 대상 할 일은 planning이 소유한 행을 읽기만 한다
+  abstract findTargetTodo(todoId: number): Promise<NudgeTargetTodo | null>;
+  // 완료·공개 변경과 답장·감사 저장을 같은 행 잠금으로 직렬화한다
+  abstract lockInteractionTodo(
+    todoId: number,
+    ownerId: UserId,
+  ): Promise<NudgeInteractionTodo | null>;
+  // 그 날짜에 걸친 할 일 수(기간 할 일은 시작~종료, 하루 할 일은 시작일)
+  abstract countTodosOn(ownerId: UserId, date: Temporal.PlainDate): Promise<number>;
 
-/** 콕 찌르기 생성 입력 */
-export interface CreateNudgeInput {
-  senderId: string;
-  receiverId: string;
-  todoId: number;
-  message?: string;
-  createdAt: Date;
-}
-
-/** 리마인드 콕 찌르기 생성 입력 */
-export interface CreateRemindNudgeInput {
-  senderId: string;
-  receiverId: string;
-  message?: string;
-}
-
-export const NUDGE_REPOSITORY = Symbol("NUDGE_REPOSITORY");
-
-export interface NudgeRepositoryPort {
-  findById(id: number): Promise<Nudge | null>;
-  findLastNudgeForTodo(senderId: string, todoId: number): Promise<Nudge | null>;
-  findLastNudgeToUser(senderId: string, receiverId: string): Promise<Nudge | null>;
-  findLastRemindNudge(senderId: string, receiverId: string): Promise<ReminderNudge | null>;
-  findTargetTodo(todoId: number): Promise<TargetTodoRecord | null>;
-  saveRead(nudge: Nudge): Promise<void>;
-  saveReply(nudge: Nudge): Promise<void>;
-  saveThanksBatch(nudgeIds: readonly number[], thankedAt: Date): Promise<void>;
-  findInteractionById(id: number, userId: string): Promise<NudgeInteractionRecord | null>;
-  findInteractions(
-    params: FindNudgesParams & { direction: "received" | "sent" },
-  ): Promise<NudgeInteractionRecord[]>;
-  findInteractionTodo(todoId: number, userId: string): Promise<NudgeInteractionTodo | null>;
-  lockInteractionTodo(todoId: number, userId: string): Promise<NudgeInteractionTodo | null>;
-  findLastReceivedNudgeId(todoId: number, userId: string): Promise<number | null>;
-  findThanksCandidates(input: FindNudgeThanksCandidatesInput): Promise<NudgeInteractionRecord[]>;
-  findThanksCandidatePage(
-    input: FindNudgeThanksCandidatesInput & { cursor?: number; size: number },
-  ): Promise<NudgeThanksCandidatePage>;
-  findThanksSummary(todoId: number, userId: string): Promise<NudgeThanksSummary>;
-
-  findReceivedNudges(params: FindNudgesParams): Promise<NudgeWithRelations[]>;
-  findSentNudges(params: FindNudgesParams): Promise<NudgeWithRelations[]>;
-
-  countSentSince(senderId: string, since: Date, untilExclusive: Date): Promise<number>;
-  countTodayTodos(userId: string, today: Date): Promise<number>;
-  countReceived(userId: string): Promise<number>;
-  countSent(userId: string): Promise<number>;
-  countUnreadReceived(userId: string): Promise<number>;
-
-  createNudge(input: CreateNudgeInput): Promise<NudgeWithRelations>;
-  createRemindNudge(input: CreateRemindNudgeInput): Promise<ReminderNudgeWithRelations>;
+  abstract nextReminderId(): Promise<ReminderNudgeId>;
+  abstract findLastReminderSentTo(
+    senderId: UserId,
+    receiverId: UserId,
+  ): Promise<ReminderNudge | null>;
+  abstract saveReminder(reminder: ReminderNudge): Promise<void>;
 }

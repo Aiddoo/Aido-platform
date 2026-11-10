@@ -1,16 +1,21 @@
-import {
-  calculateRemainingLimit,
-  type EntitlementReaderPort,
-} from "#api/modules/access/access-entitlement.public";
-import { now } from "#api/shared/domain/date/utils/core";
-import { dayWindowInTimezone } from "#api/shared/domain/date/utils/timezone";
+import { calculateRemainingLimit } from "#api/modules/access/access-entitlement.public";
+import type { ClockPort } from "#api/shared/application/ports/clock.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
+import { dailySendWindowAt } from "../../../shared/domain/daily-send-window.domain-service.js";
+import type { CheerLimitReaderPort } from "../ports/cheer-limit.reader.port.js";
 import type { CheerRepositoryPort } from "../ports/cheer.repository.port.js";
-import type { CheerLimitSnapshot } from "../read-models/cheer.read-model.js";
+import type { CheerDailyLimit } from "../read-models/cheer.read-model.js";
 
-interface GetCheerLimitDependencies {
-  readonly cheerRepository: Pick<CheerRepositoryPort, "countSentSince">;
-  readonly entitlementReader: Pick<EntitlementReaderPort, "getLimit">;
+export interface GetCheerLimitQuery {
+  readonly userId: string;
+  readonly timezone: string;
+}
+
+export interface GetCheerLimitDependencies {
+  readonly cheerRepository: Pick<CheerRepositoryPort, "countSentBetween">;
+  readonly limitReader: Pick<CheerLimitReaderPort, "readDailyLimit">;
+  readonly clock: ClockPort;
 }
 
 export class GetCheerLimitUseCase {
@@ -20,23 +25,14 @@ export class GetCheerLimitUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: {
-    readonly userId: string;
-    readonly timezone: string;
-  }): Promise<CheerLimitSnapshot> {
-    const window = dayWindowInTimezone(now(), input.timezone);
+  async execute(query: GetCheerLimitQuery): Promise<CheerDailyLimit> {
+    const { cheerRepository, limitReader, clock } = this.#dependencies;
+    const userId = UserId.reconstitute(query.userId);
+    const window = dailySendWindowAt({ now: clock.now(), timeZone: query.timezone });
     const [dailyLimit, used] = await Promise.all([
-      this.#dependencies.entitlementReader.getLimit(input.userId, "CHEER"),
-      this.#dependencies.cheerRepository.countSentSince(
-        input.userId,
-        window.startsAt,
-        window.endsAt,
-      ),
+      limitReader.readDailyLimit(userId),
+      cheerRepository.countSentBetween(userId, window),
     ]);
-    return {
-      dailyLimit,
-      used,
-      remaining: calculateRemainingLimit(dailyLimit, used),
-    };
+    return { dailyLimit, used, remaining: calculateRemainingLimit(dailyLimit, used) };
   }
 }

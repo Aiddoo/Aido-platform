@@ -1,20 +1,21 @@
-import { ErrorCode } from "@aido/api/errors";
-
-import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
-import { now } from "#api/shared/domain/date/utils/core";
+import type { ClockPort } from "#api/shared/application/ports/clock.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
+import { CheerId } from "../../domain/cheer-id.vo.js";
+import { cheerNotFound } from "../cheers.errors.js";
 import { CheerLogEvent } from "../cheers.log-events.js";
-import { type CheerRepositoryPort } from "../ports/cheer.repository.port.js";
+import type { CheerRepositoryPort } from "../ports/cheer.repository.port.js";
 
-export interface MarkCheerReadInput {
+export interface MarkCheerReadCommand {
   readonly userId: string;
   readonly cheerId: number;
 }
 
-interface MarkCheerReadDependencies {
-  readonly cheerRepository: Pick<CheerRepositoryPort, "findById" | "saveRead">;
-  readonly logger: ApplicationLoggerPort;
+export interface MarkCheerReadDependencies {
+  readonly cheerRepository: Pick<CheerRepositoryPort, "findById" | "save">;
+  readonly clock: ClockPort;
+  readonly logger: Pick<ApplicationLoggerPort, "debug">;
 }
 
 export class MarkCheerReadUseCase {
@@ -24,18 +25,18 @@ export class MarkCheerReadUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: MarkCheerReadInput): Promise<void> {
-    const { userId, cheerId } = input;
-
-    const cheer = await this.#dependencies.cheerRepository.findById(cheerId);
-    if (cheer == null || !cheer.isReceivedBy(userId)) {
-      throw new ApplicationException(ErrorCode.CHEER_1205, { cheerId });
+  async execute(command: MarkCheerReadCommand): Promise<void> {
+    const { cheerRepository, clock, logger } = this.#dependencies;
+    const cheerId = CheerId.reconstitute(command.cheerId);
+    const cheer = await cheerRepository.findById(cheerId);
+    if (cheer == null || !cheer.isReceivedBy(UserId.reconstitute(command.userId))) {
+      throw cheerNotFound(cheerId);
     }
-    if (!cheer.markRead(now())) {
+    if (!cheer.markRead(clock.now())) {
       return;
     }
 
-    await this.#dependencies.cheerRepository.saveRead(cheer);
-    this.#dependencies.logger.debug({ event: CheerLogEvent.READ, userId, cheerId });
+    await cheerRepository.save(cheer);
+    logger.debug({ event: CheerLogEvent.READ, userId: command.userId, cheerId: command.cheerId });
   }
 }

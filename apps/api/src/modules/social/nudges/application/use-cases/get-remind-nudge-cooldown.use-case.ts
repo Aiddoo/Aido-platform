@@ -1,11 +1,18 @@
-import {
-  evaluateRemindNudgeCooldown,
-  type NudgeCooldown,
-} from "../../domain/nudge-cooldown.domain-service.js";
+import type { ClockPort } from "#api/shared/application/ports/clock.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+
+import type { SendCooldown } from "../../../shared/domain/send-cooldown.domain-service.js";
+import { evaluateRemindNudgeCooldown } from "../../domain/nudge-cooldown.domain-service.js";
 import type { NudgeRepositoryPort } from "../ports/nudge.repository.port.js";
 
-interface GetRemindNudgeCooldownDependencies {
-  readonly nudgeRepository: Pick<NudgeRepositoryPort, "findLastRemindNudge">;
+export interface GetRemindNudgeCooldownQuery {
+  readonly senderId: string;
+  readonly receiverId: string;
+}
+
+export interface GetRemindNudgeCooldownDependencies {
+  readonly nudgeRepository: Pick<NudgeRepositoryPort, "findLastReminderSentTo">;
+  readonly clock: ClockPort;
 }
 
 export class GetRemindNudgeCooldownUseCase {
@@ -15,14 +22,15 @@ export class GetRemindNudgeCooldownUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: {
-    readonly senderId: string;
-    readonly receiverId: string;
-  }): Promise<NudgeCooldown> {
-    const last = await this.#dependencies.nudgeRepository.findLastRemindNudge(
-      input.senderId,
-      input.receiverId,
+  async execute(query: GetRemindNudgeCooldownQuery): Promise<SendCooldown> {
+    const { nudgeRepository, clock } = this.#dependencies;
+    const lastReminder = await nudgeRepository.findLastReminderSentTo(
+      UserId.reconstitute(query.senderId),
+      UserId.reconstitute(query.receiverId),
     );
-    return evaluateRemindNudgeCooldown(last?.createdAt ?? null);
+    return evaluateRemindNudgeCooldown({
+      lastSentAt: lastReminder?.createdAt ?? null,
+      now: clock.now(),
+    });
   }
 }

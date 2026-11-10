@@ -2,19 +2,14 @@ import { and, eq, sql } from "drizzle-orm";
 import { omit } from "es-toolkit";
 import { Pool } from "pg";
 
-import {
-  CHEER_REPOSITORY,
-  type CheerRepositoryPort,
-} from "#api/modules/social/cheers/application/ports/cheer.repository.port";
+import { CheerReaderPort } from "#api/modules/social/cheers/application/ports/cheer.reader.port";
+import { CheerRepositoryPort } from "#api/modules/social/cheers/application/ports/cheer.repository.port";
 import { MarkCheerReadUseCase } from "#api/modules/social/cheers/application/use-cases/mark-cheer-read.use-case";
 import { SendCheerUseCase } from "#api/modules/social/cheers/application/use-cases/send-cheer.use-case";
 import { FollowRepositoryPort } from "#api/modules/social/friends/application/ports/follow.repository.port";
 import { FriendSearchReaderPort } from "#api/modules/social/friends/application/ports/friend-search.reader.port";
 import { UserSearchTerm } from "#api/modules/social/friends/domain/user-search-term.vo";
-import {
-  NUDGE_REPOSITORY,
-  type NudgeRepositoryPort,
-} from "#api/modules/social/nudges/application/ports/nudge.repository.port";
+import { NudgeRepositoryPort } from "#api/modules/social/nudges/application/ports/nudge.repository.port";
 import { SendNudgeUseCase } from "#api/modules/social/nudges/application/use-cases/send-nudge.use-case";
 import { createEntityId } from "#api/platform/database/entity-id";
 import {
@@ -28,6 +23,7 @@ import {
 } from "#api/platform/database/schema/index";
 import { dayWindowInTimezone } from "#api/shared/domain/date/utils/timezone";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { instantFromDate } from "#api/shared/domain/time/instant";
 import { UserFixture, TodoFixture, TodoCategoryFixture } from "#test/fixtures/index";
 import { createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
@@ -173,8 +169,8 @@ describe("Social 일일 한도·쿨다운·조회 쿼리 (실제 PostgreSQL)", (
   async function usage(kind: "Cheer" | "Nudge") {
     const repo =
       kind === "Cheer"
-        ? context.module.get<CheerRepositoryPort>(CHEER_REPOSITORY)
-        : context.module.get<NudgeRepositoryPort>(NUDGE_REPOSITORY);
+        ? context.module.get(CheerRepositoryPort)
+        : context.module.get(NudgeRepositoryPort);
     return Promise.all(
       ["UTC", "Asia/Seoul"].map(async (tz) => {
         const window = dayWindowInTimezone(AT, tz);
@@ -183,7 +179,10 @@ describe("Social 일일 한도·쿨다운·조회 쿼리 (실제 PostgreSQL)", (
           localDate: window.localDate,
           startsAt: window.startsAt.toISOString(),
           endsAt: window.endsAt.toISOString(),
-          used: await repo.countSentSince(senderId, window.startsAt, window.endsAt),
+          used: await repo.countSentBetween(UserId.reconstitute(senderId), {
+            startsAt: instantFromDate(window.startsAt),
+            endsAt: instantFromDate(window.endsAt),
+          }),
         };
       }),
     );
@@ -261,8 +260,8 @@ describe("Social 일일 한도·쿨다운·조회 쿼리 (실제 PostgreSQL)", (
     // When
     recording = listStatements;
     const list = await context.module
-      .get<CheerRepositoryPort>(CHEER_REPOSITORY)
-      .findReceivedCheers({ userId: receiverId, size: 3 });
+      .get(CheerReaderPort)
+      .listReceived({ userId: UserId.reconstitute(receiverId), afterCheerId: null, limit: 3 });
     recording = null;
     const first = list[0];
     if (first === undefined) {

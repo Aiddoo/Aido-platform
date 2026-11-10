@@ -1,16 +1,14 @@
 import type { NudgeReplyKind } from "@aido/api/vocabulary";
 
 export interface NudgeSentNotification {
-  nudgeId: number;
-  senderId: string;
-  receiverId: string;
-  senderName: string;
-  todoId?: number;
-  todoTitle?: string;
-  message?: string;
+  readonly nudgeId: number;
+  readonly senderId: string;
+  readonly receiverId: string;
+  readonly senderName: string;
+  readonly todoId?: number;
+  readonly todoTitle?: string;
+  readonly message?: string;
 }
-
-export const NUDGE_NOTIFIER = Symbol("NUDGE_NOTIFIER");
 
 interface NudgeInteractionNotificationBase {
   readonly nudgeId: number;
@@ -24,8 +22,12 @@ interface NudgeInteractionNotificationBase {
 export type NudgeInteractionNotification = NudgeInteractionNotificationBase &
   ({ readonly kind: "reply"; readonly replyKind: NudgeReplyKind } | { readonly kind: "thanks" });
 
-export interface NudgeNotifierPort {
-  notifyNudgeSent(payload: NudgeSentNotification): void;
-  recordInteraction(payload: NudgeInteractionNotification): Promise<void>;
-  recordInteractions(payloads: readonly NudgeInteractionNotification[]): Promise<void>;
+export abstract class NudgeNotifierPort {
+  // 콕·리마인드 알림은 커밋 뒤 작업 큐에 넣고 기다리지 않는다
+  abstract notifyNudgeSent(notification: NudgeSentNotification): void;
+  // 답장·감사 알림은 호출한 트랜잭션 안에서 저장해 상태 변경과 함께 커밋·롤백된다
+  abstract recordInteraction(notification: NudgeInteractionNotification): Promise<void>;
+  abstract recordInteractions(
+    notifications: readonly NudgeInteractionNotification[],
+  ): Promise<void>;
 }

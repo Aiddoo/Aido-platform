@@ -2,8 +2,10 @@ import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
 import {
   and,
+  countDistinct,
   eq,
   exists,
+  getTableName,
   gte,
   inArray,
   isNotNull,
@@ -13,62 +15,79 @@ import {
   max,
   notInArray,
   or,
+  type SQL,
   sql,
 } from "drizzle-orm";
-import { compact, maxBy, uniqBy } from "es-toolkit";
+import type { AnyPgColumn } from "drizzle-orm/pg-core";
+import { compact, groupBy } from "es-toolkit";
 
-import { requireRecord } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
-import { nudge, reminderNudge, todo } from "#api/platform/database/schema/index";
+import { tupleLessThan } from "#api/platform/database/keyset";
+import {
+  nudge as nudgeTable,
+  reminderNudge as reminderNudgeTable,
+  todo as todoTable,
+} from "#api/platform/database/schema/index";
+import { nextSequenceValue } from "#api/platform/database/sequence";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { instantFromDate, instantToDate } from "#api/shared/domain/time/instant";
 
 import { hasNoBlockWith } from "../../../blocks/infrastructure/persistence/drizzle-user-block.repository.js";
-import {
-  USER_BRIEF_RELATION,
-  type UserBriefRow,
-} from "../../../friends/infrastructure/persistence/user-brief-relation.constants.js";
+import { USER_BRIEF_RELATION } from "../../../friends/infrastructure/persistence/user-brief-relation.constants.js";
+import type { DailySendWindow } from "../../../shared/domain/daily-send-window.domain-service.js";
 import type {
-  CreateNudgeInput,
-  CreateRemindNudgeInput,
-  FindNudgesParams,
-  FindNudgeThanksCandidatesInput,
-  NudgeInteractionRecord,
-  NudgeInteractionTodo,
+  ListNudgesParams,
+  NudgeReaderPort,
+} from "../../application/ports/nudge.reader.port.js";
+import type {
   NudgeRepositoryPort,
-  NudgeThanksCandidatePage,
-  NudgeThanksSummary,
-  NudgeWithRelations,
-  ReminderNudgeWithRelations,
-  TargetTodoRecord,
+  NudgeThanksCandidateQuery,
 } from "../../application/ports/nudge.repository.port.js";
-import { Nudge } from "../../domain/nudge.aggregate.js";
-import { ReminderNudge } from "../../domain/reminder-nudge.aggregate.js";
+import type {
+  NudgeInteractionTodo,
+  NudgeThanksRecipient,
+} from "../../application/read-models/nudge-interaction.read-model.js";
+import type { NudgeListItem } from "../../application/read-models/nudge.read-model.js";
+import { NudgeId } from "../../domain/nudge-id.vo.js";
+import type { NudgeTargetTodo } from "../../domain/nudge-target-todo.vo.js";
+import type { Nudge } from "../../domain/nudge.aggregate.js";
+import type { NudgeDirection } from "../../domain/nudges.constants.js";
+import { ReminderNudgeId } from "../../domain/reminder-nudge-id.vo.js";
+import type { ReminderNudge } from "../../domain/reminder-nudge.aggregate.js";
+import {
+  toDateColumn,
+  toNudge,
+  toNudgeInteractionTodo,
+  toNudgeListItem,
+  toNudgeRow,
+  toNudgeTargetTodo,
+  toNudgeUserSummary,
+  toReminderNudge,
+  toReminderNudgeRow,
+} from "./nudge-row.mapper.js";
 
-type NudgeRow = typeof nudge.$inferSelect;
-type ReminderNudgeRow = typeof reminderNudge.$inferSelect;
-type InteractionTodoRow = {
-  id: number;
-  title: string;
-  completed: boolean;
-  userId: string;
-  visibility: string;
-};
-type NudgeRowWithRelations = NudgeRow & {
-  sender: UserBriefRow;
-  receiver: UserBriefRow;
-  todo: InteractionTodoRow;
-};
-type ReminderNudgeRowWithRelations = ReminderNudgeRow & {
-  sender: UserBriefRow;
-};
-
-const INTERACTION_RELATIONS = {
+const NUDGE_RELATIONS = {
   sender: USER_BRIEF_RELATION,
   receiver: USER_BRIEF_RELATION,
   todo: { columns: { id: true, title: true, completed: true, userId: true, visibility: true } },
 } as const;
 
+const INTERACTION_TODO_COLUMNS = {
+  id: todoTable.id,
+  userId: todoTable.userId,
+  title: todoTable.title,
+  completed: todoTable.completed,
+  visibility: todoTable.visibility,
+};
+
+// 동시에 읽음·감사가 저장돼도 먼저 남은 시각을 덮어쓰지 않는다
+function keepStoredInstant(column: AnyPgColumn): SQL {
+  const name = sql.identifier(column.name);
+  return sql`coalesce(${sql.identifier(getTableName(nudgeTable))}.${name}, excluded.${name})`;
+}
+
 @Injectable()
-export class DrizzleNudgeRepository implements NudgeRepositoryPort {
+export class DrizzleNudgeRepository implements NudgeRepositoryPort, NudgeReaderPort {
   readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
 
   constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>) {
@@ -79,466 +98,381 @@ export class DrizzleNudgeRepository implements NudgeRepositoryPort {
     return this.#txHost.tx;
   }
 
-  async findById(id: number): Promise<Nudge | null> {
-    const row = await this.#db.query.nudge.findFirst({ where: { id } });
+  async nextId(): Promise<NudgeId> {
+    return NudgeId.reconstitute(await nextSequenceValue(this.#db, nudgeTable.id));
+  }
+
+  async findById(nudgeId: NudgeId): Promise<Nudge | null> {
+    const row = await this.#db.query.nudge.findFirst({ where: { id: nudgeId.value } });
     return row == null ? null : toNudge(row);
   }
 
-  async findLastNudgeForTodo(senderId: string, todoId: number): Promise<Nudge | null> {
+  async findLastSentForTodo(senderId: UserId, todoId: number): Promise<Nudge | null> {
     const row = await this.#db.query.nudge.findFirst({
-      where: { senderId, todoId },
+      where: { senderId: senderId.value, todoId },
       orderBy: { createdAt: "desc" },
     });
     return row == null ? null : toNudge(row);
   }
 
-  async findLastNudgeToUser(senderId: string, receiverId: string): Promise<Nudge | null> {
+  async findLastSentTo(senderId: UserId, receiverId: UserId): Promise<Nudge | null> {
     const row = await this.#db.query.nudge.findFirst({
-      where: { senderId, receiverId },
+      where: { senderId: senderId.value, receiverId: receiverId.value },
       orderBy: { createdAt: "desc" },
     });
     return row == null ? null : toNudge(row);
   }
 
-  async findLastRemindNudge(senderId: string, receiverId: string): Promise<ReminderNudge | null> {
+  countSentBetween(
+    senderId: UserId,
+    window: Pick<DailySendWindow, "startsAt" | "endsAt">,
+  ): Promise<number> {
+    return this.#db.$count(
+      nudgeTable,
+      and(
+        eq(nudgeTable.senderId, senderId.value),
+        gte(nudgeTable.createdAt, instantToDate(window.startsAt)),
+        lt(nudgeTable.createdAt, instantToDate(window.endsAt)),
+      ),
+    );
+  }
+
+  async save(nudge: Nudge): Promise<void> {
+    const row = toNudgeRow(nudge);
+    await this.#db
+      .insert(nudgeTable)
+      .values(row)
+      .onConflictDoUpdate({
+        target: nudgeTable.id,
+        set: {
+          readAt: keepStoredInstant(nudgeTable.readAt),
+          replyKind: row.replyKind,
+          repliedAt: row.repliedAt,
+          replyUpdatedAt: row.replyUpdatedAt,
+          thankedAt: keepStoredInstant(nudgeTable.thankedAt),
+        },
+      });
+  }
+
+  async saveThanks(nudges: readonly Nudge[]): Promise<void> {
+    const byThankedAt = groupBy(
+      nudges.filter((nudge) => nudge.thankedAt != null),
+      (nudge) => String(nudge.thankedAt?.epochMilliseconds),
+    );
+    for (const group of Object.values(byThankedAt)) {
+      const thankedAt = group[0]?.thankedAt;
+      if (thankedAt == null) {
+        continue;
+      }
+      await this.#db
+        .update(nudgeTable)
+        .set({ thankedAt: instantToDate(thankedAt) })
+        .where(
+          and(
+            inArray(
+              nudgeTable.id,
+              group.map((nudge) => nudge.id.value),
+            ),
+            isNull(nudgeTable.thankedAt),
+          ),
+        );
+    }
+  }
+
+  async listThanksCandidates(query: NudgeThanksCandidateQuery): Promise<Nudge[]> {
+    const ids = await this.#listThanksCandidateIds(query);
+    if (ids.length === 0) {
+      return [];
+    }
+    const rows = await this.#db.query.nudge.findMany({
+      where: { id: { in: ids } },
+      orderBy: { id: "desc" },
+    });
+    return rows.map(toNudge);
+  }
+
+  async findTargetTodo(todoId: number): Promise<NudgeTargetTodo | null> {
+    const row = await this.#db.query.todo.findFirst({
+      columns: { userId: true, title: true, visibility: true, startDate: true, endDate: true },
+      where: { id: todoId },
+    });
+    return row == null ? null : toNudgeTargetTodo(row);
+  }
+
+  async lockInteractionTodo(todoId: number, ownerId: UserId): Promise<NudgeInteractionTodo | null> {
+    const [row] = await this.#db
+      .select(INTERACTION_TODO_COLUMNS)
+      .from(todoTable)
+      .where(and(eq(todoTable.id, todoId), eq(todoTable.userId, ownerId.value)))
+      .limit(1)
+      .for("update");
+    return row == null ? null : toNudgeInteractionTodo(row);
+  }
+
+  countTodosOn(ownerId: UserId, date: Temporal.PlainDate): Promise<number> {
+    const day = toDateColumn(date);
+    return this.#db.$count(
+      todoTable,
+      and(
+        eq(todoTable.userId, ownerId.value),
+        or(
+          and(lte(todoTable.startDate, day), gte(todoTable.endDate, day)),
+          and(eq(todoTable.startDate, day), isNull(todoTable.endDate)),
+        ),
+      ),
+    );
+  }
+
+  async nextReminderId(): Promise<ReminderNudgeId> {
+    return ReminderNudgeId.reconstitute(await nextSequenceValue(this.#db, reminderNudgeTable.id));
+  }
+
+  async findLastReminderSentTo(
+    senderId: UserId,
+    receiverId: UserId,
+  ): Promise<ReminderNudge | null> {
     const row = await this.#db.query.reminderNudge.findFirst({
-      where: { senderId, receiverId },
+      where: { senderId: senderId.value, receiverId: receiverId.value },
       orderBy: { createdAt: "desc" },
     });
     return row == null ? null : toReminderNudge(row);
   }
 
-  async findTargetTodo(todoId: number): Promise<TargetTodoRecord | null> {
-    const row = await this.#db.query.todo.findFirst({
-      columns: { userId: true, visibility: true, startDate: true, endDate: true },
-      where: { id: todoId },
-    });
-    if (row == null) {
-      return null;
-    }
-    return {
-      ownerId: row.userId,
-      visibility: row.visibility,
-      startDate: row.startDate,
-      endDate: row.endDate,
-    };
+  async saveReminder(reminder: ReminderNudge): Promise<void> {
+    await this.#db.insert(reminderNudgeTable).values(toReminderNudgeRow(reminder));
   }
 
-  async saveRead(target: Nudge): Promise<void> {
-    await this.#db
-      .update(nudge)
-      .set({ readAt: target.readAt })
-      .where(and(eq(nudge.id, target.id), isNull(nudge.readAt)));
+  listReceived(params: ListNudgesParams): Promise<NudgeListItem[]> {
+    return this.#listOwned(params, "received");
   }
 
-  async saveReply(target: Nudge): Promise<void> {
-    const state = target.toPersistence();
-    const [updated] = await this.#db
-      .update(nudge)
-      .set({
-        replyKind: state.replyKind,
-        repliedAt: state.repliedAt,
-        replyUpdatedAt: state.replyUpdatedAt,
-      })
-      .where(eq(nudge.id, target.id))
-      .returning({ id: nudge.id });
-    requireRecord(updated);
-    await this.saveRead(target);
+  listSent(params: ListNudgesParams): Promise<NudgeListItem[]> {
+    return this.#listOwned(params, "sent");
   }
 
-  async saveThanksBatch(nudgeIds: readonly number[], thankedAt: Date): Promise<void> {
-    if (nudgeIds.length === 0) {
-      return;
-    }
-    await this.#db
-      .update(nudge)
-      .set({ thankedAt })
-      .where(and(inArray(nudge.id, [...nudgeIds]), isNull(nudge.thankedAt)));
+  countReceived(userId: UserId): Promise<number> {
+    return this.#db.$count(
+      nudgeTable,
+      and(
+        eq(nudgeTable.receiverId, userId.value),
+        hasNoBlockWith(nudgeTable.senderId, userId.value),
+      ),
+    );
   }
 
-  async findInteractionById(id: number, userId: string): Promise<NudgeInteractionRecord | null> {
+  countSent(userId: UserId): Promise<number> {
+    return this.#db.$count(
+      nudgeTable,
+      and(
+        eq(nudgeTable.senderId, userId.value),
+        hasNoBlockWith(nudgeTable.receiverId, userId.value),
+      ),
+    );
+  }
+
+  countUnreadReceived(userId: UserId): Promise<number> {
+    return this.#db.$count(
+      nudgeTable,
+      and(
+        eq(nudgeTable.receiverId, userId.value),
+        isNull(nudgeTable.readAt),
+        hasNoBlockWith(nudgeTable.senderId, userId.value),
+      ),
+    );
+  }
+
+  async findInteraction(nudgeId: NudgeId, viewerId: UserId): Promise<NudgeListItem | null> {
     const row = await this.#db.query.nudge.findFirst({
       where: {
-        id,
-        // 목록과 같이 상대가 어느 방향으로든 차단 관계면 없는 콕으로 본다.
+        id: nudgeId.value,
         OR: [
-          { receiverId: userId, RAW: (table) => hasNoBlockWith(table.senderId, userId) },
-          { senderId: userId, RAW: (table) => hasNoBlockWith(table.receiverId, userId) },
+          {
+            receiverId: viewerId.value,
+            RAW: (table) => hasNoBlockWith(table.senderId, viewerId.value),
+          },
+          {
+            senderId: viewerId.value,
+            RAW: (table) => hasNoBlockWith(table.receiverId, viewerId.value),
+          },
         ],
       },
-      with: INTERACTION_RELATIONS,
+      with: NUDGE_RELATIONS,
     });
-    return row == null ? null : toInteraction(row);
+    return row == null ? null : toNudgeListItem(row);
   }
 
-  async findInteractions(
-    params: FindNudgesParams & { direction: "received" | "sent" },
-  ): Promise<NudgeInteractionRecord[]> {
-    const { userId, cursor, size, direction } = params;
+  async listInteractions(params: {
+    readonly viewerId: UserId;
+    readonly direction: NudgeDirection;
+    readonly afterNudgeId: NudgeId | null;
+    readonly limit: number;
+  }): Promise<NudgeListItem[]> {
+    const { viewerId, direction, afterNudgeId, limit } = params;
     const rows = await this.#db.query.nudge.findMany({
       where: {
-        ...(direction === "received" ? { receiverId: userId } : { senderId: userId }),
+        ...(direction === "received"
+          ? { receiverId: viewerId.value }
+          : { senderId: viewerId.value }),
         RAW: (table) =>
-          hasNoBlockWith(direction === "received" ? table.senderId : table.receiverId, userId),
-        ...(cursor != null && { id: { lt: cursor } }),
+          hasNoBlockWith(
+            direction === "received" ? table.senderId : table.receiverId,
+            viewerId.value,
+          ),
+        ...(afterNudgeId != null && { id: { lt: afterNudgeId.value } }),
       },
-      with: INTERACTION_RELATIONS,
+      with: NUDGE_RELATIONS,
       orderBy: { id: "desc" },
-      limit: size + 1,
+      limit,
     });
-    return rows.map((row) => toInteraction(row));
+    return rows.map(toNudgeListItem);
   }
 
-  async lockInteractionTodo(todoId: number, userId: string): Promise<NudgeInteractionTodo | null> {
-    // 완료·공개 상태 변경과 답장·감사 저장을 같은 행 잠금으로 직렬화한다.
-    const [row] = await this.#db
-      .select({
-        id: todo.id,
-        userId: todo.userId,
-        title: todo.title,
-        completed: todo.completed,
-        visibility: todo.visibility,
-      })
-      .from(todo)
-      .where(and(eq(todo.id, todoId), eq(todo.userId, userId)))
-      .limit(1)
-      .for("update");
-    return row ? toInteractionTodo(row) : null;
-  }
-
-  async findInteractionTodo(todoId: number, userId: string): Promise<NudgeInteractionTodo | null> {
+  async findInteractionTodo(todoId: number, ownerId: UserId): Promise<NudgeInteractionTodo | null> {
     const row = await this.#db.query.todo.findFirst({
       columns: { id: true, userId: true, title: true, completed: true, visibility: true },
-      where: { id: todoId, userId },
+      where: { id: todoId, userId: ownerId.value },
     });
-    return row ? toInteractionTodo(row) : null;
+    return row == null ? null : toNudgeInteractionTodo(row);
   }
 
-  async findLastReceivedNudgeId(todoId: number, userId: string): Promise<number | null> {
+  async findLastReceivedNudgeId(todoId: number, receiverId: UserId): Promise<NudgeId | null> {
     const row = await this.#db.query.nudge.findFirst({
       columns: { id: true },
-      where: { todoId, receiverId: userId },
+      where: { todoId, receiverId: receiverId.value },
       orderBy: { id: "desc" },
     });
-    return row?.id ?? null;
+    return row == null ? null : NudgeId.reconstitute(row.id);
   }
 
-  async findThanksCandidates(
-    input: FindNudgeThanksCandidatesInput,
-  ): Promise<NudgeInteractionRecord[]> {
-    const ids = await this.#findThanksCandidateIds(input);
-    return this.#findThanksCandidatesByIds(ids);
+  async countThankedRecipients(todoId: number, receiverId: UserId): Promise<number> {
+    const [row] = await this.#db
+      .select({ count: countDistinct(nudgeTable.senderId) })
+      .from(nudgeTable)
+      .where(this.#thankedOnTodo(todoId, receiverId));
+    return row?.count ?? 0;
   }
 
-  async findThanksCandidatePage(
-    input: FindNudgeThanksCandidatesInput & { cursor?: number; size: number },
-  ): Promise<NudgeThanksCandidatePage> {
-    const ids = await this.#findThanksCandidateIds(input);
-    const { cursor } = input;
-    const remainingIds = cursor == null ? ids : ids.filter((id) => id < cursor);
-    const pageIds = remainingIds.slice(0, input.size);
-    const hasNext = remainingIds.length > pageIds.length;
-    return {
-      items: await this.#findThanksCandidatesByIds(pageIds),
-      totalRecipients: ids.length,
-      hasNext,
-      nextCursor: hasNext ? (pageIds.at(-1) ?? null) : null,
-    };
+  async findLastThankedAt(todoId: number, receiverId: UserId): Promise<Temporal.Instant | null> {
+    const [row] = await this.#db
+      .select({ lastThankedAt: max(nudgeTable.thankedAt) })
+      .from(nudgeTable)
+      .where(this.#thankedOnTodo(todoId, receiverId));
+    return row?.lastThankedAt == null ? null : instantFromDate(row.lastThankedAt);
   }
 
-  async findThanksSummary(todoId: number, userId: string): Promise<NudgeThanksSummary> {
-    const thanked = await this.#db
-      .select({ senderId: nudge.senderId, thankedAt: nudge.thankedAt })
-      .from(nudge)
-      .where(
-        and(eq(nudge.todoId, todoId), eq(nudge.receiverId, userId), isNotNull(nudge.thankedAt)),
-      );
-    const thankedAtList = compact(thanked.map((item) => item.thankedAt));
-    return {
-      thankedRecipientCount: uniqBy(thanked, (item) => item.senderId).length,
-      lastThankedAt: maxBy(thankedAtList, (thankedAt) => thankedAt.getTime()) ?? null,
-    };
+  async listThanksRecipients(
+    query: NudgeThanksCandidateQuery & {
+      readonly afterNudgeId: NudgeId | null;
+      readonly limit: number | null;
+    },
+  ): Promise<NudgeThanksRecipient[]> {
+    const ids = await this.#listThanksCandidateIds(query);
+    const { afterNudgeId, limit } = query;
+    const remainingIds = afterNudgeId == null ? ids : ids.filter((id) => id < afterNudgeId.value);
+    const pageIds = limit == null ? remainingIds : remainingIds.slice(0, limit);
+    if (pageIds.length === 0) {
+      return [];
+    }
+    const rows = await this.#db.query.nudge.findMany({
+      columns: { id: true },
+      where: { id: { in: pageIds } },
+      with: { sender: USER_BRIEF_RELATION },
+      orderBy: { id: "desc" },
+    });
+    return rows.map((row) => ({ nudgeId: row.id, sender: toNudgeUserSummary(row.sender) }));
   }
 
-  async #findThanksCandidateIds(input: FindNudgeThanksCandidatesInput): Promise<number[]> {
-    if (input.friendIds.length === 0) {
+  async countThanksRecipients(query: NudgeThanksCandidateQuery): Promise<number> {
+    return (await this.#listThanksCandidateIds(query)).length;
+  }
+
+  #thankedOnTodo(todoId: number, receiverId: UserId): SQL | undefined {
+    return and(
+      eq(nudgeTable.todoId, todoId),
+      eq(nudgeTable.receiverId, receiverId.value),
+      isNotNull(nudgeTable.thankedAt),
+    );
+  }
+
+  async #listThanksCandidateIds(query: NudgeThanksCandidateQuery): Promise<number[]> {
+    if (query.friendIds.length === 0) {
       return [];
     }
     const thanked = await this.#db
-      .select({ senderId: nudge.senderId })
-      .from(nudge)
-      .where(
-        and(
-          eq(nudge.todoId, input.todoId),
-          eq(nudge.receiverId, input.userId),
-          isNotNull(nudge.thankedAt),
-        ),
-      );
-    const thankedSenderIds = thanked.map((item) => item.senderId);
+      .select({ senderId: nudgeTable.senderId })
+      .from(nudgeTable)
+      .where(this.#thankedOnTodo(query.todoId, query.ownerId));
+    const thankedSenderIds = thanked.map((row) => row.senderId);
     const groups = await this.#db
-      .select({ latestId: max(nudge.id) })
-      .from(nudge)
+      .select({ latestId: max(nudgeTable.id) })
+      .from(nudgeTable)
       .where(
         and(
-          eq(nudge.todoId, input.todoId),
-          eq(nudge.receiverId, input.userId),
-          lte(nudge.id, input.throughNudgeId),
-          inArray(nudge.senderId, [...input.friendIds]),
-          thankedSenderIds.length === 0 ? undefined : notInArray(nudge.senderId, thankedSenderIds),
-          isNull(nudge.thankedAt),
+          eq(nudgeTable.todoId, query.todoId),
+          eq(nudgeTable.receiverId, query.ownerId.value),
+          lte(nudgeTable.id, query.throughNudgeId.value),
+          inArray(nudgeTable.senderId, [...query.friendIds]),
+          thankedSenderIds.length === 0
+            ? undefined
+            : notInArray(nudgeTable.senderId, thankedSenderIds),
+          isNull(nudgeTable.thankedAt),
           exists(
             this.#db
               .select({ one: sql`1` })
-              .from(todo)
+              .from(todoTable)
               .where(
                 and(
-                  eq(todo.id, nudge.todoId),
-                  eq(todo.visibility, "PUBLIC"),
-                  eq(todo.userId, input.userId),
+                  eq(todoTable.id, nudgeTable.todoId),
+                  eq(todoTable.visibility, "PUBLIC"),
+                  eq(todoTable.userId, query.ownerId.value),
                 ),
               ),
           ),
         ),
       )
-      .groupBy(nudge.senderId);
-    return compact(groups.map((group) => group.latestId)).sort((left, right) => right - left);
+      .groupBy(nudgeTable.senderId);
+    return compact(groups.map((group) => group.latestId)).toSorted((left, right) => right - left);
   }
 
-  async #findThanksCandidatesByIds(ids: readonly number[]): Promise<NudgeInteractionRecord[]> {
-    if (ids.length === 0) {
-      return [];
-    }
-    const rows = await this.#db.query.nudge.findMany({
-      where: { id: { in: [...ids] } },
-      with: INTERACTION_RELATIONS,
-      orderBy: { id: "desc" },
-    });
-    return rows.map((row) => toInteraction(row));
-  }
-
-  findReceivedNudges(params: FindNudgesParams): Promise<NudgeWithRelations[]> {
-    return this.#findPage(params, "receiverId");
-  }
-
-  findSentNudges(params: FindNudgesParams): Promise<NudgeWithRelations[]> {
-    return this.#findPage(params, "senderId");
-  }
-
-  async #findPage(
-    { userId, cursor, size }: FindNudgesParams,
-    owner: "receiverId" | "senderId",
-  ): Promise<NudgeWithRelations[]> {
+  async #listOwned(params: ListNudgesParams, direction: NudgeDirection): Promise<NudgeListItem[]> {
+    const { userId, afterNudgeId, limit } = params;
+    // 커서는 콕 id 하나라 그 콕의 생성 시각을 먼저 읽어 (createdAt, id) 경계를 만든다
     const anchor =
-      cursor == null
-        ? undefined
+      afterNudgeId == null
+        ? null
         : await this.#db.query.nudge.findFirst({
             columns: { id: true, createdAt: true },
-            where: { id: cursor },
+            where: { id: afterNudgeId.value },
           });
-    if (cursor != null && anchor == null) {
+    if (afterNudgeId != null && anchor == null) {
       return [];
     }
 
     const rows = await this.#db.query.nudge.findMany({
       where: {
-        ...(owner === "receiverId" ? { receiverId: userId } : { senderId: userId }),
+        ...(direction === "received" ? { receiverId: userId.value } : { senderId: userId.value }),
         AND: [
           {
             RAW: (table) =>
-              hasNoBlockWith(owner === "receiverId" ? table.senderId : table.receiverId, userId),
+              hasNoBlockWith(
+                direction === "received" ? table.senderId : table.receiverId,
+                userId.value,
+              ),
           },
           ...(anchor == null
             ? []
             : [
                 {
-                  RAW: (table: typeof nudge) =>
-                    sql`(${table.createdAt}, ${table.id}) < (${sql.param(anchor.createdAt, table.createdAt)}, ${anchor.id})`,
+                  RAW: (table: typeof nudgeTable) =>
+                    tupleLessThan([table.createdAt, table.id], [anchor.createdAt, anchor.id]),
                 },
               ]),
         ],
       },
-      with: INTERACTION_RELATIONS,
+      with: NUDGE_RELATIONS,
       orderBy: { createdAt: "desc", id: "desc" },
-      limit: size + 1,
+      limit,
     });
-    return rows.map((row) => toWithRelations(row));
+    return rows.map(toNudgeListItem);
   }
-
-  countSentSince(senderId: string, since: Date, untilExclusive: Date): Promise<number> {
-    return this.#db.$count(
-      nudge,
-      and(
-        eq(nudge.senderId, senderId),
-        gte(nudge.createdAt, since),
-        lt(nudge.createdAt, untilExclusive),
-      ),
-    );
-  }
-
-  countTodayTodos(userId: string, today: Date): Promise<number> {
-    return this.#db.$count(
-      todo,
-      and(
-        eq(todo.userId, userId),
-        or(
-          and(lte(todo.startDate, today), gte(todo.endDate, today)),
-          and(eq(todo.startDate, today), isNull(todo.endDate)),
-        ),
-      ),
-    );
-  }
-
-  countReceived(userId: string): Promise<number> {
-    return this.#db.$count(
-      nudge,
-      and(eq(nudge.receiverId, userId), hasNoBlockWith(nudge.senderId, userId)),
-    );
-  }
-
-  countSent(userId: string): Promise<number> {
-    return this.#db.$count(
-      nudge,
-      and(eq(nudge.senderId, userId), hasNoBlockWith(nudge.receiverId, userId)),
-    );
-  }
-
-  countUnreadReceived(userId: string): Promise<number> {
-    return this.#db.$count(
-      nudge,
-      and(
-        eq(nudge.receiverId, userId),
-        isNull(nudge.readAt),
-        hasNoBlockWith(nudge.senderId, userId),
-      ),
-    );
-  }
-
-  async createNudge(input: CreateNudgeInput): Promise<NudgeWithRelations> {
-    const [created] = await this.#db
-      .insert(nudge)
-      .values({
-        senderId: input.senderId,
-        receiverId: input.receiverId,
-        todoId: input.todoId,
-        message: input.message,
-        createdAt: input.createdAt,
-      })
-      .returning({ id: nudge.id });
-    const row = await this.#db.query.nudge.findFirst({
-      where: { id: requireRecord(created).id },
-      with: INTERACTION_RELATIONS,
-    });
-    return toWithRelations(requireRecord(row));
-  }
-
-  async createRemindNudge(input: CreateRemindNudgeInput): Promise<ReminderNudgeWithRelations> {
-    const [created] = await this.#db
-      .insert(reminderNudge)
-      .values({
-        senderId: input.senderId,
-        receiverId: input.receiverId,
-        message: input.message,
-      })
-      .returning({ id: reminderNudge.id });
-    const row = await this.#db.query.reminderNudge.findFirst({
-      where: { id: requireRecord(created).id },
-      with: { sender: USER_BRIEF_RELATION },
-    });
-    return toRemindWithRelations(requireRecord(row));
-  }
-}
-
-function toInteraction(row: NudgeRowWithRelations): NudgeInteractionRecord {
-  return {
-    ...toWithRelations(row),
-    replyKind: row.replyKind,
-    repliedAt: row.repliedAt,
-    replyUpdatedAt: row.replyUpdatedAt,
-    thankedAt: row.thankedAt,
-    todo: {
-      id: row.todo.id,
-      title: row.todo.title,
-      completed: row.todo.completed,
-      ownerId: row.todo.userId,
-      visibility: row.todo.visibility,
-    },
-  };
-}
-
-function toRemindWithRelations(row: ReminderNudgeRowWithRelations): ReminderNudgeWithRelations {
-  return {
-    id: row.id,
-    senderId: row.senderId,
-    receiverId: row.receiverId,
-    message: row.message,
-    createdAt: row.createdAt,
-    sender: {
-      id: row.sender.id,
-      userTag: row.sender.userTag,
-      profile: row.sender.profile,
-    },
-  };
-}
-
-function toInteractionTodo(row: InteractionTodoRow): NudgeInteractionTodo {
-  return {
-    id: row.id,
-    ownerId: row.userId,
-    title: row.title,
-    completed: row.completed,
-    visibility: row.visibility,
-  };
-}
-
-function toWithRelations(row: NudgeRowWithRelations): NudgeWithRelations {
-  return {
-    id: row.id,
-    senderId: row.senderId,
-    receiverId: row.receiverId,
-    todoId: row.todoId,
-    message: row.message,
-    readAt: row.readAt,
-    createdAt: row.createdAt,
-    sender: {
-      id: row.sender.id,
-      userTag: row.sender.userTag,
-      profile: row.sender.profile,
-    },
-    receiver: {
-      id: row.receiver.id,
-      userTag: row.receiver.userTag,
-      profile: row.receiver.profile,
-    },
-    todo: {
-      id: row.todo.id,
-      title: row.todo.title,
-      completed: row.todo.completed,
-    },
-  };
-}
-
-function toReminderNudge(row: ReminderNudgeRow): ReminderNudge {
-  return ReminderNudge.reconstitute({
-    id: row.id,
-    senderId: row.senderId,
-    receiverId: row.receiverId,
-    message: row.message,
-    createdAt: row.createdAt,
-  });
-}
-
-function toNudge(row: NudgeRow): Nudge {
-  return Nudge.reconstitute({
-    id: row.id,
-    senderId: row.senderId,
-    receiverId: row.receiverId,
-    todoId: row.todoId,
-    message: row.message,
-    readAt: row.readAt,
-    createdAt: row.createdAt,
-    replyKind: row.replyKind,
-    repliedAt: row.repliedAt,
-    replyUpdatedAt: row.replyUpdatedAt,
-    thankedAt: row.thankedAt,
-  });
 }

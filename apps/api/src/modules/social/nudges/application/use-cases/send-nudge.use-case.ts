@@ -1,27 +1,29 @@
-import { ErrorCode } from "@aido/api/errors";
-
 import type { FollowReaderPort } from "#api/modules/social/friends/social-friends.public";
-import { NudgeLockKeys } from "#api/modules/social/nudges/application/nudges.lock-keys";
-import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
-import { type MutationLockPort, type UnitOfWorkPort } from "#api/shared/application/ports/index";
-import { now } from "#api/shared/domain/date/utils/core";
-import { dayWindowInTimezone } from "#api/shared/domain/date/utils/timezone";
+import type { ClockPort } from "#api/shared/application/ports/clock.port";
+import type { MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
+import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
+import { dailySendWindowAt } from "../../../shared/domain/daily-send-window.domain-service.js";
 import { evaluateNudgeCooldown } from "../../domain/nudge-cooldown.domain-service.js";
 import { NudgeMessage } from "../../domain/nudge-message.vo.js";
-import { NudgeTargetTodo } from "../../domain/nudge-target-todo.vo.js";
 import { Nudge } from "../../domain/nudge.aggregate.js";
-import { NudgeLogEvent } from "../nudges.log-events.js";
-import { type NudgeLimitReaderPort } from "../ports/nudge-limit.reader.port.js";
-import { type NudgeNotifierPort } from "../ports/nudge-notifier.port.js";
 import {
-  type NudgeRepositoryPort,
-  type NudgeWithRelations,
-} from "../ports/nudge.repository.port.js";
+  cannotNudgeSelf,
+  nudgeCooldownActive,
+  nudgeDailyLimitReached,
+  nudgeTargetNotFriend,
+  nudgeTodoNotActiveToday,
+  nudgeTodoNotFound,
+} from "../nudges.errors.js";
+import { NudgeLockKeys } from "../nudges.lock-keys.js";
+import { NudgeLogEvent } from "../nudges.log-events.js";
+import type { NudgeLimitReaderPort } from "../ports/nudge-limit.reader.port.js";
+import type { NudgeNotifierPort } from "../ports/nudge-notifier.port.js";
+import type { NudgeRepositoryPort } from "../ports/nudge.repository.port.js";
 
-export interface SendNudgeInput {
+export interface SendNudgeCommand {
   readonly senderId: string;
   readonly receiverId: string;
   readonly todoId: number;
@@ -29,17 +31,18 @@ export interface SendNudgeInput {
   readonly timezone: string;
 }
 
-interface SendNudgeDependencies {
+export interface SendNudgeDependencies {
+  readonly unitOfWork: UnitOfWorkPort;
+  readonly mutationLock: MutationLockPort;
   readonly nudgeRepository: Pick<
     NudgeRepositoryPort,
-    "countSentSince" | "createNudge" | "findLastNudgeForTodo" | "findTargetTodo"
+    "nextId" | "countSentBetween" | "findLastSentForTodo" | "findTargetTodo" | "save"
   >;
+  readonly limitReader: Pick<NudgeLimitReaderPort, "readDailyLimitInTx" | "readDailyQuotaInTx">;
+  readonly followReader: Pick<FollowReaderPort, "isMutualFriend" | "getUserDisplayName">;
   readonly notifier: Pick<NudgeNotifierPort, "notifyNudgeSent">;
-  readonly limitReader: NudgeLimitReaderPort;
-  readonly mutationLock: MutationLockPort;
-  readonly unitOfWork: UnitOfWorkPort;
-  readonly followReader: Pick<FollowReaderPort, "isMutualFriend">;
-  readonly logger: ApplicationLoggerPort;
+  readonly clock: ClockPort;
+  readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
 
 export class SendNudgeUseCase {
@@ -49,107 +52,96 @@ export class SendNudgeUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: SendNudgeInput): Promise<NudgeWithRelations> {
-    const { senderId, receiverId, todoId, message } = input;
+  async execute(command: SendNudgeCommand): Promise<Nudge> {
+    const {
+      unitOfWork,
+      mutationLock,
+      nudgeRepository,
+      limitReader,
+      followReader,
+      notifier,
+      clock,
+      logger,
+    } = this.#dependencies;
+    const senderId = UserId.reconstitute(command.senderId);
+    const receiverId = UserId.reconstitute(command.receiverId);
+    const { todoId } = command;
 
-    if (senderId === receiverId) {
-      throw new ApplicationException(ErrorCode.NUDGE_1104);
+    // 자기 자신 → 친구 아님 → 메시지 → 할 일 → 일간 한도 → 쿨다운 순서는 출시 앱이 받는 오류 우선순위다
+    if (senderId.equals(receiverId)) {
+      throw cannotNudgeSelf();
     }
-
-    const isFriend = await this.#dependencies.followReader.isMutualFriend(senderId, receiverId);
-    if (!isFriend) {
-      throw new ApplicationException(ErrorCode.NUDGE_1103, {
-        targetUserId: receiverId,
-      });
+    if (!(await followReader.isMutualFriend(senderId.value, receiverId.value))) {
+      throw nudgeTargetNotFriend(receiverId);
     }
+    const message = command.message == null ? null : NudgeMessage.create(command.message);
+    // 잠금을 기다리다 자정을 넘겨도 요청 시각의 하루와 생성 시각을 쓴다
+    const requestedAt = clock.now();
+    const window = dailySendWindowAt({ now: requestedAt, timeZone: command.timezone });
 
-    const nudgeMessage = NudgeMessage.of(message);
-    const capturedAt = now();
-    const quotaWindow = dayWindowInTimezone(capturedAt, input.timezone);
-
-    const nudge = await this.#dependencies.unitOfWork.run(async () => {
-      await this.#dependencies.mutationLock.acquire([
-        NudgeLockKeys.dailyQuota(UserId.reconstitute(senderId)),
-        NudgeLockKeys.cooldown(UserId.reconstitute(senderId), todoId),
+    const { nudge, todoTitle, senderName } = await unitOfWork.run(async () => {
+      await mutationLock.acquire([
+        NudgeLockKeys.dailyQuota(senderId),
+        NudgeLockKeys.cooldown(senderId, todoId),
       ]);
 
-      const todoRow = await this.#dependencies.nudgeRepository.findTargetTodo(todoId);
-      if (todoRow == null) {
-        throw new ApplicationException(ErrorCode.TODO_0801, { todoId });
+      const target = await nudgeRepository.findTargetTodo(todoId);
+      if (target == null || !target.isOwnedBy(receiverId) || !target.isPublic()) {
+        throw nudgeTodoNotFound(todoId);
+      }
+      if (!target.isActiveOn(window.localDate)) {
+        throw nudgeTodoNotActiveToday(todoId);
       }
 
-      const target = NudgeTargetTodo.of(todoRow);
-      if (!target.isOwnedBy(receiverId)) {
-        throw new ApplicationException(ErrorCode.TODO_0801, { todoId });
-      }
-      if (!target.isPublic()) {
-        throw new ApplicationException(ErrorCode.TODO_0801, { todoId });
-      }
-
-      if (!target.isActiveOn(quotaWindow.date)) {
-        throw new ApplicationException(ErrorCode.NUDGE_1106, { todoId });
-      }
-
-      const dailyLimit = await this.#dependencies.limitReader.getDailyLimitInTx(senderId);
-      const used = await this.#dependencies.nudgeRepository.countSentSince(
-        senderId,
-        quotaWindow.startsAt,
-        quotaWindow.endsAt,
-      );
+      const dailyLimit = await limitReader.readDailyLimitInTx(senderId);
+      const used = await nudgeRepository.countSentBetween(senderId, window);
       if (dailyLimit != null && used >= dailyLimit) {
-        throw new ApplicationException(ErrorCode.NUDGE_1101, {
-          charged: false,
-          featureQuota: await this.#dependencies.limitReader.readDailyQuotaInTx(senderId, {
-            used,
-            resetsAt: quotaWindow.endsAt,
-          }),
-        });
+        throw nudgeDailyLimitReached(
+          await limitReader.readDailyQuotaInTx(senderId, { used, resetsAt: window.endsAt }),
+        );
       }
 
-      const lastNudge = await this.#dependencies.nudgeRepository.findLastNudgeForTodo(
+      const lastNudge = await nudgeRepository.findLastSentForTodo(senderId, todoId);
+      const cooldown = evaluateNudgeCooldown({
+        lastSentAt: lastNudge?.createdAt ?? null,
+        now: clock.now(),
+      });
+      if (cooldown.isActive) {
+        throw nudgeCooldownActive(receiverId, cooldown.remainingSeconds);
+      }
+
+      const created = Nudge.create({
+        id: await nudgeRepository.nextId(),
         senderId,
+        receiverId,
         todoId,
-      );
-      if (lastNudge != null) {
-        const cooldown = evaluateNudgeCooldown(lastNudge.createdAt);
-        if (cooldown.isActive) {
-          throw new ApplicationException(ErrorCode.NUDGE_1102, {
-            targetUserId: receiverId,
-            remainingSeconds: cooldown.remainingSeconds,
-          });
-        }
-      }
-
-      return this.#dependencies.nudgeRepository.createNudge(
-        Nudge.planCreation({
-          senderId,
-          receiverId,
-          todoId,
-          message: nudgeMessage.raw,
-          createdAt: capturedAt,
-        }),
-      );
+        message,
+        now: requestedAt,
+      });
+      await nudgeRepository.save(created);
+      return {
+        nudge: created,
+        todoTitle: target.title,
+        senderName: await followReader.getUserDisplayName(senderId.value),
+      };
     });
 
-    this.#dependencies.logger.log({
+    logger.log({
       event: NudgeLogEvent.SENT,
-      nudgeId: nudge.id,
+      nudgeId: nudge.id.value,
       todoId,
-      senderId,
-      receiverId,
+      senderId: senderId.value,
+      receiverId: receiverId.value,
     });
-
-    const senderName = nudge.sender.profile?.name ?? nudge.sender.userTag;
-    this.#dependencies.notifier.notifyNudgeSent({
-      nudgeId: nudge.id,
-      senderId,
-      receiverId,
+    notifier.notifyNudgeSent({
+      nudgeId: nudge.id.value,
+      senderId: senderId.value,
+      receiverId: receiverId.value,
       senderName,
       todoId,
-      todoTitle: nudge.todo.title,
-      message: nudgeMessage.raw,
+      todoTitle,
+      message: message?.value,
     });
-
     return nudge;
   }
 }

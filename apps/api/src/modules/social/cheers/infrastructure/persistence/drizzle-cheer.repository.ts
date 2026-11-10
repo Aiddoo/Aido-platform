@@ -1,33 +1,31 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
-import { and, eq, gte, inArray, isNull, lt, sql } from "drizzle-orm";
+import { and, eq, gte, inArray, isNull, lt } from "drizzle-orm";
 
-import { requireRecord } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
-import { cheer } from "#api/platform/database/schema/index";
-import { now } from "#api/shared/domain/date/utils/core";
+import { tupleLessThan } from "#api/platform/database/keyset";
+import { cheer as cheerTable } from "#api/platform/database/schema/index";
+import { nextSequenceValue } from "#api/platform/database/sequence";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { instantToDate } from "#api/shared/domain/time/instant";
 
 import { hasNoBlockWith } from "../../../blocks/infrastructure/persistence/drizzle-user-block.repository.js";
-import {
-  USER_BRIEF_RELATION,
-  type UserBriefRow,
-} from "../../../friends/infrastructure/persistence/user-brief-relation.constants.js";
+import { USER_BRIEF_RELATION } from "../../../friends/infrastructure/persistence/user-brief-relation.constants.js";
+import type { DailySendWindow } from "../../../shared/domain/daily-send-window.domain-service.js";
 import type {
-  CheerRepositoryPort,
-  CheerWithRelations,
-  CreateCheerInput,
-  FindCheersParams,
-} from "../../application/ports/cheer.repository.port.js";
-import { Cheer } from "../../domain/cheer.aggregate.js";
+  CheerReaderPort,
+  ListCheersParams,
+} from "../../application/ports/cheer.reader.port.js";
+import type { CheerRepositoryPort } from "../../application/ports/cheer.repository.port.js";
+import type { CheerListItem } from "../../application/read-models/cheer.read-model.js";
+import { CheerId } from "../../domain/cheer-id.vo.js";
+import type { Cheer } from "../../domain/cheer.aggregate.js";
+import { toCheer, toCheerListItem, toCheerRow } from "./cheer-row.mapper.js";
 
-type CheerRow = typeof cheer.$inferSelect;
-type CheerRowWithRelations = CheerRow & {
-  sender: UserBriefRow;
-  receiver: UserBriefRow;
-};
+type CheerOwner = "receiverId" | "senderId";
 
 @Injectable()
-export class DrizzleCheerRepository implements CheerRepositoryPort {
+export class DrizzleCheerRepository implements CheerRepositoryPort, CheerReaderPort {
   readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
 
   constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>) {
@@ -38,169 +36,147 @@ export class DrizzleCheerRepository implements CheerRepositoryPort {
     return this.#txHost.tx;
   }
 
-  async findById(id: number): Promise<Cheer | null> {
-    const row = await this.#db.query.cheer.findFirst({ where: { id } });
+  async nextId(): Promise<CheerId> {
+    return CheerId.reconstitute(await nextSequenceValue(this.#db, cheerTable.id));
+  }
+
+  async findById(cheerId: CheerId): Promise<Cheer | null> {
+    const row = await this.#db.query.cheer.findFirst({ where: { id: cheerId.value } });
     return row == null ? null : toCheer(row);
   }
 
-  async findLastCheerToUser(senderId: string, receiverId: string): Promise<Cheer | null> {
+  async findLastSent(senderId: UserId, receiverId: UserId): Promise<Cheer | null> {
     const row = await this.#db.query.cheer.findFirst({
-      where: { senderId, receiverId },
+      where: { senderId: senderId.value, receiverId: receiverId.value },
       orderBy: { createdAt: "desc" },
     });
     return row == null ? null : toCheer(row);
   }
 
-  async saveRead(target: Cheer): Promise<void> {
-    const [row] = await this.#db
-      .update(cheer)
-      .set({ readAt: target.readAt })
-      .where(eq(cheer.id, target.id))
-      .returning({ id: cheer.id });
-    requireRecord(row);
+  countSentBetween(
+    senderId: UserId,
+    window: Pick<DailySendWindow, "startsAt" | "endsAt">,
+  ): Promise<number> {
+    return this.#db.$count(
+      cheerTable,
+      and(
+        eq(cheerTable.senderId, senderId.value),
+        gte(cheerTable.createdAt, instantToDate(window.startsAt)),
+        lt(cheerTable.createdAt, instantToDate(window.endsAt)),
+      ),
+    );
   }
 
-  async markManyAsRead(ids: readonly number[], receiverId: string): Promise<number> {
+  async save(cheer: Cheer): Promise<void> {
+    const row = toCheerRow(cheer);
+    await this.#db
+      .insert(cheerTable)
+      .values(row)
+      .onConflictDoUpdate({ target: cheerTable.id, set: { readAt: row.readAt } });
+  }
+
+  async markManyRead(params: {
+    readonly receiverId: UserId;
+    readonly cheerIds: readonly CheerId[];
+    readonly now: Temporal.Instant;
+  }): Promise<number> {
+    if (params.cheerIds.length === 0) {
+      return 0;
+    }
     const updated = await this.#db
-      .update(cheer)
-      .set({ readAt: now() })
+      .update(cheerTable)
+      .set({ readAt: instantToDate(params.now) })
       .where(
-        and(inArray(cheer.id, [...ids]), eq(cheer.receiverId, receiverId), isNull(cheer.readAt)),
+        and(
+          inArray(
+            cheerTable.id,
+            params.cheerIds.map((cheerId) => cheerId.value),
+          ),
+          eq(cheerTable.receiverId, params.receiverId.value),
+          isNull(cheerTable.readAt),
+        ),
       )
-      .returning({ id: cheer.id });
+      .returning({ id: cheerTable.id });
     return updated.length;
   }
 
-  async findReceivedCheers(params: FindCheersParams): Promise<CheerWithRelations[]> {
-    return this.#findPage(params, "receiverId");
+  listReceived(params: ListCheersParams): Promise<CheerListItem[]> {
+    return this.#listOwned(params, "receiverId");
   }
 
-  async findSentCheers(params: FindCheersParams): Promise<CheerWithRelations[]> {
-    return this.#findPage(params, "senderId");
+  listSent(params: ListCheersParams): Promise<CheerListItem[]> {
+    return this.#listOwned(params, "senderId");
   }
 
-  async #findPage(
-    { userId, cursor, size }: FindCheersParams,
-    owner: "receiverId" | "senderId",
-  ): Promise<CheerWithRelations[]> {
+  countReceived(userId: UserId): Promise<number> {
+    return this.#db.$count(
+      cheerTable,
+      and(
+        eq(cheerTable.receiverId, userId.value),
+        hasNoBlockWith(cheerTable.senderId, userId.value),
+      ),
+    );
+  }
+
+  countSent(userId: UserId): Promise<number> {
+    return this.#db.$count(
+      cheerTable,
+      and(
+        eq(cheerTable.senderId, userId.value),
+        hasNoBlockWith(cheerTable.receiverId, userId.value),
+      ),
+    );
+  }
+
+  countUnreadReceived(userId: UserId): Promise<number> {
+    return this.#db.$count(
+      cheerTable,
+      and(
+        eq(cheerTable.receiverId, userId.value),
+        isNull(cheerTable.readAt),
+        hasNoBlockWith(cheerTable.senderId, userId.value),
+      ),
+    );
+  }
+
+  async #listOwned(params: ListCheersParams, owner: CheerOwner): Promise<CheerListItem[]> {
+    const { userId, afterCheerId, limit } = params;
+    // 커서는 응원 id 하나라 그 응원의 생성 시각을 먼저 읽어 (createdAt, id) 경계를 만든다
     const anchor =
-      cursor == null
-        ? undefined
+      afterCheerId == null
+        ? null
         : await this.#db.query.cheer.findFirst({
             columns: { id: true, createdAt: true },
-            where: { id: cursor },
+            where: { id: afterCheerId.value },
           });
-    if (cursor != null && anchor == null) {
+    if (afterCheerId != null && anchor == null) {
       return [];
     }
-
     const rows = await this.#db.query.cheer.findMany({
       where: {
-        ...(owner === "receiverId" ? { receiverId: userId } : { senderId: userId }),
+        ...(owner === "receiverId" ? { receiverId: userId.value } : { senderId: userId.value }),
         AND: [
           {
             RAW: (table) =>
-              hasNoBlockWith(owner === "receiverId" ? table.senderId : table.receiverId, userId),
+              hasNoBlockWith(
+                owner === "receiverId" ? table.senderId : table.receiverId,
+                userId.value,
+              ),
           },
           ...(anchor == null
             ? []
             : [
                 {
-                  RAW: (table: typeof cheer) =>
-                    sql`(${table.createdAt}, ${table.id}) < (${sql.param(anchor.createdAt, table.createdAt)}, ${anchor.id})`,
+                  RAW: (table: typeof cheerTable) =>
+                    tupleLessThan([table.createdAt, table.id], [anchor.createdAt, anchor.id]),
                 },
               ]),
         ],
       },
       with: { sender: USER_BRIEF_RELATION, receiver: USER_BRIEF_RELATION },
       orderBy: { createdAt: "desc", id: "desc" },
-      limit: size + 1,
+      limit,
     });
-    return rows.map((row) => toWithRelations(row));
+    return rows.map(toCheerListItem);
   }
-
-  countSentSince(senderId: string, since: Date, untilExclusive: Date): Promise<number> {
-    return this.#db.$count(
-      cheer,
-      and(
-        eq(cheer.senderId, senderId),
-        gte(cheer.createdAt, since),
-        lt(cheer.createdAt, untilExclusive),
-      ),
-    );
-  }
-
-  countReceived(userId: string): Promise<number> {
-    return this.#db.$count(
-      cheer,
-      and(eq(cheer.receiverId, userId), hasNoBlockWith(cheer.senderId, userId)),
-    );
-  }
-
-  countSent(userId: string): Promise<number> {
-    return this.#db.$count(
-      cheer,
-      and(eq(cheer.senderId, userId), hasNoBlockWith(cheer.receiverId, userId)),
-    );
-  }
-
-  countUnreadReceived(userId: string): Promise<number> {
-    return this.#db.$count(
-      cheer,
-      and(
-        eq(cheer.receiverId, userId),
-        isNull(cheer.readAt),
-        hasNoBlockWith(cheer.senderId, userId),
-      ),
-    );
-  }
-
-  async createWithRelations(input: CreateCheerInput): Promise<CheerWithRelations> {
-    const [created] = await this.#db
-      .insert(cheer)
-      .values({
-        senderId: input.senderId,
-        receiverId: input.receiverId,
-        message: input.message,
-        createdAt: input.createdAt,
-      })
-      .returning({ id: cheer.id });
-    const row = await this.#db.query.cheer.findFirst({
-      where: { id: requireRecord(created).id },
-      with: { sender: USER_BRIEF_RELATION, receiver: USER_BRIEF_RELATION },
-    });
-    return toWithRelations(requireRecord(row));
-  }
-}
-
-function toWithRelations(row: CheerRowWithRelations): CheerWithRelations {
-  return {
-    id: row.id,
-    senderId: row.senderId,
-    receiverId: row.receiverId,
-    message: row.message,
-    readAt: row.readAt,
-    createdAt: row.createdAt,
-    sender: {
-      id: row.sender.id,
-      userTag: row.sender.userTag,
-      profile: row.sender.profile,
-    },
-    receiver: {
-      id: row.receiver.id,
-      userTag: row.receiver.userTag,
-      profile: row.receiver.profile,
-    },
-  };
-}
-
-function toCheer(row: CheerRow): Cheer {
-  return Cheer.reconstitute({
-    id: row.id,
-    senderId: row.senderId,
-    receiverId: row.receiverId,
-    message: row.message,
-    readAt: row.readAt,
-    createdAt: row.createdAt,
-  });
 }

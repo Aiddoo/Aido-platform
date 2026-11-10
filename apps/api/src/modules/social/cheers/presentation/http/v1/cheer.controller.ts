@@ -17,6 +17,7 @@ import {
   CurrentUser,
   type CurrentUserPayload,
 } from "#api/modules/identity/identity-auth-http.public";
+import { API_VERSION } from "#api/platform/http/api-versioning";
 import { Timezone } from "#api/platform/http/decorators/index";
 import { UserIdParamDto } from "#api/platform/http/dtos/index";
 import { AppVersion } from "#api/platform/http/request-client/index";
@@ -32,7 +33,6 @@ import {
   ApiUnauthorizedError,
   SWAGGER_TAGS,
 } from "#api/platform/http/swagger/index";
-import { toISOStringOrNull } from "#api/shared/domain/date/utils/format";
 
 import { GetCheerCooldownUseCase } from "../../../application/use-cases/get-cheer-cooldown.use-case.js";
 import { GetCheerLimitUseCase } from "../../../application/use-cases/get-cheer-limit.use-case.js";
@@ -41,7 +41,15 @@ import { GetSentCheersUseCase } from "../../../application/use-cases/get-sent-ch
 import { MarkCheerReadUseCase } from "../../../application/use-cases/mark-cheer-read.use-case.js";
 import { MarkManyCheersReadUseCase } from "../../../application/use-cases/mark-many-cheers-read.use-case.js";
 import { SendCheerUseCase } from "../../../application/use-cases/send-cheer.use-case.js";
-import { CheerMapper } from "./cheer-response.mapper.js";
+import {
+  toCheerCooldownResponse,
+  toCheerLimitInfoResponse,
+  toCreateCheerResponse,
+  toMarkCheerReadResponse,
+  toMarkManyCheersReadResponse,
+  toReceivedCheersResponse,
+  toSentCheersResponse,
+} from "./cheer-response.mapper.js";
 import {
   CheerCooldownResponseDto,
   CheerIdParamDto,
@@ -57,7 +65,7 @@ import {
 
 @ApiTags(SWAGGER_TAGS.CHEERS)
 @ApiBearerAuth()
-@Controller("cheers")
+@Controller({ path: "cheers", version: API_VERSION.V1 })
 export class CheerController {
   readonly #getReceivedCheersUseCase: GetReceivedCheersUseCase;
   readonly #getSentCheersUseCase: GetSentCheersUseCase;
@@ -123,10 +131,7 @@ export class CheerController {
       timezone: tz,
     });
 
-    return {
-      message: "응원을 보냈어요! 🎉",
-      cheer: CheerMapper.toDto(cheer),
-    };
+    return toCreateCheerResponse(cheer);
   }
 
   @Get("received")
@@ -150,7 +155,6 @@ export class CheerController {
   async getReceivedCheers(
     @CurrentUser() user: CurrentUserPayload,
     @Query({ schema: GetCheersQueryDto }) query: GetCheersQueryDto,
-
     @AppVersion() appVersion?: string,
   ): Promise<ReceivedCheersResponseDto> {
     const result = await this.#getReceivedCheersUseCase.execute({
@@ -159,12 +163,7 @@ export class CheerController {
       size: query.limit,
     });
 
-    return {
-      cheers: CheerMapper.toDetailDtoList(result.items, appVersion),
-      totalCount: result.totalCount,
-      unreadCount: result.unreadCount,
-      hasMore: result.hasMore,
-    };
+    return toReceivedCheersResponse(result, appVersion);
   }
 
   @Get("sent")
@@ -188,7 +187,6 @@ export class CheerController {
   async getSentCheers(
     @CurrentUser() user: CurrentUserPayload,
     @Query({ schema: GetCheersQueryDto }) query: GetCheersQueryDto,
-
     @AppVersion() appVersion?: string,
   ): Promise<SentCheersResponseDto> {
     const result = await this.#getSentCheersUseCase.execute({
@@ -197,11 +195,7 @@ export class CheerController {
       size: query.limit,
     });
 
-    return {
-      cheers: CheerMapper.toDetailDtoList(result.items, appVersion),
-      totalCount: result.totalCount,
-      hasMore: result.hasMore,
-    };
+    return toSentCheersResponse(result, appVersion);
   }
 
   @Get("limit")
@@ -228,7 +222,7 @@ export class CheerController {
       userId: user.userId,
       timezone: tz,
     });
-    return CheerMapper.toLimitInfoDto(limitInfo);
+    return toCheerLimitInfoResponse(limitInfo);
   }
 
   @Get("cooldown/:userId")
@@ -250,12 +244,7 @@ export class CheerController {
       receiverId: params.userId,
     });
 
-    return {
-      userId: params.userId,
-      canCheer: !cooldownInfo.isActive,
-      remainingSeconds: cooldownInfo.remainingSeconds,
-      cooldownEndsAt: toISOStringOrNull(cooldownInfo.canCheerAt ?? null),
-    };
+    return toCheerCooldownResponse(params.userId, cooldownInfo);
   }
 
   @Patch(":id/read")
@@ -277,10 +266,7 @@ export class CheerController {
       cheerId: params.id,
     });
 
-    return {
-      message: "확인했습니다.",
-      readCount: 1,
-    };
+    return toMarkCheerReadResponse();
   }
 
   @Patch("read")
@@ -304,9 +290,6 @@ export class CheerController {
       cheerIds: dto.cheerIds,
     });
 
-    return {
-      message: `${count}개의 응원을 확인했습니다.`,
-      readCount: count,
-    };
+    return toMarkManyCheersReadResponse(count);
   }
 }

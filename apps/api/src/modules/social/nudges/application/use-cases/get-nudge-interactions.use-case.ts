@@ -1,30 +1,26 @@
-import { ErrorCode } from "@aido/api/errors";
-
 import type { FollowReaderPort } from "#api/modules/social/friends/social-friends.public";
-import { ApplicationException } from "#api/shared/application/application.exception";
-import type { PaginationService } from "#api/shared/application/pagination/index";
-import { type CursorPaginatedResponse } from "#api/shared/application/pagination/index";
+import { clampPageSize, type CursorPage, toCursorPage } from "#api/shared/application/cursor-page";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import { NudgeInteractionPolicy } from "../../domain/nudge-interaction.domain-service.js";
-import { type NudgeInteractionConfigPort } from "../ports/nudge-interaction-config.port.js";
-import {
-  type NudgeInteractionRecord,
-  type NudgeRepositoryPort,
-} from "../ports/nudge.repository.port.js";
-import type { NudgeInteractionResult } from "../read-models/nudge-interaction.read-model.js";
+import { NudgeId } from "../../domain/nudge-id.vo.js";
+import { isNudgeInteractionAvailable } from "../../domain/nudge-interaction.domain-service.js";
+import type { NudgeDirection } from "../../domain/nudges.constants.js";
+import { nudgeInteractionNotFound } from "../nudges.errors.js";
+import type { NudgeInteractionConfigPort } from "../ports/nudge-interaction-config.port.js";
+import type { NudgeReaderPort } from "../ports/nudge.reader.port.js";
+import type { NudgeInteraction } from "../read-models/nudge-interaction.read-model.js";
 
-export interface GetNudgeInteractionsInput {
+export interface GetNudgeInteractionsQuery {
   readonly userId: string;
-  readonly direction: "received" | "sent";
+  readonly direction: NudgeDirection;
   readonly cursor?: number;
-  readonly size: number;
+  readonly size?: number;
 }
 
-interface GetNudgeInteractionsDependencies {
-  readonly nudgeRepository: Pick<NudgeRepositoryPort, "findInteractions">;
-  readonly nudgeInteractionConfig: NudgeInteractionConfigPort;
+export interface GetNudgeInteractionsDependencies {
+  readonly nudgeReader: Pick<NudgeReaderPort, "listInteractions">;
+  readonly interactionConfig: NudgeInteractionConfigPort;
   readonly followReader: Pick<FollowReaderPort, "getCurrentMutualFriendIds">;
-  readonly paginationService: PaginationService;
 }
 
 export class GetNudgeInteractionsUseCase {
@@ -34,33 +30,33 @@ export class GetNudgeInteractionsUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(
-    input: GetNudgeInteractionsInput,
-  ): Promise<CursorPaginatedResponse<NudgeInteractionResult, number>> {
-    if (!this.#dependencies.nudgeInteractionConfig.isEnabled) {
-      throw new ApplicationException(ErrorCode.NUDGE_1105);
+  async execute(query: GetNudgeInteractionsQuery): Promise<CursorPage<NudgeInteraction, number>> {
+    const { nudgeReader, interactionConfig, followReader } = this.#dependencies;
+    if (!interactionConfig.isEnabled) {
+      throw nudgeInteractionNotFound();
     }
 
-    const [nudges, friendIds] = await Promise.all([
-      this.#dependencies.nudgeRepository.findInteractions(input),
-      this.#dependencies.followReader.getCurrentMutualFriendIds(input.userId),
+    const size = clampPageSize(query.size);
+    const [rows, friendIds] = await Promise.all([
+      nudgeReader.listInteractions({
+        viewerId: UserId.reconstitute(query.userId),
+        direction: query.direction,
+        afterNudgeId: query.cursor == null ? null : NudgeId.reconstitute(query.cursor),
+        limit: size + 1,
+      }),
+      followReader.getCurrentMutualFriendIds(query.userId),
     ]);
     const friends = new Set(friendIds);
-    const page = this.#dependencies.paginationService.createCursorPaginatedResponse<
-      NudgeInteractionRecord,
-      number
-    >({
-      items: nudges,
-      size: input.size,
-    });
+    const page = toCursorPage({ rows, size, toCursor: (nudge) => nudge.id });
 
     return {
       ...page,
       items: page.items.map((nudge) => ({
         ...nudge,
-        isAvailable: NudgeInteractionPolicy.isAvailable(nudge, {
+        isAvailable: isNudgeInteractionAvailable({
+          receiverId: nudge.receiverId,
           isMutualFriend: friends.has(
-            input.direction === "received" ? nudge.senderId : nudge.receiverId,
+            query.direction === "received" ? nudge.senderId : nudge.receiverId,
           ),
           todoOwnerId: nudge.todo.ownerId,
           todoVisibility: nudge.todo.visibility,

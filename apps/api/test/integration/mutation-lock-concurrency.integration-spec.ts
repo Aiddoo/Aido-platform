@@ -11,10 +11,7 @@ import { ClsModule, ClsService } from "nestjs-cls";
 import { vi } from "vitest";
 import { mock } from "vitest-mock-extended";
 
-import {
-  ENTITLEMENT_READER,
-  type EntitlementReaderPort,
-} from "#api/modules/access/access-entitlement.public";
+import { ENTITLEMENT_READER } from "#api/modules/access/access-entitlement.public";
 import { ENTITLEMENT_CACHE } from "#api/modules/access/application/ports/entitlement/entitlement-cache.port";
 import { ENTITLEMENT_DATABASE } from "#api/modules/access/application/ports/entitlement/entitlement-state.port";
 import { EntitlementCacheAdapter } from "#api/modules/access/infrastructure/adapters/entitlement/entitlement-cache.adapter";
@@ -25,9 +22,9 @@ import { ReorderTodoCategoryUseCase } from "#api/modules/planning/categories/app
 import { TodoCategoryLimitReaderAdapter } from "#api/modules/planning/categories/infrastructure/adapters/todo-category-limit-reader.adapter";
 import { DrizzleTodoCategoryRepository } from "#api/modules/planning/categories/infrastructure/persistence/drizzle-todo-category.repository";
 import { CheerLockKeys } from "#api/modules/social/cheers/application/cheers.lock-keys";
-import { type CheerLimitReaderPort } from "#api/modules/social/cheers/application/ports/cheer-limit.reader.port";
+import type { CheerLimitReaderPort } from "#api/modules/social/cheers/application/ports/cheer-limit.reader.port";
 import type { CheerNotifierPort } from "#api/modules/social/cheers/application/ports/cheer-notifier.port";
-import type { DailySendUsage } from "#api/modules/social/cheers/application/ports/daily-send-usage.reader.port";
+import type { DailySendQuotaUsage } from "#api/modules/social/cheers/application/ports/daily-send-usage.reader.port";
 import { GetCheerLimitUseCase } from "#api/modules/social/cheers/application/use-cases/get-cheer-limit.use-case";
 import { SendCheerUseCase } from "#api/modules/social/cheers/application/use-cases/send-cheer.use-case";
 import { DrizzleCheerRepository } from "#api/modules/social/cheers/infrastructure/persistence/drizzle-cheer.repository";
@@ -56,6 +53,7 @@ import {
   type UnitOfWorkPort,
 } from "#api/shared/application/ports/index";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { toIsoString } from "#api/shared/domain/time/instant";
 import { DateClock } from "#test/doubles/platform/date-clock";
 import { createTestClient } from "#test/setup/database-context";
 import type { TestDatabaseClient } from "#test/setup/test-database";
@@ -168,18 +166,17 @@ class RacingCheerRepository extends DrizzleCheerRepository {
     super(txHost);
   }
 
-  override async countSentSince(
-    senderId: string,
-    since: Date,
-    untilExclusive: Date,
+  override async countSentBetween(
+    senderId: UserId,
+    window: { readonly startsAt: Temporal.Instant; readonly endsAt: Temporal.Instant },
   ): Promise<number> {
-    const count = await super.countSentSince(senderId, since, untilExclusive);
+    const count = await super.countSentBetween(senderId, window);
     await this.dailyBarrier?.wait();
     return count;
   }
 
-  override async findLastCheerToUser(senderId: string, receiverId: string) {
-    const lastCheer = await super.findLastCheerToUser(senderId, receiverId);
+  override async findLastSent(senderId: UserId, receiverId: UserId) {
+    const lastCheer = await super.findLastSent(senderId, receiverId);
     await this.cooldownBarrier?.wait();
     return lastCheer;
   }
@@ -195,24 +192,23 @@ class RacingNudgeRepository extends DrizzleNudgeRepository {
     super(txHost);
   }
 
-  override async countSentSince(
-    senderId: string,
-    since: Date,
-    untilExclusive: Date,
+  override async countSentBetween(
+    senderId: UserId,
+    window: { readonly startsAt: Temporal.Instant; readonly endsAt: Temporal.Instant },
   ): Promise<number> {
-    const count = await super.countSentSince(senderId, since, untilExclusive);
+    const count = await super.countSentBetween(senderId, window);
     await this.dailyBarrier?.wait();
     return count;
   }
 
-  override async findLastNudgeForTodo(senderId: string, todoId: number) {
-    const lastNudge = await super.findLastNudgeForTodo(senderId, todoId);
+  override async findLastSentForTodo(senderId: UserId, todoId: number) {
+    const lastNudge = await super.findLastSentForTodo(senderId, todoId);
     await this.todoCooldownBarrier?.wait();
     return lastNudge;
   }
 
-  override async findLastRemindNudge(senderId: string, receiverId: string) {
-    const reminder = await super.findLastRemindNudge(senderId, receiverId);
+  override async findLastReminderSentTo(senderId: UserId, receiverId: UserId) {
+    const reminder = await super.findLastReminderSentTo(senderId, receiverId);
     await this.reminderCooldownBarrier?.wait();
     return reminder;
   }
@@ -566,8 +562,8 @@ async function completeWithin<T>(promise: Promise<T>, timeoutMs: number): Promis
   }
 }
 
-function createFollowReaderStub(): Pick<FollowReaderPort, "isMutualFriend"> {
-  return { isMutualFriend: async () => true };
+function createFollowReaderStub(): Pick<FollowReaderPort, "isMutualFriend" | "getUserDisplayName"> {
+  return { isMutualFriend: async () => true, getUserDisplayName: async (userId) => userId };
 }
 
 function createCheerNotifier(): CheerNotifierPort {
@@ -586,7 +582,7 @@ function createNudgeNotifier(): NudgeNotifierPort {
 function fixedDailyQuota(
   feature: "CHEER" | "NUDGE",
   limit: number | null,
-  usage: DailySendUsage,
+  usage: DailySendQuotaUsage,
 ): FeatureQuota {
   return {
     feature,
@@ -595,28 +591,34 @@ function fixedDailyQuota(
     used: usage.used,
     remaining: limit == null ? null : Math.max(0, limit - usage.used),
     period: "day",
-    resetsAt: usage.resetsAt.toISOString(),
+    resetsAt: toIsoString(usage.resetsAt),
     isFairUse: false,
     perUse: null,
   };
 }
 
-function createCheerLimitReader(limit: number | null): CheerLimitReaderPort {
+function createCheerLimitReader(
+  limit: number | null,
+): Pick<CheerLimitReaderPort, "readDailyLimitInTx" | "readDailyQuotaInTx"> {
   return {
-    getDailyLimitInTx: async () => limit,
+    readDailyLimitInTx: async () => limit,
     readDailyQuotaInTx: async (_userId, usage) => fixedDailyQuota("CHEER", limit, usage),
   };
 }
 
-function createNudgeLimitReader(limit: number | null): NudgeLimitReaderPort {
+function createNudgeLimitReader(
+  limit: number | null,
+): Pick<NudgeLimitReaderPort, "readDailyLimitInTx" | "readDailyQuotaInTx"> {
   return {
-    getDailyLimitInTx: async () => limit,
+    readDailyLimitInTx: async () => limit,
     readDailyQuotaInTx: async (_userId, usage) => fixedDailyQuota("NUDGE", limit, usage),
   };
 }
 
-function createReaderEntitlement(dailyLimit: number): Pick<EntitlementReaderPort, "getLimit"> {
-  return { getLimit: async () => dailyLimit };
+function createDailyLimitReader(
+  dailyLimit: number,
+): Pick<CheerLimitReaderPort | NudgeLimitReaderPort, "readDailyLimit"> {
+  return { readDailyLimit: async () => dailyLimit };
 }
 
 function createTodoCategoryCache(): TodoCategoryCachePort {
@@ -861,6 +863,7 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
       mutationLock: new PostgresMutationLockAdapter(txHost),
       unitOfWork: uow,
       followReader: createFollowReaderStub(),
+      clock: new DateClock(),
       logger: mock<ConstructorParameters<typeof SendCheerUseCase>[0]["logger"]>(),
     });
 
@@ -894,6 +897,7 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
       mutationLock: new PostgresMutationLockAdapter(txHost),
       unitOfWork: uow,
       followReader: createFollowReaderStub(),
+      clock: new DateClock(),
       logger: mock<ConstructorParameters<typeof SendCheerUseCase>[0]["logger"]>(),
     });
 
@@ -934,6 +938,7 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
       mutationLock: new PostgresMutationLockAdapter(txHost),
       unitOfWork: uow,
       followReader: createFollowReaderStub(),
+      clock: new DateClock(),
       logger: mock<ConstructorParameters<typeof SendNudgeUseCase>[0]["logger"]>(),
     });
 
@@ -968,6 +973,7 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
       mutationLock: new PostgresMutationLockAdapter(txHost),
       unitOfWork: uow,
       followReader: createFollowReaderStub(),
+      clock: new DateClock(),
       logger: mock<ConstructorParameters<typeof SendNudgeUseCase>[0]["logger"]>(),
     });
 
@@ -1005,6 +1011,7 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
       mutationLock: new PostgresMutationLockAdapter(txHost),
       unitOfWork: uow,
       followReader: createFollowReaderStub(),
+      clock: new DateClock(),
       logger: mock<ConstructorParameters<typeof SendRemindNudgeUseCase>[0]["logger"]>(),
     });
 
@@ -1173,7 +1180,8 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
     const { txHost } = createTransactionHarness(client);
     const reader = new GetCheerLimitUseCase({
       cheerRepository: new DrizzleCheerRepository(txHost),
-      entitlementReader: createReaderEntitlement(3),
+      limitReader: createDailyLimitReader(3),
+      clock: new DateClock(),
     });
 
     // When
@@ -1205,7 +1213,8 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
     const { txHost } = createTransactionHarness(client);
     const reader = new GetNudgeLimitUseCase({
       nudgeRepository: new DrizzleNudgeRepository(txHost),
-      entitlementReader: createReaderEntitlement(3),
+      limitReader: createDailyLimitReader(3),
+      clock: new DateClock(),
     });
 
     // When
@@ -1261,6 +1270,7 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
       mutationLock: mutationLock,
       unitOfWork: uow,
       followReader: createFollowReaderStub(),
+      clock: new DateClock(),
       logger: mock<ConstructorParameters<typeof SendCheerUseCase>[0]["logger"]>(),
     });
 
@@ -1287,8 +1297,8 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
     const created = await sending;
 
     // Then
-    expect(created.createdAt).toEqual(new Date("2026-07-26T14:59:59.900Z"));
-    const persisted = await client.query.cheer.findFirst({ where: { id: created.id } });
+    expect(created.createdAt).toEqual(Temporal.Instant.from("2026-07-26T14:59:59.900Z"));
+    const persisted = await client.query.cheer.findFirst({ where: { id: created.id.value } });
     expect(persisted?.createdAt).toEqual(new Date("2026-07-26T14:59:59.900Z"));
   });
 });

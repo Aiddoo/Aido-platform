@@ -22,7 +22,6 @@
  *   .buildWithRelations();
  * ```
  */
-import type { NudgeInteractionRecord } from "#api/modules/social/nudges/application/ports/nudge.repository.port";
 import type { Nudge } from "#test/types/database-rows";
 
 /**
@@ -195,14 +194,6 @@ export class NudgeBuilder {
         title: "테스트 할 일",
         completed: false,
       },
-    };
-  }
-
-  buildInteraction(): NudgeInteractionRecord {
-    const nudge = this.buildWithRelations();
-    return {
-      ...nudge,
-      todo: { ...nudge.todo, ownerId: nudge.receiverId, visibility: "PUBLIC" },
     };
   }
 

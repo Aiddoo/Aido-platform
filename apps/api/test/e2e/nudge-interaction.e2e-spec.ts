@@ -14,11 +14,8 @@ import { and, count, eq, isNotNull, type SQL } from "drizzle-orm";
 import request from "supertest";
 
 import { NOTIFICATION_COPY_REVISION } from "#api/modules/notification/push/application/messages/notification-copy-revision.messages";
-import { NUDGE_INTERACTION_CONFIG } from "#api/modules/social/nudges/application/ports/nudge-interaction-config.port";
-import {
-  NUDGE_NOTIFIER,
-  type NudgeNotifierPort,
-} from "#api/modules/social/nudges/application/ports/nudge-notifier.port";
+import { NudgeInteractionConfigPort } from "#api/modules/social/nudges/application/ports/nudge-interaction-config.port";
+import { NudgeNotifierPort } from "#api/modules/social/nudges/application/ports/nudge-notifier.port";
 import {
   notification,
   nudge as nudgeTable,
@@ -38,7 +35,7 @@ describe("콕 답장·감사 E2E (실제 DB)", () => {
   beforeAll(async () => {
     ctx = await createE2eApp({
       customizeBuilder: (builder) =>
-        builder.overrideProvider(NUDGE_INTERACTION_CONFIG).useValue({ isEnabled: true }),
+        builder.overrideProvider(NudgeInteractionConfigPort).useValue({ isEnabled: true }),
     });
   }, 60000);
 
@@ -453,10 +450,9 @@ describe("콕 답장·감사 E2E (실제 DB)", () => {
     await ctx.helpers.createFriendship(sender, receiver);
     const todo = await createTodo(receiver);
     const nudge = await sendNudge(sender, receiver, todo.id);
-    vi.spyOn(
-      ctx.module.get<NudgeNotifierPort>(NUDGE_NOTIFIER),
-      "recordInteraction",
-    ).mockRejectedValueOnce(new Error("알림 저장 실패"));
+    vi.spyOn(ctx.module.get(NudgeNotifierPort), "recordInteraction").mockRejectedValueOnce(
+      new Error("알림 저장 실패"),
+    );
 
     // When
     await reply(receiver, nudge.id, "THANKFUL").expect(500);
@@ -618,7 +614,7 @@ describe("콕 답장·감사 E2E (실제 DB)", () => {
     const todo = await createTodo(owner);
     const nudge = await sendNudge(sender, owner, todo.id);
     await setCompleted(owner, todo.id, true);
-    const notifier = ctx.module.get<NudgeNotifierPort>(NUDGE_NOTIFIER);
+    const notifier = ctx.module.get(NudgeNotifierPort);
     vi.spyOn(notifier, "recordInteractions").mockRejectedValueOnce(
       new Error("감사 알림 저장 실패"),
     );

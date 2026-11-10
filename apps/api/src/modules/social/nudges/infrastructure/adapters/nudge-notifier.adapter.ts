@@ -13,14 +13,14 @@ import {
 } from "#api/modules/notification/notification-delivery.public";
 import { DEFAULT_LOCALE, type SupportedLocale } from "#api/shared/domain/locale";
 
-import type {
+import {
+  type NudgeInteractionNotification,
   NudgeNotifierPort,
-  NudgeSentNotification,
-  NudgeInteractionNotification,
+  type NudgeSentNotification,
 } from "../../application/ports/nudge-notifier.port.js";
 
 @Injectable()
-export class NudgeNotifierAdapter implements NudgeNotifierPort {
+export class NudgeNotifierAdapter extends NudgeNotifierPort {
   readonly #notificationQueue: NotificationQueueService;
   readonly #notificationPublisher: NotificationPublisher;
   readonly #notificationRecipientLocaleReader: NotificationRecipientLocaleReaderPort;
@@ -31,30 +31,36 @@ export class NudgeNotifierAdapter implements NudgeNotifierPort {
     @Inject(NOTIFICATION_RECIPIENT_LOCALE_READER)
     notificationRecipientLocaleReader: NotificationRecipientLocaleReaderPort,
   ) {
+    super();
     this.#notificationQueue = notificationQueue;
     this.#notificationPublisher = notificationPublisher;
     this.#notificationRecipientLocaleReader = notificationRecipientLocaleReader;
   }
 
-  notifyNudgeSent(payload: NudgeSentNotification): void {
-    this.#notificationQueue.enqueueNudgeSent(payload);
+  notifyNudgeSent(notification: NudgeSentNotification): void {
+    this.#notificationQueue.enqueueNudgeSent(notification);
   }
 
-  async recordInteraction(payload: NudgeInteractionNotification): Promise<void> {
-    const locale = await this.#notificationRecipientLocaleReader.getLocale(payload.recipientId);
-    await this.#notificationPublisher.publish(this.#toNotificationData(payload, locale));
+  async recordInteraction(notification: NudgeInteractionNotification): Promise<void> {
+    const locale = await this.#notificationRecipientLocaleReader.getLocale(
+      notification.recipientId,
+    );
+    await this.#notificationPublisher.publish(this.#toNotificationData(notification, locale));
   }
 
-  async recordInteractions(payloads: readonly NudgeInteractionNotification[]): Promise<void> {
-    if (payloads.length === 0) {
+  async recordInteractions(notifications: readonly NudgeInteractionNotification[]): Promise<void> {
+    if (notifications.length === 0) {
       return;
     }
     const locales = await this.#notificationRecipientLocaleReader.getLocales(
-      payloads.map((payload) => payload.recipientId),
+      notifications.map((notification) => notification.recipientId),
     );
     await this.#notificationPublisher.publishBatch(
-      payloads.map((payload) =>
-        this.#toNotificationData(payload, locales.get(payload.recipientId) ?? DEFAULT_LOCALE),
+      notifications.map((notification) =>
+        this.#toNotificationData(
+          notification,
+          locales.get(notification.recipientId) ?? DEFAULT_LOCALE,
+        ),
       ),
     );
   }

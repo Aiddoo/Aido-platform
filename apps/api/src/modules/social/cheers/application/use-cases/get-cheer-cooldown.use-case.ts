@@ -1,11 +1,18 @@
-import {
-  evaluateCheerCooldown,
-  type CheerCooldown,
-} from "../../domain/cheer-cooldown.domain-service.js";
+import type { ClockPort } from "#api/shared/application/ports/clock.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+
+import type { SendCooldown } from "../../../shared/domain/send-cooldown.domain-service.js";
+import { evaluateCheerCooldown } from "../../domain/cheer-cooldown.domain-service.js";
 import type { CheerRepositoryPort } from "../ports/cheer.repository.port.js";
 
-interface GetCheerCooldownDependencies {
-  readonly cheerRepository: Pick<CheerRepositoryPort, "findLastCheerToUser">;
+export interface GetCheerCooldownQuery {
+  readonly senderId: string;
+  readonly receiverId: string;
+}
+
+export interface GetCheerCooldownDependencies {
+  readonly cheerRepository: Pick<CheerRepositoryPort, "findLastSent">;
+  readonly clock: ClockPort;
 }
 
 export class GetCheerCooldownUseCase {
@@ -15,14 +22,12 @@ export class GetCheerCooldownUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: {
-    readonly senderId: string;
-    readonly receiverId: string;
-  }): Promise<CheerCooldown> {
-    const last = await this.#dependencies.cheerRepository.findLastCheerToUser(
-      input.senderId,
-      input.receiverId,
+  async execute(query: GetCheerCooldownQuery): Promise<SendCooldown> {
+    const { cheerRepository, clock } = this.#dependencies;
+    const lastCheer = await cheerRepository.findLastSent(
+      UserId.reconstitute(query.senderId),
+      UserId.reconstitute(query.receiverId),
     );
-    return evaluateCheerCooldown(last?.createdAt ?? null);
+    return evaluateCheerCooldown({ lastSentAt: lastCheer?.createdAt ?? null, now: clock.now() });
   }
 }

@@ -17,6 +17,7 @@ import {
   CurrentUser,
   type CurrentUserPayload,
 } from "#api/modules/identity/identity-auth-http.public";
+import { API_VERSION } from "#api/platform/http/api-versioning";
 import { Timezone } from "#api/platform/http/decorators/index";
 import { UserIdParamDto } from "#api/platform/http/dtos/index";
 import { AppVersion } from "#api/platform/http/request-client/index";
@@ -32,7 +33,6 @@ import {
   ApiUnauthorizedError,
   SWAGGER_TAGS,
 } from "#api/platform/http/swagger/index";
-import { toISOStringOrNull } from "#api/shared/domain/date/utils/format";
 
 import { GetNudgeCooldownUseCase } from "../../../application/use-cases/get-nudge-cooldown.use-case.js";
 import { GetNudgeLimitUseCase } from "../../../application/use-cases/get-nudge-limit.use-case.js";
@@ -42,7 +42,15 @@ import { GetSentNudgesUseCase } from "../../../application/use-cases/get-sent-nu
 import { MarkNudgeReadUseCase } from "../../../application/use-cases/mark-nudge-read.use-case.js";
 import { SendNudgeUseCase } from "../../../application/use-cases/send-nudge.use-case.js";
 import { SendRemindNudgeUseCase } from "../../../application/use-cases/send-remind-nudge.use-case.js";
-import { NudgeMapper } from "./nudge-response.mapper.js";
+import {
+  toCreateNudgeResponse,
+  toCreateRemindNudgeResponse,
+  toMarkNudgeReadResponse,
+  toNudgeCooldownResponse,
+  toNudgeLimitInfoResponse,
+  toReceivedNudgesResponse,
+  toSentNudgesResponse,
+} from "./nudge-response.mapper.js";
 import {
   CreateNudgeResponseDto,
   CreateRemindNudgeResponseDto,
@@ -59,7 +67,7 @@ import {
 
 @ApiTags(SWAGGER_TAGS.NUDGES)
 @ApiBearerAuth()
-@Controller("nudges")
+@Controller({ path: "nudges", version: API_VERSION.V1 })
 export class NudgeController {
   readonly #getReceivedNudgesUseCase: GetReceivedNudgesUseCase;
   readonly #getSentNudgesUseCase: GetSentNudgesUseCase;
@@ -132,10 +140,7 @@ export class NudgeController {
       timezone: tz,
     });
 
-    return {
-      message: "콕! 찔렀습니다 👆",
-      nudge: NudgeMapper.toDto(nudge),
-    };
+    return toCreateNudgeResponse(nudge);
   }
 
   @Get("received")
@@ -159,7 +164,6 @@ export class NudgeController {
   async getReceivedNudges(
     @CurrentUser() user: CurrentUserPayload,
     @Query({ schema: GetNudgesQueryDto }) query: GetNudgesQueryDto,
-
     @AppVersion() appVersion?: string,
   ): Promise<ReceivedNudgesResponseDto> {
     const result = await this.#getReceivedNudgesUseCase.execute({
@@ -168,12 +172,7 @@ export class NudgeController {
       size: query.limit,
     });
 
-    return {
-      nudges: NudgeMapper.toDetailDtoList(result.items, appVersion),
-      totalCount: result.totalCount,
-      unreadCount: result.unreadCount,
-      hasMore: result.hasMore,
-    };
+    return toReceivedNudgesResponse(result, appVersion);
   }
 
   @Get("sent")
@@ -197,7 +196,6 @@ export class NudgeController {
   async getSentNudges(
     @CurrentUser() user: CurrentUserPayload,
     @Query({ schema: GetNudgesQueryDto }) query: GetNudgesQueryDto,
-
     @AppVersion() appVersion?: string,
   ): Promise<SentNudgesResponseDto> {
     const result = await this.#getSentNudgesUseCase.execute({
@@ -206,11 +204,7 @@ export class NudgeController {
       size: query.limit,
     });
 
-    return {
-      nudges: NudgeMapper.toDetailDtoList(result.items, appVersion),
-      totalCount: result.totalCount,
-      hasMore: result.hasMore,
-    };
+    return toSentNudgesResponse(result, appVersion);
   }
 
   @Get("limit")
@@ -238,7 +232,7 @@ export class NudgeController {
       timezone: tz,
     });
 
-    return NudgeMapper.toLimitInfoDto(limitInfo);
+    return toNudgeLimitInfoResponse(limitInfo);
   }
 
   @Get("cooldown/:userId")
@@ -261,11 +255,7 @@ export class NudgeController {
       receiverId: params.userId,
     });
 
-    return {
-      canNudge: !cooldownInfo.isActive,
-      cooldownEndsAt: toISOStringOrNull(cooldownInfo.cooldownEndsAt ?? null),
-      remainingSeconds: cooldownInfo.remainingSeconds > 0 ? cooldownInfo.remainingSeconds : null,
-    };
+    return toNudgeCooldownResponse(cooldownInfo);
   }
 
   @Post("remind")
@@ -306,10 +296,7 @@ export class NudgeController {
       timezone: tz,
     });
 
-    return {
-      message: "할일 좀 만들어! 콕 찔렀습니다 👆",
-      remindNudge: NudgeMapper.toRemindNudgeDto(remindNudge),
-    };
+    return toCreateRemindNudgeResponse(remindNudge);
   }
 
   @Get("remind/cooldown/:userId")
@@ -331,11 +318,7 @@ export class NudgeController {
       receiverId: params.userId,
     });
 
-    return {
-      canNudge: !cooldownInfo.isActive,
-      cooldownEndsAt: toISOStringOrNull(cooldownInfo.cooldownEndsAt ?? null),
-      remainingSeconds: cooldownInfo.remainingSeconds > 0 ? cooldownInfo.remainingSeconds : null,
-    };
+    return toNudgeCooldownResponse(cooldownInfo);
   }
 
   @Patch(":id/read")
@@ -357,9 +340,6 @@ export class NudgeController {
       nudgeId: params.id,
     });
 
-    return {
-      message: "확인했습니다.",
-      readCount: 1,
-    };
+    return toMarkNudgeReadResponse();
   }
 }

@@ -1,13 +1,18 @@
-import { ErrorCode } from "@aido/api/errors";
-
 import type { FollowReaderPort } from "#api/modules/social/friends/social-friends.public";
-import { ApplicationException } from "#api/shared/application/application.exception";
+import { toCursorPage } from "#api/shared/application/cursor-page";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import { type NudgeInteractionConfigPort } from "../ports/nudge-interaction-config.port.js";
-import { type NudgeRepositoryPort } from "../ports/nudge.repository.port.js";
-import type { NudgeThanksPreviewResult } from "../read-models/nudge-interaction.read-model.js";
+import { NudgeId } from "../../domain/nudge-id.vo.js";
+import {
+  nudgeInteractionNotFound,
+  thanksTodoNotCompleted,
+  thanksTodoNotFound,
+} from "../nudges.errors.js";
+import type { NudgeInteractionConfigPort } from "../ports/nudge-interaction-config.port.js";
+import type { NudgeReaderPort } from "../ports/nudge.reader.port.js";
+import type { NudgeThanksPreview } from "../read-models/nudge-interaction.read-model.js";
 
-export interface GetNudgeThanksPreviewInput {
+export interface GetNudgeThanksPreviewQuery {
   readonly userId: string;
   readonly todoId: number;
   readonly limit?: number;
@@ -15,17 +20,18 @@ export interface GetNudgeThanksPreviewInput {
   readonly throughNudgeId?: number;
 }
 
-interface GetNudgeThanksPreviewDependencies {
-  readonly nudgeRepository: Pick<
-    NudgeRepositoryPort,
-    | "findInteractionById"
+export interface GetNudgeThanksPreviewDependencies {
+  readonly nudgeReader: Pick<
+    NudgeReaderPort,
+    | "findInteraction"
     | "findInteractionTodo"
     | "findLastReceivedNudgeId"
-    | "findThanksCandidatePage"
-    | "findThanksCandidates"
-    | "findThanksSummary"
+    | "countThankedRecipients"
+    | "findLastThankedAt"
+    | "listThanksRecipients"
+    | "countThanksRecipients"
   >;
-  readonly nudgeInteractionConfig: NudgeInteractionConfigPort;
+  readonly interactionConfig: NudgeInteractionConfigPort;
   readonly followReader: Pick<FollowReaderPort, "getCurrentMutualFriendIds">;
 }
 
@@ -36,77 +42,85 @@ export class GetNudgeThanksPreviewUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: GetNudgeThanksPreviewInput): Promise<NudgeThanksPreviewResult> {
-    if (!this.#dependencies.nudgeInteractionConfig.isEnabled) {
-      throw new ApplicationException(ErrorCode.NUDGE_1105);
+  async execute(query: GetNudgeThanksPreviewQuery): Promise<NudgeThanksPreview> {
+    const { nudgeReader, interactionConfig, followReader } = this.#dependencies;
+    if (!interactionConfig.isEnabled) {
+      throw nudgeInteractionNotFound();
     }
-    const todo = await this.#dependencies.nudgeRepository.findInteractionTodo(
-      input.todoId,
-      input.userId,
-    );
+    const ownerId = UserId.reconstitute(query.userId);
+    const todo = await nudgeReader.findInteractionTodo(query.todoId, ownerId);
     if (todo == null) {
-      throw new ApplicationException(ErrorCode.TODO_0801);
+      throw thanksTodoNotFound();
     }
     if (!todo.completed) {
-      throw new ApplicationException(ErrorCode.NUDGE_1110);
+      throw thanksTodoNotCompleted();
     }
 
-    if (input.throughNudgeId != null) {
-      const cutoff = await this.#dependencies.nudgeRepository.findInteractionById(
-        input.throughNudgeId,
-        input.userId,
+    // 다음 페이지는 첫 미리보기 시점의 마지막 콕까지만 보여 그 사이 새 콕이 끼어들지 않게 한다
+    if (query.throughNudgeId != null) {
+      const cutoff = await nudgeReader.findInteraction(
+        NudgeId.reconstitute(query.throughNudgeId),
+        ownerId,
       );
-      if (cutoff == null || cutoff.todoId !== input.todoId || cutoff.receiverId !== input.userId) {
-        throw new ApplicationException(ErrorCode.NUDGE_1105);
+      if (cutoff == null || cutoff.todoId !== query.todoId || cutoff.receiverId !== query.userId) {
+        throw nudgeInteractionNotFound();
       }
     }
-    const [throughNudgeId, thanksSummary] = await Promise.all([
-      input.throughNudgeId ??
-        this.#dependencies.nudgeRepository.findLastReceivedNudgeId(input.todoId, input.userId),
-      this.#dependencies.nudgeRepository.findThanksSummary(input.todoId, input.userId),
+    const [throughNudgeId, thankedRecipientCount, lastThankedAt] = await Promise.all([
+      query.throughNudgeId == null
+        ? nudgeReader.findLastReceivedNudgeId(query.todoId, ownerId)
+        : NudgeId.reconstitute(query.throughNudgeId),
+      nudgeReader.countThankedRecipients(query.todoId, ownerId),
+      nudgeReader.findLastThankedAt(query.todoId, ownerId),
     ]);
+    const preview = { todoId: query.todoId, thankedRecipientCount, lastThankedAt };
     if (throughNudgeId == null || todo.visibility !== "PUBLIC") {
       return {
-        todoId: input.todoId,
-        throughNudgeId,
+        ...preview,
+        throughNudgeId: throughNudgeId?.value ?? null,
         recipients: [],
-        totalRecipients: 0,
-        nextCursor: null,
-        hasNext: false,
-        ...thanksSummary,
+        pagination: { totalRecipients: 0, nextCursor: null, hasNext: false },
       };
     }
-    const friendIds = await this.#dependencies.followReader.getCurrentMutualFriendIds(input.userId);
-    if (input.limit != null) {
-      const page = await this.#dependencies.nudgeRepository.findThanksCandidatePage({
-        userId: input.userId,
-        todoId: input.todoId,
-        throughNudgeId,
-        friendIds,
-        cursor: input.cursor,
-        size: input.limit,
+
+    const candidateQuery = {
+      ownerId,
+      todoId: query.todoId,
+      throughNudgeId,
+      friendIds: await followReader.getCurrentMutualFriendIds(query.userId),
+    };
+    if (query.limit == null) {
+      const recipients = await nudgeReader.listThanksRecipients({
+        ...candidateQuery,
+        afterNudgeId: null,
+        limit: null,
       });
       return {
-        todoId: input.todoId,
-        throughNudgeId,
-        recipients: page.items.map((nudge) => nudge.sender),
-        totalRecipients: page.totalRecipients,
-        nextCursor: page.nextCursor,
-        hasNext: page.hasNext,
-        ...thanksSummary,
+        ...preview,
+        throughNudgeId: throughNudgeId.value,
+        recipients: recipients.map((recipient) => recipient.sender),
+        pagination: null,
       };
     }
-    const candidates = await this.#dependencies.nudgeRepository.findThanksCandidates({
-      ...input,
-      throughNudgeId,
-      friendIds,
-    });
 
+    const [rows, totalRecipients] = await Promise.all([
+      nudgeReader.listThanksRecipients({
+        ...candidateQuery,
+        afterNudgeId: query.cursor == null ? null : NudgeId.reconstitute(query.cursor),
+        limit: query.limit + 1,
+      }),
+      nudgeReader.countThanksRecipients(candidateQuery),
+    ]);
+    const page = toCursorPage({ rows, size: query.limit, toCursor: (row) => row.nudgeId });
     return {
-      todoId: input.todoId,
-      throughNudgeId,
-      recipients: candidates.map((nudge) => nudge.sender),
-      ...thanksSummary,
+      ...preview,
+      throughNudgeId: throughNudgeId.value,
+      recipients: page.items.map((recipient) => recipient.sender),
+      pagination: {
+        totalRecipients,
+        nextCursor: page.pagination.nextCursor,
+        hasNext: page.pagination.hasNext,
+      },
     };
   }
 }

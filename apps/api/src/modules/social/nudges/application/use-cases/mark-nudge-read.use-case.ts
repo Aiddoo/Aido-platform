@@ -1,20 +1,21 @@
-import { ErrorCode } from "@aido/api/errors";
-
-import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
-import { now } from "#api/shared/domain/date/utils/core";
+import type { ClockPort } from "#api/shared/application/ports/clock.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
+import { NudgeId } from "../../domain/nudge-id.vo.js";
+import { nudgeNotFound } from "../nudges.errors.js";
 import { NudgeLogEvent } from "../nudges.log-events.js";
-import { type NudgeRepositoryPort } from "../ports/nudge.repository.port.js";
+import type { NudgeRepositoryPort } from "../ports/nudge.repository.port.js";
 
-export interface MarkNudgeReadInput {
+export interface MarkNudgeReadCommand {
   readonly userId: string;
   readonly nudgeId: number;
 }
 
-interface MarkNudgeReadDependencies {
-  readonly nudgeRepository: Pick<NudgeRepositoryPort, "findById" | "saveRead">;
-  readonly logger: ApplicationLoggerPort;
+export interface MarkNudgeReadDependencies {
+  readonly nudgeRepository: Pick<NudgeRepositoryPort, "findById" | "save">;
+  readonly clock: ClockPort;
+  readonly logger: Pick<ApplicationLoggerPort, "debug">;
 }
 
 export class MarkNudgeReadUseCase {
@@ -24,18 +25,18 @@ export class MarkNudgeReadUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: MarkNudgeReadInput): Promise<void> {
-    const { userId, nudgeId } = input;
-
-    const nudge = await this.#dependencies.nudgeRepository.findById(nudgeId);
-    if (nudge == null || !nudge.isReceivedBy(userId)) {
-      throw new ApplicationException(ErrorCode.NUDGE_1105, { nudgeId });
+  async execute(command: MarkNudgeReadCommand): Promise<void> {
+    const { nudgeRepository, clock, logger } = this.#dependencies;
+    const nudgeId = NudgeId.reconstitute(command.nudgeId);
+    const nudge = await nudgeRepository.findById(nudgeId);
+    if (nudge == null || !nudge.isReceivedBy(UserId.reconstitute(command.userId))) {
+      throw nudgeNotFound(nudgeId);
     }
-    if (!nudge.markRead(now())) {
+    if (!nudge.markRead(clock.now())) {
       return;
     }
 
-    await this.#dependencies.nudgeRepository.saveRead(nudge);
-    this.#dependencies.logger.debug({ event: NudgeLogEvent.READ, userId, nudgeId });
+    await nudgeRepository.save(nudge);
+    logger.debug({ event: NudgeLogEvent.READ, userId: command.userId, nudgeId: command.nudgeId });
   }
 }

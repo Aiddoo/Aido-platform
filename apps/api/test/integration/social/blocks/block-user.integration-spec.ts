@@ -16,6 +16,7 @@ import { DrizzleFollowRepository } from "#api/modules/social/friends/infrastruct
 import { DrizzleFriendProfileReader } from "#api/modules/social/friends/infrastructure/persistence/drizzle-friend-profile.reader";
 import { DrizzleFriendSearchReader } from "#api/modules/social/friends/infrastructure/persistence/drizzle-friend-search.reader";
 import { DrizzleFriendshipReader } from "#api/modules/social/friends/infrastructure/persistence/drizzle-friendship.reader";
+import { NudgeId } from "#api/modules/social/nudges/domain/nudge-id.vo";
 import { DrizzleNudgeRepository } from "#api/modules/social/nudges/infrastructure/persistence/drizzle-nudge.repository";
 import { requireRecord } from "#api/platform/database/database-error.util";
 import { PostgresMutationLockAdapter } from "#api/platform/database/postgres-mutation-lock.adapter";
@@ -292,10 +293,22 @@ describe("사용자 차단 (실제 PostgreSQL)", () => {
     // When
     const [receivedNudges, unreadNudges, sentCheers, cheersSeenByBlocked, searchResults] =
       await Promise.all([
-        nudgeRepository.findReceivedNudges({ userId: meId, size: 10 }),
-        nudgeRepository.countUnreadReceived(meId),
-        cheerRepository.findSentCheers({ userId: meId, size: 10 }),
-        cheerRepository.findReceivedCheers({ userId: otherId, size: 10 }),
+        nudgeRepository.listReceived({
+          userId: UserId.reconstitute(meId),
+          afterNudgeId: null,
+          limit: 10,
+        }),
+        nudgeRepository.countUnreadReceived(UserId.reconstitute(meId)),
+        cheerRepository.listSent({
+          userId: UserId.reconstitute(meId),
+          afterCheerId: null,
+          limit: 10,
+        }),
+        cheerRepository.listReceived({
+          userId: UserId.reconstitute(otherId),
+          afterCheerId: null,
+          limit: 10,
+        }),
         friendSearchReader.searchUsers({
           viewerId: UserId.reconstitute(meId),
           term: UserSearchTerm.create(otherTag),
@@ -336,15 +349,15 @@ describe("사용자 차단 (실제 PostgreSQL)", () => {
       .returning();
     const nudgeId = requireRecord(createdNudge).id;
     const [receivedBeforeBlock, sentBeforeBlock] = await Promise.all([
-      nudgeRepository.findInteractionById(nudgeId, meId),
-      nudgeRepository.findInteractionById(nudgeId, otherId),
+      nudgeRepository.findInteraction(NudgeId.reconstitute(nudgeId), UserId.reconstitute(meId)),
+      nudgeRepository.findInteraction(NudgeId.reconstitute(nudgeId), UserId.reconstitute(otherId)),
     ]);
     await blockUser.execute({ blockerId: meId, blockedId: otherId });
 
     // When
     const [receivedAfterBlock, sentAfterBlock] = await Promise.all([
-      nudgeRepository.findInteractionById(nudgeId, meId),
-      nudgeRepository.findInteractionById(nudgeId, otherId),
+      nudgeRepository.findInteraction(NudgeId.reconstitute(nudgeId), UserId.reconstitute(meId)),
+      nudgeRepository.findInteraction(NudgeId.reconstitute(nudgeId), UserId.reconstitute(otherId)),
     ]);
 
     // Then

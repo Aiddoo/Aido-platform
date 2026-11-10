@@ -1,41 +1,43 @@
-import { ErrorCode } from "@aido/api/errors";
-
 import type { FollowReaderPort } from "#api/modules/social/friends/social-friends.public";
-import { NudgeLockKeys } from "#api/modules/social/nudges/application/nudges.lock-keys";
-import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
-import { type MutationLockPort, type UnitOfWorkPort } from "#api/shared/application/ports/index";
-import { now } from "#api/shared/domain/date/utils/core";
-import { startOfDayInTimezone } from "#api/shared/domain/date/utils/timezone";
+import type { ClockPort } from "#api/shared/application/ports/clock.port";
+import type { MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
+import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
+import { dailySendWindowAt } from "../../../shared/domain/daily-send-window.domain-service.js";
 import { evaluateRemindNudgeCooldown } from "../../domain/nudge-cooldown.domain-service.js";
 import { NudgeMessage } from "../../domain/nudge-message.vo.js";
 import { ReminderNudge } from "../../domain/reminder-nudge.aggregate.js";
-import { NudgeLogEvent } from "../nudges.log-events.js";
-import { type NudgeNotifierPort } from "../ports/nudge-notifier.port.js";
 import {
-  type NudgeRepositoryPort,
-  type ReminderNudgeWithRelations,
-} from "../ports/nudge.repository.port.js";
+  cannotNudgeSelf,
+  nudgeTargetNotFriend,
+  remindNudgeCooldownActive,
+  remindTargetHasTodayTodos,
+} from "../nudges.errors.js";
+import { NudgeLockKeys } from "../nudges.lock-keys.js";
+import { NudgeLogEvent } from "../nudges.log-events.js";
+import type { NudgeNotifierPort } from "../ports/nudge-notifier.port.js";
+import type { NudgeRepositoryPort } from "../ports/nudge.repository.port.js";
 
-export interface SendRemindNudgeInput {
+export interface SendRemindNudgeCommand {
   readonly senderId: string;
   readonly receiverId: string;
   readonly message?: string;
   readonly timezone: string;
 }
 
-interface SendRemindNudgeDependencies {
+export interface SendRemindNudgeDependencies {
+  readonly unitOfWork: UnitOfWorkPort;
+  readonly mutationLock: MutationLockPort;
   readonly nudgeRepository: Pick<
     NudgeRepositoryPort,
-    "countTodayTodos" | "createRemindNudge" | "findLastRemindNudge"
+    "countTodosOn" | "findLastReminderSentTo" | "nextReminderId" | "saveReminder"
   >;
+  readonly followReader: Pick<FollowReaderPort, "isMutualFriend" | "getUserDisplayName">;
   readonly notifier: Pick<NudgeNotifierPort, "notifyNudgeSent">;
-  readonly mutationLock: MutationLockPort;
-  readonly unitOfWork: UnitOfWorkPort;
-  readonly followReader: Pick<FollowReaderPort, "isMutualFriend">;
-  readonly logger: ApplicationLoggerPort;
+  readonly clock: ClockPort;
+  readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
 
 export class SendRemindNudgeUseCase {
@@ -45,79 +47,66 @@ export class SendRemindNudgeUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: SendRemindNudgeInput): Promise<ReminderNudgeWithRelations> {
-    const { senderId, receiverId, message } = input;
+  async execute(command: SendRemindNudgeCommand): Promise<ReminderNudge> {
+    const { unitOfWork, mutationLock, nudgeRepository, followReader, notifier, clock, logger } =
+      this.#dependencies;
+    const senderId = UserId.reconstitute(command.senderId);
+    const receiverId = UserId.reconstitute(command.receiverId);
 
-    if (senderId === receiverId) {
-      throw new ApplicationException(ErrorCode.NUDGE_1104);
+    if (senderId.equals(receiverId)) {
+      throw cannotNudgeSelf();
     }
-
-    const isFriend = await this.#dependencies.followReader.isMutualFriend(senderId, receiverId);
-    if (!isFriend) {
-      throw new ApplicationException(ErrorCode.NUDGE_1103, {
-        targetUserId: receiverId,
-      });
+    if (!(await followReader.isMutualFriend(senderId.value, receiverId.value))) {
+      throw nudgeTargetNotFriend(receiverId);
     }
+    const message = command.message == null ? null : NudgeMessage.create(command.message);
+    // 친구의 "오늘"도 보낸 사람이 요청한 시간대로 본다
+    const requestedAt = clock.now();
+    const today = dailySendWindowAt({ now: requestedAt, timeZone: command.timezone }).localDate;
 
-    const nudgeMessage = NudgeMessage.of(message);
-    const capturedAt = now();
-    const today = startOfDayInTimezone(capturedAt, input.timezone);
+    const { reminder, senderName } = await unitOfWork.run(async () => {
+      await mutationLock.acquire([NudgeLockKeys.remindCooldown(senderId, receiverId)]);
 
-    const remindNudge = await this.#dependencies.unitOfWork.run(async () => {
-      await this.#dependencies.mutationLock.acquire([
-        NudgeLockKeys.remindCooldown(
-          UserId.reconstitute(senderId),
-          UserId.reconstitute(receiverId),
-        ),
-      ]);
-
-      const todayTodoCount = await this.#dependencies.nudgeRepository.countTodayTodos(
-        receiverId,
-        today,
-      );
-      if (todayTodoCount > 0) {
-        throw new ApplicationException(ErrorCode.NUDGE_1107, { receiverId });
+      if ((await nudgeRepository.countTodosOn(receiverId, today)) > 0) {
+        throw remindTargetHasTodayTodos(receiverId);
       }
 
-      const lastRemind = await this.#dependencies.nudgeRepository.findLastRemindNudge(
+      const lastReminder = await nudgeRepository.findLastReminderSentTo(senderId, receiverId);
+      const cooldown = evaluateRemindNudgeCooldown({
+        lastSentAt: lastReminder?.createdAt ?? null,
+        now: clock.now(),
+      });
+      if (cooldown.isActive) {
+        throw remindNudgeCooldownActive(receiverId, cooldown.remainingSeconds);
+      }
+
+      const created = ReminderNudge.create({
+        id: await nudgeRepository.nextReminderId(),
         senderId,
         receiverId,
-      );
-      if (lastRemind != null) {
-        const cooldown = evaluateRemindNudgeCooldown(lastRemind.createdAt);
-        if (cooldown.isActive) {
-          throw new ApplicationException(ErrorCode.NUDGE_1108, {
-            targetUserId: receiverId,
-            remainingSeconds: cooldown.remainingSeconds,
-          });
-        }
-      }
-
-      return this.#dependencies.nudgeRepository.createRemindNudge(
-        ReminderNudge.planCreation({
-          senderId,
-          receiverId,
-          message: nudgeMessage.raw,
-        }),
-      );
+        message,
+        now: requestedAt,
+      });
+      await nudgeRepository.saveReminder(created);
+      return {
+        reminder: created,
+        senderName: await followReader.getUserDisplayName(senderId.value),
+      };
     });
 
-    this.#dependencies.logger.log({
+    logger.log({
       event: NudgeLogEvent.REMINDER_SENT,
-      nudgeId: remindNudge.id,
-      senderId,
-      receiverId,
+      nudgeId: reminder.id.value,
+      senderId: senderId.value,
+      receiverId: receiverId.value,
     });
-
-    const senderName = remindNudge.sender.profile?.name ?? remindNudge.sender.userTag;
-    this.#dependencies.notifier.notifyNudgeSent({
-      nudgeId: remindNudge.id,
-      senderId,
-      receiverId,
+    notifier.notifyNudgeSent({
+      nudgeId: reminder.id.value,
+      senderId: senderId.value,
+      receiverId: receiverId.value,
       senderName,
-      message: nudgeMessage.raw,
+      message: message?.value,
     });
-
-    return remindNudge;
+    return reminder;
   }
 }

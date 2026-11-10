@@ -7,6 +7,7 @@ import {
   CurrentUser,
   type CurrentUserPayload,
 } from "#api/modules/identity/identity-auth-http.public";
+import { API_VERSION } from "#api/platform/http/api-versioning";
 import { AppVersion } from "#api/platform/http/request-client/index";
 import {
   ApiConflictError,
@@ -26,19 +27,21 @@ import { GetNudgeInteractionsUseCase } from "../../../application/use-cases/get-
 import { GetNudgeThanksPreviewUseCase } from "../../../application/use-cases/get-nudge-thanks-preview.use-case.js";
 import { ReplyToNudgeUseCase } from "../../../application/use-cases/reply-to-nudge.use-case.js";
 import { SendNudgeThanksUseCase } from "../../../application/use-cases/send-nudge-thanks.use-case.js";
-import { NudgeInteractionMapper } from "./nudge-interaction-response.mapper.js";
+import {
+  toNudgeInteractionResponse,
+  toNudgeInteractionsResponse,
+  toNudgeThanksPreviewResponse,
+} from "./nudge-interaction-response.mapper.js";
 import {
   GetNudgeInteractionsQueryDto,
   GetNudgeThanksPreviewQueryDto,
-  NudgeTodoIdParamDto,
-  ReplyToNudgeDto,
-  SendNudgeThanksDto,
-} from "./nudge-interaction.dto.js";
-import {
   NudgeInteractionAvailabilityResponseDto,
   NudgeInteractionResponseDto,
   NudgeInteractionsResponseDto,
   NudgeThanksPreviewResponseDto,
+  NudgeTodoIdParamDto,
+  ReplyToNudgeDto,
+  SendNudgeThanksDto,
   SendNudgeThanksResponseDto,
 } from "./nudge-interaction.dto.js";
 import { NudgeIdParamDto } from "./nudge.dto.js";
@@ -53,7 +56,7 @@ const APP_VERSION_HEADER = {
 
 @ApiTags(SWAGGER_TAGS.NUDGES)
 @ApiBearerAuth()
-@Controller("nudges")
+@Controller({ path: "nudges", version: API_VERSION.V1 })
 export class NudgeInteractionController {
   readonly #getNudgeInteractionAvailabilityUseCase: GetNudgeInteractionAvailabilityUseCase;
   readonly #getNudgeInteractionsUseCase: GetNudgeInteractionsUseCase;
@@ -114,12 +117,7 @@ export class NudgeInteractionController {
       cursor: query.cursor,
       size: query.limit,
     });
-    return {
-      ...page,
-      items: page.items.map((nudge) =>
-        NudgeInteractionMapper.toDto(nudge, user.userId, appVersion),
-      ),
-    };
+    return toNudgeInteractionsResponse(page, user.userId, appVersion);
   }
 
   @Get(":id/interaction")
@@ -143,7 +141,7 @@ export class NudgeInteractionController {
       userId: user.userId,
       nudgeId: params.id,
     });
-    return NudgeInteractionMapper.toDto(nudge, user.userId, appVersion);
+    return toNudgeInteractionResponse(nudge, user.userId, appVersion);
   }
 
   @Put(":id/reply")
@@ -173,7 +171,7 @@ export class NudgeInteractionController {
       nudgeId: params.id,
       replyKind: body.replyKind,
     });
-    return NudgeInteractionMapper.toDto(nudge, user.userId, appVersion);
+    return toNudgeInteractionResponse(nudge, user.userId, appVersion);
   }
 
   @Get("todos/:todoId/thanks")
@@ -200,7 +198,7 @@ export class NudgeInteractionController {
       todoId: params.todoId,
       ...query,
     });
-    return NudgeInteractionMapper.toThanksPreviewDto(preview, appVersion);
+    return toNudgeThanksPreviewResponse(preview, appVersion);
   }
 
   @Put("todos/:todoId/thanks")

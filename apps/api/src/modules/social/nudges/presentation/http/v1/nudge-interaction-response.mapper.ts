@@ -1,56 +1,64 @@
-import type { NudgeInteractionResponse, NudgeThanksPreviewResponse, NudgeSender } from "@aido/api";
-
-import { resolveProfileImage } from "#api/platform/http/profile/profile-image.resolver";
-import { toISOStringOrNull } from "#api/shared/domain/date/utils/format";
-
-import type { NudgeUserBrief } from "../../../application/ports/nudge.repository.port.js";
 import type {
-  NudgeInteractionResult,
-  NudgeThanksPreviewResult,
+  NudgeInteractionResponse,
+  NudgeInteractionsResponse,
+  NudgeThanksPreviewResponse,
+} from "@aido/api";
+
+import type { CursorPage } from "#api/shared/application/cursor-page";
+
+import type {
+  NudgeInteraction,
+  NudgeThanksPreview,
 } from "../../../application/read-models/nudge-interaction.read-model.js";
-import { NudgeMapper } from "./nudge-response.mapper.js";
+import {
+  toNudgeResponse,
+  toNudgeUserResponse,
+  toNullableIsoString,
+} from "./nudge-response.mapper.js";
 
-export const NudgeInteractionMapper = {
-  toUserDto(user: NudgeUserBrief, appVersion?: string): NudgeSender {
-    return {
-      id: user.id,
-      userTag: user.userTag,
-      name: user.profile?.name ?? null,
-      profileImage: resolveProfileImage(user.profile?.profileImage ?? null, appVersion),
-    };
-  },
+// 할 일 정보는 지금 답장·감사할 수 있거나 내가 받은 콕일 때만 보여 준다(비공개 전환·관계 해제 뒤 노출 방지)
+export function toNudgeInteractionResponse(
+  nudge: NudgeInteraction,
+  viewerId: string,
+  appVersion?: string,
+): NudgeInteractionResponse {
+  return {
+    ...toNudgeResponse(nudge),
+    sender: toNudgeUserResponse(nudge.sender, appVersion),
+    receiver: toNudgeUserResponse(nudge.receiver, appVersion),
+    todo:
+      nudge.isAvailable || nudge.receiverId === viewerId
+        ? { id: nudge.todo.id, title: nudge.todo.title, completed: nudge.todo.completed }
+        : null,
+    replyKind: nudge.replyKind,
+    repliedAt: toNullableIsoString(nudge.repliedAt),
+    replyUpdatedAt: toNullableIsoString(nudge.replyUpdatedAt),
+    thankedAt: toNullableIsoString(nudge.thankedAt),
+    isAvailable: nudge.isAvailable,
+  };
+}
 
-  toDto(
-    nudge: NudgeInteractionResult,
-    userId: string,
-    appVersion?: string,
-  ): NudgeInteractionResponse {
-    return {
-      ...NudgeMapper.toDto(nudge),
-      sender: NudgeInteractionMapper.toUserDto(nudge.sender, appVersion),
-      receiver: NudgeInteractionMapper.toUserDto(nudge.receiver, appVersion),
-      todo:
-        nudge.isAvailable || nudge.receiverId === userId
-          ? { id: nudge.todo.id, title: nudge.todo.title, completed: nudge.todo.completed }
-          : null,
-      replyKind: nudge.replyKind,
-      repliedAt: toISOStringOrNull(nudge.repliedAt),
-      replyUpdatedAt: toISOStringOrNull(nudge.replyUpdatedAt),
-      thankedAt: toISOStringOrNull(nudge.thankedAt),
-      isAvailable: nudge.isAvailable,
-    };
-  },
+export function toNudgeInteractionsResponse(
+  page: CursorPage<NudgeInteraction, number>,
+  viewerId: string,
+  appVersion?: string,
+): NudgeInteractionsResponse {
+  return {
+    items: page.items.map((nudge) => toNudgeInteractionResponse(nudge, viewerId, appVersion)),
+    pagination: page.pagination,
+  };
+}
 
-  toThanksPreviewDto(
-    preview: NudgeThanksPreviewResult,
-    appVersion?: string,
-  ): NudgeThanksPreviewResponse {
-    return {
-      ...preview,
-      lastThankedAt: toISOStringOrNull(preview.lastThankedAt),
-      recipients: preview.recipients.map((user) =>
-        NudgeInteractionMapper.toUserDto(user, appVersion),
-      ),
-    };
-  },
-};
+export function toNudgeThanksPreviewResponse(
+  preview: NudgeThanksPreview,
+  appVersion?: string,
+): NudgeThanksPreviewResponse {
+  return {
+    todoId: preview.todoId,
+    throughNudgeId: preview.throughNudgeId,
+    recipients: preview.recipients.map((user) => toNudgeUserResponse(user, appVersion)),
+    ...preview.pagination,
+    thankedRecipientCount: preview.thankedRecipientCount,
+    lastThankedAt: toNullableIsoString(preview.lastThankedAt),
+  };
+}

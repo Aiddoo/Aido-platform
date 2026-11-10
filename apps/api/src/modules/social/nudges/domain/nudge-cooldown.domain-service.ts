@@ -1,25 +1,19 @@
 import { NUDGE_LIMITS, REMIND_NUDGE_LIMITS } from "@aido/api/vocabulary";
 
-import { calculateCooldown } from "#api/shared/domain/date/utils/cooldown";
+import {
+  evaluateSendCooldown,
+  type SendCooldown,
+} from "../../shared/domain/send-cooldown.domain-service.js";
 
-export interface NudgeCooldown {
-  isActive: boolean;
-  remainingSeconds: number;
-  cooldownEndsAt: Date | null;
+interface EvaluateNudgeCooldownParams {
+  readonly lastSentAt: Temporal.Instant | null;
+  readonly now: Temporal.Instant;
 }
 
-export function evaluateNudgeCooldown(lastNudgeTime: Date | null): NudgeCooldown {
-  const { isActive, remainingSeconds, endsAt } = calculateCooldown(
-    lastNudgeTime,
-    NUDGE_LIMITS.COOLDOWN_HOURS,
-  );
-  return { isActive, remainingSeconds, cooldownEndsAt: endsAt };
+export function evaluateNudgeCooldown(params: EvaluateNudgeCooldownParams): SendCooldown {
+  return evaluateSendCooldown({ ...params, cooldownHours: NUDGE_LIMITS.COOLDOWN_HOURS });
 }
 
-export function evaluateRemindNudgeCooldown(lastNudgeTime: Date | null): NudgeCooldown {
-  const { isActive, remainingSeconds, endsAt } = calculateCooldown(
-    lastNudgeTime,
-    REMIND_NUDGE_LIMITS.COOLDOWN_HOURS,
-  );
-  return { isActive, remainingSeconds, cooldownEndsAt: endsAt };
+export function evaluateRemindNudgeCooldown(params: EvaluateNudgeCooldownParams): SendCooldown {
+  return evaluateSendCooldown({ ...params, cooldownHours: REMIND_NUDGE_LIMITS.COOLDOWN_HOURS });
 }

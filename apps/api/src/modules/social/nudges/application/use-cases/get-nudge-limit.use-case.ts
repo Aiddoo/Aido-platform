@@ -1,16 +1,21 @@
-import {
-  calculateRemainingLimit,
-  type EntitlementReaderPort,
-} from "#api/modules/access/access-entitlement.public";
-import { now } from "#api/shared/domain/date/utils/core";
-import { dayWindowInTimezone } from "#api/shared/domain/date/utils/timezone";
+import { calculateRemainingLimit } from "#api/modules/access/access-entitlement.public";
+import type { ClockPort } from "#api/shared/application/ports/clock.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
+import { dailySendWindowAt } from "../../../shared/domain/daily-send-window.domain-service.js";
+import type { NudgeLimitReaderPort } from "../ports/nudge-limit.reader.port.js";
 import type { NudgeRepositoryPort } from "../ports/nudge.repository.port.js";
-import type { NudgeLimitSnapshot } from "../read-models/nudge.read-model.js";
+import type { NudgeDailyLimit } from "../read-models/nudge.read-model.js";
 
-interface GetNudgeLimitDependencies {
-  readonly nudgeRepository: Pick<NudgeRepositoryPort, "countSentSince">;
-  readonly entitlementReader: Pick<EntitlementReaderPort, "getLimit">;
+export interface GetNudgeLimitQuery {
+  readonly userId: string;
+  readonly timezone: string;
+}
+
+export interface GetNudgeLimitDependencies {
+  readonly nudgeRepository: Pick<NudgeRepositoryPort, "countSentBetween">;
+  readonly limitReader: Pick<NudgeLimitReaderPort, "readDailyLimit">;
+  readonly clock: ClockPort;
 }
 
 export class GetNudgeLimitUseCase {
@@ -20,23 +25,14 @@ export class GetNudgeLimitUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: {
-    readonly userId: string;
-    readonly timezone: string;
-  }): Promise<NudgeLimitSnapshot> {
-    const window = dayWindowInTimezone(now(), input.timezone);
+  async execute(query: GetNudgeLimitQuery): Promise<NudgeDailyLimit> {
+    const { nudgeRepository, limitReader, clock } = this.#dependencies;
+    const userId = UserId.reconstitute(query.userId);
+    const window = dailySendWindowAt({ now: clock.now(), timeZone: query.timezone });
     const [dailyLimit, used] = await Promise.all([
-      this.#dependencies.entitlementReader.getLimit(input.userId, "NUDGE"),
-      this.#dependencies.nudgeRepository.countSentSince(
-        input.userId,
-        window.startsAt,
-        window.endsAt,
-      ),
+      limitReader.readDailyLimit(userId),
+      nudgeRepository.countSentBetween(userId, window),
     ]);
-    return {
-      dailyLimit,
-      used,
-      remaining: calculateRemainingLimit(dailyLimit, used),
-    };
+    return { dailyLimit, used, remaining: calculateRemainingLimit(dailyLimit, used) };
   }
 }
