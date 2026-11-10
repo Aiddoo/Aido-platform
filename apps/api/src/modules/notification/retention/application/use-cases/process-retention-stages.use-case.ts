@@ -3,6 +3,7 @@ import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { localDateIn } from "#api/shared/domain/time/time-zone-name";
 
+import { NotificationId } from "../../../inbox/domain/notification-id.vo.js";
 import { type RetentionNotificationCopySelection } from "../../../push/application/messages/notification-copy-catalog.messages.js";
 import { createRetentionNotificationMessage } from "../../../push/application/messages/notification.messages.js";
 import type { PublishNotificationUseCase } from "../../../push/application/use-cases/publish-notification.use-case.js";
@@ -191,7 +192,7 @@ export class ProcessRetentionStagesUseCase {
       if (notification != null) {
         await this.#dependencies.repository.linkStageNotification(
           candidate.stageId,
-          notification.id,
+          NotificationId.reconstitute(notification.id),
           now,
         );
       }

@@ -1,6 +1,7 @@
 import { decideEveningWeatherBriefing } from "#api/modules/weather/forecasts/weather-forecasts.public";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantToDate } from "#api/shared/domain/time/instant";
 
 import type { NotificationHistoryReader } from "../../../inbox/application/notification-history.reader.js";
@@ -81,7 +82,7 @@ export class SendWeatherEveningUseCase implements TimezoneReminderStrategyPort {
       tz: ctx.tz,
       hour: ctx.localHour,
       minute: ctx.localMinute,
-      userId: ctx.userId,
+      userId: ctx.userId == null ? undefined : UserId.reconstitute(ctx.userId),
     });
     const targets = await filterUnnotifiedWeatherUsers(
       this.#dependencies.notificationHistoryReader,
@@ -144,7 +145,7 @@ export class SendWeatherEveningUseCase implements TimezoneReminderStrategyPort {
       tz: ctx.tz,
       hour: ctx.localHour,
       minute: ctx.localMinute,
-      userId: ctx.userId,
+      userId: ctx.userId == null ? undefined : UserId.reconstitute(ctx.userId),
     });
     return sendWeatherFallbackNotifications(this.#dependencies, {
       users,

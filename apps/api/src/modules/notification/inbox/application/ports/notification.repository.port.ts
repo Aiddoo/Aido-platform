@@ -1,3 +1,5 @@
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+
 import type { NotificationId } from "../../domain/notification-id.vo.js";
 import type { NotificationType } from "../../domain/notification-type.constants.js";
 import type { Notification } from "../../domain/notification.aggregate.js";
@@ -22,15 +24,15 @@ export abstract class NotificationRepositoryPort {
   // 처음 연 기록만 남기고 읽음도 맞춘다. 남의 알림·없는 알림·이미 연 알림은 false다
   abstract markAsOpened(
     notificationId: NotificationId,
-    userId: string,
+    userId: UserId,
     now: Temporal.Instant,
   ): Promise<boolean>;
   abstract markAllAsRead(
-    userId: string,
+    userId: UserId,
     types: readonly NotificationType[] | undefined,
     now: Temporal.Instant,
   ): Promise<{ count: number }>;
   abstract deleteNotificationsByActorId(
-    actorId: string,
+    actorId: UserId,
   ): Promise<{ count: number; affectedUserIds: string[] }>;
 }

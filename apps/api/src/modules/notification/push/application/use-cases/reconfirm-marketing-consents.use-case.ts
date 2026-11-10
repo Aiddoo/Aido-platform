@@ -7,6 +7,7 @@ import {
 } from "#api/modules/identity/identity-settings.public";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { DEFAULT_LOCALE } from "#api/shared/domain/locale";
 import { instantToDate } from "#api/shared/domain/time/instant";
 import { DEFAULT_DELIVERY_TIMEZONE } from "#api/shared/domain/time/time-zone-name";
@@ -66,7 +67,7 @@ export class ReconfirmMarketingConsentsUseCase {
 
   async execute(input: ReconfirmMarketingConsentsInput): Promise<ReconfirmMarketingConsentsResult> {
     const cutoff = marketingReconfirmCutoff(input.now);
-    let afterUserId: string | undefined;
+    let afterUserId: UserId | undefined;
     let notifiedCount = 0;
     let hasRemaining = false;
 
@@ -77,7 +78,7 @@ export class ReconfirmMarketingConsentsUseCase {
         limit: MARKETING_CONSENT_RECONFIRM.BATCH_SIZE,
       });
       const quietUserIds = await this.#dependencies.quietHoursReader.findUsersInQuietHours(
-        targets.map((target) => target.userId),
+        targets.map((target) => UserId.reconstitute(target.userId)),
         instantToDate(input.now),
       );
       const daytimeUserIds = targets
@@ -90,7 +91,7 @@ export class ReconfirmMarketingConsentsUseCase {
       if (!hasRemaining) {
         break;
       }
-      afterUserId = targets.at(-1)?.userId;
+      afterUserId = targets.map((target) => UserId.reconstitute(target.userId)).at(-1);
     }
 
     this.#dependencies.logger.log({
@@ -106,15 +107,19 @@ export class ReconfirmMarketingConsentsUseCase {
     cutoff: Temporal.Instant,
     now: Temporal.Instant,
   ): Promise<number> {
+    const recipientIds = userIds.map((userId) => UserId.reconstitute(userId));
     const [locales, timezones] = await Promise.all([
-      this.#dependencies.localeReader.getLocales(userIds),
+      this.#dependencies.localeReader.getLocales(recipientIds),
       this.#dependencies.timezoneReader.getTimezones(userIds),
     ]);
     return this.#dependencies.unitOfWork.run(async () => {
-      const claimed = await this.#dependencies.reconfirmAccess.claimMarketingReconfirm(userIds, {
-        cutoff,
-        at: now,
-      });
+      const claimed = await this.#dependencies.reconfirmAccess.claimMarketingReconfirm(
+        recipientIds,
+        {
+          cutoff,
+          at: now,
+        },
+      );
       const notices = claimed.flatMap((recipient) =>
         this.#notice(recipient, {
           locale: locales.get(recipient.userId) ?? DEFAULT_LOCALE,

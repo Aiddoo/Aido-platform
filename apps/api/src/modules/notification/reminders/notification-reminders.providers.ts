@@ -68,7 +68,12 @@ export const NOTIFICATION_REMINDERS_PERSISTENCE_PROVIDERS = [
     inject: [InsightsWeeklyAchievementWriterPort],
     useFactory: (
       writer: Pick<InsightsWeeklyAchievementWriterPort, "execute">,
-    ): WeeklyAchievementWriterPort => writer,
+    ): WeeklyAchievementWriterPort => ({
+      execute: ({ records }) =>
+        writer.execute({
+          records: records.map((record) => ({ ...record, userId: record.userId.value })),
+        }),
+    }),
   },
 ] satisfies Provider[];
 

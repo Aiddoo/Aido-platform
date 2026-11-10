@@ -2,6 +2,7 @@ import { USER_PREFERENCE_DEFAULTS } from "@aido/api/vocabulary";
 
 import { computeEffectiveStreak } from "#api/modules/identity/identity-settings.public";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { plainDateToDate } from "#api/shared/domain/time/plain-date";
 
 import type { NotificationHistoryReader } from "../../../inbox/application/notification-history.reader.js";
@@ -45,7 +46,7 @@ export class SendEveningReminderUseCase implements TimezoneReminderStrategyPort 
       minute: localMinute,
       today,
       tomorrow,
-      userId,
+      userId: userId == null ? undefined : UserId.reconstitute(userId),
     });
 
     // 무료 사용자: 고정 시간(19:00)에만 발송

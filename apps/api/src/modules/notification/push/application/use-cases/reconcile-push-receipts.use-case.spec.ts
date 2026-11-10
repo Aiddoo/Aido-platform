@@ -1,3 +1,4 @@
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { FakePushProvider } from "#test/doubles/notification/fake-push-provider";
 import { InMemoryPushTokenRepository } from "#test/doubles/notification/in-memory-push-token.repository";
 import { PassThroughNotificationCache } from "#test/doubles/notification/pass-through-notification-cache";
@@ -166,7 +167,10 @@ describe("ReconcilePushReceiptsUseCase — receipt 반영", () => {
     await useCase.execute();
 
     // Then
-    const tokens = await pushTokenRepository.findActivePushTokensByUsers(["user-1", "user-2"]);
+    const tokens = await pushTokenRepository.findActivePushTokensByUsers([
+      UserId.reconstitute("user-1"),
+      UserId.reconstitute("user-2"),
+    ]);
     expect(tokens.map(({ token }) => token)).toEqual(["token-3"]);
     expect(pushTokenRepository.tokenOf("user-1", "device-1")?.updatedAt.equals(NOW)).toBe(true);
     expect(transactionEvents).toEqual(["begin", "commit", "begin", "commit"]);

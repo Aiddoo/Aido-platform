@@ -156,7 +156,7 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
 
   const userMutationLock = {
     async lockById(id: UserId) {
-      return (await users.findByIdForUpdate(UserId.reconstitute(id.value))) !== null;
+      return (await users.findByIdForUpdate(id)) !== null;
     },
   };
 
@@ -169,7 +169,7 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
         consentRepository: new DrizzleUserConsentRepository(fixture.txHost),
       }),
       clientAppVersion: {
-        findLatestAppVersion: (owner) => pushDeviceVersions.findLatestAppVersion(owner.value),
+        findLatestAppVersion: (owner) => pushDeviceVersions.findLatestAppVersion(owner),
       },
       clock,
     });

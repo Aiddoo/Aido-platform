@@ -378,21 +378,26 @@ function createDatabaseBackedSettingsPort(database: Database): UserNotificationS
       .onConflictDoUpdate({ target: userPreference.userId, set: { userId, ...values } });
   };
   return {
-    upsertPushTimezone: (userId, timezone) => upsertPreference(userId, { timezone }),
-    upsertPushLocale: (userId, locale) => upsertPreference(userId, { locale }),
+    upsertPushTimezone: (userId, timezone) => upsertPreference(userId.value, { timezone }),
+    upsertPushLocale: (userId, locale) => upsertPreference(userId.value, { locale }),
     getPreferenceRecord: async (userId): Promise<UserPreferenceRecord | null> =>
-      (await database.query.userPreference.findFirst({ where: { userId } })) ?? null,
+      (await database.query.userPreference.findFirst({ where: { userId: userId.value } })) ?? null,
     getPreferenceRecordsByUserIds: async (userIds): Promise<UserPreferenceRecordWithId[]> =>
       userIds.length === 0
         ? []
-        : database.query.userPreference.findMany({ where: { userId: { in: [...userIds] } } }),
+        : database.query.userPreference.findMany({
+            where: { userId: { in: userIds.map((userId) => userId.value) } },
+          }),
     getConsentRecord: async (userId): Promise<UserConsentRecord | null> =>
-      (await database.query.userConsent.findFirst({ where: { userId } })) ?? null,
+      (await database.query.userConsent.findFirst({ where: { userId: userId.value } })) ?? null,
     getConsentRecordsByUserIds: async (userIds): Promise<UserConsentRecordWithId[]> =>
       userIds.length === 0
         ? []
-        : database.query.userConsent.findMany({ where: { userId: { in: [...userIds] } } }),
-    updateMarketingPushConsent: async (userId, agreed) => {
+        : database.query.userConsent.findMany({
+            where: { userId: { in: userIds.map((userId) => userId.value) } },
+          }),
+    updateMarketingPushConsent: async (user, agreed) => {
+      const userId = user.value;
       const marketingPushAgreedAt = agreed
         ? Temporal.Instant.fromEpochMilliseconds(Date.now())
         : null;

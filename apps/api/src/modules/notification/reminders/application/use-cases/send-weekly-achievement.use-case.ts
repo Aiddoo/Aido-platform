@@ -1,4 +1,5 @@
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { DEFAULT_LOCALE } from "#api/shared/domain/locale";
 import { plainDateToDate } from "#api/shared/domain/time/plain-date";
 
@@ -70,7 +71,9 @@ export class SendWeeklyAchievementUseCase implements TimezoneReminderStrategyPor
     }));
 
     // ─── B. 기록 저장 (모든 유저 — pushEnabled/dedup 무관) ─────
-    await this.#dependencies.weeklyAchievementWriter.execute({ records });
+    await this.#dependencies.weeklyAchievementWriter.execute({
+      records: records.map((record) => ({ ...record, userId: UserId.reconstitute(record.userId) })),
+    });
 
     // ─── C. 알림 발송 (completed > 0 + dedup) ────
     const completedUserIds = records.filter((r) => r.completedTodos > 0).map((r) => r.userId);

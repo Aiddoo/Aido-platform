@@ -1,4 +1,5 @@
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY } from "../../domain/transactional-notification-campaign.constants.js";
 import { createFollowAcceptedNotificationMessage } from "../messages/notification.messages.js";
@@ -26,7 +27,9 @@ export class SendFollowAcceptedNotificationUseCase {
   }
 
   async execute(input: SendFollowAcceptedNotificationInput): Promise<void> {
-    const locale = await this.#dependencies.recipientLocaleReader.getLocale(input.userId);
+    const locale = await this.#dependencies.recipientLocaleReader.getLocale(
+      UserId.reconstitute(input.userId),
+    );
     const variantContext = {
       campaignKey: TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY.FOLLOW_ACCEPTED,
       recipientId: input.userId,

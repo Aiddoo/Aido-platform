@@ -1,6 +1,7 @@
 import { NOTICE_DEEP_LINK_PATH } from "@aido/api/vocabulary";
 
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { createBillingIssueNotificationMessage } from "../messages/notification.messages.js";
 import { NotificationDeliveryLogEvent } from "../notification-delivery.log-events.js";
@@ -25,7 +26,9 @@ export class SendBillingIssueNotificationUseCase {
   }
 
   async execute(input: SendBillingIssueNotificationInput): Promise<void> {
-    const locale = await this.#dependencies.recipientLocaleReader.getLocale(input.userId);
+    const locale = await this.#dependencies.recipientLocaleReader.getLocale(
+      UserId.reconstitute(input.userId),
+    );
     const message = createBillingIssueNotificationMessage({ locale });
     await this.#dependencies.notificationPublisher.publish({
       userId: input.userId,

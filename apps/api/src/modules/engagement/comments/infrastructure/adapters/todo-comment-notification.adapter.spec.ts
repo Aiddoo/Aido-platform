@@ -6,6 +6,7 @@ import {
   type NotificationRecipientLocaleReaderPort,
   TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY,
 } from "#api/modules/notification/notification-delivery.public";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { TodoCommentNotificationAdapter } from "./todo-comment-notification.adapter.js";
 
@@ -29,12 +30,14 @@ function createRecordingPublisher(published: PublishedNotification[]): Notificat
 class RecordingLocaleReader implements NotificationRecipientLocaleReaderPort {
   readonly requestedUserIds: string[] = [];
 
-  async getLocale(userId: string): Promise<SupportedLocale> {
+  async getLocale(user: UserId): Promise<SupportedLocale> {
+    const userId = user.value;
     this.requestedUserIds.push(userId);
     return "ko";
   }
 
-  async getLocales(userIds: readonly string[]): Promise<ReadonlyMap<string, SupportedLocale>> {
+  async getLocales(users: readonly UserId[]): Promise<ReadonlyMap<string, SupportedLocale>> {
+    const userIds = users.map((user) => user.value);
     return new Map(userIds.map((userId) => [userId, "ko"]));
   }
 }

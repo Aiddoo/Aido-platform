@@ -1,7 +1,9 @@
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+
 import type { WeatherReminderTodo } from "../read-models/scheduler.read-model.js";
 
 export interface WeatherBriefingTodoQuery {
-  readonly userIds: readonly string[];
+  readonly userIds: readonly UserId[];
   /** 알림 시간대의 오늘 */
   readonly date: Temporal.PlainDate;
   /** 알림 시간대(기기 시간대) */

@@ -1,6 +1,7 @@
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { localDateIn } from "#api/shared/domain/time/time-zone-name";
 
 import type { NotificationHistoryReader } from "../../../inbox/application/notification-history.reader.js";
@@ -72,7 +73,7 @@ export class SendFriendCompletionNotificationsUseCase {
 
     const preferences =
       await this.#dependencies.userNotificationSettings.getPreferenceRecordsByUserIds(
-        recipientUserIds,
+        recipientUserIds.map((userId) => UserId.reconstitute(userId)),
       );
     const storedLocaleByUserId = new Map(
       preferences.map((preference) => [preference.userId, preference.locale]),

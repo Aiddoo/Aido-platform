@@ -604,7 +604,7 @@ describe("반복 할 일 휴면·복귀 (실제 PostgreSQL)", () => {
         timezone: "UTC",
       });
       // When
-      const dormantSince = await dormancy().findDormantSince(owner.userId);
+      const dormantSince = await dormancy().findDormantSince(UserId.reconstitute(owner.userId));
       // Then
       expect(dormantSince).toBe(expected ? lastActiveAt.slice(0, 10) : null);
     });
@@ -616,14 +616,14 @@ describe("반복 할 일 휴면·복귀 (실제 PostgreSQL)", () => {
         createdAt: new Date("2026-01-01T00:00:00.000Z"),
       });
       // When
-      const dormantSince = await dormancy().findDormantSince(owner.userId);
+      const dormantSince = await dormancy().findDormantSince(UserId.reconstitute(owner.userId));
       // Then
       expect(dormantSince).toBe("2026-01-01");
     });
 
     it("지워진 계정은 휴면으로 보지 않는다", async () => {
       // When
-      const dormantSince = await dormancy().findDormantSince("no-such-user");
+      const dormantSince = await dormancy().findDormantSince(UserId.reconstitute("no-such-user"));
       // Then
       expect(dormantSince).toBeNull();
     });
@@ -636,7 +636,7 @@ describe("반복 할 일 휴면·복귀 (실제 PostgreSQL)", () => {
       });
       premiumUserIds.add(owner.userId);
       // When
-      const dormantSince = await dormancy().findDormantSince(owner.userId);
+      const dormantSince = await dormancy().findDormantSince(UserId.reconstitute(owner.userId));
       // Then
       expect(dormantSince).toBeNull();
     });

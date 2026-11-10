@@ -1,5 +1,7 @@
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+
 export interface WeeklyAchievementTally {
-  readonly userId: string;
+  readonly userId: UserId;
   readonly year: number;
   readonly week: number;
   readonly totalTodos: number;

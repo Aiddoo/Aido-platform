@@ -2,6 +2,7 @@ import type { ReminderWeatherReport } from "#api/modules/notification/reminders/
 import { WeatherReportReader } from "#api/modules/weather/forecasts/application/weather-report.reader";
 import { WeatherReportCache } from "#api/modules/weather/forecasts/infrastructure/cache/weather-report.cache";
 import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { RecordingNotificationPublisher } from "#test/doubles/notification/recording-notification-publisher";
 import { StubNotificationHistoryReader } from "#test/doubles/notification/stub-notification-history.reader";
 import { StubReminderWeatherReportReader } from "#test/doubles/notification/stub-reminder-weather-report.reader";
@@ -128,7 +129,7 @@ describe("SendWeatherMorningUseCase — 아침 날씨 알림", () => {
       action: { type: "DEEP_LINK", url: "/weather/reschedule?todoIds=12&reason=rain" },
     });
     expect(todoReader.queries[0]).toEqual({
-      userIds: ["u1"],
+      userIds: [UserId.reconstitute("u1")],
       date: Temporal.PlainDate.from("2026-11-02"),
       timezone: "Asia/Seoul",
       from: NOW,
@@ -202,7 +203,11 @@ describe("SendWeatherMorningUseCase — 아침 날씨 알림", () => {
     // When
     await strategy.execute(ctx({ userId: "user-specific" }));
     // Then
-    expect(reader.userParams[0]).toMatchObject({ userId: "user-specific", hour: 7, minute: 0 });
+    expect(reader.userParams[0]).toMatchObject({
+      userId: UserId.reconstitute("user-specific"),
+      hour: 7,
+      minute: 0,
+    });
   });
 });
 

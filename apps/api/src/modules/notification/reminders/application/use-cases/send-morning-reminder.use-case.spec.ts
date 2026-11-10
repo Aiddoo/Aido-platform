@@ -1,3 +1,4 @@
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { RecordingNotificationPublisher } from "#test/doubles/notification/recording-notification-publisher";
 import { StubNotificationHistoryReader } from "#test/doubles/notification/stub-notification-history.reader";
 import { StubScheduledReminderReader } from "#test/doubles/notification/stub-scheduled-reminder.reader";
@@ -105,7 +106,7 @@ describe("SendMorningReminderUseCase — 아침 리마인더 전략", () => {
     expect(reader.queries).toEqual([
       {
         method: "findPremiumMorningReminderUsers",
-        params: expect.objectContaining({ userId: TEST_CUID.USER_1 }),
+        params: expect.objectContaining({ userId: UserId.reconstitute(TEST_CUID.USER_1) }),
       },
     ]);
   });

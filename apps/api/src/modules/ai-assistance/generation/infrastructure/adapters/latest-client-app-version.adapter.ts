@@ -3,7 +3,7 @@ import { Injectable } from "@nestjs/common";
 
 import { UserAppVersionReaderPort } from "#api/modules/identity/identity-user-access.public";
 import { ClientAppVersionReaderPort } from "#api/modules/notification/notification-delivery.public";
-import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { AiClientAppVersionReaderPort } from "../../application/ports/client-app-version.reader.port.js";
 
@@ -27,7 +27,7 @@ export class LatestClientAppVersionAdapter extends AiClientAppVersionReaderPort 
 
   async findLatestAppVersion(userId: UserId): Promise<string | null> {
     const [pushDeviceVersion, requestVersion] = await Promise.all([
-      this.#pushDeviceVersions.findLatestAppVersion(userId.value),
+      this.#pushDeviceVersions.findLatestAppVersion(userId),
       this.#requestVersions.findLastSeenAppVersion(userId),
     ]);
     if (pushDeviceVersion == null || requestVersion == null) {

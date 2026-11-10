@@ -265,7 +265,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
         const result = await context.module.get(MaterializeDueTodoSeriesUseCase).execute();
         const since = await context.module
           .get(TodoSeriesOwnerDormancyPort, { strict: false })
-          .findDormantSince(userId);
+          .findDormantSince(UserId.reconstitute(userId));
         // Then
         expect(result.dormantCount).toBe(dormantCount);
         expect(since).toBe(dormantSince);

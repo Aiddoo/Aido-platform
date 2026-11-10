@@ -1,5 +1,6 @@
 import { ErrorCode } from "@aido/api/errors";
 
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { FakePushProvider } from "#test/doubles/notification/fake-push-provider";
 import { InMemoryPushDeviceRepository } from "#test/doubles/notification/in-memory-push-device.repository";
 import { InMemoryPushTokenRepository } from "#test/doubles/notification/in-memory-push-token.repository";
@@ -25,11 +26,11 @@ class RecordingSettings implements Pick<
   readonly timezones: string[] = [];
   readonly locales: string[] = [];
 
-  async upsertPushTimezone(_userId: string, timezone: string): Promise<void> {
+  async upsertPushTimezone(_userId: UserId, timezone: string): Promise<void> {
     this.timezones.push(timezone);
   }
 
-  async upsertPushLocale(_userId: string, locale: string): Promise<void> {
+  async upsertPushLocale(_userId: UserId, locale: string): Promise<void> {
     this.locales.push(locale);
   }
 }

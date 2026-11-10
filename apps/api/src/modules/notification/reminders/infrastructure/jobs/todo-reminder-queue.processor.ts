@@ -1,9 +1,11 @@
 import { Inject, Injectable, Logger, type OnModuleInit } from "@nestjs/common";
 
+import { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
 import { WindowedCounter } from "#api/shared/application/alerts/windowed-counter";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
 import { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import {
   createTodoReminderNotificationMessage,
@@ -97,7 +99,7 @@ export class TodoReminderQueueProcessor implements OnModuleInit {
     const stage = resolveReminderStage(stageLabel);
     this.#logger.debug({ event: NotificationProviderLogEvent.JOB_STARTED, todoId, userId, stage });
 
-    const todo = await this.#reader.findActiveTodo(todoId);
+    const todo = await this.#reader.findActiveTodo(TodoId.reconstitute(todoId));
     if (!todo) {
       this.#logger.debug({
         event: NotificationProviderLogEvent.JOB_SKIPPED,
@@ -134,7 +136,9 @@ export class TodoReminderQueueProcessor implements OnModuleInit {
     }
 
     const dormantSince =
-      todo.seriesId == null ? null : await this.#seriesOwnerDormancy.findDormantSince(userId);
+      todo.seriesId == null
+        ? null
+        : await this.#seriesOwnerDormancy.findDormantSince(UserId.reconstitute(userId));
     if (dormantSince != null) {
       // 운영에서 세므로 debug가 아닌 info다. 단계·식별자만 남긴다.
       this.#logger.log({
@@ -151,7 +155,7 @@ export class TodoReminderQueueProcessor implements OnModuleInit {
       return;
     }
 
-    const locale = await this.#recipientLocaleReader.getLocale(userId);
+    const locale = await this.#recipientLocaleReader.getLocale(UserId.reconstitute(userId));
     const message = createTodoReminderNotificationMessage({
       todoTitle: todo.title,
       stage,
@@ -210,7 +214,7 @@ export class TodoReminderQueueProcessor implements OnModuleInit {
 
   async #sendSeriesPausedNotice(job: { readonly todoId: number; readonly userId: string }) {
     const { todoId, userId } = job;
-    const locale = await this.#recipientLocaleReader.getLocale(userId);
+    const locale = await this.#recipientLocaleReader.getLocale(UserId.reconstitute(userId));
     const message = createTodoSeriesPausedNotificationMessage({
       locale,
       variantContext: {

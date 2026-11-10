@@ -60,7 +60,7 @@ describe("사용자 앱 버전 조회 (실제 PostgreSQL)", () => {
     await addToken("unknown", null);
 
     // When
-    const latest = await reader.findLatestAppVersion(userId);
+    const latest = await reader.findLatestAppVersion(UserId.reconstitute(userId));
 
     // Then
     expect(latest).toBe("1.13.0");
@@ -68,7 +68,7 @@ describe("사용자 앱 버전 조회 (실제 PostgreSQL)", () => {
 
   it("버전을 남긴 기기가 없으면 null이다", async () => {
     // When
-    const latest = await reader.findLatestAppVersion(userId);
+    const latest = await reader.findLatestAppVersion(UserId.reconstitute(userId));
 
     // Then
     expect(latest).toBeNull();

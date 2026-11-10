@@ -3,6 +3,7 @@ import {
   type AfterCommitTaskRegistryPort,
   type UnitOfWorkPort,
 } from "#api/shared/application/ports/index";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { type NotificationCachePort } from "../../../inbox/application/ports/notification-cache.port.js";
 import type { CreateNotificationData } from "../../../inbox/application/ports/notification-draft.port.js";
@@ -68,7 +69,7 @@ export class SendNotificationUseCase {
 
   #registerUnreadCountInvalidation(userId: string): void {
     this.#dependencies.afterCommit.register(() => {
-      this.#dependencies.cache.invalidateUnreadCount(userId).catch(() => {
+      this.#dependencies.cache.invalidateUnreadCount(UserId.reconstitute(userId)).catch(() => {
         this.#dependencies.logger.warn({
           event: NotificationDeliveryLogEvent.SEND_NOTIFICATION_UNREAD_CACHE_FAILED,
           userId,

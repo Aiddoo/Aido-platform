@@ -1,6 +1,7 @@
 import { uniq } from "es-toolkit";
 
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import {
   localDateIn,
   resolveDeliveryTimezone,
@@ -87,7 +88,9 @@ export class EvaluatePushDeliveryEligibilityUseCase {
   }
 
   async loadSingleRecipient(userId: string): Promise<SinglePushDeliveryRecipient> {
-    const preference = await this.#dependencies.recipientPreferenceReader.getPreference(userId);
+    const preference = await this.#dependencies.recipientPreferenceReader.getPreference(
+      UserId.reconstitute(userId),
+    );
     const timezone = resolveDeliveryTimezone(preference.timezone);
     return {
       userId,
@@ -102,8 +105,12 @@ export class EvaluatePushDeliveryEligibilityUseCase {
   ): Promise<ReadonlyMap<string, BatchPushDeliveryRecipient>> {
     const uniqueUserIds = uniq(userIds);
     const [preferences, consents] = await Promise.all([
-      this.#dependencies.userSettings.getPreferenceRecordsByUserIds(uniqueUserIds),
-      this.#dependencies.userSettings.getConsentRecordsByUserIds(uniqueUserIds),
+      this.#dependencies.userSettings.getPreferenceRecordsByUserIds(
+        uniqueUserIds.map((userId) => UserId.reconstitute(userId)),
+      ),
+      this.#dependencies.userSettings.getConsentRecordsByUserIds(
+        uniqueUserIds.map((userId) => UserId.reconstitute(userId)),
+      ),
     ]);
     const preferenceByUserId = new Map(
       preferences.map((preference) => [preference.userId, preference]),
@@ -167,7 +174,9 @@ export class EvaluatePushDeliveryEligibilityUseCase {
     }
 
     if (isMarketing) {
-      const consent = await this.#dependencies.userSettings.getConsentRecord(data.userId);
+      const consent = await this.#dependencies.userSettings.getConsentRecord(
+        UserId.reconstitute(data.userId),
+      );
       if (!consent?.marketingPushAgreedAt) {
         return this.#skipped(data, "MARKETING_CONSENT_REQUIRED");
       }

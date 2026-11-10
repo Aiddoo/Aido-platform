@@ -1,5 +1,7 @@
+import { NotificationId } from "#api/modules/notification/inbox/domain/notification-id.vo";
 import type { RetentionRepositoryPort } from "#api/modules/notification/retention/application/ports/retention.repository.port";
 import type { RetentionStageCandidate } from "#api/modules/notification/retention/application/read-models/retention-stage-candidate.read-model";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import type { SupportedLocale } from "#api/shared/domain/locale";
 
 export interface RetentionD7Result {
@@ -56,8 +58,16 @@ export function describeRetentionRepositoryContract(
       const userId = await givenUser({ timezone: "Asia/Seoul", locale: "en" });
 
       // When
-      await repository.enroll({ userId, variant: "TREATMENT", startedAt: STARTED_AT });
-      await repository.enroll({ userId, variant: "CONTROL", startedAt: STARTED_AT });
+      await repository.enroll({
+        userId: UserId.reconstitute(userId),
+        variant: "TREATMENT",
+        startedAt: STARTED_AT,
+      });
+      await repository.enroll({
+        userId: UserId.reconstitute(userId),
+        variant: "CONTROL",
+        startedAt: STARTED_AT,
+      });
 
       // Then
       const stages = await dueStagesOf(repository);
@@ -79,13 +89,17 @@ export function describeRetentionRepositoryContract(
       const { repository, givenUser } = await createSubject();
       const userId = await givenUser({ timezone: "Asia/Seoul", locale: "ko" });
       const unknownUserId = await givenUser({ timezone: "Asia/Seoul", locale: "ko" });
-      await repository.enroll({ userId, variant: "CONTROL", startedAt: null });
+      await repository.enroll({
+        userId: UserId.reconstitute(userId),
+        variant: "CONTROL",
+        startedAt: null,
+      });
       const beforeActivation = await dueStagesOf(repository);
 
       // When
-      const first = await repository.activate(userId, STARTED_AT);
-      const second = await repository.activate(userId, ALL_DUE_AT);
-      const notEnrolled = await repository.activate(unknownUserId, STARTED_AT);
+      const first = await repository.activate(UserId.reconstitute(userId), STARTED_AT);
+      const second = await repository.activate(UserId.reconstitute(userId), ALL_DUE_AT);
+      const notEnrolled = await repository.activate(UserId.reconstitute(unknownUserId), STARTED_AT);
 
       // Then
       expect(beforeActivation).toEqual([]);
@@ -99,7 +113,11 @@ export function describeRetentionRepositoryContract(
       // Given
       const { repository, givenUser } = await createSubject();
       const userId = await givenUser({ timezone: "Asia/Seoul", locale: "ko" });
-      await repository.enroll({ userId, variant: "TREATMENT", startedAt: STARTED_AT });
+      await repository.enroll({
+        userId: UserId.reconstitute(userId),
+        variant: "TREATMENT",
+        startedAt: STARTED_AT,
+      });
 
       // When
       const atStart = await dueStagesOf(repository, STARTED_AT);
@@ -117,9 +135,17 @@ export function describeRetentionRepositoryContract(
       const { repository, givenUser } = await createSubject();
       const first = await givenUser({ timezone: "Asia/Seoul", locale: "ko" });
       const second = await givenUser({ timezone: "Asia/Seoul", locale: "ko" });
-      await repository.enroll({ userId: first, variant: "TREATMENT", startedAt: STARTED_AT });
+      await repository.enroll({
+        userId: UserId.reconstitute(first),
+        variant: "TREATMENT",
+        startedAt: STARTED_AT,
+      });
       await nextMillisecond();
-      await repository.enroll({ userId: second, variant: "CONTROL", startedAt: STARTED_AT });
+      await repository.enroll({
+        userId: UserId.reconstitute(second),
+        variant: "CONTROL",
+        startedAt: STARTED_AT,
+      });
 
       // When
       const all = await dueStagesOf(repository);
@@ -160,7 +186,11 @@ export function describeRetentionRepositoryContract(
       // Given
       const { repository, givenUser } = await createSubject();
       const userId = await givenUser({ timezone: "Asia/Seoul", locale: "ko" });
-      await repository.enroll({ userId, variant: "TREATMENT", startedAt: STARTED_AT });
+      await repository.enroll({
+        userId: UserId.reconstitute(userId),
+        variant: "TREATMENT",
+        startedAt: STARTED_AT,
+      });
       const [d0, d1] = (await dueStagesOf(repository)).toSorted((left, right) =>
         left.stage.localeCompare(right.stage),
       );
@@ -191,7 +221,11 @@ export function describeRetentionRepositoryContract(
       const { repository } = await createSubject();
 
       // When
-      const linking = repository.linkStageNotification("missing-stage", 1, PROCESSED_AT);
+      const linking = repository.linkStageNotification(
+        "missing-stage",
+        NotificationId.reconstitute(1),
+        PROCESSED_AT,
+      );
 
       // Then
       await expect(linking).rejects.toThrow();
@@ -201,7 +235,11 @@ export function describeRetentionRepositoryContract(
       // Given
       const { repository, givenUser, d7ResultOf } = await createSubject();
       const userId = await givenUser({ timezone: "Asia/Seoul", locale: "ko" });
-      await repository.enroll({ userId, variant: "TREATMENT", startedAt: STARTED_AT });
+      await repository.enroll({
+        userId: UserId.reconstitute(userId),
+        variant: "TREATMENT",
+        startedAt: STARTED_AT,
+      });
       const [stage] = await dueStagesOf(repository);
       if (stage == null) {
         throw new Error("stage fixture 누락");

@@ -5,6 +5,7 @@ import { isRetentionStageDue } from "#api/modules/notification/retention/domain/
 import { DrizzleRetentionRepository } from "#api/modules/notification/retention/infrastructure/persistence/drizzle-retention.repository";
 import { createEntityId } from "#api/platform/database/entity-id";
 import { todo, todoCategory, userPreference } from "#api/platform/database/schema/index";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { toIsoString } from "#api/shared/domain/time/instant";
 import { describeRetentionRepositoryContract } from "#test/contracts/notification/retention-repository.contract";
 import { RecordingNotificationPublisher } from "#test/doubles/notification/recording-notification-publisher";
@@ -112,7 +113,7 @@ describe("신규 사용자 리텐션 V2 통합 테스트 (실제 DB)", () => {
   it("stage 후보를 N+1 없이 집계 projection으로 조회한다", async () => {
     const userId = await createUser("projection@example.com");
     await repository.enroll({
-      userId,
+      userId: UserId.reconstitute(userId),
       variant: "TREATMENT",
       startedAt: Temporal.Instant.from("2026-07-15T00:00:00Z"),
     });
@@ -187,12 +188,12 @@ describe("신규 사용자 리텐션 V2 통합 테스트 (실제 DB)", () => {
     const startedAt = Temporal.Instant.from("2026-07-15T00:00:00.000Z");
     await Promise.all([
       repository.enroll({
-        userId: invalidTimezoneUserId,
+        userId: UserId.reconstitute(invalidTimezoneUserId),
         variant: "TREATMENT",
         startedAt,
       }),
       repository.enroll({
-        userId: aliasTimezoneUserId,
+        userId: UserId.reconstitute(aliasTimezoneUserId),
         variant: "TREATMENT",
         startedAt,
       }),
@@ -233,7 +234,11 @@ describe("신규 사용자 리텐션 V2 통합 테스트 (실제 DB)", () => {
   it("같은 단계는 동시에 처리해도 한 실행만 발송 대상으로 가져간다", async () => {
     // Given
     const userId = await createUser("claimone@example.com");
-    await repository.enroll({ userId, variant: "TREATMENT", startedAt: nowInstant() });
+    await repository.enroll({
+      userId: UserId.reconstitute(userId),
+      variant: "TREATMENT",
+      startedAt: nowInstant(),
+    });
     const stage = await stageOf(userId, "D0");
 
     // When
@@ -249,7 +254,11 @@ describe("신규 사용자 리텐션 V2 통합 테스트 (실제 DB)", () => {
   it("발행이 실패하면 단계 claim도 rollback돼 다음 sweep이 다시 처리한다", async () => {
     // Given
     const userId = await createUser("rollback@example.com");
-    await repository.enroll({ userId, variant: "TREATMENT", startedAt: nowInstant() });
+    await repository.enroll({
+      userId: UserId.reconstitute(userId),
+      variant: "TREATMENT",
+      startedAt: nowInstant(),
+    });
     const stage = await stageOf(userId, "D0");
 
     // When
@@ -281,7 +290,11 @@ describe("신규 사용자 리텐션 V2 통합 테스트 (실제 DB)", () => {
     const timezoneByUserId = new Map<string, string>();
     for (const [index, timezone] of timezones.entries()) {
       const userId = await createUser(`duetz${index}@example.com`, { timezone });
-      await repository.enroll({ userId, variant: "TREATMENT", startedAt });
+      await repository.enroll({
+        userId: UserId.reconstitute(userId),
+        variant: "TREATMENT",
+        startedAt,
+      });
       timezoneByUserId.set(userId, timezone === "Invalid/Timezone" ? "UTC" : timezone);
     }
     const stages = (
@@ -331,7 +344,7 @@ describe("신규 사용자 리텐션 V2 통합 테스트 (실제 DB)", () => {
     for (const [index, startedAt] of startedAts.entries()) {
       const userId = await createUser(`sweep${index}@example.com`, { withPushToken: true });
       await repository.enroll({
-        userId,
+        userId: UserId.reconstitute(userId),
         variant: "TREATMENT",
         startedAt: Temporal.Instant.from(startedAt),
       });

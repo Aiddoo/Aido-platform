@@ -2,6 +2,7 @@ import { uniq } from "es-toolkit";
 
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { NotificationCachePort } from "../../../inbox/application/ports/notification-cache.port.js";
 import { NotificationDeliveryLogEvent } from "../notification-delivery.log-events.js";
@@ -43,7 +44,9 @@ export class ReleaseSessionPushDevicesUseCase implements SessionPushDeviceReleas
         tokenCount: tokens.userIds.length,
       };
     });
-    await Promise.all(userIds.map((userId) => cache.invalidatePushTokens(userId)));
+    await Promise.all(
+      userIds.map((userId) => cache.invalidatePushTokens(UserId.reconstitute(userId))),
+    );
     logger.log({
       event: NotificationDeliveryLogEvent.RELEASE_SESSION_PUSH_DEVICES_RELEASED,
       sessionCount: sessionIds.length,

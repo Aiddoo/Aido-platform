@@ -10,6 +10,7 @@ import {
   userPreference,
 } from "#api/platform/database/schema/index";
 import { UNIT_OF_WORK, type UnitOfWorkPort } from "#api/shared/application/ports/index";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { UserConsentBuilder, UserPreferenceBuilder } from "#test/builders/index";
 import {
   createE2eApp,
@@ -177,14 +178,17 @@ describe("광고성 수신 동의 2년 재확인 (실제 PostgreSQL)", () => {
 
     // When
     const first = unitOfWork.run(async () => {
-      const claimed = await access.claimMarketingReconfirm([userId], { cutoff, at: now });
+      const claimed = await access.claimMarketingReconfirm([UserId.reconstitute(userId)], {
+        cutoff,
+        at: now,
+      });
       firstClaimed.resolve();
       await releaseFirst.promise;
       return claimed;
     });
     await firstClaimed.promise;
     const second = unitOfWork.run(() =>
-      access.claimMarketingReconfirm([userId], { cutoff, at: now }),
+      access.claimMarketingReconfirm([UserId.reconstitute(userId)], { cutoff, at: now }),
     );
     try {
       await vi.waitFor(

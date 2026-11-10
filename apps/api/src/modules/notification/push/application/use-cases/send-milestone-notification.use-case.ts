@@ -1,4 +1,5 @@
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { type NotificationHistoryReaderPort } from "../../../inbox/application/ports/notification-history.reader.port.js";
 import type { NotificationMilestone } from "../../domain/notification-milestone.constants.js";
@@ -57,7 +58,9 @@ export class SendMilestoneNotificationUseCase {
         return;
       }
 
-      const locale = await this.#dependencies.recipientLocaleReader.getLocale(input.userId);
+      const locale = await this.#dependencies.recipientLocaleReader.getLocale(
+        UserId.reconstitute(input.userId),
+      );
       const message = createMilestoneNotificationMessage({
         milestone: input.milestone,
         locale,

@@ -7,7 +7,7 @@ import {
 import { UserActivityReaderPort } from "#api/modules/identity/identity-user-access.public";
 import { isSeriesOwnerDormant } from "#api/modules/planning/todo-series/planning-todo-series-dormancy.public";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
-import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { TimeZone } from "#api/shared/domain/time/time-zone.vo";
 import { localDateOf } from "#api/shared/domain/time/zoned-time";
 
@@ -34,15 +34,15 @@ export class TodoSeriesOwnerDormancyAdapter extends TodoSeriesOwnerDormancyPort 
     this.#clock = clock;
   }
 
-  async findDormantSince(userId: string): Promise<string | null> {
-    const [account] = await this.#activityReader.findActiveAccounts([UserId.reconstitute(userId)]);
+  async findDormantSince(userId: UserId): Promise<string | null> {
+    const [account] = await this.#activityReader.findActiveAccounts([userId]);
     if (account == null) {
       return null;
     }
     if (!isSeriesOwnerDormant(account, this.#clock.now())) {
       return null;
     }
-    const { plan } = await this.#entitlementReader.getEntitlements(UserId.reconstitute(userId));
+    const { plan } = await this.#entitlementReader.getEntitlements(userId);
     // 휴면 시작일은 지금처럼 UTC 달력 날짜로 알린다
     return isExemptFromDormancy(plan)
       ? null

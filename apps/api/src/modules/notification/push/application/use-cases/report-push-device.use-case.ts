@@ -102,7 +102,7 @@ export class ReportPushDeviceUseCase {
     const previousUserIds = uniq(releasedUserIds.filter((userId) => userId !== command.userId));
     await Promise.all(
       [command.userId, ...previousUserIds].map((userId) =>
-        this.#dependencies.cache.invalidatePushTokens(userId),
+        this.#dependencies.cache.invalidatePushTokens(UserId.reconstitute(userId)),
       ),
     );
     if (previousUserIds.length > 0) {
@@ -153,8 +153,7 @@ export class ReportPushDeviceUseCase {
 
   #save(device: PushDevice, command: ReportPushDeviceCommand): Promise<readonly string[]> {
     const { pushDeviceRepository, pushTokenRepository } = this.#dependencies;
-    const userId = device.userId.value;
-    const deviceId = device.id.value;
+    const { userId, id: deviceId } = device;
     const token = device.deliverableToken;
 
     return this.#dependencies.unitOfWork.run(async () => {
@@ -185,14 +184,15 @@ export class ReportPushDeviceUseCase {
 
   async #syncDeliveryLocale(command: ReportPushDeviceCommand): Promise<void> {
     const timezone = normalizeIanaTimezone(command.timezone);
+    const userId = UserId.reconstitute(command.userId);
     if (timezone) {
-      await this.#dependencies.userSettings.upsertPushTimezone(command.userId, timezone);
+      await this.#dependencies.userSettings.upsertPushTimezone(userId, timezone);
     }
     if (command.locale) {
-      await this.#dependencies.userSettings.upsertPushLocale(command.userId, command.locale);
+      await this.#dependencies.userSettings.upsertPushLocale(userId, command.locale);
     }
     if (timezone || command.locale) {
-      await this.#dependencies.cache.invalidateUserPreference(command.userId);
+      await this.#dependencies.cache.invalidateUserPreference(userId);
     }
   }
 }

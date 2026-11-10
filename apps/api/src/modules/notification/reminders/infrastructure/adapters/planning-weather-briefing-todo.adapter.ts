@@ -1,7 +1,6 @@
 import { Injectable } from "@nestjs/common";
 
 import { TodoScheduleReaderPort } from "#api/modules/planning/todos/planning-todo-queries.public";
-import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantFromDate, instantToDate } from "#api/shared/domain/time/instant";
 
 import {
@@ -21,7 +20,7 @@ export class PlanningWeatherBriefingTodoAdapter implements WeatherBriefingTodoRe
 
   async listTodayTodos(query: WeatherBriefingTodoQuery): Promise<WeatherReminderTodo[]> {
     const todos = await this.#todoSchedule.listPendingTimedTodos({
-      userIds: query.userIds.map((userId) => UserId.reconstitute(userId)),
+      userIds: query.userIds,
       date: query.date,
       timezone: query.timezone,
       from: instantFromDate(query.from),

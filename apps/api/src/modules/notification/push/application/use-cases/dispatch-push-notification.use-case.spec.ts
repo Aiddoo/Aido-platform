@@ -1,5 +1,6 @@
 import type { PushPermissionStatus } from "@aido/api/vocabulary";
 
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { FakePushProvider } from "#test/doubles/notification/fake-push-provider";
 import { InMemoryPushDeviceRepository } from "#test/doubles/notification/in-memory-push-device.repository";
 import { InMemoryPushTokenRepository } from "#test/doubles/notification/in-memory-push-token.repository";
@@ -92,7 +93,9 @@ async function activeTokensOf(
   repository: InMemoryPushTokenRepository,
   userIds: string[],
 ): Promise<string[]> {
-  const records = await repository.findActivePushTokensByUsers(userIds);
+  const records = await repository.findActivePushTokensByUsers(
+    userIds.map((userId) => UserId.reconstitute(userId)),
+  );
   return records.map(({ token }) => token).toSorted();
 }
 

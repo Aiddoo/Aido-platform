@@ -8,6 +8,7 @@ import {
   NotificationRecipientTimezoneReaderPort,
   SCHEDULER_CAMPAIGN_KEY,
 } from "#api/modules/notification/notification-delivery.public";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { DEFAULT_LOCALE } from "#api/shared/domain/locale";
 import { instantToDate } from "#api/shared/domain/time/instant";
 import { DEFAULT_DELIVERY_TIMEZONE } from "#api/shared/domain/time/time-zone-name";
@@ -40,7 +41,7 @@ export class UpcomingRenewalNotifierAdapter extends UpcomingRenewalNotifierPort 
     }
     const userIds = notices.map((notice) => notice.userId);
     const [locales, timezones] = await Promise.all([
-      this.#localeReader.getLocales(userIds),
+      this.#localeReader.getLocales(userIds.map((userId) => UserId.reconstitute(userId))),
       this.#timezoneReader.getTimezones(userIds),
     ]);
     await this.#notificationPublisher.publishBatch(

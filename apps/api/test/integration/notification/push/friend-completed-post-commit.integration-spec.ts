@@ -30,6 +30,7 @@ import {
   AfterCommitTaskRegistryPort,
   UnitOfWorkPort,
 } from "#api/shared/application/ports/index";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { InMemoryNotificationRepository } from "#test/doubles/notification/in-memory-notification.repository";
 import { PassThroughNotificationCache } from "#test/doubles/notification/pass-through-notification-cache";
 import { pickProviders } from "#test/integration/helpers/pick-providers";
@@ -103,9 +104,10 @@ class EventRecordingNotificationCache extends PassThroughNotificationCache {
     this.#events = events;
   }
 
-  override async invalidateUnreadCount(userId: string): Promise<void> {
+  override async invalidateUnreadCount(user: UserId): Promise<void> {
+    const userId = user.value;
     this.#events.push(`invalidate-cache:${userId}`);
-    await super.invalidateUnreadCount(userId);
+    await super.invalidateUnreadCount(user);
   }
 }
 

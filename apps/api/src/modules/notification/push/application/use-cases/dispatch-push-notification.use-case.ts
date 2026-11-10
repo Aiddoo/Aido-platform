@@ -3,6 +3,7 @@ import { groupBy, uniq } from "es-toolkit";
 
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { type NotificationCachePort } from "../../../inbox/application/ports/notification-cache.port.js";
 import type { CreateNotificationData } from "../../../inbox/application/ports/notification-draft.port.js";
@@ -117,7 +118,9 @@ export class DispatchPushNotificationUseCase {
         revokedTokens,
         this.#dependencies.clock.now(),
       );
-      await this.#dependencies.notificationCache.invalidatePushTokens(input.data.userId);
+      await this.#dependencies.notificationCache.invalidatePushTokens(
+        UserId.reconstitute(input.data.userId),
+      );
       this.#dependencies.logger.warn({
         event: NotificationDeliveryLogEvent.PUSH_NOTIFICATION_DELIVERY_INVALID_TOKENS_DEACTIVATED,
         count: revokedTokens.length,
@@ -135,7 +138,9 @@ export class DispatchPushNotificationUseCase {
     payloads: readonly BatchPushNotificationPayload[],
   ): Promise<PreparedBatchPushDelivery> {
     const userIds = uniq(payloads.map((payload) => payload.userId));
-    const tokensByUser = await this.#dependencies.activePushTokenReader.findByUserIds(userIds);
+    const tokensByUser = await this.#dependencies.activePushTokenReader.findByUserIds(
+      userIds.map((userId) => UserId.reconstitute(userId)),
+    );
     const capabilityUserIds = uniq(
       payloads
         .filter((payload) => payload.requiresFeatureCapability || payload.minAppVersion != null)
@@ -145,7 +150,7 @@ export class DispatchPushNotificationUseCase {
       capabilityUserIds.length === 0
         ? []
         : await this.#dependencies.pushTokenRepository.findActivePushTokensByUsers(
-            capabilityUserIds,
+            capabilityUserIds.map((userId) => UserId.reconstitute(userId)),
           );
     const capabilityTokensByUser = groupBy(capabilityTokenRecords, (record) => record.userId);
 
@@ -241,7 +246,7 @@ export class DispatchPushNotificationUseCase {
       );
       await Promise.all(
         prepared.recipientUserIds.map((userId) =>
-          this.#dependencies.notificationCache.invalidatePushTokens(userId),
+          this.#dependencies.notificationCache.invalidatePushTokens(UserId.reconstitute(userId)),
         ),
       );
       this.#dependencies.logger.warn({
@@ -278,7 +283,7 @@ export class DispatchPushNotificationUseCase {
     const requiresAppVersion = notificationMinAppVersion(data.type) != null;
     if (requiresFeatureCapability || requiresAppVersion) {
       const records = await this.#dependencies.pushTokenRepository.findPushTokensByUser({
-        userId: data.userId,
+        userId: UserId.reconstitute(data.userId),
         activeOnly: true,
       });
       if (records.length === 0) {
@@ -297,7 +302,9 @@ export class DispatchPushNotificationUseCase {
         : { status: "skipped", reason: "UNSUPPORTED_APP_CAPABILITY" };
     }
 
-    const tokens = await this.#dependencies.activePushTokenReader.findByUserId(data.userId);
+    const tokens = await this.#dependencies.activePushTokenReader.findByUserId(
+      UserId.reconstitute(data.userId),
+    );
     return tokens.length > 0
       ? { status: "resolved", tokens }
       : { status: "skipped", reason: await this.#noActiveTokenReason(data.userId) };
@@ -316,7 +323,7 @@ export class DispatchPushNotificationUseCase {
     }
     const statusesByUser =
       await this.#dependencies.pushDeviceRepository.findPermissionStatusesByUsers(
-        userIds,
+        userIds.map((userId) => UserId.reconstitute(userId)),
         this.#dependencies.clock.now().subtract({ hours: 24 * PUSH_DEVICE_STALE_AFTER_DAYS }),
       );
     return new Map(

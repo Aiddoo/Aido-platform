@@ -64,7 +64,7 @@ import {
   UnitOfWorkPort,
 } from "#api/shared/application/ports/index";
 import { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
-import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { UserPreferenceBuilder } from "#test/builders/index";
 import { NoCacheStore } from "#test/doubles/platform/no-cache-store";
 import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";
@@ -219,23 +219,19 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
             preferenceRepository: DrizzleUserPreferenceRepository,
             consentRepository: DrizzleUserConsentRepository,
           ) => ({
-            upsertPushTimezone: (userId: string, timezone: string) =>
-              preferenceRepository.upsertTimezone(UserId.reconstitute(userId), timezone),
-            upsertPushLocale: (userId: string, locale: string) =>
-              preferenceRepository.upsertLocale(UserId.reconstitute(userId), locale),
-            getPreferenceRecord: (userId: string) =>
-              preferenceRepository.findByUserId(UserId.reconstitute(userId)),
-            getPreferenceRecordsByUserIds: (userIds: string[]) =>
-              preferenceRepository.findByUserIds(
-                userIds.map((userId) => UserId.reconstitute(userId)),
-              ),
-            getConsentRecord: (userId: string) =>
-              consentRepository.findByUserId(UserId.reconstitute(userId)),
-            getConsentRecordsByUserIds: (userIds: string[]) =>
-              consentRepository.findByUserIds(userIds.map((userId) => UserId.reconstitute(userId))),
-            updateMarketingPushConsent: (userId: string, agreed: boolean) =>
+            upsertPushTimezone: (userId: UserId, timezone: string) =>
+              preferenceRepository.upsertTimezone(userId, timezone),
+            upsertPushLocale: (userId: UserId, locale: string) =>
+              preferenceRepository.upsertLocale(userId, locale),
+            getPreferenceRecord: (userId: UserId) => preferenceRepository.findByUserId(userId),
+            getPreferenceRecordsByUserIds: (userIds: readonly UserId[]) =>
+              preferenceRepository.findByUserIds(userIds),
+            getConsentRecord: (userId: UserId) => consentRepository.findByUserId(userId),
+            getConsentRecordsByUserIds: (userIds: readonly UserId[]) =>
+              consentRepository.findByUserIds(userIds),
+            updateMarketingPushConsent: (userId: UserId, agreed: boolean) =>
               consentRepository
-                .upsertMarketingPushConsent(UserId.reconstitute(userId), {
+                .upsertMarketingPushConsent(userId, {
                   agreedAt: agreed ? Temporal.Instant.fromEpochMilliseconds(Date.now()) : null,
                 })
                 .then(() => undefined),

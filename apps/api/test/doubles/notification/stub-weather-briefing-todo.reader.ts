@@ -11,7 +11,7 @@ export class StubWeatherBriefingTodoReader extends WeatherBriefingTodoReaderPort
 
   async listTodayTodos(query: WeatherBriefingTodoQuery): Promise<WeatherReminderTodo[]> {
     this.queries.push({ ...query });
-    const userIds = new Set(query.userIds);
+    const userIds = new Set(query.userIds.map((userId) => userId.value));
     return this.todos
       .filter(
         (todo) =>
