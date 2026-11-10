@@ -9,8 +9,9 @@ import {
 import { Injectable } from "@nestjs/common";
 import { z } from "zod";
 
-import { CacheService } from "#api/platform/cache/cache.service";
-import { now } from "#api/shared/domain/date/utils/core";
+import { CacheStorePort } from "#api/platform/cache/cache-store.port";
+import { ClockPort } from "#api/shared/application/ports/clock.port";
+import { instantToDate } from "#api/shared/domain/time/instant";
 
 import type { GeoCell } from "../../../shared/domain/geo-cell.vo.js";
 import type { AirQuality } from "../../application/ports/air-quality-provider.port.js";
@@ -136,10 +137,12 @@ const AIR_QUALITY_SCHEMA = z
 
 @Injectable()
 export class WeatherReportCache implements WeatherReportCachePort {
-  readonly #cacheService: CacheService;
+  readonly #cache: CacheStorePort;
+  readonly #clock: ClockPort;
 
-  constructor(cacheService: CacheService) {
-    this.#cacheService = cacheService;
+  constructor(cache: CacheStorePort, clock: ClockPort) {
+    this.#cache = cache;
+    this.#clock = clock;
   }
 
   getOrLoadReport(
@@ -147,19 +150,19 @@ export class WeatherReportCache implements WeatherReportCachePort {
     scope: WeatherReportCacheScope,
     load: () => Promise<WeatherReport>,
   ): Promise<WeatherReport> {
-    return this.#cacheService.wrap(
+    return this.#cache.wrap(
       WeatherReportCacheKey.report(cell.key, scope),
       WEATHER_REPORT_SCHEMA,
       async () => {
         const report = await load();
-        await this.#cacheService.set(
+        await this.#cache.set(
           WeatherReportCacheKey.latestReport(cell.key, scope),
           report,
           WEATHER_REPORT_CACHE_TTL_MS.LATEST_REPORT,
         );
         return report;
       },
-      (report) => weatherReportTtlMs(report, now()),
+      (report) => weatherReportTtlMs(report, instantToDate(this.#clock.now())),
     );
   }
 
@@ -167,7 +170,7 @@ export class WeatherReportCache implements WeatherReportCachePort {
     cell: GeoCell,
     scope: WeatherReportCacheScope,
   ): Promise<WeatherReport | undefined> {
-    return this.#cacheService.get(
+    return this.#cache.get(
       WeatherReportCacheKey.latestReport(cell.key, scope),
       WEATHER_REPORT_SCHEMA,
     );
@@ -177,7 +180,7 @@ export class WeatherReportCache implements WeatherReportCachePort {
     cell: GeoCell,
     load: () => Promise<AirQuality | null>,
   ): Promise<AirQuality | null> {
-    return this.#cacheService.wrap(
+    return this.#cache.wrap(
       WeatherReportCacheKey.airQuality(cell.key),
       AIR_QUALITY_SCHEMA,
       load,

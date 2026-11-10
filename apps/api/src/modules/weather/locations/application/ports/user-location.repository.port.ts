@@ -1,15 +1,9 @@
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+
 import type { UserLocation } from "../../domain/user-location.entity.js";
 
-/** UserLocationRepositoryPort DI 토큰 */
-export const WEATHER_LOCATION_REPOSITORY = Symbol("WEATHER_LOCATION_REPOSITORY");
-
-/**
- * 사용자 위치 저장소 포트.
- *
- * 위치 애그리게잇의 조회·upsert를 추상화한다. 영속 방식은 인프라 어댑터가
- * 담당한다.
- */
-export interface UserLocationRepositoryPort {
-  findByUserId(userId: string): Promise<UserLocation | null>;
-  upsert(location: UserLocation): Promise<UserLocation>;
+export abstract class UserLocationRepositoryPort {
+  abstract findByUserId(userId: UserId): Promise<UserLocation | null>;
+  /** 사용자당 위치는 하나라 있으면 덮어쓴다. */
+  abstract save(location: UserLocation): Promise<void>;
 }

@@ -2,15 +2,15 @@ import type { ReminderWeatherReport } from "#api/modules/notification/reminders/
 import { WeatherReportReader } from "#api/modules/weather/forecasts/application/weather-report.reader";
 import { WeatherReportCache } from "#api/modules/weather/forecasts/infrastructure/cache/weather-report.cache";
 import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
-import { CacheService } from "#api/platform/cache/cache.service";
 import { RecordingNotificationPublisher } from "#test/doubles/notification/recording-notification-publisher";
 import { StubNotificationHistoryReader } from "#test/doubles/notification/stub-notification-history.reader";
 import { StubReminderWeatherReportReader } from "#test/doubles/notification/stub-reminder-weather-report.reader";
 import { StubWeatherReminderReader } from "#test/doubles/notification/stub-weather-reminder.reader";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
+import { StubTimezoneResolver } from "#test/doubles/weather/stub-timezone-resolver";
+import { StubWeatherReportProvider } from "#test/doubles/weather/stub-weather-report-provider";
 import { weatherReportFixture } from "#test/fixtures/weather.fixture";
-import { StubTimezoneResolver, StubWeatherReportProvider } from "#test/mocks/ports/weather.stub";
 
 import type { TimezoneContext } from "../../domain/timezone-context.read-model.js";
 import { SendWeatherMorningUseCase } from "./send-weather-morning.use-case.js";
@@ -224,7 +224,10 @@ describe("SendWeatherMorningUseCase + weather v2 리포트 — 공급자 호출 
       notificationHistoryReader: new StubNotificationHistoryReader(),
       weatherReportReader: new WeatherReportReader({
         weatherReportProvider: provider,
-        weatherReportCache: new WeatherReportCache(new CacheService(memory)),
+        weatherReportCache: new WeatherReportCache(
+          memory,
+          new FixedClock(Temporal.Instant.fromEpochMilliseconds(NOW.getTime())),
+        ),
         timezoneResolver: new StubTimezoneResolver(),
         logger: new SilentLogger(),
       }),

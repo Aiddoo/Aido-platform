@@ -1,18 +1,15 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { Inject, Injectable, Logger } from "@nestjs/common";
 import { HttpClient, InjectHttpClient } from "@nestjs/http-client";
 
-import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { requestVendorJson } from "#api/platform/http/request-vendor-json";
 import type { OutboundPolicy } from "#api/platform/resilience/outbound-policy";
 import { OutboundRejectedError } from "#api/platform/resilience/outbound-policy.errors";
 import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
-import { ApplicationExceptions } from "#api/shared/application/exceptions/application-exceptions";
 
 import { convertToGrid } from "../../../shared/domain/kma-grid-projection.domain-service.js";
-import type {
-  WeatherForecast,
-  WeatherForecastProviderPort,
-} from "../../application/ports/weather-forecast-provider.port.js";
+import { weatherServiceUnavailable } from "../../application/forecasts.errors.js";
+import type { WeatherForecastProviderPort } from "../../application/ports/weather-forecast-provider.port.js";
+import type { WeatherForecast } from "../../application/read-models/weather-forecast.read-model.js";
 import {
   type KmaBaseDateTime,
   getKmaBaseDateTime,
@@ -22,6 +19,10 @@ import {
   KMA_TIMEZONE,
   type KmaForecastTiming,
 } from "../../domain/kma-forecast-availability.domain-service.js";
+import {
+  weatherForecastsConfig,
+  type WeatherForecastsConfig,
+} from "../../weather-forecasts.config.js";
 import { WeatherProviderLogEvent } from "../weather-provider.log-events.js";
 import { parseKmaResponse } from "./kma-forecast-response.mapper.js";
 import { KMA_BASE_URL, KMA_ENDPOINTS } from "./kma.constants.js";
@@ -35,15 +36,15 @@ export class KmaWeatherForecastAdapter implements WeatherForecastProviderPort {
   readonly #logger = new Logger(KmaWeatherForecastAdapter.name);
   readonly #policy: OutboundPolicy;
 
-  readonly #configService: TypedConfigService;
+  readonly #config: WeatherForecastsConfig;
   readonly #http: HttpClient;
 
   constructor(
-    configService: TypedConfigService,
+    @Inject(weatherForecastsConfig.KEY) config: WeatherForecastsConfig,
     @InjectHttpClient("weather") http: HttpClient,
     policies: OutboundPolicyRegistry,
   ) {
-    this.#configService = configService;
+    this.#config = config;
     this.#http = http;
 
     this.#policy = policies.get(KMA_FORECAST_POLICY);
@@ -76,7 +77,7 @@ export class KmaWeatherForecastAdapter implements WeatherForecastProviderPort {
       errorType: "provider_result",
       resultCode: previous.response.header.resultCode,
     });
-    throw ApplicationExceptions.weatherServiceUnavailable({
+    throw weatherServiceUnavailable({
       code: previous.response.header.resultCode,
       message: previous.response.header.resultMsg,
     });
@@ -92,7 +93,7 @@ export class KmaWeatherForecastAdapter implements WeatherForecastProviderPort {
           this.#http,
           `${KMA_BASE_URL}${KMA_ENDPOINTS.VILLAGE_FORECAST}`,
           {
-            serviceKey: this.#configService.dataGoKrApiKey ?? "",
+            serviceKey: this.#config.kmaApiKey ?? "",
             pageNo: 1,
             numOfRows: 1000,
             dataType: "JSON",
@@ -125,7 +126,7 @@ export class KmaWeatherForecastAdapter implements WeatherForecastProviderPort {
         operation: "forecast",
         statusCode: outcome.statusCode,
       });
-      throw ApplicationExceptions.weatherServiceUnavailable({
+      throw weatherServiceUnavailable({
         status: outcome.statusCode,
       });
     }
@@ -138,7 +139,7 @@ export class KmaWeatherForecastAdapter implements WeatherForecastProviderPort {
         operation: "forecast",
         errorType: "invalid_structure",
       });
-      throw ApplicationExceptions.weatherServiceUnavailable({
+      throw weatherServiceUnavailable({
         reason: "unexpected response structure",
       });
     }
@@ -146,6 +147,6 @@ export class KmaWeatherForecastAdapter implements WeatherForecastProviderPort {
   }
 
   isConfigured(): boolean {
-    return Boolean(this.#configService.dataGoKrApiKey);
+    return Boolean(this.#config.kmaApiKey);
   }
 }

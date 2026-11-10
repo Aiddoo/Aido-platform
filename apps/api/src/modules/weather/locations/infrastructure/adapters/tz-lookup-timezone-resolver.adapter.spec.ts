@@ -11,7 +11,7 @@ describe("TzLookupTimezoneResolverAdapter — 좌표의 시간대와 국가", ()
     ["뉴욕", 40.7128, -74.006, { timezone: "America/New_York", countryCode: "US" }],
   ])("%s 좌표의 IANA 시간대와 국가를 돌려준다", (_city, latitude, longitude, expected) => {
     // Given
-    const coordinate = Coordinate.of(latitude, longitude);
+    const coordinate = Coordinate.create(latitude, longitude);
     // When
     const region = resolver.resolve(coordinate);
     // Then
@@ -20,7 +20,7 @@ describe("TzLookupTimezoneResolverAdapter — 좌표의 시간대와 국가", ()
 
   it("나라가 없는 바다 한가운데는 시간대만 있고 국가는 null이다", () => {
     // Given
-    const southPacific = Coordinate.of(-40, -130);
+    const southPacific = Coordinate.create(-40, -130);
     // When
     const region = resolver.resolve(southPacific);
     // Then

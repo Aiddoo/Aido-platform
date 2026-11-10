@@ -6,12 +6,13 @@ import {
   type UsageMeterPort,
 } from "#api/platform/metering/interfaces/usage-meter.interface";
 import { crossedThresholds, usagePeriod } from "#api/platform/metering/usage-period";
+import { ClockPort } from "#api/shared/application/ports/clock.port";
 import {
   OPERATIONAL_ALERT,
   type OperationalAlertPort,
 } from "#api/shared/application/ports/operational-alert.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
-import { now } from "#api/shared/domain/date/utils/core";
+import { instantToDate } from "#api/shared/domain/time/instant";
 
 import { ForecastAlertKey } from "../../application/forecasts.alerts.js";
 import { WeatherKitLogEvent } from "../weatherkit.log-events.js";
@@ -29,17 +30,20 @@ export class WeatherKitUsageMeterAdapter {
 
   readonly #meter: Pick<UsageMeterPort, "add">;
   readonly #alert: OperationalAlertPort;
+  readonly #clock: ClockPort;
 
   constructor(
     @Inject(USAGE_METER) meter: Pick<UsageMeterPort, "add">,
     @Inject(OPERATIONAL_ALERT) alert: OperationalAlertPort,
+    clock: ClockPort,
   ) {
     this.#meter = meter;
     this.#alert = alert;
+    this.#clock = clock;
   }
 
   async recordCall(): Promise<void> {
-    const period = usagePeriod.month(now());
+    const period = usagePeriod.month(instantToDate(this.#clock.now()));
     try {
       const [total = 0] = await this.#meter.add([
         {

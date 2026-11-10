@@ -1,7 +1,5 @@
-import type {
-  WeatherForecast,
-  WeatherForecastProviderPort,
-} from "#api/modules/weather/forecasts/application/ports/weather-forecast-provider.port";
+import type { WeatherForecastProviderPort } from "#api/modules/weather/forecasts/application/ports/weather-forecast-provider.port";
+import type { WeatherForecast } from "#api/modules/weather/forecasts/application/read-models/weather-forecast.read-model";
 import type { KmaForecastTiming } from "#api/modules/weather/forecasts/domain/kma-forecast-availability.domain-service";
 
 /**

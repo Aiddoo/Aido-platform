@@ -1,10 +1,9 @@
-import { ErrorCode } from "@aido/api/errors";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import { ApplicationException } from "#api/shared/application/application.exception";
-
-import { type UserLocationRepositoryPort } from "../../../locations/application/ports/user-location.repository.port.js";
+import { userLocationNotFound } from "../../../locations/application/locations.errors.js";
+import type { UserLocationRepositoryPort } from "../../../locations/application/ports/user-location.repository.port.js";
 import type { UserLocation } from "../../../locations/domain/user-location.entity.js";
-import type { WeatherForecast } from "../ports/weather-forecast-provider.port.js";
+import type { WeatherForecast } from "../read-models/weather-forecast.read-model.js";
 import type { WeatherForecastReader } from "../weather-forecast.reader.js";
 
 /** 예보 + 위치 (컨트롤러가 좌표를 응답에 병합하기 위해 위치도 반환) */
@@ -13,16 +12,14 @@ export interface WeatherForecastWithLocation {
   readonly location: UserLocation;
 }
 
-/**
- * 사용자 위치 기반 날씨 예보 조회 입력.
- */
-export interface GetWeatherForecastInput {
+/** 사용자 위치 기반 날씨 예보 조회 입력. */
+export interface GetWeatherForecastQuery {
   readonly userId: string;
   readonly date: Date;
 }
 
-interface GetWeatherForecastDependencies {
-  readonly weatherLocationRepository: Pick<UserLocationRepositoryPort, "findByUserId">;
+export interface GetWeatherForecastDependencies {
+  readonly userLocationRepository: Pick<UserLocationRepositoryPort, "findByUserId">;
   readonly forecastReader: Pick<WeatherForecastReader, "fetchForLocation">;
 }
 
@@ -33,14 +30,15 @@ export class GetWeatherForecastUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: GetWeatherForecastInput): Promise<WeatherForecastWithLocation> {
-    const location = await this.#dependencies.weatherLocationRepository.findByUserId(input.userId);
+  async execute(query: GetWeatherForecastQuery): Promise<WeatherForecastWithLocation> {
+    const { userLocationRepository, forecastReader } = this.#dependencies;
+    const location = await userLocationRepository.findByUserId(UserId.reconstitute(query.userId));
     if (location == null) {
-      throw new ApplicationException(ErrorCode.WEATHER_1902);
+      throw userLocationNotFound();
     }
     location.requireKmaGrid();
 
-    const forecast = await this.#dependencies.forecastReader.fetchForLocation(location, input.date);
+    const forecast = await forecastReader.fetchForLocation(location, query.date);
     return { forecast, location };
   }
 }

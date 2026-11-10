@@ -48,11 +48,11 @@ import { TodoSeriesMaterializationProcessor } from "#api/modules/planning/todo-s
 import { TodoSeriesMaterializationScheduler } from "#api/modules/planning/todo-series/infrastructure/jobs/todo-series-materialization.scheduler";
 import { PlanApplicationCleanupJob } from "#api/modules/voice/infrastructure/jobs/plans/plan-application-cleanup.job";
 import { PlanApplicationCleanupProcessor } from "#api/modules/voice/infrastructure/jobs/plans/plan-application-cleanup.processor";
-import { AIR_QUALITY_PROVIDER } from "#api/modules/weather/forecasts/application/ports/air-quality-provider.port";
-import { LIFESTYLE_INDEX_PROVIDER } from "#api/modules/weather/forecasts/application/ports/lifestyle-index-provider.port";
-import { SUN_TIME_PROVIDER } from "#api/modules/weather/forecasts/application/ports/sun-time-provider.port";
-import { WEATHER_PROVIDER } from "#api/modules/weather/forecasts/application/ports/weather-forecast-provider.port";
-import { WEATHER_REPORT_PROVIDER } from "#api/modules/weather/forecasts/application/ports/weather-report-provider.port";
+import { AirQualityProviderPort } from "#api/modules/weather/forecasts/application/ports/air-quality-provider.port";
+import { LifestyleIndexProviderPort } from "#api/modules/weather/forecasts/application/ports/lifestyle-index-provider.port";
+import { SunTimeProviderPort } from "#api/modules/weather/forecasts/application/ports/sun-time-provider.port";
+import { WeatherForecastProviderPort } from "#api/modules/weather/forecasts/application/ports/weather-forecast-provider.port";
+import { WeatherReportProviderPort } from "#api/modules/weather/forecasts/application/ports/weather-report-provider.port";
 import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
 import { CacheStorePort } from "#api/platform/cache/cache-store.port";
 import { DRIZZLE } from "#api/platform/database/index";
@@ -68,7 +68,7 @@ import {
 import { FakePushProvider } from "#test/doubles/notification/fake-push-provider";
 import { DateClock } from "#test/doubles/platform/date-clock";
 import { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
-import { StubWeatherReportProvider } from "#test/mocks/ports/weather.stub";
+import { StubWeatherReportProvider } from "#test/doubles/weather/stub-weather-report-provider";
 
 import { FakeAdminNotifier } from "../../mocks/fake-admin-notifier.js";
 import { FakeAiGenerator } from "../../mocks/fake-ai.generator.js";
@@ -262,15 +262,15 @@ export async function createE2eApp(options?: E2eAppOptions): Promise<E2eTestCont
     .useValue(fakePushProvider)
     .overrideProvider(AI_GENERATOR)
     .useValue(fakeAiGenerator)
-    .overrideProvider(WEATHER_PROVIDER)
+    .overrideProvider(WeatherForecastProviderPort)
     .useValue(fakeWeatherProvider)
-    .overrideProvider(WEATHER_REPORT_PROVIDER)
+    .overrideProvider(WeatherReportProviderPort)
     .useValue(stubWeatherReportProvider)
-    .overrideProvider(AIR_QUALITY_PROVIDER)
+    .overrideProvider(AirQualityProviderPort)
     .useValue(fakeAirQualityProvider)
-    .overrideProvider(LIFESTYLE_INDEX_PROVIDER)
+    .overrideProvider(LifestyleIndexProviderPort)
     .useValue(fakeLifestyleIndexProvider)
-    .overrideProvider(SUN_TIME_PROVIDER)
+    .overrideProvider(SunTimeProviderPort)
     .useValue(fakeSunTimeProvider)
     .overrideProvider(PinoLogger)
     .useClass(FakeLogger)

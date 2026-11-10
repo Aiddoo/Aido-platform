@@ -1,9 +1,12 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import { importPKCS8, SignJWT } from "jose";
 
-import { TypedConfigService } from "#api/platform/config/services/config.service";
-import { now } from "#api/shared/domain/date/utils/core";
+import { ClockPort } from "#api/shared/application/ports/clock.port";
 
+import {
+  weatherForecastsConfig,
+  type WeatherForecastsConfig,
+} from "../../weather-forecasts.config.js";
 import { WeatherKitLogEvent } from "../weatherkit.log-events.js";
 
 const TOKEN_LIFETIME_SECONDS = 60 * 60;
@@ -29,17 +32,19 @@ export class WeatherKitTokenAdapter {
   readonly #logger = new Logger(WeatherKitTokenAdapter.name);
   #current: SignedToken | null = null;
   #signing: Promise<string> | null = null;
-  readonly #configService: Pick<TypedConfigService, "weatherKit">;
+  readonly #config: Pick<WeatherForecastsConfig, "weatherKit">;
+  readonly #clock: ClockPort;
 
   constructor(
-    @Inject(TypedConfigService)
-    configService: Pick<TypedConfigService, "weatherKit">,
+    @Inject(weatherForecastsConfig.KEY) config: Pick<WeatherForecastsConfig, "weatherKit">,
+    clock: ClockPort,
   ) {
-    this.#configService = configService;
+    this.#config = config;
+    this.#clock = clock;
   }
 
   resolve(): Promise<string> {
-    if (this.#current != null && now().getTime() < this.#current.refreshAtMs) {
+    if (this.#current != null && this.#clock.now().epochMilliseconds < this.#current.refreshAtMs) {
       return Promise.resolve(this.#current.token);
     }
     this.#signing ??= this.#sign().finally(() => {
@@ -54,13 +59,13 @@ export class WeatherKitTokenAdapter {
   }
 
   async #sign(): Promise<string> {
-    const credentials = this.#configService.weatherKit;
+    const credentials = this.#config.weatherKit;
     if (credentials == null) {
       throw new WeatherKitNotConfiguredError();
     }
 
     const key = await importPKCS8(credentials.privateKey, "ES256");
-    const issuedAtSeconds = Math.floor(now().getTime() / 1000);
+    const issuedAtSeconds = Math.floor(this.#clock.now().epochMilliseconds / 1000);
     const expiresAtSeconds = issuedAtSeconds + TOKEN_LIFETIME_SECONDS;
     const token = await new SignJWT({})
       .setProtectedHeader({

@@ -3,6 +3,7 @@ import type { GeoCell } from "../../../shared/domain/geo-cell.vo.js";
 import type { WeatherReportLanguage } from "../../domain/weather-report-language.domain-service.js";
 import type { WeatherReport } from "../../domain/weather-report.vo.js";
 
+/** 옛 Symbol 토큰. 클래스 토큰과 같은 인스턴스를 가리키며 소비 Context가 옮기면 지운다. */
 export const WEATHER_REPORT_READER = Symbol("WEATHER_REPORT_READER");
 
 export interface WeatherReportReadRequest {
@@ -20,19 +21,19 @@ export interface LocatedWeatherReport {
 }
 
 /** 화면 조회와 다른 Context(날씨 알림)가 같은 칸 캐시·폴백으로 v2 리포트를 읽는다. */
-export interface WeatherReportReaderPort {
+export abstract class WeatherReportReaderPort {
   /**
    * 칸 캐시(동시 요청 한 번 load) → 공급자 → 마지막 성공 스냅샷 순으로 한 칸을 읽는다. 창은 자르지 않는다.
    * 스냅샷까지 없으면 `WEATHER_1901`이다.
    */
-  readReport(
+  abstract readReport(
     cell: GeoCell,
     region: ResolvedRegion,
     language: WeatherReportLanguage,
   ): Promise<WeatherReport>;
 
   /** 같은 칸·언어 요청은 한 번만 읽는다. 캐시·마지막 스냅샷까지 없는 칸의 키는 결과에서 빠진다. */
-  readReports(
+  abstract readReports(
     requests: readonly WeatherReportReadRequest[],
     now: Date,
   ): Promise<ReadonlyMap<string, LocatedWeatherReport>>;

@@ -1,21 +1,13 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
 
-import { requireRecord } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
-import { userLocation } from "#api/platform/database/schema/index";
+import { userLocation } from "#api/platform/database/schema/weather.schema";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import type { UserLocationRepositoryPort } from "../../application/ports/user-location.repository.port.js";
-import { UserLocation } from "../../domain/user-location.entity.js";
-
-const locationColumns = {
-  userId: userLocation.userId,
-  latitude: userLocation.latitude,
-  longitude: userLocation.longitude,
-  gridX: userLocation.gridX,
-  gridY: userLocation.gridY,
-  timezone: userLocation.timezone,
-};
+import { UserLocationRepositoryPort } from "../../application/ports/user-location.repository.port.js";
+import type { UserLocation } from "../../domain/user-location.entity.js";
+import { toUserLocation, toUserLocationRow } from "./user-location-row.mapper.js";
 
 @Injectable()
 export class DrizzleUserLocationRepository implements UserLocationRepositoryPort {
@@ -29,7 +21,7 @@ export class DrizzleUserLocationRepository implements UserLocationRepositoryPort
     return this.#txHost.tx;
   }
 
-  async findByUserId(userId: string): Promise<UserLocation | null> {
+  async findByUserId(userId: UserId): Promise<UserLocation | null> {
     const row = await this.#db.query.userLocation.findFirst({
       columns: {
         userId: true,
@@ -38,25 +30,18 @@ export class DrizzleUserLocationRepository implements UserLocationRepositoryPort
         gridX: true,
         gridY: true,
         timezone: true,
+        updatedAt: true,
       },
-      where: { userId },
+      where: { userId: userId.value },
     });
-    return row == null ? null : UserLocation.reconstitute(row);
+    return row == null ? null : toUserLocation(row);
   }
 
-  async upsert(location: UserLocation): Promise<UserLocation> {
-    const data = {
-      latitude: location.latitude,
-      longitude: location.longitude,
-      gridX: location.grid?.gridX ?? null,
-      gridY: location.grid?.gridY ?? null,
-      timezone: location.timezone,
-    };
-    const [row] = await this.#db
+  async save(location: UserLocation): Promise<void> {
+    const { userId, ...fields } = toUserLocationRow(location);
+    await this.#db
       .insert(userLocation)
-      .values({ userId: location.userId, ...data })
-      .onConflictDoUpdate({ target: userLocation.userId, set: data })
-      .returning(locationColumns);
-    return UserLocation.reconstitute(requireRecord(row));
+      .values({ userId, ...fields })
+      .onConflictDoUpdate({ target: userLocation.userId, set: fields });
   }
 }

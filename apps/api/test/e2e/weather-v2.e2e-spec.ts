@@ -3,15 +3,16 @@ import { ErrorCode } from "@aido/api/errors";
 import { eq } from "drizzle-orm";
 import request from "supertest";
 
-import { AIR_QUALITY_PROVIDER } from "#api/modules/weather/forecasts/application/ports/air-quality-provider.port";
-import { WEATHER_REPORT_PROVIDER } from "#api/modules/weather/forecasts/application/ports/weather-report-provider.port";
+import { AirQualityProviderPort } from "#api/modules/weather/forecasts/application/ports/air-quality-provider.port";
+import { WeatherReportProviderPort } from "#api/modules/weather/forecasts/application/ports/weather-report-provider.port";
 import { SHARED_WEATHER_REPORT_SCOPE } from "#api/modules/weather/forecasts/domain/weather-report-language.domain-service";
 import { WeatherKitRequestError } from "#api/modules/weather/forecasts/infrastructure/adapters/weatherkit-report.adapter";
 import { WeatherReportCacheKey } from "#api/modules/weather/forecasts/infrastructure/cache/weather-report.keyspace";
 import { CacheService } from "#api/platform/cache/cache.service";
 import { userLocation } from "#api/platform/database/schema/index";
+import { StubAirQualityProvider } from "#test/doubles/weather/stub-air-quality-provider";
+import { StubWeatherReportProvider } from "#test/doubles/weather/stub-weather-report-provider";
 import { weatherReportFixture } from "#test/fixtures/weather.fixture";
-import { StubAirQualityProvider, StubWeatherReportProvider } from "#test/mocks/ports/weather.stub";
 
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 
@@ -29,9 +30,9 @@ describe("날씨 v2 E2E", () => {
     ctx = await createE2eApp({
       customizeBuilder: (builder) =>
         builder
-          .overrideProvider(WEATHER_REPORT_PROVIDER)
+          .overrideProvider(WeatherReportProviderPort)
           .useValue(reportProvider)
-          .overrideProvider(AIR_QUALITY_PROVIDER)
+          .overrideProvider(AirQualityProviderPort)
           .useValue(airQualityProvider),
       additionalResetters: [() => reportProvider.clear(), () => airQualityProvider.clear()],
     });

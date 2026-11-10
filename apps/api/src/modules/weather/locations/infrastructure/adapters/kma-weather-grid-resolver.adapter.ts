@@ -11,6 +11,6 @@ export class KmaWeatherGridResolverAdapter implements WeatherGridResolverPort {
   resolveGrid(coordinate: Coordinate): GridCoordinate {
     assertKoreanWeatherCovered(coordinate);
     const { nx, ny } = convertToGrid(coordinate.latitude, coordinate.longitude);
-    return GridCoordinate.of(nx, ny);
+    return GridCoordinate.create(nx, ny);
   }
 }

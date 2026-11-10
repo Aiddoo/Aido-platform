@@ -1,9 +1,10 @@
-import { ErrorCode } from "@aido/api/errors";
-
-import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
+import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { instantToDate } from "#api/shared/domain/time/instant";
 
+import { userLocationNotFound } from "../../../locations/application/locations.errors.js";
 import type { TimezoneResolverPort } from "../../../locations/application/ports/timezone-resolver.port.js";
 import type { UserLocationRepositoryPort } from "../../../locations/application/ports/user-location.repository.port.js";
 import { GeoCell } from "../../../shared/domain/geo-cell.vo.js";
@@ -22,10 +23,9 @@ import type { WeatherReportReaderPort } from "../ports/weather-report.reader.por
 
 const KOREA_COUNTRY_CODE = "KR";
 
-export interface GetWeatherReportInput {
+export interface GetWeatherReportQuery {
   readonly userId: string;
   readonly language: WeatherReportLanguage;
-  readonly now: Date;
 }
 
 export interface WeatherReportResult {
@@ -39,14 +39,15 @@ export interface WeatherReportResult {
   readonly attribution: WeatherReportAttribution;
 }
 
-interface GetWeatherReportDependencies {
-  readonly weatherLocationRepository: Pick<UserLocationRepositoryPort, "findByUserId">;
+export interface GetWeatherReportDependencies {
+  readonly userLocationRepository: Pick<UserLocationRepositoryPort, "findByUserId">;
   readonly weatherReportReader: Pick<WeatherReportReaderPort, "readReport">;
   readonly weatherReportProvider: Pick<WeatherReportProviderPort, "getAttribution">;
   readonly weatherReportCache: Pick<WeatherReportCachePort, "getOrLoadAirQuality">;
   readonly timezoneResolver: Pick<TimezoneResolverPort, "resolve">;
   readonly airQualityProvider: Pick<AirQualityProviderPort, "getAirQuality">;
   readonly logger: Pick<ApplicationLoggerPort, "warn" | "error">;
+  readonly clock: ClockPort;
 }
 
 export class GetWeatherReportUseCase {
@@ -56,13 +57,15 @@ export class GetWeatherReportUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: GetWeatherReportInput): Promise<WeatherReportResult> {
-    const location = await this.#dependencies.weatherLocationRepository.findByUserId(input.userId);
+  async execute(query: GetWeatherReportQuery): Promise<WeatherReportResult> {
+    const location = await this.#dependencies.userLocationRepository.findByUserId(
+      UserId.reconstitute(query.userId),
+    );
     if (location == null) {
-      throw new ApplicationException(ErrorCode.WEATHER_1902);
+      throw userLocationNotFound();
     }
 
-    const cell = GeoCell.fromCoordinate(location.coordinate);
+    const cell = GeoCell.create(location.coordinate);
     // 리포트·대기질 캐시를 칸 단위로 공유하므로 시간대·국가·대기질 여부도 사용자 좌표가 아닌 칸 중심에서 정한다.
     const region = this.#dependencies.timezoneResolver.resolve(cell.center);
     const isKorea =
@@ -70,9 +73,9 @@ export class GetWeatherReportUseCase {
 
     // 리포트는 언어 공유 캐시일 수 있으므로 공급자 표기는 요청 언어로 따로 받는다.
     const [reportResult, airQualityResult, attributionResult] = await Promise.allSettled([
-      this.#dependencies.weatherReportReader.readReport(cell, region, input.language),
+      this.#dependencies.weatherReportReader.readReport(cell, region, query.language),
       isKorea ? this.#loadAirQuality(cell) : Promise.resolve(null),
-      this.#dependencies.weatherReportProvider.getAttribution(input.language),
+      this.#dependencies.weatherReportProvider.getAttribution(query.language),
     ]);
     if (reportResult.status === "rejected") {
       throw reportResult.reason;
@@ -94,7 +97,11 @@ export class GetWeatherReportUseCase {
         longitude: location.longitude,
         timezone: region.timezone,
       },
-      report: windowWeatherReport(reportResult.value, input.now, region.timezone),
+      report: windowWeatherReport(
+        reportResult.value,
+        instantToDate(this.#dependencies.clock.now()),
+        region.timezone,
+      ),
       airQuality: airQualityResult.status === "fulfilled" ? airQualityResult.value : null,
       attribution: attributionResult.value,
     };

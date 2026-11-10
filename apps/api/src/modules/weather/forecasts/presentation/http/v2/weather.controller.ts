@@ -19,7 +19,6 @@ import {
   SWAGGER_TAGS,
 } from "#api/platform/http/swagger/index";
 import { THROTTLED_DESCRIPTION, ThrottleByUser } from "#api/platform/throttle/index";
-import { now } from "#api/shared/domain/date/utils/core";
 
 import { GetWeatherReportUseCase } from "../../../application/use-cases/get-weather-report.use-case.js";
 import { resolveWeatherReportLanguage } from "../../../domain/weather-report-language.domain-service.js";
@@ -100,7 +99,6 @@ export class WeatherV2Controller {
     const result = await this.#getWeatherReport.execute({
       userId: user.userId,
       language: resolveWeatherReportLanguage(locale),
-      now: now(),
     });
     return toWeatherReportResponse(result);
   }

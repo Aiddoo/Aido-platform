@@ -1,8 +1,6 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { Inject, Injectable, Logger } from "@nestjs/common";
 import { HttpClient, InjectHttpClient } from "@nestjs/http-client";
-import { z } from "zod";
 
-import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { requestVendorJson } from "#api/platform/http/request-vendor-json";
 import type { OutboundPolicy } from "#api/platform/resilience/outbound-policy";
 import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
@@ -12,38 +10,13 @@ import type {
   AirQualityProviderPort,
 } from "../../application/ports/air-quality-provider.port.js";
 import { convertToTm } from "../../domain/wgs84-to-utmk.domain-service.js";
+import {
+  weatherForecastsConfig,
+  type WeatherForecastsConfig,
+} from "../../weather-forecasts.config.js";
 import { WeatherProviderLogEvent } from "../weather-provider.log-events.js";
+import { airkoreaAirQualitySchema, airkoreaNearbyStationSchema } from "./airkorea.wire.js";
 import { AIRKOREA_POLICY } from "./weather-outbound.policy.js";
-
-const nearbyStationResponseSchema = z.object({
-  response: z
-    .object({
-      body: z
-        .object({
-          items: z
-            .array(z.object({ stationName: z.string().nullish() }))
-            .optional()
-            .catch(undefined),
-        })
-        .optional(),
-    })
-    .optional(),
-});
-
-const airQualityResponseSchema = z.object({
-  response: z
-    .object({
-      body: z
-        .object({
-          items: z
-            .array(z.object({ pm10Value: z.string().nullish(), pm25Value: z.string().nullish() }))
-            .optional()
-            .catch(undefined),
-        })
-        .optional(),
-    })
-    .optional(),
-});
 
 @Injectable()
 export class AirkoreaAirQualityAdapter implements AirQualityProviderPort {
@@ -51,15 +24,15 @@ export class AirkoreaAirQualityAdapter implements AirQualityProviderPort {
 
   readonly #policy: OutboundPolicy;
 
-  readonly #configService: TypedConfigService;
+  readonly #config: WeatherForecastsConfig;
   readonly #http: HttpClient;
 
   constructor(
-    configService: TypedConfigService,
+    @Inject(weatherForecastsConfig.KEY) config: WeatherForecastsConfig,
     @InjectHttpClient("weather") http: HttpClient,
     policies: OutboundPolicyRegistry,
   ) {
-    this.#configService = configService;
+    this.#config = config;
     this.#http = http;
 
     this.#policy = policies.get(AIRKOREA_POLICY);
@@ -67,7 +40,7 @@ export class AirkoreaAirQualityAdapter implements AirQualityProviderPort {
 
   async getAirQuality(lat: number, lon: number): Promise<AirQuality | null> {
     try {
-      const apiKey = this.#configService.dataGoKrApiKey;
+      const apiKey = this.#config.kmaApiKey;
       if (apiKey == null || apiKey === "") {
         this.#logger.warn({
           event: WeatherProviderLogEvent.NOT_CONFIGURED,
@@ -122,7 +95,7 @@ export class AirkoreaAirQualityAdapter implements AirQualityProviderPort {
       return null;
     }
 
-    const parsed = nearbyStationResponseSchema.safeParse(outcome.body);
+    const parsed = airkoreaNearbyStationSchema.safeParse(outcome.body);
     if (!parsed.success) {
       this.#logger.warn({
         event: WeatherProviderLogEvent.RESPONSE_UNAVAILABLE,
@@ -190,7 +163,7 @@ export class AirkoreaAirQualityAdapter implements AirQualityProviderPort {
       return null;
     }
 
-    const parsed = airQualityResponseSchema.safeParse(outcome.body);
+    const parsed = airkoreaAirQualitySchema.safeParse(outcome.body);
     if (!parsed.success) {
       this.#logger.warn({
         event: WeatherProviderLogEvent.RESPONSE_UNAVAILABLE,

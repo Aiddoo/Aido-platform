@@ -33,5 +33,4 @@ export { TodoBuilder } from "./todo.builder.js";
 export { TodoCategoryBuilder, type TodoCategoryWithCount } from "./todo-category.builder.js";
 export { UserBuilder } from "./user.builder.js";
 export { UserConsentBuilder } from "./user-consent.builder.js";
-export { UserLocationBuilder } from "./user-location.builder.js";
 export { UserPreferenceBuilder } from "./user-preference.builder.js";

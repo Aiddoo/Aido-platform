@@ -1,8 +1,6 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { Inject, Injectable, Logger } from "@nestjs/common";
 import { HttpClient, InjectHttpClient } from "@nestjs/http-client";
-import { z } from "zod";
 
-import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { requestVendorJson } from "#api/platform/http/request-vendor-json";
 import type { OutboundPolicy } from "#api/platform/resilience/outbound-policy";
 import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
@@ -13,28 +11,13 @@ import type {
   SunTimeProviderPort,
 } from "../../application/ports/sun-time-provider.port.js";
 import { KMA_TIMEZONE } from "../../domain/kma-forecast-availability.domain-service.js";
+import {
+  weatherForecastsConfig,
+  type WeatherForecastsConfig,
+} from "../../weather-forecasts.config.js";
 import { WeatherProviderLogEvent } from "../weather-provider.log-events.js";
+import { kasiSunTimeSchema } from "./kasi.wire.js";
 import { KASI_POLICY } from "./weather-outbound.policy.js";
-
-const sunTimeResponseSchema = z.object({
-  response: z
-    .object({
-      header: z.object({ resultCode: z.string().optional() }).optional(),
-      body: z
-        .object({
-          items: z
-            .object({
-              item: z
-                .object({ sunrise: z.string().optional(), sunset: z.string().optional() })
-                .nullish(),
-            })
-            .optional()
-            .catch(undefined),
-        })
-        .optional(),
-    })
-    .optional(),
-});
 
 @Injectable()
 export class KasiSunTimeAdapter implements SunTimeProviderPort {
@@ -42,15 +25,15 @@ export class KasiSunTimeAdapter implements SunTimeProviderPort {
 
   readonly #policy: OutboundPolicy;
 
-  readonly #configService: TypedConfigService;
+  readonly #config: WeatherForecastsConfig;
   readonly #http: HttpClient;
 
   constructor(
-    configService: TypedConfigService,
+    @Inject(weatherForecastsConfig.KEY) config: WeatherForecastsConfig,
     @InjectHttpClient("weather") http: HttpClient,
     policies: OutboundPolicyRegistry,
   ) {
-    this.#configService = configService;
+    this.#config = config;
     this.#http = http;
 
     this.#policy = policies.get(KASI_POLICY);
@@ -58,7 +41,7 @@ export class KasiSunTimeAdapter implements SunTimeProviderPort {
 
   async getSunTime(lat: number, lon: number, date: Date): Promise<SunTime | null> {
     try {
-      const apiKey = this.#configService.dataGoKrApiKey;
+      const apiKey = this.#config.kmaApiKey;
       if (apiKey == null || apiKey === "") {
         this.#logger.warn({
           event: WeatherProviderLogEvent.NOT_CONFIGURED,
@@ -96,7 +79,7 @@ export class KasiSunTimeAdapter implements SunTimeProviderPort {
         return null;
       }
 
-      const parsed = sunTimeResponseSchema.safeParse(outcome.body);
+      const parsed = kasiSunTimeSchema.safeParse(outcome.body);
       if (!parsed.success) {
         this.#logger.warn({
           event: WeatherProviderLogEvent.RESPONSE_UNAVAILABLE,

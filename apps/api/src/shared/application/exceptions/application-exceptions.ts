@@ -40,8 +40,4 @@ export const ApplicationExceptions = {
   todoCategoryNameDuplicate(name: string) {
     return new ApplicationException(ErrorCode.TODO_CATEGORY_0853, { name });
   },
-
-  weatherServiceUnavailable(details?: unknown) {
-    return new ApplicationException(ErrorCode.WEATHER_1901, details);
-  },
 };

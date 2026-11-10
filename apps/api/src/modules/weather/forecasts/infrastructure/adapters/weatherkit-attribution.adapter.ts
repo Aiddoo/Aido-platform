@@ -2,7 +2,7 @@ import { Inject, Injectable, Logger } from "@nestjs/common";
 import { HttpClient, InjectHttpClient } from "@nestjs/http-client";
 import { z } from "zod";
 
-import { CacheService } from "#api/platform/cache/cache.service";
+import { CacheStorePort } from "#api/platform/cache/cache-store.port";
 import { requestVendorJson } from "#api/platform/http/request-vendor-json";
 import type { OutboundPolicy } from "#api/platform/resilience/outbound-policy";
 import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
@@ -67,18 +67,18 @@ export class WeatherKitAttributionAdapter {
   readonly #logger = new Logger(WeatherKitAttributionAdapter.name);
   readonly #policy: OutboundPolicy;
   readonly #http: HttpClient;
-  readonly #cacheService: Pick<CacheService, "wrap" | "has" | "set">;
+  readonly #cache: Pick<CacheStorePort, "wrap" | "has" | "set">;
   readonly #usage: Pick<WeatherKitUsageMeterAdapter, "recordCall">;
 
   constructor(
     @InjectHttpClient("weather") http: HttpClient,
-    @Inject(CacheService)
-    cacheService: Pick<CacheService, "wrap" | "has" | "set">,
+    @Inject(CacheStorePort)
+    cache: Pick<CacheStorePort, "wrap" | "has" | "set">,
     policies: OutboundPolicyRegistry,
     @Inject(WeatherKitUsageMeterAdapter) usage: Pick<WeatherKitUsageMeterAdapter, "recordCall">,
   ) {
     this.#http = http;
-    this.#cacheService = cacheService;
+    this.#cache = cache;
     this.#usage = usage;
     this.#policy = policies.get(WEATHERKIT_POLICY);
   }
@@ -94,11 +94,11 @@ export class WeatherKitAttributionAdapter {
 
   async #logo(language: string): Promise<WeatherReportAttributionLogo | null> {
     const failureKey = WeatherReportCacheKey.attributionFailure(language);
-    if (await this.#cacheService.has(failureKey)) {
+    if (await this.#cache.has(failureKey)) {
       return null;
     }
     try {
-      return await this.#cacheService.wrap(
+      return await this.#cache.wrap(
         WeatherReportCacheKey.attribution(language),
         attributionLogoSchema,
         async () => {
@@ -137,11 +137,7 @@ export class WeatherKitAttributionAdapter {
         status: error instanceof WeatherKitAttributionRequestError ? error.status : null,
         errorType: toErrorType(error),
       });
-      await this.#cacheService.set(
-        failureKey,
-        true,
-        WEATHER_REPORT_CACHE_TTL_MS.ATTRIBUTION_FAILURE,
-      );
+      await this.#cache.set(failureKey, true, WEATHER_REPORT_CACHE_TTL_MS.ATTRIBUTION_FAILURE);
       return null;
     }
   }

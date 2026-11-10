@@ -6,7 +6,7 @@ import type {
   DailyForecast,
   HourlyForecast,
   WeatherForecast,
-} from "../../application/ports/weather-forecast-provider.port.js";
+} from "../../application/read-models/weather-forecast.read-model.js";
 import { KMA_TIMEZONE } from "../../domain/kma-forecast-availability.domain-service.js";
 import { KMA_CATEGORY, PTY_CODE_MAP, SKY_CODE_MAP } from "./kma.constants.js";
 import type { KmaApiResponse, KmaResponseItem } from "./kma.wire.js";

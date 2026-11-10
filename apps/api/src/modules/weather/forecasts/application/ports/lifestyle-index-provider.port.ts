@@ -1,12 +1,10 @@
-export const LIFESTYLE_INDEX_PROVIDER = Symbol("LIFESTYLE_INDEX_PROVIDER");
-
 export interface LifestyleIndex {
   readonly feelsLikeTemperature: number;
   readonly uvIndex: number | null;
 }
 
-export interface LifestyleIndexProviderPort {
-  getIndex(
+export abstract class LifestyleIndexProviderPort {
+  abstract getIndex(
     lat: number,
     lon: number,
     date: Date,

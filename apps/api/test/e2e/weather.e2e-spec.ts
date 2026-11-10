@@ -17,18 +17,16 @@
 import { weatherConditionsSchema, weatherForecastSchema } from "@aido/api";
 import request from "supertest";
 
-import { AIR_QUALITY_PROVIDER } from "#api/modules/weather/forecasts/application/ports/air-quality-provider.port";
-import { LIFESTYLE_INDEX_PROVIDER } from "#api/modules/weather/forecasts/application/ports/lifestyle-index-provider.port";
-import { SUN_TIME_PROVIDER } from "#api/modules/weather/forecasts/application/ports/sun-time-provider.port";
-import { WEATHER_PROVIDER } from "#api/modules/weather/forecasts/application/ports/weather-forecast-provider.port";
+import { AirQualityProviderPort } from "#api/modules/weather/forecasts/application/ports/air-quality-provider.port";
+import { LifestyleIndexProviderPort } from "#api/modules/weather/forecasts/application/ports/lifestyle-index-provider.port";
+import { SunTimeProviderPort } from "#api/modules/weather/forecasts/application/ports/sun-time-provider.port";
+import { WeatherForecastProviderPort } from "#api/modules/weather/forecasts/application/ports/weather-forecast-provider.port";
 import { addDays } from "#api/shared/domain/date/utils/arithmetic";
 import { dayWindowInTimezone } from "#api/shared/domain/date/utils/timezone";
-import {
-  StubAirQualityProvider,
-  StubLifestyleIndexProvider,
-  StubSunTimeProvider,
-  StubWeatherProvider,
-} from "#test/mocks/ports/weather.stub";
+import { StubAirQualityProvider } from "#test/doubles/weather/stub-air-quality-provider";
+import { StubLifestyleIndexProvider } from "#test/doubles/weather/stub-lifestyle-index-provider";
+import { StubSunTimeProvider } from "#test/doubles/weather/stub-sun-time-provider";
+import { StubWeatherForecastProvider } from "#test/doubles/weather/stub-weather-forecast-provider";
 
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 
@@ -39,7 +37,7 @@ function kstDate(offsetDays: number): string {
 
 describe("날씨 E2E", () => {
   let ctx: E2eTestContext;
-  const weatherProvider = new StubWeatherProvider();
+  const weatherProvider = new StubWeatherForecastProvider();
   const airQualityProvider = new StubAirQualityProvider();
   const lifestyleIndexProvider = new StubLifestyleIndexProvider();
   const sunTimeProvider = new StubSunTimeProvider();
@@ -48,13 +46,13 @@ describe("날씨 E2E", () => {
     ctx = await createE2eApp({
       customizeBuilder: (builder) =>
         builder
-          .overrideProvider(WEATHER_PROVIDER)
+          .overrideProvider(WeatherForecastProviderPort)
           .useValue(weatherProvider)
-          .overrideProvider(AIR_QUALITY_PROVIDER)
+          .overrideProvider(AirQualityProviderPort)
           .useValue(airQualityProvider)
-          .overrideProvider(LIFESTYLE_INDEX_PROVIDER)
+          .overrideProvider(LifestyleIndexProviderPort)
           .useValue(lifestyleIndexProvider)
-          .overrideProvider(SUN_TIME_PROVIDER)
+          .overrideProvider(SunTimeProviderPort)
           .useValue(sunTimeProvider),
       additionalResetters: [
         () => weatherProvider.clear(),

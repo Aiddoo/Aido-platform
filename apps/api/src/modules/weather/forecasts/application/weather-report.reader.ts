@@ -18,6 +18,7 @@ import {
 } from "../domain/weather-report-language.domain-service.js";
 import { windowWeatherReport } from "../domain/weather-report-window.domain-service.js";
 import type { WeatherReport } from "../domain/weather-report.vo.js";
+import { weatherServiceUnavailable } from "./forecasts.errors.js";
 import { ForecastLogEvent } from "./forecasts.log-events.js";
 import type { WeatherReportCachePort } from "./ports/weather-report-cache.port.js";
 import type {
@@ -70,7 +71,7 @@ export class WeatherReportReader implements WeatherReportReaderPort {
           errorType: toErrorType(error),
           errorCode: ErrorCode.WEATHER_1901,
         });
-        throw new ApplicationException(ErrorCode.WEATHER_1901);
+        throw weatherServiceUnavailable();
       }
       this.#dependencies.logger.warn({
         event: ForecastLogEvent.REPORT_FALLBACK_USED,
@@ -88,7 +89,7 @@ export class WeatherReportReader implements WeatherReportReaderPort {
   ): Promise<ReadonlyMap<string, LocatedWeatherReport>> {
     const located = requests.map((request) => ({
       request,
-      cell: GeoCell.fromCoordinate(Coordinate.of(request.latitude, request.longitude)),
+      cell: GeoCell.create(Coordinate.create(request.latitude, request.longitude)),
     }));
     const groups = Object.values(
       groupBy(located, ({ cell, request }) => `${cell.key}\u0000${request.language}`),

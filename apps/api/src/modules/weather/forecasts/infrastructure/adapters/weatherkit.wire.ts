@@ -98,8 +98,8 @@ const precipitationTypeSchema = knownValue(PRECIPITATION_TYPES);
 
 const instantSchema = z.iso.datetime({ offset: true }).transform((value) => new Date(value));
 
-const currentWeatherSchema = z.object({
-  metadata: z.object({ readTime: instantSchema.nullish() }).optional().catch(undefined),
+const currentWeatherSchema = z.looseObject({
+  metadata: z.looseObject({ readTime: instantSchema.nullish() }).optional().catch(undefined),
   asOf: instantSchema,
   cloudCover: z.number(),
   conditionCode: conditionCodeSchema,
@@ -118,9 +118,9 @@ const currentWeatherSchema = z.object({
   windSpeed: z.number(),
 });
 
-const nextHourSchema = z.object({
+const nextHourSchema = z.looseObject({
   summary: z.array(
-    z.object({
+    z.looseObject({
       startTime: instantSchema,
       endTime: instantSchema.nullish(),
       condition: precipitationTypeSchema,
@@ -129,7 +129,7 @@ const nextHourSchema = z.object({
     }),
   ),
   minutes: z.array(
-    z.object({
+    z.looseObject({
       startTime: instantSchema,
       precipitationChance: z.number(),
       precipitationIntensity: z.number(),
@@ -137,7 +137,7 @@ const nextHourSchema = z.object({
   ),
 });
 
-const hourSchema = z.object({
+const hourSchema = z.looseObject({
   forecastStart: instantSchema,
   conditionCode: conditionCodeSchema,
   daylight: z.boolean(),
@@ -152,7 +152,7 @@ const hourSchema = z.object({
   windSpeed: z.number(),
 });
 
-const dayPartSchema = z.object({
+const dayPartSchema = z.looseObject({
   conditionCode: conditionCodeSchema,
   precipitationAmount: z.number(),
   precipitationChance: z.number(),
@@ -161,7 +161,7 @@ const dayPartSchema = z.object({
   temperatureMin: z.number().nullish(),
 });
 
-const daySchema = z.object({
+const daySchema = z.looseObject({
   forecastStart: instantSchema,
   conditionCode: conditionCodeSchema,
   maxUvIndex: z.number(),
@@ -183,7 +183,7 @@ const daySchema = z.object({
   overnightForecast: dayPartSchema.nullish().catch(undefined),
 });
 
-const alertSchema = z.object({
+const alertSchema = z.looseObject({
   id: z.string(),
   description: z.string(),
   severity: knownValue(ALERT_SEVERITIES),
@@ -194,7 +194,7 @@ const alertSchema = z.object({
   detailsUrl: z.url(),
 });
 
-export const weatherKitWeatherSchema = z.object({
+export const weatherKitWeatherSchema = z.looseObject({
   currentWeather: currentWeatherSchema.optional(),
   forecastNextHour: nextHourSchema.optional().catch(undefined),
   forecastHourly: z

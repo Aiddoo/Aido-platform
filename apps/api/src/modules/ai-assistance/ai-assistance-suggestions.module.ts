@@ -5,7 +5,7 @@ import { IdentityUserAccessModule } from "#api/modules/identity/identity-user-ac
 
 import { NotificationDeliveryModule } from "../notification/notification-delivery.public.js";
 import { PlanningTodosModule } from "../planning/todos/planning-todos.public.js";
-import { WeatherForecastModule } from "../weather/forecasts/weather-forecasts.public.js";
+import { WeatherForecastsModule } from "../weather/forecasts/weather-forecasts.public.js";
 import { AiAssistanceGenerationModule } from "./ai-assistance-generation.module.js";
 import { AiAssistanceParsingModule } from "./ai-assistance-parsing.module.js";
 import { AiAssistanceReportsModule } from "./ai-assistance-reports.module.js";
@@ -39,7 +39,7 @@ import { AiSuggestionController } from "./presentation/controllers/suggestions/v
  * - AiAssistanceParsingModule: AI 데이터 처리 동의·앱 버전 reader
  * - PlanningTodosModule: 수락 시 STAGED_TODO_CREATOR로 같은 트랜잭션에 반복 할 일을 만들고 효과는 커밋 뒤 실행
  * - AiAssistanceReportsModule: WEEKLY_REPORT_READER가 최신 주간 보고서 인사이트 주입
- * - WeatherForecastModule: 날씨 기반 제안을 위한 격자 예보 조회
+ * - WeatherForecastsModule: 날씨 기반 제안을 위한 격자 예보 조회
  * - NotificationDeliveryModule: 새 제안 생성 시 알림 발송(프로세서)
  */
 @Module({
@@ -51,7 +51,7 @@ import { AiSuggestionController } from "./presentation/controllers/suggestions/v
     AiAssistanceReportsModule,
     NotificationDeliveryModule,
     PlanningTodosModule,
-    WeatherForecastModule,
+    WeatherForecastsModule,
   ],
   controllers: [AiSuggestionController],
   providers: [

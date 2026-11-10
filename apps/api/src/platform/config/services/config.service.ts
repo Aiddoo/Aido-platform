@@ -264,27 +264,6 @@ export class TypedConfigService {
     return this.#ai;
   }
 
-  get dataGoKrApiKey(): string | undefined {
-    return this.get("KMA_API_KEY");
-  }
-
-  /** 네 값이 모두 있을 때만 자격을 돌려준다. 스키마가 all-or-none을 보장한다. */
-  get weatherKit(): {
-    readonly teamId: string;
-    readonly keyId: string;
-    readonly serviceId: string;
-    readonly privateKey: string;
-  } | null {
-    const teamId = this.get("WEATHERKIT_TEAM_ID");
-    const keyId = this.get("WEATHERKIT_KEY_ID");
-    const serviceId = this.get("WEATHERKIT_SERVICE_ID");
-    const privateKey = this.get("WEATHERKIT_PRIVATE_KEY");
-    if (!teamId || !keyId || !serviceId || !privateKey) {
-      return null;
-    }
-    return { teamId, keyId, serviceId, privateKey };
-  }
-
   get cache() {
     return this.#read(cacheConfig);
   }

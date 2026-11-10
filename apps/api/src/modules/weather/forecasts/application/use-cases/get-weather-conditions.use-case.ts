@@ -1,32 +1,29 @@
-import { ErrorCode } from "@aido/api/errors";
-
-import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { toLocalTimeString } from "#api/shared/domain/date/utils/timezone";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import { type UserLocationRepositoryPort } from "../../../locations/application/ports/user-location.repository.port.js";
+import { userLocationNotFound } from "../../../locations/application/locations.errors.js";
+import type { UserLocationRepositoryPort } from "../../../locations/application/ports/user-location.repository.port.js";
 import type { UserLocation } from "../../../locations/domain/user-location.entity.js";
 import { ForecastLogEvent } from "../forecasts.log-events.js";
-import { type AirQualityProviderPort } from "../ports/air-quality-provider.port.js";
-import { type LifestyleIndexProviderPort } from "../ports/lifestyle-index-provider.port.js";
-import { type SunTimeProviderPort } from "../ports/sun-time-provider.port.js";
-import { type WeatherForecastCachePort } from "../ports/weather-forecast-cache.port.js";
-import type {
-  WeatherConditions,
-  WeatherForecastProviderPort,
-} from "../ports/weather-forecast-provider.port.js";
+import type { AirQualityProviderPort } from "../ports/air-quality-provider.port.js";
+import type { LifestyleIndexProviderPort } from "../ports/lifestyle-index-provider.port.js";
+import type { SunTimeProviderPort } from "../ports/sun-time-provider.port.js";
+import type { WeatherForecastCachePort } from "../ports/weather-forecast-cache.port.js";
+import type { WeatherForecastProviderPort } from "../ports/weather-forecast-provider.port.js";
+import type { WeatherConditions } from "../read-models/weather-forecast.read-model.js";
 import type { WeatherForecastReader } from "../weather-forecast.reader.js";
 
 /**
  * 사용자 위치 기반 날씨 부가 정보(체감온도·자외선·일출/일몰·미세먼지) 조회 입력.
  */
-export interface GetWeatherConditionsInput {
+export interface GetWeatherConditionsQuery {
   readonly userId: string;
   readonly date: Date;
 }
 
-interface GetWeatherConditionsDependencies {
-  readonly weatherLocationRepository: Pick<UserLocationRepositoryPort, "findByUserId">;
+export interface GetWeatherConditionsDependencies {
+  readonly userLocationRepository: Pick<UserLocationRepositoryPort, "findByUserId">;
   readonly airQualityProvider: Pick<AirQualityProviderPort, "getAirQuality">;
   readonly lifestyleIndexProvider: Pick<LifestyleIndexProviderPort, "getIndex">;
   readonly sunTimeProvider: Pick<SunTimeProviderPort, "getSunTime">;
@@ -43,37 +40,39 @@ export class GetWeatherConditionsUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: GetWeatherConditionsInput): Promise<WeatherConditions> {
-    const location = await this.#dependencies.weatherLocationRepository.findByUserId(input.userId);
+  async execute(query: GetWeatherConditionsQuery): Promise<WeatherConditions> {
+    const location = await this.#dependencies.userLocationRepository.findByUserId(
+      UserId.reconstitute(query.userId),
+    );
     if (location == null) {
-      throw new ApplicationException(ErrorCode.WEATHER_1902);
+      throw userLocationNotFound();
     }
     const grid = location.requireKmaGrid();
 
     const cached = await this.#dependencies.weatherCache.getConditions(
       grid.gridX,
       grid.gridY,
-      input.date,
+      query.date,
     );
     if (cached != null) {
       return cached;
     }
 
-    const { currentTemp, windSpeed } = await this.#currentTempAndWind(location, input.date);
+    const { currentTemp, windSpeed } = await this.#currentTempAndWind(location, query.date);
 
     const [airResult, lifestyleResult, sunResult] = await Promise.allSettled([
       this.#dependencies.airQualityProvider.getAirQuality(location.latitude, location.longitude),
       this.#dependencies.lifestyleIndexProvider.getIndex(
         location.latitude,
         location.longitude,
-        input.date,
+        query.date,
         currentTemp,
         windSpeed,
       ),
       this.#dependencies.sunTimeProvider.getSunTime(
         location.latitude,
         location.longitude,
-        input.date,
+        query.date,
       ),
     ]);
 
@@ -93,7 +92,7 @@ export class GetWeatherConditionsUseCase {
     await this.#dependencies.weatherCache.setConditions(
       grid.gridX,
       grid.gridY,
-      input.date,
+      query.date,
       conditions,
     );
 

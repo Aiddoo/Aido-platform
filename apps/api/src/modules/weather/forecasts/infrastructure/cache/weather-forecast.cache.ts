@@ -1,7 +1,8 @@
+import { PRECIPITATION_TYPES, SKY_CONDITIONS } from "@aido/api/vocabulary";
 import { Injectable } from "@nestjs/common";
 import { z } from "zod";
 
-import { CacheService } from "#api/platform/cache/cache.service";
+import { CacheStorePort } from "#api/platform/cache/cache-store.port";
 import { dayWindowInTimezone } from "#api/shared/domain/date/utils/timezone";
 
 import type {
@@ -12,7 +13,7 @@ import type {
 import type {
   WeatherConditions,
   WeatherForecast,
-} from "../../application/ports/weather-forecast-provider.port.js";
+} from "../../application/read-models/weather-forecast.read-model.js";
 import { getKmaBaseDateTime } from "../../domain/kma-base-datetime.domain-service.js";
 import {
   KMA_TIMEZONE,
@@ -20,8 +21,8 @@ import {
 } from "../../domain/kma-forecast-availability.domain-service.js";
 import { WEATHER_CACHE_TTL_MS, WeatherCacheKey } from "./weather-forecast.keyspace.js";
 
-const SKY_CONDITION_SCHEMA = z.enum(["CLEAR", "PARTLY_CLOUDY", "CLOUDY"]);
-const PRECIPITATION_TYPE_SCHEMA = z.enum(["NONE", "RAIN", "RAIN_SNOW", "SNOW", "SHOWER"]);
+const SKY_CONDITION_SCHEMA = z.enum(SKY_CONDITIONS);
+const PRECIPITATION_TYPE_SCHEMA = z.enum(PRECIPITATION_TYPES);
 
 /** Redis JSON에서 문자열이 된 예보 기준 시각을 Date로 복원한다. */
 const WEATHER_FORECAST_SCHEMA = z.object({
@@ -72,10 +73,10 @@ function forecastKey(gridX: number, gridY: number, timing: KmaForecastTiming): s
 
 @Injectable()
 export class WeatherForecastCache implements WeatherForecastCachePort {
-  readonly #cacheService: CacheService;
+  readonly #cache: CacheStorePort;
 
-  constructor(cacheService: CacheService) {
-    this.#cacheService = cacheService;
+  constructor(cache: CacheStorePort) {
+    this.#cache = cache;
   }
 
   getForecast(
@@ -83,7 +84,7 @@ export class WeatherForecastCache implements WeatherForecastCachePort {
     gridY: number,
     timing: KmaForecastTiming,
   ): Promise<WeatherForecast | undefined> {
-    return this.#cacheService.get(forecastKey(gridX, gridY, timing), WEATHER_FORECAST_SCHEMA);
+    return this.#cache.get(forecastKey(gridX, gridY, timing), WEATHER_FORECAST_SCHEMA);
   }
 
   getOrLoadForecast(
@@ -92,12 +93,12 @@ export class WeatherForecastCache implements WeatherForecastCachePort {
     timing: KmaForecastTiming,
     load: () => Promise<WeatherForecast>,
   ): Promise<WeatherForecast> {
-    return this.#cacheService.wrap(
+    return this.#cache.wrap(
       forecastKey(gridX, gridY, timing),
       WEATHER_FORECAST_SCHEMA,
       async () => {
         const forecast = await load();
-        await this.#cacheService.set(
+        await this.#cache.set(
           WeatherCacheKey.latestForecast(gridX, gridY),
           forecast,
           WEATHER_CACHE_TTL_MS.LATEST_FORECAST,
@@ -109,11 +110,11 @@ export class WeatherForecastCache implements WeatherForecastCachePort {
   }
 
   hasRecentForecastFailure(gridX: number, gridY: number): Promise<boolean> {
-    return this.#cacheService.has(WeatherCacheKey.forecastFailure(gridX, gridY));
+    return this.#cache.has(WeatherCacheKey.forecastFailure(gridX, gridY));
   }
 
   markForecastFailure(gridX: number, gridY: number): Promise<void> {
-    return this.#cacheService.set(
+    return this.#cache.set(
       WeatherCacheKey.forecastFailure(gridX, gridY),
       true,
       WEATHER_CACHE_TTL_MS.FORECAST_FAILURE,
@@ -121,17 +122,14 @@ export class WeatherForecastCache implements WeatherForecastCachePort {
   }
 
   getLatestForecast(gridX: number, gridY: number): Promise<WeatherForecast | undefined> {
-    return this.#cacheService.get(
-      WeatherCacheKey.latestForecast(gridX, gridY),
-      WEATHER_FORECAST_SCHEMA,
-    );
+    return this.#cache.get(WeatherCacheKey.latestForecast(gridX, gridY), WEATHER_FORECAST_SCHEMA);
   }
 
   getForecastBatch(
     grids: readonly WeatherGridRef[],
     timing: KmaForecastTiming,
   ): Promise<(WeatherForecast | undefined)[]> {
-    return this.#cacheService.mget(
+    return this.#cache.mget(
       grids.map((grid) => forecastKey(grid.gridX, grid.gridY, timing)),
       WEATHER_FORECAST_SCHEMA,
     );
@@ -153,13 +151,13 @@ export class WeatherForecastCache implements WeatherForecastCachePort {
         ttlMs: WEATHER_CACHE_TTL_MS.LATEST_FORECAST,
       },
     ]);
-    await this.#cacheService.mset(cacheEntries);
+    await this.#cache.mset(cacheEntries);
   }
 
   getLatestForecastBatch(
     grids: readonly WeatherGridRef[],
   ): Promise<(WeatherForecast | undefined)[]> {
-    return this.#cacheService.mget(
+    return this.#cache.mget(
       grids.map((grid) => WeatherCacheKey.latestForecast(grid.gridX, grid.gridY)),
       WEATHER_FORECAST_SCHEMA,
     );
@@ -167,7 +165,7 @@ export class WeatherForecastCache implements WeatherForecastCachePort {
 
   getConditions(gridX: number, gridY: number, date: Date): Promise<WeatherConditions | undefined> {
     const { localDate } = dayWindowInTimezone(date, KMA_TIMEZONE);
-    return this.#cacheService.get(
+    return this.#cache.get(
       WeatherCacheKey.conditions(gridX, gridY, localDate),
       WEATHER_CONDITIONS_SCHEMA,
     );
@@ -180,18 +178,10 @@ export class WeatherForecastCache implements WeatherForecastCachePort {
     conditions: WeatherConditions,
   ): Promise<void> {
     const { localDate } = dayWindowInTimezone(date, KMA_TIMEZONE);
-    await this.#cacheService.set(
+    await this.#cache.set(
       WeatherCacheKey.conditions(gridX, gridY, localDate),
       conditions,
       WEATHER_CACHE_TTL_MS.CONDITIONS,
     );
-  }
-
-  async invalidateGrid(gridX: number, gridY: number): Promise<void> {
-    await Promise.all([
-      this.#cacheService.delByPattern(WeatherCacheKey.forecastPattern(gridX, gridY)),
-      this.#cacheService.del(WeatherCacheKey.latestForecast(gridX, gridY)),
-      this.#cacheService.delByPattern(WeatherCacheKey.conditionsPattern(gridX, gridY)),
-    ]);
   }
 }

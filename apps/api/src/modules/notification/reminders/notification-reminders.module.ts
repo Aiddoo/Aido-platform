@@ -5,7 +5,7 @@ import { IdentityUserAccessModule } from "#api/modules/identity/identity-user-ac
 import { InsightsWeeklyAchievementsModule } from "#api/modules/insights/insights-weekly-achievements.public";
 import { DatabaseModule } from "#api/platform/database/database.module";
 
-import { WeatherForecastModule } from "../../weather/forecasts/weather-forecasts.public.js";
+import { WeatherForecastsModule } from "../../weather/forecasts/weather-forecasts.public.js";
 import { NotificationPushModule } from "../push/notification-push.module.js";
 import {
   REMINDER_SCHEDULER,
@@ -26,7 +26,7 @@ import {
     TimezoneReminderQueueModule,
     DatabaseModule,
     NotificationPushModule,
-    WeatherForecastModule,
+    WeatherForecastsModule,
     InsightsWeeklyAchievementsModule,
     AccessModule,
     IdentityUserAccessModule,

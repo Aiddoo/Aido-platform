@@ -1,20 +1,18 @@
-import { ErrorCode } from "@aido/api/errors";
 import { chunk } from "es-toolkit";
 
-import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
+import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
-import { now } from "#api/shared/domain/date/utils/core";
+import { instantToDate } from "#api/shared/domain/time/instant";
 
 import type { UserLocation } from "../../locations/domain/user-location.entity.js";
 import { resolveKmaForecastAvailability } from "../domain/kma-forecast-availability.domain-service.js";
+import { forecastDateUnsupported, weatherServiceUnavailable } from "./forecasts.errors.js";
 import { ForecastLogEvent } from "./forecasts.log-events.js";
-import { type WeatherForecastCachePort } from "./ports/weather-forecast-cache.port.js";
-import {
-  type WeatherForecast,
-  type WeatherForecastProviderPort,
-} from "./ports/weather-forecast-provider.port.js";
+import type { WeatherForecastCachePort } from "./ports/weather-forecast-cache.port.js";
+import type { WeatherForecastProviderPort } from "./ports/weather-forecast-provider.port.js";
 import type { GridInput, WeatherForecastReaderPort } from "./ports/weather-forecast.reader.port.js";
+import type { WeatherForecast } from "./read-models/weather-forecast.read-model.js";
 
 /** 정기 sweep의 cache miss 전체를 동시에 보내면 공급자 실패 코드가 몰려 발생해 동시 호출 수를 제한한다. */
 const MAX_CONCURRENT_FORECAST_REQUESTS = 4;
@@ -39,6 +37,7 @@ interface WeatherForecastReaderDependencies {
     | "getLatestForecastBatch"
   >;
   readonly logger: Pick<ApplicationLoggerPort, "warn" | "debug">;
+  readonly clock: ClockPort;
 }
 
 export class WeatherForecastReader implements WeatherForecastReaderPort {
@@ -54,9 +53,12 @@ export class WeatherForecastReader implements WeatherForecastReaderPort {
    */
   async fetchForLocation(location: UserLocation, date: Date): Promise<WeatherForecast> {
     const grid = location.requireKmaGrid();
-    const availability = resolveKmaForecastAvailability({ target: date, now: now() });
+    const availability = resolveKmaForecastAvailability({
+      target: date,
+      now: instantToDate(this.#dependencies.clock.now()),
+    });
     if (availability.kind === "UNAVAILABLE") {
-      throw new ApplicationException(ErrorCode.SYS_0002, { field: "date" });
+      throw forecastDateUnsupported();
     }
     const { timing } = availability;
     const cached = await this.#dependencies.weatherCache.getForecast(
@@ -91,7 +93,7 @@ export class WeatherForecastReader implements WeatherForecastReaderPort {
       return latest;
     }
 
-    throw new ApplicationException(ErrorCode.WEATHER_1901);
+    throw weatherServiceUnavailable();
   }
 
   /**
@@ -108,7 +110,10 @@ export class WeatherForecastReader implements WeatherForecastReaderPort {
       return result;
     }
 
-    const availability = resolveKmaForecastAvailability({ target: date, now: now() });
+    const availability = resolveKmaForecastAvailability({
+      target: date,
+      now: instantToDate(this.#dependencies.clock.now()),
+    });
     if (availability.kind === "UNAVAILABLE") {
       this.#dependencies.logger.warn({
         event: ForecastLogEvent.FORECAST_DATE_UNAVAILABLE,

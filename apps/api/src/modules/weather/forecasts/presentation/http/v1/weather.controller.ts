@@ -7,8 +7,9 @@ import {
 } from "#api/modules/identity/identity-auth-http.public";
 import { API_VERSION } from "#api/platform/http/api-versioning";
 import { ApiDoc, ApiSuccessResponse, SWAGGER_TAGS } from "#api/platform/http/swagger/index";
-import { now } from "#api/shared/domain/date/utils/core";
+import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { parseDateOnly } from "#api/shared/domain/date/utils/parse";
+import { instantToDate } from "#api/shared/domain/time/instant";
 
 import { GetWeatherConditionsUseCase } from "../../../application/use-cases/get-weather-conditions.use-case.js";
 import { GetWeatherForecastUseCase } from "../../../application/use-cases/get-weather-forecast.use-case.js";
@@ -24,13 +25,16 @@ import {
 export class WeatherController {
   readonly #getWeatherForecast: GetWeatherForecastUseCase;
   readonly #getWeatherConditions: GetWeatherConditionsUseCase;
+  readonly #clock: ClockPort;
 
   constructor(
     getWeatherForecast: GetWeatherForecastUseCase,
     getWeatherConditions: GetWeatherConditionsUseCase,
+    clock: ClockPort,
   ) {
     this.#getWeatherForecast = getWeatherForecast;
     this.#getWeatherConditions = getWeatherConditions;
+    this.#clock = clock;
   }
 
   @Get("forecast")
@@ -104,7 +108,7 @@ export class WeatherController {
     @CurrentUser() user: CurrentUserPayload,
     @Query({ schema: GetForecastQueryDto }) query: GetForecastQueryDto,
   ) {
-    const date = query.date ? parseDateOnly(query.date) : now();
+    const date = query.date ? parseDateOnly(query.date) : instantToDate(this.#clock.now());
     const { forecast, location } = await this.#getWeatherForecast.execute({
       userId: user.userId,
       date,
@@ -171,7 +175,7 @@ export class WeatherController {
     @CurrentUser() user: CurrentUserPayload,
     @Query({ schema: GetForecastQueryDto }) query: GetForecastQueryDto,
   ) {
-    const date = query.date ? parseDateOnly(query.date) : now();
+    const date = query.date ? parseDateOnly(query.date) : instantToDate(this.#clock.now());
     return this.#getWeatherConditions.execute({
       userId: user.userId,
       date,

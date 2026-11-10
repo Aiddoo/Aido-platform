@@ -3,14 +3,15 @@ import { HttpClient, InjectHttpClient } from "@nestjs/http-client";
 import { round } from "es-toolkit";
 import { z } from "zod";
 
-import { CacheService } from "#api/platform/cache/cache.service";
+import { CacheStorePort } from "#api/platform/cache/cache-store.port";
 import { requestVendorJson } from "#api/platform/http/request-vendor-json";
 import type { OutboundPolicy } from "#api/platform/resilience/outbound-policy";
 import { OutboundRejectedError } from "#api/platform/resilience/outbound-policy.errors";
 import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
+import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import { TIME_UNIT } from "#api/shared/domain/date/constants/date.constant";
-import { now } from "#api/shared/domain/date/utils/core";
+import { instantToDate } from "#api/shared/domain/time/instant";
 
 import type { GeoCell } from "../../../shared/domain/geo-cell.vo.js";
 import type {
@@ -120,24 +121,27 @@ export class WeatherKitReportAdapter implements WeatherReportProviderPort {
   readonly #policy: OutboundPolicy;
   readonly #http: HttpClient;
   readonly #tokenResolver: Pick<WeatherKitTokenAdapter, "resolve" | "invalidate">;
-  readonly #cacheService: Pick<CacheService, "wrap" | "has" | "set">;
+  readonly #cache: Pick<CacheStorePort, "wrap" | "has" | "set">;
   readonly #attributionResolver: Pick<WeatherKitAttributionAdapter, "resolve">;
   readonly #usage: Pick<WeatherKitUsageMeterAdapter, "recordCall">;
+  readonly #clock: ClockPort;
 
   constructor(
     @InjectHttpClient("weather") http: HttpClient,
     @Inject(WeatherKitTokenAdapter)
     tokenResolver: Pick<WeatherKitTokenAdapter, "resolve" | "invalidate">,
-    @Inject(CacheService)
-    cacheService: Pick<CacheService, "wrap" | "has" | "set">,
+    @Inject(CacheStorePort)
+    cache: Pick<CacheStorePort, "wrap" | "has" | "set">,
     @Inject(WeatherKitAttributionAdapter)
     attributionResolver: Pick<WeatherKitAttributionAdapter, "resolve">,
     policies: OutboundPolicyRegistry,
     @Inject(WeatherKitUsageMeterAdapter) usage: Pick<WeatherKitUsageMeterAdapter, "recordCall">,
+    clock: ClockPort,
   ) {
+    this.#clock = clock;
     this.#http = http;
     this.#tokenResolver = tokenResolver;
-    this.#cacheService = cacheService;
+    this.#cache = cache;
     this.#attributionResolver = attributionResolver;
     this.#usage = usage;
     this.#policy = policies.get(WEATHERKIT_POLICY);
@@ -155,14 +159,14 @@ export class WeatherKitReportAdapter implements WeatherReportProviderPort {
     }
     const failureKey = WeatherReportCacheKey.providerFailure(cell.key);
     // 장애 중에는 요청마다 시간 초과를 기다리지 않고 바로 폴백하도록 칸별로 잠시 호출을 멈춘다.
-    if (await this.#cacheService.has(failureKey)) {
+    if (await this.#cache.has(failureKey)) {
       this.#logger.debug({ event: WeatherKitLogEvent.REQUEST_SKIPPED, cellKey: cell.key });
       throw new WeatherKitRequestError("recent_failure");
     }
 
     const startedAtMs = performance.now();
     try {
-      const requestedAt = now();
+      const requestedAt = instantToDate(this.#clock.now());
       const dataSets = await this.#availableDataSets(cell, request);
       const weather = await this.#fetchWeather(cell, request, dataSets, requestedAt);
       const received = receivedDataSets(weather);
@@ -197,11 +201,7 @@ export class WeatherKitReportAdapter implements WeatherReportProviderPort {
         errorType: failureTypeOf(error),
       });
       if (!(error instanceof WeatherKitNotConfiguredError) && !isRejection(error)) {
-        await this.#cacheService.set(
-          failureKey,
-          true,
-          WEATHER_REPORT_CACHE_TTL_MS.PROVIDER_FAILURE,
-        );
+        await this.#cache.set(failureKey, true, WEATHER_REPORT_CACHE_TTL_MS.PROVIDER_FAILURE);
       }
       throw error;
     }
@@ -275,11 +275,11 @@ export class WeatherKitReportAdapter implements WeatherReportProviderPort {
     request: WeatherReportRequest,
   ): Promise<readonly WeatherKitDataSet[]> {
     const failureKey = WeatherReportCacheKey.availabilityFailure(cell.key);
-    if (await this.#cacheService.has(failureKey)) {
+    if (await this.#cache.has(failureKey)) {
       return BASE_DATA_SETS;
     }
     try {
-      return await this.#cacheService.wrap(
+      return await this.#cache.wrap(
         WeatherReportCacheKey.availability(cell.key),
         cachedAvailabilitySchema,
         async () => {
@@ -318,11 +318,7 @@ export class WeatherKitReportAdapter implements WeatherReportProviderPort {
         status: statusOf(error),
         errorType: failureTypeOf(error),
       });
-      await this.#cacheService.set(
-        failureKey,
-        true,
-        WEATHER_REPORT_CACHE_TTL_MS.AVAILABILITY_FAILURE,
-      );
+      await this.#cache.set(failureKey, true, WEATHER_REPORT_CACHE_TTL_MS.AVAILABILITY_FAILURE);
       return BASE_DATA_SETS;
     }
   }
