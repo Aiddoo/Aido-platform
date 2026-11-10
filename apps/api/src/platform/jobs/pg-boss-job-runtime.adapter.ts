@@ -25,6 +25,7 @@ import { databaseConfig } from "#api/platform/config/database.config";
 import { jobConfig } from "#api/platform/config/job.config";
 import type { Database } from "#api/platform/database/database.client";
 import { PlatformLogEvent } from "#api/platform/logging/platform.log-events";
+import { withJobScope } from "#api/platform/observability/sentry-scope";
 import type {
   DeadLetterQueue,
   EnqueueJobOptions,
@@ -355,14 +356,26 @@ export class PgBossJobRuntimeAdapter implements JobRuntimePort {
         pollingIntervalSeconds: options.pollingIntervalSeconds,
       },
       async (jobs) => {
+        const envelopes = jobs.map(({ id, name, data, retryCount }) => ({
+          id,
+          name,
+          data,
+          attempt: retryCount + 1,
+        }));
+        const [first] = envelopes;
+        if (first == null) {
+          return;
+        }
         try {
-          await handler(
-            jobs.map(({ id, name, data, retryCount }) => ({
-              id,
-              name,
-              data,
-              attempt: retryCount + 1,
-            })),
+          await withJobScope(
+            {
+              queue,
+              jobName: first.name,
+              jobId: first.id,
+              attempt: first.attempt,
+              batchSize: envelopes.length,
+            },
+            () => handler(envelopes),
           );
         } catch (error) {
           for (const job of jobs) {

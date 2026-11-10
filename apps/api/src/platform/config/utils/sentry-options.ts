@@ -25,14 +25,25 @@ import type { AppEnvironment } from "../schemas/app.schema.js";
 const TRACE_PROPAGATION_TARGETS = [/^https:\/\/api\.aido\.kr/] as const;
 
 /**
- * 5xx 이벤트에 요청 본문을 붙이지 않을 경로. AI 요청 본문은 사용자 할 일 문장·메모 원문이고
- * AI_1301(503)처럼 공급자 장애로 5xx가 날 때 Sentry로 그대로 나가므로 본문 수집을 끈다.
+ * SDK 11의 기본값은 요청·응답 본문, DB 바인딩 값, 스택 지역 변수, 쿠키·헤더를 모두 모은다.
+ * 할 일 제목·메모·전사·AI 입출력이 본문과 바인딩 값으로 나가므로 전부 끄고, 사용자는 ID만 직접 싣는다.
  */
-const BODYLESS_PATH = /\/(?:ai|quick-plans|voice-notes|action-plans)(?:[/?]|$)/;
-
-export function isRequestBodyIgnored(url: string): boolean {
-  return BODYLESS_PATH.test(url);
-}
+export const SENTRY_DATA_COLLECTION = {
+  userInfo: false,
+  cookies: false,
+  httpHeaders: {
+    request: { allow: ["user-agent", "x-app-version", "x-device-type"] },
+    response: false,
+  },
+  httpBodies: [],
+  urlQueryParams: false,
+  graphQL: { document: false, variables: false },
+  genAI: { inputs: false, outputs: false },
+  mcp: { inputs: false, outputs: false },
+  databaseQueryData: false,
+  queues: false,
+  stackFrameVariables: false,
+} satisfies Sentry.NodeOptions["dataCollection"];
 
 /**
  * AI 호출 span에는 모델·토큰·지연만 남긴다. 입력(사용자 할 일·메모 문장, 시스템 지시)과 모델 응답은
@@ -41,10 +52,117 @@ export function isRequestBodyIgnored(url: string): boolean {
 const AI_SPAN_RECORDING = { recordInputs: false, recordOutputs: false } as const;
 
 export function sentryIntegrations() {
-  return [
-    Sentry.httpIntegration({ ignoreRequestBody: isRequestBodyIgnored }),
-    Sentry.vercelAIIntegration(AI_SPAN_RECORDING),
-  ];
+  return [Sentry.vercelAIIntegration(AI_SPAN_RECORDING)];
+}
+
+/** pg-boss 처리 span(`queue.process`)이 큐 이름을 싣는 속성. 표본 결정이 큐별 비율을 고른다 */
+export const JOB_QUEUE_SPAN_ATTRIBUTE = "messaging.destination.name";
+
+interface HttpTraceRule {
+  readonly method?: string;
+  readonly path: RegExp;
+  readonly rate: number;
+}
+
+/** 경로별 표본 비율. 위에서부터 처음 맞는 규칙을 쓰고, 맞는 규칙이 없으면 기본 비율이다. */
+export const HTTP_TRACE_RULES: readonly HttpTraceRule[] = [
+  // 컨테이너 상태 확인이 주기적으로 부른다
+  { path: /^\/(?:health(?:\/.*)?)?$/, rate: 0 },
+  // 앱이 화면에 돌아올 때마다 부르는 가벼운 조회라 요청 수에 비해 볼 것이 없다
+  {
+    method: "GET",
+    path: /^\/v\d+\/(?:notifications(?:\/inbox)?\/unread-count|app-config\/[^/]+)$/,
+    rate: 0,
+  },
+  // 결제 반영 흐름. 하루 수십 건이라 모두 본다
+  { method: "POST", path: /^\/v\d+\/webhooks\//, rate: 1 },
+  // 계정 삭제는 드물고 끝까지 따라가야 한다
+  { method: "DELETE", path: /^\/v\d+\/auth\/account$/, rate: 1 },
+  // 로그인·토큰 갱신·OAuth
+  { path: /^\/v\d+\/auth\//, rate: 0.25 },
+  // AI 생성은 느리고 비싸 지연 분포를 자주 본다
+  { path: /^\/v\d+\/(?:ai|quick-plans|voice-notes|action-plans)(?:\/|$)/, rate: 0.5 },
+];
+
+export const DEFAULT_HTTP_TRACE_RATE = 0.1;
+
+/** 큐별 표본 비율. 매분 도는 큐는 낮게, 드물고 중요한 큐는 모두 본다. 없는 큐는 기본 비율이다. */
+export const JOB_TRACE_RATES: ReadonlyMap<string, number> = new Map([
+  ["timezone-reminder.v1", 0.01],
+  ["retention.v1", 0.01],
+  ["push-delivery.v1", 0.01],
+  ["notification.v1", 0.02],
+  ["todo-reminder.v1", 0.02],
+  ["account-purge.v1", 1],
+  ["store-subscription-reconcile.v1", 1],
+  ["invite-reward.v1", 1],
+  ["todo-series-materialization.v1", 1],
+  ["email-delivery.v1", 0.5],
+  ["ai-report-generation.v1", 0.5],
+]);
+
+export const DEFAULT_JOB_TRACE_RATE = 0.05;
+
+/** Sentry의 표본 문맥 중 결정에 쓰는 값. 앱이 이어 보낸 추적이면 parentSampled가 있다 */
+export interface TraceSamplingInput {
+  readonly attributes?: Readonly<Record<string, unknown>>;
+  readonly parentSampled?: boolean;
+}
+
+/** 앱이 이어 보낸 추적은 앱의 결정을 따라 한 추적이 끊기지 않게 하고, 0인 경로는 앱이 보내도 남기지 않는다. */
+export function sampleTrace(input: TraceSamplingInput, defaultHttpRate: number): number {
+  const attributes = input.attributes ?? {};
+  const queue = attributes[JOB_QUEUE_SPAN_ATTRIBUTE];
+  const rate =
+    typeof queue === "string"
+      ? (JOB_TRACE_RATES.get(queue) ?? DEFAULT_JOB_TRACE_RATE)
+      : httpTraceRate(attributes, defaultHttpRate);
+  if (rate === 0 || input.parentSampled == null) {
+    return rate;
+  }
+  return input.parentSampled ? 1 : 0;
+}
+
+function httpTraceRate(attributes: Readonly<Record<string, unknown>>, defaultRate: number): number {
+  const path = attributes["url.path"];
+  const method = attributes["http.request.method"];
+  if (typeof path !== "string") {
+    return defaultRate;
+  }
+  const rule = HTTP_TRACE_RULES.find(
+    (candidate) =>
+      candidate.path.test(path) && (candidate.method == null || candidate.method === method),
+  );
+  return rule?.rate ?? defaultRate;
+}
+
+const FILTERED_QUERY_VALUE = /token=[^&]+/gi;
+
+/** 보내기 직전 마지막 정리. 수집 설정이 바뀌어도 인증 헤더·IP·본문·쿠키가 나가지 않게 한 번 더 지운다. */
+export function scrubErrorEvent(event: Sentry.ErrorEvent): Sentry.ErrorEvent {
+  if (event.request != null) {
+    const { headers } = event.request;
+    if (headers != null) {
+      delete headers.authorization;
+      delete headers.cookie;
+      delete headers["x-forwarded-for"];
+      delete headers["x-real-ip"];
+    }
+    delete event.request.data;
+    delete event.request.cookies;
+    if (typeof event.request.query_string === "string") {
+      event.request.query_string = event.request.query_string.replace(
+        FILTERED_QUERY_VALUE,
+        "token=[FILTERED]",
+      );
+    }
+  }
+  if (event.user != null) {
+    delete event.user.ip_address;
+    delete event.user.email;
+    delete event.user.username;
+  }
+  return event;
 }
 
 const packageVersionSchema = z.object({ version: z.string().min(1) });
@@ -55,10 +173,21 @@ export function toSentryRelease(packageJson: unknown): string | undefined {
   return parsed.success ? `aido-server@${parsed.data.version}` : undefined;
 }
 
+/**
+ * Sentry로 보내는 조건. 운영(APP_ENV 기준)이면서 DSN이 있을 때뿐이다.
+ * SDK 초기화(instrument.ts)와 경보·예외 어댑터 선택(AlertingModule)이 같은 판정을 쓴다.
+ */
+export function isSentryEnabled(input: {
+  readonly isProduction: boolean;
+  readonly dsn: string | undefined;
+}): boolean {
+  return input.isProduction && input.dsn != null && input.dsn !== "";
+}
+
 export interface SentryInstrumentOptions {
   enabled: boolean;
   environment: AppEnvironment;
-  tracesSampleRate: number;
+  tracesSampler: (input: TraceSamplingInput) => number;
   tracePropagationTargets: readonly RegExp[];
 }
 
@@ -67,16 +196,16 @@ type SentryEnvSource = Record<string, string | undefined>;
 
 export function resolveSentryOptions(env: SentryEnvSource): SentryInstrumentOptions {
   const { environment, isProduction } = appConfig.parse(env);
+  // 운영에서 비율을 잠시 바꿀 때 쓴다. 경로·큐별로 정한 비율은 그대로 두고 기본 HTTP 비율만 바꾼다
+  const defaultHttpRate =
+    env.SENTRY_TRACES_SAMPLE_RATE != null
+      ? Number(env.SENTRY_TRACES_SAMPLE_RATE)
+      : DEFAULT_HTTP_TRACE_RATE;
 
   return {
-    enabled: isProduction && Boolean(env.SENTRY_DSN),
+    enabled: isSentryEnabled({ isProduction, dsn: env.SENTRY_DSN }),
     environment,
-    tracesSampleRate:
-      env.SENTRY_TRACES_SAMPLE_RATE != null
-        ? Number(env.SENTRY_TRACES_SAMPLE_RATE)
-        : isProduction
-          ? 0.2
-          : 1.0,
+    tracesSampler: (input) => sampleTrace(input, defaultHttpRate),
     tracePropagationTargets: TRACE_PROPAGATION_TARGETS,
   };
 }

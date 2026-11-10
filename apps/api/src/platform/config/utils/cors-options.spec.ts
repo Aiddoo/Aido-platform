@@ -25,4 +25,12 @@ describe("createCorsOptions", () => {
     expect(options.allowedHeaders).not.toContain("X-Requested-With");
     expect(options.exposedHeaders).toEqual(["X-Request-Id"]);
   });
+
+  it("앱·웹 Sentry가 보낸 추적을 이어 받도록 sentry-trace·baggage 헤더를 받는다", () => {
+    // When
+    const options = createCorsOptions("production", []);
+
+    // Then
+    expect(options.allowedHeaders).toEqual(expect.arrayContaining(["sentry-trace", "baggage"]));
+  });
 });

@@ -4,6 +4,7 @@ import type { JobResult, JobWithMetadata } from "pg-boss";
 
 import type { Database } from "#api/platform/database/database.client";
 import { PlatformLogEvent } from "#api/platform/logging/platform.log-events";
+import { withJobScope } from "#api/platform/observability/sentry-scope";
 import {
   JobQueuePort,
   OperationalAlertPort,
@@ -182,7 +183,8 @@ export class PgBossJobQueueAdapter extends JobQueuePort {
       });
     }
 
-    if (accepted.length === 0) {
+    const [first] = accepted;
+    if (first == null) {
       return results;
     }
     const jobsById = new Map(jobs.map((job) => [job.id, job]));
@@ -192,11 +194,21 @@ export class PgBossJobQueueAdapter extends JobQueuePort {
         this.#reportFailure(queue, job, toErrorType(error));
       }
     };
+    const scope = {
+      queue: queue.name,
+      jobName: first.name,
+      jobId: first.id,
+      attempt: first.attempt,
+      batchSize: accepted.length,
+    };
     if (queue.worker.isolateJobFailures === true) {
-      return [...results, ...(await settleEachJob(accepted, handler, reportFailure))];
+      return [
+        ...results,
+        ...(await withJobScope(scope, () => settleEachJob(accepted, handler, reportFailure))),
+      ];
     }
     try {
-      await handler(accepted);
+      await withJobScope(scope, () => handler(accepted));
     } catch (error) {
       for (const envelope of accepted) {
         reportFailure(envelope, error);

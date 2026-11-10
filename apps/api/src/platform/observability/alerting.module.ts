@@ -1,6 +1,9 @@
 import { Global, Module } from "@nestjs/common";
-import { ConfigModule } from "@nestjs/config";
+import type { ConfigType } from "@nestjs/config";
+import { APP_INTERCEPTOR } from "@nestjs/core";
 
+import { appConfig } from "#api/platform/config/app.config";
+import { sentryConfig } from "#api/platform/config/sentry.config";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { ExceptionReporterPort } from "#api/shared/application/ports/exception-reporter.port";
 import { JobHeartbeatPort } from "#api/shared/application/ports/job-heartbeat.port";
@@ -10,25 +13,74 @@ import {
 } from "#api/shared/application/ports/operational-alert.port";
 
 import { DeduplicatingOperationalAlertAdapter } from "./deduplicating-operational-alert.adapter.js";
-import { jobHeartbeatConfig } from "./job-heartbeat.config.js";
-import { jobHeartbeatProvider } from "./job-heartbeat.providers.js";
+import { LogExceptionReporterAdapter } from "./log-exception-reporter.adapter.js";
+import { LogOperationalAlertAdapter } from "./log-operational-alert.adapter.js";
+import { NoopJobHeartbeatAdapter } from "./noop-job-heartbeat.adapter.js";
+import { type ObservabilityBackend, selectObservabilityBackend } from "./observability-backend.js";
+import { RequestScopeInterceptor } from "./request-scope.interceptor.js";
 import { SentryExceptionReporter } from "./sentry-exception-reporter.adapter.js";
+import { SentryJobHeartbeatAdapter } from "./sentry-job-heartbeat.adapter.js";
 import { SentryOperationalAlertAdapter } from "./sentry-operational-alert.adapter.js";
+
+/**
+ * 환경별 어댑터 표. 관측 포트를 더하면 이 표에 열 하나를 더하고 같은 판정으로 고른다.
+ * 경보 중복 제거는 고른 어댑터 바깥에 두어 모든 환경에서 같게 돈다.
+ */
+const OBSERVABILITY_ADAPTERS = {
+  sentry: {
+    alert: SentryOperationalAlertAdapter,
+    exceptions: SentryExceptionReporter,
+    heartbeat: SentryJobHeartbeatAdapter,
+  },
+  log: {
+    alert: LogOperationalAlertAdapter,
+    exceptions: LogExceptionReporterAdapter,
+    heartbeat: NoopJobHeartbeatAdapter,
+  },
+} satisfies Record<
+  ObservabilityBackend,
+  {
+    readonly alert: new () => OperationalAlertPort;
+    readonly exceptions: new () => ExceptionReporterPort;
+    readonly heartbeat: new () => JobHeartbeatPort;
+  }
+>;
+
+type AppSettings = ConfigType<typeof appConfig>;
+type SentrySettings = ConfigType<typeof sentryConfig>;
+
+function adaptersFor(app: AppSettings, sentry: SentrySettings) {
+  return OBSERVABILITY_ADAPTERS[selectObservabilityBackend({ app, sentry })];
+}
 
 @Global()
 @Module({
-  imports: [ConfigModule.forFeature(jobHeartbeatConfig)],
   providers: [
-    SentryOperationalAlertAdapter,
     {
       provide: OPERATIONAL_ALERT,
-      inject: [SentryOperationalAlertAdapter, ClockPort],
-      useFactory: (sentry: SentryOperationalAlertAdapter, clock: ClockPort) =>
-        new DeduplicatingOperationalAlertAdapter(sentry, clock),
+      inject: [appConfig.KEY, sentryConfig.KEY, ClockPort],
+      useFactory: (
+        app: AppSettings,
+        sentry: SentrySettings,
+        clock: ClockPort,
+      ): OperationalAlertPort =>
+        new DeduplicatingOperationalAlertAdapter(new (adaptersFor(app, sentry).alert)(), clock),
     },
+    // 테스트가 OPERATIONAL_ALERT 하나만 바꿔도 클래스 토큰으로 받는 곳까지 같은 기록기를 받는다
     { provide: OperationalAlertPort, useExisting: OPERATIONAL_ALERT },
-    { provide: ExceptionReporterPort, useClass: SentryExceptionReporter },
-    jobHeartbeatProvider,
+    {
+      provide: ExceptionReporterPort,
+      inject: [appConfig.KEY, sentryConfig.KEY],
+      useFactory: (app: AppSettings, sentry: SentrySettings): ExceptionReporterPort =>
+        new (adaptersFor(app, sentry).exceptions)(),
+    },
+    {
+      provide: JobHeartbeatPort,
+      inject: [appConfig.KEY, sentryConfig.KEY],
+      useFactory: (app: AppSettings, sentry: SentrySettings): JobHeartbeatPort =>
+        new (adaptersFor(app, sentry).heartbeat)(),
+    },
+    { provide: APP_INTERCEPTOR, useClass: RequestScopeInterceptor },
   ],
   exports: [OPERATIONAL_ALERT, OperationalAlertPort, ExceptionReporterPort, JobHeartbeatPort],
 })

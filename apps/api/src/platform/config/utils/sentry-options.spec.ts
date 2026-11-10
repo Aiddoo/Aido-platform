@@ -11,7 +11,17 @@
  * pnpm --filter @aido/server test sentry-options
  * ```
  */
-import { isRequestBodyIgnored, resolveSentryOptions } from "./sentry-options.js";
+import * as Sentry from "@sentry/nestjs";
+
+import {
+  DEFAULT_HTTP_TRACE_RATE,
+  DEFAULT_JOB_TRACE_RATE,
+  JOB_QUEUE_SPAN_ATTRIBUTE,
+  resolveSentryOptions,
+  sampleTrace,
+  scrubErrorEvent,
+  SENTRY_DATA_COLLECTION,
+} from "./sentry-options.js";
 
 const DSN = "https://key@o0.ingest.sentry.io/0";
 
@@ -132,32 +142,131 @@ describe("resolveSentryOptions — Sentry 환경 게이트", () => {
     });
   });
 
-  describe("tracesSampleRate", () => {
-    it("명시된 SENTRY_TRACES_SAMPLE_RATE가 최우선이다", () => {
-      const options = resolveSentryOptions({
+  describe("tracesSampler", () => {
+    it("SENTRY_TRACES_SAMPLE_RATE는 기본 HTTP 비율만 바꾸고 경로별 비율은 그대로 둔다", () => {
+      // Given
+      const { tracesSampler } = resolveSentryOptions({
         APP_ENV: "production",
         SENTRY_TRACES_SAMPLE_RATE: "0.05",
       });
-      expect(options.tracesSampleRate).toBe(0.05);
-    });
 
-    it("production 기본값은 0.2, 그 외는 1.0이다", () => {
-      expect(resolveSentryOptions({ APP_ENV: "production" }).tracesSampleRate).toBe(0.2);
-      expect(resolveSentryOptions({ APP_ENV: "development" }).tracesSampleRate).toBe(1.0);
+      // When
+      const todos = tracesSampler({ attributes: { "url.path": "/v1/todos" } });
+      const webhook = tracesSampler({
+        attributes: { "url.path": "/v1/webhooks/revenuecat", "http.request.method": "POST" },
+      });
+
+      // Then
+      expect(todos).toBe(0.05);
+      expect(webhook).toBe(1);
     });
   });
 });
 
-describe("isRequestBodyIgnored — 5xx 이벤트의 요청 본문", () => {
+describe("sampleTrace — 무료 플랜 span 한도 안의 경로·큐별 비율", () => {
+  const http = (path: string, method = "GET") => ({
+    attributes: { "url.path": path, "http.request.method": method },
+  });
+
   it.each([
-    ["https://api.aido.kr/v1/ai/parse-todo", true],
-    ["https://api.aido.kr/v1/ai/parse-memo?x=1", true],
-    ["https://api.aido.kr/v1/quick-plans", true],
-    ["https://api.aido.kr/v1/voice-notes/digest", true],
-    ["https://api.aido.kr/v1/action-plans/apply", true],
-    ["https://api.aido.kr/v1/todos", false],
-  ])("%s 본문 제외 여부는 %s다", (url, expected) => {
-    // Given / When / Then
-    expect(isRequestBodyIgnored(url)).toBe(expected);
+    { name: "상태 확인", input: http("/health"), rate: 0 },
+    { name: "안 읽은 알림 수 조회", input: http("/v1/notifications/unread-count"), rate: 0 },
+    { name: "앱 버전 조회", input: http("/v1/app-config/app-version"), rate: 0 },
+    { name: "결제 웹훅", input: http("/v1/webhooks/revenuecat", "POST"), rate: 1 },
+    { name: "계정 삭제", input: http("/v1/auth/account", "DELETE"), rate: 1 },
+    { name: "토큰 갱신", input: http("/v1/auth/refresh", "POST"), rate: 0.25 },
+    { name: "AI 할 일 파싱", input: http("/v1/ai/parse-todo", "POST"), rate: 0.5 },
+    { name: "그 밖의 경로", input: http("/v1/todos"), rate: DEFAULT_HTTP_TRACE_RATE },
+    {
+      name: "매분 도는 시간대 리마인더 큐",
+      input: { attributes: { [JOB_QUEUE_SPAN_ATTRIBUTE]: "timezone-reminder.v1" } },
+      rate: 0.01,
+    },
+    {
+      name: "계정 영구 삭제 큐",
+      input: { attributes: { [JOB_QUEUE_SPAN_ATTRIBUTE]: "account-purge.v1" } },
+      rate: 1,
+    },
+    {
+      name: "비율을 정하지 않은 큐",
+      input: { attributes: { [JOB_QUEUE_SPAN_ATTRIBUTE]: "new-queue.v1" } },
+      rate: DEFAULT_JOB_TRACE_RATE,
+    },
+  ])("$name → $rate", ({ input, rate }) => {
+    // When
+    const sampled = sampleTrace(input, DEFAULT_HTTP_TRACE_RATE);
+
+    // Then
+    expect(sampled).toBe(rate);
+  });
+
+  it("앱이 이어 보낸 추적은 앱의 결정을 따른다", () => {
+    // When
+    const continued = sampleTrace({ ...http("/v1/todos"), parentSampled: true }, 0.1);
+    const dropped = sampleTrace({ ...http("/v1/todos"), parentSampled: false }, 0.1);
+
+    // Then
+    expect([continued, dropped]).toEqual([1, 0]);
+  });
+
+  it("비율 0인 경로는 앱이 표본으로 골라 보내도 남기지 않는다", () => {
+    // When
+    const sampled = sampleTrace({ ...http("/health"), parentSampled: true }, 0.1);
+
+    // Then
+    expect(sampled).toBe(0);
+  });
+});
+
+describe("Sentry 수집 범위 — 사용자 원문이 나가지 않게", () => {
+  afterEach(async () => {
+    await Sentry.close();
+  });
+
+  it("본문·DB 바인딩 값·스택 지역 변수·쿠키·쿼리를 모으지 않는다", () => {
+    // Given
+    Sentry.init({
+      dsn: "https://public@o0.ingest.sentry.io/0",
+      dataCollection: SENTRY_DATA_COLLECTION,
+      transport: () => ({ send: async () => ({}), flush: async () => true }),
+    });
+
+    // When
+    const collected = Sentry.getClient()?.getDataCollectionOptions();
+
+    // Then
+    expect(collected).toMatchObject({
+      userInfo: false,
+      cookies: false,
+      httpBodies: [],
+      urlQueryParams: false,
+      databaseQueryData: false,
+      queues: false,
+      stackFrameVariables: false,
+      genAI: { inputs: false, outputs: false },
+    });
+  });
+
+  it("보내기 직전에 인증 헤더·IP·본문·이메일을 한 번 더 지운다", () => {
+    // Given
+    const event: Sentry.ErrorEvent = {
+      type: undefined,
+      request: {
+        headers: { authorization: "Bearer secret", "x-real-ip": "1.2.3.4", "user-agent": "app" },
+        data: { title: "병원 예약" },
+        query_string: "token=abc&page=1",
+      },
+      user: { id: "user-1", email: "a@b.c", ip_address: "1.2.3.4" },
+    };
+
+    // When
+    const scrubbed = scrubErrorEvent(event);
+
+    // Then
+    expect(scrubbed.request).toEqual({
+      headers: { "user-agent": "app" },
+      query_string: "token=[FILTERED]&page=1",
+    });
+    expect(scrubbed.user).toEqual({ id: "user-1" });
   });
 });
