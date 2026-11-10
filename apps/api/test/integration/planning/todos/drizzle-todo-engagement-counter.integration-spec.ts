@@ -94,6 +94,19 @@ describe("DrizzleTodoEngagementCounterAdapter (실제 PostgreSQL)", () => {
     expect([first, second]).toEqual(expected);
   });
 
+  it("계정 정리용으로 할 일 행을 잠그고 다시 센 댓글 수로 바꾼다", async () => {
+    // Given
+    await counter.increaseCommentCount(todoId, 3);
+
+    // When
+    await counter.lockCounters([todoId]);
+    await counter.replaceCommentCounts([{ todoId, commentCount: 1 }]);
+    await counter.replaceCommentCounts([]);
+
+    // Then
+    expect(await counts()).toEqual({ commentCount: 1, viewCount: 0 });
+  });
+
   it("없는 할 일의 댓글 수를 늘리면 부재 오류를 낸다", async () => {
     // When
     const increasing = counter.increaseCommentCount(MISSING_TODO_ID, 1);
