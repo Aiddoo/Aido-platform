@@ -1,7 +1,7 @@
 import { vi } from "vitest";
 
-import { DrizzleAdminUserDirectoryAdapter } from "#api/modules/operations/infrastructure/adapters/admin/drizzle-admin-user-directory.adapter";
-import { DrizzleSignupStatsReader } from "#api/modules/operations/infrastructure/adapters/notifications/drizzle-signup-stats.reader";
+import { DrizzleSignupStatsReader } from "#api/modules/operations/admin-notices/infrastructure/persistence/drizzle-signup-stats.reader";
+import { DrizzleAdminUserDirectoryAdapter } from "#api/modules/operations/broadcasts/infrastructure/persistence/drizzle-admin-user-directory.reader";
 import { account, user } from "#api/platform/database/schema/index";
 import { AccountFixture, UserFixture } from "#test/fixtures/user.fixture";
 import { createDatabaseTransactionFixture } from "#test/setup/database-context";

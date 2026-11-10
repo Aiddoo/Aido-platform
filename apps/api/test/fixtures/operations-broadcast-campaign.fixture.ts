@@ -1,7 +1,7 @@
 import {
   BroadcastCampaign,
   type BroadcastCampaignProps,
-} from "#api/modules/operations/domain/aggregates/admin/broadcast-campaign.aggregate";
+} from "#api/modules/operations/broadcasts/domain/broadcast-campaign.aggregate";
 
 /** 브로드캐스트 캠페인 기본값. 시나리오는 다른 필드만 덮어쓴다. */
 export function broadcastCampaignFixture(

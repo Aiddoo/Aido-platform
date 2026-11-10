@@ -1,9 +1,9 @@
-import type { NotificationChannel } from "#api/modules/operations/application/ports/notifications/admin-notification-queue.port";
+import type { NotificationChannel } from "#api/modules/operations/admin-notices/application/ports/admin-notification-queue.port";
 import type {
   AdminNotifierPort,
   AdminNotifyOutcome,
-} from "#api/modules/operations/application/ports/notifications/admin-notifier.port";
-import type { AdminNotice } from "#api/modules/operations/application/read-models/notifications/admin-notice.read-model";
+} from "#api/modules/operations/admin-notices/application/ports/admin-notifier.port";
+import type { AdminNotice } from "#api/modules/operations/admin-notices/application/read-models/admin-notice.read-model";
 
 export interface SentAdminNotification {
   readonly channel: NotificationChannel;

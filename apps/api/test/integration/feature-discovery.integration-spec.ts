@@ -4,17 +4,17 @@ import { Test } from "@nestjs/testing";
 import request from "supertest";
 import type { App } from "supertest/types.js";
 
-import { AppConfigDiscoveryModule } from "#api/modules/app-config/app-config-discovery.public";
+import { AppConfigModule } from "#api/modules/app-config/app-config.module";
 import {
   APP_VERSION_CONFIG,
   type AppVersionConfigPort,
-} from "#api/modules/app-config/application/ports/discovery/app-version-config.port";
+} from "#api/modules/app-config/app-versions/application/ports/app-version-config.port";
+import type { AppVersionConfig } from "#api/modules/app-config/app-versions/application/read-models/app-version.read-model";
 import {
   FEATURE_DISCOVERY_CONFIG,
   type FeatureDiscoveryConfigPort,
   type FeatureDiscoveryConfig,
-} from "#api/modules/app-config/application/ports/discovery/feature-discovery-config.port";
-import type { AppVersionConfig } from "#api/modules/app-config/application/read-models/discovery/app-version.read-model";
+} from "#api/modules/app-config/feature-discovery/application/ports/feature-discovery-config.port";
 import { API_VERSIONING_OPTIONS } from "#api/platform/http/api-versioning";
 import { ResponseTransformInterceptor } from "#api/platform/http/interceptors/response-transform.interceptor";
 
@@ -47,7 +47,7 @@ describe("기능 발견 설정 route (Integration)", () => {
 
   beforeAll(async () => {
     const module = await Test.createTestingModule({
-      imports: [AppConfigDiscoveryModule],
+      imports: [AppConfigModule],
       providers: [ResponseTransformInterceptor],
     })
       .overrideProvider(FEATURE_DISCOVERY_CONFIG)

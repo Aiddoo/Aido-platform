@@ -11,7 +11,7 @@ import { AccessModule } from "#api/modules/access/access.module";
 import { AiAssistanceParsingModule } from "#api/modules/ai-assistance/ai-assistance-parsing.public";
 import { AiAssistanceReportsModule } from "#api/modules/ai-assistance/ai-assistance-reports.public";
 import { AiAssistanceSuggestionsModule } from "#api/modules/ai-assistance/ai-assistance-suggestions.public";
-import { AppConfigDiscoveryModule } from "#api/modules/app-config/app-config-discovery.public";
+import { AppConfigModule as AppConfigContextModule } from "#api/modules/app-config/app-config.module";
 import { BillingModule } from "#api/modules/billing/billing.module";
 import { EngagementCommentsModule } from "#api/modules/engagement/engagement-comments.public";
 import { JwtAuthGuard } from "#api/modules/identity/auth/identity-auth.public";
@@ -23,8 +23,7 @@ import { InsightsWeeklyAchievementsModule } from "#api/modules/insights/insights
 import { NotesModule } from "#api/modules/notes/notes.module";
 import { NotificationDeliveryModule } from "#api/modules/notification/notification-delivery.public";
 import { NotificationRemindersModule } from "#api/modules/notification/notification-reminders.public";
-import { OperationsAdminModule } from "#api/modules/operations/operations-admin.public";
-import { OperationsNotificationsModule } from "#api/modules/operations/operations-notifications.public";
+import { OperationsModule } from "#api/modules/operations/operations.module";
 import { PlanningCategoriesModule } from "#api/modules/planning/planning-categories.public";
 import { PlanningTodosModule } from "#api/modules/planning/planning-todos.public";
 import { SocialBlocksModule } from "#api/modules/social/social-blocks.public";
@@ -36,7 +35,7 @@ import {
   SocialReportsAdminModule,
   SocialReportsModule,
 } from "#api/modules/social/social-reports.public";
-import { SupportInquiriesModule } from "#api/modules/support/support-inquiries.public";
+import { SupportModule } from "#api/modules/support/support.module";
 import { VoiceModule } from "#api/modules/voice/voice.public";
 import { WeatherForecastModule } from "#api/modules/weather/weather-forecast.public";
 import { CacheModule } from "#api/platform/cache/index";
@@ -124,9 +123,8 @@ import { AppService } from "./app.service.js";
       }),
     }),
 
-    OperationsAdminModule,
-    OperationsNotificationsModule,
-    AppConfigDiscoveryModule,
+    OperationsModule,
+    AppConfigContextModule,
     AiAssistanceParsingModule,
     AiAssistanceReportsModule,
     AiAssistanceSuggestionsModule,
@@ -137,7 +135,7 @@ import { AppService } from "./app.service.js";
     InsightsDailyCompletionsModule,
     SocialFriendsModule,
     HealthModule,
-    SupportInquiriesModule,
+    SupportModule,
     NotesModule,
     NotificationDeliveryModule,
     SocialNudgesModule,

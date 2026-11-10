@@ -2,7 +2,7 @@ import { eq } from "drizzle-orm";
 import request from "supertest";
 
 import { PUSH_DELIVERY_QUEUE } from "#api/modules/notification/notification-delivery-jobs.public";
-import { BROADCAST_FAN_OUT_QUEUE } from "#api/modules/operations/operations-admin-jobs.public";
+import { BROADCAST_FAN_OUT_QUEUE } from "#api/modules/operations/broadcasts/operations-broadcasts-jobs.public";
 import { DRIZZLE, type Database } from "#api/platform/database/database.client";
 import { user as userTable } from "#api/platform/database/schema/index";
 import { JOB_RUNTIME } from "#api/shared/application/ports/index";

@@ -10,8 +10,8 @@ import {
   RETENTION_QUEUE,
   RetentionJobName,
 } from "#api/modules/notification/infrastructure/jobs/retention/retention-queue.constants";
-import { CreateBroadcastCampaign } from "#api/modules/operations/application/use-cases/admin/create-broadcast-campaign.use-case";
-import { BROADCAST_FAN_OUT_QUEUE } from "#api/modules/operations/operations-admin-jobs.public";
+import { CreateBroadcastCampaign } from "#api/modules/operations/broadcasts/application/use-cases/create-broadcast-campaign.use-case";
+import { BROADCAST_FAN_OUT_QUEUE } from "#api/modules/operations/broadcasts/operations-broadcasts-jobs.public";
 import { pushDispatch, pushToken, user, userPreference } from "#api/platform/database/schema/index";
 import type { EnqueueJobOptions } from "#api/shared/application/ports/job-runtime.port";
 import type { TestDatabaseClient } from "#test/setup/test-database";

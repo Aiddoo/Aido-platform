@@ -43,9 +43,9 @@ import { TodoReminderQueueProcessor } from "#api/modules/notification/infrastruc
 import { RetentionQueueProcessor } from "#api/modules/notification/infrastructure/jobs/retention/retention-queue.processor";
 import { RetentionQueueService } from "#api/modules/notification/infrastructure/jobs/retention/retention-queue.service";
 import { TransactionalEmailSender } from "#api/modules/notification/notification-email.public";
-import { ADMIN_NOTIFIER } from "#api/modules/operations/application/ports/notifications/admin-notifier.port";
-import { AdminNotificationProcessor } from "#api/modules/operations/infrastructure/jobs/notifications/admin-notification-queue.processor";
-import { DailySignupSummaryScheduler } from "#api/modules/operations/infrastructure/jobs/notifications/daily-signup-summary.scheduler";
+import { ADMIN_NOTIFIER } from "#api/modules/operations/admin-notices/application/ports/admin-notifier.port";
+import { AdminNotificationProcessor } from "#api/modules/operations/admin-notices/infrastructure/jobs/admin-notification.processor";
+import { DailySignupSummaryScheduler } from "#api/modules/operations/admin-notices/infrastructure/jobs/daily-signup-summary.scheduler";
 import { TodoSeriesMaterializationJob } from "#api/modules/planning/infrastructure/jobs/series/todo-series-materialization.job";
 import { TodoSeriesMaterializationProcessor } from "#api/modules/planning/infrastructure/jobs/series/todo-series-materialization.processor";
 import { PlanApplicationCleanupJob } from "#api/modules/voice/infrastructure/jobs/plans/plan-application-cleanup.job";

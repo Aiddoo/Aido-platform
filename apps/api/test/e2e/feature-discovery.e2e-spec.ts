@@ -2,7 +2,7 @@ import { featureDiscoveryResponseSchema } from "@aido/api";
 import request from "supertest";
 import { vi } from "vitest";
 
-import { GetFeatureDiscovery } from "#api/modules/app-config/application/use-cases/discovery/get-feature-discovery.use-case";
+import { GetFeatureDiscovery } from "#api/modules/app-config/feature-discovery/application/use-cases/get-feature-discovery.use-case";
 
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 

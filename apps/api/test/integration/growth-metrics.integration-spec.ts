@@ -3,7 +3,7 @@ import { vi } from "vitest";
 import { z } from "zod";
 
 import { DrizzleUserRepository } from "#api/modules/identity/users/infrastructure/persistence/drizzle-user.repository";
-import { DrizzleAdminGrowthMetricsAdapter } from "#api/modules/operations/infrastructure/adapters/admin/drizzle-admin-growth-metrics.adapter";
+import { DrizzleAdminGrowthMetricsAdapter } from "#api/modules/operations/metrics/infrastructure/persistence/drizzle-growth-metrics.reader";
 import { requireRecord } from "#api/platform/database/database-error.util";
 import {
   account,

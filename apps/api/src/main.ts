@@ -3,7 +3,8 @@ import { NestFactory } from "@nestjs/core";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import { Logger } from "nestjs-pino";
 
-import { OperationsAdminModule } from "#api/modules/operations/operations-admin.public";
+import { OperationsBroadcastsModule } from "#api/modules/operations/broadcasts/operations-broadcasts.public";
+import { OperationsMetricsModule } from "#api/modules/operations/metrics/operations-metrics.public";
 import { SocialReportsAdminModule } from "#api/modules/social/social-reports.public";
 import { processEnv } from "#api/platform/config/env";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
@@ -178,7 +179,7 @@ async function bootstrap() {
       .build();
 
     const adminDocument = SwaggerModule.createDocument(app, adminConfig, {
-      include: [OperationsAdminModule, SocialReportsAdminModule],
+      include: [OperationsBroadcastsModule, OperationsMetricsModule, SocialReportsAdminModule],
       standardSchemaConverter: convertStandardSchema,
     });
     SwaggerModule.setup("api/admin/docs", app, adminDocument, {

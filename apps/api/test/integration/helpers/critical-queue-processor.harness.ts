@@ -99,20 +99,20 @@ import {
   sendNotificationProvider,
 } from "#api/modules/notification/notification-delivery-application.providers";
 import { processRetentionStagesProvider } from "#api/modules/notification/notification-retention-application.providers";
-import { ADMIN_BROADCAST_NOTIFIER } from "#api/modules/operations/application/ports/admin/admin-broadcast-notifier.port";
-import { ADMIN_USER_DIRECTORY } from "#api/modules/operations/application/ports/admin/admin-user-directory.port";
-import { BROADCAST_CAMPAIGN_REPOSITORY } from "#api/modules/operations/application/ports/admin/broadcast-campaign.repository.port";
-import { BROADCAST_FAN_OUT_ENQUEUER } from "#api/modules/operations/application/ports/admin/broadcast-fan-out.enqueuer.port";
-import { DrizzleAdminUserDirectoryAdapter } from "#api/modules/operations/infrastructure/adapters/admin/drizzle-admin-user-directory.adapter";
-import { NotificationAdminBroadcastNotifierAdapter } from "#api/modules/operations/infrastructure/adapters/admin/notification-admin-broadcast-notifier.adapter";
-import { BroadcastFanOutQueueProcessor } from "#api/modules/operations/infrastructure/jobs/admin/broadcast-fan-out-queue.processor";
-import { BroadcastFanOutQueueService } from "#api/modules/operations/infrastructure/jobs/admin/broadcast-fan-out-queue.service";
-import { DrizzleBroadcastCampaignRepository } from "#api/modules/operations/infrastructure/persistence/admin/drizzle-broadcast-campaign.repository";
+import { ADMIN_BROADCAST_NOTIFIER } from "#api/modules/operations/broadcasts/application/ports/admin-broadcast-notifier.port";
+import { ADMIN_USER_DIRECTORY } from "#api/modules/operations/broadcasts/application/ports/admin-user-directory.reader.port";
+import { BROADCAST_CAMPAIGN_REPOSITORY } from "#api/modules/operations/broadcasts/application/ports/broadcast-campaign.repository.port";
+import { BROADCAST_FAN_OUT_ENQUEUER } from "#api/modules/operations/broadcasts/application/ports/broadcast-fan-out-enqueuer.port";
+import { BroadcastFanOutQueueService } from "#api/modules/operations/broadcasts/infrastructure/adapters/broadcast-fan-out-enqueuer.adapter";
+import { NotificationAdminBroadcastNotifierAdapter } from "#api/modules/operations/broadcasts/infrastructure/adapters/notification-admin-broadcast-notifier.adapter";
+import { BroadcastFanOutQueueProcessor } from "#api/modules/operations/broadcasts/infrastructure/jobs/broadcast-fan-out.processor";
+import { DrizzleAdminUserDirectoryAdapter } from "#api/modules/operations/broadcasts/infrastructure/persistence/drizzle-admin-user-directory.reader";
+import { DrizzleBroadcastCampaignRepository } from "#api/modules/operations/broadcasts/infrastructure/persistence/drizzle-broadcast-campaign.repository";
 import {
   createBroadcastCampaignProvider,
   failBroadcastCampaignProvider,
   fanOutBroadcastCampaignProvider,
-} from "#api/modules/operations/operations-admin-application.providers";
+} from "#api/modules/operations/broadcasts/operations-broadcasts.providers";
 import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
 import { CacheStorePort } from "#api/platform/cache/cache-store.port";
 import { CacheService } from "#api/platform/cache/cache.service";

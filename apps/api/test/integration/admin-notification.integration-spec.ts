@@ -20,10 +20,10 @@ import { Test, type TestingModule } from "@nestjs/testing";
  */
 import { vi } from "vitest";
 
-import { ADMIN_NOTIFICATION_QUEUE_PORT } from "#api/modules/operations/application/ports/notifications/admin-notification-queue.port";
-import { ADMIN_NOTIFIER } from "#api/modules/operations/application/ports/notifications/admin-notifier.port";
-import { SIGNUP_STATS_READER } from "#api/modules/operations/application/ports/notifications/signup-stats.reader.port";
-import { AdminNotificationProcessor } from "#api/modules/operations/infrastructure/jobs/notifications/admin-notification-queue.processor";
+import { ADMIN_NOTIFICATION_QUEUE_PORT } from "#api/modules/operations/admin-notices/application/ports/admin-notification-queue.port";
+import { ADMIN_NOTIFIER } from "#api/modules/operations/admin-notices/application/ports/admin-notifier.port";
+import { SIGNUP_STATS_READER } from "#api/modules/operations/admin-notices/application/ports/signup-stats.reader.port";
+import { AdminNotificationProcessor } from "#api/modules/operations/admin-notices/infrastructure/jobs/admin-notification.processor";
 import { OPERATIONAL_ALERT } from "#api/shared/application/ports/operational-alert.port";
 import { RecordingOperationalAlert } from "#test/mocks/recording-operational-alert";
 import { suppressLogger } from "#test/setup/suppress-logger";
@@ -31,7 +31,7 @@ import { suppressLogger } from "#test/setup/suppress-logger";
 import {
   dispatchDailySignupSummaryProvider,
   sendAdminNotificationProvider,
-} from "../../src/modules/operations/operations-notifications-application.providers.js";
+} from "../../src/modules/operations/admin-notices/operations-admin-notices-application.providers.js";
 
 function createMockJob(name: string, data: Record<string, unknown>) {
   return { name, data, id: `job-${name}` };

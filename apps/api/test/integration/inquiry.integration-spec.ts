@@ -16,7 +16,7 @@ import { Test, type TestingModule } from "@nestjs/testing";
 import { vi } from "vitest";
 
 import { TransactionalEmailSender } from "#api/modules/notification/notification-email.public";
-import { EmailInquiryMailerAdapter } from "#api/modules/support/infrastructure/adapters/inquiries/email-inquiry-mailer.adapter";
+import { EmailInquiryMailerAdapter } from "#api/modules/support/inquiries/infrastructure/adapters/email-inquiry-mailer.adapter";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { suppressLogger } from "#test/setup/suppress-logger";
 

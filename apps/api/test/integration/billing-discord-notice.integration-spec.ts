@@ -5,14 +5,14 @@
 import type { RevenueCatWebhookPayload } from "@aido/api";
 
 import { RevenueCatWebhookReceiver } from "#api/modules/billing/subscriptions/infrastructure/adapters/revenuecat/revenuecat-webhook-receiver.adapter";
-import { ADMIN_NOTIFIER } from "#api/modules/operations/application/ports/notifications/admin-notifier.port";
-import type { AdminNotice } from "#api/modules/operations/application/read-models/notifications/admin-notice.read-model";
-import { DispatchDailySignupSummary } from "#api/modules/operations/application/use-cases/notifications/dispatch-daily-signup-summary.use-case";
-import { SendAdminNotification } from "#api/modules/operations/application/use-cases/notifications/send-admin-notification.use-case";
-import { renderDiscordEmbed } from "#api/modules/operations/infrastructure/adapters/notifications/discord-embed.renderer";
-import { DrizzleAdminNoticeUserReader } from "#api/modules/operations/infrastructure/adapters/notifications/drizzle-admin-notice-user.reader";
-import { ADMIN_NOTIFICATION_QUEUE } from "#api/modules/operations/infrastructure/jobs/notifications/admin-notification-queue.constants";
-import { AdminNotificationProcessor } from "#api/modules/operations/infrastructure/jobs/notifications/admin-notification-queue.processor";
+import { ADMIN_NOTIFIER } from "#api/modules/operations/admin-notices/application/ports/admin-notifier.port";
+import type { AdminNotice } from "#api/modules/operations/admin-notices/application/read-models/admin-notice.read-model";
+import { DispatchDailySignupSummary } from "#api/modules/operations/admin-notices/application/use-cases/dispatch-daily-signup-summary.use-case";
+import { SendAdminNotification } from "#api/modules/operations/admin-notices/application/use-cases/send-admin-notification.use-case";
+import { renderDiscordEmbed } from "#api/modules/operations/admin-notices/infrastructure/adapters/discord-embed.mapper";
+import { AdminNotificationProcessor } from "#api/modules/operations/admin-notices/infrastructure/jobs/admin-notification.processor";
+import { ADMIN_NOTIFICATION_QUEUE } from "#api/modules/operations/admin-notices/infrastructure/jobs/admin-notification.queue";
+import { DrizzleAdminNoticeUserReader } from "#api/modules/operations/admin-notices/infrastructure/persistence/drizzle-admin-notice-user.reader";
 import { createEntityId } from "#api/platform/database/entity-id";
 import { account, user as userTable, userProfile } from "#api/platform/database/schema/index";
 import { JOB_RUNTIME } from "#api/shared/application/ports/index";
