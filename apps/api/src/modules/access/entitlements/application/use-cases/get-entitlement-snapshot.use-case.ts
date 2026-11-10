@@ -1,28 +1,42 @@
-import type { EntitlementSnapshot } from "@aido/api/contracts/entitlement";
+import { PLAN_CATALOG, type PlanFeature } from "@aido/api/vocabulary";
+import { mapValues } from "es-toolkit";
 
-import type { QuotaLedgerPort } from "#api/modules/access/access-quota.public";
-import type { TodoCategoryCountReaderPort } from "#api/modules/planning/categories/planning-categories.public";
-import type { DailySendUsageReaderPort } from "#api/modules/social/cheers/social-cheers.public";
-import type { FriendCountReaderPort } from "#api/modules/social/friends/social-friends.public";
+import type { ClockPort } from "#api/shared/application/ports/clock.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+
+import type { QuotaUsageRepositoryPort } from "../../../quotas/application/ports/quota-usage.repository.port.js";
+import { QuotaWindow } from "../../../quotas/domain/quota-window.vo.js";
+import {
+  resolveAccessTier,
+  resolveFeatureQuota,
+  resolveResourceUsage,
+  type FeatureUsageReading,
+} from "../../domain/entitlement.domain-service.js";
+import { accessUserNotFound } from "../entitlements.errors.js";
+import type { AccessStateReaderPort } from "../ports/access-state.reader.port.js";
+import type { OwnedFeatureUsageReaderPort } from "../ports/owned-feature-usage.reader.port.js";
+import type { EntitlementSnapshot } from "../read-models/entitlement-snapshot.read-model.js";
 
 export interface GetEntitlementSnapshotQuery {
   readonly userId: string;
   /** 응원·찌르기 일간 사용량의 하루 기준(X-Timezone) */
-  readonly timezone: string;
+  readonly timeZone: string;
 }
 
-interface GetEntitlementSnapshotDependencies {
-  readonly quotaLedger: Pick<QuotaLedgerPort, "readSnapshot">;
-  readonly cheerUsageReader: Pick<DailySendUsageReaderPort, "readDailyUsage">;
-  readonly nudgeUsageReader: Pick<DailySendUsageReaderPort, "readDailyUsage">;
-  readonly friendCountReader: Pick<FriendCountReaderPort, "countCurrentFriends">;
-  readonly categoryCountReader: Pick<TodoCategoryCountReaderPort, "countCategories">;
+export interface GetEntitlementSnapshotDependencies {
+  readonly accessStateReader: Pick<
+    AccessStateReaderPort,
+    "findAccessState" | "findResourceBonuses"
+  >;
+  readonly quotaUsageRepository: Pick<QuotaUsageRepositoryPort, "countUsage">;
+  readonly ownedFeatureUsageReader: OwnedFeatureUsageReaderPort;
+  readonly clock: ClockPort;
 }
 
 /**
- * GET /v1/entitlements. 한도·계량기 사용량은 Access 원장이 계산하고, Access가 의존할 수 없는 응원·찌르기
- * 일간 사용량과 친구·카테고리 개수는 /me처럼 여기서 Social·Planning 읽기 포트로 모아 넘긴다. 개수는 친구
- * 맺기·카테고리 만들기 한도 검사와 같은 값이라 앱이 한도에 닿은 것을 입력 전에 안다.
+ * GET /v1/entitlements. 한도·계량기 사용량은 Access가 계산하고, Access가 셀 수 없는 응원·찌르기 일간 사용량과
+ * 친구·카테고리 개수는 소유 Context가 센 값을 받는다. 개수는 친구 맺기·카테고리 만들기 한도 검사와 같은 값이라
+ * 앱이 한도에 닿은 것을 입력 전에 안다.
  */
 export class GetEntitlementSnapshotUseCase {
   readonly #dependencies: GetEntitlementSnapshotDependencies;
@@ -31,24 +45,40 @@ export class GetEntitlementSnapshotUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: GetEntitlementSnapshotQuery): Promise<EntitlementSnapshot> {
-    const { userId, timezone } = input;
-    const {
-      quotaLedger,
-      cheerUsageReader,
-      nudgeUsageReader,
-      friendCountReader,
-      categoryCountReader,
-    } = this.#dependencies;
-    const [cheer, nudge, friendCount, categoryCount] = await Promise.all([
-      cheerUsageReader.readDailyUsage(userId, timezone),
-      nudgeUsageReader.readDailyUsage(userId, timezone),
-      friendCountReader.countCurrentFriends(userId),
-      categoryCountReader.countCategories(userId),
+  async execute(query: GetEntitlementSnapshotQuery): Promise<EntitlementSnapshot> {
+    const { accessStateReader, quotaUsageRepository, ownedFeatureUsageReader, clock } =
+      this.#dependencies;
+    const userId = UserId.reconstitute(query.userId);
+    const ownedUsage = await ownedFeatureUsageReader.read({ userId, timeZone: query.timeZone });
+    const [state, resourceBonuses] = await Promise.all([
+      accessStateReader.findAccessState(userId),
+      accessStateReader.findResourceBonuses(userId),
     ]);
-    return quotaLedger.readSnapshot(userId, {
-      daily: { CHEER: cheer, NUDGE: nudge },
-      resourceCounts: { FRIEND: friendCount, TODO_CATEGORY: categoryCount },
-    });
+    if (state == null) {
+      throw accessUserNotFound(query.userId);
+    }
+    const now = clock.now();
+    const { tier, isPremium } = resolveAccessTier({ state, now });
+    const window = QuotaWindow.monthOf(now);
+    const [aiPlanUsed, voiceNoteUsed] = await Promise.all([
+      quotaUsageRepository.countUsage({ userId, meter: "AI_PLAN", window }),
+      quotaUsageRepository.countUsage({ userId, meter: "VOICE_NOTE", window }),
+    ]);
+    const resourceUsage = mapValues(ownedUsage.resourceCounts, (count, feature) =>
+      resolveResourceUsage({ tier, feature, resourceBonuses, count }),
+    );
+    const usage: Readonly<Partial<Record<PlanFeature, FeatureUsageReading | null>>> = {
+      ...ownedUsage.daily,
+      ...resourceUsage,
+      AI_PARSE: { used: aiPlanUsed, resetsAt: window.resetsAt },
+      VOICE_NOTE: { used: voiceNoteUsed, resetsAt: window.resetsAt },
+    };
+    return {
+      tier,
+      isPremium,
+      features: mapValues(PLAN_CATALOG, (_definition, feature) =>
+        resolveFeatureQuota({ tier, feature, resourceBonuses, usage: usage[feature] ?? null }),
+      ),
+    };
   }
 }

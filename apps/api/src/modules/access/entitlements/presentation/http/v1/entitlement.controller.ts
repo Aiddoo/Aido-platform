@@ -1,5 +1,10 @@
 import { ErrorCode } from "@aido/api/errors";
-import { PLAN_CATALOG, PLAN_FEATURE_KEYS, type PlanFeature } from "@aido/api/vocabulary";
+import {
+  PLAN_CATALOG,
+  PLAN_FEATURE_KEYS,
+  type PlanFeature,
+  type PlanQuotaPeriod,
+} from "@aido/api/vocabulary";
 import { Controller, Get } from "@nestjs/common";
 import { ApiBearerAuth, ApiHeader, ApiTags } from "@nestjs/swagger";
 
@@ -16,11 +21,18 @@ import {
 } from "#api/platform/http/swagger/index";
 
 import { GetEntitlementSnapshotUseCase } from "../../../application/use-cases/get-entitlement-snapshot.use-case.js";
+import { toEntitlementSnapshotResponse } from "./entitlement-response.mapper.js";
 import { EntitlementSnapshotDto } from "./entitlement.dto.js";
 
-const PERIOD_LABEL = { day: "하루", month: "월" } as const;
+const PERIOD_LABEL = { day: "하루", month: "월" } as const satisfies Record<
+  PlanQuotaPeriod,
+  string
+>;
 
-function describeCount(feature: PlanFeature, tier: "free" | "premium"): string {
+/** 카탈로그가 값을 적는 등급. ADMIN은 서버 정책이라 표에 없다 */
+const CATALOG_TIERS = ["free", "premium"] as const;
+
+function describeCount(feature: PlanFeature, tier: (typeof CATALOG_TIERS)[number]): string {
   const definition = PLAN_CATALOG[feature];
   if (definition.kind === "flag") {
     return definition[tier] ? "사용" : "-";
@@ -41,17 +53,17 @@ function describeCount(feature: PlanFeature, tier: "free" | "premium"): string {
 /** 카탈로그 숫자를 그대로 보여 주는 표. 숫자는 PLAN_CATALOG에서만 고친다. */
 const PLAN_CATALOG_TABLE = PLAN_FEATURE_KEYS.map(
   (feature) =>
-    `| \`${feature}\` | ${PLAN_CATALOG[feature].kind} | ${describeCount(feature, "free")} | ${describeCount(feature, "premium")} |`,
+    `| \`${feature}\` | ${PLAN_CATALOG[feature].kind} | ${CATALOG_TIERS.map((tier) => describeCount(feature, tier)).join(" | ")} |`,
 ).join("\n");
 
 @ApiTags(SWAGGER_TAGS.ENTITLEMENTS)
 @ApiBearerAuth()
 @Controller("entitlements")
 export class EntitlementController {
-  readonly #getEntitlementSnapshotQuery: GetEntitlementSnapshotUseCase;
+  readonly #getEntitlementSnapshot: GetEntitlementSnapshotUseCase;
 
-  constructor(getEntitlementSnapshotQuery: GetEntitlementSnapshotUseCase) {
-    this.#getEntitlementSnapshotQuery = getEntitlementSnapshotQuery;
+  constructor(getEntitlementSnapshot: GetEntitlementSnapshotUseCase) {
+    this.#getEntitlementSnapshot = getEntitlementSnapshot;
   }
 
   @Get()
@@ -82,10 +94,14 @@ ${PLAN_CATALOG_TABLE}
   })
   @ApiSuccessResponse({ type: EntitlementSnapshotDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
-  getEntitlements(
+  async getEntitlements(
     @CurrentUser() user: CurrentUserPayload,
     @Timezone() timezone: string,
   ): Promise<EntitlementSnapshotDto> {
-    return this.#getEntitlementSnapshotQuery.execute({ userId: user.userId, timezone });
+    const snapshot = await this.#getEntitlementSnapshot.execute({
+      userId: user.userId,
+      timeZone: timezone,
+    });
+    return toEntitlementSnapshotResponse(snapshot);
   }
 }

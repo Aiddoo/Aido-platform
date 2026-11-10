@@ -1,8 +1,8 @@
 import type { CurrentUserPayload } from "@aido/api";
 import { PLAN_CATALOG } from "@aido/api/vocabulary";
 
+import { QUOTA_LEDGER_TIME } from "#test/fixtures/access/quota-ledger.fixture";
 import { createAiParsingFixture } from "#test/fixtures/ai-parsing.fixture";
-import { QUOTA_LEDGER_TIME } from "#test/fixtures/quota-ledger.fixture";
 import { createMockExecutionContext } from "#test/mocks/index";
 
 import { GetAiUsage } from "../../../application/use-cases/parsing/get-ai-usage.use-case.js";

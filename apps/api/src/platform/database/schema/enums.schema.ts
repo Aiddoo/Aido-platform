@@ -30,6 +30,7 @@ import {
 import { pgEnum } from "drizzle-orm/pg-core";
 
 // drizzle-kit은 #api 별칭을 못 따라가므로 상대 경로로 둔다
+import { BONUS_RESOURCES } from "../../../modules/access/entitlements/domain/entitlements.constants.js";
 import {
   INVITE_STATUSES,
   REWARD_CLAIM_KINDS,
@@ -141,7 +142,7 @@ export const inviteRejectionReason = pgEnum("InviteRejectionReason", REDEMPTION_
 export const inviteStatus = pgEnum("InviteStatus", INVITE_STATUSES);
 export const premiumGrantSource = pgEnum("PremiumGrantSource", PREMIUM_GRANT_SOURCES);
 export const premiumGrantStatus = pgEnum("PremiumGrantStatus", PREMIUM_GRANT_STATUSES);
-export const resourceType = pgEnum("ResourceType", ["FRIEND"]);
+export const resourceType = pgEnum("ResourceType", BONUS_RESOURCES);
 export const rewardClaimKind = pgEnum("RewardClaimKind", REWARD_CLAIM_KINDS);
 export const rewardGrantStatus = pgEnum("RewardGrantStatus", REWARD_GRANT_STATUSES);
 export const rewardSourceType = pgEnum("RewardSourceType", REWARD_SOURCE_TYPES);

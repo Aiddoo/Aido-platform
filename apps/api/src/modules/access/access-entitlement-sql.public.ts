@@ -1,7 +1,7 @@
-// 여러 사용자를 한 SQL로 고르는 다른 Context의 배치 read model이 EntitlementReaderAdapter와 같은 프리미엄 판단을 쓰게 한다
+// 아직 옮기지 않은 소비 Context가 쓰는 옛 진입점. 새 코드는 entitlements/access-entitlements.public.ts를 쓴다
 export {
   activeSubscriptionCondition,
   freeAccessCondition,
   premiumAccessCondition,
   validStoreEntitlementCondition,
-} from "./entitlements/infrastructure/persistence/premium-access-condition.reader.js";
+} from "./entitlements/access-entitlements.public.js";

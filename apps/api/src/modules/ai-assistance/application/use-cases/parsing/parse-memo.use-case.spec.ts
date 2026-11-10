@@ -210,7 +210,9 @@ describe("ParseMemo", () => {
     // Given
     const fixture = createFixture();
     fixture.generator.setInvalidResponse(createAiGenerationError("UPSTREAM"));
-    vi.spyOn(fixture.repository, "updateCharge").mockRejectedValue(new TypeError("db down"));
+    vi.spyOn(fixture.quotaChargeRepository, "saveIfUnchanged").mockRejectedValue(
+      new TypeError("db down"),
+    );
     // When
     const failure = await fixture.useCase.execute(fixture.input).catch((cause: unknown) => cause);
     // Then
@@ -228,7 +230,7 @@ describe("ParseMemo", () => {
     // Then
     expect(result.featureQuota).toBeNull();
     expect(result.data).toBeDefined();
-    expect([...fixture.repository.charges.values()][0]).toMatchObject({ status: "COMMITTED" });
+    expect([...fixture.quotaChargeRepository.all][0]).toMatchObject({ status: "COMMITTED" });
     expect(fixture.logger.warn).toHaveBeenCalledWith({
       event: "ai.generation.quota-read-failed",
       feature: "AI_PARSE",
@@ -584,7 +586,7 @@ describe("ParseMemo", () => {
     ]);
     expect((await fixture.quota.read(fixture.userId, "AI_PARSE")).used).toBe(0);
     expect(result.featureQuota).toMatchObject({ used: 0 });
-    expect([...fixture.repository.charges.values()]).toMatchObject([
+    expect([...fixture.quotaChargeRepository.all]).toMatchObject([
       { status: "REFUNDED", refundReason: "NO_ACTION", reason: "parse-memo" },
     ]);
   });

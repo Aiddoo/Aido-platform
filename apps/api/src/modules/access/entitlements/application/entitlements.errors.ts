@@ -1,4 +1,4 @@
-import { ErrorCode } from "@aido/api/errors";
+import { ErrorCode, type ErrorCodeType } from "@aido/api/errors";
 
 import { ApplicationException } from "#api/shared/application/application.exception";
 
@@ -10,7 +10,7 @@ const DENIED_ERROR_CODE = {
   AI_REPORT: ErrorCode.AI_1308,
   AI_SUGGESTION: ErrorCode.AI_1309,
   CUSTOM_REMINDER_TIME: ErrorCode.PREFERENCE_1701,
-} as const satisfies Record<ServerFlagFeature, (typeof ErrorCode)[keyof typeof ErrorCode]>;
+} as const satisfies Record<ServerFlagFeature, ErrorCodeType>;
 
 export function premiumFeatureDenied(feature: ServerFlagFeature): ApplicationException {
   return new ApplicationException(DENIED_ERROR_CODE[feature]);
@@ -36,4 +36,9 @@ export async function assertEntitledInTx(
   if (!(await entitlements.canInTx(userId, feature))) {
     throw premiumFeatureDenied(feature);
   }
+}
+
+/** 사용자 행을 잠그지 못했거나 사용자가 없다. 기존 응답과 같은 USER_0601이다. */
+export function accessUserNotFound(userId: string): ApplicationException {
+  return new ApplicationException(ErrorCode.USER_0601, { userId });
 }

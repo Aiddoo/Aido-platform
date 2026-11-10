@@ -12,9 +12,11 @@ import { vi } from "vitest";
 import { mock } from "vitest-mock-extended";
 
 import { ENTITLEMENT_READER } from "#api/modules/access/access-entitlement.public";
-import { ENTITLEMENT_CACHE } from "#api/modules/access/entitlements/application/ports/entitlement-cache.port";
-import { ACCESS_STATE_READER } from "#api/modules/access/entitlements/application/ports/access-state.reader.port";
+import { AccessStateReaderPort } from "#api/modules/access/entitlements/application/ports/access-state.reader.port";
+import { EntitlementCachePort } from "#api/modules/access/entitlements/application/ports/entitlement-cache.port";
+import { GetResolvedAccessUseCase } from "#api/modules/access/entitlements/application/use-cases/get-resolved-access.use-case";
 import { EntitlementCacheAdapter } from "#api/modules/access/entitlements/infrastructure/adapters/entitlement-cache.adapter";
+import { EntitlementReaderAdapter } from "#api/modules/access/entitlements/infrastructure/adapters/entitlement-reader.adapter";
 import { DrizzleAccessStateReader } from "#api/modules/access/entitlements/infrastructure/persistence/drizzle-access-state.reader";
 import type { TodoCategoryCachePort } from "#api/modules/planning/categories/application/ports/todo-category-cache.port";
 import { CreateTodoCategoryUseCase } from "#api/modules/planning/categories/application/use-cases/create-todo-category.use-case";
@@ -47,6 +49,8 @@ import {
   todoCategory,
   user,
 } from "#api/platform/database/schema/index";
+import { provideUseCase } from "#api/platform/di/provide-use-case";
+import { ClockPort } from "#api/shared/application/ports/clock.port";
 import {
   MutationLockKeys,
   type MutationLockPort,
@@ -58,7 +62,6 @@ import { DateClock } from "#test/doubles/platform/date-clock";
 import { createTestClient } from "#test/setup/database-context";
 import type { TestDatabaseClient } from "#test/setup/test-database";
 
-import { entitlementReaderAdapterProvider } from "../../src/modules/access/entitlements/access-entitlements.providers.js";
 import { TestDatabase } from "../setup/test-database.js";
 
 const CONCURRENCY = 20;
@@ -712,10 +715,15 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
         ClsUnitOfWork,
         DrizzleTodoCategoryRepository,
         PostgresMutationLockAdapter,
-        { ...entitlementReaderAdapterProvider, provide: ENTITLEMENT_READER },
-        EntitlementCacheAdapter,
-        { provide: ENTITLEMENT_CACHE, useExisting: EntitlementCacheAdapter },
-        { provide: ACCESS_STATE_READER, useClass: DrizzleAccessStateReader },
+        { provide: ENTITLEMENT_READER, useClass: EntitlementReaderAdapter },
+        { provide: EntitlementCachePort, useClass: EntitlementCacheAdapter },
+        { provide: AccessStateReaderPort, useClass: DrizzleAccessStateReader },
+        { provide: ClockPort, useValue: new DateClock() },
+        provideUseCase(GetResolvedAccessUseCase, {
+          accessStateReader: AccessStateReaderPort,
+          entitlementCache: EntitlementCachePort,
+          clock: ClockPort,
+        }),
         TodoCategoryLimitReaderAdapter,
         {
           provide: CacheService,

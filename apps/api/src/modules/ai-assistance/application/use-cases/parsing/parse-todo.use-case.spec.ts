@@ -112,7 +112,7 @@ describe("ParseTodo", () => {
     expect(result.data.categoryId).toBeUndefined();
     expect((await fixture.quota.read(fixture.userId, "AI_PARSE")).used).toBe(0);
     expect(result.featureQuota).toMatchObject({ used: 0 });
-    expect([...fixture.repository.charges.values()]).toMatchObject([
+    expect([...fixture.quotaChargeRepository.all]).toMatchObject([
       { status: "REFUNDED", refundReason: "NO_ACTION" },
     ]);
     expect(fixture.logger.log).toHaveBeenCalledWith(
@@ -211,7 +211,7 @@ describe("ParseTodo", () => {
       used: 1,
       remaining: FREE_AI_LIMIT - 1,
     });
-    expect([...fixture.repository.charges.values()]).toMatchObject([
+    expect([...fixture.quotaChargeRepository.all]).toMatchObject([
       { status: "COMMITTED", reason: "parse-todo", idempotencyKey: null },
     ]);
     expect(result.data).toMatchObject({ title: "팀 미팅", categoryId: 7 });
@@ -226,7 +226,9 @@ describe("ParseTodo", () => {
     // Given
     const fixture = createFixture();
     fixture.generator.setInvalidResponse(createAiGenerationError("UPSTREAM"));
-    vi.spyOn(fixture.repository, "updateCharge").mockRejectedValue(new TypeError("db down"));
+    vi.spyOn(fixture.quotaChargeRepository, "saveIfUnchanged").mockRejectedValue(
+      new TypeError("db down"),
+    );
     // When
     const failure = await fixture.useCase.execute(fixture.input).catch((cause: unknown) => cause);
     // Then
@@ -243,7 +245,7 @@ describe("ParseTodo", () => {
     // Then
     expect(result.featureQuota).toBeNull();
     expect(result.data).toBeDefined();
-    expect([...fixture.repository.charges.values()][0]).toMatchObject({ status: "COMMITTED" });
+    expect([...fixture.quotaChargeRepository.all][0]).toMatchObject({ status: "COMMITTED" });
     expect(fixture.logger.warn).toHaveBeenCalledWith({
       event: "ai.generation.quota-read-failed",
       feature: "AI_PARSE",
@@ -304,7 +306,7 @@ describe("ParseTodo", () => {
       // Then
       await expect(execution).rejects.toMatchObject({ errorCode });
       expect((await fixture.quota.read(fixture.userId, "AI_PARSE")).used).toBe(0);
-      expect([...fixture.repository.charges.values()]).toMatchObject([
+      expect([...fixture.quotaChargeRepository.all]).toMatchObject([
         { status: "REFUNDED", refundReason: "FAILED" },
       ]);
     },

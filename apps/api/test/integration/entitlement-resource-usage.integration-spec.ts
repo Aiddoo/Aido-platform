@@ -94,7 +94,7 @@ describe("권한 스냅샷의 친구·카테고리 개수는 한도 검사와 �
   }
 
   function readSnapshot() {
-    return snapshot.execute({ userId, timezone: "Asia/Seoul" });
+    return snapshot.execute({ userId, timeZone: "Asia/Seoul" });
   }
 
   it("카테고리 개수는 다른 사용자 카테고리를 세지 않고, 한도에 닿으면 스냅샷과 만들기 거절이 같은 0을 말한다", async () => {

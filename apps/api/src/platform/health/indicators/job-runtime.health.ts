@@ -2,7 +2,6 @@ import { Inject, Injectable } from "@nestjs/common";
 import { type HealthIndicatorResult, HealthIndicatorService } from "@nestjs/terminus";
 import { uniq, withTimeout } from "es-toolkit";
 
-import { QUOTA_ABANDONED_REFUND_QUEUE } from "#api/modules/access/access-quota-jobs.public";
 import { AI_REPORT_QUEUE } from "#api/modules/ai-assistance/ai-assistance-reports.public";
 import { AI_SUGGESTION_QUEUE } from "#api/modules/ai-assistance/ai-assistance-suggestions.public";
 import { ACCOUNT_PURGE_QUEUE } from "#api/modules/identity/users/identity-users.public";
@@ -20,7 +19,6 @@ const QUEUE_STATS_TIMEOUT_MS = 2_000;
 const LEGACY_MONITORED_QUEUES = [
   AI_SUGGESTION_QUEUE,
   AI_REPORT_QUEUE,
-  QUOTA_ABANDONED_REFUND_QUEUE,
   ACCOUNT_PURGE_QUEUE,
   INVITE_REWARD_QUEUE,
   INVITE_MAINTENANCE_QUEUE,

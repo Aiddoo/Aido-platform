@@ -1,8 +1,8 @@
-import type { GrantResourceBonusInput } from "./resource-bonus-granter.port.js";
+import type { ResourceBonusId } from "../../domain/resource-bonus-id.vo.js";
+import type { ResourceBonus } from "../../domain/resource-bonus.aggregate.js";
 
-export const RESOURCE_BONUS_REPOSITORY = Symbol("RESOURCE_BONUS_REPOSITORY");
-
-export interface ResourceBonusRepositoryPort {
+export abstract class ResourceBonusRepositoryPort {
+  abstract nextId(): Promise<ResourceBonusId>;
   /** 같은 sourceKey가 이미 있으면 저장하지 않고 false를 반환한다. */
-  create(input: GrantResourceBonusInput): Promise<boolean>;
+  abstract saveIfAbsent(bonus: ResourceBonus): Promise<boolean>;
 }

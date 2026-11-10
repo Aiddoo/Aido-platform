@@ -1,37 +1,78 @@
-import { Logger, type FactoryProvider } from "@nestjs/common";
+import type { Provider } from "@nestjs/common";
 
-import { UNIT_OF_WORK } from "#api/shared/application/ports/index";
-import { OPERATIONAL_ALERT } from "#api/shared/application/ports/operational-alert.port";
+import { UserMutationLockPort } from "#api/modules/identity/users/identity-users.public";
+import { loggerFor, provideUseCase } from "#api/platform/di/provide-use-case";
+import { ClockPort } from "#api/shared/application/ports/clock.port";
+import { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
+import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 
-import { ACCESS_STATE_READER } from "../entitlements/application/ports/access-state.reader.port.js";
-import { QUOTA_LEDGER_REPOSITORY } from "./application/ports/quota-ledger.repository.port.js";
-import { QUOTA_USER_MUTATION_LOCK } from "./application/ports/quota-user-mutation-lock.port.js";
+import { AccessStateReaderPort } from "../entitlements/application/ports/access-state.reader.port.js";
+import { QuotaChargeRepositoryPort } from "./application/ports/quota-charge.repository.port.js";
+import { QUOTA_LEDGER, QuotaLedgerPort } from "./application/ports/quota-ledger.port.js";
+import { QuotaUsageRepositoryPort } from "./application/ports/quota-usage.repository.port.js";
+import { CommitQuotaReservationUseCase } from "./application/use-cases/commit-quota-reservation.use-case.js";
+import { GetMeteredFeatureQuotaUseCase } from "./application/use-cases/get-metered-feature-quota.use-case.js";
+import { RefundAbandonedQuotaReservationsUseCase } from "./application/use-cases/refund-abandoned-quota-reservations.use-case.js";
+import { RefundQuotaReservationUseCase } from "./application/use-cases/refund-quota-reservation.use-case.js";
+import { ReopenQuotaReservationUseCase } from "./application/use-cases/reopen-quota-reservation.use-case.js";
+import { ReserveQuotaUseCase } from "./application/use-cases/reserve-quota.use-case.js";
 import { QuotaLedgerAdapter } from "./infrastructure/adapters/quota-ledger.adapter.js";
+import { QuotaAbandonedRefundProcessor } from "./infrastructure/jobs/quota-abandoned-refund.processor.js";
+import { QuotaAbandonedRefundScheduler } from "./infrastructure/jobs/quota-abandoned-refund.scheduler.js";
+import { DrizzleQuotaChargeRepository } from "./infrastructure/persistence/drizzle-quota-charge.repository.js";
+import { DrizzleQuotaUsageRepository } from "./infrastructure/persistence/drizzle-quota-usage.repository.js";
 
-type QuotaLedgerDependencies = ConstructorParameters<typeof QuotaLedgerAdapter>[0];
-
-export const quotaLedgerAdapterProvider: FactoryProvider<QuotaLedgerAdapter> = {
-  provide: QuotaLedgerAdapter,
-  inject: [
-    QUOTA_LEDGER_REPOSITORY,
-    QUOTA_USER_MUTATION_LOCK,
-    ACCESS_STATE_READER,
-    UNIT_OF_WORK,
-    OPERATIONAL_ALERT,
-  ],
-  useFactory: (
-    repository: QuotaLedgerDependencies["repository"],
-    userMutationLock: QuotaLedgerDependencies["userMutationLock"],
-    resourceBonuses: QuotaLedgerDependencies["resourceBonuses"],
-    unitOfWork: QuotaLedgerDependencies["unitOfWork"],
-    alert: QuotaLedgerDependencies["alert"],
-  ) =>
-    new QuotaLedgerAdapter({
-      repository,
-      userMutationLock,
-      resourceBonuses,
-      unitOfWork,
-      alert,
-      logger: new Logger(QuotaLedgerAdapter.name),
-    }),
-};
+export const ACCESS_QUOTAS_PROVIDERS = [
+  { provide: QuotaChargeRepositoryPort, useClass: DrizzleQuotaChargeRepository },
+  { provide: QuotaUsageRepositoryPort, useClass: DrizzleQuotaUsageRepository },
+  { provide: QuotaLedgerPort, useClass: QuotaLedgerAdapter },
+  // 옛 Symbol 토큰은 소비 Context가 옮길 때까지 클래스 토큰과 같은 인스턴스를 가리킨다
+  { provide: QUOTA_LEDGER, useExisting: QuotaLedgerPort },
+  provideUseCase(ReserveQuotaUseCase, {
+    unitOfWork: UnitOfWorkPort,
+    userMutationLock: UserMutationLockPort,
+    accessStateReader: AccessStateReaderPort,
+    quotaChargeRepository: QuotaChargeRepositoryPort,
+    quotaUsageRepository: QuotaUsageRepositoryPort,
+    clock: ClockPort,
+    logger: loggerFor(ReserveQuotaUseCase),
+  }),
+  provideUseCase(ReopenQuotaReservationUseCase, {
+    unitOfWork: UnitOfWorkPort,
+    userMutationLock: UserMutationLockPort,
+    accessStateReader: AccessStateReaderPort,
+    quotaChargeRepository: QuotaChargeRepositoryPort,
+    quotaUsageRepository: QuotaUsageRepositoryPort,
+    clock: ClockPort,
+    logger: loggerFor(ReopenQuotaReservationUseCase),
+  }),
+  provideUseCase(CommitQuotaReservationUseCase, {
+    quotaChargeRepository: QuotaChargeRepositoryPort,
+    clock: ClockPort,
+    logger: loggerFor(CommitQuotaReservationUseCase),
+  }),
+  provideUseCase(RefundQuotaReservationUseCase, {
+    unitOfWork: UnitOfWorkPort,
+    userMutationLock: UserMutationLockPort,
+    quotaChargeRepository: QuotaChargeRepositoryPort,
+    quotaUsageRepository: QuotaUsageRepositoryPort,
+    clock: ClockPort,
+    logger: loggerFor(RefundQuotaReservationUseCase),
+  }),
+  provideUseCase(RefundAbandonedQuotaReservationsUseCase, {
+    unitOfWork: UnitOfWorkPort,
+    userMutationLock: UserMutationLockPort,
+    quotaChargeRepository: QuotaChargeRepositoryPort,
+    quotaUsageRepository: QuotaUsageRepositoryPort,
+    alert: OperationalAlertPort,
+    clock: ClockPort,
+    logger: loggerFor(RefundAbandonedQuotaReservationsUseCase),
+  }),
+  provideUseCase(GetMeteredFeatureQuotaUseCase, {
+    accessStateReader: AccessStateReaderPort,
+    quotaUsageRepository: QuotaUsageRepositoryPort,
+    clock: ClockPort,
+  }),
+  QuotaAbandonedRefundProcessor,
+  QuotaAbandonedRefundScheduler,
+] satisfies Provider[];

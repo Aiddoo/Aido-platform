@@ -2,7 +2,7 @@ import { quickPlanResponseSchema } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
 import { PLAN_CATALOG } from "@aido/api/vocabulary";
 
-import { QUOTA_LEDGER_TIME } from "#test/fixtures/quota-ledger.fixture";
+import { QUOTA_LEDGER_TIME } from "#test/fixtures/access/quota-ledger.fixture";
 import {
   createPlanFlowFixture,
   InMemoryPlanResultReplay,
@@ -105,14 +105,14 @@ describe("CreateQuickPlan", () => {
     { kind: "INVALID_OUTPUT", errorCode: ErrorCode.AI_1302 },
   ] as const)("$kind 실패는 정확히 한 번 환불하고 charged:false다", async ({ kind, errorCode }) => {
     // Given
-    const { aiGenerator, execute, used, repository } = setup();
+    const { aiGenerator, execute, used, quotaChargeRepository } = setup();
     aiGenerator.setInvalidResponse(createAiGenerationError(kind));
     // When
     const failure = execute();
     // Then
     await expect(failure).rejects.toMatchObject({ errorCode, details: { charged: false } });
     expect(await used()).toBe(0);
-    expect([...repository.charges.values()]).toEqual([
+    expect([...quotaChargeRepository.all]).toEqual([
       expect.objectContaining({ status: "REFUNDED", refundReason: "FAILED", attempt: 1 }),
     ]);
   });
@@ -133,7 +133,7 @@ describe("CreateQuickPlan", () => {
 
   it("앱이 연결을 끊어 AI 호출이 멈추면 신호를 넘겼고 예약을 환불한다", async () => {
     // Given
-    const { aiGenerator, execute, used, repository } = setup();
+    const { aiGenerator, execute, used, quotaChargeRepository } = setup();
     const controller = new AbortController();
     const generate = vi
       .spyOn(aiGenerator, "generate")
@@ -147,7 +147,7 @@ describe("CreateQuickPlan", () => {
     });
     expect(generate.mock.calls[0]?.[0].signal).toBe(controller.signal);
     expect(await used()).toBe(0);
-    expect([...repository.charges.values()]).toEqual([
+    expect([...quotaChargeRepository.all]).toEqual([
       expect.objectContaining({ status: "REFUNDED", refundReason: "FAILED" }),
     ]);
   });
@@ -202,7 +202,7 @@ describe("CreateQuickPlan", () => {
 
     it("기억한 결과를 잃은 재요청은 추가 차감 없이 같은 행에서 다시 만든다", async () => {
       // Given
-      const { aiGenerator, execute, replay, used, repository } = setup();
+      const { aiGenerator, execute, replay, used, quotaChargeRepository } = setup();
       aiGenerator.setRawResponse({ todos: [todoActionDraft()], memo: null });
       await execute();
       replay.results.clear();
@@ -213,7 +213,7 @@ describe("CreateQuickPlan", () => {
       expect(second.charged).toBe(true);
       expect(aiGenerator.getCallCount()).toBe(2);
       expect(await used()).toBe(1);
-      expect([...repository.charges.values()]).toEqual([
+      expect([...quotaChargeRepository.all]).toEqual([
         expect.objectContaining({ status: "COMMITTED", attempt: 2 }),
       ]);
     });
@@ -260,10 +260,10 @@ describe("CreateQuickPlan", () => {
 
     it("환불된 키를 다시 보낼 때 그 사이 한도가 찼으면 차감 없이 AI_1303이다", async () => {
       // Given
-      const { aiGenerator, execute, repository, used } = setup();
+      const { aiGenerator, execute, quotaUsageRepository, used } = setup();
       aiGenerator.setRawResponse({ todos: [], memo: null });
       await execute();
-      vi.spyOn(repository, "addUsage").mockResolvedValueOnce(false);
+      vi.spyOn(quotaUsageRepository, "addUsageWithinLimit").mockResolvedValueOnce(false);
       // When
       const second = execute();
       // Then
@@ -325,7 +325,7 @@ describe("CreateQuickPlan", () => {
 
     it("환불한 요청의 재시도는 다시 예약해 순 차감이 한 번이다", async () => {
       // Given
-      const { aiGenerator, execute, used, repository } = setup();
+      const { aiGenerator, execute, used, quotaChargeRepository } = setup();
       aiGenerator.setInvalidResponse(createAiGenerationError("TIMEOUT"));
       await execute().catch(() => null);
       aiGenerator.clear();
@@ -335,7 +335,7 @@ describe("CreateQuickPlan", () => {
       // Then
       expect(response.charged).toBe(true);
       expect(await used()).toBe(1);
-      expect([...repository.charges.values()]).toEqual([
+      expect([...quotaChargeRepository.all]).toEqual([
         expect.objectContaining({ status: "COMMITTED", attempt: 2 }),
       ]);
     });

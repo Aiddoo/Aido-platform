@@ -4,16 +4,17 @@ import {
   calculateRemainingLimit,
   isExemptFromDormancy,
   isExemptFromUserSpendLimit,
-  NO_RESOURCE_BONUSES,
-  resolveAccessContext,
+  isUnlimitedSubject,
+  resolveAccessTier,
   resolveAllFeatureAccess,
   resolveFeatureAccess,
   resolveFeatureQuota,
   resolvePerUseLimit,
   resolveQuotaLimit,
 } from "./entitlement.domain-service.js";
+import { NO_RESOURCE_BONUSES } from "./entitlements.constants.js";
 
-const AT = new Date("2028-03-04T00:00:00.000Z");
+const AT = Temporal.Instant.from("2028-03-04T00:00:00.000Z");
 
 describe("isExemptFromDormancy", () => {
   it.each([
@@ -41,18 +42,29 @@ describe("권한 정책 — 카탈로그와 접근 주체", () => {
   });
 
   it.each([
+    { tier: "FREE", unlimited: false },
+    { tier: "PREMIUM", unlimited: false },
+    { tier: "ADMIN", unlimited: true },
+  ] as const)("$tier 주체의 무제한 판단은 $unlimited 이다", ({ tier, unlimited }) => {
+    // When
+    const result = isUnlimitedSubject({ tier });
+    // Then
+    expect(result).toBe(unlimited);
+  });
+
+  it.each([
     { role: "USER", subscriptionStatus: "ACTIVE", expected: { tier: "PREMIUM", isPremium: true } },
     { role: "USER", subscriptionStatus: "CANCELLED", expected: { tier: "FREE", isPremium: false } },
     { role: "ADMIN", subscriptionStatus: "FREE", expected: { tier: "ADMIN", isPremium: false } },
     { role: "ADMIN", subscriptionStatus: "ACTIVE", expected: { tier: "ADMIN", isPremium: true } },
-  ])(
+  ] as const)(
     "$role·$subscriptionStatus 사용자의 접근 주체는 $expected.tier다",
     ({ role, subscriptionStatus, expected }) => {
       // Given
       const state = { role, subscriptionStatus, accessDeadline: null };
 
       // When
-      const context = resolveAccessContext(state, AT);
+      const context = resolveAccessTier({ state, now: AT });
 
       // Then
       expect(context).toEqual(expected);
@@ -61,10 +73,10 @@ describe("권한 정책 — 카탈로그와 접근 주체", () => {
 
   it("끝나는 시각이 지난 ACTIVE는 tier와 isPremium이 함께 무료가 된다", () => {
     // Given
-    const state = { role: "USER", subscriptionStatus: "ACTIVE", accessDeadline: AT };
+    const state = { role: "USER", subscriptionStatus: "ACTIVE", accessDeadline: AT } as const;
 
     // When
-    const context = resolveAccessContext(state, AT);
+    const context = resolveAccessTier({ state, now: AT });
 
     // Then
     expect(context).toEqual({ tier: "FREE", isPremium: false });
@@ -72,8 +84,16 @@ describe("권한 정책 — 카탈로그와 접근 주체", () => {
 
   it("ACTIVE 카테고리도 명시된 최대 보유량이 있으며 ADMIN만 무제한이다", () => {
     // When
-    const premium = resolveFeatureAccess("PREMIUM", "TODO_CATEGORY", NO_RESOURCE_BONUSES);
-    const admin = resolveFeatureAccess("ADMIN", "TODO_CATEGORY", NO_RESOURCE_BONUSES);
+    const premium = resolveFeatureAccess({
+      tier: "PREMIUM",
+      feature: "TODO_CATEGORY",
+      resourceBonuses: NO_RESOURCE_BONUSES,
+    });
+    const admin = resolveFeatureAccess({
+      tier: "ADMIN",
+      feature: "TODO_CATEGORY",
+      resourceBonuses: NO_RESOURCE_BONUSES,
+    });
 
     // Then
     expect(premium.limit).toBe(PLAN_CATALOG.TODO_CATEGORY.premium);
@@ -85,8 +105,16 @@ describe("권한 정책 — 카탈로그와 접근 주체", () => {
     const bonuses = { FRIEND: 2 };
 
     // When
-    const free = resolveFeatureAccess("FREE", "FRIEND", bonuses);
-    const premium = resolveFeatureAccess("PREMIUM", "FRIEND", bonuses);
+    const free = resolveFeatureAccess({
+      tier: "FREE",
+      feature: "FRIEND",
+      resourceBonuses: bonuses,
+    });
+    const premium = resolveFeatureAccess({
+      tier: "PREMIUM",
+      feature: "FRIEND",
+      resourceBonuses: bonuses,
+    });
 
     // Then
     expect(free.limit).toBe(PLAN_CATALOG.FRIEND.free + 2);
@@ -95,8 +123,12 @@ describe("권한 정책 — 카탈로그와 접근 주체", () => {
 
   it("프리미엄 AI 정리는 무제한으로 보이지만 서버는 공정 사용 상한으로 막는다", () => {
     // When
-    const displayed = resolveFeatureAccess("PREMIUM", "AI_PARSE", NO_RESOURCE_BONUSES);
-    const enforced = resolveQuotaLimit("PREMIUM", "AI_PARSE");
+    const displayed = resolveFeatureAccess({
+      tier: "PREMIUM",
+      feature: "AI_PARSE",
+      resourceBonuses: NO_RESOURCE_BONUSES,
+    });
+    const enforced = resolveQuotaLimit({ tier: "PREMIUM", feature: "AI_PARSE" });
 
     // Then
     expect(displayed.limit).toBeNull();
@@ -108,7 +140,7 @@ describe("권한 정책 — 카탈로그와 접근 주체", () => {
     { tier: "ADMIN" as const, expected: { limit: null, isFairUse: false } },
   ])("$tier의 AI 정리 집행 한도는 $expected.limit이다", ({ tier, expected }) => {
     // When
-    const limit = resolveQuotaLimit(tier, "AI_PARSE");
+    const limit = resolveQuotaLimit({ tier, feature: "AI_PARSE" });
 
     // Then
     expect(limit).toEqual(expected);
@@ -116,7 +148,7 @@ describe("권한 정책 — 카탈로그와 접근 주체", () => {
 
   it("응원처럼 상한 없는 프리미엄 quota는 정말 무제한이다", () => {
     // When
-    const limit = resolveQuotaLimit("PREMIUM", "CHEER");
+    const limit = resolveQuotaLimit({ tier: "PREMIUM", feature: "CHEER" });
 
     // Then
     expect(limit).toEqual({ limit: null, isFairUse: false });
@@ -124,8 +156,8 @@ describe("권한 정책 — 카탈로그와 접근 주체", () => {
 
   it("flag는 무료에서 꺼지고 프리미엄·ADMIN에서 켜지며 전체 권한은 카탈로그 순서다", () => {
     // When
-    const free = resolveAllFeatureAccess("FREE", NO_RESOURCE_BONUSES);
-    const admin = resolveAllFeatureAccess("ADMIN", NO_RESOURCE_BONUSES);
+    const free = resolveAllFeatureAccess({ tier: "FREE", resourceBonuses: NO_RESOURCE_BONUSES });
+    const admin = resolveAllFeatureAccess({ tier: "ADMIN", resourceBonuses: NO_RESOURCE_BONUSES });
 
     // Then
     expect(Object.keys(free)).toEqual(Object.keys(PLAN_CATALOG));
@@ -186,7 +218,7 @@ describe("권한 정책 — 카탈로그와 접근 주체", () => {
     "$tier 녹음 정리 featureQuota는 집행 한도·남은 횟수·길이 상한을 서버가 계산한다",
     ({ tier, used, expected }) => {
       // Given
-      const resetsAt = new Date("2028-03-31T15:00:00.000Z");
+      const resetsAt = Temporal.Instant.from("2028-03-31T15:00:00.000Z");
 
       // When
       const quota = resolveFeatureQuota({
@@ -260,7 +292,7 @@ describe("권한 정책 — 카탈로그와 접근 주체", () => {
 
   it("길이 상한이 없는 기능은 perUse가 null이다", () => {
     // When
-    const perUse = resolvePerUseLimit("PREMIUM", "AI_PARSE");
+    const perUse = resolvePerUseLimit({ tier: "PREMIUM", feature: "AI_PARSE" });
 
     // Then
     expect(perUse).toBeNull();

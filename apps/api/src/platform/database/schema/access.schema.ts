@@ -4,7 +4,6 @@ import {
   integer,
   smallint,
   text,
-  timestamp,
   varchar,
   index,
   foreignKey,
@@ -13,6 +12,7 @@ import {
   uniqueIndex,
 } from "drizzle-orm/pg-core";
 
+import { instant } from "../columns/temporal-columns.js";
 import { createEntityId } from "../entity-id.js";
 import { quotaChargeStatus, quotaMeter, resourceType } from "./enums.schema.js";
 import { user } from "./identity.schema.js";
@@ -20,7 +20,9 @@ import { user } from "./identity.schema.js";
 export const resourceBonus = pgTable(
   "ResourceBonus",
   {
-    createdAt: timestamp({ precision: 3 }).defaultNow().notNull(),
+    createdAt: instant()
+      .default(sql`now()`)
+      .notNull(),
     id: text().primaryKey().$defaultFn(createEntityId),
     quantity: integer().notNull(),
     resource: resourceType().notNull(),
@@ -50,10 +52,8 @@ export const quotaUsage = pgTable(
   {
     meter: quotaMeter().notNull(),
     periodKey: varchar({ length: 16 }).notNull(),
-    updatedAt: timestamp({ precision: 3 })
-      .notNull()
-      .$defaultFn(() => new Date())
-      .$onUpdate(() => new Date()),
+    // 도메인이 ClockPort 값으로 채운다. 집합 update도 저장소가 명시한다
+    updatedAt: instant().notNull(),
     used: integer().notNull(),
     userId: text().notNull(),
   },
@@ -78,7 +78,9 @@ export const quotaCharge = pgTable(
   {
     amount: smallint().notNull(),
     attempt: smallint().notNull(),
-    createdAt: timestamp({ precision: 3 }).defaultNow().notNull(),
+    createdAt: instant()
+      .default(sql`now()`)
+      .notNull(),
     id: text().primaryKey().$defaultFn(createEntityId),
     idempotencyKey: varchar({ length: 128 }),
     meter: quotaMeter().notNull(),
@@ -88,10 +90,8 @@ export const quotaCharge = pgTable(
     /** 같은 키가 같은 요청인지 가리는 SHA-256 지문. 사용자 글자는 저장하지 않는다. */
     requestHash: varchar({ length: 64 }),
     status: quotaChargeStatus().notNull(),
-    updatedAt: timestamp({ precision: 3 })
-      .notNull()
-      .$defaultFn(() => new Date())
-      .$onUpdate(() => new Date()),
+    // 도메인이 ClockPort 값으로 채운다. 집합 update도 저장소가 명시한다
+    updatedAt: instant().notNull(),
     userId: text().notNull(),
   },
   (table) => [

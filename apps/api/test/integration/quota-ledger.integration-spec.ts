@@ -11,16 +11,13 @@ import {
   type QuotaLedgerPort,
   type QuotaReserveInput,
 } from "#api/modules/access/access-quota.public";
-import {
-  QUOTA_LEDGER_REPOSITORY,
-  type QuotaLedgerRepositoryPort,
-} from "#api/modules/access/quotas/application/ports/quota-ledger.repository.port";
+import { QuotaUsageRepositoryPort } from "#api/modules/access/quotas/application/ports/quota-usage.repository.port";
+import { RefundAbandonedQuotaReservationsUseCase } from "#api/modules/access/quotas/application/use-cases/refund-abandoned-quota-reservations.use-case";
 import { QuotaWindow } from "#api/modules/access/quotas/domain/quota-window.vo";
 import {
   QUOTA_REQUEST_HASH_RETENTION_MS,
   QUOTA_RESERVATION_TAKEOVER_AFTER_MS,
 } from "#api/modules/access/quotas/domain/quotas.constants";
-import { QuotaLedgerAdapter } from "#api/modules/access/quotas/infrastructure/adapters/quota-ledger.adapter";
 import {
   PREMIUM_GRANTER,
   type PremiumGranterPort,
@@ -29,6 +26,8 @@ import { isUniqueConstraintViolation } from "#api/platform/database/database-err
 import { createEntityId } from "#api/platform/database/entity-id";
 import { quotaCharge, quotaUsage, user as userTable } from "#api/platform/database/schema/index";
 import { UNIT_OF_WORK, type UnitOfWorkPort } from "#api/shared/application/ports/index";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { instantFromDate } from "#api/shared/domain/time/instant";
 import { UserFixture } from "#test/fixtures/index";
 import { createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
@@ -40,6 +39,10 @@ import {
 } from "../e2e/helpers/e2e-app-factory.js";
 
 const FREE_AI_LIMIT = PLAN_CATALOG.AI_PARSE.free;
+
+function periodKeyOf(at: Date): string {
+  return QuotaWindow.monthOf(instantFromDate(at)).periodKey;
+}
 const FREE_VOICE_LIMIT = PLAN_CATALOG.VOICE_NOTE.free;
 
 const newMonthAt = new Date("2026-09-30T15:00:01.000Z");
@@ -50,8 +53,8 @@ describe("QuotaLedger 원장·카운터·멱등 (실제 PostgreSQL)", () => {
   let client: TestDatabaseClient;
   let context: E2eTestContext;
   let ledger: QuotaLedgerPort;
-  let service: QuotaLedgerAdapter;
-  let repository: QuotaLedgerRepositoryPort;
+  let refundAbandoned: RefundAbandonedQuotaReservationsUseCase;
+  let usageRepository: QuotaUsageRepositoryPort;
   let unitOfWork: UnitOfWorkPort;
   let entitlement: EntitlementReaderPort;
   let userId: string;
@@ -61,8 +64,10 @@ describe("QuotaLedger 원장·카운터·멱등 (실제 PostgreSQL)", () => {
     client = await database.start();
     context = await createE2eApp({ testDatabase: database });
     ledger = context.module.get(QUOTA_LEDGER);
-    service = context.module.get(QuotaLedgerAdapter, { strict: false });
-    repository = context.module.get(QUOTA_LEDGER_REPOSITORY);
+    refundAbandoned = context.module.get(RefundAbandonedQuotaReservationsUseCase, {
+      strict: false,
+    });
+    usageRepository = context.module.get(QuotaUsageRepositoryPort, { strict: false });
     unitOfWork = context.module.get(UNIT_OF_WORK);
     entitlement = context.module.get(ENTITLEMENT_READER);
   });
@@ -110,7 +115,7 @@ describe("QuotaLedger 원장·카운터·멱등 (실제 PostgreSQL)", () => {
     return row;
   }
 
-  async function storedVoiceUsage(periodKey = QuotaWindow.resolvePeriodKey(newMonthAt)) {
+  async function storedVoiceUsage(periodKey = periodKeyOf(newMonthAt)) {
     const [row] = await client
       .select({ used: quotaUsage.used })
       .from(quotaUsage)
@@ -182,7 +187,7 @@ describe("QuotaLedger 원장·카운터·멱등 (실제 PostgreSQL)", () => {
       vi.setSystemTime(stale);
 
       // When
-      await service.refundAbandonedReservations();
+      await refundAbandoned.execute();
 
       // Then
       expect((await storedAiUsage())?.count).toBe(2);
@@ -200,9 +205,7 @@ describe("QuotaLedger 원장·카운터·멱등 (실제 PostgreSQL)", () => {
       vi.setSystemTime(stale);
 
       // When
-      const { outcomes, observedWaiters } = await contend(() =>
-        service.refundAbandonedReservations(),
-      );
+      const { outcomes, observedWaiters } = await contend(() => refundAbandoned.execute());
 
       // Then
       expect(observedWaiters).toBe(2);
@@ -230,14 +233,18 @@ describe("QuotaLedger 원장·카운터·멱등 (실제 PostgreSQL)", () => {
       );
       await client
         .update(quotaCharge)
-        .set({ createdAt: new Date(newMonthAt.getTime() - QUOTA_REQUEST_HASH_RETENTION_MS - 1) })
+        .set({
+          createdAt: instantFromDate(newMonthAt).subtract({
+            milliseconds: QUOTA_REQUEST_HASH_RETENTION_MS + 1,
+          }),
+        })
         .where(eq(quotaCharge.idempotencyKey, "old"));
       await client
         .update(quotaCharge)
-        .set({ createdAt: newMonthAt })
+        .set({ createdAt: instantFromDate(newMonthAt) })
         .where(eq(quotaCharge.idempotencyKey, "recent"));
       // When
-      await service.refundAbandonedReservations();
+      await refundAbandoned.execute();
       // Then
       const rows = await client.query.quotaCharge.findMany({ where: { userId } });
       expect(rows.find((row) => row.idempotencyKey === "old")?.requestHash).toBeNull();
@@ -257,6 +264,7 @@ describe("QuotaLedger 원장·카운터·멱등 (실제 PostgreSQL)", () => {
           periodKey: "2026-M10",
           reason: "voice-note-digest",
           status: "COMMITTED" as const,
+          updatedAt: instantFromDate(newMonthAt),
         })),
       );
       await client.execute(sql`ANALYZE "QuotaCharge"`);
@@ -278,7 +286,7 @@ describe("QuotaLedger 원장·카운터·멱등 (실제 PostgreSQL)", () => {
       const key = "stale-key";
       const reserveAgain = () =>
         ledger.reserve(input({ feature: "VOICE_NOTE", idempotencyKey: key }));
-      const sweep = () => service.refundAbandonedReservations();
+      const sweep = () => refundAbandoned.execute();
 
       /** 사용자 행 잠금을 쥔 채 작업을 차례로 대기열에 세운 뒤 풀어 PostgreSQL이 그 순서로 처리하게 한다. */
       async function queueInOrder<A, B>(first: () => Promise<A>, second: () => Promise<B>) {
@@ -361,7 +369,7 @@ describe("QuotaLedger 원장·카운터·멱등 (실제 PostgreSQL)", () => {
       const key = "late-key";
       const first = await ledger.reserve(input({ feature: "VOICE_NOTE", idempotencyKey: key }));
       vi.setSystemTime(stale);
-      await service.refundAbandonedReservations();
+      await refundAbandoned.execute();
 
       // When
       const lateCommit = await ledger.commit(first);
@@ -514,27 +522,36 @@ describe("QuotaLedger 원장·카운터·멱등 (실제 PostgreSQL)", () => {
       // Then
       expect(await storedAiUsage()).toEqual({ count: 1, resetAt: newMonthAt });
       expect(await storedVoiceUsage()).toBe(1);
-      expect(await storedVoiceUsage(QuotaWindow.resolvePeriodKey(oldMonthAt))).toBe(0);
+      expect(await storedVoiceUsage(periodKeyOf(oldMonthAt))).toBe(0);
     });
 
     it("AI_PLAN 카운터 차감은 같은 기간이고 남은 횟수가 있을 때만 적용한다", async () => {
       // Given
       await client.update(userTable).set({ aiUsageCount: 1 }).where(eq(userTable.id, userId));
-      const oldPeriod = QuotaWindow.resolvePeriodKey(oldMonthAt);
-      const currentPeriod = QuotaWindow.resolvePeriodKey(newMonthAt);
+      const oldPeriod = periodKeyOf(oldMonthAt);
+      const currentPeriod = periodKeyOf(newMonthAt);
 
       // When
-      const wrongPeriod = await repository.subtractUsage(userId, "AI_PLAN", {
+      const wrongPeriod = await usageRepository.subtractUsage({
+        userId: UserId.reconstitute(userId),
+        meter: "AI_PLAN",
         periodKey: oldPeriod,
         amount: 1,
+        now: instantFromDate(newMonthAt),
       });
-      const tooMany = await repository.subtractUsage(userId, "AI_PLAN", {
+      const tooMany = await usageRepository.subtractUsage({
+        userId: UserId.reconstitute(userId),
+        meter: "AI_PLAN",
         periodKey: currentPeriod,
         amount: 2,
+        now: instantFromDate(newMonthAt),
       });
-      const applied = await repository.subtractUsage(userId, "AI_PLAN", {
+      const applied = await usageRepository.subtractUsage({
+        userId: UserId.reconstitute(userId),
+        meter: "AI_PLAN",
         periodKey: currentPeriod,
         amount: 1,
+        now: instantFromDate(newMonthAt),
       });
 
       // Then
@@ -653,7 +670,7 @@ describe("QuotaLedger 원장·카운터·멱등 (실제 PostgreSQL)", () => {
         const [charge] = await storedCharges();
         expect(takenOver.attempt).toBe(2);
         expect(quotaAfterTakeOver.used).toBe(1);
-        expect(charge?.periodKey).toBe(QuotaWindow.resolvePeriodKey(newMonthAt));
+        expect(charge?.periodKey).toBe(periodKeyOf(newMonthAt));
         expect(refunded).toBe(true);
         expect((await ledger.read(userId, feature)).used).toBe(0);
       },
@@ -690,6 +707,7 @@ describe("QuotaLedger 원장·카운터·멱등 (실제 PostgreSQL)", () => {
         periodKey: "2026-M10",
         reason: "test",
         status: "RESERVED",
+        updatedAt: instantFromDate(newMonthAt),
       } as const;
       await client.insert(quotaCharge).values(duplicate);
 
@@ -739,9 +757,16 @@ describe("QuotaLedger 원장·카운터·멱등 (실제 PostgreSQL)", () => {
 
     it("QuotaUsage 원자적 증가는 DB 조건으로도 한도를 넘지 않는다", async () => {
       // Given
-      const window = QuotaWindow.monthAt(newMonthAt);
+      const window = QuotaWindow.monthOf(instantFromDate(newMonthAt));
       const add = () =>
-        repository.addUsage(userId, "VOICE_NOTE", { window, at: newMonthAt, amount: 1, limit: 1 });
+        usageRepository.addUsageWithinLimit({
+          userId: UserId.reconstitute(userId),
+          meter: "VOICE_NOTE",
+          window,
+          amount: 1,
+          limit: 1,
+          now: instantFromDate(newMonthAt),
+        });
 
       // When
       const results = [await add(), await add()];

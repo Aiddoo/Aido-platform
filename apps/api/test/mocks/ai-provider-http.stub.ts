@@ -1,15 +1,11 @@
 import { readFileSync } from "node:fs";
 
+import type { AccessTier } from "@aido/api/vocabulary";
 import { ConfigService } from "@nestjs/config";
 import { generateText, Output } from "ai";
 import { z } from "zod";
 
 import type { EntitlementReaderPort } from "#api/modules/access/access-entitlement.public";
-import {
-  type AccessTier,
-  NO_RESOURCE_BONUSES,
-  resolveAllFeatureAccess,
-} from "#api/modules/access/entitlements/domain/entitlement.domain-service";
 import { AiSdkGenerator } from "#api/modules/ai-assistance/infrastructure/adapters/generation/ai-sdk.generator";
 import { AiSpendBudget } from "#api/modules/ai-assistance/infrastructure/adapters/generation/ai-spend.budget";
 import type { AiProviderAdapter } from "#api/modules/ai-assistance/infrastructure/adapters/generation/providers/ai-provider-adapter";
@@ -17,6 +13,7 @@ import type { EnvConfig } from "#api/platform/config/schemas/index";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
 import type { UsageMeterPort } from "#api/platform/metering/interfaces/usage-meter.interface";
 import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
+import { createFeatureAccessFixture } from "#test/fixtures/access/access-user.fixture";
 import { InMemoryUsageMeterAdapter } from "#test/mocks/in-memory-usage-meter.adapter";
 
 import { RecordingOperationalAlert } from "./recording-operational-alert.js";
@@ -73,7 +70,7 @@ export function stubAccessTiers(
       return {
         tier,
         isPremium: tier === "PREMIUM",
-        features: resolveAllFeatureAccess(tier, NO_RESOURCE_BONUSES),
+        features: createFeatureAccessFixture(tier),
       };
     },
   };

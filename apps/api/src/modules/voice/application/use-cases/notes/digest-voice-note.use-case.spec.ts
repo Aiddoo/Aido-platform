@@ -2,7 +2,7 @@ import { voiceNoteDigestResponseSchema } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
 import { PLAN_CATALOG } from "@aido/api/vocabulary";
 
-import { QUOTA_LEDGER_TIME } from "#test/fixtures/quota-ledger.fixture";
+import { QUOTA_LEDGER_TIME } from "#test/fixtures/access/quota-ledger.fixture";
 import {
   createPlanFlowFixture,
   digestDraft,
@@ -105,7 +105,7 @@ describe("DigestVoiceNote", () => {
       { name: "요약과 핵심 내용", draft: { todos: [] } },
     ])("$name 돌려주면 1회를 확정해 charged:true다", async ({ draft }) => {
       // Given
-      const { aiGenerator, execute, used, repository } = setup();
+      const { aiGenerator, execute, used, quotaChargeRepository } = setup();
       aiGenerator.setRawResponse(digestDraft(draft));
       // When
       const response = await execute();
@@ -113,7 +113,7 @@ describe("DigestVoiceNote", () => {
       expect(response.charged).toBe(true);
       expect(response.featureQuota).toMatchObject({ used: 1 });
       expect(await used()).toBe(1);
-      expect([...repository.charges.values()]).toEqual([
+      expect([...quotaChargeRepository.all]).toEqual([
         expect.objectContaining({ status: "COMMITTED", refundReason: null }),
       ]);
     });
@@ -149,7 +149,7 @@ describe("DigestVoiceNote", () => {
 
     it("기억한 결과를 잃은 재요청은 추가 차감 없이 같은 행에서 다시 만든다", async () => {
       // Given
-      const { aiGenerator, execute, replay, used, repository } = setup();
+      const { aiGenerator, execute, replay, used, quotaChargeRepository } = setup();
       aiGenerator.setRawResponse(digestDraft({ todos: [] }));
       await execute();
       replay.results.clear();
@@ -160,7 +160,7 @@ describe("DigestVoiceNote", () => {
       expect(second.charged).toBe(true);
       expect(aiGenerator.getCallCount()).toBe(2);
       expect(await used()).toBe(1);
-      expect([...repository.charges.values()]).toEqual([
+      expect([...quotaChargeRepository.all]).toEqual([
         expect.objectContaining({ status: "COMMITTED", attempt: 2 }),
       ]);
     });
@@ -215,7 +215,7 @@ describe("DigestVoiceNote", () => {
 
   it("빈 결과(AI_1302)로 환불된 키를 다시 보내면 만들어지고 순 차감은 한 번이다", async () => {
     // Given
-    const { aiGenerator, execute, used, repository } = setup();
+    const { aiGenerator, execute, used, quotaChargeRepository } = setup();
     aiGenerator.setRawResponse(digestDraft({ title: " ", summary: "", keyPoints: [], todos: [] }));
     await expect(execute()).rejects.toMatchObject({
       errorCode: ErrorCode.AI_1302,
@@ -227,7 +227,7 @@ describe("DigestVoiceNote", () => {
     // Then
     expect(second.charged).toBe(true);
     expect(await used()).toBe(1);
-    expect([...repository.charges.values()]).toEqual([
+    expect([...quotaChargeRepository.all]).toEqual([
       expect.objectContaining({ status: "COMMITTED", attempt: 2 }),
     ]);
   });
@@ -251,7 +251,7 @@ describe("DigestVoiceNote", () => {
 
   it("돌려줄 내용이 전혀 없으면 환불하고 AI_1302다", async () => {
     // Given
-    const { aiGenerator, execute, used, repository } = setup();
+    const { aiGenerator, execute, used, quotaChargeRepository } = setup();
     aiGenerator.setRawResponse(digestDraft({ title: " ", summary: "", keyPoints: [], todos: [] }));
     // When
     const failure = execute();
@@ -261,7 +261,7 @@ describe("DigestVoiceNote", () => {
       details: { charged: false },
     });
     expect(await used()).toBe(0);
-    expect([...repository.charges.values()]).toEqual([
+    expect([...quotaChargeRepository.all]).toEqual([
       expect.objectContaining({ status: "REFUNDED", refundReason: "NO_ACTION", attempt: 1 }),
     ]);
   });
@@ -282,7 +282,7 @@ describe("DigestVoiceNote", () => {
 
   it("AI 실패는 정확히 한 번 환불하고 원장에 사유를 남긴다", async () => {
     // Given
-    const { aiGenerator, execute, used, repository } = setup();
+    const { aiGenerator, execute, used, quotaChargeRepository } = setup();
     aiGenerator.setInvalidResponse(createAiGenerationError("TIMEOUT"));
     // When
     const failure = execute();
@@ -292,7 +292,7 @@ describe("DigestVoiceNote", () => {
       details: { charged: false },
     });
     expect(await used()).toBe(0);
-    expect([...repository.charges.values()]).toEqual([
+    expect([...quotaChargeRepository.all]).toEqual([
       expect.objectContaining({
         meter: "VOICE_NOTE",
         status: "REFUNDED",
@@ -384,8 +384,13 @@ describe("DigestVoiceNote", () => {
       },
     ])("$tier: $count회 쓴 뒤 막힘=$blocked", async ({ input, count, blocked }) => {
       // Given
-      const { aiGenerator, execute, repository, userId } = setup(input);
-      repository.usage.set(`${userId}:VOICE_NOTE:2026-M04`, count);
+      const { aiGenerator, execute, quotaUsageRepository, userId } = setup(input);
+      quotaUsageRepository.setUsage({
+        userId,
+        meter: "VOICE_NOTE",
+        periodKey: "2026-M04",
+        used: count,
+      });
       aiGenerator.setRawResponse(digestDraft());
       // When
       const outcome = execute();

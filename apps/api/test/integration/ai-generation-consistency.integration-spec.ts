@@ -2,6 +2,7 @@ import { ErrorCode } from "@aido/api/errors";
 import { Logger } from "@nestjs/common";
 import { and, eq, sql } from "drizzle-orm";
 
+import { GetResolvedAccessUseCase } from "#api/modules/access/entitlements/application/use-cases/get-resolved-access.use-case";
 import { EntitlementCacheAdapter } from "#api/modules/access/entitlements/infrastructure/adapters/entitlement-cache.adapter";
 import { EntitlementReaderAdapter } from "#api/modules/access/entitlements/infrastructure/adapters/entitlement-reader.adapter";
 import { DrizzleAccessStateReader } from "#api/modules/access/entitlements/infrastructure/persistence/drizzle-access-state.reader";
@@ -40,6 +41,7 @@ import {
 } from "#api/platform/database/schema/index";
 import type { AfterCommitTask } from "#api/shared/application/ports/index";
 import { TodoBuilder } from "#test/builders/todo.builder";
+import { DateClock } from "#test/doubles/platform/date-clock";
 import { createSuggestionPick } from "#test/fixtures/ai-assistance.fixture";
 import { createReportAiResponse } from "#test/fixtures/ai-response.fixture";
 import { createTodoResponseFixture } from "#test/fixtures/todo-response.fixture";
@@ -94,10 +96,13 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
     vi.setSystemTime(CURRENT_TIME);
     fixture = createDatabaseTransactionFixture(client);
     memory = new InMemoryCacheStore({ defaultTtlMs: 600_000, maxItems: 20 });
-    entitlement = new EntitlementReaderAdapter({
-      database: new DrizzleAccessStateReader(fixture.txHost),
-      cacheService: new EntitlementCacheAdapter(new CacheService(memory)),
-    });
+    entitlement = new EntitlementReaderAdapter(
+      new GetResolvedAccessUseCase({
+        accessStateReader: new DrizzleAccessStateReader(fixture.txHost),
+        entitlementCache: new EntitlementCacheAdapter(new CacheService(memory)),
+        clock: new DateClock(),
+      }),
+    );
     suggestions = new DrizzleAiSuggestionRepository(fixture.txHost);
     reports = new DrizzleAiReportRepository(fixture.txHost);
     users = new DrizzleUserRepository(fixture.txHost);

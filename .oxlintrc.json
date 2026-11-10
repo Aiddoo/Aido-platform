@@ -241,11 +241,7 @@
       "excludeFiles": [
         "**/*.spec.ts",
         "**/*.test.ts",
-        "apps/api/src/modules/*/{domain,application,infrastructure,presentation}/**",
-        "apps/api/src/modules/access/entitlements/application/use-cases/get-entitlement-snapshot.use-case.ts",
-        "apps/api/src/modules/access/entitlements/application/ports/entitlement.reader.port.ts",
-        "apps/api/src/modules/access/entitlements/application/read-models/feature-quota.read-model.ts",
-        "apps/api/src/modules/access/quotas/application/ports/quota-ledger.port.ts"
+        "apps/api/src/modules/*/{domain,application,infrastructure,presentation}/**"
       ],
       "rules": {
         "no-restricted-imports": [
@@ -279,11 +275,7 @@
       "excludeFiles": [
         "**/*.spec.ts",
         "**/*.test.ts",
-        "apps/api/src/modules/*/{domain,application,infrastructure,presentation}/**",
-        "apps/api/src/modules/access/entitlements/application/use-cases/get-entitlement-snapshot.use-case.ts",
-        "apps/api/src/modules/access/entitlements/application/ports/entitlement.reader.port.ts",
-        "apps/api/src/modules/access/entitlements/application/read-models/feature-quota.read-model.ts",
-        "apps/api/src/modules/access/quotas/application/ports/quota-ledger.port.ts"
+        "apps/api/src/modules/*/{domain,application,infrastructure,presentation}/**"
       ],
       "rules": {
         "no-restricted-imports": [

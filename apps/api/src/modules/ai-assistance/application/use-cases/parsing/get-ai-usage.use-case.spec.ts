@@ -1,7 +1,7 @@
 import { PLAN_CATALOG } from "@aido/api/vocabulary";
 
+import { QUOTA_LEDGER_TIME } from "#test/fixtures/access/quota-ledger.fixture";
 import { createAiParsingFixture } from "#test/fixtures/ai-parsing.fixture";
-import { QUOTA_LEDGER_TIME } from "#test/fixtures/quota-ledger.fixture";
 
 import { GetAiUsage } from "./get-ai-usage.use-case.js";
 
@@ -40,12 +40,12 @@ describe("GetAiUsage", () => {
     const usage = await new GetAiUsage(fixture).execute({ userId: fixture.userId });
     // Then
     expect(usage.used).toBe(0);
-    expect(fixture.repository.users.get(fixture.userId)?.aiUsageCount).toBe(5);
+    expect(fixture.users.get(fixture.userId)?.aiUsageCount).toBe(5);
   });
   it("사용자가 없으면 USER_0601을 반환한다", async () => {
     // Given
     const fixture = createAiParsingFixture();
-    fixture.repository.users.clear();
+    fixture.users.clear();
     // When
     const execution = new GetAiUsage(fixture).execute({ userId: fixture.userId });
     // Then

@@ -2,7 +2,7 @@ import { ErrorCode } from "@aido/api/errors";
 import { PLAN_FEATURE_KEYS } from "@aido/api/vocabulary";
 
 import { ApplicationException } from "#api/shared/application/application.exception";
-import { createEntitlementFixture } from "#test/fixtures/entitlement.fixture";
+import { createEntitlementFixture } from "#test/fixtures/access/entitlement.fixture";
 
 import { assertEntitled, assertEntitledInTx } from "../../application/entitlements.errors.js";
 
@@ -43,14 +43,14 @@ describe("EntitlementReaderAdapter — 세 주체 × 기능 종류 권한 매트
       const fixture = createEntitlementFixture(SUBJECTS[subject]);
 
       // When
-      const snapshot = await fixture.service.getAccessSnapshot(fixture.userId);
+      const snapshot = await fixture.reader.getAccessSnapshot(fixture.userId);
       const limits = {
-        aiParse: await fixture.service.getLimit(fixture.userId, "AI_PARSE"),
-        friend: await fixture.service.getLimitInTx(fixture.userId, "FRIEND"),
+        aiParse: await fixture.reader.getLimit(fixture.userId, "AI_PARSE"),
+        friend: await fixture.reader.getLimitInTx(fixture.userId, "FRIEND"),
       };
       const canReport = {
-        cached: await fixture.service.can(fixture.userId, "AI_REPORT"),
-        fresh: await fixture.service.canInTx(fixture.userId, "AI_REPORT"),
+        cached: await fixture.reader.can(fixture.userId, "AI_REPORT"),
+        fresh: await fixture.reader.canInTx(fixture.userId, "AI_REPORT"),
       };
 
       // Then
@@ -68,7 +68,7 @@ describe("EntitlementReaderAdapter — 세 주체 × 기능 종류 권한 매트
     const fixture = createEntitlementFixture(SUBJECTS.ADMIN);
 
     // When
-    const { tier, features } = await fixture.service.getAccessSnapshot(fixture.userId);
+    const { tier, features } = await fixture.reader.getAccessSnapshot(fixture.userId);
 
     // Then
     expect(tier).toBe("ADMIN");
@@ -82,11 +82,11 @@ describe("EntitlementReaderAdapter — 세 주체 × 기능 종류 권한 매트
     // Given
     const premium = createEntitlementFixture(SUBJECTS.PREMIUM);
     const free = createEntitlementFixture(SUBJECTS.FREE);
-    free.database.resourceBonuses.set(free.userId, { FRIEND: 2 });
+    free.accessStateReader.resourceBonuses.set(free.userId, { FRIEND: 2 });
 
     // When
-    const premiumCategory = await premium.service.getLimit(premium.userId, "TODO_CATEGORY");
-    const freeFriend = await free.service.getLimit(free.userId, "FRIEND");
+    const premiumCategory = await premium.reader.getLimit(premium.userId, "TODO_CATEGORY");
+    const freeFriend = await free.reader.getLimit(free.userId, "FRIEND");
 
     // Then
     expect(premiumCategory).toBe(30);
@@ -105,7 +105,7 @@ describe("EntitlementReaderAdapter — 세 주체 × 기능 종류 권한 매트
     });
 
     // When
-    const snapshot = await fixture.service.getAccessSnapshot(fixture.userId);
+    const snapshot = await fixture.reader.getAccessSnapshot(fixture.userId);
 
     // Then
     expect(snapshot.isPremium).toBe(expected);
@@ -129,8 +129,8 @@ describe("assertEntitled — 기능별 기존 거부 코드", () => {
     const fixture = createEntitlementFixture(SUBJECTS.FREE);
 
     // When
-    const cached = assertEntitled(fixture.service, fixture.userId, feature);
-    const fresh = assertEntitledInTx(fixture.service, fixture.userId, feature);
+    const cached = assertEntitled(fixture.reader, fixture.userId, feature);
+    const fresh = assertEntitledInTx(fixture.reader, fixture.userId, feature);
 
     // Then
     await expect(cached).rejects.toEqual(new ApplicationException(errorCode));
@@ -143,9 +143,9 @@ describe("assertEntitled — 기능별 기존 거부 코드", () => {
     const premium = createEntitlementFixture(SUBJECTS.PREMIUM);
 
     // When / Then
-    await expect(assertEntitled(admin.service, admin.userId, "AI_REPORT")).resolves.toBeUndefined();
+    await expect(assertEntitled(admin.reader, admin.userId, "AI_REPORT")).resolves.toBeUndefined();
     await expect(
-      assertEntitledInTx(premium.service, premium.userId, "CUSTOM_REMINDER_TIME"),
+      assertEntitledInTx(premium.reader, premium.userId, "CUSTOM_REMINDER_TIME"),
     ).resolves.toBeUndefined();
   });
 });

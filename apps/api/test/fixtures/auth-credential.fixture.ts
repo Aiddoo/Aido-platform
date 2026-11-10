@@ -1,13 +1,10 @@
+import type { AccessTier } from "@aido/api/vocabulary";
+
 import type {
   AccessSnapshot,
   EntitlementReaderPort,
 } from "#api/modules/access/access-entitlement.public";
 import type { MeteredFeatureQuota, QuotaLedgerPort } from "#api/modules/access/access-quota.public";
-import {
-  type AccessTier,
-  NO_RESOURCE_BONUSES,
-  resolveAllFeatureAccess,
-} from "#api/modules/access/entitlements/domain/entitlement.domain-service";
 import type {
   PremiumAccess,
   PremiumAccessReaderPort,
@@ -32,6 +29,7 @@ import { InMemoryAuthVerificationRepository } from "#test/doubles/identity/in-me
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { ImmediateUnitOfWork } from "#test/doubles/platform/immediate-unit-of-work";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
+import { createFeatureAccessFixture } from "#test/fixtures/access/access-user.fixture";
 import { FakeEmailService } from "#test/mocks/fake-email.service";
 import {
   StubAuthPasswordHasher,
@@ -170,7 +168,7 @@ export class StubCurrentUserAccess implements Pick<EntitlementReaderPort, "getAc
     return {
       tier,
       isPremium: this.activeSubscriptionUserIds.has(userId),
-      features: resolveAllFeatureAccess(tier, NO_RESOURCE_BONUSES),
+      features: createFeatureAccessFixture(tier),
     };
   }
 }

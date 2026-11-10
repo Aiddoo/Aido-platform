@@ -10,7 +10,7 @@ import { ChargedPlanRunner } from "#api/modules/voice/application/services/plans
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { FakeAiGenerator } from "#test/mocks/fake-ai.generator";
 
-import { createQuotaLedgerFixture } from "./quota-ledger.fixture.js";
+import { createQuotaLedgerFixture } from "./access/quota-ledger.fixture.js";
 
 /** 계획 프롬프트 모델 출력의 할 일 하나. 빠진 칸은 schema가 null로 채운다. */
 export function todoActionDraft(overrides: Record<string, unknown> = {}) {

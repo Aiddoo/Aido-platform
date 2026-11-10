@@ -1,8 +1,9 @@
 import { PLAN_CATALOG } from "@aido/api/vocabulary";
 
-import { createEntitlementFixture } from "#test/fixtures/entitlement.fixture";
+import { createAccessUserFixture } from "#test/fixtures/access/access-user.fixture";
+import { createEntitlementFixture } from "#test/fixtures/access/entitlement.fixture";
 
-import { NO_RESOURCE_BONUSES } from "../../domain/entitlement.domain-service.js";
+import { NO_RESOURCE_BONUSES } from "../../domain/entitlements.constants.js";
 
 describe("EntitlementReaderAdapter", () => {
   it.each(["CHEER", "NUDGE", "AI_PARSE", "FRIEND", "TODO_CATEGORY"] as const)(
@@ -11,7 +12,7 @@ describe("EntitlementReaderAdapter", () => {
       // Given
       const fixture = createEntitlementFixture({ role: "ADMIN" });
       // When
-      const limit = await fixture.service.getLimit(fixture.userId, feature);
+      const limit = await fixture.reader.getLimit(fixture.userId, feature);
       // Then
       expect(limit).toBeNull();
     },
@@ -27,7 +28,7 @@ describe("EntitlementReaderAdapter", () => {
     // Given
     const fixture = createEntitlementFixture({ subscriptionStatus: "ACTIVE" });
     // When
-    const result = await fixture.service.getLimit(fixture.userId, feature);
+    const result = await fixture.reader.getLimit(fixture.userId, feature);
     // Then
     expect(result).toBe(limit);
   });
@@ -43,7 +44,7 @@ describe("EntitlementReaderAdapter", () => {
     // Given
     const fixture = createEntitlementFixture({ subscriptionStatus: status });
     // When
-    const limit = await fixture.service.getLimit(fixture.userId, feature);
+    const limit = await fixture.reader.getLimit(fixture.userId, feature);
     // Then
     expect(limit).toBe(PLAN_CATALOG[feature].free);
   });
@@ -51,12 +52,12 @@ describe("EntitlementReaderAdapter", () => {
   it("읽기 캐시는 저장 상태가 없어져도 warm snapshot을 반환하고 무효화 후 다시 조회한다", async () => {
     // Given
     const fixture = createEntitlementFixture({ subscriptionStatus: "ACTIVE" });
-    await fixture.service.getLimit(fixture.userId, "AI_PARSE");
-    fixture.database.users.delete(fixture.userId);
+    await fixture.reader.getLimit(fixture.userId, "AI_PARSE");
+    fixture.users.delete(fixture.userId);
     // When
-    const warm = await fixture.service.getLimit(fixture.userId, "AI_PARSE");
-    await fixture.cache.invalidateSubscription(fixture.userId);
-    const cold = await fixture.service.getLimit(fixture.userId, "AI_PARSE");
+    const warm = await fixture.reader.getLimit(fixture.userId, "AI_PARSE");
+    fixture.cache.entries.delete(fixture.userId);
+    const cold = await fixture.reader.getLimit(fixture.userId, "AI_PARSE");
     // Then
     expect([warm, cold]).toEqual([null, PLAN_CATALOG.AI_PARSE.free]);
   });
@@ -71,10 +72,13 @@ describe("EntitlementReaderAdapter", () => {
       const fixture = createEntitlementFixture({
         subscriptionStatus: status === "FREE" ? "ACTIVE" : "FREE",
       });
-      await fixture.service.getLimit(fixture.userId, "AI_PARSE");
-      fixture.database.users.set(fixture.userId, { role: "USER", subscriptionStatus: status });
+      await fixture.reader.getLimit(fixture.userId, "AI_PARSE");
+      fixture.users.set(
+        fixture.userId,
+        createAccessUserFixture({ role: "USER", subscriptionStatus: status }),
+      );
       // When
-      const limit = await fixture.service.getLimitInTx(fixture.userId, "AI_PARSE");
+      const limit = await fixture.reader.getLimitInTx(fixture.userId, "AI_PARSE");
       // Then
       expect(limit).toBe(expected);
     },
@@ -83,10 +87,13 @@ describe("EntitlementReaderAdapter", () => {
   it("카테고리 쓰기 한도는 유료 cache가 남아 있어도 최신 무료 상태를 사용한다", async () => {
     // Given
     const fixture = createEntitlementFixture({ subscriptionStatus: "ACTIVE" });
-    await fixture.service.getLimit(fixture.userId, "TODO_CATEGORY");
-    fixture.database.users.set(fixture.userId, { role: "USER", subscriptionStatus: "FREE" });
+    await fixture.reader.getLimit(fixture.userId, "TODO_CATEGORY");
+    fixture.users.set(
+      fixture.userId,
+      createAccessUserFixture({ role: "USER", subscriptionStatus: "FREE" }),
+    );
     // When
-    const limit = await fixture.service.getLimitInTx(fixture.userId, "TODO_CATEGORY");
+    const limit = await fixture.reader.getLimitInTx(fixture.userId, "TODO_CATEGORY");
     // Then
     expect(limit).toBe(PLAN_CATALOG.TODO_CATEGORY.free);
   });
@@ -95,24 +102,30 @@ describe("EntitlementReaderAdapter", () => {
     // Given
     const fixture = createEntitlementFixture({ exists: false });
     // When
-    const cached = await fixture.service.getLimit(fixture.userId, "CHEER");
-    const fresh = await fixture.service.getLimitInTx(fixture.userId, "CHEER");
+    const cached = await fixture.reader.getLimit(fixture.userId, "CHEER");
+    const fresh = await fixture.reader.getLimitInTx(fixture.userId, "CHEER");
     // Then
     expect([cached, fresh]).toEqual([PLAN_CATALOG.CHEER.free, PLAN_CATALOG.CHEER.free]);
   });
 
-  it("알 수 없는 구독 상태는 무료 기본 한도로 안전하게 판정한다", async () => {
+  it("캐시에 남은 알 수 없는 구독 상태는 무료 기본 한도로 안전하게 판정한다", async () => {
     // Given
-    const fixture = createEntitlementFixture({ subscriptionStatus: "UNRECOGNIZED" });
+    const fixture = createEntitlementFixture();
+    fixture.cache.entries.set(fixture.userId, {
+      status: "UNRECOGNIZED",
+      isAdmin: false,
+      accessDeadlineMs: null,
+      resourceBonuses: NO_RESOURCE_BONUSES,
+    });
     // When
-    const aiParse = await fixture.service.getLimit(fixture.userId, "AI_PARSE");
-    const category = await fixture.service.getLimit(fixture.userId, "TODO_CATEGORY");
+    const aiParse = await fixture.reader.getLimit(fixture.userId, "AI_PARSE");
+    const category = await fixture.reader.getLimit(fixture.userId, "TODO_CATEGORY");
     // Then
     expect([aiParse, category]).toEqual([
       PLAN_CATALOG.AI_PARSE.free,
       PLAN_CATALOG.TODO_CATEGORY.free,
     ]);
-    expect(await fixture.service.can(fixture.userId, "AI_REPORT")).toBe(false);
+    expect(await fixture.reader.can(fixture.userId, "AI_REPORT")).toBe(false);
   });
 
   it.each([
@@ -125,7 +138,7 @@ describe("EntitlementReaderAdapter", () => {
     // Given
     const fixture = createEntitlementFixture({ role, subscriptionStatus: status });
     // When
-    const result = await fixture.service.can(fixture.userId, "AI_REPORT");
+    const result = await fixture.reader.can(fixture.userId, "AI_REPORT");
     // Then
     expect(result).toBe(allowed);
   });
@@ -134,17 +147,20 @@ describe("EntitlementReaderAdapter", () => {
     "fresh premium은 warm ACTIVE cache와 달라진 %s 상태를 읽는다",
     async (status) => {
       const fixture = createEntitlementFixture({ subscriptionStatus: "ACTIVE" });
-      expect(await fixture.service.can(fixture.userId, "AI_REPORT")).toBe(true);
-      fixture.database.users.set(fixture.userId, { role: "USER", subscriptionStatus: status });
-      expect(await fixture.service.canInTx(fixture.userId, "AI_REPORT")).toBe(false);
-      expect(await fixture.service.can(fixture.userId, "AI_REPORT")).toBe(true);
+      expect(await fixture.reader.can(fixture.userId, "AI_REPORT")).toBe(true);
+      fixture.users.set(
+        fixture.userId,
+        createAccessUserFixture({ role: "USER", subscriptionStatus: status }),
+      );
+      expect(await fixture.reader.canInTx(fixture.userId, "AI_REPORT")).toBe(false);
+      expect(await fixture.reader.can(fixture.userId, "AI_REPORT")).toBe(true);
     },
   );
   it("fresh premium은 존재하지 않는 사용자와 ADMIN 삭제를 허용하지 않는다", async () => {
     const fixture = createEntitlementFixture({ role: "ADMIN" });
-    expect(await fixture.service.canInTx(fixture.userId, "AI_REPORT")).toBe(true);
-    fixture.database.users.delete(fixture.userId);
-    expect(await fixture.service.canInTx(fixture.userId, "AI_REPORT")).toBe(false);
+    expect(await fixture.reader.canInTx(fixture.userId, "AI_REPORT")).toBe(true);
+    fixture.users.delete(fixture.userId);
+    expect(await fixture.reader.canInTx(fixture.userId, "AI_REPORT")).toBe(false);
   });
 
   describe("한도 오류 featureQuota", () => {
@@ -158,7 +174,7 @@ describe("EntitlementReaderAdapter", () => {
         const used = PLAN_CATALOG[feature].free;
 
         // When
-        const quota = await fixture.service.readFeatureQuotaInTx(fixture.userId, feature, {
+        const quota = await fixture.reader.readFeatureQuotaInTx(fixture.userId, feature, {
           used,
           resetsAt: RESETS_AT,
         });
@@ -181,11 +197,11 @@ describe("EntitlementReaderAdapter", () => {
     it("친구 한도는 초대 보상 자리를 더하고 resource라 resetsAt이 null이다", async () => {
       // Given
       const fixture = createEntitlementFixture({ subscriptionStatus: "FREE" });
-      fixture.database.resourceBonuses.set(fixture.userId, { FRIEND: 2 });
+      fixture.accessStateReader.resourceBonuses.set(fixture.userId, { FRIEND: 2 });
       const limit = PLAN_CATALOG.FRIEND.free + 2;
 
       // When
-      const quota = await fixture.service.readFeatureQuotaInTx(fixture.userId, "FRIEND", {
+      const quota = await fixture.reader.readFeatureQuotaInTx(fixture.userId, "FRIEND", {
         used: limit,
         resetsAt: null,
       });
@@ -210,7 +226,7 @@ describe("EntitlementReaderAdapter", () => {
       const fixture = createEntitlementFixture({ role, subscriptionStatus: status });
 
       // When
-      const quota = await fixture.service.readFeatureQuotaInTx(fixture.userId, "TODO_CATEGORY", {
+      const quota = await fixture.reader.readFeatureQuotaInTx(fixture.userId, "TODO_CATEGORY", {
         used: 3,
         resetsAt: null,
       });
@@ -222,11 +238,14 @@ describe("EntitlementReaderAdapter", () => {
     it("유료 캐시가 남아 있어도 최신 무료 상태로 계산한다", async () => {
       // Given
       const fixture = createEntitlementFixture({ subscriptionStatus: "ACTIVE" });
-      await fixture.service.getLimit(fixture.userId, "CHEER");
-      fixture.database.users.set(fixture.userId, { role: "USER", subscriptionStatus: "FREE" });
+      await fixture.reader.getLimit(fixture.userId, "CHEER");
+      fixture.users.set(
+        fixture.userId,
+        createAccessUserFixture({ role: "USER", subscriptionStatus: "FREE" }),
+      );
 
       // When
-      const quota = await fixture.service.readFeatureQuotaInTx(fixture.userId, "CHEER", {
+      const quota = await fixture.reader.readFeatureQuotaInTx(fixture.userId, "CHEER", {
         used: PLAN_CATALOG.CHEER.free,
         resetsAt: RESETS_AT,
       });
@@ -248,13 +267,13 @@ describe("EntitlementReaderAdapter", () => {
         subscriptionStatus: "ACTIVE",
         accessDeadline: ENDS_AT,
       });
-      const before = await fixture.service.can(fixture.userId, "AI_REPORT");
+      const before = await fixture.reader.can(fixture.userId, "AI_REPORT");
 
       // When
       vi.setSystemTime(ENDS_AT);
-      const cached = await fixture.service.can(fixture.userId, "AI_REPORT");
-      const fresh = await fixture.service.canInTx(fixture.userId, "AI_REPORT");
-      const limit = await fixture.service.getLimit(fixture.userId, "AI_PARSE");
+      const cached = await fixture.reader.can(fixture.userId, "AI_REPORT");
+      const fresh = await fixture.reader.canInTx(fixture.userId, "AI_REPORT");
+      const limit = await fixture.reader.getLimit(fixture.userId, "AI_PARSE");
 
       // Then
       expect([before, cached, fresh]).toEqual([true, false, false]);
@@ -264,14 +283,14 @@ describe("EntitlementReaderAdapter", () => {
     it("기한이 없는 1.13.0 이전 캐시는 기존처럼 상태를 그대로 쓴다", async () => {
       // Given
       const fixture = createEntitlementFixture({ subscriptionStatus: "FREE" });
-      fixture.cache.snapshots.set(fixture.userId, {
+      fixture.cache.entries.set(fixture.userId, {
         status: "ACTIVE",
         isAdmin: false,
         resourceBonuses: NO_RESOURCE_BONUSES,
       });
 
       // When
-      const premium = await fixture.service.can(fixture.userId, "AI_REPORT");
+      const premium = await fixture.reader.can(fixture.userId, "AI_REPORT");
 
       // Then
       expect(premium).toBe(true);

@@ -1,5 +1,6 @@
 import { ConfigService } from "@nestjs/config";
 
+import { GetResolvedAccessUseCase } from "#api/modules/access/entitlements/application/use-cases/get-resolved-access.use-case";
 import { hasPaidAccess } from "#api/modules/access/entitlements/domain/paid-access.domain-service";
 import { EntitlementReaderAdapter } from "#api/modules/access/entitlements/infrastructure/adapters/entitlement-reader.adapter";
 import { DrizzleAccessStateReader } from "#api/modules/access/entitlements/infrastructure/persistence/drizzle-access-state.reader";
@@ -12,8 +13,10 @@ import type { EnvConfig } from "#api/platform/config/schemas/index";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { createEntityId } from "#api/platform/database/entity-id";
 import { subscription, user, userPreference } from "#api/platform/database/schema/index";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantFromDate } from "#api/shared/domain/time/instant";
 import { UserPreferenceBuilder } from "#test/builders/index";
+import { DateClock } from "#test/doubles/platform/date-clock";
 import { UserFixture } from "#test/fixtures/user.fixture";
 import { createDatabaseTransactionFixture, createTestClient } from "#test/setup/database-context";
 import { suppressLogger } from "#test/setup/suppress-logger";
@@ -55,10 +58,13 @@ describe("유효 프리미엄 SQL 조건과 스케줄러 대상 (실제 PostgreS
       new TypedConfigService(new ConfigService<EnvConfig, true>({})),
     );
     entitlementReader = new DrizzleAccessStateReader(txHost);
-    entitlement = new EntitlementReaderAdapter({
-      cacheService: { wrapSubscription: (_userId, factory) => factory() },
-      database: entitlementReader,
-    });
+    entitlement = new EntitlementReaderAdapter(
+      new GetResolvedAccessUseCase({
+        accessStateReader: entitlementReader,
+        entitlementCache: { wrap: (_userId, factory) => factory() },
+        clock: new DateClock(),
+      }),
+    );
   });
 
   beforeEach(async () => {
@@ -187,11 +193,11 @@ describe("유효 프리미엄 SQL 조건과 스케줄러 대상 (실제 PostgreS
     // When
     const decisions = await Promise.all(
       Object.entries(userIds).map(async ([scenario, id]) => {
-        const state = await entitlementReader.findUserState(id);
+        const state = await entitlementReader.findActiveUserAccessState(UserId.reconstitute(id));
         return {
           scenario,
           sql: sqlPaid.get(id),
-          ts: state != null && hasPaidAccess(state, at),
+          ts: state != null && hasPaidAccess({ state, now: instantFromDate(at) }),
           isPremium: (await entitlement.getAccessSnapshot(id)).isPremium,
         };
       }),

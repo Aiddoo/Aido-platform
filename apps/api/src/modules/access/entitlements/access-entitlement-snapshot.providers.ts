@@ -1,38 +1,20 @@
-import { type FactoryProvider } from "@nestjs/common";
+import type { Provider } from "@nestjs/common";
 
-import { TODO_CATEGORY_COUNT_READER } from "#api/modules/planning/categories/planning-categories.public";
-import { CHEER_USAGE_READER } from "#api/modules/social/cheers/social-cheers.public";
-import { FRIEND_COUNT_READER } from "#api/modules/social/friends/social-friends.public";
-import { NUDGE_USAGE_READER } from "#api/modules/social/nudges/social-nudges.public";
+import { provideUseCase } from "#api/platform/di/provide-use-case";
+import { ClockPort } from "#api/shared/application/ports/clock.port";
 
-import { QUOTA_LEDGER } from "../quotas/application/ports/quota-ledger.port.js";
+import { QuotaUsageRepositoryPort } from "../quotas/application/ports/quota-usage.repository.port.js";
+import { AccessStateReaderPort } from "./application/ports/access-state.reader.port.js";
+import { OwnedFeatureUsageReaderPort } from "./application/ports/owned-feature-usage.reader.port.js";
 import { GetEntitlementSnapshotUseCase } from "./application/use-cases/get-entitlement-snapshot.use-case.js";
+import { OwnedFeatureUsageReaderAdapter } from "./infrastructure/adapters/owned-feature-usage-reader.adapter.js";
 
-type GetEntitlementSnapshotDependencies = ConstructorParameters<
-  typeof GetEntitlementSnapshotUseCase
->[0];
-
-export const getEntitlementSnapshotProvider: FactoryProvider<GetEntitlementSnapshotUseCase> = {
-  provide: GetEntitlementSnapshotUseCase,
-  inject: [
-    QUOTA_LEDGER,
-    CHEER_USAGE_READER,
-    NUDGE_USAGE_READER,
-    FRIEND_COUNT_READER,
-    TODO_CATEGORY_COUNT_READER,
-  ],
-  useFactory: (
-    quotaLedger: GetEntitlementSnapshotDependencies["quotaLedger"],
-    cheerUsageReader: GetEntitlementSnapshotDependencies["cheerUsageReader"],
-    nudgeUsageReader: GetEntitlementSnapshotDependencies["nudgeUsageReader"],
-    friendCountReader: GetEntitlementSnapshotDependencies["friendCountReader"],
-    categoryCountReader: GetEntitlementSnapshotDependencies["categoryCountReader"],
-  ) =>
-    new GetEntitlementSnapshotUseCase({
-      quotaLedger,
-      cheerUsageReader,
-      nudgeUsageReader,
-      friendCountReader,
-      categoryCountReader,
-    }),
-};
+export const ACCESS_ENTITLEMENT_SNAPSHOT_PROVIDERS = [
+  { provide: OwnedFeatureUsageReaderPort, useClass: OwnedFeatureUsageReaderAdapter },
+  provideUseCase(GetEntitlementSnapshotUseCase, {
+    accessStateReader: AccessStateReaderPort,
+    quotaUsageRepository: QuotaUsageRepositoryPort,
+    ownedFeatureUsageReader: OwnedFeatureUsageReaderPort,
+    clock: ClockPort,
+  }),
+] satisfies Provider[];

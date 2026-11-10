@@ -1,9 +1,9 @@
-import { instantFromDate } from "#api/shared/domain/time/instant";
+import { SUBSCRIPTION_STATUS } from "@aido/api/vocabulary";
 
 import { hasPaidAccess, resolvePremiumAccessDeadline } from "./paid-access.domain-service.js";
 
-describe("유료 접근 정책 — 프리미엄 종료 시각", () => {
-  const ENDS_AT = new Date("2028-03-04T00:00:00.000Z");
+describe("유료 접근 판단 — 프리미엄 종료 시각", () => {
+  const ENDS_AT = Temporal.Instant.from("2028-03-04T00:00:00.000Z");
 
   it.each([
     { now: "2028-03-03T23:59:59.999Z", expected: true },
@@ -16,7 +16,10 @@ describe("유료 접근 정책 — 프리미엄 종료 시각", () => {
     });
 
     // When
-    const paid = hasPaidAccess({ subscriptionStatus: "ACTIVE", accessDeadline }, new Date(now));
+    const paid = hasPaidAccess({
+      state: { subscriptionStatus: "ACTIVE", accessDeadline },
+      now: Temporal.Instant.from(now),
+    });
 
     // Then
     expect(paid).toBe(expected);
@@ -26,12 +29,15 @@ describe("유료 접근 정책 — 프리미엄 종료 시각", () => {
     // Given
     const accessDeadline = resolvePremiumAccessDeadline({
       subscriptionExpiresAt: ENDS_AT,
-      storeEntitlements: [{ status: "ACTIVE", expiresAt: instantFromDate(ENDS_AT) }],
+      storeEntitlements: [{ status: "ACTIVE", expiresAt: ENDS_AT }],
     });
 
     // When
     const paid = ["2028-03-04T02:59:59.999Z", "2028-03-04T03:00:00.000Z"].map((now) =>
-      hasPaidAccess({ subscriptionStatus: "ACTIVE", accessDeadline }, new Date(now)),
+      hasPaidAccess({
+        state: { subscriptionStatus: "ACTIVE", accessDeadline },
+        now: Temporal.Instant.from(now),
+      }),
     );
 
     // Then
@@ -40,37 +46,40 @@ describe("유료 접근 정책 — 프리미엄 종료 시각", () => {
 
   it("결제 유예 중인 스토어 구독은 취소 상태여도 유예가 끝날 때까지 프리미엄이다", () => {
     // Given
-    const graceEndsAt = new Date("2028-03-14T00:00:00.000Z");
+    const graceEndsAt = Temporal.Instant.from("2028-03-14T00:00:00.000Z");
     const accessDeadline = resolvePremiumAccessDeadline({
       subscriptionExpiresAt: ENDS_AT,
       storeEntitlements: [
-        {
-          status: "CANCELLED",
-          expiresAt: instantFromDate(ENDS_AT),
-          gracePeriodEndsAt: instantFromDate(graceEndsAt),
-        },
+        { status: "CANCELLED", expiresAt: ENDS_AT, gracePeriodEndsAt: graceEndsAt },
       ],
     });
 
     // When
-    const paid = [new Date(graceEndsAt.getTime() - 1), graceEndsAt].map((at) =>
-      hasPaidAccess({ subscriptionStatus: "ACTIVE", accessDeadline }, at),
+    const paid = [graceEndsAt.subtract({ milliseconds: 1 }), graceEndsAt].map((now) =>
+      hasPaidAccess({ state: { subscriptionStatus: "ACTIVE", accessDeadline }, now }),
     );
 
     // Then
     expect(paid).toEqual([true, false]);
   });
 
-  it("만료 시각이 없는 ACTIVE는 유지하고 ACTIVE가 아닌 상태와 모르는 상태는 무료다", () => {
+  it("만료 시각이 없는 ACTIVE는 유지하고 ACTIVE가 아닌 상태는 무료다", () => {
     // Given
-    const at = new Date("2030-01-01T00:00:00.000Z");
+    const now = Temporal.Instant.from("2030-01-01T00:00:00.000Z");
 
     // When
-    const paid = ["ACTIVE", "FREE", "CANCELLED", "EXPIRED", "TRIAL", "__proto__"].map(
-      (subscriptionStatus) => hasPaidAccess({ subscriptionStatus, accessDeadline: null }, at),
+    const paid = SUBSCRIPTION_STATUS.map((subscriptionStatus) =>
+      hasPaidAccess({ state: { subscriptionStatus, accessDeadline: null }, now }),
     );
 
     // Then
-    expect(paid).toEqual([true, false, false, false, false, false]);
+    expect(
+      Object.fromEntries(SUBSCRIPTION_STATUS.map((status, index) => [status, paid[index]])),
+    ).toEqual({
+      FREE: false,
+      ACTIVE: true,
+      EXPIRED: false,
+      CANCELLED: false,
+    });
   });
 });
