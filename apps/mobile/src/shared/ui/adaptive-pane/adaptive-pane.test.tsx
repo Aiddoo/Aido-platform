@@ -1,10 +1,11 @@
 import { stubWindowDimensions } from '@src/shared/__tests__';
-import { render, screen } from '@testing-library/react-native';
+import { fireEvent, render, screen } from '@testing-library/react-native';
 import { useEffect } from 'react';
 import { Text } from 'react-native';
 import { SafeAreaInsetsContext, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AdaptivePane } from './adaptive-pane';
+import { PaneArea } from './pane-area';
 
 function renderPane(width: number) {
   stubWindowDimensions(width);
@@ -43,6 +44,36 @@ describe('AdaptivePane 컴포넌트', () => {
     await rerender(createPane());
 
     // Then
+    expect(onMount.mock.calls).toEqual([['목록'], ['상세']]);
+  });
+
+  it('iPad 탭 사이드바가 열려 탭 안이 좁아지면 창이 넓어도 목록만 그리고 목록은 다시 마운트하지 않는다', async () => {
+    // Given
+    const onMount = jest.fn();
+    function MountProbe({ label }: { label: string }) {
+      useEffect(() => {
+        onMount(label);
+      }, [label]);
+      return <Text>{label}</Text>;
+    }
+    stubWindowDimensions(820, 1180);
+    await render(
+      <PaneArea>
+        <AdaptivePane
+          primary={<MountProbe label="목록" />}
+          secondary={<MountProbe label="상세" />}
+        />
+      </PaneArea>,
+    );
+    expect(screen.getByText('상세')).toBeTruthy();
+
+    // When
+    await fireEvent(screen.getByTestId('pane-area'), 'layout', {
+      nativeEvent: { layout: { x: 0, y: 0, width: 500, height: 1180 } },
+    });
+
+    // Then
+    expect(screen.queryByText('상세')).toBeNull();
     expect(onMount.mock.calls).toEqual([['목록'], ['상세']]);
   });
 

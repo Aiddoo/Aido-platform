@@ -12,11 +12,45 @@ const appWindowSchema = z.object({
 
 export type AppWindow = z.infer<typeof appWindowSchema>;
 
-export type OrientationLock = 'portrait' | 'unlocked';
+/** 목록·상세 칸을 나눌 영역. iPad 탭 사이드바가 열리면 창보다 좁다 */
+const paneAreaSchema = z.object({
+  /** 영역이 잰 폭. 재기 전이면 null */
+  width: z.number().nullable(),
+  /** 반쯤 접은 자세의 세로 접힘선 x(영역 좌표). 없으면 null */
+  foldX: z.number().nullable(),
+});
+
+type PaneAreaSize = z.infer<typeof paneAreaSchema>;
+
+export interface PaneColumns {
+  isSplit: boolean;
+  /** 목록 칸 폭. 한 칸이면 영역 전체다 */
+  primaryWidth: number;
+}
+
+type OrientationLock = 'portrait' | 'unlocked';
+
+/** 목록 칸의 최소 폭. 상세 칸이 남은 폭을 채운다 */
+const PRIMARY_PANE_WIDTH = { medium: 320, expanded: 400 } as const;
 
 /** Mac은 창 폭과 관계없이 모바일과 같은 경험을 주는 제품 결정이다 */
 function getSizeClass(window: AppWindow): WindowSizeClass {
   return window.isDesktop ? 'compact' : getWindowSizeClass(window.width);
+}
+
+/** 창 폭이 아니라 영역 폭으로 나눠야 사이드바가 칸을 짓누르지 않는다. 재기 전에는 창 폭으로 어림한다 */
+function getPaneSizeClass(window: AppWindow, areaWidth: number | null): WindowSizeClass {
+  return getSizeClass({ ...window, width: areaWidth ?? window.width });
+}
+
+/** 접힘선이 있으면 목록을 접힘선 앞면에 맞춘다 */
+function getPaneColumns(window: AppWindow, area: PaneAreaSize): PaneColumns {
+  const sizeClass = getPaneSizeClass(window, area.width);
+
+  if (sizeClass === 'compact') {
+    return { isSplit: false, primaryWidth: area.width ?? window.width };
+  }
+  return { isSplit: true, primaryWidth: area.foldX ?? PRIMARY_PANE_WIDTH[sizeClass] };
 }
 
 /**
@@ -33,4 +67,9 @@ function getOrientationLock(window: AppWindow): OrientationLock | null {
   return getWindowSizeClass(smallestWidth) === 'compact' ? 'portrait' : 'unlocked';
 }
 
-export const WindowLayoutPolicy = { getSizeClass, getOrientationLock } as const;
+export const WindowLayoutPolicy = {
+  getSizeClass,
+  getPaneSizeClass,
+  getPaneColumns,
+  getOrientationLock,
+} as const;

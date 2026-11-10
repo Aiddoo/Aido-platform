@@ -16,4 +16,13 @@ export const DEVICE_WINDOW = {
   unfoldedInner: { width: 841, height: 701 },
   /** 10인치 Android 태블릿 */
   tablet: { width: 1280, height: 800 },
+  /** iPad Air 11인치 세로 */
+  iPadPortrait: { width: 820, height: 1180 },
+  /** iPad Air 11인치 가로 */
+  iPadLandscape: { width: 1180, height: 820 },
+  /** iPad Pro 13인치 가로를 반으로 나눈 Split View */
+  iPadHalfSplitView: { width: 683, height: 1024 },
 } as const;
+
+/** iPadOS 탭 사이드바 폭(pt)의 어림값. 열리면 탭 안 영역이 이만큼 좁아진다 */
+export const IPAD_SIDEBAR_WIDTH = 320;

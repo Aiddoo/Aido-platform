@@ -5,7 +5,6 @@ import { formatYearAwareDateLabel } from '@src/shared/date/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTodayKey } from '@src/shared/hooks/use-today';
-import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
 import { useTranslation } from '@src/shared/i18n';
 import {
   Button,
@@ -17,6 +16,7 @@ import {
   Result,
   Text,
   TextSkeleton,
+  usePaneSizeClass,
   VStack,
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
@@ -45,8 +45,8 @@ const TITLE_LINE_COUNT_WITH_BODY = 2;
 const TITLE_LINE_COUNT_ALONE = 4;
 
 /** 펼친 화면에서는 목록 pane이 좁아 한 열로 보여준다. */
-function getColumnCount(windowSizeClass: WindowSizeClass) {
-  return match(windowSizeClass)
+function getColumnCount(paneSizeClass: WindowSizeClass) {
+  return match(paneSizeClass)
     .with('compact', () => 2)
     .with(P.union('medium', 'expanded'), () => 1)
     .exhaustive();
@@ -65,7 +65,7 @@ export function MemoList() {
   const { data: me } = useSuspenseQuery(useGetMeQueryOptions());
   const [voiceNotes] = useVoiceNotes(me.id);
   const hasVoiceNotes = voiceNotes.length > 0;
-  const windowSizeClass = useWindowSizeClass();
+  const paneSizeClass = usePaneSizeClass();
   // 칸마다 route 훅을 부르면 URL이 바뀔 때마다 메모 수만큼 params를 다시 파싱한다. 목록이 한 번 읽어 넘긴다
   const [selectedMemoId, setSelectedMemoId] = useSelectedMemoId();
 
@@ -74,7 +74,7 @@ export function MemoList() {
   }
 
   // 메모가 하나면 옆 칸이 비지 않게 한 열로 보여 준다
-  const columnCount = Math.min(getColumnCount(windowSizeClass), memos.length);
+  const columnCount = Math.min(getColumnCount(paneSizeClass), memos.length);
 
   return (
     <VStack gap={20}>
@@ -174,7 +174,7 @@ MemoList.Item = function Item({ memo, isSelected, onSelect }: MemoListItemProps)
 };
 
 MemoList.Loading = function Loading() {
-  const columnCount = getColumnCount(useWindowSizeClass());
+  const columnCount = getColumnCount(usePaneSizeClass());
 
   return (
     <HStack gap={12} align="start">

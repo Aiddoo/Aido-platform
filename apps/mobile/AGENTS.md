@@ -102,7 +102,7 @@ features/{area}/{feature}/   # 서버 모듈 이름의 업무 영역 + 단수 ke
 - **[폼](.claude/architecture.md#폼)**: `useForm` 제네릭 없이 `form`으로 쓰고 입력은 RHF `Controller`로 잇는다. 생성과 수정은 스키마와 입력 부품만 공유하고 제출은 각자 소유한다([생성·수정](.claude/architecture.md#생성수정)).
 - **[오류](docs/error-handling.md)**: 4xx·Policy는 `Result.err()`, 5xx·네트워크·파싱은 `throw`다. 한 오류는 한 곳에서만 보인다.
 - **[UI](.claude/ui-components.md)**: heroui-native → `shared/ui` → RN 순서다. 글자·레이아웃은 `shared/ui`가 먼저다. 새 `shared/ui` 컴포넌트는 `{name}.md`를 만들고 [목록](.claude/ui-components.md#shared-ui-컴포넌트-목록)에 추가한다.
-- **[넓은 화면](.claude/architecture.md#넓은-화면과-기기)**: 창 폭(`useWindowSizeClass`)으로 판단한다. 레이아웃을 힌지로 나누지 않는다. 접힘선은 경계 위치만 맞춘다.
+- **[넓은 화면](.claude/architecture.md#넓은-화면과-기기)**: 칸은 화면이 받은 폭(`usePaneSizeClass`, iPad 탭 사이드바 제외)으로, 방향 같은 창 전체 정책은 창 폭(`useWindowSizeClass`)으로 판단한다. 규칙은 `WindowLayoutPolicy`다. 레이아웃을 힌지로 나누지 않는다. 접힘선은 경계 위치만 맞춘다.
 - **[상수·날짜](.claude/architecture.md#상수와-날짜)**: 기존 도구 하나로 쓴다. 새 `Intl` 포매터를 만들지 않는다.
 - **[문구](.claude/i18n-guide.md)**: 하드코딩하지 않고 ko·en 카탈로그에 함께 넣는다. 해요체, 앱 이름은 "아이두"/"Aido"다.
 - **[관측](.claude/observability.md)**: Sentry는 `ErrorReporter`·`Logger` 포트, GA는 타입 카탈로그 `useTrack`이다.

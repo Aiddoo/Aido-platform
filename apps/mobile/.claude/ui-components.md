@@ -69,7 +69,7 @@ interface QuotaChipProps extends Omit<ComponentProps<typeof Chip>, 'children'> {
 | `Box`                                                                                                            | 단순 컨테이너                                                                                                                              | `src/shared/ui/box/box.md`                                        |
 | `Flex`                                                                                                           | `HStack`·`VStack` 내부 구현. 방향이 값으로 바뀌는 곳만 직접 쓴다                                                                           | `src/shared/ui/flex/flex.md`                                      |
 | `HStack`                                                                                                         | 수평 레이아웃                                                                                                                              | `src/shared/ui/h-stack/h-stack.md`                                |
-| `AdaptivePane`, `useAdaptivePaneLayoutKey`                                                                       | 창 폭 기준 List-detail 2-pane (pane별 safe area, 전환 시 재마운트 없음)                                                                    | `src/shared/ui/adaptive-pane/adaptive-pane.md`                    |
+| `AdaptivePane`, `useAdaptivePaneLayoutKey`, `PaneArea`, `usePaneSizeClass`, `usePaneColumns`                     | 영역 폭 기준 List-detail 2-pane (pane별 safe area, 전환 시 재마운트 없음, 탭 사이드바를 뺀 폭)                                             | `src/shared/ui/adaptive-pane/adaptive-pane.md`                    |
 | `ReadableContent`                                                                                                | 넓은 창에서 폼·안내를 가운데 최대 폭(480)으로 모음                                                                                         | `src/shared/ui/readable-content/readable-content.md`              |
 | `SafeAreaScrollView`                                                                                             | 내용만 가로·아래 inset을 피하고 배경·스크롤바는 칸 끝까지 가는 ScrollView (context inset)                                                  | `src/shared/ui/safe-area-scroll-view/safe-area-scroll-view.md`    |
 | `ScreenScrollShadow`                                                                                             | 화면 배경 위 스크롤의 잘리는 쪽을 흐리게 덮음 (시트는 `SheetScrollShadow`)                                                                 | `src/shared/ui/screen-scroll-shadow/screen-scroll-shadow.md`      |
@@ -213,7 +213,7 @@ Android에는 단어 단위 줄바꿈 Text prop이 없다. `lineBreakStrategyIOS
 
 ## 넓은 화면과 기기
 
-- **창 폭으로 판단한다.** 1열·2열은 `useWindowSizeClass`(`compact`·`medium`·`expanded`)로 정한다. 기기 종류나 힌지로 레이아웃을 나누지 않는다.
+- **화면이 받은 폭으로 판단한다.** 1열·2열은 `usePaneSizeClass`(`compact`·`medium`·`expanded`)로 정한다. 탭 Stack을 감싼 `PaneArea`가 iPad 탭 사이드바를 뺀 폭을 재고, 탭 밖 화면은 창 폭이다. 창 전체 정책(방향·시트)은 `useWindowSizeClass`다. 규칙은 `WindowLayoutPolicy`에 있다. 기기 종류나 힌지로 레이아웃을 나누지 않는다.
 - **2열은 `AdaptivePane` 하나다.** 접기·펼치기에서 pane이 다시 마운트되지 않는다. 접힘선은 경계 위치만 맞춘다(`findVerticalFold`). 상세: [adaptive-pane.md](../src/shared/ui/adaptive-pane/adaptive-pane.md).
   - 예외는 마이 탭 하나다. 상세 칸이 Stack이라 헤더를 전체 폭으로 두고 메뉴를 화면마다 본문 왼쪽 칸에 그린다(`MyPageStack`). iPadOS 세로의 떠 있는 탭 바가 칸 안 헤더의 뒤로 가기를 가리기 때문이다. [내 정보 메뉴](../src/shared/ui/adaptive-pane/adaptive-pane.md#내-정보-메뉴-전체-폭-헤더--화면마다-메뉴-칸).
 - **Duo 세로 레일(84pt)과 iOS 분할 화면·배치 전환은 safe area inset으로 피한다.** [가로 safe area](#가로-safe-area-iphone-duo-세로-레일)를 따른다.

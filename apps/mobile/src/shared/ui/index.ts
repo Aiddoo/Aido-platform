@@ -2,8 +2,10 @@ export { ActionButton } from './action-button';
 export {
   AdaptivePane,
   getPaneEdgeInsets,
-  getPrimaryPaneWidth,
+  PaneArea,
   useAdaptivePaneLayoutKey,
+  usePaneColumns,
+  usePaneSizeClass,
 } from './adaptive-pane';
 export { Avatar } from './avatar';
 export { Barcode } from './barcode';

@@ -431,7 +431,7 @@ interface MemoActionButtonProps extends Omit<ComponentProps<typeof PressableFeed
 ```tsx
 // features/notes/memo/components/memo-list.tsx
 MemoList.Loading = function Loading() {
-  const columnCount = getColumnCount(useWindowSizeClass());
+  const columnCount = getColumnCount(usePaneSizeClass());
 
   return (
     <HStack gap={12} align="start">
@@ -503,6 +503,7 @@ MemoList.Loading = function Loading() {
 | `theme-provider`, `font-scale-provider`, `language-provider` | 유지(저장소는 `useSyncStorageString`) | 값의 원천은 `ObservableSyncStorage` 하나다. 셋은 DI 위에 있어 `syncStorage` prop(기본 `deviceSyncStorage`)을 `useSyncStorageString(storage, key)`에 넘기고, 파생(해석·적용)만 Provider가 한다. 키(`aido_theme_mode`, `aido_font_scale`, `aido_language`)와 값은 그대로다                                     |
 | `local-date-provider`                                        | 유지                                  | 저장 값이 아니라 자정 타이머·AppState·기기 달력에서 파생한 상태의 단일 소유자다. 원천이 MMKV가 아니다                                                                                                                                                                                                        |
 | `keyboard-bottom-gap-provider`                               | 유지                                  | 하위 트리마다 `measureInWindow`로 잰 레이아웃 값이다. 저장소가 아니라 서브트리 범위 값이다                                                                                                                                                                                                                   |
+| `pane-area`                                                  | 유지(UI 내부)                         | 탭 Stack이 `onLayout`으로 잰 폭이다. 화면·목록 행·칸이 같은 폭으로 칸 나누기를 정해야 해 여러 층에서 읽는다. iPad 탭 사이드바는 창 폭을 바꾸지 않아 `useWindowDimensions`로 대신할 수 없다. `keyboard-bottom-gap-provider`처럼 서브트리 범위의 레이아웃 값이다                                               |
 | `todo-comment-expansion`                                     | 유지(UI 내부)                         | 댓글 세션 하나의 펼친 묶음 `Map`이다. 묶음 행과 작성 바(게시하면 그 묶음을 펼친다)가 `FlashList` 행 안팎에서 함께 쓰고 세션이 끝나면 사라져야 한다. props로는 목록·행·답글 여러 층을 거치고, 모듈 저장소는 세션(넓은 화면 pane과 Stack 화면)마다 나뉘지 않고 화면을 떠나도 남는다. 서버 값도 URL 값도 아니다 |
 | `todo-comment-reveal`                                        | 유지(UI 내부)                         | 목록·작성 바 ref, Reanimated 공유 값, 키보드 이벤트 뒤 `measureInWindow`로 재는 스크롤 동작을 나눈다. 값은 바뀌지 않는 ref와 함수라 소비자가 다시 그려지지 않는다. `keyboard-bottom-gap-provider`처럼 서브트리 범위의 레이아웃 값이다                                                                        |
 
@@ -1212,7 +1213,7 @@ await clipboard.copy(comment.content ?? '');
 
 ## 넓은 화면과 기기
 
-배치는 창 폭 class(`useWindowSizeClass`)와 `AdaptivePane` 하나로 정한다. 규칙은 [ui-components](./ui-components.md#넓은-화면과-기기)에, 구현은 [adaptive-pane.md](../src/shared/ui/adaptive-pane/adaptive-pane.md)에 있다.
+칸 배치는 화면이 받은 폭의 class(`usePaneSizeClass`, `PaneArea`가 잰다)와 `AdaptivePane` 하나로 정하고, 창 전체 정책(방향 등)은 `useWindowSizeClass`로 정한다. 판단 규칙은 `WindowLayoutPolicy`(`shared/domains/window-layout.model.ts`)에, 화면 규칙은 [ui-components](./ui-components.md#넓은-화면과-기기)에, 구현은 [adaptive-pane.md](../src/shared/ui/adaptive-pane/adaptive-pane.md)에 있다.
 
 ---
 

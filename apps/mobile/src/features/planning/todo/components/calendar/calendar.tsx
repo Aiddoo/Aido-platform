@@ -18,14 +18,12 @@ import {
 } from '@src/shared/date/local-day';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useToday, useTodayKey } from '@src/shared/hooks/use-today';
-import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
 import { useTranslation } from '@src/shared/i18n';
-import { Box, getPrimaryPaneWidth, HStack, Result, Text, VStack } from '@src/shared/ui';
+import { Box, HStack, Result, Text, usePaneColumns, VStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
-import { findVerticalFold } from '@src/shared/utils/find-vertical-fold';
 import { PressableFeedback, Tabs } from 'heroui-native';
 import { type ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
-import { type LayoutChangeEvent, useWindowDimensions } from 'react-native';
+import type { LayoutChangeEvent } from 'react-native';
 import Animated, {
   Easing,
   ReduceMotion,
@@ -33,7 +31,6 @@ import Animated, {
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
-import { useReservedRegions } from 'react-native-reserved-regions';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { match } from 'ts-pattern';
 
@@ -134,21 +131,15 @@ export function Calendar({ completions = EMPTY_COMPLETIONS, status }: CalendarPr
 
 /** 주·월을 바꿔도 다시 재지 않도록 달력이 쪽 너비를 잰다. 재기 전에는 목록 pane 폭으로 어림해 첫 프레임부터 7칸이 맞는다 */
 function useCalendarPageWidth() {
-  const windowSizeClass = useWindowSizeClass();
-  const { width: windowWidth } = useWindowDimensions();
-  const fold = findVerticalFold(useReservedRegions());
+  const { primaryWidth } = usePaneColumns();
   const insets = useSafeAreaInsets();
   const [measuredWidth, setMeasuredWidth] = useState<number | null>(null);
-  const paneWidth =
-    windowSizeClass === 'compact'
-      ? windowWidth
-      : getPrimaryPaneWidth({ windowSizeClass, foldFrame: fold?.frame });
 
   const handleLayout = (event: LayoutChangeEvent) => {
     setMeasuredWidth(event.nativeEvent.layout.width);
   };
 
-  return [measuredWidth ?? paneWidth - insets.left - insets.right, handleLayout] as const;
+  return [measuredWidth ?? primaryWidth - insets.left - insets.right, handleLayout] as const;
 }
 
 interface CalendarHeightTransitionProps {

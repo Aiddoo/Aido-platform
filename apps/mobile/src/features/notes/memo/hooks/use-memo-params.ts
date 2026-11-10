@@ -1,6 +1,6 @@
 import { useOpenDetailWhenCompact } from '@src/shared/hooks/use-open-detail-when-compact';
 import { useRouteParams } from '@src/shared/hooks/use-route-params';
-import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
+import { usePaneSizeClass } from '@src/shared/ui';
 import { noop } from 'es-toolkit';
 import { router } from 'expo-router';
 import { useCallback } from 'react';
@@ -18,19 +18,19 @@ export function useMemoId() {
 /** 메모 탭 URL의 `memoId`를 선택된 메모로 읽고, 화면 크기에 맞는 방식으로 선택을 바꾼다. */
 export function useSelectedMemoId() {
   const [{ memoId: selectedMemoId }, setParams] = useRouteParams(selectedMemoParamsSchema);
-  const windowSizeClass = useWindowSizeClass();
+  const paneSizeClass = usePaneSizeClass();
 
   const setSelectedMemoId = useCallback(
     (memoId: number | undefined) => {
-      match({ windowSizeClass, memoId })
-        .with({ windowSizeClass: 'compact', memoId: P.nullish }, noop)
-        .with({ windowSizeClass: 'compact', memoId: P.number }, ({ memoId: selected }) =>
+      match({ paneSizeClass, memoId })
+        .with({ paneSizeClass: 'compact', memoId: P.nullish }, noop)
+        .with({ paneSizeClass: 'compact', memoId: P.number }, ({ memoId: selected }) =>
           router.push({ pathname: '/memo/[memoId]', params: { memoId: selected } }),
         )
-        .with({ windowSizeClass: P.union('medium', 'expanded') }, () => setParams({ memoId }))
+        .with({ paneSizeClass: P.union('medium', 'expanded') }, () => setParams({ memoId }))
         .exhaustive();
     },
-    [windowSizeClass, setParams],
+    [paneSizeClass, setParams],
   );
 
   return [selectedMemoId, setSelectedMemoId] as const;
