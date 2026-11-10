@@ -50,6 +50,7 @@ createBroadcastCampaignSchema = broadcastNotificationSchema.extend({
 ## 방해 금지
 
 - 광고성 알림은 수신자 현지 21:00~08:00에 야간 동의가 없으면 보내지 않고 다음 허용 시각으로 미룬다(정보통신망법). 기존 `force`·야간 동의 규칙은 그대로다.
+- 사용자가 시각을 정한 알림(할 일 리마인더, 프리미엄 아침·저녁 리마인더, 날씨)은 야간 수신을 꺼도 보낸다. 소셜·재방문은 야간 설정을, 광고성은 야간 금지를 그대로 따른다([푸시](push-notifications.md#공통-발송-조건)).
 - 판정은 순수 함수 `isWithinQuietHours({ instant, timeZone, window })`(Temporal) 하나다.
 
 ## 푸시를 등록하지 않은 사용자

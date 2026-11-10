@@ -24,6 +24,14 @@ const engagement = createNotificationDraftFixture({
   purpose: "ENGAGEMENT",
 });
 
+const MARKETING_AGREED_AT = Temporal.Instant.from("2026-07-01T00:00:00Z");
+
+function localInstant(timeZone: string, localTime: string): Temporal.Instant {
+  return Temporal.PlainDate.from("2026-07-16")
+    .toZonedDateTime({ timeZone, plainTime: Temporal.PlainTime.from(localTime) })
+    .toInstant();
+}
+
 function createEvaluatePushDeliveryEligibilityUseCase(now: Temporal.Instant = DAYTIME) {
   const userSettings = new InMemoryUserNotificationSettings();
   const rateLimiter = new StubPushRateLimiter();
@@ -251,5 +259,74 @@ describe("EvaluatePushDeliveryEligibilityUseCase — 푸시 발송 자격 판정
         { dispatchId: 2, userId: "user-2", engagementLocalDate: "2026-07-15" },
       ],
     ]);
+  });
+
+  describe("야간 경계 — 사용자가 정한 리마인더만 야간 수신을 꺼도 보낸다", () => {
+    it.each([
+      ["Asia/Seoul", "20:59", false],
+      ["Asia/Seoul", "21:00", true],
+      ["Asia/Seoul", "07:59", true],
+      ["Asia/Seoul", "08:00", false],
+      ["America/Los_Angeles", "20:59", false],
+      ["America/Los_Angeles", "21:00", true],
+      ["America/Los_Angeles", "07:59", true],
+      ["America/Los_Angeles", "08:00", false],
+    ] as const)("%s 현지 %s(야간 %s)", async (timeZone, localTime, isNight) => {
+      // Given 야간 수신을 끄고 광고성 수신에 동의한 사용자
+      const { useCase, userSettings } = createEvaluatePushDeliveryEligibilityUseCase(
+        localInstant(timeZone, localTime),
+      );
+      userSettings.preferences.set(
+        "user-1",
+        createNotificationDeliveryPreferenceFixture({
+          timezone: timeZone,
+          nightPushEnabled: false,
+        }),
+      );
+      userSettings.consents.set("user-1", { marketingPushAgreedAt: MARKETING_AGREED_AT });
+      const recipients = await useCase.loadBatchRecipients(["user-1"]);
+      const candidates = (
+        ["TODO_REMINDER", "EVENING_REMINDER", "WEATHER_MORNING", "FOLLOW_NEW", "WINBACK"] as const
+      ).map((type, index) => ({ data: { ...transactional, type }, rateLimitDispatchId: index }));
+
+      // When
+      const decisions = useCase.evaluateBatchSettings(candidates, recipients);
+
+      // Then
+      expect(
+        decisions.map((decision) =>
+          decision.status === "eligible" ? "eligible" : decision.reason,
+        ),
+      ).toEqual(
+        isNight
+          ? ["eligible", "eligible", "eligible", "NIGHT_PUSH_DISABLED", "MARKETING_QUIET_HOURS"]
+          : ["eligible", "eligible", "eligible", "eligible", "eligible"],
+      );
+    });
+
+    it("단건도 야간에 할 일 리마인더는 보내고 소셜 알림은 야간 설정을 따른다", async () => {
+      // Given 서울 22:00, 야간 수신을 끈 사용자
+      const { useCase } = createEvaluatePushDeliveryEligibilityUseCase(
+        localInstant("Asia/Seoul", "22:00"),
+      );
+      const recipient = {
+        ...(await useCase.loadSingleRecipient("user-1")),
+        preference: createNotificationDeliveryPreferenceFixture({ nightPushEnabled: false }),
+      };
+      const reminder = { ...transactional, type: "TODO_REMINDER" as const };
+
+      // When
+      const decisions = await Promise.all(
+        [reminder, transactional].map((data) =>
+          useCase.evaluateSingle(data, recipient, RATE_LIMIT_DISPATCH_ID, true),
+        ),
+      );
+
+      // Then
+      expect(decisions).toEqual([
+        { status: "eligible", candidate: reminder },
+        { status: "skipped", candidate: transactional, reason: "NIGHT_PUSH_DISABLED" },
+      ]);
+    });
   });
 });
