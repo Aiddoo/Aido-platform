@@ -4,7 +4,13 @@ import type { SupportedLocale } from "#api/shared/domain/locale";
  * 출력 언어 규칙. 할 일 제목은 말한 언어 그대로, 설명 문장은 앱 언어로 쓴다.
  * 언어를 더하려면 이 표에 항목을 더하고 작업마다 examples.<locale>을 더한다.
  */
-export type LanguagePolicyRule = "TITLES_AS_SPOKEN" | "PROSE_IN_APP_LANGUAGE" | "NAMES_AS_WRITTEN";
+export const LANGUAGE_POLICY_RULES = [
+  "TITLES_AS_SPOKEN",
+  "PROSE_IN_APP_LANGUAGE",
+  "NAMES_AS_WRITTEN",
+] as const;
+
+export type LanguagePolicyRule = (typeof LANGUAGE_POLICY_RULES)[number];
 
 const LANGUAGE_POLICY: Readonly<
   Record<SupportedLocale, Readonly<Record<LanguagePolicyRule, string>>>

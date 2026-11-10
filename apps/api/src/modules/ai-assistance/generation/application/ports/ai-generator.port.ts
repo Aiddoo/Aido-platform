@@ -6,7 +6,7 @@ import type { AiTaskClass } from "../../domain/ai-spend.domain-service.js";
 
 export type { AiTaskClass } from "../../domain/ai-spend.domain-service.js";
 
-export const AI_TASK_IDS = [
+const AI_TASK_IDS = [
   "parse-todo",
   "parse-memo",
   "report",

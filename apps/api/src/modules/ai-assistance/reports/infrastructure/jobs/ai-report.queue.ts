@@ -1,6 +1,9 @@
+import { AI_REPORT_TYPES } from "@aido/api/vocabulary";
 import { z } from "zod";
 
 import { JOB_POLLING_SECONDS } from "#api/shared/application/ports/index";
+
+import type { ReportType } from "../../domain/ai-report.constants.js";
 
 export const AI_REPORT_QUEUE = "ai-report-generation.v1";
 
@@ -44,7 +47,7 @@ export const AI_REPORT_WORKER_POLICY = {
 export const AiReportRuntimeJobSchema = z.discriminatedUnion("name", [
   z.object({
     name: z.literal(AiReportJobName.DISPATCH),
-    data: z.object({ reportType: z.enum(["WEEKLY", "MONTHLY"]) }),
+    data: z.object({ reportType: z.enum(AI_REPORT_TYPES) }),
   }),
   z.object({
     name: z.literal(AiReportJobName.GENERATE),
@@ -52,14 +55,14 @@ export const AiReportRuntimeJobSchema = z.discriminatedUnion("name", [
       userId: z.string().min(1),
       timezone: z.string().min(1),
       locale: z.string().optional(),
-      reportType: z.enum(["WEEKLY", "MONTHLY"]),
+      reportType: z.enum(AI_REPORT_TYPES),
     }),
   }),
 ]);
 
 /** 스케줄러가 생성하는 dispatch 트리거 잡 데이터 */
 export interface AiReportDispatchData {
-  reportType: "WEEKLY" | "MONTHLY";
+  reportType: ReportType;
 }
 
 /** per-user 리포트 생성 잡 데이터 */
@@ -68,16 +71,8 @@ export interface AiReportGenerateData {
   timezone: string;
   /** 생성 언어 — 없으면 ko (구버전 잡 하위 호환) */
   locale?: string;
-  reportType: "WEEKLY" | "MONTHLY";
+  reportType: ReportType;
 }
-
-export interface AiReportJobMap {
-  [AiReportJobName.DISPATCH]: AiReportDispatchData;
-  [AiReportJobName.GENERATE]: AiReportGenerateData;
-}
-
-export type AiReportJobData = AiReportJobMap[keyof AiReportJobMap];
-export type AiReportRuntimeJob = z.infer<typeof AiReportRuntimeJobSchema>;
 
 export interface ReportDispatcher {
   dispatchReports(reportType: AiReportDispatchData["reportType"]): Promise<void>;

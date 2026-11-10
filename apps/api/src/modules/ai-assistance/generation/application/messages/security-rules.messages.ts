@@ -7,14 +7,17 @@ import type { UntrustedTag } from "./untrusted-input.messages.js";
  * 사용자 문장을 할 일로 바꾸는 작업은 모델 대상 명령·자기 계획 수정 구분을 더하며,
  * 말로 받은 입력은 남에게 부탁·군말·고유명사 규칙을 더한다.
  */
-export type SecurityRule =
-  | "MODEL_COMMANDS"
-  | "OWN_PLAN_EDITS"
-  | "NO_INVENTION"
-  | "KNOWN_IDS_ONLY"
-  | "OWN_TODO"
-  | "SPEECH_NOISE"
-  | "PROPER_NOUNS";
+export const SECURITY_RULES = [
+  "MODEL_COMMANDS",
+  "OWN_PLAN_EDITS",
+  "NO_INVENTION",
+  "KNOWN_IDS_ONLY",
+  "OWN_TODO",
+  "SPEECH_NOISE",
+  "PROPER_NOUNS",
+] as const;
+
+export type SecurityRule = (typeof SECURITY_RULES)[number];
 
 interface SecurityCopy {
   readonly untrustedData: (tags: string) => string;

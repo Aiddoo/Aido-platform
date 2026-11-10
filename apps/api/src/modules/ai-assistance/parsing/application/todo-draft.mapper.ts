@@ -26,7 +26,7 @@ import {
 } from "../../shared/domain/todo-schedule.domain-service.js";
 
 /** 공개 계약의 할 일·하위 할 일·메모 제목 상한 */
-export const TITLE_MAX_LENGTH = 200;
+const TITLE_MAX_LENGTH = 200;
 
 /**
  * 모델이 센 메모 전체 할 일 수의 상한. 입력에 심은 지시로 터무니없는 수("나머지 99999개")를
@@ -35,22 +35,25 @@ export const TITLE_MAX_LENGTH = 200;
 const MEMO_TOTAL_TASK_COUNT_MAX = 100;
 
 /** 모델 대상 명령만 있는 입력에 앱 언어로 보여 줄 제목 */
-export const NO_ACTION_TITLE: Readonly<Record<SupportedLocale, string>> = {
+const NO_ACTION_TITLE: Readonly<Record<SupportedLocale, string>> = {
   ko: "입력 확인 필요",
   en: "Needs review",
 };
 
-export type NormalizationWarning =
-  | "TITLE_FALLBACK"
-  | "TODOS_TRUNCATED"
-  | "ITEMS_TRUNCATED"
-  | "INVALID_DATE"
-  | "INVALID_TIME"
-  | "END_BEFORE_START"
-  | "REPEAT_END_NOT_AFTER_START"
-  | "UNSUPPORTED_RECURRENCE"
-  | "EMPTY_RECURRENCE"
-  | "UNKNOWN_DUPLICATE";
+const NORMALIZATION_WARNINGS = [
+  "TITLE_FALLBACK",
+  "TODOS_TRUNCATED",
+  "ITEMS_TRUNCATED",
+  "INVALID_DATE",
+  "INVALID_TIME",
+  "END_BEFORE_START",
+  "REPEAT_END_NOT_AFTER_START",
+  "UNSUPPORTED_RECURRENCE",
+  "EMPTY_RECURRENCE",
+  "UNKNOWN_DUPLICATE",
+] as const;
+
+export type NormalizationWarning = (typeof NORMALIZATION_WARNINGS)[number];
 
 export interface DraftNormalizeContext {
   readonly now: Date;

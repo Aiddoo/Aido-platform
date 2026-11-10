@@ -1,3 +1,5 @@
+import type { TodoVisibility } from "@aido/api/vocabulary";
+
 import type {
   DateRef,
   PlanRepeatRef,
@@ -10,6 +12,9 @@ import type {
  * 있어 모델 출력은 할 일 목록과 메모 하나로 나눈다.
  * 일정은 날짜가 아니라 표현(ScheduleDraft)이고, 서버 resolver가 사용자 시간대로 계산한다.
  */
+/** 계획은 말로 비공개를 요청했을 때만 공개 범위를 정한다 */
+export type PlannedVisibility = Extract<TodoVisibility, "PRIVATE">;
+
 export interface TodoActionDraft {
   readonly title: string;
   readonly categoryId: number | null;
@@ -18,7 +23,7 @@ export interface TodoActionDraft {
   readonly time: TimeRef | null;
   readonly repeat: PlanRepeatRef;
   /** 말로 비공개를 요청했을 때만 PRIVATE. 언급이 없으면 null(기본 공개 범위) */
-  readonly visibility: "PRIVATE" | null;
+  readonly visibility: PlannedVisibility | null;
   readonly items: readonly string[];
   /** 겹친다고 본 다가오는 할 일 id */
   readonly duplicateOfTodoId: number | null;
@@ -34,7 +39,7 @@ export interface QuickPlanDraft {
   readonly memo: MemoActionDraft | null;
 }
 
-export interface DigestKeyPointDraft {
+interface DigestKeyPointDraft {
   readonly text: string;
   /** 번호 붙인 전사 문장 목록의 index. 고를 문장이 없으면 null */
   readonly sentenceIndex: number | null;
@@ -51,7 +56,7 @@ export interface PlannedTodoDraft {
   readonly title: string;
   readonly categoryId: number | null;
   readonly schedule: ScheduleDraft<PlanRepeatRef>;
-  readonly visibility: "PRIVATE" | null;
+  readonly visibility: PlannedVisibility | null;
   readonly items: readonly string[];
   readonly duplicateOfTodoId: number | null;
 }
@@ -61,13 +66,16 @@ export interface PlannedMemoDraft {
   readonly content: string;
 }
 
-export type ActionPlanWarning =
-  | "TODOS_TRUNCATED"
-  | "ITEMS_TRUNCATED"
-  | "UNKNOWN_CATEGORY"
-  | "UNKNOWN_DUPLICATE"
-  | "EMPTY_TITLE"
-  | "REPEAT_WITH_END_DATE";
+const ACTION_PLAN_WARNINGS = [
+  "TODOS_TRUNCATED",
+  "ITEMS_TRUNCATED",
+  "UNKNOWN_CATEGORY",
+  "UNKNOWN_DUPLICATE",
+  "EMPTY_TITLE",
+  "REPEAT_WITH_END_DATE",
+] as const;
+
+export type ActionPlanWarning = (typeof ACTION_PLAN_WARNINGS)[number];
 
 export interface NormalizedActionPlan {
   readonly todos: readonly PlannedTodoDraft[];
@@ -77,7 +85,7 @@ export interface NormalizedActionPlan {
   readonly warnings: readonly ActionPlanWarning[];
 }
 
-export interface NormalizedDigestKeyPoint {
+interface NormalizedDigestKeyPoint {
   readonly text: string;
   readonly sentenceIndex: number | null;
 }

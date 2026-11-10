@@ -16,7 +16,15 @@ export const AiGenerationLogEvent = {
   QUOTA_READ_FAILED: "ai.generation.quota-read-failed",
 } as const;
 
-export type AiGenerationOutcome = "SUCCESS" | "NO_ACTION" | "FALLBACK" | "RETRYING" | "FAILED";
+export const AI_GENERATION_OUTCOMES = [
+  "SUCCESS",
+  "NO_ACTION",
+  "FALLBACK",
+  "RETRYING",
+  "FAILED",
+] as const;
+
+export type AiGenerationOutcome = (typeof AI_GENERATION_OUTCOMES)[number];
 
 interface GenerationLogBase {
   readonly task: AiTaskId;

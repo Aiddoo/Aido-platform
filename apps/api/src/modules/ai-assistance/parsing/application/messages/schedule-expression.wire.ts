@@ -6,12 +6,16 @@ import {
   llmObject,
   nullableLlmObject,
 } from "../../../generation/application/messages/llm-output.wire.js";
-import type {
-  DateRef,
-  PlanRepeatRef,
-  RepeatPattern,
-  RepeatRef,
-  TimeRef,
+import {
+  DATE_REF_KINDS,
+  type DateRef,
+  PARTS_OF_DAY,
+  type PlanRepeatRef,
+  REPEAT_DURATION_UNITS,
+  type RepeatPattern,
+  type RepeatRef,
+  TIME_MERIDIEMS,
+  type TimeRef,
 } from "../../../shared/domain/todo-draft.constants.js";
 
 /**
@@ -23,19 +27,7 @@ const dayCode = z.enum(DAYS_OF_WEEK);
 
 const dateRefShape = {
   kind: z
-    .enum([
-      "NONE",
-      "TODAY",
-      "OFFSET_DAYS",
-      "OFFSET_WEEKS",
-      "OFFSET_MONTHS",
-      "WEEKDAY",
-      "CALENDAR_DATE",
-      "MONTH_START",
-      "MONTH_END",
-      "YEAR_START",
-      "YEAR_END",
-    ])
+    .enum(DATE_REF_KINDS)
     .describe("Kind of date expression in the input. NONE when no date is mentioned."),
   amount: llmInteger()
     .nullable()
@@ -63,10 +55,8 @@ export const nullableTimeRefSchema = nullableLlmObject({
     .nullable()
     .describe("Hour exactly as said (0-23). null when only a part of day is said."),
   minute: llmInteger().nullable(),
-  meridiem: z.enum(["AM", "PM", "NONE"]).nullable().describe("NONE when AM/PM is not stated."),
-  partOfDay: z
-    .enum(["DAWN", "MORNING", "NOON", "AFTERNOON", "EVENING", "NIGHT", "MIDNIGHT"])
-    .nullable(),
+  meridiem: z.enum(TIME_MERIDIEMS).nullable().describe("NONE when AM/PM is not stated."),
+  partOfDay: z.enum(PARTS_OF_DAY).nullable(),
   relativeMinutes: llmInteger()
     .nullable()
     .describe("Only for time from now, 1 or more ('in 2 hours' = 120). null otherwise."),
@@ -100,7 +90,7 @@ const repeatEnd = {
     "Only when an end of the repetition is stated ('until the end of next month'), or null.",
   ),
   forDuration: nullableLlmObject({
-    unit: z.enum(["DAY", "WEEK", "MONTH"]),
+    unit: z.enum(REPEAT_DURATION_UNITS),
     amount: llmInteger(),
   }).describe(
     "Only when the length of the repetition is stated ('for a month' = MONTH 1), or null. Never how long one occurrence takes ('30 minutes').",

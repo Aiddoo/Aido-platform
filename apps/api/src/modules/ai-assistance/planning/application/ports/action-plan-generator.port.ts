@@ -2,6 +2,7 @@ import type { SupportedLocale } from "#api/shared/domain/locale";
 
 import type { AiGenerationMeta } from "../../../generation/application/ports/ai-generator.port.js";
 import type { TodoRepeatRule } from "../../../shared/domain/todo-draft.constants.js";
+import type { PlannedVisibility } from "../../domain/action-plan-draft.constants.js";
 import type { TranscriptSentence } from "../messages/voice-note-digest-prompt.messages.js";
 
 export interface PlanningCategory {
@@ -42,7 +43,7 @@ export interface GeneratedTodo {
   readonly endDate: string | null;
   readonly scheduledTime: string | null;
   readonly repeat: TodoRepeatRule | null;
-  readonly visibility: "PRIVATE" | null;
+  readonly visibility: PlannedVisibility | null;
   readonly items: readonly string[];
   readonly duplicateOfTodoId: number | null;
 }

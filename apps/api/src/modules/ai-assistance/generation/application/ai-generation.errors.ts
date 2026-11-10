@@ -28,7 +28,9 @@ export const AI_FAILURE_KINDS = [
  */
 export type AiFailureKind = (typeof AI_FAILURE_KINDS)[number];
 
-export type AiCircuitBreakerKind = "billing" | "auth" | "health";
+const AI_CIRCUIT_BREAKER_KINDS = ["billing", "auth", "health"] as const;
+
+export type AiCircuitBreakerKind = (typeof AI_CIRCUIT_BREAKER_KINDS)[number];
 
 export interface AiFailureRule {
   /** 다음 업체로 넘어가는지 */

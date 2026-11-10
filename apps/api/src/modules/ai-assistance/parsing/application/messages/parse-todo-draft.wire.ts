@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 import { llmInteger, llmObject } from "../../../generation/application/messages/llm-output.wire.js";
-import type { TodoDraft } from "../../../shared/domain/todo-draft.constants.js";
+import { TODO_DRAFT_INTENTS, type TodoDraft } from "../../../shared/domain/todo-draft.constants.js";
 import {
   dateRefSchema,
   nullableDateRefSchema,
@@ -11,7 +11,7 @@ import {
 
 /** parse-todo·parse-memo 할 일 칸. 길이 제한은 서버 정규화가 맞춘다. */
 export const todoDraftShape = {
-  intent: z.enum(["TASK", "NO_ACTION"]),
+  intent: z.enum(TODO_DRAFT_INTENTS),
   title: z.string().describe("Core action only, in the input's language."),
   date: dateRefSchema,
   endDate: nullableDateRefSchema.describe(

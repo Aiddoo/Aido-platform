@@ -11,7 +11,7 @@ export interface AiSpendLimits {
   readonly userDailyMicroUsd: number;
 }
 
-export interface AiSpendWindowLimits {
+interface AiSpendWindowLimits {
   readonly dailyMicroUsd: number;
   readonly monthlyMicroUsd: number;
 }
@@ -26,11 +26,15 @@ export interface AiSpend {
   readonly userDailyMicroUsd: number | null;
 }
 
+const AI_SPEND_HALT_REASONS = ["kill-switch", "daily-budget", "monthly-budget"] as const;
+
+type AiSpendHaltReason = (typeof AI_SPEND_HALT_REASONS)[number];
+
 export type AiSpendDecision =
   | { readonly type: "allowed" }
   | {
       readonly type: "halted";
-      readonly reason: "kill-switch" | "daily-budget" | "monthly-budget";
+      readonly reason: AiSpendHaltReason;
     }
   | { readonly type: "user-limited" };
 

@@ -22,18 +22,21 @@ export type TodoRepeatRule =
  * 날짜·요일·시각 계산은 담지 않고, 표현의 종류와 말한 숫자만 담는다.
  * 말하지 않은 칸은 모델 출력부터 끝까지 null이다(업체 공통 구조화 출력 규칙).
  */
-export type DateRefKind =
-  | "NONE"
-  | "TODAY"
-  | "OFFSET_DAYS"
-  | "OFFSET_WEEKS"
-  | "OFFSET_MONTHS"
-  | "WEEKDAY"
-  | "CALENDAR_DATE"
-  | "MONTH_START"
-  | "MONTH_END"
-  | "YEAR_START"
-  | "YEAR_END";
+export const DATE_REF_KINDS = [
+  "NONE",
+  "TODAY",
+  "OFFSET_DAYS",
+  "OFFSET_WEEKS",
+  "OFFSET_MONTHS",
+  "WEEKDAY",
+  "CALENDAR_DATE",
+  "MONTH_START",
+  "MONTH_END",
+  "YEAR_START",
+  "YEAR_END",
+] as const;
+
+type DateRefKind = (typeof DATE_REF_KINDS)[number];
 
 export interface DateRef {
   readonly kind: DateRefKind;
@@ -45,19 +48,26 @@ export interface DateRef {
   readonly year: number | null;
 }
 
-export type PartOfDay =
-  | "DAWN"
-  | "MORNING"
-  | "NOON"
-  | "AFTERNOON"
-  | "EVENING"
-  | "NIGHT"
-  | "MIDNIGHT";
+export const PARTS_OF_DAY = [
+  "DAWN",
+  "MORNING",
+  "NOON",
+  "AFTERNOON",
+  "EVENING",
+  "NIGHT",
+  "MIDNIGHT",
+] as const;
+
+export type PartOfDay = (typeof PARTS_OF_DAY)[number];
+
+export const TIME_MERIDIEMS = ["AM", "PM", "NONE"] as const;
+
+type TimeMeridiem = (typeof TIME_MERIDIEMS)[number];
 
 export interface TimeRef {
   readonly hour: number | null;
   readonly minute: number | null;
-  readonly meridiem: "AM" | "PM" | "NONE" | null;
+  readonly meridiem: TimeMeridiem | null;
   readonly partOfDay: PartOfDay | null;
   readonly relativeMinutes: number | null;
 }
@@ -66,28 +76,35 @@ export interface TimeRef {
  * 반복 표현 종류. BIWEEKLY_DAYS·MONTHLY_DAY는 반복 할 일(TodoSeries)이 생기면서 계획 프롬프트가 먼저 쓰고,
  * 출시 parse 응답의 recurrence(요일 + 종료일)로는 나타낼 수 없어 그 경로에서는 UNSUPPORTED와 같게 다룬다.
  */
-export type RepeatPattern =
-  | "NONE"
-  | "WEEKLY_DAYS"
-  | "BIWEEKLY_DAYS"
-  | "MONTHLY_DAY"
-  | "DAILY"
-  | "WEEKDAYS"
-  | "WEEKENDS"
-  | "THIS_WEEK"
-  | "NEXT_WEEK"
-  | "WEEK_AFTER_NEXT"
-  | "THIS_WEEKEND"
-  | "NEXT_WEEKEND"
-  | "THIS_WEEKDAYS"
-  | "UNSUPPORTED";
+const REPEAT_PATTERNS = [
+  "NONE",
+  "WEEKLY_DAYS",
+  "BIWEEKLY_DAYS",
+  "MONTHLY_DAY",
+  "DAILY",
+  "WEEKDAYS",
+  "WEEKENDS",
+  "THIS_WEEK",
+  "NEXT_WEEK",
+  "WEEK_AFTER_NEXT",
+  "THIS_WEEKEND",
+  "NEXT_WEEKEND",
+  "THIS_WEEKDAYS",
+  "UNSUPPORTED",
+] as const;
+
+export type RepeatPattern = (typeof REPEAT_PATTERNS)[number];
+
+export const REPEAT_DURATION_UNITS = ["DAY", "WEEK", "MONTH"] as const;
+
+type RepeatDurationUnit = (typeof REPEAT_DURATION_UNITS)[number];
 
 export interface RepeatRef {
   readonly pattern: RepeatPattern;
   readonly daysOfWeek: readonly DayOfWeek[] | null;
   readonly until: DateRef | null;
   readonly forDuration: {
-    readonly unit: "DAY" | "WEEK" | "MONTH";
+    readonly unit: RepeatDurationUnit;
     readonly amount: number;
   } | null;
 }
@@ -105,7 +122,9 @@ export interface ScheduleDraft<R extends RepeatRef = RepeatRef> {
   readonly repeat: R;
 }
 
-export type TodoDraftIntent = "TASK" | "NO_ACTION";
+export const TODO_DRAFT_INTENTS = ["TASK", "NO_ACTION"] as const;
+
+type TodoDraftIntent = (typeof TODO_DRAFT_INTENTS)[number];
 
 export interface TodoDraft extends ScheduleDraft {
   readonly intent: TodoDraftIntent;
@@ -113,13 +132,16 @@ export interface TodoDraft extends ScheduleDraft {
   readonly categoryId: number | null;
 }
 
-export type ScheduleWarning =
-  | "INVALID_DATE"
-  | "INVALID_TIME"
-  | "END_BEFORE_START"
-  | "REPEAT_END_NOT_AFTER_START"
-  | "UNSUPPORTED_RECURRENCE"
-  | "EMPTY_RECURRENCE";
+const SCHEDULE_WARNINGS = [
+  "INVALID_DATE",
+  "INVALID_TIME",
+  "END_BEFORE_START",
+  "REPEAT_END_NOT_AFTER_START",
+  "UNSUPPORTED_RECURRENCE",
+  "EMPTY_RECURRENCE",
+] as const;
+
+export type ScheduleWarning = (typeof SCHEDULE_WARNINGS)[number];
 
 /** 서버가 결정적으로 계산한 일정. 공개 계약의 날짜·시각 필드와 같은 형식이다. */
 export interface ResolvedSchedule {

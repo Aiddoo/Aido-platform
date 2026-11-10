@@ -3,7 +3,7 @@ import type { DayOfWeek } from "@aido/api/vocabulary";
 import type { SuggestionStatus } from "./suggestion.aggregate.js";
 
 /** 제안에 대한 사용자 응답. 요청 계약 suggestionActionSchema와 같은 값이다 */
-export const SUGGESTION_ACTIONS = ["accept", "dismiss"] as const;
+const SUGGESTION_ACTIONS = ["accept", "dismiss"] as const;
 
 export type SuggestionAction = (typeof SUGGESTION_ACTIONS)[number];
 
