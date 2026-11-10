@@ -42,7 +42,7 @@ Git tree 증거는 파일과 검증 범위에 관한 근거다. 새로운 runner
 
 CI는 PostgreSQL service를 띄우지 않는다. 통합 테스트는 러너의 Docker에서, 계약 테스트는 로컬 훅에서 Testcontainers(또는 `AIDO_TEST_POSTGRES_URL`)로 무작위 `aido_test_<run-id>` DB를 만들고 자신이 만든 DB만 정리한다. 유료 vendor 호출은 기본 테스트에 넣지 않는다.
 
-Turbo 원격 캐시는 `TURBO_TOKEN`·`TURBO_TEAM`으로 로컬과 CI가 같은 팀 캐시를 쓴다(시크릿이 없는 fork PR은 캐시 없이 전부 돈다). `test:integration`·`test:contract`는 `src/**`·`test/**`·`drizzle/**`·설정 파일과 통합 테스트가 읽는 `docs/releases/**`를 입력으로 캐시되며, 결과에 영향을 주는 `TZ`·`BROADCAST_RECIPIENT_COUNT`는 `env`로 해시에 넣는다. Docker build cache는 도구 기본 경로를 사용한다. gate는 변경 파일 목록만 필요하므로 `filter: blob:none`으로 이력만 받는다.
+Turbo 원격 캐시는 `TURBO_TOKEN`·`TURBO_TEAM`으로 로컬과 CI가 같은 팀 캐시를 쓴다(시크릿이 없는 fork PR은 캐시 없이 전부 돈다). `test:integration`·`test:contract`는 `src/**`·`test/**`·`drizzle/**`·설정 파일을 입력으로 캐시되며, 결과에 영향을 주는 `TZ`·`BROADCAST_RECIPIENT_COUNT`는 `env`로 해시에 넣는다. Docker build cache는 도구 기본 경로를 사용한다. gate는 변경 파일 목록만 필요하므로 `filter: blob:none`으로 이력만 받는다.
 
 ## 로컬 검증과 완료 기록
 

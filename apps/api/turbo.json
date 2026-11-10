@@ -56,8 +56,7 @@
         "nest-cli.json",
         ".swcrc",
         "vitest.config.ts",
-        "test/**",
-        "$TURBO_ROOT$/docs/releases/**"
+        "test/**"
       ],
       "dependsOn": ["^build"]
     },
