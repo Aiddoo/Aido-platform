@@ -7,7 +7,8 @@ import type { ApplicationLoggerPort } from "#api/shared/application/ports/applic
 import { AuthLogEvent } from "../auth.log-events.js";
 import type { AuthSecurityLogRepositoryPort } from "../ports/auth-security-log.repository.port.js";
 import type { AuthUserRepositoryPort } from "../ports/auth-user.repository.port.js";
-import type { VerificationService } from "./issue-verification-code.use-case.js";
+import type { IssueVerificationCodeUseCase } from "./issue-verification-code.use-case.js";
+import type { SendVerificationCodeUseCase } from "./send-verification-code.use-case.js";
 
 export interface RequestPasswordResetCommand {
   readonly email: string;
@@ -16,7 +17,8 @@ export interface RequestPasswordResetCommand {
 
 interface RequestPasswordResetDependencies {
   readonly userRepository: Pick<AuthUserRepositoryPort, "findByEmail">;
-  readonly verificationService: Pick<VerificationService, "createAndSendPasswordReset">;
+  readonly issueVerificationCode: Pick<IssueVerificationCodeUseCase, "execute">;
+  readonly sendVerificationCode: Pick<SendVerificationCodeUseCase, "execute">;
   readonly securityLogRepository: Pick<AuthSecurityLogRepositoryPort, "create">;
   readonly logger: ApplicationLoggerPort;
 }
@@ -36,7 +38,16 @@ export class RequestPasswordResetUseCase {
     const user = await this.#dependencies.userRepository.findByEmail(email);
 
     if (user != null && user.deletedAt == null) {
-      await this.#dependencies.verificationService.createAndSendPasswordReset(user.id.value, email);
+      const issued = await this.#dependencies.issueVerificationCode.execute({
+        userId: user.id.value,
+        type: "PASSWORD_RESET",
+      });
+      await this.#dependencies.sendVerificationCode.execute({
+        userId: user.id.value,
+        email,
+        code: issued.code,
+        type: "PASSWORD_RESET",
+      });
 
       await this.#dependencies.securityLogRepository.create({
         userId: user.id.value,

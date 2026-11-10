@@ -31,3 +31,19 @@ export const LOGIN_FAILURE_REASON = {
 
 /** 기기 이름 또는 User-Agent. 세션을 기기별로 보여 줄 때 쓴다 */
 export type DeviceFingerprint = string;
+
+export const SESSION_VALIDITIES = ["valid", "revoked", "expired"] as const;
+export const AUTH_VERIFICATION_VALIDITIES = ["valid", "used", "expired", "exhausted"] as const;
+export const VERIFICATION_REJECTIONS = [
+  "missing",
+  "used",
+  "expired",
+  "exhausted",
+  "mismatch",
+] as const;
+export const AUTH_OAUTH_STATE_VALIDITIES = ["valid", "expired", "exchanged"] as const;
+const OAUTH_MODES = ["login", "link"] as const;
+export type OAuthMode = (typeof OAUTH_MODES)[number];
+
+/** 웹 OAuth state가 콜백을 기다리는 시간 */
+export const OAUTH_STATE_EXPIRY_MINUTES = 10;

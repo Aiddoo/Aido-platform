@@ -5,6 +5,7 @@ import { accountDeleted } from "#api/modules/identity/auth/application/auth.erro
 import { AUTH_DEFAULTS } from "#api/modules/identity/auth/domain/auth.constants";
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
+import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
 
 import { AuthLogEvent } from "../auth.log-events.js";
@@ -15,7 +16,7 @@ import type { AuthSecurityLogRepositoryPort } from "../ports/auth-security-log.r
 import type { AuthSessionRepositoryPort } from "../ports/auth-session.repository.port.js";
 import type { AuthUserRepositoryPort } from "../ports/auth-user.repository.port.js";
 import type { SessionPushDeviceReleaserPort } from "../ports/session-push-device-releaser.port.js";
-import type { VerificationService } from "./issue-verification-code.use-case.js";
+import type { ConsumeVerificationCodeUseCase } from "./consume-verification-code.use-case.js";
 
 export interface ResetPasswordCommand {
   readonly email: string;
@@ -30,12 +31,13 @@ interface ResetPasswordDependencies {
     "findByUserIdAndProvider" | "updatePassword"
   >;
   readonly passwordService: Pick<AuthPasswordHasherPort, "hash">;
-  readonly verificationService: Pick<VerificationService, "verifyCode">;
+  readonly consumeVerificationCode: Pick<ConsumeVerificationCodeUseCase, "execute">;
   readonly sessionRepository: Pick<AuthSessionRepositoryPort, "revokeAllByUserId">;
   readonly cacheService: Pick<AuthCachePort, "invalidateSession">;
   readonly securityLogRepository: Pick<AuthSecurityLogRepositoryPort, "create">;
   readonly unitOfWork: UnitOfWorkPort;
   readonly pushDevices: Pick<SessionPushDeviceReleaserPort, "releaseSessions">;
+  readonly clock: ClockPort;
   readonly logger: ApplicationLoggerPort;
 }
 
@@ -67,19 +69,19 @@ export class ResetPasswordUseCase {
     const hashedPassword = await this.#dependencies.passwordService.hash(newPassword);
 
     const revokedSessionIds = await this.#dependencies.unitOfWork.run(async () => {
-      await this.#dependencies.verificationService.verifyCode(
-        user.id.value,
+      await this.#dependencies.consumeVerificationCode.execute({
+        userId: user.id.value,
         code,
-        "PASSWORD_RESET",
-      );
+        type: "PASSWORD_RESET",
+      });
 
       await this.#dependencies.accountRepository.updatePassword(user.id.value, hashedPassword);
 
-      const revokedSessionIds = await this.#dependencies.sessionRepository.revokeAllByUserId(
-        user.id.value,
-        REVOKE_REASON.PASSWORD_RESET,
-        undefined,
-      );
+      const revokedSessionIds = await this.#dependencies.sessionRepository.revokeAllByUserId({
+        userId: user.id.value,
+        reason: REVOKE_REASON.PASSWORD_RESET,
+        now: this.#dependencies.clock.now(),
+      });
 
       await this.#dependencies.securityLogRepository.create({
         userId: user.id.value,

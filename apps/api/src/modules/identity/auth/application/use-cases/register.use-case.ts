@@ -10,9 +10,9 @@ import { AUTH_DEFAULTS } from "#api/modules/identity/auth/domain/auth.constants"
 import { Email } from "#api/modules/identity/auth/domain/email.vo";
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
+import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
-import { now } from "#api/shared/domain/date/utils/core";
-import { toISOString } from "#api/shared/domain/date/utils/format";
+import { toIsoString } from "#api/shared/domain/time/instant";
 
 import { AuthLogEvent } from "../auth.log-events.js";
 import type {
@@ -22,8 +22,9 @@ import type {
 import type { AuthPasswordHasherPort } from "../ports/auth-crypto.port.js";
 import { type AuthSecurityLogRepositoryPort } from "../ports/auth-security-log.repository.port.js";
 import { type AuthUserRepositoryPort } from "../ports/auth-user.repository.port.js";
-import type { VerificationService } from "./issue-verification-code.use-case.js";
+import type { IssueVerificationCodeUseCase } from "./issue-verification-code.use-case.js";
 import type { ProvisionUserUseCase } from "./provision-user.use-case.js";
+import type { SendVerificationCodeUseCase } from "./send-verification-code.use-case.js";
 
 export interface RegisterCommand {
   readonly email: string;
@@ -40,13 +41,12 @@ interface RegisterDependencies {
   readonly userRepository: Pick<AuthUserRepositoryPort, "findByEmail">;
   readonly passwordService: Pick<AuthPasswordHasherPort, "hash">;
   readonly provisionUserUseCase: Pick<ProvisionUserUseCase, "execute">;
-  readonly verificationService: Pick<
-    VerificationService,
-    "createEmailVerification" | "sendVerificationEmail"
-  >;
+  readonly issueVerificationCode: Pick<IssueVerificationCodeUseCase, "execute">;
+  readonly sendVerificationCode: Pick<SendVerificationCodeUseCase, "execute">;
   readonly securityLogRepository: Pick<AuthSecurityLogRepositoryPort, "create">;
   readonly unitOfWork: UnitOfWorkPort;
   readonly adminEventNotifier: Pick<AuthRegistrationNotifierPort, "notifyUserRegistered">;
+  readonly clock: ClockPort;
   readonly logger: ApplicationLoggerPort;
 }
 
@@ -79,7 +79,7 @@ export class RegisterUseCase {
     };
     try {
       result = await this.#dependencies.unitOfWork.run(async () => {
-        const currentTime = now();
+        const currentTime = this.#dependencies.clock.now();
         const newUser = await this.#dependencies.provisionUserUseCase.execute({
           email,
           status: "PENDING_VERIFY",
@@ -95,8 +95,10 @@ export class RegisterUseCase {
           locale: metadata?.locale,
         });
 
-        const verificationResult =
-          await this.#dependencies.verificationService.createEmailVerification(newUser.id);
+        const verificationResult = await this.#dependencies.issueVerificationCode.execute({
+          userId: newUser.id,
+          type: "EMAIL_VERIFY",
+        });
 
         await this.#dependencies.securityLogRepository.create({
           userId: newUser.id,
@@ -119,10 +121,12 @@ export class RegisterUseCase {
 
     let emailSent = false;
     try {
-      emailSent = await this.#dependencies.verificationService.sendVerificationEmail(
+      emailSent = await this.#dependencies.sendVerificationCode.execute({
+        userId: result.user.id,
         email,
-        result.verificationCode,
-      );
+        code: result.verificationCode,
+        type: "EMAIL_VERIFY",
+      });
     } catch (error) {
       this.#dependencies.logger.error({
         event: AuthLogEvent.VERIFICATION_EMAIL_FAILED,
@@ -140,7 +144,7 @@ export class RegisterUseCase {
       userId: result.user.id,
       email: result.user.email,
       provider: "credential",
-      registeredAt: toISOString(now()),
+      registeredAt: toIsoString(this.#dependencies.clock.now()),
       name,
       ...metadata?.device,
     } satisfies AuthUserRegisteredNotification);

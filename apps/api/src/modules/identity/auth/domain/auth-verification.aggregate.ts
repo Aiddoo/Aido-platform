@@ -3,7 +3,7 @@ import { VERIFICATION_CODE } from "@aido/api/vocabulary";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { AggregateRoot } from "#api/shared/domain/model/aggregate-root";
 
-import type { VerificationType } from "./auth.constants.js";
+import type { AUTH_VERIFICATION_VALIDITIES, VerificationType } from "./auth.constants.js";
 import { VerificationId } from "./verification-id.vo.js";
 
 export interface AuthVerificationPrimitives {
@@ -14,30 +14,45 @@ export interface AuthVerificationPrimitives {
   readonly expiresAt: Temporal.Instant;
   readonly attempts: number;
   readonly usedAt: Temporal.Instant | null;
+  readonly createdAt: Temporal.Instant;
 }
 
-interface AuthVerificationProps {
+type AuthVerificationProps = Omit<AuthVerificationPrimitives, "id" | "userId"> & {
   readonly userId: UserId;
-  readonly type: VerificationType;
-  readonly tokenHash: string;
-  readonly expiresAt: Temporal.Instant;
-  readonly attempts: number;
-  usedAt: Temporal.Instant | null;
-}
+};
 
-export type AuthVerificationValidity = "valid" | "used" | "expired" | "exhausted";
+export type AuthVerificationValidity = (typeof AUTH_VERIFICATION_VALIDITIES)[number];
 
 /** 메일로 보낸 인증 코드 한 건. 코드 원문은 저장하지 않고 hash만 둔다 */
 export class AuthVerification extends AggregateRoot<VerificationId, AuthVerificationProps> {
-  static reconstitute(primitives: AuthVerificationPrimitives): AuthVerification {
-    return new AuthVerification(VerificationId.reconstitute(primitives.id), {
-      userId: UserId.reconstitute(primitives.userId),
-      type: primitives.type,
-      tokenHash: primitives.tokenHash,
-      expiresAt: primitives.expiresAt,
-      attempts: primitives.attempts,
-      usedAt: primitives.usedAt,
+  static create(params: {
+    readonly id: VerificationId;
+    readonly userId: string;
+    readonly type: VerificationType;
+    readonly tokenHash: string;
+    readonly now: Temporal.Instant;
+  }): AuthVerification {
+    return new AuthVerification(params.id, {
+      userId: UserId.reconstitute(params.userId),
+      type: params.type,
+      tokenHash: params.tokenHash,
+      expiresAt: params.now.add({ minutes: VERIFICATION_CODE.EXPIRY_MINUTES }),
+      attempts: 0,
+      usedAt: null,
+      createdAt: params.now,
     });
+  }
+
+  static reconstitute(primitives: AuthVerificationPrimitives): AuthVerification {
+    const { id, userId, ...props } = primitives;
+    return new AuthVerification(VerificationId.reconstitute(id), {
+      ...props,
+      userId: UserId.reconstitute(userId),
+    });
+  }
+
+  get userId(): UserId {
+    return this.props.userId;
   }
 
   get type(): VerificationType {
@@ -46,6 +61,10 @@ export class AuthVerification extends AggregateRoot<VerificationId, AuthVerifica
 
   get tokenHash(): string {
     return this.props.tokenHash;
+  }
+
+  get expiresAt(): Temporal.Instant {
+    return this.props.expiresAt;
   }
 
   get usedAt(): Temporal.Instant | null {
@@ -66,23 +85,7 @@ export class AuthVerification extends AggregateRoot<VerificationId, AuthVerifica
     return this.props.tokenHash === tokenHash;
   }
 
-  consume(now: Temporal.Instant): boolean {
-    if (this.validityAt(now) !== "valid") {
-      return false;
-    }
-    this.props.usedAt = now;
-    return true;
-  }
-
   toPrimitives(): AuthVerificationPrimitives {
-    return {
-      id: this.id.value,
-      userId: this.props.userId.value,
-      type: this.props.type,
-      tokenHash: this.props.tokenHash,
-      expiresAt: this.props.expiresAt,
-      attempts: this.props.attempts,
-      usedAt: this.props.usedAt,
-    };
+    return { id: this.id.value, ...this.props, userId: this.props.userId.value };
   }
 }

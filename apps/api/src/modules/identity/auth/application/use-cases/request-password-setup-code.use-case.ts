@@ -5,7 +5,8 @@ import { ApplicationException } from "#api/shared/application/application.except
 
 import type { AuthAccountRepositoryPort } from "../ports/auth-account.repository.port.js";
 import type { AuthUserRepositoryPort } from "../ports/auth-user.repository.port.js";
-import type { VerificationService } from "./issue-verification-code.use-case.js";
+import type { IssueVerificationCodeUseCase } from "./issue-verification-code.use-case.js";
+import type { SendVerificationCodeUseCase } from "./send-verification-code.use-case.js";
 
 export interface RequestPasswordSetupCodeCommand {
   readonly userId: string;
@@ -14,7 +15,8 @@ export interface RequestPasswordSetupCodeCommand {
 interface RequestPasswordSetupCodeDependencies {
   readonly userRepository: Pick<AuthUserRepositoryPort, "findById">;
   readonly accountRepository: Pick<AuthAccountRepositoryPort, "findByUserIdAndProvider">;
-  readonly verificationService: Pick<VerificationService, "createAndSendPasswordSetup">;
+  readonly issueVerificationCode: Pick<IssueVerificationCodeUseCase, "execute">;
+  readonly sendVerificationCode: Pick<SendVerificationCodeUseCase, "execute">;
 }
 
 export class RequestPasswordSetupCodeUseCase {
@@ -42,7 +44,16 @@ export class RequestPasswordSetupCodeUseCase {
       throw new ApplicationException(ErrorCode.USER_0614, { userId });
     }
 
-    await this.#dependencies.verificationService.createAndSendPasswordSetup(userId, user.email);
+    const issued = await this.#dependencies.issueVerificationCode.execute({
+      userId,
+      type: "PASSWORD_SETUP",
+    });
+    await this.#dependencies.sendVerificationCode.execute({
+      userId,
+      email: user.email,
+      code: issued.code,
+      type: "PASSWORD_SETUP",
+    });
 
     return {
       message: "비밀번호 설정 코드가 이메일로 발송되었습니다.",

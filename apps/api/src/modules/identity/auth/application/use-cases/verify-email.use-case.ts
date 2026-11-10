@@ -10,14 +10,15 @@ import { assertStatusAllowsLogin } from "#api/modules/identity/auth/domain/accou
 import { AUTH_DEFAULTS } from "#api/modules/identity/auth/domain/auth.constants";
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
+import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
 
 import { AuthLogEvent } from "../auth.log-events.js";
 import type { AuthSecurityLogRepositoryPort } from "../ports/auth-security-log.repository.port.js";
 import type { AuthUserRepositoryPort } from "../ports/auth-user.repository.port.js";
 import type { RetentionEnrollerPort } from "../ports/retention-enroller.port.js";
+import type { ConsumeVerificationCodeUseCase } from "./consume-verification-code.use-case.js";
 import type { CreateSessionUseCase } from "./create-session.use-case.js";
-import type { VerificationService } from "./issue-verification-code.use-case.js";
 
 export interface VerifyEmailCommand {
   readonly email: string;
@@ -30,11 +31,12 @@ interface VerifyEmailDependencies {
     AuthUserRepositoryPort,
     "findByEmail" | "markEmailVerified" | "findByIdWithProfile"
   >;
-  readonly verificationService: Pick<VerificationService, "verifyCode">;
+  readonly consumeVerificationCode: Pick<ConsumeVerificationCodeUseCase, "execute">;
   readonly retentionEnroller: Pick<RetentionEnrollerPort, "activateNewUser">;
   readonly sessionService: Pick<CreateSessionUseCase, "execute">;
   readonly securityLogRepository: Pick<AuthSecurityLogRepositoryPort, "create">;
   readonly unitOfWork: UnitOfWorkPort;
+  readonly clock: ClockPort;
   readonly logger: ApplicationLoggerPort;
 }
 
@@ -71,9 +73,16 @@ export class VerifyEmailUseCase {
     }
 
     const result = await this.#dependencies.unitOfWork.run(async () => {
-      await this.#dependencies.verificationService.verifyCode(user.id.value, code, "EMAIL_VERIFY");
+      await this.#dependencies.consumeVerificationCode.execute({
+        userId: user.id.value,
+        code,
+        type: "EMAIL_VERIFY",
+      });
 
-      await this.#dependencies.userRepository.markEmailVerified(user.id.value);
+      await this.#dependencies.userRepository.markEmailVerified(
+        user.id.value,
+        this.#dependencies.clock.now(),
+      );
 
       await this.#dependencies.retentionEnroller.activateNewUser(user.id.value);
 

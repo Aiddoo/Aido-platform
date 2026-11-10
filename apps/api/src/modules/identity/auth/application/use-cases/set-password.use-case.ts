@@ -14,7 +14,7 @@ import type { AuthCachePort } from "../ports/auth-collaboration.port.js";
 import type { AuthPasswordHasherPort } from "../ports/auth-crypto.port.js";
 import type { AuthSecurityLogRepositoryPort } from "../ports/auth-security-log.repository.port.js";
 import type { AuthUserRepositoryPort } from "../ports/auth-user.repository.port.js";
-import type { VerificationService } from "./issue-verification-code.use-case.js";
+import type { ConsumeVerificationCodeUseCase } from "./consume-verification-code.use-case.js";
 
 export interface SetPasswordCommand {
   readonly userId: string;
@@ -31,7 +31,7 @@ interface SetPasswordDependencies {
     "findByUserIdAndProvider" | "createCredentialAccount"
   >;
   readonly passwordService: Pick<AuthPasswordHasherPort, "hash">;
-  readonly verificationService: Pick<VerificationService, "verifyCode">;
+  readonly consumeVerificationCode: Pick<ConsumeVerificationCodeUseCase, "execute">;
   readonly securityLogRepository: Pick<AuthSecurityLogRepositoryPort, "create">;
   readonly cacheService: Pick<AuthCachePort, "invalidateUserProfile">;
   readonly unitOfWork: UnitOfWorkPort;
@@ -83,7 +83,11 @@ export class SetPasswordUseCase {
       if (currentAccount != null) {
         throw new ApplicationException(ErrorCode.USER_0614, { userId });
       }
-      await this.#dependencies.verificationService.verifyCode(userId, code, "PASSWORD_SETUP");
+      await this.#dependencies.consumeVerificationCode.execute({
+        userId: userId,
+        code,
+        type: "PASSWORD_SETUP",
+      });
 
       await this.#dependencies.accountRepository.createCredentialAccount(userId, hashedPassword);
 

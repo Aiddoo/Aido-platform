@@ -41,6 +41,7 @@ import { VerificationCodeSecurityPort } from "./application/ports/verification-c
 import { AuthenticateSessionUseCase } from "./application/use-cases/authenticate-session.use-case.js";
 import { ChangePasswordUseCase } from "./application/use-cases/change-password.use-case.js";
 import { CompleteOAuthAuthorizationUseCase } from "./application/use-cases/complete-oauth-authorization.use-case.js";
+import { ConsumeVerificationCodeUseCase } from "./application/use-cases/consume-verification-code.use-case.js";
 import { CreateSessionUseCase } from "./application/use-cases/create-session.use-case.js";
 import { DeleteAccountUseCase } from "./application/use-cases/delete-account.use-case.js";
 import { ExchangeOAuthCodeUseCase } from "./application/use-cases/exchange-oauth-code.use-case.js";
@@ -48,7 +49,7 @@ import { GetCurrentUserUseCase } from "./application/use-cases/get-current-user.
 import { GetEntitlementSnapshotUseCase } from "./application/use-cases/get-entitlement-snapshot.use-case.js";
 import { GetOAuthRedirectUriUseCase } from "./application/use-cases/get-oauth-redirect-uri.use-case.js";
 import { IssueLoginUseCase } from "./application/use-cases/issue-login.use-case.js";
-import { VerificationService } from "./application/use-cases/issue-verification-code.use-case.js";
+import { IssueVerificationCodeUseCase } from "./application/use-cases/issue-verification-code.use-case.js";
 import { LinkOAuthAccountWithCodeUseCase } from "./application/use-cases/link-oauth-account-with-code.use-case.js";
 import { LinkOAuthAccountUseCase } from "./application/use-cases/link-oauth-account.use-case.js";
 import { LinkOAuthIdentityUseCase } from "./application/use-cases/link-oauth-identity.use-case.js";
@@ -70,6 +71,7 @@ import { ResendVerificationUseCase } from "./application/use-cases/resend-verifi
 import { ResetPasswordUseCase } from "./application/use-cases/reset-password.use-case.js";
 import { RestoreAccountUseCase } from "./application/use-cases/restore-account.use-case.js";
 import { RevokeSessionUseCase } from "./application/use-cases/revoke-session.use-case.js";
+import { SendVerificationCodeUseCase } from "./application/use-cases/send-verification-code.use-case.js";
 import { SetPasswordUseCase } from "./application/use-cases/set-password.use-case.js";
 import { StartOAuthAuthorizationUseCase } from "./application/use-cases/start-oauth-authorization.use-case.js";
 import { UnlinkOAuthAccountUseCase } from "./application/use-cases/unlink-oauth-account.use-case.js";
@@ -139,10 +141,12 @@ export const getEntitlementSnapshotProvider: FactoryProvider<GetEntitlementSnaps
 
 export const getOAuthRedirectUriProvider = provideUseCase(GetOAuthRedirectUriUseCase, {
   oauthStateRepository: AuthOAuthStateRepositoryPort,
+  clock: ClockPort,
 });
 
 export const listActiveSessionsProvider = provideUseCase(ListActiveSessionsUseCase, {
   sessionRepository: AuthSessionRepositoryPort,
+  clock: ClockPort,
 });
 export const listLinkedAccountsProvider = provideUseCase(ListLinkedAccountsUseCase, {
   accountRepository: AuthAccountRepositoryPort,
@@ -162,12 +166,23 @@ export const createSessionProvider = provideUseCase(CreateSessionUseCase, {
   clock: ClockPort,
 });
 
-export const verificationServiceProvider = provideUseCase(VerificationService, {
+export const issueVerificationCodeProvider = provideUseCase(IssueVerificationCodeUseCase, {
   verificationRepository: AuthVerificationRepositoryPort,
-  emailSender: AuthEmailSenderPort,
   verificationCodeSecurity: VerificationCodeSecurityPort,
   clock: ClockPort,
-  logger: loggerFor(VerificationService),
+  logger: loggerFor(IssueVerificationCodeUseCase),
+});
+
+export const sendVerificationCodeProvider = provideUseCase(SendVerificationCodeUseCase, {
+  emailSender: AuthEmailSenderPort,
+  logger: loggerFor(SendVerificationCodeUseCase),
+});
+
+export const consumeVerificationCodeProvider = provideUseCase(ConsumeVerificationCodeUseCase, {
+  verificationRepository: AuthVerificationRepositoryPort,
+  verificationCodeSecurity: VerificationCodeSecurityPort,
+  clock: ClockPort,
+  logger: loggerFor(ConsumeVerificationCodeUseCase),
 });
 
 export const changePasswordProvider = provideUseCase(ChangePasswordUseCase, {
@@ -179,6 +194,7 @@ export const changePasswordProvider = provideUseCase(ChangePasswordUseCase, {
   cacheService: AuthCachePort,
   securityLogRepository: AuthSecurityLogRepositoryPort,
   unitOfWork: UnitOfWorkPort,
+  clock: ClockPort,
   logger: loggerFor(ChangePasswordUseCase),
 });
 
@@ -188,6 +204,7 @@ export const completeOAuthAuthorizationProvider = provideUseCase(
     registry: OAuthIdentityProviderRegistryPort,
     oauthStateRepository: AuthOAuthStateRepositoryPort,
     loginWithOAuthToken: LoginWithOAuthTokenUseCase,
+    clock: ClockPort,
     logger: loggerFor(CompleteOAuthAuthorizationUseCase),
   },
 );
@@ -239,6 +256,7 @@ export const issueLoginProvider = provideUseCase(IssueLoginUseCase, {
   loginAttemptRepository: AuthLoginAttemptRepositoryPort,
   securityLogRepository: AuthSecurityLogRepositoryPort,
   userRepository: AuthUserRepositoryPort,
+  clock: ClockPort,
 });
 
 export const linkOAuthIdentityProvider = provideUseCase(LinkOAuthIdentityUseCase, {
@@ -304,6 +322,7 @@ export const logoutProvider = provideUseCase(LogoutUseCase, {
   sessionRepository: AuthSessionRepositoryPort,
   securityLogRepository: AuthSecurityLogRepositoryPort,
   cacheService: AuthCachePort,
+  clock: ClockPort,
   logger: loggerFor(LogoutUseCase),
 });
 export const logoutAllProvider = provideUseCase(LogoutAllUseCase, {
@@ -311,6 +330,7 @@ export const logoutAllProvider = provideUseCase(LogoutAllUseCase, {
   sessionRepository: AuthSessionRepositoryPort,
   securityLogRepository: AuthSecurityLogRepositoryPort,
   cacheService: AuthCachePort,
+  clock: ClockPort,
   logger: loggerFor(LogoutAllUseCase),
 });
 export const provisionUserProvider = provideUseCase(ProvisionUserUseCase, {
@@ -333,16 +353,19 @@ export const registerProvider = provideUseCase(RegisterUseCase, {
   userRepository: AuthUserRepositoryPort,
   passwordService: AuthPasswordHasherPort,
   provisionUserUseCase: ProvisionUserUseCase,
-  verificationService: VerificationService,
+  issueVerificationCode: IssueVerificationCodeUseCase,
+  sendVerificationCode: SendVerificationCodeUseCase,
   securityLogRepository: AuthSecurityLogRepositoryPort,
   unitOfWork: UnitOfWorkPort,
   adminEventNotifier: AuthRegistrationNotifierPort,
+  clock: ClockPort,
   logger: loggerFor(RegisterUseCase),
 });
 
 export const requestPasswordResetProvider = provideUseCase(RequestPasswordResetUseCase, {
   userRepository: AuthUserRepositoryPort,
-  verificationService: VerificationService,
+  issueVerificationCode: IssueVerificationCodeUseCase,
+  sendVerificationCode: SendVerificationCodeUseCase,
   securityLogRepository: AuthSecurityLogRepositoryPort,
   logger: loggerFor(RequestPasswordResetUseCase),
 });
@@ -350,12 +373,14 @@ export const requestPasswordResetProvider = provideUseCase(RequestPasswordResetU
 export const requestPasswordSetupCodeProvider = provideUseCase(RequestPasswordSetupCodeUseCase, {
   userRepository: AuthUserRepositoryPort,
   accountRepository: AuthAccountRepositoryPort,
-  verificationService: VerificationService,
+  issueVerificationCode: IssueVerificationCodeUseCase,
+  sendVerificationCode: SendVerificationCodeUseCase,
 });
 
 export const resendVerificationProvider = provideUseCase(ResendVerificationUseCase, {
   userRepository: AuthUserRepositoryPort,
-  verificationService: VerificationService,
+  issueVerificationCode: IssueVerificationCodeUseCase,
+  sendVerificationCode: SendVerificationCodeUseCase,
   unitOfWork: UnitOfWorkPort,
   logger: loggerFor(ResendVerificationUseCase),
 });
@@ -365,11 +390,12 @@ export const resetPasswordProvider = provideUseCase(ResetPasswordUseCase, {
   userRepository: AuthUserRepositoryPort,
   accountRepository: AuthAccountRepositoryPort,
   passwordService: AuthPasswordHasherPort,
-  verificationService: VerificationService,
+  consumeVerificationCode: ConsumeVerificationCodeUseCase,
   sessionRepository: AuthSessionRepositoryPort,
   cacheService: AuthCachePort,
   securityLogRepository: AuthSecurityLogRepositoryPort,
   unitOfWork: UnitOfWorkPort,
+  clock: ClockPort,
   logger: loggerFor(ResetPasswordUseCase),
 });
 
@@ -378,13 +404,14 @@ export const revokeSessionProvider = provideUseCase(RevokeSessionUseCase, {
   sessionRepository: AuthSessionRepositoryPort,
   securityLogRepository: AuthSecurityLogRepositoryPort,
   cacheService: AuthCachePort,
+  clock: ClockPort,
   logger: loggerFor(RevokeSessionUseCase),
 });
 export const setPasswordProvider = provideUseCase(SetPasswordUseCase, {
   userRepository: AuthUserRepositoryPort,
   accountRepository: AuthAccountRepositoryPort,
   passwordService: AuthPasswordHasherPort,
-  verificationService: VerificationService,
+  consumeVerificationCode: ConsumeVerificationCodeUseCase,
   securityLogRepository: AuthSecurityLogRepositoryPort,
   cacheService: AuthCachePort,
   unitOfWork: UnitOfWorkPort,
@@ -395,6 +422,7 @@ export const startOAuthAuthorizationProvider = provideUseCase(StartOAuthAuthoriz
   registry: OAuthIdentityProviderRegistryPort,
   oauthStateRepository: AuthOAuthStateRepositoryPort,
   configService: AuthRuntimeConfigPort,
+  clock: ClockPort,
   logger: loggerFor(StartOAuthAuthorizationUseCase),
 });
 
@@ -415,10 +443,11 @@ export const updateProfileProvider = provideUseCase(UpdateProfileUseCase, {
 
 export const verifyEmailProvider = provideUseCase(VerifyEmailUseCase, {
   userRepository: AuthUserRepositoryPort,
-  verificationService: VerificationService,
+  consumeVerificationCode: ConsumeVerificationCodeUseCase,
   retentionEnroller: RetentionEnrollerPort,
   sessionService: CreateSessionUseCase,
   securityLogRepository: AuthSecurityLogRepositoryPort,
   unitOfWork: UnitOfWorkPort,
+  clock: ClockPort,
   logger: loggerFor(VerifyEmailUseCase),
 });

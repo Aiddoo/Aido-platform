@@ -90,7 +90,9 @@ import {
   startOAuthAuthorizationProvider,
   unlinkOAuthAccountProvider,
   updateProfileProvider,
-  verificationServiceProvider,
+  issueVerificationCodeProvider,
+  sendVerificationCodeProvider,
+  consumeVerificationCodeProvider,
   verifyEmailProvider,
 } from "./identity-auth.providers.js";
 import { AppleOAuthIdentityAdapter } from "./infrastructure/adapters/apple-oauth-identity.adapter.js";
@@ -219,7 +221,9 @@ import { SessionController } from "./presentation/http/v1/session.controller.js"
       useExisting: AdminEventNotifier,
     },
     { provide: AuthRuntimeConfigPort, useExisting: TypedConfigService },
-    verificationServiceProvider,
+    issueVerificationCodeProvider,
+    sendVerificationCodeProvider,
+    consumeVerificationCodeProvider,
     {
       provide: VerificationCodeSecurityPort,
       useClass: NodeVerificationCodeSecurityAdapter,

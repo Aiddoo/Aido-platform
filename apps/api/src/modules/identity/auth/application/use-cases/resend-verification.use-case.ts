@@ -7,7 +7,8 @@ import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
 
 import { AuthLogEvent } from "../auth.log-events.js";
 import type { AuthUserRepositoryPort } from "../ports/auth-user.repository.port.js";
-import type { VerificationService } from "./issue-verification-code.use-case.js";
+import type { IssueVerificationCodeUseCase } from "./issue-verification-code.use-case.js";
+import type { SendVerificationCodeUseCase } from "./send-verification-code.use-case.js";
 
 export interface ResendVerificationCommand {
   readonly email: string;
@@ -15,10 +16,8 @@ export interface ResendVerificationCommand {
 
 interface ResendVerificationDependencies {
   readonly userRepository: Pick<AuthUserRepositoryPort, "findByEmail">;
-  readonly verificationService: Pick<
-    VerificationService,
-    "createEmailVerification" | "sendVerificationEmail"
-  >;
+  readonly issueVerificationCode: Pick<IssueVerificationCodeUseCase, "execute">;
+  readonly sendVerificationCode: Pick<SendVerificationCodeUseCase, "execute">;
   readonly unitOfWork: UnitOfWorkPort;
   readonly logger: ApplicationLoggerPort;
 }
@@ -50,14 +49,19 @@ export class ResendVerificationUseCase {
     }
 
     const verificationResult = await this.#dependencies.unitOfWork.run(() =>
-      this.#dependencies.verificationService.createEmailVerification(user.id.value),
+      this.#dependencies.issueVerificationCode.execute({
+        userId: user.id.value,
+        type: "EMAIL_VERIFY",
+      }),
     );
 
     try {
-      await this.#dependencies.verificationService.sendVerificationEmail(
+      await this.#dependencies.sendVerificationCode.execute({
+        userId: user.id.value,
         email,
-        verificationResult.code,
-      );
+        code: verificationResult.code,
+        type: "EMAIL_VERIFY",
+      });
     } catch (error) {
       this.#dependencies.logger.error({
         event: AuthLogEvent.VERIFICATION_EMAIL_FAILED,

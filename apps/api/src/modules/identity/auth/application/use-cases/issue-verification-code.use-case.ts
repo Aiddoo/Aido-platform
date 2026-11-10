@@ -1,235 +1,74 @@
 import { ErrorCode } from "@aido/api/errors";
 import { VERIFICATION_CODE } from "@aido/api/vocabulary";
-import { match } from "ts-pattern";
 
-import type { VerificationType } from "#api/modules/identity/auth/domain/auth.constants";
-import { VerificationCode } from "#api/modules/identity/auth/domain/verification-code.vo";
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
-import { instantToDate } from "#api/shared/domain/time/instant";
 
+import { AuthVerification } from "../../domain/auth-verification.aggregate.js";
+import { resendCooldownStartsAt } from "../../domain/auth-verification.domain-service.js";
+import type { VerificationType } from "../../domain/auth.constants.js";
 import { AuthLogEvent } from "../auth.log-events.js";
-import { type AuthEmailSenderPort } from "../ports/auth-collaboration.port.js";
-import { type AuthVerificationRepositoryPort } from "../ports/auth-verification.repository.port.js";
-import { type VerificationCodeSecurityPort } from "../ports/verification-code-security.port.js";
+import type { AuthVerificationRepositoryPort } from "../ports/auth-verification.repository.port.js";
+import type { VerificationCodeSecurityPort } from "../ports/verification-code-security.port.js";
 
-export interface VerificationCodeResult {
-  code: string;
-  expiresAt: Date;
+export interface IssueVerificationCodeCommand {
+  readonly userId: string;
+  readonly type: VerificationType;
 }
 
-interface VerificationServiceDependencies {
-  readonly verificationRepository: AuthVerificationRepositoryPort;
-  readonly emailSender: AuthEmailSenderPort;
-  readonly verificationCodeSecurity: VerificationCodeSecurityPort;
+export interface IssuedVerificationCode {
+  readonly code: string;
+  readonly expiresAt: Temporal.Instant;
+}
+
+interface IssueVerificationCodeDependencies {
+  readonly verificationRepository: Pick<
+    AuthVerificationRepositoryPort,
+    "countRecentByUserIdAndType" | "invalidateAllByUserIdAndType" | "nextId" | "save"
+  >;
+  readonly verificationCodeSecurity: Pick<VerificationCodeSecurityPort, "generate">;
   readonly clock: ClockPort;
   readonly logger: ApplicationLoggerPort;
 }
 
-export class VerificationService {
-  readonly #dependencies: VerificationServiceDependencies;
+/** 같은 종류의 남은 코드를 만료시키고 새 코드를 발급한다. 메일 발송은 호출자가 커밋 뒤에 한다 */
+export class IssueVerificationCodeUseCase {
+  readonly #dependencies: IssueVerificationCodeDependencies;
 
-  constructor(dependencies: VerificationServiceDependencies) {
+  constructor(dependencies: IssueVerificationCodeDependencies) {
     this.#dependencies = dependencies;
   }
 
-  // 트랜잭션 내부에서만 사용. 이메일 발송은 트랜잭션 후 sendVerificationEmail()로 별도 처리
-  async createEmailVerification(userId: string): Promise<VerificationCodeResult> {
-    await this.#checkResendCooldown(userId, "EMAIL_VERIFY");
+  async execute(command: IssueVerificationCodeCommand): Promise<IssuedVerificationCode> {
+    const { verificationRepository, verificationCodeSecurity, clock, logger } = this.#dependencies;
+    const { userId, type } = command;
+    const now = clock.now();
 
-    await this.#dependencies.verificationRepository.invalidateAllByUserIdAndType(
-      userId,
-      "EMAIL_VERIFY",
-    );
-
-    const result = await this.#createVerificationCode(userId, "EMAIL_VERIFY");
-
-    this.#dependencies.logger.log({
-      event: AuthLogEvent.VERIFICATION_CREATED,
-      userId,
-      verificationType: "EMAIL_VERIFY",
-    });
-    return result;
-  }
-
-  /** 발송 큐에 담았으면 true. 담지 못해도 예외를 던지지 않고 호출자가 다시 보내게 안내한다. */
-  async sendVerificationEmail(email: string, code: string): Promise<boolean> {
-    const dispatch = await this.#dependencies.emailSender.sendVerificationCode(email, {
-      code,
-      expiryMinutes: VERIFICATION_CODE.EXPIRY_MINUTES,
-    });
-
-    if (dispatch.status === "rejected") {
-      this.#dependencies.logger.error({
-        event: AuthLogEvent.VERIFICATION_EMAIL_FAILED,
-        verificationType: "EMAIL_VERIFY",
-        reason: dispatch.reason,
-      });
-    }
-    return dispatch.status === "queued";
-  }
-
-  async createAndSendPasswordReset(userId: string, email: string): Promise<VerificationCodeResult> {
-    await this.#checkResendCooldown(userId, "PASSWORD_RESET");
-
-    await this.#dependencies.verificationRepository.invalidateAllByUserIdAndType(
-      userId,
-      "PASSWORD_RESET",
-    );
-
-    const result = await this.#createVerificationCode(userId, "PASSWORD_RESET");
-
-    const dispatch = await this.#dependencies.emailSender.sendPasswordResetCode(email, {
-      code: result.code,
-      expiryMinutes: VERIFICATION_CODE.EXPIRY_MINUTES,
-    });
-
-    if (dispatch.status === "rejected") {
-      this.#dependencies.logger.error({
-        event: AuthLogEvent.VERIFICATION_EMAIL_FAILED,
-        verificationType: "PASSWORD_RESET",
-        userId,
-        reason: dispatch.reason,
-      });
-    }
-
-    this.#dependencies.logger.log({
-      event: AuthLogEvent.VERIFICATION_CREATED,
-      userId,
-      verificationType: "PASSWORD_RESET",
-    });
-    return result;
-  }
-
-  async createAndSendPasswordSetup(userId: string, email: string): Promise<VerificationCodeResult> {
-    await this.#checkResendCooldown(userId, "PASSWORD_SETUP");
-
-    await this.#dependencies.verificationRepository.invalidateAllByUserIdAndType(
-      userId,
-      "PASSWORD_SETUP",
-    );
-
-    const result = await this.#createVerificationCode(userId, "PASSWORD_SETUP");
-
-    const dispatch = await this.#dependencies.emailSender.sendPasswordSetupCode(email, {
-      code: result.code,
-      expiryMinutes: VERIFICATION_CODE.EXPIRY_MINUTES,
-    });
-
-    if (dispatch.status === "rejected") {
-      this.#dependencies.logger.error({
-        event: AuthLogEvent.VERIFICATION_EMAIL_FAILED,
-        verificationType: "PASSWORD_SETUP",
-        userId,
-        reason: dispatch.reason,
-      });
-    }
-
-    this.#dependencies.logger.log({
-      event: AuthLogEvent.VERIFICATION_CREATED,
-      userId,
-      verificationType: "PASSWORD_SETUP",
-    });
-    return result;
-  }
-
-  async verifyCode(userId: string, code: string, type: VerificationType): Promise<boolean> {
-    const at = this.#dependencies.clock.now();
-    const verification = await this.#dependencies.verificationRepository.findValidByUserIdAndType(
+    const recentCount = await verificationRepository.countRecentByUserIdAndType(
       userId,
       type,
-      at,
+      resendCooldownStartsAt(now),
     );
-
-    if (verification == null) {
-      throw new ApplicationException(ErrorCode.VERIFY_0751);
-    }
-
-    match(verification.validityAt(at))
-      .with("valid", () => undefined)
-      .with("exhausted", () => {
-        throw new ApplicationException(ErrorCode.VERIFY_0754);
-      })
-      .with("used", "expired", () => {
-        throw new ApplicationException(ErrorCode.VERIFY_0751);
-      })
-      .exhaustive();
-
-    const tokenHash = this.#dependencies.verificationCodeSecurity.hash(code);
-
-    if (!verification.matches(tokenHash)) {
-      // 호출자 TX가 롤백되어도 실패 횟수가 남도록 base client로 독립 커밋한다.
-      await this.#dependencies.verificationRepository.incrementAttempts(verification.id.value);
-
-      this.#dependencies.logger.warn({
-        event: AuthLogEvent.VERIFICATION_FAILED,
-        userId,
-        verificationType: type,
-      });
-
-      throw new ApplicationException(ErrorCode.VERIFY_0751);
-    }
-
-    const consumed = await this.#dependencies.verificationRepository.consume({
-      id: verification.id.value,
-      userId,
-      type,
-      tokenHash,
-      maxAttempts: VERIFICATION_CODE.MAX_ATTEMPTS,
-      at,
-    });
-    if (!consumed) {
-      throw new ApplicationException(ErrorCode.VERIFY_0751);
-    }
-    verification.consume(at);
-
-    this.#dependencies.logger.log({
-      event: AuthLogEvent.VERIFICATION_CONSUMED,
-      userId,
-      verificationType: type,
-    });
-    return true;
-  }
-
-  async #checkResendCooldown(userId: string, type: VerificationType): Promise<void> {
-    const cooldownSince = instantToDate(
-      this.#dependencies.clock
-        .now()
-        .subtract({ seconds: VERIFICATION_CODE.RESEND_COOLDOWN_SECONDS }),
-    );
-
-    const recentCount = await this.#dependencies.verificationRepository.countRecentByUserIdAndType(
-      userId,
-      type,
-      cooldownSince,
-    );
-
     if (recentCount > 0) {
       throw new ApplicationException(ErrorCode.VERIFY_0753, {
         remainingSeconds: VERIFICATION_CODE.RESEND_COOLDOWN_SECONDS,
       });
     }
-  }
 
-  async #createVerificationCode(
-    userId: string,
-    type: VerificationType,
-  ): Promise<VerificationCodeResult> {
-    const generatedCode = this.#dependencies.verificationCodeSecurity.generate();
-    const verificationCode = VerificationCode.create(generatedCode.plaintext, generatedCode.digest);
+    await verificationRepository.invalidateAllByUserIdAndType(userId, type, now);
 
-    const expiresAt = instantToDate(
-      this.#dependencies.clock.now().add({ minutes: VERIFICATION_CODE.EXPIRY_MINUTES }),
-    );
-
-    await this.#dependencies.verificationRepository.create({
+    const generated = verificationCodeSecurity.generate();
+    const verification = AuthVerification.create({
+      id: await verificationRepository.nextId(),
       userId,
       type,
-      token: verificationCode.hash,
-      expiresAt,
+      tokenHash: generated.digest,
+      now,
     });
+    await verificationRepository.save(verification);
 
-    return { code: verificationCode.value, expiresAt };
+    logger.log({ event: AuthLogEvent.VERIFICATION_CREATED, userId, verificationType: type });
+    return { code: generated.plaintext, expiresAt: verification.expiresAt };
   }
 }
