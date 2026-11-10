@@ -1,16 +1,17 @@
 import { useTranslation } from '@src/shared/i18n';
 import { ArrowLeftIcon, ArrowRightIcon, HStack, IconButton } from '@src/shared/ui';
+import type { ComponentProps } from 'react';
 
-interface CalendarNavigationProps {
+interface CalendarNavigationProps extends Pick<ComponentProps<typeof HStack>, 'ref'> {
   onPrevious: () => void;
   onNext: () => void;
 }
 
-export function CalendarNavigation({ onPrevious, onNext }: CalendarNavigationProps) {
+export function CalendarNavigation({ ref, onPrevious, onNext }: CalendarNavigationProps) {
   const { t } = useTranslation('common');
 
   return (
-    <HStack gap={4}>
+    <HStack ref={ref} gap={4}>
       <IconButton
         accessibilityLabel={t('calendar.previousMonth')}
         icon={<ArrowLeftIcon width={20} height={20} colorClassName="text-gray-6" />}
