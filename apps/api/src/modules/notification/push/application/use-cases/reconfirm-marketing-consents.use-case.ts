@@ -10,8 +10,8 @@ import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
 import { DEFAULT_DELIVERY_TIMEZONE } from "#api/shared/domain/date/utils/timezone";
 import { DEFAULT_LOCALE } from "#api/shared/domain/locale";
 
-import { SCHEDULER_CAMPAIGN_KEY } from "../../../domain/services/reminders/notification-campaign.js";
 import type { CreateNotificationData } from "../../../inbox/application/ports/notification-draft.port.js";
+import { SCHEDULER_CAMPAIGN_KEY } from "../../../reminders/domain/notification-campaign.constants.js";
 import { createMarketingConsentReconfirmNotificationMessage } from "../messages/notification.messages.js";
 import { NotificationDeliveryLogEvent } from "../notification-delivery.log-events.js";
 import type {

@@ -4,7 +4,7 @@ import request from "supertest";
 import {
   RETENTION_CONFIG,
   type RetentionConfigPort,
-} from "#api/modules/notification/application/ports/retention/retention-config.port";
+} from "#api/modules/notification/retention/application/ports/retention-config.port";
 import { requireRecord } from "#api/platform/database/database-error.util";
 import {
   notification,

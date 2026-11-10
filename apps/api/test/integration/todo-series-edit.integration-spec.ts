@@ -9,7 +9,7 @@ import { omit } from "es-toolkit";
 import {
   TODO_SERIES_OWNER_DORMANCY,
   type TodoSeriesOwnerDormancyPort,
-} from "#api/modules/notification/application/ports/reminders/todo-series-owner-dormancy.port";
+} from "#api/modules/notification/reminders/application/ports/todo-series-owner-dormancy.port";
 import { DeleteTodoCategoryUseCase } from "#api/modules/planning/categories/application/use-cases/delete-todo-category.use-case";
 import { MaterializeDueTodoSeriesUseCase } from "#api/modules/planning/todo-series/application/use-cases/materialize-due-todo-series.use-case";
 import {

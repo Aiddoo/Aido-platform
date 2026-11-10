@@ -5,8 +5,8 @@ import {
   TODO_REMINDER_QUEUE,
   TODO_SERIES_PAUSED_JOB_NAME,
   TODO_SERIES_PAUSED_JOB_POLICY,
-} from "#api/modules/notification/infrastructure/jobs/reminders/todo-reminder-queue.constants";
-import { TodoReminderSchedulerAdapter } from "#api/modules/notification/infrastructure/jobs/reminders/todo-reminder-scheduler.adapter";
+} from "#api/modules/notification/reminders/infrastructure/jobs/todo-reminder-queue.constants";
+import { TodoReminderSchedulerAdapter } from "#api/modules/notification/reminders/infrastructure/jobs/todo-reminder-scheduler.adapter";
 import { PgBossJobRuntimeAdapter } from "#api/platform/jobs/pg-boss-job-runtime.adapter";
 import { createDatabaseTransactionFixture } from "#test/setup/database-context";
 

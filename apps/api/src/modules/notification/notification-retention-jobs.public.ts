@@ -1,1 +1,1 @@
-export { RETENTION_QUEUE } from "./infrastructure/jobs/retention/retention-queue.constants.js";
+export { RETENTION_QUEUE } from "./retention/infrastructure/jobs/retention-queue.constants.js";

@@ -1,4 +1,4 @@
 export {
   REMINDER_TIMEZONE_CACHE,
   type ReminderTimezoneCachePort,
-} from "./application/ports/reminders/reminder-timezone-cache.port.js";
+} from "./reminders/application/ports/reminder-timezone-cache.port.js";

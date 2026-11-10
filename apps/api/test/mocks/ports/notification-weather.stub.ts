@@ -1,20 +1,20 @@
+import type { NotificationHistoryReader } from "#api/modules/notification/inbox/application/notification-history.reader";
+import type { CreateNotificationData } from "#api/modules/notification/inbox/application/ports/notification-draft.port";
 import type {
   ReminderWeatherReport,
   ReminderWeatherReportReaderPort,
   ReminderWeatherReportRequest,
-} from "#api/modules/notification/application/ports/reminders/reminder-weather-report.reader.port";
-import type {
-  WeatherFallbackUser,
-  WeatherReminderTodo,
-  WeatherReminderUser,
-} from "#api/modules/notification/application/ports/reminders/scheduler-read-models";
+} from "#api/modules/notification/reminders/application/ports/reminder-weather-report.reader.port";
 import type {
   WeatherReminderParams,
   WeatherReminderReaderPort,
   WeatherReminderTodoQuery,
-} from "#api/modules/notification/application/ports/reminders/weather-reminder-reader.port";
-import type { NotificationHistoryReader } from "#api/modules/notification/inbox/application/notification-history.reader";
-import type { CreateNotificationData } from "#api/modules/notification/inbox/application/ports/notification-draft.port";
+} from "#api/modules/notification/reminders/application/ports/weather-reminder-reader.port";
+import type {
+  WeatherFallbackUser,
+  WeatherReminderTodo,
+  WeatherReminderUser,
+} from "#api/modules/notification/reminders/application/read-models/scheduler.read-model";
 
 /** 아침·저녁 날씨 알림 수신자와 할 일을 고정해 돌려주고 조회 조건을 기록한다. */
 export class StubWeatherReminderReader implements WeatherReminderReaderPort {

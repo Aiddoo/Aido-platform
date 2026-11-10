@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
 
-import { DrizzleRetentionRepository } from "#api/modules/notification/infrastructure/persistence/retention/drizzle-retention.repository";
+import { DrizzleRetentionRepository } from "#api/modules/notification/retention/infrastructure/persistence/drizzle-retention.repository";
 import { createEntityId } from "#api/platform/database/entity-id";
 import { todo, todoCategory, userPreference } from "#api/platform/database/schema/index";
 import { createDatabaseTransactionFixture } from "#test/setup/database-context";

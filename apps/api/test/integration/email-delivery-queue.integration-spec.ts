@@ -3,16 +3,16 @@ import { PgBoss } from "pg-boss";
 import { vi } from "vitest";
 import { mock } from "vitest-mock-extended";
 
-import { EMAIL_DELIVERY_QUEUE_PORT } from "#api/modules/notification/application/ports/email/email-delivery-queue.port";
-import { EMAIL_SENDER } from "#api/modules/notification/application/ports/email/email-sender.port";
-import { EmailDeliveryQueueAdapter } from "#api/modules/notification/infrastructure/adapters/email/email-delivery-queue.adapter";
-import { ResendEmailSenderAdapter } from "#api/modules/notification/infrastructure/adapters/email/resend-email-sender.adapter";
-import { EmailDeliveryQueueProcessor } from "#api/modules/notification/infrastructure/jobs/email/email-delivery-queue.processor";
+import { EMAIL_DELIVERY_QUEUE_PORT } from "#api/modules/notification/email/application/ports/email-delivery-queue.port";
+import { EMAIL_SENDER } from "#api/modules/notification/email/application/ports/email-sender.port";
+import { EmailDeliveryQueueAdapter } from "#api/modules/notification/email/infrastructure/adapters/email-delivery-queue.adapter";
+import { ResendEmailSenderAdapter } from "#api/modules/notification/email/infrastructure/adapters/resend-email-sender.adapter";
+import { EmailDeliveryQueueProcessor } from "#api/modules/notification/email/infrastructure/jobs/email-delivery-queue.processor";
 import {
   deliverEmailProvider,
   emailBudgetProvider,
   transactionalEmailSenderProvider,
-} from "#api/modules/notification/notification-email-application.providers";
+} from "#api/modules/notification/email/notification-email.providers";
 import { TransactionalEmailSender } from "#api/modules/notification/notification-email.public";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { EncryptionService } from "#api/platform/encryption/encryption.service";

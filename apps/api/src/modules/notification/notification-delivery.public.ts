@@ -33,7 +33,7 @@ export {
   DeleteActorNotificationsUseCase,
   DeleteActorNotificationsUseCase as NotificationAccountCleanup,
 } from "./inbox/application/use-cases/delete-actor-notifications.use-case.js";
-export { SCHEDULER_CAMPAIGN_KEY } from "./domain/services/reminders/notification-campaign.js";
+export { SCHEDULER_CAMPAIGN_KEY } from "./reminders/domain/notification-campaign.constants.js";
 export { TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY } from "./push/domain/transactional-notification-campaign.constants.js";
 export {
   createAiSuggestionNotificationMessage,

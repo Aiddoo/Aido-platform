@@ -18,15 +18,7 @@ import {
 import { ReadUserPreferencesUseCase } from "#api/modules/identity/preferences/application/use-cases/read-user-preferences.use-case";
 import { UserSettingsCacheAdapter } from "#api/modules/identity/preferences/infrastructure/adapters/user-settings-cache.adapter";
 import { DrizzleUserPreferenceRepository } from "#api/modules/identity/preferences/infrastructure/persistence/drizzle-user-preference.repository";
-import {
-  RETENTION_CONFIG,
-  type RetentionConfigPort,
-} from "#api/modules/notification/application/ports/retention/retention-config.port";
-import { RETENTION_REPOSITORY } from "#api/modules/notification/application/ports/retention/retention.repository.port";
 import { NOTIFICATION_INBOX_PROVIDERS } from "#api/modules/notification/inbox/notification-inbox.providers";
-import { RetentionQueueProcessor } from "#api/modules/notification/infrastructure/jobs/retention/retention-queue.processor";
-import { DrizzleRetentionRepository } from "#api/modules/notification/infrastructure/persistence/retention/drizzle-retention.repository";
-import { processRetentionStagesProvider } from "#api/modules/notification/notification-retention-application.providers";
 import { MarketingConsentReconfirmPort } from "#api/modules/notification/push/application/ports/marketing-consent-reconfirm.port";
 import { MarketingPushOptOutTokenPort } from "#api/modules/notification/push/application/ports/marketing-push-opt-out-token.port";
 import { PushProviderPort } from "#api/modules/notification/push/application/ports/push-provider.port";
@@ -52,6 +44,14 @@ import {
   NOTIFICATION_PUSH_PERSISTENCE_PROVIDERS,
   NOTIFICATION_PUSH_USE_CASE_PROVIDERS,
 } from "#api/modules/notification/push/notification-push.providers";
+import {
+  RETENTION_CONFIG,
+  type RetentionConfigPort,
+} from "#api/modules/notification/retention/application/ports/retention-config.port";
+import { RETENTION_REPOSITORY } from "#api/modules/notification/retention/application/ports/retention.repository.port";
+import { RetentionQueueProcessor } from "#api/modules/notification/retention/infrastructure/jobs/retention-queue.processor";
+import { DrizzleRetentionRepository } from "#api/modules/notification/retention/infrastructure/persistence/drizzle-retention.repository";
+import { processRetentionStagesProvider } from "#api/modules/notification/retention/notification-retention.providers";
 import { AdminBroadcastNotifierPort } from "#api/modules/operations/broadcasts/application/ports/admin-broadcast-notifier.port";
 import { AdminUserDirectoryReaderPort } from "#api/modules/operations/broadcasts/application/ports/admin-user-directory.reader.port";
 import { BroadcastCampaignRepositoryPort } from "#api/modules/operations/broadcasts/application/ports/broadcast-campaign.repository.port";

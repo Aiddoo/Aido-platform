@@ -1,9 +1,8 @@
 import { Test, type TestingModule } from "@nestjs/testing";
 import { vi } from "vitest";
 
-import { SCHEDULER_PREFERENCE_READER } from "#api/modules/notification/application/ports/reminders/scheduler-preference-reader.port";
-import { TIMEZONE_REMINDER_ENQUEUER } from "#api/modules/notification/application/ports/reminders/timezone-reminder-enqueuer.port";
-import { TimezoneAwareReminderOrchestrator } from "#api/modules/notification/application/services/reminders/timezone-aware-reminder.orchestrator";
+import { SCHEDULER_PREFERENCE_READER } from "#api/modules/notification/reminders/application/ports/scheduler-preference-reader.port";
+import { TIMEZONE_REMINDER_ENQUEUER } from "#api/modules/notification/reminders/application/ports/timezone-reminder-enqueuer.port";
 import {
   EveningReminderStrategy,
   LunchNudgeStrategy,
@@ -18,12 +17,13 @@ import {
   WeeklyAchievementStrategy,
   WeeklyReportStrategy,
   WinbackStrategy,
-} from "#api/modules/notification/application/strategies/reminders/index";
-import { NOTIFICATION_SCHEDULE } from "#api/modules/notification/domain/services/reminders/notification-schedule";
+} from "#api/modules/notification/reminders/application/use-cases/reminder-strategies.constants";
+import { TimezoneAwareReminderOrchestrator } from "#api/modules/notification/reminders/application/use-cases/sweep-timezone-reminders.use-case";
+import { NOTIFICATION_SCHEDULE } from "#api/modules/notification/reminders/domain/notification-schedule.domain-service";
 import { TEST_CUID } from "#test/fixtures/index";
 import { suppressLogger } from "#test/setup/suppress-logger";
 
-import { timezoneAwareReminderOrchestratorProvider } from "../../src/modules/notification/notification-reminders-application.providers.js";
+import { timezoneAwareReminderOrchestratorProvider } from "../../src/modules/notification/reminders/notification-reminders.providers.js";
 
 describe("TimezoneAwareReminderOrchestrator 통합 테스트 (Mock 포트)", () => {
   let module: TestingModule;

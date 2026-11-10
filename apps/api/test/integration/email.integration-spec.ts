@@ -3,8 +3,8 @@ import { Test, type TestingModule } from "@nestjs/testing";
 import { vi } from "vitest";
 import { mock } from "vitest-mock-extended";
 
-import { EmailDeliveryQueueProcessor } from "#api/modules/notification/infrastructure/jobs/email/email-delivery-queue.processor";
-import { NotificationEmailModule } from "#api/modules/notification/notification-email.module";
+import { EmailDeliveryQueueProcessor } from "#api/modules/notification/email/infrastructure/jobs/email-delivery-queue.processor";
+import { NotificationEmailModule } from "#api/modules/notification/email/notification-email.module";
 import { TransactionalEmailSender } from "#api/modules/notification/notification-email.public";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { EncryptionService } from "#api/platform/encryption/encryption.service";

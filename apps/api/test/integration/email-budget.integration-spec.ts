@@ -1,4 +1,4 @@
-import { MeteredEmailBudgetAdapter } from "#api/modules/notification/infrastructure/adapters/email/metered-email-budget.adapter";
+import { MeteredEmailBudgetAdapter } from "#api/modules/notification/email/infrastructure/adapters/metered-email-budget.adapter";
 import {
   USAGE_METER,
   USAGE_SUBJECT_ALL,

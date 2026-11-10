@@ -7,11 +7,11 @@ import { match } from "ts-pattern";
 
 import { DEFAULT_LOCALE, type SupportedLocale } from "#api/shared/domain/locale";
 
+import type { NotificationAction } from "../../../inbox/application/ports/notification-draft.port.js";
 import type {
   EveningWeatherBriefing,
   MorningWeatherBriefing,
-} from "../../../domain/services/reminders/weather-briefing.policy.js";
-import type { NotificationAction } from "../../../inbox/application/ports/notification-draft.port.js";
+} from "../../../reminders/domain/weather-briefing.domain-service.js";
 import type {
   NotificationMessage,
   NotificationVariantContext,

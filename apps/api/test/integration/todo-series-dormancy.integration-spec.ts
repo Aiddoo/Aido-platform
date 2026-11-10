@@ -4,8 +4,8 @@ import { omit } from "es-toolkit";
 
 import type { EntitlementReaderPort } from "#api/modules/access/access-entitlement.public";
 import { DrizzleUserRepository } from "#api/modules/identity/users/infrastructure/persistence/drizzle-user.repository";
-import { TodoSeriesOwnerDormancyAdapter } from "#api/modules/notification/infrastructure/adapters/reminders/todo-series-owner-dormancy.adapter";
-import { TodoReminderSchedulerAdapter } from "#api/modules/notification/infrastructure/jobs/reminders/todo-reminder-scheduler.adapter";
+import { TodoSeriesOwnerDormancyAdapter } from "#api/modules/notification/reminders/infrastructure/adapters/todo-series-owner-dormancy.adapter";
+import { TodoReminderSchedulerAdapter } from "#api/modules/notification/reminders/infrastructure/jobs/todo-reminder-scheduler.adapter";
 import { TodoTitle } from "#api/modules/planning/shared/domain/todo-title.vo";
 import { CatchUpTodoSeriesUseCase } from "#api/modules/planning/todo-series/application/use-cases/catch-up-todo-series.use-case";
 import { MaterializeDueTodoSeriesUseCase } from "#api/modules/planning/todo-series/application/use-cases/materialize-due-todo-series.use-case";

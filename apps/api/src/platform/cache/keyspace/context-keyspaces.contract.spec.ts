@@ -11,18 +11,18 @@ import {
   NotificationCacheKey,
 } from "#api/modules/notification/inbox/infrastructure/cache/notification-cache.keyspace";
 import {
-  ReminderCacheKey,
-  REMINDER_CACHE_TTL_MS,
-} from "#api/modules/notification/infrastructure/cache/reminders/reminder-cache.keyspace";
-import {
-  SCHEDULER_DEDUP_TTL_MS,
-  SchedulerDedupKey,
-} from "#api/modules/notification/infrastructure/cache/reminders/scheduler-dedup.keyspace";
-import {
   NOTIFICATION_DEDUP_SENTINEL,
   NOTIFICATION_DEDUP_TTL_MS,
   notificationDedupKey,
 } from "#api/modules/notification/push/infrastructure/cache/notification-dedup.keyspace";
+import {
+  ReminderCacheKey,
+  REMINDER_CACHE_TTL_MS,
+} from "#api/modules/notification/reminders/infrastructure/cache/reminder-cache.keyspace";
+import {
+  SCHEDULER_DEDUP_TTL_MS,
+  SchedulerDedupKey,
+} from "#api/modules/notification/reminders/infrastructure/cache/scheduler-dedup.keyspace";
 import {
   TodoCategoryCacheKey,
   TODO_CATEGORY_CACHE_TTL_MS,

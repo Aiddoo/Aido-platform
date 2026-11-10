@@ -2,7 +2,7 @@ import { pushNotificationDataSchema } from "@aido/api";
 
 import { parseLocalDateTime } from "#api/shared/domain/date/utils/timezone";
 
-import type { WeatherBriefingDay } from "../../../domain/services/reminders/weather-briefing.policy.js";
+import type { WeatherBriefingDay } from "../../../reminders/domain/weather-briefing.domain-service.js";
 import {
   createWeatherEveningNotificationMessage,
   createWeatherMorningNotificationMessage,

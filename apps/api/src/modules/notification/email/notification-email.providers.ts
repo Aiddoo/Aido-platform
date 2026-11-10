@@ -1,0 +1,54 @@
+import { Logger, type FactoryProvider } from "@nestjs/common";
+
+import {
+  USAGE_METER,
+  type UsageMeterPort,
+} from "#api/platform/metering/interfaces/usage-meter.interface";
+import {
+  OPERATIONAL_ALERT,
+  type OperationalAlertPort,
+} from "#api/shared/application/ports/operational-alert.port";
+
+import { EMAIL_BUDGET_PORT, type EmailBudgetPort } from "./application/ports/email-budget.port.js";
+import { EMAIL_DELIVERY_QUEUE_PORT } from "./application/ports/email-delivery-queue.port.js";
+import { EMAIL_SENDER } from "./application/ports/email-sender.port.js";
+import { DeliverEmail } from "./application/use-cases/deliver-email.use-case.js";
+import { TransactionalEmailSender } from "./application/use-cases/send-transactional-email.use-case.js";
+import { MeteredEmailBudgetAdapter } from "./infrastructure/adapters/metered-email-budget.adapter.js";
+
+export const emailBudgetProvider: FactoryProvider<EmailBudgetPort> = {
+  provide: EMAIL_BUDGET_PORT,
+  inject: [USAGE_METER, OPERATIONAL_ALERT],
+  useFactory: (meter: UsageMeterPort, alert: OperationalAlertPort) =>
+    new MeteredEmailBudgetAdapter({
+      meter,
+      alert,
+      logger: new Logger(MeteredEmailBudgetAdapter.name),
+    }),
+};
+
+export const transactionalEmailSenderProvider: FactoryProvider<TransactionalEmailSender> = {
+  provide: TransactionalEmailSender,
+  inject: [EMAIL_DELIVERY_QUEUE_PORT, EMAIL_SENDER, EMAIL_BUDGET_PORT],
+  useFactory: (
+    queue: ConstructorParameters<typeof TransactionalEmailSender>[0]["queue"],
+    sender: ConstructorParameters<typeof TransactionalEmailSender>[0]["sender"],
+    budget: ConstructorParameters<typeof TransactionalEmailSender>[0]["budget"],
+  ) =>
+    new TransactionalEmailSender({
+      queue,
+      sender,
+      budget,
+      logger: new Logger(TransactionalEmailSender.name),
+    }),
+};
+
+export const deliverEmailProvider: FactoryProvider<DeliverEmail> = {
+  provide: DeliverEmail,
+  inject: [EMAIL_SENDER, EMAIL_BUDGET_PORT, OPERATIONAL_ALERT],
+  useFactory: (
+    sender: ConstructorParameters<typeof DeliverEmail>[0]["sender"],
+    budget: ConstructorParameters<typeof DeliverEmail>[0]["budget"],
+    alert: OperationalAlertPort,
+  ) => new DeliverEmail({ sender, budget, alert, logger: new Logger(DeliverEmail.name) }),
+};

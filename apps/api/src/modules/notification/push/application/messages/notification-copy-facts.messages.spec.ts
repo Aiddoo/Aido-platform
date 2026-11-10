@@ -4,8 +4,8 @@ import { computeEffectiveStreak } from "#api/modules/identity/identity-settings.
 import type { SupportedLocale } from "#api/shared/domain/locale";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
 
-import { WeeklyAchievementStrategy } from "../../../application/strategies/reminders/weekly-achievement.strategy.js";
-import type { TimezoneContext } from "../../../domain/services/reminders/timezone-context.js";
+import { WeeklyAchievementStrategy } from "../../../reminders/application/use-cases/send-weekly-achievement.use-case.js";
+import type { TimezoneContext } from "../../../reminders/domain/timezone-context.read-model.js";
 import { SOCIAL_COPY } from "./notification-copy-templates.messages.js";
 import { createMorningReminderNotificationMessage } from "./scheduler-notification.messages.js";
 import {
