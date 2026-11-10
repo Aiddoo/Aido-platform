@@ -1,5 +1,3 @@
-import type { ConfigType } from "@nestjs/config";
-
 import { defineConfig } from "#api/platform/config/define-config";
 import { nudgeSchema } from "#api/platform/config/schemas/nudge.schema";
 
@@ -8,5 +6,3 @@ export const socialNudgesConfig = defineConfig(
   nudgeSchema.transform((env) => ({ interactionsEnabled: env.NUDGE_INTERACTIONS_ENABLED })),
   (env) => ({ NUDGE_INTERACTIONS_ENABLED: env.NUDGE_INTERACTIONS_ENABLED }),
 );
-
-export type SocialNudgesConfig = ConfigType<typeof socialNudgesConfig>;

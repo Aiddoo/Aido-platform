@@ -1,5 +1,3 @@
-import type { ConfigType } from "@nestjs/config";
-
 import { defineConfig } from "#api/platform/config/define-config";
 import { jwtSchema } from "#api/platform/config/schemas/jwt.schema";
 import { pushSchema } from "#api/platform/config/schemas/push.schema";
@@ -29,5 +27,3 @@ export const notificationPushConfig = defineConfig(
     JWT_SECRET: env.JWT_SECRET,
   }),
 );
-
-export type NotificationPushConfig = ConfigType<typeof notificationPushConfig>;

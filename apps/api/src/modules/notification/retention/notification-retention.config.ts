@@ -1,5 +1,3 @@
-import type { ConfigType } from "@nestjs/config";
-
 import { defineConfig } from "#api/platform/config/define-config";
 import { retentionSchema } from "#api/platform/config/schemas/retention.schema";
 
@@ -17,5 +15,3 @@ export const notificationRetentionConfig = defineConfig(
     RETENTION_ONBOARDING_V2_TREATMENT_PERCENT: env.RETENTION_ONBOARDING_V2_TREATMENT_PERCENT,
   }),
 );
-
-export type NotificationRetentionConfig = ConfigType<typeof notificationRetentionConfig>;
