@@ -51,7 +51,7 @@ Repository·Reader·스키마·마이그레이션·DB 오류 번역을 바꿀 �
 
 - Drizzle `customType` 두 개(`instant`, `plainDate`)가 Temporal을 주고받는다. `dataType()`은 기존 문자열(`"timestamp(3)"`, `"timestamp(3) with time zone"`, `"date"`)을 정확히 돌려줘 `db:generate`가 빈 diff여야 한다. `codec`은 문자열을 받고 RQB `with`용 `fromJson`을 둔다. custom column은 `.defaultNow()`가 없어 ``.default(sql`now()`)``를 쓴다.
 - 풀은 세션 `TimeZone=UTC`를 고정한다. 규칙은 [날짜](../../../docs/conventions/dates.md)다.
-- `updatedAt`은 도메인이 `ClockPort` 값으로 직접 둔다. 스키마 `$onUpdate`로 숨겨 채우지 않는다. 집합 update(순서 이동 등)도 지금처럼 `updatedAt: now`를 명시한다.
+- `updatedAt`은 도메인이 `ClockPort` 값으로 직접 둔다. 스키마 `$onUpdate`·`$defaultFn`으로 숨겨 채우지 않는다(DB 기본값이 없으면 테스트 seed도 값을 넣는다). 집합 update(순서 이동 등)도 지금처럼 `updatedAt: now`를 명시한다. 사례: [Memo 테이블](../src/platform/database/schema/notes.schema.ts)·[DrizzleMemoRepository](../src/modules/notes/memos/infrastructure/persistence/drizzle-memo.repository.ts).
 
 ## 풀 설정
 

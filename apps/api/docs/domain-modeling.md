@@ -23,13 +23,13 @@ Entity·VO·Aggregate·도메인 서비스·도메인 오류를 만들거나 바
 
 ## 상태 전이
 
-- 전이 메서드는 동사이고, 실제로 바뀌었으면 `true`, 이미 같은 상태면 아무것도 바꾸지 않고 `false`다. UseCase는 `false`면 저장·발송을 건너뛰어 재요청·재시도를 멱등으로 만든다. 현재 사례: [Nudge](../src/modules/social/domain/aggregates/nudges/nudge.aggregate.ts)의 `markRead`·`reply`.
-- 같은 값 수정에서 저장을 건너뛰면 `updatedAt`이 유지된다. 앱이 `updatedAt` 변화를 쓰는 slice(예: 메모 초안 rebase)는 항상 저장하고 그 이유를 slice에 적는다.
+- 전이 메서드는 동사이고, 실제로 바뀌었으면 `true`, 이미 같은 상태면 아무것도 바꾸지 않고 `false`다. UseCase는 `false`면 저장·발송을 건너뛰어 재요청·재시도를 멱등으로 만든다. 현재 사례: [Memo](../src/modules/notes/memos/domain/memo.aggregate.ts)의 `rewrite`·`changePinned`·`moveTo`와 [UpdateMemoUseCase](../src/modules/notes/memos/application/use-cases/update-memo.use-case.ts).
+- 같은 값 수정에서 저장을 건너뛰면 `updatedAt`이 유지된다. 앱이 "값이 같아도 `updatedAt`이 바뀐다"에 기대는 slice만 항상 저장하고 그 이유를 slice에 적는다. 메모는 앱 초안이 원본 시각이 더 새로울 때만 낡았다고 보므로(`apps/mobile/src/shared/draft/draft.model.ts`) 건너뛴다. 여러 행을 미는 집합 update(`shiftSortOrders`)는 옮긴 행의 `updatedAt`을 지금처럼 바꾼다.
 - 시각은 `now: Temporal.Instant` 인자로 받는다. 도메인 안에서 시계를 읽지 않는다.
 
 ## 규칙을 둘 곳
 
-1. 한 Entity·VO의 상태만 보는 규칙은 그 클래스 메서드다(`subscription.isPremiumAt(now)`, `memo.isOwnedBy(userId)`).
+1. 한 Entity·VO의 상태만 보는 규칙은 그 클래스 메서드다(`subscription.isPremiumAt(now)`, `memoContent.toTodoTitle()`).
 2. 여러 모델에 걸치거나 상태가 없는 규칙은 `*.domain-service.ts`의 순수 함수다.
    - 입력은 이름 붙은 객체 하나, `now`는 인자다.
    - 업무 판단은 throw하지 않고 `{ ok: true } | { ok: false; reason }` 판별 유니온으로 돌려준다. 같은 종류 함수는 반환 모양을 통일한다.
@@ -45,7 +45,7 @@ Entity·VO·Aggregate·도메인 서비스·도메인 오류를 만들거나 바
 
 ## 목표 예시: notes/memos
 
-기준 구현은 notes/memos다. 동작·응답·오류 순서·잠금 키 문자열은 옮기기 전과 같다.
+기준 구현은 [notes/memos](../src/modules/notes/memos)다. 동작·응답·오류 순서·잠금 키 문자열은 옮기기 전과 같다. 테스트는 [fixture](../test/fixtures/notes/memo.fixture.ts)·[InMemory 저장소](../test/doubles/notes/in-memory-memo.repository.ts)·[저장소 계약](../test/contracts/notes/memo-repository.contract.ts)이 사례다.
 
 ```ts
 // modules/notes/memos/domain/memo.aggregate.ts (발췌)
@@ -76,15 +76,15 @@ export class Memo extends AggregateRoot<MemoId, MemoProps> {
 }
 ```
 
-| 파일                                            | 핵심                                                                         |
-| ----------------------------------------------- | ---------------------------------------------------------------------------- |
-| `memo-id.vo.ts`                                 | `MemoId extends EntityId<number>`, `reconstitute`만(시퀀스 id)               |
-| `memo-content.vo.ts`                            | `create`가 `1 <= length && length <= MEMO_LIMITS.MAX_CONTENT_LENGTH` 검사    |
-| `memo-ordering.domain-service.ts`               | `planMoveRelativeTo`·`planMoveToEdge`가 `{ sortOrder, shift }` 계획을 돌려줌 |
-| `application/memos.lock-keys.ts`                | `MemoLockKeys.memo`·`sortOrder`(문자열은 기존 `MutationLockKeys`와 동일)     |
-| `create-memo.use-case.ts`                       | 잠금 → 한도 → 내용 검증 → `nextId` → `Memo.create` → `save` → 로그           |
-| `infrastructure/persistence/memo-row.mapper.ts` | `toMemo(row)`·`toMemoRow(memo)`                                              |
-| `presentation/http/v1/memo-response.mapper.ts`  | 응답 문구 `MEMO_RESPONSE_MESSAGES`와 `toIsoString` 직렬화                    |
+| 파일                                                                                                                        | 핵심                                                                         |
+| --------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| [`memo-id.vo.ts`](../src/modules/notes/memos/domain/memo-id.vo.ts)                                                          | `MemoId extends EntityId<number>`, `reconstitute`만(시퀀스 id)               |
+| [`memo-content.vo.ts`](../src/modules/notes/memos/domain/memo-content.vo.ts)                                                | `create`가 `1 <= length && length <= MEMO_LIMITS.MAX_CONTENT_LENGTH` 검사    |
+| [`memo-ordering.domain-service.ts`](../src/modules/notes/memos/domain/memo-ordering.domain-service.ts)                      | `planMoveRelativeTo`·`planMoveToEdge`가 `{ sortOrder, shift }` 계획을 돌려줌 |
+| [`application/memos.lock-keys.ts`](../src/modules/notes/memos/application/memos.lock-keys.ts)                               | `MemoLockKeys.memo`·`sortOrder`(문자열은 기존 `MutationLockKeys`와 동일)     |
+| [`create-memo.use-case.ts`](../src/modules/notes/memos/application/use-cases/create-memo.use-case.ts)                       | 잠금 → 한도 → 내용 검증 → `nextId` → `Memo.create` → `save` → 로그           |
+| [`infrastructure/persistence/memo-row.mapper.ts`](../src/modules/notes/memos/infrastructure/persistence/memo-row.mapper.ts) | `toMemo(row)`·`toMemoRow(memo)`                                              |
+| [`presentation/http/v1/memo-response.mapper.ts`](../src/modules/notes/memos/presentation/http/v1/memo-response.mapper.ts)   | 응답 문구 `MEMO_RESPONSE_MESSAGES`와 `toIsoString` 직렬화                    |
 
 ## 전환 중
 

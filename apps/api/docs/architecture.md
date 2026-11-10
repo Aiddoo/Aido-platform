@@ -104,7 +104,7 @@ presentation → application → domain        infrastructure → application(po
 - **조립**: `platform/di/provide-use-case.ts`의 `provideUseCase(UseCase, { key: PortClass })`가 키 누락·토큰 타입 불일치를 컴파일 오류로 만든다. 단언은 helper 안 1곳만 이유 주석과 함께 둔다.
 
 ```ts
-// 목표 예시: modules/notes/memos/notes-memos.providers.ts
+// modules/notes/memos/notes-memos.providers.ts (발췌)
 export const NOTES_MEMOS_PROVIDERS = [
   { provide: MemoRepositoryPort, useClass: DrizzleMemoRepository },
   provideUseCase(CreateMemoUseCase, {

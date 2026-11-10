@@ -33,24 +33,26 @@ test/
 
 - 새 필드는 fixture 기본값 한곳에 더하고 시나리오에서는 차이만 덮어쓴다.
 - 포트 계약 suite(`describe<Noun>RepositoryContract(createRepository)`)를 InMemory(unit)와 Drizzle(integration)이 같이 통과한다.
-- UseCase spec은 파일 안의 작은 factory(`createCreateMemoUseCase({ memoRepository })`)로 기본 더블(`ImmediateUnitOfWork`·`RecordingMutationLock`·`FixedClock`·`SilentLogger`)을 두고 다른 부분만 덮어쓴다.
+- UseCase spec은 파일 안의 작은 factory(`createCreateMemoUseCase({ memoRepository })`)로 기본 더블(`ImmediateUnitOfWork`·`RecordingMutationLock`·`FixedClock`·`SilentLogger`)을 두고 다른 부분만 덮어쓴다. 사례: [create-memo spec](../src/modules/notes/memos/application/use-cases/create-memo.use-case.spec.ts), 같은 계약을 InMemory·Drizzle에서 돌리는 [unit](../src/modules/notes/memos/application/ports/memo.repository.port.spec.ts)·[integration](../test/integration/notes/memos/drizzle-memo.repository.integration-spec.ts).
 - 테스트 더블은 손으로 쓴 InMemory·Fake·Stub 하나로 모은다. `vitest-mock-extended`·`@suites/*`는 새로 쓰지 않는다. 기존 mock 테스트는 그 Context를 옮길 때 의미 있는 assertion만 옮기고 전달 확인뿐인 테스트는 지운다.
 
 ```ts
 describe("CreateMemoUseCase — 메모 만들기", () => {
-  it("한도에 도달하면 저장하지 않고 MEMO_2003을 던진다", async () => {
+  it("한도에 도달하면 빈 내용보다 MEMO_2003을 먼저 던지고 저장하지 않는다", async () => {
     // Given
     const memoRepository = new InMemoryMemoRepository(
-      times(MEMO_LIMITS.MAX_PER_USER, (index) => createMemoFixture({ id: index + 1 })),
+      Array.from({ length: MEMO_LIMITS.MAX_PER_USER }, (_, index) =>
+        createMemoFixture({ id: index + 1, sortOrder: index }),
+      ),
     );
     const useCase = createCreateMemoUseCase({ memoRepository });
 
     // When
-    const result = useCase.execute({ userId: USER_ID_FIXTURE, content: "새 메모" });
+    const result = useCase.execute({ userId: MEMO_FIXTURE_USER_ID, content: "" });
 
     // Then
-    await expect(result).rejects.toMatchObject({ code: ErrorCode.MEMO_2003 });
-    expect(await memoRepository.countByUserId(USER_ID)).toBe(MEMO_LIMITS.MAX_PER_USER);
+    await expect(result).rejects.toMatchObject({ errorCode: ErrorCode.MEMO_2003 });
+    expect(memoRepository.size).toBe(MEMO_LIMITS.MAX_PER_USER);
   });
 });
 ```

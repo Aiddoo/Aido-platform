@@ -26,6 +26,7 @@
 | HTTP            | `http/v1/memo.controller.ts`·`memo.dto.ts`·`memo-response.mapper.ts` | `MemoController`·`CreateMemoDto`·`toMemoResponse()` | DTO는 컨트롤러별 한 파일, 응답 문구는 매퍼                                                |
 | 로그·경보·오류  | `memos.log-events.ts`·`memos.alerts.ts`·`memos.errors.ts`            | `MemoLogEvent`·`memoNotFound()`                     | 로그 상수는 `*.events.ts`와 겹치지 않게                                                   |
 
+- 표의 메모 이름은 모두 실제 코드다: [notes/memos](../src/modules/notes/memos), 테스트 [fixture](../test/fixtures/notes/memo.fixture.ts)·[InMemory 저장소](../test/doubles/notes/in-memory-memo.repository.ts)·[계약](../test/contracts/notes/memo-repository.contract.ts).
 - 구현은 기술 접두사(`DrizzleMemoRepository`, `InMemoryMemoRepository`)로 짓고 `Impl`을 쓰지 않는다. 구현이 둘 이상 생겨도 구분된다.
 - `Manager`·전달 전용 Facade·`TodoService` 같은 만능 이름으로 역할을 감추지 않는다. 행동 하나가 UseCase 하나다.
 - 라이브러리와 겹치는 이름(`HttpService`·`CacheService`·`Logger`)을 쓰지 않는다(`CacheStore`, `requestVendorJson`).
