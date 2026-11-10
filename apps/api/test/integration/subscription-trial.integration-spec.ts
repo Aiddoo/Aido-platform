@@ -15,6 +15,7 @@ import {
   userPreference,
 } from "#api/platform/database/schema/index";
 import { UNIT_OF_WORK, type UnitOfWorkPort } from "#api/shared/application/ports/index";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantFromDate } from "#api/shared/domain/time/instant";
 import { SubscriptionEventBuilder, UserPreferenceBuilder } from "#test/builders/index";
 import { toDateOrNull } from "#test/fixtures/billing/subscription.fixture";
@@ -167,7 +168,7 @@ describe("무료 체험 구독 저장과 종료 3일 전 안내 (실제 PostgreS
 
       // When
       await webhook.receive({ body: trialPurchase(userId) });
-      const started = await premiumAccess.getPremiumAccess(userId);
+      const started = await premiumAccess.getPremiumAccess(UserId.reconstitute(userId));
       await webhook.receive({
         body: trialEvent(
           userId,
@@ -175,7 +176,7 @@ describe("무료 체험 구독 저장과 종료 3일 전 안내 (실제 PostgreS
           "cancel",
         ),
       });
-      const cancelled = await premiumAccess.getPremiumAccess(userId);
+      const cancelled = await premiumAccess.getPremiumAccess(UserId.reconstitute(userId));
       vi.setSystemTime(new Date(trialEndsAt.getTime() + 60_000));
       await webhook.receive({
         body: trialEvent(
@@ -186,7 +187,7 @@ describe("무료 체험 구독 저장과 종료 3일 전 안내 (실제 PostgreS
           "expire",
         ),
       });
-      const expired = await premiumAccess.getPremiumAccess(userId);
+      const expired = await premiumAccess.getPremiumAccess(UserId.reconstitute(userId));
 
       // Then
       expect(started).toMatchObject({
@@ -226,7 +227,7 @@ describe("무료 체험 구독 저장과 종료 3일 전 안내 (실제 PostgreS
         status: "ACTIVE",
         expiresAt: nextYear,
       });
-      expect(await premiumAccess.getPremiumAccess(userId)).toMatchObject({
+      expect(await premiumAccess.getPremiumAccess(UserId.reconstitute(userId))).toMatchObject({
         isTrial: false,
         willRenew: true,
         periodEndsAt: nextYear,

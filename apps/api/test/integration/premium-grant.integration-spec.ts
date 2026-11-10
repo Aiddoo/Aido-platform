@@ -122,7 +122,12 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
   it("구독 중 받은 보상은 쌓아 두고 스토어 만료 웹훅이 오면 이어서 시작해 프리미엄을 유지한다", async () => {
     // Given
     await givenStoreSubscription();
-    await granter.grant({ userId, source: "INVITE", sourceKey: "invite:a", durationDays: 7 });
+    await granter.grant({
+      userId: UserId.reconstitute(userId),
+      source: "INVITE",
+      sourceKey: "invite:a",
+      durationDays: 7,
+    });
     vi.setSystemTime(STORE_EXPIRY);
     const body = SubscriptionEventBuilder.expiration()
       .withAppUserId(userId)
@@ -154,7 +159,7 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
   it("같은 보상을 동시에 여러 번 지급해도 한 번만 저장하고 다음 보상은 쌓아 두되 이어 붙인 끝까지 프리미엄이다", async () => {
     // Given
     const requests = Array.from({ length: 5 }, () => ({
-      userId,
+      userId: UserId.reconstitute(userId),
       source: "INVITE" as const,
       sourceKey: "invite:same",
       durationDays: 7,
@@ -162,7 +167,12 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
 
     // When
     const results = await Promise.all(requests.map((request) => granter.grant(request)));
-    await granter.grant({ userId, source: "INVITE", sourceKey: "invite:next", durationDays: 3 });
+    await granter.grant({
+      userId: UserId.reconstitute(userId),
+      source: "INVITE",
+      sourceKey: "invite:next",
+      durationDays: 3,
+    });
 
     // Then
     expect(results.filter((result) => result.status === "granted")).toHaveLength(1);
@@ -183,7 +193,12 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
 
   it("끝나기 24시간 전 마지막 기간만 한 번 안내하고 끝나면 sweep이 FREE로 돌린다", async () => {
     // Given
-    await granter.grant({ userId, source: "INVITE", sourceKey: "invite:ending", durationDays: 1 });
+    await granter.grant({
+      userId: UserId.reconstitute(userId),
+      source: "INVITE",
+      sourceKey: "invite:ending",
+      durationDays: 1,
+    });
     const notify = context.module.get(NotifyEndingPremiumGrantsUseCase);
     const sweep = context.module.get(SweepPremiumGrantsUseCase);
 
@@ -222,7 +237,12 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
 
   it("두 sweep이 동시에 돌아도 보상 종료 알림은 하나다", async () => {
     // Given
-    await granter.grant({ userId, source: "INVITE", sourceKey: "invite:race", durationDays: 1 });
+    await granter.grant({
+      userId: UserId.reconstitute(userId),
+      source: "INVITE",
+      sourceKey: "invite:race",
+      durationDays: 1,
+    });
     const notify = context.module.get(NotifyEndingPremiumGrantsUseCase);
     const at = new Date("2028-02-26T06:00:00.000Z");
 
@@ -245,7 +265,7 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
   it("보상 중에 산 스토어 구독이 보상 끝 뒤까지 이어지면 보상 종료 알림을 보내지 않는다", async () => {
     // Given
     await granter.grant({
-      userId,
+      userId: UserId.reconstitute(userId),
       source: "INVITE",
       sourceKey: "invite:then-store",
       durationDays: 1,
@@ -271,7 +291,12 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
   it("스토어 구독이 웹훅 없이 끝나도 sweep이 그 시각부터 쌓아 둔 보상을 시작하고, 아직 유효한 구독의 보상은 그대로 둔다", async () => {
     // Given
     await givenStoreSubscription();
-    await granter.grant({ userId, source: "INVITE", sourceKey: "invite:banked", durationDays: 7 });
+    await granter.grant({
+      userId: UserId.reconstitute(userId),
+      source: "INVITE",
+      sourceKey: "invite:banked",
+      durationDays: 7,
+    });
     const coveredUser = UserFixture.create({
       id: createEntityId(),
       email: "premium-grant-covered@example.com",
@@ -291,7 +316,7 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
       subscriptionExpiresAt: new Date("2028-04-01T04:00:00.000Z"),
     });
     await granter.grant({
-      userId: coveredUser.id,
+      userId: UserId.reconstitute(coveredUser.id),
       source: "INVITE",
       sourceKey: "invite:covered",
       durationDays: 7,
@@ -401,7 +426,7 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
       .build();
     await context.module.get(RevenueCatWebhookReceiver).receive({ body: transfer });
     await granter.grant({
-      userId,
+      userId: UserId.reconstitute(userId),
       source: "INVITE",
       sourceKey: "invite:transfer",
       durationDays: 7,
@@ -424,7 +449,7 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
     expect(
       await context.module
         .get<PremiumAccessReaderPort>(PremiumAccessReaderPort)
-        .getPremiumAccess(userId),
+        .getPremiumAccess(UserId.reconstitute(userId)),
     ).toMatchObject({ source: null, endsAt: null });
   });
 
@@ -446,7 +471,7 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
 
     // When
     await granter.grant({
-      userId,
+      userId: UserId.reconstitute(userId),
       source: "INVITE",
       sourceKey: "invite:receiver",
       durationDays: 7,
@@ -473,14 +498,14 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
     expect(
       await context.module
         .get<PremiumAccessReaderPort>(PremiumAccessReaderPort)
-        .getPremiumAccess(giverId),
+        .getPremiumAccess(UserId.reconstitute(giverId)),
     ).toMatchObject({ source: null });
   });
 
   it("sweep이 돌기 전이라도 보상 기간이 끝나는 시각부터 프리미엄이 아니다", async () => {
     // Given
     await granter.grant({
-      userId,
+      userId: UserId.reconstitute(userId),
       source: "INVITE",
       sourceKey: "invite:boundary",
       durationDays: 7,
@@ -501,7 +526,12 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
   it("자동 갱신 구독은 만료 뒤 유예 시간 동안 쌓아 둔 보상을 시작하지 않고 그 뒤에야 시작한다", async () => {
     // Given
     await givenStoreSubscription();
-    await granter.grant({ userId, source: "INVITE", sourceKey: "invite:grace", durationDays: 7 });
+    await granter.grant({
+      userId: UserId.reconstitute(userId),
+      source: "INVITE",
+      sourceKey: "invite:grace",
+      durationDays: 7,
+    });
     const sweep = context.module.get(SweepPremiumGrantsUseCase);
     const inGrace = new Date(STORE_EXPIRY.getTime() + STORE_RENEWAL_GRACE_MS - 1);
     const afterGrace = new Date(STORE_EXPIRY.getTime() + STORE_RENEWAL_GRACE_MS);
@@ -551,15 +581,25 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
   function premiumAccess() {
     return context.module
       .get<PremiumAccessReaderPort>(PremiumAccessReaderPort)
-      .getPremiumAccess(userId);
+      .getPremiumAccess(UserId.reconstitute(userId));
   }
 
   it("보상 기간 중 구독을 사면 진행 중인 기간을 구매 시각에 끝내고 남은 일수를 스토어 뒤로 다시 쌓는다", async () => {
     // Given
-    await granter.grant({ userId, source: "INVITE", sourceKey: "invite:g1", durationDays: 7 });
+    await granter.grant({
+      userId: UserId.reconstitute(userId),
+      source: "INVITE",
+      sourceKey: "invite:g1",
+      durationDays: 7,
+    });
     // 받은 순서가 createdAt이라 같은 시각에 받으면 순서가 id로 갈린다. 실제 지급처럼 시각을 띄운다
     vi.setSystemTime(new Date(AT.getTime() + 1_000));
-    await granter.grant({ userId, source: "INVITE", sourceKey: "invite:g2", durationDays: 7 });
+    await granter.grant({
+      userId: UserId.reconstitute(userId),
+      source: "INVITE",
+      sourceKey: "invite:g2",
+      durationDays: 7,
+    });
     const beforePurchase = await premiumAccess();
     const purchasedAt = new Date("2028-02-28T04:00:00.000Z");
     vi.setSystemTime(purchasedAt);
@@ -624,7 +664,12 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
 
   it("구매 웹훅·sweep·보상 지급이 동시에 와도 남은 기간은 한 번만 다시 쌓고 새 보상은 그 뒤에 쌓는다", async () => {
     // Given
-    await granter.grant({ userId, source: "INVITE", sourceKey: "invite:running", durationDays: 7 });
+    await granter.grant({
+      userId: UserId.reconstitute(userId),
+      source: "INVITE",
+      sourceKey: "invite:running",
+      durationDays: 7,
+    });
     const purchasedAt = new Date("2028-02-29T15:00:00.000Z");
     vi.setSystemTime(purchasedAt);
     const webhook = context.module.get(RevenueCatWebhookReceiver);
@@ -634,7 +679,12 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
     await Promise.all([
       webhook.receive({ body: purchase("concurrent-purchase", purchasedAt) }),
       sweep.execute({ now: instantFromDate(purchasedAt) }),
-      granter.grant({ userId, source: "INVITE", sourceKey: "invite:concurrent", durationDays: 7 }),
+      granter.grant({
+        userId: UserId.reconstitute(userId),
+        source: "INVITE",
+        sourceKey: "invite:concurrent",
+        durationDays: 7,
+      }),
     ]);
     // 같은 사용자 웹훅 잠금 경합(SUBSCRIPTION_1605)은 RevenueCat이 다시 보내므로 재전송은 뒤에 온다
     await webhook.receive({ body: purchase("concurrent-purchase-redelivered", purchasedAt) });
@@ -658,7 +708,7 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
     // Given
     await givenStoreSubscription();
     await granter.grant({
-      userId,
+      userId: UserId.reconstitute(userId),
       source: "INVITE",
       sourceKey: "invite:after-store",
       durationDays: 7,
@@ -703,7 +753,12 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
   it("보상이 시작된 뒤 다시 구독하면 진행 중인 보상을 끊어 남은 일수를 새 구독 뒤로 쌓는다", async () => {
     // Given
     await givenStoreSubscription();
-    await granter.grant({ userId, source: "INVITE", sourceKey: "invite:resub", durationDays: 7 });
+    await granter.grant({
+      userId: UserId.reconstitute(userId),
+      source: "INVITE",
+      sourceKey: "invite:resub",
+      durationDays: 7,
+    });
     vi.setSystemTime(STORE_EXPIRY);
     const webhook = context.module.get(RevenueCatWebhookReceiver);
     await webhook.receive({
@@ -751,7 +806,12 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
 
   it("보상 기간이 끝난 뒤 받은 보상은 쌓지 않고 바로 시작한다", async () => {
     // Given
-    await granter.grant({ userId, source: "INVITE", sourceKey: "invite:first", durationDays: 7 });
+    await granter.grant({
+      userId: UserId.reconstitute(userId),
+      source: "INVITE",
+      sourceKey: "invite:first",
+      durationDays: 7,
+    });
     const afterFirst = new Date("2028-03-05T04:00:00.000Z");
     vi.setSystemTime(afterFirst);
     await context.module
@@ -759,7 +819,12 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
       .execute({ now: instantFromDate(afterFirst) });
 
     // When
-    await granter.grant({ userId, source: "INVITE", sourceKey: "invite:second", durationDays: 7 });
+    await granter.grant({
+      userId: UserId.reconstitute(userId),
+      source: "INVITE",
+      sourceKey: "invite:second",
+      durationDays: 7,
+    });
 
     // Then
     expect(await grantsOf(userId)).toEqual([
@@ -813,7 +878,7 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
 
     // When
     const granted = await granter.grant({
-      userId,
+      userId: UserId.reconstitute(userId),
       source: "INVITE",
       sourceKey: "invite:admin",
       durationDays: 1,
@@ -849,7 +914,7 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
     await client.update(userTable).set({ role: "ADMIN" }).where(eq(userTable.id, userId));
     await givenStoreSubscription();
     await granter.grant({
-      userId,
+      userId: UserId.reconstitute(userId),
       source: "INVITE",
       sourceKey: "invite:admin-store",
       durationDays: 7,
@@ -874,7 +939,7 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
     const userIds = [userId, await createUser("PGRANT04"), await createUser("PGRANT05")];
     for (const [index, target] of userIds.entries()) {
       await granter.grant({
-        userId: target,
+        userId: UserId.reconstitute(target),
         source: "INVITE",
         sourceKey: `invite:notice-${index}`,
         durationDays: 1,
@@ -928,7 +993,12 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
   it("만료 웹훅을 잃은 구독자에게 쌓아 둔 보상이 있으면 sweep이 스토어가 끝난 시각부터 이어서 시작한다", async () => {
     // Given
     await givenStoreSubscription();
-    await granter.grant({ userId, source: "INVITE", sourceKey: "invite:lapsed", durationDays: 7 });
+    await granter.grant({
+      userId: UserId.reconstitute(userId),
+      source: "INVITE",
+      sourceKey: "invite:lapsed",
+      durationDays: 7,
+    });
     const afterGrace = new Date(STORE_EXPIRY.getTime() + STORE_RENEWAL_GRACE_MS);
     vi.setSystemTime(afterGrace);
 
@@ -946,7 +1016,12 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
   });
   it("잘못 준 보상을 취소하면 REVOKED로 남기고 프리미엄을 바로 끝내며 같은 취소는 바꾸지 않는다", async () => {
     // Given
-    await granter.grant({ userId, source: "INVITE", sourceKey: "invite:wrong", durationDays: 7 });
+    await granter.grant({
+      userId: UserId.reconstitute(userId),
+      source: "INVITE",
+      sourceKey: "invite:wrong",
+      durationDays: 7,
+    });
     const revoke = context.module.get(RevokePremiumGrantUseCase);
 
     // When

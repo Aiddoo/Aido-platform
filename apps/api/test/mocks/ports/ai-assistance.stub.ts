@@ -51,7 +51,7 @@ export class StubAiGenerationAccess
     this.reads.push({ inUnitOfWork: this.unitOfWork.depth > 0, eligible });
     return eligible;
   }
-  async lockById(_userId: string): Promise<boolean> {
+  async lockById(_userId: UserId): Promise<boolean> {
     this.locks.push(this.unitOfWork.depth > 0);
     return this.exists;
   }

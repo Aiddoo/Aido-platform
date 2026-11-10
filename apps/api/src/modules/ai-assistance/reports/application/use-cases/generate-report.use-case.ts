@@ -274,7 +274,7 @@ export class GenerateReportUseCase {
     try {
       return await unitOfWork.run(async () => {
         if (
-          !(await userMutationLock.lockById(userId)) ||
+          !(await userMutationLock.lockById(owner)) ||
           !(await entitlementReader.canInTx(owner, "AI_REPORT"))
         ) {
           return null;

@@ -45,7 +45,7 @@ export class ReopenQuotaReservationUseCase {
     } = this.#dependencies;
     const userId = UserId.reconstitute(reservation.userId);
     return unitOfWork.run(async () => {
-      if (!(await userMutationLock.lockById(reservation.userId))) {
+      if (!(await userMutationLock.lockById(UserId.reconstitute(reservation.userId)))) {
         throw accessUserNotFound(reservation.userId);
       }
       const state = await accessStateReader.findAccessState(userId);

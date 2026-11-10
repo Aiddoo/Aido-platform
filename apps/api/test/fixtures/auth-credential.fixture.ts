@@ -216,10 +216,10 @@ export class StubPremiumAccessReader implements PremiumAccessReaderPort {
   readonly accesses = new Map<string, PremiumAccess>();
   readonly requestedUserIds: string[] = [];
 
-  async getPremiumAccess(userId: string): Promise<PremiumAccess> {
-    this.requestedUserIds.push(userId);
+  async getPremiumAccess(userId: UserId): Promise<PremiumAccess> {
+    this.requestedUserIds.push(userId.value);
     return (
-      this.accesses.get(userId) ?? {
+      this.accesses.get(userId.value) ?? {
         source: null,
         endsAt: null,
         periodEndsAt: null,

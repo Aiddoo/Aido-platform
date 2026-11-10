@@ -146,7 +146,7 @@ export class SweepPremiumGrantsUseCase {
     let changedGrantCount: number;
     try {
       changedGrantCount = await this.#dependencies.unitOfWork.run(async () => {
-        if (!(await this.#dependencies.userLock.lockById(userId.value))) {
+        if (!(await this.#dependencies.userLock.lockById(userId))) {
           return 0;
         }
         const projected = await this.#dependencies.projectPremiumAccess.execute({ userId, now });
@@ -162,7 +162,7 @@ export class SweepPremiumGrantsUseCase {
     }
 
     try {
-      await this.#dependencies.cache.invalidate(userId.value);
+      await this.#dependencies.cache.invalidate(userId);
     } catch (error) {
       this.#dependencies.logger.warn({
         event: PremiumGrantLogEvent.PREMIUM_GRANT_CACHE_INVALIDATION_FAILED,

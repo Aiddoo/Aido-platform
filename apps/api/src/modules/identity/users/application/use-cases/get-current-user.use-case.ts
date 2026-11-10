@@ -52,7 +52,9 @@ export class GetCurrentUserUseCase {
           return undefined;
         }
         // 없는 사용자에게 보상·구독 조회를 더 하지 않는다
-        const premiumAccess = await this.#dependencies.premiumAccessReader.getPremiumAccess(userId);
+        const premiumAccess = await this.#dependencies.premiumAccessReader.getPremiumAccess(
+          UserId.reconstitute(userId),
+        );
 
         return {
           id: user.id,

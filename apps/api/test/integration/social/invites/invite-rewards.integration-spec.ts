@@ -386,7 +386,7 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
     const entitlement = context.module.get(EntitlementReaderPort);
     const reader = context.module.get<PremiumAccessReaderPort>(PremiumAccessReaderPort);
     for (const { inviterId } of scenarios) {
-      expect(await reader.getPremiumAccess(inviterId)).toMatchObject({
+      expect(await reader.getPremiumAccess(UserId.reconstitute(inviterId))).toMatchObject({
         source: "STORE",
         periodEndsAt: storeExpiry,
         bankedDays: 7,

@@ -12,6 +12,7 @@ import {
   type BillingSubscriptionsConfig,
   billingSubscriptionsConfig,
 } from "../../../billing-subscriptions.config.js";
+import type { StoreSubscriptionId } from "../../../domain/store-subscription-id.vo.js";
 import type { StoreSubscriptionState } from "../../../domain/subscription.aggregate.js";
 import { REVENUECAT_API_POLICY } from "./revenuecat-outbound.policy.js";
 import {
@@ -76,14 +77,16 @@ export class RevenueCatStoreSubscriptionStatusAdapter extends StoreSubscriptionS
     this.#policy = policies.get(REVENUECAT_API_POLICY);
   }
 
-  async read(storeSubscriptionIds: readonly string[]): Promise<StoreSubscriptionState[] | null> {
+  async read(
+    storeSubscriptionIds: readonly StoreSubscriptionId[],
+  ): Promise<StoreSubscriptionState[] | null> {
     const { apiV2SecretKey, projectId } = this.#config.revenuecat;
     if (apiV2SecretKey == null || projectId == null) {
       return null;
     }
     const states: StoreSubscriptionState[] = [];
     // 사용자당 체인이 몇 개뿐이라 순서대로 읽어 한도와 bulkhead를 아낀다
-    for (const storeSubscriptionId of storeSubscriptionIds) {
+    for (const { value: storeSubscriptionId } of storeSubscriptionIds) {
       const subscription = await this.#findSubscription(projectId, storeSubscriptionId);
       if (subscription != null) {
         states.push({

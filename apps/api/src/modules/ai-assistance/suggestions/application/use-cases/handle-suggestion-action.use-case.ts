@@ -76,7 +76,9 @@ export class HandleSuggestionActionUseCase {
     const timezone =
       command.timezone ?? (await this.#dependencies.localePreferenceReader.read(owner)).timezone;
     const result = await this.#dependencies.unitOfWork.run(async () => {
-      if (!(await this.#dependencies.userMutationLock.lockById(command.userId))) {
+      if (
+        !(await this.#dependencies.userMutationLock.lockById(UserId.reconstitute(command.userId)))
+      ) {
         throw new ApplicationException(ErrorCode.AI_1309);
       }
       await this.#enforcePremium(command.userId);

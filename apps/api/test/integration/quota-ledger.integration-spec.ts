@@ -812,9 +812,12 @@ describe("QuotaLedger 원장·카운터·멱등 (실제 PostgreSQL)", () => {
         .update(userTable)
         .set({ aiUsageCount: FREE_AI_LIMIT })
         .where(eq(userTable.id, userId));
-      await context.module
-        .get<PremiumGranterPort>(PremiumGranterPort)
-        .grant({ userId, source: "INVITE", sourceKey: "invite:quota-ledger", durationDays: 7 });
+      await context.module.get<PremiumGranterPort>(PremiumGranterPort).grant({
+        userId: UserId.reconstitute(userId),
+        source: "INVITE",
+        sourceKey: "invite:quota-ledger",
+        durationDays: 7,
+      });
       const grantEndsAt = new Date(newMonthAt.getTime() + 7 * 24 * 60 * 60 * 1_000);
       vi.setSystemTime(new Date(grantEndsAt.getTime() - 1));
       const duringGrant = await ledger.read(UserId.reconstitute(userId), "AI_PARSE");

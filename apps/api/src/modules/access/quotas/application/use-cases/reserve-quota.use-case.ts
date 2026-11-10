@@ -54,7 +54,7 @@ export class ReserveQuotaUseCase {
       this.#dependencies;
     const { userId } = command;
     return unitOfWork.run(async () => {
-      if (!(await userMutationLock.lockById(userId.value))) {
+      if (!(await userMutationLock.lockById(userId))) {
         throw accessUserNotFound(userId.value);
       }
       const state = await accessStateReader.findAccessState(userId);

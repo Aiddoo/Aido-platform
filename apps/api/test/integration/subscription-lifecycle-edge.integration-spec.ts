@@ -8,6 +8,7 @@ import {
 import { RevenueCatWebhookReceiver } from "#api/modules/billing/subscriptions/infrastructure/adapters/revenuecat/revenuecat-webhook-receiver.adapter";
 import { createEntityId } from "#api/platform/database/entity-id";
 import { user as userTable } from "#api/platform/database/schema/index";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantFromDate } from "#api/shared/domain/time/instant";
 import { SubscriptionEventBuilder } from "#test/builders/index";
 import { toDateOrNull } from "#test/fixtures/billing/subscription.fixture";
@@ -91,7 +92,7 @@ describe("결제 생애주기의 순서 뒤바뀜·환불 경계 (실제 Postgre
   function premiumAccess() {
     return context.module
       .get<PremiumAccessReaderPort>(PremiumAccessReaderPort)
-      .getPremiumAccess(userId);
+      .getPremiumAccess(UserId.reconstitute(userId));
   }
 
   async function grantsOf() {
@@ -121,7 +122,12 @@ describe("결제 생애주기의 순서 뒤바뀜·환불 경계 (실제 Postgre
       await webhook(
         chainEvent(SubscriptionEventBuilder.initialPurchase(), "purchase", FIRST_EXPIRY),
       );
-      await granter.grant({ userId, source: "INVITE", sourceKey: "edge:invite", durationDays: 7 });
+      await granter.grant({
+        userId: UserId.reconstitute(userId),
+        source: "INVITE",
+        sourceKey: "edge:invite",
+        durationDays: 7,
+      });
       vi.setSystemTime(RENEWED_AT);
       await webhook(chainEvent(SubscriptionEventBuilder.renewal(), "renewal", NEXT_EXPIRY));
       vi.setSystemTime(LATE_AT);
@@ -169,7 +175,12 @@ describe("결제 생애주기의 순서 뒤바뀜·환불 경계 (실제 Postgre
   it("환불 뒤 다시 온 환불과 늦은 만료는 이미 시작한 보상을 다시 시작하거나 두 번 세지 않는다", async () => {
     // Given
     await webhook(chainEvent(SubscriptionEventBuilder.initialPurchase(), "purchase", FIRST_EXPIRY));
-    await granter.grant({ userId, source: "INVITE", sourceKey: "refund:invite", durationDays: 7 });
+    await granter.grant({
+      userId: UserId.reconstitute(userId),
+      source: "INVITE",
+      sourceKey: "refund:invite",
+      durationDays: 7,
+    });
     const refundedAt = new Date("2028-03-01T04:00:00.000Z");
     vi.setSystemTime(refundedAt);
     await webhook(

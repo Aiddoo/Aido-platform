@@ -36,7 +36,7 @@ export class RewardApplierAdapter extends RewardApplierPort {
 
   async #applyPremiumDays(grant: RewardGrant): Promise<void> {
     const result = await this.#premiumGranter.grant({
-      userId: grant.recipientId.value,
+      userId: grant.recipientId,
       source: "INVITE",
       sourceKey: grant.benefitSourceKey,
       durationDays: grant.quantity,

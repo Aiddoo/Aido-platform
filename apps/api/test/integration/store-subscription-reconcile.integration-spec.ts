@@ -8,6 +8,7 @@ import { STORE_SUBSCRIPTION_RECONCILE_QUEUE } from "#api/modules/billing/subscri
 import { createEntityId } from "#api/platform/database/entity-id";
 import { user as userTable } from "#api/platform/database/schema/index";
 import { JobQueuePort } from "#api/shared/application/ports/index";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantFromDate } from "#api/shared/domain/time/instant";
 import { SubscriptionEventBuilder } from "#test/builders/index";
 import { StubStoreSubscriptionStatusReader } from "#test/doubles/billing/stub-store-subscription-status.reader";
@@ -151,7 +152,7 @@ describe("구독 웹훅 뒤 스토어 상태 대조 (실제 PostgreSQL)", () => 
         where: { revenueCatId: CHAIN },
       }),
     ).toEqual(afterFirstRun);
-    expect(await premiumAccess.getPremiumAccess(user.id)).toMatchObject({
+    expect(await premiumAccess.getPremiumAccess(UserId.reconstitute(user.id))).toMatchObject({
       source: "STORE",
       periodEndsAt: renewedExpiresAt,
       willRenew: true,

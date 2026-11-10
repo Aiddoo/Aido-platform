@@ -7,6 +7,7 @@ import { billingSubscriptionsConfig } from "#api/modules/billing/subscriptions/b
 import { PremiumGranterPort } from "#api/modules/billing/subscriptions/billing-subscriptions.public";
 import { AuthCachePort } from "#api/modules/identity/auth/application/ports/auth-collaboration.port";
 import { subscription, subscriptionEventReceipt } from "#api/platform/database/schema/index";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantFromDate } from "#api/shared/domain/time/instant";
 import { SubscriptionEventBuilder } from "#test/builders/subscription-event.builder";
 
@@ -301,9 +302,12 @@ describe("구독 Webhook HTTP 계약과 권한 캐시 (실제 PostgreSQL)", () =
       .get("/v1/auth/me")
       .set("Authorization", `Bearer ${user.accessToken}`)
       .expect(200);
-    await context.module
-      .get<PremiumGranterPort>(PremiumGranterPort)
-      .grant({ userId: user.userId, source: "INVITE", sourceKey: "invite:me", durationDays: 7 });
+    await context.module.get<PremiumGranterPort>(PremiumGranterPort).grant({
+      userId: UserId.reconstitute(user.userId),
+      source: "INVITE",
+      sourceKey: "invite:me",
+      durationDays: 7,
+    });
 
     const afterFirst = await request(context.app.getHttpServer())
       .get("/v1/auth/me")
@@ -311,9 +315,12 @@ describe("구독 Webhook HTTP 계약과 권한 캐시 (실제 PostgreSQL)", () =
       .expect(200);
 
     // When
-    await context.module
-      .get<PremiumGranterPort>(PremiumGranterPort)
-      .grant({ userId: user.userId, source: "INVITE", sourceKey: "invite:me-2", durationDays: 7 });
+    await context.module.get<PremiumGranterPort>(PremiumGranterPort).grant({
+      userId: UserId.reconstitute(user.userId),
+      source: "INVITE",
+      sourceKey: "invite:me-2",
+      durationDays: 7,
+    });
     const after = await request(context.app.getHttpServer())
       .get("/v1/auth/me")
       .set("Authorization", `Bearer ${user.accessToken}`)
@@ -354,9 +361,12 @@ describe("구독 Webhook HTTP 계약과 권한 캐시 (실제 PostgreSQL)", () =
     const email = "premium-grant-ended@test.com";
     const password = "Test1234!";
     const user = await context.helpers.createVerifiedUser(email, password);
-    await context.module
-      .get<PremiumGranterPort>(PremiumGranterPort)
-      .grant({ userId: user.userId, source: "INVITE", sourceKey: "invite:ended", durationDays: 1 });
+    await context.module.get<PremiumGranterPort>(PremiumGranterPort).grant({
+      userId: UserId.reconstitute(user.userId),
+      source: "INVITE",
+      sourceKey: "invite:ended",
+      durationDays: 1,
+    });
     const endsAt = new Date(Date.now() + 24 * 60 * 60 * 1_000);
     const authCache = context.module.get<AuthCachePort>(AuthCachePort, { strict: false });
     const meAt = async (time: Date) => {

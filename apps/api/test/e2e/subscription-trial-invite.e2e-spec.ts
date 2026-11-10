@@ -5,6 +5,7 @@ import { STORE_RENEWAL_GRACE_MS } from "#api/modules/billing/shared/store-renewa
 import { billingSubscriptionsConfig } from "#api/modules/billing/subscriptions/billing-subscriptions.config";
 import { PremiumGranterPort } from "#api/modules/billing/subscriptions/billing-subscriptions.public";
 import { subscription } from "#api/platform/database/schema/index";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { SubscriptionEventBuilder } from "#test/builders/subscription-event.builder";
 
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
@@ -92,9 +93,12 @@ describe("무료 체험 중 받은 초대 보상과 체험 종료 뒤 /me (실�
       trialEvent(SubscriptionEventBuilder.initialPurchase().withPrice(0), userId, "trial-start"),
     );
     vi.setSystemTime(INVITED_AT);
-    await context.module
-      .get<PremiumGranterPort>(PremiumGranterPort)
-      .grant({ userId, source: "INVITE", sourceKey: "invite:trial", durationDays: 7 });
+    await context.module.get<PremiumGranterPort>(PremiumGranterPort).grant({
+      userId: UserId.reconstitute(userId),
+      source: "INVITE",
+      sourceKey: "invite:trial",
+      durationDays: 7,
+    });
 
     // When
     const duringTrial = await meAt(INVITED_AT);

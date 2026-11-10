@@ -177,7 +177,7 @@ export class AnalyzeAndCreateSuggestionsUseCase {
     const createdCount = await this.#dependencies.unitOfWork.run(async () => {
       const { userMutationLock, entitlementReader } = this.#dependencies;
       if (
-        !(await userMutationLock.lockById(userId)) ||
+        !(await userMutationLock.lockById(owner)) ||
         !(await entitlementReader.canInTx(owner, "AI_SUGGESTION"))
       ) {
         return 0;

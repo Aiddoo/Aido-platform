@@ -87,7 +87,7 @@ describe("결제 구독과 보상 기간 결합 타임라인 QA (실제 PostgreS
   function premiumAccess() {
     return context.module
       .get<PremiumAccessReaderPort>(PremiumAccessReaderPort)
-      .getPremiumAccess(userId);
+      .getPremiumAccess(UserId.reconstitute(userId));
   }
 
   function isPremium() {
@@ -129,7 +129,12 @@ describe("결제 구독과 보상 기간 결합 타임라인 QA (실제 PostgreS
     await webhook(storeEvent(SubscriptionEventBuilder.initialPurchase(), "s5-purchase"));
 
     // When
-    await granter.grant({ userId, source: "INVITE", sourceKey: "s5:invite", durationDays: 7 });
+    await granter.grant({
+      userId: UserId.reconstitute(userId),
+      source: "INVITE",
+      sourceKey: "s5:invite",
+      durationDays: 7,
+    });
 
     // Then
     expect(await premiumAccess()).toEqual({
@@ -148,7 +153,12 @@ describe("결제 구독과 보상 기간 결합 타임라인 QA (실제 PostgreS
   it("자동 갱신을 끈 구독과 쌓아 둔 보상은 /me와 취소 웹훅 projection 모두 만료 시각부터 이어 붙인다", async () => {
     // Given
     await webhook(storeEvent(SubscriptionEventBuilder.initialPurchase(), "s6-purchase"));
-    await granter.grant({ userId, source: "INVITE", sourceKey: "s6:invite", durationDays: 7 });
+    await granter.grant({
+      userId: UserId.reconstitute(userId),
+      source: "INVITE",
+      sourceKey: "s6:invite",
+      durationDays: 7,
+    });
     vi.setSystemTime(new Date("2028-03-01T04:00:00.000Z"));
 
     // When
@@ -185,7 +195,12 @@ describe("결제 구독과 보상 기간 결합 타임라인 QA (실제 PostgreS
   it("환불되면 스토어는 즉시 끝나고 쌓아 둔 보상은 환불 시각부터 바로 시작한다", async () => {
     // Given
     await webhook(storeEvent(SubscriptionEventBuilder.initialPurchase(), "s8-purchase"));
-    await granter.grant({ userId, source: "INVITE", sourceKey: "s8:invite", durationDays: 7 });
+    await granter.grant({
+      userId: UserId.reconstitute(userId),
+      source: "INVITE",
+      sourceKey: "s8:invite",
+      durationDays: 7,
+    });
     const refundedAt = new Date("2028-03-01T04:00:00.000Z");
     vi.setSystemTime(refundedAt);
 
@@ -228,7 +243,12 @@ describe("결제 구독과 보상 기간 결합 타임라인 QA (실제 PostgreS
   it("스토어 결제 유예 10일째에는 프리미엄을 유지하고 보상을 시작하지 않으며, 결제가 복구되면 쌓아 둔 일수를 그대로 둔다", async () => {
     // Given 결제 실패: RevenueCat은 BILLING_ISSUE와 CANCELLATION(BILLING_ERROR)을 함께 보낸다
     await webhook(storeEvent(SubscriptionEventBuilder.initialPurchase(), "s7-purchase"));
-    await granter.grant({ userId, source: "INVITE", sourceKey: "s7:invite", durationDays: 7 });
+    await granter.grant({
+      userId: UserId.reconstitute(userId),
+      source: "INVITE",
+      sourceKey: "s7:invite",
+      durationDays: 7,
+    });
     const graceEndsAt = new Date(STORE_EXPIRY.getTime() + 16 * DAY_MS);
     vi.setSystemTime(STORE_EXPIRY);
     await webhook(billingIssue("s7-billing", graceEndsAt));
@@ -287,7 +307,12 @@ describe("결제 구독과 보상 기간 결합 타임라인 QA (실제 PostgreS
   it("결제 유예가 복구 없이 끝나면 쌓아 둔 보상을 유예 끝부터 한 번만 시작하고 늦은 EXPIRATION도 다시 시작하지 않는다", async () => {
     // Given
     await webhook(storeEvent(SubscriptionEventBuilder.initialPurchase(), "g-purchase"));
-    await granter.grant({ userId, source: "INVITE", sourceKey: "g:invite", durationDays: 7 });
+    await granter.grant({
+      userId: UserId.reconstitute(userId),
+      source: "INVITE",
+      sourceKey: "g:invite",
+      durationDays: 7,
+    });
     const graceEndsAt = new Date(STORE_EXPIRY.getTime() + 16 * DAY_MS);
     vi.setSystemTime(STORE_EXPIRY);
     await webhook(billingIssue("g-billing", graceEndsAt));
@@ -332,7 +357,12 @@ describe("결제 구독과 보상 기간 결합 타임라인 QA (실제 PostgreS
 
   it("진행 중인 보상을 두 번 끊어도 남은 기간을 ms 그대로 쌓아 일수 올림이 누적되지 않는다", async () => {
     // Given 보상 진행 중 1일 21시간 뒤 구매, 환불 뒤 다시 1일 9시간 뒤 구매
-    await granter.grant({ userId, source: "INVITE", sourceKey: "r:invite", durationDays: 7 });
+    await granter.grant({
+      userId: UserId.reconstitute(userId),
+      source: "INVITE",
+      sourceKey: "r:invite",
+      durationDays: 7,
+    });
     vi.setSystemTime(new Date(AT.getTime() + DAY_MS + 21 * 3_600_000));
     await webhook(storeEvent(SubscriptionEventBuilder.initialPurchase(), "r-purchase"));
     const refundedAt = new Date(AT.getTime() + 3 * DAY_MS);
@@ -411,7 +441,12 @@ describe("결제 구독과 보상 기간 결합 타임라인 QA (실제 PostgreS
   it("만료 시각 없는 UNCANCELLATION은 저장된 만료 시각을 유지해 유료 기간 중에 쌓아 둔 보상을 시작하지 않는다", async () => {
     // Given
     await webhook(storeEvent(SubscriptionEventBuilder.initialPurchase(), "u-purchase"));
-    await granter.grant({ userId, source: "INVITE", sourceKey: "u:invite", durationDays: 7 });
+    await granter.grant({
+      userId: UserId.reconstitute(userId),
+      source: "INVITE",
+      sourceKey: "u:invite",
+      durationDays: 7,
+    });
     vi.setSystemTime(new Date("2028-03-01T04:00:00.000Z"));
     await webhook(storeEvent(SubscriptionEventBuilder.cancellation(), "u-cancel"));
     const uncancelledAt = new Date("2028-03-02T04:00:00.000Z");
@@ -468,7 +503,12 @@ describe("결제 구독과 보상 기간 결합 타임라인 QA (실제 PostgreS
 
   it("보상이 끝난 직후 sweep 전이라도 /me 프로필 캐시가 경계에서 만료돼 source와 isPremium이 함께 무료가 된다", async () => {
     // Given
-    await granter.grant({ userId, source: "INVITE", sourceKey: "c:invite", durationDays: 7 });
+    await granter.grant({
+      userId: UserId.reconstitute(userId),
+      source: "INVITE",
+      sourceKey: "c:invite",
+      durationDays: 7,
+    });
     const endsAt = new Date(AT.getTime() + 7 * DAY_MS);
     const getMe = context.module.get(GetCurrentUserUseCase);
     const input = { userId, sessionId: "qa-session", timezone: "Asia/Seoul" };
@@ -497,7 +537,12 @@ describe("결제 구독과 보상 기간 결합 타임라인 QA (실제 PostgreS
   it("월간에서 연간으로 바꾸면 상품 변경 안내는 기간을 두고, 연간 갱신이 만료만 늘리며 쌓아 둔 보상은 유지된다", async () => {
     // Given
     await webhook(storeEvent(SubscriptionEventBuilder.initialPurchase(), "p-purchase"));
-    await granter.grant({ userId, source: "INVITE", sourceKey: "p:invite", durationDays: 7 });
+    await granter.grant({
+      userId: UserId.reconstitute(userId),
+      source: "INVITE",
+      sourceKey: "p:invite",
+      durationDays: 7,
+    });
     const annualExpiry = new Date("2029-03-10T04:00:00.000Z");
 
     // When

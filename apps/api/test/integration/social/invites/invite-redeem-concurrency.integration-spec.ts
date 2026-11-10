@@ -16,6 +16,7 @@ import {
   rewardGrant,
   user,
 } from "#api/platform/database/schema/index";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { SubscriptionEventBuilder } from "#test/builders/index";
 import { UserFixture } from "#test/fixtures/index";
 import { createTestClient } from "#test/setup/database-context";
@@ -136,7 +137,7 @@ describe("초대 수락 동시성 (실제 PostgreSQL)", () => {
     expect(redeemed.outcome).toBe("REDEEMED");
     const access = await context.module
       .get<PremiumAccessReaderPort>(PremiumAccessReaderPort)
-      .getPremiumAccess(inviteeId);
+      .getPremiumAccess(UserId.reconstitute(inviteeId));
     expect(access).toMatchObject({ source: "STORE", bankedDays: 7 });
     expect(
       await client
