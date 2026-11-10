@@ -22,9 +22,11 @@ import { SweepTimezoneRemindersUseCase } from "#api/modules/notification/reminde
 import { NOTIFICATION_SCHEDULE } from "#api/modules/notification/reminders/domain/notification-schedule.domain-service";
 import { provideSweepTimezoneRemindersUseCase } from "#api/modules/notification/reminders/notification-reminders.providers";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
+import { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 import { SweepCursorPort } from "#api/shared/application/ports/sweep-cursor.port";
 import { InMemorySweepCursor } from "#test/doubles/notification/in-memory-sweep-cursor";
 import { DateClock } from "#test/doubles/platform/date-clock";
+import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";
 import { TEST_CUID } from "#test/fixtures/index";
 import { suppressLogger } from "#test/setup/suppress-logger";
 
@@ -91,6 +93,7 @@ describe("SweepTimezoneRemindersUseCase 통합 테스트 (Mock 포트)", () => {
         { provide: TimezoneReminderEnqueuerPort, useValue: mockEnqueuer },
         { provide: SweepCursorPort, useValue: new InMemorySweepCursor() },
         { provide: ClockPort, useValue: new DateClock() },
+        { provide: OperationalAlertPort, useValue: new RecordingOperationalAlert() },
         { provide: SendMorningReminderUseCase, useValue: mockMorningReminder },
         { provide: SendEveningReminderUseCase, useValue: mockEveningReminder },
         { provide: SendOnboardingUseCase, useValue: mockOnboarding },

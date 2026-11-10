@@ -57,11 +57,13 @@ import { account, user as userTable } from "#api/platform/database/schema/index"
 import { EncryptionService } from "#api/platform/encryption/index";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { UnitOfWorkPort } from "#api/shared/application/ports/index";
+import { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 import { subtractDays } from "#api/shared/domain/date/utils/arithmetic";
 import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
 import { instantFromDate } from "#api/shared/domain/time/instant";
 import { DateClock } from "#test/doubles/platform/date-clock";
 import { NoCacheStore } from "#test/doubles/platform/no-cache-store";
+import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";
 import { createDatabaseTransactionFixture } from "#test/setup/database-context";
 import { suppressLogger } from "#test/setup/suppress-logger";
 
@@ -198,6 +200,7 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
           useValue: transaction.txHost,
         },
         { provide: ClockPort, useClass: DateClock },
+        { provide: OperationalAlertPort, useValue: new RecordingOperationalAlert() },
         {
           provide: jwtConfig.KEY,
           useValue: {

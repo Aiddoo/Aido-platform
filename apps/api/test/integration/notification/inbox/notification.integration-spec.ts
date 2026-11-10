@@ -63,8 +63,10 @@ import {
   UNIT_OF_WORK,
   UnitOfWorkPort,
 } from "#api/shared/application/ports/index";
+import { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 import { UserPreferenceBuilder } from "#test/builders/index";
 import { NoCacheStore } from "#test/doubles/platform/no-cache-store";
+import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";
 import { createInboxNotificationFixture } from "#test/fixtures/notification/notification.fixture";
 import { createReportPushDeviceCommandFixture } from "#test/fixtures/notification/push-device.fixture";
 import { createPushTokenFixture } from "#test/fixtures/notification/push-token.fixture";
@@ -151,6 +153,7 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
       providers: [
         ...NOTIFICATION_INBOX_PROVIDERS,
         { provide: ClockPort, useClass: SystemClock },
+        { provide: OperationalAlertPort, useValue: new RecordingOperationalAlert() },
         ...NOTIFICATION_PUSH_PERSISTENCE_PROVIDERS,
         ...NOTIFICATION_PUSH_USE_CASE_PROVIDERS,
         {

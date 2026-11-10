@@ -50,8 +50,10 @@ import {
   MutationLockPort,
   UnitOfWorkPort,
 } from "#api/shared/application/ports/index";
+import { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 import { RecordingTodoViewCacheInvalidator } from "#test/doubles/engagement/recording-todo-view-cache-invalidator";
 import { DateClock } from "#test/doubles/platform/date-clock";
+import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";
 import { createDatabaseTransactionFixture } from "#test/setup/database-context";
 import type { TestDatabaseClient } from "#test/setup/test-database";
 
@@ -240,6 +242,7 @@ describe("댓글 계정 purge (실제 PostgreSQL)", () => {
         ClsUnitOfWork,
         { provide: UnitOfWorkPort, useExisting: ClsUnitOfWork },
         { provide: ClockPort, useClass: DateClock },
+        { provide: OperationalAlertPort, useValue: new RecordingOperationalAlert() },
         PostgresMutationLockAdapter,
         { provide: MUTATION_LOCK, useExisting: PostgresMutationLockAdapter },
         { provide: MutationLockPort, useExisting: PostgresMutationLockAdapter },
