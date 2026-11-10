@@ -22,7 +22,7 @@ export interface StartOAuthAuthorizationCommand {
 interface StartOAuthAuthorizationDependencies {
   readonly registry: Pick<OAuthIdentityProviderRegistryPort, "get">;
   readonly oauthStateRepository: Pick<AuthOAuthStateRepositoryPort, "create">;
-  readonly configService: Pick<AuthRuntimeConfigPort, "isDevelopment">;
+  readonly configService: Pick<AuthRuntimeConfigPort, "allowsDevRedirects">;
   readonly clock: ClockPort;
   readonly logger: ApplicationLoggerPort;
 }
@@ -74,7 +74,7 @@ export class StartOAuthAuthorizationUseCase {
       /^https:\/\/aido\.kr(\/.*)?$/,
       /^https:\/\/(api|www|app)\.aido\.kr(\/.*)?$/,
     ];
-    if (this.#dependencies.configService.isDevelopment) {
+    if (this.#dependencies.configService.allowsDevRedirects) {
       patterns.push(
         /^aido-dev:\/\/auth(\/.*)?$/,
         /^aido-dev:\/\/\/auth(\/.*)?$/,

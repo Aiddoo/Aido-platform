@@ -14,7 +14,7 @@ import {
   OperationsAdminNoticesModule,
 } from "#api/modules/operations/admin-notices/operations-admin-notices.public";
 import { PlanningCategoriesModule } from "#api/modules/planning/categories/planning-categories.public";
-import { appConfig } from "#api/platform/config/app.config";
+import { appConfig, type AppSettings } from "#api/platform/config/app.config";
 import { jwtConfig } from "#api/platform/config/jwt.config";
 
 import { IdentityPreferencesModule } from "../preferences/identity-preferences.module.js";
@@ -188,8 +188,8 @@ import { SessionController } from "./presentation/http/v1/session.controller.js"
     {
       provide: AuthRuntimeConfigPort,
       inject: [appConfig.KEY],
-      useFactory: (app: ConfigType<typeof appConfig>): AuthRuntimeConfigPort => ({
-        isDevelopment: app.nodeEnv === "development",
+      useFactory: (app: AppSettings): AuthRuntimeConfigPort => ({
+        allowsDevRedirects: app.devTools.oauthDevRedirects,
       }),
     },
     issueVerificationCodeProvider,

@@ -118,7 +118,7 @@ export async function createAuthTestModule(
             unlinkOAuthAccountProvider,
             DrizzleOAuthStateRepository,
             { provide: AuthOAuthStateRepositoryPort, useExisting: DrizzleOAuthStateRepository },
-            { provide: AuthRuntimeConfigPort, useValue: { isDevelopment: false } },
+            { provide: AuthRuntimeConfigPort, useValue: { allowsDevRedirects: false } },
             { provide: OAuthIdentityProviderRegistryPort, useValue: options.oauthProviderRegistry },
           ]),
       registerProvider,

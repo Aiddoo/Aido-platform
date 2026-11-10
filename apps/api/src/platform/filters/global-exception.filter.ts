@@ -8,11 +8,10 @@ import {
   HttpStatus,
   Inject,
 } from "@nestjs/common";
-import type { ConfigType } from "@nestjs/config";
 import type { Request, Response } from "express";
 import { PinoLogger } from "nestjs-pino";
 
-import { appConfig } from "#api/platform/config/app.config";
+import { appConfig, type AppSettings } from "#api/platform/config/app.config";
 import {
   classifyDatabaseError,
   databaseConstraint,
@@ -78,13 +77,13 @@ export class GlobalExceptionFilter implements ExceptionFilter {
 
   constructor(
     logger: PinoLogger,
-    @Inject(appConfig.KEY) app: Pick<ConfigType<typeof appConfig>, "nodeEnv">,
+    @Inject(appConfig.KEY) app: Pick<AppSettings, "devTools">,
     messages: ErrorMessageTranslator,
     exceptionReporter: ExceptionReporterPort,
     operationalAlert: OperationalAlertPort,
   ) {
     this.#logger = logger;
-    this.#exposeErrorDetails = app.nodeEnv === "development";
+    this.#exposeErrorDetails = app.devTools.exposeErrorDetails;
     this.#messages = messages;
     this.#exceptionReporter = exceptionReporter;
     this.#operationalAlert = operationalAlert;

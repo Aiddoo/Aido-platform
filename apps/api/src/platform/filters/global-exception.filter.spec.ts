@@ -12,6 +12,7 @@ import { ExecutionContextHost } from "@nestjs/core/helpers/execution-context-hos
 import { Test } from "@nestjs/testing";
 import { vi, type Mock } from "vitest";
 
+import { resolveDevTools } from "#api/platform/config/app.config";
 import { ErrorMessageTranslator } from "#api/platform/i18n/error-message.translator";
 import { AppI18nModule } from "#api/platform/i18n/i18n.module";
 import { ApplicationException } from "#api/shared/application/application.exception";
@@ -39,16 +40,14 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
   let reporter: RecordingExceptionReporter;
   let alerts: RecordingOperationalAlert;
 
-  const createFilter = (isDevelopment = true) => {
+  const createFilter = (exposeErrorDetails = true) => {
+    const devTools = resolveDevTools({
+      environment: exposeErrorDetails ? "development" : "production",
+      nodeEnv: "development",
+    });
     reporter = new RecordingExceptionReporter();
     alerts = new RecordingOperationalAlert();
-    return new GlobalExceptionFilter(
-      logger,
-      { nodeEnv: isDevelopment ? "development" : "production" },
-      messages,
-      reporter,
-      alerts,
-    );
+    return new GlobalExceptionFilter(logger, { devTools }, messages, reporter, alerts);
   };
 
   beforeAll(async () => {
@@ -545,8 +544,8 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
     };
 
     it.each(Object.entries(exceptions))("%s 응답이 envelope 스키마를 만족한다", (_name, create) => {
-      for (const isDevelopment of [true, false]) {
-        createFilter(isDevelopment).catch(create(), host);
+      for (const exposeErrorDetails of [true, false]) {
+        createFilter(exposeErrorDetails).catch(create(), host);
         const body = mockResponse.json.mock.lastCall?.[0];
         expect(errorEnvelopeSchema.safeParse(body).success).toBe(true);
       }
