@@ -81,7 +81,10 @@ describe("@RequireQuota 남은 횟수 선검사 (실제 PostgreSQL)", () => {
 
   it("남은 AI 횟수가 0이면 출시 앱과 같은 AI_1303과 차감 없음·현재 한도를 주고 핸들러에 닿지 않는다", async () => {
     // Given
-    await updateUser({ aiUsageCount: PLAN_CATALOG.AI_PARSE.free, aiUsageResetAt: AT });
+    await updateUser({
+      aiUsageCount: PLAN_CATALOG.AI_PARSE.free,
+      aiUsageResetAt: instantFromDate(AT),
+    });
 
     // When
     const response = await call("ai-plan");
@@ -108,7 +111,10 @@ describe("@RequireQuota 남은 횟수 선검사 (실제 PostgreSQL)", () => {
 
   it("남은 횟수가 있으면 통과시키고 선검사는 차감하지 않는다", async () => {
     // Given
-    await updateUser({ aiUsageCount: PLAN_CATALOG.AI_PARSE.free - 1, aiUsageResetAt: AT });
+    await updateUser({
+      aiUsageCount: PLAN_CATALOG.AI_PARSE.free - 1,
+      aiUsageResetAt: instantFromDate(AT),
+    });
 
     // When
     const response = await call("ai-plan");
@@ -123,7 +129,7 @@ describe("@RequireQuota 남은 횟수 선검사 (실제 PostgreSQL)", () => {
     // Given
     await updateUser({
       aiUsageCount: PLAN_CATALOG.AI_PARSE.free,
-      aiUsageResetAt: new Date("2026-03-31T14:59:59.000Z"),
+      aiUsageResetAt: Temporal.Instant.from("2026-03-31T14:59:59.000Z"),
     });
 
     // When
@@ -165,7 +171,7 @@ describe("@RequireQuota 남은 횟수 선검사 (실제 PostgreSQL)", () => {
     await updateUser({
       role: "ADMIN",
       aiUsageCount: PLAN_CATALOG.AI_PARSE.fairUse.premium + 5,
-      aiUsageResetAt: AT,
+      aiUsageResetAt: instantFromDate(AT),
     });
 
     // When

@@ -196,7 +196,7 @@ describe("GET /v1/entitlements 서버 계산 권한 스냅샷 (실제 PostgreSQL
 
   describe("하루·월 경계 (서울·LA)", () => {
     // KST 1월 31일 23:00에 AI를 4회 쓴 사용자
-    const LAST_AI_USE = new Date("2027-01-31T14:00:00.000Z");
+    const LAST_AI_USE = Temporal.Instant.from("2027-01-31T14:00:00.000Z");
 
     async function entitlementsIn(accessToken: string, timeZone: string) {
       const response = await request(context.app.getHttpServer())

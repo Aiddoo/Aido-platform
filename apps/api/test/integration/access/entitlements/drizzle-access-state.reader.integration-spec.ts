@@ -1,7 +1,6 @@
 import { DrizzleAccessStateReader } from "#api/modules/access/entitlements/infrastructure/persistence/drizzle-access-state.reader";
 import { DrizzleResourceBonusRepository } from "#api/modules/access/entitlements/infrastructure/persistence/drizzle-resource-bonus.repository";
 import { user } from "#api/platform/database/schema/index";
-import { instantToDate } from "#api/shared/domain/time/instant";
 import { describeAccessStateReaderContract } from "#test/contracts/access/access-state-reader.contract";
 import { UserFixture } from "#test/fixtures/index";
 import { createDatabaseTransactionFixture } from "#test/setup/database-context";
@@ -39,8 +38,7 @@ describe("DrizzleAccessStateReader·DrizzleResourceBonusRepository (실제 Postg
             userTag: `ACCS${String(seeded).padStart(4, "0")}`,
             role,
             subscriptionStatus,
-            subscriptionExpiresAt:
-              subscriptionExpiresAt == null ? null : instantToDate(subscriptionExpiresAt),
+            subscriptionExpiresAt,
             status: isActive ? "ACTIVE" : "LOCKED",
           }),
         );
