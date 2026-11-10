@@ -51,6 +51,65 @@
 
 결제 웹훅 실패를 Discord로 보내는 규칙은 표시할 tag에 `storeEnvironment`를 넣어 SANDBOX와 PRODUCTION을 구분한다.
 
+## 작업 실패 경보
+
+2026-11 운영에서 `ai-report-generation.v1`·`ai-suggestion-analysis.v1` 디스패처가 8일 넘게 매 실행 실패(실패 작업 392건)했지만 pg-boss `failed` 상태와 로그에만 남아 아무도 몰랐다. 작업 실패를 사람에게 알리는 장치는 아래 넷이고 모두 Sentry 무료(Developer) 플랜 안에서 돈다.
+
+### Sentry 무료 플랜 한도 (2026-11-10 공식 문서 확인)
+
+| 항목                 | 한도                                                                                                        |
+| -------------------- | ----------------------------------------------------------------------------------------------------------- |
+| 오류 이벤트          | 월 5,000건(운영 경보·5xx가 함께 쓴다)                                                                       |
+| Cron 모니터          | 1개(추가는 유료 플랜 PAYG $0.78/개). check-in은 모니터 환경당 분당 6건까지                                  |
+| Uptime 모니터        | 1개. 확인 간격 1분~1시간, 기본 3회 연속 실패 뒤 이슈, 확인 요청 span은 span 한도에 세지 않는다              |
+| 알림                 | 이메일만. Slack·Discord 같은 연동 도구 알림, 서드파티 연동, API, 추가 경보 종류는 Team 플랜부터, 사용자 1명 |
+| 경보 규칙 조건(무료) | 새 이슈·재발 트리거, `Tagged event`(`is set`·`equals` 등)·Issue category 필터, 여러 필터의 any/all          |
+
+출처: [요금](https://sentry.io/pricing/), [Crons(NestJS)](https://docs.sentry.io/platforms/javascript/guides/nestjs/crons/), [Uptime](https://docs.sentry.io/product/uptime-monitoring/), [경보 조건](https://docs.sentry.io/product/alerts/create-alerts/issue-alert-config/). 무료 플랜은 Discord·Slack 전달이 안 되므로 위 [경보 전달](#경보-전달)도 이메일로 받는다.
+
+### 경보 종류
+
+| 신호                                | 언제                                                                                                                                                                               | 어디서                                                                       |
+| ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| `job.failed:<queue>:<errorType>`    | 작업이 재시도를 모두 쓰고 실패했다(DLQ로 옮겨지는 때, 잘못된 payload `InvalidJobPayload` 포함). 재시도가 남은 실패는 `jobs.attempt.failed` 로그만, 마지막 실패는 `jobs.job.failed` | 작업 runtime(`PgBossJobQueueAdapter`, 옛 `PgBossJobRuntimeAdapter`)          |
+| `schedule.failing:<scheduleKey>`    | 끝났어야 할 마지막 두 예정 실행의 창 안에 끝난 실행이 없고 실패만 있다                                                                                                             | `schedule-watchdog.v1`(15분, `missed: "skip"`)                               |
+| `schedule.overdue:<scheduleKey>`    | 같은 창 안에 실행이 없거나, 남은 실행이 여유 30분을 넘겨 멈춰 있다                                                                                                                 | 같음                                                                         |
+| `queue.dead-letter:<queue>`         | 최근 15분 동안 DLQ에 작업이 들어왔다(`JobQueueRegistry`가 아는 DLQ)                                                                                                                | 같음                                                                         |
+| Cron 모니터 `aido-job-worker`(기본) | 감시 작업 check-in이 두 번 연속 빠지거나 실패했다(약 35분). worker·pg-boss가 통째로 멈춘 경우다                                                                                    | `JobHeartbeatPort` → `SentryJobHeartbeatAdapter`(`withMonitor`, 설정 upsert) |
+
+- 태그는 `queue`, `job.name`(payload의 고정 `name`, 없으면 큐 이름), `job.attempt`, `error.type`, `schedule.key`뿐이다. payload 값과 예외 message(공급자 원문)는 싣지 않는다. 원인은 같은 시각의 로그로 찾는다.
+- 감시 대상은 pg-boss `schedule` 표 전체(옛 `JobRuntimePort` 등록 포함)다. 스케줄러와 같은 cron 해석(`previewSchedule`)으로 실제 예정 시각을 구해 "간격 × 2 + 30분" 창을 만들므로 한 번 빠지는 것(배포·`skip`)은 넘기고 서머타임·평일 cron에서도 맞다. 판정은 순수 함수 [schedule-watchdog.domain-service.ts](../src/platform/jobs/schedule-watchdog.domain-service.ts)다.
+- 판정하지 않는 경우: 앞 예정 시각 뒤에 등록된 스케줄, 최근 예정 실행이 끝난 작업 보관 기간(`deleteAfterSeconds`)이 지나 지워졌을 수 있는 경우. 감시하려면 보관 기간을 스케줄 간격 이상으로 둔다(지금 스케줄은 모두 24시간 이상, 간격은 하루 이하).
+- 다루지 않는 것: 한 번도 등록되지 않은 스케줄(등록 실패는 `bootstrap.background-init.failed` 로그), 만료(`expireInSeconds`)로 pg-boss가 실패시킨 스케줄 없는 작업.
+- 개발·스테이징·테스트와 DSN이 없을 때는 no-op 어댑터라 check-in을 보내지 않는다. 모니터 slug는 선택 설정 `SENTRY_JOB_MONITOR_SLUG`(기본 `aido-job-worker`)다.
+
+### 중복 제거와 한도 계산
+
+모든 `OperationalAlertPort` 경보(작업 경보만이 아니다)는 [DeduplicatingOperationalAlertAdapter](../src/platform/observability/deduplicating-operational-alert.adapter.ts)를 거쳐 Sentry로 간다. Sentry 이슈 key(fingerprint)는 그대로 경보 key다.
+
+- key의 첫 경보는 늘 보낸다(새 이슈 → 알림).
+- 같은 key는 1시간에 한 번만 다시 보낸다.
+- 다시 보내는 경보는 프로세스 전체에서 시간당 2건까지다.
+- 기록은 상한 있는 `lru-cache`(key 1,000개)이고 프로세스 메모리라 재시작하면 key마다 한 번 더 간다.
+
+| 경우                                                                            | 월 오류 이벤트                                     |
+| ------------------------------------------------------------------------------- | -------------------------------------------------- |
+| 평소(실패 없음)                                                                 | 0                                                  |
+| 이번 사고(매시 디스패처 2개, 8일): key 4개(`job.failed` 2·`schedule.failing` 2) | 첫 4건 + 시간당 2건 × 192시간 ≈ 390건(한도의 8%)   |
+| 사용자별 작업 1,000개가 같은 원인으로 실패                                      | key 1개라 1건(중복 제거가 없으면 1,000건)          |
+| 상한(어떤 폭주든 한 달 내내)                                                    | 반복 2건 × 720시간 = 1,440건 + key별 첫 경보(29%~) |
+
+Cron check-in은 15분마다 2건(시작·끝)으로 분당 6건 한도 아래이고 모니터 1개라 무료 몫 안이다.
+
+### 배포 뒤 Sentry에서 할 일
+
+1. **경보 규칙 하나**(Alerts → Create Alert, 서버 프로젝트):
+   - When(any): `A new issue is created`, `A resolved issue regresses`
+   - If(any): `Tagged event` `alert.key` **is set** / `Tagged event` `monitor.slug` **equals** `aido-job-worker` / (Uptime을 쓰면) `Issue category` **equals** `Outage`
+   - Then: `Notify on preferred channel` → Member(본인). 무료 플랜이라 이메일로 온다.
+2. **Cron 모니터**: 따로 만들지 않는다. 운영 첫 감시 실행이 `withMonitor` upsert로 `aido-job-worker`(`*/15 * * * *` UTC, margin 5분, max runtime 5분, 연속 2회 실패에 이슈, 1회 성공에 해소)를 만든다. 배포 15분쯤 뒤 Crons 화면에서 check-in이 OK인지 본다. 계정에 다른 Cron 모니터가 이미 있으면 무료 1개를 넘으므로 하나를 지우거나 이 slug를 그 모니터에 맞춘다.
+3. **(선택) Uptime 모니터 1개**: `GET https://api.aido.kr/health`, 간격 5분, 기대 상태 200. API나 DB가 내려가면(503) 3회 연속 실패 뒤 Outage 이슈가 생겨 1번 규칙으로 온다. 큐 장애는 `/health`가 `degraded`로 200을 주므로 이 모니터가 아니라 위 작업 경보가 맡는다.
+
 ## 지연·포화도 신호
 
 새 유료 인프라 없이 Sentry Performance(운영 `tracesSampleRate` 0.2, `pg` 자동 계측), `/health`, `OperationalAlertPort`로 본다.

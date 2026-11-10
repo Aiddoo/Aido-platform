@@ -77,7 +77,7 @@ await jobQueue.registerSchedules(DOCUMENT_QUEUE); // schedules를 key별로 upse
 
 ## 크론 주기와 `missed` 정책
 
-모든 스케줄은 `missed`를 명시한다(`defineQueue` schedule의 필수 필드). 기본값 `skip`은 배포로 내려간 사이의 실행을 버린다.
+모든 스케줄은 `missed`를 명시한다(`defineQueue` schedule의 필수 필드). 기본값 `skip`은 배포로 내려간 사이의 실행을 버린다. 재시도를 다 쓴 실패·늦거나 계속 실패하는 스케줄·DLQ 유입·worker 정지는 [작업 실패 경보](observability.md#작업-실패-경보)가 알린다.
 
 | 스케줄                                         | 주기                                 | `missed`·보완                         |
 | ---------------------------------------------- | ------------------------------------ | ------------------------------------- |
