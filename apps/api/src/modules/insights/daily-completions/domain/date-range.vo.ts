@@ -28,11 +28,4 @@ export class DateRange extends ValueObject<DateRangeValue> {
   get end(): Temporal.PlainDate {
     return this.value.end;
   }
-
-  includes(day: Temporal.PlainDate): boolean {
-    return (
-      Temporal.PlainDate.compare(this.value.start, day) <= 0 &&
-      Temporal.PlainDate.compare(day, this.value.end) <= 0
-    );
-  }
 }

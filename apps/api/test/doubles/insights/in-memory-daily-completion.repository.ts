@@ -2,7 +2,6 @@ import {
   type DailyCompletionRangeQuery,
   DailyCompletionRepositoryPort,
 } from "#api/modules/insights/daily-completions/application/ports/daily-completion.repository.port";
-import type { MultiDayTodoSpan } from "#api/modules/insights/daily-completions/application/read-models/daily-completion-range.read-model";
 import { tallyDailyCompletions } from "#api/modules/insights/daily-completions/domain/daily-completion.domain-service";
 import type { DailyCompletion } from "#api/modules/insights/daily-completions/domain/daily-completion.entity";
 import type { TodoSeed } from "#test/fixtures/insights/daily-completion.fixture";
@@ -41,14 +40,6 @@ export class InMemoryDailyCompletionRepository extends DailyCompletionRepository
     return this.#afterHeld(this.#tally(query, true));
   }
 
-  async listMultiDayTodoSpans(query: DailyCompletionRangeQuery): Promise<MultiDayTodoSpan[]> {
-    return this.#spans(query, false);
-  }
-
-  async listPublicMultiDayTodoSpans(query: DailyCompletionRangeQuery): Promise<MultiDayTodoSpan[]> {
-    return this.#spans(query, true);
-  }
-
   async #afterHeld(completions: DailyCompletion[]): Promise<DailyCompletion[]> {
     const held = this.#heldRead;
     if (held != null) {
@@ -71,29 +62,11 @@ export class InMemoryDailyCompletionRepository extends DailyCompletionRepository
       range: query.range,
       groups: this.#owned(query, publicOnly).map((todo) => ({
         startDate: todo.startDate,
+        endDate: todo.endDate,
         completed: todo.completed,
         categoryColor: todo.categoryColor,
         todoCount: 1,
       })),
     });
-  }
-
-  #spans(query: DailyCompletionRangeQuery, publicOnly: boolean): MultiDayTodoSpan[] {
-    const { start, end } = query.range;
-    return this.#owned(query, publicOnly).flatMap((todo) =>
-      todo.endDate != null &&
-      Temporal.PlainDate.compare(todo.startDate, todo.endDate) < 0 &&
-      Temporal.PlainDate.compare(todo.startDate, end) <= 0 &&
-      Temporal.PlainDate.compare(todo.endDate, start) >= 0
-        ? [
-            {
-              startDate: todo.startDate,
-              endDate: todo.endDate,
-              completed: todo.completed,
-              categoryColor: todo.categoryColor,
-            },
-          ]
-        : [],
-    );
   }
 }

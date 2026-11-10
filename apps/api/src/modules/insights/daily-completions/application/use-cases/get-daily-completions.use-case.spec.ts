@@ -106,14 +106,14 @@ describe("GetDailyCompletionsUseCase — 일일 완료 조회", () => {
     expect(other.value).toBeNull();
   });
 
-  it("기간과 겹치는 여러 날 할 일을 집계와 따로 돌려준다", async () => {
+  it("구간 앞에서 시작한 여러 날 할 일도 구간 안 기간의 모든 날에 세어 완료일 수에 넣는다", async () => {
     // Given
     const { dailyCompletionRepository, useCase } = setup();
     dailyCompletionRepository.add(
       createTodoSeedFixture({
         startDate: calendarDate("2028-01-30"),
         endDate: calendarDate("2028-02-02"),
-        categoryColor: "#123456",
+        completed: true,
       }),
     );
 
@@ -121,15 +121,8 @@ describe("GetDailyCompletionsUseCase — 일일 완료 조회", () => {
     const result = await useCase.execute(QUERY);
 
     // Then
-    expect(result.multiDayTodos).toEqual([
-      {
-        startDate: calendarDate("2028-01-30"),
-        endDate: calendarDate("2028-02-02"),
-        completed: false,
-        categoryColor: "#123456",
-      },
-    ]);
-    expect(result.completions).toEqual([]);
+    expect(summariesOf(result).map(({ date }) => date)).toEqual(["2028-02-01", "2028-02-02"]);
+    expect(result.totalCompleteDays).toBe(2);
   });
 
   it("할 일이 없으면 조회 구간을 그대로 둔 빈 완료 현황을 돌려준다", async () => {

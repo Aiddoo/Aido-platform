@@ -1,6 +1,9 @@
 import type { DailyCompletionRepositoryPort } from "#api/modules/insights/daily-completions/application/ports/daily-completion.repository.port";
 import type { DailyCompletion } from "#api/modules/insights/daily-completions/domain/daily-completion.entity";
+import { DateRange } from "#api/modules/insights/daily-completions/domain/date-range.vo";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { TimeZone } from "#api/shared/domain/time/time-zone.vo";
+import { localDateOf } from "#api/shared/domain/time/zoned-time";
 import {
   calendarDate,
   createDateRangeFixture,
@@ -20,6 +23,14 @@ function summariesOf(completions: readonly DailyCompletion[]) {
     completedTodos: completion.completedTodos,
     categoryColors: completion.categoryColors.toSorted(),
   }));
+}
+
+function countsOf(completions: readonly DailyCompletion[]) {
+  return completions.map((completion) => [
+    completion.date.toString(),
+    completion.totalTodos,
+    completion.completedTodos,
+  ]);
 }
 
 function todo(startDate: string, overrides: Partial<TodoSeed> = {}): TodoSeed {
@@ -97,41 +108,125 @@ export function describeDailyCompletionRepositoryContract(
       expect(completions).toEqual([]);
     });
 
-    it("여러 날 할 일은 시작일에만 세고 구간과 겹치는 기간을 따로 준다", async () => {
+    it("여러 날 할 일은 시작 전 날에는 없고 시작일·기간 안·종료일에 모두 세며 종료 다음 날에는 없다", async () => {
       // Given
       const repository = await createRepository([
-        span("2025-12-30", "2026-01-02"),
-        span("2026-01-30", "2026-02-03", { completed: true }),
-        span("2025-12-01", "2025-12-31"),
-        span("2026-02-01", "2026-02-03"),
-        span("2026-01-10", "2026-01-10"),
-        span("2026-01-20", "2026-01-22", { isPublic: false }),
+        span("2026-01-28", "2026-01-30", { completed: true }),
+        todo("2026-01-29"),
       ]);
-      const query = { userId: USER, range: createDateRangeFixture("2026-01-01", "2026-01-31") };
 
       // When
-      const completions = await repository.listByDateRange(query);
-      const spans = await repository.listMultiDayTodoSpans(query);
-      const publicSpans = await repository.listPublicMultiDayTodoSpans(query);
+      const completions = await repository.listByDateRange({
+        userId: USER,
+        range: createDateRangeFixture("2026-01-26", "2026-02-02"),
+      });
 
       // Then
-      expect(summariesOf(completions).map(({ date, totalTodos }) => [date, totalTodos])).toEqual([
-        ["2026-01-10", 1],
-        ["2026-01-20", 1],
-        ["2026-01-30", 1],
+      expect(countsOf(completions)).toEqual([
+        ["2026-01-28", 1, 1],
+        ["2026-01-29", 2, 1],
+        ["2026-01-30", 1, 1],
       ]);
-      const toPair = (value: { startDate: Temporal.PlainDate; endDate: Temporal.PlainDate }) => [
-        value.startDate.toString(),
-        value.endDate.toString(),
-      ];
-      expect(spans.map(toPair).toSorted()).toEqual([
-        ["2025-12-30", "2026-01-02"],
-        ["2026-01-20", "2026-01-22"],
-        ["2026-01-30", "2026-02-03"],
+    });
+
+    it("하루짜리 할 일과 시작일·종료일이 같은 할 일은 그날에만 센다", async () => {
+      // Given
+      const repository = await createRepository([
+        todo("2026-01-15", { completed: true }),
+        span("2026-01-20", "2026-01-20"),
       ]);
-      expect(publicSpans.map(toPair).toSorted()).toEqual([
-        ["2025-12-30", "2026-01-02"],
-        ["2026-01-30", "2026-02-03"],
+
+      // When
+      const completions = await repository.listByDateRange({
+        userId: USER,
+        range: createDateRangeFixture("2026-01-14", "2026-01-21"),
+      });
+
+      // Then
+      expect(countsOf(completions)).toEqual([
+        ["2026-01-15", 1, 1],
+        ["2026-01-20", 1, 0],
+      ]);
+    });
+
+    it("월 경계에 걸친 할 일은 앞 달 조회의 말일과 다음 달 조회의 1일에 모두 센다", async () => {
+      // Given
+      const repository = await createRepository([span("2026-11-30", "2026-12-01")]);
+
+      // When
+      const november = await repository.listByDateRange({
+        userId: USER,
+        range: createDateRangeFixture("2026-11-01", "2026-11-30"),
+      });
+      const december = await repository.listByDateRange({
+        userId: USER,
+        range: createDateRangeFixture("2026-12-01", "2026-12-31"),
+      });
+
+      // Then
+      expect(countsOf(november)).toEqual([["2026-11-30", 1, 0]]);
+      expect(countsOf(december)).toEqual([["2026-12-01", 1, 0]]);
+    });
+
+    it("서울과 LA가 다른 날짜를 보는 같은 순간에도 각자 앱이 보낸 달력 날짜에 센다", async () => {
+      // Given
+      const repository = await createRepository([span("2026-11-30", "2026-12-01")]);
+      const instant = Temporal.Instant.from("2026-11-30T16:30:00Z");
+      const seoulToday = localDateOf(instant, TimeZone.SEOUL);
+      const laToday = localDateOf(instant, TimeZone.create("America/Los_Angeles"));
+
+      // When
+      const seoul = await repository.listByDateRange({
+        userId: USER,
+        range: DateRange.create(seoulToday, seoulToday),
+      });
+      const la = await repository.listByDateRange({
+        userId: USER,
+        range: DateRange.create(laToday, laToday),
+      });
+
+      // Then
+      expect([seoulToday.toString(), laToday.toString()]).toEqual(["2026-12-01", "2026-11-30"]);
+      expect(countsOf(seoul)).toEqual([["2026-12-01", 1, 0]]);
+      expect(countsOf(la)).toEqual([["2026-11-30", 1, 0]]);
+    });
+
+    it("끝이 아주 먼 할 일도 조회 구간 안의 날만 펼친다", async () => {
+      // Given
+      const repository = await createRepository([
+        span("2020-01-01", "2099-12-31", { completed: true }),
+      ]);
+
+      // When
+      const completions = await repository.listByDateRange({
+        userId: USER,
+        range: createDateRangeFixture("2026-02-01", "2026-02-28"),
+      });
+
+      // Then
+      expect(completions).toHaveLength(28);
+      expect(countsOf(completions).at(0)).toEqual(["2026-02-01", 1, 1]);
+      expect(countsOf(completions).at(-1)).toEqual(["2026-02-28", 1, 1]);
+    });
+
+    it("친구 조회도 공개 여러 날 할 일만 기간의 모든 날에 세고 다른 사용자의 할 일은 섞지 않는다", async () => {
+      // Given
+      const repository = await createRepository([
+        span("2026-01-05", "2026-01-06", { completed: true }),
+        span("2026-01-05", "2026-01-07", { isPublic: false }),
+        span("2026-01-05", "2026-01-06", { userId: DAILY_COMPLETION_FIXTURE_FRIEND_ID }),
+      ]);
+
+      // When
+      const completions = await repository.listPublicByDateRange({
+        userId: USER,
+        range: createDateRangeFixture("2026-01-01", "2026-01-31"),
+      });
+
+      // Then
+      expect(countsOf(completions)).toEqual([
+        ["2026-01-05", 1, 1],
+        ["2026-01-06", 1, 1],
       ]);
     });
   });

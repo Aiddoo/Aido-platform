@@ -34,16 +34,8 @@ const CACHED_RANGE_SCHEMA = z.object({
     }),
   ),
   totalCompleteDays: z.number(),
-  multiDayTodos: z
-    .array(
-      z.object({
-        startDate: PLAIN_DATE_SCHEMA,
-        endDate: PLAIN_DATE_SCHEMA,
-        completed: z.boolean(),
-        categoryColor: z.string(),
-      }),
-    )
-    .optional(),
+  // 여러 날 할 일을 시작일에만 세던 이전 값은 기간이 남아 있어 미스로 보고 다시 센다
+  multiDayTodos: z.array(z.unknown()).max(0).optional(),
   dateRange: z.object({ startDate: PLAIN_DATE_SCHEMA, endDate: PLAIN_DATE_SCHEMA }),
 });
 
@@ -60,12 +52,7 @@ function toCachedJson(value: DailyCompletionRange) {
       categoryColors: [...completion.categoryColors],
     })),
     totalCompleteDays: value.totalCompleteDays,
-    multiDayTodos: value.multiDayTodos.map((span) => ({
-      startDate: span.startDate.toString(),
-      endDate: span.endDate.toString(),
-      completed: span.completed,
-      categoryColor: span.categoryColor,
-    })),
+    multiDayTodos: [],
     dateRange: { startDate: value.range.start.toString(), endDate: value.range.end.toString() },
   };
 }
@@ -83,7 +70,6 @@ function toDailyCompletionRange(userId: UserId, cached: CachedRange): DailyCompl
       }),
     ),
     totalCompleteDays: cached.totalCompleteDays,
-    multiDayTodos: cached.multiDayTodos ?? [],
   };
 }
 

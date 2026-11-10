@@ -5,9 +5,10 @@ import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { DailyCompletion } from "./daily-completion.entity.js";
 import type { DateRange } from "./date-range.vo.js";
 
-/** 같은 날짜·완료 여부·카테고리 색으로 묶은 할 일 수 */
+/** 같은 기간·완료 여부·카테고리 색으로 묶은 할 일 수. endDate가 없으면 하루짜리다 */
 export interface TodoCompletionGroup {
   readonly startDate: Temporal.PlainDate;
+  readonly endDate: Temporal.PlainDate | null;
   readonly completed: boolean;
   readonly categoryColor: string | null;
   readonly todoCount: number;
@@ -20,8 +21,26 @@ interface DayTally {
   readonly categoryColors: string[];
 }
 
+function laterOf(left: Temporal.PlainDate, right: Temporal.PlainDate): Temporal.PlainDate {
+  return Temporal.PlainDate.compare(left, right) >= 0 ? left : right;
+}
+
+function earlierOf(left: Temporal.PlainDate, right: Temporal.PlainDate): Temporal.PlainDate {
+  return Temporal.PlainDate.compare(left, right) <= 0 ? left : right;
+}
+
+/**
+ * 할 일이 그날에 있는 날만 센다: startDate <= 그날 AND (endDate >= 그날 OR (endDate 없음 AND startDate = 그날)).
+ * identity 연속 기록·notification 주간 집계와 같은 규칙이고, 끝없이 긴 기간도 조회 구간 안의 날만 펼친다
+ */
 function daysCounted(group: TodoCompletionGroup, range: DateRange): Temporal.PlainDate[] {
-  return range.includes(group.startDate) ? [group.startDate] : [];
+  const first = laterOf(group.startDate, range.start);
+  const last = earlierOf(group.endDate ?? group.startDate, range.end);
+  const days: Temporal.PlainDate[] = [];
+  for (let day = first; Temporal.PlainDate.compare(day, last) <= 0; day = day.add({ days: 1 })) {
+    days.push(day);
+  }
+  return days;
 }
 
 /** 조회 구간의 날짜별 완료 현황(날짜 오름차순). 할 일이 없는 날은 넣지 않는다. */

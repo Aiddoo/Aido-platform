@@ -75,7 +75,7 @@ export const dailyCompletionsRangeResponseSchema = z
       .array(multiDayTodoSpanSchema)
       .optional()
       .describe(
-        "조회 기간과 겹치는 여러 날 할 일. completions는 시작일에만 세므로 앱이 기간 안의 날에도 표시한다",
+        "출시 앱(1.15.0) 호환 칸이라 항상 빈 배열이다. completions가 여러 날 할 일을 기간의 모든 날에 이미 센다",
       ),
     dateRange: z
       .object({

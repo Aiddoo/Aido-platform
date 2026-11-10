@@ -23,12 +23,8 @@ export function toDailyCompletionsRangeResponse(
   return {
     completions: result.completions.map(toDailyCompletionSummaryResponse),
     totalCompleteDays: result.totalCompleteDays,
-    multiDayTodos: result.multiDayTodos.map((span) => ({
-      startDate: span.startDate.toString(),
-      endDate: span.endDate.toString(),
-      completed: span.completed,
-      categoryColor: span.categoryColor,
-    })),
+    // completions가 이미 기간의 모든 날을 세므로 비운다. 1.15.0 앱은 여기 기간을 받으면 나머지 날에 한 번 더 더한다
+    multiDayTodos: [],
     dateRange: {
       startDate: result.range.start.toString(),
       endDate: result.range.end.toString(),

@@ -7414,7 +7414,7 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
           "type": "object",
         },
         "multiDayTodos": {
-          "description": "조회 기간과 겹치는 여러 날 할 일. completions는 시작일에만 세므로 앱이 기간 안의 날에도 표시한다",
+          "description": "출시 앱(1.15.0) 호환 칸이라 항상 빈 배열이다. completions가 여러 날 할 일을 기간의 모든 날에 이미 센다",
           "items": {
             "properties": {
               "categoryColor": {

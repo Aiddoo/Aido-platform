@@ -16,10 +16,7 @@ export interface GetFriendDailyCompletionsQuery {
 }
 
 export interface GetFriendDailyCompletionsDependencies {
-  readonly dailyCompletionRepository: Pick<
-    DailyCompletionRepositoryPort,
-    "listPublicByDateRange" | "listPublicMultiDayTodoSpans"
-  >;
+  readonly dailyCompletionRepository: Pick<DailyCompletionRepositoryPort, "listPublicByDateRange">;
   readonly dailyCompletionCache: Pick<
     DailyCompletionCachePort,
     "readPublicRange" | "storePublicRangeIfCurrent"
@@ -50,15 +47,14 @@ export class GetFriendDailyCompletionsUseCase {
       return cached.value;
     }
 
-    const [completions, multiDayTodos] = await Promise.all([
-      dailyCompletionRepository.listPublicByDateRange({ userId: friendUserId, range }),
-      dailyCompletionRepository.listPublicMultiDayTodoSpans({ userId: friendUserId, range }),
-    ]);
+    const completions = await dailyCompletionRepository.listPublicByDateRange({
+      userId: friendUserId,
+      range,
+    });
     const result: DailyCompletionRange = {
       range,
       completions,
       totalCompleteDays: countCompleteDays(completions),
-      multiDayTodos,
     };
 
     await dailyCompletionCache.storePublicRangeIfCurrent(friendUserId, cached.generation, result);

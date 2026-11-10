@@ -33,14 +33,13 @@ export function createDailyCompletionFixture(
 }
 
 export function createDailyCompletionRangeFixture(
-  overrides: Partial<Pick<DailyCompletionRange, "range" | "completions" | "multiDayTodos">> = {},
+  overrides: Partial<Pick<DailyCompletionRange, "range" | "completions">> = {},
 ): DailyCompletionRange {
   const completions = overrides.completions ?? [createDailyCompletionFixture()];
   return {
     range: overrides.range ?? createDateRangeFixture(),
     completions,
     totalCompleteDays: countCompleteDays(completions),
-    multiDayTodos: overrides.multiDayTodos ?? [],
   };
 }
 

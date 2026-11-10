@@ -1,16 +1,15 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
-import { and, count, eq, gte, isNotNull, lt } from "drizzle-orm";
+import { and, count, eq, gte, isNull, lte, or } from "drizzle-orm";
 import { uniq } from "es-toolkit";
 
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
-import { todo, todoCategory } from "#api/platform/database/schema/index";
+import { todo } from "#api/platform/database/schema/index";
 
 import {
   type DailyCompletionRangeQuery,
   DailyCompletionRepositoryPort,
 } from "../../application/ports/daily-completion.repository.port.js";
-import type { MultiDayTodoSpan } from "../../application/read-models/daily-completion-range.read-model.js";
 import { tallyDailyCompletions } from "../../domain/daily-completion.domain-service.js";
 import type { DailyCompletion } from "../../domain/daily-completion.entity.js";
 import { toCalendarDate, toDateColumnValue } from "./todo-date-row.mapper.js";
@@ -36,51 +35,20 @@ export class DrizzleDailyCompletionRepository implements DailyCompletionReposito
     return this.#listCompletions(query, true);
   }
 
-  listMultiDayTodoSpans(query: DailyCompletionRangeQuery): Promise<MultiDayTodoSpan[]> {
-    return this.#listMultiDayTodoSpans(query, false);
-  }
-
-  listPublicMultiDayTodoSpans(query: DailyCompletionRangeQuery): Promise<MultiDayTodoSpan[]> {
-    return this.#listMultiDayTodoSpans(query, true);
-  }
-
-  /** `Todo_userId_startDate_endDate_idx`를 타는 쿼리 하나다. 날짜 칸 조건은 할 일 목록의 `todoDateCondition`과 같다. */
-  async #listMultiDayTodoSpans(
-    { userId, range }: DailyCompletionRangeQuery,
-    publicOnly: boolean,
-  ): Promise<MultiDayTodoSpan[]> {
-    const rows = await this.#db
-      .select({
-        startDate: todo.startDate,
-        endDate: todo.endDate,
-        completed: todo.completed,
-        categoryColor: todoCategory.color,
-      })
-      .from(todo)
-      .innerJoin(todoCategory, eq(todo.categoryId, todoCategory.id))
-      .where(
-        and(
-          eq(todo.userId, userId.value),
-          isNotNull(todo.endDate),
-          lt(todo.startDate, toDateColumnValue(range.end.add({ days: 1 }))),
-          gte(todo.endDate, toDateColumnValue(range.start)),
-          publicOnly ? eq(todo.visibility, "PUBLIC") : undefined,
-        ),
-      );
-    return rows.flatMap(({ endDate, startDate, ...row }) =>
-      endDate == null || endDate.getTime() <= startDate.getTime()
-        ? []
-        : [{ ...row, startDate: toCalendarDate(startDate), endDate: toCalendarDate(endDate) }],
-    );
-  }
-
+  /**
+   * 구간의 어느 날에든 있는 할 일을 기간째 묶어 읽고, 날짜별로 펼치는 일은 도메인 규칙(tallyDailyCompletions)이 한다.
+   * 겹침 조건은 identity 연속 기록의 하루 조건(startDate <= 그날 AND (endDate >= 그날 OR (endDate 없음 AND startDate = 그날)))을
+   * 구간 양끝으로 넓힌 것이고 `Todo_userId_startDate_endDate_idx`를 탄다.
+   */
   async #listCompletions(
     { userId, range }: DailyCompletionRangeQuery,
     publicOnly: boolean,
   ): Promise<DailyCompletion[]> {
+    const rangeStart = toDateColumnValue(range.start);
     const groups = await this.#db
       .select({
         startDate: todo.startDate,
+        endDate: todo.endDate,
         categoryId: todo.categoryId,
         completed: todo.completed,
         todoCount: count(),
@@ -89,12 +57,15 @@ export class DrizzleDailyCompletionRepository implements DailyCompletionReposito
       .where(
         and(
           eq(todo.userId, userId.value),
-          gte(todo.startDate, toDateColumnValue(range.start)),
-          lt(todo.startDate, toDateColumnValue(range.end.add({ days: 1 }))),
+          lte(todo.startDate, toDateColumnValue(range.end)),
+          or(
+            gte(todo.endDate, rangeStart),
+            and(isNull(todo.endDate), gte(todo.startDate, rangeStart)),
+          ),
           publicOnly ? eq(todo.visibility, "PUBLIC") : undefined,
         ),
       )
-      .groupBy(todo.startDate, todo.categoryId, todo.completed);
+      .groupBy(todo.startDate, todo.endDate, todo.categoryId, todo.completed);
     if (groups.length === 0) {
       return [];
     }
@@ -109,6 +80,7 @@ export class DrizzleDailyCompletionRepository implements DailyCompletionReposito
       range,
       groups: groups.map((group) => ({
         startDate: toCalendarDate(group.startDate),
+        endDate: group.endDate == null ? null : toCalendarDate(group.endDate),
         completed: group.completed,
         categoryColor: colors.get(group.categoryId) ?? null,
         todoCount: group.todoCount,

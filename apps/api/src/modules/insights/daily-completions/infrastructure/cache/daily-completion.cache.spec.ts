@@ -141,6 +141,29 @@ describe("DailyCompletionCache — 완료 집계 세대 캐시", () => {
     });
   });
 
+  it("여러 날 할 일을 시작일에만 세던 이전 배포의 값(기간이 남은 값)은 미스로 보고 다시 센다", async () => {
+    // Given
+    const read = await cache.readRange(USER, RANGE);
+    await backend.set(
+      DailyCompletionCacheKey.range(USER.value, read.generation, START_DATE, END_DATE),
+      {
+        completions: [],
+        totalCompleteDays: 0,
+        multiDayTodos: [
+          { startDate: "2028-02-28", endDate: "2028-03-01", completed: false, categoryColor: "#1" },
+        ],
+        dateRange: { startDate: START_DATE, endDate: END_DATE },
+      },
+    );
+
+    // When
+    const reread = await cache.readRange(USER, RANGE);
+
+    // Then
+    expect(reread.generation).toBe(read.generation);
+    expect(reread.value).toBeNull();
+  });
+
   it("DB 조회 중 무효화되면 늦게 끝난 이전 결과를 현재 세대에 저장하지 않는다", async () => {
     // Given
     const staleRead = await cache.readRange(USER, RANGE);
