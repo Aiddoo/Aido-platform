@@ -4,7 +4,7 @@ import type { RepeatSpec } from "../../../todo-series/domain/repeat-rule.vo.js";
 
 // 시각은 toIsoString 문자열, 날짜는 YYYY-MM-DD다. 친구 첫 페이지 캐시에 그대로 담으므로 JSON 값만 둔다
 
-export interface TodoItemReadModel {
+interface TodoItemReadModel {
   readonly id: number;
   readonly title: string;
   readonly completed: boolean;
@@ -13,7 +13,7 @@ export interface TodoItemReadModel {
   readonly updatedAt: string;
 }
 
-export interface TodoCategoryReadModel {
+interface TodoCategoryReadModel {
   readonly id: number;
   readonly name: string;
   readonly color: string;
