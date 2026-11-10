@@ -3,6 +3,7 @@ import { type OAUTH_PROVIDERS, TERMS_VERSION, SECURITY_EVENT } from "@aido/api/v
 
 import {
   AuthPersistenceConflict,
+  emailAlreadyRegistered,
   oauthAccountAlreadyLinked,
 } from "#api/modules/identity/auth/application/auth.errors";
 import {
@@ -21,7 +22,10 @@ import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
 import type { SupportedLocale } from "#api/shared/domain/locale";
 
 import { AuthLogEvent } from "../auth.log-events.js";
-import type { AuthAccountRepositoryPort } from "../ports/auth-account.repository.port.js";
+import type {
+  AuthAccountRecord,
+  AuthAccountRepositoryPort,
+} from "../ports/auth-account.repository.port.js";
 import type { AuthCachePort } from "../ports/auth-collaboration.port.js";
 import type { AuthLoginAttemptRepositoryPort } from "../ports/auth-login-attempt.repository.port.js";
 import type { AuthSecurityLogRepositoryPort } from "../ports/auth-security-log.repository.port.js";
@@ -121,52 +125,23 @@ export class LoginWithOAuthTokenUseCase {
       metadata?: RequestMetadata;
     },
   ): Promise<SocialLoginResult> {
+    const { accountRepository, userRepository, logger } = this.#dependencies;
     const ip = options.metadata?.ip ?? AUTH_DEFAULTS.UNKNOWN_IP;
     const userAgent = options.metadata?.userAgent ?? AUTH_DEFAULTS.UNKNOWN_USER_AGENT;
+    const request = { ip, userAgent, provider };
 
-    const existingAccount = await this.#dependencies.accountRepository.findByProviderAccountId(
+    const existingAccount = await accountRepository.findByProviderAccountId(
       provider,
       providerAccountId,
     );
-
-    let userId: string;
-    let userEmail: string;
-    let isNewUser = false;
-
     if (existingAccount != null) {
-      userId = existingAccount.userId;
-      const user = await this.#dependencies.userRepository.findById(userId);
+      return this.#loginLinkedUser(existingAccount.userId, request);
+    }
 
-      if (user == null) {
-        throw new ApplicationException(ErrorCode.USER_0601, { userId });
-      }
-
-      const restorationAt = this.#dependencies.clock.now();
-      if (user.requiresRestoration(restorationAt)) {
-        const loginResult = await this.#restoreAndCreateSession(user, {
-          ip,
-          userAgent,
-          provider,
-          restorationAt,
-        });
-        return { ...loginResult, accountRestored: true, isNewUser: false };
-      }
-
-      this.#validateUserStatus(user.status);
-      userEmail = user.email;
-
-      this.#dependencies.logger.debug({
-        event: AuthLogEvent.OAUTH_EXISTING_USER_AUTHENTICATED,
-        userId,
-        provider,
-      });
-    } else {
-      const effectiveEmail =
-        email ?? `${provider.toLowerCase()}_${providerAccountId}@social.aido.kr`;
-
-      if (email) {
-        const existingUser = await this.#dependencies.userRepository.findByEmail(email);
-        if (existingUser != null) {
+    if (email) {
+      const existingUser = await userRepository.findByEmail(email);
+      if (existingUser != null) {
+        try {
           const loginResult = await this.#handleEmailConflict(
             existingUser,
             provider,
@@ -174,10 +149,21 @@ export class LoginWithOAuthTokenUseCase {
             { emailVerified: options.emailVerified, ip, userAgent },
           );
           return { ...loginResult, isNewUser: false };
+        } catch (error) {
+          const linked = await this.#findAccountLinkedMeanwhile(error, provider, providerAccountId);
+          // 이 사용자에게 같은 공급자의 다른 계정이 있거나 다른 사용자에게 연결됐으면 진짜 충돌이다
+          if (linked?.userId !== existingUser.id.value) {
+            throw oauthAccountAlreadyLinked(provider, providerAccountId);
+          }
+          return this.#loginLinkedUser(existingUser.id.value, request);
         }
       }
+    }
 
-      const newUser = await this.#createSocialUser({
+    const effectiveEmail = email ?? `${provider.toLowerCase()}_${providerAccountId}@social.aido.kr`;
+    let newUser: { id: string };
+    try {
+      newUser = await this.#createSocialUser({
         email: effectiveEmail,
         provider,
         providerAccountId,
@@ -185,20 +171,59 @@ export class LoginWithOAuthTokenUseCase {
         profileImage: options.profileImage,
         locale: options.metadata?.locale,
       });
+    } catch (error) {
+      const linked = await this.#findAccountLinkedMeanwhile(error, provider, providerAccountId);
+      if (linked == null) {
+        // 그사이 다른 가입이 이메일을 가져갔다. 1.15.0이 User_email_key 제약에 주던 응답이다
+        throw emailAlreadyRegistered(effectiveEmail);
+      }
+      return this.#loginLinkedUser(linked.userId, request);
+    }
+    logger.log({ event: AuthLogEvent.USER_REGISTERED, userId: newUser.id, provider });
 
-      userId = newUser.id;
-      userEmail = effectiveEmail;
-      isNewUser = true;
+    const loginResult = await this.#createSessionAndTokens(newUser.id, effectiveEmail, request);
+    return { ...loginResult, isNewUser: true };
+  }
 
-      this.#dependencies.logger.log({ event: AuthLogEvent.USER_REGISTERED, userId, provider });
+  async #loginLinkedUser(
+    userId: string,
+    request: { ip: string; userAgent: string; provider: AccountProvider },
+  ): Promise<SocialLoginResult> {
+    const user = await this.#dependencies.userRepository.findById(userId);
+    if (user == null) {
+      throw new ApplicationException(ErrorCode.USER_0601, { userId });
     }
 
-    const loginResult = await this.#createSessionAndTokens(userId, userEmail, {
-      ip,
-      userAgent,
-      provider,
+    const restorationAt = this.#dependencies.clock.now();
+    if (user.requiresRestoration(restorationAt)) {
+      const loginResult = await this.#restoreAndCreateSession(user, { ...request, restorationAt });
+      return { ...loginResult, accountRestored: true, isNewUser: false };
+    }
+
+    this.#validateUserStatus(user.status);
+    this.#dependencies.logger.debug({
+      event: AuthLogEvent.OAUTH_EXISTING_USER_AUTHENTICATED,
+      userId,
+      provider: request.provider,
     });
-    return { ...loginResult, isNewUser };
+    const loginResult = await this.#createSessionAndTokens(userId, user.email, request);
+    return { ...loginResult, isNewUser: false };
+  }
+
+  // 같은 공급자 계정의 첫 로그인이 동시에 오면 늦은 요청은 사용자·계정 INSERT의 유일 제약에 걸린다.
+  // 먼저 커밋한 요청이 만든 연결을 한 번만 다시 읽어 그 사용자로 이어서 로그인하게 한다
+  async #findAccountLinkedMeanwhile(
+    error: unknown,
+    provider: AccountProvider,
+    providerAccountId: string,
+  ): Promise<AuthAccountRecord | null> {
+    if (!(error instanceof AuthPersistenceConflict)) {
+      throw error;
+    }
+    return this.#dependencies.accountRepository.findByProviderAccountId(
+      provider,
+      providerAccountId,
+    );
   }
 
   async #createSocialUser(data: {
@@ -254,22 +279,11 @@ export class LoginWithOAuthTokenUseCase {
     options: { ip: string; userAgent: string },
   ): Promise<void> {
     await this.#dependencies.userRepository.findByIdForUpdate(userId);
-    try {
-      await this.#dependencies.accountRepository.createOAuthAccount({
-        userId,
-        provider,
-        providerAccountId,
-      });
-    } catch (error) {
-      // 같은 자동 연결 요청이 동시에 오면 User 잠금 뒤 두 번째 INSERT가 제약에 걸린다
-      if (
-        error instanceof AuthPersistenceConflict &&
-        error.kind === "OAUTH_ACCOUNT_ALREADY_LINKED"
-      ) {
-        throw oauthAccountAlreadyLinked(provider, providerAccountId);
-      }
-      throw error;
-    }
+    await this.#dependencies.accountRepository.createOAuthAccount({
+      userId,
+      provider,
+      providerAccountId,
+    });
 
     await this.#dependencies.securityLogRepository.create({
       userId,

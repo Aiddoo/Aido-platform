@@ -1,8 +1,9 @@
 import { ErrorCode } from "@aido/api/errors";
 import type { TestingModule } from "@nestjs/testing";
-import { sql } from "drizzle-orm";
+import { sql, TransactionRollbackError } from "drizzle-orm";
 import { vi } from "vitest";
 
+import type { SocialLoginResult } from "#api/modules/identity/auth/application/read-models/auth-result.read-model";
 import { ExchangeOAuthCodeUseCase } from "#api/modules/identity/auth/application/use-cases/exchange-oauth-code.use-case";
 import { LinkOAuthAccountWithCodeUseCase } from "#api/modules/identity/auth/application/use-cases/link-oauth-account-with-code.use-case";
 import { LoginWithOAuthTokenUseCase } from "#api/modules/identity/auth/application/use-cases/login-with-oauth-token.use-case";
@@ -135,6 +136,47 @@ describe("OAuth 교환과 로그인 수단 변경 (실제 PostgreSQL)", () => {
     };
   }
 
+  async function holdUncommittedUser(email: string) {
+    const rolledBack = Promise.withResolvers<void>();
+    const inserted = Promise.withResolvers<void>();
+    const holding = client
+      .transaction(async (transaction) => {
+        await transaction
+          .insert(userTable)
+          .values(UserFixture.create({ id: createEntityId(), email, userTag: "OAUTHPG2" }));
+        inserted.resolve();
+        await rolledBack.promise;
+        transaction.rollback();
+      })
+      .catch((error: unknown) => {
+        if (!(error instanceof TransactionRollbackError)) {
+          throw error;
+        }
+      });
+    await Promise.race([
+      inserted.promise,
+      holding.then(() => {
+        throw new Error("경쟁 요청 전에 가입이 끝났습니다.");
+      }),
+    ]);
+    return {
+      async rollback() {
+        rolledBack.resolve();
+        await holding;
+      },
+    };
+  }
+
+  function loggedInUserIds(outcomes: PromiseSettledResult<SocialLoginResult>[]) {
+    return outcomes.map((result) => {
+      if (result.status === "rejected") {
+        throw result.reason;
+      }
+      expect(result.value.tokens.accessToken).toEqual(expect.any(String));
+      return result.value.userId;
+    });
+  }
+
   async function observeTwoWaiters(queryPart: string) {
     await vi.waitFor(
       async () => {
@@ -212,7 +254,7 @@ describe("OAuth 교환과 로그인 수단 변경 (실제 PostgreSQL)", () => {
     expect(audits.filter((audit) => audit.event === "OAUTH_UNLINKED")).toHaveLength(1);
   });
 
-  it("같은 자동 연결 로그인이 동시에 와도 한 요청만 연결하고 다른 요청은 500 대신 이미 연결된 계정 오류를 받는다", async () => {
+  it("같은 자동 연결 로그인이 동시에 오면 한 요청만 연결하고 두 요청 모두 그 사용자로 로그인한다", async () => {
     // Given
     // 검증된 Google 이메일이 기존 사용자와 같아 두 요청 모두 자동 연결 경로로 간다
     provider.profile = { ...provider.profile, id: "google-race", email: "oauth-owner@example.com" };
@@ -234,15 +276,69 @@ describe("OAuth 교환과 로그인 수단 변경 (실제 PostgreSQL)", () => {
     const outcomes = await results;
 
     // Then
-    expect(outcomes.filter((result) => result.status === "fulfilled")).toHaveLength(1);
-    expect(outcomes.find((result) => result.status === "rejected")).toMatchObject({
-      reason: { errorCode: ErrorCode.GOOGLE_0405 },
-    });
+    expect(loggedInUserIds(outcomes)).toEqual([userId, userId]);
     expect(
       (await accounts.findAllByUserId(userId)).map((account) => account.providerAccountId),
     ).toEqual(["google-race"]);
     const audits = await client.query.securityLog.findMany();
     expect(audits.filter((audit) => audit.event === "OAUTH_AUTO_LINKED")).toHaveLength(1);
+  });
+
+  it("새 공급자 계정의 첫 로그인이 동시에 오면 사용자·계정을 하나만 만들고 두 요청 모두 그 사용자로 로그인한다", async () => {
+    // Given
+    const email = "first-login@example.com";
+    provider.profile = { ...provider.profile, id: "google-first", email };
+    // 같은 이메일의 미확정 가입이 두 요청의 사용자 INSERT를 함께 붙잡는다
+    const pending = await holdUncommittedUser(email);
+    const results = Promise.allSettled([
+      oauthLogin.execute({ provider: "GOOGLE", token: "same-token" }),
+      oauthLogin.execute({ provider: "GOOGLE", token: "same-token" }),
+    ]);
+
+    // When
+    try {
+      await observeTwoWaiters('%insert into "User"%');
+    } finally {
+      await pending.rollback();
+      await results;
+    }
+    const outcomes = await results;
+
+    // Then
+    const created = await client.query.user.findMany({ columns: { id: true }, where: { email } });
+    expect(created).toHaveLength(1);
+    const createdId = created.at(0)?.id;
+    expect(loggedInUserIds(outcomes)).toEqual([createdId, createdId]);
+    expect(
+      outcomes.map((result) => (result.status === "fulfilled" ? result.value.isNewUser : null)),
+    ).toEqual(expect.arrayContaining([true, false]));
+    const linked = await client.query.account.findMany({
+      columns: { userId: true },
+      where: { provider: "GOOGLE", providerAccountId: "google-first" },
+    });
+    expect(linked).toEqual([{ userId: createdId }]);
+  });
+
+  it("이미 같은 공급자의 다른 계정이 연결된 사용자에게 자동 연결하면 공급자별 이미 연결된 계정 오류를 낸다", async () => {
+    // Given
+    await accounts.createOAuthAccount({
+      userId,
+      provider: "GOOGLE",
+      providerAccountId: "google-old",
+    });
+    provider.profile = { ...provider.profile, id: "google-new", email: "oauth-owner@example.com" };
+
+    // When
+    const login = oauthLogin.execute({ provider: "GOOGLE", token: "other-token" });
+
+    // Then
+    await expect(login).rejects.toMatchObject({
+      errorCode: ErrorCode.GOOGLE_0405,
+      details: { googleId: "google-new" },
+    });
+    expect(
+      (await accounts.findAllByUserId(userId)).map((account) => account.providerAccountId),
+    ).toEqual(["google-old"]);
   });
 
   it("이미 이메일 로그인 수단이 있으면 저장소가 제약 위반을 필터의 옛 응답과 같은 USER_0604로 번역한다", async () => {
