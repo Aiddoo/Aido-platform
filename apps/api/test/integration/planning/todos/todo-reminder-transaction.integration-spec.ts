@@ -16,7 +16,6 @@ import { PostgresMutationLockAdapter } from "#api/platform/database/postgres-mut
 import { todo, todoCategory, user as userTable } from "#api/platform/database/schema/index";
 import { JobQueueRegistry } from "#api/platform/jobs/job-queue.registry";
 import { PgBossJobQueueAdapter } from "#api/platform/jobs/pg-boss-job-queue.adapter";
-import { PgBossJobRuntimeAdapter } from "#api/platform/jobs/pg-boss-job-runtime.adapter";
 import type {
   DomainEventPublisherPort,
   PublishedDomainEvent,
@@ -51,7 +50,7 @@ describe("할 일 리마인더를 같은 트랜잭션에서 예약·취소한다
   let database: TestDatabase;
   let client: TestDatabaseClient;
   let boss: PgBoss;
-  let runtime: PgBossJobRuntimeAdapter;
+  let jobQueue: PgBossJobQueueAdapter;
   let reminderAdapter: ReminderSchedulerAdapter;
   let publisher: SwitchablePublisher;
   let updateSchedule: UpdateTodoScheduleUseCase;
@@ -68,11 +67,13 @@ describe("할 일 리마인더를 같은 트랜잭션에서 예약·취소한다
     await migrator.stop({ graceful: true, timeout: 10_000, close: true });
     boss = new PgBoss({ connectionString, schema: SCHEMA, migrate: false, max: 3 });
     const { txHost, uow } = createDatabaseTransactionFixture(client);
-    runtime = new PgBossJobRuntimeAdapter(boss, txHost, { shutdownTimeoutMs: 10_000 });
-    await runtime.start();
+    jobQueue = new PgBossJobQueueAdapter(boss, txHost, new JobQueueRegistry(), {
+      shutdownTimeoutMs: 10_000,
+    });
+    await jobQueue.start();
     reminderAdapter = new ReminderSchedulerAdapter(
       new TodoReminderSchedulerAdapter(
-        new PgBossJobQueueAdapter(boss, txHost, new JobQueueRegistry()),
+        jobQueue,
         new FixedClock(Temporal.Instant.from("2026-11-10T00:00:00Z")),
       ),
     );
@@ -134,7 +135,7 @@ describe("할 일 리마인더를 같은 트랜잭션에서 예약·취소한다
   });
 
   afterAll(async () => {
-    await runtime?.stop();
+    await jobQueue?.stop();
     await database?.stop();
   });
 

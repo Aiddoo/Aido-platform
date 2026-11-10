@@ -91,7 +91,7 @@ key·심각도·첫 대응 전체는 [경보 카탈로그](alerts.md)다. 아래
 
 | 신호(key:subject)                | 언제                                                                                                                  | 어디서                                                  |
 | -------------------------------- | --------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
-| `job.failed:<queue>:<errorType>` | 재시도를 모두 쓰고 실패(DLQ로 옮겨질 때, `InvalidJobPayload` 포함). 남은 재시도의 실패는 `jobs.attempt.failed` 로그만 | `PgBossJobQueueAdapter`, 옛 `PgBossJobRuntimeAdapter`   |
+| `job.failed:<queue>:<errorType>` | 재시도를 모두 쓰고 실패(DLQ로 옮겨질 때, `InvalidJobPayload` 포함). 남은 재시도의 실패는 `jobs.attempt.failed` 로그만 | `PgBossJobQueueAdapter`                                 |
 | `schedule.failing:<scheduleKey>` | 마지막 두 예정 실행의 창(간격 × 2 + 30분) 안에 실패만 있다                                                            | `schedule-watchdog.v1`(15분, `missed: "skip"`)          |
 | `schedule.overdue:<scheduleKey>` | 같은 창 안에 실행이 없거나 남은 실행이 30분 넘게 멈춰 있다                                                            | 같음                                                    |
 | `queue.dead-letter:<queue>`      | 최근 15분 동안 DLQ에 작업이 들어왔다                                                                                  | 같음                                                    |

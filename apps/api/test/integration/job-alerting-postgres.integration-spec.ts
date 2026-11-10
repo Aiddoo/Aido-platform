@@ -111,7 +111,7 @@ describe("작업 실패 경보 통합 테스트 (실제 PostgreSQL·pg-boss)", (
 
   function jobQueueWith(alerts: OperationalAlertPort, registry = new JobQueueRegistry()) {
     const { txHost } = createDatabaseTransactionFixture(database);
-    return new PgBossJobQueueAdapter(boss, txHost, registry, alerts);
+    return new PgBossJobQueueAdapter(boss, txHost, registry, { shutdownTimeoutMs: 10_000 }, alerts);
   }
 
   function watchdogWith(alerts: OperationalAlertPort, registry = new JobQueueRegistry()) {

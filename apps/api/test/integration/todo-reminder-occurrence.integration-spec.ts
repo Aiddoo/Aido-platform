@@ -43,7 +43,6 @@ import {
 } from "#api/platform/database/schema/index";
 import { JobQueueRegistry } from "#api/platform/jobs/job-queue.registry";
 import { PgBossJobQueueAdapter } from "#api/platform/jobs/pg-boss-job-queue.adapter";
-import { PgBossJobRuntimeAdapter } from "#api/platform/jobs/pg-boss-job-runtime.adapter";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { addDaysToDateKey } from "#api/shared/domain/date/utils/arithmetic";
 import { toDateString } from "#api/shared/domain/date/utils/format";
@@ -84,7 +83,7 @@ describe("할 일 알림 회차 중복 방지 (실제 PostgreSQL·pg-boss)", () 
   let database: TestDatabase;
   let client: TestDatabaseClient;
   let boss: PgBoss;
-  let runtime: PgBossJobRuntimeAdapter;
+  let jobQueue: PgBossJobQueueAdapter;
   let reminderAdapter: ReminderSchedulerAdapter;
   let rebase: RebaseTodoTimezoneUseCase;
   let updateSchedule: UpdateTodoScheduleUseCase;
@@ -113,9 +112,10 @@ describe("할 일 알림 회차 중복 방지 (실제 PostgreSQL·pg-boss)", () 
       max: 3,
     });
     const { txHost, uow } = createDatabaseTransactionFixture(client);
-    runtime = new PgBossJobRuntimeAdapter(boss, txHost, { shutdownTimeoutMs: 10_000 });
-    await runtime.start();
-    const jobQueue = new PgBossJobQueueAdapter(boss, txHost, new JobQueueRegistry());
+    jobQueue = new PgBossJobQueueAdapter(boss, txHost, new JobQueueRegistry(), {
+      shutdownTimeoutMs: 10_000,
+    });
+    await jobQueue.start();
     reminderAdapter = new ReminderSchedulerAdapter(
       new TodoReminderSchedulerAdapter(jobQueue, new DateClock()),
     );
@@ -218,7 +218,7 @@ describe("할 일 알림 회차 중복 방지 (실제 PostgreSQL·pg-boss)", () 
   });
 
   afterAll(async () => {
-    await runtime?.stop();
+    await jobQueue?.stop();
     await database?.stop();
   });
 

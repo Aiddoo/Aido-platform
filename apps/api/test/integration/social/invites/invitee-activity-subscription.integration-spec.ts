@@ -78,6 +78,7 @@ describe("초대 사용 시작 기록의 내구성 구독 (실제 PostgreSQL·pg
       boss,
       context.module.get<TransactionHost<DrizzleTransactionalAdapter>>(TransactionHost),
       new JobQueueRegistry(),
+      { shutdownTimeoutMs: 10_000 },
     );
     // 커밋 뒤 in-process 전달을 받을 리스너가 하나도 없는 emitter다
     eventEmitter = new EventEmitter2();

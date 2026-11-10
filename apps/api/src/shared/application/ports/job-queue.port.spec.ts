@@ -1,4 +1,4 @@
-import { resolveDeadLetterJobPolicy, resolveDeadLetterQueue } from "./job-runtime.port.js";
+import { resolveDeadLetterJobPolicy, resolveDeadLetterQueue } from "./job-queue.port.js";
 
 const BASE_OPTIONS = {
   retryLimit: 2,

@@ -26,7 +26,6 @@ export const AuthLogEvent = {
   ACCOUNT_PURGE_SCHEDULER_REGISTERED: "identity.account-purge.scheduler.registered",
   ACCOUNT_PURGE_CATCH_UP_DISPATCHED: "identity.account-purge.catch-up.dispatched",
   ACCOUNT_PURGE_JOB_STARTED: "identity.account-purge.job.started",
-  ACCOUNT_PURGE_JOB_FAILED: "identity.account-purge.job.failed",
   SESSION_LOGGED_OUT: "identity.session.logged-out",
   ALL_SESSIONS_LOGGED_OUT: "identity.session.all-logged-out",
   SESSION_PUSH_DEVICE_RELEASE_FAILED: "identity.session.push-device-release.failed",

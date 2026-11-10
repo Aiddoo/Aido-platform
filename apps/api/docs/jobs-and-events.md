@@ -61,12 +61,12 @@ await jobQueue.registerSchedules(DOCUMENT_QUEUE); // schedules를 key별로 upse
 | 멱등         | at-least-once라 handler는 같은 payload 재실행에 멱등이다(`singletonKey`, 유니크 키, 상태 fence, `boolean` 전이)                                                                                                                                               |
 | 이름         | `teamSize` 대신 pg-boss 12 용어 `localConcurrency`                                                                                                                                                                                                            |
 | 묶음         | 발송량이 많은 큐는 `batchSize`(+`burstWhenBatchFull`). handler가 throw하면 묶음 전체가 재시도되므로 상태 fence로 멱등을 보장한다. 다시 실행하면 한 번 더 보내는 작업이 섞인 큐는 `isolateJobFailures`로 작업마다 끝낸다(`notification.v1`·`push-delivery.v1`) |
-| Health       | `JobQueuePort`에 넘긴 정의(와 DLQ)는 `JobQueueRegistry`가 모아 Health에 더한다. 옮기지 않은 큐는 `job-runtime.health.ts`의 옛 목록에 있다                                                                                                                     |
+| Health       | `JobQueuePort.health()`는 이 프로세스가 정의로 쓴 큐와 그 DLQ(`JobQueueRegistry`)를 본다                                                                                                                                                                      |
 | 연결 예산    | 앱 풀 10 + pg-boss 3 = 13. 늘리지 않는다                                                                                                                                                                                                                      |
 | `startAfter` | 포트는 `Temporal.Instant`를 받고 어댑터가 Date로 바꿔 pg-boss에 넘긴다                                                                                                                                                                                        |
 | 우선순위     | 거래성(리마인더·소셜) `priority: 10`, 마케팅 `0`. 거래성 worker는 `minPriority: 10`([알림](notifications.md)). 같은 큐의 두 번째 worker는 `{ ...QUEUE, worker }`로 정의를 하나 더 둔다                                                                        |
 
-- `JobQueuePort`(`PgBossJobQueueAdapter`)와 옛 `JobRuntimePort`(`PgBossJobRuntimeAdapter`)는 메서드 이름이 겹쳐 클래스가 나뉘지만 같은 pg-boss client와 시작·종료를 쓴다.
+- 큐 포트는 `JobQueuePort` 하나다. `PgBossJobQueueAdapter`가 등록·소비·스케줄·Health와 시작·종료(`JobQueueLifecycle`)를 맡는다.
 - E2E 앱은 `JobQueuePort`를 `test/doubles/platform/in-memory-job-queue.ts`로 바꾼다.
 
 **바꾸지 않는 운영 계약**
@@ -126,4 +126,4 @@ for (const minute of minutesToSweep({ lastCompletedAt, now: clock.now(), maxCatc
 
 ## 전환 중
 
-아직 옮기지 않은 Context는 `JobRuntimePort`·`teamSize`(스케줄 `missed`는 생략 시 `skip`), `*.job.ts`·`*-queue.constants.ts`로 흩어진 큐 정의를 쓴다. 초대 활동 기록은 `social.invitee-activity` 내구성 구독(`social.invitee-activity.v1`), insights 일간 완료 캐시 정리는 planning 이벤트의 `after-commit` 구독이다. 옛 `publishAll`·이벤트 이름 상수·`@OnEvent` 구독은 없다. planning 완료 효과(스트릭·친구 완료 알림·마일스톤)는 소유 Context가 내구성 구독으로 옮기기 전까지 `ApplyTodoCompletionEffectsUseCase`가 커밋 뒤 바로 부른다.
+초대 활동 기록은 `social.invitee-activity` 내구성 구독(`social.invitee-activity.v1`), insights 일간 완료 캐시 정리는 planning 이벤트의 `after-commit` 구독이다. 옛 `publishAll`·이벤트 이름 상수·`@OnEvent` 구독은 없다. planning 완료 효과(스트릭·친구 완료 알림·마일스톤)는 소유 Context가 내구성 구독으로 옮기기 전까지 `ApplyTodoCompletionEffectsUseCase`가 커밋 뒤 바로 부른다.

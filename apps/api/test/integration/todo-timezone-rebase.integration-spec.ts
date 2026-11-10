@@ -35,7 +35,6 @@ import {
 } from "#api/platform/database/schema/index";
 import { JobQueueRegistry } from "#api/platform/jobs/job-queue.registry";
 import { PgBossJobQueueAdapter } from "#api/platform/jobs/pg-boss-job-queue.adapter";
-import { PgBossJobRuntimeAdapter } from "#api/platform/jobs/pg-boss-job-runtime.adapter";
 import { SystemClock } from "#api/platform/time/system-clock";
 import { addDaysToDateKey } from "#api/shared/domain/date/utils/arithmetic";
 import { toDateString } from "#api/shared/domain/date/utils/format";
@@ -69,7 +68,6 @@ describe("시간대 재계산 (실제 PostgreSQL·pg-boss)", () => {
   let database: TestDatabase;
   let client: TestDatabaseClient;
   let boss: PgBoss;
-  let runtime: PgBossJobRuntimeAdapter;
   let jobQueue: PgBossJobQueueAdapter;
   let useCase: RebaseTodoTimezoneUseCase;
   let queue: TodoTimezoneRebaseQueueService;
@@ -99,9 +97,10 @@ describe("시간대 재계산 (실제 PostgreSQL·pg-boss)", () => {
       max: 3,
     });
     transaction = createDatabaseTransactionFixture(client);
-    runtime = new PgBossJobRuntimeAdapter(boss, transaction.txHost, { shutdownTimeoutMs: 10_000 });
-    await runtime.start();
-    jobQueue = new PgBossJobQueueAdapter(boss, transaction.txHost, new JobQueueRegistry());
+    jobQueue = new PgBossJobQueueAdapter(boss, transaction.txHost, new JobQueueRegistry(), {
+      shutdownTimeoutMs: 10_000,
+    });
+    await jobQueue.start();
     reminderAdapter = new ReminderSchedulerAdapter(
       new TodoReminderSchedulerAdapter(jobQueue, new DateClock()),
     );
@@ -152,7 +151,7 @@ describe("시간대 재계산 (실제 PostgreSQL·pg-boss)", () => {
   });
 
   afterAll(async () => {
-    await runtime?.stop();
+    await jobQueue?.stop();
     await database?.stop();
   });
 
@@ -469,7 +468,9 @@ describe("시간대 재계산 (실제 PostgreSQL·pg-boss)", () => {
     // Given
     const transaction = createDatabaseTransactionFixture(client);
     const localQueue = new TodoTimezoneRebaseQueueService(
-      new PgBossJobQueueAdapter(boss, transaction.txHost, new JobQueueRegistry()),
+      new PgBossJobQueueAdapter(boss, transaction.txHost, new JobQueueRegistry(), {
+        shutdownTimeoutMs: 10_000,
+      }),
     );
     const at = new Date(Date.now() + 10 * TODO_TIMEZONE_REBASE_WINDOW_MS);
     // When

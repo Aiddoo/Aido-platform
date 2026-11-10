@@ -6,11 +6,7 @@ import { ConfigModule } from "@nestjs/config";
 import { Test, type TestingModule } from "@nestjs/testing";
 import type { z } from "zod";
 
-import {
-  PG_BOSS_CLIENT,
-  type PgBossClient,
-  pgBossClientProvider,
-} from "../jobs/pg-boss-job-runtime.adapter.js";
+import { PG_BOSS_CLIENT, type PgBossClient, pgBossClientProvider } from "../jobs/pg-boss-client.js";
 import type { NamespaceConfig } from "./define-config.js";
 import { envSchema, validateEnv } from "./schemas/index.js";
 

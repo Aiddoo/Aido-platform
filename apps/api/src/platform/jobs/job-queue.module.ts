@@ -7,31 +7,31 @@ import {
 } from "@nestjs/common";
 
 import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
-import { JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
 import { SweepCursorPort } from "#api/shared/application/ports/sweep-cursor.port";
 
 import { DrizzleSweepCursorAdapter } from "./drizzle-sweep-cursor.adapter.js";
 import { JobQueueRegistry } from "./job-queue.registry.js";
+import { pgBossClientProvider } from "./pg-boss-client.js";
 import { PgBossJobQueueAdapter } from "./pg-boss-job-queue.adapter.js";
-import { PgBossJobRuntimeAdapter, pgBossClientProvider } from "./pg-boss-job-runtime.adapter.js";
 import { PgBossScheduleRunReader } from "./pg-boss-schedule-run.reader.js";
 import { ScheduleWatchdogProcessor } from "./schedule-watchdog.processor.js";
 import { ScheduleWatchdogScheduler } from "./schedule-watchdog.scheduler.js";
 
 @Injectable()
-export class JobRuntimeLifecycle implements OnApplicationBootstrap, BeforeApplicationShutdown {
-  readonly #runtime: JobRuntimePort;
+export class JobQueueLifecycle implements OnApplicationBootstrap, BeforeApplicationShutdown {
+  readonly #jobQueue: Pick<JobQueuePort, "start" | "stop">;
 
-  constructor(runtime: JobRuntimePort) {
-    this.#runtime = runtime;
+  // 테스트가 포트를 메모리 구현으로 덮어써도 같은 수명주기를 타도록 어댑터가 아닌 포트를 받는다
+  constructor(jobQueue: JobQueuePort) {
+    this.#jobQueue = jobQueue;
   }
 
   async onApplicationBootstrap(): Promise<void> {
-    await this.#runtime.start();
+    await this.#jobQueue.start();
   }
 
   async beforeApplicationShutdown(): Promise<void> {
-    await this.#runtime.stop();
+    await this.#jobQueue.stop();
   }
 }
 
@@ -39,18 +39,15 @@ export class JobRuntimeLifecycle implements OnApplicationBootstrap, BeforeApplic
 @Module({
   providers: [
     pgBossClientProvider,
-    PgBossJobRuntimeAdapter,
-    { provide: JobRuntimePort, useExisting: PgBossJobRuntimeAdapter },
-    // JobRuntimePort와 메서드 이름이 겹쳐 따로 구현하고, 같은 pg-boss client와 시작·종료를 공유한다
     PgBossJobQueueAdapter,
     { provide: JobQueuePort, useExisting: PgBossJobQueueAdapter },
     JobQueueRegistry,
     { provide: SweepCursorPort, useClass: DrizzleSweepCursorAdapter },
-    JobRuntimeLifecycle,
+    JobQueueLifecycle,
     PgBossScheduleRunReader,
     ScheduleWatchdogProcessor,
     ScheduleWatchdogScheduler,
   ],
-  exports: [JobRuntimePort, JobQueuePort, JobQueueRegistry, SweepCursorPort],
+  exports: [JobQueuePort, JobQueueRegistry, SweepCursorPort],
 })
-export class JobRuntimeModule {}
+export class JobQueueModule {}

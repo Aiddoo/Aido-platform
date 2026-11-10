@@ -84,7 +84,6 @@ import { DEDUP_PROVIDER } from "#api/platform/dedup/interfaces/dedup.interface";
 import { loggerFor, provideUseCase } from "#api/platform/di/provide-use-case";
 import { JobQueueRegistry } from "#api/platform/jobs/job-queue.registry";
 import { PgBossJobQueueAdapter } from "#api/platform/jobs/pg-boss-job-queue.adapter";
-import { PgBossJobRuntimeAdapter } from "#api/platform/jobs/pg-boss-job-runtime.adapter";
 import { InMemoryLockAdapter } from "#api/platform/lock/adapters/in-memory-lock.adapter";
 import { LOCK_PROVIDER } from "#api/platform/lock/interfaces/lock.interface";
 import { SystemClock } from "#api/platform/time/system-clock";
@@ -93,7 +92,6 @@ import { ClockPort } from "#api/shared/application/ports/clock.port";
 import {
   AFTER_COMMIT_TASK_REGISTRY,
   JobQueuePort,
-  JobRuntimePort,
   UNIT_OF_WORK,
   UnitOfWorkPort,
 } from "#api/shared/application/ports/index";
@@ -128,7 +126,6 @@ class CriticalQueueDatabaseModule {
 export interface CriticalQueueProcessorHarness {
   readonly client: TestDatabaseClient;
   readonly boss: PgBoss;
-  readonly runtime: JobRuntimePort;
   readonly jobQueue: JobQueuePort;
   readonly pushProvider: FakePushProvider;
   readonly module: TestingModule;
@@ -186,12 +183,6 @@ export async function createCriticalQueueProcessorHarness(): Promise<CriticalQue
       { provide: AFTER_COMMIT_TASK_REGISTRY, useExisting: ClsUnitOfWork },
       { provide: AfterCommitTaskRegistryPort, useExisting: ClsUnitOfWork },
       { provide: ClockPort, useClass: SystemClock },
-      {
-        provide: JobRuntimePort,
-        inject: [TransactionHost],
-        useFactory: (txHost: TransactionHost<DrizzleTransactionalAdapter>) =>
-          new PgBossJobRuntimeAdapter(boss, txHost, { shutdownTimeoutMs: 10_000 }),
-      },
       JobQueueRegistry,
       {
         provide: JobQueuePort,
@@ -199,7 +190,7 @@ export async function createCriticalQueueProcessorHarness(): Promise<CriticalQue
         useFactory: (
           txHost: TransactionHost<DrizzleTransactionalAdapter>,
           registry: JobQueueRegistry,
-        ) => new PgBossJobQueueAdapter(boss, txHost, registry),
+        ) => new PgBossJobQueueAdapter(boss, txHost, registry, { shutdownTimeoutMs: 10_000 }),
       },
       ...notificationProviders(pushProvider),
       ...retentionProviders(),
@@ -207,15 +198,14 @@ export async function createCriticalQueueProcessorHarness(): Promise<CriticalQue
     ],
   }).compile();
 
-  const runtime = module.get(JobRuntimePort);
-  await runtime.start();
+  const jobQueue = module.get(JobQueuePort);
+  await jobQueue.start();
   await module.init();
 
   return {
     client,
     boss,
-    runtime,
-    jobQueue: module.get(JobQueuePort),
+    jobQueue,
     pushProvider,
     module,
     retentionRepository: module.get(DrizzleRetentionRepository),
@@ -231,7 +221,7 @@ export async function createCriticalQueueProcessorHarness(): Promise<CriticalQue
       await eventually(assertion, timeoutMs);
     },
     close: async () => {
-      await runtime.stop();
+      await jobQueue.stop();
       await module.close();
       await testDatabase.stop();
     },

@@ -1,17 +1,16 @@
 import { Inject, Injectable, Logger, type OnModuleInit, Optional } from "@nestjs/common";
 
-import { JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
+import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
 import { toSupportedLocale } from "#api/shared/domain/locale";
 
 import { GenerateReportUseCase } from "../../application/use-cases/generate-report.use-case.js";
 import { AiJobLogEvent } from "./ai-job.log-events.js";
-import type { ReportDispatcher } from "./ai-report.queue.js";
 import {
   AI_REPORT_QUEUE,
-  AI_REPORT_WORKER_POLICY,
   AiReportJobName,
-  AiReportRuntimeJobSchema,
+  type AiReportRuntimeJob,
   isFinalReportAttempt,
+  type ReportDispatcher,
 } from "./ai-report.queue.js";
 
 @Injectable()
@@ -24,60 +23,29 @@ export class ReportGenerationProcessor implements OnModuleInit {
   }
 
   readonly #generateReport: Pick<GenerateReportUseCase, "execute">;
-  readonly #runtime: JobRuntimePort | undefined;
+  readonly #jobQueue: Pick<JobQueuePort, "work"> | undefined;
 
   constructor(
     @Inject(GenerateReportUseCase) generateReport: Pick<GenerateReportUseCase, "execute">,
-    @Optional() runtime?: JobRuntimePort,
+    @Optional() jobQueue?: JobQueuePort,
   ) {
     this.#generateReport = generateReport;
-    this.#runtime = runtime;
+    this.#jobQueue = jobQueue;
   }
 
   async onModuleInit(): Promise<void> {
-    if (this.#runtime == null) {
+    if (this.#jobQueue == null) {
       return;
     }
-    await this.#runtime.work(
-      AI_REPORT_QUEUE,
-      async (jobs) => {
-        for (const job of jobs) {
-          await this.process(job.data, job.attempt);
-        }
-      },
-      AI_REPORT_WORKER_POLICY,
-    );
-  }
-
-  onStalled(jobId: string): void {
-    this.#logger.warn({ event: AiJobLogEvent.STALLED, queueName: AI_REPORT_QUEUE, jobId });
-  }
-
-  onError(_error: Error): void {
-    this.#logger.error({
-      event: AiJobLogEvent.WORKER_FAILED,
-      queueName: AI_REPORT_QUEUE,
-      errorType: "Error",
-    });
-  }
-
-  onFailed(job: { readonly id?: string; readonly name?: string } | undefined, _error: Error) {
-    this.#logger.error({
-      event: AiJobLogEvent.FAILED,
-      queueName: AI_REPORT_QUEUE,
-      jobId: job?.id,
-      errorType: "Error",
+    await this.#jobQueue.work(AI_REPORT_QUEUE, async (jobs) => {
+      for (const job of jobs) {
+        await this.process(job.data, job.attempt);
+      }
     });
   }
 
   /** attempt는 1부터 센다. 생략하면 재시도 없는 단발 실행으로 보고 폴백까지 저장한다. */
-  async process(untrustedJob: unknown, attempt = Number.POSITIVE_INFINITY): Promise<void> {
-    const parsedJob = AiReportRuntimeJobSchema.safeParse(untrustedJob);
-    if (!parsedJob.success) {
-      this.#logger.warn({ event: AiJobLogEvent.INVALID, queueName: AI_REPORT_QUEUE });
-      return;
-    }
-    const job = parsedJob.data;
+  async process(job: AiReportRuntimeJob, attempt = Number.POSITIVE_INFINITY): Promise<void> {
     if (job.name === AiReportJobName.DISPATCH) {
       await this.#reportJob?.dispatchReports(job.data.reportType);
       return;
@@ -88,7 +56,7 @@ export class ReportGenerationProcessor implements OnModuleInit {
 
     this.#logger.debug({
       event: AiJobLogEvent.STARTED,
-      queueName: AI_REPORT_QUEUE,
+      queueName: AI_REPORT_QUEUE.name,
       userId,
       reportType,
     });
@@ -104,7 +72,7 @@ export class ReportGenerationProcessor implements OnModuleInit {
     if (report == null) {
       this.#logger.debug({
         event: AiJobLogEvent.SKIPPED,
-        queueName: AI_REPORT_QUEUE,
+        queueName: AI_REPORT_QUEUE.name,
         userId,
         reportType,
       });
@@ -113,7 +81,7 @@ export class ReportGenerationProcessor implements OnModuleInit {
 
     this.#logger.log({
       event: AiJobLogEvent.COMPLETED,
-      queueName: AI_REPORT_QUEUE,
+      queueName: AI_REPORT_QUEUE.name,
       userId,
       reportType,
     });

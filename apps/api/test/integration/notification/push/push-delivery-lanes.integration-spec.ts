@@ -7,8 +7,10 @@ import {
   PUSH_DELIVERY_TRANSACTIONAL_QUEUE,
 } from "#api/modules/notification/push/infrastructure/jobs/push-delivery.queue";
 import { JobQueueRegistry } from "#api/platform/jobs/job-queue.registry";
-import { PgBossJobQueueAdapter } from "#api/platform/jobs/pg-boss-job-queue.adapter";
-import { deterministicJobId } from "#api/platform/jobs/pg-boss-job-runtime.adapter";
+import {
+  deterministicJobId,
+  PgBossJobQueueAdapter,
+} from "#api/platform/jobs/pg-boss-job-queue.adapter";
 import { createDatabaseTransactionFixture } from "#test/setup/database-context";
 import { TestDatabase } from "#test/setup/test-database";
 
@@ -55,6 +57,7 @@ describe("푸시 발송 차선 (실제 PostgreSQL + pg-boss)", () => {
       boss,
       createDatabaseTransactionFixture(client).txHost,
       new JobQueueRegistry(),
+      { shutdownTimeoutMs: 10_000 },
     );
   }, 60_000);
 

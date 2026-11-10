@@ -39,7 +39,7 @@ import {
   RequestClientModule,
 } from "#api/platform/http/request-client/index";
 import { AppI18nModule } from "#api/platform/i18n/i18n.module";
-import { JobRuntimeModule } from "#api/platform/jobs/job-runtime.module";
+import { JobQueueModule } from "#api/platform/jobs/job-queue.module";
 import { LockModule } from "#api/platform/lock/index";
 import { LoggerModule } from "#api/platform/logging/index";
 import { MeteringModule } from "#api/platform/metering/index";
@@ -88,7 +88,7 @@ import { AppService } from "./app.service.js";
     CacheModule.forRoot(),
     DedupModule.forRoot(),
     LockModule.forRoot(),
-    JobRuntimeModule,
+    JobQueueModule,
     AlertingModule,
     ResilienceModule,
     MeteringModule,

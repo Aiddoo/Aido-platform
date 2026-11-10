@@ -1,6 +1,56 @@
 import type { z } from "zod";
 
-import type { DeadLetterQueue, JobEnvelope, JobRetryPolicy } from "./job-runtime.port.js";
+export interface JobEnvelope<T extends object = object> {
+  readonly id: string;
+  readonly name: string;
+  readonly data: Readonly<T>;
+  readonly attempt: number;
+}
+
+export interface JobRetryPolicy {
+  readonly retryLimit: number;
+  readonly retryDelaySeconds: number;
+  readonly retryBackoff: boolean;
+  readonly expireInSeconds: number;
+  readonly retentionSeconds: number;
+  readonly deleteAfterSeconds: number;
+}
+
+interface DeadLetterQueuePolicy {
+  readonly queue: string;
+  readonly jobPolicy: JobRetryPolicy;
+}
+
+// 문자열은 DLQ 자체 정책 없이 이름만 넘기던 옛 정의와 쌓인 작업을 위한 모양이다
+export type DeadLetterQueue = string | DeadLetterQueuePolicy;
+
+export function resolveDeadLetterQueue(
+  deadLetter: DeadLetterQueue | undefined,
+): string | undefined {
+  return typeof deadLetter === "string" ? deadLetter : deadLetter?.queue;
+}
+
+export function resolveDeadLetterJobPolicy(
+  deadLetter: DeadLetterQueue | undefined,
+): JobRetryPolicy | undefined {
+  return typeof deadLetter === "object" ? deadLetter.jobPolicy : undefined;
+}
+
+/**
+ * 큐 폴링 주기.
+ *
+ * 폴링은 일이 없어도 도는 비용이다 — pg-boss는 주기마다 큐별로
+ * `UPDATE ... FOR UPDATE SKIP LOCKED`를 날리므로, 유휴 상태에서도 WAL과 죽은 튜플이 쌓인다.
+ * 그래서 주기는 "사람이 기다리고 있는가"로 정한다.
+ */
+export const JOB_POLLING_SECONDS = {
+  /** 사람이 결과를 기다린다 — 푸시 발송처럼 늦으면 체감되는 일. */
+  INTERACTIVE: 2,
+  /** 정해진 시각에 도는 일 — 몇 초 늦어도 아무도 모른다. */
+  SCHEDULED: 15,
+  /** 배경에서 알아서 되는 일 — 지연이 의미를 갖지 않는다. */
+  BACKGROUND: 30,
+} as const;
 
 // skip은 배포로 내려간 사이의 실행을 버리고, once는 놓친 실행 중 마지막 하나만 보낸다
 type ScheduleMissedPolicy = "skip" | "once";
@@ -54,8 +104,25 @@ export interface EnqueueManyJob<TPayload extends object> {
   readonly priority?: number;
 }
 
+interface QueueHealth {
+  readonly waiting: number;
+  readonly active: number;
+  readonly failed: number;
+  readonly oldestAgeSeconds: number | null;
+}
+
+export interface JobQueueHealth {
+  readonly backend: "postgres";
+  readonly degraded: boolean;
+  readonly reason?: string;
+  readonly queues: Readonly<Record<string, QueueHealth>>;
+}
+
 /** 큐 하나의 정의(`defineQueue`)로 등록·소비·스케줄을 한다. 등록은 활성 UoW 트랜잭션에 함께 쓴다. */
 export abstract class JobQueuePort {
+  abstract start(): Promise<void>;
+  /** 처리 중인 작업이 끝나기를 기다린 뒤 연결을 닫는다. */
+  abstract stop(): Promise<void>;
   /** 같은 idempotencyKey의 작업이 이미 있으면 null이다. */
   abstract enqueue<TPayload extends object>(
     queue: QueueDefinition<TPayload>,
@@ -78,4 +145,6 @@ export abstract class JobQueuePort {
   ): Promise<void>;
   /** 정의의 schedules를 key별로 upsert한다. */
   abstract registerSchedules(queue: QueueDefinition<object>): Promise<void>;
+  /** 이 프로세스가 정의로 쓴 큐와 그 DLQ의 상태. 저장소 장애는 throw하지 않고 degraded로 돌려준다. */
+  abstract health(): Promise<JobQueueHealth>;
 }

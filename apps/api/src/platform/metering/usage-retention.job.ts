@@ -1,36 +1,43 @@
 import { Inject, Injectable, Logger, type OnModuleInit } from "@nestjs/common";
+import { z } from "zod";
 
 import { runInBackground } from "#api/platform/jobs/non-blocking-init";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import {
-  type EnqueueJobOptions,
+  defineQueue,
   JOB_POLLING_SECONDS,
-  JobRuntimePort,
-} from "#api/shared/application/ports/job-runtime.port";
+  JobQueuePort,
+} from "#api/shared/application/ports/job-queue.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 
 import { PlatformLogEvent } from "../logging/platform.log-events.js";
 import { USAGE_METER, type UsageMeterPort } from "./interfaces/usage-meter.interface.js";
 
-export const USAGE_RETENTION_QUEUE = "outbound-usage-retention.v1";
 /** 월 예산·공급자 월 한도를 넘는 기간만 남긴다. */
 const USAGE_RETENTION_DAYS = 90;
 
-const USAGE_RETENTION_SCHEDULE = {
-  id: "daily-outbound-usage-retention",
-  cron: "30 4 * * *",
-  timezone: "Asia/Seoul",
-} as const;
-
-const USAGE_RETENTION_JOB_OPTIONS = {
-  retryLimit: 2,
-  retryDelaySeconds: 60,
-  retryBackoff: true,
-  expireInSeconds: 10 * 60,
-  retentionSeconds: 24 * 60 * 60,
-  deleteAfterSeconds: 24 * 60 * 60,
-  timezone: USAGE_RETENTION_SCHEDULE.timezone,
-} satisfies EnqueueJobOptions;
+const USAGE_RETENTION_QUEUE = defineQueue({
+  name: "outbound-usage-retention.v1",
+  payloadSchema: z.object({}),
+  retry: {
+    retryLimit: 2,
+    retryDelaySeconds: 60,
+    retryBackoff: true,
+    expireInSeconds: 10 * 60,
+    retentionSeconds: 24 * 60 * 60,
+    deleteAfterSeconds: 24 * 60 * 60,
+  },
+  worker: { localConcurrency: 1, pollingIntervalSeconds: JOB_POLLING_SECONDS.BACKGROUND },
+  schedules: [
+    {
+      key: "daily-outbound-usage-retention",
+      cron: "30 4 * * *",
+      timezone: "Asia/Seoul",
+      missed: "skip",
+      payload: {},
+    },
+  ],
+});
 
 /** 오래된 외부 호출 사용량 기간을 하루 한 번 지운다. */
 @Injectable()
@@ -39,16 +46,16 @@ export class UsageRetentionJob implements OnModuleInit {
   schedulerRegistration: Promise<void> = Promise.resolve();
 
   readonly #meter: Pick<UsageMeterPort, "prune">;
-  readonly #runtime: JobRuntimePort;
+  readonly #jobQueue: Pick<JobQueuePort, "work" | "registerSchedules">;
   readonly #clock: ClockPort;
 
   constructor(
     @Inject(USAGE_METER) meter: Pick<UsageMeterPort, "prune">,
-    runtime: JobRuntimePort,
+    jobQueue: JobQueuePort,
     clock: ClockPort,
   ) {
     this.#meter = meter;
-    this.#runtime = runtime;
+    this.#jobQueue = jobQueue;
     this.#clock = clock;
   }
 
@@ -57,18 +64,8 @@ export class UsageRetentionJob implements OnModuleInit {
       this.#logger,
       "Outbound usage retention scheduler registration",
       async () => {
-        await this.#runtime.work(USAGE_RETENTION_QUEUE, async () => this.prune(), {
-          teamSize: 1,
-          pollingIntervalSeconds: JOB_POLLING_SECONDS.BACKGROUND,
-          queuePolicy: USAGE_RETENTION_JOB_OPTIONS,
-        });
-        await this.#runtime.schedule(
-          USAGE_RETENTION_SCHEDULE.id,
-          USAGE_RETENTION_SCHEDULE.cron,
-          USAGE_RETENTION_QUEUE,
-          {},
-          USAGE_RETENTION_JOB_OPTIONS,
-        );
+        await this.#jobQueue.work(USAGE_RETENTION_QUEUE, async () => this.prune());
+        await this.#jobQueue.registerSchedules(USAGE_RETENTION_QUEUE);
       },
     );
   }

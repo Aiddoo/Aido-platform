@@ -173,4 +173,4 @@ Sentry AI span에는 입력·지시·응답 문장을 싣지 않는다([보안](
 
 ## 전환 중
 
-ai-assistance는 slice 구조로 옮겼다. 남은 것: 리포트 큐는 아직 `JobRuntimePort`(defineQueue 전), parse-todo·parse-memo의 application 다섯 파일은 정리 결과를 공개 계약(`parsedTodoDataSchema`)으로 검증해 줄 단위 lint 예외가 있다(ParsedTodo read model로 옮길 때 지운다).
+ai-assistance는 slice 구조로 옮겼다. 남은 것: parse-todo·parse-memo의 application 다섯 파일은 정리 결과를 공개 계약(`parsedTodoDataSchema`)으로 검증해 줄 단위 lint 예외가 있다(ParsedTodo read model로 옮길 때 지운다).
