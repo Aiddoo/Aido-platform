@@ -1,6 +1,7 @@
 import { MARKETING_OPT_OUT_ACTION } from '../constants/notification.constants';
 import {
-  NotificationPolicy,
+  type HandledResponseIds,
+  HandledResponsePolicy,
   type PendingNotificationResponse,
 } from '../domains/notification.model';
 import type { NotificationDestination } from '../utils/notification-destination';
@@ -35,7 +36,7 @@ const EMPTY_STATE: NotificationEntryState = { pending: null, ready: null, optOut
 /** 응답 슬롯. 라우트 경계가 다시 그려도 남도록 DI가 소유한다 */
 export function createNotificationEntryStore(): NotificationEntryStore {
   let state = EMPTY_STATE;
-  let handledResponseIds: readonly string[] = [];
+  let handledResponseIds: HandledResponseIds = [];
   const listeners = new Set<() => void>();
 
   function setState(next: NotificationEntryState) {
@@ -55,7 +56,7 @@ export function createNotificationEntryStore(): NotificationEntryStore {
     },
     receive: (response) => {
       if (
-        NotificationPolicy.hasHandledResponse(response, handledResponseIds) ||
+        HandledResponsePolicy.hasHandledResponse(handledResponseIds, response.id) ||
         response.id === state.pending?.id ||
         response.id === state.ready?.response.id ||
         response.id === state.optOut?.id
@@ -75,9 +76,9 @@ export function createNotificationEntryStore(): NotificationEntryStore {
       setState({ ...state, pending: null, ready: { response: state.pending, destination } });
     },
     settle: (responseId) => {
-      handledResponseIds = NotificationPolicy.rememberHandledResponse(
-        { id: responseId },
+      handledResponseIds = HandledResponsePolicy.rememberHandledResponse(
         handledResponseIds,
+        responseId,
       );
       setState({
         pending: state.pending?.id === responseId ? null : state.pending,

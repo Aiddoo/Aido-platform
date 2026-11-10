@@ -1,8 +1,16 @@
 import { toInstant } from '@src/shared/date/instant';
 
-import { createPushNotificationPayload } from '../__tests__/notification.fixtures';
+import {
+  createPendingNotificationResponse,
+  createPushNotificationPayload,
+} from '../__tests__/notification.fixtures';
 import type { Notification } from './notification.model';
-import { NotificationPolicy } from './notification.model';
+import {
+  HandledResponsePolicy,
+  NotificationPolicy,
+  NotificationResponsePolicy,
+  PushNotificationPolicy,
+} from './notification.model';
 
 const baseNotification: Notification = {
   id: 1,
@@ -26,7 +34,7 @@ describe('isAiFeature', () => {
     ['SYSTEM_NOTICE', false],
   ] as const)('%s 알림이 프리미엄 AI 기능인지는 %s다', (type, expected) => {
     // Given
-    const notification = { type };
+    const notification = { ...baseNotification, type };
 
     // When
     const result = NotificationPolicy.isAiFeature(notification);
@@ -85,16 +93,16 @@ describe('findReceivedCheer', () => {
 
 describe('getResponseAction', () => {
   const NOW = 1_000_000_000;
-  const DEFAULT_TAP = {
-    actionIdentifier: 'expo.modules.notifications.actions.DEFAULT',
-    receivedAt: NOW,
-  };
+  const DEFAULT_TAP = createPendingNotificationResponse({ receivedAt: NOW });
 
   it.each(['loading', 'locked'] as const)(
     '%s 상태에서는 계정 알림 처리를 인증 판정 뒤로 미룬다',
     (authStatus) => {
       // When
-      const action = NotificationPolicy.getResponseAction(DEFAULT_TAP, { authStatus, now: NOW });
+      const action = NotificationResponsePolicy.getResponseAction(DEFAULT_TAP, {
+        authStatus,
+        now: NOW,
+      });
 
       // Then
       expect(action).toEqual({ type: 'defer', reason: 'auth-resolving' });
@@ -103,7 +111,7 @@ describe('getResponseAction', () => {
 
   it('미인증이면 로그인할 때까지 보관한다', () => {
     // When
-    const action = NotificationPolicy.getResponseAction(DEFAULT_TAP, {
+    const action = NotificationResponsePolicy.getResponseAction(DEFAULT_TAP, {
       authStatus: 'unauthenticated',
       now: NOW,
     });
@@ -114,7 +122,7 @@ describe('getResponseAction', () => {
 
   it('인증됐으면 연다', () => {
     // When
-    const action = NotificationPolicy.getResponseAction(DEFAULT_TAP, {
+    const action = NotificationResponsePolicy.getResponseAction(DEFAULT_TAP, {
       authStatus: 'authenticated',
       now: NOW,
     });
@@ -130,7 +138,10 @@ describe('getResponseAction', () => {
       const optOutTap = { ...DEFAULT_TAP, actionIdentifier: 'MARKETING_OPT_OUT' };
 
       // When
-      const action = NotificationPolicy.getResponseAction(optOutTap, { authStatus, now: NOW });
+      const action = NotificationResponsePolicy.getResponseAction(optOutTap, {
+        authStatus,
+        now: NOW,
+      });
 
       // Then
       expect(action).toEqual({ type: 'optOut' });
@@ -139,7 +150,7 @@ describe('getResponseAction', () => {
 
   it('받은 지 정확히 10분이 지난 응답은 아직 연다', () => {
     // When
-    const action = NotificationPolicy.getResponseAction(DEFAULT_TAP, {
+    const action = NotificationResponsePolicy.getResponseAction(DEFAULT_TAP, {
       authStatus: 'authenticated',
       now: NOW + 10 * 60_000,
     });
@@ -150,7 +161,7 @@ describe('getResponseAction', () => {
 
   it('10분에서 1ms가 더 지난 응답은 버린다', () => {
     // When
-    const action = NotificationPolicy.getResponseAction(DEFAULT_TAP, {
+    const action = NotificationResponsePolicy.getResponseAction(DEFAULT_TAP, {
       authStatus: 'authenticated',
       now: NOW + 10 * 60_000 + 1,
     });
@@ -167,7 +178,9 @@ describe('hasServerRecord', () => {
     { title: '알림 ID가 있으면 서버 기록이 있다', notificationId: 7, expected: true },
   ])('$title', ({ notificationId, expected }) => {
     // When
-    const result = NotificationPolicy.hasServerRecord({ notificationId });
+    const result = PushNotificationPolicy.hasServerRecord(
+      createPushNotificationPayload({ notificationId }),
+    );
 
     // Then
     expect(result).toBe(expected);
@@ -211,7 +224,7 @@ describe('getForegroundPresentation', () => {
     const payload = createPushNotificationPayload({ type });
 
     // When
-    const presentation = NotificationPolicy.getForegroundPresentation(payload, viewing);
+    const presentation = PushNotificationPolicy.getForegroundPresentation(payload, viewing);
 
     // Then
     expect(presentation).toBe(expected);
@@ -237,11 +250,16 @@ describe('getOpenAppState', () => {
   ] as const)(
     '%s 열림을 %s로 남긴다',
     (_case, expected, isLaunchResponse, appState, activeSince, receivedAt) => {
+      // Given
+      const response = createPendingNotificationResponse({
+        isLaunchResponse,
+        appState,
+        activeSince,
+        receivedAt,
+      });
+
       // When
-      const openedFrom = NotificationPolicy.getOpenAppState(
-        { receivedAt },
-        { isLaunchResponse, appState, activeSince },
-      );
+      const openedFrom = NotificationResponsePolicy.getOpenAppState(response);
 
       // Then
       expect(openedFrom).toBe(expected);
@@ -249,16 +267,13 @@ describe('getOpenAppState', () => {
   );
 });
 
-describe('rememberHandledResponse', () => {
+describe('HandledResponsePolicy', () => {
   it('처리한 응답은 다른 탭이 끼어도 다시 처리하지 않는다', () => {
     // Given
-    const handledResponseIds = ['a', 'b'].reduce<string[]>(
-      (ids, id) => NotificationPolicy.rememberHandledResponse({ id }, ids),
-      [],
-    );
+    const handledResponseIds = ['a', 'b'].reduce(HandledResponsePolicy.rememberHandledResponse, []);
 
     // When
-    const hasHandled = NotificationPolicy.hasHandledResponse({ id: 'a' }, handledResponseIds);
+    const hasHandled = HandledResponsePolicy.hasHandledResponse(handledResponseIds, 'a');
 
     // Then
     expect(hasHandled).toBe(true);
@@ -266,21 +281,17 @@ describe('rememberHandledResponse', () => {
 
   it('최근 20개만 기억해 앱을 오래 써도 기억이 늘지 않는다', () => {
     // Given
-    const ids = Array.from({ length: 21 }, (_, index) => `response-${index}`);
+    const responseIds = Array.from({ length: 21 }, (_, index) => `response-${index}`);
 
     // When
-    const handledResponseIds = ids.reduce<string[]>(
-      (remembered, id) => NotificationPolicy.rememberHandledResponse({ id }, remembered),
+    const handledResponseIds = responseIds.reduce(
+      HandledResponsePolicy.rememberHandledResponse,
       [],
     );
 
     // Then
     expect(handledResponseIds).toHaveLength(20);
-    expect(NotificationPolicy.hasHandledResponse({ id: 'response-0' }, handledResponseIds)).toBe(
-      false,
-    );
-    expect(NotificationPolicy.hasHandledResponse({ id: 'response-20' }, handledResponseIds)).toBe(
-      true,
-    );
+    expect(HandledResponsePolicy.hasHandledResponse(handledResponseIds, 'response-0')).toBe(false);
+    expect(HandledResponsePolicy.hasHandledResponse(handledResponseIds, 'response-20')).toBe(true);
   });
 });

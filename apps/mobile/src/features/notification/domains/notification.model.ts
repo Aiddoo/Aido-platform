@@ -140,8 +140,15 @@ export interface PendingNotificationResponse {
   actionIdentifier: string;
   data: PushNotificationPayload;
   receivedAt: number;
-  openedFrom: PushOpenAppState;
+  /** 시작할 때 읽은 마지막 응답이면 true. 꺼진 앱이 이 탭으로 켜졌다 */
+  isLaunchResponse: boolean;
+  /** 응답을 받을 때 앱 상태와, 앞에 있었다면 앞으로 온 시각 */
+  appState: AppLifecycleState;
+  activeSince: number | null;
 }
+
+/** 이미 처리한 응답 id. 최근 것만 남긴다 */
+export type HandledResponseIds = readonly string[];
 
 /** 인증을 기다리는 응답을 보관하는 수명 */
 const PENDING_RESPONSE_LIFETIME_MS = 10 * MINUTE_MS;
@@ -170,73 +177,14 @@ function findReceivedCheer(
   return { cheerId, senderId, senderName: notification.routing?.senderName ?? null };
 }
 
-type NotificationResponseAction =
-  | { type: 'optOut' }
-  | { type: 'open' }
-  | { type: 'defer'; reason: 'auth-resolving' | 'authentication-required' }
-  | { type: 'drop'; reason: 'expired' };
-
-/** 눌린 응답을 지금 어떻게 할지. 공개 수신 거부 액션은 인증과 무관하게 처리한다. */
-function getResponseAction(
-  response: Pick<PendingNotificationResponse, 'actionIdentifier' | 'receivedAt'>,
-  { authStatus, now }: { authStatus: AuthStatus; now: number },
-): NotificationResponseAction {
-  if (now - response.receivedAt > PENDING_RESPONSE_LIFETIME_MS) {
-    return { type: 'drop', reason: 'expired' };
-  }
-  if (response.actionIdentifier === MARKETING_OPT_OUT_ACTION) {
-    return { type: 'optOut' };
-  }
-  return match(authStatus)
-    .returnType<NotificationResponseAction>()
-    .with('loading', 'locked', () => ({ type: 'defer', reason: 'auth-resolving' }))
-    .with('unauthenticated', () => ({ type: 'defer', reason: 'authentication-required' }))
-    .with('authenticated', () => ({ type: 'open' }))
-    .exhaustive();
-}
-
-function getOpenAppState(
-  response: Pick<PendingNotificationResponse, 'receivedAt'>,
-  {
-    isLaunchResponse,
-    appState,
-    activeSince,
-  }: { isLaunchResponse: boolean; appState: AppLifecycleState; activeSince: number | null },
-): PushOpenAppState {
-  if (isLaunchResponse) {
-    return 'cold';
-  }
-  if (
-    appState !== 'active' ||
-    activeSince == null ||
-    response.receivedAt - activeSince < FOREGROUND_TAP_SETTLE_MS
-  ) {
-    return 'background';
-  }
-  return 'foreground';
-}
-
-/** 한 탭은 한 번만 연다 */
-function hasHandledResponse(
-  response: Pick<PendingNotificationResponse, 'id'>,
-  handledResponseIds: readonly string[],
-) {
-  return handledResponseIds.includes(response.id);
-}
-
-function rememberHandledResponse(
-  response: Pick<PendingNotificationResponse, 'id'>,
-  handledResponseIds: readonly string[],
-): string[] {
-  return takeRight(
-    [...without(handledResponseIds, response.id), response.id],
-    HANDLED_RESPONSE_ID_LIMIT,
-  );
-}
-
 /** 알림 ID가 0이면 서버에 알림 기록이 없는 푸시라 읽음·열림을 서버에 묻지 않는다 */
-function hasServerRecord({ notificationId }: Pick<PushNotificationPayload, 'notificationId'>) {
-  return notificationId > 0;
+function hasServerRecord(payload: Pick<PushNotificationPayload, 'notificationId'>) {
+  return payload.notificationId > 0;
+}
+
+/** 받을 때 그 타입의 화면을 다시 받는지. 다시 받으면 보고 있는 화면에 새 내용이 바로 보인다 */
+function isRefreshedOnReceipt(payload: Pick<PushNotificationPayload, 'type'>) {
+  return payload.type != null && NOTIFICATION_TYPE_TRAITS[payload.type].invalidation != null;
 }
 
 /**
@@ -253,17 +201,93 @@ function getForegroundPresentation(
   if (payload.type == null) {
     return 'banner';
   }
-  const isDestinationRefreshed = NOTIFICATION_TYPE_TRAITS[payload.type].invalidation != null;
-  return isViewingInbox || (isViewingDestination && isDestinationRefreshed) ? 'quiet' : 'banner';
+  return isViewingInbox || (isViewingDestination && isRefreshedOnReceipt(payload))
+    ? 'quiet'
+    : 'banner';
 }
 
+type NotificationResponseAction =
+  | { type: 'optOut' }
+  | { type: 'open' }
+  | { type: 'defer'; reason: 'auth-resolving' | 'authentication-required' }
+  | { type: 'drop'; reason: 'expired' };
+
+function isExpiredResponse(response: Pick<PendingNotificationResponse, 'receivedAt'>, now: number) {
+  return now - response.receivedAt > PENDING_RESPONSE_LIFETIME_MS;
+}
+
+/** 눌린 응답을 지금 어떻게 할지. 공개 수신 거부 액션은 인증과 무관하게 처리한다. */
+function getResponseAction(
+  response: Pick<PendingNotificationResponse, 'actionIdentifier' | 'receivedAt'>,
+  { authStatus, now }: { authStatus: AuthStatus; now: number },
+): NotificationResponseAction {
+  if (isExpiredResponse(response, now)) {
+    return { type: 'drop', reason: 'expired' };
+  }
+  if (response.actionIdentifier === MARKETING_OPT_OUT_ACTION) {
+    return { type: 'optOut' };
+  }
+  return match(authStatus)
+    .returnType<NotificationResponseAction>()
+    .with('loading', 'locked', () => ({ type: 'defer', reason: 'auth-resolving' }))
+    .with('unauthenticated', () => ({ type: 'defer', reason: 'authentication-required' }))
+    .with('authenticated', () => ({ type: 'open' }))
+    .exhaustive();
+}
+
+function getOpenAppState(
+  response: Pick<
+    PendingNotificationResponse,
+    'isLaunchResponse' | 'appState' | 'activeSince' | 'receivedAt'
+  >,
+): PushOpenAppState {
+  if (response.isLaunchResponse) {
+    return 'cold';
+  }
+  if (
+    response.appState !== 'active' ||
+    response.activeSince == null ||
+    response.receivedAt - response.activeSince < FOREGROUND_TAP_SETTLE_MS
+  ) {
+    return 'background';
+  }
+  return 'foreground';
+}
+
+function hasHandledResponse(handledResponseIds: HandledResponseIds, responseId: string) {
+  return handledResponseIds.includes(responseId);
+}
+
+function rememberHandledResponse(
+  handledResponseIds: HandledResponseIds,
+  responseId: string,
+): HandledResponseIds {
+  return takeRight(
+    [...without(handledResponseIds, responseId), responseId],
+    HANDLED_RESPONSE_ID_LIMIT,
+  );
+}
+
+/** 받은 알림(알림함 항목) */
 export const NotificationPolicy = {
-  hasServerRecord,
-  getForegroundPresentation,
-  getOpenAppState,
-  hasHandledResponse,
-  rememberHandledResponse,
   isAiFeature,
   findReceivedCheer,
+} as const;
+
+/** 기기가 받은 푸시 */
+export const PushNotificationPolicy = {
+  hasServerRecord,
+  getForegroundPresentation,
+} as const;
+
+/** 사용자가 누른 푸시 */
+export const NotificationResponsePolicy = {
   getResponseAction,
+  getOpenAppState,
+} as const;
+
+/** 한 탭은 한 번만 연다 */
+export const HandledResponsePolicy = {
+  hasHandledResponse,
+  rememberHandledResponse,
 } as const;

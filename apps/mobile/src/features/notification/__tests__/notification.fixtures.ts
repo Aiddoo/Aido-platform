@@ -15,6 +15,7 @@ import {
 import { ApiError } from '@src/core/errors/api-error';
 import type { PushPermissionResponse } from '@src/core/ports/push-notification-gateway';
 
+import type { PendingNotificationResponse } from '../domains/notification.model';
 import type { PushPermission } from '../domains/push-permission.model';
 import { type PushRegistration, pushRegistrationSchema } from '../domains/push-registration.model';
 import {
@@ -165,4 +166,19 @@ export function createPushRegistration(
   overrides: Partial<PushRegistration> = {},
 ): PushRegistration {
   return { ...DEFAULT_PUSH_REGISTRATION, ...overrides };
+}
+
+export function createPendingNotificationResponse(
+  overrides: Partial<PendingNotificationResponse> = {},
+): PendingNotificationResponse {
+  return {
+    id: 'response-1',
+    actionIdentifier: 'expo.modules.notifications.actions.DEFAULT',
+    data: DEFAULT_PUSH_NOTIFICATION_PAYLOAD,
+    receivedAt: 0,
+    isLaunchResponse: false,
+    appState: 'background',
+    activeSince: null,
+    ...overrides,
+  };
 }

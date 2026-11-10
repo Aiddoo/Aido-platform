@@ -11,7 +11,7 @@ import { identity, withTimeout } from 'es-toolkit';
 
 import { NOTIFICATION_READ_BUDGET_MS } from '../constants/notification.constants';
 import { isForeignNotificationError } from '../domains/notification.error';
-import { NotificationPolicy } from '../domains/notification.model';
+import { PushNotificationPolicy } from '../domains/notification.model';
 import type { NotificationOwnership } from '../domains/notification.model';
 import type { GetNotificationsQuery } from '../schemas/get-notifications-request.schema';
 import { toMarketingPushOptOutResult, toNotificationListResult } from './notification.mapper';
@@ -88,7 +88,7 @@ export class NotificationService {
 
   // 예산 안에 답이 없어도 항상 끝나고, 서버 알림 기록이 없는 푸시는 묻지 않는다
   markAsReadAndCheckOwnership = async (notificationId: number): Promise<NotificationOwnership> => {
-    if (!NotificationPolicy.hasServerRecord({ notificationId })) {
+    if (!PushNotificationPolicy.hasServerRecord({ notificationId })) {
       return 'ok';
     }
     try {

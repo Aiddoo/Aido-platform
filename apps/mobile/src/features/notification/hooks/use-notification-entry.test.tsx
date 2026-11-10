@@ -12,7 +12,9 @@ const RESPONSE: PendingNotificationResponse = {
   actionIdentifier: 'default',
   data: { notificationId: 7, type: 'FOLLOW_NEW', action: { type: 'NONE' } },
   receivedAt: 0,
-  openedFrom: 'cold',
+  isLaunchResponse: true,
+  appState: 'active',
+  activeSince: 0,
 };
 
 async function setup() {

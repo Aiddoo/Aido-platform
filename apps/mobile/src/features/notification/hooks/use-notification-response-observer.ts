@@ -31,7 +31,7 @@ import {
 import type { ReadyNotificationEntry } from '../apis/notification-entry.store';
 import { NOTIFICATION_LOG_EVENT } from '../constants/notification-log-events';
 import { NOTIFICATION_ENTRY_HOLD_MAX_MS } from '../constants/notification.constants';
-import { NotificationPolicy } from '../domains/notification.model';
+import { NotificationResponsePolicy, PushNotificationPolicy } from '../domains/notification.model';
 import { type PendingNotificationResponse } from '../domains/notification.model';
 import { useRecordPushOpenedMutationOptions } from '../queries/notification.mutations';
 import { pushNotificationPayloadSchema } from '../schemas/push-notification-payload.schema';
@@ -80,16 +80,14 @@ export function useNotificationResponseObserver(): void {
         });
         return;
       }
-      const receivedAt = Date.now();
       store.receive({
         id: response.id,
         actionIdentifier: response.actionIdentifier,
         data: parsed.data,
-        receivedAt,
-        openedFrom: NotificationPolicy.getOpenAppState(
-          { receivedAt },
-          { isLaunchResponse, appState: appLifecycle.getCurrentState(), activeSince },
-        ),
+        receivedAt: Date.now(),
+        isLaunchResponse,
+        appState: appLifecycle.getCurrentState(),
+        activeSince,
       });
     };
     const launchResponse = gateway.getLastResponse();
@@ -139,7 +137,7 @@ function useMarketingOptOut(
     if (inFlightIdRef.current === target.id) {
       return;
     }
-    const action = NotificationPolicy.getResponseAction(target, {
+    const action = NotificationResponsePolicy.getResponseAction(target, {
       authStatus: status,
       now: Date.now(),
     });
@@ -241,7 +239,7 @@ function useResolveResponse(
   });
 
   const decide = useEffectEvent((target: PendingNotificationResponse) => {
-    const action = NotificationPolicy.getResponseAction(target, {
+    const action = NotificationResponsePolicy.getResponseAction(target, {
       authStatus: status,
       now: Date.now(),
     });
@@ -288,7 +286,7 @@ function useOpenReadyEntry(
         trackEvent('push_notification_opened', {
           type: data.type ?? 'UNKNOWN',
           action: data.action.type,
-          app_state: response.openedFrom,
+          app_state: NotificationResponsePolicy.getOpenAppState(response),
           ...(data.campaignKey && { campaign_key: data.campaignKey }),
           ...(data.variantId && { variant_id: data.variantId }),
           ...(data.purpose && { purpose: data.purpose }),
@@ -301,7 +299,7 @@ function useOpenReadyEntry(
           error: getErrorMessage(error),
         });
       }
-      if (NotificationPolicy.hasServerRecord(data)) {
+      if (PushNotificationPolicy.hasServerRecord(data)) {
         recordOpened(data.notificationId);
       }
     } catch (error) {
@@ -316,7 +314,7 @@ function useOpenReadyEntry(
   // 목적지로 못 가 피드로 보내도 사용자는 알림을 열었으므로 열람(읽음 포함)은 남긴다
   const abandon = useEffectEvent(({ response }: ReadyNotificationEntry) => {
     logger.warn(NOTIFICATION_LOG_EVENT.RESPONSE_OPEN_FAILED, { responseId: response.id });
-    if (NotificationPolicy.hasServerRecord(response.data)) {
+    if (PushNotificationPolicy.hasServerRecord(response.data)) {
       recordOpened(response.data.notificationId);
     }
     finishResponse(response.id);
