@@ -40,7 +40,8 @@
     "test:integration": "vitest run --project integration",
     "test:performance": "vitest run --project performance",
     "test:watch": "vitest --project unit",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "lint:deps": "depcruise src --config .dependency-cruiser.cjs"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "catalog:",
@@ -111,6 +112,7 @@
     "@types/pg": "catalog:",
     "@types/supertest": "7.2.1",
     "@vitest/coverage-v8": "catalog:",
+    "dependency-cruiser": "catalog:",
     "drizzle-kit": "catalog:drizzle1",
     "ioredis-mock": "8.13.1",
     "supertest": "7.3.1",
