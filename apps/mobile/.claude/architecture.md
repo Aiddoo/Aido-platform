@@ -126,7 +126,7 @@ Screen(app/) → components·hooks·queries → Service(apis/) → Port(core/por
 **정해 둔 자리**
 
 - **`device/*`**: 기기 전용이라는 묶음일 뿐 한 층이 아니다. 실제로 보는 대상에 맞춰 각각 둔다. `activation`은 체크리스트가 할 일, 알림, 초대를 읽어 4층이고, 아래에서는 `activation-cache`만 쓴다. 할 일은 활성화가 읽으므로 완료 기록을 `todo-completion-changed` 이벤트로 알리고, `(app)/_layout`이 `useRecordTodoCompletion`으로 받는다. `app-icon`은 마이페이지가 쓰고 아무것도 보지 않아 1층이다.
-- **`app-config/feature-campaign`**: 캠페인 설정 조회뿐이라 1층이다. `whats-new`, `activation`이 읽는다.
+- **`app-config/feature-campaign`**: 캠페인 설정 조회뿐이라 1층이다. `whats-new`가 읽는다.
 - **`billing/subscription/apis/entitlement.mapper`**: 응답의 한도 조각을 여러 기능의 mapper와 mutation이 읽는다. 다른 feature의 `apis/`는 가져오지 않는 것이 원칙이고 이 파일과 순수 변환인 `planning/todo/apis/todo-repeat.mapper`만 예외다. 조립할 일이 아니라 변환이라 자리를 옮기지 않는다.
 - **`shared/__tests__`**: 테스트 도구는 조립을 위해 위층을 볼 수 있다. 운영 코드만 층 규칙을 받는다.
 - **`app/` 안 route 간 import**: `app/` 안 파일은 모두 route가 되어 공용 파일을 옆에 둘 수 없고, 조립 대상이 여러 층이면 feature로 내릴 수도 없다. 그래서 두 route가 같은 조립을 쓰면 route 파일에서 export하지 않고 5층인 `bootstrap/navigation/`에 컴포넌트로 둔다(`(tabs)/(mypage)/_layout`과 `(tabs)/(mypage)/mypage/index`가 `MyPageMenuPane`을, `(tabs)/(mypage)/_layout`이 `MyPageStack`을, `/settings/subscription`과 `/paywall`이 `SubscriptionCheckout`을, `/settings/notifications/weather`와 `/weather/settings`가 `WeatherNotificationSettings`를 쓴다).

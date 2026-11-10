@@ -1,6 +1,5 @@
 import '@src/shared/i18n/init';
 import { FEATURE_CAMPAIGN_QUERY_KEYS } from '@src/features/app-config/feature-campaign/constants/feature-campaign-query-keys';
-import { WHATS_NEW_CAMPAIGN_ID } from '@src/features/app-config/feature-campaign/constants/feature-campaign.constants';
 import type { FeatureCampaignConfig } from '@src/features/app-config/feature-campaign/domains/feature-campaign.model';
 import { createAuthSessionStoreStub } from '@src/features/identity/auth/__tests__/create-auth-session-store-stub';
 import { createUser } from '@src/features/identity/user/__tests__/user.fixtures';
@@ -14,6 +13,7 @@ import { toInstant } from '@src/shared/date/instant';
 import { waitFor } from '@testing-library/react-native';
 import { router } from 'expo-router';
 
+import { RELEASE_1_15_0 } from '../constants/releases';
 import { RELEASE_ID } from '../constants/whats-new.constants';
 import { useWhatsNewFeed } from './use-whats-new-feed';
 
@@ -38,7 +38,7 @@ async function renderFeed({
   );
   const config: FeatureCampaignConfig = {
     enabled: true,
-    campaignId: WHATS_NEW_CAMPAIGN_ID,
+    campaignId: RELEASE_1_15_0.campaignId,
     minAppVersion: '1.15.0',
     launchedAt: LAUNCHED_AT,
     autoOpen: true,

@@ -319,6 +319,7 @@ export function DIProvider({
             now: getNowInstant(),
           }),
         coachmark: () => coachmarkRepository.removeRetiredKeys(),
+        activation: () => activationProgressRepository.removeRetiredKeys(),
       },
       logger,
     );
