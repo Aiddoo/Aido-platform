@@ -24,10 +24,7 @@ import { Test, type TestingModule } from "@nestjs/testing";
 import { ClsModule } from "nestjs-cls";
 import { vi } from "vitest";
 
-import {
-  TODO_STATS_READER,
-  type TodoStatsReaderPort,
-} from "#api/modules/ai-assistance/reports/application/ports/todo-stats.reader.port";
+import { TodoStatsReaderPort } from "#api/modules/ai-assistance/reports/application/ports/todo-stats.reader.port";
 import type {
   AggregatedReportData,
   AggregateParams,
@@ -105,11 +102,14 @@ describe("ReportAggregator 통합 테스트 (실제 DB)", () => {
           ],
         }),
       ],
-      providers: [{ provide: TODO_STATS_READER, useClass: DrizzleTodoStatsReader }, ClsUnitOfWork],
+      providers: [
+        { provide: TodoStatsReaderPort, useClass: DrizzleTodoStatsReader },
+        ClsUnitOfWork,
+      ],
     }).compile();
 
     await module.init();
-    reader = module.get<TodoStatsReaderPort>(TODO_STATS_READER);
+    reader = module.get(TodoStatsReaderPort);
     txHost = module.get(TransactionHost);
     uow = module.get(ClsUnitOfWork);
   }, 60000); // 컨테이너 시작에 시간이 걸릴 수 있음

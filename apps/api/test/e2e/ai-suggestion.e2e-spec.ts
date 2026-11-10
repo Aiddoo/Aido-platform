@@ -87,7 +87,8 @@ describe("AI 제안 E2E", () => {
         matchedTodos: [],
         suggestedCategoryId: null,
         status: overrides?.status ?? "PENDING",
-        expiresAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
+        expiresAt: Temporal.Now.instant().add({ hours: 14 * 24 }),
+        updatedAt: Temporal.Now.instant(),
       })
       .returning({ id: recurringSuggestion.id });
     if (suggestion === undefined) {

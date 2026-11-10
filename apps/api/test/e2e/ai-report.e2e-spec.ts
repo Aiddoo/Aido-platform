@@ -5,6 +5,7 @@ import { assert } from "vitest";
 import { EntitlementCacheKey } from "#api/modules/access/entitlements/infrastructure/cache/entitlement-cache.keyspace";
 import { AiGeneratorPort } from "#api/modules/ai-assistance/generation/ai-assistance-generation.public";
 import { GenerateReportUseCase } from "#api/modules/ai-assistance/reports/application/use-cases/generate-report.use-case";
+import { toAiReportResponse } from "#api/modules/ai-assistance/reports/presentation/http/v1/ai-report-response.mapper";
 /**
  * AI 리포트 모듈 E2E 테스트
  *
@@ -209,24 +210,24 @@ describe("AI 리포트 E2E", () => {
         .execute({ userId: user.userId, timezone: "Asia/Seoul", type: "WEEKLY", locale });
       assert.exists(report);
       const response = await request(ctx.app.getHttpServer())
-        .get(`/v1/ai/reports/${report.id}`)
+        .get(`/v1/ai/reports/${report.id.value}`)
         .set("Authorization", `Bearer ${user.accessToken}`);
 
       // Then
       expect(response.status).toBe(200);
       expect(response.body.data.report.aiSummary).toBe(raw.summary);
       expect(response.body.data.report.aiTips).toEqual(raw.tips);
-      expect(response.body.data.report.periodLabel).toBe(report.periodLabel);
+      expect(response.body.data.report.periodLabel).toBe(toAiReportResponse(report).periodLabel);
       expect(fakeAiGenerator.getCallCount()).toBe(1);
       const stored = await ctx.testDatabase
         .getClient()
-        .query.aiReport.findFirst({ where: { id: report.id } });
+        .query.aiReport.findFirst({ where: { id: report.id.value } });
       expect(stored).toMatchObject({ locale, contentSource: "AI", promptVersion: "report@3" });
 
       // When
       const other = await createPremiumUser(`ai-report-other-${locale}@example.com`, "Test1234!");
       const denied = await request(ctx.app.getHttpServer())
-        .get(`/v1/ai/reports/${report.id}`)
+        .get(`/v1/ai/reports/${report.id.value}`)
         .set("Authorization", `Bearer ${other.accessToken}`);
 
       // Then
