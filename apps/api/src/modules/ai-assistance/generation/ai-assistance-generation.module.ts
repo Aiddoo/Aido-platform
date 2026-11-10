@@ -1,6 +1,5 @@
 import { Module } from "@nestjs/common";
 
-import { AccessQuotasModule } from "#api/modules/access/quotas/access-quotas.public";
 import { IdentitySettingsModule } from "#api/modules/identity/identity-settings.public";
 import { IdentityUserAccessModule } from "#api/modules/identity/identity-user-access.public";
 import { NotificationDeliveryModule } from "#api/modules/notification/notification-delivery.public";
@@ -18,12 +17,7 @@ import { ScheduledAiConsentReader } from "./application/scheduled-ai-consent.rea
  * 회로·bulkhead는 전역 OutboundPolicyRegistry, 예산 누적은 UsageMeter, 경보는 OperationalAlertPort를 쓴다.
  */
 @Module({
-  imports: [
-    AccessQuotasModule,
-    IdentitySettingsModule,
-    IdentityUserAccessModule,
-    NotificationDeliveryModule,
-  ],
+  imports: [IdentitySettingsModule, IdentityUserAccessModule, NotificationDeliveryModule],
   providers: [...AI_ASSISTANCE_GENERATION_PROVIDERS],
   exports: [
     AiGeneratorPort,
