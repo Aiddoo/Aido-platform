@@ -2,10 +2,7 @@ import { currentUserSchema, type RevenueCatWebhookPayload } from "@aido/api";
 import request from "supertest";
 
 import { STORE_RENEWAL_GRACE_MS } from "#api/modules/billing/shared/store-renewal-grace.domain-service";
-import {
-  PREMIUM_GRANTER,
-  type PremiumGranterPort,
-} from "#api/modules/billing/subscriptions/billing-subscriptions.public";
+import { PremiumGranterPort } from "#api/modules/billing/subscriptions/billing-subscriptions.public";
 import { subscription } from "#api/platform/database/schema/index";
 import { SubscriptionEventBuilder } from "#test/builders/subscription-event.builder";
 
@@ -88,7 +85,7 @@ describe("무료 체험 중 받은 초대 보상과 체험 종료 뒤 /me (실�
     );
     vi.setSystemTime(INVITED_AT);
     await context.module
-      .get<PremiumGranterPort>(PREMIUM_GRANTER)
+      .get<PremiumGranterPort>(PremiumGranterPort)
       .grant({ userId, source: "INVITE", sourceKey: "invite:trial", durationDays: 7 });
 
     // When

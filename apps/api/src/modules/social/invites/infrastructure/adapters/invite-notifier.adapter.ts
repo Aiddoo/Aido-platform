@@ -6,10 +6,8 @@ import {
   createInviteQualifyReminderNotificationMessage,
   createInviteRewardedNotificationMessage,
   NotificationPublisher,
-  NOTIFICATION_RECIPIENT_LOCALE_READER,
-  type NotificationRecipientLocaleReaderPort,
-  PUSH_QUIET_HOURS_READER,
-  type PushQuietHoursReaderPort,
+  NotificationRecipientLocaleReaderPort,
+  PushQuietHoursReaderPort,
   TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY,
 } from "#api/modules/notification/notification-delivery.public";
 import { instantToDate } from "#api/shared/domain/time/instant";
@@ -30,9 +28,9 @@ export class InviteNotifierAdapter extends InviteNotifierPort {
 
   constructor(
     notificationPublisher: NotificationPublisher,
-    @Inject(NOTIFICATION_RECIPIENT_LOCALE_READER)
+    @Inject(NotificationRecipientLocaleReaderPort)
     localeReader: NotificationRecipientLocaleReaderPort,
-    @Inject(PUSH_QUIET_HOURS_READER)
+    @Inject(PushQuietHoursReaderPort)
     quietHoursReader: PushQuietHoursReaderPort,
   ) {
     super();

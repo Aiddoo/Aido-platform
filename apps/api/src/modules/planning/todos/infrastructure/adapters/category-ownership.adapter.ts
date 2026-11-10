@@ -1,9 +1,6 @@
 import { Inject, Injectable } from "@nestjs/common";
 
-import {
-  TODO_CATEGORY_READER,
-  type TodoCategoryReaderPort,
-} from "#api/modules/planning/categories/planning-categories.public";
+import { TodoCategoryReaderPort } from "#api/modules/planning/categories/planning-categories.public";
 
 import type { CategoryOwnershipPort } from "../../application/ports/category-ownership.port.js";
 
@@ -12,7 +9,7 @@ export class CategoryOwnershipAdapter implements CategoryOwnershipPort {
   readonly #categoryReader: Pick<TodoCategoryReaderPort, "validateOwnership">;
 
   constructor(
-    @Inject(TODO_CATEGORY_READER)
+    @Inject(TodoCategoryReaderPort)
     categoryReader: Pick<TodoCategoryReaderPort, "validateOwnership">,
   ) {
     this.#categoryReader = categoryReader;

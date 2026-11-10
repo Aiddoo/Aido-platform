@@ -10,10 +10,7 @@ import { TodoCommentPurgeRepositoryPort } from "#api/modules/engagement/comments
 import { CleanUpAccountTodoCommentsUseCase } from "#api/modules/engagement/comments/application/use-cases/clean-up-account-todo-comments.use-case";
 import { InvalidateCleanedTodoCachesUseCase } from "#api/modules/engagement/comments/application/use-cases/invalidate-cleaned-todo-caches.use-case";
 import { DELETED_COMMENT_AUTHOR } from "#api/modules/engagement/comments/domain/comments.constants";
-import {
-  TODO_COMMENT_ACCOUNT_CLEANUP,
-  TodoCommentAccountCleanupPort,
-} from "#api/modules/engagement/comments/engagement-comments.public";
+import { TodoCommentAccountCleanupPort } from "#api/modules/engagement/comments/engagement-comments.public";
 import { TodoCommentAccountCleanupAdapter } from "#api/modules/engagement/comments/infrastructure/adapters/todo-comment-account-cleanup.adapter";
 import { DrizzleTodoCommentPurgeRepository } from "#api/modules/engagement/comments/infrastructure/persistence/drizzle-todo-comment-purge.repository";
 import { DrizzleTodoCommentReader } from "#api/modules/engagement/comments/infrastructure/persistence/drizzle-todo-comment.reader";
@@ -256,7 +253,6 @@ describe("댓글 계정 purge (실제 PostgreSQL)", () => {
           logger: loggerFor(InvalidateCleanedTodoCachesUseCase),
         }),
         { provide: TodoCommentAccountCleanupPort, useClass: TodoCommentAccountCleanupAdapter },
-        { provide: TODO_COMMENT_ACCOUNT_CLEANUP, useExisting: TodoCommentAccountCleanupPort },
         { provide: NotificationRepositoryPort, useClass: DrizzleNotificationRepository },
         provideUseCase(DeleteActorNotificationsUseCase, {
           repository: NotificationRepositoryPort,

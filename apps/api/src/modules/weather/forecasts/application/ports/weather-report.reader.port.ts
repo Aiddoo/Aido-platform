@@ -3,9 +3,6 @@ import type { GeoCell } from "../../../shared/domain/geo-cell.vo.js";
 import type { WeatherReportLanguage } from "../../domain/weather-report-language.domain-service.js";
 import type { WeatherReport } from "../../domain/weather-report.vo.js";
 
-/** 옛 Symbol 토큰. 클래스 토큰과 같은 인스턴스를 가리키며 소비 Context가 옮기면 지운다. */
-export const WEATHER_REPORT_READER = Symbol("WEATHER_REPORT_READER");
-
 export interface WeatherReportReadRequest {
   /** 호출자가 결과를 다시 찾을 키(사용자 ID 등). 공급자에는 보내지 않는다. */
   readonly key: string;

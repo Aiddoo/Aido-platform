@@ -1,6 +1,7 @@
 import type { UserSettingsCachePort } from "./preferences/application/ports/user-settings-cache.port.js";
 
-export { USER_SETTINGS_CACHE } from "./preferences/application/ports/user-settings-cache.port.js";
+export { UserSettingsCachePort } from "./preferences/application/ports/user-settings-cache.port.js";
+
 export type UserPreferenceCacheInvalidatorPort = Pick<
   UserSettingsCachePort,
   "invalidateUserPreference"
@@ -23,14 +24,10 @@ export type {
 } from "./preferences/application/ports/user-consent.repository.port.js";
 export type { UserPreferenceRecordWithId } from "./preferences/application/ports/user-preference.repository.port.js";
 export {
-  USER_NOTIFICATION_SETTINGS_ACCESS,
-  USER_SETTINGS_PROVISIONER,
-  USER_STREAK_ACCESS,
-  USER_TIMEZONE_READER,
-  type UserNotificationSettingsAccessPort,
-  type UserSettingsProvisionerPort,
-  type UserStreakAccessPort,
-  type UserTimezoneReaderPort,
+  UserNotificationSettingsAccessPort,
+  UserSettingsProvisionerPort,
+  UserStreakAccessPort,
+  UserTimezoneReaderPort,
 } from "./preferences/application/ports/user-settings-access.port.js";
 export type { UserConsentRecord } from "./preferences/domain/user-consent.constants.js";
 export type { UserPreferenceRecord } from "./preferences/domain/user-preference.constants.js";

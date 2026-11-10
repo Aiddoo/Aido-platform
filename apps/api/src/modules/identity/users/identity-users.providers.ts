@@ -2,11 +2,11 @@ import type { FactoryProvider, Provider } from "@nestjs/common";
 
 import { ENTITLEMENT_READER } from "#api/modules/access/access-entitlement.public";
 import { QUOTA_LEDGER } from "#api/modules/access/access-quota.public";
-import { PREMIUM_ACCESS_READER } from "#api/modules/billing/subscriptions/billing-subscriptions.public";
+import { PremiumAccessReaderPort } from "#api/modules/billing/subscriptions/billing-subscriptions.public";
 import { TodoCommentAccountCleanupPort } from "#api/modules/engagement/comments/engagement-comments.public";
 import { NotificationAccountCleanup } from "#api/modules/notification/notification-delivery.public";
-import { CHEER_USAGE_READER } from "#api/modules/social/cheers/social-cheers.public";
-import { NUDGE_USAGE_READER } from "#api/modules/social/nudges/social-nudges.public";
+import { CheerUsageReaderPort } from "#api/modules/social/cheers/social-cheers.public";
+import { NudgeUsageReaderPort } from "#api/modules/social/nudges/social-nudges.public";
 import { loggerFor, provideUseCase } from "#api/platform/di/provide-use-case";
 import {
   USAGE_METER,
@@ -61,11 +61,11 @@ const getCurrentUserProvider: FactoryProvider<GetCurrentUserUseCase> = {
   inject: [
     AuthUserRepositoryPort,
     AuthCachePort,
-    PREMIUM_ACCESS_READER,
+    PremiumAccessReaderPort,
     ENTITLEMENT_READER,
     QUOTA_LEDGER,
-    CHEER_USAGE_READER,
-    NUDGE_USAGE_READER,
+    CheerUsageReaderPort,
+    NudgeUsageReaderPort,
   ],
   useFactory: (
     userRepository: GetCurrentUserDependencies["userRepository"],

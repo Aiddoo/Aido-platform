@@ -15,10 +15,7 @@ import { UnlikeTodoCommentUseCase } from "#api/modules/engagement/comments/appli
 import { WriteTodoCommentChainUseCase } from "#api/modules/engagement/comments/application/use-cases/write-todo-comment-chain.use-case";
 import { TodoComment } from "#api/modules/engagement/comments/domain/todo-comment.aggregate";
 import { DrizzleTodoCommentRepository } from "#api/modules/engagement/comments/infrastructure/persistence/drizzle-todo-comment.repository";
-import {
-  NOTIFICATION_CACHE,
-  type NotificationCachePort,
-} from "#api/modules/notification/inbox/application/ports/notification-cache.port";
+import { NotificationCachePort } from "#api/modules/notification/inbox/application/ports/notification-cache.port";
 import { PushDispatchStagingRepositoryPort } from "#api/modules/notification/push/application/ports/push-dispatch-staging.repository.port";
 import { PublishPushDeliveryAfterCommitUseCase } from "#api/modules/notification/push/application/use-cases/publish-push-delivery-after-commit.use-case";
 import { PublishPushDeliveryOutboxUseCase } from "#api/modules/notification/push/application/use-cases/publish-push-delivery-outbox.use-case";
@@ -269,7 +266,7 @@ describe("Engagement 댓글 실제 PostgreSQL 회귀", () => {
       context.module.get(PublishPushDeliveryAfterCommitUseCase),
       "register",
     );
-    const cache = context.module.get<NotificationCachePort>(NOTIFICATION_CACHE);
+    const cache = context.module.get<NotificationCachePort>(NotificationCachePort);
     const invalidation = vi.spyOn(cache, "invalidateUnreadCount");
     let stagedCounts: number[] = [];
     let markerSqlState: string | undefined;

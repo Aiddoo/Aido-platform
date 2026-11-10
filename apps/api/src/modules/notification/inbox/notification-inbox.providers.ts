@@ -3,22 +3,10 @@ import type { Provider } from "@nestjs/common";
 import { loggerFor, provideUseCase } from "#api/platform/di/provide-use-case";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 
-import {
-  NOTIFICATION_CACHE,
-  NotificationCachePort,
-} from "./application/ports/notification-cache.port.js";
-import {
-  NOTIFICATION_HISTORY_READER,
-  NotificationHistoryReaderPort,
-} from "./application/ports/notification-history.reader.port.js";
-import {
-  NOTIFICATION_INBOX_READER,
-  NotificationInboxReaderPort,
-} from "./application/ports/notification-inbox.reader.port.js";
-import {
-  NOTIFICATION_REPOSITORY,
-  NotificationRepositoryPort,
-} from "./application/ports/notification.repository.port.js";
+import { NotificationCachePort } from "./application/ports/notification-cache.port.js";
+import { NotificationHistoryReaderPort } from "./application/ports/notification-history.reader.port.js";
+import { NotificationInboxReaderPort } from "./application/ports/notification-inbox.reader.port.js";
+import { NotificationRepositoryPort } from "./application/ports/notification.repository.port.js";
 import { DeleteActorNotificationsUseCase } from "./application/use-cases/delete-actor-notifications.use-case.js";
 import { GetUnreadNotificationCountUseCase } from "./application/use-cases/get-unread-notification-count.use-case.js";
 import { ListNotificationsUseCase } from "./application/use-cases/list-notifications.use-case.js";
@@ -29,21 +17,12 @@ import { NotificationCacheAdapter } from "./infrastructure/cache/notification-ca
 import { DrizzleNotificationReader } from "./infrastructure/persistence/drizzle-notification.reader.js";
 import { DrizzleNotificationRepository } from "./infrastructure/persistence/drizzle-notification.repository.js";
 
-// 옛 Symbol 토큰은 아직 Symbol로 주입하는 push·reminders·테스트를 위해 같은 인스턴스로 묶는다
-const NOTIFICATION_INBOX_LEGACY_TOKEN_PROVIDERS = [
-  { provide: NOTIFICATION_REPOSITORY, useExisting: NotificationRepositoryPort },
-  { provide: NOTIFICATION_INBOX_READER, useExisting: NotificationInboxReaderPort },
-  { provide: NOTIFICATION_HISTORY_READER, useExisting: NotificationHistoryReaderPort },
-  { provide: NOTIFICATION_CACHE, useExisting: NotificationCachePort },
-] satisfies Provider[];
-
 export const NOTIFICATION_INBOX_PROVIDERS = [
   { provide: NotificationRepositoryPort, useClass: DrizzleNotificationRepository },
   DrizzleNotificationReader,
   { provide: NotificationInboxReaderPort, useExisting: DrizzleNotificationReader },
   { provide: NotificationHistoryReaderPort, useExisting: DrizzleNotificationReader },
   { provide: NotificationCachePort, useClass: NotificationCacheAdapter },
-  ...NOTIFICATION_INBOX_LEGACY_TOKEN_PROVIDERS,
   provideUseCase(ListNotificationsUseCase, {
     notificationInboxReader: NotificationInboxReaderPort,
     logger: loggerFor(ListNotificationsUseCase),

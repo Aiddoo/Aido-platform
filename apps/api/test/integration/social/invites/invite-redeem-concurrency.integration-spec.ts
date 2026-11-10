@@ -1,10 +1,7 @@
 import { ErrorCode } from "@aido/api/errors";
 import { and, count as countRows, eq, inArray } from "drizzle-orm";
 
-import {
-  PREMIUM_ACCESS_READER,
-  type PremiumAccessReaderPort,
-} from "#api/modules/billing/subscriptions/billing-subscriptions.public";
+import { PremiumAccessReaderPort } from "#api/modules/billing/subscriptions/billing-subscriptions.public";
 import { RevenueCatWebhookReceiver } from "#api/modules/billing/subscriptions/infrastructure/adapters/revenuecat/revenuecat-webhook-receiver.adapter";
 import { InviteConfigPort } from "#api/modules/social/invites/application/ports/invite-config.port";
 import { GetMyInviteUseCase } from "#api/modules/social/invites/application/use-cases/get-my-invite.use-case";
@@ -138,7 +135,7 @@ describe("초대 수락 동시성 (실제 PostgreSQL)", () => {
     // Then
     expect(redeemed.outcome).toBe("REDEEMED");
     const access = await context.module
-      .get<PremiumAccessReaderPort>(PREMIUM_ACCESS_READER)
+      .get<PremiumAccessReaderPort>(PremiumAccessReaderPort)
       .getPremiumAccess(inviteeId);
     expect(access).toMatchObject({ source: "STORE", bankedDays: 7 });
     expect(

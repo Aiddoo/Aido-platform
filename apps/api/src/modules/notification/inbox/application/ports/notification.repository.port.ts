@@ -4,9 +4,6 @@ import type { Notification } from "../../domain/notification.aggregate.js";
 import type { InboxNotification } from "../read-models/inbox-notification.read-model.js";
 import type { CreateNotificationData } from "./notification-draft.port.js";
 
-// 옛 Symbol 토큰. 아직 Symbol로 주입하는 곳이 있어 같은 인스턴스로 묶어 둔다
-export const NOTIFICATION_REPOSITORY = Symbol("NOTIFICATION_REPOSITORY");
-
 export class DuplicateNotificationError extends Error {
   constructor() {
     super("Notification already exists");

@@ -4,8 +4,8 @@ import { and, eq } from "drizzle-orm";
 import { vi } from "vitest";
 
 import {
-  USER_PREFERENCE_READER,
-  USER_SETTINGS_CACHE,
+  UserPreferenceReaderPort,
+  UserSettingsCachePort,
 } from "#api/modules/identity/identity-settings.public";
 import { ReadUserPreferencesUseCase } from "#api/modules/identity/preferences/application/use-cases/read-user-preferences.use-case";
 import { UserSettingsCacheAdapter } from "#api/modules/identity/preferences/infrastructure/adapters/user-settings-cache.adapter";
@@ -183,7 +183,7 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
           useValue: mockAfterCommitPublisher,
         },
         {
-          provide: USER_PREFERENCE_READER,
+          provide: UserPreferenceReaderPort,
           useFactory: (
             preferenceRepository: DrizzleUserPreferenceRepository,
             cache: CacheService,
@@ -195,7 +195,7 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
           inject: [DrizzleUserPreferenceRepository, CacheService],
         },
         UserSettingsCacheAdapter,
-        { provide: USER_SETTINGS_CACHE, useExisting: UserSettingsCacheAdapter },
+        { provide: UserSettingsCachePort, useExisting: UserSettingsCacheAdapter },
         {
           provide: NotificationDedupPort,
           useValue: {

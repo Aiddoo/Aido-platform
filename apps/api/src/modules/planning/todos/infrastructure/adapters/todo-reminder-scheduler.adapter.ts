@@ -2,7 +2,7 @@ import { Inject, Injectable } from "@nestjs/common";
 
 import {
   type IReminderScheduler,
-  REMINDER_SCHEDULER,
+  TodoReminderSchedulerPort as NotificationReminderSchedulerPort,
 } from "#api/modules/notification/notification-reminders.public";
 
 import type {
@@ -18,7 +18,7 @@ export class ReminderSchedulerAdapter implements TodoReminderSchedulerPort {
   readonly #reminderScheduler: IReminderScheduler;
 
   constructor(
-    @Inject(REMINDER_SCHEDULER)
+    @Inject(NotificationReminderSchedulerPort)
     reminderScheduler: IReminderScheduler,
   ) {
     this.#reminderScheduler = reminderScheduler;

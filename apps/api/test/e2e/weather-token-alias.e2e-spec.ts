@@ -1,8 +1,6 @@
 import {
   WEATHER_FORECAST_READER,
-  WEATHER_REPORT_READER,
   WeatherForecastReaderPort,
-  WeatherReportReaderPort,
 } from "#api/modules/weather/forecasts/weather-forecasts.public";
 
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
@@ -25,18 +23,6 @@ describe("날씨 옛 Symbol 토큰 별칭 (e2e)", () => {
     // When
     const legacy = app.get(WEATHER_FORECAST_READER, { strict: false });
     const current = app.get(WeatherForecastReaderPort, { strict: false });
-
-    // Then
-    expect(legacy).toBe(current);
-  });
-
-  it("리포트 reader의 옛 토큰과 클래스 토큰은 같은 인스턴스다", () => {
-    // Given
-    const app = ctx.module;
-
-    // When
-    const legacy = app.get(WEATHER_REPORT_READER, { strict: false });
-    const current = app.get(WeatherReportReaderPort, { strict: false });
 
     // Then
     expect(legacy).toBe(current);

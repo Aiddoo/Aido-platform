@@ -1,8 +1,5 @@
 import type { PremiumGrantSource } from "@aido/api/vocabulary";
 
-// 옛 Symbol 토큰. social이 클래스 토큰으로 옮길 때까지 같은 인스턴스를 가리키는 별칭으로 남긴다
-export const PREMIUM_GRANTER = Symbol("PREMIUM_GRANTER");
-
 export interface GrantPremiumInput {
   readonly userId: string;
   readonly source: PremiumGrantSource;

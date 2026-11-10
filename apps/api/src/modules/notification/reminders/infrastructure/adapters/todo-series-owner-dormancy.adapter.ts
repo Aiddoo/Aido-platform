@@ -5,10 +5,7 @@ import {
   isExemptFromDormancy,
   type EntitlementReaderPort,
 } from "#api/modules/access/access-entitlement.public";
-import {
-  USER_ACTIVITY_READER,
-  type UserActivityReaderPort,
-} from "#api/modules/identity/identity-user-access.public";
+import { UserActivityReaderPort } from "#api/modules/identity/identity-user-access.public";
 import { isSeriesOwnerDormant } from "#api/modules/planning/todo-series/planning-todo-series-dormancy.public";
 import { now } from "#api/shared/domain/date/utils/core";
 import { toDateString } from "#api/shared/domain/date/utils/format";
@@ -22,7 +19,7 @@ export class TodoSeriesOwnerDormancyAdapter extends TodoSeriesOwnerDormancyPort 
   readonly #entitlementReader: EntitlementReaderPort;
 
   constructor(
-    @Inject(USER_ACTIVITY_READER) activityReader: UserActivityReaderPort,
+    @Inject(UserActivityReaderPort) activityReader: UserActivityReaderPort,
     @Inject(ENTITLEMENT_READER) entitlementReader: EntitlementReaderPort,
   ) {
     super();

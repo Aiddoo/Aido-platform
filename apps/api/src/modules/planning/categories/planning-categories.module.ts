@@ -2,14 +2,8 @@ import { Module } from "@nestjs/common";
 
 import { AccessModule } from "#api/modules/access/access-entitlement.public";
 
-import {
-  TODO_CATEGORY_COUNT_READER,
-  TodoCategoryCountReaderPort,
-} from "./application/ports/todo-category-count.reader.port.js";
-import {
-  TODO_CATEGORY_PROVISIONER,
-  TodoCategoryProvisionerPort,
-} from "./application/ports/todo-category-provisioner.port.js";
+import { TodoCategoryCountReaderPort } from "./application/ports/todo-category-count.reader.port.js";
+import { TodoCategoryProvisionerPort } from "./application/ports/todo-category-provisioner.port.js";
 import {
   TODO_CATEGORY_READER,
   TodoCategoryReaderPort,
@@ -26,8 +20,6 @@ import { TodoCategoryController } from "./presentation/http/v1/todo-category.con
     TodoCategoryCountReaderPort,
     TodoCategoryProvisionerPort,
     TODO_CATEGORY_READER,
-    TODO_CATEGORY_COUNT_READER,
-    TODO_CATEGORY_PROVISIONER,
   ],
 })
 export class PlanningCategoriesModule {}

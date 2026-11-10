@@ -7,13 +7,12 @@ import { omit } from "es-toolkit";
 import { DeleteTodoCategoryUseCase } from "#api/modules/planning/categories/application/use-cases/delete-todo-category.use-case";
 import { TodoId } from "#api/modules/planning/shared/domain/todo-id.vo";
 import { TodoToggledEvent } from "#api/modules/planning/shared/domain/todo-toggled.event";
-import type { StagedTodoCreatorPort } from "#api/modules/planning/todos/application/ports/staged-todo-creator.port";
+import { StagedTodoCreatorPort } from "#api/modules/planning/todos/application/ports/staged-todo-creator.port";
 import { TodoRepositoryPort } from "#api/modules/planning/todos/application/ports/todo.repository.port";
 import { AddTodoItemUseCase } from "#api/modules/planning/todos/application/use-cases/add-todo-item.use-case";
 import { CreateTodoUseCase } from "#api/modules/planning/todos/application/use-cases/create-todo.use-case";
 import { ReorderTodoItemsUseCase } from "#api/modules/planning/todos/application/use-cases/reorder-todo-items.use-case";
 import { SetTodoCompletedUseCase } from "#api/modules/planning/todos/application/use-cases/set-todo-completed.use-case";
-import { STAGED_TODO_CREATOR } from "#api/modules/planning/todos/planning-todos.public";
 import { DatabaseRecordNotFoundError } from "#api/platform/database/database-error.util";
 import { createEntityId } from "#api/platform/database/entity-id";
 import {
@@ -492,7 +491,7 @@ describe("Todo 변경 원자성·Drizzle 쿼리 실행 수 (실제 PostgreSQL)",
 
   describe("커밋 후 생성 포트", () => {
     function stageInsideUnitOfWork(afterStage: () => Promise<void>) {
-      const creator = context.module.get<StagedTodoCreatorPort>(STAGED_TODO_CREATOR);
+      const creator = context.module.get<StagedTodoCreatorPort>(StagedTodoCreatorPort);
       const unitOfWork = context.module.get<UnitOfWorkPort>(UNIT_OF_WORK);
       const registry = context.module.get<AfterCommitTaskRegistryPort>(AFTER_COMMIT_TASK_REGISTRY);
       return unitOfWork.run(async () => {

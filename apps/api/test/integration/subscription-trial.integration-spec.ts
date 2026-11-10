@@ -5,10 +5,7 @@ import { SubscriptionEventNotifierPort } from "#api/modules/billing/subscription
 import { TrialEndingNoticeRepositoryPort } from "#api/modules/billing/subscriptions/application/ports/trial-ending-notice.repository.port";
 import type { SubscriptionEventPayload } from "#api/modules/billing/subscriptions/application/read-models/subscription-event-payload.read-model";
 import { NotifyEndingTrialsUseCase } from "#api/modules/billing/subscriptions/application/use-cases/notify-ending-trials.use-case";
-import {
-  PREMIUM_ACCESS_READER,
-  type PremiumAccessReaderPort,
-} from "#api/modules/billing/subscriptions/billing-subscriptions.public";
+import { PremiumAccessReaderPort } from "#api/modules/billing/subscriptions/billing-subscriptions.public";
 import { RevenueCatWebhookReceiver } from "#api/modules/billing/subscriptions/infrastructure/adapters/revenuecat/revenuecat-webhook-receiver.adapter";
 import { createEntityId } from "#api/platform/database/entity-id";
 import {
@@ -68,7 +65,7 @@ describe("무료 체험 구독 저장과 종료 3일 전 안내 (실제 PostgreS
     webhook = context.module.get(RevenueCatWebhookReceiver);
     notifyEndingTrials = context.module.get(NotifyEndingTrialsUseCase);
     noticeSource = context.module.get(TrialEndingNoticeRepositoryPort);
-    premiumAccess = context.module.get(PREMIUM_ACCESS_READER);
+    premiumAccess = context.module.get(PremiumAccessReaderPort);
     unitOfWork = context.module.get(UNIT_OF_WORK);
   });
 

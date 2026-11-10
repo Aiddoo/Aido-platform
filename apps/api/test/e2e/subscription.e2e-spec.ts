@@ -3,12 +3,7 @@ import { ErrorCode } from "@aido/api/errors";
 import request from "supertest";
 
 import { SubscriptionWebhookLockPort } from "#api/modules/billing/subscriptions/application/ports/subscription-webhook-lock.port";
-import {
-  PREMIUM_ACCESS_READER,
-  PREMIUM_GRANTER,
-  PremiumAccessReaderPort,
-  PremiumGranterPort,
-} from "#api/modules/billing/subscriptions/billing-subscriptions.public";
+import { PremiumGranterPort } from "#api/modules/billing/subscriptions/billing-subscriptions.public";
 import { AuthCachePort } from "#api/modules/identity/auth/application/ports/auth-collaboration.port";
 import { subscription, subscriptionEventReceipt } from "#api/platform/database/schema/index";
 import { SubscriptionEventBuilder } from "#test/builders/subscription-event.builder";
@@ -297,7 +292,7 @@ describe("구독 Webhook HTTP 계약과 권한 캐시 (실제 PostgreSQL)", () =
       .set("Authorization", `Bearer ${user.accessToken}`)
       .expect(200);
     await context.module
-      .get<PremiumGranterPort>(PREMIUM_GRANTER)
+      .get<PremiumGranterPort>(PremiumGranterPort)
       .grant({ userId: user.userId, source: "INVITE", sourceKey: "invite:me", durationDays: 7 });
 
     const afterFirst = await request(context.app.getHttpServer())
@@ -307,7 +302,7 @@ describe("구독 Webhook HTTP 계약과 권한 캐시 (실제 PostgreSQL)", () =
 
     // When
     await context.module
-      .get<PremiumGranterPort>(PREMIUM_GRANTER)
+      .get<PremiumGranterPort>(PremiumGranterPort)
       .grant({ userId: user.userId, source: "INVITE", sourceKey: "invite:me-2", durationDays: 7 });
     const after = await request(context.app.getHttpServer())
       .get("/v1/auth/me")
@@ -350,7 +345,7 @@ describe("구독 Webhook HTTP 계약과 권한 캐시 (실제 PostgreSQL)", () =
     const password = "Test1234!";
     const user = await context.helpers.createVerifiedUser(email, password);
     await context.module
-      .get<PremiumGranterPort>(PREMIUM_GRANTER)
+      .get<PremiumGranterPort>(PremiumGranterPort)
       .grant({ userId: user.userId, source: "INVITE", sourceKey: "invite:ended", durationDays: 1 });
     const endsAt = new Date(Date.now() + 24 * 60 * 60 * 1_000);
     const authCache = context.module.get<AuthCachePort>(AuthCachePort, { strict: false });
@@ -465,17 +460,4 @@ describe("구독 Webhook HTTP 계약과 권한 캐시 (실제 PostgreSQL)", () =
       expect(after).toMatchObject({ premiumSource: "STORE", premiumPlanType: expected });
     },
   );
-
-  it("옛 Symbol 토큰은 새 클래스 토큰과 같은 인스턴스다", () => {
-    // Given
-    const module = context.module;
-
-    // When
-    const granter = module.get(PREMIUM_GRANTER);
-    const reader = module.get(PREMIUM_ACCESS_READER);
-
-    // Then
-    expect(granter).toBe(module.get(PremiumGranterPort));
-    expect(reader).toBe(module.get(PremiumAccessReaderPort));
-  });
 });

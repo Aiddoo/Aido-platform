@@ -19,10 +19,7 @@ export {
   toFriendTodoResponse,
   toTodoResponse,
 } from "./presentation/http/v1/todo-response.mapper.js";
-export {
-  TODO_VIEW_CACHE_INVALIDATOR,
-  TodoViewCacheInvalidatorPort,
-} from "./application/ports/todo-view-cache-invalidator.port.js";
+export { TodoViewCacheInvalidatorPort } from "./application/ports/todo-view-cache-invalidator.port.js";
 export {
   todoChangedPayloadSchema,
   todoSeriesChangedPayloadSchema,

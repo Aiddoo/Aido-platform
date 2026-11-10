@@ -1,6 +1,6 @@
 import type { Provider } from "@nestjs/common";
 
-import { FOLLOW_READER } from "#api/modules/social/friends/social-friends.public";
+import { FollowReaderPort } from "#api/modules/social/friends/social-friends.public";
 import { loggerFor, provideUseCase } from "#api/platform/di/provide-use-case";
 
 import { DailyCompletionCachePort } from "./application/ports/daily-completion-cache.port.js";
@@ -15,7 +15,7 @@ import { DrizzleDailyCompletionRepository } from "./infrastructure/persistence/d
 export const INSIGHTS_DAILY_COMPLETIONS_PROVIDERS = [
   { provide: DailyCompletionRepositoryPort, useClass: DrizzleDailyCompletionRepository },
   { provide: DailyCompletionCachePort, useClass: DailyCompletionCache },
-  { provide: FriendshipReaderPort, useExisting: FOLLOW_READER },
+  { provide: FriendshipReaderPort, useExisting: FollowReaderPort },
   provideUseCase(DailyCompletionCacheEventHandler, {
     dailyCompletionCache: DailyCompletionCachePort,
     logger: loggerFor(DailyCompletionCacheEventHandler),

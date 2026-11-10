@@ -1,13 +1,7 @@
 import { Inject, Injectable } from "@nestjs/common";
 
-import {
-  USER_SETTINGS_PROVISIONER,
-  type UserSettingsProvisionerPort,
-} from "#api/modules/identity/identity-settings.public";
-import {
-  TODO_CATEGORY_PROVISIONER,
-  type TodoCategoryProvisionerPort,
-} from "#api/modules/planning/categories/planning-categories.public";
+import { UserSettingsProvisionerPort } from "#api/modules/identity/identity-settings.public";
+import { TodoCategoryProvisionerPort } from "#api/modules/planning/categories/planning-categories.public";
 import type { SupportedLocale } from "#api/shared/domain/locale";
 import { instantToDate } from "#api/shared/domain/time/instant";
 
@@ -31,9 +25,9 @@ export class UserProvisioningSeederAdapter implements UserProvisioningSeederPort
   readonly #categoryProvisioner: TodoCategoryProvisionerPort;
 
   constructor(
-    @Inject(USER_SETTINGS_PROVISIONER)
+    @Inject(UserSettingsProvisionerPort)
     userSettingsProvisioner: UserSettingsProvisionerPort,
-    @Inject(TODO_CATEGORY_PROVISIONER)
+    @Inject(TodoCategoryProvisionerPort)
     categoryProvisioner: TodoCategoryProvisionerPort,
   ) {
     this.#userSettingsProvisioner = userSettingsProvisioner;

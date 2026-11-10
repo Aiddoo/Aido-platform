@@ -7,10 +7,7 @@ import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port"
 import { PublishNotificationUseCase } from "../push/application/use-cases/publish-notification.use-case.js";
 import { ExperimentAssignerPort } from "./application/ports/experiment-assigner.port.js";
 import { RetentionConfigPort } from "./application/ports/retention-config.port.js";
-import {
-  RETENTION_ENROLLMENT,
-  RetentionEnrollmentPort,
-} from "./application/ports/retention-enrollment.port.js";
+import { RetentionEnrollmentPort } from "./application/ports/retention-enrollment.port.js";
 import { RetentionRepositoryPort } from "./application/ports/retention.repository.port.js";
 import { ActivateRetentionExperimentUseCase } from "./application/use-cases/activate-retention-experiment.use-case.js";
 import { EnrollRetentionExperimentUseCase } from "./application/use-cases/enroll-retention-experiment.use-case.js";
@@ -55,5 +52,4 @@ export const NOTIFICATION_RETENTION_PROVIDERS: Provider[] = [
   { provide: ExperimentAssignerPort, useClass: DeterministicHashExperimentAssignerAdapter },
   RetentionEnrollmentAdapter,
   { provide: RetentionEnrollmentPort, useExisting: RetentionEnrollmentAdapter },
-  { provide: RETENTION_ENROLLMENT, useExisting: RetentionEnrollmentPort },
 ];

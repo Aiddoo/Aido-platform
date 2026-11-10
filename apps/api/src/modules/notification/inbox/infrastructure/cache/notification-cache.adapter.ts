@@ -2,8 +2,8 @@ import { Inject, Injectable } from "@nestjs/common";
 import { z } from "zod";
 
 import {
-  USER_SETTINGS_CACHE,
   type UserPreferenceCacheInvalidatorPort,
+  UserSettingsCachePort,
 } from "#api/modules/identity/identity-settings.public";
 import { CacheService } from "#api/platform/cache/cache.service";
 
@@ -22,7 +22,7 @@ export class NotificationCacheAdapter implements NotificationCachePort {
 
   constructor(
     cacheService: CacheService,
-    @Inject(USER_SETTINGS_CACHE)
+    @Inject(UserSettingsCachePort)
     preferenceCache: UserPreferenceCacheInvalidatorPort,
   ) {
     this.#cacheService = cacheService;

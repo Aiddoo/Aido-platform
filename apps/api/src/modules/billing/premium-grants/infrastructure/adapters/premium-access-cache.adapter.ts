@@ -4,10 +4,7 @@ import {
   ENTITLEMENT_SUBSCRIPTION_INVALIDATOR,
   type EntitlementSubscriptionInvalidatorPort,
 } from "#api/modules/access/access-entitlement.public";
-import {
-  USER_PROFILE_INVALIDATOR,
-  type UserProfileInvalidatorPort,
-} from "#api/modules/identity/identity-user-access.public";
+import { UserProfileInvalidatorPort } from "#api/modules/identity/identity-user-access.public";
 
 import { PremiumAccessCachePort } from "../../application/ports/premium-access-cache.port.js";
 
@@ -19,7 +16,7 @@ export class PremiumAccessCacheAdapter extends PremiumAccessCachePort {
   constructor(
     @Inject(ENTITLEMENT_SUBSCRIPTION_INVALIDATOR)
     subscriptionCache: EntitlementSubscriptionInvalidatorPort,
-    @Inject(USER_PROFILE_INVALIDATOR) profileCache: UserProfileInvalidatorPort,
+    @Inject(UserProfileInvalidatorPort) profileCache: UserProfileInvalidatorPort,
   ) {
     super();
     this.#subscriptionCache = subscriptionCache;

@@ -3,10 +3,7 @@ import { and, count, eq, inArray } from "drizzle-orm";
 
 import { ENTITLEMENT_READER } from "#api/modules/access/access-entitlement.public";
 import type { EntitlementReaderPort } from "#api/modules/access/access-entitlement.public";
-import {
-  PREMIUM_ACCESS_READER,
-  type PremiumAccessReaderPort,
-} from "#api/modules/billing/subscriptions/billing-subscriptions.public";
+import { PremiumAccessReaderPort } from "#api/modules/billing/subscriptions/billing-subscriptions.public";
 import { RevenueCatWebhookReceiver } from "#api/modules/billing/subscriptions/infrastructure/adapters/revenuecat/revenuecat-webhook-receiver.adapter";
 import { InviteConfigPort } from "#api/modules/social/invites/application/ports/invite-config.port";
 import { InviteNotifierPort } from "#api/modules/social/invites/application/ports/invite-notifier.port";
@@ -384,7 +381,7 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
 
     // Then
     const entitlement = context.module.get<EntitlementReaderPort>(ENTITLEMENT_READER);
-    const reader = context.module.get<PremiumAccessReaderPort>(PREMIUM_ACCESS_READER);
+    const reader = context.module.get<PremiumAccessReaderPort>(PremiumAccessReaderPort);
     for (const { inviterId } of scenarios) {
       expect(await reader.getPremiumAccess(inviterId)).toMatchObject({
         source: "STORE",

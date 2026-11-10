@@ -2,10 +2,9 @@ import { Inject, Injectable } from "@nestjs/common";
 
 import {
   type MarketingReconfirmTarget,
-  USER_NOTIFICATION_SETTINGS_ACCESS,
   type UserConsentRecord,
   type UserConsentRecordWithId,
-  type UserNotificationSettingsAccessPort,
+  UserNotificationSettingsAccessPort,
   type UserPreferenceRecord,
   type UserPreferenceRecordWithId,
 } from "#api/modules/identity/identity-settings.public";
@@ -23,7 +22,7 @@ export class UserNotificationSettingsAdapter
   readonly #userSettingsAccess: UserNotificationSettingsAccessPort;
 
   constructor(
-    @Inject(USER_NOTIFICATION_SETTINGS_ACCESS)
+    @Inject(UserNotificationSettingsAccessPort)
     userSettingsAccess: UserNotificationSettingsAccessPort,
   ) {
     this.#userSettingsAccess = userSettingsAccess;

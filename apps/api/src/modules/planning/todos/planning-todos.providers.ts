@@ -28,10 +28,7 @@ import { TodoNotificationPort } from "./application/ports/todo-notification.port
 import { TodoOwnerTimezonePort } from "./application/ports/todo-owner-timezone.port.js";
 import { TodoReadRepositoryPort } from "./application/ports/todo-read.repository.port.js";
 import { TodoReminderSchedulerPort } from "./application/ports/todo-reminder-scheduler.port.js";
-import {
-  TODO_VIEW_CACHE_INVALIDATOR,
-  TodoViewCacheInvalidatorPort,
-} from "./application/ports/todo-view-cache-invalidator.port.js";
+import { TodoViewCacheInvalidatorPort } from "./application/ports/todo-view-cache-invalidator.port.js";
 import { TodoRepositoryPort } from "./application/ports/todo.repository.port.js";
 import { AddTodoItemUseCase } from "./application/use-cases/add-todo-item.use-case.js";
 import { ApplyTodoEventsUseCase } from "./application/use-cases/apply-todo-events.use-case.js";
@@ -98,7 +95,6 @@ export const PLANNING_TODOS_PROVIDERS = [
     cache: TodoCachePort,
   }),
   { provide: TodoViewCacheInvalidatorPort, useClass: TodoViewCacheInvalidatorAdapter },
-  { provide: TODO_VIEW_CACHE_INVALIDATOR, useExisting: TodoViewCacheInvalidatorPort },
   provideUseCase(CreateTodoUseCase, { todoCreator: StagedTodoCreatorPort, ...MUTATION }),
   provideUseCase(DeleteTodoUseCase, {
     todoRepository: TodoRepositoryPort,

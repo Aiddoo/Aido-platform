@@ -1,9 +1,6 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
-import {
-  SESSION_PUSH_DEVICE_RELEASE,
-  type SessionPushDeviceReleasePort,
-} from "#api/modules/notification/notification-delivery.public";
+import { SessionPushDeviceReleasePort } from "#api/modules/notification/notification-delivery.public";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 
 import { AuthLogEvent } from "../../application/auth.log-events.js";
@@ -16,7 +13,7 @@ export class SessionPushDeviceReleaserAdapter implements SessionPushDeviceReleas
   readonly #sessionPushDeviceRelease: SessionPushDeviceReleasePort;
 
   constructor(
-    @Inject(SESSION_PUSH_DEVICE_RELEASE)
+    @Inject(SessionPushDeviceReleasePort)
     sessionPushDeviceRelease: SessionPushDeviceReleasePort,
   ) {
     this.#sessionPushDeviceRelease = sessionPushDeviceRelease;

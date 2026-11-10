@@ -2,14 +2,8 @@ import { TransactionHost } from "@nestjs-cls/transactional";
 import { eq, sql } from "drizzle-orm";
 import { vi } from "vitest";
 
-import {
-  STREAK_MILESTONE_NOTIFIER,
-  type StreakMilestoneNotifierPort,
-} from "#api/modules/identity/preferences/application/ports/streak-milestone-notifier.port";
-import {
-  USER_SETTINGS_CACHE,
-  type UserSettingsCachePort,
-} from "#api/modules/identity/preferences/application/ports/user-settings-cache.port";
+import { StreakMilestoneNotifierPort } from "#api/modules/identity/preferences/application/ports/streak-milestone-notifier.port";
+import { UserSettingsCachePort } from "#api/modules/identity/preferences/application/ports/user-settings-cache.port";
 import { GetPreferenceUseCase } from "#api/modules/identity/preferences/application/use-cases/get-preference.use-case";
 import { OnTodoToggledUseCase } from "#api/modules/identity/preferences/application/use-cases/on-todo-toggled.use-case";
 import { RefreshPushTimezoneUseCase } from "#api/modules/identity/preferences/application/use-cases/refresh-push-timezone.use-case";
@@ -18,10 +12,7 @@ import { UpdatePreferenceUseCase } from "#api/modules/identity/preferences/appli
 import { UpsertPushTimezoneUseCase } from "#api/modules/identity/preferences/application/use-cases/upsert-push-timezone.use-case";
 import { DrizzleUserConsentRepository } from "#api/modules/identity/preferences/infrastructure/persistence/drizzle-user-consent.repository";
 import { DrizzleUserPreferenceRepository } from "#api/modules/identity/preferences/infrastructure/persistence/drizzle-user-preference.repository";
-import {
-  REMINDER_TIMEZONE_CACHE,
-  type ReminderTimezoneCachePort,
-} from "#api/modules/notification/notification-reminders-cache.public";
+import { ReminderTimezoneCachePort } from "#api/modules/notification/notification-reminders-cache.public";
 import type { Database, DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { createEntityId } from "#api/platform/database/entity-id";
 import {
@@ -204,10 +195,10 @@ describe("사용자 설정 저장·캐시·동시 스트릭 (실제 PostgreSQL)"
 
   it("없는 설정과 동일 timezone은 자가치유에서 생성·캐시 무효화를 하지 않는다", async () => {
     // Given
-    const cache = context.module.get<UserSettingsCachePort>(USER_SETTINGS_CACHE);
+    const cache = context.module.get<UserSettingsCachePort>(UserSettingsCachePort);
     const invalidatePreference = vi.spyOn(cache, "invalidateUserPreference");
     const reminderTimezoneCache =
-      context.module.get<ReminderTimezoneCachePort>(REMINDER_TIMEZONE_CACHE);
+      context.module.get<ReminderTimezoneCachePort>(ReminderTimezoneCachePort);
     const invalidateTimezones = vi.spyOn(reminderTimezoneCache, "invalidateActiveTimezones");
     const refresh = context.module.get(RefreshPushTimezoneUseCase);
 
@@ -251,7 +242,7 @@ describe("사용자 설정 저장·캐시·동시 스트릭 (실제 PostgreSQL)"
       .set({ currentStreak: 2, longestStreak: 2, lastCompletedDate: yesterday })
       .where(eq(userPreference.userId, userId));
     await givenCompletedTodos();
-    const notifier = context.module.get<StreakMilestoneNotifierPort>(STREAK_MILESTONE_NOTIFIER);
+    const notifier = context.module.get<StreakMilestoneNotifierPort>(StreakMilestoneNotifierPort);
     const notification = vi.spyOn(notifier, "notifyStreak3Reached").mockImplementation(() => {});
     const lock = await holdRowLock((transaction) =>
       transaction

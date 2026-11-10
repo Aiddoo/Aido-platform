@@ -1,6 +1,3 @@
-// 옛 Symbol 토큰. engagement가 클래스 토큰으로 옮길 때까지 UserBlockReaderPort의 같은 인스턴스 별칭이다
-export const USER_BLOCK_READER = Symbol("USER_BLOCK_READER");
-
 /** 두 사용자 사이의 차단 상태. 어느 쪽이든 차단이 있으면 서로의 콘텐츠와 상호작용을 막는다. */
 export interface UserBlockRelation {
   /** userId가 상대를 차단했다 */

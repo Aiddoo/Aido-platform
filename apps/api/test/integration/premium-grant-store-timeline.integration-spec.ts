@@ -3,10 +3,8 @@ import type { EntitlementReaderPort } from "#api/modules/access/access-entitleme
 import { SweepPremiumGrantsUseCase } from "#api/modules/billing/premium-grants/application/use-cases/sweep-premium-grants.use-case";
 import { STORE_RENEWAL_GRACE_MS } from "#api/modules/billing/shared/store-renewal-grace.domain-service";
 import {
-  PREMIUM_ACCESS_READER,
-  PREMIUM_GRANTER,
-  type PremiumAccessReaderPort,
-  type PremiumGranterPort,
+  PremiumAccessReaderPort,
+  PremiumGranterPort,
 } from "#api/modules/billing/subscriptions/billing-subscriptions.public";
 import { RevenueCatWebhookReceiver } from "#api/modules/billing/subscriptions/infrastructure/adapters/revenuecat/revenuecat-webhook-receiver.adapter";
 import { GetCurrentUserUseCase } from "#api/modules/identity/users/application/use-cases/get-current-user.use-case";
@@ -43,7 +41,7 @@ describe("결제 구독과 보상 기간 결합 타임라인 QA (실제 PostgreS
     database = new TestDatabase({ createClient: (url) => createTestClient(url, { max: 8 }) });
     client = await database.start();
     context = await createE2eApp({ testDatabase: database });
-    granter = context.module.get<PremiumGranterPort>(PREMIUM_GRANTER);
+    granter = context.module.get<PremiumGranterPort>(PremiumGranterPort);
     entitlement = context.module.get<EntitlementReaderPort>(ENTITLEMENT_READER);
   });
 
@@ -88,7 +86,7 @@ describe("결제 구독과 보상 기간 결합 타임라인 QA (실제 PostgreS
 
   function premiumAccess() {
     return context.module
-      .get<PremiumAccessReaderPort>(PREMIUM_ACCESS_READER)
+      .get<PremiumAccessReaderPort>(PremiumAccessReaderPort)
       .getPremiumAccess(userId);
   }
 

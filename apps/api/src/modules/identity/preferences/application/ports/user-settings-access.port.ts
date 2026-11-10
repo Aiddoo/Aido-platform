@@ -7,15 +7,6 @@ import type {
 } from "./user-consent.repository.port.js";
 import type { UserPreferenceRecordWithId } from "./user-preference.repository.port.js";
 
-/** 옛 토큰. 아직 옮기지 않은 소비 Context가 쓴다(같은 인스턴스 별칭으로 바인딩) */
-export const USER_SETTINGS_PROVISIONER = Symbol("USER_SETTINGS_PROVISIONER");
-/** 옛 토큰. 아직 옮기지 않은 소비 Context가 쓴다(같은 인스턴스 별칭으로 바인딩) */
-export const USER_STREAK_ACCESS = Symbol("USER_STREAK_ACCESS");
-/** 옛 토큰. 아직 옮기지 않은 소비 Context가 쓴다(같은 인스턴스 별칭으로 바인딩) */
-export const USER_NOTIFICATION_SETTINGS_ACCESS = Symbol("USER_NOTIFICATION_SETTINGS_ACCESS");
-/** 옛 토큰. 아직 옮기지 않은 소비 Context가 쓴다(같은 인스턴스 별칭으로 바인딩) */
-export const USER_TIMEZONE_READER = Symbol("USER_TIMEZONE_READER");
-
 /** auth가 회원가입 트랜잭션 안에서 사용하는 초기 설정 생성 capability. */
 export abstract class UserSettingsProvisionerPort {
   abstract seedDefaults(userId: string, consent: ConsentSeedInput): Promise<void>;

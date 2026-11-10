@@ -11,10 +11,7 @@ import { NudgeUsageReader } from "./application/nudge-usage.reader.js";
 import { NudgeInteractionConfigPort } from "./application/ports/nudge-interaction-config.port.js";
 import { NudgeLimitReaderPort } from "./application/ports/nudge-limit.reader.port.js";
 import { NudgeNotifierPort } from "./application/ports/nudge-notifier.port.js";
-import {
-  NUDGE_USAGE_READER,
-  NudgeUsageReaderPort,
-} from "./application/ports/nudge-usage.reader.port.js";
+import { NudgeUsageReaderPort } from "./application/ports/nudge-usage.reader.port.js";
 import { NudgeReaderPort } from "./application/ports/nudge.reader.port.js";
 import { NudgeRepositoryPort } from "./application/ports/nudge.repository.port.js";
 import { GetNudgeCooldownUseCase } from "./application/use-cases/get-nudge-cooldown.use-case.js";
@@ -49,7 +46,6 @@ export const SOCIAL_NUDGES_PROVIDERS = [
   },
   provideUseCase(NudgeUsageReader, { nudgeRepository: NudgeRepositoryPort, clock: ClockPort }),
   { provide: NudgeUsageReaderPort, useExisting: NudgeUsageReader },
-  { provide: NUDGE_USAGE_READER, useExisting: NudgeUsageReaderPort },
   provideUseCase(SendNudgeUseCase, {
     unitOfWork: UnitOfWorkPort,
     mutationLock: MutationLockPort,

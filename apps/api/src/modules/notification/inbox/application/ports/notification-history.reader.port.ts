@@ -1,9 +1,6 @@
 import type { NotificationMilestone } from "../../../push/domain/notification-milestone.constants.js";
 import type { NotificationType } from "../../domain/notification-type.constants.js";
 
-// 옛 Symbol 토큰. 아직 Symbol로 주입하는 곳이 있어 같은 인스턴스로 묶어 둔다
-export const NOTIFICATION_HISTORY_READER = Symbol("NOTIFICATION_HISTORY_READER");
-
 export interface ExistsRecentNotificationQuery {
   readonly userId: string;
   readonly type: NotificationType;

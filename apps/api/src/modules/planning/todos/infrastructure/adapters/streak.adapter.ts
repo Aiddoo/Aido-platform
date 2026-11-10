@@ -1,9 +1,6 @@
 import { Inject, Injectable } from "@nestjs/common";
 
-import {
-  USER_STREAK_ACCESS,
-  type UserStreakAccessPort,
-} from "#api/modules/identity/identity-settings.public";
+import { UserStreakAccessPort } from "#api/modules/identity/identity-settings.public";
 
 import type { StreakPort } from "../../application/ports/streak.port.js";
 
@@ -15,7 +12,7 @@ export class StreakAdapter implements StreakPort {
   readonly #userStreakAccess: UserStreakAccessPort;
 
   constructor(
-    @Inject(USER_STREAK_ACCESS)
+    @Inject(UserStreakAccessPort)
     userStreakAccess: UserStreakAccessPort,
   ) {
     this.#userStreakAccess = userStreakAccess;

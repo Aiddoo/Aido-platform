@@ -7,16 +7,12 @@ import { DatabaseModule } from "#api/platform/database/database.module";
 
 import { WeatherForecastsModule } from "../../weather/forecasts/weather-forecasts.public.js";
 import { NotificationPushModule } from "../push/notification-push.module.js";
-import {
-  REMINDER_SCHEDULER,
-  TodoReminderSchedulerPort,
-} from "./application/ports/todo-reminder-scheduler.port.js";
+import { TodoReminderSchedulerPort } from "./application/ports/todo-reminder-scheduler.port.js";
 import { TimezoneReminderQueueModule } from "./infrastructure/jobs/timezone-reminder-queue.module.js";
 import { TimezoneReminderQueueProcessor } from "./infrastructure/jobs/timezone-reminder-queue.processor.js";
 import { TimezoneReminderSweepScheduler } from "./infrastructure/jobs/timezone-reminder-sweep.scheduler.js";
 import { TodoReminderQueueProcessor } from "./infrastructure/jobs/todo-reminder-queue.processor.js";
 import {
-  NOTIFICATION_REMINDERS_LEGACY_TOKEN_PROVIDERS,
   NOTIFICATION_REMINDERS_PERSISTENCE_PROVIDERS,
   NOTIFICATION_REMINDERS_USE_CASE_PROVIDERS,
 } from "./notification-reminders.providers.js";
@@ -34,11 +30,10 @@ import {
   providers: [
     ...NOTIFICATION_REMINDERS_PERSISTENCE_PROVIDERS,
     ...NOTIFICATION_REMINDERS_USE_CASE_PROVIDERS,
-    ...NOTIFICATION_REMINDERS_LEGACY_TOKEN_PROVIDERS,
     TimezoneReminderSweepScheduler,
     TimezoneReminderQueueProcessor,
     TodoReminderQueueProcessor,
   ],
-  exports: [TodoReminderSchedulerPort, REMINDER_SCHEDULER],
+  exports: [TodoReminderSchedulerPort],
 })
 export class NotificationRemindersModule {}

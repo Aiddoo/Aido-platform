@@ -4,10 +4,8 @@ import { Inject, Injectable } from "@nestjs/common";
 import {
   createPremiumTrialEndingNotificationMessage,
   NotificationPublisher,
-  NOTIFICATION_RECIPIENT_LOCALE_READER,
-  NOTIFICATION_RECIPIENT_TIMEZONE_READER,
-  type NotificationRecipientLocaleReaderPort,
-  type NotificationRecipientTimezoneReaderPort,
+  NotificationRecipientLocaleReaderPort,
+  NotificationRecipientTimezoneReaderPort,
   SCHEDULER_CAMPAIGN_KEY,
 } from "#api/modules/notification/notification-delivery.public";
 import { DEFAULT_DELIVERY_TIMEZONE } from "#api/shared/domain/date/utils/timezone";
@@ -25,9 +23,9 @@ export class TrialEndingNotifierAdapter extends TrialEndingNotifierPort {
 
   constructor(
     notificationPublisher: NotificationPublisher,
-    @Inject(NOTIFICATION_RECIPIENT_LOCALE_READER)
+    @Inject(NotificationRecipientLocaleReaderPort)
     localeReader: NotificationRecipientLocaleReaderPort,
-    @Inject(NOTIFICATION_RECIPIENT_TIMEZONE_READER)
+    @Inject(NotificationRecipientTimezoneReaderPort)
     timezoneReader: NotificationRecipientTimezoneReaderPort,
   ) {
     super();

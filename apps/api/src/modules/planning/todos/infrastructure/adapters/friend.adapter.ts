@@ -1,9 +1,6 @@
 import { Inject, Injectable } from "@nestjs/common";
 
-import {
-  FOLLOW_READER,
-  type FollowReaderPort,
-} from "#api/modules/social/friends/social-friends.public";
+import { FollowReaderPort } from "#api/modules/social/friends/social-friends.public";
 
 import type { FriendPort } from "../../application/ports/friend.port.js";
 
@@ -15,7 +12,7 @@ export class FriendAdapter implements FriendPort {
   >;
 
   constructor(
-    @Inject(FOLLOW_READER)
+    @Inject(FollowReaderPort)
     followReader: Pick<
       FollowReaderPort,
       "isMutualFriend" | "getMutualFriendIds" | "getUserDisplayName"

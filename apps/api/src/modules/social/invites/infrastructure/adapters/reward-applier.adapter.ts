@@ -6,10 +6,7 @@ import {
   RESOURCE_BONUS_GRANTER,
   type ResourceBonusGranterPort,
 } from "#api/modules/access/access-entitlement.public";
-import {
-  PREMIUM_GRANTER,
-  type PremiumGranterPort,
-} from "#api/modules/billing/subscriptions/billing-subscriptions.public";
+import { PremiumGranterPort } from "#api/modules/billing/subscriptions/billing-subscriptions.public";
 
 import { inviteUserNotFound } from "../../application/invites.errors.js";
 import { RewardApplierPort } from "../../application/ports/reward-applier.port.js";
@@ -25,7 +22,7 @@ export class RewardApplierAdapter extends RewardApplierPort {
   readonly #resourceBonusGranter: ResourceBonusGranterPort;
 
   constructor(
-    @Inject(PREMIUM_GRANTER) premiumGranter: PremiumGranterPort,
+    @Inject(PremiumGranterPort) premiumGranter: PremiumGranterPort,
     @Inject(RESOURCE_BONUS_GRANTER) resourceBonusGranter: ResourceBonusGranterPort,
   ) {
     super();

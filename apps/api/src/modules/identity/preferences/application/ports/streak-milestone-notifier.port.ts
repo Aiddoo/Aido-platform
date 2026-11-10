@@ -7,6 +7,3 @@
 export abstract class StreakMilestoneNotifierPort {
   abstract notifyStreak3Reached(userId: string): void;
 }
-
-/** 옛 토큰. 아직 옮기지 않은 소비 Context가 쓴다(같은 인스턴스 별칭으로 바인딩) */
-export const STREAK_MILESTONE_NOTIFIER = Symbol("STREAK_MILESTONE_NOTIFIER");

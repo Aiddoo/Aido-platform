@@ -3,10 +3,7 @@ import { and, eq } from "drizzle-orm";
 
 import { SubscriptionEventNotifierPort } from "#api/modules/billing/subscriptions/application/ports/subscription-event-notifier.port";
 import { NotifyUpcomingRenewalsUseCase } from "#api/modules/billing/subscriptions/application/use-cases/notify-upcoming-renewals.use-case";
-import {
-  PREMIUM_ACCESS_READER,
-  type PremiumAccessReaderPort,
-} from "#api/modules/billing/subscriptions/billing-subscriptions.public";
+import { PremiumAccessReaderPort } from "#api/modules/billing/subscriptions/billing-subscriptions.public";
 import { RevenueCatWebhookReceiver } from "#api/modules/billing/subscriptions/infrastructure/adapters/revenuecat/revenuecat-webhook-receiver.adapter";
 import { createEntityId } from "#api/platform/database/entity-id";
 import {
@@ -62,7 +59,7 @@ describe("연간 구독 갱신 7일 전 안내와 상품 변경 예약 (실제 P
     });
     webhook = context.module.get(RevenueCatWebhookReceiver);
     notifyUpcomingRenewals = context.module.get(NotifyUpcomingRenewalsUseCase);
-    premiumAccess = context.module.get(PREMIUM_ACCESS_READER);
+    premiumAccess = context.module.get(PremiumAccessReaderPort);
   });
 
   beforeEach(async () => {

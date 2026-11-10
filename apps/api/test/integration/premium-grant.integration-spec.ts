@@ -10,10 +10,8 @@ import { SweepPremiumGrantsUseCase } from "#api/modules/billing/premium-grants/a
 import { SubscriptionRepositoryPort } from "#api/modules/billing/subscriptions/application/ports/subscription.repository.port";
 import { STORE_RENEWAL_GRACE_MS } from "#api/modules/billing/subscriptions/billing-subscriptions-entitlement.public";
 import {
-  PREMIUM_ACCESS_READER,
-  PREMIUM_GRANTER,
-  type PremiumAccessReaderPort,
-  type PremiumGranterPort,
+  PremiumAccessReaderPort,
+  PremiumGranterPort,
 } from "#api/modules/billing/subscriptions/billing-subscriptions.public";
 import { RevenueCatWebhookReceiver } from "#api/modules/billing/subscriptions/infrastructure/adapters/revenuecat/revenuecat-webhook-receiver.adapter";
 import { createEntityId } from "#api/platform/database/entity-id";
@@ -55,7 +53,7 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
     database = new TestDatabase({ createClient: (url) => createTestClient(url, { max: 8 }) });
     client = await database.start();
     context = await createE2eApp({ testDatabase: database });
-    granter = context.module.get<PremiumGranterPort>(PREMIUM_GRANTER);
+    granter = context.module.get<PremiumGranterPort>(PremiumGranterPort);
     subscriptions = context.module.get(SubscriptionRepositoryPort);
     projection = context.module.get(UserSubscriptionProjectionRepositoryPort);
     entitlement = context.module.get<EntitlementReaderPort>(ENTITLEMENT_READER);
@@ -422,7 +420,7 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
     expect(await entitlement.canInTx(userId, "AI_REPORT")).toBe(false);
     expect(
       await context.module
-        .get<PremiumAccessReaderPort>(PREMIUM_ACCESS_READER)
+        .get<PremiumAccessReaderPort>(PremiumAccessReaderPort)
         .getPremiumAccess(userId),
     ).toMatchObject({ source: null, endsAt: null });
   });
@@ -471,7 +469,7 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
     });
     expect(
       await context.module
-        .get<PremiumAccessReaderPort>(PREMIUM_ACCESS_READER)
+        .get<PremiumAccessReaderPort>(PremiumAccessReaderPort)
         .getPremiumAccess(giverId),
     ).toMatchObject({ source: null });
   });
@@ -549,7 +547,7 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
 
   function premiumAccess() {
     return context.module
-      .get<PremiumAccessReaderPort>(PREMIUM_ACCESS_READER)
+      .get<PremiumAccessReaderPort>(PremiumAccessReaderPort)
       .getPremiumAccess(userId);
   }
 

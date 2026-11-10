@@ -5,8 +5,7 @@ import request from "supertest";
 
 import { EntitlementCacheKey } from "#api/modules/access/entitlements/infrastructure/cache/entitlement-cache.keyspace";
 import { AiGeneratorPort } from "#api/modules/ai-assistance/generation/ai-assistance-generation.public";
-import type { StagedTodoCreatorPort } from "#api/modules/planning/todos/application/ports/staged-todo-creator.port";
-import { STAGED_TODO_CREATOR } from "#api/modules/planning/todos/planning-todos.public";
+import { StagedTodoCreatorPort } from "#api/modules/planning/todos/application/ports/staged-todo-creator.port";
 /**
  * AI 반복 제안 모듈 E2E 테스트
  *
@@ -315,7 +314,7 @@ describe("AI 제안 E2E", () => {
     const user = await createPremiumUser("ai-suggestion-failure@example.com", "Test1234!");
     const categoryId = await ctx.helpers.getDefaultCategoryId(user.accessToken);
     const id = await seedPendingSuggestion(user.userId);
-    const creator = ctx.module.get<StagedTodoCreatorPort>(STAGED_TODO_CREATOR);
+    const creator = ctx.module.get<StagedTodoCreatorPort>(StagedTodoCreatorPort);
     const before = await ctx.testDatabase
       .getClient()
       .query.todo.findMany({ where: { userId: user.userId } });

@@ -5,10 +5,7 @@ import {
   isExemptFromDormancy,
   type EntitlementReaderPort,
 } from "#api/modules/access/access-entitlement.public";
-import {
-  USER_ACTIVITY_READER,
-  type UserActivityReaderPort,
-} from "#api/modules/identity/identity-user-access.public";
+import { UserActivityReaderPort } from "#api/modules/identity/identity-user-access.public";
 
 import type { TodoSeriesOwnerPort } from "../../application/ports/todo-series-owner.port.js";
 import type { SeriesOwnerActivity } from "../../domain/series-dormancy.domain-service.js";
@@ -19,7 +16,7 @@ export class TodoSeriesOwnerAdapter implements TodoSeriesOwnerPort {
   readonly #entitlementReader: Pick<EntitlementReaderPort, "getAccessSnapshot">;
 
   constructor(
-    @Inject(USER_ACTIVITY_READER) activityReader: UserActivityReaderPort,
+    @Inject(UserActivityReaderPort) activityReader: UserActivityReaderPort,
     @Inject(ENTITLEMENT_READER) entitlementReader: Pick<EntitlementReaderPort, "getAccessSnapshot">,
   ) {
     this.#activityReader = activityReader;

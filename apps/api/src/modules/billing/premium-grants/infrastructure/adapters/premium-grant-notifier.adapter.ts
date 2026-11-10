@@ -3,8 +3,7 @@ import { Inject, Injectable } from "@nestjs/common";
 import {
   createPremiumGrantEndingNotificationMessage,
   NotificationPublisher,
-  NOTIFICATION_RECIPIENT_LOCALE_READER,
-  type NotificationRecipientLocaleReaderPort,
+  NotificationRecipientLocaleReaderPort,
   SCHEDULER_CAMPAIGN_KEY,
 } from "#api/modules/notification/notification-delivery.public";
 import { DEFAULT_LOCALE } from "#api/shared/domain/locale";
@@ -19,7 +18,7 @@ export class PremiumGrantNotifierAdapter extends PremiumGrantNotifierPort {
 
   constructor(
     notificationPublisher: NotificationPublisher,
-    @Inject(NOTIFICATION_RECIPIENT_LOCALE_READER)
+    @Inject(NotificationRecipientLocaleReaderPort)
     localeReader: NotificationRecipientLocaleReaderPort,
   ) {
     super();

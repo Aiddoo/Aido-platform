@@ -4,7 +4,6 @@ import { TODO_REMINDER_QUEUE as TODO_REMINDER_QUEUE_DEFINITION } from "./reminde
 export const TODO_REMINDER_QUEUE = TODO_REMINDER_QUEUE_DEFINITION.name;
 
 export {
-  REMINDER_SCHEDULER,
   TodoReminderSchedulerPort,
   type IReminderScheduler,
   type ReminderSchedule,

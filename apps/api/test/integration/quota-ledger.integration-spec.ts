@@ -18,10 +18,7 @@ import {
   QUOTA_REQUEST_HASH_RETENTION_MS,
   QUOTA_RESERVATION_TAKEOVER_AFTER_MS,
 } from "#api/modules/access/quotas/domain/quotas.constants";
-import {
-  PREMIUM_GRANTER,
-  type PremiumGranterPort,
-} from "#api/modules/billing/subscriptions/billing-subscriptions.public";
+import { PremiumGranterPort } from "#api/modules/billing/subscriptions/billing-subscriptions.public";
 import { isUniqueConstraintViolation } from "#api/platform/database/database-error.util";
 import { createEntityId } from "#api/platform/database/entity-id";
 import { quotaCharge, quotaUsage, user as userTable } from "#api/platform/database/schema/index";
@@ -818,7 +815,7 @@ describe("QuotaLedger 원장·카운터·멱등 (실제 PostgreSQL)", () => {
         .set({ aiUsageCount: FREE_AI_LIMIT })
         .where(eq(userTable.id, userId));
       await context.module
-        .get<PremiumGranterPort>(PREMIUM_GRANTER)
+        .get<PremiumGranterPort>(PremiumGranterPort)
         .grant({ userId, source: "INVITE", sourceKey: "invite:quota-ledger", durationDays: 7 });
       const grantEndsAt = new Date(newMonthAt.getTime() + 7 * 24 * 60 * 60 * 1_000);
       vi.setSystemTime(new Date(grantEndsAt.getTime() - 1));

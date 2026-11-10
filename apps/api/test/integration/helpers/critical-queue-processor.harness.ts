@@ -12,8 +12,8 @@ import type {
   UserPreferenceRecordWithId,
 } from "#api/modules/identity/identity-settings.public";
 import {
-  USER_PREFERENCE_READER,
-  USER_SETTINGS_CACHE,
+  UserPreferenceReaderPort,
+  UserSettingsCachePort,
 } from "#api/modules/identity/identity-settings.public";
 import { ReadUserPreferencesUseCase } from "#api/modules/identity/preferences/application/use-cases/read-user-preferences.use-case";
 import { UserSettingsCacheAdapter } from "#api/modules/identity/preferences/infrastructure/adapters/user-settings-cache.adapter";
@@ -289,7 +289,7 @@ function notificationProviders(pushProvider: FakePushProvider): Provider[] {
     },
     CacheService,
     UserSettingsCacheAdapter,
-    { provide: USER_SETTINGS_CACHE, useExisting: UserSettingsCacheAdapter },
+    { provide: UserSettingsCachePort, useExisting: UserSettingsCacheAdapter },
     InMemoryDedupAdapter,
     { provide: DEDUP_PROVIDER, useExisting: InMemoryDedupAdapter },
     { provide: LOCK_PROVIDER, useFactory: () => new InMemoryLockAdapter() },
@@ -301,7 +301,7 @@ function notificationProviders(pushProvider: FakePushProvider): Provider[] {
     },
     DrizzleUserPreferenceRepository,
     {
-      provide: USER_PREFERENCE_READER,
+      provide: UserPreferenceReaderPort,
       useFactory: (preferenceRepository: DrizzleUserPreferenceRepository, cache: CacheService) =>
         new ReadUserPreferencesUseCase({
           preferenceRepository,

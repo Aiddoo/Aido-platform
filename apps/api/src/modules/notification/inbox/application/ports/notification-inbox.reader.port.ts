@@ -1,9 +1,6 @@
 import type { NotificationType } from "../../domain/notification-type.constants.js";
 import type { InboxNotification } from "../read-models/inbox-notification.read-model.js";
 
-// 옛 Symbol 토큰. 아직 Symbol로 주입하는 곳이 있어 같은 인스턴스로 묶어 둔다
-export const NOTIFICATION_INBOX_READER = Symbol("NOTIFICATION_INBOX_READER");
-
 export interface ListInboxNotificationsQuery {
   readonly userId: string;
   readonly afterNotificationId: number | null;

@@ -11,10 +11,7 @@ import request from "supertest";
  */
 
 import { SweepPremiumGrantsUseCase } from "#api/modules/billing/premium-grants/application/use-cases/sweep-premium-grants.use-case";
-import {
-  PREMIUM_GRANTER,
-  type PremiumGranterPort,
-} from "#api/modules/billing/subscriptions/billing-subscriptions.public";
+import { PremiumGranterPort } from "#api/modules/billing/subscriptions/billing-subscriptions.public";
 import { requireRecord } from "#api/platform/database/database-error.util";
 import { resourceBonus, user as userTable } from "#api/platform/database/schema/index";
 import { instantFromDate } from "#api/shared/domain/time/instant";
@@ -151,7 +148,7 @@ describe("팔로우 리소스 제한 E2E", () => {
           quantity: 1,
           sourceKey: "invite:follow-limit-grant",
         });
-        await ctx.module.get<PremiumGranterPort>(PREMIUM_GRANTER).grant({
+        await ctx.module.get<PremiumGranterPort>(PremiumGranterPort).grant({
           userId: user.userId,
           source: "INVITE",
           sourceKey: "invite:limit",

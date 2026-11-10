@@ -1,19 +1,3 @@
-import {
-  NOTIFICATION_CACHE,
-  NotificationCachePort,
-} from "#api/modules/notification/inbox/application/ports/notification-cache.port";
-import {
-  NOTIFICATION_HISTORY_READER,
-  NotificationHistoryReaderPort,
-} from "#api/modules/notification/inbox/application/ports/notification-history.reader.port";
-import {
-  NOTIFICATION_INBOX_READER,
-  NotificationInboxReaderPort,
-} from "#api/modules/notification/inbox/application/ports/notification-inbox.reader.port";
-import {
-  NOTIFICATION_REPOSITORY,
-  NotificationRepositoryPort,
-} from "#api/modules/notification/inbox/application/ports/notification.repository.port";
 import { DeleteActorNotificationsUseCase } from "#api/modules/notification/inbox/application/use-cases/delete-actor-notifications.use-case";
 import {
   NotificationQueueAdapter,
@@ -22,19 +6,9 @@ import {
 import {
   CLIENT_APP_VERSION_READER,
   ClientAppVersionReaderPort,
-  NOTIFICATION_RECIPIENT_LOCALE_READER,
-  NOTIFICATION_RECIPIENT_TIMEZONE_READER,
   NotificationAccountCleanup,
   NotificationDeliveryModule,
   NotificationPublisher,
-  NotificationRecipientLocaleReaderPort,
-  NotificationRecipientTimezoneReaderPort,
-  PUSH_CAMPAIGN_OUTCOME_READER,
-  PUSH_QUIET_HOURS_READER,
-  PushCampaignOutcomeReaderPort,
-  PushQuietHoursReaderPort,
-  SESSION_PUSH_DEVICE_RELEASE,
-  SessionPushDeviceReleasePort,
 } from "#api/modules/notification/notification-delivery.public";
 import { PublishNotificationUseCase } from "#api/modules/notification/push/application/use-cases/publish-notification.use-case";
 import { NotificationQueueAdapter as NotificationQueueAdapterClass } from "#api/modules/notification/push/infrastructure/jobs/notification-queue.adapter";
@@ -54,24 +28,7 @@ describe("알림 옛 토큰·이름 호환 (E2E 앱 조립)", () => {
   });
 
   it.each([
-    [
-      "NOTIFICATION_RECIPIENT_LOCALE_READER",
-      NOTIFICATION_RECIPIENT_LOCALE_READER,
-      NotificationRecipientLocaleReaderPort,
-    ],
-    [
-      "NOTIFICATION_RECIPIENT_TIMEZONE_READER",
-      NOTIFICATION_RECIPIENT_TIMEZONE_READER,
-      NotificationRecipientTimezoneReaderPort,
-    ],
-    ["PUSH_QUIET_HOURS_READER", PUSH_QUIET_HOURS_READER, PushQuietHoursReaderPort],
-    ["PUSH_CAMPAIGN_OUTCOME_READER", PUSH_CAMPAIGN_OUTCOME_READER, PushCampaignOutcomeReaderPort],
     ["CLIENT_APP_VERSION_READER", CLIENT_APP_VERSION_READER, ClientAppVersionReaderPort],
-    ["SESSION_PUSH_DEVICE_RELEASE", SESSION_PUSH_DEVICE_RELEASE, SessionPushDeviceReleasePort],
-    ["NOTIFICATION_REPOSITORY", NOTIFICATION_REPOSITORY, NotificationRepositoryPort],
-    ["NOTIFICATION_INBOX_READER", NOTIFICATION_INBOX_READER, NotificationInboxReaderPort],
-    ["NOTIFICATION_HISTORY_READER", NOTIFICATION_HISTORY_READER, NotificationHistoryReaderPort],
-    ["NOTIFICATION_CACHE", NOTIFICATION_CACHE, NotificationCachePort],
   ] as const)("%s는 새 포트와 같은 인스턴스다", (_name, symbol, portClass) => {
     // Given
     const options = { strict: false } as const;

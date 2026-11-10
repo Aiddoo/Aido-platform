@@ -26,20 +26,11 @@ import {
   NotificationDedupLockPort,
   NotificationDedupPort,
 } from "./application/ports/notification-dedup.port.js";
-import {
-  NOTIFICATION_RECIPIENT_LOCALE_READER,
-  NotificationRecipientLocaleReaderPort,
-} from "./application/ports/notification-recipient-locale.reader.port.js";
+import { NotificationRecipientLocaleReaderPort } from "./application/ports/notification-recipient-locale.reader.port.js";
 import { NotificationRecipientPreferenceReaderPort } from "./application/ports/notification-recipient-preference.reader.port.js";
-import {
-  NOTIFICATION_RECIPIENT_TIMEZONE_READER,
-  NotificationRecipientTimezoneReaderPort,
-} from "./application/ports/notification-recipient-timezone.reader.port.js";
+import { NotificationRecipientTimezoneReaderPort } from "./application/ports/notification-recipient-timezone.reader.port.js";
 import { NotificationTodoTargetReaderPort } from "./application/ports/notification-todo-target.reader.port.js";
-import {
-  PUSH_CAMPAIGN_OUTCOME_READER,
-  PushCampaignOutcomeReaderPort,
-} from "./application/ports/push-campaign-outcome.reader.port.js";
+import { PushCampaignOutcomeReaderPort } from "./application/ports/push-campaign-outcome.reader.port.js";
 import { PushDeliveryJobEnqueuerPort } from "./application/ports/push-delivery-job-enqueuer.port.js";
 import { PushDeliveryLifecycleRepositoryPort } from "./application/ports/push-delivery-lifecycle.repository.port.js";
 import { PushDeliveryOutboxRepositoryPort } from "./application/ports/push-delivery-outbox.repository.port.js";
@@ -48,17 +39,11 @@ import { PushDispatchStagingRepositoryPort } from "./application/ports/push-disp
 import { PushFunnelReaderPort } from "./application/ports/push-funnel.reader.port.js";
 import { PushNotificationPayloadPort } from "./application/ports/push-notification-payload.port.js";
 import { PushProviderPort } from "./application/ports/push-provider.port.js";
-import {
-  PUSH_QUIET_HOURS_READER,
-  PushQuietHoursReaderPort,
-} from "./application/ports/push-quiet-hours.reader.port.js";
+import { PushQuietHoursReaderPort } from "./application/ports/push-quiet-hours.reader.port.js";
 import { PushRateLimiterPort } from "./application/ports/push-rate-limiter.port.js";
 import { PushReceiptRepositoryPort } from "./application/ports/push-receipt.repository.port.js";
 import { PushTokenRepositoryPort } from "./application/ports/push-token.repository.port.js";
-import {
-  SESSION_PUSH_DEVICE_RELEASE,
-  SessionPushDeviceReleasePort,
-} from "./application/ports/session-push-device-release.port.js";
+import { SessionPushDeviceReleasePort } from "./application/ports/session-push-device-release.port.js";
 import { UserNotificationSettingsPort } from "./application/ports/user-notification-settings.port.js";
 import { PushQuietHoursReader } from "./application/push-quiet-hours.reader.js";
 import { DeliverPushNotificationsUseCase } from "./application/use-cases/deliver-push-notifications.use-case.js";
@@ -361,20 +346,9 @@ export const NOTIFICATION_PUSH_USE_CASE_PROVIDERS = [
   }),
 ] satisfies Provider[];
 
-// 다른 Context가 옮길 때까지 옛 Symbol 토큰을 같은 인스턴스의 별칭으로 둔다
+// ai가 옮길 때까지 옛 Symbol 토큰을 같은 인스턴스의 별칭으로 둔다
 export const NOTIFICATION_PUSH_LEGACY_TOKEN_PROVIDERS = [
-  {
-    provide: NOTIFICATION_RECIPIENT_LOCALE_READER,
-    useExisting: NotificationRecipientLocaleReaderPort,
-  },
-  {
-    provide: NOTIFICATION_RECIPIENT_TIMEZONE_READER,
-    useExisting: NotificationRecipientTimezoneReaderPort,
-  },
-  { provide: PUSH_QUIET_HOURS_READER, useExisting: PushQuietHoursReaderPort },
-  { provide: PUSH_CAMPAIGN_OUTCOME_READER, useExisting: PushCampaignOutcomeReaderPort },
   { provide: CLIENT_APP_VERSION_READER, useExisting: ClientAppVersionReaderPort },
-  { provide: SESSION_PUSH_DEVICE_RELEASE, useExisting: SessionPushDeviceReleasePort },
 ] satisfies Provider[];
 
 export const NOTIFICATION_PUSH_PROVIDERS = [

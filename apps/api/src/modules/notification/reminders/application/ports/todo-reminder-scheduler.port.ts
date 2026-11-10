@@ -1,6 +1,3 @@
-// planning이 옮길 때까지 옛 Symbol을 같은 인스턴스의 별칭으로 남긴다
-export const REMINDER_SCHEDULER = Symbol("REMINDER_SCHEDULER");
-
 export interface ReminderSchedule {
   readonly todoId: number;
   readonly scheduledTime: Date;

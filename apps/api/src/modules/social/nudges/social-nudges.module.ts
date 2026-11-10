@@ -4,10 +4,7 @@ import { AccessModule } from "#api/modules/access/access-entitlement.public";
 import { NotificationDeliveryModule } from "#api/modules/notification/notification-delivery.public";
 import { SocialFriendsModule } from "#api/modules/social/friends/social-friends.public";
 
-import {
-  NUDGE_USAGE_READER,
-  NudgeUsageReaderPort,
-} from "./application/ports/nudge-usage.reader.port.js";
+import { NudgeUsageReaderPort } from "./application/ports/nudge-usage.reader.port.js";
 import { NudgeInteractionController } from "./presentation/http/v1/nudge-interaction.controller.js";
 import { NudgeController } from "./presentation/http/v1/nudge.controller.js";
 import { SOCIAL_NUDGES_PROVIDERS } from "./social-nudges.providers.js";
@@ -16,6 +13,6 @@ import { SOCIAL_NUDGES_PROVIDERS } from "./social-nudges.providers.js";
   imports: [AccessModule, SocialFriendsModule, NotificationDeliveryModule],
   controllers: [NudgeController, NudgeInteractionController],
   providers: [...SOCIAL_NUDGES_PROVIDERS],
-  exports: [NudgeUsageReaderPort, NUDGE_USAGE_READER],
+  exports: [NudgeUsageReaderPort],
 })
 export class SocialNudgesModule {}

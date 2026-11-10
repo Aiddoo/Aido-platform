@@ -7,8 +7,7 @@ import {
   createNudgeThanksNotificationMessage,
   NotificationPublisher,
   type CreateNotificationData,
-  NOTIFICATION_RECIPIENT_LOCALE_READER,
-  type NotificationRecipientLocaleReaderPort,
+  NotificationRecipientLocaleReaderPort,
   TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY,
 } from "#api/modules/notification/notification-delivery.public";
 import { DEFAULT_LOCALE, type SupportedLocale } from "#api/shared/domain/locale";
@@ -28,7 +27,7 @@ export class NudgeNotifierAdapter extends NudgeNotifierPort {
   constructor(
     notificationQueue: NotificationQueueService,
     notificationPublisher: NotificationPublisher,
-    @Inject(NOTIFICATION_RECIPIENT_LOCALE_READER)
+    @Inject(NotificationRecipientLocaleReaderPort)
     notificationRecipientLocaleReader: NotificationRecipientLocaleReaderPort,
   ) {
     super();

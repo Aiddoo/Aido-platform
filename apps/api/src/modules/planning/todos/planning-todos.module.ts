@@ -11,10 +11,7 @@ import {
   StagedTodoCreatorPort,
 } from "./application/ports/staged-todo-creator.port.js";
 import { TodoEngagementCounterPort } from "./application/ports/todo-engagement-counter.port.js";
-import {
-  TODO_VIEW_CACHE_INVALIDATOR,
-  TodoViewCacheInvalidatorPort,
-} from "./application/ports/todo-view-cache-invalidator.port.js";
+import { TodoViewCacheInvalidatorPort } from "./application/ports/todo-view-cache-invalidator.port.js";
 import { PlanningTodoPortsModule } from "./planning-todo-ports.module.js";
 import { PLANNING_TODOS_PROVIDERS } from "./planning-todos.providers.js";
 import { TodoController } from "./presentation/http/v1/todo.controller.js";
@@ -36,7 +33,6 @@ import { TodoController } from "./presentation/http/v1/todo.controller.js";
     STAGED_TODO_CREATOR,
     TodoEngagementCounterPort,
     TodoViewCacheInvalidatorPort,
-    TODO_VIEW_CACHE_INVALIDATOR,
   ],
 })
 export class PlanningTodosModule {}

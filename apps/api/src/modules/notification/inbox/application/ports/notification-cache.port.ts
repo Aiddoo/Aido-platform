@@ -1,8 +1,5 @@
 import type { NotificationInboxScope } from "../../../push/domain/notification-client-capability.domain-service.js";
 
-// 옛 Symbol 토큰. 아직 Symbol로 주입하는 곳이 있어 같은 인스턴스로 묶어 둔다
-export const NOTIFICATION_CACHE = Symbol("NOTIFICATION_CACHE");
-
 export abstract class NotificationCachePort {
   abstract wrapUnreadCount(
     userId: string,

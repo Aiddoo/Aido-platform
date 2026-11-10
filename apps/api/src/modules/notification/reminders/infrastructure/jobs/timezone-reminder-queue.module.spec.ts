@@ -14,10 +14,7 @@ import {
   updatePreferenceProvider,
   upsertPushTimezoneProvider,
 } from "#api/modules/identity/preferences/identity-preferences.providers";
-import {
-  REMINDER_TIMEZONE_CACHE,
-  type ReminderTimezoneCachePort,
-} from "#api/modules/notification/notification-reminders-cache.public";
+import { ReminderTimezoneCachePort } from "#api/modules/notification/notification-reminders-cache.public";
 import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
 import { CacheService } from "#api/platform/cache/cache.service";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
@@ -64,7 +61,7 @@ async function createFixture() {
       { provide: UserPreferenceRepositoryPort, useValue: settings.preferenceRepository },
       { provide: UserSettingsCachePort, useValue: settings.cache },
       { provide: PreferenceEntitlementPort, useValue: settings.entitlement },
-      { provide: PreferenceReminderTimezoneCachePort, useExisting: REMINDER_TIMEZONE_CACHE },
+      { provide: PreferenceReminderTimezoneCachePort, useExisting: ReminderTimezoneCachePort },
       { provide: ReminderScheduleEnqueuerPort, useValue: settings.reminderEnqueuer },
       { provide: TodoTimezoneRebaseEnqueuerPort, useValue: settings.todoTimezoneRebase },
       { provide: UnitOfWorkPort, useValue: settings.unitOfWork },
@@ -75,7 +72,7 @@ async function createFixture() {
     cache,
     settings,
     upsertTimezone: module.get(UpsertPushTimezoneUseCase),
-    timezoneCache: module.get<ReminderTimezoneCachePort>(REMINDER_TIMEZONE_CACHE),
+    timezoneCache: module.get<ReminderTimezoneCachePort>(ReminderTimezoneCachePort),
     close: () => module.close(),
   };
 }

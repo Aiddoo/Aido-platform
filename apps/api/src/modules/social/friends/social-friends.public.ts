@@ -1,8 +1,5 @@
-export { FOLLOW_READER, FollowReaderPort } from "./application/ports/follow.reader.port.js";
-export {
-  FRIEND_COUNT_READER,
-  FriendCountReaderPort,
-} from "./application/ports/friend-count.reader.port.js";
+export { FollowReaderPort } from "./application/ports/follow.reader.port.js";
+export { FriendCountReaderPort } from "./application/ports/friend-count.reader.port.js";
 export {
   FriendshipEstablisherPort,
   type FriendshipEstablishment,

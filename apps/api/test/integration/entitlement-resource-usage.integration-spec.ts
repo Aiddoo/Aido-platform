@@ -4,15 +4,9 @@ import { eq } from "drizzle-orm";
 
 import { GetEntitlementSnapshotUseCase } from "#api/modules/access/entitlements/application/use-cases/get-entitlement-snapshot.use-case";
 import { CreateTodoCategoryUseCase } from "#api/modules/planning/categories/application/use-cases/create-todo-category.use-case";
-import {
-  TODO_CATEGORY_COUNT_READER,
-  type TodoCategoryCountReaderPort,
-} from "#api/modules/planning/categories/planning-categories.public";
+import { TodoCategoryCountReaderPort } from "#api/modules/planning/categories/planning-categories.public";
 import { SendFriendRequestUseCase } from "#api/modules/social/friends/application/use-cases/send-friend-request.use-case";
-import {
-  FRIEND_COUNT_READER,
-  type FriendCountReaderPort,
-} from "#api/modules/social/friends/social-friends.public";
+import { FriendCountReaderPort } from "#api/modules/social/friends/social-friends.public";
 import { follow, resourceBonus, todoCategory, user } from "#api/platform/database/schema/index";
 import { FollowFixture, UserFixture } from "#test/fixtures/index";
 
@@ -35,8 +29,8 @@ describe("권한 스냅샷의 친구·카테고리 개수는 한도 검사와 �
 
   beforeAll(async () => {
     context = await createE2eApp();
-    categoryCountReader = context.module.get(TODO_CATEGORY_COUNT_READER);
-    friendCountReader = context.module.get(FRIEND_COUNT_READER);
+    categoryCountReader = context.module.get(TodoCategoryCountReaderPort);
+    friendCountReader = context.module.get(FriendCountReaderPort);
     snapshot = context.module.get(GetEntitlementSnapshotUseCase);
   });
 

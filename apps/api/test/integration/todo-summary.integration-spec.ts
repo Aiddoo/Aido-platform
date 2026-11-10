@@ -19,7 +19,7 @@ import { Test, type TestingModule } from "@nestjs/testing";
  */
 import { vi } from "vitest";
 
-import { USER_STREAK_ACCESS } from "#api/modules/identity/identity-settings.public";
+import { UserStreakAccessPort } from "#api/modules/identity/identity-settings.public";
 import { CatchUpTodoSeriesUseCase } from "#api/modules/planning/todo-series/application/use-cases/catch-up-todo-series.use-case";
 import { StreakPort } from "#api/modules/planning/todos/application/ports/streak.port";
 import { TodoReadRepositoryPort } from "#api/modules/planning/todos/application/ports/todo-read.repository.port";
@@ -53,7 +53,7 @@ describe("GetTodoSummaryUseCase 통합 테스트 (Mock DB)", () => {
         }),
         { provide: TodoReadRepositoryPort, useValue: mockReadRepository },
         { provide: StreakPort, useClass: StreakAdapter },
-        { provide: USER_STREAK_ACCESS, useValue: mockUserStreakAccess },
+        { provide: UserStreakAccessPort, useValue: mockUserStreakAccess },
         { provide: CatchUpTodoSeriesUseCase, useValue: { execute: vi.fn() } },
       ],
     }).compile();

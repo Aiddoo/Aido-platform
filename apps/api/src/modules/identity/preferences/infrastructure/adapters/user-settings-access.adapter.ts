@@ -4,8 +4,7 @@ import {
   type ConsentSeedInput,
   type FindMarketingReconfirmTargetsParams,
   type MarketingReconfirmTarget,
-  USER_CONSENT_REPOSITORY,
-  type UserConsentRepositoryPort,
+  UserConsentRepositoryPort,
 } from "../../application/ports/user-consent.repository.port.js";
 import type {
   UserNotificationSettingsAccessPort,
@@ -56,7 +55,7 @@ export class UserSettingsAccessAdapter
     upsertPushTimezoneUseCase: UpsertPushTimezoneUseCase,
     upsertPushLocaleUseCase: UpsertPushLocaleUseCase,
     updateMarketingPushConsentUseCase: UpdateMarketingPushConsentUseCase,
-    @Inject(USER_CONSENT_REPOSITORY)
+    @Inject(UserConsentRepositoryPort)
     consentRepository: Pick<
       UserConsentRepositoryPort,
       "findMarketingReconfirmTargets" | "claimMarketingReconfirm"

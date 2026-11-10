@@ -2,10 +2,7 @@ import type { SupportedLocale } from "@aido/api/vocabulary";
 import { Inject, Injectable } from "@nestjs/common";
 import { uniq } from "es-toolkit";
 
-import {
-  USER_PREFERENCE_READER,
-  type UserPreferenceReaderPort,
-} from "#api/modules/identity/identity-settings.public";
+import { UserPreferenceReaderPort } from "#api/modules/identity/identity-settings.public";
 import { resolveDeliveryTimezone } from "#api/shared/domain/date/utils/timezone";
 import { DEFAULT_LOCALE } from "#api/shared/domain/locale";
 
@@ -30,7 +27,7 @@ export class CachedNotificationRecipientPreferenceAdapter
 
   constructor(
     userSettings: UserNotificationSettingsPort,
-    @Inject(USER_PREFERENCE_READER)
+    @Inject(UserPreferenceReaderPort)
     preferenceReader: UserPreferenceReaderPort,
   ) {
     this.#userSettings = userSettings;

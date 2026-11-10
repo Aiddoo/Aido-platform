@@ -2,10 +2,8 @@ import { DEFAULT_LOCALE } from "@aido/api/vocabulary";
 import { Inject, Injectable } from "@nestjs/common";
 
 import {
-  NOTIFICATION_RECIPIENT_LOCALE_READER,
-  NOTIFICATION_RECIPIENT_TIMEZONE_READER,
-  type NotificationRecipientLocaleReaderPort,
-  type NotificationRecipientTimezoneReaderPort,
+  NotificationRecipientLocaleReaderPort,
+  NotificationRecipientTimezoneReaderPort,
 } from "#api/modules/notification/notification-delivery.public";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { TimeZone } from "#api/shared/domain/time/time-zone.vo";
@@ -20,9 +18,9 @@ export class NotificationBroadcastRecipientAdapter extends BroadcastRecipientRea
   readonly #timezoneReader: NotificationRecipientTimezoneReaderPort;
 
   constructor(
-    @Inject(NOTIFICATION_RECIPIENT_LOCALE_READER)
+    @Inject(NotificationRecipientLocaleReaderPort)
     localeReader: NotificationRecipientLocaleReaderPort,
-    @Inject(NOTIFICATION_RECIPIENT_TIMEZONE_READER)
+    @Inject(NotificationRecipientTimezoneReaderPort)
     timezoneReader: NotificationRecipientTimezoneReaderPort,
   ) {
     super();

@@ -7,10 +7,7 @@ import {
   WEATHER_FORECAST_READER,
   WeatherForecastReaderPort,
 } from "./application/ports/weather-forecast.reader.port.js";
-import {
-  WEATHER_REPORT_READER,
-  WeatherReportReaderPort,
-} from "./application/ports/weather-report.reader.port.js";
+import { WeatherReportReaderPort } from "./application/ports/weather-report.reader.port.js";
 import { WeatherController } from "./presentation/http/v1/weather.controller.js";
 import { WeatherV2Controller } from "./presentation/http/v2/weather.controller.js";
 import { weatherForecastsConfig } from "./weather-forecasts.config.js";
@@ -32,11 +29,6 @@ const WEATHER_VENDOR_TIMEOUT_MS = 10_000;
   ],
   controllers: [WeatherController, WeatherV2Controller],
   providers: [...WEATHER_FORECASTS_PROVIDERS],
-  exports: [
-    WeatherForecastReaderPort,
-    WeatherReportReaderPort,
-    WEATHER_FORECAST_READER,
-    WEATHER_REPORT_READER,
-  ],
+  exports: [WeatherForecastReaderPort, WeatherReportReaderPort, WEATHER_FORECAST_READER],
 })
 export class WeatherForecastsModule {}

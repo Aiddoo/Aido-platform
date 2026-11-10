@@ -1,9 +1,6 @@
 import { Module } from "@nestjs/common";
 
-import {
-  USER_BLOCK_READER,
-  UserBlockReaderPort,
-} from "./application/ports/user-block.reader.port.js";
+import { UserBlockReaderPort } from "./application/ports/user-block.reader.port.js";
 import { UserBlockController } from "./presentation/http/v1/user-block.controller.js";
 import { SOCIAL_BLOCKS_PROVIDERS } from "./social-blocks.providers.js";
 
@@ -11,6 +8,6 @@ import { SOCIAL_BLOCKS_PROVIDERS } from "./social-blocks.providers.js";
 @Module({
   controllers: [UserBlockController],
   providers: [...SOCIAL_BLOCKS_PROVIDERS],
-  exports: [UserBlockReaderPort, USER_BLOCK_READER],
+  exports: [UserBlockReaderPort],
 })
 export class SocialBlocksModule {}

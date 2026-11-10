@@ -9,10 +9,7 @@ import { GetTodoCategoryUseCase } from "#api/modules/planning/categories/applica
 import { ListTodoCategoriesUseCase } from "#api/modules/planning/categories/application/use-cases/list-todo-categories.use-case";
 import { UpdateTodoCategoryUseCase } from "#api/modules/planning/categories/application/use-cases/update-todo-category.use-case";
 import type { TodoCategory } from "#api/modules/planning/categories/domain/todo-category.aggregate";
-import {
-  TODO_CATEGORY_PROVISIONER,
-  type TodoCategoryProvisionerPort,
-} from "#api/modules/planning/categories/planning-categories.public";
+import { TodoCategoryProvisionerPort } from "#api/modules/planning/categories/planning-categories.public";
 import { createEntityId } from "#api/platform/database/entity-id";
 import { todo, user } from "#api/platform/database/schema/index";
 import { UNIT_OF_WORK, type UnitOfWorkPort } from "#api/shared/application/ports/index";
@@ -265,7 +262,9 @@ describe("Planning 카테고리 상태·조회·트랜잭션 (실제 PostgreSQL)
   it("공개 기본 카테고리 provisioner도 상위 transaction rollback에 참여한다", async () => {
     // Given
     const unitOfWork = context.module.get<UnitOfWorkPort>(UNIT_OF_WORK);
-    const provisioner = context.module.get<TodoCategoryProvisionerPort>(TODO_CATEGORY_PROVISIONER);
+    const provisioner = context.module.get<TodoCategoryProvisionerPort>(
+      TodoCategoryProvisionerPort,
+    );
     const failure = new Error("rollback-default-categories");
 
     // When
@@ -286,7 +285,9 @@ describe("Planning 카테고리 상태·조회·트랜잭션 (실제 PostgreSQL)
   ] as const)("기본 카테고리 이름은 $why로 만든다", async ({ locale, names }) => {
     // Given
     const unitOfWork = context.module.get<UnitOfWorkPort>(UNIT_OF_WORK);
-    const provisioner = context.module.get<TodoCategoryProvisionerPort>(TODO_CATEGORY_PROVISIONER);
+    const provisioner = context.module.get<TodoCategoryProvisionerPort>(
+      TodoCategoryProvisionerPort,
+    );
 
     // When
     await unitOfWork.run(() => provisioner.seed(userId, locale));

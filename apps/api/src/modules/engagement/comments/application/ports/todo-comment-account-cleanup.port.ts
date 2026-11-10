@@ -1,6 +1,3 @@
-// 옛 Symbol 토큰. identity가 클래스 토큰으로 옮길 때까지 같은 인스턴스 별칭으로 남긴다
-export const TODO_COMMENT_ACCOUNT_CLEANUP = Symbol("TODO_COMMENT_ACCOUNT_CLEANUP");
-
 export interface TodoCommentAccountCleanupResult {
   readonly affectedTodoIds: readonly number[];
 }
