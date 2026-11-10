@@ -4,7 +4,7 @@ import { vi } from "vitest";
 import { AUTH_CREDENTIAL_TIME } from "#test/fixtures/auth-credential.fixture";
 import { createAuthOAuthFixture } from "#test/fixtures/auth-oauth.fixture";
 
-import { StartOAuthAuthorization } from "./start-oauth-authorization.use-case.js";
+import { StartOAuthAuthorizationUseCase } from "./start-oauth-authorization.use-case.js";
 
 describe("StartOAuthAuthorization — 허용된 복귀 주소와 OAuth state 저장", () => {
   beforeEach(() => {
@@ -14,11 +14,11 @@ describe("StartOAuthAuthorization — 허용된 복귀 주소와 OAuth state 저
   afterEach(() => vi.useRealTimers());
 
   it.each(["GOOGLE", "KAKAO", "NAVER"] satisfies Array<
-    Parameters<StartOAuthAuthorization["execute"]>[0]["provider"]
+    Parameters<StartOAuthAuthorizationUseCase["execute"]>[0]["provider"]
   >)("%s 연결 요청의 actor와 복귀 주소를 저장한다", async (provider) => {
     // Given
     const fixture = createAuthOAuthFixture(provider);
-    const useCase = new StartOAuthAuthorization({
+    const useCase = new StartOAuthAuthorizationUseCase({
       ...fixture,
       configService: { isDevelopment: false },
     });
@@ -80,7 +80,7 @@ describe("StartOAuthAuthorization — 허용된 복귀 주소와 OAuth state 저
     async ({ uri, development, expected }) => {
       // Given
       const fixture = createAuthOAuthFixture();
-      const useCase = new StartOAuthAuthorization({
+      const useCase = new StartOAuthAuthorizationUseCase({
         ...fixture,
         configService: { isDevelopment: development },
       });
@@ -94,7 +94,7 @@ describe("StartOAuthAuthorization — 허용된 복귀 주소와 OAuth state 저
   it("등록되지 않은 제공자는 state를 저장하기 전에 기존 지원 오류로 거부한다", async () => {
     // Given
     const fixture = createAuthOAuthFixture();
-    const useCase = new StartOAuthAuthorization({
+    const useCase = new StartOAuthAuthorizationUseCase({
       ...fixture,
       configService: { isDevelopment: false },
     });

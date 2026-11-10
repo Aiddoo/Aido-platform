@@ -9,7 +9,7 @@ import type {
 } from "../ports/auth-persistence.port.js";
 import type { VerificationService } from "./issue-verification-code.use-case.js";
 
-export interface RequestPasswordSetupCodeInput {
+export interface RequestPasswordSetupCodeCommand {
   readonly userId: string;
 }
 
@@ -19,14 +19,14 @@ interface RequestPasswordSetupCodeDependencies {
   readonly verificationService: Pick<VerificationService, "createAndSendPasswordSetup">;
 }
 
-export class RequestPasswordSetupCode {
+export class RequestPasswordSetupCodeUseCase {
   readonly #dependencies: RequestPasswordSetupCodeDependencies;
 
   constructor(dependencies: RequestPasswordSetupCodeDependencies) {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: RequestPasswordSetupCodeInput): Promise<{ message: string }> {
+  async execute(input: RequestPasswordSetupCodeCommand): Promise<{ message: string }> {
     const { userId } = input;
     const user = await this.#dependencies.userRepository.findById(userId);
     if (user == null) {

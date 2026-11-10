@@ -3,8 +3,8 @@ import { sql } from "drizzle-orm";
 import { vi } from "vitest";
 
 import { VerificationService } from "#api/modules/identity/auth/application/use-cases/issue-verification-code.use-case";
-import { ResetPassword } from "#api/modules/identity/auth/application/use-cases/reset-password.use-case";
-import { PasswordService } from "#api/modules/identity/auth/infrastructure/adapters/argon2-password-hasher.adapter";
+import { ResetPasswordUseCase } from "#api/modules/identity/auth/application/use-cases/reset-password.use-case";
+import { Argon2PasswordHasherAdapter } from "#api/modules/identity/auth/infrastructure/adapters/argon2-password-hasher.adapter";
 import { NodeVerificationCodeSecurityAdapter } from "#api/modules/identity/auth/infrastructure/adapters/node-verification-code-security.adapter";
 import { DrizzleAccountRepository } from "#api/modules/identity/auth/infrastructure/persistence/drizzle-account.repository";
 import { DrizzleVerificationRepository } from "#api/modules/identity/auth/infrastructure/persistence/drizzle-verification.repository";
@@ -31,8 +31,8 @@ describe("인증 소비와 credential 저장 (실제 PostgreSQL)", () => {
   let repository: DrizzleVerificationRepository;
   let accountRepository: DrizzleAccountRepository;
   let service: VerificationService;
-  let passwordService: PasswordService;
-  let resetPassword: ResetPassword;
+  let passwordService: Argon2PasswordHasherAdapter;
+  let resetPassword: ResetPasswordUseCase;
   let unitOfWork: UnitOfWorkPort;
   let userId: string;
   const email = "verification-owner@example.com";
@@ -44,8 +44,8 @@ describe("인증 소비와 credential 저장 (실제 PostgreSQL)", () => {
     repository = module.get(DrizzleVerificationRepository);
     accountRepository = module.get(DrizzleAccountRepository);
     service = module.get(VerificationService);
-    passwordService = module.get(PasswordService);
-    resetPassword = module.get(ResetPassword);
+    passwordService = module.get(Argon2PasswordHasherAdapter);
+    resetPassword = module.get(ResetPasswordUseCase);
     unitOfWork = module.get(UNIT_OF_WORK);
   });
 

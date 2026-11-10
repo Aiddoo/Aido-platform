@@ -11,7 +11,7 @@ import { ApplicationException } from "#api/shared/application/application.except
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
 
-import { IdentityLogEvent } from "../auth.log-events.js";
+import { AuthLogEvent } from "../auth.log-events.js";
 import type { AuthCachePort } from "../ports/auth-collaboration.port.js";
 import type { AuthPasswordHasherPort } from "../ports/auth-crypto.port.js";
 import type {
@@ -22,7 +22,7 @@ import type {
 } from "../ports/auth-persistence.port.js";
 import type { SessionPushDeviceReleaserPort } from "../ports/session-push-device-releaser.port.js";
 
-export interface ChangePasswordInput {
+export interface ChangePasswordCommand {
   readonly userId: string;
   readonly currentPassword: string;
   readonly newPassword: string;
@@ -45,14 +45,14 @@ interface ChangePasswordDependencies {
   readonly logger: ApplicationLoggerPort;
 }
 
-export class ChangePassword {
+export class ChangePasswordUseCase {
   readonly #dependencies: ChangePasswordDependencies;
 
   constructor(dependencies: ChangePasswordDependencies) {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: ChangePasswordInput): Promise<{ message: string }> {
+  async execute(input: ChangePasswordCommand): Promise<{ message: string }> {
     const { userId, currentPassword, newPassword, metadata, currentSessionId } = input;
     const ip = metadata?.ip ?? AUTH_DEFAULTS.UNKNOWN_IP;
     const userAgent = metadata?.userAgent ?? AUTH_DEFAULTS.UNKNOWN_USER_AGENT;
@@ -105,7 +105,7 @@ export class ChangePassword {
       ),
     );
     await this.#dependencies.pushDevices.releaseSessions(revokedSessionIds);
-    this.#dependencies.logger.log({ event: IdentityLogEvent.PASSWORD_CHANGED, userId });
+    this.#dependencies.logger.log({ event: AuthLogEvent.PASSWORD_CHANGED, userId });
 
     return { message: "비밀번호가 변경되었습니다." };
   }

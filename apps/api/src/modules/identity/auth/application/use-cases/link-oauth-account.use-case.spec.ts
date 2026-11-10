@@ -4,7 +4,7 @@ import { vi } from "vitest";
 import { AUTH_CREDENTIAL_TIME } from "#test/fixtures/auth-credential.fixture";
 import { createAuthOAuthFixture } from "#test/fixtures/auth-oauth.fixture";
 
-import { LinkOAuthAccount } from "./link-oauth-account.use-case.js";
+import { LinkOAuthAccountUseCase } from "./link-oauth-account.use-case.js";
 
 describe("LinkOAuthAccount — 검증된 토큰으로 소셜 신원 연결", () => {
   beforeEach(() => {
@@ -24,7 +24,7 @@ describe("LinkOAuthAccount — 검증된 토큰으로 소셜 신원 연결", () 
       return result;
     };
     // When
-    const result = await new LinkOAuthAccount(fixture).execute({
+    const result = await new LinkOAuthAccountUseCase(fixture).execute({
       userId: fixture.user.id,
       provider: "APPLE",
       idToken: "id-secret",
@@ -54,12 +54,12 @@ describe("LinkOAuthAccount — 검증된 토큰으로 소셜 신원 연결", () 
   it("accessToken으로 연결한 계정을 다시 연결하면 캐시·감사 기록을 추가로 변경하지 않는다", async () => {
     // Given
     const fixture = createAuthOAuthFixture("KAKAO");
-    const useCase = new LinkOAuthAccount(fixture);
+    const useCase = new LinkOAuthAccountUseCase(fixture);
     const input = {
       userId: fixture.user.id,
       provider: "KAKAO",
       accessToken: "access-secret",
-    } satisfies Parameters<LinkOAuthAccount["execute"]>[0];
+    } satisfies Parameters<LinkOAuthAccountUseCase["execute"]>[0];
     await useCase.execute(input);
     fixture.cacheService.userIds.add(fixture.user.id);
     // When
@@ -77,7 +77,7 @@ describe("LinkOAuthAccount — 검증된 토큰으로 소셜 신원 연결", () 
     // Given
     const fixture = createAuthOAuthFixture();
     // When
-    const pending = new LinkOAuthAccount(fixture).execute({
+    const pending = new LinkOAuthAccountUseCase(fixture).execute({
       userId: fixture.user.id,
       provider: "GOOGLE",
       idToken,
@@ -93,7 +93,7 @@ describe("LinkOAuthAccount — 검증된 토큰으로 소셜 신원 연결", () 
     // Given
     const fixture = createAuthOAuthFixture();
     // When
-    const pending = new LinkOAuthAccount(fixture).execute({
+    const pending = new LinkOAuthAccountUseCase(fixture).execute({
       userId: fixture.user.id,
       provider: "APPLE",
       idToken: "token",
@@ -110,7 +110,7 @@ describe("LinkOAuthAccount — 검증된 토큰으로 소셜 신원 연결", () 
     const providerError = new Error("공급자 오류");
     fixture.identityProvider.verificationError = providerError;
     // When
-    const pending = new LinkOAuthAccount(fixture).execute({
+    const pending = new LinkOAuthAccountUseCase(fixture).execute({
       userId: fixture.user.id,
       provider: "GOOGLE",
       idToken: "token",

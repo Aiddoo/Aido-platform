@@ -15,11 +15,11 @@ import { ApiHeader, ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import { Throttle } from "@nestjs/throttler";
 import type { Request } from "express";
 
-import { DeleteAccount } from "#api/modules/identity/auth/application/use-cases/delete-account.use-case";
-import { GetCurrentUser } from "#api/modules/identity/auth/application/use-cases/get-current-user.use-case";
-import { ListLinkedAccounts } from "#api/modules/identity/auth/application/use-cases/list-linked-accounts.use-case";
-import { UnlinkOAuthAccount } from "#api/modules/identity/auth/application/use-cases/unlink-oauth-account.use-case";
-import { UpdateProfile } from "#api/modules/identity/auth/application/use-cases/update-profile.use-case";
+import { DeleteAccountUseCase } from "#api/modules/identity/auth/application/use-cases/delete-account.use-case";
+import { GetCurrentUserUseCase } from "#api/modules/identity/auth/application/use-cases/get-current-user.use-case";
+import { ListLinkedAccountsUseCase } from "#api/modules/identity/auth/application/use-cases/list-linked-accounts.use-case";
+import { UnlinkOAuthAccountUseCase } from "#api/modules/identity/auth/application/use-cases/unlink-oauth-account.use-case";
+import { UpdateProfileUseCase } from "#api/modules/identity/auth/application/use-cases/update-profile.use-case";
 import {
   CurrentUser,
   type CurrentUserPayload,
@@ -42,33 +42,35 @@ import {
 } from "#api/platform/http/swagger/index";
 import { ThrottleByUser } from "#api/platform/throttle/index";
 
-import { DeleteAccountDto, UnlinkAccountDto, UpdateProfileDto } from "./auth-request.dto.js";
 import { extractMetadata } from "./auth-request.mapper.js";
+import { AUTH_THROTTLE } from "./auth-throttle.constants.js";
 import {
   CurrentUserDto,
+  DeleteAccountDto,
   DeleteAccountResponseDto,
   LinkedAccountsResponseDto,
   MessageResponseDto,
+  UnlinkAccountDto,
+  UpdateProfileDto,
   UpdateProfileResponseDto,
-} from "./auth-response.dto.js";
-import { AUTH_THROTTLE } from "./auth-throttle.constants.js";
+} from "./auth.dto.js";
 
 @ApiTags(SWAGGER_TAGS.USER_AUTH)
 @ApiBearerAuth()
 @Controller("auth")
 export class AccountController {
-  readonly #getCurrentUserQuery: GetCurrentUser;
-  readonly #updateProfileUseCase: UpdateProfile;
-  readonly #listLinkedAccountsQuery: ListLinkedAccounts;
-  readonly #unlinkOAuthAccountUseCase: UnlinkOAuthAccount;
-  readonly #deleteAccountUseCase: DeleteAccount;
+  readonly #getCurrentUserQuery: GetCurrentUserUseCase;
+  readonly #updateProfileUseCase: UpdateProfileUseCase;
+  readonly #listLinkedAccountsQuery: ListLinkedAccountsUseCase;
+  readonly #unlinkOAuthAccountUseCase: UnlinkOAuthAccountUseCase;
+  readonly #deleteAccountUseCase: DeleteAccountUseCase;
 
   constructor(
-    getCurrentUserQuery: GetCurrentUser,
-    updateProfileUseCase: UpdateProfile,
-    listLinkedAccountsQuery: ListLinkedAccounts,
-    unlinkOAuthAccountUseCase: UnlinkOAuthAccount,
-    deleteAccountUseCase: DeleteAccount,
+    getCurrentUserQuery: GetCurrentUserUseCase,
+    updateProfileUseCase: UpdateProfileUseCase,
+    listLinkedAccountsQuery: ListLinkedAccountsUseCase,
+    unlinkOAuthAccountUseCase: UnlinkOAuthAccountUseCase,
+    deleteAccountUseCase: DeleteAccountUseCase,
   ) {
     this.#getCurrentUserQuery = getCurrentUserQuery;
     this.#updateProfileUseCase = updateProfileUseCase;

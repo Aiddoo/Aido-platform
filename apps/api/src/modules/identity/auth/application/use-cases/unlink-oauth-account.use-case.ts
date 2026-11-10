@@ -4,7 +4,7 @@ import type { AccountProvider } from "#api/modules/identity/auth/domain/identity
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
 
-import { IdentityLogEvent } from "../auth.log-events.js";
+import { AuthLogEvent } from "../auth.log-events.js";
 import type { AuthCachePort } from "../ports/auth-collaboration.port.js";
 import type {
   AuthAccountRepositoryPort,
@@ -13,7 +13,7 @@ import type {
 } from "../ports/auth-persistence.port.js";
 import type { RequestMetadata } from "../read-models/auth-result.read-model.js";
 
-export interface UnlinkOAuthAccountInput {
+export interface UnlinkOAuthAccountCommand {
   readonly userId: string;
   readonly provider: AccountProvider;
   readonly metadata?: RequestMetadata;
@@ -28,14 +28,14 @@ interface UnlinkOAuthAccountDependencies {
   readonly logger: ApplicationLoggerPort;
 }
 
-export class UnlinkOAuthAccount {
+export class UnlinkOAuthAccountUseCase {
   readonly #dependencies: UnlinkOAuthAccountDependencies;
 
   constructor(dependencies: UnlinkOAuthAccountDependencies) {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: UnlinkOAuthAccountInput): Promise<{ message: string }> {
+  async execute(input: UnlinkOAuthAccountCommand): Promise<{ message: string }> {
     const { userId, provider, metadata } = input;
     await this.#dependencies.unitOfWork.run(async () => {
       await this.#dependencies.userRepository.findByIdForUpdate(userId);
@@ -52,7 +52,7 @@ export class UnlinkOAuthAccount {
     });
     await this.#dependencies.cacheService.invalidateUserProfile(userId);
     this.#dependencies.logger.log({
-      event: IdentityLogEvent.OAUTH_ACCOUNT_UNLINKED,
+      event: AuthLogEvent.OAUTH_ACCOUNT_UNLINKED,
       userId,
       provider,
     });

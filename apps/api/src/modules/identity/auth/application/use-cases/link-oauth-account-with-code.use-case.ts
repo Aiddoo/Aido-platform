@@ -6,16 +6,16 @@ import type { ApplicationLoggerPort } from "#api/shared/application/ports/applic
 import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
 import { now } from "#api/shared/domain/date/utils/core";
 
-import { IdentityLogEvent } from "../auth.log-events.js";
+import { AuthLogEvent } from "../auth.log-events.js";
 import type { AuthCachePort } from "../ports/auth-collaboration.port.js";
 import type {
   AuthOAuthStateRepositoryPort,
   AuthUserLockRepositoryPort,
 } from "../ports/auth-persistence.port.js";
 import type { RequestMetadata } from "../read-models/auth-result.read-model.js";
-import type { LinkOAuthIdentity } from "./link-oauth-identity.use-case.js";
+import type { LinkOAuthIdentityUseCase } from "./link-oauth-identity.use-case.js";
 
-export interface LinkOAuthAccountWithCodeInput {
+export interface LinkOAuthAccountWithCodeCommand {
   readonly userId: string;
   readonly code: string;
   readonly metadata?: RequestMetadata;
@@ -27,20 +27,20 @@ interface LinkOAuthAccountWithCodeDependencies {
     AuthOAuthStateRepositoryPort,
     "findByExchangeCode" | "consumeExchangeCode"
   >;
-  readonly linkOAuthIdentity: Pick<LinkOAuthIdentity, "execute">;
+  readonly linkOAuthIdentity: Pick<LinkOAuthIdentityUseCase, "execute">;
   readonly unitOfWork: UnitOfWorkPort;
   readonly cacheService: Pick<AuthCachePort, "invalidateUserProfile">;
   readonly logger: ApplicationLoggerPort;
 }
 
-export class LinkOAuthAccountWithCode {
+export class LinkOAuthAccountWithCodeUseCase {
   readonly #dependencies: LinkOAuthAccountWithCodeDependencies;
 
   constructor(dependencies: LinkOAuthAccountWithCodeDependencies) {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: LinkOAuthAccountWithCodeInput): Promise<{ message: string }> {
+  async execute(input: LinkOAuthAccountWithCodeCommand): Promise<{ message: string }> {
     const result = await this.#dependencies.unitOfWork.run(async () => {
       await this.#dependencies.userRepository.findByIdForUpdate(input.userId);
       const at = now();
@@ -80,7 +80,7 @@ export class LinkOAuthAccountWithCode {
     if (result.linked) {
       await this.#dependencies.cacheService.invalidateUserProfile(input.userId);
       this.#dependencies.logger.log({
-        event: IdentityLogEvent.OAUTH_ACCOUNT_LINKED,
+        event: AuthLogEvent.OAUTH_ACCOUNT_LINKED,
         userId: input.userId,
       });
     }
@@ -89,7 +89,7 @@ export class LinkOAuthAccountWithCode {
 
   #invalidCode(): ApplicationException {
     this.#dependencies.logger.warn({
-      event: IdentityLogEvent.OAUTH_EXCHANGE_REJECTED,
+      event: AuthLogEvent.OAUTH_EXCHANGE_REJECTED,
       mode: "link",
     });
     return new ApplicationException(ErrorCode.USER_0602);

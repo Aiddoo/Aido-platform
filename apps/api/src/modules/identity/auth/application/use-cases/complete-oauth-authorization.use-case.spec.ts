@@ -5,8 +5,8 @@ import { AUTH_CREDENTIAL_TIME } from "#test/fixtures/auth-credential.fixture";
 import { createAuthOAuthFixture } from "#test/fixtures/auth-oauth.fixture";
 import { OAuthStateFixture } from "#test/fixtures/oauth-state.fixture";
 
-import { CompleteOAuthAuthorization } from "./complete-oauth-authorization.use-case.js";
-import { LoginWithOAuthToken } from "./login-with-oauth-token.use-case.js";
+import { CompleteOAuthAuthorizationUseCase } from "./complete-oauth-authorization.use-case.js";
+import { LoginWithOAuthTokenUseCase } from "./login-with-oauth-token.use-case.js";
 
 describe("CompleteOAuthAuthorization — 코드 교환부터 실제 로그인까지", () => {
   beforeEach(() => {
@@ -16,22 +16,22 @@ describe("CompleteOAuthAuthorization — 코드 교환부터 실제 로그인까
   afterEach(() => vi.useRealTimers());
 
   function given(
-    provider: Parameters<CompleteOAuthAuthorization["execute"]>[0]["provider"] = "GOOGLE",
+    provider: Parameters<CompleteOAuthAuthorizationUseCase["execute"]>[0]["provider"] = "GOOGLE",
     overrides: Parameters<typeof OAuthStateFixture.create>[0] = {},
   ) {
     const fixture = createAuthOAuthFixture(provider, { empty: true });
     const state = OAuthStateFixture.create({ provider, ...overrides });
     fixture.oauthStateRepository.states.set(state.id, state);
-    const loginWithOAuthToken = new LoginWithOAuthToken(fixture);
+    const loginWithOAuthToken = new LoginWithOAuthTokenUseCase(fixture);
     return {
       ...fixture,
       state,
-      useCase: new CompleteOAuthAuthorization({ ...fixture, loginWithOAuthToken }),
+      useCase: new CompleteOAuthAuthorizationUseCase({ ...fixture, loginWithOAuthToken }),
     };
   }
 
   it.each(["GOOGLE", "KAKAO", "NAVER"] satisfies Array<
-    Parameters<CompleteOAuthAuthorization["execute"]>[0]["provider"]
+    Parameters<CompleteOAuthAuthorizationUseCase["execute"]>[0]["provider"]
   >)(
     "%s: 공급자 교환·검증을 각 한 번 실행하고 실제 세션과 로그인 결과를 저장한다",
     async (provider) => {

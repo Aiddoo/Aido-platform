@@ -5,7 +5,7 @@ import type { ApplicationLoggerPort } from "#api/shared/application/ports/applic
 
 import { AuthSession } from "../../domain/auth-session.aggregate.js";
 import { AUTH_DEFAULTS, REVOKE_REASON, SECURITY_EVENT } from "../../domain/auth.constants.js";
-import { IdentityLogEvent } from "../auth.log-events.js";
+import { AuthLogEvent } from "../auth.log-events.js";
 import type { AuthCachePort } from "../ports/auth-collaboration.port.js";
 import type {
   AuthSecurityLogRepositoryPort,
@@ -14,7 +14,7 @@ import type {
 import type { SessionPushDeviceReleaserPort } from "../ports/session-push-device-releaser.port.js";
 import type { RequestMetadata } from "../read-models/auth-result.read-model.js";
 
-export interface LogoutInput {
+export interface LogoutCommand {
   readonly userId: string;
   readonly sessionId: string;
   readonly metadata?: RequestMetadata;
@@ -28,14 +28,14 @@ interface LogoutDependencies {
   readonly logger: ApplicationLoggerPort;
 }
 
-export class Logout {
+export class LogoutUseCase {
   readonly #dependencies: LogoutDependencies;
 
   constructor(dependencies: LogoutDependencies) {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: LogoutInput): Promise<{ message: string }> {
+  async execute(input: LogoutCommand): Promise<{ message: string }> {
     const session = await this.#dependencies.sessionRepository.findById(input.sessionId);
     if (session == null) {
       throw new ApplicationException(ErrorCode.SESSION_0701, { sessionId: undefined });
@@ -59,7 +59,7 @@ export class Logout {
       userAgent: input.metadata?.userAgent ?? AUTH_DEFAULTS.UNKNOWN_USER_AGENT,
     });
     this.#dependencies.logger.log({
-      event: IdentityLogEvent.SESSION_LOGGED_OUT,
+      event: AuthLogEvent.SESSION_LOGGED_OUT,
       userId: input.userId,
       sessionId: input.sessionId,
     });

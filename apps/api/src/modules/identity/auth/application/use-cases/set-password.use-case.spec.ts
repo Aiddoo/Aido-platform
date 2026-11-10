@@ -8,8 +8,8 @@ import {
 } from "#test/fixtures/auth-credential.fixture";
 import { SessionFixture, VerificationFixture } from "#test/fixtures/session.fixture";
 
-import { GetCurrentUser } from "./get-current-user.use-case.js";
-import { SetPassword } from "./set-password.use-case.js";
+import { GetCurrentUserUseCase } from "./get-current-user.use-case.js";
+import { SetPasswordUseCase } from "./set-password.use-case.js";
 
 describe("SetPassword — 소셜 세션을 유지하는 Credential 계정 추가", () => {
   const code = "123456";
@@ -28,7 +28,7 @@ describe("SetPassword — 소셜 세션을 유지하는 Credential 계정 추가
       token: fixture.verificationCodeSecurity.hash(code),
     });
     fixture.verificationRepository.verifications.set(verification.id, verification);
-    return { ...fixture, verification, useCase: new SetPassword(fixture) };
+    return { ...fixture, verification, useCase: new SetPasswordUseCase(fixture) };
   }
 
   it("설정 코드를 소비해 Credential 계정을 추가하고 기존 세션·최신 프로필을 유지한다", async () => {
@@ -37,7 +37,7 @@ describe("SetPassword — 소셜 세션을 유지하는 Credential 계정 추가
     const session = SessionFixture.create({ userId: fixture.user.id });
     fixture.sessionRepository.sessions.set(session.id, session);
     fixture.cacheService.sessionIds.add(session.id);
-    const currentUser = new GetCurrentUser(fixture);
+    const currentUser = new GetCurrentUserUseCase(fixture);
     expect(
       (
         await currentUser.execute({

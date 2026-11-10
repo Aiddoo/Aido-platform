@@ -12,7 +12,7 @@ import {
 } from "#test/mocks/ports/auth-session.stub";
 
 import { REVOKE_REASON, SECURITY_EVENT } from "../../domain/auth.constants.js";
-import { RevokeSession } from "./revoke-session.use-case.js";
+import { RevokeSessionUseCase } from "./revoke-session.use-case.js";
 
 const currentTime = new Date("2026-12-31T23:59:00Z");
 const userId = "user-123";
@@ -30,7 +30,7 @@ describe("RevokeSession — 지정한 기기의 세션 종료", () => {
     const cacheService = new StubAuthSessionCache([sessionId, "current-session"]);
     const securityLogRepository = new StubAuthSecurityLogRepository();
     const pushDevices = new StubSessionPushDeviceReleaser();
-    const useCase = new RevokeSession({
+    const useCase = new RevokeSessionUseCase({
       pushDevices,
       sessionRepository,
       cacheService,

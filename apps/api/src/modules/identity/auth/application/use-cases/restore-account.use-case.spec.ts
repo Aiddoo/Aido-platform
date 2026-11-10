@@ -7,7 +7,7 @@ import { StubAuthSecurityLogRepository } from "#test/mocks/ports/auth-session.st
 
 import { AUTH_DEFAULTS, SECURITY_EVENT } from "../../domain/auth.constants.js";
 import { IdentityUser } from "../../domain/identity-user.aggregate.js";
-import { RestoreAccount } from "./restore-account.use-case.js";
+import { RestoreAccountUseCase } from "./restore-account.use-case.js";
 
 const currentTime = new Date("2026-12-31T23:59:00Z");
 const deletedAt = new Date("2026-12-02T23:59:00Z");
@@ -30,7 +30,7 @@ describe("RestoreAccount — 탈퇴 유예 기간 내 계정 복구", () => {
     });
     const userRepository = new StubAccountLifecycleRepository([record]);
     const securityLogRepository = new StubAuthSecurityLogRepository();
-    const useCase = new RestoreAccount({ userRepository, securityLogRepository });
+    const useCase = new RestoreAccountUseCase({ userRepository, securityLogRepository });
     return {
       useCase,
       userRepository,

@@ -1,5 +1,6 @@
-import { LOGIN_ATTEMPT, type LoginInput as LoginBody } from "@aido/api";
+import { type LoginInput as LoginBody } from "@aido/api/contracts/auth";
 import { ErrorCode } from "@aido/api/errors";
+import { LOGIN_ATTEMPT } from "@aido/api/vocabulary";
 
 import type {
   LoginResult,
@@ -19,7 +20,7 @@ import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
 import { subtractMinutes } from "#api/shared/domain/date/utils/arithmetic";
 import { now } from "#api/shared/domain/date/utils/core";
 
-import { IdentityLogEvent } from "../auth.log-events.js";
+import { AuthLogEvent } from "../auth.log-events.js";
 import type { AuthCachePort } from "../ports/auth-collaboration.port.js";
 import type { AuthPasswordHasherPort } from "../ports/auth-crypto.port.js";
 import type {
@@ -28,10 +29,12 @@ import type {
   AuthLoginAttemptRepositoryPort,
   AuthSecurityLogRepositoryPort,
 } from "../ports/auth-persistence.port.js";
-import type { IssueLogin } from "./issue-login.use-case.js";
-import type { RestoreAccount } from "./restore-account.use-case.js";
+import type { IssueLoginUseCase } from "./issue-login.use-case.js";
+import type { RestoreAccountUseCase } from "./restore-account.use-case.js";
 
-export type LoginWithPasswordInput = Readonly<LoginBody> & { readonly metadata?: RequestMetadata };
+export type LoginWithPasswordCommand = Readonly<LoginBody> & {
+  readonly metadata?: RequestMetadata;
+};
 
 interface LoginWithPasswordDependencies {
   readonly userRepository: Pick<AuthUserRepositoryPort, "findByEmail">;
@@ -45,24 +48,24 @@ interface LoginWithPasswordDependencies {
   >;
   readonly passwordService: Pick<AuthPasswordHasherPort, "verify" | "needsRehash" | "hash">;
   readonly securityLogRepository: Pick<AuthSecurityLogRepositoryPort, "create">;
-  readonly issueLoginUseCase: Pick<IssueLogin, "execute">;
-  readonly restoreAccount: Pick<RestoreAccount, "execute">;
+  readonly issueLoginUseCase: Pick<IssueLoginUseCase, "execute">;
+  readonly restoreAccount: Pick<RestoreAccountUseCase, "execute">;
   readonly cacheService: Pick<AuthCachePort, "invalidateUserProfile">;
   readonly unitOfWork: UnitOfWorkPort;
   readonly logger: ApplicationLoggerPort;
 }
 
-export class LoginWithPassword {
+export class LoginWithPasswordUseCase {
   readonly #dependencies: LoginWithPasswordDependencies;
 
   constructor(dependencies: LoginWithPasswordDependencies) {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: LoginWithPasswordInput): Promise<LoginResult> {
+  async execute(input: LoginWithPasswordCommand): Promise<LoginResult> {
     const metadata = input.metadata;
     const { password, deviceName } = input;
-    const email = Email.of(input.email).value;
+    const email = Email.create(input.email).value;
     const ip = metadata?.ip ?? AUTH_DEFAULTS.UNKNOWN_IP;
     const userAgent = metadata?.userAgent ?? AUTH_DEFAULTS.UNKNOWN_USER_AGENT;
     const attemptContext = { email, ipAddress: ip, userAgent };
@@ -144,14 +147,14 @@ export class LoginWithPassword {
         .then((updated) => {
           if (updated) {
             this.#dependencies.logger.debug({
-              event: IdentityLogEvent.PASSWORD_REHASHED,
+              event: AuthLogEvent.PASSWORD_REHASHED,
               userId: user.id,
             });
           }
         })
         .catch((error: unknown) =>
           this.#dependencies.logger.error({
-            event: IdentityLogEvent.PASSWORD_REHASH_FAILED,
+            event: AuthLogEvent.PASSWORD_REHASH_FAILED,
             userId: user.id,
             errorType: error instanceof Error ? error.name : "unknown",
           }),
@@ -192,14 +195,14 @@ export class LoginWithPassword {
     if (needsRestore) {
       await this.#dependencies.cacheService.invalidateUserProfile(user.id);
       this.#dependencies.logger.log({
-        event: IdentityLogEvent.ACCOUNT_RESTORED,
+        event: AuthLogEvent.ACCOUNT_RESTORED,
         userId: user.id,
         provider: "CREDENTIAL",
       });
     }
 
     this.#dependencies.logger.log({
-      event: IdentityLogEvent.USER_LOGGED_IN,
+      event: AuthLogEvent.USER_LOGGED_IN,
       userId: user.id,
       provider: "CREDENTIAL",
     });

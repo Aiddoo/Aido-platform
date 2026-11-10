@@ -38,7 +38,7 @@ const JWT_AUDIENCE = "aido-app";
 
 // Access Token (15분) + Refresh Token (7일) 발급 및 검증, Token Rotation 지원
 @Injectable()
-export class TokenService {
+export class JwtTokenIssuerAdapter {
   readonly #jwtService: JwtService;
   readonly #configService: TypedConfigService;
 

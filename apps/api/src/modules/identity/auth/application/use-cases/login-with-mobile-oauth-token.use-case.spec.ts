@@ -3,8 +3,8 @@ import { vi } from "vitest";
 import { AUTH_CREDENTIAL_TIME } from "#test/fixtures/auth-credential.fixture";
 import { createAuthOAuthFixture } from "#test/fixtures/auth-oauth.fixture";
 
-import { LoginWithMobileOAuthToken } from "./login-with-mobile-oauth-token.use-case.js";
-import { LoginWithOAuthToken } from "./login-with-oauth-token.use-case.js";
+import { LoginWithMobileOAuthTokenUseCase } from "./login-with-mobile-oauth-token.use-case.js";
+import { LoginWithOAuthTokenUseCase } from "./login-with-oauth-token.use-case.js";
 
 describe("LoginWithMobileOAuthToken — 앱이 직접 보낸 소셜 로그인의 가입 알림", () => {
   beforeEach(() => {
@@ -19,9 +19,9 @@ describe("LoginWithMobileOAuthToken — 앱이 직접 보낸 소셜 로그인의
     const fixture = createAuthOAuthFixture("GOOGLE", options);
     return {
       ...fixture,
-      useCase: new LoginWithMobileOAuthToken({
+      useCase: new LoginWithMobileOAuthTokenUseCase({
         ...fixture,
-        loginWithOAuthToken: new LoginWithOAuthToken(fixture),
+        loginWithOAuthToken: new LoginWithOAuthTokenUseCase(fixture),
       }),
     };
   }

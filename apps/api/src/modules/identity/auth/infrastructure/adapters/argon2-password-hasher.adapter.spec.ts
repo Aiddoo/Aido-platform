@@ -1,5 +1,5 @@
 /**
- * PasswordService 단위 테스트
+ * Argon2PasswordHasherAdapter 단위 테스트
  *
  * @description
  * 비밀번호 해싱, 검증, 리해싱 필요 여부 판단 로직을 검증한다.
@@ -13,13 +13,13 @@
 
 import { TestBed } from "@suites/unit";
 
-import { PasswordService } from "#api/modules/identity/auth/infrastructure/adapters/argon2-password-hasher.adapter";
+import { Argon2PasswordHasherAdapter } from "#api/modules/identity/auth/infrastructure/adapters/argon2-password-hasher.adapter";
 
 describe("PasswordService — 비밀번호 서비스", () => {
-  let service: PasswordService;
+  let service: Argon2PasswordHasherAdapter;
 
   beforeEach(async () => {
-    const { unit } = await TestBed.solitary(PasswordService).compile();
+    const { unit } = await TestBed.solitary(Argon2PasswordHasherAdapter).compile();
 
     service = unit;
   });

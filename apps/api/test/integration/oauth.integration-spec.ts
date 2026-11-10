@@ -6,17 +6,17 @@ import { count, eq } from "drizzle-orm";
 import { vi } from "vitest";
 
 import type { OAuthIdentityProvider } from "#api/modules/identity/auth/application/ports/oauth-identity-provider.port";
-import { ExchangeOAuthCode } from "#api/modules/identity/auth/application/use-cases/exchange-oauth-code.use-case";
-import { GetOAuthRedirectUri } from "#api/modules/identity/auth/application/use-cases/get-oauth-redirect-uri.use-case";
-import { LinkOAuthAccount } from "#api/modules/identity/auth/application/use-cases/link-oauth-account.use-case";
-import { ListLinkedAccounts } from "#api/modules/identity/auth/application/use-cases/list-linked-accounts.use-case";
-import { LoginWithOAuthToken } from "#api/modules/identity/auth/application/use-cases/login-with-oauth-token.use-case";
-import { UnlinkOAuthAccount } from "#api/modules/identity/auth/application/use-cases/unlink-oauth-account.use-case";
+import { ExchangeOAuthCodeUseCase } from "#api/modules/identity/auth/application/use-cases/exchange-oauth-code.use-case";
+import { GetOAuthRedirectUriUseCase } from "#api/modules/identity/auth/application/use-cases/get-oauth-redirect-uri.use-case";
+import { LinkOAuthAccountUseCase } from "#api/modules/identity/auth/application/use-cases/link-oauth-account.use-case";
+import { ListLinkedAccountsUseCase } from "#api/modules/identity/auth/application/use-cases/list-linked-accounts.use-case";
+import { LoginWithOAuthTokenUseCase } from "#api/modules/identity/auth/application/use-cases/login-with-oauth-token.use-case";
+import { UnlinkOAuthAccountUseCase } from "#api/modules/identity/auth/application/use-cases/unlink-oauth-account.use-case";
 import type { AccountProvider } from "#api/modules/identity/auth/domain/identity.constants";
-import { AppleOAuthProvider } from "#api/modules/identity/auth/infrastructure/adapters/apple-oauth-identity.adapter";
-import { GoogleOAuthProvider } from "#api/modules/identity/auth/infrastructure/adapters/google-oauth-identity.adapter";
-import { KakaoOAuthProvider } from "#api/modules/identity/auth/infrastructure/adapters/kakao-oauth-identity.adapter";
-import { NaverOAuthProvider } from "#api/modules/identity/auth/infrastructure/adapters/naver-oauth-identity.adapter";
+import { AppleOAuthIdentityAdapter } from "#api/modules/identity/auth/infrastructure/adapters/apple-oauth-identity.adapter";
+import { GoogleOAuthIdentityAdapter } from "#api/modules/identity/auth/infrastructure/adapters/google-oauth-identity.adapter";
+import { KakaoOAuthIdentityAdapter } from "#api/modules/identity/auth/infrastructure/adapters/kakao-oauth-identity.adapter";
+import { NaverOAuthIdentityAdapter } from "#api/modules/identity/auth/infrastructure/adapters/naver-oauth-identity.adapter";
 import { DrizzleOAuthStateRepository } from "#api/modules/identity/auth/infrastructure/persistence/drizzle-oauth-state.repository";
 import { requireRecord } from "#api/platform/database/database-error.util";
 import { session as sessionTable, user as userTable } from "#api/platform/database/schema/index";
@@ -45,12 +45,12 @@ const at = new Date("2026-10-07T12:00:00.000Z");
 
 describe("OAuth UseCase 통합 테스트 (실제 PostgreSQL)", () => {
   let module: TestingModule;
-  let loginWithOAuthToken: LoginWithOAuthToken;
-  let linkOAuthAccount: LinkOAuthAccount;
-  let unlinkOAuthAccount: UnlinkOAuthAccount;
-  let listLinkedAccounts: ListLinkedAccounts;
-  let getOAuthRedirectUri: GetOAuthRedirectUri;
-  let exchangeOAuthCode: ExchangeOAuthCode;
+  let loginWithOAuthToken: LoginWithOAuthTokenUseCase;
+  let linkOAuthAccount: LinkOAuthAccountUseCase;
+  let unlinkOAuthAccount: UnlinkOAuthAccountUseCase;
+  let listLinkedAccounts: ListLinkedAccountsUseCase;
+  let getOAuthRedirectUri: GetOAuthRedirectUriUseCase;
+  let exchangeOAuthCode: ExchangeOAuthCodeUseCase;
   let fakeTokenVerifier: FakeOAuthTokenVerifierService;
   let testDb: TestDatabase;
   let client: TestDatabaseClient;
@@ -70,20 +70,29 @@ describe("OAuth UseCase 통합 테스트 (실제 PostgreSQL)", () => {
     const http = new HttpClient({ retry: false, throwOnHttpError: false });
     const policies = new OutboundPolicyRegistry(new RecordingOperationalAlert());
     const registry = new Map<AccountProvider, OAuthIdentityProvider>([
-      ["APPLE", new AppleOAuthProvider(fakeTokenVerifier)],
-      ["GOOGLE", new GoogleOAuthProvider(getConfig, fakeTokenVerifier, logger, http, policies)],
-      ["KAKAO", new KakaoOAuthProvider(getConfig, fakeTokenVerifier, logger, http, policies)],
-      ["NAVER", new NaverOAuthProvider(getConfig, fakeTokenVerifier, logger, http, policies)],
+      ["APPLE", new AppleOAuthIdentityAdapter(fakeTokenVerifier)],
+      [
+        "GOOGLE",
+        new GoogleOAuthIdentityAdapter(getConfig, fakeTokenVerifier, logger, http, policies),
+      ],
+      [
+        "KAKAO",
+        new KakaoOAuthIdentityAdapter(getConfig, fakeTokenVerifier, logger, http, policies),
+      ],
+      [
+        "NAVER",
+        new NaverOAuthIdentityAdapter(getConfig, fakeTokenVerifier, logger, http, policies),
+      ],
     ]);
     module = await createAuthTestModule(testDb.getClient(), new FakeEmailService(), {
       oauthProviderRegistry: registry,
     });
-    loginWithOAuthToken = module.get(LoginWithOAuthToken);
-    linkOAuthAccount = module.get(LinkOAuthAccount);
-    unlinkOAuthAccount = module.get(UnlinkOAuthAccount);
-    listLinkedAccounts = module.get(ListLinkedAccounts);
-    getOAuthRedirectUri = module.get(GetOAuthRedirectUri);
-    exchangeOAuthCode = module.get(ExchangeOAuthCode);
+    loginWithOAuthToken = module.get(LoginWithOAuthTokenUseCase);
+    linkOAuthAccount = module.get(LinkOAuthAccountUseCase);
+    unlinkOAuthAccount = module.get(UnlinkOAuthAccountUseCase);
+    listLinkedAccounts = module.get(ListLinkedAccountsUseCase);
+    getOAuthRedirectUri = module.get(GetOAuthRedirectUriUseCase);
+    exchangeOAuthCode = module.get(ExchangeOAuthCodeUseCase);
     oauthStateRepository = module.get(DrizzleOAuthStateRepository);
   });
 

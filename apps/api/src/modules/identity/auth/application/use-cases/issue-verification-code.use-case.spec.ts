@@ -9,7 +9,7 @@ import { VerificationFixture } from "#test/fixtures/index";
 import { FakeEmailService } from "#test/mocks/fake-email.service";
 import { StubAuthVerificationRepository } from "#test/mocks/ports/auth-credentials.stub";
 
-import { IdentityLogEvent } from "../auth.log-events.js";
+import { AuthLogEvent } from "../auth.log-events.js";
 import type { AuthVerificationRepositoryPort } from "../ports/auth-persistence.port.js";
 import type { VerificationCodeSecurityPort } from "../ports/verification-code-security.port.js";
 import { VerificationService } from "./issue-verification-code.use-case.js";
@@ -117,7 +117,7 @@ describe("VerificationService — 인증 코드 발급과 계정 보호", () => 
       expect(result).toEqual({ code, expiresAt });
       expect(emailSender.hasSentTo(email)).toBe(false);
       expect(logger.error).toHaveBeenCalledWith({
-        event: IdentityLogEvent.VERIFICATION_EMAIL_FAILED,
+        event: AuthLogEvent.VERIFICATION_EMAIL_FAILED,
         verificationType: type,
         userId,
         reason: "queue_unavailable",

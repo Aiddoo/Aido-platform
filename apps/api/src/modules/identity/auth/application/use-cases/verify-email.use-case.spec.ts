@@ -6,7 +6,7 @@ import {
   createAuthCredentialFixture,
 } from "#test/fixtures/auth-credential.fixture";
 
-import { VerifyEmail } from "./verify-email.use-case.js";
+import { VerifyEmailUseCase } from "./verify-email.use-case.js";
 
 describe("VerifyEmail — 이메일 인증과 첫 세션 발급", () => {
   beforeEach(() => {
@@ -17,7 +17,7 @@ describe("VerifyEmail — 이메일 인증과 첫 세션 발급", () => {
 
   function given(options: Parameters<typeof createAuthCredentialFixture>[0] = {}) {
     const fixture = createAuthCredentialFixture(options);
-    const useCase = new VerifyEmail({
+    const useCase = new VerifyEmailUseCase({
       userRepository: fixture.userRepository,
       verificationService: fixture.verificationService,
       retentionEnroller: fixture.retentionEnroller,

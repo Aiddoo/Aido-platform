@@ -11,7 +11,7 @@ import {
 } from "../ports/auth-persistence.port.js";
 import type { SessionService } from "./create-session.use-case.js";
 
-export interface IssueLoginInput {
+export interface IssueLoginCommand {
   userId: string;
   email: string;
   role: UserRole;
@@ -46,14 +46,14 @@ interface IssueLoginDependencies {
   readonly userRepository: Pick<AuthUserRepositoryPort, "findByIdWithProfile">;
 }
 
-export class IssueLogin {
+export class IssueLoginUseCase {
   readonly #dependencies: IssueLoginDependencies;
 
   constructor(dependencies: IssueLoginDependencies) {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: IssueLoginInput): Promise<IssueLoginOutcome> {
+  async execute(input: IssueLoginCommand): Promise<IssueLoginOutcome> {
     const { sessionId, tokens } = await this.#dependencies.sessionService.createSessionWithTokens({
       userId: input.userId,
       email: input.email,

@@ -19,7 +19,7 @@ import {
   AUTH_USER_REPOSITORY,
   AUTH_SECURITY_LOG_REPOSITORY,
 } from "#api/modules/identity/auth/application/ports/auth-persistence.port";
-import { PurgeDeletedAccounts } from "#api/modules/identity/auth/application/use-cases/purge-deleted-accounts.use-case";
+import { PurgeDeletedAccountsUseCase } from "#api/modules/identity/auth/application/use-cases/purge-deleted-accounts.use-case";
 import { DrizzleSecurityLogRepository } from "#api/modules/identity/auth/infrastructure/persistence/drizzle-security-log.repository";
 import { DrizzleUserRepository } from "#api/modules/identity/auth/infrastructure/persistence/drizzle-user.repository";
 import {
@@ -194,7 +194,7 @@ describe("댓글 계정 purge (실제 PostgreSQL)", () => {
   let testDatabase: TestDatabase;
   let client: TestDatabaseClient;
   let module: TestingModule;
-  let purgeDeletedAccounts: PurgeDeletedAccounts;
+  let purgeDeletedAccounts: PurgeDeletedAccountsUseCase;
   let notificationCache: NotificationCachePort;
   let todoViewCache: TodoViewCachePort;
 
@@ -251,7 +251,7 @@ describe("댓글 계정 purge (실제 PostgreSQL)", () => {
       ],
     }).compile();
     await module.init();
-    purgeDeletedAccounts = module.get(PurgeDeletedAccounts);
+    purgeDeletedAccounts = module.get(PurgeDeletedAccountsUseCase);
   }, 60_000);
 
   beforeEach(async () => {

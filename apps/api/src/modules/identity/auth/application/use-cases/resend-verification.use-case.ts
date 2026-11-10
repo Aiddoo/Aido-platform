@@ -5,11 +5,11 @@ import { ApplicationException } from "#api/shared/application/application.except
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
 
-import { IdentityLogEvent } from "../auth.log-events.js";
+import { AuthLogEvent } from "../auth.log-events.js";
 import type { AuthUserRepositoryPort } from "../ports/auth-persistence.port.js";
 import type { VerificationService } from "./issue-verification-code.use-case.js";
 
-export interface ResendVerificationInput {
+export interface ResendVerificationCommand {
   readonly email: string;
 }
 
@@ -23,14 +23,14 @@ interface ResendVerificationDependencies {
   readonly logger: ApplicationLoggerPort;
 }
 
-export class ResendVerification {
+export class ResendVerificationUseCase {
   readonly #dependencies: ResendVerificationDependencies;
 
   constructor(dependencies: ResendVerificationDependencies) {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: ResendVerificationInput): Promise<{ message: string }> {
+  async execute(input: ResendVerificationCommand): Promise<{ message: string }> {
     const { email } = input;
     const user = await this.#dependencies.userRepository.findByEmail(email);
     if (user == null) {
@@ -60,13 +60,13 @@ export class ResendVerification {
       );
     } catch (error) {
       this.#dependencies.logger.error({
-        event: IdentityLogEvent.VERIFICATION_EMAIL_FAILED,
+        event: AuthLogEvent.VERIFICATION_EMAIL_FAILED,
         userId: user.id,
         errorType: error instanceof Error ? error.name : "unknown",
       });
     }
 
-    this.#dependencies.logger.log({ event: IdentityLogEvent.VERIFICATION_RESENT, userId: user.id });
+    this.#dependencies.logger.log({ event: AuthLogEvent.VERIFICATION_RESENT, userId: user.id });
 
     return {
       message: "인증 코드가 발송되었습니다. 이메일을 확인해주세요.",

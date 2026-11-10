@@ -3,8 +3,8 @@ import { Controller, Delete, Get, HttpCode, HttpStatus, Param, Req } from "@nest
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import type { Request } from "express";
 
-import { ListActiveSessions } from "#api/modules/identity/auth/application/use-cases/list-active-sessions.use-case";
-import { RevokeSession } from "#api/modules/identity/auth/application/use-cases/revoke-session.use-case";
+import { ListActiveSessionsUseCase } from "#api/modules/identity/auth/application/use-cases/list-active-sessions.use-case";
+import { RevokeSessionUseCase } from "#api/modules/identity/auth/application/use-cases/revoke-session.use-case";
 import {
   CurrentUser,
   type CurrentUserPayload,
@@ -18,9 +18,9 @@ import {
   SWAGGER_TAGS,
 } from "#api/platform/http/swagger/index";
 
-import { RevokeSessionDto } from "./auth-request.dto.js";
 import { extractMetadata } from "./auth-request.mapper.js";
-import { MessageResponseDto, SessionListDto } from "./auth-response.dto.js";
+import { RevokeSessionDto } from "./auth.dto.js";
+import { MessageResponseDto, SessionListDto } from "./auth.dto.js";
 
 /**
  * Session API 컨트롤러
@@ -35,10 +35,13 @@ import { MessageResponseDto, SessionListDto } from "./auth-response.dto.js";
 @ApiBearerAuth()
 @Controller("auth")
 export class SessionController {
-  readonly #listActiveSessionsQuery: ListActiveSessions;
-  readonly #revokeSessionUseCase: RevokeSession;
+  readonly #listActiveSessionsQuery: ListActiveSessionsUseCase;
+  readonly #revokeSessionUseCase: RevokeSessionUseCase;
 
-  constructor(listActiveSessionsQuery: ListActiveSessions, revokeSessionUseCase: RevokeSession) {
+  constructor(
+    listActiveSessionsQuery: ListActiveSessionsUseCase,
+    revokeSessionUseCase: RevokeSessionUseCase,
+  ) {
     this.#listActiveSessionsQuery = listActiveSessionsQuery;
     this.#revokeSessionUseCase = revokeSessionUseCase;
   }

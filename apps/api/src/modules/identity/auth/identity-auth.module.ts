@@ -91,9 +91,9 @@ import {
   verificationServiceProvider,
   verifyEmailProvider,
 } from "./identity-auth.providers.js";
-import { PasswordService } from "./infrastructure/adapters/argon2-password-hasher.adapter.js";
+import { Argon2PasswordHasherAdapter } from "./infrastructure/adapters/argon2-password-hasher.adapter.js";
 import { AuthCacheAdapter } from "./infrastructure/adapters/auth-cache.adapter.js";
-import { TokenService } from "./infrastructure/adapters/jwt-token-issuer.adapter.js";
+import { JwtTokenIssuerAdapter } from "./infrastructure/adapters/jwt-token-issuer.adapter.js";
 import { NodeVerificationCodeSecurityAdapter } from "./infrastructure/adapters/node-verification-code-security.adapter.js";
 import { createOAuthProviderRegistry } from "./infrastructure/adapters/oauth-identity-provider-registry.adapter.js";
 import {
@@ -104,7 +104,7 @@ import { RetentionEnrollerAdapter } from "./infrastructure/adapters/retention-en
 import { SessionPushDeviceReleaserAdapter } from "./infrastructure/adapters/session-push-device-releaser.adapter.js";
 import { UserProvisioningSeederAdapter } from "./infrastructure/adapters/user-provisioning-seeder.adapter.js";
 import { AccountPurgeProcessor } from "./infrastructure/jobs/account-purge.processor.js";
-import { AccountPurgeJob } from "./infrastructure/jobs/account-purge.scheduler.js";
+import { AccountPurgeScheduler } from "./infrastructure/jobs/account-purge.scheduler.js";
 import { DrizzleAccountRepository } from "./infrastructure/persistence/drizzle-account.repository.js";
 import { DrizzleLoginAttemptRepository } from "./infrastructure/persistence/drizzle-login-attempt.repository.js";
 import { DrizzleOAuthStateRepository } from "./infrastructure/persistence/drizzle-oauth-state.repository.js";
@@ -205,11 +205,11 @@ import { SessionController } from "./presentation/http/v1/session.controller.js"
     accountNotificationCleanupProvider,
     accountTodoCommentCleanupProvider,
     accountUsageCleanupProvider,
-    PasswordService,
+    Argon2PasswordHasherAdapter,
     sessionServiceProvider,
-    TokenService,
-    { provide: AUTH_PASSWORD_HASHER, useExisting: PasswordService },
-    { provide: AUTH_TOKEN_ISSUER, useExisting: TokenService },
+    JwtTokenIssuerAdapter,
+    { provide: AUTH_PASSWORD_HASHER, useExisting: Argon2PasswordHasherAdapter },
+    { provide: AUTH_TOKEN_ISSUER, useExisting: JwtTokenIssuerAdapter },
     AuthCacheAdapter,
     { provide: AUTH_CACHE, useExisting: AuthCacheAdapter },
     { provide: AUTH_EMAIL_SENDER, useExisting: TransactionalEmailSender },
@@ -280,7 +280,7 @@ import { SessionController } from "./presentation/http/v1/session.controller.js"
     JwtAuthGuard,
     JwtRefreshGuard,
     LastActiveInterceptor,
-    AccountPurgeJob,
+    AccountPurgeScheduler,
     AccountPurgeProcessor,
   ],
   exports: [JwtAuthGuard, JwtRefreshGuard, LastActiveInterceptor],

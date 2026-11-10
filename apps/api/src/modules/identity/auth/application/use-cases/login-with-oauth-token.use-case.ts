@@ -17,7 +17,7 @@ import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
 import { now } from "#api/shared/domain/date/utils/core";
 import type { SupportedLocale } from "#api/shared/domain/locale";
 
-import { IdentityLogEvent } from "../auth.log-events.js";
+import { AuthLogEvent } from "../auth.log-events.js";
 import type { AuthCachePort } from "../ports/auth-collaboration.port.js";
 import type {
   AuthAccountRepositoryPort,
@@ -37,11 +37,11 @@ import type {
   RequestMetadata,
   SocialLoginResult,
 } from "../read-models/auth-result.read-model.js";
-import type { IssueLogin } from "./issue-login.use-case.js";
-import type { ProvisionUser } from "./provision-user.use-case.js";
-import type { RestoreAccount } from "./restore-account.use-case.js";
+import type { IssueLoginUseCase } from "./issue-login.use-case.js";
+import type { ProvisionUserUseCase } from "./provision-user.use-case.js";
+import type { RestoreAccountUseCase } from "./restore-account.use-case.js";
 
-export interface LoginWithOAuthTokenInput {
+export interface LoginWithOAuthTokenCommand {
   readonly provider: (typeof OAUTH_PROVIDERS)[number];
   readonly token: string;
   readonly userName?: string;
@@ -61,20 +61,20 @@ interface LoginWithOAuthTokenDependencies {
   readonly loginAttemptRepository: Pick<AuthLoginAttemptRepositoryPort, "create">;
   readonly unitOfWork: UnitOfWorkPort;
   readonly cacheService: Pick<AuthCachePort, "invalidateUserProfile">;
-  readonly issueLoginUseCase: Pick<IssueLogin, "execute">;
-  readonly provisionUserUseCase: Pick<ProvisionUser, "execute">;
-  readonly restoreAccount: Pick<RestoreAccount, "execute">;
+  readonly issueLoginUseCase: Pick<IssueLoginUseCase, "execute">;
+  readonly provisionUserUseCase: Pick<ProvisionUserUseCase, "execute">;
+  readonly restoreAccount: Pick<RestoreAccountUseCase, "execute">;
   readonly logger: ApplicationLoggerPort;
 }
 
-export class LoginWithOAuthToken {
+export class LoginWithOAuthTokenUseCase {
   readonly #dependencies: LoginWithOAuthTokenDependencies;
 
   constructor(dependencies: LoginWithOAuthTokenDependencies) {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: LoginWithOAuthTokenInput): Promise<SocialLoginResult> {
+  async execute(input: LoginWithOAuthTokenCommand): Promise<SocialLoginResult> {
     const strategy = this.#dependencies.registry.get(input.provider);
     if (strategy == null) {
       throw new ApplicationException(ErrorCode.SOCIAL_0204, {
@@ -153,7 +153,7 @@ export class LoginWithOAuthToken {
       userEmail = user.email;
 
       this.#dependencies.logger.debug({
-        event: IdentityLogEvent.OAUTH_EXISTING_USER_AUTHENTICATED,
+        event: AuthLogEvent.OAUTH_EXISTING_USER_AUTHENTICATED,
         userId,
         provider,
       });
@@ -187,7 +187,7 @@ export class LoginWithOAuthToken {
       userEmail = effectiveEmail;
       isNewUser = true;
 
-      this.#dependencies.logger.log({ event: IdentityLogEvent.USER_REGISTERED, userId, provider });
+      this.#dependencies.logger.log({ event: AuthLogEvent.USER_REGISTERED, userId, provider });
     }
 
     const loginResult = await this.#createSessionAndTokens(userId, userEmail, {
@@ -315,7 +315,7 @@ export class LoginWithOAuthToken {
 
     await this.#dependencies.cacheService.invalidateUserProfile(user.id);
     this.#dependencies.logger.log({
-      event: IdentityLogEvent.ACCOUNT_RESTORED,
+      event: AuthLogEvent.ACCOUNT_RESTORED,
       userId: user.id,
       provider: options.provider,
     });
@@ -392,7 +392,7 @@ export class LoginWithOAuthToken {
 
     if (isTrusted && isEmailVerified) {
       this.#dependencies.logger.log({
-        event: IdentityLogEvent.OAUTH_ACCOUNT_AUTO_LINKING,
+        event: AuthLogEvent.OAUTH_ACCOUNT_AUTO_LINKING,
         userId: existingUser.id,
         provider,
       });
@@ -432,7 +432,7 @@ export class LoginWithOAuthToken {
     }
 
     this.#dependencies.logger.warn({
-      event: IdentityLogEvent.OAUTH_ACCOUNT_LINK_REQUIRED,
+      event: AuthLogEvent.OAUTH_ACCOUNT_LINK_REQUIRED,
       userId: existingUser.id,
       provider,
     });

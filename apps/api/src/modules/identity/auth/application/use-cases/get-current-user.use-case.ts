@@ -1,4 +1,4 @@
-import type { PremiumEntitlements } from "@aido/api";
+import type { PremiumEntitlements } from "@aido/api/contracts/auth";
 import { ErrorCode } from "@aido/api/errors";
 import { PREMIUM_FEATURE_KEYS } from "@aido/api/vocabulary";
 import { pick } from "es-toolkit";
@@ -14,7 +14,7 @@ import { toISOString, toISOStringOrNull } from "#api/shared/domain/date/utils/fo
 import type { AuthCachePort } from "../ports/auth-collaboration.port.js";
 import type { AuthUserRepositoryPort } from "../ports/auth-persistence.port.js";
 
-export interface GetCurrentUserInput {
+export interface GetCurrentUserQuery {
   readonly userId: string;
   readonly sessionId: string;
   /** 응원·찌르기 일간 사용량의 하루 기준(X-Timezone) */
@@ -31,14 +31,14 @@ interface GetCurrentUserDependencies {
   readonly nudgeUsageReader: Pick<DailySendUsageReaderPort, "readDailyUsage">;
 }
 
-export class GetCurrentUser {
+export class GetCurrentUserUseCase {
   readonly #dependencies: GetCurrentUserDependencies;
 
   constructor(dependencies: GetCurrentUserDependencies) {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: GetCurrentUserInput): Promise<CurrentUserResult> {
+  async execute(input: GetCurrentUserQuery): Promise<CurrentUserResult> {
     const { userId, sessionId } = input;
     const cachedProfile = await this.#dependencies.cacheService.wrapUserProfile(
       userId,

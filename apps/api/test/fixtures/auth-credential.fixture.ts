@@ -15,10 +15,10 @@ import type {
   PremiumAccessReaderPort,
 } from "#api/modules/billing/billing-subscriptions.public";
 import { SessionService } from "#api/modules/identity/auth/application/use-cases/create-session.use-case";
-import { IssueLogin } from "#api/modules/identity/auth/application/use-cases/issue-login.use-case";
+import { IssueLoginUseCase } from "#api/modules/identity/auth/application/use-cases/issue-login.use-case";
 import { VerificationService } from "#api/modules/identity/auth/application/use-cases/issue-verification-code.use-case";
-import { ProvisionUser } from "#api/modules/identity/auth/application/use-cases/provision-user.use-case";
-import { RestoreAccount } from "#api/modules/identity/auth/application/use-cases/restore-account.use-case";
+import { ProvisionUserUseCase } from "#api/modules/identity/auth/application/use-cases/provision-user.use-case";
+import { RestoreAccountUseCase } from "#api/modules/identity/auth/application/use-cases/restore-account.use-case";
 import type {
   DailySendUsage,
   DailySendUsageReaderPort,
@@ -97,19 +97,19 @@ export function createAuthCredentialFixture(
     emailSender,
     logger,
   });
-  const provisionUserUseCase = new ProvisionUser({
+  const provisionUserUseCase = new ProvisionUserUseCase({
     userRepository,
     accountRepository,
     seeder,
     retentionEnroller,
   });
-  const issueLoginUseCase = new IssueLogin({
+  const issueLoginUseCase = new IssueLoginUseCase({
     sessionService,
     loginAttemptRepository,
     securityLogRepository,
     userRepository,
   });
-  const restoreAccount = new RestoreAccount({ userRepository, securityLogRepository });
+  const restoreAccount = new RestoreAccountUseCase({ userRepository, securityLogRepository });
   return {
     user,
     userRepository,

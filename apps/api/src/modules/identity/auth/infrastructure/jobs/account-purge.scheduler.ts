@@ -1,7 +1,7 @@
 import { Inject, Injectable, Logger, type OnModuleInit } from "@nestjs/common";
 import dayjs from "dayjs";
 
-import { IdentityLogEvent } from "#api/modules/identity/auth/application/auth.log-events";
+import { AuthLogEvent } from "#api/modules/identity/auth/application/auth.log-events";
 import { runInBackground } from "#api/platform/jobs/non-blocking-init";
 import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
 
@@ -14,8 +14,8 @@ import {
 } from "./account-purge.queue.js";
 
 @Injectable()
-export class AccountPurgeJob implements OnModuleInit {
-  readonly #logger = new Logger(AccountPurgeJob.name);
+export class AccountPurgeScheduler implements OnModuleInit {
+  readonly #logger = new Logger(AccountPurgeScheduler.name);
   schedulerRegistration: Promise<void> = Promise.resolve();
 
   readonly #runtime: JobRuntimePort;
@@ -37,7 +37,7 @@ export class AccountPurgeJob implements OnModuleInit {
           { name: ACCOUNT_PURGE_JOB_NAME, data: {} },
           ACCOUNT_PURGE_JOB_OPTIONS,
         );
-        this.#logger.log({ event: IdentityLogEvent.ACCOUNT_PURGE_SCHEDULER_REGISTERED });
+        this.#logger.log({ event: AuthLogEvent.ACCOUNT_PURGE_SCHEDULER_REGISTERED });
         await this.#catchUpIfNeeded();
       },
     );
@@ -55,6 +55,6 @@ export class AccountPurgeJob implements OnModuleInit {
       { name: ACCOUNT_PURGE_JOB_NAME, data: {} },
       { ...ACCOUNT_PURGE_JOB_OPTIONS, idempotencyKey: AccountPurgeJobKey.catchUp(localDate) },
     );
-    this.#logger.log({ event: IdentityLogEvent.ACCOUNT_PURGE_CATCH_UP_DISPATCHED, localDate });
+    this.#logger.log({ event: AuthLogEvent.ACCOUNT_PURGE_CATCH_UP_DISPATCHED, localDate });
   }
 }

@@ -1,4 +1,4 @@
-export const IdentityInfraLogEvent = {
+export const AuthInfraLogEvent = {
   OAUTH_TOKEN_EXCHANGE_FAILED: "identity.oauth.token-exchange.failed",
   OAUTH_TOKEN_EXCHANGE_INVALID: "identity.oauth.token-exchange.invalid",
   OAUTH_NONCE_REJECTED: "identity.oauth.nonce.rejected",

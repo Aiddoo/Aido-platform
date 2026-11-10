@@ -10,7 +10,7 @@ import { ApplicationException } from "#api/shared/application/application.except
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
 
-import { IdentityLogEvent } from "../auth.log-events.js";
+import { AuthLogEvent } from "../auth.log-events.js";
 import type { AuthCachePort } from "../ports/auth-collaboration.port.js";
 import type { AuthPasswordHasherPort } from "../ports/auth-crypto.port.js";
 import type {
@@ -22,7 +22,7 @@ import type {
 import type { SessionPushDeviceReleaserPort } from "../ports/session-push-device-releaser.port.js";
 import type { VerificationService } from "./issue-verification-code.use-case.js";
 
-export interface ResetPasswordInput {
+export interface ResetPasswordCommand {
   readonly email: string;
   readonly code: string;
   readonly newPassword: string;
@@ -44,14 +44,14 @@ interface ResetPasswordDependencies {
   readonly logger: ApplicationLoggerPort;
 }
 
-export class ResetPassword {
+export class ResetPasswordUseCase {
   readonly #dependencies: ResetPasswordDependencies;
 
   constructor(dependencies: ResetPasswordDependencies) {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: ResetPasswordInput): Promise<{ message: string }> {
+  async execute(input: ResetPasswordCommand): Promise<{ message: string }> {
     const { email, code, newPassword } = input;
     const user = await this.#dependencies.userRepository.findByEmail(email);
     if (user == null) {
@@ -97,7 +97,7 @@ export class ResetPassword {
     );
     await this.#dependencies.pushDevices.releaseSessions(revokedSessionIds);
     this.#dependencies.logger.log({
-      event: IdentityLogEvent.PASSWORD_RESET_COMPLETED,
+      event: AuthLogEvent.PASSWORD_RESET_COMPLETED,
       userId: user.id,
     });
 

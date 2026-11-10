@@ -14,7 +14,7 @@ import {
 
 import { AUTH_DEFAULTS, REVOKE_REASON, SECURITY_EVENT } from "../../domain/auth.constants.js";
 import type { VerifiedRefreshPayload } from "../read-models/auth-result.read-model.js";
-import { RefreshTokens } from "./refresh-tokens.use-case.js";
+import { RefreshTokensUseCase } from "./refresh-tokens.use-case.js";
 
 const currentTime = new Date("2026-12-31T23:59:00Z");
 const userId = "user-123";
@@ -49,7 +49,7 @@ describe("RefreshTokens — 세션 연장과 Refresh Token 재사용 방어", ()
     const securityLogRepository = new StubAuthSecurityLogRepository();
     const logger = mock<ApplicationLoggerPort>();
     const pushDevices = new StubSessionPushDeviceReleaser();
-    const useCase = new RefreshTokens({
+    const useCase = new RefreshTokensUseCase({
       pushDevices,
       sessionRepository,
       tokenService,

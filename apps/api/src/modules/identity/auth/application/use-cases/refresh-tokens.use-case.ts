@@ -12,7 +12,7 @@ import {
   SECURITY_EVENT,
   TOKEN_REUSE_GRACE_PERIOD_MS,
 } from "../../domain/auth.constants.js";
-import { IdentityLogEvent } from "../auth.log-events.js";
+import { AuthLogEvent } from "../auth.log-events.js";
 import type { AuthCachePort } from "../ports/auth-collaboration.port.js";
 import type { AuthTokenIssuerPort } from "../ports/auth-crypto.port.js";
 import type {
@@ -26,7 +26,7 @@ import type {
   VerifiedRefreshPayload,
 } from "../read-models/auth-result.read-model.js";
 
-export interface RefreshTokensInput {
+export interface RefreshTokensCommand {
   readonly refreshToken: string;
   readonly verifiedPayload: VerifiedRefreshPayload;
   readonly metadata?: RequestMetadata;
@@ -47,14 +47,14 @@ interface RefreshTokensDependencies {
   readonly logger: ApplicationLoggerPort;
 }
 
-export class RefreshTokens {
+export class RefreshTokensUseCase {
   readonly #dependencies: RefreshTokensDependencies;
 
   constructor(dependencies: RefreshTokensDependencies) {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: RefreshTokensInput): Promise<RefreshTokensResult> {
+  async execute(input: RefreshTokensCommand): Promise<RefreshTokensResult> {
     const { sessionId } = input.verifiedPayload;
     if (!sessionId) {
       throw new ApplicationException(ErrorCode.SESSION_0701, { sessionId: undefined });
@@ -99,7 +99,7 @@ export class RefreshTokens {
       },
     });
     this.#dependencies.logger.warn({
-      event: IdentityLogEvent.SESSION_TOKEN_REUSE_DETECTED,
+      event: AuthLogEvent.SESSION_TOKEN_REUSE_DETECTED,
       userId: authSession.userId,
       sessionId,
       revokedCount: revokedSessionIds.length,
@@ -109,7 +109,7 @@ export class RefreshTokens {
 
   async #rotateSession(
     session: AuthSession,
-    input: RefreshTokensInput,
+    input: RefreshTokensCommand,
     retryWithinGracePeriod: boolean,
   ): Promise<RefreshTokensResult> {
     const validity = session.validityAt(now());
@@ -151,7 +151,7 @@ export class RefreshTokens {
     );
     if (rotatedSession == null) {
       this.#dependencies.logger.warn({
-        event: IdentityLogEvent.SESSION_ROTATION_CONFLICT,
+        event: AuthLogEvent.SESSION_ROTATION_CONFLICT,
         userId,
         sessionId,
       });
@@ -167,7 +167,7 @@ export class RefreshTokens {
       ...(retryWithinGracePeriod && { metadata: { retryWithinGracePeriod: true } }),
     });
     this.#dependencies.logger.debug({
-      event: IdentityLogEvent.SESSION_TOKENS_REFRESHED,
+      event: AuthLogEvent.SESSION_TOKENS_REFRESHED,
       userId,
       sessionId,
       retryWithinGracePeriod,

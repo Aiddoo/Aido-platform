@@ -7,7 +7,7 @@ import { ApplicationException } from "#api/shared/application/application.except
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
 
-import { IdentityLogEvent } from "../auth.log-events.js";
+import { AuthLogEvent } from "../auth.log-events.js";
 import type { AuthCachePort } from "../ports/auth-collaboration.port.js";
 import type { AuthPasswordHasherPort } from "../ports/auth-crypto.port.js";
 import type {
@@ -18,7 +18,7 @@ import type {
 } from "../ports/auth-persistence.port.js";
 import type { VerificationService } from "./issue-verification-code.use-case.js";
 
-export interface SetPasswordInput {
+export interface SetPasswordCommand {
   readonly userId: string;
   readonly code: string;
   readonly newPassword: string;
@@ -39,14 +39,14 @@ interface SetPasswordDependencies {
   readonly logger: ApplicationLoggerPort;
 }
 
-export class SetPassword {
+export class SetPasswordUseCase {
   readonly #dependencies: SetPasswordDependencies;
 
   constructor(dependencies: SetPasswordDependencies) {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: SetPasswordInput): Promise<{ message: string }> {
+  async execute(input: SetPasswordCommand): Promise<{ message: string }> {
     const { userId, code, newPassword, metadata } = input;
     const ip = metadata?.ip ?? AUTH_DEFAULTS.UNKNOWN_IP;
     const userAgent = metadata?.userAgent ?? AUTH_DEFAULTS.UNKNOWN_USER_AGENT;
@@ -93,7 +93,7 @@ export class SetPassword {
     });
 
     await this.#dependencies.cacheService.invalidateUserProfile(userId);
-    this.#dependencies.logger.log({ event: IdentityLogEvent.PASSWORD_SET, userId });
+    this.#dependencies.logger.log({ event: AuthLogEvent.PASSWORD_SET, userId });
 
     return {
       message: "비밀번호가 설정되었습니다. 이제 이메일로 로그인할 수 있습니다.",

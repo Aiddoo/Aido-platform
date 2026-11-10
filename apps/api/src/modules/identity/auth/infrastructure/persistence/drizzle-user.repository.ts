@@ -10,7 +10,7 @@ import {
   type AuthUserRepositoryPort,
 } from "#api/modules/identity/auth/application/ports/auth-persistence.port";
 import type { UserActivity } from "#api/modules/identity/auth/application/ports/user-activity.reader.port";
-import { IdentityInfraLogEvent } from "#api/modules/identity/auth/infrastructure/auth-infra.log-events";
+import { AuthInfraLogEvent } from "#api/modules/identity/auth/infrastructure/auth-infra.log-events";
 import { requireRecord, uniqueConstraintTargets } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import {
@@ -147,7 +147,7 @@ export class DrizzleUserRepository
         return tag;
       }
 
-      this.#logger.warn({ event: IdentityInfraLogEvent.USER_TAG_COLLIDED, attempt: i + 1 });
+      this.#logger.warn({ event: AuthInfraLogEvent.USER_TAG_COLLIDED, attempt: i + 1 });
     }
 
     throw new ApplicationException(ErrorCode.USER_0611, {

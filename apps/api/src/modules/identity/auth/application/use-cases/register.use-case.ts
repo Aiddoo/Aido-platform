@@ -1,4 +1,4 @@
-import type { RegisterInput as RegisterBody } from "@aido/api";
+import type { RegisterInput as RegisterBody } from "@aido/api/contracts/auth";
 import { ErrorCode } from "@aido/api/errors";
 import { TERMS_VERSION } from "@aido/api/vocabulary";
 
@@ -14,7 +14,7 @@ import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
 import { now } from "#api/shared/domain/date/utils/core";
 import { toISOString } from "#api/shared/domain/date/utils/format";
 
-import { IdentityLogEvent } from "../auth.log-events.js";
+import { AuthLogEvent } from "../auth.log-events.js";
 import type {
   AuthRegistrationNotifierPort,
   AuthUserRegisteredNotification,
@@ -26,14 +26,14 @@ import {
   AuthPersistenceConflict,
 } from "../ports/auth-persistence.port.js";
 import type { VerificationService } from "./issue-verification-code.use-case.js";
-import type { ProvisionUser } from "./provision-user.use-case.js";
+import type { ProvisionUserUseCase } from "./provision-user.use-case.js";
 
-export type RegisterInput = Readonly<RegisterBody> & { readonly metadata?: RequestMetadata };
+export type RegisterCommand = Readonly<RegisterBody> & { readonly metadata?: RequestMetadata };
 
 interface RegisterDependencies {
   readonly userRepository: Pick<AuthUserRepositoryPort, "findByEmail">;
   readonly passwordService: Pick<AuthPasswordHasherPort, "hash">;
-  readonly provisionUserUseCase: Pick<ProvisionUser, "execute">;
+  readonly provisionUserUseCase: Pick<ProvisionUserUseCase, "execute">;
   readonly verificationService: Pick<
     VerificationService,
     "createEmailVerification" | "sendVerificationEmail"
@@ -44,21 +44,21 @@ interface RegisterDependencies {
   readonly logger: ApplicationLoggerPort;
 }
 
-export class Register {
+export class RegisterUseCase {
   readonly #dependencies: RegisterDependencies;
 
   constructor(dependencies: RegisterDependencies) {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: RegisterInput): Promise<RegisterResult> {
+  async execute(input: RegisterCommand): Promise<RegisterResult> {
     const metadata = input.metadata;
     const ip = metadata?.ip ?? AUTH_DEFAULTS.UNKNOWN_IP;
     const userAgent = metadata?.userAgent ?? AUTH_DEFAULTS.UNKNOWN_USER_AGENT;
 
     const { password, name, termsAgreed, privacyAgreed, marketingAgreed, marketingPushAgreed } =
       input;
-    const email = Email.of(input.email).value;
+    const email = Email.create(input.email).value;
 
     const existingUser = await this.#dependencies.userRepository.findByEmail(email);
     if (existingUser != null) {
@@ -119,14 +119,14 @@ export class Register {
       );
     } catch (error) {
       this.#dependencies.logger.error({
-        event: IdentityLogEvent.VERIFICATION_EMAIL_FAILED,
+        event: AuthLogEvent.VERIFICATION_EMAIL_FAILED,
         userId: result.user.id,
         errorType: error instanceof Error ? error.name : "unknown",
       });
     }
 
     this.#dependencies.logger.log({
-      event: IdentityLogEvent.USER_REGISTERED,
+      event: AuthLogEvent.USER_REGISTERED,
       userId: result.user.id,
     });
 

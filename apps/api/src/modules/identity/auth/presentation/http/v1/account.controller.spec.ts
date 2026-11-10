@@ -15,11 +15,11 @@ import { TestBed } from "@suites/unit";
 import type { Request } from "express";
 import type { Mocked } from "vitest";
 
-import { DeleteAccount } from "#api/modules/identity/auth/application/use-cases/delete-account.use-case";
-import { GetCurrentUser } from "#api/modules/identity/auth/application/use-cases/get-current-user.use-case";
-import { ListLinkedAccounts } from "#api/modules/identity/auth/application/use-cases/list-linked-accounts.use-case";
-import { UnlinkOAuthAccount } from "#api/modules/identity/auth/application/use-cases/unlink-oauth-account.use-case";
-import { UpdateProfile } from "#api/modules/identity/auth/application/use-cases/update-profile.use-case";
+import { DeleteAccountUseCase } from "#api/modules/identity/auth/application/use-cases/delete-account.use-case";
+import { GetCurrentUserUseCase } from "#api/modules/identity/auth/application/use-cases/get-current-user.use-case";
+import { ListLinkedAccountsUseCase } from "#api/modules/identity/auth/application/use-cases/list-linked-accounts.use-case";
+import { UnlinkOAuthAccountUseCase } from "#api/modules/identity/auth/application/use-cases/unlink-oauth-account.use-case";
+import { UpdateProfileUseCase } from "#api/modules/identity/auth/application/use-cases/update-profile.use-case";
 import type { CurrentUserPayload } from "#api/modules/identity/auth/presentation/http/decorators/current-user.decorator";
 import { AuthMapper } from "#api/modules/identity/auth/presentation/http/v1/auth-response.mapper";
 import { parseRequestClient } from "#api/platform/http/request-client/index";
@@ -27,15 +27,15 @@ import { TEST_REQUEST_ID } from "#test/mocks/request-client";
 import { mockOf } from "#test/mocks/typed-mock";
 
 import { AccountController } from "./account.controller.js";
-import type { DeleteAccountDto, UpdateProfileDto } from "./auth-request.dto.js";
+import type { DeleteAccountDto, UpdateProfileDto } from "./auth.dto.js";
 
 describe("AccountController — 계정 컨트롤러", () => {
   let controller: AccountController;
-  let getCurrentUserQuery: Mocked<GetCurrentUser>;
-  let updateProfileUseCase: Mocked<UpdateProfile>;
-  let listLinkedAccountsQuery: Mocked<ListLinkedAccounts>;
-  let unlinkOAuthAccountUseCase: Mocked<UnlinkOAuthAccount>;
-  let deleteAccountUseCase: Mocked<DeleteAccount>;
+  let getCurrentUserQuery: Mocked<GetCurrentUserUseCase>;
+  let updateProfileUseCase: Mocked<UpdateProfileUseCase>;
+  let listLinkedAccountsQuery: Mocked<ListLinkedAccountsUseCase>;
+  let unlinkOAuthAccountUseCase: Mocked<UnlinkOAuthAccountUseCase>;
+  let deleteAccountUseCase: Mocked<DeleteAccountUseCase>;
 
   const mockUser: CurrentUserPayload = {
     userId: "user-123",
@@ -58,11 +58,11 @@ describe("AccountController — 계정 컨트롤러", () => {
     const { unit, unitRef } = await TestBed.solitary(AccountController).compile();
 
     controller = unit;
-    getCurrentUserQuery = unitRef.get(GetCurrentUser);
-    updateProfileUseCase = unitRef.get(UpdateProfile);
-    listLinkedAccountsQuery = unitRef.get(ListLinkedAccounts);
-    unlinkOAuthAccountUseCase = unitRef.get(UnlinkOAuthAccount);
-    deleteAccountUseCase = unitRef.get(DeleteAccount);
+    getCurrentUserQuery = unitRef.get(GetCurrentUserUseCase);
+    updateProfileUseCase = unitRef.get(UpdateProfileUseCase);
+    listLinkedAccountsQuery = unitRef.get(ListLinkedAccountsUseCase);
+    unlinkOAuthAccountUseCase = unitRef.get(UnlinkOAuthAccountUseCase);
+    deleteAccountUseCase = unitRef.get(DeleteAccountUseCase);
   });
 
   describe("getMe", () => {

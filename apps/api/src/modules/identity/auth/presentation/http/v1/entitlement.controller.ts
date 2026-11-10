@@ -3,7 +3,7 @@ import { PLAN_CATALOG, PLAN_FEATURE_KEYS, type PlanFeature } from "@aido/api/voc
 import { Controller, Get } from "@nestjs/common";
 import { ApiBearerAuth, ApiHeader, ApiTags } from "@nestjs/swagger";
 
-import { GetEntitlementSnapshot } from "#api/modules/identity/auth/application/use-cases/get-entitlement-snapshot.use-case";
+import { GetEntitlementSnapshotUseCase } from "#api/modules/identity/auth/application/use-cases/get-entitlement-snapshot.use-case";
 import {
   CurrentUser,
   type CurrentUserPayload,
@@ -16,7 +16,7 @@ import {
   SWAGGER_TAGS,
 } from "#api/platform/http/swagger/index";
 
-import { EntitlementSnapshotDto } from "./auth-response.dto.js";
+import { EntitlementSnapshotDto } from "./auth.dto.js";
 
 const PERIOD_LABEL = { day: "하루", month: "월" } as const;
 
@@ -48,9 +48,9 @@ const PLAN_CATALOG_TABLE = PLAN_FEATURE_KEYS.map(
 @ApiBearerAuth()
 @Controller("entitlements")
 export class EntitlementController {
-  readonly #getEntitlementSnapshotQuery: GetEntitlementSnapshot;
+  readonly #getEntitlementSnapshotQuery: GetEntitlementSnapshotUseCase;
 
-  constructor(getEntitlementSnapshotQuery: GetEntitlementSnapshot) {
+  constructor(getEntitlementSnapshotQuery: GetEntitlementSnapshotUseCase) {
     this.#getEntitlementSnapshotQuery = getEntitlementSnapshotQuery;
   }
 

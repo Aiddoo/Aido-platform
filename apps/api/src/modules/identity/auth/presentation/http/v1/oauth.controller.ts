@@ -18,14 +18,14 @@ import { ApiHeader, ApiBearerAuth, ApiQuery, ApiTags } from "@nestjs/swagger";
 import { Throttle } from "@nestjs/throttler";
 import type { Request, Response } from "express";
 
-import { IdentityLogEvent } from "#api/modules/identity/auth/application/auth.log-events";
-import { CompleteOAuthAuthorization } from "#api/modules/identity/auth/application/use-cases/complete-oauth-authorization.use-case";
-import { ExchangeOAuthCode } from "#api/modules/identity/auth/application/use-cases/exchange-oauth-code.use-case";
-import { GetOAuthRedirectUri } from "#api/modules/identity/auth/application/use-cases/get-oauth-redirect-uri.use-case";
-import { LinkOAuthAccountWithCode } from "#api/modules/identity/auth/application/use-cases/link-oauth-account-with-code.use-case";
-import { LinkOAuthAccount } from "#api/modules/identity/auth/application/use-cases/link-oauth-account.use-case";
-import { LoginWithMobileOAuthToken } from "#api/modules/identity/auth/application/use-cases/login-with-mobile-oauth-token.use-case";
-import { StartOAuthAuthorization } from "#api/modules/identity/auth/application/use-cases/start-oauth-authorization.use-case";
+import { AuthLogEvent } from "#api/modules/identity/auth/application/auth.log-events";
+import { CompleteOAuthAuthorizationUseCase } from "#api/modules/identity/auth/application/use-cases/complete-oauth-authorization.use-case";
+import { ExchangeOAuthCodeUseCase } from "#api/modules/identity/auth/application/use-cases/exchange-oauth-code.use-case";
+import { GetOAuthRedirectUriUseCase } from "#api/modules/identity/auth/application/use-cases/get-oauth-redirect-uri.use-case";
+import { LinkOAuthAccountWithCodeUseCase } from "#api/modules/identity/auth/application/use-cases/link-oauth-account-with-code.use-case";
+import { LinkOAuthAccountUseCase } from "#api/modules/identity/auth/application/use-cases/link-oauth-account.use-case";
+import { LoginWithMobileOAuthTokenUseCase } from "#api/modules/identity/auth/application/use-cases/login-with-mobile-oauth-token.use-case";
+import { StartOAuthAuthorizationUseCase } from "#api/modules/identity/auth/application/use-cases/start-oauth-authorization.use-case";
 import {
   CurrentUser,
   type CurrentUserPayload,
@@ -49,39 +49,40 @@ import { ThrottleByUser } from "#api/platform/throttle/index";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import { ErrorCodedException } from "#api/shared/domain/exceptions/error-coded.exception";
 
+import { buildOAuthErrorParams, extractMetadata } from "./auth-request.mapper.js";
+import { AUTH_THROTTLE } from "./auth-throttle.constants.js";
 import {
   AppleMobileCallbackDto,
+  AuthTokensDto,
   ExchangeCodeDto,
   GoogleMobileCallbackDto,
   KakaoMobileCallbackDto,
   LinkSocialAccountDto,
+  MessageResponseDto,
   NaverMobileCallbackDto,
-} from "./auth-request.dto.js";
-import { buildOAuthErrorParams, extractMetadata } from "./auth-request.mapper.js";
-import { AuthTokensDto, MessageResponseDto } from "./auth-response.dto.js";
-import { AUTH_THROTTLE } from "./auth-throttle.constants.js";
+} from "./auth.dto.js";
 
 @ApiTags(SWAGGER_TAGS.USER_AUTH)
 @Controller("auth")
 export class OAuthController {
   readonly #logger = new Logger(OAuthController.name);
 
-  readonly #getOAuthRedirectUriQuery: GetOAuthRedirectUri;
-  readonly #startOAuthAuthorizationUseCase: StartOAuthAuthorization;
-  readonly #completeOAuthAuthorizationUseCase: CompleteOAuthAuthorization;
-  readonly #loginWithMobileOAuthTokenUseCase: LoginWithMobileOAuthToken;
-  readonly #linkOAuthAccountUseCase: LinkOAuthAccount;
-  readonly #linkOAuthAccountWithCodeUseCase: LinkOAuthAccountWithCode;
-  readonly #exchangeOAuthCodeUseCase: ExchangeOAuthCode;
+  readonly #getOAuthRedirectUriQuery: GetOAuthRedirectUriUseCase;
+  readonly #startOAuthAuthorizationUseCase: StartOAuthAuthorizationUseCase;
+  readonly #completeOAuthAuthorizationUseCase: CompleteOAuthAuthorizationUseCase;
+  readonly #loginWithMobileOAuthTokenUseCase: LoginWithMobileOAuthTokenUseCase;
+  readonly #linkOAuthAccountUseCase: LinkOAuthAccountUseCase;
+  readonly #linkOAuthAccountWithCodeUseCase: LinkOAuthAccountWithCodeUseCase;
+  readonly #exchangeOAuthCodeUseCase: ExchangeOAuthCodeUseCase;
 
   constructor(
-    getOAuthRedirectUriQuery: GetOAuthRedirectUri,
-    startOAuthAuthorizationUseCase: StartOAuthAuthorization,
-    completeOAuthAuthorizationUseCase: CompleteOAuthAuthorization,
-    loginWithMobileOAuthTokenUseCase: LoginWithMobileOAuthToken,
-    linkOAuthAccountUseCase: LinkOAuthAccount,
-    linkOAuthAccountWithCodeUseCase: LinkOAuthAccountWithCode,
-    exchangeOAuthCodeUseCase: ExchangeOAuthCode,
+    getOAuthRedirectUriQuery: GetOAuthRedirectUriUseCase,
+    startOAuthAuthorizationUseCase: StartOAuthAuthorizationUseCase,
+    completeOAuthAuthorizationUseCase: CompleteOAuthAuthorizationUseCase,
+    loginWithMobileOAuthTokenUseCase: LoginWithMobileOAuthTokenUseCase,
+    linkOAuthAccountUseCase: LinkOAuthAccountUseCase,
+    linkOAuthAccountWithCodeUseCase: LinkOAuthAccountWithCodeUseCase,
+    exchangeOAuthCodeUseCase: ExchangeOAuthCodeUseCase,
   ) {
     this.#getOAuthRedirectUriQuery = getOAuthRedirectUriQuery;
     this.#startOAuthAuthorizationUseCase = startOAuthAuthorizationUseCase;
@@ -98,7 +99,7 @@ export class OAuthController {
       return redirectUri || defaultRedirectUri;
     } catch (error) {
       this.#logger.warn({
-        event: IdentityLogEvent.OAUTH_ERROR_REDIRECT_FAILED,
+        event: AuthLogEvent.OAUTH_ERROR_REDIRECT_FAILED,
         errorType: toErrorType(error),
       });
       return defaultRedirectUri;
@@ -108,7 +109,7 @@ export class OAuthController {
   #logCallbackFailed(provider: "GOOGLE" | "KAKAO" | "NAVER", error: unknown): void {
     if (error instanceof ErrorCodedException) {
       this.#logger.warn({
-        event: IdentityLogEvent.OAUTH_CALLBACK_FAILED,
+        event: AuthLogEvent.OAUTH_CALLBACK_FAILED,
         provider,
         errorType: error.name,
         errorCode: error.errorCode,
@@ -116,7 +117,7 @@ export class OAuthController {
       return;
     }
     this.#logger.error({
-      event: IdentityLogEvent.OAUTH_CALLBACK_FAILED,
+      event: AuthLogEvent.OAUTH_CALLBACK_FAILED,
       provider,
       errorType: toErrorType(error),
     });

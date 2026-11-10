@@ -2,14 +2,14 @@ import type { RequestMetadata } from "#api/modules/identity/auth/application/rea
 import { AUTH_DEFAULTS, SECURITY_EVENT } from "#api/modules/identity/auth/domain/auth.constants";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 
-import { IdentityLogEvent } from "../auth.log-events.js";
+import { AuthLogEvent } from "../auth.log-events.js";
 import type {
   AuthUserRepositoryPort,
   AuthSecurityLogRepositoryPort,
 } from "../ports/auth-persistence.port.js";
 import type { VerificationService } from "./issue-verification-code.use-case.js";
 
-export interface RequestPasswordResetInput {
+export interface RequestPasswordResetCommand {
   readonly email: string;
   readonly metadata?: RequestMetadata;
 }
@@ -21,14 +21,14 @@ interface RequestPasswordResetDependencies {
   readonly logger: ApplicationLoggerPort;
 }
 
-export class RequestPasswordReset {
+export class RequestPasswordResetUseCase {
   readonly #dependencies: RequestPasswordResetDependencies;
 
   constructor(dependencies: RequestPasswordResetDependencies) {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: RequestPasswordResetInput): Promise<{ message: string }> {
+  async execute(input: RequestPasswordResetCommand): Promise<{ message: string }> {
     const { email, metadata } = input;
     const ip = metadata?.ip ?? AUTH_DEFAULTS.UNKNOWN_IP;
     const userAgent = metadata?.userAgent ?? AUTH_DEFAULTS.UNKNOWN_USER_AGENT;
@@ -47,11 +47,11 @@ export class RequestPasswordReset {
       });
 
       this.#dependencies.logger.debug({
-        event: IdentityLogEvent.PASSWORD_RESET_REQUESTED,
+        event: AuthLogEvent.PASSWORD_RESET_REQUESTED,
         userId: user.id,
       });
     } else {
-      this.#dependencies.logger.debug({ event: IdentityLogEvent.PASSWORD_RESET_REQUEST_SKIPPED });
+      this.#dependencies.logger.debug({ event: AuthLogEvent.PASSWORD_RESET_REQUEST_SKIPPED });
     }
 
     return {

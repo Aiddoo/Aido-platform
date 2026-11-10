@@ -35,45 +35,45 @@ import { RETENTION_ENROLLER } from "./application/ports/retention-enroller.port.
 import { SESSION_PUSH_DEVICE_RELEASER } from "./application/ports/session-push-device-releaser.port.js";
 import { USER_PROVISIONING_SEEDER } from "./application/ports/user-provisioning-seeder.port.js";
 import { VERIFICATION_CODE_SECURITY } from "./application/ports/verification-code-security.port.js";
-import { ChangePassword } from "./application/use-cases/change-password.use-case.js";
-import { CompleteOAuthAuthorization } from "./application/use-cases/complete-oauth-authorization.use-case.js";
+import { ChangePasswordUseCase } from "./application/use-cases/change-password.use-case.js";
+import { CompleteOAuthAuthorizationUseCase } from "./application/use-cases/complete-oauth-authorization.use-case.js";
 import { SessionService } from "./application/use-cases/create-session.use-case.js";
-import { DeleteAccount } from "./application/use-cases/delete-account.use-case.js";
-import { ExchangeOAuthCode } from "./application/use-cases/exchange-oauth-code.use-case.js";
-import { GetCurrentUser } from "./application/use-cases/get-current-user.use-case.js";
-import { GetEntitlementSnapshot } from "./application/use-cases/get-entitlement-snapshot.use-case.js";
-import { GetOAuthRedirectUri } from "./application/use-cases/get-oauth-redirect-uri.use-case.js";
-import { IssueLogin } from "./application/use-cases/issue-login.use-case.js";
+import { DeleteAccountUseCase } from "./application/use-cases/delete-account.use-case.js";
+import { ExchangeOAuthCodeUseCase } from "./application/use-cases/exchange-oauth-code.use-case.js";
+import { GetCurrentUserUseCase } from "./application/use-cases/get-current-user.use-case.js";
+import { GetEntitlementSnapshotUseCase } from "./application/use-cases/get-entitlement-snapshot.use-case.js";
+import { GetOAuthRedirectUriUseCase } from "./application/use-cases/get-oauth-redirect-uri.use-case.js";
+import { IssueLoginUseCase } from "./application/use-cases/issue-login.use-case.js";
 import { VerificationService } from "./application/use-cases/issue-verification-code.use-case.js";
-import { LinkOAuthAccountWithCode } from "./application/use-cases/link-oauth-account-with-code.use-case.js";
-import { LinkOAuthAccount } from "./application/use-cases/link-oauth-account.use-case.js";
-import { LinkOAuthIdentity } from "./application/use-cases/link-oauth-identity.use-case.js";
-import { ListActiveSessions } from "./application/use-cases/list-active-sessions.use-case.js";
-import { ListLinkedAccounts } from "./application/use-cases/list-linked-accounts.use-case.js";
-import { LoginWithMobileOAuthToken } from "./application/use-cases/login-with-mobile-oauth-token.use-case.js";
-import { LoginWithOAuthToken } from "./application/use-cases/login-with-oauth-token.use-case.js";
-import { LoginWithPassword } from "./application/use-cases/login-with-password.use-case.js";
-import { LogoutAll } from "./application/use-cases/logout-all.use-case.js";
-import { Logout } from "./application/use-cases/logout.use-case.js";
-import { OAuthSignupNotifier } from "./application/use-cases/notify-oauth-signup.use-case.js";
-import { ProvisionUser } from "./application/use-cases/provision-user.use-case.js";
-import { PurgeDeletedAccounts } from "./application/use-cases/purge-deleted-accounts.use-case.js";
-import { RefreshTokens } from "./application/use-cases/refresh-tokens.use-case.js";
-import { Register } from "./application/use-cases/register.use-case.js";
-import { RequestPasswordReset } from "./application/use-cases/request-password-reset.use-case.js";
-import { RequestPasswordSetupCode } from "./application/use-cases/request-password-setup-code.use-case.js";
-import { ResendVerification } from "./application/use-cases/resend-verification.use-case.js";
-import { ResetPassword } from "./application/use-cases/reset-password.use-case.js";
-import { RestoreAccount } from "./application/use-cases/restore-account.use-case.js";
-import { RevokeSession } from "./application/use-cases/revoke-session.use-case.js";
-import { SetPassword } from "./application/use-cases/set-password.use-case.js";
-import { StartOAuthAuthorization } from "./application/use-cases/start-oauth-authorization.use-case.js";
-import { UnlinkOAuthAccount } from "./application/use-cases/unlink-oauth-account.use-case.js";
-import { UpdateProfile } from "./application/use-cases/update-profile.use-case.js";
-import { VerifyEmail } from "./application/use-cases/verify-email.use-case.js";
+import { LinkOAuthAccountWithCodeUseCase } from "./application/use-cases/link-oauth-account-with-code.use-case.js";
+import { LinkOAuthAccountUseCase } from "./application/use-cases/link-oauth-account.use-case.js";
+import { LinkOAuthIdentityUseCase } from "./application/use-cases/link-oauth-identity.use-case.js";
+import { ListActiveSessionsUseCase } from "./application/use-cases/list-active-sessions.use-case.js";
+import { ListLinkedAccountsUseCase } from "./application/use-cases/list-linked-accounts.use-case.js";
+import { LoginWithMobileOAuthTokenUseCase } from "./application/use-cases/login-with-mobile-oauth-token.use-case.js";
+import { LoginWithOAuthTokenUseCase } from "./application/use-cases/login-with-oauth-token.use-case.js";
+import { LoginWithPasswordUseCase } from "./application/use-cases/login-with-password.use-case.js";
+import { LogoutAllUseCase } from "./application/use-cases/logout-all.use-case.js";
+import { LogoutUseCase } from "./application/use-cases/logout.use-case.js";
+import { NotifyOAuthSignupUseCase } from "./application/use-cases/notify-oauth-signup.use-case.js";
+import { ProvisionUserUseCase } from "./application/use-cases/provision-user.use-case.js";
+import { PurgeDeletedAccountsUseCase } from "./application/use-cases/purge-deleted-accounts.use-case.js";
+import { RefreshTokensUseCase } from "./application/use-cases/refresh-tokens.use-case.js";
+import { RegisterUseCase } from "./application/use-cases/register.use-case.js";
+import { RequestPasswordResetUseCase } from "./application/use-cases/request-password-reset.use-case.js";
+import { RequestPasswordSetupCodeUseCase } from "./application/use-cases/request-password-setup-code.use-case.js";
+import { ResendVerificationUseCase } from "./application/use-cases/resend-verification.use-case.js";
+import { ResetPasswordUseCase } from "./application/use-cases/reset-password.use-case.js";
+import { RestoreAccountUseCase } from "./application/use-cases/restore-account.use-case.js";
+import { RevokeSessionUseCase } from "./application/use-cases/revoke-session.use-case.js";
+import { SetPasswordUseCase } from "./application/use-cases/set-password.use-case.js";
+import { StartOAuthAuthorizationUseCase } from "./application/use-cases/start-oauth-authorization.use-case.js";
+import { UnlinkOAuthAccountUseCase } from "./application/use-cases/unlink-oauth-account.use-case.js";
+import { UpdateProfileUseCase } from "./application/use-cases/update-profile.use-case.js";
+import { VerifyEmailUseCase } from "./application/use-cases/verify-email.use-case.js";
 
-export const getCurrentUserProvider: FactoryProvider<GetCurrentUser> = {
-  provide: GetCurrentUser,
+export const getCurrentUserProvider: FactoryProvider<GetCurrentUserUseCase> = {
+  provide: GetCurrentUserUseCase,
   inject: [
     AUTH_USER_REPOSITORY,
     AUTH_CACHE,
@@ -84,15 +84,17 @@ export const getCurrentUserProvider: FactoryProvider<GetCurrentUser> = {
     NUDGE_USAGE_READER,
   ],
   useFactory: (
-    userRepository: ConstructorParameters<typeof GetCurrentUser>[0]["userRepository"],
-    cacheService: ConstructorParameters<typeof GetCurrentUser>[0]["cacheService"],
-    premiumAccessReader: ConstructorParameters<typeof GetCurrentUser>[0]["premiumAccessReader"],
-    entitlementReader: ConstructorParameters<typeof GetCurrentUser>[0]["entitlementReader"],
-    quotaLedger: ConstructorParameters<typeof GetCurrentUser>[0]["quotaLedger"],
-    cheerUsageReader: ConstructorParameters<typeof GetCurrentUser>[0]["cheerUsageReader"],
-    nudgeUsageReader: ConstructorParameters<typeof GetCurrentUser>[0]["nudgeUsageReader"],
+    userRepository: ConstructorParameters<typeof GetCurrentUserUseCase>[0]["userRepository"],
+    cacheService: ConstructorParameters<typeof GetCurrentUserUseCase>[0]["cacheService"],
+    premiumAccessReader: ConstructorParameters<
+      typeof GetCurrentUserUseCase
+    >[0]["premiumAccessReader"],
+    entitlementReader: ConstructorParameters<typeof GetCurrentUserUseCase>[0]["entitlementReader"],
+    quotaLedger: ConstructorParameters<typeof GetCurrentUserUseCase>[0]["quotaLedger"],
+    cheerUsageReader: ConstructorParameters<typeof GetCurrentUserUseCase>[0]["cheerUsageReader"],
+    nudgeUsageReader: ConstructorParameters<typeof GetCurrentUserUseCase>[0]["nudgeUsageReader"],
   ) =>
-    new GetCurrentUser({
+    new GetCurrentUserUseCase({
       userRepository,
       cacheService,
       premiumAccessReader,
@@ -103,8 +105,8 @@ export const getCurrentUserProvider: FactoryProvider<GetCurrentUser> = {
     }),
 };
 
-export const getEntitlementSnapshotProvider: FactoryProvider<GetEntitlementSnapshot> = {
-  provide: GetEntitlementSnapshot,
+export const getEntitlementSnapshotProvider: FactoryProvider<GetEntitlementSnapshotUseCase> = {
+  provide: GetEntitlementSnapshotUseCase,
   inject: [
     QUOTA_LEDGER,
     CHEER_USAGE_READER,
@@ -113,15 +115,21 @@ export const getEntitlementSnapshotProvider: FactoryProvider<GetEntitlementSnaps
     TODO_CATEGORY_COUNT_READER,
   ],
   useFactory: (
-    quotaLedger: ConstructorParameters<typeof GetEntitlementSnapshot>[0]["quotaLedger"],
-    cheerUsageReader: ConstructorParameters<typeof GetEntitlementSnapshot>[0]["cheerUsageReader"],
-    nudgeUsageReader: ConstructorParameters<typeof GetEntitlementSnapshot>[0]["nudgeUsageReader"],
-    friendCountReader: ConstructorParameters<typeof GetEntitlementSnapshot>[0]["friendCountReader"],
+    quotaLedger: ConstructorParameters<typeof GetEntitlementSnapshotUseCase>[0]["quotaLedger"],
+    cheerUsageReader: ConstructorParameters<
+      typeof GetEntitlementSnapshotUseCase
+    >[0]["cheerUsageReader"],
+    nudgeUsageReader: ConstructorParameters<
+      typeof GetEntitlementSnapshotUseCase
+    >[0]["nudgeUsageReader"],
+    friendCountReader: ConstructorParameters<
+      typeof GetEntitlementSnapshotUseCase
+    >[0]["friendCountReader"],
     categoryCountReader: ConstructorParameters<
-      typeof GetEntitlementSnapshot
+      typeof GetEntitlementSnapshotUseCase
     >[0]["categoryCountReader"],
   ) =>
-    new GetEntitlementSnapshot({
+    new GetEntitlementSnapshotUseCase({
       quotaLedger,
       cheerUsageReader,
       nudgeUsageReader,
@@ -130,33 +138,37 @@ export const getEntitlementSnapshotProvider: FactoryProvider<GetEntitlementSnaps
     }),
 };
 
-export const getOAuthRedirectUriProvider: FactoryProvider<GetOAuthRedirectUri> = {
-  provide: GetOAuthRedirectUri,
+export const getOAuthRedirectUriProvider: FactoryProvider<GetOAuthRedirectUriUseCase> = {
+  provide: GetOAuthRedirectUriUseCase,
   inject: [AUTH_OAUTH_STATE_REPOSITORY],
   useFactory: (
     oauthStateRepository: ConstructorParameters<
-      typeof GetOAuthRedirectUri
+      typeof GetOAuthRedirectUriUseCase
     >[0]["oauthStateRepository"],
   ) =>
-    new GetOAuthRedirectUri({
+    new GetOAuthRedirectUriUseCase({
       oauthStateRepository,
     }),
 };
 
-export const listActiveSessionsProvider: FactoryProvider<ListActiveSessions> = {
-  provide: ListActiveSessions,
+export const listActiveSessionsProvider: FactoryProvider<ListActiveSessionsUseCase> = {
+  provide: ListActiveSessionsUseCase,
   inject: [AUTH_SESSION_REPOSITORY],
   useFactory: (
-    sessionRepository: ConstructorParameters<typeof ListActiveSessions>[0]["sessionRepository"],
-  ) => new ListActiveSessions({ sessionRepository }),
+    sessionRepository: ConstructorParameters<
+      typeof ListActiveSessionsUseCase
+    >[0]["sessionRepository"],
+  ) => new ListActiveSessionsUseCase({ sessionRepository }),
 };
-export const listLinkedAccountsProvider: FactoryProvider<ListLinkedAccounts> = {
-  provide: ListLinkedAccounts,
+export const listLinkedAccountsProvider: FactoryProvider<ListLinkedAccountsUseCase> = {
+  provide: ListLinkedAccountsUseCase,
   inject: [AUTH_ACCOUNT_REPOSITORY],
   useFactory: (
-    accountRepository: ConstructorParameters<typeof ListLinkedAccounts>[0]["accountRepository"],
+    accountRepository: ConstructorParameters<
+      typeof ListLinkedAccountsUseCase
+    >[0]["accountRepository"],
   ) =>
-    new ListLinkedAccounts({
+    new ListLinkedAccountsUseCase({
       accountRepository,
     }),
 };
@@ -190,8 +202,8 @@ export const verificationServiceProvider: FactoryProvider<VerificationService> =
     }),
 };
 
-export const changePasswordProvider: FactoryProvider<ChangePassword> = {
-  provide: ChangePassword,
+export const changePasswordProvider: FactoryProvider<ChangePasswordUseCase> = {
+  provide: ChangePasswordUseCase,
   inject: [
     AUTH_USER_REPOSITORY,
     AUTH_ACCOUNT_REPOSITORY,
@@ -203,16 +215,18 @@ export const changePasswordProvider: FactoryProvider<ChangePassword> = {
     SESSION_PUSH_DEVICE_RELEASER,
   ],
   useFactory: (
-    userRepository: ConstructorParameters<typeof ChangePassword>[0]["userRepository"],
-    accountRepository: ConstructorParameters<typeof ChangePassword>[0]["accountRepository"],
-    passwordService: ConstructorParameters<typeof ChangePassword>[0]["passwordService"],
-    sessionRepository: ConstructorParameters<typeof ChangePassword>[0]["sessionRepository"],
-    cacheService: ConstructorParameters<typeof ChangePassword>[0]["cacheService"],
-    securityLogRepository: ConstructorParameters<typeof ChangePassword>[0]["securityLogRepository"],
-    unitOfWork: ConstructorParameters<typeof ChangePassword>[0]["unitOfWork"],
-    pushDevices: ConstructorParameters<typeof ChangePassword>[0]["pushDevices"],
+    userRepository: ConstructorParameters<typeof ChangePasswordUseCase>[0]["userRepository"],
+    accountRepository: ConstructorParameters<typeof ChangePasswordUseCase>[0]["accountRepository"],
+    passwordService: ConstructorParameters<typeof ChangePasswordUseCase>[0]["passwordService"],
+    sessionRepository: ConstructorParameters<typeof ChangePasswordUseCase>[0]["sessionRepository"],
+    cacheService: ConstructorParameters<typeof ChangePasswordUseCase>[0]["cacheService"],
+    securityLogRepository: ConstructorParameters<
+      typeof ChangePasswordUseCase
+    >[0]["securityLogRepository"],
+    unitOfWork: ConstructorParameters<typeof ChangePasswordUseCase>[0]["unitOfWork"],
+    pushDevices: ConstructorParameters<typeof ChangePasswordUseCase>[0]["pushDevices"],
   ) =>
-    new ChangePassword({
+    new ChangePasswordUseCase({
       pushDevices,
       userRepository,
       accountRepository,
@@ -221,32 +235,37 @@ export const changePasswordProvider: FactoryProvider<ChangePassword> = {
       cacheService,
       securityLogRepository,
       unitOfWork,
-      logger: new Logger(ChangePassword.name),
+      logger: new Logger(ChangePasswordUseCase.name),
     }),
 };
 
-export const completeOAuthAuthorizationProvider: FactoryProvider<CompleteOAuthAuthorization> = {
-  provide: CompleteOAuthAuthorization,
-  inject: [OAUTH_IDENTITY_PROVIDER_REGISTRY, AUTH_OAUTH_STATE_REPOSITORY, LoginWithOAuthToken],
-  useFactory: (
-    registry: ConstructorParameters<typeof CompleteOAuthAuthorization>[0]["registry"],
-    oauthStateRepository: ConstructorParameters<
-      typeof CompleteOAuthAuthorization
-    >[0]["oauthStateRepository"],
-    loginWithOAuthToken: ConstructorParameters<
-      typeof CompleteOAuthAuthorization
-    >[0]["loginWithOAuthToken"],
-  ) =>
-    new CompleteOAuthAuthorization({
-      registry,
-      oauthStateRepository,
-      loginWithOAuthToken,
-      logger: new Logger(CompleteOAuthAuthorization.name),
-    }),
-};
+export const completeOAuthAuthorizationProvider: FactoryProvider<CompleteOAuthAuthorizationUseCase> =
+  {
+    provide: CompleteOAuthAuthorizationUseCase,
+    inject: [
+      OAUTH_IDENTITY_PROVIDER_REGISTRY,
+      AUTH_OAUTH_STATE_REPOSITORY,
+      LoginWithOAuthTokenUseCase,
+    ],
+    useFactory: (
+      registry: ConstructorParameters<typeof CompleteOAuthAuthorizationUseCase>[0]["registry"],
+      oauthStateRepository: ConstructorParameters<
+        typeof CompleteOAuthAuthorizationUseCase
+      >[0]["oauthStateRepository"],
+      loginWithOAuthToken: ConstructorParameters<
+        typeof CompleteOAuthAuthorizationUseCase
+      >[0]["loginWithOAuthToken"],
+    ) =>
+      new CompleteOAuthAuthorizationUseCase({
+        registry,
+        oauthStateRepository,
+        loginWithOAuthToken,
+        logger: new Logger(CompleteOAuthAuthorizationUseCase.name),
+      }),
+  };
 
-export const deleteAccountProvider: FactoryProvider<DeleteAccount> = {
-  provide: DeleteAccount,
+export const deleteAccountProvider: FactoryProvider<DeleteAccountUseCase> = {
+  provide: DeleteAccountUseCase,
   inject: [
     AUTH_USER_REPOSITORY,
     AUTH_ACCOUNT_REPOSITORY,
@@ -258,16 +277,18 @@ export const deleteAccountProvider: FactoryProvider<DeleteAccount> = {
     SESSION_PUSH_DEVICE_RELEASER,
   ],
   useFactory: (
-    userRepository: ConstructorParameters<typeof DeleteAccount>[0]["userRepository"],
-    accountRepository: ConstructorParameters<typeof DeleteAccount>[0]["accountRepository"],
-    sessionRepository: ConstructorParameters<typeof DeleteAccount>[0]["sessionRepository"],
-    passwordService: ConstructorParameters<typeof DeleteAccount>[0]["passwordService"],
-    securityLogRepository: ConstructorParameters<typeof DeleteAccount>[0]["securityLogRepository"],
-    unitOfWork: ConstructorParameters<typeof DeleteAccount>[0]["unitOfWork"],
-    cacheService: ConstructorParameters<typeof DeleteAccount>[0]["cacheService"],
-    pushDevices: ConstructorParameters<typeof DeleteAccount>[0]["pushDevices"],
+    userRepository: ConstructorParameters<typeof DeleteAccountUseCase>[0]["userRepository"],
+    accountRepository: ConstructorParameters<typeof DeleteAccountUseCase>[0]["accountRepository"],
+    sessionRepository: ConstructorParameters<typeof DeleteAccountUseCase>[0]["sessionRepository"],
+    passwordService: ConstructorParameters<typeof DeleteAccountUseCase>[0]["passwordService"],
+    securityLogRepository: ConstructorParameters<
+      typeof DeleteAccountUseCase
+    >[0]["securityLogRepository"],
+    unitOfWork: ConstructorParameters<typeof DeleteAccountUseCase>[0]["unitOfWork"],
+    cacheService: ConstructorParameters<typeof DeleteAccountUseCase>[0]["cacheService"],
+    pushDevices: ConstructorParameters<typeof DeleteAccountUseCase>[0]["pushDevices"],
   ) =>
-    new DeleteAccount({
+    new DeleteAccountUseCase({
       pushDevices,
       userRepository,
       accountRepository,
@@ -276,21 +297,23 @@ export const deleteAccountProvider: FactoryProvider<DeleteAccount> = {
       securityLogRepository,
       unitOfWork,
       cacheService,
-      logger: new Logger(DeleteAccount.name),
+      logger: new Logger(DeleteAccountUseCase.name),
     }),
 };
 
-export const restoreAccountProvider: FactoryProvider<RestoreAccount> = {
-  provide: RestoreAccount,
+export const restoreAccountProvider: FactoryProvider<RestoreAccountUseCase> = {
+  provide: RestoreAccountUseCase,
   inject: [AUTH_USER_REPOSITORY, AUTH_SECURITY_LOG_REPOSITORY],
   useFactory: (
-    userRepository: ConstructorParameters<typeof RestoreAccount>[0]["userRepository"],
-    securityLogRepository: ConstructorParameters<typeof RestoreAccount>[0]["securityLogRepository"],
-  ) => new RestoreAccount({ userRepository, securityLogRepository }),
+    userRepository: ConstructorParameters<typeof RestoreAccountUseCase>[0]["userRepository"],
+    securityLogRepository: ConstructorParameters<
+      typeof RestoreAccountUseCase
+    >[0]["securityLogRepository"],
+  ) => new RestoreAccountUseCase({ userRepository, securityLogRepository }),
 };
 
-export const purgeDeletedAccountsProvider: FactoryProvider<PurgeDeletedAccounts> = {
-  provide: PurgeDeletedAccounts,
+export const purgeDeletedAccountsProvider: FactoryProvider<PurgeDeletedAccountsUseCase> = {
+  provide: PurgeDeletedAccountsUseCase,
   inject: [
     AUTH_USER_REPOSITORY,
     UNIT_OF_WORK,
@@ -300,60 +323,66 @@ export const purgeDeletedAccountsProvider: FactoryProvider<PurgeDeletedAccounts>
     ACCOUNT_USAGE_CLEANUP,
   ],
   useFactory: (
-    userRepository: ConstructorParameters<typeof PurgeDeletedAccounts>[0]["userRepository"],
-    unitOfWork: ConstructorParameters<typeof PurgeDeletedAccounts>[0]["unitOfWork"],
+    userRepository: ConstructorParameters<typeof PurgeDeletedAccountsUseCase>[0]["userRepository"],
+    unitOfWork: ConstructorParameters<typeof PurgeDeletedAccountsUseCase>[0]["unitOfWork"],
     securityLogRepository: ConstructorParameters<
-      typeof PurgeDeletedAccounts
+      typeof PurgeDeletedAccountsUseCase
     >[0]["securityLogRepository"],
     notificationCleanup: ConstructorParameters<
-      typeof PurgeDeletedAccounts
+      typeof PurgeDeletedAccountsUseCase
     >[0]["notificationCleanup"],
-    todoCommentCleanup: ConstructorParameters<typeof PurgeDeletedAccounts>[0]["todoCommentCleanup"],
-    usageCleanup: ConstructorParameters<typeof PurgeDeletedAccounts>[0]["usageCleanup"],
+    todoCommentCleanup: ConstructorParameters<
+      typeof PurgeDeletedAccountsUseCase
+    >[0]["todoCommentCleanup"],
+    usageCleanup: ConstructorParameters<typeof PurgeDeletedAccountsUseCase>[0]["usageCleanup"],
   ) =>
-    new PurgeDeletedAccounts({
+    new PurgeDeletedAccountsUseCase({
       userRepository,
       unitOfWork,
       securityLogRepository,
       notificationCleanup,
       todoCommentCleanup,
       usageCleanup,
-      logger: new Logger(PurgeDeletedAccounts.name),
+      logger: new Logger(PurgeDeletedAccountsUseCase.name),
     }),
 };
 
-export const exchangeOAuthCodeProvider: FactoryProvider<ExchangeOAuthCode> = {
-  provide: ExchangeOAuthCode,
-  inject: [AUTH_OAUTH_STATE_REPOSITORY, OAuthSignupNotifier],
+export const exchangeOAuthCodeProvider: FactoryProvider<ExchangeOAuthCodeUseCase> = {
+  provide: ExchangeOAuthCodeUseCase,
+  inject: [AUTH_OAUTH_STATE_REPOSITORY, NotifyOAuthSignupUseCase],
   useFactory: (
     oauthStateRepository: ConstructorParameters<
-      typeof ExchangeOAuthCode
+      typeof ExchangeOAuthCodeUseCase
     >[0]["oauthStateRepository"],
-    oauthSignupNotifier: ConstructorParameters<typeof ExchangeOAuthCode>[0]["oauthSignupNotifier"],
+    oauthSignupNotifier: ConstructorParameters<
+      typeof ExchangeOAuthCodeUseCase
+    >[0]["oauthSignupNotifier"],
   ) =>
-    new ExchangeOAuthCode({
+    new ExchangeOAuthCodeUseCase({
       oauthStateRepository,
       oauthSignupNotifier,
-      logger: new Logger(ExchangeOAuthCode.name),
+      logger: new Logger(ExchangeOAuthCodeUseCase.name),
     }),
 };
 
-export const oauthSignupNotifierProvider: FactoryProvider<OAuthSignupNotifier> = {
-  provide: OAuthSignupNotifier,
+export const oauthSignupNotifierProvider: FactoryProvider<NotifyOAuthSignupUseCase> = {
+  provide: NotifyOAuthSignupUseCase,
   inject: [AUTH_USER_REPOSITORY, AUTH_REGISTRATION_NOTIFIER],
   useFactory: (
-    userRepository: ConstructorParameters<typeof OAuthSignupNotifier>[0]["userRepository"],
-    adminEventNotifier: ConstructorParameters<typeof OAuthSignupNotifier>[0]["adminEventNotifier"],
+    userRepository: ConstructorParameters<typeof NotifyOAuthSignupUseCase>[0]["userRepository"],
+    adminEventNotifier: ConstructorParameters<
+      typeof NotifyOAuthSignupUseCase
+    >[0]["adminEventNotifier"],
   ) =>
-    new OAuthSignupNotifier({
+    new NotifyOAuthSignupUseCase({
       userRepository,
       adminEventNotifier,
-      logger: new Logger(OAuthSignupNotifier.name),
+      logger: new Logger(NotifyOAuthSignupUseCase.name),
     }),
 };
 
-export const issueLoginProvider: FactoryProvider<IssueLogin> = {
-  provide: IssueLogin,
+export const issueLoginProvider: FactoryProvider<IssueLoginUseCase> = {
+  provide: IssueLoginUseCase,
   inject: [
     SessionService,
     AUTH_LOGIN_ATTEMPT_REPOSITORY,
@@ -361,12 +390,16 @@ export const issueLoginProvider: FactoryProvider<IssueLogin> = {
     AUTH_USER_REPOSITORY,
   ],
   useFactory: (
-    sessionService: ConstructorParameters<typeof IssueLogin>[0]["sessionService"],
-    loginAttemptRepository: ConstructorParameters<typeof IssueLogin>[0]["loginAttemptRepository"],
-    securityLogRepository: ConstructorParameters<typeof IssueLogin>[0]["securityLogRepository"],
-    userRepository: ConstructorParameters<typeof IssueLogin>[0]["userRepository"],
+    sessionService: ConstructorParameters<typeof IssueLoginUseCase>[0]["sessionService"],
+    loginAttemptRepository: ConstructorParameters<
+      typeof IssueLoginUseCase
+    >[0]["loginAttemptRepository"],
+    securityLogRepository: ConstructorParameters<
+      typeof IssueLoginUseCase
+    >[0]["securityLogRepository"],
+    userRepository: ConstructorParameters<typeof IssueLoginUseCase>[0]["userRepository"],
   ) =>
-    new IssueLogin({
+    new IssueLoginUseCase({
       sessionService,
       loginAttemptRepository,
       securityLogRepository,
@@ -374,79 +407,85 @@ export const issueLoginProvider: FactoryProvider<IssueLogin> = {
     }),
 };
 
-export const linkOAuthIdentityProvider: FactoryProvider<LinkOAuthIdentity> = {
-  provide: LinkOAuthIdentity,
+export const linkOAuthIdentityProvider: FactoryProvider<LinkOAuthIdentityUseCase> = {
+  provide: LinkOAuthIdentityUseCase,
   inject: [AUTH_ACCOUNT_REPOSITORY, AUTH_SECURITY_LOG_REPOSITORY],
   useFactory: (
-    accountRepository: ConstructorParameters<typeof LinkOAuthIdentity>[0]["accountRepository"],
+    accountRepository: ConstructorParameters<
+      typeof LinkOAuthIdentityUseCase
+    >[0]["accountRepository"],
     securityLogRepository: ConstructorParameters<
-      typeof LinkOAuthIdentity
+      typeof LinkOAuthIdentityUseCase
     >[0]["securityLogRepository"],
   ) =>
-    new LinkOAuthIdentity({
+    new LinkOAuthIdentityUseCase({
       accountRepository,
       securityLogRepository,
     }),
 };
 
-export const linkOAuthAccountProvider: FactoryProvider<LinkOAuthAccount> = {
-  provide: LinkOAuthAccount,
+export const linkOAuthAccountProvider: FactoryProvider<LinkOAuthAccountUseCase> = {
+  provide: LinkOAuthAccountUseCase,
   inject: [
     AUTH_USER_REPOSITORY,
     OAUTH_IDENTITY_PROVIDER_REGISTRY,
-    LinkOAuthIdentity,
+    LinkOAuthIdentityUseCase,
     UNIT_OF_WORK,
     AUTH_CACHE,
   ],
   useFactory: (
-    userRepository: ConstructorParameters<typeof LinkOAuthAccount>[0]["userRepository"],
-    registry: ConstructorParameters<typeof LinkOAuthAccount>[0]["registry"],
-    linkOAuthIdentity: ConstructorParameters<typeof LinkOAuthAccount>[0]["linkOAuthIdentity"],
-    unitOfWork: ConstructorParameters<typeof LinkOAuthAccount>[0]["unitOfWork"],
-    cacheService: ConstructorParameters<typeof LinkOAuthAccount>[0]["cacheService"],
+    userRepository: ConstructorParameters<typeof LinkOAuthAccountUseCase>[0]["userRepository"],
+    registry: ConstructorParameters<typeof LinkOAuthAccountUseCase>[0]["registry"],
+    linkOAuthIdentity: ConstructorParameters<
+      typeof LinkOAuthAccountUseCase
+    >[0]["linkOAuthIdentity"],
+    unitOfWork: ConstructorParameters<typeof LinkOAuthAccountUseCase>[0]["unitOfWork"],
+    cacheService: ConstructorParameters<typeof LinkOAuthAccountUseCase>[0]["cacheService"],
   ) =>
-    new LinkOAuthAccount({
+    new LinkOAuthAccountUseCase({
       userRepository,
       registry,
       linkOAuthIdentity,
       unitOfWork,
       cacheService,
-      logger: new Logger(LinkOAuthAccount.name),
+      logger: new Logger(LinkOAuthAccountUseCase.name),
     }),
 };
 
-export const linkOAuthAccountWithCodeProvider: FactoryProvider<LinkOAuthAccountWithCode> = {
-  provide: LinkOAuthAccountWithCode,
+export const linkOAuthAccountWithCodeProvider: FactoryProvider<LinkOAuthAccountWithCodeUseCase> = {
+  provide: LinkOAuthAccountWithCodeUseCase,
   inject: [
     AUTH_USER_REPOSITORY,
     AUTH_OAUTH_STATE_REPOSITORY,
-    LinkOAuthIdentity,
+    LinkOAuthIdentityUseCase,
     UNIT_OF_WORK,
     AUTH_CACHE,
   ],
   useFactory: (
-    userRepository: ConstructorParameters<typeof LinkOAuthAccountWithCode>[0]["userRepository"],
+    userRepository: ConstructorParameters<
+      typeof LinkOAuthAccountWithCodeUseCase
+    >[0]["userRepository"],
     oauthStateRepository: ConstructorParameters<
-      typeof LinkOAuthAccountWithCode
+      typeof LinkOAuthAccountWithCodeUseCase
     >[0]["oauthStateRepository"],
     linkOAuthIdentity: ConstructorParameters<
-      typeof LinkOAuthAccountWithCode
+      typeof LinkOAuthAccountWithCodeUseCase
     >[0]["linkOAuthIdentity"],
-    unitOfWork: ConstructorParameters<typeof LinkOAuthAccountWithCode>[0]["unitOfWork"],
-    cacheService: ConstructorParameters<typeof LinkOAuthAccountWithCode>[0]["cacheService"],
+    unitOfWork: ConstructorParameters<typeof LinkOAuthAccountWithCodeUseCase>[0]["unitOfWork"],
+    cacheService: ConstructorParameters<typeof LinkOAuthAccountWithCodeUseCase>[0]["cacheService"],
   ) =>
-    new LinkOAuthAccountWithCode({
+    new LinkOAuthAccountWithCodeUseCase({
       userRepository,
       oauthStateRepository,
       linkOAuthIdentity,
       unitOfWork,
       cacheService,
-      logger: new Logger(LinkOAuthAccountWithCode.name),
+      logger: new Logger(LinkOAuthAccountWithCodeUseCase.name),
     }),
 };
 
-export const loginWithOAuthTokenProvider: FactoryProvider<LoginWithOAuthToken> = {
-  provide: LoginWithOAuthToken,
+export const loginWithOAuthTokenProvider: FactoryProvider<LoginWithOAuthTokenUseCase> = {
+  provide: LoginWithOAuthTokenUseCase,
   inject: [
     OAUTH_IDENTITY_PROVIDER_REGISTRY,
     AUTH_USER_REPOSITORY,
@@ -455,29 +494,33 @@ export const loginWithOAuthTokenProvider: FactoryProvider<LoginWithOAuthToken> =
     AUTH_LOGIN_ATTEMPT_REPOSITORY,
     UNIT_OF_WORK,
     AUTH_CACHE,
-    IssueLogin,
-    ProvisionUser,
-    RestoreAccount,
+    IssueLoginUseCase,
+    ProvisionUserUseCase,
+    RestoreAccountUseCase,
   ],
   useFactory: (
-    registry: ConstructorParameters<typeof LoginWithOAuthToken>[0]["registry"],
-    userRepository: ConstructorParameters<typeof LoginWithOAuthToken>[0]["userRepository"],
-    accountRepository: ConstructorParameters<typeof LoginWithOAuthToken>[0]["accountRepository"],
+    registry: ConstructorParameters<typeof LoginWithOAuthTokenUseCase>[0]["registry"],
+    userRepository: ConstructorParameters<typeof LoginWithOAuthTokenUseCase>[0]["userRepository"],
+    accountRepository: ConstructorParameters<
+      typeof LoginWithOAuthTokenUseCase
+    >[0]["accountRepository"],
     securityLogRepository: ConstructorParameters<
-      typeof LoginWithOAuthToken
+      typeof LoginWithOAuthTokenUseCase
     >[0]["securityLogRepository"],
     loginAttemptRepository: ConstructorParameters<
-      typeof LoginWithOAuthToken
+      typeof LoginWithOAuthTokenUseCase
     >[0]["loginAttemptRepository"],
-    unitOfWork: ConstructorParameters<typeof LoginWithOAuthToken>[0]["unitOfWork"],
-    cacheService: ConstructorParameters<typeof LoginWithOAuthToken>[0]["cacheService"],
-    issueLoginUseCase: ConstructorParameters<typeof LoginWithOAuthToken>[0]["issueLoginUseCase"],
+    unitOfWork: ConstructorParameters<typeof LoginWithOAuthTokenUseCase>[0]["unitOfWork"],
+    cacheService: ConstructorParameters<typeof LoginWithOAuthTokenUseCase>[0]["cacheService"],
+    issueLoginUseCase: ConstructorParameters<
+      typeof LoginWithOAuthTokenUseCase
+    >[0]["issueLoginUseCase"],
     provisionUserUseCase: ConstructorParameters<
-      typeof LoginWithOAuthToken
+      typeof LoginWithOAuthTokenUseCase
     >[0]["provisionUserUseCase"],
-    restoreAccount: ConstructorParameters<typeof LoginWithOAuthToken>[0]["restoreAccount"],
+    restoreAccount: ConstructorParameters<typeof LoginWithOAuthTokenUseCase>[0]["restoreAccount"],
   ) =>
-    new LoginWithOAuthToken({
+    new LoginWithOAuthTokenUseCase({
       registry,
       userRepository,
       accountRepository,
@@ -488,52 +531,57 @@ export const loginWithOAuthTokenProvider: FactoryProvider<LoginWithOAuthToken> =
       issueLoginUseCase,
       provisionUserUseCase,
       restoreAccount,
-      logger: new Logger(LoginWithOAuthToken.name),
+      logger: new Logger(LoginWithOAuthTokenUseCase.name),
     }),
 };
 
-export const loginWithMobileOAuthTokenProvider: FactoryProvider<LoginWithMobileOAuthToken> = {
-  provide: LoginWithMobileOAuthToken,
-  inject: [LoginWithOAuthToken, OAuthSignupNotifier],
-  useFactory: (
-    loginWithOAuthToken: ConstructorParameters<
-      typeof LoginWithMobileOAuthToken
-    >[0]["loginWithOAuthToken"],
-    oauthSignupNotifier: ConstructorParameters<
-      typeof LoginWithMobileOAuthToken
-    >[0]["oauthSignupNotifier"],
-  ) => new LoginWithMobileOAuthToken({ loginWithOAuthToken, oauthSignupNotifier }),
-};
+export const loginWithMobileOAuthTokenProvider: FactoryProvider<LoginWithMobileOAuthTokenUseCase> =
+  {
+    provide: LoginWithMobileOAuthTokenUseCase,
+    inject: [LoginWithOAuthTokenUseCase, NotifyOAuthSignupUseCase],
+    useFactory: (
+      loginWithOAuthToken: ConstructorParameters<
+        typeof LoginWithMobileOAuthTokenUseCase
+      >[0]["loginWithOAuthToken"],
+      oauthSignupNotifier: ConstructorParameters<
+        typeof LoginWithMobileOAuthTokenUseCase
+      >[0]["oauthSignupNotifier"],
+    ) => new LoginWithMobileOAuthTokenUseCase({ loginWithOAuthToken, oauthSignupNotifier }),
+  };
 
-export const loginWithPasswordProvider: FactoryProvider<LoginWithPassword> = {
-  provide: LoginWithPassword,
+export const loginWithPasswordProvider: FactoryProvider<LoginWithPasswordUseCase> = {
+  provide: LoginWithPasswordUseCase,
   inject: [
     AUTH_USER_REPOSITORY,
     AUTH_ACCOUNT_REPOSITORY,
     AUTH_LOGIN_ATTEMPT_REPOSITORY,
     AUTH_PASSWORD_HASHER,
     AUTH_SECURITY_LOG_REPOSITORY,
-    IssueLogin,
-    RestoreAccount,
+    IssueLoginUseCase,
+    RestoreAccountUseCase,
     AUTH_CACHE,
     UNIT_OF_WORK,
   ],
   useFactory: (
-    userRepository: ConstructorParameters<typeof LoginWithPassword>[0]["userRepository"],
-    accountRepository: ConstructorParameters<typeof LoginWithPassword>[0]["accountRepository"],
+    userRepository: ConstructorParameters<typeof LoginWithPasswordUseCase>[0]["userRepository"],
+    accountRepository: ConstructorParameters<
+      typeof LoginWithPasswordUseCase
+    >[0]["accountRepository"],
     loginAttemptRepository: ConstructorParameters<
-      typeof LoginWithPassword
+      typeof LoginWithPasswordUseCase
     >[0]["loginAttemptRepository"],
-    passwordService: ConstructorParameters<typeof LoginWithPassword>[0]["passwordService"],
+    passwordService: ConstructorParameters<typeof LoginWithPasswordUseCase>[0]["passwordService"],
     securityLogRepository: ConstructorParameters<
-      typeof LoginWithPassword
+      typeof LoginWithPasswordUseCase
     >[0]["securityLogRepository"],
-    issueLoginUseCase: ConstructorParameters<typeof LoginWithPassword>[0]["issueLoginUseCase"],
-    restoreAccount: ConstructorParameters<typeof LoginWithPassword>[0]["restoreAccount"],
-    cacheService: ConstructorParameters<typeof LoginWithPassword>[0]["cacheService"],
-    unitOfWork: ConstructorParameters<typeof LoginWithPassword>[0]["unitOfWork"],
+    issueLoginUseCase: ConstructorParameters<
+      typeof LoginWithPasswordUseCase
+    >[0]["issueLoginUseCase"],
+    restoreAccount: ConstructorParameters<typeof LoginWithPasswordUseCase>[0]["restoreAccount"],
+    cacheService: ConstructorParameters<typeof LoginWithPasswordUseCase>[0]["cacheService"],
+    unitOfWork: ConstructorParameters<typeof LoginWithPasswordUseCase>[0]["unitOfWork"],
   ) =>
-    new LoginWithPassword({
+    new LoginWithPasswordUseCase({
       userRepository,
       accountRepository,
       loginAttemptRepository,
@@ -543,12 +591,12 @@ export const loginWithPasswordProvider: FactoryProvider<LoginWithPassword> = {
       restoreAccount,
       cacheService,
       unitOfWork,
-      logger: new Logger(LoginWithPassword.name),
+      logger: new Logger(LoginWithPasswordUseCase.name),
     }),
 };
 
-export const logoutProvider: FactoryProvider<Logout> = {
-  provide: Logout,
+export const logoutProvider: FactoryProvider<LogoutUseCase> = {
+  provide: LogoutUseCase,
   inject: [
     AUTH_SESSION_REPOSITORY,
     AUTH_SECURITY_LOG_REPOSITORY,
@@ -556,21 +604,21 @@ export const logoutProvider: FactoryProvider<Logout> = {
     SESSION_PUSH_DEVICE_RELEASER,
   ],
   useFactory: (
-    sessionRepository: ConstructorParameters<typeof Logout>[0]["sessionRepository"],
-    securityLogRepository: ConstructorParameters<typeof Logout>[0]["securityLogRepository"],
-    cacheService: ConstructorParameters<typeof Logout>[0]["cacheService"],
-    pushDevices: ConstructorParameters<typeof Logout>[0]["pushDevices"],
+    sessionRepository: ConstructorParameters<typeof LogoutUseCase>[0]["sessionRepository"],
+    securityLogRepository: ConstructorParameters<typeof LogoutUseCase>[0]["securityLogRepository"],
+    cacheService: ConstructorParameters<typeof LogoutUseCase>[0]["cacheService"],
+    pushDevices: ConstructorParameters<typeof LogoutUseCase>[0]["pushDevices"],
   ) =>
-    new Logout({
+    new LogoutUseCase({
       pushDevices,
       sessionRepository,
       securityLogRepository,
       cacheService,
-      logger: new Logger(Logout.name),
+      logger: new Logger(LogoutUseCase.name),
     }),
 };
-export const logoutAllProvider: FactoryProvider<LogoutAll> = {
-  provide: LogoutAll,
+export const logoutAllProvider: FactoryProvider<LogoutAllUseCase> = {
+  provide: LogoutAllUseCase,
   inject: [
     AUTH_SESSION_REPOSITORY,
     AUTH_SECURITY_LOG_REPOSITORY,
@@ -578,21 +626,23 @@ export const logoutAllProvider: FactoryProvider<LogoutAll> = {
     SESSION_PUSH_DEVICE_RELEASER,
   ],
   useFactory: (
-    sessionRepository: ConstructorParameters<typeof LogoutAll>[0]["sessionRepository"],
-    securityLogRepository: ConstructorParameters<typeof LogoutAll>[0]["securityLogRepository"],
-    cacheService: ConstructorParameters<typeof LogoutAll>[0]["cacheService"],
-    pushDevices: ConstructorParameters<typeof LogoutAll>[0]["pushDevices"],
+    sessionRepository: ConstructorParameters<typeof LogoutAllUseCase>[0]["sessionRepository"],
+    securityLogRepository: ConstructorParameters<
+      typeof LogoutAllUseCase
+    >[0]["securityLogRepository"],
+    cacheService: ConstructorParameters<typeof LogoutAllUseCase>[0]["cacheService"],
+    pushDevices: ConstructorParameters<typeof LogoutAllUseCase>[0]["pushDevices"],
   ) =>
-    new LogoutAll({
+    new LogoutAllUseCase({
       pushDevices,
       sessionRepository,
       securityLogRepository,
       cacheService,
-      logger: new Logger(LogoutAll.name),
+      logger: new Logger(LogoutAllUseCase.name),
     }),
 };
-export const provisionUserProvider: FactoryProvider<ProvisionUser> = {
-  provide: ProvisionUser,
+export const provisionUserProvider: FactoryProvider<ProvisionUserUseCase> = {
+  provide: ProvisionUserUseCase,
   inject: [
     AUTH_USER_REPOSITORY,
     AUTH_ACCOUNT_REPOSITORY,
@@ -600,12 +650,12 @@ export const provisionUserProvider: FactoryProvider<ProvisionUser> = {
     RETENTION_ENROLLER,
   ],
   useFactory: (
-    userRepository: ConstructorParameters<typeof ProvisionUser>[0]["userRepository"],
-    accountRepository: ConstructorParameters<typeof ProvisionUser>[0]["accountRepository"],
-    seeder: ConstructorParameters<typeof ProvisionUser>[0]["seeder"],
-    retentionEnroller: ConstructorParameters<typeof ProvisionUser>[0]["retentionEnroller"],
+    userRepository: ConstructorParameters<typeof ProvisionUserUseCase>[0]["userRepository"],
+    accountRepository: ConstructorParameters<typeof ProvisionUserUseCase>[0]["accountRepository"],
+    seeder: ConstructorParameters<typeof ProvisionUserUseCase>[0]["seeder"],
+    retentionEnroller: ConstructorParameters<typeof ProvisionUserUseCase>[0]["retentionEnroller"],
   ) =>
-    new ProvisionUser({
+    new ProvisionUserUseCase({
       userRepository,
       accountRepository,
       seeder,
@@ -613,8 +663,8 @@ export const provisionUserProvider: FactoryProvider<ProvisionUser> = {
     }),
 };
 
-export const refreshTokensProvider: FactoryProvider<RefreshTokens> = {
-  provide: RefreshTokens,
+export const refreshTokensProvider: FactoryProvider<RefreshTokensUseCase> = {
+  provide: RefreshTokensUseCase,
   inject: [
     AUTH_SESSION_REPOSITORY,
     AUTH_TOKEN_ISSUER,
@@ -623,42 +673,46 @@ export const refreshTokensProvider: FactoryProvider<RefreshTokens> = {
     SESSION_PUSH_DEVICE_RELEASER,
   ],
   useFactory: (
-    sessionRepository: ConstructorParameters<typeof RefreshTokens>[0]["sessionRepository"],
-    tokenService: ConstructorParameters<typeof RefreshTokens>[0]["tokenService"],
-    securityLogRepository: ConstructorParameters<typeof RefreshTokens>[0]["securityLogRepository"],
-    cacheService: ConstructorParameters<typeof RefreshTokens>[0]["cacheService"],
-    pushDevices: ConstructorParameters<typeof RefreshTokens>[0]["pushDevices"],
+    sessionRepository: ConstructorParameters<typeof RefreshTokensUseCase>[0]["sessionRepository"],
+    tokenService: ConstructorParameters<typeof RefreshTokensUseCase>[0]["tokenService"],
+    securityLogRepository: ConstructorParameters<
+      typeof RefreshTokensUseCase
+    >[0]["securityLogRepository"],
+    cacheService: ConstructorParameters<typeof RefreshTokensUseCase>[0]["cacheService"],
+    pushDevices: ConstructorParameters<typeof RefreshTokensUseCase>[0]["pushDevices"],
   ) =>
-    new RefreshTokens({
+    new RefreshTokensUseCase({
       pushDevices,
       sessionRepository,
       tokenService,
       securityLogRepository,
       cacheService,
-      logger: new Logger(RefreshTokens.name),
+      logger: new Logger(RefreshTokensUseCase.name),
     }),
 };
-export const registerProvider: FactoryProvider<Register> = {
-  provide: Register,
+export const registerProvider: FactoryProvider<RegisterUseCase> = {
+  provide: RegisterUseCase,
   inject: [
     AUTH_USER_REPOSITORY,
     AUTH_PASSWORD_HASHER,
-    ProvisionUser,
+    ProvisionUserUseCase,
     VerificationService,
     AUTH_SECURITY_LOG_REPOSITORY,
     UNIT_OF_WORK,
     AUTH_REGISTRATION_NOTIFIER,
   ],
   useFactory: (
-    userRepository: ConstructorParameters<typeof Register>[0]["userRepository"],
-    passwordService: ConstructorParameters<typeof Register>[0]["passwordService"],
-    provisionUserUseCase: ConstructorParameters<typeof Register>[0]["provisionUserUseCase"],
-    verificationService: ConstructorParameters<typeof Register>[0]["verificationService"],
-    securityLogRepository: ConstructorParameters<typeof Register>[0]["securityLogRepository"],
-    unitOfWork: ConstructorParameters<typeof Register>[0]["unitOfWork"],
-    adminEventNotifier: ConstructorParameters<typeof Register>[0]["adminEventNotifier"],
+    userRepository: ConstructorParameters<typeof RegisterUseCase>[0]["userRepository"],
+    passwordService: ConstructorParameters<typeof RegisterUseCase>[0]["passwordService"],
+    provisionUserUseCase: ConstructorParameters<typeof RegisterUseCase>[0]["provisionUserUseCase"],
+    verificationService: ConstructorParameters<typeof RegisterUseCase>[0]["verificationService"],
+    securityLogRepository: ConstructorParameters<
+      typeof RegisterUseCase
+    >[0]["securityLogRepository"],
+    unitOfWork: ConstructorParameters<typeof RegisterUseCase>[0]["unitOfWork"],
+    adminEventNotifier: ConstructorParameters<typeof RegisterUseCase>[0]["adminEventNotifier"],
   ) =>
-    new Register({
+    new RegisterUseCase({
       userRepository,
       passwordService,
       provisionUserUseCase,
@@ -666,67 +720,71 @@ export const registerProvider: FactoryProvider<Register> = {
       securityLogRepository,
       unitOfWork,
       adminEventNotifier,
-      logger: new Logger(Register.name),
+      logger: new Logger(RegisterUseCase.name),
     }),
 };
 
-export const requestPasswordResetProvider: FactoryProvider<RequestPasswordReset> = {
-  provide: RequestPasswordReset,
+export const requestPasswordResetProvider: FactoryProvider<RequestPasswordResetUseCase> = {
+  provide: RequestPasswordResetUseCase,
   inject: [AUTH_USER_REPOSITORY, VerificationService, AUTH_SECURITY_LOG_REPOSITORY],
   useFactory: (
-    userRepository: ConstructorParameters<typeof RequestPasswordReset>[0]["userRepository"],
+    userRepository: ConstructorParameters<typeof RequestPasswordResetUseCase>[0]["userRepository"],
     verificationService: ConstructorParameters<
-      typeof RequestPasswordReset
+      typeof RequestPasswordResetUseCase
     >[0]["verificationService"],
     securityLogRepository: ConstructorParameters<
-      typeof RequestPasswordReset
+      typeof RequestPasswordResetUseCase
     >[0]["securityLogRepository"],
   ) =>
-    new RequestPasswordReset({
+    new RequestPasswordResetUseCase({
       userRepository,
       verificationService,
       securityLogRepository,
-      logger: new Logger(RequestPasswordReset.name),
+      logger: new Logger(RequestPasswordResetUseCase.name),
     }),
 };
 
-export const requestPasswordSetupCodeProvider: FactoryProvider<RequestPasswordSetupCode> = {
-  provide: RequestPasswordSetupCode,
+export const requestPasswordSetupCodeProvider: FactoryProvider<RequestPasswordSetupCodeUseCase> = {
+  provide: RequestPasswordSetupCodeUseCase,
   inject: [AUTH_USER_REPOSITORY, AUTH_ACCOUNT_REPOSITORY, VerificationService],
   useFactory: (
-    userRepository: ConstructorParameters<typeof RequestPasswordSetupCode>[0]["userRepository"],
+    userRepository: ConstructorParameters<
+      typeof RequestPasswordSetupCodeUseCase
+    >[0]["userRepository"],
     accountRepository: ConstructorParameters<
-      typeof RequestPasswordSetupCode
+      typeof RequestPasswordSetupCodeUseCase
     >[0]["accountRepository"],
     verificationService: ConstructorParameters<
-      typeof RequestPasswordSetupCode
+      typeof RequestPasswordSetupCodeUseCase
     >[0]["verificationService"],
   ) =>
-    new RequestPasswordSetupCode({
+    new RequestPasswordSetupCodeUseCase({
       userRepository,
       accountRepository,
       verificationService,
     }),
 };
 
-export const resendVerificationProvider: FactoryProvider<ResendVerification> = {
-  provide: ResendVerification,
+export const resendVerificationProvider: FactoryProvider<ResendVerificationUseCase> = {
+  provide: ResendVerificationUseCase,
   inject: [AUTH_USER_REPOSITORY, VerificationService, UNIT_OF_WORK],
   useFactory: (
-    userRepository: ConstructorParameters<typeof ResendVerification>[0]["userRepository"],
-    verificationService: ConstructorParameters<typeof ResendVerification>[0]["verificationService"],
-    unitOfWork: ConstructorParameters<typeof ResendVerification>[0]["unitOfWork"],
+    userRepository: ConstructorParameters<typeof ResendVerificationUseCase>[0]["userRepository"],
+    verificationService: ConstructorParameters<
+      typeof ResendVerificationUseCase
+    >[0]["verificationService"],
+    unitOfWork: ConstructorParameters<typeof ResendVerificationUseCase>[0]["unitOfWork"],
   ) =>
-    new ResendVerification({
+    new ResendVerificationUseCase({
       userRepository,
       verificationService,
       unitOfWork,
-      logger: new Logger(ResendVerification.name),
+      logger: new Logger(ResendVerificationUseCase.name),
     }),
 };
 
-export const resetPasswordProvider: FactoryProvider<ResetPassword> = {
-  provide: ResetPassword,
+export const resetPasswordProvider: FactoryProvider<ResetPasswordUseCase> = {
+  provide: ResetPasswordUseCase,
   inject: [
     AUTH_USER_REPOSITORY,
     AUTH_ACCOUNT_REPOSITORY,
@@ -739,17 +797,21 @@ export const resetPasswordProvider: FactoryProvider<ResetPassword> = {
     SESSION_PUSH_DEVICE_RELEASER,
   ],
   useFactory: (
-    userRepository: ConstructorParameters<typeof ResetPassword>[0]["userRepository"],
-    accountRepository: ConstructorParameters<typeof ResetPassword>[0]["accountRepository"],
-    passwordService: ConstructorParameters<typeof ResetPassword>[0]["passwordService"],
-    verificationService: ConstructorParameters<typeof ResetPassword>[0]["verificationService"],
-    sessionRepository: ConstructorParameters<typeof ResetPassword>[0]["sessionRepository"],
-    cacheService: ConstructorParameters<typeof ResetPassword>[0]["cacheService"],
-    securityLogRepository: ConstructorParameters<typeof ResetPassword>[0]["securityLogRepository"],
-    unitOfWork: ConstructorParameters<typeof ResetPassword>[0]["unitOfWork"],
-    pushDevices: ConstructorParameters<typeof ResetPassword>[0]["pushDevices"],
+    userRepository: ConstructorParameters<typeof ResetPasswordUseCase>[0]["userRepository"],
+    accountRepository: ConstructorParameters<typeof ResetPasswordUseCase>[0]["accountRepository"],
+    passwordService: ConstructorParameters<typeof ResetPasswordUseCase>[0]["passwordService"],
+    verificationService: ConstructorParameters<
+      typeof ResetPasswordUseCase
+    >[0]["verificationService"],
+    sessionRepository: ConstructorParameters<typeof ResetPasswordUseCase>[0]["sessionRepository"],
+    cacheService: ConstructorParameters<typeof ResetPasswordUseCase>[0]["cacheService"],
+    securityLogRepository: ConstructorParameters<
+      typeof ResetPasswordUseCase
+    >[0]["securityLogRepository"],
+    unitOfWork: ConstructorParameters<typeof ResetPasswordUseCase>[0]["unitOfWork"],
+    pushDevices: ConstructorParameters<typeof ResetPasswordUseCase>[0]["pushDevices"],
   ) =>
-    new ResetPassword({
+    new ResetPasswordUseCase({
       pushDevices,
       userRepository,
       accountRepository,
@@ -759,12 +821,12 @@ export const resetPasswordProvider: FactoryProvider<ResetPassword> = {
       cacheService,
       securityLogRepository,
       unitOfWork,
-      logger: new Logger(ResetPassword.name),
+      logger: new Logger(ResetPasswordUseCase.name),
     }),
 };
 
-export const revokeSessionProvider: FactoryProvider<RevokeSession> = {
-  provide: RevokeSession,
+export const revokeSessionProvider: FactoryProvider<RevokeSessionUseCase> = {
+  provide: RevokeSessionUseCase,
   inject: [
     AUTH_SESSION_REPOSITORY,
     AUTH_SECURITY_LOG_REPOSITORY,
@@ -772,21 +834,23 @@ export const revokeSessionProvider: FactoryProvider<RevokeSession> = {
     SESSION_PUSH_DEVICE_RELEASER,
   ],
   useFactory: (
-    sessionRepository: ConstructorParameters<typeof RevokeSession>[0]["sessionRepository"],
-    securityLogRepository: ConstructorParameters<typeof RevokeSession>[0]["securityLogRepository"],
-    cacheService: ConstructorParameters<typeof RevokeSession>[0]["cacheService"],
-    pushDevices: ConstructorParameters<typeof RevokeSession>[0]["pushDevices"],
+    sessionRepository: ConstructorParameters<typeof RevokeSessionUseCase>[0]["sessionRepository"],
+    securityLogRepository: ConstructorParameters<
+      typeof RevokeSessionUseCase
+    >[0]["securityLogRepository"],
+    cacheService: ConstructorParameters<typeof RevokeSessionUseCase>[0]["cacheService"],
+    pushDevices: ConstructorParameters<typeof RevokeSessionUseCase>[0]["pushDevices"],
   ) =>
-    new RevokeSession({
+    new RevokeSessionUseCase({
       pushDevices,
       sessionRepository,
       securityLogRepository,
       cacheService,
-      logger: new Logger(RevokeSession.name),
+      logger: new Logger(RevokeSessionUseCase.name),
     }),
 };
-export const setPasswordProvider: FactoryProvider<SetPassword> = {
-  provide: SetPassword,
+export const setPasswordProvider: FactoryProvider<SetPasswordUseCase> = {
+  provide: SetPasswordUseCase,
   inject: [
     AUTH_USER_REPOSITORY,
     AUTH_ACCOUNT_REPOSITORY,
@@ -797,15 +861,17 @@ export const setPasswordProvider: FactoryProvider<SetPassword> = {
     UNIT_OF_WORK,
   ],
   useFactory: (
-    userRepository: ConstructorParameters<typeof SetPassword>[0]["userRepository"],
-    accountRepository: ConstructorParameters<typeof SetPassword>[0]["accountRepository"],
-    passwordService: ConstructorParameters<typeof SetPassword>[0]["passwordService"],
-    verificationService: ConstructorParameters<typeof SetPassword>[0]["verificationService"],
-    securityLogRepository: ConstructorParameters<typeof SetPassword>[0]["securityLogRepository"],
-    cacheService: ConstructorParameters<typeof SetPassword>[0]["cacheService"],
-    unitOfWork: ConstructorParameters<typeof SetPassword>[0]["unitOfWork"],
+    userRepository: ConstructorParameters<typeof SetPasswordUseCase>[0]["userRepository"],
+    accountRepository: ConstructorParameters<typeof SetPasswordUseCase>[0]["accountRepository"],
+    passwordService: ConstructorParameters<typeof SetPasswordUseCase>[0]["passwordService"],
+    verificationService: ConstructorParameters<typeof SetPasswordUseCase>[0]["verificationService"],
+    securityLogRepository: ConstructorParameters<
+      typeof SetPasswordUseCase
+    >[0]["securityLogRepository"],
+    cacheService: ConstructorParameters<typeof SetPasswordUseCase>[0]["cacheService"],
+    unitOfWork: ConstructorParameters<typeof SetPasswordUseCase>[0]["unitOfWork"],
   ) =>
-    new SetPassword({
+    new SetPasswordUseCase({
       userRepository,
       accountRepository,
       passwordService,
@@ -813,30 +879,30 @@ export const setPasswordProvider: FactoryProvider<SetPassword> = {
       securityLogRepository,
       cacheService,
       unitOfWork,
-      logger: new Logger(SetPassword.name),
+      logger: new Logger(SetPasswordUseCase.name),
     }),
 };
 
-export const startOAuthAuthorizationProvider: FactoryProvider<StartOAuthAuthorization> = {
-  provide: StartOAuthAuthorization,
+export const startOAuthAuthorizationProvider: FactoryProvider<StartOAuthAuthorizationUseCase> = {
+  provide: StartOAuthAuthorizationUseCase,
   inject: [OAUTH_IDENTITY_PROVIDER_REGISTRY, AUTH_OAUTH_STATE_REPOSITORY, AUTH_RUNTIME_CONFIG],
   useFactory: (
-    registry: ConstructorParameters<typeof StartOAuthAuthorization>[0]["registry"],
+    registry: ConstructorParameters<typeof StartOAuthAuthorizationUseCase>[0]["registry"],
     oauthStateRepository: ConstructorParameters<
-      typeof StartOAuthAuthorization
+      typeof StartOAuthAuthorizationUseCase
     >[0]["oauthStateRepository"],
-    configService: ConstructorParameters<typeof StartOAuthAuthorization>[0]["configService"],
+    configService: ConstructorParameters<typeof StartOAuthAuthorizationUseCase>[0]["configService"],
   ) =>
-    new StartOAuthAuthorization({
+    new StartOAuthAuthorizationUseCase({
       registry,
       oauthStateRepository,
       configService,
-      logger: new Logger(StartOAuthAuthorization.name),
+      logger: new Logger(StartOAuthAuthorizationUseCase.name),
     }),
 };
 
-export const unlinkOAuthAccountProvider: FactoryProvider<UnlinkOAuthAccount> = {
-  provide: UnlinkOAuthAccount,
+export const unlinkOAuthAccountProvider: FactoryProvider<UnlinkOAuthAccountUseCase> = {
+  provide: UnlinkOAuthAccountUseCase,
   inject: [
     AUTH_USER_REPOSITORY,
     AUTH_ACCOUNT_REPOSITORY,
@@ -845,40 +911,42 @@ export const unlinkOAuthAccountProvider: FactoryProvider<UnlinkOAuthAccount> = {
     AUTH_CACHE,
   ],
   useFactory: (
-    userRepository: ConstructorParameters<typeof UnlinkOAuthAccount>[0]["userRepository"],
-    accountRepository: ConstructorParameters<typeof UnlinkOAuthAccount>[0]["accountRepository"],
+    userRepository: ConstructorParameters<typeof UnlinkOAuthAccountUseCase>[0]["userRepository"],
+    accountRepository: ConstructorParameters<
+      typeof UnlinkOAuthAccountUseCase
+    >[0]["accountRepository"],
     securityLogRepository: ConstructorParameters<
-      typeof UnlinkOAuthAccount
+      typeof UnlinkOAuthAccountUseCase
     >[0]["securityLogRepository"],
-    unitOfWork: ConstructorParameters<typeof UnlinkOAuthAccount>[0]["unitOfWork"],
-    cacheService: ConstructorParameters<typeof UnlinkOAuthAccount>[0]["cacheService"],
+    unitOfWork: ConstructorParameters<typeof UnlinkOAuthAccountUseCase>[0]["unitOfWork"],
+    cacheService: ConstructorParameters<typeof UnlinkOAuthAccountUseCase>[0]["cacheService"],
   ) =>
-    new UnlinkOAuthAccount({
+    new UnlinkOAuthAccountUseCase({
       userRepository,
       accountRepository,
       securityLogRepository,
       unitOfWork,
       cacheService,
-      logger: new Logger(UnlinkOAuthAccount.name),
+      logger: new Logger(UnlinkOAuthAccountUseCase.name),
     }),
 };
 
-export const updateProfileProvider: FactoryProvider<UpdateProfile> = {
-  provide: UpdateProfile,
+export const updateProfileProvider: FactoryProvider<UpdateProfileUseCase> = {
+  provide: UpdateProfileUseCase,
   inject: [AUTH_USER_REPOSITORY, AUTH_CACHE],
   useFactory: (
-    userRepository: ConstructorParameters<typeof UpdateProfile>[0]["userRepository"],
-    cacheService: ConstructorParameters<typeof UpdateProfile>[0]["cacheService"],
+    userRepository: ConstructorParameters<typeof UpdateProfileUseCase>[0]["userRepository"],
+    cacheService: ConstructorParameters<typeof UpdateProfileUseCase>[0]["cacheService"],
   ) =>
-    new UpdateProfile({
+    new UpdateProfileUseCase({
       userRepository,
       cacheService,
-      logger: new Logger(UpdateProfile.name),
+      logger: new Logger(UpdateProfileUseCase.name),
     }),
 };
 
-export const verifyEmailProvider: FactoryProvider<VerifyEmail> = {
-  provide: VerifyEmail,
+export const verifyEmailProvider: FactoryProvider<VerifyEmailUseCase> = {
+  provide: VerifyEmailUseCase,
   inject: [
     AUTH_USER_REPOSITORY,
     VerificationService,
@@ -888,20 +956,22 @@ export const verifyEmailProvider: FactoryProvider<VerifyEmail> = {
     UNIT_OF_WORK,
   ],
   useFactory: (
-    userRepository: ConstructorParameters<typeof VerifyEmail>[0]["userRepository"],
-    verificationService: ConstructorParameters<typeof VerifyEmail>[0]["verificationService"],
-    retentionEnroller: ConstructorParameters<typeof VerifyEmail>[0]["retentionEnroller"],
-    sessionService: ConstructorParameters<typeof VerifyEmail>[0]["sessionService"],
-    securityLogRepository: ConstructorParameters<typeof VerifyEmail>[0]["securityLogRepository"],
-    unitOfWork: ConstructorParameters<typeof VerifyEmail>[0]["unitOfWork"],
+    userRepository: ConstructorParameters<typeof VerifyEmailUseCase>[0]["userRepository"],
+    verificationService: ConstructorParameters<typeof VerifyEmailUseCase>[0]["verificationService"],
+    retentionEnroller: ConstructorParameters<typeof VerifyEmailUseCase>[0]["retentionEnroller"],
+    sessionService: ConstructorParameters<typeof VerifyEmailUseCase>[0]["sessionService"],
+    securityLogRepository: ConstructorParameters<
+      typeof VerifyEmailUseCase
+    >[0]["securityLogRepository"],
+    unitOfWork: ConstructorParameters<typeof VerifyEmailUseCase>[0]["unitOfWork"],
   ) =>
-    new VerifyEmail({
+    new VerifyEmailUseCase({
       userRepository,
       verificationService,
       retentionEnroller,
       sessionService,
       securityLogRepository,
       unitOfWork,
-      logger: new Logger(VerifyEmail.name),
+      logger: new Logger(VerifyEmailUseCase.name),
     }),
 };

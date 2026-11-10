@@ -1,11 +1,11 @@
-import type { EntitlementSnapshot } from "@aido/api";
+import type { EntitlementSnapshot } from "@aido/api/contracts/entitlement";
 
 import type { QuotaLedgerPort } from "#api/modules/access/access-quota.public";
 import type { TodoCategoryCountReaderPort } from "#api/modules/planning/planning-categories.public";
 import type { DailySendUsageReaderPort } from "#api/modules/social/social-cheers.public";
 import type { FriendCountReaderPort } from "#api/modules/social/social-friends.public";
 
-export interface GetEntitlementSnapshotInput {
+export interface GetEntitlementSnapshotQuery {
   readonly userId: string;
   /** 응원·찌르기 일간 사용량의 하루 기준(X-Timezone) */
   readonly timezone: string;
@@ -24,14 +24,14 @@ interface GetEntitlementSnapshotDependencies {
  * 일간 사용량과 친구·카테고리 개수는 /me처럼 여기서 Social·Planning 읽기 포트로 모아 넘긴다. 개수는 친구
  * 맺기·카테고리 만들기 한도 검사와 같은 값이라 앱이 한도에 닿은 것을 입력 전에 안다.
  */
-export class GetEntitlementSnapshot {
+export class GetEntitlementSnapshotUseCase {
   readonly #dependencies: GetEntitlementSnapshotDependencies;
 
   constructor(dependencies: GetEntitlementSnapshotDependencies) {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: GetEntitlementSnapshotInput): Promise<EntitlementSnapshot> {
+  async execute(input: GetEntitlementSnapshotQuery): Promise<EntitlementSnapshot> {
     const { userId, timezone } = input;
     const {
       quotaLedger,

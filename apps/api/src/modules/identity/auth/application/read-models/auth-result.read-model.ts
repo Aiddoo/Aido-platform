@@ -1,4 +1,5 @@
-import type { PremiumEntitlements, SubscriptionStatus, UserRole } from "@aido/api";
+import type { PremiumEntitlements } from "@aido/api/contracts/auth";
+import type { SubscriptionStatus, UserRole } from "@aido/api/vocabulary";
 import type { PremiumSource, SubscriptionPlanType } from "@aido/api/vocabulary";
 
 import type {

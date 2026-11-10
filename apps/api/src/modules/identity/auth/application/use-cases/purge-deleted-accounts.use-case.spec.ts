@@ -13,8 +13,8 @@ import { StubAuthSecurityLogRepository } from "#test/mocks/ports/auth-session.st
 import { createUnitOfWorkMock } from "#test/mocks/ports/unit-of-work.mock";
 
 import { SECURITY_EVENT } from "../../domain/auth.constants.js";
-import { IdentityLogEvent } from "../auth.log-events.js";
-import { PurgeDeletedAccounts } from "./purge-deleted-accounts.use-case.js";
+import { AuthLogEvent } from "../auth.log-events.js";
+import { PurgeDeletedAccountsUseCase } from "./purge-deleted-accounts.use-case.js";
 
 const currentTime = new Date("2026-12-31T23:59:00Z");
 const deletedAt = new Date("2026-11-30T23:59:00Z");
@@ -35,7 +35,7 @@ describe("PurgeDeletedAccounts — 유예 기간이 지난 계정의 영구 삭�
     const usageCleanup = new StubAccountUsageCleanup();
     const securityLogRepository = new StubAuthSecurityLogRepository();
     const logger = mock<ApplicationLoggerPort>();
-    const useCase = new PurgeDeletedAccounts({
+    const useCase = new PurgeDeletedAccountsUseCase({
       userRepository,
       notificationCleanup,
       todoCommentCleanup,
@@ -90,7 +90,7 @@ describe("PurgeDeletedAccounts — 유예 기간이 지난 계정의 영구 삭�
       },
     ]);
     expect(fixture.logger.log).toHaveBeenCalledWith({
-      event: IdentityLogEvent.ACCOUNT_PURGE_COMPLETED,
+      event: AuthLogEvent.ACCOUNT_PURGE_COMPLETED,
       candidateCount: 1,
       purgedCount: 1,
       skippedCount: 0,
@@ -115,7 +115,7 @@ describe("PurgeDeletedAccounts — 유예 기간이 지난 계정의 영구 삭�
     expect(fixture.notificationCleanup.settlements).toEqual([]);
     expect(fixture.todoCommentCleanup.settlements).toEqual([]);
     expect(fixture.logger.log).toHaveBeenCalledWith({
-      event: IdentityLogEvent.ACCOUNT_PURGE_COMPLETED,
+      event: AuthLogEvent.ACCOUNT_PURGE_COMPLETED,
       candidateCount: 1,
       purgedCount: 0,
       skippedCount: 0,
@@ -142,7 +142,7 @@ describe("PurgeDeletedAccounts — 유예 기간이 지난 계정의 영구 삭�
     expect(fixture.notificationCleanup.settlements).toEqual([{ affectedUserIds: ["user-2"] }]);
     expect(fixture.todoCommentCleanup.settlements).toHaveLength(1);
     expect(fixture.logger.log).toHaveBeenCalledWith({
-      event: IdentityLogEvent.ACCOUNT_PURGE_COMPLETED,
+      event: AuthLogEvent.ACCOUNT_PURGE_COMPLETED,
       candidateCount: 2,
       purgedCount: 1,
       skippedCount: 0,
@@ -172,14 +172,14 @@ describe("PurgeDeletedAccounts — 유예 기간이 지난 계정의 영구 삭�
       expect(fixture.securityLogRepository.entries).toHaveLength(1);
       expect(fixture.todoCommentCleanup.settlements).toEqual([{ affectedTodoIds: [101] }]);
       expect(fixture.logger.log).toHaveBeenCalledWith({
-        event: IdentityLogEvent.ACCOUNT_PURGE_COMPLETED,
+        event: AuthLogEvent.ACCOUNT_PURGE_COMPLETED,
         candidateCount: 1,
         purgedCount: 1,
         skippedCount: 0,
         failedCount: 0,
       });
       expect(fixture.logger.warn).toHaveBeenCalledWith({
-        event: IdentityLogEvent.ACCOUNT_PURGE_SETTLEMENT_FAILED,
+        event: AuthLogEvent.ACCOUNT_PURGE_SETTLEMENT_FAILED,
         userId: "user-1",
         context: "notification",
       });
@@ -203,7 +203,7 @@ describe("PurgeDeletedAccounts — 유예 기간이 지난 계정의 영구 삭�
     expect(fixture.notificationCleanup.settlements).toEqual([]);
     expect(fixture.todoCommentCleanup.settlements).toEqual([]);
     expect(fixture.logger.log).toHaveBeenCalledWith({
-      event: IdentityLogEvent.ACCOUNT_PURGE_COMPLETED,
+      event: AuthLogEvent.ACCOUNT_PURGE_COMPLETED,
       candidateCount: 1,
       purgedCount: 0,
       skippedCount: 0,
@@ -232,7 +232,7 @@ describe("PurgeDeletedAccounts — 유예 기간이 지난 계정의 영구 삭�
     expect(fixture.todoCommentCleanup.cleanedUserIds).toEqual([]);
     expect(fixture.securityLogRepository.entries).toEqual([]);
     expect(fixture.logger.log).toHaveBeenCalledWith({
-      event: IdentityLogEvent.ACCOUNT_PURGE_COMPLETED,
+      event: AuthLogEvent.ACCOUNT_PURGE_COMPLETED,
       candidateCount: 3,
       purgedCount: 0,
       skippedCount: 3,
@@ -252,7 +252,7 @@ describe("PurgeDeletedAccounts — 유예 기간이 지난 계정의 영구 삭�
     expect(fixture.todoCommentCleanup.cleanedUserIds).toEqual([]);
     expect(fixture.securityLogRepository.entries).toEqual([]);
     expect(fixture.logger.log).toHaveBeenCalledWith({
-      event: IdentityLogEvent.ACCOUNT_PURGE_COMPLETED,
+      event: AuthLogEvent.ACCOUNT_PURGE_COMPLETED,
       candidateCount: 0,
       purgedCount: 0,
       skippedCount: 0,

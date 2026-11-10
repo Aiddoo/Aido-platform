@@ -8,7 +8,7 @@ import {
 } from "#test/fixtures/auth-credential.fixture";
 
 import { AuthPersistenceConflict } from "../ports/auth-persistence.port.js";
-import { Register } from "./register.use-case.js";
+import { RegisterUseCase } from "./register.use-case.js";
 
 describe("Register — 이메일 계정 등록", () => {
   beforeEach(() => {
@@ -19,7 +19,7 @@ describe("Register — 이메일 계정 등록", () => {
 
   function given(options: Parameters<typeof createAuthCredentialFixture>[0] = {}) {
     const fixture = createAuthCredentialFixture(options);
-    const useCase = new Register({
+    const useCase = new RegisterUseCase({
       userRepository: fixture.userRepository,
       passwordService: fixture.passwordService,
       provisionUserUseCase: fixture.provisionUserUseCase,
@@ -50,7 +50,7 @@ describe("Register — 이메일 계정 등록", () => {
     privacyAgreed: true,
     marketingAgreed: false,
     marketingPushAgreed: false,
-  } satisfies Parameters<Register["execute"]>[0];
+  } satisfies Parameters<RegisterUseCase["execute"]>[0];
 
   it("미인증 계정·프로필·동의를 저장하고 인증 메일과 등록 알림을 발송한다", async () => {
     // Given

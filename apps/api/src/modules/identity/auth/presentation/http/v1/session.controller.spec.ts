@@ -15,8 +15,8 @@ import { TestBed } from "@suites/unit";
 import type { Request } from "express";
 import type { Mocked } from "vitest";
 
-import { ListActiveSessions } from "#api/modules/identity/auth/application/use-cases/list-active-sessions.use-case";
-import { RevokeSession } from "#api/modules/identity/auth/application/use-cases/revoke-session.use-case";
+import { ListActiveSessionsUseCase } from "#api/modules/identity/auth/application/use-cases/list-active-sessions.use-case";
+import { RevokeSessionUseCase } from "#api/modules/identity/auth/application/use-cases/revoke-session.use-case";
 import type { CurrentUserPayload } from "#api/modules/identity/auth/presentation/http/decorators/current-user.decorator";
 import { parseRequestClient } from "#api/platform/http/request-client/index";
 import { TEST_REQUEST_ID } from "#test/mocks/request-client";
@@ -26,8 +26,8 @@ import { SessionController } from "./session.controller.js";
 
 describe("SessionController — 세션 컨트롤러", () => {
   let controller: SessionController;
-  let listActiveSessionsQuery: Mocked<ListActiveSessions>;
-  let revokeSessionUseCase: Mocked<RevokeSession>;
+  let listActiveSessionsQuery: Mocked<ListActiveSessionsUseCase>;
+  let revokeSessionUseCase: Mocked<RevokeSessionUseCase>;
 
   const mockUser: CurrentUserPayload = {
     userId: "user-123",
@@ -50,8 +50,8 @@ describe("SessionController — 세션 컨트롤러", () => {
     const { unit, unitRef } = await TestBed.solitary(SessionController).compile();
 
     controller = unit;
-    listActiveSessionsQuery = unitRef.get(ListActiveSessions);
-    revokeSessionUseCase = unitRef.get(RevokeSession);
+    listActiveSessionsQuery = unitRef.get(ListActiveSessionsUseCase);
+    revokeSessionUseCase = unitRef.get(RevokeSessionUseCase);
   });
 
   describe("getSessions", () => {

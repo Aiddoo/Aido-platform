@@ -6,7 +6,7 @@ import {
 } from "#api/modules/notification/notification-delivery.public";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 
-import { IdentityLogEvent } from "../../application/auth.log-events.js";
+import { AuthLogEvent } from "../../application/auth.log-events.js";
 import type { SessionPushDeviceReleaserPort } from "../../application/ports/session-push-device-releaser.port.js";
 
 @Injectable()
@@ -27,7 +27,7 @@ export class SessionPushDeviceReleaserAdapter implements SessionPushDeviceReleas
       await this.#sessionPushDeviceRelease.releaseSessions(sessionIds);
     } catch (error) {
       this.#logger.warn({
-        event: IdentityLogEvent.SESSION_PUSH_DEVICE_RELEASE_FAILED,
+        event: AuthLogEvent.SESSION_PUSH_DEVICE_RELEASE_FAILED,
         sessionCount: sessionIds.length,
         errorType: toErrorType(error),
       });

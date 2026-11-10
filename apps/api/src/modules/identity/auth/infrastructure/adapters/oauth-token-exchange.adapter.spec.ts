@@ -8,9 +8,9 @@ import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy
 import { FakeOAuthTokenVerifierService } from "#test/mocks/fake-oauth-token-verifier.service";
 import { RecordingOperationalAlert } from "#test/mocks/recording-operational-alert";
 
-import { GoogleOAuthProvider } from "./google-oauth-identity.adapter.js";
-import { KakaoOAuthProvider } from "./kakao-oauth-identity.adapter.js";
-import { NaverOAuthProvider } from "./naver-oauth-identity.adapter.js";
+import { GoogleOAuthIdentityAdapter } from "./google-oauth-identity.adapter.js";
+import { KakaoOAuthIdentityAdapter } from "./kakao-oauth-identity.adapter.js";
+import { NaverOAuthIdentityAdapter } from "./naver-oauth-identity.adapter.js";
 
 const SECRET_DESCRIPTION = "authorization code fixture-code-123 for user@example.com";
 
@@ -22,9 +22,9 @@ const config = () => ({
 });
 
 const providers = [
-  { name: "KAKAO", create: KakaoOAuthProvider },
-  { name: "GOOGLE", create: GoogleOAuthProvider },
-  { name: "NAVER", create: NaverOAuthProvider },
+  { name: "KAKAO", create: KakaoOAuthIdentityAdapter },
+  { name: "GOOGLE", create: GoogleOAuthIdentityAdapter },
+  { name: "NAVER", create: NaverOAuthIdentityAdapter },
 ] as const;
 
 describe("OAuth 공급자 토큰 교환 로그", () => {
@@ -103,7 +103,7 @@ describe("OAuth 공급자 토큰 교환 로그", () => {
     );
 
     // When
-    await new KakaoOAuthProvider(config, verifier, logger, http, policies)
+    await new KakaoOAuthIdentityAdapter(config, verifier, logger, http, policies)
       .exchangeCode("code")
       .catch(() => undefined);
 
@@ -116,7 +116,7 @@ describe("OAuth 공급자 토큰 교환 로그", () => {
     fetch.mockResolvedValue(new Response(`<html>${SECRET_DESCRIPTION}</html>`, { status: 502 }));
 
     // When
-    await new GoogleOAuthProvider(config, verifier, logger, http, policies)
+    await new GoogleOAuthIdentityAdapter(config, verifier, logger, http, policies)
       .exchangeCode("code")
       .catch(() => undefined);
 

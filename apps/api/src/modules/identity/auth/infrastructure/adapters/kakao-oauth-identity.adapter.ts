@@ -11,7 +11,7 @@ import type {
   SocialLoginOptions,
   VerifiedProfile,
 } from "#api/modules/identity/auth/application/ports/oauth-identity-provider.port";
-import { IdentityInfraLogEvent } from "#api/modules/identity/auth/infrastructure/auth-infra.log-events";
+import { AuthInfraLogEvent } from "#api/modules/identity/auth/infrastructure/auth-infra.log-events";
 import { readJson } from "#api/platform/http/read-json";
 import type { OutboundPolicy } from "#api/platform/resilience/outbound-policy";
 import type { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
@@ -36,7 +36,7 @@ interface OAuthConfig {
  * - scope: profile_nickname profile_image
  * - 토큰 교환 시 access_token 필드 사용
  */
-export class KakaoOAuthProvider implements OAuthIdentityProvider {
+export class KakaoOAuthIdentityAdapter implements OAuthIdentityProvider {
   readonly provider = "KAKAO" as const;
   readonly failureEmail = "kakao_unknown@social.aido.kr";
 
@@ -110,7 +110,7 @@ export class KakaoOAuthProvider implements OAuthIdentityProvider {
 
     if (!tokenResponse.ok) {
       this.#logger.error({
-        event: IdentityInfraLogEvent.OAUTH_TOKEN_EXCHANGE_FAILED,
+        event: AuthInfraLogEvent.OAUTH_TOKEN_EXCHANGE_FAILED,
         provider: this.provider,
         statusCode: tokenResponse.status,
         providerError: await readOAuthProviderError(tokenResponse),
@@ -121,7 +121,7 @@ export class KakaoOAuthProvider implements OAuthIdentityProvider {
     const tokenData = await readJson(tokenResponse, KAKAO_TOKEN_RESPONSE_SCHEMA);
     if (!tokenData.success) {
       this.#logger.error({
-        event: IdentityInfraLogEvent.OAUTH_TOKEN_EXCHANGE_INVALID,
+        event: AuthInfraLogEvent.OAUTH_TOKEN_EXCHANGE_INVALID,
         provider: this.provider,
       });
       throw new ApplicationException(ErrorCode.USER_0602);

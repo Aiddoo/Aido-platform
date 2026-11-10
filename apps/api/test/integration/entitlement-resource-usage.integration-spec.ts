@@ -2,7 +2,7 @@ import { ErrorCode } from "@aido/api/errors";
 import { PLAN_CATALOG } from "@aido/api/vocabulary";
 import { eq } from "drizzle-orm";
 
-import { GetEntitlementSnapshot } from "#api/modules/identity/auth/application/use-cases/get-entitlement-snapshot.use-case";
+import { GetEntitlementSnapshotUseCase } from "#api/modules/identity/auth/application/use-cases/get-entitlement-snapshot.use-case";
 import { CreateTodoCategory } from "#api/modules/planning/application/use-cases/categories/create-todo-category.use-case";
 import {
   TODO_CATEGORY_COUNT_READER,
@@ -30,14 +30,14 @@ describe("권한 스냅샷의 친구·카테고리 개수는 한도 검사와 �
   let context: E2eTestContext;
   let categoryCountReader: TodoCategoryCountReaderPort;
   let friendCountReader: FriendCountReaderPort;
-  let snapshot: GetEntitlementSnapshot;
+  let snapshot: GetEntitlementSnapshotUseCase;
   let userId: string;
 
   beforeAll(async () => {
     context = await createE2eApp();
     categoryCountReader = context.module.get(TODO_CATEGORY_COUNT_READER);
     friendCountReader = context.module.get(FRIEND_COUNT_READER);
-    snapshot = context.module.get(GetEntitlementSnapshot);
+    snapshot = context.module.get(GetEntitlementSnapshotUseCase);
   });
 
   beforeEach(async () => {

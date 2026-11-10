@@ -6,7 +6,7 @@ import {
   createAuthCredentialFixture,
 } from "#test/fixtures/auth-credential.fixture";
 
-import { RequestPasswordReset } from "./request-password-reset.use-case.js";
+import { RequestPasswordResetUseCase } from "./request-password-reset.use-case.js";
 
 describe("RequestPasswordReset — 계정 존재를 노출하지 않는 재설정 요청", () => {
   beforeEach(() => {
@@ -18,7 +18,7 @@ describe("RequestPasswordReset — 계정 존재를 노출하지 않는 재설�
   it("재설정 용도의 코드를 저장·발송하고 요청 정보를 감사 기록에 남긴다", async () => {
     // Given
     const fixture = createAuthCredentialFixture();
-    const useCase = new RequestPasswordReset(fixture);
+    const useCase = new RequestPasswordResetUseCase(fixture);
     const metadata = { ip: "192.0.2.10", userAgent: "재설정 요청 기기" };
 
     // When
@@ -50,7 +50,7 @@ describe("RequestPasswordReset — 계정 존재를 노출하지 않는 재설�
       if (state === "탈퇴한") {
         await fixture.userRepository.softDelete(fixture.user.id, AUTH_CREDENTIAL_TIME);
       }
-      const useCase = new RequestPasswordReset(fixture);
+      const useCase = new RequestPasswordResetUseCase(fixture);
 
       // When
       const result = await useCase.execute({ email: fixture.user.email });
@@ -68,7 +68,7 @@ describe("RequestPasswordReset — 계정 존재를 노출하지 않는 재설�
   it("요청 정보가 없으면 기존 기본값으로 감사 기록을 저장한다", async () => {
     // Given
     const fixture = createAuthCredentialFixture();
-    const useCase = new RequestPasswordReset(fixture);
+    const useCase = new RequestPasswordResetUseCase(fixture);
 
     // When
     await useCase.execute({ email: fixture.user.email });

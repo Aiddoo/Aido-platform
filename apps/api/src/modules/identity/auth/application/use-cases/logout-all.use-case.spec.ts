@@ -11,7 +11,7 @@ import {
 } from "#test/mocks/ports/auth-session.stub";
 
 import { AUTH_DEFAULTS, REVOKE_REASON, SECURITY_EVENT } from "../../domain/auth.constants.js";
-import { LogoutAll } from "./logout-all.use-case.js";
+import { LogoutAllUseCase } from "./logout-all.use-case.js";
 
 const currentTime = new Date("2026-12-31T23:59:00Z");
 const userId = "user-123";
@@ -38,7 +38,7 @@ describe("LogoutAll — 모든 기기의 세션 종료", () => {
     const cacheService = new StubAuthSessionCache([...sessionRepository.sessions.keys()]);
     const securityLogRepository = new StubAuthSecurityLogRepository();
     const pushDevices = new StubSessionPushDeviceReleaser();
-    const useCase = new LogoutAll({
+    const useCase = new LogoutAllUseCase({
       pushDevices,
       sessionRepository,
       cacheService,
@@ -79,7 +79,7 @@ describe("LogoutAll — 모든 기기의 세션 종료", () => {
     const cacheService = new StubAuthSessionCache();
     const securityLogRepository = new StubAuthSecurityLogRepository();
     const pushDevices = new StubSessionPushDeviceReleaser();
-    const useCase = new LogoutAll({
+    const useCase = new LogoutAllUseCase({
       pushDevices,
       sessionRepository,
       cacheService,

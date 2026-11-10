@@ -4,7 +4,7 @@ import { now } from "#api/shared/domain/date/utils/core";
 
 import { ACCOUNT_DELETION, SECURITY_EVENT } from "../../domain/auth.constants.js";
 import { IdentityUser } from "../../domain/identity-user.aggregate.js";
-import { IdentityLogEvent } from "../auth.log-events.js";
+import { AuthLogEvent } from "../auth.log-events.js";
 import type {
   AccountNotificationCleanupPort,
   AccountTodoCommentCleanupPort,
@@ -25,7 +25,7 @@ interface PurgeDeletedAccountsDependencies {
   readonly logger: ApplicationLoggerPort;
 }
 
-export class PurgeDeletedAccounts {
+export class PurgeDeletedAccountsUseCase {
   readonly #dependencies: PurgeDeletedAccountsDependencies;
 
   constructor(dependencies: PurgeDeletedAccountsDependencies) {
@@ -79,7 +79,7 @@ export class PurgeDeletedAccounts {
         }
         purgedCount += 1;
         this.#dependencies.logger.log({
-          event: IdentityLogEvent.ACCOUNT_PURGED,
+          event: AuthLogEvent.ACCOUNT_PURGED,
           userId: candidate.id,
         });
         const settlements = await Promise.allSettled([
@@ -93,7 +93,7 @@ export class PurgeDeletedAccounts {
         for (const [index, settlement] of settlements.entries()) {
           if (settlement.status === "rejected") {
             this.#dependencies.logger.warn({
-              event: IdentityLogEvent.ACCOUNT_PURGE_SETTLEMENT_FAILED,
+              event: AuthLogEvent.ACCOUNT_PURGE_SETTLEMENT_FAILED,
               userId: candidate.id,
               context: index === 0 ? "notification" : "engagement",
             });
@@ -102,14 +102,14 @@ export class PurgeDeletedAccounts {
       } catch (error) {
         failedCount += 1;
         this.#dependencies.logger.error({
-          event: IdentityLogEvent.ACCOUNT_PURGE_FAILED,
+          event: AuthLogEvent.ACCOUNT_PURGE_FAILED,
           userId: candidate.id,
           errorType: error instanceof Error ? error.name : "unknown",
         });
       }
     }
     this.#dependencies.logger.log({
-      event: IdentityLogEvent.ACCOUNT_PURGE_COMPLETED,
+      event: AuthLogEvent.ACCOUNT_PURGE_COMPLETED,
       candidateCount: users.length,
       purgedCount,
       skippedCount,

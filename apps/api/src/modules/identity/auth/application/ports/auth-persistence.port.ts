@@ -1,4 +1,4 @@
-import type { SubscriptionStatus, UserRole } from "@aido/api";
+import type { SubscriptionStatus, UserRole } from "@aido/api/vocabulary";
 
 import type {
   AccountProvider,

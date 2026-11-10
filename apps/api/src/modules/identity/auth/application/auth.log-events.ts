@@ -1,4 +1,4 @@
-export const IdentityLogEvent = {
+export const AuthLogEvent = {
   USER_REGISTERED: "identity.user.registered",
   SIGNUP_NOTIFICATION_SKIPPED: "identity.user.signup-notification.skipped",
   SIGNUP_NOTIFICATION_FAILED: "identity.user.signup-notification.failed",

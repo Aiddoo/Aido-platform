@@ -5,7 +5,7 @@ import { AUTH_CREDENTIAL_TIME } from "#test/fixtures/auth-credential.fixture";
 import { createAuthOAuthFixture } from "#test/fixtures/auth-oauth.fixture";
 import { AccountFixture } from "#test/fixtures/user.fixture";
 
-import { ListLinkedAccounts } from "./list-linked-accounts.use-case.js";
+import { ListLinkedAccountsUseCase } from "./list-linked-accounts.use-case.js";
 
 describe("ListLinkedAccounts — 로그인 수단과 소셜 연결 상태", () => {
   beforeEach(() => {
@@ -28,7 +28,9 @@ describe("ListLinkedAccounts — 로그인 수단과 소셜 연결 상태", () =
       AccountFixture.create({ userId: "other-user", provider: "APPLE" }),
     );
     // When
-    const result = await new ListLinkedAccounts(fixture).execute({ userId: fixture.user.id });
+    const result = await new ListLinkedAccountsUseCase(fixture).execute({
+      userId: fixture.user.id,
+    });
     // Then
     expect(result.accounts.map((account) => account.provider)).toEqual(OAUTH_PROVIDERS);
     expect(result.accounts.find((account) => account.provider === "GOOGLE")).toEqual({
@@ -55,7 +57,9 @@ describe("ListLinkedAccounts — 로그인 수단과 소셜 연결 상태", () =
       AccountFixture.create({ userId: "other-user", provider: "APPLE" }),
     );
     // When
-    const result = await new ListLinkedAccounts(fixture).execute({ userId: fixture.user.id });
+    const result = await new ListLinkedAccountsUseCase(fixture).execute({
+      userId: fixture.user.id,
+    });
     // Then
     expect(result.canUnlink).toBe(false);
   });

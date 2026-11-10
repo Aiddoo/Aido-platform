@@ -1,5 +1,5 @@
 /**
- * TokenService 테스트 (Suites 패턴)
+ * JwtTokenIssuerAdapter 테스트 (Suites 패턴)
  *
  * NestJS 공식 권장 Suites 라이브러리 사용
  * - 자동 Mock 생성으로 보일러플레이트 제거
@@ -14,12 +14,12 @@ import { JwtService } from "@nestjs/jwt";
 import { TestBed } from "@suites/unit";
 import type { Mocked } from "vitest";
 
-import { TokenService } from "#api/modules/identity/auth/infrastructure/adapters/jwt-token-issuer.adapter";
+import { JwtTokenIssuerAdapter } from "#api/modules/identity/auth/infrastructure/adapters/jwt-token-issuer.adapter";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { decodeJwtSegment, signJwtWithAlgorithm } from "#test/fixtures/jwt-token.fixture";
 
 describe("TokenService — 토큰 서비스", () => {
-  let service: TokenService;
+  let service: JwtTokenIssuerAdapter;
   let jwtService: Mocked<JwtService>;
   let configService: Mocked<TypedConfigService>;
 
@@ -33,7 +33,7 @@ describe("TokenService — 토큰 서비스", () => {
 
   beforeEach(async () => {
     // Given - Suites TestBed로 자동 mock 생성
-    const { unit, unitRef } = await TestBed.solitary(TokenService).compile();
+    const { unit, unitRef } = await TestBed.solitary(JwtTokenIssuerAdapter).compile();
 
     service = unit;
     jwtService = unitRef.get(JwtService);
@@ -266,10 +266,10 @@ describe("TokenService — 토큰 서비스", () => {
 describe("TokenService — 서명 알고리즘 고정", () => {
   const accessSecret = "test-jwt-secret-at-least-32-chars";
   const refreshSecret = "test-refresh-secret-at-least-32-chars";
-  let service: TokenService;
+  let service: JwtTokenIssuerAdapter;
 
   beforeEach(async () => {
-    const { unit } = await TestBed.solitary(TokenService)
+    const { unit } = await TestBed.solitary(JwtTokenIssuerAdapter)
       .mock(JwtService)
       .final(new JwtService())
       .mock(TypedConfigService)

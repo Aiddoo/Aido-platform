@@ -6,7 +6,7 @@ import {
   createAuthCredentialFixture,
 } from "#test/fixtures/auth-credential.fixture";
 
-import { ResendVerification } from "./resend-verification.use-case.js";
+import { ResendVerificationUseCase } from "./resend-verification.use-case.js";
 
 describe("ResendVerification — 이메일 인증 코드 재발송", () => {
   beforeEach(() => {
@@ -17,7 +17,7 @@ describe("ResendVerification — 이메일 인증 코드 재발송", () => {
 
   function given(options: Parameters<typeof createAuthCredentialFixture>[0] = {}) {
     const fixture = createAuthCredentialFixture(options);
-    const useCase = new ResendVerification({
+    const useCase = new ResendVerificationUseCase({
       userRepository: fixture.userRepository,
       verificationService: fixture.verificationService,
       unitOfWork: fixture.unitOfWork,

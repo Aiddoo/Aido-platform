@@ -14,18 +14,18 @@ import { ApiHeader, ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import { Throttle } from "@nestjs/throttler";
 import type { Request } from "express";
 
-import { ChangePassword } from "#api/modules/identity/auth/application/use-cases/change-password.use-case";
-import { LoginWithPassword } from "#api/modules/identity/auth/application/use-cases/login-with-password.use-case";
-import { LogoutAll } from "#api/modules/identity/auth/application/use-cases/logout-all.use-case";
-import { Logout } from "#api/modules/identity/auth/application/use-cases/logout.use-case";
-import { RefreshTokens } from "#api/modules/identity/auth/application/use-cases/refresh-tokens.use-case";
-import { Register } from "#api/modules/identity/auth/application/use-cases/register.use-case";
-import { RequestPasswordReset } from "#api/modules/identity/auth/application/use-cases/request-password-reset.use-case";
-import { RequestPasswordSetupCode } from "#api/modules/identity/auth/application/use-cases/request-password-setup-code.use-case";
-import { ResendVerification } from "#api/modules/identity/auth/application/use-cases/resend-verification.use-case";
-import { ResetPassword } from "#api/modules/identity/auth/application/use-cases/reset-password.use-case";
-import { SetPassword } from "#api/modules/identity/auth/application/use-cases/set-password.use-case";
-import { VerifyEmail } from "#api/modules/identity/auth/application/use-cases/verify-email.use-case";
+import { ChangePasswordUseCase } from "#api/modules/identity/auth/application/use-cases/change-password.use-case";
+import { LoginWithPasswordUseCase } from "#api/modules/identity/auth/application/use-cases/login-with-password.use-case";
+import { LogoutAllUseCase } from "#api/modules/identity/auth/application/use-cases/logout-all.use-case";
+import { LogoutUseCase } from "#api/modules/identity/auth/application/use-cases/logout.use-case";
+import { RefreshTokensUseCase } from "#api/modules/identity/auth/application/use-cases/refresh-tokens.use-case";
+import { RegisterUseCase } from "#api/modules/identity/auth/application/use-cases/register.use-case";
+import { RequestPasswordResetUseCase } from "#api/modules/identity/auth/application/use-cases/request-password-reset.use-case";
+import { RequestPasswordSetupCodeUseCase } from "#api/modules/identity/auth/application/use-cases/request-password-setup-code.use-case";
+import { ResendVerificationUseCase } from "#api/modules/identity/auth/application/use-cases/resend-verification.use-case";
+import { ResetPasswordUseCase } from "#api/modules/identity/auth/application/use-cases/reset-password.use-case";
+import { SetPasswordUseCase } from "#api/modules/identity/auth/application/use-cases/set-password.use-case";
+import { VerifyEmailUseCase } from "#api/modules/identity/auth/application/use-cases/verify-email.use-case";
 import { refreshTokenUserSchema } from "#api/modules/identity/auth/presentation/http/decorators/authenticated-user.dto";
 import {
   CurrentUser,
@@ -51,49 +51,51 @@ import {
 import { ThrottleByUser } from "#api/platform/throttle/index";
 import { ApplicationException } from "#api/shared/application/application.exception";
 
+import { extractMetadata } from "./auth-request.mapper.js";
+import { AUTH_THROTTLE } from "./auth-throttle.constants.js";
 import {
+  AuthTokensDto,
   ChangePasswordDto,
   ForgotPasswordDto,
   LoginDto,
+  MessageResponseDto,
+  RefreshTokensDto,
   RegisterDto,
   ResendVerificationDto,
   ResetPasswordDto,
   SetPasswordDto,
   VerifyEmailDto,
-} from "./auth-request.dto.js";
-import { extractMetadata } from "./auth-request.mapper.js";
-import { AuthTokensDto, MessageResponseDto, RefreshTokensDto } from "./auth-response.dto.js";
-import { AUTH_THROTTLE } from "./auth-throttle.constants.js";
+} from "./auth.dto.js";
 
 @ApiTags(SWAGGER_TAGS.USER_AUTH)
 @Controller("auth")
 export class AuthController {
-  readonly #registerUseCase: Register;
-  readonly #verifyEmailUseCase: VerifyEmail;
-  readonly #resendVerificationUseCase: ResendVerification;
-  readonly #loginWithPasswordUseCase: LoginWithPassword;
-  readonly #logoutUseCase: Logout;
-  readonly #logoutAllUseCase: LogoutAll;
-  readonly #refreshTokensUseCase: RefreshTokens;
-  readonly #requestPasswordResetUseCase: RequestPasswordReset;
-  readonly #resetPasswordUseCase: ResetPassword;
-  readonly #requestPasswordSetupCodeUseCase: RequestPasswordSetupCode;
-  readonly #setPasswordUseCase: SetPassword;
-  readonly #changePasswordUseCase: ChangePassword;
+  readonly #registerUseCase: RegisterUseCase;
+  readonly #verifyEmailUseCase: VerifyEmailUseCase;
+  readonly #resendVerificationUseCase: ResendVerificationUseCase;
+  readonly #loginWithPasswordUseCase: LoginWithPasswordUseCase;
+  readonly #logoutUseCase: LogoutUseCase;
+  readonly #logoutAllUseCase: LogoutAllUseCase;
+  readonly #refreshTokensUseCase: RefreshTokensUseCase;
+  readonly #requestPasswordResetUseCase: RequestPasswordResetUseCase;
+  readonly #resetPasswordUseCase: ResetPasswordUseCase;
+  readonly #requestPasswordSetupCodeUseCase: RequestPasswordSetupCodeUseCase;
+  readonly #setPasswordUseCase: SetPasswordUseCase;
+  readonly #changePasswordUseCase: ChangePasswordUseCase;
 
   constructor(
-    registerUseCase: Register,
-    verifyEmailUseCase: VerifyEmail,
-    resendVerificationUseCase: ResendVerification,
-    loginWithPasswordUseCase: LoginWithPassword,
-    logoutUseCase: Logout,
-    logoutAllUseCase: LogoutAll,
-    refreshTokensUseCase: RefreshTokens,
-    requestPasswordResetUseCase: RequestPasswordReset,
-    resetPasswordUseCase: ResetPassword,
-    requestPasswordSetupCodeUseCase: RequestPasswordSetupCode,
-    setPasswordUseCase: SetPassword,
-    changePasswordUseCase: ChangePassword,
+    registerUseCase: RegisterUseCase,
+    verifyEmailUseCase: VerifyEmailUseCase,
+    resendVerificationUseCase: ResendVerificationUseCase,
+    loginWithPasswordUseCase: LoginWithPasswordUseCase,
+    logoutUseCase: LogoutUseCase,
+    logoutAllUseCase: LogoutAllUseCase,
+    refreshTokensUseCase: RefreshTokensUseCase,
+    requestPasswordResetUseCase: RequestPasswordResetUseCase,
+    resetPasswordUseCase: ResetPasswordUseCase,
+    requestPasswordSetupCodeUseCase: RequestPasswordSetupCodeUseCase,
+    setPasswordUseCase: SetPasswordUseCase,
+    changePasswordUseCase: ChangePasswordUseCase,
   ) {
     this.#registerUseCase = registerUseCase;
     this.#verifyEmailUseCase = verifyEmailUseCase;

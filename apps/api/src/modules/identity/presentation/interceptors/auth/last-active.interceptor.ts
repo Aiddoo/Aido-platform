@@ -10,7 +10,7 @@ import {
 import type { Request } from "express";
 import type { Observable } from "rxjs";
 
-import { IdentityLogEvent } from "#api/modules/identity/auth/application/auth.log-events";
+import { AuthLogEvent } from "#api/modules/identity/auth/application/auth.log-events";
 import {
   AUTH_USER_ACTIVITY_WRITER,
   type AuthUserActivityWriterPort,
@@ -84,7 +84,7 @@ export class LastActiveInterceptor implements NestInterceptor, OnModuleDestroy {
         this.#throttleMap.delete(throttleKey);
       }
       this.#logger.error({
-        event: IdentityLogEvent.LAST_ACTIVE_UPDATE_FAILED,
+        event: AuthLogEvent.LAST_ACTIVE_UPDATE_FAILED,
         userId,
         errorType: toErrorType(error),
       });
@@ -103,7 +103,7 @@ export class LastActiveInterceptor implements NestInterceptor, OnModuleDestroy {
     }
 
     if (cleaned > 0) {
-      this.#logger.debug({ event: IdentityLogEvent.LAST_ACTIVE_THROTTLE_CLEANED, count: cleaned });
+      this.#logger.debug({ event: AuthLogEvent.LAST_ACTIVE_THROTTLE_CLEANED, count: cleaned });
     }
   }
 }

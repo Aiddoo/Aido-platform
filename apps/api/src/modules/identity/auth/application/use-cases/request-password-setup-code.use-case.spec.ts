@@ -6,7 +6,7 @@ import {
   createAuthCredentialFixture,
 } from "#test/fixtures/auth-credential.fixture";
 
-import { RequestPasswordSetupCode } from "./request-password-setup-code.use-case.js";
+import { RequestPasswordSetupCodeUseCase } from "./request-password-setup-code.use-case.js";
 
 describe("RequestPasswordSetupCode — 소셜 계정의 비밀번호 설정 요청", () => {
   beforeEach(() => {
@@ -18,7 +18,7 @@ describe("RequestPasswordSetupCode — 소셜 계정의 비밀번호 설정 요�
   it("소셜 계정에 PASSWORD_SETUP 코드를 발송하고 계정은 아직 추가하지 않는다", async () => {
     // Given
     const fixture = createAuthCredentialFixture({ socialOnly: true });
-    const useCase = new RequestPasswordSetupCode(fixture);
+    const useCase = new RequestPasswordSetupCodeUseCase(fixture);
 
     // When
     const result = await useCase.execute({ userId: fixture.user.id });
@@ -45,7 +45,7 @@ describe("RequestPasswordSetupCode — 소셜 계정의 비밀번호 설정 요�
       if (state === "탈퇴한") {
         await fixture.userRepository.softDelete(fixture.user.id, AUTH_CREDENTIAL_TIME);
       }
-      const useCase = new RequestPasswordSetupCode(fixture);
+      const useCase = new RequestPasswordSetupCodeUseCase(fixture);
       const errorCode =
         state === "존재하지 않는"
           ? ErrorCode.USER_0601
@@ -66,7 +66,7 @@ describe("RequestPasswordSetupCode — 소셜 계정의 비밀번호 설정 요�
   it("쿨다운 중 재요청하면 기존 코드를 유지하고 재발송하지 않는다", async () => {
     // Given
     const fixture = createAuthCredentialFixture({ socialOnly: true });
-    const useCase = new RequestPasswordSetupCode(fixture);
+    const useCase = new RequestPasswordSetupCodeUseCase(fixture);
     await useCase.execute({ userId: fixture.user.id });
     const originalCode = fixture.emailSender.getLastCode(fixture.user.email);
 

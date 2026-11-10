@@ -6,7 +6,7 @@ import { AUTH_CREDENTIAL_TIME } from "#test/fixtures/auth-credential.fixture";
 import { createAuthOAuthFixture } from "#test/fixtures/auth-oauth.fixture";
 import { AccountFixture } from "#test/fixtures/user.fixture";
 
-import { UnlinkOAuthAccount } from "./unlink-oauth-account.use-case.js";
+import { UnlinkOAuthAccountUseCase } from "./unlink-oauth-account.use-case.js";
 
 describe("UnlinkOAuthAccount — 마지막 로그인 수단 보호", () => {
   beforeEach(() => {
@@ -29,7 +29,7 @@ describe("UnlinkOAuthAccount — 마지막 로그인 수단 보호", () => {
       return result;
     };
     // When
-    const result = await new UnlinkOAuthAccount(fixture).execute({
+    const result = await new UnlinkOAuthAccountUseCase(fixture).execute({
       userId: fixture.user.id,
       provider: "GOOGLE",
       metadata,
@@ -76,7 +76,7 @@ describe("UnlinkOAuthAccount — 마지막 로그인 수단 보호", () => {
       const fixture = createAuthOAuthFixture("GOOGLE", { socialOnly: true });
       fixture.cacheService.userIds.add(fixture.user.id);
       // When
-      const pending = new UnlinkOAuthAccount(fixture).execute({
+      const pending = new UnlinkOAuthAccountUseCase(fixture).execute({
         userId: fixture.user.id,
         provider,
       });

@@ -2,7 +2,7 @@ import { sql } from "drizzle-orm";
 import { vi } from "vitest";
 import { z } from "zod";
 
-import { PurgeDeletedAccounts } from "#api/modules/identity/auth/application/use-cases/purge-deleted-accounts.use-case";
+import { PurgeDeletedAccountsUseCase } from "#api/modules/identity/auth/application/use-cases/purge-deleted-accounts.use-case";
 import { IdentityUser } from "#api/modules/identity/auth/domain/identity-user.aggregate";
 import { DrizzleSecurityLogRepository } from "#api/modules/identity/auth/infrastructure/persistence/drizzle-security-log.repository";
 import { DrizzleUserRepository } from "#api/modules/identity/auth/infrastructure/persistence/drizzle-user.repository";
@@ -128,7 +128,7 @@ describe("DrizzleUserRepository 통합 테스트 — 계정 생명주기", () =>
       unitOfWork: transaction.uow,
       logger,
     };
-    return { dependencies, purge: new PurgeDeletedAccounts(dependencies) };
+    return { dependencies, purge: new PurgeDeletedAccountsUseCase(dependencies) };
   }
 
   it("후보 조회 후 탈퇴 상태가 해제된 계정은 lock 이후 재검증하여 삭제하지 않는다", async () => {
@@ -138,7 +138,7 @@ describe("DrizzleUserRepository 통합 테스트 — 계정 생명주기", () =>
       deletedAt: new Date(cutoff.getTime() - 1),
     });
     const { dependencies } = givenPurge();
-    const purge = new PurgeDeletedAccounts({
+    const purge = new PurgeDeletedAccountsUseCase({
       ...dependencies,
       userRepository: {
         findSoftDeletedForPurge: async (graceDays, checkedAt) => {
@@ -171,7 +171,7 @@ describe("DrizzleUserRepository 통합 테스트 — 계정 생명주기", () =>
     });
     await repository.createProfile(user.id, { name: "보존할 프로필" });
     const { dependencies } = givenPurge();
-    const purge = new PurgeDeletedAccounts({
+    const purge = new PurgeDeletedAccountsUseCase({
       ...dependencies,
       securityLogRepository: {
         create: (data) =>

@@ -24,11 +24,11 @@ import { SuggestionAnalysisJob } from "#api/modules/ai-assistance/infrastructure
 import { ReportGenerationProcessor } from "#api/modules/ai-assistance/infrastructure/processors/reports/report-generation.processor";
 import { SuggestionAnalysisProcessor } from "#api/modules/ai-assistance/infrastructure/processors/suggestions/suggestion-analysis.processor";
 import { OAUTH_IDENTITY_PROVIDER_REGISTRY } from "#api/modules/identity/auth/application/ports/oauth-identity-provider.port";
-import { PasswordService } from "#api/modules/identity/auth/infrastructure/adapters/argon2-password-hasher.adapter";
+import { Argon2PasswordHasherAdapter } from "#api/modules/identity/auth/infrastructure/adapters/argon2-password-hasher.adapter";
 import { createOAuthProviderRegistry } from "#api/modules/identity/auth/infrastructure/adapters/oauth-identity-provider-registry.adapter";
 import { OAuthTokenVerifierService } from "#api/modules/identity/auth/infrastructure/adapters/oauth-token-verifier.adapter";
 import { AccountPurgeProcessor } from "#api/modules/identity/auth/infrastructure/jobs/account-purge.processor";
-import { AccountPurgeJob } from "#api/modules/identity/auth/infrastructure/jobs/account-purge.scheduler";
+import { AccountPurgeScheduler } from "#api/modules/identity/auth/infrastructure/jobs/account-purge.scheduler";
 import { PUSH_PROVIDER } from "#api/modules/notification/application/ports/delivery/push-provider.port";
 import { TimezoneAwareReminderOrchestrator } from "#api/modules/notification/application/services/reminders/timezone-aware-reminder.orchestrator";
 import { NotificationQueueProcessor } from "#api/modules/notification/infrastructure/jobs/delivery/notification-queue.processor";
@@ -105,7 +105,7 @@ const BACKGROUND_JOBS = [
   TimezoneAwareReminderOrchestrator,
   SuggestionAnalysisJob,
   ReportGenerationJob,
-  AccountPurgeJob,
+  AccountPurgeScheduler,
   TodoSeriesMaterializationJob,
   PlanApplicationCleanupJob,
   RetentionQueueService,
@@ -221,7 +221,7 @@ export async function createE2eApp(options?: E2eAppOptions): Promise<E2eTestCont
     .useValue(cacheAdapter)
     .overrideProvider(DRIZZLE)
     .useValue(testDatabase.getClient())
-    .overrideProvider(PasswordService)
+    .overrideProvider(Argon2PasswordHasherAdapter)
     .useClass(FakePasswordHasher)
     .overrideProvider(TransactionalEmailSender)
     .useValue(fakeEmailService)

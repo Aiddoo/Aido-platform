@@ -4,7 +4,7 @@ import type { OAUTH_PROVIDERS } from "@aido/api/vocabulary";
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 
-import { IdentityLogEvent } from "../auth.log-events.js";
+import { AuthLogEvent } from "../auth.log-events.js";
 import type { AuthRuntimeConfigPort } from "../ports/auth-collaboration.port.js";
 import type { AuthOAuthStateRepositoryPort } from "../ports/auth-persistence.port.js";
 import type {
@@ -12,7 +12,7 @@ import type {
   OAuthMode,
 } from "../ports/oauth-identity-provider.port.js";
 
-export interface StartOAuthAuthorizationInput {
+export interface StartOAuthAuthorizationCommand {
   readonly provider: Exclude<(typeof OAUTH_PROVIDERS)[number], "APPLE">;
   readonly state: string;
   readonly clientRedirectUri?: string;
@@ -27,14 +27,14 @@ interface StartOAuthAuthorizationDependencies {
   readonly logger: ApplicationLoggerPort;
 }
 
-export class StartOAuthAuthorization {
+export class StartOAuthAuthorizationUseCase {
   readonly #dependencies: StartOAuthAuthorizationDependencies;
 
   constructor(dependencies: StartOAuthAuthorizationDependencies) {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: StartOAuthAuthorizationInput): Promise<string> {
+  async execute(input: StartOAuthAuthorizationCommand): Promise<string> {
     const strategy = this.#dependencies.registry.get(input.provider);
     if (strategy == null) {
       throw new ApplicationException(ErrorCode.SOCIAL_0204, {
@@ -78,7 +78,7 @@ export class StartOAuthAuthorization {
     if (patterns.some((pattern) => pattern.test(redirectUri))) {
       return redirectUri;
     }
-    this.#dependencies.logger.warn({ event: IdentityLogEvent.OAUTH_REDIRECT_REJECTED });
+    this.#dependencies.logger.warn({ event: AuthLogEvent.OAUTH_REDIRECT_REJECTED });
     return defaultRedirectUri;
   }
 }

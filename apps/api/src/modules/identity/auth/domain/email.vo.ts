@@ -9,7 +9,7 @@ const EMAIL_FORMAT = z.email().pipe(z.string().max(255));
 
 // 소셜 로그인의 합성 이메일(provider_id@social.aido.kr)은 이 VO를 거치지 않는다
 export class Email extends ValueObject<string> {
-  static of(value: string): Email {
+  static create(value: string): Email {
     const result = EMAIL_FORMAT.safeParse(value);
     if (!result.success) {
       throw new DomainException(ErrorCode.SYS_0002, { email: value });

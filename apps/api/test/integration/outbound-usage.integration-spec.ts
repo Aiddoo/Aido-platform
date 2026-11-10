@@ -1,6 +1,6 @@
 import { ACCOUNT_DELETION } from "@aido/api";
 
-import { PurgeDeletedAccounts } from "#api/modules/identity/auth/application/use-cases/purge-deleted-accounts.use-case";
+import { PurgeDeletedAccountsUseCase } from "#api/modules/identity/auth/application/use-cases/purge-deleted-accounts.use-case";
 import { createEntityId } from "#api/platform/database/entity-id";
 import { user as userTable } from "#api/platform/database/schema/index";
 import { DrizzleUsageMeterAdapter } from "#api/platform/metering/adapters/drizzle-usage-meter.adapter";
@@ -65,7 +65,7 @@ describe("OutboundUsage 계량기 (실제 PostgreSQL)", () => {
       { key: globalKey, amount: 100 },
     ]);
     // When
-    await context.module.get(PurgeDeletedAccounts, { strict: false }).execute();
+    await context.module.get(PurgeDeletedAccountsUseCase, { strict: false }).execute();
     // Then
     expect(await meter.read([userKey, globalKey])).toEqual([0, 100]);
     await context.reset();

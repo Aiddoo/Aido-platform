@@ -15,7 +15,7 @@ import { ARGON2_CONFIG } from "#api/modules/identity/auth/domain/auth.constants"
  * @see https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html
  */
 @Injectable()
-export class PasswordService {
+export class Argon2PasswordHasherAdapter {
   readonly #hashOptions: argon2.HashOptions = {
     type: argon2.argon2id,
     memoryCost: ARGON2_CONFIG.MEMORY_COST,

@@ -1,7 +1,7 @@
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 
 import { AUTH_DEFAULTS, REVOKE_REASON, SECURITY_EVENT } from "../../domain/auth.constants.js";
-import { IdentityLogEvent } from "../auth.log-events.js";
+import { AuthLogEvent } from "../auth.log-events.js";
 import type { AuthCachePort } from "../ports/auth-collaboration.port.js";
 import type {
   AuthSecurityLogRepositoryPort,
@@ -10,7 +10,7 @@ import type {
 import type { SessionPushDeviceReleaserPort } from "../ports/session-push-device-releaser.port.js";
 import type { RequestMetadata } from "../read-models/auth-result.read-model.js";
 
-export interface LogoutAllInput {
+export interface LogoutAllCommand {
   readonly userId: string;
   readonly metadata?: RequestMetadata;
 }
@@ -23,14 +23,14 @@ interface LogoutAllDependencies {
   readonly logger: ApplicationLoggerPort;
 }
 
-export class LogoutAll {
+export class LogoutAllUseCase {
   readonly #dependencies: LogoutAllDependencies;
 
   constructor(dependencies: LogoutAllDependencies) {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: LogoutAllInput): Promise<{ message: string; revokedCount: number }> {
+  async execute(input: LogoutAllCommand): Promise<{ message: string; revokedCount: number }> {
     const revokedSessionIds = await this.#dependencies.sessionRepository.revokeAllByUserId(
       input.userId,
       REVOKE_REASON.USER_LOGOUT_ALL,
@@ -50,7 +50,7 @@ export class LogoutAll {
       metadata: { revokedCount },
     });
     this.#dependencies.logger.log({
-      event: IdentityLogEvent.ALL_SESSIONS_LOGGED_OUT,
+      event: AuthLogEvent.ALL_SESSIONS_LOGGED_OUT,
       userId: input.userId,
       revokedCount,
     });

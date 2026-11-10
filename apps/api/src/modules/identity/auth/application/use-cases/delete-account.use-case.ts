@@ -14,7 +14,7 @@ import {
 } from "../../domain/auth.constants.js";
 import { IdentityUser } from "../../domain/identity-user.aggregate.js";
 import { assertNotDeleted } from "../auth.errors.js";
-import { IdentityLogEvent } from "../auth.log-events.js";
+import { AuthLogEvent } from "../auth.log-events.js";
 import type { AuthCachePort } from "../ports/auth-collaboration.port.js";
 import type { AuthPasswordHasherPort } from "../ports/auth-crypto.port.js";
 import type {
@@ -29,7 +29,7 @@ import type {
   RequestMetadata,
 } from "../read-models/auth-result.read-model.js";
 
-export interface DeleteAccountInput {
+export interface DeleteAccountCommand {
   readonly userId: string;
   readonly password?: string;
   readonly reason?: string;
@@ -48,14 +48,14 @@ interface DeleteAccountDependencies {
   readonly logger: ApplicationLoggerPort;
 }
 
-export class DeleteAccount {
+export class DeleteAccountUseCase {
   readonly #dependencies: DeleteAccountDependencies;
 
   constructor(dependencies: DeleteAccountDependencies) {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: DeleteAccountInput): Promise<DeleteAccountResult> {
+  async execute(input: DeleteAccountCommand): Promise<DeleteAccountResult> {
     const user = await this.#dependencies.userRepository.findById(input.userId);
     if (user == null) {
       throw new ApplicationException(ErrorCode.USER_0601, { userId: input.userId });
@@ -112,7 +112,7 @@ export class DeleteAccount {
     await this.#dependencies.pushDevices.releaseSessions(revokedSessionIds);
     await this.#dependencies.cacheService.invalidateUserProfile(identityUser.id);
     this.#dependencies.logger.log({
-      event: IdentityLogEvent.ACCOUNT_DELETION_REQUESTED,
+      event: AuthLogEvent.ACCOUNT_DELETION_REQUESTED,
       userId: identityUser.id,
     });
     return {

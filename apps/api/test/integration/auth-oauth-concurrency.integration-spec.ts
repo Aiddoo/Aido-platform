@@ -3,9 +3,9 @@ import type { TestingModule } from "@nestjs/testing";
 import { sql } from "drizzle-orm";
 import { vi } from "vitest";
 
-import { ExchangeOAuthCode } from "#api/modules/identity/auth/application/use-cases/exchange-oauth-code.use-case";
-import { LinkOAuthAccountWithCode } from "#api/modules/identity/auth/application/use-cases/link-oauth-account-with-code.use-case";
-import { UnlinkOAuthAccount } from "#api/modules/identity/auth/application/use-cases/unlink-oauth-account.use-case";
+import { ExchangeOAuthCodeUseCase } from "#api/modules/identity/auth/application/use-cases/exchange-oauth-code.use-case";
+import { LinkOAuthAccountWithCodeUseCase } from "#api/modules/identity/auth/application/use-cases/link-oauth-account-with-code.use-case";
+import { UnlinkOAuthAccountUseCase } from "#api/modules/identity/auth/application/use-cases/unlink-oauth-account.use-case";
 import { DrizzleAccountRepository } from "#api/modules/identity/auth/infrastructure/persistence/drizzle-account.repository";
 import { DrizzleOAuthStateRepository } from "#api/modules/identity/auth/infrastructure/persistence/drizzle-oauth-state.repository";
 import { DrizzleSecurityLogRepository } from "#api/modules/identity/auth/infrastructure/persistence/drizzle-security-log.repository";
@@ -32,9 +32,9 @@ describe("OAuth 교환과 로그인 수단 변경 (실제 PostgreSQL)", () => {
   let states: DrizzleOAuthStateRepository;
   let users: DrizzleUserRepository;
   let securityLogs: DrizzleSecurityLogRepository;
-  let exchange: ExchangeOAuthCode;
-  let link: LinkOAuthAccountWithCode;
-  let unlink: UnlinkOAuthAccount;
+  let exchange: ExchangeOAuthCodeUseCase;
+  let link: LinkOAuthAccountWithCodeUseCase;
+  let unlink: UnlinkOAuthAccountUseCase;
   let unitOfWork: UnitOfWorkPort;
   let userId: string;
   let sequence = 0;
@@ -50,9 +50,9 @@ describe("OAuth 교환과 로그인 수단 변경 (실제 PostgreSQL)", () => {
     states = module.get(DrizzleOAuthStateRepository);
     users = module.get(DrizzleUserRepository);
     securityLogs = module.get(DrizzleSecurityLogRepository);
-    exchange = module.get(ExchangeOAuthCode);
-    link = module.get(LinkOAuthAccountWithCode);
-    unlink = module.get(UnlinkOAuthAccount);
+    exchange = module.get(ExchangeOAuthCodeUseCase);
+    link = module.get(LinkOAuthAccountWithCodeUseCase);
+    unlink = module.get(UnlinkOAuthAccountUseCase);
     unitOfWork = module.get(UNIT_OF_WORK);
   });
 

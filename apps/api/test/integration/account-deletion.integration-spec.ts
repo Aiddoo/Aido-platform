@@ -29,14 +29,14 @@ import {
   AUTH_VERIFICATION_REPOSITORY,
 } from "#api/modules/identity/auth/application/ports/auth-persistence.port";
 import { VERIFICATION_CODE_SECURITY } from "#api/modules/identity/auth/application/ports/verification-code-security.port";
-import { DeleteAccount } from "#api/modules/identity/auth/application/use-cases/delete-account.use-case";
-import { LoginWithPassword } from "#api/modules/identity/auth/application/use-cases/login-with-password.use-case";
-import { PurgeDeletedAccounts } from "#api/modules/identity/auth/application/use-cases/purge-deleted-accounts.use-case";
-import { Register } from "#api/modules/identity/auth/application/use-cases/register.use-case";
-import { RequestPasswordReset } from "#api/modules/identity/auth/application/use-cases/request-password-reset.use-case";
-import { PasswordService } from "#api/modules/identity/auth/infrastructure/adapters/argon2-password-hasher.adapter";
+import { DeleteAccountUseCase } from "#api/modules/identity/auth/application/use-cases/delete-account.use-case";
+import { LoginWithPasswordUseCase } from "#api/modules/identity/auth/application/use-cases/login-with-password.use-case";
+import { PurgeDeletedAccountsUseCase } from "#api/modules/identity/auth/application/use-cases/purge-deleted-accounts.use-case";
+import { RegisterUseCase } from "#api/modules/identity/auth/application/use-cases/register.use-case";
+import { RequestPasswordResetUseCase } from "#api/modules/identity/auth/application/use-cases/request-password-reset.use-case";
+import { Argon2PasswordHasherAdapter } from "#api/modules/identity/auth/infrastructure/adapters/argon2-password-hasher.adapter";
 import { AuthCacheAdapter } from "#api/modules/identity/auth/infrastructure/adapters/auth-cache.adapter";
-import { TokenService } from "#api/modules/identity/auth/infrastructure/adapters/jwt-token-issuer.adapter";
+import { JwtTokenIssuerAdapter } from "#api/modules/identity/auth/infrastructure/adapters/jwt-token-issuer.adapter";
 import { NodeVerificationCodeSecurityAdapter } from "#api/modules/identity/auth/infrastructure/adapters/node-verification-code-security.adapter";
 import { DrizzleAccountRepository } from "#api/modules/identity/auth/infrastructure/persistence/drizzle-account.repository";
 import { DrizzleLoginAttemptRepository } from "#api/modules/identity/auth/infrastructure/persistence/drizzle-login-attempt.repository";
@@ -84,11 +84,11 @@ import { sessionPushDeviceReleaserTestProvider } from "./helpers/session-push-de
 
 describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
   let module: TestingModule;
-  let register: Register;
-  let loginWithPassword: LoginWithPassword;
-  let requestPasswordReset: RequestPasswordReset;
-  let deleteAccount: DeleteAccount;
-  let purgeDeletedAccounts: PurgeDeletedAccounts;
+  let register: RegisterUseCase;
+  let loginWithPassword: LoginWithPasswordUseCase;
+  let requestPasswordReset: RequestPasswordResetUseCase;
+  let deleteAccount: DeleteAccountUseCase;
+  let purgeDeletedAccounts: PurgeDeletedAccountsUseCase;
   let testDb: TestDatabase;
   let client: TestDatabaseClient;
 
@@ -130,10 +130,10 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
             settleAfterCommit: async () => {},
           },
         },
-        PasswordService,
+        Argon2PasswordHasherAdapter,
         requestPasswordResetProvider,
         sessionServiceProvider,
-        TokenService,
+        JwtTokenIssuerAdapter,
         verificationServiceProvider,
         {
           provide: VERIFICATION_CODE_SECURITY,
@@ -167,8 +167,8 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
           provide: AUTH_SECURITY_LOG_REPOSITORY,
           useExisting: DrizzleSecurityLogRepository,
         },
-        { provide: AUTH_PASSWORD_HASHER, useExisting: PasswordService },
-        { provide: AUTH_TOKEN_ISSUER, useExisting: TokenService },
+        { provide: AUTH_PASSWORD_HASHER, useExisting: Argon2PasswordHasherAdapter },
+        { provide: AUTH_TOKEN_ISSUER, useExisting: JwtTokenIssuerAdapter },
         { provide: AUTH_EMAIL_SENDER, useExisting: TransactionalEmailSender },
         AuthCacheAdapter,
         { provide: AUTH_CACHE, useExisting: AuthCacheAdapter },
@@ -276,11 +276,11 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
       ],
     }).compile();
 
-    register = module.get(Register);
-    loginWithPassword = module.get(LoginWithPassword);
-    requestPasswordReset = module.get(RequestPasswordReset);
-    deleteAccount = module.get(DeleteAccount);
-    purgeDeletedAccounts = module.get(PurgeDeletedAccounts);
+    register = module.get(RegisterUseCase);
+    loginWithPassword = module.get(LoginWithPasswordUseCase);
+    requestPasswordReset = module.get(RequestPasswordResetUseCase);
+    deleteAccount = module.get(DeleteAccountUseCase);
+    purgeDeletedAccounts = module.get(PurgeDeletedAccountsUseCase);
   }, 60000);
 
   beforeEach(async () => {

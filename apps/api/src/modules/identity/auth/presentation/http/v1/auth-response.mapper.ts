@@ -1,4 +1,4 @@
-import type { currentUserSchema } from "@aido/api";
+import type { currentUserSchema } from "@aido/api/contracts/auth";
 import type { z } from "zod";
 
 import type {

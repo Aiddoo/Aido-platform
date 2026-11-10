@@ -2,16 +2,16 @@ import { vi } from "vitest";
 
 import { FakeJobRuntime } from "#test/mocks/fake-job-runtime";
 
-import { AccountPurgeJob } from "./account-purge.scheduler.js";
+import { AccountPurgeScheduler } from "./account-purge.scheduler.js";
 
 describe("AccountPurgeJob — 일일 스케줄과 재시작 보정", () => {
   let runtime: FakeJobRuntime;
-  let job: AccountPurgeJob;
+  let job: AccountPurgeScheduler;
 
   beforeEach(() => {
     vi.useFakeTimers();
     runtime = new FakeJobRuntime();
-    job = new AccountPurgeJob(runtime);
+    job = new AccountPurgeScheduler(runtime);
   });
 
   afterEach(() => vi.useRealTimers());

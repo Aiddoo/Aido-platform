@@ -9,7 +9,7 @@ import {
   JWT_ALGORITHM,
   type JwtPayload,
 } from "#api/modules/identity/auth/infrastructure/adapters/jwt-token-issuer.adapter";
-import { IdentityInfraLogEvent } from "#api/modules/identity/auth/infrastructure/auth-infra.log-events";
+import { AuthInfraLogEvent } from "#api/modules/identity/auth/infrastructure/auth-infra.log-events";
 import { DrizzleSessionRepository } from "#api/modules/identity/auth/infrastructure/persistence/drizzle-session.repository";
 import { DrizzleUserRepository } from "#api/modules/identity/auth/infrastructure/persistence/drizzle-user.repository";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
@@ -134,7 +134,7 @@ export class JwtStrategy extends PassportStrategy(Strategy, "jwt") {
       return await this.cacheService.getSession(sessionId);
     } catch (error) {
       this.#logger.warn({
-        event: IdentityInfraLogEvent.SESSION_CACHE_READ_FAILED,
+        event: AuthInfraLogEvent.SESSION_CACHE_READ_FAILED,
         errorType: toErrorType(error),
       });
       return undefined;
@@ -149,7 +149,7 @@ export class JwtStrategy extends PassportStrategy(Strategy, "jwt") {
       await this.cacheService.setSession(sessionId, session);
     } catch (error) {
       this.#logger.warn({
-        event: IdentityInfraLogEvent.SESSION_CACHE_WRITE_FAILED,
+        event: AuthInfraLogEvent.SESSION_CACHE_WRITE_FAILED,
         errorType: toErrorType(error),
       });
     }

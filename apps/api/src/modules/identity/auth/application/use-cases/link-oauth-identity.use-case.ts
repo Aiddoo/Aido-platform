@@ -12,7 +12,7 @@ import {
 } from "../ports/auth-persistence.port.js";
 import type { RequestMetadata } from "../read-models/auth-result.read-model.js";
 
-export interface LinkOAuthIdentityInput {
+export interface LinkOAuthIdentityCommand {
   readonly userId: string;
   readonly provider: AccountProvider;
   readonly providerAccountId: string;
@@ -27,14 +27,14 @@ interface LinkOAuthIdentityDependencies {
   readonly securityLogRepository: Pick<AuthSecurityLogRepositoryPort, "create">;
 }
 
-export class LinkOAuthIdentity {
+export class LinkOAuthIdentityUseCase {
   readonly #dependencies: LinkOAuthIdentityDependencies;
 
   constructor(dependencies: LinkOAuthIdentityDependencies) {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: LinkOAuthIdentityInput): Promise<{ message: string; linked: boolean }> {
+  async execute(input: LinkOAuthIdentityCommand): Promise<{ message: string; linked: boolean }> {
     const { userId, provider, providerAccountId, metadata } = input;
     const existingAccount = await this.#dependencies.accountRepository.findByProviderAccountId(
       provider,
@@ -71,7 +71,7 @@ export class LinkOAuthIdentity {
     return { message: "계정이 연결되었습니다.", linked: true };
   }
 
-  #alreadyLinked(input: LinkOAuthIdentityInput): ApplicationException {
+  #alreadyLinked(input: LinkOAuthIdentityCommand): ApplicationException {
     const { provider, providerAccountId } = input;
     return match(provider)
       .with(

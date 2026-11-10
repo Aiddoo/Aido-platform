@@ -1,13 +1,13 @@
-import type { UpdateProfileInput as UpdateProfileBody } from "@aido/api";
+import type { UpdateProfileInput as UpdateProfileBody } from "@aido/api/contracts/auth";
 
 import type { UpdateProfileResult } from "#api/modules/identity/auth/application/read-models/auth-result.read-model";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 
-import { IdentityLogEvent } from "../auth.log-events.js";
+import { AuthLogEvent } from "../auth.log-events.js";
 import type { AuthCachePort } from "../ports/auth-collaboration.port.js";
 import type { AuthUserRepositoryPort } from "../ports/auth-persistence.port.js";
 
-export type UpdateProfileInput = Readonly<UpdateProfileBody> & { readonly userId: string };
+export type UpdateProfileCommand = Readonly<UpdateProfileBody> & { readonly userId: string };
 
 interface UpdateProfileDependencies {
   readonly userRepository: Pick<AuthUserRepositoryPort, "updateProfile">;
@@ -15,20 +15,20 @@ interface UpdateProfileDependencies {
   readonly logger: ApplicationLoggerPort;
 }
 
-export class UpdateProfile {
+export class UpdateProfileUseCase {
   readonly #dependencies: UpdateProfileDependencies;
 
   constructor(dependencies: UpdateProfileDependencies) {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: UpdateProfileInput): Promise<UpdateProfileResult> {
+  async execute(input: UpdateProfileCommand): Promise<UpdateProfileResult> {
     const { userId, ...data } = input;
     const profile = await this.#dependencies.userRepository.updateProfile(userId, data);
 
     await this.#dependencies.cacheService.invalidateUserProfile(userId);
 
-    this.#dependencies.logger.log({ event: IdentityLogEvent.PROFILE_UPDATED, userId });
+    this.#dependencies.logger.log({ event: AuthLogEvent.PROFILE_UPDATED, userId });
 
     return {
       message: "프로필이 수정되었습니다.",

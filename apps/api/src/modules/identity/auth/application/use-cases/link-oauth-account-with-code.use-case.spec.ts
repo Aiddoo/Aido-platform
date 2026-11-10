@@ -5,7 +5,7 @@ import { AUTH_CREDENTIAL_TIME } from "#test/fixtures/auth-credential.fixture";
 import { createAuthOAuthFixture } from "#test/fixtures/auth-oauth.fixture";
 import { OAuthStateFixture } from "#test/fixtures/oauth-state.fixture";
 
-import { LinkOAuthAccountWithCode } from "./link-oauth-account-with-code.use-case.js";
+import { LinkOAuthAccountWithCodeUseCase } from "./link-oauth-account-with-code.use-case.js";
 
 describe("LinkOAuthAccountWithCode — 사용자에게 귀속된 일회용 연결 코드", () => {
   beforeEach(() => {
@@ -23,7 +23,7 @@ describe("LinkOAuthAccountWithCode — 사용자에게 귀속된 일회용 연�
       ...overrides,
     });
     fixture.oauthStateRepository.states.set(state.id, state);
-    return { ...fixture, state, useCase: new LinkOAuthAccountWithCode(fixture) };
+    return { ...fixture, state, useCase: new LinkOAuthAccountWithCodeUseCase(fixture) };
   }
 
   it.each([null, "", "credential-user"])(

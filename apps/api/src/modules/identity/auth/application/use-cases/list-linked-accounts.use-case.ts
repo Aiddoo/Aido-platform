@@ -4,7 +4,7 @@ import { IdentityAccounts } from "#api/modules/identity/auth/domain/identity-acc
 
 import type { AuthAccountRepositoryPort } from "../ports/auth-persistence.port.js";
 
-export interface ListLinkedAccountsInput {
+export interface ListLinkedAccountsQuery {
   readonly userId: string;
 }
 
@@ -22,14 +22,14 @@ interface ListLinkedAccountsDependencies {
   readonly accountRepository: Pick<AuthAccountRepositoryPort, "findAllByUserId">;
 }
 
-export class ListLinkedAccounts {
+export class ListLinkedAccountsUseCase {
   readonly #dependencies: ListLinkedAccountsDependencies;
 
   constructor(dependencies: ListLinkedAccountsDependencies) {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: ListLinkedAccountsInput): Promise<ListLinkedAccountsResult> {
+  async execute(input: ListLinkedAccountsQuery): Promise<ListLinkedAccountsResult> {
     const accounts = await this.#dependencies.accountRepository.findAllByUserId(input.userId);
     const accountsByProvider = new Map(accounts.map((account) => [account.provider, account]));
     return {

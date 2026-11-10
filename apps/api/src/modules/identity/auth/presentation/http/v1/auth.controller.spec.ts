@@ -15,22 +15,22 @@ import { TestBed } from "@suites/unit";
 import type { Request } from "express";
 import type { Mocked } from "vitest";
 
-import { LoginWithPassword } from "#api/modules/identity/auth/application/use-cases/login-with-password.use-case";
-import { LogoutAll } from "#api/modules/identity/auth/application/use-cases/logout-all.use-case";
-import { Register } from "#api/modules/identity/auth/application/use-cases/register.use-case";
+import { LoginWithPasswordUseCase } from "#api/modules/identity/auth/application/use-cases/login-with-password.use-case";
+import { LogoutAllUseCase } from "#api/modules/identity/auth/application/use-cases/logout-all.use-case";
+import { RegisterUseCase } from "#api/modules/identity/auth/application/use-cases/register.use-case";
 import type { CurrentUserPayload } from "#api/modules/identity/auth/presentation/http/decorators/current-user.decorator";
 import { parseRequestClient } from "#api/platform/http/request-client/index";
 import { TEST_REQUEST_ID } from "#test/mocks/request-client";
 import { mockOf } from "#test/mocks/typed-mock";
 
-import type { LoginDto, RegisterDto } from "./auth-request.dto.js";
 import { AuthController } from "./auth.controller.js";
+import type { LoginDto, RegisterDto } from "./auth.dto.js";
 
 describe("AuthController — 인증 컨트롤러", () => {
   let controller: AuthController;
-  let registerUseCase: Mocked<Register>;
-  let loginWithPasswordUseCase: Mocked<LoginWithPassword>;
-  let logoutAllUseCase: Mocked<LogoutAll>;
+  let registerUseCase: Mocked<RegisterUseCase>;
+  let loginWithPasswordUseCase: Mocked<LoginWithPasswordUseCase>;
+  let logoutAllUseCase: Mocked<LogoutAllUseCase>;
 
   const mockUser: CurrentUserPayload = {
     userId: "user-123",
@@ -49,9 +49,9 @@ describe("AuthController — 인증 컨트롤러", () => {
     const { unit, unitRef } = await TestBed.solitary(AuthController).compile();
 
     controller = unit;
-    registerUseCase = unitRef.get(Register);
-    loginWithPasswordUseCase = unitRef.get(LoginWithPassword);
-    logoutAllUseCase = unitRef.get(LogoutAll);
+    registerUseCase = unitRef.get(RegisterUseCase);
+    loginWithPasswordUseCase = unitRef.get(LoginWithPasswordUseCase);
+    logoutAllUseCase = unitRef.get(LogoutAllUseCase);
   });
 
   describe("register", () => {

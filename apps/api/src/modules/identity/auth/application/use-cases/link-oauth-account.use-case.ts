@@ -5,14 +5,14 @@ import { ApplicationException } from "#api/shared/application/application.except
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
 
-import { IdentityLogEvent } from "../auth.log-events.js";
+import { AuthLogEvent } from "../auth.log-events.js";
 import type { AuthCachePort } from "../ports/auth-collaboration.port.js";
 import type { AuthUserLockRepositoryPort } from "../ports/auth-persistence.port.js";
 import type { OAuthIdentityProviderRegistry } from "../ports/oauth-identity-provider.port.js";
 import type { RequestMetadata } from "../read-models/auth-result.read-model.js";
-import type { LinkOAuthIdentity } from "./link-oauth-identity.use-case.js";
+import type { LinkOAuthIdentityUseCase } from "./link-oauth-identity.use-case.js";
 
-export interface LinkOAuthAccountInput {
+export interface LinkOAuthAccountCommand {
   readonly userId: string;
   readonly provider: (typeof OAUTH_PROVIDERS)[number];
   readonly idToken?: string;
@@ -24,20 +24,20 @@ export interface LinkOAuthAccountInput {
 interface LinkOAuthAccountDependencies {
   readonly userRepository: AuthUserLockRepositoryPort;
   readonly registry: OAuthIdentityProviderRegistry;
-  readonly linkOAuthIdentity: Pick<LinkOAuthIdentity, "execute">;
+  readonly linkOAuthIdentity: Pick<LinkOAuthIdentityUseCase, "execute">;
   readonly unitOfWork: UnitOfWorkPort;
   readonly cacheService: Pick<AuthCachePort, "invalidateUserProfile">;
   readonly logger: ApplicationLoggerPort;
 }
 
-export class LinkOAuthAccount {
+export class LinkOAuthAccountUseCase {
   readonly #dependencies: LinkOAuthAccountDependencies;
 
   constructor(dependencies: LinkOAuthAccountDependencies) {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: LinkOAuthAccountInput): Promise<{ message: string }> {
+  async execute(input: LinkOAuthAccountCommand): Promise<{ message: string }> {
     const strategy = this.#dependencies.registry.get(input.provider);
     if (strategy == null) {
       throw new ApplicationException(ErrorCode.USER_0602);
@@ -59,7 +59,7 @@ export class LinkOAuthAccount {
     if (result.linked) {
       await this.#dependencies.cacheService.invalidateUserProfile(input.userId);
       this.#dependencies.logger.log({
-        event: IdentityLogEvent.OAUTH_ACCOUNT_LINKED,
+        event: AuthLogEvent.OAUTH_ACCOUNT_LINKED,
         userId: input.userId,
         provider: input.provider,
       });

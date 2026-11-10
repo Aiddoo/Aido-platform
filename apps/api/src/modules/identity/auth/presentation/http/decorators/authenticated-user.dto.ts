@@ -1,4 +1,4 @@
-import { type CurrentUserPayload, userRoleSchema } from "@aido/api";
+import { type CurrentUserPayload, userRoleSchema } from "@aido/api/contracts/auth";
 import { z } from "zod";
 
 import type { RefreshTokenPayload } from "#api/modules/identity/infrastructure/strategies/auth/jwt-refresh.strategy";

@@ -1,4 +1,4 @@
-import type { VerifyEmailInput as VerifyEmailBody } from "@aido/api";
+import type { VerifyEmailInput as VerifyEmailBody } from "@aido/api/contracts/auth";
 import { ErrorCode } from "@aido/api/errors";
 
 import { assertNotDeleted } from "#api/modules/identity/auth/application/auth.errors";
@@ -12,7 +12,7 @@ import { ApplicationException } from "#api/shared/application/application.except
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
 
-import { IdentityLogEvent } from "../auth.log-events.js";
+import { AuthLogEvent } from "../auth.log-events.js";
 import type {
   AuthUserRepositoryPort,
   AuthSecurityLogRepositoryPort,
@@ -21,7 +21,9 @@ import type { RetentionEnrollerPort } from "../ports/retention-enroller.port.js"
 import type { SessionService } from "./create-session.use-case.js";
 import type { VerificationService } from "./issue-verification-code.use-case.js";
 
-export type VerifyEmailInput = Readonly<VerifyEmailBody> & { readonly metadata?: RequestMetadata };
+export type VerifyEmailCommand = Readonly<VerifyEmailBody> & {
+  readonly metadata?: RequestMetadata;
+};
 
 interface VerifyEmailDependencies {
   readonly userRepository: Pick<
@@ -36,14 +38,14 @@ interface VerifyEmailDependencies {
   readonly logger: ApplicationLoggerPort;
 }
 
-export class VerifyEmail {
+export class VerifyEmailUseCase {
   readonly #dependencies: VerifyEmailDependencies;
 
   constructor(dependencies: VerifyEmailDependencies) {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: VerifyEmailInput): Promise<VerifyEmailResult> {
+  async execute(input: VerifyEmailCommand): Promise<VerifyEmailResult> {
     const metadata = input.metadata;
     const { email, code } = input;
     const ip = metadata?.ip ?? AUTH_DEFAULTS.UNKNOWN_IP;
@@ -98,7 +100,7 @@ export class VerifyEmail {
       };
     });
 
-    this.#dependencies.logger.log({ event: IdentityLogEvent.EMAIL_VERIFIED, userId: user.id });
+    this.#dependencies.logger.log({ event: AuthLogEvent.EMAIL_VERIFIED, userId: user.id });
 
     return {
       userId: user.id,

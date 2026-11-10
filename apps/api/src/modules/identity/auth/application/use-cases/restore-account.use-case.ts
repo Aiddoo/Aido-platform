@@ -8,7 +8,7 @@ import type {
 } from "../ports/auth-persistence.port.js";
 import type { RequestMetadata } from "../read-models/auth-result.read-model.js";
 
-export interface RestoreAccountInput {
+export interface RestoreAccountCommand {
   readonly user: IdentityUser;
   readonly metadata?: RequestMetadata;
   readonly at: Date;
@@ -19,14 +19,14 @@ interface RestoreAccountDependencies {
   readonly securityLogRepository: Pick<AuthSecurityLogRepositoryPort, "create">;
 }
 
-export class RestoreAccount {
+export class RestoreAccountUseCase {
   readonly #dependencies: RestoreAccountDependencies;
 
   constructor(dependencies: RestoreAccountDependencies) {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: RestoreAccountInput): Promise<void> {
+  async execute(input: RestoreAccountCommand): Promise<void> {
     if (!input.user.requiresRestoration(input.at)) {
       return;
     }

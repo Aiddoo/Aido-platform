@@ -7,8 +7,8 @@ import {
   createAuthCredentialFixture,
 } from "#test/fixtures/auth-credential.fixture";
 
-import { ChangePassword } from "./change-password.use-case.js";
-import { LoginWithPassword } from "./login-with-password.use-case.js";
+import { ChangePasswordUseCase } from "./change-password.use-case.js";
+import { LoginWithPasswordUseCase } from "./login-with-password.use-case.js";
 
 describe("LoginWithPassword — 이메일 로그인과 계정 보호", () => {
   beforeEach(() => {
@@ -19,7 +19,7 @@ describe("LoginWithPassword — 이메일 로그인과 계정 보호", () => {
 
   function given(options: Parameters<typeof createAuthCredentialFixture>[0] = {}) {
     const fixture = createAuthCredentialFixture(options);
-    const useCase = new LoginWithPassword({
+    const useCase = new LoginWithPasswordUseCase({
       userRepository: fixture.userRepository,
       accountRepository: fixture.accountRepository,
       loginAttemptRepository: fixture.loginAttemptRepository,
@@ -233,7 +233,7 @@ describe("LoginWithPassword — 이메일 로그인과 계정 보호", () => {
       email: fixture.user.email,
       password: AUTH_CREDENTIAL_PASSWORD,
     });
-    const changePassword = new ChangePassword({
+    const changePassword = new ChangePasswordUseCase({
       pushDevices: fixture.pushDevices,
       userRepository: fixture.userRepository,
       accountRepository: fixture.accountRepository,

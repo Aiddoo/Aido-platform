@@ -1,23 +1,23 @@
 import type { SocialLoginResult } from "../read-models/auth-result.read-model.js";
 import type {
-  LoginWithOAuthToken,
-  LoginWithOAuthTokenInput,
+  LoginWithOAuthTokenUseCase,
+  LoginWithOAuthTokenCommand,
 } from "./login-with-oauth-token.use-case.js";
-import type { OAuthSignupNotifier } from "./notify-oauth-signup.use-case.js";
+import type { NotifyOAuthSignupUseCase } from "./notify-oauth-signup.use-case.js";
 
 interface LoginWithMobileOAuthTokenDependencies {
-  readonly loginWithOAuthToken: Pick<LoginWithOAuthToken, "execute">;
-  readonly oauthSignupNotifier: Pick<OAuthSignupNotifier, "notify">;
+  readonly loginWithOAuthToken: Pick<LoginWithOAuthTokenUseCase, "execute">;
+  readonly oauthSignupNotifier: Pick<NotifyOAuthSignupUseCase, "notify">;
 }
 
-export class LoginWithMobileOAuthToken {
+export class LoginWithMobileOAuthTokenUseCase {
   readonly #dependencies: LoginWithMobileOAuthTokenDependencies;
 
   constructor(dependencies: LoginWithMobileOAuthTokenDependencies) {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: LoginWithOAuthTokenInput): Promise<SocialLoginResult> {
+  async execute(input: LoginWithOAuthTokenCommand): Promise<SocialLoginResult> {
     const result = await this.#dependencies.loginWithOAuthToken.execute(input);
     if (result.isNewUser) {
       await this.#dependencies.oauthSignupNotifier.notify({

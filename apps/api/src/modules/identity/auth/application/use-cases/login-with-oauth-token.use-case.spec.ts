@@ -12,11 +12,11 @@ import { createAuthOAuthFixture } from "#test/fixtures/auth-oauth.fixture";
 import { SessionFixture } from "#test/fixtures/session.fixture";
 import { AccountFixture } from "#test/fixtures/user.fixture";
 
-import { GetCurrentUser } from "./get-current-user.use-case.js";
-import { LoginWithOAuthToken } from "./login-with-oauth-token.use-case.js";
+import { GetCurrentUserUseCase } from "./get-current-user.use-case.js";
+import { LoginWithOAuthTokenUseCase } from "./login-with-oauth-token.use-case.js";
 
 const providers = ["APPLE", "GOOGLE", "KAKAO", "NAVER"] satisfies Array<
-  Parameters<LoginWithOAuthToken["execute"]>[0]["provider"]
+  Parameters<LoginWithOAuthTokenUseCase["execute"]>[0]["provider"]
 >;
 const metadata = { ip: "192.0.2.40", userAgent: "소셜 로그인 기기" };
 
@@ -36,7 +36,7 @@ describe("LoginWithOAuthToken — 공급자 인증과 사용자 생명주기", (
         providerAccountId: fixture.identityProvider.profile.id,
       }),
     );
-    return { ...fixture, useCase: new LoginWithOAuthToken(fixture) };
+    return { ...fixture, useCase: new LoginWithOAuthTokenUseCase(fixture) };
   }
 
   it.each(providers)(
@@ -122,7 +122,7 @@ describe("LoginWithOAuthToken — 공급자 인증과 사용자 생명주기", (
       const fixture = createAuthOAuthFixture(provider, { empty: true });
       const userName = "사용자가 직접 지정한 매우 긴 이름입니다";
       // When
-      const result = await new LoginWithOAuthToken(fixture).execute({
+      const result = await new LoginWithOAuthTokenUseCase(fixture).execute({
         provider,
         token: "token",
         userName,
@@ -181,7 +181,7 @@ describe("LoginWithOAuthToken — 공급자 인증과 사용자 생명주기", (
     const fixture = createAuthOAuthFixture("KAKAO", { empty: true });
     fixture.identityProvider.profile.email = null;
     // When
-    const result = await new LoginWithOAuthToken(fixture).execute({
+    const result = await new LoginWithOAuthTokenUseCase(fixture).execute({
       provider: "KAKAO",
       token: "token",
     });
@@ -235,7 +235,7 @@ describe("LoginWithOAuthToken — 공급자 인증과 사용자 생명주기", (
   });
 
   it.each(["APPLE", "GOOGLE"] satisfies Array<
-    Parameters<LoginWithOAuthToken["execute"]>[0]["provider"]
+    Parameters<LoginWithOAuthTokenUseCase["execute"]>[0]["provider"]
   >)("%s: 검증된 동일 이메일은 기존 계정에 자동 연결하고 로그인한다", async (provider) => {
     // Given
     const fixture = createAuthOAuthFixture(provider);
@@ -243,7 +243,7 @@ describe("LoginWithOAuthToken — 공급자 인증과 사용자 생명주기", (
     const existingSession = SessionFixture.create({ userId: fixture.user.id });
     fixture.sessionRepository.sessions.set(existingSession.id, existingSession);
     fixture.cacheService.sessionIds.add(existingSession.id);
-    const currentUser = new GetCurrentUser(fixture);
+    const currentUser = new GetCurrentUserUseCase(fixture);
     expect(
       (
         await currentUser.execute({
@@ -254,7 +254,7 @@ describe("LoginWithOAuthToken — 공급자 인증과 사용자 생명주기", (
       ).providers,
     ).toEqual(["CREDENTIAL"]);
     // When
-    const result = await new LoginWithOAuthToken(fixture).execute({
+    const result = await new LoginWithOAuthTokenUseCase(fixture).execute({
       provider,
       token: "token",
       metadata,
@@ -298,7 +298,7 @@ describe("LoginWithOAuthToken — 공급자 인증과 사용자 생명주기", (
     { provider: "KAKAO", emailVerified: true, reason: "untrusted_provider" },
     { provider: "NAVER", emailVerified: false, reason: "untrusted_provider" },
   ] satisfies Array<{
-    provider: Parameters<LoginWithOAuthToken["execute"]>[0]["provider"];
+    provider: Parameters<LoginWithOAuthTokenUseCase["execute"]>[0]["provider"];
     emailVerified: boolean;
     reason: string;
   }>)(
@@ -313,7 +313,7 @@ describe("LoginWithOAuthToken — 공급자 인증과 사용자 생명주기", (
       };
       fixture.userRepository.users.set(fixture.user.id, { ...fixture.user, status: "LOCKED" });
       // When
-      const pending = new LoginWithOAuthToken(fixture).execute({
+      const pending = new LoginWithOAuthTokenUseCase(fixture).execute({
         provider,
         token: "token",
         metadata,
@@ -344,7 +344,7 @@ describe("LoginWithOAuthToken — 공급자 인증과 사용자 생명주기", (
       fixture.identityProvider.profile.email = fixture.user.email;
       fixture.userRepository.users.set(fixture.user.id, { ...fixture.user, status });
       // When
-      const pending = new LoginWithOAuthToken(fixture).execute({
+      const pending = new LoginWithOAuthTokenUseCase(fixture).execute({
         provider: "GOOGLE",
         token: "token",
       });
@@ -371,7 +371,7 @@ describe("LoginWithOAuthToken — 공급자 인증과 사용자 생명주기", (
         return work();
       };
       // When
-      const result = await new LoginWithOAuthToken(fixture).execute({
+      const result = await new LoginWithOAuthTokenUseCase(fixture).execute({
         provider: "GOOGLE",
         token: "token",
         metadata,
@@ -438,7 +438,7 @@ describe("LoginWithOAuthToken — 공급자 인증과 사용자 생명주기", (
         new Date(AUTH_CREDENTIAL_TIME.getTime() - 31 * 86_400_000),
       );
       // When
-      const pending = new LoginWithOAuthToken(fixture).execute({
+      const pending = new LoginWithOAuthTokenUseCase(fixture).execute({
         provider: "KAKAO",
         token: "token",
       });
@@ -466,7 +466,7 @@ describe("LoginWithOAuthToken — 공급자 인증과 사용자 생명주기", (
       const storageError = new Error("연결 저장 실패");
       vi.spyOn(fixture.accountRepository, "createOAuthAccount").mockRejectedValueOnce(storageError);
       // When
-      const pending = new LoginWithOAuthToken(fixture).execute({
+      const pending = new LoginWithOAuthTokenUseCase(fixture).execute({
         provider: "GOOGLE",
         token: "token",
       });
@@ -483,7 +483,10 @@ describe("LoginWithOAuthToken — 공급자 인증과 사용자 생명주기", (
     // Given
     const fixture = createAuthOAuthFixture();
     // When
-    const pending = new LoginWithOAuthToken(fixture).execute({ provider: "APPLE", token: "token" });
+    const pending = new LoginWithOAuthTokenUseCase(fixture).execute({
+      provider: "APPLE",
+      token: "token",
+    });
     // Then
     await expect(pending).rejects.toMatchObject({
       errorCode: ErrorCode.SOCIAL_0204,

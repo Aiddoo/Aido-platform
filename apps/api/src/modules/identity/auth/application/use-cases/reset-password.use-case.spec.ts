@@ -13,7 +13,7 @@ import {
 } from "#test/fixtures/auth-credential.fixture";
 import { SessionFixture, VerificationFixture } from "#test/fixtures/session.fixture";
 
-import { ResetPassword } from "./reset-password.use-case.js";
+import { ResetPasswordUseCase } from "./reset-password.use-case.js";
 
 describe("ResetPassword — 코드 소비와 모든 기기의 세션 폐기", () => {
   const code = "123456";
@@ -32,7 +32,7 @@ describe("ResetPassword — 코드 소비와 모든 기기의 세션 폐기", ()
       token: fixture.verificationCodeSecurity.hash(code),
     });
     fixture.verificationRepository.verifications.set(verification.id, verification);
-    return { ...fixture, verification, useCase: new ResetPassword(fixture) };
+    return { ...fixture, verification, useCase: new ResetPasswordUseCase(fixture) };
   }
 
   it("코드를 한 번 소비하고 모든 기기의 실제 폐기 세션 캐시와 비밀번호를 갱신한다", async () => {

@@ -21,7 +21,7 @@ export type ProvisionAccount =
       refreshToken?: string;
     };
 
-export interface ProvisionUserInput {
+export interface ProvisionUserCommand {
   email: string;
   status: UserStatus;
   /** 소셜은 즉시 인증됨(now()), 크레덴셜은 미설정(이메일 인증 대기) */
@@ -64,14 +64,14 @@ interface ProvisionUserDependencies {
   readonly retentionEnroller: Pick<RetentionEnrollerPort, "enrollNewUser">;
 }
 
-export class ProvisionUser {
+export class ProvisionUserUseCase {
   readonly #dependencies: ProvisionUserDependencies;
 
   constructor(dependencies: ProvisionUserDependencies) {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: ProvisionUserInput): Promise<ProvisionedUser> {
+  async execute(input: ProvisionUserCommand): Promise<ProvisionedUser> {
     const user = await this.#dependencies.userRepository.create({
       email: input.email,
       status: input.status,

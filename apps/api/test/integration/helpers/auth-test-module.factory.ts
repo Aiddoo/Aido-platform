@@ -27,9 +27,9 @@ import {
   type OAuthIdentityProviderRegistry,
 } from "#api/modules/identity/auth/application/ports/oauth-identity-provider.port";
 import { VERIFICATION_CODE_SECURITY } from "#api/modules/identity/auth/application/ports/verification-code-security.port";
-import { PasswordService } from "#api/modules/identity/auth/infrastructure/adapters/argon2-password-hasher.adapter";
+import { Argon2PasswordHasherAdapter } from "#api/modules/identity/auth/infrastructure/adapters/argon2-password-hasher.adapter";
 import { AuthCacheAdapter } from "#api/modules/identity/auth/infrastructure/adapters/auth-cache.adapter";
-import { TokenService } from "#api/modules/identity/auth/infrastructure/adapters/jwt-token-issuer.adapter";
+import { JwtTokenIssuerAdapter } from "#api/modules/identity/auth/infrastructure/adapters/jwt-token-issuer.adapter";
 import { NodeVerificationCodeSecurityAdapter } from "#api/modules/identity/auth/infrastructure/adapters/node-verification-code-security.adapter";
 import { DrizzleAccountRepository } from "#api/modules/identity/auth/infrastructure/persistence/drizzle-account.repository";
 import { DrizzleLoginAttemptRepository } from "#api/modules/identity/auth/infrastructure/persistence/drizzle-login-attempt.repository";
@@ -133,9 +133,9 @@ export async function createAuthTestModule(
       restoreAccountProvider,
       issueLoginProvider,
       provisionUserProvider,
-      PasswordService,
+      Argon2PasswordHasherAdapter,
       sessionServiceProvider,
-      TokenService,
+      JwtTokenIssuerAdapter,
       verificationServiceProvider,
       {
         provide: VERIFICATION_CODE_SECURITY,
@@ -169,8 +169,8 @@ export async function createAuthTestModule(
         provide: AUTH_SECURITY_LOG_REPOSITORY,
         useExisting: DrizzleSecurityLogRepository,
       },
-      { provide: AUTH_PASSWORD_HASHER, useExisting: PasswordService },
-      { provide: AUTH_TOKEN_ISSUER, useExisting: TokenService },
+      { provide: AUTH_PASSWORD_HASHER, useExisting: Argon2PasswordHasherAdapter },
+      { provide: AUTH_TOKEN_ISSUER, useExisting: JwtTokenIssuerAdapter },
       { provide: AUTH_EMAIL_SENDER, useExisting: TransactionalEmailSender },
       AuthCacheAdapter,
       { provide: AUTH_CACHE, useExisting: AuthCacheAdapter },

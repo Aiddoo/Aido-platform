@@ -16,16 +16,16 @@ import type { Request } from "express";
 import type { Mocked } from "vitest";
 import { mock } from "vitest-mock-extended";
 
-import { ExchangeOAuthCode } from "#api/modules/identity/auth/application/use-cases/exchange-oauth-code.use-case";
+import { ExchangeOAuthCodeUseCase } from "#api/modules/identity/auth/application/use-cases/exchange-oauth-code.use-case";
 import { parseRequestClient } from "#api/platform/http/request-client/index";
 import { TEST_REQUEST_ID } from "#test/mocks/request-client";
 
-import type { ExchangeCodeDto } from "./auth-request.dto.js";
+import type { ExchangeCodeDto } from "./auth.dto.js";
 import { OAuthController } from "./oauth.controller.js";
 
 describe("OAuthController — OAuth 인증 컨트롤러", () => {
   let controller: OAuthController;
-  let exchangeOAuthCodeUseCase: Mocked<ExchangeOAuthCode>;
+  let exchangeOAuthCodeUseCase: Mocked<ExchangeOAuthCodeUseCase>;
   const request = Object.assign(mock<Request>(), { headers: {} });
   const client = parseRequestClient({ "x-app-version": "1.14.2" }, TEST_REQUEST_ID);
 
@@ -33,7 +33,7 @@ describe("OAuthController — OAuth 인증 컨트롤러", () => {
     const { unit, unitRef } = await TestBed.solitary(OAuthController).compile();
 
     controller = unit;
-    exchangeOAuthCodeUseCase = unitRef.get(ExchangeOAuthCode);
+    exchangeOAuthCodeUseCase = unitRef.get(ExchangeOAuthCodeUseCase);
   });
 
   describe("exchangeCode", () => {

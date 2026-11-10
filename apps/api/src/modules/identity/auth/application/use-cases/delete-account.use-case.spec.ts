@@ -24,8 +24,8 @@ import {
   SECURITY_EVENT,
 } from "../../domain/auth.constants.js";
 import type { AccountProvider } from "../../domain/identity.constants.js";
-import { IdentityLogEvent } from "../auth.log-events.js";
-import { DeleteAccount } from "./delete-account.use-case.js";
+import { AuthLogEvent } from "../auth.log-events.js";
+import { DeleteAccountUseCase } from "./delete-account.use-case.js";
 
 const currentTime = new Date("2026-12-31T23:59:00Z");
 const userId = "user-123";
@@ -65,7 +65,7 @@ describe("DeleteAccount — 계정 탈퇴와 모든 기기의 접근 종료", ()
     const passwordService = new StubAccountPasswordVerifier();
     const logger = mock<ApplicationLoggerPort>();
     const pushDevices = new StubSessionPushDeviceReleaser();
-    const useCase = new DeleteAccount({
+    const useCase = new DeleteAccountUseCase({
       pushDevices,
       userRepository,
       accountRepository,
@@ -139,7 +139,7 @@ describe("DeleteAccount — 계정 탈퇴와 모든 기기의 접근 종료", ()
         provider === "CREDENTIAL" ? [{ hash: `digest:${password}`, password }] : [],
       );
       expect(fixture.logger.log).toHaveBeenCalledWith({
-        event: IdentityLogEvent.ACCOUNT_DELETION_REQUESTED,
+        event: AuthLogEvent.ACCOUNT_DELETION_REQUESTED,
         userId,
       });
       const logs = JSON.stringify(fixture.logger.log.mock.calls);

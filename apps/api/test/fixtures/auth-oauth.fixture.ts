@@ -1,6 +1,6 @@
 import type { OAuthIdentityProviderRegistry } from "#api/modules/identity/auth/application/ports/oauth-identity-provider.port";
-import { LinkOAuthIdentity } from "#api/modules/identity/auth/application/use-cases/link-oauth-identity.use-case";
-import { OAuthSignupNotifier } from "#api/modules/identity/auth/application/use-cases/notify-oauth-signup.use-case";
+import { LinkOAuthIdentityUseCase } from "#api/modules/identity/auth/application/use-cases/link-oauth-identity.use-case";
+import { NotifyOAuthSignupUseCase } from "#api/modules/identity/auth/application/use-cases/notify-oauth-signup.use-case";
 import type { AccountProvider } from "#api/modules/identity/auth/domain/identity.constants";
 import {
   CountingOAuthIdentityProvider,
@@ -17,8 +17,8 @@ export function createAuthOAuthFixture(
   const identityProvider = new CountingOAuthIdentityProvider(provider);
   const registry: OAuthIdentityProviderRegistry = new Map([[provider, identityProvider]]);
   const oauthStateRepository = new StubAuthOAuthStateRepository();
-  const linkOAuthIdentity = new LinkOAuthIdentity(fixture);
-  const oauthSignupNotifier = new OAuthSignupNotifier(fixture);
+  const linkOAuthIdentity = new LinkOAuthIdentityUseCase(fixture);
+  const oauthSignupNotifier = new NotifyOAuthSignupUseCase(fixture);
   return {
     ...fixture,
     identityProvider,

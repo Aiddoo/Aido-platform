@@ -8,7 +8,7 @@ import {
   type PremiumGranterPort,
 } from "#api/modules/billing/billing-subscriptions.public";
 import { RevenueCatWebhookReceiver } from "#api/modules/billing/infrastructure/revenuecat/revenuecat-webhook.receiver";
-import { GetCurrentUser } from "#api/modules/identity/auth/application/use-cases/get-current-user.use-case";
+import { GetCurrentUserUseCase } from "#api/modules/identity/auth/application/use-cases/get-current-user.use-case";
 import { createEntityId } from "#api/platform/database/entity-id";
 import { user as userTable } from "#api/platform/database/schema/index";
 import { STORE_RENEWAL_GRACE_MS } from "#api/shared/domain/store-renewal-grace";
@@ -432,7 +432,7 @@ describe("결제 구독과 보상 기간 결합 타임라인 QA (실제 PostgreS
     vi.setSystemTime(STORE_EXPIRY);
     await webhook(billingIssue("m-billing", graceEndsAt));
     await webhook(billingErrorCancellation("m-billing-cancel"));
-    const getMe = context.module.get(GetCurrentUser);
+    const getMe = context.module.get(GetCurrentUserUseCase);
     const input = { userId, sessionId: "qa-session", timezone: "Asia/Seoul" };
     vi.setSystemTime(new Date(graceEndsAt.getTime() - 60_000));
     const beforeEnd = await getMe.execute(input);
@@ -456,7 +456,7 @@ describe("결제 구독과 보상 기간 결합 타임라인 QA (실제 PostgreS
     // Given
     await granter.grant({ userId, source: "INVITE", sourceKey: "c:invite", durationDays: 7 });
     const endsAt = new Date(AT.getTime() + 7 * DAY_MS);
-    const getMe = context.module.get(GetCurrentUser);
+    const getMe = context.module.get(GetCurrentUserUseCase);
     const input = { userId, sessionId: "qa-session", timezone: "Asia/Seoul" };
     vi.setSystemTime(new Date(endsAt.getTime() - 60_000));
     await getMe.execute(input);

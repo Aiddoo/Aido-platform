@@ -5,7 +5,7 @@ import {
   createAuthCredentialFixture,
 } from "#test/fixtures/auth-credential.fixture";
 
-import { UpdateProfile } from "./update-profile.use-case.js";
+import { UpdateProfileUseCase } from "./update-profile.use-case.js";
 
 describe("UpdateProfile — 프로필 변경", () => {
   beforeEach(() => {
@@ -16,7 +16,7 @@ describe("UpdateProfile — 프로필 변경", () => {
 
   function given(options: Parameters<typeof createAuthCredentialFixture>[0] = {}) {
     const fixture = createAuthCredentialFixture(options);
-    const useCase = new UpdateProfile({
+    const useCase = new UpdateProfileUseCase({
       userRepository: fixture.userRepository,
       cacheService: fixture.cacheService,
       logger: fixture.logger,

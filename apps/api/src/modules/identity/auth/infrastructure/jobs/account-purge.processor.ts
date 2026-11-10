@@ -1,7 +1,7 @@
 import { Inject, Injectable, Logger, type OnModuleInit } from "@nestjs/common";
 
-import { IdentityLogEvent } from "#api/modules/identity/auth/application/auth.log-events";
-import { PurgeDeletedAccounts } from "#api/modules/identity/auth/application/use-cases/purge-deleted-accounts.use-case";
+import { AuthLogEvent } from "#api/modules/identity/auth/application/auth.log-events";
+import { PurgeDeletedAccountsUseCase } from "#api/modules/identity/auth/application/use-cases/purge-deleted-accounts.use-case";
 import { JOB_POLLING_SECONDS } from "#api/shared/application/ports/index";
 import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
 
@@ -11,12 +11,12 @@ import { ACCOUNT_PURGE_QUEUE, type AccountPurgeJobData } from "./account-purge.q
 export class AccountPurgeProcessor implements OnModuleInit {
   readonly #logger = new Logger(AccountPurgeProcessor.name);
 
-  readonly #purgeDeletedAccounts: Pick<PurgeDeletedAccounts, "execute">;
+  readonly #purgeDeletedAccounts: Pick<PurgeDeletedAccountsUseCase, "execute">;
   readonly #runtime: JobRuntimePort;
 
   constructor(
-    @Inject(PurgeDeletedAccounts)
-    purgeDeletedAccounts: Pick<PurgeDeletedAccounts, "execute">,
+    @Inject(PurgeDeletedAccountsUseCase)
+    purgeDeletedAccounts: Pick<PurgeDeletedAccountsUseCase, "execute">,
     @Inject(JOB_RUNTIME) runtime: JobRuntimePort,
   ) {
     this.#purgeDeletedAccounts = purgeDeletedAccounts;
@@ -33,7 +33,7 @@ export class AccountPurgeProcessor implements OnModuleInit {
   onFailed(job: { readonly id?: string; readonly name?: string } | undefined, error: Error): void {
     this.#logger.error(
       {
-        event: IdentityLogEvent.ACCOUNT_PURGE_JOB_FAILED,
+        event: AuthLogEvent.ACCOUNT_PURGE_JOB_FAILED,
         jobId: job?.id,
         jobName: job?.name,
         errorType: error.name,
@@ -43,7 +43,7 @@ export class AccountPurgeProcessor implements OnModuleInit {
   }
 
   async process(_job?: { readonly data?: AccountPurgeJobData }): Promise<void> {
-    this.#logger.debug({ event: IdentityLogEvent.ACCOUNT_PURGE_JOB_STARTED });
+    this.#logger.debug({ event: AuthLogEvent.ACCOUNT_PURGE_JOB_STARTED });
     await this.#purgeDeletedAccounts.execute();
   }
 }

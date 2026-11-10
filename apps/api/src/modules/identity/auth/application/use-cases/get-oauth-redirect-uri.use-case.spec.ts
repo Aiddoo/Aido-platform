@@ -4,7 +4,7 @@ import { AUTH_CREDENTIAL_TIME } from "#test/fixtures/auth-credential.fixture";
 import { createAuthOAuthFixture } from "#test/fixtures/auth-oauth.fixture";
 import { OAuthStateFixture } from "#test/fixtures/oauth-state.fixture";
 
-import { GetOAuthRedirectUri } from "./get-oauth-redirect-uri.use-case.js";
+import { GetOAuthRedirectUriUseCase } from "./get-oauth-redirect-uri.use-case.js";
 
 describe("GetOAuthRedirectUri — 유효한 OAuth state의 앱 복귀 URI", () => {
   beforeEach(() => {
@@ -17,7 +17,7 @@ describe("GetOAuthRedirectUri — 유효한 OAuth state의 앱 복귀 URI", () =
     const fixture = createAuthOAuthFixture();
     const state = OAuthStateFixture.create({ redirectUri: "aido:///auth/complete" });
     fixture.oauthStateRepository.states.set(state.id, state);
-    const useCase = new GetOAuthRedirectUri(fixture);
+    const useCase = new GetOAuthRedirectUriUseCase(fixture);
     // When / Then
     expect(await useCase.execute({ state: state.state })).toBe(state.redirectUri);
     expect(await useCase.execute({ state: "unknown-state" })).toBeNull();

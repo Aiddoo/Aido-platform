@@ -5,7 +5,7 @@ import {
   subscriptionStatusSchema,
   userRoleSchema,
   userStatusSchema,
-} from "@aido/api";
+} from "@aido/api/contracts/auth";
 import { Injectable } from "@nestjs/common";
 import { z } from "zod";
 

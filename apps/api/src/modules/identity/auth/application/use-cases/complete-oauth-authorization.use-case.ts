@@ -4,13 +4,13 @@ import type { OAUTH_PROVIDERS } from "@aido/api/vocabulary";
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 
-import { IdentityLogEvent } from "../auth.log-events.js";
+import { AuthLogEvent } from "../auth.log-events.js";
 import type { AuthOAuthStateRepositoryPort } from "../ports/auth-persistence.port.js";
 import type { OAuthIdentityProviderRegistry } from "../ports/oauth-identity-provider.port.js";
 import type { RequestMetadata } from "../read-models/auth-result.read-model.js";
-import type { LoginWithOAuthToken } from "./login-with-oauth-token.use-case.js";
+import type { LoginWithOAuthTokenUseCase } from "./login-with-oauth-token.use-case.js";
 
-export interface CompleteOAuthAuthorizationInput {
+export interface CompleteOAuthAuthorizationCommand {
   readonly provider: Exclude<(typeof OAUTH_PROVIDERS)[number], "APPLE">;
   readonly code: string;
   readonly state: string;
@@ -31,18 +31,20 @@ interface CompleteOAuthAuthorizationDependencies {
     AuthOAuthStateRepositoryPort,
     "findByState" | "generateExchangeCode" | "saveExchangeData" | "saveLinkingData"
   >;
-  readonly loginWithOAuthToken: Pick<LoginWithOAuthToken, "execute">;
+  readonly loginWithOAuthToken: Pick<LoginWithOAuthTokenUseCase, "execute">;
   readonly logger: ApplicationLoggerPort;
 }
 
-export class CompleteOAuthAuthorization {
+export class CompleteOAuthAuthorizationUseCase {
   readonly #dependencies: CompleteOAuthAuthorizationDependencies;
 
   constructor(dependencies: CompleteOAuthAuthorizationDependencies) {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: CompleteOAuthAuthorizationInput): Promise<CompleteOAuthAuthorizationResult> {
+  async execute(
+    input: CompleteOAuthAuthorizationCommand,
+  ): Promise<CompleteOAuthAuthorizationResult> {
     const { provider, code, state, metadata } = input;
     const strategy = this.#dependencies.registry.get(provider);
     if (strategy == null) {
@@ -53,7 +55,7 @@ export class CompleteOAuthAuthorization {
     }
     const authorization = await this.#dependencies.oauthStateRepository.findByState(state);
     if (authorization == null) {
-      this.#dependencies.logger.warn({ event: IdentityLogEvent.OAUTH_STATE_REJECTED });
+      this.#dependencies.logger.warn({ event: AuthLogEvent.OAUTH_STATE_REJECTED });
       throw new ApplicationException(ErrorCode.USER_0602);
     }
     const redirectUri =
@@ -71,7 +73,7 @@ export class CompleteOAuthAuthorization {
         providerAccountId: profile.id,
       });
       this.#dependencies.logger.debug({
-        event: IdentityLogEvent.OAUTH_EXCHANGE_CREATED,
+        event: AuthLogEvent.OAUTH_EXCHANGE_CREATED,
         oauthStateId: authorization.id,
         mode: "link",
         provider: authorization.provider,
@@ -95,7 +97,7 @@ export class CompleteOAuthAuthorization {
       isNewUser: loginResult.isNewUser,
     });
     this.#dependencies.logger.debug({
-      event: IdentityLogEvent.OAUTH_EXCHANGE_CREATED,
+      event: AuthLogEvent.OAUTH_EXCHANGE_CREATED,
       oauthStateId: authorization.id,
       mode: "login",
       userId: loginResult.userId,

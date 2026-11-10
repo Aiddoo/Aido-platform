@@ -10,7 +10,7 @@ import type { ApplicationLoggerPort } from "#api/shared/application/ports/applic
 import { addMinutes, subtractSeconds } from "#api/shared/domain/date/utils/arithmetic";
 import { now } from "#api/shared/domain/date/utils/core";
 
-import { IdentityLogEvent } from "../auth.log-events.js";
+import { AuthLogEvent } from "../auth.log-events.js";
 import { type AuthEmailSenderPort } from "../ports/auth-collaboration.port.js";
 import { type AuthVerificationRepositoryPort } from "../ports/auth-persistence.port.js";
 import { type VerificationCodeSecurityPort } from "../ports/verification-code-security.port.js";
@@ -46,7 +46,7 @@ export class VerificationService {
     const result = await this.#createVerificationCode(userId, "EMAIL_VERIFY");
 
     this.#dependencies.logger.log({
-      event: IdentityLogEvent.VERIFICATION_CREATED,
+      event: AuthLogEvent.VERIFICATION_CREATED,
       userId,
       verificationType: "EMAIL_VERIFY",
     });
@@ -62,7 +62,7 @@ export class VerificationService {
 
     if (dispatch.status === "rejected") {
       this.#dependencies.logger.error({
-        event: IdentityLogEvent.VERIFICATION_EMAIL_FAILED,
+        event: AuthLogEvent.VERIFICATION_EMAIL_FAILED,
         verificationType: "EMAIL_VERIFY",
         reason: dispatch.reason,
       });
@@ -87,7 +87,7 @@ export class VerificationService {
 
     if (dispatch.status === "rejected") {
       this.#dependencies.logger.error({
-        event: IdentityLogEvent.VERIFICATION_EMAIL_FAILED,
+        event: AuthLogEvent.VERIFICATION_EMAIL_FAILED,
         verificationType: "PASSWORD_RESET",
         userId,
         reason: dispatch.reason,
@@ -95,7 +95,7 @@ export class VerificationService {
     }
 
     this.#dependencies.logger.log({
-      event: IdentityLogEvent.VERIFICATION_CREATED,
+      event: AuthLogEvent.VERIFICATION_CREATED,
       userId,
       verificationType: "PASSWORD_RESET",
     });
@@ -119,7 +119,7 @@ export class VerificationService {
 
     if (dispatch.status === "rejected") {
       this.#dependencies.logger.error({
-        event: IdentityLogEvent.VERIFICATION_EMAIL_FAILED,
+        event: AuthLogEvent.VERIFICATION_EMAIL_FAILED,
         verificationType: "PASSWORD_SETUP",
         userId,
         reason: dispatch.reason,
@@ -127,7 +127,7 @@ export class VerificationService {
     }
 
     this.#dependencies.logger.log({
-      event: IdentityLogEvent.VERIFICATION_CREATED,
+      event: AuthLogEvent.VERIFICATION_CREATED,
       userId,
       verificationType: "PASSWORD_SETUP",
     });
@@ -164,7 +164,7 @@ export class VerificationService {
       await this.#dependencies.verificationRepository.incrementAttempts(verification.id);
 
       this.#dependencies.logger.warn({
-        event: IdentityLogEvent.VERIFICATION_FAILED,
+        event: AuthLogEvent.VERIFICATION_FAILED,
         userId,
         verificationType: type,
       });
@@ -186,7 +186,7 @@ export class VerificationService {
     challenge.consume(at);
 
     this.#dependencies.logger.log({
-      event: IdentityLogEvent.VERIFICATION_CONSUMED,
+      event: AuthLogEvent.VERIFICATION_CONSUMED,
       userId,
       verificationType: type,
     });

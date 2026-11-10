@@ -4,7 +4,7 @@ import type { ResourceBonuses } from "#api/modules/access/domain/policies/entitl
 import { QUOTA_LEDGER_TIME, createQuotaLedgerFixture } from "#test/fixtures/quota-ledger.fixture";
 import type { InMemoryQuotaUser } from "#test/mocks/ports/quota-ledger.stub";
 
-import { GetEntitlementSnapshot } from "./get-entitlement-snapshot.use-case.js";
+import { GetEntitlementSnapshotUseCase } from "./get-entitlement-snapshot.use-case.js";
 
 const DAILY_RESETS_AT = new Date("2026-04-12T15:00:00Z");
 
@@ -24,7 +24,7 @@ describe("GetEntitlementSnapshot — 권한 스냅샷", () => {
     const ledgerFixture = createQuotaLedgerFixture(input.user, input.resourceBonuses);
     const friendCounts = new Map([[ledgerFixture.userId, input.friends]]);
     const categoryCounts = new Map([[ledgerFixture.userId, input.categories]]);
-    const useCase = new GetEntitlementSnapshot({
+    const useCase = new GetEntitlementSnapshotUseCase({
       quotaLedger: ledgerFixture.ledger,
       cheerUsageReader: { readDailyUsage: async () => ({ used: 1, resetsAt: DAILY_RESETS_AT }) },
       nudgeUsageReader: { readDailyUsage: async () => ({ used: 0, resetsAt: DAILY_RESETS_AT }) },

@@ -3,7 +3,7 @@ import { vi } from "vitest";
 import { SessionFixture } from "#test/fixtures/index";
 import { StubAuthSessionRepository } from "#test/mocks/ports/auth-session.stub";
 
-import { ListActiveSessions } from "./list-active-sessions.use-case.js";
+import { ListActiveSessionsUseCase } from "./list-active-sessions.use-case.js";
 
 const currentTime = new Date("2026-12-31T23:59:00Z");
 const userId = "user-123";
@@ -28,7 +28,7 @@ describe("ListActiveSessions — 내 활성 기기 목록", () => {
       SessionFixture.create({ userId, id: "revoked-session", revokedAt: currentTime }),
       SessionFixture.createExpired({ userId, id: "expired-session" }),
     ]);
-    const useCase = new ListActiveSessions({ sessionRepository });
+    const useCase = new ListActiveSessionsUseCase({ sessionRepository });
 
     // When
     const result = await useCase.execute({ userId });
@@ -50,7 +50,9 @@ describe("ListActiveSessions — 내 활성 기기 목록", () => {
 
   it("내 활성 세션이 없으면 빈 목록을 반환한다", async () => {
     // Given
-    const useCase = new ListActiveSessions({ sessionRepository: new StubAuthSessionRepository() });
+    const useCase = new ListActiveSessionsUseCase({
+      sessionRepository: new StubAuthSessionRepository(),
+    });
 
     // When
     const result = await useCase.execute({ userId });

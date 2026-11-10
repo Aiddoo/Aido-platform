@@ -5,7 +5,7 @@ import {
   createAuthCredentialFixture,
 } from "#test/fixtures/auth-credential.fixture";
 
-import type { IssueLoginInput } from "./issue-login.use-case.js";
+import type { IssueLoginCommand } from "./issue-login.use-case.js";
 
 describe("IssueLogin — 세션 발급과 로그인 성공 기록", () => {
   beforeEach(() => {
@@ -17,12 +17,12 @@ describe("IssueLogin — 세션 발급과 로그인 성공 기록", () => {
   it.each([
     { provider: "CREDENTIAL", securityMetadata: undefined },
     { provider: "GOOGLE", securityMetadata: { provider: "GOOGLE" } },
-  ] satisfies Pick<IssueLoginInput, "provider" | "securityMetadata">[])(
+  ] satisfies Pick<IssueLoginCommand, "provider" | "securityMetadata">[])(
     "$provider 로그인은 실제 발급한 세션·토큰과 성공 기록·프로필을 반환한다",
     async ({ provider, securityMetadata }) => {
       // Given
       const fixture = createAuthCredentialFixture({ socialOnly: provider === "GOOGLE" });
-      const input: IssueLoginInput = {
+      const input: IssueLoginCommand = {
         userId: fixture.user.id,
         email: fixture.user.email,
         role: fixture.user.role,

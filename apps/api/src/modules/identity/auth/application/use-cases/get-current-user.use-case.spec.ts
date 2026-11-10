@@ -7,7 +7,7 @@ import {
   createAuthCredentialFixture,
 } from "#test/fixtures/auth-credential.fixture";
 
-import { GetCurrentUser } from "./get-current-user.use-case.js";
+import { GetCurrentUserUseCase } from "./get-current-user.use-case.js";
 
 describe("GetCurrentUser — 현재 사용자 조회", () => {
   beforeEach(() => {
@@ -18,7 +18,7 @@ describe("GetCurrentUser — 현재 사용자 조회", () => {
 
   function given(options: Parameters<typeof createAuthCredentialFixture>[0] = {}) {
     const fixture = createAuthCredentialFixture(options);
-    const useCase = new GetCurrentUser({
+    const useCase = new GetCurrentUserUseCase({
       userRepository: fixture.userRepository,
       cacheService: fixture.cacheService,
       premiumAccessReader: fixture.premiumAccessReader,

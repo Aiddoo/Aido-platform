@@ -5,7 +5,7 @@ import { AUTH_CREDENTIAL_TIME } from "#test/fixtures/auth-credential.fixture";
 import { createAuthOAuthFixture } from "#test/fixtures/auth-oauth.fixture";
 import { OAuthStateFixture } from "#test/fixtures/oauth-state.fixture";
 
-import { ExchangeOAuthCode } from "./exchange-oauth-code.use-case.js";
+import { ExchangeOAuthCodeUseCase } from "./exchange-oauth-code.use-case.js";
 
 describe("ExchangeOAuthCode — 일회용 로그인 결과 교환", () => {
   beforeEach(() => {
@@ -26,7 +26,7 @@ describe("ExchangeOAuthCode — 일회용 로그인 결과 교환", () => {
       ...overrides,
     });
     fixture.oauthStateRepository.states.set(state.id, state);
-    return { ...fixture, state, useCase: new ExchangeOAuthCode(fixture) };
+    return { ...fixture, state, useCase: new ExchangeOAuthCodeUseCase(fixture) };
   }
 
   it("로그인 결과를 반환하고 저장된 토큰을 지워 같은 코드를 재사용할 수 없게 한다", async () => {

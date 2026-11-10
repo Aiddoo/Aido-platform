@@ -9,7 +9,7 @@ import {
 } from "#test/fixtures/auth-credential.fixture";
 import { SessionFixture } from "#test/fixtures/session.fixture";
 
-import { ChangePassword } from "./change-password.use-case.js";
+import { ChangePasswordUseCase } from "./change-password.use-case.js";
 
 describe("ChangePassword — 현재 기기를 유지하는 비밀번호 변경", () => {
   const newPassword = "NewPassword2!";
@@ -22,7 +22,7 @@ describe("ChangePassword — 현재 기기를 유지하는 비밀번호 변경",
   it("현재 기기와 다른 사용자는 유지하고 나머지 폐기 세션 캐시만 삭제한다", async () => {
     // Given
     const fixture = createAuthCredentialFixture();
-    const useCase = new ChangePassword(fixture);
+    const useCase = new ChangePasswordUseCase(fixture);
     const currentSession = SessionFixture.create({ id: "current-device", userId: fixture.user.id });
     const otherSession = SessionFixture.create({ id: "other-device", userId: fixture.user.id });
     const otherUserSession = SessionFixture.create({
@@ -73,7 +73,7 @@ describe("ChangePassword — 현재 기기를 유지하는 비밀번호 변경",
   it("현재 세션을 지정하지 않은 기존 호출은 모든 기기를 폐기한다", async () => {
     // Given
     const fixture = createAuthCredentialFixture();
-    const useCase = new ChangePassword(fixture);
+    const useCase = new ChangePasswordUseCase(fixture);
     const session = SessionFixture.create({ userId: fixture.user.id });
     fixture.sessionRepository.sessions.set(session.id, session);
     fixture.cacheService.sessionIds.add(session.id);
@@ -108,7 +108,7 @@ describe("ChangePassword — 현재 기기를 유지하는 비밀번호 변경",
           account.password = null;
         }
       }
-      const useCase = new ChangePassword(fixture);
+      const useCase = new ChangePasswordUseCase(fixture);
       const errorCode =
         state === "존재하지 않는"
           ? ErrorCode.USER_0601
@@ -133,7 +133,7 @@ describe("ChangePassword — 현재 기기를 유지하는 비밀번호 변경",
   it("현재 비밀번호가 틀리면 비밀번호·세션·캐시를 유지한다", async () => {
     // Given
     const fixture = createAuthCredentialFixture();
-    const useCase = new ChangePassword(fixture);
+    const useCase = new ChangePasswordUseCase(fixture);
     const session = SessionFixture.create({ userId: fixture.user.id });
     fixture.sessionRepository.sessions.set(session.id, session);
     fixture.cacheService.sessionIds.add(session.id);
