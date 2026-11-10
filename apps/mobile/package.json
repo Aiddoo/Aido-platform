@@ -49,7 +49,7 @@
     "test:watch": "jest --watch",
     "test:conventions": "node --test scripts/check-mobile-conventions.test.mjs",
     "test:revenuecat-env": "node --test scripts/check-revenuecat-env.test.mjs",
-    "test:native-config": "node --test scripts/firebase-initialization.test.mjs scripts/widget-gallery-locales.test.mjs scripts/kakao-compile-sdk.test.mjs scripts/dev-launcher-local-network.test.mjs",
+    "test:native-config": "node --test scripts/firebase-initialization.test.mjs scripts/widget-gallery-locales.test.mjs scripts/kakao-compile-sdk.test.mjs scripts/dev-launcher-local-network.test.mjs scripts/android-density-config-change.test.mjs",
     "typecheck": "tsc --noEmit",
     "update:preview": "eas update --branch preview",
     "update:production": "eas update --branch production",
