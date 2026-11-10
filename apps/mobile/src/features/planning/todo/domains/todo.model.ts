@@ -2,6 +2,7 @@ import { TODO_VISIBILITIES } from '@aido/api/vocabulary';
 import { todoCategorySchema } from '@src/features/planning/category/domains/todo-category.model';
 import { addDaysToDateKey, diffDateKeysInDays } from '@src/shared/date/date-key';
 import { instantSchema, toHHmm } from '@src/shared/date/instant';
+import { entityIdSchema } from '@src/shared/domains/entity-id.model';
 import { z } from 'zod';
 
 import { type SubTodo, subTodoSchema } from './sub-todo.model';
@@ -68,7 +69,7 @@ export type TodoSummary = z.infer<typeof todoSummarySchema>;
 export const todoDetailsSchema = z.object({
   todo: todoSchema,
   owner: z.object({
-    id: z.cuid(),
+    id: entityIdSchema,
     name: z.string().nullable(),
     profileImage: z.string().nullable(),
   }),

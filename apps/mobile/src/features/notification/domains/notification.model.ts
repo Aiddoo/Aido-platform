@@ -9,6 +9,7 @@ import type { ForegroundPushPresentation } from '@src/core/ports/push-notificati
 import type { AuthStatus } from '@src/core/session/auth-status';
 import { MINUTE_MS, SECOND_MS } from '@src/shared/constants/time-units';
 import { instantSchema } from '@src/shared/date/instant';
+import { entityIdSchema } from '@src/shared/domains/entity-id.model';
 import { takeRight, without } from 'es-toolkit';
 import { match } from 'ts-pattern';
 import { z } from 'zod';
@@ -63,7 +64,7 @@ export const notificationDestinationRoutingSchema = z.discriminatedUnion('type',
   z.object({
     type: z.literal('TODO_SHARED'),
     todoId: z.int().positive(),
-    commentId: z.cuid().optional().catch(undefined),
+    commentId: entityIdSchema.optional().catch(undefined),
     ...todoTargetShape,
   }),
   z.object({ type: z.literal('FOLLOW_NEW') }),

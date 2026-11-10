@@ -51,8 +51,8 @@ src/
 │   ├── hooks/                    # 여러 파일이 쓰는 훅 (route 읽기, 상태 튜플)
 │   ├── utils/                    # {feature}-draft.ts, {name}.view-model.ts, 순수 계산
 │   └── __tests__/                # {entity}.fixtures.ts, {feature}.test-utils.ts
-└── shared/                       # analytics, config, constants, date, di, draft, errors, hooks, i18n,
-                                  # infra(어댑터), preferences, providers, schemas, stores, types, ui, utils
+└── shared/                       # analytics, config, constants, date, di, domains(여러 feature의 모델이 쓰는 규칙: entity-id),
+                                  # draft, errors, hooks, i18n, infra(어댑터), preferences, providers, schemas, stores, types, ui, utils
 ```
 
 - 로컬 저장소(SecureStore·MMKV)는 `apis/{name}.repository.ts`로 둔다. `create{Name}Repository` 함수 하나가 `{Name}Repository` 인터페이스를 돌려주고 메서드는 화살표 속성이다. 위젯의 네이티브 경계는 `features/device/widget/bridge/`에 둔다.
