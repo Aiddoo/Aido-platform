@@ -1,4 +1,4 @@
-import { dayOfWeekSchema } from "@aido/api";
+import { DAYS_OF_WEEK } from "@aido/api/vocabulary";
 import { z } from "zod";
 
 import { llmObject } from "../../../generation/application/messages/llm-output.wire.js";
@@ -9,7 +9,7 @@ export const suggestionDraftSchema = llmObject({
     .array(
       llmObject({
         candidateId: z.string(),
-        daysOfWeek: z.array(dayOfWeekSchema),
+        daysOfWeek: z.array(z.enum(DAYS_OF_WEEK)),
         useRecordedTime: z.boolean(),
         reason: z
           .string()

@@ -132,7 +132,7 @@ UoW: 잠금 → 최신 자격·상태 확인 → 도메인 행동 → 저장 →
 commit → 캐시 정리
 ```
 
-현재 사례: [CreateTodoUseCase](../src/modules/planning/todos/application/use-cases/create-todo.use-case.ts)(정렬 잠금 아래 저장), [GenerateReport](../src/modules/ai-assistance/application/use-cases/reports/generate-report.use-case.ts)(AI 호출 전후로 자격 재확인), [ReconcilePushReceipts](../src/modules/notification/push/application/use-cases/reconcile-push-receipts.use-case.ts)(외부 조회 밖, 기록·토큰 비활성화 한 UoW).
+현재 사례: [CreateTodoUseCase](../src/modules/planning/todos/application/use-cases/create-todo.use-case.ts)(정렬 잠금 아래 저장), [GenerateReportUseCase](../src/modules/ai-assistance/reports/application/use-cases/generate-report.use-case.ts)(AI 호출 전후로 자격 재확인), [ReconcilePushReceipts](../src/modules/notification/push/application/use-cases/reconcile-push-receipts.use-case.ts)(외부 조회 밖, 기록·토큰 비활성화 한 UoW).
 
 ## 교체 가능한 포트
 

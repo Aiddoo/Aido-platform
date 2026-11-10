@@ -1,5 +1,21 @@
-import type { TodoRepeat } from "@aido/api";
-import type { DayOfWeek } from "@aido/api/vocabulary";
+import type { DayOfWeek, TodoRepeatInterval } from "@aido/api/vocabulary";
+
+/** 반복 끝. 공개 계약 todoRepeatSchema의 end와 같은 모양이라 응답에 그대로 싣는다 */
+export type TodoRepeatEndRule =
+  | { readonly type: "NEVER" }
+  | { readonly type: "UNTIL"; readonly date: string }
+  | { readonly type: "COUNT"; readonly count: number };
+
+/** 서버가 정한 반복 규칙. 공개 계약 todoRepeatSchema와 같은 모양이다(요일 배열은 계약에 그대로 넘기려고 변경 가능 배열) */
+export type TodoRepeatRule =
+  | { readonly frequency: "DAILY"; readonly end: TodoRepeatEndRule }
+  | {
+      readonly frequency: "WEEKLY";
+      readonly interval: TodoRepeatInterval;
+      readonly weekdays: DayOfWeek[];
+      readonly end: TodoRepeatEndRule;
+    }
+  | { readonly frequency: "MONTHLY"; readonly monthDay: number; readonly end: TodoRepeatEndRule };
 
 /**
  * LLM이 문장에서 읽은 일정 표현의 중간 표현(IR).
@@ -115,6 +131,6 @@ export interface ResolvedSchedule {
   /** 출시 앱용 요일 + 종료일. 종료를 말하지 않으면 기본 기간으로 채운다. */
   readonly recurrence: { readonly daysOfWeek: DayOfWeek[]; readonly endDate: string } | null;
   /** 반복 규칙. 종료를 말하지 않으면 계속 반복이다. */
-  readonly repeat: TodoRepeat | null;
+  readonly repeat: TodoRepeatRule | null;
   readonly warnings: readonly ScheduleWarning[];
 }

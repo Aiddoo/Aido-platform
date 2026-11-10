@@ -1,4 +1,3 @@
-import type { TodoRepeat, TodoRepeatEnd } from "@aido/api";
 import { DAY_OF_WEEK_ORDER, type DayOfWeek } from "@aido/api/vocabulary";
 import dayjs from "dayjs";
 import { range, uniq } from "es-toolkit";
@@ -14,6 +13,8 @@ import type {
   ScheduleDraft,
   ScheduleWarning,
   TimeRef,
+  TodoRepeatEndRule,
+  TodoRepeatRule,
 } from "./todo-draft.constants.js";
 
 export interface ScheduleClock {
@@ -188,7 +189,7 @@ export function resolvePlanSchedule(
  * 출시 parse 응답은 "이번 주말 X"를 토·일 + 그 주 일요일까지로 준다. 새 반복 규칙(repeat)에서는 끝이 시작 다음 날까지인
  * 주말 반복을 반복이 아니라 시작일 한 번으로 본다. 앱 `TodoRepeatPolicy.isSingleWeekendRepeat`와 같은 판단이다.
  */
-export function isSingleWeekendRepeat(repeat: TodoRepeat, startDate: string): boolean {
+export function isSingleWeekendRepeat(repeat: TodoRepeatRule, startDate: string): boolean {
   return (
     repeat.frequency === "WEEKLY" &&
     repeat.weekdays.includes("SAT") &&
@@ -203,10 +204,10 @@ function resolveRepeat(
   window: RecurrenceWindow | null,
   start: CalendarDay,
   today: CalendarDay,
-): TodoRepeat | null {
+): TodoRepeatRule | null {
   const end = resolveRepeatEnd(repeat, window, start, today);
   return match(repeat.pattern)
-    .returnType<TodoRepeat | null>()
+    .returnType<TodoRepeatRule | null>()
     .with("NONE", "UNSUPPORTED", () => null)
     .with("DAILY", () => ({ frequency: "DAILY", end }))
     .with("MONTHLY_DAY", () => ({
@@ -246,7 +247,7 @@ function resolveRepeatEnd(
   window: RecurrenceWindow | null,
   start: CalendarDay,
   today: CalendarDay,
-): TodoRepeatEnd {
+): TodoRepeatEndRule {
   const end = window?.end ?? resolveSpokenRepeatEnd(repeat, start, today);
   if (end == null) {
     return { type: "NEVER" };

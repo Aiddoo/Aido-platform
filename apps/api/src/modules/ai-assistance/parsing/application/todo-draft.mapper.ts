@@ -1,3 +1,4 @@
+// oxlint-disable-next-line no-restricted-imports -- 정리한 결과를 과금 생성 안에서 공개 계약으로 검증해 위반이면 환불한다. ParsedTodo read model로 옮길 때 지운다
 import {
   type ParsedMemoData,
   parsedMemoDataSchema,

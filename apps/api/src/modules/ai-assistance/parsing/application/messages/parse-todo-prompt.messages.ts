@@ -1,3 +1,4 @@
+// oxlint-disable-next-line no-restricted-imports -- todo-draft.mapper가 공개 계약으로 검증한 결과 타입이다. ParsedTodo read model로 옮길 때 지운다
 import type { ParsedTodoData } from "@aido/api";
 import { AI_PARSE_LIMITS } from "@aido/api/vocabulary";
 

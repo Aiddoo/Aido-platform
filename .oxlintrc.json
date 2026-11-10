@@ -242,7 +242,7 @@
         "**/*.spec.ts",
         "**/*.test.ts",
         "apps/api/src/modules/*/{domain,application,infrastructure,presentation}/**",
-        "apps/api/src/modules/{ai-assistance,voice}/**"
+        "apps/api/src/modules/voice/**"
       ],
       "rules": {
         "no-restricted-imports": [
@@ -277,7 +277,7 @@
         "**/*.spec.ts",
         "**/*.test.ts",
         "apps/api/src/modules/*/{domain,application,infrastructure,presentation}/**",
-        "apps/api/src/modules/{ai-assistance,voice}/**"
+        "apps/api/src/modules/voice/**"
       ],
       "rules": {
         "no-restricted-imports": [
