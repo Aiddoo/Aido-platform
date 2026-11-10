@@ -80,7 +80,7 @@ describe("GetDailyCompletionsUseCase — 일일 완료 조회", () => {
         completedTodos: 1,
         isComplete: false,
         completionRate: 50,
-        categoryColors: ["#FF6B43", "#654321"],
+        categoryColors: ["#654321", "#FF6B43"],
       },
     ]);
     expect(result.totalCompleteDays).toBe(1);
