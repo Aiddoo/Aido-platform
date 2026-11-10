@@ -66,6 +66,7 @@
 
 - [ ] 행동 하나를 가장 싼 층에서 한 번. UseCase는 InMemory 포트 + `FixedClock`, SQL 의미는 Testcontainers PG, 계약은 E2E.
 - [ ] 전달만 하는 코드·조립·필드 복사 매퍼·상수·mock 호출 횟수는 테스트하지 않는다.
+- [ ] 기다림은 `vi.waitFor`·`expect.poll`, 시각은 비교마다 DB 시계나 고정 값 하나, 경쟁 순서는 lock·barrier로 정한다. `retry` 금지([flake](docs/testing.md#실행-자원과-flake)).
 
 ## 완료
 

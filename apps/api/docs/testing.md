@@ -76,7 +76,7 @@ describe("CreateMemoUseCase — 메모 만들기", () => {
 ## 시간과 타이머
 
 - 시각은 `FixedClock`으로 고정한다. 옛 구조 코드의 Date 판단만 `vi.useFakeTimers({ toFake: ["Date"] })`로 Date만 바꾸고 `afterEach`에 복원한다.
-- PostgreSQL·socket·job의 native timer는 그대로 둔다. 임의 sleep이나 polling으로 완료를 추측하지 않는다.
+- PostgreSQL·socket·job의 native timer는 그대로 둔다. 완료는 [실행 자원과 flake](#실행-자원과-flake)대로 기다린다.
 - 같은 instant를 서울·LA × ko·en으로 돌려 결과가 언어에 따라 바뀌지 않는지 본다.
 
 ## Integration (실제 PostgreSQL)
@@ -127,6 +127,15 @@ DB 프로젝트는 파일을 직렬로 돌리고 순서를 섞는다. 결과에�
 ```sh
 AIDO_TEST_DB_WORKERS=2 pnpm --filter @aido/server exec vitest run --project performance test/performance/memory-soak.performance-spec.ts
 ```
+
+## 실행 자원과 flake
+
+- worker 수: API unit·`packages/api`·Mobile Jest는 `AIDO_TEST_WORKERS`(양의 정수 또는 `1%`~`100%`, 기본 `50%`·`25%`·`50%`), DB 프로젝트는 `AIDO_TEST_DB_WORKERS`(기본 2~4)를 읽는다. 여러 suite·에이전트가 함께 돌 때 이 값으로 줄이고, 잘못된 값은 바로 실패한다.
+- 테스트 PostgreSQL은 Non-Durable Settings(`fsync`·`synchronous_commit`·`full_page_writes` off)와 tmpfs로 뜬다. DB가 느려서 통과하는 테스트를 남기지 않는다.
+- 비교마다 시각 출처는 하나다. DB 기본값(`now()`)·`CURRENT_TIMESTAMP`와 비교할 시각은 DB 시계(`clock_timestamp()`)에서 읽거나 행에 고정 시각을 넣고, 호스트 `new Date()`와 섞지 않는다. `timestamp(3)` 열은 ms로 반올림돼 방금 쓴 행이 바로 뒤 `CURRENT_TIMESTAMP`보다 늦을 수 있어, 그런 열은 같은 정밀도(`LOCALTIMESTAMP(3)`)와 비교한다.
+- 경쟁 순서는 시간이 아니라 barrier와 lock 대기(`pg_stat_activity`·`pg_locks`)로 강제한다.
+- 결과는 `vi.waitFor`·`expect.poll`에 `timeout`·`interval`을 적어 기다린다. 고정 `setTimeout`은 "일어나지 않음" 확인에만 이유 주석과 함께 쓴다. pg-boss worker는 [fast-job-timing](../test/integration/helpers/fast-job-timing.ts)의 짧은 polling·재시도를 쓴다.
+- Vitest `retry`·재실행으로 가리지 않는다. 실패는 출력된 seed(`--sequence.seed`)로 그 파일을 여러 번 돌려 재현한다. 타이밍 실패는 같은 seed에서도 매번 나지 않는다.
 
 ## 전환 중
 
