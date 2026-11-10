@@ -3,11 +3,19 @@ import {
   UserBlockReaderPort,
 } from "#api/modules/social/blocks/social-blocks.public";
 import {
+  CHEER_USAGE_READER,
+  CheerUsageReaderPort,
+} from "#api/modules/social/cheers/social-cheers.public";
+import {
   FOLLOW_READER,
   FollowReaderPort,
   FRIEND_COUNT_READER,
   FriendCountReaderPort,
 } from "#api/modules/social/friends/social-friends.public";
+import {
+  NUDGE_USAGE_READER,
+  NudgeUsageReaderPort,
+} from "#api/modules/social/nudges/social-nudges.public";
 
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 
@@ -28,6 +36,8 @@ describe("social 공개 포트 별칭 (E2E)", () => {
       [FollowReaderPort, FOLLOW_READER],
       [FriendCountReaderPort, FRIEND_COUNT_READER],
       [UserBlockReaderPort, USER_BLOCK_READER],
+      [CheerUsageReaderPort, CHEER_USAGE_READER],
+      [NudgeUsageReaderPort, NUDGE_USAGE_READER],
     ] as const;
 
     // When
@@ -36,6 +46,6 @@ describe("social 공개 포트 별칭 (E2E)", () => {
     );
 
     // Then
-    expect(isSameInstance).toEqual([true, true, true]);
+    expect(isSameInstance).toEqual([true, true, true, true, true]);
   });
 });
