@@ -4,8 +4,10 @@ import request from "supertest";
 
 import { SubscriptionWebhookLockPort } from "#api/modules/billing/subscriptions/application/ports/subscription-webhook-lock.port";
 import {
+  PREMIUM_ACCESS_READER,
   PREMIUM_GRANTER,
-  type PremiumGranterPort,
+  PremiumAccessReaderPort,
+  PremiumGranterPort,
 } from "#api/modules/billing/subscriptions/billing-subscriptions.public";
 import { AuthCachePort } from "#api/modules/identity/auth/application/ports/auth-collaboration.port";
 import { subscription, subscriptionEventReceipt } from "#api/platform/database/schema/index";
@@ -463,4 +465,17 @@ describe("구독 Webhook HTTP 계약과 권한 캐시 (실제 PostgreSQL)", () =
       expect(after).toMatchObject({ premiumSource: "STORE", premiumPlanType: expected });
     },
   );
+
+  it("옛 Symbol 토큰은 새 클래스 토큰과 같은 인스턴스다", () => {
+    // Given
+    const module = context.module;
+
+    // When
+    const granter = module.get(PREMIUM_GRANTER);
+    const reader = module.get(PREMIUM_ACCESS_READER);
+
+    // Then
+    expect(granter).toBe(module.get(PremiumGranterPort));
+    expect(reader).toBe(module.get(PremiumAccessReaderPort));
+  });
 });
