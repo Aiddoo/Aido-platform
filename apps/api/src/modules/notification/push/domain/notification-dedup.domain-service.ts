@@ -1,5 +1,3 @@
-import { TIME_UNIT } from "#api/shared/domain/date/constants/date.constant";
-
 import type { NotificationType } from "../../inbox/domain/notification-type.constants.js";
 
 /**
@@ -35,7 +33,7 @@ export interface DedupContextFields {
 }
 
 const DEDUP_WINDOW = {
-  FOLLOW: 24 * TIME_UNIT.MS_PER_HOUR, // 24시간
+  FOLLOW: 24 * 60 * 60_000, // 24시간
 } as const;
 
 const DEDUP_STRATEGIES: Partial<Record<NotificationType, DedupStrategy>> = {

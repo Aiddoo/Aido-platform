@@ -1,7 +1,6 @@
 import { pushNotificationDataSchema } from "@aido/api";
 
 import type { WeatherBriefingDay } from "#api/modules/weather/forecasts/weather-forecasts.public";
-import { parseLocalDateTime } from "#api/shared/domain/date/utils/timezone";
 
 import {
   createWeatherEveningNotificationMessage,
@@ -194,7 +193,9 @@ describe("날씨 옮기기 deep link", () => {
 
   it("재계산 뒤의 순간은 어느 시간대에서든 고른 벽시계로 적힌다", () => {
     // Given
-    const instant = parseLocalDateTime("2026-11-10", "10:00", "America/New_York");
+    const instant = new Date(
+      Temporal.ZonedDateTime.from("2026-11-10T10:00[America/New_York]").epochMilliseconds,
+    );
     // When
     const label = formatWeatherNotificationTime(instant, {
       locale: "ko",

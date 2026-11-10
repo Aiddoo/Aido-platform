@@ -3,8 +3,8 @@ import { Inject, Injectable } from "@nestjs/common";
 import { uniq } from "es-toolkit";
 
 import { UserPreferenceReaderPort } from "#api/modules/identity/identity-settings.public";
-import { resolveDeliveryTimezone } from "#api/shared/domain/date/utils/timezone";
 import { DEFAULT_LOCALE } from "#api/shared/domain/locale";
+import { resolveDeliveryTimezone } from "#api/shared/domain/time/time-zone-name";
 
 import type { NotificationRecipientLocaleReaderPort } from "../../application/ports/notification-recipient-locale.reader.port.js";
 import type { NotificationRecipientPreferenceReaderPort } from "../../application/ports/notification-recipient-preference.reader.port.js";

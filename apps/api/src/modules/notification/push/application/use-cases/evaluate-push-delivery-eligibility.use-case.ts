@@ -2,11 +2,10 @@ import { uniq } from "es-toolkit";
 
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import {
-  localDateInTimezone,
+  localDateIn,
   resolveDeliveryTimezone,
   resolveTimezone,
-} from "#api/shared/domain/date/utils/timezone";
-import { instantToDate } from "#api/shared/domain/time/instant";
+} from "#api/shared/domain/time/time-zone-name";
 import { TimeZone } from "#api/shared/domain/time/time-zone.vo";
 
 import type { CreateNotificationData } from "../../../inbox/application/ports/notification-draft.port.js";
@@ -94,7 +93,7 @@ export class EvaluatePushDeliveryEligibilityUseCase {
       userId,
       preference,
       timezone,
-      localDate: localDateInTimezone(this.#now(), timezone),
+      localDate: this.#localDate(timezone),
     };
   }
 
@@ -122,7 +121,7 @@ export class EvaluatePushDeliveryEligibilityUseCase {
             preference,
             consent: consentByUserId.get(userId),
             timezone,
-            localDate: localDateInTimezone(this.#now(), timezone),
+            localDate: this.#localDate(timezone),
           },
         ];
       }),
@@ -267,16 +266,14 @@ export class EvaluatePushDeliveryEligibilityUseCase {
       ...(isEngagement && {
         engagementLocalDate:
           recipient?.localDate ??
-          localDateInTimezone(
-            this.#now(),
-            resolveDeliveryTimezone(recipient?.preference?.timezone),
-          ),
+          this.#localDate(resolveDeliveryTimezone(recipient?.preference?.timezone)),
       }),
     };
   }
 
-  #now(): Date {
-    return instantToDate(this.#dependencies.clock.now());
+  // 발송 판단의 현지 날짜(YYYY-MM-DD)는 rate limit·발송 context 키로 쓴다
+  #localDate(timezone: string): string {
+    return localDateIn(this.#dependencies.clock.now(), timezone).toString();
   }
 
   #isQuietHours(timezone: string): boolean {

@@ -1,5 +1,5 @@
-import { resolveDeliveryTimezone } from "#api/shared/domain/date/utils/timezone";
 import { instantFromDate } from "#api/shared/domain/time/instant";
+import { resolveDeliveryTimezone } from "#api/shared/domain/time/time-zone-name";
 import { TimeZone } from "#api/shared/domain/time/time-zone.vo";
 
 import {
