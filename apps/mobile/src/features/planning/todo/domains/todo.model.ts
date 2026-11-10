@@ -86,15 +86,15 @@ export const todoDetailsSchema = z.object({
 export type TodoDetails = z.infer<typeof todoDetailsSchema>;
 
 // 공개 범위 규칙은 할 일·폼·음성 계획이 함께 써서 공개 범위 값만 받는다. 정하지 않은(null, 생략) 공개 범위는 서버 기본값인 공개로 본다
-export function getVisibility(todo: {
-  visibility?: Todo['visibility'] | null;
-}): Todo['visibility'] {
-  return todo.visibility ?? 'PUBLIC';
+export function getVisibility(
+  visibility: Todo['visibility'] | null | undefined,
+): Todo['visibility'] {
+  return visibility ?? 'PUBLIC';
 }
 
 // 비공개 할 일은 친구에게 보이지 않는다
 export function isPrivateVisibility(visibility: Todo['visibility'] | null): boolean {
-  return getVisibility({ visibility }) === 'PRIVATE';
+  return getVisibility(visibility) === 'PRIVATE';
 }
 
 export function withVisibilityToggled<T extends { visibility: Todo['visibility'] | null }>(
@@ -214,7 +214,6 @@ export function canReorderTodos(todos: readonly Todo[]) {
 
 export const TodoPolicy = {
   canReorderTodos,
-  getVisibility,
   findTodo,
   findSubTodo,
   getOptimisticListDate,

@@ -21,20 +21,7 @@
     "entries": {}
   },
   "policy-facade": {
-    "reason": "Policy 멤버의 첫 인자가 모델 일부인 곳. 모두 queries/*.mutations.ts가 일부 값으로 부르는 곳이라 mutation 낙관적 갱신 작업(1.15.1 34a) 위로 옮긴 뒤 호출부와 함께 고친다",
-    "entries": {
-      "apps/mobile/src/features/billing/subscription/domains/subscription.model.ts": {
-        "count": 1,
-        "reason": "hasFreeTrial. subscription.mutations.ts의 PurchaseVariables가 요금제 일부만 싣는다. 변수를 SubscriptionPlan으로 넓힌다"
-      },
-      "apps/mobile/src/features/identity/consent/domains/consent.model.ts": {
-        "count": 1,
-        "reason": "getConsentResult. 변경 응답의 시각 두 값만 받는 순수 함수라 consent.mutations.ts 호출부와 함께 Policy 밖으로 옮긴다"
-      },
-      "apps/mobile/src/features/planning/todo/domains/todo.model.ts": {
-        "count": 1,
-        "reason": "getVisibility. todo-composer.mutations.ts가 만들기 입력으로 부른다. isPrivateVisibility처럼 공개 범위 값만 받는 함수로 Policy 밖에 둔다"
-      }
-    }
+    "reason": "남은 예외가 없다. 새로 생기면 모델 전체를 받거나 Policy 밖 순수 함수로 고친다",
+    "entries": {}
   }
 }

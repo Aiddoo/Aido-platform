@@ -62,8 +62,8 @@ function findPlanByType(
   return plans.find((plan) => plan.planType === planType) ?? null;
 }
 
-function hasFreeTrial(plan: Pick<SubscriptionPlan, 'freeTrial'>) {
-  return plan.freeTrial != null;
+export function hasFreeTrial(freeTrial: FreeTrial | null) {
+  return freeTrial != null;
 }
 
 /** 결제 전 예상일이다. 실제 체험 끝은 결제 뒤 서버(premiumPeriodEndsAt)가 알려 준다. 월 단위는 말일을 넘기면 그 달 마지막 날로 맞춘다 */
@@ -100,7 +100,6 @@ export const SubscriptionPolicy = {
   getMonthlyEquivalent,
   findSelectedPlan,
   findPlanByType,
-  hasFreeTrial,
   getFreeTrialEndDateKey,
   getFreeTrialReminderDateKey,
   getAmountDueToday,

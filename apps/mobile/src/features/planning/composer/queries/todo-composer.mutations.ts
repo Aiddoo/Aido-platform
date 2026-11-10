@@ -24,7 +24,7 @@ import {
   isCategoryTodoLimitError,
   isRecurringCategoryTodoLimitError,
 } from '@src/features/planning/todo/domains/todo.error';
-import { TodoPolicy } from '@src/features/planning/todo/domains/todo.model';
+import { getVisibility } from '@src/features/planning/todo/domains/todo.model';
 import type { OptimisticTodo } from '@src/features/planning/todo/domains/todo.model';
 import {
   appendTodoToList,
@@ -107,7 +107,7 @@ export function useCreateTodoMutationOptions() {
         localTime: input.scheduledTime ?? null,
         scheduledAt: null,
         isAllDay: input.isAllDay,
-        visibility: TodoPolicy.getVisibility(input),
+        visibility: getVisibility(input.visibility),
         recurrenceGroupId: null,
         repeat: null,
         subTodos: [],
@@ -140,7 +140,7 @@ export function useCreateTodoMutationOptions() {
         is_recurring: false,
         has_scheduled_time: !!input.scheduledTime,
         is_all_day: input.isAllDay,
-        visibility: TodoPolicy.getVisibility(input),
+        visibility: getVisibility(input.visibility),
       });
       const accountId = getCachedMe(queryClient)?.id;
       if (accountId) {

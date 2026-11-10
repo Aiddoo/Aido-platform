@@ -1,5 +1,5 @@
 import { type SubscriptionOffering, type SubscriptionPlan } from './subscription.model';
-import { SubscriptionPolicy } from './subscription.model';
+import { hasFreeTrial, SubscriptionPolicy } from './subscription.model';
 
 function createPlan(overrides: Partial<SubscriptionPlan>): SubscriptionPlan {
   return {
@@ -203,7 +203,7 @@ describe('hasFreeTrial', () => {
     ['자격이 없으면 false', null, false],
   ] as const)('%s를 반환한다', (_case, freeTrial, expected) => {
     // When
-    const result = SubscriptionPolicy.hasFreeTrial(createPlan({ freeTrial }));
+    const result = hasFreeTrial(freeTrial);
 
     // Then
     expect(result).toBe(expected);
