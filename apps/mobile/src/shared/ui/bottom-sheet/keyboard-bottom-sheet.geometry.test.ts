@@ -2,6 +2,7 @@ import {
   getBodyHeightAboveKeyboard,
   getKeyboardHiddenHeight,
   getKeyboardSheetMaxHeight,
+  getKeyboardSheetTopInset,
 } from './keyboard-bottom-sheet.geometry';
 
 // 창 높이 800, 위쪽 한계 50 → 시트 최대 높이 800 - 50 - 위 여백 24 - 손잡이 24 = 702
@@ -124,5 +125,86 @@ describe('getBodyHeightAboveKeyboard', () => {
 
     // Then
     expect(bodyHeight).toBe(578);
+  });
+});
+
+describe('getKeyboardSheetTopInset', () => {
+  // 접은 Duo는 시뮬레이터에서 잰 값이다. 위쪽 safe area가 0이고 레일의 상태 표시 occlusion이 170까지 시트와 겹친다
+  // 카테고리 시트 내용 = 위 여백 20 + 이름 칸·색 한 줄 163 + 아래 여백(safe area + 4) + footer 64
+  const SHORT_WINDOWS = {
+    iPhoneDuoFolded: { windowHeight: 678, safeAreaTop: 0, topInset: 170, contentHeight: 285 },
+    iPhoneSe: { windowHeight: 667, safeAreaTop: 20, topInset: 20, contentHeight: 271 },
+  } as const;
+
+  it.each([
+    ['iPhoneDuoFolded', 304],
+    ['iPhoneDuoFolded', 336],
+    ['iPhoneDuoFolded', 291],
+    ['iPhoneSe', 336],
+    ['iPhoneSe', 291],
+  ] as const)(
+    '%s에서 키보드 %d를 올려도 카테고리 시트의 이름 칸·색 줄·확인이 모두 키보드 위에 보인다',
+    (device, keyboardHeight) => {
+      // Given
+      const { windowHeight, safeAreaTop, topInset, contentHeight } = SHORT_WINDOWS[device];
+
+      // When
+      const hiddenHeight = getKeyboardHiddenHeight({
+        contentHeight,
+        keyboardHeight,
+        maxSheetHeight: getKeyboardSheetMaxHeight(windowHeight, topInset),
+        windowHeight,
+        topInset: getKeyboardSheetTopInset({ topInset, safeAreaTop }),
+      });
+
+      // Then
+      expect(hiddenHeight).toBeNull();
+    },
+  );
+
+  it('접은 Duo에서 긴 내용은 상태 표시 아래가 아니라 위쪽 safe area까지 올라가고 나머지만 키보드에 가린다', () => {
+    // Given
+    const { windowHeight, safeAreaTop, topInset } = SHORT_WINDOWS.iPhoneDuoFolded;
+
+    // When
+    const hiddenHeight = getKeyboardHiddenHeight({
+      contentHeight: 1000,
+      keyboardHeight: 336,
+      maxSheetHeight: getKeyboardSheetMaxHeight(windowHeight, topInset),
+      windowHeight,
+      topInset: getKeyboardSheetTopInset({ topInset, safeAreaTop }),
+    });
+
+    // Then
+    // 쉬는 최대 높이 460 + 키보드 336 - 창 678 = 118. 상태 표시 아래(170)에서 멈추면 288이 가렸다
+    expect(hiddenHeight).toBe(118);
+  });
+
+  it('접은 Duo에서 키보드 위에 남는 내용 높이가 이름 칸·색 한 줄(163)보다 크다', () => {
+    // Given
+    const { windowHeight, safeAreaTop, topInset } = SHORT_WINDOWS.iPhoneDuoFolded;
+
+    // When
+    const bodyHeight = getBodyHeightAboveKeyboard({
+      keyboardTop: windowHeight - 336,
+      topInset: getKeyboardSheetTopInset({ topInset, safeAreaTop }),
+      maxSheetHeight: getKeyboardSheetMaxHeight(windowHeight, topInset),
+      reservedHeight: 20 + 64,
+    });
+
+    // Then
+    // 키보드 위 342 - 손잡이 24 - 위 여백·footer 84 = 234. 상태 표시 아래(170)에서 멈추면 64였다
+    expect(bodyHeight).toBe(234);
+  });
+
+  it('occlusion이 위쪽 safe area 안에 있는 창(일반 iPhone·iPad)은 쉬는 시트와 같은 한계라 지금과 같다', () => {
+    // Given
+    const layout = { topInset: 59, safeAreaTop: 59 };
+
+    // When
+    const keyboardTopInset = getKeyboardSheetTopInset(layout);
+
+    // Then
+    expect(keyboardTopInset).toBe(layout.topInset);
   });
 });

@@ -78,9 +78,11 @@ import { KeyboardBottomSheet } from '@src/shared/ui';
 손잡이·내용 끌어내리기는 gorhom이 닫으므로 이 경로를 타지 않는다. 핸들러는 ref로 읽어 렌더마다 바뀌어도 backdrop이 다시 마운트되지 않는다.
 
 내용과 `footer`를 나누는 규칙은 [시트 규칙](../../../../.claude/ui-components.md#시트)을 따른다. 키보드 위에 남는 높이는 기기마다
-달라(접은 Duo는 레일 occlusion 아래부터라 약 200pt) `footer`를 쓰는 키보드 시트는 카테고리 만들기·고치기, 콕 찌르기, 계획 할 일
+달라(접은 Duo는 키보드 위 374pt) `footer`를 쓰는 키보드 시트는 카테고리 만들기·고치기, 콕 찌르기, 계획 할 일
 고치기, 신고다. `footer`는 시트 바닥에 붙어 시트와 함께 올라오고, 시트가 위쪽 한계에 닿아 키보드에 가리는
-만큼만 올라가 키보드 위에 멈춘다. 첫 높이는 그리기 전에 동기로 재어(New Architecture `useLayoutEffect` + `measure`) 내용 아래
+만큼만 올라가 키보드 위에 멈춘다. 위쪽 한계는 쉬는 시트와 다르다. 쉬는 시트는 레일 상태 표시(occlusion) 아래에 두지만 키보드가
+올린 시트는 위쪽 safe area까지 내용 높이만큼 올라간다(`getKeyboardSheetTopInset`). 접은 Duo는 상태 표시 아래(170pt)와 키보드 위
+사이가 204pt라 카테고리 이름 칸·색·확인(309pt)이 함께 들어가지 않았다. 대신 오른쪽 위 모서리가 상태 표시 밑으로 지난다. 첫 높이는 그리기 전에 동기로 재어(New Architecture `useLayoutEffect` + `measure`) 내용 아래
 여백과 시트 높이에 처음부터 들어간다. gorhom은 키보드가 올라와도 내용 영역을 줄이지 않으므로, 시트가 위쪽 한계에 닿으면 스크롤 영역
 아래 끝을 키보드 위로 맞춘다. 그래서 `footer` 뒤로 들어간 내용(카테고리 색)도 `footer` 위까지 스크롤되고, 키보드가 다 올라오면
 스크롤 막대를 잠깐 보여 아래 내용이 있음을 알린다. 시트를 끌어내리면 gorhom이 키보드를 내린다.
@@ -251,7 +253,7 @@ bottom-sheet/
 배치 기하는 `react-native-reserved-regions`가 잰 값만 쓰고 직접 추정하지 않는다.
 
 시트는 모두 Portal로 전체 창에 그려져 레일을 덮으므로 좌우 대칭으로 채운다. 세로 접힘선이 있으면 더 넓은 면에만 두고,
-위쪽 한계는 위쪽 safe area와 겹치는 occlusion(레일의 상태 표시) 중 아래쪽이다.
+위쪽 한계는 위쪽 safe area와 겹치는 occlusion(레일의 상태 표시) 중 아래쪽이다. 키보드가 올린 `KeyboardBottomSheet`만 위쪽 safe area까지 간다.
 
 최대 높이는 위쪽 한계와 아래 여백 사이(`getSheetMaxHeight`)이고, 내용이 더 길면 시트 안에서 스크롤한다.
 route 시트는 모달이 크기를 받은 뒤 그려서, 시트에서 시트로 replace할 때 크기가 정해지기 전 위치로 열리지 않게 한다.

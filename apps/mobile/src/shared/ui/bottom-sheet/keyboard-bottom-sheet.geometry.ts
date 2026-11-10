@@ -21,9 +21,23 @@ interface BodyHeightAboveKeyboardInput {
   reservedHeight: number;
 }
 
+interface KeyboardSheetTopInsetInput {
+  /** 쉬는 시트의 위쪽 한계. 위쪽 safe area와 시트에 겹치는 occlusion 중 아래쪽(`getSheetLayout`) */
+  topInset: number;
+  safeAreaTop: number;
+}
+
 /** 키보드 시트는 아래 여백 없이 위쪽 한계까지 올라간다. gorhom 최대 높이는 손잡이를 포함한다 */
 export function getKeyboardSheetMaxHeight(windowHeight: number, topInset: number): number {
   return getSheetMaxHeight(windowHeight, topInset, 0) - HANDLE_HEIGHT;
+}
+
+/** 키보드가 올린 시트의 위쪽 한계. 쉬는 시트는 occlusion(접은 Duo 레일의 상태 표시) 아래에 두지만, 그 아래와 키보드 사이에는 입력·선택지·주 버튼이 함께 들어가지 않아(접은 Duo: 170~374의 204pt, 카테고리 시트 309pt) 시스템 시트처럼 위쪽 safe area까지 올린다. 시트는 내용 높이만큼만 올라간다 */
+export function getKeyboardSheetTopInset({
+  topInset,
+  safeAreaTop,
+}: KeyboardSheetTopInsetInput): number {
+  return Math.min(topInset, safeAreaTop);
 }
 
 /** 시트가 위쪽 한계에 닿아 바닥이 키보드에 가린 높이. 키보드가 없거나 시트가 키보드 위에 다 들어가면 null */

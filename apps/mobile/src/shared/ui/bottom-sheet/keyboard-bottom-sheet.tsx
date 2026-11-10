@@ -55,6 +55,7 @@ import {
   getBodyHeightAboveKeyboard,
   getKeyboardHiddenHeight,
   getKeyboardSheetMaxHeight,
+  getKeyboardSheetTopInset,
 } from './keyboard-bottom-sheet.geometry';
 import { usePortalTarget } from './portal-target';
 import { SheetFooterContext, SheetFooterSlot } from './sheet-footer-slot';
@@ -109,6 +110,7 @@ export function KeyboardBottomSheet({
   const backgroundStyle = useResolveClassNames('bg-white dark:bg-gray-1');
   const handleIndicatorStyle = useResolveClassNames('bg-gray-4');
   const maxDynamicContentSize = getKeyboardSheetMaxHeight(windowHeight, topInset);
+  const keyboardTopInset = getKeyboardSheetTopInset({ topInset, safeAreaTop: insets.top });
   const bottomPadding = getContentBottomPadding(insets.bottom);
   const contentHeight = useSharedValue(0);
   const keyboardHeight = useSharedValue(0);
@@ -119,7 +121,7 @@ export function KeyboardBottomSheet({
       keyboardHeight: keyboardHeight.get(),
       maxSheetHeight: maxDynamicContentSize,
       windowHeight,
-      topInset,
+      topInset: keyboardTopInset,
     }),
   );
   // 스크롤 영역 아래 끝을 키보드 위에 맞춰야 footer 뒤로 들어간 내용(카테고리 색)까지 스크롤된다
@@ -157,7 +159,7 @@ export function KeyboardBottomSheet({
       ? null
       : getBodyHeightAboveKeyboard({
           keyboardTop,
-          topInset,
+          topInset: keyboardTopInset,
           maxSheetHeight: maxDynamicContentSize,
           reservedHeight: CONTENT_PADDING_TOP + footerSpace,
         });
@@ -179,7 +181,7 @@ export function KeyboardBottomSheet({
       isOpen,
       animatedPosition,
       bottomInset: footer == null ? 0 : footerChromeHeight + FOOTER_KEYBOARD_GAP,
-      viewportTopLimit: topInset + HANDLE_HEIGHT,
+      viewportTopLimit: keyboardTopInset + HANDLE_HEIGHT,
     });
 
   const closeSheet = useCallback(() => {
@@ -430,7 +432,8 @@ export function KeyboardBottomSheet({
               keyboardBehavior="interactive"
               keyboardBlurBehavior="restore"
               android_keyboardInputMode="adjustPan"
-              topInset={topInset}
+              // 쉬는 높이는 maxDynamicContentSize가 occlusion 아래로 막고, 키보드가 올릴 때만 이 한계까지 간다
+              topInset={keyboardTopInset}
               style={{ marginLeft: margins.left, marginRight: margins.right }}
               backgroundComponent={DecoratedSheetBackground}
               backgroundStyle={[backgroundStyle, { borderRadius: SHEET_RADIUS }]}
