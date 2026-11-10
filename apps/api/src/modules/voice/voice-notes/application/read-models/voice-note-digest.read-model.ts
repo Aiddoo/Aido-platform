@@ -1,6 +1,6 @@
 import type { ActionPlanReadModel } from "../../../action-plans/application/read-models/action-plan.read-model.js";
 
-export interface VoiceNoteKeyPointReadModel {
+interface VoiceNoteKeyPointReadModel {
   readonly text: string;
   /** 앱이 보낸 문장의 시각. AI가 고른 문장이 없거나 범위 밖이면 null이다 */
   readonly startMs: number | null;

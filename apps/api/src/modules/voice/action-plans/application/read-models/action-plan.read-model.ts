@@ -8,7 +8,7 @@ import {
 
 type GeneratedTodo = GeneratedActionPlan["todos"][number];
 
-export interface PlannedTodoReadModel {
+interface PlannedTodoReadModel {
   readonly type: "CREATE_TODO";
   readonly key: string;
   readonly title: string;
@@ -23,14 +23,14 @@ export interface PlannedTodoReadModel {
   readonly duplicateOfTodoId: number | null;
 }
 
-export interface PlannedMemoReadModel {
+interface PlannedMemoReadModel {
   readonly type: "CREATE_MEMO";
   readonly key: string;
   readonly title: string;
   readonly content: string;
 }
 
-export type PlannedActionReadModel = PlannedTodoReadModel | PlannedMemoReadModel;
+type PlannedActionReadModel = PlannedTodoReadModel | PlannedMemoReadModel;
 
 /** 사용자에게 보여 줄 계획. 서버는 저장하지 않고 사용자가 확인한 행동만 적용 API로 받는다 */
 export interface ActionPlanReadModel {
