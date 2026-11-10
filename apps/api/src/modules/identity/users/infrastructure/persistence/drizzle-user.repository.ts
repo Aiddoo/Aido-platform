@@ -121,8 +121,13 @@ export class DrizzleUserRepository
         .returning();
       return toIdentityUser(requireRecord(row));
     } catch (error) {
-      if (uniqueConstraintTargets(error)?.includes("email")) {
+      const targets = uniqueConstraintTargets(error);
+      if (targets?.includes("email")) {
         throw new AuthPersistenceConflict("EMAIL_ALREADY_EXISTS");
+      }
+      // 확인 뒤 다른 가입이 같은 태그를 먼저 넣었다. 1.15.0 필터가 이 제약에 주던 500 응답을 유지한다
+      if (targets?.includes("userTag")) {
+        throw new ApplicationException(ErrorCode.SYS_0001, { detail: "userTag collision" });
       }
       throw error;
     }
