@@ -20,7 +20,6 @@ import { TodoTimezoneRebaseQueueService } from "#api/modules/planning/todos/infr
 import {
   TODO_TIMEZONE_REBASE_QUEUE,
   TODO_TIMEZONE_REBASE_WINDOW_MS,
-  todoTimezoneRebaseJobSchema,
 } from "#api/modules/planning/todos/infrastructure/jobs/todo-timezone-rebase.queue";
 import { DrizzleTodoRepository } from "#api/modules/planning/todos/infrastructure/persistence/drizzle-todo.repository";
 import { createEntityId } from "#api/platform/database/entity-id";
@@ -33,6 +32,8 @@ import {
   user as userTable,
   userPreference,
 } from "#api/platform/database/schema/index";
+import { JobQueueRegistry } from "#api/platform/jobs/job-queue.registry";
+import { PgBossJobQueueAdapter } from "#api/platform/jobs/pg-boss-job-queue.adapter";
 import { PgBossJobRuntimeAdapter } from "#api/platform/jobs/pg-boss-job-runtime.adapter";
 import { SystemClock } from "#api/platform/time/system-clock";
 import { addDaysToDateKey } from "#api/shared/domain/date/utils/arithmetic";
@@ -66,6 +67,7 @@ describe("시간대 재계산 (실제 PostgreSQL·pg-boss)", () => {
   let client: TestDatabaseClient;
   let boss: PgBoss;
   let runtime: PgBossJobRuntimeAdapter;
+  let jobQueue: PgBossJobQueueAdapter;
   let useCase: RebaseTodoTimezoneUseCase;
   let queue: TodoTimezoneRebaseQueueService;
   let reminderAdapter: ReminderSchedulerAdapter;
@@ -99,7 +101,8 @@ describe("시간대 재계산 (실제 PostgreSQL·pg-boss)", () => {
     });
     await runtime.start();
     reminderAdapter = new ReminderSchedulerAdapter(new TodoReminderSchedulerAdapter(runtime));
-    queue = new TodoTimezoneRebaseQueueService(runtime);
+    jobQueue = new PgBossJobQueueAdapter(boss, transaction.txHost, new JobQueueRegistry());
+    queue = new TodoTimezoneRebaseQueueService(jobQueue);
     useCase = new RebaseTodoTimezoneUseCase({
       clock: new DateClock(),
       todoRepository: new DrizzleTodoRepository(transaction.txHost),
@@ -126,7 +129,7 @@ describe("시간대 재계산 (실제 PostgreSQL·pg-boss)", () => {
     await database.cleanup();
     await client.execute(
       sql.raw(
-        `DELETE FROM ${SCHEMA}.job WHERE name IN ('${TODO_REMINDER_QUEUE}', '${TODO_TIMEZONE_REBASE_QUEUE}')`,
+        `DELETE FROM ${SCHEMA}.job WHERE name IN ('${TODO_REMINDER_QUEUE}', '${TODO_TIMEZONE_REBASE_QUEUE.name}')`,
       ),
     );
     const user = UserFixture.create({
@@ -381,7 +384,7 @@ describe("시간대 재계산 (실제 PostgreSQL·pg-boss)", () => {
     await queue.enqueueRebase(userId, sameWindow);
     await queue.enqueueRebase(userId, nextWindow);
     // Then
-    const jobs = await boss.findJobs(TODO_TIMEZONE_REBASE_QUEUE, { queued: true });
+    const jobs = await boss.findJobs(TODO_TIMEZONE_REBASE_QUEUE.name, { queued: true });
     const mine = jobs.filter((job) => job.singletonKey?.includes(userId));
     expect(mine).toHaveLength(2);
     expect(Math.min(...mine.map((job) => job.startAfter.getTime()))).toBeGreaterThan(
@@ -444,7 +447,7 @@ describe("시간대 재계산 (실제 PostgreSQL·pg-boss)", () => {
         await refresh.execute({ userId, timezone });
       }
       // Then
-      const jobs = await boss.findJobs(TODO_TIMEZONE_REBASE_QUEUE, { queued: true });
+      const jobs = await boss.findJobs(TODO_TIMEZONE_REBASE_QUEUE.name, { queued: true });
       expect(jobs.filter((job) => job.singletonKey?.includes(userId))).toHaveLength(1);
       await useCase.execute({ userId });
       expect(await readInstant(id)).toBe(parseLocalDateTime(date, "10:00", last).toISOString());
@@ -455,10 +458,9 @@ describe("시간대 재계산 (실제 PostgreSQL·pg-boss)", () => {
   it("활성 트랜잭션이 되돌아가면 재계산 작업도 등록되지 않는다", async () => {
     // Given
     const transaction = createDatabaseTransactionFixture(client);
-    const localRuntime = new PgBossJobRuntimeAdapter(boss, transaction.txHost, {
-      job: { shutdownTimeoutMs: 10_000 },
-    });
-    const localQueue = new TodoTimezoneRebaseQueueService(localRuntime);
+    const localQueue = new TodoTimezoneRebaseQueueService(
+      new PgBossJobQueueAdapter(boss, transaction.txHost, new JobQueueRegistry()),
+    );
     const at = new Date(Date.now() + 10 * TODO_TIMEZONE_REBASE_WINDOW_MS);
     // When
     await expect(
@@ -468,7 +470,7 @@ describe("시간대 재계산 (실제 PostgreSQL·pg-boss)", () => {
       }),
     ).rejects.toThrow("rollback");
     // Then
-    const jobs = await boss.findJobs(TODO_TIMEZONE_REBASE_QUEUE, { queued: true });
+    const jobs = await boss.findJobs(TODO_TIMEZONE_REBASE_QUEUE.name, { queued: true });
     expect(jobs.filter((job) => job.singletonKey?.includes(userId))).toHaveLength(0);
   });
 
@@ -477,18 +479,16 @@ describe("시간대 재계산 (실제 PostgreSQL·pg-boss)", () => {
     const date = addDaysToDateKey(today, 3);
     const id = await seedTodo(date, "10:00");
     const done = Promise.withResolvers<void>();
-    await runtime.work(
-      TODO_TIMEZONE_REBASE_QUEUE,
+    await jobQueue.work(
+      { ...TODO_TIMEZONE_REBASE_QUEUE, worker: { localConcurrency: 1, pollingIntervalSeconds: 1 } },
       async (jobs) => {
         for (const job of jobs) {
-          const parsed = todoTimezoneRebaseJobSchema.safeParse(job.data);
-          if (parsed.success && parsed.data.data.userId === userId) {
+          if (job.data.data.userId === userId) {
             await useCase.execute({ userId });
             done.resolve();
           }
         }
       },
-      { teamSize: 1, pollingIntervalSeconds: 1 },
     );
     // When
     await queue.enqueueRebase(userId, new Date(Date.now() - 2 * TODO_TIMEZONE_REBASE_WINDOW_MS));

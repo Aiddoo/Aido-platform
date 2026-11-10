@@ -13,7 +13,7 @@ import { RebaseTodoTimezoneUseCase } from "#api/modules/planning/todos/applicati
 import { TODO_TIMEZONE_REBASE_QUEUE } from "#api/modules/planning/todos/infrastructure/jobs/todo-timezone-rebase.queue";
 import { createEntityId } from "#api/platform/database/entity-id";
 import { todoSeries, userPreference } from "#api/platform/database/schema/index";
-import { JOB_RUNTIME } from "#api/shared/application/ports/index";
+import { JobQueuePort } from "#api/shared/application/ports/index";
 import { addDaysToDateKey } from "#api/shared/domain/date/utils/arithmetic";
 import { toDateString } from "#api/shared/domain/date/utils/format";
 import {
@@ -21,7 +21,7 @@ import {
   todayInTimezone,
   toLocalTimeString,
 } from "#api/shared/domain/date/utils/timezone";
-import type { FakeJobRuntime } from "#test/mocks/fake-job-runtime";
+import { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
 
 import { releasedTodoSchema } from "./fixtures/released-todo-response.schema.js";
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
@@ -51,6 +51,14 @@ describe("떠 있는 시각 E2E", () => {
     userId = owner.userId;
     categoryId = await ctx.helpers.getDefaultCategoryId(accessToken);
   });
+
+  function rebaseJobQueue(): InMemoryJobQueue {
+    const jobQueue = ctx.module.get(JobQueuePort);
+    if (!(jobQueue instanceof InMemoryJobQueue)) {
+      throw new Error("E2E 앱은 InMemoryJobQueue를 쓴다");
+    }
+    return jobQueue;
+  }
 
   function send(
     method: "post" | "patch" | "get",
@@ -275,18 +283,15 @@ describe("떠 있는 시각 E2E", () => {
   ])("$name: 저장된 사용자 시간대로 해석하고 재계산을 시작하지 않는다", async ({ header }) => {
     // Given
     await storeTimezone("Europe/London");
-    const runtime = ctx.module.get<FakeJobRuntime>(JOB_RUNTIME);
-    const before = runtime.enqueueCalls.filter(
-      (call) => call.queue === TODO_TIMEZONE_REBASE_QUEUE,
-    ).length;
+    const jobQueue = rebaseJobQueue();
+    const before = jobQueue.jobsIn(TODO_TIMEZONE_REBASE_QUEUE).length;
     // When
     const created = await createTimed(header);
     // Then
     expect(created.scheduledTime).toBe(
       parseLocalDateTime(date(), "10:00", "Europe/London").toISOString(),
     );
-    const after = runtime.enqueueCalls.filter((call) => call.queue === TODO_TIMEZONE_REBASE_QUEUE);
-    expect(after).toHaveLength(before);
+    expect(jobQueue.jobsIn(TODO_TIMEZONE_REBASE_QUEUE)).toHaveLength(before);
     const stored = await ctx.testDatabase
       .getClient()
       .query.userPreference.findFirst({ where: { userId } });
@@ -305,20 +310,18 @@ describe("떠 있는 시각 E2E", () => {
   it("기기 시간대가 바뀌면 사용자당 지연 작업을 하나 넣는다", async () => {
     // Given
     await storeTimezone(SEOUL);
-    const runtime = ctx.module.get<FakeJobRuntime>(JOB_RUNTIME);
+    const jobQueue = rebaseJobQueue();
     const rebaseCalls = () =>
-      runtime.enqueueCalls.filter(
-        (call) =>
-          call.queue === TODO_TIMEZONE_REBASE_QUEUE &&
-          call.options.idempotencyKey?.includes(userId) === true,
-      );
+      jobQueue
+        .jobsIn(TODO_TIMEZONE_REBASE_QUEUE)
+        .filter((job) => job.options.idempotencyKey?.includes(userId) === true);
     // When
     await send("get", "/v1/todos", NEW_YORK).expect(200);
     await vi.waitFor(() => expect(rebaseCalls()).toHaveLength(1));
     // Then
     const [call] = rebaseCalls();
-    expect(call?.data).toEqual({ name: "rebase-todo-timezone", data: { userId } });
-    expect(call?.options.startAfter?.getTime()).toBeGreaterThan(Date.now() - 60_000);
+    expect(call?.payload).toEqual({ name: "rebase-todo-timezone", data: { userId } });
+    expect(call?.options.startAfter?.epochMilliseconds).toBeGreaterThan(Date.now() - 60_000);
     await vi.waitFor(async () => {
       const stored = await ctx.testDatabase
         .getClient()

@@ -1,30 +1,22 @@
-import { Inject, Injectable, type OnModuleInit } from "@nestjs/common";
+import { Injectable, type OnModuleInit } from "@nestjs/common";
 
-import { JOB_POLLING_SECONDS } from "#api/shared/application/ports/index";
-import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
+import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
 
 import { MaterializeDueTodoSeriesUseCase } from "../../application/use-cases/materialize-due-todo-series.use-case.js";
 import { TODO_SERIES_MATERIALIZATION_QUEUE } from "./todo-series-materialization.queue.js";
 
 @Injectable()
 export class TodoSeriesMaterializationProcessor implements OnModuleInit {
-  readonly #runtime: JobRuntimePort;
-
   readonly #materializeDueTodoSeries: Pick<MaterializeDueTodoSeriesUseCase, "execute">;
-  constructor(
-    @Inject(MaterializeDueTodoSeriesUseCase)
-    materializeDueTodoSeries: Pick<MaterializeDueTodoSeriesUseCase, "execute">,
-    @Inject(JOB_RUNTIME) runtime: JobRuntimePort,
-  ) {
+  readonly #jobQueue: JobQueuePort;
+
+  constructor(materializeDueTodoSeries: MaterializeDueTodoSeriesUseCase, jobQueue: JobQueuePort) {
     this.#materializeDueTodoSeries = materializeDueTodoSeries;
-    this.#runtime = runtime;
+    this.#jobQueue = jobQueue;
   }
 
   async onModuleInit(): Promise<void> {
-    await this.#runtime.work(TODO_SERIES_MATERIALIZATION_QUEUE, async () => this.process(), {
-      teamSize: 1,
-      pollingIntervalSeconds: JOB_POLLING_SECONDS.BACKGROUND,
-    });
+    await this.#jobQueue.work(TODO_SERIES_MATERIALIZATION_QUEUE, async () => this.process());
   }
 
   async process(): Promise<void> {

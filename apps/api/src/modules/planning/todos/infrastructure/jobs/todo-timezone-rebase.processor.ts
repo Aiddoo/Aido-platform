@@ -1,6 +1,6 @@
 import { Inject, Injectable, Logger, type OnModuleInit } from "@nestjs/common";
 
-import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
+import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
 import {
   OPERATIONAL_ALERT,
   type OperationalAlertPort,
@@ -11,50 +11,38 @@ import { TodoAlertKey } from "../../application/todos.alerts.js";
 import { TodoLogEvent } from "../../application/todos.log-events.js";
 import { RebaseTodoTimezoneUseCase } from "../../application/use-cases/rebase-todo-timezone.use-case.js";
 import {
-  TODO_TIMEZONE_REBASE_JOB_POLICY,
   TODO_TIMEZONE_REBASE_QUEUE,
-  TODO_TIMEZONE_REBASE_WORKER_POLICY,
-  todoTimezoneRebaseJobSchema,
+  type TodoTimezoneRebasePayload,
 } from "./todo-timezone-rebase.queue.js";
 
 @Injectable()
 export class TodoTimezoneRebaseProcessor implements OnModuleInit {
   readonly #logger = new Logger(TodoTimezoneRebaseProcessor.name);
-
-  readonly #alert: OperationalAlertPort;
-  readonly #runtime: JobRuntimePort;
-
   readonly #rebaseTodoTimezone: Pick<RebaseTodoTimezoneUseCase, "execute">;
+  readonly #alert: OperationalAlertPort;
+  readonly #jobQueue: JobQueuePort;
+
   constructor(
     @Inject(RebaseTodoTimezoneUseCase)
     rebaseTodoTimezone: Pick<RebaseTodoTimezoneUseCase, "execute">,
     @Inject(OPERATIONAL_ALERT) alert: OperationalAlertPort,
-    @Inject(JOB_RUNTIME) runtime: JobRuntimePort,
+    jobQueue: JobQueuePort,
   ) {
     this.#rebaseTodoTimezone = rebaseTodoTimezone;
     this.#alert = alert;
-    this.#runtime = runtime;
+    this.#jobQueue = jobQueue;
   }
 
   async onModuleInit(): Promise<void> {
-    await this.#runtime.work(
-      TODO_TIMEZONE_REBASE_QUEUE,
-      async (jobs) => {
-        for (const job of jobs) {
-          await this.process(job.data, job.attempt);
-        }
-      },
-      { ...TODO_TIMEZONE_REBASE_WORKER_POLICY, queuePolicy: TODO_TIMEZONE_REBASE_JOB_POLICY },
-    );
+    await this.#jobQueue.work(TODO_TIMEZONE_REBASE_QUEUE, async (jobs) => {
+      for (const job of jobs) {
+        await this.process(job.data, job.attempt);
+      }
+    });
   }
 
-  async process(untrustedJob: unknown, attempt: number): Promise<void> {
-    const parsed = todoTimezoneRebaseJobSchema.safeParse(untrustedJob);
-    if (!parsed.success) {
-      this.#logger.warn({ event: TodoLogEvent.TIMEZONE_REBASE_INVALID });
-      return;
-    }
-    const { userId } = parsed.data.data;
+  async process(payload: TodoTimezoneRebasePayload, attempt: number): Promise<void> {
+    const { userId } = payload.data;
     try {
       await this.#rebaseTodoTimezone.execute({ userId });
     } catch (error) {
@@ -65,7 +53,7 @@ export class TodoTimezoneRebaseProcessor implements OnModuleInit {
         attempt,
         errorType,
       });
-      if (attempt > TODO_TIMEZONE_REBASE_JOB_POLICY.retryLimit) {
+      if (attempt > TODO_TIMEZONE_REBASE_QUEUE.retry.retryLimit) {
         // 재시도가 끝났다. 알림이 옛 시각으로 울리므로 사람이 봐야 한다.
         this.#alert.raise({
           key: TodoAlertKey.TIMEZONE_REBASE_FAILED,

@@ -1,20 +1,19 @@
-import { Inject, Injectable } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 
-import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
+import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
 
 import {
-  TODO_TIMEZONE_REBASE_JOB_NAME,
-  TODO_TIMEZONE_REBASE_JOB_POLICY,
   TODO_TIMEZONE_REBASE_QUEUE,
   TODO_TIMEZONE_REBASE_WINDOW_MS,
+  toTodoTimezoneRebasePayload,
 } from "./todo-timezone-rebase.queue.js";
 
 @Injectable()
 export class TodoTimezoneRebaseQueueService {
-  readonly #runtime: JobRuntimePort;
+  readonly #jobQueue: JobQueuePort;
 
-  constructor(@Inject(JOB_RUNTIME) runtime: JobRuntimePort) {
-    this.#runtime = runtime;
+  constructor(jobQueue: JobQueuePort) {
+    this.#jobQueue = jobQueue;
   }
 
   /**
@@ -24,14 +23,11 @@ export class TodoTimezoneRebaseQueueService {
   async enqueueRebase(userId: string, at: Date): Promise<void> {
     const windowStart =
       Math.floor(at.getTime() / TODO_TIMEZONE_REBASE_WINDOW_MS) * TODO_TIMEZONE_REBASE_WINDOW_MS;
-    await this.#runtime.enqueue(
-      TODO_TIMEZONE_REBASE_QUEUE,
-      { name: TODO_TIMEZONE_REBASE_JOB_NAME, data: { userId } },
-      {
-        ...TODO_TIMEZONE_REBASE_JOB_POLICY,
-        idempotencyKey: `todo-timezone-rebase_${userId}_${windowStart}`,
-        startAfter: new Date(windowStart + TODO_TIMEZONE_REBASE_WINDOW_MS),
-      },
-    );
+    await this.#jobQueue.enqueue(TODO_TIMEZONE_REBASE_QUEUE, toTodoTimezoneRebasePayload(userId), {
+      idempotencyKey: `todo-timezone-rebase_${userId}_${windowStart}`,
+      startAfter: Temporal.Instant.fromEpochMilliseconds(
+        windowStart + TODO_TIMEZONE_REBASE_WINDOW_MS,
+      ),
+    });
   }
 }

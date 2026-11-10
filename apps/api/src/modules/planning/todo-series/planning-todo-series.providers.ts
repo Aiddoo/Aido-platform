@@ -27,7 +27,7 @@ import { StopTodoSeriesUseCase } from "./application/use-cases/stop-todo-series.
 import { UpdateFollowingTodosUseCase } from "./application/use-cases/update-following-todos.use-case.js";
 import { TodoSeriesOwnerAdapter } from "./infrastructure/adapters/todo-series-owner.adapter.js";
 import { TodoSeriesMaterializationProcessor } from "./infrastructure/jobs/todo-series-materialization.processor.js";
-import { TodoSeriesMaterializationJob } from "./infrastructure/jobs/todo-series-materialization.scheduler.js";
+import { TodoSeriesMaterializationScheduler } from "./infrastructure/jobs/todo-series-materialization.scheduler.js";
 import { DrizzleTodoSeriesRepository } from "./infrastructure/persistence/drizzle-todo-series.repository.js";
 
 export const PLANNING_TODO_SERIES_PROVIDERS = [
@@ -104,6 +104,6 @@ export const PLANNING_TODO_SERIES_PROVIDERS = [
     applyTodoEvents: ApplyTodoEventsUseCase,
     logger: loggerFor(UpdateFollowingTodosUseCase),
   }),
-  TodoSeriesMaterializationJob,
+  TodoSeriesMaterializationScheduler,
   TodoSeriesMaterializationProcessor,
 ] satisfies Provider[];
