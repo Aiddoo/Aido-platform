@@ -4,6 +4,7 @@ import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.q
 import type { NotificationType } from '@src/features/notification/domains/notification.model';
 import { useForegroundNotificationListener } from '@src/features/notification/hooks/use-foreground-notification-listener';
 import { useForegroundNotificationSync } from '@src/features/notification/hooks/use-foreground-notification-sync';
+import { useForegroundPushPresentation } from '@src/features/notification/hooks/use-foreground-push-presentation';
 import { useNotificationBadgeSync } from '@src/features/notification/hooks/use-notification-badge-sync';
 import { usePushDeviceReleaseFlush } from '@src/features/notification/hooks/use-push-device-release-flush';
 import { usePushDeviceSync } from '@src/features/notification/hooks/use-push-device-sync';
@@ -36,6 +37,7 @@ export function NotificationProvider({ children }: PropsWithChildren) {
   const { currentTimeZone } = useLocalDate();
   const [reportCount, markReported] = useReducer((count: number) => count + 1, 0);
 
+  useForegroundPushPresentation();
   useForegroundNotificationListener(handleForegroundNotification);
   useEffect(
     () => subscribeNotificationsChanged(() => invalidateNotifications(queryClient)),

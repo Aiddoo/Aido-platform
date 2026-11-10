@@ -16,6 +16,10 @@ import { ApiError } from '@src/core/errors/api-error';
 import type { PushPermissionResponse } from '@src/core/ports/push-notification-gateway';
 
 import type { PushPermission } from '../domains/push-permission.model';
+import {
+  type PushNotificationPayload,
+  pushNotificationPayloadSchema,
+} from '../schemas/push-notification-payload.schema';
 
 function generateNotificationListResponseDto(): NotificationListResponse {
   return {
@@ -138,3 +142,15 @@ export function createNotificationApiError(
 }
 
 export const INVALID_DTO = { invalid: 'data' };
+
+const DEFAULT_PUSH_NOTIFICATION_PAYLOAD = pushNotificationPayloadSchema.parse({
+  notificationId: 7,
+  type: 'FOLLOW_NEW',
+  action: { type: 'DEEP_LINK' },
+});
+
+export function createPushNotificationPayload(
+  overrides: Partial<PushNotificationPayload> = {},
+): PushNotificationPayload {
+  return { ...DEFAULT_PUSH_NOTIFICATION_PAYLOAD, ...overrides };
+}

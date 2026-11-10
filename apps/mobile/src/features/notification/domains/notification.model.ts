@@ -4,6 +4,7 @@ import {
   NOTIFICATION_CATEGORY,
   NOTIFICATION_TYPE,
 } from '@aido/api/vocabulary';
+import type { ForegroundPushPresentation } from '@src/core/ports/push-notification-gateway';
 import type { AuthStatus } from '@src/core/session/auth-status';
 import { MINUTE_MS } from '@src/shared/constants/time-units';
 import { instantSchema } from '@src/shared/date/instant';
@@ -189,8 +190,27 @@ function hasServerRecord({ notificationId }: Pick<PushNotificationPayload, 'noti
   return notificationId > 0;
 }
 
+/**
+ * 앱이 앞에 있을 때 받은 알림을 보이는 방식. 알림함과 받은 타입의 화면은 받을 때 다시 받으므로, 그 화면을 보고 있으면
+ * 배너·소리로 가리지 않고 알림 센터에만 남긴다. 모르는 타입과 다시 받지 않는 화면은 새 내용이 보이지 않아 배너로 알린다
+ */
+function getForegroundPresentation(
+  payload: Pick<PushNotificationPayload, 'type'>,
+  {
+    isViewingInbox,
+    isViewingDestination,
+  }: { isViewingInbox: boolean; isViewingDestination: boolean },
+): ForegroundPushPresentation {
+  if (payload.type == null) {
+    return 'banner';
+  }
+  const isDestinationRefreshed = NOTIFICATION_TYPE_TRAITS[payload.type].invalidation != null;
+  return isViewingInbox || (isViewingDestination && isDestinationRefreshed) ? 'quiet' : 'banner';
+}
+
 export const NotificationPolicy = {
   hasServerRecord,
+  getForegroundPresentation,
   isAiFeature,
   findReceivedCheer,
   getResponseAction,

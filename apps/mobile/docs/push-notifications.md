@@ -67,6 +67,21 @@ PushNotificationGateway (core/ports) ← createExpoPushNotificationGateway (shar
 - 혜택·소식(광고성) 제안은 첫 할 일 완료 뒤 시트 한 번이다(`useOfferMarketingPushAfterCompletion`). 기기 알림과 앱 푸시가 켜져 있을 때만 띄우고, 거절하면 계정마다 90일 뒤 다시 제안한다.
 - 분석 이벤트는 [observability.md](../.claude/observability.md#푸시-권한-퍼널)를 본다.
 
+## 앱이 앞에 있을 때 받은 알림
+
+`registerForegroundNotificationPresentation`이 앱이 그려지기 전에 `setNotificationHandler`를 걸고, `NotificationProvider`의 `useForegroundPushPresentation`이 지금 화면에 맞춘 판단을 `PushNotificationGateway.setForegroundPresentation`으로 넘긴다. 판단 규칙은 `NotificationPolicy.getForegroundPresentation` 하나다.
+
+| 지금 화면                                                         | 보이는 방식                           | 이유                                                                     |
+| ----------------------------------------------------------------- | ------------------------------------- | ------------------------------------------------------------------------ |
+| 알림함(`/notifications`)                                          | `quiet`: 배너·소리 없이 알림 센터에만 | 받을 때마다 알림함을 다시 받아 맨 위에 바로 보인다                       |
+| 알림이 여는 화면 + 받을 때 다시 받는 타입(친구·초대·콕·혜택 종료) | `quiet`                               | `invalidateOnNotificationReceived`가 그 화면을 다시 받는다               |
+| 알림이 여는 화면 + 다시 받지 않는 타입(리마인드·댓글·날씨 등)     | `banner`                              | 화면에 새 내용이 보이지 않는다                                           |
+| 그 밖의 화면, 모르는 타입, 계약에 맞지 않는 data, 판단 실패       | `banner`: 배너·목록·소리              | 앱이 뒤에 있을 때와 같게 알린다. 판단 전(그려지기 전)에 온 알림도 배너다 |
+
+- "여는 화면"은 경로와 보는 대상 id(할 일·친구·콕)가 모두 같을 때다. 날짜·진입 경로·댓글 위치(`date`·`entry`·`comment`)는 비교하지 않는다(`isViewingNotificationDestination`).
+- 어느 쪽이든 받은 즉시 알림함·안 읽은 수와 그 타입의 화면을 다시 받는다(`useForegroundNotificationSync`). 배지는 그 수를 따른다.
+- `shouldSetBadge`는 끈다. 배지는 안 읽은 수 조회 하나가 맞춘다.
+
 ## 로그아웃과 배지
 
 - 로그아웃은 `PushDeviceService.unregister()`로 `DELETE v1/notifications/token?deviceId=`를 보낸다. 진행 중인 보고를 모두 제한 시간 안에서 기다리고, 해제가 시작되면 늦은 보고는 보내지 않는다. 늦게 도착한 보고가 해제된 기기를 되살리지 않게 하기 위해서다. 해제가 실패하거나 오프라인이어도 로컬 세션은 항상 지운다(`logOutDevice`).
