@@ -3,7 +3,7 @@ import { type FactoryProvider, Logger } from "@nestjs/common";
 import { QUOTA_LEDGER } from "#api/modules/access/access-quota.public";
 import { USER_LOCALE_PREFERENCE_READER } from "#api/modules/ai-assistance/ai-assistance-parsing.public";
 import { ACTION_PLAN_GENERATOR } from "#api/modules/ai-assistance/ai-assistance-planning.public";
-import { PLAN_MEMO_WRITER } from "#api/modules/notes/notes-memos.public";
+import { PLAN_MEMO_WRITER } from "#api/modules/notes/memos/notes-memos.public";
 import { STAGED_TODO_CREATOR, TODO_PLAN_READER } from "#api/modules/planning/planning-todos.public";
 import {
   AFTER_COMMIT_TASK_REGISTRY,

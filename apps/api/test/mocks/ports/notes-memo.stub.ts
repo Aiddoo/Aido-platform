@@ -3,9 +3,9 @@ import { ErrorCode } from "@aido/api/errors";
 import type {
   FindMemosParams,
   MemoRepositoryPort,
-} from "#api/modules/notes/application/ports/memos/memo.repository.port";
-import { Memo } from "#api/modules/notes/domain/aggregates/memos/memo.aggregate";
-import type { MemoRecord } from "#api/modules/notes/domain/records/memos/memo.record";
+} from "#api/modules/notes/memos/application/ports/memo.repository.port";
+import { Memo } from "#api/modules/notes/memos/domain/memo.aggregate";
+import type { MemoRecord } from "#api/modules/notes/memos/domain/memo.record";
 import { ApplicationException } from "#api/shared/application/application.exception";
 import { MemoBuilder } from "#test/builders/memo.builder";
 

@@ -3,7 +3,7 @@ import type { Todo } from "@aido/api";
 import type {
   MemoTodoCreatorPort,
   MemoTodoDraft,
-} from "#api/modules/notes/application/ports/memos/memo-todo-creator.port";
+} from "#api/modules/notes/memos/application/ports/memo-todo-creator.port";
 import { toDateString } from "#api/shared/domain/date/utils/format";
 import { parseLocalDateTime } from "#api/shared/domain/date/utils/timezone";
 import { TodoBuilder } from "#test/builders/todo.builder";

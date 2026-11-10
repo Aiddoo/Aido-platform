@@ -5,7 +5,7 @@ import { z } from "zod";
 import { AccessModule } from "#api/modules/access/access-quota.public";
 import { AiAssistanceParsingModule } from "#api/modules/ai-assistance/ai-assistance-parsing.public";
 import { AiAssistancePlanningModule } from "#api/modules/ai-assistance/ai-assistance-planning.public";
-import { NotesMemosModule } from "#api/modules/notes/notes-memos.public";
+import { NotesMemosModule } from "#api/modules/notes/memos/notes-memos.public";
 import { PlanningCategoriesModule } from "#api/modules/planning/planning-categories.public";
 import { PlanningTodosModule } from "#api/modules/planning/planning-todos.public";
 import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";

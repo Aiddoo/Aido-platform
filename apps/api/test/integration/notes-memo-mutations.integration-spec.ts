@@ -7,11 +7,11 @@ import { Pool } from "pg";
 import {
   MEMO_REPOSITORY,
   type MemoRepositoryPort,
-} from "#api/modules/notes/application/ports/memos/memo.repository.port";
-import { ConvertMemoToTodos } from "#api/modules/notes/application/use-cases/memos/convert-memo-to-todos.use-case";
-import { CreateMemo } from "#api/modules/notes/application/use-cases/memos/create-memo.use-case";
-import { ReorderMemo } from "#api/modules/notes/application/use-cases/memos/reorder-memo.use-case";
-import { UpdateMemo } from "#api/modules/notes/application/use-cases/memos/update-memo.use-case";
+} from "#api/modules/notes/memos/application/ports/memo.repository.port";
+import { ConvertMemoToTodos } from "#api/modules/notes/memos/application/use-cases/convert-memo-to-todos.use-case";
+import { CreateMemo } from "#api/modules/notes/memos/application/use-cases/create-memo.use-case";
+import { ReorderMemo } from "#api/modules/notes/memos/application/use-cases/reorder-memo.use-case";
+import { UpdateMemo } from "#api/modules/notes/memos/application/use-cases/update-memo.use-case";
 import { TodoCreatedEvent } from "#api/modules/planning/domain/events/todos/todo-created.event";
 import {
   DatabaseRecordNotFoundError,

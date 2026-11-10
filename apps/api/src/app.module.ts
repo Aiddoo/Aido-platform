@@ -25,7 +25,7 @@ import {
 } from "#api/modules/identity/identity-settings.public";
 import { InsightsDailyCompletionsModule } from "#api/modules/insights/insights-daily-completions.public";
 import { InsightsWeeklyAchievementsModule } from "#api/modules/insights/insights-weekly-achievements.public";
-import { NotesMemosModule } from "#api/modules/notes/notes-memos.public";
+import { NotesMemosModule } from "#api/modules/notes/memos/notes-memos.public";
 import { NotificationDeliveryModule } from "#api/modules/notification/notification-delivery.public";
 import { NotificationRemindersModule } from "#api/modules/notification/notification-reminders.public";
 import { OperationsAdminModule } from "#api/modules/operations/operations-admin.public";

@@ -275,7 +275,8 @@
       "excludeFiles": [
         "**/*.spec.ts",
         "**/*.test.ts",
-        "apps/api/src/modules/*/{domain,application,infrastructure,presentation}/**"
+        "apps/api/src/modules/*/{domain,application,infrastructure,presentation}/**",
+        "apps/api/src/modules/notes/memos/**"
       ],
       "rules": {
         "no-restricted-imports": [
