@@ -19,7 +19,7 @@ import {
 } from "#api/platform/http/swagger/index";
 import { ThrottleByUser } from "#api/platform/throttle/index";
 
-import { ApplyActionPlan } from "../../../application/use-cases/apply-action-plan.use-case.js";
+import { ApplyActionPlanUseCase } from "../../../application/use-cases/apply-action-plan.use-case.js";
 import { ApiIdempotencyKeyHeader } from "../plan-request.decorator.js";
 import { ApplyActionPlanRequestDto, ApplyActionPlanResponseDto } from "./action-plan.dto.js";
 
@@ -29,9 +29,9 @@ export const ACTION_PLAN_THROTTLE = { default: { ttl: 60_000, limit: 10 } } as c
 @ApiBearerAuth()
 @Controller("action-plans")
 export class ActionPlanController {
-  readonly #applyActionPlan: ApplyActionPlan;
+  readonly #applyActionPlan: ApplyActionPlanUseCase;
 
-  constructor(applyActionPlan: ApplyActionPlan) {
+  constructor(applyActionPlan: ApplyActionPlanUseCase) {
     this.#applyActionPlan = applyActionPlan;
   }
 

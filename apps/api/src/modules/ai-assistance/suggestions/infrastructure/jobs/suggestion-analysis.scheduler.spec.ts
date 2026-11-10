@@ -10,7 +10,7 @@ import { UserBuilder } from "#test/builders/index";
 import { AiSuggestionQueueMaintenanceService } from "./ai-suggestion-queue-maintenance.scheduler.js";
 import { AI_SUGGESTION_QUEUE } from "./ai-suggestion.queue.js";
 import { SuggestionAnalysisProcessor } from "./suggestion-analysis.processor.js";
-import { SuggestionAnalysisJob } from "./suggestion-analysis.scheduler.js";
+import { SuggestionAnalysisScheduler } from "./suggestion-analysis.scheduler.js";
 
 function createUserQueryHost() {
   const findMany = vi.fn();
@@ -19,8 +19,8 @@ function createUserQueryHost() {
   return { host, findMany };
 }
 
-describe("SuggestionAnalysisJob — 영속 추천 분석 job 발행", () => {
-  let job: SuggestionAnalysisJob;
+describe("SuggestionAnalysisScheduler — 영속 추천 분석 job 발행", () => {
+  let job: SuggestionAnalysisScheduler;
   let findMany: ReturnType<typeof createUserQueryHost>["findMany"];
   let runtime: Mocked<JobRuntimePort>;
   let processor: Mocked<SuggestionAnalysisProcessor>;
@@ -34,7 +34,7 @@ describe("SuggestionAnalysisJob — 영속 추천 분석 job 발행", () => {
     processor = mock<SuggestionAnalysisProcessor>();
     const maintenance = mock<AiSuggestionQueueMaintenanceService>();
     maintenance.cleanExpiredFailures.mockResolvedValue(0);
-    job = new SuggestionAnalysisJob(userQuery.host, runtime, processor, maintenance);
+    job = new SuggestionAnalysisScheduler(userQuery.host, runtime, processor, maintenance);
   });
 
   afterEach(() => vi.useRealTimers());

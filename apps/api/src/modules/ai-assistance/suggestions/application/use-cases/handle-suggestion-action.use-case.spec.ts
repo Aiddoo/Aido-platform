@@ -9,7 +9,7 @@ import { createTodoResponseFixture } from "#test/fixtures/todo-response.fixture"
 import { createUnitOfWorkMock } from "#test/mocks/ports/unit-of-work.mock";
 
 import { Suggestion, type SuggestionProps } from "../../domain/suggestion.aggregate.js";
-import { HandleSuggestionAction } from "./handle-suggestion-action.use-case.js";
+import { HandleSuggestionActionUseCase } from "./handle-suggestion-action.use-case.js";
 
 const mockUserId = "user-123";
 const todoResponse = createTodoResponseFixture(TodoBuilder.create(mockUserId).withId(1).build());
@@ -33,26 +33,28 @@ function createSuggestion(overrides?: Partial<SuggestionProps>): Suggestion {
   });
 }
 
-describe("HandleSuggestionAction", () => {
-  let useCase: HandleSuggestionAction;
+describe("HandleSuggestionActionUseCase", () => {
+  let useCase: HandleSuggestionActionUseCase;
   let localePreferenceReader: Mocked<
-    ConstructorParameters<typeof HandleSuggestionAction>[0]["localePreferenceReader"]
+    ConstructorParameters<typeof HandleSuggestionActionUseCase>[0]["localePreferenceReader"]
   >;
-  let repo: Mocked<ConstructorParameters<typeof HandleSuggestionAction>[0]["repository"]>;
-  let creator: Mocked<ConstructorParameters<typeof HandleSuggestionAction>[0]["todoCreator"]>;
+  let repo: Mocked<ConstructorParameters<typeof HandleSuggestionActionUseCase>[0]["repository"]>;
+  let creator: Mocked<
+    ConstructorParameters<typeof HandleSuggestionActionUseCase>[0]["todoCreator"]
+  >;
   let afterCommitRegistry: Mocked<
-    ConstructorParameters<typeof HandleSuggestionAction>[0]["afterCommit"]
+    ConstructorParameters<typeof HandleSuggestionActionUseCase>[0]["afterCommit"]
   >;
   const afterCommit = vi.fn(async () => undefined);
   let entitlement: Mocked<
-    ConstructorParameters<typeof HandleSuggestionAction>[0]["entitlementReader"]
+    ConstructorParameters<typeof HandleSuggestionActionUseCase>[0]["entitlementReader"]
   >;
 
   beforeEach(async () => {
     const handleSuggestionActionDependencies = mockDeep<
-      ConstructorParameters<typeof HandleSuggestionAction>[0]
+      ConstructorParameters<typeof HandleSuggestionActionUseCase>[0]
     >({ unitOfWork: createUnitOfWorkMock() });
-    const unit = new HandleSuggestionAction(handleSuggestionActionDependencies);
+    const unit = new HandleSuggestionActionUseCase(handleSuggestionActionDependencies);
 
     useCase = unit;
     repo = handleSuggestionActionDependencies.repository;

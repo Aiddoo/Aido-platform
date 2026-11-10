@@ -24,7 +24,7 @@ import type { PlanTodoReaderPort } from "../ports/plan-todo.reader.port.js";
 import type { PlanningContextReaderPort } from "../ports/planning-context.reader.port.js";
 import { VoiceLogEvent } from "../voice.log-events.js";
 
-export interface ApplyActionPlanInput {
+export interface ApplyActionPlanCommand {
   readonly userId: string;
   readonly timezone: string | undefined;
   readonly source: ActionPlanSource;
@@ -55,14 +55,14 @@ type ApplyOutcome =
  * 멱등 확인 → 카테고리 소유 확인 → 생성 순서로 실행해, 하나라도 실패하면 아무것도 남지 않고 앱은 고친 카드를
  * 그대로 다시 보낼 수 있다.
  */
-export class ApplyActionPlan {
+export class ApplyActionPlanUseCase {
   readonly #dependencies: ApplyActionPlanDependencies;
 
   constructor(dependencies: ApplyActionPlanDependencies) {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: ApplyActionPlanInput): Promise<ApplyActionPlanResponse> {
+  async execute(input: ApplyActionPlanCommand): Promise<ApplyActionPlanResponse> {
     const { userId, source, sourceMemoId } = input;
     const plan = ActionPlan.create(input.actions);
     const requestHash = fingerprintRequest(userId, {
@@ -101,7 +101,7 @@ export class ApplyActionPlan {
 
   async #apply(
     plan: ActionPlan,
-    input: ApplyActionPlanInput,
+    input: ApplyActionPlanCommand,
     requestHash: string,
   ): Promise<ApplyOutcome> {
     const { todoCreator, memoWriter, afterCommit, repository } = this.#dependencies;

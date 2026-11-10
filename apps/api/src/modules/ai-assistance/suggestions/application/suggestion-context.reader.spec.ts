@@ -7,7 +7,7 @@ import { weatherForecastFixture } from "#test/fixtures/weather.fixture";
 
 const grid = { gridX: 60, gridY: 127, lat: 37.5, lon: 127 };
 
-describe("SuggestionContextBuilder", () => {
+describe("SuggestionContextReader", () => {
   it("실제 기록·통계·날씨·보고서·응답 이력을 컨텍스트에 전달한다", () =>
     withAiAssistanceTime(async () => {
       // Given - 상태 Stub에 실제 읽기 프로젝션이 있음

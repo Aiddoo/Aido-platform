@@ -1,5 +1,5 @@
 /**
- * AiSuggestionMapper 단위 테스트
+ * AiSuggestionResponseMapper 단위 테스트
  *
  * GWT 패턴 적용
  * - Suggestion 애그리게잇 → DTO 변환 검증
@@ -8,7 +8,7 @@
  */
 
 import { Suggestion, type SuggestionProps } from "../../../domain/suggestion.aggregate.js";
-import { AiSuggestionMapper } from "./ai-suggestion-response.mapper.js";
+import { AiSuggestionResponseMapper } from "./ai-suggestion-response.mapper.js";
 
 function createSuggestion(overrides?: Partial<SuggestionProps>): Suggestion {
   return Suggestion.reconstitute({
@@ -29,14 +29,14 @@ function createSuggestion(overrides?: Partial<SuggestionProps>): Suggestion {
   });
 }
 
-describe("AiSuggestionMapper — AI 제안 매퍼", () => {
+describe("AiSuggestionResponseMapper — AI 제안 매퍼", () => {
   describe("toResponse", () => {
     it("Suggestion 애그리게잇을 올바른 DTO 형식으로 변환해야 한다", () => {
       // Given -Suggestion 애그리게잇
       const suggestion = createSuggestion();
 
       // When -toResponse를 호출하면
-      const result = AiSuggestionMapper.toResponse(suggestion);
+      const result = AiSuggestionResponseMapper.toResponse(suggestion);
 
       // Then -DTO 형식으로 변환되어야 한다
       expect(result.id).toBe(1);
@@ -65,7 +65,7 @@ describe("AiSuggestionMapper — AI 제안 매퍼", () => {
       });
 
       // When -toResponse를 호출하면
-      const result = AiSuggestionMapper.toResponse(suggestion);
+      const result = AiSuggestionResponseMapper.toResponse(suggestion);
 
       // Then -suggestedCategoryId가 null이어야 한다
       expect(result.suggestedCategoryId).toBeNull();
@@ -76,7 +76,7 @@ describe("AiSuggestionMapper — AI 제안 매퍼", () => {
       const suggestion = createSuggestion({ daysOfWeek: "invalid" });
 
       // When -toResponse를 호출하면
-      const result = AiSuggestionMapper.toResponse(suggestion);
+      const result = AiSuggestionResponseMapper.toResponse(suggestion);
 
       // Then -빈 배열로 변환되어야 한다
       expect(result.daysOfWeek).toEqual([]);
@@ -92,7 +92,7 @@ describe("AiSuggestionMapper — AI 제안 매퍼", () => {
       ];
 
       // When -toManyResponse를 호출하면
-      const result = AiSuggestionMapper.toManyResponse(suggestions);
+      const result = AiSuggestionResponseMapper.toManyResponse(suggestions);
 
       // Then -2개의 DTO를 반환해야 한다
       expect(result).toHaveLength(2);
@@ -102,7 +102,7 @@ describe("AiSuggestionMapper — AI 제안 매퍼", () => {
 
     it("빈 배열이면 빈 배열을 반환해야 한다", () => {
       // When -toManyResponse를 호출하면
-      const result = AiSuggestionMapper.toManyResponse([]);
+      const result = AiSuggestionResponseMapper.toManyResponse([]);
 
       // Then -빈 배열을 반환해야 한다
       expect(result).toEqual([]);
@@ -112,7 +112,7 @@ describe("AiSuggestionMapper — AI 제안 매퍼", () => {
   describe("toActionResponse", () => {
     it("수락 결과는 createdTodosCount를 포함해야 한다", () => {
       // Given -수락 결과
-      const result = AiSuggestionMapper.toActionResponse({
+      const result = AiSuggestionResponseMapper.toActionResponse({
         message: "제안이 수락되어 반복 할 일이 생성되었습니다.",
         suggestion: createSuggestion({ status: "ACCEPTED" }),
         createdTodosCount: 12,
@@ -126,7 +126,7 @@ describe("AiSuggestionMapper — AI 제안 매퍼", () => {
 
     it("거절 결과는 createdTodosCount를 포함하지 않아야 한다", () => {
       // Given -거절 결과
-      const result = AiSuggestionMapper.toActionResponse({
+      const result = AiSuggestionResponseMapper.toActionResponse({
         message: "제안이 거절되었습니다.",
         suggestion: createSuggestion({ status: "DISMISSED" }),
       });

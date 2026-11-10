@@ -18,7 +18,7 @@ import { toDateString } from "#api/shared/domain/date/utils/format";
 import { startOfDayInTimezone, toLocalTimeString } from "#api/shared/domain/date/utils/timezone";
 
 import type {
-  AiSuggestionRepositoryPort,
+  SuggestionRepositoryPort,
   CreateSuggestionInput,
 } from "../../application/ports/suggestion.repository.port.js";
 import { Suggestion, type SuggestionStatus } from "../../domain/suggestion.aggregate.js";
@@ -38,13 +38,13 @@ function localDay(value: Date, timezone: string): Date {
 }
 
 /**
- * AiSuggestionRepositoryPort의 Drizzle 어댑터.
+ * SuggestionRepositoryPort의 Drizzle 어댑터.
  *
  * RecurringSuggestion의 쓰기·단건 조회는 Suggestion 애그리게잇으로 재구성하고,
  * 분석용 통계 읽기는 도메인 프로젝션으로 반환한다. 트랜잭션은 CLS(TransactionHost.tx)로 전파된다.
  */
 @Injectable()
-export class DrizzleAiSuggestionRepository implements AiSuggestionRepositoryPort {
+export class DrizzleSuggestionRepository implements SuggestionRepositoryPort {
   readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
 
   constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>) {
@@ -78,12 +78,12 @@ export class DrizzleAiSuggestionRepository implements AiSuggestionRepositoryPort
       where: { userId, status: "PENDING", expiresAt: { gt: now() } },
       orderBy: { createdAt: "desc" },
     });
-    return rows.map((row) => DrizzleAiSuggestionRepository.toEntity(row));
+    return rows.map((row) => DrizzleSuggestionRepository.toEntity(row));
   }
 
   async findByIdAndUserId(id: number, userId: string): Promise<Suggestion | null> {
     const row = await this.#db.query.recurringSuggestion.findFirst({ where: { id, userId } });
-    return row == null ? null : DrizzleAiSuggestionRepository.toEntity(row);
+    return row == null ? null : DrizzleSuggestionRepository.toEntity(row);
   }
 
   async updateStatus(id: number, status: SuggestionStatus): Promise<Suggestion> {
@@ -92,7 +92,7 @@ export class DrizzleAiSuggestionRepository implements AiSuggestionRepositoryPort
       .set({ status })
       .where(eq(recurringSuggestion.id, id))
       .returning();
-    return DrizzleAiSuggestionRepository.toEntity(requireRecord(row));
+    return DrizzleSuggestionRepository.toEntity(requireRecord(row));
   }
 
   async createMany(data: CreateSuggestionInput[]): Promise<{ count: number }> {

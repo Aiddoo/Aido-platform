@@ -7,8 +7,8 @@ import { z } from "zod";
 
 import type { EntitlementReaderPort } from "#api/modules/access/access-entitlement.public";
 import type { AiProviderAdapter } from "#api/modules/ai-assistance/generation/infrastructure/adapters/ai-provider.adapter";
-import { AiSdkGenerator } from "#api/modules/ai-assistance/generation/infrastructure/adapters/ai-sdk-generator.adapter";
-import { AiSpendBudget } from "#api/modules/ai-assistance/generation/infrastructure/adapters/ai-spend-budget.adapter";
+import { AiSdkGeneratorAdapter } from "#api/modules/ai-assistance/generation/infrastructure/adapters/ai-sdk-generator.adapter";
+import { AiSpendBudgetAdapter } from "#api/modules/ai-assistance/generation/infrastructure/adapters/ai-spend-budget.adapter";
 import type { EnvConfig } from "#api/platform/config/schemas/index";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
 import type { UsageMeterPort } from "#api/platform/metering/interfaces/usage-meter.interface";
@@ -77,7 +77,7 @@ export function stubAccessTiers(
 }
 
 /**
- * 실제 업체 체인(AiSdkGenerator)을 메모리 계량기·기록용 경보로 조립한다.
+ * 실제 업체 체인(AiSdkGeneratorAdapter)을 메모리 계량기·기록용 경보로 조립한다.
  * 회로 레지스트리를 새로 만들므로 생성기마다 회로 상태가 따로다.
  */
 export function createAiSdkGenerator(
@@ -92,11 +92,11 @@ export function createAiSdkGenerator(
   const alert = options.alert ?? new RecordingOperationalAlert();
   const meter = options.meter ?? new InMemoryUsageMeterAdapter();
   const registry = new OutboundPolicyRegistry(alert);
-  const generator = new AiSdkGenerator(
+  const generator = new AiSdkGeneratorAdapter(
     config,
     adapters,
     registry,
-    new AiSpendBudget(config, meter, alert, options.access ?? stubAccessTiers()),
+    new AiSpendBudgetAdapter(config, meter, alert, options.access ?? stubAccessTiers()),
   );
   return { generator, alert, meter, registry };
 }

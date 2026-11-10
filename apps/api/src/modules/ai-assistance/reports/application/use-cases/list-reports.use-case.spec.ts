@@ -4,7 +4,7 @@ import { mockDeep } from "vitest-mock-extended";
 import { ApplicationException } from "#api/shared/application/application.exception";
 
 import { AiReport } from "../../domain/ai-report.entity.js";
-import { GetReports } from "./get-reports.use-case.js";
+import { ListReportsUseCase } from "./list-reports.use-case.js";
 
 const makeReport = (id: number): AiReport =>
   AiReport.reconstitute({
@@ -30,14 +30,20 @@ const makeReport = (id: number): AiReport =>
     generatedAt: new Date("2026-03-09T07:00:00.000Z"),
   });
 
-describe("GetReports", () => {
-  let useCase: GetReports;
-  let mockRepository: Mocked<ConstructorParameters<typeof GetReports>[0]["aiReportRepository"]>;
-  let mockEntitlement: Mocked<ConstructorParameters<typeof GetReports>[0]["entitlementReader"]>;
+describe("ListReportsUseCase", () => {
+  let useCase: ListReportsUseCase;
+  let mockRepository: Mocked<
+    ConstructorParameters<typeof ListReportsUseCase>[0]["aiReportRepository"]
+  >;
+  let mockEntitlement: Mocked<
+    ConstructorParameters<typeof ListReportsUseCase>[0]["entitlementReader"]
+  >;
 
   beforeEach(async () => {
-    const getReportsDependencies = mockDeep<ConstructorParameters<typeof GetReports>[0]>({});
-    const unit = new GetReports(getReportsDependencies);
+    const getReportsDependencies = mockDeep<ConstructorParameters<typeof ListReportsUseCase>[0]>(
+      {},
+    );
+    const unit = new ListReportsUseCase(getReportsDependencies);
     useCase = unit;
     mockRepository = getReportsDependencies.aiReportRepository;
     mockEntitlement = getReportsDependencies.entitlementReader;

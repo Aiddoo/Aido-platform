@@ -13,7 +13,10 @@ import {
 } from "#test/fixtures/voice-plan.fixture";
 import { createAiGenerationError } from "#test/mocks/fake-ai.generator";
 
-import { DigestVoiceNote, type VoiceNoteDigestResult } from "./digest-voice-note.use-case.js";
+import {
+  DigestVoiceNoteUseCase,
+  type VoiceNoteDigestResult,
+} from "./digest-voice-note.use-case.js";
 
 const { maxCharacters } = PLAN_CATALOG.VOICE_NOTE.perUse;
 const NEXT_MONTH = new Date("2026-06-01T00:00:00.000Z");
@@ -29,7 +32,7 @@ const segments = [
 function setup(ledgerInput: Parameters<typeof createPlanFlowFixture>[0] = {}) {
   const fixture = createPlanFlowFixture(ledgerInput);
   const replay = new InMemoryPlanResultReplay<VoiceNoteDigestResult>();
-  const useCase = new DigestVoiceNote({
+  const useCase = new DigestVoiceNoteUseCase({
     runner: fixture.runner,
     quota: fixture.quota,
     generator: fixture.generator,
@@ -53,7 +56,7 @@ function setup(ledgerInput: Parameters<typeof createPlanFlowFixture>[0] = {}) {
   return { ...fixture, replay, execute, used };
 }
 
-describe("DigestVoiceNote", () => {
+describe("DigestVoiceNoteUseCase", () => {
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(QUOTA_LEDGER_TIME);

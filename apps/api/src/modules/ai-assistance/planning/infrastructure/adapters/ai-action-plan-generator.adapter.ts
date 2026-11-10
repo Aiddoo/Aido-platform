@@ -71,7 +71,7 @@ function normalizeContext(input: QuickPlanGenerationInput | VoiceNoteDigestGener
   };
 }
 
-export class ActionPlanGenerator implements ActionPlanGeneratorPort {
+export class AiActionPlanGeneratorAdapter implements ActionPlanGeneratorPort {
   readonly #dependencies: ActionPlanGeneratorDependencies;
 
   constructor(dependencies: ActionPlanGeneratorDependencies) {

@@ -29,7 +29,7 @@ import {
 import { ThrottleByUser } from "#api/platform/throttle/index";
 import type { SupportedLocale } from "#api/shared/domain/locale";
 
-import { CreateQuickPlan } from "../../../application/use-cases/create-quick-plan.use-case.js";
+import { CreateQuickPlanUseCase } from "../../../application/use-cases/create-quick-plan.use-case.js";
 import { ApiIdempotencyKeyHeader, ApiPlanningLocaleHeaders } from "../plan-request.decorator.js";
 import { QuickPlanRequestDto, QuickPlanResponseDto } from "./action-plan.dto.js";
 
@@ -39,9 +39,9 @@ export const QUICK_PLAN_THROTTLE = { default: { ttl: 60_000, limit: 20 } } as co
 @ApiBearerAuth()
 @Controller("quick-plans")
 export class QuickPlanController {
-  readonly #createQuickPlan: CreateQuickPlan;
+  readonly #createQuickPlan: CreateQuickPlanUseCase;
 
-  constructor(createQuickPlan: CreateQuickPlan) {
+  constructor(createQuickPlan: CreateQuickPlanUseCase) {
     this.#createQuickPlan = createQuickPlan;
   }
 

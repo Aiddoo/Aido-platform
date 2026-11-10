@@ -12,8 +12,8 @@ import {
 } from "./plan-application-cleanup.queue.js";
 
 @Injectable()
-export class PlanApplicationCleanupJob implements OnModuleInit {
-  readonly #logger = new Logger(PlanApplicationCleanupJob.name);
+export class PlanApplicationCleanupScheduler implements OnModuleInit {
+  readonly #logger = new Logger(PlanApplicationCleanupScheduler.name);
   schedulerRegistration: Promise<void> = Promise.resolve();
 
   readonly #runtime: JobRuntimePort;

@@ -30,8 +30,8 @@ import type {
   AiGeneratorPort,
 } from "#api/modules/ai-assistance/generation/application/ports/ai-generator.port";
 import type { AiProviderAdapter } from "#api/modules/ai-assistance/generation/infrastructure/adapters/ai-provider.adapter";
-import { AiSdkGenerator } from "#api/modules/ai-assistance/generation/infrastructure/adapters/ai-sdk-generator.adapter";
-import { AiSpendBudget } from "#api/modules/ai-assistance/generation/infrastructure/adapters/ai-spend-budget.adapter";
+import { AiSdkGeneratorAdapter } from "#api/modules/ai-assistance/generation/infrastructure/adapters/ai-sdk-generator.adapter";
+import { AiSpendBudgetAdapter } from "#api/modules/ai-assistance/generation/infrastructure/adapters/ai-spend-budget.adapter";
 import { AnthropicProviderAdapter } from "#api/modules/ai-assistance/generation/infrastructure/adapters/anthropic-provider.adapter";
 import { GoogleProviderAdapter } from "#api/modules/ai-assistance/generation/infrastructure/adapters/google-provider.adapter";
 import { OpenAiProviderAdapter } from "#api/modules/ai-assistance/generation/infrastructure/adapters/openai-provider.adapter";
@@ -403,12 +403,12 @@ function createGenerator(task: GoldenTask, provider: string | undefined) {
     (id) => adapters.find((adapter) => adapter.id === id)?.getModel(task) != null,
   );
   return {
-    generator: new AiSdkGenerator(
+    generator: new AiSdkGeneratorAdapter(
       config,
       adapters,
       new OutboundPolicyRegistry(alert),
       // eval은 userId가 null이라 사용자 예산·등급을 읽지 않는다.
-      new AiSpendBudget(config, new InMemoryUsageMeterAdapter(), alert, {
+      new AiSpendBudgetAdapter(config, new InMemoryUsageMeterAdapter(), alert, {
         getAccessSnapshot: () => Promise.reject(new Error("eval has no user")),
       }),
     ),

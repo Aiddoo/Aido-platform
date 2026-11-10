@@ -18,7 +18,7 @@ export interface AiProviderModel {
 
 /**
  * 업체별 모델·옵션·오류 해석 전략. 업체 고유 옵션과 오류 본문 해석은 이 구현 안에만 둔다.
- * 생성 체인(AiSdkGenerator)은 업체를 몰라도 같은 방식으로 시도·폴백한다.
+ * 생성 체인(AiSdkGeneratorAdapter)은 업체를 몰라도 같은 방식으로 시도·폴백한다.
  */
 export interface AiProviderAdapter {
   readonly id: AiProviderId;

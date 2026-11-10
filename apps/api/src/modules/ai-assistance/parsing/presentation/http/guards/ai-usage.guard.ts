@@ -5,7 +5,7 @@ import type { Request } from "express";
 
 import { ApplicationException } from "#api/shared/application/application.exception";
 
-import { GetAiUsage } from "../../../application/use-cases/get-ai-usage.use-case.js";
+import { GetAiUsageUseCase } from "../../../application/use-cases/get-ai-usage.use-case.js";
 
 /** 인증 페이로드가 첨부된 Request 타입 (캐스트 없이 user 접근). */
 interface AuthenticatedRequest extends Request {
@@ -23,9 +23,9 @@ interface AuthenticatedRequest extends Request {
  */
 @Injectable()
 export class AiUsageGuard implements CanActivate {
-  readonly #getAiUsageUseCase: GetAiUsage;
+  readonly #getAiUsageUseCase: GetAiUsageUseCase;
 
-  constructor(getAiUsageUseCase: GetAiUsage) {
+  constructor(getAiUsageUseCase: GetAiUsageUseCase) {
     this.#getAiUsageUseCase = getAiUsageUseCase;
   }
 

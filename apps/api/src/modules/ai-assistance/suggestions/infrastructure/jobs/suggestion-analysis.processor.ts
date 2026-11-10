@@ -10,7 +10,7 @@ import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/
 import { toSupportedLocale } from "#api/shared/domain/locale";
 
 import { AiJobLogEvent } from "../../../reports/infrastructure/jobs/ai-job.log-events.js";
-import { AnalyzeAndCreateSuggestions } from "../../application/use-cases/analyze-and-create-suggestions.use-case.js";
+import { AnalyzeAndCreateSuggestionsUseCase } from "../../application/use-cases/analyze-and-create-suggestions.use-case.js";
 import type { SuggestionDispatcher } from "./ai-suggestion.queue.js";
 import {
   AI_SUGGESTION_QUEUE,
@@ -31,14 +31,14 @@ export class SuggestionAnalysisProcessor implements OnModuleInit {
     this.#suggestionJob = job;
   }
 
-  readonly #analyzeSuggestions: Pick<AnalyzeAndCreateSuggestions, "execute">;
+  readonly #analyzeSuggestions: Pick<AnalyzeAndCreateSuggestionsUseCase, "execute">;
   readonly #notificationPublisher: Pick<NotificationPublisher, "publish">;
   readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
   readonly #runtime: JobRuntimePort | undefined;
 
   constructor(
-    @Inject(AnalyzeAndCreateSuggestions) analyzeSuggestions: Pick<
-      AnalyzeAndCreateSuggestions,
+    @Inject(AnalyzeAndCreateSuggestionsUseCase) analyzeSuggestions: Pick<
+      AnalyzeAndCreateSuggestionsUseCase,
       "execute"
     >,
     @Inject(NotificationPublisher) notificationPublisher: Pick<NotificationPublisher, "publish">,

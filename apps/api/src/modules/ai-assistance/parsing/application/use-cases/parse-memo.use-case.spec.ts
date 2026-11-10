@@ -5,7 +5,7 @@ import { createAiParsingFixture } from "#test/fixtures/ai-parsing.fixture";
 import { readPromptBlock } from "#test/fixtures/ai-prompt.fixture";
 import { createAiGenerationError } from "#test/mocks/fake-ai.generator";
 
-import { ParseMemo, type ParseMemoInput } from "./parse-memo.use-case.js";
+import { ParseMemoUseCase, type ParseMemoCommand } from "./parse-memo.use-case.js";
 
 const FREE_AI_LIMIT = PLAN_CATALOG.AI_PARSE.free;
 
@@ -26,8 +26,8 @@ function draftTodo(title: string, overrides: Record<string, unknown> = {}) {
 
 function createFixture() {
   const fixture = createAiParsingFixture();
-  const useCase = new ParseMemo(fixture);
-  const input: ParseMemoInput = {
+  const useCase = new ParseMemoUseCase(fixture);
+  const input: ParseMemoCommand = {
     userId: fixture.userId,
     content: "메모 원문",
     timezone: "Asia/Seoul",
@@ -38,7 +38,7 @@ function createFixture() {
   return { ...fixture, useCase, input };
 }
 
-describe("ParseMemo", () => {
+describe("ParseMemoUseCase", () => {
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(NOW);

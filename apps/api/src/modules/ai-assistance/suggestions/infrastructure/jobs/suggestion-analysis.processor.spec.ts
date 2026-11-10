@@ -12,19 +12,19 @@ import { createMockDrizzleTransactionHost } from "#test/mocks/drizzle.mock";
  * - 패턴 감지 여부에 따른 알림 발송 검증
  */
 
-import { AnalyzeAndCreateSuggestions } from "../../application/use-cases/analyze-and-create-suggestions.use-case.js";
+import { AnalyzeAndCreateSuggestionsUseCase } from "../../application/use-cases/analyze-and-create-suggestions.use-case.js";
 import { AiSuggestionJobName } from "./ai-suggestion.queue.js";
 import { SuggestionAnalysisProcessor } from "./suggestion-analysis.processor.js";
 
 describe("SuggestionAnalysisProcessor — AI 제안 분석 프로세서", () => {
   let processor: SuggestionAnalysisProcessor;
-  let analyzeAndCreateSuggestionsUseCase: Mocked<AnalyzeAndCreateSuggestions>;
+  let analyzeAndCreateSuggestionsUseCase: Mocked<AnalyzeAndCreateSuggestionsUseCase>;
   let mockNotificationService: Mocked<NotificationPublisher>;
 
   beforeEach(async () => {
     const database = mockDeep<Database>();
     database.query.userPreference.findFirst.mockResolvedValue(undefined);
-    analyzeAndCreateSuggestionsUseCase = mock<AnalyzeAndCreateSuggestions>();
+    analyzeAndCreateSuggestionsUseCase = mock<AnalyzeAndCreateSuggestionsUseCase>();
     mockNotificationService = mock<NotificationPublisher>();
     processor = new SuggestionAnalysisProcessor(
       analyzeAndCreateSuggestionsUseCase,

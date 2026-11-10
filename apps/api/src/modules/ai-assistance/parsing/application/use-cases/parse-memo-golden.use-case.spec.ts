@@ -5,11 +5,11 @@ import {
 } from "#test/fixtures/ai-golden/golden-cases";
 import { createAiParsingFixture } from "#test/fixtures/ai-parsing.fixture";
 
-import { ParseMemo } from "./parse-memo.use-case.js";
+import { ParseMemoUseCase } from "./parse-memo.use-case.js";
 
 const cases = GOLDEN_VARIANTS.flatMap((variant) => loadParseMemoGoldenCases(variant));
 
-describe("ParseMemo golden — fake model이 draft를 내면 공개 응답이 기대값과 같다", () => {
+describe("ParseMemoUseCase golden — fake model이 draft를 내면 공개 응답이 기대값과 같다", () => {
   afterEach(() => {
     vi.useRealTimers();
   });
@@ -20,7 +20,7 @@ describe("ParseMemo golden — fake model이 draft를 내면 공개 응답이 �
     vi.setSystemTime(new Date(golden.now));
     const fixture = createAiParsingFixture();
     fixture.generator.setRawResponse(golden.draft);
-    const useCase = new ParseMemo(fixture);
+    const useCase = new ParseMemoUseCase(fixture);
     // When
     const result = await useCase.execute({
       userId: fixture.userId,

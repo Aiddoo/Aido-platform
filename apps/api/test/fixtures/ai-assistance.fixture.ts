@@ -6,9 +6,9 @@ import type {
   AiGenerationResult,
   AiGeneratorPort,
 } from "#api/modules/ai-assistance/generation/application/ports/ai-generator.port";
-import { GenerateReport } from "#api/modules/ai-assistance/reports/application/use-cases/generate-report.use-case";
-import { SuggestionContextBuilder } from "#api/modules/ai-assistance/suggestions/application/suggestion-context.reader";
-import { AnalyzeAndCreateSuggestions } from "#api/modules/ai-assistance/suggestions/application/use-cases/analyze-and-create-suggestions.use-case";
+import { GenerateReportUseCase } from "#api/modules/ai-assistance/reports/application/use-cases/generate-report.use-case";
+import { SuggestionContextReader } from "#api/modules/ai-assistance/suggestions/application/suggestion-context.reader";
+import { AnalyzeAndCreateSuggestionsUseCase } from "#api/modules/ai-assistance/suggestions/application/use-cases/analyze-and-create-suggestions.use-case";
 import type { SuggestionPick } from "#api/modules/ai-assistance/suggestions/domain/suggestion-candidates.domain-service";
 import type { TodoSummaryForAnalysis } from "#api/modules/ai-assistance/suggestions/domain/suggestion.constants";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
@@ -85,13 +85,13 @@ export function createAiAssistanceFixture() {
   const aiDataSharingConsent = new StubAiDataSharingConsent();
   const clientAppVersion = new StubAiClientAppVersion();
   const logger = mock<ApplicationLoggerPort>();
-  const contextBuilder = new SuggestionContextBuilder({
+  const contextBuilder = new SuggestionContextReader({
     repository,
     weatherForecastReader,
     reportReader,
     logger,
   });
-  const analyze = new AnalyzeAndCreateSuggestions({
+  const analyze = new AnalyzeAndCreateSuggestionsUseCase({
     repository,
     generator,
     aiDataSharingConsent,
@@ -102,7 +102,7 @@ export function createAiAssistanceFixture() {
     entitlementReader: access,
     userMutationLock: access,
   });
-  const generateReport = new GenerateReport({
+  const generateReport = new GenerateReportUseCase({
     aiReportRepository: reportRepository,
     todoStatsReader,
     generator,

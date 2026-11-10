@@ -12,7 +12,7 @@ import { createUnitOfWorkMock } from "#test/mocks/ports/unit-of-work.mock";
 import type { PlannedAction, PlannedTodo } from "../../domain/action-plan.vo.js";
 import type { PlanApplicationRecord } from "../ports/plan-application.repository.port.js";
 import type { PlannedTodoDraft } from "../ports/plan-todo-creator.port.js";
-import { ApplyActionPlan } from "./apply-action-plan.use-case.js";
+import { ApplyActionPlanUseCase } from "./apply-action-plan.use-case.js";
 
 const USER_ID = "user-1";
 const MISSING_MEMO_ID = 404;
@@ -62,7 +62,7 @@ function setup(ownedCategoryIds: readonly number[] = [1]) {
     updatedAt: "2027-01-04T00:00:00.000Z",
   };
   let nextTodoId = 100;
-  const useCase = new ApplyActionPlan({
+  const useCase = new ApplyActionPlanUseCase({
     unitOfWork: createUnitOfWorkMock(),
     mutationLock: {
       acquire: async (keys) => {
@@ -150,7 +150,7 @@ function setup(ownedCategoryIds: readonly number[] = [1]) {
   };
 }
 
-describe("ApplyActionPlan", () => {
+describe("ApplyActionPlanUseCase", () => {
   it("잠금 → 멱등 확인 → 카테고리 확인 → 생성 → 기록 순서로 한 UoW에서 저장한다", async () => {
     // Given
     const { order, execute } = setup();

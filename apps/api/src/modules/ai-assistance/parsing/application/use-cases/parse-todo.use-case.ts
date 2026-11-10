@@ -53,7 +53,7 @@ export interface ParseTodoResult {
  * 자연어 텍스트를 투두 데이터로 파싱하는 입력.
  * 사용량을 차감하는 쓰기 유스케이스다.
  */
-export interface ParseTodoInput {
+export interface ParseTodoCommand {
   text: string;
   userId: string;
   /** X-Timezone 헤더. 없으면 저장된 사용자 시간대를 쓴다. */
@@ -65,7 +65,7 @@ export interface ParseTodoInput {
   signal?: AbortSignal;
 }
 
-type ResolvedParseTodoInput = Omit<ParseTodoInput, "timezone" | "locale"> & {
+type ResolvedParseTodoInput = Omit<ParseTodoCommand, "timezone" | "locale"> & {
   readonly timezone: string;
   readonly locale: SupportedLocale;
 };
@@ -86,14 +86,14 @@ interface ParseTodoDependencies {
   readonly logger: Pick<ApplicationLoggerPort, "log" | "warn" | "error">;
 }
 
-export class ParseTodo {
+export class ParseTodoUseCase {
   readonly #dependencies: ParseTodoDependencies;
 
   constructor(dependencies: ParseTodoDependencies) {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: ParseTodoInput): Promise<ParseTodoResult> {
+  async execute(input: ParseTodoCommand): Promise<ParseTodoResult> {
     const { userId } = input;
     const startTime = Date.now();
 

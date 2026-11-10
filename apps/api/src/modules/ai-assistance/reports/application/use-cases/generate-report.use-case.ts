@@ -74,7 +74,7 @@ interface GenerateReportDependencies {
   readonly unitOfWork: Pick<UnitOfWorkPort, "run">;
 }
 
-export class GenerateReport {
+export class GenerateReportUseCase {
   readonly #dependencies: GenerateReportDependencies;
 
   constructor(dependencies: GenerateReportDependencies) {

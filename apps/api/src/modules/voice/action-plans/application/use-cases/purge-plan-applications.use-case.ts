@@ -11,7 +11,7 @@ interface PurgePlanApplicationsDependencies {
 }
 
 /** 재시도 기간이 지난 적용 멱등 기록을 지운다. */
-export class PurgePlanApplications {
+export class PurgePlanApplicationsUseCase {
   readonly #dependencies: PurgePlanApplicationsDependencies;
 
   constructor(dependencies: PurgePlanApplicationsDependencies) {

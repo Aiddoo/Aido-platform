@@ -9,7 +9,7 @@ import { UserBuilder } from "#test/builders/index";
 
 import { AI_REPORT_QUEUE } from "./ai-report.queue.js";
 import { ReportGenerationProcessor } from "./report-generation.processor.js";
-import { ReportGenerationJob } from "./report-generation.scheduler.js";
+import { ReportGenerationScheduler } from "./report-generation.scheduler.js";
 
 function createUserQueryHost() {
   const findMany = vi.fn();
@@ -18,8 +18,8 @@ function createUserQueryHost() {
   return { host, findMany };
 }
 
-describe("ReportGenerationJob — 영속 보고서 생성 job 발행", () => {
-  let job: ReportGenerationJob;
+describe("ReportGenerationScheduler — 영속 보고서 생성 job 발행", () => {
+  let job: ReportGenerationScheduler;
   let findMany: ReturnType<typeof createUserQueryHost>["findMany"];
   let runtime: Mocked<JobRuntimePort>;
   let processor: Mocked<ReportGenerationProcessor>;
@@ -31,7 +31,7 @@ describe("ReportGenerationJob — 영속 보고서 생성 job 발행", () => {
     runtime.schedule.mockResolvedValue(undefined);
     runtime.enqueue.mockResolvedValue("job-1");
     processor = mock<ReportGenerationProcessor>();
-    job = new ReportGenerationJob(userQuery.host, runtime, processor);
+    job = new ReportGenerationScheduler(userQuery.host, runtime, processor);
   });
 
   afterEach(() => vi.useRealTimers());

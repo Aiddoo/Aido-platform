@@ -9,14 +9,14 @@ import {
   generateReportProvider,
   getReportByIdProvider,
   getReportStatusProvider,
-  getReportsProvider,
+  listReportsProvider,
 } from "./ai-assistance-reports-application.providers.js";
 import { AI_REPORT_REPOSITORY } from "./application/ports/ai-report.repository.port.js";
 import { LATEST_REPORT_STATS_READER } from "./application/ports/latest-report-stats.reader.port.js";
 import { TODO_STATS_READER } from "./application/ports/todo-stats.reader.port.js";
-import { LatestReportStatsReader } from "./infrastructure/adapters/latest-report-stats-reader.adapter.js";
+import { LatestReportStatsReaderAdapter } from "./infrastructure/adapters/latest-report-stats-reader.adapter.js";
 import { ReportGenerationProcessor } from "./infrastructure/jobs/report-generation.processor.js";
-import { ReportGenerationJob } from "./infrastructure/jobs/report-generation.scheduler.js";
+import { ReportGenerationScheduler } from "./infrastructure/jobs/report-generation.scheduler.js";
 import { DrizzleAiReportRepository } from "./infrastructure/persistence/drizzle-ai-report.repository.js";
 import { DrizzleTodoStatsReader } from "./infrastructure/persistence/drizzle-todo-stats.reader.js";
 import { AiReportController } from "./presentation/http/v1/ai-report.controller.js";
@@ -44,18 +44,18 @@ import { AiReportController } from "./presentation/http/v1/ai-report.controller.
   ],
   controllers: [AiReportController],
   providers: [
-    LatestReportStatsReader,
+    LatestReportStatsReaderAdapter,
     getReportStatusProvider,
-    getReportsProvider,
+    listReportsProvider,
     getReportByIdProvider,
     generateReportProvider,
-    ReportGenerationJob,
+    ReportGenerationScheduler,
     ReportGenerationProcessor,
     { provide: AI_REPORT_REPOSITORY, useClass: DrizzleAiReportRepository },
     { provide: TODO_STATS_READER, useClass: DrizzleTodoStatsReader },
     {
       provide: LATEST_REPORT_STATS_READER,
-      useExisting: LatestReportStatsReader,
+      useExisting: LatestReportStatsReaderAdapter,
     },
   ],
   exports: [LATEST_REPORT_STATS_READER],

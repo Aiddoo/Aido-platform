@@ -27,7 +27,7 @@ import {
   toActionPlanView,
 } from "../../../action-plans/application/read-models/action-plan.read-model.js";
 import { VoiceLogEvent } from "../../../action-plans/application/voice.log-events.js";
-import type { ChargedPlanRunner } from "../../../action-plans/infrastructure/adapters/quota-charged-plan-runner.adapter.js";
+import type { QuotaChargedPlanRunnerAdapter } from "../../../action-plans/infrastructure/adapters/quota-charged-plan-runner.adapter.js";
 import { type TranscriptSegment, VoiceTranscript } from "../../domain/voice-transcript.vo.js";
 
 /** `model`은 다시 보낸 응답의 로그에도 남기려고 함께 보관하고, 응답에는 싣지 않는다. */
@@ -35,7 +35,7 @@ export type VoiceNoteDigestResult = Omit<VoiceNoteDigestResponse, "featureQuota"
   readonly model: string;
 };
 
-export interface DigestVoiceNoteInput {
+export interface DigestVoiceNoteCommand {
   readonly userId: string;
   readonly text: string;
   readonly durationSeconds: number;
@@ -50,7 +50,7 @@ export interface DigestVoiceNoteInput {
 }
 
 interface DigestVoiceNoteDependencies {
-  readonly runner: Pick<ChargedPlanRunner, "run">;
+  readonly runner: Pick<QuotaChargedPlanRunnerAdapter, "run">;
   readonly quota: Pick<QuotaLedgerPort, "read">;
   readonly generator: Pick<ActionPlanGeneratorPort, "digestVoiceNote">;
   readonly contextReader: Pick<PlanningContextReaderPort, "read">;
@@ -65,14 +65,14 @@ function resolveChargeOutcome(digest: VoiceNoteDigestGeneration): ChargeOutcome 
 }
 
 /** 긴 전사 → 제목·요약·핵심 내용·실행 계획. 전사 글자는 요청이 끝나면 어디에도 남지 않는다. */
-export class DigestVoiceNote {
+export class DigestVoiceNoteUseCase {
   readonly #dependencies: DigestVoiceNoteDependencies;
 
   constructor(dependencies: DigestVoiceNoteDependencies) {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: DigestVoiceNoteInput): Promise<VoiceNoteDigestResponse> {
+  async execute(input: DigestVoiceNoteCommand): Promise<VoiceNoteDigestResponse> {
     const { userId, text, durationSeconds, segments, idempotencyKey } = input;
     const startedAt = Date.now();
     const transcript = VoiceTranscript.create({ text, durationSeconds, segments });

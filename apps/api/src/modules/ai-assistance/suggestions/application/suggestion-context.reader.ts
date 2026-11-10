@@ -21,7 +21,7 @@ import type {
 } from "../domain/suggestion.constants.js";
 import { AiSuggestionLogEvent } from "./ai-suggestion.log-events.js";
 import { suggestionContextTranslations } from "./messages/suggestion-context.messages.js";
-import { type AiSuggestionRepositoryPort } from "./ports/suggestion.repository.port.js";
+import { type SuggestionRepositoryPort } from "./ports/suggestion.repository.port.js";
 import { type WeeklyReportReaderPort } from "./ports/weekly-report.reader.port.js";
 import type { SuggestionContext } from "./read-models/suggestion-context.read-model.js";
 
@@ -32,7 +32,7 @@ import type { SuggestionContext } from "./read-models/suggestion-context.read-mo
  */
 interface SuggestionContextBuilderDependencies {
   readonly repository: Pick<
-    AiSuggestionRepositoryPort,
+    SuggestionRepositoryPort,
     | "findRecentTodos"
     | "findDayCompletionRates"
     | "findTimeCompletionRates"
@@ -45,7 +45,7 @@ interface SuggestionContextBuilderDependencies {
   readonly logger: Pick<ApplicationLoggerPort, "debug">;
 }
 
-export class SuggestionContextBuilder {
+export class SuggestionContextReader {
   readonly #dependencies: SuggestionContextBuilderDependencies;
 
   constructor(dependencies: SuggestionContextBuilderDependencies) {

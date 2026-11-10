@@ -21,9 +21,9 @@ import {
   PLAN_RESULT_REPLAY_MAX_ITEMS,
   PLAN_RESULT_REPLAY_TTL_MS,
 } from "./action-plans/infrastructure/adapters/in-memory-plan-result-replay.adapter.js";
-import { PlanningContextReader } from "./action-plans/infrastructure/adapters/planning-context-reader.adapter.js";
+import { PlanningContextReaderAdapter } from "./action-plans/infrastructure/adapters/planning-context-reader.adapter.js";
 import { PlanApplicationCleanupProcessor } from "./action-plans/infrastructure/jobs/plan-application-cleanup.processor.js";
-import { PlanApplicationCleanupJob } from "./action-plans/infrastructure/jobs/plan-application-cleanup.scheduler.js";
+import { PlanApplicationCleanupScheduler } from "./action-plans/infrastructure/jobs/plan-application-cleanup.scheduler.js";
 import { DrizzlePlanApplicationRepository } from "./action-plans/infrastructure/persistence/drizzle-plan-application.repository.js";
 import { ActionPlanController } from "./action-plans/presentation/http/v1/action-plan.controller.js";
 import { QuickPlanController } from "./action-plans/presentation/http/v1/quick-plan.controller.js";
@@ -82,7 +82,7 @@ const replayProviders: Provider[] = [
   ],
   controllers: [QuickPlanController, VoiceNoteController, ActionPlanController],
   providers: [
-    { provide: PLANNING_CONTEXT_READER, useClass: PlanningContextReader },
+    { provide: PLANNING_CONTEXT_READER, useClass: PlanningContextReaderAdapter },
     { provide: PLAN_APPLICATION_REPOSITORY, useClass: DrizzlePlanApplicationRepository },
     ...replayProviders,
     chargedPlanRunnerProvider,
@@ -90,7 +90,7 @@ const replayProviders: Provider[] = [
     digestVoiceNoteProvider,
     applyActionPlanProvider,
     purgePlanApplicationsProvider,
-    PlanApplicationCleanupJob,
+    PlanApplicationCleanupScheduler,
     PlanApplicationCleanupProcessor,
   ],
 })

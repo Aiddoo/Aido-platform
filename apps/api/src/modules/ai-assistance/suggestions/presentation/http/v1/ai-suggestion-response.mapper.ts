@@ -16,7 +16,7 @@ import type { Suggestion } from "../../../domain/suggestion.aggregate.js";
  *
  * Suggestion 애그리게잇을 API 응답 형식으로 변환합니다.
  */
-export const AiSuggestionMapper = {
+export const AiSuggestionResponseMapper = {
   /**
    * Suggestion 애그리게잇을 API 응답 형식으로 변환
    */
@@ -41,7 +41,7 @@ export const AiSuggestionMapper = {
    * 여러 애그리게잇을 API 응답 형식으로 일괄 변환
    */
   toManyResponse(suggestions: Suggestion[]): RecurringSuggestion[] {
-    return suggestions.map((suggestion) => AiSuggestionMapper.toResponse(suggestion));
+    return suggestions.map((suggestion) => AiSuggestionResponseMapper.toResponse(suggestion));
   },
 
   /**
@@ -50,7 +50,7 @@ export const AiSuggestionMapper = {
   toActionResponse(result: SuggestionActionResult): SuggestionActionResponse {
     return {
       message: result.message,
-      suggestion: AiSuggestionMapper.toResponse(result.suggestion),
+      suggestion: AiSuggestionResponseMapper.toResponse(result.suggestion),
       ...(result.createdTodosCount != null && {
         createdTodosCount: result.createdTodosCount,
       }),

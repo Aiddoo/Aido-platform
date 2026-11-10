@@ -20,92 +20,97 @@ import {
   AI_DATA_SHARING_CONSENT_DECISION_READER,
   USER_LOCALE_PREFERENCE_READER,
 } from "../parsing/ai-assistance-parsing.public.js";
-import { AI_SUGGESTION_REPOSITORY } from "./application/ports/suggestion.repository.port.js";
+import { SUGGESTION_REPOSITORY } from "./application/ports/suggestion.repository.port.js";
 import { WEEKLY_REPORT_READER } from "./application/ports/weekly-report.reader.port.js";
-import { SuggestionContextBuilder } from "./application/suggestion-context.reader.js";
-import { AnalyzeAndCreateSuggestions } from "./application/use-cases/analyze-and-create-suggestions.use-case.js";
-import { GetPendingSuggestions } from "./application/use-cases/get-pending-suggestions.use-case.js";
-import { HandleSuggestionAction } from "./application/use-cases/handle-suggestion-action.use-case.js";
+import { SuggestionContextReader } from "./application/suggestion-context.reader.js";
+import { AnalyzeAndCreateSuggestionsUseCase } from "./application/use-cases/analyze-and-create-suggestions.use-case.js";
+import { HandleSuggestionActionUseCase } from "./application/use-cases/handle-suggestion-action.use-case.js";
+import { ListPendingSuggestionsUseCase } from "./application/use-cases/list-pending-suggestions.use-case.js";
 
-export const suggestionContextBuilderProvider: FactoryProvider<SuggestionContextBuilder> = {
-  provide: SuggestionContextBuilder,
-  inject: [AI_SUGGESTION_REPOSITORY, WEATHER_FORECAST_READER, WEEKLY_REPORT_READER],
+export const suggestionContextReaderProvider: FactoryProvider<SuggestionContextReader> = {
+  provide: SuggestionContextReader,
+  inject: [SUGGESTION_REPOSITORY, WEATHER_FORECAST_READER, WEEKLY_REPORT_READER],
   useFactory: (
-    repository: ConstructorParameters<typeof SuggestionContextBuilder>[0]["repository"],
+    repository: ConstructorParameters<typeof SuggestionContextReader>[0]["repository"],
     weatherForecastReader: ConstructorParameters<
-      typeof SuggestionContextBuilder
+      typeof SuggestionContextReader
     >[0]["weatherForecastReader"],
-    reportReader: ConstructorParameters<typeof SuggestionContextBuilder>[0]["reportReader"],
+    reportReader: ConstructorParameters<typeof SuggestionContextReader>[0]["reportReader"],
   ) =>
-    new SuggestionContextBuilder({
+    new SuggestionContextReader({
       repository,
       weatherForecastReader,
       reportReader,
-      logger: new Logger(SuggestionContextBuilder.name),
+      logger: new Logger(SuggestionContextReader.name),
     }),
 };
 
-export const analyzeAndCreateSuggestionsProvider: FactoryProvider<AnalyzeAndCreateSuggestions> = {
-  provide: AnalyzeAndCreateSuggestions,
-  inject: [
-    AI_SUGGESTION_REPOSITORY,
-    AI_GENERATOR,
-    AI_DATA_SHARING_CONSENT_DECISION_READER,
-    AI_CLIENT_APP_VERSION_READER,
-    UNIT_OF_WORK,
-    SuggestionContextBuilder,
-    ENTITLEMENT_READER,
-    USER_MUTATION_LOCK,
-  ],
+export const analyzeAndCreateSuggestionsProvider: FactoryProvider<AnalyzeAndCreateSuggestionsUseCase> =
+  {
+    provide: AnalyzeAndCreateSuggestionsUseCase,
+    inject: [
+      SUGGESTION_REPOSITORY,
+      AI_GENERATOR,
+      AI_DATA_SHARING_CONSENT_DECISION_READER,
+      AI_CLIENT_APP_VERSION_READER,
+      UNIT_OF_WORK,
+      SuggestionContextReader,
+      ENTITLEMENT_READER,
+      USER_MUTATION_LOCK,
+    ],
+    useFactory: (
+      repository: ConstructorParameters<typeof AnalyzeAndCreateSuggestionsUseCase>[0]["repository"],
+      generator: ConstructorParameters<typeof AnalyzeAndCreateSuggestionsUseCase>[0]["generator"],
+      aiDataSharingConsent: ConstructorParameters<
+        typeof AnalyzeAndCreateSuggestionsUseCase
+      >[0]["aiDataSharingConsent"],
+      clientAppVersion: ConstructorParameters<
+        typeof AnalyzeAndCreateSuggestionsUseCase
+      >[0]["clientAppVersion"],
+      unitOfWork: ConstructorParameters<typeof AnalyzeAndCreateSuggestionsUseCase>[0]["unitOfWork"],
+      contextBuilder: ConstructorParameters<
+        typeof AnalyzeAndCreateSuggestionsUseCase
+      >[0]["contextBuilder"],
+      entitlementReader: ConstructorParameters<
+        typeof AnalyzeAndCreateSuggestionsUseCase
+      >[0]["entitlementReader"],
+      userMutationLock: ConstructorParameters<
+        typeof AnalyzeAndCreateSuggestionsUseCase
+      >[0]["userMutationLock"],
+    ) =>
+      new AnalyzeAndCreateSuggestionsUseCase({
+        repository,
+        generator,
+        aiDataSharingConsent,
+        clientAppVersion,
+        unitOfWork,
+        contextBuilder,
+        entitlementReader,
+        userMutationLock,
+        logger: new Logger(AnalyzeAndCreateSuggestionsUseCase.name),
+      }),
+  };
+
+export const listPendingSuggestionsProvider: FactoryProvider<ListPendingSuggestionsUseCase> = {
+  provide: ListPendingSuggestionsUseCase,
+  inject: [SUGGESTION_REPOSITORY, ENTITLEMENT_READER],
   useFactory: (
-    repository: ConstructorParameters<typeof AnalyzeAndCreateSuggestions>[0]["repository"],
-    generator: ConstructorParameters<typeof AnalyzeAndCreateSuggestions>[0]["generator"],
-    aiDataSharingConsent: ConstructorParameters<
-      typeof AnalyzeAndCreateSuggestions
-    >[0]["aiDataSharingConsent"],
-    clientAppVersion: ConstructorParameters<
-      typeof AnalyzeAndCreateSuggestions
-    >[0]["clientAppVersion"],
-    unitOfWork: ConstructorParameters<typeof AnalyzeAndCreateSuggestions>[0]["unitOfWork"],
-    contextBuilder: ConstructorParameters<typeof AnalyzeAndCreateSuggestions>[0]["contextBuilder"],
+    repository: ConstructorParameters<typeof ListPendingSuggestionsUseCase>[0]["repository"],
     entitlementReader: ConstructorParameters<
-      typeof AnalyzeAndCreateSuggestions
+      typeof ListPendingSuggestionsUseCase
     >[0]["entitlementReader"],
-    userMutationLock: ConstructorParameters<
-      typeof AnalyzeAndCreateSuggestions
-    >[0]["userMutationLock"],
   ) =>
-    new AnalyzeAndCreateSuggestions({
+    new ListPendingSuggestionsUseCase({
       repository,
-      generator,
-      aiDataSharingConsent,
-      clientAppVersion,
-      unitOfWork,
-      contextBuilder,
       entitlementReader,
-      userMutationLock,
-      logger: new Logger(AnalyzeAndCreateSuggestions.name),
+      logger: new Logger(ListPendingSuggestionsUseCase.name),
     }),
 };
 
-export const getPendingSuggestionsProvider: FactoryProvider<GetPendingSuggestions> = {
-  provide: GetPendingSuggestions,
-  inject: [AI_SUGGESTION_REPOSITORY, ENTITLEMENT_READER],
-  useFactory: (
-    repository: ConstructorParameters<typeof GetPendingSuggestions>[0]["repository"],
-    entitlementReader: ConstructorParameters<typeof GetPendingSuggestions>[0]["entitlementReader"],
-  ) =>
-    new GetPendingSuggestions({
-      repository,
-      entitlementReader,
-      logger: new Logger(GetPendingSuggestions.name),
-    }),
-};
-
-export const handleSuggestionActionProvider: FactoryProvider<HandleSuggestionAction> = {
-  provide: HandleSuggestionAction,
+export const handleSuggestionActionProvider: FactoryProvider<HandleSuggestionActionUseCase> = {
+  provide: HandleSuggestionActionUseCase,
   inject: [
-    AI_SUGGESTION_REPOSITORY,
+    SUGGESTION_REPOSITORY,
     STAGED_TODO_CREATOR,
     ENTITLEMENT_READER,
     UNIT_OF_WORK,
@@ -115,18 +120,22 @@ export const handleSuggestionActionProvider: FactoryProvider<HandleSuggestionAct
     USER_LOCALE_PREFERENCE_READER,
   ],
   useFactory: (
-    repository: ConstructorParameters<typeof HandleSuggestionAction>[0]["repository"],
+    repository: ConstructorParameters<typeof HandleSuggestionActionUseCase>[0]["repository"],
     stagedTodoCreator: StagedTodoCreatorPort,
-    entitlementReader: ConstructorParameters<typeof HandleSuggestionAction>[0]["entitlementReader"],
-    unitOfWork: ConstructorParameters<typeof HandleSuggestionAction>[0]["unitOfWork"],
-    userMutationLock: ConstructorParameters<typeof HandleSuggestionAction>[0]["userMutationLock"],
-    mutationLock: ConstructorParameters<typeof HandleSuggestionAction>[0]["mutationLock"],
-    afterCommit: ConstructorParameters<typeof HandleSuggestionAction>[0]["afterCommit"],
+    entitlementReader: ConstructorParameters<
+      typeof HandleSuggestionActionUseCase
+    >[0]["entitlementReader"],
+    unitOfWork: ConstructorParameters<typeof HandleSuggestionActionUseCase>[0]["unitOfWork"],
+    userMutationLock: ConstructorParameters<
+      typeof HandleSuggestionActionUseCase
+    >[0]["userMutationLock"],
+    mutationLock: ConstructorParameters<typeof HandleSuggestionActionUseCase>[0]["mutationLock"],
+    afterCommit: ConstructorParameters<typeof HandleSuggestionActionUseCase>[0]["afterCommit"],
     localePreferenceReader: ConstructorParameters<
-      typeof HandleSuggestionAction
+      typeof HandleSuggestionActionUseCase
     >[0]["localePreferenceReader"],
   ) =>
-    new HandleSuggestionAction({
+    new HandleSuggestionActionUseCase({
       repository,
       // ai는 아직 계약 Todo로 받는다. planning Read Model은 경계에서 계약 모양으로 바꾼다
       todoCreator: {
@@ -141,6 +150,6 @@ export const handleSuggestionActionProvider: FactoryProvider<HandleSuggestionAct
       mutationLock,
       afterCommit,
       localePreferenceReader,
-      logger: new Logger(HandleSuggestionAction.name),
+      logger: new Logger(HandleSuggestionActionUseCase.name),
     }),
 };

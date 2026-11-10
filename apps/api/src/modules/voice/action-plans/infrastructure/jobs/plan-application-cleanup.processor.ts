@@ -4,7 +4,7 @@ import { JOB_POLLING_SECONDS } from "#api/shared/application/ports/index";
 import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 
-import { PurgePlanApplications } from "../../application/use-cases/purge-plan-applications.use-case.js";
+import { PurgePlanApplicationsUseCase } from "../../application/use-cases/purge-plan-applications.use-case.js";
 import { VoiceLogEvent } from "../../application/voice.log-events.js";
 import { PLAN_APPLICATION_CLEANUP_QUEUE } from "./plan-application-cleanup.queue.js";
 
@@ -12,12 +12,12 @@ import { PLAN_APPLICATION_CLEANUP_QUEUE } from "./plan-application-cleanup.queue
 export class PlanApplicationCleanupProcessor implements OnModuleInit {
   readonly #logger = new Logger(PlanApplicationCleanupProcessor.name);
 
-  readonly #purgePlanApplications: Pick<PurgePlanApplications, "execute">;
+  readonly #purgePlanApplications: Pick<PurgePlanApplicationsUseCase, "execute">;
   readonly #runtime: JobRuntimePort;
 
   constructor(
-    @Inject(PurgePlanApplications)
-    purgePlanApplications: Pick<PurgePlanApplications, "execute">,
+    @Inject(PurgePlanApplicationsUseCase)
+    purgePlanApplications: Pick<PurgePlanApplicationsUseCase, "execute">,
     @Inject(JOB_RUNTIME) runtime: JobRuntimePort,
   ) {
     this.#purgePlanApplications = purgePlanApplications;

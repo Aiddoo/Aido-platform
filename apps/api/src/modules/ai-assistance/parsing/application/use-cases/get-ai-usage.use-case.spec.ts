@@ -3,11 +3,11 @@ import { PLAN_CATALOG } from "@aido/api/vocabulary";
 import { QUOTA_LEDGER_TIME } from "#test/fixtures/access/quota-ledger.fixture";
 import { createAiParsingFixture } from "#test/fixtures/ai-parsing.fixture";
 
-import { GetAiUsage } from "./get-ai-usage.use-case.js";
+import { GetAiUsageUseCase } from "./get-ai-usage.use-case.js";
 
 const FREE_AI_LIMIT = PLAN_CATALOG.AI_PARSE.free;
 
-describe("GetAiUsage", () => {
+describe("GetAiUsageUseCase", () => {
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(QUOTA_LEDGER_TIME);
@@ -16,7 +16,7 @@ describe("GetAiUsage", () => {
   it("현재 기간의 AI_PARSE 사용량과 KST 다음 달 리셋 시각을 반환한다", async () => {
     // Given
     const fixture = createAiParsingFixture({ aiUsageCount: 3 });
-    const useCase = new GetAiUsage(fixture);
+    const useCase = new GetAiUsageUseCase(fixture);
     // When
     const usage = await useCase.execute({ userId: fixture.userId });
     // Then
@@ -37,7 +37,7 @@ describe("GetAiUsage", () => {
       aiUsageResetAt: new Date("2026-03-12T12:00:00Z"),
     });
     // When
-    const usage = await new GetAiUsage(fixture).execute({ userId: fixture.userId });
+    const usage = await new GetAiUsageUseCase(fixture).execute({ userId: fixture.userId });
     // Then
     expect(usage.used).toBe(0);
     expect(fixture.users.get(fixture.userId)?.aiUsageCount).toBe(5);
@@ -47,7 +47,7 @@ describe("GetAiUsage", () => {
     const fixture = createAiParsingFixture();
     fixture.users.clear();
     // When
-    const execution = new GetAiUsage(fixture).execute({ userId: fixture.userId });
+    const execution = new GetAiUsageUseCase(fixture).execute({ userId: fixture.userId });
     // Then
     await expect(execution).rejects.toMatchObject({ errorCode: "USER_0601" });
   });

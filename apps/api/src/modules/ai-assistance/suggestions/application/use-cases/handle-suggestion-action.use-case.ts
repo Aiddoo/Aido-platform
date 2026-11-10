@@ -25,9 +25,9 @@ import type { UserLocalePreferenceReaderPort } from "../../../generation/applica
 import type { Suggestion } from "../../domain/suggestion.aggregate.js";
 import { AiSuggestionLogEvent } from "../ai-suggestion.log-events.js";
 import type { SuggestionTodoCreatorPort } from "../ports/suggestion-todo-creator.port.js";
-import { type AiSuggestionRepositoryPort } from "../ports/suggestion.repository.port.js";
+import { type SuggestionRepositoryPort } from "../ports/suggestion.repository.port.js";
 
-export interface HandleSuggestionActionInput {
+export interface HandleSuggestionActionCommand {
   readonly userId: string;
   readonly suggestionId: number;
   readonly action: "accept" | "dismiss";
@@ -53,7 +53,7 @@ export interface SuggestionActionResult {
  * 할 일 알림·캐시 효과는 커밋 뒤에만 실행된다.
  */
 interface HandleSuggestionActionDependencies {
-  readonly repository: Pick<AiSuggestionRepositoryPort, "findByIdAndUserId" | "updateStatus">;
+  readonly repository: Pick<SuggestionRepositoryPort, "findByIdAndUserId" | "updateStatus">;
   readonly todoCreator: SuggestionTodoCreatorPort;
   readonly entitlementReader: Pick<EntitlementReaderPort, "canInTx">;
   readonly logger: Pick<ApplicationLoggerPort, "log" | "warn">;
@@ -64,14 +64,14 @@ interface HandleSuggestionActionDependencies {
   readonly localePreferenceReader: Pick<UserLocalePreferenceReaderPort, "read">;
 }
 
-export class HandleSuggestionAction {
+export class HandleSuggestionActionUseCase {
   readonly #dependencies: HandleSuggestionActionDependencies;
 
   constructor(dependencies: HandleSuggestionActionDependencies) {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: HandleSuggestionActionInput): Promise<SuggestionActionResult> {
+  async execute(input: HandleSuggestionActionCommand): Promise<SuggestionActionResult> {
     const timezone =
       input.timezone ??
       (await this.#dependencies.localePreferenceReader.read(input.userId)).timezone;

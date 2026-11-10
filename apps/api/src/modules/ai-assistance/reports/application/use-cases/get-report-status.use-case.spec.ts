@@ -6,7 +6,7 @@ import { ApplicationException } from "#api/shared/application/application.except
 
 import type { ReportType } from "../../domain/ai-report.constants.js";
 import { AiReport } from "../../domain/ai-report.entity.js";
-import { GetReportStatus } from "./get-report-status.use-case.js";
+import { GetReportStatusUseCase } from "./get-report-status.use-case.js";
 
 const makeReport = (type: ReportType): AiReport =>
   AiReport.reconstitute({
@@ -32,25 +32,25 @@ const makeReport = (type: ReportType): AiReport =>
     generatedAt: new Date("2026-03-09T07:00:00.000Z"),
   });
 
-describe("GetReportStatus", () => {
-  let useCase: GetReportStatus;
+describe("GetReportStatusUseCase", () => {
+  let useCase: GetReportStatusUseCase;
   let mockRepository: Mocked<
-    ConstructorParameters<typeof GetReportStatus>[0]["aiReportRepository"]
+    ConstructorParameters<typeof GetReportStatusUseCase>[0]["aiReportRepository"]
   >;
   let mockEntitlement: Mocked<
-    ConstructorParameters<typeof GetReportStatus>[0]["entitlementReader"]
+    ConstructorParameters<typeof GetReportStatusUseCase>[0]["entitlementReader"]
   >;
   let mockPreference: Mocked<
-    ConstructorParameters<typeof GetReportStatus>[0]["localePreferenceReader"]
+    ConstructorParameters<typeof GetReportStatusUseCase>[0]["localePreferenceReader"]
   >;
 
   const tz = "Asia/Seoul";
 
   beforeEach(async () => {
-    const getReportStatusDependencies = mockDeep<ConstructorParameters<typeof GetReportStatus>[0]>(
-      {},
-    );
-    const unit = new GetReportStatus(getReportStatusDependencies);
+    const getReportStatusDependencies = mockDeep<
+      ConstructorParameters<typeof GetReportStatusUseCase>[0]
+    >({});
+    const unit = new GetReportStatusUseCase(getReportStatusDependencies);
     useCase = unit;
     mockRepository = getReportStatusDependencies.aiReportRepository;
     mockEntitlement = getReportStatusDependencies.entitlementReader;

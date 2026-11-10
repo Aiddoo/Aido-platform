@@ -43,7 +43,7 @@ export interface ParseMemoResult {
  * 메모 내용을 다중 Todo + SubTodo 데이터로 파싱하는 입력.
  * parse-todo와 월간 사용량을 공유하는 쓰기 유스케이스다.
  */
-export interface ParseMemoInput {
+export interface ParseMemoCommand {
   content: string;
   userId: string;
   /** X-Timezone 헤더. 없으면 저장된 사용자 시간대를 쓴다. */
@@ -57,7 +57,7 @@ export interface ParseMemoInput {
   signal?: AbortSignal;
 }
 
-type ResolvedParseMemoInput = Omit<ParseMemoInput, "timezone" | "locale"> & {
+type ResolvedParseMemoInput = Omit<ParseMemoCommand, "timezone" | "locale"> & {
   readonly timezone: string;
   readonly locale: SupportedLocale;
 };
@@ -78,14 +78,14 @@ interface ParseMemoDependencies {
   readonly logger: Pick<ApplicationLoggerPort, "log" | "warn" | "error">;
 }
 
-export class ParseMemo {
+export class ParseMemoUseCase {
   readonly #dependencies: ParseMemoDependencies;
 
   constructor(dependencies: ParseMemoDependencies) {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: ParseMemoInput): Promise<ParseMemoResult> {
+  async execute(input: ParseMemoCommand): Promise<ParseMemoResult> {
     const { userId, content, categoryId, idempotencyKey } = input;
     const startTime = Date.now();
 

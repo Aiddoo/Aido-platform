@@ -21,7 +21,7 @@ import type {
 
 /** 카테고리 id·이름과 다가오는 할 일을 읽기만 한다. 다른 Context의 공개 포트로만 읽는다. */
 @Injectable()
-export class PlanningContextReader implements PlanningContextReaderPort {
+export class PlanningContextReaderAdapter implements PlanningContextReaderPort {
   readonly #categoryReader: Pick<TodoCategoryReaderPort, "listForUser">;
   readonly #todoReader: Pick<TodoPlanReaderPort, "findUpcoming">;
 

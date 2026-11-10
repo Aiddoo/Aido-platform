@@ -1,6 +1,6 @@
 import type { MeteredFeatureQuota, QuotaLedgerPort } from "#api/modules/access/access-quota.public";
 
-export interface GetAiUsageInput {
+export interface GetAiUsageQuery {
   readonly userId: string;
 }
 
@@ -9,14 +9,14 @@ interface GetAiUsageDependencies {
 }
 
 /** parse-todo·parse-memo·빠른 계획이 함께 쓰는 AI_PARSE 월간 사용량 */
-export class GetAiUsage {
+export class GetAiUsageUseCase {
   readonly #dependencies: GetAiUsageDependencies;
 
   constructor(dependencies: GetAiUsageDependencies) {
     this.#dependencies = dependencies;
   }
 
-  execute(input: GetAiUsageInput): Promise<MeteredFeatureQuota> {
+  execute(input: GetAiUsageQuery): Promise<MeteredFeatureQuota> {
     return this.#dependencies.quota.read(input.userId, "AI_PARSE");
   }
 }

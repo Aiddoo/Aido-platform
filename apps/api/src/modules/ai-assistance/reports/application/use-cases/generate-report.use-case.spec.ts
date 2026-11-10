@@ -8,7 +8,7 @@ import {
 import { createReportAiResponse } from "#test/fixtures/ai-response.fixture";
 import { createAiGenerationError } from "#test/mocks/fake-ai.generator";
 
-describe("GenerateReport", () => {
+describe("GenerateReportUseCase", () => {
   it.each([
     {
       type: "MONTHLY" as const,
@@ -32,7 +32,7 @@ describe("GenerateReport", () => {
       withAiAssistanceTime(async () => {
         // Given - 3월 DST 전환을 걸치는 실제 리포트 기간
         const f = useReportResponse(createAiAssistanceFixture());
-        // When - 실제 GenerateReport가 StatsReader에 범위를 전달
+        // When - 실제 GenerateReportUseCase가 StatsReader에 범위를 전달
         await f.generateReport.execute({ userId: f.userId, timezone: "America/New_York", type });
         // Then - UTC timestamp와 배타적 종료를 모두 보존
         expect(f.todoStatsReader.calls[0]).toMatchObject({

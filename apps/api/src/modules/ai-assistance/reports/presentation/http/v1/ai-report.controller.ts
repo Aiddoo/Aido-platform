@@ -16,9 +16,9 @@ import {
   SWAGGER_TAGS,
 } from "#api/platform/http/swagger/index";
 
-import { GetReportById } from "../../../application/use-cases/get-report-by-id.use-case.js";
-import { GetReportStatus } from "../../../application/use-cases/get-report-status.use-case.js";
-import { GetReports } from "../../../application/use-cases/get-reports.use-case.js";
+import { GetReportByIdUseCase } from "../../../application/use-cases/get-report-by-id.use-case.js";
+import { GetReportStatusUseCase } from "../../../application/use-cases/get-report-status.use-case.js";
+import { ListReportsUseCase } from "../../../application/use-cases/list-reports.use-case.js";
 import {
   AiReportIdParamDto,
   AiReportListResponseDto,
@@ -32,14 +32,14 @@ import {
 @ApiBearerAuth()
 @Controller("ai/reports")
 export class AiReportController {
-  readonly #getReportStatusUseCase: GetReportStatus;
-  readonly #getReportsUseCase: GetReports;
-  readonly #getReportByIdUseCase: GetReportById;
+  readonly #getReportStatusUseCase: GetReportStatusUseCase;
+  readonly #getReportsUseCase: ListReportsUseCase;
+  readonly #getReportByIdUseCase: GetReportByIdUseCase;
 
   constructor(
-    getReportStatusUseCase: GetReportStatus,
-    getReportsUseCase: GetReports,
-    getReportByIdUseCase: GetReportById,
+    getReportStatusUseCase: GetReportStatusUseCase,
+    getReportsUseCase: ListReportsUseCase,
+    getReportByIdUseCase: GetReportByIdUseCase,
   ) {
     this.#getReportStatusUseCase = getReportStatusUseCase;
     this.#getReportsUseCase = getReportsUseCase;

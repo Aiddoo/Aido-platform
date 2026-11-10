@@ -4,7 +4,7 @@ import { mockDeep } from "vitest-mock-extended";
 import { ApplicationException } from "#api/shared/application/application.exception";
 
 import { Suggestion } from "../../domain/suggestion.aggregate.js";
-import { GetPendingSuggestions } from "./get-pending-suggestions.use-case.js";
+import { ListPendingSuggestionsUseCase } from "./list-pending-suggestions.use-case.js";
 
 const mockUserId = "user-123";
 
@@ -26,18 +26,18 @@ function createSuggestion(): Suggestion {
   });
 }
 
-describe("GetPendingSuggestions", () => {
-  let useCase: GetPendingSuggestions;
-  let repo: Mocked<ConstructorParameters<typeof GetPendingSuggestions>[0]["repository"]>;
+describe("ListPendingSuggestionsUseCase", () => {
+  let useCase: ListPendingSuggestionsUseCase;
+  let repo: Mocked<ConstructorParameters<typeof ListPendingSuggestionsUseCase>[0]["repository"]>;
   let entitlement: Mocked<
-    ConstructorParameters<typeof GetPendingSuggestions>[0]["entitlementReader"]
+    ConstructorParameters<typeof ListPendingSuggestionsUseCase>[0]["entitlementReader"]
   >;
 
   beforeEach(async () => {
     const getPendingSuggestionsDependencies = mockDeep<
-      ConstructorParameters<typeof GetPendingSuggestions>[0]
+      ConstructorParameters<typeof ListPendingSuggestionsUseCase>[0]
     >({});
-    const unit = new GetPendingSuggestions(getPendingSuggestionsDependencies);
+    const unit = new ListPendingSuggestionsUseCase(getPendingSuggestionsDependencies);
 
     useCase = unit;
     repo = getPendingSuggestionsDependencies.repository;

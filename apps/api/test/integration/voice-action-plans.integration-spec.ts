@@ -8,10 +8,10 @@ import {
   TODO_PLAN_READER,
   type TodoPlanReaderPort,
 } from "#api/modules/planning/todos/planning-todos.public";
-import { ApplyActionPlan } from "#api/modules/voice/action-plans/application/use-cases/apply-action-plan.use-case";
-import { CreateQuickPlan } from "#api/modules/voice/action-plans/application/use-cases/create-quick-plan.use-case";
-import { PurgePlanApplications } from "#api/modules/voice/action-plans/application/use-cases/purge-plan-applications.use-case";
-import { DigestVoiceNote } from "#api/modules/voice/voice-notes/application/use-cases/digest-voice-note.use-case";
+import { ApplyActionPlanUseCase } from "#api/modules/voice/action-plans/application/use-cases/apply-action-plan.use-case";
+import { CreateQuickPlanUseCase } from "#api/modules/voice/action-plans/application/use-cases/create-quick-plan.use-case";
+import { PurgePlanApplicationsUseCase } from "#api/modules/voice/action-plans/application/use-cases/purge-plan-applications.use-case";
+import { DigestVoiceNoteUseCase } from "#api/modules/voice/voice-notes/application/use-cases/digest-voice-note.use-case";
 import { createEntityId } from "#api/platform/database/entity-id";
 import {
   memo as memoTable,
@@ -43,10 +43,10 @@ describe("계획 사용량·멱등 적용 (실제 PostgreSQL)", () => {
   let client: TestDatabaseClient;
   let context: E2eTestContext;
   let aiGenerator: FakeAiGenerator;
-  let quickPlan: CreateQuickPlan;
-  let digest: DigestVoiceNote;
-  let apply: ApplyActionPlan;
-  let purge: PurgePlanApplications;
+  let quickPlan: CreateQuickPlanUseCase;
+  let digest: DigestVoiceNoteUseCase;
+  let apply: ApplyActionPlanUseCase;
+  let purge: PurgePlanApplicationsUseCase;
   let todoPlanReader: TodoPlanReaderPort;
   let userId: string;
   let categoryId: number;
@@ -60,10 +60,10 @@ describe("계획 사용량·멱등 적용 (실제 PostgreSQL)", () => {
       customizeBuilder: (builder) => builder.overrideProvider(AI_GENERATOR).useValue(aiGenerator),
       additionalResetters: [() => aiGenerator.clear()],
     });
-    quickPlan = context.module.get(CreateQuickPlan);
-    digest = context.module.get(DigestVoiceNote);
-    apply = context.module.get(ApplyActionPlan);
-    purge = context.module.get(PurgePlanApplications);
+    quickPlan = context.module.get(CreateQuickPlanUseCase);
+    digest = context.module.get(DigestVoiceNoteUseCase);
+    apply = context.module.get(ApplyActionPlanUseCase);
+    purge = context.module.get(PurgePlanApplicationsUseCase);
     todoPlanReader = context.module.get(TODO_PLAN_READER);
   });
 
@@ -130,7 +130,7 @@ describe("계획 사용량·멱등 적용 (실제 PostgreSQL)", () => {
   }
 
   function runApply(
-    actions: Parameters<ApplyActionPlan["execute"]>[0]["actions"],
+    actions: Parameters<ApplyActionPlanUseCase["execute"]>[0]["actions"],
     key = "apply-1",
   ) {
     return apply.execute({
@@ -145,7 +145,7 @@ describe("계획 사용량·멱등 적용 (실제 PostgreSQL)", () => {
 
   function runApplyFromMemo(
     sourceMemoId: number,
-    actions: Parameters<ApplyActionPlan["execute"]>[0]["actions"],
+    actions: Parameters<ApplyActionPlanUseCase["execute"]>[0]["actions"],
     targetUserId = userId,
   ) {
     return apply.execute({

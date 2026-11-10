@@ -10,7 +10,7 @@ import type {
   UserStreakInfo,
 } from "../../domain/suggestion.constants.js";
 
-export const AI_SUGGESTION_REPOSITORY = Symbol("AI_SUGGESTION_REPOSITORY");
+export const SUGGESTION_REPOSITORY = Symbol("SUGGESTION_REPOSITORY");
 
 /** 제안 일괄 생성 입력 — daysOfWeek/matchedTodos의 Json 직렬화는 어댑터 경계가 담당한다 */
 export interface CreateSuggestionInput {
@@ -31,7 +31,7 @@ export interface CreateSuggestionInput {
  * RecurringSuggestion 애그리게잇의 쓰기·단건 조회는 Suggestion 도메인 엔티티를,
  * 분석용 통계 읽기는 도메인 읽기 프로젝션을 반환한다. 트랜잭션은 CLS로 전파된다.
  */
-export interface AiSuggestionRepositoryPort {
+export interface SuggestionRepositoryPort {
   findPendingByUserId(userId: string): Promise<Suggestion[]>;
   findByIdAndUserId(id: number, userId: string): Promise<Suggestion | null>;
   updateStatus(id: number, status: SuggestionStatus): Promise<Suggestion>;

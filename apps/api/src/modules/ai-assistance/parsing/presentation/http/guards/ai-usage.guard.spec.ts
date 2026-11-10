@@ -5,7 +5,7 @@ import { QUOTA_LEDGER_TIME } from "#test/fixtures/access/quota-ledger.fixture";
 import { createAiParsingFixture } from "#test/fixtures/ai-parsing.fixture";
 import { createMockExecutionContext } from "#test/mocks/index";
 
-import { GetAiUsage } from "../../../application/use-cases/get-ai-usage.use-case.js";
+import { GetAiUsageUseCase } from "../../../application/use-cases/get-ai-usage.use-case.js";
 import { AiUsageGuard } from "./ai-usage.guard.js";
 
 const FREE_AI_LIMIT = PLAN_CATALOG.AI_PARSE.free;
@@ -19,7 +19,7 @@ function guardFor(fixture: ReturnType<typeof createAiParsingFixture>) {
     role: "USER",
   };
   return {
-    guard: new AiUsageGuard(new GetAiUsage(fixture)),
+    guard: new AiUsageGuard(new GetAiUsageUseCase(fixture)),
     context: createMockExecutionContext({ user }).context,
   };
 }
@@ -79,7 +79,7 @@ describe("AiUsageGuard", () => {
   it("인증 정보가 없으면 AUTH_0107을 반환한다", async () => {
     // Given
     const fixture = createAiParsingFixture();
-    const guard = new AiUsageGuard(new GetAiUsage(fixture));
+    const guard = new AiUsageGuard(new GetAiUsageUseCase(fixture));
     const { context } = createMockExecutionContext();
 
     // When

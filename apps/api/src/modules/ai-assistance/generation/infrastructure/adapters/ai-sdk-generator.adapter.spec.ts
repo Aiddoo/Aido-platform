@@ -13,7 +13,7 @@ import { RecordingOperationalAlert } from "#test/mocks/recording-operational-ale
 
 import { AiGenerationError, isTransientAiFailure } from "../../application/ai-generation.errors.js";
 import type { AiGenerationRequest } from "../../application/ports/ai-generator.port.js";
-import { AiSpendBudget } from "./ai-spend-budget.adapter.js";
+import { AiSpendBudgetAdapter } from "./ai-spend-budget.adapter.js";
 
 const schema = z.object({ title: z.string() });
 const NOW = new Date("2026-11-05T03:00:00.000Z");
@@ -71,12 +71,12 @@ const spendKey = (periodKey: string, subject = "*") => ({
   subject,
 });
 
-describe("AiSpendBudget — 기동 검사", () => {
+describe("AiSpendBudgetAdapter — 기동 검사", () => {
   it("가격표에 없는 모델이 설정되면 기동 때 경보를 올린다", () => {
     // Given
     const config = createAiTestConfig({ AI_MODEL_ANTHROPIC: "claude-unknown-9" });
     const alert = new RecordingOperationalAlert();
-    const guard = new AiSpendBudget(
+    const guard = new AiSpendBudgetAdapter(
       config,
       new InMemoryUsageMeterAdapter(),
       alert,
@@ -96,7 +96,7 @@ describe("AiSpendBudget — 기동 검사", () => {
   it("기본 모델은 경보를 올리지 않는다", () => {
     // Given
     const alert = new RecordingOperationalAlert();
-    const guard = new AiSpendBudget(
+    const guard = new AiSpendBudgetAdapter(
       createAiTestConfig(),
       new InMemoryUsageMeterAdapter(),
       alert,
@@ -109,7 +109,7 @@ describe("AiSpendBudget — 기동 검사", () => {
   });
 });
 
-describe("AiSdkGenerator — 업체 체인·폴백·제한 시간", () => {
+describe("AiSdkGeneratorAdapter — 업체 체인·폴백·제한 시간", () => {
   let warn: ReturnType<typeof vi.spyOn>;
   let error: ReturnType<typeof vi.spyOn>;
 
@@ -639,7 +639,7 @@ describe("AiSdkGenerator — 업체 체인·폴백·제한 시간", () => {
   });
 });
 
-describe("AiSdkGenerator — 입력 상한·킬 스위치·비용 예산", () => {
+describe("AiSdkGeneratorAdapter — 입력 상한·킬 스위치·비용 예산", () => {
   let warn: ReturnType<typeof vi.spyOn>;
   let error: ReturnType<typeof vi.spyOn>;
 
@@ -923,7 +923,7 @@ describe("AiSdkGenerator — 입력 상한·킬 스위치·비용 예산", () =>
   });
 });
 
-describe("AiSdkGenerator — 업체 회로 (공용 OutboundPolicy, 가짜 시계)", () => {
+describe("AiSdkGeneratorAdapter — 업체 회로 (공용 OutboundPolicy, 가짜 시계)", () => {
   const MINUTE = 60_000;
   let log: ReturnType<typeof vi.spyOn>;
   let warn: ReturnType<typeof vi.spyOn>;

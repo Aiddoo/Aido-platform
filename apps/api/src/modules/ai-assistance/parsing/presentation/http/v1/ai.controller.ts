@@ -28,9 +28,9 @@ import {
 import { ThrottleByUser } from "#api/platform/throttle/index";
 import type { SupportedLocale } from "#api/shared/domain/locale";
 
-import { GetAiUsage } from "../../../application/use-cases/get-ai-usage.use-case.js";
-import { ParseMemo } from "../../../application/use-cases/parse-memo.use-case.js";
-import { ParseTodo } from "../../../application/use-cases/parse-todo.use-case.js";
+import { GetAiUsageUseCase } from "../../../application/use-cases/get-ai-usage.use-case.js";
+import { ParseMemoUseCase } from "../../../application/use-cases/parse-memo.use-case.js";
+import { ParseTodoUseCase } from "../../../application/use-cases/parse-todo.use-case.js";
 import { AiDataSharingConsentGuard } from "../guards/ai-data-sharing-consent.guard.js";
 import { AiUsageGuard } from "../guards/ai-usage.guard.js";
 import { toAiUsageData } from "./ai-usage-response.mapper.js";
@@ -56,14 +56,14 @@ const AI_PARSE_THROTTLE = {
 @ApiBearerAuth()
 @Controller("ai")
 export class AiController {
-  readonly #parseTodoUseCase: ParseTodo;
-  readonly #parseMemoUseCase: ParseMemo;
-  readonly #getAiUsageUseCase: GetAiUsage;
+  readonly #parseTodoUseCase: ParseTodoUseCase;
+  readonly #parseMemoUseCase: ParseMemoUseCase;
+  readonly #getAiUsageUseCase: GetAiUsageUseCase;
 
   constructor(
-    parseTodoUseCase: ParseTodo,
-    parseMemoUseCase: ParseMemo,
-    getAiUsageUseCase: GetAiUsage,
+    parseTodoUseCase: ParseTodoUseCase,
+    parseMemoUseCase: ParseMemoUseCase,
+    getAiUsageUseCase: GetAiUsageUseCase,
   ) {
     this.#parseTodoUseCase = parseTodoUseCase;
     this.#parseMemoUseCase = parseMemoUseCase;

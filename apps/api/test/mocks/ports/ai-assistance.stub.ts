@@ -23,7 +23,7 @@ import type {
 } from "#api/modules/ai-assistance/reports/domain/ai-report.constants";
 import { AiReport } from "#api/modules/ai-assistance/reports/domain/ai-report.entity";
 import type {
-  AiSuggestionRepositoryPort,
+  SuggestionRepositoryPort,
   CreateSuggestionInput,
 } from "#api/modules/ai-assistance/suggestions/application/ports/suggestion.repository.port";
 import type { WeeklyReportReaderPort } from "#api/modules/ai-assistance/suggestions/application/ports/weekly-report.reader.port";
@@ -85,7 +85,7 @@ export class StubAiGenerationAccess
   }
 }
 
-export class StubAiSuggestionRepository implements AiSuggestionRepositoryPort {
+export class StubAiSuggestionRepository implements SuggestionRepositoryPort {
   readonly rows = new Map<number, SuggestionProps>();
   todos: TodoSummaryForAnalysis[] = [];
   streak: { currentStreak: number; longestStreak: number } | null = {

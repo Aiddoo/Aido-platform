@@ -10,19 +10,19 @@ import type {
   AiGenerationRequest,
   AiGenerationResult,
 } from "#api/modules/ai-assistance/generation/application/ports/ai-generator.port";
-import { GenerateReport } from "#api/modules/ai-assistance/reports/application/use-cases/generate-report.use-case";
+import { GenerateReportUseCase } from "#api/modules/ai-assistance/reports/application/use-cases/generate-report.use-case";
 import { AiReportJobName } from "#api/modules/ai-assistance/reports/infrastructure/jobs/ai-report.queue";
 import { ReportGenerationProcessor } from "#api/modules/ai-assistance/reports/infrastructure/jobs/report-generation.processor";
 import { DrizzleAiReportRepository } from "#api/modules/ai-assistance/reports/infrastructure/persistence/drizzle-ai-report.repository";
 import { DrizzleTodoStatsReader } from "#api/modules/ai-assistance/reports/infrastructure/persistence/drizzle-todo-stats.reader";
 import type { SuggestionTodoCreatorPort } from "#api/modules/ai-assistance/suggestions/application/ports/suggestion-todo-creator.port";
 import type { CreateSuggestionInput } from "#api/modules/ai-assistance/suggestions/application/ports/suggestion.repository.port";
-import { SuggestionContextBuilder } from "#api/modules/ai-assistance/suggestions/application/suggestion-context.reader";
-import { AnalyzeAndCreateSuggestions } from "#api/modules/ai-assistance/suggestions/application/use-cases/analyze-and-create-suggestions.use-case";
-import { HandleSuggestionAction } from "#api/modules/ai-assistance/suggestions/application/use-cases/handle-suggestion-action.use-case";
+import { SuggestionContextReader } from "#api/modules/ai-assistance/suggestions/application/suggestion-context.reader";
+import { AnalyzeAndCreateSuggestionsUseCase } from "#api/modules/ai-assistance/suggestions/application/use-cases/analyze-and-create-suggestions.use-case";
+import { HandleSuggestionActionUseCase } from "#api/modules/ai-assistance/suggestions/application/use-cases/handle-suggestion-action.use-case";
 import { AiSuggestionJobName } from "#api/modules/ai-assistance/suggestions/infrastructure/jobs/ai-suggestion.queue";
 import { SuggestionAnalysisProcessor } from "#api/modules/ai-assistance/suggestions/infrastructure/jobs/suggestion-analysis.processor";
-import { DrizzleAiSuggestionRepository } from "#api/modules/ai-assistance/suggestions/infrastructure/persistence/drizzle-suggestion.repository";
+import { DrizzleSuggestionRepository } from "#api/modules/ai-assistance/suggestions/infrastructure/persistence/drizzle-suggestion.repository";
 import { GetAiDataSharingConsentUseCase } from "#api/modules/identity/preferences/application/use-cases/get-ai-data-sharing-consent.use-case";
 import { DrizzleUserConsentRepository } from "#api/modules/identity/preferences/infrastructure/persistence/drizzle-user-consent.repository";
 import { DrizzleUserRepository } from "#api/modules/identity/users/infrastructure/persistence/drizzle-user.repository";
@@ -68,7 +68,7 @@ class GatedAiGenerator extends FakeAiGenerator {
   }
 }
 
-class FailingSuggestionRepository extends DrizzleAiSuggestionRepository {
+class FailingSuggestionRepository extends DrizzleSuggestionRepository {
   override createMany(inputs: CreateSuggestionInput[]) {
     return super.createMany(inputs.map((input) => ({ ...input, userId: "missing-ai-user" })));
   }
@@ -80,7 +80,7 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
   let fixture: ReturnType<typeof createDatabaseTransactionFixture>;
   let memory: InMemoryCacheStore;
   let entitlement: EntitlementReaderAdapter;
-  let suggestions: DrizzleAiSuggestionRepository;
+  let suggestions: DrizzleSuggestionRepository;
   let reports: DrizzleAiReportRepository;
   let users: DrizzleUserRepository;
   let userId: string;
@@ -103,7 +103,7 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
         clock: new DateClock(),
       }),
     );
-    suggestions = new DrizzleAiSuggestionRepository(fixture.txHost);
+    suggestions = new DrizzleSuggestionRepository(fixture.txHost);
     reports = new DrizzleAiReportRepository(fixture.txHost);
     users = new DrizzleUserRepository(fixture.txHost);
     userId = createEntityId();
@@ -145,13 +145,13 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
     const consentReader = new GetAiDataSharingConsentUseCase({
       consentRepository: new DrizzleUserConsentRepository(fixture.txHost),
     });
-    const contextBuilder = new SuggestionContextBuilder({
+    const contextBuilder = new SuggestionContextReader({
       repository,
       weatherForecastReader: { getForecastsByGridBatch: async () => new Map() },
       reportReader: { findLatestWeekly: async () => null },
       logger,
     });
-    const analyze = new AnalyzeAndCreateSuggestions({
+    const analyze = new AnalyzeAndCreateSuggestionsUseCase({
       repository,
       generator: provider,
       aiDataSharingConsent: consentReader,
@@ -162,7 +162,7 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
       userMutationLock,
       logger,
     });
-    const report = new GenerateReport({
+    const report = new GenerateReportUseCase({
       aiReportRepository: reports,
       todoStatsReader: new DrizzleTodoStatsReader(fixture.txHost),
       generator: provider,
@@ -560,7 +560,7 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
   const registeredAfterCommit: AfterCommitTask[] = [];
 
   function action(todoCreator: SuggestionTodoCreatorPort) {
-    return new HandleSuggestionAction({
+    return new HandleSuggestionActionUseCase({
       repository: suggestions,
       todoCreator,
       entitlementReader: entitlement,

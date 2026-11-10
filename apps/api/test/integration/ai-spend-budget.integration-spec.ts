@@ -4,7 +4,7 @@ import {
   ENTITLEMENT_READER,
   type EntitlementReaderPort,
 } from "#api/modules/access/access-entitlement.public";
-import { AiSpendBudget } from "#api/modules/ai-assistance/generation/infrastructure/adapters/ai-spend-budget.adapter";
+import { AiSpendBudgetAdapter } from "#api/modules/ai-assistance/generation/infrastructure/adapters/ai-spend-budget.adapter";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { createEntityId } from "#api/platform/database/entity-id";
 import { user as userTable } from "#api/platform/database/schema/index";
@@ -64,7 +64,7 @@ describe("AI 비용 예산 누적 (실제 PostgreSQL)", () => {
   it("동시에 끝난 요청의 비용을 전역 일·월·사용자 일 행에 빠짐없이 더하고 경보는 한 번만 올린다", async () => {
     // Given
     const alert = new RecordingOperationalAlert();
-    const budget = new AiSpendBudget(config, meter, alert, stubAccessTiers());
+    const budget = new AiSpendBudgetAdapter(config, meter, alert, stubAccessTiers());
     // When
     await Promise.all(
       Array.from({ length: 20 }, (_, index) =>
@@ -90,13 +90,13 @@ describe("AI 비용 예산 누적 (실제 PostgreSQL)", () => {
 
   it("재시작한 서버도 저장된 사용량으로 예산을 판단한다", async () => {
     // Given
-    await new AiSpendBudget(
+    await new AiSpendBudgetAdapter(
       config,
       meter,
       new RecordingOperationalAlert(),
       stubAccessTiers(),
     ).record("user-a", 250_000);
-    const restarted = new AiSpendBudget(
+    const restarted = new AiSpendBudgetAdapter(
       config,
       meter,
       new RecordingOperationalAlert(),
@@ -112,7 +112,7 @@ describe("AI 비용 예산 누적 (실제 PostgreSQL)", () => {
 
   it("다음 UTC 날짜가 되면 일 예산을 새로 센다", async () => {
     // Given
-    const budget = new AiSpendBudget(
+    const budget = new AiSpendBudgetAdapter(
       config,
       meter,
       new RecordingOperationalAlert(),
@@ -141,7 +141,12 @@ describe("AI 비용 예산 누적 (실제 PostgreSQL)", () => {
         subscriptionStatus: "FREE",
       });
       await client.insert(userTable).values(user);
-      const budget = new AiSpendBudget(config, meter, new RecordingOperationalAlert(), access);
+      const budget = new AiSpendBudgetAdapter(
+        config,
+        meter,
+        new RecordingOperationalAlert(),
+        access,
+      );
       await budget.record(user.id, 250_000);
       // When
       const result = await budget.decide({ taskClass: "interactive", userId: user.id });

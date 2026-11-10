@@ -7,7 +7,7 @@ import {
 import type { LatestReportStatsReaderPort } from "../../application/ports/latest-report-stats.reader.port.js";
 
 @Injectable()
-export class LatestReportStatsReader implements LatestReportStatsReaderPort {
+export class LatestReportStatsReaderAdapter implements LatestReportStatsReaderPort {
   readonly #aiReportRepository: AiReportRepositoryPort;
 
   constructor(

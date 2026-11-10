@@ -3,7 +3,7 @@ import { Inject, Injectable, Logger, type OnModuleInit, Optional } from "@nestjs
 import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
 import { toSupportedLocale } from "#api/shared/domain/locale";
 
-import { GenerateReport } from "../../application/use-cases/generate-report.use-case.js";
+import { GenerateReportUseCase } from "../../application/use-cases/generate-report.use-case.js";
 import { AiJobLogEvent } from "./ai-job.log-events.js";
 import type { ReportDispatcher } from "./ai-report.queue.js";
 import {
@@ -23,11 +23,11 @@ export class ReportGenerationProcessor implements OnModuleInit {
     this.#reportJob = job;
   }
 
-  readonly #generateReport: Pick<GenerateReport, "execute">;
+  readonly #generateReport: Pick<GenerateReportUseCase, "execute">;
   readonly #runtime: JobRuntimePort | undefined;
 
   constructor(
-    @Inject(GenerateReport) generateReport: Pick<GenerateReport, "execute">,
+    @Inject(GenerateReportUseCase) generateReport: Pick<GenerateReportUseCase, "execute">,
     @Optional() @Inject(JOB_RUNTIME) runtime?: JobRuntimePort,
   ) {
     this.#generateReport = generateReport;

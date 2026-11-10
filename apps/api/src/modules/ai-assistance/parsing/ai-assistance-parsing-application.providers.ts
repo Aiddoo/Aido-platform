@@ -7,19 +7,19 @@ import { AI_GENERATOR } from "../generation/application/ports/ai-generator.port.
 import { USER_LOCALE_PREFERENCE_READER } from "../generation/application/ports/user-locale-preference.reader.port.js";
 import { UPCOMING_TODO_READER } from "./application/ports/upcoming-todo.reader.port.js";
 import { USER_CATEGORY_READER } from "./application/ports/user-category.reader.port.js";
-import { GetAiUsage } from "./application/use-cases/get-ai-usage.use-case.js";
-import { ParseMemo } from "./application/use-cases/parse-memo.use-case.js";
-import { ParseTodo } from "./application/use-cases/parse-todo.use-case.js";
+import { GetAiUsageUseCase } from "./application/use-cases/get-ai-usage.use-case.js";
+import { ParseMemoUseCase } from "./application/use-cases/parse-memo.use-case.js";
+import { ParseTodoUseCase } from "./application/use-cases/parse-todo.use-case.js";
 
-export const getAiUsageProvider: FactoryProvider<GetAiUsage> = {
-  provide: GetAiUsage,
+export const getAiUsageProvider: FactoryProvider<GetAiUsageUseCase> = {
+  provide: GetAiUsageUseCase,
   inject: [QUOTA_LEDGER],
-  useFactory: (quota: ConstructorParameters<typeof GetAiUsage>[0]["quota"]) =>
-    new GetAiUsage({ quota }),
+  useFactory: (quota: ConstructorParameters<typeof GetAiUsageUseCase>[0]["quota"]) =>
+    new GetAiUsageUseCase({ quota }),
 };
 
-export const parseMemoProvider: FactoryProvider<ParseMemo> = {
-  provide: ParseMemo,
+export const parseMemoProvider: FactoryProvider<ParseMemoUseCase> = {
+  provide: ParseMemoUseCase,
   inject: [
     AI_GENERATOR,
     AI_DATA_SHARING_CONSENT_DECISION_READER,
@@ -29,26 +29,28 @@ export const parseMemoProvider: FactoryProvider<ParseMemo> = {
     USER_LOCALE_PREFERENCE_READER,
   ],
   useFactory: (
-    generator: ConstructorParameters<typeof ParseMemo>[0]["generator"],
-    consentReader: ConstructorParameters<typeof ParseMemo>[0]["consentReader"],
-    categoryReader: ConstructorParameters<typeof ParseMemo>[0]["categoryReader"],
-    upcomingTodoReader: ConstructorParameters<typeof ParseMemo>[0]["upcomingTodoReader"],
-    quota: ConstructorParameters<typeof ParseMemo>[0]["quota"],
-    localePreferenceReader: ConstructorParameters<typeof ParseMemo>[0]["localePreferenceReader"],
+    generator: ConstructorParameters<typeof ParseMemoUseCase>[0]["generator"],
+    consentReader: ConstructorParameters<typeof ParseMemoUseCase>[0]["consentReader"],
+    categoryReader: ConstructorParameters<typeof ParseMemoUseCase>[0]["categoryReader"],
+    upcomingTodoReader: ConstructorParameters<typeof ParseMemoUseCase>[0]["upcomingTodoReader"],
+    quota: ConstructorParameters<typeof ParseMemoUseCase>[0]["quota"],
+    localePreferenceReader: ConstructorParameters<
+      typeof ParseMemoUseCase
+    >[0]["localePreferenceReader"],
   ) =>
-    new ParseMemo({
+    new ParseMemoUseCase({
       generator,
       consentReader,
       categoryReader,
       upcomingTodoReader,
       quota,
       localePreferenceReader,
-      logger: new Logger(ParseMemo.name),
+      logger: new Logger(ParseMemoUseCase.name),
     }),
 };
 
-export const parseTodoProvider: FactoryProvider<ParseTodo> = {
-  provide: ParseTodo,
+export const parseTodoProvider: FactoryProvider<ParseTodoUseCase> = {
+  provide: ParseTodoUseCase,
   inject: [
     AI_GENERATOR,
     AI_DATA_SHARING_CONSENT_DECISION_READER,
@@ -57,18 +59,20 @@ export const parseTodoProvider: FactoryProvider<ParseTodo> = {
     USER_LOCALE_PREFERENCE_READER,
   ],
   useFactory: (
-    generator: ConstructorParameters<typeof ParseTodo>[0]["generator"],
-    consentReader: ConstructorParameters<typeof ParseTodo>[0]["consentReader"],
-    categoryReader: ConstructorParameters<typeof ParseTodo>[0]["categoryReader"],
-    quota: ConstructorParameters<typeof ParseTodo>[0]["quota"],
-    localePreferenceReader: ConstructorParameters<typeof ParseTodo>[0]["localePreferenceReader"],
+    generator: ConstructorParameters<typeof ParseTodoUseCase>[0]["generator"],
+    consentReader: ConstructorParameters<typeof ParseTodoUseCase>[0]["consentReader"],
+    categoryReader: ConstructorParameters<typeof ParseTodoUseCase>[0]["categoryReader"],
+    quota: ConstructorParameters<typeof ParseTodoUseCase>[0]["quota"],
+    localePreferenceReader: ConstructorParameters<
+      typeof ParseTodoUseCase
+    >[0]["localePreferenceReader"],
   ) =>
-    new ParseTodo({
+    new ParseTodoUseCase({
       generator,
       consentReader,
       categoryReader,
       quota,
       localePreferenceReader,
-      logger: new Logger(ParseTodo.name),
+      logger: new Logger(ParseTodoUseCase.name),
     }),
 };

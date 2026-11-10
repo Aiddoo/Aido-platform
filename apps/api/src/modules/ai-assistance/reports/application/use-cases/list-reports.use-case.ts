@@ -14,7 +14,7 @@ interface GetReportsDependencies {
   readonly entitlementReader: Pick<EntitlementReaderPort, "can">;
 }
 
-export class GetReports {
+export class ListReportsUseCase {
   readonly #dependencies: GetReportsDependencies;
 
   constructor(dependencies: GetReportsDependencies) {

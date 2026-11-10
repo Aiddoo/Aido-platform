@@ -29,8 +29,8 @@ const ENQUEUE_BATCH_SIZE = 50;
 const DISPATCH_CRON_TZ = "Asia/Seoul";
 
 @Injectable()
-export class SuggestionAnalysisJob implements OnModuleInit {
-  readonly #logger = new Logger(SuggestionAnalysisJob.name);
+export class SuggestionAnalysisScheduler implements OnModuleInit {
+  readonly #logger = new Logger(SuggestionAnalysisScheduler.name);
 
   readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
   readonly #runtime: JobRuntimePort;

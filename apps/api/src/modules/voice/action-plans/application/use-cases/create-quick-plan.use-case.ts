@@ -12,7 +12,7 @@ import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import { ErrorCodedException } from "#api/shared/domain/exceptions/error-coded.exception";
 import type { SupportedLocale } from "#api/shared/domain/locale";
 
-import type { ChargedPlanRunner } from "../../infrastructure/adapters/quota-charged-plan-runner.adapter.js";
+import type { QuotaChargedPlanRunnerAdapter } from "../../infrastructure/adapters/quota-charged-plan-runner.adapter.js";
 import type { PlanResultReplayPort } from "../ports/plan-result-replay.port.js";
 import type { PlanningContextReaderPort } from "../ports/planning-context.reader.port.js";
 import { countPlannedActions, toActionPlanView } from "../read-models/action-plan.read-model.js";
@@ -21,7 +21,7 @@ import { VoiceLogEvent } from "../voice.log-events.js";
 /** `model`은 다시 보낸 응답의 로그에도 남기려고 함께 보관하고, 응답에는 싣지 않는다. */
 export type QuickPlanResult = Pick<QuickPlanResponse, "plan"> & { readonly model: string };
 
-export interface CreateQuickPlanInput {
+export interface CreateQuickPlanCommand {
   readonly userId: string;
   readonly text: string;
   readonly source: QuickPlanSource;
@@ -35,7 +35,7 @@ export interface CreateQuickPlanInput {
 }
 
 interface CreateQuickPlanDependencies {
-  readonly runner: Pick<ChargedPlanRunner, "run">;
+  readonly runner: Pick<QuotaChargedPlanRunnerAdapter, "run">;
   readonly generator: Pick<ActionPlanGeneratorPort, "generateQuickPlan">;
   readonly contextReader: Pick<PlanningContextReaderPort, "read">;
   readonly localePreferenceReader: Pick<UserLocalePreferenceReaderPort, "read">;
@@ -44,14 +44,14 @@ interface CreateQuickPlanDependencies {
 }
 
 /** 짧은 말·글 → 실행 계획. 할 일을 찾지 못하면 환불한다. 저장은 사용자가 확인한 뒤 적용 API가 한다. */
-export class CreateQuickPlan {
+export class CreateQuickPlanUseCase {
   readonly #dependencies: CreateQuickPlanDependencies;
 
   constructor(dependencies: CreateQuickPlanDependencies) {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: CreateQuickPlanInput): Promise<QuickPlanResponse> {
+  async execute(input: CreateQuickPlanCommand): Promise<QuickPlanResponse> {
     const { runner, generator, contextReader, localePreferenceReader, replay, logger } =
       this.#dependencies;
     const { userId, text, source, idempotencyKey } = input;

@@ -15,7 +15,7 @@ import { AI_DATA_SHARING_CONSENT_DECISION_READER } from "../generation/applicati
 import { AI_CLIENT_APP_VERSION_READER } from "../generation/application/ports/client-app-version.reader.port.js";
 import { USER_LOCALE_PREFERENCE_READER } from "../generation/application/ports/user-locale-preference.reader.port.js";
 import { LatestClientAppVersionAdapter } from "../generation/infrastructure/adapters/latest-client-app-version.adapter.js";
-import { UserLocalePreferenceReader } from "../generation/infrastructure/adapters/user-locale-preference-reader.adapter.js";
+import { UserLocalePreferenceReaderAdapter } from "../generation/infrastructure/adapters/user-locale-preference-reader.adapter.js";
 import { AI_PARSING_PROVIDERS } from "./ai-assistance-parsing.providers.js";
 import { UPCOMING_TODO_READER } from "./application/ports/upcoming-todo.reader.port.js";
 import { USER_CATEGORY_READER } from "./application/ports/user-category.reader.port.js";
@@ -45,7 +45,7 @@ import { AiController } from "./presentation/http/v1/ai.controller.js";
     },
     { provide: AI_CLIENT_APP_VERSION_READER, useClass: LatestClientAppVersionAdapter },
     { provide: USER_CATEGORY_READER, useClass: TodoCategoryReaderAdapter },
-    { provide: USER_LOCALE_PREFERENCE_READER, useClass: UserLocalePreferenceReader },
+    { provide: USER_LOCALE_PREFERENCE_READER, useClass: UserLocalePreferenceReaderAdapter },
     { provide: UPCOMING_TODO_READER, useClass: UpcomingTodoReaderAdapter },
     ...AI_PARSING_PROVIDERS,
   ],

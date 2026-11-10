@@ -30,7 +30,7 @@ interface ChargedPlanRunnerDependencies {
 }
 
 /** 돈이 드는 계획 생성의 사용량 흐름: 호출 전 예약 → 결과에 따라 확정·환불. 같은 키는 몇 번을 보내도 한 번만 차감한다. */
-export class ChargedPlanRunner {
+export class QuotaChargedPlanRunnerAdapter {
   readonly #dependencies: ChargedPlanRunnerDependencies;
 
   constructor(dependencies: ChargedPlanRunnerDependencies) {

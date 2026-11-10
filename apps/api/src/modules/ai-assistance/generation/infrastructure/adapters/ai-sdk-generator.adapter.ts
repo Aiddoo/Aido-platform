@@ -43,7 +43,7 @@ import {
   readFailedUsage,
   withoutRetryOnBillingFailure,
 } from "./ai-sdk-failure.mapper.js";
-import { AiSpendBudget } from "./ai-spend-budget.adapter.js";
+import { AiSpendBudgetAdapter } from "./ai-spend-budget.adapter.js";
 
 /** 사람이 키·요청을 확인해야 하는 실패. 다음 업체로 넘기면서 error로 남긴다. */
 const OPERATOR_FAILURES: ReadonlySet<AiFailureKind> = new Set(["AUTH", "BAD_REQUEST"]);
@@ -98,21 +98,21 @@ interface ChainContext {
  * 기다린 뒤 넘긴다. 끝나면 이번 요청의 추정 비용을 예산에 한 번 더한다.
  */
 @Injectable()
-export class AiSdkGenerator implements AiGeneratorPort {
-  readonly #logger = new Logger(AiSdkGenerator.name);
+export class AiSdkGeneratorAdapter implements AiGeneratorPort {
+  readonly #logger = new Logger(AiSdkGeneratorAdapter.name);
   readonly #adapters: ReadonlyMap<AiProviderId, AiProviderAdapter>;
   readonly #providerPolicies: ReadonlyMap<AiProviderId, OutboundPolicy>;
   readonly #classPolicies: Readonly<Record<AiTaskClass, OutboundPolicy>>;
   readonly #inflight = new Map<string, Promise<AiGenerationResult<unknown>>>();
 
   readonly #config: TypedConfigService;
-  readonly #spend: AiSpendBudget;
+  readonly #spend: AiSpendBudgetAdapter;
 
   constructor(
     config: TypedConfigService,
     @Inject(AI_PROVIDER_ADAPTERS) adapters: readonly AiProviderAdapter[],
     policies: OutboundPolicyRegistry,
-    spend: AiSpendBudget,
+    spend: AiSpendBudgetAdapter,
   ) {
     this.#config = config;
     this.#spend = spend;

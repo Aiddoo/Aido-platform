@@ -16,9 +16,9 @@ import {
   SWAGGER_TAGS,
 } from "#api/platform/http/swagger/index";
 
-import { GetPendingSuggestions } from "../../../application/use-cases/get-pending-suggestions.use-case.js";
-import { HandleSuggestionAction } from "../../../application/use-cases/handle-suggestion-action.use-case.js";
-import { AiSuggestionMapper } from "./ai-suggestion-response.mapper.js";
+import { HandleSuggestionActionUseCase } from "../../../application/use-cases/handle-suggestion-action.use-case.js";
+import { ListPendingSuggestionsUseCase } from "../../../application/use-cases/list-pending-suggestions.use-case.js";
+import { AiSuggestionResponseMapper } from "./ai-suggestion-response.mapper.js";
 import {
   SuggestionActionDto,
   SuggestionActionResponseDto,
@@ -68,12 +68,12 @@ import {
 @ApiBearerAuth()
 @Controller("ai/suggestions")
 export class AiSuggestionController {
-  readonly #getPendingSuggestionsUseCase: GetPendingSuggestions;
-  readonly #handleSuggestionActionUseCase: HandleSuggestionAction;
+  readonly #getPendingSuggestionsUseCase: ListPendingSuggestionsUseCase;
+  readonly #handleSuggestionActionUseCase: HandleSuggestionActionUseCase;
 
   constructor(
-    getPendingSuggestionsUseCase: GetPendingSuggestions,
-    handleSuggestionActionUseCase: HandleSuggestionAction,
+    getPendingSuggestionsUseCase: ListPendingSuggestionsUseCase,
+    handleSuggestionActionUseCase: HandleSuggestionActionUseCase,
   ) {
     this.#getPendingSuggestionsUseCase = getPendingSuggestionsUseCase;
     this.#handleSuggestionActionUseCase = handleSuggestionActionUseCase;
@@ -227,7 +227,7 @@ export class AiSuggestionController {
   ): Promise<SuggestionListResponseDto> {
     const suggestions = await this.#getPendingSuggestionsUseCase.execute(user.userId);
 
-    return { suggestions: AiSuggestionMapper.toManyResponse(suggestions) };
+    return { suggestions: AiSuggestionResponseMapper.toManyResponse(suggestions) };
   }
 
   @Patch(":id")
@@ -282,6 +282,6 @@ export class AiSuggestionController {
       timezone: tz,
     });
 
-    return AiSuggestionMapper.toActionResponse(result);
+    return AiSuggestionResponseMapper.toActionResponse(result);
   }
 }

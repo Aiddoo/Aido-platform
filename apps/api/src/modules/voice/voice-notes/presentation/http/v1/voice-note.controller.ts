@@ -37,7 +37,7 @@ import {
   VoiceNoteDigestRequestDto,
   VoiceNoteDigestResponseDto,
 } from "../../../../action-plans/presentation/http/v1/action-plan.dto.js";
-import { DigestVoiceNote } from "../../../application/use-cases/digest-voice-note.use-case.js";
+import { DigestVoiceNoteUseCase } from "../../../application/use-cases/digest-voice-note.use-case.js";
 
 export const VOICE_NOTE_THROTTLE = {
   MINUTE: { default: { ttl: 60_000, limit: 4 } },
@@ -50,9 +50,9 @@ const { maxCharacters } = PLAN_CATALOG.VOICE_NOTE.perUse;
 @ApiBearerAuth()
 @Controller("voice-notes")
 export class VoiceNoteController {
-  readonly #digestVoiceNote: DigestVoiceNote;
+  readonly #digestVoiceNote: DigestVoiceNoteUseCase;
 
-  constructor(digestVoiceNote: DigestVoiceNote) {
+  constructor(digestVoiceNote: DigestVoiceNoteUseCase) {
     this.#digestVoiceNote = digestVoiceNote;
   }
 

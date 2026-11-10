@@ -1,12 +1,12 @@
 import { mock } from "vitest-mock-extended";
 
-import { ActionPlanGenerator } from "#api/modules/ai-assistance/planning/infrastructure/adapters/ai-action-plan-generator.adapter";
+import { AiActionPlanGeneratorAdapter } from "#api/modules/ai-assistance/planning/infrastructure/adapters/ai-action-plan-generator.adapter";
 import type { PlanResultReplayPort } from "#api/modules/voice/action-plans/application/ports/plan-result-replay.port";
 import type {
   PlanningContext,
   PlanningContextReaderPort,
 } from "#api/modules/voice/action-plans/application/ports/planning-context.reader.port";
-import { ChargedPlanRunner } from "#api/modules/voice/action-plans/infrastructure/adapters/quota-charged-plan-runner.adapter";
+import { QuotaChargedPlanRunnerAdapter } from "#api/modules/voice/action-plans/infrastructure/adapters/quota-charged-plan-runner.adapter";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { FakeAiGenerator } from "#test/mocks/fake-ai.generator";
 
@@ -80,14 +80,14 @@ export function createPlanFlowFixture(
     reopen: ledgerFixture.ledger.reopen.bind(ledgerFixture.ledger),
     read: ledgerFixture.ledger.read.bind(ledgerFixture.ledger),
   };
-  const generator = new ActionPlanGenerator({
+  const generator = new AiActionPlanGeneratorAdapter({
     generator: aiGenerator,
     consentReader: {
       findAiDataSharingConsent: async () => ({ decision: "AGREED", agreedVersion: "2026-11-04" }),
     },
     logger,
   });
-  const runner = new ChargedPlanRunner({ quota, logger });
+  const runner = new QuotaChargedPlanRunnerAdapter({ quota, logger });
   const localePreferenceReader = {
     read: async () => ({ timezone: "Asia/Seoul", locale: "ko" as const }),
   };

@@ -6,7 +6,7 @@ import type { ApplicationLoggerPort } from "#api/shared/application/ports/applic
 
 import type { Suggestion } from "../../domain/suggestion.aggregate.js";
 import { AiSuggestionLogEvent } from "../ai-suggestion.log-events.js";
-import { type AiSuggestionRepositoryPort } from "../ports/suggestion.repository.port.js";
+import { type SuggestionRepositoryPort } from "../ports/suggestion.repository.port.js";
 
 /**
  * 대기 중인 제안 목록 조회 use-case.
@@ -14,12 +14,12 @@ import { type AiSuggestionRepositoryPort } from "../ports/suggestion.repository.
  * 프리미엄 접근을 강제한 뒤 PENDING·미만료 제안을 조회한다.
  */
 interface GetPendingSuggestionsDependencies {
-  readonly repository: Pick<AiSuggestionRepositoryPort, "findPendingByUserId">;
+  readonly repository: Pick<SuggestionRepositoryPort, "findPendingByUserId">;
   readonly entitlementReader: Pick<EntitlementReaderPort, "can">;
   readonly logger: Pick<ApplicationLoggerPort, "warn">;
 }
 
-export class GetPendingSuggestions {
+export class ListPendingSuggestionsUseCase {
   readonly #dependencies: GetPendingSuggestionsDependencies;
 
   constructor(dependencies: GetPendingSuggestionsDependencies) {

@@ -29,8 +29,8 @@ import {
 import { resolveSuggestedCategoryId } from "../../domain/category-resolver.domain-service.js";
 import { AiSuggestionLogEvent } from "../ai-suggestion.log-events.js";
 import { suggestionPrompt } from "../messages/suggestion-prompt.messages.js";
-import { type AiSuggestionRepositoryPort } from "../ports/suggestion.repository.port.js";
-import type { SuggestionContextBuilder } from "../suggestion-context.reader.js";
+import { type SuggestionRepositoryPort } from "../ports/suggestion.repository.port.js";
+import type { SuggestionContextReader } from "../suggestion-context.reader.js";
 
 /**
  * 사용자의 최근 할 일을 분석하여 반복 제안을 생성하는 use-case.
@@ -41,20 +41,20 @@ import type { SuggestionContextBuilder } from "../suggestion-context.reader.js";
  */
 interface AnalyzeAndCreateSuggestionsDependencies {
   readonly repository: Pick<
-    AiSuggestionRepositoryPort,
+    SuggestionRepositoryPort,
     "deletePending" | "deleteExpired" | "createMany"
   >;
   readonly generator: Pick<AiGeneratorPort, "generate">;
   readonly aiDataSharingConsent: ScheduledAiConsentReaders["aiDataSharingConsent"];
   readonly clientAppVersion: ScheduledAiConsentReaders["clientAppVersion"];
   readonly unitOfWork: Pick<UnitOfWorkPort, "run">;
-  readonly contextBuilder: Pick<SuggestionContextBuilder, "build">;
+  readonly contextBuilder: Pick<SuggestionContextReader, "build">;
   readonly logger: Pick<ApplicationLoggerPort, "debug" | "log" | "warn">;
   readonly entitlementReader: Pick<EntitlementReaderPort, "canInTx">;
   readonly userMutationLock: Pick<UserMutationLockPort, "lockById">;
 }
 
-export class AnalyzeAndCreateSuggestions {
+export class AnalyzeAndCreateSuggestionsUseCase {
   readonly #dependencies: AnalyzeAndCreateSuggestionsDependencies;
 
   constructor(dependencies: AnalyzeAndCreateSuggestionsDependencies) {

@@ -51,8 +51,8 @@ interface GlobalSnapshot {
  * 진행 중인 호출은 끝난 뒤에 더해지므로 상한은 그만큼 넘을 수 있다. 계량 오류는 생성을 막지 않는다.
  */
 @Injectable()
-export class AiSpendBudget implements OnModuleInit {
-  readonly #logger = new Logger(AiSpendBudget.name);
+export class AiSpendBudgetAdapter implements OnModuleInit {
+  readonly #logger = new Logger(AiSpendBudgetAdapter.name);
   #global: GlobalSnapshot | null = null;
   /** #usersDay 하루의 사용자별 비용 */
   readonly #users = new Map<string, number>();

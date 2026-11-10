@@ -36,8 +36,8 @@ const HOURLY_DISPATCH_CRON = "5 * * * *";
 const DISPATCH_CRON_TZ = "UTC";
 
 @Injectable()
-export class ReportGenerationJob implements OnModuleInit {
-  readonly #logger = new Logger(ReportGenerationJob.name);
+export class ReportGenerationScheduler implements OnModuleInit {
+  readonly #logger = new Logger(ReportGenerationScheduler.name);
 
   readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
   readonly #runtime: JobRuntimePort;

@@ -3,7 +3,7 @@ import { PLAN_CATALOG } from "@aido/api/vocabulary";
 import { createAiParsingFixture } from "#test/fixtures/ai-parsing.fixture";
 import { createAiGenerationError } from "#test/mocks/fake-ai.generator";
 
-import { ParseTodo, type ParseTodoInput } from "./parse-todo.use-case.js";
+import { ParseTodoUseCase, type ParseTodoCommand } from "./parse-todo.use-case.js";
 
 const FREE_AI_LIMIT = PLAN_CATALOG.AI_PARSE.free;
 
@@ -17,8 +17,8 @@ function createFixture() {
     date: { kind: "OFFSET_DAYS", amount: 1 },
     categoryId: 7,
   });
-  const useCase = new ParseTodo(fixture);
-  const input: ParseTodoInput = {
+  const useCase = new ParseTodoUseCase(fixture);
+  const input: ParseTodoCommand = {
     userId: fixture.userId,
     text: "내일 오후 3시 팀 미팅",
     timezone: "Asia/Seoul",
@@ -28,7 +28,7 @@ function createFixture() {
   return { ...fixture, useCase, input };
 }
 
-describe("ParseTodo", () => {
+describe("ParseTodoUseCase", () => {
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(NOW);

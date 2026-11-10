@@ -27,7 +27,7 @@ interface GetReportStatusDependencies {
   readonly localePreferenceReader: Pick<UserLocalePreferenceReaderPort, "read">;
 }
 
-export class GetReportStatus {
+export class GetReportStatusUseCase {
   readonly #dependencies: GetReportStatusDependencies;
 
   constructor(dependencies: GetReportStatusDependencies) {

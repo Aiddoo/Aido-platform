@@ -11,17 +11,17 @@ import { AiAssistanceParsingModule } from "../parsing/ai-assistance-parsing.modu
 import { AiAssistanceReportsModule } from "../reports/ai-assistance-reports.module.js";
 import {
   analyzeAndCreateSuggestionsProvider,
-  getPendingSuggestionsProvider,
+  listPendingSuggestionsProvider,
   handleSuggestionActionProvider,
-  suggestionContextBuilderProvider,
+  suggestionContextReaderProvider,
 } from "./ai-assistance-suggestions-application.providers.js";
-import { AI_SUGGESTION_REPOSITORY } from "./application/ports/suggestion.repository.port.js";
+import { SUGGESTION_REPOSITORY } from "./application/ports/suggestion.repository.port.js";
 import { WEEKLY_REPORT_READER } from "./application/ports/weekly-report.reader.port.js";
 import { WeeklyReportReaderAdapter } from "./infrastructure/adapters/weekly-report-reader.adapter.js";
 import { AiSuggestionQueueMaintenanceService } from "./infrastructure/jobs/ai-suggestion-queue-maintenance.scheduler.js";
 import { SuggestionAnalysisProcessor } from "./infrastructure/jobs/suggestion-analysis.processor.js";
-import { SuggestionAnalysisJob } from "./infrastructure/jobs/suggestion-analysis.scheduler.js";
-import { DrizzleAiSuggestionRepository } from "./infrastructure/persistence/drizzle-suggestion.repository.js";
+import { SuggestionAnalysisScheduler } from "./infrastructure/jobs/suggestion-analysis.scheduler.js";
+import { DrizzleSuggestionRepository } from "./infrastructure/persistence/drizzle-suggestion.repository.js";
 import { AiSuggestionController } from "./presentation/http/v1/ai-suggestion.controller.js";
 
 /**
@@ -56,15 +56,15 @@ import { AiSuggestionController } from "./presentation/http/v1/ai-suggestion.con
   controllers: [AiSuggestionController],
   providers: [
     {
-      provide: AI_SUGGESTION_REPOSITORY,
-      useClass: DrizzleAiSuggestionRepository,
+      provide: SUGGESTION_REPOSITORY,
+      useClass: DrizzleSuggestionRepository,
     },
     { provide: WEEKLY_REPORT_READER, useClass: WeeklyReportReaderAdapter },
-    suggestionContextBuilderProvider,
-    getPendingSuggestionsProvider,
+    suggestionContextReaderProvider,
+    listPendingSuggestionsProvider,
     handleSuggestionActionProvider,
     analyzeAndCreateSuggestionsProvider,
-    SuggestionAnalysisJob,
+    SuggestionAnalysisScheduler,
     SuggestionAnalysisProcessor,
     AiSuggestionQueueMaintenanceService,
   ],

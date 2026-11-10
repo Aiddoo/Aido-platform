@@ -3,11 +3,11 @@ import { omit } from "es-toolkit";
 import { GOLDEN_VARIANTS, loadParseTodoGoldenCases } from "#test/fixtures/ai-golden/golden-cases";
 import { createAiParsingFixture } from "#test/fixtures/ai-parsing.fixture";
 
-import { ParseTodo } from "./parse-todo.use-case.js";
+import { ParseTodoUseCase } from "./parse-todo.use-case.js";
 
 const cases = GOLDEN_VARIANTS.flatMap((variant) => loadParseTodoGoldenCases(variant));
 
-describe("ParseTodo golden — fake model이 draft를 내면 공개 응답이 기대값과 같다", () => {
+describe("ParseTodoUseCase golden — fake model이 draft를 내면 공개 응답이 기대값과 같다", () => {
   afterEach(() => {
     vi.useRealTimers();
   });
@@ -18,7 +18,7 @@ describe("ParseTodo golden — fake model이 draft를 내면 공개 응답이 �
     vi.setSystemTime(new Date(golden.now));
     const fixture = createAiParsingFixture();
     fixture.generator.setRawResponse(golden.draft);
-    const useCase = new ParseTodo(fixture);
+    const useCase = new ParseTodoUseCase(fixture);
     // When
     const result = await useCase.execute({
       userId: fixture.userId,

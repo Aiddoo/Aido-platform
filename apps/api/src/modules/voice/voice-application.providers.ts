@@ -23,29 +23,32 @@ import {
   VOICE_NOTE_DIGEST_RESULT_REPLAY,
 } from "./action-plans/application/ports/plan-result-replay.port.js";
 import { PLANNING_CONTEXT_READER } from "./action-plans/application/ports/planning-context.reader.port.js";
-import { ApplyActionPlan } from "./action-plans/application/use-cases/apply-action-plan.use-case.js";
-import { CreateQuickPlan } from "./action-plans/application/use-cases/create-quick-plan.use-case.js";
-import { PurgePlanApplications } from "./action-plans/application/use-cases/purge-plan-applications.use-case.js";
-import { ChargedPlanRunner } from "./action-plans/infrastructure/adapters/quota-charged-plan-runner.adapter.js";
-import { DigestVoiceNote } from "./voice-notes/application/use-cases/digest-voice-note.use-case.js";
+import { ApplyActionPlanUseCase } from "./action-plans/application/use-cases/apply-action-plan.use-case.js";
+import { CreateQuickPlanUseCase } from "./action-plans/application/use-cases/create-quick-plan.use-case.js";
+import { PurgePlanApplicationsUseCase } from "./action-plans/application/use-cases/purge-plan-applications.use-case.js";
+import { QuotaChargedPlanRunnerAdapter } from "./action-plans/infrastructure/adapters/quota-charged-plan-runner.adapter.js";
+import { DigestVoiceNoteUseCase } from "./voice-notes/application/use-cases/digest-voice-note.use-case.js";
 
-type RunnerDependencies = ConstructorParameters<typeof ChargedPlanRunner>[0];
-type QuickPlanDependencies = ConstructorParameters<typeof CreateQuickPlan>[0];
-type DigestDependencies = ConstructorParameters<typeof DigestVoiceNote>[0];
-type ApplyDependencies = ConstructorParameters<typeof ApplyActionPlan>[0];
-type PurgeDependencies = ConstructorParameters<typeof PurgePlanApplications>[0];
+type RunnerDependencies = ConstructorParameters<typeof QuotaChargedPlanRunnerAdapter>[0];
+type QuickPlanDependencies = ConstructorParameters<typeof CreateQuickPlanUseCase>[0];
+type DigestDependencies = ConstructorParameters<typeof DigestVoiceNoteUseCase>[0];
+type ApplyDependencies = ConstructorParameters<typeof ApplyActionPlanUseCase>[0];
+type PurgeDependencies = ConstructorParameters<typeof PurgePlanApplicationsUseCase>[0];
 
-export const chargedPlanRunnerProvider: FactoryProvider<ChargedPlanRunner> = {
-  provide: ChargedPlanRunner,
+export const chargedPlanRunnerProvider: FactoryProvider<QuotaChargedPlanRunnerAdapter> = {
+  provide: QuotaChargedPlanRunnerAdapter,
   inject: [QUOTA_LEDGER],
   useFactory: (quota: RunnerDependencies["quota"]) =>
-    new ChargedPlanRunner({ quota, logger: new Logger(ChargedPlanRunner.name) }),
+    new QuotaChargedPlanRunnerAdapter({
+      quota,
+      logger: new Logger(QuotaChargedPlanRunnerAdapter.name),
+    }),
 };
 
-export const createQuickPlanProvider: FactoryProvider<CreateQuickPlan> = {
-  provide: CreateQuickPlan,
+export const createQuickPlanProvider: FactoryProvider<CreateQuickPlanUseCase> = {
+  provide: CreateQuickPlanUseCase,
   inject: [
-    ChargedPlanRunner,
+    QuotaChargedPlanRunnerAdapter,
     ACTION_PLAN_GENERATOR,
     PLANNING_CONTEXT_READER,
     USER_LOCALE_PREFERENCE_READER,
@@ -58,20 +61,20 @@ export const createQuickPlanProvider: FactoryProvider<CreateQuickPlan> = {
     localePreferenceReader: QuickPlanDependencies["localePreferenceReader"],
     replay: QuickPlanDependencies["replay"],
   ) =>
-    new CreateQuickPlan({
+    new CreateQuickPlanUseCase({
       runner,
       generator,
       contextReader,
       localePreferenceReader,
       replay,
-      logger: new Logger(CreateQuickPlan.name),
+      logger: new Logger(CreateQuickPlanUseCase.name),
     }),
 };
 
-export const digestVoiceNoteProvider: FactoryProvider<DigestVoiceNote> = {
-  provide: DigestVoiceNote,
+export const digestVoiceNoteProvider: FactoryProvider<DigestVoiceNoteUseCase> = {
+  provide: DigestVoiceNoteUseCase,
   inject: [
-    ChargedPlanRunner,
+    QuotaChargedPlanRunnerAdapter,
     QUOTA_LEDGER,
     ACTION_PLAN_GENERATOR,
     PLANNING_CONTEXT_READER,
@@ -86,19 +89,19 @@ export const digestVoiceNoteProvider: FactoryProvider<DigestVoiceNote> = {
     localePreferenceReader: DigestDependencies["localePreferenceReader"],
     replay: DigestDependencies["replay"],
   ) =>
-    new DigestVoiceNote({
+    new DigestVoiceNoteUseCase({
       runner,
       quota,
       generator,
       contextReader,
       localePreferenceReader,
       replay,
-      logger: new Logger(DigestVoiceNote.name),
+      logger: new Logger(DigestVoiceNoteUseCase.name),
     }),
 };
 
-export const applyActionPlanProvider: FactoryProvider<ApplyActionPlan> = {
-  provide: ApplyActionPlan,
+export const applyActionPlanProvider: FactoryProvider<ApplyActionPlanUseCase> = {
+  provide: ApplyActionPlanUseCase,
   inject: [
     UNIT_OF_WORK,
     MUTATION_LOCK,
@@ -119,7 +122,7 @@ export const applyActionPlanProvider: FactoryProvider<ApplyActionPlan> = {
     memoWriter: ApplyDependencies["memoWriter"],
     todoPlanReader: TodoPlanReaderPort,
   ) =>
-    new ApplyActionPlan({
+    new ApplyActionPlanUseCase({
       unitOfWork,
       mutationLock,
       afterCommit,
@@ -137,13 +140,16 @@ export const applyActionPlanProvider: FactoryProvider<ApplyActionPlan> = {
         findManyByIds: async (userId, ids) =>
           (await todoPlanReader.findManyByIds(userId, ids)).map(toTodoResponse),
       },
-      logger: new Logger(ApplyActionPlan.name),
+      logger: new Logger(ApplyActionPlanUseCase.name),
     }),
 };
 
-export const purgePlanApplicationsProvider: FactoryProvider<PurgePlanApplications> = {
-  provide: PurgePlanApplications,
+export const purgePlanApplicationsProvider: FactoryProvider<PurgePlanApplicationsUseCase> = {
+  provide: PurgePlanApplicationsUseCase,
   inject: [PLAN_APPLICATION_REPOSITORY],
   useFactory: (repository: PurgeDependencies["repository"]) =>
-    new PurgePlanApplications({ repository, logger: new Logger(PurgePlanApplications.name) }),
+    new PurgePlanApplicationsUseCase({
+      repository,
+      logger: new Logger(PurgePlanApplicationsUseCase.name),
+    }),
 };

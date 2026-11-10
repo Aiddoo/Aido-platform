@@ -15,7 +15,7 @@ import { createAiGenerationError } from "#test/mocks/fake-ai.generator";
 const SEOUL_GRID = { gridX: 60, gridY: 127, lat: 37.5, lon: 127 };
 
 // 고정 기록: "책 읽기 10분"(독서, 카테고리 7)을 2026-03-02·09·16(월) 세 번 완료
-describe("AnalyzeAndCreateSuggestions", () => {
+describe("AnalyzeAndCreateSuggestionsUseCase", () => {
   it.each(["USER", "ADMIN"])(
     "활성 %s의 실제 근거 제안은 pending을 교체하고 응답 이력을 유지한다",
     (role) =>

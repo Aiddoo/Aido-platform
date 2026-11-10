@@ -7,8 +7,8 @@ import {
   AI_PROVIDER_ADAPTERS,
   type AiProviderAdapter,
 } from "./infrastructure/adapters/ai-provider.adapter.js";
-import { AiSdkGenerator } from "./infrastructure/adapters/ai-sdk-generator.adapter.js";
-import { AiSpendBudget } from "./infrastructure/adapters/ai-spend-budget.adapter.js";
+import { AiSdkGeneratorAdapter } from "./infrastructure/adapters/ai-sdk-generator.adapter.js";
+import { AiSpendBudgetAdapter } from "./infrastructure/adapters/ai-spend-budget.adapter.js";
 import { AnthropicProviderAdapter } from "./infrastructure/adapters/anthropic-provider.adapter.js";
 import { GoogleProviderAdapter } from "./infrastructure/adapters/google-provider.adapter.js";
 import { OpenAiProviderAdapter } from "./infrastructure/adapters/openai-provider.adapter.js";
@@ -30,8 +30,8 @@ const providerAdaptersProvider: FactoryProvider<readonly AiProviderAdapter[]> = 
     GoogleProviderAdapter,
     OpenAiProviderAdapter,
     providerAdaptersProvider,
-    AiSpendBudget,
-    { provide: AI_GENERATOR, useClass: AiSdkGenerator },
+    AiSpendBudgetAdapter,
+    { provide: AI_GENERATOR, useClass: AiSdkGeneratorAdapter },
   ],
   exports: [AI_GENERATOR],
 })

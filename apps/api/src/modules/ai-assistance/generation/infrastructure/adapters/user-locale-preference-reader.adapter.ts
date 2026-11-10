@@ -13,7 +13,7 @@ import type {
 } from "../../application/ports/user-locale-preference.reader.port.js";
 
 @Injectable()
-export class UserLocalePreferenceReader implements UserLocalePreferenceReaderPort {
+export class UserLocalePreferenceReaderAdapter implements UserLocalePreferenceReaderPort {
   readonly #preferenceReader: Pick<UserPreferenceReaderPort, "read">;
 
   constructor(

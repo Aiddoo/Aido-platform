@@ -12,7 +12,7 @@ import {
 } from "#test/fixtures/voice-plan.fixture";
 import { createAiGenerationError } from "#test/mocks/fake-ai.generator";
 
-import { CreateQuickPlan, type QuickPlanResult } from "./create-quick-plan.use-case.js";
+import { CreateQuickPlanUseCase, type QuickPlanResult } from "./create-quick-plan.use-case.js";
 
 const FREE_LIMIT = PLAN_CATALOG.AI_PARSE.free;
 const FAIR_USE_LIMIT = PLAN_CATALOG.AI_PARSE.fairUse.premium;
@@ -21,7 +21,7 @@ const NEXT_MONTH = new Date("2026-06-01T00:00:00.000Z");
 function setup(ledgerInput: Parameters<typeof createPlanFlowFixture>[0] = {}) {
   const fixture = createPlanFlowFixture(ledgerInput);
   const replay = new InMemoryPlanResultReplay<QuickPlanResult>();
-  const useCase = new CreateQuickPlan({
+  const useCase = new CreateQuickPlanUseCase({
     runner: fixture.runner,
     generator: fixture.generator,
     contextReader: stubPlanningContextReader({
@@ -48,7 +48,7 @@ function setup(ledgerInput: Parameters<typeof createPlanFlowFixture>[0] = {}) {
   return { ...fixture, replay, execute, used };
 }
 
-describe("CreateQuickPlan", () => {
+describe("CreateQuickPlanUseCase", () => {
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(QUOTA_LEDGER_TIME);

@@ -12,7 +12,7 @@ import {
 } from "../../application/messages/planning-context.constants.js";
 import { quickPlanPrompt } from "../../application/messages/quick-plan-prompt.messages.js";
 import { voiceNoteDigestPrompt } from "../../application/messages/voice-note-digest-prompt.messages.js";
-import { ActionPlanGenerator } from "./ai-action-plan-generator.adapter.js";
+import { AiActionPlanGeneratorAdapter } from "./ai-action-plan-generator.adapter.js";
 
 const consentReader = {
   findAiDataSharingConsent: async () => ({
@@ -46,11 +46,11 @@ function setup() {
   return {
     aiGenerator,
     logger,
-    generator: new ActionPlanGenerator({ generator: aiGenerator, consentReader, logger }),
+    generator: new AiActionPlanGeneratorAdapter({ generator: aiGenerator, consentReader, logger }),
   };
 }
 
-describe("ActionPlanGenerator", () => {
+describe("AiActionPlanGeneratorAdapter", () => {
   it("일정 표현을 날짜·반복으로 계산하고 모르는 카테고리는 null로 바꾼다", async () => {
     // Given
     const { aiGenerator, generator } = setup();
