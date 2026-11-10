@@ -2,10 +2,10 @@ import { sql } from "drizzle-orm";
 import { vi } from "vitest";
 import { z } from "zod";
 
-import { PurgeDeletedAccounts } from "#api/modules/identity/application/use-cases/auth/purge-deleted-accounts.use-case";
-import { IdentityUser } from "#api/modules/identity/domain/aggregates/auth/identity-user.aggregate";
-import { DrizzleSecurityLogRepository } from "#api/modules/identity/infrastructure/persistence/auth/drizzle-security-log.repository";
-import { DrizzleUserRepository } from "#api/modules/identity/infrastructure/persistence/auth/drizzle-user.repository";
+import { PurgeDeletedAccounts } from "#api/modules/identity/auth/application/use-cases/purge-deleted-accounts.use-case";
+import { IdentityUser } from "#api/modules/identity/auth/domain/identity-user.aggregate";
+import { DrizzleSecurityLogRepository } from "#api/modules/identity/auth/infrastructure/persistence/drizzle-security-log.repository";
+import { DrizzleUserRepository } from "#api/modules/identity/auth/infrastructure/persistence/drizzle-user.repository";
 import { createEntityId } from "#api/platform/database/entity-id";
 import { securityLog, user as userTable } from "#api/platform/database/schema/index";
 import { UserFixture } from "#test/fixtures/index";

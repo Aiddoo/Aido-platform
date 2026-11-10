@@ -18,7 +18,7 @@ import {
 import {
   IdentityCacheKey,
   IDENTITY_CACHE_TTL_MS,
-} from "#api/modules/identity/infrastructure/cache/auth/identity-cache.keyspace";
+} from "#api/modules/identity/auth/infrastructure/cache/identity-cache.keyspace";
 import {
   FollowCacheKey,
   FOLLOW_CACHE_TTL_MS,

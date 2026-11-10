@@ -4,14 +4,14 @@ import { Inject, Injectable, Logger } from "@nestjs/common";
 import { PassportStrategy } from "@nestjs/passport";
 import { ExtractJwt, Strategy } from "passport-jwt";
 
-import { SessionService } from "#api/modules/identity/application/services/auth/session.service";
+import { SessionService } from "#api/modules/identity/auth/application/use-cases/create-session.use-case";
 import {
   JWT_ALGORITHM,
   type JwtPayload,
-} from "#api/modules/identity/infrastructure/adapters/auth/token.service";
-import { IdentityInfraLogEvent } from "#api/modules/identity/infrastructure/observability/auth/identity-infra-log.events";
-import { DrizzleSessionRepository } from "#api/modules/identity/infrastructure/persistence/auth/drizzle-session.repository";
-import { DrizzleUserRepository } from "#api/modules/identity/infrastructure/persistence/auth/drizzle-user.repository";
+} from "#api/modules/identity/auth/infrastructure/adapters/jwt-token-issuer.adapter";
+import { IdentityInfraLogEvent } from "#api/modules/identity/auth/infrastructure/auth-infra.log-events";
+import { DrizzleSessionRepository } from "#api/modules/identity/auth/infrastructure/persistence/drizzle-session.repository";
+import { DrizzleUserRepository } from "#api/modules/identity/auth/infrastructure/persistence/drizzle-user.repository";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { ApplicationException } from "#api/shared/application/application.exception";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
@@ -21,7 +21,7 @@ import {
   AUTH_CACHE,
   type AuthCachePort,
   type AuthCachedSession,
-} from "../../../application/ports/auth/auth-collaboration.port.js";
+} from "../../../auth/application/ports/auth-collaboration.port.js";
 
 /**
  * JWT Access Token Strategy

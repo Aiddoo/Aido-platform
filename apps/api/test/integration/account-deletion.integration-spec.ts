@@ -10,36 +10,40 @@ import {
   ACCOUNT_NOTIFICATION_CLEANUP,
   ACCOUNT_TODO_COMMENT_CLEANUP,
   ACCOUNT_USAGE_CLEANUP,
-} from "#api/modules/identity/application/ports/auth/account-cleanup.port";
+} from "#api/modules/identity/auth/application/ports/account-cleanup.port";
 import {
-  AUTH_ACCOUNT_REPOSITORY,
   AUTH_CACHE,
   AUTH_EMAIL_SENDER,
-  AUTH_LOGIN_ATTEMPT_REPOSITORY,
-  AUTH_PASSWORD_HASHER,
   AUTH_REGISTRATION_NOTIFIER,
+} from "#api/modules/identity/auth/application/ports/auth-collaboration.port";
+import {
+  AUTH_PASSWORD_HASHER,
+  AUTH_TOKEN_ISSUER,
+} from "#api/modules/identity/auth/application/ports/auth-crypto.port";
+import {
+  AUTH_ACCOUNT_REPOSITORY,
+  AUTH_LOGIN_ATTEMPT_REPOSITORY,
   AUTH_SECURITY_LOG_REPOSITORY,
   AUTH_SESSION_REPOSITORY,
-  AUTH_TOKEN_ISSUER,
   AUTH_USER_REPOSITORY,
   AUTH_VERIFICATION_REPOSITORY,
-} from "#api/modules/identity/application/ports/auth/index";
-import { VERIFICATION_CODE_SECURITY } from "#api/modules/identity/application/ports/auth/verification-code-security.port";
-import { DeleteAccount } from "#api/modules/identity/application/use-cases/auth/delete-account.use-case";
-import { LoginWithPassword } from "#api/modules/identity/application/use-cases/auth/login-with-password.use-case";
-import { PurgeDeletedAccounts } from "#api/modules/identity/application/use-cases/auth/purge-deleted-accounts.use-case";
-import { Register } from "#api/modules/identity/application/use-cases/auth/register.use-case";
-import { RequestPasswordReset } from "#api/modules/identity/application/use-cases/auth/request-password-reset.use-case";
-import { AuthCacheAdapter } from "#api/modules/identity/infrastructure/adapters/auth/auth-cache.adapter";
-import { NodeVerificationCodeSecurityAdapter } from "#api/modules/identity/infrastructure/adapters/auth/node-verification-code-security.adapter";
-import { PasswordService } from "#api/modules/identity/infrastructure/adapters/auth/password.service";
-import { TokenService } from "#api/modules/identity/infrastructure/adapters/auth/token.service";
-import { DrizzleAccountRepository } from "#api/modules/identity/infrastructure/persistence/auth/drizzle-account.repository";
-import { DrizzleLoginAttemptRepository } from "#api/modules/identity/infrastructure/persistence/auth/drizzle-login-attempt.repository";
-import { DrizzleSecurityLogRepository } from "#api/modules/identity/infrastructure/persistence/auth/drizzle-security-log.repository";
-import { DrizzleSessionRepository } from "#api/modules/identity/infrastructure/persistence/auth/drizzle-session.repository";
-import { DrizzleUserRepository } from "#api/modules/identity/infrastructure/persistence/auth/drizzle-user.repository";
-import { DrizzleVerificationRepository } from "#api/modules/identity/infrastructure/persistence/auth/drizzle-verification.repository";
+} from "#api/modules/identity/auth/application/ports/auth-persistence.port";
+import { VERIFICATION_CODE_SECURITY } from "#api/modules/identity/auth/application/ports/verification-code-security.port";
+import { DeleteAccount } from "#api/modules/identity/auth/application/use-cases/delete-account.use-case";
+import { LoginWithPassword } from "#api/modules/identity/auth/application/use-cases/login-with-password.use-case";
+import { PurgeDeletedAccounts } from "#api/modules/identity/auth/application/use-cases/purge-deleted-accounts.use-case";
+import { Register } from "#api/modules/identity/auth/application/use-cases/register.use-case";
+import { RequestPasswordReset } from "#api/modules/identity/auth/application/use-cases/request-password-reset.use-case";
+import { PasswordService } from "#api/modules/identity/auth/infrastructure/adapters/argon2-password-hasher.adapter";
+import { AuthCacheAdapter } from "#api/modules/identity/auth/infrastructure/adapters/auth-cache.adapter";
+import { TokenService } from "#api/modules/identity/auth/infrastructure/adapters/jwt-token-issuer.adapter";
+import { NodeVerificationCodeSecurityAdapter } from "#api/modules/identity/auth/infrastructure/adapters/node-verification-code-security.adapter";
+import { DrizzleAccountRepository } from "#api/modules/identity/auth/infrastructure/persistence/drizzle-account.repository";
+import { DrizzleLoginAttemptRepository } from "#api/modules/identity/auth/infrastructure/persistence/drizzle-login-attempt.repository";
+import { DrizzleSecurityLogRepository } from "#api/modules/identity/auth/infrastructure/persistence/drizzle-security-log.repository";
+import { DrizzleSessionRepository } from "#api/modules/identity/auth/infrastructure/persistence/drizzle-session.repository";
+import { DrizzleUserRepository } from "#api/modules/identity/auth/infrastructure/persistence/drizzle-user.repository";
+import { DrizzleVerificationRepository } from "#api/modules/identity/auth/infrastructure/persistence/drizzle-verification.repository";
 import { DrizzleUserConsentRepository } from "#api/modules/identity/infrastructure/persistence/settings/drizzle-user-consent.repository";
 import { DrizzleUserPreferenceRepository } from "#api/modules/identity/infrastructure/persistence/settings/drizzle-user-preference.repository";
 import { NotificationQueueService } from "#api/modules/notification/notification-delivery-jobs.public";
@@ -71,7 +75,7 @@ import {
   provisionUserProvider,
   sessionServiceProvider,
   verificationServiceProvider,
-} from "../../src/modules/identity/identity-auth-application.providers.js";
+} from "../../src/modules/identity/auth/identity-auth.providers.js";
 import { FakeEmailService } from "../mocks/fake-email.service.js";
 import { TestDatabase, type TestDatabaseClient } from "../setup/test-database.js";
 import { provisioningSeederTestProvider } from "./helpers/provisioning-seeder.provider.js";

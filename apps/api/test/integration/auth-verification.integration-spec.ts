@@ -2,12 +2,12 @@ import type { TestingModule } from "@nestjs/testing";
 import { sql } from "drizzle-orm";
 import { vi } from "vitest";
 
-import { VerificationService } from "#api/modules/identity/application/services/auth/verification.service";
-import { ResetPassword } from "#api/modules/identity/application/use-cases/auth/reset-password.use-case";
-import { NodeVerificationCodeSecurityAdapter } from "#api/modules/identity/infrastructure/adapters/auth/node-verification-code-security.adapter";
-import { PasswordService } from "#api/modules/identity/infrastructure/adapters/auth/password.service";
-import { DrizzleAccountRepository } from "#api/modules/identity/infrastructure/persistence/auth/drizzle-account.repository";
-import { DrizzleVerificationRepository } from "#api/modules/identity/infrastructure/persistence/auth/drizzle-verification.repository";
+import { VerificationService } from "#api/modules/identity/auth/application/use-cases/issue-verification-code.use-case";
+import { ResetPassword } from "#api/modules/identity/auth/application/use-cases/reset-password.use-case";
+import { PasswordService } from "#api/modules/identity/auth/infrastructure/adapters/argon2-password-hasher.adapter";
+import { NodeVerificationCodeSecurityAdapter } from "#api/modules/identity/auth/infrastructure/adapters/node-verification-code-security.adapter";
+import { DrizzleAccountRepository } from "#api/modules/identity/auth/infrastructure/persistence/drizzle-account.repository";
+import { DrizzleVerificationRepository } from "#api/modules/identity/auth/infrastructure/persistence/drizzle-verification.repository";
 import { createEntityId } from "#api/platform/database/entity-id";
 import { user as userTable, verification } from "#api/platform/database/schema/index";
 import { UNIT_OF_WORK, type UnitOfWorkPort } from "#api/shared/application/ports/index";

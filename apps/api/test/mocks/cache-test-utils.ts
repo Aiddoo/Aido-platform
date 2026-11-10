@@ -1,7 +1,7 @@
 import type { Mocked } from "vitest";
 import { mockDeep } from "vitest-mock-extended";
 
-import type { AuthCachedUserProfile } from "#api/modules/identity/application/ports/auth/auth-collaboration.port";
+import type { AuthCachedUserProfile } from "#api/modules/identity/auth/application/ports/auth-collaboration.port";
 import type { ICacheService } from "#api/platform/cache/interfaces/cache.interface";
 
 /**

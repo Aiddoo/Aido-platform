@@ -13,7 +13,7 @@ import { vi } from "vitest";
  * ```
  */
 
-import type { JwtPayload } from "#api/modules/identity/infrastructure/adapters/auth/token.service";
+import type { JwtPayload } from "#api/modules/identity/auth/infrastructure/adapters/jwt-token-issuer.adapter";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { ApplicationException } from "#api/shared/application/application.exception";
 import { authenticateBearer, signJwtWithAlgorithm } from "#test/fixtures/jwt-token.fixture";

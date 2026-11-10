@@ -2,7 +2,7 @@ import { sql } from "drizzle-orm";
 import { vi } from "vitest";
 import { z } from "zod";
 
-import { DrizzleSessionRepository } from "#api/modules/identity/infrastructure/persistence/auth/drizzle-session.repository";
+import { DrizzleSessionRepository } from "#api/modules/identity/auth/infrastructure/persistence/drizzle-session.repository";
 import { createEntityId } from "#api/platform/database/entity-id";
 import { session as sessionTable, user as userTable } from "#api/platform/database/schema/index";
 import { SessionFixture, UserFixture } from "#test/fixtures/index";

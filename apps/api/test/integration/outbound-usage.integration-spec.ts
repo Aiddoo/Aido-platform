@@ -1,6 +1,6 @@
 import { ACCOUNT_DELETION } from "@aido/api";
 
-import { PurgeDeletedAccounts } from "#api/modules/identity/application/use-cases/auth/purge-deleted-accounts.use-case";
+import { PurgeDeletedAccounts } from "#api/modules/identity/auth/application/use-cases/purge-deleted-accounts.use-case";
 import { createEntityId } from "#api/platform/database/entity-id";
 import { user as userTable } from "#api/platform/database/schema/index";
 import { DrizzleUsageMeterAdapter } from "#api/platform/metering/adapters/drizzle-usage-meter.adapter";

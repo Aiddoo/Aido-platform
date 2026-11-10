@@ -15,10 +15,10 @@ import { TestBed } from "@suites/unit";
 import { vi } from "vitest";
 import type { Mocked } from "vitest";
 
-import { SessionService } from "#api/modules/identity/application/services/auth/session.service";
-import type { JwtPayload } from "#api/modules/identity/infrastructure/adapters/auth/token.service";
-import { DrizzleSessionRepository } from "#api/modules/identity/infrastructure/persistence/auth/drizzle-session.repository";
-import { DrizzleUserRepository } from "#api/modules/identity/infrastructure/persistence/auth/drizzle-user.repository";
+import { SessionService } from "#api/modules/identity/auth/application/use-cases/create-session.use-case";
+import type { JwtPayload } from "#api/modules/identity/auth/infrastructure/adapters/jwt-token-issuer.adapter";
+import { DrizzleSessionRepository } from "#api/modules/identity/auth/infrastructure/persistence/drizzle-session.repository";
+import { DrizzleUserRepository } from "#api/modules/identity/auth/infrastructure/persistence/drizzle-user.repository";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { ApplicationException } from "#api/shared/application/application.exception";
 import { authenticateBearer, signJwtWithAlgorithm } from "#test/fixtures/jwt-token.fixture";
@@ -27,7 +27,7 @@ import { asDep, asMock } from "#test/mocks/index";
 import {
   AUTH_CACHE,
   type AuthCachePort,
-} from "../../../application/ports/auth/auth-collaboration.port.js";
+} from "../../../auth/application/ports/auth-collaboration.port.js";
 import { JwtStrategy } from "./jwt.strategy.js";
 
 describe("JwtStrategy — JWT 전략", () => {

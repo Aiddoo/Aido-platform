@@ -2,14 +2,14 @@ import type {
   AuthOAuthStateRecord,
   AuthOAuthStateRepositoryPort,
   ConsumeAuthOAuthStateInput,
-} from "#api/modules/identity/application/ports/auth/auth-persistence.port";
+} from "#api/modules/identity/auth/application/ports/auth-persistence.port";
 import type {
   GenerateAuthUrlParams,
   OAuthIdentityProvider,
   SocialLoginOptions,
   VerifiedProfile,
-} from "#api/modules/identity/application/ports/auth/oauth-identity-provider.port";
-import type { AccountProvider } from "#api/modules/identity/domain/types/auth/auth.types";
+} from "#api/modules/identity/auth/application/ports/oauth-identity-provider.port";
+import type { AccountProvider } from "#api/modules/identity/auth/domain/identity.constants";
 import { OAuthStateFixture } from "#test/fixtures/oauth-state.fixture";
 
 export class StubAuthOAuthStateRepository implements AuthOAuthStateRepositoryPort {

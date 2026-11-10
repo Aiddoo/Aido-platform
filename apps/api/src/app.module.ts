@@ -18,7 +18,7 @@ import {
   IdentityAuthModule,
   JwtAuthGuard,
   LastActiveInterceptor,
-} from "#api/modules/identity/identity-auth.public";
+} from "#api/modules/identity/auth/identity-auth.public";
 import {
   TimezoneSelfHealInterceptor,
   IdentitySettingsModule,

@@ -3,7 +3,7 @@ import { Logger } from "@nestjs/common";
 import { of } from "rxjs";
 import { vi, type MockInstance } from "vitest";
 
-import type { AuthUserActivityWriterPort } from "#api/modules/identity/application/ports/auth/auth-collaboration.port";
+import type { AuthUserActivityWriterPort } from "#api/modules/identity/auth/application/ports/auth-collaboration.port";
 import { createMockExecutionContext } from "#test/mocks/index";
 import { createRequestClientReader, runWithRequestHeaders } from "#test/mocks/request-client";
 

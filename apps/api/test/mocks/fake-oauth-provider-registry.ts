@@ -7,8 +7,8 @@ import type {
   OAuthIdentityProviderRegistry,
   SocialLoginOptions,
   VerifiedProfile,
-} from "#api/modules/identity/application/ports/auth/oauth-identity-provider.port";
-import type { AccountProvider } from "#api/modules/identity/domain/types/auth/auth.types";
+} from "#api/modules/identity/auth/application/ports/oauth-identity-provider.port";
+import type { AccountProvider } from "#api/modules/identity/auth/domain/identity.constants";
 import { ApplicationException } from "#api/shared/application/application.exception";
 
 function exchangeKey(provider: AccountProvider, code: string): string {

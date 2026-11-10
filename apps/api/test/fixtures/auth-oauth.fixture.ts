@@ -1,7 +1,7 @@
-import type { OAuthIdentityProviderRegistry } from "#api/modules/identity/application/ports/auth/oauth-identity-provider.port";
-import { LinkOAuthIdentity } from "#api/modules/identity/application/services/auth/link-oauth-identity.service";
-import { OAuthSignupNotifier } from "#api/modules/identity/application/services/auth/oauth-signup-notifier.service";
-import type { AccountProvider } from "#api/modules/identity/domain/types/auth/auth.types";
+import type { OAuthIdentityProviderRegistry } from "#api/modules/identity/auth/application/ports/oauth-identity-provider.port";
+import { LinkOAuthIdentity } from "#api/modules/identity/auth/application/use-cases/link-oauth-identity.use-case";
+import { OAuthSignupNotifier } from "#api/modules/identity/auth/application/use-cases/notify-oauth-signup.use-case";
+import type { AccountProvider } from "#api/modules/identity/auth/domain/identity.constants";
 import {
   CountingOAuthIdentityProvider,
   StubAuthOAuthStateRepository,

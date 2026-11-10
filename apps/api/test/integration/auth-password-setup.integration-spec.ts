@@ -1,9 +1,9 @@
 import type { TestingModule } from "@nestjs/testing";
 import { omit } from "es-toolkit";
 
-import { LoginWithPassword } from "#api/modules/identity/application/use-cases/auth/login-with-password.use-case";
-import { RequestPasswordSetupCode } from "#api/modules/identity/application/use-cases/auth/request-password-setup-code.use-case";
-import { SetPassword } from "#api/modules/identity/application/use-cases/auth/set-password.use-case";
+import { LoginWithPassword } from "#api/modules/identity/auth/application/use-cases/login-with-password.use-case";
+import { RequestPasswordSetupCode } from "#api/modules/identity/auth/application/use-cases/request-password-setup-code.use-case";
+import { SetPassword } from "#api/modules/identity/auth/application/use-cases/set-password.use-case";
 import { ApplicationException } from "#api/shared/application/application.exception";
 import { AccountFixture, UserFixture } from "#test/fixtures/user.fixture";
 import { suppressLogger } from "#test/setup/suppress-logger";

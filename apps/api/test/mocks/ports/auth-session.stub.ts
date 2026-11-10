@@ -1,18 +1,18 @@
 import type { UserRole } from "@aido/api/vocabulary";
 
-import type { AuthCachePort } from "#api/modules/identity/application/ports/auth/auth-collaboration.port";
+import type { AuthCachePort } from "#api/modules/identity/auth/application/ports/auth-collaboration.port";
 import type {
   AuthTokenIssuerPort,
   TokenPair,
-} from "#api/modules/identity/application/ports/auth/auth-crypto.port";
+} from "#api/modules/identity/auth/application/ports/auth-crypto.port";
 import type {
   AuthSecurityLogRepositoryPort,
   AuthSessionRecord,
   AuthSessionRepositoryPort,
   RotateAuthSessionInput,
-} from "#api/modules/identity/application/ports/auth/auth-persistence.port";
-import type { SessionPushDeviceReleaserPort } from "#api/modules/identity/application/ports/auth/session-push-device-releaser.port";
-import type { CreateSessionData } from "#api/modules/identity/application/types/auth/index";
+} from "#api/modules/identity/auth/application/ports/auth-persistence.port";
+import type { SessionPushDeviceReleaserPort } from "#api/modules/identity/auth/application/ports/session-push-device-releaser.port";
+import type { CreateSessionData } from "#api/modules/identity/auth/application/read-models/create-session-data.read-model";
 import { SessionFixture } from "#test/fixtures/session.fixture";
 
 type SessionOperations = Pick<

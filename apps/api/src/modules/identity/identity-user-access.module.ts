@@ -1,14 +1,14 @@
 import { Module, type FactoryProvider } from "@nestjs/common";
 
-import { USER_ACTIVITY_READER } from "./application/ports/auth/user-activity.reader.port.js";
-import { USER_APP_VERSION_READER } from "./application/ports/auth/user-app-version.reader.port.js";
+import { USER_ACTIVITY_READER } from "./auth/application/ports/user-activity.reader.port.js";
+import { USER_APP_VERSION_READER } from "./auth/application/ports/user-app-version.reader.port.js";
 import {
   USER_MUTATION_LOCK,
   type UserMutationLockPort,
-} from "./application/ports/auth/user-mutation-lock.port.js";
-import { USER_PROFILE_INVALIDATOR } from "./application/ports/auth/user-profile-invalidator.port.js";
-import { AuthCacheAdapter } from "./infrastructure/adapters/auth/auth-cache.adapter.js";
-import { DrizzleUserRepository } from "./infrastructure/persistence/auth/drizzle-user.repository.js";
+} from "./auth/application/ports/user-mutation-lock.port.js";
+import { USER_PROFILE_INVALIDATOR } from "./auth/application/ports/user-profile-invalidator.port.js";
+import { AuthCacheAdapter } from "./auth/infrastructure/adapters/auth-cache.adapter.js";
+import { DrizzleUserRepository } from "./auth/infrastructure/persistence/drizzle-user.repository.js";
 
 const userMutationLockProvider: FactoryProvider<UserMutationLockPort> = {
   provide: USER_MUTATION_LOCK,

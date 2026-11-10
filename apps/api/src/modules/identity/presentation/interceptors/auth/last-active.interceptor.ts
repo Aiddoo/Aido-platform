@@ -10,11 +10,11 @@ import {
 import type { Request } from "express";
 import type { Observable } from "rxjs";
 
-import { IdentityLogEvent } from "#api/modules/identity/application/observability/auth/identity-log.events";
+import { IdentityLogEvent } from "#api/modules/identity/auth/application/auth.log-events";
 import {
   AUTH_USER_ACTIVITY_WRITER,
   type AuthUserActivityWriterPort,
-} from "#api/modules/identity/application/ports/auth/auth-collaboration.port";
+} from "#api/modules/identity/auth/application/ports/auth-collaboration.port";
 import { RequestClientReader, requestTimezoneOrUtc } from "#api/platform/http/request-client/index";
 import { readRequestUserId } from "#api/platform/http/request-user-id";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";

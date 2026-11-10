@@ -14,11 +14,11 @@ import type {
   PremiumAccess,
   PremiumAccessReaderPort,
 } from "#api/modules/billing/billing-subscriptions.public";
-import { SessionService } from "#api/modules/identity/application/services/auth/session.service";
-import { VerificationService } from "#api/modules/identity/application/services/auth/verification.service";
-import { IssueLogin } from "#api/modules/identity/application/use-cases/auth/issue-login.use-case";
-import { ProvisionUser } from "#api/modules/identity/application/use-cases/auth/provision-user.use-case";
-import { RestoreAccount } from "#api/modules/identity/application/use-cases/auth/restore-account.use-case";
+import { SessionService } from "#api/modules/identity/auth/application/use-cases/create-session.use-case";
+import { IssueLogin } from "#api/modules/identity/auth/application/use-cases/issue-login.use-case";
+import { VerificationService } from "#api/modules/identity/auth/application/use-cases/issue-verification-code.use-case";
+import { ProvisionUser } from "#api/modules/identity/auth/application/use-cases/provision-user.use-case";
+import { RestoreAccount } from "#api/modules/identity/auth/application/use-cases/restore-account.use-case";
 import type {
   DailySendUsage,
   DailySendUsageReaderPort,

@@ -7,7 +7,7 @@
 
 import { ErrorCode } from "@aido/api/errors";
 
-import type { VerifiedProfile } from "#api/modules/identity/infrastructure/oauth/auth/verifier/oauth-token-verifier.service";
+import type { VerifiedProfile } from "#api/modules/identity/auth/infrastructure/adapters/oauth-token-verifier.adapter";
 import { ApplicationException } from "#api/shared/application/application.exception";
 
 /**

@@ -5,21 +5,19 @@ import type { TestingModule } from "@nestjs/testing";
 import { count, eq } from "drizzle-orm";
 import { vi } from "vitest";
 
-import type { OAuthIdentityProvider } from "#api/modules/identity/application/ports/auth/oauth-identity-provider.port";
-import { ExchangeOAuthCode } from "#api/modules/identity/application/use-cases/auth/exchange-oauth-code.use-case";
-import { GetOAuthRedirectUri } from "#api/modules/identity/application/use-cases/auth/get-oauth-redirect-uri.use-case";
-import { LinkOAuthAccount } from "#api/modules/identity/application/use-cases/auth/link-oauth-account.use-case";
-import { ListLinkedAccounts } from "#api/modules/identity/application/use-cases/auth/list-linked-accounts.use-case";
-import { LoginWithOAuthToken } from "#api/modules/identity/application/use-cases/auth/login-with-oauth-token.use-case";
-import { UnlinkOAuthAccount } from "#api/modules/identity/application/use-cases/auth/unlink-oauth-account.use-case";
-import type { AccountProvider } from "#api/modules/identity/domain/types/auth/auth.types";
-import {
-  AppleOAuthProvider,
-  GoogleOAuthProvider,
-  KakaoOAuthProvider,
-  NaverOAuthProvider,
-} from "#api/modules/identity/infrastructure/oauth/auth/adapters/index";
-import { DrizzleOAuthStateRepository } from "#api/modules/identity/infrastructure/persistence/auth/drizzle-oauth-state.repository";
+import type { OAuthIdentityProvider } from "#api/modules/identity/auth/application/ports/oauth-identity-provider.port";
+import { ExchangeOAuthCode } from "#api/modules/identity/auth/application/use-cases/exchange-oauth-code.use-case";
+import { GetOAuthRedirectUri } from "#api/modules/identity/auth/application/use-cases/get-oauth-redirect-uri.use-case";
+import { LinkOAuthAccount } from "#api/modules/identity/auth/application/use-cases/link-oauth-account.use-case";
+import { ListLinkedAccounts } from "#api/modules/identity/auth/application/use-cases/list-linked-accounts.use-case";
+import { LoginWithOAuthToken } from "#api/modules/identity/auth/application/use-cases/login-with-oauth-token.use-case";
+import { UnlinkOAuthAccount } from "#api/modules/identity/auth/application/use-cases/unlink-oauth-account.use-case";
+import type { AccountProvider } from "#api/modules/identity/auth/domain/identity.constants";
+import { AppleOAuthProvider } from "#api/modules/identity/auth/infrastructure/adapters/apple-oauth-identity.adapter";
+import { GoogleOAuthProvider } from "#api/modules/identity/auth/infrastructure/adapters/google-oauth-identity.adapter";
+import { KakaoOAuthProvider } from "#api/modules/identity/auth/infrastructure/adapters/kakao-oauth-identity.adapter";
+import { NaverOAuthProvider } from "#api/modules/identity/auth/infrastructure/adapters/naver-oauth-identity.adapter";
+import { DrizzleOAuthStateRepository } from "#api/modules/identity/auth/infrastructure/persistence/drizzle-oauth-state.repository";
 import { requireRecord } from "#api/platform/database/database-error.util";
 import { session as sessionTable, user as userTable } from "#api/platform/database/schema/index";
 import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";

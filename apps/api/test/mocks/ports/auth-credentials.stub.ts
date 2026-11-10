@@ -3,8 +3,8 @@ import type {
   AuthCachePort,
   AuthRegistrationNotifierPort,
   AuthUserRegisteredNotification,
-} from "#api/modules/identity/application/ports/auth/auth-collaboration.port";
-import type { AuthPasswordHasherPort } from "#api/modules/identity/application/ports/auth/auth-crypto.port";
+} from "#api/modules/identity/auth/application/ports/auth-collaboration.port";
+import type { AuthPasswordHasherPort } from "#api/modules/identity/auth/application/ports/auth-crypto.port";
 import type {
   AuthLoginAttemptRepositoryPort,
   AuthAccountRecord,
@@ -13,10 +13,10 @@ import type {
   AuthUserRepositoryPort,
   AuthVerificationRecord,
   AuthVerificationRepositoryPort,
-} from "#api/modules/identity/application/ports/auth/auth-persistence.port";
-import type { RetentionEnrollerPort } from "#api/modules/identity/application/ports/auth/retention-enroller.port";
-import type { UserProvisioningSeederPort } from "#api/modules/identity/application/ports/auth/user-provisioning-seeder.port";
-import type { VerificationCodeSecurityPort } from "#api/modules/identity/application/ports/auth/verification-code-security.port";
+} from "#api/modules/identity/auth/application/ports/auth-persistence.port";
+import type { RetentionEnrollerPort } from "#api/modules/identity/auth/application/ports/retention-enroller.port";
+import type { UserProvisioningSeederPort } from "#api/modules/identity/auth/application/ports/user-provisioning-seeder.port";
+import type { VerificationCodeSecurityPort } from "#api/modules/identity/auth/application/ports/verification-code-security.port";
 import { UserFixture, VerificationFixture } from "#test/fixtures/index";
 
 import {

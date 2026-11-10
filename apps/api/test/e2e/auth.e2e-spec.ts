@@ -14,15 +14,15 @@ import { EntitlementCacheKey } from "#api/modules/access/infrastructure/cache/en
 import {
   AUTH_CACHE,
   type AuthCachePort,
-} from "#api/modules/identity/application/ports/auth/auth-collaboration.port";
+} from "#api/modules/identity/auth/application/ports/auth-collaboration.port";
 import {
   AUTH_TOKEN_ISSUER,
   type AuthTokenIssuerPort,
-} from "#api/modules/identity/application/ports/auth/auth-crypto.port";
+} from "#api/modules/identity/auth/application/ports/auth-crypto.port";
 import {
   REVOKE_REASON,
   TOKEN_REUSE_GRACE_PERIOD_MS,
-} from "#api/modules/identity/domain/constants/auth/auth.constants";
+} from "#api/modules/identity/auth/domain/auth.constants";
 import { CacheService } from "#api/platform/cache/cache.service";
 import { CACHE_SERVICE, type ICacheService } from "#api/platform/cache/interfaces/cache.interface";
 import { requireRecord } from "#api/platform/database/database-error.util";

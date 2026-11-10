@@ -4,16 +4,16 @@ import type {
   AccountTodoCommentCleanupPort,
   AccountTodoCommentCleanupResult,
   AccountUsageCleanupPort,
-} from "#api/modules/identity/application/ports/auth/account-cleanup.port";
-import type { AuthCachePort } from "#api/modules/identity/application/ports/auth/auth-collaboration.port";
-import type { AuthPasswordHasherPort } from "#api/modules/identity/application/ports/auth/auth-crypto.port";
+} from "#api/modules/identity/auth/application/ports/account-cleanup.port";
+import type { AuthCachePort } from "#api/modules/identity/auth/application/ports/auth-collaboration.port";
+import type { AuthPasswordHasherPort } from "#api/modules/identity/auth/application/ports/auth-crypto.port";
 import type {
   AuthAccountLifecycleRepositoryPort,
   AuthAccountRecord,
   AuthAccountRepositoryPort,
   AuthUserRecord,
   AuthUserRepositoryPort,
-} from "#api/modules/identity/application/ports/auth/auth-persistence.port";
+} from "#api/modules/identity/auth/application/ports/auth-persistence.port";
 import { AccountFixture } from "#test/fixtures/user.fixture";
 
 import { StubAuthSessionCache } from "./auth-session.stub.js";

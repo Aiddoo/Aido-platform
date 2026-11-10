@@ -4,36 +4,40 @@ import { JwtModule } from "@nestjs/jwt";
 import { Test, type TestingModule } from "@nestjs/testing";
 
 import {
-  AUTH_ACCOUNT_REPOSITORY,
   AUTH_CACHE,
   AUTH_EMAIL_SENDER,
+  AUTH_RUNTIME_CONFIG,
+  AUTH_REGISTRATION_NOTIFIER,
+} from "#api/modules/identity/auth/application/ports/auth-collaboration.port";
+import {
+  AUTH_PASSWORD_HASHER,
+  AUTH_TOKEN_ISSUER,
+} from "#api/modules/identity/auth/application/ports/auth-crypto.port";
+import {
+  AUTH_ACCOUNT_REPOSITORY,
   AUTH_LOGIN_ATTEMPT_REPOSITORY,
   AUTH_OAUTH_STATE_REPOSITORY,
-  AUTH_RUNTIME_CONFIG,
-  AUTH_PASSWORD_HASHER,
-  AUTH_REGISTRATION_NOTIFIER,
   AUTH_SECURITY_LOG_REPOSITORY,
   AUTH_SESSION_REPOSITORY,
-  AUTH_TOKEN_ISSUER,
   AUTH_USER_REPOSITORY,
   AUTH_VERIFICATION_REPOSITORY,
-} from "#api/modules/identity/application/ports/auth/index";
+} from "#api/modules/identity/auth/application/ports/auth-persistence.port";
 import {
   OAUTH_IDENTITY_PROVIDER_REGISTRY,
   type OAuthIdentityProviderRegistry,
-} from "#api/modules/identity/application/ports/auth/oauth-identity-provider.port";
-import { VERIFICATION_CODE_SECURITY } from "#api/modules/identity/application/ports/auth/verification-code-security.port";
-import { AuthCacheAdapter } from "#api/modules/identity/infrastructure/adapters/auth/auth-cache.adapter";
-import { NodeVerificationCodeSecurityAdapter } from "#api/modules/identity/infrastructure/adapters/auth/node-verification-code-security.adapter";
-import { PasswordService } from "#api/modules/identity/infrastructure/adapters/auth/password.service";
-import { TokenService } from "#api/modules/identity/infrastructure/adapters/auth/token.service";
-import { DrizzleAccountRepository } from "#api/modules/identity/infrastructure/persistence/auth/drizzle-account.repository";
-import { DrizzleLoginAttemptRepository } from "#api/modules/identity/infrastructure/persistence/auth/drizzle-login-attempt.repository";
-import { DrizzleOAuthStateRepository } from "#api/modules/identity/infrastructure/persistence/auth/drizzle-oauth-state.repository";
-import { DrizzleSecurityLogRepository } from "#api/modules/identity/infrastructure/persistence/auth/drizzle-security-log.repository";
-import { DrizzleSessionRepository } from "#api/modules/identity/infrastructure/persistence/auth/drizzle-session.repository";
-import { DrizzleUserRepository } from "#api/modules/identity/infrastructure/persistence/auth/drizzle-user.repository";
-import { DrizzleVerificationRepository } from "#api/modules/identity/infrastructure/persistence/auth/drizzle-verification.repository";
+} from "#api/modules/identity/auth/application/ports/oauth-identity-provider.port";
+import { VERIFICATION_CODE_SECURITY } from "#api/modules/identity/auth/application/ports/verification-code-security.port";
+import { PasswordService } from "#api/modules/identity/auth/infrastructure/adapters/argon2-password-hasher.adapter";
+import { AuthCacheAdapter } from "#api/modules/identity/auth/infrastructure/adapters/auth-cache.adapter";
+import { TokenService } from "#api/modules/identity/auth/infrastructure/adapters/jwt-token-issuer.adapter";
+import { NodeVerificationCodeSecurityAdapter } from "#api/modules/identity/auth/infrastructure/adapters/node-verification-code-security.adapter";
+import { DrizzleAccountRepository } from "#api/modules/identity/auth/infrastructure/persistence/drizzle-account.repository";
+import { DrizzleLoginAttemptRepository } from "#api/modules/identity/auth/infrastructure/persistence/drizzle-login-attempt.repository";
+import { DrizzleOAuthStateRepository } from "#api/modules/identity/auth/infrastructure/persistence/drizzle-oauth-state.repository";
+import { DrizzleSecurityLogRepository } from "#api/modules/identity/auth/infrastructure/persistence/drizzle-security-log.repository";
+import { DrizzleSessionRepository } from "#api/modules/identity/auth/infrastructure/persistence/drizzle-session.repository";
+import { DrizzleUserRepository } from "#api/modules/identity/auth/infrastructure/persistence/drizzle-user.repository";
+import { DrizzleVerificationRepository } from "#api/modules/identity/auth/infrastructure/persistence/drizzle-verification.repository";
 import { DrizzleUserConsentRepository } from "#api/modules/identity/infrastructure/persistence/settings/drizzle-user-consent.repository";
 import { DrizzleUserPreferenceRepository } from "#api/modules/identity/infrastructure/persistence/settings/drizzle-user-preference.repository";
 import { NotificationQueueService } from "#api/modules/notification/notification-delivery-jobs.public";
@@ -78,7 +82,7 @@ import {
   provisionUserProvider,
   sessionServiceProvider,
   verificationServiceProvider,
-} from "../../../src/modules/identity/identity-auth-application.providers.js";
+} from "../../../src/modules/identity/auth/identity-auth.providers.js";
 import type { FakeEmailService } from "../../mocks/fake-email.service.js";
 import { provisioningSeederTestProvider } from "./provisioning-seeder.provider.js";
 import { retentionEnrollerTestProvider } from "./retention-enroller.provider.js";

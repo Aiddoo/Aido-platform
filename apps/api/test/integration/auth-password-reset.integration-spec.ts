@@ -2,11 +2,11 @@ import type { TestingModule } from "@nestjs/testing";
 import { and, eq } from "drizzle-orm";
 import { omit } from "es-toolkit";
 
-import { LoginWithPassword } from "#api/modules/identity/application/use-cases/auth/login-with-password.use-case";
-import { Register } from "#api/modules/identity/application/use-cases/auth/register.use-case";
-import { RequestPasswordReset } from "#api/modules/identity/application/use-cases/auth/request-password-reset.use-case";
-import { ResetPassword } from "#api/modules/identity/application/use-cases/auth/reset-password.use-case";
-import { VerifyEmail } from "#api/modules/identity/application/use-cases/auth/verify-email.use-case";
+import { LoginWithPassword } from "#api/modules/identity/auth/application/use-cases/login-with-password.use-case";
+import { Register } from "#api/modules/identity/auth/application/use-cases/register.use-case";
+import { RequestPasswordReset } from "#api/modules/identity/auth/application/use-cases/request-password-reset.use-case";
+import { ResetPassword } from "#api/modules/identity/auth/application/use-cases/reset-password.use-case";
+import { VerifyEmail } from "#api/modules/identity/auth/application/use-cases/verify-email.use-case";
 import { requireRecord } from "#api/platform/database/database-error.util";
 import { securityLog, session as sessionTable } from "#api/platform/database/schema/index";
 import { ApplicationException } from "#api/shared/application/application.exception";

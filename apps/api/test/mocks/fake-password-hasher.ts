@@ -1,6 +1,6 @@
 import * as argon2 from "argon2";
 
-import type { AuthPasswordHasherPort } from "#api/modules/identity/application/ports/auth/auth-crypto.port";
+import type { AuthPasswordHasherPort } from "#api/modules/identity/auth/application/ports/auth-crypto.port";
 
 const TEST_HASH_OPTIONS: argon2.HashOptions = {
   type: argon2.argon2id,

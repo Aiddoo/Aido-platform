@@ -10,7 +10,7 @@ import type {
   AccessSnapshot,
   EntitlementReaderPort,
 } from "#api/modules/access/access-entitlement.public";
-import { DrizzleUserRepository } from "#api/modules/identity/infrastructure/persistence/auth/drizzle-user.repository";
+import { DrizzleUserRepository } from "#api/modules/identity/auth/infrastructure/persistence/drizzle-user.repository";
 import type { TodoReminderPort } from "#api/modules/planning/application/ports/todos/todo-reminder.port";
 import { TodoOccurrenceMaterializer } from "#api/modules/planning/application/services/series/todo-occurrence-materializer.service";
 import { TodoSeriesDueRunner } from "#api/modules/planning/application/services/series/todo-series-due-runner.service";

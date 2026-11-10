@@ -13,7 +13,7 @@ import {
 import {
   AUTH_CACHE,
   type AuthCachePort,
-} from "#api/modules/identity/application/ports/auth/auth-collaboration.port";
+} from "#api/modules/identity/auth/application/ports/auth-collaboration.port";
 import { subscription, subscriptionEventReceipt } from "#api/platform/database/schema/index";
 import { SubscriptionEventBuilder } from "#test/builders/subscription-event.builder";
 

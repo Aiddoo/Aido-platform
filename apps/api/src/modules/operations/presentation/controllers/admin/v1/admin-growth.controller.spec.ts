@@ -2,7 +2,7 @@ import type { CurrentUserPayload } from "@aido/api";
 import { TestBed } from "@suites/unit";
 import type { Mocked } from "vitest";
 
-import { IS_ADMIN_KEY } from "#api/modules/identity/presentation/decorators/auth/admin.decorator";
+import { IS_ADMIN_KEY } from "#api/modules/identity/auth/presentation/http/decorators/admin.decorator";
 
 import { GetGrowthSummary } from "../../../../application/use-cases/admin/get-growth-summary.use-case.js";
 import { AdminGrowthController } from "./admin-growth.controller.js";

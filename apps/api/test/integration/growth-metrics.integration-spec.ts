@@ -2,7 +2,7 @@ import { eq, sql } from "drizzle-orm";
 import { vi } from "vitest";
 import { z } from "zod";
 
-import { DrizzleUserRepository } from "#api/modules/identity/infrastructure/persistence/auth/drizzle-user.repository";
+import { DrizzleUserRepository } from "#api/modules/identity/auth/infrastructure/persistence/drizzle-user.repository";
 import { DrizzleAdminGrowthMetricsAdapter } from "#api/modules/operations/infrastructure/adapters/admin/drizzle-admin-growth-metrics.adapter";
 import { requireRecord } from "#api/platform/database/database-error.util";
 import {

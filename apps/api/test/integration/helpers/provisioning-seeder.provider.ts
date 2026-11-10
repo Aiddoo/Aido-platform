@@ -13,7 +13,7 @@ import {
   type ProvisioningConsent,
   USER_PROVISIONING_SEEDER,
   type UserProvisioningSeederPort,
-} from "#api/modules/identity/application/ports/auth/user-provisioning-seeder.port";
+} from "#api/modules/identity/auth/application/ports/user-provisioning-seeder.port";
 import { DrizzleUserConsentRepository } from "#api/modules/identity/infrastructure/persistence/settings/drizzle-user-consent.repository";
 import { DrizzleUserPreferenceRepository } from "#api/modules/identity/infrastructure/persistence/settings/drizzle-user-preference.repository";
 import { DefaultTodoCategorySeeder } from "#api/modules/planning/infrastructure/seeders/categories/default-todo-category.seeder";

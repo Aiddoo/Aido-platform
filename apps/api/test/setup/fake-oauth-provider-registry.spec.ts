@@ -3,7 +3,7 @@ import { vi } from "vitest";
 import type {
   OAuthIdentityProvider,
   OAuthIdentityProviderRegistry,
-} from "#api/modules/identity/application/ports/auth/oauth-identity-provider.port";
+} from "#api/modules/identity/auth/application/ports/oauth-identity-provider.port";
 
 import { FakeOAuthProviderRegistry } from "../mocks/fake-oauth-provider-registry.js";
 

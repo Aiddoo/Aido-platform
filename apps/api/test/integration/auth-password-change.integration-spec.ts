@@ -1,10 +1,10 @@
 import type { TestingModule } from "@nestjs/testing";
 import { omit } from "es-toolkit";
 
-import { ChangePassword } from "#api/modules/identity/application/use-cases/auth/change-password.use-case";
-import { LoginWithPassword } from "#api/modules/identity/application/use-cases/auth/login-with-password.use-case";
-import { Register } from "#api/modules/identity/application/use-cases/auth/register.use-case";
-import { VerifyEmail } from "#api/modules/identity/application/use-cases/auth/verify-email.use-case";
+import { ChangePassword } from "#api/modules/identity/auth/application/use-cases/change-password.use-case";
+import { LoginWithPassword } from "#api/modules/identity/auth/application/use-cases/login-with-password.use-case";
+import { Register } from "#api/modules/identity/auth/application/use-cases/register.use-case";
+import { VerifyEmail } from "#api/modules/identity/auth/application/use-cases/verify-email.use-case";
 import { ApplicationException } from "#api/shared/application/application.exception";
 import { AccountFixture, UserFixture } from "#test/fixtures/user.fixture";
 import { suppressLogger } from "#test/setup/suppress-logger";

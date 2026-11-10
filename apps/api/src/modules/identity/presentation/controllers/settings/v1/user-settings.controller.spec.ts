@@ -12,7 +12,7 @@ import { TestBed } from "@suites/unit";
  */
 import type { Mocked } from "vitest";
 
-import type { CurrentUserPayload } from "#api/modules/identity/presentation/decorators/auth/index";
+import type { CurrentUserPayload } from "#api/modules/identity/auth/presentation/http/decorators/current-user.decorator";
 
 import { GetConsent } from "../../../../application/use-cases/settings/get-consent.use-case.js";
 import { GetPreference } from "../../../../application/use-cases/settings/get-preference.use-case.js";

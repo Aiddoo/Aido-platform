@@ -241,7 +241,8 @@
       "excludeFiles": [
         "**/*.spec.ts",
         "**/*.test.ts",
-        "apps/api/src/modules/*/{domain,application,infrastructure,presentation}/**"
+        "apps/api/src/modules/*/{domain,application,infrastructure,presentation}/**",
+        "apps/api/src/modules/identity/auth/**"
       ],
       "rules": {
         "no-restricted-imports": [
@@ -275,7 +276,8 @@
       "excludeFiles": [
         "**/*.spec.ts",
         "**/*.test.ts",
-        "apps/api/src/modules/*/{domain,application,infrastructure,presentation}/**"
+        "apps/api/src/modules/*/{domain,application,infrastructure,presentation}/**",
+        "apps/api/src/modules/identity/auth/**"
       ],
       "rules": {
         "no-restricted-imports": [

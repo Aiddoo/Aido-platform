@@ -1,6 +1,6 @@
 import request from "supertest";
 
-import { AUTH_REGISTRATION_NOTIFIER } from "#api/modules/identity/application/ports/auth/auth-collaboration.port";
+import { AUTH_REGISTRATION_NOTIFIER } from "#api/modules/identity/auth/application/ports/auth-collaboration.port";
 import { StubAuthRegistrationNotifier } from "#test/mocks/ports/auth-credentials.stub";
 
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";

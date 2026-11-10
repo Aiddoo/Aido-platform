@@ -9,7 +9,7 @@ import {
   PREMIUM_GRANT_SWEEP_QUEUE,
   STORE_SUBSCRIPTION_RECONCILE_QUEUE,
 } from "#api/modules/billing/billing-subscriptions-jobs.public";
-import { ACCOUNT_PURGE_QUEUE } from "#api/modules/identity/identity-auth.public";
+import { ACCOUNT_PURGE_QUEUE } from "#api/modules/identity/auth/identity-auth.public";
 import {
   MARKETING_CONSENT_RECONFIRM_QUEUE,
   NOTIFICATION_DEAD_LETTER_QUEUE,

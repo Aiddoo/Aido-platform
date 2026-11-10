@@ -18,10 +18,10 @@ import { DrizzleTodoCommentReader } from "#api/modules/engagement/infrastructure
 import {
   AUTH_USER_REPOSITORY,
   AUTH_SECURITY_LOG_REPOSITORY,
-} from "#api/modules/identity/application/ports/auth/auth-persistence.port";
-import { PurgeDeletedAccounts } from "#api/modules/identity/application/use-cases/auth/purge-deleted-accounts.use-case";
-import { DrizzleSecurityLogRepository } from "#api/modules/identity/infrastructure/persistence/auth/drizzle-security-log.repository";
-import { DrizzleUserRepository } from "#api/modules/identity/infrastructure/persistence/auth/drizzle-user.repository";
+} from "#api/modules/identity/auth/application/ports/auth-persistence.port";
+import { PurgeDeletedAccounts } from "#api/modules/identity/auth/application/use-cases/purge-deleted-accounts.use-case";
+import { DrizzleSecurityLogRepository } from "#api/modules/identity/auth/infrastructure/persistence/drizzle-security-log.repository";
+import { DrizzleUserRepository } from "#api/modules/identity/auth/infrastructure/persistence/drizzle-user.repository";
 import {
   NOTIFICATION_CACHE,
   type NotificationCachePort,
@@ -52,8 +52,8 @@ import {
   accountNotificationCleanupProvider,
   accountTodoCommentCleanupProvider,
   accountUsageCleanupProvider,
-} from "../../src/modules/identity/identity-auth-account-cleanup.providers.js";
-import { purgeDeletedAccountsProvider } from "../../src/modules/identity/identity-auth-application.providers.js";
+} from "../../src/modules/identity/auth/identity-auth-account-cleanup.providers.js";
+import { purgeDeletedAccountsProvider } from "../../src/modules/identity/auth/identity-auth.providers.js";
 import { notificationAccountCleanupProvider } from "../../src/modules/notification/notification-delivery-application.providers.js";
 import { TestDatabase } from "../setup/test-database.js";
 

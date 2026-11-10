@@ -1,6 +1,6 @@
-export { Admin } from "./presentation/decorators/auth/admin.decorator.js";
+export { Admin } from "./auth/presentation/http/decorators/admin.decorator.js";
 export {
   CurrentUser,
   type CurrentUserPayload,
-} from "./presentation/decorators/auth/current-user.decorator.js";
-export { Public } from "./presentation/decorators/auth/public.decorator.js";
+} from "./auth/presentation/http/decorators/current-user.decorator.js";
+export { Public } from "./auth/presentation/http/decorators/public.decorator.js";
