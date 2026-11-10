@@ -1,12 +1,12 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
-import { Inject, Injectable, Logger, type OnModuleInit } from "@nestjs/common";
+import { Injectable, Logger, type OnModuleInit } from "@nestjs/common";
 
 import { premiumAccessCondition } from "#api/modules/access/entitlements/access-entitlements.public";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { forEachBatch } from "#api/platform/database/utils/batch-cursor.util";
 import { runInBackground } from "#api/platform/jobs/non-blocking-init";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
-import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
+import { JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
 import { instantToDate, toIsoString } from "#api/shared/domain/time/instant";
 import { resolveTimezone } from "#api/shared/domain/time/time-zone-name";
 import { TimeZone } from "#api/shared/domain/time/time-zone.vo";
@@ -48,7 +48,7 @@ export class ReportGenerationScheduler implements OnModuleInit {
 
   constructor(
     txHost: TransactionHost<DrizzleTransactionalAdapter>,
-    @Inject(JOB_RUNTIME) runtime: JobRuntimePort,
+    runtime: JobRuntimePort,
     processor: ReportGenerationProcessor,
     clock: ClockPort,
   ) {

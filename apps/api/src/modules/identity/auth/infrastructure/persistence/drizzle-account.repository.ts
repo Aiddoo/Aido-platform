@@ -89,7 +89,7 @@ export class DrizzleAccountRepository extends AuthAccountRepositoryPort {
         updatedAt: this.#clock.now(),
       });
     } catch (error) {
-      // Account_userId_provider_key·Account_provider_providerAccountId_key: 필터의 옛 제약 표와 같은 USER_0604
+      // Account_userId_provider_key·Account_provider_providerAccountId_key: 출시 앱이 받던 USER_0604
       if (isUniqueConstraintViolation(error)) {
         throw accountAlreadyExists();
       }

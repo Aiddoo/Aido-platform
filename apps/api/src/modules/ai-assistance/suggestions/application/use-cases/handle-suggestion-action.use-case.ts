@@ -5,7 +5,7 @@ import {
   type EntitlementReaderPort,
   premiumFeatureDenied,
 } from "#api/modules/access/entitlements/access-entitlements.public";
-import type { UserMutationLockPort } from "#api/modules/identity/identity-user-access.public";
+import type { UserMutationLockPort } from "#api/modules/identity/users/identity-users.public";
 import {
   TodoCategoryId,
   TodoCategoryLockKeys,

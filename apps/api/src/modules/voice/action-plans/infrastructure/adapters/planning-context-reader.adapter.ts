@@ -16,7 +16,7 @@ import {
   PlanningContextReaderPort,
 } from "../../application/ports/planning-context.reader.port.js";
 
-// 옛 날짜 함수(todayInTimezone)처럼 알 수 없는 시간대는 계획을 멈추지 않고 UTC 오늘로 본다
+// 알 수 없는 시간대는 계획을 멈추지 않고 UTC 오늘로 본다
 function toPlanningTimeZone(raw: string): TimeZone {
   try {
     return TimeZone.create(raw);

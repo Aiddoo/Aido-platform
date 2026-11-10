@@ -7,7 +7,7 @@ import type {
   AggregateParams,
   AggregationInputs,
 } from "#api/modules/ai-assistance/reports/domain/ai-report.constants";
-import type { UserMutationLockPort } from "#api/modules/identity/identity-user-access.public";
+import type { UserMutationLockPort } from "#api/modules/identity/users/identity-users.public";
 import type {
   WeatherForecastReaderPort,
   GridInput,

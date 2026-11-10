@@ -1,7 +1,7 @@
 import request from "supertest";
 import { vi, type MockInstance } from "vitest";
 
-import { JOB_RUNTIME } from "#api/shared/application/ports/job-runtime.port";
+import { JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
 
 import { FakeJobRuntime } from "../mocks/fake-job-runtime.js";
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
@@ -13,7 +13,7 @@ describe("영속 job runtime 상태 확인 E2E", () => {
 
   beforeAll(async () => {
     ctx = await createE2eApp({
-      customizeBuilder: (builder) => builder.overrideProvider(JOB_RUNTIME).useValue(runtime),
+      customizeBuilder: (builder) => builder.overrideProvider(JobRuntimePort).useValue(runtime),
       additionalResetters: [() => health?.mockClear()],
     });
   });

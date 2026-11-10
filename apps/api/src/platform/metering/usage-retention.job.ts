@@ -5,8 +5,7 @@ import { ClockPort } from "#api/shared/application/ports/clock.port";
 import {
   type EnqueueJobOptions,
   JOB_POLLING_SECONDS,
-  JOB_RUNTIME,
-  type JobRuntimePort,
+  JobRuntimePort,
 } from "#api/shared/application/ports/job-runtime.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 
@@ -45,7 +44,7 @@ export class UsageRetentionJob implements OnModuleInit {
 
   constructor(
     @Inject(USAGE_METER) meter: Pick<UsageMeterPort, "prune">,
-    @Inject(JOB_RUNTIME) runtime: JobRuntimePort,
+    runtime: JobRuntimePort,
     clock: ClockPort,
   ) {
     this.#meter = meter;

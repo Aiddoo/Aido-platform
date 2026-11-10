@@ -58,7 +58,7 @@ import { CacheStorePort } from "#api/platform/cache/cache-store.port";
 import { DRIZZLE } from "#api/platform/database/index";
 import { configureApplication } from "#api/platform/http/configure-application";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
-import { JOB_RUNTIME, JobQueuePort } from "#api/shared/application/ports/index";
+import { JobQueuePort, JobRuntimePort } from "#api/shared/application/ports/index";
 import { FakePushProvider } from "#test/doubles/notification/fake-push-provider";
 import { DateClock } from "#test/doubles/platform/date-clock";
 import { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
@@ -195,7 +195,7 @@ export async function createE2eApp(options?: E2eAppOptions): Promise<E2eTestCont
   let builder = Test.createTestingModule({
     imports: [AppModule, ...(options?.imports ?? [])],
   })
-    .overrideProvider(JOB_RUNTIME)
+    .overrideProvider(JobRuntimePort)
     .useValue(fakeJobRuntime)
     // E2E 앱이 실제 pg-boss에 연결하지 않게 새 큐 포트도 메모리 구현으로 바꾼다
     .overrideProvider(JobQueuePort)

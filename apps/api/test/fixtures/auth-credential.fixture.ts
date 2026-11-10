@@ -12,7 +12,7 @@ import type {
 import type {
   PremiumAccess,
   PremiumAccessReaderPort,
-} from "#api/modules/billing/subscriptions/billing-subscriptions.public";
+} from "#api/modules/billing/premium-grants/billing-premium-grants.public";
 import { ConsumeVerificationCodeUseCase } from "#api/modules/identity/auth/application/use-cases/consume-verification-code.use-case";
 import { CreateSessionUseCase } from "#api/modules/identity/auth/application/use-cases/create-session.use-case";
 import { IssueLoginUseCase } from "#api/modules/identity/auth/application/use-cases/issue-login.use-case";

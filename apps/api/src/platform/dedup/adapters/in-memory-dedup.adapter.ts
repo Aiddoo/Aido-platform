@@ -19,7 +19,7 @@ export class InMemoryDedupAdapter implements IDedupProvider, OnModuleInit {
   readonly #logger = new Logger(InMemoryDedupAdapter.name);
   readonly #sets = new LRUCache<string, Set<string>>({
     max: DEDUP_MAX_ENTRIES,
-    // 옛 저장소처럼 만료를 Date.now로 재서 테스트의 가짜 시계(setSystemTime)를 그대로 따른다
+    // 만료를 Date.now로 재서 테스트의 가짜 시계(setSystemTime)를 그대로 따른다
     perf: { now: () => Date.now() },
     ttlResolution: 0,
   });

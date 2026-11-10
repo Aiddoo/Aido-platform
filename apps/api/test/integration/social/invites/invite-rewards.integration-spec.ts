@@ -2,7 +2,7 @@ import { Logger } from "@nestjs/common";
 import { and, count, eq, inArray } from "drizzle-orm";
 
 import { EntitlementReaderPort } from "#api/modules/access/entitlements/access-entitlements.public";
-import { PremiumAccessReaderPort } from "#api/modules/billing/subscriptions/billing-subscriptions.public";
+import { PremiumAccessReaderPort } from "#api/modules/billing/premium-grants/billing-premium-grants.public";
 import { RevenueCatWebhookReceiver } from "#api/modules/billing/subscriptions/infrastructure/adapters/revenuecat/revenuecat-webhook-receiver.adapter";
 import { InviteConfigPort } from "#api/modules/social/invites/application/ports/invite-config.port";
 import { InviteNotifierPort } from "#api/modules/social/invites/application/ports/invite-notifier.port";

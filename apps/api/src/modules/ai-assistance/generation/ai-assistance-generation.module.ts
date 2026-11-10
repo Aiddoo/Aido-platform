@@ -2,7 +2,7 @@ import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 
 import { IdentitySettingsModule } from "#api/modules/identity/identity-settings.public";
-import { IdentityUserAccessModule } from "#api/modules/identity/identity-user-access.public";
+import { IdentityUserAccessModule } from "#api/modules/identity/users/identity-users.public";
 import { NotificationDeliveryModule } from "#api/modules/notification/notification-delivery.public";
 
 import { aiAssistanceGenerationConfig } from "./ai-assistance-generation.config.js";

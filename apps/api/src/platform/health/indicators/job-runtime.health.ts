@@ -1,4 +1,4 @@
-import { Inject, Injectable } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 import { type HealthIndicatorResult, HealthIndicatorService } from "@nestjs/terminus";
 import { uniq, withTimeout } from "es-toolkit";
 
@@ -10,7 +10,7 @@ import {
 } from "#api/modules/social/invites/social-invites.public";
 import { JobQueueRegistry } from "#api/platform/jobs/job-queue.registry";
 import { USAGE_RETENTION_QUEUE } from "#api/platform/metering/usage-retention.job";
-import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
+import { JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
 
 const QUEUE_STATS_TIMEOUT_MS = 2000;
 // defineQueue로 옮긴 큐는 JobQueueRegistry가 알려 주므로 Context를 옮길 때 이 목록에서 뺀다
@@ -34,7 +34,7 @@ export class JobRuntimeHealthIndicator {
 
   constructor(
     healthIndicatorService: HealthIndicatorService,
-    @Inject(JOB_RUNTIME) runtime: JobRuntimePort,
+    runtime: JobRuntimePort,
     registry: JobQueueRegistry,
   ) {
     this.#healthIndicatorService = healthIndicatorService;

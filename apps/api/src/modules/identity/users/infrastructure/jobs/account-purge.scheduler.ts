@@ -1,9 +1,9 @@
-import { Inject, Injectable, Logger, type OnModuleInit } from "@nestjs/common";
+import { Injectable, Logger, type OnModuleInit } from "@nestjs/common";
 
 import { AuthLogEvent } from "#api/modules/identity/auth/application/auth.log-events";
 import { runInBackground } from "#api/platform/jobs/non-blocking-init";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
-import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
+import { JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
 
 import {
   ACCOUNT_PURGE_JOB_NAME,
@@ -21,7 +21,7 @@ export class AccountPurgeScheduler implements OnModuleInit {
   readonly #runtime: JobRuntimePort;
   readonly #clock: ClockPort;
 
-  constructor(@Inject(JOB_RUNTIME) runtime: JobRuntimePort, clock: ClockPort) {
+  constructor(runtime: JobRuntimePort, clock: ClockPort) {
     this.#runtime = runtime;
     this.#clock = clock;
   }

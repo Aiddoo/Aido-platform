@@ -1,8 +1,8 @@
 import type { RevenueCatWebhookPayload } from "@aido/api";
 
+import { PremiumAccessReaderPort } from "#api/modules/billing/premium-grants/billing-premium-grants.public";
 import { StoreSubscriptionStatusReaderPort } from "#api/modules/billing/subscriptions/application/ports/store-subscription-status.reader.port";
 import { SubscriptionEventNotifierPort } from "#api/modules/billing/subscriptions/application/ports/subscription-event-notifier.port";
-import { PremiumAccessReaderPort } from "#api/modules/billing/subscriptions/billing-subscriptions.public";
 import { RevenueCatWebhookReceiver } from "#api/modules/billing/subscriptions/infrastructure/adapters/revenuecat/revenuecat-webhook-receiver.adapter";
 import { STORE_SUBSCRIPTION_RECONCILE_QUEUE } from "#api/modules/billing/subscriptions/infrastructure/jobs/store-subscription-reconcile.queue";
 import { createEntityId } from "#api/platform/database/entity-id";

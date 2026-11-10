@@ -7,8 +7,8 @@ import { BROADCAST_FAN_OUT_QUEUE } from "#api/modules/operations/broadcasts/infr
 import { DRIZZLE, type Database } from "#api/platform/database/database.client";
 import { user as userTable, userPreference } from "#api/platform/database/schema/index";
 import {
-  JOB_RUNTIME,
   JobQueuePort,
+  JobRuntimePort,
   type QueueDefinition,
 } from "#api/shared/application/ports/index";
 import type { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
@@ -140,7 +140,7 @@ describe("관리자 E2E", () => {
     };
 
     function jobRuntime(): FakeJobRuntime {
-      return ctx.module.get<FakeJobRuntime>(JOB_RUNTIME);
+      return ctx.module.get<FakeJobRuntime>(JobRuntimePort);
     }
 
     function jobQueue(): InMemoryJobQueue {

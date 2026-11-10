@@ -6,9 +6,7 @@ import { databaseConfig } from "#api/platform/config/database.config";
 import {
   AFTER_COMMIT_TASK_REGISTRY,
   AfterCommitTaskRegistryPort,
-  MUTATION_LOCK,
   MutationLockPort,
-  SAVEPOINT_RUNNER,
   SavepointRunnerPort,
   UNIT_OF_WORK,
   UnitOfWorkPort,
@@ -34,22 +32,18 @@ import { createPostgresPool } from "./postgres-pool.js";
   providers: [
     { provide: DRIZZLE, useExisting: getDrizzleToken() },
     ClsUnitOfWork,
-    { provide: SAVEPOINT_RUNNER, useClass: ClsSavepointRunner },
+    { provide: SavepointRunnerPort, useClass: ClsSavepointRunner },
+    { provide: MutationLockPort, useClass: PostgresMutationLockAdapter },
+    { provide: UnitOfWorkPort, useExisting: ClsUnitOfWork },
+    { provide: AfterCommitTaskRegistryPort, useExisting: ClsUnitOfWork },
+    // notification이 아직 Symbol로 주입받아 같은 인스턴스를 가리킨다. notification이 클래스 토큰으로 옮기면 지운다
     { provide: UNIT_OF_WORK, useExisting: ClsUnitOfWork },
     { provide: AFTER_COMMIT_TASK_REGISTRY, useExisting: ClsUnitOfWork },
-    { provide: MUTATION_LOCK, useClass: PostgresMutationLockAdapter },
-    // 옛 Symbol 토큰을 쓰는 Context가 모두 옮겨질 때까지 클래스 토큰은 같은 인스턴스의 별칭이다
-    { provide: SavepointRunnerPort, useExisting: SAVEPOINT_RUNNER },
-    { provide: UnitOfWorkPort, useExisting: UNIT_OF_WORK },
-    { provide: AfterCommitTaskRegistryPort, useExisting: AFTER_COMMIT_TASK_REGISTRY },
-    { provide: MutationLockPort, useExisting: MUTATION_LOCK },
   ],
   exports: [
     DRIZZLE,
     UNIT_OF_WORK,
     AFTER_COMMIT_TASK_REGISTRY,
-    MUTATION_LOCK,
-    SAVEPOINT_RUNNER,
     UnitOfWorkPort,
     AfterCommitTaskRegistryPort,
     MutationLockPort,

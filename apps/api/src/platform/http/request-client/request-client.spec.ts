@@ -117,7 +117,7 @@ describe("parseAcceptLanguage", () => {
   });
 
   it.each([undefined, null, "", 123, ["en"]])(
-    "헤더 미전송/비정상 값(%s)은 undefined — 저장된 locale을 덮어쓰지 않는다 (1.3.x 하위 호환)",
+    "헤더 미전송/비정상 값(%s)은 undefined — 저장된 locale을 덮어쓰지 않는다",
     (header) => {
       expect(parseAcceptLanguage(header)).toBeUndefined();
     },

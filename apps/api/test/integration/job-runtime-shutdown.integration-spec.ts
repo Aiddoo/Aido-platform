@@ -8,7 +8,7 @@ import { createEntityId } from "#api/platform/database/entity-id";
 import { createPostgresPoolConfig } from "#api/platform/database/postgres-pool";
 import { user as userTable } from "#api/platform/database/schema/index";
 import { JobRuntimeLifecycle } from "#api/platform/jobs/job-runtime.module";
-import { JOB_RUNTIME } from "#api/shared/application/ports/job-runtime.port";
+import { JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
 import { UserFixture } from "#test/fixtures/user.fixture";
 import { FakeJobRuntime } from "#test/mocks/fake-job-runtime";
 import { createTestClient } from "#test/setup/database-context";
@@ -66,7 +66,7 @@ it("종료 중 활성 worker가 DB 저장을 마친 뒤 연결이 닫힌다", as
       imports: [DrizzleModule.forRoot({ db: createDatabase(pool) })],
       providers: [
         { provide: DRIZZLE, useExisting: getDrizzleToken() },
-        { provide: JOB_RUNTIME, useValue: runtime },
+        { provide: JobRuntimePort, useValue: runtime },
         JobRuntimeLifecycle,
       ],
     }).compile();

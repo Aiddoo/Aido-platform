@@ -92,9 +92,8 @@ import { AfterCommitTaskRegistryPort } from "#api/shared/application/ports/after
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import {
   AFTER_COMMIT_TASK_REGISTRY,
-  JOB_RUNTIME,
   JobQueuePort,
-  type JobRuntimePort,
+  JobRuntimePort,
   UNIT_OF_WORK,
   UnitOfWorkPort,
 } from "#api/shared/application/ports/index";
@@ -188,7 +187,7 @@ export async function createCriticalQueueProcessorHarness(): Promise<CriticalQue
       { provide: AfterCommitTaskRegistryPort, useExisting: ClsUnitOfWork },
       { provide: ClockPort, useClass: SystemClock },
       {
-        provide: JOB_RUNTIME,
+        provide: JobRuntimePort,
         inject: [TransactionHost],
         useFactory: (txHost: TransactionHost<DrizzleTransactionalAdapter>) =>
           new PgBossJobRuntimeAdapter(boss, txHost, { shutdownTimeoutMs: 10_000 }),
@@ -208,7 +207,7 @@ export async function createCriticalQueueProcessorHarness(): Promise<CriticalQue
     ],
   }).compile();
 
-  const runtime = module.get<JobRuntimePort>(JOB_RUNTIME);
+  const runtime = module.get(JobRuntimePort);
   await runtime.start();
   await module.init();
 

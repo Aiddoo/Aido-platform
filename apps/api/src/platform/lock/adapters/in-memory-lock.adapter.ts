@@ -25,7 +25,7 @@ export class InMemoryLockAdapter implements ILockProvider, OnModuleInit {
   readonly #logger = new Logger(InMemoryLockAdapter.name);
   readonly #locks = new LRUCache<string, LockEntry>({
     max: LOCK_MAX_ENTRIES,
-    // 옛 저장소처럼 만료를 Date.now로 재서 테스트의 가짜 시계(setSystemTime)를 그대로 따른다
+    // 만료를 Date.now로 재서 테스트의 가짜 시계(setSystemTime)를 그대로 따른다
     perf: { now: () => Date.now() },
     ttlResolution: 0,
   });

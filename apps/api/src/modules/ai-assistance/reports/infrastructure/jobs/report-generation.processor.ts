@@ -1,6 +1,6 @@
 import { Inject, Injectable, Logger, type OnModuleInit, Optional } from "@nestjs/common";
 
-import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
+import { JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
 import { toSupportedLocale } from "#api/shared/domain/locale";
 
 import { GenerateReportUseCase } from "../../application/use-cases/generate-report.use-case.js";
@@ -28,7 +28,7 @@ export class ReportGenerationProcessor implements OnModuleInit {
 
   constructor(
     @Inject(GenerateReportUseCase) generateReport: Pick<GenerateReportUseCase, "execute">,
-    @Optional() @Inject(JOB_RUNTIME) runtime?: JobRuntimePort,
+    @Optional() runtime?: JobRuntimePort,
   ) {
     this.#generateReport = generateReport;
     this.#runtime = runtime;

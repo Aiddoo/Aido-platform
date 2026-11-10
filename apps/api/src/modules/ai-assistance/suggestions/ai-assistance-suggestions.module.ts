@@ -1,7 +1,7 @@
 import { Module } from "@nestjs/common";
 
 import { AccessQuotasModule } from "#api/modules/access/quotas/access-quotas.public";
-import { IdentityUserAccessModule } from "#api/modules/identity/identity-user-access.public";
+import { IdentityUserAccessModule } from "#api/modules/identity/users/identity-users.public";
 import { NotificationDeliveryModule } from "#api/modules/notification/notification-delivery.public";
 import { PlanningTodosModule } from "#api/modules/planning/todos/planning-todos.public";
 import { WeatherForecastsModule } from "#api/modules/weather/forecasts/weather-forecasts.public";

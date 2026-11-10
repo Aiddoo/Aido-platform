@@ -29,7 +29,5 @@ import { RevenueCatWebhookController } from "./presentation/http/v1/revenuecat-w
   ],
   controllers: [RevenueCatWebhookController],
   providers: [...BILLING_SUBSCRIPTIONS_PROVIDERS],
-  // 보상 기간 포트는 옛 import 경로(billing-subscriptions.public)를 쓰는 Context가 이 모듈로 받는다
-  exports: [BillingPremiumGrantsModule],
 })
 export class BillingSubscriptionsModule {}

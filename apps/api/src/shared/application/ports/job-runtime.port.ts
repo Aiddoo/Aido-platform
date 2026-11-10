@@ -111,8 +111,6 @@ export abstract class JobRuntimePort {
   abstract health(queueNames: readonly string[]): Promise<JobRuntimeHealth>;
 }
 
-export const JOB_RUNTIME = Symbol("JOB_RUNTIME");
-
 /**
  * 큐 폴링 주기.
  *

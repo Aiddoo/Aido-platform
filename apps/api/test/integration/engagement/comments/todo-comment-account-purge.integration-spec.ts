@@ -47,11 +47,7 @@ import { loggerFor, provideUseCase } from "#api/platform/di/provide-use-case";
 import { DrizzleUsageMeterAdapter } from "#api/platform/metering/adapters/drizzle-usage-meter.adapter";
 import { USAGE_METER } from "#api/platform/metering/interfaces/usage-meter.interface";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
-import {
-  MUTATION_LOCK,
-  MutationLockPort,
-  UnitOfWorkPort,
-} from "#api/shared/application/ports/index";
+import { MutationLockPort, UnitOfWorkPort } from "#api/shared/application/ports/index";
 import { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { RecordingTodoViewCacheInvalidator } from "#test/doubles/engagement/recording-todo-view-cache-invalidator";
@@ -255,7 +251,6 @@ describe("댓글 계정 purge (실제 PostgreSQL)", () => {
         { provide: ClockPort, useClass: DateClock },
         { provide: OperationalAlertPort, useValue: new RecordingOperationalAlert() },
         PostgresMutationLockAdapter,
-        { provide: MUTATION_LOCK, useExisting: PostgresMutationLockAdapter },
         { provide: MutationLockPort, useExisting: PostgresMutationLockAdapter },
         { provide: TodoCommentPurgeRepositoryPort, useClass: DrizzleTodoCommentPurgeRepository },
         { provide: TodoEngagementCounterPort, useClass: DrizzleTodoEngagementCounterAdapter },

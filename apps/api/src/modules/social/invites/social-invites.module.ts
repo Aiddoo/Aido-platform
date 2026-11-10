@@ -2,7 +2,7 @@ import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 
 import { AccessEntitlementsModule } from "#api/modules/access/entitlements/access-entitlements.public";
-import { BillingSubscriptionsModule } from "#api/modules/billing/subscriptions/billing-subscriptions.public";
+import { BillingPremiumGrantsModule } from "#api/modules/billing/premium-grants/billing-premium-grants.public";
 import { NotificationDeliveryModule } from "#api/modules/notification/notification-delivery.public";
 import { SocialBlocksModule } from "#api/modules/social/blocks/social-blocks.public";
 import { SocialFriendsModule } from "#api/modules/social/friends/social-friends.public";
@@ -25,7 +25,7 @@ import { SOCIAL_INVITES_PROVIDERS } from "./social-invites.providers.js";
     SocialFriendsModule,
     NotificationDeliveryModule,
     AccessEntitlementsModule,
-    BillingSubscriptionsModule,
+    BillingPremiumGrantsModule,
     ConfigModule.forFeature(socialInvitesConfig),
   ],
   controllers: [InviteController],

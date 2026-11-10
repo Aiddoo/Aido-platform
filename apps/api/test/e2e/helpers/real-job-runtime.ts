@@ -5,7 +5,7 @@ import { databaseConfig } from "#api/platform/config/database.config";
 import { jobConfig } from "#api/platform/config/job.config";
 import { PgBossJobQueueAdapter } from "#api/platform/jobs/pg-boss-job-queue.adapter";
 import { PgBossJobRuntimeAdapter } from "#api/platform/jobs/pg-boss-job-runtime.adapter";
-import { JOB_RUNTIME, JobQueuePort } from "#api/shared/application/ports/index";
+import { JobQueuePort, JobRuntimePort } from "#api/shared/application/ports/index";
 import { assertManagedTestDatabaseEnvironment } from "#test/setup/managed-test-database";
 
 /** 운영 앱의 pg-boss client는 schema를 만들지 않으므로 앱을 띄우기 전에 테스트 DB에 만든다. 이미 있으면 그대로 둔다. */
@@ -30,7 +30,7 @@ export async function preparePgBossSchema(): Promise<void> {
 export function useRealJobRuntime(builder: TestingModuleBuilder): TestingModuleBuilder {
   assertManagedTestDatabaseEnvironment(process.env);
   return builder
-    .overrideProvider(JOB_RUNTIME)
+    .overrideProvider(JobRuntimePort)
     .useFactory({
       inject: [PgBossJobRuntimeAdapter],
       factory: (runtime: PgBossJobRuntimeAdapter) => runtime,

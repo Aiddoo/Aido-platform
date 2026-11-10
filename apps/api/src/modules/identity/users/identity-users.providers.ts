@@ -2,7 +2,7 @@ import type { FactoryProvider, Provider } from "@nestjs/common";
 
 import { EntitlementReaderPort } from "#api/modules/access/entitlements/access-entitlements.public";
 import { QuotaLedgerPort } from "#api/modules/access/quotas/access-quotas.public";
-import { PremiumAccessReaderPort } from "#api/modules/billing/subscriptions/billing-subscriptions.public";
+import { PremiumAccessReaderPort } from "#api/modules/billing/premium-grants/billing-premium-grants.public";
 import { TodoCommentAccountCleanupPort } from "#api/modules/engagement/comments/engagement-comments.public";
 import { NotificationAccountCleanup } from "#api/modules/notification/notification-delivery.public";
 import { CheerUsageReaderPort } from "#api/modules/social/cheers/social-cheers.public";

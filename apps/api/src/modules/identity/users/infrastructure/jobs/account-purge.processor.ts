@@ -3,7 +3,7 @@ import { Inject, Injectable, Logger, type OnModuleInit } from "@nestjs/common";
 import { AuthLogEvent } from "#api/modules/identity/auth/application/auth.log-events";
 import { PurgeDeletedAccountsUseCase } from "#api/modules/identity/users/application/use-cases/purge-deleted-accounts.use-case";
 import { JOB_POLLING_SECONDS } from "#api/shared/application/ports/index";
-import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
+import { JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
 
 import { ACCOUNT_PURGE_QUEUE, type AccountPurgeJobData } from "./account-purge.queue.js";
 
@@ -17,7 +17,7 @@ export class AccountPurgeProcessor implements OnModuleInit {
   constructor(
     @Inject(PurgeDeletedAccountsUseCase)
     purgeDeletedAccounts: Pick<PurgeDeletedAccountsUseCase, "execute">,
-    @Inject(JOB_RUNTIME) runtime: JobRuntimePort,
+    runtime: JobRuntimePort,
   ) {
     this.#purgeDeletedAccounts = purgeDeletedAccounts;
     this.#runtime = runtime;
