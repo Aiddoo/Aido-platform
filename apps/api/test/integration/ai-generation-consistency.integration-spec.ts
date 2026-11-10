@@ -263,10 +263,11 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
     await client.insert(dailyCompletion).values({
       id: createEntityId(),
       userId,
-      date: new Date("2026-10-05T00:00:00Z"),
+      date: Temporal.PlainDate.from("2026-10-05"),
       totalTodos: 2,
       completedTodos: 2,
-      achievedAt: new Date("2026-10-05T12:00:00Z"),
+      achievedAt: Temporal.Instant.from("2026-10-05T12:00:00Z"),
+      updatedAt: Temporal.Instant.from("2026-10-05T12:00:00Z"),
     });
 
     // When
@@ -317,10 +318,11 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
         dates.map((date) => ({
           id: createEntityId(),
           userId,
-          date: new Date(`${date}T00:00:00Z`),
+          date: Temporal.PlainDate.from(date),
           totalTodos: 1,
           completedTodos: 1,
-          achievedAt: new Date(`${date}T12:00:00Z`),
+          achievedAt: Temporal.Instant.from(`${date}T12:00:00Z`),
+          updatedAt: Temporal.Instant.from(`${date}T12:00:00Z`),
         })),
       );
 

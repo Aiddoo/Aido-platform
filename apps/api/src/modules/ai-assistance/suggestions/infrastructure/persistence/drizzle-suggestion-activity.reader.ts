@@ -12,7 +12,11 @@ import { compact, countBy, groupBy, sumBy } from "es-toolkit";
 import { requireRecord } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { toDateString } from "#api/shared/domain/date/utils/format";
-import { startOfDayInTimezone, toLocalTimeString } from "#api/shared/domain/date/utils/timezone";
+import {
+  resolveTimezone,
+  startOfDayInTimezone,
+  toLocalTimeString,
+} from "#api/shared/domain/date/utils/timezone";
 import { instantFromDate } from "#api/shared/domain/time/instant";
 
 import { SuggestionActivityReaderPort } from "../../application/ports/suggestion-activity.reader.port.js";
@@ -27,6 +31,11 @@ import type {
 
 function localDay(value: Date, timezone: string): Date {
   return startOfDayInTimezone(value, timezone);
+}
+
+// insights DailyCompletion.date는 달력 날짜 칸이라 같은 현지 날짜를 PlainDate로 비교한다
+function localCalendarDay(value: Date, timezone: string): Temporal.PlainDate {
+  return instantFromDate(value).toZonedDateTimeISO(resolveTimezone(timezone)).toPlainDate();
 }
 
 /** 제안 분석용 활동 projection. planning·insights 테이블을 읽는다(공개 조회 포트로 옮기는 것은 후속). */
@@ -53,13 +62,14 @@ export class DrizzleSuggestionActivityReader extends SuggestionActivityReaderPor
       columns: { date: true, totalTodos: true, completedTodos: true },
       where: {
         userId,
-        date: { gte: localDay(from, timezone), lte: localDay(to, timezone) },
+        date: { gte: localCalendarDay(from, timezone), lte: localCalendarDay(to, timezone) },
       },
     });
 
     const completionsByDay: Partial<Record<DayOfWeek, typeof completions>> = groupBy(
       completions,
-      (c) => dayIndexToDayOfWeek(dayjs.utc(c.date).day()),
+      // Temporal은 월요일 1 ~ 일요일 7이라 dayjs의 일요일 0 기준으로 맞춘다
+      (c) => dayIndexToDayOfWeek(c.date.dayOfWeek % 7),
     );
 
     return DAY_OF_WEEK_ORDER.map((day) => {
