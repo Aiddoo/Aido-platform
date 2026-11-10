@@ -30,6 +30,7 @@ env를 더하거나 읽는 위치를 바꿀 때, 운영 env를 준비할 때 읽
 | `AI_PROVIDER_ORDER` / `AI_GENERATION_MODE`                           | `anthropic,google,openai` / `on`    | 같음                        | 같음                  |
 | 초대 해시 비밀(`INVITE_ENABLED=true`일 때)                           | 없으면 로컬 값                      | 필수                        | 필수                  |
 | Sentry 발송                                                          | 안 함                               | 안 함                       | DSN 있으면 보냄       |
+| 공개 `/health` 상세(`exposeHealthDetails`: 큐·런타임·인스턴스)       | 공개                                | 공개                        | `{ status }`만        |
 
 - 테스트 실행(`NODE_ENV=test`)은 출시 응답 계약을 검증하므로 development여도 개발 도구를 끈다.
 - 공급자는 한 모양이다: 설정 파일의 `as const` 튜플 + 배포 환경 기본값(`defaultEmailProvider` 등) + slice `*.providers.ts`가 부르는 선택 helper(`selectEmailSender`·`selectAdminNotifier`·`selectSharedRedis`·`selectPushRateLimiter`). env에 적은 값은 기본값보다 앞선다.

@@ -1,14 +1,13 @@
 import { randomUUID } from "node:crypto";
 
 import { Controller, Get, Inject, VERSION_NEUTRAL } from "@nestjs/common";
-import type { ConfigType } from "@nestjs/config";
 import { ApiResponse, ApiTags, type SchemaObject } from "@nestjs/swagger";
 import type { HealthCheckResult } from "@nestjs/terminus";
 import { HealthCheck, HealthCheckService } from "@nestjs/terminus";
 import { SkipThrottle } from "@nestjs/throttler";
 
 import { Public } from "#api/modules/identity/identity-auth-http.public";
-import { appConfig } from "#api/platform/config/app.config";
+import { appConfig, type AppSettings } from "#api/platform/config/app.config";
 import { ApiDoc, SWAGGER_TAGS } from "#api/platform/http/swagger/index";
 
 import { DatabaseHealthIndicator } from "./indicators/database.health.js";
@@ -39,6 +38,7 @@ function describeHealthResponse(status: "ok" | "error"): SchemaObject {
 @Controller({ path: "health", version: VERSION_NEUTRAL })
 export class HealthController {
   readonly #instanceId: string;
+  readonly #exposeDetails: boolean;
 
   constructor(
     private readonly health: HealthCheckService,
@@ -46,9 +46,10 @@ export class HealthController {
     private readonly jobRuntimeHealth: JobRuntimeHealthIndicator,
     private readonly outboundHealth: OutboundHealthIndicator,
     private readonly runtimeStatsHealth: RuntimeStatsHealthIndicator,
-    @Inject(appConfig.KEY) config: Pick<ConfigType<typeof appConfig>, "instanceId">,
+    @Inject(appConfig.KEY) app: Pick<AppSettings, "instanceId" | "exposeHealthDetails">,
   ) {
-    this.#instanceId = config.instanceId ?? randomUUID().slice(0, 8);
+    this.#instanceId = app.instanceId ?? randomUUID().slice(0, 8);
+    this.#exposeDetails = app.exposeHealthDetails;
   }
 
   @Get()
@@ -123,13 +124,19 @@ curl https://api.aido.com/health
       },
     },
   })
-  async check(): Promise<HealthCheckResult & { instanceId: string }> {
+  async check(): Promise<
+    Pick<HealthCheckResult, "status"> | (HealthCheckResult & { instanceId: string })
+  > {
     const result = await this.health.check([
       () => this.databaseHealth.isHealthy("database"),
       () => this.jobRuntimeHealth.isHealthy("queues"),
       () => this.outboundHealth.isHealthy("outbound"),
       () => this.runtimeStatsHealth.isHealthy("runtime"),
     ]);
+    // 운영은 공개 응답에 큐 이름·실패 수·런타임 수치를 싣지 않는다. 실패는 지금처럼 503이다
+    if (!this.#exposeDetails) {
+      return { status: result.status };
+    }
     return { ...result, instanceId: this.#instanceId };
   }
 }

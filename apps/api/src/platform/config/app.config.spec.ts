@@ -83,3 +83,19 @@ describe("appConfig — 개발 도구 스위치", () => {
     expect(config.devTools).toEqual(devTools);
   });
 });
+
+describe("appConfig — 공개 health 상세", () => {
+  it.each([
+    { name: "로컬 개발", env: { NODE_ENV: "development" }, expose: true },
+    { name: "테스트 실행", env: { NODE_ENV: "test" }, expose: true },
+    { name: "스테이징", env: { NODE_ENV: "production", APP_ENV: "staging" }, expose: true },
+    { name: "운영", env: { NODE_ENV: "production", APP_ENV: "production" }, expose: false },
+    { name: "APP_ENV 없는 운영", env: { NODE_ENV: "production" }, expose: false },
+  ])("$name은 /health 상세 공개가 $expose다", ({ env, expose }) => {
+    // When
+    const config = appConfig.parse(env);
+
+    // Then
+    expect(config.exposeHealthDetails).toBe(expose);
+  });
+});

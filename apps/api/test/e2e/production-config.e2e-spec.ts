@@ -76,6 +76,15 @@ describe("운영 설정(APP_ENV=production)으로 띄운 앱 (실제 PostgreSQL)
     },
   );
 
+  it("공개 /health는 큐 이름·실패 수·런타임 수치 없이 전체 상태만 준다", async () => {
+    // When
+    const response = await server().get("/health").expect(200);
+
+    // Then
+    expect(response.body.data).toEqual({ status: "ok" });
+    expect(JSON.stringify(response.body)).not.toMatch(/\.v1|queues|runtime|instanceId/);
+  });
+
   it("CORS는 localhost 개발 출처를 허용하지 않고 랜딩 출처는 허용한다", async () => {
     // When
     const local = await server()

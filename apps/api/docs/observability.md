@@ -174,4 +174,5 @@ Developer 플랜(2026-11-10 [요금 페이지](https://sentry.io/pricing/) 확�
 
 - `app.module`의 `SentryModule.forRoot()`는 SDK 설정 모듈이라 그대로 둔다.
 - [runtime-stats](../src/platform/observability/runtime-stats.ts)는 60초마다 표본을 재서 `/health`의 `runtime` 상세(항상 up)에 싣고, 판정은 순수 함수 `evaluateRuntimeSample`·`newlyBreached`다. Swagger 설명은 계약 지문 때문에 바꾸지 않았다.
+- 공개 `/health`의 상세(`database`·`queues`·`outbound`·`runtime`·`instanceId`)는 development·staging에서만 싣는다(`appConfig.exposeHealthDetails`). 운영은 `{ status }`와 200/503만 주므로 큐·포화도 감시는 경보(`OperationalAlertPort`)와 로그로 한다.
 - platform 로그 이벤트 상수는 [platform.log-events.ts](../src/platform/logging/platform.log-events.ts)다. 아직 옮기지 않은 Context는 `application/observability/<slice>/*.events.ts`와 Nest Logger 연결 factory를 쓴다. 옮긴 Context는 `apps/api/architecture.ratchet.json`의 `migratedContexts`에 있다.

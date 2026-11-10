@@ -14,7 +14,7 @@ export type WebhookSignatureCheck =
   | { readonly mode: "skip" }
   | { readonly mode: "reject" };
 
-export function resolveWebhookSignatureCheck(input: {
+function resolveWebhookSignatureCheck(input: {
   readonly environment: AppEnvironment;
   readonly secret: string | undefined;
 }): WebhookSignatureCheck {

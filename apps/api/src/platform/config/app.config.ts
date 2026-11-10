@@ -52,6 +52,8 @@ export const appConfig = defineConfig(
         environment,
         isProduction: environment === "production",
         devTools: resolveDevTools({ environment, nodeEnv: env.NODE_ENV }),
+        // 공개 /health의 큐 이름·실패 수·런타임 수치. 운영은 전체 상태만 공개한다(가동 감시·배포 검사는 상태 코드만 본다)
+        exposeHealthDetails: environment !== "production",
         port: env.PORT,
         corsOrigins: env.CORS_ORIGINS,
         instanceId: env.INSTANCE_ID,

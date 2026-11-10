@@ -91,7 +91,7 @@ worker → 규칙 시간대 변경 → 500행씩: 잠금 → 최신 시간대 �
 
 - 완료 로그 `planning.todo.timezone-rebase.completed`: `outcome`(`COMPLETED`·`SUPERSEDED`·`NO_PREFERENCE`), `scannedCount`, `rebasedCount`, `skippedCount`, `seriesCount`, `timezone`, `durationMs`. 제목은 남기지 않는다.
 - 시도별 실패 `planning.todo.timezone-rebase.failed`. pg-boss가 3번 다시 시도하고(30초, 백오프) 마지막 시도까지 실패하면 경보 `planning.todo-timezone-rebase-failed`가 오른다. 이때 그 사용자의 알림은 옛 시각이다. 표시는 벽시계라 맞다.
-- `/health`의 job 상태에 `todo-timezone-rebase.v1` 대기·실행·실패 수가 보인다.
+- 개발·스테이징 `/health`의 job 상태에 `todo-timezone-rebase.v1` 대기·실행·실패 수가 보인다(운영 공개 응답은 상태만 준다).
 - 탈퇴·설정 없는 사용자는 `NO_PREFERENCE`로 조용히 끝난다. 정지·휴면 사용자도 그대로 계산하고 발송은 기존 리마인더 처리가 건너뛴다.
 
 ## 한계
