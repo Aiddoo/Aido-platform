@@ -146,6 +146,7 @@ function CategoryHeader({ category, date }: CategoryHeaderProps) {
       onPress={() => push({ pathname: '/todo/new', params: { date, categoryId: category.id } })}
       isDisabled={TodoCategoryPolicy.isOptimisticCategory(category)}
       hitSlop={8}
+      testID={`todo-add-${category.id}`}
       className="self-start"
     >
       <CategoryHeaderPill label={category.name} color={category.color} pointerEvents="none">
@@ -358,6 +359,7 @@ TodoList.Item = function Item({
             className="min-h-0 min-w-0"
             hitSlop={8}
             onPress={isOptimistic ? undefined : handleActionsPress}
+            testID={`todo-more-${todo.id}`}
           />
         </HStack>
       }
