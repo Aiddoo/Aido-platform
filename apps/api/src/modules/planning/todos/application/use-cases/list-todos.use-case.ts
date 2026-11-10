@@ -3,7 +3,9 @@ import { ErrorCode } from "@aido/api/errors";
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { CursorPaginatedResponse } from "#api/shared/application/pagination/index";
 import type { PaginationService } from "#api/shared/application/pagination/index";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
+import { TodoCategoryId } from "../../../categories/domain/todo-category-id.vo.js";
 import type { CatchUpTodoSeriesUseCase } from "../../../todo-series/application/use-cases/catch-up-todo-series.use-case.js";
 import { type TodoReadRepositoryPort } from "../ports/todo-read.repository.port.js";
 import type { FindTodosParams } from "../ports/todo-read.repository.port.js";
@@ -57,11 +59,12 @@ export class ListTodosUseCase {
     );
 
     const repoParams: FindTodosParams = {
-      userId: input.userId,
+      userId: UserId.reconstitute(input.userId),
       cursor,
       size,
       completed: input.completed,
-      categoryId: input.categoryId,
+      categoryId:
+        input.categoryId == null ? undefined : TodoCategoryId.reconstitute(input.categoryId),
       startDate: input.startDate,
       endDate: input.endDate,
     };

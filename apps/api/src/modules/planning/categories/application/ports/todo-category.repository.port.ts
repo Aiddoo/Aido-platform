@@ -1,3 +1,5 @@
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+
 import type { TodoCategoryId } from "../../domain/todo-category-id.vo.js";
 import type { TodoCategory } from "../../domain/todo-category.aggregate.js";
 import type { TodoCategoryWithCountReadModel } from "../read-models/todo-category-with-count.read-model.js";
@@ -16,28 +18,31 @@ export interface UpdateCategoryInput {
 export abstract class TodoCategoryRepositoryPort {
   abstract nextId(): Promise<TodoCategoryId>;
   abstract insert(category: TodoCategory): Promise<void>;
-  abstract update(id: number, input: UpdateCategoryInput): Promise<TodoCategory>;
-  abstract delete(id: number): Promise<void>;
+  abstract update(id: TodoCategoryId, input: UpdateCategoryInput): Promise<TodoCategory>;
+  abstract delete(id: TodoCategoryId): Promise<void>;
 
-  abstract findByIdAndUserId(id: number, userId: string): Promise<TodoCategory | null>;
-  abstract findByIdWithCount(id: number): Promise<TodoCategoryWithCountReadModel | null>;
-  abstract findManyByUserId(userId: string): Promise<TodoCategoryWithCountReadModel[]>;
+  abstract findByIdAndUserId(id: TodoCategoryId, userId: UserId): Promise<TodoCategory | null>;
+  abstract findByIdWithCount(id: TodoCategoryId): Promise<TodoCategoryWithCountReadModel | null>;
+  abstract findManyByUserId(userId: UserId): Promise<TodoCategoryWithCountReadModel[]>;
 
-  abstract countByUserId(userId: string): Promise<number>;
+  abstract countByUserId(userId: UserId): Promise<number>;
   abstract existsByUserIdAndName(
-    userId: string,
+    userId: UserId,
     name: string,
-    excludeId?: number,
+    excludeId?: TodoCategoryId,
   ): Promise<boolean>;
-  abstract getMaxSortOrder(userId: string): Promise<number>;
+  abstract getMaxSortOrder(userId: UserId): Promise<number>;
   abstract shiftSortOrders(
-    userId: string,
+    userId: UserId,
     fromSortOrder: number,
     toSortOrder: number | null,
     delta: number,
   ): Promise<number>;
 
-  abstract getTodoCount(categoryId: number): Promise<number>;
-  abstract countActiveSeries(categoryId: number): Promise<number>;
-  abstract moveTodosToCategory(fromCategoryId: number, toCategoryId: number): Promise<void>;
+  abstract getTodoCount(categoryId: TodoCategoryId): Promise<number>;
+  abstract countActiveSeries(categoryId: TodoCategoryId): Promise<number>;
+  abstract moveTodosToCategory(
+    fromCategoryId: TodoCategoryId,
+    toCategoryId: TodoCategoryId,
+  ): Promise<void>;
 }

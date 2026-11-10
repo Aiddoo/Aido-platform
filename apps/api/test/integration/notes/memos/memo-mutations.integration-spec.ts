@@ -12,6 +12,7 @@ import { ReorderMemoUseCase } from "#api/modules/notes/memos/application/use-cas
 import { SetMemoPinnedUseCase } from "#api/modules/notes/memos/application/use-cases/set-memo-pinned.use-case";
 import { UpdateMemoUseCase } from "#api/modules/notes/memos/application/use-cases/update-memo.use-case";
 import { MemoId } from "#api/modules/notes/memos/domain/memo-id.vo";
+import { TodoCategoryId } from "#api/modules/planning/categories/planning-categories.public";
 import {
   DatabaseRecordNotFoundError,
   databaseSqlState,
@@ -460,10 +461,14 @@ describe("메모 변경 원자성 (실제 PostgreSQL)", () => {
         memoId: seeded.id,
         timezone: "UTC",
         todos: [
-          { title: "앞선 성공 항목", categoryId, startDate },
+          {
+            title: "앞선 성공 항목",
+            categoryId: TodoCategoryId.reconstitute(categoryId),
+            startDate,
+          },
           {
             title: "실패 반복 항목",
-            categoryId,
+            categoryId: TodoCategoryId.reconstitute(categoryId),
             startDate,
             repeat: {
               frequency: "WEEKLY",

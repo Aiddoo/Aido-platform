@@ -4,7 +4,9 @@ import { ApplicationException } from "#api/shared/application/application.except
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { type MutationLockPort, type UnitOfWorkPort } from "#api/shared/application/ports/index";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
+import { TodoId } from "../../../shared/domain/todo-id.vo.js";
 import { TodoTitle } from "../../../shared/domain/todo-title.vo.js";
 import { type TodoCachePort } from "../ports/todo-cache.port.js";
 import { type TodoReadRepositoryPort } from "../ports/todo-read.repository.port.js";
@@ -47,10 +49,12 @@ export class AddTodoItemUseCase {
 
   async execute(input: AddTodoItemInput): Promise<TodoReadModel> {
     const { todoId, userId, title, timezone } = input;
+    const targetTodoId = TodoId.reconstitute(todoId);
+    const ownerId = UserId.reconstitute(userId);
 
     const events = await this.#dependencies.unitOfWork.run(async () => {
       await this.#dependencies.mutationLock.acquire([TodoLockKeys.todo(todoId)]);
-      const todo = await this.#dependencies.todoRepository.findByIdAndUserId(todoId, userId);
+      const todo = await this.#dependencies.todoRepository.findByIdAndUserId(targetTodoId, ownerId);
       if (todo == null) {
         throw new ApplicationException(ErrorCode.TODO_0801, { todoId });
       }
@@ -59,12 +63,12 @@ export class AddTodoItemUseCase {
       const itemTitle = TodoTitle.create(title);
       const now = clock.now();
       const item = todo.addItem({ id: await todoRepository.nextItemId(), title: itemTitle, now });
-      await todoRepository.insertItem(todoId, item);
+      await todoRepository.insertItem(targetTodoId, item);
 
       if (!todo.reopenForAddedItem(timezone, now)) {
         return [];
       }
-      await todoRepository.updateDetails(todoId, {
+      await todoRepository.updateDetails(targetTodoId, {
         completed: todo.completed,
         completedAt: todo.completedAt,
       });
@@ -83,9 +87,12 @@ export class AddTodoItemUseCase {
 
     await this.#dependencies.completionEffects.execute(events);
 
-    await this.#dependencies.todoCache.invalidateFriendTodos(userId);
+    await this.#dependencies.todoCache.invalidateFriendTodos(ownerId);
 
-    const response = await this.#dependencies.todoReadRepository.findByIdAndUserId(todoId, userId);
+    const response = await this.#dependencies.todoReadRepository.findByIdAndUserId(
+      targetTodoId,
+      ownerId,
+    );
     if (response == null) {
       throw new ApplicationException(ErrorCode.TODO_0801, { todoId });
     }

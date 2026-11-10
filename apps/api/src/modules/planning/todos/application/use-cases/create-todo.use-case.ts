@@ -27,8 +27,8 @@ export class CreateTodoUseCase {
   async execute(input: CreateTodoInput): Promise<CreateTodoResult> {
     const staged = await this.#dependencies.unitOfWork.run(async () => {
       await this.#dependencies.mutationLock.acquire([
-        TodoCategoryLockKeys.userCategories(input.userId),
-        TodoLockKeys.sortOrder(input.userId),
+        TodoCategoryLockKeys.userCategories(input.userId.value),
+        TodoLockKeys.sortOrder(input.userId.value),
       ]);
       return this.#dependencies.todoCreator.stage(input);
     });

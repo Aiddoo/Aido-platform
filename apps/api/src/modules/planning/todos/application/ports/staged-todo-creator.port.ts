@@ -1,7 +1,9 @@
 import type { TodoVisibility } from "@aido/api/vocabulary";
 
 import type { AfterCommitTask } from "#api/shared/application/ports/index";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
+import type { TodoCategoryId } from "../../../categories/domain/todo-category-id.vo.js";
 import type { TodoSeriesReadModel } from "../../../todo-series/application/read-models/todo-series.read-model.js";
 import type { RepeatSpec } from "../../../todo-series/domain/repeat-rule.vo.js";
 import type { TodoReadModel } from "../read-models/todo.read-model.js";
@@ -11,9 +13,9 @@ import type { TodoReadModel } from "../read-models/todo.read-model.js";
  * 반복은 회차 날짜마다 다시 해석해야 해서 이미 변환한 instant로는 받지 않는다.
  */
 export interface CreateTodoData {
-  readonly userId: string;
+  readonly userId: UserId;
   readonly title: string;
-  readonly categoryId: number;
+  readonly categoryId: TodoCategoryId;
   // 메모·음성·AI가 아직 날짜를 UTC 자정 Date로 넘겨 이 경계에서만 Date로 받는다
   readonly startDate: Date;
   readonly endDate?: Date | null;

@@ -1,3 +1,6 @@
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+
+import type { TodoId } from "../../../shared/domain/todo-id.vo.js";
 import type { TodoReadModel } from "../read-models/todo.read-model.js";
 
 /** 계획의 겹침 판정·고유명사 교정에 쓰는 다가오는 할 일. 반복 할 일은 다음 회차 하나다. */
@@ -12,8 +15,8 @@ export interface UpcomingTodoView {
 export abstract class TodoPlanReaderPort {
   // 음성·AI가 아직 오늘을 UTC 자정 Date로 넘긴다
   abstract findUpcoming(
-    userId: string,
+    userId: UserId,
     input: { readonly fromDate: Date; readonly limit: number },
   ): Promise<UpcomingTodoView[]>;
-  abstract findManyByIds(userId: string, ids: readonly number[]): Promise<TodoReadModel[]>;
+  abstract findManyByIds(userId: UserId, ids: readonly TodoId[]): Promise<TodoReadModel[]>;
 }

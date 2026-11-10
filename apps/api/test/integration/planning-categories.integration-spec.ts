@@ -8,11 +8,13 @@ import { GetTodoCategoryResourceLimitUseCase } from "#api/modules/planning/categ
 import { GetTodoCategoryUseCase } from "#api/modules/planning/categories/application/use-cases/get-todo-category.use-case";
 import { ListTodoCategoriesUseCase } from "#api/modules/planning/categories/application/use-cases/list-todo-categories.use-case";
 import { UpdateTodoCategoryUseCase } from "#api/modules/planning/categories/application/use-cases/update-todo-category.use-case";
+import { TodoCategoryId } from "#api/modules/planning/categories/domain/todo-category-id.vo";
 import type { TodoCategory } from "#api/modules/planning/categories/domain/todo-category.aggregate";
 import { TodoCategoryProvisionerPort } from "#api/modules/planning/categories/planning-categories.public";
 import { createEntityId } from "#api/platform/database/entity-id";
 import { todo, user } from "#api/platform/database/schema/index";
 import { UNIT_OF_WORK, type UnitOfWorkPort } from "#api/shared/application/ports/index";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantFromDate } from "#api/shared/domain/time/instant";
 import { TodoFixture, UserFixture } from "#test/fixtures/index";
 import { createTodoCategoryFixture } from "#test/fixtures/planning/todo-category.fixture";
@@ -125,7 +127,14 @@ describe("Planning 카테고리 상태·조회·트랜잭션 (실제 PostgreSQL)
     ).rejects.toBeInstanceOf(Error);
 
     // Then
-    expect((await repository.findByIdAndUserId(categoryId, userId))?.toPrimitives()).toMatchObject({
+    expect(
+      (
+        await repository.findByIdAndUserId(
+          TodoCategoryId.reconstitute(categoryId),
+          UserId.reconstitute(userId),
+        )
+      )?.toPrimitives(),
+    ).toMatchObject({
       name: "기존",
       color: "#FFB3B3",
     });
@@ -146,7 +155,14 @@ describe("Planning 카테고리 상태·조회·트랜잭션 (실제 PostgreSQL)
     ).rejects.toBe(failure);
 
     // Then
-    expect((await repository.findByIdAndUserId(categoryId, userId))?.toPrimitives()).toMatchObject({
+    expect(
+      (
+        await repository.findByIdAndUserId(
+          TodoCategoryId.reconstitute(categoryId),
+          UserId.reconstitute(userId),
+        )
+      )?.toPrimitives(),
+    ).toMatchObject({
       name: "기존",
     });
   });
@@ -161,7 +177,14 @@ describe("Planning 카테고리 상태·조회·트랜잭션 (실제 PostgreSQL)
     ]);
 
     // Then
-    expect((await repository.findByIdAndUserId(categoryId, userId))?.toPrimitives()).toMatchObject({
+    expect(
+      (
+        await repository.findByIdAndUserId(
+          TodoCategoryId.reconstitute(categoryId),
+          UserId.reconstitute(userId),
+        )
+      )?.toPrimitives(),
+    ).toMatchObject({
       name: "변경",
       color: "#112233",
     });
@@ -178,7 +201,7 @@ describe("Planning 카테고리 상태·조회·트랜잭션 (실제 PostgreSQL)
 
     // Then
     expect(
-      (await repository.findByIdAndUserId(another.id.value, userId))?.toPrimitives(),
+      (await repository.findByIdAndUserId(another.id, UserId.reconstitute(userId)))?.toPrimitives(),
     ).toMatchObject({
       name: "다른",
     });
@@ -243,7 +266,12 @@ describe("Planning 카테고리 상태·조회·트랜잭션 (실제 PostgreSQL)
         categoryId: target.id.value,
       })),
     );
-    expect(await repository.findByIdAndUserId(categoryId, userId)).toBeNull();
+    expect(
+      await repository.findByIdAndUserId(
+        TodoCategoryId.reconstitute(categoryId),
+        UserId.reconstitute(userId),
+      ),
+    ).toBeNull();
     expect(
       await context.module.get(GetTodoCategoryUseCase).execute({ id: target.id.value, userId }),
     ).toMatchObject({ todoCount: 2 });
@@ -271,13 +299,13 @@ describe("Planning 카테고리 상태·조회·트랜잭션 (실제 PostgreSQL)
     // When
     await expect(
       unitOfWork.run(async () => {
-        await provisioner.seed(userId);
+        await provisioner.seed(UserId.reconstitute(userId));
         throw failure;
       }),
     ).rejects.toBe(failure);
 
     // Then
-    expect(await repository.countByUserId(userId)).toBe(1);
+    expect(await repository.countByUserId(UserId.reconstitute(userId))).toBe(1);
   });
 
   it.each([
@@ -291,10 +319,10 @@ describe("Planning 카테고리 상태·조회·트랜잭션 (실제 PostgreSQL)
     );
 
     // When
-    await unitOfWork.run(() => provisioner.seed(userId, locale));
+    await unitOfWork.run(() => provisioner.seed(UserId.reconstitute(userId), locale));
 
     // Then
-    const categories = await repository.findManyByUserId(userId);
+    const categories = await repository.findManyByUserId(UserId.reconstitute(userId));
     expect(categories.map(({ name }) => name)).toEqual(expect.arrayContaining([...names]));
   });
 });

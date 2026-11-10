@@ -9,6 +9,7 @@ import { omit } from "es-toolkit";
 import { TodoSeriesOwnerDormancyPort } from "#api/modules/notification/reminders/application/ports/todo-series-owner-dormancy.port";
 import { TODO_REMINDER_QUEUE } from "#api/modules/notification/reminders/infrastructure/jobs/todo-reminder.queue";
 import { DeleteTodoCategoryUseCase } from "#api/modules/planning/categories/application/use-cases/delete-todo-category.use-case";
+import { TodoCategoryId } from "#api/modules/planning/categories/domain/todo-category-id.vo";
 import { MaterializeDueTodoSeriesUseCase } from "#api/modules/planning/todo-series/application/use-cases/materialize-due-todo-series.use-case";
 import {
   UpdateFollowingTodosUseCase,
@@ -33,6 +34,7 @@ import {
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
 import { parseLocalDateTime } from "#api/shared/domain/date/utils/timezone";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantFromDate, toIsoString } from "#api/shared/domain/time/instant";
 import { plainDateFromDate } from "#api/shared/domain/time/plain-date";
 import { DateClock } from "#test/doubles/platform/date-clock";
@@ -114,8 +116,8 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
 
   async function start(repeat: TodoRepeat = DAILY_NEVER, scheduledTime: string | null = null) {
     const { series, todos } = await context.module.get(CreateTodoUseCase).execute({
-      userId,
-      categoryId,
+      userId: UserId.reconstitute(userId),
+      categoryId: TodoCategoryId.reconstitute(categoryId),
       title: "원래 제목",
       startDate: AT,
       scheduledTime,
@@ -275,8 +277,8 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
     it("지난 회차가 상한을 넘는 새 반복은 만들지 않는다", async () => {
       // When
       const outcome = context.module.get(CreateTodoUseCase).execute({
-        userId,
-        categoryId,
+        userId: UserId.reconstitute(userId),
+        categoryId: TodoCategoryId.reconstitute(categoryId),
         title: "먼 과거",
         startDate: new Date("2000-01-01T00:00:00.000Z"),
         timezone: "UTC",
@@ -295,8 +297,8 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
       const startDate = new Date("2025-11-02T00:00:00.000Z");
       // When
       const { series } = await context.module.get(CreateTodoUseCase).execute({
-        userId,
-        categoryId,
+        userId: UserId.reconstitute(userId),
+        categoryId: TodoCategoryId.reconstitute(categoryId),
         title: "1년 전 시작",
         startDate,
         timezone: "UTC",
@@ -313,8 +315,8 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
     it("출시 앱의 /recurring이 보내는 366일 범위는 시작일이 오래돼도 그대로 만든다", async () => {
       // When
       const { todos } = await context.module.get(CreateTodoUseCase).execute({
-        userId,
-        categoryId,
+        userId: UserId.reconstitute(userId),
+        categoryId: TodoCategoryId.reconstitute(categoryId),
         title: "옛 앱",
         startDate: new Date("2000-01-03T00:00:00.000Z"),
         timezone: "UTC",
@@ -364,8 +366,8 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
       vi.setSystemTime(new Date("2027-03-12T00:00:00.000Z"));
       const { seriesId } = await (async () => {
         const created = await context.module.get(CreateTodoUseCase).execute({
-          userId,
-          categoryId,
+          userId: UserId.reconstitute(userId),
+          categoryId: TodoCategoryId.reconstitute(categoryId),
           title: "DST",
           startDate: new Date("2027-03-13T00:00:00.000Z"),
           scheduledTime: "08:00",
@@ -626,8 +628,8 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
     it("반복이 아니면 TODO_0844다", async () => {
       // Given
       const { todos } = await context.module.get(CreateTodoUseCase).execute({
-        userId,
-        categoryId,
+        userId: UserId.reconstitute(userId),
+        categoryId: TodoCategoryId.reconstitute(categoryId),
         title: "단일",
         startDate: AT,
         timezone: "UTC",
@@ -710,8 +712,8 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
         .values(omit(TodoCategoryFixture.create({ userId: other.id, sortOrder: 0 }), ["id"]))
         .returning();
       const otherTodos = await context.module.get(CreateTodoUseCase).execute({
-        userId: other.id,
-        categoryId: otherCategory?.id ?? 0,
+        userId: UserId.reconstitute(other.id),
+        categoryId: TodoCategoryId.reconstitute(otherCategory?.id ?? 0),
         title: "남의 반복",
         startDate: AT,
         timezone: "UTC",
@@ -749,8 +751,8 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
       async (scope) => {
         // Given
         const { todos } = await context.module.get(CreateTodoUseCase).execute({
-          userId,
-          categoryId,
+          userId: UserId.reconstitute(userId),
+          categoryId: TodoCategoryId.reconstitute(categoryId),
           title: "단일",
           startDate: AT,
           timezone: "UTC",
@@ -1182,8 +1184,8 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
     it("그 할 일을 첫 회차로 삼아 id·댓글을 유지하고 체크리스트를 템플릿으로 쓴다", async () => {
       // Given
       const { todos } = await context.module.get(CreateTodoUseCase).execute({
-        userId,
-        categoryId,
+        userId: UserId.reconstitute(userId),
+        categoryId: TodoCategoryId.reconstitute(categoryId),
         title: "전환",
         startDate: AT,
         scheduledTime: "09:00",
@@ -1223,8 +1225,8 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
     it("시작일이 규칙에 맞지 않으면 다음 맞는 날로 옮긴다", async () => {
       // Given
       const { todos } = await context.module.get(CreateTodoUseCase).execute({
-        userId,
-        categoryId,
+        userId: UserId.reconstitute(userId),
+        categoryId: TodoCategoryId.reconstitute(categoryId),
         title: "전환",
         startDate: AT,
         timezone: "UTC",
@@ -1247,8 +1249,8 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
     it("첫 회차가 옮겨지면 옛 시각의 예약을 지우고 새 날짜로 다시 잡는다", async () => {
       // Given
       const { todos } = await context.module.get(CreateTodoUseCase).execute({
-        userId,
-        categoryId,
+        userId: UserId.reconstitute(userId),
+        categoryId: TodoCategoryId.reconstitute(categoryId),
         title: "전환",
         startDate: AT,
         scheduledTime: "09:00",
@@ -1279,8 +1281,8 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
     it("전환과 함께 시간을 바꿔도 옮겨진 첫 회차의 예약이 옛 시각으로 덮이지 않는다", async () => {
       // Given
       const { todos } = await context.module.get(CreateTodoUseCase).execute({
-        userId,
-        categoryId,
+        userId: UserId.reconstitute(userId),
+        categoryId: TodoCategoryId.reconstitute(categoryId),
         title: "전환",
         startDate: AT,
         scheduledTime: "09:00",
@@ -1312,8 +1314,8 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
     it("규칙 상한에 걸리면 함께 보낸 제목도 저장되지 않는다", async () => {
       // Given
       const { todos } = await context.module.get(CreateTodoUseCase).execute({
-        userId,
-        categoryId,
+        userId: UserId.reconstitute(userId),
+        categoryId: TodoCategoryId.reconstitute(categoryId),
         title: "원래 제목",
         startDate: AT,
         timezone: "UTC",
@@ -1354,8 +1356,8 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
     it("아주 오래된 단일 할 일을 매일 반복으로 바꾸면 지난 회차가 너무 많아 TODO_0845다", async () => {
       // Given
       const { todos } = await context.module.get(CreateTodoUseCase).execute({
-        userId,
-        categoryId,
+        userId: UserId.reconstitute(userId),
+        categoryId: TodoCategoryId.reconstitute(categoryId),
         title: "오래된 할 일",
         startDate: new Date("2000-01-01T00:00:00.000Z"),
         timezone: "UTC",

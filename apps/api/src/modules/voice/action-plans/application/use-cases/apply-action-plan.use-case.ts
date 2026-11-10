@@ -7,7 +7,11 @@ import {
   type PlanMemo,
   type PlanMemoWriterPort,
 } from "#api/modules/notes/memos/notes-memos.public";
-import { TodoCategoryLockKeys } from "#api/modules/planning/categories/planning-categories.public";
+import {
+  TodoCategoryId,
+  TodoCategoryLockKeys,
+} from "#api/modules/planning/categories/planning-categories.public";
+import { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
 import {
   type StagedTodoCreatorPort,
   TodoLockKeys,
@@ -133,9 +137,9 @@ export class ApplyActionPlanUseCase {
     const todos: TodoReadModel[] = [];
     for (const todo of plan.todos) {
       const staged = await todoCreator.stage({
-        userId,
+        userId: owner,
         title: todo.title,
-        categoryId: todo.categoryId,
+        categoryId: TodoCategoryId.reconstitute(todo.categoryId),
         startDate: toUtcMidnight(todo.startDate),
         endDate: todo.endDate == null ? null : toUtcMidnight(todo.endDate),
         scheduledTime: todo.scheduledTime,
@@ -186,10 +190,12 @@ export class ApplyActionPlanUseCase {
   /** 그 뒤 사용자가 지운 할 일·메모는 돌려주지 않는다. 다시 만들지도 않는다. */
   async #readApplied(application: PlanApplication): Promise<AppliedActionPlan> {
     const { todoReader, memoWriter } = this.#dependencies;
-    const userId = application.userId.value;
     const { memoId } = application;
     const [todos, memo] = await Promise.all([
-      todoReader.findManyByIds(userId, application.todoIds),
+      todoReader.findManyByIds(
+        application.userId,
+        application.todoIds.map((todoId) => TodoId.reconstitute(todoId)),
+      ),
       memoId == null ? null : memoWriter.findById(MemoId.reconstitute(memoId), application.userId),
     ]);
     return { todos, memo };

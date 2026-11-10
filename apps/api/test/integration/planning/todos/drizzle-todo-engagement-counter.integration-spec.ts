@@ -1,5 +1,6 @@
 import { omit } from "es-toolkit";
 
+import { TodoId } from "#api/modules/planning/shared/domain/todo-id.vo";
 import { DrizzleTodoEngagementCounterAdapter } from "#api/modules/planning/todos/infrastructure/persistence/drizzle-todo-engagement-counter.adapter";
 import type {
   TodoEngagementCounterPort,
@@ -7,6 +8,7 @@ import type {
 } from "#api/modules/planning/todos/planning-todos.public";
 import { DatabaseRecordNotFoundError } from "#api/platform/database/database-error.util";
 import { todo, todoCategory, user } from "#api/platform/database/schema/index";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { DateClock } from "#test/doubles/platform/date-clock";
 import { TodoCategoryFixture, TodoFixture, UserFixture } from "#test/fixtures/index";
 import { createDatabaseTransactionFixture } from "#test/setup/database-context";
@@ -69,13 +71,13 @@ describe("DrizzleTodoEngagementCounterAdapter (실제 PostgreSQL)", () => {
 
   it("댓글 수를 늘리고 0 아래로는 줄이지 않는다", async () => {
     // Given
-    await counter.increaseCommentCount(todoId, 2);
+    await counter.increaseCommentCount(TodoId.reconstitute(todoId), 2);
 
     // When
     const decremented = [
-      await counter.decrementCommentCount(todoId),
-      await counter.decrementCommentCount(todoId),
-      await counter.decrementCommentCount(todoId),
+      await counter.decrementCommentCount(TodoId.reconstitute(todoId)),
+      await counter.decrementCommentCount(TodoId.reconstitute(todoId)),
+      await counter.decrementCommentCount(TodoId.reconstitute(todoId)),
     ];
 
     // Then
@@ -85,8 +87,14 @@ describe("DrizzleTodoEngagementCounterAdapter (실제 PostgreSQL)", () => {
 
   it("같은 사람이 여러 번 봐도 조회 수는 한 번만 늘린다", async () => {
     // When
-    const first = await counter.recordView(todoId, VIEWER_ID);
-    const second = await counter.recordView(todoId, VIEWER_ID);
+    const first = await counter.recordView(
+      TodoId.reconstitute(todoId),
+      UserId.reconstitute(VIEWER_ID),
+    );
+    const second = await counter.recordView(
+      TodoId.reconstitute(todoId),
+      UserId.reconstitute(VIEWER_ID),
+    );
 
     // Then
     const expected: TodoViewRecord[] = [
@@ -98,10 +106,10 @@ describe("DrizzleTodoEngagementCounterAdapter (실제 PostgreSQL)", () => {
 
   it("계정 정리용으로 할 일 행을 잠그고 다시 센 댓글 수로 바꾼다", async () => {
     // Given
-    await counter.increaseCommentCount(todoId, 3);
+    await counter.increaseCommentCount(TodoId.reconstitute(todoId), 3);
 
     // When
-    await counter.lockCounters([todoId]);
+    await counter.lockCounters([TodoId.reconstitute(todoId)]);
     await counter.replaceCommentCounts([{ todoId, commentCount: 1 }]);
     await counter.replaceCommentCounts([]);
 
@@ -111,7 +119,7 @@ describe("DrizzleTodoEngagementCounterAdapter (실제 PostgreSQL)", () => {
 
   it("없는 할 일의 댓글 수를 늘리면 부재 오류를 낸다", async () => {
     // When
-    const increasing = counter.increaseCommentCount(MISSING_TODO_ID, 1);
+    const increasing = counter.increaseCommentCount(TodoId.reconstitute(MISSING_TODO_ID), 1);
 
     // Then
     await expect(increasing).rejects.toBeInstanceOf(DatabaseRecordNotFoundError);

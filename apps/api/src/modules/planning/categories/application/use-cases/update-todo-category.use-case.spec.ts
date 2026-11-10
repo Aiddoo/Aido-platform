@@ -1,5 +1,6 @@
 import { ErrorCode } from "@aido/api/errors";
 
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { FakeTodoCategoryCache } from "#test/doubles/planning/fake-todo-category-cache";
 import { InMemoryTodoCategoryRepository } from "#test/doubles/planning/in-memory-todo-category.repository";
 import { RecordingDomainEventPublisher } from "#test/doubles/planning/recording-domain-event-publisher";
@@ -10,6 +11,7 @@ import { SilentLogger } from "#test/doubles/platform/silent-logger";
 import { createTodoCategoryFixture } from "#test/fixtures/planning/todo-category.fixture";
 import { TODO_FIXTURE_NOW, TODO_FIXTURE_USER_ID } from "#test/fixtures/planning/todo.fixture";
 
+import type { TodoCategoryId } from "../../domain/todo-category-id.vo.js";
 import type { UpdateCategoryInput } from "../ports/todo-category.repository.port.js";
 import { UpdateTodoCategoryUseCase } from "./update-todo-category.use-case.js";
 
@@ -21,16 +23,16 @@ class RecordingCategoryRepository extends InMemoryTodoCategoryRepository {
   readonly nameChecks: string[] = [];
 
   override async existsByUserIdAndName(
-    userId: string,
+    userId: UserId,
     name: string,
-    excludeId?: number,
+    excludeId?: TodoCategoryId,
   ): Promise<boolean> {
     this.nameChecks.push(name);
     return super.existsByUserIdAndName(userId, name, excludeId);
   }
 
-  override async update(id: number, input: UpdateCategoryInput) {
-    this.updates.push([id, input]);
+  override async update(id: TodoCategoryId, input: UpdateCategoryInput) {
+    this.updates.push([id.value, input]);
     return super.update(id, input);
   }
 }

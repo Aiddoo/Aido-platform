@@ -46,8 +46,8 @@ export class PlanningContextReaderAdapter extends PlanningContextReaderPort {
   async read(userId: UserId, timezone: string): Promise<PlanningContext> {
     const today = localDateOf(this.#clock.now(), toPlanningTimeZone(timezone));
     const [categories, upcomingTodos] = await Promise.all([
-      this.#categoryReader.listForUser(userId.value),
-      this.#todoReader.findUpcoming(userId.value, {
+      this.#categoryReader.listForUser(userId),
+      this.#todoReader.findUpcoming(userId, {
         // planning 조회 포트는 아직 날짜를 UTC 자정 Date로 받는다
         fromDate: new Date(today.toZonedDateTime("UTC").epochMilliseconds),
         limit: PLANNING_UPCOMING_TODO_LIMIT,
@@ -62,7 +62,7 @@ export class PlanningContextReaderAdapter extends PlanningContextReaderPort {
   }
 
   async findOwnedCategoryIds(userId: UserId): Promise<ReadonlySet<number>> {
-    const categories = await this.#categoryReader.listForUser(userId.value);
+    const categories = await this.#categoryReader.listForUser(userId);
     return new Set(categories.map((category) => category.id));
   }
 }

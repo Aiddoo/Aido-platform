@@ -3,12 +3,14 @@ import { ErrorCode } from "@aido/api/errors";
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { type MutationLockPort, type UnitOfWorkPort } from "#api/shared/application/ports/index";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import {
   planReorderRelativeTo,
   planReorderToEdge,
   type ReorderPosition,
 } from "../../domain/category-ordering.domain-service.js";
+import { TodoCategoryId } from "../../domain/todo-category-id.vo.js";
 import type { TodoCategory } from "../../domain/todo-category.aggregate.js";
 import { TodoCategoryLockKeys } from "../categories.lock-keys.js";
 import { TodoCategoryLogEvent } from "../categories.log-events.js";
@@ -47,12 +49,18 @@ export class ReorderTodoCategoryUseCase {
   }
 
   async execute(input: ReorderTodoCategoryInput): Promise<TodoCategory> {
-    const { userId, categoryId, targetCategoryId, position } = input;
+    const { categoryId, targetCategoryId, position } = input;
+    const userId = UserId.reconstitute(input.userId);
 
     const result = await this.#dependencies.unitOfWork.run(async () => {
-      await this.#dependencies.mutationLock.acquire([TodoCategoryLockKeys.userCategories(userId)]);
+      await this.#dependencies.mutationLock.acquire([
+        TodoCategoryLockKeys.userCategories(input.userId),
+      ]);
 
-      const category = await this.#dependencies.repository.findByIdAndUserId(categoryId, userId);
+      const category = await this.#dependencies.repository.findByIdAndUserId(
+        TodoCategoryId.reconstitute(categoryId),
+        userId,
+      );
       if (category == null) {
         throw new ApplicationException(ErrorCode.TODO_CATEGORY_0851, {
           categoryId,
@@ -66,7 +74,7 @@ export class ReorderTodoCategoryUseCase {
       let plan: ReturnType<typeof planReorderRelativeTo>;
       if (targetCategoryId != null) {
         const target = await this.#dependencies.repository.findByIdAndUserId(
-          targetCategoryId,
+          TodoCategoryId.reconstitute(targetCategoryId),
           userId,
         );
         if (target == null) {
@@ -86,7 +94,7 @@ export class ReorderTodoCategoryUseCase {
         plan.shift.to,
         plan.shift.delta,
       );
-      return this.#dependencies.repository.update(categoryId, {
+      return this.#dependencies.repository.update(category.id, {
         sortOrder: plan.newSortOrder,
       });
     });
@@ -94,7 +102,7 @@ export class ReorderTodoCategoryUseCase {
     await this.#dependencies.cache.invalidate(userId);
     this.#dependencies.logger.debug({
       event: TodoCategoryLogEvent.REORDERED,
-      userId,
+      userId: input.userId,
       categoryId: categoryId,
     });
     return result;

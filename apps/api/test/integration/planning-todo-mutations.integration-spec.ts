@@ -7,7 +7,10 @@ import { omit } from "es-toolkit";
 
 import { DAILY_COMPLETION_CACHE_SUBSCRIPTIONS } from "#api/modules/insights/daily-completions/infrastructure/event-handlers/daily-completion-cache.event-handler";
 import { DeleteTodoCategoryUseCase } from "#api/modules/planning/categories/application/use-cases/delete-todo-category.use-case";
+import { TodoCategoryId } from "#api/modules/planning/categories/domain/todo-category-id.vo";
 import { TodoId } from "#api/modules/planning/shared/domain/todo-id.vo";
+import { TodoItemId } from "#api/modules/planning/shared/domain/todo-item-id.vo";
+import { TodoSeriesId } from "#api/modules/planning/todo-series/domain/todo-series-id.vo";
 import { StagedTodoCreatorPort } from "#api/modules/planning/todos/application/ports/staged-todo-creator.port";
 import { TodoRepositoryPort } from "#api/modules/planning/todos/application/ports/todo.repository.port";
 import { AddTodoItemUseCase } from "#api/modules/planning/todos/application/use-cases/add-todo-item.use-case";
@@ -31,6 +34,7 @@ import {
   type DomainEventPublisherPort,
   type UnitOfWorkPort,
 } from "#api/shared/application/ports/index";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantFromDate } from "#api/shared/domain/time/instant";
 import { plainDateFromDate } from "#api/shared/domain/time/plain-date";
 import { nowInstant } from "#test/fixtures/clock.fixture";
@@ -296,7 +300,9 @@ describe("Todo 변경 원자성·Drizzle 쿼리 실행 수 (실제 PostgreSQL)",
     const unitOfWork = context.module.get<UnitOfWorkPort>(UNIT_OF_WORK);
 
     // When
-    const result = unitOfWork.run(() => repository.reorderItems([first.id, 999_999]));
+    const result = unitOfWork.run(() =>
+      repository.reorderItems([TodoItemId.reconstitute(first.id), TodoItemId.reconstitute(999999)]),
+    );
 
     // Then
     await expect(result).rejects.toBeInstanceOf(DatabaseRecordNotFoundError);
@@ -308,7 +314,7 @@ describe("Todo 변경 원자성·Drizzle 쿼리 실행 수 (실제 PostgreSQL)",
     const repository = context.module.get(TodoRepositoryPort);
     const unitOfWork = context.module.get<UnitOfWorkPort>(UNIT_OF_WORK);
     await unitOfWork.run(() =>
-      repository.updateDetails(todoId, {
+      repository.updateDetails(TodoId.reconstitute(todoId), {
         title: "기존 제목",
         completed: true,
         completedAt: instantFromDate(AT),
@@ -318,7 +324,7 @@ describe("Todo 변경 원자성·Drizzle 쿼리 실행 수 (실제 PostgreSQL)",
 
     // When
     await unitOfWork.run(() =>
-      repository.updateDetails(todoId, {
+      repository.updateDetails(TodoId.reconstitute(todoId), {
         title: undefined,
         completed: false,
         completedAt: null,
@@ -368,8 +374,8 @@ describe("Todo 변경 원자성·Drizzle 쿼리 실행 수 (실제 PostgreSQL)",
 
     // When
     const response = await context.module.get(CreateTodoUseCase).execute({
-      userId,
-      categoryId,
+      userId: UserId.reconstitute(userId),
+      categoryId: TodoCategoryId.reconstitute(categoryId),
       title: "반복 생성",
       startDate: new Date("2027-01-04"),
       scheduledTime: null,
@@ -401,8 +407,8 @@ describe("Todo 변경 원자성·Drizzle 쿼리 실행 수 (실제 PostgreSQL)",
     recording = statements;
     // When
     const response = await context.module.get(CreateTodoUseCase).execute({
-      userId,
-      categoryId,
+      userId: UserId.reconstitute(userId),
+      categoryId: TodoCategoryId.reconstitute(categoryId),
       title: "매일 반복",
       startDate: AT,
       timezone: "UTC",
@@ -441,8 +447,8 @@ describe("Todo 변경 원자성·Drizzle 쿼리 실행 수 (실제 PostgreSQL)",
 
     function startSeries(target: number, repeat: TodoRepeat) {
       return context.module.get(CreateTodoUseCase).execute({
-        userId,
-        categoryId: target,
+        userId: UserId.reconstitute(userId),
+        categoryId: TodoCategoryId.reconstitute(target),
         title: "카테고리 반복",
         startDate: AT,
         timezone: "UTC",
@@ -499,7 +505,7 @@ describe("Todo 변경 원자성·Drizzle 쿼리 실행 수 (실제 PostgreSQL)",
       // When
       const usage = await context.module
         .get(TodoRepositoryPort)
-        .countCategoryUsage(userId, categoryId);
+        .countCategoryUsage(UserId.reconstitute(userId), TodoCategoryId.reconstitute(categoryId));
       // Then
       expect(usage).toBe(2);
     });
@@ -532,8 +538,8 @@ describe("Todo 변경 원자성·Drizzle 쿼리 실행 수 (실제 PostgreSQL)",
       const registry = context.module.get<AfterCommitTaskRegistryPort>(AFTER_COMMIT_TASK_REGISTRY);
       return unitOfWork.run(async () => {
         const staged = await creator.stage({
-          userId,
-          categoryId,
+          userId: UserId.reconstitute(userId),
+          categoryId: TodoCategoryId.reconstitute(categoryId),
           title: "포트 반복",
           startDate: new Date("2027-01-04"),
           scheduledTime: "09:00",
@@ -598,7 +604,7 @@ describe("Todo 변경 원자성·Drizzle 쿼리 실행 수 (실제 PostgreSQL)",
             createdAt: instantFromDate(AT),
           },
         ],
-        "00000000-0000-4000-8000-000000000701",
+        TodoSeriesId.reconstitute("00000000-0000-4000-8000-000000000701"),
         [{ title: "x".repeat(201) }],
       ),
     );

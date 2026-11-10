@@ -5,6 +5,7 @@ import type {
   TodoCategory,
   TodoCategoryPrimitives,
 } from "#api/modules/planning/categories/domain/todo-category.aggregate";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { createTodoCategoryFixture } from "#test/fixtures/planning/todo-category.fixture";
 import {
   TODO_FIXTURE_NOW,
@@ -47,12 +48,12 @@ export function describeTodoCategoryRepositoryContract(
 
       // When
       const found = await categoryRepository.findByIdAndUserId(
-        category.id.value,
-        TODO_FIXTURE_USER_ID,
+        category.id,
+        UserId.reconstitute(TODO_FIXTURE_USER_ID),
       );
       const foreign = await categoryRepository.findByIdAndUserId(
-        category.id.value,
-        TODO_FIXTURE_OTHER_USER_ID,
+        category.id,
+        UserId.reconstitute(TODO_FIXTURE_OTHER_USER_ID),
       );
 
       // Then
@@ -72,7 +73,7 @@ export function describeTodoCategoryRepositoryContract(
 
       // When
       const insertDuplicate = insertCategory(categoryRepository, { name: "업무", sortOrder: 2 });
-      const renameDuplicate = categoryRepository.update(other.id.value, { name: "업무" });
+      const renameDuplicate = categoryRepository.update(other.id, { name: "업무" });
 
       // Then
       await expect(insertDuplicate).rejects.toMatchObject({
@@ -83,9 +84,9 @@ export function describeTodoCategoryRepositoryContract(
       });
       expect(
         await categoryRepository.existsByUserIdAndName(
-          TODO_FIXTURE_USER_ID,
+          UserId.reconstitute(TODO_FIXTURE_USER_ID),
           "업무",
-          other.id.value,
+          other.id,
         ),
       ).toBe(true);
     });
@@ -96,7 +97,7 @@ export function describeTodoCategoryRepositoryContract(
       const category = await insertCategory(categoryRepository, { name: "업무", color: "#FFB3B3" });
 
       // When
-      const updated = await categoryRepository.update(category.id.value, { color: "#000000" });
+      const updated = await categoryRepository.update(category.id, { color: "#000000" });
 
       // Then
       expect(updated.toPrimitives()).toMatchObject({
@@ -125,8 +126,10 @@ export function describeTodoCategoryRepositoryContract(
       await context.seedTodo(later.id.value);
 
       // When
-      const list = await context.categoryRepository.findManyByUserId(TODO_FIXTURE_USER_ID);
-      const single = await context.categoryRepository.findByIdWithCount(later.id.value);
+      const list = await context.categoryRepository.findManyByUserId(
+        UserId.reconstitute(TODO_FIXTURE_USER_ID),
+      );
+      const single = await context.categoryRepository.findByIdWithCount(later.id);
 
       // Then
       expect(list.map((category) => [category.id, category.todoCount])).toEqual([
@@ -139,7 +142,9 @@ export function describeTodoCategoryRepositoryContract(
     it("개수·최대 순서는 그 사용자 것만 보고 없으면 최대 순서는 -1이다", async () => {
       // Given
       const { categoryRepository } = await createContext();
-      const empty = await categoryRepository.getMaxSortOrder(TODO_FIXTURE_USER_ID);
+      const empty = await categoryRepository.getMaxSortOrder(
+        UserId.reconstitute(TODO_FIXTURE_USER_ID),
+      );
       await insertCategory(categoryRepository, { name: "가", sortOrder: 4 });
       await insertCategory(categoryRepository, {
         userId: TODO_FIXTURE_OTHER_USER_ID,
@@ -148,8 +153,12 @@ export function describeTodoCategoryRepositoryContract(
       });
 
       // When
-      const count = await categoryRepository.countByUserId(TODO_FIXTURE_USER_ID);
-      const max = await categoryRepository.getMaxSortOrder(TODO_FIXTURE_USER_ID);
+      const count = await categoryRepository.countByUserId(
+        UserId.reconstitute(TODO_FIXTURE_USER_ID),
+      );
+      const max = await categoryRepository.getMaxSortOrder(
+        UserId.reconstitute(TODO_FIXTURE_USER_ID),
+      );
 
       // Then
       expect({ empty, count, max }).toEqual({ empty: -1, count: 1, max: 4 });
@@ -171,14 +180,23 @@ export function describeTodoCategoryRepositoryContract(
       });
 
       // When
-      const shifted = await categoryRepository.shiftSortOrders(TODO_FIXTURE_USER_ID, 1, null, 1);
+      const shifted = await categoryRepository.shiftSortOrders(
+        UserId.reconstitute(TODO_FIXTURE_USER_ID),
+        1,
+        null,
+        1,
+      );
 
       // Then
       const sortOrders = [];
       for (const category of categories) {
         sortOrders.push(
-          (await categoryRepository.findByIdAndUserId(category.id.value, TODO_FIXTURE_USER_ID))
-            ?.sortOrder,
+          (
+            await categoryRepository.findByIdAndUserId(
+              category.id,
+              UserId.reconstitute(TODO_FIXTURE_USER_ID),
+            )
+          )?.sortOrder,
         );
       }
       expect({ shifted, sortOrders }).toEqual({ shifted: 2, sortOrders: [0, 2, 3] });
@@ -195,13 +213,16 @@ export function describeTodoCategoryRepositoryContract(
       await context.seedTodo(source.id.value);
 
       // When
-      await context.categoryRepository.moveTodosToCategory(source.id.value, target.id.value);
-      await context.categoryRepository.delete(source.id.value);
+      await context.categoryRepository.moveTodosToCategory(source.id, target.id);
+      await context.categoryRepository.delete(source.id);
 
       // Then
-      expect(await context.categoryRepository.getTodoCount(target.id.value)).toBe(1);
+      expect(await context.categoryRepository.getTodoCount(target.id)).toBe(1);
       expect(
-        await context.categoryRepository.findByIdAndUserId(source.id.value, TODO_FIXTURE_USER_ID),
+        await context.categoryRepository.findByIdAndUserId(
+          source.id,
+          UserId.reconstitute(TODO_FIXTURE_USER_ID),
+        ),
       ).toBeNull();
     });
   });

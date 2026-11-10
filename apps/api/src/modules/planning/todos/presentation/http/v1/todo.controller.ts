@@ -34,9 +34,11 @@ import {
 } from "#api/platform/http/swagger/index";
 import { ApplicationException } from "#api/shared/application/application.exception";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { DomainException } from "#api/shared/domain/index";
 import { plainDateToDate } from "#api/shared/domain/time/plain-date";
 
+import { TodoCategoryId } from "../../../../categories/domain/todo-category-id.vo.js";
 import { localDateAt } from "../../../../shared/domain/todo-calendar.domain-service.js";
 import { toTodoSeriesResponse } from "../../../../todo-series/presentation/http/v1/todo-series-response.mapper.js";
 import { AddTodoItemUseCase } from "../../../application/use-cases/add-todo-item.use-case.js";
@@ -285,9 +287,9 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
     @Timezone({ preserveIfMissing: true }) timezone: string | undefined,
   ): Promise<CreateTodoResponseDto> {
     const { todos, series } = await this.#createTodoUseCase.execute({
-      userId: user.userId,
+      userId: UserId.reconstitute(user.userId),
       title: dto.title,
-      categoryId: dto.categoryId,
+      categoryId: TodoCategoryId.reconstitute(dto.categoryId),
       startDate: plainDateToDate(Temporal.PlainDate.from(dto.startDate)),
       endDate:
         dto.endDate == null ? undefined : plainDateToDate(Temporal.PlainDate.from(dto.endDate)),
@@ -353,9 +355,9 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
   ): Promise<CreateRecurringTodoResponseDto> {
     const { todos } = await this.#createTodoUseCase
       .execute({
-        userId: user.userId,
+        userId: UserId.reconstitute(user.userId),
         title: dto.title,
-        categoryId: dto.categoryId,
+        categoryId: TodoCategoryId.reconstitute(dto.categoryId),
         startDate: plainDateToDate(Temporal.PlainDate.from(dto.startDate)),
         scheduledTime: dto.scheduledTime,
         timezone,

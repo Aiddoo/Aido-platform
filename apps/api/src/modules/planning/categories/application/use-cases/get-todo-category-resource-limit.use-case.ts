@@ -1,3 +1,5 @@
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+
 import type { TodoCategoryLimitReaderPort } from "../ports/todo-category-limit.reader.port.js";
 import type { TodoCategoryRepositoryPort } from "../ports/todo-category.repository.port.js";
 
@@ -16,9 +18,10 @@ export class GetTodoCategoryResourceLimitUseCase {
   async execute(input: {
     readonly userId: string;
   }): Promise<{ categoryCount: number; maxCount: number | null }> {
+    const userId = UserId.reconstitute(input.userId);
     const [maxCount, categoryCount] = await Promise.all([
-      this.#dependencies.limitReader.readLimit(input.userId),
-      this.#dependencies.repository.countByUserId(input.userId),
+      this.#dependencies.limitReader.readLimit(userId),
+      this.#dependencies.repository.countByUserId(userId),
     ]);
     return { categoryCount, maxCount };
   }

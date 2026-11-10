@@ -3,9 +3,10 @@ import { TODO_LIMITS, TODO_SERIES_LIMITS, type TodoVisibility } from "@aido/api/
 
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
-import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { plainDateFromDate } from "#api/shared/domain/time/plain-date";
 
+import type { TodoCategoryId } from "../../../categories/domain/todo-category-id.vo.js";
 import { TodoSchedule } from "../../../shared/domain/todo-schedule.vo.js";
 import { TodoTitle } from "../../../shared/domain/todo-title.vo.js";
 import { Todo, type TodoEvent } from "../../../shared/domain/todo.aggregate.js";
@@ -21,8 +22,8 @@ import type { ApplyTodoEventsUseCase } from "./apply-todo-events.use-case.js";
 
 /** 잠금 전에 검증을 마친 단일 할 일 입력. 제목·일정 오류가 소유·한도 오류보다 먼저다. */
 export interface SingleTodoSpec {
-  readonly userId: string;
-  readonly categoryId: number;
+  readonly userId: UserId;
+  readonly categoryId: TodoCategoryId;
   readonly title: TodoTitle;
   readonly schedule: TodoSchedule;
   readonly visibility: TodoVisibility;
@@ -93,8 +94,8 @@ export class WriteTodoCreationUseCase {
     const maxSortOrder = await todoRepository.getMaxSortOrder(spec.userId);
     const todo = Todo.create({
       id: await todoRepository.nextId(),
-      userId: UserId.reconstitute(spec.userId),
-      categoryId: spec.categoryId,
+      userId: spec.userId,
+      categoryId: spec.categoryId.value,
       title: spec.title,
       schedule: spec.schedule,
       visibility: spec.visibility,
@@ -103,7 +104,7 @@ export class WriteTodoCreationUseCase {
     });
     await todoRepository.insert(todo);
     if (items != null && items.length > 0) {
-      await todoRepository.createInlineItems(todo.id.value, items);
+      await todoRepository.createInlineItems(todo.id, items);
     }
     // 리마인더 예약과 planning.todo.created는 행과 함께 커밋한다. 옛 todo.created는 커밋 뒤 따로 나간다
     const events = todo.pullDomainEvents();
@@ -123,8 +124,8 @@ export class WriteTodoCreationUseCase {
     const title = TodoTitle.create(input.title);
     const series = TodoSeries.create({
       id: TodoSeriesId.generate(),
-      userId: UserId.reconstitute(userId),
-      categoryId,
+      userId,
+      categoryId: categoryId.value,
       title,
       visibility: input.visibility ?? "PUBLIC",
       scheduledLocalTime: input.scheduledTime ?? null,
@@ -154,7 +155,7 @@ export class WriteTodoCreationUseCase {
     return { series, occurrences };
   }
 
-  async #assertSeriesLimit(userId: string, usesLegacyLimit: boolean): Promise<void> {
+  async #assertSeriesLimit(userId: UserId, usesLegacyLimit: boolean): Promise<void> {
     const limit = usesLegacyLimit
       ? TODO_SERIES_LIMITS.MAX_ACTIVE_PER_USER_LEGACY
       : TODO_SERIES_LIMITS.MAX_ACTIVE_PER_USER;

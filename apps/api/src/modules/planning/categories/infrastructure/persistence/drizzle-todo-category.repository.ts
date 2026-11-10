@@ -25,6 +25,7 @@ import { todo, todoCategory, todoSeries } from "#api/platform/database/schema/in
 import { nextSequenceValue } from "#api/platform/database/sequence";
 import { ApplicationException } from "#api/shared/application/application.exception";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type {
   TodoCategoryRepositoryPort,
@@ -83,7 +84,8 @@ export class DrizzleTodoCategoryRepository implements TodoCategoryRepositoryPort
     }
   }
 
-  async update(id: number, input: UpdateCategoryInput): Promise<TodoCategory> {
+  async update(categoryId: TodoCategoryId, input: UpdateCategoryInput): Promise<TodoCategory> {
+    const id = categoryId.value;
     try {
       const values = omitBy(
         { name: input.name, color: input.color, sortOrder: input.sortOrder },
@@ -109,7 +111,8 @@ export class DrizzleTodoCategoryRepository implements TodoCategoryRepositoryPort
     }
   }
 
-  async delete(id: number): Promise<void> {
+  async delete(categoryId: TodoCategoryId): Promise<void> {
+    const id = categoryId.value;
     // 끝난 규칙은 사용자에게 보이지 않아 옮길 대상을 묻지 않는다. 카테고리와 함께 정리한다.
     await this.#db
       .delete(todoSeries)
@@ -121,45 +124,60 @@ export class DrizzleTodoCategoryRepository implements TodoCategoryRepositoryPort
     requireRecord(deleted[0]);
   }
 
-  async findByIdAndUserId(id: number, userId: string): Promise<TodoCategory | null> {
-    const row = await this.#db.query.todoCategory.findFirst({ where: { id, userId } });
+  async findByIdAndUserId(
+    categoryId: TodoCategoryId,
+    userId: UserId,
+  ): Promise<TodoCategory | null> {
+    const row = await this.#db.query.todoCategory.findFirst({
+      where: { id: categoryId.value, userId: userId.value },
+    });
     return row == null ? null : toTodoCategory(row);
   }
 
-  async findByIdWithCount(id: number): Promise<TodoCategoryWithCountReadModel | null> {
-    const [row] = await this.#selectWithCount().where(eq(todoCategory.id, id));
+  async findByIdWithCount(
+    categoryId: TodoCategoryId,
+  ): Promise<TodoCategoryWithCountReadModel | null> {
+    const [row] = await this.#selectWithCount().where(eq(todoCategory.id, categoryId.value));
     return row == null ? null : toTodoCategoryWithCountReadModel(row);
   }
 
-  async findManyByUserId(userId: string): Promise<TodoCategoryWithCountReadModel[]> {
+  async findManyByUserId(userId: UserId): Promise<TodoCategoryWithCountReadModel[]> {
     const rows = await this.#selectWithCount()
-      .where(eq(todoCategory.userId, userId))
+      .where(eq(todoCategory.userId, userId.value))
       .orderBy(asc(todoCategory.sortOrder), asc(todoCategory.id));
     return rows.map((row) => toTodoCategoryWithCountReadModel(row));
   }
 
-  countByUserId(userId: string): Promise<number> {
-    return this.#db.$count(todoCategory, eq(todoCategory.userId, userId));
+  countByUserId(userId: UserId): Promise<number> {
+    return this.#db.$count(todoCategory, eq(todoCategory.userId, userId.value));
   }
 
-  async existsByUserIdAndName(userId: string, name: string, excludeId?: number): Promise<boolean> {
+  async existsByUserIdAndName(
+    userId: UserId,
+    name: string,
+    excludeId?: TodoCategoryId,
+  ): Promise<boolean> {
     const row = await this.#db.query.todoCategory.findFirst({
       columns: { id: true },
-      where: { userId, name, ...(excludeId == null ? {} : { id: { ne: excludeId } }) },
+      where: {
+        userId: userId.value,
+        name,
+        ...(excludeId == null ? {} : { id: { ne: excludeId.value } }),
+      },
     });
     return row != null;
   }
 
-  async getMaxSortOrder(userId: string): Promise<number> {
+  async getMaxSortOrder(userId: UserId): Promise<number> {
     const [result] = await this.#db
       .select({ maximum: max(todoCategory.sortOrder) })
       .from(todoCategory)
-      .where(eq(todoCategory.userId, userId));
+      .where(eq(todoCategory.userId, userId.value));
     return result?.maximum ?? -1;
   }
 
   async shiftSortOrders(
-    userId: string,
+    userId: UserId,
     fromSortOrder: number,
     toSortOrder: number | null,
     delta: number,
@@ -169,7 +187,7 @@ export class DrizzleTodoCategoryRepository implements TodoCategoryRepositoryPort
       .set({ sortOrder: sql`${todoCategory.sortOrder} + ${delta}`, updatedAt: this.#clock.now() })
       .where(
         and(
-          eq(todoCategory.userId, userId),
+          eq(todoCategory.userId, userId.value),
           gte(todoCategory.sortOrder, fromSortOrder),
           toSortOrder == null ? undefined : lte(todoCategory.sortOrder, toSortOrder),
         ),
@@ -178,26 +196,29 @@ export class DrizzleTodoCategoryRepository implements TodoCategoryRepositoryPort
     return updated.length;
   }
 
-  getTodoCount(categoryId: number): Promise<number> {
-    return this.#db.$count(todo, eq(todo.categoryId, categoryId));
+  getTodoCount(categoryId: TodoCategoryId): Promise<number> {
+    return this.#db.$count(todo, eq(todo.categoryId, categoryId.value));
   }
 
-  countActiveSeries(categoryId: number): Promise<number> {
+  countActiveSeries(categoryId: TodoCategoryId): Promise<number> {
     return this.#db.$count(
       todoSeries,
-      and(eq(todoSeries.categoryId, categoryId), isNotNull(todoSeries.nextOccurrenceDate)),
+      and(eq(todoSeries.categoryId, categoryId.value), isNotNull(todoSeries.nextOccurrenceDate)),
     );
   }
 
-  async moveTodosToCategory(fromCategoryId: number, toCategoryId: number): Promise<void> {
+  async moveTodosToCategory(
+    fromCategoryId: TodoCategoryId,
+    toCategoryId: TodoCategoryId,
+  ): Promise<void> {
     const updatedAt = this.#clock.now();
     await this.#db
       .update(todo)
-      .set({ categoryId: toCategoryId, updatedAt })
-      .where(eq(todo.categoryId, fromCategoryId));
+      .set({ categoryId: toCategoryId.value, updatedAt })
+      .where(eq(todo.categoryId, fromCategoryId.value));
     await this.#db
       .update(todoSeries)
-      .set({ categoryId: toCategoryId, updatedAt })
-      .where(eq(todoSeries.categoryId, fromCategoryId));
+      .set({ categoryId: toCategoryId.value, updatedAt })
+      .where(eq(todoSeries.categoryId, fromCategoryId.value));
   }
 }

@@ -1,5 +1,6 @@
 import { ErrorCode } from "@aido/api/errors";
 
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { FakeTodoCategoryCache } from "#test/doubles/planning/fake-todo-category-cache";
 import { InMemoryTodoCategoryRepository } from "#test/doubles/planning/in-memory-todo-category.repository";
 import { ImmediateUnitOfWork } from "#test/doubles/platform/immediate-unit-of-work";
@@ -8,6 +9,7 @@ import { SilentLogger } from "#test/doubles/platform/silent-logger";
 import { createTodoCategoryFixture } from "#test/fixtures/planning/todo-category.fixture";
 import { TODO_FIXTURE_USER_ID } from "#test/fixtures/planning/todo.fixture";
 
+import type { TodoCategoryId } from "../../domain/todo-category-id.vo.js";
 import type { TodoCategory } from "../../domain/todo-category.aggregate.js";
 import type { UpdateCategoryInput } from "../ports/todo-category.repository.port.js";
 import { ReorderTodoCategoryUseCase } from "./reorder-todo-category.use-case.js";
@@ -43,7 +45,7 @@ function setUp(
 }
 
 async function sortOrders(repository: InMemoryTodoCategoryRepository): Promise<number[][]> {
-  return (await repository.findManyByUserId(USER_ID)).map((category) => [
+  return (await repository.findManyByUserId(UserId.reconstitute(USER_ID))).map((category) => [
     category.id,
     category.sortOrder,
   ]);
@@ -161,12 +163,12 @@ describe("카테고리 재정렬", () => {
       }
     }
     class OrderedRepository extends InMemoryTodoCategoryRepository {
-      override async findByIdAndUserId(id: number, userId: string) {
-        events.push(id === 3 ? "category-read" : "target-read");
+      override async findByIdAndUserId(id: TodoCategoryId, userId: UserId) {
+        events.push(id.value === 3 ? "category-read" : "target-read");
         return super.findByIdAndUserId(id, userId);
       }
       override async shiftSortOrders(
-        userId: string,
+        userId: UserId,
         fromSortOrder: number,
         toSortOrder: number | null,
         delta: number,
@@ -174,13 +176,13 @@ describe("카테고리 재정렬", () => {
         events.push("shift");
         return super.shiftSortOrders(userId, fromSortOrder, toSortOrder, delta);
       }
-      override async update(id: number, input: UpdateCategoryInput): Promise<TodoCategory> {
+      override async update(id: TodoCategoryId, input: UpdateCategoryInput): Promise<TodoCategory> {
         events.push("update");
         return super.update(id, input);
       }
     }
     class OrderedCache extends FakeTodoCategoryCache {
-      override async invalidate(userId: string): Promise<void> {
+      override async invalidate(userId: UserId): Promise<void> {
         events.push("cache");
         await super.invalidate(userId);
       }

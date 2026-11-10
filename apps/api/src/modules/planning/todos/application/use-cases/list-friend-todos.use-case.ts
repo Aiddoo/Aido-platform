@@ -3,6 +3,7 @@ import { ErrorCode } from "@aido/api/errors";
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { CursorPaginatedResponse } from "#api/shared/application/pagination/index";
 import type { PaginationService } from "#api/shared/application/pagination/index";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { type FriendPort } from "../ports/friend.port.js";
 import { type TodoCachePort } from "../ports/todo-cache.port.js";
@@ -42,6 +43,8 @@ export class ListFriendTodosUseCase {
     input: GetFriendTodosInput,
   ): Promise<CursorPaginatedResponse<FriendTodoReadModel, number>> {
     const { userId, friendUserId } = input;
+    const viewerId = UserId.reconstitute(userId);
+    const friendId = UserId.reconstitute(friendUserId);
 
     if (
       input.startDate != null &&
@@ -55,7 +58,7 @@ export class ListFriendTodosUseCase {
       });
     }
 
-    const isMutualFriend = await this.#dependencies.friendPort.isMutualFriend(userId, friendUserId);
+    const isMutualFriend = await this.#dependencies.friendPort.isMutualFriend(viewerId, friendId);
     if (!isMutualFriend) {
       throw new ApplicationException(ErrorCode.FOLLOW_0906, {
         targetUserId: friendUserId,
@@ -76,7 +79,7 @@ export class ListFriendTodosUseCase {
 
     if (isFirstPage) {
       const cached = await this.#dependencies.todoCache.readFriendTodosFirstPage(
-        friendUserId,
+        friendId,
         startDateKey,
         endDateKey,
         size,
@@ -88,7 +91,7 @@ export class ListFriendTodosUseCase {
     }
 
     const repoParams: FindFriendTodosParams = {
-      friendUserId,
+      friendUserId: friendId,
       cursor,
       size,
       startDate: input.startDate,
@@ -107,7 +110,7 @@ export class ListFriendTodosUseCase {
 
     if (isFirstPage && cacheGeneration != null) {
       await this.#dependencies.todoCache.storeFriendTodosFirstPageIfCurrent(
-        friendUserId,
+        friendId,
         startDateKey,
         endDateKey,
         size,

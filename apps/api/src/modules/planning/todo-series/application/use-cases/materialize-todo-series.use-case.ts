@@ -2,6 +2,7 @@ import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { type MutationLockPort, type UnitOfWorkPort } from "#api/shared/application/ports/index";
 
 import { TodoLockKeys } from "../../../todos/application/todos.lock-keys.js";
+import { TodoSeriesId } from "../../domain/todo-series-id.vo.js";
 import type {
   TodoSeriesRef,
   TodoSeriesRepositoryPort,
@@ -33,7 +34,10 @@ export class MaterializeTodoSeriesUseCase {
     const materialized = await unitOfWork.run(async () => {
       // 카테고리 삭제와 같은 순서(잠금 → 규칙 행)로 잡아 교착을 막는다.
       await mutationLock.acquire([TodoLockKeys.sortOrder(due.userId)]);
-      const series = await seriesRepository.lockForUpdate(due.id, options);
+      const series = await seriesRepository.lockForUpdate(
+        TodoSeriesId.reconstitute(due.id),
+        options,
+      );
       if (series == null) {
         return null;
       }

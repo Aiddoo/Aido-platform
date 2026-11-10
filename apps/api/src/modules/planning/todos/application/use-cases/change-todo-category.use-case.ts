@@ -5,8 +5,11 @@ import { ApplicationException } from "#api/shared/application/application.except
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { type MutationLockPort, type UnitOfWorkPort } from "#api/shared/application/ports/index";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { TodoCategoryLockKeys } from "../../../categories/application/categories.lock-keys.js";
+import { TodoCategoryId } from "../../../categories/domain/todo-category-id.vo.js";
+import { TodoId } from "../../../shared/domain/todo-id.vo.js";
 import { type CategoryOwnershipPort } from "../ports/category-ownership.port.js";
 import { type TodoCachePort } from "../ports/todo-cache.port.js";
 import { type TodoReadRepositoryPort } from "../ports/todo-read.repository.port.js";
@@ -46,15 +49,18 @@ export class ChangeTodoCategoryUseCase {
 
   async execute(input: ChangeTodoCategoryInput): Promise<TodoReadModel> {
     const { id, userId, categoryId } = input;
+    const todoId = TodoId.reconstitute(id);
+    const ownerId = UserId.reconstitute(userId);
+    const targetCategoryId = TodoCategoryId.reconstitute(categoryId);
 
     await this.#dependencies.unitOfWork.run(async () => {
       await this.#dependencies.mutationLock.acquire([
         TodoCategoryLockKeys.userCategories(userId),
         TodoLockKeys.todo(id),
       ]);
-      await this.#dependencies.categoryOwnership.validateOwnership(categoryId, userId);
+      await this.#dependencies.categoryOwnership.validateOwnership(targetCategoryId, ownerId);
 
-      const todo = await this.#dependencies.todoRepository.findByIdAndUserId(id, userId);
+      const todo = await this.#dependencies.todoRepository.findByIdAndUserId(todoId, ownerId);
       if (todo == null) {
         throw new ApplicationException(ErrorCode.TODO_0801, { todoId: id });
       }
@@ -64,8 +70,8 @@ export class ChangeTodoCategoryUseCase {
       // 같은 카테고리여도 한도를 먼저 본다. 회차 하나를 옮겨도 규칙 1개로 세는 사용량은 그대로다.
       if (!todo.completed && todo.seriesId == null) {
         const activeInTarget = await this.#dependencies.todoRepository.countCategoryUsage(
-          userId,
-          categoryId,
+          ownerId,
+          targetCategoryId,
         );
         if (activeInTarget >= TODO_LIMITS.MAX_PER_CATEGORY) {
           throw new ApplicationException(ErrorCode.TODO_0811, {
@@ -77,12 +83,12 @@ export class ChangeTodoCategoryUseCase {
       if (!changed) {
         return;
       }
-      await this.#dependencies.todoRepository.updateCategory(id, todo.categoryId);
+      await this.#dependencies.todoRepository.updateCategory(todoId, targetCategoryId);
       await this.#dependencies.applyTodoEvents.execute(todo.pullDomainEvents());
     });
 
-    await this.#dependencies.todoCache.invalidateTodoCategories(userId);
-    await this.#dependencies.todoCache.invalidateFriendTodos(userId);
+    await this.#dependencies.todoCache.invalidateTodoCategories(ownerId);
+    await this.#dependencies.todoCache.invalidateFriendTodos(ownerId);
 
     this.#dependencies.logger.log({
       event: TodoLogEvent.CATEGORY_CHANGED,
@@ -91,7 +97,7 @@ export class ChangeTodoCategoryUseCase {
       categoryId,
     });
 
-    const response = await this.#dependencies.todoReadRepository.findByIdAndUserId(id, userId);
+    const response = await this.#dependencies.todoReadRepository.findByIdAndUserId(todoId, ownerId);
     if (response == null) {
       throw new ApplicationException(ErrorCode.TODO_0801, { todoId: id });
     }

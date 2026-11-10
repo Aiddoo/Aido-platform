@@ -10,9 +10,11 @@ import {
   type MutationLockPort,
   type UnitOfWorkPort,
 } from "#api/shared/application/ports/index";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { TodoLockKeys } from "../../../todos/application/todos.lock-keys.js";
 import { CategoryChangedEvent } from "../../domain/category-changed.event.js";
+import { TodoCategoryId } from "../../domain/todo-category-id.vo.js";
 import { TodoCategoryLockKeys } from "../categories.lock-keys.js";
 import { TodoCategoryLogEvent } from "../categories.log-events.js";
 import { type TodoCategoryCachePort } from "../ports/todo-category-cache.port.js";
@@ -56,15 +58,17 @@ export class DeleteTodoCategoryUseCase {
   }
 
   async execute(input: DeleteTodoCategoryInput): Promise<void> {
-    const { userId, categoryId, moveToCategoryId } = input;
+    const { categoryId, moveToCategoryId } = input;
+    const userId = UserId.reconstitute(input.userId);
+    const id = TodoCategoryId.reconstitute(categoryId);
 
     await this.#dependencies.unitOfWork.run(async () => {
       await this.#dependencies.mutationLock.acquire([
-        TodoCategoryLockKeys.userCategories(userId),
-        TodoLockKeys.sortOrder(userId),
+        TodoCategoryLockKeys.userCategories(input.userId),
+        TodoLockKeys.sortOrder(input.userId),
       ]);
 
-      const category = await this.#dependencies.repository.findByIdAndUserId(categoryId, userId);
+      const category = await this.#dependencies.repository.findByIdAndUserId(id, userId);
       if (category == null) {
         throw new ApplicationException(ErrorCode.TODO_CATEGORY_0851, {
           categoryId,
@@ -76,9 +80,9 @@ export class DeleteTodoCategoryUseCase {
         throw new ApplicationException(ErrorCode.TODO_CATEGORY_0854);
       }
 
-      const todoCount = await this.#dependencies.repository.getTodoCount(categoryId);
+      const todoCount = await this.#dependencies.repository.getTodoCount(id);
       // 회차가 아직 없어도 진행 중 규칙이 있으면 옮길 곳을 받아야 한다.
-      const activeSeries = await this.#dependencies.repository.countActiveSeries(categoryId);
+      const activeSeries = await this.#dependencies.repository.countActiveSeries(id);
       if (todoCount + activeSeries > 0) {
         if (moveToCategoryId == null) {
           throw new ApplicationException(ErrorCode.TODO_CATEGORY_0855, {
@@ -93,8 +97,9 @@ export class DeleteTodoCategoryUseCase {
             moveToCategoryId,
           });
         }
+        const moveTargetId = TodoCategoryId.reconstitute(moveToCategoryId);
         const moveTarget = await this.#dependencies.repository.findByIdAndUserId(
-          moveToCategoryId,
+          moveTargetId,
           userId,
         );
         if (moveTarget == null) {
@@ -102,17 +107,17 @@ export class DeleteTodoCategoryUseCase {
             categoryId: moveToCategoryId,
           });
         }
-        await this.#dependencies.repository.moveTodosToCategory(categoryId, moveToCategoryId);
+        await this.#dependencies.repository.moveTodosToCategory(id, moveTargetId);
       }
 
-      await this.#dependencies.repository.delete(categoryId);
+      await this.#dependencies.repository.delete(id);
       await this.#dependencies.eventPublisher.publish([
         new CategoryChangedEvent({
           eventName: "planning.todo-category.deleted",
           eventId: randomUUID(),
           occurredAt: this.#dependencies.clock.now(),
           categoryId,
-          userId,
+          userId: input.userId,
         }),
       ]);
     });
@@ -120,7 +125,7 @@ export class DeleteTodoCategoryUseCase {
     await this.#dependencies.cache.invalidate(userId);
     this.#dependencies.logger.debug({
       event: TodoCategoryLogEvent.DELETED,
-      userId,
+      userId: input.userId,
       categoryId: categoryId,
     });
   }

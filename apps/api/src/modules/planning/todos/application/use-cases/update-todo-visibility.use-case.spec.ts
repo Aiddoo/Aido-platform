@@ -1,6 +1,7 @@
 import { ErrorCode } from "@aido/api/errors";
 import { vi } from "vitest";
 
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import {
   createPlanningTodoFixture,
   createPlanningTodo,
@@ -25,17 +26,31 @@ describe("할 일 공개 범위 수정", () => {
 
   it("비공개 전이를 저장하고 친구 목록 캐시와 이벤트에 반영한다", async () => {
     // Given
-    await fixture.todoCache.storeFriendTodosFirstPageIfCurrent(fixture.userId, "-", "-", 20, "0", {
-      items: [],
-      pagination: { hasNext: false, nextCursor: null, size: 20 },
-    });
+    await fixture.todoCache.storeFriendTodosFirstPageIfCurrent(
+      UserId.reconstitute(fixture.userId),
+      "-",
+      "-",
+      20,
+      "0",
+      {
+        items: [],
+        pagination: { hasNext: false, nextCursor: null, size: 20 },
+      },
+    );
     // When
     const result = await useCase.execute({ id: 1, userId: fixture.userId, visibility: "PRIVATE" });
     // Then
     expect(result.visibility).toBe("PRIVATE");
     expect(fixture.records.get(1)?.visibility).toBe("PRIVATE");
     expect(
-      (await fixture.todoCache.readFriendTodosFirstPage(fixture.userId, "-", "-", 20)).page,
+      (
+        await fixture.todoCache.readFriendTodosFirstPage(
+          UserId.reconstitute(fixture.userId),
+          "-",
+          "-",
+          20,
+        )
+      ).page,
     ).toBeUndefined();
     expect(fixture.eventPublisher.publishedEvents.map(({ eventName }) => eventName)).toEqual([
       "planning.todo.visibility-changed",

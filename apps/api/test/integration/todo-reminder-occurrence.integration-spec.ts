@@ -48,6 +48,7 @@ import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { addDaysToDateKey } from "#api/shared/domain/date/utils/arithmetic";
 import { toDateString } from "#api/shared/domain/date/utils/format";
 import { parseLocalDateTime, todayInTimezone } from "#api/shared/domain/date/utils/timezone";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantFromDate } from "#api/shared/domain/time/instant";
 import { StubNotificationRecipientLocaleReader } from "#test/doubles/notification/stub-notification-recipient-locale.reader";
 import { StubTodoSeriesOwnerDormancy } from "#test/doubles/notification/stub-todo-series-owner-dormancy";
@@ -119,10 +120,10 @@ describe("할 일 알림 회차 중복 방지 (실제 PostgreSQL·pg-boss)", () 
       new TodoReminderSchedulerAdapter(jobQueue, new DateClock()),
     );
     const ownerTimezone = {
-      findTimezone: async (id: string) => {
+      findTimezone: async (id: UserId) => {
         const row = await txHost.tx.query.userPreference.findFirst({
           columns: { timezone: true },
-          where: { userId: id },
+          where: { userId: id.value },
         });
         return row?.timezone ?? null;
       },

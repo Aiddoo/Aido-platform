@@ -10,6 +10,7 @@ import { TodoCategory } from "#api/modules/planning/categories/domain/todo-categ
 import type { TodoSeries } from "#api/modules/planning/todo-series/domain/todo-series.aggregate";
 import { DatabaseRecordNotFoundError } from "#api/platform/database/database-error.util";
 import { ApplicationException } from "#api/shared/application/application.exception";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { toIsoString } from "#api/shared/domain/time/instant";
 import type { PlanningTodoRecord } from "#test/fixtures/todo-response.fixture";
 
@@ -50,7 +51,8 @@ export class InMemoryTodoCategoryRepository extends TodoCategoryRepositoryPort {
     this.#categories.set(category.id.value, copyOf(category));
   }
 
-  async update(id: number, input: UpdateCategoryInput): Promise<TodoCategory> {
+  async update(categoryId: TodoCategoryId, input: UpdateCategoryInput): Promise<TodoCategory> {
+    const id = categoryId.value;
     const current = this.#require(id);
     const primitives = current.toPrimitives();
     if (input.name != null) {
@@ -66,7 +68,8 @@ export class InMemoryTodoCategoryRepository extends TodoCategoryRepositoryPort {
     return copyOf(updated);
   }
 
-  async delete(id: number): Promise<void> {
+  async delete(categoryId: TodoCategoryId): Promise<void> {
+    const id = categoryId.value;
     this.#require(id);
     for (const [seriesId, series] of this.#stores.seriesStore) {
       if (series.categoryId === id && !series.isActive) {
@@ -76,48 +79,52 @@ export class InMemoryTodoCategoryRepository extends TodoCategoryRepositoryPort {
     this.#categories.delete(id);
   }
 
-  async findByIdAndUserId(id: number, userId: string): Promise<TodoCategory | null> {
-    const category = this.#categories.get(id);
-    return category != null && category.userId.value === userId ? copyOf(category) : null;
+  async findByIdAndUserId(id: TodoCategoryId, userId: UserId): Promise<TodoCategory | null> {
+    const category = this.#categories.get(id.value);
+    return category != null && category.userId.equals(userId) ? copyOf(category) : null;
   }
 
-  async findByIdWithCount(id: number): Promise<TodoCategoryWithCountReadModel | null> {
-    const category = this.#categories.get(id);
+  async findByIdWithCount(id: TodoCategoryId): Promise<TodoCategoryWithCountReadModel | null> {
+    const category = this.#categories.get(id.value);
     return category == null ? null : this.#withCount(category);
   }
 
-  async findManyByUserId(userId: string): Promise<TodoCategoryWithCountReadModel[]> {
+  async findManyByUserId(userId: UserId): Promise<TodoCategoryWithCountReadModel[]> {
     return [...this.#categories.values()]
-      .filter((category) => category.userId.value === userId)
+      .filter((category) => category.userId.equals(userId))
       .toSorted((left, right) => left.sortOrder - right.sortOrder || left.id.value - right.id.value)
       .map((category) => this.#withCount(category));
   }
 
-  async countByUserId(userId: string): Promise<number> {
-    return [...this.#categories.values()].filter((category) => category.userId.value === userId)
+  async countByUserId(userId: UserId): Promise<number> {
+    return [...this.#categories.values()].filter((category) => category.userId.equals(userId))
       .length;
   }
 
-  async existsByUserIdAndName(userId: string, name: string, excludeId?: number): Promise<boolean> {
+  async existsByUserIdAndName(
+    userId: UserId,
+    name: string,
+    excludeId?: TodoCategoryId,
+  ): Promise<boolean> {
     return [...this.#categories.values()].some(
       (category) =>
-        category.userId.value === userId &&
+        category.userId.equals(userId) &&
         category.name.value === name &&
-        category.id.value !== excludeId,
+        category.id.value !== excludeId?.value,
     );
   }
 
-  async getMaxSortOrder(userId: string): Promise<number> {
+  async getMaxSortOrder(userId: UserId): Promise<number> {
     return Math.max(
       -1,
       ...[...this.#categories.values()]
-        .filter((category) => category.userId.value === userId)
+        .filter((category) => category.userId.equals(userId))
         .map((category) => category.sortOrder),
     );
   }
 
   async shiftSortOrders(
-    userId: string,
+    userId: UserId,
     fromSortOrder: number,
     toSortOrder: number | null,
     delta: number,
@@ -127,7 +134,7 @@ export class InMemoryTodoCategoryRepository extends TodoCategoryRepositoryPort {
       const isInRange =
         category.sortOrder >= fromSortOrder &&
         (toSortOrder == null || category.sortOrder <= toSortOrder);
-      if (category.userId.value === userId && isInRange) {
+      if (category.userId.equals(userId) && isInRange) {
         this.#categories.set(
           id,
           TodoCategory.reconstitute({
@@ -141,27 +148,30 @@ export class InMemoryTodoCategoryRepository extends TodoCategoryRepositoryPort {
     return shifted;
   }
 
-  async getTodoCount(categoryId: number): Promise<number> {
+  async getTodoCount(categoryId: TodoCategoryId): Promise<number> {
     return [...this.#stores.todoRecords.values()].filter(
-      (record) => record.categoryId === categoryId,
+      (record) => record.categoryId === categoryId.value,
     ).length;
   }
 
-  async countActiveSeries(categoryId: number): Promise<number> {
+  async countActiveSeries(categoryId: TodoCategoryId): Promise<number> {
     return [...this.#stores.seriesStore.values()].filter(
-      (series) => series.categoryId === categoryId && series.isActive,
+      (series) => series.categoryId === categoryId.value && series.isActive,
     ).length;
   }
 
-  async moveTodosToCategory(fromCategoryId: number, toCategoryId: number): Promise<void> {
+  async moveTodosToCategory(
+    fromCategoryId: TodoCategoryId,
+    toCategoryId: TodoCategoryId,
+  ): Promise<void> {
     for (const record of this.#stores.todoRecords.values()) {
-      if (record.categoryId === fromCategoryId) {
-        record.categoryId = toCategoryId;
+      if (record.categoryId === fromCategoryId.value) {
+        record.categoryId = toCategoryId.value;
       }
     }
     for (const series of this.#stores.seriesStore.values()) {
-      if (series.categoryId === fromCategoryId) {
-        series.applyDetails({ categoryId: toCategoryId });
+      if (series.categoryId === fromCategoryId.value) {
+        series.applyDetails({ categoryId: toCategoryId.value });
       }
     }
   }

@@ -1,10 +1,12 @@
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { type MutationLockPort, type UnitOfWorkPort } from "#api/shared/application/ports/index";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { resolveWallClockTimezone } from "#api/shared/domain/time/time-zone-name";
 
 import { TodoCategoryLockKeys } from "../../../categories/application/categories.lock-keys.js";
 import { resolveScheduledInstant } from "../../../shared/domain/todo-calendar.domain-service.js";
+import { TodoId } from "../../../shared/domain/todo-id.vo.js";
 import type { TodoSeriesRepositoryPort } from "../../../todo-series/application/ports/todo-series.repository.port.js";
 import type { TodoCachePort } from "../ports/todo-cache.port.js";
 import type { TodoOwnerTimezonePort } from "../ports/todo-owner-timezone.port.js";
@@ -67,15 +69,16 @@ export class RebaseTodoTimezoneUseCase {
 
   async execute(input: RebaseTodoTimezoneInput): Promise<RebaseTodoTimezoneResult> {
     const { userId } = input;
+    const ownerId = UserId.reconstitute(userId);
     const startedAt = performance.now();
-    const stored = await this.#dependencies.ownerTimezone.findTimezone(userId);
+    const stored = await this.#dependencies.ownerTimezone.findTimezone(ownerId);
     const timezone = stored == null ? null : resolveWallClockTimezone(stored);
     const result =
       timezone == null
         ? { ...EMPTY_RESULT, outcome: "NO_PREFERENCE" as const }
         : await this.#rebase(userId, timezone);
     if (result.rebasedCount > 0) {
-      await this.#dependencies.todoCache.invalidateFriendTodos(userId);
+      await this.#dependencies.todoCache.invalidateFriendTodos(ownerId);
     }
     this.#dependencies.logger.log({
       event: TodoLogEvent.TIMEZONE_REBASED,
@@ -93,7 +96,7 @@ export class RebaseTodoTimezoneUseCase {
     // 규칙을 먼저 바꾼다. 그 뒤 밤 작업이 만드는 회차는 새 시간대이고, 그 전에 만든 회차는 아래에서 읽힌다.
     const seriesCount = await unitOfWork.run(async () => {
       await this.#acquireLocks(userId);
-      return seriesRepository.updateTimezoneByUserId(userId, timezone);
+      return seriesRepository.updateTimezoneByUserId(UserId.reconstitute(userId), timezone);
     });
 
     let afterId: number | null = null;
@@ -125,13 +128,14 @@ export class RebaseTodoTimezoneUseCase {
   ): Promise<RebasedBatch> {
     const { todoRepository, ownerTimezone, todoReminder } = this.#dependencies;
     await this.#acquireLocks(userId);
-    const latest = await ownerTimezone.findTimezone(userId);
+    const ownerId = UserId.reconstitute(userId);
+    const latest = await ownerTimezone.findTimezone(ownerId);
     if (latest == null || resolveWallClockTimezone(latest) !== timezone) {
       return { ...EMPTY_BATCH, superseded: true };
     }
     const candidates = await todoRepository.lockRebaseCandidates({
-      userId,
-      afterId,
+      userId: ownerId,
+      afterId: afterId == null ? null : TodoId.reconstitute(afterId),
       limit,
     });
     const rebased = candidates.flatMap((candidate) => rebaseInstant(candidate, timezone));
@@ -139,9 +143,13 @@ export class RebaseTodoTimezoneUseCase {
     const now = this.#dependencies.clock.now();
     const reminders = rebased.filter((row) => hasPendingReminder(row, now));
     // 행과 함께 커밋한다. 실패하면 행도 그대로라 재시도가 같은 행을 다시 본다.
-    await todoReminder.cancelReminders(reminders.map(({ todoId }) => todoId));
+    await todoReminder.cancelReminders(reminders.map(({ todoId }) => todoId.value));
     await todoReminder.scheduleReminders(
-      reminders.map(({ todoId, scheduledTime }) => ({ todoId, scheduledTime, userId })),
+      reminders.map(({ todoId, scheduledTime }) => ({
+        todoId: todoId.value,
+        scheduledTime,
+        userId,
+      })),
     );
     return {
       superseded: false,
@@ -186,7 +194,14 @@ function rebaseInstant(candidate: RebaseCandidate, timezone: string) {
   if (next == null || next.equals(scheduledTime)) {
     return [];
   }
-  return [{ todoId, scheduledTime: next, previousTime: scheduledTime, completed }];
+  return [
+    {
+      todoId: TodoId.reconstitute(todoId),
+      scheduledTime: next,
+      previousTime: scheduledTime,
+      completed,
+    },
+  ];
 }
 
 /** 완료 전이고 옛 시각이나 새 시각이 앞으로일 때만 지울 예약이나 새 예약이 있다. 지난 이력은 예약을 건드리지 않는다. */

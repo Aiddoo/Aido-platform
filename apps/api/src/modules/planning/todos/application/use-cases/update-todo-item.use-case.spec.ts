@@ -8,6 +8,8 @@ import {
   snapshotTodoRecord,
 } from "#test/fixtures/planning/planning-todos.fixture";
 
+import { TodoId } from "../../../shared/domain/todo-id.vo.js";
+import { TodoItemId } from "../../../shared/domain/todo-item-id.vo.js";
 import { UpdateTodoItemUseCase } from "./update-todo-item.use-case.js";
 
 describe("하위 항목 수정", () => {
@@ -26,11 +28,11 @@ describe("하위 항목 수정", () => {
 
   it("제목과 false 완료 값을 저장하고 다른 항목은 보존한다", async () => {
     // Given
-    await fixture.todoRepository.createInlineItems(1, [
+    await fixture.todoRepository.createInlineItems(TodoId.reconstitute(1), [
       { title: "첫 항목" },
       { title: "둘째 항목" },
     ]);
-    await fixture.todoRepository.updateItem(1, { completed: true });
+    await fixture.todoRepository.updateItem(TodoItemId.reconstitute(1), { completed: true });
     // When
     const result = await useCase.execute({
       todoId: 1,

@@ -19,6 +19,7 @@ import {
   todoSeries,
   user as userTable,
 } from "#api/platform/database/schema/index";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantFromDate } from "#api/shared/domain/time/instant";
 import { plainDateFromDate } from "#api/shared/domain/time/plain-date";
 import { UserFixture } from "#test/fixtures/index";
@@ -591,7 +592,7 @@ describe("계획 사용량·멱등 적용 (실제 PostgreSQL)", () => {
         }),
       ]);
       // When
-      const upcoming = await todoPlanReader.findUpcoming(userId, {
+      const upcoming = await todoPlanReader.findUpcoming(UserId.reconstitute(userId), {
         fromDate: new Date("2027-01-04T00:00:00.000Z"),
         limit: 3,
       });

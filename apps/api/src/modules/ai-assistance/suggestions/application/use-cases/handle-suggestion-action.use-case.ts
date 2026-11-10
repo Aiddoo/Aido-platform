@@ -6,7 +6,10 @@ import {
   premiumFeatureDenied,
 } from "#api/modules/access/entitlements/access-entitlements.public";
 import type { UserMutationLockPort } from "#api/modules/identity/identity-user-access.public";
-import { TodoCategoryLockKeys } from "#api/modules/planning/categories/planning-categories.public";
+import {
+  TodoCategoryId,
+  TodoCategoryLockKeys,
+} from "#api/modules/planning/categories/planning-categories.public";
 import {
   type StagedTodoCreatorPort,
   TodoLockKeys,
@@ -139,9 +142,9 @@ export class HandleSuggestionActionUseCase {
     ]);
     // 같은 UoW에 참여하므로 생성이 실패하면 상태 갱신도 함께 rollback된다.
     const staged = await this.#dependencies.todoCreator.stage({
-      userId: command.userId,
+      userId: UserId.reconstitute(command.userId),
       title: suggestion.title,
-      categoryId: command.categoryId,
+      categoryId: TodoCategoryId.reconstitute(command.categoryId),
       startDate: plainDateToDate(Temporal.PlainDate.from(startDate)),
       scheduledTime: suggestion.scheduledTime,
       timezone: at.timezone,

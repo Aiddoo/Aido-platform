@@ -22,7 +22,7 @@ export class UpcomingTodoReaderAdapter extends UpcomingTodoReaderPort {
   }
 
   findByUserId(userId: UserId, timezone: string): Promise<readonly ExistingTodo[]> {
-    return this.#todoReader.findUpcoming(userId.value, {
+    return this.#todoReader.findUpcoming(userId, {
       fromDate: plainDateToDate(localDateAt(this.#clock.now(), timezone)),
       limit: PLANNING_UPCOMING_TODO_LIMIT,
     });

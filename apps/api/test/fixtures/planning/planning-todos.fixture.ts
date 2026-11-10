@@ -6,6 +6,7 @@ import type { TodoSeries } from "#api/modules/planning/todo-series/domain/todo-s
 import { ApplyTodoEventsUseCase } from "#api/modules/planning/todos/application/use-cases/apply-todo-events.use-case";
 import { ResolveTodoTimezoneUseCase } from "#api/modules/planning/todos/application/use-cases/resolve-todo-timezone.use-case";
 import { PaginationService } from "#api/shared/application/pagination/index";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { TodoBuilder } from "#test/builders/index";
 import { FakeTodoCache } from "#test/doubles/planning/fake-todo-cache";
 import { InMemoryTodoReadRepository } from "#test/doubles/planning/in-memory-todo-read.repository";
@@ -82,8 +83,8 @@ export function createPlanningTodoFixture(
   const seriesCatchUp = { execute: async (_userId: string) => undefined };
   const friendIds = new Set<string>();
   const friendPort = {
-    async isMutualFriend(_userId: string, friendUserId: string) {
-      return friendIds.has(friendUserId);
+    async isMutualFriend(_userId: UserId, friendUserId: UserId) {
+      return friendIds.has(friendUserId.value);
     },
   };
   const streakContext: { currentStreak: number; lastCompletedDate: Temporal.PlainDate | null } = {
@@ -91,7 +92,7 @@ export function createPlanningTodoFixture(
     lastCompletedDate: null,
   };
   const streakPort = {
-    async getStreakContext(_userId: string) {
+    async getStreakContext(_userId: UserId) {
       return { ...streakContext };
     },
   };

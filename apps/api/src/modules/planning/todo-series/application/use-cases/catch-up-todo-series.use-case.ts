@@ -1,6 +1,7 @@
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import {
   addDaysToKey,
@@ -71,10 +72,11 @@ export class CatchUpTodoSeriesUseCase {
     const startedAt = performance.now();
     const { seriesRepository, seriesOwner, logger } = this.#dependencies;
     try {
-      const behindIds = await seriesRepository.findIdsBehind(userId, through);
+      const ownerId = UserId.reconstitute(userId);
+      const behindIds = await seriesRepository.findIdsBehind(ownerId, through);
       // 세션 캐시(30초) 동안은 정지·탈퇴 대기 계정의 토큰도 통과한다.
       const seriesIds =
-        behindIds.length > 0 && (await seriesOwner.findOperatingOwners([userId])).has(userId)
+        behindIds.length > 0 && (await seriesOwner.findOperatingOwners([ownerId])).has(userId)
           ? behindIds
           : [];
       const { createdCount, failedCount, timedOut } = await this.#materializeAll(userId, seriesIds);

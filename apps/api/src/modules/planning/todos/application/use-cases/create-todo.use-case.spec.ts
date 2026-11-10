@@ -2,6 +2,7 @@ import { ErrorCode } from "@aido/api/errors";
 import { type DayOfWeek, TODO_LIMITS, TODO_SERIES_LIMITS } from "@aido/api/vocabulary";
 import { vi } from "vitest";
 
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { copyTodoRecord } from "#test/doubles/planning/in-memory-todo.repository";
 import {
   createPlanningTodoFixture,
@@ -9,6 +10,7 @@ import {
   PLANNING_TIME,
 } from "#test/fixtures/planning/planning-todos.fixture";
 
+import { TodoCategoryId } from "../../../categories/domain/todo-category-id.vo.js";
 import { MAX_OCCURRENCES_PER_RUN } from "../../../todo-series/application/use-cases/materialize-todo-occurrences.use-case.js";
 import { PublishTodoCreationUseCase } from "../../../todo-series/application/use-cases/publish-todo-creation.use-case.js";
 import { StagedTodoCreatorAdapter } from "../../infrastructure/adapters/staged-todo-creator.adapter.js";
@@ -49,9 +51,9 @@ describe("할 일 생성", () => {
     const {
       todos: [result],
     } = await useCase.execute({
-      userId: fixture.userId,
+      userId: UserId.reconstitute(fixture.userId),
       title: "시간 맞춤",
-      categoryId: 1,
+      categoryId: TodoCategoryId.reconstitute(1),
       startDate: new Date("2026-05-16T00:00:00Z"),
       scheduledTime,
       isAllDay,
@@ -68,9 +70,9 @@ describe("할 일 생성", () => {
     fixture.todoCache.categoryUsers.add(fixture.userId);
     // When
     const { todos, series } = await useCase.execute({
-      userId: fixture.userId,
+      userId: UserId.reconstitute(fixture.userId),
       title: "새 할 일",
-      categoryId: 1,
+      categoryId: TodoCategoryId.reconstitute(1),
       startDate: new Date("2026-05-16T00:00:00Z"),
       timezone: "UTC",
       items: [{ title: "첫 항목" }, { title: "둘째 항목" }],
@@ -103,9 +105,9 @@ describe("할 일 생성", () => {
     fixture.categoryOwners.set(1, "other-user");
     const before = [...fixture.records.values()].map(copyTodoRecord);
     const input = {
-      userId: fixture.userId,
+      userId: UserId.reconstitute(fixture.userId),
       title: "새 할 일",
-      categoryId: 1,
+      categoryId: TodoCategoryId.reconstitute(1),
       startDate: PLANNING_TIME,
       timezone: "UTC",
     };
@@ -127,9 +129,9 @@ describe("할 일 생성", () => {
     // When / Then
     await expect(
       useCase.execute({
-        userId: fixture.userId,
+        userId: UserId.reconstitute(fixture.userId),
         title: "초과 할 일",
-        categoryId: 1,
+        categoryId: TodoCategoryId.reconstitute(1),
         startDate: PLANNING_TIME,
         timezone: "UTC",
       }),
@@ -148,9 +150,9 @@ describe("할 일 생성", () => {
       // When / Then
       await expect(
         useCase.execute({
-          userId: fixture.userId,
+          userId: UserId.reconstitute(fixture.userId),
           title: "새 할 일",
-          categoryId: 1,
+          categoryId: TodoCategoryId.reconstitute(1),
           startDate: PLANNING_TIME,
           timezone: "UTC",
         }),
@@ -168,9 +170,9 @@ describe("할 일 생성", () => {
 
     function seriesInput(overrides: Partial<CreateTodoInput> = {}): CreateTodoInput {
       return {
-        userId: fixture.userId,
+        userId: UserId.reconstitute(fixture.userId),
         title: "반복 할 일",
-        categoryId: 1,
+        categoryId: TodoCategoryId.reconstitute(1),
         startDate: new Date("2026-05-18T00:00:00Z"),
         timezone: "UTC",
         repeat: { frequency: "DAILY", end: { type: "NEVER" } },
@@ -341,7 +343,10 @@ describe("할 일 생성", () => {
       // Given
       await useCase.execute(seriesInput());
       // When
-      const usage = await fixture.todoRepository.countCategoryUsage(fixture.userId, 1);
+      const usage = await fixture.todoRepository.countCategoryUsage(
+        UserId.reconstitute(fixture.userId),
+        TodoCategoryId.reconstitute(1),
+      );
       // Then
       expect(usage).toBe(1);
     });

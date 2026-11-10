@@ -6,12 +6,14 @@ import { requireRecord } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { todoSeries } from "#api/platform/database/schema/index";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type {
   DueTodoSeriesQuery,
   TodoSeriesRef,
   TodoSeriesRepositoryPort,
 } from "../../application/ports/todo-series.repository.port.js";
+import { TodoSeriesId } from "../../domain/todo-series-id.vo.js";
 import type { TodoSeries } from "../../domain/todo-series.aggregate.js";
 import { toTodoSeries, toTodoSeriesRow } from "./todo-series-row.mapper.js";
 
@@ -29,16 +31,18 @@ export class DrizzleTodoSeriesRepository implements TodoSeriesRepositoryPort {
     return this.#txHost.tx;
   }
 
-  async findByIdAndUserId(id: string, userId: string): Promise<TodoSeries | null> {
-    const row = await this.#db.query.todoSeries.findFirst({ where: { id, userId } });
+  async findByIdAndUserId(id: TodoSeriesId, userId: UserId): Promise<TodoSeries | null> {
+    const row = await this.#db.query.todoSeries.findFirst({
+      where: { id: id.value, userId: userId.value },
+    });
     return row == null ? null : toTodoSeries(row);
   }
 
   async lockForUpdate(
-    id: string,
+    id: TodoSeriesId,
     options: { readonly skipLocked: boolean } = { skipLocked: false },
   ): Promise<TodoSeries | null> {
-    const query = this.#db.select().from(todoSeries).where(eq(todoSeries.id, id));
+    const query = this.#db.select().from(todoSeries).where(eq(todoSeries.id, id.value));
     const [row] = await (options.skipLocked
       ? query.for("update", { skipLocked: true })
       : query.for("update"));
@@ -61,14 +65,22 @@ export class DrizzleTodoSeriesRepository implements TodoSeriesRepositoryPort {
     requireRecord(updated[0]);
   }
 
-  async lockFamilyIds(userId: string, originSeriesId: string): Promise<readonly string[]> {
+  async lockFamilyIds(
+    userId: UserId,
+    originSeriesId: TodoSeriesId,
+  ): Promise<readonly TodoSeriesId[]> {
     const rows = await this.#db
       .select({ id: todoSeries.id })
       .from(todoSeries)
-      .where(and(eq(todoSeries.userId, userId), eq(todoSeries.originSeriesId, originSeriesId)))
+      .where(
+        and(
+          eq(todoSeries.userId, userId.value),
+          eq(todoSeries.originSeriesId, originSeriesId.value),
+        ),
+      )
       .orderBy(asc(todoSeries.id))
       .for("update");
-    return rows.map((row) => row.id);
+    return rows.map((row) => TodoSeriesId.reconstitute(row.id));
   }
 
   async lockFollowingSegments(series: TodoSeries): Promise<readonly TodoSeries[]> {
@@ -88,25 +100,30 @@ export class DrizzleTodoSeriesRepository implements TodoSeriesRepositoryPort {
     return rows.map(toTodoSeries);
   }
 
-  async deleteMany(ids: readonly string[]): Promise<void> {
+  async deleteMany(ids: readonly TodoSeriesId[]): Promise<void> {
     if (ids.length === 0) {
       return;
     }
-    await this.#db.delete(todoSeries).where(inArray(todoSeries.id, [...ids]));
-  }
-
-  countActiveByUserId(userId: string): Promise<number> {
-    return this.#db.$count(
-      todoSeries,
-      and(eq(todoSeries.userId, userId), isNotNull(todoSeries.nextOccurrenceDate)),
+    await this.#db.delete(todoSeries).where(
+      inArray(
+        todoSeries.id,
+        ids.map((id) => id.value),
+      ),
     );
   }
 
-  async updateTimezoneByUserId(userId: string, timezone: string): Promise<number> {
+  countActiveByUserId(userId: UserId): Promise<number> {
+    return this.#db.$count(
+      todoSeries,
+      and(eq(todoSeries.userId, userId.value), isNotNull(todoSeries.nextOccurrenceDate)),
+    );
+  }
+
+  async updateTimezoneByUserId(userId: UserId, timezone: string): Promise<number> {
     const updated = await this.#db
       .update(todoSeries)
       .set({ timezone, updatedAt: this.#clock.now() })
-      .where(and(eq(todoSeries.userId, userId), ne(todoSeries.timezone, timezone)))
+      .where(and(eq(todoSeries.userId, userId.value), ne(todoSeries.timezone, timezone)))
       .returning({ id: todoSeries.id });
     return updated.length;
   }
@@ -119,20 +136,20 @@ export class DrizzleTodoSeriesRepository implements TodoSeriesRepositoryPort {
         and(
           isNotNull(todoSeries.nextOccurrenceDate),
           lte(todoSeries.nextOccurrenceDate, Temporal.PlainDate.from(query.through)),
-          query.afterId == null ? undefined : gt(todoSeries.id, query.afterId),
+          query.afterId == null ? undefined : gt(todoSeries.id, query.afterId.value),
         ),
       )
       .orderBy(asc(todoSeries.id))
       .limit(query.limit);
   }
 
-  async findIdsBehind(userId: string, through: string): Promise<readonly string[]> {
+  async findIdsBehind(userId: UserId, through: string): Promise<readonly string[]> {
     const rows = await this.#db
       .select({ id: todoSeries.id })
       .from(todoSeries)
       .where(
         and(
-          eq(todoSeries.userId, userId),
+          eq(todoSeries.userId, userId.value),
           lte(todoSeries.nextOccurrenceDate, Temporal.PlainDate.from(through)),
         ),
       );

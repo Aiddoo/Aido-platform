@@ -1,4 +1,5 @@
 import { computeEffectiveStreak } from "#api/modules/identity/identity-settings.public";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { plainDateToDate } from "#api/shared/domain/time/plain-date";
 
 import type { CatchUpTodoSeriesUseCase } from "../../../todo-series/application/use-cases/catch-up-todo-series.use-case.js";
@@ -58,11 +59,12 @@ export class GetTodoSummaryUseCase {
     // 앱이 목록과 나란히 부르므로 같은 복귀를 기다려야 위젯·요약이 0개로 남지 않는다.
     await this.#dependencies.seriesCatchUp.execute(userId);
 
+    const ownerId = UserId.reconstitute(userId);
     const [stats, topTodos, streakContext] = await Promise.all([
-      this.#dependencies.todoReadRepository.getTodayTodoStats(userId, date),
+      this.#dependencies.todoReadRepository.getTodayTodoStats(ownerId, date),
 
-      this.#dependencies.todoReadRepository.findTodayTopTodos(userId, date, TOP_TODOS_LIMIT),
-      this.#dependencies.streakPort.getStreakContext(userId),
+      this.#dependencies.todoReadRepository.findTodayTopTodos(ownerId, date, TOP_TODOS_LIMIT),
+      this.#dependencies.streakPort.getStreakContext(ownerId),
     ]);
 
     const { completionRate, isComplete } = summarizeCompletion(stats);

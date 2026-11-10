@@ -1,6 +1,7 @@
 import type { TodoRepeat } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
 
+import { TodoCategoryId } from "#api/modules/planning/categories/planning-categories.public";
 import { ApplicationException } from "#api/shared/application/application.exception";
 import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
@@ -71,7 +72,9 @@ describe("ConvertMemoToTodosUseCase — 메모를 여러 할 일로", () => {
       userId: MEMO_FIXTURE_USER_ID,
       memoId: foreign.id.value,
       timezone: "Asia/Seoul",
-      todos: [{ title: "할 일", categoryId: 1, startDate: START_DATE }],
+      todos: [
+        { title: "할 일", categoryId: TodoCategoryId.reconstitute(1), startDate: START_DATE },
+      ],
     });
 
     // Then
@@ -96,10 +99,10 @@ describe("ConvertMemoToTodosUseCase — 메모를 여러 할 일로", () => {
       memoId: memo.id.value,
       timezone: "Asia/Seoul",
       todos: [
-        { title: "단건", categoryId: 1, startDate: START_DATE },
+        { title: "단건", categoryId: TodoCategoryId.reconstitute(1), startDate: START_DATE },
         {
           title: "반복",
-          categoryId: 1,
+          categoryId: TodoCategoryId.reconstitute(1),
           startDate: START_DATE,
           scheduledTime: null,
           isAllDay: false,
@@ -112,9 +115,9 @@ describe("ConvertMemoToTodosUseCase — 메모를 여러 할 일로", () => {
     // Then
     expect(todos.map((todo) => todo.id)).toEqual([1, 20, 21]);
     expect(todoCreator.inputs.at(1)).toEqual({
-      userId: MEMO_FIXTURE_USER_ID,
+      userId: UserId.reconstitute(MEMO_FIXTURE_USER_ID),
       title: "반복",
-      categoryId: 1,
+      categoryId: TodoCategoryId.reconstitute(1),
       startDate: START_DATE,
       scheduledTime: null,
       timezone: "Asia/Seoul",
@@ -132,7 +135,7 @@ describe("ConvertMemoToTodosUseCase — 메모를 여러 할 일로", () => {
     const memoRepository = new InMemoryMemoRepository([memo]);
     const failure = new ApplicationException(ErrorCode.TODO_CATEGORY_0851, { categoryId: 999 });
     const todoCreator = new FakeStagedTodoCreator();
-    todoCreator.failure = (input) => (input.categoryId === 999 ? failure : null);
+    todoCreator.failure = (input) => (input.categoryId.value === 999 ? failure : null);
     const afterCommit = new RecordingAfterCommitRegistry();
     const unitOfWork = new CommitCountingUnitOfWork();
     const useCase = createConvertMemoToTodosUseCase({
@@ -148,9 +151,13 @@ describe("ConvertMemoToTodosUseCase — 메모를 여러 할 일로", () => {
       memoId: memo.id.value,
       timezone: "Asia/Seoul",
       todos: [
-        { title: "성공", categoryId: 1, startDate: START_DATE },
-        { title: "실패", categoryId: 999, startDate: START_DATE },
-        { title: "실행하지 않음", categoryId: 1, startDate: START_DATE },
+        { title: "성공", categoryId: TodoCategoryId.reconstitute(1), startDate: START_DATE },
+        { title: "실패", categoryId: TodoCategoryId.reconstitute(999), startDate: START_DATE },
+        {
+          title: "실행하지 않음",
+          categoryId: TodoCategoryId.reconstitute(1),
+          startDate: START_DATE,
+        },
       ],
     });
 

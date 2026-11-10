@@ -2,11 +2,12 @@ import { vi } from "vitest";
 
 import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
 import { CacheService } from "#api/platform/cache/cache.service";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { FRIEND_TODOS_INITIAL_GENERATION, TodoCacheKey } from "../cache/todo-cache.keyspace.js";
 import { TodoCacheAdapter } from "./todo-cache.adapter.js";
 
-const OWNER_ID = "friend-1";
+const OWNER_ID = UserId.reconstitute("friend-1");
 const START_DATE = "2026-07-01";
 const END_DATE = "2026-07-31";
 const PAGE_SIZE = 20;
@@ -69,7 +70,7 @@ describe("TodoCacheAdapter — 친구 Todo generation 캐시", () => {
     expect(
       await backend.has(
         TodoCacheKey.friendTodosFirstPageVersioned(
-          OWNER_ID,
+          OWNER_ID.value,
           staleRead.generation,
           START_DATE,
           END_DATE,
@@ -124,9 +125,9 @@ describe("TodoCacheAdapter — 친구 Todo generation 캐시", () => {
       pagination: { nextCursor: null, hasNext: false, size: PAGE_SIZE },
     };
     const cacheService = new CacheService(backend);
-    const generationKey = TodoCacheKey.friendTodosGeneration(OWNER_ID);
+    const generationKey = TodoCacheKey.friendTodosGeneration(OWNER_ID.value);
     const pageKey = TodoCacheKey.friendTodosFirstPageVersioned(
-      OWNER_ID,
+      OWNER_ID.value,
       "generation-before-write",
       START_DATE,
       END_DATE,

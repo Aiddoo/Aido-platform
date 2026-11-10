@@ -133,7 +133,7 @@ describe("시간대 재계산 규모 측정", () => {
             findTimezone: async (id) => {
               const row = await transaction.txHost.tx.query.userPreference.findFirst({
                 columns: { timezone: true },
-                where: { userId: id },
+                where: { userId: id.value },
               });
               return row?.timezone ?? null;
             },

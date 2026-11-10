@@ -579,7 +579,10 @@ describe("반복 할 일 스키마 (실제 PostgreSQL)", () => {
       const series = plan(id, rule);
       // When
       await repository().insert(series);
-      const restored = await repository().findByIdAndUserId(id, userId);
+      const restored = await repository().findByIdAndUserId(
+        TodoSeriesId.reconstitute(id),
+        UserId.reconstitute(userId),
+      );
       // Then
       expect(restored?.rule.equals(rule)).toBe(true);
       expect(restored?.checklistTemplate).toEqual([{ title: "항목" }]);
@@ -603,7 +606,7 @@ describe("반복 할 일 스키마 (실제 PostgreSQL)", () => {
       finished.planOccurrences("2026-12-31");
       await repository().update(finished);
       // Then
-      expect(await repository().countActiveByUserId(userId)).toBe(1);
+      expect(await repository().countActiveByUserId(UserId.reconstitute(userId))).toBe(1);
     });
 
     it("다음 회차가 through 이하인 규칙만 id 순 커서로 돌려준다", async () => {
@@ -640,7 +643,7 @@ describe("반복 할 일 스키마 (실제 PostgreSQL)", () => {
       });
       const second = await repository().findDueBatch({
         through: "2026-12-01",
-        afterId: first.at(-1)?.id ?? null,
+        afterId: first.map((due) => TodoSeriesId.reconstitute(due.id)).at(-1) ?? null,
         limit: 2,
       });
       // Then
@@ -659,7 +662,7 @@ describe("반복 할 일 스키마 (실제 PostgreSQL)", () => {
       const held = Promise.withResolvers<void>();
       const release = Promise.withResolvers<void>();
       const holder = uow.run(async () => {
-        await locking.lockForUpdate(id);
+        await locking.lockForUpdate(TodoSeriesId.reconstitute(id));
         held.resolve();
         await release.promise;
       });
@@ -668,9 +671,12 @@ describe("반복 할 일 스키마 (실제 PostgreSQL)", () => {
         // When
         const fixture = createDatabaseTransactionFixture(client);
         const skipped = await fixture.uow.run(() =>
-          new DrizzleTodoSeriesRepository(fixture.txHost, new DateClock()).lockForUpdate(id, {
-            skipLocked: true,
-          }),
+          new DrizzleTodoSeriesRepository(fixture.txHost, new DateClock()).lockForUpdate(
+            TodoSeriesId.reconstitute(id),
+            {
+              skipLocked: true,
+            },
+          ),
         );
         // Then
         expect(skipped).toBeNull();

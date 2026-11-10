@@ -632,14 +632,14 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
   const creator: Pick<StagedTodoCreatorPort, "stage"> = {
     async stage(input) {
       const { id: _id, ...row } = TodoFixture.create({
-        userId: input.userId,
-        categoryId: input.categoryId,
+        userId: input.userId.value,
+        categoryId: input.categoryId.value,
         title: input.title,
         startDate: Temporal.PlainDate.from("2026-10-12"),
       });
       await fixture.txHost.tx.insert(todo).values(row);
       return {
-        todos: [createTodoReadModelFixture({ id: 1, userId: input.userId })],
+        todos: [createTodoReadModelFixture({ id: 1, userId: input.userId.value })],
         series: null,
         afterCommit: async () => undefined,
       };

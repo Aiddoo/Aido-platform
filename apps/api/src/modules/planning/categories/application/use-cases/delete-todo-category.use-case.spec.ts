@@ -1,6 +1,7 @@
 import { ErrorCode } from "@aido/api/errors";
 
 import type { TodoSeries } from "#api/modules/planning/todo-series/domain/todo-series.aggregate";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { FakeTodoCategoryCache } from "#test/doubles/planning/fake-todo-category-cache";
 import { InMemoryTodoCategoryRepository } from "#test/doubles/planning/in-memory-todo-category.repository";
 import { RecordingDomainEventPublisher } from "#test/doubles/planning/recording-domain-event-publisher";
@@ -14,6 +15,7 @@ import { createTodoSeriesFixture } from "#test/fixtures/planning/todo-series.fix
 import { TODO_FIXTURE_NOW, TODO_FIXTURE_USER_ID } from "#test/fixtures/planning/todo.fixture";
 import type { PlanningTodoRecord } from "#test/fixtures/todo-response.fixture";
 
+import { TodoCategoryId } from "../../domain/todo-category-id.vo.js";
 import { DeleteTodoCategoryUseCase } from "./delete-todo-category.use-case.js";
 
 const USER_ID = TODO_FIXTURE_USER_ID;
@@ -107,7 +109,7 @@ describe("카테고리 삭제", () => {
 
     // Then
     await expect(deletion).rejects.toMatchObject(error);
-    expect(await repository.countByUserId(USER_ID)).toBe(categoryIds.length);
+    expect(await repository.countByUserId(UserId.reconstitute(USER_ID))).toBe(categoryIds.length);
     expect([...todoRecords.values()].map((record) => record.categoryId)).toEqual(
       todos.map((record) => record.categoryId),
     );
@@ -129,7 +131,12 @@ describe("카테고리 삭제", () => {
       errorCode: ErrorCode.TODO_CATEGORY_0855,
       details: { categoryId: 1, todoCount: 0 },
     });
-    expect(await repository.findByIdAndUserId(1, USER_ID)).not.toBeNull();
+    expect(
+      await repository.findByIdAndUserId(
+        TodoCategoryId.reconstitute(1),
+        UserId.reconstitute(USER_ID),
+      ),
+    ).not.toBeNull();
   });
 
   it("할 일을 대상 카테고리로 옮긴 뒤 삭제하고 캐시를 무효화한다", async () => {
@@ -142,7 +149,12 @@ describe("카테고리 삭제", () => {
     await useCase.execute({ userId: USER_ID, categoryId: 1, moveToCategoryId: 2 });
 
     // Then
-    expect(await repository.findByIdAndUserId(1, USER_ID)).toBeNull();
+    expect(
+      await repository.findByIdAndUserId(
+        TodoCategoryId.reconstitute(1),
+        UserId.reconstitute(USER_ID),
+      ),
+    ).toBeNull();
     expect([...todoRecords.values()].map((record) => record.categoryId)).toEqual([2, 2, 2]);
     expect(cache.invalidatedUserIds).toEqual([USER_ID]);
     expect(
@@ -163,8 +175,13 @@ describe("카테고리 삭제", () => {
     await useCase.execute({ userId: USER_ID, categoryId: 1 });
 
     // Then
-    expect(await repository.findByIdAndUserId(1, USER_ID)).toBeNull();
-    expect(await repository.countByUserId(USER_ID)).toBe(1);
+    expect(
+      await repository.findByIdAndUserId(
+        TodoCategoryId.reconstitute(1),
+        UserId.reconstitute(USER_ID),
+      ),
+    ).toBeNull();
+    expect(await repository.countByUserId(UserId.reconstitute(USER_ID))).toBe(1);
   });
 
   it("사용자 카테고리 키를 UoW 안에서 첫 구조 읽기 전에 잠그고 UoW callback 성공 후 캐시를 무효화한다", async () => {
@@ -185,29 +202,29 @@ describe("카테고리 삭제", () => {
       }
     }
     class OrderedRepository extends InMemoryTodoCategoryRepository {
-      override async findByIdAndUserId(id: number, userId: string) {
+      override async findByIdAndUserId(id: TodoCategoryId, userId: UserId) {
         events.push("category-read");
         return super.findByIdAndUserId(id, userId);
       }
-      override async countByUserId(userId: string): Promise<number> {
+      override async countByUserId(userId: UserId): Promise<number> {
         events.push("count");
         return super.countByUserId(userId);
       }
-      override async getTodoCount(categoryId: number): Promise<number> {
+      override async getTodoCount(categoryId: TodoCategoryId): Promise<number> {
         events.push("todo-count");
         return super.getTodoCount(categoryId);
       }
-      override async countActiveSeries(categoryId: number): Promise<number> {
+      override async countActiveSeries(categoryId: TodoCategoryId): Promise<number> {
         events.push("active-series");
         return super.countActiveSeries(categoryId);
       }
-      override async delete(id: number): Promise<void> {
+      override async delete(id: TodoCategoryId): Promise<void> {
         events.push("delete");
         await super.delete(id);
       }
     }
     class OrderedCache extends FakeTodoCategoryCache {
-      override async invalidate(userId: string): Promise<void> {
+      override async invalidate(userId: UserId): Promise<void> {
         events.push("cache");
         await super.invalidate(userId);
       }

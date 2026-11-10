@@ -1,5 +1,7 @@
 import { ErrorCode } from "@aido/api/errors";
 
+import { TodoCategoryId } from "#api/modules/planning/categories/planning-categories.public";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { InMemorySuggestionRepository } from "#test/doubles/ai-assistance/in-memory-suggestion.repository";
 import { createSpyApplicationLogger } from "#test/doubles/ai-assistance/spy-application-logger";
 import { FakeStagedTodoCreator } from "#test/doubles/planning/fake-staged-todo-creator";
@@ -186,9 +188,9 @@ describe("HandleSuggestionActionUseCase", () => {
     expect(repository.writes).toEqual(["save"]);
     expect(todoCreator.inputs).toEqual([
       expect.objectContaining({
-        userId: USER_ID,
+        userId: UserId.reconstitute(USER_ID),
         title: "팀 미팅",
-        categoryId: 5,
+        categoryId: TodoCategoryId.reconstitute(5),
         scheduledTime: "10:00",
         timezone: "Asia/Seoul",
         repeat: expect.objectContaining({

@@ -18,6 +18,7 @@ import {
   CurrentUser,
   type CurrentUserPayload,
 } from "#api/modules/identity/identity-auth-http.public";
+import { TodoCategoryId } from "#api/modules/planning/categories/planning-categories.public";
 import { API_VERSION } from "#api/platform/http/api-versioning";
 import { Timezone } from "#api/platform/http/decorators/index";
 import {
@@ -324,7 +325,7 @@ export class MemoController {
       memoId: params.id,
       timezone: tz,
       todo: {
-        categoryId: dto.categoryId,
+        categoryId: TodoCategoryId.reconstitute(dto.categoryId),
         startDate: plainDateToDate(Temporal.PlainDate.from(dto.startDate)),
         endDate:
           dto.endDate == null ? undefined : plainDateToDate(Temporal.PlainDate.from(dto.endDate)),
@@ -382,7 +383,7 @@ export class MemoController {
       timezone: tz,
       todos: dto.todos.map((todo) => ({
         title: todo.title,
-        categoryId: todo.categoryId,
+        categoryId: TodoCategoryId.reconstitute(todo.categoryId),
         startDate: plainDateToDate(Temporal.PlainDate.from(todo.startDate)),
         endDate:
           todo.endDate == null ? undefined : plainDateToDate(Temporal.PlainDate.from(todo.endDate)),

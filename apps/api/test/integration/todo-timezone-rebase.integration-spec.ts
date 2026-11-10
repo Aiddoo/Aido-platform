@@ -9,6 +9,7 @@ import { RefreshPushTimezoneUseCase } from "#api/modules/identity/preferences/ap
 import { DrizzleUserPreferenceRepository } from "#api/modules/identity/preferences/infrastructure/persistence/drizzle-user-preference.repository";
 import { TODO_REMINDER_QUEUE } from "#api/modules/notification/notification-reminders.public";
 import { TodoReminderSchedulerAdapter } from "#api/modules/notification/reminders/infrastructure/jobs/todo-reminder-scheduler.adapter";
+import { TodoCategoryId } from "#api/modules/planning/categories/domain/todo-category-id.vo";
 import { MaterializeDueTodoSeriesUseCase } from "#api/modules/planning/todo-series/application/use-cases/materialize-due-todo-series.use-case";
 import { MaterializeTodoSeriesUseCase } from "#api/modules/planning/todo-series/application/use-cases/materialize-todo-series.use-case";
 import { DrizzleTodoSeriesRepository } from "#api/modules/planning/todo-series/infrastructure/persistence/drizzle-todo-series.repository";
@@ -45,6 +46,7 @@ import {
   todayInTimezone,
   toLocalTimeString,
 } from "#api/shared/domain/date/utils/timezone";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantFromDate, toIsoString } from "#api/shared/domain/time/instant";
 import { DateClock } from "#test/doubles/platform/date-clock";
 import { nowInstant } from "#test/fixtures/clock.fixture";
@@ -113,7 +115,7 @@ describe("시간대 재계산 (실제 PostgreSQL·pg-boss)", () => {
         findTimezone: async (id) => {
           const row = await transaction.txHost.tx.query.userPreference.findFirst({
             columns: { timezone: true },
-            where: { userId: id },
+            where: { userId: id.value },
           });
           return row?.timezone ?? null;
         },
@@ -655,9 +657,9 @@ describe("시간대 재계산 동시성 (실제 PostgreSQL 잠금)", () => {
 
   async function createDailySeries(time: string) {
     const { series, todos } = await context.module.get(CreateTodoUseCase).execute({
-      userId,
+      userId: UserId.reconstitute(userId),
       title: "회차",
-      categoryId,
+      categoryId: TodoCategoryId.reconstitute(categoryId),
       startDate: parseDateOnly(addDaysToDateKey(today, 1)),
       scheduledTime: time,
       timezone: SEOUL,
@@ -705,9 +707,9 @@ describe("시간대 재계산 동시성 (실제 PostgreSQL 잠금)", () => {
       }),
       materialize.execute(),
       create.execute({
-        userId,
+        userId: UserId.reconstitute(userId),
         title: "새 할 일",
-        categoryId,
+        categoryId: TodoCategoryId.reconstitute(categoryId),
         startDate: parseDateOnly(addDaysToDateKey(today, 2)),
         scheduledTime: "07:15",
         timezone: NEW_YORK,
@@ -727,9 +729,9 @@ describe("시간대 재계산 동시성 (실제 PostgreSQL 잠금)", () => {
     // Given
     const date = addDaysToDateKey(today, 2);
     const { todos } = await context.module.get(CreateTodoUseCase).execute({
-      userId,
+      userId: UserId.reconstitute(userId),
       title: "단건",
-      categoryId,
+      categoryId: TodoCategoryId.reconstitute(categoryId),
       startDate: parseDateOnly(date),
       scheduledTime: "09:00",
       timezone: SEOUL,
