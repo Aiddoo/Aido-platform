@@ -19,6 +19,7 @@
 
 - 비밀 하나에 여러 용도를 묶지 않는다. 용도마다 키를 나눠야 하나씩 회전할 수 있다.
 - Passport 없이 공식 `JwtService` 기반 guard로 검증한다. 세션 검증·캐시·상태 검사 동작은 그대로 둔다.
+- 로그인 본문의 `deviceName`·`deviceType`은 출시 앱 호환으로 받기만 한다. 비밀번호 로그인은 `deviceName`을 세션의 기기 지문(없으면 User-Agent)에, 소셜 로그인은 둘을 신규 가입 관리자 알림의 기기 표시([관리자 알림](admin-notifications.md))에만 쓴다. 세션 목록의 `deviceName`·`deviceType`은 늘 null이고 둘 다 신뢰 판단에 쓰지 않는다.
 
 ## 키 회전
 

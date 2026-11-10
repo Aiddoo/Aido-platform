@@ -21,8 +21,6 @@ describe("extractMetadata", () => {
     expect(metadata).toEqual({
       ip: "198.51.100.24",
       userAgent: "request-identity-test",
-      deviceName: undefined,
-      deviceType: undefined,
       device: {},
     });
   });
