@@ -3,12 +3,15 @@ import { HttpClient, InjectHttpClient } from "@nestjs/http-client";
 import { sortBy } from "es-toolkit";
 import type { z } from "zod";
 
-import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { requestVendorJson } from "#api/platform/http/request-vendor-json";
 import type { OutboundPolicy } from "#api/platform/resilience/outbound-policy";
 import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
 
 import { StoreSubscriptionStatusReaderPort } from "../../../application/ports/store-subscription-status.reader.port.js";
+import {
+  type BillingSubscriptionsConfig,
+  billingSubscriptionsConfig,
+} from "../../../billing-subscriptions.config.js";
 import type { StoreSubscriptionState } from "../../../domain/subscription.aggregate.js";
 import { REVENUECAT_API_POLICY } from "./revenuecat-outbound.policy.js";
 import {
@@ -60,11 +63,11 @@ export class RevenueCatStoreSubscriptionStatusAdapter extends StoreSubscriptionS
   // 상품은 거의 바뀌지 않아 프로세스 안에서 한 번만 읽는다(Project Configuration 한도 60/분)
   readonly #storeProductIds = new Map<string, string>();
   readonly #http: HttpClient;
-  readonly #config: Pick<TypedConfigService, "revenuecat">;
+  readonly #config: Pick<BillingSubscriptionsConfig, "revenuecat">;
 
   constructor(
     @InjectHttpClient(REVENUECAT_HTTP_CLIENT) http: HttpClient,
-    @Inject(TypedConfigService) config: Pick<TypedConfigService, "revenuecat">,
+    @Inject(billingSubscriptionsConfig.KEY) config: Pick<BillingSubscriptionsConfig, "revenuecat">,
     policies: OutboundPolicyRegistry,
   ) {
     super();

@@ -1,5 +1,4 @@
 import { ErrorCode } from "@aido/api/errors";
-import { ConfigService } from "@nestjs/config";
 
 import { NotificationQueueAdapter } from "#api/modules/notification/notification-delivery-jobs.public";
 import { notificationEventJobKey } from "#api/modules/notification/push/infrastructure/jobs/notification-job-keys.constants";
@@ -7,8 +6,6 @@ import {
   NOTIFICATION_QUEUE,
   NotificationJobName,
 } from "#api/modules/notification/push/infrastructure/jobs/notification.queue";
-import type { EnvConfig } from "#api/platform/config/schemas/index";
-import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { ApplicationException } from "#api/shared/application/application.exception";
 import { RecordingAdminEventNotifier } from "#test/doubles/operations/recording-admin-event-notifier";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
@@ -24,9 +21,13 @@ function createAdapter(options: { projectId?: string } = {}) {
   const adminEventNotifier = new RecordingAdminEventNotifier();
   const alerts = new RecordingOperationalAlert();
   const jobQueue = new InMemoryJobQueue();
-  const config = new TypedConfigService(
-    new ConfigService<EnvConfig, true>({ REVENUECAT_PROJECT_ID: options.projectId }),
-  );
+  const config = {
+    revenuecat: {
+      webhookSecret: undefined,
+      projectId: options.projectId,
+      apiV2SecretKey: undefined,
+    },
+  };
   const adapter = new SubscriptionEventNotifierAdapter(
     adminEventNotifier,
     new NotificationQueueAdapter(

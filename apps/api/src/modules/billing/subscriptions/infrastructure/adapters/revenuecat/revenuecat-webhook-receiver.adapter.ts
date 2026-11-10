@@ -1,6 +1,7 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
+import type { ConfigType } from "@nestjs/config";
 
-import { TypedConfigService } from "#api/platform/config/services/config.service";
+import { appConfig } from "#api/platform/config/app.config";
 import { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 
 import { SubscriptionAlertKey } from "../../../application/subscriptions.alerts.js";
@@ -17,12 +18,12 @@ export class RevenueCatWebhookReceiver {
   readonly #logger = new Logger(RevenueCatWebhookReceiver.name);
   readonly #applyStoreSubscriptionEvent: Pick<ApplyStoreSubscriptionEventUseCase, "execute">;
   readonly #alert: OperationalAlertPort;
-  readonly #config: Pick<TypedConfigService, "appEnv">;
+  readonly #config: Pick<ConfigType<typeof appConfig>, "appEnv">;
 
   constructor(
     applyStoreSubscriptionEvent: ApplyStoreSubscriptionEventUseCase,
     alert: OperationalAlertPort,
-    @Inject(TypedConfigService) config: Pick<TypedConfigService, "appEnv">,
+    @Inject(appConfig.KEY) config: Pick<ConfigType<typeof appConfig>, "appEnv">,
   ) {
     this.#applyStoreSubscriptionEvent = applyStoreSubscriptionEvent;
     this.#alert = alert;

@@ -1,13 +1,15 @@
 import { timingSafeEqual } from "node:crypto";
 
 import { ErrorCode } from "@aido/api/errors";
-import { CanActivate, ExecutionContext, Injectable, Logger } from "@nestjs/common";
+import { CanActivate, ExecutionContext, Inject, Injectable, Logger } from "@nestjs/common";
+import type { ConfigType } from "@nestjs/config";
 import type { Request } from "express";
 
-import { TypedConfigService } from "#api/platform/config/services/config.service";
+import { appConfig } from "#api/platform/config/app.config";
 import { ApplicationException } from "#api/shared/application/application.exception";
 
 import { SubscriptionLogEvent } from "../../../application/subscriptions.log-events.js";
+import { billingSubscriptionsConfig } from "../../../billing-subscriptions.config.js";
 
 /**
  * RevenueCat Webhook 서명 검증 가드
@@ -21,18 +23,24 @@ import { SubscriptionLogEvent } from "../../../application/subscriptions.log-eve
 export class RevenueCatWebhookSignatureGuard implements CanActivate {
   readonly #logger = new Logger(RevenueCatWebhookSignatureGuard.name);
 
-  readonly #config: TypedConfigService;
+  readonly #webhookSecret: string | undefined;
+  readonly #isProduction: boolean;
 
-  constructor(config: TypedConfigService) {
-    this.#config = config;
+  constructor(
+    @Inject(billingSubscriptionsConfig.KEY)
+    billing: Pick<ConfigType<typeof billingSubscriptionsConfig>, "revenuecat">,
+    @Inject(appConfig.KEY) app: Pick<ConfigType<typeof appConfig>, "isProduction">,
+  ) {
+    this.#webhookSecret = billing.revenuecat.webhookSecret;
+    this.#isProduction = app.isProduction;
   }
 
   canActivate(context: ExecutionContext): boolean {
     const request = context.switchToHttp().getRequest<Request>();
-    const webhookSecret = this.#config.revenuecat.webhookSecret;
+    const webhookSecret = this.#webhookSecret;
 
     if (!webhookSecret) {
-      if (this.#config.isProduction) {
+      if (this.#isProduction) {
         this.#logger.error({
           event: SubscriptionLogEvent.WEBHOOK_SECRET_MISSING,
           action: "rejected",

@@ -1,41 +1,28 @@
-/**
- * RevenueCatWebhookSignatureGuard 가드 단위 테스트
- *
- * @description
- * RevenueCatWebhookSignatureGuard의 인가 로직을 격리 테스트합니다.
- *
- * 실행 명령:
- * ```bash
- * pnpm --filter @aido/server test webhook-signature.guard
- * ```
- */
 import { Logger } from "@nestjs/common";
-import { Test, type TestingModule } from "@nestjs/testing";
+import { ExecutionContextHost } from "@nestjs/core/helpers/execution-context-host.js";
 
-import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { ApplicationException } from "#api/shared/application/application.exception";
-import { createMockExecutionContext } from "#test/mocks/index";
 
 import { RevenueCatWebhookSignatureGuard } from "./revenuecat-webhook-signature.guard.js";
 
-/** 가드가 참조하는 config 필드만 담은 스텁 형태 */
-interface GuardConfigStub {
-  revenuecat: { webhookSecret: string };
-  isProduction?: boolean;
+function createGuard(config: {
+  readonly webhookSecret: string;
+  readonly isProduction?: boolean;
+}): RevenueCatWebhookSignatureGuard {
+  return new RevenueCatWebhookSignatureGuard(
+    {
+      revenuecat: {
+        webhookSecret: config.webhookSecret,
+        projectId: undefined,
+        apiV2SecretKey: undefined,
+      },
+    },
+    { isProduction: config.isProduction ?? false },
+  );
 }
 
-/**
- * TypedConfigService 부분 스텁으로 가드 인스턴스를 생성한다.
- * (useValue는 any이므로 부분 객체를 캐스트 없이 주입할 수 있다)
- */
-let moduleRef: TestingModule | undefined;
-
-async function createGuard(config: GuardConfigStub): Promise<RevenueCatWebhookSignatureGuard> {
-  moduleRef = await Test.createTestingModule({
-    providers: [RevenueCatWebhookSignatureGuard, { provide: TypedConfigService, useValue: config }],
-  }).compile();
-
-  return moduleRef.get(RevenueCatWebhookSignatureGuard);
+function requestWith(headers: Record<string, string>): ExecutionContextHost {
+  return new ExecutionContextHost([{ headers }]);
 }
 
 describe("RevenueCatWebhookSignatureGuard — 가드", () => {
@@ -43,77 +30,57 @@ describe("RevenueCatWebhookSignatureGuard — 가드", () => {
     vi.spyOn(Logger.prototype, "error").mockImplementation(() => {});
     vi.spyOn(Logger.prototype, "warn").mockImplementation(() => {});
   });
-  afterEach(async () => {
-    await moduleRef?.close();
-    moduleRef = undefined;
-  });
   describe("webhook secret이 설정된 경우", () => {
     let guard: RevenueCatWebhookSignatureGuard;
 
-    beforeEach(async () => {
-      guard = await createGuard({
-        revenuecat: { webhookSecret: "test-secret" },
-      });
+    beforeEach(() => {
+      guard = createGuard({ webhookSecret: "test-secret" });
     });
 
     it("올바른 Authorization 헤더 → 통과 (true)", () => {
-      const { context } = createMockExecutionContext({
-        headers: { authorization: "Bearer test-secret" },
-      });
+      const context = requestWith({ authorization: "Bearer test-secret" });
 
       expect(guard.canActivate(context)).toBe(true);
     });
 
     it("Authorization 헤더 없음 → ApplicationException", () => {
-      const { context } = createMockExecutionContext({ headers: {} });
+      const context = requestWith({});
 
       expect(() => guard.canActivate(context)).toThrow(ApplicationException);
     });
 
     it("잘못된 값 → ApplicationException", () => {
-      const { context } = createMockExecutionContext({
-        headers: { authorization: "Bearer wrong-secret" },
-      });
+      const context = requestWith({ authorization: "Bearer wrong-secret" });
 
       expect(() => guard.canActivate(context)).toThrow(ApplicationException);
     });
 
     it("길이가 다른 토큰 → 거부", () => {
-      const { context } = createMockExecutionContext({
-        headers: { authorization: "Bearer short" },
-      });
+      const context = requestWith({ authorization: "Bearer short" });
 
       expect(() => guard.canActivate(context)).toThrow(ApplicationException);
     });
 
     it("Bearer prefix 없는 raw 값 → 통과 (true)", () => {
-      const { context } = createMockExecutionContext({
-        headers: { authorization: "test-secret" },
-      });
+      const context = requestWith({ authorization: "test-secret" });
 
       expect(guard.canActivate(context)).toBe(true);
     });
   });
 
   describe("webhook secret이 미설정된 경우 (개발 환경)", () => {
-    it("secret 미설정 → 통과 (true)", async () => {
-      const guard = await createGuard({
-        revenuecat: { webhookSecret: "" },
-        isProduction: false,
-      });
-      const { context } = createMockExecutionContext({ headers: {} });
+    it("secret 미설정 → 통과 (true)", () => {
+      const guard = createGuard({ webhookSecret: "", isProduction: false });
+      const context = requestWith({});
 
       expect(guard.canActivate(context)).toBe(true);
     });
   });
 
   describe("webhook secret이 미설정된 경우 (프로덕션 환경)", () => {
-    it("프로덕션 + secret 미설정 → ApplicationException", async () => {
-      const guard = await createGuard({
-        revenuecat: { webhookSecret: "" },
-        isProduction: true,
-      });
-      const { context } = createMockExecutionContext({ headers: {} });
+    it("프로덕션 + secret 미설정 → ApplicationException", () => {
+      const guard = createGuard({ webhookSecret: "", isProduction: true });
+      const context = requestWith({});
 
       expect(() => guard.canActivate(context)).toThrow(ApplicationException);
     });

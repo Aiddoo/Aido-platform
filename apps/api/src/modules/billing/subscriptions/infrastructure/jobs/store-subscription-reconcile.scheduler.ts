@@ -1,10 +1,13 @@
 import { Inject, Injectable, Logger, type OnModuleInit } from "@nestjs/common";
 
-import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
 
 import { StoreSubscriptionReconcileSchedulerPort } from "../../application/ports/store-subscription-reconcile-scheduler.port.js";
 import { SubscriptionLogEvent } from "../../application/subscriptions.log-events.js";
+import {
+  type BillingSubscriptionsConfig,
+  billingSubscriptionsConfig,
+} from "../../billing-subscriptions.config.js";
 import {
   reconcileWindowStart,
   STORE_SUBSCRIPTION_RECONCILE_JOB_NAME,
@@ -21,11 +24,11 @@ export class StoreSubscriptionReconcileScheduler
 {
   readonly #logger = new Logger(StoreSubscriptionReconcileScheduler.name);
   readonly #jobQueue: JobQueuePort;
-  readonly #config: Pick<TypedConfigService, "revenuecat">;
+  readonly #config: Pick<BillingSubscriptionsConfig, "revenuecat">;
 
   constructor(
     jobQueue: JobQueuePort,
-    @Inject(TypedConfigService) config: Pick<TypedConfigService, "revenuecat">,
+    @Inject(billingSubscriptionsConfig.KEY) config: Pick<BillingSubscriptionsConfig, "revenuecat">,
   ) {
     super();
     this.#jobQueue = jobQueue;

@@ -5,7 +5,6 @@ import {
   AdminEventNotifierPort,
   type SubscriptionAlertInput,
 } from "#api/modules/operations/admin-notices/operations-admin-notices.public";
-import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import { ErrorCodedException } from "#api/shared/domain/exceptions/error-coded.exception";
@@ -17,6 +16,10 @@ import {
 } from "../../application/ports/subscription-event-notifier.port.js";
 import type { SubscriptionEventPayload } from "../../application/read-models/subscription-event-payload.read-model.js";
 import { SubscriptionAlertKey } from "../../application/subscriptions.alerts.js";
+import {
+  type BillingSubscriptionsConfig,
+  billingSubscriptionsConfig,
+} from "../../billing-subscriptions.config.js";
 
 /**
  * 구독 이벤트 알림 어댑터.
@@ -29,13 +32,13 @@ export class SubscriptionEventNotifierAdapter extends SubscriptionEventNotifierP
   readonly #adminEventNotifier: AdminEventNotifierPort;
   readonly #notificationQueueService: NotificationQueueService;
   readonly #alert: OperationalAlertPort;
-  readonly #config: TypedConfigService;
+  readonly #config: Pick<BillingSubscriptionsConfig, "revenuecat">;
 
   constructor(
     adminEventNotifier: AdminEventNotifierPort,
     notificationQueueService: NotificationQueueService,
     alert: OperationalAlertPort,
-    @Inject(TypedConfigService) config: TypedConfigService,
+    @Inject(billingSubscriptionsConfig.KEY) config: Pick<BillingSubscriptionsConfig, "revenuecat">,
   ) {
     super();
     this.#adminEventNotifier = adminEventNotifier;

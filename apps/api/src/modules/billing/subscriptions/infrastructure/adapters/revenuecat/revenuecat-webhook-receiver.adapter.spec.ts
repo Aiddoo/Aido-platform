@@ -1,6 +1,7 @@
 import { Logger } from "@nestjs/common";
+import type { ConfigType } from "@nestjs/config";
 
-import type { TypedConfigService } from "#api/platform/config/services/config.service";
+import { appConfig } from "#api/platform/config/app.config";
 import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";
 
 import { ApplyStoreSubscriptionEventUseCase } from "../../../application/use-cases/apply-store-subscription-event.use-case.js";
@@ -37,7 +38,7 @@ function purchase(store: string) {
   };
 }
 
-function receiverIn(appEnv: TypedConfigService["appEnv"]) {
+function receiverIn(appEnv: ConfigType<typeof appConfig>["appEnv"]) {
   const applied: StoreSubscriptionEvent[] = [];
   const alert = new RecordingOperationalAlert();
   const receiver = new RevenueCatWebhookReceiver(recordingApplyUseCase(applied), alert, { appEnv });
