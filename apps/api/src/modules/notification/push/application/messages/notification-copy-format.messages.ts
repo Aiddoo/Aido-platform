@@ -44,7 +44,7 @@ export function formatNotificationCopyText(
   const text =
     typeof message === "string" ? message : selectPluralForm(message, args.count, locale);
   return text.replace(PLACEHOLDER, (match: string, name: string | undefined) => {
-    if (name === undefined) {
+    if (name == null) {
       return match.charAt(0);
     }
     return Object.hasOwn(args, name) ? String(args[name]) : match;

@@ -177,7 +177,7 @@ export function defineNotificationCopy<TFacts extends NotificationCopyFacts, TVa
   ) => {
     const variants = definition.variants(NOTIFICATION_COPY_CATALOG[locale]);
     const variant = Object.hasOwn(variants, variantName) ? variants[variantName] : undefined;
-    return variant === undefined
+    return variant == null
       ? null
       : definition.render(variant, facts, createCopyContext(locale, overrides));
   };
