@@ -1,7 +1,6 @@
 import type { Provider } from "@nestjs/common";
 import { getHttpClientToken } from "@nestjs/http-client";
 
-import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { loggerFor, provideUseCase } from "#api/platform/di/provide-use-case";
 import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
@@ -24,6 +23,7 @@ import { AdminNotificationProcessor } from "./infrastructure/jobs/admin-notifica
 import { DailySignupSummaryScheduler } from "./infrastructure/jobs/daily-signup-summary.scheduler.js";
 import { DrizzleAdminNoticeUserReader } from "./infrastructure/persistence/drizzle-admin-notice-user.reader.js";
 import { DrizzleSignupStatsReader } from "./infrastructure/persistence/drizzle-signup-stats.reader.js";
+import { operationsAdminNoticesConfig } from "./operations-admin-notices.config.js";
 
 export const DISCORD_HTTP_CLIENT_NAME = "discord";
 
@@ -35,7 +35,7 @@ export const OPERATIONS_ADMIN_NOTICES_PROVIDERS = [
     provide: AdminNotifierPort,
     useFactory: createAdminNotifier,
     inject: [
-      TypedConfigService,
+      operationsAdminNoticesConfig.KEY,
       getHttpClientToken(DISCORD_HTTP_CLIENT_NAME),
       OutboundPolicyRegistry,
     ],

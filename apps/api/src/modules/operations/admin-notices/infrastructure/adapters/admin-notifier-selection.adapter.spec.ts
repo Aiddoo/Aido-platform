@@ -17,9 +17,8 @@ describe("createAdminNotifier", () => {
     (provider, adapter) => {
       // Given
       const config = {
-        adminNotifierProvider: provider,
-        discordSignupWebhookUrl: undefined,
-        discordPaymentWebhookUrl: undefined,
+        provider,
+        discordWebhookUrls: { admin: undefined, payment: undefined },
       };
 
       // When
