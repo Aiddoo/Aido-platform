@@ -1,13 +1,12 @@
 import { Global, Module } from "@nestjs/common";
 import { Test, type TestingModule } from "@nestjs/testing";
 import { vi } from "vitest";
-import { mock } from "vitest-mock-extended";
 
 import { EmailDeliveryQueueProcessor } from "#api/modules/notification/email/infrastructure/jobs/email-delivery-queue.processor";
 import { EMAIL_DELIVERY_QUEUE } from "#api/modules/notification/email/infrastructure/jobs/email-delivery.queue";
+import { notificationEmailConfig } from "#api/modules/notification/email/notification-email.config";
 import { NotificationEmailModule } from "#api/modules/notification/email/notification-email.module";
 import { SendTransactionalEmailUseCase } from "#api/modules/notification/notification-email.public";
-import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { EncryptionService } from "#api/platform/encryption/encryption.service";
 import { USAGE_METER } from "#api/platform/metering/interfaces/usage-meter.interface";
 import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
@@ -34,18 +33,6 @@ const expiryMinutes = 15;
 const success = resendResponseFixture("send.success.json");
 const unavailable = resendResponseFixture("send.application-error.json", 500);
 
-const config = mock<TypedConfigService>({
-  email: {
-    provider: "resend",
-    apiKey: "fixture-api-key",
-    from: "noreply@integration-test.com",
-    fromName: "Integration Test",
-    supportEmail: "support@example.com",
-  },
-  nodeEnv: "test",
-  tokenEncryptionKey: "test-token-encryption-key-minimum-32-characters-long",
-  tokenEncryptionSalt: undefined,
-});
 const jobQueue = new InMemoryJobQueue();
 const meter = new InMemoryUsageMeterAdapter();
 const alerts = new RecordingOperationalAlert();
@@ -53,17 +40,21 @@ const alerts = new RecordingOperationalAlert();
 @Global()
 @Module({
   providers: [
-    { provide: TypedConfigService, useValue: config },
     { provide: JobQueuePort, useValue: jobQueue },
     { provide: USAGE_METER, useValue: meter },
     { provide: OPERATIONAL_ALERT, useValue: alerts },
     { provide: OperationalAlertPort, useValue: alerts },
     { provide: ClockPort, useClass: DateClock },
     OutboundPolicyRegistry,
-    EncryptionService,
+    {
+      provide: EncryptionService,
+      useValue: new EncryptionService({
+        key: "test-token-encryption-key-minimum-32-characters-long",
+        salt: undefined,
+      }),
+    },
   ],
   exports: [
-    TypedConfigService,
     JobQueuePort,
     USAGE_METER,
     OPERATIONAL_ALERT,
@@ -89,7 +80,15 @@ describe("이메일 발송 큐 통합 테스트 — 운영 NotificationEmailModu
     alerts.alerts.length = 0;
     module = await Test.createTestingModule({
       imports: [PlatformStubModule, NotificationEmailModule],
-    }).compile();
+    })
+      .overrideProvider(notificationEmailConfig.KEY)
+      .useValue({
+        provider: "resend",
+        apiKey: "fixture-api-key",
+        from: "noreply@integration-test.com",
+        fromName: "Integration Test",
+      })
+      .compile();
     sender = module.get(SendTransactionalEmailUseCase);
     processor = module.get(EmailDeliveryQueueProcessor);
   });

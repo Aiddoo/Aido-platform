@@ -20,6 +20,7 @@ import {
   todoReminderJobSchema,
 } from "#api/modules/notification/reminders/infrastructure/jobs/todo-reminder.queue";
 import { DrizzleSchedulerReader } from "#api/modules/notification/reminders/infrastructure/persistence/drizzle-scheduler.reader";
+import { notificationRetentionConfig } from "#api/modules/notification/retention/notification-retention.config";
 import { DrizzleTodoSeriesRepository } from "#api/modules/planning/todo-series/infrastructure/persistence/drizzle-todo-series.repository";
 import { ApplyTodoEventsUseCase } from "#api/modules/planning/todos/application/use-cases/apply-todo-events.use-case";
 import { RebaseTodoTimezoneUseCase } from "#api/modules/planning/todos/application/use-cases/rebase-todo-timezone.use-case";
@@ -29,7 +30,6 @@ import { ReminderSchedulerAdapter } from "#api/modules/planning/todos/infrastruc
 import { DrizzleTodoReadRepository } from "#api/modules/planning/todos/infrastructure/persistence/drizzle-todo-read.repository";
 import { DrizzleTodoRepository } from "#api/modules/planning/todos/infrastructure/persistence/drizzle-todo.repository";
 import { CacheService } from "#api/platform/cache/cache.service";
-import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { createEntityId } from "#api/platform/database/entity-id";
 import { PostgresMutationLockAdapter } from "#api/platform/database/postgres-mutation-lock.adapter";
 import {
@@ -174,7 +174,10 @@ describe("할 일 알림 회차 중복 방지 (실제 PostgreSQL·pg-boss)", () 
         DrizzleSchedulerReader,
         { provide: TransactionHost, useValue: txHost },
         { provide: CacheService, useValue: {} },
-        { provide: TypedConfigService, useValue: {} },
+        {
+          provide: notificationRetentionConfig.KEY,
+          useValue: { onboardingV2: { enabled: false, treatmentPercent: 50 } },
+        },
       ],
     }).compile();
     processor = new TodoReminderQueueProcessor(

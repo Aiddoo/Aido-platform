@@ -44,7 +44,6 @@ import {
   NOTIFICATION_PUSH_USE_CASE_PROVIDERS,
 } from "#api/modules/notification/push/notification-push.providers";
 import { CacheService } from "#api/platform/cache/cache.service";
-import { TypedConfigService } from "#api/platform/config/services/config.service";
 import {
   notification,
   pushDispatch,
@@ -237,12 +236,6 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
         {
           provide: TransactionHost,
           useValue: transaction.txHost,
-        },
-        {
-          provide: TypedConfigService,
-          useValue: {
-            get: vi.fn().mockReturnValue(20),
-          },
         },
         {
           provide: PushProviderPort,

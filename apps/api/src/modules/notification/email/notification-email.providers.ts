@@ -1,7 +1,7 @@
 import { Logger, type Provider } from "@nestjs/common";
+import type { ConfigType } from "@nestjs/config";
 import { Mailer } from "@nestjs/mail";
 
-import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { loggerFor, provideUseCase } from "#api/platform/di/provide-use-case";
 import {
   USAGE_METER,
@@ -20,8 +20,8 @@ import { SendTransactionalEmailUseCase } from "./application/use-cases/send-tran
 import { selectEmailSender } from "./infrastructure/adapters/email-sender-factory.adapter.js";
 import { MeteredEmailBudgetAdapter } from "./infrastructure/adapters/metered-email-budget.adapter.js";
 import { NestMailEmailSenderAdapter } from "./infrastructure/adapters/nest-mail-email-sender.adapter.js";
-import { emailProviderApiKey } from "./infrastructure/adapters/nest-mail-module.config.js";
 import { EmailDeliveryQueueAdapter } from "./infrastructure/jobs/email-delivery-queue.adapter.js";
+import { notificationEmailConfig } from "./notification-email.config.js";
 
 const NOTIFICATION_EMAIL_QUEUE_PROVIDERS = [
   { provide: EmailDeliveryQueuePort, useClass: EmailDeliveryQueueAdapter },
@@ -31,20 +31,21 @@ const NOTIFICATION_EMAIL_QUEUE_PROVIDERS = [
 const NOTIFICATION_EMAIL_EXTERNAL_PROVIDERS = [
   {
     provide: NestMailEmailSenderAdapter,
-    inject: [Mailer, OutboundPolicyRegistry, TypedConfigService],
-    useFactory: (mailer: Mailer, policies: OutboundPolicyRegistry, config: TypedConfigService) =>
-      new NestMailEmailSenderAdapter({
-        mailer,
-        policies,
-        isConfigured: emailProviderApiKey(config) != null,
-      }),
+    inject: [Mailer, OutboundPolicyRegistry, notificationEmailConfig.KEY],
+    useFactory: (
+      mailer: Mailer,
+      policies: OutboundPolicyRegistry,
+      config: ConfigType<typeof notificationEmailConfig>,
+    ) => new NestMailEmailSenderAdapter({ mailer, policies, isConfigured: config.apiKey != null }),
   },
   { provide: EmailTemplateRendererPort, useExisting: NestMailEmailSenderAdapter },
   {
     provide: EmailSenderPort,
-    inject: [TypedConfigService, NestMailEmailSenderAdapter],
-    useFactory: (config: TypedConfigService, nestMail: NestMailEmailSenderAdapter) =>
-      selectEmailSender(config.email.provider, nestMail),
+    inject: [notificationEmailConfig.KEY, NestMailEmailSenderAdapter],
+    useFactory: (
+      config: ConfigType<typeof notificationEmailConfig>,
+      nestMail: NestMailEmailSenderAdapter,
+    ) => selectEmailSender(config.provider, nestMail),
   },
   {
     provide: EmailBudgetPort,

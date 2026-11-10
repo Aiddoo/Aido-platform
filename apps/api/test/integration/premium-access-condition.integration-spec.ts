@@ -1,5 +1,3 @@
-import { ConfigService } from "@nestjs/config";
-
 import { GetResolvedAccessUseCase } from "#api/modules/access/entitlements/application/use-cases/get-resolved-access.use-case";
 import { hasPaidAccess } from "#api/modules/access/entitlements/domain/paid-access.domain-service";
 import { EntitlementReaderAdapter } from "#api/modules/access/entitlements/infrastructure/adapters/entitlement-reader.adapter";
@@ -9,8 +7,6 @@ import { STORE_RENEWAL_GRACE_MS } from "#api/modules/billing/subscriptions/billi
 import { DrizzleSchedulerReader } from "#api/modules/notification/reminders/infrastructure/persistence/drizzle-scheduler.reader";
 import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
 import { CacheService } from "#api/platform/cache/cache.service";
-import type { EnvConfig } from "#api/platform/config/schemas/index";
-import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { createEntityId } from "#api/platform/database/entity-id";
 import { subscription, user, userPreference } from "#api/platform/database/schema/index";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
@@ -52,11 +48,9 @@ describe("유효 프리미엄 SQL 조건과 스케줄러 대상 (실제 PostgreS
     client = await database.start();
     memory = new InMemoryCacheStore({ defaultTtlMs: 60_000, maxItems: 10 });
     const { txHost } = createDatabaseTransactionFixture(client);
-    reader = new DrizzleSchedulerReader(
-      txHost,
-      new CacheService(memory),
-      new TypedConfigService(new ConfigService<EnvConfig, true>({})),
-    );
+    reader = new DrizzleSchedulerReader(txHost, new CacheService(memory), {
+      onboardingV2: { enabled: false, treatmentPercent: 50 },
+    });
     entitlementReader = new DrizzleAccessStateReader(txHost);
     entitlement = new EntitlementReaderAdapter(
       new GetResolvedAccessUseCase({

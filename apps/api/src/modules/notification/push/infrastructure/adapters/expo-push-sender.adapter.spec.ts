@@ -1,9 +1,6 @@
 import { Logger } from "@nestjs/common";
-import { ConfigService } from "@nestjs/config";
 import { vi } from "vitest";
 
-import type { EnvConfig } from "#api/platform/config/schemas/index";
-import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
 import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";
 
@@ -60,7 +57,7 @@ beforeEach(() => {
     return expected.response;
   });
   provider = new ExpoPushSenderAdapter(
-    new TypedConfigService(new ConfigService<EnvConfig, true>({ EXPO_ACCESS_TOKEN: credential })),
+    { expoAccessToken: credential },
     new OutboundPolicyRegistry(new RecordingOperationalAlert()),
   );
 });

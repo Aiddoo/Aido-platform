@@ -1,5 +1,4 @@
 import { Logger } from "@nestjs/common";
-import { ConfigService } from "@nestjs/config";
 import { and, eq } from "drizzle-orm";
 import { omit } from "es-toolkit";
 import { vi } from "vitest";
@@ -24,8 +23,6 @@ import { TodoReminderQueueProcessor } from "#api/modules/notification/reminders/
 import { DrizzleSchedulerReader } from "#api/modules/notification/reminders/infrastructure/persistence/drizzle-scheduler.reader";
 import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
 import { CacheService } from "#api/platform/cache/cache.service";
-import type { EnvConfig } from "#api/platform/config/schemas/index";
-import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { createEntityId } from "#api/platform/database/entity-id";
 import {
   notification,
@@ -92,7 +89,7 @@ describe("리마인더 sweep 따라잡기 (실제 PostgreSQL)", () => {
     reader = new DrizzleSchedulerReader(
       txHost,
       new CacheService(new InMemoryCacheStore({ defaultTtlMs: 60_000, maxItems: 10 })),
-      new TypedConfigService(new ConfigService<EnvConfig, true>({})),
+      { onboardingV2: { enabled: false, treatmentPercent: 50 } },
     );
     publisher = new PublishNotificationUseCase({
       sendNotification: new SendNotificationUseCase({

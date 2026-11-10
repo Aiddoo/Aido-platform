@@ -1,9 +1,9 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { Inject, Injectable, Logger } from "@nestjs/common";
+import type { ConfigType } from "@nestjs/config";
 import { chunk, delay } from "es-toolkit";
 import Expo, { type ExpoPushMessage, type ExpoPushTicket } from "expo-server-sdk";
 import { match, P } from "ts-pattern";
 
-import { TypedConfigService } from "#api/platform/config/services/config.service";
 import type { OutboundPolicy } from "#api/platform/resilience/outbound-policy";
 import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
 
@@ -19,6 +19,7 @@ import {
   PUSH_FAILURE_KIND,
   type PushFailureKind,
 } from "../../domain/push-failure-kind.constants.js";
+import { notificationPushConfig } from "../../notification-push.config.js";
 import { EXPO_PUSH_POLICY } from "./expo-outbound.policy.js";
 import { buildExpoPushMessage } from "./expo-push-message.mapper.js";
 import {
@@ -63,7 +64,11 @@ export class ExpoPushSenderAdapter implements PushProviderPort {
 
   readonly #policy: OutboundPolicy;
 
-  constructor(config: TypedConfigService, policies: OutboundPolicyRegistry) {
+  constructor(
+    @Inject(notificationPushConfig.KEY)
+    config: Pick<ConfigType<typeof notificationPushConfig>, "expoAccessToken">,
+    policies: OutboundPolicyRegistry,
+  ) {
     const accessToken = config.expoAccessToken;
     this.#expo = new Expo(accessToken ? { accessToken } : undefined);
     this.#policy = policies.get(EXPO_PUSH_POLICY);

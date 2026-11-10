@@ -1,4 +1,5 @@
 import type { Provider } from "@nestjs/common";
+import type { ConfigType } from "@nestjs/config";
 
 import { loggerFor, provideUseCase } from "#api/platform/di/provide-use-case";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
@@ -13,9 +14,9 @@ import { ActivateRetentionExperimentUseCase } from "./application/use-cases/acti
 import { EnrollRetentionExperimentUseCase } from "./application/use-cases/enroll-retention-experiment.use-case.js";
 import { ProcessRetentionStagesUseCase } from "./application/use-cases/process-retention-stages.use-case.js";
 import { DeterministicHashExperimentAssignerAdapter } from "./infrastructure/adapters/deterministic-hash-experiment-assigner.adapter.js";
-import { RetentionConfigAdapter } from "./infrastructure/adapters/retention-config.adapter.js";
 import { RetentionEnrollmentAdapter } from "./infrastructure/adapters/retention-enrollment.adapter.js";
 import { DrizzleRetentionRepository } from "./infrastructure/persistence/drizzle-retention.repository.js";
+import { notificationRetentionConfig } from "./notification-retention.config.js";
 
 export const NOTIFICATION_RETENTION_PERSISTENCE_PROVIDERS: Provider[] = [
   DrizzleRetentionRepository,
@@ -48,7 +49,12 @@ export const NOTIFICATION_RETENTION_USE_CASE_PROVIDERS: Provider[] = [
 export const NOTIFICATION_RETENTION_PROVIDERS: Provider[] = [
   ...NOTIFICATION_RETENTION_PERSISTENCE_PROVIDERS,
   ...NOTIFICATION_RETENTION_USE_CASE_PROVIDERS,
-  { provide: RetentionConfigPort, useClass: RetentionConfigAdapter },
+  {
+    provide: RetentionConfigPort,
+    inject: [notificationRetentionConfig.KEY],
+    useFactory: (config: ConfigType<typeof notificationRetentionConfig>): RetentionConfigPort =>
+      config.onboardingV2,
+  },
   { provide: ExperimentAssignerPort, useClass: DeterministicHashExperimentAssignerAdapter },
   RetentionEnrollmentAdapter,
   { provide: RetentionEnrollmentPort, useExisting: RetentionEnrollmentAdapter },

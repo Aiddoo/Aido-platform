@@ -2,14 +2,13 @@ import { Global, Module } from "@nestjs/common";
 import { Test, type TestingModule } from "@nestjs/testing";
 import { PgBoss } from "pg-boss";
 import { vi } from "vitest";
-import { mock } from "vitest-mock-extended";
 
 import { EMAIL_DELIVERY_QUEUE } from "#api/modules/notification/email/infrastructure/jobs/email-delivery.queue";
+import { notificationEmailConfig } from "#api/modules/notification/email/notification-email.config";
 import {
   NotificationEmailModule,
   SendTransactionalEmailUseCase,
 } from "#api/modules/notification/notification-email.public";
-import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { EncryptionService } from "#api/platform/encryption/encryption.service";
 import { JobQueueRegistry } from "#api/platform/jobs/job-queue.registry";
 import { PgBossJobQueueAdapter } from "#api/platform/jobs/pg-boss-job-queue.adapter";
@@ -99,33 +98,24 @@ describe("이메일 발송 큐 (실제 pg-boss + PostgreSQL)", () => {
       new JobQueueRegistry(),
     );
 
-    const config = mock<TypedConfigService>({
-      email: {
-        provider: "resend",
-        apiKey: "fixture-api-key",
-        from: "noreply@integration-test.com",
-        fromName: "Integration Test",
-        supportEmail: "support@example.com",
-      },
-      nodeEnv: "test",
-      tokenEncryptionKey: "test-token-encryption-key-minimum-32-characters-long",
-      tokenEncryptionSalt: undefined,
-    });
-
     @Global()
     @Module({
       providers: [
-        { provide: TypedConfigService, useValue: config },
         { provide: JobQueuePort, useValue: jobQueue },
         { provide: USAGE_METER, useValue: new InMemoryUsageMeterAdapter() },
         { provide: OPERATIONAL_ALERT, useValue: alerts },
         { provide: OperationalAlertPort, useValue: alerts },
         { provide: ClockPort, useClass: DateClock },
         OutboundPolicyRegistry,
-        EncryptionService,
+        {
+          provide: EncryptionService,
+          useValue: new EncryptionService({
+            key: "test-token-encryption-key-minimum-32-characters-long",
+            salt: undefined,
+          }),
+        },
       ],
       exports: [
-        TypedConfigService,
         JobQueuePort,
         USAGE_METER,
         OPERATIONAL_ALERT,
@@ -140,7 +130,15 @@ describe("이메일 발송 큐 (실제 pg-boss + PostgreSQL)", () => {
     // 운영 배선 그대로 올려 processor가 onModuleInit에서 email-delivery.v1 worker를 등록한다
     module = await Test.createTestingModule({
       imports: [PlatformStubModule, NotificationEmailModule],
-    }).compile();
+    })
+      .overrideProvider(notificationEmailConfig.KEY)
+      .useValue({
+        provider: "resend",
+        apiKey: "fixture-api-key",
+        from: "noreply@integration-test.com",
+        fromName: "Integration Test",
+      })
+      .compile();
     await module.init();
     sender = module.get(SendTransactionalEmailUseCase);
   });

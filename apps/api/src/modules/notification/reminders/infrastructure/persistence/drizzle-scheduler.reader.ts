@@ -1,5 +1,6 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
-import { Injectable } from "@nestjs/common";
+import { Inject, Injectable } from "@nestjs/common";
+import type { ConfigType } from "@nestjs/config";
 import { and, count, eq, inArray, sql, type AnyColumn, type SQL } from "drizzle-orm";
 import { z } from "zod";
 
@@ -11,8 +12,8 @@ import {
   ReminderCacheKey,
   REMINDER_CACHE_TTL_MS,
 } from "#api/modules/notification/reminders/infrastructure/cache/reminder-cache.keyspace";
+import { notificationRetentionConfig } from "#api/modules/notification/retention/notification-retention.config";
 import { CacheService } from "#api/platform/cache/cache.service";
-import { TypedConfigService } from "#api/platform/config/services/config.service";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { todo, userPreference } from "#api/platform/database/schema/index";
 import { subtractDays } from "#api/shared/domain/date/utils/arithmetic";
@@ -103,6 +104,8 @@ function toFollowRelationUser<T extends { readonly lastActiveAt: Temporal.Instan
  * 스케줄러의 모든 읽기 포트를 단일 영속성 어댑터로 구현한다.
  * (조회 계약은 포트별로 분리되어 있고, 어댑터는 DB 접근을 응집한다)
  */
+type RetentionSettings = Pick<ConfigType<typeof notificationRetentionConfig>, "onboardingV2">;
+
 @Injectable()
 export class DrizzleSchedulerReader
   implements
@@ -115,16 +118,16 @@ export class DrizzleSchedulerReader
 {
   readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
   readonly #cacheService: CacheService;
-  readonly #config: TypedConfigService;
+  readonly #retention: RetentionSettings;
 
   constructor(
     txHost: TransactionHost<DrizzleTransactionalAdapter>,
     cacheService: CacheService,
-    config: TypedConfigService,
+    @Inject(notificationRetentionConfig.KEY) retention: RetentionSettings,
   ) {
     this.#txHost = txHost;
     this.#cacheService = cacheService;
-    this.#config = config;
+    this.#retention = retention;
   }
 
   get #db() {
@@ -650,7 +653,7 @@ export class DrizzleSchedulerReader
 
   /** kill switch가 켜진 동안 최근 TREATMENT만 legacy engagement에서 제외한다. */
   #recentTreatmentExclusion() {
-    if (!this.#config.retentionOnboardingV2.enabled) {
+    if (!this.#retention.onboardingV2.enabled) {
       return [];
     }
     return [

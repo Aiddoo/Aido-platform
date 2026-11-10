@@ -1,7 +1,7 @@
 import type { Provider } from "@nestjs/common";
+import type { ConfigType } from "@nestjs/config";
 import type { Redis } from "ioredis";
 
-import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { DRIZZLE, type Database } from "#api/platform/database/database.client";
 import { loggerFor, provideUseCase } from "#api/platform/di/provide-use-case";
 import { REDIS_COMMAND_CLIENT } from "#api/platform/redis/redis.constants";
@@ -89,21 +89,22 @@ import { DrizzlePushDispatchStagingRepository } from "./infrastructure/persisten
 import { DrizzlePushFunnelReader } from "./infrastructure/persistence/drizzle-push-funnel.reader.js";
 import { DrizzlePushReceiptRepository } from "./infrastructure/persistence/drizzle-push-receipt.repository.js";
 import { DrizzlePushTokenRepository } from "./infrastructure/persistence/drizzle-push-token.repository.js";
+import { notificationPushConfig } from "./notification-push.config.js";
 
 // 운영은 PostgreSQL, 설정으로 Redis·메모리를 고른다
 const pushRateLimiterProvider = {
   provide: PushRateLimiterPort,
   useFactory: (
-    configService: TypedConfigService,
+    config: ConfigType<typeof notificationPushConfig>,
     database: Database,
     redis?: Redis,
   ): PushRateLimiterPort =>
     createPushRateLimiter({
-      backend: configService.pushRateLimitBackend,
+      backend: config.rateLimitBackend,
       database,
       ...(redis && { redis }),
     }),
-  inject: [TypedConfigService, DRIZZLE, { token: REDIS_COMMAND_CLIENT, optional: true }],
+  inject: [notificationPushConfig.KEY, DRIZZLE, { token: REDIS_COMMAND_CLIENT, optional: true }],
 } satisfies Provider;
 
 // 테스트 하네스가 공급자·한도기·설정 어댑터만 바꿔 끼우도록 저장소·조회 어댑터를 따로 묶는다
