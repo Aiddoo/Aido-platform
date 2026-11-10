@@ -22,6 +22,7 @@ import {
 } from "../../domain/weather-briefing.domain-service.js";
 import type { ReminderWeatherReportReaderPort } from "../ports/reminder-weather-report.reader.port.js";
 import type { TimezoneReminderStrategyPort } from "../ports/timezone-reminder-strategy.port.js";
+import type { WeatherBriefingTodoReaderPort } from "../ports/weather-briefing-todo.reader.port.js";
 import { type WeatherReminderReaderPort } from "../ports/weather-reminder-reader.port.js";
 import { NotificationRemindersLogEvent } from "../reminders.log-events.js";
 import {
@@ -38,10 +39,9 @@ const NOTIFICATION_TYPE = "WEATHER_MORNING";
 interface WeatherMorningStrategyDependencies {
   readonly reader: Pick<
     WeatherReminderReaderPort,
-    | "findWeatherMorningFallbackUsers"
-    | "findWeatherMorningUsersWithLocation"
-    | "findScheduledTodosBetween"
+    "findWeatherMorningFallbackUsers" | "findWeatherMorningUsersWithLocation"
   >;
+  readonly todoReader: Pick<WeatherBriefingTodoReaderPort, "listTodayTodos">;
   readonly notificationPublisher: Pick<PublishNotificationUseCase, "publishBatch">;
   readonly notificationHistoryReader: Pick<NotificationHistoryReader, "findAlreadyNotifiedUserIds">;
   readonly weatherReportReader: Pick<ReminderWeatherReportReaderPort, "readReports">;
@@ -105,11 +105,14 @@ export class SendWeatherMorningUseCase implements TimezoneReminderStrategyPort {
     }
 
     const at = instantToDate(this.#dependencies.clock.now());
+    const day = dayWindowInTimezone(at, ctx.tz);
     const [todos, reports] = await Promise.all([
-      this.#dependencies.reader.findScheduledTodosBetween({
+      this.#dependencies.todoReader.listTodayTodos({
         userIds: targets.map((u) => u.id),
+        date: Temporal.PlainDate.from(day.localDate),
+        timezone: ctx.tz,
         from: at,
-        until: dayWindowInTimezone(at, ctx.tz).endsAt,
+        until: day.endsAt,
       }),
       this.#dependencies.weatherReportReader.readReports(
         targets.map((user) => ({

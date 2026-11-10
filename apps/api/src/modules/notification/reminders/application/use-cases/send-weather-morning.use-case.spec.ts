@@ -5,6 +5,7 @@ import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache
 import { RecordingNotificationPublisher } from "#test/doubles/notification/recording-notification-publisher";
 import { StubNotificationHistoryReader } from "#test/doubles/notification/stub-notification-history.reader";
 import { StubReminderWeatherReportReader } from "#test/doubles/notification/stub-reminder-weather-report.reader";
+import { StubWeatherBriefingTodoReader } from "#test/doubles/notification/stub-weather-briefing-todo.reader";
 import { StubWeatherReminderReader } from "#test/doubles/notification/stub-weather-reminder.reader";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
@@ -61,6 +62,7 @@ function seoulReport(
 
 describe("SendWeatherMorningUseCase — 아침 날씨 알림", () => {
   let reader: StubWeatherReminderReader;
+  let todoReader: StubWeatherBriefingTodoReader;
   let publisher: RecordingNotificationPublisher;
   let history: StubNotificationHistoryReader;
   let weatherReports: StubReminderWeatherReportReader;
@@ -71,12 +73,14 @@ describe("SendWeatherMorningUseCase — 아침 날씨 알림", () => {
 
   beforeEach(() => {
     reader = new StubWeatherReminderReader();
+    todoReader = new StubWeatherBriefingTodoReader();
     publisher = new RecordingNotificationPublisher();
     history = new StubNotificationHistoryReader();
     weatherReports = new StubReminderWeatherReportReader();
     logger = new SilentLogger();
     strategy = new SendWeatherMorningUseCase({
       reader,
+      todoReader,
       notificationPublisher: publisher,
       notificationHistoryReader: history,
       weatherReportReader: weatherReports,
@@ -113,7 +117,7 @@ describe("SendWeatherMorningUseCase — 아침 날씨 알림", () => {
   it("오늘 할 일이 비와 겹치면 그 할 일과 옮기기 링크를 보낸다", async () => {
     // Given 15시 '한강 산책'에 강수 확률 70%
     reader.usersWithLocation = [{ id: "u1", preference: { locale: "ko" }, location: SEOUL }];
-    reader.todos = [{ id: 12, userId: "u1", title: "한강 산책", scheduledTime: atKst(15) }];
+    todoReader.todos = [{ id: 12, userId: "u1", title: "한강 산책", scheduledTime: atKst(15) }];
     weatherReports.reports.set("u1", seoulReport({ hour: 15, precipitationChance: 70 }));
     // When
     await strategy.execute(ctx());
@@ -123,8 +127,10 @@ describe("SendWeatherMorningUseCase — 아침 날씨 알림", () => {
       body: "강수 확률 70% · 시간 옮기기",
       action: { type: "DEEP_LINK", url: "/weather/reschedule?todoIds=12&reason=rain" },
     });
-    expect(reader.todoQueries[0]).toEqual({
+    expect(todoReader.queries[0]).toEqual({
       userIds: ["u1"],
+      date: Temporal.PlainDate.from("2026-11-02"),
+      timezone: "Asia/Seoul",
       from: NOW,
       until: new Date("2026-11-02T15:00:00.000Z"),
     });
@@ -133,7 +139,7 @@ describe("SendWeatherMorningUseCase — 아침 날씨 알림", () => {
   it("오늘 할 일이 낮 더위와 겹치면 체감 온도와 더위 옮기기 링크를 보낸다", async () => {
     // Given
     reader.usersWithLocation = [{ id: "u1", preference: { locale: "ko" }, location: SEOUL }];
-    reader.todos = [{ id: 7, userId: "u1", title: "테니스", scheduledTime: atKst(13) }];
+    todoReader.todos = [{ id: 7, userId: "u1", title: "테니스", scheduledTime: atKst(13) }];
     weatherReports.reports.set("u1", seoulReport({ hour: 13, apparentTemperature: 34.6 }));
     // When
     await strategy.execute(ctx());
@@ -184,7 +190,7 @@ describe("SendWeatherMorningUseCase — 아침 날씨 알림", () => {
     const result = await strategy.execute(ctx());
     // Then
     expect(weatherReports.requests).toEqual([]);
-    expect(reader.todoQueries).toEqual([]);
+    expect(todoReader.queries).toEqual([]);
     expect(result).toEqual({ sent: 1 });
     expect(sent()[0]).toMatchObject({
       userId: "no-location",
@@ -204,6 +210,7 @@ describe("SendWeatherMorningUseCase + weather v2 리포트 — 공급자 호출 
   let memory: InMemoryCacheStore;
   let provider: StubWeatherReportProvider;
   let reader: StubWeatherReminderReader;
+  let todoReader: StubWeatherBriefingTodoReader;
   let publisher: RecordingNotificationPublisher;
   let clock: FixedClock;
   let strategy: SendWeatherMorningUseCase;
@@ -217,9 +224,11 @@ describe("SendWeatherMorningUseCase + weather v2 리포트 — 공급자 호출 
     provider = new StubWeatherReportProvider();
     provider.report = weatherReportFixture(NOW);
     reader = new StubWeatherReminderReader();
+    todoReader = new StubWeatherBriefingTodoReader();
     publisher = new RecordingNotificationPublisher();
     strategy = new SendWeatherMorningUseCase({
       reader,
+      todoReader,
       notificationPublisher: publisher,
       notificationHistoryReader: new StubNotificationHistoryReader(),
       weatherReportReader: new WeatherReportReader({

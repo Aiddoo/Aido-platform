@@ -1,6 +1,6 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
-import { and, asc, count, eq, gte, inArray, lt, sql, type AnyColumn, type SQL } from "drizzle-orm";
+import { and, count, eq, inArray, sql, type AnyColumn, type SQL } from "drizzle-orm";
 import { z } from "zod";
 
 import {
@@ -39,7 +39,6 @@ import type { TodoReminderReaderPort } from "../../application/ports/todo-remind
 import type {
   WeatherReminderParams,
   WeatherReminderReaderPort,
-  WeatherReminderTodoQuery,
 } from "../../application/ports/weather-reminder-reader.port.js";
 import type {
   WeeklyAchievementStatsReaderPort,
@@ -58,7 +57,6 @@ import type {
   UserTodoCount,
   UserWithTodosAndStreak,
   WeatherFallbackUser,
-  WeatherReminderTodo,
   WeatherReminderUser,
   WinbackUser,
 } from "../../application/read-models/scheduler.read-model.js";
@@ -464,36 +462,6 @@ export class DrizzleSchedulerReader
       },
       with: { preference: { columns: { locale: true } } },
     });
-  }
-
-  async findScheduledTodosBetween(
-    params: WeatherReminderTodoQuery,
-  ): Promise<WeatherReminderTodo[]> {
-    const { userIds, from, until } = params;
-    if (userIds.length === 0) {
-      return [];
-    }
-    const rows = await this.#db
-      .select({
-        id: todo.id,
-        userId: todo.userId,
-        title: todo.title,
-        scheduledTime: todo.scheduledTime,
-      })
-      .from(todo)
-      .where(
-        and(
-          inArray(todo.userId, [...userIds]),
-          eq(todo.isAllDay, false),
-          eq(todo.completed, false),
-          gte(todo.scheduledTime, from),
-          lt(todo.scheduledTime, until),
-        ),
-      )
-      .orderBy(asc(todo.scheduledTime), asc(todo.id));
-    return rows.flatMap(({ scheduledTime, ...row }) =>
-      scheduledTime == null ? [] : [{ ...row, scheduledTime }],
-    );
   }
 
   // ─────────────────────────────────────────────────────────────

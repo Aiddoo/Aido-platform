@@ -144,11 +144,13 @@ export class GetWeatherReportUseCase {
     now: Temporal.Instant,
     timezone: string,
   ): Promise<WeatherBriefingTodo[]> {
-    const until = instantFromDate(dayWindowInTimezone(instantToDate(now), timezone).endsAt);
+    const today = dayWindowInTimezone(instantToDate(now), timezone);
     const todos = await this.#dependencies.scheduledTodoReader.listPendingTimedTodos({
       userId,
+      date: Temporal.PlainDate.from(today.localDate),
+      timezone,
       from: now,
-      until,
+      until: instantFromDate(today.endsAt),
     });
     return todos.map((todo) => ({ id: todo.id, scheduledAt: instantToDate(todo.scheduledAt) }));
   }

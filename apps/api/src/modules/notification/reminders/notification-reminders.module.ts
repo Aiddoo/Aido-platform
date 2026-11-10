@@ -3,6 +3,7 @@ import { Module } from "@nestjs/common";
 import { AccessModule } from "#api/modules/access/access-entitlement.public";
 import { IdentityUserAccessModule } from "#api/modules/identity/identity-user-access.public";
 import { InsightsWeeklyAchievementsModule } from "#api/modules/insights/weekly-achievements/insights-weekly-achievements.public";
+import { PlanningTodoQueriesModule } from "#api/modules/planning/todos/planning-todo-queries.public";
 import { DatabaseModule } from "#api/platform/database/database.module";
 
 import { WeatherForecastsModule } from "../../weather/forecasts/weather-forecasts.public.js";
@@ -26,6 +27,7 @@ import {
     InsightsWeeklyAchievementsModule,
     AccessModule,
     IdentityUserAccessModule,
+    PlanningTodoQueriesModule,
   ],
   providers: [
     ...NOTIFICATION_REMINDERS_PERSISTENCE_PROVIDERS,

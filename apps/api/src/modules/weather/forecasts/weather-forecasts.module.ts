@@ -2,6 +2,8 @@ import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 import { HttpClientModule } from "@nestjs/http-client";
 
+import { PlanningTodoQueriesModule } from "#api/modules/planning/todos/planning-todo-queries.public";
+
 import { WeatherLocationsModule } from "../locations/weather-locations.module.js";
 import {
   WEATHER_FORECAST_READER,
@@ -20,6 +22,7 @@ const WEATHER_VENDOR_TIMEOUT_MS = 10_000;
   imports: [
     ConfigModule.forFeature(weatherForecastsConfig),
     WeatherLocationsModule,
+    PlanningTodoQueriesModule,
     HttpClientModule.register({
       name: "weather",
       retry: false,

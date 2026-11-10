@@ -17,6 +17,7 @@ import { TimezoneReminderEnqueuerPort } from "./application/ports/timezone-remin
 import { TodoReminderReaderPort } from "./application/ports/todo-reminder-reader.port.js";
 import { TodoReminderSchedulerPort } from "./application/ports/todo-reminder-scheduler.port.js";
 import { TodoSeriesOwnerDormancyPort } from "./application/ports/todo-series-owner-dormancy.port.js";
+import { WeatherBriefingTodoReaderPort } from "./application/ports/weather-briefing-todo.reader.port.js";
 import { WeatherReminderReaderPort } from "./application/ports/weather-reminder-reader.port.js";
 import { WeeklyAchievementStatsReaderPort } from "./application/ports/weekly-achievement-stats-reader.port.js";
 import { WeeklyAchievementWriterPort } from "./application/ports/weekly-achievement-writer.port.js";
@@ -34,6 +35,7 @@ import { SendWeeklyAchievementUseCase } from "./application/use-cases/send-weekl
 import { SendWeeklyReportUseCase } from "./application/use-cases/send-weekly-report.use-case.js";
 import { SendWinbackUseCase } from "./application/use-cases/send-winback.use-case.js";
 import { SweepTimezoneRemindersUseCase } from "./application/use-cases/sweep-timezone-reminders.use-case.js";
+import { PlanningWeatherBriefingTodoAdapter } from "./infrastructure/adapters/planning-weather-briefing-todo.adapter.js";
 import { SchedulerDedupAdapter } from "./infrastructure/adapters/scheduler-dedup.adapter.js";
 import { TodoSeriesOwnerDormancyAdapter } from "./infrastructure/adapters/todo-series-owner-dormancy.adapter.js";
 import { TodoReminderSchedulerAdapter } from "./infrastructure/jobs/todo-reminder-scheduler.adapter.js";
@@ -41,6 +43,7 @@ import { DrizzleSchedulerReader } from "./infrastructure/persistence/drizzle-sch
 
 // 읽기 포트는 계약별로 나뉘고 DB 접근은 Drizzle 어댑터 하나에 모인다
 export const NOTIFICATION_REMINDERS_PERSISTENCE_PROVIDERS = [
+  { provide: WeatherBriefingTodoReaderPort, useClass: PlanningWeatherBriefingTodoAdapter },
   DrizzleSchedulerReader,
   { provide: ScheduledReminderReaderPort, useExisting: DrizzleSchedulerReader },
   { provide: ReEngagementReaderPort, useExisting: DrizzleSchedulerReader },
@@ -148,6 +151,7 @@ export const NOTIFICATION_REMINDERS_USE_CASE_PROVIDERS = [
   }),
   provideUseCase(SendWeatherMorningUseCase, {
     reader: WeatherReminderReaderPort,
+    todoReader: WeatherBriefingTodoReaderPort,
     notificationPublisher: PublishNotificationUseCase,
     notificationHistoryReader: NotificationHistoryReader,
     weatherReportReader: ReminderWeatherReportReaderPort,

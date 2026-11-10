@@ -27,13 +27,13 @@ import { AirkoreaAirQualityAdapter } from "./infrastructure/adapters/airkorea-ai
 import { KasiSunTimeAdapter } from "./infrastructure/adapters/kasi-sun-time.adapter.js";
 import { KmaLifestyleIndexAdapter } from "./infrastructure/adapters/kma-lifestyle-index.adapter.js";
 import { KmaWeatherForecastAdapter } from "./infrastructure/adapters/kma-weather-forecast.adapter.js";
+import { PlanningScheduledTodoAdapter } from "./infrastructure/adapters/planning-scheduled-todo.adapter.js";
 import { WeatherKitAttributionAdapter } from "./infrastructure/adapters/weatherkit-attribution.adapter.js";
 import { WeatherKitReportAdapter } from "./infrastructure/adapters/weatherkit-report.adapter.js";
 import { WeatherKitTokenAdapter } from "./infrastructure/adapters/weatherkit-token.adapter.js";
 import { WeatherKitUsageMeterAdapter } from "./infrastructure/adapters/weatherkit-usage-meter.adapter.js";
 import { WeatherForecastCache } from "./infrastructure/cache/weather-forecast.cache.js";
 import { WeatherReportCache } from "./infrastructure/cache/weather-report.cache.js";
-import { DrizzleScheduledTodoReader } from "./infrastructure/persistence/drizzle-scheduled-todo.reader.js";
 
 export const WEATHER_FORECASTS_PROVIDERS = [
   { provide: WeatherForecastProviderPort, useClass: KmaWeatherForecastAdapter },
@@ -46,7 +46,7 @@ export const WEATHER_FORECASTS_PROVIDERS = [
   WeatherKitUsageMeterAdapter,
   { provide: WeatherReportProviderPort, useClass: WeatherKitReportAdapter },
   { provide: WeatherReportCachePort, useClass: WeatherReportCache },
-  { provide: ScheduledTodoReaderPort, useClass: DrizzleScheduledTodoReader },
+  { provide: ScheduledTodoReaderPort, useClass: PlanningScheduledTodoAdapter },
   provideUseCase(WeatherForecastReader, {
     weatherProvider: WeatherForecastProviderPort,
     weatherCache: WeatherForecastCachePort,
