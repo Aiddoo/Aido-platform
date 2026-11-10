@@ -6,9 +6,11 @@ import type { QuotaLedgerPort } from "#api/modules/access/access-quota.public";
 import {
   fingerprintRequest,
   resolveRequestLocale,
-  type ChargedGeneration,
-  type ChargeOutcome,
   type UserLocalePreferenceReaderPort,
+} from "#api/modules/ai-assistance/generation/ai-assistance-generation.public";
+import type {
+  ChargedGeneration,
+  ChargeOutcome,
 } from "#api/modules/ai-assistance/parsing/ai-assistance-parsing.public";
 import type {
   ActionPlanGeneratorPort,
@@ -16,24 +18,26 @@ import type {
 } from "#api/modules/ai-assistance/planning/ai-assistance-planning.public";
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
+import type { ClockPort } from "#api/shared/application/ports/clock.port";
+import type { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import { ErrorCodedException } from "#api/shared/domain/exceptions/error-coded.exception";
 import type { SupportedLocale } from "#api/shared/domain/locale";
 
-import type { PlanResultReplayPort } from "../../../action-plans/application/ports/plan-result-replay.port.js";
+import type { ChargedPlanRunnerPort } from "../../../action-plans/application/ports/charged-plan-runner.port.js";
+import type {
+  PlanResultReplay,
+  VoiceNoteDigestResult,
+} from "../../../action-plans/application/ports/plan-result-replay.port.js";
 import type { PlanningContextReaderPort } from "../../../action-plans/application/ports/planning-context.reader.port.js";
 import {
   countPlannedActions,
   toActionPlanView,
 } from "../../../action-plans/application/read-models/action-plan.read-model.js";
 import { VoiceLogEvent } from "../../../action-plans/application/voice.log-events.js";
-import type { QuotaChargedPlanRunnerAdapter } from "../../../action-plans/infrastructure/adapters/quota-charged-plan-runner.adapter.js";
+import { VOICE_NOTE_DURATION_TOLERANCE_SECONDS } from "../../domain/voice-notes.constants.js";
 import { type TranscriptSegment, VoiceTranscript } from "../../domain/voice-transcript.vo.js";
-
-/** `model`은 다시 보낸 응답의 로그에도 남기려고 함께 보관하고, 응답에는 싣지 않는다. */
-export type VoiceNoteDigestResult = Omit<VoiceNoteDigestResponse, "featureQuota" | "charged"> & {
-  readonly model: string;
-};
+import { VoiceNoteAlertKey } from "../voice-notes.alerts.js";
 
 export interface DigestVoiceNoteCommand {
   readonly userId: string;
@@ -50,12 +54,14 @@ export interface DigestVoiceNoteCommand {
 }
 
 interface DigestVoiceNoteDependencies {
-  readonly runner: Pick<QuotaChargedPlanRunnerAdapter, "run">;
+  readonly runner: Pick<ChargedPlanRunnerPort, "run">;
   readonly quota: Pick<QuotaLedgerPort, "read">;
   readonly generator: Pick<ActionPlanGeneratorPort, "digestVoiceNote">;
   readonly contextReader: Pick<PlanningContextReaderPort, "read">;
   readonly localePreferenceReader: Pick<UserLocalePreferenceReaderPort, "read">;
-  readonly replay: PlanResultReplayPort<VoiceNoteDigestResult>;
+  readonly replay: PlanResultReplay<VoiceNoteDigestResult>;
+  readonly clock: ClockPort;
+  readonly alert: Pick<OperationalAlertPort, "raise">;
   readonly logger: Pick<ApplicationLoggerPort, "log" | "warn">;
 }
 
@@ -74,7 +80,7 @@ export class DigestVoiceNoteUseCase {
 
   async execute(input: DigestVoiceNoteCommand): Promise<VoiceNoteDigestResponse> {
     const { userId, text, durationSeconds, segments, idempotencyKey } = input;
-    const startedAt = Date.now();
+    const startedAt = this.#dependencies.clock.now().epochMilliseconds;
     const transcript = VoiceTranscript.create({ text, durationSeconds, segments });
     const logFields = {
       userId,
@@ -111,7 +117,7 @@ export class DigestVoiceNoteUseCase {
         ...countPlannedActions(result.plan),
         keyPointCount: result.keyPoints.length,
         model: result.model,
-        latencyMs: Date.now() - startedAt,
+        latencyMs: this.#dependencies.clock.now().epochMilliseconds - startedAt,
         quotaCharged: charged,
       });
       return { ...omit(result, ["model"]), featureQuota, charged };
@@ -119,7 +125,7 @@ export class DigestVoiceNoteUseCase {
       this.#dependencies.logger.warn({
         event: VoiceLogEvent.NOTE_DIGEST_FAILED,
         ...logFields,
-        latencyMs: Date.now() - startedAt,
+        latencyMs: this.#dependencies.clock.now().epochMilliseconds - startedAt,
         ...(error instanceof ErrorCodedException
           ? { errorCode: error.errorCode }
           : { errorType: toErrorType(error) }),
@@ -131,6 +137,24 @@ export class DigestVoiceNoteUseCase {
   /** 등급별 상한은 access가 계산해 준 값만 쓴다. 차감 전에 막아 횟수를 쓰지 않는다. */
   async #assertWithinPerUseLimit(userId: string, transcript: VoiceTranscript): Promise<void> {
     const featureQuota = await this.#dependencies.quota.read(userId, "VOICE_NOTE");
+    if (
+      featureQuota.perUse != null &&
+      transcript.exceedsDuration({
+        maxSeconds: featureQuota.perUse.maxSeconds,
+        toleranceSeconds: VOICE_NOTE_DURATION_TOLERANCE_SECONDS,
+      })
+    ) {
+      // 1.15.1은 출시 앱 호환을 위해 거절하지 않고 경보만 올린다(1.15.2부터 거절)
+      this.#dependencies.alert.raise({
+        key: VoiceNoteAlertKey.DURATION_OVER_LIMIT,
+        severity: "warning",
+        message: "녹음 길이가 한 번 상한을 넘었습니다",
+        details: {
+          durationSeconds: transcript.durationSeconds,
+          maxSeconds: featureQuota.perUse.maxSeconds,
+        },
+      });
+    }
     if (featureQuota.perUse != null && transcript.exceeds(featureQuota.perUse)) {
       throw new ApplicationException(ErrorCode.AI_1312, {
         charged: false,

@@ -7,6 +7,7 @@ import {
   CurrentUser,
   type CurrentUserPayload,
 } from "#api/modules/identity/identity-auth-http.public";
+import { toTodoResponse } from "#api/modules/planning/todos/planning-todos.public";
 import { IdempotencyKey, Timezone } from "#api/platform/http/decorators/index";
 import {
   ApiBadRequestError,
@@ -54,13 +55,13 @@ export class ActionPlanController {
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
   @ApiNotFoundError(ErrorCode.MEMO_2001)
   @ApiErrorCodesResponse(HttpStatus.UNPROCESSABLE_ENTITY, [ErrorCode.AI_1315, ErrorCode.AI_1318])
-  apply(
+  async apply(
     @CurrentUser() user: CurrentUserPayload,
     @Body({ schema: ApplyActionPlanRequestDto }) dto: ApplyActionPlanRequestDto,
     @IdempotencyKey() idempotencyKey: string,
     @Timezone({ preserveIfMissing: true }) timezone: string | undefined,
   ): Promise<ApplyActionPlanResponseDto> {
-    return this.#applyActionPlan.execute({
+    const applied = await this.#applyActionPlan.execute({
       userId: user.userId,
       timezone,
       source: dto.source,
@@ -68,5 +69,6 @@ export class ActionPlanController {
       actions: dto.actions,
       idempotencyKey,
     });
+    return { todos: applied.todos.map(toTodoResponse), memo: applied.memo };
   }
 }

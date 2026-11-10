@@ -12,7 +12,8 @@ import {
 } from "#test/fixtures/voice-plan.fixture";
 import { createAiGenerationError } from "#test/mocks/fake-ai.generator";
 
-import { CreateQuickPlanUseCase, type QuickPlanResult } from "./create-quick-plan.use-case.js";
+import type { QuickPlanResult } from "../ports/plan-result-replay.port.js";
+import { CreateQuickPlanUseCase } from "./create-quick-plan.use-case.js";
 
 const FREE_LIMIT = PLAN_CATALOG.AI_PARSE.free;
 const FAIR_USE_LIMIT = PLAN_CATALOG.AI_PARSE.fairUse.premium;
@@ -30,6 +31,7 @@ function setup(ledgerInput: Parameters<typeof createPlanFlowFixture>[0] = {}) {
     }),
     localePreferenceReader: fixture.localePreferenceReader,
     replay,
+    clock: fixture.clock,
     logger: fixture.logger,
   });
   const execute = (

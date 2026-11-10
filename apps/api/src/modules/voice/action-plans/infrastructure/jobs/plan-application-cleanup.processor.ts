@@ -1,7 +1,6 @@
-import { Inject, Injectable, Logger, type OnModuleInit } from "@nestjs/common";
+import { Injectable, Logger, type OnModuleInit } from "@nestjs/common";
 
-import { JOB_POLLING_SECONDS } from "#api/shared/application/ports/index";
-import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
+import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 
 import { PurgePlanApplicationsUseCase } from "../../application/use-cases/purge-plan-applications.use-case.js";
@@ -13,22 +12,15 @@ export class PlanApplicationCleanupProcessor implements OnModuleInit {
   readonly #logger = new Logger(PlanApplicationCleanupProcessor.name);
 
   readonly #purgePlanApplications: Pick<PurgePlanApplicationsUseCase, "execute">;
-  readonly #runtime: JobRuntimePort;
+  readonly #jobQueue: JobQueuePort;
 
-  constructor(
-    @Inject(PurgePlanApplicationsUseCase)
-    purgePlanApplications: Pick<PurgePlanApplicationsUseCase, "execute">,
-    @Inject(JOB_RUNTIME) runtime: JobRuntimePort,
-  ) {
+  constructor(purgePlanApplications: PurgePlanApplicationsUseCase, jobQueue: JobQueuePort) {
     this.#purgePlanApplications = purgePlanApplications;
-    this.#runtime = runtime;
+    this.#jobQueue = jobQueue;
   }
 
   async onModuleInit(): Promise<void> {
-    await this.#runtime.work(PLAN_APPLICATION_CLEANUP_QUEUE, async () => this.process(), {
-      teamSize: 1,
-      pollingIntervalSeconds: JOB_POLLING_SECONDS.BACKGROUND,
-    });
+    await this.#jobQueue.work(PLAN_APPLICATION_CLEANUP_QUEUE, async () => this.process());
   }
 
   async process(): Promise<void> {

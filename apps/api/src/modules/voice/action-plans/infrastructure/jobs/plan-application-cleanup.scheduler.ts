@@ -1,25 +1,20 @@
-import { Inject, Injectable, Logger, type OnModuleInit } from "@nestjs/common";
+import { Injectable, Logger, type OnModuleInit } from "@nestjs/common";
 
 import { runInBackground } from "#api/platform/jobs/non-blocking-init";
-import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
+import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
 
 import { VoiceLogEvent } from "../../application/voice.log-events.js";
-import {
-  PLAN_APPLICATION_CLEANUP_JOB_NAME,
-  PLAN_APPLICATION_CLEANUP_JOB_OPTIONS,
-  PLAN_APPLICATION_CLEANUP_QUEUE,
-  PLAN_APPLICATION_CLEANUP_SCHEDULE,
-} from "./plan-application-cleanup.queue.js";
+import { PLAN_APPLICATION_CLEANUP_QUEUE } from "./plan-application-cleanup.queue.js";
 
 @Injectable()
 export class PlanApplicationCleanupScheduler implements OnModuleInit {
   readonly #logger = new Logger(PlanApplicationCleanupScheduler.name);
   schedulerRegistration: Promise<void> = Promise.resolve();
 
-  readonly #runtime: JobRuntimePort;
+  readonly #jobQueue: JobQueuePort;
 
-  constructor(@Inject(JOB_RUNTIME) runtime: JobRuntimePort) {
-    this.#runtime = runtime;
+  constructor(jobQueue: JobQueuePort) {
+    this.#jobQueue = jobQueue;
   }
 
   onModuleInit(): void {
@@ -28,13 +23,7 @@ export class PlanApplicationCleanupScheduler implements OnModuleInit {
       this.#logger,
       "Plan application cleanup scheduler registration",
       async () => {
-        await this.#runtime.schedule(
-          PLAN_APPLICATION_CLEANUP_SCHEDULE.id,
-          PLAN_APPLICATION_CLEANUP_SCHEDULE.cron,
-          PLAN_APPLICATION_CLEANUP_QUEUE,
-          { name: PLAN_APPLICATION_CLEANUP_JOB_NAME, data: {} },
-          PLAN_APPLICATION_CLEANUP_JOB_OPTIONS,
-        );
+        await this.#jobQueue.registerSchedules(PLAN_APPLICATION_CLEANUP_QUEUE);
         this.#logger.log({ event: VoiceLogEvent.PLAN_CLEANUP_SCHEDULER_REGISTERED });
       },
     );

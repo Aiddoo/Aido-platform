@@ -1,26 +1,32 @@
-import type { ApplyActionPlanResponse, Memo, Todo } from "@aido/api";
-import { ErrorCode } from "@aido/api/errors";
 import type { ActionPlanSource } from "@aido/api/vocabulary";
 
-import { fingerprintRequest } from "#api/modules/ai-assistance/parsing/ai-assistance-parsing.public";
-import { ApplicationException } from "#api/shared/application/application.exception";
-import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
+import { fingerprintRequest } from "#api/modules/ai-assistance/generation/ai-assistance-generation.public";
 import {
-  type AfterCommitTaskRegistryPort,
+  MemoId,
+  MemoLockKeys,
+  type PlanMemo,
+  type PlanMemoWriterPort,
+} from "#api/modules/notes/memos/notes-memos.public";
+import type {
+  StagedTodoCreatorPort,
+  TodoPlanReaderPort,
+  TodoReadModel,
+} from "#api/modules/planning/todos/planning-todos.public";
+import type { AfterCommitTaskRegistryPort } from "#api/shared/application/ports/after-commit-task.registry.port";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
+import type { ClockPort } from "#api/shared/application/ports/clock.port";
+import {
   MutationLockKeys,
   type MutationLockPort,
-  type UnitOfWorkPort,
-} from "#api/shared/application/ports/index";
+} from "#api/shared/application/ports/mutation-lock.port";
+import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { parseDateOnly } from "#api/shared/domain/date/utils/parse";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { ActionPlan, type PlannedAction } from "../../domain/action-plan.vo.js";
-import type {
-  PlanApplicationRecord,
-  PlanApplicationRepositoryPort,
-} from "../ports/plan-application.repository.port.js";
-import type { PlanMemoWriterPort } from "../ports/plan-memo-writer.port.js";
-import type { PlanTodoCreatorPort } from "../ports/plan-todo-creator.port.js";
-import type { PlanTodoReaderPort } from "../ports/plan-todo.reader.port.js";
+import { PlanApplication } from "../../domain/plan-application.aggregate.js";
+import { planRequestMismatch, sourceMemoNotFound } from "../action-plans.errors.js";
+import type { PlanApplicationRepositoryPort } from "../ports/plan-application.repository.port.js";
 import type { PlanningContextReaderPort } from "../ports/planning-context.reader.port.js";
 import { VoiceLogEvent } from "../voice.log-events.js";
 
@@ -34,21 +40,28 @@ export interface ApplyActionPlanCommand {
   readonly idempotencyKey: string;
 }
 
+/** 저장했거나 앞서 저장한 계획의 결과. 그 뒤 사용자가 지운 할 일·메모는 빠진다 */
+export interface AppliedActionPlan {
+  readonly todos: readonly TodoReadModel[];
+  readonly memo: PlanMemo | null;
+}
+
 interface ApplyActionPlanDependencies {
-  readonly unitOfWork: UnitOfWorkPort;
-  readonly mutationLock: MutationLockPort;
-  readonly afterCommit: AfterCommitTaskRegistryPort;
-  readonly repository: Pick<PlanApplicationRepositoryPort, "findByKey" | "insert">;
+  readonly unitOfWork: Pick<UnitOfWorkPort, "run">;
+  readonly mutationLock: Pick<MutationLockPort, "acquire">;
+  readonly afterCommit: Pick<AfterCommitTaskRegistryPort, "register">;
+  readonly repository: Pick<PlanApplicationRepositoryPort, "findByIdempotencyKey" | "save">;
   readonly contextReader: Pick<PlanningContextReaderPort, "findOwnedCategoryIds">;
-  readonly todoCreator: PlanTodoCreatorPort;
-  readonly memoWriter: PlanMemoWriterPort;
-  readonly todoReader: PlanTodoReaderPort;
+  readonly todoCreator: Pick<StagedTodoCreatorPort, "stage">;
+  readonly todoReader: Pick<TodoPlanReaderPort, "findManyByIds">;
+  readonly memoWriter: Pick<PlanMemoWriterPort, "create" | "findById" | "delete">;
+  readonly clock: ClockPort;
   readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
 
 type ApplyOutcome =
-  | { readonly kind: "applied"; readonly todos: readonly Todo[]; readonly memo: Memo | null }
-  | { readonly kind: "replayed"; readonly record: PlanApplicationRecord };
+  | { readonly kind: "applied"; readonly applied: AppliedActionPlan }
+  | { readonly kind: "replayed"; readonly application: PlanApplication };
 
 /**
  * 사용자가 확인한 행동을 저장한다. 사용 횟수를 차감하지 않고 AI도 부르지 않는다. 한 UoW 안에서 사용자 잠금 →
@@ -62,51 +75,55 @@ export class ApplyActionPlanUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: ApplyActionPlanCommand): Promise<ApplyActionPlanResponse> {
-    const { userId, source, sourceMemoId } = input;
-    const plan = ActionPlan.create(input.actions);
+  async execute(command: ApplyActionPlanCommand): Promise<AppliedActionPlan> {
+    const { userId, source, sourceMemoId } = command;
+    const owner = UserId.reconstitute(userId);
+    const plan = ActionPlan.create(command.actions);
     const requestHash = fingerprintRequest(userId, {
       source,
       sourceMemoId,
-      actions: input.actions,
+      actions: command.actions,
     });
     const outcome = await this.#dependencies.unitOfWork.run<ApplyOutcome>(async () => {
       await this.#dependencies.mutationLock.acquire([
-        ...(sourceMemoId == null ? [] : [MutationLockKeys.memo(sourceMemoId)]),
-        MutationLockKeys.memoSortOrder(userId),
+        ...(sourceMemoId == null ? [] : [MemoLockKeys.memo(MemoId.reconstitute(sourceMemoId))]),
+        MemoLockKeys.sortOrder(owner),
         MutationLockKeys.todoCategory(userId),
         MutationLockKeys.todoSortOrder(userId),
       ]);
-      const existing = await this.#dependencies.repository.findByKey(userId, input.idempotencyKey);
+      const existing = await this.#dependencies.repository.findByIdempotencyKey(
+        owner,
+        command.idempotencyKey,
+      );
       if (existing != null) {
-        if (existing.requestHash !== requestHash) {
-          throw new ApplicationException(ErrorCode.AI_1318, { charged: false });
+        if (!existing.isSameRequest(requestHash)) {
+          throw planRequestMismatch();
         }
-        return { kind: "replayed", record: existing };
+        return { kind: "replayed", application: existing };
       }
       await this.#assertSourceMemoExists(userId, sourceMemoId);
       plan.assertCategoriesOwned(
         await this.#dependencies.contextReader.findOwnedCategoryIds(userId),
       );
-      return this.#apply(plan, input, requestHash);
+      return { kind: "applied", applied: await this.#apply(plan, command, requestHash) };
     });
     const logFields = { userId, source, todoCount: plan.todos.length, hasMemo: plan.memo != null };
     if (outcome.kind === "applied") {
       this.#dependencies.logger.log({ event: VoiceLogEvent.PLAN_APPLY_COMPLETED, ...logFields });
-      return { todos: [...outcome.todos], memo: outcome.memo };
+      return outcome.applied;
     }
     this.#dependencies.logger.log({ event: VoiceLogEvent.PLAN_APPLY_REPLAYED, ...logFields });
-    return this.#readApplied(outcome.record);
+    return this.#readApplied(outcome.application);
   }
 
   async #apply(
     plan: ActionPlan,
-    input: ApplyActionPlanCommand,
+    command: ApplyActionPlanCommand,
     requestHash: string,
-  ): Promise<ApplyOutcome> {
-    const { todoCreator, memoWriter, afterCommit, repository } = this.#dependencies;
-    const { userId, timezone, source, sourceMemoId, idempotencyKey } = input;
-    const todos: Todo[] = [];
+  ): Promise<AppliedActionPlan> {
+    const { todoCreator, memoWriter, afterCommit, repository, clock } = this.#dependencies;
+    const { userId, timezone, source, sourceMemoId, idempotencyKey } = command;
+    const todos: TodoReadModel[] = [];
     for (const todo of plan.todos) {
       const staged = await todoCreator.stage({
         userId,
@@ -132,15 +149,18 @@ export class ApplyActionPlanUseCase {
     const { memoContent } = plan;
     const memo =
       memoContent == null ? null : await memoWriter.create({ userId, content: memoContent });
-    await repository.insert({
-      userId,
-      idempotencyKey,
-      requestHash,
-      source,
-      todoIds: todos.map((todo) => todo.id),
-      memoId: memo?.id ?? null,
-    });
-    return { kind: "applied", todos, memo };
+    await repository.save(
+      PlanApplication.create({
+        userId: UserId.reconstitute(userId),
+        idempotencyKey,
+        requestHash,
+        source,
+        todoIds: todos.map((todo) => todo.id),
+        memoId: memo?.id ?? null,
+        now: clock.now(),
+      }),
+    );
+    return { todos, memo };
   }
 
   /** 메모를 할 일로 바꾸는 기존 흐름과 같게, 없거나 남의 메모면 만들기 전에 MEMO_2001로 거절한다. */
@@ -149,16 +169,18 @@ export class ApplyActionPlanUseCase {
       return;
     }
     if ((await this.#dependencies.memoWriter.findById(memoId, userId)) == null) {
-      throw new ApplicationException(ErrorCode.MEMO_2001, { memoId });
+      throw sourceMemoNotFound(memoId);
     }
   }
 
   /** 그 뒤 사용자가 지운 할 일·메모는 돌려주지 않는다. 다시 만들지도 않는다. */
-  async #readApplied(record: PlanApplicationRecord): Promise<ApplyActionPlanResponse> {
+  async #readApplied(application: PlanApplication): Promise<AppliedActionPlan> {
     const { todoReader, memoWriter } = this.#dependencies;
+    const userId = application.userId.value;
+    const { memoId } = application;
     const [todos, memo] = await Promise.all([
-      todoReader.findManyByIds(record.userId, record.todoIds),
-      record.memoId == null ? null : memoWriter.findById(record.memoId, record.userId),
+      todoReader.findManyByIds(userId, application.todoIds),
+      memoId == null ? null : memoWriter.findById(memoId, userId),
     ]);
     return { todos, memo };
   }

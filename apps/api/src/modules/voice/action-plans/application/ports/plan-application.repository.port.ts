@@ -1,19 +1,13 @@
-import type { ActionPlanSource } from "@aido/api/vocabulary";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-export const PLAN_APPLICATION_REPOSITORY = Symbol("PLAN_APPLICATION_REPOSITORY");
+import type { PlanApplication } from "../../domain/plan-application.aggregate.js";
 
-/** 적용 한 번의 멱등 기록. 만든 id와 요청 해시만 두고 사용자 글자는 두지 않는다. */
-export interface PlanApplicationRecord {
-  readonly userId: string;
-  readonly idempotencyKey: string;
-  readonly requestHash: string;
-  readonly source: ActionPlanSource;
-  readonly todoIds: readonly number[];
-  readonly memoId: number | null;
-}
-
-export interface PlanApplicationRepositoryPort {
-  findByKey(userId: string, idempotencyKey: string): Promise<PlanApplicationRecord | null>;
-  insert(record: PlanApplicationRecord): Promise<void>;
-  deleteCreatedBefore(cutoff: Date): Promise<number>;
+export abstract class PlanApplicationRepositoryPort {
+  abstract findByIdempotencyKey(
+    userId: UserId,
+    idempotencyKey: string,
+  ): Promise<PlanApplication | null>;
+  abstract save(application: PlanApplication): Promise<void>;
+  /** cutoff 전에 만든 기록을 지우고 지운 수를 돌려준다 */
+  abstract deleteCreatedBefore(cutoff: Temporal.Instant): Promise<number>;
 }

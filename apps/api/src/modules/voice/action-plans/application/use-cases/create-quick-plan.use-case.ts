@@ -5,21 +5,19 @@ import {
   fingerprintRequest,
   resolveRequestLocale,
   type UserLocalePreferenceReaderPort,
-} from "#api/modules/ai-assistance/parsing/ai-assistance-parsing.public";
+} from "#api/modules/ai-assistance/generation/ai-assistance-generation.public";
 import type { ActionPlanGeneratorPort } from "#api/modules/ai-assistance/planning/ai-assistance-planning.public";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
+import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import { ErrorCodedException } from "#api/shared/domain/exceptions/error-coded.exception";
 import type { SupportedLocale } from "#api/shared/domain/locale";
 
-import type { QuotaChargedPlanRunnerAdapter } from "../../infrastructure/adapters/quota-charged-plan-runner.adapter.js";
-import type { PlanResultReplayPort } from "../ports/plan-result-replay.port.js";
+import type { ChargedPlanRunnerPort } from "../ports/charged-plan-runner.port.js";
+import type { PlanResultReplay, QuickPlanResult } from "../ports/plan-result-replay.port.js";
 import type { PlanningContextReaderPort } from "../ports/planning-context.reader.port.js";
 import { countPlannedActions, toActionPlanView } from "../read-models/action-plan.read-model.js";
 import { VoiceLogEvent } from "../voice.log-events.js";
-
-/** `model`은 다시 보낸 응답의 로그에도 남기려고 함께 보관하고, 응답에는 싣지 않는다. */
-export type QuickPlanResult = Pick<QuickPlanResponse, "plan"> & { readonly model: string };
 
 export interface CreateQuickPlanCommand {
   readonly userId: string;
@@ -35,11 +33,12 @@ export interface CreateQuickPlanCommand {
 }
 
 interface CreateQuickPlanDependencies {
-  readonly runner: Pick<QuotaChargedPlanRunnerAdapter, "run">;
+  readonly runner: Pick<ChargedPlanRunnerPort, "run">;
   readonly generator: Pick<ActionPlanGeneratorPort, "generateQuickPlan">;
   readonly contextReader: Pick<PlanningContextReaderPort, "read">;
   readonly localePreferenceReader: Pick<UserLocalePreferenceReaderPort, "read">;
-  readonly replay: PlanResultReplayPort<QuickPlanResult>;
+  readonly replay: PlanResultReplay<QuickPlanResult>;
+  readonly clock: ClockPort;
   readonly logger: Pick<ApplicationLoggerPort, "log" | "warn">;
 }
 
@@ -55,7 +54,7 @@ export class CreateQuickPlanUseCase {
     const { runner, generator, contextReader, localePreferenceReader, replay, logger } =
       this.#dependencies;
     const { userId, text, source, idempotencyKey } = input;
-    const startedAt = Date.now();
+    const startedAt = this.#dependencies.clock.now().epochMilliseconds;
     const { timezone, locale } = await resolveRequestLocale(localePreferenceReader, userId, input);
 
     try {
@@ -93,7 +92,7 @@ export class CreateQuickPlanUseCase {
         characterCount: text.length,
         ...countPlannedActions(result.plan),
         model: result.model,
-        latencyMs: Date.now() - startedAt,
+        latencyMs: this.#dependencies.clock.now().epochMilliseconds - startedAt,
         quotaCharged: charged,
       });
       return { plan: result.plan, featureQuota, charged };
@@ -103,7 +102,7 @@ export class CreateQuickPlanUseCase {
         userId,
         source,
         characterCount: text.length,
-        latencyMs: Date.now() - startedAt,
+        latencyMs: this.#dependencies.clock.now().epochMilliseconds - startedAt,
         ...(error instanceof ErrorCodedException
           ? { errorCode: error.errorCode }
           : { errorType: toErrorType(error) }),

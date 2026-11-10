@@ -1,17 +1,17 @@
-import type { Memo, Todo, TodoRepeat } from "@aido/api";
+import type { TodoRepeat } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
-import { mock } from "vitest-mock-extended";
 
-import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
-import { MutationLockKeys } from "#api/shared/application/ports/index";
+import type { PlanMemo } from "#api/modules/notes/memos/notes-memos.public";
+import type { StagedTodoCreatorPort } from "#api/modules/planning/todos/planning-todos.public";
+import type { TodoReadModel } from "#api/modules/planning/todos/planning-todos.public";
 import { parseDateOnly } from "#api/shared/domain/date/utils/parse";
-import { TodoBuilder } from "#test/builders/todo.builder";
-import { createTodoResponseFixture } from "#test/fixtures/todo-response.fixture";
+import { createSpyApplicationLogger } from "#test/doubles/ai-assistance/spy-application-logger";
+import { FixedClock } from "#test/doubles/platform/fixed-clock";
+import { InMemoryPlanApplicationRepository } from "#test/doubles/voice/in-memory-plan-application.repository";
+import { createTodoReadModelFixture } from "#test/fixtures/planning/todo-read-model.fixture";
 import { createUnitOfWorkMock } from "#test/mocks/ports/unit-of-work.mock";
 
 import type { PlannedAction, PlannedTodo } from "../../domain/action-plan.vo.js";
-import type { PlanApplicationRecord } from "../ports/plan-application.repository.port.js";
-import type { PlannedTodoDraft } from "../ports/plan-todo-creator.port.js";
 import { ApplyActionPlanUseCase } from "./apply-action-plan.use-case.js";
 
 const USER_ID = "user-1";
@@ -40,19 +40,21 @@ const memoAction: PlannedAction = {
   content: "온보딩 문구",
 };
 
-function todoResponse(id: number): Todo {
-  return createTodoResponseFixture(TodoBuilder.create(USER_ID).withId(id).build());
+function todoResponse(id: number): TodoReadModel {
+  return createTodoReadModelFixture({ id, userId: USER_ID });
 }
+
+type StagedInput = Parameters<StagedTodoCreatorPort["stage"]>[0];
 
 function setup(ownedCategoryIds: readonly number[] = [1]) {
   const order: string[] = [];
-  const records = new Map<string, PlanApplicationRecord>();
-  const stagedInputs: PlannedTodoDraft[] = [];
+  const repository = new InMemoryPlanApplicationRepository();
+  const stagedInputs: StagedInput[] = [];
   const registered: (() => Promise<void>)[] = [];
   const createdMemos: { userId: string; content: string }[] = [];
   const deletedMemoIds: number[] = [];
   const acquiredLocks: string[][] = [];
-  const memo: Memo = {
+  const memo: PlanMemo = {
     id: 7,
     userId: USER_ID,
     content: "온보딩 문구",
@@ -72,13 +74,13 @@ function setup(ownedCategoryIds: readonly number[] = [1]) {
     },
     afterCommit: { register: (task) => registered.push(task) },
     repository: {
-      findByKey: async (userId, key) => {
+      findByIdempotencyKey: async (userId, key) => {
         order.push("findByKey");
-        return records.get(`${userId}:${key}`) ?? null;
+        return repository.findByIdempotencyKey(userId, key);
       },
-      insert: async (record) => {
+      save: async (application) => {
         order.push("insert");
-        records.set(`${record.userId}:${record.idempotencyKey}`, record);
+        await repository.save(application);
       },
     },
     contextReader: {
@@ -115,9 +117,10 @@ function setup(ownedCategoryIds: readonly number[] = [1]) {
       },
     },
     todoReader: {
-      findManyByIds: async (_userId, ids): Promise<Todo[]> => ids.map((id) => todoResponse(id)),
+      findManyByIds: async (_userId, ids) => ids.map((id) => todoResponse(id)),
     },
-    logger: mock<ApplicationLoggerPort>(),
+    clock: new FixedClock(Temporal.Instant.from("2027-01-04T00:00:00Z")),
+    logger: createSpyApplicationLogger(),
   });
   const execute = (actions: readonly PlannedAction[], idempotencyKey = "key-1") =>
     useCase.execute({
@@ -139,7 +142,7 @@ function setup(ownedCategoryIds: readonly number[] = [1]) {
     });
   return {
     order,
-    records,
+    repository,
     stagedInputs,
     registered,
     createdMemos,
@@ -248,11 +251,11 @@ describe("ApplyActionPlanUseCase", () => {
 
   it("멱등 기록에는 사용자 글자 없이 id와 해시만 남긴다", async () => {
     // Given
-    const { records, execute } = setup();
+    const { repository, execute } = setup();
     // When
     await execute([todoAction({ title: "비밀 제목" })]);
     // Then
-    const [record] = [...records.values()];
+    const [record] = repository.saved.map((application) => application.toPrimitives());
     expect(JSON.stringify(record)).not.toContain("비밀");
     expect(record?.requestHash).toMatch(/^[0-9a-f]{64}$/);
     expect(record?.todoIds).toHaveLength(1);
@@ -265,7 +268,7 @@ describe("ApplyActionPlanUseCase", () => {
       // When
       await executeFromMemo(7, [todoAction()]);
       // Then
-      expect(acquiredLocks[0]).toContain(MutationLockKeys.memo(7));
+      expect(acquiredLocks[0]).toContain("mutation:v1:memo:7");
       expect(order).toEqual(["lock", "findByKey", "categories", "stage", "deleteMemo", "insert"]);
       expect(deletedMemoIds).toEqual([7]);
     });

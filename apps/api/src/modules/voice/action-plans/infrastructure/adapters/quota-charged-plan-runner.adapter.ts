@@ -1,44 +1,30 @@
-import type { MeteredFeatureKey } from "@aido/api/vocabulary";
-
 import type { QuotaLedgerPort, QuotaReservation } from "#api/modules/access/access-quota.public";
-import type { AiTaskId } from "#api/modules/ai-assistance/generation/ai-assistance-generation.public";
-import {
-  commitOrWarn,
-  readFeatureQuotaOrNull,
-  settleChargedGeneration,
-  type ChargedGeneration,
-  type ChargedGenerationResult,
+import type {
+  ChargedGenerationPort,
+  ChargedGenerationResult,
 } from "#api/modules/ai-assistance/parsing/ai-assistance-parsing.public";
-import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 
-import type { PlanResultReplayPort } from "../../application/ports/plan-result-replay.port.js";
+import {
+  type ChargedPlanRequest,
+  ChargedPlanRunnerPort,
+} from "../../application/ports/charged-plan-runner.port.js";
 
-export interface ChargedPlanRequest<T> {
-  readonly userId: string;
-  readonly feature: MeteredFeatureKey;
-  /** 차감한 작업 id. 원장에 남고, 같은 키의 다른 작업을 가린다 */
-  readonly reason: AiTaskId;
-  readonly idempotencyKey: string;
-  readonly requestHash: string;
-  readonly replay: PlanResultReplayPort<T>;
-  readonly generate: () => Promise<ChargedGeneration<T>>;
+interface QuotaChargedPlanRunnerDependencies {
+  readonly quota: Pick<QuotaLedgerPort, "reserve" | "reopen">;
+  readonly chargedGeneration: Pick<ChargedGenerationPort, "settle" | "commit" | "readFeatureQuota">;
 }
 
-interface ChargedPlanRunnerDependencies {
-  readonly quota: Pick<QuotaLedgerPort, "reserve" | "reopen" | "commit" | "refund" | "read">;
-  readonly logger: Pick<ApplicationLoggerPort, "warn">;
-}
+/** access 사용량 원장에 Idempotency-Key로 예약하고, 앞선 시도의 결과가 남아 있으면 다시 만들지 않고 돌려준다. */
+export class QuotaChargedPlanRunnerAdapter extends ChargedPlanRunnerPort {
+  readonly #dependencies: QuotaChargedPlanRunnerDependencies;
 
-/** 돈이 드는 계획 생성의 사용량 흐름: 호출 전 예약 → 결과에 따라 확정·환불. 같은 키는 몇 번을 보내도 한 번만 차감한다. */
-export class QuotaChargedPlanRunnerAdapter {
-  readonly #dependencies: ChargedPlanRunnerDependencies;
-
-  constructor(dependencies: ChargedPlanRunnerDependencies) {
+  constructor(dependencies: QuotaChargedPlanRunnerDependencies) {
+    super();
     this.#dependencies = dependencies;
   }
 
   async run<T>(request: ChargedPlanRequest<T>): Promise<ChargedGenerationResult<T>> {
-    const { quota } = this.#dependencies;
+    const { quota, chargedGeneration } = this.#dependencies;
     const { userId, feature, idempotencyKey, reason, requestHash, replay } = request;
     const reservation = await quota.reserve({
       userId,
@@ -55,7 +41,7 @@ export class QuotaChargedPlanRunnerAdapter {
     if (remembered != null) {
       return this.#returnRemembered(request, reservation, remembered);
     }
-    return settleChargedGeneration<T>(this.#dependencies, {
+    return chargedGeneration.settle<T>({
       // 확정했는데 결과를 잃었으면(재시작·10분 경과) 추가 차감 없이 같은 행에서 다시 만든다.
       reservation: reservation.isAlreadyCommitted ? await quota.reopen(reservation) : reservation,
       userId,
@@ -72,11 +58,12 @@ export class QuotaChargedPlanRunnerAdapter {
     reservation: QuotaReservation,
     result: T,
   ): Promise<ChargedGenerationResult<T>> {
+    const { chargedGeneration } = this.#dependencies;
     const { userId, feature, reason } = request;
     const charged =
       reservation.isAlreadyCommitted ||
-      (await commitOrWarn(this.#dependencies, { reservation, task: reason }));
-    const featureQuota = await readFeatureQuotaOrNull(this.#dependencies, {
+      (await chargedGeneration.commit({ reservation, task: reason }));
+    const featureQuota = await chargedGeneration.readFeatureQuota({
       userId,
       feature,
       task: reason,

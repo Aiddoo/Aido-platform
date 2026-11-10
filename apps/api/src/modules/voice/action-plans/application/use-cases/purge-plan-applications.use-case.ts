@@ -1,12 +1,13 @@
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
-import { subtractDays } from "#api/shared/domain/date/utils/arithmetic";
+import type { ClockPort } from "#api/shared/application/ports/clock.port";
 
-import { PLAN_APPLICATION_RETENTION_DAYS } from "../../domain/plan-application.constants.js";
+import { PlanApplication } from "../../domain/plan-application.aggregate.js";
 import type { PlanApplicationRepositoryPort } from "../ports/plan-application.repository.port.js";
 import { VoiceLogEvent } from "../voice.log-events.js";
 
 interface PurgePlanApplicationsDependencies {
   readonly repository: Pick<PlanApplicationRepositoryPort, "deleteCreatedBefore">;
+  readonly clock: ClockPort;
   readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
 
@@ -20,7 +21,7 @@ export class PurgePlanApplicationsUseCase {
 
   async execute(): Promise<number> {
     const deletedCount = await this.#dependencies.repository.deleteCreatedBefore(
-      subtractDays(PLAN_APPLICATION_RETENTION_DAYS),
+      PlanApplication.retentionCutoff(this.#dependencies.clock.now()),
     );
     this.#dependencies.logger.log({ event: VoiceLogEvent.PLAN_APPLICATION_PURGED, deletedCount });
     return deletedCount;

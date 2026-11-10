@@ -4,6 +4,7 @@ import { MEMO_LIMITS, type TodoVisibility } from "@aido/api/vocabulary";
 import { uniq } from "es-toolkit";
 
 import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
+import { ValueObject } from "#api/shared/domain/model/value-object";
 import { truncateGraphemes } from "#api/shared/domain/utils/grapheme.util";
 
 export interface PlannedTodo {
@@ -36,18 +37,23 @@ function isMemo(action: PlannedAction): action is PlannedMemo {
   return action.type === "CREATE_MEMO";
 }
 
-/** 사용자가 확인해 저장하기로 한 계획. 개수·모양은 요청 계약이 먼저 확인한다. */
-export class ActionPlan {
+interface ActionPlanValue {
   readonly todos: readonly PlannedTodo[];
   readonly memo: PlannedMemo | null;
+}
 
-  constructor(todos: readonly PlannedTodo[], memo: PlannedMemo | null) {
-    this.todos = todos;
-    this.memo = memo;
+/** 사용자가 확인해 저장하기로 한 계획. 개수·모양은 요청 계약이 먼저 확인한다. */
+export class ActionPlan extends ValueObject<ActionPlanValue> {
+  static create(actions: readonly PlannedAction[]): ActionPlan {
+    return new ActionPlan({ todos: actions.filter(isTodo), memo: actions.find(isMemo) ?? null });
   }
 
-  static create(actions: readonly PlannedAction[]): ActionPlan {
-    return new ActionPlan(actions.filter(isTodo), actions.find(isMemo) ?? null);
+  get todos(): readonly PlannedTodo[] {
+    return this.value.todos;
+  }
+
+  get memo(): PlannedMemo | null {
+    return this.value.memo;
   }
 
   assertCategoriesOwned(owned: ReadonlySet<number>): void {

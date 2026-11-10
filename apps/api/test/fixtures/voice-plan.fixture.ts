@@ -1,13 +1,15 @@
-import { mock } from "vitest-mock-extended";
-
+import { QuotaChargedGenerationAdapter } from "#api/modules/ai-assistance/parsing/infrastructure/adapters/quota-charged-generation.adapter";
 import { AiActionPlanGeneratorAdapter } from "#api/modules/ai-assistance/planning/infrastructure/adapters/ai-action-plan-generator.adapter";
-import type { PlanResultReplayPort } from "#api/modules/voice/action-plans/application/ports/plan-result-replay.port";
+import type { PlanResultReplay } from "#api/modules/voice/action-plans/application/ports/plan-result-replay.port";
 import type {
   PlanningContext,
   PlanningContextReaderPort,
 } from "#api/modules/voice/action-plans/application/ports/planning-context.reader.port";
 import { QuotaChargedPlanRunnerAdapter } from "#api/modules/voice/action-plans/infrastructure/adapters/quota-charged-plan-runner.adapter";
-import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
+import { createSpyApplicationLogger } from "#test/doubles/ai-assistance/spy-application-logger";
+import { StubAiDataSharingConsentReader } from "#test/doubles/ai-assistance/stub-ai-data-sharing-consent.reader";
+import { DateClock } from "#test/doubles/platform/date-clock";
+import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";
 import { FakeAiGenerator } from "#test/mocks/fake-ai.generator";
 
 import { createQuotaLedgerFixture } from "./access/quota-ledger.fixture.js";
@@ -48,7 +50,7 @@ export const EMPTY_PLANNING_CONTEXT: PlanningContext = {
   upcomingTodos: [],
 };
 
-export class InMemoryPlanResultReplay<T> implements PlanResultReplayPort<T> {
+export class InMemoryPlanResultReplay<T> implements PlanResultReplay<T> {
   readonly results = new Map<string, T>();
 
   async save(userId: string, idempotencyKey: string, result: T): Promise<void> {
@@ -72,7 +74,11 @@ export function createPlanFlowFixture(
 ) {
   const ledgerFixture = createQuotaLedgerFixture(ledgerInput);
   const aiGenerator = new FakeAiGenerator();
-  const logger = mock<ApplicationLoggerPort>();
+  const logger = createSpyApplicationLogger();
+  const clock = new DateClock();
+  const alert = new RecordingOperationalAlert();
+  const consentReader = new StubAiDataSharingConsentReader();
+  consentReader.decision = "AGREED";
   const quota = {
     reserve: ledgerFixture.ledger.reserve.bind(ledgerFixture.ledger),
     commit: ledgerFixture.ledger.commit.bind(ledgerFixture.ledger),
@@ -82,12 +88,12 @@ export function createPlanFlowFixture(
   };
   const generator = new AiActionPlanGeneratorAdapter({
     generator: aiGenerator,
-    consentReader: {
-      findAiDataSharingConsent: async () => ({ decision: "AGREED", agreedVersion: "2026-11-04" }),
-    },
+    consentReader,
+    clock,
     logger,
   });
-  const runner = new QuotaChargedPlanRunnerAdapter({ quota, logger });
+  const chargedGeneration = new QuotaChargedGenerationAdapter({ quota, logger });
+  const runner = new QuotaChargedPlanRunnerAdapter({ quota, chargedGeneration });
   const localePreferenceReader = {
     read: async () => ({ timezone: "Asia/Seoul", locale: "ko" as const }),
   };
@@ -95,7 +101,10 @@ export function createPlanFlowFixture(
     ...ledgerFixture,
     aiGenerator,
     logger,
+    clock,
+    alert,
     quota,
+    chargedGeneration,
     generator,
     runner,
     localePreferenceReader,

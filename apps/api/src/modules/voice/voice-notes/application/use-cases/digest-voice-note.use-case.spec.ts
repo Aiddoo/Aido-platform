@@ -13,10 +13,8 @@ import {
 } from "#test/fixtures/voice-plan.fixture";
 import { createAiGenerationError } from "#test/mocks/fake-ai.generator";
 
-import {
-  DigestVoiceNoteUseCase,
-  type VoiceNoteDigestResult,
-} from "./digest-voice-note.use-case.js";
+import type { VoiceNoteDigestResult } from "../../../action-plans/application/ports/plan-result-replay.port.js";
+import { DigestVoiceNoteUseCase } from "./digest-voice-note.use-case.js";
 
 const { maxCharacters } = PLAN_CATALOG.VOICE_NOTE.perUse;
 const NEXT_MONTH = new Date("2026-06-01T00:00:00.000Z");
@@ -39,9 +37,13 @@ function setup(ledgerInput: Parameters<typeof createPlanFlowFixture>[0] = {}) {
     contextReader: stubPlanningContextReader(),
     localePreferenceReader: fixture.localePreferenceReader,
     replay,
+    clock: fixture.clock,
+    alert: fixture.alert,
     logger: fixture.logger,
   });
-  const execute = (overrides: { text?: string; segments?: typeof segments } = {}) =>
+  const execute = (
+    overrides: { text?: string; segments?: typeof segments; durationSeconds?: number } = {},
+  ) =>
     useCase.execute({
       userId: fixture.userId,
       text: "다음 주 일정을 정했습니다. 회의록은 제가 보냅니다.",
@@ -64,6 +66,42 @@ describe("DigestVoiceNoteUseCase", () => {
   afterEach(() => {
     vi.useRealTimers();
     vi.restoreAllMocks();
+  });
+
+  describe("녹음 길이 확인(1.15.1은 경보만)", () => {
+    const { maxSeconds } = PLAN_CATALOG.VOICE_NOTE.perUse;
+
+    it("등급 상한을 허용 오차보다 넘긴 녹음은 거절하지 않고 운영 경보를 올린다", async () => {
+      // Given
+      const { aiGenerator, execute, alert } = setup();
+      aiGenerator.setRawResponse(digestDraft());
+      const durationSeconds = maxSeconds.free + 31;
+
+      // When
+      const response = await execute({ durationSeconds });
+
+      // Then
+      expect(response.charged).toBe(true);
+      expect(alert.alerts).toEqual([
+        expect.objectContaining({
+          key: "voice.note-digest.duration-over-limit",
+          severity: "warning",
+          details: { durationSeconds, maxSeconds: maxSeconds.free },
+        }),
+      ]);
+    });
+
+    it("허용 오차 안의 녹음은 경보를 올리지 않는다", async () => {
+      // Given
+      const { aiGenerator, execute, alert } = setup();
+      aiGenerator.setRawResponse(digestDraft());
+
+      // When
+      await execute({ durationSeconds: maxSeconds.free + 30 });
+
+      // Then
+      expect(alert.alerts).toEqual([]);
+    });
   });
 
   it("핵심 내용의 시각은 AI가 고른 문장 번호로 앱이 보낸 값에서 찾는다", async () => {

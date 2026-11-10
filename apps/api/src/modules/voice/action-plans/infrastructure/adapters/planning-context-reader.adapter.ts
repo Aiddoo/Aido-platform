@@ -1,36 +1,26 @@
-import { Inject, Injectable } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 
 import {
   PLANNING_CATEGORY_LIMIT,
   PLANNING_UPCOMING_TODO_LIMIT,
 } from "#api/modules/ai-assistance/planning/ai-assistance-planning.public";
-import {
-  TODO_CATEGORY_READER,
-  type TodoCategoryReaderPort,
-} from "#api/modules/planning/categories/planning-categories.public";
-import {
-  TODO_PLAN_READER,
-  type TodoPlanReaderPort,
-} from "#api/modules/planning/todos/planning-todos.public";
+import { TodoCategoryReaderPort } from "#api/modules/planning/categories/planning-categories.public";
+import { TodoPlanReaderPort } from "#api/modules/planning/todos/planning-todos.public";
 import { todayInTimezone } from "#api/shared/domain/date/utils/timezone";
 
-import type {
-  PlanningContext,
+import {
+  type PlanningContext,
   PlanningContextReaderPort,
 } from "../../application/ports/planning-context.reader.port.js";
 
 /** 카테고리 id·이름과 다가오는 할 일을 읽기만 한다. 다른 Context의 공개 포트로만 읽는다. */
 @Injectable()
-export class PlanningContextReaderAdapter implements PlanningContextReaderPort {
+export class PlanningContextReaderAdapter extends PlanningContextReaderPort {
   readonly #categoryReader: Pick<TodoCategoryReaderPort, "listForUser">;
   readonly #todoReader: Pick<TodoPlanReaderPort, "findUpcoming">;
 
-  constructor(
-    @Inject(TODO_CATEGORY_READER)
-    categoryReader: Pick<TodoCategoryReaderPort, "listForUser">,
-    @Inject(TODO_PLAN_READER)
-    todoReader: Pick<TodoPlanReaderPort, "findUpcoming">,
-  ) {
+  constructor(categoryReader: TodoCategoryReaderPort, todoReader: TodoPlanReaderPort) {
+    super();
     this.#categoryReader = categoryReader;
     this.#todoReader = todoReader;
   }
