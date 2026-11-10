@@ -17,7 +17,7 @@ import {
 } from '@src/shared/__tests__';
 import { NetworkError } from '@src/shared/errors/infra-error';
 import { onlineManager } from '@tanstack/react-query';
-import { fireEvent, screen, waitFor } from '@testing-library/react-native';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { KeyboardController } from 'react-native-keyboard-controller';
 
@@ -465,5 +465,46 @@ describe('할 일 상세 체크', () => {
 
     // Then
     expect(await screen.findByTestId('todo-detail-sub-todo-checkbox-7')).toBeDisabled();
+  });
+});
+
+describe('댓글 하트 연타', () => {
+  function createLikeResponse(isLiked: boolean, likeCount: number) {
+    return createPendingResponse(ok({ commentId: COMMENT_ID, isLiked, likeCount }));
+  }
+
+  it('앞 응답이 뒤에 누른 하트를 덮지 않고 마지막 응답만 서버 수로 보인다', async () => {
+    // Given
+    const { httpClient } = await renderTodoDetail();
+    const firstLike = createLikeResponse(true, 1);
+    const unlike = createLikeResponse(false, 0);
+    // 그사이 다른 사람도 눌러 마지막 응답의 수는 2다
+    const secondLike = createLikeResponse(true, 2);
+    httpClient.put.mockReturnValueOnce(firstLike.response).mockReturnValueOnce(secondLike.response);
+    httpClient.delete.mockReturnValueOnce(unlike.response);
+    const heart = () => screen.getByTestId(`todo-comment-like-${COMMENT_ID}`);
+    await fireEvent.press(heart());
+    await waitFor(() => expect(heart()).toBeSelected());
+    await fireEvent.press(heart());
+    await waitFor(() => expect(heart()).not.toBeSelected());
+    await fireEvent.press(heart());
+    await waitFor(() => expect(heart()).toBeSelected());
+
+    // When
+    firstLike.settle();
+    await waitFor(() => expect(httpClient.delete).toHaveBeenCalledTimes(1));
+    unlike.settle();
+    await waitFor(() => expect(httpClient.put).toHaveBeenCalledTimes(2));
+
+    // Then
+    expect(heart()).toBeSelected();
+    expect(within(heart()).getByText('1')).toBeOnTheScreen();
+
+    // When
+    secondLike.settle();
+
+    // Then
+    await waitFor(() => expect(within(heart()).getByText('2')).toBeOnTheScreen());
+    expect(heart()).toBeSelected();
   });
 });
