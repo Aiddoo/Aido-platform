@@ -1,3 +1,6 @@
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
+
 import type { PlopTypes } from '@turbo/gen';
 
 const KEBAB_CASE = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/;
@@ -79,6 +82,50 @@ function addFiles(
   }));
 }
 
+const MODULE_ARRAYS = ['imports', 'exports'] as const;
+
+function toPascalCase(name: string): string {
+  return name
+    .split('-')
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join('');
+}
+
+// Context Module이 이미 있으면 새 slice Module을 imports·exports에 더한다. 없으면 add 액션이 만든다.
+function appendSliceToContextModule(
+  contextModulePath: string,
+  context: string,
+  slice: string,
+): string {
+  const sliceModule = `${toPascalCase(context)}${toPascalCase(slice)}Module`;
+  const source = readFileSync(contextModulePath, 'utf8');
+  if (source.includes(sliceModule)) {
+    return `${contextModulePath}에 ${sliceModule}이 이미 있다`;
+  }
+
+  const importLine = `import { ${sliceModule} } from "./${slice}/${context}-${slice}.module.js";`;
+  const lastImport = [...source.matchAll(/^import .*;$/gm)].at(-1);
+  if (lastImport?.index == null) {
+    throw new Error(`${contextModulePath}에서 import 위치를 찾지 못했다`);
+  }
+  const importEnd = lastImport.index + lastImport[0].length;
+  let next = `${source.slice(0, importEnd)}\n${importLine}${source.slice(importEnd)}`;
+
+  for (const key of MODULE_ARRAYS) {
+    const pattern = new RegExp(`(${key}: \\[)([^\\]]*)(\\])`);
+    if (!pattern.test(next)) {
+      throw new Error(`${contextModulePath}에서 ${key} 배열을 찾지 못했다`);
+    }
+    next = next.replace(pattern, (_match, open: string, items: string, close: string) => {
+      const kept = items.trim().replace(/,$/, '');
+      return `${open}${kept === '' ? '' : `${kept}, `}${sliceModule}${close}`;
+    });
+  }
+
+  writeFileSync(contextModulePath, next);
+  return `${contextModulePath}에 ${sliceModule}을 더했다`;
+}
+
 export default function generator(plop: PlopTypes.NodePlopAPI): void {
   plop.setGenerator('api-slice', {
     description: '규칙대로 서버 slice(도메인·UseCase·저장소·HTTP·테스트)와 계약 뼈대를 만든다',
@@ -112,8 +159,26 @@ export default function generator(plop: PlopTypes.NodePlopAPI): void {
       const isSerial = answers?.idType === 'serial';
       const data: IdTemplateData = { isSerial, idTsType: isSerial ? 'number' : 'string' };
 
+      const context = String(answers?.context);
+      const slice = String(answers?.slice);
+      const contextModulePath = join(
+        plop.getDestBasePath(),
+        `apps/api/src/modules/${context}/${context}.module.ts`,
+      );
+      const contextModuleActions: PlopTypes.ActionType[] = existsSync(contextModulePath)
+        ? [() => appendSliceToContextModule(contextModulePath, context, slice)]
+        : [
+            {
+              type: 'add',
+              path: 'apps/api/src/modules/{{context}}/{{context}}.module.ts',
+              templateFile: `${TEMPLATE_ROOT}/context.module.ts.hbs`,
+              abortOnFail: true,
+            },
+          ];
+
       return [
         ...addFiles('apps/api/src/modules/{{context}}/{{slice}}', SLICE_FILES, data),
+        ...contextModuleActions,
         ...addFiles('apps/api/test', TEST_FILES, data),
         ...addFiles('packages/api/src', CONTRACT_FILES, data),
         {
@@ -145,7 +210,7 @@ export default function generator(plop: PlopTypes.NodePlopAPI): void {
           [
             '다음을 직접 마무리한다:',
             '1. platform/database/schema/<context>.schema.ts에 테이블이 있는지 확인하고 pnpm db:generate',
-            '2. app.module.ts에 <Context><Slice>Module을 등록',
+            '2. app.module.ts에는 <Context>Module(modules/<context>/<context>.module.ts)만 import한다. slice Module을 직접 넣지 않는다',
             '3. pnpm --filter @aido/api build && pnpm format && pnpm check',
           ].join('\n'),
       ];

@@ -54,6 +54,8 @@ apps/api/src/
 - slice 기준은 "Aggregate Root 하나 = slice 하나"다. 필요한 파일만 만든다.
 - 버전은 HTTP 경계(`presentation/http/v<n>/`, `@aido/api/contracts/<resource>/v<n>/`)에만 둔다. Application·Domain에는 버전이 없다.
 - 새 slice는 생성기(`pnpm gen:api-slice`)로 시작한다. 생성기가 없는 동안에는 위 템플릿을 손으로 따른다.
+- AppModule은 `<context>.module.ts`(`<Context>Module`)만 import한다. slice Module을 AppModule에 직접 넣지 않는다. 생성기는 Context Module이 없으면 만들고, 있으면 새 slice Module을 그 imports·exports에 더한다.
+- 프레젠테이션은 계약을 `@aido/api/contracts/<aggregate>` 하위 경로로 import한다. 서버 테스트 별칭(`apps/api/vitest.config.ts`)도 같은 하위 경로를 해석한다.
 
 | Context       | slice                                                         |
 | ------------- | ------------------------------------------------------------- |

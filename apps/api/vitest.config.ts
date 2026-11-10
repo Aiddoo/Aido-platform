@@ -5,6 +5,7 @@ import { defineConfig } from "vitest/config";
 
 import { resolveTestDatabaseWorkerCount } from "./test/setup/test-database-workers.js";
 
+const packageApiSource = resolve(import.meta.dirname, "../../packages/api/src");
 const setupFiles = ["./test/setup/vitest.setup"];
 const databaseProject = {
   globalSetup: "./test/setup/global-setup",
@@ -26,16 +27,20 @@ export default defineConfig({
     }),
   ],
   resolve: {
-    alias: {
-      "#api": resolve(import.meta.dirname, "src"),
-      "#test": resolve(import.meta.dirname, "test"),
-      "@aido/api/errors": resolve(import.meta.dirname, "../../packages/api/src/errors/index"),
-      "@aido/api/vocabulary": resolve(
-        import.meta.dirname,
-        "../../packages/api/src/vocabulary/index",
-      ),
-      "@aido/api": resolve(import.meta.dirname, "../../packages/api/src/index"),
-    },
+    // 접두사 일치(`@aido/api`가 `@aido/api/contracts/x`까지 삼키는 일)를 막으려고 정확히 일치하는 정규식으로 둔다.
+    alias: [
+      { find: "#api", replacement: resolve(import.meta.dirname, "src") },
+      { find: "#test", replacement: resolve(import.meta.dirname, "test") },
+      { find: /^@aido\/api$/, replacement: `${packageApiSource}/index.ts` },
+      {
+        find: /^@aido\/api\/(common|errors|vocabulary)$/,
+        replacement: `${packageApiSource}/$1/index.ts`,
+      },
+      {
+        find: /^@aido\/api\/contracts\/([^/]+)$/,
+        replacement: `${packageApiSource}/contracts/$1/index.ts`,
+      },
+    ],
   },
   test: {
     globals: true,
