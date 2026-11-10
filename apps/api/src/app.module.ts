@@ -25,7 +25,7 @@ import {
 } from "#api/modules/identity/identity-settings.public";
 import { InsightsDailyCompletionsModule } from "#api/modules/insights/insights-daily-completions.public";
 import { InsightsWeeklyAchievementsModule } from "#api/modules/insights/insights-weekly-achievements.public";
-import { NotesMemosModule } from "#api/modules/notes/memos/notes-memos.public";
+import { NotesModule } from "#api/modules/notes/notes.module";
 import { NotificationDeliveryModule } from "#api/modules/notification/notification-delivery.public";
 import { NotificationRemindersModule } from "#api/modules/notification/notification-reminders.public";
 import { OperationsAdminModule } from "#api/modules/operations/operations-admin.public";
@@ -143,7 +143,7 @@ import { AppService } from "./app.service.js";
     SocialFriendsModule,
     HealthModule,
     SupportInquiriesModule,
-    NotesMemosModule,
+    NotesModule,
     NotificationDeliveryModule,
     SocialNudgesModule,
     SocialInvitesModule,
