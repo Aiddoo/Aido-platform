@@ -89,6 +89,7 @@
     "expo": "catalog:expo58",
     "expo-apple-authentication": "catalog:expo58",
     "expo-application": "catalog:expo58",
+    "expo-asset": "catalog:expo58",
     "expo-audio": "catalog:expo58",
     "expo-auth-session": "catalog:expo58",
     "expo-blur": "catalog:expo58",
