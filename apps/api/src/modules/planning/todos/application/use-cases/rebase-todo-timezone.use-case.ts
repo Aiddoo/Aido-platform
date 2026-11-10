@@ -1,18 +1,16 @@
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
-import {
-  MutationLockKeys,
-  type MutationLockPort,
-  type UnitOfWorkPort,
-} from "#api/shared/application/ports/index";
+import { type MutationLockPort, type UnitOfWorkPort } from "#api/shared/application/ports/index";
 import { resolveWallClockTimezone } from "#api/shared/domain/date/utils/timezone";
 
+import { TodoCategoryLockKeys } from "../../../categories/application/categories.lock-keys.js";
 import { resolveScheduledInstant } from "../../../shared/domain/todo-calendar.domain-service.js";
 import type { TodoSeriesRepositoryPort } from "../../../todo-series/application/ports/todo-series.repository.port.js";
 import type { TodoCachePort } from "../ports/todo-cache.port.js";
 import type { TodoOwnerTimezonePort } from "../ports/todo-owner-timezone.port.js";
 import type { TodoReminderSchedulerPort } from "../ports/todo-reminder-scheduler.port.js";
 import type { RebaseCandidate, TodoRepositoryPort } from "../ports/todo.repository.port.js";
+import { TodoLockKeys } from "../todos.lock-keys.js";
 import { TodoLogEvent } from "../todos.log-events.js";
 
 export const TODO_TIMEZONE_REBASE_BUDGET = {
@@ -157,8 +155,8 @@ export class RebaseTodoTimezoneUseCase {
   /** 카테고리 삭제·회차 채우기·이후 모두 수정과 같은 순서(사용자 잠금 → 규칙 행 → 할 일 행)다. */
   #acquireLocks(userId: string): Promise<void> {
     return this.#dependencies.mutationLock.acquire([
-      MutationLockKeys.todoCategory(userId),
-      MutationLockKeys.todoSortOrder(userId),
+      TodoCategoryLockKeys.userCategories(userId),
+      TodoLockKeys.sortOrder(userId),
     ]);
   }
 }

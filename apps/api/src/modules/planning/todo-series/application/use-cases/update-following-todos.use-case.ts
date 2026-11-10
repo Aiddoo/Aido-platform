@@ -5,12 +5,9 @@ import { isEqual, sortBy, uniq, uniqBy } from "es-toolkit";
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
-import {
-  MutationLockKeys,
-  type MutationLockPort,
-  type UnitOfWorkPort,
-} from "#api/shared/application/ports/index";
+import { type MutationLockPort, type UnitOfWorkPort } from "#api/shared/application/ports/index";
 
+import { TodoCategoryLockKeys } from "../../../categories/application/categories.lock-keys.js";
 import { addDaysToKey, dateKeyOf } from "../../../shared/domain/todo-calendar.domain-service.js";
 import { resolveScheduledInstant } from "../../../shared/domain/todo-calendar.domain-service.js";
 import type { CategoryOwnershipPort } from "../../../todos/application/ports/category-ownership.port.js";
@@ -25,6 +22,7 @@ import type {
   TodoRepositoryPort,
 } from "../../../todos/application/ports/todo.repository.port.js";
 import type { TodoReadModel } from "../../../todos/application/read-models/todo.read-model.js";
+import { TodoLockKeys } from "../../../todos/application/todos.lock-keys.js";
 import type { ApplyTodoEventsUseCase } from "../../../todos/application/use-cases/apply-todo-events.use-case.js";
 import { occurrenceHorizon } from "../../domain/occurrence-horizon.domain-service.js";
 import { RepeatRule, type RepeatSpec } from "../../domain/repeat-rule.vo.js";
@@ -121,9 +119,9 @@ export class UpdateFollowingTodosUseCase {
     const { todoRepository, seriesRepository, mutationLock } = this.#dependencies;
     // 카테고리 삭제와 같은 순서(잠금 → 규칙 행)로 잡아 교착을 막는다.
     await mutationLock.acquire([
-      MutationLockKeys.todoCategory(userId),
-      MutationLockKeys.todoSortOrder(userId),
-      MutationLockKeys.todo(id),
+      TodoCategoryLockKeys.userCategories(userId),
+      TodoLockKeys.sortOrder(userId),
+      TodoLockKeys.todo(id),
     ]);
     const todo = await todoRepository.findByIdAndUserId(id, userId);
     if (todo == null) {

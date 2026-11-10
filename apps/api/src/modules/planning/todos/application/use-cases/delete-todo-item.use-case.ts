@@ -2,16 +2,13 @@ import { ErrorCode } from "@aido/api/errors";
 
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
-import {
-  MutationLockKeys,
-  type MutationLockPort,
-  type UnitOfWorkPort,
-} from "#api/shared/application/ports/index";
+import { type MutationLockPort, type UnitOfWorkPort } from "#api/shared/application/ports/index";
 
 import { type TodoCachePort } from "../ports/todo-cache.port.js";
 import { type TodoReadRepositoryPort } from "../ports/todo-read.repository.port.js";
 import { type TodoRepositoryPort } from "../ports/todo.repository.port.js";
 import type { TodoReadModel } from "../read-models/todo.read-model.js";
+import { TodoLockKeys } from "../todos.lock-keys.js";
 import { TodoLogEvent } from "../todos.log-events.js";
 
 export interface DeleteTodoItemInput {
@@ -40,7 +37,7 @@ export class DeleteTodoItemUseCase {
     const { todoId, itemId, userId } = input;
 
     await this.#dependencies.unitOfWork.run(async () => {
-      await this.#dependencies.mutationLock.acquire([MutationLockKeys.todo(todoId)]);
+      await this.#dependencies.mutationLock.acquire([TodoLockKeys.todo(todoId)]);
       const todo = await this.#dependencies.todoRepository.findByIdAndUserId(todoId, userId);
       if (todo == null) {
         throw new ApplicationException(ErrorCode.TODO_0801, { todoId });

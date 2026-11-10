@@ -1,17 +1,16 @@
 import { ErrorCode } from "@aido/api/errors";
 
+import { TodoCategoryLockKeys } from "#api/modules/planning/categories/planning-categories.public";
 import type {
   CreateTodoData,
   StagedTodoCreation,
   StagedTodoCreatorPort,
 } from "#api/modules/planning/todos/planning-todos.public";
+import { TodoLockKeys } from "#api/modules/planning/todos/planning-todos.public";
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { AfterCommitTaskRegistryPort } from "#api/shared/application/ports/after-commit-task.registry.port";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
-import {
-  MutationLockKeys,
-  type MutationLockPort,
-} from "#api/shared/application/ports/mutation-lock.port";
+import { type MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
@@ -59,8 +58,8 @@ export class ConvertMemoToTodoUseCase {
       await mutationLock.acquire([
         MemoLockKeys.memo(memoId),
         MemoLockKeys.sortOrder(userId),
-        MutationLockKeys.todoCategory(command.userId),
-        MutationLockKeys.todoSortOrder(command.userId),
+        TodoCategoryLockKeys.userCategories(command.userId),
+        TodoLockKeys.sortOrder(command.userId),
       ]);
       const memo = await memoRepository.findByIdAndUserId(memoId, userId);
       if (memo == null) {

@@ -3,8 +3,9 @@ import { TODO_SERIES_LIMITS } from "@aido/api/vocabulary";
 
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
-import { MutationLockKeys, type MutationLockPort } from "#api/shared/application/ports/index";
+import { type MutationLockPort } from "#api/shared/application/ports/index";
 
+import { TodoCategoryLockKeys } from "../../../categories/application/categories.lock-keys.js";
 import { dateKeyOf } from "../../../shared/domain/todo-calendar.domain-service.js";
 import { resolveScheduledInstant } from "../../../shared/domain/todo-calendar.domain-service.js";
 import type { TodoReminderSchedulerPort } from "../../../todos/application/ports/todo-reminder-scheduler.port.js";
@@ -12,6 +13,7 @@ import type {
   CreatedOccurrence,
   TodoRepositoryPort,
 } from "../../../todos/application/ports/todo.repository.port.js";
+import { TodoLockKeys } from "../../../todos/application/todos.lock-keys.js";
 import { RepeatRule, type RepeatSpec } from "../../domain/repeat-rule.vo.js";
 import { TodoSeriesId } from "../../domain/todo-series-id.vo.js";
 import { TodoSeries } from "../../domain/todo-series.aggregate.js";
@@ -77,9 +79,9 @@ export class StartSeriesFromTodoUseCase {
     const { todoRepository, seriesRepository, materializer, todoReminder, mutationLock } =
       this.#dependencies;
     await mutationLock.acquire([
-      MutationLockKeys.todoCategory(userId),
-      MutationLockKeys.todoSortOrder(userId),
-      MutationLockKeys.todo(todoId),
+      TodoCategoryLockKeys.userCategories(userId),
+      TodoLockKeys.sortOrder(userId),
+      TodoLockKeys.todo(todoId),
     ]);
     await this.assertCanStart(todoId, userId);
     const todo = await todoRepository.findByIdAndUserId(todoId, userId);

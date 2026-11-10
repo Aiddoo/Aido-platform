@@ -18,6 +18,7 @@ import { GetResolvedAccessUseCase } from "#api/modules/access/entitlements/appli
 import { EntitlementCacheAdapter } from "#api/modules/access/entitlements/infrastructure/adapters/entitlement-cache.adapter";
 import { EntitlementReaderAdapter } from "#api/modules/access/entitlements/infrastructure/adapters/entitlement-reader.adapter";
 import { DrizzleAccessStateReader } from "#api/modules/access/entitlements/infrastructure/persistence/drizzle-access-state.reader";
+import { TodoCategoryLockKeys } from "#api/modules/planning/categories/application/categories.lock-keys";
 import type { TodoCategoryCachePort } from "#api/modules/planning/categories/application/ports/todo-category-cache.port";
 import { CreateTodoCategoryUseCase } from "#api/modules/planning/categories/application/use-cases/create-todo-category.use-case";
 import { ReorderTodoCategoryUseCase } from "#api/modules/planning/categories/application/use-cases/reorder-todo-category.use-case";
@@ -51,11 +52,7 @@ import {
 } from "#api/platform/database/schema/index";
 import { provideUseCase } from "#api/platform/di/provide-use-case";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
-import {
-  MutationLockKeys,
-  type MutationLockPort,
-  type UnitOfWorkPort,
-} from "#api/shared/application/ports/index";
+import { type MutationLockPort, type UnitOfWorkPort } from "#api/shared/application/ports/index";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { toIsoString } from "#api/shared/domain/time/instant";
 import { DateClock } from "#test/doubles/platform/date-clock";
@@ -1047,7 +1044,7 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
   it("20개 고유 이름 카테고리 생성 경쟁에서 FREE 한도와 연속 sortOrder를 보존한다", async () => {
     // Given
     const userId = await createUser(client, 0);
-    const lockKey = MutationLockKeys.todoCategory(userId);
+    const lockKey = TodoCategoryLockKeys.userCategories(userId);
     const coordinatedLock = new CoordinatedCategoryMutationLock(
       categoryTxHost,
       categoryLockAdapter,
@@ -1118,7 +1115,7 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
       .from(todoCategory)
       .where(eq(todoCategory.userId, userId))
       .orderBy(asc(todoCategory.sortOrder));
-    const lockKey = MutationLockKeys.todoCategory(userId);
+    const lockKey = TodoCategoryLockKeys.userCategories(userId);
     const coordinatedLock = new CoordinatedCategoryMutationLock(
       categoryTxHost,
       categoryLockAdapter,

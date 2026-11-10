@@ -6,7 +6,6 @@ import { ApplicationException } from "#api/shared/application/application.except
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import {
-  MutationLockKeys,
   type DomainEventPublisherPort,
   type MutationLockPort,
   type UnitOfWorkPort,
@@ -14,6 +13,7 @@ import {
 
 import { CategoryChangedEvent } from "../../domain/category-changed.event.js";
 import type { TodoCategory } from "../../domain/todo-category.aggregate.js";
+import { TodoCategoryLockKeys } from "../categories.lock-keys.js";
 import { TodoCategoryLogEvent } from "../categories.log-events.js";
 import { type TodoCategoryCachePort } from "../ports/todo-category-cache.port.js";
 import { type TodoCategoryRepositoryPort } from "../ports/todo-category.repository.port.js";
@@ -52,7 +52,7 @@ export class UpdateTodoCategoryUseCase {
   async execute(input: UpdateTodoCategoryInput): Promise<TodoCategory> {
     const { id, userId, data } = input;
     const updated = await this.#dependencies.unitOfWork.run(async () => {
-      await this.#dependencies.mutationLock.acquire([MutationLockKeys.todoCategory(userId)]);
+      await this.#dependencies.mutationLock.acquire([TodoCategoryLockKeys.userCategories(userId)]);
       const category = await this.#dependencies.repository.findByIdAndUserId(id, userId);
       if (category == null) {
         throw new ApplicationException(ErrorCode.TODO_CATEGORY_0851, {

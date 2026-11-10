@@ -2,12 +2,9 @@ import { ErrorCode } from "@aido/api/errors";
 import type { TodoUpdateScope } from "@aido/api/vocabulary";
 
 import { ApplicationException } from "#api/shared/application/application.exception";
-import {
-  MutationLockKeys,
-  type MutationLockPort,
-  type UnitOfWorkPort,
-} from "#api/shared/application/ports/index";
+import { type MutationLockPort, type UnitOfWorkPort } from "#api/shared/application/ports/index";
 
+import { TodoCategoryLockKeys } from "../../../categories/application/categories.lock-keys.js";
 import { TodoRescheduledEvent } from "../../../shared/domain/todo-rescheduled.event.js";
 import type { StartSeriesFromTodoUseCase } from "../../../todo-series/application/use-cases/start-series-from-todo.use-case.js";
 import type { StopTodoSeriesUseCase } from "../../../todo-series/application/use-cases/stop-todo-series.use-case.js";
@@ -15,6 +12,7 @@ import type { UpdateFollowingTodosUseCase } from "../../../todo-series/applicati
 import type { RepeatSpec } from "../../../todo-series/domain/repeat-rule.vo.js";
 import type { TodoReadRepositoryPort } from "../ports/todo-read.repository.port.js";
 import type { TodoReadModel } from "../read-models/todo.read-model.js";
+import { TodoLockKeys } from "../todos.lock-keys.js";
 import type { ApplyTodoEventsUseCase } from "./apply-todo-events.use-case.js";
 import type { ResolveTodoTimezoneUseCase } from "./resolve-todo-timezone.use-case.js";
 import type { UpdateTodoData } from "./update-todo.use-case.js";
@@ -165,9 +163,9 @@ export class EditTodoUseCase {
   /** 단계마다 따로 잠그면 다른 요청과 순서가 엇갈릴 수 있어 쓸 잠금을 정렬해 한 번에 잡는다. */
   #acquireLocks(id: number, userId: string): Promise<void> {
     return this.#dependencies.mutationLock.acquire([
-      MutationLockKeys.todoCategory(userId),
-      MutationLockKeys.todoSortOrder(userId),
-      MutationLockKeys.todo(id),
+      TodoCategoryLockKeys.userCategories(userId),
+      TodoLockKeys.sortOrder(userId),
+      TodoLockKeys.todo(id),
     ]);
   }
 

@@ -14,6 +14,7 @@ import {
   UpdateFollowingTodosUseCase,
   type UpdateFollowingTodosInput,
 } from "#api/modules/planning/todo-series/application/use-cases/update-following-todos.use-case";
+import { TodoLockKeys } from "#api/modules/planning/todos/application/todos.lock-keys";
 import { CreateTodoUseCase } from "#api/modules/planning/todos/application/use-cases/create-todo.use-case";
 import { DeleteTodoUseCase } from "#api/modules/planning/todos/application/use-cases/delete-todo.use-case";
 import {
@@ -30,7 +31,6 @@ import {
   user as userTable,
 } from "#api/platform/database/schema/index";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
-import { MutationLockKeys } from "#api/shared/application/ports/index";
 import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
 import { parseLocalDateTime } from "#api/shared/domain/date/utils/timezone";
 import { instantFromDate, toIsoString } from "#api/shared/domain/time/instant";
@@ -1415,7 +1415,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
         const release = Promise.withResolvers<void>();
         const holder = client.transaction(async (tx) => {
           await tx.execute(
-            sql`SELECT pg_advisory_xact_lock(hashtextextended(${MutationLockKeys.todoSortOrder(userId)}, 0))`,
+            sql`SELECT pg_advisory_xact_lock(hashtextextended(${TodoLockKeys.sortOrder(userId)}, 0))`,
           );
           held.resolve();
           await release.promise;

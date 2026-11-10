@@ -6,17 +6,18 @@ import { ApplicationException } from "#api/shared/application/application.except
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import {
-  MutationLockKeys,
   type MutationLockPort,
   type UnitOfWorkPort,
 } from "#api/shared/application/ports/index";
 
+import { TodoCategoryLockKeys } from "../../../categories/application/categories.lock-keys.js";
 import type { Todo, TodoDetailsPatch, TodoEvent } from "../../../shared/domain/todo.aggregate.js";
 import { type CategoryOwnershipPort } from "../ports/category-ownership.port.js";
 import { type TodoCachePort } from "../ports/todo-cache.port.js";
 import { type TodoReadRepositoryPort } from "../ports/todo-read.repository.port.js";
 import { type TodoRepositoryPort, type TodoUpdatePatch } from "../ports/todo.repository.port.js";
 import type { TodoReadModel } from "../read-models/todo.read-model.js";
+import { TodoLockKeys } from "../todos.lock-keys.js";
 import { TodoLogEvent } from "../todos.log-events.js";
 import type { ApplyTodoEventsUseCase } from "./apply-todo-events.use-case.js";
 
@@ -87,8 +88,8 @@ export class UpdateTodoUseCase {
   async apply(input: UpdateTodoInput): Promise<AppliedTodoUpdate> {
     const { id, userId, data, timezone } = input;
     await this.#dependencies.mutationLock.acquire([
-      MutationLockKeys.todo(id),
-      ...(data.categoryId == null ? [] : [MutationLockKeys.todoCategory(userId)]),
+      TodoLockKeys.todo(id),
+      ...(data.categoryId == null ? [] : [TodoCategoryLockKeys.userCategories(userId)]),
     ]);
     if (data.categoryId != null) {
       // 일반 PATCH는 전용 category endpoint와 달리 활성 한도를 검사하지 않는다.

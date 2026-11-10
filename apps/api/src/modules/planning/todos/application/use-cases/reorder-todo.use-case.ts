@@ -3,11 +3,7 @@ import type { ReorderPosition } from "@aido/api/vocabulary";
 
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
-import {
-  MutationLockKeys,
-  type MutationLockPort,
-  type UnitOfWorkPort,
-} from "#api/shared/application/ports/index";
+import { type MutationLockPort, type UnitOfWorkPort } from "#api/shared/application/ports/index";
 
 import {
   planReorderRelativeTo,
@@ -18,6 +14,7 @@ import { type TodoCachePort } from "../ports/todo-cache.port.js";
 import { type TodoReadRepositoryPort } from "../ports/todo-read.repository.port.js";
 import { type TodoRepositoryPort } from "../ports/todo.repository.port.js";
 import type { TodoReadModel } from "../read-models/todo.read-model.js";
+import { TodoLockKeys } from "../todos.lock-keys.js";
 import { TodoLogEvent } from "../todos.log-events.js";
 
 export interface ReorderTodoInput {
@@ -51,9 +48,9 @@ export class ReorderTodoUseCase {
 
     await this.#dependencies.unitOfWork.run(async () => {
       await this.#dependencies.mutationLock.acquire([
-        MutationLockKeys.todoSortOrder(userId),
-        MutationLockKeys.todo(id),
-        ...(targetTodoId == null ? [] : [MutationLockKeys.todo(targetTodoId)]),
+        TodoLockKeys.sortOrder(userId),
+        TodoLockKeys.todo(id),
+        ...(targetTodoId == null ? [] : [TodoLockKeys.todo(targetTodoId)]),
       ]);
       const todo = await this.#dependencies.todoRepository.findByIdAndUserId(id, userId);
       if (todo == null) {

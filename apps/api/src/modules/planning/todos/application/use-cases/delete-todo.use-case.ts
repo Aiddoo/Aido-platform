@@ -5,11 +5,11 @@ import { match } from "ts-pattern";
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import {
-  MutationLockKeys,
   type MutationLockPort,
   type UnitOfWorkPort,
 } from "#api/shared/application/ports/index";
 
+import { TodoCategoryLockKeys } from "../../../categories/application/categories.lock-keys.js";
 import { addDaysToKey, dateKeyOf } from "../../../shared/domain/todo-calendar.domain-service.js";
 import type { TodoSeriesRepositoryPort } from "../../../todo-series/application/ports/todo-series.repository.port.js";
 import type { PublishTodoSeriesEditUseCase } from "../../../todo-series/application/use-cases/publish-todo-series-edit.use-case.js";
@@ -17,6 +17,7 @@ import { TodoOccurrencesChangedEvent } from "../../../todo-series/domain/todo-oc
 import { type TodoCachePort } from "../ports/todo-cache.port.js";
 import type { TodoReminderSchedulerPort } from "../ports/todo-reminder-scheduler.port.js";
 import { type TodoRepositoryPort } from "../ports/todo.repository.port.js";
+import { TodoLockKeys } from "../todos.lock-keys.js";
 import { TodoLogEvent } from "../todos.log-events.js";
 import type { ApplyTodoEventsUseCase } from "./apply-todo-events.use-case.js";
 
@@ -61,8 +62,8 @@ export class DeleteTodoUseCase {
 
     await this.#dependencies.unitOfWork.run(async () => {
       await this.#dependencies.mutationLock.acquire([
-        MutationLockKeys.todoCategory(userId),
-        MutationLockKeys.todo(id),
+        TodoCategoryLockKeys.userCategories(userId),
+        TodoLockKeys.todo(id),
       ]);
       const todo = await this.#dependencies.todoRepository.findByIdAndUserId(id, userId);
       if (todo == null) {
@@ -93,7 +94,7 @@ export class DeleteTodoUseCase {
       this.#dependencies;
     const deleted = await unitOfWork.run(async () => {
       // 카테고리 삭제와 같은 순서(잠금 → 규칙 행)로 잡아 교착을 막는다.
-      await mutationLock.acquire([MutationLockKeys.todoCategory(userId)]);
+      await mutationLock.acquire([TodoCategoryLockKeys.userCategories(userId)]);
       const todo = await todoRepository.findByIdAndUserId(id, userId);
       if (todo == null) {
         throw new ApplicationException(ErrorCode.TODO_0801, { todoId: id });

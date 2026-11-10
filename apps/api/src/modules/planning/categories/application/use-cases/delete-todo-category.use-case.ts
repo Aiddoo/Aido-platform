@@ -6,13 +6,14 @@ import { ApplicationException } from "#api/shared/application/application.except
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import {
-  MutationLockKeys,
   type DomainEventPublisherPort,
   type MutationLockPort,
   type UnitOfWorkPort,
 } from "#api/shared/application/ports/index";
 
+import { TodoLockKeys } from "../../../todos/application/todos.lock-keys.js";
 import { CategoryChangedEvent } from "../../domain/category-changed.event.js";
+import { TodoCategoryLockKeys } from "../categories.lock-keys.js";
 import { TodoCategoryLogEvent } from "../categories.log-events.js";
 import { type TodoCategoryCachePort } from "../ports/todo-category-cache.port.js";
 import { type TodoCategoryRepositoryPort } from "../ports/todo-category.repository.port.js";
@@ -59,8 +60,8 @@ export class DeleteTodoCategoryUseCase {
 
     await this.#dependencies.unitOfWork.run(async () => {
       await this.#dependencies.mutationLock.acquire([
-        MutationLockKeys.todoCategory(userId),
-        MutationLockKeys.todoSortOrder(userId),
+        TodoCategoryLockKeys.userCategories(userId),
+        TodoLockKeys.sortOrder(userId),
       ]);
 
       const category = await this.#dependencies.repository.findByIdAndUserId(categoryId, userId);

@@ -2,8 +2,9 @@ import { ErrorCode } from "@aido/api/errors";
 
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
-import { MutationLockKeys, type MutationLockPort } from "#api/shared/application/ports/index";
+import { type MutationLockPort } from "#api/shared/application/ports/index";
 
+import { TodoCategoryLockKeys } from "../../../categories/application/categories.lock-keys.js";
 import { addDaysToKey, dateKeyOf } from "../../../shared/domain/todo-calendar.domain-service.js";
 import type { TodoReminderSchedulerPort } from "../../../todos/application/ports/todo-reminder-scheduler.port.js";
 import type { TodoRepositoryPort } from "../../../todos/application/ports/todo.repository.port.js";
@@ -51,7 +52,7 @@ export class StopTodoSeriesUseCase {
     const { todoId, userId } = input;
     const { todoRepository, seriesRepository, todoReminder, mutationLock } = this.#dependencies;
     // 카테고리 삭제와 같은 순서(잠금 → 규칙 행)로 잡아 교착을 막는다.
-    await mutationLock.acquire([MutationLockKeys.todoCategory(userId)]);
+    await mutationLock.acquire([TodoCategoryLockKeys.userCategories(userId)]);
     const todo = await todoRepository.findByIdAndUserId(todoId, userId);
     if (todo == null) {
       throw new ApplicationException(ErrorCode.TODO_0801, { todoId });
