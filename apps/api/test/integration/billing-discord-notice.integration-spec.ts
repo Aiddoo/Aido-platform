@@ -16,6 +16,7 @@ import { DrizzleAdminNoticeUserReader } from "#api/modules/operations/admin-noti
 import { createEntityId } from "#api/platform/database/entity-id";
 import { account, user as userTable, userProfile } from "#api/platform/database/schema/index";
 import { JobQueuePort } from "#api/shared/application/ports/index";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantFromDate } from "#api/shared/domain/time/instant";
 import { SubscriptionEventBuilder } from "#test/builders/index";
 import type { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
@@ -266,7 +267,7 @@ describe("DrizzleAdminNoticeUserReader (실제 PostgreSQL)", () => {
     await client.insert(userTable).values(deleted);
 
     // When / Then
-    await expect(reader.findById(deleted.id)).resolves.toBeNull();
+    await expect(reader.findById(UserId.reconstitute(deleted.id))).resolves.toBeNull();
   });
 
   it("프로필·계정이 없는 사용자는 닉네임·가입 방식을 비운다", async () => {
@@ -275,7 +276,7 @@ describe("DrizzleAdminNoticeUserReader (실제 PostgreSQL)", () => {
     await client.insert(userTable).values(bare);
 
     // When
-    const found = await reader.findById(bare.id);
+    const found = await reader.findById(UserId.reconstitute(bare.id));
 
     // Then
     expect(found).toEqual({
