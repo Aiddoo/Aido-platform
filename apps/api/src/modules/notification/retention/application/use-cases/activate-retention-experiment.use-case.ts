@@ -1,6 +1,5 @@
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
-import { instantToDate } from "#api/shared/domain/time/instant";
 
 import type { RetentionConfigPort } from "../ports/retention-config.port.js";
 import type { RetentionRepositoryPort } from "../ports/retention.repository.port.js";
@@ -23,7 +22,7 @@ export class ActivateRetentionExperimentUseCase {
     if (!this.#dependencies.config.enabled) {
       return;
     }
-    const startedAt = instantToDate(this.#dependencies.clock.now());
+    const startedAt = this.#dependencies.clock.now();
     await this.#dependencies.unitOfWork.run(() =>
       this.#dependencies.repository.activate(userId, startedAt),
     );

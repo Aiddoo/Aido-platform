@@ -17,30 +17,32 @@ export interface StoredRetentionStage {
   readonly candidate: RetentionStageCandidate;
   status: StageStatus;
   skipReason: string | null;
-  processedAt: Date | null;
+  processedAt: Temporal.Instant | null;
   notificationId: number | null;
 }
 
 interface RetentionEnrollment {
   readonly userId: string;
   readonly variant: RetentionVariant;
-  startedAt: Date | null;
+  startedAt: Temporal.Instant | null;
 }
 
 interface D7Result {
   readonly returnedWithinD7: boolean;
   readonly todoActionWithinD7: boolean;
-  readonly measuredAt: Date;
+  readonly measuredAt: Temporal.Instant;
 }
 
 function isAfter(candidate: RetentionStageCandidate, cursor: RetentionStageCursor): boolean {
-  const createdAt = candidate.stageCreatedAt.getTime();
-  const cursorAt = cursor.createdAt.getTime();
-  return createdAt > cursorAt || (createdAt === cursorAt && candidate.stageId > cursor.stageId);
+  const order = Temporal.Instant.compare(candidate.stageCreatedAt, cursor.createdAt);
+  return order > 0 || (order === 0 && candidate.stageId > cursor.stageId);
 }
 
 function byCreation(left: StoredRetentionStage, right: StoredRetentionStage): number {
-  const diff = left.candidate.stageCreatedAt.getTime() - right.candidate.stageCreatedAt.getTime();
+  const diff = Temporal.Instant.compare(
+    left.candidate.stageCreatedAt,
+    right.candidate.stageCreatedAt,
+  );
   return diff === 0 ? left.candidate.stageId.localeCompare(right.candidate.stageId) : diff;
 }
 
@@ -57,17 +59,17 @@ export class InMemoryRetentionRepository extends RetentionRepositoryPort {
   readonly stages: StoredRetentionStage[];
   readonly enrollments: RetentionEnrollment[] = [];
   readonly d7Results = new Map<string, D7Result>();
-  readonly dueQueries: Date[] = [];
+  readonly dueQueries: Temporal.Instant[] = [];
   // 이 단계를 표시하려 하면 실패한다(발행 도중 오류를 흉내 낸다)
   failingStageIds = new Set<string>();
   readonly #profiles = new Map<string, RetentionUserProfile>();
   readonly #assignmentIdByUser = new Map<string, string>();
-  readonly #now: () => Date;
+  readonly #now: () => Temporal.Instant;
   #sequence = 0;
 
   constructor(
     candidates: readonly RetentionStageCandidate[] = [],
-    now: () => Date = () => new Date(),
+    now: () => Temporal.Instant = () => Temporal.Instant.fromEpochMilliseconds(Date.now()),
   ) {
     super();
     this.#now = now;
@@ -83,7 +85,7 @@ export class InMemoryRetentionRepository extends RetentionRepositoryPort {
   async enroll(input: {
     readonly userId: string;
     readonly variant: RetentionVariant;
-    readonly startedAt: Date | null;
+    readonly startedAt: Temporal.Instant | null;
   }): Promise<void> {
     if (this.enrollments.some((enrollment) => enrollment.userId === input.userId)) {
       return;
@@ -100,7 +102,7 @@ export class InMemoryRetentionRepository extends RetentionRepositoryPort {
     this.#profiles.set(userId, profile);
   }
 
-  async activate(userId: string, startedAt: Date): Promise<boolean> {
+  async activate(userId: string, startedAt: Temporal.Instant): Promise<boolean> {
     const enrollment = this.enrollments.find((item) => item.userId === userId);
     if (enrollment == null || enrollment.startedAt != null) {
       return false;
@@ -111,7 +113,7 @@ export class InMemoryRetentionRepository extends RetentionRepositoryPort {
   }
 
   async findDueStages(params: {
-    readonly dueAt: Date;
+    readonly dueAt: Temporal.Instant;
     readonly after?: RetentionStageCursor;
     readonly limit: number;
   }): Promise<RetentionStageCandidate[]> {
@@ -133,15 +135,23 @@ export class InMemoryRetentionRepository extends RetentionRepositoryPort {
       .map(({ candidate }) => candidate);
   }
 
-  async markStageSkipped(stageId: string, reason: string, processedAt: Date): Promise<boolean> {
+  async markStageSkipped(
+    stageId: string,
+    reason: string,
+    processedAt: Temporal.Instant,
+  ): Promise<boolean> {
     return this.#transition(stageId, { status: "SKIPPED", skipReason: reason, processedAt });
   }
 
-  async markStageOutboxed(stageId: string, processedAt: Date): Promise<boolean> {
+  async markStageOutboxed(stageId: string, processedAt: Temporal.Instant): Promise<boolean> {
     return this.#transition(stageId, { status: "OUTBOXED", skipReason: null, processedAt });
   }
 
-  async linkStageNotification(stageId: string, notificationId: number): Promise<void> {
+  async linkStageNotification(
+    stageId: string,
+    notificationId: number,
+    _linkedAt: Temporal.Instant,
+  ): Promise<void> {
     const stage = this.#require(stageId);
     stage.notificationId = notificationId;
   }
@@ -150,7 +160,7 @@ export class InMemoryRetentionRepository extends RetentionRepositoryPort {
     readonly assignmentId: string;
     readonly returnedWithinD7: boolean;
     readonly todoActionWithinD7: boolean;
-    readonly measuredAt: Date;
+    readonly measuredAt: Temporal.Instant;
   }): Promise<void> {
     const { assignmentId, ...result } = input;
     this.d7Results.set(assignmentId, result);
@@ -176,7 +186,7 @@ export class InMemoryRetentionRepository extends RetentionRepositoryPort {
   }
 
   // 한 번에 만든 네 단계는 생성 시각이 같고 ID 순서가 생성 순서다
-  #createStages(userId: string, variant: RetentionVariant, startedAt: Date): void {
+  #createStages(userId: string, variant: RetentionVariant, startedAt: Temporal.Instant): void {
     const assignmentId = this.#assignmentIdByUser.get(userId) ?? userId;
     const stageCreatedAt = this.#now();
     for (const stage of RETENTION_STAGE_NAMES) {

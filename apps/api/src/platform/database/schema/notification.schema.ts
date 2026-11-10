@@ -3,7 +3,6 @@ import {
   pgTable,
   integer,
   text,
-  timestamp,
   varchar,
   boolean,
   serial,
@@ -444,10 +443,12 @@ export const retentionExperimentAssignment = pgTable(
   "RetentionExperimentAssignment",
   {
     // 1.15.2에서 DROP: 코드 참조 없음(롤백 호환 때문에 1.15.1은 유지)
-    assignedAt: timestamp({ precision: 3 }).defaultNow().notNull(),
+    assignedAt: instant()
+      .default(sql`now()`)
+      .notNull(),
     experimentKey: varchar({ length: 100 }).notNull(),
     id: text().primaryKey().$defaultFn(createEntityId),
-    startedAt: timestamp({ precision: 3 }),
+    startedAt: instant(),
     userId: text().notNull(),
     variant: retentionExperimentVariant().notNull(),
   },
@@ -477,7 +478,9 @@ export const retentionExperimentResult = pgTable(
   {
     assignmentId: text().notNull(),
     id: text().primaryKey().$defaultFn(createEntityId),
-    measuredAt: timestamp({ precision: 3 }).defaultNow().notNull(),
+    measuredAt: instant()
+      .default(sql`now()`)
+      .notNull(),
     returnedWithinD7: boolean().notNull(),
     todoActionWithinD7: boolean().notNull(),
   },
@@ -501,17 +504,17 @@ export const retentionExperimentStage = pgTable(
   "RetentionExperimentStage",
   {
     assignmentId: text().notNull(),
-    createdAt: timestamp({ precision: 3 }).defaultNow().notNull(),
+    createdAt: instant()
+      .default(sql`now()`)
+      .notNull(),
     id: text().primaryKey().$defaultFn(createEntityId),
     notificationId: integer(),
-    processedAt: timestamp({ precision: 3 }),
+    processedAt: instant(),
     skipReason: varchar({ length: 100 }),
     stage: retentionExperimentStageName().notNull(),
     status: retentionExperimentStageStatus().default("SCHEDULED").notNull(),
-    updatedAt: timestamp({ precision: 3 })
-      .notNull()
-      .$defaultFn(() => new Date())
-      .$onUpdate(() => new Date()),
+    // 리텐션 저장소가 단계를 만들고 바꿀 때마다 그 시각으로 명시한다
+    updatedAt: instant().notNull(),
   },
   (table) => [
     foreignKey({

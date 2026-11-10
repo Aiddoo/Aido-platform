@@ -1,5 +1,6 @@
 import {
   DEFAULT_DELIVERY_TIMEZONE,
+  localDateIn,
   normalizeIanaTimezone,
   resolveDeliveryTimezone,
   resolveTimezone,
@@ -55,5 +56,37 @@ describe("시간대 이름 해석", () => {
     // Then
     expect(timezone).toBe("UTC");
     expect(resolveWallClockTimezone(undefined, null)).toBe(DEFAULT_DELIVERY_TIMEZONE);
+  });
+
+  it.each([
+    {
+      label: "서울 자정 직전",
+      at: "2026-11-09T14:59:59.999Z",
+      zone: "Asia/Seoul",
+      date: "2026-11-09",
+    },
+    { label: "서울 자정", at: "2026-11-09T15:00:00.000Z", zone: "Asia/Seoul", date: "2026-11-10" },
+    {
+      label: "LA 서머타임 종료일",
+      at: "2026-11-01T08:30:00.000Z",
+      zone: "America/Los_Angeles",
+      date: "2026-11-01",
+    },
+    { label: "윤일", at: "2028-02-29T12:00:00.000Z", zone: "UTC", date: "2028-02-29" },
+    {
+      label: "잘못된 시간대는 UTC",
+      at: "2026-11-09T20:00:00.000Z",
+      zone: "Mars/Olympus",
+      date: "2026-11-09",
+    },
+  ])("localDateIn: $label", ({ at, zone, date }) => {
+    // Given
+    const instant = Temporal.Instant.from(at);
+
+    // When
+    const localDate = localDateIn(instant, zone);
+
+    // Then
+    expect(localDate.toString()).toBe(date);
   });
 });

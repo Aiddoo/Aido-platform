@@ -29,7 +29,11 @@ describe("ActivateRetentionExperimentUseCase — 최초 인증 시점 시작", (
 
     // Then
     expect(repository.enrollments).toEqual([
-      { userId: "new-user", variant: "TREATMENT", startedAt: new Date("2026-07-15T00:00:00Z") },
+      {
+        userId: "new-user",
+        variant: "TREATMENT",
+        startedAt: Temporal.Instant.from("2026-07-15T00:00:00Z"),
+      },
     ]);
   });
 

@@ -5,7 +5,7 @@ import type { SupportedLocale } from "#api/shared/domain/locale";
 export interface RetentionD7Result {
   readonly returnedWithinD7: boolean;
   readonly todoActionWithinD7: boolean;
-  readonly measuredAt: Date;
+  readonly measuredAt: Temporal.Instant;
 }
 
 export interface RetentionRepositoryContractSubject {
@@ -18,21 +18,21 @@ export interface RetentionRepositoryContractSubject {
 }
 
 // 서울 09:00에 시작한 사용자. D0는 2시간 뒤, D1은 다음 날 10:30부터 결정할 때가 된다
-const STARTED_AT = new Date("2026-07-15T00:00:00.000Z");
-const D0_ONLY_DUE_AT = new Date("2026-07-15T03:00:00.000Z");
-const ALL_DUE_AT = new Date("2026-08-15T00:00:00.000Z");
-const PROCESSED_AT = new Date("2026-07-15T03:00:00.000Z");
+const STARTED_AT = Temporal.Instant.from("2026-07-15T00:00:00.000Z");
+const D0_ONLY_DUE_AT = Temporal.Instant.from("2026-07-15T03:00:00.000Z");
+const ALL_DUE_AT = Temporal.Instant.from("2026-08-15T00:00:00.000Z");
+const PROCESSED_AT = Temporal.Instant.from("2026-07-15T03:00:00.000Z");
 
 function byCreation(left: RetentionStageCandidate, right: RetentionStageCandidate): number {
   return (
-    left.stageCreatedAt.getTime() - right.stageCreatedAt.getTime() ||
+    Temporal.Instant.compare(left.stageCreatedAt, right.stageCreatedAt) ||
     left.stageId.localeCompare(right.stageId)
   );
 }
 
 async function dueStagesOf(
   repository: RetentionRepositoryPort,
-  dueAt: Date = ALL_DUE_AT,
+  dueAt: Temporal.Instant = ALL_DUE_AT,
 ): Promise<RetentionStageCandidate[]> {
   return repository.findDueStages({ dueAt, limit: 200 });
 }
@@ -92,9 +92,7 @@ export function describeRetentionRepositoryContract(
       expect([first, second, notEnrolled]).toEqual([true, false, false]);
       const stages = await dueStagesOf(repository);
       expect(stageNamesOf(stages)).toEqual(["D0", "D1", "D3", "D7"]);
-      expect(stages.every((stage) => stage.startedAt.getTime() === STARTED_AT.getTime())).toBe(
-        true,
-      );
+      expect(stages.every((stage) => stage.startedAt.equals(STARTED_AT))).toBe(true);
     });
 
     it("결정할 때가 된 단계만 고른다", async () => {
@@ -126,7 +124,7 @@ export function describeRetentionRepositoryContract(
       // When
       const all = await dueStagesOf(repository);
       const paged: string[] = [];
-      let after: { createdAt: Date; stageId: string } | undefined;
+      let after: { createdAt: Temporal.Instant; stageId: string } | undefined;
       for (;;) {
         const page = await repository.findDueStages({
           dueAt: ALL_DUE_AT,
@@ -193,7 +191,7 @@ export function describeRetentionRepositoryContract(
       const { repository } = await createSubject();
 
       // When
-      const linking = repository.linkStageNotification("missing-stage", 1);
+      const linking = repository.linkStageNotification("missing-stage", 1, PROCESSED_AT);
 
       // Then
       await expect(linking).rejects.toThrow();
@@ -215,20 +213,20 @@ export function describeRetentionRepositoryContract(
         assignmentId,
         returnedWithinD7: false,
         todoActionWithinD7: false,
-        measuredAt: new Date("2026-07-22T01:30:00.000Z"),
+        measuredAt: Temporal.Instant.from("2026-07-22T01:30:00.000Z"),
       });
       await repository.recordD7Result({
         assignmentId,
         returnedWithinD7: true,
         todoActionWithinD7: true,
-        measuredAt: new Date("2026-07-22T01:35:00.000Z"),
+        measuredAt: Temporal.Instant.from("2026-07-22T01:35:00.000Z"),
       });
 
       // Then
       expect(await d7ResultOf(assignmentId)).toEqual({
         returnedWithinD7: true,
         todoActionWithinD7: true,
-        measuredAt: new Date("2026-07-22T01:35:00.000Z"),
+        measuredAt: Temporal.Instant.from("2026-07-22T01:35:00.000Z"),
       });
     });
   });

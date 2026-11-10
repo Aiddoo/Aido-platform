@@ -681,7 +681,7 @@ export class DrizzleSchedulerReader
           retentionAssignments: {
             experimentKey: "onboarding_v2_d7",
             variant: "TREATMENT" as const,
-            startedAt: { gte: subtractDays(8) },
+            startedAt: { gte: instantFromDate(subtractDays(8)) },
           },
         },
       },

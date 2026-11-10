@@ -1,8 +1,7 @@
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
-import { localDateInTimezone } from "#api/shared/domain/date/utils/timezone";
-import { instantToDate } from "#api/shared/domain/time/instant";
+import { localDateIn } from "#api/shared/domain/time/time-zone-name";
 
 import { type RetentionNotificationCopySelection } from "../../../push/application/messages/notification-copy-catalog.messages.js";
 import { createRetentionNotificationMessage } from "../../../push/application/messages/notification.messages.js";
@@ -86,21 +85,24 @@ export class ProcessRetentionStagesUseCase {
     }
   }
 
-  #now(): Date {
-    return instantToDate(this.#dependencies.clock.now());
+  #now(): Temporal.Instant {
+    return this.#dependencies.clock.now();
   }
 
-  async #processCandidate(candidate: RetentionStageCandidate, now: Date): Promise<void> {
-    const returnedWithinWindow = Boolean(
-      candidate.lastActiveAt &&
-      localDateInTimezone(candidate.lastActiveAt, candidate.timezone) >
-        localDateInTimezone(candidate.startedAt, candidate.timezone),
-    );
-    const activeToday = Boolean(
-      candidate.lastActiveAt &&
-      localDateInTimezone(candidate.lastActiveAt, candidate.timezone) ===
-        localDateInTimezone(now, candidate.timezone),
-    );
+  async #processCandidate(
+    candidate: RetentionStageCandidate,
+    now: Temporal.Instant,
+  ): Promise<void> {
+    const { lastActiveAt, startedAt, timezone } = candidate;
+    const returnedWithinWindow =
+      lastActiveAt != null &&
+      Temporal.PlainDate.compare(
+        localDateIn(lastActiveAt, timezone),
+        localDateIn(startedAt, timezone),
+      ) > 0;
+    const activeToday =
+      lastActiveAt != null &&
+      localDateIn(lastActiveAt, timezone).equals(localDateIn(now, timezone));
 
     if (candidate.variant === "CONTROL" && candidate.stage !== "D7") {
       await this.#dependencies.repository.markStageSkipped(candidate.stageId, "CONTROL_GROUP", now);
@@ -166,7 +168,7 @@ export class ProcessRetentionStagesUseCase {
         locale: candidate.locale,
         selectionContext: {
           recipientId: candidate.userId,
-          occurrenceKey: localDateInTimezone(now, candidate.timezone),
+          occurrenceKey: localDateIn(now, candidate.timezone).toString(),
         },
       });
       if (!(await this.#dependencies.repository.markStageOutboxed(candidate.stageId, now))) {
@@ -190,6 +192,7 @@ export class ProcessRetentionStagesUseCase {
         await this.#dependencies.repository.linkStageNotification(
           candidate.stageId,
           notification.id,
+          now,
         );
       }
     });

@@ -22,6 +22,11 @@ export function resolveTimezone(value: unknown): string {
   return normalizeIanaTimezone(value) ?? UTC;
 }
 
+/** 저장된 시간대(잘못되면 UTC)에서 그 순간이 속한 달력 날짜 */
+export function localDateIn(instant: Temporal.Instant, timezone: unknown): Temporal.PlainDate {
+  return instant.toZonedDateTimeISO(resolveTimezone(timezone)).toPlainDate();
+}
+
 /**
  * 알림 발송·자격·야간 광고 판정용. 앱이 요청마다 X-Timezone을 보내므로 저장된 UTC는 헤더를 못 받아
  * 기본값에 머문 사용자이고, 발송 시각과 법정 야간(21:00–08:00 KST)을 서울로 판정하는 편이 안전하다.

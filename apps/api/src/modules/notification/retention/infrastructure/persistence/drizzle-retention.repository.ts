@@ -22,6 +22,7 @@ import {
 } from "#api/platform/database/schema/index";
 import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { toSupportedLocale } from "#api/shared/domain/locale";
+import { instantFromDate, toIsoString } from "#api/shared/domain/time/instant";
 
 import type { RetentionRepositoryPort } from "../../application/ports/retention.repository.port.js";
 import type {
@@ -36,21 +37,27 @@ import {
   type RetentionVariant,
 } from "../../domain/retention.constants.js";
 
+// raw SQL 결과는 칸 디코더를 거치지 않아 Date로 읽은 뒤 Instant로 바꾼다
+const rawInstantSchema = rawTimestamptzSchema.transform(instantFromDate);
+const nullableRawInstantSchema = nullableRawTimestamptzSchema.transform((value) =>
+  value == null ? null : instantFromDate(value),
+);
+
 const stageRowSchema = z.object({
   assignmentId: z.string(),
   stageId: z.string(),
-  stageCreatedAt: rawTimestamptzSchema,
+  stageCreatedAt: rawInstantSchema,
   userId: z.string(),
   variant: z.enum(RETENTION_VARIANTS),
   stage: z.enum(RETENTION_STAGE_NAMES),
-  startedAt: rawTimestamptzSchema,
+  startedAt: rawInstantSchema,
   timezone: z.string(),
   locale: z.string(),
   pushEnabled: z.boolean(),
   nightPushEnabled: z.boolean(),
-  marketingPushAgreedAt: nullableRawTimestamptzSchema,
+  marketingPushAgreedAt: nullableRawInstantSchema,
   activeTokenCount: z.number(),
-  lastActiveAt: nullableRawTimestamptzSchema,
+  lastActiveAt: nullableRawInstantSchema,
   todoCount: z.number(),
   completedCount: z.number(),
   todoActionWithinWindow: z.boolean(),
@@ -73,7 +80,7 @@ export class DrizzleRetentionRepository implements RetentionRepositoryPort {
   async enroll(input: {
     userId: string;
     variant: RetentionVariant;
-    startedAt: Date | null;
+    startedAt: Temporal.Instant | null;
   }): Promise<void> {
     await this.#uow.run(async () => {
       const assignmentId = createEntityId();
@@ -93,16 +100,19 @@ export class DrizzleRetentionRepository implements RetentionRepositoryPort {
           ],
         })
         .returning({ id: retentionExperimentAssignment.id });
-      if (input.startedAt == null || inserted.length === 0) {
+      const { startedAt } = input;
+      if (startedAt == null || inserted.length === 0) {
         return;
       }
       await this.#db
         .insert(retentionExperimentStage)
-        .values(RETENTION_STAGE_NAMES.map((stage) => ({ assignmentId, stage })));
+        .values(
+          RETENTION_STAGE_NAMES.map((stage) => ({ assignmentId, stage, updatedAt: startedAt })),
+        );
     });
   }
 
-  async activate(userId: string, startedAt: Date): Promise<boolean> {
+  async activate(userId: string, startedAt: Temporal.Instant): Promise<boolean> {
     const claimed = await this.#db
       .update(retentionExperimentAssignment)
       .set({ startedAt })
@@ -120,25 +130,31 @@ export class DrizzleRetentionRepository implements RetentionRepositoryPort {
     }
     await this.#db
       .insert(retentionExperimentStage)
-      .values(RETENTION_STAGE_NAMES.map((stage) => ({ assignmentId: assignment.id, stage })))
+      .values(
+        RETENTION_STAGE_NAMES.map((stage) => ({
+          assignmentId: assignment.id,
+          stage,
+          updatedAt: startedAt,
+        })),
+      )
       .onConflictDoNothing();
     return true;
   }
 
   async findDueStages(params: {
-    readonly dueAt: Date;
+    readonly dueAt: Temporal.Instant;
     readonly after?: RetentionStageCursor;
     readonly limit: number;
   }): Promise<RetentionStageCandidate[]> {
-    const dueAt = params.dueAt.toISOString();
-    const d0ReadyBefore = new Date(
-      params.dueAt.getTime() - RETENTION_STAGE_TIMING.d0MinWaitMs,
-    ).toISOString();
+    const dueAt = toIsoString(params.dueAt);
+    const d0ReadyBefore = toIsoString(
+      params.dueAt.subtract({ milliseconds: RETENTION_STAGE_TIMING.d0MinWaitMs }),
+    );
     const { targetDay, sendLocalTime } = RETENTION_STAGE_TIMING;
     const afterCursor =
       params.after == null
         ? sql`TRUE`
-        : sql`(stage."createdAt", stage."id") > (${params.after.createdAt.toISOString()}::timestamptz AT TIME ZONE 'UTC', ${params.after.stageId})`;
+        : sql`(stage."createdAt", stage."id") > (${toIsoString(params.after.createdAt)}::timestamptz AT TIME ZONE 'UTC', ${params.after.stageId})`;
     const rows = z.array(stageRowSchema).parse(
       (
         await this.#db.execute<Record<string, unknown>>(sql`
@@ -258,10 +274,14 @@ export class DrizzleRetentionRepository implements RetentionRepositoryPort {
     }));
   }
 
-  async markStageSkipped(stageId: string, reason: string, processedAt: Date): Promise<boolean> {
+  async markStageSkipped(
+    stageId: string,
+    reason: string,
+    processedAt: Temporal.Instant,
+  ): Promise<boolean> {
     const updated = await this.#db
       .update(retentionExperimentStage)
-      .set({ status: "SKIPPED", skipReason: reason, processedAt })
+      .set({ status: "SKIPPED", skipReason: reason, processedAt, updatedAt: processedAt })
       .where(
         and(
           eq(retentionExperimentStage.id, stageId),
@@ -272,10 +292,10 @@ export class DrizzleRetentionRepository implements RetentionRepositoryPort {
     return updated.length === 1;
   }
 
-  async markStageOutboxed(stageId: string, processedAt: Date): Promise<boolean> {
+  async markStageOutboxed(stageId: string, processedAt: Temporal.Instant): Promise<boolean> {
     const claimed = await this.#db
       .update(retentionExperimentStage)
-      .set({ status: "OUTBOXED", processedAt })
+      .set({ status: "OUTBOXED", processedAt, updatedAt: processedAt })
       .where(
         and(
           eq(retentionExperimentStage.id, stageId),
@@ -286,10 +306,14 @@ export class DrizzleRetentionRepository implements RetentionRepositoryPort {
     return claimed.length === 1;
   }
 
-  async linkStageNotification(stageId: string, notificationId: number): Promise<void> {
+  async linkStageNotification(
+    stageId: string,
+    notificationId: number,
+    linkedAt: Temporal.Instant,
+  ): Promise<void> {
     const [linked] = await this.#db
       .update(retentionExperimentStage)
-      .set({ notificationId })
+      .set({ notificationId, updatedAt: linkedAt })
       .where(eq(retentionExperimentStage.id, stageId))
       .returning({ id: retentionExperimentStage.id });
     requireRecord(linked);
@@ -299,7 +323,7 @@ export class DrizzleRetentionRepository implements RetentionRepositoryPort {
     readonly assignmentId: string;
     readonly returnedWithinD7: boolean;
     readonly todoActionWithinD7: boolean;
-    readonly measuredAt: Date;
+    readonly measuredAt: Temporal.Instant;
   }): Promise<void> {
     await this.#db
       .insert(retentionExperimentResult)
