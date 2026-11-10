@@ -17,7 +17,7 @@ const foreignKeyRuleSchema = z.object({
 class RollbackSeed extends Error {}
 
 function baselineSeedStatement(): string {
-  const root = join(import.meta.dirname, "../../drizzle");
+  const root = join(import.meta.dirname, "../../../../drizzle");
   const [baseline] = readdirSync(root).sort();
   if (baseline === undefined) {
     throw new Error("Drizzle baseline migration not found");

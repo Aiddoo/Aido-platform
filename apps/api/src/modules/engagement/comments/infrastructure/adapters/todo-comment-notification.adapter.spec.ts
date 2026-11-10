@@ -1,28 +1,56 @@
-import { TestBed } from "@suites/unit";
-import type { Mocked } from "vitest";
+import type { SupportedLocale } from "@aido/api/vocabulary";
 
 import {
   createTodoCommentNotificationMessage,
   NotificationPublisher,
-  NOTIFICATION_RECIPIENT_LOCALE_READER,
   type NotificationRecipientLocaleReaderPort,
   TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY,
 } from "#api/modules/notification/notification-delivery.public";
 
 import { TodoCommentNotificationAdapter } from "./todo-comment-notification.adapter.js";
 
+type PublishedNotification = Parameters<NotificationPublisher["publish"]>[0];
+
+/** 실제 발행기를 쓰고 저장 단계만 기록용으로 바꾼다 */
+function createRecordingPublisher(published: PublishedNotification[]): NotificationPublisher {
+  return new NotificationPublisher({
+    sendNotification: {
+      execute: async (data) => {
+        published.push(data);
+        return null;
+      },
+    },
+    sendNotificationWithDeduplication: { execute: async () => null },
+    sendBatchNotification: { execute: async () => ({ count: 0 }) },
+    todoTargetReader: { findTodoTargets: async () => new Map() },
+  });
+}
+
+class RecordingLocaleReader implements NotificationRecipientLocaleReaderPort {
+  readonly requestedUserIds: string[] = [];
+
+  async getLocale(userId: string): Promise<SupportedLocale> {
+    this.requestedUserIds.push(userId);
+    return "ko";
+  }
+
+  async getLocales(userIds: readonly string[]): Promise<ReadonlyMap<string, SupportedLocale>> {
+    return new Map(userIds.map((userId) => [userId, "ko"]));
+  }
+}
+
 describe("TodoCommentNotificationAdapter — 배포 앱 알림 이동 호환", () => {
   let adapter: TodoCommentNotificationAdapter;
-  let notificationSender: Mocked<NotificationPublisher>;
-  let recipientLocaleReader: Mocked<NotificationRecipientLocaleReaderPort>;
+  let published: PublishedNotification[];
+  let recipientLocaleReader: RecordingLocaleReader;
 
-  beforeEach(async () => {
-    const { unit, unitRef } = await TestBed.solitary(TodoCommentNotificationAdapter).compile();
-    adapter = unit;
-    notificationSender = unitRef.get(NotificationPublisher);
-    recipientLocaleReader = unitRef.get(NOTIFICATION_RECIPIENT_LOCALE_READER);
-    recipientLocaleReader.getLocale.mockResolvedValue("ko");
-    notificationSender.publish.mockResolvedValue(null);
+  beforeEach(() => {
+    published = [];
+    recipientLocaleReader = new RecordingLocaleReader();
+    adapter = new TodoCommentNotificationAdapter(
+      createRecordingPublisher(published),
+      recipientLocaleReader,
+    );
   });
 
   it("댓글 알림은 서버 내부 경로 대신 의미 기반 이동 재료만 보내야 한다", async () => {
@@ -54,22 +82,24 @@ describe("TodoCommentNotificationAdapter — 배포 앱 알림 이동 호환", (
     await adapter.notifyCommentsWritten(input);
 
     // Then - v1.8은 TODO_SHARED 기본 화면으로, 최신 앱은 metadata로 이동할 수 있다
-    expect(notificationSender.publish).toHaveBeenCalledWith({
-      userId: input.recipientId,
-      type: "TODO_SHARED",
-      title: message.title,
-      body: message.body,
-      todoId: input.todoId,
-      action: { type: "DEEP_LINK" },
-      metadata: {
-        senderId: input.senderId,
-        commentId: input.commentId,
-        threadRootId: input.threadRootId,
-        activityKind: "COMMENT",
+    expect(published).toEqual([
+      {
+        userId: input.recipientId,
+        type: "TODO_SHARED",
+        title: message.title,
+        body: message.body,
+        todoId: input.todoId,
+        action: { type: "DEEP_LINK" },
+        metadata: {
+          senderId: input.senderId,
+          commentId: input.commentId,
+          threadRootId: input.threadRootId,
+          activityKind: "COMMENT",
+        },
+        campaignKey: variantContext.campaignKey,
+        variantId: message.variantId,
       },
-      campaignKey: variantContext.campaignKey,
-      variantId: message.variantId,
-    });
+    ]);
   });
 
   it("좋아요 알림도 기기별로 해석할 수 있는 같은 계약을 사용해야 한다", async () => {
@@ -87,7 +117,7 @@ describe("TodoCommentNotificationAdapter — 배포 앱 알림 이동 호환", (
     await adapter.notifyCommentLiked(input);
 
     // Then - 공유 알림 레코드에 특정 모바일 route를 고정하지 않는다
-    expect(notificationSender.publish).toHaveBeenCalledWith(
+    expect(published).toEqual([
       expect.objectContaining({
         action: { type: "DEEP_LINK" },
         metadata: {
@@ -97,7 +127,7 @@ describe("TodoCommentNotificationAdapter — 배포 앱 알림 이동 호환", (
           activityKind: "LIKE",
         },
       }),
-    );
+    ]);
   });
 
   it("답글은 REPLY activity로 구분한다", async () => {
@@ -117,11 +147,11 @@ describe("TodoCommentNotificationAdapter — 배포 앱 알림 이동 호환", (
     await adapter.notifyCommentsWritten(input);
 
     // Then
-    expect(notificationSender.publish).toHaveBeenCalledWith(
+    expect(published).toEqual([
       expect.objectContaining({
         metadata: expect.objectContaining({ activityKind: "REPLY" }),
       }),
-    );
+    ]);
   });
 
   it("같은 댓글 이벤트를 재시도하면 같은 variant를 사용한다", async () => {
@@ -142,8 +172,7 @@ describe("TodoCommentNotificationAdapter — 배포 앱 알림 이동 호환", (
     await adapter.notifyCommentsWritten(input);
 
     // Then
-    const first = notificationSender.publish.mock.calls[0]?.[0];
-    const retried = notificationSender.publish.mock.calls[1]?.[0];
+    const [first, retried] = published;
     expect(first?.variantId).toBeDefined();
     expect(retried?.variantId).toBe(first?.variantId);
     expect(retried?.title).toBe(first?.title);
@@ -165,7 +194,7 @@ describe("TodoCommentNotificationAdapter — 배포 앱 알림 이동 호환", (
     });
 
     // Then
-    expect(recipientLocaleReader.getLocale).not.toHaveBeenCalled();
-    expect(notificationSender.publish).not.toHaveBeenCalled();
+    expect(recipientLocaleReader.requestedUserIds).toEqual([]);
+    expect(published).toEqual([]);
   });
 });

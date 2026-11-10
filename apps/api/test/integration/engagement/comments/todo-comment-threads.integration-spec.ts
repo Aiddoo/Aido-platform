@@ -12,7 +12,7 @@ import { todo, todoCategory, todoComment, user } from "#api/platform/database/sc
 import { createDatabaseTransactionFixture, createTestClient } from "#test/setup/database-context";
 import type { TestDatabaseClient } from "#test/setup/test-database";
 
-import { TestDatabase } from "../setup/test-database.js";
+import { TestDatabase } from "../../../setup/test-database.js";
 
 const OWNER_ID = "threads-owner";
 const FRIEND_ID = "threads-friend";

@@ -30,7 +30,7 @@ import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { createDatabaseTransactionFixture, createTestClient } from "#test/setup/database-context";
 import type { TestDatabaseClient } from "#test/setup/test-database";
 
-import { TestDatabase } from "../setup/test-database.js";
+import { TestDatabase } from "../../../setup/test-database.js";
 
 const ROOT_A = "cm1conversationroota00000001";
 const ROOT_B = "cm1conversationrootb00000001";
