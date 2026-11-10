@@ -12,12 +12,13 @@ describeTodoCategoryRepositoryContract(async () => {
       todoRecords,
       seriesStore: new Map(),
     }),
-    async seedTodo(categoryId) {
+    async seedTodo(categoryId, options) {
       const id = todoRecords.size + 1;
-      todoRecords.set(
-        id,
-        TodoBuilder.create(TODO_FIXTURE_USER_ID).withId(id).withCategoryId(categoryId).build(),
-      );
+      const record = TodoBuilder.create(TODO_FIXTURE_USER_ID)
+        .withId(id)
+        .withCategoryId(categoryId)
+        .build();
+      todoRecords.set(id, { ...record, completed: options?.completed ?? false });
     },
   };
 });

@@ -287,23 +287,27 @@ export class TodoCategoryController {
   @ApiDoc({
     summary: "카테고리 삭제",
     operationId: "deleteTodoCategory",
-    description: `카테고리를 삭제합니다.
+    description: `카테고리를 삭제합니다. 안에 할 일(완료 포함)이나 진행 중 반복이 있으면 옮길지 함께 지울지 고릅니다.
+지우기 전에 \`GET /todo-categories/{id}/deletion-preview\`로 할 일·완료·반복 수를 보여 줄 수 있습니다.
 
 ## 삭제 규칙
 1. **최소 1개의 카테고리 필요**: 마지막 남은 카테고리는 삭제할 수 없습니다.
-2. **할 일 이동 필수**: 카테고리에 할 일이 있으면 \`moveToCategoryId\` 쿼리 파라미터로 이동 대상 카테고리를 지정해야 합니다.
+2. **안의 할 일 처리** (\`todoHandling\`, 선택)
+   - \`move\`: \`moveToCategoryId\`(필수)로 할 일과 반복 규칙을 옮긴 뒤 삭제합니다.
+   - \`delete\`: 할 일·하위 항목·댓글·반복 규칙을 함께 삭제합니다. \`moveToCategoryId\`를 함께 보내면 \`400\`입니다. 완료한 할 일도 지워져 날짜별 완료 기록에서 빠집니다.
+   - 생략(1.15.0까지 앱): 할 일이 있으면 \`moveToCategoryId\`로 옮깁니다. 없으면 \`TODO_CATEGORY_0855\`입니다.
+3. 할 일과 진행 중 반복이 없으면 \`todoHandling\`·\`moveToCategoryId\`와 상관없이 바로 삭제합니다(\`result.todoHandling = none\`).
 
 ## 사용 예시
-
-### 할 일이 없는 카테고리 삭제
 \`\`\`
 DELETE /todo-categories/3
+DELETE /todo-categories/3?moveToCategoryId=1
+DELETE /todo-categories/3?todoHandling=move&moveToCategoryId=1
+DELETE /todo-categories/3?todoHandling=delete
 \`\`\`
 
-### 할 일이 있는 카테고리 삭제 (다른 카테고리로 이동)
-\`\`\`
-DELETE /todo-categories/3?moveToCategoryId=1
-\`\`\`
+## 응답
+- \`result\`: 실제로 한 처리(\`move\`·\`delete\`·\`none\`), 옮기거나 지운 할 일 수(\`todoCount\`), 진행 중 반복 수(\`seriesCount\`), 옮긴 카테고리(\`moveToCategoryId\`)
 
 ## 에러 케이스
 | 상황 | 에러 코드 | 메시지 |
@@ -311,6 +315,7 @@ DELETE /todo-categories/3?moveToCategoryId=1
 | 마지막 카테고리 삭제 시도 | \`TODO_CATEGORY_0854\` | 최소 1개의 카테고리가 필요합니다 |
 | 할 일이 있는데 moveToCategoryId 없음 | \`TODO_CATEGORY_0855\` | 카테고리에 할 일이 있습니다 (details에 todoCount 포함) |
 | moveToCategoryId가 삭제 대상과 같음 | \`SYS_0002\` | 삭제할 카테고리와 이동 대상 카테고리가 같을 수 없습니다 |
+| move인데 moveToCategoryId 없음, delete인데 moveToCategoryId 있음 | \`SYS_0002\` | 입력 검증 실패 |
 | moveToCategoryId 카테고리 없음 | \`TODO_CATEGORY_0851\` | 카테고리를 찾을 수 없습니다 |`,
   })
   @ApiSuccessResponse({ type: DeleteTodoCategoryResponseDto })
@@ -325,14 +330,16 @@ DELETE /todo-categories/3?moveToCategoryId=1
     @Param({ schema: TodoCategoryIdParamDto }) params: TodoCategoryIdParamDto,
     @Query({ schema: DeleteTodoCategoryQueryDto }) query: DeleteTodoCategoryQueryDto,
   ): Promise<DeleteTodoCategoryResponseDto> {
-    await this.#deleteTodoCategoryUseCase.execute({
+    const deletion = await this.#deleteTodoCategoryUseCase.execute({
       userId: user.userId,
       categoryId: params.id,
       moveToCategoryId: query.moveToCategoryId,
+      todoHandling: query.todoHandling,
     });
 
     return {
       message: "카테고리가 삭제되었습니다.",
+      result: TodoCategoryMapper.toDeletionResult(deletion),
     };
   }
 }

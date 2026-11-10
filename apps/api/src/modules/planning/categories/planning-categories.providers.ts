@@ -6,6 +6,7 @@ import { DomainEventPublisherPort } from "#api/shared/application/ports/domain-e
 import { MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
 import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 
+import { RemoveCategoryTodosUseCase } from "../todos/application/use-cases/remove-category-todos.use-case.js";
 import { TodoCategoryCachePort } from "./application/ports/todo-category-cache.port.js";
 import { TodoCategoryCountReaderPort } from "./application/ports/todo-category-count.reader.port.js";
 import { TodoCategoryLimitReaderPort } from "./application/ports/todo-category-limit.reader.port.js";
@@ -62,6 +63,7 @@ export const PLANNING_CATEGORIES_PROVIDERS = [
   }),
   provideUseCase(DeleteTodoCategoryUseCase, {
     repository: TodoCategoryRepositoryPort,
+    categoryTodos: RemoveCategoryTodosUseCase,
     cache: TodoCategoryCachePort,
     mutationLock: MutationLockPort,
     unitOfWork: UnitOfWorkPort,

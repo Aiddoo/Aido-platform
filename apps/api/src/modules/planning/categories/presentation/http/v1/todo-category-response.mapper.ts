@@ -2,12 +2,14 @@
  * TodoCategory 프레젠테이션 매퍼 — 애플리케이션 타입 → API 응답(@aido/api). 계약 불변.
  */
 import type {
+  CategoryDeletionResult,
   TodoCategory as TodoCategoryDto,
   TodoCategoryWithCount as TodoCategoryWithCountDto,
 } from "@aido/api";
 
 import { toIsoString } from "#api/shared/domain/time/instant";
 
+import type { TodoCategoryDeletionReadModel } from "../../../application/read-models/todo-category-deletion.read-model.js";
 import type { TodoCategoryWithCountReadModel } from "../../../application/read-models/todo-category-with-count.read-model.js";
 import type { TodoCategory } from "../../../domain/todo-category.aggregate.js";
 
@@ -40,5 +42,14 @@ export const TodoCategoryMapper = {
 
   toManyResponseWithCount(views: TodoCategoryWithCountReadModel[]): TodoCategoryWithCountDto[] {
     return views.map((view) => TodoCategoryMapper.toResponseWithCount(view));
+  },
+
+  toDeletionResult(deletion: TodoCategoryDeletionReadModel): CategoryDeletionResult {
+    return {
+      todoHandling: deletion.todoHandling,
+      todoCount: deletion.todoCount,
+      seriesCount: deletion.seriesCount,
+      moveToCategoryId: deletion.moveToCategoryId,
+    };
   },
 };

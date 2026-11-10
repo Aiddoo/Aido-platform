@@ -1,6 +1,7 @@
 import { ErrorCode } from "@aido/api/errors";
 
 import {
+  type CategoryTodoCount,
   TodoCategoryRepositoryPort,
   type UpdateCategoryInput,
 } from "#api/modules/planning/categories/application/ports/todo-category.repository.port";
@@ -148,10 +149,14 @@ export class InMemoryTodoCategoryRepository extends TodoCategoryRepositoryPort {
     return shifted;
   }
 
-  async getTodoCount(categoryId: TodoCategoryId): Promise<number> {
-    return [...this.#stores.todoRecords.values()].filter(
-      (record) => record.categoryId === categoryId.value,
-    ).length;
+  async countTodos(userId: UserId, categoryId: TodoCategoryId): Promise<CategoryTodoCount> {
+    const records = [...this.#stores.todoRecords.values()].filter(
+      (record) => record.userId === userId.value && record.categoryId === categoryId.value,
+    );
+    return {
+      total: records.length,
+      completed: records.filter((record) => record.completed).length,
+    };
   }
 
   async countActiveSeries(categoryId: TodoCategoryId): Promise<number> {
@@ -161,16 +166,17 @@ export class InMemoryTodoCategoryRepository extends TodoCategoryRepositoryPort {
   }
 
   async moveTodosToCategory(
+    userId: UserId,
     fromCategoryId: TodoCategoryId,
     toCategoryId: TodoCategoryId,
   ): Promise<void> {
     for (const record of this.#stores.todoRecords.values()) {
-      if (record.categoryId === fromCategoryId.value) {
+      if (record.userId === userId.value && record.categoryId === fromCategoryId.value) {
         record.categoryId = toCategoryId.value;
       }
     }
     for (const series of this.#stores.seriesStore.values()) {
-      if (series.categoryId === fromCategoryId.value) {
+      if (series.userId.equals(userId) && series.categoryId === fromCategoryId.value) {
         series.applyDetails({ categoryId: toCategoryId.value });
       }
     }

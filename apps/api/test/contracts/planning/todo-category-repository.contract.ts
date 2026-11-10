@@ -15,8 +15,8 @@ import {
 
 export interface TodoCategoryRepositoryContractContext {
   readonly categoryRepository: TodoCategoryRepositoryPort;
-  /** 그 카테고리에 할 일 하나를 만든다. 개수·옮기기를 확인할 때만 쓴다. */
-  seedTodo(categoryId: number): Promise<void>;
+  /** 그 카테고리에 사용자의 할 일 하나를 만든다. 개수·옮기기를 확인할 때만 쓴다. */
+  seedTodo(categoryId: number, options?: { readonly completed?: boolean }): Promise<void>;
 }
 
 async function insertCategory(
@@ -205,25 +205,53 @@ export function describeTodoCategoryRepositoryContract(
     it("할 일을 옮긴 뒤 지우면 옮긴 카테고리에 할 일이 남고 지운 카테고리는 없다", async () => {
       // Given
       const context = await createContext();
+      const userId = UserId.reconstitute(TODO_FIXTURE_USER_ID);
       const source = await insertCategory(context.categoryRepository, { name: "옛것" });
       const target = await insertCategory(context.categoryRepository, {
         name: "새것",
         sortOrder: 1,
       });
       await context.seedTodo(source.id.value);
+      await context.seedTodo(source.id.value, { completed: true });
 
       // When
-      await context.categoryRepository.moveTodosToCategory(source.id, target.id);
+      await context.categoryRepository.moveTodosToCategory(userId, source.id, target.id);
       await context.categoryRepository.delete(source.id);
 
       // Then
-      expect(await context.categoryRepository.getTodoCount(target.id)).toBe(1);
+      expect(await context.categoryRepository.countTodos(userId, target.id)).toEqual({
+        total: 2,
+        completed: 1,
+      });
       expect(
         await context.categoryRepository.findByIdAndUserId(
           source.id,
           UserId.reconstitute(TODO_FIXTURE_USER_ID),
         ),
       ).toBeNull();
+    });
+
+    it("할 일 수는 그 사용자의 그 카테고리만 센다", async () => {
+      // Given
+      const context = await createContext();
+      const category = await insertCategory(context.categoryRepository);
+      await context.seedTodo(category.id.value, { completed: true });
+
+      // When
+      const own = await context.categoryRepository.countTodos(
+        UserId.reconstitute(TODO_FIXTURE_USER_ID),
+        category.id,
+      );
+      const foreign = await context.categoryRepository.countTodos(
+        UserId.reconstitute(TODO_FIXTURE_OTHER_USER_ID),
+        category.id,
+      );
+
+      // Then
+      expect({ own, foreign }).toEqual({
+        own: { total: 1, completed: 1 },
+        foreign: { total: 0, completed: 0 },
+      });
     });
   });
 }
