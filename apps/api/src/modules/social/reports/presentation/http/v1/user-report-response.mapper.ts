@@ -7,7 +7,7 @@ import { toIsoString } from "#api/shared/domain/time/instant";
 
 import type { UserReport } from "../../../domain/user-report.aggregate.js";
 
-export const USER_REPORT_RESPONSE_MESSAGES = {
+const USER_REPORT_RESPONSE_MESSAGES = {
   CREATED: "신고를 접수했습니다.",
   RESOLVED: "신고를 처리 완료로 바꿨습니다.",
 } as const;

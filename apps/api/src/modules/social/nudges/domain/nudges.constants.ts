@@ -1,5 +1,5 @@
 // 주고받은 콕 목록의 방향. 계약의 direction 쿼리와 같은 값이다
-export const NUDGE_DIRECTIONS = ["received", "sent"] as const;
+const NUDGE_DIRECTIONS = ["received", "sent"] as const;
 
 export type NudgeDirection = (typeof NUDGE_DIRECTIONS)[number];
 

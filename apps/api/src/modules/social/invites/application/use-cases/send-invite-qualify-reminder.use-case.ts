@@ -14,7 +14,7 @@ export interface SendInviteQualifyReminderCommand {
   readonly now: Temporal.Instant;
 }
 
-export type QualifyReminderSkipReason = "disabled" | "not-due" | "quiet-hours" | "unreachable";
+type QualifyReminderSkipReason = "disabled" | "not-due" | "quiet-hours" | "unreachable";
 
 export type SendInviteQualifyReminderResult =
   | { readonly status: "sent" }

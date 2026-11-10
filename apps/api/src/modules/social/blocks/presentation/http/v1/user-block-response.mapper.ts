@@ -14,7 +14,7 @@ import type {
 } from "../../../application/read-models/blocked-user.read-model.js";
 import type { UserBlock } from "../../../domain/user-block.aggregate.js";
 
-export const USER_BLOCK_RESPONSE_MESSAGES = {
+const USER_BLOCK_RESPONSE_MESSAGES = {
   BLOCKED: "사용자를 차단했습니다.",
   UNBLOCKED: "차단을 해제했습니다.",
 } as const;

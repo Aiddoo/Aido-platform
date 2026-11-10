@@ -42,7 +42,6 @@ export const InviteRewardJobKey = {
 
 export const INVITE_MAINTENANCE_QUEUE = "invite-maintenance.v1";
 export const INVITE_MAINTENANCE_JOB_NAME = "expire-stale-redemptions";
-export type InviteMaintenanceJobData = Record<string, never>;
 
 export const INVITE_MAINTENANCE_SCHEDULE = {
   id: "daily-invite-maintenance-scheduler",

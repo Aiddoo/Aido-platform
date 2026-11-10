@@ -9,7 +9,7 @@ export interface NudgeUserSummary {
   readonly profileImage: string | null;
 }
 
-export interface NudgeTodoSummary {
+interface NudgeTodoSummary {
   readonly id: number;
   readonly title: string;
   readonly completed: boolean;

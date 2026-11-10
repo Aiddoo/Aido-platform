@@ -3,9 +3,10 @@ import { and, count, eq } from "drizzle-orm";
 import request from "supertest";
 
 import { follow } from "#api/platform/database/schema/index";
-import { SOCIAL_TIME } from "#test/fixtures/social-friends.fixture";
 
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
+
+const SOCIAL_TIME = new Date("2026-07-26T00:30:00.000Z");
 
 describe("친구 상태 변경 HTTP 계약", () => {
   let context: E2eTestContext;

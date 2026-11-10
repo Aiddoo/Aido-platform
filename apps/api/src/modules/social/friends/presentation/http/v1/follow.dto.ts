@@ -7,8 +7,6 @@ import {
   friendsListResponseSchema,
   receivedRequestsResponseSchema,
   sentRequestsResponseSchema,
-  friendRequestUserSchema,
-  friendUserSchema,
   getFollowsQuerySchema,
   getFriendsQuerySchema,
   reorderFriendSchema,
@@ -66,14 +64,6 @@ export class FollowResourceLimitResponseDto {
   declare maxCount: number | null;
 }
 
-export const FriendUserResponseDto = friendUserSchema.meta({ id: "FriendUserResponseDto" });
-export type FriendUserResponseDto = z.infer<typeof FriendUserResponseDto>;
-
-export const FriendRequestUserResponseDto = friendRequestUserSchema.meta({
-  id: "FriendRequestUserResponseDto",
-});
-export type FriendRequestUserResponseDto = z.infer<typeof FriendRequestUserResponseDto>;
-
 export const GetFollowsQueryDto = getFollowsQuerySchema.meta({
   id: "GetFollowsQueryDto",
   apiParameter: true,
@@ -98,14 +88,6 @@ export const SearchUsersResponseDto = searchUsersResponseSchema.meta({
   id: "SearchUsersResponseDto",
 });
 export type SearchUsersResponseDto = z.infer<typeof SearchUsersResponseDto>;
-
-/**
- * 공용 DTO 재수출 — 공개 표면 유지용.
- *
- * UserIdParamDto는 여러 모듈이 공유하는 범용 파라미터 DTO라 @/shared/presentation/dtos에
- * 위치한다. follow 모듈의 dtos 배럴 표면은 그대로 유지한다.
- */
-export { UserIdParamDto } from "#api/platform/http/dtos/user-id-param.dto";
 
 export const UserTagParamDto = sendFriendRequestParamSchema.meta({
   id: "UserTagParamDto",

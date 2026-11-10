@@ -26,7 +26,7 @@ import type {
 import type { Nudge } from "../../../domain/nudge.aggregate.js";
 import type { ReminderNudge } from "../../../domain/reminder-nudge.aggregate.js";
 
-export const NUDGE_RESPONSE_MESSAGES = {
+const NUDGE_RESPONSE_MESSAGES = {
   SENT: "콕! 찔렀습니다 👆",
   REMINDER_SENT: "할일 좀 만들어! 콕 찔렀습니다 👆",
   READ: "확인했습니다.",

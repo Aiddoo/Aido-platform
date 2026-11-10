@@ -4,12 +4,10 @@ import {
   cheerLimitInfoSchema,
   createCheerResponseSchema,
   markCheerReadResponseSchema,
-  cheerDetailSchema,
   receivedCheersResponseSchema,
   sentCheersResponseSchema,
   getCheersQuerySchema,
   createCheerSchema,
-  markCheerReadSchema,
   markCheersReadSchema,
 } from "@aido/api";
 import type { z } from "zod";
@@ -38,9 +36,6 @@ export const MarkCheerReadResponseDto = markCheerReadResponseSchema.meta({
 });
 export type MarkCheerReadResponseDto = z.infer<typeof MarkCheerReadResponseDto>;
 
-export const CheerDetailDto = cheerDetailSchema.meta({ id: "CheerDetailDto" });
-export type CheerDetailDto = z.infer<typeof CheerDetailDto>;
-
 export const ReceivedCheersResponseDto = receivedCheersResponseSchema.meta({
   id: "ReceivedCheersResponseDto",
 });
@@ -57,9 +52,6 @@ export type GetCheersQueryDto = z.infer<typeof GetCheersQueryDto>;
 
 export const SendCheerDto = createCheerSchema.meta({ id: "SendCheerDto" });
 export type SendCheerDto = z.infer<typeof SendCheerDto>;
-
-export const MarkCheerReadDto = markCheerReadSchema.meta({ id: "MarkCheerReadDto" });
-export type MarkCheerReadDto = z.infer<typeof MarkCheerReadDto>;
 
 export const MarkCheersReadDto = markCheersReadSchema.meta({ id: "MarkCheersReadDto" });
 export type MarkCheersReadDto = z.infer<typeof MarkCheersReadDto>;

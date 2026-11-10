@@ -36,7 +36,7 @@ export interface GrantInviteRewardsResult {
 }
 
 /** 큐가 backoff로 다시 시도하게 지급 작업을 실패시킨다. */
-export class InviteRewardGrantFailedError extends Error {
+class InviteRewardGrantFailedError extends Error {
   readonly failedCount: number;
 
   constructor(failedCount: number) {

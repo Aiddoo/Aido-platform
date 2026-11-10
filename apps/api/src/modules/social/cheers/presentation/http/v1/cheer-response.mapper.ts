@@ -21,7 +21,7 @@ import type {
 } from "../../../application/read-models/cheer.read-model.js";
 import type { Cheer } from "../../../domain/cheer.aggregate.js";
 
-export const CHEER_RESPONSE_MESSAGES = {
+const CHEER_RESPONSE_MESSAGES = {
   SENT: "응원을 보냈어요! 🎉",
   READ: "확인했습니다.",
 } as const;
@@ -30,7 +30,7 @@ function toNullableIsoString(instant: Temporal.Instant | null): string | null {
   return instant == null ? null : toIsoString(instant);
 }
 
-export function toCheerResponse(cheer: Cheer): CheerResponse {
+function toCheerResponse(cheer: Cheer): CheerResponse {
   const primitives = cheer.toPrimitives();
   return {
     id: primitives.id,

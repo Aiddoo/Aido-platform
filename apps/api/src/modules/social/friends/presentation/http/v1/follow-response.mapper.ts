@@ -36,7 +36,7 @@ export const FOLLOW_RESPONSE_MESSAGES = {
   REORDERED: "친구 순서가 변경되었습니다.",
 } as const;
 
-export function toFollowResponse(friendship: Friendship): FollowResponse {
+function toFollowResponse(friendship: Friendship): FollowResponse {
   const primitives = friendship.toPrimitives();
   return {
     id: primitives.id,
@@ -48,7 +48,7 @@ export function toFollowResponse(friendship: Friendship): FollowResponse {
   };
 }
 
-export function toFriendUserResponse(friend: FriendReadModel, appVersion?: string): FriendUser {
+function toFriendUserResponse(friend: FriendReadModel, appVersion?: string): FriendUser {
   return {
     followId: friend.friendshipId,
     id: friend.user.id,
@@ -59,7 +59,7 @@ export function toFriendUserResponse(friend: FriendReadModel, appVersion?: strin
   };
 }
 
-export function toFriendRequestUserResponse(
+function toFriendRequestUserResponse(
   request: FriendRequestReadModel,
   appVersion?: string,
 ): FriendRequestUser {
@@ -72,10 +72,7 @@ export function toFriendRequestUserResponse(
   };
 }
 
-export function toSearchUserResponse(
-  result: UserSearchResultReadModel,
-  appVersion?: string,
-): SearchUser {
+function toSearchUserResponse(result: UserSearchResultReadModel, appVersion?: string): SearchUser {
   return {
     id: result.user.id,
     userTag: result.user.userTag,
