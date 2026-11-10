@@ -18,14 +18,10 @@ import {
   user as userTable,
   userPreference,
 } from "#api/platform/database/schema/index";
-import {
-  DEFAULT_DELIVERY_TIMEZONE,
-  parseLocalDateTime,
-} from "#api/shared/domain/date/utils/timezone";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { instantFromDate } from "#api/shared/domain/time/instant";
+import { DEFAULT_DELIVERY_TIMEZONE } from "#api/shared/domain/time/time-zone-name";
 import { DateClock } from "#test/doubles/platform/date-clock";
-import { nowInstant } from "#test/fixtures/clock.fixture";
+import { nowInstant, wallClockInstant } from "#test/fixtures/clock.fixture";
 import { TodoCategoryFixture, TodoFixture, UserFixture } from "#test/fixtures/index";
 import { createDatabaseTransactionFixture, createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
@@ -217,7 +213,7 @@ describe("반복 할 일 스키마 (실제 PostgreSQL)", () => {
         await client.insert(userPreference).values({ userId, timezone: stored });
       }
       const row = await seedLegacy("group-zone", "2026-03-02", {
-        scheduledTime: instantFromDate(parseLocalDateTime("2026-03-02", time, zone)),
+        scheduledTime: wallClockInstant("2026-03-02", time, zone),
         isAllDay: false,
       });
       // When
@@ -228,13 +224,7 @@ describe("반복 할 일 스키마 (실제 PostgreSQL)", () => {
       const migrated = await client.query.todo.findFirst({ where: { id: row.id } });
       expect(migrated?.scheduledTime).toEqual(row.scheduledTime);
       expect(
-        instantFromDate(
-          parseLocalDateTime(
-            "2026-03-02",
-            series?.scheduledLocalTime ?? "",
-            series?.timezone ?? "",
-          ),
-        ),
+        wallClockInstant("2026-03-02", series?.scheduledLocalTime ?? "", series?.timezone ?? ""),
       ).toEqual(row.scheduledTime);
     });
 
@@ -243,7 +233,7 @@ describe("반복 할 일 스키마 (실제 PostgreSQL)", () => {
       await client.insert(userPreference).values({ userId, timezone: "America/New_York" });
       for (const date of ["2026-03-02", "2026-03-09", "2026-03-16"]) {
         await seedLegacy("group-dst", date, {
-          scheduledTime: instantFromDate(parseLocalDateTime(date, "09:00", "America/New_York")),
+          scheduledTime: wallClockInstant(date, "09:00", "America/New_York"),
           isAllDay: false,
         });
       }

@@ -17,7 +17,7 @@
 - 달력 날짜를 process 시간대의 `Date`로 바꾼 뒤 요일·자정을 계산하지 않는다. 날짜 산술은 `YYYY-MM-DD` key로 한다.
 - 서버 process(Docker `ENV TZ=UTC`·CI `TZ: UTC`)와 PostgreSQL 세션(`TimeZone=UTC`)은 UTC로 고정한다. 그래도 코드는 process 시간대에 의존하지 않는다.
 - **서버 날짜 계산은 Temporal이다.** 순간은 `Temporal.Instant`, 달력 날짜는 `Temporal.PlainDate`, 벽시계는 `Temporal.PlainTime`(분 단위), 시간대 계산은 IANA 이름을 명시한 `ZonedDateTime`이다. 서버의 현재 시각은 `ClockPort.now()` 하나다. 계약(`@aido/api`)은 문자열을 유지하고(Hermes에는 Temporal이 없다) 변환은 서버 presentation 경계에서만 한다. 순간 직렬화는 `toIsoString`(ms 3자리)으로 `Date#toISOString()`과 바이트 단위로 같다. `Temporal.Instant`는 `<`·`>`로 비교하지 않고 `Temporal.Instant.compare`를 쓴다. 서버 상세는 [영속성](../../apps/api/docs/persistence.md#시간-칼럼)에 있다.
-- 서버 전환 중: 아직 옮기지 않은 Context는 dayjs(`dayjs.tz(…, timezone)`, 시간대 없는 달력 계산은 `dayjs.utc(…)`, plugin 등록은 `apps/api/src/shared/domain/date/dayjs.setup.ts` 한 곳)와 UTC 자정 `Date`의 `date` 칼럼을 쓴다. 모바일은 Temporal을 쓰지 않는다.
+- 서버에는 dayjs가 없다. 모바일은 Temporal을 쓰지 않는다.
 
 ## 2. "오늘"과 시간대의 출처
 
@@ -30,7 +30,7 @@
   | 저장값 갱신           | `RequestClientReader.current().timezone`                           | 갱신하지 않음         | 시간대 자가 치유(`TimezoneSelfHealInterceptor`)                                              |
   | 벽시계 해석           | `@Timezone({ preserveIfMissing: true })` + `TodoTimezoneResolver`  | 저장값 → `Asia/Seoul` | 할 일 생성·수정·일정 변경·메모 변환·계획 적용(5절)                                           |
 
-  응답 형태는 규칙과 무관하다. 새 엔드포인트는 위 규칙 중 하나를 고르고 `X-Timezone`을 직접 읽지 않는다. 배치는 사용자별 저장 시간대로 계산한다. 공용 helper는 `apps/api/src/shared/domain/date/utils`(`todayInTimezone`, `localDateInTimezone`, `parseDateOnly`, `parseLocalDateTime`)다. 한 instant의 사용자 달력 날짜(`YYYY-MM-DD`)는 `localDateInTimezone(date, timezone)`으로 구하고 `Intl.DateTimeFormat` 포매터를 새로 만들지 않는다. 사용자 기본 시간대 폴백은 `DEFAULT_DELIVERY_TIMEZONE`이다. 이 helper는 전환 중인 옛 코드용이고, 옮긴 Context는 같은 판단을 Temporal로 한다.
+  응답 형태는 규칙과 무관하다. 새 엔드포인트는 위 규칙 중 하나를 고르고 `X-Timezone`을 직접 읽지 않는다. 배치는 사용자별 저장 시간대로 계산한다. 공용 helper는 `apps/api/src/shared/domain/time`(`localDateIn`, `localDateOf`, `toZonedInstant`, `resolveTimezone`)이다. 한 순간의 사용자 달력 날짜는 `localDateIn(instant, timezone)`으로 구하고 `Intl.DateTimeFormat` 포매터를 새로 만들지 않는다. 사용자 기본 시간대 폴백은 `DEFAULT_DELIVERY_TIMEZONE`이다.
 
 - **모바일**: 시간대는 기기 달력(`expo-localization` `getCalendars()[0].timeZone`)에서만 온다. 앱 전체의 오늘 key·자정 전환은 `LocalDateProvider`(`apps/mobile/src/shared/providers/local-date-provider.tsx`)가 소유하고, Provider 밖(위젯 경계)은 같은 `readDeviceLocalDateState()`를 쓴다. 컴포넌트는 `useToday`/`useTodayKey`로 읽고 render 중 `new Date()`를 기준 상태로 만들지 않는다. 상대 시간처럼 분 단위로 바뀌는 표시는 `useMinuteNow()`를 쓴다. `Date`의 달력 날짜·요일은 `shared/date/instant.ts`의 `toDateKey(date, timeZone)`로 key를 만든 뒤 계산하고, 하루 길이 상수는 `shared/constants/time-units.ts`의 `DAY_MS` 하나를 쓴다. 시간대 인자는 생략할 수 없고 기기 시간대는 `shared/infra/localization/device-timezone.ts`의 `getDeviceTimezone()`이다.
 - 서버의 요청 언어는 `RequestClient.locale`(`@Locale()`)이다. `Accept-Language`가 없으면 null(저장된 언어 유지, 날씨 특보 문구는 `en`)이다. 지원하지 않는 언어는 앱과 같게 `en`, 저장값도 요청값도 없으면 `ko`(언어를 보고하지 않던 옛 앱 사용자)다. 규칙은 `@aido/api/vocabulary`의 `resolveSupportedLocale` 하나를 앱과 서버가 함께 쓴다([서버 다국어](../../apps/api/docs/i18n.md)). 서버 전환 중에는 아직 지원하지 않는 언어를 `ko`로 본다.

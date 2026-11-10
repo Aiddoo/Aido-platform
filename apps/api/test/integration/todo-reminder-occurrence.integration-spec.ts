@@ -44,15 +44,11 @@ import {
 import { JobQueueRegistry } from "#api/platform/jobs/job-queue.registry";
 import { PgBossJobQueueAdapter } from "#api/platform/jobs/pg-boss-job-queue.adapter";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
-import { addDaysToDateKey } from "#api/shared/domain/date/utils/arithmetic";
-import { toDateString } from "#api/shared/domain/date/utils/format";
-import { parseLocalDateTime, todayInTimezone } from "#api/shared/domain/date/utils/timezone";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { instantFromDate } from "#api/shared/domain/time/instant";
 import { StubNotificationRecipientLocaleReader } from "#test/doubles/notification/stub-notification-recipient-locale.reader";
 import { StubTodoSeriesOwnerDormancy } from "#test/doubles/notification/stub-todo-series-owner-dormancy";
 import { DateClock } from "#test/doubles/platform/date-clock";
-import { nowInstant } from "#test/fixtures/clock.fixture";
+import { nowInstant, shiftDateKey, todayIn, wallClockInstant } from "#test/fixtures/clock.fixture";
 import { TodoCategoryFixture, TodoFixture, UserFixture } from "#test/fixtures/index";
 import { createDatabaseTransactionFixture, createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
@@ -214,7 +210,7 @@ describe("할 일 알림 회차 중복 방지 (실제 PostgreSQL·pg-boss)", () 
       .values(omit(TodoCategoryFixture.create({ userId, sortOrder: 0 }), ["id"]))
       .returning();
     categoryId = category?.id ?? 0;
-    today = toDateString(todayInTimezone(SEOUL));
+    today = todayIn(SEOUL).toString();
   });
 
   afterAll(async () => {
@@ -224,12 +220,12 @@ describe("할 일 알림 회차 중복 방지 (실제 PostgreSQL·pg-boss)", () 
 
   /** 사흘 뒤를 첫날로 둔다. 어느 시각에 돌려도 모든 단계가 미래다. */
   function dayKey(day: number): string {
-    return addDaysToDateKey(today, 3 + day);
+    return shiftDateKey(today, 3 + day);
   }
 
   async function seedTodo(day: number, time: string, overrides: object = {}) {
     const date = dayKey(day);
-    const scheduledTime = instantFromDate(parseLocalDateTime(date, time, SEOUL));
+    const scheduledTime = wallClockInstant(date, time, SEOUL);
     const [row] = await client
       .insert(todo)
       .values({
@@ -639,7 +635,7 @@ describe("할 일 알림 회차 중복 방지 (실제 PostgreSQL·pg-boss)", () 
         scheduledTime: null,
         isAllDay: true,
       });
-      const pastDate = addDaysToDateKey(today, -10);
+      const pastDate = shiftDateKey(today, -10);
       const past = await seedTodo(0, "10:00", { startDate: Temporal.PlainDate.from(pastDate) });
       const allDayRow = await seedLegacyRow(allDay, { stage: "60min", todoDate: dayKey(0) });
       const pastRow = await seedLegacyRow(past, { stage: "60min", todoDate: pastDate });

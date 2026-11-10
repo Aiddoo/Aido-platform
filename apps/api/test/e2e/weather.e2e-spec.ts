@@ -21,18 +21,17 @@ import { AirQualityProviderPort } from "#api/modules/weather/forecasts/applicati
 import { LifestyleIndexProviderPort } from "#api/modules/weather/forecasts/application/ports/lifestyle-index-provider.port";
 import { SunTimeProviderPort } from "#api/modules/weather/forecasts/application/ports/sun-time-provider.port";
 import { WeatherForecastProviderPort } from "#api/modules/weather/forecasts/application/ports/weather-forecast-provider.port";
-import { addDays } from "#api/shared/domain/date/utils/arithmetic";
-import { dayWindowInTimezone } from "#api/shared/domain/date/utils/timezone";
 import { StubAirQualityProvider } from "#test/doubles/weather/stub-air-quality-provider";
 import { StubLifestyleIndexProvider } from "#test/doubles/weather/stub-lifestyle-index-provider";
 import { StubSunTimeProvider } from "#test/doubles/weather/stub-sun-time-provider";
 import { StubWeatherForecastProvider } from "#test/doubles/weather/stub-weather-forecast-provider";
+import { todayIn } from "#test/fixtures/clock.fixture";
 
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 
 /** KMA 제공 범위가 오늘(KST) 기준이므로 고정 날짜 대신 오늘에서 떨어진 날짜를 쓴다. */
 function kstDate(offsetDays: number): string {
-  return dayWindowInTimezone(addDays(offsetDays), "Asia/Seoul").localDate;
+  return todayIn("Asia/Seoul").add({ days: offsetDays }).toString();
 }
 
 describe("날씨 E2E", () => {

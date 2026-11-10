@@ -20,11 +20,10 @@ import type {
   DomainEventPublisherPort,
   PublishedDomainEvent,
 } from "#api/shared/application/ports/domain-event-publisher.port";
-import { parseLocalDateTime } from "#api/shared/domain/date/utils/timezone";
-import { instantFromDate } from "#api/shared/domain/time/instant";
 import { DateClock } from "#test/doubles/platform/date-clock";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
+import { wallClockInstant } from "#test/fixtures/clock.fixture";
 import { TodoCategoryFixture, TodoFixture, UserFixture } from "#test/fixtures/index";
 import { createDatabaseTransactionFixture, createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
@@ -146,9 +145,7 @@ describe("할 일 리마인더를 같은 트랜잭션에서 예약·취소한다
         ...omit(TodoFixture.create({ userId, categoryId }), ["id"]),
         startDate: Temporal.PlainDate.from(FUTURE_DATE),
         scheduledLocalTime: scheduled ? "10:00" : null,
-        scheduledTime: scheduled
-          ? instantFromDate(parseLocalDateTime(FUTURE_DATE, "10:00", SEOUL))
-          : null,
+        scheduledTime: scheduled ? wallClockInstant(FUTURE_DATE, "10:00", SEOUL) : null,
         isAllDay: !scheduled,
         completed: false,
       })
@@ -218,7 +215,7 @@ describe("할 일 리마인더를 같은 트랜잭션에서 예약·취소한다
     await reminderAdapter.scheduleReminders([
       {
         todoId,
-        scheduledTime: instantFromDate(parseLocalDateTime(FUTURE_DATE, "10:00", SEOUL)),
+        scheduledTime: wallClockInstant(FUTURE_DATE, "10:00", SEOUL),
         userId,
       },
     ]);
@@ -245,7 +242,7 @@ describe("할 일 리마인더를 같은 트랜잭션에서 예약·취소한다
     await reminderAdapter.scheduleReminders([
       {
         todoId,
-        scheduledTime: instantFromDate(parseLocalDateTime(FUTURE_DATE, "10:00", SEOUL)),
+        scheduledTime: wallClockInstant(FUTURE_DATE, "10:00", SEOUL),
         userId,
       },
     ]);

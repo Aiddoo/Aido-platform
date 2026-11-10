@@ -1,6 +1,5 @@
 import { computeEffectiveStreak } from "#api/modules/identity/identity-settings.public";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { plainDateToDate } from "#api/shared/domain/time/plain-date";
 
 import type { CatchUpTodoSeriesUseCase } from "../../../todo-series/application/use-cases/catch-up-todo-series.use-case.js";
 import { summarizeCompletion } from "../../domain/todo-completion.domain-service.js";
@@ -70,13 +69,12 @@ export class GetTodoSummaryUseCase {
     const { completionRate, isComplete } = summarizeCompletion(stats);
 
     const { lastCompletedDate } = streakContext;
-    // identity의 스트릭 판정은 아직 UTC 자정 Date로 계산한다
     const { streak: currentStreak } = computeEffectiveStreak({
       currentStreak: streakContext.currentStreak,
-      lastCompletedDate: lastCompletedDate == null ? null : plainDateToDate(lastCompletedDate),
+      lastCompletedDate,
       todosCompleted: stats.completed,
       todosTotal: stats.total,
-      today: plainDateToDate(date),
+      today: date,
     });
 
     return {

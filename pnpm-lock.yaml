@@ -745,9 +745,6 @@ importers:
       countries-and-timezones:
         specifier: 'catalog:'
         version: 3.11.0
-      dayjs:
-        specifier: 'catalog:'
-        version: 1.11.23
       drizzle-orm:
         specifier: catalog:drizzle1
         version: 1.0.0-rc.5(@cloudflare/workers-types@5.20261006.1)(@effect/sql-d1@4.0.3(effect@4.0.3))(@effect/sql-sqlite-do@4.0.3(effect@4.0.3))(@electric-sql/pglite@0.3.15)(@libsql/client@0.17.4)(@opentelemetry/api@1.9.1)(@sinclair/typebox@0.34.52)(@types/pg@8.23.1)(arktype@2.2.7)(effect@4.0.3)(pg@8.23.1)(valibot@1.5.0(typescript@6.0.3))(zod@4.6.7)

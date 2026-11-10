@@ -6,8 +6,7 @@ import { user as userTable } from "#api/platform/database/schema/index";
 import { DrizzleUsageMeterAdapter } from "#api/platform/metering/adapters/drizzle-usage-meter.adapter";
 import { describeUsageMeterContract } from "#api/platform/metering/adapters/usage-meter.contract";
 import { UsageMeterPort, USAGE_SUBJECT_ALL } from "#api/platform/metering/usage-meter.port";
-import { subtractDays } from "#api/shared/domain/date/utils/arithmetic";
-import { instantFromDate } from "#api/shared/domain/time/instant";
+import { nowInstant } from "#test/fixtures/clock.fixture";
 import { UserFixture } from "#test/fixtures/index";
 import { createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
@@ -52,7 +51,7 @@ describe("OutboundUsage 계량기 (실제 PostgreSQL)", () => {
       email: "usage-purge@example.com",
       userTag: "USGPURGE",
       status: "SUSPENDED",
-      deletedAt: instantFromDate(subtractDays(ACCOUNT_DELETION.GRACE_PERIOD_DAYS + 1)),
+      deletedAt: nowInstant().subtract({ hours: 24 * (ACCOUNT_DELETION.GRACE_PERIOD_DAYS + 1) }),
     });
     await client.insert(userTable).values(user);
     const userKey = { meter: "ai.spend", periodKey: "2026-11-05", subject: user.id };

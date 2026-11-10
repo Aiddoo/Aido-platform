@@ -10,10 +10,7 @@ import request from "supertest";
  */
 
 import { todo as todoTable } from "#api/platform/database/schema/index";
-import { toDateString } from "#api/shared/domain/date/utils/format";
-import { todayInTimezone } from "#api/shared/domain/date/utils/timezone";
-import { plainDateFromDate } from "#api/shared/domain/time/plain-date";
-import { nowInstant } from "#test/fixtures/clock.fixture";
+import { nowInstant, todayIn } from "#test/fixtures/clock.fixture";
 
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 
@@ -35,7 +32,7 @@ describe("오늘의 할 일 요약 E2E", () => {
   const password = "Test1234!";
   const timezone = "Asia/Seoul";
   const activeDateRange = () => {
-    const today = plainDateFromDate(todayInTimezone(timezone));
+    const today = todayIn(timezone);
     return {
       today,
       startDate: today.subtract({ days: 1 }),
@@ -94,7 +91,7 @@ describe("오늘의 할 일 요약 E2E", () => {
       // Then
       expect(response.status).toBe(200);
       expect(response.body.data).toEqual({
-        date: toDateString(todayInTimezone(timezone)),
+        date: todayIn(timezone).toString(),
         totalTodos: 3,
         completedTodos: 1,
         completionRate: 33,
@@ -193,7 +190,7 @@ describe("오늘의 할 일 요약 E2E", () => {
       // Given
       const user = await ctx.helpers.createVerifiedUser("todo-summary-tomorrow@test.com", password);
       const categoryId = await ctx.helpers.getDefaultCategoryId(user.accessToken);
-      const today = plainDateFromDate(todayInTimezone(timezone));
+      const today = todayIn(timezone);
       const tomorrow = today.add({ days: 1 });
       const client = ctx.testDatabase.getClient();
       await client.insert(todoTable).values(
@@ -257,14 +254,12 @@ describe("오늘의 할 일 요약 E2E", () => {
         `todo-summary-range-${offsetDays}@test.com`,
         password,
       );
-      const outOfRange = new Date(
-        todayInTimezone(timezone).getTime() + offsetDays * 24 * 60 * 60 * 1000,
-      );
+      const outOfRange = todayIn(timezone).add({ days: offsetDays }).toString();
 
       // When
       const response = await request(ctx.app.getHttpServer())
         .get("/v1/todos/summary")
-        .query({ date: toDateString(outOfRange) })
+        .query({ date: outOfRange })
         .set("Authorization", `Bearer ${user.accessToken}`)
         .set("X-Timezone", timezone);
 
