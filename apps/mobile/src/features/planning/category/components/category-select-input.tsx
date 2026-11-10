@@ -51,6 +51,9 @@ export function CategorySelectInput({
           return (
             <PressableFeedback
               key={category.id}
+              accessibilityRole="button"
+              accessibilityLabel={category.name}
+              accessibilityState={{ selected: isSelected }}
               onPress={() => setLocalCategoryId(category.id)}
               isDisabled={TodoCategoryPolicy.isOptimisticCategory(category)}
               className="rounded-xl"
