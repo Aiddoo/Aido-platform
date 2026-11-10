@@ -8,9 +8,9 @@ import { runInBackground } from "#api/platform/jobs/non-blocking-init";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
 import { instantToDate, toIsoString } from "#api/shared/domain/time/instant";
+import { resolveTimezone } from "#api/shared/domain/time/time-zone-name";
 import { TimeZone } from "#api/shared/domain/time/time-zone.vo";
 
-import { toUserTimeZone } from "../../../shared/domain/user-calendar.domain-service.js";
 import type { ReportType } from "../../domain/ai-report.constants.js";
 import {
   isInReportDispatchWindow,
@@ -129,7 +129,7 @@ export class ReportGenerationScheduler implements OnModuleInit {
         }),
       onBatch: async (batch) => {
         const due = batch.flatMap((user) => {
-          const timezone = toUserTimeZone(user.preference?.timezone ?? TimeZone.SEOUL.value).value;
+          const timezone = resolveTimezone(user.preference?.timezone ?? TimeZone.SEOUL.value);
           return isInReportDispatchWindow(type, dispatchedAt, timezone) ? [{ user, timezone }] : [];
         });
         if (due.length === 0) {

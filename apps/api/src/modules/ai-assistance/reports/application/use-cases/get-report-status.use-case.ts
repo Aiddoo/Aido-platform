@@ -4,13 +4,12 @@ import {
 } from "#api/modules/access/entitlements/access-entitlements.public";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { resolveTimezone } from "#api/shared/domain/time/time-zone-name";
+import { TimeZone } from "#api/shared/domain/time/time-zone.vo";
 import { toZonedInstant } from "#api/shared/domain/time/zoned-time";
 
 import type { UserLocalePreferenceReaderPort } from "../../../generation/application/ports/user-locale-preference.reader.port.js";
-import {
-  localDateAt,
-  toUserTimeZone,
-} from "../../../shared/domain/user-calendar.domain-service.js";
+import { localDateAt } from "../../../shared/domain/user-calendar.domain-service.js";
 import { type AiReportRepositoryPort } from "../ports/ai-report.repository.port.js";
 import type { ReportStatusReadModel } from "../read-models/report-status.read-model.js";
 
@@ -48,7 +47,7 @@ export class GetReportStatusUseCase {
 
     const zone = timezone ?? (await this.#dependencies.localePreferenceReader.read(owner)).timezone;
     const now = this.#dependencies.clock.now();
-    const timeZone = toUserTimeZone(zone);
+    const timeZone = TimeZone.reconstitute(resolveTimezone(zone));
     // 달력 날짜를 먼저 정하고 각 경계를 다시 시간대에 적용해 DST offset을 반영한다.
     const localToday = localDateAt(now, zone);
     const readyAt = (date: Temporal.PlainDate) =>

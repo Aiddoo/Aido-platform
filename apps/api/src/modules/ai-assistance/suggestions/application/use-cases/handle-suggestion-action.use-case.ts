@@ -18,9 +18,10 @@ import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { plainDateToDate } from "#api/shared/domain/time/plain-date";
 
 import type { UserLocalePreferenceReaderPort } from "../../../generation/application/ports/user-locale-preference.reader.port.js";
-import { dateColumnOf, localDateAt } from "../../../shared/domain/user-calendar.domain-service.js";
+import { localDateAt } from "../../../shared/domain/user-calendar.domain-service.js";
 import { SuggestionId } from "../../domain/suggestion-id.vo.js";
 import type { Suggestion } from "../../domain/suggestion.aggregate.js";
 import type { SuggestionAction } from "../../domain/suggestion.constants.js";
@@ -139,7 +140,7 @@ export class HandleSuggestionActionUseCase {
       userId: command.userId,
       title: suggestion.title,
       categoryId: command.categoryId,
-      startDate: dateColumnOf(Temporal.PlainDate.from(startDate)),
+      startDate: plainDateToDate(Temporal.PlainDate.from(startDate)),
       scheduledTime: suggestion.scheduledTime,
       timezone: at.timezone,
       repeat: {
