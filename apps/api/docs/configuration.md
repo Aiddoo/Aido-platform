@@ -18,7 +18,8 @@ env를 더하거나 읽는 위치를 바꿀 때, 운영 env를 준비할 때 읽
 | 설정                                                              | 기본/용도                                                                                                         |
 | ----------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
 | DATABASE_URL / PGBOSS_DATABASE_URL                                | API DB / 별도 미설정 시 같은 pg-boss DB                                                                           |
-| DATABASE_POOL_MAX / _IDLE_TIMEOUT_MS / _CONNECTION_TIMEOUT_MS     | 10 / 비우면 pg 기본값(유휴 10초, 연결 대기 무제한)                                                                |
+| DATABASE_POOL_MAX / _IDLE_TIMEOUT_MS / _CONNECTION_TIMEOUT_MS     | 10 / 비우면 pg 기본값(유휴 10초) / 연결 대기 5초                                                                  |
+| DATABASE_SSL_ALLOW_UNVERIFIED                                     | 기본 false. `sslmode`가 있으면 RDS CA(`NODE_EXTRA_CA_CERTS`)로 인증서를 검증하고, 비상시에만 true로 끈다          |
 | NODE_ENV / APP_ENV                                                | 런타임 / 배포 환경. production APP_ENV에서 Sentry를 보내고 RevenueCat Test Store 웹훅을 반영하지 않는다           |
 | PORT                                                              | host 기본 8080, API container 8080                                                                                |
 | JWT_SECRET / JWT_REFRESH_SECRET / TOKEN_ENCRYPTION_KEY            | 시작 검증에 필요한 32자 이상 값                                                                                   |
