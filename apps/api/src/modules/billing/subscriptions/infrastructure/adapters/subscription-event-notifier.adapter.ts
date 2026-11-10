@@ -1,7 +1,7 @@
 import { Inject, Injectable } from "@nestjs/common";
 
 import { NotificationQueueService } from "#api/modules/notification/notification-delivery-jobs.public";
-import { AdminEventNotifier } from "#api/modules/operations/operations-notifications.public";
+import { AdminEventNotifierPort } from "#api/modules/operations/admin-notices/operations-admin-notices.public";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
@@ -23,13 +23,13 @@ import { SubscriptionAlertKey } from "../../application/subscriptions.alerts.js"
  */
 @Injectable()
 export class SubscriptionEventNotifierAdapter extends SubscriptionEventNotifierPort {
-  readonly #adminEventNotifier: AdminEventNotifier;
+  readonly #adminEventNotifier: AdminEventNotifierPort;
   readonly #notificationQueueService: NotificationQueueService;
   readonly #alert: OperationalAlertPort;
   readonly #config: TypedConfigService;
 
   constructor(
-    adminEventNotifier: AdminEventNotifier,
+    adminEventNotifier: AdminEventNotifierPort,
     notificationQueueService: NotificationQueueService,
     alert: OperationalAlertPort,
     @Inject(TypedConfigService) config: TypedConfigService,

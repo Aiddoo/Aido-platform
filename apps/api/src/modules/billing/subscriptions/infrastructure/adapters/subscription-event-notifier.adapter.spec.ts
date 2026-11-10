@@ -4,12 +4,11 @@ import { ConfigService } from "@nestjs/config";
 import { NotificationJobName } from "#api/modules/notification/infrastructure/jobs/delivery/notification-queue.constants";
 import { notificationEventJobKey } from "#api/modules/notification/infrastructure/jobs/notification-job-keys";
 import { NotificationQueueService } from "#api/modules/notification/notification-delivery-jobs.public";
-import { AdminEventNotifier } from "#api/modules/operations/operations-notifications.public";
 import type { EnvConfig } from "#api/platform/config/schemas/index";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { ApplicationException } from "#api/shared/application/application.exception";
+import { RecordingAdminEventNotifier } from "#test/doubles/operations/recording-admin-event-notifier";
 import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";
-import { SilentLogger } from "#test/doubles/platform/silent-logger";
 import { FakeJobRuntime } from "#test/mocks/fake-job-runtime";
 import { suppressLogger } from "#test/setup/suppress-logger";
 
@@ -18,18 +17,9 @@ import type { SubscriptionEventPayload } from "../../application/read-models/sub
 import { SubscriptionEventNotifierAdapter } from "./subscription-event-notifier.adapter.js";
 
 function createAdapter(options: { projectId?: string } = {}) {
-  const forwarded: SubscriptionEventPayload[] = [];
+  const adminEventNotifier = new RecordingAdminEventNotifier();
   const alerts = new RecordingOperationalAlert();
   const jobRuntime = new FakeJobRuntime();
-  const adminEventNotifier = new AdminEventNotifier({
-    enqueueUserRegistered: { execute: async () => undefined },
-    enqueueSubscriptionEvent: {
-      execute: async (payload) => {
-        forwarded.push(payload);
-      },
-    },
-    logger: new SilentLogger(),
-  });
   const config = new TypedConfigService(
     new ConfigService<EnvConfig, true>({ REVENUECAT_PROJECT_ID: options.projectId }),
   );
@@ -39,7 +29,7 @@ function createAdapter(options: { projectId?: string } = {}) {
     alerts,
     config,
   );
-  return { adapter, alerts, forwarded, jobRuntime };
+  return { adapter, alerts, forwarded: adminEventNotifier.subscriptionEvents, jobRuntime };
 }
 
 describe("SubscriptionEventNotifierAdapter — 웹훅 실패 보고", () => {
