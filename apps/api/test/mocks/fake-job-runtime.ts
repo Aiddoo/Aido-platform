@@ -27,10 +27,10 @@ export class FakeJobRuntime implements JobRuntimePort {
   readonly unscheduleCalls: Array<{ scheduleKey: string; queue: string }> = [];
   readonly cancelCalls: Array<{ queue: string; idempotencyKey: string }> = [];
   readonly workCalls: Array<{ queue: string; options: WorkJobOptions }> = [];
-  private readonly handlers = new Map<string, StoredHandler>();
+  readonly #handlers = new Map<string, StoredHandler>();
   /** 실제 런타임처럼 지우기 전에는 같은 key를 다시 받지 않는다. */
-  private readonly storedKeys = new Set<string>();
-  private sequence = 0;
+  readonly #storedKeys = new Set<string>();
+  #sequence = 0;
 
   async start(): Promise<void> {}
 
@@ -43,14 +43,14 @@ export class FakeJobRuntime implements JobRuntimePort {
   ): Promise<string | null> {
     const storedKey = options.idempotencyKey == null ? null : `${queue}:${options.idempotencyKey}`;
     if (storedKey != null) {
-      if (this.storedKeys.has(storedKey)) {
+      if (this.#storedKeys.has(storedKey)) {
         return null;
       }
-      this.storedKeys.add(storedKey);
+      this.#storedKeys.add(storedKey);
     }
     this.enqueueCalls.push({ queue, data, options });
-    this.sequence += 1;
-    return `fake-job-${this.sequence}`;
+    this.#sequence += 1;
+    return `fake-job-${this.#sequence}`;
   }
 
   async enqueueMany<T extends JobData>(
@@ -78,7 +78,7 @@ export class FakeJobRuntime implements JobRuntimePort {
 
   async cancel(queue: string, idempotencyKeys: readonly string[]): Promise<void> {
     for (const idempotencyKey of idempotencyKeys) {
-      this.storedKeys.delete(`${queue}:${idempotencyKey}`);
+      this.#storedKeys.delete(`${queue}:${idempotencyKey}`);
       this.cancelCalls.push({ queue, idempotencyKey });
     }
   }
@@ -89,7 +89,7 @@ export class FakeJobRuntime implements JobRuntimePort {
     options: WorkJobOptions,
   ): Promise<void> {
     this.workCalls.push({ queue, options });
-    this.handlers.set(queue, handler);
+    this.#handlers.set(queue, handler);
   }
 
   async health(queueNames: readonly string[]): Promise<JobRuntimeHealth> {
@@ -111,14 +111,14 @@ export class FakeJobRuntime implements JobRuntimePort {
   }
 
   async run<T extends JobData>(queue: string, data: T, name = queue): Promise<void> {
-    const handler = this.handlers.get(queue);
+    const handler = this.#handlers.get(queue);
     if (!handler) {
       throw new Error(`No fake job handler registered for ${queue}`);
     }
-    this.sequence += 1;
+    this.#sequence += 1;
     await handler([
       {
-        id: `fake-run-${this.sequence}`,
+        id: `fake-run-${this.#sequence}`,
         name,
         data,
         attempt: 1,
@@ -132,7 +132,7 @@ export class FakeJobRuntime implements JobRuntimePort {
     this.unscheduleCalls.length = 0;
     this.cancelCalls.length = 0;
     this.workCalls.length = 0;
-    this.storedKeys.clear();
-    this.sequence = 0;
+    this.#storedKeys.clear();
+    this.#sequence = 0;
   }
 }

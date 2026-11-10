@@ -46,15 +46,15 @@ interface TestDatabaseOptions {
 }
 
 export class TestDatabase {
-  private client: TestDatabaseClient | null = null;
-  private connectionUri: string | null = null;
-  private canDisableTriggers = true;
-  private readonly env: NodeJS.ProcessEnv;
-  private readonly createClient: (connectionUri: string) => TestDatabaseClient;
+  #client: TestDatabaseClient | null = null;
+  #connectionUri: string | null = null;
+  #canDisableTriggers = true;
+  readonly #env: NodeJS.ProcessEnv;
+  readonly #createClient: (connectionUri: string) => TestDatabaseClient;
 
   constructor(options: TestDatabaseOptions = {}) {
-    this.env = options.env ?? process.env;
-    this.createClient =
+    this.#env = options.env ?? process.env;
+    this.#createClient =
       options.createClient ?? ((connectionUri) => createTestClient(connectionUri));
   }
 
@@ -64,12 +64,12 @@ export class TestDatabase {
    * @returns TestDatabaseClient 인스턴스
    */
   async start(): Promise<TestDatabaseClient> {
-    if (this.client) {
-      return this.client;
+    if (this.#client) {
+      return this.#client;
     }
 
-    const { connectionUri } = assertManagedTestDatabaseEnvironment(this.env);
-    const client = this.createClient(connectionUri);
+    const { connectionUri } = assertManagedTestDatabaseEnvironment(this.#env);
+    const client = this.#createClient(connectionUri);
 
     try {
       await client.execute(sql`SELECT 1`);
@@ -79,8 +79,8 @@ export class TestDatabase {
       throw error;
     }
 
-    this.client = client;
-    this.connectionUri = connectionUri;
+    this.#client = client;
+    this.#connectionUri = connectionUri;
     return client;
   }
 
@@ -88,53 +88,53 @@ export class TestDatabase {
    * 테스트 DB 클라이언트 반환
    */
   getClient(): TestDatabaseClient {
-    if (!this.client) {
+    if (!this.#client) {
       throw new Error("TestDatabase not started. Call start() first.");
     }
-    return this.client;
+    return this.#client;
   }
 
   /**
    * 관리형 테스트 DB 연결 URI 반환
    */
   getConnectionUri(): string {
-    if (!this.connectionUri) {
+    if (!this.#connectionUri) {
       throw new Error("TestDatabase not started. Call start() first.");
     }
-    return this.connectionUri;
+    return this.#connectionUri;
   }
 
   /**
    * 테스트 데이터 초기화 (모든 테이블 데이터 삭제)
    */
   async cleanup(): Promise<void> {
-    if (!this.client) {
+    if (!this.#client) {
       return;
     }
 
-    assertManagedTestDatabaseEnvironment(this.env);
-    if (this.canDisableTriggers) {
+    assertManagedTestDatabaseEnvironment(this.#env);
+    if (this.#canDisableTriggers) {
       try {
-        await this.client.execute(RESET_ALL_TABLES);
+        await this.#client.execute(RESET_ALL_TABLES);
         return;
       } catch (error) {
         if (databaseSqlState(error) !== INSUFFICIENT_PRIVILEGE) {
           throw error;
         }
-        this.canDisableTriggers = false;
+        this.#canDisableTriggers = false;
       }
     }
-    await this.client.execute(TRUNCATE_ALL_TABLES);
+    await this.#client.execute(TRUNCATE_ALL_TABLES);
   }
 
   /**
    * 테스트 DB 연결 해제
    */
   async stop(): Promise<void> {
-    if (this.client) {
-      await this.client.close();
-      this.client = null;
+    if (this.#client) {
+      await this.#client.close();
+      this.#client = null;
     }
-    this.connectionUri = null;
+    this.#connectionUri = null;
   }
 }

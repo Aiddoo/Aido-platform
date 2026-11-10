@@ -225,7 +225,7 @@
       }
     },
     {
-      "files": ["apps/api/src/**/*.ts"],
+      "files": ["apps/api/**/*.ts"],
       "rules": {
         "typescript/parameter-properties": [
           "error",

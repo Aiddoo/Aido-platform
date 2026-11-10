@@ -24,7 +24,7 @@ pre-commit:
       run: pnpm exec ls-lint
     # 관례는 이번 커밋의 파일만 본다. 전체는 pnpm check가 본다.
     - name: server-conventions
-      glob: 'apps/api/src/**/*.ts'
+      glob: 'apps/api/{src,test,scripts}/**/*.ts'
       run: node apps/api/scripts/check-conventions.mjs --file {staged_files}
 
 # 커밋마다 전체 검사를 돌리면 작은 커밋이 수 분씩 걸려 push 때 한 번 모아 돌린다.

@@ -56,7 +56,7 @@
 - 비공개 필드·메서드·getter는 모두 `#`이다. TS `private` 키워드와 생성자 파라미터 프로퍼티(`constructor(private readonly x)`)를 쓰지 않는다.
 - Nest가 주입하는 의존성도 `readonly #x` 필드에 생성자에서 대입한다. DI는 생성자 파라미터 타입만 본다.
 - `protected`는 `shared/domain` 베이스 클래스의 확장점(`props`, `raise`)에만 허용한다.
-- 강제: oxlint `typescript/parameter-properties`(`prefer: "class-property"`), `private` 키워드 검사(`check:conventions`), 전환이 끝나면 TS `erasableSyntaxOnly: true`.
+- 강제(src·test·scripts 전체): TS `erasableSyntaxOnly: true`(파라미터 프로퍼티·TS `enum` 컴파일 오류), oxlint `typescript/parameter-properties`(`prefer: "class-property"`), `private`·`public`·`protected` 키워드 검사(`check:conventions`). 정적 비공개 멤버는 Nest 데코레이터 클래스에 쓸 수 없어 모듈 함수·상수로 뺀다.
 
 ## 없음의 모양
 

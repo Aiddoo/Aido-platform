@@ -73,19 +73,22 @@ class BestEffortRendezvous {
     this.#release = resolve;
   });
 
-  constructor(
-    private readonly participants: number,
-    private readonly maximumWaitMs = 20,
-  ) {}
+  readonly #participants: number;
+  readonly #maximumWaitMs: number;
+
+  constructor(participants: number, maximumWaitMs = 20) {
+    this.#participants = participants;
+    this.#maximumWaitMs = maximumWaitMs;
+  }
 
   async wait(): Promise<void> {
     this.#arrivals += 1;
-    if (this.#arrivals >= this.participants) {
+    if (this.#arrivals >= this.#participants) {
       this.#release?.();
     }
     await Promise.race([
       this.#released,
-      new Promise<void>((resolve) => setTimeout(resolve, this.maximumWaitMs)),
+      new Promise<void>((resolve) => setTimeout(resolve, this.#maximumWaitMs)),
     ]);
   }
 }
@@ -115,15 +118,15 @@ class RequiredParticipantBarrier {
   readonly #ready = createRejectableDeferred();
   readonly #timer: ReturnType<typeof setTimeout>;
 
-  constructor(
-    private readonly participants: number,
-    timeoutMs = 5_000,
-  ) {
+  readonly #participants: number;
+
+  constructor(participants: number, timeoutMs = 5_000) {
+    this.#participants = participants;
     this.#timer = setTimeout(() => {
       this.#ready.reject(
         new Error(
           `category pre-lock barrier timed out: ` +
-            `arrivals=${this.#arrivals.length}/${this.participants}; ` +
+            `arrivals=${this.#arrivals.length}/${this.#participants}; ` +
             `participants=[${this.#arrivals.join(",")}]`,
         ),
       );
@@ -132,16 +135,16 @@ class RequiredParticipantBarrier {
 
   async arrive(participant: string): Promise<void> {
     this.#arrivals.push(participant);
-    if (this.#arrivals.length > this.participants) {
+    if (this.#arrivals.length > this.#participants) {
       const error = new Error(
         `category pre-lock barrier overflow: ` +
-          `arrivals=${this.#arrivals.length}/${this.participants}; ` +
+          `arrivals=${this.#arrivals.length}/${this.#participants}; ` +
           `participants=[${this.#arrivals.join(",")}]`,
       );
       this.#ready.reject(error);
       throw error;
     }
-    if (this.#arrivals.length === this.participants) {
+    if (this.#arrivals.length === this.#participants) {
       clearTimeout(this.#timer);
       this.#ready.resolve();
     }
@@ -158,12 +161,17 @@ class RequiredParticipantBarrier {
 }
 
 class RacingCheerRepository extends DrizzleCheerRepository {
+  readonly #dailyBarrier?: BestEffortRendezvous;
+  readonly #cooldownBarrier?: BestEffortRendezvous;
+
   constructor(
     txHost: TransactionHost<DrizzleTransactionalAdapter>,
-    private readonly dailyBarrier?: BestEffortRendezvous,
-    private readonly cooldownBarrier?: BestEffortRendezvous,
+    dailyBarrier?: BestEffortRendezvous,
+    cooldownBarrier?: BestEffortRendezvous,
   ) {
     super(txHost);
+    this.#dailyBarrier = dailyBarrier;
+    this.#cooldownBarrier = cooldownBarrier;
   }
 
   override async countSentBetween(
@@ -171,25 +179,32 @@ class RacingCheerRepository extends DrizzleCheerRepository {
     window: { readonly startsAt: Temporal.Instant; readonly endsAt: Temporal.Instant },
   ): Promise<number> {
     const count = await super.countSentBetween(senderId, window);
-    await this.dailyBarrier?.wait();
+    await this.#dailyBarrier?.wait();
     return count;
   }
 
   override async findLastSent(senderId: UserId, receiverId: UserId) {
     const lastCheer = await super.findLastSent(senderId, receiverId);
-    await this.cooldownBarrier?.wait();
+    await this.#cooldownBarrier?.wait();
     return lastCheer;
   }
 }
 
 class RacingNudgeRepository extends DrizzleNudgeRepository {
+  readonly #dailyBarrier?: BestEffortRendezvous;
+  readonly #todoCooldownBarrier?: BestEffortRendezvous;
+  readonly #reminderCooldownBarrier?: BestEffortRendezvous;
+
   constructor(
     txHost: TransactionHost<DrizzleTransactionalAdapter>,
-    private readonly dailyBarrier?: BestEffortRendezvous,
-    private readonly todoCooldownBarrier?: BestEffortRendezvous,
-    private readonly reminderCooldownBarrier?: BestEffortRendezvous,
+    dailyBarrier?: BestEffortRendezvous,
+    todoCooldownBarrier?: BestEffortRendezvous,
+    reminderCooldownBarrier?: BestEffortRendezvous,
   ) {
     super(txHost);
+    this.#dailyBarrier = dailyBarrier;
+    this.#todoCooldownBarrier = todoCooldownBarrier;
+    this.#reminderCooldownBarrier = reminderCooldownBarrier;
   }
 
   override async countSentBetween(
@@ -197,19 +212,19 @@ class RacingNudgeRepository extends DrizzleNudgeRepository {
     window: { readonly startsAt: Temporal.Instant; readonly endsAt: Temporal.Instant },
   ): Promise<number> {
     const count = await super.countSentBetween(senderId, window);
-    await this.dailyBarrier?.wait();
+    await this.#dailyBarrier?.wait();
     return count;
   }
 
   override async findLastSentForTodo(senderId: UserId, todoId: TodoId) {
     const lastNudge = await super.findLastSentForTodo(senderId, todoId);
-    await this.todoCooldownBarrier?.wait();
+    await this.#todoCooldownBarrier?.wait();
     return lastNudge;
   }
 
   override async findLastReminderSentTo(senderId: UserId, receiverId: UserId) {
     const reminder = await super.findLastReminderSentTo(senderId, receiverId);
-    await this.reminderCooldownBarrier?.wait();
+    await this.#reminderCooldownBarrier?.wait();
     return reminder;
   }
 }
@@ -271,42 +286,49 @@ class CoordinatedCategoryMutationLock implements MutationLockPort {
   readonly #releaseFirstHolder = createDeferred();
   #hasFirstHolder = false;
 
+  readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
+  readonly #delegate: PostgresMutationLockAdapter;
+  readonly #expectedKey: string;
+
   constructor(
-    private readonly txHost: TransactionHost<DrizzleTransactionalAdapter>,
-    private readonly delegate: PostgresMutationLockAdapter,
-    private readonly expectedKey: string,
+    txHost: TransactionHost<DrizzleTransactionalAdapter>,
+    delegate: PostgresMutationLockAdapter,
+    expectedKey: string,
     participants: number,
     timeoutMs = 5_000,
   ) {
+    this.#txHost = txHost;
+    this.#delegate = delegate;
+    this.#expectedKey = expectedKey;
     this.#barrier = new RequiredParticipantBarrier(participants, timeoutMs);
   }
 
   async acquire(keys: readonly string[]): Promise<void> {
-    if (keys.length !== 1 || keys[0] !== this.expectedKey) {
+    if (keys.length !== 1 || keys[0] !== this.#expectedKey) {
       throw new Error(
-        `unexpected category lock key: expected=${JSON.stringify(this.expectedKey)}, ` +
+        `unexpected category lock key: expected=${JSON.stringify(this.#expectedKey)}, ` +
           `received=${JSON.stringify(keys)}`,
       );
     }
-    if (!this.txHost.isTransactionActive()) {
+    if (!this.#txHost.isTransactionActive()) {
       throw new Error(
-        `category lock reached outside active UoW: key=${JSON.stringify(this.expectedKey)}`,
+        `category lock reached outside active UoW: key=${JSON.stringify(this.#expectedKey)}`,
       );
     }
 
-    const { rows } = await this.txHost.tx.execute<{ pid: number }>(
+    const { rows } = await this.#txHost.tx.execute<{ pid: number }>(
       sql`SELECT pg_backend_pid()::int AS pid`,
     );
     const pid = rows[0]?.pid;
     if (pid === undefined) {
       throw new Error(
         `could not identify category transaction backend: ` +
-          `key=${JSON.stringify(this.expectedKey)}`,
+          `key=${JSON.stringify(this.#expectedKey)}`,
       );
     }
 
     await this.#barrier.arrive(pid.toString());
-    await this.delegate.acquire(keys);
+    await this.#delegate.acquire(keys);
 
     if (!this.#hasFirstHolder) {
       this.#hasFirstHolder = true;

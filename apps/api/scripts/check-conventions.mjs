@@ -199,10 +199,18 @@ function listRepoFiles() {
   }
 }
 
+// 멤버 키워드 규칙은 tsconfig(erasableSyntaxOnly)와 같은 범위인 src·test·scripts 전체에 건다
+const CHECKED_DIRS = ["src/", "test/", "scripts/"];
+
+function isCheckedFile(rel) {
+  return CHECKED_DIRS.some((dir) => rel.startsWith(dir)) && rel.endsWith(".ts");
+}
+
 function listSourceFiles(repoFiles) {
   return repoFiles
-    .filter((path) => path.startsWith("apps/api/src/") && path.endsWith(".ts"))
-    .map((path) => path.slice("apps/api/".length));
+    .filter((path) => path.startsWith("apps/api/"))
+    .map((path) => path.slice("apps/api/".length))
+    .filter(isCheckedFile);
 }
 
 // 저장소가 보는 파일이 .DS_Store·.gitkeep뿐인 폴더는 남기지 않는다. 빈 폴더는 git에 없어 CI에서 보이지 않으므로 대상이 아니다.
@@ -256,7 +264,7 @@ const files = checksTree
   : selectedFiles.map(toApiRelative).filter((rel) => existsSync(join(apiRoot, rel)));
 
 for (const rel of files) {
-  if (!rel.startsWith("src/") || !rel.endsWith(".ts")) {
+  if (!isCheckedFile(rel)) {
     continue;
   }
   checkFile(rel, violations, warnings);
