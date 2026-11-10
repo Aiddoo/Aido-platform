@@ -11,8 +11,9 @@ import { z } from "zod";
 
 import type { UserProfileInvalidatorPort } from "#api/modules/identity/users/application/ports/user-profile-invalidator.port";
 import { CacheService } from "#api/platform/cache/cache.service";
-import { now } from "#api/shared/domain/date/utils/core";
+import { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { instantToDate } from "#api/shared/domain/time/instant";
 
 import type {
   AuthCachedSession,
@@ -64,9 +65,11 @@ const AUTH_CACHED_USER_PROFILE_SCHEMA = z.looseObject({
 // 사용자 프로필 무효화 포트로도 같은 인스턴스를 쓴다(useExisting)
 export class AuthCacheAdapter implements AuthCachePort, UserProfileInvalidatorPort {
   readonly #cacheService: CacheService;
+  readonly #clock: ClockPort;
 
-  constructor(cacheService: CacheService) {
+  constructor(cacheService: CacheService, clock: ClockPort) {
     this.#cacheService = cacheService;
+    this.#clock = clock;
   }
 
   getSession(sessionId: SessionId): Promise<AuthCachedSession | undefined> {
@@ -100,7 +103,7 @@ export class AuthCacheAdapter implements AuthCachePort, UserProfileInvalidatorPo
       IdentityCacheKey.userProfile(userId.value),
       AUTH_CACHED_USER_PROFILE_SCHEMA.optional(),
       factory,
-      (profile) => userProfileTtlMs(profile, now()),
+      (profile) => userProfileTtlMs(profile, instantToDate(this.#clock.now())),
     );
   }
 }

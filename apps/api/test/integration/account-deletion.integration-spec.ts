@@ -58,9 +58,7 @@ import { EncryptionService } from "#api/platform/encryption/index";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { UnitOfWorkPort } from "#api/shared/application/ports/index";
 import { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
-import { subtractDays } from "#api/shared/domain/date/utils/arithmetic";
 import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
-import { instantFromDate } from "#api/shared/domain/time/instant";
 import { DateClock } from "#test/doubles/platform/date-clock";
 import { NoCacheStore } from "#test/doubles/platform/no-cache-store";
 import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";
@@ -88,6 +86,10 @@ import { TestDatabase, type TestDatabaseClient } from "../setup/test-database.js
 import { provisioningSeederTestProvider } from "./helpers/provisioning-seeder.provider.js";
 import { retentionEnrollerTestProvider } from "./helpers/retention-enroller.provider.js";
 import { sessionPushDeviceReleaserTestProvider } from "./helpers/session-push-device-releaser.provider.js";
+
+function daysAgo(days: number): Temporal.Instant {
+  return Temporal.Now.instant().subtract({ hours: days * 24 });
+}
 
 describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
   let module: TestingModule;
@@ -398,7 +400,7 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
 
     it("유예 기간 초과 시 로그인 차단 (USER_0606)", async () => {
       // Given
-      const pastDate = subtractDays(ACCOUNT_DELETION.GRACE_PERIOD_DAYS + 1);
+      const pastDate = daysAgo(ACCOUNT_DELETION.GRACE_PERIOD_DAYS + 1);
 
       const email = "expired-delete@example.com";
       const password = "Test1234!";
@@ -406,7 +408,7 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
 
       await client
         .update(userTable)
-        .set({ deletedAt: instantFromDate(pastDate), status: "SUSPENDED" })
+        .set({ deletedAt: pastDate, status: "SUSPENDED" })
         .where(eq(userTable.id, userId));
 
       // When
@@ -417,7 +419,7 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
   describe("PurgeDeletedAccounts — 계정 영구 삭제", () => {
     it("유예 기간 경과 후 hard delete 실행", async () => {
       // Given
-      const pastDate = subtractDays(ACCOUNT_DELETION.GRACE_PERIOD_DAYS + 1);
+      const pastDate = daysAgo(ACCOUNT_DELETION.GRACE_PERIOD_DAYS + 1);
 
       const [created] = await client
         .insert(userTable)
@@ -425,7 +427,7 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
           email: "purge-test@example.com",
           userTag: "PURGE001",
           status: "SUSPENDED",
-          deletedAt: instantFromDate(pastDate),
+          deletedAt: pastDate,
           updatedAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
         })
         .returning();
@@ -441,7 +443,7 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
 
     it("유예 기간 내 사용자는 삭제하지 않음", async () => {
       // Given
-      const recentDate = subtractDays(ACCOUNT_DELETION.GRACE_PERIOD_DAYS - 1);
+      const recentDate = daysAgo(ACCOUNT_DELETION.GRACE_PERIOD_DAYS - 1);
 
       const [created] = await client
         .insert(userTable)
@@ -449,7 +451,7 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
           email: "keep-test@example.com",
           userTag: "KEEP0001",
           status: "SUSPENDED",
-          deletedAt: instantFromDate(recentDate),
+          deletedAt: recentDate,
           updatedAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
         })
         .returning();

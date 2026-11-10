@@ -5,9 +5,9 @@ import { ApplicationException } from "#api/shared/application/application.except
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
-import { normalizeIanaTimezone } from "#api/shared/domain/date/utils/timezone";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantToDate } from "#api/shared/domain/time/instant";
+import { normalizeIanaTimezone } from "#api/shared/domain/time/time-zone-name";
 
 import { ReminderTime } from "../../domain/reminder-time.vo.js";
 import type { PreferenceEntitlementPort } from "../ports/preference-entitlement.port.js";
