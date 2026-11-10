@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 import { dateSchema, datetimeSchema } from "../../../common/datetime.js";
-import { numberCursorPaginationInfoSchema } from "../../../common/pagination.js";
+import { cursorPageSchema } from "../../../common/pagination.js";
 
 export const weeklyAchievementSchema = z
   .object({
@@ -56,12 +56,12 @@ export const weeklyAchievementSummarySchema = z
 
 export type WeeklyAchievementSummary = z.infer<typeof weeklyAchievementSummarySchema>;
 
-export const weeklyAchievementListResponseSchema = z
-  .object({
-    items: z.array(weeklyAchievementSchema).describe("주간 달성 목록"),
-    pagination: numberCursorPaginationInfoSchema.describe("페이지네이션 정보"),
-    summary: weeklyAchievementSummarySchema.describe("전체 통계 요약"),
-  })
+export const weeklyAchievementListResponseSchema = cursorPageSchema(
+  weeklyAchievementSchema,
+  z.number().int(),
+  { items: "주간 달성 목록", pagination: "페이지네이션 정보" },
+)
+  .extend({ summary: weeklyAchievementSummarySchema.describe("전체 통계 요약") })
   .meta({
     example: {
       items: [

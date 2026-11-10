@@ -6,7 +6,7 @@ import {
   nullableDatetimeSchema,
   timeOfDaySchema,
 } from "../../../common/datetime.js";
-import { numberCursorPaginationInfoSchema } from "../../../common/pagination.js";
+import { cursorPageSchema } from "../../../common/pagination.js";
 import { todoCategorySummarySchema } from "../../todo-category/v1/todo-category.response.js";
 import { todoSeriesResponseSchema } from "./todo-series.response.js";
 import { todoRepeatSchema, todoVisibilitySchema } from "./todo.common.js";
@@ -122,52 +122,42 @@ export const friendTodoSchema = todoSchema
 
 export type FriendTodo = z.infer<typeof friendTodoSchema>;
 
-export { numberCursorPaginationInfoSchema };
-
-export const todoListResponseSchema = z
-  .object({
-    items: z.array(todoSchema),
-    pagination: numberCursorPaginationInfoSchema,
-  })
-  .meta({
-    example: {
-      items: [
-        {
+export const todoListResponseSchema = cursorPageSchema(todoSchema, z.number().int()).meta({
+  example: {
+    items: [
+      {
+        id: 1,
+        userId: "clz7x5p8k0010qz0z8z8z8z8z",
+        title: "운동하기",
+        sortOrder: 0,
+        completed: false,
+        completedAt: null,
+        startDate: "2024-01-15",
+        endDate: "2024-01-15",
+        scheduledTime: "2024-01-15T09:00:00.000Z",
+        isAllDay: false,
+        visibility: "PUBLIC",
+        category: {
           id: 1,
-          userId: "clz7x5p8k0010qz0z8z8z8z8z",
-          title: "운동하기",
+          name: "중요한 일",
+          color: "#FFB3B3",
           sortOrder: 0,
-          completed: false,
-          completedAt: null,
-          startDate: "2024-01-15",
-          endDate: "2024-01-15",
-          scheduledTime: "2024-01-15T09:00:00.000Z",
-          isAllDay: false,
-          visibility: "PUBLIC",
-          category: {
-            id: 1,
-            name: "중요한 일",
-            color: "#FFB3B3",
-            sortOrder: 0,
-          },
-          createdAt: "2024-01-10T12:00:00.000Z",
-          updatedAt: "2024-01-10T12:00:00.000Z",
         },
-      ],
-      pagination: {
-        nextCursor: 2,
-        hasNext: true,
-        size: 20,
+        createdAt: "2024-01-10T12:00:00.000Z",
+        updatedAt: "2024-01-10T12:00:00.000Z",
       },
+    ],
+    pagination: {
+      nextCursor: 2,
+      hasNext: true,
+      size: 20,
     },
-  });
+  },
+});
 
 export type TodoListResponse = z.infer<typeof todoListResponseSchema>;
 
-export const friendTodoListResponseSchema = z.object({
-  items: z.array(friendTodoSchema),
-  pagination: numberCursorPaginationInfoSchema,
-});
+export const friendTodoListResponseSchema = cursorPageSchema(friendTodoSchema, z.number().int());
 
 export type FriendTodoListResponse = z.infer<typeof friendTodoListResponseSchema>;
 
