@@ -1,4 +1,3 @@
-import { TODO_SERIES_LIMITS } from '@aido/api/vocabulary';
 import { useHaptics, useTodoService } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
 import { emitTodoCompletionChanged } from '@src/core/events/todo-completion-changed';
@@ -20,7 +19,11 @@ import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 import { TODO_MUTATION_KEYS } from '../constants/todo-mutation-keys';
 import { TODO_QUERY_KEYS } from '../constants/todo-query-keys';
 import type { TodoUpdateScope, TodoEditScope } from '../domains/todo-repeat.model';
-import { findTodoSeriesFailure, shouldRefreshTodos } from '../domains/todo-series.error';
+import {
+  findTodoSeriesFailure,
+  getTodoSeriesLimit,
+  shouldRefreshTodos,
+} from '../domains/todo-series.error';
 import { TodoPolicy } from '../domains/todo.model';
 import type {
   ChangeTodoCategoryInput,
@@ -190,7 +193,7 @@ export function useChangeTodoCategoryMutationOptions() {
         }
         toast.error(
           t(`todo:toast.series.${seriesFailure}.title`, {
-            limit: TODO_SERIES_LIMITS.MAX_ACTIVE_PER_USER,
+            limit: getTodoSeriesLimit(error),
           }),
           { description: t(`todo:toast.series.${seriesFailure}.description`) },
         );
@@ -269,7 +272,7 @@ export function useDeleteTodoMutationOptions() {
         }
         toast.error(
           t(`todo:toast.series.${seriesFailure}.title`, {
-            limit: TODO_SERIES_LIMITS.MAX_ACTIVE_PER_USER,
+            limit: getTodoSeriesLimit(error),
           }),
           { description: t(`todo:toast.series.${seriesFailure}.description`) },
         );
@@ -387,7 +390,7 @@ export function useUpdateTodoScheduleMutationOptions() {
         }
         toast.error(
           t(`todo:toast.series.${seriesFailure}.title`, {
-            limit: TODO_SERIES_LIMITS.MAX_ACTIVE_PER_USER,
+            limit: getTodoSeriesLimit(error),
           }),
           { description: t(`todo:toast.series.${seriesFailure}.description`) },
         );
