@@ -3,20 +3,21 @@ import { createServer, type Server } from "node:http";
 
 import { ErrorCode } from "@aido/api/errors";
 import { Logger } from "@nestjs/common";
-import { HttpClient, getHttpClientToken } from "@nestjs/http-client";
-import { TestBed } from "@suites/unit";
+import { HttpClient } from "@nestjs/http-client";
 import { SignJWT, exportJWK, generateKeyPair, type JWK } from "jose";
 import { vi, type Mock } from "vitest";
 
-import {
-  OAUTH_PROVIDER_TIMEOUT_MS,
-  OAuthTokenVerifierService,
-} from "#api/modules/identity/auth/infrastructure/adapters/oauth-token-verifier.adapter";
-import { TypedConfigService } from "#api/platform/config/services/config.service";
+import type { VerifiedProfile } from "#api/modules/identity/auth/application/ports/oauth-identity-provider.port";
 import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
 import { ApplicationException } from "#api/shared/application/application.exception";
 import { asMock } from "#test/mocks/index";
 import { RecordingOperationalAlert } from "#test/mocks/recording-operational-alert";
+
+import { AppleOAuthIdentityAdapter } from "./apple-oauth-identity.adapter.js";
+import { GoogleOAuthIdentityAdapter } from "./google-oauth-identity.adapter.js";
+import { KakaoOAuthIdentityAdapter } from "./kakao-oauth-identity.adapter.js";
+import { NaverOAuthIdentityAdapter } from "./naver-oauth-identity.adapter.js";
+import { OAUTH_PROVIDER_TIMEOUT_MS } from "./oauth-outbound.policy.js";
 
 // Google Auth Library 모킹
 vi.mock("google-auth-library", () => ({
@@ -35,8 +36,13 @@ async function responseFromFixture(fixture: {
   });
 }
 
-describe("OAuthTokenVerifierService — OAuth 토큰 검증 서비스", () => {
-  let service: OAuthTokenVerifierService;
+describe("OAuth 공급자 어댑터 — 앱이 보낸 공급자 토큰 검증", () => {
+  let service: {
+    verifyGoogleToken(token: string): Promise<VerifiedProfile>;
+    verifyKakaoToken(token: string): Promise<VerifiedProfile>;
+    verifyNaverToken(token: string): Promise<VerifiedProfile>;
+    verifyAppleToken(token: string, nonce?: string): Promise<VerifiedProfile>;
+  };
   let mockGoogleVerifyIdToken: Mock;
   let appleJwksUrl: string | undefined;
 
@@ -48,25 +54,38 @@ describe("OAuthTokenVerifierService — OAuth 토큰 검증 서비스", () => {
       return { verifyIdToken: mockGoogleVerifyIdToken };
     });
 
-    const { unit } = await TestBed.solitary(OAuthTokenVerifierService)
-      .mock(getHttpClientToken("oauth"))
-      .final(new HttpClient({ retry: false, throwOnHttpError: false }))
-      .mock(OutboundPolicyRegistry)
-      .final(new OutboundPolicyRegistry(new RecordingOperationalAlert()))
-      .mock(TypedConfigService)
-      .final({
-        googleOAuth: { clientId: "google-client-id" },
-        get appleOAuth() {
-          return {
-            clientId: "apple-client-id",
-            jwksUrl: appleJwksUrl,
-            jwksCooldownDurationMs: appleJwksUrl == null ? undefined : 0,
-          };
-        },
-      })
-      .compile();
-
-    service = unit;
+    const client = {
+      clientId: "google-client-id",
+      clientSecret: "client-secret",
+      callbackUrl: "https://api.example.com/callback",
+      isConfigured: true,
+    };
+    const config = () => ({
+      google: client,
+      kakao: client,
+      naver: client,
+      apple: {
+        clientId: "apple-client-id",
+        jwksUrl: appleJwksUrl,
+        jwksCooldownDurationMs: appleJwksUrl == null ? undefined : 0,
+      },
+    });
+    const http = new HttpClient({ retry: false, throwOnHttpError: false });
+    const policies = new OutboundPolicyRegistry(new RecordingOperationalAlert());
+    const google = new GoogleOAuthIdentityAdapter(config(), http, policies);
+    const kakao = new KakaoOAuthIdentityAdapter(config(), http, policies);
+    const naver = new NaverOAuthIdentityAdapter(config(), http, policies);
+    // JWKS 캐시를 테스트 안에서 이어 보려고 Apple 어댑터는 처음 검증할 때 한 번 만든다
+    let apple: AppleOAuthIdentityAdapter | null = null;
+    service = {
+      verifyGoogleToken: (token) => google.verifyToken(token),
+      verifyKakaoToken: (token) => kakao.verifyToken(token),
+      verifyNaverToken: (token) => naver.verifyToken(token),
+      verifyAppleToken: (token, nonce) => {
+        apple ??= new AppleOAuthIdentityAdapter(config());
+        return apple.verifyToken(token, nonce);
+      },
+    };
   });
 
   afterEach(() => {

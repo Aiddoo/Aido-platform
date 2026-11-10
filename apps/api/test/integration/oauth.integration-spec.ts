@@ -1,11 +1,10 @@
 import { ErrorCode } from "@aido/api/errors";
-import { Logger } from "@nestjs/common";
 import { HttpClient } from "@nestjs/http-client";
 import type { TestingModule } from "@nestjs/testing";
 import { count, eq } from "drizzle-orm";
 import { vi } from "vitest";
 
-import type { OAuthIdentityProvider } from "#api/modules/identity/auth/application/ports/oauth-identity-provider.port";
+import type { OAuthIdentityProviderPort } from "#api/modules/identity/auth/application/ports/oauth-identity-provider.port";
 import { ExchangeOAuthCodeUseCase } from "#api/modules/identity/auth/application/use-cases/exchange-oauth-code.use-case";
 import { GetOAuthRedirectUriUseCase } from "#api/modules/identity/auth/application/use-cases/get-oauth-redirect-uri.use-case";
 import { LinkOAuthAccountUseCase } from "#api/modules/identity/auth/application/use-cases/link-oauth-account.use-case";
@@ -24,6 +23,7 @@ import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy
 import { ApplicationException } from "#api/shared/application/application.exception";
 import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
 import { FakeEmailService } from "#test/mocks/fake-email.service";
+import { FakeOAuthProviderRegistry } from "#test/mocks/fake-oauth-provider-registry";
 import { FakeOAuthTokenVerifierService } from "#test/mocks/fake-oauth-token-verifier.service";
 import { RecordingOperationalAlert } from "#test/mocks/recording-operational-alert";
 import { suppressLogger } from "#test/setup/suppress-logger";
@@ -60,30 +60,29 @@ describe("OAuth UseCase 통합 테스트 (실제 PostgreSQL)", () => {
     testDb = new TestDatabase();
     client = await testDb.start();
     fakeTokenVerifier = new FakeOAuthTokenVerifierService();
-    const getConfig = () => ({
+    const oauthClient = {
       clientId: "test-client-id",
       clientSecret: "test-client-secret",
       callbackUrl: "http://localhost:3000/auth/callback",
       isConfigured: true,
-    });
-    const logger = new Logger("OAuthIdentityProvider");
+    };
+    const config = {
+      google: oauthClient,
+      kakao: oauthClient,
+      naver: oauthClient,
+      apple: { clientId: undefined, jwksUrl: undefined, jwksCooldownDurationMs: undefined },
+    };
     const http = new HttpClient({ retry: false, throwOnHttpError: false });
     const policies = new OutboundPolicyRegistry(new RecordingOperationalAlert());
-    const registry = new Map<AccountProvider, OAuthIdentityProvider>([
-      ["APPLE", new AppleOAuthIdentityAdapter(fakeTokenVerifier)],
-      [
-        "GOOGLE",
-        new GoogleOAuthIdentityAdapter(getConfig, fakeTokenVerifier, logger, http, policies),
-      ],
-      [
-        "KAKAO",
-        new KakaoOAuthIdentityAdapter(getConfig, fakeTokenVerifier, logger, http, policies),
-      ],
-      [
-        "NAVER",
-        new NaverOAuthIdentityAdapter(getConfig, fakeTokenVerifier, logger, http, policies),
-      ],
-    ]);
+    const registry = new FakeOAuthProviderRegistry(
+      new Map<AccountProvider, OAuthIdentityProviderPort>([
+        ["APPLE", new AppleOAuthIdentityAdapter(config)],
+        ["GOOGLE", new GoogleOAuthIdentityAdapter(config, http, policies)],
+        ["KAKAO", new KakaoOAuthIdentityAdapter(config, http, policies)],
+        ["NAVER", new NaverOAuthIdentityAdapter(config, http, policies)],
+      ]),
+      fakeTokenVerifier,
+    ).registry;
     module = await createAuthTestModule(testDb.getClient(), new FakeEmailService(), {
       oauthProviderRegistry: registry,
     });

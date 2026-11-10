@@ -6,7 +6,7 @@ import type { ApplicationLoggerPort } from "#api/shared/application/ports/applic
 
 import { AuthLogEvent } from "../auth.log-events.js";
 import type { AuthOAuthStateRepositoryPort } from "../ports/auth-persistence.port.js";
-import type { OAuthIdentityProviderRegistry } from "../ports/oauth-identity-provider.port.js";
+import type { OAuthIdentityProviderRegistryPort } from "../ports/oauth-identity-provider.port.js";
 import type { RequestMetadata } from "../read-models/auth-result.read-model.js";
 import type { LoginWithOAuthTokenUseCase } from "./login-with-oauth-token.use-case.js";
 
@@ -26,7 +26,7 @@ export interface CompleteOAuthAuthorizationResult {
 }
 
 interface CompleteOAuthAuthorizationDependencies {
-  readonly registry: OAuthIdentityProviderRegistry;
+  readonly registry: Pick<OAuthIdentityProviderRegistryPort, "get">;
   readonly oauthStateRepository: Pick<
     AuthOAuthStateRepositoryPort,
     "findByState" | "generateExchangeCode" | "saveExchangeData" | "saveLinkingData"

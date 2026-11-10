@@ -7,13 +7,27 @@
 
 import { ErrorCode } from "@aido/api/errors";
 
-import type { VerifiedProfile } from "#api/modules/identity/auth/infrastructure/adapters/oauth-token-verifier.adapter";
+import type { VerifiedProfile } from "#api/modules/identity/auth/application/ports/oauth-identity-provider.port";
+import type { AccountProvider } from "#api/modules/identity/auth/domain/identity.constants";
 import { ApplicationException } from "#api/shared/application/application.exception";
 
 /**
  * 테스트용 OAuth 토큰 검증 서비스
  */
 export class FakeOAuthTokenVerifierService {
+  verify(provider: AccountProvider, token: string): Promise<VerifiedProfile> {
+    switch (provider) {
+      case "APPLE":
+        return this.verifyAppleToken(token);
+      case "GOOGLE":
+        return this.verifyGoogleToken(token);
+      case "KAKAO":
+        return this.verifyKakaoToken(token);
+      default:
+        return this.verifyNaverToken(token);
+    }
+  }
+
   /** 실패 시뮬레이션 설정 */
   private _shouldFail = false;
   private _failureError: Error | null = null;

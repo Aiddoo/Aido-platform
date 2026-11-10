@@ -5,7 +5,7 @@ import type {
 } from "#api/modules/identity/auth/application/ports/auth-persistence.port";
 import type {
   GenerateAuthUrlParams,
-  OAuthIdentityProvider,
+  OAuthIdentityProviderPort,
   SocialLoginOptions,
   VerifiedProfile,
 } from "#api/modules/identity/auth/application/ports/oauth-identity-provider.port";
@@ -117,7 +117,7 @@ export class StubAuthOAuthStateRepository implements AuthOAuthStateRepositoryPor
   }
 }
 
-export class CountingOAuthIdentityProvider implements OAuthIdentityProvider {
+export class CountingOAuthIdentityProvider implements OAuthIdentityProviderPort {
   readonly failureEmail: string;
   readonly exchanges: { code: string; state: string | undefined }[] = [];
   readonly verifications: { token: string; nonce: string | undefined }[] = [];

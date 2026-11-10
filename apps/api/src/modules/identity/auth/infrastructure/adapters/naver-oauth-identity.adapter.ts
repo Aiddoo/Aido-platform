@@ -1,68 +1,52 @@
 import { ErrorCode } from "@aido/api/errors";
-import type { Logger } from "@nestjs/common";
-import type { HttpClient } from "@nestjs/http-client";
-import { z } from "zod";
+import { Inject, Injectable, Logger } from "@nestjs/common";
+import type { ConfigType } from "@nestjs/config";
+import { HttpClient, InjectHttpClient } from "@nestjs/http-client";
 
-import { AuthLogEvent } from "#api/modules/identity/auth/application/auth.log-events";
-import type {
-  ExchangedToken,
-  GenerateAuthUrlParams,
-  OAuthIdentityProvider,
-  OAuthTokenVerifier,
-  SocialLoginOptions,
-  VerifiedProfile,
-} from "#api/modules/identity/auth/application/ports/oauth-identity-provider.port";
 import { readJson } from "#api/platform/http/read-json";
 import type { OutboundPolicy } from "#api/platform/resilience/outbound-policy";
-import type { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
+import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
 import { ApplicationException } from "#api/shared/application/application.exception";
 
+import { AuthLogEvent } from "../../application/auth.log-events.js";
+import {
+  type ExchangedToken,
+  type GenerateAuthUrlParams,
+  OAuthIdentityProviderPort,
+  type SocialLoginOptions,
+  type VerifiedProfile,
+} from "../../application/ports/oauth-identity-provider.port.js";
+import { identityAuthConfig } from "../../identity-auth.config.js";
+import { naverTokenResponseSchema, naverUserInfoSchema } from "./naver.wire.js";
 import { NAVER_OAUTH_POLICY } from "./oauth-outbound.policy.js";
-import { readOAuthProviderError } from "./oauth-provider-error.wire.js";
+import { logOAuthTokenVerifyFailed, readOAuthProviderError } from "./oauth-provider-error.wire.js";
 
-const NAVER_TOKEN_RESPONSE_SCHEMA = z.object({ access_token: z.string() });
+const NAVER_USER_INFO_URL = "https://openapi.naver.com/v1/nid/me";
 
-interface OAuthConfig {
-  clientId: string | undefined;
-  clientSecret: string | undefined;
-  callbackUrl: string | undefined;
-  isConfigured: boolean;
-}
-
-/**
- * Naver OAuth 전략
- *
- * - accessToken 기반 검증
- * - scope 파라미터 없음
- * - exchangeCode에 optional state 전달 (Naver API 요구사항)
- */
-export class NaverOAuthIdentityAdapter implements OAuthIdentityProvider {
+/** 네이버 로그인. code를 access_token으로 바꾸고 프로필 API로 토큰을 검증한다. */
+@Injectable()
+export class NaverOAuthIdentityAdapter extends OAuthIdentityProviderPort {
   readonly provider = "NAVER" as const;
   readonly failureEmail = "naver_unknown@social.aido.kr";
 
-  readonly #getConfig: () => OAuthConfig;
-  readonly #verifier: OAuthTokenVerifier;
-  readonly #logger: Logger;
-  readonly #policy: OutboundPolicy;
+  readonly #logger = new Logger(NaverOAuthIdentityAdapter.name);
+  readonly #config: ConfigType<typeof identityAuthConfig>["naver"];
   readonly #http: HttpClient;
+  readonly #policy: OutboundPolicy;
 
   constructor(
-    getConfig: () => OAuthConfig,
-    verifier: OAuthTokenVerifier,
-    logger: Logger,
-    http: HttpClient,
+    @Inject(identityAuthConfig.KEY) config: ConfigType<typeof identityAuthConfig>,
+    @InjectHttpClient("oauth") http: HttpClient,
     policies: OutboundPolicyRegistry,
   ) {
+    super();
+    this.#config = config.naver;
     this.#http = http;
     this.#policy = policies.get(NAVER_OAUTH_POLICY);
-    this.#getConfig = getConfig;
-    this.#verifier = verifier;
-    this.#logger = logger;
   }
 
   async generateAuthUrl(params: GenerateAuthUrlParams): Promise<string> {
-    const { clientId, callbackUrl, isConfigured } = this.#getConfig();
-
+    const { clientId, callbackUrl, isConfigured } = this.#config;
     if (!isConfigured || !clientId || !callbackUrl) {
       throw new ApplicationException(ErrorCode.USER_0602);
     }
@@ -78,13 +62,11 @@ export class NaverOAuthIdentityAdapter implements OAuthIdentityProvider {
       response_type: "code",
       state: params.state,
     });
-
     return `https://nid.naver.com/oauth2.0/authorize?${urlParams.toString()}`;
   }
 
   async exchangeCode(code: string, state?: string): Promise<ExchangedToken> {
-    const { clientId, clientSecret, callbackUrl, isConfigured } = this.#getConfig();
-
+    const { clientId, clientSecret, callbackUrl, isConfigured } = this.#config;
     if (!isConfigured || !clientId || !clientSecret || !callbackUrl) {
       throw new ApplicationException(ErrorCode.USER_0602);
     }
@@ -96,7 +78,6 @@ export class NaverOAuthIdentityAdapter implements OAuthIdentityProvider {
       redirect_uri: callbackUrl,
       code,
     });
-
     if (state) {
       tokenRequestBody.set("state", state);
     }
@@ -123,7 +104,7 @@ export class NaverOAuthIdentityAdapter implements OAuthIdentityProvider {
       throw new ApplicationException(ErrorCode.USER_0602);
     }
 
-    const tokenData = await readJson(tokenResponse, NAVER_TOKEN_RESPONSE_SCHEMA);
+    const tokenData = await readJson(tokenResponse, naverTokenResponseSchema);
     if (!tokenData.success) {
       this.#logger.error({
         event: AuthLogEvent.OAUTH_TOKEN_EXCHANGE_INVALID,
@@ -131,12 +112,48 @@ export class NaverOAuthIdentityAdapter implements OAuthIdentityProvider {
       });
       throw new ApplicationException(ErrorCode.USER_0602);
     }
-
     return { token: tokenData.data.access_token };
   }
 
   async verifyToken(accessToken: string): Promise<VerifiedProfile> {
-    return this.#verifier.verifyNaverToken(accessToken);
+    try {
+      const { data: response } = await this.#policy.execute((signal) =>
+        this.#http.request(NAVER_USER_INFO_URL, {
+          responseType: "response",
+          retry: false,
+          throwOnHttpError: false,
+          signal,
+          headers: { Authorization: `Bearer ${accessToken}` },
+        }),
+      );
+
+      if (!response.ok) {
+        throw new ApplicationException(
+          response.status === 401 ? ErrorCode.SOCIAL_0203 : ErrorCode.SOCIAL_0202,
+          { provider: "NAVER" },
+        );
+      }
+
+      const parsed = await readJson(response, naverUserInfoSchema);
+      if (!parsed.success || parsed.data.resultcode !== "00" || !parsed.data.response) {
+        throw new ApplicationException(ErrorCode.SOCIAL_0202, { provider: "NAVER" });
+      }
+      const naverUser = parsed.data.response;
+      // 네이버는 이메일 인증 여부를 주지 않아 자동 연동하지 않고 수동 연동으로 보낸다
+      return {
+        id: naverUser.id,
+        email: naverUser.email ?? null,
+        emailVerified: false,
+        name: naverUser.name || (naverUser.nickname ?? undefined),
+        picture: naverUser.profile_image ?? undefined,
+      };
+    } catch (error) {
+      logOAuthTokenVerifyFailed(this.#logger, "NAVER", error);
+      if (error instanceof ApplicationException) {
+        throw error;
+      }
+      throw new ApplicationException(ErrorCode.SOCIAL_0202, { provider: "NAVER" });
+    }
   }
 
   buildLoginOptions(verifiedProfile: VerifiedProfile, userName?: string): SocialLoginOptions {

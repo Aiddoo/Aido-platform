@@ -1,6 +1,6 @@
 import { Module } from "@nestjs/common";
-import type { ConfigType } from "@nestjs/config";
-import { HttpClient, HttpClientModule, getHttpClientToken } from "@nestjs/http-client";
+import { ConfigModule, type ConfigType } from "@nestjs/config";
+import { HttpClientModule } from "@nestjs/http-client";
 import { JwtModule } from "@nestjs/jwt";
 
 import { AccessModule } from "#api/modules/access/access-entitlement.public";
@@ -23,7 +23,6 @@ import { SocialFriendsModule } from "#api/modules/social/social-friends.public";
 import { SocialNudgesModule } from "#api/modules/social/social-nudges.public";
 import { jwtConfig } from "#api/platform/config/jwt.config";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
-import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
 
 import { LastActiveInterceptor } from "../presentation/interceptors/auth/last-active.interceptor.js";
 import {
@@ -43,7 +42,7 @@ import {
   AUTH_USER_REPOSITORY,
   AUTH_VERIFICATION_REPOSITORY,
 } from "./application/ports/auth-persistence.port.js";
-import { OAUTH_IDENTITY_PROVIDER_REGISTRY } from "./application/ports/oauth-identity-provider.port.js";
+import { OAuthIdentityProviderRegistryPort } from "./application/ports/oauth-identity-provider.port.js";
 import { RETENTION_ENROLLER } from "./application/ports/retention-enroller.port.js";
 import { SESSION_PUSH_DEVICE_RELEASER } from "./application/ports/session-push-device-releaser.port.js";
 import { USER_PROVISIONING_SEEDER } from "./application/ports/user-provisioning-seeder.port.js";
@@ -53,6 +52,7 @@ import {
   accountTodoCommentCleanupProvider,
   accountUsageCleanupProvider,
 } from "./identity-auth-account-cleanup.providers.js";
+import { identityAuthConfig } from "./identity-auth.config.js";
 import {
   changePasswordProvider,
   completeOAuthAuthorizationProvider,
@@ -92,15 +92,16 @@ import {
   verificationServiceProvider,
   verifyEmailProvider,
 } from "./identity-auth.providers.js";
+import { AppleOAuthIdentityAdapter } from "./infrastructure/adapters/apple-oauth-identity.adapter.js";
 import { Argon2PasswordHasherAdapter } from "./infrastructure/adapters/argon2-password-hasher.adapter.js";
 import { AuthCacheAdapter } from "./infrastructure/adapters/auth-cache.adapter.js";
+import { GoogleOAuthIdentityAdapter } from "./infrastructure/adapters/google-oauth-identity.adapter.js";
 import { JwtTokenIssuerAdapter } from "./infrastructure/adapters/jwt-token-issuer.adapter.js";
+import { KakaoOAuthIdentityAdapter } from "./infrastructure/adapters/kakao-oauth-identity.adapter.js";
+import { NaverOAuthIdentityAdapter } from "./infrastructure/adapters/naver-oauth-identity.adapter.js";
 import { NodeVerificationCodeSecurityAdapter } from "./infrastructure/adapters/node-verification-code-security.adapter.js";
-import { createOAuthProviderRegistry } from "./infrastructure/adapters/oauth-identity-provider-registry.adapter.js";
-import {
-  OAUTH_PROVIDER_TIMEOUT_MS,
-  OAuthTokenVerifierService,
-} from "./infrastructure/adapters/oauth-token-verifier.adapter.js";
+import { OAuthIdentityProviderRegistryAdapter } from "./infrastructure/adapters/oauth-identity-provider-registry.adapter.js";
+import { OAUTH_PROVIDER_TIMEOUT_MS } from "./infrastructure/adapters/oauth-outbound.policy.js";
 import { RetentionEnrollerAdapter } from "./infrastructure/adapters/retention-enroller.adapter.js";
 import { SessionPushDeviceReleaserAdapter } from "./infrastructure/adapters/session-push-device-releaser.adapter.js";
 import { UserProvisioningSeederAdapter } from "./infrastructure/adapters/user-provisioning-seeder.adapter.js";
@@ -128,6 +129,7 @@ import { SessionController } from "./presentation/http/v1/session.controller.js"
  */
 @Module({
   imports: [
+    ConfigModule.forFeature(identityAuthConfig),
     HttpClientModule.register({
       name: "oauth",
       retry: false,
@@ -221,7 +223,6 @@ import { SessionController } from "./presentation/http/v1/session.controller.js"
       provide: VERIFICATION_CODE_SECURITY,
       useClass: NodeVerificationCodeSecurityAdapter,
     },
-    OAuthTokenVerifierService,
     linkOAuthIdentityProvider,
     oauthSignupNotifierProvider,
     // Use-cases (이메일·소셜 로그인·프로비저닝 수렴)
@@ -257,22 +258,11 @@ import { SessionController } from "./presentation/http/v1/session.controller.js"
     linkOAuthAccountProvider,
     linkOAuthAccountWithCodeProvider,
     exchangeOAuthCodeProvider,
-    // OAuth 신원 제공자 레지스트리 (provider → 벤더 어댑터 Map)
-    {
-      provide: OAUTH_IDENTITY_PROVIDER_REGISTRY,
-      inject: [
-        TypedConfigService,
-        OAuthTokenVerifierService,
-        getHttpClientToken("oauth"),
-        OutboundPolicyRegistry,
-      ],
-      useFactory: (
-        configService: TypedConfigService,
-        tokenVerifier: OAuthTokenVerifierService,
-        http: HttpClient,
-        policies: OutboundPolicyRegistry,
-      ) => createOAuthProviderRegistry(configService, tokenVerifier, http, policies),
-    },
+    AppleOAuthIdentityAdapter,
+    GoogleOAuthIdentityAdapter,
+    KakaoOAuthIdentityAdapter,
+    NaverOAuthIdentityAdapter,
+    { provide: OAuthIdentityProviderRegistryPort, useClass: OAuthIdentityProviderRegistryAdapter },
     authenticateSessionProvider,
     JwtAuthGuard,
     JwtRefreshGuard,

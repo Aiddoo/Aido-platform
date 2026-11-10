@@ -3,9 +3,7 @@ import { Logger } from "@nestjs/common";
 import { HttpClient, HttpNetworkError } from "@nestjs/http-client";
 import { type MockInstance, vi } from "vitest";
 
-import type { OAuthTokenVerifier } from "#api/modules/identity/auth/application/ports/oauth-identity-provider.port";
 import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
-import { FakeOAuthTokenVerifierService } from "#test/mocks/fake-oauth-token-verifier.service";
 import { RecordingOperationalAlert } from "#test/mocks/recording-operational-alert";
 
 import { GoogleOAuthIdentityAdapter } from "./google-oauth-identity.adapter.js";
@@ -14,12 +12,18 @@ import { NaverOAuthIdentityAdapter } from "./naver-oauth-identity.adapter.js";
 
 const SECRET_DESCRIPTION = "authorization code fixture-code-123 for user@example.com";
 
-const config = () => ({
+const client = {
   clientId: "client-id",
   clientSecret: "client-secret",
   callbackUrl: "https://api.example.com/callback",
   isConfigured: true,
-});
+};
+const config = {
+  google: client,
+  kakao: client,
+  naver: client,
+  apple: { clientId: undefined, jwksUrl: undefined, jwksCooldownDurationMs: undefined },
+};
 
 const providers = [
   { name: "KAKAO", create: KakaoOAuthIdentityAdapter },
@@ -28,18 +32,19 @@ const providers = [
 ] as const;
 
 describe("OAuth 공급자 토큰 교환 로그", () => {
-  let logger: Logger;
   let loggedError: MockInstance<Logger["error"]>;
   let fetch: MockInstance<typeof globalThis.fetch>;
-  const verifier: OAuthTokenVerifier = new FakeOAuthTokenVerifierService();
   const http = new HttpClient({ retry: false, throwOnHttpError: false });
   let policies: OutboundPolicyRegistry;
 
   beforeEach(() => {
     policies = new OutboundPolicyRegistry(new RecordingOperationalAlert());
-    logger = new Logger("test");
-    loggedError = vi.spyOn(logger, "error").mockImplementation(() => undefined);
+    loggedError = vi.spyOn(Logger.prototype, "error").mockImplementation(() => undefined);
     fetch = vi.spyOn(globalThis, "fetch");
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   it.each(providers)(
@@ -55,7 +60,7 @@ describe("OAuth 공급자 토큰 교환 로그", () => {
           { status: 400 },
         ),
       );
-      const provider = new create(config, verifier, logger, http, policies);
+      const provider = new create(config, http, policies);
 
       // When
       const exchange = provider.exchangeCode("fixture-code-123");
@@ -78,7 +83,7 @@ describe("OAuth 공급자 토큰 교환 로그", () => {
     async ({ create }) => {
       // Given
       fetch.mockRejectedValue(new TypeError("fetch failed"));
-      const provider = new create(config, verifier, logger, http, policies);
+      const provider = new create(config, http, policies);
 
       // When
       const failures: unknown[] = [];
@@ -103,7 +108,7 @@ describe("OAuth 공급자 토큰 교환 로그", () => {
     );
 
     // When
-    await new KakaoOAuthIdentityAdapter(config, verifier, logger, http, policies)
+    await new KakaoOAuthIdentityAdapter(config, http, policies)
       .exchangeCode("code")
       .catch(() => undefined);
 
@@ -116,7 +121,7 @@ describe("OAuth 공급자 토큰 교환 로그", () => {
     fetch.mockResolvedValue(new Response(`<html>${SECRET_DESCRIPTION}</html>`, { status: 502 }));
 
     // When
-    await new GoogleOAuthIdentityAdapter(config, verifier, logger, http, policies)
+    await new GoogleOAuthIdentityAdapter(config, http, policies)
       .exchangeCode("code")
       .catch(() => undefined);
 

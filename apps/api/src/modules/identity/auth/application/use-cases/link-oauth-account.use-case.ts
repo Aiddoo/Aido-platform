@@ -8,7 +8,7 @@ import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
 import { AuthLogEvent } from "../auth.log-events.js";
 import type { AuthCachePort } from "../ports/auth-collaboration.port.js";
 import type { AuthUserLockRepositoryPort } from "../ports/auth-persistence.port.js";
-import type { OAuthIdentityProviderRegistry } from "../ports/oauth-identity-provider.port.js";
+import type { OAuthIdentityProviderRegistryPort } from "../ports/oauth-identity-provider.port.js";
 import type { RequestMetadata } from "../read-models/auth-result.read-model.js";
 import type { LinkOAuthIdentityUseCase } from "./link-oauth-identity.use-case.js";
 
@@ -23,7 +23,7 @@ export interface LinkOAuthAccountCommand {
 
 interface LinkOAuthAccountDependencies {
   readonly userRepository: AuthUserLockRepositoryPort;
-  readonly registry: OAuthIdentityProviderRegistry;
+  readonly registry: Pick<OAuthIdentityProviderRegistryPort, "get">;
   readonly linkOAuthIdentity: Pick<LinkOAuthIdentityUseCase, "execute">;
   readonly unitOfWork: UnitOfWorkPort;
   readonly cacheService: Pick<AuthCachePort, "invalidateUserProfile">;

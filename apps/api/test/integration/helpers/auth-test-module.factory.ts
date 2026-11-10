@@ -22,10 +22,7 @@ import {
   AUTH_USER_REPOSITORY,
   AUTH_VERIFICATION_REPOSITORY,
 } from "#api/modules/identity/auth/application/ports/auth-persistence.port";
-import {
-  OAUTH_IDENTITY_PROVIDER_REGISTRY,
-  type OAuthIdentityProviderRegistry,
-} from "#api/modules/identity/auth/application/ports/oauth-identity-provider.port";
+import { OAuthIdentityProviderRegistryPort } from "#api/modules/identity/auth/application/ports/oauth-identity-provider.port";
 import { VERIFICATION_CODE_SECURITY } from "#api/modules/identity/auth/application/ports/verification-code-security.port";
 import { Argon2PasswordHasherAdapter } from "#api/modules/identity/auth/infrastructure/adapters/argon2-password-hasher.adapter";
 import { AuthCacheAdapter } from "#api/modules/identity/auth/infrastructure/adapters/auth-cache.adapter";
@@ -91,7 +88,7 @@ import { sessionPushDeviceReleaserTestProvider } from "./session-push-device-rel
 export async function createAuthTestModule(
   client: TestDatabaseClient,
   fakeEmailService: FakeEmailService,
-  options: { readonly oauthProviderRegistry?: OAuthIdentityProviderRegistry } = {},
+  options: { readonly oauthProviderRegistry?: OAuthIdentityProviderRegistryPort } = {},
 ): Promise<TestingModule> {
   const transaction = createDatabaseTransactionFixture(client);
   return Test.createTestingModule({
@@ -120,7 +117,7 @@ export async function createAuthTestModule(
             DrizzleOAuthStateRepository,
             { provide: AUTH_OAUTH_STATE_REPOSITORY, useExisting: DrizzleOAuthStateRepository },
             { provide: AUTH_RUNTIME_CONFIG, useExisting: TypedConfigService },
-            { provide: OAUTH_IDENTITY_PROVIDER_REGISTRY, useValue: options.oauthProviderRegistry },
+            { provide: OAuthIdentityProviderRegistryPort, useValue: options.oauthProviderRegistry },
           ]),
       registerProvider,
       verifyEmailProvider,

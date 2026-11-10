@@ -1,58 +1,32 @@
-import { Logger } from "@nestjs/common";
-import type { HttpClient } from "@nestjs/http-client";
+import { Injectable } from "@nestjs/common";
 
-import type {
-  OAuthIdentityProvider,
-  OAuthIdentityProviderRegistry,
-  OAuthTokenVerifier,
-} from "#api/modules/identity/auth/application/ports/oauth-identity-provider.port";
-import type { AccountProvider } from "#api/modules/identity/auth/domain/identity.constants";
-import type { TypedConfigService } from "#api/platform/config/services/config.service";
-import type { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
-
+import {
+  type OAuthIdentityProviderPort,
+  OAuthIdentityProviderRegistryPort,
+} from "../../application/ports/oauth-identity-provider.port.js";
+import type { AccountProvider } from "../../domain/identity.constants.js";
 import { AppleOAuthIdentityAdapter } from "./apple-oauth-identity.adapter.js";
 import { GoogleOAuthIdentityAdapter } from "./google-oauth-identity.adapter.js";
 import { KakaoOAuthIdentityAdapter } from "./kakao-oauth-identity.adapter.js";
 import { NaverOAuthIdentityAdapter } from "./naver-oauth-identity.adapter.js";
 
-export function createOAuthProviderRegistry(
-  configService: TypedConfigService,
-  tokenVerifier: OAuthTokenVerifier,
-  http: HttpClient,
-  policies: OutboundPolicyRegistry,
-): OAuthIdentityProviderRegistry {
-  const logger = new Logger("OAuthIdentityProvider");
-  return new Map<AccountProvider, OAuthIdentityProvider>([
-    ["APPLE", new AppleOAuthIdentityAdapter(tokenVerifier)],
-    [
-      "GOOGLE",
-      new GoogleOAuthIdentityAdapter(
-        () => configService.googleOAuth,
-        tokenVerifier,
-        logger,
-        http,
-        policies,
-      ),
-    ],
-    [
-      "KAKAO",
-      new KakaoOAuthIdentityAdapter(
-        () => configService.kakaoOAuth,
-        tokenVerifier,
-        logger,
-        http,
-        policies,
-      ),
-    ],
-    [
-      "NAVER",
-      new NaverOAuthIdentityAdapter(
-        () => configService.naverOAuth,
-        tokenVerifier,
-        logger,
-        http,
-        policies,
-      ),
-    ],
-  ]);
+@Injectable()
+export class OAuthIdentityProviderRegistryAdapter extends OAuthIdentityProviderRegistryPort {
+  readonly #providers: ReadonlyMap<AccountProvider, OAuthIdentityProviderPort>;
+
+  constructor(
+    apple: AppleOAuthIdentityAdapter,
+    google: GoogleOAuthIdentityAdapter,
+    kakao: KakaoOAuthIdentityAdapter,
+    naver: NaverOAuthIdentityAdapter,
+  ) {
+    super();
+    this.#providers = new Map(
+      [apple, google, kakao, naver].map((provider) => [provider.provider, provider]),
+    );
+  }
+
+  get(provider: AccountProvider): OAuthIdentityProviderPort | undefined {
+    return this.#providers.get(provider);
+  }
 }

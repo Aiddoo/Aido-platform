@@ -3,7 +3,6 @@ import { Logger, type FactoryProvider } from "@nestjs/common";
 import { ENTITLEMENT_READER } from "#api/modules/access/access-entitlement.public";
 import { QUOTA_LEDGER } from "#api/modules/access/access-quota.public";
 import { PREMIUM_ACCESS_READER } from "#api/modules/billing/billing-subscriptions.public";
-import { OAUTH_IDENTITY_PROVIDER_REGISTRY } from "#api/modules/identity/auth/application/ports/oauth-identity-provider.port";
 import { TODO_CATEGORY_COUNT_READER } from "#api/modules/planning/planning-categories.public";
 import { CHEER_USAGE_READER } from "#api/modules/social/social-cheers.public";
 import { FRIEND_COUNT_READER } from "#api/modules/social/social-friends.public";
@@ -31,6 +30,7 @@ import {
   AUTH_ACCOUNT_REPOSITORY,
   AUTH_OAUTH_STATE_REPOSITORY,
 } from "./application/ports/auth-persistence.port.js";
+import { OAuthIdentityProviderRegistryPort } from "./application/ports/oauth-identity-provider.port.js";
 import { RETENTION_ENROLLER } from "./application/ports/retention-enroller.port.js";
 import { SESSION_PUSH_DEVICE_RELEASER } from "./application/ports/session-push-device-releaser.port.js";
 import { USER_PROVISIONING_SEEDER } from "./application/ports/user-provisioning-seeder.port.js";
@@ -264,7 +264,7 @@ export const completeOAuthAuthorizationProvider: FactoryProvider<CompleteOAuthAu
   {
     provide: CompleteOAuthAuthorizationUseCase,
     inject: [
-      OAUTH_IDENTITY_PROVIDER_REGISTRY,
+      OAuthIdentityProviderRegistryPort,
       AUTH_OAUTH_STATE_REPOSITORY,
       LoginWithOAuthTokenUseCase,
     ],
@@ -449,7 +449,7 @@ export const linkOAuthAccountProvider: FactoryProvider<LinkOAuthAccountUseCase> 
   provide: LinkOAuthAccountUseCase,
   inject: [
     AUTH_USER_REPOSITORY,
-    OAUTH_IDENTITY_PROVIDER_REGISTRY,
+    OAuthIdentityProviderRegistryPort,
     LinkOAuthIdentityUseCase,
     UNIT_OF_WORK,
     AUTH_CACHE,
@@ -508,7 +508,7 @@ export const linkOAuthAccountWithCodeProvider: FactoryProvider<LinkOAuthAccountW
 export const loginWithOAuthTokenProvider: FactoryProvider<LoginWithOAuthTokenUseCase> = {
   provide: LoginWithOAuthTokenUseCase,
   inject: [
-    OAUTH_IDENTITY_PROVIDER_REGISTRY,
+    OAuthIdentityProviderRegistryPort,
     AUTH_USER_REPOSITORY,
     AUTH_ACCOUNT_REPOSITORY,
     AUTH_SECURITY_LOG_REPOSITORY,
@@ -906,7 +906,7 @@ export const setPasswordProvider: FactoryProvider<SetPasswordUseCase> = {
 
 export const startOAuthAuthorizationProvider: FactoryProvider<StartOAuthAuthorizationUseCase> = {
   provide: StartOAuthAuthorizationUseCase,
-  inject: [OAUTH_IDENTITY_PROVIDER_REGISTRY, AUTH_OAUTH_STATE_REPOSITORY, AUTH_RUNTIME_CONFIG],
+  inject: [OAuthIdentityProviderRegistryPort, AUTH_OAUTH_STATE_REPOSITORY, AUTH_RUNTIME_CONFIG],
   useFactory: (
     registry: ConstructorParameters<typeof StartOAuthAuthorizationUseCase>[0]["registry"],
     oauthStateRepository: ConstructorParameters<

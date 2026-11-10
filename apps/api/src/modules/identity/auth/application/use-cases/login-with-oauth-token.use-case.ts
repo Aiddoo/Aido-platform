@@ -28,7 +28,7 @@ import type {
   AuthUserLockRepositoryPort,
 } from "../ports/auth-persistence.port.js";
 import type {
-  OAuthIdentityProviderRegistry,
+  OAuthIdentityProviderRegistryPort,
   SocialLoginOptions,
   VerifiedProfile,
 } from "../ports/oauth-identity-provider.port.js";
@@ -50,7 +50,7 @@ export interface LoginWithOAuthTokenCommand {
 }
 
 interface LoginWithOAuthTokenDependencies {
-  readonly registry: OAuthIdentityProviderRegistry;
+  readonly registry: Pick<OAuthIdentityProviderRegistryPort, "get">;
   readonly userRepository: Pick<AuthUserRepositoryPort, "findById" | "findByEmail"> &
     AuthUserLockRepositoryPort;
   readonly accountRepository: Pick<

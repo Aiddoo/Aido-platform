@@ -8,7 +8,7 @@ import { AuthLogEvent } from "../auth.log-events.js";
 import type { AuthRuntimeConfigPort } from "../ports/auth-collaboration.port.js";
 import type { AuthOAuthStateRepositoryPort } from "../ports/auth-persistence.port.js";
 import type {
-  OAuthIdentityProviderRegistry,
+  OAuthIdentityProviderRegistryPort,
   OAuthMode,
 } from "../ports/oauth-identity-provider.port.js";
 
@@ -21,7 +21,7 @@ export interface StartOAuthAuthorizationCommand {
 }
 
 interface StartOAuthAuthorizationDependencies {
-  readonly registry: OAuthIdentityProviderRegistry;
+  readonly registry: Pick<OAuthIdentityProviderRegistryPort, "get">;
   readonly oauthStateRepository: Pick<AuthOAuthStateRepositoryPort, "create">;
   readonly configService: Pick<AuthRuntimeConfigPort, "isDevelopment">;
   readonly logger: ApplicationLoggerPort;

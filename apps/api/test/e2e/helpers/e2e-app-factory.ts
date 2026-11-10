@@ -10,7 +10,6 @@ import type { INestApplication } from "@nestjs/common";
  * - PinoLogger 억제
  */
 import { EventEmitter2 } from "@nestjs/event-emitter";
-import { HttpClient } from "@nestjs/http-client";
 import { Test, type TestingModule } from "@nestjs/testing";
 import { ThrottlerGuard } from "@nestjs/throttler";
 import RedisMock from "ioredis-mock";
@@ -23,10 +22,16 @@ import { ReportGenerationJob } from "#api/modules/ai-assistance/infrastructure/j
 import { SuggestionAnalysisJob } from "#api/modules/ai-assistance/infrastructure/jobs/suggestions/suggestion-analysis.job";
 import { ReportGenerationProcessor } from "#api/modules/ai-assistance/infrastructure/processors/reports/report-generation.processor";
 import { SuggestionAnalysisProcessor } from "#api/modules/ai-assistance/infrastructure/processors/suggestions/suggestion-analysis.processor";
-import { OAUTH_IDENTITY_PROVIDER_REGISTRY } from "#api/modules/identity/auth/application/ports/oauth-identity-provider.port";
+import {
+  type OAuthIdentityProviderPort,
+  OAuthIdentityProviderRegistryPort,
+} from "#api/modules/identity/auth/application/ports/oauth-identity-provider.port";
+import type { AccountProvider } from "#api/modules/identity/auth/domain/identity.constants";
+import { AppleOAuthIdentityAdapter } from "#api/modules/identity/auth/infrastructure/adapters/apple-oauth-identity.adapter";
 import { Argon2PasswordHasherAdapter } from "#api/modules/identity/auth/infrastructure/adapters/argon2-password-hasher.adapter";
-import { createOAuthProviderRegistry } from "#api/modules/identity/auth/infrastructure/adapters/oauth-identity-provider-registry.adapter";
-import { OAuthTokenVerifierService } from "#api/modules/identity/auth/infrastructure/adapters/oauth-token-verifier.adapter";
+import { GoogleOAuthIdentityAdapter } from "#api/modules/identity/auth/infrastructure/adapters/google-oauth-identity.adapter";
+import { KakaoOAuthIdentityAdapter } from "#api/modules/identity/auth/infrastructure/adapters/kakao-oauth-identity.adapter";
+import { NaverOAuthIdentityAdapter } from "#api/modules/identity/auth/infrastructure/adapters/naver-oauth-identity.adapter";
 import { AccountPurgeProcessor } from "#api/modules/identity/auth/infrastructure/jobs/account-purge.processor";
 import { AccountPurgeScheduler } from "#api/modules/identity/auth/infrastructure/jobs/account-purge.scheduler";
 import { PUSH_PROVIDER } from "#api/modules/notification/application/ports/delivery/push-provider.port";
@@ -52,12 +57,10 @@ import { WEATHER_PROVIDER } from "#api/modules/weather/application/ports/forecas
 import { WEATHER_REPORT_PROVIDER } from "#api/modules/weather/application/ports/forecast/weather-report.provider.port";
 import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
 import { CacheStorePort } from "#api/platform/cache/cache-store.port";
-import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { DRIZZLE } from "#api/platform/database/index";
 import { FanOutDomainEventPublisher } from "#api/platform/events/fan-out-domain-event.publisher";
 import { configureApplication } from "#api/platform/http/configure-application";
 import { REDIS_COMMAND_CLIENT } from "#api/platform/redis/redis.constants";
-import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
 import {
   DOMAIN_EVENT_PUBLISHER,
   JOB_RUNTIME,
@@ -225,19 +228,29 @@ export async function createE2eApp(options?: E2eAppOptions): Promise<E2eTestCont
     .useClass(FakePasswordHasher)
     .overrideProvider(TransactionalEmailSender)
     .useValue(fakeEmailService)
-    .overrideProvider(OAuthTokenVerifierService)
-    .useValue(fakeOAuthTokenVerifierService)
-    .overrideProvider(OAUTH_IDENTITY_PROVIDER_REGISTRY)
+    .overrideProvider(OAuthIdentityProviderRegistryPort)
     .useFactory({
-      inject: [TypedConfigService, OutboundPolicyRegistry],
-      factory: (configService: TypedConfigService, policies: OutboundPolicyRegistry) => {
-        const delegates = createOAuthProviderRegistry(
-          configService,
-          fakeOAuthTokenVerifierService,
-          new HttpClient({ retry: false, throwOnHttpError: false }),
-          policies,
+      inject: [
+        AppleOAuthIdentityAdapter,
+        GoogleOAuthIdentityAdapter,
+        KakaoOAuthIdentityAdapter,
+        NaverOAuthIdentityAdapter,
+      ],
+      factory: (
+        ...adapters: readonly [
+          AppleOAuthIdentityAdapter,
+          GoogleOAuthIdentityAdapter,
+          KakaoOAuthIdentityAdapter,
+          NaverOAuthIdentityAdapter,
+        ]
+      ) => {
+        const delegates = new Map<AccountProvider, OAuthIdentityProviderPort>(
+          adapters.map((adapter) => [adapter.provider, adapter]),
         );
-        fakeOAuthProviderRegistry = new FakeOAuthProviderRegistry(delegates);
+        fakeOAuthProviderRegistry = new FakeOAuthProviderRegistry(
+          delegates,
+          fakeOAuthTokenVerifierService,
+        );
         return fakeOAuthProviderRegistry.registry;
       },
     })

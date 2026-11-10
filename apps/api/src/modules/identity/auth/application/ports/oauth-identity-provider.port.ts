@@ -1,24 +1,14 @@
-import type { AccountProvider } from "#api/modules/identity/auth/domain/identity.constants";
+import type { AccountProvider } from "../../domain/identity.constants.js";
 
-export const OAUTH_IDENTITY_PROVIDER_REGISTRY = Symbol("OAUTH_IDENTITY_PROVIDER_REGISTRY");
-
-/** OAuth 흐름 모드: 신규 로그인 vs 기존 계정 링크 */
 export type OAuthMode = "login" | "link";
 
-/** 벤더 토큰 검증 결과(정규화된 프로필) */
+/** 공급자 토큰을 검증해 얻은 프로필. 공급자 응답 모양은 어댑터의 wire schema가 안다 */
 export interface VerifiedProfile {
   id: string;
   email?: string | null;
   emailVerified: boolean;
   name?: string;
   picture?: string;
-}
-
-export interface OAuthTokenVerifier {
-  verifyAppleToken(token: string, nonce?: string): Promise<VerifiedProfile>;
-  verifyGoogleToken(token: string): Promise<VerifiedProfile>;
-  verifyKakaoToken(token: string): Promise<VerifiedProfile>;
-  verifyNaverToken(token: string): Promise<VerifiedProfile>;
 }
 
 export interface GenerateAuthUrlParams {
@@ -43,46 +33,22 @@ export interface SocialLoginOptions {
   profileImage?: string;
 }
 
-export interface OAuthIdentityProvider {
-  /** Provider 식별자 */
-  readonly provider: AccountProvider;
-
-  /** 토큰 검증 실패 시 LoginAttempt에 기록할 이메일 */
-  readonly failureEmail: string;
-
-  /**
-   * OAuth 인증 URL 생성 (Web flow)
-   *
-   * Apple은 web flow가 없으므로 null을 반환합니다.
-   * @param params.state CSRF 방지용 state 값
-   * @param params.validatedRedirectUri 검증된 redirect URI
-   * @param params.persistState state를 DB에 저장하는 콜백
-   */
-  generateAuthUrl(params: GenerateAuthUrlParams): Promise<string | null>;
-
-  /**
-   * Authorization Code → Token 교환
-   *
-   * Apple은 web flow가 없으므로 null을 반환합니다.
-   * @returns token: verifyToken에 전달할 토큰 (idToken 또는 accessToken)
-   */
-  exchangeCode(code: string, state?: string): Promise<ExchangedToken | null>;
-
-  /**
-   * 모바일 클라이언트 토큰 검증
-   *
-   * OAuthTokenVerifierService에 위임합니다.
-   */
-  verifyToken(token: string, nonce?: string): Promise<VerifiedProfile>;
-
-  /**
-   * VerifiedProfile에서 _handleSocialLogin 옵션을 빌드
-   *
-   * Apple: userName 파라미터만 사용, profileImage 없음
-   * Google/Kakao/Naver: userName ?? profile.name, profileImage = profile.picture
-   */
-  buildLoginOptions(verifiedProfile: VerifiedProfile, userName?: string): SocialLoginOptions;
+/** 공급자 하나의 웹 인가 URL·코드 교환·토큰 검증. 공급자 이름과 응답 모양은 어댑터에만 둔다 */
+export abstract class OAuthIdentityProviderPort {
+  abstract readonly provider: AccountProvider;
+  /** 토큰 검증이 실패해 사용자를 알 수 없을 때 LoginAttempt에 남길 이메일 */
+  abstract readonly failureEmail: string;
+  /** 웹 인가 흐름이 없는 공급자(Apple)는 null이다 */
+  abstract generateAuthUrl(params: GenerateAuthUrlParams): Promise<string | null>;
+  /** 웹 인가 흐름이 없는 공급자(Apple)는 null이다. 받은 token은 verifyToken에 그대로 넘긴다 */
+  abstract exchangeCode(code: string, state?: string): Promise<ExchangedToken | null>;
+  abstract verifyToken(token: string, nonce?: string): Promise<VerifiedProfile>;
+  abstract buildLoginOptions(
+    verifiedProfile: VerifiedProfile,
+    userName?: string,
+  ): SocialLoginOptions;
 }
 
-/** provider → 어댑터 레지스트리(불변) */
-export type OAuthIdentityProviderRegistry = ReadonlyMap<AccountProvider, OAuthIdentityProvider>;
+export abstract class OAuthIdentityProviderRegistryPort {
+  abstract get(provider: AccountProvider): OAuthIdentityProviderPort | undefined;
+}
