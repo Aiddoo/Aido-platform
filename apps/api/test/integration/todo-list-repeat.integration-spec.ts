@@ -150,7 +150,7 @@ describe("할 일 목록의 반복 정보 조회 (실제 PostgreSQL)", () => {
     // When
     const result = await repository.findManyByUserId({ userId, size: 10 });
     // Then
-    expect(result[0]).toMatchObject({ recurrenceGroupId: "orphan-group", repeat: null });
+    expect(result[0]).toMatchObject({ seriesId: "orphan-group", repeat: null });
   });
 
   it("친구에게 주는 목록에는 repeat와 occurrenceDate 키가 없다", async () => {

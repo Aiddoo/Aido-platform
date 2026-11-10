@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 
-import { type FriendTodo, friendTodoSchema } from "@aido/api";
+import { friendTodoSchema } from "@aido/api";
 import { Injectable } from "@nestjs/common";
 import { z } from "zod";
 
@@ -12,20 +12,26 @@ import type {
   FriendTodosFirstPageCacheRead,
   TodoCachePort,
 } from "../../application/ports/todo-cache.port.js";
+import type { FriendTodoReadModel } from "../../application/read-models/todo.read-model.js";
 import {
   FRIEND_TODOS_INITIAL_GENERATION,
   TODO_CACHE_TTL_MS,
   TodoCacheKey,
 } from "../cache/todo-cache.keyspace.js";
 
+// 1.15.1 전에 담은 응답 모양 값은 seriesId가 없어 parse에 실패하고 미스로 읽힌다
+const friendTodoReadModelSchema = friendTodoSchema
+  .omit({ content: true, itemStats: true, recurrenceGroupId: true })
+  .extend({ seriesId: z.string().nullable(), scheduledLocalTime: z.string().nullable() });
+
 const FRIEND_TODOS_PAGE_SCHEMA = z.object({
-  items: z.array(friendTodoSchema),
+  items: z.array(friendTodoReadModelSchema),
   pagination: z.object({
     nextCursor: z.number().nullable(),
     hasNext: z.boolean(),
     size: z.number(),
   }),
-}) satisfies z.ZodType<CursorPaginatedResponse<FriendTodo, number>>;
+}) satisfies z.ZodType<CursorPaginatedResponse<FriendTodoReadModel, number>>;
 
 /**
  * Todo 캐시 포트 어댑터 — CacheService에 위임
@@ -70,7 +76,7 @@ export class TodoCacheAdapter implements TodoCachePort {
     endDate: string,
     size: number,
     generation: string,
-    page: CursorPaginatedResponse<FriendTodo, number>,
+    page: CursorPaginatedResponse<FriendTodoReadModel, number>,
   ): Promise<void> {
     const currentGeneration = await this.#getFriendTodosGeneration(ownerUserId);
     if (currentGeneration !== generation) {

@@ -10,6 +10,7 @@ import type {
   AiGenerationResult,
 } from "#api/modules/ai-assistance/application/ports/generation/ai-generator.port";
 import type { CreateSuggestionInput } from "#api/modules/ai-assistance/application/ports/suggestions/ai-suggestion.repository.port";
+import type { SuggestionTodoCreatorPort } from "#api/modules/ai-assistance/application/ports/suggestions/suggestion-todo-creator.port";
 import { SuggestionContextBuilder } from "#api/modules/ai-assistance/application/services/suggestions/suggestion-context.builder";
 import { GenerateReport } from "#api/modules/ai-assistance/application/use-cases/reports/generate-report.use-case";
 import { AnalyzeAndCreateSuggestions } from "#api/modules/ai-assistance/application/use-cases/suggestions/analyze-and-create-suggestions.use-case";
@@ -25,7 +26,6 @@ import { GetAiDataSharingConsentUseCase } from "#api/modules/identity/preference
 import { DrizzleUserConsentRepository } from "#api/modules/identity/preferences/infrastructure/persistence/drizzle-user-consent.repository";
 import { DrizzleUserRepository } from "#api/modules/identity/users/infrastructure/persistence/drizzle-user.repository";
 import { DrizzleClientAppVersionReader } from "#api/modules/notification/infrastructure/persistence/delivery/drizzle-client-app-version.reader";
-import type { StagedTodoCreatorPort } from "#api/modules/planning/todos/application/ports/staged-todo-creator.port";
 import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
 import { CacheService } from "#api/platform/cache/cache.service";
 import { databaseSqlState, requireRecord } from "#api/platform/database/database-error.util";
@@ -554,7 +554,7 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
 
   const registeredAfterCommit: AfterCommitTask[] = [];
 
-  function action(todoCreator: StagedTodoCreatorPort) {
+  function action(todoCreator: SuggestionTodoCreatorPort) {
     return new HandleSuggestionAction({
       repository: suggestions,
       todoCreator,
@@ -568,7 +568,7 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
     });
   }
 
-  const creator: StagedTodoCreatorPort = {
+  const creator: SuggestionTodoCreatorPort = {
     async stage(input) {
       const { id: _id, ...row } = TodoFixture.create({
         userId: input.userId,

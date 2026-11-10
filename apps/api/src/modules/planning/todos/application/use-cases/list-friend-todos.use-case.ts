@@ -1,4 +1,3 @@
-import type { FriendTodo } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
 
 import { ApplicationException } from "#api/shared/application/application.exception";
@@ -10,6 +9,7 @@ import { type FriendPort } from "../ports/friend.port.js";
 import { type TodoCachePort } from "../ports/todo-cache.port.js";
 import { type TodoReadRepositoryPort } from "../ports/todo-read.repository.port.js";
 import type { FindFriendTodosParams } from "../ports/todo-read.repository.port.js";
+import type { FriendTodoReadModel } from "../read-models/todo.read-model.js";
 
 export interface GetFriendTodosParams {
   readonly userId: string;
@@ -39,7 +39,9 @@ export class ListFriendTodosUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: GetFriendTodosInput): Promise<CursorPaginatedResponse<FriendTodo, number>> {
+  async execute(
+    input: GetFriendTodosInput,
+  ): Promise<CursorPaginatedResponse<FriendTodoReadModel, number>> {
     const { userId, friendUserId } = input;
 
     if (
@@ -97,7 +99,7 @@ export class ListFriendTodosUseCase {
     const items = await this.#dependencies.todoReadRepository.findPublicTodosByUserId(repoParams);
 
     const response = this.#dependencies.paginationService.createCursorPaginatedResponse<
-      FriendTodo,
+      FriendTodoReadModel,
       number
     >({
       items,

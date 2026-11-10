@@ -43,6 +43,10 @@ import type {
   TodoRepositoryPort,
   TodoUpdatePatch,
 } from "#api/modules/planning/todos/application/ports/todo.repository.port";
+import type {
+  FriendTodoReadModel,
+  TodoReadModel,
+} from "#api/modules/planning/todos/application/read-models/todo.read-model";
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { CursorPaginatedResponse } from "#api/shared/application/pagination/index";
 import type {
@@ -56,7 +60,7 @@ import type { DomainEvent } from "#api/shared/domain/model/domain-event";
 import { instantFromDate, instantToDate } from "#api/shared/domain/time/instant";
 import { TodoBuilder } from "#test/builders/index";
 import {
-  createTodoResponseFixture,
+  createTodoReadModelFromRecord,
   type PlanningTodoRecord,
 } from "#test/fixtures/todo-response.fixture";
 
@@ -558,7 +562,7 @@ export class StubPlanningTodoReminder implements TodoReminderSchedulerPort {
 }
 
 export class StubPlanningTodoReadRepository implements TodoReadRepositoryPort {
-  queryResults: TodoResponse[] = [];
+  queryResults: TodoReadModel[] = [];
   dayStats = { total: 0, completed: 0 };
   topTodos: TodaySummaryTodoRow[] = [];
   constructor(
@@ -566,7 +570,7 @@ export class StubPlanningTodoReadRepository implements TodoReadRepositoryPort {
     readonly categories: Map<number, TodoResponse["category"]>,
     readonly seriesStore: Map<string, TodoSeries> = new Map(),
   ) {}
-  async findByIdAndUserId(id: number, userId: string): Promise<TodoResponse | null> {
+  async findByIdAndUserId(id: number, userId: string): Promise<TodoReadModel | null> {
     const saved = this.records.get(id);
     if (saved === undefined || saved.userId !== userId) {
       return null;
@@ -574,16 +578,16 @@ export class StubPlanningTodoReadRepository implements TodoReadRepositoryPort {
     const record = structuredClone(saved);
     record.items.sort((left, right) => left.sortOrder - right.sortOrder);
     record.category = this.categories.get(record.categoryId) ?? null;
-    return createTodoResponseFixture(record);
+    return createTodoReadModelFromRecord(record);
   }
   async findOwnerId(id: number): Promise<string | null> {
     return this.records.get(id)?.userId ?? null;
   }
-  async findManyBySeriesId(userId: string, seriesId: string): Promise<TodoResponse[]> {
+  async findManyBySeriesId(userId: string, seriesId: string): Promise<TodoReadModel[]> {
     const records = [...this.records.values()]
       .filter((record) => record.userId === userId && record.seriesId === seriesId)
       .sort((left, right) => left.sortOrder - right.sortOrder);
-    const responses: TodoResponse[] = [];
+    const responses: TodoReadModel[] = [];
     for (const record of records) {
       const response = await this.findByIdAndUserId(record.id, userId);
       if (response !== null) {
@@ -592,10 +596,10 @@ export class StubPlanningTodoReadRepository implements TodoReadRepositoryPort {
     }
     return responses;
   }
-  async findManyByUserId(_params: FindTodosParams): Promise<TodoResponse[]> {
+  async findManyByUserId(_params: FindTodosParams): Promise<TodoReadModel[]> {
     return structuredClone(this.queryResults);
   }
-  async findPublicTodosByUserId(_params: FindFriendTodosParams): Promise<TodoResponse[]> {
+  async findPublicTodosByUserId(_params: FindFriendTodosParams): Promise<FriendTodoReadModel[]> {
     return structuredClone(this.queryResults);
   }
   async countCategoryUsage(userId: string, categoryId: number): Promise<number> {
@@ -636,7 +640,7 @@ export class StubPlanningTodoReadRepository implements TodoReadRepositoryPort {
 
 export class StubPlanningTodoCache implements TodoCachePort {
   readonly categoryUsers = new Set<string>();
-  readonly pages = new Map<string, CursorPaginatedResponse<TodoResponse, number>>();
+  readonly pages = new Map<string, CursorPaginatedResponse<FriendTodoReadModel, number>>();
   readonly generations = new Map<string, number>();
   async invalidateTodoCategories(userId: string): Promise<void> {
     this.categoryUsers.delete(userId);
@@ -654,7 +658,7 @@ export class StubPlanningTodoCache implements TodoCachePort {
     end: string,
     size: number,
     generation: string,
-    page: CursorPaginatedResponse<TodoResponse, number>,
+    page: CursorPaginatedResponse<FriendTodoReadModel, number>,
   ): Promise<void> {
     if (generation === String(this.generations.get(userId) ?? 0)) {
       this.pages.set(this.#key(userId, start, end, size), structuredClone(page));

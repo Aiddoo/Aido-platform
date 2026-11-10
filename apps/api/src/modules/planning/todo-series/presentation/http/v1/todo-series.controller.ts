@@ -15,6 +15,7 @@ import {
 } from "#api/platform/http/swagger/index";
 
 import { GetTodoSeriesUseCase } from "../../../application/use-cases/get-todo-series.use-case.js";
+import { toTodoSeriesResponse } from "./todo-series-response.mapper.js";
 import { TodoSeriesIdParamDto, TodoSeriesResponseDto } from "./todo-series.dto.js";
 
 @ApiTags(SWAGGER_TAGS.TODOS)
@@ -45,6 +46,10 @@ export class TodoSeriesController {
     @CurrentUser() user: CurrentUserPayload,
     @Param({ schema: TodoSeriesIdParamDto }) params: TodoSeriesIdParamDto,
   ): Promise<TodoSeriesResponseDto> {
-    return this.#getTodoSeriesUseCase.execute({ seriesId: params.seriesId, userId: user.userId });
+    const series = await this.#getTodoSeriesUseCase.execute({
+      seriesId: params.seriesId,
+      userId: user.userId,
+    });
+    return toTodoSeriesResponse(series);
   }
 }

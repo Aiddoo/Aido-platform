@@ -1,18 +1,17 @@
-import type { Todo } from "@aido/api";
-
+import { dateKeyOf } from "#api/modules/planning/shared/domain/todo-calendar.domain-service";
 import {
   type CreateTodoData,
   type StagedTodoCreation,
   StagedTodoCreatorPort,
+  type TodoReadModel,
 } from "#api/modules/planning/todos/planning-todos.public";
-import { TodoBuilder } from "#test/builders/todo.builder";
-import { createTodoResponseFixture } from "#test/fixtures/todo-response.fixture";
+import { createTodoReadModelFixture } from "#test/fixtures/planning/todo-read-model.fixture";
 
 // 받은 입력을 남기고 입력 제목의 할 일을 하나 만든다. 반복이면 recurringTodos를 회차로 돌려준다
 export class FakeStagedTodoCreator extends StagedTodoCreatorPort {
   readonly inputs: CreateTodoData[] = [];
   readonly settledTodoIds: number[] = [];
-  recurringTodos: readonly Todo[] = [];
+  recurringTodos: readonly TodoReadModel[] = [];
   failure: ((input: CreateTodoData) => unknown) | null = null;
   #nextTodoId = 1;
 
@@ -32,17 +31,17 @@ export class FakeStagedTodoCreator extends StagedTodoCreatorPort {
     };
   }
 
-  #createTodo(input: CreateTodoData): Todo {
-    const record = TodoBuilder.create(input.userId)
-      .withId(this.#nextTodoId)
-      .withTitle(input.title)
-      .withCategoryId(input.categoryId)
-      .withStartDate(input.startDate)
-      .withEndDate(input.endDate ?? null)
-      .withIsAllDay(input.isAllDay ?? true)
-      .withVisibility(input.visibility ?? "PUBLIC")
-      .build();
+  #createTodo(input: CreateTodoData): TodoReadModel {
+    const todo = createTodoReadModelFixture({
+      id: this.#nextTodoId,
+      userId: input.userId,
+      title: input.title,
+      startDate: dateKeyOf(input.startDate),
+      endDate: input.endDate == null ? null : dateKeyOf(input.endDate),
+      isAllDay: input.isAllDay ?? true,
+      visibility: input.visibility ?? "PUBLIC",
+    });
     this.#nextTodoId += 1;
-    return createTodoResponseFixture(record);
+    return { ...todo, category: { ...todo.category, id: input.categoryId } };
   }
 }

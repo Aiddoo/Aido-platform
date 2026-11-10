@@ -33,7 +33,6 @@ describe("하위 항목 삭제", () => {
     const result = await useCase.execute({ todoId: 1, itemId: 1, userId: fixture.userId });
     // Then
     expect(result.items.map((item) => item.title)).toEqual(["둘째 항목"]);
-    expect(result.itemStats).toEqual({ total: 1, completed: 0 });
     expect(fixture.records.get(1)?.items).toHaveLength(1);
   });
   it("없는 항목과 다른 소유자의 할 일은 상태를 바꾸지 않는다", async () => {

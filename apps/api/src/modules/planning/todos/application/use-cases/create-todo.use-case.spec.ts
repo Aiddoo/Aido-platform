@@ -91,8 +91,6 @@ describe("할 일 생성", () => {
     expect(result).toMatchObject({
       title: "새 할 일",
       startDate: "2026-05-16",
-      content: null,
-      itemStats: { total: 2, completed: 0 },
     });
     expect(result.items.map((item) => item.title)).toEqual(["첫 항목", "둘째 항목"]);
     expect(fixture.eventPublisher.events).toEqual([
@@ -204,7 +202,7 @@ describe("할 일 생성", () => {
         ["2026-05-20", 1],
         ["2026-05-22", 2],
       ]);
-      expect(todos.every((todo) => todo.recurrenceGroupId === series?.id)).toBe(true);
+      expect(todos.every((todo) => todo.seriesId === series?.id)).toBe(true);
       expect(todos.every((todo) => todo.items.length === 2)).toBe(true);
       expect(series).toMatchObject({ repeat, isActive: false, nextOccurrenceDate: null });
       expect(fixture.seriesStore.size).toBe(1);
@@ -301,7 +299,7 @@ describe("할 일 생성", () => {
         // Then
         expect(todos.map((todo) => todo.scheduledTime)).toEqual(expected);
         expect(todos.every((todo) => !todo.isAllDay)).toBe(true);
-        expect(series).toMatchObject({ scheduledTime: "09:00", timezone });
+        expect(series).toMatchObject({ scheduledLocalTime: "09:00", timezone });
       },
     );
 

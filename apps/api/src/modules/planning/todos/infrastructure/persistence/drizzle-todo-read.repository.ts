@@ -1,4 +1,3 @@
-import type { FriendTodo, Todo as TodoResponse } from "@aido/api";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
 import { and, asc, count, eq, gte, isNotNull, isNull, lte, or, sql, type SQL } from "drizzle-orm";
@@ -18,7 +17,11 @@ import type {
   FindTodosParams,
 } from "../../application/ports/todo-read.repository.port.js";
 import type { TodoReadRepositoryPort } from "../../application/ports/todo-read.repository.port.js";
-import { TodoMapper } from "./todo-response.mapper.js";
+import type {
+  FriendTodoReadModel,
+  TodoReadModel,
+} from "../../application/read-models/todo.read-model.js";
+import { toFriendTodoReadModel, toTodoReadModel } from "./todo-read-model.mapper.js";
 
 /** Inclusive overlap. A single supplied boundary selects that exact calendar date. */
 function todoDateCondition(startDate?: Date, endDate?: Date): SQL | undefined {
@@ -88,7 +91,7 @@ export class DrizzleTodoReadRepository implements TodoReadRepositoryPort, TodoPl
     return row?.userId ?? null;
   }
 
-  async findManyByUserId(params: FindTodosParams): Promise<TodoResponse[]> {
+  async findManyByUserId(params: FindTodosParams): Promise<TodoReadModel[]> {
     const ids = await this.#findPageIds(params, false);
     if (ids.length === 0) {
       return [];
@@ -97,10 +100,10 @@ export class DrizzleTodoReadRepository implements TodoReadRepositoryPort, TodoPl
       where: { id: { in: ids } },
       with: todoWith,
     });
-    return TodoMapper.toManyResponse(orderByIds(rows, ids));
+    return orderByIds(rows, ids).map(toTodoReadModel);
   }
 
-  async findPublicTodosByUserId(params: FindFriendTodosParams): Promise<FriendTodo[]> {
+  async findPublicTodosByUserId(params: FindFriendTodosParams): Promise<FriendTodoReadModel[]> {
     const ids = await this.#findPageIds({ ...params, userId: params.friendUserId }, true);
     if (ids.length === 0) {
       return [];
@@ -109,7 +112,7 @@ export class DrizzleTodoReadRepository implements TodoReadRepositoryPort, TodoPl
       where: { id: { in: ids } },
       with: friendTodoWith,
     });
-    return TodoMapper.toManyFriendResponse(orderByIds(rows, ids));
+    return orderByIds(rows, ids).map(toFriendTodoReadModel);
   }
 
   async #findPageIds(params: FindTodosParams, publicOnly: boolean): Promise<number[]> {
@@ -181,21 +184,21 @@ export class DrizzleTodoReadRepository implements TodoReadRepositoryPort, TodoPl
       .limit(limit);
   }
 
-  async findManyBySeriesId(userId: string, seriesId: string): Promise<TodoResponse[]> {
+  async findManyBySeriesId(userId: string, seriesId: string): Promise<TodoReadModel[]> {
     const rows = await this.#db.query.todo.findMany({
       where: { userId, seriesId },
       with: todoWith,
       orderBy: { sortOrder: "asc" },
     });
-    return TodoMapper.toManyResponse(rows);
+    return rows.map(toTodoReadModel);
   }
 
-  async findByIdAndUserId(id: number, userId: string): Promise<TodoResponse | null> {
+  async findByIdAndUserId(id: number, userId: string): Promise<TodoReadModel | null> {
     const row = await this.#db.query.todo.findFirst({ where: { id, userId }, with: todoWith });
-    return row == null ? null : TodoMapper.toResponse(row);
+    return row == null ? null : toTodoReadModel(row);
   }
 
-  async findManyByIds(userId: string, ids: readonly number[]): Promise<TodoResponse[]> {
+  async findManyByIds(userId: string, ids: readonly number[]): Promise<TodoReadModel[]> {
     if (ids.length === 0) {
       return [];
     }
@@ -204,7 +207,7 @@ export class DrizzleTodoReadRepository implements TodoReadRepositoryPort, TodoPl
       with: todoWith,
       orderBy: { sortOrder: "asc" },
     });
-    return TodoMapper.toManyResponse(rows);
+    return rows.map(toTodoReadModel);
   }
 
   async findUpcoming(

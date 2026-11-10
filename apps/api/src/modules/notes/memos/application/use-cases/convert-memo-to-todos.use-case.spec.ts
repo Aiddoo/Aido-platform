@@ -4,7 +4,6 @@ import { ErrorCode } from "@aido/api/errors";
 import { ApplicationException } from "#api/shared/application/application.exception";
 import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { TodoBuilder } from "#test/builders/todo.builder";
 import { InMemoryMemoRepository } from "#test/doubles/notes/in-memory-memo.repository";
 import { FakeStagedTodoCreator } from "#test/doubles/planning/fake-staged-todo-creator";
 import { ImmediateSavepointRunner } from "#test/doubles/platform/immediate-savepoint-runner";
@@ -17,7 +16,7 @@ import {
   MEMO_FIXTURE_OTHER_USER_ID,
   MEMO_FIXTURE_USER_ID,
 } from "#test/fixtures/notes/memo.fixture";
-import { createTodoResponseFixture } from "#test/fixtures/todo-response.fixture";
+import { createTodoReadModelFixture } from "#test/fixtures/planning/todo-read-model.fixture";
 
 import {
   type ConvertMemoToTodosDependencies,
@@ -86,7 +85,7 @@ describe("ConvertMemoToTodosUseCase — 메모를 여러 할 일로", () => {
     const memoRepository = new InMemoryMemoRepository([memo]);
     const todoCreator = new FakeStagedTodoCreator();
     todoCreator.recurringTodos = [20, 21].map((id) =>
-      createTodoResponseFixture(TodoBuilder.create(MEMO_FIXTURE_USER_ID).withId(id).build()),
+      createTodoReadModelFixture({ id, userId: MEMO_FIXTURE_USER_ID }),
     );
     const afterCommit = new RecordingAfterCommitRegistry();
     const useCase = createConvertMemoToTodosUseCase({ memoRepository, todoCreator, afterCommit });

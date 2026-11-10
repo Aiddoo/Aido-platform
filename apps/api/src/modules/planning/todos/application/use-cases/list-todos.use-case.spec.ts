@@ -6,7 +6,7 @@ import {
   createPlanningTodo,
   PLANNING_TIME,
 } from "#test/fixtures/planning-todo.fixture";
-import { createTodoResponseFixture } from "#test/fixtures/todo-response.fixture";
+import { createTodoReadModelFromRecord } from "#test/fixtures/todo-response.fixture";
 
 import { ListTodosUseCase } from "./list-todos.use-case.js";
 
@@ -69,12 +69,12 @@ describe("할 일 목록 조회", () => {
   it("size+1 결과에서 다음 커서를 만들고 마지막 페이지는 null을 반환한다", async () => {
     // Given
     fixture.todoReadRepository.queryResults = [3, 2, 1].map((id) =>
-      createTodoResponseFixture(createPlanningTodo(fixture.userId, id)),
+      createTodoReadModelFromRecord(createPlanningTodo(fixture.userId, id)),
     );
     // When
     const first = await useCase.execute({ userId: fixture.userId, size: 2 });
     fixture.todoReadRepository.queryResults = [
-      createTodoResponseFixture(createPlanningTodo(fixture.userId, 1)),
+      createTodoReadModelFromRecord(createPlanningTodo(fixture.userId, 1)),
     ];
     const last = await useCase.execute({ userId: fixture.userId, cursor: 2, size: 2 });
     // Then

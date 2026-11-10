@@ -1,4 +1,3 @@
-import type { Todo as TodoResponse } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
 
 import { ApplicationException } from "#api/shared/application/application.exception";
@@ -13,6 +12,7 @@ import {
 import { type TodoCachePort } from "../ports/todo-cache.port.js";
 import { type TodoReadRepositoryPort } from "../ports/todo-read.repository.port.js";
 import { type TodoRepositoryPort } from "../ports/todo.repository.port.js";
+import type { TodoReadModel } from "../read-models/todo.read-model.js";
 import { TodoLogEvent } from "../todos.log-events.js";
 
 export interface UpdateTodoItemInput {
@@ -39,7 +39,7 @@ export class UpdateTodoItemUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: UpdateTodoItemInput): Promise<TodoResponse> {
+  async execute(input: UpdateTodoItemInput): Promise<TodoReadModel> {
     const { todoId, itemId, userId, data } = input;
 
     await this.#dependencies.unitOfWork.run(async () => {

@@ -5,8 +5,11 @@ import type {
   MemoListResponse,
   MemoMutationResponse,
 } from "@aido/api/contracts/memo";
-import type { Todo } from "@aido/api/contracts/todo";
 
+import {
+  type TodoReadModel,
+  toTodoResponse,
+} from "#api/modules/planning/todos/planning-todos.public";
 import type { CursorPage } from "#api/shared/application/cursor-page";
 import { toIsoString } from "#api/shared/domain/time/instant";
 
@@ -40,10 +43,15 @@ export function toMemoListResponse(page: CursorPage<Memo, number>): MemoListResp
   return { items: page.items.map(toMemoResponse), pagination: page.pagination };
 }
 
-export function toConvertMemoToTodoResponse(todo: Todo): ConvertMemoToTodoResponse {
-  return { message: MEMO_RESPONSE_MESSAGES.CONVERTED_TO_TODO, todo };
+export function toConvertMemoToTodoResponse(todo: TodoReadModel): ConvertMemoToTodoResponse {
+  return { message: MEMO_RESPONSE_MESSAGES.CONVERTED_TO_TODO, todo: toTodoResponse(todo) };
 }
 
-export function toConvertMemoToTodosResponse(todos: readonly Todo[]): ConvertMemoToTodosResponse {
-  return { message: `메모가 ${todos.length}개의 할 일로 변환되었습니다.`, todos: [...todos] };
+export function toConvertMemoToTodosResponse(
+  todos: readonly TodoReadModel[],
+): ConvertMemoToTodosResponse {
+  return {
+    message: `메모가 ${todos.length}개의 할 일로 변환되었습니다.`,
+    todos: todos.map(toTodoResponse),
+  };
 }

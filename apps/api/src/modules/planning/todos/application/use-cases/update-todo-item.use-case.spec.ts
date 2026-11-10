@@ -42,7 +42,6 @@ describe("하위 항목 수정", () => {
       { title: "수정된 항목", completed: false },
       { title: "둘째 항목", completed: false },
     ]);
-    expect(result.itemStats).toEqual({ total: 2, completed: 0 });
   });
   it("다른 부모의 항목과 없는 할 일은 거부하고 상태를 보존한다", async () => {
     // Given

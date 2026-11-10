@@ -1,4 +1,3 @@
-import type { Todo as TodoResponse } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
 
 import { ApplicationException } from "#api/shared/application/application.exception";
@@ -8,6 +7,7 @@ import type { PaginationService } from "#api/shared/application/pagination/index
 import type { CatchUpTodoSeriesUseCase } from "../../../todo-series/application/use-cases/catch-up-todo-series.use-case.js";
 import { type TodoReadRepositoryPort } from "../ports/todo-read.repository.port.js";
 import type { FindTodosParams } from "../ports/todo-read.repository.port.js";
+import type { TodoReadModel } from "../read-models/todo.read-model.js";
 
 interface GetTodosParams {
   readonly userId: string;
@@ -34,7 +34,7 @@ export class ListTodosUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: GetTodosInput): Promise<CursorPaginatedResponse<TodoResponse, number>> {
+  async execute(input: GetTodosInput): Promise<CursorPaginatedResponse<TodoReadModel, number>> {
     if (
       input.startDate != null &&
       input.endDate != null &&
@@ -68,11 +68,12 @@ export class ListTodosUseCase {
 
     const items = await this.#dependencies.todoReadRepository.findManyByUserId(repoParams);
 
-    return this.#dependencies.paginationService.createCursorPaginatedResponse<TodoResponse, number>(
-      {
-        items,
-        size,
-      },
-    );
+    return this.#dependencies.paginationService.createCursorPaginatedResponse<
+      TodoReadModel,
+      number
+    >({
+      items,
+      size,
+    });
   }
 }

@@ -421,7 +421,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
       });
       // Then
       expect(response.id).toBe(pivot?.id);
-      const newSeriesId = response.recurrenceGroupId ?? "";
+      const newSeriesId = response.seriesId ?? "";
       expect(newSeriesId).not.toBe(seriesId);
       const moved = await client.query.todo.findFirst({ where: { id: pivot?.id } });
       expect(moved).toMatchObject({ seriesId: newSeriesId, title: "새 규칙" });
@@ -445,7 +445,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
       // Then
       expect(response.id).toBe(pivot?.id);
       expect(response.startDate).toBe("2026-11-09");
-      const rows = await rowsOf(response.recurrenceGroupId ?? "");
+      const rows = await rowsOf(response.seriesId ?? "");
       expect(rows.map((row) => dateOf(row.occurrenceDate)).slice(0, 2)).toEqual([
         "2026-11-09",
         "2026-11-16",
@@ -459,7 +459,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
       // When
       const response = await following({ id: todos[0]?.id ?? 0, repeat: WEEKLY_MON });
       // Then
-      expect(response.recurrenceGroupId).toBe(seriesId);
+      expect(response.seriesId).toBe(seriesId);
       expect(await client.$count(todoSeries, eq(todoSeries.userId, userId))).toBe(1);
       expect(await seriesRow(seriesId)).toMatchObject({
         repeatFrequency: "WEEKLY",
@@ -479,7 +479,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
       // When
       const response = await following({ id: pivot?.id ?? 0, checklist: [{ title: "새 항목" }] });
       // Then
-      expect(response.recurrenceGroupId).toBe(seriesId);
+      expect(response.seriesId).toBe(seriesId);
       expect(await client.$count(todoSeries, eq(todoSeries.userId, userId))).toBe(1);
       expect(await seriesRow(seriesId)).toMatchObject({
         repeatCount: 5,
@@ -518,8 +518,8 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
         checklist: [{ title: "새 항목" }],
       });
       // Then
-      expect(response.recurrenceGroupId).not.toBe(seriesId);
-      expect(await seriesRow(response.recurrenceGroupId ?? "")).toMatchObject({
+      expect(response.seriesId).not.toBe(seriesId);
+      expect(await seriesRow(response.seriesId ?? "")).toMatchObject({
         originSeriesId: seriesId,
         checklistTemplate: [{ title: "새 항목" }],
       });
@@ -662,7 +662,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
       // Given
       const { todos } = await start();
       const first = await following({ id: todos[3]?.id ?? 0, repeat: WEEKLY_MON });
-      const rows = await rowsOf(first.recurrenceGroupId ?? "");
+      const rows = await rowsOf(first.seriesId ?? "");
       const second = await following({
         id: rows[1]?.id ?? 0,
         repeat: { frequency: "WEEKLY", interval: 1, weekdays: ["TUE"], end: { type: "NEVER" } },
@@ -758,7 +758,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
     async function startSplit(scheduledTime: string | null = null) {
       const { seriesId, todos } = await start(DAILY_NEVER, scheduledTime);
       const pivot = await following({ id: todos[3]?.id ?? 0, repeat: WEEKLY_MON });
-      const laterSeriesId = pivot.recurrenceGroupId ?? "";
+      const laterSeriesId = pivot.seriesId ?? "";
       return {
         seriesId,
         laterSeriesId,
@@ -809,7 +809,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
         // Given
         const { seriesId, laterSeriesId, earlier, later } = await startSplit();
         const second = await following({ id: later[1]?.id ?? 0, repeat: WEEKLY_TUE });
-        const lastSeriesId = second.recurrenceGroupId ?? "";
+        const lastSeriesId = second.seriesId ?? "";
         expect((await rowsOf(lastSeriesId)).length).toBeGreaterThan(0);
         // When
         await remove(earlier[0]?.id ?? 0);
@@ -1004,7 +1004,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
         // When
         const edited = await following({ id: earlier[1]?.id ?? 0, repeat: WEEKLY_MON });
         // Then
-        const mergedId = edited.recurrenceGroupId ?? "";
+        const mergedId = edited.seriesId ?? "";
         expect([seriesId, laterSeriesId]).not.toContain(mergedId);
         const merged = await rowsOf(mergedId);
         expect(merged.map((row) => row.id)).toContain(later[1]?.id);
@@ -1028,7 +1028,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
         expect(await rowsOf(laterSeriesId).then((rows) => rows.map((row) => row.id))).toEqual([
           later[1]?.id,
         ]);
-        const merged = await rowsOf(edited.recurrenceGroupId ?? "");
+        const merged = await rowsOf(edited.seriesId ?? "");
         expect(merged.map((row) => row.id)).not.toContain(later[0]?.id);
         const dates = merged.map((row) => dateOf(row.occurrenceDate));
         expect(new Set(dates).size).toBe(dates.length);
@@ -1050,7 +1050,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
         // When
         const edited = await following({ id: earlier[1]?.id ?? 0, repeat: WEEKLY_MON });
         // Then
-        const merged = await rowsOf(edited.recurrenceGroupId ?? "");
+        const merged = await rowsOf(edited.seriesId ?? "");
         const onDate = merged.filter((row) => dateOf(row.occurrenceDate) === dateOf(sameDate));
         expect(onDate.map((row) => row.title)).toEqual(["앞 구간의 완료 회차"]);
         expect(await rowsOf(laterSeriesId)).toEqual([]);
@@ -1063,7 +1063,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
         // When
         const edited = await following({ id: earlier[1]?.id ?? 0, repeat: WEEKLY_MON });
         // Then
-        const merged = await rowsOf(edited.recurrenceGroupId ?? "");
+        const merged = await rowsOf(edited.seriesId ?? "");
         expect(new Set(merged.map((row) => row.title))).toEqual(new Set(["원래 제목"]));
       });
 
@@ -1073,7 +1073,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
         // When
         const edited = await following({ id: earlier[0]?.id ?? 0, repeat: WEEKLY_MON });
         // Then
-        expect(edited.recurrenceGroupId).toBe(seriesId);
+        expect(edited.seriesId).toBe(seriesId);
         expect(await rowsOf(laterSeriesId)).toEqual([]);
         expect((await rowsOf(seriesId)).map((row) => row.id)).toContain(later[0]?.id);
         expect((await seriesRow(seriesId))?.nextOccurrenceDate).not.toBeNull();
@@ -1086,7 +1086,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
         // When
         const edited = await following({ id: earlier[0]?.id ?? 0, repeat: WEEKLY_TUE });
         // Then
-        expect(edited.recurrenceGroupId).toBeTruthy();
+        expect(edited.seriesId).toBeTruthy();
         expect(
           await client.$count(
             todoSeries,
@@ -1182,7 +1182,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
       });
       // Then
       expect(response.id).toBe(single?.id);
-      const seriesId = response.recurrenceGroupId ?? "";
+      const seriesId = response.seriesId ?? "";
       expect(await seriesRow(seriesId)).toMatchObject({
         scheduledLocalTime: "09:00",
         timezone: "Asia/Seoul",

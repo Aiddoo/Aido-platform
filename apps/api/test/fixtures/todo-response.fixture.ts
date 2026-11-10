@@ -1,5 +1,6 @@
 import type { Todo as TodoResponse } from "@aido/api";
 
+import type { TodoReadModel } from "#api/modules/planning/todos/planning-todos.public";
 import type { TodoBuilder } from "#test/builders/index";
 
 export type PlanningTodoRecord = ReturnType<TodoBuilder["build"]>;
@@ -34,5 +35,22 @@ export function createTodoResponseFixture(record: PlanningTodoRecord): TodoRespo
     commentCount: record.commentCount,
     createdAt: record.createdAt.toISOString(),
     updatedAt: record.updatedAt.toISOString(),
+  };
+}
+
+/** 저장 행 모양 기록을 planning Read Model로 바꾼다. 반복 규칙은 담지 않는다. */
+export function createTodoReadModelFromRecord(record: PlanningTodoRecord): TodoReadModel {
+  const {
+    content: _content,
+    itemStats: _itemStats,
+    recurrenceGroupId,
+    ...response
+  } = createTodoResponseFixture(record);
+  return {
+    ...response,
+    scheduledLocalTime: response.scheduledLocalTime ?? null,
+    seriesId: recurrenceGroupId,
+    repeat: null,
+    occurrenceDate: record.occurrenceDate?.toISOString().slice(0, 10) ?? null,
   };
 }

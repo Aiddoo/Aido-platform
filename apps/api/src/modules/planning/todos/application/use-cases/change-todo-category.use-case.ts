@@ -1,4 +1,3 @@
-import type { Todo as TodoResponse } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
 import { TODO_LIMITS } from "@aido/api/vocabulary";
 
@@ -16,6 +15,7 @@ import { type CategoryOwnershipPort } from "../ports/category-ownership.port.js"
 import { type TodoCachePort } from "../ports/todo-cache.port.js";
 import { type TodoReadRepositoryPort } from "../ports/todo-read.repository.port.js";
 import { type TodoRepositoryPort } from "../ports/todo.repository.port.js";
+import type { TodoReadModel } from "../read-models/todo.read-model.js";
 import { TodoLogEvent } from "../todos.log-events.js";
 import type { ApplyTodoEventsUseCase } from "./apply-todo-events.use-case.js";
 
@@ -48,7 +48,7 @@ export class ChangeTodoCategoryUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: ChangeTodoCategoryInput): Promise<TodoResponse> {
+  async execute(input: ChangeTodoCategoryInput): Promise<TodoReadModel> {
     const { id, userId, categoryId } = input;
 
     const events = await this.#dependencies.unitOfWork.run(async () => {

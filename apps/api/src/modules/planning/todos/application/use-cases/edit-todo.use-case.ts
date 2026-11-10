@@ -1,4 +1,3 @@
-import type { TodoRepeat, Todo as TodoResponse } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
 import type { TodoUpdateScope } from "@aido/api/vocabulary";
 
@@ -13,7 +12,9 @@ import { TodoRescheduledEvent } from "../../../shared/domain/todo-rescheduled.ev
 import type { StartSeriesFromTodoUseCase } from "../../../todo-series/application/use-cases/start-series-from-todo.use-case.js";
 import type { StopTodoSeriesUseCase } from "../../../todo-series/application/use-cases/stop-todo-series.use-case.js";
 import type { UpdateFollowingTodosUseCase } from "../../../todo-series/application/use-cases/update-following-todos.use-case.js";
+import type { RepeatSpec } from "../../../todo-series/domain/repeat-rule.vo.js";
 import type { TodoReadRepositoryPort } from "../ports/todo-read.repository.port.js";
+import type { TodoReadModel } from "../read-models/todo.read-model.js";
 import type { ApplyTodoEventsUseCase } from "./apply-todo-events.use-case.js";
 import type { ResolveTodoTimezoneUseCase } from "./resolve-todo-timezone.use-case.js";
 import type { UpdateTodoData } from "./update-todo.use-case.js";
@@ -26,7 +27,7 @@ export interface EditTodoInput {
   readonly timezone: string | undefined;
   readonly scope?: TodoUpdateScope;
   /** 생략은 변경 없음, null은 이 회차 뒤로 반복 끝내기, 값은 전환이나 범위 수정의 새 규칙이다. */
-  readonly repeat?: TodoRepeat | null;
+  readonly repeat?: RepeatSpec | null;
   readonly checklist?: readonly { readonly title: string }[];
   readonly data: UpdateTodoData;
 }
@@ -61,7 +62,7 @@ export class EditTodoUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(request: EditTodoInput): Promise<TodoResponse> {
+  async execute(request: EditTodoInput): Promise<TodoReadModel> {
     const timezone = await this.#dependencies.timezoneResolver.execute(
       request.userId,
       request.timezone,
@@ -89,7 +90,7 @@ export class EditTodoUseCase {
     return this.#dependencies.updateTodo.execute({ id, userId, timezone, scope, data });
   }
 
-  async #editFollowing(input: ResolvedEditTodoInput, repeat: TodoRepeat | undefined) {
+  async #editFollowing(input: ResolvedEditTodoInput, repeat: RepeatSpec | undefined) {
     const { id, userId, timezone, checklist, data } = input;
     const { updateFollowingTodos, updateTodo, unitOfWork, applyTodoEvents } = this.#dependencies;
     const followingInput = {
@@ -127,7 +128,7 @@ export class EditTodoUseCase {
     return this.#read(applied.following.responseTodoId, userId);
   }
 
-  async #startSeries(input: ResolvedEditTodoInput, repeat: TodoRepeat) {
+  async #startSeries(input: ResolvedEditTodoInput, repeat: RepeatSpec) {
     const { id, userId, timezone, data } = input;
     const { startSeriesFromTodo, updateTodo, unitOfWork, applyTodoEvents } = this.#dependencies;
     const applied = await unitOfWork.run(async () => {
@@ -170,7 +171,7 @@ export class EditTodoUseCase {
     ]);
   }
 
-  async #read(id: number, userId: string): Promise<TodoResponse> {
+  async #read(id: number, userId: string): Promise<TodoReadModel> {
     const response = await this.#dependencies.todoReadRepository.findByIdAndUserId(id, userId);
     if (response == null) {
       throw new ApplicationException(ErrorCode.TODO_0801, { todoId: id });

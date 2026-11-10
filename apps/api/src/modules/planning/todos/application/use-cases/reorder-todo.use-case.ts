@@ -1,4 +1,3 @@
-import type { Todo as TodoResponse } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
 import type { ReorderPosition } from "@aido/api/vocabulary";
 
@@ -18,6 +17,7 @@ import {
 import { type TodoCachePort } from "../ports/todo-cache.port.js";
 import { type TodoReadRepositoryPort } from "../ports/todo-read.repository.port.js";
 import { type TodoRepositoryPort } from "../ports/todo.repository.port.js";
+import type { TodoReadModel } from "../read-models/todo.read-model.js";
 import { TodoLogEvent } from "../todos.log-events.js";
 
 export interface ReorderTodoInput {
@@ -46,7 +46,7 @@ export class ReorderTodoUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: ReorderTodoInput): Promise<TodoResponse> {
+  async execute(input: ReorderTodoInput): Promise<TodoReadModel> {
     const { id, userId, targetTodoId, position } = input;
 
     await this.#dependencies.unitOfWork.run(async () => {

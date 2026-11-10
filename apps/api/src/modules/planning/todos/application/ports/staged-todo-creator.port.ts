@@ -1,8 +1,10 @@
-import type { Todo, TodoSeriesResponse } from "@aido/api";
-import type { TodoRepeat } from "@aido/api";
 import type { TodoVisibility } from "@aido/api/vocabulary";
 
 import type { AfterCommitTask } from "#api/shared/application/ports/index";
+
+import type { TodoSeriesReadModel } from "../../../todo-series/application/read-models/todo-series.read-model.js";
+import type { RepeatSpec } from "../../../todo-series/domain/repeat-rule.vo.js";
+import type { TodoReadModel } from "../read-models/todo.read-model.js";
 
 /**
  * 할 일 생성 입력. 시각은 벽시계 HH:mm로 받아 timezone으로 해석한다.
@@ -20,7 +22,7 @@ export interface CreateTodoData {
   readonly isAllDay?: boolean;
   readonly visibility?: TodoVisibility;
   readonly items?: readonly { title: string }[];
-  readonly repeat?: TodoRepeat | null;
+  readonly repeat?: RepeatSpec | null;
   /**
    * 출시 앱(1.14.x까지)의 기간이 정해진 경로 전용. 새 경로보다 넉넉한 상한을 보고, 거절은 옛 앱이
    * 아는 코드로 한다. 호환 범위는 docs/conventions/compatibility.md에 적는다.
@@ -36,9 +38,9 @@ export const STAGED_TODO_CREATOR = Symbol("STAGED_TODO_CREATOR");
 
 export interface StagedTodoCreation {
   /** 만든 할 일. 반복이면 회차를 날짜순으로 담고 맨 앞이 첫 회차다. */
-  readonly todos: readonly Todo[];
+  readonly todos: readonly TodoReadModel[];
   /** 반복으로 만들었을 때의 규칙. 단일 할 일은 null이다. */
-  readonly series: TodoSeriesResponse | null;
+  readonly series: TodoSeriesReadModel | null;
   readonly afterCommit: AfterCommitTask;
 }
 

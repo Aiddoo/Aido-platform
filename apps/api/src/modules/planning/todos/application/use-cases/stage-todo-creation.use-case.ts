@@ -2,7 +2,7 @@ import { ErrorCode } from "@aido/api/errors";
 
 import { ApplicationException } from "#api/shared/application/application.exception";
 
-import { toTodoSeriesResponse } from "../../../todo-series/application/read-models/todo-series.read-model.js";
+import { toTodoSeriesReadModel } from "../../../todo-series/application/read-models/todo-series.read-model.js";
 import type { PublishTodoCreationUseCase } from "../../../todo-series/application/use-cases/publish-todo-creation.use-case.js";
 import type {
   CreateTodoData,
@@ -72,7 +72,7 @@ export class StageTodoCreationUseCase {
     );
     return {
       todos,
-      series: toTodoSeriesResponse(series),
+      series: toTodoSeriesReadModel(series),
       afterCommit: () => this.#dependencies.effects.publishSeriesStarted(series, occurrences),
     };
   }

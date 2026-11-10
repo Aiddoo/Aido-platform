@@ -33,9 +33,7 @@ describe("할 일 상세 조회", () => {
       id: 1,
       userId: fixture.userId,
       startDate: "2026-05-15",
-      content: null,
       category: { id: 1 },
-      itemStats: { total: 1, completed: 0 },
     });
     expect(result.items[0]?.title).toBe("하위 항목");
   });

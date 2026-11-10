@@ -1,9 +1,9 @@
-import type { Todo as TodoResponse } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
 
 import { ApplicationException } from "#api/shared/application/application.exception";
 
 import { type TodoReadRepositoryPort } from "../ports/todo-read.repository.port.js";
+import type { TodoReadModel } from "../read-models/todo.read-model.js";
 
 export interface GetTodoByIdInput {
   readonly id: number;
@@ -21,7 +21,7 @@ export class GetTodoUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: GetTodoByIdInput): Promise<TodoResponse> {
+  async execute(input: GetTodoByIdInput): Promise<TodoReadModel> {
     const todo = await this.#dependencies.todoReadRepository.findByIdAndUserId(
       input.id,
       input.userId,

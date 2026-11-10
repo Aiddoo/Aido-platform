@@ -6,7 +6,10 @@ import { ACTION_PLAN_GENERATOR } from "#api/modules/ai-assistance/ai-assistance-
 import { PlanMemoWriterPort } from "#api/modules/notes/memos/notes-memos.public";
 import {
   STAGED_TODO_CREATOR,
+  type StagedTodoCreatorPort,
   TODO_PLAN_READER,
+  type TodoPlanReaderPort,
+  toTodoResponse,
 } from "#api/modules/planning/todos/planning-todos.public";
 import {
   AFTER_COMMIT_TASK_REGISTRY,
@@ -112,9 +115,9 @@ export const applyActionPlanProvider: FactoryProvider<ApplyActionPlan> = {
     afterCommit: ApplyDependencies["afterCommit"],
     repository: ApplyDependencies["repository"],
     contextReader: ApplyDependencies["contextReader"],
-    todoCreator: ApplyDependencies["todoCreator"],
+    stagedTodoCreator: StagedTodoCreatorPort,
     memoWriter: ApplyDependencies["memoWriter"],
-    todoReader: ApplyDependencies["todoReader"],
+    todoPlanReader: TodoPlanReaderPort,
   ) =>
     new ApplyActionPlan({
       unitOfWork,
@@ -122,9 +125,18 @@ export const applyActionPlanProvider: FactoryProvider<ApplyActionPlan> = {
       afterCommit,
       repository,
       contextReader,
-      todoCreator,
+      // voice는 아직 계약 Todo를 응답에 그대로 담는다. planning Read Model은 경계에서 계약 모양으로 바꾼다
+      todoCreator: {
+        stage: async (draft) => {
+          const staged = await stagedTodoCreator.stage(draft);
+          return { todos: staged.todos.map(toTodoResponse), afterCommit: staged.afterCommit };
+        },
+      },
       memoWriter,
-      todoReader,
+      todoReader: {
+        findManyByIds: async (userId, ids) =>
+          (await todoPlanReader.findManyByIds(userId, ids)).map(toTodoResponse),
+      },
       logger: new Logger(ApplyActionPlan.name),
     }),
 };

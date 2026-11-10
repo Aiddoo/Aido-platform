@@ -41,7 +41,6 @@ describe("하위 항목 추가", () => {
       { title: "기존 항목", sortOrder: 0 },
       { title: "추가 항목", sortOrder: 1 },
     ]);
-    expect(result.itemStats).toEqual({ total: 2, completed: 0 });
     expect(fixture.records.get(1)?.items).toHaveLength(2);
   });
   it("완료한 할 일에 항목을 더하면 미완료로 돌아가고 완료 변경 이벤트를 낸다", async () => {

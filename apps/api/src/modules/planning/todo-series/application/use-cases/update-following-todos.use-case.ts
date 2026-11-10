@@ -1,4 +1,3 @@
-import type { Todo as TodoResponse } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
 import { TODO_LIMITS, TODO_SERIES_LIMITS, type TodoVisibility } from "@aido/api/vocabulary";
 import { isEqual, sortBy, uniq, uniqBy } from "es-toolkit";
@@ -25,6 +24,7 @@ import type {
   OccurrenceTime,
   TodoRepositoryPort,
 } from "../../../todos/application/ports/todo.repository.port.js";
+import type { TodoReadModel } from "../../../todos/application/read-models/todo.read-model.js";
 import type { ApplyTodoEventsUseCase } from "../../../todos/application/use-cases/apply-todo-events.use-case.js";
 import { occurrenceHorizon } from "../../domain/occurrence-horizon.domain-service.js";
 import { RepeatRule, type RepeatSpec } from "../../domain/repeat-rule.vo.js";
@@ -100,7 +100,7 @@ export class UpdateFollowingTodosUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: UpdateFollowingTodosInput): Promise<TodoResponse> {
+  async execute(input: UpdateFollowingTodosInput): Promise<TodoReadModel> {
     const { userId } = input;
     const edited = await this.#dependencies.unitOfWork.run(() => this.apply(input));
     await this.publish(edited, userId);

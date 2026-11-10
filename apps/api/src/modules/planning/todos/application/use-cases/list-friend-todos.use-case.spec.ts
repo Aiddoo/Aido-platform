@@ -6,7 +6,7 @@ import {
   createPlanningTodo,
   PLANNING_TIME,
 } from "#test/fixtures/planning-todo.fixture";
-import { createTodoResponseFixture } from "#test/fixtures/todo-response.fixture";
+import { createTodoReadModelFromRecord } from "#test/fixtures/todo-response.fixture";
 
 import { ListFriendTodosUseCase } from "./list-friend-todos.use-case.js";
 
@@ -28,7 +28,7 @@ describe("친구 할 일 목록 조회", () => {
     // Given
     fixture.friendIds.add("friend-user");
     fixture.todoReadRepository.queryResults = [
-      createTodoResponseFixture(createPlanningTodo("friend-user", 2)),
+      createTodoReadModelFromRecord(createPlanningTodo("friend-user", 2)),
     ];
     const input = { userId: fixture.userId, friendUserId: "friend-user" };
     // When
@@ -65,11 +65,11 @@ describe("친구 할 일 목록 조회", () => {
       endDate: new Date("2026-05-31"),
     };
     fixture.todoReadRepository.queryResults = [
-      createTodoResponseFixture(createPlanningTodo("friend-user", 3)),
+      createTodoReadModelFromRecord(createPlanningTodo("friend-user", 3)),
     ];
     await useCase.execute(input);
     fixture.todoReadRepository.queryResults = [
-      createTodoResponseFixture(createPlanningTodo("friend-user", 2)),
+      createTodoReadModelFromRecord(createPlanningTodo("friend-user", 2)),
     ];
     // When
     const cursorPage = await useCase.execute({ ...input, cursor: 3 });

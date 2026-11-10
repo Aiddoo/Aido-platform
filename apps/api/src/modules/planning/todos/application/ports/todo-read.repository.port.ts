@@ -1,4 +1,4 @@
-import type { FriendTodo, Todo as TodoResponse } from "@aido/api";
+import type { FriendTodoReadModel, TodoReadModel } from "../read-models/todo.read-model.js";
 
 export interface FindTodosParams {
   readonly userId: string;
@@ -33,17 +33,17 @@ export interface TodaySummaryTodoRow {
 }
 
 export abstract class TodoReadRepositoryPort {
-  abstract findByIdAndUserId(id: number, userId: string): Promise<TodoResponse | null>;
+  abstract findByIdAndUserId(id: number, userId: string): Promise<TodoReadModel | null>;
 
   /** 소유자만 알면 되는 자리 — 목록 캐시 키가 소유자 기준이라 이 한 컬럼이면 충분하다. */
   abstract findOwnerId(id: number): Promise<string | null>;
 
   /** 반복 할 일의 회차 전체 (sortOrder asc — 생성 순서와 동일) */
-  abstract findManyBySeriesId(userId: string, seriesId: string): Promise<TodoResponse[]>;
+  abstract findManyBySeriesId(userId: string, seriesId: string): Promise<TodoReadModel[]>;
 
-  abstract findManyByUserId(params: FindTodosParams): Promise<TodoResponse[]>;
+  abstract findManyByUserId(params: FindTodosParams): Promise<TodoReadModel[]>;
 
-  abstract findPublicTodosByUserId(params: FindFriendTodosParams): Promise<FriendTodo[]>;
+  abstract findPublicTodosByUserId(params: FindFriendTodosParams): Promise<FriendTodoReadModel[]>;
 
   /** 카테고리 한도에 세는 수: 반복 아닌 미완료 + 진행 중 규칙 1개당 1 */
   abstract countCategoryUsage(userId: string, categoryId: number): Promise<number>;

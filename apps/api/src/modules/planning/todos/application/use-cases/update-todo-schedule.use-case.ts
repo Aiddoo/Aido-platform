@@ -1,4 +1,3 @@
-import type { Todo as TodoResponse } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
 
 import { ApplicationException } from "#api/shared/application/application.exception";
@@ -15,6 +14,7 @@ import { TodoSchedule } from "../../../shared/domain/todo-schedule.vo.js";
 import { type TodoCachePort } from "../ports/todo-cache.port.js";
 import { type TodoReadRepositoryPort } from "../ports/todo-read.repository.port.js";
 import { type TodoRepositoryPort } from "../ports/todo.repository.port.js";
+import type { TodoReadModel } from "../read-models/todo.read-model.js";
 import { TodoLogEvent } from "../todos.log-events.js";
 import type { ApplyTodoEventsUseCase } from "./apply-todo-events.use-case.js";
 import type { ResolveTodoTimezoneUseCase } from "./resolve-todo-timezone.use-case.js";
@@ -53,7 +53,7 @@ export class UpdateTodoScheduleUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: UpdateTodoScheduleInput): Promise<TodoResponse> {
+  async execute(input: UpdateTodoScheduleInput): Promise<TodoReadModel> {
     const { id, userId, schedule } = input;
     const timezone = await this.#dependencies.timezoneResolver.execute(userId, input.timezone);
 

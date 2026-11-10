@@ -8,7 +8,11 @@ import {
   USER_LOCALE_PREFERENCE_READER,
 } from "#api/modules/ai-assistance/ai-assistance-parsing.public";
 import { USER_MUTATION_LOCK } from "#api/modules/identity/identity-user-access.public";
-import { STAGED_TODO_CREATOR } from "#api/modules/planning/todos/planning-todos.public";
+import {
+  STAGED_TODO_CREATOR,
+  type StagedTodoCreatorPort,
+  toTodoResponse,
+} from "#api/modules/planning/todos/planning-todos.public";
 import { WEATHER_FORECAST_READER } from "#api/modules/weather/weather-forecast.public";
 import {
   AFTER_COMMIT_TASK_REGISTRY,
@@ -112,7 +116,7 @@ export const handleSuggestionActionProvider: FactoryProvider<HandleSuggestionAct
   ],
   useFactory: (
     repository: ConstructorParameters<typeof HandleSuggestionAction>[0]["repository"],
-    todoCreator: ConstructorParameters<typeof HandleSuggestionAction>[0]["todoCreator"],
+    stagedTodoCreator: StagedTodoCreatorPort,
     entitlementReader: ConstructorParameters<typeof HandleSuggestionAction>[0]["entitlementReader"],
     unitOfWork: ConstructorParameters<typeof HandleSuggestionAction>[0]["unitOfWork"],
     userMutationLock: ConstructorParameters<typeof HandleSuggestionAction>[0]["userMutationLock"],
@@ -124,7 +128,13 @@ export const handleSuggestionActionProvider: FactoryProvider<HandleSuggestionAct
   ) =>
     new HandleSuggestionAction({
       repository,
-      todoCreator,
+      // ai는 아직 계약 Todo로 받는다. planning Read Model은 경계에서 계약 모양으로 바꾼다
+      todoCreator: {
+        stage: async (draft) => {
+          const staged = await stagedTodoCreator.stage(draft);
+          return { todos: staged.todos.map(toTodoResponse), afterCommit: staged.afterCommit };
+        },
+      },
       entitlementReader,
       unitOfWork,
       userMutationLock,

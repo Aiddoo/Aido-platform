@@ -37,6 +37,7 @@ import { todayInTimezone } from "#api/shared/domain/date/utils/timezone";
 import { DomainException } from "#api/shared/domain/index";
 
 import { utcMidnightOf } from "../../../../shared/domain/todo-calendar.domain-service.js";
+import { toTodoSeriesResponse } from "../../../../todo-series/presentation/http/v1/todo-series-response.mapper.js";
 import { AddTodoItemUseCase } from "../../../application/use-cases/add-todo-item.use-case.js";
 import { ChangeTodoCategoryUseCase } from "../../../application/use-cases/change-todo-category.use-case.js";
 import { CreateTodoUseCase } from "../../../application/use-cases/create-todo.use-case.js";
@@ -55,6 +56,7 @@ import { UpdateTodoItemUseCase } from "../../../application/use-cases/update-tod
 import { UpdateTodoScheduleUseCase } from "../../../application/use-cases/update-todo-schedule.use-case.js";
 import { UpdateTodoTitleUseCase } from "../../../application/use-cases/update-todo-title.use-case.js";
 import { UpdateTodoVisibilityUseCase } from "../../../application/use-cases/update-todo-visibility.use-case.js";
+import { toFriendTodoResponse, toTodoResponse } from "./todo-response.mapper.js";
 import {
   ChangeTodoCategoryDto,
   CreateRecurringTodoDto,
@@ -299,8 +301,8 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 
     return {
       message: "할 일이 생성되었습니다.",
-      todo,
-      ...(series != null && { series }),
+      todo: toTodoResponse(todo),
+      ...(series != null && { series: toTodoSeriesResponse(series) }),
     };
   }
 
@@ -378,7 +380,7 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 
     return {
       message: `반복 할 일이 ${todos.length}개 생성되었습니다.`,
-      todos: [...todos],
+      todos: todos.map(toTodoResponse),
       count: todos.length,
     };
   }
@@ -526,7 +528,7 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
     });
 
     return {
-      items: result.items,
+      items: result.items.map(toTodoResponse),
       pagination: result.pagination,
     };
   }
@@ -546,10 +548,11 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
     @CurrentUser() user: CurrentUserPayload,
     @Param({ schema: TodoIdParamDto }) params: TodoIdParamDto,
   ): Promise<TodoResponseDto> {
-    return this.#getTodoByIdUseCase.execute({
+    const todo = await this.#getTodoByIdUseCase.execute({
       id: params.id,
       userId: user.userId,
     });
+    return toTodoResponse(todo);
   }
 
   @Get("friends/:userId")
@@ -608,7 +611,7 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
     });
 
     return {
-      items: result.items,
+      items: result.items.map(toFriendTodoResponse),
       pagination: result.pagination,
     };
   }
@@ -681,7 +684,7 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 
     return {
       message: "할 일이 수정되었습니다.",
-      todo,
+      todo: toTodoResponse(todo),
     };
   }
 
@@ -724,7 +727,7 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 
     return {
       message: dto.completed ? "할 일이 완료되었습니다." : "할 일이 미완료로 변경되었습니다.",
-      todo,
+      todo: toTodoResponse(todo),
     };
   }
 
@@ -753,7 +756,7 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 
     return {
       message: `공개 범위가 ${dto.visibility}로 변경되었습니다.`,
-      todo,
+      todo: toTodoResponse(todo),
     };
   }
 
@@ -782,7 +785,7 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 
     return {
       message: "카테고리가 변경되었습니다.",
-      todo,
+      todo: toTodoResponse(todo),
     };
   }
 
@@ -828,7 +831,7 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 
     return {
       message: "일정이 변경되었습니다.",
-      todo,
+      todo: toTodoResponse(todo),
     };
   }
 
@@ -858,7 +861,7 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 
     return {
       message: "할 일이 수정되었습니다.",
-      todo,
+      todo: toTodoResponse(todo),
     };
   }
 
@@ -890,7 +893,7 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 
     return {
       message: "할 일 순서가 변경되었습니다.",
-      todo,
+      todo: toTodoResponse(todo),
     };
   }
 
@@ -981,7 +984,7 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 
     return {
       message: "하위 항목이 추가되었습니다.",
-      todo,
+      todo: toTodoResponse(todo),
     };
   }
 
@@ -1026,7 +1029,7 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 
     return {
       message: "하위 항목 순서가 변경되었습니다.",
-      todo,
+      todo: toTodoResponse(todo),
     };
   }
 
@@ -1082,7 +1085,7 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 
     return {
       message: "하위 항목이 수정되었습니다.",
-      todo,
+      todo: toTodoResponse(todo),
     };
   }
 
@@ -1124,7 +1127,7 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 
     return {
       message: "하위 항목이 삭제되었습니다.",
-      todo,
+      todo: toTodoResponse(todo),
     };
   }
 }
