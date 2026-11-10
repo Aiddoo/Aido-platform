@@ -11,6 +11,4 @@ export const LEGACY_CONSTRAINT_ERRORS: Readonly<Record<string, () => ErrorCodedE
   User_userTag_key: () =>
     ApplicationExceptions.internalServerError({ detail: "userTag collision" }),
   userTag: () => ApplicationExceptions.internalServerError({ detail: "userTag collision" }),
-  Follow_followerId_followingId_key: () => ApplicationExceptions.followRequestAlreadySent(""),
-  followerId_followingId: () => ApplicationExceptions.followRequestAlreadySent(""),
 };

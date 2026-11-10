@@ -94,19 +94,6 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
       expect(jsonArg?.error.code).toBe(ErrorCode.EMAIL_0501);
     });
 
-    it("알려진 constraint(followerId_followingId)를 업무 오류으로 매핑해야 한다", () => {
-      // Given
-      const error = sqlQueryError("23505", "Follow_followerId_followingId_key");
-
-      // When
-      filter.catch(error, mockHost);
-
-      // Then
-      expect(mockResponse.status).toHaveBeenCalledWith(HttpStatus.CONFLICT);
-      const jsonArg = mockResponse.json.mock.calls[0]?.[0];
-      expect(jsonArg?.error.code).toBe(ErrorCode.FOLLOW_0901);
-    });
-
     it("알 수 없는 constraint를 SYS_0004 (409)로 폴백해야 한다", () => {
       // Given
       const error = sqlQueryError("23505");

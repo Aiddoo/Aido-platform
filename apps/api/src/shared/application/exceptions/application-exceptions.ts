@@ -29,10 +29,6 @@ export const ApplicationExceptions = {
     return new ApplicationException(ErrorCode.USER_0604, details);
   },
 
-  followRequestAlreadySent(targetUserId: string) {
-    return new ApplicationException(ErrorCode.FOLLOW_0901, { targetUserId });
-  },
-
   todoCategoryNotFound(categoryId: number) {
     return new ApplicationException(ErrorCode.TODO_CATEGORY_0851, { categoryId });
   },
