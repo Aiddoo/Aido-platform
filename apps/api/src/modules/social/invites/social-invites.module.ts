@@ -6,6 +6,7 @@ import { NotificationDeliveryModule } from "#api/modules/notification/notificati
 import { SocialBlocksModule } from "#api/modules/social/blocks/social-blocks.public";
 import { SocialFriendsModule } from "#api/modules/social/friends/social-friends.public";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
+import { provideEventSubscriptions } from "#api/platform/events/event-subscription.catalog";
 
 import { CLAIM_HASHER } from "./application/ports/claim-hasher.port.js";
 import { INVITE_CONFIG, type InviteConfigPort } from "./application/ports/invite-config.port.js";
@@ -22,7 +23,10 @@ import { InviteCodeGenerator } from "./infrastructure/adapters/invite-code-gener
 import { InviteNotifierAdapter } from "./infrastructure/adapters/invite-notifier.adapter.js";
 import { PremiumDaysRewardApplier } from "./infrastructure/adapters/premium-days-reward-applier.adapter.js";
 import { rewardAppliersProvider } from "./infrastructure/adapters/reward-appliers-registry.adapter.js";
-import { InviteeActivitySubscriber } from "./infrastructure/event-handlers/invitee-activity.event-handler.js";
+import {
+  INVITEE_ACTIVITY_SUBSCRIPTION,
+  InviteeActivityEventHandler,
+} from "./infrastructure/event-handlers/invitee-activity.event-handler.js";
 import { InviteMaintenanceProcessor } from "./infrastructure/jobs/invite-maintenance.processor.js";
 import { InviteMaintenanceJob } from "./infrastructure/jobs/invite-maintenance.scheduler.js";
 import { InviteQualifyReminderSchedulerAdapter } from "./infrastructure/jobs/invite-qualify-reminder-scheduler.adapter.js";
@@ -89,7 +93,8 @@ import {
     expireStaleRedemptionsProvider,
     scheduleInviteQualifyRemindersProvider,
     sendInviteQualifyReminderProvider,
-    InviteeActivitySubscriber,
+    provideEventSubscriptions(INVITEE_ACTIVITY_SUBSCRIPTION),
+    InviteeActivityEventHandler,
     InviteRewardProcessor,
     InviteMaintenanceJob,
     InviteMaintenanceProcessor,

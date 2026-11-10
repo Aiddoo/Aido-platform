@@ -126,4 +126,4 @@ for (const minute of minutesToSweep({ lastCompletedAt, now: clock.now(), maxCatc
 
 ## 전환 중
 
-아직 옮기지 않은 Context는 `JobRuntimePort`·`teamSize`(스케줄 `missed`는 생략 시 `skip`), `*.job.ts`·`*-queue.constants.ts`로 흩어진 큐 정의, 커밋 뒤 `publishAll`과 `@OnEvent` 구독(리마인더 예약 5개·초대 활동 1개)을 쓴다. 새 publisher(`FanOutDomainEventPublisher`)가 들어온 뒤에도 옛 `publishAll`(커밋 뒤 이벤트 이름 채널로 in-process 전달)·이벤트 이름 상수는 마지막 Context가 옮길 때까지 남는다. 구독을 옮기는 커밋은 같은 커밋에서 옛 `@OnEvent`를 지워 두 번 기록되지 않게 한다. 옮긴 Context는 `apps/api/architecture.ratchet.json`의 `migratedContexts`에 있다.
+아직 옮기지 않은 Context는 `JobRuntimePort`·`teamSize`(스케줄 `missed`는 생략 시 `skip`), `*.job.ts`·`*-queue.constants.ts`로 흩어진 큐 정의, 커밋 뒤 `publishAll`과 `@OnEvent` 구독(insights 캐시 무효화 등)을 쓴다. 초대 활동 기록은 `social.invitee-activity` 내구성 구독(`social.invitee-activity.v1`)이다. 새 publisher(`FanOutDomainEventPublisher`)가 들어온 뒤에도 옛 `publishAll`(커밋 뒤 이벤트 이름 채널로 in-process 전달)·이벤트 이름 상수는 마지막 Context가 옮길 때까지 남는다. 구독을 옮기는 커밋은 같은 커밋에서 옛 `@OnEvent`를 지워 두 번 기록되지 않게 한다. 옮긴 Context는 `apps/api/architecture.ratchet.json`의 `migratedContexts`에 있다.

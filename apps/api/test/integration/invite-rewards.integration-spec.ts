@@ -8,7 +8,6 @@ import {
   type PremiumAccessReaderPort,
 } from "#api/modules/billing/subscriptions/billing-subscriptions.public";
 import { RevenueCatWebhookReceiver } from "#api/modules/billing/subscriptions/infrastructure/adapters/revenuecat/revenuecat-webhook-receiver.adapter";
-import { TodoToggledEvent } from "#api/modules/planning/todos/planning-todos.public";
 import { INVITE_CONFIG } from "#api/modules/social/invites/application/ports/invite-config.port";
 import {
   INVITE_NOTIFIER,
@@ -37,7 +36,7 @@ import {
   rewardCapWindowStart,
 } from "#api/modules/social/invites/domain/invite-reward.domain-service";
 import { INVITE_REWARD_MAX_ATTEMPTS } from "#api/modules/social/invites/domain/reward-grant.constants";
-import { InviteeActivitySubscriber } from "#api/modules/social/invites/infrastructure/event-handlers/invitee-activity.event-handler";
+import { InviteeActivityEventHandler } from "#api/modules/social/invites/infrastructure/event-handlers/invitee-activity.event-handler";
 import { createEntityId } from "#api/platform/database/entity-id";
 import {
   inviteActiveDay,
@@ -534,16 +533,14 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
     );
   });
 
-  it("시간대를 서울에서 키리티마티로 바꿔 같은 날 두 번 완료해도 수락 때 고정한 날짜로만 센다", async () => {
+  it("키리티마티로는 다음 날인 시각에 두 번 완료해도 수락 때 고정한 서울 날짜 하루로만 센다", async () => {
     // Given
     const { inviteeId, redemptionId } = await redeemed("TZINVITR", "TZINVITE");
-    const subscriber = context.module.get(InviteeActivitySubscriber);
-    vi.setSystemTime(new Date("2028-02-28T14:00:00.000Z"));
-    await subscriber.handle(new TodoToggledEvent(1, inviteeId, true, "Asia/Seoul"));
+    const handler = context.module.get(InviteeActivityEventHandler);
+    await handler.handle({ todoId: 1, userId: inviteeId, occurredAt: "2028-02-28T14:00:00.000Z" });
 
     // When
-    vi.setSystemTime(new Date("2028-02-28T14:01:00.000Z"));
-    await subscriber.handle(new TodoToggledEvent(1, inviteeId, true, "Pacific/Kiritimati"));
+    await handler.handle({ todoId: 1, userId: inviteeId, occurredAt: "2028-02-28T14:01:00.000Z" });
 
     // Then
     const [redemption] = await client
