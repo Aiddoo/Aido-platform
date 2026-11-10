@@ -1,4 +1,6 @@
-export type TimeFormatValue = "TWELVE_HOUR" | "TWENTY_FOUR_HOUR";
+import type { TIME_FORMATS } from "@aido/api/vocabulary";
+
+export type TimeFormatValue = (typeof TIME_FORMATS)[number];
 
 /**
  * 설정 레코드(리포지토리 읽기 모델).
