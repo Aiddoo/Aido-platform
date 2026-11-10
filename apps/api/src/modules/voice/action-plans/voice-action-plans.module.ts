@@ -1,6 +1,6 @@
 import { Module } from "@nestjs/common";
 
-import { AccessModule } from "#api/modules/access/access-quota.public";
+import { AccessQuotasModule } from "#api/modules/access/quotas/access-quotas.public";
 import { AiAssistanceGenerationModule } from "#api/modules/ai-assistance/generation/ai-assistance-generation.public";
 import { AiAssistanceParsingModule } from "#api/modules/ai-assistance/parsing/ai-assistance-parsing.public";
 import { AiAssistancePlanningModule } from "#api/modules/ai-assistance/planning/ai-assistance-planning.public";
@@ -19,7 +19,7 @@ import { VOICE_ACTION_PLANS_PROVIDERS } from "./voice-action-plans.providers.js"
 /** 빠른 계획과 계획 적용. 서버는 말한 글자를 저장하지 않고 사용량과 멱등 기록만 남긴다. */
 @Module({
   imports: [
-    AccessModule,
+    AccessQuotasModule,
     AiAssistanceGenerationModule,
     AiAssistanceParsingModule,
     AiAssistancePlanningModule,

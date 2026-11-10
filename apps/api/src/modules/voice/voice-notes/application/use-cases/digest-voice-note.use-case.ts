@@ -1,7 +1,10 @@
 import { ErrorCode } from "@aido/api/errors";
 import { omit } from "es-toolkit";
 
-import type { MeteredFeatureQuota, QuotaLedgerPort } from "#api/modules/access/access-quota.public";
+import type {
+  MeteredFeatureQuota,
+  QuotaLedgerPort,
+} from "#api/modules/access/quotas/access-quotas.public";
 import {
   fingerprintRequest,
   resolveRequestLocale,

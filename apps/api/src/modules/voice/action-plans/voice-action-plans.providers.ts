@@ -2,7 +2,7 @@ import { quickPlanResponseSchema } from "@aido/api";
 import type { FactoryProvider, Provider } from "@nestjs/common";
 import { z } from "zod";
 
-import { QUOTA_LEDGER, type QuotaLedgerPort } from "#api/modules/access/access-quota.public";
+import { QuotaLedgerPort } from "#api/modules/access/quotas/access-quotas.public";
 import { UserLocalePreferenceReaderPort } from "#api/modules/ai-assistance/generation/ai-assistance-generation.public";
 import { ChargedGenerationPort } from "#api/modules/ai-assistance/parsing/ai-assistance-parsing.public";
 import { ActionPlanGeneratorPort } from "#api/modules/ai-assistance/planning/ai-assistance-planning.public";
@@ -45,10 +45,9 @@ const quickPlanResultReplayProvider: FactoryProvider<QuickPlanResultReplayPort> 
     ),
 };
 
-// access 사용량 원장은 아직 Symbol 토큰이라 provideUseCase 대신 inject 목록으로 조립한다
 const chargedPlanRunnerProvider: FactoryProvider<ChargedPlanRunnerPort> = {
   provide: ChargedPlanRunnerPort,
-  inject: [QUOTA_LEDGER, ChargedGenerationPort],
+  inject: [QuotaLedgerPort, ChargedGenerationPort],
   useFactory: (quota: QuotaLedgerPort, chargedGeneration: ChargedGenerationPort) =>
     new QuotaChargedPlanRunnerAdapter({ quota, chargedGeneration }),
 };
