@@ -103,7 +103,8 @@ for (const minute of minutesToSweep({ lastCompletedAt, now: clock.now(), maxCatc
 
 - `SweepCursorPort`(`shared/application/ports`)는 활성 UoW 트랜잭션에 쓰므로 분 처리와 커서 갱신을 같은 UoW에 넣으면 함께 커밋된다.
 - `minutesToSweep`(`shared/application/minutes-to-sweep.ts`)은 처음이면 지금 분만, 시계가 거꾸로 가면 지금 분만, 이미 지금 분을 끝냈으면 빈 목록을 준다.
-- key는 스케줄 key와 같게 둔다. 실제 sweep 전환은 notification Context가 옮길 때 한다.
+- 커서 key는 `tz-reminder-sweep`이다. notification reminders의 `SweepTimezoneRemindersUseCase`가 분마다 처리 뒤 커서를 옮기고, 15분을 넘은 분은 `late-over-15m` 사유와 건너뛴 분 수를 남긴다. 검증은 `test/integration/notification/reminders/reminder-sweep-catch-up.integration-spec.ts`다.
+- `todo-reminder.v1` 작업은 의도한 발송 시각(할 일 시각 - 단계 리드)보다 15분 넘게 늦으면 같은 사유로 건너뛴다.
 
 **상태 기준 조회**(`retention-stage-sweep`): 단계 후보를 시각 구간이 아니라 `SCHEDULED` 상태와 "결정할 때가 됐는가"(`isRetentionStageDue`와 같은 SQL)로 고르므로 워터마크 커서가 필요 없다. 5분 사이나 놓친 실행 동안 때가 된 단계는 다음 실행이 모두 읽고, 한 실행은 생성 순서 위치로 이어 읽어(200건씩 최대 10묶음) 실패한 단계에 막히지 않는다. 중복은 `SCHEDULED → OUTBOXED/SKIPPED` 조건부 전이가 막는다.
 
