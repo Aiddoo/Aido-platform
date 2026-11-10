@@ -1,6 +1,6 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { and, count, eq, gt, inArray, max } from "drizzle-orm";
-import { delay } from "es-toolkit";
+import { retry } from "es-toolkit";
 
 import { isTransactionWriteConflict } from "#api/platform/database/database-error.util";
 import { DRIZZLE, type Database } from "#api/platform/database/database.client";
@@ -18,7 +18,7 @@ import { PUSH_RATE_LIMIT_POLICY } from "../../domain/push-rate-limit.constants.j
 type PushRateLimitPhase = typeof pushRateLimitReservation.$inferSelect.phase;
 
 const { GENERAL, ENGAGEMENT } = PUSH_RATE_LIMIT_POLICY;
-const MAX_TRANSACTION_RETRIES = 5;
+const MAX_TRANSACTION_ATTEMPTS = 5;
 /**
  * Serializable 충돌 재시도 대기의 기준값. 시도마다 두 배로 늘린다.
  * 충돌 상대가 커밋하기 전에 즉시 재시도하면 같은 snapshot에서 같은 pivot 충돌이 반복되므로,
@@ -81,9 +81,9 @@ export class PostgresPushRateLimiterAdapter implements PushRateLimiterPort {
       return [];
     }
     this.#assertRequests(requests);
-    for (let attempt = 1; attempt <= MAX_TRANSACTION_RETRIES; attempt += 1) {
-      try {
-        return await this.#db.transaction(
+    return retry(
+      () =>
+        this.#db.transaction(
           async (transaction) => {
             const dispatchIds = requests.map((request) => request.dispatchId);
             const userIds = requests.map((request) => request.userId);
@@ -141,15 +141,13 @@ export class PostgresPushRateLimiterAdapter implements PushRateLimiterPort {
             return decisions.limited;
           },
           { isolationLevel: "serializable" },
-        );
-      } catch (error) {
-        if (!isTransactionWriteConflict(error) || attempt === MAX_TRANSACTION_RETRIES) {
-          throw error;
-        }
-        await delay(transactionRetryDelayMs(attempt, Math.random));
-      }
-    }
-    throw new Error("Push rate limit transaction retry budget exhausted");
+        ),
+      {
+        retries: MAX_TRANSACTION_ATTEMPTS - 1,
+        shouldRetry: (error) => isTransactionWriteConflict(error),
+        delay: (failedAttempts) => transactionRetryDelayMs(failedAttempts + 1, Math.random),
+      },
+    );
   }
 
   #decide(

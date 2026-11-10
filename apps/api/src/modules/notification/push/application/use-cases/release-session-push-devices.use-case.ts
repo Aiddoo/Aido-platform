@@ -1,3 +1,5 @@
+import { uniq } from "es-toolkit";
+
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
 
@@ -37,7 +39,7 @@ export class ReleaseSessionPushDevicesUseCase implements SessionPushDeviceReleas
       const devices = await pushDeviceRepository.deletePushDevicesBySessions(sessionIds);
       const tokens = await pushTokenRepository.deletePushTokensBySessions(sessionIds);
       return {
-        userIds: [...new Set([...devices.userIds, ...tokens.userIds])],
+        userIds: uniq([...devices.userIds, ...tokens.userIds]),
         tokenCount: tokens.userIds.length,
       };
     });

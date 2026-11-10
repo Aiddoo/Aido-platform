@@ -42,6 +42,7 @@ export class OnTodoToggledUseCase {
         .now()
         .toZonedDateTimeISO(resolveTimezone(input.timezone ?? "UTC"))
         .toPlainDate();
+      // 충돌은 오류가 아니라 false로 오고 다 쓰면 경고만 남겨 es-toolkit retry(오류 재시도·시도 사이 타이머)를 쓰지 않는다
       for (let attempt = 0; attempt < MAX_STREAK_UPDATE_ATTEMPTS; attempt += 1) {
         const stats = await this.#statsForDay(input.userId, today);
         if (stats.total === 0) {
