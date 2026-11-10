@@ -1,8 +1,4 @@
-import { ConfigService } from "@nestjs/config";
-
 import { DrizzleOAuthStateRepository } from "#api/modules/identity/auth/infrastructure/persistence/drizzle-oauth-state.repository";
-import type { EnvConfig } from "#api/platform/config/schemas/index";
-import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { oAuthState } from "#api/platform/database/schema/index";
 import { EncryptionService } from "#api/platform/encryption/index";
 import { describeAuthOAuthStateRepositoryContract } from "#test/contracts/identity/auth-oauth-state-repository.contract";
@@ -27,13 +23,10 @@ describe("DrizzleOAuthStateRepository (실제 PostgreSQL)", () => {
     await database.stop();
   });
 
-  const encryption = new EncryptionService(
-    new TypedConfigService(
-      new ConfigService<EnvConfig, true>({
-        TOKEN_ENCRYPTION_KEY: "test-token-encryption-key-minimum-32-characters-long",
-      }),
-    ),
-  );
+  const encryption = new EncryptionService({
+    key: "test-token-encryption-key-minimum-32-characters-long",
+    salt: undefined,
+  });
 
   function createRepository(): DrizzleOAuthStateRepository {
     const { txHost } = createDatabaseTransactionFixture(client);

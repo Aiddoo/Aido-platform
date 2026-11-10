@@ -168,7 +168,7 @@ describe("PgBossJobRuntimeAdapter — PostgreSQL 영속 runtime", () => {
     runtime = new PgBossJobRuntimeAdapter(
       boss,
       { tx: fake.database },
-      { job: { shutdownTimeoutMs: 90_000 } },
+      { shutdownTimeoutMs: 90_000 },
     );
   });
 

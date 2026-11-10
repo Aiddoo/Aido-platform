@@ -96,9 +96,7 @@ describe("시간대 재계산 (실제 PostgreSQL·pg-boss)", () => {
       max: 3,
     });
     transaction = createDatabaseTransactionFixture(client);
-    runtime = new PgBossJobRuntimeAdapter(boss, transaction.txHost, {
-      job: { shutdownTimeoutMs: 10_000 },
-    });
+    runtime = new PgBossJobRuntimeAdapter(boss, transaction.txHost, { shutdownTimeoutMs: 10_000 });
     await runtime.start();
     jobQueue = new PgBossJobQueueAdapter(boss, transaction.txHost, new JobQueueRegistry());
     reminderAdapter = new ReminderSchedulerAdapter(

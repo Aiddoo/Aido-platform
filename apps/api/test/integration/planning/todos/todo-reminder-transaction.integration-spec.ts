@@ -67,7 +67,7 @@ describe("할 일 리마인더를 같은 트랜잭션에서 예약·취소한다
     await migrator.stop({ graceful: true, timeout: 10_000, close: true });
     boss = new PgBoss({ connectionString, schema: SCHEMA, migrate: false, max: 3 });
     const { txHost, uow } = createDatabaseTransactionFixture(client);
-    runtime = new PgBossJobRuntimeAdapter(boss, txHost, { job: { shutdownTimeoutMs: 10_000 } });
+    runtime = new PgBossJobRuntimeAdapter(boss, txHost, { shutdownTimeoutMs: 10_000 });
     await runtime.start();
     reminderAdapter = new ReminderSchedulerAdapter(
       new TodoReminderSchedulerAdapter(

@@ -110,7 +110,7 @@ describe("할 일 알림 회차 중복 방지 (실제 PostgreSQL·pg-boss)", () 
       max: 3,
     });
     const { txHost, uow } = createDatabaseTransactionFixture(client);
-    runtime = new PgBossJobRuntimeAdapter(boss, txHost, { job: { shutdownTimeoutMs: 10_000 } });
+    runtime = new PgBossJobRuntimeAdapter(boss, txHost, { shutdownTimeoutMs: 10_000 });
     await runtime.start();
     const jobQueue = new PgBossJobQueueAdapter(boss, txHost, new JobQueueRegistry());
     reminderAdapter = new ReminderSchedulerAdapter(

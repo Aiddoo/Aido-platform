@@ -1,13 +1,14 @@
 import { randomUUID } from "node:crypto";
 
-import { Controller, Get, VERSION_NEUTRAL } from "@nestjs/common";
+import { Controller, Get, Inject, VERSION_NEUTRAL } from "@nestjs/common";
+import type { ConfigType } from "@nestjs/config";
 import { ApiResponse, ApiTags, type SchemaObject } from "@nestjs/swagger";
 import type { HealthCheckResult } from "@nestjs/terminus";
 import { HealthCheck, HealthCheckService } from "@nestjs/terminus";
 import { SkipThrottle } from "@nestjs/throttler";
 
 import { Public } from "#api/modules/identity/identity-auth-http.public";
-import { TypedConfigService } from "#api/platform/config/services/config.service";
+import { appConfig } from "#api/platform/config/app.config";
 import { ApiDoc, SWAGGER_TAGS } from "#api/platform/http/swagger/index";
 
 import { DatabaseHealthIndicator } from "./indicators/database.health.js";
@@ -45,7 +46,7 @@ export class HealthController {
     private readonly jobRuntimeHealth: JobRuntimeHealthIndicator,
     private readonly outboundHealth: OutboundHealthIndicator,
     private readonly runtimeStatsHealth: RuntimeStatsHealthIndicator,
-    config: TypedConfigService,
+    @Inject(appConfig.KEY) config: Pick<ConfigType<typeof appConfig>, "instanceId">,
   ) {
     this.#instanceId = config.instanceId ?? randomUUID().slice(0, 8);
   }

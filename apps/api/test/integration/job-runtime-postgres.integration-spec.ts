@@ -65,9 +65,7 @@ describe("PgBossJobRuntimeAdapter 통합 테스트 (실제 PostgreSQL)", () => {
       max: 3,
     });
     transaction = createDatabaseTransactionFixture(client);
-    runtime = new PgBossJobRuntimeAdapter(boss, transaction.txHost, {
-      job: { shutdownTimeoutMs: 10_000 },
-    });
+    runtime = new PgBossJobRuntimeAdapter(boss, transaction.txHost, { shutdownTimeoutMs: 10_000 });
     await runtime.start();
 
     await client.execute(sql`
@@ -237,9 +235,7 @@ describe("PgBossJobRuntimeAdapter 통합 테스트 (실제 PostgreSQL)", () => {
       createSchema: false,
       max: 3,
     });
-    runtime = new PgBossJobRuntimeAdapter(boss, transaction.txHost, {
-      job: { shutdownTimeoutMs: 10_000 },
-    });
+    runtime = new PgBossJobRuntimeAdapter(boss, transaction.txHost, { shutdownTimeoutMs: 10_000 });
     await runtime.start();
     const handled = vi.fn().mockResolvedValue(undefined);
     await runtime.work(queue, handled, {

@@ -1,4 +1,5 @@
 import "./shared/domain/date/dayjs.setup.js";
+import type { ConfigType } from "@nestjs/config";
 import { NestFactory } from "@nestjs/core";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import { Logger } from "nestjs-pino";
@@ -6,8 +7,8 @@ import { Logger } from "nestjs-pino";
 import { OperationsBroadcastsModule } from "#api/modules/operations/broadcasts/operations-broadcasts.public";
 import { OperationsMetricsModule } from "#api/modules/operations/metrics/operations-metrics.public";
 import { SocialReportsAdminModule } from "#api/modules/social/reports/social-reports.public";
+import { appConfig } from "#api/platform/config/app.config";
 import { processEnv } from "#api/platform/config/env";
-import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { configureApplication } from "#api/platform/http/configure-application";
 import { SWAGGER_TAG_DESCRIPTIONS, SWAGGER_TAGS } from "#api/platform/http/swagger/index";
 import { PlatformLogEvent } from "#api/platform/logging/platform.log-events";
@@ -20,8 +21,7 @@ import { convertStandardSchema } from "./platform/http/swagger/standard-schema.c
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
 
-  const config = app.get(TypedConfigService);
-  const { port, nodeEnv, corsOrigins } = config;
+  const { port, nodeEnv, corsOrigins } = app.get<ConfigType<typeof appConfig>>(appConfig.KEY);
 
   app.useLogger(app.get(Logger));
 

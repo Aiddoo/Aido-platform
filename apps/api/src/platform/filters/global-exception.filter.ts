@@ -6,11 +6,13 @@ import {
   type ExceptionFilter,
   HttpException,
   HttpStatus,
+  Inject,
 } from "@nestjs/common";
+import type { ConfigType } from "@nestjs/config";
 import type { Request, Response } from "express";
 import { PinoLogger } from "nestjs-pino";
 
-import { TypedConfigService } from "#api/platform/config/services/config.service";
+import { appConfig } from "#api/platform/config/app.config";
 import {
   classifyDatabaseError,
   databaseConstraint,
@@ -55,14 +57,14 @@ const UNKNOWN_UNIQUE_CONSTRAINT_ALERT_KEY = "database.unique-constraint.unknown"
 @Catch()
 export class GlobalExceptionFilter implements ExceptionFilter {
   readonly #logger: PinoLogger;
-  readonly #config: TypedConfigService;
+  readonly #config: Pick<ConfigType<typeof appConfig>, "isDevelopment">;
   readonly #messages: ErrorMessageTranslator;
   readonly #exceptionReporter: ExceptionReporterPort;
   readonly #operationalAlert: OperationalAlertPort;
 
   constructor(
     logger: PinoLogger,
-    config: TypedConfigService,
+    @Inject(appConfig.KEY) config: Pick<ConfigType<typeof appConfig>, "isDevelopment">,
     messages: ErrorMessageTranslator,
     exceptionReporter: ExceptionReporterPort,
     operationalAlert: OperationalAlertPort,

@@ -1,8 +1,4 @@
-import { ConfigService } from "@nestjs/config";
-
 import { DrizzleAccountRepository } from "#api/modules/identity/auth/infrastructure/persistence/drizzle-account.repository";
-import type { EnvConfig } from "#api/platform/config/schemas/index";
-import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { account, user } from "#api/platform/database/schema/index";
 import { EncryptionService } from "#api/platform/encryption/index";
 import { describeAuthAccountRepositoryContract } from "#test/contracts/identity/auth-account-repository.contract";
@@ -44,13 +40,10 @@ describe("DrizzleAccountRepository (실제 PostgreSQL)", () => {
     await database.stop();
   });
 
-  const encryption = new EncryptionService(
-    new TypedConfigService(
-      new ConfigService<EnvConfig, true>({
-        TOKEN_ENCRYPTION_KEY: "test-token-encryption-key-minimum-32-characters-long",
-      }),
-    ),
-  );
+  const encryption = new EncryptionService({
+    key: "test-token-encryption-key-minimum-32-characters-long",
+    salt: undefined,
+  });
 
   function createRepository(): DrizzleAccountRepository {
     const { txHost } = createDatabaseTransactionFixture(client);

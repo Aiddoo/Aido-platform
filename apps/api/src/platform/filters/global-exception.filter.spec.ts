@@ -1,12 +1,6 @@
 import { errorEnvelopeSchema } from "@aido/api";
 import { ErrorCode, Errors } from "@aido/api/errors";
-/**
- * GlobalExceptionFilter 테스트
- *
- * PostgreSQL SQLSTATE 23505 매핑, 업무 오류, HttpException, 알 수 없는 에러 처리 검증
- */
 import {
-  type ArgumentsHost,
   BadRequestException,
   HttpException,
   HttpStatus,
@@ -14,42 +8,36 @@ import {
   NotFoundException,
   ServiceUnavailableException,
 } from "@nestjs/common";
+import { ExecutionContextHost } from "@nestjs/core/helpers/execution-context-host.js";
 import { Test } from "@nestjs/testing";
-import type { PinoLogger } from "nestjs-pino";
 import { vi, type Mock } from "vitest";
-import { mock, type MockProxy } from "vitest-mock-extended";
 
-import type { TypedConfigService } from "#api/platform/config/services/config.service";
 import { ErrorMessageTranslator } from "#api/platform/i18n/error-message.translator";
 import { AppI18nModule } from "#api/platform/i18n/i18n.module";
 import { ApplicationException } from "#api/shared/application/application.exception";
-import { ApplicationExceptions } from "#api/shared/application/exceptions/application-exceptions";
 import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
 import { RecordingExceptionReporter } from "#test/doubles/platform/recording-exception-reporter";
 import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";
+import { RecordingPinoLogger } from "#test/doubles/platform/recording-pino-logger";
 import { sqlQueryError } from "#test/mocks/drizzle.mock";
 
 import { GlobalExceptionFilter } from "./global-exception.filter.js";
 
-type HttpArgumentsHost = ReturnType<ArgumentsHost["switchToHttp"]>;
-
 describe("GlobalExceptionFilter — 전역 예외 필터", () => {
   let filter: GlobalExceptionFilter;
-  let mockLogger: MockProxy<PinoLogger>;
-  let mockConfigService: TypedConfigService;
+  let logger: RecordingPinoLogger;
   let mockResponse: { status: Mock; json: Mock };
   let mockRequest: { method: string; url: string; user?: { userId: string } };
-  let mockHost: MockProxy<ArgumentsHost>;
+  let host: ExecutionContextHost;
 
   let messages: ErrorMessageTranslator;
   let reporter: RecordingExceptionReporter;
   let alerts: RecordingOperationalAlert;
 
   const createFilter = (isDevelopment = true) => {
-    mockConfigService = mock<TypedConfigService>({ isDevelopment });
     reporter = new RecordingExceptionReporter();
     alerts = new RecordingOperationalAlert();
-    return new GlobalExceptionFilter(mockLogger, mockConfigService, messages, reporter, alerts);
+    return new GlobalExceptionFilter(logger, { isDevelopment }, messages, reporter, alerts);
   };
 
   beforeAll(async () => {
@@ -59,7 +47,7 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
   });
 
   beforeEach(() => {
-    mockLogger = mock<PinoLogger>();
+    logger = new RecordingPinoLogger();
 
     mockResponse = {
       status: vi.fn().mockReturnThis(),
@@ -71,11 +59,7 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
       url: "/test",
     };
 
-    const httpHost = mock<HttpArgumentsHost>();
-    httpHost.getResponse.mockImplementation(() => mockResponse);
-    httpHost.getRequest.mockImplementation(() => mockRequest);
-    mockHost = mock<ArgumentsHost>();
-    mockHost.switchToHttp.mockReturnValue(httpHost);
+    host = new ExecutionContextHost([mockRequest, mockResponse]);
 
     filter = createFilter(true);
   });
@@ -86,7 +70,7 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
       const error = sqlQueryError("23505", "User_email_key");
 
       // When
-      filter.catch(error, mockHost);
+      filter.catch(error, host);
 
       // Then
       expect(mockResponse.status).toHaveBeenCalledWith(HttpStatus.CONFLICT);
@@ -99,16 +83,15 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
       const error = sqlQueryError("23505");
 
       // When
-      filter.catch(error, mockHost);
+      filter.catch(error, host);
 
       // Then
       expect(mockResponse.status).toHaveBeenCalledWith(HttpStatus.CONFLICT);
       const jsonArg = mockResponse.json.mock.calls[0]?.[0];
       expect(jsonArg?.error.code).toBe(ErrorCode.SYS_0004);
-      expect(mockLogger.warn).toHaveBeenCalledWith({
-        event: "database.unique-constraint.unknown",
-        constraint: "unknown",
-      });
+      expect(logger.warnings).toContainEqual([
+        { event: "database.unique-constraint.unknown", constraint: "unknown" },
+      ]);
       expect(alerts.alerts).toEqual([
         expect.objectContaining({
           key: "database.unique-constraint.unknown",
@@ -119,7 +102,7 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
 
     it("알려진 옛 제약은 경보 없이 업무 오류로 바꾼다", () => {
       // When
-      filter.catch(sqlQueryError("23505", "User_email_key"), mockHost);
+      filter.catch(sqlQueryError("23505", "User_email_key"), host);
 
       // Then
       expect(mockResponse.json.mock.calls[0]?.[0]?.error.code).toBe(ErrorCode.EMAIL_0501);
@@ -131,7 +114,7 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
       const error = sqlQueryError("23503");
 
       // When
-      filter.catch(error, mockHost);
+      filter.catch(error, host);
 
       // Then
       expect(mockResponse.status).toHaveBeenCalledWith(HttpStatus.BAD_REQUEST);
@@ -147,7 +130,7 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
       ["풀 대기 초과", new Error("timeout exceeded when trying to connect")],
     ])("일시적 DB 문제 %s는 503 SYS_0005로 처리하고 예외 보고로 보낸다", (_, error) => {
       // When
-      filter.catch(error, mockHost);
+      filter.catch(error, host);
 
       // Then
       expect(mockResponse.status).toHaveBeenCalledWith(HttpStatus.SERVICE_UNAVAILABLE);
@@ -162,7 +145,7 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
       const error = sqlQueryError("XX000");
 
       // When
-      filter.catch(error, mockHost);
+      filter.catch(error, host);
 
       // Then
       expect(mockResponse.status).toHaveBeenCalledWith(HttpStatus.INTERNAL_SERVER_ERROR);
@@ -174,10 +157,10 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
   describe("기존 동작 유지", () => {
     it("업무 오류을 올바르게 처리해야 한다", () => {
       // Given
-      const exception = ApplicationExceptions.todoCategoryNotFound(1);
+      const exception = new ApplicationException(ErrorCode.TODO_CATEGORY_0851, { categoryId: 1 });
 
       // When
-      filter.catch(exception, mockHost);
+      filter.catch(exception, host);
 
       // Then
       expect(mockResponse.status).toHaveBeenCalledWith(Errors[exception.errorCode].httpStatus);
@@ -190,7 +173,7 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
       const exception = new HttpException({ message: "Bad Request" }, HttpStatus.BAD_REQUEST);
 
       // When
-      filter.catch(exception, mockHost);
+      filter.catch(exception, host);
 
       // Then
       expect(mockResponse.status).toHaveBeenCalledWith(HttpStatus.BAD_REQUEST);
@@ -218,7 +201,7 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
       const status = exception.getStatus();
 
       // When
-      filter.catch(exception, mockHost);
+      filter.catch(exception, host);
 
       // Then
       expect(mockResponse.status).toHaveBeenCalledWith(status);
@@ -231,7 +214,7 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
       const exception = new Error("unexpected error");
 
       // When
-      filter.catch(exception, mockHost);
+      filter.catch(exception, host);
 
       // Then
       expect(mockResponse.status).toHaveBeenCalledWith(HttpStatus.INTERNAL_SERVER_ERROR);
@@ -246,7 +229,7 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
       const exception = new Error("unexpected server error");
 
       // When
-      filter.catch(exception, mockHost);
+      filter.catch(exception, host);
 
       // Then
       expect(reporter.reports).toEqual([
@@ -271,9 +254,9 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
       mockRequest.user = { userId: "user-1" };
 
       // When
-      filter.catch(new Error("boom"), mockHost);
+      filter.catch(new Error("boom"), host);
       mockRequest.user = undefined;
-      filter.catch(new Error("boom"), mockHost);
+      filter.catch(new Error("boom"), host);
 
       // Then
       expect(reporter.reports.map((report) => report.context.userId)).toEqual(["user-1", null]);
@@ -285,7 +268,7 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
       const exception = new HttpException({ message: "Bad Request" }, HttpStatus.BAD_REQUEST);
 
       // When
-      filter.catch(exception, mockHost);
+      filter.catch(exception, host);
 
       // Then
       expect(reporter.reports).toEqual([]);
@@ -293,10 +276,10 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
 
     it("업무 오류(4xx)는 보고하지 않는다", () => {
       // Given
-      const exception = ApplicationExceptions.todoCategoryNotFound(1);
+      const exception = new ApplicationException(ErrorCode.TODO_CATEGORY_0851, { categoryId: 1 });
 
       // When
-      filter.catch(exception, mockHost);
+      filter.catch(exception, host);
 
       // Then
       expect(reporter.reports).toEqual([]);
@@ -313,7 +296,7 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
       );
 
       // When
-      filter.catch(exception, mockHost);
+      filter.catch(exception, host);
 
       // Then
       const jsonArg = mockResponse.json.mock.calls[0]?.[0];
@@ -329,7 +312,7 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
       );
 
       // When
-      filter.catch(exception, mockHost);
+      filter.catch(exception, host);
 
       // Then
       const jsonArg = mockResponse.json.mock.calls[0]?.[0];
@@ -342,7 +325,7 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
       const exception = new Error("unexpected error");
 
       // When
-      filter.catch(exception, mockHost);
+      filter.catch(exception, host);
 
       // Then
       const jsonArg = mockResponse.json.mock.calls[0]?.[0];
@@ -372,7 +355,7 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
       });
 
       // When
-      filter.catch(exception, mockHost);
+      filter.catch(exception, host);
 
       // Then
       const jsonArg = mockResponse.json.mock.calls[0]?.[0];
@@ -392,7 +375,7 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
         const exception = new ApplicationException(errorCode, { charged: false, provider: "x" });
 
         // When
-        filter.catch(exception, mockHost);
+        filter.catch(exception, host);
 
         // Then
         const jsonArg = mockResponse.json.mock.calls[0]?.[0];
@@ -406,7 +389,7 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
       const exception = new ApplicationException(ErrorCode.USER_0601, { userId: "user-123" });
 
       // When
-      filter.catch(exception, mockHost);
+      filter.catch(exception, host);
 
       // Then
       const jsonArg = mockResponse.json.mock.calls[0]?.[0];
@@ -419,7 +402,7 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
       const exception = new Error("unexpected error");
 
       // When
-      filter.catch(exception, mockHost);
+      filter.catch(exception, host);
 
       // Then
       const jsonArg = mockResponse.json.mock.calls[0]?.[0];
@@ -433,10 +416,10 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
       const exception = new DomainException(ErrorCode.TODO_0801, {
         todoId: 1,
       });
-      const expected = ApplicationExceptions.todoNotFound(1);
+      const expected = new ApplicationException(ErrorCode.TODO_0801, { todoId: 1 });
 
       // When
-      filter.catch(exception, mockHost);
+      filter.catch(exception, host);
 
       // Then - 동일 ErrorCode의 업무 오류과 상태/바디가 동일
       expect(mockResponse.status).toHaveBeenCalledWith(Errors[expected.errorCode].httpStatus);
@@ -454,7 +437,7 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
       });
 
       // When
-      filter.catch(exception, mockHost);
+      filter.catch(exception, host);
 
       // Then
       const jsonArg = mockResponse.json.mock.calls[0]?.[0];
@@ -467,7 +450,7 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
       const exception = new DomainException(ErrorCode.TODO_0801, undefined, "커스텀 도메인 메시지");
 
       // When
-      filter.catch(exception, mockHost);
+      filter.catch(exception, host);
 
       // Then
       const jsonArg = mockResponse.json.mock.calls[0]?.[0];
@@ -482,7 +465,7 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
       });
 
       // When
-      filter.catch(exception, mockHost);
+      filter.catch(exception, host);
 
       // Then
       const jsonArg = mockResponse.json.mock.calls[0]?.[0];
@@ -495,7 +478,7 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
     const exception = new Error("Provider rejected secret-token");
 
     // When
-    filter.catch(exception, mockHost);
+    filter.catch(exception, host);
 
     // Then
     expect(mockResponse.status).toHaveBeenCalledWith(500);
@@ -504,7 +487,7 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
         error: expect.objectContaining({ code: ErrorCode.SYS_0001, details: exception.message }),
       }),
     );
-    expect(mockLogger.error).toHaveBeenCalledWith(
+    expect(logger.errors).toContainEqual([
       expect.objectContaining({
         event: "http.request.failed",
         path: "/oauth/callback",
@@ -512,8 +495,8 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
         errorType: "Error",
       }),
       "HTTP 요청 실패",
-    );
-    const recorded = JSON.stringify(mockLogger.error.mock.calls);
+    ]);
+    const recorded = JSON.stringify(logger.errors);
     for (const secret of ["secret-code", "secret-state", "secret-token"]) {
       expect(recorded).not.toContain(secret);
     }
@@ -521,7 +504,7 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
 
   describe("공유 errorEnvelopeSchema 계약", () => {
     const exceptions = {
-      업무_오류: () => ApplicationExceptions.invalidParameter({ reason: "invalid" }),
+      업무_오류: () => new ApplicationException(ErrorCode.SYS_0002, { reason: "invalid" }),
       HttpException: () => new HttpException({ message: ["a", "b"] }, HttpStatus.BAD_REQUEST),
       알_수_없는_에러: () => new Error("boom"),
       데이터베이스_에러: () => sqlQueryError("23505", "User_email_key"),
@@ -529,7 +512,7 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
 
     it.each(Object.entries(exceptions))("%s 응답이 envelope 스키마를 만족한다", (_name, create) => {
       for (const isDevelopment of [true, false]) {
-        createFilter(isDevelopment).catch(create(), mockHost);
+        createFilter(isDevelopment).catch(create(), host);
         const body = mockResponse.json.mock.lastCall?.[0];
         expect(errorEnvelopeSchema.safeParse(body).success).toBe(true);
       }

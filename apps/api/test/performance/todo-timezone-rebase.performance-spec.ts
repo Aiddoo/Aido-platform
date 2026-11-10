@@ -70,7 +70,7 @@ describe("시간대 재계산 규모 측정", () => {
       });
       const transaction = createDatabaseTransactionFixture(client);
       const runtime = new PgBossJobRuntimeAdapter(boss, transaction.txHost, {
-        job: { shutdownTimeoutMs: 10_000 },
+        shutdownTimeoutMs: 10_000,
       });
       await runtime.start();
       try {

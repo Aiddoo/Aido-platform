@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Inject, Injectable, Logger, type FactoryProvider } from "@nestjs/common";
+import type { ConfigType } from "@nestjs/config";
 import { uniqBy } from "es-toolkit";
 import {
   PgBoss,
@@ -18,7 +19,8 @@ import {
   type WorkOptions,
 } from "pg-boss";
 
-import { TypedConfigService } from "#api/platform/config/services/config.service";
+import { databaseConfig } from "#api/platform/config/database.config";
+import { jobConfig } from "#api/platform/config/job.config";
 import type { Database } from "#api/platform/database/database.client";
 import { PlatformLogEvent } from "#api/platform/logging/platform.log-events";
 import type {
@@ -178,21 +180,15 @@ interface JobTransactionSource {
   readonly tx: Database;
 }
 
-interface JobRuntimeConfigSource {
-  readonly job: {
-    readonly shutdownTimeoutMs: number;
-  };
-}
-
 export const pgBossClientProvider: FactoryProvider<PgBossClient> = {
   provide: PG_BOSS_CLIENT,
-  inject: [TypedConfigService],
-  useFactory: (config: TypedConfigService) =>
+  inject: [databaseConfig.KEY, jobConfig.KEY],
+  useFactory: (database: ConfigType<typeof databaseConfig>, job: ConfigType<typeof jobConfig>) =>
     new LazyPgBossClient(
       () =>
         new PgBoss({
-          connectionString: config.databaseUrl,
-          schema: config.job.schema,
+          connectionString: database.url,
+          schema: job.schema,
           application_name: "aido-pg-boss",
           max: 3,
           migrate: false,
@@ -211,8 +207,8 @@ export class PgBossJobRuntimeAdapter implements JobRuntimePort {
     @Inject(PG_BOSS_CLIENT) private readonly boss: PgBossClient,
     @Inject(TransactionHost)
     private readonly txHost: JobTransactionSource,
-    @Inject(TypedConfigService)
-    private readonly config: JobRuntimeConfigSource,
+    @Inject(jobConfig.KEY)
+    private readonly config: Pick<ConfigType<typeof jobConfig>, "shutdownTimeoutMs">,
   ) {
     this.#queues = new PgBossQueueProvisioner(boss);
     this.boss.on("error", (error) => {
@@ -232,7 +228,7 @@ export class PgBossJobRuntimeAdapter implements JobRuntimePort {
   async stop(): Promise<void> {
     await this.boss.stop({
       graceful: true,
-      timeout: this.config.job.shutdownTimeoutMs,
+      timeout: this.config.shutdownTimeoutMs,
       close: true,
     });
   }

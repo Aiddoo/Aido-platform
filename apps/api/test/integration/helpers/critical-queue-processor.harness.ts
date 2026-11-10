@@ -191,9 +191,7 @@ export async function createCriticalQueueProcessorHarness(): Promise<CriticalQue
         provide: JOB_RUNTIME,
         inject: [TransactionHost],
         useFactory: (txHost: TransactionHost<DrizzleTransactionalAdapter>) =>
-          new PgBossJobRuntimeAdapter(boss, txHost, {
-            job: { shutdownTimeoutMs: 10_000 },
-          }),
+          new PgBossJobRuntimeAdapter(boss, txHost, { shutdownTimeoutMs: 10_000 }),
       },
       JobQueueRegistry,
       {

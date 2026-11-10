@@ -1,6 +1,7 @@
 import { ClsPluginTransactional } from "@nestjs-cls/transactional";
 import { TransactionalAdapterDrizzleOrm } from "@nestjs-cls/transactional-adapter-drizzle-orm";
 import { Module } from "@nestjs/common";
+import type { ConfigType } from "@nestjs/config";
 import { APP_GUARD, APP_INTERCEPTOR } from "@nestjs/core";
 import { EventEmitterModule } from "@nestjs/event-emitter";
 import { ThrottlerGuard, ThrottlerModule, type ThrottlerStorage } from "@nestjs/throttler";
@@ -26,7 +27,8 @@ import { SupportModule } from "#api/modules/support/support.module";
 import { VoiceModule } from "#api/modules/voice/voice.module";
 import { WeatherModule } from "#api/modules/weather/weather.module";
 import { CacheModule } from "#api/platform/cache/index";
-import { AppConfigModule, TypedConfigService } from "#api/platform/config/index";
+import { AppConfigModule } from "#api/platform/config/index";
+import { throttleConfig } from "#api/platform/config/throttle.config";
 import { DatabaseModule, DRIZZLE } from "#api/platform/database/index";
 import { DedupModule } from "#api/platform/dedup/index";
 import { EncryptionModule } from "#api/platform/encryption/index";
@@ -97,12 +99,12 @@ import { AppService } from "./app.service.js";
     PaginationModule,
     ThrottlerModule.forRootAsync({
       imports: [ThrottleModule.forRoot()],
-      inject: [TypedConfigService, { token: THROTTLER_STORAGE, optional: true }],
-      useFactory: (config: TypedConfigService, storage?: ThrottlerStorage) => ({
+      inject: [throttleConfig.KEY, { token: THROTTLER_STORAGE, optional: true }],
+      useFactory: (config: ConfigType<typeof throttleConfig>, storage?: ThrottlerStorage) => ({
         throttlers: [
           {
-            ttl: config.throttleTtl,
-            limit: config.throttleLimit,
+            ttl: config.ttlMs,
+            limit: config.limit,
           },
           DAILY_THROTTLER_OPTIONS,
         ],
