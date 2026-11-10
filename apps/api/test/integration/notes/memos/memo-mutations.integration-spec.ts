@@ -9,6 +9,7 @@ import { MemoRepositoryPort } from "#api/modules/notes/memos/application/ports/m
 import { ConvertMemoToTodosUseCase } from "#api/modules/notes/memos/application/use-cases/convert-memo-to-todos.use-case";
 import { CreateMemoUseCase } from "#api/modules/notes/memos/application/use-cases/create-memo.use-case";
 import { ReorderMemoUseCase } from "#api/modules/notes/memos/application/use-cases/reorder-memo.use-case";
+import { SetMemoPinnedUseCase } from "#api/modules/notes/memos/application/use-cases/set-memo-pinned.use-case";
 import { UpdateMemoUseCase } from "#api/modules/notes/memos/application/use-cases/update-memo.use-case";
 import { MemoId } from "#api/modules/notes/memos/domain/memo-id.vo";
 import {
@@ -135,15 +136,19 @@ describe("메모 변경 원자성 (실제 PostgreSQL)", () => {
     };
   }
 
+  async function countLockWaiters() {
+    const waiting = await client.execute<{ count: number }>(sql`
+      SELECT count(*)::int AS count FROM pg_stat_activity
+      WHERE datname=current_database() AND wait_event_type='Lock'
+        AND query LIKE '%pg_advisory_xact_lock%'
+    `);
+    return waiting.rows.at(0)?.count ?? 0;
+  }
+
   async function waitForBlockedRequests(count: number) {
     await vi.waitFor(
       async () => {
-        const waiting = await client.execute<{ count: number }>(sql`
-          SELECT count(*)::int AS count FROM pg_stat_activity
-          WHERE datname=current_database() AND wait_event_type='Lock'
-            AND query LIKE '%pg_advisory_xact_lock%'
-        `);
-        expect(waiting.rows.at(0)?.count).toBe(count);
+        expect(await countLockWaiters()).toBe(count);
       },
       { timeout: 5000, interval: 10 },
     );
@@ -216,6 +221,62 @@ describe("메모 변경 원자성 (실제 PostgreSQL)", () => {
     // Then
     expect(outcomes.every((outcome) => outcome.status === "fulfilled")).toBe(true);
     expect(saved.map((row) => row.sortOrder)).toEqual([2, 0, 1]);
+  });
+
+  it("같은 메모의 재정렬·내용 수정·고정이 동시에 와도 어느 변경도 잃지 않고 순서가 이어진다", async () => {
+    // Given
+    const rows = await seedMemos(3);
+    const [source, middle, target] = rows;
+    if (source === undefined || middle === undefined || target === undefined) {
+      throw new Error("메모 fixture 누락");
+    }
+    const requestCount = 3;
+    let sourceReads = 0;
+    const findMemo = repository.findByIdAndUserId.bind(repository);
+    // 모든 요청이 같은 메모를 읽었거나 잠금을 기다릴 때까지 쓰기를 미뤄, 읽고 쓰는 사이에 다른 요청이 끼어들게 한다
+    vi.spyOn(repository, "findByIdAndUserId").mockImplementation(async (memoId, owner) => {
+      const found = await findMemo(memoId, owner);
+      if (memoId.value === source.id) {
+        sourceReads += 1;
+        await vi.waitFor(
+          async () => {
+            expect(sourceReads + (await countLockWaiters())).toBeGreaterThanOrEqual(requestCount);
+          },
+          { timeout: 5000, interval: 10 },
+        );
+      }
+      return found;
+    });
+
+    // When
+    const outcomes = await Promise.allSettled([
+      context.module
+        .get(ReorderMemoUseCase)
+        .execute({ userId, memoId: source.id, targetMemoId: target.id, position: "after" }),
+      context.module
+        .get(UpdateMemoUseCase)
+        .execute({ userId, memoId: source.id, content: "동시에 고친 내용" }),
+      context.module
+        .get(SetMemoPinnedUseCase)
+        .execute({ userId, memoId: source.id, isPinned: true }),
+    ]);
+    const saved = await client.query.memo.findMany({
+      columns: { id: true, content: true, isPinned: true, sortOrder: true },
+      where: { userId },
+      orderBy: { id: "asc" },
+    });
+
+    // Then
+    expect(outcomes.map((outcome) => outcome.status)).toEqual([
+      "fulfilled",
+      "fulfilled",
+      "fulfilled",
+    ]);
+    expect(saved).toEqual([
+      { id: source.id, content: "동시에 고친 내용", isPinned: true, sortOrder: 2 },
+      { id: middle.id, content: "메모 1", isPinned: false, sortOrder: 0 },
+      { id: target.id, content: "메모 2", isPinned: false, sortOrder: 1 },
+    ]);
   });
 
   it("한 사용자의 목록 잠금은 다른 사용자의 메모 생성을 막지 않는다", async () => {

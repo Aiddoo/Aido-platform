@@ -76,15 +76,15 @@ export class Memo extends AggregateRoot<MemoId, MemoProps> {
 }
 ```
 
-| 파일                                                                                                                        | 핵심                                                                         |
-| --------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
-| [`memo-id.vo.ts`](../src/modules/notes/memos/domain/memo-id.vo.ts)                                                          | `MemoId extends EntityId<number>`, `reconstitute`만(시퀀스 id)               |
-| [`memo-content.vo.ts`](../src/modules/notes/memos/domain/memo-content.vo.ts)                                                | `create`가 `1 <= length && length <= MEMO_LIMITS.MAX_CONTENT_LENGTH` 검사    |
-| [`memo-ordering.domain-service.ts`](../src/modules/notes/memos/domain/memo-ordering.domain-service.ts)                      | `planMoveRelativeTo`·`planMoveToEdge`가 `{ sortOrder, shift }` 계획을 돌려줌 |
-| [`application/memos.lock-keys.ts`](../src/modules/notes/memos/application/memos.lock-keys.ts)                               | `MemoLockKeys.memo`·`sortOrder`(문자열은 기존 `MutationLockKeys`와 동일)     |
-| [`create-memo.use-case.ts`](../src/modules/notes/memos/application/use-cases/create-memo.use-case.ts)                       | 잠금 → 한도 → 내용 검증 → `nextId` → `Memo.create` → `save` → 로그           |
-| [`infrastructure/persistence/memo-row.mapper.ts`](../src/modules/notes/memos/infrastructure/persistence/memo-row.mapper.ts) | `toMemo(row)`·`toMemoRow(memo)`                                              |
-| [`presentation/http/v1/memo-response.mapper.ts`](../src/modules/notes/memos/presentation/http/v1/memo-response.mapper.ts)   | 응답 문구 `MEMO_RESPONSE_MESSAGES`와 `toIsoString` 직렬화                    |
+| 파일                                                                                                                        | 핵심                                                                                                                                        |
+| --------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`memo-id.vo.ts`](../src/modules/notes/memos/domain/memo-id.vo.ts)                                                          | `MemoId extends EntityId<number>`, `reconstitute`만(시퀀스 id)                                                                              |
+| [`memo-content.vo.ts`](../src/modules/notes/memos/domain/memo-content.vo.ts)                                                | `create`가 `1 <= length && length <= MEMO_LIMITS.MAX_CONTENT_LENGTH` 검사                                                                   |
+| [`memo-ordering.domain-service.ts`](../src/modules/notes/memos/domain/memo-ordering.domain-service.ts)                      | `planMoveRelativeTo`·`planMoveToEdge`가 `{ sortOrder, shift }` 계획을 돌려줌                                                                |
+| [`application/memos.lock-keys.ts`](../src/modules/notes/memos/application/memos.lock-keys.ts)                               | `MemoLockKeys.memo`·`sortOrder`(문자열은 기존 `MutationLockKeys`와 동일), 있는 메모를 바꾸는 UseCase는 `existingMemo`로 두 키를 함께 잡는다 |
+| [`create-memo.use-case.ts`](../src/modules/notes/memos/application/use-cases/create-memo.use-case.ts)                       | 잠금 → 한도 → 내용 검증 → `nextId` → `Memo.create` → `save` → 로그                                                                          |
+| [`infrastructure/persistence/memo-row.mapper.ts`](../src/modules/notes/memos/infrastructure/persistence/memo-row.mapper.ts) | `toMemo(row)`·`toMemoRow(memo)`                                                                                                             |
+| [`presentation/http/v1/memo-response.mapper.ts`](../src/modules/notes/memos/presentation/http/v1/memo-response.mapper.ts)   | 응답 문구 `MEMO_RESPONSE_MESSAGES`와 `toIsoString` 직렬화                                                                                   |
 
 ## 전환 중
 

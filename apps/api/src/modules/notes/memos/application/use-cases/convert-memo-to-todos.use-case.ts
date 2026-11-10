@@ -67,8 +67,7 @@ export class ConvertMemoToTodosUseCase {
 
     const outcome = await unitOfWork.run<ConversionOutcome>(async () => {
       await mutationLock.acquire([
-        MemoLockKeys.memo(memoId),
-        MemoLockKeys.sortOrder(userId),
+        ...MemoLockKeys.existingMemo(memoId, userId),
         TodoCategoryLockKeys.userCategories(command.userId),
         TodoLockKeys.sortOrder(command.userId),
       ]);

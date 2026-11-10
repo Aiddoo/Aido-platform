@@ -124,6 +124,7 @@ export const NOTES_MEMOS_PROVIDERS = [
 
 - 경계는 `UnitOfWorkPort.run`이고 Repository·Reader가 CLS의 활성 트랜잭션을 읽는다. tx를 인자로 넘기지 않는다.
 - 같은 사용자의 상태를 여러 요청이 바꾸는 흐름(한도·보상·구독)은 UoW 안에서 `MutationLockPort.acquire`로 잠그고 최신 상태를 다시 읽는다. 잠금 키는 slice의 `<slice>.lock-keys.ts`에 둔다(문자열 값은 운영 계약).
+- Aggregate `save()`가 행의 여러 컬럼을 함께 쓰면, 그 Aggregate를 바꾸는 UseCase는 모두 같은 잠금을 잡은 뒤 읽는다. 하나라도 다른 키를 잡거나 잠그지 않으면 늦게 저장한 쪽이 먼저 저장한 변경을 덮어쓴다(예: `MemoLockKeys.existingMemo`).
 - 외부 AI·푸시·메일 I/O는 트랜잭션 밖이다. 커밋 뒤 작업은 `AfterCommitPort`(캐시 정리 전용)다. 상태를 바꾸는 후속 작업은 [같은 트랜잭션 enqueue](jobs-and-events.md)다.
 
 ```text
