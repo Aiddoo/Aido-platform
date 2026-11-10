@@ -14,12 +14,10 @@ import { AiAssistanceSuggestionsModule } from "#api/modules/ai-assistance/ai-ass
 import { AppConfigDiscoveryModule } from "#api/modules/app-config/app-config-discovery.public";
 import { BillingSubscriptionsModule } from "#api/modules/billing/billing-subscriptions.public";
 import { EngagementCommentsModule } from "#api/modules/engagement/engagement-comments.public";
-import {
-  JwtAuthGuard,
-  LastActiveInterceptor,
-} from "#api/modules/identity/auth/identity-auth.public";
+import { JwtAuthGuard } from "#api/modules/identity/auth/identity-auth.public";
 import { TimezoneSelfHealInterceptor } from "#api/modules/identity/identity-settings.public";
 import { IdentityModule } from "#api/modules/identity/identity.module";
+import { LastActiveInterceptor } from "#api/modules/identity/users/identity-users.public";
 import { InsightsDailyCompletionsModule } from "#api/modules/insights/insights-daily-completions.public";
 import { InsightsWeeklyAchievementsModule } from "#api/modules/insights/insights-weekly-achievements.public";
 import { NotesModule } from "#api/modules/notes/notes.module";

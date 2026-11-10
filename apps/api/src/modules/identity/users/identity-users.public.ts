@@ -1,7 +1,6 @@
 export {
   USER_ACTIVITY_READER,
   UserActivityReaderPort,
-  type UserActivity,
 } from "./application/ports/user-activity.reader.port.js";
 export {
   USER_APP_VERSION_READER,
@@ -16,3 +15,5 @@ export {
   UserProfileInvalidatorPort,
 } from "./application/ports/user-profile-invalidator.port.js";
 export { IdentityUsersModule } from "./identity-users.module.js";
+export { ACCOUNT_PURGE_QUEUE } from "./infrastructure/jobs/account-purge.queue.js";
+export { LastActiveInterceptor } from "./presentation/http/interceptors/last-active.interceptor.js";
