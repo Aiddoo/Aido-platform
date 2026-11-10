@@ -17,6 +17,7 @@ import {
   user as userTable,
   userPreference,
 } from "#api/platform/database/schema/index";
+import { DateClock } from "#test/doubles/platform/date-clock";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
 import { TodoFixture } from "#test/fixtures/todo.fixture";
@@ -163,6 +164,7 @@ describe("AI 제안·리포트 디스패치 — 사용자 현지 시각 (실제 
         createDatabaseTransactionFixture(client).txHost,
         runtime,
         new ReportGenerationProcessor({ execute: async () => null }),
+        new DateClock(),
       );
     }
 

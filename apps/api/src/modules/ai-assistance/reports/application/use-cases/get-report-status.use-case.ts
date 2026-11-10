@@ -1,20 +1,21 @@
-import dayjs from "dayjs";
-
 import {
   assertEntitled,
   type EntitlementReaderPort,
 } from "#api/modules/access/entitlements/access-entitlements.public";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
-import { parseLocalDateTime } from "#api/shared/domain/date/utils/timezone";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { instantFromDate, instantToDate } from "#api/shared/domain/time/instant";
+import { toZonedInstant } from "#api/shared/domain/time/zoned-time";
 
 import type { UserLocalePreferenceReaderPort } from "../../../generation/application/ports/user-locale-preference.reader.port.js";
+import {
+  localDateAt,
+  toUserTimeZone,
+} from "../../../shared/domain/user-calendar.domain-service.js";
 import { type AiReportRepositoryPort } from "../ports/ai-report.repository.port.js";
 import type { ReportStatusReadModel } from "../read-models/report-status.read-model.js";
 
 /** 사용자 로컬 기준으로 새 리포트를 확인할 수 있다고 안내하는 시각 (디스패치 창 이후) */
-const REPORT_READY_TIME = "08:00";
+const REPORT_READY_TIME = Temporal.PlainTime.from({ hour: 8 });
 
 /**
  * 리포트 상태 조회 use-case.
@@ -46,16 +47,19 @@ export class GetReportStatusUseCase {
 
     const zone =
       timezone ?? (await this.#dependencies.localePreferenceReader.read(userId)).timezone;
-    const at = instantToDate(this.#dependencies.clock.now());
+    const now = this.#dependencies.clock.now();
+    const timeZone = toUserTimeZone(zone);
     // 달력 날짜를 먼저 정하고 각 경계를 다시 시간대에 적용해 DST offset을 반영한다.
-    const localToday = dayjs.utc(dayjs(at).tz(zone).format("YYYY-MM-DD"));
-    const readyAt = (date: dayjs.Dayjs) =>
-      parseLocalDateTime(date.format("YYYY-MM-DD"), REPORT_READY_TIME, zone);
+    const localToday = localDateAt(now, zone);
+    const readyAt = (date: Temporal.PlainDate) =>
+      toZonedInstant({ date, time: REPORT_READY_TIME, timeZone });
+    const isBeforeReady = (date: Temporal.PlainDate) =>
+      Temporal.Instant.compare(now, readyAt(date)) < 0;
 
-    const thisMonday = localToday.startOf("isoWeek");
-    const nextWeeklyDate = at < readyAt(thisMonday) ? thisMonday : thisMonday.add(1, "week");
-    const thisFirst = localToday.startOf("month");
-    const nextMonthlyDate = at < readyAt(thisFirst) ? thisFirst : thisFirst.add(1, "month");
+    const thisMonday = localToday.subtract({ days: localToday.dayOfWeek - 1 });
+    const nextWeeklyDate = isBeforeReady(thisMonday) ? thisMonday : thisMonday.add({ weeks: 1 });
+    const thisFirst = localToday.with({ day: 1 });
+    const nextMonthlyDate = isBeforeReady(thisFirst) ? thisFirst : thisFirst.add({ months: 1 });
 
     const [latestWeekly, latestMonthly] = await Promise.all([
       this.#dependencies.aiReportRepository.findLatest(UserId.reconstitute(userId), "WEEKLY"),
@@ -63,10 +67,10 @@ export class GetReportStatusUseCase {
     ]);
 
     return {
-      nextWeeklyAt: instantFromDate(readyAt(nextWeeklyDate)),
-      nextMonthlyAt: instantFromDate(readyAt(nextMonthlyDate)),
-      daysUntilWeekly: nextWeeklyDate.diff(localToday, "day"),
-      daysUntilMonthly: nextMonthlyDate.diff(localToday, "day"),
+      nextWeeklyAt: readyAt(nextWeeklyDate),
+      nextMonthlyAt: readyAt(nextMonthlyDate),
+      daysUntilWeekly: localToday.until(nextWeeklyDate).days,
+      daysUntilMonthly: localToday.until(nextMonthlyDate).days,
       latestWeekly,
       latestMonthly,
     };

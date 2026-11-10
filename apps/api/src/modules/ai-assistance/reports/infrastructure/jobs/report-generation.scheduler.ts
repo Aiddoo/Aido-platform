@@ -5,10 +5,12 @@ import { premiumAccessCondition } from "#api/modules/access/entitlements/access-
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { forEachBatch } from "#api/platform/database/utils/batch-cursor.util";
 import { runInBackground } from "#api/platform/jobs/non-blocking-init";
+import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
-import { now } from "#api/shared/domain/date/utils/core";
-import { DEFAULT_DELIVERY_TIMEZONE, resolveTimezone } from "#api/shared/domain/date/utils/timezone";
+import { instantToDate, toIsoString } from "#api/shared/domain/time/instant";
+import { TimeZone } from "#api/shared/domain/time/time-zone.vo";
 
+import { toUserTimeZone } from "../../../shared/domain/user-calendar.domain-service.js";
 import type { ReportType } from "../../domain/ai-report.constants.js";
 import {
   isInReportDispatchWindow,
@@ -42,15 +44,18 @@ export class ReportGenerationScheduler implements OnModuleInit {
   readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
   readonly #runtime: JobRuntimePort;
   readonly #processor: ReportGenerationProcessor;
+  readonly #clock: ClockPort;
 
   constructor(
     txHost: TransactionHost<DrizzleTransactionalAdapter>,
     @Inject(JOB_RUNTIME) runtime: JobRuntimePort,
     processor: ReportGenerationProcessor,
+    clock: ClockPort,
   ) {
     this.#txHost = txHost;
     this.#runtime = runtime;
     this.#processor = processor;
+    this.#clock = clock;
   }
 
   /** 활성 트랜잭션(없으면 베이스 클라이언트) — CLS로 전파됩니다 */
@@ -103,7 +108,7 @@ export class ReportGenerationScheduler implements OnModuleInit {
       reportType: type,
     });
 
-    const dispatchedAt = now();
+    const dispatchedAt = instantToDate(this.#clock.now());
     let totalEnqueued = 0;
 
     await forEachBatch({
@@ -115,7 +120,7 @@ export class ReportGenerationScheduler implements OnModuleInit {
           where: {
             // Drizzle 1.0 RC는 undefined 조건을 거절하므로 첫 페이지에서는 조건을 빼야 한다
             ...(cursor != null && { id: { gt: cursor } }),
-            RAW: (target) => premiumAccessCondition(target, now()),
+            RAW: (target) => premiumAccessCondition(target, instantToDate(this.#clock.now())),
             status: "ACTIVE",
             deletedAt: { isNull: true },
           },
@@ -124,7 +129,7 @@ export class ReportGenerationScheduler implements OnModuleInit {
         }),
       onBatch: async (batch) => {
         const due = batch.flatMap((user) => {
-          const timezone = resolveTimezone(user.preference?.timezone ?? DEFAULT_DELIVERY_TIMEZONE);
+          const timezone = toUserTimeZone(user.preference?.timezone ?? TimeZone.SEOUL.value).value;
           return isInReportDispatchWindow(type, dispatchedAt, timezone) ? [{ user, timezone }] : [];
         });
         if (due.length === 0) {
@@ -169,7 +174,7 @@ export class ReportGenerationScheduler implements OnModuleInit {
    * 같은 UTC 시각의 보정은 한 번만 등록되고, 사용자별 중복은 생성 잡의 멱등 키가 막는다.
    */
   async #catchUpIfNeeded(): Promise<void> {
-    const hourId = now().toISOString().slice(0, 13);
+    const hourId = toIsoString(this.#clock.now()).slice(0, 13);
     for (const reportType of ["WEEKLY", "MONTHLY"] as const) {
       this.#logger.log({ event: AiJobLogEvent.CATCH_UP, queueName: AI_REPORT_QUEUE, reportType });
       await this.#runtime.enqueue(

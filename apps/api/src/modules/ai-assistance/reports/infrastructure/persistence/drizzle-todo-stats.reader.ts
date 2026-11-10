@@ -4,8 +4,8 @@ import { and, count, eq, gte, isNotNull, lt } from "drizzle-orm";
 
 import type { Database, DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { todo, todoCategory } from "#api/platform/database/schema/index";
-import { startOfDayInTimezone } from "#api/shared/domain/date/utils/timezone";
 
+import { dateColumnOf, localDateAt } from "../../../shared/domain/user-calendar.domain-service.js";
 import { TodoStatsReaderPort } from "../../application/ports/todo-stats.reader.port.js";
 import type { AggregateParams, AggregationInputs } from "../../domain/ai-report.constants.js";
 import { toAggregationInputs } from "./report-aggregation.mapper.js";
@@ -71,7 +71,7 @@ export class DrizzleTodoStatsReader extends TodoStatsReaderPort {
   async fetchAggregationInputs(params: AggregateParams): Promise<AggregationInputs> {
     const { userId, startDate, endDate, prevStartDate, prevEndDate, timezone } = params;
     const db = this.#txHost.tx;
-    const day = (value: Date) => startOfDayInTimezone(value, timezone);
+    const day = (value: Date) => dateColumnOf(localDateAt(value, timezone));
     const current = { userId, start: day(startDate), end: day(endDate) };
     const previous = { userId, start: day(prevStartDate), end: day(prevEndDate) };
     const [daily, prev, category, categories, completed] = await Promise.all([

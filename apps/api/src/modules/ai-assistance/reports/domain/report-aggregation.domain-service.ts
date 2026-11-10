@@ -1,10 +1,12 @@
 import { DAY_OF_WEEK_ORDER, dayIndexToDayOfWeek, type DayOfWeek } from "@aido/api/vocabulary";
-import dayjs from "dayjs";
 import { groupBy, keyBy, mapValues, orderBy, sumBy } from "es-toolkit";
 
-import { toDateString } from "#api/shared/domain/date/utils/format";
-import { startOfDayInTimezone } from "#api/shared/domain/date/utils/timezone";
-
+import {
+  localDateAt,
+  localDateTimeAt,
+  plainDateOfDateColumn,
+  sundayBasedDayIndex,
+} from "../../shared/domain/user-calendar.domain-service.js";
 import type {
   CategoryBreakdownItem,
   DayPatternItem,
@@ -27,7 +29,7 @@ function sumCountsBy<K extends PropertyKey>(
 }
 
 const toDayOfWeek = (group: DailyGroupRow): DayOfWeek =>
-  dayIndexToDayOfWeek(dayjs.utc(group.startDate).day());
+  dayIndexToDayOfWeek(sundayBasedDayIndex(plainDateOfDateColumn(group.startDate)));
 
 /**
  * 카테고리별 집계 계산
@@ -89,7 +91,7 @@ export function computeTimePatterns(
 
   for (const todo of completedTodos) {
     if (todo.completedAt != null) {
-      const hour = dayjs(todo.completedAt).tz(timezone).hour();
+      const { hour } = localDateTimeAt(todo.completedAt, timezone);
       hourCounts.set(hour, (hourCounts.get(hour) ?? 0) + 1);
     }
   }
@@ -114,30 +116,30 @@ export function computeStreakDays(
   endDate: Date,
   timezone: string,
 ): number {
-  const totalByDate = sumCountsBy(totalGroups, (g) => toDateString(g.startDate));
-  const completedByDate = sumCountsBy(completedGroups, (g) => toDateString(g.startDate));
+  const dateKeyOf = (group: DailyGroupRow) => plainDateOfDateColumn(group.startDate).toString();
+  const totalByDate = sumCountsBy(totalGroups, dateKeyOf);
+  const completedByDate = sumCountsBy(completedGroups, dateKeyOf);
 
   // endDate 전날부터 역순으로 연속 달성일 계산
   // DATE 그룹은 UTC 달력 label이고, 조회 경계만 사용자의 실제 instant다.
-  const current = dayjs.utc(startOfDayInTimezone(endDate, timezone)).subtract(1, "day");
-  const rangeStart = dayjs.utc(startOfDayInTimezone(startDate, timezone));
+  const rangeStart = localDateAt(startDate, timezone);
 
   let streak = 0;
-  let cursor = current;
-  while (cursor.isAfter(rangeStart, "day") || cursor.isSame(rangeStart, "day")) {
-    const dateStr = cursor.format("YYYY-MM-DD");
+  let cursor = localDateAt(endDate, timezone).subtract({ days: 1 });
+  while (Temporal.PlainDate.compare(cursor, rangeStart) >= 0) {
+    const dateStr = cursor.toString();
     const total = totalByDate[dateStr] ?? 0;
     const completed = completedByDate[dateStr] ?? 0;
 
     if (total === 0) {
       // 할 일이 없는 날은 건너뛰기
-      cursor = cursor.subtract(1, "day");
+      cursor = cursor.subtract({ days: 1 });
       continue;
     }
 
     if (completed === total) {
       streak++;
-      cursor = cursor.subtract(1, "day");
+      cursor = cursor.subtract({ days: 1 });
     } else {
       break;
     }

@@ -1,8 +1,6 @@
-import dayjs from "dayjs";
-
-import { toIsoMonthId, toIsoWeekId } from "#api/shared/domain/date/utils/format";
-
+import { localDateTimeAt } from "../../shared/domain/user-calendar.domain-service.js";
 import type { ReportType } from "./ai-report.constants.js";
+import { isoWeekPeriodOf, monthPeriodOf, reportPeriodId } from "./report-period.domain-service.js";
 
 /**
  * 사용자 로컬 기준 새 주기 시작 뒤 디스패치를 허용하는 시간.
@@ -12,12 +10,16 @@ export const REPORT_DISPATCH_WINDOW_HOURS = 6;
 
 /** 사용자 로컬 시각이 새 주(월요일)·새 달(1일) 시작 직후인지 판단한다. 이때 직전 주기가 끝나 있다. */
 export function isInReportDispatchWindow(type: ReportType, at: Date, timezone: string): boolean {
-  const local = dayjs(at).tz(timezone);
-  const isPeriodStart = type === "WEEKLY" ? local.isoWeekday() === 1 : local.date() === 1;
-  return isPeriodStart && local.hour() < REPORT_DISPATCH_WINDOW_HOURS;
+  const local = localDateTimeAt(at, timezone);
+  const isPeriodStart = type === "WEEKLY" ? local.dayOfWeek === 1 : local.day === 1;
+  return isPeriodStart && local.hour < REPORT_DISPATCH_WINDOW_HOURS;
 }
 
 /** 사용자 로컬 기준 디스패치 주기 식별자. 기존 KST 사용자의 멱등 키와 같은 형식이다. */
 export function reportDispatchPeriodId(type: ReportType, at: Date, timezone: string): string {
-  return type === "WEEKLY" ? toIsoWeekId(at, timezone) : toIsoMonthId(at, timezone);
+  const localDate = localDateTimeAt(at, timezone).toPlainDate();
+  return reportPeriodId(
+    type,
+    type === "WEEKLY" ? isoWeekPeriodOf(localDate) : monthPeriodOf(localDate),
+  );
 }
