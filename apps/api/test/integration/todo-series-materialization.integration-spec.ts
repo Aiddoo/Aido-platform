@@ -313,7 +313,7 @@ describe("회차 채우기 작업 (실제 PostgreSQL)", () => {
       where: { seriesId: id },
       with: { items: true },
     });
-    expect(row?.createdAt).toEqual(AT);
+    expect(row?.createdAt).toEqual(instantFromDate(AT));
     expect(row?.items.map((item) => item.title)).toEqual(["항목"]);
   });
 

@@ -801,7 +801,9 @@ describe("시간대 재계산 동시성 (실제 PostgreSQL 잠금)", () => {
     expect(outcomes.map((outcome) => outcome.status)).not.toContain("rejected");
     const row = await client.query.todo.findFirst({ where: { id } });
     expect(row?.scheduledLocalTime).toBe("21:00");
-    expect(row?.scheduledTime).toEqual(parseLocalDateTime(date, "21:00", NEW_YORK));
+    expect(row?.scheduledTime).toEqual(
+      instantFromDate(parseLocalDateTime(date, "21:00", NEW_YORK)),
+    );
   });
 
   it("재계산 뒤 만드는 회차와 휴면 복귀로 채우는 회차는 새 시간대다", async () => {

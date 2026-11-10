@@ -356,7 +356,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
       await following({ id: todos[2]?.id ?? 0, title: "새 제목", repeat: DAILY_NEVER });
       // Then
       expect(await client.$count(todoSeries, eq(todoSeries.userId, userId))).toBe(1);
-      expect((await seriesRow(seriesId))?.startDate).toEqual(AT);
+      expect((await seriesRow(seriesId))?.startDate).toEqual(plainDateFromDate(AT));
     });
 
     it("시간을 바꾸면 회차 날짜마다 규칙 시간대로 다시 계산하고 리마인더를 재등록한다", async () => {
