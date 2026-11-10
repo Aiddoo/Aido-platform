@@ -31,6 +31,15 @@ import {
 import { pgEnum } from "drizzle-orm/pg-core";
 
 // drizzle-kit은 #api 별칭을 못 따라가므로 상대 경로로 둔다
+import { ACCOUNT_PROVIDERS_IN_DB_ORDER } from "../../../modules/identity/auth/domain/auth.constants.js";
+import {
+  PUSH_DELIVERY_ATTEMPT_STATUSES,
+  PUSH_DISPATCH_STATUSES,
+} from "../../../modules/notification/push/domain/push-delivery-status.constants.js";
+import {
+  RETENTION_STAGE_NAMES,
+  RETENTION_VARIANTS,
+} from "../../../modules/notification/retention/domain/retention.constants.js";
 import {
   INVITE_STATUSES,
   REWARD_CLAIM_KINDS,
@@ -38,13 +47,7 @@ import {
   REWARD_SOURCE_TYPES,
 } from "../../../modules/social/invites/domain/invites.constants.js";
 
-export const accountProvider = pgEnum("AccountProvider", [
-  "CREDENTIAL",
-  "KAKAO",
-  "APPLE",
-  "GOOGLE",
-  "NAVER",
-]);
+export const accountProvider = pgEnum("AccountProvider", ACCOUNT_PROVIDERS_IN_DB_ORDER);
 export const followStatus = pgEnum("FollowStatus", FOLLOW_STATUSES);
 export const notificationActionType = pgEnum("NotificationActionType", NOTIFICATION_ACTION_TYPE);
 export const notificationPurpose = pgEnum("NotificationPurpose", NOTIFICATION_PURPOSES);
@@ -87,46 +90,28 @@ export const nudgeReplyKind = pgEnum("NudgeReplyKind", NUDGE_REPLY_KINDS);
 export const platform = pgEnum("Platform", PUSH_DEVICE_PLATFORM);
 export const pushPermissionStatus = pgEnum("PushPermissionStatus", PUSH_PERMISSION_STATUS);
 export const pushDeliveryMode = pgEnum("PushDeliveryMode", ["SINGLE", "BATCH"]);
-export const pushDeliveryStatus = pgEnum("PushDeliveryStatus", [
-  "PENDING",
-  "TICKET_ACCEPTED",
-  "DELIVERED",
-  "FAILED",
-  "UNKNOWN",
-]);
+export const pushDeliveryStatus = pgEnum("PushDeliveryStatus", PUSH_DELIVERY_ATTEMPT_STATUSES);
 export const pushDispatchOutboxStatus = pgEnum("PushDispatchOutboxStatus", [
   "PENDING",
   "PROCESSING",
   "PUBLISHED",
 ]);
-export const pushDispatchStatus = pgEnum("PushDispatchStatus", [
-  "PENDING",
-  "PROCESSING",
-  "SENT",
-  "SKIPPED",
-  "FAILED",
-  "HOLDOUT",
-]);
+export const pushDispatchStatus = pgEnum("PushDispatchStatus", PUSH_DISPATCH_STATUSES);
 export const pushRateLimitPhase = pgEnum("PushRateLimitPhase", ["GENERAL", "ENGAGEMENT"]);
 export const quotaChargeStatus = pgEnum("QuotaChargeStatus", QUOTA_CHARGE_STATUSES);
 export const quotaMeter = pgEnum("QuotaMeter", QUOTA_METERS);
 export const reportType = pgEnum("ReportType", AI_REPORT_TYPES);
-export const retentionExperimentStageName = pgEnum("RetentionExperimentStageName", [
-  "D0",
-  "D1",
-  "D3",
-  "D7",
-]);
+export const retentionExperimentStageName = pgEnum(
+  "RetentionExperimentStageName",
+  RETENTION_STAGE_NAMES,
+);
 export const retentionExperimentStageStatus = pgEnum("RetentionExperimentStageStatus", [
   "SCHEDULED",
   "SKIPPED",
   "OUTBOXED",
   "EVALUATED",
 ]);
-export const retentionExperimentVariant = pgEnum("RetentionExperimentVariant", [
-  "CONTROL",
-  "TREATMENT",
-]);
+export const retentionExperimentVariant = pgEnum("RetentionExperimentVariant", RETENTION_VARIANTS);
 export const securityEvent = pgEnum("SecurityEvent", SECURITY_EVENT);
 export const subscriptionEnvironment = pgEnum("SubscriptionEnvironment", SUBSCRIPTION_ENVIRONMENTS);
 export const subscriptionStatus = pgEnum("SubscriptionStatus", SUBSCRIPTION_STATUS);

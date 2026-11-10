@@ -1,13 +1,15 @@
 import type { IncomingHttpHeaders } from "node:http";
 
 import { isSemanticVersionAtLeast } from "@aido/api";
-import { IDEMPOTENCY_KEY_MAX_LENGTH, resolveSupportedLocale } from "@aido/api/vocabulary";
-import { match } from "ts-pattern";
+import {
+  DEVICE_TYPES,
+  type DeviceType,
+  IDEMPOTENCY_KEY_MAX_LENGTH,
+  resolveSupportedLocale,
+} from "@aido/api/vocabulary";
 
 import { DEFAULT_LOCALE, SUPPORTED_LOCALES, type SupportedLocale } from "#api/shared/domain/locale";
 import { normalizeIanaTimezone } from "#api/shared/domain/time/time-zone-name";
-
-export type RequestClientPlatform = "IOS" | "ANDROID" | "WEB";
 
 /** 앱이 매 요청에 보내는 헤더를 요청당 한 번 정규화한 값. 확인되지 않은 값은 null이다. */
 export interface RequestClient {
@@ -16,7 +18,7 @@ export interface RequestClient {
   readonly appVersion: string | null;
   readonly appBuild: string | null;
   /** X-Device-Type. User-Agent 판별은 인증 기기 정보(resolveRequestDevice)에서만 한다 */
-  readonly platform: RequestClientPlatform | null;
+  readonly platform: DeviceType | null;
   readonly osVersion: string | null;
   readonly deviceName: string | null;
   /** 런타임이 지원하는 정규 IANA X-Timezone */
@@ -51,10 +53,9 @@ function normalizeAppVersion(value: unknown): string | null {
     : null;
 }
 
-export function normalizeDevicePlatform(value: string | undefined): RequestClientPlatform | null {
-  return match(value?.trim().toUpperCase())
-    .with("IOS", "ANDROID", "WEB", (platform) => platform)
-    .otherwise(() => null);
+export function normalizeDevicePlatform(value: string | undefined): DeviceType | null {
+  const normalized = value?.trim().toUpperCase();
+  return DEVICE_TYPES.find((platform) => platform === normalized) ?? null;
 }
 
 /** 제어·방향 제어 문자를 지우고 표시 한도로 자른 기기 이름. 남는 글자가 없으면 null */

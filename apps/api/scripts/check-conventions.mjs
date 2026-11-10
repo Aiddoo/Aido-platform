@@ -1,5 +1,5 @@
 // 서버 관례 검사. 인자로 파일을 주면 그 파일만, 없으면 저장소가 보는 서버 파일 전체를 본다.
-//   node scripts/check-conventions.mjs [--file <path>...] [--strict-enums]
+//   node scripts/check-conventions.mjs [--file <path>...]
 import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
@@ -61,10 +61,17 @@ const MEMBER_KEYWORD =
   /^\s+(?:(?:static|readonly|override|abstract|declare|async)\s+)*(private|public|protected)\s/;
 const NON_CODE_LINE = /^\s*(?:\/\/|\/\*|\*)/;
 const FORWARD_REF = /\bforwardRef\(/;
-const PG_ENUM_LITERAL = /pgEnum\(\s*["'`][^"'`]+["'`]\s*,\s*\[/g;
+const PG_ENUM_LITERAL = /pgEnum\(\s*["'`]([^"'`]+)["'`]\s*,\s*\[/g;
+// notification slice가 아직 튜플을 export하지 않아 리터럴 배열로 남은 enum. 그 slice가 domain/*.constants.ts 튜플로 옮기면 지운다
+const PENDING_LITERAL_ENUMS = new Set([
+  "NotificationType",
+  "PushDeliveryMode",
+  "PushDispatchOutboxStatus",
+  "PushRateLimitPhase",
+  "RetentionExperimentStageStatus",
+]);
 
 const args = process.argv.slice(2);
-const strictEnums = args.includes("--strict-enums");
 // lefthook은 staged 파일 여러 개를 `--file a b c`로 넘긴다
 const selectedFiles = args.filter((arg) => !arg.startsWith("--"));
 
@@ -150,7 +157,7 @@ function findTemplateLiteralLines(lines) {
   return inside;
 }
 
-function checkFile(rel, violations, warnings) {
+function checkFile(rel, violations, literalEnums) {
   const text = readFileSync(join(apiRoot, rel), "utf8");
   if (isContextPath(rel) && !rel.endsWith(".d.ts")) {
     checkRoleSuffix(rel, violations);
@@ -175,12 +182,13 @@ function checkFile(rel, violations, warnings) {
   });
 
   if (isEnumSchemaPath(rel)) {
-    const enumLines = [...text.matchAll(PG_ENUM_LITERAL)].map((match) => lineOf(text, match.index));
-    const reason = "pgEnum 값을 리터럴 배열로 적었다. @aido/api/vocabulary 상수 튜플에서 유도한다.";
-    if (strictEnums) {
-      violations.push(...enumLines.map((line) => `${rel}:${line}: ${reason}`));
-    } else if (enumLines.length > 0) {
-      warnings.push(`${rel}: ${reason} (${enumLines.length}건: 줄 ${enumLines.join(", ")})`);
+    for (const match of text.matchAll(PG_ENUM_LITERAL)) {
+      literalEnums.add(match[1]);
+      if (!PENDING_LITERAL_ENUMS.has(match[1])) {
+        violations.push(
+          `${rel}:${lineOf(text, match.index)}: pgEnum("${match[1]}") 값을 리터럴 배열로 적었다. @aido/api/vocabulary 또는 소유 slice domain/*.constants.ts의 튜플에서 유도한다.`,
+        );
+      }
     }
   }
 }
@@ -252,7 +260,7 @@ function findTrackedJunkFiles(violations) {
 }
 
 const violations = [];
-const warnings = [];
+const literalEnums = new Set();
 const checksTree = selectedFiles.length === 0;
 const repoFiles = checksTree ? listRepoFiles() : null;
 if (checksTree && repoFiles == null) {
@@ -267,19 +275,19 @@ for (const rel of files) {
   if (!isCheckedFile(rel)) {
     continue;
   }
-  checkFile(rel, violations, warnings);
+  checkFile(rel, violations, literalEnums);
 }
 
 if (checksTree) {
   checkLsLintSync(violations);
   findEmptyDirectories(repoFiles, violations);
   findTrackedJunkFiles(violations);
-}
-
-if (checksTree && warnings.length > 0) {
-  console.log(`경고 ${warnings.length}건(--strict-enums 전에는 실패하지 않는 검사):`);
-  for (const warning of warnings) {
-    console.log(`  ${warning}`);
+  for (const name of PENDING_LITERAL_ENUMS) {
+    if (!literalEnums.has(name)) {
+      violations.push(
+        `scripts/check-conventions.mjs: ${name}은 튜플로 옮겨졌다. PENDING_LITERAL_ENUMS에서 지운다.`,
+      );
+    }
   }
 }
 
