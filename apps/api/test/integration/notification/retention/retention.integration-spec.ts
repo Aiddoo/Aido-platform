@@ -302,7 +302,7 @@ describe("신규 사용자 리텐션 V2 통합 테스트 (실제 DB)", () => {
     expect(mismatches).toEqual([]);
   });
 
-  it("5분마다 도는 sweep이 실행 사이와 놓친 실행 동안 결정할 때가 된 사용자를 모두 처리한다", async () => {
+  it("sweep이 실행 사이와 놓친 실행 동안 결정할 때가 된 사용자를 모두 처리한다", async () => {
     // Given: 10:00 KST(01:00Z) 실행 직후 2시간이 차는 D0 사용자들과, 1시간 동안 실행이 멈춘 사이에 찬 사용자
     const firstRun = Temporal.Instant.from("2026-07-15T01:00:00Z");
     const startedAts = [

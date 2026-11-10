@@ -1,7 +1,7 @@
 import { RETENTION_QUEUE, RetentionJobName } from "./retention.queue.js";
 
 describe("리텐션 큐 계약", () => {
-  it("queue 이름·재시도·예약 key를 기존 계약으로 유지하고 sweep을 5분마다 예약한다", () => {
+  it("queue 이름·재시도·예약 key를 기존 계약으로 유지하고 sweep을 매분 예약한다", () => {
     // Given / When / Then: 이름·예약 key가 바뀌면 쌓인 작업과 기존 예약을 잃는다
     expect(RETENTION_QUEUE).toMatchObject({
       name: "retention.v1",
@@ -17,7 +17,7 @@ describe("리텐션 큐 계약", () => {
       schedules: [
         {
           key: "retention-stage-sweep-scheduler",
-          cron: "*/5 * * * *",
+          cron: "* * * * *",
           missed: "once",
           payload: { name: RetentionJobName.STAGE_SWEEP, data: {} },
         },

@@ -36,7 +36,7 @@ const RetentionJobSchema = z.union([
   }),
 ]);
 
-// 단계는 현지 10:30(모든 시간대 오프셋이 15분 단위라 5분 경계와 맞는다)·가입 2시간 뒤에 결정하므로 분 정밀도가 필요 없다.
+// 매분 돈다. 5분 간격이면 현지 20:55~20:59에 때가 된 단계가 21:00 실행으로 밀려 야간 방해 금지로 건너뛰어진다.
 // 후보는 시각 구간이 아니라 SCHEDULED 상태로 고르므로 늦거나 놓친 실행 뒤에도 지난 단계를 모두 처리한다
 export const RETENTION_QUEUE = defineQueue({
   name: "retention.v1",
@@ -46,7 +46,7 @@ export const RETENTION_QUEUE = defineQueue({
   schedules: [
     {
       key: "retention-stage-sweep-scheduler",
-      cron: "*/5 * * * *",
+      cron: "* * * * *",
       timezone: "UTC",
       missed: "once",
       payload: { name: RetentionJobName.STAGE_SWEEP, data: {} },
