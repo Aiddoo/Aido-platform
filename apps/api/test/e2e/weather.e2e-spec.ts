@@ -17,10 +17,10 @@
 import { weatherConditionsSchema, weatherForecastSchema } from "@aido/api";
 import request from "supertest";
 
-import { AIR_QUALITY_PROVIDER } from "#api/modules/weather/application/ports/forecast/air-quality-provider.port";
-import { LIFESTYLE_INDEX_PROVIDER } from "#api/modules/weather/application/ports/forecast/lifestyle-index-provider.port";
-import { SUN_TIME_PROVIDER } from "#api/modules/weather/application/ports/forecast/sun-time-provider.port";
-import { WEATHER_PROVIDER } from "#api/modules/weather/application/ports/forecast/weather-provider.port";
+import { AIR_QUALITY_PROVIDER } from "#api/modules/weather/forecasts/application/ports/air-quality-provider.port";
+import { LIFESTYLE_INDEX_PROVIDER } from "#api/modules/weather/forecasts/application/ports/lifestyle-index-provider.port";
+import { SUN_TIME_PROVIDER } from "#api/modules/weather/forecasts/application/ports/sun-time-provider.port";
+import { WEATHER_PROVIDER } from "#api/modules/weather/forecasts/application/ports/weather-forecast-provider.port";
 import { addDays } from "#api/shared/domain/date/utils/arithmetic";
 import { dayWindowInTimezone } from "#api/shared/domain/date/utils/timezone";
 import {

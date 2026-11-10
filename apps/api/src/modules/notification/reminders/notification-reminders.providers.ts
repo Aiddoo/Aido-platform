@@ -11,7 +11,7 @@ import { SweepCursorPort } from "#api/shared/application/ports/sweep-cursor.port
 import {
   WEATHER_REPORT_READER,
   type WeatherReportReaderPort,
-} from "../../weather/weather-forecast.public.js";
+} from "../../weather/forecasts/weather-forecasts.public.js";
 import { NotificationHistoryReader } from "../inbox/application/notification-history.reader.js";
 import { PublishNotificationUseCase } from "../push/application/use-cases/publish-notification.use-case.js";
 import { ReEngagementReaderPort } from "./application/ports/re-engagement-reader.port.js";

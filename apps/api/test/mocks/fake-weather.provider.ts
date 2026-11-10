@@ -1,8 +1,8 @@
 import type {
   WeatherForecast,
   WeatherProvider,
-} from "#api/modules/weather/application/ports/forecast/weather-provider.port";
-import type { KmaForecastTiming } from "#api/modules/weather/domain/policies/forecast/kma-forecast-availability.policy";
+} from "#api/modules/weather/forecasts/application/ports/weather-forecast-provider.port";
+import type { KmaForecastTiming } from "#api/modules/weather/forecasts/domain/kma-forecast-availability.domain-service";
 
 /**
  * 테스트용 FakeWeatherProvider

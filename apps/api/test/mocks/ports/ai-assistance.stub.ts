@@ -41,7 +41,7 @@ import type {
   WeatherForecastReaderPort,
   GridInput,
   WeatherForecast,
-} from "#api/modules/weather/weather-forecast.public";
+} from "#api/modules/weather/forecasts/weather-forecasts.public";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 
 /** 콜백 조립 Stub. 실제 PostgreSQL rollback/lock 보장은 Integration에서 검증한다. */

@@ -38,7 +38,7 @@ import {
 import {
   WEATHER_CACHE_TTL_MS,
   WeatherCacheKey,
-} from "#api/modules/weather/infrastructure/cache/forecast/weather-cache.keyspace";
+} from "#api/modules/weather/forecasts/infrastructure/cache/weather-forecast.keyspace";
 
 describe("Bounded Context별 cache keyspace 계약", () => {
   it("기존 키와 전환한 날짜별 Weather 키를 명시한다", () => {

@@ -4,7 +4,7 @@ import { orderBy } from "es-toolkit";
 
 import type { EntitlementReaderPort } from "#api/modules/access/access-entitlement.public";
 import type { UserMutationLockPort } from "#api/modules/identity/identity-user-access.public";
-import type { GridInput } from "#api/modules/weather/weather-forecast.public";
+import type { GridInput } from "#api/modules/weather/forecasts/weather-forecasts.public";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { type UnitOfWorkPort } from "#api/shared/application/ports/index";
 import { now } from "#api/shared/domain/date/utils/core";

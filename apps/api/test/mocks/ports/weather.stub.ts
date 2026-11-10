@@ -1,38 +1,38 @@
-import type { WeatherReportLanguage } from "#api/modules/weather/application/models/forecast/weather-report-language";
-import type { WeatherReportAttribution } from "#api/modules/weather/application/models/forecast/weather-report.model";
-import type { WeatherReport } from "#api/modules/weather/application/models/forecast/weather-report.model";
 import type {
   AirQuality,
   AirQualityProvider,
-} from "#api/modules/weather/application/ports/forecast/air-quality-provider.port";
+} from "#api/modules/weather/forecasts/application/ports/air-quality-provider.port";
 import type {
   LifestyleIndex,
   LifestyleIndexProvider,
-} from "#api/modules/weather/application/ports/forecast/lifestyle-index-provider.port";
+} from "#api/modules/weather/forecasts/application/ports/lifestyle-index-provider.port";
 import type {
   SunTime,
   SunTimeProvider,
-} from "#api/modules/weather/application/ports/forecast/sun-time-provider.port";
-import type {
-  ResolvedRegion,
-  TimezoneResolverPort,
-} from "#api/modules/weather/application/ports/forecast/timezone.resolver.port";
-import type { WeatherGridResolverPort } from "#api/modules/weather/application/ports/forecast/weather-grid-resolver.port";
-import type { WeatherLocationRepositoryPort } from "#api/modules/weather/application/ports/forecast/weather-location.repository.port";
+} from "#api/modules/weather/forecasts/application/ports/sun-time-provider.port";
 import type {
   WeatherForecast,
   WeatherProvider,
-} from "#api/modules/weather/application/ports/forecast/weather-provider.port";
+} from "#api/modules/weather/forecasts/application/ports/weather-forecast-provider.port";
 import type {
   WeatherReportProviderPort,
   WeatherReportRequest,
-} from "#api/modules/weather/application/ports/forecast/weather-report.provider.port";
-import type { UserLocation } from "#api/modules/weather/domain/entities/forecast/user-location.entity";
-import type { KmaForecastTiming } from "#api/modules/weather/domain/policies/forecast/kma-forecast-availability.policy";
-import type { Coordinate } from "#api/modules/weather/domain/value-objects/forecast/coordinate.vo";
-import type { GeoCell } from "#api/modules/weather/domain/value-objects/forecast/geo-cell.vo";
-import { GridCoordinate } from "#api/modules/weather/domain/value-objects/forecast/grid-coordinate.vo";
-import { WeatherKitUsageMeter } from "#api/modules/weather/infrastructure/adapters/forecast/weatherkit-usage.meter";
+} from "#api/modules/weather/forecasts/application/ports/weather-report-provider.port";
+import type { KmaForecastTiming } from "#api/modules/weather/forecasts/domain/kma-forecast-availability.domain-service";
+import type { WeatherReportLanguage } from "#api/modules/weather/forecasts/domain/weather-report-language.domain-service";
+import type { WeatherReportAttribution } from "#api/modules/weather/forecasts/domain/weather-report.vo";
+import type { WeatherReport } from "#api/modules/weather/forecasts/domain/weather-report.vo";
+import { WeatherKitUsageMeter } from "#api/modules/weather/forecasts/infrastructure/adapters/weatherkit-usage-meter.adapter";
+import type {
+  ResolvedRegion,
+  TimezoneResolverPort,
+} from "#api/modules/weather/locations/application/ports/timezone-resolver.port";
+import type { WeatherLocationRepositoryPort } from "#api/modules/weather/locations/application/ports/user-location.repository.port";
+import type { WeatherGridResolverPort } from "#api/modules/weather/locations/application/ports/weather-grid-resolver.port";
+import type { UserLocation } from "#api/modules/weather/locations/domain/user-location.entity";
+import type { Coordinate } from "#api/modules/weather/shared/domain/coordinate.vo";
+import type { GeoCell } from "#api/modules/weather/shared/domain/geo-cell.vo";
+import { GridCoordinate } from "#api/modules/weather/shared/domain/grid-coordinate.vo";
 import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
 import {
   weatherAttributionFixture,

@@ -1,12 +1,12 @@
 import { count, eq, sql } from "drizzle-orm";
 
-import { UpsertLocation } from "#api/modules/weather/application/use-cases/forecast/upsert-location.use-case";
-import { UserLocation } from "#api/modules/weather/domain/entities/forecast/user-location.entity";
-import { Coordinate } from "#api/modules/weather/domain/value-objects/forecast/coordinate.vo";
-import { KmaWeatherGridResolver } from "#api/modules/weather/infrastructure/adapters/forecast/kma-weather-grid.resolver";
-import { TzLookupTimezoneResolver } from "#api/modules/weather/infrastructure/adapters/forecast/tz-lookup-timezone.resolver";
-import { WeatherCacheAdapter } from "#api/modules/weather/infrastructure/adapters/forecast/weather-cache.adapter";
-import { DrizzleWeatherLocationRepository } from "#api/modules/weather/infrastructure/persistence/forecast/drizzle-weather-location.repository";
+import { WeatherCacheAdapter } from "#api/modules/weather/forecasts/infrastructure/cache/weather-forecast.cache";
+import { UpsertLocation } from "#api/modules/weather/locations/application/use-cases/upsert-user-location.use-case";
+import { UserLocation } from "#api/modules/weather/locations/domain/user-location.entity";
+import { KmaWeatherGridResolver } from "#api/modules/weather/locations/infrastructure/adapters/kma-weather-grid-resolver.adapter";
+import { TzLookupTimezoneResolver } from "#api/modules/weather/locations/infrastructure/adapters/tz-lookup-timezone-resolver.adapter";
+import { DrizzleWeatherLocationRepository } from "#api/modules/weather/locations/infrastructure/persistence/drizzle-user-location.repository";
+import { Coordinate } from "#api/modules/weather/shared/domain/coordinate.vo";
 import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
 import { CacheService } from "#api/platform/cache/cache.service";
 import { databaseSqlState } from "#api/platform/database/database-error.util";

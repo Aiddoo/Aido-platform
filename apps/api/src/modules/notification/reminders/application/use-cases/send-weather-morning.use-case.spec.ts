@@ -1,6 +1,6 @@
 import type { ReminderWeatherReport } from "#api/modules/notification/reminders/application/ports/reminder-weather-report.reader.port";
-import { WeatherReportReader } from "#api/modules/weather/application/services/forecast/weather-report.reader";
-import { WeatherReportCacheAdapter } from "#api/modules/weather/infrastructure/adapters/forecast/weather-report-cache.adapter";
+import { WeatherReportReader } from "#api/modules/weather/forecasts/application/weather-report.reader";
+import { WeatherReportCacheAdapter } from "#api/modules/weather/forecasts/infrastructure/cache/weather-report.cache";
 import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
 import { CacheService } from "#api/platform/cache/cache.service";
 import { RecordingNotificationPublisher } from "#test/doubles/notification/recording-notification-publisher";

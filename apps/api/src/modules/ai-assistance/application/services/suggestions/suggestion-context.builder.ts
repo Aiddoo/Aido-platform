@@ -6,8 +6,8 @@ import {
 } from "@aido/api";
 import dayjs from "dayjs";
 
-import type { WeatherForecastReaderPort } from "#api/modules/weather/weather-forecast.public";
-import { type GridInput } from "#api/modules/weather/weather-forecast.public";
+import type { WeatherForecastReaderPort } from "#api/modules/weather/forecasts/weather-forecasts.public";
+import { type GridInput } from "#api/modules/weather/forecasts/weather-forecasts.public";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { subtractDays } from "#api/shared/domain/date/utils/arithmetic";
 import { now } from "#api/shared/domain/date/utils/core";

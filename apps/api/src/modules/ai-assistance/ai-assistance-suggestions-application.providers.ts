@@ -13,7 +13,7 @@ import {
   type StagedTodoCreatorPort,
   toTodoResponse,
 } from "#api/modules/planning/todos/planning-todos.public";
-import { WEATHER_FORECAST_READER } from "#api/modules/weather/weather-forecast.public";
+import { WEATHER_FORECAST_READER } from "#api/modules/weather/forecasts/weather-forecasts.public";
 import {
   AFTER_COMMIT_TASK_REGISTRY,
   MUTATION_LOCK,

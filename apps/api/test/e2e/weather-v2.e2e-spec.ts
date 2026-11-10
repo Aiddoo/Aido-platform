@@ -3,11 +3,11 @@ import { ErrorCode } from "@aido/api/errors";
 import { eq } from "drizzle-orm";
 import request from "supertest";
 
-import { SHARED_WEATHER_REPORT_SCOPE } from "#api/modules/weather/application/models/forecast/weather-report-language";
-import { AIR_QUALITY_PROVIDER } from "#api/modules/weather/application/ports/forecast/air-quality-provider.port";
-import { WEATHER_REPORT_PROVIDER } from "#api/modules/weather/application/ports/forecast/weather-report.provider.port";
-import { WeatherKitRequestError } from "#api/modules/weather/infrastructure/adapters/forecast/weatherkit-report.provider";
-import { WeatherReportCacheKey } from "#api/modules/weather/infrastructure/cache/forecast/weather-report.keyspace";
+import { AIR_QUALITY_PROVIDER } from "#api/modules/weather/forecasts/application/ports/air-quality-provider.port";
+import { WEATHER_REPORT_PROVIDER } from "#api/modules/weather/forecasts/application/ports/weather-report-provider.port";
+import { SHARED_WEATHER_REPORT_SCOPE } from "#api/modules/weather/forecasts/domain/weather-report-language.domain-service";
+import { WeatherKitRequestError } from "#api/modules/weather/forecasts/infrastructure/adapters/weatherkit-report.adapter";
+import { WeatherReportCacheKey } from "#api/modules/weather/forecasts/infrastructure/cache/weather-report.keyspace";
 import { CacheService } from "#api/platform/cache/cache.service";
 import { userLocation } from "#api/platform/database/schema/index";
 import { weatherReportFixture } from "#test/fixtures/weather.fixture";

@@ -35,7 +35,7 @@ import {
 } from "#api/modules/social/social-reports.public";
 import { SupportModule } from "#api/modules/support/support.module";
 import { VoiceModule } from "#api/modules/voice/voice.public";
-import { WeatherForecastModule } from "#api/modules/weather/weather-forecast.public";
+import { WeatherForecastModule } from "#api/modules/weather/forecasts/weather-forecasts.public";
 import { CacheModule } from "#api/platform/cache/index";
 import { AppConfigModule, TypedConfigService } from "#api/platform/config/index";
 import { DatabaseModule, DRIZZLE } from "#api/platform/database/index";

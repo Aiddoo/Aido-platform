@@ -1,14 +1,14 @@
-import type { WeatherReportAttribution } from "#api/modules/weather/application/models/forecast/weather-report.model";
-import type {
-  WeatherReport,
-  WeatherReportHour,
-} from "#api/modules/weather/application/models/forecast/weather-report.model";
 import type {
   WeatherConditions,
   WeatherForecast,
-} from "#api/modules/weather/application/ports/forecast/weather-provider.port";
-import { UserLocation } from "#api/modules/weather/domain/entities/forecast/user-location.entity";
-import type { KmaForecastTiming } from "#api/modules/weather/domain/policies/forecast/kma-forecast-availability.policy";
+} from "#api/modules/weather/forecasts/application/ports/weather-forecast-provider.port";
+import type { KmaForecastTiming } from "#api/modules/weather/forecasts/domain/kma-forecast-availability.domain-service";
+import type { WeatherReportAttribution } from "#api/modules/weather/forecasts/domain/weather-report.vo";
+import type {
+  WeatherReport,
+  WeatherReportHour,
+} from "#api/modules/weather/forecasts/domain/weather-report.vo";
+import { UserLocation } from "#api/modules/weather/locations/domain/user-location.entity";
 import { UserLocationBuilder } from "#test/builders/user-location.builder";
 
 /** WeatherKit attribution API처럼 언어별로 다른 상표 로고 경로를 돌려준다. */

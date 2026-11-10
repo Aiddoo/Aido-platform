@@ -5,7 +5,7 @@ import { IdentityUserAccessModule } from "#api/modules/identity/identity-user-ac
 
 import { NotificationDeliveryModule } from "../notification/notification-delivery.public.js";
 import { PlanningTodosModule } from "../planning/todos/planning-todos.public.js";
-import { WeatherForecastModule } from "../weather/weather-forecast.public.js";
+import { WeatherForecastModule } from "../weather/forecasts/weather-forecasts.public.js";
 import { AiAssistanceGenerationModule } from "./ai-assistance-generation.module.js";
 import { AiAssistanceParsingModule } from "./ai-assistance-parsing.module.js";
 import { AiAssistanceReportsModule } from "./ai-assistance-reports.module.js";
