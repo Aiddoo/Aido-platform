@@ -2,20 +2,26 @@ import {
   createTodoCategoryResponseSchema,
   deleteTodoCategoryResponseSchema,
   reorderTodoCategoryResponseSchema,
+  todoCategoryDeletionPreviewSchema,
   todoCategoryListResponseSchema,
   updateTodoCategoryResponseSchema,
 } from '@aido/api';
 import type { HttpClient } from '@src/core/ports/http-client';
 import { parseApiResponse } from '@src/shared/errors/parse-api-response';
-import { noop } from 'es-toolkit';
 
+import type { TodoCategoryDeletion } from '../domains/todo-category.model';
 import type { TodoCategoryFormValues } from '../schemas/todo-category-form.schema';
 import type {
   TodoCategoryChange,
-  TodoCategoryRemoval,
   TodoCategoryReorder,
 } from '../schemas/todo-category-request.schema';
-import { toTodoCategory, toTodoCategoryWithCounts } from './todo-category.mapper';
+import {
+  toTodoCategory,
+  toTodoCategoryDeletionPreview,
+  toTodoCategoryDeletionResult,
+  toTodoCategoryRemoval,
+  toTodoCategoryWithCounts,
+} from './todo-category.mapper';
 
 export class TodoCategoryService {
   readonly #httpClient: HttpClient;
@@ -48,13 +54,21 @@ export class TodoCategoryService {
       '[TodoCategoryService] Invalid updateCategory response',
     );
 
-  deleteCategory = async (id: number, query?: TodoCategoryRemoval) =>
+  getDeletionPreview = async (id: number, signal?: AbortSignal) =>
+    parseApiResponse(
+      await this.#httpClient.get(`v1/todo-categories/${id}/deletion-preview`, { signal }),
+      todoCategoryDeletionPreviewSchema,
+      toTodoCategoryDeletionPreview,
+      '[TodoCategoryService] Invalid getDeletionPreview response',
+    );
+
+  deleteCategory = async (id: number, deletion: TodoCategoryDeletion) =>
     parseApiResponse(
       await this.#httpClient.delete(`v1/todo-categories/${id}`, {
-        params: { moveToCategoryId: query?.moveToCategoryId },
+        params: toTodoCategoryRemoval(deletion),
       }),
       deleteTodoCategoryResponseSchema,
-      noop,
+      (dto) => toTodoCategoryDeletionResult(dto.result),
       '[TodoCategoryService] Invalid deleteCategory response',
     );
 

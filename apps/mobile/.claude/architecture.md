@@ -1021,7 +1021,7 @@ export function useCreateMemoMutationOptions() {
 
 ### 낙관적 갱신
 
-여러 화면이 같은 값을 보여 주면 캐시로(TanStack "Optimistic Updates"의 via the cache), 그 버튼 하나만 보여 주면 `useMutation`의 `variables`로 그린다. 캐시로 할 때는 순서가 하나다.
+여러 화면이 같은 값을 보여 주면 캐시로(TanStack "Optimistic Updates"의 via the cache), 그 버튼 하나만 보여 주면 `useMutation`의 `variables`로 그린다. 되돌릴 수 없는 삭제(카테고리 삭제)는 미리 빼지 않고 버튼만 불러오는 중으로 둔다. 캐시로 할 때는 순서가 하나다.
 
 1. `onMutate`: 덮어쓸 수 있는 키만 `cancelQueries`(단건은 `exact: true`) → `getQueryData`로 스냅샷 → `setQueryData(key, (old) => old && withX(old, …))` → 스냅샷을 돌려준다. updater는 `*-cache.ts`의 순수 함수다(`withCategoryAdded`). 업무 규칙이면 `domains/*.model.ts` Policy다.
 2. `onError`: 돌려받은 스냅샷으로 되돌린다. 같은 키를 동시에 쓰는 뮤테이션이 있으면 통째로 덮지 않고 그 변경만 되돌린다.
@@ -1029,12 +1029,12 @@ export function useCreateMemoMutationOptions() {
 
 ```typescript
 // features/planning/category/queries/todo-category.mutations.ts
-onMutate: async ({ id }) => {
+onMutate: async ({ id, input }) => {
   await queryClient.cancelQueries({ queryKey: TODO_CATEGORY_QUERY_KEYS.list(), exact: true });
   const previousData = queryClient.getQueryData(TODO_CATEGORY_QUERY_KEYS.list());
   queryClient.setQueryData(
     TODO_CATEGORY_QUERY_KEYS.list(),
-    (old) => old && withCategoryRemoved(old, id),
+    (old) => old && withCategoryChanged(old, id, input),
   );
   return { previousData };
 },

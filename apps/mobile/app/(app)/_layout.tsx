@@ -33,6 +33,7 @@ const SHEET_ROUTES = [
   'todo/[todoId]/sub-todos/[subTodoId]/edit',
   'todo-categories/new',
   'todo-categories/[categoryId]/edit',
+  'todo-categories/[categoryId]/delete',
   'invite-welcome/[friendId]',
   'users/[userId]/block',
   'users/[userId]/report',

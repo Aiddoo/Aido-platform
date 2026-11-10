@@ -13,11 +13,10 @@ import {
   SettingsListGroup,
   Text,
   TextSkeleton,
-  useOverlay,
   VStack,
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
-import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
+import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import { range } from 'es-toolkit';
 import { router } from 'expo-router';
 import { PressableFeedback, Skeleton } from 'heroui-native';
@@ -27,9 +26,12 @@ import ReorderableList, { useIsActive, useReorderableDrag } from 'react-native-r
 
 import { TodoCategoryPolicy } from '../domains/todo-category.model';
 import type { TodoCategoryWithCount } from '../domains/todo-category.model';
+import { prefetchDeletionPreview } from '../queries/todo-category-cache';
 import { useReorderTodoCategoryMutationOptions } from '../queries/todo-category.mutations';
-import { useGetTodoCategoriesQueryOptions } from '../queries/todo-category.queries';
-import { CategoryDeleteDialog } from './category-delete-dialog';
+import {
+  useGetTodoCategoriesQueryOptions,
+  useGetTodoCategoryDeletionPreviewQueryOptions,
+} from '../queries/todo-category.queries';
 
 /** 카드 안에 그리는 행만 둔다. 카드와 제목은 화면이 감싼다 */
 export function CategoryList() {
@@ -119,23 +121,20 @@ interface CategoryListItemProps {
 CategoryList.EditItem = function EditItem({ category }: CategoryListItemProps) {
   const { t } = useTranslation('common');
   const push = useSingleTap(router.push);
-  const deleteOverlay = useOverlay();
+  const queryClient = useQueryClient();
+  const deletionPreviewOptions = useGetTodoCategoryDeletionPreviewQueryOptions({
+    categoryId: category.id,
+  });
   const isOptimistic = TodoCategoryPolicy.isOptimisticCategory(category);
 
-  const openDeleteDialog = () => {
-    deleteOverlay.open(({ isOpen, close, unmount }) => (
-      <CategoryDeleteDialog
-        categoryId={category.id}
-        isOpen={isOpen}
-        onOpenChange={(open) => {
-          if (!open) {
-            close();
-            unmount();
-          }
-        }}
-      />
-    ));
-  };
+  // 시트가 미리보기를 기다리지 않게 route로 넘어가는 동안 받는다
+  const handleDeletePress = useSingleTap(() => {
+    prefetchDeletionPreview(queryClient, deletionPreviewOptions);
+    router.push({
+      pathname: '/todo-categories/[categoryId]/delete',
+      params: { categoryId: category.id },
+    });
+  });
 
   return (
     <Box className="rounded-xl">
@@ -164,7 +163,7 @@ CategoryList.EditItem = function EditItem({ category }: CategoryListItemProps) {
               size="small"
               display="inline"
               isDisabled={isOptimistic}
-              onPress={openDeleteDialog}
+              onPress={handleDeletePress}
             >
               {t('actions.delete')}
             </Button>

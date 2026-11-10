@@ -9,6 +9,10 @@
     "categoryAdded": "Category added",
     "categoryUpdated": "Category updated",
     "categoryDeleted": "Category deleted",
+    "categoryTodosMoved_one": "Moved {{count}} to-do to \"{{name}}\"",
+    "categoryTodosMoved_other": "Moved {{count}} to-dos to \"{{name}}\"",
+    "categoryDeletedWithTodos_one": "Deleted \"{{name}}\" and {{count}} to-do",
+    "categoryDeletedWithTodos_other": "Deleted \"{{name}}\" and {{count}} to-dos",
     "recurringAdded": "Added your repeating to-dos!",
     "recurringCategoryLimit": "These repeating to-dos would go over the category limit. Try a shorter period.",
     "categoryLimitReached": "This category is full. Complete some to-dos or move them to another category.",
@@ -197,12 +201,36 @@
     "colorOption": "Color {{index}} of {{total}}",
     "nameLabel": "Category name",
     "namePlaceholder": "Enter a category name",
-    "deleteTitle": "Delete the {{name}} category?",
-    "deleteDescription": "This can't be undone",
-    "todoCount_one": "It contains {{count}} to-do",
-    "todoCount_other": "It contains {{count}} to-dos",
-    "moveSelect": "Please choose a category to move them to",
     "select": "Choose a category"
+  },
+  "categoryDelete": {
+    "title": "Delete the \"{{name}}\" category?",
+    "description": "This can't be undone.",
+    "lastCategory": "You need at least one category.",
+    "summary": {
+      "one": "This category has {{items}}.",
+      "two": "This category has {{first}} and {{second}}."
+    },
+    "part": {
+      "todo_one": "{{count}} to-do",
+      "todo_other": "{{count}} to-dos",
+      "todoWithCompleted_one": "{{count}} to-do ({{completedCount}} completed)",
+      "todoWithCompleted_other": "{{count}} to-dos ({{completedCount}} completed)",
+      "series_one": "{{count}} repeating to-do",
+      "series_other": "{{count}} repeating to-dos"
+    },
+    "move": {
+      "title": "Move to another category, then delete",
+      "description": "Your to-dos move to the category you choose, and only this category is deleted.",
+      "target": "Move to: {{name}}",
+      "submit": "Move and delete"
+    },
+    "deleteAll": {
+      "title": "Delete the to-dos too",
+      "description": "Your to-dos, repeating to-dos, and friends' comments and cheers on them will be deleted. This can't be undone.",
+      "descriptionWithHistory": "Your to-dos, repeating to-dos, and friends' comments and cheers on them will be deleted. Completed to-dos also disappear from your calendar's completion history, and this can't be undone.",
+      "submit": "Delete all"
+    }
   },
   "calendar": {
     "week": "Week",
