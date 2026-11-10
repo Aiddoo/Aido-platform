@@ -265,15 +265,15 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
     // When
     const missed: number[] = [];
     for (const notification of notifications) {
-      await db.transaction(async (tx) => {
-        const { dispatchId } = await staging(tx).stage({
+      await inTransaction(async () => {
+        const { dispatchId } = await staging(host).stage({
           notificationId: notification.id,
           userId: user.id,
           purpose: "TRANSACTIONAL",
           deliveryMode: "SINGLE",
           force: false,
         });
-        const claimed = await outbox(tx).claimByDispatchIds([dispatchId], new Date());
+        const claimed = await outbox(host).claimByDispatchIds([dispatchId], new Date());
         if (claimed.length === 0) {
           missed.push(dispatchId);
         }
