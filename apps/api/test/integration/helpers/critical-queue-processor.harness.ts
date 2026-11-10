@@ -97,9 +97,9 @@ import { suppressLogger } from "#test/setup/suppress-logger";
 import type { TestDatabaseClient } from "#test/setup/test-database";
 import { TestDatabase } from "#test/setup/test-database";
 
+import { FastJobQueue } from "./fast-job-timing.js";
+
 const PG_BOSS_SCHEMA = "pgboss_critical_processors";
-const POLL_INTERVAL_MS = 100;
-const EVENTUALLY_TIMEOUT_MS = 20_000;
 
 const unexpectedUseCase = {
   execute: async () => {
@@ -127,7 +127,6 @@ export interface CriticalQueueProcessorHarness {
   readonly retentionRepository: DrizzleRetentionRepository;
   readonly daytimeTimezone: string;
   cleanup(): Promise<void>;
-  eventually(assertion: () => Promise<void>, timeoutMs?: number): Promise<void>;
   close(): Promise<void>;
 }
 
@@ -183,7 +182,10 @@ export async function createCriticalQueueProcessorHarness(): Promise<CriticalQue
         useFactory: (
           txHost: TransactionHost<DrizzleTransactionalAdapter>,
           registry: JobQueueRegistry,
-        ) => new PgBossJobQueueAdapter(boss, txHost, registry, { shutdownTimeoutMs: 10_000 }),
+        ) =>
+          new FastJobQueue(
+            new PgBossJobQueueAdapter(boss, txHost, registry, { shutdownTimeoutMs: 10_000 }),
+          ),
       },
       ...notificationProviders(pushProvider),
       ...retentionProviders(),
@@ -209,9 +211,6 @@ export async function createCriticalQueueProcessorHarness(): Promise<CriticalQue
       await boss.deleteAllJobs(PUSH_DELIVERY_QUEUE.name);
       pushProvider.clear();
       await module.get(CacheStorePort).reset();
-    },
-    eventually: async (assertion, timeoutMs) => {
-      await eventually(assertion, timeoutMs);
     },
     close: async () => {
       await jobQueue.stop();
@@ -391,24 +390,6 @@ function createDatabaseBackedSettingsPort(database: Database): UserNotificationS
         });
     },
   };
-}
-
-async function eventually(
-  assertion: () => Promise<void>,
-  timeoutMs = EVENTUALLY_TIMEOUT_MS,
-): Promise<void> {
-  const deadline = Date.now() + timeoutMs;
-  let lastError: unknown;
-  while (Date.now() < deadline) {
-    try {
-      await assertion();
-      return;
-    } catch (error) {
-      lastError = error;
-      await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MS));
-    }
-  }
-  throw lastError;
 }
 
 function findDaytimeTimezone(now: Date): string {
