@@ -13,7 +13,7 @@ import { describeDedupProviderContract } from "#test/contracts/platform/dedup-pr
 import { describeLockProviderContract } from "#test/contracts/platform/lock-provider.contract";
 import { describeThrottlerStorageContract } from "#test/contracts/platform/throttler-storage.contract";
 
-const REDIS_PORT = 6_379;
+const REDIS_PORT = 6379;
 
 describeThrottlerStorageContract({
   name: "@nestjs/throttler 기본 in-memory",
@@ -109,7 +109,7 @@ describe.each([
       );
 
       // When
-      const release = await lock.acquire("resource", 5_000);
+      const release = await lock.acquire("resource", 5000);
       const isLocked = await lock.isLocked("resource");
 
       // Then
@@ -128,7 +128,7 @@ describe.each([
         client,
         new RedisErrorLogSampler({ warn: (entry: unknown) => warnings.push(entry) }),
       );
-      const release = await lock.acquire("resource", 5_000);
+      const release = await lock.acquire("resource", 5000);
       client.disconnect();
 
       // When / Then

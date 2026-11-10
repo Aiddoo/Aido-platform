@@ -73,9 +73,9 @@ function parseThrottleResult(raw: unknown): ThrottlerStorageRecord {
   // @nestjs/throttler는 두 값을 초로 받아 X-RateLimit-Reset·Retry-After 헤더에 그대로 쓴다(기본 in-memory 저장소와 같게)
   return {
     totalHits,
-    timeToExpire: Math.ceil(timeToExpireMs / 1_000),
+    timeToExpire: Math.ceil(timeToExpireMs / 1000),
     isBlocked: isBlocked === 1,
-    timeToBlockExpire: Math.ceil(timeToBlockExpireMs / 1_000),
+    timeToBlockExpire: Math.ceil(timeToBlockExpireMs / 1000),
   };
 }
 

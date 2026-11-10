@@ -29,7 +29,7 @@ describe("InMemoryLockAdapter — 인메모리 락 어댑터", () => {
       await lock.acquire(resource, 5000);
 
       // When
-      vi.advanceTimersByTime(4_999);
+      vi.advanceTimersByTime(4999);
 
       // Then
       expect(await lock.isLocked(resource)).toBe(true);
