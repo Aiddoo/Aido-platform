@@ -1,0 +1,15 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "workspaces": {
+    "apps/api": {
+      "entry": [
+        "src/bootstrap.ts",
+        "src/instrument.ts",
+        "src/main.ts",
+        "test/**/*.ts",
+        "scripts/**/*.{ts,mjs,cjs}"
+      ],
+      "project": ["src/**/*.ts"]
+    }
+  }
+}
