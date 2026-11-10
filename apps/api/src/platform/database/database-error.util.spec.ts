@@ -206,6 +206,16 @@ describe("classifyDatabaseError — SQLSTATE 없는 연결 문제", () => {
       kind: "connection",
     },
     {
+      name: "연결 시간 초과(pg-pool connectionTimeoutMillis)",
+      error: new Error("Connection terminated due to connection timeout"),
+      kind: "connection",
+    },
+    {
+      name: "답이 없는 쿼리(클라이언트 query_timeout)",
+      error: new DrizzleQueryError("SELECT 1", [], new Error("Query read timeout")),
+      kind: "query-timeout",
+    },
+    {
       name: "DB 쿼리의 네트워크 오류",
       error: new DrizzleQueryError("SELECT 1", [], networkError("127.0.0.1:5432")),
       kind: "connection",

@@ -4,8 +4,10 @@ import { TransactionHost } from "@nestjs-cls/transactional";
 import { Inject, Injectable, Logger, Optional, type FactoryProvider } from "@nestjs/common";
 import type { ConfigType } from "@nestjs/config";
 import { uniqBy } from "es-toolkit";
+import type { PoolConfig } from "pg";
 import {
   PgBoss,
+  type ConstructorOptions,
   type Db,
   type InsertOptions,
   type JobInsert,
@@ -205,19 +207,21 @@ interface JobTransactionSource {
 export const pgBossClientProvider: FactoryProvider<PgBossClient> = {
   provide: PG_BOSS_CLIENT,
   inject: [databaseConfig.KEY, jobConfig.KEY],
-  useFactory: (database: ConfigType<typeof databaseConfig>, job: ConfigType<typeof jobConfig>) =>
-    new LazyPgBossClient(
-      () =>
-        new PgBoss({
-          connectionString: database.url,
-          schema: job.schema,
-          application_name: "aido-pg-boss",
-          max: 3,
-          migrate: false,
-          createSchema: false,
-          useListenNotify: false,
-        }),
-    ),
+  useFactory: (database: ConfigType<typeof databaseConfig>, job: ConfigType<typeof jobConfig>) => {
+    // pg-boss는 이 설정을 pg Pool에 그대로 넘긴다. query_timeout은 pg-boss 타입에 없어 pg 타입으로 더한다
+    const options: ConstructorOptions & Pick<PoolConfig, "query_timeout"> = {
+      connectionString: database.url,
+      schema: job.schema,
+      application_name: "aido-pg-boss",
+      max: 3,
+      connectionTimeoutMillis: database.connectionTimeoutMs,
+      query_timeout: database.queryTimeoutMs,
+      migrate: false,
+      createSchema: false,
+      useListenNotify: false,
+    };
+    return new LazyPgBossClient(() => new PgBoss(options));
+  },
 };
 
 @Injectable()

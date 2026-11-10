@@ -244,6 +244,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         );
       case "connection":
       case "pool-timeout":
+      case "query-timeout":
       case "statement-timeout":
       case "lock-timeout":
         this.#logger.warn({

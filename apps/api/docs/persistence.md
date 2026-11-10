@@ -63,19 +63,22 @@ Repository·Reader·스키마·마이그레이션·DB 오류 번역을 바꿀 �
 | `statement_timeout`·`lock_timeout`    | 15s · 5s (배치는 `unitOfWork.run(work, { statementTimeoutMs })`가 그 트랜잭션에만 `SET LOCAL`로 늘린다) |
 | `idle_in_transaction_session_timeout` | 60s                                                                                                     |
 | `connectionTimeoutMillis`             | 약 5s, 넘으면 503으로 빨리 실패                                                                         |
-| 크기                                  | 앱 `DATABASE_POOL_MAX` 10 + pg-boss 3. 메모리 때문에 늘리지 않는다                                      |
+| `query_timeout`(클라이언트)           | 20s. 서버 `statement_timeout`보다 길어 평소에는 서버가 먼저 취소하고, DB가 답하지 않을 때만 끊는다      |
+| 크기                                  | 앱 `DATABASE_POOL_MAX` 10 + pg-boss 3(연결·쿼리 상한은 앱 풀과 같다). 메모리 때문에 늘리지 않는다       |
 | TLS                                   | `sslmode=verify-full`(RDS CA는 이미지에 있다)                                                           |
 
 ## DB 오류 번역
 
-| SQLSTATE                                | 분류                     | 처리                                                                                       |
-| --------------------------------------- | ------------------------ | ------------------------------------------------------------------------------------------ |
-| `23505`·`23503`·`23514`                 | unique·FK·check          | 저장소가 `isUniqueConstraintViolation(error, "<제약>")`으로 자기 제약만 업무 오류로 번역   |
-| `40001`·`40P01`                         | 직렬화·교착              | 멱등한 UoW만 `run(work, { retryOnConflict: true })`로 1회 재실행                           |
-| `55P03`·`57014`                         | lock·statement 시간 초과 | 503 `SYS_0005`(잠시 후 다시 시도)                                                          |
-| `08***`·`57P01`, 풀 대기 초과·연결 끊김 | 연결                     | 같음. SQLSTATE가 없는 pg·pg-pool 고정 문구와 Drizzle 쿼리 아래 네트워크 오류도 연결로 본다 |
+| SQLSTATE                                | 분류                      | 처리                                                                                       |
+| --------------------------------------- | ------------------------- | ------------------------------------------------------------------------------------------ |
+| `23505`·`23503`·`23514`                 | unique·FK·check           | 저장소가 `isUniqueConstraintViolation(error, "<제약>")`으로 자기 제약만 업무 오류로 번역   |
+| `40001`·`40P01`                         | 직렬화·교착               | 멱등한 UoW만 `run(work, { retryOnConflict: true })`로 1회 재실행                           |
+| `55P03`·`57014`                         | lock·statement 시간 초과  | 503 `SYS_0005`(잠시 후 다시 시도)                                                          |
+| `08***`·`57P01`, 풀 대기 초과·연결 끊김 | 연결                      | 같음. SQLSTATE가 없는 pg·pg-pool 고정 문구와 Drizzle 쿼리 아래 네트워크 오류도 연결로 본다 |
+| 없음(`Query read timeout`)              | 클라이언트 쿼리 시간 초과 | 같음                                                                                       |
 
 - 분류표는 [classifyDatabaseError](../src/platform/database/database-error.util.ts) 한 곳이다. `GlobalExceptionFilter`는 이 분류로 응답을 정하고, 미지의 unique는 409 `SYS_0004`에 경보(`database.unique-constraint.unknown`)를 올린다.
+- 유휴 연결이 끊기면 pg-pool이 그 연결을 빼고, 풀은 같은 분류로 `database.idle-connection.failed`를 warn으로 남긴다(듣는 쪽이 없으면 프로세스가 죽는다).
 - 단건 변경 결과가 없으면 부재 오류를 낸다. 잠금·CAS·rollback은 실제 PostgreSQL integration으로 확인한다.
 
 ## 마이그레이션

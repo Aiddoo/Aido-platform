@@ -136,6 +136,8 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
       ["연결 예외(08006)", sqlQueryError("08006")],
       ["관리자 종료(57P01)", sqlQueryError("57P01")],
       ["풀 대기 초과", new Error("timeout exceeded when trying to connect")],
+      ["연결 시간 초과", new Error("Connection terminated due to connection timeout")],
+      ["답이 없는 쿼리", new Error("Query read timeout")],
     ])("일시적 DB 문제 %s는 503 SYS_0005로 처리하고 예외 보고로 보낸다", (_, error) => {
       // When
       filter.catch(error, host);
