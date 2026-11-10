@@ -12,7 +12,7 @@ import {
   todoDetailsParamSchema,
   todoDetailsResponseSchema,
   updateTodoCommentSchema,
-} from "@aido/api";
+} from "@aido/api/contracts/todo-comment";
 import type { z } from "zod";
 
 export const TodoDetailsParamDto = todoDetailsParamSchema.meta({

@@ -1,9 +1,11 @@
 import { createHmac } from "node:crypto";
 
-import { TODO_COMMENT_SORT, z } from "@aido/api";
+import { TODO_COMMENT_SORT } from "@aido/api/vocabulary";
+import { ConfigService } from "@nestjs/config";
+import { z } from "zod";
 
-import type { TypedConfigService } from "#api/platform/config/services/config.service";
-import { asDep } from "#test/mocks/index";
+import type { EnvConfig } from "#api/platform/config/schemas/index";
+import { TypedConfigService } from "#api/platform/config/services/config.service";
 
 import type {
   TodoCommentThreadReadModel,
@@ -28,7 +30,7 @@ const record: TodoConversationReadModel = {
   replyCount: 2,
   deletedAt: null,
   editedAt: null,
-  createdAt: "2026-08-14T00:00:00.000Z",
+  createdAt: Temporal.Instant.from("2026-08-14T00:00:00.000Z"),
   conversationPosition: { rootLikeCount: 3, rootReplyCount: 2 },
 };
 const threadComment: TodoCommentThreadReadModel = {
@@ -66,7 +68,13 @@ function createCodec(config: {
   readonly cursorSigningKeys?: string;
 }): HmacTodoCommentCursorCodecAdapter {
   return new HmacTodoCommentCursorCodecAdapter(
-    asDep<TypedConfigService>({ cursorSigningKeys: undefined, ...config }),
+    new TypedConfigService(
+      new ConfigService<EnvConfig, true>({
+        JWT_SECRET: config.jwtSecret,
+        JWT_REFRESH_SECRET: "test-refresh-secret-at-least-32-characters",
+        CURSOR_SIGNING_KEYS: config.cursorSigningKeys,
+      }),
+    ),
   );
 }
 
@@ -86,7 +94,7 @@ describe("HmacTodoCommentCursorCodecAdapter", () => {
   it.each([TODO_COMMENT_SORT.LATEST, TODO_COMMENT_SORT.POPULAR])(
     "%s conversation cursor를 서명하고 경계를 복원한다",
     (sort) => {
-      const cursor = codec.encodeConversation(record, sort);
+      const cursor = codec.encodeConversation(record, sort, "TODO");
 
       expect(codec.decodeConversation(cursor, sort)).toEqual({
         v: 1,
@@ -112,7 +120,7 @@ describe("HmacTodoCommentCursorCodecAdapter", () => {
   });
 
   it("payload의 인기 rank를 변경하면 서명 검증에서 거부한다", () => {
-    const cursor = codec.encodeConversation(record, TODO_COMMENT_SORT.POPULAR);
+    const cursor = codec.encodeConversation(record, TODO_COMMENT_SORT.POPULAR, "TODO");
     const tampered = replacePayload(cursor, (payload) => {
       payload.position = { rootLikeCount: 400, rootReplyCount: 2 };
     });
@@ -121,7 +129,7 @@ describe("HmacTodoCommentCursorCodecAdapter", () => {
   });
 
   it("서명 한 글자를 변경하면 거부한다", () => {
-    const cursor = codec.encodeConversation(record, TODO_COMMENT_SORT.LATEST);
+    const cursor = codec.encodeConversation(record, TODO_COMMENT_SORT.LATEST, "TODO");
     const [payload, signature] = cursor.split(".");
     if (payload == null || signature == null) {
       throw new Error("테스트 cursor 형식이 올바르지 않습니다.");
@@ -136,7 +144,7 @@ describe("HmacTodoCommentCursorCodecAdapter", () => {
   });
 
   it("다른 secret으로 만든 cursor를 거부한다", () => {
-    const cursor = codec.encodeConversation(record, TODO_COMMENT_SORT.LATEST);
+    const cursor = codec.encodeConversation(record, TODO_COMMENT_SORT.LATEST, "TODO");
     const another = createCodec({ jwtSecret: "another-jwt-secret-at-least-32-characters" });
 
     expect(() => another.decodeConversation(cursor, TODO_COMMENT_SORT.LATEST)).toThrow();
@@ -159,7 +167,7 @@ describe("HmacTodoCommentCursorCodecAdapter", () => {
     ).toString("base64url");
 
     // When
-    const cursor = codec.encodeConversation(record, TODO_COMMENT_SORT.LATEST);
+    const cursor = codec.encodeConversation(record, TODO_COMMENT_SORT.LATEST, "TODO");
 
     // Then
     expect(cursor).toBe(`${payload}.${signLegacy(payload)}`);
@@ -184,7 +192,7 @@ describe("HmacTodoCommentCursorCodecAdapter", () => {
     });
 
     // When
-    const cursor = rotated.encodeConversation(record, TODO_COMMENT_SORT.LATEST);
+    const cursor = rotated.encodeConversation(record, TODO_COMMENT_SORT.LATEST, "TODO");
 
     // Then
     expect(cursor.split(".")[0]).toBe("k2");
@@ -200,7 +208,7 @@ describe("HmacTodoCommentCursorCodecAdapter", () => {
     const cursor = createCodec({
       jwtSecret: secret,
       cursorSigningKeys: `k1:${previousKey}`,
-    }).encodeConversation(record, TODO_COMMENT_SORT.LATEST);
+    }).encodeConversation(record, TODO_COMMENT_SORT.LATEST, "TODO");
     const otherKid = createCodec({ jwtSecret: secret, cursorSigningKeys: `k2:${currentKey}` });
 
     // When / Then
@@ -209,7 +217,7 @@ describe("HmacTodoCommentCursorCodecAdapter", () => {
   });
 
   it("정렬 종류가 다른 cursor를 거부한다", () => {
-    const cursor = codec.encodeConversation(record, TODO_COMMENT_SORT.LATEST);
+    const cursor = codec.encodeConversation(record, TODO_COMMENT_SORT.LATEST, "TODO");
 
     expect(() => codec.decodeConversation(cursor, TODO_COMMENT_SORT.POPULAR)).toThrow();
   });

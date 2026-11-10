@@ -1,58 +1,51 @@
-import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
-import { type MutationLockPort } from "#api/shared/application/ports/index";
+import type { TodoEngagementCounterPort } from "#api/modules/planning/todos/planning-todos.public";
+import type { ClockPort } from "#api/shared/application/ports/clock.port";
+import type { MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { TodoCommentLockKeys } from "../comments.lock-keys.js";
-import { TodoCommentLogEvent } from "../comments.log-events.js";
-import { settleAfterCommit } from "../comments.log-events.js";
-import type {
-  TodoCommentAccountCleanupPort,
-  TodoCommentAccountCleanupResult,
-} from "../ports/todo-comment-account-cleanup.port.js";
-import { type TodoCommentPurgeRepositoryPort } from "../ports/todo-comment-purge.repository.port.js";
-import { type TodoViewCachePort } from "../ports/todo-view-cache.port.js";
+import type { TodoCommentAccountCleanupResult } from "../ports/todo-comment-account-cleanup.port.js";
+import type { TodoCommentPurgeRepositoryPort } from "../ports/todo-comment-purge.repository.port.js";
 
-/**
- * auth 계정 purge가 소비하는 댓글 모듈의 공개 capability.
- *
- * cleanupInTransaction은 호출자가 연 UoW에 참여합니다. 계정 삭제보다 먼저 댓글 데이터와
- * counter를 정리해야 User FK의 RESTRICT가 마지막 안전망으로 동작합니다.
- */
-interface CleanUpAccountTodoCommentsDependencies {
-  readonly store: TodoCommentPurgeRepositoryPort;
-  readonly todoViewCache: TodoViewCachePort;
-  readonly mutationLock: MutationLockPort;
-  readonly logger: ApplicationLoggerPort;
+export interface CleanUpAccountTodoCommentsCommand {
+  readonly userId: string;
 }
 
-export class CleanUpAccountTodoCommentsUseCase implements TodoCommentAccountCleanupPort {
+interface CleanUpAccountTodoCommentsDependencies {
+  readonly mutationLock: MutationLockPort;
+  readonly clock: ClockPort;
+  readonly purgeRepository: TodoCommentPurgeRepositoryPort;
+  readonly engagementCounter: Pick<
+    TodoEngagementCounterPort,
+    "lockCounters" | "replaceCommentCounts"
+  >;
+}
+
+/**
+ * 계정 hard delete 전에 호출자의 UoW 안에서 댓글 데이터와 수를 정리한다.
+ * 잠금 순서: 댓글 advisory 잠금 → 할 일 행 → 댓글 행. 작성·삭제와 같은 순서라 교착하지 않는다.
+ */
+export class CleanUpAccountTodoCommentsUseCase {
   readonly #dependencies: CleanUpAccountTodoCommentsDependencies;
 
   constructor(dependencies: CleanUpAccountTodoCommentsDependencies) {
     this.#dependencies = dependencies;
   }
 
-  async cleanupInTransaction(userId: string): Promise<TodoCommentAccountCleanupResult> {
-    const plan = await this.#dependencies.store.plan(userId);
-
+  async execute(
+    command: CleanUpAccountTodoCommentsCommand,
+  ): Promise<TodoCommentAccountCleanupResult> {
+    const { mutationLock, clock, purgeRepository, engagementCounter } = this.#dependencies;
+    const userId = UserId.reconstitute(command.userId);
+    const plan = await purgeRepository.planPurge(userId);
     if (plan.commentIdsToLock.length > 0) {
-      await this.#dependencies.mutationLock.acquire(
-        plan.commentIdsToLock.map(TodoCommentLockKeys.comment),
-      );
+      await mutationLock.acquire(plan.commentIdsToLock.map(TodoCommentLockKeys.comment));
     }
-
-    await this.#dependencies.store.cleanup(userId, plan);
+    if (plan.affectedTodoIds.length > 0) {
+      await engagementCounter.lockCounters(plan.affectedTodoIds);
+      const commentCounts = await purgeRepository.purge(userId, plan, clock.now());
+      await engagementCounter.replaceCommentCounts(commentCounts);
+    }
     return { affectedTodoIds: [...plan.affectedTodoIds] };
-  }
-
-  /** 이미 끝난 계정 삭제를 cache 장애 때문에 실패로 보고하지 않도록 전부 best-effort로 정리한다. */
-  async settleAfterCommit(result: TodoCommentAccountCleanupResult): Promise<void> {
-    await settleAfterCommit(
-      this.#dependencies.logger,
-      result.affectedTodoIds.map((todoId) => ({
-        failureEvent: TodoCommentLogEvent.ACCOUNT_CLEANUP_CACHE_INVALIDATION_FAILED,
-        context: { todoId },
-        run: () => this.#dependencies.todoViewCache.invalidateForTodo(todoId),
-      })),
-    );
   }
 }

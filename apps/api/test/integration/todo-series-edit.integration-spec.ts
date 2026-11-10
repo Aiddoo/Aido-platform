@@ -421,6 +421,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
         content: "회차 댓글",
         clientRequestId: randomUUID(),
         requestFingerprint: "series-edit",
+        updatedAt: Temporal.Now.instant(),
       });
       // When
       const response = await following({
@@ -1011,6 +1012,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
           content: "댓글",
           clientRequestId: randomUUID(),
           requestFingerprint: "series-merge",
+          updatedAt: Temporal.Now.instant(),
         });
         // When
         const edited = await following({ id: earlier[1]?.id ?? 0, repeat: WEEKLY_MON });
@@ -1185,6 +1187,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
         content: "유지",
         clientRequestId: randomUUID(),
         requestFingerprint: "series-edit",
+        updatedAt: Temporal.Now.instant(),
       });
       // When
       const response = await edit(single?.id ?? 0, {

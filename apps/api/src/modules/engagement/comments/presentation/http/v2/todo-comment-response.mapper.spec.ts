@@ -1,15 +1,15 @@
 import {
-  createCommentRecordFixture,
-  createViewerContextFixture,
-  ENGAGEMENT_OWNER_ID,
-} from "#test/fixtures/engagement-comment.fixture";
+  createTodoCommentReadModelFixture as createCommentRecordFixture,
+  createTodoCommentViewerFixture as createViewerContextFixture,
+  TODO_COMMENT_FIXTURE_OWNER_ID as ENGAGEMENT_OWNER_ID,
+} from "#test/fixtures/engagement/todo-comment.fixture";
 
-import { toTodoCommentThreadsResponse, toTodoCommentView } from "./todo-comment-response.mapper.js";
+import { toTodoCommentThreadsResponse, toTodoCommentV2 } from "./todo-comment-response.mapper.js";
 
 const BLOCKED_AUTHOR_ID = "cmblocked0000000000000001";
 const COMMENT_ID = "cm1rootcomment000000000001";
 
-describe("toTodoCommentView — v1·v2 공통 댓글 표현", () => {
+describe("toTodoCommentV2 — v1·v2 공통 댓글 표현", () => {
   it("차단 관계인 작성자의 글은 작성자·내용·좋아요 수를 지우고 상호작용을 막는다", () => {
     // Given
     const record = createCommentRecordFixture({
@@ -20,7 +20,7 @@ describe("toTodoCommentView — v1·v2 공통 댓글 표현", () => {
     });
 
     // When
-    const view = toTodoCommentView(
+    const view = toTodoCommentV2(
       record,
       createViewerContextFixture({
         likedCommentIds: new Set([record.id]),
@@ -51,7 +51,7 @@ describe("toTodoCommentView — v1·v2 공통 댓글 표현", () => {
     });
 
     // When
-    const view = toTodoCommentView(
+    const view = toTodoCommentV2(
       record,
       createViewerContextFixture({ blockedAuthorIds: new Set([BLOCKED_AUTHOR_ID]) }),
     );

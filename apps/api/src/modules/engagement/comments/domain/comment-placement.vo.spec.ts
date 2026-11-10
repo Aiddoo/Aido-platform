@@ -7,13 +7,13 @@ const NESTED_REPLY_ID = "cm1todoacomment00000000003";
 describe("CommentPlacement", () => {
   it("댓글에 답하면 그 댓글이 묶음 머리이자 답글 대상이다", () => {
     // Given
-    const target = { id: COMMENT_ID, placement: CommentPlacement.comment() };
+    const target = { id: COMMENT_ID, placement: CommentPlacement.create(null) };
 
     // When
-    const placement = CommentPlacement.replyTo(target);
+    const placement = CommentPlacement.create(target);
 
     // Then
-    expect(placement).toEqual({
+    expect(placement.value).toEqual({
       kind: "REPLY",
       threadCommentId: COMMENT_ID,
       replyToCommentId: COMMENT_ID,
@@ -24,17 +24,17 @@ describe("CommentPlacement", () => {
     // Given
     const target = {
       id: REPLY_ID,
-      placement: CommentPlacement.replyTo({
+      placement: CommentPlacement.create({
         id: COMMENT_ID,
-        placement: CommentPlacement.comment(),
+        placement: CommentPlacement.create(null),
       }),
     };
 
     // When
-    const placement = CommentPlacement.replyTo(target);
+    const placement = CommentPlacement.create(target);
 
     // Then
-    expect(placement).toEqual({
+    expect(placement.value).toEqual({
       kind: "REPLY",
       threadCommentId: COMMENT_ID,
       replyToCommentId: REPLY_ID,
@@ -43,17 +43,17 @@ describe("CommentPlacement", () => {
 
   it("답글의 답글에 답해도 묶음은 2단계를 넘지 않는다", () => {
     // Given
-    const reply = CommentPlacement.replyTo({
+    const reply = CommentPlacement.create({
       id: COMMENT_ID,
-      placement: CommentPlacement.comment(),
+      placement: CommentPlacement.create(null),
     });
-    const nestedReply = CommentPlacement.replyTo({ id: REPLY_ID, placement: reply });
+    const nestedReply = CommentPlacement.create({ id: REPLY_ID, placement: reply });
 
     // When
-    const placement = CommentPlacement.replyTo({ id: NESTED_REPLY_ID, placement: nestedReply });
+    const placement = CommentPlacement.create({ id: NESTED_REPLY_ID, placement: nestedReply });
 
     // Then
-    expect(placement).toEqual({
+    expect(placement.value).toEqual({
       kind: "REPLY",
       threadCommentId: COMMENT_ID,
       replyToCommentId: NESTED_REPLY_ID,
@@ -68,7 +68,7 @@ describe("CommentPlacement", () => {
     });
 
     // Then
-    expect(placement).toEqual({
+    expect(placement.value).toEqual({
       kind: "REPLY",
       threadCommentId: COMMENT_ID,
       replyToCommentId: COMMENT_ID,
@@ -77,8 +77,10 @@ describe("CommentPlacement", () => {
 
   it("묶음 머리가 없으면 댓글이다", () => {
     // Given / When / Then
-    expect(CommentPlacement.reconstitute({ parentId: null, replyToCommentId: null })).toEqual({
-      kind: "COMMENT",
-    });
+    expect(CommentPlacement.reconstitute({ parentId: null, replyToCommentId: null }).value).toEqual(
+      {
+        kind: "COMMENT",
+      },
+    );
   });
 });

@@ -277,8 +277,7 @@
         "**/*.spec.ts",
         "**/*.test.ts",
         "apps/api/src/modules/*/{domain,application,infrastructure,presentation}/**",
-        "apps/api/src/modules/identity/users/application/use-cases/get-entitlement-snapshot.use-case.ts",
-        "apps/api/src/modules/engagement/comments/**"
+        "apps/api/src/modules/identity/users/application/use-cases/get-entitlement-snapshot.use-case.ts"
       ],
       "rules": {
         "no-restricted-imports": [

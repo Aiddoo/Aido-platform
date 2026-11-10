@@ -1,24 +1,29 @@
-import { TODO_COMMENT_SORT, z, type TodoCommentSort } from "@aido/api";
-import { ErrorCode } from "@aido/api/errors";
+import { TODO_COMMENT_SORT, type TodoCommentSort } from "@aido/api/vocabulary";
 import { Injectable } from "@nestjs/common";
+import { z } from "zod";
 
 import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { HmacTokenSigner } from "#api/platform/security/hmac-token-signer";
 import { SigningKeyRing } from "#api/platform/security/signing-key-ring";
-import { ApplicationException } from "#api/shared/application/application.exception";
 
-import type { TodoCommentCursorCodecPort } from "../../application/ports/todo-comment-cursor-codec.port.js";
+import { invalidCommentRequest } from "../../application/comments.errors.js";
 import {
-  TODO_COMMENT_PAGE_DIRECTION,
-  type TodoCommentPageDirection,
-  type TodoCommentReadModel,
+  TodoCommentCursorCodecPort,
   type TodoCommentRepliesCursor,
   type TodoCommentThreadCursor,
-  type TodoCommentThreadReadModel,
   type TodoConversationCursor,
-  type TodoConversationReadModel,
-  type TodoConversationScope,
+} from "../../application/ports/todo-comment-cursor-codec.port.js";
+import type {
+  TodoCommentReadModel,
+  TodoCommentThreadReadModel,
+  TodoConversationReadModel,
 } from "../../application/read-models/todo-comment.read-model.js";
+import {
+  TODO_COMMENT_PAGE_DIRECTIONS,
+  TODO_CONVERSATION_SCOPES,
+  type TodoCommentPageDirection,
+  type TodoConversationScope,
+} from "../../application/todo-comment-page.constants.js";
 
 const CURSOR_DOMAIN = {
   legacyPrefix: "todo-comment-cursor:v1:",
@@ -36,10 +41,10 @@ const conversationCursorSchema = z.strictObject({
   todoId: z.number().int().positive(),
   commentId: z.cuid(),
   threadId: z.cuid(),
-  scope: z.enum(["TODO", "THREAD"]),
+  scope: z.enum(TODO_CONVERSATION_SCOPES),
   position: cursorPositionSchema,
 });
-const directionSchema = z.enum(TODO_COMMENT_PAGE_DIRECTION);
+const directionSchema = z.enum(TODO_COMMENT_PAGE_DIRECTIONS);
 const threadsCursorSchema = z.strictObject({
   v: z.literal(1),
   kind: z.literal("overview"),
@@ -58,11 +63,8 @@ const repliesCursorSchema = z.strictObject({
   direction: directionSchema,
 });
 
-function invalidCursor(): ApplicationException {
-  return new ApplicationException(ErrorCode.SYS_0002);
-}
-
 @Injectable()
+// 서명·payload 바이트는 출시 앱이 가진 cursor와 같아야 한다(접두사·키 이름·JSON 키 순서 포함)
 export class HmacTodoCommentCursorCodecAdapter implements TodoCommentCursorCodecPort {
   readonly #signer: HmacTokenSigner;
 
@@ -78,7 +80,7 @@ export class HmacTodoCommentCursorCodecAdapter implements TodoCommentCursorCodec
     const parsedCursor = conversationCursorSchema.safeParse(this.#decode(cursor));
 
     if (!parsedCursor.success || parsedCursor.data.sort !== sort) {
-      throw invalidCursor();
+      throw invalidCommentRequest();
     }
 
     return parsedCursor.data;
@@ -87,7 +89,7 @@ export class HmacTodoCommentCursorCodecAdapter implements TodoCommentCursorCodec
   encodeConversation(
     record: TodoConversationReadModel,
     sort: TodoCommentSort,
-    scope: TodoConversationScope = "TODO",
+    scope: TodoConversationScope,
   ): string {
     return this.#encodeParsed(conversationCursorSchema, {
       v: 1,
@@ -105,7 +107,7 @@ export class HmacTodoCommentCursorCodecAdapter implements TodoCommentCursorCodec
     const parsedCursor = threadsCursorSchema.safeParse(this.#decode(cursor));
 
     if (!parsedCursor.success || parsedCursor.data.sort !== sort) {
-      throw invalidCursor();
+      throw invalidCommentRequest();
     }
 
     return parsedCursor.data;
@@ -117,7 +119,7 @@ export class HmacTodoCommentCursorCodecAdapter implements TodoCommentCursorCodec
     direction: TodoCommentPageDirection,
   ): string {
     if (record.threadCommentId != null) {
-      throw invalidCursor();
+      throw invalidCommentRequest();
     }
 
     return this.#encodeParsed(threadsCursorSchema, {
@@ -135,7 +137,7 @@ export class HmacTodoCommentCursorCodecAdapter implements TodoCommentCursorCodec
     const parsedCursor = repliesCursorSchema.safeParse(this.#decode(cursor));
 
     if (!parsedCursor.success) {
-      throw invalidCursor();
+      throw invalidCommentRequest();
     }
 
     return parsedCursor.data;
@@ -143,7 +145,7 @@ export class HmacTodoCommentCursorCodecAdapter implements TodoCommentCursorCodec
 
   encodeReplies(record: TodoCommentReadModel, direction: TodoCommentPageDirection): string {
     if (record.threadCommentId == null) {
-      throw invalidCursor();
+      throw invalidCommentRequest();
     }
 
     return this.#encodeParsed(repliesCursorSchema, {
@@ -160,7 +162,7 @@ export class HmacTodoCommentCursorCodecAdapter implements TodoCommentCursorCodec
     const cursor = schema.safeParse(value);
 
     if (!cursor.success) {
-      throw invalidCursor();
+      throw invalidCommentRequest();
     }
 
     const payload = Buffer.from(JSON.stringify(cursor.data), "utf8").toString("base64url");
@@ -170,13 +172,13 @@ export class HmacTodoCommentCursorCodecAdapter implements TodoCommentCursorCodec
   #decode(cursor: string): unknown {
     const payload = this.#signer.open(cursor);
     if (payload == null) {
-      throw invalidCursor();
+      throw invalidCommentRequest();
     }
 
     try {
       return JSON.parse(Buffer.from(payload, "base64url").toString("utf8"));
     } catch {
-      throw invalidCursor();
+      throw invalidCommentRequest();
     }
   }
 }

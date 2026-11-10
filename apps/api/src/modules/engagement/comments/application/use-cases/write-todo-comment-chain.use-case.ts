@@ -1,35 +1,43 @@
-import type { TodoCommentChainResponse } from "@aido/api";
-import { ErrorCode } from "@aido/api/errors";
+import type { TodoCommentKind } from "@aido/api/vocabulary";
 import { uniq } from "es-toolkit";
 
-import { ApplicationException } from "#api/shared/application/application.exception";
+import type {
+  TodoEngagementCounterPort,
+  TodoViewCacheInvalidatorPort,
+} from "#api/modules/planning/todos/planning-todos.public";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
-import { type MutationLockPort, type UnitOfWorkPort } from "#api/shared/application/ports/index";
+import type { ClockPort } from "#api/shared/application/ports/clock.port";
+import type { MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
+import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { CommentPlacement } from "../../domain/comment-placement.vo.js";
+import {
+  matchTodoCommentChainReplay,
+  fingerprintTodoCommentChain,
+  type TodoCommentChainRequest,
+} from "../../domain/todo-comment-chain.domain-service.js";
 import { TodoCommentContent } from "../../domain/todo-comment-content.vo.js";
-import type { TodoComment } from "../../domain/todo-comment.aggregate.js";
-import { toTodoCommentResponse } from "../../presentation/http/v1/todo-comment-response.mapper.js";
-import { assertNotBlocked } from "../comments.errors.js";
-import { assertTodoCommentAccess } from "../comments.errors.js";
-import { TodoCommentLockKeys } from "../comments.lock-keys.js";
-import { TodoCommentLogEvent } from "../comments.log-events.js";
-import { settleAfterCommit } from "../comments.log-events.js";
-import { type TodoCommentBlockReaderPort } from "../ports/todo-comment-block-reader.port.js";
+import { TodoCommentId } from "../../domain/todo-comment-id.vo.js";
+import { TodoComment } from "../../domain/todo-comment.aggregate.js";
 import {
-  type TodoCommentNotificationPort,
-  type TodoCommentWrittenInput,
-} from "../ports/todo-comment-notification.port.js";
-import { type TodoCommentReaderPort } from "../ports/todo-comment.reader.port.js";
-import {
+  blockedCounterpart,
+  commentNotFound,
+  commentStateConflict,
+  invalidCommentRequest,
+  todoNotFound,
   TodoCommentIdempotencyConflict,
   TodoCommentIdempotencyRace,
-  type TodoCommentRepositoryPort,
-} from "../ports/todo-comment.repository.port.js";
-import { type TodoViewCachePort } from "../ports/todo-view-cache.port.js";
+} from "../comments.errors.js";
+import { TodoCommentLockKeys } from "../comments.lock-keys.js";
+import { settleAfterCommit, TodoCommentLogEvent } from "../comments.log-events.js";
+import type { TodoCommentBlockReaderPort } from "../ports/todo-comment-block-reader.port.js";
+import type { TodoCommentNotificationPort } from "../ports/todo-comment-notification.port.js";
+import type { TodoCommentReaderPort } from "../ports/todo-comment.reader.port.js";
+import type { TodoCommentRepositoryPort } from "../ports/todo-comment.repository.port.js";
 import type {
-  TodoCommentChainCommand,
   TodoCommentReadModel,
+  TodoCommentsWithViewer,
 } from "../read-models/todo-comment.read-model.js";
 
 export interface WriteTodoCommentChainCommand {
@@ -45,71 +53,56 @@ interface WriteOutcome {
   readonly addedCount: number;
   readonly recipientId: string;
   readonly threadRootId: string;
-  readonly replyTarget: TodoCommentWrittenInput["replyTarget"];
+  readonly replyTarget: TodoCommentKind | null;
 }
 
-function normalizeCommand(input: WriteTodoCommentChainCommand): TodoCommentChainCommand {
-  if (input.items.length === 0) {
-    throw new ApplicationException(ErrorCode.SYS_0002);
-  }
+interface WriteTodoCommentChainDependencies {
+  readonly unitOfWork: UnitOfWorkPort;
+  readonly mutationLock: MutationLockPort;
+  readonly clock: ClockPort;
+  readonly reader: Pick<
+    TodoCommentReaderPort,
+    "findAccessibleTodoOwnerId" | "listComments" | "listLikedCommentIds"
+  >;
+  readonly repository: Pick<
+    TodoCommentRepositoryPort,
+    "nextId" | "findByIdAndTodoId" | "listByAuthorIdAndClientRequestIds" | "save"
+  >;
+  readonly engagementCounter: Pick<TodoEngagementCounterPort, "increaseCommentCount">;
+  readonly notification: Pick<TodoCommentNotificationPort, "notifyCommentsWritten">;
+  readonly blockReader: Pick<TodoCommentBlockReaderPort, "findBlockedCounterpartIds">;
+  readonly todoViewCache: Pick<TodoViewCacheInvalidatorPort, "invalidateForTodo">;
+  readonly logger: ApplicationLoggerPort;
+}
 
+function toRequest(command: WriteTodoCommentChainCommand): TodoCommentChainRequest {
+  if (command.items.length === 0) {
+    throw invalidCommentRequest();
+  }
   return {
-    todoId: input.todoId,
-    authorId: input.authorId,
-    parentId: input.parentId,
-    items: input.items.map((item) => ({
+    todoId: command.todoId,
+    authorId: command.authorId,
+    parentId: command.parentId,
+    items: command.items.map((item) => ({
       clientRequestId: item.clientRequestId,
-      content: TodoCommentContent.create(item.content).getValue(),
+      content: TodoCommentContent.create(item.content).value,
     })),
   };
 }
 
-function toReplyTargetKind(replyTarget: TodoComment | null): WriteOutcome["replyTarget"] {
-  if (replyTarget == null) {
-    return null;
-  }
-
-  return replyTarget.placement.kind;
-}
-
-function requireFirst(records: readonly TodoCommentReadModel[]): TodoCommentReadModel {
-  const first = records[0];
+function requireFirst(comments: readonly TodoCommentReadModel[]): TodoCommentReadModel {
+  const first = comments[0];
   if (first == null) {
-    throw new ApplicationException(ErrorCode.SYS_0003);
+    throw commentStateConflict();
   }
-
   return first;
 }
 
-function throwMappedWriteError(error: unknown): never {
-  if (error instanceof TodoCommentIdempotencyConflict) {
-    throw new ApplicationException(ErrorCode.SYS_0002);
-  }
-
-  throw error;
+function toWriteError(error: unknown): unknown {
+  return error instanceof TodoCommentIdempotencyConflict ? invalidCommentRequest() : error;
 }
 
-interface WriteTodoCommentChainDependencies {
-  readonly reader: Pick<
-    TodoCommentReaderPort,
-    "findAccessibleTodoOwnerId" | "findCommentRecords" | "findLikedCommentIds"
-  >;
-  readonly repository: Pick<
-    TodoCommentRepositoryPort,
-    | "findCommentChainReplay"
-    | "findComment"
-    | "createCommentChain"
-    | "increaseTodoCommentCount"
-    | "increaseReplyCount"
-  >;
-  readonly notification: Pick<TodoCommentNotificationPort, "notifyCommentsWritten">;
-  readonly blockReader: Pick<TodoCommentBlockReaderPort, "findBlockedCounterpartIds">;
-  readonly todoViewCache: TodoViewCachePort;
-  readonly mutationLock: MutationLockPort;
-  readonly unitOfWork: UnitOfWorkPort;
-  readonly logger: ApplicationLoggerPort;
-}
-
+/** 이어 쓴 글은 모두 같은 묶음에 붙고 각자 바로 앞 글에 답한다. 같은 멱등 키로 다시 보내면 원래 글을 돌려준다 */
 export class WriteTodoCommentChainUseCase {
   readonly #dependencies: WriteTodoCommentChainDependencies;
 
@@ -117,27 +110,29 @@ export class WriteTodoCommentChainUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: WriteTodoCommentChainCommand): Promise<TodoCommentChainResponse> {
-    const command = normalizeCommand(input);
-    const outcome = await this.#resolveWrite(command);
+  async execute(command: WriteTodoCommentChainCommand): Promise<TodoCommentsWithViewer> {
+    const { notification, todoViewCache, logger } = this.#dependencies;
+    const request = toRequest(command);
+    const outcome = await this.#resolveWrite(request);
 
     if (outcome.addedCount > 0) {
       const first = requireFirst(outcome.written);
-      await settleAfterCommit(this.#dependencies.logger, [
+      const context = { todoId: command.todoId, userId: command.authorId };
+      await settleAfterCommit(logger, [
         {
           failureEvent: TodoCommentLogEvent.VIEW_CACHE_INVALIDATION_FAILED,
-          context: { todoId: input.todoId, userId: input.authorId },
-          run: () => this.#dependencies.todoViewCache.invalidateForTodo(input.todoId),
+          context,
+          run: () => todoViewCache.invalidateForTodo(command.todoId),
         },
         {
           failureEvent: TodoCommentLogEvent.WRITE_NOTIFICATION_FAILED,
-          context: { todoId: input.todoId, userId: input.authorId },
+          context,
           run: () =>
-            this.#dependencies.notification.notifyCommentsWritten({
+            notification.notifyCommentsWritten({
               recipientId: outcome.recipientId,
-              senderId: input.authorId,
+              senderId: command.authorId,
               senderName: first.authorName,
-              todoId: input.todoId,
+              todoId: command.todoId,
               commentId: first.id,
               threadRootId: outcome.threadRootId,
               replyTarget: outcome.replyTarget,
@@ -148,163 +143,189 @@ export class WriteTodoCommentChainUseCase {
     }
 
     return {
-      comments: outcome.written.map((record) =>
-        toTodoCommentResponse(record, {
-          viewerId: input.authorId,
-          likedCommentIds: outcome.likedCommentIds,
-          blockedAuthorIds: new Set(),
-        }),
-      ),
+      comments: outcome.written,
+      viewer: {
+        viewerId: command.authorId,
+        likedCommentIds: outcome.likedCommentIds,
+        blockedAuthorIds: new Set(),
+      },
     };
   }
 
-  async #resolveWrite(command: TodoCommentChainCommand): Promise<WriteOutcome> {
+  async #resolveWrite(request: TodoCommentChainRequest): Promise<WriteOutcome> {
     try {
-      return await this.#write(command);
+      return await this.#write(request);
     } catch (error) {
       if (!(error instanceof TodoCommentIdempotencyRace)) {
-        throwMappedWriteError(error);
+        throw toWriteError(error);
       }
-
-      try {
-        return await this.#replayAfterRace(command);
-      } catch (replayError) {
-        throwMappedWriteError(replayError);
-      }
+    }
+    try {
+      return await this.#replayAfterRace(request);
+    } catch (error) {
+      throw toWriteError(error);
     }
   }
 
-  #write(command: TodoCommentChainCommand): Promise<WriteOutcome> {
-    return this.#dependencies.unitOfWork.run(async () => {
-      const lockKeys = command.items.map((item) =>
-        TodoCommentLockKeys.request(command.authorId, item.clientRequestId),
+  #write(request: TodoCommentChainRequest): Promise<WriteOutcome> {
+    const { unitOfWork, mutationLock, repository, blockReader } = this.#dependencies;
+    const parentId = request.parentId == null ? null : TodoCommentId.reconstitute(request.parentId);
+    return unitOfWork.run(async () => {
+      const lockKeys = request.items.map((item) =>
+        TodoCommentLockKeys.request(request.authorId, item.clientRequestId),
       );
-      // 답글 수를 바꾸는 묶음 머리까지 삭제와 같은 순서로 한 번에 잠근다. 묶음 머리는 바뀌지 않는다.
+      // 답글 수를 바꾸는 묶음 머리까지 삭제와 같은 순서로 한 번에 잠근다. 묶음 머리는 바뀌지 않는다
       const target =
-        command.parentId == null
-          ? null
-          : await this.#dependencies.repository.findComment(command.todoId, command.parentId);
-      if (command.parentId != null && target == null) {
-        throw new ApplicationException(ErrorCode.TODO_0831, { commentId: command.parentId });
+        parentId == null ? null : await repository.findByIdAndTodoId(parentId, request.todoId);
+      if (parentId != null && target == null) {
+        throw commentNotFound(parentId.value);
       }
       if (target != null) {
         lockKeys.push(
-          ...uniq([target.id.getValue(), target.threadCommentId]).map(TodoCommentLockKeys.comment),
+          ...uniq([target.id.value, target.threadCommentId.value]).map(TodoCommentLockKeys.comment),
         );
       }
-
-      await this.#dependencies.mutationLock.acquire(lockKeys);
-      await assertTodoCommentAccess(this.#dependencies.reader, command.todoId, command.authorId);
-      const replayIds = await this.#dependencies.repository.findCommentChainReplay(command);
+      await mutationLock.acquire(lockKeys);
+      await this.#assertAccess(request);
+      const replayIds = await this.#findReplay(request);
       if (replayIds != null) {
-        return this.#loadReplay(command, replayIds);
+        return this.#loadReplay(request, replayIds);
       }
 
       const replyTarget =
-        command.parentId == null
-          ? null
-          : await this.#dependencies.repository.findComment(command.todoId, command.parentId);
-      if (command.parentId != null && replyTarget == null) {
-        throw new ApplicationException(ErrorCode.TODO_0831, { commentId: command.parentId });
+        parentId == null ? null : await repository.findByIdAndTodoId(parentId, request.todoId);
+      if (parentId != null && replyTarget == null) {
+        throw commentNotFound(parentId.value);
       }
       if (replyTarget != null) {
-        await assertNotBlocked(
-          this.#dependencies.blockReader,
-          command.authorId,
-          replyTarget.authorId,
-        );
-      }
-
-      const thread = replyTarget == null ? null : await this.#findThreadComment(replyTarget);
-      const placement = replyTarget == null ? CommentPlacement.comment() : replyTarget.placeReply();
-      const chain = await this.#dependencies.repository.createCommentChain({
-        todoId: command.todoId,
-        authorId: command.authorId,
-        placement,
-        items: command.items,
-      });
-      await this.#dependencies.repository.increaseTodoCommentCount(
-        command.todoId,
-        chain.createdCount,
-      );
-
-      if (thread != null) {
-        thread.applyReplyAdded(chain.createdCount);
-        if (
-          !(await this.#dependencies.repository.increaseReplyCount(
-            thread.id.getValue(),
-            chain.createdCount,
-          ))
-        ) {
-          throw new ApplicationException(ErrorCode.SYS_0003, { commentId: thread.id.getValue() });
+        const blockedIds = await blockReader.findBlockedCounterpartIds(request.authorId, [
+          replyTarget.authorId.value,
+        ]);
+        if (blockedIds.has(replyTarget.authorId.value)) {
+          throw blockedCounterpart();
         }
       }
-
-      const written = await this.#dependencies.reader.findCommentRecords(
-        command.todoId,
-        chain.commentIds,
+      const thread = replyTarget == null ? null : await this.#findThread(replyTarget);
+      const placement =
+        replyTarget == null ? CommentPlacement.create(null) : replyTarget.placeReply();
+      const created = await this.#createChain(request, placement);
+      await this.#dependencies.engagementCounter.increaseCommentCount(
+        request.todoId,
+        created.length,
       );
-      const first = requireFirst(written);
-      if (written.length !== chain.commentIds.length) {
-        throw new ApplicationException(ErrorCode.SYS_0003);
+      if (thread != null) {
+        thread.addReplies(created.length, this.#dependencies.clock.now());
+        await repository.save(thread);
       }
 
+      const commentIds = created.map((comment) => comment.id.value);
+      const written = await this.#dependencies.reader.listComments(request.todoId, commentIds);
+      const first = requireFirst(written);
+      if (written.length !== commentIds.length) {
+        throw commentStateConflict();
+      }
       return {
         written,
         likedCommentIds: new Set<string>(),
-        addedCount: chain.createdCount,
-        recipientId: replyTarget == null ? first.todoOwnerId : replyTarget.authorId,
-        threadRootId: replyTarget == null ? first.id : replyTarget.threadCommentId,
-        replyTarget: toReplyTargetKind(replyTarget),
+        addedCount: created.length,
+        recipientId: replyTarget == null ? first.todoOwnerId : replyTarget.authorId.value,
+        threadRootId: replyTarget == null ? first.id : replyTarget.threadCommentId.value,
+        replyTarget: replyTarget?.placement.kind ?? null,
       };
     });
   }
 
-  async #findThreadComment(replyTarget: TodoComment): Promise<TodoComment> {
+  // 묶음 안 답글은 작성 시각 순서라 같은 시각에 1ms씩 더해 쓴 순서를 남긴다
+  async #createChain(
+    request: TodoCommentChainRequest,
+    firstPlacement: CommentPlacement,
+  ): Promise<TodoComment[]> {
+    const { repository, clock } = this.#dependencies;
+    const now = clock.now().round({ smallestUnit: "millisecond", roundingMode: "floor" });
+    const authorId = UserId.reconstitute(request.authorId);
+    const requestFingerprint = fingerprintTodoCommentChain(request);
+    const created: TodoComment[] = [];
+    let placement = firstPlacement;
+    for (const [index, item] of request.items.entries()) {
+      const comment = TodoComment.create({
+        id: await repository.nextId(),
+        todoId: request.todoId,
+        authorId,
+        placement,
+        content: TodoCommentContent.reconstitute(item.content),
+        clientRequestId: item.clientRequestId,
+        requestFingerprint,
+        createdAt: now.add({ milliseconds: index }),
+      });
+      if (index === 0 && !placement.isReply && request.items.length > 1) {
+        comment.addReplies(request.items.length - 1, now);
+      }
+      await repository.save(comment);
+      created.push(comment);
+      placement = CommentPlacement.create({ id: comment.id.value, placement });
+    }
+    return created;
+  }
+
+  async #assertAccess(request: TodoCommentChainRequest): Promise<void> {
+    const todoOwnerId = await this.#dependencies.reader.findAccessibleTodoOwnerId(
+      request.todoId,
+      request.authorId,
+    );
+    if (todoOwnerId == null) {
+      throw todoNotFound(request.todoId);
+    }
+  }
+
+  async #findReplay(request: TodoCommentChainRequest): Promise<readonly string[] | null> {
+    const stored = await this.#dependencies.repository.listByAuthorIdAndClientRequestIds(
+      UserId.reconstitute(request.authorId),
+      request.items.map((item) => item.clientRequestId),
+    );
+    const replay = matchTodoCommentChainReplay({ request, stored });
+    if (!replay.ok) {
+      throw new TodoCommentIdempotencyConflict();
+    }
+    return replay.commentIds;
+  }
+
+  async #findThread(replyTarget: TodoComment): Promise<TodoComment> {
     if (!replyTarget.isReply) {
       return replyTarget;
     }
-
-    const thread = await this.#dependencies.repository.findComment(
-      replyTarget.todoId,
+    const thread = await this.#dependencies.repository.findByIdAndTodoId(
       replyTarget.threadCommentId,
+      replyTarget.todoId,
     );
     if (thread == null) {
-      throw new ApplicationException(ErrorCode.SYS_0003, {
-        commentId: replyTarget.threadCommentId,
-      });
+      throw commentStateConflict(replyTarget.threadCommentId.value);
     }
-
     return thread;
   }
 
-  /** unique 제약 위반으로 실패한 트랜잭션은 폐기하고 새 UoW에서 승자의 행을 읽는다. */
-  #replayAfterRace(command: TodoCommentChainCommand): Promise<WriteOutcome> {
+  /** 유니크 제약 위반으로 실패한 트랜잭션은 버리고 새 UoW에서 먼저 저장한 요청의 글을 읽는다 */
+  #replayAfterRace(request: TodoCommentChainRequest): Promise<WriteOutcome> {
     return this.#dependencies.unitOfWork.run(async () => {
-      await assertTodoCommentAccess(this.#dependencies.reader, command.todoId, command.authorId);
-      const replayIds = await this.#dependencies.repository.findCommentChainReplay(command);
+      await this.#assertAccess(request);
+      const replayIds = await this.#findReplay(request);
       if (replayIds == null) {
-        throw new ApplicationException(ErrorCode.SYS_0003);
+        throw commentStateConflict();
       }
-
-      return this.#loadReplay(command, replayIds);
+      return this.#loadReplay(request, replayIds);
     });
   }
 
   async #loadReplay(
-    command: TodoCommentChainCommand,
+    request: TodoCommentChainRequest,
     commentIds: readonly string[],
   ): Promise<WriteOutcome> {
-    const written = await this.#dependencies.reader.findCommentRecords(command.todoId, commentIds);
+    const { reader } = this.#dependencies;
+    const written = await reader.listComments(request.todoId, commentIds);
     const first = requireFirst(written);
     if (written.length !== commentIds.length) {
       throw new TodoCommentIdempotencyConflict();
     }
-
-    const likedCommentIds = await this.#dependencies.reader.findLikedCommentIds(
-      commentIds,
-      command.authorId,
-    );
+    const likedCommentIds = await reader.listLikedCommentIds(commentIds, request.authorId);
     return {
       written,
       likedCommentIds,

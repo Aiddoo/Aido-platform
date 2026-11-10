@@ -2,6 +2,7 @@ import type {
   TodoComment,
   TodoCommentAuthor,
   TodoCommentChainResponse,
+  TodoCommentLikeResponse,
   TodoCommentMutationResponse,
   TodoCommentOverviewResponse,
   TodoCommentV2Author,
@@ -9,23 +10,31 @@ import type {
   TodoConversationItem,
   TodoConversationResponse,
   TodoDetailsResponse,
-} from "@aido/api";
+} from "@aido/api/contracts/todo-comment";
 
+import { toFriendTodoResponse } from "#api/modules/planning/todos/planning-todos.public";
 import { resolveProfileImage } from "#api/platform/http/profile/profile-image.resolver";
 
 import type {
+  TodoCommentLikeState,
   TodoCommentReadModel,
+  TodoCommentsWithViewer,
   TodoCommentThreadsPage,
+  TodoCommentWithViewer,
   TodoCommentViewer,
+  TodoConversationPage,
+  TodoDetailsReadModel,
 } from "../../../application/read-models/todo-comment.read-model.js";
+import { getTodoDetailsPermissions } from "../../../domain/todo-comment-permission.domain-service.js";
 import {
-  toTodoCommentParticipantAuthor,
-  toTodoCommentView,
+  toTodoCommentCursorPagination,
+  toTodoCommentV2,
+  toVisibleParticipantAuthors,
   toVisiblePreviewReply,
 } from "../v2/todo-comment-response.mapper.js";
 
-/** v1 작성자는 userTag가 optional이라 값이 없으면 키를 뺀다. */
-export function toTodoCommentAuthorResponse(author: TodoCommentV2Author): TodoCommentAuthor {
+/** v1 작성자는 userTag가 optional이라 값이 없으면 키를 뺀다 */
+function toTodoCommentAuthorResponse(author: TodoCommentV2Author): TodoCommentAuthor {
   return {
     id: author.id,
     name: author.name,
@@ -35,13 +44,13 @@ export function toTodoCommentAuthorResponse(author: TodoCommentV2Author): TodoCo
   };
 }
 
-/** 1.14.0 이하 앱은 parentId·depth로 들여쓰기를 그린다. 2단계라 parentId는 묶음 머리다. */
+/** 1.14.0 이하 앱은 parentId·depth로 들여쓰기를 그린다. 2단계라 parentId는 묶음 머리다 */
 export function toTodoCommentResponse(
-  record: TodoCommentReadModel,
+  comment: TodoCommentReadModel,
   viewer: TodoCommentViewer,
+  appVersion?: string,
 ): TodoComment {
-  const view = toTodoCommentView(record, viewer);
-
+  const view = toTodoCommentV2(comment, viewer, appVersion);
   return {
     id: view.id,
     threadId: view.threadCommentId ?? view.id,
@@ -62,35 +71,36 @@ export function toTodoCommentResponse(
 }
 
 export function toTodoCommentOverviewResponse(
-  result: TodoCommentThreadsPage,
+  page: TodoCommentThreadsPage,
+  appVersion?: string,
 ): TodoCommentOverviewResponse {
   return {
-    items: result.items.map((item) => {
-      const previewReply = toVisiblePreviewReply(item, result.viewer);
+    items: page.items.map((item) => {
+      const previewReply = toVisiblePreviewReply(item, page.viewer);
       const hiddenCount = Math.max(0, item.totalCount - (previewReply == null ? 0 : 1));
-
       return {
-        comment: toTodoCommentResponse(item.comment, result.viewer),
+        comment: toTodoCommentResponse(item.comment, page.viewer, appVersion),
+        // 차단한 작성자의 대표 답글도 1.14.0 이하 앱에는 가린 묘비로 그대로 싣는다
         previewReply:
           item.previewReply == null
             ? null
-            : toTodoCommentResponse(item.previewReply, result.viewer),
+            : toTodoCommentResponse(item.previewReply, page.viewer, appVersion),
         replySummary: {
           totalCount: item.totalCount,
           hiddenCount,
           hasMore: hiddenCount > 0,
-          participantAuthors: item.participantAuthors
-            .filter((author) => !result.viewer.blockedAuthorIds.has(author.id))
-            .map((author) => toTodoCommentAuthorResponse(toTodoCommentParticipantAuthor(author))),
+          participantAuthors: toVisibleParticipantAuthors(item, page.viewer, appVersion).map(
+            toTodoCommentAuthorResponse,
+          ),
         },
       };
     }),
-    pagination: result.pagination,
+    pagination: toTodoCommentCursorPagination(page.pagination),
   };
 }
 
-function toVisualDepth(record: TodoCommentReadModel): 0 | 1 {
-  return record.threadCommentId == null ? 0 : 1;
+function toVisualDepth(comment: TodoCommentReadModel): 0 | 1 {
+  return comment.threadCommentId == null ? 0 : 1;
 }
 
 /**
@@ -98,13 +108,12 @@ function toVisualDepth(record: TodoCommentReadModel): 0 | 1 {
  * 다음 행이 같은 묶음의 답글이면 lane이 이어진다.
  */
 function toConversationConnection(
-  record: TodoCommentReadModel,
-  nextRecord: TodoCommentReadModel | null | undefined,
+  comment: TodoCommentReadModel,
+  next: TodoCommentReadModel | null | undefined,
 ): TodoConversationConnection {
-  const visualDepth = toVisualDepth(record);
-  const threadCommentId = record.threadCommentId ?? record.id;
-  const continuesThread = nextRecord?.threadCommentId === threadCommentId;
-
+  const visualDepth = toVisualDepth(comment);
+  const threadCommentId = comment.threadCommentId ?? comment.id;
+  const continuesThread = next?.threadCommentId === threadCommentId;
   return {
     visualDepth,
     upperLaneDepths: visualDepth === 0 ? [] : [0],
@@ -113,96 +122,99 @@ function toConversationConnection(
   };
 }
 
-export function toTodoConversationItems(input: {
-  records: readonly TodoCommentReadModel[];
-  nextRecord: TodoCommentReadModel | null;
-  focusCommentId: string | null;
-  viewer: TodoCommentViewer;
+export function toTodoConversationItems(params: {
+  readonly comments: readonly TodoCommentReadModel[];
+  readonly nextComment: TodoCommentReadModel | null;
+  readonly focusCommentId: string | null;
+  readonly viewer: TodoCommentViewer;
+  readonly appVersion?: string;
 }): TodoConversationItem[] {
-  return input.records.map((record, index) => ({
-    comment: toTodoCommentResponse(record, input.viewer),
+  return params.comments.map((comment, index) => ({
+    comment: toTodoCommentResponse(comment, params.viewer, params.appVersion),
     connection: toConversationConnection(
-      record,
-      index === input.records.length - 1 ? input.nextRecord : input.records[index + 1],
+      comment,
+      index === params.comments.length - 1 ? params.nextComment : params.comments[index + 1],
     ),
-    isFocused: record.id === input.focusCommentId,
+    isFocused: comment.id === params.focusCommentId,
   }));
 }
 
-/** focus 답글 앞에 따로 싣는 묶음 머리. 아래 lane만 열어 focus 쪽으로 이어진다. */
-export function toTodoConversationAncestorItems(input: {
-  records: readonly TodoCommentReadModel[];
-  viewer: TodoCommentViewer;
+/** focus 답글 앞에 따로 싣는 묶음 머리. 아래 lane만 열어 focus 쪽으로 이어진다 */
+export function toTodoConversationAncestorItems(params: {
+  readonly comments: readonly TodoCommentReadModel[];
+  readonly viewer: TodoCommentViewer;
+  readonly appVersion?: string;
 }): TodoConversationItem[] {
-  return input.records.map((record) => ({
-    comment: toTodoCommentResponse(record, input.viewer),
-    connection: {
-      visualDepth: 0,
-      upperLaneDepths: [],
-      lowerLaneDepths: [0],
-      incomingBranch: null,
-    },
+  return params.comments.map((comment) => ({
+    comment: toTodoCommentResponse(comment, params.viewer, params.appVersion),
+    connection: { visualDepth: 0, upperLaneDepths: [], lowerLaneDepths: [0], incomingBranch: null },
     isFocused: false,
   }));
 }
 
-const toComment = (comment: TodoComment, appVersion?: string): TodoComment => ({
-  ...comment,
-  author: comment.author && {
-    ...comment.author,
-    profileImage: resolveProfileImage(comment.author.profileImage, appVersion),
-  },
-});
+export function toTodoConversationResponse(
+  page: TodoConversationPage,
+  appVersion?: string,
+): TodoConversationResponse {
+  return {
+    items: toTodoConversationItems({
+      comments: page.items,
+      nextComment: page.nextItem,
+      focusCommentId: page.focus?.commentId ?? null,
+      viewer: page.viewer,
+      appVersion,
+    }),
+    focus:
+      page.focus == null
+        ? null
+        : {
+            commentId: page.focus.commentId,
+            itemIndex: page.focus.itemIndex,
+            precedingAncestors: toTodoConversationAncestorItems({
+              comments: page.focus.precedingThreadComments,
+              viewer: page.viewer,
+              appVersion,
+            }),
+            omittedAncestorCount: 0,
+          },
+    pagination: toTodoCommentCursorPagination(page.pagination),
+  };
+}
 
-export const TodoCommentMapper = {
-  toDetails: (result: TodoDetailsResponse, appVersion?: string): TodoDetailsResponse => ({
-    ...result,
+export function toTodoCommentChainResponse(
+  written: TodoCommentsWithViewer,
+  appVersion?: string,
+): TodoCommentChainResponse {
+  return {
+    comments: written.comments.map((comment) =>
+      toTodoCommentResponse(comment, written.viewer, appVersion),
+    ),
+  };
+}
+
+export function toTodoCommentMutationResponse(
+  updated: TodoCommentWithViewer,
+  appVersion?: string,
+): TodoCommentMutationResponse {
+  return { comment: toTodoCommentResponse(updated.comment, updated.viewer, appVersion) };
+}
+
+export function toTodoCommentLikeResponse(state: TodoCommentLikeState): TodoCommentLikeResponse {
+  return { commentId: state.commentId, isLiked: state.isLiked, likeCount: state.likeCount };
+}
+
+export function toTodoDetailsResponse(
+  details: TodoDetailsReadModel,
+  appVersion?: string,
+): TodoDetailsResponse {
+  return {
+    todo: toFriendTodoResponse(details.todo),
     owner: {
-      ...result.owner,
-      profileImage: resolveProfileImage(result.owner.profileImage, appVersion),
+      id: details.owner.id,
+      name: details.owner.name,
+      profileImage: resolveProfileImage(details.owner.profileImage, appVersion),
     },
-  }),
-  toOverview: (
-    result: TodoCommentOverviewResponse,
-    appVersion?: string,
-  ): TodoCommentOverviewResponse => ({
-    ...result,
-    items: result.items.map((item) => ({
-      ...item,
-      comment: toComment(item.comment, appVersion),
-      previewReply: item.previewReply && toComment(item.previewReply, appVersion),
-      replySummary: {
-        ...item.replySummary,
-        participantAuthors: item.replySummary.participantAuthors.map((author) => ({
-          ...author,
-          profileImage: resolveProfileImage(author.profileImage, appVersion),
-        })),
-      },
-    })),
-  }),
-  toConversation: (
-    result: TodoConversationResponse,
-    appVersion?: string,
-  ): TodoConversationResponse => ({
-    ...result,
-    items: result.items.map((item) => ({ ...item, comment: toComment(item.comment, appVersion) })),
-    focus: result.focus && {
-      ...result.focus,
-      precedingAncestors: result.focus.precedingAncestors.map((item) => ({
-        ...item,
-        comment: toComment(item.comment, appVersion),
-      })),
-    },
-  }),
-  toChain: (result: TodoCommentChainResponse, appVersion?: string): TodoCommentChainResponse => ({
-    ...result,
-    comments: result.comments.map((comment) => toComment(comment, appVersion)),
-  }),
-  toMutation: (
-    result: TodoCommentMutationResponse,
-    appVersion?: string,
-  ): TodoCommentMutationResponse => ({
-    ...result,
-    comment: toComment(result.comment, appVersion),
-  }),
-};
+    permissions: getTodoDetailsPermissions(details.isOwner),
+    metrics: { viewCount: details.viewCount, commentCount: details.commentCount },
+  };
+}

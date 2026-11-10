@@ -27,7 +27,6 @@ import {
   toTodoCommentRepliesResponse,
   toTodoCommentThreadsResponse,
 } from "./todo-comment-response.mapper.js";
-import { TodoCommentV2Mapper } from "./todo-comment-response.mapper.js";
 import {
   GetTodoCommentRepliesQueryDto,
   GetTodoCommentThreadsQueryDto,
@@ -99,7 +98,7 @@ export class TodoCommentV2Controller {
       size: query.size,
       page: toThreadsPage(query),
     });
-    return TodoCommentV2Mapper.toThreads(toTodoCommentThreadsResponse(result), appVersion);
+    return toTodoCommentThreadsResponse(result, appVersion);
   }
 
   @Get(":commentId/replies")
@@ -138,6 +137,6 @@ export class TodoCommentV2Controller {
       cursor: query.cursor,
       aroundReplyId: query.aroundReplyId,
     });
-    return TodoCommentV2Mapper.toReplies(toTodoCommentRepliesResponse(result), appVersion);
+    return toTodoCommentRepliesResponse(result, appVersion);
   }
 }

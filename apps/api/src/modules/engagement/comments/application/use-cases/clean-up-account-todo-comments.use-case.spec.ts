@@ -1,95 +1,98 @@
-import { vi } from "vitest";
-
+import { DELETED_COMMENT_AUTHOR } from "#api/modules/engagement/comments/domain/comments.constants";
 import {
-  createEngagementCommentFixture,
-  ENGAGEMENT_TIME,
-  ENGAGEMENT_OWNER_ID,
-} from "#test/fixtures/engagement-comment.fixture";
+  createTodoCommentLikeFixture,
+  TODO_COMMENT_FIXTURE_FRIEND_ID,
+  TODO_COMMENT_FIXTURE_OWNER_ID,
+  TODO_COMMENT_FIXTURE_TODO_ID,
+  TODO_COMMENT_FIXTURE_VIEWER_ID,
+} from "#test/fixtures/engagement/todo-comment.fixture";
+import {
+  createTodoCommentsFixture,
+  type TodoCommentsFixture,
+} from "#test/fixtures/engagement/todo-comments.fixture";
 
-import type { TodoCommentPurgeRepositoryPort } from "../ports/todo-comment-purge.repository.port.js";
+import { TodoCommentLockKeys } from "../comments.lock-keys.js";
+import { TodoCommentLogEvent } from "../comments.log-events.js";
 import { CleanUpAccountTodoCommentsUseCase } from "./clean-up-account-todo-comments.use-case.js";
+import { InvalidateCleanedTodoCachesUseCase } from "./invalidate-cleaned-todo-caches.use-case.js";
+
+const TODO_ID = TODO_COMMENT_FIXTURE_TODO_ID;
 
 describe("CleanUpAccountTodoCommentsUseCase — 계정 정리 경계", () => {
-  let fixture: ReturnType<typeof createEngagementCommentFixture>;
+  let fixture: TodoCommentsFixture;
+
   beforeEach(() => {
-    vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(ENGAGEMENT_TIME);
-    fixture = createEngagementCommentFixture();
-  });
-  afterEach(() => vi.useRealTimers());
-
-  it("정리 대상 잠금이 끝난 뒤 Store에 동일 계획을 전달하고 영향받은 Todo를 반환한다", async () => {
-    // Given
-    const comment = fixture.addComment();
-    const plan = { affectedTodoIds: [8, 13], commentIdsToLock: [comment.id] };
-    const lockKeys: string[] = [];
-    fixture.mutationLock.acquire = async (keys) => {
-      lockKeys.push(...keys);
-    };
-    let cleanedUserId: string | undefined;
-    const store: TodoCommentPurgeRepositoryPort = {
-      async plan(_userId) {
-        return structuredClone(plan);
-      },
-      async cleanup(userId, cleanupPlan) {
-        expect(lockKeys).toEqual([`mutation:v1:todo-comment:${comment.id}`]);
-        expect(cleanupPlan).toEqual(plan);
-        cleanedUserId = userId;
-      },
-    };
-    // When
-    const result = await new CleanUpAccountTodoCommentsUseCase({
-      ...fixture,
-      store,
-    }).cleanupInTransaction(ENGAGEMENT_OWNER_ID);
-    // Then
-    expect(cleanedUserId).toBe(ENGAGEMENT_OWNER_ID);
-    expect(result).toEqual({ affectedTodoIds: [8, 13] });
+    fixture = createTodoCommentsFixture();
   });
 
-  it("정리 대상 댓글이 없어도 사용자 참조 최종 확인을 실행하고 잠금은 요청하지 않는다", async () => {
+  it("정리할 글을 모두 잠근 뒤 할 일 수를 잠그고, 묘비로 남긴 글을 빼고 다시 센 댓글 수를 planning에 넘긴다", async () => {
     // Given
-    const lock = vi.spyOn(fixture.mutationLock, "acquire");
-    let cleaned = false;
-    const store: TodoCommentPurgeRepositoryPort = {
-      async plan() {
-        return { affectedTodoIds: [], commentIdsToLock: [] };
-      },
-      async cleanup() {
-        cleaned = true;
-      },
-    };
-    // When
-    const result = await new CleanUpAccountTodoCommentsUseCase({
-      ...fixture,
-      store,
-    }).cleanupInTransaction(ENGAGEMENT_OWNER_ID);
-    // Then
-    expect(cleaned).toBe(true);
-    expect(result.affectedTodoIds).toEqual([]);
-    expect(lock).not.toHaveBeenCalled();
-  });
-
-  it("첫 캐시 정리가 실패해도 나머지 Todo를 정리하고 완료된 계정 삭제를 실패로 바꾸지 않는다", async () => {
-    // Given
-    const invalidate = fixture.todoViewCache.invalidateForTodo.bind(fixture.todoViewCache);
-    vi.spyOn(fixture.todoViewCache, "invalidateForTodo").mockImplementation(async (todoId) => {
-      if (todoId === 8) {
-        throw new Error("private cache failure");
-      }
-      return invalidate(todoId);
+    const head = await fixture.addComment({
+      authorId: TODO_COMMENT_FIXTURE_FRIEND_ID,
+      replyCount: 1,
     });
-    const warning = vi.spyOn(fixture.logger, "warn");
-    const store: TodoCommentPurgeRepositoryPort = {
-      async plan() {
-        return { affectedTodoIds: [], commentIdsToLock: [] };
-      },
-      async cleanup() {},
-    };
-    const cleanup = new CleanUpAccountTodoCommentsUseCase({ ...fixture, store });
-    // When / Then
-    await expect(cleanup.settleAfterCommit({ affectedTodoIds: [8, 13] })).resolves.toBeUndefined();
-    expect(fixture.invalidatedTodoIds).toEqual([13]);
-    expect(JSON.stringify(warning.mock.calls)).not.toContain("private cache failure");
+    const reply = await fixture.addComment({
+      authorId: TODO_COMMENT_FIXTURE_VIEWER_ID,
+      parentId: head.id.value,
+      replyToCommentId: head.id.value,
+    });
+    await fixture.likeRepository.save(createTodoCommentLikeFixture({ commentId: head.id.value }));
+
+    // When
+    const result = await new CleanUpAccountTodoCommentsUseCase(fixture).execute({
+      userId: TODO_COMMENT_FIXTURE_VIEWER_ID,
+    });
+
+    // Then
+    expect(result).toEqual({ affectedTodoIds: [TODO_ID] });
+    expect(fixture.mutationLock.acquiredKeys).toEqual([
+      [head.id.value, reply.id.value].toSorted().map(TodoCommentLockKeys.comment),
+    ]);
+    expect(fixture.engagementCounter.lockedTodoIds).toEqual([[TODO_ID]]);
+    expect(fixture.engagementCounter.commentCounts.get(TODO_ID)).toBe(1);
+    const stored = new Map(fixture.repository.list().map((comment) => [comment.id.value, comment]));
+    expect(stored.get(reply.id.value)?.toPrimitives()).toMatchObject({
+      authorId: DELETED_COMMENT_AUTHOR.id,
+      content: null,
+      requestFingerprint: null,
+    });
+    expect(stored.get(head.id.value)?.replyCount).toBe(0);
+    expect(fixture.likeRepository.list()).toEqual([]);
+  });
+
+  it("정리할 글이 없으면 잠그지 않고 할 일 수도 건드리지 않는다", async () => {
+    // Given
+    await fixture.addComment({ authorId: TODO_COMMENT_FIXTURE_OWNER_ID });
+
+    // When
+    const result = await new CleanUpAccountTodoCommentsUseCase(fixture).execute({
+      userId: TODO_COMMENT_FIXTURE_VIEWER_ID,
+    });
+
+    // Then
+    expect(result).toEqual({ affectedTodoIds: [] });
+    expect(fixture.mutationLock.acquiredKeys).toEqual([]);
+    expect(fixture.engagementCounter.lockedTodoIds).toEqual([]);
+  });
+});
+
+describe("InvalidateCleanedTodoCachesUseCase — 계정 정리 뒤 캐시", () => {
+  it("첫 캐시 정리가 실패해도 나머지 할 일을 정리하고 오류 원문을 로그에 남기지 않는다", async () => {
+    // Given
+    const fixture = createTodoCommentsFixture();
+    fixture.todoViewCache.failures.set(8, new Error("private cache failure"));
+
+    // When
+    await new InvalidateCleanedTodoCachesUseCase(fixture).execute({ todoIds: [8, 13] });
+
+    // Then
+    expect(fixture.todoViewCache.invalidatedTodoIds).toEqual([13]);
+    expect(fixture.logger.messages).toEqual([
+      expect.objectContaining({
+        event: TodoCommentLogEvent.ACCOUNT_CLEANUP_CACHE_INVALIDATION_FAILED,
+        todoId: 8,
+      }),
+    ]);
+    expect(JSON.stringify(fixture.logger.messages)).not.toContain("private cache failure");
   });
 });

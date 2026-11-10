@@ -4,8 +4,8 @@ import { join } from "node:path";
 import { eq, sql } from "drizzle-orm";
 import { z } from "zod";
 
+import { DELETED_COMMENT_AUTHOR } from "#api/modules/engagement/comments/domain/comments.constants";
 import { account, user } from "#api/platform/database/schema/index";
-import { DELETED_COMMENT_AUTHOR } from "#api/shared/domain/system-user";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
 const foreignKeyRuleSchema = z.object({

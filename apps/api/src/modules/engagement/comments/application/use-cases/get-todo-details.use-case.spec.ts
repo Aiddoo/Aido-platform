@@ -1,71 +1,85 @@
-import { vi } from "vitest";
+import { ErrorCode } from "@aido/api/errors";
 
-import { TodoBuilder } from "#test/builders/todo.builder";
 import {
-  createEngagementCommentFixture,
-  ENGAGEMENT_TIME,
-  ENGAGEMENT_OWNER_ID,
-  ENGAGEMENT_VIEWER_ID,
-} from "#test/fixtures/engagement-comment.fixture";
-import { createTodoResponseFixture } from "#test/fixtures/todo-response.fixture";
+  TODO_COMMENT_FIXTURE_FRIEND_ID,
+  TODO_COMMENT_FIXTURE_OWNER_ID,
+  TODO_COMMENT_FIXTURE_TODO_ID,
+  TODO_COMMENT_FIXTURE_VIEWER_ID,
+} from "#test/fixtures/engagement/todo-comment.fixture";
+import {
+  createTodoCommentsFixture,
+  type TodoCommentsFixture,
+} from "#test/fixtures/engagement/todo-comments.fixture";
+import { createTodoReadModelFixture } from "#test/fixtures/planning/todo-read-model.fixture";
 
 import { GetTodoDetailsUseCase } from "./get-todo-details.use-case.js";
 
-describe("GetTodoDetailsUseCase — 할 일 상세 조회와 방문 기록", () => {
-  let fixture: ReturnType<typeof createEngagementCommentFixture>;
-  let useCase: GetTodoDetailsUseCase;
+const TODO_ID = TODO_COMMENT_FIXTURE_TODO_ID;
+
+describe("GetTodoDetailsUseCase — 할 일 상세와 조회 수", () => {
+  let fixture: TodoCommentsFixture;
+
   beforeEach(() => {
-    vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(ENGAGEMENT_TIME);
-    fixture = createEngagementCommentFixture();
-    fixture.reader.details.set(1, {
-      todo: createTodoResponseFixture(
-        TodoBuilder.create(ENGAGEMENT_OWNER_ID).withId(1).withStartDate(ENGAGEMENT_TIME).build(),
-      ),
-      owner: { id: ENGAGEMENT_OWNER_ID, name: "작성자", profileImage: null },
-      viewCount: 7,
-      commentCount: 3,
+    fixture = createTodoCommentsFixture();
+    fixture.reader.details.set(TODO_ID, {
+      todo: createTodoReadModelFixture({ id: TODO_ID, userId: TODO_COMMENT_FIXTURE_OWNER_ID }),
+      owner: { id: TODO_COMMENT_FIXTURE_OWNER_ID, name: "작성자", profileImage: null },
+      viewCount: 3,
+      commentCount: 2,
       isOwner: false,
     });
-    fixture.repository.viewCounts.set(1, 7);
-    useCase = new GetTodoDetailsUseCase({
-      todoCommentReader: fixture.reader,
-      todoCommentRepository: fixture.repository,
-      unitOfWork: fixture.unitOfWork,
+    fixture.engagementCounter.viewCounts.set(TODO_ID, 3);
+  });
+
+  it("주인이 열면 조회 수를 올리지 않는다", async () => {
+    // When
+    const details = await new GetTodoDetailsUseCase(fixture).execute({
+      todoId: TODO_ID,
+      viewerId: TODO_COMMENT_FIXTURE_OWNER_ID,
     });
-  });
-  afterEach(() => vi.useRealTimers());
 
-  it("소유자는 조회수를 추가하지 않고 편집 권한을 받는다", async () => {
-    // Given / When
-    const result = await useCase.execute({ todoId: 1, viewerId: ENGAGEMENT_OWNER_ID });
     // Then
-    expect(result.permissions).toEqual({ canEdit: true, canComment: true, canNudge: false });
-    expect(result.metrics).toEqual({ viewCount: 7, commentCount: 3 });
-    expect(fixture.repository.views.size).toBe(0);
-    expect(fixture.repository.viewCounts.get(1)).toBe(7);
+    expect({ isOwner: details.isOwner, viewCount: details.viewCount }).toEqual({
+      isOwner: true,
+      viewCount: 3,
+    });
+    expect(fixture.engagementCounter.viewCounts.get(TODO_ID)).toBe(3);
   });
 
-  it("같은 방문자의 반복 조회는 조회수를 한 번만 늘리고 방문자 권한을 유지한다", async () => {
-    // Given / When
-    const first = await useCase.execute({ todoId: 1, viewerId: ENGAGEMENT_VIEWER_ID });
-    const second = await useCase.execute({ todoId: 1, viewerId: ENGAGEMENT_VIEWER_ID });
-    // Then
-    expect(first.permissions).toEqual({ canEdit: false, canComment: true, canNudge: true });
-    expect(first.metrics.viewCount).toBe(8);
-    expect(second.metrics.viewCount).toBe(8);
-    expect(fixture.repository.views.size).toBe(1);
-    expect(fixture.repository.viewCounts.get(1)).toBe(8);
-  });
-
-  it("접근할 수 없는 할 일은 TODO_0801로 거부하고 조회수를 기록하지 않는다", async () => {
+  it("같은 방문자가 여러 번 열어도 조회 수는 한 번만 늘린다", async () => {
     // Given
-    fixture.reader.accessiblePairs.delete(`1:${ENGAGEMENT_VIEWER_ID}`);
-    // When / Then
-    await expect(
-      useCase.execute({ todoId: 1, viewerId: ENGAGEMENT_VIEWER_ID }),
-    ).rejects.toMatchObject({ errorCode: "TODO_0801" });
-    expect(fixture.repository.views.size).toBe(0);
-    expect(fixture.repository.viewCounts.get(1)).toBe(7);
+    const useCase = new GetTodoDetailsUseCase(fixture);
+
+    // When
+    const first = await useCase.execute({
+      todoId: TODO_ID,
+      viewerId: TODO_COMMENT_FIXTURE_VIEWER_ID,
+    });
+    const second = await useCase.execute({
+      todoId: TODO_ID,
+      viewerId: TODO_COMMENT_FIXTURE_VIEWER_ID,
+    });
+    const other = await useCase.execute({
+      todoId: TODO_ID,
+      viewerId: TODO_COMMENT_FIXTURE_FRIEND_ID,
+    });
+
+    // Then
+    expect([first.viewCount, second.viewCount, other.viewCount]).toEqual([4, 4, 5]);
+  });
+
+  it("볼 수 없는 할 일은 TODO_0801로 거부하고 조회를 남기지 않는다", async () => {
+    // Given
+    fixture.reader.revokeAccess(TODO_ID, TODO_COMMENT_FIXTURE_VIEWER_ID);
+
+    // When
+    const opening = new GetTodoDetailsUseCase(fixture).execute({
+      todoId: TODO_ID,
+      viewerId: TODO_COMMENT_FIXTURE_VIEWER_ID,
+    });
+
+    // Then
+    await expect(opening).rejects.toMatchObject({ errorCode: ErrorCode.TODO_0801 });
+    expect(fixture.engagementCounter.viewCounts.get(TODO_ID)).toBe(3);
   });
 });

@@ -1,17 +1,15 @@
-import {
-  todoConversationItemSchema,
-  type TodoComment,
-  type TodoCommentOverviewResponse,
-} from "@aido/api";
+import { todoConversationItemSchema } from "@aido/api/contracts/todo-comment";
 
 import {
-  createCommentRecordFixture,
-  createViewerContextFixture,
-} from "#test/fixtures/engagement-comment.fixture";
+  createTodoCommentReadModelFixture,
+  createTodoCommentReadModelFixture as createCommentRecordFixture,
+  createTodoCommentViewerFixture,
+  createTodoCommentViewerFixture as createViewerContextFixture,
+} from "#test/fixtures/engagement/todo-comment.fixture";
 
 import type { TodoCommentReadModel } from "../../../application/read-models/todo-comment.read-model.js";
 import {
-  TodoCommentMapper,
+  toTodoCommentOverviewResponse,
   toTodoCommentResponse,
   toTodoConversationAncestorItems,
   toTodoConversationItems,
@@ -80,14 +78,17 @@ function createRecord(
     replyCount: 0,
     deletedAt: null,
     editedAt: null,
-    createdAt: "2026-08-26T00:00:00.000Z",
+    createdAt: Temporal.Instant.from("2026-08-26T00:00:00.000Z"),
   };
 }
 
-function toItems(records: TodoCommentReadModel[], nextRecord: TodoCommentReadModel | null = null) {
+function toItems(
+  comments: TodoCommentReadModel[],
+  nextComment: TodoCommentReadModel | null = null,
+) {
   return toTodoConversationItems({
-    records,
-    nextRecord,
+    comments,
+    nextComment,
     focusCommentId: null,
     viewer: createViewerContextFixture({ viewerId: VIEWER_ID }),
   });
@@ -157,7 +158,7 @@ describe("할 일 대화 응답 변환 (1.14.0 이하 앱)", () => {
 
     // When
     const items = toTodoConversationAncestorItems({
-      records: [comment],
+      comments: [comment],
       viewer: createViewerContextFixture({ viewerId: VIEWER_ID }),
     });
 
@@ -168,41 +169,34 @@ describe("할 일 대화 응답 변환 (1.14.0 이하 앱)", () => {
   });
 });
 
-const createComment = (profileImage: string | null): TodoComment => ({
-  id: "comment-1",
-  threadId: "comment-1",
-  parentId: null,
-  depth: 0,
-  author: { id: "user-1", name: "고양이", profileImage, isTodoOwner: true },
-  content: "안녕",
-  isDeleted: false,
-  isEdited: false,
-  likeCount: 0,
-  replyCount: 1,
-  replyTo: null,
-  viewer: { isLiked: false, canEdit: true, canDelete: true, canReply: true },
-  createdAt: "2026-10-03T00:00:00.000Z",
-  editedAt: null,
-});
-
 describe("댓글 프로필 응답 매핑", () => {
-  it("개요·답글·참여자를 변환해도 원본 프로필은 변경하지 않는다", () => {
+  it("1.10.1보다 낮은 앱에는 작성자·대표 답글·참여자의 새 프로필을 옛 프로필로 바꿔 준다", () => {
     // Given
-    const root = createComment("russian_blue");
-    const reply = createComment("tuxedo_cat");
-    const source: TodoCommentOverviewResponse = {
+    const head = createTodoCommentReadModelFixture({ authorProfileImage: "russian_blue" });
+    const reply = createTodoCommentReadModelFixture({
+      id: "cm1replycomment00000000001",
+      threadCommentId: head.id,
+      replyToCommentId: head.id,
+      authorProfileImage: "tuxedo_cat",
+    });
+    const page = {
       items: [
         {
-          comment: root,
+          comment: { ...head, threadPosition: { rootLikeCount: 0, rootReplyCount: 1 } },
           previewReply: reply,
-          replySummary: {
-            totalCount: 1,
-            hiddenCount: 0,
-            hasMore: false,
-            participantAuthors: root.author ? [root.author] : [],
-          },
+          totalCount: 1,
+          participantAuthors: [
+            {
+              id: head.authorId,
+              name: "고양이",
+              userTag: null,
+              profileImage: "russian_blue",
+              isTodoOwner: true,
+            },
+          ],
         },
       ],
+      viewer: createTodoCommentViewerFixture(),
       pagination: {
         previousCursor: null,
         nextCursor: null,
@@ -210,31 +204,19 @@ describe("댓글 프로필 응답 매핑", () => {
         hasNext: false,
         size: 20,
       },
+      anchor: null,
     };
 
     // When
-    const legacy = TodoCommentMapper.toOverview(source, "1.10.0");
-    const latest = TodoCommentMapper.toOverview(source, "1.10.1");
+    const legacy = toTodoCommentOverviewResponse(page, "1.10.0");
+    const latest = toTodoCommentOverviewResponse(page, "1.10.1");
 
     // Then
-    expect(legacy.items[0]?.comment.author?.profileImage).toBe("scottish_fold");
-    expect(legacy.items[0]?.previewReply?.author?.profileImage).toBe("black_cat");
-    expect(legacy.items[0]?.replySummary.participantAuthors[0]?.profileImage).toBe("scottish_fold");
-    expect(latest).toEqual(source);
-    expect(root.author?.profileImage).toBe("russian_blue");
-    expect(reply.author?.profileImage).toBe("tuxedo_cat");
-  });
-
-  it("삭제된 댓글의 빈 작성자 정보는 보존한다", () => {
-    // Given
-    const comment = { ...createComment(null), author: null, content: null, isDeleted: true };
-
-    // When
-    const result = TodoCommentMapper.toMutation({ comment });
-
-    // Then
-    expect(result.comment.author).toBeNull();
-    expect(result.comment.content).toBeNull();
-    expect(result.comment.isDeleted).toBe(true);
+    expect([
+      legacy.items[0]?.comment.author?.profileImage,
+      legacy.items[0]?.previewReply?.author?.profileImage,
+      legacy.items[0]?.replySummary.participantAuthors[0]?.profileImage,
+    ]).toEqual(["scottish_fold", "black_cat", "scottish_fold"]);
+    expect(latest.items[0]?.comment.author?.profileImage).toBe("russian_blue");
   });
 });

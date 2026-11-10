@@ -1,15 +1,14 @@
-import type { TodoCommentMutationResponse } from "@aido/api";
-import { ErrorCode } from "@aido/api/errors";
+import type { ClockPort } from "#api/shared/application/ports/clock.port";
+import type { MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
+import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import { ApplicationException } from "#api/shared/application/application.exception";
-import { type MutationLockPort, type UnitOfWorkPort } from "#api/shared/application/ports/index";
-import { now } from "#api/shared/domain/date/utils/core";
-
-import { toTodoCommentResponse } from "../../presentation/http/v1/todo-comment-response.mapper.js";
-import { assertTodoCommentAccess } from "../comments.errors.js";
+import { TodoCommentId } from "../../domain/todo-comment-id.vo.js";
+import { commentNotFound, todoNotFound } from "../comments.errors.js";
 import { TodoCommentLockKeys } from "../comments.lock-keys.js";
-import { type TodoCommentReaderPort } from "../ports/todo-comment.reader.port.js";
-import { type TodoCommentRepositoryPort } from "../ports/todo-comment.repository.port.js";
+import type { TodoCommentReaderPort } from "../ports/todo-comment.reader.port.js";
+import type { TodoCommentRepositoryPort } from "../ports/todo-comment.repository.port.js";
+import type { TodoCommentWithViewer } from "../read-models/todo-comment.read-model.js";
 
 export interface UpdateTodoCommentCommand {
   readonly todoId: number;
@@ -19,13 +18,14 @@ export interface UpdateTodoCommentCommand {
 }
 
 interface UpdateTodoCommentDependencies {
+  readonly unitOfWork: UnitOfWorkPort;
+  readonly mutationLock: MutationLockPort;
+  readonly clock: ClockPort;
   readonly reader: Pick<
     TodoCommentReaderPort,
-    "findAccessibleTodoOwnerId" | "findCommentRecord" | "findLikedCommentIds"
+    "findAccessibleTodoOwnerId" | "findComment" | "listLikedCommentIds"
   >;
-  readonly repository: Pick<TodoCommentRepositoryPort, "findComment" | "updateComment">;
-  readonly mutationLock: MutationLockPort;
-  readonly unitOfWork: UnitOfWorkPort;
+  readonly repository: Pick<TodoCommentRepositoryPort, "findByIdAndTodoId" | "save">;
 }
 
 export class UpdateTodoCommentUseCase {
@@ -35,42 +35,31 @@ export class UpdateTodoCommentUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: UpdateTodoCommentCommand): Promise<TodoCommentMutationResponse> {
-    return this.#dependencies.unitOfWork.run(async () => {
-      await this.#dependencies.mutationLock.acquire([TodoCommentLockKeys.comment(input.commentId)]);
-      await assertTodoCommentAccess(this.#dependencies.reader, input.todoId, input.userId);
-      const comment = await this.#dependencies.repository.findComment(
-        input.todoId,
-        input.commentId,
+  execute(command: UpdateTodoCommentCommand): Promise<TodoCommentWithViewer> {
+    const { unitOfWork, mutationLock, clock, reader, repository } = this.#dependencies;
+    return unitOfWork.run(async () => {
+      await mutationLock.acquire([TodoCommentLockKeys.comment(command.commentId)]);
+      if ((await reader.findAccessibleTodoOwnerId(command.todoId, command.userId)) == null) {
+        throw todoNotFound(command.todoId);
+      }
+      const comment = await repository.findByIdAndTodoId(
+        TodoCommentId.reconstitute(command.commentId),
+        command.todoId,
       );
-
       if (comment == null) {
-        throw new ApplicationException(ErrorCode.TODO_0831, { commentId: input.commentId });
+        throw commentNotFound(command.commentId);
       }
+      comment.edit(UserId.reconstitute(command.userId), command.content, clock.now());
+      await repository.save(comment);
 
-      comment.edit(input.userId, input.content, now());
-      if (!(await this.#dependencies.repository.updateComment(comment))) {
-        throw new ApplicationException(ErrorCode.SYS_0003, { commentId: input.commentId });
+      const updated = await reader.findComment(command.todoId, command.commentId);
+      if (updated == null) {
+        throw commentNotFound(command.commentId);
       }
-
-      const updatedComment = await this.#dependencies.reader.findCommentRecord(
-        input.todoId,
-        input.commentId,
-      );
-      if (updatedComment == null) {
-        throw new ApplicationException(ErrorCode.TODO_0831, { commentId: input.commentId });
-      }
-
-      const likedIds = await this.#dependencies.reader.findLikedCommentIds(
-        [input.commentId],
-        input.userId,
-      );
+      const likedCommentIds = await reader.listLikedCommentIds([command.commentId], command.userId);
       return {
-        comment: toTodoCommentResponse(updatedComment, {
-          viewerId: input.userId,
-          likedCommentIds: likedIds,
-          blockedAuthorIds: new Set(),
-        }),
+        comment: updated,
+        viewer: { viewerId: command.userId, likedCommentIds, blockedAuthorIds: new Set() },
       };
     });
   }

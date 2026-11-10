@@ -9,10 +9,7 @@ import {
 import { and, eq } from "drizzle-orm";
 import request from "supertest";
 
-import {
-  TODO_COMMENT_NOTIFICATION,
-  type TodoCommentNotificationPort,
-} from "#api/modules/engagement/comments/application/ports/todo-comment-notification.port";
+import { TodoCommentNotificationPort } from "#api/modules/engagement/comments/application/ports/todo-comment-notification.port";
 import { notification } from "#api/platform/database/schema/index";
 
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
@@ -72,8 +69,7 @@ describe("댓글 상태 HTTP 회귀", () => {
     const todoId = await createTodo(owner.accessToken);
     const privateContent = "알림에 포함되면 안 되는 비공개 댓글 내용";
     const commentId = await writeComment(owner.accessToken, todoId, privateContent);
-    const commentNotification =
-      context.module.get<TodoCommentNotificationPort>(TODO_COMMENT_NOTIFICATION);
+    const commentNotification = context.module.get(TodoCommentNotificationPort);
     vi.spyOn(commentNotification, "notifyCommentLiked").mockRejectedValueOnce(
       new Error("notification fixture failure"),
     );
@@ -109,7 +105,10 @@ describe("댓글 상태 HTTP 회귀", () => {
 
     // Then
     expect(todoCommentLikeResponseSchema.parse(retry.body.data)).toEqual(first.body.data);
-    expect(await findLike()).toMatchObject({ isActive: true, notifiedAt: expect.any(Date) });
+    expect(await findLike()).toMatchObject({
+      isActive: true,
+      notifiedAt: expect.any(Temporal.Instant),
+    });
     expect(await client.query.todoComment.findFirst({ where: { id: commentId } })).toMatchObject({
       likeCount: 1,
     });

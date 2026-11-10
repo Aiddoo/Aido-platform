@@ -1,7 +1,7 @@
-import { EntityId } from "#api/shared/domain/index";
+import { EntityId } from "#api/shared/domain/model/entity-id";
 
 export class TodoCommentId extends EntityId<string> {
-  static create(value: string): TodoCommentId {
+  static reconstitute(value: string): TodoCommentId {
     return new TodoCommentId(value);
   }
 }

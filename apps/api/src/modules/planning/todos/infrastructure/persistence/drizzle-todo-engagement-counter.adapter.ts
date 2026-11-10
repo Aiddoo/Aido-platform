@@ -1,12 +1,13 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
-import { and, eq, gt, sql } from "drizzle-orm";
+import { and, asc, eq, gt, inArray, ne, sql } from "drizzle-orm";
 
 import { requireRecord } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { todo, todoView } from "#api/platform/database/schema/index";
 
 import type {
+  TodoCommentCount,
   TodoEngagementCounterPort,
   TodoViewRecord,
 } from "../../application/ports/todo-engagement-counter.port.js";
@@ -60,5 +61,35 @@ export class DrizzleTodoEngagementCounterAdapter implements TodoEngagementCounte
       await this.#db.query.todo.findFirst({ columns: { viewCount: true }, where: { id: todoId } }),
     );
     return { recorded: false, viewCount: existing.viewCount };
+  }
+
+  async lockCounters(todoIds: readonly number[]): Promise<void> {
+    if (todoIds.length === 0) {
+      return;
+    }
+    await this.#db
+      .select({ id: todo.id })
+      .from(todo)
+      .where(inArray(todo.id, [...todoIds]))
+      .orderBy(asc(todo.id))
+      .for("update");
+  }
+
+  async replaceCommentCounts(counts: readonly TodoCommentCount[]): Promise<void> {
+    if (counts.length === 0) {
+      return;
+    }
+    const rows = sql.join(
+      counts.map(({ todoId, commentCount }) => sql`(${todoId}::integer, ${commentCount}::integer)`),
+      sql`, `,
+    );
+    const desired = sql`(values ${rows}) as desired("todoId", "commentCount")`;
+    await this.#db
+      .update(todo)
+      .set({ commentCount: sql`desired."commentCount"` })
+      .from(desired)
+      .where(
+        and(eq(todo.id, sql`desired."todoId"`), ne(todo.commentCount, sql`desired."commentCount"`)),
+      );
   }
 }

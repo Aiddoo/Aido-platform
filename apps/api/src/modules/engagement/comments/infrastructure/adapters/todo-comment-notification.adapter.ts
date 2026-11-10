@@ -1,5 +1,5 @@
-import { todoCommentNotificationRoutingSchema, NOTIFICATION_ACTION_TYPE } from "@aido/api";
-import type { TodoCommentKind } from "@aido/api/vocabulary";
+import { todoCommentNotificationRoutingSchema } from "@aido/api/contracts/notification";
+import { NOTIFICATION_ACTION_TYPE } from "@aido/api/vocabulary";
 import { Inject, Injectable } from "@nestjs/common";
 
 import {
@@ -10,20 +10,19 @@ import {
   TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY,
 } from "#api/modules/notification/notification-delivery.public";
 
-import type {
-  TodoCommentActivityNotificationInput,
+import {
+  type TodoCommentActivityNotificationInput,
   TodoCommentNotificationPort,
-  TodoCommentWrittenInput,
+  type TodoCommentWrittenInput,
 } from "../../application/ports/todo-comment-notification.port.js";
 
-type TodoCommentNotificationActivity =
-  | { readonly activityKind: "COMMENT"; readonly commentCount: number }
-  | {
-      readonly activityKind: "REPLY";
-      readonly commentCount: number;
-      readonly replyTarget: TodoCommentKind;
-    }
-  | { readonly activityKind: "LIKE" };
+type TodoCommentNotificationCopyInput = Parameters<typeof createTodoCommentNotificationMessage>[0];
+// 문구 입력에서 받는 사람·문맥 칸을 뺀 활동 부분. 종류 목록은 notification 문구가 소유한다
+type TodoCommentNotificationActivity = TodoCommentNotificationCopyInput extends infer Input
+  ? Input extends unknown
+    ? Omit<Input, "senderName" | "locale" | "variantContext">
+    : never
+  : never;
 
 @Injectable()
 export class TodoCommentNotificationAdapter implements TodoCommentNotificationPort {

@@ -36,6 +36,15 @@ function at(offsetMs: number): Date {
   return new Date(T0 + offsetMs);
 }
 
+// 댓글 테이블은 Temporal 칸이라 같은 시각을 Instant로 넣는다
+function instantAt(offsetMs: number): Temporal.Instant {
+  return Temporal.Instant.fromEpochMilliseconds(T0 + offsetMs);
+}
+
+function toInstant(date: Date | undefined): Temporal.Instant | null {
+  return date == null ? null : Temporal.Instant.fromEpochMilliseconds(date.getTime());
+}
+
 function commentId(label: string): string {
   return `cmchar${label.padEnd(19, "0")}`;
 }
@@ -276,15 +285,15 @@ async function seed(client: TestDatabaseClient): Promise<void> {
       replyToCommentId: comment.replyToCommentId ?? null,
       likeCount: comment.likeCount ?? 0,
       replyCount: comment.replyCount ?? 0,
-      deletedAt: comment.deletedAt ?? null,
-      editedAt: comment.editedAt ?? null,
-      createdAt: comment.createdAt,
-      updatedAt: comment.createdAt,
+      deletedAt: toInstant(comment.deletedAt),
+      editedAt: toInstant(comment.editedAt),
+      createdAt: Temporal.Instant.fromEpochMilliseconds(comment.createdAt.getTime()),
+      updatedAt: Temporal.Instant.fromEpochMilliseconds(comment.createdAt.getTime()),
     })),
   );
   await client
     .insert(todoCommentLike)
-    .values(LIKES.map((like) => ({ ...like, createdAt: at(0), updatedAt: at(0) })));
+    .values(LIKES.map((like) => ({ ...like, createdAt: instantAt(0), updatedAt: instantAt(0) })));
 }
 
 describe("댓글 읽기 응답 특성 (실제 PostgreSQL)", () => {
@@ -562,7 +571,7 @@ describe("댓글 읽기 응답 특성 (실제 PostgreSQL)", () => {
     await client.update(todoComment).set({ likeCount: 9 }).where(eq(todoComment.id, ROOT.r6));
     await client
       .update(todoComment)
-      .set({ deletedAt: at(20 * MINUTE_MS), content: null })
+      .set({ deletedAt: instantAt(20 * MINUTE_MS), content: null })
       .where(eq(todoComment.id, ROOT.r1));
 
     // When

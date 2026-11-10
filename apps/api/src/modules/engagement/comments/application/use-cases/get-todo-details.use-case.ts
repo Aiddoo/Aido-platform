@@ -1,12 +1,9 @@
-import type { TodoDetailsResponse } from "@aido/api";
-import { ErrorCode } from "@aido/api/errors";
+import type { TodoEngagementCounterPort } from "#api/modules/planning/todos/planning-todos.public";
+import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 
-import { ApplicationException } from "#api/shared/application/application.exception";
-import { type UnitOfWorkPort } from "#api/shared/application/ports/index";
-
-import { getTodoDetailsPermissions } from "../../domain/todo-comment-permission.domain-service.js";
-import { type TodoCommentReaderPort } from "../ports/todo-comment.reader.port.js";
-import { type TodoCommentRepositoryPort } from "../ports/todo-comment.repository.port.js";
+import { todoNotFound } from "../comments.errors.js";
+import type { TodoCommentReaderPort } from "../ports/todo-comment.reader.port.js";
+import type { TodoDetailsReadModel } from "../read-models/todo-comment.read-model.js";
 
 export interface GetTodoDetailsQuery {
   readonly todoId: number;
@@ -14,11 +11,12 @@ export interface GetTodoDetailsQuery {
 }
 
 interface GetTodoDetailsDependencies {
-  readonly todoCommentReader: Pick<TodoCommentReaderPort, "findAccessibleTodoDetails">;
-  readonly todoCommentRepository: Pick<TodoCommentRepositoryPort, "recordView">;
   readonly unitOfWork: UnitOfWorkPort;
+  readonly reader: Pick<TodoCommentReaderPort, "findAccessibleTodoDetails">;
+  readonly engagementCounter: Pick<TodoEngagementCounterPort, "recordView">;
 }
 
+/** 주인이 아닌 사람이 처음 열 때만 조회 수를 올린다 */
 export class GetTodoDetailsUseCase {
   readonly #dependencies: GetTodoDetailsDependencies;
 
@@ -26,31 +24,18 @@ export class GetTodoDetailsUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: GetTodoDetailsQuery): Promise<TodoDetailsResponse> {
-    return this.#dependencies.unitOfWork.run(async () => {
-      const todoDetails = await this.#dependencies.todoCommentReader.findAccessibleTodoDetails(
-        input.todoId,
-        input.viewerId,
-      );
-
-      if (todoDetails == null) {
-        throw new ApplicationException(ErrorCode.TODO_0801, { todoId: input.todoId });
+  execute(query: GetTodoDetailsQuery): Promise<TodoDetailsReadModel> {
+    const { unitOfWork, reader, engagementCounter } = this.#dependencies;
+    return unitOfWork.run(async () => {
+      const details = await reader.findAccessibleTodoDetails(query.todoId, query.viewerId);
+      if (details == null) {
+        throw todoNotFound(query.todoId);
       }
-
-      const viewCount = todoDetails.isOwner
-        ? todoDetails.viewCount
-        : (await this.#dependencies.todoCommentRepository.recordView(input.todoId, input.viewerId))
-            .viewCount;
-
-      return {
-        todo: todoDetails.todo,
-        owner: todoDetails.owner,
-        permissions: getTodoDetailsPermissions(todoDetails.isOwner),
-        metrics: {
-          viewCount,
-          commentCount: todoDetails.commentCount,
-        },
-      };
+      if (details.isOwner) {
+        return details;
+      }
+      const view = await engagementCounter.recordView(query.todoId, query.viewerId);
+      return { ...details, viewCount: view.viewCount };
     });
   }
 }

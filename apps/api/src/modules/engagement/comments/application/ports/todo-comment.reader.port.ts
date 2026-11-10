@@ -1,35 +1,78 @@
+import type { TodoCommentSort } from "@aido/api/vocabulary";
+
 import type {
-  ListTodoCommentRepliesParams,
-  ListTodoCommentThreadsParams,
-  ListTodoConversationParams,
   TodoCommentReadModel,
+  TodoCommentRootPosition,
   TodoCommentThreadItemReadModel,
   TodoCommentWindow,
   TodoConversationWindow,
   TodoDetailsReadModel,
 } from "../read-models/todo-comment.read-model.js";
+import type {
+  TodoCommentReplyPageMode,
+  TodoCommentThreadPageMode,
+  TodoConversationPageMode,
+  TodoConversationScope,
+} from "../todo-comment-page.constants.js";
 
-export const TODO_COMMENT_READER = Symbol("TODO_COMMENT_READER");
+export interface ListTodoCommentThreadsParams {
+  readonly todoId: number;
+  readonly sort: TodoCommentSort;
+  readonly size: number;
+  readonly mode: TodoCommentThreadPageMode;
+  readonly anchorCommentId?: string;
+  /** cursor에 담긴 인기 점수. 없으면 기준 행의 현재 값을 쓴다 */
+  readonly anchorPosition?: TodoCommentRootPosition;
+}
 
-/** 댓글 읽기 모델의 단일 경계. 쓰기 aggregate와 응답 projection을 섞지 않는다. */
-export interface TodoCommentReaderPort {
-  findAccessibleTodoDetails(todoId: number, viewerId: string): Promise<TodoDetailsReadModel | null>;
+export interface ListTodoCommentRepliesParams {
+  readonly todoId: number;
+  readonly threadCommentId: string;
+  readonly size: number;
+  readonly mode: TodoCommentReplyPageMode;
+  readonly anchorReplyId?: string;
+}
+
+export interface ListTodoConversationParams {
+  readonly todoId: number;
+  readonly sort: TodoCommentSort;
+  readonly size: number;
+  readonly mode: TodoConversationPageMode;
+  readonly scope: TodoConversationScope;
+  readonly anchorCommentId?: string;
+  readonly anchorThreadId?: string;
+  readonly anchorPosition?: TodoCommentRootPosition;
+}
+
+/** 댓글 조회의 단일 경계. 쓰기 Aggregate와 응답용 조회 결과를 섞지 않는다 */
+export abstract class TodoCommentReaderPort {
+  abstract findAccessibleTodoDetails(
+    todoId: number,
+    viewerId: string,
+  ): Promise<TodoDetailsReadModel | null>;
   /** viewer가 볼 수 있는 할 일이면 주인 ID, 없거나 볼 수 없으면 null */
-  findAccessibleTodoOwnerId(todoId: number, viewerId: string): Promise<string | null>;
-  findCommentRecord(todoId: number, commentId: string): Promise<TodoCommentReadModel | null>;
-  findCommentRecords(
+  abstract findAccessibleTodoOwnerId(todoId: number, viewerId: string): Promise<string | null>;
+  abstract findComment(todoId: number, commentId: string): Promise<TodoCommentReadModel | null>;
+  /** 요청한 id 순서대로 찾은 글만 돌려준다 */
+  abstract listComments(
     todoId: number,
     commentIds: readonly string[],
   ): Promise<TodoCommentReadModel[]>;
   /** 기준 묶음을 찾지 못하면 null */
-  listThreads(
+  abstract listThreads(
     params: ListTodoCommentThreadsParams,
   ): Promise<TodoCommentWindow<TodoCommentThreadItemReadModel> | null>;
   /** 기준 답글을 찾지 못하면 null */
-  listReplies(
+  abstract listReplies(
     params: ListTodoCommentRepliesParams,
   ): Promise<TodoCommentWindow<TodoCommentReadModel> | null>;
-  listConversation(params: ListTodoConversationParams): Promise<TodoConversationWindow | null>;
-  findLikedCommentIds(commentIds: readonly string[], viewerId: string): Promise<Set<string>>;
-  findUserDisplayName(userId: string): Promise<string | null>;
+  /** 기준 글을 찾지 못하면 null */
+  abstract listConversation(
+    params: ListTodoConversationParams,
+  ): Promise<TodoConversationWindow | null>;
+  abstract listLikedCommentIds(
+    commentIds: readonly string[],
+    viewerId: string,
+  ): Promise<ReadonlySet<string>>;
+  abstract findUserDisplayName(userId: string): Promise<string | null>;
 }

@@ -1,5 +1,4 @@
-import type { FriendTodo } from "@aido/api";
-
+import type { FriendTodoReadModel } from "#api/modules/planning/todos/planning-todos.public";
 import { requireRecord } from "#api/platform/database/database-error.util";
 import type { todo, todoCategory, todoItem } from "#api/platform/database/schema/index";
 import {
@@ -14,7 +13,7 @@ export type TodoDetailsRow = typeof todo.$inferSelect & {
   items: (typeof todoItem.$inferSelect)[];
 };
 
-export function toTodoResponse(row: TodoDetailsRow): FriendTodo {
+export function toFriendTodoReadModel(row: TodoDetailsRow): FriendTodoReadModel {
   const items = row.items.map((item) => ({
     id: item.id,
     title: item.title,
@@ -28,7 +27,6 @@ export function toTodoResponse(row: TodoDetailsRow): FriendTodo {
     id: row.id,
     userId: row.userId,
     title: row.title,
-    content: null,
     sortOrder: row.sortOrder,
     completed: row.completed,
     completedAt: toISOStringOrNull(row.completedAt),
@@ -38,7 +36,7 @@ export function toTodoResponse(row: TodoDetailsRow): FriendTodo {
     scheduledLocalTime: row.scheduledTime == null ? null : row.scheduledLocalTime,
     isAllDay: row.isAllDay,
     visibility: row.visibility,
-    recurrenceGroupId: row.seriesId,
+    seriesId: row.seriesId,
     category: {
       id: requireRecord(row.category).id,
       name: requireRecord(row.category).name,
@@ -46,10 +44,6 @@ export function toTodoResponse(row: TodoDetailsRow): FriendTodo {
       sortOrder: requireRecord(row.category).sortOrder,
     },
     items,
-    itemStats: {
-      total: items.length,
-      completed: items.filter((item) => item.completed).length,
-    },
     commentCount: row.commentCount,
     createdAt: toISOString(row.createdAt),
     updatedAt: toISOString(row.updatedAt),

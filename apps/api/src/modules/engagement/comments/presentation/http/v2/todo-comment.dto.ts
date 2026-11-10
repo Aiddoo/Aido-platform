@@ -3,7 +3,7 @@ import {
   getTodoCommentThreadsQuerySchema,
   todoCommentRepliesResponseSchema,
   todoCommentThreadsResponseSchema,
-} from "@aido/api";
+} from "@aido/api/contracts/todo-comment";
 import type { z } from "zod";
 
 export const GetTodoCommentThreadsQueryDto = getTodoCommentThreadsQuerySchema.meta({

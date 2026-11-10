@@ -2,32 +2,44 @@ import { ErrorCode } from "@aido/api/errors";
 
 import { ApplicationException } from "#api/shared/application/application.exception";
 
-import type { TodoCommentBlockReaderPort } from "./ports/todo-comment-block-reader.port.js";
-import type { TodoCommentReaderPort } from "./ports/todo-comment.reader.port.js";
-
-/** viewer가 할 일의 댓글에 접근할 수 있는지 확인하고, 삭제 권한 판단에 쓰는 할 일 주인 ID를 돌려준다 */
-export async function assertTodoCommentAccess(
-  reader: Pick<TodoCommentReaderPort, "findAccessibleTodoOwnerId">,
-  todoId: number,
-  viewerId: string,
-): Promise<string> {
-  const todoOwnerId = await reader.findAccessibleTodoOwnerId(todoId, viewerId);
-
-  if (todoOwnerId == null) {
-    throw new ApplicationException(ErrorCode.TODO_0801, { todoId });
-  }
-  return todoOwnerId;
+export function todoNotFound(todoId: number): ApplicationException {
+  return new ApplicationException(ErrorCode.TODO_0801, { todoId });
 }
 
-/** 상대 댓글에 답글·좋아요를 남기기 전에 확인한다. 누가 차단했는지는 오류에 담지 않는다. */
-export async function assertNotBlocked(
-  blockReader: Pick<TodoCommentBlockReaderPort, "findBlockedCounterpartIds">,
-  actorId: string,
-  counterpartId: string,
-): Promise<void> {
-  const blockedIds = await blockReader.findBlockedCounterpartIds(actorId, [counterpartId]);
+export function commentNotFound(commentId: string): ApplicationException {
+  return new ApplicationException(ErrorCode.TODO_0831, { commentId });
+}
 
-  if (blockedIds.has(counterpartId)) {
-    throw new ApplicationException(ErrorCode.BLOCK_2204);
+/** 누가 차단했는지는 오류에 담지 않는다 */
+export function blockedCounterpart(): ApplicationException {
+  return new ApplicationException(ErrorCode.BLOCK_2204);
+}
+
+/** 잘못된 cursor·요청과 같은 멱등 키를 다른 요청에 쓴 경우 */
+export function invalidCommentRequest(): ApplicationException {
+  return new ApplicationException(ErrorCode.SYS_0002);
+}
+
+/** 저장된 수·관계가 기대와 달라 지금 상태로는 처리할 수 없다 */
+export function commentStateConflict(commentId?: string): ApplicationException {
+  return new ApplicationException(
+    ErrorCode.SYS_0003,
+    commentId == null ? undefined : { commentId },
+  );
+}
+
+/** 같은 멱등 키가 원래 요청과 다른 명령에 쓰였다 */
+export class TodoCommentIdempotencyConflict extends Error {
+  constructor() {
+    super();
+    this.name = TodoCommentIdempotencyConflict.name;
+  }
+}
+
+/** 다른 요청과 동시에 같은 멱등 키로 저장해 DB 유니크 제약에서 승패가 갈렸다 */
+export class TodoCommentIdempotencyRace extends Error {
+  constructor() {
+    super();
+    this.name = TodoCommentIdempotencyRace.name;
   }
 }

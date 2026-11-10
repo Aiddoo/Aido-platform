@@ -4,7 +4,7 @@ import { z } from "zod";
 
 import { nullableRawTimestampSchema } from "#api/platform/database/raw-timestamp.schema";
 import { todo, todoComment, user, userProfile } from "#api/platform/database/schema/index";
-import { toISOString, toISOStringOrNull } from "#api/shared/domain/date/utils/format";
+import { instantFromDate } from "#api/shared/domain/time/instant";
 
 import type {
   TodoCommentReadModel,
@@ -108,9 +108,9 @@ export function toCommentRecord(row: CommentRow): TodoCommentReadModel | null {
     content: row.content,
     likeCount: requireValue(row.likeCount, "likeCount"),
     replyCount: requireValue(row.replyCount, "replyCount"),
-    deletedAt: toISOStringOrNull(row.deletedAt),
-    editedAt: toISOStringOrNull(row.editedAt),
-    createdAt: toISOString(requireValue(row.createdAt, "createdAt")),
+    deletedAt: row.deletedAt == null ? null : instantFromDate(row.deletedAt),
+    editedAt: row.editedAt == null ? null : instantFromDate(row.editedAt),
+    createdAt: instantFromDate(requireValue(row.createdAt, "createdAt")),
   };
 }
 

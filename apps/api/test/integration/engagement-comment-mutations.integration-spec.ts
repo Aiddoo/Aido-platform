@@ -4,20 +4,16 @@ import { TransactionHost } from "@nestjs-cls/transactional";
 import { and, eq, sql } from "drizzle-orm";
 import { omit } from "es-toolkit";
 
-import {
-  TODO_COMMENT_NOTIFICATION,
-  type TodoCommentNotificationPort,
-} from "#api/modules/engagement/comments/application/ports/todo-comment-notification.port";
-import {
-  TODO_COMMENT_REPOSITORY,
-  type TodoCommentRepositoryPort,
-} from "#api/modules/engagement/comments/application/ports/todo-comment.repository.port";
+import { TodoCommentLikeRepositoryPort } from "#api/modules/engagement/comments/application/ports/todo-comment-like.repository.port";
+import { TodoCommentNotificationPort } from "#api/modules/engagement/comments/application/ports/todo-comment-notification.port";
+import { TodoCommentRepositoryPort } from "#api/modules/engagement/comments/application/ports/todo-comment.repository.port";
 import { GetTodoConversationUseCase } from "#api/modules/engagement/comments/application/use-cases/get-todo-conversation.use-case";
 import { GetTodoDetailsUseCase } from "#api/modules/engagement/comments/application/use-cases/get-todo-details.use-case";
 import { LikeTodoCommentUseCase } from "#api/modules/engagement/comments/application/use-cases/like-todo-comment.use-case";
 import { ListTodoCommentThreadsUseCase } from "#api/modules/engagement/comments/application/use-cases/list-todo-comment-threads.use-case";
 import { UnlikeTodoCommentUseCase } from "#api/modules/engagement/comments/application/use-cases/unlike-todo-comment.use-case";
 import { WriteTodoCommentChainUseCase } from "#api/modules/engagement/comments/application/use-cases/write-todo-comment-chain.use-case";
+import { TodoComment } from "#api/modules/engagement/comments/domain/todo-comment.aggregate";
 import { DrizzleTodoCommentRepository } from "#api/modules/engagement/comments/infrastructure/persistence/drizzle-todo-comment.repository";
 import {
   NOTIFICATION_CACHE,
@@ -40,7 +36,6 @@ import {
   todoCommentLike,
   user as userTable,
 } from "#api/platform/database/schema/index";
-import { UNIT_OF_WORK, type UnitOfWorkPort } from "#api/shared/application/ports/index";
 import {
   createE2eApp,
   destroyE2eApp,
@@ -62,7 +57,7 @@ describe("Engagement 댓글 실제 PostgreSQL 회귀", () => {
   let roots: string[];
   let focusId: string;
   let repository: TodoCommentRepositoryPort;
-  let uow: UnitOfWorkPort;
+  let likeRepository: TodoCommentLikeRepositoryPort;
   beforeAll(async () => {
     database = new TestDatabase({
       createClient: (url) =>
@@ -74,8 +69,8 @@ describe("Engagement 댓글 실제 PostgreSQL 회귀", () => {
     });
     client = await database.start();
     context = await createE2eApp({ testDatabase: database });
-    repository = context.module.get(TODO_COMMENT_REPOSITORY);
-    uow = context.module.get(UNIT_OF_WORK);
+    repository = context.module.get(TodoCommentRepositoryPort);
+    likeRepository = context.module.get(TodoCommentLikeRepositoryPort);
   });
   beforeEach(async () => {
     statements = null;
@@ -128,7 +123,8 @@ describe("Engagement 댓글 실제 PostgreSQL 회귀", () => {
         clientRequestId: randomUUID(),
         content: `루트 ${index}`,
         replyCount: 2,
-        createdAt: new Date(AT.getTime() + index * 1000),
+        createdAt: Temporal.Instant.fromEpochMilliseconds(AT.getTime() + index * 1000),
+        updatedAt: Temporal.Instant.fromEpochMilliseconds(AT.getTime()),
       });
       await client.insert(todoComment).values({
         id: childId,
@@ -138,7 +134,8 @@ describe("Engagement 댓글 실제 PostgreSQL 회귀", () => {
         content: `답글 ${index}`,
         parentId: rootId,
         replyToCommentId: rootId,
-        createdAt: new Date(AT.getTime() + index * 1000 + 100),
+        createdAt: Temporal.Instant.fromEpochMilliseconds(AT.getTime() + index * 1000 + 100),
+        updatedAt: Temporal.Instant.fromEpochMilliseconds(AT.getTime()),
       });
       await client.insert(todoComment).values({
         id: grandId,
@@ -148,7 +145,8 @@ describe("Engagement 댓글 실제 PostgreSQL 회귀", () => {
         content: `하위 답글 ${index}`,
         parentId: rootId,
         replyToCommentId: childId,
-        createdAt: new Date(AT.getTime() + index * 1000 + 200),
+        createdAt: Temporal.Instant.fromEpochMilliseconds(AT.getTime() + index * 1000 + 200),
+        updatedAt: Temporal.Instant.fromEpochMilliseconds(AT.getTime()),
       });
       if (index === 0) {
         focusId = grandId;
@@ -231,10 +229,10 @@ describe("Engagement 댓글 실제 PostgreSQL 회귀", () => {
     expect(focus.result.items).toHaveLength(1);
     expect(focus.result.focus).toMatchObject({
       itemIndex: 0,
-      precedingAncestors: expect.any(Array),
+      precedingThreadComments: expect.any(Array),
     });
-    expect(focus.result.focus?.precedingAncestors).toHaveLength(1);
-    expect(focus.result.items.at(0)?.comment.id).toBe(focusId);
+    expect(focus.result.focus?.precedingThreadComments).toHaveLength(1);
+    expect(focus.result.items.at(0)?.id).toBe(focusId);
   });
 
   it("할 일 소유자 상세는 관계를 쿼리 1번으로 읽는다", async () => {
@@ -246,65 +244,7 @@ describe("Engagement 댓글 실제 PostgreSQL 회귀", () => {
 
     // Then
     expect(measured.count).toBe(1);
-    expect(measured.result.metrics).toMatchObject({ commentCount: 9 });
-  });
-
-  it("좋아요와 좋아요 취소는 조건부 쓰기와 카운터 재조회를 정해진 쿼리 수로 수행한다", async () => {
-    // Given
-    const commentId = roots[0];
-    if (commentId === undefined) {
-      throw new Error("root fixture missing");
-    }
-
-    // When
-    const like = await measure(() => uow.run(() => repository.setLike(todoId, commentId, userId)));
-    const unlike = await measure(() =>
-      uow.run(() => repository.removeLike(todoId, commentId, userId)),
-    );
-
-    // Then
-    expect(like.result).toMatchObject({ changed: true, isLiked: true, likeCount: 1 });
-    expect(unlike.result).toMatchObject({ changed: true, isLiked: false, likeCount: 0 });
-    expect(like.count).toBe(4);
-    expect(unlike.count).toBe(5);
-  });
-
-  it("활성 상태이고 아직 알리지 않은 좋아요만 해당 댓글의 알림 대상으로 쿼리 1번에 읽는다", async () => {
-    // Given
-    const commentId = roots[0];
-    if (commentId === undefined) {
-      throw new Error("root fixture missing");
-    }
-    await uow.run(() => repository.setLike(todoId, commentId, userId));
-
-    // When
-    const eligible = await measure(() =>
-      repository.findPendingLikeNotification(todoId, commentId, userId),
-    );
-    const otherTodo = await repository.findPendingLikeNotification(todoId + 1, commentId, userId);
-    const selfLike = await repository.findPendingLikeNotification(todoId, commentId, authorId);
-    await uow.run(() => repository.markLikeNotified(commentId, userId));
-    const notified = await repository.findPendingLikeNotification(todoId, commentId, userId);
-    await client
-      .update(todoCommentLike)
-      .set({ notifiedAt: null, isActive: false })
-      .where(and(eq(todoCommentLike.commentId, commentId), eq(todoCommentLike.userId, userId)));
-    const inactive = await repository.findPendingLikeNotification(todoId, commentId, userId);
-    await client
-      .update(todoCommentLike)
-      .set({ isActive: true })
-      .where(and(eq(todoCommentLike.commentId, commentId), eq(todoCommentLike.userId, userId)));
-    await client.update(todoComment).set({ deletedAt: AT }).where(eq(todoComment.id, commentId));
-    const deleted = await repository.findPendingLikeNotification(todoId, commentId, userId);
-
-    // Then
-    expect(eligible.count).toBe(1);
-    expect(eligible.result).toEqual({ recipientId: authorId, threadRootId: commentId });
-    expect(otherTodo).toBeNull();
-    expect(selfLike).toBeNull();
-    expect(notified).toBeNull();
-    expect(inactive).toBeNull();
-    expect(deleted).toBeNull();
+    expect(measured.result).toMatchObject({ commentCount: 9 });
   });
 
   async function notificationTableCounts(source: Pick<typeof client, "$count">) {
@@ -333,12 +273,21 @@ describe("Engagement 댓글 실제 PostgreSQL 회귀", () => {
     const invalidation = vi.spyOn(cache, "invalidateUnreadCount");
     let stagedCounts: number[] = [];
     let markerSqlState: string | undefined;
-    vi.spyOn(repository, "markLikeNotified").mockImplementationOnce(async () => {
+    const saveLike = likeRepository.save.bind(likeRepository);
+    let hasFailed = false;
+    vi.spyOn(likeRepository, "save").mockImplementation(async (savedLike) => {
+      if (!savedLike.wasEverNotified || hasFailed) {
+        return saveLike(savedLike);
+      }
+      hasFailed = true;
       stagedCounts = await notificationTableCounts(txHost.tx);
       try {
-        await txHost.tx
-          .insert(todoCommentLike)
-          .values({ commentId: createEntityId(), userId, isActive: true });
+        await txHost.tx.insert(todoCommentLike).values({
+          commentId: createEntityId(),
+          userId,
+          isActive: true,
+          updatedAt: Temporal.Now.instant(),
+        });
       } catch (error) {
         markerSqlState = databaseSqlState(error);
         throw error;
@@ -372,7 +321,7 @@ describe("Engagement 댓글 실제 PostgreSQL 회귀", () => {
     expect(await notificationTableCounts(client)).toEqual([1, 1, 1]);
     expect(
       await client.query.todoCommentLike.findFirst({ where: { commentId, userId } }),
-    ).toMatchObject({ notifiedAt: expect.any(Date) });
+    ).toMatchObject({ notifiedAt: expect.any(Temporal.Instant) });
     expect(publication).toHaveBeenCalledTimes(1);
     expect(invalidation).toHaveBeenCalledTimes(1);
   });
@@ -422,7 +371,7 @@ describe("Engagement 댓글 실제 PostgreSQL 회귀", () => {
     if (commentId === undefined) {
       throw new Error("root fixture missing");
     }
-    const adapter = context.module.get<TodoCommentNotificationPort>(TODO_COMMENT_NOTIFICATION);
+    const adapter = context.module.get(TodoCommentNotificationPort);
     const notify = adapter.notifyCommentLiked.bind(adapter);
     const entered = Promise.withResolvers<void>();
     const release = Promise.withResolvers<void>();
@@ -473,7 +422,7 @@ describe("Engagement 댓글 실제 PostgreSQL 회귀", () => {
     ).toEqual({ likeCount: 1 });
     expect(
       await client.query.todoCommentLike.findFirst({ where: { commentId, userId } }),
-    ).toMatchObject({ isActive: true, notifiedAt: expect.any(Date) });
+    ).toMatchObject({ isActive: true, notifiedAt: expect.any(Temporal.Instant) });
     expect(await client.$count(notification)).toBe(1);
   });
 
@@ -489,16 +438,19 @@ describe("Engagement 댓글 실제 PostgreSQL 회귀", () => {
     const outside = new DrizzleTodoCommentRepository(
       createDatabaseTransactionFixture(client).txHost,
     );
-    const create = repository.createCommentChain.bind(repository);
-    vi.spyOn(repository, "createCommentChain").mockImplementationOnce(async (input) => {
-      await outside.createCommentChain(input);
+    const save = repository.save.bind(repository);
+    vi.spyOn(repository, "save").mockImplementationOnce(async (comment) => {
+      // 구버전 작성기가 같은 멱등 키로 다른 id의 글을 먼저 커밋한다
+      await outside.save(
+        TodoComment.reconstitute({ ...comment.toPrimitives(), id: createEntityId() }),
+      );
       await client
         .delete(follow)
         .where(and(eq(follow.followerId, userId), eq(follow.followingId, authorId)));
       await client
         .delete(follow)
         .where(and(eq(follow.followerId, authorId), eq(follow.followingId, userId)));
-      return create(input);
+      return save(comment);
     });
 
     // When

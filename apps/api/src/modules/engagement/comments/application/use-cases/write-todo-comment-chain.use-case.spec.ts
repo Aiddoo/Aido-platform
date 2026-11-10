@@ -1,341 +1,319 @@
-import { vi } from "vitest";
+import { ErrorCode } from "@aido/api/errors";
 
+import { InMemoryTodoCommentRepository } from "#test/doubles/engagement/in-memory-todo-comment.repository";
 import {
-  createEngagementCommentFixture,
-  ENGAGEMENT_TIME,
-  ENGAGEMENT_OWNER_ID,
-  ENGAGEMENT_VIEWER_ID,
-} from "#test/fixtures/engagement-comment.fixture";
+  nextClientRequestId,
+  TODO_COMMENT_FIXTURE_FRIEND_ID,
+  TODO_COMMENT_FIXTURE_OWNER_ID,
+  TODO_COMMENT_FIXTURE_TODO_ID,
+  TODO_COMMENT_FIXTURE_VIEWER_ID,
+} from "#test/fixtures/engagement/todo-comment.fixture";
+import {
+  createTodoCommentsFixture,
+  type TodoCommentsFixture,
+} from "#test/fixtures/engagement/todo-comments.fixture";
 
+import { TodoCommentIdempotencyRace } from "../comments.errors.js";
 import { TodoCommentLockKeys } from "../comments.lock-keys.js";
 import { TodoCommentLogEvent } from "../comments.log-events.js";
-import {
-  TodoCommentIdempotencyConflict,
-  TodoCommentIdempotencyRace,
-} from "../ports/todo-comment.repository.port.js";
-import {
-  WriteTodoCommentChainUseCase,
-  type WriteTodoCommentChainCommand,
-} from "./write-todo-comment-chain.use-case.js";
+import { WriteTodoCommentChainUseCase } from "./write-todo-comment-chain.use-case.js";
+
+const TODO_ID = TODO_COMMENT_FIXTURE_TODO_ID;
+
+function createUseCase(fixture: TodoCommentsFixture) {
+  return new WriteTodoCommentChainUseCase(fixture);
+}
+
+function chainOf(...contents: string[]) {
+  return contents.map((content) => ({ clientRequestId: nextClientRequestId(), content }));
+}
 
 describe("WriteTodoCommentChainUseCase — 댓글 작성과 멱등성", () => {
-  let fixture: ReturnType<typeof createEngagementCommentFixture>;
+  let fixture: TodoCommentsFixture;
+
   beforeEach(() => {
-    vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(ENGAGEMENT_TIME);
-    fixture = createEngagementCommentFixture();
+    fixture = createTodoCommentsFixture();
   });
-  afterEach(() => vi.useRealTimers());
 
-  function input(): WriteTodoCommentChainCommand {
-    return {
-      todoId: 1,
-      authorId: ENGAGEMENT_VIEWER_ID,
-      parentId: null,
-      items: [
-        { clientRequestId: "b7b0f6d4-6f1e-4d6a-9e0a-2d6a1c1f3a11", content: "  함께 해요  " },
-      ],
-    };
-  }
-
-  it("원문을 정규화해 저장하고 알림 경계에는 원문 없이 작성 정보만 전달한다", async () => {
+  it("원문을 다듬어 저장하고 알림에는 원문 없이 작성 정보만 넘긴다", async () => {
     // Given
-    const useCase = new WriteTodoCommentChainUseCase(fixture);
+    const useCase = createUseCase(fixture);
+
     // When
-    const result = await useCase.execute(input());
+    const result = await useCase.execute({
+      todoId: TODO_ID,
+      authorId: TODO_COMMENT_FIXTURE_VIEWER_ID,
+      parentId: null,
+      items: chainOf("  함께 해요  "),
+    });
+
     // Then
-    const comment = result.comments[0];
-    if (comment == null) {
-      throw new Error("댓글 응답 fixture가 비어 있습니다.");
-    }
-    expect(comment.content).toBe("함께 해요");
-    expect(fixture.repository.comments.get(comment.id)?.content).toBe("함께 해요");
-    expect(fixture.repository.commentCounts.get(1)).toBe(1);
+    expect(result.comments.map((comment) => comment.content)).toEqual(["함께 해요"]);
+    expect(fixture.engagementCounter.commentCounts.get(TODO_ID)).toBe(1);
+    expect(fixture.todoViewCache.invalidatedTodoIds).toEqual([TODO_ID]);
     expect(fixture.notification.written).toEqual([
       {
-        recipientId: ENGAGEMENT_OWNER_ID,
-        senderId: ENGAGEMENT_VIEWER_ID,
+        recipientId: TODO_COMMENT_FIXTURE_OWNER_ID,
+        senderId: TODO_COMMENT_FIXTURE_VIEWER_ID,
         senderName: "방문자",
-        todoId: 1,
-        commentId: comment.id,
-        threadRootId: comment.id,
+        todoId: TODO_ID,
+        commentId: result.comments[0]?.id,
+        threadRootId: result.comments[0]?.id,
         replyTarget: null,
         commentCount: 1,
       },
     ]);
-    expect(fixture.invalidatedTodoIds).toEqual([1]);
+    expect(JSON.stringify(fixture.notification.written)).not.toContain("함께 해요");
   });
 
   it("할 일에 이어 쓴 글은 첫 글을 머리로 한 묶음의 답글이 되고 각자 앞 글에 답한다", async () => {
     // Given
-    const chain = {
-      ...input(),
-      items: [
-        { clientRequestId: "b7b0f6d4-6f1e-4d6a-9e0a-2d6a1c1f3a11", content: "첫 글" },
-        { clientRequestId: "b7b0f6d4-6f1e-4d6a-9e0a-2d6a1c1f3a12", content: "둘째 글" },
-        { clientRequestId: "b7b0f6d4-6f1e-4d6a-9e0a-2d6a1c1f3a13", content: "셋째 글" },
-      ],
-    };
+    const useCase = createUseCase(fixture);
 
     // When
-    const result = await new WriteTodoCommentChainUseCase(fixture).execute(chain);
+    const result = await useCase.execute({
+      todoId: TODO_ID,
+      authorId: TODO_COMMENT_FIXTURE_VIEWER_ID,
+      parentId: null,
+      items: chainOf("하나", "둘", "셋"),
+    });
 
     // Then
-    const [first, second, third] = result.comments;
-    expect(result.comments.map((comment) => [comment.depth, comment.replyTo?.commentId])).toEqual([
-      [0, undefined],
-      [1, first?.id],
-      [1, second?.id],
-    ]);
-    expect(third?.parentId).toBe(first?.id);
-    expect(fixture.repository.comments.get(first?.id ?? "")?.replyCount).toBe(2);
-    expect(fixture.repository.commentCounts.get(1)).toBe(3);
+    const [head, second, third] = result.comments;
+    expect(head).toMatchObject({ threadCommentId: null, replyCount: 2 });
+    expect(second).toMatchObject({ threadCommentId: head?.id, replyToCommentId: head?.id });
+    expect(third).toMatchObject({ threadCommentId: head?.id, replyToCommentId: second?.id });
+    expect(fixture.engagementCounter.commentCounts.get(TODO_ID)).toBe(3);
+    expect(fixture.notification.written.map((input) => input.commentCount)).toEqual([3]);
   });
 
   it("답글에 답하면 같은 묶음 끝에 붙고 머리 답글 수를 올리며 답글 작성자에게 알린다", async () => {
     // Given
-    const comment = fixture.addComment({ replyCount: 1 });
-    const reply = fixture.addComment({
-      authorId: ENGAGEMENT_OWNER_ID,
-      parentId: comment.id,
-      replyToCommentId: comment.id,
+    const head = await fixture.addComment({ replyCount: 1 });
+    const reply = await fixture.addComment({
+      authorId: TODO_COMMENT_FIXTURE_FRIEND_ID,
+      parentId: head.id.value,
+      replyToCommentId: head.id.value,
     });
-    const lock = vi.spyOn(fixture.mutationLock, "acquire");
-    const chain = {
-      ...input(),
-      parentId: reply.id,
-      items: [
-        { clientRequestId: "b7b0f6d4-6f1e-4d6a-9e0a-2d6a1c1f3a11", content: "첫 답" },
-        { clientRequestId: "b7b0f6d4-6f1e-4d6a-9e0a-2d6a1c1f3a12", content: "이어서" },
-      ],
-    };
 
     // When
-    const result = await new WriteTodoCommentChainUseCase(fixture).execute(chain);
+    const result = await createUseCase(fixture).execute({
+      todoId: TODO_ID,
+      authorId: TODO_COMMENT_FIXTURE_VIEWER_ID,
+      parentId: reply.id.value,
+      items: chainOf("답글에 답글"),
+    });
 
     // Then
-    const [first, second] = result.comments;
-    expect(first).toMatchObject({
-      parentId: comment.id,
-      threadId: comment.id,
-      depth: 1,
-      replyTo: { commentId: reply.id },
+    expect(result.comments[0]).toMatchObject({
+      threadCommentId: head.id.value,
+      replyToCommentId: reply.id.value,
     });
-    expect(second).toMatchObject({
-      parentId: comment.id,
-      depth: 1,
-      replyTo: { commentId: first?.id },
+    const storedHead = await fixture.repository.findByIdAndTodoId(head.id, TODO_ID);
+    expect(storedHead?.replyCount).toBe(2);
+    expect(fixture.mutationLock.acquiredKeys.at(0)?.slice(1)).toEqual([
+      TodoCommentLockKeys.comment(reply.id.value),
+      TodoCommentLockKeys.comment(head.id.value),
+    ]);
+    expect(fixture.notification.written[0]).toMatchObject({
+      recipientId: TODO_COMMENT_FIXTURE_FRIEND_ID,
+      threadRootId: head.id.value,
+      replyTarget: "REPLY",
     });
-    expect(fixture.repository.comments.get(comment.id)?.replyCount).toBe(3);
-    expect(fixture.repository.comments.get(reply.id)?.replyCount).toBe(0);
-    expect(lock).toHaveBeenCalledWith([
-      TodoCommentLockKeys.request(ENGAGEMENT_VIEWER_ID, chain.items[0]?.clientRequestId ?? ""),
-      TodoCommentLockKeys.request(ENGAGEMENT_VIEWER_ID, chain.items[1]?.clientRequestId ?? ""),
-      TodoCommentLockKeys.comment(reply.id),
-      TodoCommentLockKeys.comment(comment.id),
-    ]);
-    expect(fixture.notification.written).toEqual([
-      expect.objectContaining({
-        recipientId: ENGAGEMENT_OWNER_ID,
-        threadRootId: comment.id,
-        replyTarget: "REPLY",
-        commentCount: 2,
-      }),
-    ]);
   });
 
-  it("묘비가 된 댓글의 답글에도 답할 수 있지만 삭제된 글에는 답하지 못한다", async () => {
+  it("묘비가 된 댓글의 답글에는 답할 수 있지만 지운 글에는 답하지 못한다", async () => {
     // Given
-    const comment = fixture.addComment({
-      replyCount: 1,
+    const tombstone = await fixture.addComment({
       content: null,
-      deletedAt: ENGAGEMENT_TIME,
+      replyCount: 1,
+      deletedAt: TODO_COMMENT_FIXTURE_NOW_PLUS_MINUTE,
     });
-    const reply = fixture.addComment({ parentId: comment.id, replyToCommentId: comment.id });
-    const useCase = new WriteTodoCommentChainUseCase(fixture);
+    const reply = await fixture.addComment({
+      authorId: TODO_COMMENT_FIXTURE_FRIEND_ID,
+      parentId: tombstone.id.value,
+      replyToCommentId: tombstone.id.value,
+    });
+    const useCase = createUseCase(fixture);
 
     // When
-    await useCase.execute({ ...input(), parentId: reply.id });
+    const toReply = await useCase.execute({
+      todoId: TODO_ID,
+      authorId: TODO_COMMENT_FIXTURE_VIEWER_ID,
+      parentId: reply.id.value,
+      items: chainOf("살아 있는 답글에"),
+    });
+    const toTombstone = useCase.execute({
+      todoId: TODO_ID,
+      authorId: TODO_COMMENT_FIXTURE_VIEWER_ID,
+      parentId: tombstone.id.value,
+      items: chainOf("지운 글에"),
+    });
 
     // Then
-    expect(fixture.repository.comments.get(comment.id)?.replyCount).toBe(2);
-    await expect(
-      useCase.execute({
-        ...input(),
-        parentId: comment.id,
-        items: [{ clientRequestId: "b7b0f6d4-6f1e-4d6a-9e0a-2d6a1c1f3a19", content: "답" }],
-      }),
-    ).rejects.toMatchObject({ errorCode: "TODO_0833" });
+    expect(toReply.comments).toHaveLength(1);
+    await expect(toTombstone).rejects.toMatchObject({ errorCode: ErrorCode.TODO_0833 });
   });
 
-  it("차단 관계인 사람의 댓글에는 답글을 저장하지 않는다", async () => {
+  it("차단 관계인 사람의 글에는 답글을 저장하지 않는다", async () => {
     // Given
-    const parent = fixture.addComment();
-    fixture.blockReader.block(ENGAGEMENT_VIEWER_ID, ENGAGEMENT_OWNER_ID);
-    // When / Then
-    await expect(
-      new WriteTodoCommentChainUseCase(fixture).execute({ ...input(), parentId: parent.id }),
-    ).rejects.toMatchObject({ errorCode: "BLOCK_2204" });
-    expect(fixture.repository.comments.size).toBe(1);
-    expect(fixture.notification.written).toEqual([]);
-  });
+    const comment = await fixture.addComment({ authorId: TODO_COMMENT_FIXTURE_FRIEND_ID });
+    fixture.blockReader.block(TODO_COMMENT_FIXTURE_FRIEND_ID, TODO_COMMENT_FIXTURE_VIEWER_ID);
 
-  it("알림이 실패해도 저장된 댓글과 성공 응답을 유지한다", async () => {
-    // Given
-    vi.spyOn(fixture.notification, "notifyCommentsWritten").mockRejectedValueOnce(
-      new Error("push down"),
-    );
     // When
-    const result = await new WriteTodoCommentChainUseCase(fixture).execute(input());
+    const writing = createUseCase(fixture).execute({
+      todoId: TODO_ID,
+      authorId: TODO_COMMENT_FIXTURE_VIEWER_ID,
+      parentId: comment.id.value,
+      items: chainOf("답글"),
+    });
+
+    // Then
+    await expect(writing).rejects.toMatchObject({ errorCode: ErrorCode.BLOCK_2204 });
+    expect(fixture.repository.list()).toHaveLength(1);
+  });
+
+  it("알림이 실패해도 저장한 글과 성공 응답을 유지하고 오류 원문을 로그에 남기지 않는다", async () => {
+    // Given
+    fixture.notification.failure = new Error("private notification failure");
+
+    // When
+    const result = await createUseCase(fixture).execute({
+      todoId: TODO_ID,
+      authorId: TODO_COMMENT_FIXTURE_VIEWER_ID,
+      parentId: null,
+      items: chainOf("알림 실패"),
+    });
+
     // Then
     expect(result.comments).toHaveLength(1);
-    expect(fixture.repository.comments.size).toBe(1);
-    expect(fixture.repository.commentCounts.get(1)).toBe(1);
-    expect(fixture.invalidatedTodoIds).toEqual([1]);
-  });
-
-  it("캐시 정리가 동기로 실패해도 둘째 알림 작업과 성공 응답을 유지하며 원문 오류를 기록하지 않는다", async () => {
-    // Given
-    vi.spyOn(fixture.todoViewCache, "invalidateForTodo").mockImplementation(() => {
-      throw new Error("private cache error content");
-    });
-    const warning = vi.spyOn(fixture.logger, "warn");
-    // When
-    const result = await new WriteTodoCommentChainUseCase(fixture).execute(input());
-    // Then
-    expect(result.comments).toHaveLength(1);
-    expect(fixture.notification.written).toHaveLength(1);
-    expect(fixture.repository.comments.size).toBe(1);
-    expect(warning).toHaveBeenCalledTimes(1);
-    expect(JSON.stringify(warning.mock.calls)).not.toContain("private cache error content");
-    expect(warning.mock.calls[0]?.[0]).toEqual({
-      event: TodoCommentLogEvent.VIEW_CACHE_INVALIDATION_FAILED,
-      todoId: 1,
-      userId: ENGAGEMENT_VIEWER_ID,
-      errorType: "Error",
-    });
-  });
-
-  it("작성 멱등 잠금은 UoW 안에서 획득하고 완료 뒤에만 알림을 처리한다", async () => {
-    // Given
-    let insideUnitOfWork = false;
-    const prepared = Promise.withResolvers<void>();
-    const finish = Promise.withResolvers<void>();
-    const lock = vi.spyOn(fixture.mutationLock, "acquire").mockImplementation(async () => {
-      expect(insideUnitOfWork).toBe(true);
-    });
-    fixture.unitOfWork.run = async (work) => {
-      insideUnitOfWork = true;
-      const result = await work();
-      insideUnitOfWork = false;
-      prepared.resolve();
-      await finish.promise;
-      return result;
-    };
-    // When
-    const outcome = new WriteTodoCommentChainUseCase(fixture).execute(input());
-    await Promise.race([
-      prepared.promise,
-      outcome.then(() => {
-        throw new Error("UoW 대기 전에 작성이 끝났습니다.");
-      }),
+    expect(fixture.logger.messages).toEqual([
+      expect.objectContaining({ event: TodoCommentLogEvent.WRITE_NOTIFICATION_FAILED }),
     ]);
-    // Then
-    try {
-      expect(fixture.notification.written).toEqual([]);
-      expect(fixture.invalidatedTodoIds).toEqual([]);
-      expect(lock).toHaveBeenCalledTimes(1);
-    } finally {
-      finish.resolve();
-    }
-    await outcome;
-    expect(fixture.notification.written).toHaveLength(1);
+    expect(JSON.stringify(fixture.logger.messages)).not.toContain("private notification failure");
   });
 
-  it("정확한 replay는 원래 댓글과 viewer 좋아요를 반환하고 count·알림을 다시 변경하지 않는다", async () => {
+  it("같은 멱등 키로 다시 보내면 원래 글과 좋아요를 돌려주고 수·알림을 다시 바꾸지 않는다", async () => {
     // Given
-    const useCase = new WriteTodoCommentChainUseCase(fixture);
-    const original = await useCase.execute(input());
-    const commentId = original.comments[0]?.id;
-    if (commentId == null) {
-      throw new Error("댓글 fixture가 비어 있습니다.");
-    }
-    await fixture.repository.setLike(1, commentId, ENGAGEMENT_VIEWER_ID);
+    const useCase = createUseCase(fixture);
+    const command = {
+      todoId: TODO_ID,
+      authorId: TODO_COMMENT_FIXTURE_VIEWER_ID,
+      parentId: null,
+      items: chainOf("한 번만"),
+    };
+    const first = await useCase.execute(command);
+
     // When
-    const result = await useCase.execute(input());
+    const replay = await useCase.execute(command);
+
     // Then
-    expect(result.comments[0]?.id).toBe(commentId);
-    expect(result.comments[0]?.viewer.isLiked).toBe(true);
-    expect(fixture.repository.comments.size).toBe(1);
-    expect(fixture.repository.commentCounts.get(1)).toBe(1);
-    expect(fixture.notification.written).toHaveLength(1);
-    expect(fixture.invalidatedTodoIds).toEqual([1]);
-  });
-
-  it("같은 멱등 키의 다른 명령은 SYS_0002로 거부하고 원래 댓글을 유지한다", async () => {
-    // Given
-    const useCase = new WriteTodoCommentChainUseCase(fixture);
-    await useCase.execute(input());
-    // When / Then
-    await expect(
-      useCase.execute({
-        ...input(),
-        items: [{ clientRequestId: input().items[0]?.clientRequestId ?? "", content: "다른 내용" }],
-      }),
-    ).rejects.toMatchObject({ errorCode: "SYS_0002" });
-    expect(fixture.repository.comments.size).toBe(1);
-    expect(fixture.repository.commentCounts.get(1)).toBe(1);
-  });
-
-  it("멱등 경합 신호를 받으면 새 UoW에서 승자 결과를 replay하고 counter·알림을 중복 처리하지 않는다", async () => {
-    // Given
-    const create = fixture.repository.createCommentChain.bind(fixture.repository);
-    vi.spyOn(fixture.repository, "createCommentChain").mockImplementationOnce(async (command) => {
-      await create(command);
-      throw new TodoCommentIdempotencyRace();
-    });
-    const run = vi.spyOn(fixture.unitOfWork, "run");
-    // When
-    const result = await new WriteTodoCommentChainUseCase(fixture).execute(input());
-    // Then
-    expect(result.comments).toHaveLength(1);
-    expect(fixture.repository.comments.size).toBe(1);
-    expect(fixture.repository.commentCounts.get(1)).toBeUndefined();
-    expect(fixture.notification.written).toEqual([]);
-    expect(run).toHaveBeenCalledTimes(2);
-  });
-
-  it("경합 뒤 승자 명령이 다르면 SYS_0002로 거부한다", async () => {
-    // Given
-    const replay = vi
-      .spyOn(fixture.repository, "findCommentChainReplay")
-      .mockResolvedValueOnce(null)
-      .mockRejectedValueOnce(new TodoCommentIdempotencyConflict());
-    vi.spyOn(fixture.repository, "createCommentChain").mockRejectedValueOnce(
-      new TodoCommentIdempotencyRace(),
+    expect(replay.comments.map((comment) => comment.id)).toEqual(
+      first.comments.map((comment) => comment.id),
     );
-    // When / Then
-    await expect(new WriteTodoCommentChainUseCase(fixture).execute(input())).rejects.toMatchObject({
-      errorCode: "SYS_0002",
-    });
-    expect(replay).toHaveBeenCalledTimes(2);
-    expect(fixture.notification.written).toEqual([]);
+    expect(fixture.engagementCounter.commentCounts.get(TODO_ID)).toBe(1);
+    expect(fixture.notification.written).toHaveLength(1);
   });
 
-  it("경합 뒤 접근권한을 잃으면 승자 댓글이 있어도 새 UoW에서 TODO_0801로 거부한다", async () => {
+  it("같은 멱등 키를 다른 내용에 쓰면 SYS_0002로 거부하고 원래 글을 둔다", async () => {
     // Given
-    const create = fixture.repository.createCommentChain.bind(fixture.repository);
-    vi.spyOn(fixture.repository, "createCommentChain").mockImplementationOnce(async (command) => {
-      await create(command);
-      fixture.reader.accessiblePairs.delete(`1:${ENGAGEMENT_VIEWER_ID}`);
-      throw new TodoCommentIdempotencyRace();
+    const useCase = createUseCase(fixture);
+    const [item] = chainOf("원래 내용");
+    if (item == null) {
+      throw new Error("chain fixture missing");
+    }
+    await useCase.execute({
+      todoId: TODO_ID,
+      authorId: TODO_COMMENT_FIXTURE_VIEWER_ID,
+      parentId: null,
+      items: [item],
     });
-    // When / Then
-    await expect(new WriteTodoCommentChainUseCase(fixture).execute(input())).rejects.toMatchObject({
-      errorCode: "TODO_0801",
+
+    // When
+    const conflicting = useCase.execute({
+      todoId: TODO_ID,
+      authorId: TODO_COMMENT_FIXTURE_VIEWER_ID,
+      parentId: null,
+      items: [{ ...item, content: "다른 내용" }],
     });
-    expect(fixture.repository.comments.size).toBe(1);
-    expect(fixture.notification.written).toEqual([]);
-    expect(fixture.invalidatedTodoIds).toEqual([]);
+
+    // Then
+    await expect(conflicting).rejects.toMatchObject({ errorCode: ErrorCode.SYS_0002 });
+    expect(fixture.repository.list().map((comment) => comment.content)).toEqual(["원래 내용"]);
+  });
+
+  it("다른 요청과 멱등 키 경합에서 지면 새 UoW에서 먼저 저장한 글을 돌려주고 수·알림을 두 번 바꾸지 않는다", async () => {
+    // Given
+    const command = {
+      todoId: TODO_ID,
+      authorId: TODO_COMMENT_FIXTURE_VIEWER_ID,
+      parentId: null,
+      items: chainOf("경합"),
+    };
+    await createUseCase(fixture).execute(command);
+    const racing = new RacingTodoCommentRepository(fixture.repository);
+
+    // When
+    const result = await new WriteTodoCommentChainUseCase({
+      ...fixture,
+      repository: racing,
+    }).execute(command);
+
+    // Then
+    expect(result.comments.map((comment) => comment.content)).toEqual(["경합"]);
+    expect(fixture.unitOfWork.runCount).toBe(3);
+    expect(fixture.engagementCounter.commentCounts.get(TODO_ID)).toBe(1);
+    expect(fixture.notification.written).toHaveLength(1);
+  });
+
+  it("경합 뒤 할 일을 볼 수 없게 되면 먼저 저장한 글이 있어도 TODO_0801로 거부한다", async () => {
+    // Given
+    const command = {
+      todoId: TODO_ID,
+      authorId: TODO_COMMENT_FIXTURE_VIEWER_ID,
+      parentId: null,
+      items: chainOf("경합"),
+    };
+    await createUseCase(fixture).execute(command);
+    const racing = new RacingTodoCommentRepository(fixture.repository, () =>
+      fixture.reader.revokeAccess(TODO_ID, TODO_COMMENT_FIXTURE_VIEWER_ID),
+    );
+
+    // When
+    const writing = new WriteTodoCommentChainUseCase({ ...fixture, repository: racing }).execute(
+      command,
+    );
+
+    // Then
+    await expect(writing).rejects.toMatchObject({ errorCode: ErrorCode.TODO_0801 });
   });
 });
+
+const TODO_COMMENT_FIXTURE_NOW_PLUS_MINUTE = Temporal.Instant.from("2026-08-26T00:01:00Z");
+
+/** 처음 조회에서는 먼저 저장한 요청을 못 본 것처럼 굴고, 저장할 때 유니크 경합을 낸다 */
+class RacingTodoCommentRepository extends InMemoryTodoCommentRepository {
+  readonly #inner: InMemoryTodoCommentRepository;
+  readonly #onRace: () => void;
+  #hasRaced = false;
+
+  constructor(inner: InMemoryTodoCommentRepository, onRace: () => void = () => undefined) {
+    super();
+    this.#inner = inner;
+    this.#onRace = onRace;
+  }
+
+  override listByAuthorIdAndClientRequestIds(
+    ...args: Parameters<InMemoryTodoCommentRepository["listByAuthorIdAndClientRequestIds"]>
+  ) {
+    return this.#hasRaced
+      ? this.#inner.listByAuthorIdAndClientRequestIds(...args)
+      : Promise.resolve([]);
+  }
+
+  override async save(): Promise<void> {
+    this.#hasRaced = true;
+    this.#onRace();
+    throw new TodoCommentIdempotencyRace();
+  }
+}

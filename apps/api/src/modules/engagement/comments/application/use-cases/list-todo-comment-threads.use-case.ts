@@ -1,26 +1,20 @@
-import type { TodoCommentSort } from "@aido/api";
-import { ErrorCode } from "@aido/api/errors";
+import type { TodoCommentSort } from "@aido/api/vocabulary";
 
-import { ApplicationException } from "#api/shared/application/application.exception";
-
+import { invalidCommentRequest, todoNotFound } from "../comments.errors.js";
+import type { TodoCommentBlockReaderPort } from "../ports/todo-comment-block-reader.port.js";
+import type { TodoCommentCursorCodecPort } from "../ports/todo-comment-cursor-codec.port.js";
+import type {
+  ListTodoCommentThreadsParams,
+  TodoCommentReaderPort,
+} from "../ports/todo-comment.reader.port.js";
 import {
-  collectCommentAuthorIds,
-  collectCommentIds,
-  toTodoCommentCursorPagination,
-} from "../../presentation/http/v2/todo-comment-response.mapper.js";
-import { assertTodoCommentAccess } from "../comments.errors.js";
-import { type TodoCommentBlockReaderPort } from "../ports/todo-comment-block-reader.port.js";
-import { type TodoCommentCursorCodecPort } from "../ports/todo-comment-cursor-codec.port.js";
-import { type TodoCommentReaderPort } from "../ports/todo-comment.reader.port.js";
-import {
-  TODO_COMMENT_PAGE_DIRECTION,
-  type ListTodoCommentThreadsParams,
-  type TodoCommentPageDirection,
+  listCommentAuthorIds,
   type TodoCommentThreadAnchorReadModel,
   type TodoCommentThreadsPage,
 } from "../read-models/todo-comment.read-model.js";
+import type { TodoCommentPageDirection } from "../todo-comment-page.constants.js";
 
-/** v1은 before/after로 방향을 주고, v2는 cursor에 담긴 방향을 쓴다. */
+/** v1은 before·after로 방향을 주고, v2는 cursor에 담긴 방향을 쓴다 */
 export type TodoCommentThreadsPageRequest =
   | { readonly kind: "FIRST" }
   | {
@@ -41,7 +35,7 @@ export interface ListTodoCommentThreadsQuery {
 interface ListTodoCommentThreadsDependencies {
   readonly reader: Pick<
     TodoCommentReaderPort,
-    "findAccessibleTodoOwnerId" | "findCommentRecord" | "listThreads" | "findLikedCommentIds"
+    "findAccessibleTodoOwnerId" | "findComment" | "listThreads" | "listLikedCommentIds"
   >;
   readonly blockReader: Pick<TodoCommentBlockReaderPort, "findBlockedCounterpartIds">;
   readonly cursorCodec: Pick<TodoCommentCursorCodecPort, "decodeThreads" | "encodeThreads">;
@@ -59,26 +53,32 @@ export class ListTodoCommentThreadsUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: ListTodoCommentThreadsQuery): Promise<TodoCommentThreadsPage> {
-    await assertTodoCommentAccess(this.#dependencies.reader, input.todoId, input.viewerId);
-    const page = await this.#resolvePage(input);
-    const anchoredWindow = await this.#dependencies.reader.listThreads(page.params);
+  async execute(query: ListTodoCommentThreadsQuery): Promise<TodoCommentThreadsPage> {
+    const { reader, blockReader, cursorCodec } = this.#dependencies;
+    if ((await reader.findAccessibleTodoOwnerId(query.todoId, query.viewerId)) == null) {
+      throw todoNotFound(query.todoId);
+    }
+    const page = await this.#resolvePage(query);
+    const anchoredWindow = await reader.listThreads(page.params);
+    // 기준 묶음이 목록에서 보이지 않으면 오류 대신 첫 페이지와 빈 anchor로 연다
     const window =
       anchoredWindow == null && page.params.mode === "ANCHOR"
-        ? await this.#dependencies.reader.listThreads({ ...page.params, mode: "INITIAL" })
+        ? await reader.listThreads({ ...page.params, mode: "INITIAL" })
         : anchoredWindow;
-
     if (window == null) {
-      throw new ApplicationException(ErrorCode.SYS_0002);
+      throw invalidCommentRequest();
     }
 
-    const records = window.items.flatMap((item) =>
+    const comments = window.items.flatMap((item) =>
       item.previewReply == null ? [item.comment] : [item.comment, item.previewReply],
     );
     const [likedCommentIds, blockedAuthorIds] = await Promise.all([
-      this.#dependencies.reader.findLikedCommentIds(collectCommentIds(records), input.viewerId),
-      this.#dependencies.blockReader.findBlockedCounterpartIds(input.viewerId, [
-        ...collectCommentAuthorIds(records),
+      reader.listLikedCommentIds(
+        comments.map((comment) => comment.id),
+        query.viewerId,
+      ),
+      blockReader.findBlockedCounterpartIds(query.viewerId, [
+        ...listCommentAuthorIds(comments),
         ...window.items.flatMap((item) => item.participantAuthors.map((author) => author.id)),
       ]),
     ]);
@@ -87,48 +87,39 @@ export class ListTodoCommentThreadsUseCase {
 
     return {
       items: window.items,
-      viewer: { viewerId: input.viewerId, likedCommentIds, blockedAuthorIds },
-      pagination: toTodoCommentCursorPagination({
-        size: input.size,
-        hasPrevious: window.hasPrevious,
-        hasNext: window.hasNext,
+      viewer: { viewerId: query.viewerId, likedCommentIds, blockedAuthorIds },
+      pagination: {
         previousCursor:
           window.hasPrevious && first != null
-            ? this.#dependencies.cursorCodec.encodeThreads(
-                first,
-                input.sort,
-                TODO_COMMENT_PAGE_DIRECTION.BEFORE,
-              )
+            ? cursorCodec.encodeThreads(first, query.sort, "BEFORE")
             : null,
         nextCursor:
           window.hasNext && last != null
-            ? this.#dependencies.cursorCodec.encodeThreads(
-                last,
-                input.sort,
-                TODO_COMMENT_PAGE_DIRECTION.AFTER,
-              )
+            ? cursorCodec.encodeThreads(last, query.sort, "AFTER")
             : null,
-      }),
+        hasPrevious: window.hasPrevious,
+        hasNext: window.hasNext,
+        size: query.size,
+      },
       anchor: anchoredWindow == null ? null : page.anchor,
     };
   }
 
-  async #resolvePage(input: ListTodoCommentThreadsQuery): Promise<ResolvedPage> {
-    const base = { todoId: input.todoId, sort: input.sort, size: input.size };
-
-    switch (input.page.kind) {
+  async #resolvePage(query: ListTodoCommentThreadsQuery): Promise<ResolvedPage> {
+    const base = { todoId: query.todoId, sort: query.sort, size: query.size };
+    switch (query.page.kind) {
       case "FIRST":
         return { params: { ...base, mode: "INITIAL" }, anchor: null };
       case "CURSOR": {
-        const cursor = this.#dependencies.cursorCodec.decodeThreads(input.page.cursor, input.sort);
-        if (cursor.todoId !== input.todoId) {
-          throw new ApplicationException(ErrorCode.SYS_0002);
+        const cursor = this.#dependencies.cursorCodec.decodeThreads(query.page.cursor, query.sort);
+        if (cursor.todoId !== query.todoId) {
+          throw invalidCommentRequest();
         }
-
         return {
           params: {
             ...base,
-            mode: input.page.direction ?? cursor.direction ?? TODO_COMMENT_PAGE_DIRECTION.AFTER,
+            // 방향이 없는 cursor는 1.14.0 이하 앱의 다음 페이지 cursor다
+            mode: query.page.direction ?? cursor.direction ?? "AFTER",
             anchorCommentId: cursor.rootId,
             anchorPosition: cursor.position,
           },
@@ -136,20 +127,19 @@ export class ListTodoCommentThreadsUseCase {
         };
       }
       case "ANCHOR": {
-        const record = await this.#dependencies.reader.findCommentRecord(
-          input.todoId,
-          input.page.commentId,
+        const comment = await this.#dependencies.reader.findComment(
+          query.todoId,
+          query.page.commentId,
         );
-        if (record == null || record.deletedAt != null) {
+        if (comment == null || comment.deletedAt != null) {
           return { params: { ...base, mode: "INITIAL" }, anchor: null };
         }
-
-        const threadCommentId = record.threadCommentId ?? record.id;
+        const threadCommentId = comment.threadCommentId ?? comment.id;
         return {
           params: { ...base, mode: "ANCHOR", anchorCommentId: threadCommentId },
           anchor: {
             threadCommentId,
-            replyId: record.threadCommentId == null ? null : record.id,
+            replyId: comment.threadCommentId == null ? null : comment.id,
           },
         };
       }

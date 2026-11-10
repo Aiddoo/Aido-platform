@@ -1,118 +1,115 @@
 import { ErrorCode } from "@aido/api/errors";
-import { vi } from "vitest";
 
 import {
-  createCommentRecordFixture,
-  createEngagementCommentReader,
-  StubEngagementCursorCodec,
-} from "#test/fixtures/engagement-comment.fixture";
-import { StubTodoCommentBlockReader } from "#test/mocks/ports/engagement-comment.stub";
+  createTodoCommentReadModelFixture,
+  TODO_COMMENT_FIXTURE_TODO_ID,
+  TODO_COMMENT_FIXTURE_VIEWER_ID,
+} from "#test/fixtures/engagement/todo-comment.fixture";
+import {
+  createTodoCommentsFixture,
+  type TodoCommentsFixture,
+} from "#test/fixtures/engagement/todo-comments.fixture";
 
 import { ListTodoCommentRepliesUseCase } from "./list-todo-comment-replies.use-case.js";
 
-const TODO_ID = 1;
-const VIEWER_ID = "cm1viewer0000000000000001";
-const COMMENT_ID = "cm1rootcomment000000000001";
+const TODO_ID = TODO_COMMENT_FIXTURE_TODO_ID;
+const HEAD_ID = "cm1rootcomment000000000001";
 const REPLY_ID = "cm1replycomment00000000001";
 
-function setup() {
-  const reader = createEngagementCommentReader();
-  const cursorCodec = new StubEngagementCursorCodec();
-  reader.accessiblePairs.add(`${TODO_ID}:${VIEWER_ID}`);
-  reader.likedCommentIds = new Set();
-  vi.spyOn(reader, "findCommentRecord").mockResolvedValue(
-    createCommentRecordFixture({ id: COMMENT_ID }),
-  );
-  reader.repliesWindow = {
-    items: [
-      createCommentRecordFixture({
-        id: REPLY_ID,
-        threadCommentId: COMMENT_ID,
-        replyToCommentId: COMMENT_ID,
-      }),
-    ],
-    hasPrevious: false,
-    hasNext: true,
+describe("ListTodoCommentRepliesUseCase — 묶음의 답글 목록", () => {
+  let fixture: TodoCommentsFixture;
+  const query = {
+    todoId: TODO_ID,
+    viewerId: TODO_COMMENT_FIXTURE_VIEWER_ID,
+    threadCommentId: HEAD_ID,
+    size: 2,
   };
-  const useCase = new ListTodoCommentRepliesUseCase({
-    reader,
-    cursorCodec,
-    blockReader: new StubTodoCommentBlockReader(),
+
+  beforeEach(async () => {
+    fixture = createTodoCommentsFixture();
+    await fixture.addComment({ id: HEAD_ID, replyCount: 1 });
+    await fixture.addComment({ id: REPLY_ID, parentId: HEAD_ID, replyToCommentId: HEAD_ID });
+    fixture.reader.repliesWindow = {
+      items: [
+        createTodoCommentReadModelFixture({
+          id: REPLY_ID,
+          threadCommentId: HEAD_ID,
+          replyToCommentId: HEAD_ID,
+        }),
+      ],
+      hasPrevious: false,
+      hasNext: true,
+    };
   });
-  return { reader, cursorCodec, useCase };
-}
 
-const baseInput = { todoId: TODO_ID, viewerId: VIEWER_ID, threadCommentId: COMMENT_ID, size: 10 };
-
-describe("ListTodoCommentRepliesUseCase", () => {
   it("묶음 머리의 답글 첫 페이지와 다음 cursor를 돌려준다", async () => {
-    // Given
-    const { reader, useCase } = setup();
-    const list = vi.spyOn(reader, "listReplies");
-
     // When
-    const result = await useCase.execute(baseInput);
+    const page = await new ListTodoCommentRepliesUseCase(fixture).execute(query);
 
     // Then
-    expect(list).toHaveBeenCalledWith(
-      expect.objectContaining({ mode: "INITIAL", threadCommentId: COMMENT_ID, size: 10 }),
-    );
-    expect(result.items.map((item) => item.id)).toEqual([REPLY_ID]);
-    expect(result.pagination).toMatchObject({ hasNext: true, nextCursor: "previous" });
+    expect(page.items.map((item) => item.id)).toEqual([REPLY_ID]);
+    expect(page.pagination).toEqual({
+      previousCursor: null,
+      nextCursor: `replies:AFTER:${REPLY_ID}`,
+      hasPrevious: false,
+      hasNext: true,
+      size: 2,
+    });
   });
 
-  it("답글 ID로 묶음을 열면 TODO_0831로 거부한다", async () => {
-    // Given
-    const { reader, useCase } = setup();
-    vi.spyOn(reader, "findCommentRecord").mockResolvedValue(
-      createCommentRecordFixture({ id: REPLY_ID, threadCommentId: COMMENT_ID }),
-    );
-
+  it("답글 id로 묶음을 열면 TODO_0831로 거부한다", async () => {
     // When
-    const result = useCase.execute({ ...baseInput, threadCommentId: REPLY_ID });
+    const listing = new ListTodoCommentRepliesUseCase(fixture).execute({
+      ...query,
+      threadCommentId: REPLY_ID,
+    });
 
     // Then
-    await expect(result).rejects.toMatchObject({ errorCode: ErrorCode.TODO_0831 });
+    await expect(listing).rejects.toMatchObject({
+      errorCode: ErrorCode.TODO_0831,
+      details: { commentId: REPLY_ID },
+    });
   });
 
-  it("aroundReplyId가 지워졌거나 다른 묶음이면 첫 페이지로 복구한다", async () => {
+  it("aroundReplyId를 찾지 못하면 첫 페이지로 연다", async () => {
     // Given
-    const { reader, useCase } = setup();
-    const window = reader.repliesWindow;
-    const list = vi
-      .spyOn(reader, "listReplies")
-      .mockResolvedValueOnce(null)
-      .mockResolvedValue(window);
+    fixture.reader.isAnchorMissing = true;
 
     // When
-    await useCase.execute({ ...baseInput, aroundReplyId: REPLY_ID });
+    await new ListTodoCommentRepliesUseCase(fixture).execute({
+      ...query,
+      aroundReplyId: "cm1missingreply0000000001",
+    });
 
     // Then
-    expect(list.mock.calls.map((call) => call[0].mode)).toEqual(["AROUND", "INITIAL"]);
+    expect(fixture.reader.replyParams.map((params) => params.mode)).toEqual(["AROUND", "INITIAL"]);
   });
 
-  it("cursor의 방향을 쓰고 다른 묶음의 cursor는 거부한다", async () => {
+  it("cursor에 담긴 방향으로 읽고 다른 묶음의 cursor는 SYS_0002로 거부한다", async () => {
     // Given
-    const { reader, cursorCodec, useCase } = setup();
-    const list = vi.spyOn(reader, "listReplies");
-    cursorCodec.decodedReplies = {
-      v: 1,
-      kind: "replies",
+    fixture.cursorCodec.register("before", {
       todoId: TODO_ID,
-      threadCommentId: COMMENT_ID,
+      threadCommentId: HEAD_ID,
       replyId: REPLY_ID,
       direction: "BEFORE",
-    };
+    });
+    fixture.cursorCodec.register("other-thread", {
+      todoId: TODO_ID,
+      threadCommentId: REPLY_ID,
+      replyId: REPLY_ID,
+      direction: "AFTER",
+    });
+    const useCase = new ListTodoCommentRepliesUseCase(fixture);
 
     // When
-    await useCase.execute({ ...baseInput, cursor: "signed" });
-    cursorCodec.decodedReplies = { ...cursorCodec.decodedReplies, threadCommentId: REPLY_ID };
-    const otherThread = useCase.execute({ ...baseInput, cursor: "other" });
+    await useCase.execute({ ...query, cursor: "before" });
+    const foreign = useCase.execute({ ...query, cursor: "other-thread" });
 
     // Then
-    expect(list).toHaveBeenCalledWith(
-      expect.objectContaining({ mode: "BEFORE", anchorReplyId: REPLY_ID }),
-    );
-    await expect(otherThread).rejects.toMatchObject({ errorCode: ErrorCode.SYS_0002 });
+    expect(fixture.reader.replyParams.at(0)).toMatchObject({
+      mode: "BEFORE",
+      anchorReplyId: REPLY_ID,
+    });
+    await expect(foreign).rejects.toMatchObject({ errorCode: ErrorCode.SYS_0002 });
   });
 });

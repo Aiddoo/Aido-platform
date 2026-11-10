@@ -2,6 +2,7 @@ import { eq, sql } from "drizzle-orm";
 import { vi } from "vitest";
 import { z } from "zod";
 
+import { DELETED_COMMENT_AUTHOR } from "#api/modules/engagement/comments/domain/comments.constants";
 import { DrizzleUserRepository } from "#api/modules/identity/users/infrastructure/persistence/drizzle-user.repository";
 import { DrizzleGrowthMetricsReader } from "#api/modules/operations/metrics/infrastructure/persistence/drizzle-growth-metrics.reader";
 import { requireRecord } from "#api/platform/database/database-error.util";
@@ -12,7 +13,6 @@ import {
   user as userTable,
   userActivityDay,
 } from "#api/platform/database/schema/index";
-import { DELETED_COMMENT_AUTHOR } from "#api/shared/domain/system-user";
 import { createDatabaseTransactionFixture } from "#test/setup/database-context";
 import type { TestDatabaseClient } from "#test/setup/test-database";
 

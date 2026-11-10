@@ -9,11 +9,13 @@ import { requireRecord } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { todo, todoComment, user, userProfile } from "#api/platform/database/schema/index";
 
-import type { TodoCommentReaderPort } from "../../application/ports/todo-comment.reader.port.js";
+import {
+  type ListTodoCommentRepliesParams,
+  type ListTodoCommentThreadsParams,
+  type ListTodoConversationParams,
+  TodoCommentReaderPort,
+} from "../../application/ports/todo-comment.reader.port.js";
 import type {
-  ListTodoCommentRepliesParams,
-  ListTodoCommentThreadsParams,
-  ListTodoConversationParams,
   TodoCommentParticipantAuthorReadModel,
   TodoCommentReadModel,
   TodoCommentThreadItemReadModel,
@@ -36,7 +38,7 @@ import {
   type MarkedTodoCommentRow,
   type TodoCommentRowMarker,
 } from "./todo-comment-window.mapper.js";
-import { toTodoResponse } from "./todo-details-row.mapper.js";
+import { toFriendTodoReadModel } from "./todo-details-row.mapper.js";
 
 const candidateComment = alias(todoComment, "candidate");
 const anchorComment = alias(todoComment, "comment");
@@ -191,7 +193,7 @@ export class DrizzleTodoCommentReader implements TodoCommentReaderPort {
     }
     const owner = requireRecord(row.user);
     return {
-      todo: toTodoResponse(row),
+      todo: toFriendTodoReadModel(row),
       owner: {
         id: owner.id,
         name: owner.profile?.name ?? null,
@@ -203,12 +205,12 @@ export class DrizzleTodoCommentReader implements TodoCommentReaderPort {
     };
   }
 
-  async findCommentRecord(todoId: number, commentId: string): Promise<TodoCommentReadModel | null> {
-    const [record] = await this.findCommentRecords(todoId, [commentId]);
+  async findComment(todoId: number, commentId: string): Promise<TodoCommentReadModel | null> {
+    const [record] = await this.listComments(todoId, [commentId]);
     return record ?? null;
   }
 
-  async findCommentRecords(
+  async listComments(
     todoId: number,
     commentIds: readonly string[],
   ): Promise<TodoCommentReadModel[]> {
@@ -897,14 +899,25 @@ export class DrizzleTodoCommentReader implements TodoCommentReaderPort {
       return null;
     }
 
-    return toTodoCommentKeysetWindow(
+    const window = toTodoCommentKeysetWindow(
       toMarkedRecords(rows, toConversationRecord),
       params.mode,
       params.size,
     );
+    return {
+      items: window.items,
+      anchorIndex: window.anchorIndex,
+      previousItem: window.previousRecord,
+      nextItem: window.nextRecord,
+      hasPrevious: window.hasPrevious,
+      hasNext: window.hasNext,
+    };
   }
 
-  async findLikedCommentIds(commentIds: readonly string[], viewerId: string): Promise<Set<string>> {
+  async listLikedCommentIds(
+    commentIds: readonly string[],
+    viewerId: string,
+  ): Promise<ReadonlySet<string>> {
     if (commentIds.length === 0) {
       return new Set();
     }

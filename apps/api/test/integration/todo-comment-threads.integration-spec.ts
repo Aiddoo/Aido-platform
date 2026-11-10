@@ -152,7 +152,8 @@ describe("댓글 v2 묶음·답글 읽기 (실제 PostgreSQL)", () => {
       clientRequestId: crypto.randomUUID(),
       content: "답글이 많은 댓글",
       replyCount: BUSY_REPLY_COUNT - 1,
-      createdAt: new Date("2026-08-25T00:00:00.000Z"),
+      createdAt: Temporal.Instant.from("2026-08-25T00:00:00.000Z"),
+      updatedAt: Temporal.Instant.from("2026-08-25T00:00:00.000Z"),
     });
     await client.insert(todoComment).values(
       Array.from({ length: BUSY_REPLY_COUNT }, (_, index) => ({
@@ -161,10 +162,14 @@ describe("댓글 v2 묶음·답글 읽기 (실제 PostgreSQL)", () => {
         authorId: index % 2 === 0 ? FRIEND_ID : OWNER_ID,
         clientRequestId: crypto.randomUUID(),
         content: index === DELETED_BUSY_REPLY_INDEX ? null : `답글 ${index}`,
-        deletedAt: index === DELETED_BUSY_REPLY_INDEX ? new Date("2026-08-25T05:00:00.000Z") : null,
+        deletedAt:
+          index === DELETED_BUSY_REPLY_INDEX
+            ? Temporal.Instant.from("2026-08-25T05:00:00.000Z")
+            : null,
         parentId: BUSY_THREAD,
         replyToCommentId: index === 0 ? BUSY_THREAD : busyReplyId(index - 1),
-        createdAt: new Date(Date.UTC(2026, 7, 25, 1, index)),
+        createdAt: Temporal.Instant.fromEpochMilliseconds(Date.UTC(2026, 7, 25, 1, index)),
+        updatedAt: Temporal.Instant.fromEpochMilliseconds(Date.UTC(2026, 7, 25, 1, index)),
       })),
     );
     await client.execute(sql`ANALYZE ${todoComment}`);

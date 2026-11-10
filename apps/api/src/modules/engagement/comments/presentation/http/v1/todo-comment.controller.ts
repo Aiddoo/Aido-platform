@@ -34,7 +34,6 @@ import {
 } from "#api/platform/http/swagger/index";
 import { THROTTLED_DESCRIPTION, ThrottleByUser } from "#api/platform/throttle/index";
 
-import { TODO_COMMENT_PAGE_DIRECTION } from "../../../application/read-models/todo-comment.read-model.js";
 import { DeleteTodoCommentUseCase } from "../../../application/use-cases/delete-todo-comment.use-case.js";
 import { GetTodoConversationUseCase } from "../../../application/use-cases/get-todo-conversation.use-case.js";
 import { GetTodoDetailsUseCase } from "../../../application/use-cases/get-todo-details.use-case.js";
@@ -46,8 +45,14 @@ import {
 import { UnlikeTodoCommentUseCase } from "../../../application/use-cases/unlike-todo-comment.use-case.js";
 import { UpdateTodoCommentUseCase } from "../../../application/use-cases/update-todo-comment.use-case.js";
 import { WriteTodoCommentChainUseCase } from "../../../application/use-cases/write-todo-comment-chain.use-case.js";
-import { toTodoCommentOverviewResponse } from "./todo-comment-response.mapper.js";
-import { TodoCommentMapper } from "./todo-comment-response.mapper.js";
+import {
+  toTodoCommentChainResponse,
+  toTodoCommentLikeResponse,
+  toTodoCommentMutationResponse,
+  toTodoCommentOverviewResponse,
+  toTodoConversationResponse,
+  toTodoDetailsResponse,
+} from "./todo-comment-response.mapper.js";
 import {
   DeleteTodoCommentResponseDto,
   GetTodoCommentOverviewQueryDto,
@@ -132,7 +137,7 @@ export class TodoCommentController {
       todoId: params.todoId,
       viewerId: user.userId,
     });
-    return TodoCommentMapper.toDetails(result, appVersion);
+    return toTodoDetailsResponse(result, appVersion);
   }
 
   @Get("comments/overview")
@@ -165,7 +170,7 @@ export class TodoCommentController {
       size: query.size,
       page: toOverviewPage(query),
     });
-    return TodoCommentMapper.toOverview(toTodoCommentOverviewResponse(result), appVersion);
+    return toTodoCommentOverviewResponse(result, appVersion);
   }
 
   @Get("conversation")
@@ -200,7 +205,7 @@ export class TodoCommentController {
       before: query.before,
       after: query.after,
     });
-    return TodoCommentMapper.toConversation(result, appVersion);
+    return toTodoConversationResponse(result, appVersion);
   }
 
   @Post("comments")
@@ -237,7 +242,7 @@ export class TodoCommentController {
       parentId: body.parentId,
       items: body.items,
     });
-    return TodoCommentMapper.toChain(result, appVersion);
+    return toTodoCommentChainResponse(result, appVersion);
   }
 
   @Patch("comments/:commentId")
@@ -274,7 +279,7 @@ export class TodoCommentController {
       userId: user.userId,
       content: body.content,
     });
-    return TodoCommentMapper.toMutation(result, appVersion);
+    return toTodoCommentMutationResponse(result, appVersion);
   }
 
   @Delete("comments/:commentId")
@@ -292,15 +297,16 @@ export class TodoCommentController {
   @ApiErrorCodesResponse(HttpStatus.NOT_FOUND, [ErrorCode.TODO_0801, ErrorCode.TODO_0831])
   @ApiConflictError(ErrorCode.SYS_0003)
   @ApiTooManyRequestsError(ErrorCode.SYS_0001, THROTTLED_DESCRIPTION)
-  deleteComment(
+  async deleteComment(
     @CurrentUser() user: CurrentUserPayload,
     @Param({ schema: TodoCommentIdParamDto }) params: TodoCommentIdParamDto,
   ): Promise<DeleteTodoCommentResponseDto> {
-    return this.#deleteTodoComment.execute({
+    await this.#deleteTodoComment.execute({
       todoId: params.todoId,
       commentId: params.commentId,
       userId: user.userId,
     });
+    return { commentId: params.commentId, isDeleted: true };
   }
 
   @Put("comments/:commentId/likes")
@@ -318,15 +324,16 @@ export class TodoCommentController {
   @ApiErrorCodesResponse(HttpStatus.NOT_FOUND, [ErrorCode.TODO_0801, ErrorCode.TODO_0831])
   @ApiConflictError(ErrorCode.TODO_0833)
   @ApiTooManyRequestsError(ErrorCode.SYS_0001, THROTTLED_DESCRIPTION)
-  likeComment(
+  async likeComment(
     @CurrentUser() user: CurrentUserPayload,
     @Param({ schema: TodoCommentIdParamDto }) params: TodoCommentIdParamDto,
   ): Promise<TodoCommentLikeResponseDto> {
-    return this.#likeTodoComment.execute({
+    const result = await this.#likeTodoComment.execute({
       todoId: params.todoId,
       commentId: params.commentId,
       userId: user.userId,
     });
+    return toTodoCommentLikeResponse(result);
   }
 
   @Delete("comments/:commentId/likes")
@@ -343,25 +350,26 @@ export class TodoCommentController {
   @ApiErrorCodesResponse(HttpStatus.NOT_FOUND, [ErrorCode.TODO_0801, ErrorCode.TODO_0831])
   @ApiConflictError(ErrorCode.TODO_0833)
   @ApiTooManyRequestsError(ErrorCode.SYS_0001, THROTTLED_DESCRIPTION)
-  unlikeComment(
+  async unlikeComment(
     @CurrentUser() user: CurrentUserPayload,
     @Param({ schema: TodoCommentIdParamDto }) params: TodoCommentIdParamDto,
   ): Promise<TodoCommentLikeResponseDto> {
-    return this.#unlikeTodoComment.execute({
+    const result = await this.#unlikeTodoComment.execute({
       todoId: params.todoId,
       commentId: params.commentId,
       userId: user.userId,
     });
+    return toTodoCommentLikeResponse(result);
   }
 }
 
 function toOverviewPage(query: GetTodoCommentOverviewQueryDto): TodoCommentThreadsPageRequest {
   if (query.before != null) {
-    return { kind: "CURSOR", cursor: query.before, direction: TODO_COMMENT_PAGE_DIRECTION.BEFORE };
+    return { kind: "CURSOR", cursor: query.before, direction: "BEFORE" };
   }
 
   if (query.after != null) {
-    return { kind: "CURSOR", cursor: query.after, direction: TODO_COMMENT_PAGE_DIRECTION.AFTER };
+    return { kind: "CURSOR", cursor: query.after, direction: "AFTER" };
   }
 
   return { kind: "FIRST" };

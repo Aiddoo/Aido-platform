@@ -1,222 +1,169 @@
-import type {
-  Todo,
-  TodoCommentCursorPagination,
-  TodoCommentSort,
-  TodoDetailsResponse,
-} from "@aido/api";
+import type { FriendTodoReadModel } from "#api/modules/planning/todos/planning-todos.public";
 
-import type { CommentPlacement } from "../../domain/comment-placement.vo.js";
-
-/** 댓글 응답을 만드는 데 필요한 저장소 독립 읽기 모델. */
+/** 댓글 응답을 만드는 데 필요한 저장소 독립 조회 결과 */
 export interface TodoCommentReadModel {
-  id: string;
-  todoId: number;
+  readonly id: string;
+  readonly todoId: number;
   /** 답글이 속한 묶음의 머리 댓글. 댓글이면 null */
-  threadCommentId: string | null;
+  readonly threadCommentId: string | null;
   /** 답글이 답한 글. 댓글이거나 대상이 사라졌으면 null */
-  replyToCommentId: string | null;
+  readonly replyToCommentId: string | null;
   /** 답글 대상 작성자. 차단 관계면 @멘션 이름을 가린다 */
-  replyToAuthorId: string | null;
-  replyToAuthorName: string | null;
-  authorId: string;
-  authorName: string | null;
+  readonly replyToAuthorId: string | null;
+  readonly replyToAuthorName: string | null;
+  readonly authorId: string;
+  readonly authorName: string | null;
   /** 작성자 Aido ID. 같은 이름의 작성자를 구분하는 데 쓴다 */
-  authorUserTag: string | null;
-  authorProfileImage: string | null;
-  todoOwnerId: string;
-  content: string | null;
-  likeCount: number;
-  replyCount: number;
-  deletedAt: string | null;
-  editedAt: string | null;
-  createdAt: string;
-}
-
-export interface TodoDetailsReadModel {
-  todo: Todo;
-  owner: TodoDetailsResponse["owner"];
-  viewCount: number;
-  commentCount: number;
-  isOwner: boolean;
+  readonly authorUserTag: string | null;
+  readonly authorProfileImage: string | null;
+  readonly todoOwnerId: string;
+  readonly content: string | null;
+  readonly likeCount: number;
+  readonly replyCount: number;
+  readonly deletedAt: Temporal.Instant | null;
+  readonly editedAt: Temporal.Instant | null;
+  readonly createdAt: Temporal.Instant;
 }
 
 /**
- * 묶음 머리를 정렬하던 순간의 위치.
+ * 묶음 머리를 정렬하던 순간의 인기 점수.
  *
- * 인기 점수는 페이지를 넘기는 사이 바뀔 수 있으므로 현재 DB 값이 아니라 cursor에 담은 값을
- * 경계로 쓴다. 불변 createdAt과 묶음 안 순서는 anchor 행에서 읽고 wire에는 싣지 않는다.
+ * 점수는 페이지를 넘기는 사이 바뀔 수 있어 현재 DB 값이 아니라 cursor에 담은 값을 경계로 쓴다.
+ * 바뀌지 않는 createdAt과 묶음 안 순서는 기준 행에서 읽어 cursor에 싣지 않는다.
  */
 export interface TodoCommentRootPosition {
-  rootLikeCount: number;
-  rootReplyCount: number;
+  readonly rootLikeCount: number;
+  readonly rootReplyCount: number;
 }
 
-export type TodoConversationScope = "TODO" | "THREAD";
-
-/** 대화 reader만 만드는 행. 일반 댓글 projection에는 정렬 내부 값을 섞지 않는다. */
+/** 대화 reader만 만드는 행. 일반 댓글 조회 결과에는 정렬 내부 값을 섞지 않는다 */
 export interface TodoConversationReadModel extends TodoCommentReadModel {
-  conversationPosition: TodoCommentRootPosition;
+  readonly conversationPosition: TodoCommentRootPosition;
 }
 
-/** 대화 커서는 화면에 노출하지 않는 정렬의 불변 행 위치를 식별한다. */
-export type TodoConversationCursor = {
-  v: 1;
-  kind: "conversation";
-  sort: TodoCommentSort;
-  todoId: number;
-  commentId: string;
-  threadId: string;
-  scope: TodoConversationScope;
-  position: TodoCommentRootPosition;
-};
-
-export const TODO_COMMENT_PAGE_DIRECTION = {
-  BEFORE: "BEFORE",
-  AFTER: "AFTER",
-} as const;
-
-export type TodoCommentPageDirection =
-  (typeof TODO_COMMENT_PAGE_DIRECTION)[keyof typeof TODO_COMMENT_PAGE_DIRECTION];
-
-/** 1.14.0 이하 앱이 가진 cursor도 그대로 읽도록 wire kind는 overview로 둔다. */
-export type TodoCommentThreadCursor = {
-  v: 1;
-  kind: "overview";
-  sort: TodoCommentSort;
-  todoId: number;
-  rootId: string;
-  position: TodoCommentRootPosition;
-  direction?: TodoCommentPageDirection;
-};
-
-export type TodoCommentRepliesCursor = {
-  v: 1;
-  kind: "replies";
-  todoId: number;
-  threadCommentId: string;
-  replyId: string;
-  direction: TodoCommentPageDirection;
-};
-
-export type ConversationPageMode = "INITIAL" | "BEFORE" | "AFTER" | "FOCUS";
-
-export interface ListTodoConversationParams {
-  todoId: number;
-  sort: TodoCommentSort;
-  size: number;
-  mode: ConversationPageMode;
-  scope: TodoConversationScope;
-  anchorCommentId?: string;
-  anchorThreadId?: string;
-  anchorPosition?: TodoCommentRootPosition;
-}
-
-/** 저장소가 앞뒤 경계 한 행까지 읽은 뒤 돌려주는 대화 창. */
-export interface TodoConversationWindow {
-  items: TodoConversationReadModel[];
-  anchorIndex: number | null;
-  previousRecord: TodoConversationReadModel | null;
-  nextRecord: TodoConversationReadModel | null;
-  hasPrevious: boolean;
-  hasNext: boolean;
-}
-
-export type TodoCommentPageMode = "INITIAL" | TodoCommentPageDirection;
-
-export interface ListTodoCommentThreadsParams {
-  todoId: number;
-  sort: TodoCommentSort;
-  size: number;
-  mode: TodoCommentPageMode | "ANCHOR";
-  anchorCommentId?: string;
-  anchorPosition?: TodoCommentRootPosition;
-}
-
-/** 묶음 머리 댓글만 가지는 keyset 위치. 일반 댓글 projection에는 노출하지 않는다. */
+/** 묶음 머리 댓글만 가지는 keyset 위치 */
 export interface TodoCommentThreadReadModel extends TodoCommentReadModel {
-  threadPosition: TodoCommentRootPosition;
+  readonly threadPosition: TodoCommentRootPosition;
 }
 
 export interface TodoCommentParticipantAuthorReadModel {
-  id: string;
-  name: string | null;
-  userTag: string | null;
-  profileImage: string | null;
-  isTodoOwner: boolean;
+  readonly id: string;
+  readonly name: string | null;
+  readonly userTag: string | null;
+  readonly profileImage: string | null;
+  readonly isTodoOwner: boolean;
 }
 
 export interface TodoCommentThreadItemReadModel {
-  comment: TodoCommentThreadReadModel;
-  previewReply: TodoCommentReadModel | null;
-  totalCount: number;
-  participantAuthors: TodoCommentParticipantAuthorReadModel[];
+  readonly comment: TodoCommentThreadReadModel;
+  readonly previewReply: TodoCommentReadModel | null;
+  readonly totalCount: number;
+  readonly participantAuthors: readonly TodoCommentParticipantAuthorReadModel[];
 }
 
-export interface TodoCommentWindow<T> {
-  items: T[];
-  hasPrevious: boolean;
-  hasNext: boolean;
+export interface TodoCommentWindow<TItem> {
+  readonly items: readonly TItem[];
+  readonly hasPrevious: boolean;
+  readonly hasNext: boolean;
 }
 
-export interface ListTodoCommentRepliesParams {
-  todoId: number;
-  threadCommentId: string;
-  size: number;
-  mode: TodoCommentPageMode | "AROUND";
-  anchorReplyId?: string;
+/** 저장소가 앞뒤 경계 한 행까지 읽은 뒤 돌려주는 대화 창 */
+export interface TodoConversationWindow extends TodoCommentWindow<TodoConversationReadModel> {
+  readonly anchorIndex: number | null;
+  /** 창 바로 앞 행. cursor 행이 지워져도 경계로 남는지 확인할 때 쓴다 */
+  readonly previousItem: TodoConversationReadModel | null;
+  /** 창 바로 뒤 행. 마지막 행의 연결선이 이어지는지 정한다 */
+  readonly nextItem: TodoConversationReadModel | null;
 }
 
-/** 버전과 무관한 읽기 결과. v1·v2 presenter가 각자 응답 모양으로 바꾼다. */
+/** 버전과 무관한 보는 사람 문맥. v1·v2 응답 매퍼가 가림·권한을 계산한다 */
 export interface TodoCommentViewer {
-  viewerId: string;
-  likedCommentIds: ReadonlySet<string>;
-  blockedAuthorIds: ReadonlySet<string>;
+  readonly viewerId: string;
+  readonly likedCommentIds: ReadonlySet<string>;
+  readonly blockedAuthorIds: ReadonlySet<string>;
+}
+
+export interface TodoCommentCursorPage {
+  readonly previousCursor: string | null;
+  readonly nextCursor: string | null;
+  readonly hasPrevious: boolean;
+  readonly hasNext: boolean;
+  readonly size: number;
 }
 
 export interface TodoCommentThreadAnchorReadModel {
-  threadCommentId: string;
-  replyId: string | null;
+  readonly threadCommentId: string;
+  readonly replyId: string | null;
 }
 
 export interface TodoCommentThreadsPage {
-  items: TodoCommentThreadItemReadModel[];
-  viewer: TodoCommentViewer;
-  pagination: TodoCommentCursorPagination;
-  anchor: TodoCommentThreadAnchorReadModel | null;
+  readonly items: readonly TodoCommentThreadItemReadModel[];
+  readonly viewer: TodoCommentViewer;
+  readonly pagination: TodoCommentCursorPage;
+  readonly anchor: TodoCommentThreadAnchorReadModel | null;
 }
 
 export interface TodoCommentRepliesPage {
-  items: TodoCommentReadModel[];
-  viewer: TodoCommentViewer;
-  pagination: TodoCommentCursorPagination;
+  readonly items: readonly TodoCommentReadModel[];
+  readonly viewer: TodoCommentViewer;
+  readonly pagination: TodoCommentCursorPage;
 }
 
-export interface CreateTodoCommentChainInput {
-  todoId: number;
-  authorId: string;
-  placement: CommentPlacement;
-  items: { clientRequestId: string; content: string }[];
+export interface TodoConversationFocusReadModel {
+  readonly commentId: string;
+  readonly itemIndex: number;
+  /** focus 답글 앞 페이지 밖의 묶음 머리. 1.14.0 이하 앱이 대화를 이어 그리는 데 쓴다 */
+  readonly precedingThreadComments: readonly TodoCommentReadModel[];
 }
 
-/** 멱등 replay 여부를 확인할 때 쓰는 정규화된 원본 명령. */
-export interface TodoCommentChainCommand {
-  todoId: number;
-  authorId: string;
-  parentId: string | null;
-  items: { clientRequestId: string; content: string }[];
+export interface TodoConversationPage {
+  readonly items: readonly TodoCommentReadModel[];
+  readonly nextItem: TodoCommentReadModel | null;
+  readonly focus: TodoConversationFocusReadModel | null;
+  readonly viewer: TodoCommentViewer;
+  readonly pagination: TodoCommentCursorPage;
 }
 
-export interface TodoCommentChainCreationResult {
-  commentIds: string[];
-  /** 이번 요청으로 새로 생긴 글 수. 재시도로 전부 이미 있으면 0이다. */
-  createdCount: number;
+/** 쓰거나 고친 글과 그 글을 본 작성자의 문맥 */
+export interface TodoCommentsWithViewer {
+  readonly comments: readonly TodoCommentReadModel[];
+  readonly viewer: TodoCommentViewer;
 }
 
-export interface TodoCommentLikeTransition {
-  commentId: string;
-  commentAuthorId: string | null;
-  changed: boolean;
-  isLiked: boolean;
-  likeCount: number;
-  wasEverNotified: boolean;
+export interface TodoCommentWithViewer {
+  readonly comment: TodoCommentReadModel;
+  readonly viewer: TodoCommentViewer;
+}
+
+export interface TodoCommentLikeState {
+  readonly commentId: string;
+  readonly isLiked: boolean;
+  readonly likeCount: number;
+}
+
+export interface TodoDetailsOwnerReadModel {
+  readonly id: string;
+  readonly name: string | null;
+  readonly profileImage: string | null;
+}
+
+export interface TodoDetailsReadModel {
+  readonly todo: FriendTodoReadModel;
+  readonly owner: TodoDetailsOwnerReadModel;
+  readonly viewCount: number;
+  readonly commentCount: number;
+  readonly isOwner: boolean;
+}
+
+export function listCommentIds(comments: readonly TodoCommentReadModel[]): string[] {
+  return comments.map((comment) => comment.id);
+}
+
+/** 응답에 실릴 수 있는 작성자 ID. 차단 관계를 한 번에 조회하는 후보로 쓴다 */
+export function listCommentAuthorIds(comments: readonly TodoCommentReadModel[]): string[] {
+  return comments.flatMap((comment) =>
+    comment.replyToAuthorId == null
+      ? [comment.authorId]
+      : [comment.authorId, comment.replyToAuthorId],
+  );
 }

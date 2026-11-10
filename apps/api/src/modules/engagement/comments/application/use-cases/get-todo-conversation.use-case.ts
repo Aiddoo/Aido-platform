@@ -1,29 +1,23 @@
-import type { TodoCommentSort, TodoConversationFocus, TodoConversationResponse } from "@aido/api";
-import { ErrorCode } from "@aido/api/errors";
+import type { TodoCommentSort } from "@aido/api/vocabulary";
 
-import { ApplicationException } from "#api/shared/application/application.exception";
-
-import {
-  toTodoConversationAncestorItems,
-  toTodoConversationItems,
-} from "../../presentation/http/v1/todo-comment-response.mapper.js";
-import {
-  collectCommentAuthorIds,
-  collectCommentIds,
-  toTodoCommentCursorPagination,
-} from "../../presentation/http/v2/todo-comment-response.mapper.js";
-import { assertTodoCommentAccess } from "../comments.errors.js";
-import { type TodoCommentBlockReaderPort } from "../ports/todo-comment-block-reader.port.js";
-import { type TodoCommentCursorCodecPort } from "../ports/todo-comment-cursor-codec.port.js";
-import { type TodoCommentReaderPort } from "../ports/todo-comment.reader.port.js";
+import { commentNotFound, invalidCommentRequest, todoNotFound } from "../comments.errors.js";
+import type { TodoCommentBlockReaderPort } from "../ports/todo-comment-block-reader.port.js";
 import type {
-  ConversationPageMode,
-  TodoCommentReadModel,
-  TodoCommentRootPosition,
-  TodoCommentViewer,
+  TodoCommentCursorCodecPort,
   TodoConversationCursor,
-  TodoConversationScope,
+} from "../ports/todo-comment-cursor-codec.port.js";
+import type { TodoCommentReaderPort } from "../ports/todo-comment.reader.port.js";
+import {
+  listCommentAuthorIds,
+  listCommentIds,
+  type TodoCommentReadModel,
+  type TodoCommentRootPosition,
+  type TodoConversationPage,
 } from "../read-models/todo-comment.read-model.js";
+import type {
+  TodoConversationPageMode,
+  TodoConversationScope,
+} from "../todo-comment-page.constants.js";
 
 export interface GetTodoConversationQuery {
   readonly todoId: number;
@@ -36,65 +30,17 @@ export interface GetTodoConversationQuery {
 }
 
 interface ConversationAnchor {
-  readonly mode: ConversationPageMode;
+  readonly mode: TodoConversationPageMode;
   readonly scope: TodoConversationScope;
   readonly commentId?: string;
   readonly threadId?: string;
   readonly position?: TodoCommentRootPosition;
 }
 
-function decodeCursor(
-  cursor: string,
-  sort: TodoCommentSort,
-  todoId: number,
-  cursorCodec: Pick<TodoCommentCursorCodecPort, "decodeConversation">,
-): TodoConversationCursor {
-  const decoded = cursorCodec.decodeConversation(cursor, sort);
-
-  if (decoded.todoId !== todoId) {
-    throw new ApplicationException(ErrorCode.SYS_0002);
-  }
-
-  return decoded;
-}
-
-function getAnchor(
-  input: GetTodoConversationQuery,
-  cursorCodec: Pick<TodoCommentCursorCodecPort, "decodeConversation">,
-): ConversationAnchor {
-  if (input.focusCommentId != null) {
-    return { mode: "FOCUS", scope: "THREAD", commentId: input.focusCommentId };
-  }
-
-  if (input.before != null) {
-    const cursor = decodeCursor(input.before, input.sort, input.todoId, cursorCodec);
-    return {
-      mode: "BEFORE",
-      scope: cursor.scope,
-      commentId: cursor.commentId,
-      threadId: cursor.threadId,
-      position: cursor.position,
-    };
-  }
-
-  if (input.after != null) {
-    const cursor = decodeCursor(input.after, input.sort, input.todoId, cursorCodec);
-    return {
-      mode: "AFTER",
-      scope: cursor.scope,
-      commentId: cursor.commentId,
-      threadId: cursor.threadId,
-      position: cursor.position,
-    };
-  }
-
-  return { mode: "INITIAL", scope: "TODO" };
-}
-
 interface GetTodoConversationDependencies {
   readonly reader: Pick<
     TodoCommentReaderPort,
-    "findAccessibleTodoOwnerId" | "listConversation" | "findCommentRecords" | "findLikedCommentIds"
+    "findAccessibleTodoOwnerId" | "listConversation" | "listComments" | "listLikedCommentIds"
   >;
   readonly blockReader: Pick<TodoCommentBlockReaderPort, "findBlockedCounterpartIds">;
   readonly cursorCodec: Pick<
@@ -103,6 +49,12 @@ interface GetTodoConversationDependencies {
   >;
 }
 
+const EMPTY_VIEWER_SETS = {
+  likedCommentIds: new Set<string>(),
+  blockedAuthorIds: new Set<string>(),
+};
+
+/** 1.14.0 이하 앱의 v1 대화. 묶음 순서를 지키고 묶음 안은 머리 다음 답글을 작성 순으로 세운다 */
 export class GetTodoConversationUseCase {
   readonly #dependencies: GetTodoConversationDependencies;
 
@@ -110,93 +62,107 @@ export class GetTodoConversationUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: GetTodoConversationQuery): Promise<TodoConversationResponse> {
-    await assertTodoCommentAccess(this.#dependencies.reader, input.todoId, input.viewerId);
-    const anchor = getAnchor(input, this.#dependencies.cursorCodec);
-    const window = await this.#dependencies.reader.listConversation({
-      todoId: input.todoId,
-      sort: input.sort,
-      size: input.size,
+  async execute(query: GetTodoConversationQuery): Promise<TodoConversationPage> {
+    const { reader, blockReader, cursorCodec } = this.#dependencies;
+    if ((await reader.findAccessibleTodoOwnerId(query.todoId, query.viewerId)) == null) {
+      throw todoNotFound(query.todoId);
+    }
+    const anchor = this.#toAnchor(query);
+    const window = await reader.listConversation({
+      todoId: query.todoId,
+      sort: query.sort,
+      size: query.size,
       mode: anchor.mode,
       scope: anchor.scope,
       anchorCommentId: anchor.commentId,
       anchorThreadId: anchor.threadId,
       anchorPosition: anchor.position,
     });
-
-    const focusedRecord =
-      window?.anchorIndex == null ? undefined : window.items[window.anchorIndex];
+    const focusedItem = window?.anchorIndex == null ? undefined : window.items[window.anchorIndex];
+    // 없거나 대화에서 사라진 focus는 다른 묶음으로 바꾸지 않고 빈 대화로 연다
     if (
       anchor.mode === "FOCUS" &&
-      (window == null || focusedRecord == null || focusedRecord.id !== anchor.commentId)
+      (window == null || focusedItem == null || focusedItem.id !== anchor.commentId)
     ) {
-      return this.#toEmptyResponse(input.size);
+      return this.#toEmptyPage(query);
     }
-
     if (window == null) {
-      throw new ApplicationException(ErrorCode.SYS_0002);
+      throw invalidCommentRequest();
     }
 
-    const focusRecord = this.#getFocusRecord(window.items, window.anchorIndex, anchor);
-    const precedingThreadComments = await this.#findPrecedingThreadComment(
-      input.todoId,
-      focusRecord,
+    const focusItem = this.#findFocusItem(window.items, window.anchorIndex, anchor);
+    const precedingThreadComments = await this.#listPrecedingThreadComment(
+      query.todoId,
+      focusItem,
       window.items,
     );
-    const visibleRecords = [...window.items, ...precedingThreadComments];
+    const visibleComments = [...window.items, ...precedingThreadComments];
     const [likedCommentIds, blockedAuthorIds] = await Promise.all([
-      this.#dependencies.reader.findLikedCommentIds(
-        collectCommentIds(visibleRecords),
-        input.viewerId,
-      ),
-      this.#dependencies.blockReader.findBlockedCounterpartIds(
-        input.viewerId,
-        collectCommentAuthorIds(visibleRecords),
-      ),
+      reader.listLikedCommentIds(listCommentIds(visibleComments), query.viewerId),
+      blockReader.findBlockedCounterpartIds(query.viewerId, listCommentAuthorIds(visibleComments)),
     ]);
-    const viewer = { viewerId: input.viewerId, likedCommentIds, blockedAuthorIds };
-    const items = toTodoConversationItems({
-      records: window.items,
-      nextRecord: window.nextRecord,
-      focusCommentId: focusRecord?.id ?? null,
-      viewer,
-    });
-    const firstRecord = window.items.at(0);
-    const lastRecord = window.items.at(-1);
+    const first = window.items.at(0);
+    const last = window.items.at(-1);
 
     return {
-      items,
-      focus: this.#toFocusResponse(
-        focusRecord,
-        window.anchorIndex,
-        precedingThreadComments,
-        viewer,
-      ),
-      pagination: toTodoCommentCursorPagination({
-        size: input.size,
-        hasPrevious: window.hasPrevious,
-        hasNext: window.hasNext,
+      items: window.items,
+      nextItem: window.nextItem,
+      focus:
+        focusItem == null || window.anchorIndex == null
+          ? null
+          : {
+              commentId: focusItem.id,
+              itemIndex: window.anchorIndex,
+              precedingThreadComments,
+            },
+      viewer: { viewerId: query.viewerId, likedCommentIds, blockedAuthorIds },
+      pagination: {
         previousCursor:
-          window.hasPrevious && firstRecord != null
-            ? this.#dependencies.cursorCodec.encodeConversation(
-                firstRecord,
-                input.sort,
-                anchor.scope,
-              )
+          window.hasPrevious && first != null
+            ? cursorCodec.encodeConversation(first, query.sort, anchor.scope)
             : null,
         nextCursor:
-          window.hasNext && lastRecord != null
-            ? this.#dependencies.cursorCodec.encodeConversation(
-                lastRecord,
-                input.sort,
-                anchor.scope,
-              )
+          window.hasNext && last != null
+            ? cursorCodec.encodeConversation(last, query.sort, anchor.scope)
             : null,
-      }),
+        hasPrevious: window.hasPrevious,
+        hasNext: window.hasNext,
+        size: query.size,
+      },
     };
   }
 
-  #getFocusRecord(
+  #toAnchor(query: GetTodoConversationQuery): ConversationAnchor {
+    if (query.focusCommentId != null) {
+      return { mode: "FOCUS", scope: "THREAD", commentId: query.focusCommentId };
+    }
+    if (query.before != null) {
+      return { mode: "BEFORE", ...this.#fromCursor(this.#decode(query.before, query)) };
+    }
+    if (query.after != null) {
+      return { mode: "AFTER", ...this.#fromCursor(this.#decode(query.after, query)) };
+    }
+    return { mode: "INITIAL", scope: "TODO" };
+  }
+
+  #decode(cursor: string, query: GetTodoConversationQuery): TodoConversationCursor {
+    const decoded = this.#dependencies.cursorCodec.decodeConversation(cursor, query.sort);
+    if (decoded.todoId !== query.todoId) {
+      throw invalidCommentRequest();
+    }
+    return decoded;
+  }
+
+  #fromCursor(cursor: TodoConversationCursor): Omit<ConversationAnchor, "mode"> {
+    return {
+      scope: cursor.scope,
+      commentId: cursor.commentId,
+      threadId: cursor.threadId,
+      position: cursor.position,
+    };
+  }
+
+  #findFocusItem(
     items: readonly TodoCommentReadModel[],
     anchorIndex: number | null,
     anchor: ConversationAnchor,
@@ -204,62 +170,39 @@ export class GetTodoConversationUseCase {
     if (anchor.mode !== "FOCUS") {
       return null;
     }
-
-    const record = anchorIndex == null ? undefined : items[anchorIndex];
-
-    if (record == null || record.id !== anchor.commentId) {
-      throw new ApplicationException(ErrorCode.TODO_0831, { commentId: anchor.commentId });
+    const item = anchorIndex == null ? undefined : items[anchorIndex];
+    if (item == null || item.id !== anchor.commentId) {
+      throw commentNotFound(anchor.commentId ?? "");
     }
-
-    return record;
+    return item;
   }
 
-  #toEmptyResponse(size: number): TodoConversationResponse {
+  #toEmptyPage(query: GetTodoConversationQuery): TodoConversationPage {
     return {
       items: [],
+      nextItem: null,
       focus: null,
-      pagination: toTodoCommentCursorPagination({
-        size,
-        hasPrevious: false,
-        hasNext: false,
+      viewer: { viewerId: query.viewerId, ...EMPTY_VIEWER_SETS },
+      pagination: {
         previousCursor: null,
         nextCursor: null,
-      }),
+        hasPrevious: false,
+        hasNext: false,
+        size: query.size,
+      },
     };
   }
 
-  /** 1.14.0 이하 앱은 focus 답글 앞에 묶음 머리가 보여야 대화를 이어 그린다. */
-  async #findPrecedingThreadComment(
+  /** 1.14.0 이하 앱은 focus 답글 앞에 묶음 머리가 보여야 대화를 이어 그린다 */
+  async #listPrecedingThreadComment(
     todoId: number,
-    focusRecord: TodoCommentReadModel | null,
-    pageRecords: readonly TodoCommentReadModel[],
+    focusItem: TodoCommentReadModel | null,
+    pageItems: readonly TodoCommentReadModel[],
   ): Promise<TodoCommentReadModel[]> {
-    const threadCommentId = focusRecord?.threadCommentId;
-    if (threadCommentId == null || pageRecords.some((record) => record.id === threadCommentId)) {
+    const threadCommentId = focusItem?.threadCommentId;
+    if (threadCommentId == null || pageItems.some((item) => item.id === threadCommentId)) {
       return [];
     }
-
-    return this.#dependencies.reader.findCommentRecords(todoId, [threadCommentId]);
-  }
-
-  #toFocusResponse(
-    focusRecord: TodoCommentReadModel | null,
-    itemIndex: number | null,
-    precedingThreadComments: readonly TodoCommentReadModel[],
-    viewer: TodoCommentViewer,
-  ): TodoConversationFocus | null {
-    if (focusRecord == null || itemIndex == null) {
-      return null;
-    }
-
-    return {
-      commentId: focusRecord.id,
-      itemIndex,
-      precedingAncestors: toTodoConversationAncestorItems({
-        records: precedingThreadComments,
-        viewer,
-      }),
-      omittedAncestorCount: 0,
-    };
+    return this.#dependencies.reader.listComments(todoId, [threadCommentId]);
   }
 }

@@ -4,17 +4,19 @@ import { todoConversationConnectionSchema } from "@aido/api";
 import { Test, type TestingModule } from "@nestjs/testing";
 import { eq } from "drizzle-orm";
 
+import { TodoCommentIdempotencyRace } from "#api/modules/engagement/comments/application/comments.errors";
 import type { TodoCommentCursorCodecPort } from "#api/modules/engagement/comments/application/ports/todo-comment-cursor-codec.port";
-import {
-  TodoCommentIdempotencyConflict,
-  TodoCommentIdempotencyRace,
-} from "#api/modules/engagement/comments/application/ports/todo-comment.repository.port";
 import { GetTodoConversationUseCase } from "#api/modules/engagement/comments/application/use-cases/get-todo-conversation.use-case";
 import { ListTodoCommentThreadsUseCase } from "#api/modules/engagement/comments/application/use-cases/list-todo-comment-threads.use-case";
 import { CommentPlacement } from "#api/modules/engagement/comments/domain/comment-placement.vo";
+import { DELETED_COMMENT_AUTHOR } from "#api/modules/engagement/comments/domain/comments.constants";
+import { matchTodoCommentChainReplay } from "#api/modules/engagement/comments/domain/todo-comment-chain.domain-service";
+import { TodoCommentContent } from "#api/modules/engagement/comments/domain/todo-comment-content.vo";
+import { TodoComment } from "#api/modules/engagement/comments/domain/todo-comment.aggregate";
 import { HmacTodoCommentCursorCodecAdapter } from "#api/modules/engagement/comments/infrastructure/adapters/hmac-todo-comment-cursor-codec.adapter";
 import { DrizzleTodoCommentReader } from "#api/modules/engagement/comments/infrastructure/persistence/drizzle-todo-comment.reader";
 import { DrizzleTodoCommentRepository } from "#api/modules/engagement/comments/infrastructure/persistence/drizzle-todo-comment.repository";
+import { toTodoConversationResponse } from "#api/modules/engagement/comments/presentation/http/v1/todo-comment-response.mapper";
 import { DrizzleUserBlockRepository } from "#api/modules/social/infrastructure/persistence/blocks/drizzle-user-block.repository";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
 import {
@@ -24,7 +26,7 @@ import {
   user,
   userProfile,
 } from "#api/platform/database/schema/index";
-import { DELETED_COMMENT_AUTHOR, DELETED_COMMENT_AUTHOR_ID } from "#api/shared/domain/system-user";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { createDatabaseTransactionFixture, createTestClient } from "#test/setup/database-context";
 import type { TestDatabaseClient } from "#test/setup/test-database";
 
@@ -41,6 +43,10 @@ const DELETED_LEAF = "cm1conversationdeletedleaf001";
 const OWNER_REPLY = "cm1conversationownerreply0001";
 const PARTICIPANT_A_REPLY = "cm1conversationparticipantareply1";
 const PARTICIPANT_B_REPLY = "cm1conversationparticipantbreply1";
+
+type CommentRow = Omit<typeof todoComment.$inferInsert, "updatedAt">;
+const TODO_START_DATE = new Date("2026-08-26T00:00:00.000Z");
+const COMMENT_UPDATED_AT = Temporal.Instant.from("2026-08-26T00:00:00.000Z");
 
 describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
   let testDatabase: TestDatabase;
@@ -77,12 +83,19 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
     cursorCodec = cursorModule.get(HmacTodoCommentCursorCodecAdapter);
   }, 60_000);
 
+  async function insertComments(rows: CommentRow | readonly CommentRow[]) {
+    const list: readonly CommentRow[] = "todoId" in rows ? [rows] : rows;
+    await client
+      .insert(todoComment)
+      .values(list.map((row) => ({ updatedAt: row.createdAt ?? COMMENT_UPDATED_AT, ...row })));
+  }
+
   async function updateComment(id: string, values: Partial<typeof todoComment.$inferInsert>) {
     await client.update(todoComment).set(values).where(eq(todoComment.id, id));
   }
 
-  async function softDeleteComment(id: string, deletedAt: Date) {
-    await updateComment(id, { authorId: DELETED_COMMENT_AUTHOR_ID, content: null, deletedAt });
+  async function softDeleteComment(id: string, deletedAt: Temporal.Instant) {
+    await updateComment(id, { authorId: DELETED_COMMENT_AUTHOR.id, content: null, deletedAt });
   }
 
   async function recordStatements<T>(work: () => Promise<T>) {
@@ -100,7 +113,7 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
     await testDatabase.cleanup();
     await client.insert(user).values([
       {
-        id: DELETED_COMMENT_AUTHOR_ID,
+        id: DELETED_COMMENT_AUTHOR.id,
         email: DELETED_COMMENT_AUTHOR.email,
         userTag: DELETED_COMMENT_AUTHOR.userTag,
         status: "LOCKED",
@@ -129,7 +142,7 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
         userId: "conversation-owner",
         categoryId: category.id,
         title: "한 화면의 댓글 대화",
-        startDate: new Date("2026-08-26T00:00:00.000Z"),
+        startDate: TODO_START_DATE,
         commentCount: 5,
       })
       .returning();
@@ -138,8 +151,8 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
     }
     todoId = createdTodo.id;
 
-    const siblingCreatedAt = new Date("2026-08-26T02:00:00.000Z");
-    await client.insert(todoComment).values([
+    const siblingCreatedAt = Temporal.Instant.from("2026-08-26T02:00:00.000Z");
+    await insertComments([
       {
         id: ROOT_A,
         todoId,
@@ -147,7 +160,7 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
         clientRequestId: "00000000-0000-4000-8000-000000000001",
         content: "오래된 루트",
         replyCount: 3,
-        createdAt: new Date("2026-08-26T01:00:00.000Z"),
+        createdAt: Temporal.Instant.from("2026-08-26T01:00:00.000Z"),
       },
       {
         id: ROOT_B,
@@ -155,7 +168,7 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
         authorId: "conversation-author",
         clientRequestId: "00000000-0000-4000-8000-000000000002",
         content: "최신 루트",
-        createdAt: new Date("2026-08-26T03:00:00.000Z"),
+        createdAt: Temporal.Instant.from("2026-08-26T03:00:00.000Z"),
       },
       {
         id: CHILD_Z,
@@ -185,7 +198,7 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
         replyToCommentId: CHILD_A,
         clientRequestId: "00000000-0000-4000-8000-000000000005",
         content: "답글에 단 답글",
-        createdAt: new Date("2026-08-26T02:30:00.000Z"),
+        createdAt: Temporal.Instant.from("2026-08-26T02:30:00.000Z"),
       },
     ]);
   });
@@ -211,7 +224,7 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
     // Then
     expect(window?.items.map((item) => item.id)).toEqual([ROOT_B, ROOT_A, CHILD_A]);
     expect(window?.items.map((item) => item.threadCommentId)).toEqual([null, null, ROOT_A]);
-    expect(window?.nextRecord?.id).toBe(CHILD_Z);
+    expect(window?.nextItem?.id).toBe(CHILD_Z);
     expect(window?.hasPrevious).toBe(false);
     expect(window?.hasNext).toBe(true);
     expect(count).toBe(1);
@@ -235,7 +248,7 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
       { userId: "conversation-participant-a", name: "참여자 A" },
       { userId: "conversation-participant-b", name: "참여자 B" },
     ]);
-    await client.insert(todoComment).values([
+    await insertComments([
       {
         id: OWNER_REPLY,
         todoId,
@@ -244,7 +257,7 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
         replyToCommentId: ROOT_A,
         clientRequestId: "00000000-0000-4000-8000-000000000009",
         content: "할 일 주인의 답글",
-        createdAt: new Date("2026-08-26T02:40:00.000Z"),
+        createdAt: Temporal.Instant.from("2026-08-26T02:40:00.000Z"),
       },
       {
         id: PARTICIPANT_A_REPLY,
@@ -254,7 +267,7 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
         replyToCommentId: ROOT_A,
         clientRequestId: "00000000-0000-4000-8000-000000000010",
         content: "참여자 A의 답글",
-        createdAt: new Date("2026-08-26T02:50:00.000Z"),
+        createdAt: Temporal.Instant.from("2026-08-26T02:50:00.000Z"),
       },
       {
         id: PARTICIPANT_B_REPLY,
@@ -264,11 +277,11 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
         replyToCommentId: ROOT_A,
         clientRequestId: "00000000-0000-4000-8000-000000000011",
         content: "참여자 B의 답글",
-        createdAt: new Date("2026-08-26T02:55:00.000Z"),
+        createdAt: Temporal.Instant.from("2026-08-26T02:55:00.000Z"),
       },
     ]);
     await updateComment(ROOT_A, { replyCount: 5 });
-    await softDeleteComment(CHILD_A, new Date("2026-08-26T03:30:00.000Z"));
+    await softDeleteComment(CHILD_A, Temporal.Instant.from("2026-08-26T03:30:00.000Z"));
 
     // When
     const { result: window, count } = await recordStatements(() =>
@@ -293,8 +306,8 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
 
   it("주인의 답글이 없으면 개요의 직접 답글 미리보기는 createdAt과 id가 가장 앞선 답글이다", async () => {
     // Given
-    const replyCreatedAt = new Date("2026-08-26T04:00:00.000Z");
-    await client.insert(todoComment).values([
+    const replyCreatedAt = Temporal.Instant.from("2026-08-26T04:00:00.000Z");
+    await insertComments([
       {
         id: "conversation-preview-z",
         todoId,
@@ -391,7 +404,7 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
     if (cursor === null) {
       throw new Error("Overview first page must have a next cursor");
     }
-    await softDeleteComment(ROOT_B, new Date("2026-08-26T04:00:00.000Z"));
+    await softDeleteComment(ROOT_B, Temporal.Instant.from("2026-08-26T04:00:00.000Z"));
 
     // When
     const secondPage = await useCase.execute({
@@ -425,7 +438,7 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
 
     // Then
     expect(window?.items.map((item) => item.id)).toEqual([CHILD_Z, GRANDCHILD]);
-    expect(window?.previousRecord?.id).toBe(CHILD_A);
+    expect(window?.previousItem?.id).toBe(CHILD_A);
     expect(window?.hasPrevious).toBe(true);
     expect(window?.hasNext).toBe(false);
   });
@@ -448,8 +461,8 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
 
     // Then
     expect(window?.items.map((item) => item.id)).toEqual([CHILD_A, CHILD_Z]);
-    expect(window?.previousRecord?.id).toBe(ROOT_A);
-    expect(window?.nextRecord?.id).toBe(GRANDCHILD);
+    expect(window?.previousItem?.id).toBe(ROOT_A);
+    expect(window?.nextItem?.id).toBe(GRANDCHILD);
     expect(window?.hasPrevious).toBe(true);
     expect(window?.hasNext).toBe(true);
   });
@@ -536,14 +549,14 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
       // Given
       await updateComment(ROOT_A, { likeCount: 3 });
       await updateComment(ROOT_B, { likeCount: 2 });
-      await client.insert(todoComment).values({
+      await insertComments({
         id: ROOT_C,
         todoId,
         authorId: "conversation-author",
         clientRequestId: "00000000-0000-4000-8000-000000000006",
         content: "인기 경계 뒤의 루트",
         likeCount: 1,
-        createdAt: new Date("2026-08-26T00:30:00.000Z"),
+        createdAt: Temporal.Instant.from("2026-08-26T00:30:00.000Z"),
       });
       const firstPage = await reader.listConversation({
         todoId,
@@ -584,7 +597,7 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
 
   it("페이지 cursor의 마지막 댓글이 삭제 처리되어도 DB에 남은 위치에서 계속 읽는다", async () => {
     // Given
-    await client.insert(todoComment).values([
+    await insertComments([
       {
         id: NEW_ROOT,
         todoId,
@@ -592,7 +605,7 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
         clientRequestId: "00000000-0000-4000-8000-000000000007",
         content: "가장 최신 루트",
         replyCount: 1,
-        createdAt: new Date("2026-08-26T04:00:00.000Z"),
+        createdAt: Temporal.Instant.from("2026-08-26T04:00:00.000Z"),
       },
       {
         id: DELETED_LEAF,
@@ -602,7 +615,7 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
         replyToCommentId: NEW_ROOT,
         clientRequestId: "00000000-0000-4000-8000-000000000008",
         content: "경계가 될 leaf",
-        createdAt: new Date("2026-08-26T05:00:00.000Z"),
+        createdAt: Temporal.Instant.from("2026-08-26T05:00:00.000Z"),
       },
     ]);
     const firstPage = await reader.listConversation({
@@ -616,7 +629,7 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
     if (anchor === undefined) {
       throw new Error("LATEST page must have a leaf anchor");
     }
-    await softDeleteComment(DELETED_LEAF, new Date("2026-08-26T06:00:00.000Z"));
+    await softDeleteComment(DELETED_LEAF, Temporal.Instant.from("2026-08-26T06:00:00.000Z"));
     const anchorInput = {
       todoId,
       sort: "LATEST",
@@ -634,14 +647,14 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
     // Then
     expect(firstPage?.items.map((item) => item.id)).toEqual([NEW_ROOT, DELETED_LEAF]);
     expect(nextPage?.items.at(0)?.id).toBe(ROOT_B);
-    expect(nextPage?.previousRecord).toMatchObject({
+    expect(nextPage?.previousItem).toMatchObject({
       id: DELETED_LEAF,
-      deletedAt: expect.any(String),
+      deletedAt: expect.any(Temporal.Instant),
     });
     expect(previousPage?.items.map((item) => item.id)).toEqual([NEW_ROOT]);
-    expect(previousPage?.nextRecord).toMatchObject({
+    expect(previousPage?.nextItem).toMatchObject({
       id: DELETED_LEAF,
-      deletedAt: expect.any(String),
+      deletedAt: expect.any(Temporal.Instant),
     });
   });
 
@@ -667,14 +680,14 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
 
   it("focus는 다른 큰 묶음이 있어도 선택한 묶음만 읽는다", async () => {
     // Given
-    await client.insert(todoComment).values(
+    await insertComments(
       Array.from({ length: 500 }, (_, index) => ({
         id: `conversation-distractor-${index}`,
         todoId,
         authorId: "conversation-author",
         clientRequestId: randomUUID(),
         content: `관계없는 원문 ${index}`,
-        createdAt: new Date("2026-08-26T05:00:00.000Z"),
+        createdAt: Temporal.Instant.from("2026-08-26T05:00:00.000Z"),
       })),
     );
 
@@ -734,7 +747,7 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
 
   it("삭제된 답글로 열어도 묘비로 focus를 채우고 1.14.0 이하 앱의 대화 계약을 지킨다", async () => {
     // Given
-    await softDeleteComment(CHILD_A, new Date("2026-08-26T04:00:00.000Z"));
+    await softDeleteComment(CHILD_A, Temporal.Instant.from("2026-08-26T04:00:00.000Z"));
     const useCase = new GetTodoConversationUseCase({
       reader: reader,
       cursorCodec: cursorCodec,
@@ -742,13 +755,15 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
     });
 
     // When
-    const response = await useCase.execute({
-      todoId,
-      viewerId: "conversation-owner",
-      sort: "LATEST",
-      focusCommentId: CHILD_A,
-      size: 3,
-    });
+    const response = toTodoConversationResponse(
+      await useCase.execute({
+        todoId,
+        viewerId: "conversation-owner",
+        sort: "LATEST",
+        focusCommentId: CHILD_A,
+        size: 3,
+      }),
+    );
 
     // Then
     expect(response.focus).toMatchObject({ commentId: CHILD_A, itemIndex: 1 });
@@ -773,13 +788,15 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
     });
 
     // When
-    const response = await useCase.execute({
-      todoId,
-      viewerId: "conversation-owner",
-      sort: "LATEST",
-      focusCommentId: GRANDCHILD,
-      size: 2,
-    });
+    const response = toTodoConversationResponse(
+      await useCase.execute({
+        todoId,
+        viewerId: "conversation-owner",
+        sort: "LATEST",
+        focusCommentId: GRANDCHILD,
+        size: 2,
+      }),
+    );
 
     // Then
     expect(response.items.map((item) => item.comment.id)).toEqual([CHILD_Z, GRANDCHILD]);
@@ -803,7 +820,7 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
 
   it("답글 없는 삭제 댓글 focus는 다른 묶음으로 대체하지 않고 묘비 하나만 돌려준다", async () => {
     // Given
-    await softDeleteComment(ROOT_B, new Date("2026-08-26T04:00:00.000Z"));
+    await softDeleteComment(ROOT_B, Temporal.Instant.from("2026-08-26T04:00:00.000Z"));
     const useCase = new GetTodoConversationUseCase({
       reader: reader,
       cursorCodec: cursorCodec,
@@ -811,13 +828,15 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
     });
 
     // When
-    const response = await useCase.execute({
-      todoId,
-      viewerId: "conversation-owner",
-      sort: "LATEST",
-      focusCommentId: ROOT_B,
-      size: 3,
-    });
+    const response = toTodoConversationResponse(
+      await useCase.execute({
+        todoId,
+        viewerId: "conversation-owner",
+        sort: "LATEST",
+        focusCommentId: ROOT_B,
+        size: 3,
+      }),
+    );
 
     // Then
     expect(response).toMatchObject({
@@ -846,10 +865,16 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
     };
 
     // When
-    const replayed = await repository.findCommentChainReplay(input);
+    const replayed = matchTodoCommentChainReplay({
+      request: input,
+      stored: await repository.listByAuthorIdAndClientRequestIds(
+        UserId.reconstitute(input.authorId),
+        input.items.map((item) => item.clientRequestId),
+      ),
+    });
 
     // Then
-    expect(replayed).toEqual([ROOT_A, CHILD_A]);
+    expect(replayed).toEqual({ ok: true, commentIds: [ROOT_A, CHILD_A] });
   });
 
   it("지문이 없는 멱등 키의 내용이 다르면 replay하지 않는다", async () => {
@@ -867,28 +892,33 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
     };
 
     // When
-    const replay = repository.findCommentChainReplay(input);
+    const replay = matchTodoCommentChainReplay({
+      request: input,
+      stored: await repository.listByAuthorIdAndClientRequestIds(
+        UserId.reconstitute(input.authorId),
+        input.items.map((item) => item.clientRequestId),
+      ),
+    });
 
     // Then
-    await expect(replay).rejects.toBeInstanceOf(TodoCommentIdempotencyConflict);
+    expect(replay).toEqual({ ok: false });
   });
 
   it("구버전 서버가 먼저 쓴 멱등 키의 SQLSTATE 23505를 애플리케이션 경합 오류로 번역한다", async () => {
     // Given
-    const input = {
+    const comment = TodoComment.create({
+      id: await repository.nextId(),
       todoId,
-      authorId: "conversation-author",
-      placement: CommentPlacement.comment(),
-      items: [
-        {
-          clientRequestId: "00000000-0000-4000-8000-000000000001",
-          content: "오래된 루트",
-        },
-      ],
-    };
+      authorId: UserId.reconstitute("conversation-author"),
+      placement: CommentPlacement.create(null),
+      content: TodoCommentContent.create("오래된 루트"),
+      clientRequestId: "00000000-0000-4000-8000-000000000001",
+      requestFingerprint: "f".repeat(64),
+      createdAt: COMMENT_UPDATED_AT,
+    });
 
     // When
-    const creation = repository.createCommentChain(input);
+    const creation = repository.save(comment);
 
     // Then
     await expect(creation).rejects.toBeInstanceOf(TodoCommentIdempotencyRace);
