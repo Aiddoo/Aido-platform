@@ -6,8 +6,8 @@ import {
   WEEKLY_ACHIEVEMENT_REPOSITORY,
   type WeeklyAchievementRepositoryPort,
 } from "#api/modules/insights/weekly-achievements/application/ports/weekly-achievement.repository.port";
-import { GetWeeklyAchievement } from "#api/modules/insights/weekly-achievements/application/use-cases/get-weekly-achievement.use-case";
-import { GetWeeklyAchievements } from "#api/modules/insights/weekly-achievements/application/use-cases/get-weekly-achievements.use-case";
+import { GetWeeklyAchievementUseCase } from "#api/modules/insights/weekly-achievements/application/use-cases/get-weekly-achievement.use-case";
+import { ListWeeklyAchievementsUseCase } from "#api/modules/insights/weekly-achievements/application/use-cases/list-weekly-achievements.use-case";
 import type { WeeklyAchievementUpsert } from "#api/modules/insights/weekly-achievements/domain/weekly-achievement.read-model";
 import { databaseSqlState } from "#api/platform/database/database-error.util";
 import {
@@ -183,7 +183,7 @@ describe("Insights 집계·주간 기록 실제 PostgreSQL 회귀", () => {
   it("주간 목록은 summary와 함께 두 번, cursor가 있으면 기준 행 조회까지 세 번 조회한다", async () => {
     // Given
     await weekly.upsertMany([snapshot(1), snapshot(2), snapshot(3)]);
-    const useCase = context.module.get(GetWeeklyAchievements);
+    const useCase = context.module.get(ListWeeklyAchievementsUseCase);
 
     // When
     const first = await measure("weekly-list-no-cursor", () =>
@@ -260,7 +260,7 @@ describe("Insights 집계·주간 기록 실제 PostgreSQL 회귀", () => {
   it("실제 주간 상세는 locale로 직렬화하고 없는 기록은 기존 오류로 거부한다", async () => {
     // Given
     await weekly.upsertMany([snapshot(1)]);
-    const get = context.module.get(GetWeeklyAchievement);
+    const get = context.module.get(GetWeeklyAchievementUseCase);
 
     // When
     const ko = await get.execute({ userId, year: 2027, week: 1, locale: "ko" });

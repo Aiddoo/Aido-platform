@@ -7,7 +7,7 @@ import type { DailyCompletionsRange } from "../../domain/daily-completion.read-m
 import { type DailyCompletionCachePort } from "../ports/daily-completion-cache.port.js";
 import { type TodoCompletionRepositoryPort } from "../ports/todo-completion.repository.port.js";
 
-export interface GetDailyCompletionsInput {
+export interface GetDailyCompletionsQuery {
   readonly userId: string;
   readonly startDate: string;
   readonly endDate: string;
@@ -21,14 +21,14 @@ interface GetDailyCompletionsDependencies {
   readonly cache: Pick<DailyCompletionCachePort, "readRange" | "storeRangeIfCurrent">;
 }
 
-export class GetDailyCompletions {
+export class GetDailyCompletionsUseCase {
   readonly #dependencies: GetDailyCompletionsDependencies;
 
   constructor(dependencies: GetDailyCompletionsDependencies) {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: GetDailyCompletionsInput): Promise<DailyCompletionsRange> {
+  async execute(input: GetDailyCompletionsQuery): Promise<DailyCompletionsRange> {
     const start = parseDateOnly(input.startDate);
     const endInclusive = parseDateOnly(input.endDate);
 

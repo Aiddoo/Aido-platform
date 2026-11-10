@@ -3,22 +3,22 @@ import type { WeeklyAchievementUpsert } from "../../domain/weekly-achievement.re
 import type { WeeklyAchievementWriterPort } from "../ports/weekly-achievement-writer.port.js";
 import { type WeeklyAchievementRepositoryPort } from "../ports/weekly-achievement.repository.port.js";
 
-export interface UpsertWeeklyAchievementsInput {
+export interface RecordWeeklyAchievementsCommand {
   readonly records: readonly WeeklyAchievementUpsert[];
 }
 
-interface UpsertWeeklyAchievementsDependencies {
+interface RecordWeeklyAchievementsDependencies {
   readonly repository: Pick<WeeklyAchievementRepositoryPort, "upsertMany">;
 }
 
-export class UpsertWeeklyAchievements implements WeeklyAchievementWriterPort {
-  readonly #dependencies: UpsertWeeklyAchievementsDependencies;
+export class RecordWeeklyAchievementsUseCase implements WeeklyAchievementWriterPort {
+  readonly #dependencies: RecordWeeklyAchievementsDependencies;
 
-  constructor(dependencies: UpsertWeeklyAchievementsDependencies) {
+  constructor(dependencies: RecordWeeklyAchievementsDependencies) {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: UpsertWeeklyAchievementsInput): Promise<void> {
+  async execute(input: RecordWeeklyAchievementsCommand): Promise<void> {
     if (input.records.length === 0) {
       return;
     }

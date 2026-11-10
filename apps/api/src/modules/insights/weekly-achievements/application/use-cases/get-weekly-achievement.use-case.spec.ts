@@ -7,9 +7,9 @@ import {
   INSIGHTS_TIME,
 } from "#test/fixtures/insights.fixture";
 
-import { GetWeeklyAchievement } from "./get-weekly-achievement.use-case.js";
+import { GetWeeklyAchievementUseCase } from "./get-weekly-achievement.use-case.js";
 
-describe("GetWeeklyAchievement", () => {
+describe("GetWeeklyAchievementUseCase", () => {
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(INSIGHTS_TIME);
@@ -28,7 +28,7 @@ describe("GetWeeklyAchievement", () => {
         JSON.stringify([fixture.userId, 2026, 10]),
         createWeeklyAchievementFixture(),
       );
-      const useCase = new GetWeeklyAchievement({ repository: fixture.weeklyRepository });
+      const useCase = new GetWeeklyAchievementUseCase({ repository: fixture.weeklyRepository });
       // When
       const result = await useCase.execute({
         userId: fixture.userId,
@@ -58,7 +58,7 @@ describe("GetWeeklyAchievement", () => {
       JSON.stringify([fixture.viewerId, 2026, 10]),
       createWeeklyAchievementFixture(),
     );
-    const useCase = new GetWeeklyAchievement({ repository: fixture.weeklyRepository });
+    const useCase = new GetWeeklyAchievementUseCase({ repository: fixture.weeklyRepository });
     // When, Then
     await expect(
       useCase.execute({ userId: fixture.userId, year: 2026, week: 10, locale: "ko" }),

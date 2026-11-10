@@ -6,9 +6,9 @@ import { TODO_CATEGORY_EVENTS } from "#api/modules/planning/categories/planning-
 import { TODO_EVENTS, TodoCreatedEvent } from "#api/modules/planning/todos/planning-todos.public";
 import { createInsightsFixture, INSIGHTS_TIME } from "#test/fixtures/insights.fixture";
 
-import { InsightsLogEvent } from "../../application/daily-completions.log-events.js";
+import { DailyCompletionLogEvent } from "../../application/daily-completions.log-events.js";
 import { DAILY_COMPLETION_CACHE } from "../../application/ports/daily-completion-cache.port.js";
-import { DailyCompletionCacheInvalidator } from "./daily-completion-cache.event-handler.js";
+import { DailyCompletionCacheEventHandler } from "./daily-completion-cache.event-handler.js";
 
 const sourceEvents = [
   TODO_EVENTS.CREATED,
@@ -24,7 +24,7 @@ const sourceEvents = [
 const RANGE = { startDate: "2028-02-29", endDate: "2028-02-29" };
 const EMPTY_RANGE = { completions: [], totalCompleteDays: 0, dateRange: RANGE };
 
-describe("DailyCompletionCacheInvalidator", () => {
+describe("DailyCompletionCacheEventHandler", () => {
   let module: TestingModule | undefined;
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ["Date"] });
@@ -68,7 +68,7 @@ describe("DailyCompletionCacheInvalidator", () => {
       module = await Test.createTestingModule({
         imports: [EventEmitterModule.forRoot()],
         providers: [
-          DailyCompletionCacheInvalidator,
+          DailyCompletionCacheEventHandler,
           { provide: DAILY_COMPLETION_CACHE, useValue: fixture.cache },
         ],
       }).compile();
@@ -94,13 +94,13 @@ describe("DailyCompletionCacheInvalidator", () => {
     const fixture = createInsightsFixture();
     vi.spyOn(fixture.cache, "invalidate").mockRejectedValueOnce(new Error("private cache payload"));
     const warning = vi.spyOn(Logger.prototype, "warn").mockImplementation(() => undefined);
-    const invalidator = new DailyCompletionCacheInvalidator(fixture.cache);
+    const invalidator = new DailyCompletionCacheEventHandler(fixture.cache);
     // When, Then
     await expect(
       invalidator.handle(new TodoCreatedEvent(1, fixture.userId, null)),
     ).resolves.toBeUndefined();
     expect(warning).toHaveBeenCalledWith({
-      event: InsightsLogEvent.DAILY_COMPLETION_CACHE_INVALIDATION_FAILED,
+      event: DailyCompletionLogEvent.CACHE_INVALIDATION_FAILED,
       userId: fixture.userId,
       errorType: "Error",
     });

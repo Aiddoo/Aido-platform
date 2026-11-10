@@ -42,7 +42,7 @@ const DAILY_COMPLETIONS_RANGE_SCHEMA = z.object({
 }) satisfies z.ZodType<DailyCompletionsRange>;
 
 @Injectable()
-export class DailyCompletionCacheAdapter implements DailyCompletionCachePort {
+export class DailyCompletionCache implements DailyCompletionCachePort {
   readonly #cacheService: CacheService;
 
   constructor(cacheService: CacheService) {

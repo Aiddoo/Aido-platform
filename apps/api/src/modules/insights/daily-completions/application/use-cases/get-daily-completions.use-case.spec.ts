@@ -4,11 +4,11 @@ import {
   INSIGHTS_TIME,
 } from "#test/fixtures/insights.fixture";
 
-import { GetDailyCompletions } from "./get-daily-completions.use-case.js";
+import { GetDailyCompletionsUseCase } from "./get-daily-completions.use-case.js";
 
 const RANGE = { startDate: "2028-02-01", endDate: "2028-02-29" };
 
-describe("GetDailyCompletions — 일일 완료 조회", () => {
+describe("GetDailyCompletionsUseCase — 일일 완료 조회", () => {
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(INSIGHTS_TIME);
@@ -29,7 +29,7 @@ describe("GetDailyCompletions — 일일 완료 조회", () => {
     ]);
     const query = vi.spyOn(fixture.repository, "aggregateByDateRange");
     // When
-    const result = await new GetDailyCompletions(fixture).execute({
+    const result = await new GetDailyCompletionsUseCase(fixture).execute({
       userId: fixture.userId,
       ...RANGE,
     });
@@ -68,7 +68,7 @@ describe("GetDailyCompletions — 일일 완료 조회", () => {
     // Given
     const fixture = createInsightsFixture();
     fixture.repository.ownAggregates.set(fixture.userId, [createTodoAggregateFixture()]);
-    const useCase = new GetDailyCompletions(fixture);
+    const useCase = new GetDailyCompletionsUseCase(fixture);
     const first = await useCase.execute({ userId: fixture.userId, ...RANGE });
     fixture.repository.ownAggregates.clear();
     // When
@@ -94,7 +94,7 @@ describe("GetDailyCompletions — 일일 완료 조회", () => {
     };
     fixture.repository.ownMultiDayTodos.set(fixture.userId, [span]);
     // When
-    const result = await new GetDailyCompletions(fixture).execute({
+    const result = await new GetDailyCompletionsUseCase(fixture).execute({
       userId: fixture.userId,
       ...RANGE,
     });
@@ -107,7 +107,7 @@ describe("GetDailyCompletions — 일일 완료 조회", () => {
     // Given
     const fixture = createInsightsFixture();
     // When
-    const result = await new GetDailyCompletions(fixture).execute({
+    const result = await new GetDailyCompletionsUseCase(fixture).execute({
       userId: fixture.userId,
       ...RANGE,
     });
@@ -135,7 +135,7 @@ describe("GetDailyCompletions — 일일 완료 조회", () => {
       await release.promise;
       return snapshot;
     });
-    const useCase = new GetDailyCompletions(fixture);
+    const useCase = new GetDailyCompletionsUseCase(fixture);
     const staleRead = useCase.execute({ userId: fixture.userId, ...RANGE });
     await Promise.race([
       entered.promise,

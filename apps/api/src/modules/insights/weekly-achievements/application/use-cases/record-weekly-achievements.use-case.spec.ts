@@ -6,9 +6,9 @@ import {
   INSIGHTS_TIME,
 } from "#test/fixtures/insights.fixture";
 
-import { UpsertWeeklyAchievements } from "./upsert-weekly-achievements.use-case.js";
+import { RecordWeeklyAchievementsUseCase } from "./record-weekly-achievements.use-case.js";
 
-describe("UpsertWeeklyAchievements", () => {
+describe("RecordWeeklyAchievementsUseCase", () => {
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(INSIGHTS_TIME);
@@ -19,7 +19,7 @@ describe("UpsertWeeklyAchievements", () => {
     // Given
     const fixture = createInsightsFixture();
     const save = vi.spyOn(fixture.weeklyRepository, "upsertMany");
-    const useCase = new UpsertWeeklyAchievements({ repository: fixture.weeklyRepository });
+    const useCase = new RecordWeeklyAchievementsUseCase({ repository: fixture.weeklyRepository });
     // When
     await useCase.execute({ records: [] });
     // Then
@@ -32,7 +32,7 @@ describe("UpsertWeeklyAchievements", () => {
     const fixture = createInsightsFixture();
     const first = createWeeklyAchievementWriteFixture();
     const second = createWeeklyAchievementWriteFixture({ userId: fixture.viewerId, week: 11 });
-    const useCase = new UpsertWeeklyAchievements({ repository: fixture.weeklyRepository });
+    const useCase = new RecordWeeklyAchievementsUseCase({ repository: fixture.weeklyRepository });
     // When
     await useCase.execute({ records: [first, second] });
     const before = await fixture.weeklyRepository.findByYearAndWeek(
@@ -69,7 +69,7 @@ describe("UpsertWeeklyAchievements", () => {
       createWeeklyAchievementWriteFixture(),
       createWeeklyAchievementWriteFixture({ week: 11, totalTodos: 2, completedTodos: 5 }),
     ];
-    const useCase = new UpsertWeeklyAchievements({ repository: fixture.weeklyRepository });
+    const useCase = new RecordWeeklyAchievementsUseCase({ repository: fixture.weeklyRepository });
     // When, Then
     await expect(useCase.execute({ records })).rejects.toMatchObject({
       errorCode: ErrorCode.SYS_0002,

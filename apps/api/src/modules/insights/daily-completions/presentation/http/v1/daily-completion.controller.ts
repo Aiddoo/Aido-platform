@@ -15,8 +15,8 @@ import {
   SWAGGER_TAGS,
 } from "#api/platform/http/swagger/index";
 
-import { GetDailyCompletions } from "../../../application/use-cases/get-daily-completions.use-case.js";
-import { GetFriendDailyCompletions } from "../../../application/use-cases/get-friend-daily-completions.use-case.js";
+import { GetDailyCompletionsUseCase } from "../../../application/use-cases/get-daily-completions.use-case.js";
+import { GetFriendDailyCompletionsUseCase } from "../../../application/use-cases/get-friend-daily-completions.use-case.js";
 import type { DailyCompletionsRange } from "../../../domain/daily-completion.read-model.js";
 import {
   DailyCompletionsRangeResponseDto,
@@ -27,12 +27,12 @@ import {
 @ApiBearerAuth()
 @Controller("daily-completions")
 export class DailyCompletionController {
-  readonly #readDailyCompletions: GetDailyCompletions;
-  readonly #readFriendDailyCompletions: GetFriendDailyCompletions;
+  readonly #readDailyCompletions: GetDailyCompletionsUseCase;
+  readonly #readFriendDailyCompletions: GetFriendDailyCompletionsUseCase;
 
   constructor(
-    readDailyCompletions: GetDailyCompletions,
-    readFriendDailyCompletions: GetFriendDailyCompletions,
+    readDailyCompletions: GetDailyCompletionsUseCase,
+    readFriendDailyCompletions: GetFriendDailyCompletionsUseCase,
   ) {
     this.#readDailyCompletions = readDailyCompletions;
     this.#readFriendDailyCompletions = readFriendDailyCompletions;

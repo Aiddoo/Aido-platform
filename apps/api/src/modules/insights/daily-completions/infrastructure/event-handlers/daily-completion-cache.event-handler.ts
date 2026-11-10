@@ -20,7 +20,7 @@ import {
 } from "#api/modules/planning/todos/planning-todos.public";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 
-import { InsightsLogEvent } from "../../application/daily-completions.log-events.js";
+import { DailyCompletionLogEvent } from "../../application/daily-completions.log-events.js";
 import {
   DAILY_COMPLETION_CACHE,
   type DailyCompletionCachePort,
@@ -40,8 +40,8 @@ type CompletionSourceChangedEvent =
   | TodoCategoryDeletedEvent;
 
 @Injectable()
-export class DailyCompletionCacheInvalidator {
-  readonly #logger = new Logger(DailyCompletionCacheInvalidator.name);
+export class DailyCompletionCacheEventHandler {
+  readonly #logger = new Logger(DailyCompletionCacheEventHandler.name);
 
   readonly #cache: DailyCompletionCachePort;
 
@@ -67,7 +67,7 @@ export class DailyCompletionCacheInvalidator {
       await this.#cache.invalidate(event.userId);
     } catch (error) {
       this.#logger.warn({
-        event: InsightsLogEvent.DAILY_COMPLETION_CACHE_INVALIDATION_FAILED,
+        event: DailyCompletionLogEvent.CACHE_INVALIDATION_FAILED,
         userId: event.userId,
         errorType: toErrorType(error),
       });

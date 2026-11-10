@@ -4,12 +4,12 @@ import {
   INSIGHTS_TIME,
 } from "#test/fixtures/insights.fixture";
 
-import { GetDailyCompletions } from "./get-daily-completions.use-case.js";
-import { GetFriendDailyCompletions } from "./get-friend-daily-completions.use-case.js";
+import { GetDailyCompletionsUseCase } from "./get-daily-completions.use-case.js";
+import { GetFriendDailyCompletionsUseCase } from "./get-friend-daily-completions.use-case.js";
 
 const RANGE = { startDate: "2028-02-01", endDate: "2028-02-29" };
 
-describe("GetFriendDailyCompletions — 친구 공개 완료 조회", () => {
+describe("GetFriendDailyCompletionsUseCase — 친구 공개 완료 조회", () => {
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(INSIGHTS_TIME);
@@ -27,17 +27,17 @@ describe("GetFriendDailyCompletions — 친구 공개 완료 조회", () => {
     ]);
     const publicQuery = vi.spyOn(fixture.repository, "aggregatePublicByDateRange");
     // When
-    const own = await new GetDailyCompletions(fixture).execute({
+    const own = await new GetDailyCompletionsUseCase(fixture).execute({
       userId: fixture.userId,
       ...RANGE,
     });
-    const result = await new GetFriendDailyCompletions(fixture).execute({
+    const result = await new GetFriendDailyCompletionsUseCase(fixture).execute({
       userId: fixture.viewerId,
       friendUserId: fixture.userId,
       ...RANGE,
     });
     fixture.repository.publicAggregates.clear();
-    const cached = await new GetFriendDailyCompletions(fixture).execute({
+    const cached = await new GetFriendDailyCompletionsUseCase(fixture).execute({
       userId: fixture.viewerId,
       friendUserId: fixture.userId,
       ...RANGE,
@@ -71,7 +71,7 @@ describe("GetFriendDailyCompletions — 친구 공개 완료 조회", () => {
     // Given
     const fixture = createInsightsFixture();
     fixture.repository.publicAggregates.set(fixture.userId, [createTodoAggregateFixture()]);
-    const useCase = new GetFriendDailyCompletions(fixture);
+    const useCase = new GetFriendDailyCompletionsUseCase(fixture);
     await useCase.execute({ userId: fixture.viewerId, friendUserId: fixture.userId, ...RANGE });
     fixture.followReader.mutualPairs.clear();
     // When
@@ -109,7 +109,7 @@ describe("GetFriendDailyCompletions — 친구 공개 완료 조회", () => {
         return snapshot;
       },
     );
-    const useCase = new GetFriendDailyCompletions(fixture);
+    const useCase = new GetFriendDailyCompletionsUseCase(fixture);
     const input = { userId: fixture.viewerId, friendUserId: fixture.userId, ...RANGE };
     const staleRead = useCase.execute(input);
     await Promise.race([

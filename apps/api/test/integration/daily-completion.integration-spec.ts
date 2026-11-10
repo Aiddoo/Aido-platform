@@ -1,7 +1,7 @@
 import dayjs from "dayjs";
 
 import { TODO_COMPLETION_REPOSITORY } from "#api/modules/insights/daily-completions/application/ports/todo-completion.repository.port";
-import { GetDailyCompletions } from "#api/modules/insights/daily-completions/application/use-cases/get-daily-completions.use-case";
+import { GetDailyCompletionsUseCase } from "#api/modules/insights/daily-completions/application/use-cases/get-daily-completions.use-case";
 import type { DrizzleTodoCompletionRepository } from "#api/modules/insights/daily-completions/infrastructure/persistence/drizzle-todo-completion.repository";
 import { todo, todoCategory } from "#api/platform/database/schema/index";
 import {
@@ -16,7 +16,7 @@ import { TestDatabase, type TestDatabaseClient } from "../setup/test-database.js
 
 describe("DailyCompletion 통합 테스트 (실제 DB)", () => {
   let context: E2eTestContext;
-  let getDailyCompletionsUseCase: GetDailyCompletions;
+  let getDailyCompletionsUseCase: GetDailyCompletionsUseCase;
   let repository: DrizzleTodoCompletionRepository;
   let testDb: TestDatabase;
   let client: TestDatabaseClient;
@@ -24,7 +24,7 @@ describe("DailyCompletion 통합 테스트 (실제 DB)", () => {
     testDb = new TestDatabase();
     client = await testDb.start();
     context = await createE2eApp({ testDatabase: testDb });
-    getDailyCompletionsUseCase = context.module.get(GetDailyCompletions);
+    getDailyCompletionsUseCase = context.module.get(GetDailyCompletionsUseCase);
     repository = context.module.get(TODO_COMPLETION_REPOSITORY);
   });
 

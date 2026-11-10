@@ -4,9 +4,9 @@ import {
   INSIGHTS_TIME,
 } from "#test/fixtures/insights.fixture";
 
-import { GetWeeklyAchievements } from "./get-weekly-achievements.use-case.js";
+import { ListWeeklyAchievementsUseCase } from "./list-weekly-achievements.use-case.js";
 
-describe("GetWeeklyAchievements", () => {
+describe("ListWeeklyAchievementsUseCase", () => {
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(INSIGHTS_TIME);
@@ -23,7 +23,7 @@ describe("GetWeeklyAchievements", () => {
     fixture.weeklyRepository.pages.set(key, [...records].reverse());
     fixture.weeklyRepository.years.set(key, records);
     const query = vi.spyOn(fixture.weeklyRepository, "findByYear");
-    const useCase = new GetWeeklyAchievements({
+    const useCase = new ListWeeklyAchievementsUseCase({
       repository: fixture.weeklyRepository,
       paginationService: fixture.paginationService,
     });
@@ -54,7 +54,7 @@ describe("GetWeeklyAchievements", () => {
     const key = JSON.stringify([fixture.userId, 2026]);
     fixture.weeklyRepository.pages.set(key, records);
     fixture.weeklyRepository.years.set(key, records);
-    const useCase = new GetWeeklyAchievements({
+    const useCase = new ListWeeklyAchievementsUseCase({
       repository: fixture.weeklyRepository,
       paginationService: fixture.paginationService,
     });
@@ -73,7 +73,7 @@ describe("GetWeeklyAchievements", () => {
   it("기록 없는 연도는 기본 페이지 크기와 빈 요약을 반환한다", async () => {
     // Given
     const fixture = createInsightsFixture();
-    const useCase = new GetWeeklyAchievements({
+    const useCase = new ListWeeklyAchievementsUseCase({
       repository: fixture.weeklyRepository,
       paginationService: fixture.paginationService,
     });

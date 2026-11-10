@@ -11,7 +11,7 @@ import { type DailyCompletionCachePort } from "../ports/daily-completion-cache.p
 import { type DailyCompletionFollowReaderPort } from "../ports/daily-completion-follow-reader.port.js";
 import { type TodoCompletionRepositoryPort } from "../ports/todo-completion.repository.port.js";
 
-export interface GetFriendDailyCompletionsInput {
+export interface GetFriendDailyCompletionsQuery {
   readonly userId: string;
   readonly friendUserId: string;
   readonly startDate: string;
@@ -27,14 +27,14 @@ interface GetFriendDailyCompletionsDependencies {
   readonly followReader: Pick<DailyCompletionFollowReaderPort, "isMutualFriend">;
 }
 
-export class GetFriendDailyCompletions {
+export class GetFriendDailyCompletionsUseCase {
   readonly #dependencies: GetFriendDailyCompletionsDependencies;
 
   constructor(dependencies: GetFriendDailyCompletionsDependencies) {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: GetFriendDailyCompletionsInput): Promise<DailyCompletionsRange> {
+  async execute(input: GetFriendDailyCompletionsQuery): Promise<DailyCompletionsRange> {
     const { userId, friendUserId } = input;
 
     const isMutualFriend = await this.#dependencies.followReader.isMutualFriend(

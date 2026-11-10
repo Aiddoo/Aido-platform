@@ -15,8 +15,8 @@ import {
 } from "#api/platform/http/swagger/index";
 import type { SupportedLocale } from "#api/shared/domain/locale";
 
-import { GetWeeklyAchievement } from "../../../application/use-cases/get-weekly-achievement.use-case.js";
-import { GetWeeklyAchievements } from "../../../application/use-cases/get-weekly-achievements.use-case.js";
+import { GetWeeklyAchievementUseCase } from "../../../application/use-cases/get-weekly-achievement.use-case.js";
+import { ListWeeklyAchievementsUseCase } from "../../../application/use-cases/list-weekly-achievements.use-case.js";
 import {
   GetWeeklyAchievementsQueryDto,
   WeeklyAchievementDetailResponseDto,
@@ -28,12 +28,12 @@ import {
 @ApiBearerAuth()
 @Controller("weekly-achievements")
 export class WeeklyAchievementController {
-  readonly #readWeeklyAchievements: GetWeeklyAchievements;
-  readonly #readWeeklyAchievement: GetWeeklyAchievement;
+  readonly #readWeeklyAchievements: ListWeeklyAchievementsUseCase;
+  readonly #readWeeklyAchievement: GetWeeklyAchievementUseCase;
 
   constructor(
-    readWeeklyAchievements: GetWeeklyAchievements,
-    readWeeklyAchievement: GetWeeklyAchievement,
+    readWeeklyAchievements: ListWeeklyAchievementsUseCase,
+    readWeeklyAchievement: GetWeeklyAchievementUseCase,
   ) {
     this.#readWeeklyAchievements = readWeeklyAchievements;
     this.#readWeeklyAchievement = readWeeklyAchievement;

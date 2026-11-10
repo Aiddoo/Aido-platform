@@ -4,7 +4,7 @@ import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache
 import { CacheService } from "#api/platform/cache/cache.service";
 
 import type { DailyCompletionsRange } from "../../domain/daily-completion.read-model.js";
-import { DailyCompletionCacheAdapter } from "./daily-completion.cache.js";
+import { DailyCompletionCache } from "./daily-completion.cache.js";
 import {
   DAILY_COMPLETION_CACHE_TTL_MS,
   DAILY_COMPLETION_GENERATION_TTL_MS,
@@ -20,17 +20,17 @@ const RANGE: DailyCompletionsRange = {
   dateRange: { startDate: START_DATE, endDate: END_DATE },
 };
 
-describe("DailyCompletionCacheAdapter — 완료 집계 generation", () => {
+describe("DailyCompletionCache — 완료 집계 generation", () => {
   let backend: InMemoryCacheStore;
   let cacheService: CacheService;
-  let adapter: DailyCompletionCacheAdapter;
+  let adapter: DailyCompletionCache;
 
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(new Date("2028-02-29T12:00:00Z"));
     backend = new InMemoryCacheStore({ defaultTtlMs: 60_000, maxItems: 100 });
     cacheService = new CacheService(backend);
-    adapter = new DailyCompletionCacheAdapter(cacheService);
+    adapter = new DailyCompletionCache(cacheService);
   });
 
   afterEach(() => {

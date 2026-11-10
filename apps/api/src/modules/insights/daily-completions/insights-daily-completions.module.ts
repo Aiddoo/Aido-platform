@@ -5,8 +5,8 @@ import { FOLLOW_READER, SocialFriendsModule } from "#api/modules/social/social-f
 import { DAILY_COMPLETION_CACHE } from "./application/ports/daily-completion-cache.port.js";
 import { DAILY_COMPLETION_FOLLOW_READER } from "./application/ports/daily-completion-follow-reader.port.js";
 import { TODO_COMPLETION_REPOSITORY } from "./application/ports/todo-completion.repository.port.js";
-import { DailyCompletionCacheAdapter } from "./infrastructure/cache/daily-completion.cache.js";
-import { DailyCompletionCacheInvalidator } from "./infrastructure/event-handlers/daily-completion-cache.event-handler.js";
+import { DailyCompletionCache } from "./infrastructure/cache/daily-completion.cache.js";
+import { DailyCompletionCacheEventHandler } from "./infrastructure/event-handlers/daily-completion-cache.event-handler.js";
 import { DrizzleTodoCompletionRepository } from "./infrastructure/persistence/drizzle-todo-completion.repository.js";
 import {
   getDailyCompletionsProvider,
@@ -24,10 +24,10 @@ import { DailyCompletionController } from "./presentation/http/v1/daily-completi
     },
     {
       provide: DAILY_COMPLETION_CACHE,
-      useClass: DailyCompletionCacheAdapter,
+      useClass: DailyCompletionCache,
     },
     { provide: DAILY_COMPLETION_FOLLOW_READER, useExisting: FOLLOW_READER },
-    DailyCompletionCacheInvalidator,
+    DailyCompletionCacheEventHandler,
     getDailyCompletionsProvider,
     getFriendDailyCompletionsProvider,
   ],

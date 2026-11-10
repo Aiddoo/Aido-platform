@@ -9,7 +9,7 @@ import {
   type WeeklyAchievementView,
 } from "../read-models/weekly-achievement.read-model.js";
 
-export interface GetWeeklyAchievementInput {
+export interface GetWeeklyAchievementQuery {
   readonly userId: string;
   readonly year: number;
   readonly week: number;
@@ -20,14 +20,14 @@ interface GetWeeklyAchievementDependencies {
   readonly repository: Pick<WeeklyAchievementRepositoryPort, "findByYearAndWeek">;
 }
 
-export class GetWeeklyAchievement {
+export class GetWeeklyAchievementUseCase {
   readonly #dependencies: GetWeeklyAchievementDependencies;
 
   constructor(dependencies: GetWeeklyAchievementDependencies) {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: GetWeeklyAchievementInput): Promise<WeeklyAchievementView> {
+  async execute(input: GetWeeklyAchievementQuery): Promise<WeeklyAchievementView> {
     const { userId, year, week, locale } = input;
 
     const row = await this.#dependencies.repository.findByYearAndWeek(userId, year, week);

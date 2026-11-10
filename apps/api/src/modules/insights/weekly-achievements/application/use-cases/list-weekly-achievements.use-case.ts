@@ -10,7 +10,7 @@ import {
   type WeeklyAchievementView,
 } from "../read-models/weekly-achievement.read-model.js";
 
-export interface GetWeeklyAchievementsInput {
+export interface ListWeeklyAchievementsQuery {
   readonly userId: string;
   readonly year: number;
   readonly cursor?: number;
@@ -25,19 +25,19 @@ export interface WeeklyAchievementListView {
   readonly summary: WeeklyAchievementSummary;
 }
 
-interface GetWeeklyAchievementsDependencies {
+interface ListWeeklyAchievementsDependencies {
   readonly repository: Pick<WeeklyAchievementRepositoryPort, "findByYear" | "findAllByYear">;
   readonly paginationService: Pick<PaginationService, "normalizeCursorPagination">;
 }
 
-export class GetWeeklyAchievements {
-  readonly #dependencies: GetWeeklyAchievementsDependencies;
+export class ListWeeklyAchievementsUseCase {
+  readonly #dependencies: ListWeeklyAchievementsDependencies;
 
-  constructor(dependencies: GetWeeklyAchievementsDependencies) {
+  constructor(dependencies: ListWeeklyAchievementsDependencies) {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: GetWeeklyAchievementsInput): Promise<WeeklyAchievementListView> {
+  async execute(input: ListWeeklyAchievementsQuery): Promise<WeeklyAchievementListView> {
     const { userId, year, locale } = input;
 
     const { cursor, size, take } =
