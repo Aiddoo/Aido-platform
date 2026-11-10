@@ -1,6 +1,6 @@
 # 관리자 알림
 
-운영 채널(가입)과 결제 채널(구독)로 가는 관리자 알림 기준이다. Application(`src/modules/operations/application`)은 채널에 상관없는 알림 사실(`AdminNotice`)만 만든다. 제목·이모지·색·필드 배치·날짜 표시는 채널 어댑터가 정하고, Discord는 `infrastructure/adapters/notifications/discord-*.renderer.ts` 한 곳에 있다. 지금 어댑터는 Discord와 로그(`ADMIN_NOTIFIER_PROVIDER=log`)이며, 다른 채널은 어댑터와 factory 표에 한 줄을 더해 붙인다.
+운영 채널(가입)과 결제 채널(구독)로 가는 관리자 알림 기준이다. Application(`src/modules/operations/admin-notices/application`)은 채널에 상관없는 알림 사실(`AdminNotice`)만 만든다. 제목·이모지·색·필드 배치·날짜 표시는 채널 어댑터가 정하고, Discord는 `admin-notices/infrastructure/adapters/discord-*.mapper.ts` 한 곳에 있다. 지금 어댑터는 Discord와 로그(`ADMIN_NOTIFIER_PROVIDER=log`)이며, 다른 채널은 어댑터와 `admin-notifier-selection.adapter.ts` 표에 한 줄을 더해 붙인다.
 
 | `AdminNotice.type`   | 내용                                                     | 만드는 곳                                     |
 | -------------------- | -------------------------------------------------------- | --------------------------------------------- |

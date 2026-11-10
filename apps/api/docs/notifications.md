@@ -44,7 +44,7 @@ createBroadcastCampaignSchema = broadcastNotificationSchema.extend({
 
 - `BroadcastCampaign` Aggregate의 `contentFor(locale)`가 언어별 문구를 고른다. 없는 언어는 기본 `title`·`body`다.
 - fan-out 페이지는 수신자를 언어별로 묶어 렌더링을 한 번만 한다.
-- `RECIPIENT_LOCAL_TIME`은 수신자 저장 시간대의 그 시각을 `startAfter`로 둔다. 이미 지난 시각이면 다음 날이다.
+- `RECIPIENT_LOCAL_TIME`은 수신자 저장 시간대의 그 시각을 `startAfter`로 둔다. 이미 지난 시각이면 다음 날이고, 날짜가 오래전이면 수신자의 오늘부터 다음 그 시각이다. 분배 페이지는 알림을 바로 만들지 않고 같은 시각의 사용자끼리 묶어 `operations.broadcast-delivery.v1` 작업(`startAfter`, 마케팅 priority 0)을 같은 transaction에 등록하며, 그 시각에 작업이 알림과 발송 outbox를 만든다.
 - 같은 `requestId` 재요청은 같은 캠페인이다(중복 발송 없음).
 
 ## 방해 금지
@@ -62,15 +62,15 @@ createBroadcastCampaignSchema = broadcastNotificationSchema.extend({
 | ---------------- | ---------------------------------------------------------------------------------------------- |
 | DAU·WAU·MAU      | `UserActivityDay.localDate`(요청 시간대의 달력 날짜, `LastActiveInterceptor`)가 있는 사용자 수 |
 | 활성             | 로그인한 사용자의 앱 요청이 있는 사용자 현지 날짜(앱 시작·복귀·푸시 탭 때의 기기 보고 포함)    |
-| D1·D7·D30 리텐션 | 가입 cohort 기준(`drizzle-admin-growth-metrics.adapter.ts`, 한 SQL 집계)                       |
-| stickiness       | DAU/MAU(관리자 API 추가 필드)                                                                  |
+| D1·D7·D30 리텐션 | 가입 cohort 기준(`drizzle-growth-metrics.reader.ts`, 한 SQL 집계)                              |
+| stickiness       | DAU/MAU(%, 소수 둘째 자리, MAU가 0이면 0. 관리자 API 추가 필드 `stickiness`)                   |
 | 푸시 퍼널        | 캠페인·종류별 생성 → 건너뜀(사유별) → 발송 요청 → receipt 성공 → 열람(`readAt`)                |
 
-- 정의는 문서와 타입(`GrowthMetricDefinition`) 두 곳에 고정한다. 관리자 지표는 operations `metrics` slice가 소유한다.
+- 정의는 문서와 타입(`GROWTH_METRIC_DEFINITIONS`, 관리자 Swagger 설명이 이 상수로 만들어진다) 두 곳에 고정한다. 관리자 지표는 operations `metrics` slice가 소유한다.
 - 열람이 푸시 탭으로 기록되는지 앱 동작을 먼저 확인하고, 아니면 퍼널은 receipt까지만 둔다.
 - 문구·발송 시각 실험은 `ExperimentAssignerPort`(결정적 해시)로 배정하고 결과는 퍼널과 리텐션으로 읽는다.
 - SANDBOX 결제는 매출 지표에서 뺀다([결제](billing.md#sandbox-결제)).
 
 ## 전환 중
 
-지금 관리자 브로드캐스트는 `title`·`body` 한 벌이고 수신자 현지 시각 발송이 없다. 거래성과 마케팅이 같은 `push-delivery.v1`에서 우선순위 없이 섞이고, 지표 집계는 operations의 기존 어댑터에 있다. 이 문서의 규칙은 notification·operations Context를 옮길 때 들어온다. 옮긴 Context는 `apps/api/architecture.ratchet.json`의 `migratedContexts`에 있다.
+관리자 캠페인의 언어별 문구·수신자 현지 시각 발송·마케팅 우선순위 0 차선은 operations `broadcasts` slice에 들어왔다. 거래성과 마케팅이 같은 `push-delivery.v1`에서 우선순위 없이 섞이는 문제, 방해 금지, 푸시 퍼널은 notification Context를 옮길 때 들어온다. 옮긴 Context는 `apps/api/architecture.ratchet.json`의 `migratedContexts`에 있다.
