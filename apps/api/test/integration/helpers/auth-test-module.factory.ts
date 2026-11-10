@@ -79,7 +79,9 @@ import {
   issueLoginProvider,
   provisionUserProvider,
   createSessionProvider,
-  verificationServiceProvider,
+  issueVerificationCodeProvider,
+  sendVerificationCodeProvider,
+  consumeVerificationCodeProvider,
 } from "../../../src/modules/identity/auth/identity-auth.providers.js";
 import type { FakeEmailService } from "../../mocks/fake-email.service.js";
 import { provisioningSeederTestProvider } from "./provisioning-seeder.provider.js";
@@ -134,7 +136,9 @@ export async function createAuthTestModule(
       Argon2PasswordHasherAdapter,
       createSessionProvider,
       JwtTokenIssuerAdapter,
-      verificationServiceProvider,
+      issueVerificationCodeProvider,
+      sendVerificationCodeProvider,
+      consumeVerificationCodeProvider,
       {
         provide: VerificationCodeSecurityPort,
         useClass: NodeVerificationCodeSecurityAdapter,

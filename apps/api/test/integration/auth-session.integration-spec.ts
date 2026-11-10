@@ -1,3 +1,4 @@
+import { REVOKE_REASON } from "@aido/api/vocabulary";
 import { sql } from "drizzle-orm";
 import { vi } from "vitest";
 import { z } from "zod";
@@ -5,6 +6,7 @@ import { z } from "zod";
 import { DrizzleSessionRepository } from "#api/modules/identity/auth/infrastructure/persistence/drizzle-session.repository";
 import { createEntityId } from "#api/platform/database/entity-id";
 import { session as sessionTable, user as userTable } from "#api/platform/database/schema/index";
+import { instantFromDate } from "#api/shared/domain/time/instant";
 import { SessionFixture, UserFixture } from "#test/fixtures/index";
 import { createDatabaseTransactionFixture, createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
@@ -148,7 +150,7 @@ describe("DrizzleSessionRepository 통합 테스트 — 세션 회전과 폐기 
   it("폐기한 세션은 버전이 일치해도 회전하거나 새 해시를 저장할 수 없다", async () => {
     // Given
     const session = await givenSession({ refreshTokenHash: "revoked-hash", tokenVersion: 1 });
-    await repository.revoke(session.id, "user_logout");
+    await repository.revoke(session.id, REVOKE_REASON.USER_LOGOUT, instantFromDate(currentTime));
 
     // When
     const result = await repository.rotateToken(
@@ -168,7 +170,7 @@ describe("DrizzleSessionRepository 통합 테스트 — 세션 회전과 폐기 
     const persisted = await readSession(session.id);
     expect(persisted?.refreshTokenHash).toBe("revoked-hash");
     expect(persisted?.tokenVersion).toBe(1);
-    expect(persisted?.revokedReason).toBe("user_logout");
+    expect(persisted?.revokedReason).toBe(REVOKE_REASON.USER_LOGOUT);
   });
 
   it("패밀리 폐기는 실제로 폐기한 ID만 반환하고 다른 패밀리와 기존 폐기 사유를 보존한다", async () => {
@@ -178,7 +180,7 @@ describe("DrizzleSessionRepository 통합 테스트 — 세션 회전과 폐기 
     const alreadyRevoked = await givenSession({
       refreshTokenHash: "family-revoked",
       revokedAt: currentTime,
-      revokedReason: "user_logout",
+      revokedReason: REVOKE_REASON.USER_LOGOUT,
     });
     const otherFamily = await givenSession({
       refreshTokenHash: "other-family-hash",
@@ -188,19 +190,21 @@ describe("DrizzleSessionRepository 통합 테스트 — 세션 회전과 폐기 
     // When
     const revokedIds = await repository.revokeByTokenFamily(
       "session-family",
-      "token_reuse_detected",
+      REVOKE_REASON.TOKEN_REUSE_DETECTED,
+      instantFromDate(currentTime),
     );
     const repeatedIds = await repository.revokeByTokenFamily(
       "session-family",
-      "token_reuse_detected",
+      REVOKE_REASON.TOKEN_REUSE_DETECTED,
+      instantFromDate(currentTime),
     );
 
     // Then
     expect(revokedIds.toSorted()).toEqual([first.id, second.id].toSorted());
     expect(repeatedIds).toEqual([]);
-    expect((await readSession(first.id))?.revokedReason).toBe("token_reuse_detected");
+    expect((await readSession(first.id))?.revokedReason).toBe(REVOKE_REASON.TOKEN_REUSE_DETECTED);
     expect((await readSession(second.id))?.revokedAt).toBeInstanceOf(Date);
-    expect((await readSession(alreadyRevoked.id))?.revokedReason).toBe("user_logout");
+    expect((await readSession(alreadyRevoked.id))?.revokedReason).toBe(REVOKE_REASON.USER_LOGOUT);
     expect((await readSession(otherFamily.id))?.revokedAt).toBeNull();
   });
 
@@ -215,7 +219,7 @@ describe("DrizzleSessionRepository 통합 테스트 — 세션 회전과 폐기 
     const revoked = await givenSession({
       refreshTokenHash: "already-revoked",
       revokedAt: currentTime,
-      revokedReason: "user_logout",
+      revokedReason: REVOKE_REASON.USER_LOGOUT,
     });
     const [otherUser] = await client
       .insert(userTable)
@@ -230,15 +234,21 @@ describe("DrizzleSessionRepository 통합 테스트 — 세션 회전과 폐기 
     });
 
     // When
-    const ids = await repository.revokeAllByUserId(userId, "password_changed", current.id);
-    const repeated = await repository.revokeAllByUserId(userId, "password_changed", current.id);
+    const revokeAll = {
+      userId,
+      reason: REVOKE_REASON.PASSWORD_CHANGED,
+      now: instantFromDate(currentTime),
+      exceptSessionId: current.id,
+    };
+    const ids = await repository.revokeAllByUserId(revokeAll);
+    const repeated = await repository.revokeAllByUserId(revokeAll);
 
     // Then
     expect(ids.toSorted()).toEqual([active.id, expired.id].toSorted());
     expect(repeated).toEqual([]);
     expect((await readSession(current.id))?.revokedAt).toBeNull();
     expect((await readSession(otherSession.id))?.revokedAt).toBeNull();
-    expect((await readSession(revoked.id))?.revokedReason).toBe("user_logout");
-    expect((await readSession(expired.id))?.revokedReason).toBe("password_changed");
+    expect((await readSession(revoked.id))?.revokedReason).toBe(REVOKE_REASON.USER_LOGOUT);
+    expect((await readSession(expired.id))?.revokedReason).toBe(REVOKE_REASON.PASSWORD_CHANGED);
   });
 });

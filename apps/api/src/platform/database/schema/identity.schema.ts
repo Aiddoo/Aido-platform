@@ -1,3 +1,4 @@
+import { sql } from "drizzle-orm";
 import {
   pgTable,
   integer,
@@ -14,6 +15,7 @@ import {
   unique,
 } from "drizzle-orm/pg-core";
 
+import { instant } from "../columns/temporal-columns.js";
 import { createEntityId } from "../entity-id.js";
 import {
   accountProvider,
@@ -152,12 +154,14 @@ export const verification = pgTable(
   "Verification",
   {
     attempts: integer().default(0).notNull(),
-    createdAt: timestamp({ precision: 3 }).defaultNow().notNull(),
-    expiresAt: timestamp({ precision: 3 }).notNull(),
+    createdAt: instant()
+      .default(sql`now()`)
+      .notNull(),
+    expiresAt: instant().notNull(),
     id: serial().primaryKey(),
     token: varchar({ length: 64 }).notNull(),
     type: verificationType().notNull(),
-    usedAt: timestamp({ precision: 3 }),
+    usedAt: instant(),
     userId: text().notNull(),
   },
   (table) => [
@@ -180,7 +184,9 @@ export const verification = pgTable(
 export const loginAttempt = pgTable(
   "LoginAttempt",
   {
-    createdAt: timestamp({ precision: 3 }).defaultNow().notNull(),
+    createdAt: instant()
+      .default(sql`now()`)
+      .notNull(),
     email: varchar({ length: 255 }).notNull(),
     failureReason: varchar({ length: 100 }),
     id: serial().primaryKey(),
@@ -215,10 +221,12 @@ export const oAuthState = pgTable(
     accessToken: varchar({ length: 1000 }),
     accountRestored: boolean(),
     codeVerifier: varchar({ length: 128 }),
-    createdAt: timestamp({ precision: 3 }).defaultNow().notNull(),
+    createdAt: instant()
+      .default(sql`now()`)
+      .notNull(),
     exchangeCode: varchar({ length: 64 }),
-    exchangedAt: timestamp({ precision: 3 }),
-    expiresAt: timestamp({ precision: 3 }).notNull(),
+    exchangedAt: instant(),
+    expiresAt: instant().notNull(),
     id: serial().primaryKey(),
     initiatingUserId: varchar({ length: 36 }),
     ipAddress: varchar({ length: 45 }),
@@ -243,7 +251,9 @@ export const oAuthState = pgTable(
 export const securityLog = pgTable(
   "SecurityLog",
   {
-    createdAt: timestamp({ precision: 3 }).defaultNow().notNull(),
+    createdAt: instant()
+      .default(sql`now()`)
+      .notNull(),
     event: securityEvent().notNull(),
     id: serial().primaryKey(),
     ipAddress: varchar({ length: 45 }).notNull(),

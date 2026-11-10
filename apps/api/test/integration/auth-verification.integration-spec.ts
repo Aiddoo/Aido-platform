@@ -2,7 +2,7 @@ import type { TestingModule } from "@nestjs/testing";
 import { sql } from "drizzle-orm";
 import { vi } from "vitest";
 
-import { VerificationService } from "#api/modules/identity/auth/application/use-cases/issue-verification-code.use-case";
+import { ConsumeVerificationCodeUseCase } from "#api/modules/identity/auth/application/use-cases/consume-verification-code.use-case";
 import { ResetPasswordUseCase } from "#api/modules/identity/auth/application/use-cases/reset-password.use-case";
 import { Argon2PasswordHasherAdapter } from "#api/modules/identity/auth/infrastructure/adapters/argon2-password-hasher.adapter";
 import { NodeVerificationCodeSecurityAdapter } from "#api/modules/identity/auth/infrastructure/adapters/node-verification-code-security.adapter";
@@ -19,7 +19,8 @@ import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database
 import { createAuthTestModule } from "./helpers/auth-test-module.factory.js";
 
 const at = new Date("2026-12-31T23:59:00.000Z");
-const expiresAt = new Date("2027-01-01T00:09:00.000Z");
+const atInstant = Temporal.Instant.fromEpochMilliseconds(at.getTime());
+const expiresAt = Temporal.Instant.from("2027-01-01T00:09:00.000Z");
 const code = "123456";
 const security = new NodeVerificationCodeSecurityAdapter();
 const digest = security.hash(code);
@@ -30,7 +31,7 @@ describe("인증 소비와 credential 저장 (실제 PostgreSQL)", () => {
   let module: TestingModule;
   let repository: DrizzleVerificationRepository;
   let accountRepository: DrizzleAccountRepository;
-  let service: VerificationService;
+  let consumeCode: ConsumeVerificationCodeUseCase;
   let passwordService: Argon2PasswordHasherAdapter;
   let resetPassword: ResetPasswordUseCase;
   let unitOfWork: UnitOfWorkPort;
@@ -43,7 +44,7 @@ describe("인증 소비와 credential 저장 (실제 PostgreSQL)", () => {
     module = await createAuthTestModule(client, new FakeEmailService());
     repository = module.get(DrizzleVerificationRepository);
     accountRepository = module.get(DrizzleAccountRepository);
-    service = module.get(VerificationService);
+    consumeCode = module.get(ConsumeVerificationCodeUseCase);
     passwordService = module.get(Argon2PasswordHasherAdapter);
     resetPassword = module.get(ResetPasswordUseCase);
     unitOfWork = module.get(UnitOfWorkPort);
@@ -82,7 +83,7 @@ describe("인증 소비와 credential 저장 (실제 PostgreSQL)", () => {
       type: "PASSWORD_RESET",
       token: digest,
       expiresAt,
-      createdAt: at,
+      createdAt: atInstant,
       ...overrides,
     });
     await client.insert(verification).values(fixture);
@@ -163,7 +164,7 @@ describe("인증 소비와 credential 저장 (실제 PostgreSQL)", () => {
       nextPasswords.map((password) => passwordService.verify(passwordHash, password)),
     );
     expect(matches).toEqual(results.map((result) => result.status === "fulfilled"));
-    expect((await readVerification(verification.id))?.usedAt).toBeInstanceOf(Date);
+    expect((await readVerification(verification.id))?.usedAt).toBeInstanceOf(Temporal.Instant);
     expect(
       await client.query.securityLog.findMany({ where: { event: "PASSWORD_CHANGED" } }),
     ).toHaveLength(1);
@@ -177,15 +178,17 @@ describe("인증 소비와 credential 저장 (실제 PostgreSQL)", () => {
     // When
     await expect(
       unitOfWork.run(async () => {
-        await service.verifyCode(userId, code, "PASSWORD_RESET");
+        await consumeCode.execute({ userId, code, type: "PASSWORD_RESET" });
         throw failure;
       }),
     ).rejects.toBe(failure);
 
     // Then
     expect((await readVerification(verification.id))?.usedAt).toBeNull();
-    await expect(service.verifyCode(userId, code, "PASSWORD_RESET")).resolves.toBe(true);
-    expect((await readVerification(verification.id))?.usedAt).toEqual(at);
+    await expect(
+      consumeCode.execute({ userId, code, type: "PASSWORD_RESET" }),
+    ).resolves.toBeUndefined();
+    expect((await readVerification(verification.id))?.usedAt).toEqual(atInstant);
   });
 
   it("잘못된 코드의 실패 횟수는 외부 트랜잭션 rollback 후에도 유지한다", async () => {
@@ -194,7 +197,7 @@ describe("인증 소비와 credential 저장 (실제 PostgreSQL)", () => {
 
     // When
     await expect(
-      unitOfWork.run(() => service.verifyCode(userId, "000000", "PASSWORD_RESET")),
+      unitOfWork.run(() => consumeCode.execute({ userId, code: "000000", type: "PASSWORD_RESET" })),
     ).rejects.toMatchObject({ errorCode: "VERIFY_0751" });
 
     // Then
@@ -207,8 +210,8 @@ describe("인증 소비와 credential 저장 (실제 PostgreSQL)", () => {
 
     // When
     const results = await competeForRow("Verification", verification.id, () => [
-      unitOfWork.run(() => service.verifyCode(userId, "000000", "PASSWORD_RESET")),
-      unitOfWork.run(() => service.verifyCode(userId, "000000", "PASSWORD_RESET")),
+      unitOfWork.run(() => consumeCode.execute({ userId, code: "000000", type: "PASSWORD_RESET" })),
+      unitOfWork.run(() => consumeCode.execute({ userId, code: "000000", type: "PASSWORD_RESET" })),
     ]);
 
     // Then
@@ -222,7 +225,7 @@ describe("인증 소비와 credential 저장 (실제 PostgreSQL)", () => {
   });
 
   it.each([
-    { description: "만료 시각", overrides: { expiresAt: at }, errorCode: "VERIFY_0751" },
+    { description: "만료 시각", overrides: { expiresAt: atInstant }, errorCode: "VERIFY_0751" },
     { description: "시도 한도", overrides: { attempts: 5 }, errorCode: "VERIFY_0754" },
   ])(
     "$description에 도달한 코드는 DB 조건과 서비스에서 소비를 거부한다",
@@ -235,12 +238,14 @@ describe("인증 소비와 credential 저장 (실제 PostgreSQL)", () => {
         type: verification.type,
         tokenHash: digest,
         maxAttempts: 5,
-        at: Temporal.Instant.fromEpochMilliseconds(at.getTime()),
+        at: atInstant,
       };
 
       // When
       expect(await repository.consume(input)).toBe(false);
-      await expect(service.verifyCode(userId, code, "PASSWORD_RESET")).rejects.toMatchObject({
+      await expect(
+        consumeCode.execute({ userId, code, type: "PASSWORD_RESET" }),
+      ).rejects.toMatchObject({
         errorCode,
       });
       expect(await readVerification(verification.id)).toMatchObject({
@@ -259,7 +264,7 @@ describe("인증 소비와 credential 저장 (실제 PostgreSQL)", () => {
       type: verification.type,
       tokenHash: digest,
       maxAttempts: 5,
-      at: Temporal.Instant.fromEpochMilliseconds(at.getTime()),
+      at: atInstant,
     };
 
     // When
@@ -293,7 +298,11 @@ describe("인증 소비와 credential 저장 (실제 PostgreSQL)", () => {
 
   it("같은 기존 해시의 두 rehash 중 하나만 변경하고 실제 승자의 해시를 저장한다", async () => {
     // Given
-    const account = await accountRepository.createCredentialAccount(userId, "old-password-hash");
+    await accountRepository.createCredentialAccount(userId, "old-password-hash");
+    const account = await accountRepository.findByUserIdAndProvider(userId, "CREDENTIAL");
+    if (account == null) {
+      throw new Error("credential 계정이 만들어지지 않았습니다.");
+    }
 
     // When
     const results = await competeForRow("Account", account.id, () => [

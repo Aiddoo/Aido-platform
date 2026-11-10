@@ -2060,7 +2060,7 @@ describe("인증 E2E", () => {
           mode: "link",
           exchangeCode,
           userId: providerAccountId,
-          expiresAt: new Date(Date.now() + 10 * 60 * 1000),
+          expiresAt: Temporal.Now.instant().add({ minutes: 10 }),
         });
 
       return exchangeCode;

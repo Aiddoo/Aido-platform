@@ -89,50 +89,25 @@ export const SessionFixture = {
  * Verification Fixture 팩토리
  */
 export const VerificationFixture = {
-  /**
-   * Verification 엔티티 생성
-   */
   create: (overrides: Partial<Verification> = {}): Verification => {
     const id = ++verificationCounter;
-    const now = new Date();
-    const expiresAt = new Date(now.getTime() + 10 * 60 * 1000); // 10분 후
+    const now = Temporal.Now.instant().round({
+      smallestUnit: "millisecond",
+      roundingMode: "floor",
+    });
 
     return {
       id: overrides.id ?? id,
       userId: overrides.userId ?? `user-${id}`,
       type: overrides.type ?? "EMAIL_VERIFY",
-      token: overrides.token ?? `token-${id}-${Date.now()}`,
-      expiresAt: overrides.expiresAt ?? expiresAt,
+      token: overrides.token ?? `token-${id}-${now.epochMilliseconds}`,
+      expiresAt: overrides.expiresAt ?? now.add({ minutes: 10 }),
       usedAt: overrides.usedAt ?? null,
       attempts: overrides.attempts ?? 0,
       createdAt: overrides.createdAt ?? now,
     };
   },
 
-  /**
-   * 만료된 Verification 생성
-   */
-  createExpired: (overrides: Partial<Verification> = {}): Verification => {
-    const pastDate = new Date(Date.now() - 60 * 60 * 1000); // 1시간 전
-    return VerificationFixture.create({
-      expiresAt: pastDate,
-      ...overrides,
-    });
-  },
-
-  /**
-   * 사용된 Verification 생성
-   */
-  createUsed: (overrides: Partial<Verification> = {}): Verification => {
-    return VerificationFixture.create({
-      usedAt: new Date(),
-      ...overrides,
-    });
-  },
-
-  /**
-   * 카운터 리셋
-   */
   reset: (): void => {
     verificationCounter = 0;
   },

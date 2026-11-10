@@ -20,7 +20,6 @@ export {
   type FollowWithFollowing,
   type FollowWithUser,
 } from "./follow.builder.js";
-export { LoginAttemptBuilder } from "./login-attempt.builder.js";
 export { NotificationBuilder } from "./notification.builder.js";
 export {
   NudgeBuilder,
@@ -30,7 +29,6 @@ export {
   type NudgeWithRelations,
 } from "./nudge.builder.js";
 export { PushTokenBuilder } from "./push-token.builder.js";
-export { SecurityLogBuilder } from "./security-log.builder.js";
 export { SessionBuilder } from "./session.builder.js";
 export { SubscriptionEventBuilder } from "./subscription-event.builder.js";
 export { TodoBuilder } from "./todo.builder.js";
@@ -39,4 +37,3 @@ export { UserBuilder } from "./user.builder.js";
 export { UserConsentBuilder } from "./user-consent.builder.js";
 export { UserLocationBuilder } from "./user-location.builder.js";
 export { UserPreferenceBuilder } from "./user-preference.builder.js";
-export { VerificationBuilder } from "./verification.builder.js";

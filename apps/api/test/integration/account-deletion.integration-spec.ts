@@ -75,7 +75,9 @@ import {
   requestPasswordResetProvider,
   provisionUserProvider,
   createSessionProvider,
-  verificationServiceProvider,
+  issueVerificationCodeProvider,
+  sendVerificationCodeProvider,
+  consumeVerificationCodeProvider,
 } from "../../src/modules/identity/auth/identity-auth.providers.js";
 import { FakeEmailService } from "../mocks/fake-email.service.js";
 import { TestDatabase, type TestDatabaseClient } from "../setup/test-database.js";
@@ -135,7 +137,9 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
         requestPasswordResetProvider,
         createSessionProvider,
         JwtTokenIssuerAdapter,
-        verificationServiceProvider,
+        issueVerificationCodeProvider,
+        sendVerificationCodeProvider,
+        consumeVerificationCodeProvider,
         {
           provide: VerificationCodeSecurityPort,
           useClass: NodeVerificationCodeSecurityAdapter,

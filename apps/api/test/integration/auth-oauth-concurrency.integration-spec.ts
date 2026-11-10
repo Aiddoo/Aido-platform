@@ -14,7 +14,6 @@ import { createEntityId } from "#api/platform/database/entity-id";
 import { oAuthState, user as userTable } from "#api/platform/database/schema/index";
 import { UnitOfWorkPort } from "#api/shared/application/ports/index";
 import { UserFixture } from "#test/fixtures/index";
-import { OAuthStateFixture } from "#test/fixtures/oauth-state.fixture";
 import { FakeEmailService } from "#test/mocks/fake-email.service";
 import { CountingOAuthIdentityProvider } from "#test/mocks/ports/auth-oauth.stub";
 import { createTestClient } from "#test/setup/database-context";
@@ -23,6 +22,7 @@ import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database
 import { createAuthTestModule } from "./helpers/auth-test-module.factory.js";
 
 const at = new Date("2027-01-01T00:00:00.000Z");
+const atInstant = Temporal.Instant.fromEpochMilliseconds(at.getTime());
 
 describe("OAuth 교환과 로그인 수단 변경 (실제 PostgreSQL)", () => {
   let database: TestDatabase;
@@ -81,20 +81,27 @@ describe("OAuth 교환과 로그인 수단 변경 (실제 PostgreSQL)", () => {
     }
   });
 
-  async function givenState(overrides: Parameters<typeof OAuthStateFixture.create>[0] = {}) {
+  async function givenState(overrides: Partial<typeof oAuthState.$inferSelect> = {}) {
     sequence += 1;
-    const fixture = OAuthStateFixture.create({
-      id: sequence,
-      state: `state-${sequence}`,
-      exchangeCode: `code-${sequence}`,
-      mode: "login",
-      accessToken: "access",
-      refreshToken: "refresh",
-      userId,
-      expiresAt: new Date(at.getTime() + 600_000),
-      ...overrides,
-    });
-    await client.insert(oAuthState).values(fixture);
+    const [fixture] = await client
+      .insert(oAuthState)
+      .values({
+        id: sequence,
+        state: `state-${sequence}`,
+        provider: "GOOGLE",
+        redirectUri: "aido://auth/callback",
+        exchangeCode: `code-${sequence}`,
+        mode: "login",
+        accessToken: "access",
+        refreshToken: "refresh",
+        userId,
+        expiresAt: atInstant.add({ minutes: 10 }),
+        ...overrides,
+      })
+      .returning();
+    if (fixture == null) {
+      throw new Error("OAuth state fixture was not created");
+    }
     return fixture;
   }
 
@@ -164,7 +171,7 @@ describe("OAuth 교환과 로그인 수단 변경 (실제 PostgreSQL)", () => {
       reason: { errorCode: ErrorCode.USER_0602 },
     });
     expect(await savedState(state.id)).toMatchObject({
-      exchangedAt: expect.any(Date),
+      exchangedAt: expect.any(Temporal.Instant),
       accessToken: null,
       refreshToken: null,
     });
@@ -339,7 +346,7 @@ describe("OAuth 교환과 로그인 수단 변경 (실제 PostgreSQL)", () => {
       const consumed = await states.consumeExchangeCode({
         id: state.id,
         exchangeCode: state.exchangeCode ?? "",
-        at: Temporal.Instant.fromEpochMilliseconds(at.getTime()),
+        at: atInstant,
         purpose: "link",
         actorUserId: userId,
       });
@@ -350,7 +357,7 @@ describe("OAuth 교환과 로그인 수단 변경 (실제 PostgreSQL)", () => {
         await states.consumeExchangeCode({
           id: state.id,
           exchangeCode: state.exchangeCode ?? "",
-          at: Temporal.Instant.fromEpochMilliseconds(at.getTime()),
+          at: atInstant,
           purpose: "link",
           actorUserId: userId,
         }),
@@ -362,7 +369,7 @@ describe("OAuth 교환과 로그인 수단 변경 (실제 PostgreSQL)", () => {
     // Given
     const actorMismatch = await givenState({ mode: "link", initiatingUserId: createEntityId() });
     const purposeMismatch = await givenState({ mode: "login" });
-    const expired = await givenState({ mode: "link", expiresAt: at });
+    const expired = await givenState({ mode: "link", expiresAt: atInstant });
 
     // When
     for (const state of [actorMismatch, purposeMismatch, expired]) {
@@ -370,7 +377,7 @@ describe("OAuth 교환과 로그인 수단 변경 (실제 PostgreSQL)", () => {
         await states.consumeExchangeCode({
           id: state.id,
           exchangeCode: state.exchangeCode ?? "",
-          at: Temporal.Instant.fromEpochMilliseconds(at.getTime()),
+          at: atInstant,
           purpose: "link",
           actorUserId: userId,
         }),

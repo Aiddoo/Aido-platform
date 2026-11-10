@@ -674,13 +674,29 @@ describe("OAuth UseCase 통합 테스트 (실제 PostgreSQL)", () => {
     });
   });
 
+  async function createState(state: string, provider: AccountProvider, redirectUri: string) {
+    // use case의 DateNowClock과 같은 시계로 만료를 정한다
+    const now = Temporal.Instant.fromEpochMilliseconds(Date.now());
+    await oauthStateRepository.create({
+      state,
+      provider,
+      redirectUri,
+      expiresAt: now.add({ minutes: 10 }),
+    });
+    const created = await oauthStateRepository.findByState(state, now);
+    if (created == null) {
+      throw new Error(`OAuth state가 만들어지지 않았습니다: ${state}`);
+    }
+    return created;
+  }
+
   describe("OAuth State 및 Exchange Code", () => {
     it("저장된 state로 redirectUri를 조회할 수 있어야 한다", async () => {
       // Given
       const state = "redirect-lookup-state";
       const redirectUri = "aido-dev://auth/naver";
 
-      await oauthStateRepository.create(state, "NAVER", redirectUri);
+      await createState(state, "NAVER", redirectUri);
 
       // When
       const resolved = await getOAuthRedirectUri.execute({ state: state });
@@ -703,17 +719,12 @@ describe("OAuth UseCase 통합 테스트 (실제 PostgreSQL)", () => {
       const redirectUri = "aido://auth/callback";
 
       // When
-      const oauthState = await oauthStateRepository.create(state, "KAKAO", redirectUri);
+      const oauthState = await createState(state, "KAKAO", redirectUri);
 
       // Then
-      expect(oauthState).toBeDefined();
       expect(oauthState.state).toBe(state);
       expect(oauthState.provider).toBe("KAKAO");
       expect(oauthState.redirectUri).toBe(redirectUri);
-
-      const found = await oauthStateRepository.findByState(state);
-      expect(found).not.toBeNull();
-      expect(found?.state).toBe(state);
     });
 
     it("교환 코드로 토큰을 교환할 수 있어야 한다", async () => {
@@ -732,10 +743,10 @@ describe("OAuth UseCase 통합 테스트 (실제 PostgreSQL)", () => {
       });
 
       const state = "exchange-state-456";
-      const oauthState = await oauthStateRepository.create(state, "GOOGLE", "aido://auth/callback");
+      const oauthState = await createState(state, "GOOGLE", "aido://auth/callback");
 
       const exchangeCode = oauthStateRepository.generateExchangeCode();
-      await oauthStateRepository.saveExchangeData(oauthState.id, {
+      await oauthStateRepository.saveExchangeData(oauthState.id.value, {
         exchangeCode,
         ...loginResult.tokens,
         userId: loginResult.userId,
@@ -778,14 +789,10 @@ describe("OAuth UseCase 통합 테스트 (실제 PostgreSQL)", () => {
         token: googleToken,
       });
 
-      const oauthState = await oauthStateRepository.create(
-        "reuse-state",
-        "GOOGLE",
-        "aido://auth/callback",
-      );
+      const oauthState = await createState("reuse-state", "GOOGLE", "aido://auth/callback");
 
       const exchangeCode = oauthStateRepository.generateExchangeCode();
-      await oauthStateRepository.saveExchangeData(oauthState.id, {
+      await oauthStateRepository.saveExchangeData(oauthState.id.value, {
         exchangeCode,
         ...loginResult.tokens,
         userId: loginResult.userId,
