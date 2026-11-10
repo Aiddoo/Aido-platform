@@ -1,15 +1,19 @@
 import { ErrorCode } from "@aido/api/errors";
 import { ConfigService } from "@nestjs/config";
 
-import { NotificationQueueService } from "#api/modules/notification/notification-delivery-jobs.public";
+import { NotificationQueueAdapter } from "#api/modules/notification/notification-delivery-jobs.public";
 import { notificationEventJobKey } from "#api/modules/notification/push/infrastructure/jobs/notification-job-keys.constants";
-import { NotificationJobName } from "#api/modules/notification/push/infrastructure/jobs/notification.queue";
+import {
+  NOTIFICATION_QUEUE,
+  NotificationJobName,
+} from "#api/modules/notification/push/infrastructure/jobs/notification.queue";
 import type { EnvConfig } from "#api/platform/config/schemas/index";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { ApplicationException } from "#api/shared/application/application.exception";
 import { RecordingAdminEventNotifier } from "#test/doubles/operations/recording-admin-event-notifier";
+import { FixedClock } from "#test/doubles/platform/fixed-clock";
+import { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
 import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";
-import { FakeJobRuntime } from "#test/mocks/fake-job-runtime";
 import { suppressLogger } from "#test/setup/suppress-logger";
 
 import type { StoreSubscriptionEventFailureContext } from "../../application/ports/subscription-event-notifier.port.js";
@@ -19,17 +23,20 @@ import { SubscriptionEventNotifierAdapter } from "./subscription-event-notifier.
 function createAdapter(options: { projectId?: string } = {}) {
   const adminEventNotifier = new RecordingAdminEventNotifier();
   const alerts = new RecordingOperationalAlert();
-  const jobRuntime = new FakeJobRuntime();
+  const jobQueue = new InMemoryJobQueue();
   const config = new TypedConfigService(
     new ConfigService<EnvConfig, true>({ REVENUECAT_PROJECT_ID: options.projectId }),
   );
   const adapter = new SubscriptionEventNotifierAdapter(
     adminEventNotifier,
-    new NotificationQueueService(jobRuntime),
+    new NotificationQueueAdapter(
+      jobQueue,
+      new FixedClock(Temporal.Instant.from("2028-02-26T12:00:00Z")),
+    ),
     alerts,
     config,
   );
-  return { adapter, alerts, forwarded: adminEventNotifier.subscriptionEvents, jobRuntime };
+  return { adapter, alerts, forwarded: adminEventNotifier.subscriptionEvents, jobQueue };
 }
 
 describe("SubscriptionEventNotifierAdapter — 웹훅 실패 보고", () => {
@@ -147,7 +154,7 @@ describe("SubscriptionEventNotifierAdapter — 결제 문제 푸시 기록", () 
 
   it("발생 시각을 같은 시각의 Date로 바꿔 결제 문제 알림 작업을 등록한다", async () => {
     // Given
-    const { adapter, jobRuntime } = createAdapter();
+    const { adapter, jobQueue } = createAdapter();
     const at = Temporal.Instant.from("2028-02-26T12:00:00.000Z");
     const job = { name: NotificationJobName.BILLING_ISSUE, data: { userId: "user-1" } } as const;
 
@@ -155,9 +162,10 @@ describe("SubscriptionEventNotifierAdapter — 결제 문제 푸시 기록", () 
     await adapter.recordBillingIssue("user-1", at);
 
     // Then
-    expect(jobRuntime.enqueueCalls).toHaveLength(1);
-    expect(jobRuntime.enqueueCalls[0]?.data).toEqual(job);
-    expect(jobRuntime.enqueueCalls[0]?.options.idempotencyKey).toBe(
+    const queued = jobQueue.jobsIn(NOTIFICATION_QUEUE);
+    expect(queued).toHaveLength(1);
+    expect(queued[0]?.payload).toEqual(job);
+    expect(queued[0]?.options.idempotencyKey).toBe(
       notificationEventJobKey(job, new Date("2028-02-26T12:00:00.000Z")),
     );
   });
