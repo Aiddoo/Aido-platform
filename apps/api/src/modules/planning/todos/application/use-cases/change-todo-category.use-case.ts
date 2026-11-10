@@ -4,10 +4,7 @@ import { TODO_LIMITS } from "@aido/api/vocabulary";
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
-import {
-  type MutationLockPort,
-  type UnitOfWorkPort,
-} from "#api/shared/application/ports/index";
+import { type MutationLockPort, type UnitOfWorkPort } from "#api/shared/application/ports/index";
 
 import { TodoCategoryLockKeys } from "../../../categories/application/categories.lock-keys.js";
 import { type CategoryOwnershipPort } from "../ports/category-ownership.port.js";
