@@ -1,6 +1,6 @@
 # Aido Mobile App
 
-> **Version**: 1.8.0 · **Last Updated**: 2026-11-07 · **Owner**: Aido Mobile Team
+> **Version**: 1.9.0 · **Last Updated**: 2026-11-11 · **Owner**: Aido Mobile Team
 
 Expo 기반 React Native 모바일 앱. Feature-based Layered Architecture.
 
@@ -96,7 +96,7 @@ features/{area}/{feature}/   # 서버 모듈 이름의 업무 영역 + 단수 ke
 - **[컴포넌트](.claude/architecture.md#컴포넌트-계약)**: 데이터는 쓰는 컴포넌트가 조회한다. 화면 id는 route hook에서 읽는다. 바깥 레이아웃을 모른다. Props는 `Omit<ComponentProps<typeof X>, …>`로 원본 이름을 살린다. 반복 표시는 `<Record />`를 나란히 쓴다. 래퍼와 훅은 역할이 있을 때만 만든다. 한 곳에서만 쓰면 파일 아래 지역 컴포넌트다.
 - **[레이아웃 시프트](.claude/architecture.md#레이아웃-시프트)**: 받은 뒤에 화면이 밀리지 않게 자리를 먼저 잡는다.
 - **[함수 형태](.claude/architecture.md#함수-형태)**: 모듈 수준은 `function` 선언이다. 화살표는 Service 필드, 컴포넌트 안 핸들러, 인라인 콜백만 쓴다.
-- **[DI](.claude/architecture.md#portadapterdi)**: 포트는 앱의 말로 짓는다. SDK import는 `shared/infra`에서만 한다. Mapper는 DI에 넣지 않는다.
+- **[DI](.claude/architecture.md#portadapterdi)**: 포트는 앱의 말로 짓는다. SDK import는 `shared/infra`에서만 한다. 조립은 순수 함수 `createAppContainer(ports)` 하나이고, 프로세스 수명 객체(로거·QueryClient·토큰·HTTP·결제 SDK)는 `composition-root`가 한 번 만든다([수명](.claude/architecture.md#수명)). feature는 `di-context` 훅으로만 꺼낸다. Mapper는 DI에 넣지 않는다.
 - **[상태](.claude/architecture.md#상태)**: 서버·URL·MMKV·폼·임시 값을 구분하고 원천 하나에만 둔다. 앱이 만드는 Context는 DI와 UI 내부 구현에만 쓴다([대신 쓰는 것](.claude/architecture.md#context-대신-쓰는-것)).
 - **[쿼리](.claude/architecture.md#query와-mutation)**: 옵션은 `useGetXQueryOptions`·`useXMutationOptions` 훅이고 화면은 `useSuspenseQuery`·`useMutation`을 직접 부른다. 저장 후 바로 떠나는 변경은 `onSettled`에서 Promise를 돌려주지 않는다.
 - **[폼](.claude/architecture.md#폼)**: `useForm` 제네릭 없이 `form`으로 쓰고 입력은 RHF `Controller`로 잇는다. 생성과 수정은 스키마와 입력 부품만 공유하고 제출은 각자 소유한다([생성·수정](.claude/architecture.md#생성수정)).
