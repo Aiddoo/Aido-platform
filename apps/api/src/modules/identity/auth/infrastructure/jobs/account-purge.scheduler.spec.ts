@@ -1,20 +1,39 @@
 import { vi } from "vitest";
 
+import type { EnqueueJobOptions, JobData } from "#api/shared/application/ports/job-runtime.port";
 import { FakeJobRuntime } from "#test/mocks/fake-job-runtime";
 
 import { AccountPurgeScheduler } from "./account-purge.scheduler.js";
 
+class ControlledScheduleRuntime extends FakeJobRuntime {
+  scheduleOutcome: () => Promise<void> = async () => undefined;
+
+  override async schedule<T extends JobData>(
+    scheduleKey: string,
+    cron: string,
+    queue: string,
+    data: T,
+    options: EnqueueJobOptions,
+  ): Promise<void> {
+    await this.scheduleOutcome();
+    await super.schedule(scheduleKey, cron, queue, data, options);
+  }
+}
+
+// AccountPurgeScheduler는 ClockPort 없이 dayjs()로 현지 시각을 읽어 Date만 고정한다(vitest.setup이 테스트마다 되돌린다)
+function freezeDateAt(at: string): void {
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(new Date(at));
+}
+
 describe("AccountPurgeJob — 일일 스케줄과 재시작 보정", () => {
-  let runtime: FakeJobRuntime;
+  let runtime: ControlledScheduleRuntime;
   let job: AccountPurgeScheduler;
 
   beforeEach(() => {
-    vi.useFakeTimers();
-    runtime = new FakeJobRuntime();
+    runtime = new ControlledScheduleRuntime();
     job = new AccountPurgeScheduler(runtime);
   });
-
-  afterEach(() => vi.useRealTimers());
 
   it.each([
     { at: "2026-12-31T17:59:59.999Z", key: undefined },
@@ -22,7 +41,7 @@ describe("AccountPurgeJob — 일일 스케줄과 재시작 보정", () => {
     { at: "2027-01-01T14:59:59.999Z", key: "purge_2027-01-01" },
   ])("KST 03:00 경계와 연말 시각 $at에서 기존 스케줄·보정 키를 유지한다", async ({ at, key }) => {
     // Given
-    vi.setSystemTime(new Date(at));
+    freezeDateAt(at);
     const options = {
       retryLimit: 2,
       retryDelaySeconds: 5,
@@ -62,12 +81,11 @@ describe("AccountPurgeJob — 일일 스케줄과 재시작 보정", () => {
 
   it("스케줄 등록이 대기 중이어도 API 부팅은 즉시 계속된다", async () => {
     // Given
-    vi.setSystemTime(new Date("2026-12-31T17:00:00.000Z"));
-    let release: (() => void) | undefined;
-    const pending = new Promise<void>((resolve) => {
-      release = resolve;
-    });
-    vi.spyOn(runtime, "schedule").mockReturnValueOnce(pending);
+    let release = (): void => undefined;
+    runtime.scheduleOutcome = () =>
+      new Promise<void>((resolve) => {
+        release = resolve;
+      });
 
     // When
     const result = job.onModuleInit();
@@ -77,15 +95,15 @@ describe("AccountPurgeJob — 일일 스케줄과 재시작 보정", () => {
       expect(result).toBeUndefined();
       expect(runtime.enqueueCalls).toEqual([]);
     } finally {
-      release?.();
+      release();
       await job.schedulerRegistration;
     }
   });
 
   it("스케줄 등록 실패는 부팅 실패로 전파하지 않고 보정 잡을 만들지 않는다", async () => {
     // Given
-    vi.setSystemTime(new Date("2026-12-31T18:00:00.000Z"));
-    vi.spyOn(runtime, "schedule").mockRejectedValueOnce(new Error("Queue unavailable"));
+    freezeDateAt("2026-12-31T18:00:00.000Z");
+    runtime.scheduleOutcome = () => Promise.reject(new Error("Queue unavailable"));
 
     // When
     job.onModuleInit();

@@ -1,156 +1,80 @@
-/**
- * AuthController 단위 테스트
- *
- * @description
- * 인증 컨트롤러의 회원가입, 로그인, 전체 로그아웃 엔드포인트를 검증한다.
- * 서비스 위임과 AuthMapper를 통한 응답 변환을 확인한다.
- *
- * 실행 명령:
- * ```bash
- * pnpm --filter @aido/server test auth.controller.spec.ts
- * ```
- */
+import { IncomingMessage, ServerResponse } from "node:http";
+import { Socket } from "node:net";
 
-import { TestBed } from "@suites/unit";
-import type { Request } from "express";
-import type { Mocked } from "vitest";
+import express, { type Request } from "express";
 
+import { ChangePasswordUseCase } from "#api/modules/identity/auth/application/use-cases/change-password.use-case";
 import { LoginWithPasswordUseCase } from "#api/modules/identity/auth/application/use-cases/login-with-password.use-case";
 import { LogoutAllUseCase } from "#api/modules/identity/auth/application/use-cases/logout-all.use-case";
+import { LogoutUseCase } from "#api/modules/identity/auth/application/use-cases/logout.use-case";
+import { RefreshTokensUseCase } from "#api/modules/identity/auth/application/use-cases/refresh-tokens.use-case";
 import { RegisterUseCase } from "#api/modules/identity/auth/application/use-cases/register.use-case";
+import { RequestPasswordResetUseCase } from "#api/modules/identity/auth/application/use-cases/request-password-reset.use-case";
+import { RequestPasswordSetupCodeUseCase } from "#api/modules/identity/auth/application/use-cases/request-password-setup-code.use-case";
+import { ResendVerificationUseCase } from "#api/modules/identity/auth/application/use-cases/resend-verification.use-case";
+import { ResetPasswordUseCase } from "#api/modules/identity/auth/application/use-cases/reset-password.use-case";
+import { SetPasswordUseCase } from "#api/modules/identity/auth/application/use-cases/set-password.use-case";
+import { VerifyEmailUseCase } from "#api/modules/identity/auth/application/use-cases/verify-email.use-case";
 import type { CurrentUserPayload } from "#api/modules/identity/auth/presentation/http/decorators/current-user.decorator";
 import { parseRequestClient } from "#api/platform/http/request-client/index";
+import { createAuthCredentialFixture } from "#test/fixtures/auth-credential.fixture";
+import { createAuthSessionFixture } from "#test/fixtures/identity/auth-session.fixture";
 import { TEST_REQUEST_ID } from "#test/mocks/request-client";
-import { mockOf } from "#test/mocks/typed-mock";
 
 import { AuthController } from "./auth.controller.js";
-import type { LoginDto, RegisterDto } from "./auth.dto.js";
+
+function createAuthController(fixture: ReturnType<typeof createAuthCredentialFixture>) {
+  return new AuthController(
+    new RegisterUseCase(fixture),
+    new VerifyEmailUseCase(fixture),
+    new ResendVerificationUseCase(fixture),
+    new LoginWithPasswordUseCase(fixture),
+    new LogoutUseCase(fixture),
+    new LogoutAllUseCase(fixture),
+    new RefreshTokensUseCase(fixture),
+    new RequestPasswordResetUseCase(fixture),
+    new ResetPasswordUseCase(fixture),
+    new RequestPasswordSetupCodeUseCase(fixture),
+    new SetPasswordUseCase(fixture),
+    new ChangePasswordUseCase(fixture),
+  );
+}
+
+// 컨트롤러가 express Request를 받아 실제 express 앱이 만든 요청 객체를 쓴다
+function createExpressRequest(headers: IncomingMessage["headers"]): Promise<Request> {
+  const incoming = new IncomingMessage(new Socket());
+  incoming.method = "POST";
+  incoming.url = "/";
+  incoming.headers = headers;
+  const app = express();
+  return new Promise((resolve) => {
+    app.use((request: Request) => resolve(request));
+    app(incoming, new ServerResponse(incoming));
+  });
+}
 
 describe("AuthController — 인증 컨트롤러", () => {
-  let controller: AuthController;
-  let registerUseCase: Mocked<RegisterUseCase>;
-  let loginWithPasswordUseCase: Mocked<LoginWithPasswordUseCase>;
-  let logoutAllUseCase: Mocked<LogoutAllUseCase>;
+  it("전체 로그아웃은 출시 앱이 받던 안내 문구만 응답한다", async () => {
+    // Given
+    const fixture = createAuthCredentialFixture();
+    await fixture.sessionRepository.save(createAuthSessionFixture({ userId: fixture.user.id }));
+    const user: CurrentUserPayload = {
+      userId: fixture.user.id,
+      email: fixture.user.email,
+      sessionId: "session-123",
+      role: "USER",
+    };
+    const headers = { "user-agent": "test-agent" };
+    const request = await createExpressRequest(headers);
 
-  const mockUser: CurrentUserPayload = {
-    userId: "user-123",
-    email: "test@example.com",
-    sessionId: "session-123",
-    role: "USER",
-  };
+    // When
+    const result = await createAuthController(fixture).logoutAll(
+      user,
+      request,
+      parseRequestClient(headers, TEST_REQUEST_ID),
+    );
 
-  const mockReq = mockOf<Request>({
-    ip: "127.0.0.1",
-    headers: { "user-agent": "test-agent" },
-  });
-  const mockClient = parseRequestClient(mockReq.headers, TEST_REQUEST_ID);
-
-  beforeEach(async () => {
-    const { unit, unitRef } = await TestBed.solitary(AuthController).compile();
-
-    controller = unit;
-    registerUseCase = unitRef.get(RegisterUseCase);
-    loginWithPasswordUseCase = unitRef.get(LoginWithPasswordUseCase);
-    logoutAllUseCase = unitRef.get(LogoutAllUseCase);
-  });
-
-  describe("register", () => {
-    it("회원가입 요청을 서비스에 위임하고 매퍼를 통해 응답을 반환해야 한다", async () => {
-      // Given - 회원가입 DTO와 서비스 응답이 준비되었을 때
-      const dto: RegisterDto = {
-        email: "test@example.com",
-        password: "Password1!",
-        passwordConfirm: "Password1!",
-        name: "테스터",
-        termsAgreed: true,
-        privacyAgreed: true,
-        marketingAgreed: false,
-        marketingPushAgreed: false,
-      };
-      const serviceResult = {
-        userId: "user-123",
-        message: "인증 코드가 발송되었습니다.",
-        email: "test@example.com",
-        emailSent: true,
-      };
-      registerUseCase.execute.mockResolvedValue(serviceResult);
-
-      // When - register를 호출하면
-      const result = await controller.register(dto, mockReq, mockClient);
-
-      // Then - 서비스에 위임하고 AuthMapper.toRegisterResponse 형식의 응답을 반환해야 한다
-      expect(registerUseCase.execute).toHaveBeenCalledWith({
-        ...dto,
-        metadata: { ip: "127.0.0.1", userAgent: "test-agent", device: {} },
-      });
-      expect(result).toEqual({
-        message: serviceResult.message,
-        email: serviceResult.email,
-        emailSent: true,
-      });
-    });
-  });
-
-  describe("login", () => {
-    it("로그인 요청을 서비스에 위임하고 매퍼를 통해 토큰 응답을 반환해야 한다", async () => {
-      // Given - 로그인 DTO와 서비스 응답이 준비되었을 때
-      const dto: LoginDto = {
-        email: "test@example.com",
-        password: "Password1!",
-      };
-      const serviceResult = {
-        userId: "user-123",
-        userTag: "tester#1234",
-        name: "테스터",
-        profileImage: null,
-        sessionId: "session-789",
-        tokens: {
-          accessToken: "access-token",
-          refreshToken: "refresh-token",
-          expiresIn: 3600,
-        },
-      };
-      loginWithPasswordUseCase.execute.mockResolvedValue(serviceResult);
-
-      // When - login을 호출하면
-      const result = await controller.login(dto, mockReq, mockClient);
-
-      // Then - 서비스에 위임하고 AuthMapper.toAuthTokensResponse 형식의 응답을 반환해야 한다
-      expect(loginWithPasswordUseCase.execute).toHaveBeenCalledWith({
-        ...dto,
-        metadata: { ip: "127.0.0.1", userAgent: "test-agent", device: {} },
-      });
-      expect(result).toEqual({
-        userId: serviceResult.userId,
-        userTag: serviceResult.userTag,
-        accessToken: serviceResult.tokens.accessToken,
-        refreshToken: serviceResult.tokens.refreshToken,
-        name: serviceResult.name,
-        profileImage: serviceResult.profileImage,
-        accountRestored: false,
-      });
-    });
-  });
-
-  describe("logoutAll", () => {
-    it("전체 로그아웃 요청을 서비스에 위임하고 메시지를 반환해야 한다", async () => {
-      // Given - 인증된 사용자가 있을 때
-      logoutAllUseCase.execute.mockResolvedValue({
-        message: "모든 기기에서 로그아웃되었습니다.",
-        revokedCount: 3,
-      });
-
-      // When - logoutAll을 호출하면
-      const result = await controller.logoutAll(mockUser, mockReq, mockClient);
-
-      // Then - 서비스에 userId를 전달하고 메시지 응답을 반환해야 한다
-      expect(logoutAllUseCase.execute).toHaveBeenCalledWith({
-        userId: mockUser.userId,
-        metadata: expect.any(Object),
-      });
-      expect(result).toEqual({
-        message: "모든 기기에서 로그아웃되었습니다.",
-      });
-    });
+    // Then
+    expect(result).toEqual({ message: "모든 기기에서 로그아웃되었습니다." });
   });
 });

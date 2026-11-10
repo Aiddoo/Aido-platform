@@ -1,143 +1,49 @@
-/**
- * AdminGuard 단위 테스트
- *
- * @description
- * 관리자 권한 가드의 역할 기반 접근 제어를 검증한다.
- * ADMIN 허용, USER/미인증/알 수 없는 역할 거부를 확인한다.
- *
- * 실행 명령:
- * ```bash
- * pnpm --filter @aido/server test admin.guard.spec.ts
- * ```
- */
-import { TestBed } from "@suites/unit";
-
-import { ApplicationException } from "#api/shared/application/application.exception";
-import { createMockExecutionContext } from "#test/mocks/index";
+import { ErrorCode } from "@aido/api/errors";
+import { ExecutionContextHost } from "@nestjs/core/helpers/execution-context-host.js";
 
 import { AdminGuard } from "./admin.guard.js";
 
+function contextWithUser(role?: string) {
+  const user =
+    role == null
+      ? undefined
+      : { userId: "user-1", email: "user@test.com", sessionId: "session-1", role };
+  return new ExecutionContextHost([{ user }, {}]);
+}
+
 describe("AdminGuard — 관리자 가드", () => {
-  let guard: AdminGuard;
+  const guard = new AdminGuard();
 
-  beforeEach(async () => {
-    const { unit } = await TestBed.solitary(AdminGuard).compile();
+  it("ADMIN 역할을 가진 사용자는 접근을 허용한다", () => {
+    // Given
+    const context = contextWithUser("ADMIN");
 
-    guard = unit;
+    // When
+    const result = guard.canActivate(context);
+
+    // Then
+    expect(result).toBe(true);
   });
 
-  describe("canActivate", () => {
-    it("ADMIN 역할을 가진 사용자는 접근을 허용해야 한다", () => {
-      // Given
-      const { context } = createMockExecutionContext({
-        user: {
-          userId: "user-1",
-          email: "admin@test.com",
-          sessionId: "session-1",
-          role: "ADMIN",
-        },
-      });
+  it.each(["USER", "UNKNOWN_ROLE", ""])("역할이 '%s'이면 ADMIN_1401로 거부한다", (role) => {
+    // Given
+    const context = contextWithUser(role);
 
-      // When
-      const result = guard.canActivate(context);
+    // When
+    const activation = () => guard.canActivate(context);
 
-      // Then
-      expect(result).toBe(true);
-    });
-
-    it("USER 역할을 가진 사용자는 접근을 거부해야 한다", () => {
-      // Given
-      const { context } = createMockExecutionContext({
-        user: {
-          userId: "user-1",
-          email: "user@test.com",
-          sessionId: "session-1",
-          role: "USER",
-        },
-      });
-
-      // When & Then
-      expect(() => guard.canActivate(context)).toThrow(ApplicationException);
-    });
-
-    it("사용자 정보가 없으면 invalidToken 에러를 던져야 한다", () => {
-      // Given
-      const { context } = createMockExecutionContext();
-
-      // When & Then
-      expect(() => guard.canActivate(context)).toThrow(ApplicationException);
-    });
-
-    it("알 수 없는 역할은 접근을 거부해야 한다", () => {
-      // Given
-      const { context } = createMockExecutionContext({
-        user: {
-          userId: "user-1",
-          email: "unknown@test.com",
-          sessionId: "session-1",
-          role: "UNKNOWN_ROLE",
-        },
-      });
-
-      // When & Then
-      expect(() => guard.canActivate(context)).toThrow(ApplicationException);
-    });
-
-    it("빈 문자열 역할은 접근을 거부해야 한다", () => {
-      // Given
-      const { context } = createMockExecutionContext({
-        user: {
-          userId: "user-1",
-          email: "empty@test.com",
-          sessionId: "session-1",
-          role: "",
-        },
-      });
-
-      // When & Then
-      expect(() => guard.canActivate(context)).toThrow(ApplicationException);
-    });
+    // Then
+    expect(activation).toThrow(expect.objectContaining({ errorCode: ErrorCode.ADMIN_1401 }));
   });
 
-  describe("에러 메시지 검증", () => {
-    it("USER 역할 거부 시 ADMIN_1401 에러 코드를 반환해야 한다", () => {
-      // Given
-      const { context } = createMockExecutionContext({
-        user: {
-          userId: "user-1",
-          email: "user@test.com",
-          sessionId: "session-1",
-          role: "USER",
-        },
-      });
+  it("사용자 정보가 없으면 AUTH_0101로 거부한다", () => {
+    // Given
+    const context = contextWithUser();
 
-      // When & Then
-      try {
-        guard.canActivate(context);
-        expect.fail("에러가 발생해야 합니다");
-      } catch (error) {
-        expect(error).toBeInstanceOf(ApplicationException);
-        if (error instanceof ApplicationException) {
-          expect(error.errorCode).toBe("ADMIN_1401");
-        }
-      }
-    });
+    // When
+    const activation = () => guard.canActivate(context);
 
-    it("사용자 정보 없음 시 AUTH 에러 코드를 반환해야 한다", () => {
-      // Given
-      const { context } = createMockExecutionContext();
-
-      // When & Then
-      try {
-        guard.canActivate(context);
-        expect.fail("에러가 발생해야 합니다");
-      } catch (error) {
-        expect(error).toBeInstanceOf(ApplicationException);
-        // invalidToken 에러는 AUTH 도메인 에러 코드를 사용
-        if (error instanceof ApplicationException) {
-          expect(error.errorCode).toMatch(/^AUTH_/);
-        }
-      }
-    });
+    // Then
+    expect(activation).toThrow(expect.objectContaining({ errorCode: ErrorCode.AUTH_0101 }));
   });
 });

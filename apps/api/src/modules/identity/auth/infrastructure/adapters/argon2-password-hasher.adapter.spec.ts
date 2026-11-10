@@ -1,28 +1,7 @@
-/**
- * Argon2PasswordHasherAdapter 단위 테스트
- *
- * @description
- * 비밀번호 해싱, 검증, 리해싱 필요 여부 판단 로직을 검증한다.
- * argon2 기반 해싱의 일방향성, 솔트 유일성을 확인한다.
- *
- * 실행 명령:
- * ```bash
- * pnpm --filter @aido/server test password.service.spec.ts
- * ```
- */
-
-import { TestBed } from "@suites/unit";
-
 import { Argon2PasswordHasherAdapter } from "#api/modules/identity/auth/infrastructure/adapters/argon2-password-hasher.adapter";
 
-describe("PasswordService — 비밀번호 서비스", () => {
-  let service: Argon2PasswordHasherAdapter;
-
-  beforeEach(async () => {
-    const { unit } = await TestBed.solitary(Argon2PasswordHasherAdapter).compile();
-
-    service = unit;
-  });
+describe("Argon2PasswordHasherAdapter — 비밀번호 해시", () => {
+  const hasher = new Argon2PasswordHasherAdapter();
 
   describe("hash", () => {
     it("비밀번호를 해싱한다", async () => {
@@ -30,7 +9,7 @@ describe("PasswordService — 비밀번호 서비스", () => {
       const password = "Test1234@";
 
       // When
-      const hash = await service.hash(password);
+      const hash = await hasher.hash(password);
 
       // Then
       expect(hash).toBeDefined();
@@ -43,8 +22,8 @@ describe("PasswordService — 비밀번호 서비스", () => {
       const password = "Test1234@";
 
       // When
-      const hash1 = await service.hash(password);
-      const hash2 = await service.hash(password);
+      const hash1 = await hasher.hash(password);
+      const hash2 = await hasher.hash(password);
 
       // Then
       expect(hash1).not.toBe(hash2);
@@ -55,10 +34,10 @@ describe("PasswordService — 비밀번호 서비스", () => {
     it("올바른 비밀번호는 검증을 통과한다", async () => {
       // Given
       const password = "Test1234@";
-      const hash = await service.hash(password);
+      const hash = await hasher.hash(password);
 
       // When
-      const result = await service.verify(hash, password);
+      const result = await hasher.verify(hash, password);
 
       // Then
       expect(result).toBe(true);
@@ -68,10 +47,10 @@ describe("PasswordService — 비밀번호 서비스", () => {
       // Given
       const password = "Test1234@";
       const wrongPassword = "WrongPassword@";
-      const hash = await service.hash(password);
+      const hash = await hasher.hash(password);
 
       // When
-      const result = await service.verify(hash, wrongPassword);
+      const result = await hasher.verify(hash, wrongPassword);
 
       // Then
       expect(result).toBe(false);
@@ -80,10 +59,10 @@ describe("PasswordService — 비밀번호 서비스", () => {
     it("빈 비밀번호는 검증에 실패한다", async () => {
       // Given
       const password = "Test1234@";
-      const hash = await service.hash(password);
+      const hash = await hasher.hash(password);
 
       // When
-      const result = await service.verify(hash, "");
+      const result = await hasher.verify(hash, "");
 
       // Then
       expect(result).toBe(false);
@@ -99,24 +78,33 @@ describe("PasswordService — 비밀번호 서비스", () => {
       "$argon2id$v=19$m=65536,t=3,p=4$qJNCpGrN4QL1DvhstoOKug$1HwvaTmVjDQf/5kSpxii/rdbpQxrg+dhl4/S9imXAFI";
 
     it("구버전에서 생성된 해시로도 로그인 검증에 성공한다", async () => {
+      // Given
+      const hash = LEGACY_HASH;
+
       // When
-      const result = await service.verify(LEGACY_HASH, LEGACY_PASSWORD);
+      const result = await hasher.verify(hash, LEGACY_PASSWORD);
 
       // Then
       expect(result).toBe(true);
     });
 
     it("구버전 해시에 잘못된 비밀번호는 여전히 거부한다", async () => {
+      // Given
+      const hash = LEGACY_HASH;
+
       // When
-      const result = await service.verify(LEGACY_HASH, "WrongPassword@");
+      const result = await hasher.verify(hash, "WrongPassword@");
 
       // Then
       expect(result).toBe(false);
     });
 
     it("구버전 해시는 현재 설정과 동일하므로 리해싱이 필요없다", () => {
+      // Given
+      const hash = LEGACY_HASH;
+
       // When
-      const result = service.needsRehash(LEGACY_HASH);
+      const result = hasher.needsRehash(hash);
 
       // Then
       expect(result).toBe(false);
@@ -124,13 +112,12 @@ describe("PasswordService — 비밀번호 서비스", () => {
   });
 
   describe("needsRehash", () => {
-    it("유효한 해시는 리해싱이 필요없다고 반환한다", async () => {
+    it("현재 설정으로 만든 해시는 리해싱이 필요없다", async () => {
       // Given
-      const password = "Test1234@";
-      const hash = await service.hash(password);
+      const hash = await hasher.hash("Test1234@");
 
       // When
-      const result = await service.needsRehash(hash);
+      const result = hasher.needsRehash(hash);
 
       // Then
       expect(result).toBe(false);

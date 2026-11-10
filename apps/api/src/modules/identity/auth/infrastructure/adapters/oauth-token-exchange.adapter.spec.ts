@@ -1,10 +1,9 @@
 import { ErrorCode } from "@aido/api/errors";
-import { Logger } from "@nestjs/common";
+import { Logger, type LoggerService } from "@nestjs/common";
 import { HttpClient, HttpNetworkError } from "@nestjs/http-client";
-import { type MockInstance, vi } from "vitest";
 
 import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
-import { RecordingOperationalAlert } from "#test/mocks/recording-operational-alert";
+import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";
 
 import { GoogleOAuthIdentityAdapter } from "./google-oauth-identity.adapter.js";
 import { KakaoOAuthIdentityAdapter } from "./kakao-oauth-identity.adapter.js";
@@ -31,34 +30,72 @@ const providers = [
   { name: "NAVER", create: NaverOAuthIdentityAdapter },
 ] as const;
 
+// 어댑터가 Nest Logger를 직접 만들어 정적 logger 자리에 둔다(vitest는 spec 파일마다 모듈을 새로 읽는다)
+class RecordingNestLogger implements LoggerService {
+  readonly errors: unknown[] = [];
+  readonly others: unknown[] = [];
+
+  log(message: unknown): void {
+    this.others.push(message);
+  }
+
+  warn(message: unknown): void {
+    this.others.push(message);
+  }
+
+  debug(message: unknown): void {
+    this.others.push(message);
+  }
+
+  error(message: unknown): void {
+    this.errors.push(message);
+  }
+}
+
+class ProviderFetch {
+  readonly requests: Request[] = [];
+  #reply: () => Promise<Response> = async () => new Response(null, { status: 500 });
+
+  respondWith(createResponse: () => Response): void {
+    this.#reply = async () => createResponse();
+  }
+
+  failWith(error: Error): void {
+    this.#reply = async () => {
+      throw error;
+    };
+  }
+
+  readonly fetch: typeof globalThis.fetch = async (input, init) => {
+    this.requests.push(new Request(input, init));
+    return this.#reply();
+  };
+}
+
 describe("OAuth 공급자 토큰 교환 로그", () => {
-  let loggedError: MockInstance<Logger["error"]>;
-  let fetch: MockInstance<typeof globalThis.fetch>;
-  const http = new HttpClient({ retry: false, throwOnHttpError: false });
+  let logs: RecordingNestLogger;
+  let providerFetch: ProviderFetch;
+  let http: HttpClient;
   let policies: OutboundPolicyRegistry;
 
   beforeEach(() => {
+    logs = new RecordingNestLogger();
+    Logger.overrideLogger(logs);
+    providerFetch = new ProviderFetch();
+    http = new HttpClient({ retry: false, throwOnHttpError: false, fetch: providerFetch.fetch });
     policies = new OutboundPolicyRegistry(new RecordingOperationalAlert());
-    loggedError = vi.spyOn(Logger.prototype, "error").mockImplementation(() => undefined);
-    fetch = vi.spyOn(globalThis, "fetch");
-  });
-
-  afterEach(() => {
-    vi.restoreAllMocks();
   });
 
   it.each(providers)(
     "$name 교환이 거절되면 공급자·상태·짧은 오류 코드만 남기고 본문은 남기지 않는다",
     async ({ name, create }) => {
       // Given
-      fetch.mockResolvedValue(
-        new Response(
-          JSON.stringify({
-            error: "invalid_grant",
-            error_description: SECRET_DESCRIPTION,
-          }),
-          { status: 400 },
-        ),
+      providerFetch.respondWith(
+        () =>
+          new Response(
+            JSON.stringify({ error: "invalid_grant", error_description: SECRET_DESCRIPTION }),
+            { status: 400 },
+          ),
       );
       const provider = new create(config, http, policies);
 
@@ -67,14 +104,15 @@ describe("OAuth 공급자 토큰 교환 로그", () => {
 
       // Then
       await expect(exchange).rejects.toMatchObject({ errorCode: ErrorCode.USER_0602 });
-      expect(loggedError).toHaveBeenCalledWith({
+      expect(logs.errors).toContainEqual({
         event: "identity.oauth.token-exchange.failed",
         provider: name,
         statusCode: 400,
         providerError: "invalid_grant",
       });
-      expect(JSON.stringify(loggedError.mock.calls)).not.toContain("fixture-code-123");
-      expect(JSON.stringify(loggedError.mock.calls)).not.toContain("user@example.com");
+      const logged = JSON.stringify([logs.errors, logs.others]);
+      expect(logged).not.toContain("fixture-code-123");
+      expect(logged).not.toContain("user@example.com");
     },
   );
 
@@ -82,7 +120,7 @@ describe("OAuth 공급자 토큰 교환 로그", () => {
     "$name 교환은 연결이 끊겨도 다시 보내지 않고, 실패가 이어져도 다음 로그인을 막지 않는다",
     async ({ create }) => {
       // Given
-      fetch.mockRejectedValue(new TypeError("fetch failed"));
+      providerFetch.failWith(new TypeError("fetch failed"));
       const provider = new create(config, http, policies);
 
       // When
@@ -92,7 +130,7 @@ describe("OAuth 공급자 토큰 교환 로그", () => {
       }
 
       // Then
-      expect(fetch).toHaveBeenCalledTimes(6);
+      expect(providerFetch.requests).toHaveLength(6);
       for (const failure of failures) {
         expect(failure).toBeInstanceOf(HttpNetworkError);
       }
@@ -101,10 +139,11 @@ describe("OAuth 공급자 토큰 교환 로그", () => {
 
   it("Kakao 오류 본문의 error_code(KOE)를 공급자 오류 코드로 쓴다", async () => {
     // Given
-    fetch.mockResolvedValue(
-      new Response(JSON.stringify({ error: "invalid_grant", error_code: "KOE320" }), {
-        status: 400,
-      }),
+    providerFetch.respondWith(
+      () =>
+        new Response(JSON.stringify({ error: "invalid_grant", error_code: "KOE320" }), {
+          status: 400,
+        }),
     );
 
     // When
@@ -113,12 +152,14 @@ describe("OAuth 공급자 토큰 교환 로그", () => {
       .catch(() => undefined);
 
     // Then
-    expect(loggedError).toHaveBeenCalledWith(expect.objectContaining({ providerError: "KOE320" }));
+    expect(logs.errors).toContainEqual(expect.objectContaining({ providerError: "KOE320" }));
   });
 
   it("JSON이 아닌 오류 본문은 공급자 오류 코드 없이 상태만 남긴다", async () => {
     // Given
-    fetch.mockResolvedValue(new Response(`<html>${SECRET_DESCRIPTION}</html>`, { status: 502 }));
+    providerFetch.respondWith(
+      () => new Response(`<html>${SECRET_DESCRIPTION}</html>`, { status: 502 }),
+    );
 
     // When
     await new GoogleOAuthIdentityAdapter(config, http, policies)
@@ -126,12 +167,12 @@ describe("OAuth 공급자 토큰 교환 로그", () => {
       .catch(() => undefined);
 
     // Then
-    expect(loggedError).toHaveBeenCalledWith({
+    expect(logs.errors).toContainEqual({
       event: "identity.oauth.token-exchange.failed",
       provider: "GOOGLE",
       statusCode: 502,
       providerError: undefined,
     });
-    expect(JSON.stringify(loggedError.mock.calls)).not.toContain("user@example.com");
+    expect(JSON.stringify([logs.errors, logs.others])).not.toContain("user@example.com");
   });
 });

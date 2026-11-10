@@ -2,16 +2,13 @@ import { createHash } from "node:crypto";
 import { createServer, type Server } from "node:http";
 
 import { ErrorCode } from "@aido/api/errors";
-import { Logger } from "@nestjs/common";
+import { Logger, type LoggerService } from "@nestjs/common";
 import { HttpClient } from "@nestjs/http-client";
 import { SignJWT, exportJWK, generateKeyPair, type JWK } from "jose";
-import { vi, type Mock } from "vitest";
+import { vi } from "vitest";
 
-import type { VerifiedProfile } from "#api/modules/identity/auth/application/ports/oauth-identity-provider.port";
 import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
-import { ApplicationException } from "#api/shared/application/application.exception";
-import { asMock } from "#test/mocks/index";
-import { RecordingOperationalAlert } from "#test/mocks/recording-operational-alert";
+import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";
 
 import { AppleOAuthIdentityAdapter } from "./apple-oauth-identity.adapter.js";
 import { GoogleOAuthIdentityAdapter } from "./google-oauth-identity.adapter.js";
@@ -19,88 +16,139 @@ import { KakaoOAuthIdentityAdapter } from "./kakao-oauth-identity.adapter.js";
 import { NaverOAuthIdentityAdapter } from "./naver-oauth-identity.adapter.js";
 import { OAUTH_PROVIDER_TIMEOUT_MS } from "./oauth-outbound.policy.js";
 
-// Google Auth Library 모킹
-vi.mock("google-auth-library", () => ({
-  OAuth2Client: vi.fn().mockImplementation(() => ({
-    verifyIdToken: vi.fn(),
-  })),
+const googleIdTokens = vi.hoisted(() => ({
+  clientOptions: new Array<unknown>(),
+  verifications: new Array<unknown>(),
+  verify: (): Promise<{ getPayload(): unknown }> =>
+    Promise.reject(new Error("verifyIdToken 응답을 정하지 않았다")),
 }));
 
-async function responseFromFixture(fixture: {
-  ok: boolean;
-  status?: number;
-  json?: () => Promise<unknown>;
-}): Promise<Response> {
-  return new Response(fixture.json ? JSON.stringify(await fixture.json()) : null, {
-    status: fixture.status ?? (fixture.ok ? 200 : 500),
-  });
+// 어댑터가 OAuth2Client를 직접 만들고 라이브러리는 node-fetch로 Google 공개키를 받아 모듈 경계를 손으로 쓴 대역으로 바꾼다
+vi.mock("google-auth-library", () => ({
+  OAuth2Client: class {
+    constructor(options: unknown) {
+      googleIdTokens.clientOptions.push(options);
+    }
+
+    verifyIdToken(options: unknown) {
+      googleIdTokens.verifications.push(options);
+      return googleIdTokens.verify();
+    }
+  },
+}));
+
+// 어댑터가 Nest Logger를 직접 만들어 정적 logger 자리에 둔다(vitest는 spec 파일마다 모듈을 새로 읽는다)
+class RecordingNestLogger implements LoggerService {
+  readonly errors: unknown[] = [];
+  readonly others: unknown[] = [];
+
+  log(message: unknown): void {
+    this.others.push(message);
+  }
+
+  warn(message: unknown): void {
+    this.others.push(message);
+  }
+
+  debug(message: unknown): void {
+    this.others.push(message);
+  }
+
+  error(message: unknown): void {
+    this.errors.push(message);
+  }
+}
+
+class ProviderFetch {
+  readonly requests: Request[] = [];
+  #replies: Array<() => Promise<Response>> = [];
+
+  respondWith(...createResponses: Array<() => Response>): void {
+    this.#replies = createResponses.map((createResponse) => async () => createResponse());
+  }
+
+  failWith(error: Error): void {
+    this.#replies = [
+      async () => {
+        throw error;
+      },
+    ];
+  }
+
+  // 마지막 응답은 이후 요청에도 계속 쓴다
+  readonly fetch: typeof globalThis.fetch = async (input, init) => {
+    this.requests.push(new Request(input, init));
+    const reply = this.#replies.length > 1 ? this.#replies.shift() : this.#replies[0];
+    if (reply == null) {
+      throw new Error("공급자 응답을 정하지 않았다");
+    }
+    return reply();
+  };
+}
+
+function jsonResponse(body: unknown, status = 200): () => Response {
+  return () => new Response(JSON.stringify(body), { status });
+}
+
+function emptyResponse(status: number): () => Response {
+  return () => new Response(null, { status });
+}
+
+const oauthClient = {
+  clientId: "google-client-id",
+  clientSecret: "client-secret",
+  callbackUrl: "https://api.example.com/callback",
+  isConfigured: true,
+};
+
+function oauthConfig(appleJwksUrl?: string) {
+  return {
+    google: oauthClient,
+    kakao: oauthClient,
+    naver: oauthClient,
+    apple: {
+      clientId: "apple-client-id",
+      jwksUrl: appleJwksUrl,
+      jwksCooldownDurationMs: appleJwksUrl == null ? undefined : 0,
+    },
+  };
 }
 
 describe("OAuth 공급자 어댑터 — 앱이 보낸 공급자 토큰 검증", () => {
-  let service: {
-    verifyGoogleToken(token: string): Promise<VerifiedProfile>;
-    verifyKakaoToken(token: string): Promise<VerifiedProfile>;
-    verifyNaverToken(token: string): Promise<VerifiedProfile>;
-    verifyAppleToken(token: string, nonce?: string): Promise<VerifiedProfile>;
-  };
-  let mockGoogleVerifyIdToken: Mock;
-  let appleJwksUrl: string | undefined;
+  let logs: RecordingNestLogger;
+  let providerFetch: ProviderFetch;
+  let google: GoogleOAuthIdentityAdapter;
+  let kakao: KakaoOAuthIdentityAdapter;
+  let naver: NaverOAuthIdentityAdapter;
 
-  beforeEach(async () => {
-    // Google Auth Library mock 설정
-    const { OAuth2Client } = await vi.importMock<{ OAuth2Client: Mock }>("google-auth-library");
-    mockGoogleVerifyIdToken = vi.fn();
-    OAuth2Client.mockImplementation(function () {
-      return { verifyIdToken: mockGoogleVerifyIdToken };
+  beforeEach(() => {
+    logs = new RecordingNestLogger();
+    Logger.overrideLogger(logs);
+    googleIdTokens.clientOptions.length = 0;
+    googleIdTokens.verifications.length = 0;
+    providerFetch = new ProviderFetch();
+    const http = new HttpClient({
+      retry: false,
+      throwOnHttpError: false,
+      fetch: providerFetch.fetch,
     });
-
-    const client = {
-      clientId: "google-client-id",
-      clientSecret: "client-secret",
-      callbackUrl: "https://api.example.com/callback",
-      isConfigured: true,
-    };
-    const config = () => ({
-      google: client,
-      kakao: client,
-      naver: client,
-      apple: {
-        clientId: "apple-client-id",
-        jwksUrl: appleJwksUrl,
-        jwksCooldownDurationMs: appleJwksUrl == null ? undefined : 0,
-      },
-    });
-    const http = new HttpClient({ retry: false, throwOnHttpError: false });
     const policies = new OutboundPolicyRegistry(new RecordingOperationalAlert());
-    const google = new GoogleOAuthIdentityAdapter(config(), http, policies);
-    const kakao = new KakaoOAuthIdentityAdapter(config(), http, policies);
-    const naver = new NaverOAuthIdentityAdapter(config(), http, policies);
-    // JWKS 캐시를 테스트 안에서 이어 보려고 Apple 어댑터는 처음 검증할 때 한 번 만든다
-    let apple: AppleOAuthIdentityAdapter | null = null;
-    service = {
-      verifyGoogleToken: (token) => google.verifyToken(token),
-      verifyKakaoToken: (token) => kakao.verifyToken(token),
-      verifyNaverToken: (token) => naver.verifyToken(token),
-      verifyAppleToken: (token, nonce) => {
-        apple ??= new AppleOAuthIdentityAdapter(config());
-        return apple.verifyToken(token, nonce);
-      },
-    };
+    google = new GoogleOAuthIdentityAdapter(oauthConfig(), http, policies);
+    kakao = new KakaoOAuthIdentityAdapter(oauthConfig(), http, policies);
+    naver = new NaverOAuthIdentityAdapter(oauthConfig(), http, policies);
   });
 
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
-  it("Google 공개키 조회에도 OAuth 공급자 시간 제한(10초)을 건다", async () => {
+  it("Google 공개키 조회에도 OAuth 공급자 시간 제한을 건다", () => {
     // Given
-    const { OAuth2Client } = await vi.importMock<{ OAuth2Client: Mock }>("google-auth-library");
+    const created = googleIdTokens.clientOptions;
+
+    // When
+    const options = created.at(-1);
 
     // Then
-    expect(OAUTH_PROVIDER_TIMEOUT_MS).toBe(10_000);
-    expect(OAuth2Client).toHaveBeenCalledWith(
-      expect.objectContaining({ transporterOptions: { timeout: OAUTH_PROVIDER_TIMEOUT_MS } }),
-    );
+    expect(options).toMatchObject({
+      transporterOptions: { timeout: OAUTH_PROVIDER_TIMEOUT_MS },
+    });
   });
 
   describe("Google ID Token 검증", () => {
@@ -114,12 +162,10 @@ describe("OAuth 공급자 어댑터 — 앱이 보낸 공급자 토큰 검증", 
 
     it("유효한 Google ID Token을 검증하면 프로필을 반환한다", async () => {
       // Given
-      mockGoogleVerifyIdToken.mockResolvedValue({
-        getPayload: () => validGooglePayload,
-      });
+      googleIdTokens.verify = async () => ({ getPayload: () => validGooglePayload });
 
       // When
-      const result = await service.verifyGoogleToken("valid-google-token");
+      const result = await google.verifyToken("valid-google-token");
 
       // Then
       expect(result).toEqual({
@@ -129,23 +175,19 @@ describe("OAuth 공급자 어댑터 — 앱이 보낸 공급자 토큰 검증", 
         name: "홍길동",
         picture: "https://lh3.googleusercontent.com/photo.jpg",
       });
-      expect(mockGoogleVerifyIdToken).toHaveBeenCalledWith({
-        idToken: "valid-google-token",
-        audience: "google-client-id",
-      });
+      expect(googleIdTokens.verifications).toEqual([
+        { idToken: "valid-google-token", audience: "google-client-id" },
+      ]);
     });
 
     it("이메일이 없는 Google 프로필도 처리한다", async () => {
       // Given
-      mockGoogleVerifyIdToken.mockResolvedValue({
-        getPayload: () => ({
-          sub: "google-user-456",
-          email_verified: false,
-        }),
+      googleIdTokens.verify = async () => ({
+        getPayload: () => ({ sub: "google-user-456", email_verified: false }),
       });
 
       // When
-      const result = await service.verifyGoogleToken("valid-token");
+      const result = await google.verifyToken("valid-token");
 
       // Then
       expect(result).toEqual({
@@ -159,12 +201,13 @@ describe("OAuth 공급자 어댑터 — 앱이 보낸 공급자 토큰 검증", 
 
     it("payload가 없으면 에러를 발생시킨다", async () => {
       // Given
-      mockGoogleVerifyIdToken.mockResolvedValue({
-        getPayload: () => null,
-      });
+      googleIdTokens.verify = async () => ({ getPayload: () => null });
 
-      // When & Then
-      await expect(service.verifyGoogleToken("invalid-token")).rejects.toMatchObject({
+      // When
+      const verification = google.verifyToken("invalid-token");
+
+      // Then
+      await expect(verification).rejects.toMatchObject({
         errorCode: ErrorCode.SOCIAL_0202,
         details: { provider: "GOOGLE" },
       });
@@ -172,39 +215,39 @@ describe("OAuth 공급자 어댑터 — 앱이 보낸 공급자 토큰 검증", 
 
     it("만료된 토큰은 socialTokenExpired 에러를 발생시킨다", async () => {
       // Given
-      const loggerErrorSpy = vi
-        .spyOn(Logger.prototype, "error")
-        .mockImplementation(() => undefined);
       const sensitiveSubject = "google-user-123";
-      mockGoogleVerifyIdToken.mockRejectedValue(
-        new Error(`Token used too late, 100 > 90: {"sub":"${sensitiveSubject}"}`),
-      );
+      googleIdTokens.verify = () =>
+        Promise.reject(new Error(`Token used too late, 100 > 90: {"sub":"${sensitiveSubject}"}`));
 
       // When
-      const verification = service.verifyGoogleToken("expired-token");
+      const verification = google.verifyToken("expired-token");
 
       // Then
       await expect(verification).rejects.toMatchObject({
         errorCode: ErrorCode.SOCIAL_0203,
         details: { provider: "GOOGLE" },
       });
-      expect(loggerErrorSpy).toHaveBeenCalledWith({
-        event: "identity.oauth.token-verify.failed",
-        provider: "GOOGLE",
-        reason: "expired",
-        errorType: "Error",
-      });
-      expect(JSON.stringify(loggerErrorSpy.mock.calls)).not.toContain(sensitiveSubject);
+      expect(logs.errors).toEqual([
+        {
+          event: "identity.oauth.token-verify.failed",
+          provider: "GOOGLE",
+          reason: "expired",
+          errorType: "Error",
+        },
+      ]);
+      expect(JSON.stringify([logs.errors, logs.others])).not.toContain(sensitiveSubject);
     });
 
     it("audience가 다른 토큰은 socialTokenInvalid 에러를 발생시킨다", async () => {
       // Given
-      mockGoogleVerifyIdToken.mockRejectedValue(
-        new Error("Wrong recipient, payload audience != requiredAudience"),
-      );
+      googleIdTokens.verify = () =>
+        Promise.reject(new Error("Wrong recipient, payload audience != requiredAudience"));
 
-      // When & Then
-      await expect(service.verifyGoogleToken("wrong-audience-token")).rejects.toMatchObject({
+      // When
+      const verification = google.verifyToken("wrong-audience-token");
+
+      // Then
+      await expect(verification).rejects.toMatchObject({
         errorCode: ErrorCode.SOCIAL_0202,
         details: { provider: "GOOGLE" },
       });
@@ -212,10 +255,13 @@ describe("OAuth 공급자 어댑터 — 앱이 보낸 공급자 토큰 검증", 
 
     it("잘못된 토큰은 socialTokenInvalid 에러를 발생시킨다", async () => {
       // Given
-      mockGoogleVerifyIdToken.mockRejectedValue(new Error("Invalid signature"));
+      googleIdTokens.verify = () => Promise.reject(new Error("Invalid signature"));
 
-      // When & Then
-      await expect(service.verifyGoogleToken("malformed-token")).rejects.toMatchObject({
+      // When
+      const verification = google.verifyToken("malformed-token");
+
+      // Then
+      await expect(verification).rejects.toMatchObject({
         errorCode: ErrorCode.SOCIAL_0202,
         details: { provider: "GOOGLE" },
       });
@@ -223,7 +269,7 @@ describe("OAuth 공급자 어댑터 — 앱이 보낸 공급자 토큰 검증", 
   });
 
   describe("Kakao Access Token 검증", () => {
-    const mockKakaoResponse = {
+    const kakaoUser = {
       id: 12345678,
       kakao_account: {
         email: "test@kakao.com",
@@ -235,21 +281,12 @@ describe("OAuth 공급자 어댑터 — 앱이 보낸 공급자 토큰 검증", 
       },
     };
 
-    beforeEach(() => {
-      global.fetch = vi.fn();
-    });
-
     it("유효한 Kakao access token을 검증하면 프로필을 반환한다", async () => {
       // Given
-      asMock(global.fetch).mockResolvedValue(
-        await responseFromFixture({
-          ok: true,
-          json: () => Promise.resolve(mockKakaoResponse),
-        }),
-      );
+      providerFetch.respondWith(jsonResponse(kakaoUser));
 
       // When
-      const result = await service.verifyKakaoToken("valid-kakao-token");
+      const result = await kakao.verifyToken("valid-kakao-token");
 
       // Then
       expect(result).toEqual({
@@ -259,37 +296,22 @@ describe("OAuth 공급자 어댑터 — 앱이 보낸 공급자 토큰 검증", 
         name: "카카오유저",
         picture: "https://k.kakaocdn.net/dn/profile.jpg",
       });
-
-      expect(global.fetch).toHaveBeenCalledWith(
-        new URL("https://kapi.kakao.com/v2/user/me?secure_resource=true"),
-        expect.objectContaining({
-          headers: new Headers({
-            Authorization: "Bearer valid-kakao-token",
-            "Content-Type": "application/x-www-form-urlencoded;charset=utf-8",
-          }),
-        }),
+      const [request] = providerFetch.requests;
+      expect(request?.url).toBe("https://kapi.kakao.com/v2/user/me?secure_resource=true");
+      expect(request?.headers.get("authorization")).toBe("Bearer valid-kakao-token");
+      expect(request?.headers.get("content-type")).toBe(
+        "application/x-www-form-urlencoded;charset=utf-8",
       );
     });
 
     it("이메일이 없는 Kakao 계정도 처리한다", async () => {
       // Given
-      asMock(global.fetch).mockResolvedValue(
-        await responseFromFixture({
-          ok: true,
-          json: () =>
-            Promise.resolve({
-              id: 87654321,
-              kakao_account: {
-                profile: {
-                  nickname: "닉네임만",
-                },
-              },
-            }),
-        }),
+      providerFetch.respondWith(
+        jsonResponse({ id: 87654321, kakao_account: { profile: { nickname: "닉네임만" } } }),
       );
 
       // When
-      const result = await service.verifyKakaoToken("valid-token");
+      const result = await kakao.verifyToken("valid-token");
 
       // Then
       expect(result.email).toBeNull();
@@ -298,83 +320,71 @@ describe("OAuth 공급자 어댑터 — 앱이 보낸 공급자 토큰 검증", 
 
     it("401 응답은 socialTokenExpired 에러를 발생시킨다", async () => {
       // Given
-      asMock(global.fetch).mockResolvedValue(
-        await responseFromFixture({
-          ok: false,
-          status: 401,
-        }),
-      );
+      providerFetch.respondWith(emptyResponse(401));
 
-      // When & Then
-      await expect(service.verifyKakaoToken("expired-token")).rejects.toThrow(ApplicationException);
+      // When
+      const verification = kakao.verifyToken("expired-token");
+
+      // Then
+      await expect(verification).rejects.toMatchObject({ errorCode: ErrorCode.SOCIAL_0203 });
     });
 
     it("검증 성공·실패 로그에 공급자 사용자 ID와 오류 원문을 남기지 않는다", async () => {
       // Given
-      const logged = [
-        vi.spyOn(Logger.prototype, "debug").mockImplementation(() => undefined),
-        vi.spyOn(Logger.prototype, "error").mockImplementation(() => undefined),
-      ];
-      asMock(global.fetch)
-        .mockResolvedValueOnce(
-          await responseFromFixture({ ok: true, json: () => Promise.resolve(mockKakaoResponse) }),
-        )
-        .mockResolvedValueOnce(await responseFromFixture({ ok: false, status: 401 }));
+      providerFetch.respondWith(jsonResponse(kakaoUser), emptyResponse(401));
 
       // When
-      await service.verifyKakaoToken("valid-kakao-token");
-      await service.verifyKakaoToken("expired-token").catch(() => undefined);
+      await kakao.verifyToken("valid-kakao-token");
+      await kakao.verifyToken("expired-token").catch(() => undefined);
 
       // Then
-      expect(logged[1]).toHaveBeenCalledWith({
-        event: "identity.oauth.token-verify.failed",
-        provider: "KAKAO",
-        errorType: "ApplicationException",
-        errorCode: ErrorCode.SOCIAL_0203,
-      });
-      const calls = JSON.stringify(logged.map((spy) => spy.mock.calls));
-      expect(calls).not.toContain(String(mockKakaoResponse.id));
-      expect(calls).not.toContain("test@kakao.com");
+      expect(logs.errors).toEqual([
+        {
+          event: "identity.oauth.token-verify.failed",
+          provider: "KAKAO",
+          errorType: "ApplicationException",
+          errorCode: ErrorCode.SOCIAL_0203,
+        },
+      ]);
+      const logged = JSON.stringify([logs.errors, logs.others]);
+      expect(logged).not.toContain(String(kakaoUser.id));
+      expect(logged).not.toContain("test@kakao.com");
     });
 
     it("기타 에러 응답은 socialTokenInvalid 에러를 발생시킨다", async () => {
       // Given
-      asMock(global.fetch).mockResolvedValue(
-        await responseFromFixture({
-          ok: false,
-          status: 400,
-        }),
-      );
+      providerFetch.respondWith(emptyResponse(400));
 
-      // When & Then
-      await expect(service.verifyKakaoToken("invalid-token")).rejects.toThrow(ApplicationException);
+      // When
+      const verification = kakao.verifyToken("invalid-token");
+
+      // Then
+      await expect(verification).rejects.toMatchObject({ errorCode: ErrorCode.SOCIAL_0202 });
     });
 
     it("연결 실패가 이어져도 오류 코드는 그대로이고 공급자가 돌아오면 바로 로그인된다", async () => {
       // Given
-      asMock(global.fetch).mockRejectedValue(new TypeError("fetch failed"));
+      providerFetch.failWith(new TypeError("fetch failed"));
       const failures: unknown[] = [];
       for (let attempt = 0; attempt < 6; attempt += 1) {
-        failures.push(await service.verifyKakaoToken("token").catch((error: unknown) => error));
+        failures.push(await kakao.verifyToken("token").catch((error: unknown) => error));
       }
-      asMock(global.fetch).mockResolvedValue(
-        await responseFromFixture({ ok: true, json: () => Promise.resolve(mockKakaoResponse) }),
-      );
+      providerFetch.respondWith(jsonResponse(kakaoUser));
 
       // When
-      const profile = await service.verifyKakaoToken("token");
+      const profile = await kakao.verifyToken("token");
 
       // Then
       for (const failure of failures) {
         expect(failure).toMatchObject({ errorCode: ErrorCode.SOCIAL_0202 });
       }
-      expect(global.fetch).toHaveBeenCalledTimes(7);
-      expect(profile.id).toBe(String(mockKakaoResponse.id));
+      expect(providerFetch.requests).toHaveLength(7);
+      expect(profile.id).toBe(String(kakaoUser.id));
     });
   });
 
   describe("Naver Access Token 검증", () => {
-    const mockNaverResponse = {
+    const naverUser = {
       resultcode: "00",
       message: "success",
       response: {
@@ -386,57 +396,38 @@ describe("OAuth 공급자 어댑터 — 앱이 보낸 공급자 토큰 검증", 
       },
     };
 
-    beforeEach(() => {
-      global.fetch = vi.fn();
-    });
-
     it("유효한 Naver access token을 검증하면 프로필을 반환한다", async () => {
       // Given
-      asMock(global.fetch).mockResolvedValue(
-        await responseFromFixture({
-          ok: true,
-          json: () => Promise.resolve(mockNaverResponse),
-        }),
-      );
+      providerFetch.respondWith(jsonResponse(naverUser));
 
       // When
-      const result = await service.verifyNaverToken("valid-naver-token");
+      const result = await naver.verifyToken("valid-naver-token");
 
       // Then
       expect(result).toEqual({
         id: "naver-user-123",
         email: "test@naver.com",
-        emailVerified: false, // Naver는 이메일 인증 여부를 제공하지 않으므로 항상 false
+        emailVerified: false,
         name: "네이버유저",
         picture: "https://phinf.pstatic.net/profile.jpg",
       });
-      expect(global.fetch).toHaveBeenCalledWith(
-        new URL("https://openapi.naver.com/v1/nid/me"),
-        expect.objectContaining({
-          headers: new Headers({ Authorization: "Bearer valid-naver-token" }),
-        }),
-      );
+      const [request] = providerFetch.requests;
+      expect(request?.url).toBe("https://openapi.naver.com/v1/nid/me");
+      expect(request?.headers.get("authorization")).toBe("Bearer valid-naver-token");
     });
 
     it("이름이 없으면 닉네임을 사용한다", async () => {
       // Given
-      asMock(global.fetch).mockResolvedValue(
-        await responseFromFixture({
-          ok: true,
-          json: () =>
-            Promise.resolve({
-              resultcode: "00",
-              message: "success",
-              response: {
-                id: "naver-user-456",
-                nickname: "닉네임만",
-              },
-            }),
+      providerFetch.respondWith(
+        jsonResponse({
+          resultcode: "00",
+          message: "success",
+          response: { id: "naver-user-456", nickname: "닉네임만" },
         }),
       );
 
       // When
-      const result = await service.verifyNaverToken("valid-token");
+      const result = await naver.verifyToken("valid-token");
 
       // Then
       expect(result.name).toBe("닉네임만");
@@ -444,23 +435,16 @@ describe("OAuth 공급자 어댑터 — 앱이 보낸 공급자 토큰 검증", 
 
     it("이메일이 없으면 emailVerified는 false이다", async () => {
       // Given
-      asMock(global.fetch).mockResolvedValue(
-        await responseFromFixture({
-          ok: true,
-          json: () =>
-            Promise.resolve({
-              resultcode: "00",
-              message: "success",
-              response: {
-                id: "naver-user-789",
-                name: "이름만",
-              },
-            }),
+      providerFetch.respondWith(
+        jsonResponse({
+          resultcode: "00",
+          message: "success",
+          response: { id: "naver-user-789", name: "이름만" },
         }),
       );
 
       // When
-      const result = await service.verifyNaverToken("valid-token");
+      const result = await naver.verifyToken("valid-token");
 
       // Then
       expect(result.email).toBeNull();
@@ -469,54 +453,39 @@ describe("OAuth 공급자 어댑터 — 앱이 보낸 공급자 토큰 검증", 
 
     it("401 응답은 socialTokenExpired 에러를 발생시킨다", async () => {
       // Given
-      asMock(global.fetch).mockResolvedValue(
-        await responseFromFixture({
-          ok: false,
-          status: 401,
-        }),
-      );
+      providerFetch.respondWith(emptyResponse(401));
 
-      // When & Then
-      await expect(service.verifyNaverToken("expired-token")).rejects.toThrow(ApplicationException);
+      // When
+      const verification = naver.verifyToken("expired-token");
+
+      // Then
+      await expect(verification).rejects.toMatchObject({ errorCode: ErrorCode.SOCIAL_0203 });
     });
 
     it("resultcode가 00이 아니면 에러를 발생시킨다", async () => {
       // Given
-      asMock(global.fetch).mockResolvedValue(
-        await responseFromFixture({
-          ok: true,
-          json: () =>
-            Promise.resolve({
-              resultcode: "01",
-              message: "error",
-            }),
-        }),
-      );
+      providerFetch.respondWith(jsonResponse({ resultcode: "01", message: "error" }));
 
-      // When & Then
-      await expect(service.verifyNaverToken("invalid-token")).rejects.toThrow(ApplicationException);
+      // When
+      const verification = naver.verifyToken("invalid-token");
+
+      // Then
+      await expect(verification).rejects.toMatchObject({ errorCode: ErrorCode.SOCIAL_0202 });
     });
 
     it("response가 없으면 에러를 발생시킨다", async () => {
       // Given
-      asMock(global.fetch).mockResolvedValue(
-        await responseFromFixture({
-          ok: true,
-          json: () =>
-            Promise.resolve({
-              resultcode: "00",
-              message: "success",
-            }),
-        }),
-      );
+      providerFetch.respondWith(jsonResponse({ resultcode: "00", message: "success" }));
 
-      // When & Then
-      await expect(service.verifyNaverToken("invalid-token")).rejects.toThrow(ApplicationException);
+      // When
+      const verification = naver.verifyToken("invalid-token");
+
+      // Then
+      await expect(verification).rejects.toMatchObject({ errorCode: ErrorCode.SOCIAL_0202 });
     });
   });
 
   describe("Apple ID Token 검증", () => {
-    const nativeFetch = global.fetch;
     const keyIds = {
       first: "apple-key-1",
       second: "apple-key-2",
@@ -528,7 +497,9 @@ describe("OAuth 공급자 어댑터 — 앱이 보낸 공급자 토큰 검증", 
     let publicJwks: { first: JWK; second: JWK };
     let activeJwks: JWK[];
     let jwksServer: Server;
+    let jwksUrl: string;
     let requestCount: number;
+    let apple: AppleOAuthIdentityAdapter;
 
     beforeAll(async () => {
       const [firstKeyPair, secondKeyPair] = await Promise.all([
@@ -541,18 +512,8 @@ describe("OAuth 공급자 어댑터 — 앱이 보낸 공급자 토큰 검증", 
         exportJWK(secondKeyPair.publicKey),
       ]);
       publicJwks = {
-        first: {
-          ...firstPublicJwk,
-          alg: "RS256",
-          kid: keyIds.first,
-          use: "sig",
-        },
-        second: {
-          ...secondPublicJwk,
-          alg: "RS256",
-          kid: keyIds.second,
-          use: "sig",
-        },
+        first: { ...firstPublicJwk, alg: "RS256", kid: keyIds.first, use: "sig" },
+        second: { ...secondPublicJwk, alg: "RS256", kid: keyIds.second, use: "sig" },
       };
 
       jwksServer = createServer((request, response) => {
@@ -576,18 +537,16 @@ describe("OAuth 공급자 어댑터 — 앱이 보낸 공급자 토큰 검증", 
       if (!address || typeof address === "string") {
         throw new Error("Apple JWKS test server address is unavailable");
       }
-      appleJwksUrl = `http://127.0.0.1:${address.port}/auth/keys`;
+      jwksUrl = `http://127.0.0.1:${address.port}/auth/keys`;
     });
 
     beforeEach(() => {
-      global.fetch = nativeFetch;
       activeJwks = [publicJwks.first];
       requestCount = 0;
+      apple = new AppleOAuthIdentityAdapter(oauthConfig(jwksUrl));
     });
 
     afterAll(async () => {
-      global.fetch = nativeFetch;
-      appleJwksUrl = undefined;
       await new Promise<void>((resolve, reject) => {
         jwksServer.close((error) => {
           if (error) {
@@ -632,7 +591,7 @@ describe("OAuth 공급자 어댑터 — 앱이 보낸 공급자 토큰 검증", 
       });
 
       // When
-      const result = await service.verifyAppleToken(idToken, nonce);
+      const result = await apple.verifyToken(idToken, nonce);
 
       // Then
       expect(result).toEqual({
@@ -649,8 +608,11 @@ describe("OAuth 공급자 어댑터 — 앱이 보낸 공급자 토큰 검증", 
         nonce: createHash("sha256").update("token-raw-nonce").digest("hex"),
       });
 
-      // When & Then
-      await expect(service.verifyAppleToken(idToken, "request-raw-nonce")).rejects.toMatchObject({
+      // When
+      const verification = apple.verifyToken(idToken, "request-raw-nonce");
+
+      // Then
+      await expect(verification).rejects.toMatchObject({
         errorCode: ErrorCode.SOCIAL_0202,
         details: { provider: "APPLE" },
       });
@@ -660,14 +622,12 @@ describe("OAuth 공급자 어댑터 — 앱이 보낸 공급자 토큰 검증", 
     it("캐시된 kid가 교체되면 JWKS를 다시 조회하고 새 키를 검증한다", async () => {
       // Given
       const firstToken = await signAppleToken("first", keyIds.first);
-      await expect(service.verifyAppleToken(firstToken)).resolves.toMatchObject({
-        id: "apple-user-1",
-      });
+      await expect(apple.verifyToken(firstToken)).resolves.toMatchObject({ id: "apple-user-1" });
       activeJwks = [publicJwks.second];
       const rotatedToken = await signAppleToken("second", keyIds.second);
 
       // When
-      const result = await service.verifyAppleToken(rotatedToken);
+      const result = await apple.verifyToken(rotatedToken);
 
       // Then
       expect(result).toMatchObject({ id: "apple-user-2" });
@@ -689,8 +649,12 @@ describe("OAuth 공급자 어댑터 — 앱이 보낸 공급자 토큰 검증", 
     ])("$condition Apple JWT는 기존 오류 코드로 거절한다", async ({ options, errorCode }) => {
       // Given
       const idToken = await signAppleToken("first", keyIds.first, {}, options);
-      // When / Then
-      await expect(service.verifyAppleToken(idToken)).rejects.toMatchObject({
+
+      // When
+      const verification = apple.verifyToken(idToken);
+
+      // Then
+      await expect(verification).rejects.toMatchObject({
         errorCode,
         details: { provider: "APPLE" },
       });
@@ -699,8 +663,12 @@ describe("OAuth 공급자 어댑터 — 앱이 보낸 공급자 토큰 검증", 
     it("kid가 일치해도 다른 개인 키로 서명한 Apple JWT를 거절한다", async () => {
       // Given
       const idToken = await signAppleToken("second", keyIds.first);
-      // When / Then
-      await expect(service.verifyAppleToken(idToken)).rejects.toMatchObject({
+
+      // When
+      const verification = apple.verifyToken(idToken);
+
+      // Then
+      await expect(verification).rejects.toMatchObject({
         errorCode: ErrorCode.SOCIAL_0202,
         details: { provider: "APPLE" },
       });
@@ -710,8 +678,11 @@ describe("OAuth 공급자 어댑터 — 앱이 보낸 공급자 토큰 검증", 
       // Given
       const idToken = await signAppleToken("second", "unknown-apple-kid");
 
-      // When & Then
-      await expect(service.verifyAppleToken(idToken)).rejects.toMatchObject({
+      // When
+      const verification = apple.verifyToken(idToken);
+
+      // Then
+      await expect(verification).rejects.toMatchObject({
         errorCode: ErrorCode.SOCIAL_0202,
         details: { provider: "APPLE" },
       });
