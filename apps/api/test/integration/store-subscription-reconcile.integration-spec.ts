@@ -1,23 +1,17 @@
 import type { RevenueCatWebhookPayload } from "@aido/api";
 
-import { STORE_SUBSCRIPTION_STATUS_READER } from "#api/modules/billing/subscriptions/application/ports/store-subscription-status.reader.port";
-import {
-  SUBSCRIPTION_EVENT_NOTIFIER,
-  type SubscriptionEventNotifierPort,
-} from "#api/modules/billing/subscriptions/application/ports/subscription-event-notifier.port";
-import { STORE_SUBSCRIPTION_RECONCILE_QUEUE } from "#api/modules/billing/subscriptions/billing-subscriptions-jobs.public";
-import {
-  PREMIUM_ACCESS_READER,
-  type PremiumAccessReaderPort,
-} from "#api/modules/billing/subscriptions/billing-subscriptions.public";
+import { StoreSubscriptionStatusReaderPort } from "#api/modules/billing/subscriptions/application/ports/store-subscription-status.reader.port";
+import { SubscriptionEventNotifierPort } from "#api/modules/billing/subscriptions/application/ports/subscription-event-notifier.port";
+import { PremiumAccessReaderPort } from "#api/modules/billing/subscriptions/billing-subscriptions.public";
 import { RevenueCatWebhookReceiver } from "#api/modules/billing/subscriptions/infrastructure/adapters/revenuecat/revenuecat-webhook-receiver.adapter";
+import { STORE_SUBSCRIPTION_RECONCILE_QUEUE } from "#api/modules/billing/subscriptions/infrastructure/jobs/store-subscription-reconcile.queue";
 import { createEntityId } from "#api/platform/database/entity-id";
 import { user as userTable } from "#api/platform/database/schema/index";
-import { JOB_RUNTIME } from "#api/shared/application/ports/index";
+import { JobQueuePort } from "#api/shared/application/ports/index";
 import { SubscriptionEventBuilder } from "#test/builders/index";
+import { StubStoreSubscriptionStatusReader } from "#test/doubles/billing/stub-store-subscription-status.reader";
+import type { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
 import { UserFixture } from "#test/fixtures/index";
-import type { FakeJobRuntime } from "#test/mocks/fake-job-runtime";
-import { StubStoreSubscriptionStatusReader } from "#test/mocks/ports/subscription.stub";
 import { createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
@@ -51,7 +45,7 @@ describe("구독 웹훅 뒤 스토어 상태 대조 (실제 PostgreSQL)", () => 
   let client: TestDatabaseClient;
   let context: E2eTestContext;
   let webhook: RevenueCatWebhookReceiver;
-  let jobs: FakeJobRuntime;
+  let jobs: InMemoryJobQueue;
   let premiumAccess: PremiumAccessReaderPort;
   const statusReader = new StubStoreSubscriptionStatusReader();
 
@@ -62,14 +56,14 @@ describe("구독 웹훅 뒤 스토어 상태 대조 (실제 PostgreSQL)", () => 
       testDatabase: database,
       customizeBuilder: (builder) =>
         builder
-          .overrideProvider(SUBSCRIPTION_EVENT_NOTIFIER)
+          .overrideProvider(SubscriptionEventNotifierPort)
           .useValue(subscriptionEventNotifier)
-          .overrideProvider(STORE_SUBSCRIPTION_STATUS_READER)
+          .overrideProvider(StoreSubscriptionStatusReaderPort)
           .useValue(statusReader),
     });
     webhook = context.module.get(RevenueCatWebhookReceiver);
-    jobs = context.module.get(JOB_RUNTIME);
-    premiumAccess = context.module.get(PREMIUM_ACCESS_READER);
+    jobs = context.module.get(JobQueuePort);
+    premiumAccess = context.module.get(PremiumAccessReaderPort);
   });
 
   beforeEach(async () => {
@@ -118,32 +112,35 @@ describe("구독 웹훅 뒤 스토어 상태 대조 (실제 PostgreSQL)", () => 
     statusReader.states.set(CHAIN, {
       storeSubscriptionId: CHAIN,
       productId: "premium_monthly",
-      periodEndsAt: renewedExpiresAt,
+      periodEndsAt: Temporal.Instant.fromEpochMilliseconds(renewedExpiresAt.getTime()),
       willRenew: true,
       isTrial: false,
       givesAccess: true,
     });
-    const reconcileJobs = jobs.enqueueCalls.filter(
-      (call) => call.queue === STORE_SUBSCRIPTION_RECONCILE_QUEUE,
-    );
+    const reconcileJobs = [...jobs.jobsIn(STORE_SUBSCRIPTION_RECONCILE_QUEUE)];
 
     // When
-    for (const job of reconcileJobs) {
-      await jobs.run(STORE_SUBSCRIPTION_RECONCILE_QUEUE, job.data);
-    }
+    await jobs.drain(STORE_SUBSCRIPTION_RECONCILE_QUEUE);
     const afterFirstRun = await client.query.subscription.findFirst({
       columns: { status: true, expiresAt: true, updatedAt: true },
       where: { revenueCatId: CHAIN },
     });
-    await jobs.run(STORE_SUBSCRIPTION_RECONCILE_QUEUE, reconcileJobs[0]?.data ?? {});
-
-    // Then
-    expect(reconcileJobs).toHaveLength(1);
-    expect(reconcileJobs[0]?.data).toEqual({
+    await jobs.enqueue(STORE_SUBSCRIPTION_RECONCILE_QUEUE, {
       name: "reconcile-store-subscriptions",
       data: { userId: user.id },
     });
-    expect(afterFirstRun).toMatchObject({ status: "ACTIVE", expiresAt: renewedExpiresAt });
+    await jobs.drain(STORE_SUBSCRIPTION_RECONCILE_QUEUE);
+
+    // Then
+    expect(reconcileJobs).toHaveLength(1);
+    expect(reconcileJobs[0]?.payload).toEqual({
+      name: "reconcile-store-subscriptions",
+      data: { userId: user.id },
+    });
+    expect(afterFirstRun).toMatchObject({
+      status: "ACTIVE",
+      expiresAt: Temporal.Instant.fromEpochMilliseconds(renewedExpiresAt.getTime()),
+    });
     expect(
       await client.query.subscription.findFirst({
         columns: { status: true, expiresAt: true, updatedAt: true },

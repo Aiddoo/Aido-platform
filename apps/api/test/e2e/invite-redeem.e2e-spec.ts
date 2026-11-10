@@ -8,11 +8,10 @@ import { ErrorCode } from "@aido/api/errors";
 import { and, count, eq } from "drizzle-orm";
 import request from "supertest";
 
-import {
-  SUBSCRIPTION_REPOSITORY,
-  type SubscriptionRepositoryPort,
-} from "#api/modules/billing/subscriptions/application/ports/subscription.repository.port";
+import { UserSubscriptionProjectionRepositoryPort } from "#api/modules/billing/premium-grants/application/ports/user-subscription-projection.repository.port";
+import { SubscriptionRepositoryPort } from "#api/modules/billing/subscriptions/application/ports/subscription.repository.port";
 import { StoreSubscriptionId } from "#api/modules/billing/subscriptions/domain/store-subscription-id.vo";
+import { Subscription } from "#api/modules/billing/subscriptions/domain/subscription.aggregate";
 import { INVITE_CONFIG } from "#api/modules/social/application/ports/invites/invite.config.port";
 import {
   follow,
@@ -22,6 +21,8 @@ import {
   user,
 } from "#api/platform/database/schema/index";
 import { subtractDays } from "#api/shared/domain/date/utils/arithmetic";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { instantFromDate } from "#api/shared/domain/time/instant";
 
 import type { VerifiedUser } from "./helpers/e2e-helpers.js";
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
@@ -210,19 +211,26 @@ describe("초대 수락 HTTP (실제 DB)", () => {
     const inviter = await ctx.helpers.createVerifiedUser("store-inviter@test.com", PASSWORD);
     const invitee = await ctx.helpers.createVerifiedUser("store-invitee@test.com", PASSWORD);
     const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1_000);
-    const subscriptions = ctx.module.get<SubscriptionRepositoryPort>(SUBSCRIPTION_REPOSITORY);
-    await subscriptions.create({
-      userId: invitee.userId,
-      storeSubscriptionId: StoreSubscriptionId.from("store-invitee-chain"),
-      productId: "premium_monthly",
-      status: "ACTIVE",
-      startedAt: new Date(),
-      expiresAt,
-    });
-    await subscriptions.updateUserSubscriptionStatus(invitee.userId, {
-      subscriptionStatus: "ACTIVE",
-      subscriptionExpiresAt: expiresAt,
-    });
+    const subscriptions = ctx.module.get(SubscriptionRepositoryPort);
+    const now = Temporal.Now.instant();
+    await subscriptions.save(
+      Subscription.create({
+        id: await subscriptions.nextId(),
+        userId: UserId.reconstitute(invitee.userId),
+        provider: "REVENUECAT",
+        storeSubscriptionId: StoreSubscriptionId.create("store-invitee-chain"),
+        productId: "premium_monthly",
+        startedAt: now,
+        expiresAt: instantFromDate(expiresAt),
+        now,
+      }),
+    );
+    await ctx.module
+      .get(UserSubscriptionProjectionRepositoryPort)
+      .update(UserId.reconstitute(invitee.userId), {
+        subscriptionStatus: "ACTIVE",
+        subscriptionExpiresAt: instantFromDate(expiresAt),
+      });
     const code = await inviteCodeOf(inviter);
 
     // When

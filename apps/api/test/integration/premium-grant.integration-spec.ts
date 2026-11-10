@@ -2,27 +2,29 @@ import { and, eq } from "drizzle-orm";
 
 import { ENTITLEMENT_READER } from "#api/modules/access/access-entitlement.public";
 import type { EntitlementReaderPort } from "#api/modules/access/access-entitlement.public";
-import {
-  PREMIUM_GRANT_ENDING_NOTICE_SOURCE,
-  type PremiumGrantEndingNoticeSourcePort,
-} from "#api/modules/billing/premium-grants/application/ports/premium-grant-ending-notice.repository.port";
+import { PremiumGrantEndingNoticeRepositoryPort } from "#api/modules/billing/premium-grants/application/ports/premium-grant-ending-notice.repository.port";
+import { UserSubscriptionProjectionRepositoryPort } from "#api/modules/billing/premium-grants/application/ports/user-subscription-projection.repository.port";
 import { NotifyEndingPremiumGrantsUseCase } from "#api/modules/billing/premium-grants/application/use-cases/notify-ending-premium-grants.use-case";
 import { RevokePremiumGrantUseCase } from "#api/modules/billing/premium-grants/application/use-cases/revoke-premium-grant.use-case";
 import { SweepPremiumGrantsUseCase } from "#api/modules/billing/premium-grants/application/use-cases/sweep-premium-grants.use-case";
-import { STORE_RENEWAL_GRACE_MS } from "#api/modules/billing/shared/store-renewal-grace.domain-service";
-import { SUBSCRIPTION_REPOSITORY } from "#api/modules/billing/subscriptions/application/ports/subscription.repository.port";
-import type { SubscriptionRepositoryPort } from "#api/modules/billing/subscriptions/application/ports/subscription.repository.port";
+import { SubscriptionRepositoryPort } from "#api/modules/billing/subscriptions/application/ports/subscription.repository.port";
+import { STORE_RENEWAL_GRACE_MS } from "#api/modules/billing/subscriptions/billing-subscriptions-entitlement.public";
 import {
   PREMIUM_ACCESS_READER,
   PREMIUM_GRANTER,
   type PremiumAccessReaderPort,
   type PremiumGranterPort,
 } from "#api/modules/billing/subscriptions/billing-subscriptions.public";
-import { StoreSubscriptionId } from "#api/modules/billing/subscriptions/domain/store-subscription-id.vo";
 import { RevenueCatWebhookReceiver } from "#api/modules/billing/subscriptions/infrastructure/adapters/revenuecat/revenuecat-webhook-receiver.adapter";
 import { createEntityId } from "#api/platform/database/entity-id";
 import { notification, premiumGrant, user as userTable } from "#api/platform/database/schema/index";
+import { instantFromDate } from "#api/shared/domain/time/instant";
 import { SubscriptionEventBuilder } from "#test/builders/index";
+import {
+  saveSubscriptionFixture,
+  setUserSubscriptionProjection,
+  toDateOrNull,
+} from "#test/fixtures/billing/subscription.fixture";
 import { UserFixture } from "#test/fixtures/index";
 import { createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
@@ -45,6 +47,7 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
   let context: E2eTestContext;
   let granter: PremiumGranterPort;
   let subscriptions: SubscriptionRepositoryPort;
+  let projection: UserSubscriptionProjectionRepositoryPort;
   let entitlement: EntitlementReaderPort;
   let userId: string;
 
@@ -53,7 +56,8 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
     client = await database.start();
     context = await createE2eApp({ testDatabase: database });
     granter = context.module.get<PremiumGranterPort>(PREMIUM_GRANTER);
-    subscriptions = context.module.get(SUBSCRIPTION_REPOSITORY);
+    subscriptions = context.module.get(SubscriptionRepositoryPort);
+    projection = context.module.get(UserSubscriptionProjectionRepositoryPort);
     entitlement = context.module.get<EntitlementReaderPort>(ENTITLEMENT_READER);
   });
 
@@ -82,26 +86,29 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
   });
 
   async function givenStoreSubscription(): Promise<void> {
-    await subscriptions.create({
-      userId,
-      storeSubscriptionId: StoreSubscriptionId.from(TRANSACTION_ID),
-      productId: "premium_monthly",
-      status: "ACTIVE",
-      startedAt: AT,
-      expiresAt: STORE_EXPIRY,
+    await saveSubscriptionFixture(subscriptions, {
+      userId: userId,
+      storeSubscriptionId: TRANSACTION_ID,
+      startedAt: instantFromDate(AT),
+      expiresAt: instantFromDate(STORE_EXPIRY),
     });
-    await subscriptions.updateUserSubscriptionStatus(userId, {
+    await setUserSubscriptionProjection(projection, userId, {
       subscriptionStatus: "ACTIVE",
       subscriptionExpiresAt: STORE_EXPIRY,
     });
   }
 
   async function grantsOf(target: string) {
-    return client.query.premiumGrant.findMany({
+    const rows = await client.query.premiumGrant.findMany({
       columns: { sourceKey: true, status: true, startsAt: true, endsAt: true },
       where: { userId: target },
       orderBy: { sourceKey: "asc" },
     });
+    return rows.map((row) => ({
+      ...row,
+      startsAt: toDateOrNull(row.startsAt),
+      endsAt: toDateOrNull(row.endsAt),
+    }));
   }
 
   async function userProjection() {
@@ -180,9 +187,15 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
     const sweep = context.module.get(SweepPremiumGrantsUseCase);
 
     // When
-    const first = await notify.execute({ now: new Date("2028-02-26T06:00:00.000Z") });
-    const repeated = await notify.execute({ now: new Date("2028-02-26T06:10:00.000Z") });
-    const swept = await sweep.execute({ now: new Date("2028-02-27T04:00:00.000Z") });
+    const first = await notify.execute({
+      now: instantFromDate(new Date("2028-02-26T06:00:00.000Z")),
+    });
+    const repeated = await notify.execute({
+      now: instantFromDate(new Date("2028-02-26T06:10:00.000Z")),
+    });
+    const swept = await sweep.execute({
+      now: instantFromDate(new Date("2028-02-27T04:00:00.000Z")),
+    });
 
     // Then
     expect([first.notifiedCount, repeated.notifiedCount]).toEqual([1, 0]);
@@ -213,7 +226,10 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
     const at = new Date("2028-02-26T06:00:00.000Z");
 
     // When
-    const results = await Promise.all([notify.execute({ now: at }), notify.execute({ now: at })]);
+    const results = await Promise.all([
+      notify.execute({ now: instantFromDate(at) }),
+      notify.execute({ now: instantFromDate(at) }),
+    ]);
 
     // Then
     expect(results.map((result) => result.notifiedCount).sort()).toEqual([0, 1]);
@@ -237,7 +253,9 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
     const notify = context.module.get(NotifyEndingPremiumGrantsUseCase);
 
     // When
-    const result = await notify.execute({ now: new Date("2028-02-26T06:00:00.000Z") });
+    const result = await notify.execute({
+      now: instantFromDate(new Date("2028-02-26T06:00:00.000Z")),
+    });
 
     // Then
     expect(result.notifiedCount).toBe(0);
@@ -261,15 +279,13 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
       updatedAt: AT,
     });
     await client.insert(userTable).values(coveredUser);
-    await subscriptions.create({
+    await saveSubscriptionFixture(subscriptions, {
       userId: coveredUser.id,
-      storeSubscriptionId: StoreSubscriptionId.from("premium-grant-covered-chain"),
-      productId: "premium_monthly",
-      status: "ACTIVE",
-      startedAt: AT,
-      expiresAt: new Date("2028-04-01T04:00:00.000Z"),
+      storeSubscriptionId: "premium-grant-covered-chain",
+      startedAt: instantFromDate(AT),
+      expiresAt: instantFromDate(new Date("2028-04-01T04:00:00.000Z")),
     });
-    await subscriptions.updateUserSubscriptionStatus(coveredUser.id, {
+    await setUserSubscriptionProjection(projection, coveredUser.id, {
       subscriptionStatus: "ACTIVE",
       subscriptionExpiresAt: new Date("2028-04-01T04:00:00.000Z"),
     });
@@ -282,7 +298,9 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
     const sweep = context.module.get(SweepPremiumGrantsUseCase);
 
     // When
-    const swept = await sweep.execute({ now: new Date("2028-03-11T04:00:00.000Z") });
+    const swept = await sweep.execute({
+      now: instantFromDate(new Date("2028-03-11T04:00:00.000Z")),
+    });
 
     // Then
     expect(swept).toMatchObject({ userCount: 1, failedUserCount: 0 });
@@ -365,15 +383,13 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
   it("TRANSFER로 넘겨준 구독 행은 보상 기간이 User를 ACTIVE로 바꿔도 프리미엄을 늘리지 않는다", async () => {
     // Given
     const receiverId = await createUser("PGRANT03");
-    await subscriptions.create({
-      userId,
-      storeSubscriptionId: StoreSubscriptionId.from("transferred-chain"),
-      productId: "premium_monthly",
-      status: "ACTIVE",
-      startedAt: AT,
-      expiresAt: new Date("2028-03-17T04:00:00.000Z"),
+    await saveSubscriptionFixture(subscriptions, {
+      userId: userId,
+      storeSubscriptionId: "transferred-chain",
+      startedAt: instantFromDate(AT),
+      expiresAt: instantFromDate(new Date("2028-03-17T04:00:00.000Z")),
     });
-    await subscriptions.updateUserSubscriptionStatus(userId, {
+    await setUserSubscriptionProjection(projection, userId, {
       subscriptionStatus: "FREE",
       subscriptionExpiresAt: null,
     });
@@ -393,7 +409,9 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
 
     // When
     vi.setSystemTime(grantEndsAt);
-    const swept = await context.module.get(SweepPremiumGrantsUseCase).execute({ now: grantEndsAt });
+    const swept = await context.module
+      .get(SweepPremiumGrantsUseCase)
+      .execute({ now: instantFromDate(grantEndsAt) });
 
     // Then
     expect(swept).toMatchObject({ userCount: 1, failedUserCount: 0 });
@@ -412,13 +430,11 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
   it("TRANSFER로 구독을 받은 사용자는 보상을 받아도 보상 종료 시각에 프리미엄이 끊기지 않는다", async () => {
     // Given
     const giverId = await createUser("PGRANT06");
-    await subscriptions.create({
+    await saveSubscriptionFixture(subscriptions, {
       userId: giverId,
-      storeSubscriptionId: StoreSubscriptionId.from("received-chain"),
-      productId: "premium_monthly",
-      status: "ACTIVE",
-      startedAt: AT,
-      expiresAt: STORE_EXPIRY,
+      storeSubscriptionId: "received-chain",
+      startedAt: instantFromDate(AT),
+      expiresAt: instantFromDate(STORE_EXPIRY),
     });
     const transfer = SubscriptionEventBuilder.transfer()
       .withAppUserId(userId)
@@ -436,7 +452,9 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
     });
     const grantWouldEndAt = new Date("2028-03-04T04:00:00.000Z");
     vi.setSystemTime(grantWouldEndAt);
-    await context.module.get(SweepPremiumGrantsUseCase).execute({ now: grantWouldEndAt });
+    await context.module
+      .get(SweepPremiumGrantsUseCase)
+      .execute({ now: instantFromDate(grantWouldEndAt) });
 
     // Then
     expect(await grantsOf(userId)).toEqual([
@@ -489,10 +507,10 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
 
     // When
     vi.setSystemTime(inGrace);
-    const duringGrace = await sweep.execute({ now: inGrace });
+    const duringGrace = await sweep.execute({ now: instantFromDate(inGrace) });
     const premiumDuringGrace = await entitlement.canInTx(userId, "AI_REPORT");
     vi.setSystemTime(afterGrace);
-    const pastGrace = await sweep.execute({ now: afterGrace });
+    const pastGrace = await sweep.execute({ now: instantFromDate(afterGrace) });
 
     // Then
     expect(duringGrace.userCount).toBe(0);
@@ -538,6 +556,8 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
   it("보상 기간 중 구독을 사면 진행 중인 기간을 구매 시각에 끝내고 남은 일수를 스토어 뒤로 다시 쌓는다", async () => {
     // Given
     await granter.grant({ userId, source: "INVITE", sourceKey: "invite:g1", durationDays: 7 });
+    // 받은 순서가 createdAt이라 같은 시각에 받으면 순서가 id로 갈린다. 실제 지급처럼 시각을 띄운다
+    vi.setSystemTime(new Date(AT.getTime() + 1_000));
     await granter.grant({ userId, source: "INVITE", sourceKey: "invite:g2", durationDays: 7 });
     const beforePurchase = await premiumAccess();
     const purchasedAt = new Date("2028-02-28T04:00:00.000Z");
@@ -612,12 +632,12 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
     // When
     await Promise.all([
       webhook.receive({ body: purchase("concurrent-purchase", purchasedAt) }),
-      sweep.execute({ now: purchasedAt }),
+      sweep.execute({ now: instantFromDate(purchasedAt) }),
       granter.grant({ userId, source: "INVITE", sourceKey: "invite:concurrent", durationDays: 7 }),
     ]);
     // 같은 사용자 웹훅 잠금 경합(SUBSCRIPTION_1605)은 RevenueCat이 다시 보내므로 재전송은 뒤에 온다
     await webhook.receive({ body: purchase("concurrent-purchase-redelivered", purchasedAt) });
-    await sweep.execute({ now: purchasedAt });
+    await sweep.execute({ now: instantFromDate(purchasedAt) });
 
     // Then
     const grants = await grantsOf(userId);
@@ -651,15 +671,19 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
     const finalEndsAt = new Date(STORE_EXPIRY.getTime() + 7 * DAY_MS);
 
     // When
-    const beforeHandoff = await notify.execute({ now: new Date("2028-03-09T06:00:00.000Z") });
+    const beforeHandoff = await notify.execute({
+      now: instantFromDate(new Date("2028-03-09T06:00:00.000Z")),
+    });
     vi.setSystemTime(new Date(STORE_EXPIRY.getTime() - 1));
     const premiumJustBefore = await entitlement.canInTx(userId, "AI_REPORT");
     vi.setSystemTime(STORE_EXPIRY);
     const premiumAtHandoff = await entitlement.canInTx(userId, "AI_REPORT");
     const lateSweepAt = new Date(STORE_EXPIRY.getTime() + 10 * 60 * 1_000);
     vi.setSystemTime(lateSweepAt);
-    await sweep.execute({ now: lateSweepAt });
-    const beforeFinalEnd = await notify.execute({ now: new Date("2028-03-16T06:00:00.000Z") });
+    await sweep.execute({ now: instantFromDate(lateSweepAt) });
+    const beforeFinalEnd = await notify.execute({
+      now: instantFromDate(new Date("2028-03-16T06:00:00.000Z")),
+    });
 
     // Then
     expect(beforeHandoff.notifiedCount).toBe(0);
@@ -729,7 +753,9 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
     await granter.grant({ userId, source: "INVITE", sourceKey: "invite:first", durationDays: 7 });
     const afterFirst = new Date("2028-03-05T04:00:00.000Z");
     vi.setSystemTime(afterFirst);
-    await context.module.get(SweepPremiumGrantsUseCase).execute({ now: afterFirst });
+    await context.module
+      .get(SweepPremiumGrantsUseCase)
+      .execute({ now: instantFromDate(afterFirst) });
 
     // When
     await granter.grant({ userId, source: "INVITE", sourceKey: "invite:second", durationDays: 7 });
@@ -756,12 +782,15 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
       sourceKey: "invite:legacy-future",
       durationDays: 7,
       status: "ACTIVE",
-      startsAt: new Date("2028-03-01T04:00:00.000Z"),
-      endsAt: new Date("2028-03-08T04:00:00.000Z"),
+      startsAt: Temporal.Instant.from("2028-03-01T04:00:00.000Z"),
+      endsAt: Temporal.Instant.from("2028-03-08T04:00:00.000Z"),
+      updatedAt: instantFromDate(AT),
     });
 
     // When
-    const swept = await context.module.get(SweepPremiumGrantsUseCase).execute({ now: AT });
+    const swept = await context.module
+      .get(SweepPremiumGrantsUseCase)
+      .execute({ now: instantFromDate(AT) });
 
     // Then
     expect(swept).toMatchObject({ userCount: 1, changedGrantCount: 1 });
@@ -788,10 +817,12 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
       sourceKey: "invite:admin",
       durationDays: 1,
     });
-    const notified = await notify.execute({ now: new Date("2028-02-26T06:00:00.000Z") });
+    const notified = await notify.execute({
+      now: instantFromDate(new Date("2028-02-26T06:00:00.000Z")),
+    });
     const endedAt = new Date("2028-02-27T04:00:00.000Z");
     vi.setSystemTime(endedAt);
-    await sweep.execute({ now: endedAt });
+    await sweep.execute({ now: instantFromDate(endedAt) });
 
     // Then
     expect(granted.status).toBe("granted");
@@ -828,7 +859,9 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
     await context.module
       .get(RevenueCatWebhookReceiver)
       .receive({ body: storeEvent(builder(), "admin-store") });
-    await context.module.get(SweepPremiumGrantsUseCase).execute({ now: STORE_EXPIRY });
+    await context.module
+      .get(SweepPremiumGrantsUseCase)
+      .execute({ now: instantFromDate(STORE_EXPIRY) });
 
     // Then
     expect(await roleOf(userId)).toBe("ADMIN");
@@ -846,17 +879,15 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
         durationDays: 1,
       });
     }
-    const source = context.module.get<PremiumGrantEndingNoticeSourcePort>(
-      PREMIUM_GRANT_ENDING_NOTICE_SOURCE,
-    );
+    const source = context.module.get(PremiumGrantEndingNoticeRepositoryPort);
     const params = {
-      now: new Date("2028-02-26T06:00:00.000Z"),
-      endsBefore: new Date("2028-02-28T00:00:00.000Z"),
+      now: Temporal.Instant.from("2028-02-26T06:00:00.000Z"),
+      endsBefore: Temporal.Instant.from("2028-02-28T00:00:00.000Z"),
     };
 
     // When
-    const first = await source.findDue({ ...params, limit: 1 });
-    const rest = await source.findDue({ ...params, after: first.at(-1), limit: 10 });
+    const first = await source.listDue({ ...params, limit: 1 });
+    const rest = await source.listDue({ ...params, after: first.at(-1), limit: 10 });
 
     // Then
     expect(first).toHaveLength(1);
@@ -872,11 +903,11 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
 
     // When
     vi.setSystemTime(inGrace);
-    const keptRun = await sweep.execute({ now: inGrace });
+    const keptRun = await sweep.execute({ now: instantFromDate(inGrace) });
     const keptProjection = await userProjection();
     vi.setSystemTime(afterGrace);
-    const lapsedRun = await sweep.execute({ now: afterGrace });
-    const rerun = await sweep.execute({ now: afterGrace });
+    const lapsedRun = await sweep.execute({ now: instantFromDate(afterGrace) });
+    const rerun = await sweep.execute({ now: instantFromDate(afterGrace) });
 
     // Then
     expect(keptRun.lapsedUserCount).toBe(0);
@@ -901,7 +932,9 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
     vi.setSystemTime(afterGrace);
 
     // When
-    await context.module.get(SweepPremiumGrantsUseCase).execute({ now: afterGrace });
+    await context.module
+      .get(SweepPremiumGrantsUseCase)
+      .execute({ now: instantFromDate(afterGrace) });
 
     // Then
     expect(await userProjection()).toEqual({
@@ -916,8 +949,8 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
     const revoke = context.module.get(RevokePremiumGrantUseCase);
 
     // When
-    const first = await revoke.execute({ sourceKey: "invite:wrong", now: AT });
-    const second = await revoke.execute({ sourceKey: "invite:wrong", now: AT });
+    const first = await revoke.execute({ sourceKey: "invite:wrong", now: instantFromDate(AT) });
+    const second = await revoke.execute({ sourceKey: "invite:wrong", now: instantFromDate(AT) });
 
     // Then
     expect(first).toEqual({ status: "revoked", userId, revokedGrantCount: 1 });

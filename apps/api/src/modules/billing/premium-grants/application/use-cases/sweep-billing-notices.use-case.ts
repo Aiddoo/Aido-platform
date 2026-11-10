@@ -1,13 +1,13 @@
 import { chunk, sumBy } from "es-toolkit";
 
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
-import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
+import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 
 import { billingNoticeUntil } from "../../../shared/billing-notice-window.domain-service.js";
 import type {
   BillingNotice,
   BillingNoticeNotifierPort,
-  BillingNoticeSourcePort,
+  BillingNoticeRepositoryPort,
 } from "../ports/billing-notice.port.js";
 import type { QuietHoursReaderPort } from "../ports/quiet-hours.reader.port.js";
 
@@ -20,7 +20,7 @@ export const BILLING_NOTICE_SWEEP = {
   MAX_BATCHES_PER_RUN: 20,
 } as const;
 
-/** 무엇을 언제 안내할지. use case 파일이 상수로 갖는다. */
+/** 무엇을 언제 안내할지. 안내 UseCase 파일이 상수로 갖는다. */
 export interface BillingNoticeSettings<TNotice extends BillingNotice> {
   /** 끝나기 이 일수 전부터 안내한다. */
   readonly noticeDays: number;
@@ -34,12 +34,17 @@ export interface BillingNoticeSettings<TNotice extends BillingNotice> {
 export interface BillingNoticeTask<
   TNotice extends BillingNotice,
 > extends BillingNoticeSettings<TNotice> {
-  readonly source: BillingNoticeSourcePort<TNotice>;
-  readonly notifier: BillingNoticeNotifierPort<TNotice>;
+  readonly source: Pick<BillingNoticeRepositoryPort<TNotice>, "listDue" | "claim">;
+  readonly notifier: Pick<BillingNoticeNotifierPort<TNotice>, "notify">;
+}
+
+export interface SweepBillingNoticesCommand<TNotice extends BillingNotice> {
+  readonly task: BillingNoticeTask<TNotice>;
+  readonly now: Temporal.Instant;
 }
 
 export interface BillingNoticeSweepInput {
-  readonly now: Date;
+  readonly now: Temporal.Instant;
 }
 
 export interface BillingNoticeSweepResult {
@@ -57,7 +62,7 @@ interface BillingNoticeBatchResult {
   readonly isFull: boolean;
 }
 
-interface BillingNoticeSweeperDependencies {
+export interface SweepBillingNoticesDependencies {
   readonly quietHoursReader: QuietHoursReaderPort;
   readonly unitOfWork: UnitOfWorkPort;
   readonly logger: Pick<ApplicationLoggerPort, "log">;
@@ -68,18 +73,18 @@ interface BillingNoticeSweeperDependencies {
  * 표시하지 않아 다음 허용 시각의 실행이 보낸다. 표시는 조건부 UPDATE라 두 실행이 겹쳐도 한 실행만 보낸다.
  */
 export class SweepBillingNoticesUseCase {
-  readonly #dependencies: BillingNoticeSweeperDependencies;
+  readonly #dependencies: SweepBillingNoticesDependencies;
 
-  constructor(dependencies: BillingNoticeSweeperDependencies) {
+  constructor(dependencies: SweepBillingNoticesDependencies) {
     this.#dependencies = dependencies;
   }
 
-  async sweep<TNotice extends BillingNotice>(
-    task: BillingNoticeTask<TNotice>,
-    { now }: BillingNoticeSweepInput,
+  async execute<TNotice extends BillingNotice>(
+    command: SweepBillingNoticesCommand<TNotice>,
   ): Promise<BillingNoticeSweepResult> {
+    const { task, now } = command;
     const batches: BillingNoticeBatchResult[] = [];
-    for await (const candidates of this.#findDueBatches(task, now)) {
+    for await (const candidates of this.#listDueBatches(task, now)) {
       batches.push(await this.#sendBatch(task, candidates, now));
     }
     const result = {
@@ -92,14 +97,14 @@ export class SweepBillingNoticesUseCase {
     return result;
   }
 
-  async *#findDueBatches<TNotice extends BillingNotice>(
+  async *#listDueBatches<TNotice extends BillingNotice>(
     task: BillingNoticeTask<TNotice>,
-    now: Date,
+    now: Temporal.Instant,
   ): AsyncGenerator<TNotice[]> {
     const endsBefore = billingNoticeUntil(now, task.noticeDays);
     let after: TNotice | undefined;
     for (let batch = 0; batch < BILLING_NOTICE_SWEEP.MAX_BATCHES_PER_RUN; batch++) {
-      const candidates = await task.source.findDue({
+      const candidates = await task.source.listDue({
         now,
         endsBefore,
         ...(after != null && { after }),
@@ -116,7 +121,7 @@ export class SweepBillingNoticesUseCase {
   async #sendBatch<TNotice extends BillingNotice>(
     task: BillingNoticeTask<TNotice>,
     candidates: readonly TNotice[],
-    now: Date,
+    now: Temporal.Instant,
   ): Promise<BillingNoticeBatchResult> {
     const noticeable = candidates.filter(task.isNoticeable);
     const quietUserIds = await this.#dependencies.quietHoursReader.findUsersInQuietHours(
@@ -140,7 +145,7 @@ export class SweepBillingNoticesUseCase {
   async #claimAndNotify<TNotice extends BillingNotice>(
     task: BillingNoticeTask<TNotice>,
     notices: readonly TNotice[],
-    now: Date,
+    now: Temporal.Instant,
   ): Promise<number> {
     return this.#dependencies.unitOfWork.run(async () => {
       const claimed = await task.source.claim(notices, now);

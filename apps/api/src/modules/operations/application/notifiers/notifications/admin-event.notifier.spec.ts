@@ -1,7 +1,7 @@
 import type { Mocked } from "vitest";
 import { mockDeep } from "vitest-mock-extended";
 
-import type { SubscriptionEventPayload } from "#api/modules/billing/subscriptions/billing-subscriptions.public";
+import type { SubscriptionEventPayload } from "#api/modules/billing/subscriptions/billing-subscriptions-events.public";
 import { flushPromises } from "#test/mocks/index";
 
 import type { UserRegisteredEventPayload } from "../../types/notifications/user-registered.payload.js";

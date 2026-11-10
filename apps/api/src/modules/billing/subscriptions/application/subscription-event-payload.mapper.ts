@@ -1,6 +1,6 @@
 import type { StorePeriodType } from "@aido/api/vocabulary";
 
-import { toISOString, toISOStringOrNull } from "#api/shared/domain/date/utils/format";
+import { toIsoString } from "#api/shared/domain/time/instant";
 
 import type { PremiumAccess } from "../../shared/premium-access.domain-service.js";
 import { planTypeOfProduct } from "../../shared/subscription-plan.domain-service.js";
@@ -86,11 +86,11 @@ export function baseEventPayload(
     ...(event.details.appVersion != null && { appVersion: event.details.appVersion }),
     ...(event.details.deviceModel != null && { deviceModel: event.details.deviceModel }),
     ...priceFields(event.price),
-    ...(purchasedAt != null && { purchasedAt: toISOString(purchasedAt) }),
-    ...(event.periodEndsAt != null && { expiresAt: toISOString(event.periodEndsAt) }),
+    ...(purchasedAt != null && { purchasedAt: toIsoString(purchasedAt) }),
+    ...(event.periodEndsAt != null && { expiresAt: toIsoString(event.periodEndsAt) }),
     ...(event.kind === "BILLING_ISSUE" &&
       event.gracePeriodEndsAt != null && {
-        gracePeriodEndsAt: toISOString(event.gracePeriodEndsAt),
+        gracePeriodEndsAt: toIsoString(event.gracePeriodEndsAt),
       }),
     ...(event.kind === "PRODUCT_CHANGE_SCHEDULED" &&
       event.newProductId != null && {
@@ -131,7 +131,7 @@ export function transferEventPayload(
 export function premiumAccessSummaryOf(access: PremiumAccess): PremiumAccessSummary {
   return {
     source: access.source,
-    periodEndsAt: toISOStringOrNull(access.periodEndsAt),
+    periodEndsAt: access.periodEndsAt == null ? null : toIsoString(access.periodEndsAt),
     bankedDays: access.bankedDays,
     isTrial: access.isTrial,
   };

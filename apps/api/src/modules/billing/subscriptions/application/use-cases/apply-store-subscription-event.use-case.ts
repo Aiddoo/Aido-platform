@@ -4,14 +4,16 @@ import { match } from "ts-pattern";
 
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
-import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
+import type { ClockPort } from "#api/shared/application/ports/clock.port";
+import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
-import { now } from "#api/shared/domain/date/utils/core";
-import { toISOString } from "#api/shared/domain/date/utils/format";
 import { ErrorCodedException } from "#api/shared/domain/exceptions/error-coded.exception";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { toIsoString } from "#api/shared/domain/time/instant";
 
-import type { SubscriptionUserMutationLockPort } from "../../../premium-grants/application/ports/billing-user-lock.port.js";
-import type { SubscriptionCachePort } from "../../../premium-grants/application/ports/premium-access-cache.port.js";
+import type { BillingUserLockPort } from "../../../premium-grants/application/ports/billing-user-lock.port.js";
+import type { PremiumAccessCachePort } from "../../../premium-grants/application/ports/premium-access-cache.port.js";
+import type { UserSubscriptionProjection } from "../../../premium-grants/application/ports/user-subscription-projection.repository.port.js";
 import type { ProjectPremiumAccessUseCase } from "../../../premium-grants/application/use-cases/project-premium-access.use-case.js";
 import type {
   PremiumAccess,
@@ -27,7 +29,7 @@ import type {
   SubscriptionStartedEvent,
   SubscriptionTransferredEvent,
 } from "../../domain/store-subscription.event.js";
-import type { Subscription } from "../../domain/subscription.aggregate.js";
+import { Subscription } from "../../domain/subscription.aggregate.js";
 import type { StoreSubscriptionReconcileSchedulerPort } from "../ports/store-subscription-reconcile-scheduler.port.js";
 import type {
   StoreSubscriptionEventFailureContext,
@@ -38,7 +40,6 @@ import type { SubscriptionWebhookLockPort } from "../ports/subscription-webhook-
 import type {
   SubscriptionRepositoryPort,
   SubscriptionUser,
-  UpdateUserSubscriptionStatusData,
 } from "../ports/subscription.repository.port.js";
 import type { SubscriptionEventPayload } from "../read-models/subscription-event-payload.read-model.js";
 import {
@@ -47,28 +48,37 @@ import {
   premiumAccessSummaryOf,
   transferEventPayload,
 } from "../subscription-event-payload.mapper.js";
+import {
+  subscriptionChainUnresolved,
+  subscriptionUserNotFound,
+  subscriptionWebhookLockContended,
+} from "../subscriptions.errors.js";
 import { SubscriptionLogEvent } from "../subscriptions.log-events.js";
 
 type ProcessedChainEvent = Exclude<StoreSubscriptionChainEvent, { kind: "IGNORED" }>;
+type Instant = Temporal.Instant;
 
-interface ApplyStoreSubscriptionEventDependencies {
+export type ApplyStoreSubscriptionEventCommand = StoreSubscriptionEvent;
+
+export interface ApplyStoreSubscriptionEventDependencies {
   readonly subscriptionRepository: SubscriptionRepositoryPort;
   readonly receiptRepository: SubscriptionEventReceiptRepositoryPort;
-  readonly userMutationLock: SubscriptionUserMutationLockPort;
+  readonly userLock: BillingUserLockPort;
   readonly unitOfWork: UnitOfWorkPort;
-  readonly cache: SubscriptionCachePort;
+  readonly cache: PremiumAccessCachePort;
   readonly notifier: SubscriptionEventNotifierPort;
   readonly webhookLock: SubscriptionWebhookLockPort;
-  readonly premiumAccessProjector: Pick<ProjectPremiumAccessUseCase, "project">;
+  readonly projectPremiumAccess: Pick<ProjectPremiumAccessUseCase, "execute">;
   readonly reconcileScheduler: StoreSubscriptionReconcileSchedulerPort;
+  readonly clock: ClockPort;
   readonly logger: ApplicationLoggerPort;
 }
 
 interface SubscriptionTransition {
-  readonly userState: UpdateUserSubscriptionStatusData;
+  readonly projection: UserSubscriptionProjection;
   readonly payload: SubscriptionEventPayload;
   /** 이벤트가 행과 다른 만료 시각을 알려 주면 보상 기간 판단에 그 값을 쓴다. 비우면 행의 값이다. */
-  readonly chainExpiresAt?: Date;
+  readonly chainExpiresAt?: Instant;
 }
 
 /**
@@ -107,9 +117,9 @@ function isPermanentFailure(error: unknown): boolean {
   return error instanceof ErrorCodedException && PERMANENT_FAILURE_CODES.has(error.errorCode);
 }
 
-function requireDate(value: Date | undefined, kind: string, reason: string): Date {
+function requireInstant(value: Instant | undefined, kind: string, reason: string): Instant {
   if (value == null) {
-    throw new ApplicationException(ErrorCode.SUBSCRIPTION_1604, { reason, eventType: kind });
+    throw subscriptionChainUnresolved({ reason, eventType: kind });
   }
   return value;
 }
@@ -132,7 +142,7 @@ export class ApplyStoreSubscriptionEventUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(event: StoreSubscriptionEvent): Promise<void> {
+  async execute(event: ApplyStoreSubscriptionEventCommand): Promise<void> {
     // 처리하지 않는 이벤트(대시보드 TEST 등)는 우리 사용자가 아닐 수 있어 사용자를 찾기 전에 닫는다
     if (event.kind === "IGNORED") {
       this.#dependencies.logger.log({
@@ -200,7 +210,7 @@ export class ApplyStoreSubscriptionEventUseCase {
   // 영구 실패는 공급자가 다시 보내지 않으므로 스토어 상태를 다시 읽어 스스로 맞춘다
   async #scheduleRecovery(userId: string): Promise<void> {
     try {
-      await this.#dependencies.reconcileScheduler.schedule(userId, now());
+      await this.#dependencies.reconcileScheduler.schedule(userId, this.#dependencies.clock.now());
     } catch (error) {
       this.#dependencies.logger.warn({
         event: SubscriptionLogEvent.RECONCILE_FAILED,
@@ -216,20 +226,19 @@ export class ApplyStoreSubscriptionEventUseCase {
    * 행이 없으면(탈퇴로 지워짐) 다음 갱신이 체인을 이어 받는다.
    */
   async #processTransfer(event: SubscriptionTransferredEvent): Promise<void> {
-    const { subscriptionRepository, webhookLock, unitOfWork, userMutationLock } =
-      this.#dependencies;
+    const { subscriptionRepository, webhookLock, unitOfWork, userLock, clock } = this.#dependencies;
     const receiverAppUserIds = uniq(event.receivers);
     const lockKey = receiverAppUserIds[0] ?? "";
     this.#logStarted(event);
     const release = await webhookLock.acquire(lockKey);
     if (release == null) {
-      throw new ApplicationException(ErrorCode.SUBSCRIPTION_1605, { appUserId: lockKey });
+      throw subscriptionWebhookLockContended(lockKey);
     }
 
     try {
       const receiver = await this.#findFirstUser(receiverAppUserIds);
       if (receiver == null) {
-        throw new ApplicationException(ErrorCode.SUBSCRIPTION_1602, { appUserId: lockKey });
+        throw subscriptionUserNotFound(lockKey);
       }
       const previousOwners = uniqBy(
         (
@@ -244,24 +253,32 @@ export class ApplyStoreSubscriptionEventUseCase {
       const result = await unitOfWork.run(async () => {
         // 넘겨준·넘겨받은 사용자를 id 순으로 잠가 반대 방향 이전과 교착하지 않는다
         for (const user of sortBy([receiver, ...previousOwners], [(user) => user.id])) {
-          if (!(await userMutationLock.lockById(user.id)) && user.id === receiver.id) {
-            throw new ApplicationException(ErrorCode.SUBSCRIPTION_1602, { appUserId: lockKey });
+          if (!(await userLock.lockById(user.id)) && user.id === receiver.id) {
+            throw subscriptionUserNotFound(lockKey);
           }
         }
         if (!(await this.#claimReceipt(event))) {
           return null;
         }
+        const now = clock.now();
+        const receiverId = UserId.reconstitute(receiver.id);
         for (const owner of previousOwners) {
-          await subscriptionRepository.takeOverChains(owner.id, receiver.id);
+          await subscriptionRepository.takeOverChains(
+            UserId.reconstitute(owner.id),
+            receiverId,
+            now,
+          );
         }
-        const at = now();
         // 옮겨 받은 스토어 행과 보상 기간을 함께 보고 다시 계산해 보상 기간이 구독을 덮지 않게 한다
-        const { access } = await this.#dependencies.premiumAccessProjector.project({
-          userId: receiver.id,
-          now: at,
+        const { access } = await this.#dependencies.projectPremiumAccess.execute({
+          userId: receiverId,
+          now,
         });
         for (const owner of previousOwners) {
-          await this.#dependencies.premiumAccessProjector.project({ userId: owner.id, now: at });
+          await this.#dependencies.projectPremiumAccess.execute({
+            userId: UserId.reconstitute(owner.id),
+            now,
+          });
         }
         return withPremium(transferEventPayload(receiver, event, lockKey), access);
       });
@@ -300,15 +317,13 @@ export class ApplyStoreSubscriptionEventUseCase {
     this.#logStarted(event);
     const release = await webhookLock.acquire(event.appUserId);
     if (release == null) {
-      throw new ApplicationException(ErrorCode.SUBSCRIPTION_1605, { appUserId: event.appUserId });
+      throw subscriptionWebhookLockContended(event.appUserId);
     }
 
     try {
       const user = await subscriptionRepository.findUserByAppUserId(event.appUserId);
       if (user == null) {
-        throw new ApplicationException(ErrorCode.SUBSCRIPTION_1602, {
-          appUserId: event.appUserId,
-        });
+        throw subscriptionUserNotFound(event.appUserId);
       }
       const eventPayload = await this.#applyInTransaction(user, event).catch(
         async (error: unknown) => {
@@ -341,12 +356,10 @@ export class ApplyStoreSubscriptionEventUseCase {
     user: SubscriptionUser,
     event: ProcessedChainEvent,
   ): Promise<SubscriptionEventPayload | null> {
-    const { subscriptionRepository, userMutationLock } = this.#dependencies;
+    const { subscriptionRepository, userLock, clock } = this.#dependencies;
     return this.#dependencies.unitOfWork.run(async () => {
-      if (!(await userMutationLock.lockById(user.id))) {
-        throw new ApplicationException(ErrorCode.SUBSCRIPTION_1602, {
-          appUserId: event.appUserId,
-        });
+      if (!(await userLock.lockById(user.id))) {
+        throw subscriptionUserNotFound(event.appUserId);
       }
       // 처리 원장은 업무 변경과 함께 커밋한다. 실패한 트랜잭션은 다시 처리할 수 있다
       if (!(await this.#claimReceipt(event))) {
@@ -354,11 +367,11 @@ export class ApplyStoreSubscriptionEventUseCase {
         return null;
       }
       // 이벤트는 신호다. 늦거나 빠진 이벤트로 어긋난 상태를 스토어에서 다시 읽어 맞추도록 함께 커밋한다
-      await this.#dependencies.reconcileScheduler.schedule(user.id, now());
+      await this.#dependencies.reconcileScheduler.schedule(user.id, clock.now());
       const subscription =
         event.storeSubscriptionId != null && event.storeSubscriptionId !== ""
           ? await subscriptionRepository.findByStoreSubscriptionId(
-              StoreSubscriptionId.from(event.storeSubscriptionId),
+              StoreSubscriptionId.create(event.storeSubscriptionId),
             )
           : null;
       // 배포 이전 마지막 이벤트 ID도 중복 처리하지 않는다
@@ -367,7 +380,7 @@ export class ApplyStoreSubscriptionEventUseCase {
       }
       const payload = await this.#applyEvent(user, event, subscription);
       if (payload != null && event.kind === "BILLING_ISSUE") {
-        await this.#dependencies.notifier.recordBillingIssue(user.id, now());
+        await this.#dependencies.notifier.recordBillingIssue(user.id, clock.now());
       }
       return payload;
     });
@@ -380,7 +393,7 @@ export class ApplyStoreSubscriptionEventUseCase {
     return this.#dependencies.receiptRepository.claim({
       eventId: event.providerEventId,
       eventType: event.providerEventType,
-      processedAt: now(),
+      processedAt: this.#dependencies.clock.now(),
       environment: event.environment,
     });
   }
@@ -390,8 +403,8 @@ export class ApplyStoreSubscriptionEventUseCase {
     event: ProcessedChainEvent,
     subscription: Subscription | null,
   ): Promise<SubscriptionEventPayload | null> {
-    const { subscriptionRepository } = this.#dependencies;
-    const storeSubscriptionId = StoreSubscriptionId.from(event.storeSubscriptionId);
+    const { subscriptionRepository, clock } = this.#dependencies;
+    const storeSubscriptionId = StoreSubscriptionId.create(event.storeSubscriptionId);
     if (event.kind === "BILLING_ISSUE") {
       return this.#enterBillingGrace(user, event, storeSubscriptionId, subscription);
     }
@@ -402,14 +415,13 @@ export class ApplyStoreSubscriptionEventUseCase {
     // 갱신이 요구하는 시각 오류는 구독 없음 오류보다 우선한다
     const renewalExpiresAt =
       event.kind === "RENEWED"
-        ? requireDate(event.periodEndsAt, event.kind, "Missing period end for renewal")
+        ? requireInstant(event.periodEndsAt, event.kind, "Missing period end for renewal")
         : undefined;
     if (subscription == null && event.kind === "RENEWED" && renewalExpiresAt != null) {
       return this.#adoptRenewedChain(user, event, storeSubscriptionId, renewalExpiresAt);
     }
     if (subscription == null) {
-      throw new ApplicationException(
-        ErrorCode.SUBSCRIPTION_1604,
+      throw subscriptionChainUnresolved(
         event.kind === "RENEWED"
           ? {
               reason: `Subscription not found for renewal: ${storeSubscriptionId.value}`,
@@ -421,19 +433,22 @@ export class ApplyStoreSubscriptionEventUseCase {
 
     // 체인의 이벤트가 다른 사용자로 오면 구매가 옮겨 간 것이다. 행의 소유자를 이벤트 사용자로 맞춰
     // 프리미엄 판단이 User projection 대신 행 자체를 믿을 수 있게 한다
-    await subscriptionRepository.claimChain(storeSubscriptionId, user.id);
-    const transition = this.#planTransition(
+    const userId = UserId.reconstitute(user.id);
+    const now = clock.now();
+    await subscriptionRepository.claimChain(storeSubscriptionId, userId, now);
+    const transition = this.#planTransition({
       user,
       event,
       storeSubscriptionId,
       subscription,
       renewalExpiresAt,
-    );
+      now,
+    });
     if (transition == null) {
       return null;
     }
-    await subscriptionRepository.updateStatus(storeSubscriptionId, subscription.persistenceState);
-    const access = await this.#projectUser(user.id, storeSubscriptionId, transition.userState, {
+    await subscriptionRepository.save(subscription);
+    const access = await this.#projectUser(userId, storeSubscriptionId, transition.projection, {
       ...chainStateOf(subscription),
       ...(transition.chainExpiresAt != null && { expiresAt: transition.chainExpiresAt }),
     });
@@ -451,21 +466,24 @@ export class ApplyStoreSubscriptionEventUseCase {
     subscription: Subscription | null,
   ): Promise<SubscriptionEventPayload> {
     const payload = baseEventPayload(user, event, storeSubscriptionId.value);
+    const now = this.#dependencies.clock.now();
     if (
       subscription == null ||
       !subscription.enterBillingGrace({
         gracePeriodEndsAt: event.gracePeriodEndsAt,
         periodExpiresAt: event.periodEndsAt ?? null,
-        eventId: event.providerEventId,
+        now,
+        ...(event.providerEventId != null && { eventId: event.providerEventId }),
       })
     ) {
       return payload;
     }
     const { subscriptionRepository } = this.#dependencies;
-    await subscriptionRepository.claimChain(storeSubscriptionId, user.id);
-    await subscriptionRepository.updateStatus(storeSubscriptionId, subscription.persistenceState);
+    const userId = UserId.reconstitute(user.id);
+    await subscriptionRepository.claimChain(storeSubscriptionId, userId, now);
+    await subscriptionRepository.save(subscription);
     const access = await this.#projectUser(
-      user.id,
+      userId,
       storeSubscriptionId,
       { subscriptionStatus: "ACTIVE", subscriptionExpiresAt: subscription.expiresAt },
       chainStateOf(subscription),
@@ -481,33 +499,39 @@ export class ApplyStoreSubscriptionEventUseCase {
     user: SubscriptionUser,
     event: SubscriptionRenewedEvent,
     storeSubscriptionId: StoreSubscriptionId,
-    expiresAt: Date,
+    expiresAt: Instant,
   ): Promise<SubscriptionEventPayload> {
-    const startedAt = event.startedAt ?? now();
-    await this.#dependencies.subscriptionRepository.create({
-      userId: user.id,
-      storeSubscriptionId,
-      productId: event.productId,
-      status: "ACTIVE",
-      startedAt,
-      expiresAt,
-      ...(event.providerEventId != null && { lastProcessedEventId: event.providerEventId }),
-      environment: event.environment,
-      periodType: periodTypeAfter(event) ?? null,
-    });
+    const { subscriptionRepository, clock } = this.#dependencies;
+    const now = clock.now();
+    const userId = UserId.reconstitute(user.id);
+    await subscriptionRepository.save(
+      Subscription.create({
+        id: await subscriptionRepository.nextId(),
+        userId,
+        provider: event.provider,
+        storeSubscriptionId,
+        productId: event.productId,
+        startedAt: event.startedAt ?? now,
+        expiresAt,
+        lastProcessedEventId: event.providerEventId ?? null,
+        environment: event.environment,
+        periodType: periodTypeAfter(event) ?? null,
+        now,
+      }),
+    );
     this.#dependencies.logger.log({
       event: SubscriptionLogEvent.SUBSCRIPTION_CHAIN_ADOPTED,
       eventKind: event.kind,
       userId: user.id,
     });
-    const access = await this.#projectUser(user.id, storeSubscriptionId, {
+    const access = await this.#projectUser(userId, storeSubscriptionId, {
       subscriptionStatus: "ACTIVE",
       subscriptionExpiresAt: expiresAt,
     });
     return withPremium(
       {
         ...baseEventPayload(user, event, storeSubscriptionId.value),
-        expiresAt: toISOString(expiresAt),
+        expiresAt: toIsoString(expiresAt),
       },
       access,
     );
@@ -515,17 +539,17 @@ export class ApplyStoreSubscriptionEventUseCase {
 
   // 스토어 상태가 바뀌면 보상 기간을 함께 보고 User의 구독 projection을 다시 계산한다
   async #projectUser(
-    userId: string,
+    userId: UserId,
     eventChainId: StoreSubscriptionId,
-    requested: UpdateUserSubscriptionStatusData,
+    requested: UserSubscriptionProjection,
     chainState: Omit<StoreEventChainState, "storeSubscriptionId"> = {
       status: requested.subscriptionStatus,
       expiresAt: requested.subscriptionExpiresAt,
     },
   ): Promise<PremiumAccess> {
-    const { access } = await this.#dependencies.premiumAccessProjector.project({
+    const { access } = await this.#dependencies.projectPremiumAccess.execute({
       userId,
-      now: now(),
+      now: this.#dependencies.clock.now(),
       eventChain: { storeSubscriptionId: eventChainId.value, ...chainState },
       fallback: requested,
     });
@@ -538,8 +562,12 @@ export class ApplyStoreSubscriptionEventUseCase {
     storeSubscriptionId: StoreSubscriptionId,
     existing: Subscription | null,
   ): Promise<SubscriptionEventPayload | null> {
-    const startedAt = requireDate(event.startedAt, event.kind, "Missing start time for purchase");
-    const expiresAt = requireDate(
+    const startedAt = requireInstant(
+      event.startedAt,
+      event.kind,
+      "Missing start time for purchase",
+    );
+    const expiresAt = requireInstant(
       event.periodEndsAt,
       event.kind,
       "Missing period end for purchase",
@@ -547,64 +575,73 @@ export class ApplyStoreSubscriptionEventUseCase {
     if (existing != null) {
       return null;
     }
-    const { subscriptionRepository } = this.#dependencies;
-    const isFirstPurchase =
-      (await subscriptionRepository.findStoreEntitlements(user.id)).length === 0;
-    await subscriptionRepository.create({
-      userId: user.id,
-      storeSubscriptionId,
-      productId: event.productId,
-      status: "ACTIVE",
-      startedAt,
-      expiresAt,
-      ...(event.providerEventId != null && { lastProcessedEventId: event.providerEventId }),
-      // SANDBOX 구매도 프리미엄을 준다. App Review가 운영 서버에서 sandbox로 결제를 확인한다
-      environment: event.environment,
-      periodType: periodTypeAfter(event) ?? null,
-    });
-    const access = await this.#projectUser(user.id, storeSubscriptionId, {
+    const { subscriptionRepository, clock } = this.#dependencies;
+    const userId = UserId.reconstitute(user.id);
+    const isFirstPurchase = !(await subscriptionRepository.existsByUserId(userId));
+    await subscriptionRepository.save(
+      Subscription.create({
+        id: await subscriptionRepository.nextId(),
+        userId,
+        provider: event.provider,
+        storeSubscriptionId,
+        productId: event.productId,
+        startedAt,
+        expiresAt,
+        lastProcessedEventId: event.providerEventId ?? null,
+        // SANDBOX 구매도 프리미엄을 준다. App Review가 운영 서버에서 sandbox로 결제를 확인한다
+        environment: event.environment,
+        periodType: periodTypeAfter(event) ?? null,
+        now: clock.now(),
+      }),
+    );
+    const access = await this.#projectUser(userId, storeSubscriptionId, {
       subscriptionStatus: "ACTIVE",
       subscriptionExpiresAt: expiresAt,
     });
     return {
       ...withPremium(baseEventPayload(user, event, storeSubscriptionId.value), access),
       isFirstPurchase,
-      purchasedAt: toISOString(startedAt),
-      expiresAt: toISOString(expiresAt),
+      purchasedAt: toIsoString(startedAt),
+      expiresAt: toIsoString(expiresAt),
     };
   }
 
-  #planTransition(
-    user: SubscriptionUser,
-    event: Exclude<ProcessedChainEvent, { kind: "STARTED" | "BILLING_ISSUE" }>,
-    storeSubscriptionId: StoreSubscriptionId,
-    subscription: Subscription,
-    renewalExpiresAt: Date | undefined,
-  ): SubscriptionTransition | null {
+  #planTransition(params: {
+    readonly user: SubscriptionUser;
+    readonly event: Exclude<ProcessedChainEvent, { kind: "STARTED" | "BILLING_ISSUE" }>;
+    readonly storeSubscriptionId: StoreSubscriptionId;
+    readonly subscription: Subscription;
+    readonly renewalExpiresAt: Instant | undefined;
+    readonly now: Instant;
+  }): SubscriptionTransition | null {
+    const { user, event, storeSubscriptionId, subscription, renewalExpiresAt, now } = params;
     const payload = baseEventPayload(user, event, storeSubscriptionId.value);
     const expiresAt = event.periodEndsAt;
     const eventId = event.providerEventId;
-    const activeUserState: UpdateUserSubscriptionStatusData = {
+    const eventIdField = eventId == null ? {} : { eventId };
+    const activeProjection: UserSubscriptionProjection = {
       subscriptionStatus: "ACTIVE",
       ...(expiresAt != null && { subscriptionExpiresAt: expiresAt }),
     };
     return match(event)
       .returnType<SubscriptionTransition | null>()
       .with({ kind: "RENEWED" }, (renewed) => {
+        const periodType = periodTypeAfter(renewed);
         if (
           renewalExpiresAt == null ||
-          !subscription.renew(
-            renewalExpiresAt,
-            eventId,
-            periodTypeAfter(renewed),
-            renewed.productId,
-          )
+          !subscription.renew({
+            expiresAt: renewalExpiresAt,
+            now,
+            ...eventIdField,
+            ...(periodType != null && { periodType }),
+            productId: renewed.productId,
+          })
         ) {
           return null;
         }
         return {
-          userState: { subscriptionStatus: "ACTIVE", subscriptionExpiresAt: renewalExpiresAt },
-          payload: { ...payload, expiresAt: toISOString(renewalExpiresAt) },
+          projection: { subscriptionStatus: "ACTIVE", subscriptionExpiresAt: renewalExpiresAt },
+          payload: { ...payload, expiresAt: toIsoString(renewalExpiresAt) },
         };
       })
       .with({ kind: "CANCELLED" }, { kind: "REFUNDED" }, (cancelled) => {
@@ -613,49 +650,62 @@ export class ApplyStoreSubscriptionEventUseCase {
         if (
           !subscription.cancel({
             refunded,
-            cancelledAt: now(),
-            eventId,
+            now,
+            ...eventIdField,
             eventPeriodType: cancelled.periodKind,
-            eventExpiresAt: expiresAt,
+            ...(expiresAt != null && { eventExpiresAt: expiresAt }),
           })
         ) {
           return null;
         }
         return {
-          userState: refunded
+          projection: refunded
             ? { subscriptionStatus: "FREE", subscriptionExpiresAt: null }
             : {
-                subscriptionStatus: resolveCancellationUserStatus(cancellationExpiresAt),
+                subscriptionStatus: resolveCancellationUserStatus(cancellationExpiresAt, now),
                 subscriptionExpiresAt: cancellationExpiresAt,
               },
           // 해지는 이벤트에 만료 시각이 없어도 행이 아는 이용 종료 시각을 알린다
-          payload: { ...payload, expiresAt: toISOString(cancellationExpiresAt) },
+          payload: { ...payload, expiresAt: toIsoString(cancellationExpiresAt) },
           chainExpiresAt: cancellationExpiresAt,
         };
       })
       .with({ kind: "UNCANCELLED" }, () =>
-        subscription.uncancel(expiresAt, eventId) ? { userState: activeUserState, payload } : null,
+        subscription.uncancel({
+          ...(expiresAt != null && { expiresAt }),
+          now,
+          ...eventIdField,
+        })
+          ? { projection: activeProjection, payload }
+          : null,
       )
       .with({ kind: "EXPIRED" }, () => {
-        if (!subscription.expire(expiresAt ?? null, eventId, now())) {
+        if (!subscription.expire({ expirationAt: expiresAt ?? null, now, ...eventIdField })) {
           return null;
         }
         return {
-          userState: { subscriptionStatus: "FREE", subscriptionExpiresAt: null },
+          projection: { subscriptionStatus: "FREE", subscriptionExpiresAt: null },
           payload,
         };
       })
       .with({ kind: "PRODUCT_CHANGE_SCHEDULED" }, (changed) =>
         subscription.reserveProductChange({
-          newProductId: changed.newProductId,
-          expiresAt,
-          eventId,
+          ...(changed.newProductId != null && { newProductId: changed.newProductId }),
+          ...(expiresAt != null && { expiresAt }),
+          now,
+          ...eventIdField,
         })
-          ? { userState: activeUserState, payload }
+          ? { projection: activeProjection, payload }
           : null,
       )
       .with({ kind: "EXTENDED" }, () =>
-        subscription.extend(expiresAt, eventId) ? { userState: activeUserState, payload } : null,
+        subscription.extend({
+          ...(expiresAt != null && { expiresAt }),
+          now,
+          ...eventIdField,
+        })
+          ? { projection: activeProjection, payload }
+          : null,
       )
       .exhaustive();
   }

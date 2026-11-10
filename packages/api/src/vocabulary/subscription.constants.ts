@@ -55,6 +55,16 @@ export const SUBSCRIPTION_ENVIRONMENTS = ["SANDBOX", "PRODUCTION"] as const;
 
 export type SubscriptionEnvironment = (typeof SUBSCRIPTION_ENVIRONMENTS)[number];
 
+/** 보상 기간의 지급 출처. 값을 더하면 지급 경로마다 sourceKey 규칙을 함께 정한다. */
+export const PREMIUM_GRANT_SOURCES = ["INVITE"] as const;
+
+export type PremiumGrantSource = (typeof PREMIUM_GRANT_SOURCES)[number];
+
+/** 보상 기간의 상태. BANKED는 쌓아 둔 기간, ACTIVE는 진행 중, ENDED는 끝남, REVOKED는 취소다. */
+export const PREMIUM_GRANT_STATUSES = ["BANKED", "ACTIVE", "ENDED", "REVOKED"] as const;
+
+export type PremiumGrantStatus = (typeof PREMIUM_GRANT_STATUSES)[number];
+
 /** 프리미엄의 출처. STORE는 스토어 구독, GRANT는 서버가 지급한 보상 기간이다. */
 export const PREMIUM_SOURCE = {
   STORE: "STORE",

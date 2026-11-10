@@ -3,16 +3,14 @@ import { Inject, Injectable } from "@nestjs/common";
 import { NotificationQueueService } from "#api/modules/notification/notification-delivery-jobs.public";
 import { AdminEventNotifier } from "#api/modules/operations/operations-notifications.public";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
-import {
-  OPERATIONAL_ALERT,
-  type OperationalAlertPort,
-} from "#api/shared/application/ports/operational-alert.port";
+import { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import { ErrorCodedException } from "#api/shared/domain/exceptions/error-coded.exception";
+import { instantToDate } from "#api/shared/domain/time/instant";
 
-import type {
+import {
+  type StoreSubscriptionEventFailureContext,
   SubscriptionEventNotifierPort,
-  StoreSubscriptionEventFailureContext,
 } from "../../application/ports/subscription-event-notifier.port.js";
 import type { SubscriptionEventPayload } from "../../application/read-models/subscription-event-payload.read-model.js";
 import { SubscriptionAlertKey } from "../../application/subscriptions.alerts.js";
@@ -24,7 +22,7 @@ import { SubscriptionAlertKey } from "../../application/subscriptions.alerts.js"
  * notification 큐에 기록해 처리 원장과 함께 커밋한다. 웹훅 처리 실패는 운영 경보로 올린다.
  */
 @Injectable()
-export class SubscriptionEventNotifierAdapter implements SubscriptionEventNotifierPort {
+export class SubscriptionEventNotifierAdapter extends SubscriptionEventNotifierPort {
   readonly #adminEventNotifier: AdminEventNotifier;
   readonly #notificationQueueService: NotificationQueueService;
   readonly #alert: OperationalAlertPort;
@@ -33,9 +31,10 @@ export class SubscriptionEventNotifierAdapter implements SubscriptionEventNotifi
   constructor(
     adminEventNotifier: AdminEventNotifier,
     notificationQueueService: NotificationQueueService,
-    @Inject(OPERATIONAL_ALERT) alert: OperationalAlertPort,
-    config: TypedConfigService,
+    alert: OperationalAlertPort,
+    @Inject(TypedConfigService) config: TypedConfigService,
   ) {
+    super();
     this.#adminEventNotifier = adminEventNotifier;
     this.#notificationQueueService = notificationQueueService;
     this.#alert = alert;
@@ -54,8 +53,8 @@ export class SubscriptionEventNotifierAdapter implements SubscriptionEventNotifi
     );
   }
 
-  recordBillingIssue(userId: string, at: Date): Promise<void> {
-    return this.#notificationQueueService.enqueueBillingIssue({ userId }, at);
+  recordBillingIssue(userId: string, at: Temporal.Instant): Promise<void> {
+    return this.#notificationQueueService.enqueueBillingIssue({ userId }, instantToDate(at));
   }
 
   reportWebhookFailure(error: unknown, context: StoreSubscriptionEventFailureContext): void {

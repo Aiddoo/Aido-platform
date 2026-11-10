@@ -12,7 +12,7 @@ import { AiAssistanceParsingModule } from "#api/modules/ai-assistance/ai-assista
 import { AiAssistanceReportsModule } from "#api/modules/ai-assistance/ai-assistance-reports.public";
 import { AiAssistanceSuggestionsModule } from "#api/modules/ai-assistance/ai-assistance-suggestions.public";
 import { AppConfigDiscoveryModule } from "#api/modules/app-config/app-config-discovery.public";
-import { BillingSubscriptionsModule } from "#api/modules/billing/subscriptions/billing-subscriptions.public";
+import { BillingModule } from "#api/modules/billing/billing.module";
 import { EngagementCommentsModule } from "#api/modules/engagement/engagement-comments.public";
 import { JwtAuthGuard } from "#api/modules/identity/auth/identity-auth.public";
 import { TimezoneSelfHealInterceptor } from "#api/modules/identity/identity-settings.public";
@@ -145,7 +145,7 @@ import { AppService } from "./app.service.js";
     SocialReportsModule,
     SocialReportsAdminModule,
     NotificationRemindersModule,
-    BillingSubscriptionsModule,
+    BillingModule,
     PlanningTodosModule,
     EngagementCommentsModule,
     PlanningCategoriesModule,

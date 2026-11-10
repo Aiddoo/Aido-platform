@@ -1,0 +1,27 @@
+import { Inject, Injectable } from "@nestjs/common";
+
+import {
+  PUSH_QUIET_HOURS_READER,
+  type PushQuietHoursReaderPort,
+} from "#api/modules/notification/notification-delivery.public";
+import { instantToDate } from "#api/shared/domain/time/instant";
+
+import { QuietHoursReaderPort } from "../../application/ports/quiet-hours.reader.port.js";
+
+// 야간 판단은 notification Context의 공개 capability다. 시각 형식만 맞춰 넘긴다
+@Injectable()
+export class QuietHoursReaderAdapter extends QuietHoursReaderPort {
+  readonly #reader: PushQuietHoursReaderPort;
+
+  constructor(@Inject(PUSH_QUIET_HOURS_READER) reader: PushQuietHoursReaderPort) {
+    super();
+    this.#reader = reader;
+  }
+
+  findUsersInQuietHours(
+    userIds: readonly string[],
+    at: Temporal.Instant,
+  ): Promise<ReadonlySet<string>> {
+    return this.#reader.findUsersInQuietHours(userIds, instantToDate(at));
+  }
+}

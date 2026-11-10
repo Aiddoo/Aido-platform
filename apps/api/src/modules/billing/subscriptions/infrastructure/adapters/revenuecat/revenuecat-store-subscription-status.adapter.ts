@@ -8,7 +8,7 @@ import { requestVendorJson } from "#api/platform/http/request-vendor-json";
 import type { OutboundPolicy } from "#api/platform/resilience/outbound-policy";
 import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
 
-import type { StoreSubscriptionStatusReaderPort } from "../../../application/ports/store-subscription-status.reader.port.js";
+import { StoreSubscriptionStatusReaderPort } from "../../../application/ports/store-subscription-status.reader.port.js";
 import type { StoreSubscriptionState } from "../../../domain/subscription.aggregate.js";
 import { REVENUECAT_API_POLICY } from "./revenuecat-outbound.policy.js";
 import {
@@ -50,8 +50,8 @@ export class RevenueCatRequestError extends Error {
  * @see https://www.revenuecat.com/docs/api-v2/subscription
  */
 @Injectable()
-export class RevenueCatStoreSubscriptionStatusReader implements StoreSubscriptionStatusReaderPort {
-  readonly #logger = new Logger(RevenueCatStoreSubscriptionStatusReader.name);
+export class RevenueCatStoreSubscriptionStatusAdapter extends StoreSubscriptionStatusReaderPort {
+  readonly #logger = new Logger(RevenueCatStoreSubscriptionStatusAdapter.name);
   readonly #policy: OutboundPolicy;
   // 상품은 거의 바뀌지 않아 프로세스 안에서 한 번만 읽는다(Project Configuration 한도 60/분)
   readonly #storeProductIds = new Map<string, string>();
@@ -63,6 +63,7 @@ export class RevenueCatStoreSubscriptionStatusReader implements StoreSubscriptio
     @Inject(TypedConfigService) config: Pick<TypedConfigService, "revenuecat">,
     policies: OutboundPolicyRegistry,
   ) {
+    super();
     this.#http = http;
     this.#config = config;
     this.#policy = policies.get(REVENUECAT_API_POLICY);
@@ -84,7 +85,7 @@ export class RevenueCatStoreSubscriptionStatusReader implements StoreSubscriptio
           periodEndsAt:
             subscription.current_period_ends_at == null
               ? null
-              : new Date(subscription.current_period_ends_at),
+              : Temporal.Instant.fromEpochMilliseconds(subscription.current_period_ends_at),
           willRenew: RENEWING_STATUSES.has(subscription.auto_renewal_status),
           isTrial: subscription.status === "trialing",
           givesAccess: subscription.gives_access,

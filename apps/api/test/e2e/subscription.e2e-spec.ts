@@ -2,10 +2,7 @@ import { currentUserSchema, type RevenueCatWebhookPayload } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
 import request from "supertest";
 
-import {
-  SUBSCRIPTION_WEBHOOK_LOCK,
-  type SubscriptionWebhookLockPort,
-} from "#api/modules/billing/subscriptions/application/ports/subscription-webhook-lock.port";
+import { SubscriptionWebhookLockPort } from "#api/modules/billing/subscriptions/application/ports/subscription-webhook-lock.port";
 import {
   PREMIUM_GRANTER,
   type PremiumGranterPort,
@@ -237,7 +234,7 @@ describe("구독 Webhook HTTP 계약과 권한 캐시 (실제 PostgreSQL)", () =
   it("실제 Webhook 잠금 경합은 429로 반환하고 잠금 해제 후 같은 이벤트를 처리한다", async () => {
     // Given
     const user = await context.helpers.createVerifiedUser("billing-lock@example.com", "Test1234!");
-    const lock = context.module.get<SubscriptionWebhookLockPort>(SUBSCRIPTION_WEBHOOK_LOCK);
+    const lock = context.module.get(SubscriptionWebhookLockPort);
     const release = await lock.acquire(user.userId);
     if (release === null) {
       throw new Error("테스트 Webhook 잠금 획득 실패");

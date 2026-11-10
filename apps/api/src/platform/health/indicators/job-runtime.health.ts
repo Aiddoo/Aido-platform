@@ -5,10 +5,6 @@ import { uniq, withTimeout } from "es-toolkit";
 import { QUOTA_ABANDONED_REFUND_QUEUE } from "#api/modules/access/access-quota-jobs.public";
 import { AI_REPORT_QUEUE } from "#api/modules/ai-assistance/ai-assistance-reports.public";
 import { AI_SUGGESTION_QUEUE } from "#api/modules/ai-assistance/ai-assistance-suggestions.public";
-import {
-  PREMIUM_GRANT_SWEEP_QUEUE,
-  STORE_SUBSCRIPTION_RECONCILE_QUEUE,
-} from "#api/modules/billing/subscriptions/billing-subscriptions-jobs.public";
 import { ACCOUNT_PURGE_QUEUE } from "#api/modules/identity/users/identity-users.public";
 import {
   MARKETING_CONSENT_RECONFIRM_QUEUE,
@@ -55,14 +51,12 @@ const LEGACY_MONITORED_QUEUES = [
   TODO_SERIES_MATERIALIZATION_QUEUE,
   TODO_TIMEZONE_REBASE_QUEUE,
   QUOTA_ABANDONED_REFUND_QUEUE,
-  STORE_SUBSCRIPTION_RECONCILE_QUEUE,
   ACCOUNT_PURGE_QUEUE,
   MARKETING_CONSENT_RECONFIRM_QUEUE,
   TIMEZONE_REMINDER_QUEUE,
   INVITE_REWARD_QUEUE,
   INVITE_MAINTENANCE_QUEUE,
   PLAN_APPLICATION_CLEANUP_QUEUE,
-  PREMIUM_GRANT_SWEEP_QUEUE,
   USAGE_RETENTION_QUEUE,
 ] as const;
 

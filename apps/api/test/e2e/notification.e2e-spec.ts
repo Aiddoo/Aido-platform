@@ -23,10 +23,7 @@ import { ErrorCode } from "@aido/api/errors";
 import { eq } from "drizzle-orm";
 import request from "supertest";
 
-import {
-  UPCOMING_RENEWAL_NOTIFIER,
-  type UpcomingRenewalNotifierPort,
-} from "#api/modules/billing/subscriptions/application/ports/upcoming-renewal-notifier.port";
+import { UpcomingRenewalNotifierPort } from "#api/modules/billing/subscriptions/application/ports/upcoming-renewal-notifier.port";
 import {
   MARKETING_PUSH_OPT_OUT_TOKEN,
   type MarketingPushOptOutTokenPort,
@@ -40,6 +37,7 @@ import {
   userConsent,
 } from "#api/platform/database/schema/index";
 import { UNIT_OF_WORK, type UnitOfWorkPort } from "#api/shared/application/ports/index";
+import { instantFromDate } from "#api/shared/domain/time/instant";
 
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 
@@ -1213,16 +1211,16 @@ describe("알림 E2E", () => {
         const user = await ctx.helpers.createVerifiedUser("notif-renewal@test.com", password);
         const now = new Date();
         await ctx.module.get<UnitOfWorkPort>(UNIT_OF_WORK).run(() =>
-          ctx.module.get<UpcomingRenewalNotifierPort>(UPCOMING_RENEWAL_NOTIFIER).notify(
+          ctx.module.get(UpcomingRenewalNotifierPort).notify(
             [
               {
                 subscriptionId: 1,
                 userId: user.userId,
-                expiresAt: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1_000),
+                expiresAt: instantFromDate(new Date(now.getTime() + 7 * 24 * 60 * 60 * 1_000)),
                 isCurrentChain: true,
               },
             ],
-            now,
+            instantFromDate(now),
           ),
         );
         const get = (path: string) => {

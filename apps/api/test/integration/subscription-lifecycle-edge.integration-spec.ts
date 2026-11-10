@@ -11,6 +11,7 @@ import { RevenueCatWebhookReceiver } from "#api/modules/billing/subscriptions/in
 import { createEntityId } from "#api/platform/database/entity-id";
 import { user as userTable } from "#api/platform/database/schema/index";
 import { SubscriptionEventBuilder } from "#test/builders/index";
+import { toDateOrNull } from "#test/fixtures/billing/subscription.fixture";
 import { UserFixture } from "#test/fixtures/index";
 import { createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
@@ -95,19 +96,25 @@ describe("결제 생애주기의 순서 뒤바뀜·환불 경계 (실제 Postgre
   }
 
   async function grantsOf() {
-    return client.query.premiumGrant.findMany({
+    const rows = await client.query.premiumGrant.findMany({
       columns: { sourceKey: true, status: true, startsAt: true, endsAt: true },
       where: { userId },
       orderBy: { createdAt: "asc" },
     });
+    return rows.map((row) => ({
+      ...row,
+      startsAt: toDateOrNull(row.startsAt),
+      endsAt: toDateOrNull(row.endsAt),
+    }));
   }
 
   async function storeRowsOf() {
-    return client.query.subscription.findMany({
+    const rows = await client.query.subscription.findMany({
       columns: { revenueCatId: true, productId: true, status: true, expiresAt: true },
       where: { userId },
       orderBy: { id: "asc" },
     });
+    return rows.map((row) => ({ ...row, expiresAt: toDateOrNull(row.expiresAt) }));
   }
 
   describe("늦게 도착한 지난 기간의 웹훅", () => {

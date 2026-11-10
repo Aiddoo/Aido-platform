@@ -1,13 +1,14 @@
 import { mapAsync, sum } from "es-toolkit";
 
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
-import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
+import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import type { SubscriptionRepositoryPort } from "../../../subscriptions/application/ports/subscription.repository.port.js";
-import type { SubscriptionUserMutationLockPort } from "../ports/billing-user-lock.port.js";
-import type { SubscriptionCachePort } from "../ports/premium-access-cache.port.js";
+import type { BillingUserLockPort } from "../ports/billing-user-lock.port.js";
+import type { PremiumAccessCachePort } from "../ports/premium-access-cache.port.js";
 import type { PremiumGrantRepositoryPort } from "../ports/premium-grant.repository.port.js";
+import type { UserSubscriptionProjectionRepositoryPort } from "../ports/user-subscription-projection.repository.port.js";
 import { PremiumGrantLogEvent } from "../premium-grants.log-events.js";
 import type { ProjectPremiumAccessUseCase } from "./project-premium-access.use-case.js";
 
@@ -19,8 +20,8 @@ export const PREMIUM_GRANT_SWEEP = {
   USER_CONCURRENCY: 4,
 } as const;
 
-export interface SweepPremiumGrantsInput {
-  readonly now: Date;
+export interface SweepPremiumGrantsCommand {
+  readonly now: Temporal.Instant;
 }
 
 export interface SweepPremiumGrantsResult {
@@ -45,19 +46,22 @@ interface SweepBatchResult {
   readonly hasRemaining: boolean;
 }
 
-type FindUserIdsPage = (page: {
-  readonly now: Date;
-  readonly afterUserId?: string;
+type ListUserIdsPage = (page: {
+  readonly now: Temporal.Instant;
+  readonly afterUserId?: UserId;
   readonly limit: number;
-}) => Promise<string[]>;
+}) => Promise<UserId[]>;
 
-interface SweepPremiumGrantsDependencies {
-  readonly premiumGrantRepository: Pick<PremiumGrantRepositoryPort, "findUserIdsToReconcile">;
-  readonly subscriptionRepository: Pick<SubscriptionRepositoryPort, "findLapsedPremiumUserIds">;
-  readonly premiumAccessProjector: Pick<ProjectPremiumAccessUseCase, "project">;
-  readonly userMutationLock: SubscriptionUserMutationLockPort;
+export interface SweepPremiumGrantsDependencies {
+  readonly premiumGrantRepository: Pick<PremiumGrantRepositoryPort, "listUserIdsToReconcile">;
+  readonly userSubscriptionProjection: Pick<
+    UserSubscriptionProjectionRepositoryPort,
+    "listLapsedPremiumUserIds"
+  >;
+  readonly projectPremiumAccess: Pick<ProjectPremiumAccessUseCase, "execute">;
+  readonly userLock: BillingUserLockPort;
   readonly unitOfWork: UnitOfWorkPort;
-  readonly cache: SubscriptionCachePort;
+  readonly cache: PremiumAccessCachePort;
   readonly logger: ApplicationLoggerPort;
 }
 
@@ -72,10 +76,10 @@ export class SweepPremiumGrantsUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: SweepPremiumGrantsInput): Promise<SweepPremiumGrantsResult> {
-    const { premiumGrantRepository, subscriptionRepository, logger } = this.#dependencies;
-    const grants = await this.#sweep(input.now, (page) =>
-      premiumGrantRepository.findUserIdsToReconcile(page),
+  async execute(command: SweepPremiumGrantsCommand): Promise<SweepPremiumGrantsResult> {
+    const { premiumGrantRepository, userSubscriptionProjection, logger } = this.#dependencies;
+    const grants = await this.#sweep(command.now, (page) =>
+      premiumGrantRepository.listUserIdsToReconcile(page),
     );
     logger.log({
       event: PremiumGrantLogEvent.PREMIUM_GRANT_SWEPT,
@@ -86,8 +90,8 @@ export class SweepPremiumGrantsUseCase {
     });
 
     // 보상 기간 정리가 먼저 끝나야 남은 ACTIVE projection이 실제로 끝난 사용자만 남는다
-    const lapsed = await this.#sweep(input.now, (page) =>
-      subscriptionRepository.findLapsedPremiumUserIds(page),
+    const lapsed = await this.#sweep(command.now, (page) =>
+      userSubscriptionProjection.listLapsedPremiumUserIds(page),
     );
     logger.log({
       event: PremiumGrantLogEvent.LAPSED_PREMIUM_SWEPT,
@@ -104,8 +108,8 @@ export class SweepPremiumGrantsUseCase {
     };
   }
 
-  async #sweep(now: Date, findUserIds: FindUserIdsPage): Promise<SweepBatchResult> {
-    let afterUserId: string | undefined;
+  async #sweep(now: Temporal.Instant, listUserIds: ListUserIdsPage): Promise<SweepBatchResult> {
+    let afterUserId: UserId | undefined;
     let userCount = 0;
     let changedGrantCount = 0;
     let failedUserCount = 0;
@@ -113,9 +117,9 @@ export class SweepPremiumGrantsUseCase {
 
     for (let batch = 0; batch < PREMIUM_GRANT_SWEEP.MAX_BATCHES_PER_RUN; batch++) {
       // 처리한 사용자는 조건에서 빠지지만 잠금 실패 등으로 남아도 keyset이 앞으로만 나아간다
-      const userIds = await findUserIds({
+      const userIds = await listUserIds({
         now,
-        afterUserId,
+        ...(afterUserId != null && { afterUserId }),
         limit: PREMIUM_GRANT_SWEEP.BATCH_SIZE,
       });
 
@@ -138,31 +142,31 @@ export class SweepPremiumGrantsUseCase {
   }
 
   // 사용자마다 짧은 UoW에서 웹훅과 같은 사용자 잠금을 잡는다. 한 사용자의 실패가 나머지를 막지 않고 다음 실행이 다시 고른다
-  async #reconcileUser(userId: string, now: Date): Promise<UserReconciliation> {
+  async #reconcileUser(userId: UserId, now: Temporal.Instant): Promise<UserReconciliation> {
     let changedGrantCount: number;
     try {
       changedGrantCount = await this.#dependencies.unitOfWork.run(async () => {
-        if (!(await this.#dependencies.userMutationLock.lockById(userId))) {
+        if (!(await this.#dependencies.userLock.lockById(userId.value))) {
           return 0;
         }
-        const projection = await this.#dependencies.premiumAccessProjector.project({ userId, now });
-        return projection.changedGrantCount;
+        const projected = await this.#dependencies.projectPremiumAccess.execute({ userId, now });
+        return projected.changedGrantCount;
       });
     } catch (error) {
       this.#dependencies.logger.error({
         event: PremiumGrantLogEvent.PREMIUM_GRANT_RECONCILE_FAILED,
-        userId,
+        userId: userId.value,
         errorType: toErrorType(error),
       });
       return { status: "failed" };
     }
 
     try {
-      await this.#dependencies.cache.invalidate(userId);
+      await this.#dependencies.cache.invalidate(userId.value);
     } catch (error) {
       this.#dependencies.logger.warn({
         event: PremiumGrantLogEvent.PREMIUM_GRANT_CACHE_INVALIDATION_FAILED,
-        userId,
+        userId: userId.value,
         errorType: toErrorType(error),
       });
     }

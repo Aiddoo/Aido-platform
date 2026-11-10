@@ -4,22 +4,23 @@ import { and, asc, eq, gt, inArray, isNull, lte, or, sql } from "drizzle-orm";
 import { groupBy } from "es-toolkit";
 
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
-import { subscription } from "#api/platform/database/schema/index";
+import { subscription } from "#api/platform/database/schema/billing.schema";
 
 import type { FindDueBillingNoticesParams } from "../../../premium-grants/application/ports/billing-notice.port.js";
 import { currentStoreChainOf } from "../../../shared/premium-access.domain-service.js";
 import { storeProductIdsOfPlan } from "../../../shared/subscription-plan.domain-service.js";
-import type {
-  UpcomingRenewalNotice,
-  UpcomingRenewalNoticeSourcePort,
+import {
+  type UpcomingRenewalNotice,
+  UpcomingRenewalNoticeRepositoryPort,
 } from "../../application/ports/upcoming-renewal-notice.repository.port.js";
 import { toStorePeriodType } from "../../domain/subscription-lifecycle.domain-service.js";
 
 @Injectable()
-export class DrizzleUpcomingRenewalNoticeSource implements UpcomingRenewalNoticeSourcePort {
+export class DrizzleUpcomingRenewalNoticeRepository extends UpcomingRenewalNoticeRepositoryPort {
   readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
 
   constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>) {
+    super();
     this.#txHost = txHost;
   }
 
@@ -27,7 +28,7 @@ export class DrizzleUpcomingRenewalNoticeSource implements UpcomingRenewalNotice
     return this.#txHost.tx;
   }
 
-  async findDue(
+  async listDue(
     params: FindDueBillingNoticesParams<UpcomingRenewalNotice>,
   ): Promise<UpcomingRenewalNotice[]> {
     const rows = await this.#db
@@ -69,7 +70,10 @@ export class DrizzleUpcomingRenewalNoticeSource implements UpcomingRenewalNotice
   }
 
   // 현재 체인은 /me와 같은 도메인 규칙으로 고른다. 사용자 묶음을 한 번에 읽는다
-  async #currentChainsOf(userIds: readonly string[], now: Date): Promise<Map<string, string>> {
+  async #currentChainsOf(
+    userIds: readonly string[],
+    now: Temporal.Instant,
+  ): Promise<Map<string, string>> {
     if (userIds.length === 0) {
       return new Map();
     }
@@ -101,13 +105,16 @@ export class DrizzleUpcomingRenewalNoticeSource implements UpcomingRenewalNotice
   }
 
   // 읽은 뒤 갱신으로 기간이 바뀐 행은 다음 기간을 미리 표시하지 않도록 읽은 만료 시각과 같을 때만 표시한다
-  async claim(notices: readonly UpcomingRenewalNotice[]): Promise<UpcomingRenewalNotice[]> {
+  async claim(
+    notices: readonly UpcomingRenewalNotice[],
+    claimedAt: Temporal.Instant,
+  ): Promise<UpcomingRenewalNotice[]> {
     if (notices.length === 0) {
       return [];
     }
     const claimed = await this.#db
       .update(subscription)
-      .set({ renewalNoticeExpiresAt: sql`${subscription.expiresAt}` })
+      .set({ renewalNoticeExpiresAt: sql`${subscription.expiresAt}`, updatedAt: claimedAt })
       .where(
         and(
           or(

@@ -2,7 +2,7 @@ import { PREMIUM_GRANT_ENDING_NOTICE_DAYS } from "@aido/api/vocabulary";
 
 import type {
   PremiumGrantEndingNotice,
-  PremiumGrantEndingNoticeSourcePort,
+  PremiumGrantEndingNoticeRepositoryPort,
 } from "../ports/premium-grant-ending-notice.repository.port.js";
 import type { PremiumGrantNotifierPort } from "../ports/premium-grant-notifier.port.js";
 import { PremiumGrantLogEvent } from "../premium-grants.log-events.js";
@@ -20,9 +20,9 @@ export const PREMIUM_GRANT_ENDING_NOTICE = {
   logEvent: PremiumGrantLogEvent.PREMIUM_GRANT_ENDING_NOTIFIED,
 } as const satisfies BillingNoticeSettings<PremiumGrantEndingNotice>;
 
-interface NotifyEndingPremiumGrantsDependencies {
-  readonly sweeper: Pick<SweepBillingNoticesUseCase, "sweep">;
-  readonly source: PremiumGrantEndingNoticeSourcePort;
+export interface NotifyEndingPremiumGrantsDependencies {
+  readonly sweepBillingNotices: Pick<SweepBillingNoticesUseCase, "execute">;
+  readonly noticeRepository: Pick<PremiumGrantEndingNoticeRepositoryPort, "listDue" | "claim">;
   readonly notifier: PremiumGrantNotifierPort;
 }
 
@@ -38,8 +38,11 @@ export class NotifyEndingPremiumGrantsUseCase {
     this.#dependencies = dependencies;
   }
 
-  execute(input: BillingNoticeSweepInput): Promise<BillingNoticeSweepResult> {
-    const { sweeper, source, notifier } = this.#dependencies;
-    return sweeper.sweep({ ...PREMIUM_GRANT_ENDING_NOTICE, source, notifier }, input);
+  execute(command: BillingNoticeSweepInput): Promise<BillingNoticeSweepResult> {
+    const { sweepBillingNotices, noticeRepository, notifier } = this.#dependencies;
+    return sweepBillingNotices.execute({
+      task: { ...PREMIUM_GRANT_ENDING_NOTICE, source: noticeRepository, notifier },
+      now: command.now,
+    });
   }
 }

@@ -58,8 +58,8 @@ function storeOf(store: string | undefined): SubscriptionStore | null {
 }
 
 // 웹훅 계약에서 0은 빠진 시각이다
-function dateOf(ms: number | null | undefined): Date | undefined {
-  return ms == null || ms === 0 ? undefined : new Date(ms);
+function instantOf(ms: number | null | undefined): Temporal.Instant | undefined {
+  return ms == null || ms === 0 ? undefined : Temporal.Instant.fromEpochMilliseconds(ms);
 }
 
 function eventIdOf(id: string | undefined): string | undefined {
@@ -98,7 +98,7 @@ function chainEventOf(event: RevenueCatEvent): StoreSubscriptionEvent {
     appUserId: event.app_user_id,
     storeSubscriptionId: event.original_transaction_id ?? event.transaction_id,
     productId: event.product_id,
-    periodEndsAt: dateOf(event.expiration_at_ms),
+    periodEndsAt: instantOf(event.expiration_at_ms),
     periodKind: toStorePeriodType(event.period_type),
     price: {
       usd: event.price,
@@ -113,12 +113,12 @@ function chainEventOf(event: RevenueCatEvent): StoreSubscriptionEvent {
         ...common,
         kind: "STARTED",
         isOneTime: type === "NON_RENEWING_PURCHASE",
-        startedAt: dateOf(event.purchased_at_ms),
+        startedAt: instantOf(event.purchased_at_ms),
       }))
       .with("RENEWAL", () => ({
         ...common,
         kind: "RENEWED",
-        startedAt: dateOf(event.purchased_at_ms),
+        startedAt: instantOf(event.purchased_at_ms),
         isTrialConversion: event.is_trial_conversion === true,
       }))
       .with("CANCELLATION", () => ({
@@ -134,7 +134,7 @@ function chainEventOf(event: RevenueCatEvent): StoreSubscriptionEvent {
       .with("BILLING_ISSUE", () => ({
         ...common,
         kind: "BILLING_ISSUE",
-        gracePeriodEndsAt: dateOf(event.grace_period_expiration_at_ms) ?? null,
+        gracePeriodEndsAt: instantOf(event.grace_period_expiration_at_ms) ?? null,
       }))
       // RevenueCat 문서상 PRODUCT_CHANGE는 정보성이고 적용은 이후 RENEWAL(Apple)·INITIAL_PURCHASE(Play)다
       .with("PRODUCT_CHANGE", () => ({

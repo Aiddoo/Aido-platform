@@ -3,20 +3,21 @@ import { Injectable } from "@nestjs/common";
 import { and, asc, eq, gt, inArray, isNull, lte, sql } from "drizzle-orm";
 
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
-import { subscription } from "#api/platform/database/schema/index";
+import { subscription } from "#api/platform/database/schema/billing.schema";
 
 import type { FindDueBillingNoticesParams } from "../../../premium-grants/application/ports/billing-notice.port.js";
 import { planTypeOfProduct } from "../../../shared/subscription-plan.domain-service.js";
-import type {
-  TrialEndingNotice,
-  TrialEndingNoticeSourcePort,
+import {
+  type TrialEndingNotice,
+  TrialEndingNoticeRepositoryPort,
 } from "../../application/ports/trial-ending-notice.repository.port.js";
 
 @Injectable()
-export class DrizzleTrialEndingNoticeSource implements TrialEndingNoticeSourcePort {
+export class DrizzleTrialEndingNoticeRepository extends TrialEndingNoticeRepositoryPort {
   readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
 
   constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>) {
+    super();
     this.#txHost = txHost;
   }
 
@@ -24,7 +25,7 @@ export class DrizzleTrialEndingNoticeSource implements TrialEndingNoticeSourcePo
     return this.#txHost.tx;
   }
 
-  async findDue(
+  async listDue(
     params: FindDueBillingNoticesParams<TrialEndingNotice>,
   ): Promise<TrialEndingNotice[]> {
     const rows = await this.#db
@@ -61,14 +62,14 @@ export class DrizzleTrialEndingNoticeSource implements TrialEndingNoticeSourcePo
 
   async claim(
     notices: readonly TrialEndingNotice[],
-    claimedAt: Date,
+    claimedAt: Temporal.Instant,
   ): Promise<TrialEndingNotice[]> {
     if (notices.length === 0) {
       return [];
     }
     const claimed = await this.#db
       .update(subscription)
-      .set({ trialEndingNotifiedAt: claimedAt })
+      .set({ trialEndingNotifiedAt: claimedAt, updatedAt: claimedAt })
       .where(
         and(
           inArray(

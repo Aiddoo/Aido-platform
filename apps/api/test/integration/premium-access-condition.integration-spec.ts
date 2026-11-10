@@ -4,7 +4,7 @@ import { EntitlementService } from "#api/modules/access/application/services/ent
 import { hasPaidAccess } from "#api/modules/access/domain/policies/entitlement/paid-access.policy";
 import { DrizzleEntitlementReader } from "#api/modules/access/infrastructure/persistence/entitlement/drizzle-entitlement.reader";
 import { activeSubscriptionCondition } from "#api/modules/access/infrastructure/persistence/entitlement/premium-access.condition";
-import { STORE_RENEWAL_GRACE_MS } from "#api/modules/billing/shared/store-renewal-grace.domain-service";
+import { STORE_RENEWAL_GRACE_MS } from "#api/modules/billing/subscriptions/billing-subscriptions-entitlement.public";
 import { DrizzleSchedulerReader } from "#api/modules/notification/infrastructure/persistence/reminders/drizzle-scheduler.reader";
 import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
 import { CacheService } from "#api/platform/cache/cache.service";
@@ -12,6 +12,7 @@ import type { EnvConfig } from "#api/platform/config/schemas/index";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { createEntityId } from "#api/platform/database/entity-id";
 import { subscription, user, userPreference } from "#api/platform/database/schema/index";
+import { instantFromDate } from "#api/shared/domain/time/instant";
 import { UserPreferenceBuilder } from "#test/builders/index";
 import { UserFixture } from "#test/fixtures/user.fixture";
 import { createDatabaseTransactionFixture, createTestClient } from "#test/setup/database-context";
@@ -103,9 +104,10 @@ describe("유효 프리미엄 SQL 조건과 스케줄러 대상 (실제 PostgreS
       revenueCatId: `store-${userId}`,
       productId: "premium_monthly",
       status,
-      startedAt: at(-30 * 24 * HOUR_MS),
-      expiresAt,
-      gracePeriodEndsAt,
+      startedAt: instantFromDate(at(-30 * 24 * HOUR_MS)),
+      expiresAt: instantFromDate(expiresAt),
+      gracePeriodEndsAt: gracePeriodEndsAt == null ? null : instantFromDate(gracePeriodEndsAt),
+      updatedAt: instantFromDate(at(0)),
     });
     await client.insert(subscription).values([
       store(userIds.renewingInGrace, "ACTIVE", at(-HOUR_MS)),

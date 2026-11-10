@@ -50,6 +50,7 @@ import {
 } from "#api/platform/database/schema/index";
 import { UNIT_OF_WORK, type UnitOfWorkPort } from "#api/shared/application/ports/index";
 import { SubscriptionEventBuilder } from "#test/builders/index";
+import { toDateOrNull } from "#test/fixtures/billing/subscription.fixture";
 import { UserFixture } from "#test/fixtures/index";
 import { createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
@@ -186,7 +187,7 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
   }
 
   async function premiumGrantsOf(userId: string) {
-    return client
+    const rows = await client
       .select({
         durationDays: premiumGrant.durationDays,
         status: premiumGrant.status,
@@ -194,6 +195,7 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
       })
       .from(premiumGrant)
       .where(eq(premiumGrant.userId, userId));
+    return rows.map((row) => ({ ...row, endsAt: toDateOrNull(row.endsAt) }));
   }
 
   it("초대받은 사람 보상은 수락 때 이미 적용돼 지급 작업이 다시 돌아도 보상 기간은 하나다", async () => {

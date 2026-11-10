@@ -3,7 +3,13 @@ import { maxBy } from "es-toolkit";
 import {
   storeEntitlementEndsAt,
   type StoreEntitlementWindow,
-} from "#api/modules/billing/shared/store-renewal-grace.domain-service";
+} from "#api/modules/billing/subscriptions/billing-subscriptions-entitlement.public";
+import { instantToDate } from "#api/shared/domain/time/instant";
+
+function storeEntitlementEndsAtDate(store: StoreEntitlementWindow): Date | null {
+  const endsAt = storeEntitlementEndsAt(store);
+  return endsAt == null ? null : instantToDate(endsAt);
+}
 
 /** User 구독 projection과 그 projection이 끝나는 시각 */
 export interface PaidAccessState {
@@ -43,7 +49,7 @@ export function resolvePremiumAccessDeadline(input: PremiumAccessDeadlineInput):
     maxBy(
       [
         subscriptionExpiresAt,
-        ...input.storeEntitlements.flatMap((store) => storeEntitlementEndsAt(store) ?? []),
+        ...input.storeEntitlements.flatMap((store) => storeEntitlementEndsAtDate(store) ?? []),
       ],
       (date) => date.getTime(),
     ) ?? subscriptionExpiresAt

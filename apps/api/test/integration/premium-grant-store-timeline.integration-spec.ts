@@ -12,7 +12,9 @@ import { RevenueCatWebhookReceiver } from "#api/modules/billing/subscriptions/in
 import { GetCurrentUserUseCase } from "#api/modules/identity/users/application/use-cases/get-current-user.use-case";
 import { createEntityId } from "#api/platform/database/entity-id";
 import { user as userTable } from "#api/platform/database/schema/index";
+import { instantFromDate } from "#api/shared/domain/time/instant";
 import { SubscriptionEventBuilder } from "#test/builders/index";
+import { toDateOrNull } from "#test/fixtures/billing/subscription.fixture";
 import { UserFixture } from "#test/fixtures/index";
 import { createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
@@ -102,7 +104,7 @@ describe("결제 구독과 보상 기간 결합 타임라인 QA (실제 PostgreS
   }
 
   async function grantsOf() {
-    return client.query.premiumGrant.findMany({
+    const rows = await client.query.premiumGrant.findMany({
       columns: {
         sourceKey: true,
         status: true,
@@ -114,6 +116,11 @@ describe("결제 구독과 보상 기간 결합 타임라인 QA (실제 PostgreS
       where: { userId },
       orderBy: { createdAt: "asc" },
     });
+    return rows.map((row) => ({
+      ...row,
+      startsAt: toDateOrNull(row.startsAt),
+      endsAt: toDateOrNull(row.endsAt),
+    }));
   }
 
   it("자동 갱신 구독 중 받은 보상은 쌓이고 /me 끝은 유예 3시간 뒤부터 이어 붙인다", async () => {
@@ -229,7 +236,9 @@ describe("결제 구독과 보상 기간 결합 타임라인 QA (실제 PostgreS
     // When 유예 10일째 정리
     const insideGrace = new Date(STORE_EXPIRY.getTime() + 10 * DAY_MS);
     vi.setSystemTime(insideGrace);
-    await context.module.get(SweepPremiumGrantsUseCase).execute({ now: insideGrace });
+    await context.module
+      .get(SweepPremiumGrantsUseCase)
+      .execute({ now: instantFromDate(insideGrace) });
     const accessInsideGrace = await premiumAccess();
     const premiumInsideGrace = await isPremium();
     const grantsInsideGrace = await grantsOf();
@@ -286,7 +295,9 @@ describe("결제 구독과 보상 기간 결합 타임라인 QA (실제 PostgreS
     // When 유예가 끝난 뒤 정리, 이어서 늦은 만료 웹훅
     const afterGrace = new Date(graceEndsAt.getTime() + 10 * 60_000);
     vi.setSystemTime(afterGrace);
-    await context.module.get(SweepPremiumGrantsUseCase).execute({ now: afterGrace });
+    await context.module
+      .get(SweepPremiumGrantsUseCase)
+      .execute({ now: instantFromDate(afterGrace) });
     await webhook(
       SubscriptionEventBuilder.expiration()
         .withAppUserId(userId)
@@ -296,7 +307,9 @@ describe("결제 구독과 보상 기간 결합 타임라인 QA (실제 PostgreS
         .withExpirationAtMs(STORE_EXPIRY.getTime())
         .build(),
     );
-    await context.module.get(SweepPremiumGrantsUseCase).execute({ now: afterGrace });
+    await context.module
+      .get(SweepPremiumGrantsUseCase)
+      .execute({ now: instantFromDate(afterGrace) });
 
     // Then
     expect(await grantsOf()).toEqual([
@@ -383,7 +396,7 @@ describe("결제 구독과 보상 기간 결합 타임라인 QA (실제 PostgreS
     ).toEqual({
       userId,
       status: "ACTIVE",
-      expiresAt: nextExpiry,
+      expiresAt: instantFromDate(nextExpiry),
       environment: "SANDBOX",
       productId: "premium_monthly",
     });
@@ -464,7 +477,9 @@ describe("결제 구독과 보상 기간 결합 타임라인 QA (실제 PostgreS
     // When
     vi.setSystemTime(new Date(endsAt.getTime() + 60_000));
     const afterEnd = await getMe.execute(input);
-    await context.module.get(SweepPremiumGrantsUseCase).execute({ now: new Date() });
+    await context.module
+      .get(SweepPremiumGrantsUseCase)
+      .execute({ now: instantFromDate(new Date()) });
     const fresh = await getMe.execute(input);
 
     // Then

@@ -1,14 +1,8 @@
 import type { RevenueCatWebhookPayload } from "@aido/api";
 import { and, eq, sql } from "drizzle-orm";
 
-import {
-  SUBSCRIPTION_EVENT_NOTIFIER,
-  type SubscriptionEventNotifierPort,
-} from "#api/modules/billing/subscriptions/application/ports/subscription-event-notifier.port";
-import {
-  TRIAL_ENDING_NOTICE_SOURCE,
-  type TrialEndingNoticeSourcePort,
-} from "#api/modules/billing/subscriptions/application/ports/trial-ending-notice.repository.port";
+import { SubscriptionEventNotifierPort } from "#api/modules/billing/subscriptions/application/ports/subscription-event-notifier.port";
+import { TrialEndingNoticeRepositoryPort } from "#api/modules/billing/subscriptions/application/ports/trial-ending-notice.repository.port";
 import type { SubscriptionEventPayload } from "#api/modules/billing/subscriptions/application/read-models/subscription-event-payload.read-model";
 import { NotifyEndingTrialsUseCase } from "#api/modules/billing/subscriptions/application/use-cases/notify-ending-trials.use-case";
 import {
@@ -24,7 +18,9 @@ import {
   userPreference,
 } from "#api/platform/database/schema/index";
 import { UNIT_OF_WORK, type UnitOfWorkPort } from "#api/shared/application/ports/index";
+import { instantFromDate } from "#api/shared/domain/time/instant";
 import { SubscriptionEventBuilder, UserPreferenceBuilder } from "#test/builders/index";
+import { toDateOrNull } from "#test/fixtures/billing/subscription.fixture";
 import { UserFixture } from "#test/fixtures/index";
 import { createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
@@ -57,7 +53,7 @@ describe("무료 체험 구독 저장과 종료 3일 전 안내 (실제 PostgreS
   let context: E2eTestContext;
   let webhook: RevenueCatWebhookReceiver;
   let notifyEndingTrials: NotifyEndingTrialsUseCase;
-  let noticeSource: TrialEndingNoticeSourcePort;
+  let noticeSource: TrialEndingNoticeRepositoryPort;
   let premiumAccess: PremiumAccessReaderPort;
   let unitOfWork: UnitOfWorkPort;
 
@@ -67,11 +63,11 @@ describe("무료 체험 구독 저장과 종료 3일 전 안내 (실제 PostgreS
     context = await createE2eApp({
       testDatabase: database,
       customizeBuilder: (builder) =>
-        builder.overrideProvider(SUBSCRIPTION_EVENT_NOTIFIER).useValue(notifier),
+        builder.overrideProvider(SubscriptionEventNotifierPort).useValue(notifier),
     });
     webhook = context.module.get(RevenueCatWebhookReceiver);
     notifyEndingTrials = context.module.get(NotifyEndingTrialsUseCase);
-    noticeSource = context.module.get(TRIAL_ENDING_NOTICE_SOURCE);
+    noticeSource = context.module.get(TrialEndingNoticeRepositoryPort);
     premiumAccess = context.module.get(PREMIUM_ACCESS_READER);
     unitOfWork = context.module.get(UNIT_OF_WORK);
   });
@@ -142,10 +138,17 @@ describe("무료 체험 구독 저장과 종료 3일 전 안내 (실제 PostgreS
   }
 
   async function storedTrial(userId: string) {
-    return client.query.subscription.findFirst({
+    const row = await client.query.subscription.findFirst({
       columns: { periodType: true, status: true, expiresAt: true, trialEndingNotifiedAt: true },
       where: { revenueCatId: chainOf(userId) },
     });
+    return row == null
+      ? row
+      : {
+          ...row,
+          expiresAt: toDateOrNull(row.expiresAt),
+          trialEndingNotifiedAt: toDateOrNull(row.trialEndingNotifiedAt),
+        };
   }
 
   async function trialNotices(userId?: string) {
@@ -296,8 +299,8 @@ describe("무료 체험 구독 저장과 종료 3일 전 안내 (실제 PostgreS
       });
 
       // When
-      const first = await notifyEndingTrials.execute({ now: at });
-      const second = await notifyEndingTrials.execute({ now: at });
+      const first = await notifyEndingTrials.execute({ now: instantFromDate(at) });
+      const second = await notifyEndingTrials.execute({ now: instantFromDate(at) });
 
       // Then
       expect(first.notifiedCount).toBe(2);
@@ -320,9 +323,9 @@ describe("무료 체험 구독 저장과 종료 3일 전 안내 (실제 PostgreS
       const seoulMorning = new Date("2027-01-04T23:30:00.000Z");
 
       // When
-      const night = await notifyEndingTrials.execute({ now: at });
+      const night = await notifyEndingTrials.execute({ now: instantFromDate(at) });
       const afterNight = await trialNotices(userId);
-      const morning = await notifyEndingTrials.execute({ now: seoulMorning });
+      const morning = await notifyEndingTrials.execute({ now: instantFromDate(seoulMorning) });
 
       // Then
       expect(night).toMatchObject({ notifiedCount: 0, deferredCount: 1 });
@@ -348,8 +351,8 @@ describe("무료 체험 구독 저장과 종료 3일 전 안내 (실제 PostgreS
       const fourDaysBefore = new Date(trialEndsAt.getTime() - 4 * DAY_MS);
 
       // When
-      const result = await notifyEndingTrials.execute({ now: fourDaysBefore });
-      const atNotice = await notifyEndingTrials.execute({ now: at });
+      const result = await notifyEndingTrials.execute({ now: instantFromDate(fourDaysBefore) });
+      const atNotice = await notifyEndingTrials.execute({ now: instantFromDate(at) });
 
       // Then
       expect(result.notifiedCount).toBe(0);
@@ -361,20 +364,24 @@ describe("무료 체험 구독 저장과 종료 3일 전 안내 (실제 PostgreS
       // Given
       const userId = await givenUser("TRIALG01");
       await webhook.receive({ body: trialPurchase(userId) });
-      const [notice] = await noticeSource.findDue({ now: at, endsBefore: trialEndsAt, limit: 1 });
+      const [notice] = await noticeSource.listDue({
+        now: instantFromDate(at),
+        endsBefore: instantFromDate(trialEndsAt),
+        limit: 1,
+      });
       const notices = notice == null ? [] : [notice];
       const firstClaimed = Promise.withResolvers<void>();
       const releaseFirst = Promise.withResolvers<void>();
 
       // When
       const first = unitOfWork.run(async () => {
-        const claimed = await noticeSource.claim(notices, at);
+        const claimed = await noticeSource.claim(notices, instantFromDate(at));
         firstClaimed.resolve();
         await releaseFirst.promise;
         return claimed;
       });
       await firstClaimed.promise;
-      const second = unitOfWork.run(() => noticeSource.claim(notices, at));
+      const second = unitOfWork.run(() => noticeSource.claim(notices, instantFromDate(at)));
       try {
         await vi.waitFor(
           async () => {
@@ -404,8 +411,8 @@ describe("무료 체험 구독 저장과 종료 3일 전 안내 (실제 PostgreS
 
       // When
       const results = await Promise.all([
-        notifyEndingTrials.execute({ now: at }),
-        notifyEndingTrials.execute({ now: at }),
+        notifyEndingTrials.execute({ now: instantFromDate(at) }),
+        notifyEndingTrials.execute({ now: instantFromDate(at) }),
       ]);
 
       // Then

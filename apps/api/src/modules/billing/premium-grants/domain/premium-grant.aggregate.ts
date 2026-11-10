@@ -1,6 +1,9 @@
 import { ErrorCode } from "@aido/api/errors";
+import type { PremiumGrantSource, PremiumGrantStatus } from "@aido/api/vocabulary";
 
-import { AggregateRoot, DomainException } from "#api/shared/domain/index";
+import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { AggregateRoot } from "#api/shared/domain/model/aggregate-root";
 
 import {
   isPremiumGrantActive,
@@ -10,206 +13,209 @@ import {
   premiumGrantTermEndsAt,
   remainingPremiumGrantMs,
   type PremiumGrantStart,
-  type PremiumGrantStatusValue,
+  type PremiumGrantTerm,
 } from "../../shared/premium-access.domain-service.js";
+import { PremiumGrantId } from "./premium-grant-id.vo.js";
+import { PREMIUM_GRANT_SOURCE_KEY_MAX_LENGTH } from "./premium-grants.constants.js";
 
-export type { PremiumGrantStatusValue };
-export type PremiumGrantSourceValue = "INVITE";
+type Instant = Temporal.Instant;
 
-export interface PremiumGrantProps {
-  id: string;
-  userId: string;
-  source: PremiumGrantSourceValue;
-  sourceKey: string;
-  durationDays: number;
+export interface PremiumGrantPrimitives {
+  readonly id: string;
+  readonly userId: string;
+  readonly source: PremiumGrantSource;
+  readonly sourceKey: string;
+  readonly durationDays: number;
   /** 끊고 남은 기간의 정확한 길이. null이면 durationDays일이다. */
-  durationMs: number | null;
-  status: PremiumGrantStatusValue;
-  startsAt: Date | null;
-  endsAt: Date | null;
-  endingNotifiedAt: Date | null;
-  createdAt: Date;
+  readonly durationMs: number | null;
+  readonly status: PremiumGrantStatus;
+  readonly startsAt: Instant | null;
+  readonly endsAt: Instant | null;
+  readonly endingNotifiedAt: Instant | null;
+  readonly createdAt: Instant;
+  readonly updatedAt: Instant;
 }
 
-export interface PremiumGrantCreationInput {
-  readonly userId: string;
-  readonly source: PremiumGrantSourceValue;
+interface PremiumGrantProps {
+  readonly userId: UserId;
+  readonly source: PremiumGrantSource;
+  readonly sourceKey: string;
+  readonly durationDays: number;
+  readonly durationMs: number | null;
+  status: PremiumGrantStatus;
+  startsAt: Instant | null;
+  endsAt: Instant | null;
+  // 종료 안내 시각은 안내 작업이 조건부 UPDATE로만 기록하므로 저장소가 덮어쓰지 않는다
+  readonly endingNotifiedAt: Instant | null;
+  readonly createdAt: Instant;
+  updatedAt: Instant;
+}
+
+interface CreatePremiumGrantParams {
+  readonly id: PremiumGrantId;
+  readonly userId: UserId;
+  readonly source: PremiumGrantSource;
   readonly sourceKey: string;
   readonly durationDays: number;
   readonly start: PremiumGrantStart;
+  readonly now: Instant;
 }
-
-export type PremiumGrantCreationPlan = Pick<
-  PremiumGrantProps,
-  "userId" | "source" | "sourceKey" | "durationDays" | "status" | "startsAt" | "endsAt"
-> & {
-  /** 끊고 남은 기간의 정확한 길이. 비우면 durationDays일이다. */
-  readonly durationMs?: number | null;
-  /** 받은 순서(이어 붙이는 순서). 비우면 저장 시각이다. */
-  readonly createdAt?: Date;
-};
 
 /** 진행 중에 끊은 기간의 남은 일수를 다시 쌓아 둔 기간의 출처 키. 끊긴 기간마다 하나뿐이다. */
-export function bankedRemainderSourceKey(grantId: string): string {
-  return `rebank:${grantId}`;
+export function bankedRemainderSourceKey(grantId: PremiumGrantId): string {
+  return `rebank:${grantId.value}`;
 }
 
-// 종료 안내 시각은 안내 작업이 조건부 UPDATE로만 기록하므로 여기서 덮어쓰지 않는다
-export type PremiumGrantPersistenceState = Pick<
-  PremiumGrantProps,
-  "status" | "startsAt" | "endsAt"
->;
-
-/** PremiumGrant.sourceKey VARCHAR(128) */
-export const PREMIUM_GRANT_SOURCE_KEY_MAX_LENGTH = 128;
-
-function copyDate(value: Date | null): Date | null {
-  return value == null ? null : new Date(value);
-}
-
-export class PremiumGrant extends AggregateRoot<PremiumGrantProps> {
-  constructor(props: PremiumGrantProps) {
-    super(props);
-  }
-
-  static planCreation(input: PremiumGrantCreationInput): PremiumGrantCreationPlan {
+export class PremiumGrant extends AggregateRoot<PremiumGrantId, PremiumGrantProps> {
+  static create(params: CreatePremiumGrantParams): PremiumGrant {
     // 0일·음수 기간은 바로 끝나는 ACTIVE 기간을 만들고, 긴 sourceKey는 DB 오류로 늦게 드러난다
-    if (!Number.isInteger(input.durationDays) || input.durationDays <= 0) {
+    if (!Number.isInteger(params.durationDays) || params.durationDays <= 0) {
       throw new DomainException(ErrorCode.SYS_0002, {
         field: "durationDays",
-        durationDays: input.durationDays,
+        durationDays: params.durationDays,
       });
     }
     if (
-      input.sourceKey.length === 0 ||
-      input.sourceKey.length > PREMIUM_GRANT_SOURCE_KEY_MAX_LENGTH
+      params.sourceKey.length === 0 ||
+      params.sourceKey.length > PREMIUM_GRANT_SOURCE_KEY_MAX_LENGTH
     ) {
       throw new DomainException(ErrorCode.SYS_0002, {
         field: "sourceKey",
-        length: input.sourceKey.length,
+        length: params.sourceKey.length,
       });
     }
-    const base = {
-      userId: input.userId,
-      source: input.source,
-      sourceKey: input.sourceKey,
-      durationDays: input.durationDays,
-    };
-    if (input.start.kind === "bank") {
-      return { ...base, status: "BANKED", startsAt: null, endsAt: null };
-    }
-    return {
-      ...base,
-      status: "ACTIVE",
-      startsAt: new Date(input.start.startsAt),
-      endsAt: premiumGrantEndsAt(input.start.startsAt, input.durationDays),
-    };
-  }
-
-  static reconstitute(props: PremiumGrantProps): PremiumGrant {
-    return new PremiumGrant({
-      ...props,
-      startsAt: copyDate(props.startsAt),
-      endsAt: copyDate(props.endsAt),
-      endingNotifiedAt: copyDate(props.endingNotifiedAt),
-      createdAt: new Date(props.createdAt),
+    return new PremiumGrant(params.id, {
+      userId: params.userId,
+      source: params.source,
+      sourceKey: params.sourceKey,
+      durationDays: params.durationDays,
+      durationMs: null,
+      status: params.start.kind === "activate" ? "ACTIVE" : "BANKED",
+      startsAt: params.start.kind === "activate" ? params.start.startsAt : null,
+      endsAt:
+        params.start.kind === "activate"
+          ? premiumGrantEndsAt(params.start.startsAt, params.durationDays)
+          : null,
+      endingNotifiedAt: null,
+      createdAt: params.now,
+      updatedAt: params.now,
     });
   }
 
-  get id(): string {
-    return this.props.id;
+  static reconstitute(primitives: PremiumGrantPrimitives): PremiumGrant {
+    return new PremiumGrant(PremiumGrantId.reconstitute(primitives.id), {
+      userId: UserId.reconstitute(primitives.userId),
+      source: primitives.source,
+      sourceKey: primitives.sourceKey,
+      durationDays: primitives.durationDays,
+      durationMs: primitives.durationMs,
+      status: primitives.status,
+      startsAt: primitives.startsAt,
+      endsAt: primitives.endsAt,
+      endingNotifiedAt: primitives.endingNotifiedAt,
+      createdAt: primitives.createdAt,
+      updatedAt: primitives.updatedAt,
+    });
   }
 
-  get userId(): string {
+  get userId(): UserId {
     return this.props.userId;
   }
 
-  get durationDays(): number {
-    return this.props.durationDays;
+  get sourceKey(): string {
+    return this.props.sourceKey;
   }
 
-  get durationMs(): number | null {
-    return this.props.durationMs;
-  }
-
-  get status(): PremiumGrantStatusValue {
+  get status(): PremiumGrantStatus {
     return this.props.status;
   }
 
-  get startsAt(): Date | null {
-    return copyDate(this.props.startsAt);
+  get endsAt(): Instant | null {
+    return this.props.endsAt;
   }
 
-  get endsAt(): Date | null {
-    return copyDate(this.props.endsAt);
-  }
-
-  get createdAt(): Date {
-    return new Date(this.props.createdAt);
+  /** 프리미엄 판단에 필요한 값 */
+  toTerm(): PremiumGrantTerm {
+    return {
+      id: this.id.value,
+      status: this.props.status,
+      durationDays: this.props.durationDays,
+      durationMs: this.props.durationMs,
+      startsAt: this.props.startsAt,
+      endsAt: this.props.endsAt,
+      createdAt: this.props.createdAt,
+    };
   }
 
   /** 쌓아 둔 기간을 이어서 시작한다. 이미 시작했으면 false다. */
-  activate(startsAt: Date): boolean {
+  activate(startsAt: Instant, now: Instant): boolean {
     if (this.props.status !== "BANKED") {
       return false;
     }
     this.props.status = "ACTIVE";
-    this.props.startsAt = new Date(startsAt);
+    this.props.startsAt = startsAt;
     this.props.endsAt = premiumGrantTermEndsAt(startsAt, this.props);
+    this.props.updatedAt = now;
     return true;
   }
 
   /** 아직 시작하지 않은 ACTIVE 기간을 다시 쌓아 둔다. 이미 시작했거나 BANKED면 false다. */
-  returnToBank(at: Date): boolean {
+  returnToBank(now: Instant): boolean {
     if (
       this.props.status !== "ACTIVE" ||
       this.props.startsAt == null ||
-      this.props.startsAt.getTime() <= at.getTime()
+      Temporal.Instant.compare(this.props.startsAt, now) <= 0
     ) {
       return false;
     }
     this.props.status = "BANKED";
     this.props.startsAt = null;
     this.props.endsAt = null;
+    this.props.updatedAt = now;
     return true;
   }
 
   /**
-   * 진행 중인 기간을 지금 끝내고 남은 기간을 이어 받을 BANKED 기간 계획을 반환한다.
+   * 진행 중인 기간을 지금 끝내고 남은 기간을 이어 받을 BANKED 기간을 돌려준다.
    * 남은 길이는 ms 그대로 남기고 표시 일수만 올린다. 같은 기간을 여러 번 끊어도 늘거나 줄지 않는다.
    * 아직 시작하지 않았거나 이미 끝난 기간이면 null이다. 처음 받은 순서를 지켜 다른 쌓아 둔 기간보다
    * 먼저 이어 붙는다.
    */
-  splitAt(at: Date): PremiumGrantCreationPlan | null {
+  splitAt(now: Instant, remainderId: PremiumGrantId): PremiumGrant | null {
+    const term = this.toTerm();
     if (
-      !isPremiumGrantActive(this, at) ||
+      !isPremiumGrantActive(term, now) ||
       this.props.startsAt == null ||
-      this.props.startsAt.getTime() > at.getTime()
+      Temporal.Instant.compare(this.props.startsAt, now) > 0
     ) {
       return null;
     }
-    const remainingMs = remainingPremiumGrantMs(this, at);
+    const remainingMs = remainingPremiumGrantMs(term, now);
     this.props.status = "ENDED";
-    this.props.endsAt = new Date(at);
-    return {
+    this.props.endsAt = now;
+    this.props.updatedAt = now;
+    return new PremiumGrant(remainderId, {
       userId: this.props.userId,
       source: this.props.source,
-      sourceKey: bankedRemainderSourceKey(this.props.id),
+      sourceKey: bankedRemainderSourceKey(this.id),
       durationDays: premiumGrantDaysOf(remainingMs),
       durationMs: remainingMs,
       status: "BANKED",
       startsAt: null,
       endsAt: null,
-      createdAt: new Date(this.props.createdAt),
-    };
+      endingNotifiedAt: null,
+      createdAt: this.props.createdAt,
+      updatedAt: now,
+    });
   }
 
   /** 끝나는 시각이 지난 ACTIVE 기간만 끝낸다. */
-  end(at: Date): boolean {
-    if (!isPremiumGrantEnded(this, at)) {
+  end(now: Instant): boolean {
+    if (!isPremiumGrantEnded(this.toTerm(), now)) {
       return false;
     }
     this.props.status = "ENDED";
+    this.props.updatedAt = now;
     return true;
   }
 
@@ -217,29 +223,39 @@ export class PremiumGrant extends AggregateRoot<PremiumGrantProps> {
    * 지급을 취소한다. 쌓아 둔 기간은 시작하지 않고, 진행 중인 기간은 지금 끝낸다.
    * 이미 끝났거나 취소한 기간은 바꾸지 않고 false다.
    */
-  revoke(at: Date): boolean {
+  revoke(now: Instant): boolean {
     if (this.props.status !== "BANKED" && this.props.status !== "ACTIVE") {
       return false;
     }
-    if (this.props.status === "ACTIVE" && isPremiumGrantEnded(this, at)) {
+    if (this.props.status === "ACTIVE" && isPremiumGrantEnded(this.toTerm(), now)) {
       return false;
     }
     if (
       this.props.status === "ACTIVE" &&
       this.props.endsAt != null &&
-      this.props.endsAt.getTime() > at.getTime()
+      Temporal.Instant.compare(this.props.endsAt, now) > 0
     ) {
-      this.props.endsAt = new Date(at);
+      this.props.endsAt = now;
     }
     this.props.status = "REVOKED";
+    this.props.updatedAt = now;
     return true;
   }
 
-  toPersistence(): PremiumGrantPersistenceState {
+  toPrimitives(): PremiumGrantPrimitives {
     return {
+      id: this.id.value,
+      userId: this.props.userId.value,
+      source: this.props.source,
+      sourceKey: this.props.sourceKey,
+      durationDays: this.props.durationDays,
+      durationMs: this.props.durationMs,
       status: this.props.status,
-      startsAt: this.startsAt,
-      endsAt: this.endsAt,
+      startsAt: this.props.startsAt,
+      endsAt: this.props.endsAt,
+      endingNotifiedAt: this.props.endingNotifiedAt,
+      createdAt: this.props.createdAt,
+      updatedAt: this.props.updatedAt,
     };
   }
 }

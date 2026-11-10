@@ -65,14 +65,12 @@ describe("JobRuntimeHealthIndicator — 영속 job runtime 상태 확인", () =>
       "todo-series-materialization.v1",
       "todo-timezone-rebase.v1",
       "quota-abandoned-refund.v1",
-      "store-subscription-reconcile.v1",
       "account-purge.v1",
       "notification.marketing-consent-reconfirm.v1",
       "timezone-reminder.v1",
       "invite-reward.v1",
       "invite-maintenance.v1",
       "voice-plan-application-cleanup.v1",
-      "premium-grant-sweep.v1",
       "outbound-usage-retention.v1",
     ]);
   });
@@ -117,7 +115,7 @@ describe("JobRuntimeHealthIndicator — 영속 job runtime 상태 확인", () =>
 
     // Then
     const [queueNames] = jobRuntime.health.mock.calls[0] ?? [];
-    expect(queueNames).toHaveLength(26);
+    expect(queueNames).toHaveLength(24);
     expect(queueNames?.slice(-2)).toEqual(["sample.v1", "sample-dead-letter.v1"]);
   });
 

@@ -1,25 +1,19 @@
-import { Inject, Injectable, Logger, type OnModuleInit } from "@nestjs/common";
+import { Injectable, Logger, type OnModuleInit } from "@nestjs/common";
 
 import { runInBackground } from "#api/platform/jobs/non-blocking-init";
-import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
+import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
 
 import { PremiumGrantLogEvent } from "../../../premium-grants/application/premium-grants.log-events.js";
-import {
-  PREMIUM_GRANT_SWEEP_JOB_NAME,
-  PREMIUM_GRANT_SWEEP_JOB_OPTIONS,
-  PREMIUM_GRANT_SWEEP_QUEUE,
-  PREMIUM_GRANT_SWEEP_SCHEDULE,
-} from "./premium-grant-sweep.queue.js";
+import { PREMIUM_GRANT_SWEEP_QUEUE } from "./premium-grant-sweep.queue.js";
 
 @Injectable()
-export class PremiumGrantSweepJob implements OnModuleInit {
-  readonly #logger = new Logger(PremiumGrantSweepJob.name);
+export class PremiumGrantSweepScheduler implements OnModuleInit {
+  readonly #logger = new Logger(PremiumGrantSweepScheduler.name);
+  readonly #jobQueue: JobQueuePort;
   schedulerRegistration: Promise<void> = Promise.resolve();
 
-  readonly #runtime: JobRuntimePort;
-
-  constructor(@Inject(JOB_RUNTIME) runtime: JobRuntimePort) {
-    this.#runtime = runtime;
+  constructor(jobQueue: JobQueuePort) {
+    this.#jobQueue = jobQueue;
   }
 
   onModuleInit(): void {
@@ -28,13 +22,7 @@ export class PremiumGrantSweepJob implements OnModuleInit {
       this.#logger,
       "Premium grant sweep scheduler registration",
       async () => {
-        await this.#runtime.schedule(
-          PREMIUM_GRANT_SWEEP_SCHEDULE.id,
-          PREMIUM_GRANT_SWEEP_SCHEDULE.cron,
-          PREMIUM_GRANT_SWEEP_QUEUE,
-          { name: PREMIUM_GRANT_SWEEP_JOB_NAME, data: {} },
-          PREMIUM_GRANT_SWEEP_JOB_OPTIONS,
-        );
+        await this.#jobQueue.registerSchedules(PREMIUM_GRANT_SWEEP_QUEUE);
         this.#logger.log({ event: PremiumGrantLogEvent.PREMIUM_GRANT_SWEEP_SCHEDULER_REGISTERED });
       },
     );

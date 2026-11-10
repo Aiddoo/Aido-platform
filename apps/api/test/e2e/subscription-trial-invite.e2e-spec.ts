@@ -115,7 +115,12 @@ describe("무료 체험 중 받은 초대 보상과 체험 종료 뒤 /me (실�
         .getClient()
         .select({ expiresAt: subscription.expiresAt, periodType: subscription.periodType })
         .from(subscription),
-    ).toEqual([{ expiresAt: TRIAL_ENDS_AT, periodType: "TRIAL" }]);
+    ).toEqual([
+      {
+        expiresAt: Temporal.Instant.fromEpochMilliseconds(TRIAL_ENDS_AT.getTime()),
+        periodType: "TRIAL",
+      },
+    ]);
     expect(duringTrial).toMatchObject({
       isPremium: true,
       premiumSource: "STORE",

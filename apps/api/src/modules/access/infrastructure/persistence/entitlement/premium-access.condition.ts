@@ -1,8 +1,9 @@
 import { and, eq, exists, gt, inArray, isNull, or, sql, type SQL } from "drizzle-orm";
 import { QueryBuilder, type AnyPgColumn } from "drizzle-orm/pg-core";
 
-import { storeRenewalCutoff } from "#api/modules/billing/shared/store-renewal-grace.domain-service";
+import { storeRenewalCutoff } from "#api/modules/billing/subscriptions/billing-subscriptions-entitlement.public";
 import { subscription, type user } from "#api/platform/database/schema/index";
+import { instantFromDate } from "#api/shared/domain/time/instant";
 
 type PremiumUserColumns = Pick<
   typeof user,
@@ -20,10 +21,12 @@ export interface StoreEntitlementColumns {
  * 취소했으면 만료 전까지, 결제 유예 중이면 그 끝까지 유효하다. 규칙을 바꾸면 두 곳을 함께 바꾼다.
  */
 export function validStoreEntitlementCondition(store: StoreEntitlementColumns, at: Date): SQL {
+  // 구독 테이블의 시간 칸은 Temporal 칸이라 비교 값도 Instant로 건넨다
+  const instantAt = instantFromDate(at);
   return sql`(${or(
-    and(eq(store.status, "ACTIVE"), gt(store.expiresAt, storeRenewalCutoff(at))),
-    and(eq(store.status, "CANCELLED"), gt(store.expiresAt, at)),
-    and(inArray(store.status, ["ACTIVE", "CANCELLED"]), gt(store.gracePeriodEndsAt, at)),
+    and(eq(store.status, "ACTIVE"), gt(store.expiresAt, storeRenewalCutoff(instantAt))),
+    and(eq(store.status, "CANCELLED"), gt(store.expiresAt, instantAt)),
+    and(inArray(store.status, ["ACTIVE", "CANCELLED"]), gt(store.gracePeriodEndsAt, instantAt)),
   )})`;
 }
 

@@ -1,9 +1,6 @@
 import type { RevenueCatWebhookPayload } from "@aido/api";
 
-import {
-  SUBSCRIPTION_EVENT_NOTIFIER,
-  type SubscriptionEventNotifierPort,
-} from "#api/modules/billing/subscriptions/application/ports/subscription-event-notifier.port";
+import { SubscriptionEventNotifierPort } from "#api/modules/billing/subscriptions/application/ports/subscription-event-notifier.port";
 import { RevenueCatWebhookReceiver } from "#api/modules/billing/subscriptions/infrastructure/adapters/revenuecat/revenuecat-webhook-receiver.adapter";
 import { createEntityId } from "#api/platform/database/entity-id";
 import { user as userTable } from "#api/platform/database/schema/index";
@@ -57,7 +54,7 @@ describe("구독 웹훅의 일시 실패 재전송 (실제 PostgreSQL)", () => {
     context = await createE2eApp({
       testDatabase: database,
       customizeBuilder: (builder) =>
-        builder.overrideProvider(SUBSCRIPTION_EVENT_NOTIFIER).useValue(notifier),
+        builder.overrideProvider(SubscriptionEventNotifierPort).useValue(notifier),
     });
     receiver = context.module.get(RevenueCatWebhookReceiver);
   });
@@ -133,7 +130,7 @@ describe("구독 웹훅의 일시 실패 재전송 (실제 PostgreSQL)", () => {
         columns: { gracePeriodEndsAt: true },
         where: { revenueCatId: CHAIN },
       }),
-    ).toEqual({ gracePeriodEndsAt: graceEndsAt });
+    ).toEqual({ gracePeriodEndsAt: Temporal.Instant.fromEpochMilliseconds(graceEndsAt.getTime()) });
     expect(notifier.billingIssueUserIds).toEqual([user.id]);
     expect(notifier.reportedFailures).toEqual([]);
   });

@@ -1,7 +1,7 @@
 import type {
   StoreSubscriptionEventKind,
   SubscriptionLifecycle,
-} from "#api/modules/billing/subscriptions/billing-subscriptions.public";
+} from "#api/modules/billing/subscriptions/billing-subscriptions-events.public";
 
 import {
   type AdminNotice,

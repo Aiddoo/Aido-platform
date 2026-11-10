@@ -1,5 +1,4 @@
-export const SUBSCRIPTION_USER_MUTATION_LOCK = Symbol("SUBSCRIPTION_USER_MUTATION_LOCK");
-
-export interface SubscriptionUserMutationLockPort {
-  lockById(userId: string): Promise<boolean>;
+export abstract class BillingUserLockPort {
+  /** 사용자 행을 잠근다. 사용자가 없으면 false다. */
+  abstract lockById(userId: string): Promise<boolean>;
 }

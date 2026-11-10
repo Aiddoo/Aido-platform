@@ -1,18 +1,18 @@
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
-import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
+import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 
 import { bankedRemainderSourceKey } from "../../domain/premium-grant.aggregate.js";
-import type { SubscriptionUserMutationLockPort } from "../ports/billing-user-lock.port.js";
-import type { SubscriptionCachePort } from "../ports/premium-access-cache.port.js";
+import type { BillingUserLockPort } from "../ports/billing-user-lock.port.js";
+import type { PremiumAccessCachePort } from "../ports/premium-access-cache.port.js";
 import type { PremiumGrantRepositoryPort } from "../ports/premium-grant.repository.port.js";
 import { PremiumGrantLogEvent } from "../premium-grants.log-events.js";
 import type { ProjectPremiumAccessUseCase } from "./project-premium-access.use-case.js";
 
-export interface RevokePremiumGrantInput {
+export interface RevokePremiumGrantCommand {
   /** 지급할 때 쓴 출처 키(예: invite:…) */
   readonly sourceKey: string;
-  readonly now: Date;
+  readonly now: Temporal.Instant;
 }
 
 export type RevokePremiumGrantResult =
@@ -20,12 +20,12 @@ export type RevokePremiumGrantResult =
   | { readonly status: "unchanged" }
   | { readonly status: "not-found" };
 
-interface RevokePremiumGrantDependencies {
+export interface RevokePremiumGrantDependencies {
   readonly premiumGrantRepository: Pick<PremiumGrantRepositoryPort, "findBySourceKey" | "saveAll">;
-  readonly premiumAccessProjector: Pick<ProjectPremiumAccessUseCase, "project">;
-  readonly userMutationLock: SubscriptionUserMutationLockPort;
+  readonly projectPremiumAccess: Pick<ProjectPremiumAccessUseCase, "execute">;
+  readonly userLock: BillingUserLockPort;
   readonly unitOfWork: UnitOfWorkPort;
-  readonly cache: SubscriptionCachePort;
+  readonly cache: PremiumAccessCachePort;
   readonly logger: ApplicationLoggerPort;
 }
 
@@ -40,20 +40,20 @@ export class RevokePremiumGrantUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: RevokePremiumGrantInput): Promise<RevokePremiumGrantResult> {
-    const { premiumGrantRepository, unitOfWork, userMutationLock } = this.#dependencies;
-    const found = await premiumGrantRepository.findBySourceKey(input.sourceKey);
+  async execute(command: RevokePremiumGrantCommand): Promise<RevokePremiumGrantResult> {
+    const { premiumGrantRepository, unitOfWork, userLock, logger } = this.#dependencies;
+    const found = await premiumGrantRepository.findBySourceKey(command.sourceKey);
     if (found == null) {
       return { status: "not-found" };
     }
     const { userId } = found;
 
     const revokedGrantCount = await unitOfWork.run(async () => {
-      if (!(await userMutationLock.lockById(userId))) {
+      if (!(await userLock.lockById(userId.value))) {
         return 0;
       }
       // 잠금 뒤 최신 상태로 다시 판단해 정리 작업·다른 취소와 겹쳐도 한 번만 바꾼다
-      const grant = await premiumGrantRepository.findBySourceKey(input.sourceKey);
+      const grant = await premiumGrantRepository.findBySourceKey(command.sourceKey);
       if (grant == null) {
         return 0;
       }
@@ -61,13 +61,13 @@ export class RevokePremiumGrantUseCase {
         bankedRemainderSourceKey(grant.id),
       );
       const revoked = [grant, ...(remainder == null ? [] : [remainder])].filter((target) =>
-        target.revoke(input.now),
+        target.revoke(command.now),
       );
       if (revoked.length === 0) {
         return 0;
       }
       await premiumGrantRepository.saveAll(revoked);
-      await this.#dependencies.premiumAccessProjector.project({ userId, now: input.now });
+      await this.#dependencies.projectPremiumAccess.execute({ userId, now: command.now });
       return revoked.length;
     });
     if (revokedGrantCount === 0) {
@@ -75,19 +75,19 @@ export class RevokePremiumGrantUseCase {
     }
 
     try {
-      await this.#dependencies.cache.invalidate(userId);
+      await this.#dependencies.cache.invalidate(userId.value);
     } catch (error) {
-      this.#dependencies.logger.warn({
+      logger.warn({
         event: PremiumGrantLogEvent.PREMIUM_GRANT_CACHE_INVALIDATION_FAILED,
-        userId,
+        userId: userId.value,
         errorType: toErrorType(error),
       });
     }
-    this.#dependencies.logger.log({
+    logger.log({
       event: PremiumGrantLogEvent.PREMIUM_GRANT_REVOKED,
-      userId,
+      userId: userId.value,
       revokedGrantCount,
     });
-    return { status: "revoked", userId, revokedGrantCount };
+    return { status: "revoked", userId: userId.value, revokedGrantCount };
   }
 }

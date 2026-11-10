@@ -1,17 +1,18 @@
 import { uniq } from "es-toolkit";
 
-import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
+import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import type { SubscriptionUserMutationLockPort } from "../../../premium-grants/application/ports/billing-user-lock.port.js";
-import type { SubscriptionCachePort } from "../../../premium-grants/application/ports/premium-access-cache.port.js";
+import type { BillingUserLockPort } from "../../../premium-grants/application/ports/billing-user-lock.port.js";
+import type { PremiumAccessCachePort } from "../../../premium-grants/application/ports/premium-access-cache.port.js";
 import type { ProjectPremiumAccessUseCase } from "../../../premium-grants/application/use-cases/project-premium-access.use-case.js";
 import type { SubscriptionReconcileField } from "../../domain/subscription.aggregate.js";
 import type { StoreSubscriptionStatusReaderPort } from "../ports/store-subscription-status.reader.port.js";
 import type { SubscriptionRepositoryPort } from "../ports/subscription.repository.port.js";
 
-export interface ReconcileStoreSubscriptionsInput {
+export interface ReconcileStoreSubscriptionsCommand {
   readonly userId: string;
-  readonly now: Date;
+  readonly now: Temporal.Instant;
 }
 
 export interface ReconcileStoreSubscriptionsResult {
@@ -20,16 +21,16 @@ export interface ReconcileStoreSubscriptionsResult {
   readonly fields: readonly SubscriptionReconcileField[];
 }
 
-interface ReconcileStoreSubscriptionsDependencies {
+export interface ReconcileStoreSubscriptionsDependencies {
   readonly subscriptionRepository: Pick<
     SubscriptionRepositoryPort,
-    "findReconcilableByUserId" | "updateStatus"
+    "listReconcilableByUserId" | "save"
   >;
   readonly statusReader: StoreSubscriptionStatusReaderPort;
-  readonly userMutationLock: SubscriptionUserMutationLockPort;
+  readonly userLock: BillingUserLockPort;
   readonly unitOfWork: UnitOfWorkPort;
-  readonly premiumAccessProjector: Pick<ProjectPremiumAccessUseCase, "project">;
-  readonly cache: SubscriptionCachePort;
+  readonly projectPremiumAccess: Pick<ProjectPremiumAccessUseCase, "execute">;
+  readonly cache: PremiumAccessCachePort;
 }
 
 const UNCHANGED: ReconcileStoreSubscriptionsResult = { correctedCount: 0, fields: [] };
@@ -46,12 +47,13 @@ export class ReconcileStoreSubscriptionsUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute({
-    userId,
-    now,
-  }: ReconcileStoreSubscriptionsInput): Promise<ReconcileStoreSubscriptionsResult> {
+  async execute(
+    command: ReconcileStoreSubscriptionsCommand,
+  ): Promise<ReconcileStoreSubscriptionsResult> {
     const { subscriptionRepository, statusReader } = this.#dependencies;
-    const candidates = await subscriptionRepository.findReconcilableByUserId(userId);
+    const { now } = command;
+    const userId = UserId.reconstitute(command.userId);
+    const candidates = await subscriptionRepository.listReconcilableByUserId(userId);
     const states =
       candidates.length === 0
         ? []
@@ -64,11 +66,11 @@ export class ReconcileStoreSubscriptionsUseCase {
     const stateByChain = new Map(states.map((state) => [state.storeSubscriptionId, state]));
 
     const corrections = await this.#dependencies.unitOfWork.run(async () => {
-      if (!(await this.#dependencies.userMutationLock.lockById(userId))) {
+      if (!(await this.#dependencies.userLock.lockById(command.userId))) {
         return [];
       }
       // 읽는 동안 처리된 웹훅이 있을 수 있어 잠근 뒤 행을 다시 읽는다
-      const subscriptions = await subscriptionRepository.findReconcilableByUserId(userId);
+      const subscriptions = await subscriptionRepository.listReconcilableByUserId(userId);
       const corrected: SubscriptionReconcileField[][] = [];
       for (const subscription of subscriptions) {
         const state = stateByChain.get(subscription.storeSubscriptionId.value);
@@ -76,14 +78,11 @@ export class ReconcileStoreSubscriptionsUseCase {
         if (fields.length === 0) {
           continue;
         }
-        await subscriptionRepository.updateStatus(
-          subscription.storeSubscriptionId,
-          subscription.persistenceState,
-        );
+        await subscriptionRepository.save(subscription);
         corrected.push(fields);
       }
       if (corrected.length > 0) {
-        await this.#dependencies.premiumAccessProjector.project({ userId, now });
+        await this.#dependencies.projectPremiumAccess.execute({ userId, now });
       }
       return corrected;
     });
@@ -91,7 +90,7 @@ export class ReconcileStoreSubscriptionsUseCase {
     if (corrections.length === 0) {
       return UNCHANGED;
     }
-    await this.#dependencies.cache.invalidate(userId);
+    await this.#dependencies.cache.invalidate(command.userId);
     return { correctedCount: corrections.length, fields: uniq(corrections.flat()) };
   }
 }

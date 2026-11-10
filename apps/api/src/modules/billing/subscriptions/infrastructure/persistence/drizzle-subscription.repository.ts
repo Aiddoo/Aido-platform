@@ -1,59 +1,27 @@
-import { ErrorCode } from "@aido/api/errors";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
-import { and, eq, gt, isNull, ne, not } from "drizzle-orm";
+import { and, eq, isNull, ne } from "drizzle-orm";
 
-import { activeSubscriptionCondition } from "#api/modules/access/access-entitlement-sql.public";
-import { DatabaseRecordNotFoundError } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
-import { subscription, user } from "#api/platform/database/schema/index";
-import { ApplicationException } from "#api/shared/application/application.exception";
+import { subscription } from "#api/platform/database/schema/billing.schema";
+import { nextSequenceValue } from "#api/platform/database/sequence";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import type { StoreSubscriptionEntitlement } from "../../../shared/premium-access.domain-service.js";
-import type {
-  CreateSubscriptionData,
-  FindLapsedPremiumUsersParams,
+import {
   SubscriptionRepositoryPort,
-  SubscriptionUser,
-  UpdateSubscriptionStatusData,
-  UpdateUserSubscriptionStatusData,
+  type SubscriptionUser,
 } from "../../application/ports/subscription.repository.port.js";
-import { StoreSubscriptionId } from "../../domain/store-subscription-id.vo.js";
-import { toStorePeriodType } from "../../domain/subscription-lifecycle.domain-service.js";
-import { Subscription } from "../../domain/subscription.aggregate.js";
-
-const SUBSCRIPTION_COLUMNS = {
-  id: true,
-  userId: true,
-  revenueCatId: true,
-  productId: true,
-  status: true,
-  startedAt: true,
-  expiresAt: true,
-  gracePeriodEndsAt: true,
-  cancelledAt: true,
-  lastProcessedEventId: true,
-  nextProductId: true,
-  periodType: true,
-} as const;
-
-type SubscriptionRow = Pick<typeof subscription.$inferSelect, keyof typeof SUBSCRIPTION_COLUMNS>;
-
-// 칼럼 이름 revenueCatId는 운영 DB 계약이라 그대로 두고 도메인에서는 공급자 중립 이름으로 읽는다
-function toSubscription({ revenueCatId, periodType, ...row }: SubscriptionRow): Subscription {
-  return Subscription.reconstitute({
-    ...row,
-    provider: "REVENUECAT",
-    storeSubscriptionId: StoreSubscriptionId.from(revenueCatId),
-    periodType: toStorePeriodType(periodType),
-  });
-}
+import type { StoreSubscriptionId } from "../../domain/store-subscription-id.vo.js";
+import { SubscriptionId } from "../../domain/subscription-id.vo.js";
+import type { Subscription } from "../../domain/subscription.aggregate.js";
+import { toSubscription, toSubscriptionRow } from "./subscription-row.mapper.js";
 
 @Injectable()
-export class DrizzleSubscriptionRepository implements SubscriptionRepositoryPort {
+export class DrizzleSubscriptionRepository extends SubscriptionRepositoryPort {
   readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
 
   constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>) {
+    super();
     this.#txHost = txHost;
   }
 
@@ -61,20 +29,26 @@ export class DrizzleSubscriptionRepository implements SubscriptionRepositoryPort
     return this.#txHost.tx;
   }
 
+  async nextId(): Promise<SubscriptionId> {
+    return SubscriptionId.reconstitute(await nextSequenceValue(this.#db, subscription.id));
+  }
+
   async findByStoreSubscriptionId(
     storeSubscriptionId: StoreSubscriptionId,
   ): Promise<Subscription | null> {
     const row = await this.#db.query.subscription.findFirst({
-      columns: SUBSCRIPTION_COLUMNS,
       where: { revenueCatId: storeSubscriptionId.value },
     });
     return row == null ? null : toSubscription(row);
   }
 
-  async findReconcilableByUserId(userId: string): Promise<Subscription[]> {
+  async listReconcilableByUserId(userId: UserId): Promise<Subscription[]> {
     const rows = await this.#db.query.subscription.findMany({
-      columns: SUBSCRIPTION_COLUMNS,
-      where: { userId, deletedAt: { isNull: true }, status: { in: ["ACTIVE", "CANCELLED"] } },
+      where: {
+        userId: userId.value,
+        deletedAt: { isNull: true },
+        status: { in: ["ACTIVE", "CANCELLED"] },
+      },
       orderBy: { id: "asc" },
     });
     return rows.map(toSubscription);
@@ -83,125 +57,71 @@ export class DrizzleSubscriptionRepository implements SubscriptionRepositoryPort
   // RevenueCat은 처음에 User.id를 appUserId로 쓰고, 별칭이 생기면 revenueCatUserId가 달라진다
   async findUserByAppUserId(appUserId: string): Promise<SubscriptionUser | null> {
     const row = await this.#db.query.user.findFirst({
-      columns: {
-        id: true,
-        email: true,
-        subscriptionStatus: true,
-        subscriptionExpiresAt: true,
-      },
+      columns: { id: true, email: true },
       where: { OR: [{ revenueCatUserId: appUserId }, { id: appUserId }] },
       with: { profile: { columns: { name: true } } },
     });
     return row ?? null;
   }
 
-  async findStoreEntitlements(userId: string): Promise<StoreSubscriptionEntitlement[]> {
-    const rows = await this.#db.query.subscription.findMany({
-      columns: {
-        revenueCatId: true,
-        productId: true,
-        startedAt: true,
-        status: true,
-        expiresAt: true,
-        gracePeriodEndsAt: true,
-        periodType: true,
-      },
-      where: { userId, deletedAt: { isNull: true } },
-    });
-    return rows.map(({ revenueCatId, ...row }) => ({
-      ...row,
-      storeSubscriptionId: revenueCatId,
-      periodType: toStorePeriodType(row.periodType),
-    }));
+  async existsByUserId(userId: UserId): Promise<boolean> {
+    const count = await this.#db.$count(
+      subscription,
+      and(eq(subscription.userId, userId.value), isNull(subscription.deletedAt)),
+    );
+    return count > 0;
   }
 
-  async findLapsedPremiumUserIds(params: FindLapsedPremiumUsersParams): Promise<string[]> {
-    const rows = await this.#db
-      .select({ id: user.id })
-      .from(user)
-      .where(
-        and(
-          eq(user.subscriptionStatus, "ACTIVE"),
-          isNull(user.deletedAt),
-          not(activeSubscriptionCondition(user, params.now)),
-          params.afterUserId == null ? undefined : gt(user.id, params.afterUserId),
-        ),
-      )
-      .orderBy(user.id)
-      .limit(params.limit);
-    return rows.map((row) => row.id);
-  }
-
-  async create(data: CreateSubscriptionData): Promise<void> {
-    await this.#db.insert(subscription).values({
-      userId: data.userId,
-      revenueCatId: data.storeSubscriptionId.value,
-      productId: data.productId,
-      status: data.status,
-      startedAt: data.startedAt,
-      expiresAt: data.expiresAt,
-      lastProcessedEventId: data.lastProcessedEventId,
-      environment: data.environment,
-      periodType: data.periodType,
-    });
-  }
-
-  async updateStatus(
+  async claimChain(
     storeSubscriptionId: StoreSubscriptionId,
-    data: UpdateSubscriptionStatusData,
-  ): Promise<void> {
-    const updated = await this.#db
-      .update(subscription)
-      .set(data)
-      .where(eq(subscription.revenueCatId, storeSubscriptionId.value))
-      .returning({ id: subscription.id });
-    if (updated.length === 0) {
-      throw new ApplicationException(ErrorCode.SUBSCRIPTION_1604, {
-        reason: `Subscription not found: ${storeSubscriptionId.value}`,
-      });
-    }
-  }
-
-  async claimChain(storeSubscriptionId: StoreSubscriptionId, userId: string): Promise<boolean> {
+    userId: UserId,
+    now: Temporal.Instant,
+  ): Promise<boolean> {
     const claimed = await this.#db
       .update(subscription)
-      .set({ userId })
+      .set({ userId: userId.value, updatedAt: now })
       .where(
         and(
           eq(subscription.revenueCatId, storeSubscriptionId.value),
-          ne(subscription.userId, userId),
+          ne(subscription.userId, userId.value),
         ),
       )
       .returning({ id: subscription.id });
     return claimed.length > 0;
   }
 
-  async takeOverChains(fromUserId: string, toUserId: string): Promise<number> {
+  async takeOverChains(
+    fromUserId: UserId,
+    toUserId: UserId,
+    now: Temporal.Instant,
+  ): Promise<number> {
     const taken = await this.#db
       .update(subscription)
-      .set({ userId: toUserId })
-      .where(and(eq(subscription.userId, fromUserId), isNull(subscription.deletedAt)))
+      .set({ userId: toUserId.value, updatedAt: now })
+      .where(and(eq(subscription.userId, fromUserId.value), isNull(subscription.deletedAt)))
       .returning({ id: subscription.id });
     return taken.length;
   }
 
-  /**
-   * User 테이블의 구독 상태 동기화
-   */
-  async updateUserSubscriptionStatus(
-    userId: string,
-    data: UpdateUserSubscriptionStatusData,
-  ): Promise<void> {
-    const updated = await this.#db
-      .update(user)
-      .set({
-        subscriptionStatus: data.subscriptionStatus,
-        subscriptionExpiresAt: data.subscriptionExpiresAt,
-      })
-      .where(eq(user.id, userId))
-      .returning({ id: user.id });
-    if (updated.length === 0) {
-      throw new DatabaseRecordNotFoundError();
-    }
+  async save(aggregate: Subscription): Promise<void> {
+    const row = toSubscriptionRow(aggregate);
+    await this.#db
+      .insert(subscription)
+      .values(row)
+      .onConflictDoUpdate({
+        target: subscription.id,
+        // 소유자·시작 시각·결제 환경·안내 표시는 바꾸지 않는다. 소유자는 claimChain이 옮긴다
+        set: {
+          productId: row.productId,
+          status: row.status,
+          expiresAt: row.expiresAt,
+          gracePeriodEndsAt: row.gracePeriodEndsAt,
+          cancelledAt: row.cancelledAt,
+          lastProcessedEventId: row.lastProcessedEventId,
+          nextProductId: row.nextProductId,
+          periodType: row.periodType,
+          updatedAt: row.updatedAt,
+        },
+      });
   }
 }

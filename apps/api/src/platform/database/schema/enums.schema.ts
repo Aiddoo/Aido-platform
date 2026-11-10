@@ -7,6 +7,8 @@ import {
   NUDGE_REPLY_KINDS,
   PUSH_DEVICE_PLATFORM,
   PUSH_PERMISSION_STATUS,
+  PREMIUM_GRANT_SOURCES,
+  PREMIUM_GRANT_STATUSES,
   QUOTA_CHARGE_STATUSES,
   QUOTA_METERS,
   REDEMPTION_REJECTION_REASON,
@@ -129,13 +131,8 @@ export const verificationType = pgEnum("VerificationType", VERIFICATION_TYPE);
 export const inviteRedemptionStatus = pgEnum("InviteRedemptionStatus", REDEMPTION_STATUS);
 export const inviteRejectionReason = pgEnum("InviteRejectionReason", REDEMPTION_REJECTION_REASON);
 export const inviteStatus = pgEnum("InviteStatus", ["ACTIVE", "REVOKED"]);
-export const premiumGrantSource = pgEnum("PremiumGrantSource", ["INVITE"]);
-export const premiumGrantStatus = pgEnum("PremiumGrantStatus", [
-  "BANKED",
-  "ACTIVE",
-  "ENDED",
-  "REVOKED",
-]);
+export const premiumGrantSource = pgEnum("PremiumGrantSource", PREMIUM_GRANT_SOURCES);
+export const premiumGrantStatus = pgEnum("PremiumGrantStatus", PREMIUM_GRANT_STATUSES);
 export const resourceType = pgEnum("ResourceType", ["FRIEND"]);
 export const rewardClaimKind = pgEnum("RewardClaimKind", ["INSTALLATION", "IDENTITY"]);
 export const rewardGrantStatus = pgEnum("RewardGrantStatus", ["PENDING", "APPLIED", "FAILED"]);

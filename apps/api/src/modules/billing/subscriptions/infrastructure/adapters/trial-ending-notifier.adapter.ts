@@ -12,12 +12,13 @@ import {
 } from "#api/modules/notification/notification-delivery.public";
 import { DEFAULT_DELIVERY_TIMEZONE } from "#api/shared/domain/date/utils/timezone";
 import { DEFAULT_LOCALE } from "#api/shared/domain/locale";
+import { instantToDate } from "#api/shared/domain/time/instant";
 
 import type { TrialEndingNotice } from "../../application/ports/trial-ending-notice.repository.port.js";
-import type { TrialEndingNotifierPort } from "../../application/ports/trial-ending-notifier.port.js";
+import { TrialEndingNotifierPort } from "../../application/ports/trial-ending-notifier.port.js";
 
 @Injectable()
-export class TrialEndingNotifierAdapter implements TrialEndingNotifierPort {
+export class TrialEndingNotifierAdapter extends TrialEndingNotifierPort {
   readonly #notificationPublisher: NotificationPublisher;
   readonly #localeReader: NotificationRecipientLocaleReaderPort;
   readonly #timezoneReader: NotificationRecipientTimezoneReaderPort;
@@ -29,12 +30,13 @@ export class TrialEndingNotifierAdapter implements TrialEndingNotifierPort {
     @Inject(NOTIFICATION_RECIPIENT_TIMEZONE_READER)
     timezoneReader: NotificationRecipientTimezoneReaderPort,
   ) {
+    super();
     this.#notificationPublisher = notificationPublisher;
     this.#localeReader = localeReader;
     this.#timezoneReader = timezoneReader;
   }
 
-  async notify(notices: readonly TrialEndingNotice[], now: Date): Promise<void> {
+  async notify(notices: readonly TrialEndingNotice[], now: Temporal.Instant): Promise<void> {
     if (notices.length === 0) {
       return;
     }
@@ -48,8 +50,8 @@ export class TrialEndingNotifierAdapter implements TrialEndingNotifierPort {
         const message = createPremiumTrialEndingNotificationMessage({
           locale: locales.get(notice.userId) ?? DEFAULT_LOCALE,
           timezone: timezones.get(notice.userId) ?? DEFAULT_DELIVERY_TIMEZONE,
-          endsAt: notice.expiresAt,
-          now,
+          endsAt: instantToDate(notice.expiresAt),
+          now: instantToDate(now),
           willRenew: notice.willRenew,
           planType: notice.planType,
           variantContext: {

@@ -5,27 +5,29 @@ import { alias } from "drizzle-orm/pg-core";
 
 import { validStoreEntitlementCondition } from "#api/modules/access/access-entitlement-sql.public";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
-import { premiumGrant, subscription } from "#api/platform/database/schema/index";
-import { now } from "#api/shared/domain/date/utils/core";
+import { createEntityId } from "#api/platform/database/entity-id";
+import { premiumGrant, subscription } from "#api/platform/database/schema/billing.schema";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { instantToDate } from "#api/shared/domain/time/instant";
 
-import type {
-  FindPremiumGrantUsersToReconcileParams,
+import {
+  type ListPremiumGrantUsersToReconcileParams,
   PremiumGrantRepositoryPort,
 } from "../../application/ports/premium-grant.repository.port.js";
-import {
-  PremiumGrant,
-  type PremiumGrantCreationPlan,
-} from "../../domain/premium-grant.aggregate.js";
+import { PremiumGrantId } from "../../domain/premium-grant-id.vo.js";
+import type { PremiumGrant } from "../../domain/premium-grant.aggregate.js";
+import { toPremiumGrant, toPremiumGrantRow } from "./premium-grant-row.mapper.js";
 
 const grantOf = alias(premiumGrant, "grant");
 const currentOf = alias(premiumGrant, "current");
 const storeOf = alias(subscription, "store");
 
 @Injectable()
-export class DrizzlePremiumGrantRepository implements PremiumGrantRepositoryPort {
+export class DrizzlePremiumGrantRepository extends PremiumGrantRepositoryPort {
   readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
 
   constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>) {
+    super();
     this.#txHost = txHost;
   }
 
@@ -33,73 +35,51 @@ export class DrizzlePremiumGrantRepository implements PremiumGrantRepositoryPort
     return this.#txHost.tx;
   }
 
-  // 보상 기간 사용자가 소유한 스토어 행이다. 최종 판단은 PremiumAccessPolicy가 같은 규칙으로 다시 한다
+  // 보상 기간 사용자가 소유한 스토어 행이다. 최종 판단은 resolvePremiumAccess가 같은 규칙으로 다시 한다
   #storeOfGrantUser() {
     return and(eq(storeOf.userId, grantOf.userId), isNull(storeOf.deletedAt));
   }
 
-  // isStoreEntitlementValid와 같은 조건(웹훅 대기 유예·결제 유예 포함). 규칙은 Access가 소유한다
-  #validStoreOfGrantUser(at: Date) {
+  // isStoreEntitlementValid와 같은 조건(웹훅 대기 유예·결제 유예 포함). 규칙은 billing shared가 소유한다
+  #validStoreOfGrantUser(at: Temporal.Instant) {
     return this.#db
       .select({ one: sql`1` })
       .from(storeOf)
-      .where(and(this.#storeOfGrantUser(), validStoreEntitlementCondition(storeOf, at)));
+      .where(
+        and(this.#storeOfGrantUser(), validStoreEntitlementCondition(storeOf, instantToDate(at))),
+      );
   }
 
-  async findOpenByUserId(userId: string): Promise<PremiumGrant[]> {
+  async nextId(): Promise<PremiumGrantId> {
+    return PremiumGrantId.reconstitute(createEntityId());
+  }
+
+  async listOpenByUserId(userId: UserId): Promise<PremiumGrant[]> {
     const rows = await this.#db.query.premiumGrant.findMany({
-      columns: {
-        id: true,
-        userId: true,
-        source: true,
-        sourceKey: true,
-        durationDays: true,
-        durationMs: true,
-        status: true,
-        startsAt: true,
-        endsAt: true,
-        endingNotifiedAt: true,
-        createdAt: true,
-      },
-      where: { userId, status: { in: ["BANKED", "ACTIVE"] } },
+      where: { userId: userId.value, status: { in: ["BANKED", "ACTIVE"] } },
       orderBy: { createdAt: "asc" },
     });
-    return rows.map((row) => PremiumGrant.reconstitute(row));
+    return rows.map(toPremiumGrant);
   }
 
   async findBySourceKey(sourceKey: string): Promise<PremiumGrant | null> {
-    const row = await this.#db.query.premiumGrant.findFirst({
-      columns: {
-        id: true,
-        userId: true,
-        source: true,
-        sourceKey: true,
-        durationDays: true,
-        durationMs: true,
-        status: true,
-        startsAt: true,
-        endsAt: true,
-        endingNotifiedAt: true,
-        createdAt: true,
-      },
-      where: { sourceKey },
-    });
-    return row == null ? null : PremiumGrant.reconstitute(row);
+    const row = await this.#db.query.premiumGrant.findFirst({ where: { sourceKey } });
+    return row == null ? null : toPremiumGrant(row);
   }
 
-  async findLastEndedAt(userId: string): Promise<Date | null> {
+  async findLastEndedAt(userId: UserId): Promise<Temporal.Instant | null> {
     const row = await this.#db.query.premiumGrant.findFirst({
       columns: { endsAt: true },
-      where: { userId, status: "ENDED", endsAt: { isNotNull: true } },
+      where: { userId: userId.value, status: "ENDED", endsAt: { isNotNull: true } },
       orderBy: { endsAt: "desc" },
     });
     return row?.endsAt ?? null;
   }
 
-  async create(plan: PremiumGrantCreationPlan): Promise<boolean> {
+  async saveIfAbsent(grant: PremiumGrant): Promise<boolean> {
     const inserted = await this.#db
       .insert(premiumGrant)
-      .values(plan)
+      .values(toPremiumGrantRow(grant))
       .onConflictDoNothing({ target: premiumGrant.sourceKey })
       .returning({ id: premiumGrant.id });
     return inserted.length === 1;
@@ -109,25 +89,24 @@ export class DrizzlePremiumGrantRepository implements PremiumGrantRepositoryPort
     if (grants.length === 0) {
       return;
     }
-    const updatedAt = now();
     // 행마다 다른 기간은 UPDATE … FROM (VALUES …) 한 문장으로 바꾼다
     const values = grants.map((grant) => {
-      const state = grant.toPersistence();
-      return sql`(${grant.id}, ${state.status}, ${sql.param(state.startsAt, premiumGrant.startsAt)}::timestamp(3), ${sql.param(state.endsAt, premiumGrant.endsAt)}::timestamp(3))`;
+      const { id, status, startsAt, endsAt, updatedAt } = grant.toPrimitives();
+      return sql`(${id}, ${status}, ${sql.param(startsAt, premiumGrant.startsAt)}::timestamp(3), ${sql.param(endsAt, premiumGrant.endsAt)}::timestamp(3), ${sql.param(updatedAt, premiumGrant.updatedAt)}::timestamp(3))`;
     });
     await this.#db.execute(sql`
       UPDATE ${premiumGrant}
       SET ${sql.identifier(premiumGrant.status.name)} = changed."status"::"PremiumGrantStatus",
           ${sql.identifier(premiumGrant.startsAt.name)} = changed."startsAt",
           ${sql.identifier(premiumGrant.endsAt.name)} = changed."endsAt",
-          ${sql.identifier(premiumGrant.updatedAt.name)} = ${sql.param(updatedAt, premiumGrant.updatedAt)}
-      FROM (VALUES ${sql.join(values, sql`, `)}) AS changed("id", "status", "startsAt", "endsAt")
+          ${sql.identifier(premiumGrant.updatedAt.name)} = changed."updatedAt"
+      FROM (VALUES ${sql.join(values, sql`, `)}) AS changed("id", "status", "startsAt", "endsAt", "updatedAt")
       WHERE ${premiumGrant.id} = changed."id"
     `);
   }
 
-  async findUserIdsToReconcile(params: FindPremiumGrantUsersToReconcileParams): Promise<string[]> {
-    // PremiumAccessPolicy.planReconciliation이 바꿀 것이 있는 사용자만 고른다(끝낼 기간, 시작할 기간,
+  async listUserIdsToReconcile(params: ListPremiumGrantUsersToReconcileParams): Promise<UserId[]> {
+    // planPremiumReconciliation이 바꿀 것이 있는 사용자만 고른다(끝낼 기간, 시작할 기간,
     // 스토어가 유효해 다시 쌓거나 끊을 기간). 정책보다 넓게 고르면 같은 사용자를 실행마다 헛되이 다시 잠근다.
     const rows = await this.#db
       .selectDistinct({ userId: grantOf.userId })
@@ -158,11 +137,11 @@ export class DrizzlePremiumGrantRepository implements PremiumGrantRepositoryPort
               exists(this.#validStoreOfGrantUser(params.now)),
             ),
           ),
-          params.afterUserId == null ? undefined : gt(grantOf.userId, params.afterUserId),
+          params.afterUserId == null ? undefined : gt(grantOf.userId, params.afterUserId.value),
         ),
       )
       .orderBy(grantOf.userId)
       .limit(params.limit);
-    return rows.map((row) => row.userId);
+    return rows.map((row) => UserId.reconstitute(row.userId));
   }
 }

@@ -1,3 +1,5 @@
+import { instantFromDate } from "#api/shared/domain/time/instant";
+
 import { hasPaidAccess, resolvePremiumAccessDeadline } from "./paid-access.policy.js";
 
 describe("유료 접근 정책 — 프리미엄 종료 시각", () => {
@@ -24,7 +26,7 @@ describe("유료 접근 정책 — 프리미엄 종료 시각", () => {
     // Given
     const accessDeadline = resolvePremiumAccessDeadline({
       subscriptionExpiresAt: ENDS_AT,
-      storeEntitlements: [{ status: "ACTIVE", expiresAt: ENDS_AT }],
+      storeEntitlements: [{ status: "ACTIVE", expiresAt: instantFromDate(ENDS_AT) }],
     });
 
     // When
@@ -42,7 +44,11 @@ describe("유료 접근 정책 — 프리미엄 종료 시각", () => {
     const accessDeadline = resolvePremiumAccessDeadline({
       subscriptionExpiresAt: ENDS_AT,
       storeEntitlements: [
-        { status: "CANCELLED", expiresAt: ENDS_AT, gracePeriodEndsAt: graceEndsAt },
+        {
+          status: "CANCELLED",
+          expiresAt: instantFromDate(ENDS_AT),
+          gracePeriodEndsAt: instantFromDate(graceEndsAt),
+        },
       ],
     });
 

@@ -17,6 +17,7 @@ import {
 } from "#api/modules/billing/subscriptions/billing-subscriptions.public";
 import { requireRecord } from "#api/platform/database/database-error.util";
 import { resourceBonus, user as userTable } from "#api/platform/database/schema/index";
+import { instantFromDate } from "#api/shared/domain/time/instant";
 
 import type { VerifiedUser } from "./helpers/e2e-helpers.js";
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
@@ -159,7 +160,7 @@ describe("팔로우 리소스 제한 E2E", () => {
         const endsAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1_000);
         const maxCountAt = async (at: Date) => {
           vi.setSystemTime(at);
-          await ctx.module.get(SweepPremiumGrantsUseCase).execute({ now: at });
+          await ctx.module.get(SweepPremiumGrantsUseCase).execute({ now: instantFromDate(at) });
           const { accessToken } = await ctx.helpers.loginUser(email, password);
           const response = await request(ctx.app.getHttpServer())
             .get("/v1/follows/resource-limit")

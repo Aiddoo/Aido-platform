@@ -9,7 +9,7 @@ import type {
 import { isBillingNoticeable } from "../../../shared/billing-notice-window.domain-service.js";
 import type {
   TrialEndingNotice,
-  TrialEndingNoticeSourcePort,
+  TrialEndingNoticeRepositoryPort,
 } from "../ports/trial-ending-notice.repository.port.js";
 import type { TrialEndingNotifierPort } from "../ports/trial-ending-notifier.port.js";
 import { SubscriptionLogEvent } from "../subscriptions.log-events.js";
@@ -21,9 +21,9 @@ export const TRIAL_ENDING_NOTICE = {
   logEvent: SubscriptionLogEvent.TRIAL_ENDING_NOTIFIED,
 } as const satisfies BillingNoticeSettings<TrialEndingNotice>;
 
-interface NotifyEndingTrialsDependencies {
-  readonly sweeper: Pick<SweepBillingNoticesUseCase, "sweep">;
-  readonly source: TrialEndingNoticeSourcePort;
+export interface NotifyEndingTrialsDependencies {
+  readonly sweepBillingNotices: Pick<SweepBillingNoticesUseCase, "execute">;
+  readonly noticeRepository: Pick<TrialEndingNoticeRepositoryPort, "listDue" | "claim">;
   readonly notifier: TrialEndingNotifierPort;
 }
 
@@ -38,8 +38,11 @@ export class NotifyEndingTrialsUseCase {
     this.#dependencies = dependencies;
   }
 
-  execute(input: BillingNoticeSweepInput): Promise<BillingNoticeSweepResult> {
-    const { sweeper, source, notifier } = this.#dependencies;
-    return sweeper.sweep({ ...TRIAL_ENDING_NOTICE, source, notifier }, input);
+  execute(command: BillingNoticeSweepInput): Promise<BillingNoticeSweepResult> {
+    const { sweepBillingNotices, noticeRepository, notifier } = this.#dependencies;
+    return sweepBillingNotices.execute({
+      task: { ...TRIAL_ENDING_NOTICE, source: noticeRepository, notifier },
+      now: command.now,
+    });
   }
 }

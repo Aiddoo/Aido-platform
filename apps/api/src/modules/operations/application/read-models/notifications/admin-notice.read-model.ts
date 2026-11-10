@@ -8,7 +8,7 @@ import type {
 import type {
   SubscriptionEndReason,
   SubscriptionStore,
-} from "#api/modules/billing/subscriptions/billing-subscriptions.public";
+} from "#api/modules/billing/subscriptions/billing-subscriptions-events.public";
 
 import type { AdminNotification } from "./admin-notification.read-model.js";
 

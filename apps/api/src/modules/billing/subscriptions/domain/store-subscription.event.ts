@@ -38,7 +38,7 @@ interface StoreChainEventBase extends StoreSubscriptionEventBase {
   readonly storeSubscriptionId?: string;
   readonly productId: string;
   /** 지금 기간의 끝. 공급자가 보내지 않았으면 비운다. */
-  readonly periodEndsAt?: Date;
+  readonly periodEndsAt?: Temporal.Instant;
   /** 지금 기간의 유형. 없거나 모르는 값이면 null이다. */
   readonly periodKind: StorePeriodType | null;
   readonly price: StoreSubscriptionPrice;
@@ -48,13 +48,13 @@ export interface SubscriptionStartedEvent extends StoreChainEventBase {
   readonly kind: "STARTED";
   /** 기간 없는 일회성 구매 */
   readonly isOneTime: boolean;
-  readonly startedAt?: Date;
+  readonly startedAt?: Temporal.Instant;
 }
 
 export interface SubscriptionRenewedEvent extends StoreChainEventBase {
   readonly kind: "RENEWED";
   /** 행이 없는 체인을 이어 받을 때 쓰는 처음 산 시각 */
-  readonly startedAt?: Date;
+  readonly startedAt?: Temporal.Instant;
   /** 무료 체험이 끝나 첫 결제로 넘어간 갱신 */
   readonly isTrialConversion: boolean;
 }
@@ -72,7 +72,7 @@ export interface SubscriptionExpiredEvent extends StoreChainEventBase {
 export interface SubscriptionBillingIssueEvent extends StoreChainEventBase {
   readonly kind: "BILLING_ISSUE";
   /** 스토어가 결제를 다시 시도하는 유예의 끝. 유예를 쓰지 않으면 null이다. */
-  readonly gracePeriodEndsAt: Date | null;
+  readonly gracePeriodEndsAt: Temporal.Instant | null;
 }
 
 export interface SubscriptionProductChangeScheduledEvent extends StoreChainEventBase {

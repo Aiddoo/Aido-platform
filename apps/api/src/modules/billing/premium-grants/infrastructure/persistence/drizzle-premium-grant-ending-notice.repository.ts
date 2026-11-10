@@ -4,12 +4,12 @@ import { and, eq, gt, gte, inArray, isNull, lte, ne, notExists, or, sql } from "
 import { alias } from "drizzle-orm/pg-core";
 
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
-import { premiumGrant, subscription } from "#api/platform/database/schema/index";
+import { premiumGrant, subscription } from "#api/platform/database/schema/billing.schema";
 
 import type { FindDueBillingNoticesParams } from "../../application/ports/billing-notice.port.js";
-import type {
-  PremiumGrantEndingNotice,
-  PremiumGrantEndingNoticeSourcePort,
+import {
+  type PremiumGrantEndingNotice,
+  PremiumGrantEndingNoticeRepositoryPort,
 } from "../../application/ports/premium-grant-ending-notice.repository.port.js";
 
 const grantOf = alias(premiumGrant, "grant");
@@ -17,10 +17,11 @@ const nextOf = alias(premiumGrant, "next");
 const storeOf = alias(subscription, "store");
 
 @Injectable()
-export class DrizzlePremiumGrantEndingNoticeSource implements PremiumGrantEndingNoticeSourcePort {
+export class DrizzlePremiumGrantEndingNoticeRepository extends PremiumGrantEndingNoticeRepositoryPort {
   readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
 
   constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>) {
+    super();
     this.#txHost = txHost;
   }
 
@@ -29,7 +30,7 @@ export class DrizzlePremiumGrantEndingNoticeSource implements PremiumGrantEnding
   }
 
   // 뒤에 다른 보상 기간이나 스토어 구독이 이어지면 프리미엄이 끝나지 않으므로 마지막 기간만 고른다
-  async findDue(
+  async listDue(
     params: FindDueBillingNoticesParams<PremiumGrantEndingNotice>,
   ): Promise<PremiumGrantEndingNotice[]> {
     const rows = await this.#db
@@ -86,14 +87,14 @@ export class DrizzlePremiumGrantEndingNoticeSource implements PremiumGrantEnding
 
   async claim(
     notices: readonly PremiumGrantEndingNotice[],
-    claimedAt: Date,
+    claimedAt: Temporal.Instant,
   ): Promise<PremiumGrantEndingNotice[]> {
     if (notices.length === 0) {
       return [];
     }
     const claimed = await this.#db
       .update(premiumGrant)
-      .set({ endingNotifiedAt: claimedAt })
+      .set({ endingNotifiedAt: claimedAt, updatedAt: claimedAt })
       .where(
         and(
           inArray(

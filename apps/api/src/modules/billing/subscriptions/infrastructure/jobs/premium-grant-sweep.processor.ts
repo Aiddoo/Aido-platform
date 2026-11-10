@@ -1,63 +1,54 @@
-import { Inject, Injectable, Logger, type OnModuleInit } from "@nestjs/common";
+import { Injectable, Logger, type OnModuleInit } from "@nestjs/common";
 
-import { JOB_POLLING_SECONDS } from "#api/shared/application/ports/index";
-import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
+import { ClockPort } from "#api/shared/application/ports/clock.port";
+import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
-import { now } from "#api/shared/domain/date/utils/core";
 
 import { PremiumGrantLogEvent } from "../../../premium-grants/application/premium-grants.log-events.js";
 import { NotifyEndingPremiumGrantsUseCase } from "../../../premium-grants/application/use-cases/notify-ending-premium-grants.use-case.js";
 import { SweepPremiumGrantsUseCase } from "../../../premium-grants/application/use-cases/sweep-premium-grants.use-case.js";
 import { NotifyEndingTrialsUseCase } from "../../application/use-cases/notify-ending-trials.use-case.js";
 import { NotifyUpcomingRenewalsUseCase } from "../../application/use-cases/notify-upcoming-renewals.use-case.js";
-import {
-  PREMIUM_GRANT_SWEEP_JOB_OPTIONS,
-  PREMIUM_GRANT_SWEEP_QUEUE,
-} from "./premium-grant-sweep.queue.js";
+import { PREMIUM_GRANT_SWEEP_QUEUE } from "./premium-grant-sweep.queue.js";
 
 type SweepStep = Pick<NotifyEndingPremiumGrantsUseCase, "execute">;
 
+// 보상 기간 정리 잡이 체험 종료·갱신 예정 안내(subscriptions)까지 같은 10분 주기에 돌리므로 처리기는 subscriptions에 둔다
 @Injectable()
 export class PremiumGrantSweepProcessor implements OnModuleInit {
   readonly #logger = new Logger(PremiumGrantSweepProcessor.name);
-
   readonly #sweepPremiumGrants: Pick<SweepPremiumGrantsUseCase, "execute">;
   readonly #notifyEndingPremiumGrants: SweepStep;
   readonly #notifyEndingTrials: SweepStep;
   readonly #notifyUpcomingRenewals: SweepStep;
-  readonly #runtime: JobRuntimePort;
+  readonly #jobQueue: JobQueuePort;
+  readonly #clock: ClockPort;
 
   constructor(
-    @Inject(SweepPremiumGrantsUseCase)
-    sweepPremiumGrants: Pick<SweepPremiumGrantsUseCase, "execute">,
-    @Inject(NotifyEndingPremiumGrantsUseCase)
-    notifyEndingPremiumGrants: SweepStep,
-    @Inject(NotifyEndingTrialsUseCase)
-    notifyEndingTrials: SweepStep,
-    @Inject(NotifyUpcomingRenewalsUseCase)
-    notifyUpcomingRenewals: SweepStep,
-    @Inject(JOB_RUNTIME) runtime: JobRuntimePort,
+    sweepPremiumGrants: SweepPremiumGrantsUseCase,
+    notifyEndingPremiumGrants: NotifyEndingPremiumGrantsUseCase,
+    notifyEndingTrials: NotifyEndingTrialsUseCase,
+    notifyUpcomingRenewals: NotifyUpcomingRenewalsUseCase,
+    jobQueue: JobQueuePort,
+    clock: ClockPort,
   ) {
     this.#sweepPremiumGrants = sweepPremiumGrants;
     this.#notifyEndingPremiumGrants = notifyEndingPremiumGrants;
     this.#notifyEndingTrials = notifyEndingTrials;
     this.#notifyUpcomingRenewals = notifyUpcomingRenewals;
-    this.#runtime = runtime;
+    this.#jobQueue = jobQueue;
+    this.#clock = clock;
   }
 
   async onModuleInit(): Promise<void> {
-    await this.#runtime.work(PREMIUM_GRANT_SWEEP_QUEUE, async () => this.process(), {
-      teamSize: 1,
-      pollingIntervalSeconds: JOB_POLLING_SECONDS.BACKGROUND,
-      queuePolicy: PREMIUM_GRANT_SWEEP_JOB_OPTIONS,
-    });
+    await this.#jobQueue.work(PREMIUM_GRANT_SWEEP_QUEUE, async () => this.process());
   }
 
   async process(): Promise<void> {
-    const at = now();
+    const now = this.#clock.now();
     try {
       // 끝난 기간을 먼저 닫아야 안내 대상이 마지막 기간만 남는다
-      await this.#sweepPremiumGrants.execute({ now: at });
+      await this.#sweepPremiumGrants.execute({ now });
     } catch (error) {
       this.#logger.error({
         event: PremiumGrantLogEvent.PREMIUM_GRANT_SWEEP_JOB_FAILED,
@@ -76,7 +67,7 @@ export class PremiumGrantSweepProcessor implements OnModuleInit {
     const failures: unknown[] = [];
     for (const { step, useCase } of steps) {
       try {
-        await useCase.execute({ now: at });
+        await useCase.execute({ now });
       } catch (error) {
         this.#logger.error({
           event: PremiumGrantLogEvent.PREMIUM_GRANT_SWEEP_STEP_FAILED,

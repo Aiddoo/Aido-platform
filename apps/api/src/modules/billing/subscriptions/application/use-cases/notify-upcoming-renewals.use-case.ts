@@ -8,7 +8,7 @@ import type {
 } from "../../../premium-grants/application/use-cases/sweep-billing-notices.use-case.js";
 import type {
   UpcomingRenewalNotice,
-  UpcomingRenewalNoticeSourcePort,
+  UpcomingRenewalNoticeRepositoryPort,
 } from "../ports/upcoming-renewal-notice.repository.port.js";
 import type { UpcomingRenewalNotifierPort } from "../ports/upcoming-renewal-notifier.port.js";
 import { SubscriptionLogEvent } from "../subscriptions.log-events.js";
@@ -20,9 +20,9 @@ export const UPCOMING_RENEWAL_NOTICE = {
   logEvent: SubscriptionLogEvent.RENEWAL_UPCOMING_NOTIFIED,
 } as const satisfies BillingNoticeSettings<UpcomingRenewalNotice>;
 
-interface NotifyUpcomingRenewalsDependencies {
-  readonly sweeper: Pick<SweepBillingNoticesUseCase, "sweep">;
-  readonly source: UpcomingRenewalNoticeSourcePort;
+export interface NotifyUpcomingRenewalsDependencies {
+  readonly sweepBillingNotices: Pick<SweepBillingNoticesUseCase, "execute">;
+  readonly noticeRepository: Pick<UpcomingRenewalNoticeRepositoryPort, "listDue" | "claim">;
   readonly notifier: UpcomingRenewalNotifierPort;
 }
 
@@ -37,8 +37,11 @@ export class NotifyUpcomingRenewalsUseCase {
     this.#dependencies = dependencies;
   }
 
-  execute(input: BillingNoticeSweepInput): Promise<BillingNoticeSweepResult> {
-    const { sweeper, source, notifier } = this.#dependencies;
-    return sweeper.sweep({ ...UPCOMING_RENEWAL_NOTICE, source, notifier }, input);
+  execute(command: BillingNoticeSweepInput): Promise<BillingNoticeSweepResult> {
+    const { sweepBillingNotices, noticeRepository, notifier } = this.#dependencies;
+    return sweepBillingNotices.execute({
+      task: { ...UPCOMING_RENEWAL_NOTICE, source: noticeRepository, notifier },
+      now: command.now,
+    });
   }
 }

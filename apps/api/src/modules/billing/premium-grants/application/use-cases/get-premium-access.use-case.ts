@@ -1,30 +1,38 @@
-import { now } from "#api/shared/domain/date/utils/core";
+import type { ClockPort } from "#api/shared/application/ports/clock.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import {
-  type PremiumAccess,
   resolvePremiumAccess,
+  type PremiumAccess,
 } from "../../../shared/premium-access.domain-service.js";
-import type { PremiumAccessReaderPort } from "../ports/premium-access.reader.port.js";
 import type { PremiumGrantRepositoryPort } from "../ports/premium-grant.repository.port.js";
-import type { ProjectPremiumAccessUseCase } from "./project-premium-access.use-case.js";
+import type { LoadPremiumEntitlementsUseCase } from "./load-premium-entitlements.use-case.js";
 
-interface PremiumAccessReaderDependencies {
-  readonly premiumAccessProjector: Pick<ProjectPremiumAccessUseCase, "loadEntitlements">;
-  readonly premiumGrantRepository: Pick<PremiumGrantRepositoryPort, "findLastEndedAt">;
+export interface GetPremiumAccessQuery {
+  readonly userId: string;
 }
 
-export class GetPremiumAccessUseCase implements PremiumAccessReaderPort {
-  readonly #dependencies: PremiumAccessReaderDependencies;
+export interface GetPremiumAccessDependencies {
+  readonly loadPremiumEntitlements: Pick<LoadPremiumEntitlementsUseCase, "execute">;
+  readonly premiumGrantRepository: Pick<PremiumGrantRepositoryPort, "findLastEndedAt">;
+  readonly clock: ClockPort;
+}
 
-  constructor(dependencies: PremiumAccessReaderDependencies) {
+/** 스토어 구독과 보상 기간을 함께 본 현재 프리미엄 출처·종료 시각. 조회만 하고 정리는 쓰지 않는다. */
+export class GetPremiumAccessUseCase {
+  readonly #dependencies: GetPremiumAccessDependencies;
+
+  constructor(dependencies: GetPremiumAccessDependencies) {
     this.#dependencies = dependencies;
   }
 
-  async getPremiumAccess(userId: string): Promise<PremiumAccess> {
+  async execute(query: GetPremiumAccessQuery): Promise<PremiumAccess> {
+    const { loadPremiumEntitlements, premiumGrantRepository, clock } = this.#dependencies;
+    const userId = UserId.reconstitute(query.userId);
     const [{ entitlements }, lastEndedGrantAt] = await Promise.all([
-      this.#dependencies.premiumAccessProjector.loadEntitlements(userId),
-      this.#dependencies.premiumGrantRepository.findLastEndedAt(userId),
+      loadPremiumEntitlements.execute({ userId }),
+      premiumGrantRepository.findLastEndedAt(userId),
     ]);
-    return resolvePremiumAccess({ ...entitlements, lastEndedGrantAt }, now());
+    return resolvePremiumAccess({ ...entitlements, lastEndedGrantAt }, clock.now());
   }
 }

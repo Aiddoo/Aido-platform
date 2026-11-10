@@ -61,11 +61,13 @@ import { DRIZZLE } from "#api/platform/database/index";
 import { FanOutDomainEventPublisher } from "#api/platform/events/fan-out-domain-event.publisher";
 import { configureApplication } from "#api/platform/http/configure-application";
 import { REDIS_COMMAND_CLIENT } from "#api/platform/redis/redis.constants";
+import { ClockPort } from "#api/shared/application/ports/clock.port";
 import {
   DOMAIN_EVENT_PUBLISHER,
   JOB_RUNTIME,
   JobQueuePort,
 } from "#api/shared/application/ports/index";
+import { DateClock } from "#test/doubles/platform/date-clock";
 import { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
 import { StubWeatherReportProvider } from "#test/mocks/ports/weather.stub";
 
@@ -220,6 +222,9 @@ export async function createE2eApp(options?: E2eAppOptions): Promise<E2eTestCont
     // E2E 앱이 실제 pg-boss에 연결하지 않게 새 큐 포트도 메모리 구현으로 바꾼다
     .overrideProvider(JobQueuePort)
     .useValue(new InMemoryJobQueue())
+    // 시각을 옮기는 테스트가 Date 가짜 시계로 ClockPort도 움직이게 한다
+    .overrideProvider(ClockPort)
+    .useValue(new DateClock())
     .overrideProvider(CacheStorePort)
     .useValue(cacheAdapter)
     .overrideProvider(DRIZZLE)

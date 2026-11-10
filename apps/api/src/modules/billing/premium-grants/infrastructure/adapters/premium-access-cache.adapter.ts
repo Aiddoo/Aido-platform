@@ -9,10 +9,10 @@ import {
   type UserProfileInvalidatorPort,
 } from "#api/modules/identity/identity-user-access.public";
 
-import type { SubscriptionCachePort } from "../../application/ports/premium-access-cache.port.js";
+import { PremiumAccessCachePort } from "../../application/ports/premium-access-cache.port.js";
 
 @Injectable()
-export class SubscriptionCacheAdapter implements SubscriptionCachePort {
+export class PremiumAccessCacheAdapter extends PremiumAccessCachePort {
   readonly #subscriptionCache: EntitlementSubscriptionInvalidatorPort;
   readonly #profileCache: UserProfileInvalidatorPort;
 
@@ -21,6 +21,7 @@ export class SubscriptionCacheAdapter implements SubscriptionCachePort {
     subscriptionCache: EntitlementSubscriptionInvalidatorPort,
     @Inject(USER_PROFILE_INVALIDATOR) profileCache: UserProfileInvalidatorPort,
   ) {
+    super();
     this.#subscriptionCache = subscriptionCache;
     this.#profileCache = profileCache;
   }

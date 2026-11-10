@@ -11,22 +11,22 @@ export const STORE_RENEWAL_GRACE_MS = 3 * 60 * 60 * 1_000;
 /** 스토어 구독 행 중 엔타이틀먼트가 끝나는 시각 판단에 필요한 값 */
 export interface StoreEntitlementWindow {
   readonly status: string;
-  readonly expiresAt: Date;
+  readonly expiresAt: Temporal.Instant;
   /**
    * 결제 실패 뒤 스토어가 결제를 다시 시도하며 엔타이틀먼트를 유지하는 결제 유예(billing grace)의 끝.
    * BILLING_ISSUE 웹훅의 grace_period_expiration_at_ms이고 RENEWAL·EXPIRATION이 지운다.
    */
-  readonly gracePeriodEndsAt?: Date | null;
+  readonly gracePeriodEndsAt?: Temporal.Instant | null;
 }
 
 /** 자동 갱신 중인 스토어 구독이 아직 유효하다고 볼 수 있는 마지막 시각(이 시각 미만이면 유효) */
-export function storeRenewalGraceEndsAt(expiresAt: Date): Date {
-  return new Date(expiresAt.getTime() + STORE_RENEWAL_GRACE_MS);
+export function storeRenewalGraceEndsAt(expiresAt: Temporal.Instant): Temporal.Instant {
+  return expiresAt.add({ milliseconds: STORE_RENEWAL_GRACE_MS });
 }
 
 /** 이 시각보다 늦게 끝나는 자동 갱신 구독은 아직 유효하다. SQL 조건의 기준값으로 쓴다. */
-export function storeRenewalCutoff(now: Date): Date {
-  return new Date(now.getTime() - STORE_RENEWAL_GRACE_MS);
+export function storeRenewalCutoff(now: Temporal.Instant): Temporal.Instant {
+  return now.subtract({ milliseconds: STORE_RENEWAL_GRACE_MS });
 }
 
 /**
@@ -35,29 +35,31 @@ export function storeRenewalCutoff(now: Date): Date {
  * 그 끝까지 늘어난다(결제 실패 시 RevenueCat은 BILLING_ISSUE와 함께 CANCELLATION을 보낸다).
  * Billing·Access의 TS 판단과 SQL 조건이 모두 이 규칙을 따른다.
  */
-export function storeEntitlementEndsAt(store: StoreEntitlementWindow): Date | null {
-  const baseEndsAt =
-    store.status === "ACTIVE"
-      ? storeRenewalGraceEndsAt(store.expiresAt)
-      : store.status === "CANCELLED"
-        ? new Date(store.expiresAt)
-        : null;
+export function storeEntitlementEndsAt(store: StoreEntitlementWindow): Temporal.Instant | null {
+  const baseEndsAt = baseEntitlementEndsAt(store);
   if (baseEndsAt == null) {
     return null;
   }
   const graceEndsAt = store.gracePeriodEndsAt;
-  return graceEndsAt != null && graceEndsAt.getTime() > baseEndsAt.getTime()
-    ? new Date(graceEndsAt)
+  return graceEndsAt != null && Temporal.Instant.compare(graceEndsAt, baseEndsAt) > 0
+    ? graceEndsAt
     : baseEndsAt;
+}
+
+function baseEntitlementEndsAt(store: StoreEntitlementWindow): Temporal.Instant | null {
+  if (store.status === "ACTIVE") {
+    return storeRenewalGraceEndsAt(store.expiresAt);
+  }
+  return store.status === "CANCELLED" ? store.expiresAt : null;
 }
 
 /**
  * 스토어가 알려 준 지금 기간의 끝. 결제 유예 중이면 유예의 끝이다(그때까지 갱신되지 않으면 끝난다).
  * 자동 갱신의 웹훅 대기 유예는 포함하지 않는다.
  */
-export function storePeriodEndsAt(store: StoreEntitlementWindow): Date {
+export function storePeriodEndsAt(store: StoreEntitlementWindow): Temporal.Instant {
   const graceEndsAt = store.gracePeriodEndsAt;
-  return graceEndsAt != null && graceEndsAt.getTime() > store.expiresAt.getTime()
-    ? new Date(graceEndsAt)
-    : new Date(store.expiresAt);
+  return graceEndsAt != null && Temporal.Instant.compare(graceEndsAt, store.expiresAt) > 0
+    ? graceEndsAt
+    : store.expiresAt;
 }

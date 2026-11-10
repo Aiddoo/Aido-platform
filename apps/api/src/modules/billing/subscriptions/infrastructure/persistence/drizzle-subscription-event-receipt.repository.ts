@@ -2,20 +2,21 @@ import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
 
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
-import { subscriptionEventReceipt } from "#api/platform/database/schema/index";
+import { subscriptionEventReceipt } from "#api/platform/database/schema/billing.schema";
 
-import type {
-  ClaimSubscriptionEventReceiptInput,
+import {
+  type ClaimSubscriptionEventReceiptInput,
   SubscriptionEventReceiptRepositoryPort,
 } from "../../application/ports/subscription-event-receipt.repository.port.js";
 
 const PROVIDER = "REVENUECAT";
 
 @Injectable()
-export class DrizzleSubscriptionEventReceiptRepository implements SubscriptionEventReceiptRepositoryPort {
+export class DrizzleSubscriptionEventReceiptRepository extends SubscriptionEventReceiptRepositoryPort {
   readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
 
   constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>) {
+    super();
     this.#txHost = txHost;
   }
 

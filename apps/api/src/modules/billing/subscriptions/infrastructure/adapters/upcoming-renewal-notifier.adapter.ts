@@ -12,12 +12,13 @@ import {
 } from "#api/modules/notification/notification-delivery.public";
 import { DEFAULT_DELIVERY_TIMEZONE } from "#api/shared/domain/date/utils/timezone";
 import { DEFAULT_LOCALE } from "#api/shared/domain/locale";
+import { instantToDate } from "#api/shared/domain/time/instant";
 
 import type { UpcomingRenewalNotice } from "../../application/ports/upcoming-renewal-notice.repository.port.js";
-import type { UpcomingRenewalNotifierPort } from "../../application/ports/upcoming-renewal-notifier.port.js";
+import { UpcomingRenewalNotifierPort } from "../../application/ports/upcoming-renewal-notifier.port.js";
 
 @Injectable()
-export class UpcomingRenewalNotifierAdapter implements UpcomingRenewalNotifierPort {
+export class UpcomingRenewalNotifierAdapter extends UpcomingRenewalNotifierPort {
   readonly #notificationPublisher: NotificationPublisher;
   readonly #localeReader: NotificationRecipientLocaleReaderPort;
   readonly #timezoneReader: NotificationRecipientTimezoneReaderPort;
@@ -29,12 +30,13 @@ export class UpcomingRenewalNotifierAdapter implements UpcomingRenewalNotifierPo
     @Inject(NOTIFICATION_RECIPIENT_TIMEZONE_READER)
     timezoneReader: NotificationRecipientTimezoneReaderPort,
   ) {
+    super();
     this.#notificationPublisher = notificationPublisher;
     this.#localeReader = localeReader;
     this.#timezoneReader = timezoneReader;
   }
 
-  async notify(notices: readonly UpcomingRenewalNotice[], now: Date): Promise<void> {
+  async notify(notices: readonly UpcomingRenewalNotice[], now: Temporal.Instant): Promise<void> {
     if (notices.length === 0) {
       return;
     }
@@ -48,12 +50,13 @@ export class UpcomingRenewalNotifierAdapter implements UpcomingRenewalNotifierPo
         const message = createPremiumRenewalUpcomingNotificationMessage({
           locale: locales.get(notice.userId) ?? DEFAULT_LOCALE,
           timezone: timezones.get(notice.userId) ?? DEFAULT_DELIVERY_TIMEZONE,
-          renewsAt: notice.expiresAt,
-          now,
+          renewsAt: instantToDate(notice.expiresAt),
+          now: instantToDate(now),
           variantContext: {
             campaignKey: SCHEDULER_CAMPAIGN_KEY.PREMIUM_RENEWAL_UPCOMING,
             recipientId: notice.userId,
-            occurrenceKey: `${notice.subscriptionId}:${notice.expiresAt.getTime()}`,
+            // 문자열은 배포 전 안내와 같은 변형 배정을 유지하려고 만료 시각 ms를 쓴다
+            occurrenceKey: `${notice.subscriptionId}:${notice.expiresAt.epochMilliseconds}`,
           },
         });
         return {
