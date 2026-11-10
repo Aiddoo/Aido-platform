@@ -6,7 +6,7 @@
 
 - 새 slice는 `pnpm gen:api-slice`로 뼈대를 만든다. 생성기가 없으면 [아키텍처](docs/architecture.md#폴더-구조-목표)의 템플릿을 손으로 따른다.
 - 기준 구현은 notes/memos다([도메인 모델](docs/domain-modeling.md#목표-예시-notesmemos)).
-- 검사: `pnpm lint:names`, `pnpm --filter @aido/server lint:deps`·`check:conventions`·`check:unused`(knip). 모두 `pnpm check`에 있다. Claude Code는 서버 파일을 고친 직후 `scripts/agent-hooks/lint-edited-file.mjs` hook이 lint·관례 검사를 돌린다.
+- 검사: `pnpm lint:names`, `pnpm --filter @aido/server lint:deps`·`check:conventions`, `pnpm check:unused`(knip, 설정은 루트 `knip.jsonc`). 모두 `pnpm check`에 있다. Claude Code는 서버 파일을 고친 직후 `scripts/agent-hooks/lint-edited-file.mjs` hook이 lint·관례 검사를 돌린다.
 - 모든 Context가 slice 구조이고 위 검사는 `apps/api/src` 전체에 걸린다. 남은 옛 이름은 각 문서의 "전환 중" 절에 있고 새 코드의 사례로 삼지 않는다.
 
 ## 서버 규칙 체크리스트

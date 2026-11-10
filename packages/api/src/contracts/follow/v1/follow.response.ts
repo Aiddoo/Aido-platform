@@ -388,12 +388,6 @@ export const cancelFriendRequestResponseSchema = z
 
 export type CancelFriendRequestResponse = z.infer<typeof cancelFriendRequestResponseSchema>;
 
-export const followResponseSchema = sendFriendRequestResponseSchema;
-export type FollowResponse = z.infer<typeof followResponseSchema>;
-
-export const unfollowResponseSchema = removeFriendResponseSchema;
-export type UnfollowResponse = z.infer<typeof unfollowResponseSchema>;
-
 export const removeFollowerResponseSchema = z
   .object({
     message: z.string(),

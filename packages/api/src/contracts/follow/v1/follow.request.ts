@@ -21,26 +21,6 @@ export const userTagParamSchema = z.object({
 
 export type UserTagParam = z.infer<typeof userTagParamSchema>;
 
-export const sendFriendRequestParamSchema = userTagParamSchema;
-
-export type SendFriendRequestParam = z.infer<typeof sendFriendRequestParamSchema>;
-
-export const acceptFriendRequestParamSchema = userIdParamSchema;
-
-export type AcceptFriendRequestParam = z.infer<typeof acceptFriendRequestParamSchema>;
-
-export const rejectFriendRequestParamSchema = userIdParamSchema;
-
-export type RejectFriendRequestParam = z.infer<typeof rejectFriendRequestParamSchema>;
-
-export const removeFriendParamSchema = userIdParamSchema;
-
-export type RemoveFriendParam = z.infer<typeof removeFriendParamSchema>;
-
-export const cancelFriendRequestParamSchema = userIdParamSchema;
-
-export type CancelFriendRequestParam = z.infer<typeof cancelFriendRequestParamSchema>;
-
 export const getFollowsQuerySchema = z.object({
   cursor: z.cuid().optional().describe("페이지네이션 커서 (CUID 25자, 선택)"),
   limit: z
@@ -73,10 +53,6 @@ export const getFriendsQuerySchema = z.object({
 });
 
 export type GetFriendsQuery = z.infer<typeof getFriendsQuerySchema>;
-
-export const getFriendTodosParamSchema = userIdParamSchema;
-
-export type GetFriendTodosParam = z.infer<typeof getFriendTodosParamSchema>;
 
 export const searchUsersQuerySchema = z.object({
   q: z
