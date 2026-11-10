@@ -78,7 +78,7 @@ updates:
       # Firebase 27은 iOS dynamic frameworks + SPM, Kotlin 2.4를 요구해 Expo config 플러그인만으로 맞출 수 없다.
       - dependency-name: '@react-native-firebase/*'
         update-types: ['version-update:semver-major']
-      # @types/node: 프로덕션 런타임 Node 24 라인의 타입 surface 유지
+      # @types/node: 프로덕션 런타임 Node 26 라인의 타입 surface 유지
       - dependency-name: '@types/node'
         update-types: ['version-update:semver-major']
       # zod: @aido/api 서버 계약 동결 — minor도 검증 시맨틱 변화 이력(4.4.0)
@@ -100,7 +100,7 @@ updates:
       timezone: 'Asia/Seoul'
     open-pull-requests-limit: 3
     ignore:
-      # 프로덕션 런타임은 Node 24 LTS 라인을 유지한다.
+      # 프로덕션 런타임은 Node 26 LTS 라인을 유지한다.
       - dependency-name: 'node'
         update-types: ['version-update:semver-major']
     target-branch: 'main'
