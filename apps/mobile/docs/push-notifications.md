@@ -97,6 +97,8 @@ PushNotificationGateway (core/ports) ← createExpoPushNotificationGateway (shar
 
 ## 눌린 푸시 처리
 
+탭은 읽음(`markAsReadAndCheckOwnership`)과 열림(`POST …/opened`, 읽음 포함)을 기존 API로 남기고, 이동한 뒤 `push_notification_opened`를 한 번 보낸다. `app_state`는 `NotificationPolicy.getOpenAppState`가 정한다. 시작할 때 읽은 마지막 응답은 `cold`, 앱이 뒤에 있었거나 앞으로 온 지 1초 안이면 `background`(응답과 복귀 이벤트의 순서가 플랫폼마다 다르다), 그 밖은 `foreground`다. 개인 정보는 보내지 않는다.
+
 Expo Router 권장대로 루트 레이아웃의 관찰 훅 하나가 `getLastNotificationResponse`와 응답 리스너를 받아 슬롯에 넣고, 처리 뒤 `clearLastNotificationResponse`로 재시작 중복을 막는다. 푸시는 URL을 싣지 않으므로 `+native-intent`는 관여하지 않는다.
 
 | 상황                             | 동작                                                                                                                                                                  |
@@ -104,6 +106,7 @@ Expo Router 권장대로 루트 레이아웃의 관찰 훅 하나가 `getLastNot
 | 인증 확인 중(`loading`·`locked`) | 슬롯에 둔다. `locked`는 스피너로 넘기고 잠금이 풀리면 이어간다                                                                                                        |
 | 로그아웃 상태                    | 슬롯에 둔다(10분). 로그인 뒤 같은 Index 경로로 한 번만 연다                                                                                                           |
 | 연속 두 탭                       | 슬롯이 하나라 마지막 탭만 연다. 앞 탭의 늦은 읽음 응답은 버린다                                                                                                       |
+| 같은 탭이 다시 옴                | 처리한 응답 id를 최근 20개 기억해(`NotificationPolicy.rememberHandledResponse`) 콜드 스타트의 마지막 응답·리스너 중복·다시 그린 레이아웃에도 한 번만 연다             |
 | 로그아웃·세션 만료               | 슬롯과 마지막 응답을 지운다. 진행 중 응답은 `SessionEpoch`와 슬롯 id로 버린다                                                                                         |
 | 다른 계정 알림·없는 대상         | 읽음이 403·404면 버리고 머문다. 페이로드에 수신자 id가 없어 이것이 유일한 방어다                                                                                      |
 | 오프라인·5xx·읽음 지연           | `NOTIFICATION_READ_BUDGET_MS`(800ms, 초깃값, Release 측정 뒤 확정) 안에 끝내고 연다. 서버의 `opened`가 읽음도 처리하므로 mutation이 연결될 때까지 멈췄다가 재시도한다 |

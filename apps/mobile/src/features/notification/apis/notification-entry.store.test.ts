@@ -5,6 +5,7 @@ const tap = (id: string, actionIdentifier = 'default') => ({
   actionIdentifier,
   data: { notificationId: 1, type: 'FOLLOW_NEW', action: { type: 'DEEP_LINK' } } as const,
   receivedAt: 0,
+  openedFrom: 'background' as const,
 });
 
 describe('createNotificationEntryStore', () => {
@@ -25,6 +26,21 @@ describe('createNotificationEntryStore', () => {
     const store = createNotificationEntryStore();
     store.receive(tap('a'));
     store.settle('a');
+
+    // When
+    store.receive(tap('a'));
+
+    // Then
+    expect(store.getState().pending).toBeNull();
+  });
+
+  it('끝난 응답이 다른 탭 뒤에 다시 와도 슬롯에 넣지 않는다', () => {
+    // Given
+    const store = createNotificationEntryStore();
+    store.receive(tap('a'));
+    store.settle('a');
+    store.receive(tap('b'));
+    store.settle('b');
 
     // When
     store.receive(tap('a'));

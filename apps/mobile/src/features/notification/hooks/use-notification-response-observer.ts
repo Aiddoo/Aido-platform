@@ -43,6 +43,7 @@ import { useNotificationNavigation } from './use-notification-navigation';
 export function useNotificationResponseObserver(): void {
   const status = useAuthStatus();
   const gateway = usePushNotification();
+  const appLifecycle = useAppLifecycle();
   const store = useNotificationEntryStore();
   const logger = useLogger();
   const { pending, ready, optOut } = useSyncExternalStore(store.subscribe, store.getState);
@@ -64,7 +65,14 @@ export function useNotificationResponseObserver(): void {
   );
 
   useLayoutEffect(() => {
-    const receive = (response: PushNotificationResponse) => {
+    let activeSince = appLifecycle.getCurrentState() === 'active' ? Date.now() : null;
+    const removeAppStateListener = appLifecycle.subscribe((state) => {
+      activeSince = state === 'active' ? Date.now() : null;
+    });
+    const receive = (
+      response: PushNotificationResponse,
+      { isLaunchResponse }: { isLaunchResponse: boolean },
+    ) => {
       const parsed = pushNotificationPayloadSchema.safeParse(response.data);
       if (!parsed.success) {
         logger.warn(NOTIFICATION_LOG_EVENT.RESPONSE_PAYLOAD_INVALID, {
@@ -72,19 +80,30 @@ export function useNotificationResponseObserver(): void {
         });
         return;
       }
+      const receivedAt = Date.now();
       store.receive({
         id: response.id,
         actionIdentifier: response.actionIdentifier,
         data: parsed.data,
-        receivedAt: Date.now(),
+        receivedAt,
+        openedFrom: NotificationPolicy.getOpenAppState(
+          { receivedAt },
+          { isLaunchResponse, appState: appLifecycle.getCurrentState(), activeSince },
+        ),
       });
     };
-    const last = gateway.getLastResponse();
-    if (last != null) {
-      receive(last);
+    const launchResponse = gateway.getLastResponse();
+    if (launchResponse != null) {
+      receive(launchResponse, { isLaunchResponse: true });
     }
-    return gateway.subscribeResponse(receive);
-  }, [gateway, logger, store]);
+    const removeResponseListener = gateway.subscribeResponse((response) =>
+      receive(response, { isLaunchResponse: false }),
+    );
+    return () => {
+      removeAppStateListener();
+      removeResponseListener();
+    };
+  }, [appLifecycle, gateway, logger, store]);
 
   const wasAuthenticatedRef = useRef(status === 'authenticated');
   useLayoutEffect(() => {
@@ -269,6 +288,7 @@ function useOpenReadyEntry(
         trackEvent('push_notification_opened', {
           type: data.type ?? 'UNKNOWN',
           action: data.action.type,
+          app_state: response.openedFrom,
           ...(data.campaignKey && { campaign_key: data.campaignKey }),
           ...(data.variantId && { variant_id: data.variantId }),
           ...(data.purpose && { purpose: data.purpose }),

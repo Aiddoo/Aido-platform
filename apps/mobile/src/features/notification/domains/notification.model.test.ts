@@ -217,3 +217,70 @@ describe('getForegroundPresentation', () => {
     expect(presentation).toBe(expected);
   });
 });
+
+describe('getOpenAppState', () => {
+  const ACTIVE_SINCE = 10_000;
+
+  it.each([
+    ['꺼진 앱이 그 탭으로 켜졌으면', 'cold', true, 'active', ACTIVE_SINCE, ACTIVE_SINCE + 5_000],
+    ['뒤에 있던 앱이면', 'background', false, 'background', null, ACTIVE_SINCE],
+    // 응답이 복귀 이벤트보다 늦게 와도 1초 안이면 뒤에서 누른 탭이다
+    [
+      '앞으로 온 지 1초가 안 됐으면',
+      'background',
+      false,
+      'active',
+      ACTIVE_SINCE,
+      ACTIVE_SINCE + 999,
+    ],
+    ['앞에 1초 이상 있었으면', 'foreground', false, 'active', ACTIVE_SINCE, ACTIVE_SINCE + 1_000],
+  ] as const)(
+    '%s 열림을 %s로 남긴다',
+    (_case, expected, isLaunchResponse, appState, activeSince, receivedAt) => {
+      // When
+      const openedFrom = NotificationPolicy.getOpenAppState(
+        { receivedAt },
+        { isLaunchResponse, appState, activeSince },
+      );
+
+      // Then
+      expect(openedFrom).toBe(expected);
+    },
+  );
+});
+
+describe('rememberHandledResponse', () => {
+  it('처리한 응답은 다른 탭이 끼어도 다시 처리하지 않는다', () => {
+    // Given
+    const handledResponseIds = ['a', 'b'].reduce<string[]>(
+      (ids, id) => NotificationPolicy.rememberHandledResponse({ id }, ids),
+      [],
+    );
+
+    // When
+    const hasHandled = NotificationPolicy.hasHandledResponse({ id: 'a' }, handledResponseIds);
+
+    // Then
+    expect(hasHandled).toBe(true);
+  });
+
+  it('최근 20개만 기억해 앱을 오래 써도 기억이 늘지 않는다', () => {
+    // Given
+    const ids = Array.from({ length: 21 }, (_, index) => `response-${index}`);
+
+    // When
+    const handledResponseIds = ids.reduce<string[]>(
+      (remembered, id) => NotificationPolicy.rememberHandledResponse({ id }, remembered),
+      [],
+    );
+
+    // Then
+    expect(handledResponseIds).toHaveLength(20);
+    expect(NotificationPolicy.hasHandledResponse({ id: 'response-0' }, handledResponseIds)).toBe(
+      false,
+    );
+    expect(NotificationPolicy.hasHandledResponse({ id: 'response-20' }, handledResponseIds)).toBe(
+      true,
+    );
+  });
+});
