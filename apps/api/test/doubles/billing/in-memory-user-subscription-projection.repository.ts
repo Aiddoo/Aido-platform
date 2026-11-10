@@ -4,12 +4,17 @@ import {
   UserSubscriptionProjectionRepositoryPort,
 } from "#api/modules/billing/premium-grants/application/ports/user-subscription-projection.repository.port";
 import { DatabaseRecordNotFoundError } from "#api/platform/database/database-error.util";
-import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+
+interface SeedUserInput extends UserSubscriptionProjection {
+  readonly id: string;
+  readonly deleted?: boolean;
+}
 
 // User 행의 구독 projection을 userId별로 둔다. 없는 사용자는 DB처럼 부재 오류다
 export class InMemoryUserSubscriptionProjectionRepository extends UserSubscriptionProjectionRepositoryPort {
   readonly projections = new Map<string, UserSubscriptionProjection>();
-  readonly lapsedUserIds: UserId[] = [];
+  readonly #deletedUserIds = new Set<string>();
 
   constructor(knownUserIds: readonly string[]) {
     super();
@@ -18,16 +23,46 @@ export class InMemoryUserSubscriptionProjectionRepository extends UserSubscripti
     }
   }
 
+  async seedUser(input: SeedUserInput): Promise<void> {
+    this.projections.set(input.id, {
+      subscriptionStatus: input.subscriptionStatus,
+      subscriptionExpiresAt: input.subscriptionExpiresAt ?? null,
+    });
+    if (input.deleted === true) {
+      this.#deletedUserIds.add(input.id);
+    }
+  }
+
   async update(userId: UserId, projection: UserSubscriptionProjection): Promise<void> {
-    if (!this.projections.has(userId.value)) {
+    const current = this.projections.get(userId.value);
+    if (current == null) {
       throw new DatabaseRecordNotFoundError();
     }
-    this.projections.set(userId.value, projection);
+    // 생략한 만료 시각은 DB UPDATE처럼 저장값을 둔다
+    this.projections.set(userId.value, {
+      subscriptionStatus: projection.subscriptionStatus,
+      subscriptionExpiresAt:
+        projection.subscriptionExpiresAt === undefined
+          ? current.subscriptionExpiresAt
+          : projection.subscriptionExpiresAt,
+    });
   }
 
   async listLapsedPremiumUserIds(params: ListLapsedPremiumUsersParams): Promise<UserId[]> {
-    return this.lapsedUserIds
-      .filter((userId) => params.afterUserId == null || userId.value > params.afterUserId.value)
-      .slice(0, params.limit);
+    return [...this.projections]
+      .filter(([userId, projection]) => {
+        const expiresAt = projection.subscriptionExpiresAt;
+        return (
+          projection.subscriptionStatus === "ACTIVE" &&
+          !this.#deletedUserIds.has(userId) &&
+          expiresAt != null &&
+          Temporal.Instant.compare(expiresAt, params.now) <= 0 &&
+          (params.afterUserId == null || userId > params.afterUserId.value)
+        );
+      })
+      .map(([userId]) => userId)
+      .sort()
+      .slice(0, params.limit)
+      .map((userId) => UserId.reconstitute(userId));
   }
 }

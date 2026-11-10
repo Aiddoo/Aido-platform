@@ -83,7 +83,6 @@ describe("SweepPremiumGrantsUseCase — 보상 기간 정리", () => {
   it("만료 웹훅을 잃은 사용자도 같은 계산으로 다시 정리해 FREE로 저장한다", async () => {
     // Given
     const { useCase, projection } = setup([]);
-    projection.lapsedUserIds.push(UserId.reconstitute(SUBSCRIPTION_FIXTURE_USER_ID));
     await projection.update(UserId.reconstitute(SUBSCRIPTION_FIXTURE_USER_ID), {
       subscriptionStatus: "ACTIVE",
       subscriptionExpiresAt: NOW,
