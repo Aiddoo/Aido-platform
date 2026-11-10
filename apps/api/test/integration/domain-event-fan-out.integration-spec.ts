@@ -9,7 +9,7 @@ import { PgBoss } from "pg-boss";
 import { vi } from "vitest";
 import { z } from "zod";
 
-import { TypedConfigService } from "#api/platform/config/services/config.service";
+import { databaseConfig } from "#api/platform/config/database.config";
 import { DRIZZLE, type DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { DatabaseModule } from "#api/platform/database/database.module";
 import { EventEmitterDomainEventPublisher } from "#api/platform/events/event-emitter-domain-event.publisher";
@@ -89,13 +89,11 @@ function memoPinned(eventId: string, memoId: string): PublishedDomainEvent {
 @Module({
   providers: [
     {
-      provide: TypedConfigService,
-      useValue: {
-        database: { url: "postgresql://unused:unused@localhost:5432/unused", poolMax: 1 },
-      },
+      provide: databaseConfig.KEY,
+      useValue: { url: "postgresql://unused:unused@localhost:5432/unused", poolMax: 1 },
     },
   ],
-  exports: [TypedConfigService],
+  exports: [databaseConfig.KEY],
 })
 class TestConfigModule {}
 
