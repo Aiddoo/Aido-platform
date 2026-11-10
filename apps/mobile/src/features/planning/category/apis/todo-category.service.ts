@@ -9,7 +9,7 @@ import {
 import type { HttpClient } from '@src/core/ports/http-client';
 import { parseApiResponse } from '@src/shared/errors/parse-api-response';
 
-import type { TodoCategoryDeletion } from '../domains/todo-category.model';
+import type { TodoCategoryDeletionRequest } from '../domains/todo-category.model';
 import type { TodoCategoryFormValues } from '../schemas/todo-category-form.schema';
 import type {
   TodoCategoryChange,
@@ -62,7 +62,7 @@ export class TodoCategoryService {
       '[TodoCategoryService] Invalid getDeletionPreview response',
     );
 
-  deleteCategory = async (id: number, deletion: TodoCategoryDeletion) =>
+  deleteCategory = async (id: number, deletion: TodoCategoryDeletionRequest) =>
     parseApiResponse(
       await this.#httpClient.delete(`v1/todo-categories/${id}`, {
         params: toTodoCategoryRemoval(deletion),

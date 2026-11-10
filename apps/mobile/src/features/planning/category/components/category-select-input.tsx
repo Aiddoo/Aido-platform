@@ -6,6 +6,7 @@ import { PressableFeedback, Skeleton } from 'heroui-native';
 import { useState } from 'react';
 
 import { TodoCategoryPolicy } from '../domains/todo-category.model';
+import { isOptimisticCategory } from '../queries/todo-category-cache';
 import { useGetTodoCategoriesQueryOptions } from '../queries/todo-category.queries';
 
 const LOADING_ROW_COUNT = 3;
@@ -30,13 +31,14 @@ export function CategorySelectInput({
   const { t } = useTranslation('todo');
   const { data: categoriesResult } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
   const [localCategoryId, setLocalCategoryId] = useState(defaultValue);
-  const categories =
+  const excludedCategory =
     excludedCategoryId == null
+      ? null
+      : TodoCategoryPolicy.findCategory(categoriesResult.categories, excludedCategoryId);
+  const categories =
+    excludedCategory == null
       ? categoriesResult.categories
-      : TodoCategoryPolicy.getMoveTargetCategories(
-          { id: excludedCategoryId },
-          categoriesResult.categories,
-        );
+      : TodoCategoryPolicy.getMoveTargets(excludedCategory, categoriesResult.categories);
 
   return (
     <VStack gap={20}>
@@ -55,7 +57,7 @@ export function CategorySelectInput({
               accessibilityLabel={category.name}
               accessibilityState={{ selected: isSelected }}
               onPress={() => setLocalCategoryId(category.id)}
-              isDisabled={TodoCategoryPolicy.isOptimisticCategory(category)}
+              isDisabled={isOptimisticCategory(category)}
               className="rounded-xl"
             >
               <PressableFeedback.Highlight className="rounded-xl" />

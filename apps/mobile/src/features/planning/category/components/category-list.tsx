@@ -26,7 +26,7 @@ import ReorderableList, { useIsActive, useReorderableDrag } from 'react-native-r
 
 import { TodoCategoryPolicy } from '../domains/todo-category.model';
 import type { TodoCategoryWithCount } from '../domains/todo-category.model';
-import { prefetchDeletionPreview } from '../queries/todo-category-cache';
+import { isOptimisticCategory, prefetchDeletionPreview } from '../queries/todo-category-cache';
 import { useReorderTodoCategoryMutationOptions } from '../queries/todo-category.mutations';
 import {
   useGetTodoCategoriesQueryOptions,
@@ -70,7 +70,7 @@ CategoryList.Reorder = function Reorder() {
       shouldUpdateActiveItem
       // 목록 위에 나타나면 행이 통째로 밀려 누르려던 곳이 움직인다. 나타나고 닫혀도 행은 그 자리다
       ListFooterComponent={
-        TodoCategoryPolicy.canReorderCategories(reorderableList.data) ? (
+        TodoCategoryPolicy.canReorder(reorderableList.data) ? (
           <Box className="px-2 pt-2">
             <ReorderCoachmark kind="category" />
           </Box>
@@ -125,7 +125,7 @@ CategoryList.EditItem = function EditItem({ category }: CategoryListItemProps) {
   const deletionPreviewOptions = useGetTodoCategoryDeletionPreviewQueryOptions({
     categoryId: category.id,
   });
-  const isOptimistic = TodoCategoryPolicy.isOptimisticCategory(category);
+  const isOptimistic = isOptimisticCategory(category);
 
   // 시트가 미리보기를 기다리지 않게 route로 넘어가는 동안 받는다
   const handleDeletePress = useSingleTap(() => {
@@ -182,7 +182,7 @@ CategoryList.ReorderItem = function ReorderItem({ category }: CategoryListItemPr
   return (
     <PressableFeedback
       onLongPress={drag}
-      isDisabled={isActive || TodoCategoryPolicy.isOptimisticCategory(category)}
+      isDisabled={isActive || isOptimisticCategory(category)}
       className={cn('rounded-xl', isActive && 'bg-white shadow-md shadow-black/10')}
     >
       <CategoryRow

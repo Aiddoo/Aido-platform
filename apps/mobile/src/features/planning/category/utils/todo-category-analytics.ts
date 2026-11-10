@@ -1,4 +1,4 @@
-import type { TodoCategory, TodoCategoryDeletion } from '../domains/todo-category.model';
+import type { TodoCategory, TodoCategoryDeletionRequest } from '../domains/todo-category.model';
 import type { TodoCategoryFormValues } from '../schemas/todo-category-form.schema';
 
 export type TodoCountBucket = '0' | '1_9' | '10_49' | '50_plus';
@@ -32,7 +32,7 @@ export function toTodoCountBucket(todoCount: number): TodoCountBucket {
 
 /** 처리 방식 없이 옮길 곳만 보낸 옛 서버의 삭제도 move로 센다 */
 export function getCategoryDeletedTodoHandling(
-  deletion: TodoCategoryDeletion,
+  deletion: TodoCategoryDeletionRequest,
 ): CategoryDeletedTodoHandling {
   if (deletion.todoHandling != null) {
     return deletion.todoHandling;

@@ -19,8 +19,7 @@ import { TODO_CATEGORY_QUERY_KEYS } from '../constants/todo-category-query-keys'
 import { isDeletionPreviewOutdatedError } from '../domains/todo-category.error';
 import { TodoCategoryPolicy } from '../domains/todo-category.model';
 import type {
-  OptimisticTodoCategoryWithCount,
-  TodoCategoryDeletion,
+  TodoCategoryDeletionRequest,
   TodoCategoryDeletionResult,
   TodoCategoryWithCount,
 } from '../domains/todo-category.model';
@@ -37,6 +36,7 @@ import {
 import {
   invalidateDeletionPreview,
   invalidateTodoCategories,
+  type OptimisticTodoCategoryWithCount,
   removeDeletedCategory,
   withCategoryAdded,
   withCategoryChanged,
@@ -159,7 +159,7 @@ export function useUpdateTodoCategoryMutationOptions() {
 
 interface DeleteTodoCategoryVariables {
   id: number;
-  deletion: TodoCategoryDeletion;
+  deletion: TodoCategoryDeletionRequest;
 }
 
 /** 옮기거나 함께 지운 할 일이 있으면 그 결과를, 없거나 옛 서버라 결과가 없으면 삭제만 알린다 */

@@ -14,7 +14,10 @@ import { screen } from '@testing-library/react-native';
 
 import { createTodoCategoryDto } from '../__tests__/todo-category.fixtures';
 import { TODO_CATEGORY_QUERY_KEYS } from '../constants/todo-category-query-keys';
-import type { TodoCategoriesResult, TodoCategoryDeletion } from '../domains/todo-category.model';
+import type {
+  TodoCategoriesResult,
+  TodoCategoryDeletionRequest,
+} from '../domains/todo-category.model';
 import {
   useCreateTodoCategoryMutationOptions,
   useDeleteTodoCategoryMutationOptions,
@@ -27,7 +30,7 @@ const CATEGORIES: TodoCategoriesResult = {
     { id: 2, name: '업무', color: '#EF4444', sortOrder: 1, todoCount: 0 },
   ],
 };
-const MOVE_TO_WORK: TodoCategoryDeletion = { todoHandling: 'move', moveToCategoryId: 2 };
+const MOVE_TO_WORK: TodoCategoryDeletionRequest = { todoHandling: 'move', moveToCategoryId: 2 };
 
 async function renderMutations() {
   const httpClient = createHttpClientStub();
@@ -66,7 +69,7 @@ async function renderMutations() {
     create: (input: { name: string; color: string }) => actions.create?.mutateAsync(input),
     update: (id: number, input: { name: string; color?: string }) =>
       actions.update?.mutateAsync({ id, input }),
-    remove: (id: number, deletion: TodoCategoryDeletion = MOVE_TO_WORK) =>
+    remove: (id: number, deletion: TodoCategoryDeletionRequest = MOVE_TO_WORK) =>
       actions.remove?.mutateAsync({ id, deletion }),
   };
 }

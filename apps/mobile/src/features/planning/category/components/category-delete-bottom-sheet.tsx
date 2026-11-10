@@ -34,12 +34,13 @@ import Animated from 'react-native-reanimated';
 import { match } from 'ts-pattern';
 import { useResolveClassNames } from 'uniwind';
 
-import { TodoCategoryPolicy } from '../domains/todo-category.model';
+import { TodoCategoryDeletionPolicy, TodoCategoryPolicy } from '../domains/todo-category.model';
 import type {
   TodoCategoryDeletionPreview,
   TodoCategoryWithCount,
 } from '../domains/todo-category.model';
 import { useTodoCategoryId } from '../hooks/use-todo-category-id';
+import { isOptimisticCategory } from '../queries/todo-category-cache';
 import { useDeleteTodoCategoryMutationOptions } from '../queries/todo-category.mutations';
 import {
   useGetTodoCategoriesQueryOptions,
@@ -83,9 +84,9 @@ export function CategoryDeleteBottomSheet() {
 
   const preview =
     serverPreview ??
-    TodoCategoryPolicy.createFallbackDeletionPreview(category, categoriesResult.categories);
+    TodoCategoryDeletionPolicy.createFallbackPreview(category, categoriesResult.categories);
 
-  if (!TodoCategoryPolicy.shouldChooseTodoHandling(preview)) {
+  if (!TodoCategoryDeletionPolicy.shouldChooseTodoHandling(preview)) {
     return (
       <CategoryDeleteConfirmDialog
         category={category}
@@ -166,7 +167,7 @@ function CategoryDeleteConfirmDialog({
   const { t } = useTranslation(['todo', 'common']);
   const deleteCategory = useMutation(useDeleteTodoCategoryMutationOptions());
   const isDeletePending = deleteCategory.isPending;
-  const deletion = TodoCategoryPolicy.createCategoryDeletion(preview, null);
+  const deletionRequest = TodoCategoryDeletionPolicy.toDeletionRequest(preview, null);
 
   // 지우는 중에 바깥 탭·뒤로 가기로 닫으면 결과가 토스트로만 남아 끝날 때까지 닫지 않는다
   const handleOpenChange = (nextIsOpen: boolean) => {
@@ -177,10 +178,13 @@ function CategoryDeleteConfirmDialog({
   };
 
   const handleDelete = () => {
-    if (deletion == null || isDeletePending) {
+    if (deletionRequest == null || isDeletePending) {
       return;
     }
-    deleteCategory.mutate({ id: category.id, deletion }, { onSuccess: () => onOpenChange(false) });
+    deleteCategory.mutate(
+      { id: category.id, deletion: deletionRequest },
+      { onSuccess: () => onOpenChange(false) },
+    );
   };
 
   return (
@@ -194,7 +198,7 @@ function CategoryDeleteConfirmDialog({
       }
       description={
         <ConfirmDialog.Description>
-          {TodoCategoryPolicy.canDeleteCategory(preview)
+          {TodoCategoryDeletionPolicy.canDelete(preview)
             ? t('categoryDelete.description')
             : t('categoryDelete.lastCategory')}
         </ConfirmDialog.Description>
@@ -211,7 +215,7 @@ function CategoryDeleteConfirmDialog({
         <ConfirmDialog.ConfirmButton
           testID="category-delete-confirm"
           color="danger"
-          isDisabled={deletion == null}
+          isDisabled={deletionRequest == null}
           isLoading={isDeletePending}
           onPress={handleDelete}
         >
@@ -246,12 +250,13 @@ function TodoHandlingBottomSheet({
   const isDeletePending = deleteCategory.isPending;
   const [todoHandling, setTodoHandling] = useState<CategoryTodoHandling>('move');
   const [pickedMoveTargetCategoryId, setPickedMoveTargetCategoryId] = useState<number | null>(null);
+  // 서버 id가 없는 임시 행으로는 옮길 수 없다
   const moveTarget = TodoCategoryPolicy.findMoveTarget(
     category,
-    categoriesResult.categories,
+    categoriesResult.categories.filter((candidate) => !isOptimisticCategory(candidate)),
     pickedMoveTargetCategoryId,
   );
-  const deletion = TodoCategoryPolicy.createCategoryDeletion(preview, {
+  const deletionRequest = TodoCategoryDeletionPolicy.toDeletionRequest(preview, {
     todoHandling,
     moveToCategoryId: moveTarget?.id ?? null,
   });
@@ -287,10 +292,10 @@ function TodoHandlingBottomSheet({
   };
 
   const handleDelete = () => {
-    if (deletion == null || isDeletePending) {
+    if (deletionRequest == null || isDeletePending) {
       return;
     }
-    deleteCategory.mutate({ id: category.id, deletion }, { onSuccess: onClose });
+    deleteCategory.mutate({ id: category.id, deletion: deletionRequest }, { onSuccess: onClose });
   };
 
   return (
@@ -317,7 +322,7 @@ function TodoHandlingBottomSheet({
               color={isDeletingTodos ? 'danger' : 'primary'}
               size="large"
               display="full"
-              isDisabled={deletion == null}
+              isDisabled={deletionRequest == null}
               isLoading={isDeletePending}
               onPress={handleDelete}
             >
@@ -363,14 +368,14 @@ function TodoHandlingBottomSheet({
             )}
           </TodoHandlingCard>
 
-          {TodoCategoryPolicy.canDeleteTodosTogether(preview) && (
+          {TodoCategoryDeletionPolicy.canDeleteTodosTogether(preview) && (
             <TodoHandlingCard isSelected={isDeletingTodos} isDanger>
               <TodoHandlingOption
                 isDanger
                 value="delete"
                 title={t('categoryDelete.deleteAll.title')}
                 description={
-                  TodoCategoryPolicy.shouldWarnHistoryLoss(preview)
+                  TodoCategoryDeletionPolicy.shouldWarnHistoryLoss(preview)
                     ? t('categoryDelete.deleteAll.descriptionWithHistory')
                     : t('categoryDelete.deleteAll.description')
                 }

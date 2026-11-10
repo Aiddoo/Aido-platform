@@ -8,7 +8,7 @@ import { pick } from 'es-toolkit';
 
 import type {
   TodoCategory,
-  TodoCategoryDeletion,
+  TodoCategoryDeletionRequest,
   TodoCategoryDeletionPreview,
   TodoCategoryDeletionResult,
   TodoCategoryWithCount,
@@ -62,7 +62,7 @@ export function toTodoCategoryDeletionResult(
 export function toTodoCategoryRemoval({
   todoHandling,
   moveToCategoryId,
-}: TodoCategoryDeletion): TodoCategoryRemoval {
+}: TodoCategoryDeletionRequest): TodoCategoryRemoval {
   return {
     ...(todoHandling != null && { todoHandling }),
     ...(moveToCategoryId != null && { moveToCategoryId }),
