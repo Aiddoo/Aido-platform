@@ -1,6 +1,5 @@
 import type { FeatureCampaignConfig } from '@src/features/app-config/feature-campaign/domains/feature-campaign.model';
-import type { User } from '@src/features/identity/user/domains/user.model';
-import { type Instant, diffMs, toEpochMs } from '@src/shared/date/instant';
+import { type Instant, diffMs } from '@src/shared/date/instant';
 import { isSemanticVersionAtLeast } from '@src/shared/utils/semantic-version';
 import { maxBy } from 'es-toolkit';
 import { z } from 'zod';
@@ -18,9 +17,8 @@ export const releaseSchema = z.object({
 });
 export type Release = z.infer<typeof releaseSchema>;
 
-interface AutoOpenInput {
+interface AutoOpenContext {
   config: FeatureCampaignConfig | undefined;
-  user: Pick<User, 'createdAt'> | undefined;
   appVersion: string | undefined;
   hasSeen: boolean;
 }
@@ -44,16 +42,19 @@ function canViewRelease(
   return !release.requiresInvite || isInviteAvailable;
 }
 
-/** 출시 전에 가입했고, 켜진 캠페인을 지원하는 앱이고, 아직 보지 않았을 때만 자동으로 연다 */
-function shouldAutoOpen({ config, user, appVersion, hasSeen }: AutoOpenInput): boolean {
-  if (!config?.enabled || user == null) {
+/** 서버가 이 출시의 캠페인과 자동 열기를 켰고, 지원하는 앱이고, 아직 보지 않았으면 연다. 가입 시점은 보지 않아 새 계정도 한 번 본다 */
+function shouldAutoOpen(
+  release: Release,
+  { config, appVersion, hasSeen }: AutoOpenContext,
+): boolean {
+  if (config == null || !config.enabled) {
     return false;
   }
 
   return (
+    config.campaignId === release.campaignId &&
     config.autoOpen &&
     !hasSeen &&
-    toEpochMs(user.createdAt) < toEpochMs(config.launchedAt) &&
     isSemanticVersionAtLeast(appVersion, config.minAppVersion)
   );
 }

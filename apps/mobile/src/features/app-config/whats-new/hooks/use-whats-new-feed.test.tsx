@@ -62,7 +62,7 @@ async function renderFeed({
   return { ...hook, settleOnboarding };
 }
 
-describe('useWhatsNewFeed — 업데이트 후 첫 피드', () => {
+describe('useWhatsNewFeed — 첫 피드', () => {
   beforeEach(() => {
     Object.defineProperty(globalThis, 'requestIdleCallback', {
       configurable: true,
@@ -93,13 +93,12 @@ describe('useWhatsNewFeed — 업데이트 후 첫 피드', () => {
     });
   });
 
-  it('출시 뒤에 가입한 새 사용자에게는 열지 않는다', async () => {
+  it('출시 뒤에 가입한 새 사용자에게도 한 번 연다', async () => {
     // When
     await renderFeed({ signedUpAt: '2026-11-06T00:00:00.000Z' });
 
     // Then
-    await new Promise((resolve) => setImmediate(resolve));
-    expect(router.push).not.toHaveBeenCalled();
+    await waitFor(() => expect(router.push).toHaveBeenCalledTimes(1));
   });
 
   it('알림 화면을 열지 말지 정해지기 전에는 기다렸다가 정해진 뒤에 한 번만 연다', async () => {

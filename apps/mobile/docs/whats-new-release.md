@@ -11,21 +11,21 @@
 5. 장면은 화면 캡처 대신 실제 기능 부품으로 그린 예시다. `WhatsNewStep.Stage`에 기능 컴포넌트를 예시 값으로 올리고, 예시 글은 `whatsNew` 카탈로그(`v{x_y_z}.demo`)에 둔다. 마이크·네트워크·저장은 쓰지 않는다. 대본은 `useDemoScript`로 장면마다 한 번 돌고, 움직임 줄이기면 마지막 장면부터 보인다. 음량을 받는 음성 부품(`VoiceVisual`·`RecognizerWaveform`)에는 `useDemoVoiceLevel`의 UI 스레드 예시 음량을 넣고, 말이 끝나면 `isActive`를 꺼 프레임 콜백을 멈춘다. 계속 도는 움직임은 지금 보이는 단계에만 두고 한 장면에 눈에 띄는 움직임은 하나다.
 6. `locales/{ko,en}/whats-new.json`에 문구를 넣는다. 제목 1줄(약 14자), 설명 1~2줄(약 40자)이다.
 7. `constants/whats-new.events.ts`와 측정 문서를 확인한다. CTA 뒤 실제 사용은 `trackAttributedFeatureSuccess`로 잇는다.
-8. 운영 설정 `FEATURE_DISCOVERY_CAMPAIGN_ID`, `MIN_APP_VERSION`, `LAUNCHED_AT`, `AUTO_OPEN`을 바꾼다. 서버를 먼저 배포한다.
+8. 운영 설정 `FEATURE_DISCOVERY_CAMPAIGN_ID`, `MIN_APP_VERSION`, `LAUNCHED_AT`, `AUTO_OPEN`을 바꾼다. 서버를 먼저 배포한다. 1.15.1부터 새로운 기능은 `LAUNCHED_AT`을 보지 않는다(1.15.0 이하 앱과 시작 체크리스트가 읽는다).
 9. 지난 출시의 Steps는 예시를 지우고 글과 간단한 그림으로 줄인다.
 
 ## 동작 규칙
 
-| 규칙                    | 구현                                                                                                        |
-| ----------------------- | ----------------------------------------------------------------------------------------------------------- |
-| 계정·캠페인별 한 번     | `aido_feature_discovery_seen_v1:{userId}:{campaignId}`. 동기 claim                                          |
-| 기존 가입자만 자동      | `WhatsNewPolicy.shouldAutoOpen`: `user.createdAt < launchedAt`, 지원 버전, 안 봄, 서버 `enabled`·`autoOpen` |
-| 다른 안내와 겹치지 않음 | `useStableFeedForeground`(피드가 앞에 자리 잡은 뒤). 날씨 위치는 자동으로 묻지 않는다                       |
-| 알림 화면 다음에 연다   | 피드가 `useIsPushOnboardingGuardClosed()`를 `isOnboardingSettled`로 넘긴다. 아래 순서를 따른다              |
-| 다시 열기               | 피드 카드 14일(`aido_feature_discovery_reentry_v1:{userId}:{campaignId}`), 마이 메뉴 상시                   |
-| 안 본 출시 점           | 최신 출시만 본다. 지난 출시까지 세면 점이 오래 사라지지 않는다                                              |
-| 버전 표시               | 목록 줄은 `v1.15.0 · 11월 10일 업데이트`, Steps 머리는 `v1.15.0`. 읽기 라벨은 "버전 1.15.0"이다             |
-| 오프라인, 서버 실패     | 목록과 Steps는 번들이라 그대로 열린다. 설정을 못 받으면 자동으로 열지 않는다                                |
+| 규칙                      | 구현                                                                                                                                                                                 |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 계정·캠페인별 한 번       | `aido_feature_discovery_seen_v1:{userId}:{campaignId}`. 동기 claim                                                                                                                   |
+| 가입 시점과 상관없이 자동 | `WhatsNewPolicy.shouldAutoOpen(release, …)`: 서버 `enabled`·`autoOpen`, 이 출시의 캠페인, 지원 버전, 안 봄. 새 계정도 한 번 본다. 1.15.0 이하 앱은 `launchedAt` 전 가입자에게만 연다 |
+| 다른 안내와 겹치지 않음   | `useStableFeedForeground`(피드가 앞에 자리 잡은 뒤). 날씨 위치는 자동으로 묻지 않는다                                                                                                |
+| 알림 화면 다음에 연다     | 피드가 `useIsPushOnboardingGuardClosed()`를 `isOnboardingSettled`로 넘긴다. 아래 순서를 따른다                                                                                       |
+| 다시 열기                 | 피드 카드 14일(`aido_feature_discovery_reentry_v1:{userId}:{campaignId}`), 마이 메뉴 상시                                                                                            |
+| 안 본 출시 점             | 최신 출시만 본다. 지난 출시까지 세면 점이 오래 사라지지 않는다                                                                                                                       |
+| 버전 표시                 | 목록 줄은 `v1.15.0 · 11월 10일 업데이트`, Steps 머리는 `v1.15.0`. 읽기 라벨은 "버전 1.15.0"이다                                                                                      |
+| 오프라인, 서버 실패       | 목록과 Steps는 번들이라 그대로 열린다. 설정을 못 받으면 자동으로 열지 않는다                                                                                                         |
 
 ## 첫 피드의 자동 화면 순서
 

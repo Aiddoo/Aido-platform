@@ -20,7 +20,7 @@ interface WhatsNewFeedInput {
   isOnboardingSettled: boolean;
 }
 
-/** 업데이트한 기존 사용자에게 서버가 켠 캠페인을 첫 피드에서 한 번 자동으로 열고, 피드 카드로 다시 열게 한다 */
+/** 서버가 켠 캠페인을 첫 피드에서 계정마다 한 번 자동으로 열고(새 계정 포함), 피드 카드로 다시 열게 한다 */
 export function useWhatsNewFeed({
   isStable,
   isInviteAvailable,
@@ -70,12 +70,8 @@ export function useWhatsNewFeed({
   const shouldAutoOpen =
     isAuthenticated &&
     identity != null &&
-    WhatsNewPolicy.shouldAutoOpen({
-      config,
-      user,
-      appVersion,
-      hasSeen,
-    });
+    release != null &&
+    WhatsNewPolicy.shouldAutoOpen(release, { config, appVersion, hasSeen });
 
   useEffect(() => {
     if (
