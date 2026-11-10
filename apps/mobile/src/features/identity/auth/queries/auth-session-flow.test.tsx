@@ -5,10 +5,9 @@ import { useSyncUserIdentity } from '@src/bootstrap/hooks/use-sync-user-identity
 import { ApiError } from '@src/core/errors/api-error';
 import { err, ok } from '@src/core/errors/result';
 import { emitSessionExpired } from '@src/core/events/session-expired';
+import { subscribeTodoCreated } from '@src/core/events/todo-created';
 import { createSessionEpoch, withSessionEpoch } from '@src/core/session/session-epoch';
 import { createSessionManager } from '@src/core/session/session-manager';
-import { createActivationProgressRepository } from '@src/features/device/activation/apis/activation-progress.repository';
-import { ActivationService } from '@src/features/device/activation/apis/activation.service';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
 import { UserService } from '@src/features/identity/user/apis/user.service';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
@@ -20,7 +19,6 @@ import { TodoService } from '@src/features/planning/todo/apis/todo.service';
 import {
   createErrorReporterStub,
   createLoggerStub,
-  createMemoryObservableSyncStorage,
   createMemoryTokenStore,
   createHttpClientStub,
   createAnalyticsStub,
@@ -835,13 +833,13 @@ describe('로그아웃 뒤 늦게 끝난 변경', () => {
     todoHttp.post.mockReturnValue(created.response);
     todoHttp.get.mockRejectedValue(new Error('이 테스트는 조회를 보지 않는다'));
     const analytics = createAnalyticsStub();
-    const activationService = new ActivationService(
-      createActivationProgressRepository(createMemoryObservableSyncStorage()),
-    );
-    const recordTodoCreated = jest.spyOn(activationService, 'recordTodoCreated');
+    let createdEventCount = 0;
+    const unsubscribeCreated = subscribeTodoCreated(() => {
+      createdEventCount += 1;
+    });
     const session = createAuthSession({
       tokens: ACCOUNT_A_TOKENS,
-      di: { todoService: new TodoService(todoHttp), analytics, activationService },
+      di: { todoService: new TodoService(todoHttp), analytics },
     });
     session.authHttp.delete.mockResolvedValue(ok({}));
     session.authHttp.post.mockResolvedValue(ok({ message: '로그아웃되었습니다.' }));
@@ -882,7 +880,8 @@ describe('로그아웃 뒤 늦게 끝난 변경', () => {
     // Then
     await expect(creating).resolves.toBeDefined();
     expect(analytics.trackEvent.mock.calls.slice(eventsBefore)).toEqual([]);
-    expect(recordTodoCreated).not.toHaveBeenCalled();
+    expect(createdEventCount).toBe(0);
+    unsubscribeCreated();
   });
 
   it('프로필 롤백이 캐시를 다시 채워도 다음 계정은 지난 계정 값을 읽지 않는다', async () => {
