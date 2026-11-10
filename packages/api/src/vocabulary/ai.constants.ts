@@ -51,3 +51,7 @@ export const AI_SUGGESTION_LIMITS = {
   SUGGESTION_EXPIRY_DAYS: 14,
   DEFAULT_RECURRING_WEEKS: 4,
 } as const;
+
+export const AI_REPORT_TYPES = ["WEEKLY", "MONTHLY"] as const;
+
+export const AI_SUGGESTION_STATUSES = ["PENDING", "ACCEPTED", "DISMISSED"] as const;

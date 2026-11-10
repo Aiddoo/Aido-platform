@@ -1,8 +1,29 @@
 import {
+  AI_REPORT_TYPES,
+  AI_SUGGESTION_STATUSES,
+  FOLLOW_STATUSES,
+  NOTIFICATION_ACTION_TYPE,
+  NOTIFICATION_PURPOSES,
+  NUDGE_REPLY_KINDS,
+  PUSH_DEVICE_PLATFORM,
   PUSH_PERMISSION_STATUS,
   QUOTA_CHARGE_STATUSES,
   QUOTA_METERS,
+  REDEMPTION_REJECTION_REASON,
+  REDEMPTION_STATUS,
+  REWARD_TYPE,
+  SECURITY_EVENT,
+  SUBSCRIPTION_ENVIRONMENTS,
+  SUBSCRIPTION_STATUS,
+  TIME_FORMATS,
   TODO_REPEAT_FREQUENCIES,
+  TODO_VISIBILITIES,
+  USER_REPORT_REASONS,
+  USER_REPORT_STATUSES,
+  USER_REPORT_TARGET_TYPES,
+  USER_ROLE,
+  USER_STATUS,
+  VERIFICATION_TYPE,
 } from "@aido/api/vocabulary";
 import { pgEnum } from "drizzle-orm/pg-core";
 
@@ -13,18 +34,9 @@ export const accountProvider = pgEnum("AccountProvider", [
   "GOOGLE",
   "NAVER",
 ]);
-export const followStatus = pgEnum("FollowStatus", ["PENDING", "ACCEPTED"]);
-export const notificationActionType = pgEnum("NotificationActionType", [
-  "DEEP_LINK",
-  "BROWSER",
-  "WEBVIEW",
-  "NONE",
-]);
-export const notificationPurpose = pgEnum("NotificationPurpose", [
-  "TRANSACTIONAL",
-  "SCHEDULED_SERVICE",
-  "ENGAGEMENT",
-]);
+export const followStatus = pgEnum("FollowStatus", FOLLOW_STATUSES);
+export const notificationActionType = pgEnum("NotificationActionType", NOTIFICATION_ACTION_TYPE);
+export const notificationPurpose = pgEnum("NotificationPurpose", NOTIFICATION_PURPOSES);
 export const notificationType = pgEnum("NotificationType", [
   "FOLLOW_NEW",
   "FOLLOW_ACCEPTED",
@@ -60,8 +72,8 @@ export const notificationType = pgEnum("NotificationType", [
   "PREMIUM_TRIAL_ENDING",
   "PREMIUM_RENEWAL_UPCOMING",
 ]);
-export const nudgeReplyKind = pgEnum("NudgeReplyKind", ["STARTING", "THANKFUL", "LATER"]);
-export const platform = pgEnum("Platform", ["IOS", "ANDROID"]);
+export const nudgeReplyKind = pgEnum("NudgeReplyKind", NUDGE_REPLY_KINDS);
+export const platform = pgEnum("Platform", PUSH_DEVICE_PLATFORM);
 export const pushPermissionStatus = pgEnum("PushPermissionStatus", PUSH_PERMISSION_STATUS);
 export const pushDeliveryMode = pgEnum("PushDeliveryMode", ["SINGLE", "BATCH"]);
 export const pushDeliveryStatus = pgEnum("PushDeliveryStatus", [
@@ -87,7 +99,7 @@ export const pushDispatchStatus = pgEnum("PushDispatchStatus", [
 export const pushRateLimitPhase = pgEnum("PushRateLimitPhase", ["GENERAL", "ENGAGEMENT"]);
 export const quotaChargeStatus = pgEnum("QuotaChargeStatus", QUOTA_CHARGE_STATUSES);
 export const quotaMeter = pgEnum("QuotaMeter", QUOTA_METERS);
-export const reportType = pgEnum("ReportType", ["WEEKLY", "MONTHLY"]);
+export const reportType = pgEnum("ReportType", AI_REPORT_TYPES);
 export const retentionExperimentStageName = pgEnum("RetentionExperimentStageName", [
   "D0",
   "D1",
@@ -104,60 +116,18 @@ export const retentionExperimentVariant = pgEnum("RetentionExperimentVariant", [
   "CONTROL",
   "TREATMENT",
 ]);
-export const securityEvent = pgEnum("SecurityEvent", [
-  "REGISTRATION",
-  "LOGIN_SUCCESS",
-  "LOGIN_FAILURE",
-  "LOGOUT",
-  "TOKEN_REFRESH",
-  "TOKEN_REVOKED",
-  "PASSWORD_CHANGED",
-  "PASSWORD_RESET_REQUESTED",
-  "EMAIL_VERIFIED",
-  "TWO_FACTOR_ENABLED",
-  "TWO_FACTOR_DISABLED",
-  "SUSPICIOUS_ACTIVITY",
-  "ACCOUNT_LOCKED",
-  "ACCOUNT_UNLOCKED",
-  "SESSION_REVOKED",
-  "SESSION_REVOKED_ALL",
-  "OAUTH_LINKED",
-  "OAUTH_UNLINKED",
-  "OAUTH_AUTO_LINKED",
-  "OAUTH_LINK_REQUIRED",
-  "ACCOUNT_DELETION_REQUESTED",
-  "ACCOUNT_HARD_DELETED",
-  "ACCOUNT_RESTORED",
-  "PASSWORD_SETUP",
-]);
-export const subscriptionEnvironment = pgEnum("SubscriptionEnvironment", ["SANDBOX", "PRODUCTION"]);
-export const subscriptionStatus = pgEnum("SubscriptionStatus", [
-  "FREE",
-  "ACTIVE",
-  "EXPIRED",
-  "CANCELLED",
-]);
-export const suggestionStatus = pgEnum("SuggestionStatus", ["PENDING", "ACCEPTED", "DISMISSED"]);
-export const timeFormat = pgEnum("TimeFormat", ["TWELVE_HOUR", "TWENTY_FOUR_HOUR"]);
-export const todoVisibility = pgEnum("TodoVisibility", ["PUBLIC", "PRIVATE"]);
+export const securityEvent = pgEnum("SecurityEvent", SECURITY_EVENT);
+export const subscriptionEnvironment = pgEnum("SubscriptionEnvironment", SUBSCRIPTION_ENVIRONMENTS);
+export const subscriptionStatus = pgEnum("SubscriptionStatus", SUBSCRIPTION_STATUS);
+export const suggestionStatus = pgEnum("SuggestionStatus", AI_SUGGESTION_STATUSES);
+export const timeFormat = pgEnum("TimeFormat", TIME_FORMATS);
+export const todoVisibility = pgEnum("TodoVisibility", TODO_VISIBILITIES);
 export const todoRepeatFrequency = pgEnum("TodoRepeatFrequency", TODO_REPEAT_FREQUENCIES);
-export const userRole = pgEnum("UserRole", ["USER", "ADMIN"]);
-export const userStatus = pgEnum("UserStatus", ["ACTIVE", "LOCKED", "SUSPENDED", "PENDING_VERIFY"]);
-export const verificationType = pgEnum("VerificationType", [
-  "EMAIL_VERIFY",
-  "PASSWORD_RESET",
-  "PASSWORD_SETUP",
-]);
-export const inviteRedemptionStatus = pgEnum("InviteRedemptionStatus", [
-  "JOINED",
-  "QUALIFIED",
-  "REWARDED",
-  "REJECTED",
-]);
-export const inviteRejectionReason = pgEnum("InviteRejectionReason", [
-  "EXPIRED",
-  "INVITER_MONTHLY_CAP",
-]);
+export const userRole = pgEnum("UserRole", USER_ROLE);
+export const userStatus = pgEnum("UserStatus", USER_STATUS);
+export const verificationType = pgEnum("VerificationType", VERIFICATION_TYPE);
+export const inviteRedemptionStatus = pgEnum("InviteRedemptionStatus", REDEMPTION_STATUS);
+export const inviteRejectionReason = pgEnum("InviteRejectionReason", REDEMPTION_REJECTION_REASON);
 export const inviteStatus = pgEnum("InviteStatus", ["ACTIVE", "REVOKED"]);
 export const premiumGrantSource = pgEnum("PremiumGrantSource", ["INVITE"]);
 export const premiumGrantStatus = pgEnum("PremiumGrantStatus", [
@@ -170,19 +140,7 @@ export const resourceType = pgEnum("ResourceType", ["FRIEND"]);
 export const rewardClaimKind = pgEnum("RewardClaimKind", ["INSTALLATION", "IDENTITY"]);
 export const rewardGrantStatus = pgEnum("RewardGrantStatus", ["PENDING", "APPLIED", "FAILED"]);
 export const rewardSourceType = pgEnum("RewardSourceType", ["INVITE_REDEMPTION"]);
-export const rewardType = pgEnum("RewardType", ["PREMIUM_DAYS", "FRIEND_SLOT"]);
-export const userReportReason = pgEnum("UserReportReason", [
-  "SPAM",
-  "HARASSMENT",
-  "INAPPROPRIATE",
-  "IMPERSONATION",
-  "OTHER",
-]);
-export const userReportStatus = pgEnum("UserReportStatus", ["OPEN", "RESOLVED"]);
-export const userReportTargetType = pgEnum("UserReportTargetType", [
-  "PROFILE",
-  "TODO",
-  "COMMENT",
-  "NUDGE_MESSAGE",
-  "CHEER_MESSAGE",
-]);
+export const rewardType = pgEnum("RewardType", REWARD_TYPE);
+export const userReportReason = pgEnum("UserReportReason", USER_REPORT_REASONS);
+export const userReportStatus = pgEnum("UserReportStatus", USER_REPORT_STATUSES);
+export const userReportTargetType = pgEnum("UserReportTargetType", USER_REPORT_TARGET_TYPES);

@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { dateSchema, datetimeSchema } from "../../../common/datetime.js";
+import { AI_REPORT_TYPES } from "../../../vocabulary/ai.constants.js";
 import { dayOfWeekSchema } from "../../todo/v1/todo.common.js";
 
 export const reportStatsSchema = z.object({
@@ -39,7 +40,7 @@ export const timePatternItemSchema = z.object({
 
 export type TimePatternItem = z.infer<typeof timePatternItemSchema>;
 
-export const reportTypeSchema = z.enum(["WEEKLY", "MONTHLY"]);
+export const reportTypeSchema = z.enum(AI_REPORT_TYPES);
 
 export const aiReportSchema = z.object({
   id: z.number(),

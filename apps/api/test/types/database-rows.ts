@@ -1,3 +1,11 @@
+import type {
+  NotificationActionType as VocabularyNotificationActionType,
+  PushDevicePlatform,
+  SecurityEvent as VocabularySecurityEvent,
+  UserRole as VocabularyUserRole,
+  VERIFICATION_TYPE,
+} from "@aido/api/vocabulary";
+
 import type * as tables from "#api/platform/database/schema/index";
 
 export type Account = typeof tables.account.$inferSelect;
@@ -45,11 +53,12 @@ export type WeeklyAchievement = typeof tables.weeklyAchievement.$inferSelect;
 
 export type AccountProvider = (typeof tables.accountProvider.enumValues)[number];
 export type FollowStatus = (typeof tables.followStatus.enumValues)[number];
-export type NotificationActionType = (typeof tables.notificationActionType.enumValues)[number];
+// 객체 형태 vocabulary로 만든 pgEnum은 enumValues가 string[]이라 vocabulary 타입을 쓴다
+export type NotificationActionType = VocabularyNotificationActionType;
 export type NotificationPurpose = (typeof tables.notificationPurpose.enumValues)[number];
 export type NotificationType = (typeof tables.notificationType.enumValues)[number];
 export type NudgeReplyKind = (typeof tables.nudgeReplyKind.enumValues)[number];
-export type Platform = (typeof tables.platform.enumValues)[number];
+export type Platform = PushDevicePlatform;
 export type PushDeliveryMode = (typeof tables.pushDeliveryMode.enumValues)[number];
 export type PushDeliveryStatus = (typeof tables.pushDeliveryStatus.enumValues)[number];
 export type PushDispatchOutboxStatus = (typeof tables.pushDispatchOutboxStatus.enumValues)[number];
@@ -62,11 +71,11 @@ export type RetentionExperimentStageStatus =
   (typeof tables.retentionExperimentStageStatus.enumValues)[number];
 export type RetentionExperimentVariant =
   (typeof tables.retentionExperimentVariant.enumValues)[number];
-export type SecurityEvent = (typeof tables.securityEvent.enumValues)[number];
+export type SecurityEvent = VocabularySecurityEvent;
 export type SubscriptionStatus = (typeof tables.subscriptionStatus.enumValues)[number];
 export type SuggestionStatus = (typeof tables.suggestionStatus.enumValues)[number];
 export type TimeFormat = (typeof tables.timeFormat.enumValues)[number];
 export type TodoVisibility = (typeof tables.todoVisibility.enumValues)[number];
-export type UserRole = (typeof tables.userRole.enumValues)[number];
+export type UserRole = VocabularyUserRole;
 export type UserStatus = (typeof tables.userStatus.enumValues)[number];
-export type VerificationType = (typeof tables.verificationType.enumValues)[number];
+export type VerificationType = (typeof VERIFICATION_TYPE)[keyof typeof VERIFICATION_TYPE];

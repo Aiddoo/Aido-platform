@@ -5,6 +5,7 @@ export * from "./cheer.constants.js";
 export * from "./follow.constants.js";
 export * from "./inquiry.constants.js";
 export * from "./invite.constants.js";
+export * from "./locale.constants.js";
 export * from "./memo.constants.js";
 export * from "./notification.constants.js";
 export * from "./nudge.constants.js";

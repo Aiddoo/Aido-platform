@@ -1,8 +1,9 @@
 import { z } from "zod";
 
 import { datetimeSchema } from "../../../common/datetime.js";
+import { FOLLOW_STATUSES } from "../../../vocabulary/follow.constants.js";
 
-export const followStatusSchema = z.enum(["PENDING", "ACCEPTED"]);
+export const followStatusSchema = z.enum(FOLLOW_STATUSES);
 
 export type FollowStatus = z.infer<typeof followStatusSchema>;
 
