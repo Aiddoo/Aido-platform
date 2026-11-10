@@ -23,9 +23,14 @@ import {
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { Chip, PressableFeedback } from 'heroui-native';
-import { type ComponentProps, Suspense, useCallback, useMemo, useState } from 'react';
+import { type ComponentProps, Suspense, useCallback, useState } from 'react';
 import { View } from 'react-native';
-import { Directions, Gesture, GestureDetector } from 'react-native-gesture-handler';
+import {
+  Directions,
+  GestureDetector,
+  useCompetingGestures,
+  useFlingGesture,
+} from 'react-native-gesture-handler';
 
 import { DEMO_PLANNED_TODOS, RELEASE_1_15_0_STEPS } from '../constants/release-1-15-0.constants';
 import { RELEASE_1_15_0, RELEASES } from '../constants/releases';
@@ -82,18 +87,18 @@ export function Release1150Steps() {
     }
   }, [step, history]);
   // 페이저 없이 현재 단계만 그리고, 옆으로 밀면 단계를 넘긴다. 움직이는 동안 React는 다시 그려지지 않는다
-  const fling = useMemo(
-    () =>
-      Gesture.Race(
-        Gesture.Fling().direction(Directions.LEFT).runOnJS(true).onEnd(goNext),
-        Gesture.Fling()
-          .direction(Directions.RIGHT)
-          .hitSlop({ left: -SCREEN_EDGE_INSET })
-          .runOnJS(true)
-          .onEnd(history.back),
-      ),
-    [goNext, history.back],
-  );
+  const flingNext = useFlingGesture({
+    direction: Directions.LEFT,
+    runOnJS: true,
+    onDeactivate: goNext,
+  });
+  const flingBack = useFlingGesture({
+    direction: Directions.RIGHT,
+    hitSlop: { left: -SCREEN_EDGE_INSET },
+    runOnJS: true,
+    onDeactivate: history.back,
+  });
+  const fling = useCompetingGestures(flingNext, flingBack);
 
   return (
     <>
