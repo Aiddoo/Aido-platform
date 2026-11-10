@@ -72,7 +72,8 @@ PushNotificationGateway (core/ports) ← createExpoPushNotificationGateway (shar
 - 로그아웃은 `PushDeviceService.unregister()`로 `DELETE v1/notifications/token?deviceId=`를 보낸다. 진행 중인 보고를 모두 제한 시간 안에서 기다리고, 해제가 시작되면 늦은 보고는 보내지 않는다. 늦게 도착한 보고가 해제된 기기를 되살리지 않게 하기 위해서다. 해제가 실패하거나 오프라인이어도 로컬 세션은 항상 지운다(`logOutDevice`).
 - 오프라인 로그아웃은 온라인이 되면 `POST v1/auth/logout`으로 서버 세션을 풀고, 서버가 `releaseSessions`로 그 세션의 기기를 함께 푼다([오프라인 로그아웃](authentication_guide.md#오프라인-로그아웃)). 기록이 만료되면(24시간) refresh 만료 또는 다음 로그인의 소유권 이전까지 이전 계정 알림이 올 수 있다.
 - 탈퇴는 앱이 해제하지 않는다. 서버 탈퇴가 전 세션과 기기를 함께 푼다. 탈퇴 전에 풀면 비밀번호 오류에도 이 기기의 알림이 끊긴다.
-- 앱 아이콘 배지는 읽지 않은 알림 수에 맞춘다. 콜드 스타트의 인증 확인 중(`loading`·`locked`)에는 지우지 않는다. 로그아웃(`unauthenticated`)일 때만 지운다(`NotificationBadgeService.syncBadge`).
+- 앱 아이콘 배지는 알림함의 안 읽은 수 조회(`useGetUnreadCountQueryOptions`) 하나를 따른다. `NotificationProvider`의 `useNotificationBadgeSync`가 로그인한 동안 이 조회를 구독해, 앱이 앞으로 올 때(`focusManager`, `staleTime: 0`)·다시 연결될 때·푸시 수신과 읽음 처리의 무효화·낙관적 수정 때마다 배지를 그 수로 맞춘다. 그래서 다른 기기에서 읽거나 받은 알림도 이 기기를 열면 배지에 반영된다. 배지만 따로 서버에 묻지 않는다.
+- 콜드 스타트의 인증 확인 중(`loading`·`locked`)에는 배지를 건드리지 않고, 로그아웃(`unauthenticated`)일 때만 지운다(`NotificationBadgePolicy.getBadgeCount`).
 
 ## 눌린 푸시 처리
 

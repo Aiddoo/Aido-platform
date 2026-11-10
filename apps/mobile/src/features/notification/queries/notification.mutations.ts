@@ -2,7 +2,6 @@ import {
   useExternalLink,
   useHaptics,
   useLogger,
-  useNotificationBadgeService,
   useNotificationService,
   usePushDeviceService,
   useSessionEpoch,
@@ -21,7 +20,6 @@ import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 import { NOTIFICATION_LOG_EVENT } from '../constants/notification-log-events';
-import { NOTIFICATION_QUERY_KEYS } from '../constants/notification-query-keys';
 import { isPushReportRetryableError } from '../domains/notification.error';
 import {
   invalidateNotifications,
@@ -33,42 +31,23 @@ import {
 
 const PUSH_OPENED_RETRIES = 3;
 
+// 앱 아이콘 배지는 안 읽은 수 캐시를 따라가므로(`useNotificationBadgeSync`) 캐시만 고친다
 export function useMarkAllAsReadMutationOptions() {
-  const notificationBadgeService = useNotificationBadgeService();
   const haptics = useHaptics();
   const toast = useAppToast();
   const notificationService = useNotificationService();
-  const logger = useLogger();
   const queryClient = useQueryClient();
-
-  // 일부 Android 런처는 배지 호출을 거부하므로 그 실패로 읽음 처리가 실패하지 않게 한다
-  const clearBadgeQuietly = () => {
-    notificationBadgeService
-      .clearBadge()
-      .catch((error) =>
-        logger.warn(NOTIFICATION_LOG_EVENT.BADGE_CLEAR_FAILED, { error: getErrorMessage(error) }),
-      );
-  };
 
   return mutationOptions({
     mutationFn: async () => unwrap(await notificationService.markAllAsRead()),
     onMutate: async () => {
       const snapshot = await optimisticallyMarkNotificationsRead(queryClient);
-      clearBadgeQuietly();
       return { snapshot };
-    },
-    onSuccess: () => {
-      clearBadgeQuietly();
     },
     onError: (error, _variables, context) => {
       if (context != null) {
         restoreNotificationCache(queryClient, context.snapshot);
       }
-      notificationBadgeService
-        .syncBadgeCount()
-        .catch((error) =>
-          logger.warn(NOTIFICATION_LOG_EVENT.BADGE_SYNC_FAILED, { error: getErrorMessage(error) }),
-        );
       haptics.notify('error');
       toast.error(getUserFacingMessage(error), {
         fallback: t('notification:list.markAllReadFailed'),
@@ -80,10 +59,8 @@ export function useMarkAllAsReadMutationOptions() {
 }
 
 export function useMarkAsReadMutationOptions() {
-  const notificationBadgeService = useNotificationBadgeService();
   const haptics = useHaptics();
   const notificationService = useNotificationService();
-  const logger = useLogger();
   const queryClient = useQueryClient();
 
   return mutationOptions({
@@ -91,35 +68,12 @@ export function useMarkAsReadMutationOptions() {
       unwrap(await notificationService.markAsRead(notificationId)),
     onMutate: async (notificationId) => {
       const snapshot = await optimisticallyMarkNotificationsRead(queryClient, notificationId);
-      const count = queryClient.getQueryData(NOTIFICATION_QUERY_KEYS.unreadCount());
-      // 수를 모르면 배지를 0으로 지우지 않는다. 일부 Android 런처는 배지 호출을 거부해 경고만 남긴다
-      if (count != null) {
-        notificationBadgeService.setBadgeCount(count).catch((error) =>
-          logger.warn(NOTIFICATION_LOG_EVENT.BADGE_SYNC_FAILED, {
-            error: getErrorMessage(error),
-          }),
-        );
-      }
-      return { snapshot, hasBadgeCount: count != null };
-    },
-    onSuccess: (_data, _notificationId, context) => {
-      if (!context.hasBadgeCount) {
-        notificationBadgeService.syncBadgeCount().catch((error) =>
-          logger.warn(NOTIFICATION_LOG_EVENT.BADGE_SYNC_FAILED, {
-            error: getErrorMessage(error),
-          }),
-        );
-      }
+      return { snapshot };
     },
     onError: (_error, _variables, context) => {
       if (context != null) {
         restoreNotificationCache(queryClient, context.snapshot);
       }
-      notificationBadgeService
-        .syncBadgeCount()
-        .catch((error) =>
-          logger.warn(NOTIFICATION_LOG_EVENT.BADGE_SYNC_FAILED, { error: getErrorMessage(error) }),
-        );
       // 읽음은 다음 탭에 다시 보내므로 이어서 이동한 화면을 토스트로 가리지 않는다
       haptics.notify('error');
     },
@@ -202,7 +156,6 @@ function shouldRetryPushOpened(failureCount: number, error: unknown) {
 
 /** 서버의 opened는 읽음도 처리하므로 예산 안에 읽음을 확인하지 못한 탭도 여기서 뒤늦게 읽음이 된다 */
 export function useRecordPushOpenedMutationOptions() {
-  const notificationBadgeService = useNotificationBadgeService();
   const notificationService = useNotificationService();
   const sessionEpoch = useSessionEpoch();
   const logger = useLogger();
@@ -217,27 +170,16 @@ export function useRecordPushOpenedMutationOptions() {
       const isSameSession = () => sessionEpoch.current() === epoch;
       optimisticallyMarkNotificationsRead(queryClient, notificationId, {
         shouldApply: isSameSession,
-      })
-        .then(() => (isSameSession() ? notificationBadgeService.syncBadgeCount() : undefined))
-        .catch((error) =>
-          logger.warn(NOTIFICATION_LOG_EVENT.LOCAL_READ_SYNC_FAILED, {
-            error: getErrorMessage(error),
-          }),
-        );
+      }).catch((error) =>
+        logger.warn(NOTIFICATION_LOG_EVENT.LOCAL_READ_SYNC_FAILED, {
+          error: getErrorMessage(error),
+        }),
+      );
       return { epoch };
     },
-    // onMutate의 배지는 느린 망이나 오프라인이면 읽음 처리 전 수다. 서버가 처리한 뒤의 수로 다시 맞춘다
+    // onMutate의 수는 느린 망이나 오프라인이면 읽음 처리 전 수다. 서버가 처리한 뒤의 수로 다시 맞춘다
     onSuccess: (_opened, _notificationId, { epoch }) =>
-      sessionEpoch.current() === epoch
-        ? Promise.all([
-            invalidateNotifications(queryClient),
-            notificationBadgeService.syncBadgeCount().catch((error) =>
-              logger.warn(NOTIFICATION_LOG_EVENT.LOCAL_READ_SYNC_FAILED, {
-                error: getErrorMessage(error),
-              }),
-            ),
-          ])
-        : undefined,
+      sessionEpoch.current() === epoch ? invalidateNotifications(queryClient) : undefined,
     onError: (error) =>
       logger.warn(NOTIFICATION_LOG_EVENT.OPEN_RECORDING_FAILED, {
         error: getErrorMessage(error),

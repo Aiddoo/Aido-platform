@@ -285,7 +285,6 @@ export function DIProvider({
     });
     const notificationBadgeService = new NotificationBadgeService({
       badgeGateway: pushNotification,
-      notificationService,
       logger,
     });
     const pushDeviceService = new PushDeviceService({

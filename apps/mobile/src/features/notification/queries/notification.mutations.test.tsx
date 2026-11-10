@@ -9,6 +9,7 @@ import { QueryClientProvider, useMutation } from '@tanstack/react-query';
 import { act, renderHook, waitFor } from '@testing-library/react-native';
 import type { PropsWithChildren } from 'react';
 
+import { useNotificationBadgeSync } from '../hooks/use-notification-badge-sync';
 import { useRecordPushOpenedMutationOptions } from './notification.mutations';
 
 async function setup() {
@@ -35,9 +36,13 @@ async function setup() {
       <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
     </StaticDIProvider>
   );
-  const { result } = await renderHook(() => useMutation(useRecordPushOpenedMutationOptions()), {
-    wrapper,
-  });
+  const { result } = await renderHook(
+    () => {
+      useNotificationBadgeSync('authenticated');
+      return useMutation(useRecordPushOpenedMutationOptions());
+    },
+    { wrapper },
+  );
   return { result, gateway, finishOpened: () => server.finishOpened() };
 }
 

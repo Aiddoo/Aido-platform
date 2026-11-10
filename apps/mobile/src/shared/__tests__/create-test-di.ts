@@ -342,7 +342,6 @@ export function createTestDi({
     notificationService,
     notificationBadgeService: new NotificationBadgeService({
       badgeGateway: pushNotification,
-      notificationService,
       logger,
     }),
     notificationEntryStore: createNotificationEntryStore(),

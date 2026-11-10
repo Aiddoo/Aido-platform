@@ -1,10 +1,5 @@
 import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
-import {
-  createHttpClientStub,
-  createPushNotificationGatewayStub,
-  createTestDi,
-  createTestQueryClient,
-} from '@src/shared/__tests__';
+import { createHttpClientStub, createTestDi, createTestQueryClient } from '@src/shared/__tests__';
 import { setupFakeTimersPerTest } from '@src/shared/__tests__/setup-fake-timers-per-test';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { act, renderHook } from '@testing-library/react-native';
@@ -14,17 +9,11 @@ import { NOTIFICATION_QUERY_KEYS } from '../constants/notification-query-keys';
 import type { NotificationType } from '../domains/notification.model';
 import { useForegroundNotificationSync } from './use-foreground-notification-sync';
 
-const UNREAD_COUNT = 5;
-
 async function setup(isAuthenticated: boolean) {
   const invalidateByType = jest.fn(async (_type: NotificationType) => {});
-  const httpClient = createHttpClientStub();
-  httpClient.get.mockResolvedValue({ ok: true, value: { unreadCount: UNREAD_COUNT } });
-  const pushNotification = createPushNotificationGatewayStub();
-  const syncBadgeCount = pushNotification.setBadgeCount;
   const queryClient = createTestQueryClient();
   const invalidateQueries = jest.spyOn(queryClient, 'invalidateQueries');
-  const container = createTestDi({ httpClient, pushNotification });
+  const container = createTestDi({ httpClient: createHttpClientStub() });
   const wrapper = ({ children }: PropsWithChildren) => (
     <StaticDIProvider container={container}>
       <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
@@ -34,24 +23,27 @@ async function setup(isAuthenticated: boolean) {
     () => useForegroundNotificationSync({ isAuthenticated, invalidateByType }),
     { wrapper },
   );
-  return { syncBadgeCount, invalidateQueries, invalidateByType, ...hook };
+  // 안 읽은 수(배지)도 이 무효화로 다시 받는다
+  const invalidatedInbox = () =>
+    invalidateQueries.mock.calls.filter(
+      ([filters]) => filters?.queryKey === NOTIFICATION_QUERY_KEYS.all,
+    );
+  return { invalidatedInbox, invalidateByType, ...hook };
 }
 
 describe('useForegroundNotificationSync', () => {
   setupFakeTimersPerTest();
 
-  it('알림이 도착하면 목록을 다시 받고 배지를 맞춘다', async () => {
+  it('알림이 도착하면 목록과 안 읽은 수를 다시 받는다', async () => {
     // Given
-    const { result, syncBadgeCount, invalidateQueries } = await setup(true);
+    const { result, invalidatedInbox } = await setup(true);
 
     // When
     result.current({ data: {} });
     await act(() => jest.advanceTimersByTimeAsync(1000));
 
     // Then
-    expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: NOTIFICATION_QUERY_KEYS.all });
-    expect(syncBadgeCount).toHaveBeenCalledTimes(1);
-    expect(syncBadgeCount).toHaveBeenCalledWith(UNREAD_COUNT);
+    expect(invalidatedInbox()).toHaveLength(1);
   });
 
   it('받은 알림 타입으로 다른 기능의 화면을 다시 받는다', async () => {
@@ -84,33 +76,33 @@ describe('useForegroundNotificationSync', () => {
     ]);
   });
 
-  it('data가 계약에 맞지 않아도 목록과 배지는 맞춘다', async () => {
+  it('data가 계약에 맞지 않아도 목록과 안 읽은 수는 다시 받는다', async () => {
     // Given
-    const { result, syncBadgeCount } = await setup(true);
+    const { result, invalidatedInbox } = await setup(true);
 
     // When
     result.current(undefined);
     await act(() => jest.advanceTimersByTimeAsync(1000));
 
     // Then
-    expect(syncBadgeCount).toHaveBeenCalledTimes(1);
+    expect(invalidatedInbox()).toHaveLength(1);
   });
 
   it('로그인하지 않았으면 아무것도 하지 않는다', async () => {
     // Given
-    const { result, syncBadgeCount } = await setup(false);
+    const { result, invalidatedInbox } = await setup(false);
 
     // When
     result.current({ data: {} });
     await act(() => jest.advanceTimersByTimeAsync(1000));
 
     // Then
-    expect(syncBadgeCount).not.toHaveBeenCalled();
+    expect(invalidatedInbox()).toHaveLength(0);
   });
 
-  it('1초 안에 여러 알림이 와도 한 번만 맞춘다', async () => {
+  it('1초 안에 여러 알림이 와도 한 번만 다시 받는다', async () => {
     // Given
-    const { result, syncBadgeCount } = await setup(true);
+    const { result, invalidatedInbox } = await setup(true);
 
     // When
     result.current({ data: {} });
@@ -118,6 +110,6 @@ describe('useForegroundNotificationSync', () => {
     await act(() => jest.advanceTimersByTimeAsync(1000));
 
     // Then
-    expect(syncBadgeCount).toHaveBeenCalledTimes(1);
+    expect(invalidatedInbox()).toHaveLength(1);
   });
 });
