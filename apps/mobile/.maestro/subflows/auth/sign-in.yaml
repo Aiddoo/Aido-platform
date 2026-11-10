@@ -13,8 +13,13 @@ name: 로그인 화면에서 이메일로 로그인해 피드를 연다
 - hideKeyboard
 - tapOn:
     id: ${output.ids.auth.submitButton}
+# 로그인이 끝나면 피드 위에 시스템 암호 저장 창·알림 안내 화면이 먼저 덮을 수 있어, 로그인 화면이 사라진 것을 보고 그것들을 닫은 뒤 피드를 확인한다
+- extendedWaitUntil:
+    notVisible:
+      id: ${output.ids.auth.submitButton}
+    timeout: 30000
+- runFlow: ../app/dismiss-hints.yaml
 - extendedWaitUntil:
     visible:
       id: ${output.ids.feed.screen}
     timeout: 30000
-- runFlow: ../app/dismiss-hints.yaml

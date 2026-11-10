@@ -71,4 +71,6 @@ output.ids = {
 output.labels = {
   close: '닫기|Close',
   save: '저장|Save',
+  // iOS 시스템 창(암호 저장 제안)의 버튼
+  savePasswordNotNow: '지금 안 함|Not Now',
 };

@@ -1,6 +1,16 @@
 appId: ${MAESTRO_APP_ID}
-name: 처음 쓰는 계정에 뜨는 안내를 닫는다
+name: 로그인 직후 뜨는 시스템 창과 처음 쓰는 계정 안내를 닫는다
 ---
+- extendedWaitUntil:
+    visible: ${output.labels.savePasswordNotNow}
+    timeout: 5000
+    optional: true
+- runFlow:
+    label: iOS 암호 저장 제안이 뜨면 저장하지 않는다(시스템 창이라 앱 testID가 없다)
+    when:
+      visible: ${output.labels.savePasswordNotNow}
+    commands:
+      - tapOn: ${output.labels.savePasswordNotNow}
 - extendedWaitUntil:
     visible:
       id: ${output.ids.notification.onboardingScreen}
@@ -13,6 +23,11 @@ name: 처음 쓰는 계정에 뜨는 안내를 닫는다
         id: ${output.ids.notification.onboardingScreen}
     commands:
       - tapOn: ${output.ids.common.headerCloseLabel}
+- extendedWaitUntil:
+    visible:
+      id: ${output.ids.common.hintPopover}
+    timeout: 3000
+    optional: true
 - runFlow:
     label: 기능 안내 말풍선이 떠 있으면 닫는다
     when:
