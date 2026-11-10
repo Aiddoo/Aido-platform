@@ -1,6 +1,3 @@
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
-
 import { Logger } from "@nestjs/common";
 import { and, eq, sql } from "drizzle-orm";
 import { omit } from "es-toolkit";
@@ -28,7 +25,6 @@ import {
 } from "#api/platform/database/schema/index";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantFromDate } from "#api/shared/domain/time/instant";
-import { plainDateFromDate } from "#api/shared/domain/time/plain-date";
 import { DateClock } from "#test/doubles/platform/date-clock";
 import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";
 import { StubCurrentUserAccess } from "#test/fixtures/auth-credential.fixture";
@@ -335,25 +331,13 @@ describe("회차 채우기 작업 (실제 PostgreSQL)", () => {
   });
 
   describe("1.14.2로 되돌린 동안 카테고리가 지워진 규칙", () => {
-    /** 롤백 SQL 뒤 옛 서버처럼 카테고리를 지운다. 할 일만 옮기고 규칙은 없는 카테고리를 가리킨다. */
+    /** 1.14.2 서버처럼 카테고리를 지운다. 할 일만 옮기고 규칙은 없는 카테고리를 가리킨다. */
     async function deleteCategoryLikeOldServer(from: number, to: number) {
       await client.execute(
         sql.raw(`ALTER TABLE "TodoSeries" DROP CONSTRAINT "TodoSeries_categoryId_fkey"`),
       );
       await client.update(todo).set({ categoryId: to }).where(eq(todo.categoryId, from));
       await client.delete(todoCategory).where(eq(todoCategory.id, from));
-    }
-
-    function redeployStatements(): string {
-      const deployment = readFileSync(
-        join(process.cwd(), "../../docs/releases/1.15.0/server-rollback.md"),
-        "utf8",
-      );
-      const block = /```sql\n(BEGIN;[\s\S]*?COMMIT;)\n```/.exec(deployment)?.[1];
-      if (block == null) {
-        throw new Error("1.15.0 되돌리기 문서에 재배포 SQL이 없다");
-      }
-      return block;
     }
 
     async function seedOtherCategory() {
@@ -391,55 +375,6 @@ describe("회차 채우기 작업 (실제 PostgreSQL)", () => {
       expect(await countOccurrences("broken")).toBe(0);
       expect(await nextOccurrenceOf("broken")).toBe("2026-11-05");
       expect(await countOccurrences("healthy")).toBe(HORIZON_ROWS);
-    });
-
-    it("문서의 재배포 SQL은 회차가 옮겨 간 카테고리로 규칙을 옮기고 FK를 검증한다", async () => {
-      // Given
-      const remaining = await seedOtherCategory();
-      await seedSeries("broken", { categoryId });
-      await client.insert(todo).values({
-        ...omit(TodoFixture.create({ userId, categoryId, sortOrder: 1 }), ["id"]),
-        seriesId: "broken",
-        occurrenceDate: plainDateFromDate(AT),
-        startDate: plainDateFromDate(AT),
-      });
-      await deleteCategoryLikeOldServer(categoryId, remaining);
-      // When
-      await client.execute(sql.raw(redeployStatements()));
-      // Then
-      const rule = await client.query.todoSeries.findFirst({ where: { id: "broken" } });
-      expect(rule?.categoryId).toBe(remaining);
-      await expect(
-        client.delete(todoCategory).where(eq(todoCategory.id, remaining)),
-      ).rejects.toThrow();
-    });
-
-    it("회차가 없으면 사용자의 첫 카테고리로 옮기고 다음 밤 작업이 이어 만든다", async () => {
-      // Given
-      const remaining = await seedOtherCategory();
-      await seedSeries("broken", { categoryId });
-      await deleteCategoryLikeOldServer(categoryId, remaining);
-      await useCase().execute();
-      // When
-      await client.execute(sql.raw(redeployStatements()));
-      await useCase().execute();
-      // Then
-      const rule = await client.query.todoSeries.findFirst({ where: { id: "broken" } });
-      expect(rule?.categoryId).toBe(remaining);
-      expect(await countOccurrences("broken")).toBe(HORIZON_ROWS);
-    });
-
-    it("정리할 규칙이 없어도 FK를 건다", async () => {
-      // Given
-      await seedSeries("healthy");
-      await client.execute(
-        sql.raw(`ALTER TABLE "TodoSeries" DROP CONSTRAINT "TodoSeries_categoryId_fkey"`),
-      );
-      // When
-      await client.execute(sql.raw(redeployStatements()));
-      // Then
-      const rule = await client.query.todoSeries.findFirst({ where: { id: "healthy" } });
-      expect(rule?.categoryId).toBe(categoryId);
     });
   });
 

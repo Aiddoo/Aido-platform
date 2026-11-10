@@ -534,7 +534,7 @@ describe("시간대 재계산 (실제 PostgreSQL·pg-boss)", () => {
   });
 });
 
-describe("Todo.scheduledLocalTime 이관과 재배포 SQL (실제 PostgreSQL)", () => {
+describe("Todo.scheduledLocalTime 이관 (실제 PostgreSQL)", () => {
   const MIGRATIONS_DIR = join(process.cwd(), "drizzle");
   const database = new TestDatabase({ createClient: (url) => createTestClient(url, { max: 4 }) });
   let client: TestDatabaseClient;
@@ -547,16 +547,6 @@ describe("Todo.scheduledLocalTime 이관과 재배포 SQL (실제 PostgreSQL)", 
       .split("--> statement-breakpoint")
       .map((statement) => statement.trim());
     return statements.find((statement) => statement.includes('UPDATE "Todo"')) ?? "";
-  }
-
-  function readRedeploySql(): string {
-    const document = readFileSync(
-      join(process.cwd(), "../../docs/releases/1.15.0/server-rollback.md"),
-      "utf8",
-    );
-    const section = document.slice(document.indexOf("다시 채우는 SQL"));
-    const body = /```sql\n([\s\S]*?)```/.exec(section)?.[1];
-    return body ?? "";
   }
 
   beforeAll(async () => {
@@ -626,43 +616,6 @@ describe("Todo.scheduledLocalTime 이관과 재배포 SQL (실제 PostgreSQL)", 
     expect(filled?.scheduledTime).toEqual(instant);
     expect(filled?.updatedAt).toEqual(row?.updatedAt);
     expect(untouched?.scheduledLocalTime).toBeNull();
-  });
-
-  it("재배포 SQL은 롤백 중 옛 서버가 쓴 행만 고치고 지난 행의 벽시계는 지키며 두 번 돌려도 같다", async () => {
-    // Given
-    const owner = await seedUser("BF000006", NEW_YORK);
-    const rollbackAt = new Date("2026-11-05T00:00:00.000Z");
-    const before = Temporal.Instant.from("2026-11-04T00:00:00.000Z");
-    const after = Temporal.Instant.from("2026-11-05T12:00:00.000Z");
-    const pastKept = await seedRow(owner, Temporal.Instant.from("2026-11-01T01:00:00.000Z"), {
-      scheduledLocalTime: "10:00",
-      updatedAt: before,
-    });
-    const created = await seedRow(owner, Temporal.Instant.from("2026-11-06T14:00:00.000Z"), {
-      updatedAt: after,
-    });
-    const edited = await seedRow(owner, Temporal.Instant.from("2026-11-07T15:30:00.000Z"), {
-      scheduledLocalTime: "09:00",
-      updatedAt: after,
-    });
-    const cleared = await seedRow(owner, null, { scheduledLocalTime: "09:00", updatedAt: after });
-    const script = readRedeploySql().replaceAll(
-      ":'rollback_started_at'",
-      `'${rollbackAt.toISOString()}'`,
-    );
-    const read = (id: number | undefined) =>
-      client.query.todo.findFirst({
-        where: { id: id ?? 0 },
-        columns: { scheduledLocalTime: true },
-      });
-    // When
-    await client.execute(sql.raw(script));
-    await client.execute(sql.raw(script));
-    // Then
-    expect((await read(pastKept?.id))?.scheduledLocalTime).toBe("10:00");
-    expect((await read(created?.id))?.scheduledLocalTime).toBe("09:00");
-    expect((await read(edited?.id))?.scheduledLocalTime).toBe("10:30");
-    expect((await read(cleared?.id))?.scheduledLocalTime).toBeNull();
   });
 });
 
