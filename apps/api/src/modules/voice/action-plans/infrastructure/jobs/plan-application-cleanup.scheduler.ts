@@ -3,7 +3,7 @@ import { Injectable, Logger, type OnModuleInit } from "@nestjs/common";
 import { runInBackground } from "#api/platform/jobs/non-blocking-init";
 import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
 
-import { VoiceLogEvent } from "../../application/voice.log-events.js";
+import { ActionPlanLogEvent } from "../../application/action-plans.log-events.js";
 import { PLAN_APPLICATION_CLEANUP_QUEUE } from "./plan-application-cleanup.queue.js";
 
 @Injectable()
@@ -24,7 +24,7 @@ export class PlanApplicationCleanupScheduler implements OnModuleInit {
       "Plan application cleanup scheduler registration",
       async () => {
         await this.#jobQueue.registerSchedules(PLAN_APPLICATION_CLEANUP_QUEUE);
-        this.#logger.log({ event: VoiceLogEvent.PLAN_CLEANUP_SCHEDULER_REGISTERED });
+        this.#logger.log({ event: ActionPlanLogEvent.PLAN_CLEANUP_SCHEDULER_REGISTERED });
       },
     );
   }

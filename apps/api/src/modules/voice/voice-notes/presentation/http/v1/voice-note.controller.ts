@@ -33,11 +33,9 @@ import {
   ApiIdempotencyKeyHeader,
   ApiPlanningLocaleHeaders,
 } from "../../../../action-plans/presentation/http/plan-request.decorator.js";
-import {
-  VoiceNoteDigestRequestDto,
-  VoiceNoteDigestResponseDto,
-} from "../../../../action-plans/presentation/http/v1/action-plan.dto.js";
 import { DigestVoiceNoteUseCase } from "../../../application/use-cases/digest-voice-note.use-case.js";
+import { toVoiceNoteDigestResponse } from "./voice-note-response.mapper.js";
+import { VoiceNoteDigestRequestDto, VoiceNoteDigestResponseDto } from "./voice-note.dto.js";
 
 export const VOICE_NOTE_THROTTLE = {
   MINUTE: { default: { ttl: 60_000, limit: 4 } },
@@ -90,7 +88,7 @@ export class VoiceNoteController {
   ])
   @ApiErrorCodesResponse(HttpStatus.TOO_MANY_REQUESTS, [ErrorCode.AI_1313, ErrorCode.AI_1310])
   @ApiServiceUnavailableError(ErrorCode.AI_1301)
-  digest(
+  async digest(
     @CurrentUser() user: CurrentUserPayload,
     @Body({ schema: VoiceNoteDigestRequestDto }) dto: VoiceNoteDigestRequestDto,
     @IdempotencyKey() idempotencyKey: string,
@@ -98,7 +96,7 @@ export class VoiceNoteController {
     @Locale() locale: SupportedLocale | undefined,
     @ClientAbortSignal() signal: AbortSignal,
   ): Promise<VoiceNoteDigestResponseDto> {
-    return this.#digestVoiceNote.execute({
+    const digested = await this.#digestVoiceNote.execute({
       userId: user.userId,
       text: dto.text,
       durationSeconds: dto.durationSeconds,
@@ -108,5 +106,6 @@ export class VoiceNoteController {
       locale,
       signal,
     });
+    return toVoiceNoteDigestResponse(digested);
   }
 }

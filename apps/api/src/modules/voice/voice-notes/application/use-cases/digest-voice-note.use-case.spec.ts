@@ -2,18 +2,14 @@ import { voiceNoteDigestResponseSchema } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
 import { PLAN_CATALOG } from "@aido/api/vocabulary";
 
+import { InMemoryPlanResultReplay } from "#test/doubles/voice/in-memory-plan-result-replay";
+import { StubPlanningContextReader } from "#test/doubles/voice/stub-planning-context.reader";
 import { QUOTA_LEDGER_TIME } from "#test/fixtures/access/quota-ledger.fixture";
-import {
-  createPlanFlowFixture,
-  digestDraft,
-  InMemoryPlanResultReplay,
-  memoActionDraft,
-  stubPlanningContextReader,
-  todoActionDraft,
-} from "#test/fixtures/voice-plan.fixture";
+import { digestDraft, memoActionDraft, todoActionDraft } from "#test/fixtures/voice-plan.fixture";
+import { createPlanFlowFixture } from "#test/fixtures/voice/plan-flow.fixture";
 import { createAiGenerationError } from "#test/mocks/fake-ai.generator";
 
-import type { VoiceNoteDigestResult } from "../../../action-plans/application/ports/plan-result-replay.port.js";
+import type { VoiceNoteDigestResult } from "../ports/voice-note-digest-result-replay.port.js";
 import { DigestVoiceNoteUseCase } from "./digest-voice-note.use-case.js";
 
 const { maxCharacters } = PLAN_CATALOG.VOICE_NOTE.perUse;
@@ -34,7 +30,7 @@ function setup(ledgerInput: Parameters<typeof createPlanFlowFixture>[0] = {}) {
     runner: fixture.runner,
     quota: fixture.quota,
     generator: fixture.generator,
-    contextReader: stubPlanningContextReader(),
+    contextReader: new StubPlanningContextReader(),
     localePreferenceReader: fixture.localePreferenceReader,
     replay,
     clock: fixture.clock,
@@ -65,7 +61,6 @@ describe("DigestVoiceNoteUseCase", () => {
   });
   afterEach(() => {
     vi.useRealTimers();
-    vi.restoreAllMocks();
   });
 
   describe("녹음 길이 확인(1.15.1은 경보만)", () => {
@@ -457,9 +452,8 @@ describe("DigestVoiceNoteUseCase", () => {
     // When
     await execute({ text: "비밀 전사" });
     // Then
-    const logged = JSON.stringify([...logger.log.mock.calls, ...logger.warn.mock.calls]);
-    expect(logged).not.toContain("비밀");
-    expect(logger.log).toHaveBeenCalledWith(
+    expect(JSON.stringify(logger.messages)).not.toContain("비밀");
+    expect(logger.messages).toContainEqual(
       expect.objectContaining({
         event: "voice.note-digest.completed",
         segmentCount: 2,

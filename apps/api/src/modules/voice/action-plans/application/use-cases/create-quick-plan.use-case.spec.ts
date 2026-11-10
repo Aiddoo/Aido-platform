@@ -2,14 +2,11 @@ import { quickPlanResponseSchema } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
 import { PLAN_CATALOG } from "@aido/api/vocabulary";
 
+import { InMemoryPlanResultReplay } from "#test/doubles/voice/in-memory-plan-result-replay";
+import { StubPlanningContextReader } from "#test/doubles/voice/stub-planning-context.reader";
 import { QUOTA_LEDGER_TIME } from "#test/fixtures/access/quota-ledger.fixture";
-import {
-  createPlanFlowFixture,
-  InMemoryPlanResultReplay,
-  memoActionDraft,
-  stubPlanningContextReader,
-  todoActionDraft,
-} from "#test/fixtures/voice-plan.fixture";
+import { memoActionDraft, todoActionDraft } from "#test/fixtures/voice-plan.fixture";
+import { createPlanFlowFixture } from "#test/fixtures/voice/plan-flow.fixture";
 import { createAiGenerationError } from "#test/mocks/fake-ai.generator";
 
 import type { QuickPlanResult } from "../ports/plan-result-replay.port.js";
@@ -25,7 +22,7 @@ function setup(ledgerInput: Parameters<typeof createPlanFlowFixture>[0] = {}) {
   const useCase = new CreateQuickPlanUseCase({
     runner: fixture.runner,
     generator: fixture.generator,
-    contextReader: stubPlanningContextReader({
+    contextReader: new StubPlanningContextReader({
       categories: [{ id: 1, name: "업무" }],
       upcomingTodos: [{ id: 41, title: "치과 예약", startDate: "2027-01-04", isRepeating: false }],
     }),
@@ -57,7 +54,6 @@ describe("CreateQuickPlanUseCase", () => {
   });
   afterEach(() => {
     vi.useRealTimers();
-    vi.restoreAllMocks();
   });
 
   it("할 일이 있으면 한 번 차감하고 공유 응답 계약에 맞는 계획과 한도를 준다", async () => {
@@ -137,9 +133,7 @@ describe("CreateQuickPlanUseCase", () => {
     // Given
     const { aiGenerator, execute, used, quotaChargeRepository } = setup();
     const controller = new AbortController();
-    const generate = vi
-      .spyOn(aiGenerator, "generate")
-      .mockRejectedValue(createAiGenerationError("TIMEOUT"));
+    aiGenerator.setInvalidResponse(createAiGenerationError("TIMEOUT"));
     // When
     const failure = execute({ signal: controller.signal });
     // Then
@@ -147,7 +141,7 @@ describe("CreateQuickPlanUseCase", () => {
       errorCode: ErrorCode.AI_1301,
       details: { charged: false },
     });
-    expect(generate.mock.calls[0]?.[0].signal).toBe(controller.signal);
+    expect(aiGenerator.getLastRequest()?.signal).toBe(controller.signal);
     expect(await used()).toBe(0);
     expect([...quotaChargeRepository.all]).toEqual([
       expect.objectContaining({ status: "REFUNDED", refundReason: "FAILED" }),
@@ -178,7 +172,7 @@ describe("CreateQuickPlanUseCase", () => {
     expect(response.charged).toBe(true);
     expect(response.featureQuota).toBeNull();
     expect(response.plan.actions).toHaveLength(1);
-    expect(logger.warn).toHaveBeenCalledWith(
+    expect(logger.messages).toContainEqual(
       expect.objectContaining({ event: "ai.generation.quota-read-failed", feature: "AI_PARSE" }),
     );
     quota.read = async () => {
@@ -262,10 +256,13 @@ describe("CreateQuickPlanUseCase", () => {
 
     it("환불된 키를 다시 보낼 때 그 사이 한도가 찼으면 차감 없이 AI_1303이다", async () => {
       // Given
-      const { aiGenerator, execute, quotaUsageRepository, used } = setup();
+      const { aiGenerator, execute, quotaUsageRepository, used, userId } = setup();
       aiGenerator.setRawResponse({ todos: [], memo: null });
       await execute();
-      vi.spyOn(quotaUsageRepository, "addUsageWithinLimit").mockResolvedValueOnce(false);
+      const ledgerUser = quotaUsageRepository.users.get(userId);
+      if (ledgerUser != null) {
+        ledgerUser.aiUsageCount = FREE_LIMIT;
+      }
       // When
       const second = execute();
       // Then
@@ -273,7 +270,7 @@ describe("CreateQuickPlanUseCase", () => {
         errorCode: ErrorCode.AI_1303,
         details: { charged: false },
       });
-      expect(await used()).toBe(0);
+      expect(await used()).toBe(FREE_LIMIT);
     });
 
     it("다시 만들기가 실패하면 환불하고 차감하지 않았다고 답한다", async () => {
@@ -404,9 +401,8 @@ describe("CreateQuickPlanUseCase", () => {
     // When
     await execute({ text: "비밀 내용" });
     // Then
-    const logged = JSON.stringify([...logger.log.mock.calls, ...logger.warn.mock.calls]);
-    expect(logged).not.toContain("비밀");
-    expect(logger.log).toHaveBeenCalledWith(
+    expect(JSON.stringify(logger.messages)).not.toContain("비밀");
+    expect(logger.messages).toContainEqual(
       expect.objectContaining({
         event: "voice.quick-plan.completed",
         todoCount: 1,

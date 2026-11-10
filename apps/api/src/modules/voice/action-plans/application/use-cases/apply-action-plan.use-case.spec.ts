@@ -5,11 +5,11 @@ import type { PlanMemo } from "#api/modules/notes/memos/notes-memos.public";
 import type { StagedTodoCreatorPort } from "#api/modules/planning/todos/planning-todos.public";
 import type { TodoReadModel } from "#api/modules/planning/todos/planning-todos.public";
 import { parseDateOnly } from "#api/shared/domain/date/utils/parse";
-import { createSpyApplicationLogger } from "#test/doubles/ai-assistance/spy-application-logger";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
+import { ImmediateUnitOfWork } from "#test/doubles/platform/immediate-unit-of-work";
+import { SilentLogger } from "#test/doubles/platform/silent-logger";
 import { InMemoryPlanApplicationRepository } from "#test/doubles/voice/in-memory-plan-application.repository";
 import { createTodoReadModelFixture } from "#test/fixtures/planning/todo-read-model.fixture";
-import { createUnitOfWorkMock } from "#test/mocks/ports/unit-of-work.mock";
 
 import type { PlannedAction, PlannedTodo } from "../../domain/action-plan.vo.js";
 import { ApplyActionPlanUseCase } from "./apply-action-plan.use-case.js";
@@ -65,7 +65,7 @@ function setup(ownedCategoryIds: readonly number[] = [1]) {
   };
   let nextTodoId = 100;
   const useCase = new ApplyActionPlanUseCase({
-    unitOfWork: createUnitOfWorkMock(),
+    unitOfWork: new ImmediateUnitOfWork(),
     mutationLock: {
       acquire: async (keys) => {
         acquiredLocks.push([...keys]);
@@ -120,7 +120,7 @@ function setup(ownedCategoryIds: readonly number[] = [1]) {
       findManyByIds: async (_userId, ids) => ids.map((id) => todoResponse(id)),
     },
     clock: new FixedClock(Temporal.Instant.from("2027-01-04T00:00:00Z")),
-    logger: createSpyApplicationLogger(),
+    logger: new SilentLogger(),
   });
   const execute = (actions: readonly PlannedAction[], idempotencyKey = "key-1") =>
     useCase.execute({

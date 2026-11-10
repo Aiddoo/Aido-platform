@@ -1,4 +1,4 @@
-import { quickPlanResponseSchema, voiceNoteDigestResponseSchema } from "@aido/api";
+import { quickPlanResponseSchema } from "@aido/api";
 import type { FactoryProvider, Provider } from "@nestjs/common";
 import { z } from "zod";
 
@@ -19,10 +19,7 @@ import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port"
 
 import { ChargedPlanRunnerPort } from "./application/ports/charged-plan-runner.port.js";
 import { PlanApplicationRepositoryPort } from "./application/ports/plan-application.repository.port.js";
-import {
-  QuickPlanResultReplayPort,
-  VoiceNoteDigestResultReplayPort,
-} from "./application/ports/plan-result-replay.port.js";
+import { QuickPlanResultReplayPort } from "./application/ports/plan-result-replay.port.js";
 import { PlanningContextReaderPort } from "./application/ports/planning-context.reader.port.js";
 import { ApplyActionPlanUseCase } from "./application/use-cases/apply-action-plan.use-case.js";
 import { CreateQuickPlanUseCase } from "./application/use-cases/create-quick-plan.use-case.js";
@@ -48,19 +45,6 @@ const quickPlanResultReplayProvider: FactoryProvider<QuickPlanResultReplayPort> 
     ),
 };
 
-const voiceNoteDigestResultReplayProvider: FactoryProvider<VoiceNoteDigestResultReplayPort> = {
-  provide: VoiceNoteDigestResultReplayPort,
-  inject: [PlanResultReplayCache],
-  useFactory: (cache: PlanResultReplayCache) =>
-    new InMemoryPlanResultReplayAdapter(
-      cache,
-      "voice-note-digest",
-      voiceNoteDigestResponseSchema
-        .omit({ featureQuota: true, charged: true })
-        .extend({ model: z.string() }),
-    ),
-};
-
 // access 사용량 원장은 아직 Symbol 토큰이라 provideUseCase 대신 inject 목록으로 조립한다
 const chargedPlanRunnerProvider: FactoryProvider<ChargedPlanRunnerPort> = {
   provide: ChargedPlanRunnerPort,
@@ -74,7 +58,6 @@ export const VOICE_ACTION_PLANS_PROVIDERS = [
   { provide: PlanApplicationRepositoryPort, useClass: DrizzlePlanApplicationRepository },
   PlanResultReplayCache,
   quickPlanResultReplayProvider,
-  voiceNoteDigestResultReplayProvider,
   chargedPlanRunnerProvider,
   provideUseCase(CreateQuickPlanUseCase, {
     runner: ChargedPlanRunnerPort,

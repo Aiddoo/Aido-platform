@@ -26,9 +26,9 @@ import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { ActionPlan, type PlannedAction } from "../../domain/action-plan.vo.js";
 import { PlanApplication } from "../../domain/plan-application.aggregate.js";
 import { planRequestMismatch, sourceMemoNotFound } from "../action-plans.errors.js";
+import { ActionPlanLogEvent } from "../action-plans.log-events.js";
 import type { PlanApplicationRepositoryPort } from "../ports/plan-application.repository.port.js";
 import type { PlanningContextReaderPort } from "../ports/planning-context.reader.port.js";
-import { VoiceLogEvent } from "../voice.log-events.js";
 
 export interface ApplyActionPlanCommand {
   readonly userId: string;
@@ -109,10 +109,13 @@ export class ApplyActionPlanUseCase {
     });
     const logFields = { userId, source, todoCount: plan.todos.length, hasMemo: plan.memo != null };
     if (outcome.kind === "applied") {
-      this.#dependencies.logger.log({ event: VoiceLogEvent.PLAN_APPLY_COMPLETED, ...logFields });
+      this.#dependencies.logger.log({
+        event: ActionPlanLogEvent.PLAN_APPLY_COMPLETED,
+        ...logFields,
+      });
       return outcome.applied;
     }
-    this.#dependencies.logger.log({ event: VoiceLogEvent.PLAN_APPLY_REPLAYED, ...logFields });
+    this.#dependencies.logger.log({ event: ActionPlanLogEvent.PLAN_APPLY_REPLAYED, ...logFields });
     return this.#readApplied(outcome.application);
   }
 

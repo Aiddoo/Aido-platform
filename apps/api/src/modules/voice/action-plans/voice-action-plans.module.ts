@@ -10,8 +10,8 @@ import { PlanningCategoriesModule } from "#api/modules/planning/categories/plann
 import { PlanningTodosModule } from "#api/modules/planning/todos/planning-todos.public";
 
 import { ChargedPlanRunnerPort } from "./application/ports/charged-plan-runner.port.js";
-import { VoiceNoteDigestResultReplayPort } from "./application/ports/plan-result-replay.port.js";
 import { PlanningContextReaderPort } from "./application/ports/planning-context.reader.port.js";
+import { PlanResultReplayCache } from "./infrastructure/adapters/in-memory-plan-result-replay.adapter.js";
 import { ActionPlanController } from "./presentation/http/v1/action-plan.controller.js";
 import { QuickPlanController } from "./presentation/http/v1/quick-plan.controller.js";
 import { VOICE_ACTION_PLANS_PROVIDERS } from "./voice-action-plans.providers.js";
@@ -30,6 +30,6 @@ import { VOICE_ACTION_PLANS_PROVIDERS } from "./voice-action-plans.providers.js"
   ],
   controllers: [QuickPlanController, ActionPlanController],
   providers: [...VOICE_ACTION_PLANS_PROVIDERS],
-  exports: [ChargedPlanRunnerPort, PlanningContextReaderPort, VoiceNoteDigestResultReplayPort],
+  exports: [ChargedPlanRunnerPort, PlanningContextReaderPort, PlanResultReplayCache],
 })
 export class VoiceActionPlansModule {}

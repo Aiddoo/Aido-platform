@@ -7,7 +7,6 @@ import {
   CurrentUser,
   type CurrentUserPayload,
 } from "#api/modules/identity/identity-auth-http.public";
-import { toTodoResponse } from "#api/modules/planning/todos/planning-todos.public";
 import { IdempotencyKey, Timezone } from "#api/platform/http/decorators/index";
 import {
   ApiBadRequestError,
@@ -22,9 +21,10 @@ import { ThrottleByUser } from "#api/platform/throttle/index";
 
 import { ApplyActionPlanUseCase } from "../../../application/use-cases/apply-action-plan.use-case.js";
 import { ApiIdempotencyKeyHeader } from "../plan-request.decorator.js";
+import { toApplyActionPlanResponse } from "./action-plan-response.mapper.js";
 import { ApplyActionPlanRequestDto, ApplyActionPlanResponseDto } from "./action-plan.dto.js";
 
-export const ACTION_PLAN_THROTTLE = { default: { ttl: 60_000, limit: 10 } } as const;
+const ACTION_PLAN_THROTTLE = { default: { ttl: 60_000, limit: 10 } } as const;
 
 @ApiTags(SWAGGER_TAGS.VOICE)
 @ApiBearerAuth()
@@ -69,6 +69,6 @@ export class ActionPlanController {
       actions: dto.actions,
       idempotencyKey,
     });
-    return { todos: applied.todos.map(toTodoResponse), memo: applied.memo };
+    return toApplyActionPlanResponse(applied);
   }
 }

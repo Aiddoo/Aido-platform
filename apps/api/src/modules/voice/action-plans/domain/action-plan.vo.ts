@@ -1,8 +1,8 @@
-import type { TodoRepeat } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
 import { MEMO_LIMITS, type TodoVisibility } from "@aido/api/vocabulary";
 import { uniq } from "es-toolkit";
 
+import type { CreateTodoData } from "#api/modules/planning/todos/planning-todos.public";
 import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
 import { ValueObject } from "#api/shared/domain/model/value-object";
 import { truncateGraphemes } from "#api/shared/domain/utils/grapheme.util";
@@ -15,7 +15,8 @@ export interface PlannedTodo {
   readonly startDate: string;
   readonly endDate: string | null;
   readonly scheduledTime: string | null;
-  readonly repeat: TodoRepeat | null;
+  // planning이 할 일을 만들 때 받는 반복 규칙 그대로 넘긴다
+  readonly repeat: NonNullable<CreateTodoData["repeat"]> | null;
   readonly visibility: TodoVisibility | null;
   readonly items: readonly { readonly title: string }[];
 }
