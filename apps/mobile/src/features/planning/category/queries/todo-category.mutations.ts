@@ -40,6 +40,7 @@ import {
   removeDeletedCategory,
   withCategoryAdded,
   withCategoryChanged,
+  withOptimisticCategorySaved,
 } from './todo-category-cache';
 
 export function useCreateTodoCategoryMutationOptions() {
@@ -75,9 +76,13 @@ export function useCreateTodoCategoryMutationOptions() {
         (old) => old && withCategoryAdded(old, optimisticCategory),
       );
 
-      return { previousData };
+      return { previousData, optimisticCategoryId: optimisticCategory.id };
     },
-    onSuccess: (_data, variables) => {
+    onSuccess: (savedCategory, variables, { optimisticCategoryId }) => {
+      queryClient.setQueryData(
+        TODO_CATEGORY_QUERY_KEYS.list(),
+        (old) => old && withOptimisticCategorySaved(old, optimisticCategoryId, savedCategory),
+      );
       // 카테고리 수가 한도(TODO_CATEGORY)를 쓰므로 남은 개수를 다시 받는다
       invalidateEntitlements(queryClient);
       toast.success(t('todo:toast.categoryAdded'));
@@ -98,8 +103,10 @@ export function useCreateTodoCategoryMutationOptions() {
         fallback: t('todo:toast.addFailedRetry'),
       });
     },
-    // 임시 id를 서버 id로 바꾼다. 새 카테고리에는 아직 할 일이 없어 할 일 조회는 그대로다
-    onSettled: () => invalidateTodoCategories(queryClient),
+    // 응답으로 임시 id를 이미 바꿨다. 기다리면 저장한 시트가 목록을 다시 받을 때까지 닫히지 않는다
+    onSettled: () => {
+      invalidateTodoCategories(queryClient);
+    },
   });
 }
 
@@ -131,7 +138,16 @@ export function useUpdateTodoCategoryMutationOptions() {
 
       return { previousData };
     },
-    onSuccess: (_data, variables, context) => {
+    onSuccess: (savedCategory, variables, context) => {
+      queryClient.setQueryData(
+        TODO_CATEGORY_QUERY_KEYS.list(),
+        (old) =>
+          old &&
+          withCategoryChanged(old, variables.id, {
+            name: savedCategory.name,
+            color: savedCategory.color,
+          }),
+      );
       // 할 일 행과 달력 점이 카테고리 이름·색을 함께 보여 준다
       invalidateFeedTodos(queryClient);
       toast.success(t('todo:toast.categoryUpdated'));
@@ -153,7 +169,10 @@ export function useUpdateTodoCategoryMutationOptions() {
         fallback: t('todo:toast.updateFailedRetry'),
       });
     },
-    onSettled: () => invalidateTodoCategories(queryClient),
+    // 기다리면 저장한 시트가 목록을 다시 받을 때까지 닫히지 않는다
+    onSettled: () => {
+      invalidateTodoCategories(queryClient);
+    },
   });
 }
 

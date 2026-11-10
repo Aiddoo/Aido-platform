@@ -1,5 +1,9 @@
 import { createTodoCategoryWithCount } from '../__tests__/todo-category.fixtures';
-import { isOptimisticCategory, withCategoryDeleted } from './todo-category-cache';
+import {
+  isOptimisticCategory,
+  withCategoryDeleted,
+  withOptimisticCategorySaved,
+} from './todo-category-cache';
 
 const PERSONAL = createTodoCategoryWithCount({ id: 1, name: '개인', todoCount: 4 });
 const WORKOUT = createTodoCategoryWithCount({ id: 3, name: '운동', todoCount: 12 });
@@ -55,5 +59,27 @@ describe('isOptimisticCategory', () => {
 
     // Then
     expect(result).toBe(expected);
+  });
+});
+
+describe('withOptimisticCategorySaved', () => {
+  it('만들기 응답의 서버 id·정렬로 임시 행만 바꾸고 할 일 수는 그대로 둔다', () => {
+    // Given
+    const optimistic = createTodoCategoryWithCount({ id: -5, name: '운동', sortOrder: 9 });
+    const result = { categories: [PERSONAL, optimistic] };
+
+    // When
+    const next = withOptimisticCategorySaved(result, optimistic.id, {
+      id: 8,
+      name: '운동',
+      color: optimistic.color,
+      sortOrder: 2,
+    });
+
+    // Then
+    expect(next.categories).toEqual([
+      PERSONAL,
+      { id: 8, name: '운동', color: optimistic.color, sortOrder: 2, todoCount: 0 },
+    ]);
   });
 });

@@ -24,6 +24,22 @@ export function withCategoryAdded(
   return { ...result, categories: [...result.categories, category] };
 }
 
+/** 만들기 응답의 서버 값으로 임시 행을 바꾼다. 새 카테고리라 할 일 수는 그대로(0)다 */
+export function withOptimisticCategorySaved(
+  result: TodoCategoriesResult,
+  optimisticCategoryId: number,
+  savedCategory: TodoCategory,
+): TodoCategoriesResult {
+  return {
+    ...result,
+    categories: result.categories.map((category) =>
+      category.id === optimisticCategoryId
+        ? { ...savedCategory, todoCount: category.todoCount }
+        : category,
+    ),
+  };
+}
+
 export function withCategoryChanged(
   result: TodoCategoriesResult,
   categoryId: number,
