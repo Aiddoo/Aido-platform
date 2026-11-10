@@ -14,7 +14,7 @@ import {
   reorderMemoSchema,
   toggleMemoPinSchema,
   updateMemoSchema,
-} from "@aido/api";
+} from "@aido/api/contracts/memo";
 import type { z } from "zod";
 
 export const CreateMemoDto = createMemoSchema.meta({ id: "CreateMemoDto" });

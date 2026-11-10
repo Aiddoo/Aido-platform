@@ -4,8 +4,8 @@ import type {
   Memo as MemoResponse,
   MemoListResponse,
   MemoMutationResponse,
-  Todo,
-} from "@aido/api";
+} from "@aido/api/contracts/memo";
+import type { Todo } from "@aido/api/contracts/todo";
 
 import type { CursorPage } from "#api/shared/application/cursor-page";
 import { toIsoString } from "#api/shared/domain/time/instant";
