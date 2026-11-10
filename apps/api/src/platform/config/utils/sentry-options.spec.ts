@@ -213,7 +213,7 @@ describe("sampleTrace — 무료 플랜 span 한도 안의 경로·큐별 비율
     expect([continued, dropped]).toEqual([1, 0]);
   });
 
-  it("비율 0인 경로는 앱이 표본으로 골라 보내도 남기지 않는다", () => {
+  it("상태 확인처럼 비율 0인 경로는 Uptime·앱이 보낸 추적 헤더가 표본으로 골라도 남기지 않는다", () => {
     // When
     const sampled = sampleTrace({ ...http("/health"), parentSampled: true }, 0.1);
 

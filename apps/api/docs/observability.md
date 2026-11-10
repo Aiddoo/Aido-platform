@@ -130,18 +130,18 @@ key·심각도·첫 대응 전체는 [경보 카탈로그](alerts.md)다. 아래
 
 ### 표본 비율 (`tracesSampler`)
 
-| 대상                                                                                         | 비율 | 이유                     |
-| -------------------------------------------------------------------------------------------- | ---- | ------------------------ |
-| `/`, `/health`, `GET …/unread-count`, `GET /v1/app-config/*`                                 | 0    | 상태 확인·화면 복귀 폴링 |
-| `POST /v1/webhooks/*`, `DELETE /v1/auth/account`                                             | 1    | 결제·계정 삭제, 드묾     |
-| `/v1/auth/*`                                                                                 | 0.25 | 로그인·토큰 갱신         |
-| `/v1/ai/*`, `quick-plans`, `voice-notes`, `action-plans`                                     | 0.5  | 느리고 비쌈              |
-| 그 밖의 HTTP(`SENTRY_TRACES_SAMPLE_RATE`로 바꿈)                                             | 0.1  | 기본                     |
-| 매분 큐(`timezone-reminder`·`retention`·`push-delivery`)                                     | 0.01 | 하루 1,440회씩           |
-| `notification`·`todo-reminder`                                                               | 0.02 | 건수 많음                |
-| `account-purge`·`store-subscription-reconcile`·`invite-reward`·`todo-series-materialization` | 1    | 드물고 중요              |
-| `email-delivery`·`ai-report-generation`                                                      | 0.5  | 인증 메일·비싼 작업      |
-| 그 밖의 큐                                                                                   | 0.05 | 기본                     |
+| 대상                                                                                         | 비율 | 이유                                                           |
+| -------------------------------------------------------------------------------------------- | ---- | -------------------------------------------------------------- |
+| `/`, `/health`, `GET …/unread-count`, `GET /v1/app-config/*`                                 | 0    | 상태 확인(Uptime 포함)·화면 복귀 폴링. 앞선 추적 헤더가 와도 0 |
+| `POST /v1/webhooks/*`, `DELETE /v1/auth/account`                                             | 1    | 결제·계정 삭제, 드묾                                           |
+| `/v1/auth/*`                                                                                 | 0.25 | 로그인·토큰 갱신                                               |
+| `/v1/ai/*`, `quick-plans`, `voice-notes`, `action-plans`                                     | 0.5  | 느리고 비쌈                                                    |
+| 그 밖의 HTTP(`SENTRY_TRACES_SAMPLE_RATE`로 바꿈)                                             | 0.1  | 기본                                                           |
+| 매분 큐(`timezone-reminder`·`retention`·`push-delivery`)                                     | 0.01 | 하루 1,440회씩                                                 |
+| `notification`·`todo-reminder`                                                               | 0.02 | 건수 많음                                                      |
+| `account-purge`·`store-subscription-reconcile`·`invite-reward`·`todo-series-materialization` | 1    | 드물고 중요                                                    |
+| `email-delivery`·`ai-report-generation`                                                      | 0.5  | 인증 메일·비싼 작업                                            |
+| 그 밖의 큐                                                                                   | 0.05 | 기본                                                           |
 
 ## Sentry 무료 플랜 운영
 
@@ -157,13 +157,12 @@ Developer 플랜(2026-11-10 [요금 페이지](https://sentry.io/pricing/) 확�
 
 배포 1주 뒤 Settings → Stats로 다시 본다. 한도를 넘으면 그 달 남은 이벤트를 받지 않으니 비율을 줄이는 쪽으로 맞춘다.
 
-**설정된 알림**(2026-11-10): 이슈 알림 "서버 운영: 새 오류·재발·급증·장애 즉시 메일". 프로젝트 `node-nestjs`, 환경 `production`, When 새 이슈·급증(escalating)·재발, If Issue category = Error 또는 Outage(성능 이슈 제외), Then 유일한 멤버에게 이메일, 같은 이슈는 30분에 한 번. 5xx·운영 경보(warning 포함)·작업 실패와 Cron·Uptime 장애가 모두 여기로 온다. 규칙은 태그에 기대지 않고, 경보 key 태그 이름은 `alert_key` 하나다(검색·필터용).
+**설정된 것**(2026-11-10, 프로젝트 `node-nestjs`, 환경 `production`):
 
-**남은 일**:
+- 이슈 알림 "서버 운영: 새 오류·재발·급증·장애 즉시 메일": When 새 이슈·급증(escalating)·재발, If Issue category = Error 또는 Outage(성능 이슈 제외), Then 유일한 멤버에게 이메일, 같은 이슈는 30분에 한 번. 5xx·운영 경보(warning 포함)·작업 실패와 Cron·Uptime 장애가 모두 여기로 온다. 규칙은 태그에 기대지 않고, 경보 key 태그 이름은 `alert_key` 하나다(검색·필터용).
+- Uptime 모니터 "Uptime check for api.aido.kr/health": 60초마다, 제한 5초, 2xx 기대, 연속 3회 실패(약 3분)에 이슈, 1회 성공에 해소. 설명에 3단계 첫 대응이 있다. 확인 요청이 `sentry-trace`를 보내도 `/health`는 표본 0이라 span을 남기지 않는다. 큐 장애는 `/health`가 200 `degraded`라 작업 경보가 맡는다.
 
-1. Cron 모니터는 만들지 않는다. 첫 감시 실행이 `aido-job-worker`(`*/15 * * * *` UTC, margin 5분, max runtime 5분, 연속 2회 실패에 이슈)를 upsert한다. check-in은 15분마다 2건이라 분당 6건 한도 아래다. 다른 Cron 모니터가 있으면 무료 1개를 넘으니 하나를 지운다.
-2. Uptime 모니터 1개: `GET https://api.aido.kr/health`, 5분, 200 기대. 큐 장애는 `/health`가 200 `degraded`라 작업 경보가 맡는다.
-3. Client Keys(DSN) 설정에 속도 제한이 보이면 시간당 오류 200건으로 둔다(폭주에서 남은 한도를 지킨다).
+**배포 뒤 할 일**: Cron 모니터 `aido-job-worker`는 만들지 않는다. 첫 감시 실행이 코드 값(`*/15 * * * *` UTC, margin 5분, max runtime 5분, 연속 2회 실패에 이슈)으로 upsert하므로 배포 15분쯤 뒤 Crons 화면에서 check-in이 OK인지만 본다. check-in은 15분마다 2건이라 분당 6건 한도 아래다.
 
 경보를 받으면 [경보 카탈로그](alerts.md)의 첫 대응부터 본다. Sentry 이슈의 extra `runbook`에도 같은 문장이 있다.
 
