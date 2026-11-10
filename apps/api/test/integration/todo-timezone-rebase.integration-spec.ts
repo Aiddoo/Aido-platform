@@ -34,6 +34,7 @@ import {
   userPreference,
 } from "#api/platform/database/schema/index";
 import { PgBossJobRuntimeAdapter } from "#api/platform/jobs/pg-boss-job-runtime.adapter";
+import { SystemClock } from "#api/platform/time/system-clock";
 import { addDaysToDateKey } from "#api/shared/domain/date/utils/arithmetic";
 import { toDateString } from "#api/shared/domain/date/utils/format";
 import { parseDateOnly } from "#api/shared/domain/date/utils/parse";
@@ -433,6 +434,7 @@ describe("시간대 재계산 (실제 PostgreSQL·pg-boss)", () => {
         reminderTimezoneCache: { invalidateActiveTimezones: async () => undefined },
         todoTimezoneRebase: { enqueueRebase: (user) => queue.enqueueRebase(user, at) },
         unitOfWork: transaction.uow,
+        clock: new SystemClock(),
       });
       // When
       for (const timezone of requests) {

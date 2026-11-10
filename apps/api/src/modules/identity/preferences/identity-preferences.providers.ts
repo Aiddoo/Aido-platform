@@ -3,6 +3,7 @@ import type { Provider } from "@nestjs/common";
 import { ENTITLEMENT_READER } from "#api/modules/access/access-entitlement.public";
 import { REMINDER_TIMEZONE_CACHE } from "#api/modules/notification/notification-reminders-cache.public";
 import { loggerFor, provideUseCase } from "#api/platform/di/provide-use-case";
+import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 
 import { PreferenceEntitlementPort } from "./application/ports/preference-entitlement.port.js";
@@ -44,6 +45,7 @@ export const refreshPushTimezoneProvider = provideUseCase(RefreshPushTimezoneUse
   reminderTimezoneCache: ReminderTimezoneCachePort,
   todoTimezoneRebase: TodoTimezoneRebaseEnqueuerPort,
   unitOfWork: UnitOfWorkPort,
+  clock: ClockPort,
 });
 
 export const updatePreferenceProvider = provideUseCase(UpdatePreferenceUseCase, {
@@ -54,6 +56,7 @@ export const updatePreferenceProvider = provideUseCase(UpdatePreferenceUseCase, 
   reminderEnqueuer: ReminderScheduleEnqueuerPort,
   todoTimezoneRebase: TodoTimezoneRebaseEnqueuerPort,
   unitOfWork: UnitOfWorkPort,
+  clock: ClockPort,
   logger: loggerFor(UpdatePreferenceUseCase),
 });
 
@@ -63,6 +66,7 @@ export const upsertPushTimezoneProvider = provideUseCase(UpsertPushTimezoneUseCa
   reminderTimezoneCache: ReminderTimezoneCachePort,
   todoTimezoneRebase: TodoTimezoneRebaseEnqueuerPort,
   unitOfWork: UnitOfWorkPort,
+  clock: ClockPort,
 });
 
 export const IDENTITY_PREFERENCES_PROVIDERS = [
@@ -92,6 +96,7 @@ export const IDENTITY_PREFERENCES_PROVIDERS = [
     preferenceRepository: UserPreferenceRepositoryPort,
     statsReader: TodoCompletionStatsReaderPort,
     milestoneNotifier: StreakMilestoneNotifierPort,
+    clock: ClockPort,
     logger: loggerFor(OnTodoToggledUseCase),
   }),
   provideUseCase(SeedUserSettingsUseCase, {
@@ -100,14 +105,17 @@ export const IDENTITY_PREFERENCES_PROVIDERS = [
   }),
   provideUseCase(UpdateAiDataSharingConsentUseCase, {
     consentRepository: UserConsentRepositoryPort,
+    clock: ClockPort,
     logger: loggerFor(UpdateAiDataSharingConsentUseCase),
   }),
   provideUseCase(UpdateMarketingConsentUseCase, {
     consentRepository: UserConsentRepositoryPort,
+    clock: ClockPort,
     logger: loggerFor(UpdateMarketingConsentUseCase),
   }),
   provideUseCase(UpdateMarketingPushConsentUseCase, {
     consentRepository: UserConsentRepositoryPort,
+    clock: ClockPort,
     logger: loggerFor(UpdateMarketingPushConsentUseCase),
   }),
   provideUseCase(UpsertPushLocaleUseCase, {

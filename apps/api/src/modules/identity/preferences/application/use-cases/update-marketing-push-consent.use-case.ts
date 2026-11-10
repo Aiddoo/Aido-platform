@@ -1,5 +1,6 @@
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
-import { now } from "#api/shared/domain/date/utils/core";
+import type { ClockPort } from "#api/shared/application/ports/clock.port";
+import { instantToDate } from "#api/shared/domain/time/instant";
 
 import { resolveMarketingAgreement } from "../../domain/marketing-consent.domain-service.js";
 import type { UserConsentRepositoryPort } from "../ports/user-consent.repository.port.js";
@@ -16,6 +17,7 @@ export interface UpdateMarketingPushConsentCommand {
 
 interface UpdateMarketingPushConsentDependencies {
   readonly consentRepository: Pick<UserConsentRepositoryPort, "upsertMarketingPushConsent">;
+  readonly clock: ClockPort;
   readonly logger: ApplicationLoggerPort;
 }
 
@@ -27,7 +29,7 @@ export class UpdateMarketingPushConsentUseCase {
   }
 
   async execute(input: UpdateMarketingPushConsentCommand): Promise<MarketingPushConsentView> {
-    const processedAt = now();
+    const processedAt = instantToDate(this.#dependencies.clock.now());
     const updated = await this.#dependencies.consentRepository.upsertMarketingPushConsent(
       input.userId,
       {

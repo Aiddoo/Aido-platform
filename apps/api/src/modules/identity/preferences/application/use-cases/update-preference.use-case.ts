@@ -3,9 +3,10 @@ import { ErrorCode } from "@aido/api/errors";
 import { assertEntitled } from "#api/modules/access/access-entitlement.public";
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
+import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
-import { now } from "#api/shared/domain/date/utils/core";
 import { normalizeIanaTimezone } from "#api/shared/domain/date/utils/timezone";
+import { instantToDate } from "#api/shared/domain/time/instant";
 
 import { ReminderTime } from "../../domain/reminder-time.vo.js";
 import type { PreferenceEntitlementPort } from "../ports/preference-entitlement.port.js";
@@ -33,6 +34,7 @@ interface UpdatePreferenceDependencies {
   readonly reminderEnqueuer: Pick<ReminderScheduleEnqueuerPort, "enqueueReminderHourChanged">;
   readonly todoTimezoneRebase: TodoTimezoneRebaseEnqueuerPort;
   readonly unitOfWork: UnitOfWorkPort;
+  readonly clock: ClockPort;
   readonly logger: ApplicationLoggerPort;
 }
 
@@ -64,7 +66,7 @@ export class UpdatePreferenceUseCase {
       });
     }
 
-    const { preferenceRepository, todoTimezoneRebase } = this.#dependencies;
+    const { preferenceRepository, todoTimezoneRebase, clock } = this.#dependencies;
     const updated = await this.#dependencies.unitOfWork.run(async () => {
       const timezoneChanged =
         timezone != null &&
@@ -86,7 +88,7 @@ export class UpdatePreferenceUseCase {
         weatherEveningMinute: input.weatherEveningMinute,
       });
       if (timezoneChanged) {
-        await todoTimezoneRebase.enqueueRebase(userId, now());
+        await todoTimezoneRebase.enqueueRebase(userId, instantToDate(clock.now()));
       }
       return written;
     });

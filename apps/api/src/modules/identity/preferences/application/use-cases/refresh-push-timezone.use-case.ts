@@ -1,5 +1,6 @@
+import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
-import { now } from "#api/shared/domain/date/utils/core";
+import { instantToDate } from "#api/shared/domain/time/instant";
 
 import type { ReminderTimezoneCachePort } from "../ports/reminder-timezone-cache.port.js";
 import type { TodoTimezoneRebaseEnqueuerPort } from "../ports/todo-timezone-rebase-enqueuer.port.js";
@@ -17,6 +18,7 @@ interface RefreshPushTimezoneDependencies {
   readonly reminderTimezoneCache: ReminderTimezoneCachePort;
   readonly todoTimezoneRebase: TodoTimezoneRebaseEnqueuerPort;
   readonly unitOfWork: UnitOfWorkPort;
+  readonly clock: ClockPort;
 }
 
 export class RefreshPushTimezoneUseCase {
@@ -36,7 +38,10 @@ export class RefreshPushTimezoneUseCase {
       if (count === 0) {
         return false;
       }
-      await this.#dependencies.todoTimezoneRebase.enqueueRebase(userId, now());
+      await this.#dependencies.todoTimezoneRebase.enqueueRebase(
+        userId,
+        instantToDate(this.#dependencies.clock.now()),
+      );
       return true;
     });
     if (!changed) {

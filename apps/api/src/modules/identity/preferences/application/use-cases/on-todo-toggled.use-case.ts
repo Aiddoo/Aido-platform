@@ -1,8 +1,10 @@
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
+import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import { subtractDays } from "#api/shared/domain/date/utils/arithmetic";
 import { startOfDay } from "#api/shared/domain/date/utils/range";
-import { todayInTimezone } from "#api/shared/domain/date/utils/timezone";
+import { startOfDayInTimezone } from "#api/shared/domain/date/utils/timezone";
+import { instantToDate } from "#api/shared/domain/time/instant";
 
 import type { StreakCompletionPlan } from "../../domain/streak.vo.js";
 import type { UserPreference } from "../../domain/user-preference.aggregate.js";
@@ -26,6 +28,7 @@ interface OnTodoToggledDependencies {
   >;
   readonly statsReader: Pick<TodoCompletionStatsReaderPort, "countForDay">;
   readonly milestoneNotifier: Pick<StreakMilestoneNotifierPort, "notifyStreak3Reached">;
+  readonly clock: ClockPort;
   readonly logger: ApplicationLoggerPort;
 }
 
@@ -38,7 +41,10 @@ export class OnTodoToggledUseCase {
 
   async execute(input: OnTodoToggledCommand): Promise<void> {
     try {
-      const today = todayInTimezone(input.timezone ?? "UTC");
+      const today = startOfDayInTimezone(
+        instantToDate(this.#dependencies.clock.now()),
+        input.timezone ?? "UTC",
+      );
       for (let attempt = 0; attempt < MAX_STREAK_UPDATE_ATTEMPTS; attempt += 1) {
         const stats = await this.#statsForDay(input.userId, today);
         if (stats.total === 0) {

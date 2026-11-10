@@ -10,6 +10,7 @@ import {
 import type { Observable } from "rxjs";
 
 import { RequestClientReader } from "#api/platform/http/request-client/index";
+import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 
 import { PreferenceLogEvent } from "../../../application/preferences.log-events.js";
@@ -27,13 +28,16 @@ export class TimezoneSelfHealInterceptor implements NestInterceptor, OnModuleDes
 
   readonly #refreshPushTimezoneUseCase: RefreshPushTimezoneUseCase;
   readonly #requestClientReader: RequestClientReader;
+  readonly #clock: ClockPort;
 
   constructor(
     refreshPushTimezoneUseCase: RefreshPushTimezoneUseCase,
     requestClientReader: RequestClientReader,
+    clock: ClockPort,
   ) {
     this.#refreshPushTimezoneUseCase = refreshPushTimezoneUseCase;
     this.#requestClientReader = requestClientReader;
+    this.#clock = clock;
     this.#cleanupInterval = setInterval(
       () => this.#cleanup(),
       TimezoneSelfHealInterceptor.THROTTLE_MS,
@@ -58,7 +62,7 @@ export class TimezoneSelfHealInterceptor implements NestInterceptor, OnModuleDes
   }
 
   #heal(userId: string, timezone: string): void {
-    const now = Date.now();
+    const now = this.#clock.now().epochMilliseconds;
     const seen = this.#seen.get(userId);
 
     if (seen && seen.tz === timezone && now - seen.at < TimezoneSelfHealInterceptor.THROTTLE_MS) {
@@ -82,7 +86,7 @@ export class TimezoneSelfHealInterceptor implements NestInterceptor, OnModuleDes
   }
 
   #cleanup(): void {
-    const cutoff = Date.now() - TimezoneSelfHealInterceptor.THROTTLE_MS;
+    const cutoff = this.#clock.now().epochMilliseconds - TimezoneSelfHealInterceptor.THROTTLE_MS;
     let cleaned = 0;
 
     for (const [userId, entry] of this.#seen.entries()) {

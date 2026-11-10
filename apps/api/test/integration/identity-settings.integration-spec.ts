@@ -31,7 +31,9 @@ import {
   userConsent,
   userPreference,
 } from "#api/platform/database/schema/index";
+import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { UNIT_OF_WORK, type UnitOfWorkPort } from "#api/shared/application/ports/index";
+import { DateClock } from "#test/doubles/platform/date-clock";
 import { TodoCategoryFixture, TodoFixture, UserFixture } from "#test/fixtures/index";
 import { createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
@@ -68,7 +70,11 @@ describe("사용자 설정 저장·캐시·동시 스트릭 (실제 PostgreSQL)"
   beforeAll(async () => {
     database = new TestDatabase({ createClient: (url) => createTestClient(url, { max: 5 }) });
     client = await database.start();
-    context = await createE2eApp({ testDatabase: database });
+    context = await createE2eApp({
+      testDatabase: database,
+      // 스트릭의 "오늘"을 vi.setSystemTime으로 고정한 날짜로 본다
+      customizeBuilder: (builder) => builder.overrideProvider(ClockPort).useClass(DateClock),
+    });
     preferences = context.module.get(DrizzleUserPreferenceRepository);
     consents = context.module.get(DrizzleUserConsentRepository);
     unitOfWork = context.module.get(UNIT_OF_WORK);
