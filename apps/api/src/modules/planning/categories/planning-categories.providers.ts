@@ -10,10 +10,7 @@ import { TodoCategoryCachePort } from "./application/ports/todo-category-cache.p
 import { TodoCategoryCountReaderPort } from "./application/ports/todo-category-count.reader.port.js";
 import { TodoCategoryLimitReaderPort } from "./application/ports/todo-category-limit.reader.port.js";
 import { TodoCategoryProvisionerPort } from "./application/ports/todo-category-provisioner.port.js";
-import {
-  TODO_CATEGORY_READER,
-  TodoCategoryReaderPort,
-} from "./application/ports/todo-category.reader.port.js";
+import { TodoCategoryReaderPort } from "./application/ports/todo-category.reader.port.js";
 import { TodoCategoryRepositoryPort } from "./application/ports/todo-category.repository.port.js";
 import { CreateTodoCategoryUseCase } from "./application/use-cases/create-todo-category.use-case.js";
 import { DeleteTodoCategoryUseCase } from "./application/use-cases/delete-todo-category.use-case.js";
@@ -36,8 +33,6 @@ export const PLANNING_CATEGORIES_PROVIDERS = [
   { provide: TodoCategoryReaderPort, useExisting: TodoCategoryReaderAdapter },
   { provide: TodoCategoryCountReaderPort, useExisting: TodoCategoryReaderAdapter },
   { provide: TodoCategoryProvisionerPort, useClass: DefaultTodoCategoryProvisionerAdapter },
-  // 옛 Symbol 토큰은 ai·voice가 클래스 토큰으로 옮길 때까지 같은 인스턴스 별칭이다
-  { provide: TODO_CATEGORY_READER, useExisting: TodoCategoryReaderPort },
   provideUseCase(ListTodoCategoriesUseCase, {
     repository: TodoCategoryRepositoryPort,
     cache: TodoCategoryCachePort,

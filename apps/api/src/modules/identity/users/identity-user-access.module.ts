@@ -2,14 +2,8 @@ import { Module } from "@nestjs/common";
 
 import { AuthCacheAdapter } from "../auth/infrastructure/adapters/auth-cache.adapter.js";
 import { UserActivityReaderPort } from "./application/ports/user-activity.reader.port.js";
-import {
-  USER_APP_VERSION_READER,
-  UserAppVersionReaderPort,
-} from "./application/ports/user-app-version.reader.port.js";
-import {
-  USER_MUTATION_LOCK,
-  UserMutationLockPort,
-} from "./application/ports/user-mutation-lock.port.js";
+import { UserAppVersionReaderPort } from "./application/ports/user-app-version.reader.port.js";
+import { UserMutationLockPort } from "./application/ports/user-mutation-lock.port.js";
 import { UserProfileInvalidatorPort } from "./application/ports/user-profile-invalidator.port.js";
 import { UserMutationLockAdapter } from "./infrastructure/adapters/user-mutation-lock.adapter.js";
 import { DrizzleUserRepository } from "./infrastructure/persistence/drizzle-user.repository.js";
@@ -22,20 +16,16 @@ import { DrizzleUserRepository } from "./infrastructure/persistence/drizzle-user
     DrizzleUserRepository,
     AuthCacheAdapter,
     { provide: UserMutationLockPort, useClass: UserMutationLockAdapter },
-    { provide: USER_MUTATION_LOCK, useExisting: UserMutationLockPort },
     { provide: UserProfileInvalidatorPort, useExisting: AuthCacheAdapter },
     { provide: UserAppVersionReaderPort, useExisting: DrizzleUserRepository },
-    { provide: USER_APP_VERSION_READER, useExisting: UserAppVersionReaderPort },
     { provide: UserActivityReaderPort, useExisting: DrizzleUserRepository },
   ],
   exports: [
     DrizzleUserRepository,
     AuthCacheAdapter,
     UserMutationLockPort,
-    USER_MUTATION_LOCK,
     UserProfileInvalidatorPort,
     UserAppVersionReaderPort,
-    USER_APP_VERSION_READER,
     UserActivityReaderPort,
   ],
 })

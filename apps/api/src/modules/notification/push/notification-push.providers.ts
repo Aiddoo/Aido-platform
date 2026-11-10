@@ -16,10 +16,7 @@ import {
   NotificationRepositoryPort,
 } from "../inbox/notification-inbox.public.js";
 import { ActivePushTokenReaderPort } from "./application/ports/active-push-token.reader.port.js";
-import {
-  CLIENT_APP_VERSION_READER,
-  ClientAppVersionReaderPort,
-} from "./application/ports/client-app-version.reader.port.js";
+import { ClientAppVersionReaderPort } from "./application/ports/client-app-version.reader.port.js";
 import { MarketingConsentReconfirmPort } from "./application/ports/marketing-consent-reconfirm.port.js";
 import { MarketingPushOptOutTokenPort } from "./application/ports/marketing-push-opt-out-token.port.js";
 import {
@@ -346,14 +343,8 @@ export const NOTIFICATION_PUSH_USE_CASE_PROVIDERS = [
   }),
 ] satisfies Provider[];
 
-// ai가 옮길 때까지 옛 Symbol 토큰을 같은 인스턴스의 별칭으로 둔다
-export const NOTIFICATION_PUSH_LEGACY_TOKEN_PROVIDERS = [
-  { provide: CLIENT_APP_VERSION_READER, useExisting: ClientAppVersionReaderPort },
-] satisfies Provider[];
-
 export const NOTIFICATION_PUSH_PROVIDERS = [
   ...NOTIFICATION_PUSH_PERSISTENCE_PROVIDERS,
   ...NOTIFICATION_PUSH_EXTERNAL_PROVIDERS,
   ...NOTIFICATION_PUSH_USE_CASE_PROVIDERS,
-  ...NOTIFICATION_PUSH_LEGACY_TOKEN_PROVIDERS,
 ] satisfies Provider[];

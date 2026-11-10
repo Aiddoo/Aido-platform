@@ -33,9 +33,6 @@ export interface CreateTodoData {
 /** 시간대를 해석한 뒤의 생성 입력. 쓰기 경로는 이 값만 받는다. */
 export type ResolvedCreateTodoData = CreateTodoData & { readonly timezone: string };
 
-// 옛 Symbol 토큰. 소비 Context가 클래스 토큰으로 옮길 때까지 같은 인스턴스 별칭으로 남긴다
-export const STAGED_TODO_CREATOR = Symbol("STAGED_TODO_CREATOR");
-
 export interface StagedTodoCreation {
   /** 만든 할 일. 반복이면 회차를 날짜순으로 담고 맨 앞이 첫 회차다. */
   readonly todos: readonly TodoReadModel[];

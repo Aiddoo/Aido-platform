@@ -4,8 +4,6 @@ import {
   NotificationQueueService,
 } from "#api/modules/notification/notification-delivery-jobs.public";
 import {
-  CLIENT_APP_VERSION_READER,
-  ClientAppVersionReaderPort,
   NotificationAccountCleanup,
   NotificationDeliveryModule,
   NotificationPublisher,
@@ -15,7 +13,7 @@ import { NotificationQueueAdapter as NotificationQueueAdapterClass } from "#api/
 import { NotificationPushModule } from "#api/modules/notification/push/notification-push.module";
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "#test/e2e/helpers/index";
 
-// 다른 Context가 옛 Symbol·클래스 이름으로 주입받아도 새 포트와 같은 인스턴스를 받아야 한다
+// 다른 Context가 옛 클래스 이름으로 주입받아도 새 UseCase·어댑터와 같은 인스턴스를 받아야 한다
 describe("알림 옛 토큰·이름 호환 (E2E 앱 조립)", () => {
   let ctx: E2eTestContext;
 
@@ -25,21 +23,6 @@ describe("알림 옛 토큰·이름 호환 (E2E 앱 조립)", () => {
 
   afterAll(async () => {
     await destroyE2eApp(ctx);
-  });
-
-  it.each([
-    ["CLIENT_APP_VERSION_READER", CLIENT_APP_VERSION_READER, ClientAppVersionReaderPort],
-  ] as const)("%s는 새 포트와 같은 인스턴스다", (_name, symbol, portClass) => {
-    // Given
-    const options = { strict: false } as const;
-
-    // When
-    const legacy: unknown = ctx.app.get(symbol, options);
-    const current: unknown = ctx.app.get(portClass, options);
-
-    // Then
-    expect(current).toBeDefined();
-    expect(legacy).toBe(current);
   });
 
   it("shim의 옛 클래스 이름은 새 클래스와 같은 클래스 객체다", () => {

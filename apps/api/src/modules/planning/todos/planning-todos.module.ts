@@ -6,10 +6,7 @@ import { NotificationDeliveryModule } from "#api/modules/notification/notificati
 import { SocialFriendsModule } from "#api/modules/social/friends/social-friends.public";
 
 import { PlanningTodoSeriesModule } from "../todo-series/planning-todo-series.module.js";
-import {
-  STAGED_TODO_CREATOR,
-  StagedTodoCreatorPort,
-} from "./application/ports/staged-todo-creator.port.js";
+import { StagedTodoCreatorPort } from "./application/ports/staged-todo-creator.port.js";
 import { TodoEngagementCounterPort } from "./application/ports/todo-engagement-counter.port.js";
 import { TodoViewCacheInvalidatorPort } from "./application/ports/todo-view-cache-invalidator.port.js";
 import { PlanningTodoPortsModule } from "./planning-todo-ports.module.js";
@@ -30,7 +27,6 @@ import { TodoController } from "./presentation/http/v1/todo.controller.js";
   exports: [
     PlanningTodoPortsModule,
     StagedTodoCreatorPort,
-    STAGED_TODO_CREATOR,
     TodoEngagementCounterPort,
     TodoViewCacheInvalidatorPort,
   ],

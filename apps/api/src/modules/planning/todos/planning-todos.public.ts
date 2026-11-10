@@ -1,6 +1,5 @@
 export {
   type CreateTodoData,
-  STAGED_TODO_CREATOR,
   type StagedTodoCreation,
   StagedTodoCreatorPort,
 } from "./application/ports/staged-todo-creator.port.js";
@@ -9,7 +8,7 @@ export {
   TodoEngagementCounterPort,
   type TodoViewRecord,
 } from "./application/ports/todo-engagement-counter.port.js";
-export { TODO_PLAN_READER, TodoPlanReaderPort } from "./application/ports/todo-plan.reader.port.js";
+export { TodoPlanReaderPort } from "./application/ports/todo-plan.reader.port.js";
 export type {
   FriendTodoReadModel,
   TodoReadModel,

@@ -3,10 +3,7 @@
  * v1(KMA)은 AI 제안이, v2 리포트는 날씨 알림이 쓴다.
  * 예보 Symbol 토큰은 ai가 클래스 토큰으로 옮길 때까지 같은 인스턴스를 가리키는 별칭이다.
  */
-export {
-  WEATHER_FORECAST_READER,
-  WeatherForecastReaderPort,
-} from "./application/ports/weather-forecast.reader.port.js";
+export { WeatherForecastReaderPort } from "./application/ports/weather-forecast.reader.port.js";
 export type { GridInput } from "./application/ports/weather-forecast.reader.port.js";
 export { WeatherReportReaderPort } from "./application/ports/weather-report.reader.port.js";
 export type { WeatherForecast } from "./application/read-models/weather-forecast.read-model.js";

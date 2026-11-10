@@ -5,19 +5,13 @@ import { NotificationQueueModule } from "#api/modules/notification/notification-
 import { TimezoneReminderQueueModule } from "#api/modules/notification/notification-reminders-jobs.public";
 import { TodoTimezoneRebaseQueueModule } from "#api/modules/planning/todos/planning-todo-timezone-jobs.public";
 
-import {
-  AI_DATA_SHARING_CONSENT_READER,
-  AiDataSharingConsentReaderPort,
-} from "./application/ports/ai-data-sharing-consent.reader.port.js";
+import { AiDataSharingConsentReaderPort } from "./application/ports/ai-data-sharing-consent.reader.port.js";
 import { ReminderScheduleEnqueuerPort } from "./application/ports/reminder-schedule-enqueuer.port.js";
 import { StreakMilestoneNotifierPort } from "./application/ports/streak-milestone-notifier.port.js";
 import { TodoCompletionStatsReaderPort } from "./application/ports/todo-completion-stats.reader.port.js";
 import { TodoTimezoneRebaseEnqueuerPort } from "./application/ports/todo-timezone-rebase-enqueuer.port.js";
 import { UserConsentRepositoryPort } from "./application/ports/user-consent.repository.port.js";
-import {
-  USER_PREFERENCE_READER,
-  UserPreferenceReaderPort,
-} from "./application/ports/user-preference.reader.port.js";
+import { UserPreferenceReaderPort } from "./application/ports/user-preference.reader.port.js";
 import { UserPreferenceRepositoryPort } from "./application/ports/user-preference.repository.port.js";
 import {
   UserNotificationSettingsAccessPort,
@@ -52,9 +46,7 @@ import { SettingsController } from "./presentation/http/v1/user-settings.control
     ...IDENTITY_PREFERENCES_PROVIDERS,
     UserSettingsAccessAdapter,
     { provide: UserPreferenceReaderPort, useExisting: ReadUserPreferencesUseCase },
-    { provide: USER_PREFERENCE_READER, useExisting: UserPreferenceReaderPort },
     { provide: AiDataSharingConsentReaderPort, useExisting: GetAiDataSharingConsentUseCase },
-    { provide: AI_DATA_SHARING_CONSENT_READER, useExisting: AiDataSharingConsentReaderPort },
     TimezoneSelfHealInterceptor,
     DrizzleUserPreferenceRepository,
     DrizzleUserConsentRepository,
@@ -74,13 +66,11 @@ import { SettingsController } from "./presentation/http/v1/user-settings.control
   exports: [
     UserSettingsCachePort,
     UserPreferenceReaderPort,
-    USER_PREFERENCE_READER,
     UserSettingsProvisionerPort,
     UserStreakAccessPort,
     UserTimezoneReaderPort,
     UserNotificationSettingsAccessPort,
     AiDataSharingConsentReaderPort,
-    AI_DATA_SHARING_CONSENT_READER,
     TimezoneSelfHealInterceptor,
   ],
 })

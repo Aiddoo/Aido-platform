@@ -40,7 +40,6 @@ import { NotificationQueueProcessor } from "#api/modules/notification/push/infra
 import { PushDeliveryQueueProcessor } from "#api/modules/notification/push/infrastructure/jobs/push-delivery-queue.processor";
 import { PUSH_DELIVERY_QUEUE } from "#api/modules/notification/push/infrastructure/jobs/push-delivery.queue";
 import {
-  NOTIFICATION_PUSH_LEGACY_TOKEN_PROVIDERS,
   NOTIFICATION_PUSH_PERSISTENCE_PROVIDERS,
   NOTIFICATION_PUSH_USE_CASE_PROVIDERS,
 } from "#api/modules/notification/push/notification-push.providers";
@@ -247,7 +246,6 @@ function notificationProviders(pushProvider: FakePushProvider): Provider[] {
     ...NOTIFICATION_INBOX_PROVIDERS,
     ...NOTIFICATION_PUSH_PERSISTENCE_PROVIDERS,
     ...NOTIFICATION_PUSH_USE_CASE_PROVIDERS,
-    ...NOTIFICATION_PUSH_LEGACY_TOKEN_PROVIDERS,
     NotificationQueueProcessor,
     PushDeliveryQueueProcessor,
     // 큐 처리기가 부르지 않을 UseCase는 실수로 불리면 바로 드러나게 바꿔 둔다

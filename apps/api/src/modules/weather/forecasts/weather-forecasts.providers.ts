@@ -11,10 +11,7 @@ import { ScheduledTodoReaderPort } from "./application/ports/scheduled-todo.read
 import { SunTimeProviderPort } from "./application/ports/sun-time-provider.port.js";
 import { WeatherForecastCachePort } from "./application/ports/weather-forecast-cache.port.js";
 import { WeatherForecastProviderPort } from "./application/ports/weather-forecast-provider.port.js";
-import {
-  WEATHER_FORECAST_READER,
-  WeatherForecastReaderPort,
-} from "./application/ports/weather-forecast.reader.port.js";
+import { WeatherForecastReaderPort } from "./application/ports/weather-forecast.reader.port.js";
 import { WeatherReportCachePort } from "./application/ports/weather-report-cache.port.js";
 import { WeatherReportProviderPort } from "./application/ports/weather-report-provider.port.js";
 import { WeatherReportReaderPort } from "./application/ports/weather-report.reader.port.js";
@@ -61,8 +58,6 @@ export const WEATHER_FORECASTS_PROVIDERS = [
   }),
   { provide: WeatherForecastReaderPort, useExisting: WeatherForecastReader },
   { provide: WeatherReportReaderPort, useExisting: WeatherReportReader },
-  // ai가 클래스 토큰으로 옮길 때까지 옛 Symbol 토큰이 같은 인스턴스를 가리킨다
-  { provide: WEATHER_FORECAST_READER, useExisting: WeatherForecastReaderPort },
   provideUseCase(GetWeatherForecastUseCase, {
     userLocationRepository: UserLocationRepositoryPort,
     forecastReader: WeatherForecastReader,

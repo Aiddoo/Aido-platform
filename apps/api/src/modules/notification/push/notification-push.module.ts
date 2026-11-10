@@ -4,10 +4,7 @@ import { IdentitySettingsModule } from "#api/modules/identity/identity-settings.
 
 import { NotificationHistoryReader } from "../inbox/application/notification-history.reader.js";
 import { NotificationInboxModule } from "../inbox/notification-inbox.public.js";
-import {
-  CLIENT_APP_VERSION_READER,
-  ClientAppVersionReaderPort,
-} from "./application/ports/client-app-version.reader.port.js";
+import { ClientAppVersionReaderPort } from "./application/ports/client-app-version.reader.port.js";
 import { NotificationRecipientLocaleReaderPort } from "./application/ports/notification-recipient-locale.reader.port.js";
 import { NotificationRecipientTimezoneReaderPort } from "./application/ports/notification-recipient-timezone.reader.port.js";
 import { PushCampaignOutcomeReaderPort } from "./application/ports/push-campaign-outcome.reader.port.js";
@@ -44,7 +41,6 @@ import { PushDeviceController } from "./presentation/http/v1/push-device.control
     PushCampaignOutcomeReaderPort,
     PushFunnelReaderPort,
     SessionPushDeviceReleasePort,
-    CLIENT_APP_VERSION_READER,
     NotificationQueueModule, // 알림 캐시·계정 정리 UseCase를 이 모듈에서 받던 곳이 그대로 쓰게 한다
     NotificationInboxModule,
   ],

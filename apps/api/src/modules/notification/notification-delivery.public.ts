@@ -4,10 +4,7 @@ export {
   PublishNotificationUseCase,
   PublishNotificationUseCase as NotificationPublisher,
 } from "./push/application/use-cases/publish-notification.use-case.js";
-export {
-  CLIENT_APP_VERSION_READER,
-  ClientAppVersionReaderPort,
-} from "./push/application/ports/client-app-version.reader.port.js";
+export { ClientAppVersionReaderPort } from "./push/application/ports/client-app-version.reader.port.js";
 export { NotificationRecipientLocaleReaderPort } from "./push/application/ports/notification-recipient-locale.reader.port.js";
 export {
   type PushCampaignOutcome,

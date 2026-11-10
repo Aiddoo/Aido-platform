@@ -16,10 +16,7 @@ import { StopTodoSeriesUseCase } from "../todo-series/application/use-cases/stop
 import { UpdateFollowingTodosUseCase } from "../todo-series/application/use-cases/update-following-todos.use-case.js";
 import { CategoryOwnershipPort } from "./application/ports/category-ownership.port.js";
 import { FriendPort } from "./application/ports/friend.port.js";
-import {
-  STAGED_TODO_CREATOR,
-  StagedTodoCreatorPort,
-} from "./application/ports/staged-todo-creator.port.js";
+import { StagedTodoCreatorPort } from "./application/ports/staged-todo-creator.port.js";
 import { StreakPort } from "./application/ports/streak.port.js";
 import { TodoCachePort } from "./application/ports/todo-cache.port.js";
 import { TodoEngagementCounterPort } from "./application/ports/todo-engagement-counter.port.js";
@@ -88,7 +85,6 @@ export const PLANNING_TODOS_PROVIDERS = [
     timezoneResolver: ResolveTodoTimezoneUseCase,
   }),
   { provide: StagedTodoCreatorPort, useClass: StagedTodoCreatorAdapter },
-  { provide: STAGED_TODO_CREATOR, useExisting: StagedTodoCreatorPort },
   provideUseCase(InvalidateTodoViewCacheUseCase, {
     todoReadRepository: TodoReadRepositoryPort,
     cache: TodoCachePort,
