@@ -1,8 +1,8 @@
 import dayjs from "dayjs";
 
-import { TODO_COMPLETION_REPOSITORY } from "#api/modules/insights/application/ports/daily-completions/todo-completion.repository.port";
-import { GetDailyCompletions } from "#api/modules/insights/application/use-cases/daily-completions/get-daily-completions.use-case";
-import type { DrizzleTodoCompletionRepository } from "#api/modules/insights/infrastructure/persistence/daily-completions/drizzle-todo-completion.repository";
+import { TODO_COMPLETION_REPOSITORY } from "#api/modules/insights/daily-completions/application/ports/todo-completion.repository.port";
+import { GetDailyCompletions } from "#api/modules/insights/daily-completions/application/use-cases/get-daily-completions.use-case";
+import type { DrizzleTodoCompletionRepository } from "#api/modules/insights/daily-completions/infrastructure/persistence/drizzle-todo-completion.repository";
 import { todo, todoCategory } from "#api/platform/database/schema/index";
 import {
   createE2eApp,

@@ -18,8 +18,7 @@ import { JwtAuthGuard } from "#api/modules/identity/auth/identity-auth.public";
 import { TimezoneSelfHealInterceptor } from "#api/modules/identity/identity-settings.public";
 import { IdentityModule } from "#api/modules/identity/identity.module";
 import { LastActiveInterceptor } from "#api/modules/identity/users/identity-users.public";
-import { InsightsDailyCompletionsModule } from "#api/modules/insights/insights-daily-completions.public";
-import { InsightsWeeklyAchievementsModule } from "#api/modules/insights/insights-weekly-achievements.public";
+import { InsightsModule } from "#api/modules/insights/insights.module";
 import { NotesModule } from "#api/modules/notes/notes.module";
 import { NotificationModule } from "#api/modules/notification/notification.module";
 import { OperationsModule } from "#api/modules/operations/operations.module";
@@ -130,7 +129,7 @@ import { AppService } from "./app.service.js";
     IdentityModule,
     SocialBlocksModule,
     SocialCheersModule,
-    InsightsDailyCompletionsModule,
+    InsightsModule,
     SocialFriendsModule,
     HealthModule,
     SupportModule,
@@ -144,7 +143,6 @@ import { AppService } from "./app.service.js";
     PlanningModule,
     EngagementCommentsModule,
     WeatherModule,
-    InsightsWeeklyAchievementsModule,
   ],
   controllers: [AppController],
 

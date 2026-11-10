@@ -1,8 +1,8 @@
-import type { TodoAggregateByDate } from "#api/modules/insights/domain/records/daily-completions/daily-completion.record";
+import type { TodoAggregateByDate } from "#api/modules/insights/daily-completions/domain/daily-completion.read-model";
 import type {
   WeeklyAchievementRow,
   WeeklyAchievementUpsert,
-} from "#api/modules/insights/domain/records/weekly-achievements/weekly-achievement.record";
+} from "#api/modules/insights/weekly-achievements/domain/weekly-achievement.read-model";
 import { PaginationService } from "#api/shared/application/pagination/index";
 import {
   StubDailyCompletionCache,

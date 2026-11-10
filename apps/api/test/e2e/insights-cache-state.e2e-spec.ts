@@ -5,7 +5,7 @@ import request from "supertest";
 import {
   TODO_COMPLETION_REPOSITORY,
   type TodoCompletionRepositoryPort,
-} from "#api/modules/insights/application/ports/daily-completions/todo-completion.repository.port";
+} from "#api/modules/insights/daily-completions/application/ports/todo-completion.repository.port";
 import { todoCategory } from "#api/platform/database/schema/index";
 import {
   createE2eApp,

@@ -1,19 +1,19 @@
-import type { DailyCompletionCachePort } from "#api/modules/insights/application/ports/daily-completions/daily-completion-cache.port";
-import type { DailyCompletionFollowReaderPort } from "#api/modules/insights/application/ports/daily-completions/daily-completion-follow-reader.port";
+import type { DailyCompletionCachePort } from "#api/modules/insights/daily-completions/application/ports/daily-completion-cache.port";
+import type { DailyCompletionFollowReaderPort } from "#api/modules/insights/daily-completions/application/ports/daily-completion-follow-reader.port";
 import type {
   AggregateByDateRangeParams,
   TodoCompletionRepositoryPort,
-} from "#api/modules/insights/application/ports/daily-completions/todo-completion.repository.port";
-import type { WeeklyAchievementRepositoryPort } from "#api/modules/insights/application/ports/weekly-achievements/weekly-achievement.repository.port";
+} from "#api/modules/insights/daily-completions/application/ports/todo-completion.repository.port";
 import type {
   DailyCompletionsRange,
   MultiDayTodoSpan,
   TodoAggregateByDate,
-} from "#api/modules/insights/domain/records/daily-completions/daily-completion.record";
+} from "#api/modules/insights/daily-completions/domain/daily-completion.read-model";
+import type { WeeklyAchievementRepositoryPort } from "#api/modules/insights/weekly-achievements/application/ports/weekly-achievement.repository.port";
 import type {
   WeeklyAchievementRow,
   WeeklyAchievementUpsert,
-} from "#api/modules/insights/domain/records/weekly-achievements/weekly-achievement.record";
+} from "#api/modules/insights/weekly-achievements/domain/weekly-achievement.read-model";
 
 export class StubTodoCompletionRepository implements TodoCompletionRepositoryPort {
   readonly ownAggregates = new Map<string, readonly TodoAggregateByDate[]>();

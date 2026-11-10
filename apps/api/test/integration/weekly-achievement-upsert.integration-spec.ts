@@ -1,6 +1,6 @@
 import { asc, eq } from "drizzle-orm";
 
-import { DrizzleWeeklyAchievementRepository } from "#api/modules/insights/infrastructure/persistence/weekly-achievements/drizzle-weekly-achievement.repository";
+import { DrizzleWeeklyAchievementRepository } from "#api/modules/insights/weekly-achievements/infrastructure/persistence/drizzle-weekly-achievement.repository";
 import { user, weeklyAchievement } from "#api/platform/database/schema/index";
 import { UserFixture } from "#test/fixtures/user.fixture";
 import { createDatabaseTransactionFixture, createTestClient } from "#test/setup/database-context";

@@ -1,14 +1,14 @@
 import { count } from "drizzle-orm";
 import { omit } from "es-toolkit";
 
+import { DrizzleTodoCompletionRepository } from "#api/modules/insights/daily-completions/infrastructure/persistence/drizzle-todo-completion.repository";
 import {
   WEEKLY_ACHIEVEMENT_REPOSITORY,
   type WeeklyAchievementRepositoryPort,
-} from "#api/modules/insights/application/ports/weekly-achievements/weekly-achievement.repository.port";
-import { GetWeeklyAchievement } from "#api/modules/insights/application/use-cases/weekly-achievements/get-weekly-achievement.use-case";
-import { GetWeeklyAchievements } from "#api/modules/insights/application/use-cases/weekly-achievements/get-weekly-achievements.use-case";
-import type { WeeklyAchievementUpsert } from "#api/modules/insights/domain/records/weekly-achievements/weekly-achievement.record";
-import { DrizzleTodoCompletionRepository } from "#api/modules/insights/infrastructure/persistence/daily-completions/drizzle-todo-completion.repository";
+} from "#api/modules/insights/weekly-achievements/application/ports/weekly-achievement.repository.port";
+import { GetWeeklyAchievement } from "#api/modules/insights/weekly-achievements/application/use-cases/get-weekly-achievement.use-case";
+import { GetWeeklyAchievements } from "#api/modules/insights/weekly-achievements/application/use-cases/get-weekly-achievements.use-case";
+import type { WeeklyAchievementUpsert } from "#api/modules/insights/weekly-achievements/domain/weekly-achievement.read-model";
 import { databaseSqlState } from "#api/platform/database/database-error.util";
 import {
   todo,

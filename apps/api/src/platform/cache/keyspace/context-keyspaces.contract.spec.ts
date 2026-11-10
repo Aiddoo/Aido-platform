@@ -5,7 +5,7 @@ import {
 import {
   DAILY_COMPLETION_CACHE_TTL_MS,
   DailyCompletionCacheKey,
-} from "#api/modules/insights/infrastructure/cache/daily-completions/daily-completion-cache.keyspace";
+} from "#api/modules/insights/daily-completions/infrastructure/cache/daily-completion.keyspace";
 import {
   NOTIFICATION_CACHE_TTL_MS,
   NotificationCacheKey,

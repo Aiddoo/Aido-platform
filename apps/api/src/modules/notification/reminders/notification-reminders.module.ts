@@ -2,7 +2,7 @@ import { Module } from "@nestjs/common";
 
 import { AccessModule } from "#api/modules/access/access-entitlement.public";
 import { IdentityUserAccessModule } from "#api/modules/identity/identity-user-access.public";
-import { InsightsWeeklyAchievementsModule } from "#api/modules/insights/insights-weekly-achievements.public";
+import { InsightsWeeklyAchievementsModule } from "#api/modules/insights/weekly-achievements/insights-weekly-achievements.public";
 import { DatabaseModule } from "#api/platform/database/database.module";
 
 import { WeatherForecastsModule } from "../../weather/forecasts/weather-forecasts.public.js";
