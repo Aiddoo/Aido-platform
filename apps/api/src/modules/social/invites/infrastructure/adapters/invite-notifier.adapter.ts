@@ -12,17 +12,18 @@ import {
   type PushQuietHoursReaderPort,
   TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY,
 } from "#api/modules/notification/notification-delivery.public";
+import { instantToDate } from "#api/shared/domain/time/instant";
 
-import type {
-  InviteJoinedNotification,
+import {
+  type InviteJoinedNotification,
   InviteNotifierPort,
-  InviteProgressNotification,
-  InviteQualifyReminderNotification,
-  InviteRewardedNotification,
+  type InviteProgressNotification,
+  type InviteQualifyReminderNotification,
+  type InviteRewardedNotification,
 } from "../../application/ports/invite-notifier.port.js";
 
 @Injectable()
-export class InviteNotifierAdapter implements InviteNotifierPort {
+export class InviteNotifierAdapter extends InviteNotifierPort {
   readonly #notificationPublisher: NotificationPublisher;
   readonly #localeReader: NotificationRecipientLocaleReaderPort;
   readonly #quietHoursReader: PushQuietHoursReaderPort;
@@ -34,6 +35,7 @@ export class InviteNotifierAdapter implements InviteNotifierPort {
     @Inject(PUSH_QUIET_HOURS_READER)
     quietHoursReader: PushQuietHoursReaderPort,
   ) {
+    super();
     this.#notificationPublisher = notificationPublisher;
     this.#localeReader = localeReader;
     this.#quietHoursReader = quietHoursReader;
@@ -130,8 +132,11 @@ export class InviteNotifierAdapter implements InviteNotifierPort {
     });
   }
 
-  async isInQuietHours(userId: string, at: Date): Promise<boolean> {
-    const quietUserIds = await this.#quietHoursReader.findUsersInQuietHours([userId], at);
+  async isInQuietHours(userId: string, at: Temporal.Instant): Promise<boolean> {
+    const quietUserIds = await this.#quietHoursReader.findUsersInQuietHours(
+      [userId],
+      instantToDate(at),
+    );
     return quietUserIds.has(userId);
   }
 }

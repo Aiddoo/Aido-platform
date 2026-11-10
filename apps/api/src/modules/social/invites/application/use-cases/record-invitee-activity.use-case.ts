@@ -1,34 +1,32 @@
-import { InviteLockKeys } from "#api/modules/social/invites/application/invites.lock-keys";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
-import { type MutationLockPort, type UnitOfWorkPort } from "#api/shared/application/ports/index";
+import type { ClockPort } from "#api/shared/application/ports/clock.port";
+import type { MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
+import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import {
-  InviteQualificationPolicy,
-  localActivityDate,
-} from "../../domain/invite-qualification.domain-service.js";
-import { isFirstActiveDay } from "../../domain/invite-qualify-reminder.domain-service.js";
 import type { InviteRedemption } from "../../domain/invite-redemption.aggregate.js";
 import {
-  InviteRewardPolicy,
+  planInviterRewards,
   qualifiedRedemptionCount,
   rewardCapWindowStart,
+  summarizeInviterRewards,
 } from "../../domain/invite-reward.domain-service.js";
+import { RewardGrant } from "../../domain/reward-grant.entity.js";
+import { InviteLockKeys } from "../invites.lock-keys.js";
 import { InviteLogEvent } from "../invites.log-events.js";
 import type { InviteConfigPort } from "../ports/invite-config.port.js";
 import type { InviteNotifierPort } from "../ports/invite-notifier.port.js";
 import type { InviteRedemptionRepositoryPort } from "../ports/invite-redemption.repository.port.js";
 import type { InviteRewardSchedulerPort } from "../ports/invite-reward-scheduler.port.js";
+import type { InviteUserReaderPort } from "../ports/invite-user.reader.port.js";
 import type { RewardGrantRepositoryPort } from "../ports/reward-grant.repository.port.js";
-import {
-  isInvitePairReachable,
-  type InvitePairReachabilityDependencies,
-} from "./check-invite-pair-reachability.use-case.js";
+import type { CheckInvitePairReachabilityUseCase } from "./check-invite-pair-reachability.use-case.js";
 
-export interface RecordInviteeActivityInput {
+export interface RecordInviteeActivityCommand {
   readonly inviteeId: string;
-  readonly occurredAt: Date;
+  /** 할 일을 완료한 순간. 처리 시각이 아니라 이 순간으로 날짜를 정해 늦게 처리돼도 같은 활동일로 센다. */
+  readonly occurredAt: Temporal.Instant;
 }
 
 export type RecordInviteeActivityResult =
@@ -39,7 +37,7 @@ export type RecordInviteeActivityResult =
 /** 커밋 뒤 초대한 사람에게 첫 활동일을 알릴 수락 */
 interface FirstActiveDay {
   readonly redemptionId: string;
-  readonly inviterId: string;
+  readonly inviterId: UserId;
 }
 
 type RecordedActivity =
@@ -47,25 +45,24 @@ type RecordedActivity =
   | { readonly status: "recorded"; readonly firstActiveDay: FirstActiveDay | null }
   | { readonly status: "qualified"; readonly redemptionId: string; readonly grantCount: number };
 
-interface RecordInviteeActivityDependencies extends InvitePairReachabilityDependencies {
+export interface RecordInviteeActivityDependencies {
+  readonly unitOfWork: UnitOfWorkPort;
+  readonly mutationLock: MutationLockPort;
   readonly inviteRedemptionRepository: Pick<
     InviteRedemptionRepositoryPort,
-    | "hasJoinedByInviteeId"
-    | "findByInviteeIdForUpdate"
-    | "save"
-    | "summarizeByInviterId"
-    | "findDisplayName"
+    "existsJoinedByInviteeId" | "findByInviteeIdForUpdate" | "save" | "summarizeByInviterId"
   >;
   readonly rewardGrantRepository: Pick<
     RewardGrantRepositoryPort,
-    "summarizeInviterRewards" | "createPending"
+    "nextId" | "summarizeInviterRewards" | "addAll"
   >;
-  readonly rewardScheduler: InviteRewardSchedulerPort;
+  readonly userReader: Pick<InviteUserReaderPort, "findDisplayName">;
+  readonly pairReachability: Pick<CheckInvitePairReachabilityUseCase, "execute">;
+  readonly rewardScheduler: Pick<InviteRewardSchedulerPort, "schedule">;
   readonly notifier: Pick<InviteNotifierPort, "notifyInviteProgress">;
-  readonly inviteConfig: InviteConfigPort;
-  readonly mutationLock: MutationLockPort;
-  readonly unitOfWork: UnitOfWorkPort;
-  readonly logger: ApplicationLoggerPort;
+  readonly inviteConfig: Pick<InviteConfigPort, "isEnabled">;
+  readonly clock: ClockPort;
+  readonly logger: Pick<ApplicationLoggerPort, "log" | "warn">;
 }
 
 /**
@@ -80,54 +77,46 @@ export class RecordInviteeActivityUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: RecordInviteeActivityInput): Promise<RecordInviteeActivityResult> {
-    // 할 일 토글마다 불리므로 대부분은 UNIQUE 인덱스 한 번으로 끝난다
-    if (
-      !(await this.#dependencies.inviteRedemptionRepository.hasJoinedByInviteeId(input.inviteeId))
-    ) {
+  async execute(command: RecordInviteeActivityCommand): Promise<RecordInviteeActivityResult> {
+    const { unitOfWork, inviteRedemptionRepository, logger } = this.#dependencies;
+    const inviteeId = UserId.reconstitute(command.inviteeId);
+    // 할 일 완료마다 불리므로 대부분은 UNIQUE 인덱스 한 번으로 끝난다
+    if (!(await inviteRedemptionRepository.existsJoinedByInviteeId(inviteeId))) {
       return { status: "skipped" };
     }
 
-    const result = await this.#dependencies.unitOfWork.run(async (): Promise<RecordedActivity> => {
-      const redemption =
-        await this.#dependencies.inviteRedemptionRepository.findByInviteeIdForUpdate(
-          input.inviteeId,
-        );
-      if (
-        redemption == null ||
-        !redemption.recordActiveDay(
-          localActivityDate(input.occurredAt, redemption.timezone),
-          input.occurredAt,
-        )
-      ) {
-        return { status: "skipped" } as const;
+    const result = await unitOfWork.run(async (): Promise<RecordedActivity> => {
+      const redemption = await inviteRedemptionRepository.findByInviteeIdForUpdate(inviteeId);
+      if (redemption == null || !redemption.recordActivity(command.occurredAt)) {
+        return { status: "skipped" };
       }
-      if (!InviteQualificationPolicy.isQualified(redemption) || redemption.inviterId == null) {
-        await this.#dependencies.inviteRedemptionRepository.save(redemption);
+      const { inviterId } = redemption;
+      if (!redemption.hasEnoughActiveDays() || inviterId == null) {
+        await inviteRedemptionRepository.save(redemption);
         // 활동일 기록은 수락 행 잠금으로 직렬화되어 첫날로 바뀌는 실행은 한 번뿐이다. 배포 전에 이미
         // 첫날이 있던 수락은 여기서 다시 첫날이 되지 않으므로 지난 소식을 보내지 않는다
         const firstActiveDay =
-          isFirstActiveDay(redemption) && redemption.inviterId != null
-            ? { redemptionId: redemption.id, inviterId: redemption.inviterId }
+          redemption.isOnFirstActiveDay() && inviterId != null
+            ? { redemptionId: redemption.id.value, inviterId }
             : null;
         return { status: "recorded", firstActiveDay };
       }
 
-      return this.#qualify(redemption, redemption.inviterId, input.occurredAt);
+      return this.#qualify(redemption, inviterId, command.occurredAt);
     });
 
     if (result.status === "qualified") {
-      this.#dependencies.logger.log({
+      logger.log({
         event: InviteLogEvent.QUALIFIED,
         redemptionId: result.redemptionId,
-        inviteeId: input.inviteeId,
+        inviteeId: inviteeId.value,
         grantCount: result.grantCount,
       });
       return result;
     }
     if (result.status === "recorded") {
       if (result.firstActiveDay != null) {
-        await this.#notifyFirstActiveDay(input.inviteeId, result.firstActiveDay);
+        await this.#notifyFirstActiveDay(inviteeId, result.firstActiveDay);
       }
       return { status: "recorded" };
     }
@@ -135,34 +124,31 @@ export class RecordInviteeActivityUseCase {
   }
 
   /** 기록은 이미 커밋됐으므로 알림 실패는 할 일 흐름에 전파하지 않고 남긴다. */
-  async #notifyFirstActiveDay(inviteeId: string, firstActiveDay: FirstActiveDay): Promise<void> {
+  async #notifyFirstActiveDay(inviteeId: UserId, firstActiveDay: FirstActiveDay): Promise<void> {
+    const { userReader, notifier, logger } = this.#dependencies;
     const { redemptionId, inviterId } = firstActiveDay;
     try {
       const skippedReason = await this.#progressSkipReason(inviteeId, inviterId);
       if (skippedReason != null) {
-        this.#dependencies.logger.log({
+        logger.log({
           event: InviteLogEvent.PROGRESS_NOTIFICATION_SKIPPED,
           redemptionId,
           reason: skippedReason,
         });
         return;
       }
-      const inviteeName =
-        await this.#dependencies.inviteRedemptionRepository.findDisplayName(inviteeId);
+      const inviteeName = await userReader.findDisplayName(inviteeId);
       if (inviteeName == null) {
         return;
       }
-      await this.#dependencies.notifier.notifyInviteProgress({
-        inviterId,
+      await notifier.notifyInviteProgress({
+        inviterId: inviterId.value,
         inviteeName,
         redemptionId,
       });
-      this.#dependencies.logger.log({
-        event: InviteLogEvent.PROGRESS_NOTIFIED,
-        redemptionId,
-      });
+      logger.log({ event: InviteLogEvent.PROGRESS_NOTIFIED, redemptionId });
     } catch (error) {
-      this.#dependencies.logger.warn({
+      logger.warn({
         event: InviteLogEvent.PROGRESS_NOTIFICATION_FAILED,
         redemptionId,
         errorType: toErrorType(error),
@@ -171,14 +157,14 @@ export class RecordInviteeActivityUseCase {
   }
 
   async #progressSkipReason(
-    inviteeId: string,
-    inviterId: string,
+    inviteeId: UserId,
+    inviterId: UserId,
   ): Promise<"disabled" | "unreachable" | null> {
     // 꺼져 있는 동안은 INVITE_REWARDED처럼 초대 알림을 보내지 않는다
     if (!this.#dependencies.inviteConfig.isEnabled) {
       return "disabled";
     }
-    if (!(await isInvitePairReachable(this.#dependencies, inviteeId, inviterId))) {
+    if (!(await this.#dependencies.pairReachability.execute({ inviteeId, inviterId }))) {
       return "unreachable";
     }
     return null;
@@ -186,38 +172,47 @@ export class RecordInviteeActivityUseCase {
 
   async #qualify(
     redemption: InviteRedemption,
-    inviterId: string,
-    at: Date,
+    inviterId: UserId,
+    occurredAt: Temporal.Instant,
   ): Promise<RecordedActivity> {
+    const {
+      mutationLock,
+      inviteRedemptionRepository,
+      rewardGrantRepository,
+      rewardScheduler,
+      inviteConfig,
+      clock,
+    } = this.#dependencies;
     // 같은 초대한 사람의 상한을 여러 초대받은 사람이 동시에 읽지 않도록 잠근다
-    await this.#dependencies.mutationLock.acquire([
-      InviteLockKeys.rewardLedger(UserId.reconstitute(inviterId)),
-    ]);
+    await mutationLock.acquire([InviteLockKeys.rewardLedger(inviterId)]);
     const [rewardTotals, summary] = await Promise.all([
-      this.#dependencies.rewardGrantRepository.summarizeInviterRewards(
-        inviterId,
-        rewardCapWindowStart(at),
-      ),
-      this.#dependencies.inviteRedemptionRepository.summarizeByInviterId(inviterId),
+      rewardGrantRepository.summarizeInviterRewards(inviterId, rewardCapWindowStart(occurredAt)),
+      inviteRedemptionRepository.summarizeByInviterId(inviterId),
     ]);
 
     // 상한에 닿아도 사용 시작은 인정하고 지급할 보상만 줄인다. 같은 기기·신원 재사용으로 초대받은
     // 사람 보상을 막은 수락은 초대한 사람 보상도 계획하지 않는다
     const plans = redemption.inviterRewardEligible
-      ? InviteRewardPolicy.planInviterRewards(redemption, {
+      ? planInviterRewards({
+          redemptionId: redemption.id,
           inviterId,
-          summary: InviteRewardPolicy.summarize(rewardTotals),
+          summary: summarizeInviterRewards(rewardTotals),
           priorQualifiedCount: qualifiedRedemptionCount(summary),
         })
       : [];
 
-    redemption.qualify(at);
-    await this.#dependencies.inviteRedemptionRepository.save(redemption);
-    const grantCount = await this.#dependencies.rewardGrantRepository.createPending(plans);
-    // 꺼져 있으면 원장만 PENDING으로 남긴다. 다시 켜면 정비 작업이 골라 적용하므로 보상을 잃지 않는다
-    if (this.#dependencies.inviteConfig.isEnabled) {
-      await this.#dependencies.rewardScheduler.schedule(redemption.id, { kind: "qualified" });
+    redemption.qualify(occurredAt);
+    await inviteRedemptionRepository.save(redemption);
+    const now = clock.now();
+    const grants: RewardGrant[] = [];
+    for (const plan of plans) {
+      grants.push(RewardGrant.create({ id: await rewardGrantRepository.nextId(), plan, now }));
     }
-    return { status: "qualified", redemptionId: redemption.id, grantCount };
+    const grantCount = await rewardGrantRepository.addAll(grants);
+    // 꺼져 있으면 원장만 PENDING으로 남긴다. 다시 켜면 정비 작업이 골라 적용하므로 보상을 잃지 않는다
+    if (inviteConfig.isEnabled) {
+      await rewardScheduler.schedule(redemption.id, { kind: "qualified" });
+    }
+    return { status: "qualified", redemptionId: redemption.id.value, grantCount };
   }
 }

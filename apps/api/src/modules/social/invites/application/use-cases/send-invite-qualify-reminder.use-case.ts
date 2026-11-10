@@ -1,19 +1,17 @@
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
-import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
+import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 
-import { InviteQualifyReminderPolicy } from "../../domain/invite-qualify-reminder.domain-service.js";
+import { InviteRedemptionId } from "../../domain/invite-redemption-id.vo.js";
 import { InviteLogEvent } from "../invites.log-events.js";
 import type { InviteConfigPort } from "../ports/invite-config.port.js";
 import type { InviteNotifierPort } from "../ports/invite-notifier.port.js";
 import type { InviteRedemptionRepositoryPort } from "../ports/invite-redemption.repository.port.js";
-import {
-  isInvitePairReachable,
-  type InvitePairReachabilityDependencies,
-} from "./check-invite-pair-reachability.use-case.js";
+import type { InviteUserReaderPort } from "../ports/invite-user.reader.port.js";
+import type { CheckInvitePairReachabilityUseCase } from "./check-invite-pair-reachability.use-case.js";
 
-export interface SendInviteQualifyReminderInput {
+export interface SendInviteQualifyReminderCommand {
   readonly redemptionId: string;
-  readonly now: Date;
+  readonly now: Temporal.Instant;
 }
 
 export type QualifyReminderSkipReason = "disabled" | "not-due" | "quiet-hours" | "unreachable";
@@ -22,15 +20,21 @@ export type SendInviteQualifyReminderResult =
   | { readonly status: "sent" }
   | { readonly status: "skipped"; readonly reason: QualifyReminderSkipReason };
 
-interface SendInviteQualifyReminderDependencies extends InvitePairReachabilityDependencies {
+export interface SendInviteQualifyReminderDependencies {
+  readonly unitOfWork: UnitOfWorkPort;
   readonly inviteRedemptionRepository: Pick<
     InviteRedemptionRepositoryPort,
-    "findByIdForUpdate" | "save" | "findDisplayName"
+    "findByIdForUpdate" | "save"
   >;
+  readonly userReader: Pick<InviteUserReaderPort, "findDisplayName">;
+  readonly pairReachability: Pick<CheckInvitePairReachabilityUseCase, "execute">;
   readonly notifier: Pick<InviteNotifierPort, "notifyQualifyReminder" | "isInQuietHours">;
-  readonly inviteConfig: InviteConfigPort;
-  readonly unitOfWork: UnitOfWorkPort;
-  readonly logger: ApplicationLoggerPort;
+  readonly inviteConfig: Pick<InviteConfigPort, "isEnabled">;
+  readonly logger: Pick<ApplicationLoggerPort, "log">;
+}
+
+function skipped(reason: QualifyReminderSkipReason): SendInviteQualifyReminderResult {
+  return { status: "skipped", reason };
 }
 
 /**
@@ -45,62 +49,69 @@ export class SendInviteQualifyReminderUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: SendInviteQualifyReminderInput): Promise<SendInviteQualifyReminderResult> {
-    const result = await this.#send(input);
+  async execute(
+    command: SendInviteQualifyReminderCommand,
+  ): Promise<SendInviteQualifyReminderResult> {
+    const result = await this.#send(command);
     this.#dependencies.logger.log(
       result.status === "sent"
-        ? { event: InviteLogEvent.QUALIFY_REMINDER_SENT, redemptionId: input.redemptionId }
+        ? { event: InviteLogEvent.QUALIFY_REMINDER_SENT, redemptionId: command.redemptionId }
         : {
             event: InviteLogEvent.QUALIFY_REMINDER_SKIPPED,
-            redemptionId: input.redemptionId,
+            redemptionId: command.redemptionId,
             reason: result.reason,
           },
     );
     return result;
   }
 
-  async #send(input: SendInviteQualifyReminderInput): Promise<SendInviteQualifyReminderResult> {
-    if (!this.#dependencies.inviteConfig.isEnabled) {
+  async #send(command: SendInviteQualifyReminderCommand): Promise<SendInviteQualifyReminderResult> {
+    const {
+      unitOfWork,
+      inviteRedemptionRepository,
+      userReader,
+      pairReachability,
+      notifier,
+      inviteConfig,
+    } = this.#dependencies;
+    if (!inviteConfig.isEnabled) {
       return skipped("disabled");
     }
 
-    return this.#dependencies.unitOfWork.run(async () => {
-      const repository = this.#dependencies.inviteRedemptionRepository;
-      const redemption = await repository.findByIdForUpdate(input.redemptionId);
+    return unitOfWork.run(async () => {
+      const redemption = await inviteRedemptionRepository.findByIdForUpdate(
+        InviteRedemptionId.reconstitute(command.redemptionId),
+      );
       const inviterId = redemption?.inviterId;
       if (
         redemption == null ||
         inviterId == null ||
-        !InviteQualifyReminderPolicy.isDue(redemption, input.now)
+        !redemption.isQualifyReminderDue(command.now)
       ) {
         return skipped("not-due");
       }
       // 작업이 늦게 돌아 야간이면 표시하지 않고 남겨 다음 정비 작업이 다시 예약한다
-      if (await this.#dependencies.notifier.isInQuietHours(redemption.inviteeId, input.now)) {
+      if (await notifier.isInQuietHours(redemption.inviteeId.value, command.now)) {
         return skipped("quiet-hours");
       }
-      if (!(await isInvitePairReachable(this.#dependencies, redemption.inviteeId, inviterId))) {
+      if (!(await pairReachability.execute({ inviteeId: redemption.inviteeId, inviterId }))) {
         return skipped("unreachable");
       }
-      const inviterName = await repository.findDisplayName(inviterId);
+      const inviterName = await userReader.findDisplayName(inviterId);
       if (inviterName == null) {
         return skipped("unreachable");
       }
 
-      if (!redemption.markQualifyReminderSent(input.now)) {
+      if (!redemption.markQualifyReminderSent(command.now)) {
         return skipped("not-due");
       }
-      await repository.save(redemption);
-      await this.#dependencies.notifier.notifyQualifyReminder({
-        inviteeId: redemption.inviteeId,
+      await inviteRedemptionRepository.save(redemption);
+      await notifier.notifyQualifyReminder({
+        inviteeId: redemption.inviteeId.value,
         inviterName,
-        redemptionId: redemption.id,
+        redemptionId: redemption.id.value,
       });
-      return { status: "sent" } as const;
+      return { status: "sent" };
     });
   }
-}
-
-function skipped(reason: QualifyReminderSkipReason): SendInviteQualifyReminderResult {
-  return { status: "skipped", reason };
 }

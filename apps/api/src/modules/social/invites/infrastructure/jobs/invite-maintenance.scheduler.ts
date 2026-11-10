@@ -1,9 +1,9 @@
-import { Inject, Injectable, Logger, type OnModuleInit } from "@nestjs/common";
+import { Injectable, Logger, type OnModuleInit } from "@nestjs/common";
 
 import { runInBackground } from "#api/platform/jobs/non-blocking-init";
-import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
-import { now } from "#api/shared/domain/date/utils/core";
-import { dayWindowInTimezone, toLocalTimeString } from "#api/shared/domain/date/utils/timezone";
+import { ClockPort } from "#api/shared/application/ports/clock.port";
+import { JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
+import { TimeZone } from "#api/shared/domain/time/time-zone.vo";
 
 import { InviteLogEvent } from "../../application/invites.log-events.js";
 import {
@@ -15,14 +15,16 @@ import {
 } from "./invite-reward.queue.js";
 
 @Injectable()
-export class InviteMaintenanceJob implements OnModuleInit {
-  readonly #logger = new Logger(InviteMaintenanceJob.name);
+export class InviteMaintenanceScheduler implements OnModuleInit {
+  readonly #logger = new Logger(InviteMaintenanceScheduler.name);
   schedulerRegistration: Promise<void> = Promise.resolve();
 
-  readonly #runtime: JobRuntimePort;
+  readonly #runtime: Pick<JobRuntimePort, "schedule" | "enqueue">;
+  readonly #clock: ClockPort;
 
-  constructor(@Inject(JOB_RUNTIME) runtime: JobRuntimePort) {
+  constructor(runtime: JobRuntimePort, clock: ClockPort) {
     this.#runtime = runtime;
+    this.#clock = clock;
   }
 
   onModuleInit(): void {
@@ -45,22 +47,25 @@ export class InviteMaintenanceJob implements OnModuleInit {
   }
 
   async #catchUpIfNeeded(): Promise<void> {
-    // 프로세서와 같은 공용 날짜 유틸로 실행 날짜를 정해 catch-up 키와 재시도 날짜가 어긋나지 않게 한다
-    const at = now();
+    // 프로세서와 같은 시간대로 실행 날짜를 정해 catch-up 키와 재시도 날짜가 어긋나지 않게 한다
     const { timezone, catchUpHour } = INVITE_MAINTENANCE_SCHEDULE;
-    if (Number(toLocalTimeString(at, timezone).slice(0, 2)) < catchUpHour) {
+    const local = this.#clock.now().toZonedDateTimeISO(TimeZone.create(timezone).value);
+    if (local.hour < catchUpHour) {
       return;
     }
 
-    const { localDate } = dayWindowInTimezone(at, timezone);
+    const runDate = local.toPlainDate();
     await this.#runtime.enqueue(
       INVITE_MAINTENANCE_QUEUE,
       { name: INVITE_MAINTENANCE_JOB_NAME, data: {} },
       {
         ...INVITE_MAINTENANCE_JOB_OPTIONS,
-        idempotencyKey: InviteMaintenanceJobKey.catchUp(localDate),
+        idempotencyKey: InviteMaintenanceJobKey.catchUp(runDate),
       },
     );
-    this.#logger.log({ event: InviteLogEvent.MAINTENANCE_CATCH_UP_DISPATCHED, localDate });
+    this.#logger.log({
+      event: InviteLogEvent.MAINTENANCE_CATCH_UP_DISPATCHED,
+      localDate: runDate.toString(),
+    });
   }
 }

@@ -4,11 +4,10 @@ import { inArray } from "drizzle-orm";
 
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { rewardClaim } from "#api/platform/database/schema/index";
+import { instantToDate } from "#api/shared/domain/time/instant";
 
-import type {
-  RewardClaim,
-  RewardClaimRepositoryPort,
-} from "../../application/ports/reward-claim.repository.port.js";
+import { RewardClaimRepositoryPort } from "../../application/ports/reward-claim.repository.port.js";
+import type { RewardClaim } from "../../domain/reward-claim.vo.js";
 
 @Injectable()
 export class DrizzleRewardClaimRepository implements RewardClaimRepositoryPort {
@@ -22,28 +21,29 @@ export class DrizzleRewardClaimRepository implements RewardClaimRepositoryPort {
     return this.#txHost.tx;
   }
 
-  async existsAny(claimHashes: readonly string[]): Promise<boolean> {
-    if (claimHashes.length === 0) {
+  async existsAny(claims: readonly RewardClaim[]): Promise<boolean> {
+    if (claims.length === 0) {
       return false;
     }
     const row = await this.#db.query.rewardClaim.findFirst({
       columns: { claimHash: true },
-      where: { claimHash: { in: [...claimHashes] } },
+      where: { claimHash: { in: claims.map((claim) => claim.claimHash) } },
     });
     return row != null;
   }
 
-  async claimAll(claims: readonly RewardClaim[], claimedAt: Date): Promise<boolean> {
+  async claimAll(claims: readonly RewardClaim[], claimedAt: Temporal.Instant): Promise<boolean> {
     if (claims.length === 0) {
       return false;
     }
+    const firstClaimedAt = instantToDate(claimedAt);
     const inserted = await this.#db
       .insert(rewardClaim)
       .values(
         claims.map((claim) => ({
           claimHash: claim.claimHash,
           claimKind: claim.claimKind,
-          firstClaimedAt: claimedAt,
+          firstClaimedAt,
         })),
       )
       .onConflictDoNothing({ target: rewardClaim.claimHash })

@@ -5,19 +5,28 @@ import { and, asc, eq, gt, inArray, lt, lte, ne, or, sql, sum } from "drizzle-or
 import { sumBy } from "es-toolkit";
 
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
+import { createEntityId } from "#api/platform/database/entity-id";
 import { rewardGrant } from "#api/platform/database/schema/index";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { instantToDate } from "#api/shared/domain/time/instant";
 
-import type {
-  FindRetryableRewardSourcesParams,
-  RewardGrantRecord,
+import {
+  type RewardGrantFailure,
   RewardGrantRepositoryPort,
 } from "../../application/ports/reward-grant.repository.port.js";
+import { InviteRedemptionId } from "../../domain/invite-redemption-id.vo.js";
 import type { InviterRewardTotal } from "../../domain/invite-reward.domain-service.js";
+import { INVITE_REWARD_MAX_ATTEMPTS } from "../../domain/invites.constants.js";
+import { RewardGrantId } from "../../domain/reward-grant-id.vo.js";
+import type { RewardGrant } from "../../domain/reward-grant.entity.js";
 import {
-  INVITE_REWARD_MAX_ATTEMPTS,
-  type RewardGrantPlan,
-  type RewardSourceType,
-} from "../../domain/reward-grant.constants.js";
+  REWARD_GRANT_COLUMNS,
+  toRewardGrant,
+  toRewardGrantRow,
+} from "./reward-grant-row.mapper.js";
+
+// lastErrorCode 칸 길이
+const ERROR_CODE_MAX_LENGTH = 100;
 
 @Injectable()
 export class DrizzleRewardGrantRepository implements RewardGrantRepositoryPort {
@@ -31,22 +40,17 @@ export class DrizzleRewardGrantRepository implements RewardGrantRepositoryPort {
     return this.#txHost.tx;
   }
 
-  async createPending(plans: readonly RewardGrantPlan[]): Promise<number> {
-    if (plans.length === 0) {
+  async nextId(): Promise<RewardGrantId> {
+    return RewardGrantId.reconstitute(createEntityId());
+  }
+
+  async addAll(grants: readonly RewardGrant[]): Promise<number> {
+    if (grants.length === 0) {
       return 0;
     }
     const inserted = await this.#db
       .insert(rewardGrant)
-      .values(
-        plans.map((plan) => ({
-          recipientId: plan.recipientId,
-          sourceType: plan.sourceType,
-          sourceId: plan.sourceId,
-          rewardType: plan.rewardType,
-          quantity: plan.quantity,
-          status: "PENDING" as const,
-        })),
-      )
+      .values(grants.map(toRewardGrantRow))
       .onConflictDoNothing({
         target: [
           rewardGrant.sourceType,
@@ -60,8 +64,8 @@ export class DrizzleRewardGrantRepository implements RewardGrantRepositoryPort {
   }
 
   async summarizeInviterRewards(
-    inviterId: string,
-    windowStart: Date,
+    inviterId: UserId,
+    windowStart: Temporal.Instant,
   ): Promise<InviterRewardTotal[]> {
     const ownRedemptionId = await this.#findOwnRedemptionId(inviterId);
     const inviterGrants = this.#inviterGrants(inviterId, ownRedemptionId);
@@ -82,7 +86,7 @@ export class DrizzleRewardGrantRepository implements RewardGrantRepositoryPort {
           quantity: sum(rewardGrant.quantity).mapWith(Number),
         })
         .from(rewardGrant)
-        .where(and(inviterGrants, gt(rewardGrant.createdAt, windowStart)))
+        .where(and(inviterGrants, gt(rewardGrant.createdAt, instantToDate(windowStart))))
         .groupBy(rewardGrant.rewardType),
     ]);
 
@@ -105,55 +109,46 @@ export class DrizzleRewardGrantRepository implements RewardGrantRepositoryPort {
     });
   }
 
-  findBySource(sourceType: RewardSourceType, sourceId: string): Promise<RewardGrantRecord[]> {
-    return this.#db.query.rewardGrant.findMany({
-      columns: {
-        id: true,
-        recipientId: true,
-        sourceType: true,
-        sourceId: true,
-        rewardType: true,
-        quantity: true,
-        status: true,
-        attempts: true,
-        createdAt: true,
-      },
-      where: { sourceType, sourceId },
+  async listByRedemptionId(redemptionId: InviteRedemptionId): Promise<RewardGrant[]> {
+    const rows = await this.#db.query.rewardGrant.findMany({
+      columns: REWARD_GRANT_COLUMNS,
+      where: { sourceType: "INVITE_REDEMPTION", sourceId: redemptionId.value },
       orderBy: { id: "asc" },
     });
+    return rows.map(toRewardGrant);
   }
 
-  async markApplied(grantId: string, appliedAt: Date): Promise<boolean> {
+  async markApplied(grantId: RewardGrantId, appliedAt: Temporal.Instant): Promise<boolean> {
     const updated = await this.#db
       .update(rewardGrant)
-      .set({ status: "APPLIED", appliedAt })
-      .where(and(eq(rewardGrant.id, grantId), inArray(rewardGrant.status, ["PENDING", "FAILED"])))
+      .set({ status: "APPLIED", appliedAt: instantToDate(appliedAt) })
+      .where(
+        and(eq(rewardGrant.id, grantId.value), inArray(rewardGrant.status, ["PENDING", "FAILED"])),
+      )
       .returning({ id: rewardGrant.id });
     return updated.length === 1;
   }
 
-  async markFailed(
-    grantId: string,
-    failure: {
-      readonly errorCode: string;
-      readonly failedAt: Date;
-      readonly countsAttempt: boolean;
-    },
-  ): Promise<number | null> {
+  async markFailed(grantId: RewardGrantId, failure: RewardGrantFailure): Promise<number | null> {
     const [row] = await this.#db
       .update(rewardGrant)
       .set({
         status: "FAILED",
         attempts: sql`${rewardGrant.attempts} + ${failure.countsAttempt ? 1 : 0}`,
-        lastErrorCode: failure.errorCode.slice(0, 100),
-        updatedAt: failure.failedAt,
+        lastErrorCode: failure.errorCode.slice(0, ERROR_CODE_MAX_LENGTH),
+        updatedAt: instantToDate(failure.failedAt),
       })
-      .where(and(eq(rewardGrant.id, grantId), ne(rewardGrant.status, "APPLIED")))
+      .where(and(eq(rewardGrant.id, grantId.value), ne(rewardGrant.status, "APPLIED")))
       .returning({ attempts: rewardGrant.attempts });
     return row?.attempts ?? null;
   }
 
-  async findRetryableSourceIds(params: FindRetryableRewardSourcesParams): Promise<string[]> {
+  async listRetryableRedemptionIds(params: {
+    readonly maxAttempts: number;
+    readonly createdBefore: Temporal.Instant;
+    readonly afterRedemptionId: InviteRedemptionId | null;
+    readonly limit: number;
+  }): Promise<InviteRedemptionId[]> {
     // 수락 한 건의 지급 여러 개를 sourceId로 묶어 keyset으로 넘긴다
     const groups = await this.#db
       .select({ sourceId: rewardGrant.sourceId })
@@ -163,28 +158,30 @@ export class DrizzleRewardGrantRepository implements RewardGrantRepositoryPort {
           eq(rewardGrant.sourceType, "INVITE_REDEMPTION"),
           inArray(rewardGrant.status, ["PENDING", "FAILED"]),
           lt(rewardGrant.attempts, params.maxAttempts),
-          lte(rewardGrant.createdAt, params.createdBefore),
-          params.afterSourceId == null ? undefined : gt(rewardGrant.sourceId, params.afterSourceId),
+          lte(rewardGrant.createdAt, instantToDate(params.createdBefore)),
+          params.afterRedemptionId == null
+            ? undefined
+            : gt(rewardGrant.sourceId, params.afterRedemptionId.value),
         ),
       )
       .groupBy(rewardGrant.sourceId)
       .orderBy(asc(rewardGrant.sourceId))
       .limit(params.limit);
-    return groups.map((group) => group.sourceId);
+    return groups.map((group) => InviteRedemptionId.reconstitute(group.sourceId));
   }
 
   // 초대받은 사람으로 받은 자기 보상은 같은 사람의 초대한 사람 보상에서 뺀다
-  async #findOwnRedemptionId(userId: string): Promise<string | null> {
+  async #findOwnRedemptionId(userId: UserId): Promise<string | null> {
     const own = await this.#db.query.inviteRedemption.findFirst({
       columns: { id: true },
-      where: { inviteeId: userId },
+      where: { inviteeId: userId.value },
     });
     return own?.id ?? null;
   }
 
-  #inviterGrants(inviterId: string, ownRedemptionId: string | null) {
+  #inviterGrants(inviterId: UserId, ownRedemptionId: string | null) {
     return and(
-      eq(rewardGrant.recipientId, inviterId),
+      eq(rewardGrant.recipientId, inviterId.value),
       eq(rewardGrant.sourceType, "INVITE_REDEMPTION"),
       ownRedemptionId == null ? undefined : ne(rewardGrant.sourceId, ownRedemptionId),
       // 자동 재시도를 다 쓴 FAILED는 받지 못한 보상이라 상한을 차지하지 않는다

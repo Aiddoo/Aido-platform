@@ -1,10 +1,11 @@
-import { Inject, Injectable } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 
-import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
+import { JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
+import { instantToDate } from "#api/shared/domain/time/instant";
 
-import type {
+import {
   InviteQualifyReminderSchedulerPort,
-  ScheduledQualifyReminder,
+  type ScheduledQualifyReminder,
 } from "../../application/ports/invite-qualify-reminder-scheduler.port.js";
 import {
   INVITE_MAINTENANCE_JOB_OPTIONS,
@@ -14,10 +15,11 @@ import {
 } from "./invite-reward.queue.js";
 
 @Injectable()
-export class InviteQualifyReminderSchedulerAdapter implements InviteQualifyReminderSchedulerPort {
-  readonly #runtime: JobRuntimePort;
+export class InviteQualifyReminderSchedulerAdapter extends InviteQualifyReminderSchedulerPort {
+  readonly #runtime: Pick<JobRuntimePort, "enqueueMany">;
 
-  constructor(@Inject(JOB_RUNTIME) runtime: JobRuntimePort) {
+  constructor(runtime: JobRuntimePort) {
+    super();
     this.#runtime = runtime;
   }
 
@@ -28,10 +30,13 @@ export class InviteQualifyReminderSchedulerAdapter implements InviteQualifyRemin
     await this.#runtime.enqueueMany(
       INVITE_MAINTENANCE_QUEUE,
       reminders.map(({ redemptionId, sendAt }) => ({
-        data: { name: INVITE_QUALIFY_REMINDER_JOB_NAME, data: { redemptionId } },
+        data: {
+          name: INVITE_QUALIFY_REMINDER_JOB_NAME,
+          data: { redemptionId: redemptionId.value },
+        },
         options: {
           ...INVITE_MAINTENANCE_JOB_OPTIONS,
-          startAfter: sendAt,
+          startAfter: instantToDate(sendAt),
           idempotencyKey: InviteQualifyReminderJobKey.of(redemptionId, sendAt),
         },
       })),

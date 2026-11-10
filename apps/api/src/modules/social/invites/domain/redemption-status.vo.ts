@@ -5,8 +5,11 @@ import {
 } from "@aido/api/vocabulary";
 
 import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
+import { ValueObject } from "#api/shared/domain/model/value-object";
 
 export type { RedemptionStatusValue };
+
+const REDEMPTION_STATUS_VALUES: readonly RedemptionStatusValue[] = Object.values(REDEMPTION_STATUS);
 
 // 사용 시작 전 상태에서만 거절되고, 보상 지급 뒤에는 되돌리지 않는다
 const ALLOWED_TRANSITIONS: Readonly<
@@ -18,45 +21,37 @@ const ALLOWED_TRANSITIONS: Readonly<
   REJECTED: [],
 };
 
-export class RedemptionStatus {
-  readonly #value: RedemptionStatusValue;
+export class RedemptionStatus extends ValueObject<RedemptionStatusValue> {
+  static readonly JOINED: RedemptionStatus = new RedemptionStatus(REDEMPTION_STATUS.JOINED);
 
-  constructor(value: RedemptionStatusValue) {
-    this.#value = value;
-  }
-
-  static joined(): RedemptionStatus {
-    return new RedemptionStatus(REDEMPTION_STATUS.JOINED);
-  }
-
-  static of(value: string): RedemptionStatus {
-    const status = Object.values(REDEMPTION_STATUS).find((candidate) => candidate === value);
+  static create(raw: string): RedemptionStatus {
+    const status = REDEMPTION_STATUS_VALUES.find((candidate) => candidate === raw);
     if (status == null) {
       throw new DomainException(ErrorCode.SYS_0001, {
         detail: "Unknown invite redemption status",
-        value,
+        value: raw,
       });
     }
     return new RedemptionStatus(status);
   }
 
-  get raw(): RedemptionStatusValue {
-    return this.#value;
+  static reconstitute(value: RedemptionStatusValue): RedemptionStatus {
+    return new RedemptionStatus(value);
   }
 
   is(status: RedemptionStatusValue): boolean {
-    return this.#value === status;
+    return this.value === status;
   }
 
   /** 같은 상태로의 전이는 멱등으로 보고 null을 반환한다. 허용되지 않은 전이는 예외다. */
   transitionTo(next: RedemptionStatusValue): RedemptionStatus | null {
-    if (this.#value === next) {
+    if (this.value === next) {
       return null;
     }
-    if (!ALLOWED_TRANSITIONS[this.#value].includes(next)) {
+    if (!ALLOWED_TRANSITIONS[this.value].includes(next)) {
       throw new DomainException(ErrorCode.SYS_0001, {
         detail: "Invalid invite redemption transition",
-        from: this.#value,
+        from: this.value,
         to: next,
       });
     }

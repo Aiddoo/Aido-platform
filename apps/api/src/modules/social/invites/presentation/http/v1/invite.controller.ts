@@ -8,6 +8,7 @@ import {
   type CurrentUserPayload,
   Public,
 } from "#api/modules/identity/identity-auth-http.public";
+import { API_VERSION } from "#api/platform/http/api-versioning";
 import { Timezone } from "#api/platform/http/decorators/index";
 import {
   ApiBadRequestError,
@@ -30,7 +31,13 @@ import { GetMyInviteUseCase } from "../../../application/use-cases/get-my-invite
 import { PreviewInviteUseCase } from "../../../application/use-cases/preview-invite.use-case.js";
 import { RedeemInviteUseCase } from "../../../application/use-cases/redeem-invite.use-case.js";
 import { RotateInviteCodeUseCase } from "../../../application/use-cases/rotate-invite-code.use-case.js";
-import { InviteMapper } from "./invite-response.mapper.js";
+import {
+  toInviteAvailabilityResponse,
+  toInvitedFriendsListResponse,
+  toInvitePreviewResponse,
+  toMyInviteResponse,
+  toRedeemInviteResponse,
+} from "./invite-response.mapper.js";
 import {
   GetInvitedFriendsQueryDto,
   InviteAvailabilityResponseDto,
@@ -50,7 +57,7 @@ const INVITE_THROTTLE = {
 
 // 정적 경로를 :code보다 먼저 선언해 me·availability가 코드로 해석되지 않게 한다
 @ApiTags(SWAGGER_TAGS.INVITES)
-@Controller("invites")
+@Controller({ path: "invites", version: API_VERSION.V1 })
 export class InviteController {
   readonly #getInviteAvailabilityUseCase: GetInviteAvailabilityUseCase;
   readonly #getMyInviteUseCase: GetMyInviteUseCase;
@@ -85,7 +92,7 @@ export class InviteController {
   })
   @ApiSuccessResponse({ type: InviteAvailabilityResponseDto })
   getAvailability(): InviteAvailabilityResponseDto {
-    return this.#getInviteAvailabilityUseCase.execute();
+    return toInviteAvailabilityResponse(this.#getInviteAvailabilityUseCase.execute());
   }
 
   @Get("me")
@@ -100,8 +107,8 @@ export class InviteController {
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
   @ApiForbiddenError(ErrorCode.INVITE_2105)
   async getMyInvite(@CurrentUser() user: CurrentUserPayload): Promise<MyInviteResponseDto> {
-    const view = await this.#getMyInviteUseCase.execute({ inviterId: user.userId });
-    return InviteMapper.toMyInviteDto(view);
+    const myInvite = await this.#getMyInviteUseCase.execute({ inviterId: user.userId });
+    return toMyInviteResponse(myInvite);
   }
 
   @Post("me/rotate")
@@ -120,8 +127,8 @@ export class InviteController {
   @ApiForbiddenError(ErrorCode.INVITE_2105)
   @ApiTooManyRequestsError(ErrorCode.SYS_0001, THROTTLED_DESCRIPTION)
   async rotate(@CurrentUser() user: CurrentUserPayload): Promise<MyInviteResponseDto> {
-    const view = await this.#rotateInviteCodeUseCase.execute({ inviterId: user.userId });
-    return InviteMapper.toMyInviteDto(view);
+    const myInvite = await this.#rotateInviteCodeUseCase.execute({ inviterId: user.userId });
+    return toMyInviteResponse(myInvite);
   }
 
   @Get("me/invitees")
@@ -145,7 +152,7 @@ export class InviteController {
       size: query.limit,
       status: query.status,
     });
-    return InviteMapper.toInvitedFriendsDto(page);
+    return toInvitedFriendsListResponse(page);
   }
 
   @Get(":code")
@@ -166,7 +173,7 @@ export class InviteController {
     @Param({ schema: InviteCodeParamDto }) params: InviteCodeParamDto,
   ): Promise<InvitePreviewResponseDto> {
     const inviter = await this.#previewInviteUseCase.execute({ code: params.code });
-    return InviteMapper.toPreviewDto(inviter);
+    return toInvitePreviewResponse(inviter);
   }
 
   @Post(":code/redeem")
@@ -215,6 +222,6 @@ export class InviteController {
       installationId: body.installationId,
       timezone,
     });
-    return InviteMapper.toRedeemDto(result);
+    return toRedeemInviteResponse(result);
   }
 }

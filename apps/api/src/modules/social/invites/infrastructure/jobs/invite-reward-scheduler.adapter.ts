@@ -1,30 +1,32 @@
-import { Inject, Injectable } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 
-import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
+import { JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
 
-import type {
+import {
+  type InviteRewardTrigger,
   InviteRewardSchedulerPort,
-  InviteRewardTrigger,
 } from "../../application/ports/invite-reward-scheduler.port.js";
+import type { InviteRedemptionId } from "../../domain/invite-redemption-id.vo.js";
 import {
   INVITE_REWARD_JOB_OPTIONS,
   INVITE_REWARD_QUEUE,
-  InviteRewardJobKey,
   type InviteRewardJobData,
+  InviteRewardJobKey,
 } from "./invite-reward.queue.js";
 
 @Injectable()
-export class InviteRewardSchedulerAdapter implements InviteRewardSchedulerPort {
-  readonly #runtime: JobRuntimePort;
+export class InviteRewardSchedulerAdapter extends InviteRewardSchedulerPort {
+  readonly #runtime: Pick<JobRuntimePort, "enqueue" | "enqueueMany">;
 
-  constructor(@Inject(JOB_RUNTIME) runtime: JobRuntimePort) {
+  constructor(runtime: JobRuntimePort) {
+    super();
     this.#runtime = runtime;
   }
 
-  async schedule(redemptionId: string, trigger: InviteRewardTrigger): Promise<void> {
+  async schedule(redemptionId: InviteRedemptionId, trigger: InviteRewardTrigger): Promise<void> {
     await this.#runtime.enqueue<InviteRewardJobData>(
       INVITE_REWARD_QUEUE,
-      { redemptionId },
+      { redemptionId: redemptionId.value },
       {
         ...INVITE_REWARD_JOB_OPTIONS,
         idempotencyKey: InviteRewardJobKey.of(redemptionId, trigger),
@@ -33,7 +35,7 @@ export class InviteRewardSchedulerAdapter implements InviteRewardSchedulerPort {
   }
 
   async scheduleMany(
-    redemptionIds: readonly string[],
+    redemptionIds: readonly InviteRedemptionId[],
     trigger: InviteRewardTrigger,
   ): Promise<void> {
     if (redemptionIds.length === 0) {
@@ -42,7 +44,7 @@ export class InviteRewardSchedulerAdapter implements InviteRewardSchedulerPort {
     await this.#runtime.enqueueMany<InviteRewardJobData>(
       INVITE_REWARD_QUEUE,
       redemptionIds.map((redemptionId) => ({
-        data: { redemptionId },
+        data: { redemptionId: redemptionId.value },
         options: {
           ...INVITE_REWARD_JOB_OPTIONS,
           idempotencyKey: InviteRewardJobKey.of(redemptionId, trigger),

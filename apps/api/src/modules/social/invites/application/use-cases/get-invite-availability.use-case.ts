@@ -1,7 +1,7 @@
 import type { InviteConfigPort } from "../ports/invite-config.port.js";
 
-interface GetInviteAvailabilityDependencies {
-  readonly inviteConfig: InviteConfigPort;
+export interface GetInviteAvailabilityDependencies {
+  readonly inviteConfig: Pick<InviteConfigPort, "isEnabled">;
 }
 
 export class GetInviteAvailabilityUseCase {
@@ -11,7 +11,7 @@ export class GetInviteAvailabilityUseCase {
     this.#dependencies = dependencies;
   }
 
-  execute(): { enabled: boolean } {
-    return { enabled: this.#dependencies.inviteConfig.isEnabled };
+  execute(): boolean {
+    return this.#dependencies.inviteConfig.isEnabled;
   }
 }

@@ -1,242 +1,278 @@
 import {
-  INVITE_QUALIFICATION,
   REDEMPTION_REJECTION_REASON,
   REDEMPTION_STATUS,
   type RedemptionRejectionReason,
 } from "@aido/api/vocabulary";
 
-import { addDays } from "#api/shared/domain/date/utils/arithmetic";
-import { AggregateRoot } from "#api/shared/domain/index";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { AggregateRoot } from "#api/shared/domain/model/aggregate-root";
+import { TimeZone } from "#api/shared/domain/time/time-zone.vo";
 
+import { InviteId } from "./invite-id.vo.js";
+import {
+  hasEnoughActiveDays,
+  localActivityDate,
+  qualificationExpiresAt,
+} from "./invite-qualification.domain-service.js";
+import {
+  hasOneActiveDayLeft,
+  qualifyReminderExpiresBefore,
+} from "./invite-qualify-reminder.domain-service.js";
+import { InviteRedemptionId } from "./invite-redemption-id.vo.js";
 import { RedemptionStatus, type RedemptionStatusValue } from "./redemption-status.vo.js";
 
-export interface InviteRedemptionProps {
-  id: string;
-  inviteId: string | null;
-  inviterId: string | null;
-  inviteeId: string;
-  status: RedemptionStatusValue;
-  rejectionReason: RedemptionRejectionReason | null;
+export interface InviteRedemptionPrimitives {
+  readonly id: string;
+  /** 초대가 지워지면 null이다. */
+  readonly inviteId: string | null;
+  /** 초대한 사람이 탈퇴하면 null이다. */
+  readonly inviterId: string | null;
+  readonly inviteeId: string;
+  readonly status: RedemptionStatusValue;
+  readonly rejectionReason: RedemptionRejectionReason | null;
   /** 수락할 때 고정한 초대받은 사람 시간대. 활동일은 이 시간대로만 센다. */
-  timezone: string;
+  readonly timezone: string;
   /** 같은 기기·신원 재사용으로 초대받은 사람 보상을 막았으면 초대한 사람 보상도 주지 않는다. */
-  inviterRewardEligible: boolean;
-  /** 초대받은 사람 시간대의 YYYY-MM-DD 달력 날짜 */
-  activeDays: readonly string[];
-  joinedAt: Date;
-  qualifiedAt: Date | null;
-  rewardedAt: Date | null;
-  rejectedAt: Date | null;
-  expiresAt: Date;
+  readonly inviterRewardEligible: boolean;
+  /** 초대받은 사람 시간대의 달력 날짜, 오름차순 */
+  readonly activeDays: readonly Temporal.PlainDate[];
+  readonly joinedAt: Temporal.Instant;
+  readonly qualifiedAt: Temporal.Instant | null;
+  readonly rewardedAt: Temporal.Instant | null;
+  readonly rejectedAt: Temporal.Instant | null;
+  readonly expiresAt: Temporal.Instant;
   /** 사용 시작을 권하는 알림을 보낸 시각. 수락 한 건에 한 번만 보낸다. */
-  qualifyReminderSentAt: Date | null;
+  readonly qualifyReminderSentAt: Temporal.Instant | null;
 }
 
-export interface InviteRedemptionCreationInput {
-  readonly inviteId: string;
-  readonly inviterId: string;
-  readonly inviteeId: string;
-  readonly timezone: string;
-  readonly inviterRewardEligible: boolean;
-  readonly joinedAt: Date;
-}
-
-export interface InviteRedemptionCreationPlan {
-  readonly inviteId: string;
-  readonly inviterId: string;
-  readonly inviteeId: string;
-  readonly status: typeof REDEMPTION_STATUS.JOINED;
-  readonly timezone: string;
-  readonly inviterRewardEligible: boolean;
-  readonly joinedAt: Date;
-  readonly expiresAt: Date;
-}
-
-export type InviteRedemptionPersistenceState = Pick<
-  InviteRedemptionProps,
-  | "status"
-  | "rejectionReason"
-  | "qualifiedAt"
-  | "rewardedAt"
-  | "rejectedAt"
-  | "qualifyReminderSentAt"
-> & {
-  /** 이번 변경에서 새로 기록한 날짜만 담는다. */
-  readonly addedActiveDays: readonly string[];
-};
-
-type InviteRedemptionState = Omit<InviteRedemptionProps, "status" | "activeDays"> & {
+interface InviteRedemptionProps {
+  readonly inviteId: InviteId | null;
+  readonly inviterId: UserId | null;
+  readonly inviteeId: UserId;
   status: RedemptionStatus;
-  activeDays: Set<string>;
-  addedActiveDays: string[];
-};
+  rejectionReason: RedemptionRejectionReason | null;
+  readonly timeZone: TimeZone;
+  readonly inviterRewardEligible: boolean;
+  activeDays: Temporal.PlainDate[];
+  readonly joinedAt: Temporal.Instant;
+  qualifiedAt: Temporal.Instant | null;
+  rewardedAt: Temporal.Instant | null;
+  rejectedAt: Temporal.Instant | null;
+  readonly expiresAt: Temporal.Instant;
+  qualifyReminderSentAt: Temporal.Instant | null;
+}
 
-export class InviteRedemption extends AggregateRoot<InviteRedemptionState> {
-  constructor(props: InviteRedemptionState) {
-    super(props);
-  }
+interface CreateInviteRedemptionParams {
+  readonly id: InviteRedemptionId;
+  readonly inviteId: InviteId;
+  readonly inviterId: UserId;
+  readonly inviteeId: UserId;
+  readonly timeZone: TimeZone;
+  readonly inviterRewardEligible: boolean;
+  readonly now: Temporal.Instant;
+}
 
-  static planCreation(input: InviteRedemptionCreationInput): InviteRedemptionCreationPlan {
-    return {
-      inviteId: input.inviteId,
-      inviterId: input.inviterId,
-      inviteeId: input.inviteeId,
-      status: REDEMPTION_STATUS.JOINED,
-      timezone: input.timezone,
-      inviterRewardEligible: input.inviterRewardEligible,
-      joinedAt: new Date(input.joinedAt),
-      expiresAt: addDays(INVITE_QUALIFICATION.EXPIRE_AFTER_DAYS, input.joinedAt),
-    };
-  }
+function sortedDays(days: readonly Temporal.PlainDate[]): Temporal.PlainDate[] {
+  return days.toSorted(Temporal.PlainDate.compare);
+}
 
-  static reconstitute(props: InviteRedemptionProps): InviteRedemption {
-    return new InviteRedemption({
-      id: props.id,
-      inviteId: props.inviteId,
-      inviterId: props.inviterId,
-      inviteeId: props.inviteeId,
-      status: RedemptionStatus.of(props.status),
-      rejectionReason: props.rejectionReason,
-      timezone: props.timezone,
-      inviterRewardEligible: props.inviterRewardEligible,
-      activeDays: new Set(props.activeDays),
-      addedActiveDays: [],
-      joinedAt: new Date(props.joinedAt),
-      qualifiedAt: props.qualifiedAt == null ? null : new Date(props.qualifiedAt),
-      rewardedAt: props.rewardedAt == null ? null : new Date(props.rewardedAt),
-      rejectedAt: props.rejectedAt == null ? null : new Date(props.rejectedAt),
-      expiresAt: new Date(props.expiresAt),
-      qualifyReminderSentAt:
-        props.qualifyReminderSentAt == null ? null : new Date(props.qualifyReminderSentAt),
+export class InviteRedemption extends AggregateRoot<InviteRedemptionId, InviteRedemptionProps> {
+  static create(params: CreateInviteRedemptionParams): InviteRedemption {
+    return new InviteRedemption(params.id, {
+      inviteId: params.inviteId,
+      inviterId: params.inviterId,
+      inviteeId: params.inviteeId,
+      status: RedemptionStatus.JOINED,
+      rejectionReason: null,
+      timeZone: params.timeZone,
+      inviterRewardEligible: params.inviterRewardEligible,
+      activeDays: [],
+      joinedAt: params.now,
+      qualifiedAt: null,
+      rewardedAt: null,
+      rejectedAt: null,
+      expiresAt: qualificationExpiresAt(params.now),
+      qualifyReminderSentAt: null,
     });
   }
 
-  get id(): string {
-    return this.props.id;
+  static reconstitute(primitives: InviteRedemptionPrimitives): InviteRedemption {
+    return new InviteRedemption(InviteRedemptionId.reconstitute(primitives.id), {
+      inviteId: primitives.inviteId == null ? null : InviteId.reconstitute(primitives.inviteId),
+      inviterId: primitives.inviterId == null ? null : UserId.reconstitute(primitives.inviterId),
+      inviteeId: UserId.reconstitute(primitives.inviteeId),
+      status: RedemptionStatus.reconstitute(primitives.status),
+      rejectionReason: primitives.rejectionReason,
+      timeZone: TimeZone.reconstitute(primitives.timezone),
+      inviterRewardEligible: primitives.inviterRewardEligible,
+      activeDays: sortedDays(primitives.activeDays),
+      joinedAt: primitives.joinedAt,
+      qualifiedAt: primitives.qualifiedAt,
+      rewardedAt: primitives.rewardedAt,
+      rejectedAt: primitives.rejectedAt,
+      expiresAt: primitives.expiresAt,
+      qualifyReminderSentAt: primitives.qualifyReminderSentAt,
+    });
   }
 
-  get inviteId(): string | null {
+  get inviteId(): InviteId | null {
     return this.props.inviteId;
   }
 
-  get inviterId(): string | null {
+  get inviterId(): UserId | null {
     return this.props.inviterId;
   }
 
-  get inviteeId(): string {
+  get inviteeId(): UserId {
     return this.props.inviteeId;
   }
 
   get status(): RedemptionStatusValue {
-    return this.props.status.raw;
+    return this.props.status.value;
   }
 
   get rejectionReason(): RedemptionRejectionReason | null {
     return this.props.rejectionReason;
   }
 
-  get timezone(): string {
-    return this.props.timezone;
+  get timeZone(): TimeZone {
+    return this.props.timeZone;
   }
 
   get inviterRewardEligible(): boolean {
     return this.props.inviterRewardEligible;
   }
 
-  get activeDays(): string[] {
-    return [...this.props.activeDays].sort();
+  get activeDays(): readonly Temporal.PlainDate[] {
+    return [...this.props.activeDays];
   }
 
-  get joinedAt(): Date {
-    return new Date(this.props.joinedAt);
+  get joinedAt(): Temporal.Instant {
+    return this.props.joinedAt;
   }
 
-  get qualifiedAt(): Date | null {
-    return this.props.qualifiedAt == null ? null : new Date(this.props.qualifiedAt);
+  get qualifiedAt(): Temporal.Instant | null {
+    return this.props.qualifiedAt;
   }
 
-  get rewardedAt(): Date | null {
-    return this.props.rewardedAt == null ? null : new Date(this.props.rewardedAt);
+  get rewardedAt(): Temporal.Instant | null {
+    return this.props.rewardedAt;
   }
 
-  get expiresAt(): Date {
-    return new Date(this.props.expiresAt);
+  get expiresAt(): Temporal.Instant {
+    return this.props.expiresAt;
   }
 
-  get qualifyReminderSentAt(): Date | null {
-    return this.props.qualifyReminderSentAt == null
-      ? null
-      : new Date(this.props.qualifyReminderSentAt);
+  get qualifyReminderSentAt(): Temporal.Instant | null {
+    return this.props.qualifyReminderSentAt;
   }
 
-  isExpiredAt(at: Date): boolean {
-    return at.getTime() >= this.props.expiresAt.getTime();
+  isExpiredAt(at: Temporal.Instant): boolean {
+    return Temporal.Instant.compare(at, this.props.expiresAt) >= 0;
   }
 
-  /** 사용 시작 전, 만료 전의 새 날짜만 기록한다. 같은 날짜를 다시 기록하면 false다. */
-  recordActiveDay(localDate: string, at: Date): boolean {
-    if (!this.props.status.is(REDEMPTION_STATUS.JOINED) || this.isExpiredAt(at)) {
+  hasActiveDay(localDate: Temporal.PlainDate): boolean {
+    return this.props.activeDays.some((day) => day.equals(localDate));
+  }
+
+  /** 서로 다른 날짜 MIN_ACTIVE_DAYS일에 할 일을 마쳤는지 */
+  hasEnoughActiveDays(): boolean {
+    return hasEnoughActiveDays(this.props.activeDays.length);
+  }
+
+  /** 방금 기록한 날이 첫 활동일인지. 같은 수락의 활동일 기록은 행 잠금으로 직렬화되므로 한 번만 참이다. */
+  isOnFirstActiveDay(): boolean {
+    return this.props.activeDays.length === 1;
+  }
+
+  /**
+   * 할 일을 마친 순간을 수락 때 고정한 시간대의 날짜로 센다. 사용 시작 전·만료 전의 새 날짜만 기록하고
+   * 같은 날짜를 다시 기록하면 false다.
+   */
+  recordActivity(occurredAt: Temporal.Instant): boolean {
+    if (!this.props.status.is(REDEMPTION_STATUS.JOINED) || this.isExpiredAt(occurredAt)) {
       return false;
     }
-    if (this.props.activeDays.has(localDate)) {
+    const localDate = localActivityDate(occurredAt, this.props.timeZone);
+    if (this.hasActiveDay(localDate)) {
       return false;
     }
-    this.props.activeDays.add(localDate);
-    this.props.addedActiveDays.push(localDate);
+    this.props.activeDays = sortedDays([...this.props.activeDays, localDate]);
     return true;
   }
 
-  qualify(qualifiedAt: Date): boolean {
+  qualify(now: Temporal.Instant): boolean {
     if (!this.#transitionTo(REDEMPTION_STATUS.QUALIFIED)) {
       return false;
     }
-    this.props.qualifiedAt = new Date(qualifiedAt);
+    this.props.qualifiedAt = now;
     return true;
   }
 
-  markRewarded(rewardedAt: Date): boolean {
+  markRewarded(now: Temporal.Instant): boolean {
     if (!this.#transitionTo(REDEMPTION_STATUS.REWARDED)) {
       return false;
     }
-    this.props.rewardedAt = new Date(rewardedAt);
+    this.props.rewardedAt = now;
     return true;
   }
 
+  /**
+   * 하루만 더 하면 사용 시작인 수락에 마감 전 한 번 알린다. 초대한 사람 보상이 없는 수락은 "발자국을
+   * 선물"이 사실이 아니라 보내지 않는다. 오늘 이미 할 일을 끝냈다면 오늘은 더 셀 수 없어 다음 실행으로 넘긴다.
+   */
+  isQualifyReminderDue(now: Temporal.Instant): boolean {
+    return (
+      this.props.status.is(REDEMPTION_STATUS.JOINED) &&
+      this.props.inviterId != null &&
+      this.props.inviterRewardEligible &&
+      this.props.qualifyReminderSentAt == null &&
+      hasOneActiveDayLeft(this.props.activeDays.length) &&
+      !this.isExpiredAt(now) &&
+      Temporal.Instant.compare(this.props.expiresAt, qualifyReminderExpiresBefore(now)) <= 0 &&
+      !this.hasActiveDay(localActivityDate(now, this.props.timeZone))
+    );
+  }
+
   /** 사용 시작 전에만 한 번 기록한다. 이미 보냈거나 JOINED가 아니면 false다. */
-  markQualifyReminderSent(sentAt: Date): boolean {
+  markQualifyReminderSent(now: Temporal.Instant): boolean {
     if (
       !this.props.status.is(REDEMPTION_STATUS.JOINED) ||
       this.props.qualifyReminderSentAt != null
     ) {
       return false;
     }
-    this.props.qualifyReminderSentAt = new Date(sentAt);
+    this.props.qualifyReminderSentAt = now;
     return true;
   }
 
-  expire(expiredAt: Date): boolean {
-    return this.#reject(REDEMPTION_REJECTION_REASON.EXPIRED, expiredAt);
-  }
-
-  toPersistence(): InviteRedemptionPersistenceState {
-    return {
-      status: this.status,
-      rejectionReason: this.props.rejectionReason,
-      qualifiedAt: this.qualifiedAt,
-      rewardedAt: this.rewardedAt,
-      rejectedAt: this.props.rejectedAt == null ? null : new Date(this.props.rejectedAt),
-      qualifyReminderSentAt: this.qualifyReminderSentAt,
-      addedActiveDays: [...this.props.addedActiveDays],
-    };
-  }
-
-  #reject(reason: RedemptionRejectionReason, rejectedAt: Date): boolean {
+  expire(now: Temporal.Instant): boolean {
     if (!this.#transitionTo(REDEMPTION_STATUS.REJECTED)) {
       return false;
     }
-    this.props.rejectionReason = reason;
-    this.props.rejectedAt = new Date(rejectedAt);
+    this.props.rejectionReason = REDEMPTION_REJECTION_REASON.EXPIRED;
+    this.props.rejectedAt = now;
     return true;
+  }
+
+  toPrimitives(): InviteRedemptionPrimitives {
+    return {
+      id: this.id.value,
+      inviteId: this.props.inviteId?.value ?? null,
+      inviterId: this.props.inviterId?.value ?? null,
+      inviteeId: this.props.inviteeId.value,
+      status: this.props.status.value,
+      rejectionReason: this.props.rejectionReason,
+      timezone: this.props.timeZone.value,
+      inviterRewardEligible: this.props.inviterRewardEligible,
+      activeDays: [...this.props.activeDays],
+      joinedAt: this.props.joinedAt,
+      qualifiedAt: this.props.qualifiedAt,
+      rewardedAt: this.props.rewardedAt,
+      rejectedAt: this.props.rejectedAt,
+      expiresAt: this.props.expiresAt,
+      qualifyReminderSentAt: this.props.qualifyReminderSentAt,
+    };
   }
 
   #transitionTo(next: RedemptionStatusValue): boolean {

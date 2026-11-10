@@ -1,10 +1,6 @@
 import { Inject, Injectable, Logger, type OnModuleInit } from "@nestjs/common";
 
-import {
-  JOB_RUNTIME,
-  type JobEnvelope,
-  type JobRuntimePort,
-} from "#api/shared/application/ports/job-runtime.port";
+import { type JobEnvelope, JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 
 import { InviteLogEvent } from "../../application/invites.log-events.js";
@@ -18,14 +14,13 @@ import {
 @Injectable()
 export class InviteRewardProcessor implements OnModuleInit {
   readonly #logger = new Logger(InviteRewardProcessor.name);
-
   readonly #grantInviteRewards: Pick<GrantInviteRewardsUseCase, "execute">;
-  readonly #runtime: JobRuntimePort;
+  readonly #runtime: Pick<JobRuntimePort, "work">;
 
   constructor(
     @Inject(GrantInviteRewardsUseCase)
     grantInviteRewards: Pick<GrantInviteRewardsUseCase, "execute">,
-    @Inject(JOB_RUNTIME) runtime: JobRuntimePort,
+    runtime: JobRuntimePort,
   ) {
     this.#grantInviteRewards = grantInviteRewards;
     this.#runtime = runtime;

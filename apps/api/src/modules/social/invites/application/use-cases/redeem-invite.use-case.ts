@@ -1,57 +1,63 @@
-import type { RewardAmount } from "@aido/api";
-import { ErrorCode } from "@aido/api/errors";
-import {
-  INVITE_FRIENDSHIP,
-  type InviteFriendship,
-  REDEEM_OUTCOME,
-  REWARD_TYPE,
-} from "@aido/api/vocabulary";
+import { INVITE_FRIENDSHIP, REDEEM_OUTCOME, REWARD_TYPE } from "@aido/api/vocabulary";
 import { match } from "ts-pattern";
 
-import type { PremiumGranterPort } from "#api/modules/billing/subscriptions/billing-subscriptions.public";
+import type { UserBlockReaderPort } from "#api/modules/social/blocks/social-blocks.public";
 import { FriendLockKeys } from "#api/modules/social/friends/application/friends.lock-keys";
 import type {
   FollowReaderPort,
   FriendshipEstablisherPort,
   FriendshipEstablishment,
 } from "#api/modules/social/friends/social-friends.public";
-import { InviteLockKeys } from "#api/modules/social/invites/application/invites.lock-keys";
-import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
-import { type MutationLockPort, type UnitOfWorkPort } from "#api/shared/application/ports/index";
+import type { ClockPort } from "#api/shared/application/ports/clock.port";
+import type { MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
+import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
-import { now } from "#api/shared/domain/date/utils/core";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { TimeZone } from "#api/shared/domain/time/time-zone.vo";
 
-import type { UserBlockReaderPort } from "../../../blocks/application/ports/user-block.reader.port.js";
 import {
-  InviteAbusePolicy,
+  decideInviteRedemption,
   type InviteRedeemDecision,
   rewardClaimSources,
 } from "../../domain/invite-abuse.domain-service.js";
 import { InviteCode } from "../../domain/invite-code.vo.js";
+import type { InviteRedemptionId } from "../../domain/invite-redemption-id.vo.js";
 import { InviteRedemption } from "../../domain/invite-redemption.aggregate.js";
-import { InviteRewardPolicy } from "../../domain/invite-reward.domain-service.js";
+import {
+  planInviteeRewards,
+  type RewardGrantPlan,
+} from "../../domain/invite-reward.domain-service.js";
 import type { Invite } from "../../domain/invite.aggregate.js";
-import { rewardGrantSourceKey } from "../../domain/reward-grant.constants.js";
-import { assertInviteEnabled } from "../invites.errors.js";
+import { RewardClaim } from "../../domain/reward-claim.vo.js";
+import { RewardGrant } from "../../domain/reward-grant.entity.js";
+import {
+  assertInviteEnabled,
+  inviteAlreadyRedeemed,
+  inviteBlocked,
+  inviteeFriendSlotUnavailable,
+  inviteNotFound,
+  inviteRevoked,
+  inviteUserNotFound,
+  selfInvite,
+} from "../invites.errors.js";
+import { InviteLockKeys } from "../invites.lock-keys.js";
 import { InviteLogEvent } from "../invites.log-events.js";
 import type { ClaimHasherPort } from "../ports/claim-hasher.port.js";
 import type { InviteConfigPort } from "../ports/invite-config.port.js";
 import type { InviteNotifierPort } from "../ports/invite-notifier.port.js";
-import type {
-  InviteeIdentity,
-  InviteRedemptionRepositoryPort,
-} from "../ports/invite-redemption.repository.port.js";
+import type { InviteRedemptionRepositoryPort } from "../ports/invite-redemption.repository.port.js";
 import type { InviteRewardSchedulerPort } from "../ports/invite-reward-scheduler.port.js";
-import type { InviteRepositoryPort, InviterProfile } from "../ports/invite.repository.port.js";
-import type {
-  RewardClaim,
-  RewardClaimRepositoryPort,
-} from "../ports/reward-claim.repository.port.js";
+import type { InviteUserReaderPort } from "../ports/invite-user.reader.port.js";
+import type { InviteRepositoryPort } from "../ports/invite.repository.port.js";
+import type { RewardApplierPort } from "../ports/reward-applier.port.js";
+import type { RewardClaimRepositoryPort } from "../ports/reward-claim.repository.port.js";
 import type { RewardGrantRepositoryPort } from "../ports/reward-grant.repository.port.js";
+import type { InviteRedeemResult } from "../read-models/invite-redeem-result.read-model.js";
+import type { InviteeIdentity } from "../read-models/invitee-identity.read-model.js";
+import type { InviterProfile } from "../read-models/inviter-profile.read-model.js";
 
-export interface RedeemInviteInput {
+export interface RedeemInviteCommand {
   readonly inviteeId: string;
   readonly code: string;
   readonly installationId?: string;
@@ -59,48 +65,40 @@ export interface RedeemInviteInput {
   readonly timezone: string;
 }
 
-export type RedeemInviteResult =
-  | {
-      readonly outcome: typeof REDEEM_OUTCOME.REDEEMED;
-      readonly inviter: InviterProfile;
-      readonly friendship: InviteFriendship;
-      readonly rewards: readonly RewardAmount[];
-      readonly redemptionId: string;
-      /** 응답을 놓친 같은 요청을 다시 받아 저장된 결과를 돌려줬는지 */
-      readonly isReplay: boolean;
-    }
-  | {
-      readonly outcome: typeof REDEEM_OUTCOME.CONNECTED;
-      readonly inviter: InviterProfile;
-      readonly friendship: InviteFriendship;
-    }
-  | {
-      readonly outcome: typeof REDEEM_OUTCOME.ALREADY_FRIENDS;
-      readonly inviter: InviterProfile;
-    };
-
-interface RedeemInviteDependencies {
+export interface RedeemInviteDependencies {
+  readonly unitOfWork: UnitOfWorkPort;
+  readonly mutationLock: MutationLockPort;
   readonly inviteRepository: Pick<InviteRepositoryPort, "findByCodeWithInviter">;
   readonly inviteRedemptionRepository: Pick<
     InviteRedemptionRepositoryPort,
-    "findInviteeIdentity" | "findByInviteeIdForUpdate" | "create"
+    "nextId" | "add" | "findByInviteeIdForUpdate"
   >;
   readonly rewardClaimRepository: Pick<RewardClaimRepositoryPort, "existsAny" | "claimAll">;
   readonly rewardGrantRepository: Pick<
     RewardGrantRepositoryPort,
-    "createPending" | "findBySource" | "markApplied"
+    "nextId" | "addAll" | "listByRedemptionId" | "markApplied"
   >;
-  readonly premiumGranter: PremiumGranterPort;
+  readonly userReader: Pick<InviteUserReaderPort, "findInviteeIdentity">;
+  readonly rewardApplier: Pick<RewardApplierPort, "apply">;
   readonly followReader: Pick<FollowReaderPort, "isCurrentMutualFriend">;
   readonly blockReader: Pick<UserBlockReaderPort, "findRelation">;
-  readonly friendshipEstablisher: FriendshipEstablisherPort;
-  readonly claimHasher: ClaimHasherPort;
+  readonly friendshipEstablisher: Pick<FriendshipEstablisherPort, "establish">;
+  readonly claimHasher: Pick<ClaimHasherPort, "hash">;
   readonly notifier: Pick<InviteNotifierPort, "notifyInviteJoined">;
   readonly rewardScheduler: Pick<InviteRewardSchedulerPort, "schedule">;
-  readonly inviteConfig: InviteConfigPort;
-  readonly mutationLock: MutationLockPort;
-  readonly unitOfWork: UnitOfWorkPort;
-  readonly logger: ApplicationLoggerPort;
+  readonly inviteConfig: Pick<InviteConfigPort, "isEnabled">;
+  readonly clock: ClockPort;
+  readonly logger: Pick<ApplicationLoggerPort, "log" | "warn">;
+}
+
+interface RedeemContext {
+  readonly invite: Invite;
+  readonly inviter: InviterProfile;
+  readonly inviteeId: UserId;
+  readonly claims: readonly RewardClaim[];
+  readonly now: Temporal.Instant;
+  readonly timeZone: TimeZone;
+  readonly previous: InviteRedemption | null;
 }
 
 /** 초대를 수락해 친구를 맺고, 새로 가입한 사람이면 보상 지급을 남긴다. */
@@ -111,58 +109,57 @@ export class RedeemInviteUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: RedeemInviteInput): Promise<RedeemInviteResult> {
+  async execute(command: RedeemInviteCommand): Promise<InviteRedeemResult> {
+    const { unitOfWork, mutationLock, inviteRepository, userReader, clock, logger } =
+      this.#dependencies;
     assertInviteEnabled(this.#dependencies.inviteConfig);
 
-    const code = InviteCode.of(input.code);
-    const identity = await this.#dependencies.inviteRedemptionRepository.findInviteeIdentity(
-      input.inviteeId,
-    );
+    const code = InviteCode.create(command.code);
+    const inviteeId = UserId.reconstitute(command.inviteeId);
+    const identity = await userReader.findInviteeIdentity(inviteeId);
     if (identity == null) {
-      throw new ApplicationException(ErrorCode.USER_0601, { userId: input.inviteeId });
+      throw inviteUserNotFound(inviteeId);
     }
-    const claims = this.#claimsOf(identity, input.installationId);
-    const capturedAt = now();
+    const claims = this.#claimsOf(identity, command.installationId);
+    const now = clock.now();
 
-    const result = await this.#dependencies.unitOfWork.run(async () => {
-      const candidate = await this.#dependencies.inviteRepository.findByCodeWithInviter(code);
+    const result = await unitOfWork.run(async () => {
+      const candidate = await inviteRepository.findByCodeWithInviter(code);
       if (candidate == null) {
-        throw new ApplicationException(ErrorCode.INVITE_2101);
+        throw inviteNotFound();
       }
 
       // 친구 요청과 같은 키로 동시 수락·친구 한도를, 초대 키로 재발급과의 경합을 직렬화한다
-      await this.#dependencies.mutationLock.acquire([
-        InviteLockKeys.invite(UserId.reconstitute(candidate.invite.inviterId)),
-        FriendLockKeys.pair(
-          UserId.reconstitute(candidate.invite.inviterId),
-          UserId.reconstitute(input.inviteeId),
-        ),
-        FriendLockKeys.list(UserId.reconstitute(candidate.invite.inviterId)),
-        FriendLockKeys.list(UserId.reconstitute(input.inviteeId)),
+      const candidateInviterId = candidate.invite.inviterId;
+      await mutationLock.acquire([
+        InviteLockKeys.invite(candidateInviterId),
+        FriendLockKeys.pair(candidateInviterId, inviteeId),
+        FriendLockKeys.list(candidateInviterId),
+        FriendLockKeys.list(inviteeId),
       ]);
       // 잠금을 기다리는 동안 재발급됐을 수 있어 최신 상태로 다시 읽는다
-      const found = await this.#dependencies.inviteRepository.findByCodeWithInviter(code);
+      const found = await inviteRepository.findByCodeWithInviter(code);
       if (found == null) {
-        throw new ApplicationException(ErrorCode.INVITE_2101);
+        throw inviteNotFound();
       }
-      const { invite, inviter } = found;
-      const { decision, previous } = await this.#decide(invite, identity, claims, capturedAt);
+      const { decision, previous } = await this.#decide(found.invite, identity, claims, now);
 
       return this.#apply(decision, {
-        invite,
-        inviter,
-        identity,
+        invite: found.invite,
+        inviter: found.inviter,
+        inviteeId,
         claims,
-        capturedAt,
-        timezone: input.timezone,
+        now,
+        // 요청 헤더에서 정규화한 값을 그대로 고정한다. 알 수 없는 값은 활동일 계산이 UTC로 센다
+        timeZone: TimeZone.reconstitute(command.timezone),
         previous,
       });
     });
 
     await this.#notifyJoined(result, identity);
-    this.#dependencies.logger.log({
+    logger.log({
       event: InviteLogEvent.REDEEMED,
-      inviteeId: input.inviteeId,
+      inviteeId: inviteeId.value,
       inviterId: result.inviter.userId,
       outcome: result.outcome,
       rewardCount: result.outcome === REDEEM_OUTCOME.REDEEMED ? result.rewards.length : 0,
@@ -175,135 +172,137 @@ export class RedeemInviteUseCase {
       installationId,
       verifiedEmail: identity.verifiedEmail,
       providerAccounts: identity.providerAccounts,
-    }).map((source) => ({
-      claimHash: this.#dependencies.claimHasher.hash(source),
-      claimKind: source.claimKind,
-    }));
+    }).map((source) =>
+      RewardClaim.create({
+        claimHash: this.#dependencies.claimHasher.hash(source),
+        claimKind: source.claimKind,
+      }),
+    );
   }
 
   async #decide(
     invite: Invite,
     identity: InviteeIdentity,
     claims: readonly RewardClaim[],
-    capturedAt: Date,
+    now: Temporal.Instant,
   ): Promise<{
     readonly decision: InviteRedeemDecision;
     readonly previous: InviteRedemption | null;
   }> {
+    const inviteeId = UserId.reconstitute(identity.userId);
     // 친구 수가 많아도 두 사람 쌍만 확인한다
     const [areAlreadyFriends, blockRelation, previous, hasClaimedReward] = await Promise.all([
-      this.#dependencies.followReader.isCurrentMutualFriend(identity.userId, invite.inviterId),
-      this.#dependencies.blockReader.findRelation(identity.userId, invite.inviterId),
-      this.#dependencies.inviteRedemptionRepository.findByInviteeIdForUpdate(identity.userId),
-      this.#dependencies.rewardClaimRepository.existsAny(claims.map((claim) => claim.claimHash)),
+      this.#dependencies.followReader.isCurrentMutualFriend(
+        inviteeId.value,
+        invite.inviterId.value,
+      ),
+      this.#dependencies.blockReader.findRelation(inviteeId.value, invite.inviterId.value),
+      this.#dependencies.inviteRedemptionRepository.findByInviteeIdForUpdate(inviteeId),
+      this.#dependencies.rewardClaimRepository.existsAny(claims),
     ]);
-    const decision = InviteAbusePolicy.decide(invite, {
-      inviteeId: identity.userId,
-      inviteeJoinedAt: identity.createdAt,
+    const decision = decideInviteRedemption({
+      invite,
+      inviteeId,
+      inviteeJoinedAt: identity.joinedAt,
       areAlreadyFriends,
       isBlockedBetween: blockRelation.isBlocking || blockRelation.isBlockedBy,
       previousRedemption: previous == null ? null : { inviterId: previous.inviterId },
       hasClaimedReward,
-      now: capturedAt,
+      now,
     });
     return { decision, previous };
   }
 
   async #apply(
     decision: InviteRedeemDecision,
-    context: {
-      readonly invite: Invite;
-      readonly inviter: InviterProfile;
-      readonly identity: InviteeIdentity;
-      readonly claims: readonly RewardClaim[];
-      readonly capturedAt: Date;
-      readonly timezone: string;
-      readonly previous: InviteRedemption | null;
-    },
-  ): Promise<RedeemInviteResult> {
-    const { invite, inviter, identity } = context;
+    context: RedeemContext,
+  ): Promise<InviteRedeemResult> {
+    const { invite, inviter, inviteeId } = context;
 
     return match(decision)
       .with({ kind: "reject", reason: "SELF_INVITE" }, () => {
-        throw new ApplicationException(ErrorCode.INVITE_2103);
+        throw selfInvite();
       })
       .with({ kind: "reject", reason: "BLOCKED" }, () => {
-        // 초대한 사람이 나를 차단했는지 드러내지 않도록 방향 없는 차단 오류로 답한다
-        throw new ApplicationException(ErrorCode.BLOCK_2204);
+        throw inviteBlocked();
       })
       .with({ kind: "reject", reason: "INVITE_REVOKED" }, () => {
-        throw new ApplicationException(ErrorCode.INVITE_2102);
+        throw inviteRevoked();
       })
       .with({ kind: "reject", reason: "ALREADY_REDEEMED" }, () => {
-        throw new ApplicationException(ErrorCode.INVITE_2104);
+        throw inviteAlreadyRedeemed();
       })
       .with({ kind: "replay" }, () => this.#replay(context))
-      .with({ kind: "already-friends" }, (): RedeemInviteResult => ({
+      .with({ kind: "already-friends" }, (): InviteRedeemResult => ({
         outcome: REDEEM_OUTCOME.ALREADY_FRIENDS,
         inviter,
       }))
-      .with({ kind: "connect" }, async (): Promise<RedeemInviteResult> => {
-        const established = await this.#establish(identity.userId, invite.inviterId, true);
+      .with({ kind: "connect" }, async (): Promise<InviteRedeemResult> => {
+        const established = await this.#establish(inviteeId, invite.inviterId, true);
         if (established === REDEEM_OUTCOME.ALREADY_FRIENDS) {
           return { outcome: REDEEM_OUTCOME.ALREADY_FRIENDS, inviter };
         }
         return { outcome: REDEEM_OUTCOME.CONNECTED, inviter, friendship: established };
       })
-      .with({ kind: "redeem" }, async ({ rewardEligible }): Promise<RedeemInviteResult> => {
-        // 동시에 같은 기기로 수락하면 기기 해시 INSERT에서 한 번만 이긴다. 수락 행이 충돌하면
-        // 트랜잭션과 함께 claim도 되돌아간다
-        const isRewardClaimed =
-          rewardEligible &&
-          (await this.#dependencies.rewardClaimRepository.claimAll(
-            context.claims,
-            context.capturedAt,
-          ));
-        const redemption = await this.#dependencies.inviteRedemptionRepository.create(
-          InviteRedemption.planCreation({
-            inviteId: invite.id,
-            inviterId: invite.inviterId,
-            inviteeId: identity.userId,
-            timezone: context.timezone,
-            // 같은 기기·신원으로 이미 받은 수락은 부계정으로 초대한 사람 보상을 쌓지 못하게 함께 막는다
-            inviterRewardEligible: isRewardClaimed,
-            joinedAt: context.capturedAt,
-          }),
-        );
-        if (redemption == null) {
-          throw new ApplicationException(ErrorCode.INVITE_2104);
-        }
-        const { rewards, plans } = InviteRewardPolicy.planInviteeRewards(
-          redemption,
-          isRewardClaimed,
-        );
-        if (plans.length > 0) {
-          await this.#dependencies.rewardGrantRepository.createPending(plans);
-          const pendingCount = await this.#applyInviteePremiumNow(
-            redemption.id,
-            identity.userId,
-            context.capturedAt,
-          );
-          // 바로 적용하지 않은 지급이 남으면 원장과 같은 트랜잭션에 작업을 넣어 커밋되면 반드시 처리된다
-          if (pendingCount > 0) {
-            await this.#dependencies.rewardScheduler.schedule(redemption.id, { kind: "redeemed" });
-          }
-        }
-
-        // 수락·보상은 이미 기록했으므로 그 사이 친구가 됐어도 REDEEMED로 답해 replay와 맞춘다
-        const established = await this.#establish(identity.userId, invite.inviterId, false);
-        return {
-          outcome: REDEEM_OUTCOME.REDEEMED,
-          inviter,
-          friendship:
-            established === REDEEM_OUTCOME.ALREADY_FRIENDS
-              ? INVITE_FRIENDSHIP.FRIENDS
-              : established,
-          rewards,
-          redemptionId: redemption.id,
-          isReplay: false,
-        };
-      })
+      .with({ kind: "redeem" }, ({ rewardEligible }) => this.#redeem(rewardEligible, context))
       .exhaustive();
+  }
+
+  async #redeem(rewardEligible: boolean, context: RedeemContext): Promise<InviteRedeemResult> {
+    const { inviteRedemptionRepository, rewardClaimRepository, rewardScheduler } =
+      this.#dependencies;
+    const { invite, inviter, inviteeId, now } = context;
+    // 동시에 같은 기기로 수락하면 기기 해시 INSERT에서 한 번만 이긴다. 수락 행이 충돌하면
+    // 트랜잭션과 함께 claim도 되돌아간다
+    const isRewardClaimed =
+      rewardEligible && (await rewardClaimRepository.claimAll(context.claims, now));
+    const redemption = InviteRedemption.create({
+      id: await inviteRedemptionRepository.nextId(),
+      inviteId: invite.id,
+      inviterId: invite.inviterId,
+      inviteeId,
+      timeZone: context.timeZone,
+      // 같은 기기·신원으로 이미 받은 수락은 부계정으로 초대한 사람 보상을 쌓지 못하게 함께 막는다
+      inviterRewardEligible: isRewardClaimed,
+      now,
+    });
+    if (!(await inviteRedemptionRepository.add(redemption))) {
+      throw inviteAlreadyRedeemed();
+    }
+    const { rewards, plans } = planInviteeRewards({
+      redemptionId: redemption.id,
+      inviteeId,
+      isRewardClaimed,
+    });
+    if (plans.length > 0) {
+      await this.#addPendingGrants(plans, now);
+      const pendingCount = await this.#applyInviteePremiumNow(redemption.id, inviteeId, now);
+      // 바로 적용하지 않은 지급이 남으면 원장과 같은 트랜잭션에 작업을 넣어 커밋되면 반드시 처리된다
+      if (pendingCount > 0) {
+        await rewardScheduler.schedule(redemption.id, { kind: "redeemed" });
+      }
+    }
+
+    // 수락·보상은 이미 기록했으므로 그 사이 친구가 됐어도 REDEEMED로 답해 replay와 맞춘다
+    const established = await this.#establish(inviteeId, invite.inviterId, false);
+    return {
+      outcome: REDEEM_OUTCOME.REDEEMED,
+      inviter,
+      friendship:
+        established === REDEEM_OUTCOME.ALREADY_FRIENDS ? INVITE_FRIENDSHIP.FRIENDS : established,
+      rewards,
+      redemptionId: redemption.id.value,
+      isReplay: false,
+    };
+  }
+
+  async #addPendingGrants(plans: readonly RewardGrantPlan[], now: Temporal.Instant): Promise<void> {
+    const { rewardGrantRepository } = this.#dependencies;
+    const grants: RewardGrant[] = [];
+    for (const plan of plans) {
+      grants.push(RewardGrant.create({ id: await rewardGrantRepository.nextId(), plan, now }));
+    }
+    await rewardGrantRepository.addAll(grants);
   }
 
   /**
@@ -313,34 +312,24 @@ export class RedeemInviteUseCase {
    * 다시 골라도 한 번만 반영된다. 바로 적용하지 않고 남긴 지급 수를 반환한다.
    */
   async #applyInviteePremiumNow(
-    redemptionId: string,
-    inviteeId: string,
-    appliedAt: Date,
+    redemptionId: InviteRedemptionId,
+    inviteeId: UserId,
+    now: Temporal.Instant,
   ): Promise<number> {
-    const grants = await this.#dependencies.rewardGrantRepository.findBySource(
-      "INVITE_REDEMPTION",
-      redemptionId,
-    );
+    const { rewardGrantRepository, rewardApplier } = this.#dependencies;
+    const grants = await rewardGrantRepository.listByRedemptionId(redemptionId);
     let pendingCount = 0;
     for (const grant of grants) {
-      if (grant.recipientId !== inviteeId || grant.rewardType !== REWARD_TYPE.PREMIUM_DAYS) {
-        if (grant.status !== "APPLIED") {
+      if (!grant.isFor(inviteeId) || grant.rewardType !== REWARD_TYPE.PREMIUM_DAYS) {
+        if (!grant.isApplied()) {
           pendingCount += 1;
         }
         continue;
       }
-      if (!(await this.#dependencies.rewardGrantRepository.markApplied(grant.id, appliedAt))) {
+      if (!(await rewardGrantRepository.markApplied(grant.id, now))) {
         continue;
       }
-      const result = await this.#dependencies.premiumGranter.grant({
-        userId: inviteeId,
-        source: "INVITE",
-        sourceKey: rewardGrantSourceKey(grant.id),
-        durationDays: grant.quantity,
-      });
-      if (result.status === "user-missing") {
-        throw new ApplicationException(ErrorCode.USER_0601, { userId: inviteeId });
-      }
+      await rewardApplier.apply(grant);
     }
     return pendingCount;
   }
@@ -349,54 +338,43 @@ export class RedeemInviteUseCase {
    * 저장된 초대받은 사람 지급과 지금 친구 관계로 처음 결과를 다시 만든다. 친구 관계는 추정하지 않고
    * 처음 수락과 같은 establish로 다시 맞춘다(이미 친구면 그대로, 그 뒤 끊었으면 다시 맺거나 요청한다).
    */
-  async #replay(context: {
-    readonly invite: Invite;
-    readonly inviter: InviterProfile;
-    readonly identity: InviteeIdentity;
-    readonly previous: InviteRedemption | null;
-  }): Promise<RedeemInviteResult> {
-    if (context.previous == null) {
-      throw new ApplicationException(ErrorCode.INVITE_2104);
+  async #replay(context: RedeemContext): Promise<InviteRedeemResult> {
+    const { previous, inviteeId } = context;
+    if (previous == null) {
+      throw inviteAlreadyRedeemed();
     }
-    const grants = await this.#dependencies.rewardGrantRepository.findBySource(
-      "INVITE_REDEMPTION",
-      context.previous.id,
-    );
-    const established = await this.#establish(
-      context.identity.userId,
-      context.invite.inviterId,
-      false,
-    );
+    const grants = await this.#dependencies.rewardGrantRepository.listByRedemptionId(previous.id);
+    const established = await this.#establish(inviteeId, context.invite.inviterId, false);
     return {
       outcome: REDEEM_OUTCOME.REDEEMED,
       inviter: context.inviter,
       friendship:
         established === REDEEM_OUTCOME.ALREADY_FRIENDS ? INVITE_FRIENDSHIP.FRIENDS : established,
       rewards: grants
-        .filter((grant) => grant.recipientId === context.identity.userId)
+        .filter((grant) => grant.isFor(inviteeId))
         .map((grant) => ({ rewardType: grant.rewardType, quantity: grant.quantity })),
-      redemptionId: context.previous.id,
+      redemptionId: previous.id.value,
       isReplay: true,
     };
   }
 
   async #establish(
-    inviteeId: string,
-    inviterId: string,
+    inviteeId: UserId,
+    inviterId: UserId,
     shouldNotifyFriends: boolean,
   ): Promise<Exclude<FriendshipEstablishment, "UNAVAILABLE">> {
     const established = await this.#dependencies.friendshipEstablisher.establish({
-      requesterId: inviteeId,
-      targetUserId: inviterId,
+      requesterId: inviteeId.value,
+      targetUserId: inviterId.value,
       shouldNotifyFriends,
     });
     if (established === "UNAVAILABLE") {
-      throw new ApplicationException(ErrorCode.INVITE_2106);
+      throw inviteeFriendSlotUnavailable();
     }
     return established;
   }
 
-  async #notifyJoined(result: RedeemInviteResult, identity: InviteeIdentity): Promise<void> {
+  async #notifyJoined(result: InviteRedeemResult, identity: InviteeIdentity): Promise<void> {
     if (
       result.outcome !== REDEEM_OUTCOME.REDEEMED ||
       result.isReplay ||

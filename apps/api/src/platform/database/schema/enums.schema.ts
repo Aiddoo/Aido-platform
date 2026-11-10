@@ -29,6 +29,14 @@ import {
 } from "@aido/api/vocabulary";
 import { pgEnum } from "drizzle-orm/pg-core";
 
+// drizzle-kit은 #api 별칭을 못 따라가므로 상대 경로로 둔다
+import {
+  INVITE_STATUSES,
+  REWARD_CLAIM_KINDS,
+  REWARD_GRANT_STATUSES,
+  REWARD_SOURCE_TYPES,
+} from "../../../modules/social/invites/domain/invites.constants.js";
+
 export const accountProvider = pgEnum("AccountProvider", [
   "CREDENTIAL",
   "KAKAO",
@@ -130,13 +138,13 @@ export const userStatus = pgEnum("UserStatus", USER_STATUS);
 export const verificationType = pgEnum("VerificationType", VERIFICATION_TYPE);
 export const inviteRedemptionStatus = pgEnum("InviteRedemptionStatus", REDEMPTION_STATUS);
 export const inviteRejectionReason = pgEnum("InviteRejectionReason", REDEMPTION_REJECTION_REASON);
-export const inviteStatus = pgEnum("InviteStatus", ["ACTIVE", "REVOKED"]);
+export const inviteStatus = pgEnum("InviteStatus", INVITE_STATUSES);
 export const premiumGrantSource = pgEnum("PremiumGrantSource", PREMIUM_GRANT_SOURCES);
 export const premiumGrantStatus = pgEnum("PremiumGrantStatus", PREMIUM_GRANT_STATUSES);
 export const resourceType = pgEnum("ResourceType", ["FRIEND"]);
-export const rewardClaimKind = pgEnum("RewardClaimKind", ["INSTALLATION", "IDENTITY"]);
-export const rewardGrantStatus = pgEnum("RewardGrantStatus", ["PENDING", "APPLIED", "FAILED"]);
-export const rewardSourceType = pgEnum("RewardSourceType", ["INVITE_REDEMPTION"]);
+export const rewardClaimKind = pgEnum("RewardClaimKind", REWARD_CLAIM_KINDS);
+export const rewardGrantStatus = pgEnum("RewardGrantStatus", REWARD_GRANT_STATUSES);
+export const rewardSourceType = pgEnum("RewardSourceType", REWARD_SOURCE_TYPES);
 export const rewardType = pgEnum("RewardType", REWARD_TYPE);
 export const userReportReason = pgEnum("UserReportReason", USER_REPORT_REASONS);
 export const userReportStatus = pgEnum("UserReportStatus", USER_REPORT_STATUSES);

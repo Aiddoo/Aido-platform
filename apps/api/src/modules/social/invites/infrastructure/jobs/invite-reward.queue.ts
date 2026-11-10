@@ -5,8 +5,10 @@ import {
   JOB_POLLING_SECONDS,
   type WorkJobOptions,
 } from "#api/shared/application/ports/job-runtime.port";
+import { toIsoString } from "#api/shared/domain/time/instant";
 
 import type { InviteRewardTrigger } from "../../application/ports/invite-reward-scheduler.port.js";
+import type { InviteRedemptionId } from "../../domain/invite-redemption-id.vo.js";
 
 export const INVITE_REWARD_QUEUE = "invite-reward.v1";
 
@@ -31,9 +33,10 @@ export const INVITE_REWARD_WORKER_OPTIONS = {
 } satisfies WorkJobOptions;
 
 export const InviteRewardJobKey = {
-  of(redemptionId: string, trigger: InviteRewardTrigger): string {
-    const suffix = trigger.kind === "retry" ? `retry:${trigger.localDate}` : trigger.kind;
-    return `invite-reward:${redemptionId}:${suffix}`;
+  of(redemptionId: InviteRedemptionId, trigger: InviteRewardTrigger): string {
+    // 이미 쌓인 job key와 같게 재시도 날짜는 YYYY-MM-DD다
+    const suffix = trigger.kind === "retry" ? `retry:${trigger.runDate.toString()}` : trigger.kind;
+    return `invite-reward:${redemptionId.value}:${suffix}`;
   },
 };
 
@@ -59,7 +62,7 @@ export const INVITE_MAINTENANCE_JOB_OPTIONS = {
 } satisfies EnqueueJobOptions;
 
 export const InviteMaintenanceJobKey = {
-  catchUp: (localDate: string): string => `invite-maintenance_${localDate}`,
+  catchUp: (runDate: Temporal.PlainDate): string => `invite-maintenance_${runDate.toString()}`,
 };
 
 /**
@@ -78,6 +81,6 @@ export const inviteMaintenanceJobPayloadSchema = z.discriminatedUnion("name", [
 
 export const InviteQualifyReminderJobKey = {
   // 같은 수락의 같은 발송 시각은 정비 작업을 다시 돌려도 작업 하나로 합친다
-  of: (redemptionId: string, sendAt: Date): string =>
-    `invite-qualify-reminder:${redemptionId}:${sendAt.toISOString()}`,
+  of: (redemptionId: InviteRedemptionId, sendAt: Temporal.Instant): string =>
+    `invite-qualify-reminder:${redemptionId.value}:${toIsoString(sendAt)}`,
 };

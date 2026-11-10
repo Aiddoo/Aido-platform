@@ -1,13 +1,13 @@
 import { Inject, Injectable, type OnModuleInit } from "@nestjs/common";
 
-import { JOB_POLLING_SECONDS } from "#api/shared/application/ports/index";
+import { ClockPort } from "#api/shared/application/ports/clock.port";
 import {
-  JOB_RUNTIME,
+  JOB_POLLING_SECONDS,
   type JobEnvelope,
-  type JobRuntimePort,
+  JobRuntimePort,
 } from "#api/shared/application/ports/job-runtime.port";
-import { now } from "#api/shared/domain/date/utils/core";
-import { dayWindowInTimezone } from "#api/shared/domain/date/utils/timezone";
+import { TimeZone } from "#api/shared/domain/time/time-zone.vo";
+import { localDateOf } from "#api/shared/domain/time/zoned-time";
 
 import { ExpireStaleRedemptionsUseCase } from "../../application/use-cases/expire-stale-redemptions.use-case.js";
 import { ScheduleInviteQualifyRemindersUseCase } from "../../application/use-cases/schedule-invite-qualify-reminders.use-case.js";
@@ -25,8 +25,10 @@ export class InviteMaintenanceProcessor implements OnModuleInit {
   readonly #expireStaleRedemptions: Pick<ExpireStaleRedemptionsUseCase, "execute">;
   readonly #scheduleQualifyReminders: Pick<ScheduleInviteQualifyRemindersUseCase, "execute">;
   readonly #sendQualifyReminder: Pick<SendInviteQualifyReminderUseCase, "execute">;
-  readonly #runtime: JobRuntimePort;
+  readonly #runtime: Pick<JobRuntimePort, "work">;
+  readonly #clock: ClockPort;
 
+  // 대역으로 갈아 끼울 수 있게 UseCase를 클래스 토큰으로 받되 execute만 쓴다
   constructor(
     @Inject(ExpireStaleRedemptionsUseCase)
     expireStaleRedemptions: Pick<ExpireStaleRedemptionsUseCase, "execute">,
@@ -34,12 +36,14 @@ export class InviteMaintenanceProcessor implements OnModuleInit {
     scheduleQualifyReminders: Pick<ScheduleInviteQualifyRemindersUseCase, "execute">,
     @Inject(SendInviteQualifyReminderUseCase)
     sendQualifyReminder: Pick<SendInviteQualifyReminderUseCase, "execute">,
-    @Inject(JOB_RUNTIME) runtime: JobRuntimePort,
+    runtime: JobRuntimePort,
+    clock: ClockPort,
   ) {
     this.#expireStaleRedemptions = expireStaleRedemptions;
     this.#scheduleQualifyReminders = scheduleQualifyReminders;
     this.#sendQualifyReminder = sendQualifyReminder;
     this.#runtime = runtime;
+    this.#clock = clock;
   }
 
   async onModuleInit(): Promise<void> {
@@ -64,7 +68,7 @@ export class InviteMaintenanceProcessor implements OnModuleInit {
     if (payload.success && payload.data.name === INVITE_QUALIFY_REMINDER_JOB_NAME) {
       await this.#sendQualifyReminder.execute({
         redemptionId: payload.data.data.redemptionId,
-        now: now(),
+        now: this.#clock.now(),
       });
       return;
     }
@@ -72,11 +76,11 @@ export class InviteMaintenanceProcessor implements OnModuleInit {
   }
 
   async process(): Promise<void> {
-    const at = now();
+    const now = this.#clock.now();
     await this.#expireStaleRedemptions.execute({
-      now: at,
-      runDate: dayWindowInTimezone(at, INVITE_MAINTENANCE_SCHEDULE.timezone).localDate,
+      now,
+      runDate: localDateOf(now, TimeZone.create(INVITE_MAINTENANCE_SCHEDULE.timezone)),
     });
-    await this.#scheduleQualifyReminders.execute({ now: at });
+    await this.#scheduleQualifyReminders.execute({ now });
   }
 }

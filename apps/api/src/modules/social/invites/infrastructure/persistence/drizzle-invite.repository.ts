@@ -1,55 +1,41 @@
-import { ErrorCode } from "@aido/api/errors";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
-import { and, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
-import { invite } from "#api/platform/database/schema/index";
-import { ApplicationException } from "#api/shared/application/application.exception";
+import { createEntityId } from "#api/platform/database/entity-id";
+import { invite as inviteTable } from "#api/platform/database/schema/index";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import type {
-  InviteRepositoryPort,
-  InviteWithInviter,
-  IssueInviteInput,
-} from "../../application/ports/invite.repository.port.js";
-import { InviteCode } from "../../domain/invite-code.vo.js";
-import { Invite } from "../../domain/invite.aggregate.js";
-import { InviteCodeGenerator } from "../adapters/invite-code-generator.adapter.js";
-
-const INVITE_COLUMNS = {
-  id: true,
-  inviterId: true,
-  code: true,
-  status: true,
-  createdAt: true,
-  revokedAt: true,
-} as const;
+import { InviteRepositoryPort } from "../../application/ports/invite.repository.port.js";
+import type { InviteWithInviter } from "../../application/read-models/inviter-profile.read-model.js";
+import type { InviteCode } from "../../domain/invite-code.vo.js";
+import { InviteId } from "../../domain/invite-id.vo.js";
+import type { Invite } from "../../domain/invite.aggregate.js";
+import { INVITE_COLUMNS, toInvite, toInviteRow } from "./invite-row.mapper.js";
 
 @Injectable()
 export class DrizzleInviteRepository implements InviteRepositoryPort {
-  static readonly MAX_CODE_ATTEMPTS = 5;
-
   readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
-  readonly #codeGenerator: InviteCodeGenerator;
 
-  constructor(
-    txHost: TransactionHost<DrizzleTransactionalAdapter>,
-    codeGenerator: InviteCodeGenerator,
-  ) {
+  constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>) {
     this.#txHost = txHost;
-    this.#codeGenerator = codeGenerator;
   }
 
   get #db() {
     return this.#txHost.tx;
   }
 
-  async findActiveByInviterId(inviterId: string): Promise<Invite | null> {
+  async nextId(): Promise<InviteId> {
+    return InviteId.reconstitute(createEntityId());
+  }
+
+  async findActiveByInviterId(inviterId: UserId): Promise<Invite | null> {
     const row = await this.#db.query.invite.findFirst({
       columns: INVITE_COLUMNS,
-      where: { inviterId, status: "ACTIVE" },
+      where: { inviterId: inviterId.value, status: "ACTIVE" },
     });
-    return row == null ? null : Invite.reconstitute(row);
+    return row == null ? null : toInvite(row);
   }
 
   async findByCodeWithInviter(code: InviteCode): Promise<InviteWithInviter | null> {
@@ -66,13 +52,13 @@ export class DrizzleInviteRepository implements InviteRepositoryPort {
     if (row == null) {
       return null;
     }
-    const { inviter } = row;
+    const { inviter, ...inviteRow } = row;
     // 탈퇴 대기 중인 사람의 초대는 없는 코드와 같게 다뤄 계정 상태를 드러내지 않는다
     if (inviter.deletedAt != null) {
       return null;
     }
     return {
-      invite: Invite.reconstitute(row),
+      invite: toInvite(inviteRow),
       inviter: {
         userId: inviter.id,
         userTag: inviter.userTag,
@@ -82,35 +68,21 @@ export class DrizzleInviteRepository implements InviteRepositoryPort {
     };
   }
 
-  async issue(input: IssueInviteInput): Promise<Invite> {
-    for (let attempt = 0; attempt < DrizzleInviteRepository.MAX_CODE_ATTEMPTS; attempt++) {
-      const plan = Invite.planIssue({
-        inviterId: input.inviterId,
-        code: InviteCode.of(this.#codeGenerator.generate()),
-        issuedAt: input.issuedAt,
-      });
-      // 코드 충돌은 SAVEPOINT 없이 건너뛰고 새 코드로 다시 시도한다
-      const [row] = await this.#db
-        .insert(invite)
-        .values(plan)
-        .onConflictDoNothing({ target: invite.code })
-        .returning();
-      if (row != null) {
-        return Invite.reconstitute(row);
-      }
-    }
-    throw new ApplicationException(ErrorCode.SYS_0001, {
-      detail: "Invite code collision retries exhausted",
-      attempts: DrizzleInviteRepository.MAX_CODE_ATTEMPTS,
-    });
+  async add(invite: Invite): Promise<boolean> {
+    // 코드 충돌은 SAVEPOINT 없이 건너뛰어 호출자가 새 코드로 다시 시도한다
+    const inserted = await this.#db
+      .insert(inviteTable)
+      .values(toInviteRow(invite))
+      .onConflictDoNothing({ target: inviteTable.code })
+      .returning({ id: inviteTable.id });
+    return inserted.length === 1;
   }
 
-  async saveRevocation(target: Invite): Promise<boolean> {
-    const updated = await this.#db
-      .update(invite)
-      .set({ status: target.status, revokedAt: target.revokedAt })
-      .where(and(eq(invite.id, target.id), eq(invite.status, "ACTIVE")))
-      .returning({ id: invite.id });
-    return updated.length === 1;
+  async save(invite: Invite): Promise<void> {
+    const row = toInviteRow(invite);
+    await this.#db
+      .update(inviteTable)
+      .set({ status: row.status, revokedAt: row.revokedAt })
+      .where(eq(inviteTable.id, row.id));
   }
 }

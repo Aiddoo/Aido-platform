@@ -1,30 +1,31 @@
-import { InviteLockKeys } from "#api/modules/social/invites/application/invites.lock-keys";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
-import { type MutationLockPort, type UnitOfWorkPort } from "#api/shared/application/ports/index";
-import { now } from "#api/shared/domain/date/utils/core";
+import type { ClockPort } from "#api/shared/application/ports/clock.port";
+import type { MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
+import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { assertInviteEnabled } from "../invites.errors.js";
+import { InviteLockKeys } from "../invites.lock-keys.js";
 import { InviteLogEvent } from "../invites.log-events.js";
-import type { MyInviteReader } from "../my-invite.reader.js";
 import type { InviteConfigPort } from "../ports/invite-config.port.js";
 import type { InviteRepositoryPort } from "../ports/invite.repository.port.js";
-import type { MyInviteView } from "../read-models/my-invite.read-model.js";
+import type { MyInvite } from "../read-models/my-invite.read-model.js";
+import type { IssueInviteUseCase } from "./issue-invite.use-case.js";
+import type { SummarizeMyInviteUseCase } from "./summarize-my-invite.use-case.js";
 
-export interface RotateInviteCodeInput {
+export interface RotateInviteCodeCommand {
   readonly inviterId: string;
 }
 
-interface RotateInviteCodeDependencies {
-  readonly inviteRepository: Pick<
-    InviteRepositoryPort,
-    "findActiveByInviterId" | "issue" | "saveRevocation"
-  >;
-  readonly myInviteReader: Pick<MyInviteReader, "read">;
-  readonly inviteConfig: InviteConfigPort;
-  readonly mutationLock: MutationLockPort;
+export interface RotateInviteCodeDependencies {
   readonly unitOfWork: UnitOfWorkPort;
-  readonly logger: ApplicationLoggerPort;
+  readonly mutationLock: MutationLockPort;
+  readonly inviteRepository: Pick<InviteRepositoryPort, "findActiveByInviterId" | "save">;
+  readonly issueInvite: Pick<IssueInviteUseCase, "execute">;
+  readonly summarizeMyInvite: Pick<SummarizeMyInviteUseCase, "execute">;
+  readonly inviteConfig: Pick<InviteConfigPort, "isEnabled">;
+  readonly clock: ClockPort;
+  readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
 
 /** 지금 코드를 폐기하고 새 코드를 발급한다. 폐기한 코드로 들어오면 INVITE_2102가 된다. */
@@ -35,34 +36,30 @@ export class RotateInviteCodeUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: RotateInviteCodeInput): Promise<MyInviteView> {
+  async execute(command: RotateInviteCodeCommand): Promise<MyInvite> {
+    const { unitOfWork, mutationLock, inviteRepository, issueInvite, clock, logger } =
+      this.#dependencies;
     assertInviteEnabled(this.#dependencies.inviteConfig);
 
-    const capturedAt = now();
-    const { invite, revokedInviteId } = await this.#dependencies.unitOfWork.run(async () => {
-      await this.#dependencies.mutationLock.acquire([
-        InviteLockKeys.invite(UserId.reconstitute(input.inviterId)),
-      ]);
-      const current = await this.#dependencies.inviteRepository.findActiveByInviterId(
-        input.inviterId,
-      );
-      if (current?.revoke(capturedAt)) {
-        await this.#dependencies.inviteRepository.saveRevocation(current);
+    const inviterId = UserId.reconstitute(command.inviterId);
+    const now = clock.now();
+    const { invite, revokedInviteId } = await unitOfWork.run(async () => {
+      await mutationLock.acquire([InviteLockKeys.invite(inviterId)]);
+      const current = await inviteRepository.findActiveByInviterId(inviterId);
+      if (current?.revoke(now) === true) {
+        await inviteRepository.save(current);
       }
 
-      const issued = await this.#dependencies.inviteRepository.issue({
-        inviterId: input.inviterId,
-        issuedAt: capturedAt,
-      });
-      return { invite: issued, revokedInviteId: current?.id ?? null };
+      const issued = await issueInvite.execute({ inviterId, now });
+      return { invite: issued, revokedInviteId: current?.id.value ?? null };
     });
 
-    this.#dependencies.logger.log({
+    logger.log({
       event: InviteLogEvent.ROTATED,
-      inviterId: input.inviterId,
-      inviteId: invite.id,
+      inviterId: inviterId.value,
+      inviteId: invite.id.value,
       revokedInviteId,
     });
-    return this.#dependencies.myInviteReader.read(invite, capturedAt);
+    return this.#dependencies.summarizeMyInvite.execute({ invite, now });
   }
 }

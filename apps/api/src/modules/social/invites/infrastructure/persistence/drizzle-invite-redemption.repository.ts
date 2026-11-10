@@ -1,42 +1,26 @@
+import type { RedemptionStatus } from "@aido/api/vocabulary";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
 import { and, count, eq, inArray, lte, sql } from "drizzle-orm";
 
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
+import { createEntityId } from "#api/platform/database/entity-id";
 import { inviteActiveDay, inviteRedemption } from "#api/platform/database/schema/index";
-import { toDateString } from "#api/shared/domain/date/utils/format";
-import { parseDateOnly } from "#api/shared/domain/date/utils/parse";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { instantFromDate, instantToDate } from "#api/shared/domain/time/instant";
 
-import type {
-  FindInvitedFriendsParams,
-  FindQualifyReminderCandidatesParams,
-  InvitedFriendRecord,
-  InviteeIdentity,
-  InviteRedemptionRepositoryPort,
-  InviteRedemptionSummary,
-  QualifyReminderCandidate,
-} from "../../application/ports/invite-redemption.repository.port.js";
+import { InviteRedemptionRepositoryPort } from "../../application/ports/invite-redemption.repository.port.js";
+import type { InviteRedemptionSummary } from "../../application/read-models/invite-redemption-summary.read-model.js";
+import type { InvitedFriend } from "../../application/read-models/invited-friend.read-model.js";
+import type { QualifyReminderCandidate } from "../../application/read-models/qualify-reminder-candidate.read-model.js";
+import { InviteRedemptionId } from "../../domain/invite-redemption-id.vo.js";
+import type { InviteRedemption } from "../../domain/invite-redemption.aggregate.js";
 import {
-  InviteRedemption,
-  type InviteRedemptionCreationPlan,
-} from "../../domain/invite-redemption.aggregate.js";
-
-const REDEMPTION_COLUMNS = {
-  id: true,
-  inviteId: true,
-  inviterId: true,
-  inviteeId: true,
-  status: true,
-  rejectionReason: true,
-  timezone: true,
-  inviterRewardEligible: true,
-  joinedAt: true,
-  qualifiedAt: true,
-  rewardedAt: true,
-  rejectedAt: true,
-  expiresAt: true,
-  qualifyReminderSentAt: true,
-} as const;
+  INVITE_REDEMPTION_COLUMNS,
+  plainDateToDateColumn,
+  toInviteRedemption,
+  toInviteRedemptionRow,
+} from "./invite-redemption-row.mapper.js";
 
 @Injectable()
 export class DrizzleInviteRedemptionRepository implements InviteRedemptionRepositoryPort {
@@ -55,109 +39,74 @@ export class DrizzleInviteRedemptionRepository implements InviteRedemptionReposi
       this.#db.$count(inviteActiveDay, eq(inviteActiveDay.redemptionId, redemption.id));
   }
 
-  async findInviteeIdentity(inviteeId: string): Promise<InviteeIdentity | null> {
-    const found = await this.#db.query.user.findFirst({
-      columns: { id: true, userTag: true, createdAt: true, email: true, emailVerifiedAt: true },
-      where: { id: inviteeId },
-      with: {
-        profile: { columns: { name: true } },
-        accounts: { columns: { provider: true, providerAccountId: true } },
-      },
-    });
-    if (found == null) {
-      return null;
-    }
-    return {
-      userId: found.id,
-      displayName: found.profile?.name ?? found.userTag,
-      createdAt: found.createdAt,
-      verifiedEmail: found.emailVerifiedAt == null ? null : found.email,
-      providerAccounts: found.accounts.map((account) => ({
-        provider: account.provider,
-        providerAccountId: account.providerAccountId,
-      })),
-    };
+  async nextId(): Promise<InviteRedemptionId> {
+    return InviteRedemptionId.reconstitute(createEntityId());
   }
 
-  async findDisplayName(userId: string): Promise<string | null> {
-    const found = await this.#db.query.user.findFirst({
-      columns: { userTag: true },
-      where: { id: userId, deletedAt: { isNull: true } },
-      with: { profile: { columns: { name: true } } },
-    });
-    if (found == null) {
-      return null;
-    }
-    return found.profile?.name ?? found.userTag;
-  }
-
-  async create(plan: InviteRedemptionCreationPlan): Promise<InviteRedemption | null> {
-    const [row] = await this.#db
+  async add(redemption: InviteRedemption): Promise<boolean> {
+    const inserted = await this.#db
       .insert(inviteRedemption)
-      .values(plan)
+      .values(toInviteRedemptionRow(redemption))
       .onConflictDoNothing({ target: inviteRedemption.inviteeId })
-      .returning();
-    if (row == null) {
-      return null;
+      .returning({ id: inviteRedemption.id });
+    if (inserted.length === 0) {
+      return false;
     }
-    return InviteRedemption.reconstitute({ ...row, activeDays: [] });
+    await this.#addActiveDays(redemption);
+    return true;
   }
 
-  async hasJoinedByInviteeId(inviteeId: string): Promise<boolean> {
+  async save(redemption: InviteRedemption): Promise<void> {
+    const row = toInviteRedemptionRow(redemption);
+    await this.#db
+      .update(inviteRedemption)
+      .set({
+        status: row.status,
+        rejectionReason: row.rejectionReason,
+        qualifiedAt: row.qualifiedAt,
+        rewardedAt: row.rewardedAt,
+        rejectedAt: row.rejectedAt,
+        qualifyReminderSentAt: row.qualifyReminderSentAt,
+      })
+      .where(eq(inviteRedemption.id, row.id));
+    await this.#addActiveDays(redemption);
+  }
+
+  async existsJoinedByInviteeId(inviteeId: UserId): Promise<boolean> {
     const row = await this.#db.query.inviteRedemption.findFirst({
       columns: { id: true },
-      where: { inviteeId, status: "JOINED" },
+      where: { inviteeId: inviteeId.value, status: "JOINED" },
     });
     return row != null;
   }
 
-  async findByInviteeIdForUpdate(inviteeId: string): Promise<InviteRedemption | null> {
+  async findByInviteeIdForUpdate(inviteeId: UserId): Promise<InviteRedemption | null> {
     const [locked] = await this.#db
       .select({ id: inviteRedemption.id })
       .from(inviteRedemption)
-      .where(eq(inviteRedemption.inviteeId, inviteeId))
+      .where(eq(inviteRedemption.inviteeId, inviteeId.value))
       .limit(1)
       .for("update");
     return locked == null ? null : this.#findById(locked.id);
   }
 
-  async findByIdForUpdate(redemptionId: string): Promise<InviteRedemption | null> {
+  async findByIdForUpdate(redemptionId: InviteRedemptionId): Promise<InviteRedemption | null> {
     const [locked] = await this.#db
       .select({ id: inviteRedemption.id })
       .from(inviteRedemption)
-      .where(eq(inviteRedemption.id, redemptionId))
+      .where(eq(inviteRedemption.id, redemptionId.value))
       .limit(1)
       .for("update");
     return locked == null ? null : this.#findById(locked.id);
   }
 
-  async save(redemption: InviteRedemption): Promise<void> {
-    const { addedActiveDays, ...state } = redemption.toPersistence();
-    await this.#db
-      .update(inviteRedemption)
-      .set(state)
-      .where(eq(inviteRedemption.id, redemption.id));
-    if (addedActiveDays.length === 0) {
-      return;
-    }
-    await this.#db
-      .insert(inviteActiveDay)
-      .values(
-        addedActiveDays.map((localDate) => ({
-          redemptionId: redemption.id,
-          localDate: parseDateOnly(localDate),
-        })),
-      )
-      .onConflictDoNothing({ target: [inviteActiveDay.redemptionId, inviteActiveDay.localDate] });
-  }
-
-  async summarizeByInviterId(inviterId: string): Promise<InviteRedemptionSummary> {
+  async summarizeByInviterId(inviterId: UserId): Promise<InviteRedemptionSummary> {
     const groups = await this.#db
       .select({ status: inviteRedemption.status, total: count() })
       .from(inviteRedemption)
-      .where(eq(inviteRedemption.inviterId, inviterId))
+      .where(eq(inviteRedemption.inviterId, inviterId.value))
       .groupBy(inviteRedemption.status);
-    const countOf = (status: InvitedFriendRecord["status"]) =>
+    const countOf = (status: RedemptionStatus) =>
       groups.find((group) => group.status === status)?.total ?? 0;
     return {
       joinedCount: countOf("JOINED"),
@@ -167,15 +116,21 @@ export class DrizzleInviteRedemptionRepository implements InviteRedemptionReposi
     };
   }
 
-  async findInvitedFriends(params: FindInvitedFriendsParams): Promise<InvitedFriendRecord[]> {
+  async listInvitedFriends(params: {
+    readonly inviterId: UserId;
+    readonly afterInviteeId: UserId | null;
+    readonly status: RedemptionStatus | null;
+    readonly limit: number;
+  }): Promise<InvitedFriend[]> {
+    const { inviterId, afterInviteeId, status, limit } = params;
     const anchor =
-      params.cursor == null
-        ? undefined
+      afterInviteeId == null
+        ? null
         : await this.#db.query.inviteRedemption.findFirst({
             columns: { joinedAt: true, id: true },
-            where: { inviteeId: params.cursor, inviterId: params.inviterId },
+            where: { inviteeId: afterInviteeId.value, inviterId: inviterId.value },
           });
-    if (params.cursor != null && anchor == null) {
+    if (afterInviteeId != null && anchor == null) {
       return [];
     }
 
@@ -188,8 +143,8 @@ export class DrizzleInviteRedemptionRepository implements InviteRedemptionReposi
         qualifiedAt: true,
       },
       where: {
-        inviterId: params.inviterId,
-        ...(params.status != null && { status: params.status }),
+        inviterId: inviterId.value,
+        ...(status != null && { status }),
         ...(anchor != null && {
           RAW: (table) =>
             sql`(${table.joinedAt}, ${table.id}) < (${sql.param(anchor.joinedAt, table.joinedAt)}, ${anchor.id})`,
@@ -203,7 +158,7 @@ export class DrizzleInviteRedemptionRepository implements InviteRedemptionReposi
       },
       extras: { activeDayCount: this.#activeDayCount() },
       orderBy: { joinedAt: "desc", id: "desc" },
-      limit: params.size,
+      limit,
     });
     return rows.map((row) => ({
       userId: row.invitee.id,
@@ -212,17 +167,18 @@ export class DrizzleInviteRedemptionRepository implements InviteRedemptionReposi
       profileImage: row.invitee.profile?.profileImage ?? null,
       status: row.status,
       activeDayCount: row.activeDayCount,
-      joinedAt: row.joinedAt,
-      qualifiedAt: row.qualifiedAt,
+      joinedAt: instantFromDate(row.joinedAt),
+      qualifiedAt: row.qualifiedAt == null ? null : instantFromDate(row.qualifiedAt),
       rejectionReason: row.rejectionReason,
     }));
   }
 
-  async expireJoinedBefore(at: Date, limit: number): Promise<number> {
+  async expireJoinedBefore(at: Temporal.Instant, limit: number): Promise<number> {
+    const atDate = instantToDate(at);
     const claimed = await this.#db
       .select({ id: inviteRedemption.id })
       .from(inviteRedemption)
-      .where(and(eq(inviteRedemption.status, "JOINED"), lte(inviteRedemption.expiresAt, at)))
+      .where(and(eq(inviteRedemption.status, "JOINED"), lte(inviteRedemption.expiresAt, atDate)))
       .orderBy(inviteRedemption.expiresAt, inviteRedemption.id)
       .limit(limit)
       .for("update", { skipLocked: true });
@@ -232,7 +188,7 @@ export class DrizzleInviteRedemptionRepository implements InviteRedemptionReposi
 
     const expired = await this.#db
       .update(inviteRedemption)
-      .set({ status: "REJECTED", rejectionReason: "EXPIRED", rejectedAt: at })
+      .set({ status: "REJECTED", rejectionReason: "EXPIRED", rejectedAt: atDate })
       .where(
         and(
           inArray(
@@ -246,9 +202,12 @@ export class DrizzleInviteRedemptionRepository implements InviteRedemptionReposi
     return expired.length;
   }
 
-  async findQualifyReminderCandidates(
-    params: FindQualifyReminderCandidatesParams,
-  ): Promise<QualifyReminderCandidate[]> {
+  async listQualifyReminderCandidates(params: {
+    readonly now: Temporal.Instant;
+    readonly expiresBefore: Temporal.Instant;
+    readonly after: Pick<QualifyReminderCandidate, "expiresAt" | "redemptionId"> | null;
+    readonly limit: number;
+  }): Promise<QualifyReminderCandidate[]> {
     const { after } = params;
     const rows = await this.#db.query.inviteRedemption.findMany({
       columns: { id: true, timezone: true, expiresAt: true },
@@ -257,11 +216,11 @@ export class DrizzleInviteRedemptionRepository implements InviteRedemptionReposi
         qualifyReminderSentAt: { isNull: true },
         inviterId: { isNotNull: true },
         inviterRewardEligible: true,
-        expiresAt: { gt: params.now, lte: params.expiresBefore },
+        expiresAt: { gt: instantToDate(params.now), lte: instantToDate(params.expiresBefore) },
         ...(after != null && {
           OR: [
-            { expiresAt: { gt: after.expiresAt } },
-            { expiresAt: { eq: after.expiresAt }, id: { gt: after.redemptionId } },
+            { expiresAt: { gt: instantToDate(after.expiresAt) } },
+            { expiresAt: { eq: instantToDate(after.expiresAt) }, id: { gt: after.redemptionId } },
           ],
         }),
       },
@@ -272,23 +231,40 @@ export class DrizzleInviteRedemptionRepository implements InviteRedemptionReposi
     return rows.map((row) => ({
       redemptionId: row.id,
       timezone: row.timezone,
-      expiresAt: row.expiresAt,
+      expiresAt: instantFromDate(row.expiresAt),
       activeDayCount: row.activeDayCount,
     }));
   }
 
+  // 활동일은 (수락, 날짜) 기본 키라 이미 있는 날짜는 건너뛰어 같은 날을 두 번 세지 않는다
+  async #addActiveDays(redemption: InviteRedemption): Promise<void> {
+    if (redemption.activeDays.length === 0) {
+      return;
+    }
+    await this.#db
+      .insert(inviteActiveDay)
+      .values(
+        redemption.activeDays.map((localDate) => ({
+          redemptionId: redemption.id.value,
+          localDate: plainDateToDateColumn(localDate),
+        })),
+      )
+      .onConflictDoNothing({ target: [inviteActiveDay.redemptionId, inviteActiveDay.localDate] });
+  }
+
   async #findById(redemptionId: string): Promise<InviteRedemption | null> {
     const row = await this.#db.query.inviteRedemption.findFirst({
-      columns: REDEMPTION_COLUMNS,
+      columns: INVITE_REDEMPTION_COLUMNS,
       where: { id: redemptionId },
       with: { activeDays: { columns: { localDate: true } } },
     });
     if (row == null) {
       return null;
     }
-    return InviteRedemption.reconstitute({
-      ...row,
-      activeDays: row.activeDays.map((day) => toDateString(day.localDate)),
-    });
+    const { activeDays, ...redemptionRow } = row;
+    return toInviteRedemption(
+      redemptionRow,
+      activeDays.map((day) => day.localDate),
+    );
   }
 }

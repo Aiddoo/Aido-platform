@@ -3,27 +3,25 @@ import { REDEMPTION_STATUS, REWARD_TYPE, type RewardType } from "@aido/api/vocab
 import { sumBy } from "es-toolkit";
 
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
-import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
+import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
+import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
-import { now } from "#api/shared/domain/date/utils/core";
 import { ErrorCodedException } from "#api/shared/domain/exceptions/error-coded.exception";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import { INVITE_REWARD_MAX_ATTEMPTS } from "../../domain/reward-grant.constants.js";
+import { InviteRedemptionId } from "../../domain/invite-redemption-id.vo.js";
+import { INVITE_REWARD_MAX_ATTEMPTS } from "../../domain/invites.constants.js";
+import type { RewardGrant } from "../../domain/reward-grant.entity.js";
 import { InviteAlertKey } from "../invites.alerts.js";
 import { InviteLogEvent } from "../invites.log-events.js";
 import type { InviteConfigPort } from "../ports/invite-config.port.js";
 import type { InviteNotifierPort } from "../ports/invite-notifier.port.js";
 import type { InviteRedemptionRepositoryPort } from "../ports/invite-redemption.repository.port.js";
-import type { RewardApplierRegistry } from "../ports/reward-applier.port.js";
-import type {
-  RewardGrantRecord,
-  RewardGrantRepositoryPort,
-} from "../ports/reward-grant.repository.port.js";
+import type { RewardApplierPort } from "../ports/reward-applier.port.js";
+import type { RewardGrantRepositoryPort } from "../ports/reward-grant.repository.port.js";
 
-export { INVITE_REWARD_MAX_ATTEMPTS };
-
-export interface GrantInviteRewardsInput {
+export interface GrantInviteRewardsCommand {
   readonly redemptionId: string;
   /**
    * 지급 작업의 첫 실행인지. 큐 재시도까지 시도 횟수로 세면 몇 분 만에 하루 단위 정비 재시도 예산을
@@ -37,6 +35,7 @@ export interface GrantInviteRewardsResult {
   readonly failedCount: number;
 }
 
+/** 큐가 backoff로 다시 시도하게 지급 작업을 실패시킨다. */
 export class InviteRewardGrantFailedError extends Error {
   readonly failedCount: number;
 
@@ -47,21 +46,29 @@ export class InviteRewardGrantFailedError extends Error {
   }
 }
 
-interface GrantInviteRewardsDependencies {
+type GrantOutcome = "applied" | "already-applied" | "failed";
+
+interface RewardedRedemption {
+  readonly inviterId: UserId;
+  readonly grants: readonly RewardGrant[];
+}
+
+export interface GrantInviteRewardsDependencies {
+  readonly unitOfWork: UnitOfWorkPort;
   readonly rewardGrantRepository: Pick<
     RewardGrantRepositoryPort,
-    "findBySource" | "markApplied" | "markFailed"
+    "listByRedemptionId" | "markApplied" | "markFailed"
   >;
   readonly inviteRedemptionRepository: Pick<
     InviteRedemptionRepositoryPort,
     "findByIdForUpdate" | "save"
   >;
-  readonly rewardAppliers: RewardApplierRegistry;
+  readonly rewardApplier: Pick<RewardApplierPort, "apply">;
   readonly notifier: Pick<InviteNotifierPort, "notifyInviteRewarded">;
   readonly alert: Pick<OperationalAlertPort, "raise">;
-  readonly inviteConfig: InviteConfigPort;
-  readonly unitOfWork: UnitOfWorkPort;
-  readonly logger: ApplicationLoggerPort;
+  readonly inviteConfig: Pick<InviteConfigPort, "isEnabled">;
+  readonly clock: ClockPort;
+  readonly logger: Pick<ApplicationLoggerPort, "log" | "warn" | "error">;
 }
 
 /**
@@ -77,29 +84,25 @@ export class GrantInviteRewardsUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: GrantInviteRewardsInput): Promise<GrantInviteRewardsResult> {
-    if (!this.#dependencies.inviteConfig.isEnabled) {
-      this.#dependencies.logger.log({
+  async execute(command: GrantInviteRewardsCommand): Promise<GrantInviteRewardsResult> {
+    const { rewardGrantRepository, inviteConfig, clock, logger } = this.#dependencies;
+    if (!inviteConfig.isEnabled) {
+      logger.log({
         event: InviteLogEvent.REWARDS_SKIPPED_DISABLED,
-        redemptionId: input.redemptionId,
+        redemptionId: command.redemptionId,
       });
       return { appliedCount: 0, failedCount: 0 };
     }
 
-    const capturedAt = now();
-    const grants = await this.#dependencies.rewardGrantRepository.findBySource(
-      "INVITE_REDEMPTION",
-      input.redemptionId,
-    );
-    const retryable = grants.filter(
-      (grant) => grant.status !== "APPLIED" && grant.attempts < INVITE_REWARD_MAX_ATTEMPTS,
-    );
+    const redemptionId = InviteRedemptionId.reconstitute(command.redemptionId);
+    const now = clock.now();
+    const grants = await rewardGrantRepository.listByRedemptionId(redemptionId);
 
     let appliedCount = 0;
     let failedCount = 0;
     // 한 수락의 지급은 보상 종류 수만큼이라 순서대로 적용한다
-    for (const grant of retryable) {
-      const outcome = await this.#apply(grant, capturedAt, input.countsAttempt);
+    for (const grant of grants.filter((candidate) => candidate.isRetryable())) {
+      const outcome = await this.#apply(grant, now, command.countsAttempt);
       if (outcome === "applied") {
         appliedCount += 1;
       }
@@ -108,19 +111,18 @@ export class GrantInviteRewardsUseCase {
       }
     }
 
-    const rewarded = await this.#markRewardedIfComplete(input.redemptionId, capturedAt);
+    const rewarded = await this.#markRewardedIfComplete(redemptionId, now);
     if (rewarded != null) {
-      await this.#notify(input.redemptionId, rewarded);
+      await this.#notify(redemptionId, rewarded);
     }
 
-    this.#dependencies.logger.log({
+    logger.log({
       event: InviteLogEvent.REWARDS_GRANTED,
-      redemptionId: input.redemptionId,
+      redemptionId: command.redemptionId,
       appliedCount,
       failedCount,
     });
     if (failedCount > 0) {
-      // 큐가 backoff로 다시 시도하게 실패를 전파한다
       throw new InviteRewardGrantFailedError(failedCount);
     }
     return { appliedCount, failedCount };
@@ -128,29 +130,29 @@ export class GrantInviteRewardsUseCase {
 
   // 펜싱과 적용을 한 UoW에 두어 적용이 실패하면 APPLIED도 함께 되돌린다
   async #apply(
-    grant: RewardGrantRecord,
-    at: Date,
+    grant: RewardGrant,
+    now: Temporal.Instant,
     countsAttempt: boolean,
-  ): Promise<"applied" | "already-applied" | "failed"> {
+  ): Promise<GrantOutcome> {
+    const { unitOfWork, rewardGrantRepository, rewardApplier, logger } = this.#dependencies;
     try {
-      return await this.#dependencies.unitOfWork.run(async () => {
-        const isFenced = await this.#dependencies.rewardGrantRepository.markApplied(grant.id, at);
-        if (!isFenced) {
-          return "already-applied" as const;
+      return await unitOfWork.run(async (): Promise<GrantOutcome> => {
+        if (!(await rewardGrantRepository.markApplied(grant.id, now))) {
+          return "already-applied";
         }
-        await this.#dependencies.rewardAppliers[grant.rewardType].apply(grant);
-        return "applied" as const;
+        await rewardApplier.apply(grant);
+        return "applied";
       });
     } catch (error) {
       const errorCode = error instanceof ErrorCodedException ? error.errorCode : "APPLY_FAILED";
-      const attempts = await this.#dependencies.rewardGrantRepository.markFailed(grant.id, {
+      const attempts = await rewardGrantRepository.markFailed(grant.id, {
         errorCode,
-        failedAt: at,
+        failedAt: now,
         countsAttempt,
       });
-      this.#dependencies.logger.warn({
+      logger.warn({
         event: InviteLogEvent.REWARD_APPLY_FAILED,
-        grantId: grant.id,
+        grantId: grant.id.value,
         rewardType: grant.rewardType,
         attempts: attempts ?? grant.attempts,
         errorType: toErrorType(error),
@@ -163,10 +165,10 @@ export class GrantInviteRewardsUseCase {
   }
 
   // 정비 작업도 더는 고르지 않으므로 사람이 다시 적용할 수 있게 한 번만 알린다
-  #reportExhausted(grant: RewardGrantRecord, attempts: number, errorCode: string): void {
+  #reportExhausted(grant: RewardGrant, attempts: number, errorCode: string): void {
     this.#dependencies.logger.error({
       event: InviteLogEvent.REWARD_RETRY_EXHAUSTED,
-      grantId: grant.id,
+      grantId: grant.id.value,
       redemptionId: grant.sourceId,
       rewardType: grant.rewardType,
       attempts,
@@ -178,7 +180,7 @@ export class GrantInviteRewardsUseCase {
       message: "Invite reward retries exhausted",
       tags: { errorCode },
       details: {
-        grantId: grant.id,
+        grantId: grant.id.value,
         redemptionId: grant.sourceId,
         rewardType: grant.rewardType,
         attempts,
@@ -191,41 +193,36 @@ export class GrantInviteRewardsUseCase {
    * 이미 REWARDED였거나 아직 남은 지급이 있으면 null이라 발자국 알림은 수락마다 한 번이다.
    */
   async #markRewardedIfComplete(
-    redemptionId: string,
-    at: Date,
-  ): Promise<{ readonly inviterId: string; readonly grants: RewardGrantRecord[] } | null> {
-    return this.#dependencies.unitOfWork.run(async () => {
-      const redemption =
-        await this.#dependencies.inviteRedemptionRepository.findByIdForUpdate(redemptionId);
-      if (redemption == null) {
-        return null;
-      }
-      const { inviterId } = redemption;
-      if (redemption.status !== REDEMPTION_STATUS.QUALIFIED || inviterId == null) {
+    redemptionId: InviteRedemptionId,
+    now: Temporal.Instant,
+  ): Promise<RewardedRedemption | null> {
+    const { unitOfWork, inviteRedemptionRepository, rewardGrantRepository } = this.#dependencies;
+    return unitOfWork.run(async () => {
+      const redemption = await inviteRedemptionRepository.findByIdForUpdate(redemptionId);
+      const inviterId = redemption?.inviterId;
+      if (
+        redemption == null ||
+        inviterId == null ||
+        redemption.status !== REDEMPTION_STATUS.QUALIFIED
+      ) {
         return null;
       }
 
-      const grants = await this.#dependencies.rewardGrantRepository.findBySource(
-        "INVITE_REDEMPTION",
-        redemptionId,
-      );
-      const inviterGrants = grants.filter((grant) => grant.recipientId === inviterId);
-      if (!inviterGrants.every((grant) => grant.status === "APPLIED")) {
+      const grants = await rewardGrantRepository.listByRedemptionId(redemptionId);
+      const inviterGrants = grants.filter((grant) => grant.isFor(inviterId));
+      if (!inviterGrants.every((grant) => grant.isApplied())) {
         return null;
       }
-      if (!redemption.markRewarded(at)) {
+      if (!redemption.markRewarded(now)) {
         return null;
       }
-      await this.#dependencies.inviteRedemptionRepository.save(redemption);
+      await inviteRedemptionRepository.save(redemption);
       return { inviterId, grants: inviterGrants };
     });
   }
 
   // 발자국 알림은 초대한 사람에게만 보낸다. 초대받은 사람은 수락 화면에서 보상을 바로 본다
-  async #notify(
-    redemptionId: string,
-    rewarded: { readonly inviterId: string; readonly grants: readonly RewardGrantRecord[] },
-  ): Promise<void> {
+  async #notify(redemptionId: InviteRedemptionId, rewarded: RewardedRedemption): Promise<void> {
     if (rewarded.grants.length === 0) {
       return;
     }
@@ -237,15 +234,15 @@ export class GrantInviteRewardsUseCase {
       );
     try {
       await this.#dependencies.notifier.notifyInviteRewarded({
-        recipientId: rewarded.inviterId,
-        redemptionId,
+        recipientId: rewarded.inviterId.value,
+        redemptionId: redemptionId.value,
         premiumDays: quantityOf(REWARD_TYPE.PREMIUM_DAYS),
         friendSlots: quantityOf(REWARD_TYPE.FRIEND_SLOT),
       });
     } catch (error) {
       this.#dependencies.logger.warn({
         event: InviteLogEvent.REWARDED_NOTIFICATION_FAILED,
-        redemptionId,
+        redemptionId: redemptionId.value,
         errorType: toErrorType(error),
       });
     }

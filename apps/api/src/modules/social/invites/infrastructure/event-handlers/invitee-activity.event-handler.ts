@@ -5,7 +5,6 @@ import { todoChangedPayloadSchema } from "#api/modules/planning/todos/planning-t
 import { defineEventSubscription } from "#api/shared/application/ports/domain-event-publisher.port";
 import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
-import { instantToDate } from "#api/shared/domain/time/instant";
 
 import { InviteLogEvent } from "../../application/invites.log-events.js";
 import { RecordInviteeActivityUseCase } from "../../application/use-cases/record-invitee-activity.use-case.js";
@@ -50,7 +49,7 @@ export class InviteeActivityEventHandler implements OnModuleInit {
       // 처리 시각이 아니라 완료 시각으로 날짜를 정해 늦게 처리돼도 같은 활동일로 센다
       await this.#recordInviteeActivity.execute({
         inviteeId: payload.userId,
-        occurredAt: instantToDate(Temporal.Instant.from(payload.occurredAt)),
+        occurredAt: Temporal.Instant.from(payload.occurredAt),
       });
     } catch (error) {
       this.#logger.warn({

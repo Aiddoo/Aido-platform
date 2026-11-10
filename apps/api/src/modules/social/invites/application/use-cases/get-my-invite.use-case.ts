@@ -1,27 +1,32 @@
-import { InviteLockKeys } from "#api/modules/social/invites/application/invites.lock-keys";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
-import { type MutationLockPort, type UnitOfWorkPort } from "#api/shared/application/ports/index";
-import { now } from "#api/shared/domain/date/utils/core";
+import type { ClockPort } from "#api/shared/application/ports/clock.port";
+import type { MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
+import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
+import type { Invite } from "../../domain/invite.aggregate.js";
 import { assertInviteEnabled } from "../invites.errors.js";
+import { InviteLockKeys } from "../invites.lock-keys.js";
 import { InviteLogEvent } from "../invites.log-events.js";
-import type { MyInviteReader } from "../my-invite.reader.js";
 import type { InviteConfigPort } from "../ports/invite-config.port.js";
 import type { InviteRepositoryPort } from "../ports/invite.repository.port.js";
-import type { MyInviteView } from "../read-models/my-invite.read-model.js";
+import type { MyInvite } from "../read-models/my-invite.read-model.js";
+import type { IssueInviteUseCase } from "./issue-invite.use-case.js";
+import type { SummarizeMyInviteUseCase } from "./summarize-my-invite.use-case.js";
 
-export interface GetMyInviteInput {
+export interface GetMyInviteQuery {
   readonly inviterId: string;
 }
 
-interface GetMyInviteDependencies {
-  readonly inviteRepository: Pick<InviteRepositoryPort, "findActiveByInviterId" | "issue">;
-  readonly myInviteReader: Pick<MyInviteReader, "read">;
-  readonly inviteConfig: InviteConfigPort;
-  readonly mutationLock: MutationLockPort;
+export interface GetMyInviteDependencies {
   readonly unitOfWork: UnitOfWorkPort;
-  readonly logger: ApplicationLoggerPort;
+  readonly mutationLock: MutationLockPort;
+  readonly inviteRepository: Pick<InviteRepositoryPort, "findActiveByInviterId">;
+  readonly issueInvite: Pick<IssueInviteUseCase, "execute">;
+  readonly summarizeMyInvite: Pick<SummarizeMyInviteUseCase, "execute">;
+  readonly inviteConfig: Pick<InviteConfigPort, "isEnabled">;
+  readonly clock: ClockPort;
+  readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
 
 /** 처음 조회할 때 초대 코드를 발급하고 내 초대 요약을 반환한다. */
@@ -32,33 +37,34 @@ export class GetMyInviteUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: GetMyInviteInput): Promise<MyInviteView> {
-    assertInviteEnabled(this.#dependencies.inviteConfig);
+  async execute(query: GetMyInviteQuery): Promise<MyInvite> {
+    const { inviteRepository, inviteConfig, clock, summarizeMyInvite } = this.#dependencies;
+    assertInviteEnabled(inviteConfig);
 
-    const capturedAt = now();
+    const inviterId = UserId.reconstitute(query.inviterId);
+    const now = clock.now();
     const invite =
-      (await this.#dependencies.inviteRepository.findActiveByInviterId(input.inviterId)) ??
-      (await this.#issueOnce(input.inviterId, capturedAt));
+      (await inviteRepository.findActiveByInviterId(inviterId)) ??
+      (await this.#issueOnce(inviterId, now));
 
-    return this.#dependencies.myInviteReader.read(invite, capturedAt);
+    return summarizeMyInvite.execute({ invite, now });
   }
 
   // 동시에 처음 조회해도 같은 사람에게 ACTIVE 코드를 하나만 만든다
-  async #issueOnce(inviterId: string, issuedAt: Date) {
-    return this.#dependencies.unitOfWork.run(async () => {
-      await this.#dependencies.mutationLock.acquire([
-        InviteLockKeys.invite(UserId.reconstitute(inviterId)),
-      ]);
-      const existing = await this.#dependencies.inviteRepository.findActiveByInviterId(inviterId);
+  async #issueOnce(inviterId: UserId, now: Temporal.Instant): Promise<Invite> {
+    const { unitOfWork, mutationLock, inviteRepository, issueInvite, logger } = this.#dependencies;
+    return unitOfWork.run(async () => {
+      await mutationLock.acquire([InviteLockKeys.invite(inviterId)]);
+      const existing = await inviteRepository.findActiveByInviterId(inviterId);
       if (existing != null) {
         return existing;
       }
 
-      const invite = await this.#dependencies.inviteRepository.issue({ inviterId, issuedAt });
-      this.#dependencies.logger.log({
+      const invite = await issueInvite.execute({ inviterId, now });
+      logger.log({
         event: InviteLogEvent.ISSUED,
-        inviterId,
-        inviteId: invite.id,
+        inviterId: inviterId.value,
+        inviteId: invite.id.value,
       });
       return invite;
     });

@@ -1,19 +1,16 @@
-import { ErrorCode } from "@aido/api/errors";
-
-import { ApplicationException } from "#api/shared/application/application.exception";
-
 import { InviteCode } from "../../domain/invite-code.vo.js";
-import { assertInviteEnabled } from "../invites.errors.js";
+import { assertInviteEnabled, inviteNotFound, inviteRevoked } from "../invites.errors.js";
 import type { InviteConfigPort } from "../ports/invite-config.port.js";
-import type { InviteRepositoryPort, InviterProfile } from "../ports/invite.repository.port.js";
+import type { InviteRepositoryPort } from "../ports/invite.repository.port.js";
+import type { InviterProfile } from "../read-models/inviter-profile.read-model.js";
 
-export interface PreviewInviteInput {
+export interface PreviewInviteQuery {
   readonly code: string;
 }
 
-interface PreviewInviteDependencies {
+export interface PreviewInviteDependencies {
   readonly inviteRepository: Pick<InviteRepositoryPort, "findByCodeWithInviter">;
-  readonly inviteConfig: InviteConfigPort;
+  readonly inviteConfig: Pick<InviteConfigPort, "isEnabled">;
 }
 
 /** 로그인 전에도 누가 초대했는지만 보여 준다. */
@@ -24,17 +21,17 @@ export class PreviewInviteUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: PreviewInviteInput): Promise<InviterProfile> {
+  async execute(query: PreviewInviteQuery): Promise<InviterProfile> {
     assertInviteEnabled(this.#dependencies.inviteConfig);
 
     const found = await this.#dependencies.inviteRepository.findByCodeWithInviter(
-      InviteCode.of(input.code),
+      InviteCode.create(query.code),
     );
     if (found == null) {
-      throw new ApplicationException(ErrorCode.INVITE_2101);
+      throw inviteNotFound();
     }
     if (!found.invite.isActive()) {
-      throw new ApplicationException(ErrorCode.INVITE_2102);
+      throw inviteRevoked();
     }
 
     return found.inviter;

@@ -1,32 +1,20 @@
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+
 import type { InviteCode } from "../../domain/invite-code.vo.js";
+import type { InviteId } from "../../domain/invite-id.vo.js";
 import type { Invite } from "../../domain/invite.aggregate.js";
+import type { InviteWithInviter } from "../read-models/inviter-profile.read-model.js";
 
-/** 로그인 전에도 보이는 초대한 사람 공개 프로필 */
-export interface InviterProfile {
-  readonly userId: string;
-  readonly name: string | null;
-  readonly userTag: string;
-  readonly profileImage: string | null;
-}
-
-export interface InviteWithInviter {
-  readonly invite: Invite;
-  readonly inviter: InviterProfile;
-}
-
-export interface IssueInviteInput {
-  readonly inviterId: string;
-  readonly issuedAt: Date;
-}
-
-export const INVITE_REPOSITORY = Symbol("INVITE_REPOSITORY");
-
-export interface InviteRepositoryPort {
-  findActiveByInviterId(inviterId: string): Promise<Invite | null>;
-  /** 코드 UNIQUE 인덱스 한 번으로 초대와 초대한 사람 프로필을 함께 읽는다. */
-  findByCodeWithInviter(code: InviteCode): Promise<InviteWithInviter | null>;
-  /** CSPRNG 코드로 발급한다. 코드가 겹치면 새 코드로 최대 5번 다시 시도한다. */
-  issue(input: IssueInviteInput): Promise<Invite>;
-  /** ACTIVE일 때만 폐기를 반영한다. 이미 폐기됐으면 false다. */
-  saveRevocation(invite: Invite): Promise<boolean>;
+export abstract class InviteRepositoryPort {
+  abstract nextId(): Promise<InviteId>;
+  abstract findActiveByInviterId(inviterId: UserId): Promise<Invite | null>;
+  /** 코드 UNIQUE 인덱스 한 번으로 초대와 초대한 사람 프로필을 읽는다. 탈퇴 대기 중인 사람의 초대는 null이다. */
+  abstract findByCodeWithInviter(code: InviteCode): Promise<InviteWithInviter | null>;
+  /**
+   * 새 초대를 저장한다. 코드가 이미 쓰였으면 저장하지 않고 false다. 같은 사람의 두 번째 ACTIVE 초대는
+   * UNIQUE 위반으로 실패한다.
+   */
+  abstract add(invite: Invite): Promise<boolean>;
+  /** add한 초대의 상태·폐기 시각을 덮어쓴다. */
+  abstract save(invite: Invite): Promise<void>;
 }
