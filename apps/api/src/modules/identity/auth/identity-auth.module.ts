@@ -1,7 +1,7 @@
 import { Module } from "@nestjs/common";
+import type { ConfigType } from "@nestjs/config";
 import { HttpClient, HttpClientModule, getHttpClientToken } from "@nestjs/http-client";
 import { JwtModule } from "@nestjs/jwt";
-import { PassportModule } from "@nestjs/passport";
 
 import { AccessModule } from "#api/modules/access/access-entitlement.public";
 import { BillingSubscriptionsModule } from "#api/modules/billing/billing-subscriptions.public";
@@ -21,10 +21,10 @@ import { PlanningCategoriesModule } from "#api/modules/planning/planning-categor
 import { SocialCheersModule } from "#api/modules/social/social-cheers.public";
 import { SocialFriendsModule } from "#api/modules/social/social-friends.public";
 import { SocialNudgesModule } from "#api/modules/social/social-nudges.public";
+import { jwtConfig } from "#api/platform/config/jwt.config";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
 
-import { JwtRefreshStrategy, JwtStrategy } from "../infrastructure/strategies/auth/index.js";
 import { LastActiveInterceptor } from "../presentation/interceptors/auth/last-active.interceptor.js";
 import {
   AUTH_CACHE,
@@ -83,6 +83,7 @@ import {
   resendVerificationProvider,
   resetPasswordProvider,
   revokeSessionProvider,
+  authenticateSessionProvider,
   sessionServiceProvider,
   setPasswordProvider,
   startOAuthAuthorizationProvider,
@@ -133,12 +134,9 @@ import { SessionController } from "./presentation/http/v1/session.controller.js"
       throwOnHttpError: false,
       timeout: OAUTH_PROVIDER_TIMEOUT_MS,
     }),
-    PassportModule.register({ defaultStrategy: "jwt" }),
     JwtModule.registerAsync({
-      inject: [TypedConfigService],
-      useFactory: (configService: TypedConfigService) => ({
-        secret: configService.jwtSecret,
-      }),
+      inject: [jwtConfig.KEY],
+      useFactory: (jwt: ConfigType<typeof jwtConfig>) => ({ secret: jwt.secret }),
     }),
     OperationsNotificationsModule,
     NotificationDeliveryModule,
@@ -275,8 +273,7 @@ import { SessionController } from "./presentation/http/v1/session.controller.js"
         policies: OutboundPolicyRegistry,
       ) => createOAuthProviderRegistry(configService, tokenVerifier, http, policies),
     },
-    JwtStrategy,
-    JwtRefreshStrategy,
+    authenticateSessionProvider,
     JwtAuthGuard,
     JwtRefreshGuard,
     LastActiveInterceptor,

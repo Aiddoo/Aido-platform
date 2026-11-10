@@ -1,55 +1,101 @@
+import { userRoleSchema } from "@aido/api/contracts/auth";
 import { ErrorCode } from "@aido/api/errors";
-import { ExecutionContext, HttpException, Injectable } from "@nestjs/common";
+import {
+  type CanActivate,
+  type ExecutionContext,
+  HttpException,
+  Inject,
+  Injectable,
+} from "@nestjs/common";
+import type { ConfigType } from "@nestjs/config";
 import { Reflector } from "@nestjs/core";
-import { AuthGuard } from "@nestjs/passport";
+import { JwtService } from "@nestjs/jwt";
+import type { Request } from "express";
+import { z } from "zod";
 
-import { IS_PUBLIC_KEY } from "#api/modules/identity/auth/presentation/http/decorators/public.decorator";
+import { jwtConfig } from "#api/platform/config/jwt.config";
 import { ApplicationException } from "#api/shared/application/application.exception";
 import { ErrorCodedException } from "#api/shared/domain/exceptions/error-coded.exception";
 
-/**
- * JWT Access Token 인증 가드
- *
- * @Public() 데코레이터가 적용된 라우트는 인증을 건너뜀
- */
-@Injectable()
-export class JwtAuthGuard extends AuthGuard("jwt") {
-  readonly #reflector: Reflector;
+import { AuthenticateSessionUseCase } from "../../../application/use-cases/authenticate-session.use-case.js";
+import { JWT_ALGORITHM } from "../../../infrastructure/adapters/jwt-token-issuer.adapter.js";
+import { IS_PUBLIC_KEY } from "../decorators/public.decorator.js";
+import { readBearerToken } from "../v1/auth-request.mapper.js";
 
-  constructor(reflector: Reflector) {
-    super();
+const INVALID_ACCESS_TOKEN_REASON = "Access token is missing or invalid";
+
+const accessTokenClaimsSchema = z.looseObject({
+  sub: z.string(),
+  email: z.string(),
+  role: userRoleSchema,
+  type: z.string().optional(),
+  sessionId: z.string().optional(),
+});
+
+/** 전역 access 토큰 가드. `@Public()` 라우트만 건너뛴다. */
+@Injectable()
+export class JwtAuthGuard implements CanActivate {
+  readonly #reflector: Reflector;
+  readonly #jwtService: JwtService;
+  readonly #jwt: ConfigType<typeof jwtConfig>;
+  readonly #authenticateSession: AuthenticateSessionUseCase;
+
+  constructor(
+    reflector: Reflector,
+    jwtService: JwtService,
+    @Inject(jwtConfig.KEY) jwt: ConfigType<typeof jwtConfig>,
+    authenticateSession: AuthenticateSessionUseCase,
+  ) {
     this.#reflector = reflector;
+    this.#jwtService = jwtService;
+    this.#jwt = jwt;
+    this.#authenticateSession = authenticateSession;
   }
 
-  override canActivate(context: ExecutionContext) {
-    // @Public() 데코레이터가 있으면 인증 건너뛰기
+  async canActivate(context: ExecutionContext): Promise<boolean> {
     const isPublic = this.#reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
       context.getHandler(),
       context.getClass(),
     ]);
-
     if (isPublic) {
       return true;
     }
 
-    return super.canActivate(context);
-  }
-
-  override handleRequest<TUser>(err: Error | null, user: TUser | false): TUser {
-    if (err && !(err instanceof HttpException) && !(err instanceof ErrorCodedException)) {
-      // 인프라 오류(DB/캐시 장애 등)는 401로 위장하지 않는다.
-      // 401은 클라이언트가 토큰 삭제(강제 로그아웃)로 반응하므로,
-      // GlobalExceptionFilter가 500으로 처리 + Sentry 리포트되도록 rethrow.
-      // 의도적 인증 예외(ErrorCodedException=ApplicationException/DomainException)는
-      // 기존 앱이 사용하는 AUTH_0101로 인증 오류를 통일한다.
-      throw err;
+    const request = context.switchToHttp().getRequest<Request>();
+    const claims = await this.#verify(readBearerToken(request.headers.authorization));
+    if (claims == null) {
+      throw new ApplicationException(ErrorCode.AUTH_0101, { reason: INVALID_ACCESS_TOKEN_REASON });
     }
 
-    if (err || !user) {
+    try {
+      request.user = await this.#authenticateSession.execute(claims);
+    } catch (error) {
+      // 인프라 오류(DB·캐시 장애)를 401로 바꾸면 앱이 토큰을 지우고 강제 로그아웃하므로 500으로 둔다.
+      // 의도한 인증 거절(세션 폐기·계정 정지 등)은 출시 앱이 아는 AUTH_0101로 통일한다
+      if (!(error instanceof HttpException) && !(error instanceof ErrorCodedException)) {
+        throw error;
+      }
       throw new ApplicationException(ErrorCode.AUTH_0101, {
-        reason: err?.message || "Access token is missing or invalid",
+        reason: error.message || INVALID_ACCESS_TOKEN_REASON,
       });
     }
-    return user;
+    return true;
+  }
+
+  // 서명·알고리즘·만료가 하나라도 틀리면 이유를 가리지 않고 null이다(Passport 시절의 fail과 같다)
+  async #verify(token: string | null): Promise<z.infer<typeof accessTokenClaimsSchema> | null> {
+    if (token == null) {
+      return null;
+    }
+    try {
+      const payload: unknown = await this.#jwtService.verifyAsync(token, {
+        secret: this.#jwt.secret,
+        algorithms: [JWT_ALGORITHM],
+      });
+      const parsed = accessTokenClaimsSchema.safeParse(payload);
+      return parsed.success ? parsed.data : null;
+    } catch {
+      return null;
+    }
   }
 }

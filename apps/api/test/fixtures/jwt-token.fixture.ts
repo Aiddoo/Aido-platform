@@ -1,13 +1,8 @@
 import { generateKeyPairSync } from "node:crypto";
 
 import { JwtService } from "@nestjs/jwt";
-import type { Request } from "express";
-import type { Strategy } from "passport-jwt";
-
-import { mockOf } from "#test/mocks/index";
 
 export type JwtTestAlgorithm = "HS256" | "HS512" | "RS256" | "none";
-export type PassportOutcome = "success" | "fail" | "error";
 
 const jwtService = new JwtService();
 
@@ -37,14 +32,4 @@ export function signJwtWithAlgorithm(
 export function decodeJwtSegment(token: string, index: 0 | 1): unknown {
   const segment = token.split(".")[index] ?? "";
   return JSON.parse(Buffer.from(segment, "base64url").toString("utf8"));
-}
-
-/** passport 전략에 Bearer 토큰을 넣어 서명 검증과 validate까지 통과했는지 본다. */
-export function authenticateBearer(strategy: Strategy, token: string): Promise<PassportOutcome> {
-  return new Promise((resolve) => {
-    strategy.success = () => resolve("success");
-    strategy.fail = () => resolve("fail");
-    strategy.error = () => resolve("error");
-    strategy.authenticate(mockOf<Request>({ headers: { authorization: `Bearer ${token}` } }));
-  });
 }

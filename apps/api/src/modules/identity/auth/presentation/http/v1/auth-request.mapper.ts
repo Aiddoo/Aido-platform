@@ -52,3 +52,13 @@ export function buildOAuthErrorParams(error: unknown, state: string): URLSearchP
     state,
   });
 }
+
+// passport-jwt fromAuthHeaderAsBearerToken과 같은 규칙: 앞 두 덩어리 중 scheme이 bearer(대소문자 무시)일 때만 토큰이다
+export function readBearerToken(authorization: string | undefined): string | null {
+  const matches = authorization?.match(/(\S+)\s+(\S+)/);
+  if (matches == null) {
+    return null;
+  }
+  const [, scheme, token] = matches;
+  return scheme?.toLowerCase() === "bearer" && token != null ? token : null;
+}

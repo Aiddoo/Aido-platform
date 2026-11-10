@@ -3,6 +3,7 @@ import type { Logger } from "@nestjs/common";
 import type { HttpClient } from "@nestjs/http-client";
 import { z } from "zod";
 
+import { AuthLogEvent } from "#api/modules/identity/auth/application/auth.log-events";
 import type {
   ExchangedToken,
   GenerateAuthUrlParams,
@@ -11,7 +12,6 @@ import type {
   SocialLoginOptions,
   VerifiedProfile,
 } from "#api/modules/identity/auth/application/ports/oauth-identity-provider.port";
-import { AuthInfraLogEvent } from "#api/modules/identity/auth/infrastructure/auth-infra.log-events";
 import { readJson } from "#api/platform/http/read-json";
 import type { OutboundPolicy } from "#api/platform/resilience/outbound-policy";
 import type { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
@@ -115,7 +115,7 @@ export class NaverOAuthIdentityAdapter implements OAuthIdentityProvider {
 
     if (!tokenResponse.ok) {
       this.#logger.error({
-        event: AuthInfraLogEvent.OAUTH_TOKEN_EXCHANGE_FAILED,
+        event: AuthLogEvent.OAUTH_TOKEN_EXCHANGE_FAILED,
         provider: this.provider,
         statusCode: tokenResponse.status,
         providerError: await readOAuthProviderError(tokenResponse),
@@ -126,7 +126,7 @@ export class NaverOAuthIdentityAdapter implements OAuthIdentityProvider {
     const tokenData = await readJson(tokenResponse, NAVER_TOKEN_RESPONSE_SCHEMA);
     if (!tokenData.success) {
       this.#logger.error({
-        event: AuthInfraLogEvent.OAUTH_TOKEN_EXCHANGE_INVALID,
+        event: AuthLogEvent.OAUTH_TOKEN_EXCHANGE_INVALID,
         provider: this.provider,
       });
       throw new ApplicationException(ErrorCode.USER_0602);

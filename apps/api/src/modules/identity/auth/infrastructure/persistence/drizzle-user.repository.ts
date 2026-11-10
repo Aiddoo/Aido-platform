@@ -3,6 +3,7 @@ import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable, Logger } from "@nestjs/common";
 import { and, eq, inArray, isNotNull, isNull, lt, ne, sql } from "drizzle-orm";
 
+import { AuthLogEvent } from "#api/modules/identity/auth/application/auth.log-events";
 import {
   type AuthAccountLifecycleRepositoryPort,
   AuthPersistenceConflict,
@@ -10,7 +11,6 @@ import {
   type AuthUserRepositoryPort,
 } from "#api/modules/identity/auth/application/ports/auth-persistence.port";
 import type { UserActivity } from "#api/modules/identity/auth/application/ports/user-activity.reader.port";
-import { AuthInfraLogEvent } from "#api/modules/identity/auth/infrastructure/auth-infra.log-events";
 import { requireRecord, uniqueConstraintTargets } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import {
@@ -147,7 +147,7 @@ export class DrizzleUserRepository
         return tag;
       }
 
-      this.#logger.warn({ event: AuthInfraLogEvent.USER_TAG_COLLIDED, attempt: i + 1 });
+      this.#logger.warn({ event: AuthLogEvent.USER_TAG_COLLIDED, attempt: i + 1 });
     }
 
     throw new ApplicationException(ErrorCode.USER_0611, {

@@ -35,6 +35,7 @@ import { RETENTION_ENROLLER } from "./application/ports/retention-enroller.port.
 import { SESSION_PUSH_DEVICE_RELEASER } from "./application/ports/session-push-device-releaser.port.js";
 import { USER_PROVISIONING_SEEDER } from "./application/ports/user-provisioning-seeder.port.js";
 import { VERIFICATION_CODE_SECURITY } from "./application/ports/verification-code-security.port.js";
+import { AuthenticateSessionUseCase } from "./application/use-cases/authenticate-session.use-case.js";
 import { ChangePasswordUseCase } from "./application/use-cases/change-password.use-case.js";
 import { CompleteOAuthAuthorizationUseCase } from "./application/use-cases/complete-oauth-authorization.use-case.js";
 import { SessionService } from "./application/use-cases/create-session.use-case.js";
@@ -170,6 +171,26 @@ export const listLinkedAccountsProvider: FactoryProvider<ListLinkedAccountsUseCa
   ) =>
     new ListLinkedAccountsUseCase({
       accountRepository,
+    }),
+};
+
+export const authenticateSessionProvider: FactoryProvider<AuthenticateSessionUseCase> = {
+  provide: AuthenticateSessionUseCase,
+  inject: [AUTH_SESSION_REPOSITORY, AUTH_USER_REPOSITORY, SessionService, AUTH_CACHE],
+  useFactory: (
+    sessionRepository: ConstructorParameters<
+      typeof AuthenticateSessionUseCase
+    >[0]["sessionRepository"],
+    userRepository: ConstructorParameters<typeof AuthenticateSessionUseCase>[0]["userRepository"],
+    sessionValidator: SessionService,
+    cache: ConstructorParameters<typeof AuthenticateSessionUseCase>[0]["cache"],
+  ) =>
+    new AuthenticateSessionUseCase({
+      sessionRepository,
+      userRepository,
+      sessionValidator,
+      cache,
+      logger: new Logger(AuthenticateSessionUseCase.name),
     }),
 };
 

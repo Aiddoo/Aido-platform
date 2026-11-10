@@ -8,8 +8,8 @@ import { createRemoteJWKSet, errors, jwtVerify, type RemoteJWKSet } from "jose";
 import { match } from "ts-pattern";
 import { z } from "zod";
 
+import { AuthLogEvent } from "#api/modules/identity/auth/application/auth.log-events";
 import type { VerifiedProfile } from "#api/modules/identity/auth/application/ports/oauth-identity-provider.port";
-import { AuthInfraLogEvent } from "#api/modules/identity/auth/infrastructure/auth-infra.log-events";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { readJson } from "#api/platform/http/read-json";
 import type { OutboundPolicy } from "#api/platform/resilience/outbound-policy";
@@ -142,7 +142,7 @@ export class OAuthTokenVerifierService {
         const hashedNonce = createHash("sha256").update(expectedNonce).digest("hex");
         if (payload.nonce !== hashedNonce) {
           this.#logger.warn({
-            event: AuthInfraLogEvent.OAUTH_NONCE_REJECTED,
+            event: AuthLogEvent.OAUTH_NONCE_REJECTED,
             provider: "APPLE",
           });
           throw new ApplicationException(ErrorCode.SOCIAL_0202, {
@@ -352,7 +352,7 @@ export class OAuthTokenVerifierService {
     reason?: "expired" | "invalid",
   ): void {
     this.#logger.error({
-      event: AuthInfraLogEvent.OAUTH_TOKEN_VERIFY_FAILED,
+      event: AuthLogEvent.OAUTH_TOKEN_VERIFY_FAILED,
       provider,
       ...(reason != null && { reason }),
       errorType: toErrorType(error),

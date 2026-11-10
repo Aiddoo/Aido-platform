@@ -1,9 +1,7 @@
 import { type CurrentUserPayload, userRoleSchema } from "@aido/api/contracts/auth";
 import { z } from "zod";
 
-import type { RefreshTokenPayload } from "#api/modules/identity/infrastructure/strategies/auth/jwt-refresh.strategy";
-
-/** Passport strategy가 `req.user`에 둔 access token 사용자를 HTTP 경계에서 확인한다. */
+/** JwtAuthGuard가 `req.user`에 둔 access 토큰 사용자를 HTTP 경계에서 확인한다. */
 export const authenticatedUserSchema = z.object({
   userId: z.string(),
   email: z.string(),
@@ -11,7 +9,9 @@ export const authenticatedUserSchema = z.object({
   role: userRoleSchema,
 }) satisfies z.ZodType<CurrentUserPayload>;
 
-/** refresh strategy가 `req.user`에 둔 사용자와 원본 refresh token을 확인한다. */
+/** JwtRefreshGuard가 `req.user`에 둔 사용자와 원본 refresh 토큰을 확인한다. */
 export const refreshTokenUserSchema = authenticatedUserSchema.extend({
   refreshToken: z.string(),
-}) satisfies z.ZodType<RefreshTokenPayload>;
+});
+
+export type RefreshTokenUser = z.infer<typeof refreshTokenUserSchema>;
