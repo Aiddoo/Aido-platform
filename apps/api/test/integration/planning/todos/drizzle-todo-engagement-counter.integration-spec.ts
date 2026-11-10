@@ -1,6 +1,10 @@
 import { omit } from "es-toolkit";
 
 import { DrizzleTodoEngagementCounterAdapter } from "#api/modules/planning/todos/infrastructure/persistence/drizzle-todo-engagement-counter.adapter";
+import type {
+  TodoEngagementCounterPort,
+  TodoViewRecord,
+} from "#api/modules/planning/todos/planning-todos.public";
 import { DatabaseRecordNotFoundError } from "#api/platform/database/database-error.util";
 import { todo, todoCategory, user } from "#api/platform/database/schema/index";
 import { TodoCategoryFixture, TodoFixture, UserFixture } from "#test/fixtures/index";
@@ -14,7 +18,8 @@ const MISSING_TODO_ID = 999_999;
 describe("DrizzleTodoEngagementCounterAdapter (실제 PostgreSQL)", () => {
   let database: TestDatabase;
   let client: TestDatabaseClient;
-  let counter: DrizzleTodoEngagementCounterAdapter;
+  // engagement가 쓸 public 포트 모양 그대로 검증한다
+  let counter: TodoEngagementCounterPort;
   let todoId: number;
 
   beforeAll(async () => {
@@ -82,10 +87,11 @@ describe("DrizzleTodoEngagementCounterAdapter (실제 PostgreSQL)", () => {
     const second = await counter.recordView(todoId, VIEWER_ID);
 
     // Then
-    expect([first, second]).toEqual([
+    const expected: TodoViewRecord[] = [
       { recorded: true, viewCount: 1 },
       { recorded: false, viewCount: 1 },
-    ]);
+    ];
+    expect([first, second]).toEqual(expected);
   });
 
   it("없는 할 일의 댓글 수를 늘리면 부재 오류를 낸다", async () => {
