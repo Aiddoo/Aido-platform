@@ -27,7 +27,8 @@ PushNotificationGateway (core/ports) ← createExpoPushNotificationGateway (shar
 
 1. OS 권한을 읽는다. iOS 임시 허용(`PROVISIONAL`·`EPHEMERAL`)은 모두 `PROVISIONAL`로 바꾼다. 알림이 조용히 도착하므로 허용으로 본다.
 2. Android 알림 채널은 어댑터가 권한 창을 띄우기 전과 토큰을 받기 전에 만든다. Android 13+는 채널이 있어야 권한 창과 토큰 발급이 동작한다. 실패해도 권한은 읽고 보고한다.
-3. 허용 상태(`GRANTED`·`PROVISIONAL`)면 Expo 푸시 토큰을 받는다. `Device.isDevice`로 막지 않는다. Expo SDK 58에서는 시뮬레이터·에뮬레이터도 토큰을 받을 수 있다. 오프라인·APNs 없음·Play 서비스 없음·15초 초과로 실패하면 이번 보고를 보내지 않는다. 허용된 기기의 `token: null`은 1.15.0 서버가 등록된 토큰을 지워 기존 사용자의 푸시가 끊기기 때문이다. 다음 복귀·토큰 변경·권한 요청 때 다시 받는다. 거절·미결정이면 토큰 없이 권한만 보고한다.
+3. 허용 상태(`GRANTED`·`PROVISIONAL`)면 Expo 푸시 토큰을 받는다. `Device.isDevice`로 막지 않는다. Expo SDK 58에서는 시뮬레이터·에뮬레이터도 토큰을 받을 수 있다. 오프라인·APNs 없음·Play 서비스 없음·15초 초과로 실패하면 마지막으로 보고에 성공한 토큰(키체인 `pushRegistration`)으로 보고해 등록을 지키면서 권한·시간대·언어를 맞춘다. 보고한 토큰도 없으면 이번 보고를 보내지 않는다. 허용된 기기의 `token: null`은 1.15.0 서버가 등록된 토큰을 지워 기존 사용자의 푸시가 끊기기 때문이다. 다음 복귀·토큰 변경·권한 요청 때 다시 받는다. 거절·미결정이면 토큰 없이 권한만 보고한다. 판단은 `PushRegistrationPolicy.getReportToken`과 `PushPermissionPolicy.shouldReportPushDevice`다.
+   - 알려진 한계: 업데이트 전부터 토큰을 한 번도 받지 못한 허용 기기(Play 서비스 없는 Android 등)는 보고를 보내지 않아 그 기기의 시간대·언어가 서버에 가지 않는다. 서버가 허용 상태의 `token: null`을 등록 유지로 다루는 버전이 퍼지면 보내도록 바꾼다.
 4. `PUT /v1/notifications/push-devices/{deviceId}`로 `{ permission, token, payloadVersion }`을 보낸다. 같은 값을 이번 세션에 이미 보냈으면 요청하지 않는다(`force`로 무시). 웹은 보내지 않는다.
 
 ## 보고 시점
@@ -86,8 +87,8 @@ PushNotificationGateway (core/ports) ← createExpoPushNotificationGateway (shar
 
 - 로그아웃은 `PushDeviceService.unregister()`로 `DELETE v1/notifications/token?deviceId=`를 보낸다. 진행 중인 보고를 모두 제한 시간 안에서 기다리고, 해제가 시작되면 늦은 보고는 보내지 않는다. 늦게 도착한 보고가 해제된 기기를 되살리지 않게 하기 위해서다. 해제가 실패하거나 오프라인이어도 로컬 세션은 항상 지운다(`logOutDevice`).
 - 오프라인 로그아웃은 온라인이 되면 `POST v1/auth/logout`으로 서버 세션을 풀고, 서버가 `releaseSessions`로 그 세션의 기기를 함께 푼다([오프라인 로그아웃](authentication_guide.md#오프라인-로그아웃)).
-- 온라인 로그아웃 없이 세션이 끝나면 서버는 끝난 세션의 토큰을 지우지 않아 이전 계정의 푸시가 계속 온다. 그래서 refresh 만료·거절(`reason: 'expired'`), 오프라인 로그아웃, 인증 해제(`DELETE`)가 실패한 로그아웃은 `PushDeviceService.requestRelease()`로 기기에 해제 기록을 남기고 `POST v1/notifications/push-devices/unregister`(인증 없음, `{ deviceId, token }`, 항상 200)로 푼다. 토큰은 지금 Expo 토큰이다.
-  - 연결·서버 장애·429·토큰 발급 실패면 기록을 남겨 로그아웃 상태에서 연결될 때와 앱이 앞으로 올 때 다시 보낸다(`usePushDeviceReleaseFlush`). 앱을 다시 켜도 기록(MMKV)이 남는다. 화면을 막지 않는다.
+- 온라인 로그아웃 없이 세션이 끝나면 서버는 끝난 세션의 토큰을 지우지 않아 이전 계정의 푸시가 계속 온다. 그래서 refresh 만료·거절(`reason: 'expired'`), 오프라인 로그아웃, 인증 해제(`DELETE`)가 실패한 로그아웃은 `PushDeviceService.requestRelease()`로 기기에 해제 기록을 남기고 `POST v1/notifications/push-devices/unregister`(인증 없음, `{ deviceId, token }`, 항상 200)로 푼다. 토큰은 마지막으로 보고한 토큰과 지금 Expo 토큰이고, 보고한 뒤 바뀌었으면 둘 다 보낸다(`PushRegistrationPolicy.getReleaseTokens`).
+  - 연결·서버 장애·429·토큰 발급 실패면 기록을 남겨 로그아웃 상태에서 연결될 때와 앱이 앞으로 올 때 다시 보낸다(`usePushDeviceReleaseFlush`). 앱을 다시 켜도 기록(키체인 `pushRegistration`, 토큰을 담아 평문 MMKV에 두지 않는다)이 남는다. 화면을 막지 않는다.
   - 이 API가 없는 이전 서버(404)는 다시 보내도 같아 조용히 끝낸다.
   - 다시 로그인해 보고하면 해제 기록을 버리고, 가는 중인 해제가 있으면 끝난 뒤에 보고해 새 등록이 지워지지 않는다. 같은 값도 다시 보고하도록 보고 기록을 비운다.
   - 로그인한 적 없는 시작(`none`)과 판정 실패(`boot-failed`)는 등록을 건드리지 않는다. 잠긴 키체인처럼 세션이 살아 있을 수 있어서다.

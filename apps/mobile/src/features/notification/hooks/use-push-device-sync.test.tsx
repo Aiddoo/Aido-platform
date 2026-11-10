@@ -5,7 +5,7 @@ import {
   createAppLifecycleGatewayStub,
   createHttpClientStub,
   createLoggerStub,
-  createMemorySyncStorage,
+  createMemoryStorage,
   createPushNotificationGatewayStub,
   createTestDi,
   createTestQueryClient,
@@ -18,8 +18,8 @@ import {
   createNotificationApiError,
   createPushDeviceResponseDto,
 } from '../__tests__/notification.fixtures';
-import { createPushDeviceReleaseRepository } from '../apis/push-device-release.repository';
 import { PushDeviceService } from '../apis/push-device.service';
+import { createPushRegistrationRepository } from '../apis/push-registration.repository';
 import { usePushDeviceSync } from './use-push-device-sync';
 
 describe('usePushDeviceSync', () => {
@@ -58,7 +58,7 @@ describe('usePushDeviceSync', () => {
       deviceIdService: { get: async () => 'ios_device-123' },
       httpClient,
       publicHttpClient: httpClient,
-      releaseRepository: createPushDeviceReleaseRepository(createMemorySyncStorage()),
+      registrationRepository: createPushRegistrationRepository(createMemoryStorage()),
       logger: createLoggerStub(),
       getTimeZone: () => timeZone.current,
       sessionEpoch: createSessionEpoch(),

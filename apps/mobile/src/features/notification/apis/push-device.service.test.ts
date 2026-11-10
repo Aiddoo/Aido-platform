@@ -4,7 +4,7 @@ import {
   createIdGeneratorStub,
   createLoggerStub,
   createMemoryDeviceIdStore,
-  createMemorySyncStorage,
+  createMemoryStorage,
   createPendingResponse,
   createPushNotificationGatewayStub,
   createVendorIdGatewayStub,
@@ -18,8 +18,8 @@ import {
   INVALID_DTO,
 } from '../__tests__/notification.fixtures';
 import { DeviceIdService } from './device-id.service';
-import { createPushDeviceReleaseRepository } from './push-device-release.repository';
 import { PushDeviceService } from './push-device.service';
+import { createPushRegistrationRepository } from './push-registration.repository';
 
 const DEVICE_ID = 'ios_device-123';
 const RELEASE_PATH = 'v1/notifications/push-devices/unregister';
@@ -27,21 +27,21 @@ const RELEASE_PATH = 'v1/notifications/push-devices/unregister';
 function setup(
   gateway = createPushNotificationGatewayStub(),
   getTimeZone = () => 'Asia/Seoul',
-  storage = createMemorySyncStorage(),
+  storage = createMemoryStorage(),
 ) {
   const sessionEpoch = createSessionEpoch();
   const httpClient = createHttpClientStub();
   httpClient.put.mockResolvedValue({ ok: true, value: createPushDeviceResponseDto() });
   const publicHttpClient = createHttpClientStub();
   publicHttpClient.post.mockResolvedValue({ ok: true, value: { unregistered: true } });
-  const releaseRepository = createPushDeviceReleaseRepository(storage);
+  const registrationRepository = createPushRegistrationRepository(storage);
   const logger = createLoggerStub();
   const service = new PushDeviceService({
     gateway,
     deviceIdService: { get: async () => DEVICE_ID },
     httpClient,
     publicHttpClient,
-    releaseRepository,
+    registrationRepository,
     logger,
     getTimeZone,
     sessionEpoch,
@@ -51,7 +51,7 @@ function setup(
     gateway,
     httpClient,
     publicHttpClient,
-    releaseRepository,
+    registrationRepository,
     logger,
     sessionEpoch,
   };
@@ -198,6 +198,27 @@ describe('PushDeviceService.report', () => {
     );
   });
 
+  it('토큰 발급이 실패해도 서버에 보고한 토큰이 있으면 그 토큰으로 보고해 시간대를 맞추고 등록은 지킨다', async () => {
+    // Given
+    let timeZone = 'Asia/Seoul';
+    const gateway = createPushNotificationGatewayStub();
+    const { service, httpClient } = setup(gateway, () => timeZone);
+    await service.report();
+    gateway.getToken.mockRejectedValue(new Error('APNs timeout'));
+    timeZone = 'America/New_York';
+
+    // When
+    const result = await service.report();
+
+    // Then
+    expect(result.ok && result.value).not.toBeNull();
+    expect(httpClient.put).toHaveBeenCalledTimes(2);
+    expect(httpClient.put).toHaveBeenLastCalledWith(
+      expect.any(String),
+      expect.objectContaining({ token: 'ExponentPushToken[device-123]' }),
+    );
+  });
+
   it('업데이트 뒤 첫 실행에 토큰이 늦어도 저장된 기기 id로 같은 토큰을 다시 보고하고 등록을 지우는 요청은 보내지 않는다', async () => {
     // Given
     // 이전 버전이 저장한 기기 id가 있고, 새 플랫폼 식별자는 다르다
@@ -218,7 +239,7 @@ describe('PushDeviceService.report', () => {
       }),
       httpClient,
       publicHttpClient: createHttpClientStub(),
-      releaseRepository: createPushDeviceReleaseRepository(createMemorySyncStorage()),
+      registrationRepository: createPushRegistrationRepository(createMemoryStorage()),
       logger: createLoggerStub(),
       getTimeZone: () => 'Asia/Seoul',
       sessionEpoch: createSessionEpoch(),
@@ -526,33 +547,70 @@ describe('PushDeviceService.unregister', () => {
 });
 
 describe('PushDeviceService.requestRelease', () => {
-  it('온라인 로그아웃 없이 세션이 끝나면 인증 없이 기기 id와 지금 토큰으로 해제하고, 다음 로그인은 같은 값도 다시 등록한다', async () => {
+  const CURRENT_TOKEN = 'ExponentPushToken[device-123]';
+
+  it('온라인 로그아웃 없이 세션이 끝나면 인증 없이 기기 id와 보고한 토큰으로 해제하고, 다음 로그인은 같은 값도 다시 등록한다', async () => {
     // Given
-    const { service, httpClient, publicHttpClient, releaseRepository } = setup();
+    const { service, httpClient, publicHttpClient, registrationRepository } = setup();
     await service.report();
 
     // When
-    service.requestRelease();
-    await service.flushRelease();
+    await service.requestRelease();
     await service.report();
+
+    // Then
+    expect(publicHttpClient.post.mock.calls).toEqual([
+      [RELEASE_PATH, { deviceId: DEVICE_ID, token: CURRENT_TOKEN }],
+    ]);
+    expect(httpClient.post).not.toHaveBeenCalled();
+    expect(httpClient.put).toHaveBeenCalledTimes(2);
+    expect(await registrationRepository.find()).toEqual({
+      reportedToken: CURRENT_TOKEN,
+      releaseRequestedAt: null,
+    });
+  });
+
+  it('보고한 뒤 토큰이 바뀌었으면 서버가 가진 이전 토큰과 지금 토큰을 모두 푼다', async () => {
+    // Given
+    const gateway = createPushNotificationGatewayStub();
+    const { service, publicHttpClient } = setup(gateway);
+    await service.report();
+    gateway.getToken.mockResolvedValue('ExponentPushToken[rotated]');
+
+    // When
+    await service.requestRelease();
+
+    // Then
+    expect(publicHttpClient.post.mock.calls).toEqual([
+      [RELEASE_PATH, { deviceId: DEVICE_ID, token: CURRENT_TOKEN }],
+      [RELEASE_PATH, { deviceId: DEVICE_ID, token: 'ExponentPushToken[rotated]' }],
+    ]);
+  });
+
+  it('지금 토큰을 받지 못해도 보고한 토큰으로 푼다', async () => {
+    // Given
+    const gateway = createPushNotificationGatewayStub();
+    const { service, publicHttpClient } = setup(gateway);
+    await service.report();
+    gateway.getToken.mockRejectedValue(new Error('offline'));
+
+    // When
+    await service.requestRelease();
 
     // Then
     expect(publicHttpClient.post).toHaveBeenCalledWith(RELEASE_PATH, {
       deviceId: DEVICE_ID,
-      token: 'ExponentPushToken[device-123]',
+      token: CURRENT_TOKEN,
     });
-    expect(httpClient.post).not.toHaveBeenCalled();
-    expect(httpClient.put).toHaveBeenCalledTimes(2);
-    expect(releaseRepository.hasPending()).toBe(false);
   });
 
   it('연결이 끊겨 보내지 못한 해제는 앱을 다시 켜도 남아 다음 시도에 보낸다', async () => {
     // Given
-    const storage = createMemorySyncStorage();
+    const storage = createMemoryStorage();
     const before = setup(undefined, undefined, storage);
+    await before.service.report();
     before.publicHttpClient.post.mockRejectedValueOnce(new NetworkError());
-    before.service.requestRelease();
-    await before.service.flushRelease();
+    await before.service.requestRelease();
 
     // When
     const after = setup(undefined, undefined, storage);
@@ -561,9 +619,12 @@ describe('PushDeviceService.requestRelease', () => {
     // Then
     expect(after.publicHttpClient.post).toHaveBeenCalledWith(RELEASE_PATH, {
       deviceId: DEVICE_ID,
-      token: 'ExponentPushToken[device-123]',
+      token: CURRENT_TOKEN,
     });
-    expect(after.releaseRepository.hasPending()).toBe(false);
+    expect(await after.registrationRepository.find()).toEqual({
+      reportedToken: null,
+      releaseRequestedAt: null,
+    });
   });
 
   it('해제 API가 없는 이전 서버(404)면 경고 없이 끝내고 다시 보내지 않는다', async () => {
@@ -573,8 +634,7 @@ describe('PushDeviceService.requestRelease', () => {
       ok: false,
       error: createNotificationApiError({ status: 404 }),
     });
-    service.requestRelease();
-    await service.flushRelease();
+    await service.requestRelease();
 
     // When
     await service.flushRelease();
@@ -584,15 +644,13 @@ describe('PushDeviceService.requestRelease', () => {
     expect(logger.warn).not.toHaveBeenCalled();
   });
 
-  it('토큰을 받지 못하면 해제를 보내지 않고 남겨 다음 시도에 보낸다', async () => {
+  it('보고한 토큰도 지금 토큰도 없으면 해제를 남겨 토큰을 받는 다음 시도에 보낸다', async () => {
     // Given
     const gateway = createPushNotificationGatewayStub();
     gateway.getToken.mockRejectedValueOnce(new Error('offline'));
-    const { service, publicHttpClient, releaseRepository } = setup(gateway);
-    service.requestRelease();
-    await service.flushRelease();
+    const { service, publicHttpClient } = setup(gateway);
+    await service.requestRelease();
     expect(publicHttpClient.post).not.toHaveBeenCalled();
-    expect(releaseRepository.hasPending()).toBe(true);
 
     // When
     await service.flushRelease();
@@ -605,8 +663,7 @@ describe('PushDeviceService.requestRelease', () => {
     // Given
     const { service, publicHttpClient } = setup();
     publicHttpClient.post.mockRejectedValueOnce(new NetworkError());
-    service.requestRelease();
-    await service.flushRelease();
+    await service.requestRelease();
 
     // When
     await service.report({ force: true });
@@ -621,7 +678,7 @@ describe('PushDeviceService.requestRelease', () => {
     const { service, httpClient, publicHttpClient } = setup();
     const release = createPendingResponse(ok({ unregistered: true }));
     publicHttpClient.post.mockReturnValueOnce(release.response);
-    service.requestRelease();
+    const releasing = service.requestRelease();
     while (publicHttpClient.post.mock.calls.length === 0) {
       await Promise.resolve();
     }
@@ -631,7 +688,7 @@ describe('PushDeviceService.requestRelease', () => {
     await Promise.resolve();
     const reportedBeforeRelease = httpClient.put.mock.calls.length > 0;
     release.settle();
-    await reporting;
+    await Promise.all([releasing, reporting]);
 
     // Then
     expect(reportedBeforeRelease).toBe(false);

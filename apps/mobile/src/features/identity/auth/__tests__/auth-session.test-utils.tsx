@@ -13,8 +13,8 @@ import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user
 import { UserService } from '@src/features/identity/user/apis/user.service';
 import { createDeviceTimezoneRepository } from '@src/features/notification/apis/device-timezone.repository';
 import { DeviceTimezoneService } from '@src/features/notification/apis/device-timezone.service';
-import { createPushDeviceReleaseRepository } from '@src/features/notification/apis/push-device-release.repository';
 import { PushDeviceService } from '@src/features/notification/apis/push-device.service';
+import { createPushRegistrationRepository } from '@src/features/notification/apis/push-registration.repository';
 import { TodoService } from '@src/features/planning/todo/apis/todo.service';
 import { createPendingRedemptionRepository } from '@src/features/social/invite/apis/pending-redemption.repository';
 import {
@@ -93,7 +93,7 @@ export function createAuthSession({
     deviceIdService: { get: async () => 'device-1' },
     httpClient: authHttp,
     publicHttpClient: publicHttp,
-    releaseRepository: createPushDeviceReleaseRepository(createMemorySyncStorage()),
+    registrationRepository: createPushRegistrationRepository(createMemoryStorage()),
     logger: createLoggerStub(),
     getTimeZone: () => 'Asia/Seoul',
     sessionEpoch,

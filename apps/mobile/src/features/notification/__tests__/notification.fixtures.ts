@@ -16,6 +16,7 @@ import { ApiError } from '@src/core/errors/api-error';
 import type { PushPermissionResponse } from '@src/core/ports/push-notification-gateway';
 
 import type { PushPermission } from '../domains/push-permission.model';
+import { type PushRegistration, pushRegistrationSchema } from '../domains/push-registration.model';
 import {
   type PushNotificationPayload,
   pushNotificationPayloadSchema,
@@ -153,4 +154,15 @@ export function createPushNotificationPayload(
   overrides: Partial<PushNotificationPayload> = {},
 ): PushNotificationPayload {
   return { ...DEFAULT_PUSH_NOTIFICATION_PAYLOAD, ...overrides };
+}
+
+const DEFAULT_PUSH_REGISTRATION = pushRegistrationSchema.parse({
+  reportedToken: null,
+  releaseRequestedAt: null,
+});
+
+export function createPushRegistration(
+  overrides: Partial<PushRegistration> = {},
+): PushRegistration {
+  return { ...DEFAULT_PUSH_REGISTRATION, ...overrides };
 }

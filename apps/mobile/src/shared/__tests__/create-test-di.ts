@@ -55,9 +55,9 @@ import { createMarketingPushPromptRepository } from '@src/features/notification/
 import { NotificationBadgeService } from '@src/features/notification/apis/notification-badge.service';
 import { createNotificationEntryStore } from '@src/features/notification/apis/notification-entry.store';
 import { NotificationService } from '@src/features/notification/apis/notification.service';
-import { createPushDeviceReleaseRepository } from '@src/features/notification/apis/push-device-release.repository';
 import { PushDeviceService } from '@src/features/notification/apis/push-device.service';
 import { createPushPermissionPromptRepository } from '@src/features/notification/apis/push-permission-prompt.repository';
+import { createPushRegistrationRepository } from '@src/features/notification/apis/push-registration.repository';
 import { TodoCategoryService } from '@src/features/planning/category/apis/todo-category.service';
 import { createCalendarViewModeRepository } from '@src/features/planning/todo/apis/calendar-view-mode.repository';
 import { SubTodoService } from '@src/features/planning/todo/apis/sub-todo.service';
@@ -249,7 +249,7 @@ export function createTestDi({
     }),
     httpClient,
     publicHttpClient: httpClient,
-    releaseRepository: createPushDeviceReleaseRepository(syncStorage),
+    registrationRepository: createPushRegistrationRepository(storage),
     logger,
     getTimeZone: getDeviceTimezone,
     sessionEpoch,
