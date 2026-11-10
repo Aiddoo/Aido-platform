@@ -1,14 +1,21 @@
 import { omit } from "es-toolkit";
 
+import { MarkNudgeReadUseCase } from "#api/modules/social/nudges/application/use-cases/mark-nudge-read.use-case";
+import { ReplyToNudgeUseCase } from "#api/modules/social/nudges/application/use-cases/reply-to-nudge.use-case";
 import { DrizzleNudgeRepository } from "#api/modules/social/nudges/infrastructure/persistence/drizzle-nudge.repository";
 import { requireRecord } from "#api/platform/database/database-error.util";
 import { todo, todoCategory, user, userBlock } from "#api/platform/database/schema/index";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { describeNudgeRepositoryContract } from "#test/contracts/social/nudge-repository.contract";
+import { FixedClock } from "#test/doubles/platform/fixed-clock";
+import { SilentLogger } from "#test/doubles/platform/silent-logger";
+import { RecordingNudgeNotifier } from "#test/doubles/social/recording-nudge-notifier";
+import { StubFollowReader } from "#test/doubles/social/stub-follow-reader";
 import { TodoCategoryFixture, TodoFixture, UserFixture } from "#test/fixtures/index";
 import {
   createNudgeFixture,
   createNudgeTodoSeed,
+  NUDGE_FIXTURE_NOW,
   NUDGE_FIXTURE_OTHER_USER_ID,
   NUDGE_FIXTURE_RECEIVER_ID,
   NUDGE_FIXTURE_SENDER_ID,
@@ -20,6 +27,7 @@ import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database
 
 const RECEIVER_ID = UserId.reconstitute(NUDGE_FIXTURE_RECEIVER_ID);
 const SENDER_ID = UserId.reconstitute(NUDGE_FIXTURE_SENDER_ID);
+const REPLIED_AT = NUDGE_FIXTURE_NOW.add({ minutes: 5 });
 
 describe("DrizzleNudgeRepository (실제 PostgreSQL)", () => {
   let database: TestDatabase;
@@ -146,5 +154,67 @@ describe("DrizzleNudgeRepository (실제 PostgreSQL)", () => {
     // Then
     expect(found?.toPrimitives()).toEqual(nudge.toPrimitives());
     expect(foundReminder?.toPrimitives()).toEqual(reminder.toPrimitives());
+  });
+
+  it("답장 전에 읽기 시작한 읽음 처리가 답장 뒤에 끝나도 답장을 지우지 않는다", async () => {
+    // Given
+    const { txHost, uow } = createDatabaseTransactionFixture(client);
+    const repository = new DrizzleNudgeRepository(txHost);
+    const todoId = await addTodo(createNudgeTodoSeed());
+    const nudge = createNudgeFixture({ id: (await repository.nextId()).value, todoId });
+    await repository.save(nudge);
+    const clock = new FixedClock(REPLIED_AT);
+    const followReader = new StubFollowReader();
+    followReader.addMutual(NUDGE_FIXTURE_SENDER_ID, NUDGE_FIXTURE_RECEIVER_ID);
+    const reply = new ReplyToNudgeUseCase({
+      unitOfWork: uow,
+      nudgeRepository: repository,
+      nudgeReader: repository,
+      interactionConfig: { isEnabled: true },
+      followReader,
+      notifier: new RecordingNudgeNotifier(),
+      clock,
+    });
+    const markRead = new MarkNudgeReadUseCase({
+      unitOfWork: uow,
+      nudgeRepository: repository,
+      clock,
+      logger: new SilentLogger(),
+    });
+    const findNudge = repository.findById.bind(repository);
+    const firstRead = Promise.withResolvers<void>();
+    const replied = Promise.withResolvers<void>();
+    // 읽음 처리의 첫 조회만 답장이 커밋될 때까지 붙잡는다
+    vi.spyOn(repository, "findById").mockImplementationOnce(async (nudgeId) => {
+      const found = await findNudge(nudgeId);
+      firstRead.resolve();
+      await replied.promise;
+      return found;
+    });
+
+    // When
+    const marking = markRead.execute({
+      userId: NUDGE_FIXTURE_RECEIVER_ID,
+      nudgeId: nudge.id.value,
+    });
+    await firstRead.promise;
+    try {
+      await reply.execute({
+        userId: NUDGE_FIXTURE_RECEIVER_ID,
+        nudgeId: nudge.id.value,
+        replyKind: "STARTING",
+      });
+    } finally {
+      replied.resolve();
+    }
+    await marking;
+
+    // Then
+    expect((await findNudge(nudge.id))?.toPrimitives()).toMatchObject({
+      readAt: REPLIED_AT,
+      replyKind: "STARTING",
+      repliedAt: REPLIED_AT,
+      replyUpdatedAt: REPLIED_AT,
+    });
   });
 });

@@ -88,6 +88,7 @@ export const SOCIAL_NUDGES_PROVIDERS = [
     clock: ClockPort,
   }),
   provideUseCase(MarkNudgeReadUseCase, {
+    unitOfWork: UnitOfWorkPort,
     nudgeRepository: NudgeRepositoryPort,
     clock: ClockPort,
     logger: loggerFor(MarkNudgeReadUseCase),
