@@ -696,6 +696,23 @@
       }
     },
     {
+      // 간격 규격(docs/design.md#간격). 1.15.2 [31]에서 baseline과 함께 켠다(지금 위반 수는 migration-status)
+      "files": ["src/**/*.{ts,tsx}", "app/**/*.{ts,tsx}"],
+      "excludeFiles": ["**/*.test.{ts,tsx}", "**/__tests__/**", "src/testing/**"],
+      "rules": {
+        "aido/spacing-scale": ["off", { "allowed": [0, 2, 4, 6, 8, 12, 16, 20, 24, 32, 40] }],
+        "aido/no-arbitrary-spacing-class": "off",
+        "aido/one-spacing-notation": ["off", { "ignoreClassNameFrom": ["heroui-native"] }]
+      }
+    },
+    {
+      // Android 15 시스템 바 색 API(docs/build-and-release.md). 1.15.2 [32]에서 켠다
+      "files": ["src/**/*.{ts,tsx}", "app/**/*.{ts,tsx}", "app.config.ts", "plugins/*.js"],
+      "rules": {
+        "aido/no-system-bar-color": "off"
+      }
+    },
+    {
       "files": ["src/**"],
       "rules": {
         "react/forbid-component-props": [

@@ -82,3 +82,16 @@
 합계: Oxlint 87건(지시문 83줄, 52개 파일), dependency-cruiser 3건, ls-lint 30개 파일. `notes/memo`·`planning/category`는 [22/32]에서 0이다(리포트·제안과 함께 쓰는 `ai.response-parse.failed` 로그 키 하나만 주인을 정할 때까지 남는다).
 
 - `frozenNames`는 baseline이 아니라 동사 목록([observability](../observability.md#선언과-이름)) 밖인 GA 대시보드 이름의 영구 목록이다. 동사 목록을 바꾸면 규칙의 `EVENT_VERBS`와 이 목록을 함께 고친다.
+
+## 꺼 둔 규칙 (켜는 PR이 baseline과 함께 켠다)
+
+규칙과 RuleTester는 들어왔고 `apps/mobile/.oxlintrc.json`에 옵션과 함께 `"off"`로 있다. 켜는 PR은 `"off"`를 `"error"`로 바꾸고, 남길 위반에 `-- 1.15.2 전환 #1400` 지시문을 달거나 고친 뒤 이 행을 위 baseline 표로 옮긴다. 수는 [21/32] 위에서 규칙을 임시로 켜고 잰 값이다(테스트를 뺀 `src`·`app`).
+
+| 대상                                        | 규칙                              | 켜는 PR | 지금 위반                                                                                                 |
+| ------------------------------------------- | --------------------------------- | ------- | --------------------------------------------------------------------------------------------------------- |
+| 간격 규격 밖 레이아웃 prop·`Spacing`        | `aido/spacing-scale`              | [31]    | 48(27개 파일). 값별 자리는 [design](../design.md#규격-밖-값)                                              |
+| 임의 픽셀 여백 클래스                       | `aido/no-arbitrary-spacing-class` | [31]    | 12(5개 파일). `-ml-[7.5px]` 하나만 같은 값 토큰이 없다                                                    |
+| 형제끼리 여백 표기 섞임                     | `aido/one-spacing-notation`       | [31]    | 31(부모 태그 31곳, 17개 파일, heroui 제외). 보고된 클래스 31개 중 20개가 자식 바깥 여백(`mt-*`·`mb-*` 등) |
+| 상태·내비게이션 바 색(Android 15 지원 중단) | `aido/no-system-bar-color`        | [32]    | 0(`app.config.ts`·`plugins/*.js` 포함)                                                                    |
+
+- `one-spacing-notation`은 같은 부모의 직접 자식(Fragment·`{a && <X />}`는 펼친다)만 비교하고 부모마다 한 번 알린다. `ignoreClassNameFrom`은 셈에서 뺄 모듈이다. 아무것도 빼지 않으면 34, heroui·RN·reanimated·flash-list·expo-image 등 서드파티를 모두 빼도 heroui만 뺀 것과 같은 31이다.

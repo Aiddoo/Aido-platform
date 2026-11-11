@@ -5,8 +5,10 @@ import model from './rules/model.mjs';
 import modules from './rules/modules.mjs';
 import naming from './rules/naming.mjs';
 import observability from './rules/observability.mjs';
+import platform from './rules/platform.mjs';
 import react from './rules/react.mjs';
 import routing from './rules/routing.mjs';
+import spacing from './rules/spacing.mjs';
 import syntax from './rules/syntax.mjs';
 import testing from './rules/testing.mjs';
 
@@ -18,8 +20,10 @@ export default {
     ...modules,
     ...naming,
     ...observability,
+    ...platform,
     ...react,
     ...routing,
+    ...spacing,
     ...syntax,
     ...testing,
   },
