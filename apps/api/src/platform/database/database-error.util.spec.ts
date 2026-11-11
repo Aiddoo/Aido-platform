@@ -1,6 +1,9 @@
+import { DrizzleQueryError } from "drizzle-orm/errors";
+
 import { postgresError, sqlQueryError } from "#test/mocks/drizzle.mock";
 
 import {
+  classifyDatabaseError,
   databaseConstraint,
   DatabaseRecordNotFoundError,
   databaseSqlState,
@@ -79,7 +82,7 @@ describe("PostgreSQL 오류 변환 경계", () => {
     undefined,
     null,
     "40001",
-    40001,
+    40_001,
     { code: "40001" },
     { kind: "sql_query", sqlState: "40001" },
   ])("Error가 아닌 cause %j는 정규화된 DB 오류로 취급하지 않는다", (cause) => {
@@ -139,4 +142,90 @@ describe("PostgreSQL 오류 변환 경계", () => {
       expect(databaseSqlState(error)).toBe(state);
     },
   );
+});
+
+describe("classifyDatabaseError — SQLSTATE 분류", () => {
+  it.each([
+    { sqlState: "23505", kind: "unique-violation" },
+    { sqlState: "23503", kind: "foreign-key-violation" },
+    { sqlState: "23514", kind: "check-violation" },
+    { sqlState: "40001", kind: "serialization-failure" },
+    { sqlState: "40P01", kind: "deadlock" },
+    { sqlState: "55P03", kind: "lock-timeout" },
+    { sqlState: "57014", kind: "statement-timeout" },
+    { sqlState: "08000", kind: "connection" },
+    { sqlState: "08006", kind: "connection" },
+    { sqlState: "57P01", kind: "connection" },
+    { sqlState: "23502", kind: "unknown" },
+    { sqlState: "XX000", kind: "unknown" },
+  ])("$sqlState → $kind", ({ sqlState, kind }) => {
+    // Given
+    const error = new Error("wrapped", { cause: sqlQueryError(sqlState) });
+
+    // When
+    const classified = classifyDatabaseError(error);
+
+    // Then
+    expect(classified).toBe(kind);
+  });
+
+  it("PostgreSQL 오류가 아니면 SQLSTATE 모양의 code가 있어도 unknown이다", () => {
+    // Given
+    const error = Object.assign(new Error("plain"), { code: "23505" });
+
+    // When
+    const classified = classifyDatabaseError(error);
+
+    // Then
+    expect(classified).toBe("unknown");
+  });
+});
+
+describe("classifyDatabaseError — SQLSTATE 없는 연결 문제", () => {
+  const networkError = (address: string) =>
+    Object.assign(new Error(`connect ECONNREFUSED ${address}`), { code: "ECONNREFUSED" });
+
+  it.each([
+    {
+      name: "풀 대기 초과(pg-pool)",
+      error: new Error("timeout exceeded when trying to connect"),
+      kind: "pool-timeout",
+    },
+    {
+      name: "쿼리 중 풀 대기 초과",
+      error: new DrizzleQueryError(
+        "SELECT 1",
+        [],
+        new Error("timeout exceeded when trying to connect"),
+      ),
+      kind: "pool-timeout",
+    },
+    {
+      name: "연결이 끊긴 쿼리",
+      error: new DrizzleQueryError("SELECT 1", [], new Error("Connection terminated unexpectedly")),
+      kind: "connection",
+    },
+    {
+      name: "연결 시간 초과(pg-pool connectionTimeoutMillis)",
+      error: new Error("Connection terminated due to connection timeout"),
+      kind: "connection",
+    },
+    {
+      name: "답이 없는 쿼리(클라이언트 query_timeout)",
+      error: new DrizzleQueryError("SELECT 1", [], new Error("Query read timeout")),
+      kind: "query-timeout",
+    },
+    {
+      name: "DB 쿼리의 네트워크 오류",
+      error: new DrizzleQueryError("SELECT 1", [], networkError("127.0.0.1:5432")),
+      kind: "connection",
+    },
+    { name: "DB와 무관한 네트워크 오류", error: networkError("10.0.0.1:443"), kind: "unknown" },
+  ])("$name → $kind", ({ error, kind }) => {
+    // When
+    const classified = classifyDatabaseError(error);
+
+    // Then
+    expect(classified).toBe(kind);
+  });
 });

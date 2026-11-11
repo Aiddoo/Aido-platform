@@ -1,0 +1,10 @@
+import { Module } from "@nestjs/common";
+
+import { {{constantCase context}}_{{constantCase slice}}_PROVIDERS } from "./{{context}}-{{slice}}.providers.js";
+import { {{pascalCase aggregate}}Controller } from "./presentation/http/v1/{{aggregate}}.controller.js";
+
+@Module({
+  controllers: [{{pascalCase aggregate}}Controller],
+  providers: [...{{constantCase context}}_{{constantCase slice}}_PROVIDERS],
+})
+export class {{pascalCase context}}{{pascalCase slice}}Module {}

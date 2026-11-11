@@ -369,6 +369,7 @@ function TodoCreateForm({
                     renderErrorMessage={false}
                     returnKeyType="done"
                     onSubmitEditing={handleTitleSubmit}
+                    testID="todo-add-title-input"
                   />
                 )
               }
@@ -396,6 +397,7 @@ function TodoCreateForm({
                 isDisabled={isSubmitDisabled}
                 isSubmitting={isSubmitting}
                 onPress={() => submitTodo()}
+                testID="todo-add-submit"
               />
             </HStack>
           </VStack>

@@ -1,9 +1,10 @@
-FROM node:24.22.2-alpine3.24 AS base
+FROM node:26.13.0-alpine3.24 AS base
 WORKDIR /app
 ENV TZ=UTC
 ENV COREPACK_HOME=/usr/local/share/corepack
 ENV pnpm_config_verify_deps_before_run=false
-RUN apk upgrade --no-cache && corepack enable && apk add --no-cache openssl
+# Node 25부터 공식 이미지에 corepack이 없어 npm으로 설치한다.
+RUN apk upgrade --no-cache && npm install --global corepack@0.36.0 && corepack enable && apk add --no-cache openssl
 
 FROM base AS pruner
 COPY . .
@@ -32,7 +33,9 @@ CMD ["pnpm", "dev"]
 FROM base AS migrate-deps
 COPY --from=pruner /app/out/migrate/json/ ./
 COPY --from=pruner /app/out/migrate/pnpm-lock.yaml ./pnpm-lock.yaml
-RUN pnpm install --prod --frozen-lockfile --ignore-scripts && \
+# store·metadata 캐시(약 400MB)가 이미지 층에 남지 않게 빌드 캐시 마운트에 둔다. 파일은 node_modules로 복사된다.
+RUN --mount=type=cache,id=pnpm-migrate,target=/pnpm \
+    pnpm install --prod --frozen-lockfile --ignore-scripts --store-dir=/pnpm/store --config.cache-dir=/pnpm/cache && \
     chmod a+r pnpm-workspace.yaml
 
 FROM migrate-deps AS migrate
@@ -50,7 +53,7 @@ USER migrate
 RUN test -r "$NODE_EXTRA_CA_CERTS"
 CMD ["pnpm", "db:deploy"]
 
-FROM node:24.22.2-alpine3.24 AS production
+FROM node:26.13.0-alpine3.24 AS production
 WORKDIR /app
 # 운영 서버는 node로만 실행한다. 베이스 이미지 번들 npm의 취약 의존성이 운영 이미지에 남지 않게 걷어 낸다.
 RUN apk upgrade --no-cache && rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx && \

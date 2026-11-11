@@ -1,10 +1,10 @@
 import type { TestingModule } from "@nestjs/testing";
 import { omit } from "es-toolkit";
 
-import { LoginWithPassword } from "#api/modules/identity/application/use-cases/auth/login-with-password.use-case";
-import { RequestPasswordSetupCode } from "#api/modules/identity/application/use-cases/auth/request-password-setup-code.use-case";
-import { SetPassword } from "#api/modules/identity/application/use-cases/auth/set-password.use-case";
-import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
+import { LoginWithPasswordUseCase } from "#api/modules/identity/auth/application/use-cases/login-with-password.use-case";
+import { RequestPasswordSetupCodeUseCase } from "#api/modules/identity/auth/application/use-cases/request-password-setup-code.use-case";
+import { SetPasswordUseCase } from "#api/modules/identity/auth/application/use-cases/set-password.use-case";
+import { ApplicationException } from "#api/shared/application/application.exception";
 import { AccountFixture, UserFixture } from "#test/fixtures/user.fixture";
 import { suppressLogger } from "#test/setup/suppress-logger";
 import { createUserDatabaseFixture } from "#test/setup/user-database-fixture";
@@ -15,9 +15,9 @@ import { createAuthTestModule } from "./helpers/auth-test-module.factory.js";
 
 describe("비밀번호 설정 통합 테스트 (실제 DB)", () => {
   let module: TestingModule;
-  let requestPasswordSetupCode: RequestPasswordSetupCode;
-  let setPassword: SetPassword;
-  let loginWithPassword: LoginWithPassword;
+  let requestPasswordSetupCode: RequestPasswordSetupCodeUseCase;
+  let setPassword: SetPasswordUseCase;
+  let loginWithPassword: LoginWithPasswordUseCase;
   let fakeEmailService: FakeEmailService;
   let testDb: TestDatabase;
 
@@ -27,10 +27,10 @@ describe("비밀번호 설정 통합 테스트 (실제 DB)", () => {
     fakeEmailService = new FakeEmailService();
 
     module = await createAuthTestModule(testDb.getClient(), fakeEmailService);
-    requestPasswordSetupCode = module.get(RequestPasswordSetupCode);
-    setPassword = module.get(SetPassword);
-    loginWithPassword = module.get(LoginWithPassword);
-  }, 60000);
+    requestPasswordSetupCode = module.get(RequestPasswordSetupCodeUseCase);
+    setPassword = module.get(SetPasswordUseCase);
+    loginWithPassword = module.get(LoginWithPasswordUseCase);
+  }, 60_000);
 
   beforeEach(async () => {
     suppressLogger();

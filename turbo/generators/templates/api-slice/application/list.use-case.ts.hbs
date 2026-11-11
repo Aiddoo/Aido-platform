@@ -1,0 +1,34 @@
+import { clampPageSize, type CursorPage, toCursorPage } from "#api/shared/application/cursor-page";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+
+import type { {{pascalCase aggregate}} } from "../../domain/{{aggregate}}.aggregate.js";
+import { {{pascalCase aggregate}}Id } from "../../domain/{{aggregate}}-id.vo.js";
+import type { {{pascalCase aggregate}}RepositoryPort } from "../ports/{{aggregate}}.repository.port.js";
+
+export interface List{{pascalCase slice}}Query {
+  readonly userId: string;
+  readonly cursor?: {{idTsType}};
+  readonly size?: number;
+}
+
+export interface List{{pascalCase slice}}Dependencies {
+  readonly {{camelCase aggregate}}Repository: Pick<{{pascalCase aggregate}}RepositoryPort, "listByUserId">;
+}
+
+export class List{{pascalCase slice}}UseCase {
+  readonly #dependencies: List{{pascalCase slice}}Dependencies;
+
+  constructor(dependencies: List{{pascalCase slice}}Dependencies) {
+    this.#dependencies = dependencies;
+  }
+
+  async execute(query: List{{pascalCase slice}}Query): Promise<CursorPage<{{pascalCase aggregate}}, {{idTsType}}>> {
+    const size = clampPageSize(query.size);
+    const rows = await this.#dependencies.{{camelCase aggregate}}Repository.listByUserId({
+      userId: UserId.reconstitute(query.userId),
+      after{{pascalCase aggregate}}Id: query.cursor == null ? null : {{pascalCase aggregate}}Id.reconstitute(query.cursor),
+      limit: size + 1,
+    });
+    return toCursorPage({ rows, size, toCursor: ({{camelCase aggregate}}) => {{camelCase aggregate}}.id.value });
+  }
+}

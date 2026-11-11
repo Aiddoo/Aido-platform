@@ -1,0 +1,74 @@
+import { ErrorCode } from "@aido/api/errors";
+import { Body, Controller, Get, Post, Query } from "@nestjs/common";
+import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
+
+import {
+  CurrentUser,
+  type CurrentUserPayload,
+} from "#api/modules/identity/identity-auth-http.public";
+import { API_VERSION } from "#api/platform/http/api-versioning";
+import { ApiUnauthorizedError } from "#api/platform/http/swagger/decorators/api-error.decorator";
+import { ApiDoc } from "#api/platform/http/swagger/decorators/api-operation.decorator";
+import {
+  ApiCreatedResponse,
+  ApiSuccessResponse,
+} from "#api/platform/http/swagger/decorators/api-response.decorator";
+
+import { Create{{pascalCase aggregate}}UseCase } from "../../../application/use-cases/create-{{aggregate}}.use-case.js";
+import { List{{pascalCase slice}}UseCase } from "../../../application/use-cases/list-{{slice}}.use-case.js";
+import {
+  {{constantCase aggregate}}_RESPONSE_MESSAGES,
+  to{{pascalCase aggregate}}ListResponse,
+  to{{pascalCase aggregate}}MutationResponse,
+} from "./{{aggregate}}-response.mapper.js";
+import {
+  Create{{pascalCase aggregate}}Dto,
+  Get{{pascalCase slice}}QueryDto,
+  {{pascalCase aggregate}}ListResponseDto,
+  {{pascalCase aggregate}}MutationResponseDto,
+} from "./{{aggregate}}.dto.js";
+
+@ApiTags("{{titleCase slice}}")
+@ApiBearerAuth()
+@Controller({ path: "{{slice}}", version: API_VERSION.V1 })
+export class {{pascalCase aggregate}}Controller {
+  readonly #create{{pascalCase aggregate}}: Create{{pascalCase aggregate}}UseCase;
+  readonly #list{{pascalCase slice}}: List{{pascalCase slice}}UseCase;
+
+  constructor(create{{pascalCase aggregate}}: Create{{pascalCase aggregate}}UseCase, list{{pascalCase slice}}: List{{pascalCase slice}}UseCase) {
+    this.#create{{pascalCase aggregate}} = create{{pascalCase aggregate}};
+    this.#list{{pascalCase slice}} = list{{pascalCase slice}};
+  }
+
+  @Post()
+  @ApiDoc({ summary: "{{aggregate}} 만들기", operationId: "create{{pascalCase aggregate}}" })
+  @ApiCreatedResponse({ type: {{pascalCase aggregate}}MutationResponseDto })
+  @ApiUnauthorizedError(ErrorCode.AUTH_0107)
+  async create(
+    @CurrentUser() user: CurrentUserPayload,
+    @Body({ schema: Create{{pascalCase aggregate}}Dto }) dto: Create{{pascalCase aggregate}}Dto,
+  ): Promise<{{pascalCase aggregate}}MutationResponseDto> {
+    const {{camelCase aggregate}} = await this.#create{{pascalCase aggregate}}.execute({ userId: user.userId, name: dto.name });
+    return to{{pascalCase aggregate}}MutationResponse({{camelCase aggregate}}, {{constantCase aggregate}}_RESPONSE_MESSAGES.CREATED);
+  }
+
+  @Get()
+  @ApiDoc({
+    summary: "{{slice}} 목록",
+    operationId: "get{{pascalCase slice}}",
+    description: "최근 만든 순서입니다. `pagination.nextCursor`를 다음 요청의 `cursor`로 보냅니다.",
+  })
+  @ApiSuccessResponse({ type: {{pascalCase aggregate}}ListResponseDto })
+  @ApiUnauthorizedError(ErrorCode.AUTH_0107)
+  async findMany(
+    @CurrentUser() user: CurrentUserPayload,
+    @Query({ schema: Get{{pascalCase slice}}QueryDto }) query: Get{{pascalCase slice}}QueryDto,
+  ): Promise<{{pascalCase aggregate}}ListResponseDto> {
+    const page = await this.#list{{pascalCase slice}}.execute({
+      userId: user.userId,
+      cursor: query.cursor,
+      size: query.size,
+    });
+    return to{{pascalCase aggregate}}ListResponse(page);
+  }
+}

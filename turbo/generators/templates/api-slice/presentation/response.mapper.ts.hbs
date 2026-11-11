@@ -1,0 +1,36 @@
+import type {
+  {{pascalCase aggregate}} as {{pascalCase aggregate}}Response,
+  {{pascalCase aggregate}}ListResponse,
+  {{pascalCase aggregate}}MutationResponse,
+} from "@aido/api/contracts/{{aggregate}}";
+
+import type { CursorPage } from "#api/shared/application/cursor-page";
+import { toIsoString } from "#api/shared/domain/time/instant";
+
+import type { {{pascalCase aggregate}} } from "../../../domain/{{aggregate}}.aggregate.js";
+
+export const {{constantCase aggregate}}_RESPONSE_MESSAGES = {
+  CREATED: "만들었습니다.",
+} as const;
+
+export function to{{pascalCase aggregate}}Response({{camelCase aggregate}}: {{pascalCase aggregate}}): {{pascalCase aggregate}}Response {
+  const primitives = {{camelCase aggregate}}.toPrimitives();
+  return {
+    ...primitives,
+    createdAt: toIsoString(primitives.createdAt),
+    updatedAt: toIsoString(primitives.updatedAt),
+  };
+}
+
+export function to{{pascalCase aggregate}}MutationResponse(
+  {{camelCase aggregate}}: {{pascalCase aggregate}},
+  message: string,
+): {{pascalCase aggregate}}MutationResponse {
+  return { message, {{camelCase aggregate}}: to{{pascalCase aggregate}}Response({{camelCase aggregate}}) };
+}
+
+export function to{{pascalCase aggregate}}ListResponse(
+  page: CursorPage<{{pascalCase aggregate}}, {{idTsType}}>,
+): {{pascalCase aggregate}}ListResponse {
+  return { items: page.items.map(to{{pascalCase aggregate}}Response), pagination: page.pagination };
+}

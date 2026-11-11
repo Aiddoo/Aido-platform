@@ -1,19 +1,18 @@
+import { sql } from "drizzle-orm";
 import {
   pgTable,
   integer,
   text,
-  timestamp,
   varchar,
   boolean,
-  doublePrecision,
   serial,
-  date,
   jsonb,
   index,
   foreignKey,
   unique,
 } from "drizzle-orm/pg-core";
 
+import { instant, plainDate } from "../columns/temporal-columns.js";
 import { createEntityId } from "../entity-id.js";
 import {
   accountProvider,
@@ -29,28 +28,32 @@ export const user = pgTable(
   "User",
   {
     aiUsageCount: integer().default(0).notNull(),
-    aiUsageResetAt: timestamp({ precision: 3 }).defaultNow().notNull(),
-    createdAt: timestamp({ precision: 3 }).defaultNow().notNull(),
-    deletedAt: timestamp({ precision: 3 }),
+    aiUsageResetAt: instant()
+      .default(sql`now()`)
+      .notNull(),
+    createdAt: instant()
+      .default(sql`now()`)
+      .notNull(),
+    deletedAt: instant(),
     email: varchar({ length: 255 }).notNull(),
-    emailVerifiedAt: timestamp({ precision: 3 }),
+    emailVerifiedAt: instant(),
     id: text().primaryKey().$defaultFn(createEntityId),
-    lastActiveAt: timestamp({ precision: 3 }),
-    lastLoginAt: timestamp({ precision: 3 }),
+    lastActiveAt: instant(),
+    lastLoginAt: instant(),
     revenueCatUserId: varchar({ length: 255 }),
     role: userRole().default("USER").notNull(),
     status: userStatus().default("PENDING_VERIFY").notNull(),
-    subscriptionExpiresAt: timestamp({ precision: 3 }),
+    subscriptionExpiresAt: instant(),
     subscriptionStatus: subscriptionStatus().default("FREE").notNull(),
+    // 1.15.2에서 DROP: 코드 참조 없음(롤백 호환 때문에 1.15.1은 유지)
     twoFactorEnabled: boolean().default(false).notNull(),
+    // 1.15.2에서 DROP: 코드 참조 없음(롤백 호환 때문에 1.15.1은 유지)
     twoFactorSecret: varchar({ length: 255 }),
-    updatedAt: timestamp({ precision: 3 })
-      .notNull()
-      .$defaultFn(() => new Date())
-      .$onUpdate(() => new Date()),
+    // User를 바꾸는 저장소가 ClockPort 값으로 insert·update마다 명시한다
+    updatedAt: instant().notNull(),
     userTag: varchar({ length: 8 }).notNull(),
     lastSeenAppVersion: varchar({ length: 30 }),
-    lastSeenAppVersionAt: timestamp({ precision: 3 }),
+    lastSeenAppVersionAt: instant(),
   },
   (table) => [
     index("User_deletedAt_createdAt_idx").using(
@@ -82,18 +85,18 @@ export const account = pgTable(
   "Account",
   {
     accessToken: text(),
-    accessTokenExpiresAt: timestamp({ precision: 3 }),
-    createdAt: timestamp({ precision: 3 }).defaultNow().notNull(),
+    accessTokenExpiresAt: instant(),
+    createdAt: instant()
+      .default(sql`now()`)
+      .notNull(),
     id: serial().primaryKey(),
     password: varchar({ length: 128 }),
     provider: accountProvider().notNull(),
     providerAccountId: varchar({ length: 255 }).notNull(),
     refreshToken: text(),
     scope: varchar({ length: 500 }),
-    updatedAt: timestamp({ precision: 3 })
-      .notNull()
-      .$defaultFn(() => new Date())
-      .$onUpdate(() => new Date()),
+    // 저장소가 ClockPort 값으로 insert·update마다 명시한다
+    updatedAt: instant().notNull(),
     userId: text().notNull(),
   },
   (table) => [
@@ -112,22 +115,24 @@ export const account = pgTable(
 export const session = pgTable(
   "Session",
   {
-    createdAt: timestamp({ precision: 3 }).defaultNow().notNull(),
+    createdAt: instant()
+      .default(sql`now()`)
+      .notNull(),
     deviceFingerprint: varchar({ length: 64 }).notNull(),
-    expiresAt: timestamp({ precision: 3 }).notNull(),
+    expiresAt: instant().notNull(),
     id: text().primaryKey().$defaultFn(createEntityId),
     ipAddress: varchar({ length: 45 }).notNull(),
-    lastUsedAt: timestamp({ precision: 3 }).defaultNow().notNull(),
+    lastUsedAt: instant()
+      .default(sql`now()`)
+      .notNull(),
     previousTokenHash: varchar({ length: 64 }),
     refreshTokenHash: varchar({ length: 64 }).notNull(),
-    revokedAt: timestamp({ precision: 3 }),
+    revokedAt: instant(),
     revokedReason: varchar({ length: 200 }),
     tokenFamily: varchar({ length: 36 }).notNull(),
     tokenVersion: integer().default(1).notNull(),
-    updatedAt: timestamp({ precision: 3 })
-      .notNull()
-      .$defaultFn(() => new Date())
-      .$onUpdate(() => new Date()),
+    // 도메인이 ClockPort 값으로 채운다. 회전·폐기 같은 집합 update도 저장소가 명시한다
+    updatedAt: instant().notNull(),
     userAgent: varchar({ length: 500 }).notNull(),
     userId: text().notNull(),
   },
@@ -150,12 +155,14 @@ export const verification = pgTable(
   "Verification",
   {
     attempts: integer().default(0).notNull(),
-    createdAt: timestamp({ precision: 3 }).defaultNow().notNull(),
-    expiresAt: timestamp({ precision: 3 }).notNull(),
+    createdAt: instant()
+      .default(sql`now()`)
+      .notNull(),
+    expiresAt: instant().notNull(),
     id: serial().primaryKey(),
     token: varchar({ length: 64 }).notNull(),
     type: verificationType().notNull(),
-    usedAt: timestamp({ precision: 3 }),
+    usedAt: instant(),
     userId: text().notNull(),
   },
   (table) => [
@@ -178,7 +185,9 @@ export const verification = pgTable(
 export const loginAttempt = pgTable(
   "LoginAttempt",
   {
-    createdAt: timestamp({ precision: 3 }).defaultNow().notNull(),
+    createdAt: instant()
+      .default(sql`now()`)
+      .notNull(),
     email: varchar({ length: 255 }).notNull(),
     failureReason: varchar({ length: 100 }),
     id: serial().primaryKey(),
@@ -213,10 +222,12 @@ export const oAuthState = pgTable(
     accessToken: varchar({ length: 1000 }),
     accountRestored: boolean(),
     codeVerifier: varchar({ length: 128 }),
-    createdAt: timestamp({ precision: 3 }).defaultNow().notNull(),
+    createdAt: instant()
+      .default(sql`now()`)
+      .notNull(),
     exchangeCode: varchar({ length: 64 }),
-    exchangedAt: timestamp({ precision: 3 }),
-    expiresAt: timestamp({ precision: 3 }).notNull(),
+    exchangedAt: instant(),
+    expiresAt: instant().notNull(),
     id: serial().primaryKey(),
     initiatingUserId: varchar({ length: 36 }),
     ipAddress: varchar({ length: 45 }),
@@ -241,7 +252,9 @@ export const oAuthState = pgTable(
 export const securityLog = pgTable(
   "SecurityLog",
   {
-    createdAt: timestamp({ precision: 3 }).defaultNow().notNull(),
+    createdAt: instant()
+      .default(sql`now()`)
+      .notNull(),
     event: securityEvent().notNull(),
     id: serial().primaryKey(),
     ipAddress: varchar({ length: 45 }).notNull(),
@@ -302,7 +315,7 @@ export const userPreference = pgTable(
     eveningReminderHour: integer().default(19).notNull(),
     eveningReminderMinute: integer().default(0).notNull(),
     id: text().primaryKey().$defaultFn(createEntityId),
-    lastCompletedDate: date({ mode: "date" }),
+    lastCompletedDate: plainDate(),
     locale: varchar({ length: 10 }).default("ko").notNull(),
     longestStreak: integer().default(0).notNull(),
     morningReminderHour: integer().default(8).notNull(),
@@ -372,14 +385,14 @@ export const userConsent = pgTable(
   {
     agreedTermsVersion: varchar({ length: 20 }),
     id: text().primaryKey().$defaultFn(createEntityId),
-    marketingAgreedAt: timestamp({ precision: 3 }),
-    marketingPushAgreedAt: timestamp({ precision: 3 }),
+    marketingAgreedAt: instant(),
+    marketingPushAgreedAt: instant(),
     /** 광고성 수신 동의 사실을 2년마다 다시 알린 마지막 시각. 알린 적 없으면 null이다. */
-    marketingReconfirmedAt: timestamp({ precision: 3, withTimezone: true }),
-    privacyAgreedAt: timestamp({ precision: 3 }),
-    termsAgreedAt: timestamp({ precision: 3 }),
+    marketingReconfirmedAt: instant({ withTimezone: true }),
+    privacyAgreedAt: instant(),
+    termsAgreedAt: instant(),
     userId: text().notNull(),
-    aiDataSharingAgreedAt: timestamp({ precision: 3 }),
+    aiDataSharingAgreedAt: instant(),
     aiDataSharingVersion: varchar({ length: 20 }),
   },
   (table) => [
@@ -394,42 +407,17 @@ export const userConsent = pgTable(
   ],
 );
 
-export const userLocation = pgTable(
-  "UserLocation",
-  {
-    // KMA 격자는 한국 범위 좌표에만 있다.
-    gridX: integer(),
-    gridY: integer(),
-    id: text().primaryKey().$defaultFn(createEntityId),
-    latitude: doublePrecision().notNull(),
-    longitude: doublePrecision().notNull(),
-    // v2 이전에 저장된 위치는 null이다.
-    timezone: varchar({ length: 50 }),
-    updatedAt: timestamp({ precision: 3 })
-      .notNull()
-      .$defaultFn(() => new Date())
-      .$onUpdate(() => new Date()),
-    userId: text().notNull(),
-  },
-  (table) => [
-    foreignKey({
-      columns: [table.userId],
-      foreignColumns: [user.id],
-      name: "UserLocation_userId_fkey",
-    })
-      .onUpdate("cascade")
-      .onDelete("cascade"),
-    unique("UserLocation_userId_key").on(table.userId),
-  ],
-);
-
 export const userActivityDay = pgTable(
   "UserActivityDay",
   {
-    firstSeenAt: timestamp({ precision: 3 }).defaultNow().notNull(),
+    firstSeenAt: instant()
+      .default(sql`now()`)
+      .notNull(),
     id: serial().primaryKey(),
-    lastSeenAt: timestamp({ precision: 3 }).defaultNow().notNull(),
-    localDate: date({ mode: "date" }).notNull(),
+    lastSeenAt: instant()
+      .default(sql`now()`)
+      .notNull(),
+    localDate: plainDate().notNull(),
     timezone: varchar({ length: 50 }).notNull(),
     userId: text().notNull(),
   },

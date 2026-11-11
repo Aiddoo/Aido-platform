@@ -1,12 +1,13 @@
 import { z } from "zod";
 
 import { datetimeSchema, nullableDatetimeSchema } from "../../../common/datetime.js";
+import { entityIdSchema } from "../../../common/entity-id.js";
 import { TODO_COMMENT_LIMITS } from "../../../vocabulary/todo-comment.constants.js";
 import { friendTodoSchema } from "../../todo/v1/todo.response.js";
 
 export const todoCommentAuthorSchema = z
   .object({
-    id: z.cuid().describe("댓글 작성자 ID (CUID)"),
+    id: entityIdSchema.describe("댓글 작성자 ID"),
     name: z.string().nullable().describe("댓글 작성자 이름 (미설정 시 null)"),
     userTag: z
       .string()
@@ -20,7 +21,7 @@ export const todoCommentAuthorSchema = z
 
 export const todoCommentReplyTargetSchema = z
   .object({
-    commentId: z.cuid().describe("답한 글 ID (같은 묶음의 댓글 또는 답글, CUID)"),
+    commentId: entityIdSchema.describe("답한 글 ID (같은 묶음의 댓글 또는 답글)"),
     authorName: z.string().nullable().describe("답글 대상 작성자 이름 (확인할 수 없으면 null)"),
   })
   .describe("답글 대상");
@@ -47,9 +48,9 @@ export const todoCommentViewerSchema = z
 /** 대화와 개요에서 공유하는 v1 댓글. 1.14.1부터 댓글·답글 2단계 값만 내려간다. */
 export const todoCommentSchema = z
   .object({
-    id: z.cuid().describe("댓글 ID (CUID)"),
-    threadId: z.cuid().describe("묶음 머리 댓글 ID (댓글이면 자기 ID)"),
-    parentId: z.cuid().nullable().describe("답글이 속한 묶음 머리 댓글 ID (댓글이면 null)"),
+    id: entityIdSchema.describe("댓글 ID"),
+    threadId: entityIdSchema.describe("묶음 머리 댓글 ID (댓글이면 자기 ID)"),
+    parentId: entityIdSchema.nullable().describe("답글이 속한 묶음 머리 댓글 ID (댓글이면 null)"),
     depth: z.number().int().nonnegative().describe("댓글은 0, 답글은 1"),
     author: todoCommentAuthorSchema
       .nullable()
@@ -198,7 +199,7 @@ export const todoConversationItemSchema = z
 
 export const todoConversationFocusSchema = z
   .object({
-    commentId: z.cuid().describe("focus 댓글 ID (CUID)"),
+    commentId: entityIdSchema.describe("focus 댓글 ID"),
     itemIndex: z.number().int().nonnegative().describe("현재 items에서 focus 댓글의 위치"),
     precedingAncestors: z
       .array(todoConversationItemSchema)
@@ -265,7 +266,7 @@ export const todoCommentMutationResponseSchema = z
 
 export const todoCommentLikeResponseSchema = z
   .object({
-    commentId: z.cuid().describe("좋아요 상태가 바뀐 댓글 ID (CUID)"),
+    commentId: entityIdSchema.describe("좋아요 상태가 바뀐 댓글 ID"),
     isLiked: z.boolean().describe("현재 사용자의 좋아요 여부"),
     likeCount: z.number().int().nonnegative().describe("댓글의 활성 좋아요 수"),
   })
@@ -273,7 +274,7 @@ export const todoCommentLikeResponseSchema = z
 
 export const deleteTodoCommentResponseSchema = z
   .object({
-    commentId: z.cuid().describe("삭제된 댓글 ID (CUID)"),
+    commentId: entityIdSchema.describe("삭제된 댓글 ID"),
     isDeleted: z.literal(true).describe("댓글 삭제 여부 (항상 true)"),
   })
   .describe("할 일 댓글 삭제 응답");

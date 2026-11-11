@@ -237,17 +237,20 @@ jobs:
           head-ref: ${{ needs.gate.outputs.head_sha }}
           fail-on-severity: high
 
-  # 테스트(단위·통합·계약)는 로컬 lefthook 훅에서 돌리고 CI는 정적 검사와 빌드만 확인한다(docs/conventions/git.md#커밋).
-  # 정적 검사와 API 빌드를 한 job에 두어 checkout·의존성 설치를 한 번만 한다.
+  # 로컬 pre-push가 같은 팀 Turbo 원격 캐시에 올린 단위·통합 테스트 결과를 재사용하고, 놓친 작업만 러너에서 실제로 돈다.
+  # 통합 테스트(Testcontainers)는 GitHub 러너의 Docker로 돈다. 전체 E2E는 로컬에서만 돌리고 PR 본문에 기록한다(docs/conventions/git.md#커밋).
+  # 정적 검사·테스트·API 빌드를 한 job에 두어 checkout·의존성 설치를 한 번만 한다.
   verify:
-    name: Lint, Type Check & Build
+    name: Lint, Test & Build
     needs: gate
     if: needs.gate.outputs.run == 'true' && (needs.gate.outputs.api == 'true' || needs.gate.outputs.mobile == 'true' || needs.gate.outputs.shared == 'true')
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 40
     env:
       TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
       TURBO_TEAM: ${{ vars.TURBO_TEAM }}
+      # --affected의 비교 기준은 PR base다. main push는 얕은 checkout이라 전체를 변경으로 보고 캐시가 걸러 준다.
+      TURBO_SCM_BASE: ${{ github.event_name == 'pull_request' && needs.gate.outputs.base_sha || '' }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -292,11 +295,16 @@ jobs:
 
       - name: Type Check
         if: needs.gate.outputs.api == 'true' || needs.gate.outputs.mobile == 'true'
-        run: pnpm turbo run typecheck ${{ needs.gate.outputs.mobile != 'true' && '--filter=@aido/server' || needs.gate.outputs.api != 'true' && '--filter=@aido/mobile' || '' }}
+        run: pnpm turbo run typecheck --affected ${{ needs.gate.outputs.mobile != 'true' && '--filter=@aido/server' || needs.gate.outputs.api != 'true' && '--filter=@aido/mobile' || '' }}
+
+      # 테스트 러너마다 코어 비율로 worker를 잡아 겹치면 4 vCPU 러너를 과포화시키므로 테스트 작업은 한 번에 하나씩 돈다.
+      - name: Test
+        if: needs.gate.outputs.api == 'true' || needs.gate.outputs.mobile == 'true'
+        run: pnpm turbo run test test:integration --affected --concurrency=1 ${{ needs.gate.outputs.mobile != 'true' && '--filter=@aido/server' || needs.gate.outputs.api != 'true' && '--filter=@aido/mobile' || '' }}
 
       - name: Build API and dependency closure
         if: needs.gate.outputs.api == 'true'
-        run: pnpm turbo run build --filter='!@aido/mobile'
+        run: pnpm turbo run build --affected --filter='!@aido/mobile'
 
   # main 전용: 프로덕션 이미지를 arm64 러너에서 빌드해 GHCR로 push.
   # 직접 검증 또는 같은 tree의 신뢰된 tip 검증 성공 뒤에만 이미지를 발행한다. API 영향이 없는 main 변경은 건너뛴다. 서버는 pull만 한다 (scripts/deploy.sh).
@@ -333,7 +341,7 @@ jobs:
           platforms: linux/arm64
           load: true
           push: false
-          pull: true # node:24.22.2-alpine3.24의 최신 base 보안 digest 수급
+          pull: true # node:26.13.0-alpine3.24의 최신 base 보안 digest 수급
           provenance: false # 단일 아키 이미지는 plain manifest 유지 (서버 pull 단순화)
           tags: ghcr.io/aiddoo/aido-platform-api:${{ github.sha }}
           cache-from: type=gha,scope=api
@@ -356,7 +364,7 @@ jobs:
           platforms: linux/arm64
           load: true
           push: false
-          pull: true # node:24.22.2-alpine3.24의 최신 base 보안 digest 수급
+          pull: true # node:26.13.0-alpine3.24의 최신 base 보안 digest 수급
           provenance: false
           tags: ghcr.io/aiddoo/aido-platform-migrate:${{ github.sha }}
           cache-from: type=gha,scope=migrate

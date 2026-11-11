@@ -1,31 +1,13 @@
-import { mock } from "vitest-mock-extended";
-
-/**
- * EncryptionService 단위 테스트
- *
- * @description
- * EncryptionService의 개별 메서드를 격리 테스트합니다.
- *
- * 실행 명령:
- * ```bash
- * pnpm --filter @aido/server test encryption.service
- * ```
- */
-import type { TypedConfigService } from "#api/platform/config/services/config.service";
-
 import { EncryptionService } from "./encryption.service.js";
 
 describe("EncryptionService — 암호화 서비스", () => {
   let service: EncryptionService;
 
   beforeEach(() => {
-    // Given - Mock 설정 서비스
-    const mockConfigService = mock<TypedConfigService>({
-      tokenEncryptionKey: "test-encryption-key-must-be-at-least-32-characters-long",
-      tokenEncryptionSalt: undefined,
+    service = new EncryptionService({
+      key: "test-encryption-key-must-be-at-least-32-characters-long",
+      salt: undefined,
     });
-
-    service = new EncryptionService(mockConfigService);
   });
 
   describe("encrypt / decrypt", () => {

@@ -1,0 +1,25 @@
+import { z } from "zod";
+
+import { {{constantCase aggregate}}_LIMITS } from "../../../vocabulary/{{aggregate}}.constants.js";
+
+export const create{{pascalCase aggregate}}Schema = z.object({
+  name: z
+    .string()
+    .trim()
+    .min(1)
+    .max({{constantCase aggregate}}_LIMITS.NAME_MAX_LENGTH)
+    .describe(`이름 (1-${ {{constantCase aggregate}}_LIMITS.NAME_MAX_LENGTH }자)`),
+});
+
+export type Create{{pascalCase aggregate}}Input = z.infer<typeof create{{pascalCase aggregate}}Schema>;
+
+export const get{{pascalCase slice}}QuerySchema = z.object({
+{{#if isSerial}}
+  cursor: z.coerce.number().int().positive().optional().describe("이전 응답의 nextCursor"),
+{{else}}
+  cursor: z.cuid().optional().describe("이전 응답의 nextCursor"),
+{{/if}}
+  size: z.coerce.number().int().min(1).max(200).optional().describe("조회할 개수 (1-200, 기본값 20)"),
+});
+
+export type Get{{pascalCase slice}}Query = z.infer<typeof get{{pascalCase slice}}QuerySchema>;

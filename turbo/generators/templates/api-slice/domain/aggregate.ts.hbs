@@ -1,0 +1,74 @@
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { AggregateRoot } from "#api/shared/domain/model/aggregate-root";
+
+import { {{pascalCase aggregate}}Id } from "./{{aggregate}}-id.vo.js";
+import { {{pascalCase aggregate}}Name } from "./{{aggregate}}-name.vo.js";
+
+export interface {{pascalCase aggregate}}Primitives {
+  readonly id: {{idTsType}};
+  readonly userId: string;
+  readonly name: string;
+  readonly createdAt: Temporal.Instant;
+  readonly updatedAt: Temporal.Instant;
+}
+
+interface {{pascalCase aggregate}}Props {
+  readonly userId: UserId;
+  name: {{pascalCase aggregate}}Name;
+  readonly createdAt: Temporal.Instant;
+  updatedAt: Temporal.Instant;
+}
+
+interface Create{{pascalCase aggregate}}Params {
+  readonly id: {{pascalCase aggregate}}Id;
+  readonly userId: UserId;
+  readonly name: {{pascalCase aggregate}}Name;
+  readonly now: Temporal.Instant;
+}
+
+export class {{pascalCase aggregate}} extends AggregateRoot<{{pascalCase aggregate}}Id, {{pascalCase aggregate}}Props> {
+  static create(params: Create{{pascalCase aggregate}}Params): {{pascalCase aggregate}} {
+    return new {{pascalCase aggregate}}(params.id, {
+      userId: params.userId,
+      name: params.name,
+      createdAt: params.now,
+      updatedAt: params.now,
+    });
+  }
+
+  static reconstitute(primitives: {{pascalCase aggregate}}Primitives): {{pascalCase aggregate}} {
+    return new {{pascalCase aggregate}}({{pascalCase aggregate}}Id.reconstitute(primitives.id), {
+      userId: UserId.reconstitute(primitives.userId),
+      name: {{pascalCase aggregate}}Name.reconstitute(primitives.name),
+      createdAt: primitives.createdAt,
+      updatedAt: primitives.updatedAt,
+    });
+  }
+
+  get userId(): UserId {
+    return this.props.userId;
+  }
+
+  get name(): {{pascalCase aggregate}}Name {
+    return this.props.name;
+  }
+
+  rename(name: {{pascalCase aggregate}}Name, now: Temporal.Instant): boolean {
+    if (this.props.name.equals(name)) {
+      return false;
+    }
+    this.props.name = name;
+    this.props.updatedAt = now;
+    return true;
+  }
+
+  toPrimitives(): {{pascalCase aggregate}}Primitives {
+    return {
+      id: this.id.value,
+      userId: this.props.userId.value,
+      name: this.props.name.value,
+      createdAt: this.props.createdAt,
+      updatedAt: this.props.updatedAt,
+    };
+  }
+}

@@ -1,7 +1,10 @@
 import { z } from "zod";
 
 import { dateSchema } from "../../../common/datetime.js";
-import { NOTIFICATION_ACTION_TYPE } from "../../../vocabulary/notification.constants.js";
+import {
+  NOTIFICATION_ACTION_TYPE,
+  NOTIFICATION_PURPOSES,
+} from "../../../vocabulary/notification.constants.js";
 import { todoCommentIdSchema } from "../../todo-comment/v1/todo-comment.request.js";
 import { notificationTypeSchema } from "./notification.common.js";
 import {
@@ -101,7 +104,7 @@ export const pushNotificationDataSchema = z.object({
   dispatchId: z.number().int().positive().optional(),
   campaignKey: z.string().max(100).optional(),
   variantId: z.string().max(100).optional(),
-  purpose: z.enum(["TRANSACTIONAL", "SCHEDULED_SERVICE", "ENGAGEMENT"]).optional(),
+  purpose: z.enum(NOTIFICATION_PURPOSES).optional(),
   marketingOptOutToken: z.string().max(2048).optional(),
 });
 

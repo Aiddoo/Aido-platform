@@ -74,7 +74,7 @@ describe("일일 달성 E2E", () => {
 
   beforeAll(async () => {
     ctx = await createE2eApp();
-  }, 60000);
+  }, 60_000);
 
   afterAll(async () => {
     await destroyE2eApp(ctx);
@@ -115,7 +115,7 @@ describe("일일 달성 E2E", () => {
     });
 
     describe("여러 날 할 일", () => {
-      it("출시 앱이 읽는 completions는 시작일에만 세고 기간은 선택 칸 multiDayTodos로 준다", async () => {
+      it("기간의 모든 날에 세고 1.15.0 앱이 다시 더하지 않도록 multiDayTodos는 비워 둔다", async () => {
         // Given
         const { accessToken } = await ctx.helpers.createVerifiedUser("dc-span@test.com", password);
         await createTodo(accessToken, {
@@ -131,15 +131,18 @@ describe("일일 달성 E2E", () => {
         // Then
         expect(response.status).toBe(200);
         const body = dailyCompletionsRangeResponseSchema.parse(response.body.data);
-        expect(body.completions.map(({ date }) => date)).toEqual(["2026-05-05"]);
-        expect(body.multiDayTodos).toEqual([
-          {
-            startDate: "2026-05-05",
-            endDate: "2026-05-07",
-            completed: false,
-            categoryColor: expect.any(String),
-          },
+        expect(
+          body.completions.map(({ date, totalTodos, completedTodos }) => [
+            date,
+            totalTodos,
+            completedTodos,
+          ]),
+        ).toEqual([
+          ["2026-05-05", 1, 0],
+          ["2026-05-06", 1, 0],
+          ["2026-05-07", 1, 0],
         ]);
+        expect(body.multiDayTodos).toEqual([]);
       });
     });
 

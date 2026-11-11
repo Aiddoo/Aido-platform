@@ -1,0 +1,39 @@
+import { Drizzle{{pascalCase aggregate}}Repository } from "#api/modules/{{context}}/{{slice}}/infrastructure/persistence/drizzle-{{aggregate}}.repository";
+import { user } from "#api/platform/database/schema/index";
+import { describe{{pascalCase aggregate}}RepositoryContract } from "#test/contracts/{{context}}/{{aggregate}}-repository.contract";
+import { UserFixture } from "#test/fixtures/index";
+import {
+  {{constantCase aggregate}}_FIXTURE_OTHER_USER_ID,
+  {{constantCase aggregate}}_FIXTURE_USER_ID,
+} from "#test/fixtures/{{context}}/{{aggregate}}.fixture";
+import { createDatabaseTransactionFixture } from "#test/setup/database-context";
+import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
+
+describe("Drizzle{{pascalCase aggregate}}Repository (실제 PostgreSQL)", () => {
+  let database: TestDatabase;
+  let client: TestDatabaseClient;
+
+  beforeAll(async () => {
+    database = new TestDatabase();
+    client = await database.start();
+  });
+
+  beforeEach(async () => {
+    await database.cleanup();
+    await client
+      .insert(user)
+      .values([
+        UserFixture.create({ id: {{constantCase aggregate}}_FIXTURE_USER_ID }),
+        UserFixture.create({ id: {{constantCase aggregate}}_FIXTURE_OTHER_USER_ID }),
+      ]);
+  });
+
+  afterAll(async () => {
+    await database.stop();
+  });
+
+  describe{{pascalCase aggregate}}RepositoryContract(async () => {
+    const { txHost } = createDatabaseTransactionFixture(client);
+    return new Drizzle{{pascalCase aggregate}}Repository(txHost);
+  });
+});

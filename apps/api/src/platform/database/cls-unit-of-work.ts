@@ -1,15 +1,20 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Inject, Injectable, Logger } from "@nestjs/common";
+import { sql, type SQL } from "drizzle-orm";
 import { ClsService } from "nestjs-cls";
 
-import { PlatformLogEvent } from "#api/platform/logging/platform-log.events";
+import { PlatformLogEvent } from "#api/platform/logging/platform.log-events";
 import type {
   AfterCommitTask,
   AfterCommitTaskRegistryPort,
+} from "#api/shared/application/ports/after-commit-task.registry.port";
+import type {
+  UnitOfWorkOptions,
   UnitOfWorkPort,
-} from "#api/shared/application/ports/index";
+} from "#api/shared/application/ports/unit-of-work.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 
+// DI 토큰이 아니라 요청마다 커밋 뒤 작업 목록을 담는 CLS 저장소 key다
 const AFTER_COMMIT_TASK_SCOPE = Symbol("AFTER_COMMIT_TASK_SCOPE");
 
 interface AfterCommitTaskScope {
@@ -17,42 +22,58 @@ interface AfterCommitTaskScope {
 }
 
 interface UnitOfWorkTransactionHost {
+  readonly tx: { execute(query: SQL): PromiseLike<unknown> };
   isTransactionActive(): boolean;
   withTransaction<T>(work: () => Promise<T>): Promise<T>;
 }
 
 @Injectable()
 export class ClsUnitOfWork implements UnitOfWorkPort, AfterCommitTaskRegistryPort {
-  private readonly logger = new Logger(ClsUnitOfWork.name);
+  readonly #logger = new Logger(ClsUnitOfWork.name);
+  readonly #txHost: UnitOfWorkTransactionHost;
+  readonly #cls: ClsService;
 
-  constructor(
-    @Inject(TransactionHost)
-    private readonly txHost: UnitOfWorkTransactionHost,
-    private readonly cls: ClsService,
-  ) {}
+  constructor(@Inject(TransactionHost) txHost: UnitOfWorkTransactionHost, cls: ClsService) {
+    this.#txHost = txHost;
+    this.#cls = cls;
+  }
 
-  async run<T>(work: () => Promise<T>): Promise<T> {
-    if (this.txHost.isTransactionActive()) {
-      return this.txHost.withTransaction(work);
+  async run<T>(work: () => Promise<T>, options: UnitOfWorkOptions = {}): Promise<T> {
+    if (this.#txHost.isTransactionActive()) {
+      return this.#txHost.withTransaction(work);
+    }
+
+    const { statementTimeoutMs } = options;
+    if (
+      statementTimeoutMs != null &&
+      (!Number.isInteger(statementTimeoutMs) || statementTimeoutMs <= 0)
+    ) {
+      throw new RangeError("statementTimeoutMs must be a positive integer");
     }
 
     const scope: AfterCommitTaskScope = { tasks: [] };
-    const result = await this.txHost.withTransaction(async () => {
-      this.cls.set(AFTER_COMMIT_TASK_SCOPE, scope);
+    const result = await this.#txHost.withTransaction(async () => {
+      this.#cls.set(AFTER_COMMIT_TASK_SCOPE, scope);
+      if (statementTimeoutMs != null) {
+        // SET은 bind 변수를 받지 않아 set_config(..., is_local => true)로 이 트랜잭션에만 건다
+        await this.#txHost.tx.execute(
+          sql`SELECT set_config('statement_timeout', ${String(statementTimeoutMs)}, true)`,
+        );
+      }
       return work();
     });
 
-    await this.runAfterCommitTasks(scope.tasks);
+    await this.#runAfterCommitTasks(scope.tasks);
     return result;
   }
 
   register(task: AfterCommitTask): void {
-    if (!this.txHost.isTransactionActive()) {
-      this.runImmediately(task);
+    if (!this.#txHost.isTransactionActive()) {
+      this.#runImmediately(task);
       return;
     }
 
-    const scope = this.cls.get<AfterCommitTaskScope>(AFTER_COMMIT_TASK_SCOPE);
+    const scope = this.#cls.get<AfterCommitTaskScope>(AFTER_COMMIT_TASK_SCOPE);
     if (scope == null) {
       throw new Error("After-commit task scope is missing for an active transaction");
     }
@@ -62,26 +83,26 @@ export class ClsUnitOfWork implements UnitOfWorkPort, AfterCommitTaskRegistryPor
     scope.tasks.push(task);
   }
 
-  private async runAfterCommitTasks(tasks: readonly AfterCommitTask[]): Promise<void> {
+  async #runAfterCommitTasks(tasks: readonly AfterCommitTask[]): Promise<void> {
     for (const task of tasks) {
       try {
         await task();
       } catch (error) {
-        this.logTaskFailure(error);
+        this.#logTaskFailure(error);
       }
     }
   }
 
-  private runImmediately(task: AfterCommitTask): void {
+  #runImmediately(task: AfterCommitTask): void {
     try {
-      task().catch((error: unknown) => this.logTaskFailure(error));
+      task().catch((error: unknown) => this.#logTaskFailure(error));
     } catch (error) {
-      this.logTaskFailure(error);
+      this.#logTaskFailure(error);
     }
   }
 
-  private logTaskFailure(error: unknown): void {
-    this.logger.error({
+  #logTaskFailure(error: unknown): void {
+    this.#logger.error({
       event: PlatformLogEvent.AFTER_COMMIT_TASK_FAILED,
       errorType: toErrorType(error),
     });

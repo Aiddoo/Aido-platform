@@ -3,3 +3,5 @@ export const USER_SEARCH_QUERY_LENGTH = {
   MIN: 2,
   MAX: 50,
 } as const;
+
+export const FOLLOW_STATUSES = ["PENDING", "ACCEPTED"] as const;

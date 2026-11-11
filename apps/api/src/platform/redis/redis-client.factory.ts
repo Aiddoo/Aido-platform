@@ -1,7 +1,7 @@
 import type { RedisOptions } from "ioredis";
 
 /**
- * Redis 연결 설정 (config.service의 redisUrl/redis getter에서 조립)
+ * Redis 연결 설정 (redis.config 값)
  */
 export interface RedisConnectionSettings {
   /** REDIS_URL — 존재하면 host/port/password/db보다 우선 */

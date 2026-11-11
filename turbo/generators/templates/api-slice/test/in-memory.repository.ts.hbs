@@ -1,0 +1,73 @@
+import { {{pascalCase aggregate}}RepositoryPort } from "#api/modules/{{context}}/{{slice}}/application/ports/{{aggregate}}.repository.port";
+import type { {{pascalCase aggregate}} } from "#api/modules/{{context}}/{{slice}}/domain/{{aggregate}}.aggregate";
+import { {{pascalCase aggregate}}Id } from "#api/modules/{{context}}/{{slice}}/domain/{{aggregate}}-id.vo";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+
+{{#if isSerial}}
+function compareIds(left: number, right: number): number {
+  return left - right;
+}
+{{else}}
+function compareIds(left: string, right: string): number {
+  if (left === right) {
+    return 0;
+  }
+  return left < right ? -1 : 1;
+}
+{{/if}}
+
+// Drizzle 저장소와 같은 순서(createdAt·id 내림차순)로 나열한다
+function compareNewestFirst(left: {{pascalCase aggregate}}, right: {{pascalCase aggregate}}): number {
+  const leftPrimitives = left.toPrimitives();
+  const rightPrimitives = right.toPrimitives();
+  return (
+    Temporal.Instant.compare(rightPrimitives.createdAt, leftPrimitives.createdAt) ||
+    compareIds(rightPrimitives.id, leftPrimitives.id)
+  );
+}
+
+export class InMemory{{pascalCase aggregate}}Repository extends {{pascalCase aggregate}}RepositoryPort {
+  readonly #{{camelCase slice}} = new Map<{{idTsType}}, {{pascalCase aggregate}}>();
+  #sequence = 0;
+
+  get size(): number {
+    return this.#{{camelCase slice}}.size;
+  }
+
+  async nextId(): Promise<{{pascalCase aggregate}}Id> {
+    this.#sequence += 1;
+{{#if isSerial}}
+    return {{pascalCase aggregate}}Id.reconstitute(1000 + this.#sequence);
+{{else}}
+    return {{pascalCase aggregate}}Id.reconstitute(`c${this.#sequence.toString(16).padStart(24, "0")}`);
+{{/if}}
+  }
+
+  async findByIdAndUserId(
+    {{camelCase aggregate}}Id: {{pascalCase aggregate}}Id,
+    userId: UserId,
+  ): Promise<{{pascalCase aggregate}} | null> {
+    const {{camelCase aggregate}} = this.#{{camelCase slice}}.get({{camelCase aggregate}}Id.value);
+    return {{camelCase aggregate}} != null && {{camelCase aggregate}}.userId.equals(userId) ? {{camelCase aggregate}} : null;
+  }
+
+  async listByUserId(params: {
+    readonly userId: UserId;
+    readonly after{{pascalCase aggregate}}Id: {{pascalCase aggregate}}Id | null;
+    readonly limit: number;
+  }): Promise<{{pascalCase aggregate}}[]> {
+    const { userId, after{{pascalCase aggregate}}Id, limit } = params;
+    const owned = [...this.#{{camelCase slice}}.values()]
+      .filter(({{camelCase aggregate}}) => {{camelCase aggregate}}.userId.equals(userId))
+      .toSorted(compareNewestFirst);
+    if (after{{pascalCase aggregate}}Id == null) {
+      return owned.slice(0, limit);
+    }
+    const anchorIndex = owned.findIndex(({{camelCase aggregate}}) => {{camelCase aggregate}}.id.equals(after{{pascalCase aggregate}}Id));
+    return anchorIndex === -1 ? [] : owned.slice(anchorIndex + 1, anchorIndex + 1 + limit);
+  }
+
+  async save({{camelCase aggregate}}: {{pascalCase aggregate}}): Promise<void> {
+    this.#{{camelCase slice}}.set({{camelCase aggregate}}.id.value, {{camelCase aggregate}});
+  }
+}
