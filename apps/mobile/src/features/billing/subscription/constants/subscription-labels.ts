@@ -1,4 +1,6 @@
-import type { FreeTrial, PlanType } from '../domains/subscription.model';
+import type { PlanType } from '@src/shared/domains/plan-type.model';
+
+import type { FreeTrial } from '../domains/subscription.model';
 
 export const FREE_TRIAL_PERIOD_LABEL_KEYS = {
   day: 'trialPeriod.day',

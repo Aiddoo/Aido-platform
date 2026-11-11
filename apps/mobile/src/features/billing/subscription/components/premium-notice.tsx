@@ -1,9 +1,7 @@
-import {
-  PremiumAccessPolicy,
-  type PremiumPlanType,
-} from '@src/features/identity/user/domains/premium-access.model';
+import { PremiumAccessPolicy } from '@src/features/identity/user/domains/premium-access.model';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { formatYearAwareDateLabel } from '@src/shared/date/format/date-format';
+import type { PlanType } from '@src/shared/domains/plan-type.model';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
@@ -94,7 +92,7 @@ const PLAN_NAME_KEYS = {
   annual: 'endingNotice.plan.annual',
   monthly: 'endingNotice.plan.monthly',
   unknown: 'endingNotice.plan.unknown',
-} as const satisfies Record<PremiumPlanType | 'unknown', string>;
+} as const satisfies Record<PlanType | 'unknown', string>;
 
 type TrialEndingNotice = NonNullable<
   Extract<SubscriptionReceiptViewModel, { variant: 'trial' }>['endingNotice']

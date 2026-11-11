@@ -1,10 +1,10 @@
-import { DAYS_OF_WEEK } from '@aido/api/vocabulary';
+import { AI_REPORT_TYPES, DAYS_OF_WEEK } from '@aido/api/vocabulary';
 import { instantSchema } from '@src/shared/date/instant';
 import { orderBy } from 'es-toolkit';
 import { match } from 'ts-pattern';
 import { z } from 'zod';
 
-export const reportTypeSchema = z.enum(['WEEKLY', 'MONTHLY']);
+export const reportTypeSchema = z.enum(AI_REPORT_TYPES);
 export type ReportType = z.infer<typeof reportTypeSchema>;
 
 const reportStatsSchema = z.object({

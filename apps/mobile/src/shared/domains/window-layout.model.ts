@@ -1,3 +1,4 @@
+import { APP_PLATFORMS } from '@aido/api/vocabulary';
 import { getWindowSizeClass, type WindowSizeClass } from '@src/shared/utils/get-window-size-class';
 import { z } from 'zod';
 
@@ -5,7 +6,7 @@ import { z } from 'zod';
 const appWindowSchema = z.object({
   width: z.number(),
   height: z.number(),
-  os: z.enum(['ios', 'android']),
+  os: z.enum(APP_PLATFORMS),
   /** Mac(Designed for iPad)에서 도는 창 */
   isDesktop: z.boolean(),
 });

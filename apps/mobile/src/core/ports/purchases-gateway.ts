@@ -1,3 +1,5 @@
+import type { SubscriptionPlanType } from '@aido/api/vocabulary';
+
 export type PurchaseStore = 'APP_STORE' | 'PLAY_STORE' | 'PROMOTIONAL' | 'OTHER';
 
 interface PurchaseEntitlement {
@@ -9,7 +11,7 @@ export interface PurchaseStatus {
   activeEntitlements: readonly PurchaseEntitlement[];
 }
 
-export type PurchasePackageType = 'MONTHLY' | 'ANNUAL' | 'OTHER';
+export type PurchasePackageType = SubscriptionPlanType | 'OTHER';
 
 export type PurchasePeriodUnit = 'DAY' | 'WEEK' | 'MONTH' | 'YEAR';
 

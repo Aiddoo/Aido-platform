@@ -1,5 +1,10 @@
 import {
-  NOTIFICATION_ACTION_TYPE,
+  entityIdSchema,
+  notificationActionSchema,
+  notificationContextSchema,
+  notificationTypeSchema,
+} from '@aido/api/common';
+import {
   NOTIFICATION_ACTIVITY_KIND,
   NOTIFICATION_CATEGORY,
   NOTIFICATION_TYPE,
@@ -10,7 +15,6 @@ import type { AuthStatus } from '@src/core/session/auth-status';
 import { MINUTE_MS, SECOND_MS } from '@src/shared/constants/time-units';
 import { instantSchema } from '@src/shared/date/instant';
 import { cursorPageSchema } from '@src/shared/domains/cursor-page.model';
-import { entityIdSchema } from '@src/shared/domains/entity-id.model';
 import { takeRight, without } from 'es-toolkit';
 import { match } from 'ts-pattern';
 import { z } from 'zod';
@@ -24,17 +28,10 @@ import type {
   PushNotificationPayload,
 } from '../schemas/push-notification-payload.schema';
 
-const notificationTypeSchema = z.enum(NOTIFICATION_TYPE);
 export type NotificationType = z.infer<typeof notificationTypeSchema>;
 
 export const notificationCategorySchema = z.enum(NOTIFICATION_CATEGORY);
 
-const notificationContextSchema = z.object({
-  todoId: z.number().optional(),
-  friendId: z.string().optional(),
-  nudgeId: z.number().optional(),
-  cheerId: z.number().optional(),
-});
 export type NotificationContext = z.infer<typeof notificationContextSchema>;
 
 const notificationRoutingSchema = z.object({
@@ -48,10 +45,6 @@ const notificationRoutingSchema = z.object({
 });
 export type NotificationRouting = z.infer<typeof notificationRoutingSchema>;
 
-const notificationActionSchema = z.object({
-  type: z.enum(NOTIFICATION_ACTION_TYPE),
-  url: z.string().optional(),
-});
 export type NotificationAction = z.infer<typeof notificationActionSchema>;
 
 /** 서버(1.13.0+)가 할 일 알림에 싣는 할 일 주인·날짜. 예전 알림에는 없다. */

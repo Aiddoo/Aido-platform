@@ -1,20 +1,16 @@
-import { PREMIUM_FEATURES, USER_SEARCH_QUERY_LENGTH } from '@aido/api/vocabulary';
+import { PREMIUM_FEATURES, USER_SEARCH_QUERY_LENGTH, USER_TAG_LENGTH } from '@aido/api/vocabulary';
 import { instantSchema } from '@src/shared/date/instant';
 import { cursorPageSchema } from '@src/shared/domains/cursor-page.model';
+import { userSummarySchema } from '@src/shared/domains/user-summary.model';
 import { z } from 'zod';
 
 // 서버 경로 검증(userTagParamSchema)과 같은 규칙이다
 const userTagSchema = z
   .string()
-  .length(8)
+  .length(USER_TAG_LENGTH)
   .regex(/^[A-Z0-9]+$/u);
 
-const friendProfileSchema = z.object({
-  id: z.string(),
-  userTag: z.string(),
-  name: z.string().nullable(),
-  profileImage: z.string().nullable(),
-});
+const friendProfileSchema = userSummarySchema;
 
 export const friendUserSchema = friendProfileSchema.extend({
   followId: z.string(),

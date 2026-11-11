@@ -1,9 +1,10 @@
-import { TODO_VISIBILITIES } from '@aido/api/vocabulary';
+import { entityIdSchema } from '@aido/api/common';
+import { TODAY_SUMMARY_TOP_TODOS_MAX, TODO_VISIBILITIES } from '@aido/api/vocabulary';
 import { todoCategorySchema } from '@src/features/planning/category/domains/todo-category.model';
 import { addDaysToDateKey, diffDateKeysInDays } from '@src/shared/date/date-key';
 import { instantSchema } from '@src/shared/date/instant';
 import { toHHmm } from '@src/shared/date/zoned';
-import { entityIdSchema } from '@src/shared/domains/entity-id.model';
+import { userSummarySchema } from '@src/shared/domains/user-summary.model';
 import { z } from 'zod';
 
 import { type SubTodo, subTodoSchema } from './sub-todo.model';
@@ -63,17 +64,13 @@ export const todoSummarySchema = z.object({
         categoryColor: z.string(),
       }),
     )
-    .max(10),
+    .max(TODAY_SUMMARY_TOP_TODOS_MAX),
 });
 export type TodoSummary = z.infer<typeof todoSummarySchema>;
 
 export const todoDetailsSchema = z.object({
   todo: todoSchema,
-  owner: z.object({
-    id: entityIdSchema,
-    name: z.string().nullable(),
-    profileImage: z.string().nullable(),
-  }),
+  owner: userSummarySchema.pick({ name: true, profileImage: true }).extend({ id: entityIdSchema }),
   permissions: z.object({
     canEdit: z.boolean(),
     canComment: z.boolean(),

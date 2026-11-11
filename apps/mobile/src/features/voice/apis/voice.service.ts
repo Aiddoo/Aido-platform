@@ -62,7 +62,7 @@ export class VoiceService {
       this.#map('createQuickPlan', () =>
         toQuickPlanResult(lenientQuickPlanResponseSchema.parse(result.value), {
           planId: idempotencyKey,
-          source: input.source === 'voice' ? 'quick-voice' : 'quick-text',
+          source: input.source,
         }),
       ),
     );

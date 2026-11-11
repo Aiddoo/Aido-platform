@@ -1,5 +1,5 @@
-import type { PremiumPlanType } from '@src/features/identity/user/domains/premium-access.model';
 import { type Instant } from '@src/shared/date/instant';
+import type { PlanType } from '@src/shared/domains/plan-type.model';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useTranslation } from '@src/shared/i18n';
 import {
@@ -46,7 +46,7 @@ export function SubscriptionReceipt() {
   );
   const formatAmount = (value: number) => formatCount(value, dateFormatContext.locale);
   const trialPlanType =
-    rows.find((row) => row.type === 'plan')?.planType ?? ('annual' satisfies PremiumPlanType);
+    rows.find((row) => row.type === 'plan')?.planType ?? ('annual' satisfies PlanType);
   const formatReceiptDate = useFormatReceiptDate(toReceiptDateLabel(variant));
 
   return (
@@ -225,7 +225,7 @@ SubscriptionReceipt.Loading = function Loading() {
  * 서버는 금액을 몰라(국가별 스토어 가격) 스토어 요금제에서 붙인다.
  * 영수증은 스토어 없이 서버 값으로 그려야 해서 실패를 던지지 않고, 못 받으면 날짜·요금제 이름만 보인다
  */
-function usePlanPrices(isEnabled: boolean): Record<PremiumPlanType, string | null> {
+function usePlanPrices(isEnabled: boolean): Record<PlanType, string | null> {
   const { t } = useTranslation('subscription');
   const { data: availability } = useQuery({
     ...useGetOfferingsQueryOptions(),
@@ -233,7 +233,7 @@ function usePlanPrices(isEnabled: boolean): Record<PremiumPlanType, string | nul
     throwOnError: false,
   });
   const plans = availability?.status === 'available' ? availability.offering.plans : [];
-  const formatPlanPrice = (planType: PremiumPlanType) => {
+  const formatPlanPrice = (planType: PlanType) => {
     const plan = SubscriptionPolicy.findPlanByType(plans, planType);
     return plan == null ? null : t(PLAN_PRICE_LABEL_KEYS[planType], { price: plan.priceString });
   };
@@ -244,14 +244,14 @@ function usePlanPrices(isEnabled: boolean): Record<PremiumPlanType, string | nul
 const PLAN_NAME_KEYS = {
   annual: 'plan.annual',
   monthly: 'plan.monthly',
-} as const satisfies Record<PremiumPlanType, string>;
+} as const satisfies Record<PlanType, string>;
 
 interface ReceiptDetailRowProps {
   row: SubscriptionReceiptRow;
   formatDate: (date: Instant) => string;
-  planPrices: Record<PremiumPlanType, string | null>;
+  planPrices: Record<PlanType, string | null>;
   /** 체험 뒤 첫 결제 금액에 쓸 요금제. 서버가 모르면 체험을 두는 연간이다(스토어 설정) */
-  trialPlanType: PremiumPlanType;
+  trialPlanType: PlanType;
 }
 
 type ReceiptValueTone = 'default' | 'brand' | 'muted';

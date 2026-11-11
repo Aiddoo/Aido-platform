@@ -174,7 +174,7 @@ export function useCreateQuickPlanMutationOptions({
 
       const cause = getVoicePlanFailureCause(error);
       trackEvent('voice_plan_failed', {
-        source: toAnalyticsSource(input.source === 'voice' ? 'quick-voice' : 'quick-text'),
+        source: toAnalyticsSource(input.source),
         cause,
       });
       haptics.notify('error');

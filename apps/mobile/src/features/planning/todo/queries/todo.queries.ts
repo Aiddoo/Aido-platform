@@ -1,4 +1,4 @@
-import { TODO_SERIES_LIMITS } from '@aido/api/vocabulary';
+import { TODO_PAGE_SIZE, TODO_SERIES_LIMITS } from '@aido/api/vocabulary';
 import { useTodoService } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
 import { PERSISTED_QUERY_OPTIONS } from '@src/shared/constants/query-persistence';
@@ -11,8 +11,6 @@ import { keyBy } from 'es-toolkit';
 import { type DailyCompletionSummary } from '../domains/daily-completion.model';
 import { TodoPolicy } from '../domains/todo.model';
 import { TODO_QUERY_KEYS } from './todo-query-keys';
-
-const TODOS_PER_DAY_PAGE_SIZE = 200;
 
 /** 다시 열 때 먼저 보일 어제·오늘·내일 목록만 기기에 남긴다. 둘러본 다른 날짜는 콜드 스타트 복원 크기만 키운다 */
 export function shouldPersistTodosByDate({ date, todayKey }: { date: string; todayKey: string }) {
@@ -28,7 +26,7 @@ export function useGetTodosByDateQueryOptions({ date }: { date: string }) {
     queryFn: async ({ signal }) =>
       unwrap(
         await todoService.getTodos(
-          { startDate: date, endDate: date, size: TODOS_PER_DAY_PAGE_SIZE },
+          { startDate: date, endDate: date, size: TODO_PAGE_SIZE.MAX },
           signal,
         ),
       ),
@@ -98,7 +96,7 @@ export function useGetFriendTodosQueryOptions({
       unwrap(
         await todoService.getFriendTodos(
           friendUserId,
-          { startDate: date, endDate: date, size: TODOS_PER_DAY_PAGE_SIZE },
+          { startDate: date, endDate: date, size: TODO_PAGE_SIZE.MAX },
           signal,
         ),
       ),
@@ -119,7 +117,7 @@ export function useGetHasUpcomingRepeatQueryOptions() {
           {
             startDate: todayKey,
             endDate: addDaysToDateKey(todayKey, TODO_SERIES_LIMITS.VISIBLE_AHEAD_DAYS),
-            size: TODOS_PER_DAY_PAGE_SIZE,
+            size: TODO_PAGE_SIZE.MAX,
           },
           signal,
         ),

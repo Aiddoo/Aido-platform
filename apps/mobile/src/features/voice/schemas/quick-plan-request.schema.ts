@@ -1,8 +1,10 @@
 import { quickPlanRequestSchema } from '@aido/api';
-import { z } from 'zod';
+import type { z } from 'zod';
 
-// 입력 경로는 앱의 말(voice·text)로 받고 mapper가 계약 값으로 바꾼다
+import { voicePlanSourceSchema } from '../domains/voice-plan.model';
+
+// 입력 경로는 앱의 말(quick-voice·quick-text)로 받고 mapper가 계약 값으로 바꾼다
 const createQuickPlanInputSchema = quickPlanRequestSchema
   .pick({ text: true })
-  .extend({ source: z.enum(['voice', 'text']) });
+  .extend({ source: voicePlanSourceSchema.extract(['quick-voice', 'quick-text']) });
 export type CreateQuickPlanInput = z.infer<typeof createQuickPlanInputSchema>;

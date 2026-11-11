@@ -1,9 +1,10 @@
+import { APP_PLATFORMS, APP_STORE_VERSION_PATTERN } from '@aido/api/vocabulary';
 import { compareSemanticVersions } from '@src/shared/utils/semantic-version';
 import { z } from 'zod';
 
-const appStoreVersionSchema = z.string().regex(/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/);
+const appStoreVersionSchema = z.string().regex(new RegExp(APP_STORE_VERSION_PATTERN));
 
-const appVersionPlatformSchema = z.enum(['ios', 'android']);
+const appVersionPlatformSchema = z.enum(APP_PLATFORMS);
 type AppVersionPlatform = z.infer<typeof appVersionPlatformSchema>;
 
 const enabledAppVersionConfigSchema = z.object({

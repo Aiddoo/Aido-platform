@@ -1,5 +1,5 @@
-import type { PremiumPlanType } from '@src/features/identity/user/domains/premium-access.model';
 import { type Instant } from '@src/shared/date/instant';
+import type { PlanType } from '@src/shared/domains/plan-type.model';
 import { match, P } from 'ts-pattern';
 
 import {
@@ -9,7 +9,7 @@ import {
 } from './subscription-receipt.view-model';
 
 type PlanSummaryHeadline =
-  | { type: 'subscription'; planType: PremiumPlanType | null }
+  | { type: 'subscription'; planType: PlanType | null }
   | { type: 'trial' }
   | { type: 'reward' }
   | { type: 'admin' };

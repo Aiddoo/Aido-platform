@@ -1,7 +1,9 @@
 import {
   DAYS_OF_WEEK,
   TODO_EDIT_SCOPES,
+  TODO_REPEAT_INTERVALS,
   TODO_REPEAT_MONTH_DAY_CLAMP_FROM,
+  TODO_REPEAT_MONTH_DAY_MAX,
   TODO_SERIES_LIMITS,
   TODO_UPDATE_SCOPES,
 } from '@aido/api/vocabulary';
@@ -49,13 +51,13 @@ export const todoRepeatSchema = z.discriminatedUnion('frequency', [
   z.object({ frequency: z.literal('DAILY'), end: todoRepeatEndSchema }),
   z.object({
     frequency: z.literal('WEEKLY'),
-    interval: z.union([z.literal(1), z.literal(2)]),
+    interval: z.literal(TODO_REPEAT_INTERVALS),
     weekdays: z.array(z.enum(DAYS_OF_WEEK)).min(1),
     end: todoRepeatEndSchema,
   }),
   z.object({
     frequency: z.literal('MONTHLY'),
-    monthDay: z.int().min(1).max(31),
+    monthDay: z.int().min(1).max(TODO_REPEAT_MONTH_DAY_MAX),
     end: todoRepeatEndSchema,
   }),
 ]);

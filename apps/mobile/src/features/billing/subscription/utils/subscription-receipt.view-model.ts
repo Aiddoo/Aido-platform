@@ -1,11 +1,9 @@
 import { PremiumAccessPolicy } from '@src/features/identity/user/domains/premium-access.model';
-import {
-  type PremiumAccess,
-  type PremiumPlanType,
-} from '@src/features/identity/user/domains/premium-access.model';
+import { type PremiumAccess } from '@src/features/identity/user/domains/premium-access.model';
 import { UserPolicy } from '@src/features/identity/user/domains/user.model';
 import { type User } from '@src/features/identity/user/domains/user.model';
 import { type Instant } from '@src/shared/date/instant';
+import type { PlanType } from '@src/shared/domains/plan-type.model';
 import { match } from 'ts-pattern';
 
 /** 곧 끝난다는 안내를 어느 날로 보일지. 끝나는 날이면 today, 하루 남았으면 tomorrow다 */
@@ -22,13 +20,13 @@ interface TrialEndingNotice {
   daysLeft: number;
   willRenew: boolean;
   /** 체험 뒤 이어질 요금제. 모르면 요금제 없이 "구독"으로 말한다 */
-  planType: PremiumPlanType | null;
+  planType: PlanType | null;
 }
 
 export type SubscriptionReceiptRow =
   | { type: 'account' }
   /** 지금 구독(체험이면 체험 뒤)의 요금제. 모르면 null이고 "구독"으로 보인다 */
-  | { type: 'plan'; planType: PremiumPlanType | null }
+  | { type: 'plan'; planType: PlanType | null }
   | { type: 'rewardRecord'; endsAt: Instant }
   | { type: 'nextBillingDate'; date: Instant }
   | { type: 'trialEndsOn'; date: Instant }

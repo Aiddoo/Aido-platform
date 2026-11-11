@@ -5,12 +5,10 @@ import {
   addMonthsToDateKey,
   diffDateKeysInDays,
 } from '@src/shared/date/date-key';
+import { planTypeSchema } from '@src/shared/domains/plan-type.model';
 import { round } from 'es-toolkit';
 import { match } from 'ts-pattern';
 import { z } from 'zod';
-
-const planTypeSchema = z.enum(['monthly', 'annual']);
-export type PlanType = z.infer<typeof planTypeSchema>;
 
 const MONTHS_PER_YEAR = 12;
 

@@ -52,7 +52,8 @@ export type PlannedTodo = z.infer<typeof plannedTodoSchema>;
 export type PlannedMemo = z.infer<typeof plannedMemoSchema>;
 export type PlannedAction = z.infer<typeof plannedActionSchema>;
 
-const voicePlanSourceSchema = z.enum(['quick-voice', 'quick-text', 'voice-note', 'memo']);
+// 기기에 저장된 음성 노트 초안이 이 표기를 쓰므로 서버 값(ACTION_PLAN_SOURCES)으로 바꾸지 않고 mapper가 한 번 옮긴다
+export const voicePlanSourceSchema = z.enum(['quick-voice', 'quick-text', 'voice-note', 'memo']);
 export type VoicePlanSource = z.infer<typeof voicePlanSourceSchema>;
 
 export const voicePlanSchema = z.object({

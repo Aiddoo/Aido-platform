@@ -1,3 +1,4 @@
+import { TODO_PAGE_SIZE } from '@aido/api/vocabulary';
 import { useLogger, useTodoService } from '@src/bootstrap/providers/di-context';
 import type { SyncStorage } from '@src/core/ports/sync-storage';
 import { TodoPolicy } from '@src/features/planning/todo/domains/todo.model';
@@ -20,7 +21,6 @@ import { deviceTimezoneStoredValue } from '../schemas/device-timezone-storage.sc
 import { getTimezoneOffsetBucket } from '../utils/notification-analytics';
 
 const UPCOMING_TODO_WINDOW_DAYS = 31;
-const UPCOMING_TODO_PAGE_SIZE = 200;
 
 /** 보고가 성공해야 서버 재계산이 돌므로 보고 전에는 안내하지 않는다 */
 export function useTimezoneChangeNotice({
@@ -42,7 +42,7 @@ export function useTimezoneChangeNotice({
     const result = await todoService.getTodos({
       startDate: currentLocalDateKey,
       endDate: addDaysToDateKey(currentLocalDateKey, UPCOMING_TODO_WINDOW_DAYS),
-      size: UPCOMING_TODO_PAGE_SIZE,
+      size: TODO_PAGE_SIZE.MAX,
     });
     return (
       result.ok &&

@@ -13,7 +13,7 @@ import { SettingsTimeInput } from './settings-time-input';
 
 const WEATHER_TIME = {
   morning: {
-    range: SETTINGS_TIME_RANGE.morning,
+    range: SETTINGS_TIME_RANGE.weather,
     read: (preference: Preference): TimeOfDay => ({
       hour: preference.weatherMorningHour,
       minute: preference.weatherMorningMinute,
@@ -24,7 +24,7 @@ const WEATHER_TIME = {
     }),
   },
   evening: {
-    range: SETTINGS_TIME_RANGE.evening,
+    range: SETTINGS_TIME_RANGE.weather,
     read: (preference: Preference): TimeOfDay => ({
       hour: preference.weatherEveningHour,
       minute: preference.weatherEveningMinute,

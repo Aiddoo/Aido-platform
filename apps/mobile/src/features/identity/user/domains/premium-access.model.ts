@@ -6,10 +6,8 @@ import {
 } from '@aido/api/vocabulary';
 import { hasInstantPassed, type Instant, instantSchema, toEpochMs } from '@src/shared/date/instant';
 import { calculateCalendarDaysLeft } from '@src/shared/date/zoned';
+import { planTypeSchema } from '@src/shared/domains/plan-type.model';
 import { z } from 'zod';
-
-const premiumPlanTypeSchema = z.enum(['annual', 'monthly']);
-export type PremiumPlanType = z.infer<typeof premiumPlanTypeSchema>;
 
 export const premiumAccessSchema = z.object({
   source: z.enum(PREMIUM_SOURCE).nullable(),
@@ -25,7 +23,7 @@ export const premiumAccessSchema = z.object({
   /** 프리미엄이 아닐 때 최근 PREMIUM_GRANT_ENDED_WINDOW_DAYS일 안에 끝난 마지막 보상 기간의 끝. 그 뒤로는 서버가 null로 보낸다 */
   grantEndedAt: instantSchema.nullable(),
   /** 지금 기간을 정하는 스토어 구독의 요금제(체험이면 체험 뒤 요금제). 모르거나 저장해 둔 옛 캐시에 없으면 null이다 */
-  planType: premiumPlanTypeSchema.nullable().default(null),
+  planType: planTypeSchema.nullable().default(null),
 });
 export type PremiumAccess = z.infer<typeof premiumAccessSchema>;
 

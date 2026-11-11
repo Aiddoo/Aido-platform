@@ -1,4 +1,5 @@
-import type { PlanType } from '../domains/subscription.model';
+import type { PlanType } from '@src/shared/domains/plan-type.model';
+
 import type { UpsellPresentation } from '../domains/upsell.model';
 import type { SubscriptionView } from '../schemas/subscription-params.schema';
 import type {

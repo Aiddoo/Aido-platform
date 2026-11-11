@@ -83,16 +83,21 @@ export function toVoicePlan(
   });
 }
 
+const QUICK_PLAN_SOURCE = {
+  'quick-voice': 'VOICE',
+  'quick-text': 'TEXT',
+} as const satisfies Record<CreateQuickPlanInput['source'], QuickPlanRequest['source']>;
+
 export function toQuickPlanRequest({ text, source }: CreateQuickPlanInput): QuickPlanRequest {
   return {
     text,
-    source: source === 'voice' ? 'VOICE' : 'TEXT',
+    source: QUICK_PLAN_SOURCE[source],
   };
 }
 
 export function toQuickPlanResult(
   dto: LenientQuickPlanResponse,
-  { planId, source }: { planId: string; source: 'quick-voice' | 'quick-text' },
+  { planId, source }: { planId: string; source: CreateQuickPlanInput['source'] },
 ): QuickPlanResult {
   return {
     plan: toVoicePlan(planId, source, dto.plan),

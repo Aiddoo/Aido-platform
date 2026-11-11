@@ -11,6 +11,7 @@ import {
 import { type User } from '@src/features/identity/user/domains/user.model';
 import { DAY_MS } from '@src/shared/constants/time-units';
 import { diffMs, type Instant, instantSchema } from '@src/shared/date/instant';
+import { userSummarySchema } from '@src/shared/domains/user-summary.model';
 import { match } from 'ts-pattern';
 import { z } from 'zod';
 
@@ -34,12 +35,7 @@ export const pendingRedemptionSchema = z.strictObject({
 });
 export type PendingRedemption = z.infer<typeof pendingRedemptionSchema>;
 
-const inviterSummarySchema = z.object({
-  userId: z.string(),
-  name: z.string().nullable(),
-  userTag: z.string(),
-  profileImage: z.string().nullable(),
-});
+const inviterSummarySchema = userSummarySchema.omit({ id: true }).extend({ userId: z.string() });
 
 const inviteFriendshipSchema = z.enum(INVITE_FRIENDSHIP);
 

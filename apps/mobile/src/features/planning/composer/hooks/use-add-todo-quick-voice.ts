@@ -233,7 +233,7 @@ function useQuickPlanRequest({ aiConsent, onExit }: UseQuickPlanRequestOptions) 
   const send = async (text: string): Promise<CapturedPlan> => {
     const request = PlanRequestPolicy.preparePlanRequest<CreateQuickPlanInput>({
       previous: planRequestRef.current,
-      input: { text, source: 'voice' },
+      input: { text, source: 'quick-voice' },
       createIdempotencyKey: idGenerator.create,
     });
     planRequestRef.current = request;

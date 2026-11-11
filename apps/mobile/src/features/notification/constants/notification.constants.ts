@@ -1,4 +1,8 @@
-import { EVENING_REMINDER_HOUR_RANGE, MORNING_REMINDER_HOUR_RANGE } from '@aido/api/vocabulary';
+import {
+  EVENING_REMINDER_HOUR_RANGE,
+  MORNING_REMINDER_HOUR_RANGE,
+  WEATHER_HOUR_RANGE,
+} from '@aido/api/vocabulary';
 
 import type { NotificationType } from '../domains/notification.model';
 import type { PushRegistration } from '../domains/push-registration.model';
@@ -26,6 +30,10 @@ export const SETTINGS_TIME_RANGE = {
   evening: {
     minimumTime: { hour: EVENING_REMINDER_HOUR_RANGE.MIN, minute: 0 },
     maximumTime: { hour: EVENING_REMINDER_HOUR_RANGE.MAX, minute: 59 },
+  },
+  weather: {
+    minimumTime: { hour: WEATHER_HOUR_RANGE.MIN, minute: 0 },
+    maximumTime: { hour: WEATHER_HOUR_RANGE.MAX, minute: 59 },
   },
 } as const;
 

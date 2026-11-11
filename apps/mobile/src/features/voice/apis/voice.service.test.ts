@@ -24,7 +24,10 @@ describe('VoiceService', () => {
     httpClient.post.mockResolvedValue({ ok: true, value: quickPlanDto });
 
     // When
-    const result = await service.createQuickPlan({ text: '장보기', source: 'voice' }, 'key-1');
+    const result = await service.createQuickPlan(
+      { text: '장보기', source: 'quick-voice' },
+      'key-1',
+    );
 
     // Then
     expect(httpClient.post).toHaveBeenCalledWith(
@@ -40,7 +43,7 @@ describe('VoiceService', () => {
     httpClient.post.mockResolvedValue({ ok: true, value: { plan: 1 } });
 
     // When
-    const result = service.createQuickPlan({ text: '장보기', source: 'text' }, 'key-1');
+    const result = service.createQuickPlan({ text: '장보기', source: 'quick-text' }, 'key-1');
 
     // Then
     await expect(result).rejects.toThrow('Invalid createQuickPlan response');

@@ -3,12 +3,13 @@ import { omit } from 'es-toolkit';
 import { z } from 'zod';
 
 import { WIDGET_TOP_TODOS_LIMIT } from '../constants/widget.constants';
+import { widgetRenderStateSchema } from '../domains/widget-snapshot.model';
 
 // Persist only display data; isolated widget runtimes cannot access auth or i18n.
 /** 하루치 표시 데이터. v1 snapshot 본문과 같은 모양이다. */
 const widgetDaySnapshotSchema = z.object({
   /** data: 그날 할 일 있음 · empty: 로그인했으나 그날 할 일 없음 · loggedOut: 비로그인 */
-  state: z.enum(['data', 'empty', 'loggedOut']),
+  state: widgetRenderStateSchema.exclude(['stale']),
   /** 이 day가 설명하는 로컬 날짜 (YYYY-MM-DD) — 렌더 시점 오늘 key와 비교한다 */
   date: z.string(),
   totalTodos: z.number().int().min(0),
