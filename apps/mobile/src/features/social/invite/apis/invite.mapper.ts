@@ -1,8 +1,4 @@
-import type {
-  InvitedFriendResponse,
-  InvitedFriendsListResponse,
-  InvitePreviewResponse,
-} from '@aido/api';
+import type { InvitePreviewResponse } from '@aido/api';
 import { REDEEM_OUTCOME } from '@aido/api/vocabulary';
 import { toInstant, toNullableInstant } from '@src/shared/date/instant';
 import type { Page } from '@src/shared/types/page.types';
@@ -15,6 +11,8 @@ import type { InviteReward } from '../domains/invite-reward.model';
 import type { Invite } from '../domains/invite.model';
 import type { InvitedFriend } from '../domains/invited-friend.model';
 import type {
+  InvitedFriendResponse,
+  InvitedFriendsResponse,
   InviteResponse,
   InviteRewardResponse,
   RedeemResponse,
@@ -57,7 +55,7 @@ export function toRedemptionResult(dto: RedeemResponse): RedemptionResult {
       inviter,
       friendship: redeemed.friendship,
       rewards: redeemed.rewards.map(toInviteReward),
-      isReplay: redeemed.isReplay ?? false,
+      isReplay: redeemed.isReplay,
     }))
     .with({ outcome: REDEEM_OUTCOME.CONNECTED }, (connected) => ({
       outcome: connected.outcome,
@@ -80,11 +78,11 @@ function toInvitedFriend(dto: InvitedFriendResponse): InvitedFriend {
     ...pick(dto, ['userId', 'name', 'userTag', 'profileImage', 'status', 'activeDayCount']),
     joinedAt: toInstant(dto.joinedAt),
     qualifiedAt: toNullableInstant(dto.qualifiedAt),
-    rejectionReason: dto.rejectionReason ?? null,
+    rejectionReason: dto.rejectionReason,
   };
 }
 
-export function toInvitedFriendsPage(dto: InvitedFriendsListResponse): Page<InvitedFriend> {
+export function toInvitedFriendsPage(dto: InvitedFriendsResponse): Page<InvitedFriend> {
   return {
     items: dto.items.map(toInvitedFriend),
     totalCount: dto.totalCount,

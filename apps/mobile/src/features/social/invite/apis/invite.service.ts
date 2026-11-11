@@ -1,7 +1,6 @@
 import {
   type GetInvitedFriendsQuery,
   inviteAvailabilityResponseSchema,
-  invitedFriendsListResponseSchema,
   invitePreviewResponseSchema,
 } from '@aido/api';
 import type { ApiError } from '@src/core/errors/api-error';
@@ -20,7 +19,11 @@ import type { RedemptionResult } from '../domains/invite-redemption.model';
 import { INVITE_ERROR_CODE, type InviteErrorCode } from '../domains/invite.error';
 import type { Invite } from '../domains/invite.model';
 import type { InvitedFriend } from '../domains/invited-friend.model';
-import { inviteResponseSchema, redeemResponseSchema } from '../schemas/invite-response.schema';
+import {
+  inviteResponseSchema,
+  invitedFriendsResponseSchema,
+  redeemResponseSchema,
+} from '../schemas/invite-response.schema';
 import {
   toInvite,
   toInvitedFriendsPage,
@@ -145,7 +148,7 @@ export class InviteService {
         signal,
         params: { cursor: params.cursor, limit: params.limit, status: params.status },
       }),
-      invitedFriendsListResponseSchema,
+      invitedFriendsResponseSchema,
       toInvitedFriendsPage,
       '[InviteService] Invalid getInvitedFriends response',
     );

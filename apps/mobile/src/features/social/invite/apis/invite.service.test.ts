@@ -148,6 +148,7 @@ describe('InviteService', () => {
             { rewardType: 'PREMIUM_DAYS', quantity: 7 },
             { rewardType: 'BADGE', quantity: 1 },
           ],
+          isReplay: false,
         },
       });
 

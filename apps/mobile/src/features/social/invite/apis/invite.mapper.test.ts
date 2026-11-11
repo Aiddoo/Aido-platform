@@ -1,5 +1,3 @@
-import { invitedFriendsListResponseSchema } from '@aido/api';
-
 import {
   createInviteDto,
   createInvitedFriendDto,
@@ -10,7 +8,11 @@ import { invitePreviewSchema } from '../domains/invite-preview.model';
 import { redemptionResultSchema } from '../domains/invite-redemption.model';
 import { inviteSchema } from '../domains/invite.model';
 import { invitedFriendSchema } from '../domains/invited-friend.model';
-import { inviteResponseSchema, redeemResponseSchema } from '../schemas/invite-response.schema';
+import {
+  inviteResponseSchema,
+  invitedFriendsResponseSchema,
+  redeemResponseSchema,
+} from '../schemas/invite-response.schema';
 import {
   toInvite,
   toInvitedFriendsPage,
@@ -44,7 +46,7 @@ describe('toInvite', () => {
 });
 
 describe('toRedemptionResult', () => {
-  it('다시 수락 표시가 없는 구서버 응답은 처음 수락으로 읽는다', () => {
+  it('다시 수락이 아닌 응답은 처음 수락으로 읽는다', () => {
     // Given
     const dto = redeemResponseSchema.parse(createRedeemResponseDto());
 
@@ -114,7 +116,7 @@ describe('toInvitePreview', () => {
 describe('toInvitedFriendsPage', () => {
   it('모르는 상태와 보상 제외 사유는 UNKNOWN과 null로 받는다', () => {
     // Given
-    const dto = invitedFriendsListResponseSchema.parse({
+    const dto = invitedFriendsResponseSchema.parse({
       items: [{ ...createInvitedFriendDto(), status: 'PAUSED', rejectionReason: 'NEW_REASON' }],
       totalCount: 1,
       hasMore: false,
@@ -129,7 +131,7 @@ describe('toInvitedFriendsPage', () => {
 
   it('계약을 통과한 초대 친구는 앱 모델도 통과하고 시각은 순간으로 읽는다', () => {
     // Given
-    const dto = invitedFriendsListResponseSchema.parse({
+    const dto = invitedFriendsResponseSchema.parse({
       items: [createInvitedFriendDto({ qualifiedAt: '2026-11-03T10:30:00.000Z' })],
       totalCount: 1,
       hasMore: false,

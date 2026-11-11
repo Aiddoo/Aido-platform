@@ -105,6 +105,7 @@ export function createInvitedFriendDto(
     activeDayCount: 1,
     joinedAt: '2026-11-02T10:30:00.000Z',
     qualifiedAt: null,
+    rejectionReason: null,
     ...overrides,
   });
 }
@@ -151,6 +152,7 @@ export function createRedeemResponseDto(overrides?: object): RedeemInviteRespons
     inviter: INVITER,
     friendship: 'FRIENDS',
     rewards: [{ rewardType: 'PREMIUM_DAYS', quantity: 7 }],
+    isReplay: false,
     ...overrides,
   });
 }
