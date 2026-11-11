@@ -268,6 +268,7 @@ export const ErrorCode = {
   MEMO_2001: "MEMO_2001",
   MEMO_2002: "MEMO_2002",
   MEMO_2003: "MEMO_2003",
+  MEMO_2004: "MEMO_2004",
 
   // 친구 초대 (INVITE_2100-2199)
   /** 초대 코드를 찾을 수 없어요 */
@@ -1385,6 +1386,13 @@ export const Errors: Record<ErrorCodeType, ErrorDefinition> = {
     message: "메모 개수가 최대 한도에 도달했습니다.",
     description: "사용자당 최대 메모 개수를 초과했습니다. 기존 메모를 정리해주세요.",
     httpStatus: HttpStatus.FORBIDDEN,
+  },
+  [ErrorCode.MEMO_2004]: {
+    code: "MEMO_2004",
+    message: "같은 Idempotency-Key로 다른 메모를 보냈습니다.",
+    description:
+      "Idempotency-Key는 메모 저장 한 번을 가리킵니다. 내용이 달라졌으면 새 키로 보냅니다. 이 요청은 메모를 만들지 않았습니다.",
+    httpStatus: HttpStatus.CONFLICT,
   },
 
   // 친구 초대 (INVITE_2100-2199)

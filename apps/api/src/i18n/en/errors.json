@@ -168,6 +168,7 @@
   "MEMO_2001": "Memo not found",
   "MEMO_2002": "The memo at the target position was not found",
   "MEMO_2003": "You can't add more memos",
+  "MEMO_2004": "This memo was already saved with different text. Please try again.",
   "INVITE_2101": "We couldn't find this invite code. Please check with your friend",
   "INVITE_2102": "This invite link has changed. Ask your friend for a new one",
   "INVITE_2103": "This is your own invite code",

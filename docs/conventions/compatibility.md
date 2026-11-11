@@ -29,6 +29,7 @@
 - `GET /v1/ai/usage`: 마지막 지원 앱 1.14.x(1.15 앱은 안 쓴다). 1.16.0에서 `/recurring`과 같이 판단한다.
 - `POST /v1/ai/parse-todo`: 마지막 지원 앱 1.14.x(1.15 앱은 `POST /v1/quick-plans`를 쓴다). 응답의 `meta`도 출시 계약이다. 1.16.0에서 `/recurring`과 같이 판단한다.
 - `POST /v1/ai/parse-memo`의 `Idempotency-Key` 생략: 마지막 지원 앱 1.14.x. 헤더가 없으면 요청마다 차감한다. 1.15 앱은 항상 보낸다. 생략을 막는 것은 1.14.x 사용자가 사라진 뒤에 판단한다.
+- `POST /v1/memos`의 `Idempotency-Key` 생략: 출시 앱 1.15.1 이하와 서버 안 음성 계획 저장 경로(`PlanMemoWriterPort`). 헤더가 없으면 요청마다 메모를 만든다. 1.15.2 앱은 새 메모 저장마다 보내고, 같은 키로 글이 다르면 409 `MEMO_2004`다. 앱 쪽 생략을 막는 것은 1.15.1 이하 사용자가 사라진 뒤에 판단하고, 음성 계획 경로는 계속 키 없이 만든다.
 - 메모 변환의 `isRecurring`·`recurrence`: 마지막 지원 앱 1.14.x. 서버가 Presentation에서 같은 `repeat`로 바꾼다. 1.16.0에서 `/recurring`과 같이 판단한다.
 - 파싱 응답의 `recurrence`(요일 + 종료일): 마지막 지원 앱 1.14.x. 새 앱은 `repeat`를 쓴다. 1.16.0에서 `/recurring`과 같이 판단한다.
 - `POST /v1/notifications/token`: 마지막 지원 앱 1.14.1. 1.14.2 앱부터 `PUT /v1/notifications/push-devices/{deviceId}`를 쓴다. 같은 UseCase로 위임한다. 같은 경로의 `DELETE /v1/notifications/token?deviceId=`는 구 앱 경로가 아니다. 1.15.x 앱이 로그인한 채 로그아웃할 때 이 기기를 푸는 현행 경로(`PushDeviceApi.unregister`)이고, 세션이 끝난 기기는 인증 없이 `POST /v1/notifications/push-devices/unregister`로 푼다.
