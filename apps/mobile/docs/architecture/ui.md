@@ -72,7 +72,7 @@ export function CategoryList({ filters, orderBy = 'position', limit }: CategoryL
 ## 네임스페이스·반복 UI·추출
 
 - 부모 없이 의미 없는 조각은 **무엇이든** 부모 파일 아래 `Parent.Part`로 둔다. `.Loading`·`.Error`·`.Empty`·`.Item`·`.Contents`만이 아니다: `PlanSummary.Quota`, `DailyForecast.TemperatureBar`, `TodoCommentThreadList.SortBar`, `VoiceNoteRecorder.Controls`. 부모를 지우면 함께 지워지고, 이름이 부모와의 결합을 알린다.
-- 형태는 `X.Part = function Part() {}`다(`Object.assign` 금지). 쓰지 않는 부속은 만들지 않고, `.Loading`이 있으면 `.Error`도 짝으로 둔다. 예외로 route 시트는 `RouteBottomSheet`가 오류·문의를 그리므로 `.Error`를 두지 않는다. `.Contents`는 null을 좁혀 받는 조각에만 쓴다.
+- 형태는 `X.Part = function Part() {}`다(`Object.assign` 금지). 부속에 또 `.Loading`을 달면 TS가 `X.Part.Loading`을 모르므로 그 부속만 함수 선언을 대입한다(`SettingsListGroup.Item`, `ListRow.Texts`). 쓰지 않는 부속은 만들지 않고, `.Loading`이 있으면 `.Error`도 짝으로 둔다. 예외로 route 시트는 `RouteBottomSheet`가 오류·문의를 그리므로 `.Error`를 두지 않는다. `.Contents`는 null을 좁혀 받는 조각에만 쓴다.
 - 같은 모양으로 반복되는 **고정** UI는 역할이 드러나는 지역 컴포넌트로 추상화한다. 이름은 자유다(`Fact`, `Row`, `Message`, `Stat`). 항목마다 **한 줄씩** 쓰고 설정 배열을 `.map`하지 않는다. "이 항목만 강조·숨김" 같은 기획 수정이 그 한 줄에서 끝난다.
 
 ```tsx
