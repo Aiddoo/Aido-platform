@@ -1,4 +1,4 @@
-import { ErrorCode } from '@aido/api/errors';
+import { ErrorCode, HttpStatus } from '@aido/api/errors';
 import { type ApiError, isApiError } from '@src/shared/errors';
 
 export const TODO_NUDGE_ERROR_CODE = {
@@ -9,8 +9,7 @@ export type TodoNudgeErrorCode = (typeof TODO_NUDGE_ERROR_CODE)[keyof typeof TOD
 
 /** 지워졌거나 볼 수 없는 콕이다. 다시 시도해도 같다 */
 export function isNudgeUnavailableError(error: unknown): error is ApiError {
-  // oxlint-disable-next-line aido/http-status-literal -- 1.15.2 전환 #1400
-  return isApiError(error) && error.status === 404;
+  return isApiError(error) && error.status === HttpStatus.NOT_FOUND;
 }
 
 /** 서버 플래그로 보낸 콕 목록이 꺼져 있다(NUDGE_1105) */

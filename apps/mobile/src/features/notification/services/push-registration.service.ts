@@ -1,3 +1,4 @@
+import { HttpStatus } from '@aido/api/errors';
 import type { ApiError } from '@src/core/errors/api-error';
 import { ok, type Result } from '@src/core/errors/result';
 import type { RequestConfig } from '@src/core/ports/http-client';
@@ -22,8 +23,6 @@ import type { PushRegistrationRepository } from '../repositories/push-registrati
 import type { DeviceIdService } from './device-id.service';
 
 const REPORT_WAIT_TIMEOUT_MS = 3_000;
-// oxlint-disable-next-line aido/http-status-literal -- 1.15.2 전환 #1400
-const TOO_MANY_REQUESTS_STATUS = 429;
 
 interface PushDeviceReport {
   deviceId: string;
@@ -301,7 +300,7 @@ export class PushRegistrationService {
     if (result.ok) {
       return 'done';
     }
-    if (result.error.status === TOO_MANY_REQUESTS_STATUS) {
+    if (result.error.status === HttpStatus.TOO_MANY_REQUESTS) {
       return 'retry';
     }
     this.#logger.warn(NOTIFICATION_LOG_EVENT.PUSH_DEVICE_RELEASE_REJECTED, {

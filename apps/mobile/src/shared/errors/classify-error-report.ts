@@ -1,3 +1,4 @@
+import { HttpStatus } from '@aido/api/errors';
 import { isApiError } from '@src/core/errors/api-error';
 import { isCodedError } from '@src/core/errors/result';
 import type { ErrorReporterContext } from '@src/core/ports/error-reporter';
@@ -9,16 +10,13 @@ import { isKeychainLockedError } from './storage-error';
 /** event는 이슈가 되고 breadcrumb은 행적에만 남는다(4xx·BusinessError·검증 실패·네트워크·타임아웃·키체인 잠금) */
 export type ErrorReportKind = 'event' | 'breadcrumb';
 
-// oxlint-disable-next-line aido/http-status-literal -- 1.15.2 전환 #1400
-const SERVER_ERROR_STATUS = 500;
-
 /** 오류를 Sentry 이슈로 보낼지 정하는 유일한 곳. 어댑터는 이 판단만 따른다 */
 export function classifyErrorReport(error: unknown): ErrorReportKind {
   if (error instanceof ParseError) {
     return 'event';
   }
   if (isApiError(error)) {
-    return error.status >= SERVER_ERROR_STATUS ? 'event' : 'breadcrumb';
+    return error.status >= HttpStatus.INTERNAL_SERVER_ERROR ? 'event' : 'breadcrumb';
   }
   if (isCodedError(error) || error instanceof ZodError) {
     return 'breadcrumb';

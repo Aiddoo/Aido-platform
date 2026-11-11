@@ -1,4 +1,4 @@
-import { ErrorCode } from '@aido/api/errors';
+import { ErrorCode, HttpStatus } from '@aido/api/errors';
 import { isApiError } from '@src/core/errors/api-error';
 
 /** auth-transition은 라우트 게이트가 곧 로그인 화면으로 바꾸므로 조용히 넘기고, expected-state는 장애가 아니라 breadcrumb만 남긴다 */
@@ -15,13 +15,14 @@ const EXPECTED_STATE_CODES: ReadonlySet<string> = new Set([
 
 /** 401의 최종 판단은 호출부(`app/(app)/_layout.tsx` 안전망)가 `status`와 결합해 내리므로 인증 상태를 보지 않는다 */
 export function classifyBoundaryError(error: unknown): BoundaryErrorKind {
-  // oxlint-disable-next-line aido/http-status-literal -- 1.15.2 전환 #1400
-  if (isApiError(error) && error.status === 401) {
+  if (isApiError(error) && error.status === HttpStatus.UNAUTHORIZED) {
     return 'auth-transition';
   }
 
-  // oxlint-disable-next-line aido/http-status-literal -- 1.15.2 전환 #1400
-  if (isApiError(error) && (error.status === 404 || EXPECTED_STATE_CODES.has(error.code))) {
+  if (
+    isApiError(error) &&
+    (error.status === HttpStatus.NOT_FOUND || EXPECTED_STATE_CODES.has(error.code))
+  ) {
     return 'expected-state';
   }
 
