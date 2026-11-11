@@ -9,7 +9,7 @@
 | 무엇                  | 어디                                                              | 얼마나 남기나                                                                         |
 | --------------------- | ----------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
 | 목록 줄(데이터)       | `constants/releases.ts`의 `RELEASE_x_y_z`, `RELEASES`             | 기능 출시마다 하나씩 쌓고 지우지 않는다. 최신이 앞이다                                |
-| 여러 단계 소개(Steps) | `components/release-x-y-z-steps.tsx`, `TOUR_RELEASE_IDS`          | 최근 두 출시만. 세 번째 출시가 나오면 가장 오래된 소개 코드를 지우고 목록 줄은 남긴다 |
+| 여러 단계 소개(Steps) | `components/release-x-y-z-steps.tsx`, 모델의 `TOUR_RELEASE_IDS`   | 최근 두 출시만. 세 번째 출시가 나오면 가장 오래된 소개 코드를 지우고 목록 줄은 남긴다 |
 | 바로 해 보기(`cta`)   | 목록 줄의 `cta`(타입 있는 Expo Router `href` + 기능 키)           | 소개가 빠진 줄을 누르면 이 화면으로 바로 간다                                         |
 | 전체 업데이트 내역    | 목록 아래 줄이 앱 안 브라우저로 여는 패치 노트(`PATCH_NOTES_URL`) | 고친 점까지 모든 출시. 앱 목록은 기능 출시만 담는다                                   |
 
@@ -35,7 +35,7 @@
 
 ## 자세한 순서
 
-1. `constants/whats-new.constants.ts`의 `RELEASE_ID`에 한 줄 더하고 `TOUR_RELEASE_IDS` 맨 앞에 넣는다. 세 개가 되면 맨 뒤를 빼고 그 소개 파일, `app/(app)/whats-new/index.tsx`의 `match` 갈래, 소개에만 쓰던 문구(`v{x_y_z}.{단계}`)를 지운다. 목록 줄 문구(`v{x_y_z}.release`)는 남긴다.
+1. `domains/whats-new.model.ts`의 출시 id(`releaseIdSchema`)와 소개 출시(`TOUR_RELEASE_IDS`) 맨 앞에 넣고, `constants/whats-new.constants.ts`의 `RELEASE_ID`에 코드에서 부를 이름을 한 줄 더한다. 세 개가 되면 맨 뒤를 빼고 그 소개 파일, `app/(app)/whats-new/index.tsx`의 `match` 갈래, 소개에만 쓰던 문구(`v{x_y_z}.{단계}`)를 지운다. 목록 줄 문구(`v{x_y_z}.release`)는 남긴다.
 2. `constants/releases.ts`에 `RELEASE_x_y_z`를 더하고 `RELEASES` 맨 앞에 넣는다. `version`과 `releasedOn`은 [패치 노트](https://aido.kr/ko/patch-notes)에서 그 기능이 나온 버전·날짜를 그대로 쓴다. `id`는 route·지표·stepper 키라 한 번 정하면 바꾸지 않고 버전을 읽어 내지도 않는다(1.14 앱에 처음 넣은 친구 초대 소개는 id `1.14.0`, 버전 `1.13.0`). `cta`는 그 기능을 바로 쓸 화면이다. 자동으로 열 출시에만 `campaignId`(운영 `FEATURE_DISCOVERY_CAMPAIGN_ID` 값)를 둔다. 캠페인 id는 이 한 곳에만 있다. `releases.test.ts`가 버전 순서, 최근 두 출시의 소개, 캠페인 출시의 소개를 확인한다.
 3. `components/release-x-y-z-steps.tsx`를 만들고 `app/(app)/whats-new/index.tsx`의 `match`에 잇는다. `TOUR_RELEASE_IDS`를 바꾸면 `exhaustive()`가 컴파일 에러로 알려 준다.
 4. `app/(app)/(tabs)/(mypage)/whats-new/releases.tsx`의 맨 위에 `<ReleaseRow />` 한 줄을 더한다.

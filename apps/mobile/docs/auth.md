@@ -126,13 +126,13 @@
 
 ## 영속 계약 (변경 시 마이그레이션 필수)
 
-| 항목                                                              | 위치                               | 바꾸면 생기는 일                                                                                                                                                               |
-| ----------------------------------------------------------------- | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 토큰 키 이름 (`accessToken`·`refreshToken`)                       | `shared/constants/storage-keys.ts` | 기존 설치의 토큰을 못 읽어 전체 로그아웃                                                                                                                                       |
-| `keychainAccessible` 등 키체인 옵션                               | `secure-storage.ts`                | iOS 조회 쿼리엔 `kSecAttrAccessible`이 없어 읽기는 깨지지 않는다. 진짜 위험은 `SecItemUpdate`가 `kSecValueData`만 갱신해 기존 설치의 accessibility가 영영 옮겨지지 않는 것이다 |
-| refresh 응답 envelope (`{ data: { accessToken, refreshToken } }`) | 서버 `v1/auth/refresh`             | 클라이언트가 2xx를 파싱 못 해 `invalid-refresh-response`로 세션 종료                                                                                                           |
-| 토큰 키를 읽고 쓰는 곳                                            | `secure-token-store.ts` 한 곳      | 다른 레이어가 키를 직접 참조하면 저장 계약이 흩어진다                                                                                                                          |
-| 해제 대기 키 (`pendingRevocation`, `{ refreshToken, expiresAt }`) | `pending-revocation.repository.ts` | 기록한 세션을 풀지 못한다. 토큰 키와 달리 잃어도 로그아웃되지는 않는다                                                                                                         |
+| 항목                                                              | 위치                                    | 바꾸면 생기는 일                                                                                                                                                               |
+| ----------------------------------------------------------------- | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 토큰 키 이름 (`accessToken`·`refreshToken`)                       | `shared/storage/secure-storage-keys.ts` | 기존 설치의 토큰을 못 읽어 전체 로그아웃                                                                                                                                       |
+| `keychainAccessible` 등 키체인 옵션                               | `secure-storage.ts`                     | iOS 조회 쿼리엔 `kSecAttrAccessible`이 없어 읽기는 깨지지 않는다. 진짜 위험은 `SecItemUpdate`가 `kSecValueData`만 갱신해 기존 설치의 accessibility가 영영 옮겨지지 않는 것이다 |
+| refresh 응답 envelope (`{ data: { accessToken, refreshToken } }`) | 서버 `v1/auth/refresh`                  | 클라이언트가 2xx를 파싱 못 해 `invalid-refresh-response`로 세션 종료                                                                                                           |
+| 토큰 키를 읽고 쓰는 곳                                            | `secure-token-store.ts` 한 곳           | 다른 레이어가 키를 직접 참조하면 저장 계약이 흩어진다                                                                                                                          |
+| 해제 대기 키 (`pendingRevocation`, `{ refreshToken, expiresAt }`) | `pending-revocation.repository.ts`      | 기록한 세션을 풀지 못한다. 토큰 키와 달리 잃어도 로그아웃되지는 않는다                                                                                                         |
 
 서버 쪽 운영 불변식(refresh 비밀 회전, 만료, 재사용 grace)은 [서버 보안](../../api/docs/security.md#세션-토큰-운영-불변식)에 있다.
 
