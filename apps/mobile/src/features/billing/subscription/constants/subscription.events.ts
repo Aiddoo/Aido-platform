@@ -36,6 +36,10 @@ declare module '@src/shared/analytics/event-map' {
     // oxlint-disable-next-line aido/analytics-event-catalog -- 1.15.2 전환 #1400
     subscription_started: { product_id: string; plan_type: PlanType; is_trial: boolean };
     subscription_restored: undefined;
+    /** 복원이 문의로 안내할 만한 실패로 끝났다. 복원할 구매가 없는 것은 실패가 아니다 */
+    subscription_restore_failed: { reason: PurchaseFailedReason };
+    /** 스토어의 구독 관리 화면을 열었다 */
+    subscription_management_opened: { store: 'app_store' | 'play_store' };
     /** 프리미엄 안내를 띄웠다. 같은 기능을 그날 이미 닫았으면 toast다 */
     premium_gate_shown: {
       feature: PremiumGateAnalyticsFeature;

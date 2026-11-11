@@ -4,6 +4,7 @@ import {
   useExternalLink,
   useSubscriptionService,
 } from '@src/bootstrap/providers/di-context';
+import { useTrack } from '@src/shared/analytics';
 import { getErrorMessage } from '@src/shared/errors';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { t } from '@src/shared/i18n';
@@ -11,13 +12,17 @@ import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 
 import { SUBSCRIPTION_MANAGE_OPEN_FAILURE } from '../utils/subscription-failure.view-model';
 import { createManagementUrl } from '../utils/subscription-links';
+import { findSubscriptionStore } from '../utils/subscription-store';
 import { useOpenSubscriptionInquiry } from './use-open-subscription-inquiry';
+
+const STORE_EVENT_VALUES = { appStore: 'app_store', googlePlay: 'play_store' } as const;
 
 export function useOpenSubscriptionManagement() {
   const subscriptionService = useSubscriptionService();
   const applicationMetadata = useApplicationMetadata();
   const externalLink = useExternalLink();
   const errorReporter = useErrorReporter();
+  const { trackEvent } = useTrack();
   const toast = useAppToast();
   const openInquiry = useOpenSubscriptionInquiry();
 
@@ -56,6 +61,10 @@ export function useOpenSubscriptionManagement() {
     }
     try {
       await externalLink.open(url);
+      const store = findSubscriptionStore(process.env.EXPO_OS);
+      if (store != null) {
+        trackEvent('subscription_management_opened', { store: STORE_EVENT_VALUES[store] });
+      }
     } catch (error) {
       handleOpenFailed(getErrorMessage(error));
     }
