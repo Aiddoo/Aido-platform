@@ -1,10 +1,11 @@
 import { Canvas, Group } from '@shopify/react-native-skia';
 import { SECOND_MS } from '@src/shared/constants/time-units';
+import { useLayoutSize } from '@src/shared/hooks/use-layout-size';
 import { DEVICE_TOTAL_MEMORY_BYTES } from '@src/shared/infra/device/device-info';
 import { Box } from '@src/shared/ui';
 import { isEqual } from 'es-toolkit';
 import { useCallback, useEffect, useState } from 'react';
-import { type LayoutChangeEvent, StyleSheet, useWindowDimensions } from 'react-native';
+import { StyleSheet, useWindowDimensions } from 'react-native';
 import {
   cancelAnimation,
   Easing,
@@ -84,8 +85,8 @@ export function WeatherSceneCanvas({
   heroWidth,
 }: WeatherSceneCanvasProps) {
   const window = useWindowDimensions();
-  const [layoutSize, setLayoutSize] = useState<SceneSize | null>(null);
-  const { width, height } = layoutSize ?? window;
+  const [layoutSize, handleLayout] = useLayoutSize();
+  const { width, height } = layoutSize.width === 0 ? window : layoutSize;
   const { theme } = useUniwind();
   const isAnimating = useIsWeatherSceneRunning();
   const time = useSharedValue(STATIC_SCENE_SECONDS);
@@ -104,15 +105,6 @@ export function WeatherSceneCanvas({
     frameClock.setActive(isAnimating);
     return () => frameClock.setActive(false);
   }, [frameClock, isAnimating]);
-
-  const handleLayout = (event: LayoutChangeEvent) => {
-    const { width: nextWidth, height: nextHeight } = event.nativeEvent.layout;
-    setLayoutSize((previous) =>
-      previous?.width === nextWidth && previous.height === nextHeight
-        ? previous
-        : { width: nextWidth, height: nextHeight },
-    );
-  };
 
   // Skia Canvas는 onLayout을 받지 않아 감싼 View에서 크기를 잰다.
   return (

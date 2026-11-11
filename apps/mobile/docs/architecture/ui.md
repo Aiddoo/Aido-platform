@@ -186,7 +186,7 @@ export default function NotificationsScreen() {
 2. **정리.** `SkPath`·`SkImage`·텍스처는 만든 effect의 정리 함수에서 `dispose`한다. 교체할 때는 앞의 것을 먼저 `dispose`한다.
 3. **프레임 작업.** worklet의 shared·derived value로만 한다. 프레임마다 React 상태를 바꾸거나 JS로 건너가지 않는다(`scheduleOnRN`은 이벤트만). 파티클 배열은 미리 만든다.
 4. **멈춤 조건 하나.** 프레임 콜백·`withRepeat`는 `useIsAnimationActive()`(화면 포커스 + 앱 앞 + 모션 줄이기 + 화면 안)로 켜고 끈다.
-5. **크기.** `Canvas`는 `onSize`·`useCanvasSize()`로 잰다. 재기 위한 `Animated.View`를 감싸지 않는다.
+5. **크기.** Skia 2.14의 `Canvas onSize`는 멈출 수 없는 프레임 콜백으로 매 프레임 잰다. 감싼 View의 `onLayout`에서 shared value로 `set`한다(JS 값이 필요하면 `useLayoutSize`). `onSize`는 이미 프레임마다 그리는 Canvas에서만 쓴다.
 6. **품질.** 기기 메모리 품질 단계를 지키고 저사양 Android는 `*_PARTICLE_COUNT_BY_TIER` 상수로 줄인다.
 7. **값.** 애니메이션 값도 `.get()`·`.set()`이다. `.value`를 쓰지 않는다.
 

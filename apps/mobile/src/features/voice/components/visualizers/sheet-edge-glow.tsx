@@ -9,7 +9,6 @@ import {
 import { useIsReduceMotionEnabled } from '@src/shared/hooks/use-is-reduce-motion-enabled';
 import { useResolvedColor } from '@src/shared/hooks/use-resolved-color';
 import { SHEET_RADIUS } from '@src/shared/ui';
-import { useState } from 'react';
 import type { LayoutChangeEvent } from 'react-native';
 import Animated, {
   FadeIn,
@@ -35,7 +34,7 @@ export function SheetEdgeGlow({ level }: SheetEdgeGlowProps) {
   const isReducedMotion = useIsReduceMotionEnabled();
   const mainColor = useResolvedColor('text-main');
   const densityScale = useSkiaDensityScale();
-  const [size, setSize] = useState({ width: 0, height: 0 });
+  const size = useSharedValue({ width: 0, height: 0 });
   const angle = useSharedValue(0);
   const smoothed = useSharedValue(0);
 
@@ -54,9 +53,13 @@ export function SheetEdgeGlow({ level }: SheetEdgeGlowProps) {
     () => VOICE_EDGE_GLOW.minOpacity + (1 - VOICE_EDGE_GLOW.minOpacity) * smoothed.get(),
   );
   const rotation = useDerivedValue(() => [{ rotate: angle.get() }]);
-  const width = Math.max(0, size.width - BLEED * 2);
-  const height = Math.max(0, size.height - BLEED * 2);
-  const center = vec(size.width / 2, size.height / 2);
+  const handleLayout = ({ nativeEvent }: LayoutChangeEvent) => {
+    size.set({ width: nativeEvent.layout.width, height: nativeEvent.layout.height });
+  };
+
+  const width = useDerivedValue(() => Math.max(0, size.get().width - BLEED * 2));
+  const height = useDerivedValue(() => Math.max(0, size.get().height - BLEED * 2));
+  const center = useDerivedValue(() => vec(size.get().width / 2, size.get().height / 2));
   const gradient = (
     <SweepGradient
       c={center}
@@ -72,11 +75,6 @@ export function SheetEdgeGlow({ level }: SheetEdgeGlowProps) {
     />
   );
 
-  const handleLayout = ({ nativeEvent }: LayoutChangeEvent) => {
-    setSize({ width: nativeEvent.layout.width, height: nativeEvent.layout.height });
-  };
-
-  // Skia Canvas는 onLayout을 받지 않고 Box는 등장·퇴장 애니메이션이 없어 Animated.View에서 크기를 잰다
   return (
     <Animated.View
       entering={FadeIn.duration(200)}

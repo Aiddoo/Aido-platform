@@ -3,7 +3,7 @@ import { useIsReduceMotionEnabled } from '@src/shared/hooks/use-is-reduce-motion
 import { useResolvedColor } from '@src/shared/hooks/use-resolved-color';
 import { Box, Text } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
-import { type ComponentProps, useEffect, useState } from 'react';
+import { type ComponentProps, useEffect } from 'react';
 import { type LayoutChangeEvent, StyleSheet } from 'react-native';
 import {
   cancelAnimation,
@@ -23,29 +23,33 @@ interface DigestScanPreviewProps extends Omit<ComponentProps<typeof Box>, 'child
 export function DigestScanPreview({ paragraphs, className, ...boxProps }: DigestScanPreviewProps) {
   const isReducedMotion = useIsReduceMotionEnabled();
   const beamColor = useResolvedColor('text-main');
-  const [size, setSize] = useState({ width: 0, height: 0 });
-  const offset = useSharedValue(-BEAM.height);
+  const size = useSharedValue({ width: 0, height: 0 });
+  const progress = useSharedValue(0);
 
   useEffect(() => {
-    if (isReducedMotion || size.height === 0) {
+    if (isReducedMotion) {
       return;
     }
-    offset.set(-BEAM.height);
-    offset.set(
+    progress.set(0);
+    progress.set(
       withRepeat(
-        withTiming(size.height, { duration: BEAM.durationMs, easing: Easing.inOut(Easing.quad) }),
+        withTiming(1, { duration: BEAM.durationMs, easing: Easing.inOut(Easing.quad) }),
         -1,
       ),
     );
 
-    return () => cancelAnimation(offset);
-  }, [isReducedMotion, size.height, offset]);
-
-  const transform = useDerivedValue(() => [{ translateY: offset.get() }]);
+    return () => cancelAnimation(progress);
+  }, [isReducedMotion, progress]);
 
   const handleLayout = ({ nativeEvent }: LayoutChangeEvent) => {
-    setSize({ width: nativeEvent.layout.width, height: nativeEvent.layout.height });
+    size.set({ width: nativeEvent.layout.width, height: nativeEvent.layout.height });
   };
+
+  // 빔은 맨 위 밖(-BEAM.height)에서 시작해 바닥까지 지난다
+  const transform = useDerivedValue(() => [
+    { translateY: -BEAM.height + progress.get() * (size.get().height + BEAM.height) },
+  ]);
+  const beamWidth = useDerivedValue(() => size.get().width);
 
   return (
     <Box
@@ -67,7 +71,7 @@ export function DigestScanPreview({ paragraphs, className, ...boxProps }: Digest
       {!isReducedMotion && (
         <Canvas pointerEvents="none" style={StyleSheet.absoluteFill}>
           <Group transform={transform} opacity={BEAM.opacity}>
-            <Rect x={0} y={0} width={size.width} height={BEAM.height}>
+            <Rect x={0} y={0} width={beamWidth} height={BEAM.height}>
               <LinearGradient
                 start={vec(0, 0)}
                 end={vec(0, BEAM.height)}

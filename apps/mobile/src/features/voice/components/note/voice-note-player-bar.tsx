@@ -1,5 +1,6 @@
 import { Canvas, Path, Skia, type SkPathBuilder } from '@shopify/react-native-skia';
 import { SECOND_MS } from '@src/shared/constants/time-units';
+import { useLayoutSize } from '@src/shared/hooks/use-layout-size';
 import { useResolvedColor } from '@src/shared/hooks/use-resolved-color';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, HStack, PauseIcon, PlayIcon, Text } from '@src/shared/ui';
@@ -7,7 +8,7 @@ import { cn } from '@src/shared/utils/cn';
 import { noop } from 'es-toolkit';
 import { PressableFeedback } from 'heroui-native';
 import { type ComponentProps, useEffect, useMemo, useState } from 'react';
-import type { AccessibilityActionEvent, LayoutChangeEvent } from 'react-native';
+import type { AccessibilityActionEvent } from 'react-native';
 import { GestureDetector, usePanGesture } from 'react-native-gesture-handler';
 import {
   clamp,
@@ -196,7 +197,7 @@ function Scrubber({
 }: ScrubberProps) {
   const playedColor = useResolvedColor('text-main');
   const restColor = useResolvedColor('text-gray-4');
-  const [{ width, height }, setSize] = useState({ width: 0, height: 0 });
+  const [{ width, height }, handleLayout] = useLayoutSize();
   const barCount = Math.floor(width / STEP);
   const bars = useMemo(() => resampleLevels(levels, barCount), [levels, barCount]);
 
@@ -220,10 +221,6 @@ function Scrubber({
       }
     },
   });
-
-  const handleLayout = ({ nativeEvent }: LayoutChangeEvent) => {
-    setSize({ width: nativeEvent.layout.width, height: nativeEvent.layout.height });
-  };
 
   const handleAccessibilityAction = ({ nativeEvent }: AccessibilityActionEvent) => {
     const direction = nativeEvent.actionName === 'increment' ? 1 : -1;
