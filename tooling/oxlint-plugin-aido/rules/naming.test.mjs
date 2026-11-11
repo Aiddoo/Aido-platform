@@ -18,6 +18,28 @@ tester.run('component-name', rules['component-name'], {
   ],
 });
 
+const POSITION_NAMES = {
+  suffixes: ['Section', 'Detail', 'Content', 'Panel', 'Area', 'Info'],
+  standaloneNames: ['Header', 'Footer'],
+};
+
+tester.run('component-name (위치 이름)', rules['component-name'], {
+  valid: [
+    { code: 'TodoList.Header = function Header() { return null; };', options: [POSITION_NAMES] },
+    { code: 'function TodoHeader() { return null; }', options: [POSITION_NAMES] },
+    { code: 'function TodoBody() { return null; }', options: [POSITION_NAMES] },
+  ],
+  invalid: [
+    { code: 'function SettingsPanel() { return null; }', options: [POSITION_NAMES], errors: 1 },
+    {
+      code: 'Sheet.FeatureDetail = function FeatureDetail() { return null; };',
+      options: [POSITION_NAMES],
+      errors: 1,
+    },
+    { code: 'export function Footer() { return null; }', options: [POSITION_NAMES], errors: 1 },
+  ],
+});
+
 tester.run('function-name', rules['function-name'], {
   valid: [
     'function removeTodoFromList() {}',

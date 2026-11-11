@@ -1,6 +1,17 @@
 import { collectImportedNames, isComponentName, isFunction } from '../ast.mjs';
 
-const FORBIDDEN_COMPONENT_NAME = /(?:Body|Bodies|Frames?|Sections?|Blocks?|Wrappers?)$/u;
+const DEFAULT_FORBIDDEN_SUFFIXES = [
+  'Body',
+  'Bodies',
+  'Frame',
+  'Frames',
+  'Section',
+  'Sections',
+  'Block',
+  'Blocks',
+  'Wrapper',
+  'Wrappers',
+];
 
 function getMemberPropertyName(node) {
   return node?.type === 'MemberExpression' && !node.computed && node.property.type === 'Identifier'
@@ -8,33 +19,52 @@ function getMemberPropertyName(node) {
     : null;
 }
 
-// 역할이 드러나지 않는 조각 이름(Body, Frame, Section, Blocks, Wrapper)을 막는다
+// 역할이 드러나지 않는 조각 이름(Body, Frame, Section, Blocks, Wrapper)을 막는다.
+// standaloneNames는 네임스페이스 조각(`X.Header`)이 아닌 선언에만 건다
 const componentName = {
-  meta: { type: 'suggestion' },
-  createOnce(context) {
-    function check(node, name) {
-      if (isComponentName(name) && FORBIDDEN_COMPONENT_NAME.test(name)) {
+  meta: {
+    type: 'suggestion',
+    schema: [
+      {
+        type: 'object',
+        properties: {
+          suffixes: { type: 'array', items: { type: 'string' } },
+          standaloneNames: { type: 'array', items: { type: 'string' } },
+        },
+        additionalProperties: false,
+      },
+    ],
+  },
+  create(context) {
+    const suffixes = context.options[0]?.suffixes ?? DEFAULT_FORBIDDEN_SUFFIXES;
+    const standaloneNames = new Set(context.options[0]?.standaloneNames ?? []);
+    function check(node, name, isStandalone) {
+      if (!isComponentName(name)) {
+        return;
+      }
+      const suffix = suffixes.find((candidate) => name.endsWith(candidate));
+      if (suffix != null || (isStandalone && standaloneNames.has(name))) {
         context.report({
           node,
-          message: `${name}: Body, Frame, Section, Blocks, Wrapper로 끝나는 컴포넌트 이름을 쓰지 않습니다. 역할이 드러나는 이름을 짓거나 스크린에 펼치세요.`,
+          message: `${name}: 위치·틀을 말하는 컴포넌트 이름(${[...suffixes, ...standaloneNames].join(', ')})을 쓰지 않습니다. 역할이 드러나는 이름을 짓거나 스크린에 펼치세요.`,
         });
       }
     }
     return {
       FunctionDeclaration(node) {
-        check(node, node.id?.name ?? null);
+        check(node, node.id?.name ?? null, true);
       },
       VariableDeclarator(node) {
         if (
           node.id.type === 'Identifier' &&
           (isFunction(node.init) || node.init?.type === 'CallExpression')
         ) {
-          check(node, node.id.name);
+          check(node, node.id.name, true);
         }
       },
       AssignmentExpression(node) {
         if (node.operator === '=' && isFunction(node.right)) {
-          check(node, getMemberPropertyName(node.left));
+          check(node, getMemberPropertyName(node.left), false);
         }
       },
     };

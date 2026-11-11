@@ -26,7 +26,10 @@ tester.run('no-render-call', rules['no-render-call'], {
 });
 
 tester.run('card-uses-heroui-card', rules['card-uses-heroui-card'], {
-  valid: ["import { Card } from 'heroui-native';\nexport function TodoCard() { return <Card />; }"],
+  valid: [
+    "import { Card } from 'heroui-native';\nexport function TodoCard() { return <Card />; }",
+    "import { Surface } from 'heroui-native';\nexport function SurfaceCard() { return <Surface />; }",
+  ],
   invalid: [
     {
       code: "import { View } from 'react-native';\nexport function TodoCard() { return <View />; }",

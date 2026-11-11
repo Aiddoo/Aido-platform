@@ -100,7 +100,10 @@ const noRenderCall = {
   },
 };
 
-// 이름이 -card인 컴포넌트는 heroui-native Card를 쓴다. 목록 행이면 -row, 다른 원본이면 그 원본 이름이다
+// 카드 면을 그리는 heroui-native 원본. SurfaceCard(shared/ui)는 Surface를 감싼다
+const CARD_COMPONENTS = new Set(['Card', 'Surface']);
+
+// 이름이 -card인 컴포넌트는 heroui-native Card나 Surface를 쓴다. 목록 행이면 -row, 다른 원본이면 그 원본 이름이다
 const cardUsesHerouiCard = {
   meta: { type: 'suggestion' },
   createOnce(context) {
@@ -112,14 +115,15 @@ const cardUsesHerouiCard = {
             statement.source.value === 'heroui-native' &&
             statement.specifiers.some(
               (specifier) =>
-                specifier.type === 'ImportSpecifier' && getImportedName(specifier) === 'Card',
+                specifier.type === 'ImportSpecifier' &&
+                CARD_COMPONENTS.has(getImportedName(specifier)),
             ),
         );
         if (!importsCard) {
           context.report({
             node: program,
             message:
-              '이름이 -card인 컴포넌트는 heroui-native Card를 써야 합니다. 목록 행이면 -row로, 다른 원본이면 그 원본 이름으로 바꾸세요.',
+              '이름이 -card인 컴포넌트는 heroui-native Card나 Surface를 써야 합니다. 목록 행이면 -row로, 다른 원본이면 그 원본 이름으로 바꾸세요.',
           });
         }
       },
