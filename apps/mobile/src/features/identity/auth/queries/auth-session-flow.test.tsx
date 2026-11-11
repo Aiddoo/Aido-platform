@@ -8,6 +8,7 @@ import { emitSessionExpired } from '@src/core/events/session-expired';
 import { subscribeTodoCreated } from '@src/core/events/todo-created';
 import { createSessionEpoch, withSessionEpoch } from '@src/core/session/session-epoch';
 import { createSessionManager } from '@src/core/session/session-manager';
+import { createCoachmarkRepository } from '@src/features/device/coachmark/apis/coachmark.repository';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
 import { UserService } from '@src/features/identity/user/apis/user.service';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
@@ -25,7 +26,7 @@ import {
   createPendingResponse,
   createSocialAuthGatewayStub,
 } from '@src/shared/__tests__';
-import { toInstant } from '@src/shared/date/instant';
+import { getNowInstant, toInstant } from '@src/shared/date/instant';
 import { createDraftKey } from '@src/shared/draft/draft.model';
 import { NetworkError, ServerError, TimeoutError } from '@src/shared/errors';
 import { createAuthClient } from '@src/shared/infra/http/auth-client';
@@ -61,6 +62,7 @@ const memoDraftKey = createDraftKey({
   target: ['create'],
   schema: z.object({ content: z.string() }),
 });
+const OTHER_ACCOUNT_ID = 'clz7x5p8k0001qz0z8z8z8z8b';
 
 // 로그아웃이 마운트된 위젯 조회의 캐시를 비우면 떨어져 나간 쿼리에 24시간 gc 타이머가 남아 Jest 종료를 붙잡는다
 beforeEach(() => {
@@ -471,12 +473,11 @@ describe('탈퇴', () => {
 
   it('성공하면 조회 캐시를 비우고 그 계정의 안내 기록만 지운다', async () => {
     // Given
-    const clearUserDeviceData = jest.fn();
     const account = createCurrentUserDto({ userId: 'clz7x5p8k0001qz0z8z8z8z8a' });
-    const session = createAuthSession({
-      tokens: ACCOUNT_A_TOKENS,
-      clearUserDeviceData,
-    });
+    const session = createAuthSession({ tokens: ACCOUNT_A_TOKENS });
+    const coachmarks = createCoachmarkRepository(session.syncStorage, getNowInstant);
+    coachmarks.markSeen({ accountId: account.userId, kind: 'todo-reorder' });
+    coachmarks.markSeen({ accountId: OTHER_ACCOUNT_ID, kind: 'todo-reorder' });
     session.userHttp.get.mockResolvedValue(ok(account));
     session.authHttp.delete.mockImplementation(async (url) =>
       url === 'v1/auth/account' ? ok(createDeleteAccountDto()) : ok({}),
@@ -500,19 +501,17 @@ describe('탈퇴', () => {
 
     // Then
     await waitFor(() => expect(result.current.status).toBe('unauthenticated'));
-    expect(clearUserDeviceData).toHaveBeenCalledTimes(1);
-    expect(clearUserDeviceData).toHaveBeenCalledWith(account.userId);
+    expect(coachmarks.hasSeen({ accountId: account.userId, kind: 'todo-reorder' })).toBe(false);
+    expect(coachmarks.hasSeen({ accountId: OTHER_ACCOUNT_ID, kind: 'todo-reorder' })).toBe(true);
     expect(session.queryClient.getQueryData(USER_QUERY_KEYS.me())).toBeUndefined();
   });
 
   it('탈퇴 응답을 기다리는 사이 세션이 만료돼도 초안과 안내 기록을 지운다', async () => {
     // Given
-    const clearUserDeviceData = jest.fn();
     const account = createCurrentUserDto({ userId: 'clz7x5p8k0001qz0z8z8z8z8a' });
-    const session = createAuthSession({
-      tokens: ACCOUNT_A_TOKENS,
-      clearUserDeviceData,
-    });
+    const session = createAuthSession({ tokens: ACCOUNT_A_TOKENS });
+    const coachmarks = createCoachmarkRepository(session.syncStorage, getNowInstant);
+    coachmarks.markSeen({ accountId: account.userId, kind: 'todo-reorder' });
     const deleteRequest = createPendingResponse(ok(createDeleteAccountDto()));
     session.userHttp.get.mockResolvedValue(ok(account));
     session.authHttp.delete.mockImplementation((url) =>
@@ -550,7 +549,7 @@ describe('탈퇴', () => {
     await waitFor(() =>
       expect(session.draftService.restore(memoDraftKey)).toEqual({ status: 'empty' }),
     );
-    expect(clearUserDeviceData).toHaveBeenCalledWith(account.userId);
+    expect(coachmarks.hasSeen({ accountId: account.userId, kind: 'todo-reorder' })).toBe(false);
   });
 
   it('비밀번호가 틀려 실패하면 토큰과 상태를 유지한다', async () => {

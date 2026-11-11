@@ -23,8 +23,9 @@ import { groupBy, range } from 'es-toolkit';
 import { type ComponentType, useMemo, useState } from 'react';
 
 import { SubTodoPolicy } from '../domains/sub-todo.model';
+import { isFriendFeedUnavailableError } from '../domains/todo.error';
 import type { Todo } from '../domains/todo.model';
-import { useFeedDateKey, useFeedDate } from '../hooks/use-feed-params';
+import { useFeedDateKey, useFeedDate, useFeedFriendId } from '../hooks/use-feed-params';
 import { useFeedSelectedTodoId } from '../hooks/use-feed-selected-todo-id';
 import { useGetFriendTodosQueryOptions } from '../queries/todo.queries';
 import { formatTodoTime } from '../utils/format-todo-time';
@@ -170,8 +171,27 @@ FriendTodoList.Loading = function Loading() {
   );
 };
 
-FriendTodoList.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
+FriendTodoList.Error = function ErrorFallback({ error, reset }: QueryErrorFallbackProps) {
   const { t } = useTranslation(['todo', 'common']);
+  const [_friendId, selectFriend] = useFeedFriendId();
+
+  if (isFriendFeedUnavailableError(error)) {
+    return (
+      <HStack flex={1} justify="center" align="center">
+        <Result
+          testID="friend-feed-unavailable"
+          icon={<TodoIllustration />}
+          title={t('todo:friendTodo.unavailableTitle')}
+          description={t('todo:friendTodo.unavailableDescription')}
+          button={
+            <Result.Button onPress={() => selectFriend(undefined)}>
+              {t('todo:friendTodo.backToMyFeed')}
+            </Result.Button>
+          }
+        />
+      </HStack>
+    );
+  }
 
   return (
     <HStack flex={1} justify="center" align="center">

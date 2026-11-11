@@ -69,7 +69,7 @@ PushNotificationGateway (core/ports) ← createExpoPushNotificationGateway (shar
 
 ## 앱이 앞에 있을 때 받은 알림
 
-`registerForegroundNotificationPresentation`이 앱이 그려지기 전에 `setNotificationHandler`를 걸고, `NotificationProvider`의 `useForegroundPushPresentation`이 지금 화면에 맞춘 판단을 `PushNotificationGateway.setForegroundPresentation`으로 넘긴다. 판단 규칙은 `PushNotificationPolicy.getForegroundPresentation` 하나다.
+`registerForegroundNotificationPresentation`이 앱이 그려지기 전에(`composition-root`가 기기 포트를 만들 때 프로세스에 한 번) `setNotificationHandler`를 걸고, `NotificationProvider`의 `useForegroundPushPresentation`이 지금 화면에 맞춘 판단을 `PushNotificationGateway.setForegroundPresentation`으로 넘긴다. 판단 규칙은 `PushNotificationPolicy.getForegroundPresentation` 하나다.
 
 | 지금 화면                                                         | 보이는 방식                           | 이유                                                                     |
 | ----------------------------------------------------------------- | ------------------------------------- | ------------------------------------------------------------------------ |

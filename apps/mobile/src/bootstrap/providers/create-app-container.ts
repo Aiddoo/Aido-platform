@@ -1,0 +1,408 @@
+import type { Analytics } from '@src/core/ports/analytics';
+import type { AppIconGateway } from '@src/core/ports/app-icon-gateway';
+import type { AppLifecycleGateway } from '@src/core/ports/app-lifecycle-gateway';
+import type { AppStoreListingGateway } from '@src/core/ports/app-store-listing-gateway';
+import type { AppStoreReviewGateway } from '@src/core/ports/app-store-review-gateway';
+import type { ClipboardGateway } from '@src/core/ports/clipboard-gateway';
+import type { DeviceIdStore } from '@src/core/ports/device-id-store';
+import type { ErrorReporter } from '@src/core/ports/error-reporter';
+import type { ExternalLinkGateway } from '@src/core/ports/external-link-gateway';
+import type { HapticsGateway } from '@src/core/ports/haptics-gateway';
+import type { HttpClient } from '@src/core/ports/http-client';
+import type { IdGenerator } from '@src/core/ports/id-generator';
+import type { IncomingLinkGateway } from '@src/core/ports/incoming-link-gateway';
+import type { InstallReferrerGateway } from '@src/core/ports/install-referrer-gateway';
+import type { InstallationIdGateway } from '@src/core/ports/installation-id-gateway';
+import type { JsonFetcher } from '@src/core/ports/json-fetcher';
+import type { LocalFileSystem } from '@src/core/ports/local-file-system';
+import type { LocationGateway } from '@src/core/ports/location-gateway';
+import type { Logger } from '@src/core/ports/logger';
+import type { NativeApplicationMetadataGateway } from '@src/core/ports/native-application-metadata-gateway';
+import type { NetworkStatusGateway } from '@src/core/ports/network-status-gateway';
+import type { ObservableSyncStorage } from '@src/core/ports/observable-sync-storage';
+import type { PurchasesGateway } from '@src/core/ports/purchases-gateway';
+import type { PushNotificationGateway } from '@src/core/ports/push-notification-gateway';
+import type { ScreenOrientationGateway } from '@src/core/ports/screen-orientation-gateway';
+import type { SocialAuthGateway } from '@src/core/ports/social-auth-gateway';
+import type { SocialShareGateway } from '@src/core/ports/social-share-gateway';
+import type { SpeechRecognizer } from '@src/core/ports/speech-recognizer';
+import type { Storage } from '@src/core/ports/storage';
+import type { EnumerableSyncStorage } from '@src/core/ports/sync-storage';
+import type { SystemShareGateway } from '@src/core/ports/system-share-gateway';
+import type { RefreshTokensRequest } from '@src/core/ports/token-refresher';
+import type { TokenStore } from '@src/core/ports/token-store';
+import type { VendorIdGateway } from '@src/core/ports/vendor-id-gateway';
+import type { ViewCaptureGateway } from '@src/core/ports/view-capture-gateway';
+import type { SessionEpoch } from '@src/core/session/session-epoch';
+import { AppVersionService } from '@src/features/app-config/app-version/apis/app-version.service';
+import { FeatureCampaignService } from '@src/features/app-config/feature-campaign/apis/feature-campaign.service';
+import { createWhatsNewRepository } from '@src/features/app-config/whats-new/apis/whats-new.repository';
+import { SuggestionService } from '@src/features/assistant/suggestion/apis/suggestion.service';
+import { EntitlementService } from '@src/features/billing/subscription/apis/entitlement.service';
+import { PurchasesSession } from '@src/features/billing/subscription/apis/purchases-session';
+import { SubscriptionService } from '@src/features/billing/subscription/apis/subscription.service';
+import { createUpsellDismissalRepository } from '@src/features/billing/subscription/apis/upsell-dismissal.repository';
+import { createActivationProgressRepository } from '@src/features/device/activation/apis/activation-progress.repository';
+import { ActivationService } from '@src/features/device/activation/apis/activation.service';
+import { AppIconService } from '@src/features/device/app-icon/apis/app-icon.service';
+import { createCoachmarkRepository } from '@src/features/device/coachmark/apis/coachmark.repository';
+import { CoachmarkService } from '@src/features/device/coachmark/apis/coachmark.service';
+import { createStoreReviewRepository } from '@src/features/device/store-review/apis/store-review.repository';
+import { StoreReviewService } from '@src/features/device/store-review/apis/store-review.service';
+import { createWidgetHeadlessFailureRepository } from '@src/features/device/widget/apis/widget-headless-failure.repository';
+import { createWidgetNavigationRepository } from '@src/features/device/widget/apis/widget-navigation.repository';
+import { WidgetSyncService } from '@src/features/device/widget/apis/widget-sync.service';
+import type { WidgetBridge } from '@src/features/device/widget/bridge/widget-bridge';
+import { TodoCommentService } from '@src/features/engagement/comment/apis/todo-comment.service';
+import { createAuthSessionStore } from '@src/features/identity/auth/apis/auth-session.store';
+import { AuthService } from '@src/features/identity/auth/apis/auth.service';
+import { LogOutDeviceService } from '@src/features/identity/auth/apis/log-out-device.service';
+import { createPendingRevocationRepository } from '@src/features/identity/auth/apis/pending-revocation.repository';
+import { SessionCleanupService } from '@src/features/identity/auth/apis/session-cleanup.service';
+import { createSessionQueryCache } from '@src/features/identity/auth/apis/session-query-cache';
+import { SessionRevocationService } from '@src/features/identity/auth/apis/session-revocation.service';
+import { UserDeviceDataService } from '@src/features/identity/auth/apis/user-device-data.service';
+import { ConsentService } from '@src/features/identity/consent/apis/consent.service';
+import { PreferenceService } from '@src/features/identity/preference/apis/preference.service';
+import { UserService } from '@src/features/identity/user/apis/user.service';
+import { AchievementService } from '@src/features/insights/achievement/apis/achievement.service';
+import { ReportService } from '@src/features/insights/report/apis/report.service';
+import { MemoService } from '@src/features/notes/memo/apis/memo.service';
+import { DeviceIdService } from '@src/features/notification/apis/device-id.service';
+import { createDeviceTimezoneRepository } from '@src/features/notification/apis/device-timezone.repository';
+import { DeviceTimezoneService } from '@src/features/notification/apis/device-timezone.service';
+import { createMarketingPushPromptRepository } from '@src/features/notification/apis/marketing-push-prompt.repository';
+import { NotificationBadgeService } from '@src/features/notification/apis/notification-badge.service';
+import { createNotificationEntryStore } from '@src/features/notification/apis/notification-entry.store';
+import { NotificationService } from '@src/features/notification/apis/notification.service';
+import { PushDeviceService } from '@src/features/notification/apis/push-device.service';
+import { createPushPermissionPromptRepository } from '@src/features/notification/apis/push-permission-prompt.repository';
+import { createPushRegistrationRepository } from '@src/features/notification/apis/push-registration.repository';
+import { TodoCategoryService } from '@src/features/planning/category/apis/todo-category.service';
+import { createCalendarViewModeRepository } from '@src/features/planning/todo/apis/calendar-view-mode.repository';
+import { SubTodoService } from '@src/features/planning/todo/apis/sub-todo.service';
+import { TodoService } from '@src/features/planning/todo/apis/todo.service';
+import { FriendService } from '@src/features/social/friend/apis/friend.service';
+import { createAllDoneBannerRepository } from '@src/features/social/invite/apis/all-done-banner.repository';
+import { createInstallReferrerRepository } from '@src/features/social/invite/apis/install-referrer.repository';
+import { InviteShareService } from '@src/features/social/invite/apis/invite-share.service';
+import { InviteService } from '@src/features/social/invite/apis/invite.service';
+import { createPawPrintCelebrationRepository } from '@src/features/social/invite/apis/paw-print-celebration.repository';
+import { createPendingRedemptionRepository } from '@src/features/social/invite/apis/pending-redemption.repository';
+import { PendingRedemptionService } from '@src/features/social/invite/apis/pending-redemption.service';
+import { ModerationService } from '@src/features/social/moderation/apis/moderation.service';
+import { TodoNudgeService } from '@src/features/social/nudge/apis/todo-nudge.service';
+import { InquiryService } from '@src/features/support/inquiry/apis/inquiry.service';
+import { createOfflineModelPromptRepository } from '@src/features/voice/apis/offline-model-prompt.repository';
+import { createRecognitionLanguageRepository } from '@src/features/voice/apis/recognition-language.repository';
+import { createVoiceNoteDraftRepository } from '@src/features/voice/apis/voice-note-draft.repository';
+import { VoiceNoteStorageService } from '@src/features/voice/apis/voice-note-storage.service';
+import { createVoiceRecordingRepository } from '@src/features/voice/apis/voice-recording.repository';
+import { VoiceService } from '@src/features/voice/apis/voice.service';
+import { WeatherLocationService } from '@src/features/weather/apis/weather-location.service';
+import { WeatherService } from '@src/features/weather/apis/weather.service';
+import { createFeatureAttributionStore } from '@src/shared/analytics/feature-attribution';
+import { getNowInstant } from '@src/shared/date/instant';
+import { createDraftRepository } from '@src/shared/draft/draft.repository';
+import { DraftService } from '@src/shared/draft/draft.service';
+import type { QueryClient } from '@tanstack/react-query';
+
+import {
+  disabledQueryCacheStorage,
+  type QueryCacheStorage,
+} from '../query/query-cache-persistence';
+import type { DIContainer } from './di-context';
+
+/** 조립에 넣는 것. 운영은 `composition-root`가 프로세스에 한 번 만들고, 테스트는 `createTestPorts`의 stub이다 */
+export interface AppContainerPorts {
+  logger: Logger;
+  analytics: Analytics;
+  errorReporter: ErrorReporter;
+  haptics: HapticsGateway;
+  idGenerator: IdGenerator;
+  speechRecognizer: SpeechRecognizer;
+  /** 스토어 결제 SDK. 화면은 `SubscriptionService`로만 쓴다 */
+  purchasesGateway: PurchasesGateway;
+  pushNotification: PushNotificationGateway;
+  /** SecureStore. 회수 대기와 푸시 등록 기록을 둔다 */
+  storage: Storage;
+  /** 토큰 키를 아는 유일한 곳. 지우면 `sessionEpoch`가 오른다 */
+  tokenStore: TokenStore;
+  /** 토큰이 지워질 때마다 올라가는 세션 세대 */
+  sessionEpoch: SessionEpoch;
+  /** 로그인 전에도 부르는 API(로그인, 초대 코드, 공개 알림) */
+  publicHttpClient: HttpClient;
+  /** 토큰을 붙이고, 401이면 프로세스에 하나인 토큰 갱신기로 갱신한 뒤 다시 보낸다 */
+  authHttpClient: HttpClient;
+  /** API envelope 없는 원문 JSON(app-config) */
+  jsonFetcher: JsonFetcher;
+  /** 오프라인 로그아웃 뒤 서버 세션을 풀 때 갱신 토큰으로 보낸다 */
+  requestRefresh: RefreshTokensRequest;
+  socialAuth: SocialAuthGateway;
+  socialShareGateway: SocialShareGateway;
+  systemShare: SystemShareGateway;
+  clipboard: ClipboardGateway;
+  externalLink: ExternalLinkGateway;
+  incomingLink: IncomingLinkGateway;
+  appLifecycle: AppLifecycleGateway;
+  networkStatus: NetworkStatusGateway;
+  viewCapture: ViewCaptureGateway;
+  screenOrientation: ScreenOrientationGateway;
+  deviceLocation: LocationGateway;
+  applicationMetadata: NativeApplicationMetadataGateway;
+  appStoreListing: AppStoreListingGateway;
+  appStoreReviewGateway: AppStoreReviewGateway;
+  appIconGateway: AppIconGateway;
+  installReferrerGateway: InstallReferrerGateway;
+  installationIdGateway: InstallationIdGateway;
+  vendorIdGateway: VendorIdGateway;
+  deviceIdStore: DeviceIdStore;
+  /** 말로 메모 녹음 파일. 기기 밖으로 나가지 않는다 */
+  localFileSystem: LocalFileSystem;
+  widgetBridge: WidgetBridge;
+  /** 위젯 진입 명령과 위젯만 깨어난 프로세스의 실패 기록 */
+  widgetStorage: ObservableSyncStorage;
+  /** 앱과 위젯이 함께 읽는 기기 저장소. 키별 구독과 키 목록을 준다 */
+  syncStorage: ObservableSyncStorage & Pick<EnumerableSyncStorage, 'keys'>;
+  /** 암호화 초안 저장소. 초안, 말로 메모 초안, 인식 언어가 함께 쓴다 */
+  draftStorage: EnumerableSyncStorage;
+  /** 오프라인 조회 캐시. 암호화 저장소를 열지 못하면 null이고 기기에 남기지 않는다 */
+  queryCacheStorage: QueryCacheStorage | null;
+  queryClient: QueryClient;
+  platform: 'ios' | 'android';
+  /** 운영 알림에서 구독 이벤트의 기기를 보도록 결제 SDK에 붙인다 */
+  deviceModel: string | null;
+  getTimeZone: () => string;
+  /** 요청 헤더(Accept-Language)와 같은 값 */
+  getLanguage: () => string;
+}
+
+/** 포트로 Service·저장소를 만들기만 한다. 구독·타이머·저장소 쓰기는 쓰는 Provider·훅의 effect가 맡는다 */
+export function createAppContainer(ports: AppContainerPorts): DIContainer {
+  const {
+    logger,
+    analytics,
+    errorReporter,
+    publicHttpClient,
+    authHttpClient,
+    tokenStore,
+    sessionEpoch,
+    syncStorage,
+    draftStorage,
+    pushNotification,
+  } = ports;
+  const queryCacheStorage = ports.queryCacheStorage ?? disabledQueryCacheStorage;
+
+  const draftService = new DraftService(createDraftRepository(draftStorage), Date.now);
+  const sessionRevocationService = new SessionRevocationService({
+    repository: createPendingRevocationRepository(ports.storage),
+    requestRefresh: ports.requestRefresh,
+    publicHttpClient,
+    logger,
+    now: Date.now,
+  });
+  const authService = new AuthService({
+    publicHttpClient,
+    authHttpClient,
+    tokenStore,
+    socialAuthGateway: ports.socialAuth,
+    deviceType: ports.platform === 'ios' ? 'IOS' : 'ANDROID',
+    logger,
+  });
+
+  const activationProgressRepository = createActivationProgressRepository(syncStorage);
+  const whatsNewRepository = createWhatsNewRepository(syncStorage);
+  const coachmarkRepository = createCoachmarkRepository(syncStorage, getNowInstant);
+  const upsellDismissalRepository = createUpsellDismissalRepository(syncStorage);
+  const pushPermissionPromptRepository = createPushPermissionPromptRepository(syncStorage);
+  const marketingPushPromptRepository = createMarketingPushPromptRepository(syncStorage);
+
+  const pendingRedemptionRepository = createPendingRedemptionRepository(syncStorage);
+  const pendingRedemptionService = new PendingRedemptionService({
+    pendingRedemptionRepository,
+    installReferrerRepository: createInstallReferrerRepository(syncStorage),
+    installReferrerGateway: ports.installReferrerGateway,
+  });
+
+  const pushDeviceService = new PushDeviceService({
+    gateway: pushNotification,
+    deviceIdService: new DeviceIdService({
+      store: ports.deviceIdStore,
+      vendorIdGateway: ports.vendorIdGateway,
+      idGenerator: ports.idGenerator,
+      platform: ports.platform,
+    }),
+    httpClient: authHttpClient,
+    publicHttpClient,
+    registrationRepository: createPushRegistrationRepository(ports.storage),
+    logger,
+    getTimeZone: ports.getTimeZone,
+    getLanguage: ports.getLanguage,
+    sessionEpoch,
+  });
+  const deviceTimezoneService = new DeviceTimezoneService(
+    createDeviceTimezoneRepository(syncStorage),
+  );
+
+  const purchasesSession = new PurchasesSession({
+    purchases: ports.purchasesGateway,
+    logger,
+    analytics,
+    subscriberAttributes: {
+      appVersion: ports.applicationMetadata.getInstallation()?.currentVersion ?? null,
+      deviceModel: ports.deviceModel,
+    },
+  });
+
+  // 말로 메모의 녹음은 기기 밖으로 나가지 않는다. 초안은 암호화 초안 저장소, 녹음은 문서 폴더에 둔다
+  const voiceNoteDraftRepository = createVoiceNoteDraftRepository({
+    storage: draftStorage,
+    logger,
+    getTimeZone: ports.getTimeZone,
+  });
+  const voiceRecordingRepository = createVoiceRecordingRepository(ports.localFileSystem, logger);
+  const voiceNoteStorageService = new VoiceNoteStorageService(
+    voiceNoteDraftRepository,
+    voiceRecordingRepository,
+    getNowInstant,
+  );
+
+  const weatherService = new WeatherService(authHttpClient);
+
+  return {
+    logger,
+    analytics,
+    errorReporter,
+    haptics: ports.haptics,
+    idGenerator: ports.idGenerator,
+    speechRecognizer: ports.speechRecognizer,
+    pushNotification,
+    tokenStore,
+    authSessionStore: createAuthSessionStore(),
+    sessionEpoch,
+    sessionCleanupService: new SessionCleanupService({
+      queryCache: createSessionQueryCache(ports.queryClient),
+      persistedQueryCache: queryCacheStorage,
+      drafts: draftService,
+      voiceNotes: voiceNoteStorageService,
+      deviceTimezone: deviceTimezoneService,
+      pendingRedemption: pendingRedemptionRepository,
+      pushDevice: pushDeviceService,
+      userDeviceData: new UserDeviceDataService({
+        repositories: {
+          'whats-new': whatsNewRepository,
+          coachmark: coachmarkRepository,
+          'push-permission-prompt': pushPermissionPromptRepository,
+          'marketing-push-prompt': marketingPushPromptRepository,
+          'upsell-dismissal': upsellDismissalRepository,
+        },
+        logger,
+      }),
+      logger,
+    }),
+    sessionRevocationService,
+    featureAttribution: createFeatureAttributionStore(syncStorage),
+    draftService,
+    queryCacheStorage,
+    recognitionLanguageRepository: createRecognitionLanguageRepository(draftStorage),
+    offlineModelPromptRepository: createOfflineModelPromptRepository(draftStorage),
+    achievementService: new AchievementService(authHttpClient),
+    reportService: new ReportService(authHttpClient, logger),
+    suggestionService: new SuggestionService(authHttpClient, logger),
+    consentService: new ConsentService(authHttpClient),
+    authService,
+    preferenceService: new PreferenceService(authHttpClient),
+    activationService: new ActivationService(activationProgressRepository),
+    activationProgressRepository,
+    appVersionService: new AppVersionService(ports.jsonFetcher),
+    appIconService: new AppIconService(ports.appIconGateway),
+    friendService: new FriendService(authHttpClient),
+    inviteService: new InviteService({
+      publicHttpClient,
+      authHttpClient,
+      pendingRedemptionService,
+      installationIdGateway: ports.installationIdGateway,
+      logger,
+    }),
+    pendingRedemptionService,
+    allDoneBannerRepository: createAllDoneBannerRepository(syncStorage),
+    pawPrintCelebrationRepository: createPawPrintCelebrationRepository(syncStorage),
+    inviteShareService: new InviteShareService({
+      socialShare: ports.socialShareGateway,
+      systemShare: ports.systemShare,
+      clipboard: ports.clipboard,
+      errorReporter,
+    }),
+    // 기능 소개 캠페인 설정은 API envelope 없이 원문 JSON이다
+    featureCampaignService: new FeatureCampaignService(ports.jsonFetcher),
+    whatsNewRepository,
+    inquiryService: new InquiryService(authHttpClient),
+    memoService: new MemoService(authHttpClient, logger),
+    voiceService: new VoiceService(authHttpClient, logger),
+    moderationService: new ModerationService(authHttpClient),
+    subTodoService: new SubTodoService(authHttpClient),
+    todoService: new TodoService(authHttpClient),
+    todoCommentService: new TodoCommentService(authHttpClient),
+    todoCategoryService: new TodoCategoryService(authHttpClient),
+    notificationService: new NotificationService({ httpClient: authHttpClient, publicHttpClient }),
+    notificationBadgeService: new NotificationBadgeService({
+      badgeGateway: pushNotification,
+      logger,
+    }),
+    notificationEntryStore: createNotificationEntryStore(),
+    pushDeviceService,
+    deviceTimezoneService,
+    pushPermissionPromptRepository,
+    calendarViewModeRepository: createCalendarViewModeRepository(syncStorage),
+    marketingPushPromptRepository,
+    todoNudgeService: new TodoNudgeService(authHttpClient),
+    coachmarkService: new CoachmarkService(coachmarkRepository),
+    storeReviewService: new StoreReviewService(
+      createStoreReviewRepository(syncStorage),
+      ports.appStoreReviewGateway,
+      getNowInstant,
+    ),
+    userService: new UserService(authHttpClient),
+    purchasesSession,
+    subscriptionService: new SubscriptionService(purchasesSession, ports.purchasesGateway, logger),
+    entitlementService: new EntitlementService(authHttpClient, logger),
+    upsellDismissalRepository,
+    weatherService,
+    weatherLocationService: new WeatherLocationService({
+      gateway: ports.deviceLocation,
+      weatherService,
+      logger,
+      errorReporter,
+    }),
+    deviceLocation: ports.deviceLocation,
+    clipboard: ports.clipboard,
+    applicationMetadata: ports.applicationMetadata,
+    socialAuth: ports.socialAuth,
+    appStoreListing: ports.appStoreListing,
+    externalLink: ports.externalLink,
+    systemShare: ports.systemShare,
+    incomingLink: ports.incomingLink,
+    syncStorage,
+    networkStatus: ports.networkStatus,
+    appLifecycle: ports.appLifecycle,
+    viewCapture: ports.viewCapture,
+    screenOrientation: ports.screenOrientation,
+    widgetSyncService: new WidgetSyncService(
+      ports.widgetBridge,
+      errorReporter,
+      createWidgetHeadlessFailureRepository(ports.widgetStorage),
+    ),
+    widgetNavigationRepository: createWidgetNavigationRepository(ports.widgetStorage),
+    logOutDeviceService: new LogOutDeviceService({
+      authService,
+      pushDeviceService,
+      tokenStore,
+      sessionRevocationService,
+      sessionEpoch,
+      logger,
+    }),
+    voiceNoteStorageService,
+    voiceNoteDraftRepository,
+    voiceRecordingRepository,
+  };
+}
