@@ -8,6 +8,8 @@ import { createAuthSessionStoreStub } from '@src/features/identity/auth/__tests_
 import { createUser } from '@src/features/identity/user/__tests__/user.fixtures';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-keys';
 import {
+  createAnalyticsStub,
+  createIncomingLinkGatewayStub,
   createTestDi,
   createMemoryObservableSyncStorage,
   createTestQueryClient,
@@ -28,6 +30,20 @@ const WIDGET_NAVIGATION_COMMAND_TTL_MS = 5 * 60_000;
 
 let authSessionStore = createAuthSessionStoreStub('loading');
 let mockRepository: WidgetNavigationRepository;
+let analytics = createAnalyticsStub();
+let incomingLink = createIncomingLinkGatewayStub();
+const linkListeners = new Set<(url: string) => void>();
+
+/** 실행 중인 앱에 위젯 링크가 들어온다(Linking `url` 이벤트, 탭마다 한 번) */
+async function openLink(url: string) {
+  await act(() => {
+    linkListeners.forEach((listener) => listener(url));
+  });
+}
+
+function widgetOpenedCalls() {
+  return analytics.trackEvent.mock.calls.filter(([name]) => name === 'widget_opened');
+}
 
 describe('종료된 앱의 위젯 명령 복원', () => {
   let queryClient: QueryClient;
@@ -40,6 +56,8 @@ describe('종료된 앱의 위젯 명령 복원', () => {
       <QueryClientProvider client={queryClient}>
         <StaticDIProvider
           container={createTestDi({
+            analytics,
+            incomingLink,
             authSessionStore,
             widgetNavigationRepository: mockRepository,
           })}
@@ -82,6 +100,13 @@ describe('종료된 앱의 위젯 명령 복원', () => {
       }
     });
     authSessionStore = createAuthSessionStoreStub('loading');
+    analytics = createAnalyticsStub();
+    linkListeners.clear();
+    incomingLink = createIncomingLinkGatewayStub();
+    incomingLink.subscribe.mockImplementation((listener) => {
+      linkListeners.add(listener);
+      return () => linkListeners.delete(listener);
+    });
     useSegments.mockReturnValue(['loading']);
     jest.mocked(usePathname).mockReturnValue('/loading');
     jest.mocked(useLinkingURL).mockReturnValue('aido://feed?date=today');
@@ -120,9 +145,11 @@ describe('종료된 앱의 위젯 명령 복원', () => {
       { withAnchor: true },
     );
     expect(mockRepository.findPendingCommand()).toBeNull();
+    expect(widgetOpenedCalls()).toEqual([['widget_opened', { destination: 'todo' }]]);
     await hook.rerender(undefined);
     await flushFrames();
     expect(router.navigate).toHaveBeenCalledTimes(1);
+    expect(widgetOpenedCalls()).toHaveLength(1);
   });
 
   it('이동 frame 전에 연속으로 누르면 마지막 명령만 실행한다', async () => {
@@ -169,6 +196,86 @@ describe('종료된 앱의 위젯 명령 복원', () => {
 
     // Then
     expect(router.navigate).toHaveBeenCalledTimes(1);
+    expect(widgetOpenedCalls()).toHaveLength(2);
+  });
+
+  it('켜진 앱에 명령 없이 들어온 위젯 링크는 Router가 열고 탭마다 센다', async () => {
+    // Given
+    authenticate();
+    jest.mocked(useLinkingURL).mockReturnValue(null);
+    await renderHook(useWidgetAppEntry, { wrapper: Wrapper });
+
+    // When
+    // iOS 본문 링크는 늘 같은 URL이라 Linking 상태 값은 두 번째 탭에 바뀌지 않는다
+    await openLink('aido://feed?date=today');
+    await openLink('aido://feed?date=today');
+    await openLink('aido://feed?date=today&action=add-todo');
+    await flushFrames();
+
+    // Then
+    expect(router.navigate).not.toHaveBeenCalled();
+    expect(widgetOpenedCalls()).toEqual([
+      ['widget_opened', { destination: 'feed' }],
+      ['widget_opened', { destination: 'feed' }],
+      ['widget_opened', { destination: 'add_todo' }],
+    ]);
+  });
+
+  describe('Android 명령과 함께 온 피드 깨우기 링크', () => {
+    it('링크가 명령 복원보다 먼저 와도 명령 목적지로 한 번만 센다', async () => {
+      // Given
+      authenticate();
+      jest.mocked(useLinkingURL).mockReturnValue(null);
+      await renderHook(useWidgetAppEntry, { wrapper: Wrapper });
+
+      // When
+      await act(() => {
+        mockRepository.save(command);
+      });
+      await openLink('aido://feed?date=today');
+      await flushFrames();
+
+      // Then
+      expect(widgetOpenedCalls()).toEqual([['widget_opened', { destination: 'todo' }]]);
+    });
+
+    it('링크가 명령 복원 뒤에 와도 명령 목적지로 한 번만 센다', async () => {
+      // Given
+      authenticate();
+      jest.mocked(useLinkingURL).mockReturnValue(null);
+      await renderHook(useWidgetAppEntry, { wrapper: Wrapper });
+
+      // When
+      await act(() => {
+        mockRepository.save(command);
+      });
+      await flushFrames();
+      await openLink('aido://feed?date=today');
+
+      // Then
+      expect(widgetOpenedCalls()).toEqual([['widget_opened', { destination: 'todo' }]]);
+    });
+
+    it('복원하고 한참 뒤 들어온 피드 링크는 새 탭으로 센다', async () => {
+      // Given
+      authenticate();
+      jest.mocked(useLinkingURL).mockReturnValue(null);
+      await renderHook(useWidgetAppEntry, { wrapper: Wrapper });
+      await act(() => {
+        mockRepository.save(command);
+      });
+      await flushFrames();
+
+      // When
+      jest.setSystemTime(Date.now() + 5_000);
+      await openLink('aido://feed?date=today');
+
+      // Then
+      expect(widgetOpenedCalls()).toEqual([
+        ['widget_opened', { destination: 'todo' }],
+        ['widget_opened', { destination: 'feed' }],
+      ]);
+    });
   });
 
   it.each(['unauthenticated', 'different-account', 'expired'])(
@@ -196,6 +303,7 @@ describe('종료된 앱의 위젯 명령 복원', () => {
       // Then
       expect(router.navigate).not.toHaveBeenCalled();
       expect(mockRepository.findPendingCommand()).toBeNull();
+      expect(widgetOpenedCalls()).toEqual([]);
     },
   );
 

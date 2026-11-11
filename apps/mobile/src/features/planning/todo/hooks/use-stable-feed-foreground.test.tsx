@@ -16,7 +16,7 @@ let mockHasActiveOverlay = false;
 let mockIsKeyboardVisible = false;
 let incomingLink: ReturnType<typeof createIncomingLinkGatewayStub>;
 let appLifecycle: AppLifecycleGatewayStub;
-let deepLinkListener: (() => void) | undefined;
+let deepLinkListener: ((url: string) => void) | undefined;
 let idleCallbacks: Array<() => void> = [];
 
 const mockUseKeyboardState = jest.mocked(useKeyboardState);
@@ -104,7 +104,7 @@ describe('useStableFeedForeground', () => {
 
     // When
     await act(async () => {
-      deepLinkListener?.();
+      deepLinkListener?.('aido://feed');
     });
 
     // Then
