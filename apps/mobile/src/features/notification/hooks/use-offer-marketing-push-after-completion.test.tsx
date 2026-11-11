@@ -1,6 +1,7 @@
 import '@src/shared/i18n/init';
 import { ok } from '@src/core/errors/result';
 import { emitTodoCompletionChanged } from '@src/core/events/todo-completion-changed';
+import { createSessionEpoch } from '@src/core/session/session-epoch';
 import { createConsent } from '@src/features/identity/consent/__tests__/consent.fixtures';
 import { CONSENT_QUERY_KEYS } from '@src/features/identity/consent/queries/consent-query-keys';
 import { createPreferenceDto } from '@src/features/identity/preference/__tests__/preference.fixtures';
@@ -47,6 +48,7 @@ async function renderOffer() {
   httpClient.get.mockResolvedValue(ok(createPreferenceDto({ pushEnabled: true })));
   const analytics = createAnalyticsStub();
   const syncStorage = createMemoryObservableSyncStorage();
+  const sessionEpoch = createSessionEpoch();
   // 앱처럼 Overlay 호스트를 LocalDateProvider 안에 둔다(제안 시트가 날짜 형식을 쓴다)
   await renderScreen(
     <LocalDateProvider>
@@ -54,11 +56,12 @@ async function renderOffer() {
         <OfferProbe />
       </OverlayProvider>
     </LocalDateProvider>,
-    { queryClient, di: { httpClient, analytics, syncStorage } },
+    { queryClient, di: { httpClient, analytics, syncStorage, sessionEpoch } },
   );
   return {
     analytics,
     httpClient,
+    sessionEpoch,
     prompts: createMarketingPushPromptRepository(syncStorage),
   };
 }
@@ -98,6 +101,36 @@ describe('useOfferMarketingPushAfterCompletion', () => {
       'marketing_push_prompt_shown',
       expect.anything(),
     );
+  });
+
+  it('알림 설정을 읽는 사이 로그아웃하면 시트를 띄우지 않는다', async () => {
+    // Given
+    const { analytics, httpClient, sessionEpoch } = await renderOffer();
+    let resolvePreference: ((value: { ok: true; value: unknown }) => void) | undefined;
+    httpClient.get.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolvePreference = resolve;
+        }),
+    );
+    await act(async () => {
+      emitTodoCompletionChanged({ isCompleted: true });
+      await jest.advanceTimersByTimeAsync(OFFER_DELAY_MS);
+    });
+
+    // When
+    sessionEpoch.advance();
+    await act(async () => {
+      resolvePreference?.({ ok: true, value: createPreferenceDto({ pushEnabled: true }) });
+      await jest.runOnlyPendingTimersAsync();
+    });
+
+    // Then
+    expect(analytics.trackEvent).not.toHaveBeenCalledWith(
+      'marketing_push_prompt_shown',
+      expect.anything(),
+    );
+    expect(screen.queryByText('받을게요')).toBeNull();
   });
 
   it('동의하면 시트가 닫히는 순간에도 거절로 남기지 않는다', async () => {

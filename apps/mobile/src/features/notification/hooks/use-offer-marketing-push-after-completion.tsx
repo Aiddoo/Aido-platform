@@ -1,4 +1,8 @@
-import { useLogger, useMarketingPushPromptRepository } from '@src/bootstrap/providers/di-context';
+import {
+  useLogger,
+  useMarketingPushPromptRepository,
+  useSessionEpoch,
+} from '@src/bootstrap/providers/di-context';
 import { subscribeTodoCompletionChanged } from '@src/core/events/todo-completion-changed';
 import { readWithoutBlocking } from '@src/features/identity/consent/hooks/use-ai-data-sharing-consent-gate';
 import { useGetConsentQueryOptions } from '@src/features/identity/consent/queries/consent.queries';
@@ -27,29 +31,34 @@ const OFFER_DELAY_MS = 700;
 
 /** 할 일을 처음 끝낸 순간에 혜택·소식 알림을 한 번 제안한다. 로그인한 화면 묶음에 한 번만 둔다 */
 export function useOfferMarketingPushAfterCompletion() {
+  const sessionEpoch = useSessionEpoch();
   const findOfferAccountId = useFindMarketingPushOfferAccountId();
   const openOffer = useOpenMarketingPushOffer();
   const hasOfferedRef = useRef(false);
 
-  useAfterTodoCompleted(async () => {
+  useAfterTodoCompleted(async (signal) => {
     if (hasOfferedRef.current) {
       return;
     }
+    const epoch = sessionEpoch.current();
+    // 읽는 사이 로그아웃했거나 화면 묶음이 내려갔으면 로그인 화면에 시트를 띄우거나 기록을 남기지 않는다
+    const isCurrent = () => !signal.aborted && sessionEpoch.current() === epoch;
     const accountId = await findOfferAccountId();
-    if (accountId == null || hasOfferedRef.current) {
+    if (accountId == null || hasOfferedRef.current || !isCurrent()) {
       return;
     }
     hasOfferedRef.current = true;
-    await openOffer(accountId);
+    await openOffer(accountId, { isCurrent });
   });
 }
 
-/** 할 일을 끝내면 체크가 끝나는 모습을 본 뒤에 부른다 */
-function useAfterTodoCompleted(onCompleted: () => Promise<void>) {
+/** 할 일을 끝내면 체크가 끝나는 모습을 본 뒤에 부른다. 훅이 내려가면 signal이 끊긴다 */
+function useAfterTodoCompleted(onCompleted: (signal: AbortSignal) => Promise<void>) {
   const logger = useLogger();
   const handleCompleted = useEffectEvent(onCompleted);
 
   useEffect(() => {
+    const controller = new AbortController();
     let timer: ReturnType<typeof setTimeout> | null = null;
     const unsubscribe = subscribeTodoCompletionChanged(({ isCompleted }) => {
       if (!isCompleted || timer != null) {
@@ -57,7 +66,7 @@ function useAfterTodoCompleted(onCompleted: () => Promise<void>) {
       }
       timer = setTimeout(() => {
         timer = null;
-        handleCompleted().catch((error: unknown) =>
+        handleCompleted(controller.signal).catch((error: unknown) =>
           logger.warn(NOTIFICATION_LOG_EVENT.MARKETING_PUSH_OFFER_SKIPPED, {
             error: getErrorMessage(error),
           }),
@@ -65,6 +74,7 @@ function useAfterTodoCompleted(onCompleted: () => Promise<void>) {
       }, OFFER_DELAY_MS);
     });
     return () => {
+      controller.abort();
       unsubscribe();
       if (timer != null) {
         clearTimeout(timer);
@@ -126,7 +136,7 @@ function useOpenMarketingPushOffer() {
   const repository = useMarketingPushPromptRepository();
   const { trackEvent } = useTrack();
 
-  return async (accountId: string) => {
+  return async (accountId: string, { isCurrent }: { isCurrent: () => boolean }) => {
     trackEvent('marketing_push_prompt_shown', { source: 'completion_sheet' });
     const choice = await overlay.openAsync<MarketingPushOfferChoice>(
       ({ isOpen, close, unmount }) => (
@@ -146,6 +156,10 @@ function useOpenMarketingPushOffer() {
     match(choice)
       .with('agree', () => trackEvent('marketing_push_opted_in', { source: 'completion_sheet' }))
       .with('dismiss', () => {
+        // 시트가 떠 있는 사이 세션이 끝났으면 끝난 계정에 거절 시각을 남기지 않는다
+        if (!isCurrent()) {
+          return;
+        }
         repository.dismiss(accountId, getNowInstant());
         trackEvent('marketing_push_prompt_dismissed', { source: 'completion_sheet' });
       })
