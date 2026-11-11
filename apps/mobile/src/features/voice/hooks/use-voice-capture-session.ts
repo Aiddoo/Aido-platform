@@ -16,7 +16,6 @@ import { match } from 'ts-pattern';
 
 import {
   AUTO_FINISH_SILENCE_MS,
-  QUICK_CAPTURE_MAX_SECONDS,
   VOICE_NO_VOLUME_GAP_MS,
   VOICE_PREPARING_TIMEOUT_MS,
 } from '../constants/voice.constants';
@@ -49,7 +48,7 @@ interface UseVoiceCaptureSessionOptions {
   /** `quick`은 말이 멈추면 알아서 끝내고, `note`는 사용자가 끝낼 때까지 듣는다 */
   mode?: Extract<SpeechMode, 'quick' | 'note'>;
   /** 한 번에 들을 수 있는 길이(초). null이면 끝이 없다 */
-  maxSeconds?: number | null;
+  maxSeconds: number | null;
   /** 길이 한도에 닿았을 때. 없으면 바로 끝낸다 */
   onLimitReached?: () => void;
   /** 계획을 돌려주면 고르는 단계, null이면 처음으로 간다. 거절하면 글자를 남긴 채 실패 상태다 */
@@ -69,7 +68,7 @@ export interface BeginOptions {
 export function useVoiceCaptureSession({
   entry,
   mode = 'quick',
-  maxSeconds = QUICK_CAPTURE_MAX_SECONDS,
+  maxSeconds,
   onLimitReached,
   onCaptured,
   onFailed,

@@ -2,6 +2,7 @@ import { useLogger } from '@src/bootstrap/providers/di-context';
 import type { SpeechLocale } from '@src/core/ports/speech-recognizer';
 import type { TodoFormValues } from '@src/features/planning/todo/schemas/todo-form.schema';
 import { VOICE_LOG_EVENT } from '@src/features/voice/constants/voice-log-events';
+import { QUICK_CAPTURE_MAX_SECONDS } from '@src/features/voice/constants/voice.constants';
 import { VoiceTranscriptPolicy } from '@src/features/voice/domains/voice-transcript.model';
 import { useContinueAsVoiceNote } from '@src/features/voice/hooks/use-continue-as-voice-note';
 import { useEnsureMicrophonePermission } from '@src/features/voice/hooks/use-ensure-microphone-permission';
@@ -39,6 +40,7 @@ export function useAddTodoQuickVoice({ form, onExit }: UseAddTodoQuickVoiceOptio
 
   const session = useVoiceCaptureSession({
     entry: 'add_todo_sheet',
+    maxSeconds: QUICK_CAPTURE_MAX_SECONDS,
     onCaptured: planRequest.send,
     // 90초가 되면 멈추고 고르게 한다. 들은 글자로 바로 정리하거나 말로 메모하기로 이어 간다
     onLimitReached: noop,

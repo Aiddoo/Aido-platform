@@ -1,7 +1,12 @@
 import { useLogger } from '@src/bootstrap/providers/di-context';
 import type { SpeechLocale } from '@src/core/ports/speech-recognizer';
+import { EntitlementPolicy } from '@src/features/billing/subscription/domains/entitlement.model';
+import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
+import { useGetEntitlementsQueryOptions } from '@src/features/billing/subscription/queries/entitlement.queries';
+import { getPremiumBenefitAmounts } from '@src/features/billing/subscription/utils/plan-benefit.view-model';
 import { useMyPendingCoachmark } from '@src/features/device/coachmark/hooks/use-my-pending-coachmark';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
+import { MINUTE_MS, SECOND_MS } from '@src/shared/constants/time-units';
 import { getErrorMessage } from '@src/shared/errors/to-error';
 import { useAndroidBackHandler } from '@src/shared/hooks/use-android-back-handler';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
@@ -26,7 +31,7 @@ import {
 } from '@src/shared/ui';
 import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { cn } from '@src/shared/utils/cn';
-import { useSuspenseQuery } from '@tanstack/react-query';
+import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { Stack, router } from 'expo-router';
 import { Skeleton } from 'heroui-native';
 import { type ComponentProps, useEffect, useEffectEvent, useLayoutEffect, useRef } from 'react';
@@ -39,7 +44,6 @@ import { useCaptureElapsedMs } from '../../hooks/use-capture-elapsed-ms';
 import { useEnsureMicrophonePermission } from '../../hooks/use-ensure-microphone-permission';
 import { useReadSpeechContext } from '../../hooks/use-read-speech-context';
 import { useRecognitionLanguage } from '../../hooks/use-recognition-language';
-import { useVoiceNoteRecordLimit } from '../../hooks/use-voice-note-record-limit';
 import { useVoiceNoteRecording } from '../../hooks/use-voice-note-recording';
 import { voiceNoteRecordParamsSchema } from '../../schemas/voice-note-params.schema';
 import { getRecordingRingLayout } from '../../utils/recording-timer.geometry';
@@ -534,5 +538,39 @@ function useRecordFinish({ state, finish }: RecordFinishOptions) {
         error: getErrorMessage(error),
       });
     });
+  };
+}
+
+function useVoiceNoteRecordLimit() {
+  const { t } = useTranslation('voiceNote');
+  const toast = useAppToast();
+  const { data: snapshot } = useQuery(useGetEntitlementsQueryOptions());
+  const gate = useEntitlementGate('VOICE_NOTE', { surface: 'voice_note' });
+  const maxSeconds =
+    snapshot == null ? null : EntitlementPolicy.getMaxSeconds(snapshot, 'VOICE_NOTE');
+
+  const finishOrPromptLimit = ({ hasText, finish }: { hasText: boolean; finish: () => void }) => {
+    const minutes = Math.round(((maxSeconds ?? 0) * SECOND_MS) / MINUTE_MS);
+    if (snapshot != null && EntitlementPolicy.hasFullAccess(snapshot)) {
+      if (hasText) {
+        toast.warning(t('limit.premium', { minutes }));
+      }
+      finish();
+      return;
+    }
+    const { voiceNoteMinutes: premiumMinutes } = getPremiumBenefitAmounts();
+    gate.promptLimit({
+      title: t('limit.title', { minutes }),
+      description: hasText
+        ? t('limit.description', { premiumMinutes })
+        : t('limit.descriptionEmpty', { premiumMinutes }),
+      alternativeAction: hasText ? { label: t('limit.summarize'), onPress: finish } : undefined,
+    });
+  };
+
+  return {
+    maxSeconds,
+    limitMs: maxSeconds == null ? null : maxSeconds * SECOND_MS,
+    finishOrPromptLimit,
   };
 }
