@@ -121,7 +121,12 @@
   "list": {
     "title": "새로운 기능",
     "newBadge": "새 기능",
-    "updatedOn": "{{date}} 업데이트",
+    "updatedOn": "v{{version}}\u00a0· {{date}} 업데이트",
+    "updatedOnLabel": "버전 {{version}}, {{date}} 업데이트",
+    "version": "v{{version}}",
+    "versionLabel": "버전 {{version}}",
+    "patchNotes": "전체 업데이트 내역",
+    "patchNotesDescription": "고친 점까지 모든 업데이트를 패치 노트에서 볼 수 있어요",
     "unseenLabel": "아직 보지 않음"
   },
   "stage": {

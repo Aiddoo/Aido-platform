@@ -28,6 +28,12 @@ export const DEVICE_WINDOW = {
   iPadLandscape: { width: 1180, height: 820 },
   /** iPad Pro 13인치 가로를 반으로 나눈 Split View */
   iPadHalfSplitView: { width: 683, height: 1024 },
+  /** iPhone SE 3세대 */
+  iPhoneSe: { width: 375, height: 667 },
+  /** iPhone 13 mini */
+  iPhoneMini: { width: 375, height: 812 },
+  /** 접은 iPhone Duo 바깥 화면(기기에서 잰 창) */
+  iPhoneDuoFolded: { width: 466, height: 678 },
 } as const;
 
 /** iPadOS 탭 사이드바 폭(pt)의 어림값. 열리면 탭 안 영역이 이만큼 좁아진다 */

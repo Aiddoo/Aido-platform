@@ -209,6 +209,8 @@ function getUpcomingHours(
   return hourly.filter((hour) => getHourEndsAt(hour) > toEpochMs(now));
 }
 
+// 날씨 화면 부품은 예보에서 쓰는 칸만 select로 구독해 그 칸이 바뀔 때만 다시 그린다.
+// 그래서 예보 일부를 받는 규칙은 Policy 밖 함수로 두고 필요한 칸만 받는다
 type PrecipitationSource = Pick<WeatherReport, 'location' | 'nextHour' | 'hourly'>;
 
 /** 분 단위 예보에서 온 시각은 분까지, 시간별 예보에서 온 시각은 정시로 안내한다. */
@@ -277,7 +279,10 @@ function toWindow(
 }
 
 /** 분 단위 예보를 먼저 믿고, 그 범위 끝까지 이어지는 비는 시간별 예보에서 그치는 시각을 찾는다 */
-function getPrecipitationWindow(report: PrecipitationSource, now: Instant): PrecipitationWindow {
+export function getPrecipitationWindow(
+  report: PrecipitationSource,
+  now: Instant,
+): PrecipitationWindow {
   const nowMs = toEpochMs(now);
   const { nextHour, hourly } = report;
 
@@ -338,22 +343,22 @@ function findHourlyPrecipitationOutlook(
   return { hour, isOngoing: toEpochMs(hour.startsAt) <= toEpochMs(now) };
 }
 
-function isReportStale(report: Pick<WeatherReport, 'fetchedAt'>, now: Instant): boolean {
+export function isReportStale(report: Pick<WeatherReport, 'fetchedAt'>, now: Instant): boolean {
   return toEpochMs(now) - toEpochMs(report.fetchedAt) > STALE_AFTER_MS;
 }
 
 /** 6시간 넘게 갱신되지 않은 데이터로는 곧 올 비나 할 일 브리핑을 안내하지 않는다. */
-function isNowcastExpired(report: Pick<WeatherReport, 'fetchedAt'>, now: Instant): boolean {
+export function isNowcastExpired(report: Pick<WeatherReport, 'fetchedAt'>, now: Instant): boolean {
   return toEpochMs(now) - toEpochMs(report.fetchedAt) > NOWCAST_EXPIRES_AFTER_MS;
 }
 
 /** 예보 위치 시간대의 오늘 날짜(YYYY-MM-DD). 일별 예보의 날짜가 이 시간대를 따른다. */
-function getTodayKey(report: Pick<WeatherReport, 'location'>, now: Instant): string {
+export function getTodayKey(report: Pick<WeatherReport, 'location'>, now: Instant): string {
   return toDateKey(now, report.location.timezone);
 }
 
 /** 오늘 예보. 일별 예보에 오늘이 없으면(날짜 경계의 지연) 첫 예보를 오늘처럼 쓴다. */
-function findTodayOrFirstForecast(
+export function findTodayOrFirstForecast(
   report: Pick<WeatherReport, 'location' | 'daily'>,
   now: Instant,
 ): DailyForecastEntry | null {
@@ -387,12 +392,7 @@ export const WeatherReportPolicy = {
   isWetHour,
   isFrozenPrecipitation,
   getUpcomingHours,
-  getPrecipitationWindow,
   findHourlyPrecipitationOutlook,
-  isReportStale,
-  isNowcastExpired,
-  getTodayKey,
-  findTodayOrFirstForecast,
   getActiveAlerts,
   isAlertInEffect,
   getSunEvents,

@@ -14,7 +14,7 @@ import { type ComponentProps, Suspense, useEffect } from 'react';
 
 import { TodoRepeatPolicy } from '../../domains/todo-repeat.model';
 import type { TodoUpdateScope } from '../../domains/todo-repeat.model';
-import { TodoPolicy } from '../../domains/todo.model';
+import { hasScheduleChanged, TodoPolicy } from '../../domains/todo.model';
 import { useSelectTodoScope } from '../../hooks/use-select-todo-scope';
 import { useTodoId } from '../../hooks/use-todo-params';
 import { useTodoSheetDateKey } from '../../hooks/use-todo-sheet-date-key';
@@ -95,7 +95,7 @@ TodoTimeBottomSheet.TimeForm = function TimeForm({
         onCancel={onClose}
         isConfirmDisabled={updateSchedule.isPending}
         onChange={async ({ scheduledTime, isAllDay }) => {
-          const isUnchanged = !TodoPolicy.hasScheduleChanged(
+          const isUnchanged = !hasScheduleChanged(
             { isAllDay, scheduledTime },
             { isAllDay: todo.isAllDay, scheduledTime: editValues.scheduledTime },
           );
