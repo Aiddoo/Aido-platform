@@ -2,11 +2,11 @@ import { formatRepeatSummary } from '@src/features/planning/todo/utils/format-re
 import type { DateKey } from '@src/shared/date/date-key';
 import {
   type DateFormatContext,
-  formatDateKeyRange,
   formatTimeOfDay,
   formatYearAwareDateKeyLabel,
   type TimeFormat,
 } from '@src/shared/date/format/date-format';
+import { formatDateKeyRange } from '@src/shared/date/format/date-labels';
 import { toTimeOfDay } from '@src/shared/date/time-of-day';
 import { compact } from 'es-toolkit';
 import { match, P } from 'ts-pattern';

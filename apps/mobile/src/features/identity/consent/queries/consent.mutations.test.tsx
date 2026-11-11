@@ -94,7 +94,7 @@ describe('마케팅 수신 동의 결과 알림', () => {
 
     // Then
     expect(
-      await screen.findAllByText('2026년 3월 1일 아이두 마케팅 정보 수신에 동의했어요'),
+      await screen.findAllByText('2026년 3월 1일에 아이두 마케팅 정보 수신에 동의했어요'),
     ).not.toHaveLength(0);
   });
   it('철회하면 서버가 처리한 날짜로 결과를 알린다', async () => {
@@ -117,7 +117,7 @@ describe('마케팅 수신 동의 결과 알림', () => {
 
     // Then
     expect(
-      await screen.findAllByText('2026년 3월 2일 아이두 마케팅 정보 수신 동의를 철회했어요'),
+      await screen.findAllByText('2026년 3월 2일에 아이두 마케팅 정보 수신 동의를 철회했어요'),
     ).not.toHaveLength(0);
   });
 });

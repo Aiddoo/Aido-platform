@@ -8,6 +8,7 @@ import {
   type DateFormatContext,
   type TimeFormat,
 } from '@src/shared/date/format/date-format';
+import { formatRangeLabel } from '@src/shared/date/format/date-labels';
 import { type Instant } from '@src/shared/date/instant';
 import { useFontScaleRatio } from '@src/shared/hooks/use-font-scale-ratio';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
@@ -263,8 +264,11 @@ DailyForecast.Item = memo(function Item({
           {day.daytime != null && (
             <PartCard
               title={t('daily.daytime', {
-                start: hour(DAYTIME_HOURS.start),
-                end: hour(DAYTIME_HOURS.end),
+                range: formatRangeLabel(
+                  { start: hour(DAYTIME_HOURS.start), end: hour(DAYTIME_HOURS.end) },
+                  'compact',
+                  format.dateFormat,
+                ),
               })}
               value={t('daily.dayPart', {
                 condition: t(getWeatherConditionLabelKey(day.daytime.condition)),
@@ -275,8 +279,11 @@ DailyForecast.Item = memo(function Item({
           {day.overnight != null && (
             <PartCard
               title={t('daily.overnight', {
-                start: hour(DAYTIME_HOURS.end),
-                end: hour(DAYTIME_HOURS.start),
+                range: formatRangeLabel(
+                  { start: hour(DAYTIME_HOURS.end), end: hour(DAYTIME_HOURS.start) },
+                  'compact',
+                  format.dateFormat,
+                ),
               })}
               value={t('daily.nightPart', {
                 condition: t(getWeatherConditionLabelKey(day.overnight.condition)),

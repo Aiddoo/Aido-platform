@@ -50,7 +50,7 @@ describe('toWidgetWeek', () => {
       '17',
       '18',
     ]);
-    expect(week.rangeLabel).toBe('07.12 – 07.18');
+    expect(week.rangeLabel).toBe('07.12 ~ 07.18');
     expect(week.days[3]?.hasTodos).toBe(true);
   });
 

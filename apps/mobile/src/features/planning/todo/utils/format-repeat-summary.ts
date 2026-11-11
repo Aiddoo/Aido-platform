@@ -12,13 +12,12 @@ import { match } from 'ts-pattern';
 import { TodoRepeatPolicy } from '../domains/todo-repeat.model';
 import { type TodoRepeat, type TodoRepeatEnd } from '../domains/todo-repeat.model';
 
-const WEEKDAY_SEPARATOR = '·';
 const SUMMARY_SEPARATOR = ' · ';
 
 export function formatRepeatCadence(
   repeat: TodoRepeat,
   language: string,
-  { weekdaySeparator = WEEKDAY_SEPARATOR }: { weekdaySeparator?: string } = {},
+  { weekdaySeparator }: { weekdaySeparator?: string } = {},
 ): string {
   const days =
     repeat.frequency === 'WEEKLY'

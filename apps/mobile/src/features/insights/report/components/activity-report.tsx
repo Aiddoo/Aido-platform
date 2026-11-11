@@ -1,6 +1,6 @@
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
-import { formatDateKeyRange, formatHourLabel } from '@src/shared/date/format/date-format';
-import { getDayOfWeekLabel } from '@src/shared/date/format/date-labels';
+import { formatHourLabel } from '@src/shared/date/format/date-format';
+import { formatDateKeyRange, getDayOfWeekLabel } from '@src/shared/date/format/date-labels';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';

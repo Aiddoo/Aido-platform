@@ -1,6 +1,6 @@
 import { addDaysToDateKey, getCalendarWeek, type DateKey } from '@src/shared/date/date-key';
 import { formatDateKeyLabel, type DateFormatContext } from '@src/shared/date/format/date-format';
-import { formatWeekHeaderLabel } from '@src/shared/date/format/date-labels';
+import { formatRangeLabel, formatWeekHeaderLabel } from '@src/shared/date/format/date-labels';
 import { APP_LOCALES } from '@src/shared/i18n/app-locales';
 import type { ResolvedLanguage } from '@src/shared/preferences/language.preference';
 import { keyBy, range } from 'es-toolkit';
@@ -107,8 +107,13 @@ export function toWidgetWeek(
     { monthDateKey: week.middleDateKey, weekOfMonth: week.weekOfMonth, hasYear: false },
     dateFormatContext,
   );
-  const rangeLabel = [week.startDateKey, week.endDateKey]
-    .map((dateKey) => formatDateKeyLabel(dateKey, 'dottedMonthDay', dateFormatContext))
-    .join(' – ');
+  const rangeLabel = formatRangeLabel(
+    {
+      start: formatDateKeyLabel(week.startDateKey, 'dottedMonthDay', dateFormatContext),
+      end: formatDateKeyLabel(week.endDateKey, 'dottedMonthDay', dateFormatContext),
+    },
+    'full',
+    dateFormatContext,
+  );
   return { days, title, rangeLabel };
 }

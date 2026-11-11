@@ -14,10 +14,10 @@
     "later": "나중에"
   },
   "consentResult": {
-    "marketingAgreed": "{{date}} 아이두 마케팅 정보 수신에 동의했어요",
-    "marketingPushAgreed": "{{date}} 아이두 광고성 앱 푸시 수신에 동의했어요",
-    "marketingWithdrawn": "{{date}} 아이두 마케팅 정보 수신 동의를 철회했어요",
-    "marketingPushWithdrawn": "{{date}} 아이두 광고성 앱 푸시 수신 동의를 철회했어요"
+    "marketingAgreed": "{{date}}에 아이두 마케팅 정보 수신에 동의했어요",
+    "marketingPushAgreed": "{{date}}에 아이두 광고성 앱 푸시 수신에 동의했어요",
+    "marketingWithdrawn": "{{date}}에 아이두 마케팅 정보 수신 동의를 철회했어요",
+    "marketingPushWithdrawn": "{{date}}에 아이두 광고성 앱 푸시 수신 동의를 철회했어요"
   },
   "titles": {
     "notifications": "알림",

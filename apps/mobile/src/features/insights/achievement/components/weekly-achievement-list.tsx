@@ -1,8 +1,7 @@
 import type { FlashListProps } from '@shopify/flash-list';
 import { useTrack } from '@src/shared/analytics';
 import { getIsoWeekYear } from '@src/shared/date/date-key';
-import { formatDateKeyRange } from '@src/shared/date/format/date-format';
-import { formatIsoWeekLabel } from '@src/shared/date/format/date-labels';
+import { formatDateKeyRange, formatIsoWeekLabel } from '@src/shared/date/format/date-labels';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';

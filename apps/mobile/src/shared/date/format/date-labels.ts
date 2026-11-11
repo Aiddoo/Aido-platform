@@ -2,14 +2,26 @@ import { DAY_OF_WEEK_MAP, type DayOfWeek } from '@aido/api/vocabulary';
 import { t } from '@src/shared/i18n';
 import { toLanguageOfIntlLocale } from '@src/shared/i18n/app-locales';
 
-import { type DateKey, getCalendarWeek, getIsoWeekOfMonth, isSameYearDateKey } from '../date-key';
+import {
+  type DateKey,
+  getCalendarWeek,
+  getIsoWeekOfMonth,
+  isSameMonthDateKey,
+  isSameYearDateKey,
+} from '../date-key';
 import type { Instant } from '../instant';
-import { type DateFormatContext, formatDateKeyLabel, formatRelativeTimeWith } from './date-format';
+import {
+  type DateFormatContext,
+  formatDateKeyLabel,
+  formatRelativeTimeWith,
+  getYearAwareDateLabel,
+} from './date-format';
 
+/** 요일 목록(ko "월·목", en "Mon, Thu"). 스크린리더처럼 다르게 읽혀야 하는 곳만 구분자를 넘긴다 */
 export function formatDaysOfWeek(
   daysOfWeek: DayOfWeek[],
   language: string,
-  separator = ', ',
+  separator = t('common:daysOfWeekSeparator', { lng: language }),
 ): string {
   return [...daysOfWeek]
     .sort((a, b) => DAY_OF_WEEK_MAP[a] - DAY_OF_WEEK_MAP[b])
@@ -95,8 +107,60 @@ export function formatRelativeTimeLabel(
       justNow: t('common:relativeTime.justNow', { lng }),
       minutesAgo: (count) => t('common:relativeTime.minutesAgo', { count, lng }),
       hoursAgo: (count) => t('common:relativeTime.hoursAgo', { count, lng }),
+      yesterday: t('common:relativeTime.yesterday', { lng }),
       daysAgo: (count) => t('common:relativeTime.daysAgo', { count, lng }),
     },
+    context,
+  );
+}
+
+/** 기간의 두 끝을 잇는다. 구분자는 언어마다 카탈로그 하나(ko "~", en "–")이고 날짜·시각 어느 끝이든 쓴다 */
+export function formatRangeLabel(
+  { start, end }: { start: string; end: string },
+  kind: 'full' | 'compact',
+  context: DateFormatContext,
+): string {
+  return t(`common:dateRange.${kind}`, { lng: toLanguageOfIntlLocale(context.locale), start, end });
+}
+
+/** 두 끝이 모두 올해면 월·일만, 하나라도 올해가 아니면 둘 다 연도까지 쓴다 */
+export function formatDateKeyRange(
+  startDateKey: DateKey,
+  endDateKey: DateKey,
+  todayDateKey: DateKey,
+  context: DateFormatContext,
+): string {
+  const kind = getYearAwareDateLabel([startDateKey, endDateKey], todayDateKey);
+  return formatRangeLabel(
+    {
+      start: formatDateKeyLabel(startDateKey, kind, context),
+      end: formatDateKeyLabel(endDateKey, kind, context),
+    },
+    'full',
+    context,
+  );
+}
+
+/** 올해 기간을 짧게 쓴다(같은 달 "11월 5일~7일", 다른 달 "11월 30일~12월 2일"). 올해가 아닌 끝이 있으면 formatDateKeyRange다 */
+export function formatDateKeyCompactRange(
+  startDateKey: DateKey,
+  endDateKey: DateKey,
+  todayDateKey: DateKey,
+  context: DateFormatContext,
+): string {
+  if (getYearAwareDateLabel([startDateKey, endDateKey], todayDateKey) === 'monthDayYear') {
+    return formatDateKeyRange(startDateKey, endDateKey, todayDateKey, context);
+  }
+  return formatRangeLabel(
+    {
+      start: formatDateKeyLabel(startDateKey, 'monthDay', context),
+      end: formatDateKeyLabel(
+        endDateKey,
+        isSameMonthDateKey(startDateKey, endDateKey) ? 'day' : 'monthDay',
+        context,
+      ),
+    },
+    'compact',
     context,
   );
 }

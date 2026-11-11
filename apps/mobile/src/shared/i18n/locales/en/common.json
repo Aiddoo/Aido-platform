@@ -24,6 +24,7 @@
     "SAT": "Sat",
     "SUN": "Sun"
   },
+  "daysOfWeekSeparator": ", ",
   "calendar": {
     "nextMonth": "Next month",
     "previousMonth": "Previous month",
@@ -42,8 +43,13 @@
     "minutesAgo_other": "{{count}} minutes ago",
     "hoursAgo_one": "{{count}} hour ago",
     "hoursAgo_other": "{{count}} hours ago",
+    "yesterday": "yesterday",
     "daysAgo_one": "{{count}} day ago",
     "daysAgo_other": "{{count}} days ago"
+  },
+  "dateRange": {
+    "full": "{{start}} – {{end}}",
+    "compact": "{{start}}–{{end}}"
   },
   "errorBoundary": {
     "title": "Something went wrong",

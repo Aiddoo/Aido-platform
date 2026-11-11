@@ -63,8 +63,8 @@ export function AiDataSharingSetting(props: SettingsSectionProps) {
             },
             ({ aiDataSharingAgreedAt }) => (
               <Text size="e1" shade={6}>
-                {t('settings:terms.aiDataSharing.agreedOn', {
-                  date: formatDateLabel(aiDataSharingAgreedAt, 'numericDate', dateFormatContext),
+                {t('settings:terms.agreedAt', {
+                  date: formatDateLabel(aiDataSharingAgreedAt, 'monthDayYear', dateFormatContext),
                 })}
               </Text>
             ),

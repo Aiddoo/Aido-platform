@@ -1,9 +1,9 @@
 import type { DateKey } from '@src/shared/date/date-key';
 import {
   type DateFormatContext,
-  formatDateKeyCompactRange,
   formatYearAwareDateKeyLabel,
 } from '@src/shared/date/format/date-format';
+import { formatDateKeyCompactRange } from '@src/shared/date/format/date-labels';
 
 import type { Todo } from '../domains/todo.model';
 

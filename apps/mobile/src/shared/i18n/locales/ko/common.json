@@ -24,6 +24,7 @@
     "SAT": "토",
     "SUN": "일"
   },
+  "daysOfWeekSeparator": "·",
   "calendar": {
     "nextMonth": "다음 달",
     "previousMonth": "이전 달",
@@ -40,7 +41,12 @@
     "justNow": "방금 전",
     "minutesAgo": "{{count}}분 전",
     "hoursAgo": "{{count}}시간 전",
+    "yesterday": "어제",
     "daysAgo": "{{count}}일 전"
+  },
+  "dateRange": {
+    "full": "{{start}} ~ {{end}}",
+    "compact": "{{start}}~{{end}}"
   },
   "errorBoundary": {
     "title": "문제가 생겼어요",

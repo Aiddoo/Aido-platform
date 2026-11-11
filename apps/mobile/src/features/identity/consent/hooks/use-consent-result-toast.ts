@@ -29,7 +29,7 @@ export function useConsentResultToast() {
     (consent: keyof typeof CONSENT_RESULT_KEYS, result: ConsentResult) => {
       toast.success(
         t(CONSENT_RESULT_KEYS[consent][result.type], {
-          date: formatDateLabel(result.at, 'fullDate', dateFormatContext),
+          date: formatDateLabel(result.at, 'monthDayYear', dateFormatContext),
         }),
       );
     },

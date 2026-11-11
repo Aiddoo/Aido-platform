@@ -7,6 +7,8 @@ import { z } from 'zod';
 import weekCases from '../../../../../../packages/api/test/fixtures/week-of-month-cases.json';
 import {
   formatCalendarWeekLabel,
+  formatDateKeyCompactRange,
+  formatDateKeyRange,
   formatDaysOfWeek,
   formatIsoWeekLabel,
   formatRelativeTimeLabel,
@@ -42,7 +44,7 @@ describe('formatDaysOfWeek', () => {
     const result = formatDaysOfWeek(days, 'ko');
 
     // Then
-    expect(result).toBe('월, 수, 금');
+    expect(result).toBe('월·수·금');
   });
 
   it('요일 하나는 한글 한 글자로 바꾼다', () => {
@@ -64,7 +66,7 @@ describe('formatDaysOfWeek', () => {
     const result = formatDaysOfWeek(days, 'ko');
 
     // Then
-    expect(result).toBe('일, 월, 화, 수, 목, 금, 토');
+    expect(result).toBe('일·월·화·수·목·금·토');
   });
 
   it('요일이 없으면 빈 문자열이다', () => {
@@ -181,20 +183,22 @@ describe('로케일 인지 포맷 (i18n)', () => {
     const now = toInstant('2026-10-25T03:00:00Z');
     const oneMinuteAgo = fromEpochMs(toEpochMs(now) - 61_000);
     const twoHoursAgo = fromEpochMs(toEpochMs(now) - 2 * 3600_000);
+    const oneDayAgo = fromEpochMs(toEpochMs(now) - 86_400_000);
     const twoDaysAgo = fromEpochMs(toEpochMs(now) - 2 * 86_400_000);
 
     // When
-    const koreanLabels = [now, oneMinuteAgo, twoHoursAgo, twoDaysAgo].map((time) =>
+    const koreanLabels = [now, oneMinuteAgo, twoHoursAgo, oneDayAgo, twoDaysAgo].map((time) =>
       formatRelativeTimeLabel(time, now, KO_SEOUL),
     );
 
     // Then
-    expect(koreanLabels).toEqual(['방금 전', '1분 전', '2시간 전', '2일 전']);
+    expect(koreanLabels).toEqual(['방금 전', '1분 전', '2시간 전', '어제', '2일 전']);
 
     // 영어는 단수/복수를 구분하고 앱 언어 ko와 무관하다
     expect(formatRelativeTimeLabel(now, now, EN_SEOUL)).toBe('Just now');
     expect(formatRelativeTimeLabel(oneMinuteAgo, now, EN_SEOUL)).toBe('1 minute ago');
     expect(formatRelativeTimeLabel(twoHoursAgo, now, EN_SEOUL)).toBe('2 hours ago');
+    expect(formatRelativeTimeLabel(oneDayAgo, now, EN_SEOUL)).toBe('yesterday');
     expect(formatRelativeTimeLabel(twoDaysAgo, now, EN_SEOUL)).toBe('2 days ago');
   });
 });
@@ -239,6 +243,76 @@ describe('formatIsoWeekLabel', () => {
 
       // Then
       expect([korean, english]).toEqual([ko, en]);
+    },
+  );
+});
+
+describe('formatDateKeyRange·formatDateKeyCompactRange', () => {
+  it.each([
+    [
+      'ko 올해 같은 달',
+      'ko-KR',
+      ['2026-10-19', '2026-10-25', '2026-11-09'],
+      '10월 19일 ~ 10월 25일',
+      '10월 19일~25일',
+    ],
+    [
+      'en 올해 같은 달',
+      'en-US',
+      ['2026-10-19', '2026-10-25', '2026-11-09'],
+      'Oct 19 – Oct 25',
+      'Oct 19–25',
+    ],
+    [
+      'ko 올해 다른 달',
+      'ko-KR',
+      ['2026-11-30', '2026-12-02', '2026-11-09'],
+      '11월 30일 ~ 12월 2일',
+      '11월 30일~12월 2일',
+    ],
+    [
+      'ko 해를 넘는 기간',
+      'ko-KR',
+      ['2026-12-28', '2027-01-03', '2026-12-31'],
+      '2026년 12월 28일 ~ 2027년 1월 3일',
+      '2026년 12월 28일 ~ 2027년 1월 3일',
+    ],
+    [
+      'en 해를 넘는 기간',
+      'en-US',
+      ['2026-12-28', '2027-01-03', '2027-01-01'],
+      'Dec 28, 2026 – Jan 3, 2027',
+      'Dec 28, 2026 – Jan 3, 2027',
+    ],
+    [
+      'ko 지난해 기간',
+      'ko-KR',
+      ['2025-10-19', '2025-10-25', '2026-11-09'],
+      '2025년 10월 19일 ~ 2025년 10월 25일',
+      '2025년 10월 19일 ~ 2025년 10월 25일',
+    ],
+  ] as const)(
+    '%s는 올해가 아닌 끝이 있으면 연도까지, 구분자는 언어의 카탈로그 값이다',
+    (_name, locale, [start, end, today], expected, expectedCompact) => {
+      // Given
+      const context = { locale, timeZone: 'Asia/Seoul' };
+
+      // When
+      const range = formatDateKeyRange(
+        createDateKey(start),
+        createDateKey(end),
+        createDateKey(today),
+        context,
+      );
+      const compact = formatDateKeyCompactRange(
+        createDateKey(start),
+        createDateKey(end),
+        createDateKey(today),
+        context,
+      );
+
+      // Then
+      expect([range, compact]).toEqual([expected, expectedCompact]);
     },
   );
 });

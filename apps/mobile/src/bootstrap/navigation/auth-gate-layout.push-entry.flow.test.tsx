@@ -674,7 +674,7 @@ describe('푸시 탭 진입', () => {
       }),
     );
     expect(
-      await screen.findAllByText('2026년 11월 9일 아이두 광고성 앱 푸시 수신 동의를 철회했어요'),
+      await screen.findAllByText('2026년 11월 9일에 아이두 광고성 앱 푸시 수신 동의를 철회했어요'),
     ).not.toHaveLength(0);
     expect(route.getPathname()).toBe('/login');
     expect(httpClient.patch).not.toHaveBeenCalled();

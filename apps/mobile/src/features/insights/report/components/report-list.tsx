@@ -1,4 +1,4 @@
-import { formatDateKeyRange } from '@src/shared/date/format/date-format';
+import { formatDateKeyRange } from '@src/shared/date/format/date-labels';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTodayKey } from '@src/shared/hooks/use-today';
