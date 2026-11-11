@@ -6,7 +6,7 @@ import {
   useSignInService,
 } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
-import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
+import { getCachedMe, invalidateMe } from '@src/features/identity/user/queries/user-cache';
 import { useTrack } from '@src/shared/analytics';
 import type { AppEventMap } from '@src/shared/analytics/event-map';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
@@ -40,7 +40,7 @@ import {
   type ResetPasswordInput,
   type VerifyEmailInput,
 } from '../schemas/auth-request.schema';
-import { AUTH_QUERY_KEYS } from './auth-query-keys';
+import { invalidateLinkedAccounts } from './auth-cache';
 
 type EmailVerificationSource = AppEventMap['auth_email_verified']['source'];
 
@@ -495,7 +495,7 @@ export function useLinkAccountMutationOptions() {
       );
       trackEvent('auth_social_linked', { provider });
       // 화면에 머무는 행이라 새 연결 상태를 받을 때까지 버튼을 꺼 둔다. 옛 버튼을 다시 눌러 요청이 또 가지 않게 한다
-      await queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEYS.linkedAccounts() });
+      await Promise.all([invalidateLinkedAccounts(queryClient), invalidateMe(queryClient)]);
     },
     onError: (error) => {
       // 사용자가 직접 닫은 소셜 인증 창은 실패 문구 없이 햅틱만 울린다
@@ -530,7 +530,7 @@ export function useUnlinkAccountMutationOptions() {
         provider: OAuthPolicy.toOAuthProviderSlug(provider),
       });
       // 화면에 머무는 행이라 새 연결 상태를 받을 때까지 버튼을 꺼 둔다. 옛 버튼을 다시 눌러 요청이 또 가지 않게 한다
-      await queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEYS.linkedAccounts() });
+      await Promise.all([invalidateLinkedAccounts(queryClient), invalidateMe(queryClient)]);
     },
     meta: { errorFeedback: { feature: 'auth', fallbackKey: 'auth:toasts.unlinkFailed' } },
   });
