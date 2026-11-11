@@ -39,12 +39,7 @@ function withTotalCountChanged(pages: FriendPages, delta: number): FriendPages {
   };
 }
 
-/**
- * 친구 목록의 다음 커서는 그 쪽 마지막 친구의 followId다. 서버는 지운 친구의 followId로 이어 받으면 빈 쪽을 줘
- * 목록이 일찍 끝나므로, 친구를 빼거나 되돌린 쪽은 그 쪽까지 받은 마지막 친구로 커서를 다시 맞춘다.
- * 앞에 받은 친구가 하나도 없으면 이을 기준이 없어 커서를 그대로 둔다. 지우기가 실패하면 되돌린 친구가 다시 기준이 되고,
- * 성공하면 끝난 뒤 목록을 다시 받는다
- */
+/** 다음 커서는 그 쪽 마지막 친구의 followId다. 서버는 지운 친구의 followId로 이으면 빈 쪽을 줘, 빼거나 되돌린 쪽은 받은 마지막 친구로 커서를 다시 맞춘다 */
 function withLastFriendCursor(pages: FriendPages, pageIndex: number): FriendPages {
   const page = pages.pages[pageIndex];
   const lastFriend = selectPageItems({ pages: pages.pages.slice(0, pageIndex + 1) }).at(-1);

@@ -116,10 +116,7 @@ export function calculatePawPrintGrid(availableWidth: number): PawPrintGrid {
   };
 }
 
-/**
- * 지금 보여 줄 판(0부터). 판을 막 채웠고 아직 축하하지 않았으면 그 판을 한 번 더 보여 주고,
- * 다음에 열 때 새 판으로 넘어간다.
- */
+/** 지금 보여 줄 판(0부터). 막 채우고 아직 축하하지 않았으면 그 판을 한 번 더 보여 주고 다음에 새 판으로 넘어간다 */
 export function calculateBoardIndex(pawPrintedCount: number, celebratedCount: number) {
   const isJustFilled =
     pawPrintedCount > 0 &&
