@@ -5,6 +5,7 @@ import {
   deleteTodoCategoryResponseSchema,
   reorderTodoCategoryResponseSchema,
   reorderTodoCategorySchema,
+  todoCategoryDeletionPreviewSchema,
   todoCategoryIdParamSchema,
   todoCategoryListResponseSchema,
   todoCategoryResponseSchema,
@@ -70,6 +71,10 @@ export const DeleteTodoCategoryResponseDto = deleteTodoCategoryResponseSchema.me
   id: "DeleteTodoCategoryResponseDto",
 });
 export type DeleteTodoCategoryResponseDto = z.infer<typeof DeleteTodoCategoryResponseDto>;
+export const TodoCategoryDeletionPreviewDto = todoCategoryDeletionPreviewSchema.meta({
+  id: "TodoCategoryDeletionPreviewDto",
+});
+export type TodoCategoryDeletionPreviewDto = z.infer<typeof TodoCategoryDeletionPreviewDto>;
 export const ReorderTodoCategoryResponseDto = reorderTodoCategoryResponseSchema.meta({
   id: "ReorderTodoCategoryResponseDto",
 });

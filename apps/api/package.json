@@ -1,6 +1,6 @@
 {
   "name": "@aido/server",
-  "version": "1.15.0",
+  "version": "1.15.1",
   "private": true,
   "description": "Aido API Server",
   "license": "MIT",
@@ -94,6 +94,7 @@
   },
   "devDependencies": {
     "@aido/typescript-config": "workspace:*",
+    "@aido/vitest-config": "workspace:*",
     "@nestjs/cli": "catalog:nest12",
     "@nestjs/schematics": "catalog:nest12",
     "@nestjs/testing": "catalog:nest12",

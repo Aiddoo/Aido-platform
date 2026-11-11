@@ -24,6 +24,9 @@ export interface ReceivedPushNotification {
   data: Record<string, unknown>;
 }
 
+/** 앱이 앞에 있을 때 받은 알림을 보이는 방식. `quiet`는 배너와 소리 없이 알림 센터에만 남긴다 */
+export type ForegroundPushPresentation = 'banner' | 'quiet';
+
 export interface PushNotificationCategory {
   identifier: string;
   actions: readonly {
@@ -48,4 +51,8 @@ export interface PushNotificationGateway {
   clearLastResponse(): void;
   setCategory(category: PushNotificationCategory): Promise<void>;
   setBadgeCount(count: number): Promise<void>;
+  /** 앱이 앞에 있을 때 받은 알림을 어떻게 보일지 정한다. 반환 함수로 기본(배너)으로 되돌린다 */
+  setForegroundPresentation(
+    decide: (notification: ReceivedPushNotification) => ForegroundPushPresentation,
+  ): () => void;
 }

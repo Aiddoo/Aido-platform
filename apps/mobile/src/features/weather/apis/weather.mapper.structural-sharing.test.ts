@@ -10,7 +10,7 @@ describe('날씨 리포트 재조회의 구조 공유', () => {
     const client = createTestQueryClient();
     const queryKey = ['weather', 'report'];
     const fetchReport = async () => {
-      await client.fetchQuery({
+      await client.query({
         queryKey,
         queryFn: () => toWeatherReport(createSeoulReportDto()),
         staleTime: 0,

@@ -28,7 +28,7 @@ import {
   WEATHER_CONDITION_LABEL_KEYS,
 } from '../constants/weather-labels';
 import { VISIBLE_PRECIPITATION_CHANCE } from '../constants/weather.constants';
-import { type HourlySummary, WeatherHourlyPolicy } from '../domains/weather-hourly.model';
+import { getHourlySummary, type HourlySummary } from '../domains/weather-hourly.model';
 import type { HourlyForecastEntry } from '../domains/weather-report.model';
 import { useFormatLocalTime, useLocationDateFormat } from '../hooks/use-location-date-format';
 import { useTemperatureUnit } from '../hooks/use-temperature-unit';
@@ -90,7 +90,7 @@ export function HourlyForecast() {
   const dateFormat = useLocationDateFormat(data.location.timezone);
   const now = useMinuteNow();
   const timeline = toHourlyTimeline(data, now);
-  const summary = WeatherHourlyPolicy.getHourlySummary(data, now);
+  const summary = getHourlySummary(data, now);
   const cellWidth = CELL_WIDTH[preference.timeFormat] * fontScaleRatio;
   const context: TimelineContext = { dateFormat, timeFormat: preference.timeFormat };
 

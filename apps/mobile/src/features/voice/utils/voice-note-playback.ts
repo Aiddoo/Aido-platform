@@ -2,7 +2,7 @@ import type { AudioPartPlaylistStatus } from '@src/core/ports/audio-part-playlis
 import { SECOND_MS } from '@src/shared/constants/time-units';
 import { clamp } from 'es-toolkit';
 
-import { VoiceNotePolicy } from '../domains/voice-note.model';
+import { findRecordingIndexAt } from '../domains/voice-note.model';
 
 export interface VoiceNotePlayback {
   isLoaded: boolean;
@@ -53,7 +53,7 @@ export function findPartSeek(
   targetMs: number,
   durationMs: number,
 ): { index: number; offsetSeconds: number } | null {
-  const index = VoiceNotePolicy.findRecordingIndexAt(parts, targetMs);
+  const index = findRecordingIndexAt(parts, targetMs);
   const part = parts[index];
   if (part == null) {
     return null;

@@ -78,12 +78,11 @@ export function describeCacheStoreContract(context: {
       // Given
       await cache.set("contract:short", "value", 50);
 
-      // When
-      await sleep(150);
-
-      // Then
+      // When & Then
+      await expect
+        .poll(() => cache.has("contract:short"), { timeout: 2000, interval: 25 })
+        .toBe(false);
       expect(await cache.get("contract:short", z.unknown())).toBeUndefined();
-      expect(await cache.has("contract:short")).toBe(false);
     });
 
     it("has·ttl은 키가 있는지와 남은 밀리초를 알려 준다", async () => {

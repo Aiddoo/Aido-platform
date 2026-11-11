@@ -12,11 +12,27 @@ function createPayload(overrides: Partial<PushPayload> = {}): PushPayload {
     token: VALID_TOKEN,
     title: "알림",
     body: "본문",
+    priority: "high",
+    ttlSeconds: 3600,
     ...overrides,
   };
 }
 
 describe("Expo Push 메시지 변환", () => {
+  it("알림 종류의 보관 시간·우선순위를 Expo ttl·priority로, 채널은 출시 앱이 만든 default로 보낸다", () => {
+    // Given
+    const payload = createPayload({ ttlSeconds: 3600, priority: "high" });
+
+    // When
+    const result = buildExpoPushMessage(payload);
+
+    // Then
+    expect(result).toMatchObject({
+      status: "ready",
+      message: { ttl: 3600, priority: "high", channelId: "default" },
+    });
+  });
+
   it("JSON UTF-8 크기가 4096 byte면 전송 가능하다", () => {
     // Given
     const basePayload = createPayload({ data: { padding: "" } });

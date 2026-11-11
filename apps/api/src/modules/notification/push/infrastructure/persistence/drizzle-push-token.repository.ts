@@ -13,6 +13,7 @@ import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import {
   type FindPushTokensParams,
+  type KeepPushTokenData,
   PushTokenRegistrationConflictError,
   type PushTokenRepositoryPort,
   type RegisterPushTokenData,
@@ -111,6 +112,22 @@ export class DrizzlePushTokenRepository implements PushTokenRepositoryPort {
     }
   }
 
+  async keepPushToken(data: KeepPushTokenData): Promise<{ readonly hasActiveToken: boolean }> {
+    const kept = await this.#db
+      .update(pushToken)
+      .set({
+        sessionId: data.sessionId,
+        payloadVersion: data.payloadVersion,
+        appVersion: data.appVersion,
+        updatedAt: data.keptAt,
+      })
+      .where(
+        and(eq(pushToken.userId, data.userId.value), eq(pushToken.deviceId, data.deviceId.value)),
+      )
+      .returning({ isActive: pushToken.isActive });
+    return { hasActiveToken: kept.some((row) => row.isActive) };
+  }
+
   findPushTokensByUser(params: FindPushTokensParams): Promise<PushTokenRecord[]> {
     return this.#db
       .select()
@@ -156,6 +173,17 @@ export class DrizzlePushTokenRepository implements PushTokenRepositoryPort {
       .where(eq(pushToken.userId, userId.value))
       .returning({ id: pushToken.id });
     return { count: deleted.length };
+  }
+
+  async deletePushTokenByDeviceAndToken(data: {
+    readonly deviceId: PushDeviceId;
+    readonly token: string;
+  }): Promise<{ readonly userIds: readonly string[] }> {
+    const deleted = await this.#db
+      .delete(pushToken)
+      .where(and(eq(pushToken.token, data.token), eq(pushToken.deviceId, data.deviceId.value)))
+      .returning({ userId: pushToken.userId });
+    return { userIds: deleted.map((row) => row.userId) };
   }
 
   async deletePushTokensBySessions(

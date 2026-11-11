@@ -8,11 +8,17 @@ import {
   appendRepliesToReplyPages,
   findCommentInReplyPages,
   findCommentInThreadPages,
+  findReplyPlacement,
+  findThreadPlacement,
   patchCommentInReplyPages,
   patchCommentInThreadPages,
   removeCommentFromReplyPages,
   removeCommentFromThreadPages,
+  restoreCommentInReplyPages,
+  restoreCommentInThreadPages,
+  type TodoCommentPlacement,
   type TodoCommentReplyPages,
+  type TodoCommentThreadPlacement,
   type TodoCommentThreadPages,
   type TodoCommentTransform,
 } from '../utils/todo-comment-cache-pages';
@@ -21,12 +27,10 @@ interface TodoCommentCacheInput {
   todoId: number;
 }
 
-type CacheEntry<TData> = readonly [queryKey: QueryKey, data: TData | undefined];
-
-/** 낙관적 갱신 직전의 묶음·답글 캐시. 실패하면 그대로 되돌린다 */
-export interface TodoCommentCacheSnapshot {
-  threads: readonly CacheEntry<TodoCommentThreadPages>[];
-  replies: readonly CacheEntry<TodoCommentReplyPages>[];
+/** 지운 댓글이 목록마다 있던 자리. 실패하면 그 댓글만 되돌린다 */
+export interface TodoCommentPlacements {
+  threads: ReadonlyArray<readonly [queryKey: QueryKey, placement: TodoCommentThreadPlacement]>;
+  replies: ReadonlyArray<readonly [queryKey: QueryKey, placement: TodoCommentPlacement]>;
 }
 
 function threadQueries(todoId: number) {
@@ -49,22 +53,41 @@ export function cancelTodoCommentQueries(
   });
 }
 
-export function snapshotTodoCommentCaches(
+export function findTodoCommentPlacements(
   queryClient: QueryClient,
-  { todoId }: TodoCommentCacheInput,
-): TodoCommentCacheSnapshot {
+  { todoId, comment }: TodoCommentCacheInput & { comment: TodoComment },
+): TodoCommentPlacements {
   return {
-    threads: queryClient.getQueriesData<TodoCommentThreadPages>(threadQueries(todoId)),
-    replies: queryClient.getQueriesData<TodoCommentReplyPages>(replyQueries(todoId)),
+    threads: queryClient
+      .getQueriesData<TodoCommentThreadPages>(threadQueries(todoId))
+      .flatMap(([queryKey, data]) => {
+        const placement = findThreadPlacement(data, comment);
+        return placement == null ? [] : [[queryKey, placement] as const];
+      }),
+    replies: queryClient
+      .getQueriesData<TodoCommentReplyPages>(replyQueries(todoId))
+      .flatMap(([queryKey, data]) => {
+        const placement = findReplyPlacement(data, comment.id);
+        return placement == null ? [] : [[queryKey, placement] as const];
+      }),
   };
 }
 
-export function restoreTodoCommentCaches(
+/** 그 댓글 하나만 지운 자리에 되돌린다. 목록을 통째로 되돌리면 그사이 누른 하트·지운 다른 댓글이 사라진다 */
+export function restoreTodoCommentToCaches(
   queryClient: QueryClient,
-  snapshot: TodoCommentCacheSnapshot,
+  { comment, placements }: { comment: TodoComment; placements: TodoCommentPlacements },
 ) {
-  snapshot.threads.forEach(([queryKey, data]) => queryClient.setQueryData(queryKey, data));
-  snapshot.replies.forEach(([queryKey, data]) => queryClient.setQueryData(queryKey, data));
+  for (const [queryKey, placement] of placements.threads) {
+    queryClient.setQueriesData<TodoCommentThreadPages>({ queryKey, exact: true }, (data) =>
+      restoreCommentInThreadPages(data, comment, placement),
+    );
+  }
+  for (const [queryKey, placement] of placements.replies) {
+    queryClient.setQueriesData<TodoCommentReplyPages>({ queryKey, exact: true }, (data) =>
+      restoreCommentInReplyPages(data, comment, placement),
+    );
+  }
 }
 
 export function findCachedTodoComment(

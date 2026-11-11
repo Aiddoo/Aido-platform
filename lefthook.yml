@@ -1,4 +1,4 @@
-# 테스트는 GitHub Actions가 아닌 이 훅에서 실행한다(docs/conventions/git.md#커밋).
+# 테스트는 이 훅에서 turbo로 실행해 결과를 팀 원격 캐시에 올리고, tip CI가 그 캐시를 재사용한다(docs/conventions/git.md#커밋).
 # https://lefthook.dev/configuration/
 
 glob_matcher: doublestar
@@ -28,17 +28,16 @@ pre-commit:
       run: node apps/api/scripts/check-conventions.mjs --file {staged_files}
 
 # 커밋마다 전체 검사를 돌리면 작은 커밋이 수 분씩 걸려 push 때 한 번 모아 돌린다.
-# 통합·계약 테스트는 로컬 Docker PostgreSQL이 필요하다.
+# 통합·계약 테스트는 로컬 Docker가 필요하다(Testcontainers).
 pre-push:
   piped: true
   jobs:
     # 한 번의 turbo 실행이 공통 ^build를 한 번만 수행하고 변경 없는 패키지는 캐시를 쓴다.
     - name: typecheck-test-build
       run: pnpm turbo run typecheck test build
-    - name: integration
-      run: pnpm test:integration
-    - name: contract
-      run: pnpm --filter @aido/server test:contract
+    # DB 컨테이너가 동시에 여러 개 뜨지 않게 통합·계약 테스트는 한 번에 하나씩 돈다.
+    - name: integration-contract
+      run: pnpm test:integration && pnpm test:contract
 
 commit-msg:
   jobs:

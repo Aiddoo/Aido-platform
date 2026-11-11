@@ -15,15 +15,13 @@ import { createDatabaseTransactionFixture } from "#test/setup/database-context";
 import { suppressLogger } from "#test/setup/suppress-logger";
 import { TestDatabase } from "#test/setup/test-database";
 
+import { withFastJobTiming } from "../../helpers/fast-job-timing.js";
+
 const SCHEMA = "pgboss";
 const USER_ID = "user-reminder";
 const HOUR_MS = 60 * 60 * 1000;
 const MINUTE_MS = 60 * 1000;
-// 테스트가 기다리지 않게 같은 큐를 1초마다 가져간다
-const FAST_TODO_REMINDER_QUEUE = {
-  ...TODO_REMINDER_QUEUE,
-  worker: { localConcurrency: 1, pollingIntervalSeconds: 1 },
-};
+const FAST_TODO_REMINDER_QUEUE = withFastJobTiming(TODO_REMINDER_QUEUE);
 
 describe("리마인더 재예약 (실제 pg-boss)", () => {
   let testDatabase: TestDatabase;

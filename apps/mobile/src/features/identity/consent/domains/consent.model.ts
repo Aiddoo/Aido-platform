@@ -44,14 +44,12 @@ export type UpdateAiDataSharingConsentResult = z.infer<
 >;
 
 /** 이전 안내 버전 동의도 AGREED다. 서버가 그 버전의 처리 업체만 쓰므로 기능은 그대로 동작한다 */
-function hasAgreedToAiDataSharing(consent: Pick<Consent, 'aiDataSharingDecision'>) {
+function hasAgreedToAiDataSharing(consent: Consent) {
   return consent.aiDataSharingDecision === AI_DATA_SHARING_DECISION.AGREED;
 }
 
 /** 이전 안내에 동의한 사람에게 바뀐 안내를 보여 줘야 하는지. 버전을 모르면 묻지 않는다 */
-function shouldShowAiConsentRenewal(
-  consent: Pick<Consent, 'aiDataSharingDecision' | 'aiDataSharingConsentVersion'>,
-) {
+function shouldShowAiConsentRenewal(consent: Consent) {
   return (
     hasAgreedToAiDataSharing(consent) &&
     consent.aiDataSharingConsentVersion != null &&
@@ -65,7 +63,7 @@ export interface ConsentResult {
 }
 
 /** 동의 시각이 있으면 동의, 철회 시각이 있으면 철회 결과다. 구 서버라 둘 다 없으면 null이다 */
-function getConsentResult({
+export function getConsentResult({
   agreedAt,
   withdrawnAt,
 }: {
@@ -84,5 +82,4 @@ function getConsentResult({
 export const ConsentPolicy = {
   hasAgreedToAiDataSharing,
   shouldShowAiConsentRenewal,
-  getConsentResult,
 } as const;

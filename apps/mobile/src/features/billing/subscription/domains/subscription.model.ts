@@ -40,14 +40,11 @@ export const subscriptionOfferingSchema = z.object({
 export type SubscriptionOffering = z.infer<typeof subscriptionOfferingSchema>;
 
 /** 월간 결제를 12번 한 값 대비 연간 결제가 얼마나 싼지(%) */
-function getAnnualDiscountPercent(
-  monthlyPlan: Pick<SubscriptionPlan, 'price'>,
-  annualPlan: Pick<SubscriptionPlan, 'price'>,
-) {
+function getAnnualDiscountPercent(monthlyPlan: SubscriptionPlan, annualPlan: SubscriptionPlan) {
   return Math.round((1 - annualPlan.price / (monthlyPlan.price * 12)) * 100);
 }
 
-function getMonthlyEquivalent(annualPlan: Pick<SubscriptionPlan, 'price'>) {
+function getMonthlyEquivalent(annualPlan: SubscriptionPlan) {
   return round(annualPlan.price / 12, 2);
 }
 
@@ -65,12 +62,12 @@ function findPlanByType(
   return plans.find((plan) => plan.planType === planType) ?? null;
 }
 
-function hasFreeTrial(plan: Pick<SubscriptionPlan, 'freeTrial'>) {
-  return plan.freeTrial != null;
+export function hasFreeTrial(freeTrial: FreeTrial | null) {
+  return freeTrial != null;
 }
 
 /** 결제 전 예상일이다. 실제 체험 끝은 결제 뒤 서버(premiumPeriodEndsAt)가 알려 준다. 월 단위는 말일을 넘기면 그 달 마지막 날로 맞춘다 */
-function getFreeTrialEndDateKey(plan: Pick<SubscriptionPlan, 'freeTrial'>, todayKey: string) {
+function getFreeTrialEndDateKey(plan: SubscriptionPlan, todayKey: string) {
   if (plan.freeTrial == null) {
     return null;
   }
@@ -84,7 +81,7 @@ function getFreeTrialEndDateKey(plan: Pick<SubscriptionPlan, 'freeTrial'>, today
 }
 
 /** 서버가 체험 끝 N일 전에 한 번 알린다. 체험이 그보다 짧아 오늘이거나 지난 날이면 알림이 없다 */
-function getFreeTrialReminderDateKey(plan: Pick<SubscriptionPlan, 'freeTrial'>, todayKey: string) {
+function getFreeTrialReminderDateKey(plan: SubscriptionPlan, todayKey: string) {
   const endDateKey = getFreeTrialEndDateKey(plan, todayKey);
   if (endDateKey == null) {
     return null;
@@ -94,7 +91,7 @@ function getFreeTrialReminderDateKey(plan: Pick<SubscriptionPlan, 'freeTrial'>, 
 }
 
 /** 체험을 받을 수 있으면 오늘은 결제되지 않고, 아니면 고른 요금제 가격이 바로 결제된다 */
-function getAmountDueToday(plan: Pick<SubscriptionPlan, 'freeTrial' | 'price'>) {
+function getAmountDueToday(plan: SubscriptionPlan) {
   return plan.freeTrial == null ? plan.price : 0;
 }
 
@@ -103,7 +100,6 @@ export const SubscriptionPolicy = {
   getMonthlyEquivalent,
   findSelectedPlan,
   findPlanByType,
-  hasFreeTrial,
   getFreeTrialEndDateKey,
   getFreeTrialReminderDateKey,
   getAmountDueToday,

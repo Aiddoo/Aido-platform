@@ -134,6 +134,14 @@ export const registerTokenResponseSchema = z
 
 export type RegisterTokenResponse = z.infer<typeof registerTokenResponseSchema>;
 
+export const unregisterPushDeviceByTokenResponseSchema = z.object({
+  unregistered: z.literal(true).describe("항상 true. 일치하는 등록이 있었는지는 알려 주지 않는다"),
+});
+
+export type UnregisterPushDeviceByTokenResponse = z.infer<
+  typeof unregisterPushDeviceByTokenResponseSchema
+>;
+
 export const pushDeviceResponseSchema = z
   .object({
     deviceId: z.string().describe("기기 식별자"),

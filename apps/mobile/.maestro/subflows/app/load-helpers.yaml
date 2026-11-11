@@ -1,0 +1,6 @@
+appId: ${MAESTRO_APP_ID}
+name: 실행 설정·선택자·API 도우미를 output에 올린다
+---
+- runScript: ../../scripts/config.js
+- runScript: ../../scripts/selectors.js
+- runScript: ../../scripts/api.js

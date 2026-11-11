@@ -50,6 +50,7 @@ import {
   type E2eTestContext,
 } from "../e2e/helpers/e2e-app-factory.js";
 import { suppressLogger } from "../setup/suppress-logger.js";
+import { withFastJobTiming } from "./helpers/fast-job-timing.js";
 
 const SEOUL = "Asia/Seoul";
 const NEW_YORK = "America/New_York";
@@ -484,17 +485,14 @@ describe("시간대 재계산 (실제 PostgreSQL·pg-boss)", () => {
     const date = shiftDateKey(today, 3);
     const id = await seedTodo(date, "10:00");
     const done = Promise.withResolvers<void>();
-    await jobQueue.work(
-      { ...TODO_TIMEZONE_REBASE_QUEUE, worker: { localConcurrency: 1, pollingIntervalSeconds: 1 } },
-      async (jobs) => {
-        for (const job of jobs) {
-          if (job.data.data.userId === userId) {
-            await useCase.execute({ userId });
-            done.resolve();
-          }
+    await jobQueue.work(withFastJobTiming(TODO_TIMEZONE_REBASE_QUEUE), async (jobs) => {
+      for (const job of jobs) {
+        if (job.data.data.userId === userId) {
+          await useCase.execute({ userId });
+          done.resolve();
         }
-      },
-    );
+      }
+    });
     // When
     await queue.enqueueRebase(
       userId,

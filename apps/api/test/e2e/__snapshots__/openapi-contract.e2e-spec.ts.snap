@@ -7483,10 +7483,56 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
     "DeleteTodoCategoryResponseDto": {
       "example": {
         "message": "카테고리가 삭제되었습니다.",
+        "result": {
+          "moveToCategoryId": 1,
+          "seriesCount": 1,
+          "todoCount": 3,
+          "todoHandling": "move",
+        },
       },
       "properties": {
         "message": {
           "type": "string",
+        },
+        "result": {
+          "description": "삭제 결과 (1.15.1 서버부터 채운다. 출시 앱은 읽지 않는다)",
+          "properties": {
+            "moveToCategoryId": {
+              "description": "할 일을 옮긴 카테고리 ID (옮기지 않았으면 null)",
+              "maximum": 9007199254740991,
+              "minimum": -9007199254740991,
+              "nullable": true,
+              "type": "integer",
+            },
+            "seriesCount": {
+              "description": "옮기거나 함께 삭제한 진행 중 반복 규칙 수 (음이 아닌 정수)",
+              "maximum": 9007199254740991,
+              "minimum": 0,
+              "type": "integer",
+            },
+            "todoCount": {
+              "description": "옮기거나 함께 삭제한 할 일 수 (완료 포함, 음이 아닌 정수)",
+              "maximum": 9007199254740991,
+              "minimum": 0,
+              "type": "integer",
+            },
+            "todoHandling": {
+              "description": "실제로 한 처리 (move: 옮김, delete: 함께 삭제, none: 옮기거나 지울 할 일·진행 중 반복이 없었음)",
+              "enum": [
+                "move",
+                "delete",
+                "none",
+              ],
+              "type": "string",
+            },
+          },
+          "required": [
+            "todoHandling",
+            "todoCount",
+            "seriesCount",
+            "moveToCategoryId",
+          ],
+          "type": "object",
         },
       },
       "required": [
@@ -17719,6 +17765,53 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
       ],
       "type": "object",
     },
+    "TodoCategoryDeletionPreviewDto": {
+      "example": {
+        "activeSeriesCount": 1,
+        "categoryId": 3,
+        "completedTodoCount": 8,
+        "isLastCategory": false,
+        "todoCount": 12,
+      },
+      "properties": {
+        "activeSeriesCount": {
+          "description": "카테고리에 속한 진행 중 반복 규칙 수. 함께 삭제하면 앞으로의 회차도 만들지 않는다",
+          "maximum": 9007199254740991,
+          "minimum": 0,
+          "type": "integer",
+        },
+        "categoryId": {
+          "description": "삭제하려는 카테고리 ID",
+          "maximum": 9007199254740991,
+          "minimum": -9007199254740991,
+          "type": "integer",
+        },
+        "completedTodoCount": {
+          "description": "그중 완료한 할 일 수. 함께 삭제하면 날짜별 완료 기록에서도 빠진다",
+          "maximum": 9007199254740991,
+          "minimum": 0,
+          "type": "integer",
+        },
+        "isLastCategory": {
+          "description": "마지막 남은 카테고리인지. true면 삭제할 수 없다(TODO_CATEGORY_0854)",
+          "type": "boolean",
+        },
+        "todoCount": {
+          "description": "카테고리 안의 할 일 수 (완료 포함, 목록의 todoCount와 같은 기준)",
+          "maximum": 9007199254740991,
+          "minimum": 0,
+          "type": "integer",
+        },
+      },
+      "required": [
+        "categoryId",
+        "todoCount",
+        "completedTodoCount",
+        "activeSeriesCount",
+        "isLastCategory",
+      ],
+      "type": "object",
+    },
     "TodoCategoryListResponseDto": {
       "example": {
         "items": [
@@ -22346,6 +22439,43 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
       },
       "required": [
         "unreadCount",
+      ],
+      "type": "object",
+    },
+    "UnregisterPushDeviceByTokenDto": {
+      "properties": {
+        "deviceId": {
+          "description": "앱이 만든 기기 식별자. ios_ 또는 android_로 시작 (최대 100자)",
+          "maxLength": 100,
+          "minLength": 1,
+          "type": "string",
+        },
+        "token": {
+          "description": "이 기기가 마지막으로 보고한 Expo 푸시 토큰",
+          "maxLength": 200,
+          "minLength": 1,
+          "pattern": "^ExponentPushToken\\[.+\\]$",
+          "type": "string",
+        },
+      },
+      "required": [
+        "deviceId",
+        "token",
+      ],
+      "type": "object",
+    },
+    "UnregisterPushDeviceByTokenResponseDto": {
+      "properties": {
+        "unregistered": {
+          "description": "항상 true. 일치하는 등록이 있었는지는 알려 주지 않는다",
+          "enum": [
+            true,
+          ],
+          "type": "boolean",
+        },
+      },
+      "required": [
+        "unregistered",
       ],
       "type": "object",
     },
@@ -47593,12 +47723,130 @@ MEMO_2002: 이동할 위치의 메모를 찾을 수 없습니다.",
       ],
     },
   },
+  "/v1/notifications/push-devices/unregister": {
+    "post": {
+      "description": "로그인 세션이 끝나 로그아웃 해제를 보내지 못한 기기(갱신 토큰 만료, 오프라인 로그아웃)가 로그인 없이 푸시 대상에서 빠집니다.
+
+- \`deviceId\`와 그 기기에 등록된 \`token\`이 모두 맞을 때만 그 기기의 토큰과 권한 기록을 지웁니다.
+- 맞는 등록이 없어도 같은 200 응답을 줍니다. 같은 요청을 다시 보내도 결과는 같습니다.
+- IP마다 1분에 20번까지 받습니다.",
+      "operationId": "unregisterPushDeviceByToken",
+      "parameters": [],
+      "requestBody": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/UnregisterPushDeviceByTokenDto",
+            },
+          },
+        },
+        "required": true,
+      },
+      "responses": {
+        "200": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "data": {
+                    "$ref": "#/components/schemas/UnregisterPushDeviceByTokenResponseDto",
+                  },
+                  "success": {
+                    "example": true,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "data",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "요청이 성공적으로 처리되었습니다",
+        },
+        "400": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "SYS_0002",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "잘못된 파라미터입니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "잘못된 파라미터입니다.",
+        },
+        "500": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponseSchema",
+              },
+            },
+          },
+          "description": "서버 내부 오류가 발생했습니다",
+        },
+      },
+      "security": [
+        {
+          "bearer": [],
+        },
+      ],
+      "summary": "세션이 끝난 기기의 푸시 해제",
+      "tags": [
+        "Notifications",
+      ],
+    },
+  },
   "/v1/notifications/push-devices/{deviceId}": {
     "put": {
       "description": "기기 하나의 알림 권한과 Expo 푸시 토큰을 보고합니다. 1.14.2 이상 앱이 로그인 직후·앱 복귀·토큰 변경·언어 변경 때 보냅니다.
 
 - 권한이 GRANTED·PROVISIONAL이고 \`token\`이 있으면 이 기기로 푸시를 보냅니다.
-- 권한이 없거나 \`token\`이 null이면 이 기기의 토큰을 지우고 권한 상태만 저장합니다.
+- 권한이 GRANTED·PROVISIONAL인데 \`token\`이 null이면(발급 실패) 이미 등록된 토큰을 그대로 두고 권한·보고 시각만 갱신합니다.
+- 권한이 DENIED·NOT_DETERMINED면 이 기기의 토큰을 지우고 권한 상태만 저장합니다.
 - 다른 계정이 쓰던 같은 기기·토큰은 이 사용자로 옮깁니다.
 - 플랫폼은 deviceId 접두어로, 시간대·언어는 헤더로 정합니다. 같은 값을 다시 보내도 결과는 같습니다.",
       "operationId": "reportPushDevice",
@@ -50805,7 +51053,7 @@ SYS_0002: 잘못된 파라미터입니다.",
   },
   "/v1/nudges/todos/{todoId}/thanks": {
     "get": {
-      "description": "완료한 내 할 일에 콕을 보낸 현재 친구를 미리 봅니다. 할 일이 완료되지 않았으면 NUDGE_1110, 기능이 꺼져 있거나 throughNudgeId가 이 할 일에서 받은 콕이 아니면 NUDGE_1105입니다.",
+      "description": "완료한 내 할 일에 콕을 보낸 현재 친구를 미리 봅니다. 아직 완료하지 않은 할 일이면(완료 저장보다 먼저 도착한 조회 포함) 친구 없이 0명인 빈 미리보기를 반환합니다. 기능이 꺼져 있거나 throughNudgeId가 이 할 일에서 받은 콕이 아니면 NUDGE_1105입니다.",
       "operationId": "getNudgeThanksPreview",
       "parameters": [
         {
@@ -51070,53 +51318,6 @@ SYS_0002: 잘못된 파라미터입니다.",
           "description": "NUDGE_1105: Nudge를 찾을 수 없습니다.
 
 TODO_0801: Todo를 찾을 수 없습니다.",
-        },
-        "409": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "properties": {
-                  "error": {
-                    "properties": {
-                      "code": {
-                        "example": "NUDGE_1110",
-                        "type": "string",
-                      },
-                      "details": {
-                        "example": null,
-                        "nullable": true,
-                        "type": "object",
-                      },
-                      "message": {
-                        "example": "할 일을 완료한 뒤 감사를 전해주세요.",
-                        "type": "string",
-                      },
-                    },
-                    "required": [
-                      "code",
-                      "message",
-                    ],
-                    "type": "object",
-                  },
-                  "success": {
-                    "example": false,
-                    "type": "boolean",
-                  },
-                  "timestamp": {
-                    "example": 1700000000000,
-                    "type": "number",
-                  },
-                },
-                "required": [
-                  "success",
-                  "error",
-                  "timestamp",
-                ],
-                "type": "object",
-              },
-            },
-          },
-          "description": "할 일을 완료한 뒤 감사를 전해주세요.",
         },
         "500": {
           "content": {
@@ -53649,23 +53850,27 @@ SYS_0001: 요청이 너무 많습니다. 잠시 후 다시 시도해 주세요."
   },
   "/v1/todo-categories/{id}": {
     "delete": {
-      "description": "카테고리를 삭제합니다.
+      "description": "카테고리를 삭제합니다. 안에 할 일(완료 포함)이나 진행 중 반복이 있으면 옮길지 함께 지울지 고릅니다.
+지우기 전에 \`GET /todo-categories/{id}/deletion-preview\`로 할 일·완료·반복 수를 보여 줄 수 있습니다.
 
 ## 삭제 규칙
 1. **최소 1개의 카테고리 필요**: 마지막 남은 카테고리는 삭제할 수 없습니다.
-2. **할 일 이동 필수**: 카테고리에 할 일이 있으면 \`moveToCategoryId\` 쿼리 파라미터로 이동 대상 카테고리를 지정해야 합니다.
+2. **안의 할 일 처리** (\`todoHandling\`, 선택)
+   - \`move\`: \`moveToCategoryId\`(필수)로 할 일과 반복 규칙을 옮긴 뒤 삭제합니다.
+   - \`delete\`: 할 일·하위 항목·댓글·반복 규칙을 함께 삭제합니다. \`moveToCategoryId\`를 함께 보내면 \`400\`입니다. 완료한 할 일도 지워져 날짜별 완료 기록에서 빠집니다.
+   - 생략(1.15.0까지 앱): 할 일이 있으면 \`moveToCategoryId\`로 옮깁니다. 없으면 \`TODO_CATEGORY_0855\`입니다.
+3. 할 일과 진행 중 반복이 없으면 \`todoHandling\`·\`moveToCategoryId\`와 상관없이 바로 삭제합니다(\`result.todoHandling = none\`).
 
 ## 사용 예시
-
-### 할 일이 없는 카테고리 삭제
 \`\`\`
 DELETE /todo-categories/3
+DELETE /todo-categories/3?moveToCategoryId=1
+DELETE /todo-categories/3?todoHandling=move&moveToCategoryId=1
+DELETE /todo-categories/3?todoHandling=delete
 \`\`\`
 
-### 할 일이 있는 카테고리 삭제 (다른 카테고리로 이동)
-\`\`\`
-DELETE /todo-categories/3?moveToCategoryId=1
-\`\`\`
+## 응답
+- \`result\`: 실제로 한 처리(\`move\`·\`delete\`·\`none\`), 옮기거나 지운 할 일 수(\`todoCount\`), 진행 중 반복 수(\`seriesCount\`), 옮긴 카테고리(\`moveToCategoryId\`)
 
 ## 에러 케이스
 | 상황 | 에러 코드 | 메시지 |
@@ -53673,6 +53878,7 @@ DELETE /todo-categories/3?moveToCategoryId=1
 | 마지막 카테고리 삭제 시도 | \`TODO_CATEGORY_0854\` | 최소 1개의 카테고리가 필요합니다 |
 | 할 일이 있는데 moveToCategoryId 없음 | \`TODO_CATEGORY_0855\` | 카테고리에 할 일이 있습니다 (details에 todoCount 포함) |
 | moveToCategoryId가 삭제 대상과 같음 | \`SYS_0002\` | 삭제할 카테고리와 이동 대상 카테고리가 같을 수 없습니다 |
+| move인데 moveToCategoryId 없음, delete인데 moveToCategoryId 있음 | \`SYS_0002\` | 입력 검증 실패 |
 | moveToCategoryId 카테고리 없음 | \`TODO_CATEGORY_0851\` | 카테고리를 찾을 수 없습니다 |",
       "operationId": "deleteTodoCategory",
       "parameters": [
@@ -53700,6 +53906,20 @@ DELETE /todo-categories/3?moveToCategoryId=1
             "maximum": 9007199254740991,
             "minimum": 0,
             "type": "integer",
+          },
+        },
+        {
+          "description": "안의 할 일 처리 (선택). move: moveToCategoryId로 옮긴 뒤 삭제(필수), delete: 할 일·반복과 함께 삭제(moveToCategoryId 금지). 생략하면 할 일이 있을 때 moveToCategoryId가 필요하다",
+          "in": "query",
+          "name": "todoHandling",
+          "required": false,
+          "schema": {
+            "description": "안의 할 일 처리 (선택). move: moveToCategoryId로 옮긴 뒤 삭제(필수), delete: 할 일·반복과 함께 삭제(moveToCategoryId 금지). 생략하면 할 일이 있을 때 moveToCategoryId가 필요하다",
+            "enum": [
+              "move",
+              "delete",
+            ],
+            "type": "string",
           },
         },
       ],
@@ -54471,6 +54691,224 @@ TODO_CATEGORY_0855: 카테고리에 할 일이 있습니다. 다른 카테고리
         },
       ],
       "summary": "카테고리 수정",
+      "tags": [
+        "Todo Categories",
+      ],
+    },
+  },
+  "/v1/todo-categories/{id}/deletion-preview": {
+    "get": {
+      "description": "카테고리를 지우기 전에 안의 할 일을 옮길지 함께 지울지 고르는 데 필요한 수를 조회합니다.
+삭제(\`DELETE /todo-categories/{id}\`)와 같은 기준으로 셉니다.
+
+## 응답 필드
+- \`todoCount\`: 카테고리 안의 할 일 수 (완료 포함, 목록의 \`todoCount\`와 같은 값)
+- \`completedTodoCount\`: 그중 완료한 할 일 수. 함께 삭제하면 날짜별 완료 기록에서도 빠집니다
+- \`activeSeriesCount\`: 진행 중 반복 규칙 수. 할 일이 0이어도 이 값이 있으면 옮기거나 함께 지울지 골라야 합니다
+- \`isLastCategory\`: 마지막 남은 카테고리면 \`true\`이고 삭제할 수 없습니다(\`TODO_CATEGORY_0854\`)",
+      "operationId": "getTodoCategoryDeletionPreview",
+      "parameters": [
+        {
+          "description": "카테고리 ID (양의 정수, 예: 1)",
+          "in": "path",
+          "name": "id",
+          "required": true,
+          "schema": {
+            "description": "카테고리 ID (양의 정수, 예: 1)",
+            "exclusiveMinimum": true,
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer",
+          },
+        },
+      ],
+      "responses": {
+        "200": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "data": {
+                    "$ref": "#/components/schemas/TodoCategoryDeletionPreviewDto",
+                  },
+                  "success": {
+                    "example": true,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "data",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "요청이 성공적으로 처리되었습니다",
+        },
+        "400": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "SYS_0002",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "잘못된 파라미터입니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "잘못된 파라미터입니다.",
+        },
+        "401": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "AUTH_0107",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "인증이 필요합니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "인증이 필요합니다.",
+        },
+        "404": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "TODO_CATEGORY_0851",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "카테고리를 찾을 수 없습니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "카테고리를 찾을 수 없습니다.",
+        },
+        "500": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponseSchema",
+              },
+            },
+          },
+          "description": "서버 내부 오류가 발생했습니다",
+        },
+      },
+      "security": [
+        {
+          "bearer": [],
+        },
+      ],
+      "summary": "카테고리 삭제 미리보기",
       "tags": [
         "Todo Categories",
       ],

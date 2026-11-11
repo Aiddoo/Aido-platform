@@ -4,6 +4,12 @@ import type { TodoCategoryId } from "../../domain/todo-category-id.vo.js";
 import type { TodoCategory } from "../../domain/todo-category.aggregate.js";
 import type { TodoCategoryWithCountReadModel } from "../read-models/todo-category-with-count.read-model.js";
 
+export interface CategoryTodoCount {
+  /** 완료 포함. 목록의 todoCount와 같은 기준이다 */
+  readonly total: number;
+  readonly completed: number;
+}
+
 /** 카테고리 부분 갱신. undefined는 바꾸지 않는다. */
 export interface UpdateCategoryInput {
   readonly name?: string;
@@ -39,9 +45,11 @@ export abstract class TodoCategoryRepositoryPort {
     delta: number,
   ): Promise<number>;
 
-  abstract getTodoCount(categoryId: TodoCategoryId): Promise<number>;
+  abstract countTodos(userId: UserId, categoryId: TodoCategoryId): Promise<CategoryTodoCount>;
   abstract countActiveSeries(categoryId: TodoCategoryId): Promise<number>;
+  /** 할 일과 반복 규칙(끝난 규칙 포함)을 한 문장씩 옮기고 updatedAt을 지금으로 바꾼다. 앱 동기화가 이 값을 본다 */
   abstract moveTodosToCategory(
+    userId: UserId,
     fromCategoryId: TodoCategoryId,
     toCategoryId: TodoCategoryId,
   ): Promise<void>;

@@ -1,4 +1,5 @@
 import { PgBoss } from "pg-boss";
+import { vi } from "vitest";
 
 import { pushDeliveryJobKey } from "#api/modules/notification/push/infrastructure/jobs/notification-job-keys.constants";
 import { PushDeliveryQueueAdapter } from "#api/modules/notification/push/infrastructure/jobs/push-delivery-queue.adapter";
@@ -14,22 +15,9 @@ import {
 import { createDatabaseTransactionFixture } from "#test/setup/database-context";
 import { TestDatabase } from "#test/setup/test-database";
 
-const SCHEMA = "pgboss_push_lanes";
+import { WORKER_WAIT } from "../../helpers/fast-job-timing.js";
 
-async function eventually(assertion: () => Promise<void> | void, timeoutMs = 15_000) {
-  const deadline = Date.now() + timeoutMs;
-  let lastError: unknown;
-  while (Date.now() < deadline) {
-    try {
-      await assertion();
-      return;
-    } catch (error) {
-      lastError = error;
-      await new Promise((resolve) => setTimeout(resolve, 100));
-    }
-  }
-  throw lastError;
-}
+const SCHEMA = "pgboss_push_lanes";
 
 describe("푸시 발송 차선 (실제 PostgreSQL + pg-boss)", () => {
   let testDatabase: TestDatabase;
@@ -87,9 +75,9 @@ describe("푸시 발송 차선 (실제 PostgreSQL + pg-boss)", () => {
     });
 
     // Then
-    await eventually(() => {
+    await vi.waitFor(() => {
       expect(received).toEqual([reminder]);
-    });
+    }, WORKER_WAIT);
     const queued = await boss.findJobs(PUSH_DELIVERY_QUEUE.name, { queued: true });
     expect(queued.map(({ priority }) => priority)).toEqual([0, 0, 0]);
     const [reminderJob] = await boss.findJobs(PUSH_DELIVERY_QUEUE.name, {

@@ -21,6 +21,15 @@ export interface RegisterPushTokenData {
   readonly registeredAt: Temporal.Instant;
 }
 
+export interface KeepPushTokenData {
+  readonly userId: UserId;
+  readonly deviceId: PushDeviceId;
+  readonly sessionId: string | null;
+  readonly payloadVersion: number;
+  readonly appVersion: string | null;
+  readonly keptAt: Temporal.Instant;
+}
+
 // 같은 토큰이 동시에 등록돼 다른 트랜잭션이 먼저 그 토큰을 가져갔다. 원인 DB 오류는 cause로 남긴다
 export class PushTokenRegistrationConflictError extends Error {
   constructor(options?: ErrorOptions) {
@@ -38,6 +47,8 @@ export abstract class PushTokenRepositoryPort {
     readonly token: string | null;
   }): Promise<{ readonly userIds: readonly string[] }>;
   abstract registerPushToken(data: RegisterPushTokenData): Promise<PushTokenRecord>;
+  // 토큰 없이 온 허용 보고에서 이 기기의 기존 토큰을 그대로 두고 세션·앱 버전만 이번 보고로 맞춘다. 로그아웃 정리가 세션으로 찾기 때문이다
+  abstract keepPushToken(data: KeepPushTokenData): Promise<{ readonly hasActiveToken: boolean }>;
   abstract findPushTokensByUser(params: FindPushTokensParams): Promise<PushTokenRecord[]>;
   abstract findActivePushTokensByUsers(userIds: readonly UserId[]): Promise<PushTokenRecord[]>;
   abstract deletePushTokensByDevice(
@@ -45,6 +56,11 @@ export abstract class PushTokenRepositoryPort {
     deviceId: PushDeviceId,
   ): Promise<{ count: number }>;
   abstract deleteAllPushTokensByUser(userId: UserId): Promise<{ count: number }>;
+  // 로그인 없는 해제 요청은 기기 ID와 그 기기의 토큰을 함께 아는 것으로 기기를 가졌음을 증명한다. 둘 다 맞는 등록만 지우고 그 주인 ID를 준다
+  abstract deletePushTokenByDeviceAndToken(data: {
+    readonly deviceId: PushDeviceId;
+    readonly token: string;
+  }): Promise<{ readonly userIds: readonly string[] }>;
   // 지운 토큰마다 그 사용자 ID를 하나씩 돌려준다
   abstract deletePushTokensBySessions(
     sessionIds: readonly string[],

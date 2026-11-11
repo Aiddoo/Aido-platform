@@ -54,7 +54,9 @@ import { type MutationLockPort } from "#api/shared/application/ports/mutation-lo
 import { type UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { toIsoString } from "#api/shared/domain/time/instant";
+import { FakeTodoCache } from "#test/doubles/planning/fake-todo-cache";
 import { DateClock } from "#test/doubles/platform/date-clock";
+import { RecordingAfterCommitRegistry } from "#test/doubles/platform/recording-after-commit-registry";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
 import { nowInstant } from "#test/fixtures/clock.fixture";
 import { createTestClient, createTransactionHost } from "#test/setup/database-context";
@@ -1110,6 +1112,8 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
     const useCase = new ReorderTodoCategoryUseCase({
       repository: categoryRepository,
       cache: createTodoCategoryCache(),
+      todoCache: new FakeTodoCache(),
+      afterCommit: new RecordingAfterCommitRegistry(),
       mutationLock: coordinatedLock,
       unitOfWork: categoryUow,
       logger: new SilentLogger(),
