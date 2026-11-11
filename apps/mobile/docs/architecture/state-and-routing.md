@@ -50,7 +50,20 @@ const [todoId] = useTodoId(); // 읽기 전용도 튜플
 - 쓰는 필드는 URL 문자열과 값을 오가는 `z.codec`이다(`routeIdSchema`). `.transform`은 `z.encode`에서 터지고 `z.coerce`는 숫자로 남아 조용히 지워지므로 읽기 전용 필드에만 쓴다. 없거나 잘못된 값의 기본값은 `.catch`다.
 - 값을 지우면 `undefined`를 넘긴다. boolean은 끌 때 `undefined`라 `?isEditing=false`가 남지 않는다.
 - 한 파일만 읽으면 그 자리에서 `useRouteParams`·`useView`를 부른다. 여러 파일이 읽으면 `hooks/use-{name}-params.ts`의 이름 있는 훅 하나로 뺀다. 탭은 `ViewTabs`에 `schema`·`value`·`onValueChange`로 넘긴다.
-- **검증은 route 파일이 한다.** 같은 스키마로 `safeParse`해 틀리면 `Redirect`만 하고 결과의 `.data`를 읽지 않는다(lint). 안쪽은 같은 스키마의 튜플 훅으로 좁혀진 값을 읽는다. 훅에서 되돌려야 하면 `useRouteParamsOrRedirect` 하나이고 리다이렉트를 직접 만들지 않는다.
+- **검증은 route 파일이 한다.** `useRouteParamsOrRedirect(schema, { fallbackHref })`가 틀린 주소를 `<Redirect>`로 돌려주고 route는 그것만 그린다. route는 `params`를 읽지 않고, 안쪽 화면(같은 파일의 지역 컴포넌트)이 같은 스키마의 튜플 훅으로 좁혀진 값을 읽어 `resetKeys`·`key`도 정한다. 리다이렉트를 직접 만들지 않는다.
+
+```tsx
+export default function MemoDetailRoute() {
+  const route = useRouteParamsOrRedirect(memoParamsSchema, { fallbackHref: '/memo' });
+
+  if (route.redirect != null) {
+    return route.redirect;
+  }
+
+  return <MemoDetailScreen />;
+}
+```
+
 - **원시 `setParams`를 내보내지 않는다.** 연관 값을 지우는 세터를 이름 있게 내보낸다(`useTodoCommentSort`는 `comment`를 함께 지운다). 호출부가 지우기를 잊을 수 없다. `router.setParams`는 params 훅 밖에서 쓰지 않는다(lint).
 - **목록 행은 route 훅을 부르지 않는다.** 부모가 한 번 읽어 `isSelected`를 넘긴다. 가상 목록이 행 수만큼 URL을 파싱하지 않게 한다. 짧은 고정 목록은 행이 읽어도 된다.
 - **레이아웃은 자식 params를 구독하지 않는다.** 레이아웃은 내비게이터와 Provider만 둔다. 루트에서 URL을 봐야 하는 훅은 `null`을 그리는 형제 컴포넌트에 둔다: `AuthGateLayout`의 `RouteWatchers`(`useScreenTracking`, `useWidgetAppEntry`, `useInviteAppEntry`, `useAppEntrySegmentSync`)와 `NotificationProvider`의 `ForegroundPushPresentation`. 스플래시 판단이 쓰는 "앱 입구인가"는 `useAppEntrySegmentSync`가 푸시 진입 슬롯에 적고 레이아웃은 슬롯만 읽는다. `setParams`가 레이아웃을 다시 그리지 않는 것은 `auth-gate-layout.test.tsx`가 지킨다.

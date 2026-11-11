@@ -1,14 +1,14 @@
 import { TodoActionsBottomSheet } from '@src/features/planning/todo/components/todo-list/todo-actions-bottom-sheet';
 import { todoParamsSchema } from '@src/features/planning/todo/schemas/todo-params.schema';
 import { TodoThanksSummary } from '@src/features/social/nudge/components/nudge-interactions/todo-thanks-summary';
+import { useRouteParamsOrRedirect } from '@src/shared/hooks/use-route-params-or-redirect';
 import { SheetRouteScreen } from '@src/shared/ui';
-import { Redirect, useLocalSearchParams } from 'expo-router';
 
 export default function TodoActionsSheetRoute() {
-  const params = todoParamsSchema.safeParse(useLocalSearchParams());
+  const route = useRouteParamsOrRedirect(todoParamsSchema, { fallbackHref: '/feed' });
 
-  if (!params.success) {
-    return <Redirect href="/feed" />;
+  if (route.redirect != null) {
+    return route.redirect;
   }
 
   return (

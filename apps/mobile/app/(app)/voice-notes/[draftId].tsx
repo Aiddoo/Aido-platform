@@ -5,13 +5,39 @@ import { VoiceNoteResult } from '@src/features/voice/components/note/voice-note-
 import { useCurrentVoiceNoteStage } from '@src/features/voice/hooks/use-current-voice-note';
 import { voiceNoteParamsSchema } from '@src/features/voice/schemas/voice-note-params.schema';
 import { useIsOnline } from '@src/shared/hooks/use-is-online';
+import { useRouteParams } from '@src/shared/hooks/use-route-params';
+import { useRouteParamsOrRedirect } from '@src/shared/hooks/use-route-params-or-redirect';
 import { useTranslation } from '@src/shared/i18n';
 import { QueryErrorBoundary, Result, StyledSafeAreaView, VStack } from '@src/shared/ui';
-import { Redirect, Stack, useLocalSearchParams } from 'expo-router';
+import { Stack } from 'expo-router';
 import { Suspense } from 'react';
 import { match } from 'ts-pattern';
 
+export default function VoiceNoteRoute() {
+  const route = useRouteParamsOrRedirect(voiceNoteParamsSchema, { fallbackHref: '/memo' });
+
+  if (route.redirect != null) {
+    return route.redirect;
+  }
+
+  return <VoiceNoteScreen />;
+}
+
 function VoiceNoteScreen() {
+  const [{ draftId }] = useRouteParams(voiceNoteParamsSchema);
+
+  return (
+    <StyledSafeAreaView edges={['left', 'right', 'bottom']} className="flex-1 bg-white">
+      <QueryErrorBoundary fallback={VoiceNoteResult.Error} resetKeys={[draftId]}>
+        <Suspense fallback={<VoiceNoteScreen.Loading />}>
+          <VoiceNoteScreen.Stage key={draftId} />
+        </Suspense>
+      </QueryErrorBoundary>
+    </StyledSafeAreaView>
+  );
+}
+
+VoiceNoteScreen.Stage = function Stage() {
   const stage = useCurrentVoiceNoteStage();
   const refreshMemos = useRefreshMemos();
 
@@ -24,7 +50,7 @@ function VoiceNoteScreen() {
         .exhaustive()}
     </VStack>
   );
-}
+};
 
 /** 헤더는 레이아웃이 미리 그려 받은 뒤에 밀리지 않는다. 오프라인이면 연결을 기다린다고 알린다 */
 VoiceNoteScreen.Loading = function Loading() {
@@ -51,21 +77,3 @@ VoiceNoteScreen.NotFound = function NotFound() {
     </>
   );
 };
-
-export default function VoiceNoteRoute() {
-  const params = voiceNoteParamsSchema.safeParse(useLocalSearchParams());
-
-  if (!params.success) {
-    return <Redirect href="/memo" />;
-  }
-
-  return (
-    <StyledSafeAreaView edges={['left', 'right', 'bottom']} className="flex-1 bg-white">
-      <QueryErrorBoundary fallback={VoiceNoteResult.Error} resetKeys={[params.data.draftId]}>
-        <Suspense fallback={<VoiceNoteScreen.Loading />}>
-          <VoiceNoteScreen key={params.data.draftId} />
-        </Suspense>
-      </QueryErrorBoundary>
-    </StyledSafeAreaView>
-  );
-}

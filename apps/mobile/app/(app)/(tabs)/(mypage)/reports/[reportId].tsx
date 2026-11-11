@@ -2,6 +2,8 @@ import { ActivityReport } from '@src/features/insights/report/components/activit
 import { SavedActivityReport } from '@src/features/insights/report/components/saved-activity-report';
 import { getSampleReport } from '@src/features/insights/report/constants/sample-reports.constants';
 import { reportParamsSchema } from '@src/features/insights/report/schemas/report-params.schema';
+import { useRouteParams } from '@src/shared/hooks/use-route-params';
+import { useRouteParamsOrRedirect } from '@src/shared/hooks/use-route-params-or-redirect';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import {
@@ -13,23 +15,29 @@ import {
   Text,
   VStack,
 } from '@src/shared/ui';
-import { Redirect, router, useLocalSearchParams } from 'expo-router';
+import { router } from 'expo-router';
 import { Suspense } from 'react';
 import { match } from 'ts-pattern';
 
-export default function ReportDetailScreen() {
-  const params = reportParamsSchema.safeParse(useLocalSearchParams());
-  const { t } = useTranslation('ai');
-  const push = useSingleTap(router.push);
+export default function ReportDetailRoute() {
+  const route = useRouteParamsOrRedirect(reportParamsSchema, { fallbackHref: '/reports' });
 
-  if (!params.success) {
-    return <Redirect href="/reports" />;
+  if (route.redirect != null) {
+    return route.redirect;
   }
+
+  return <ReportDetailScreen />;
+}
+
+function ReportDetailScreen() {
+  const { t } = useTranslation('ai');
+  const [{ reportId }] = useRouteParams(reportParamsSchema);
+  const push = useSingleTap(router.push);
 
   return (
     <SafeAreaScrollView className="flex-1 bg-white px-4" contentContainerClassName="grow">
       <Box className="grow pb-8">
-        {match(params.data.reportId)
+        {match(reportId)
           .with({ kind: 'sample' }, ({ id }) => (
             <>
               <Spacing size={8} />

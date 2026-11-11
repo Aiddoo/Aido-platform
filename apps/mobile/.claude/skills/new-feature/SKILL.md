@@ -47,7 +47,7 @@ features/{area}/{feature}/
    - mutation은 `onSuccess`에 캐시 쓰기, `onSettled`에 무효화, `meta.errorFeedback`을 둔다.
    - `queryClient`는 `{feature}-cache.ts`에서만 만진다.
 7. **컴포넌트** `components/`: 자기 데이터를 스스로 조회한다. 부모 없이 의미 없는 조각은 `Parent.Part`, 반복 고정 UI는 지역 컴포넌트를 항목마다 한 줄씩 쓴다. 위치 이름과 바깥 여백을 쓰지 않는다.
-8. **화면** `app/.../{route}.tsx`: route 파일만 둔다. 경계·`Suspense`·`<Spacing>`·`match(view).exhaustive()`를 화면에서 정한다. params는 스키마로 검증해 틀리면 되돌리고(`safeParse` → `Redirect`), 안쪽은 같은 스키마의 튜플 훅으로 읽는다. 이동은 typed `router.push({ pathname, params })`다.
+8. **화면** `app/.../{route}.tsx`: route 파일만 둔다. 경계·`Suspense`·`<Spacing>`·`match(view).exhaustive()`를 화면에서 정한다. params는 `useRouteParamsOrRedirect`로 검증해 틀리면 되돌리고, 안쪽 화면은 같은 스키마의 튜플 훅으로 읽는다. 이동은 typed `router.push({ pathname, params })`다.
 9. **이벤트·로그 키**: `constants/{entity}.events.ts`(분석), `{entity}-log-events.ts`(로그). 추적은 mutation 옵션이나 UI에서만 한다.
 10. **테스트**: 모델·Policy, 비자명한 mapper, cache 갱신·롤백, 핵심 흐름만 쓴다. 화면 테스트는 `__tests__/{route}-screen.test.tsx`에 둔다.
 11. **검증**: `pnpm check`와 해당 기능 테스트(`pnpm --filter @aido/mobile test -- {feature}`)를 돌린다. 누름 동작은 기기에서도 확인한다.

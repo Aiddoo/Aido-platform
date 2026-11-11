@@ -8,21 +8,20 @@ import rules from './routing.mjs';
 
 const tester = createRuleTester();
 
-tester.run('sheet-route-params', rules['sheet-route-params'], {
+tester.run('route-params-guard', rules['route-params-guard'], {
   valid: [
-    `const parsed = schema.safeParse(params);
-if (!parsed.success) { return <Redirect href="/" />; }
-return <SheetRouteScreen />;`,
-    `const parsed = schema.safeParse(params);
-const id = parsed.data;`,
+    `const route = useRouteParamsOrRedirect(schema, { fallbackHref: '/feed' });
+if (route.redirect != null) { return route.redirect; }
+return <Screen />;`,
+    'const [{ todoId }] = useRouteParams(schema);',
   ],
   invalid: [
     {
-      code: `const parsed = schema.safeParse(params);
-const id = parsed.data.todoId;
-return <SheetRouteScreen />;`,
+      code: `const route = useRouteParamsOrRedirect(schema, { fallbackHref: '/feed' });
+const id = route.params.todoId;`,
       errors: 1,
     },
+    { code: 'const parsed = schema.safeParse(useLocalSearchParams());', errors: 1 },
   ],
 });
 

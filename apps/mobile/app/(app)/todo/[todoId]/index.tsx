@@ -6,22 +6,28 @@ import { TodoCommentTitleBar } from '@src/features/engagement/comment/components
 import { TodoDetailSummary } from '@src/features/engagement/comment/components/todo-detail-summary';
 import { useTodoCommentParams } from '@src/features/engagement/comment/hooks/use-todo-comment-params';
 import { TodoAvailabilityGuard } from '@src/features/planning/todo/components/todo-availability-guard';
+import { useTodoId } from '@src/features/planning/todo/hooks/use-todo-params';
 import { todoParamsSchema } from '@src/features/planning/todo/schemas/todo-params.schema';
+import { useRouteParamsOrRedirect } from '@src/shared/hooks/use-route-params-or-redirect';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { QueryErrorBoundary, StyledSafeAreaView } from '@src/shared/ui';
-import { Redirect, router, useLocalSearchParams } from 'expo-router';
+import { router } from 'expo-router';
 import { Suspense } from 'react';
 
-export default function TodoDetailScreen() {
-  const params = todoParamsSchema.safeParse(useLocalSearchParams());
-  const [{ sort, comment }] = useTodoCommentParams();
-  const goBack = useSingleTap(router.back);
+export default function TodoDetailRoute() {
+  const route = useRouteParamsOrRedirect(todoParamsSchema, { fallbackHref: '/feed' });
 
-  if (!params.success) {
-    return <Redirect href="/feed" />;
+  if (route.redirect != null) {
+    return route.redirect;
   }
 
-  const { todoId } = params.data;
+  return <TodoDetailScreen />;
+}
+
+function TodoDetailScreen() {
+  const [todoId] = useTodoId();
+  const [{ sort, comment }] = useTodoCommentParams();
+  const goBack = useSingleTap(router.back);
 
   return (
     <StyledSafeAreaView className="flex-1 bg-white" edges={['left', 'right']} testID="todo-detail">

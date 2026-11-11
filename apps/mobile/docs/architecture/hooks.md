@@ -66,15 +66,16 @@
 
 있는 도구도 같은 일에는 하나만 쓴다.
 
-| 훅                       | 자리                               | 모양                                          | 쓰는 때                            |
-| ------------------------ | ---------------------------------- | --------------------------------------------- | ---------------------------------- |
-| `useRouteParams(schema)` | `shared/hooks/use-route-params.ts` | `[params, setParams]`                         | URL 값 여럿                        |
-| `useView(key, schema)`   | `shared/hooks/use-view.ts`         | `[view, setView]`                             | 탭·보기 URL 값 하나                |
-| `useStepper(options)`    | `shared/hooks/use-stepper.tsx`     | `Stepper`                                     | 단계 흐름(아래)                    |
-| `useRefresh(refetch)`    | `shared/hooks/use-refresh.ts`      | `[isRefreshing, handleRefresh]`               | 당겨서 새로고침 표시               |
-| `useSingleTap(onTap)`    | `shared/hooks/use-single-tap.ts`   | 같은 인자의 함수                              | 연타로 화면이 두 번 쌓이는 것 막기 |
-| `useConfirmDialog()`     | `shared/ui/confirm-dialog`         | `{ openAsync(options) }` → `Promise<boolean>` | 확인 다이얼로그                    |
-| `useFetchNextPage(…)`    | `shared/ui/infinite-list`          | 다음 페이지 요청                              | `InfiniteList`의 끝 도달           |
+| 훅                                                   | 자리                                            | 모양                                                       | 쓰는 때                            |
+| ---------------------------------------------------- | ----------------------------------------------- | ---------------------------------------------------------- | ---------------------------------- |
+| `useRouteParams(schema)`                             | `shared/hooks/use-route-params.ts`              | `[params, setParams]`                                      | URL 값 여럿                        |
+| `useRouteParamsOrRedirect(schema, { fallbackHref })` | `shared/hooks/use-route-params-or-redirect.tsx` | `{ params, redirect: null } \| { params: null, redirect }` | route 파일의 params 검증           |
+| `useView(key, schema)`                               | `shared/hooks/use-view.ts`                      | `[view, setView]`                                          | 탭·보기 URL 값 하나                |
+| `useStepper(options)`                                | `shared/hooks/use-stepper.tsx`                  | `Stepper`                                                  | 단계 흐름(아래)                    |
+| `useRefresh(refetch)`                                | `shared/hooks/use-refresh.ts`                   | `[isRefreshing, handleRefresh]`                            | 당겨서 새로고침 표시               |
+| `useSingleTap(onTap)`                                | `shared/hooks/use-single-tap.ts`                | 같은 인자의 함수                                           | 연타로 화면이 두 번 쌓이는 것 막기 |
+| `useConfirmDialog()`                                 | `shared/ui/confirm-dialog`                      | `{ openAsync(options) }` → `Promise<boolean>`              | 확인 다이얼로그                    |
+| `useFetchNextPage(…)`                                | `shared/ui/infinite-list`                       | 다음 페이지 요청                                           | `InfiniteList`의 끝 도달           |
 
 애니메이션 멈춤 조건 `useIsAnimationActive()`와 UI 부품이 주는 훅은 [ui](./ui.md)·[ui-catalog](./ui-catalog.md)에 있다.
 

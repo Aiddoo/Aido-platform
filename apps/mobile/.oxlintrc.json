@@ -911,7 +911,7 @@
         "src/testing/**"
       ],
       "rules": {
-        "aido/sheet-route-params": "error"
+        "aido/route-params-guard": "error"
       }
     },
     {

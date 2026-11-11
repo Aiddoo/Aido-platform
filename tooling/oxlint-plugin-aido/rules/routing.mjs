@@ -10,40 +10,48 @@ import {
   unwrap,
 } from '../ast.mjs';
 
-// 시트 route는 safeParse로 검증하고 Redirect만 한다. 대상은 시트가 같은 스키마의 route 훅으로 읽는다
-const sheetRouteParams = {
+// route 파일은 useRouteParamsOrRedirect로 검증하고 redirect만 그린다. 값은 안쪽 화면이 같은 스키마의 튜플 훅으로 읽는다
+const routeParamsGuard = {
   meta: { type: 'suggestion' },
   create(context) {
-    const safeParseResults = new Set();
-    const dataReads = [];
+    const guardResults = new Set();
+    const paramsReads = [];
     return {
       VariableDeclarator(node) {
         if (
           node.id.type === 'Identifier' &&
           node.init?.type === 'CallExpression' &&
-          node.init.callee.type === 'MemberExpression' &&
-          !node.init.callee.computed &&
-          node.init.callee.property.name === 'safeParse'
+          getCalleeName(node.init.callee) === 'useRouteParamsOrRedirect'
         ) {
-          safeParseResults.add(node.id.name);
+          guardResults.add(node.id.name);
+        }
+      },
+      CallExpression(node) {
+        if (
+          getCalleeName(node.callee) === 'safeParse' &&
+          node.arguments[0]?.type === 'CallExpression' &&
+          getCalleeName(node.arguments[0].callee) === 'useLocalSearchParams'
+        ) {
+          context.report({
+            node,
+            message:
+              'route params는 useRouteParamsOrRedirect로 검증합니다. 리다이렉트를 직접 만들지 마세요.',
+          });
         }
       },
       MemberExpression(node) {
         const names = getMemberNames(node);
-        if (names?.[1] === 'data') {
-          dataReads.push({ node, name: names[0] });
+        if (names?.[1] === 'params') {
+          paramsReads.push({ node, name: names[0] });
         }
       },
       'Program:exit'() {
-        if (!context.sourceCode.text.includes('<SheetRouteScreen')) {
-          return;
-        }
-        for (const { node, name } of dataReads) {
-          if (safeParseResults.has(name)) {
+        for (const { node, name } of paramsReads) {
+          if (guardResults.has(name)) {
             context.report({
               node,
               message:
-                '시트 route는 safeParse로 검증하고 Redirect만 합니다. 대상은 시트가 같은 스키마의 route 훅으로 읽습니다.',
+                'route 파일은 검증과 redirect만 합니다. 값은 안쪽 화면이 같은 스키마의 튜플 훅으로 읽습니다.',
             });
           }
         }
@@ -460,7 +468,7 @@ const formShape = {
 };
 
 export default {
-  'sheet-route-params': sheetRouteParams,
+  'route-params-guard': routeParamsGuard,
   'no-destructured-search-params': noDestructuredSearchParams,
   'no-router-push': noRouterPush,
   'my-page-menu-navigation': myPageMenuNavigation,

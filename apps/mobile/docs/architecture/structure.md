@@ -203,7 +203,7 @@ composition-root(프로세스 수명) → DIProvider: createAppContainer(ports)(
 
 - **oxlint 기본 규칙**: `no-restricted-imports`: SDK는 `shared/infra` 밖 금지, 모델의 계약·i18n·UI·RN·React, `zod` 자리, `QueryClient`, `shared-di-context`, `useAnalytics`, RN `Image`·`ActivityIndicator`·`AppState`, RHF `FormProvider`, `es-toolkit/compat`, 폴더별 허용 목록. `no-restricted-properties`: `toSorted`, `Alert.alert`, `Platform.OS`, params 훅 밖 `router.setParams`. `react/forbid-elements`(`Chip.Label`), jest(`useFakeTimers`·`mock` 위치·스타일 단언·스냅숏)
 - **oxlint 타입 안전**: `no-explicit-any`, `no-non-null-assertion`, `consistent-type-assertions: never`, `ban-ts-comment`. 테스트에도 같게 건다
-- **oxlint JS 플러그인 `tooling/oxlint-plugin-aido`**: Policy 모양·첫 인자, 모듈 함수 형태, 금지 접미사·이름, `X.Y = function Y`, `*FormInput`·`*Params` 타입 이름, 엄격한 없음 비교, worklet 기본값, 범위 비교 순서, 아이콘 prop, `X.YSkeleton`, `Tabs.Label`·`Menu.ItemTitle` 날글자, 역할 비교, `queryKey: [`, `useForm<>`, 여백 prop + `className`, 시트 route `.data`, 재수출, DI 훅 주인, 추적·`queryClient`·저장 키 문자열의 층, 이벤트 카탈로그·로그 키 유일성
+- **oxlint JS 플러그인 `tooling/oxlint-plugin-aido`**: Policy 모양·첫 인자, 모듈 함수 형태, 금지 접미사·이름, `X.Y = function Y`, `*FormInput`·`*Params` 타입 이름, 엄격한 없음 비교, worklet 기본값, 범위 비교 순서, 아이콘 prop, `X.YSkeleton`, `Tabs.Label`·`Menu.ItemTitle` 날글자, 역할 비교, `queryKey: [`, `useForm<>`, 여백 prop + `className`, route params 검증, 재수출, DI 훅 주인, 추적·`queryClient`·저장 키 문자열의 층, 이벤트 카탈로그·로그 키 유일성
 - **dependency-cruiser(`lint:deps`)**: `core`·`shared` 층, 기능 층 1~5, 층 없는 기능, 상대·절대 경로 경계, 순환, 폴더별 의존(`apis/` ↛ `repositories/` 등), 날짜 라이브러리(`dayjs`·`temporal-polyfill`) import
 - **ls-lint(`.ls-lint.yml`)**: `schemas/` 접미사, 역할 폴더별 접미사, `hooks/use-*`, 테스트 위치, `app/` 아래 테스트
 - **knip**: 안 쓰는 파일·export·의존성(모바일 포함)

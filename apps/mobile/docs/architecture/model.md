@@ -171,7 +171,7 @@ export function parsePushNotification(data: unknown): ParsedPushNotification {
 | 서버 응답                  | `parseApiResponse`(strict, `shared/errors/parse-api-response.ts`) | throw → 경계 + Sentry            |
 | 앞으로 서버가 더할 열거    | 계약 `.catch(UNKNOWN)` + 로그                                     | 그 칸만 대체                     |
 | 푸시 data·딥링크·위젯 명령 | mapper `parse{X}(unknown): X \| null`                             | `null` → 안전한 기본 이동 + 로그 |
-| route params               | route 파일 `safeParse` → `Redirect`, 안쪽은 같은 스키마           | 화면 단위로 되돌림               |
+| route params               | route 파일 `useRouteParamsOrRedirect`, 안쪽은 같은 스키마의 튜플  | 화면 단위로 되돌림               |
 | 기기 저장 값               | `defineStoredValue`(`.catch`, `migrate`)                          | `fallback`                       |
 | 폼                         | `zodResolver` 하나                                                | 칸 오류                          |
 | 빌드 설정                  | `parse`                                                           | 시작할 때 throw                  |
