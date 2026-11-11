@@ -21,7 +21,7 @@ import { act, fireEvent, screen } from '@testing-library/react-native';
 
 import { PUSH_PERMISSION_QUERY_KEYS } from '../queries/push-permission-query-keys';
 import { createMarketingPushPromptRepository } from '../repositories/marketing-push-prompt.repository';
-import { useOfferMarketingPushAfterCompletion } from './use-offer-marketing-push';
+import { useOfferMarketingPushAfterCompletion } from './use-offer-marketing-push-after-completion';
 
 const OFFER_DELAY_MS = 700;
 

@@ -9,6 +9,7 @@ import { getNowInstant } from '@src/shared/date/clock';
 import { getErrorMessage } from '@src/shared/errors';
 import { useOverlay } from '@src/shared/ui';
 import { useQueryClient } from '@tanstack/react-query';
+import { noop } from 'es-toolkit';
 import { useEffect, useEffectEvent, useRef } from 'react';
 import { match } from 'ts-pattern';
 
@@ -26,28 +27,75 @@ const OFFER_DELAY_MS = 700;
 
 /** 할 일을 처음 끝낸 순간에 혜택·소식 알림을 한 번 제안한다. 로그인한 화면 묶음에 한 번만 둔다 */
 export function useOfferMarketingPushAfterCompletion() {
+  const findOfferAccountId = useFindMarketingPushOfferAccountId();
+  const openOffer = useOpenMarketingPushOffer();
+  const hasOfferedRef = useRef(false);
+
+  useAfterTodoCompleted(async () => {
+    if (hasOfferedRef.current) {
+      return;
+    }
+    const accountId = await findOfferAccountId();
+    if (accountId == null || hasOfferedRef.current) {
+      return;
+    }
+    hasOfferedRef.current = true;
+    await openOffer(accountId);
+  });
+}
+
+/** 할 일을 끝내면 체크가 끝나는 모습을 본 뒤에 부른다 */
+function useAfterTodoCompleted(onCompleted: () => Promise<void>) {
+  const logger = useLogger();
+  const handleCompleted = useEffectEvent(onCompleted);
+
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const unsubscribe = subscribeTodoCompletionChanged(({ isCompleted }) => {
+      if (!isCompleted || timer != null) {
+        return;
+      }
+      timer = setTimeout(() => {
+        timer = null;
+        handleCompleted().catch((error: unknown) =>
+          logger.warn(NOTIFICATION_LOG_EVENT.MARKETING_PUSH_OFFER_SKIPPED, {
+            error: getErrorMessage(error),
+          }),
+        );
+      }, OFFER_DELAY_MS);
+    });
+    return () => {
+      unsubscribe();
+      if (timer != null) {
+        clearTimeout(timer);
+      }
+    };
+  }, [logger]);
+}
+
+/** 제안할 계정. 기기 알림이나 앱 푸시가 꺼져 있으면 동의를 받아도 알림이 닿지 않아 제안하지 않는다 */
+function useFindMarketingPushOfferAccountId() {
   const queryClient = useQueryClient();
-  const overlay = useOverlay();
   const repository = useMarketingPushPromptRepository();
   const logger = useLogger();
-  const { trackEvent } = useTrack();
   const consentQueryOptions = useGetConsentQueryOptions();
   const preferenceQueryOptions = useGetPreferenceQueryOptions();
   const permissionQueryOptions = useGetPushPermissionQueryOptions();
-  const hasOfferedRef = useRef(false);
 
-  const offer = useEffectEvent(async () => {
+  return async (): Promise<string | null> => {
     const me = getCachedMe(queryClient);
-    if (hasOfferedRef.current || me == null) {
-      return;
+    if (me == null) {
+      return null;
     }
+    const logSkipped = (error: unknown) =>
+      logger.warn(NOTIFICATION_LOG_EVENT.MARKETING_PUSH_OFFER_SKIPPED, {
+        error: getErrorMessage(error),
+      });
     // 설정 화면을 열지 않았어도 제안할 수 있게 캐시가 없으면 받아 온다
     const [preference, consent, permission] = await Promise.all([
       // oxlint-disable-next-line aido/query-client-location -- 1.15.2 전환 #1400
       queryClient.ensureQueryData(preferenceQueryOptions).catch((error: unknown) => {
-        logger.warn(NOTIFICATION_LOG_EVENT.MARKETING_PUSH_OFFER_SKIPPED, {
-          error: getErrorMessage(error),
-        });
+        logSkipped(error);
         return null;
       }),
       readWithoutBlocking(
@@ -55,27 +103,31 @@ export function useOfferMarketingPushAfterCompletion() {
         queryClient.getQueryData(consentQueryOptions.queryKey),
         // oxlint-disable-next-line aido/query-client-location -- 1.15.2 전환 #1400
         () => queryClient.ensureQueryData(consentQueryOptions),
-        (error) =>
-          logger.warn(NOTIFICATION_LOG_EVENT.MARKETING_PUSH_OFFER_SKIPPED, {
-            error: getErrorMessage(error),
-          }),
+        logSkipped,
       ),
       // oxlint-disable-next-line aido/query-client-location -- 1.15.2 전환 #1400
       queryClient.ensureQueryData(permissionQueryOptions),
     ]);
-    // 기기 알림이나 앱 푸시가 꺼져 있으면 동의를 받아도 알림이 닿지 않는다
     if (
       preference == null ||
       consent == null ||
-      hasOfferedRef.current ||
       !PushPermissionPolicy.canReceivePush(permission, preference) ||
       !MarketingPushPromptPolicy.shouldPrompt(consent, repository.find(me.id), getNowInstant())
     ) {
-      return;
+      return null;
     }
-    hasOfferedRef.current = true;
+    return me.id;
+  };
+}
+
+/** 시트를 띄우고 고른 답을 남긴다. 동의 뒤 닫히는 애니메이션도 닫힘을 알리므로 처음 고른 답 하나만 남긴다 */
+function useOpenMarketingPushOffer() {
+  const overlay = useOverlay();
+  const repository = useMarketingPushPromptRepository();
+  const { trackEvent } = useTrack();
+
+  return async (accountId: string) => {
     trackEvent('marketing_push_prompt_shown', { source: 'completion_sheet' });
-    // 동의 뒤 닫히는 애니메이션도 닫힘을 알리므로 처음 고른 답 하나만 남긴다
     const choice = await overlay.openAsync<MarketingPushOfferChoice>(
       ({ isOpen, close, unmount }) => (
         <MarketingPushOptInBottomSheet
@@ -94,33 +146,10 @@ export function useOfferMarketingPushAfterCompletion() {
     match(choice)
       .with('agree', () => trackEvent('marketing_push_opted_in', { source: 'completion_sheet' }))
       .with('dismiss', () => {
-        repository.dismiss(me.id, getNowInstant());
+        repository.dismiss(accountId, getNowInstant());
         trackEvent('marketing_push_prompt_dismissed', { source: 'completion_sheet' });
       })
-      .with(null, () => undefined)
+      .with(null, noop)
       .exhaustive();
-  });
-
-  useEffect(() => {
-    let timer: ReturnType<typeof setTimeout> | null = null;
-    const unsubscribe = subscribeTodoCompletionChanged(({ isCompleted }) => {
-      if (!isCompleted || timer != null) {
-        return;
-      }
-      timer = setTimeout(() => {
-        timer = null;
-        offer().catch((error: unknown) =>
-          logger.warn(NOTIFICATION_LOG_EVENT.MARKETING_PUSH_OFFER_SKIPPED, {
-            error: getErrorMessage(error),
-          }),
-        );
-      }, OFFER_DELAY_MS);
-    });
-    return () => {
-      unsubscribe();
-      if (timer != null) {
-        clearTimeout(timer);
-      }
-    };
-  }, [logger]);
+  };
 }

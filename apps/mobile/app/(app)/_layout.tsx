@@ -3,7 +3,7 @@ import { useRecordTodoCompletion } from '@src/features/device/activation/hooks/u
 import { useRecordTodoCreated } from '@src/features/device/activation/hooks/use-record-todo-created';
 import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
 import { useLogoutMutationOptions } from '@src/features/identity/auth/queries/auth.mutations';
-import { useOfferMarketingPushAfterCompletion } from '@src/features/notification/hooks/use-offer-marketing-push';
+import { useOfferMarketingPushAfterCompletion } from '@src/features/notification/hooks/use-offer-marketing-push-after-completion';
 import { usePushOnboardingGuard } from '@src/features/notification/hooks/use-push-onboarding-guard';
 import { classifyBoundaryError } from '@src/shared/errors';
 import { useTranslation } from '@src/shared/i18n';
