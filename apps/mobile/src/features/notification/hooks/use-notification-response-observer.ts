@@ -49,7 +49,7 @@ export function useNotificationResponseObserver(): void {
   const appLifecycle = useAppLifecycle();
   const store = usePushNotificationEntryStore();
   const logger = useLogger();
-  const { pending, ready, optOut } = useSyncExternalStore(store.subscribe, store.getState);
+  const { pending, ready, optOut } = useSyncExternalStore(store.subscribe, store.getSnapshot);
   const clearLastResponse = useCallback(() => {
     try {
       gateway.clearLastResponse();
@@ -208,7 +208,7 @@ function useResolveResponse(
     inFlightIdRef.current = target.id;
     const epoch = sessionEpoch.current();
     const isCurrent = () =>
-      sessionEpoch.current() === epoch && store.getState().pending?.id === target.id;
+      sessionEpoch.current() === epoch && store.getSnapshot().pending?.id === target.id;
     const { notification } = target;
     try {
       const ownership = await notificationApi.markAsReadAndCheckOwnership(

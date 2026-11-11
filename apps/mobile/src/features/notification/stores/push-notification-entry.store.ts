@@ -22,7 +22,7 @@ export interface ReadyPushNotificationEntry {
 }
 
 export interface PushNotificationEntryStore {
-  getState(): PushNotificationEntryState;
+  getSnapshot(): PushNotificationEntryState;
   subscribe(listener: () => void): () => void;
   receive(response: PushNotificationResponse): void;
   /** 소유 확인이 끝난 탭의 목적지를 정한다. 그 사이 새 탭이 왔으면 무시한다 */
@@ -48,7 +48,7 @@ export function createPushNotificationEntryStore(): PushNotificationEntryStore {
   }
 
   return {
-    getState: () => state,
+    getSnapshot: () => state,
     subscribe: (listener) => {
       listeners.add(listener);
       return () => {

@@ -14,7 +14,7 @@ describe('createPushNotificationEntryStore', () => {
     store.receive(tap('b'));
 
     // Then
-    expect(store.getState().pending?.id).toBe('b');
+    expect(store.getSnapshot().pending?.id).toBe('b');
   });
 
   it('끝난 응답이 다시 와도 슬롯에 넣지 않는다', () => {
@@ -27,7 +27,7 @@ describe('createPushNotificationEntryStore', () => {
     store.receive(tap('a'));
 
     // Then
-    expect(store.getState().pending).toBeNull();
+    expect(store.getSnapshot().pending).toBeNull();
   });
 
   it('끝난 응답이 다른 탭 뒤에 다시 와도 슬롯에 넣지 않는다', () => {
@@ -42,7 +42,7 @@ describe('createPushNotificationEntryStore', () => {
     store.receive(tap('a'));
 
     // Then
-    expect(store.getState().pending).toBeNull();
+    expect(store.getSnapshot().pending).toBeNull();
   });
 
   it('수신 거부는 다음 탭에 밀리지 않는다', () => {
@@ -54,8 +54,8 @@ describe('createPushNotificationEntryStore', () => {
     store.receive(tap('a'));
 
     // Then
-    expect(store.getState().optOut?.id).toBe('opt-out');
-    expect(store.getState().pending?.id).toBe('a');
+    expect(store.getSnapshot().optOut?.id).toBe('opt-out');
+    expect(store.getSnapshot().pending?.id).toBe('a');
   });
 
   it('같은 응답이 다시 오면 구독자를 깨우지 않는다', () => {
@@ -82,8 +82,8 @@ describe('createPushNotificationEntryStore', () => {
     store.markReady('a', { kind: 'none' });
 
     // Then
-    expect(store.getState().ready).toBeNull();
-    expect(store.getState().pending?.id).toBe('b');
+    expect(store.getSnapshot().ready).toBeNull();
+    expect(store.getSnapshot().pending?.id).toBe('b');
   });
 
   it('목적지가 정해진 뒤 새 탭이 오면 새 탭이 이긴다', () => {
@@ -96,7 +96,7 @@ describe('createPushNotificationEntryStore', () => {
     store.receive(tap('b'));
 
     // Then
-    expect(store.getState().ready).toBeNull();
-    expect(store.getState().pending?.id).toBe('b');
+    expect(store.getSnapshot().ready).toBeNull();
+    expect(store.getSnapshot().pending?.id).toBe('b');
   });
 });

@@ -79,7 +79,7 @@ describe('useNotificationResponseObserver', () => {
     await act(async () => gateway.emitResponse(RESPONSE));
 
     // Then
-    expect(store.getState().pending?.id).toBe('response-1');
+    expect(store.getSnapshot().pending?.id).toBe('response-1');
     expect(listener).toHaveBeenCalledTimes(1);
   });
 
@@ -96,7 +96,10 @@ describe('useNotificationResponseObserver', () => {
     );
 
     // Then
-    expect(store.getState().ready?.destination).toEqual({ kind: 'route', href: '/notifications' });
+    expect(store.getSnapshot().ready?.destination).toEqual({
+      kind: 'route',
+      href: '/notifications',
+    });
     expect(logger.warn).toHaveBeenCalledWith('notification.push.parse-dropped', {
       source: 'response',
       responseId: 'response-1',
@@ -114,7 +117,7 @@ describe('useNotificationResponseObserver', () => {
     await changeStatus('unauthenticated');
 
     // Then
-    expect(store.getState().pending).toBeNull();
+    expect(store.getSnapshot().pending).toBeNull();
     expect(gateway.getLastResponse()).toBeNull();
   });
 
@@ -141,7 +144,7 @@ describe('useNotificationResponseObserver', () => {
     await changeStatus('locked');
 
     // Then
-    expect(store.getState().pending?.id).toBe('response-1');
+    expect(store.getSnapshot().pending?.id).toBe('response-1');
   });
 
   it('Index가 이동하지 못해도 상한이 지나면 슬롯을 비워 갇히지 않는다', async () => {
@@ -150,10 +153,10 @@ describe('useNotificationResponseObserver', () => {
 
     // When
     await act(async () => gateway.emitResponse(RESPONSE));
-    expect(store.getState().ready?.response.id).toBe('response-1');
+    expect(store.getSnapshot().ready?.response.id).toBe('response-1');
 
     // Then
-    await waitFor(() => expect(store.getState().ready).toBeNull(), {
+    await waitFor(() => expect(store.getSnapshot().ready).toBeNull(), {
       timeout: NOTIFICATION_ENTRY_HOLD_MAX_MS + 1000,
     });
     expect(logger.warn).toHaveBeenCalledTimes(1);
@@ -169,7 +172,7 @@ describe('useNotificationResponseObserver', () => {
     );
 
     // Then
-    await waitFor(() => expect(store.getState().ready).toBeNull(), {
+    await waitFor(() => expect(store.getSnapshot().ready).toBeNull(), {
       timeout: NOTIFICATION_ENTRY_HOLD_MAX_MS + 1000,
     });
     await waitFor(() => expect(httpClient.post).toHaveBeenCalledWith('v1/notifications/75/opened'));

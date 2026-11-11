@@ -14,7 +14,7 @@ const APP_ENTRY_SEGMENTS: ReadonlySet<string | undefined> = new Set([
 export function useNotificationEntry() {
   const status = useAuthStatus();
   const store = usePushNotificationEntryStore();
-  const { pending, ready } = useSyncExternalStore(store.subscribe, store.getState);
+  const { pending, ready } = useSyncExternalStore(store.subscribe, store.getSnapshot);
   const [firstSegment] = useSegments();
   const isEnteringApp = status === 'authenticated' && APP_ENTRY_SEGMENTS.has(firstSegment);
 
@@ -33,7 +33,7 @@ export function useHasPendingNotificationEntry() {
   const store = usePushNotificationEntryStore();
 
   return useSyncExternalStore(store.subscribe, () => {
-    const { pending, ready } = store.getState();
+    const { pending, ready } = store.getSnapshot();
     return pending != null || ready != null;
   });
 }
