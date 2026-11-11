@@ -4,7 +4,7 @@ import { queryOptions } from '@tanstack/react-query';
 
 import { WHATS_NEW_QUERY_KEYS } from './whats-new-query-keys';
 
-export function useGetWhatsNewCampaignConfigQueryOptions() {
+export function useGetWhatsNewCampaignQueryOptions() {
   const whatsNewCampaignApi = useWhatsNewCampaignApi();
 
   return queryOptions({
