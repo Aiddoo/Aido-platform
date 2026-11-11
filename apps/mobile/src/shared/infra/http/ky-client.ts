@@ -55,7 +55,7 @@ export class KyHttpClient implements HttpClient {
     return this.#request(() =>
       this.#client.delete(url, {
         ...this.#buildOptions(restConfig),
-        // nullish-strict: null도 보낼 수 있는 JSON 본문이다
+        // oxlint-disable-next-line aido/no-strict-nullish -- null도 보낼 수 있는 JSON 본문이다
         ...(body !== undefined ? { json: body } : {}),
       }),
     );

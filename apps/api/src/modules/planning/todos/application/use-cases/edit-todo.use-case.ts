@@ -73,7 +73,7 @@ export class EditTodoUseCase {
     if (checklist != null && scope !== "THIS_AND_FOLLOWING") {
       throw new ApplicationException(ErrorCode.TODO_0845, { field: "checklist" });
     }
-    // nullish-strict: repeat null은 반복 끝내기라 범위를 고른 수정이 아니다
+    // oxlint-disable-next-line aido/no-strict-nullish -- repeat null은 반복 끝내기라 범위를 고른 수정이 아니다
     if (scope === "THIS_AND_FOLLOWING" && repeat !== null) {
       return this.#editFollowing(input, repeat);
     }
@@ -83,7 +83,7 @@ export class EditTodoUseCase {
       }
       return this.#startSeries(input, repeat);
     }
-    // nullish-strict: repeat null은 반복 끝내기, undefined는 변경 없음이다
+    // oxlint-disable-next-line aido/no-strict-nullish -- repeat null은 반복 끝내기, undefined는 변경 없음이다
     if (repeat === null) {
       return this.#stopSeries(input);
     }
@@ -107,7 +107,7 @@ export class EditTodoUseCase {
       checklist,
     };
     const { startDate, endDate, completed } = data;
-    // nullish-strict: endDate null도 이 회차의 변경이다
+    // oxlint-disable-next-line aido/no-strict-nullish -- endDate null도 이 회차의 변경이다
     if (startDate == null && endDate === undefined && completed == null) {
       return updateFollowingTodos.execute(followingInput);
     }

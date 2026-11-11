@@ -254,7 +254,7 @@ export class UpdateFollowingTodosUseCase {
 
     await todoRepository.updateFollowingOccurrences(target.id, pivot, toOccurrencePatch(input));
 
-    // nullish-strict: null은 시간 지우기, undefined는 시간을 건드리지 않은 수정이다
+    // oxlint-disable-next-line aido/no-strict-nullish -- null은 시간 지우기, undefined는 시간을 건드리지 않은 수정이다
     if (details.scheduledLocalTime !== undefined) {
       const rescheduled = await this.#rescheduleRows(target, pivot, details.scheduledLocalTime);
       cancelledTodoIds.push(...rescheduled.map(({ todoId }) => todoId.value));
@@ -297,7 +297,7 @@ export class UpdateFollowingTodosUseCase {
       pivot,
       toOccurrencePatch(changes),
     );
-    // nullish-strict: null은 시간 지우기, undefined는 시간을 건드리지 않은 수정이다
+    // oxlint-disable-next-line aido/no-strict-nullish -- null은 시간 지우기, undefined는 시간을 건드리지 않은 수정이다
     return changes.scheduledLocalTime === undefined
       ? []
       : this.#rescheduleRows(segment, pivot, changes.scheduledLocalTime);
@@ -464,7 +464,7 @@ function toOccurrencePatch(
 }
 
 function resolveLocalTime(input: UpdateFollowingTodosInput): string | null | undefined {
-  // nullish-strict: 생략은 유지, null은 시간 지우기다
+  // oxlint-disable-next-line aido/no-strict-nullish -- 생략은 유지, null은 시간 지우기다
   if (input.scheduledTime !== undefined) {
     return input.scheduledTime;
   }

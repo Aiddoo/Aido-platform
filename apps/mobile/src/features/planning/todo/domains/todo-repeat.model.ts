@@ -158,7 +158,7 @@ export function getTodoEditScopeDecision({
   repeat,
   isDateOnly,
 }: TodoEditScopeInput): TodoEditScopeDecision {
-  // nullish-strict: repeat null은 반복 끝내기, 생략은 규칙 유지다
+  // oxlint-disable-next-line aido/no-strict-nullish -- repeat null은 반복 끝내기, 생략은 규칙 유지다
   if (!isSeries || repeat === null) {
     return 'no-scope';
   }

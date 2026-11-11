@@ -55,7 +55,7 @@ export async function setUserSubscriptionProjection(
   const expiresAt = data.subscriptionExpiresAt;
   await repository.update(UserId.reconstitute(userId), {
     subscriptionStatus: data.subscriptionStatus,
-    // nullish-strict: 생략은 만료 시각을 건드리지 않고 null은 지운다
+    // 생략은 만료 시각을 건드리지 않고 null은 지운다
     ...(expiresAt !== undefined && {
       subscriptionExpiresAt: expiresAt === null ? null : instantFromDate(expiresAt),
     }),

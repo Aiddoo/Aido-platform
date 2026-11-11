@@ -272,7 +272,7 @@ export class DrizzleUserRepository
       })
       .onConflictDoUpdate({
         target: userProfile.userId,
-        // nullish-strict: PATCH라 undefined는 그대로 두고 null은 비운다. userId는 빈 set을 피하는 무변경 값이다.
+        // PATCH라 undefined는 그대로 두고 null은 비운다. userId는 빈 set을 피하는 무변경 값이다.
         set: { userId: userId.value, name: data.name, profileImage: data.profileImage },
       })
       .returning({ name: userProfile.name, profileImage: userProfile.profileImage });

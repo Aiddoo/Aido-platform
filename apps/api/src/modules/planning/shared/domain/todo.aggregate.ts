@@ -413,9 +413,9 @@ function isSameInstant(left: Temporal.Instant | null, right: Temporal.Instant | 
 function toSchedulePatch(patch: TodoDetailsPatch): TodoSchedulePatch {
   return {
     ...(patch.startDate == null ? {} : { startDate: patch.startDate }),
-    // nullish-strict: endDate null은 종료일 지우기다
+    // oxlint-disable-next-line aido/no-strict-nullish -- endDate null은 종료일 지우기다
     ...(patch.endDate === undefined ? {} : { endDate: patch.endDate }),
-    // nullish-strict: 벽시계 null은 시간 지우기다
+    // oxlint-disable-next-line aido/no-strict-nullish -- 벽시계 null은 시간 지우기다
     ...(patch.scheduledLocalTime === undefined
       ? {}
       : { scheduledLocalTime: patch.scheduledLocalTime }),

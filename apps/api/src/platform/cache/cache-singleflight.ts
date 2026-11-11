@@ -20,7 +20,7 @@ export class CacheSingleflight {
     ttlMs: CacheWrapTtlMs<T> | undefined,
   ): Promise<T> {
     const cached = await store.get(key, schema);
-    // nullish-strict: undefined는 cache miss, null은 저장해 둔 값이다
+    // oxlint-disable-next-line aido/no-strict-nullish -- undefined는 cache miss, null은 저장해 둔 값이다
     if (cached !== undefined) {
       return cached;
     }

@@ -44,12 +44,24 @@
         "typescript/no-explicit-any": "off",
         "typescript/ban-ts-comment": [
           "error",
-          { "ts-expect-error": "allow-with-description", "ts-ignore": true, "ts-nocheck": true }
+          {
+            "ts-expect-error": "allow-with-description",
+            "ts-ignore": true,
+            "ts-nocheck": true
+          }
         ],
-        "jest/consistent-test-it": ["error", { "fn": "it", "withinDescribe": "it" }],
+        "jest/consistent-test-it": [
+          "error",
+          {
+            "fn": "it",
+            "withinDescribe": "it"
+          }
+        ],
         "jest/expect-expect": [
           "error",
-          { "assertFunctionNames": ["expect", "expectStatus", "expectSignedIn"] }
+          {
+            "assertFunctionNames": ["expect", "expectStatus", "expectSignedIn"]
+          }
         ],
         "jest/no-focused-tests": "error",
         "jest/no-disabled-tests": "error",
@@ -63,6 +75,738 @@
       "files": ["index.ts"],
       "rules": {
         "typescript/consistent-type-imports": "off"
+      }
+    },
+    {
+      "files": ["src/**", "app/**"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "paths": [
+              {
+                "name": "heroui-native",
+                "importNames": ["Avatar", "BottomSheet", "Button", "Input", "Text", "TextArea"],
+                "message": "heroui-native의 같은 이름 대신 @src/shared/ui의 부품을 씁니다. 앱 안에서 같은 이름은 하나의 뜻만 갖습니다."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["src/**", "app/**"],
+      "excludeFiles": ["**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}", "**/__tests__/**"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "paths": [
+              {
+                "name": "heroui-native",
+                "importNames": ["Avatar", "BottomSheet", "Button", "Input", "Text", "TextArea"],
+                "message": "heroui-native의 같은 이름 대신 @src/shared/ui의 부품을 씁니다. 앱 안에서 같은 이름은 하나의 뜻만 갖습니다."
+              },
+              {
+                "name": "react-native",
+                "importNames": ["Image", "ActivityIndicator"],
+                "message": "react-native의 Image 대신 @src/shared/ui의 Image를, ActivityIndicator 대신 heroui-native의 Spinner를 씁니다."
+              },
+              {
+                "name": "react-hook-form",
+                "importNames": ["FormProvider", "useFormContext"],
+                "message": "폼은 변수 form, useForm 제네릭 없이, Controller로 씁니다. FormProvider, useFormContext, FormField, methods, formMethods를 쓰지 않고 form을 props로 넘기세요."
+              }
+            ],
+            "patterns": [
+              {
+                "regex": "^@src/shared/ui$|/form-field$",
+                "importNames": ["FormField"],
+                "message": "폼은 변수 form, useForm 제네릭 없이, Controller로 씁니다. FormProvider, useFormContext, FormField, methods, formMethods를 쓰지 않고 form을 props로 넘기세요."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["app/**"],
+      "excludeFiles": ["**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}", "**/__tests__/**"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "paths": [
+              {
+                "name": "heroui-native",
+                "importNames": ["Avatar", "BottomSheet", "Button", "Input", "Text", "TextArea"],
+                "message": "heroui-native의 같은 이름 대신 @src/shared/ui의 부품을 씁니다. 앱 안에서 같은 이름은 하나의 뜻만 갖습니다."
+              },
+              {
+                "name": "react-native",
+                "importNames": ["Image", "ActivityIndicator"],
+                "message": "react-native의 Image 대신 @src/shared/ui의 Image를, ActivityIndicator 대신 heroui-native의 Spinner를 씁니다."
+              },
+              {
+                "name": "react-hook-form",
+                "importNames": ["FormProvider", "useFormContext"],
+                "message": "폼은 변수 form, useForm 제네릭 없이, Controller로 씁니다. FormProvider, useFormContext, FormField, methods, formMethods를 쓰지 않고 form을 props로 넘기세요."
+              }
+            ],
+            "patterns": [
+              {
+                "regex": "^@src/shared/ui$|/form-field$",
+                "importNames": ["FormField"],
+                "message": "폼은 변수 form, useForm 제네릭 없이, Controller로 씁니다. FormProvider, useFormContext, FormField, methods, formMethods를 쓰지 않고 form을 props로 넘기세요."
+              },
+              {
+                "regex": "(?:^@src/|/)shared/hooks/use-sync-storage-string$",
+                "importNames": ["useSyncStorageString"],
+                "message": "useSyncStorageString으로 기기 저장 값을 직접 읽지 않습니다. 그 값의 repository에 읽기·쓰기·subscribe를 두고 useSyncExternalStore로 구독하세요."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["src/features/**"],
+      "excludeFiles": ["**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}", "**/__tests__/**"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "paths": [
+              {
+                "name": "heroui-native",
+                "importNames": ["Avatar", "BottomSheet", "Button", "Input", "Text", "TextArea"],
+                "message": "heroui-native의 같은 이름 대신 @src/shared/ui의 부품을 씁니다. 앱 안에서 같은 이름은 하나의 뜻만 갖습니다."
+              },
+              {
+                "name": "react-native",
+                "importNames": ["Image", "ActivityIndicator"],
+                "message": "react-native의 Image 대신 @src/shared/ui의 Image를, ActivityIndicator 대신 heroui-native의 Spinner를 씁니다."
+              },
+              {
+                "name": "react-hook-form",
+                "importNames": ["FormProvider", "useFormContext"],
+                "message": "폼은 변수 form, useForm 제네릭 없이, Controller로 씁니다. FormProvider, useFormContext, FormField, methods, formMethods를 쓰지 않고 form을 props로 넘기세요."
+              }
+            ],
+            "patterns": [
+              {
+                "regex": "^@src/shared/ui$|/form-field$",
+                "importNames": ["FormField"],
+                "message": "폼은 변수 form, useForm 제네릭 없이, Controller로 씁니다. FormProvider, useFormContext, FormField, methods, formMethods를 쓰지 않고 form을 props로 넘기세요."
+              },
+              {
+                "regex": "(?:^@src/|/)shared/hooks/use-sync-storage-string$",
+                "importNames": ["useSyncStorageString"],
+                "message": "useSyncStorageString으로 기기 저장 값을 직접 읽지 않습니다. 그 값의 repository에 읽기·쓰기·subscribe를 두고 useSyncExternalStore로 구독하세요."
+              },
+              {
+                "regex": "(?:^@src/|/)(?:shared/di/shared-di-context|bootstrap/providers/di-context)$",
+                "importNames": ["useAnalytics"],
+                "message": "feature는 useAnalytics를 직접 쓰지 않습니다. useTrack을 쓰세요."
+              },
+              {
+                "regex": "(?:^@src/|/)(?:core/errors/api-error|shared/errors)$",
+                "importNames": ["isApiError"],
+                "message": "서버 오류는 domains/{feature}.error.ts의 이름 있는 판별 함수로만 읽으세요. isApiError와 hasCode를 이 파일에서 직접 쓰지 않습니다."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["src/features/**/*.error.ts"],
+      "excludeFiles": ["**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}", "**/__tests__/**"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "paths": [
+              {
+                "name": "heroui-native",
+                "importNames": ["Avatar", "BottomSheet", "Button", "Input", "Text", "TextArea"],
+                "message": "heroui-native의 같은 이름 대신 @src/shared/ui의 부품을 씁니다. 앱 안에서 같은 이름은 하나의 뜻만 갖습니다."
+              },
+              {
+                "name": "react-native",
+                "importNames": ["Image", "ActivityIndicator"],
+                "message": "react-native의 Image 대신 @src/shared/ui의 Image를, ActivityIndicator 대신 heroui-native의 Spinner를 씁니다."
+              },
+              {
+                "name": "react-hook-form",
+                "importNames": ["FormProvider", "useFormContext"],
+                "message": "폼은 변수 form, useForm 제네릭 없이, Controller로 씁니다. FormProvider, useFormContext, FormField, methods, formMethods를 쓰지 않고 form을 props로 넘기세요."
+              }
+            ],
+            "patterns": [
+              {
+                "regex": "^@src/shared/ui$|/form-field$",
+                "importNames": ["FormField"],
+                "message": "폼은 변수 form, useForm 제네릭 없이, Controller로 씁니다. FormProvider, useFormContext, FormField, methods, formMethods를 쓰지 않고 form을 props로 넘기세요."
+              },
+              {
+                "regex": "(?:^@src/|/)shared/hooks/use-sync-storage-string$",
+                "importNames": ["useSyncStorageString"],
+                "message": "useSyncStorageString으로 기기 저장 값을 직접 읽지 않습니다. 그 값의 repository에 읽기·쓰기·subscribe를 두고 useSyncExternalStore로 구독하세요."
+              },
+              {
+                "regex": "(?:^@src/|/)(?:shared/di/shared-di-context|bootstrap/providers/di-context)$",
+                "importNames": ["useAnalytics"],
+                "message": "feature는 useAnalytics를 직접 쓰지 않습니다. useTrack을 쓰세요."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["src/shared/ui/**"],
+      "excludeFiles": ["**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}", "**/__tests__/**"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "paths": [
+              {
+                "name": "react-native",
+                "importNames": ["Image", "ActivityIndicator"],
+                "message": "react-native의 Image 대신 @src/shared/ui의 Image를, ActivityIndicator 대신 heroui-native의 Spinner를 씁니다."
+              },
+              {
+                "name": "react-hook-form",
+                "importNames": ["FormProvider", "useFormContext"],
+                "message": "폼은 변수 form, useForm 제네릭 없이, Controller로 씁니다. FormProvider, useFormContext, FormField, methods, formMethods를 쓰지 않고 form을 props로 넘기세요."
+              }
+            ],
+            "patterns": [
+              {
+                "regex": "^@src/shared/ui$|/form-field$",
+                "importNames": ["FormField"],
+                "message": "폼은 변수 form, useForm 제네릭 없이, Controller로 씁니다. FormProvider, useFormContext, FormField, methods, formMethods를 쓰지 않고 form을 props로 넘기세요."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["src/**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}", "src/**/__tests__/**"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "paths": [
+              {
+                "name": "heroui-native",
+                "importNames": ["Avatar", "BottomSheet", "Button", "Input", "Text", "TextArea"],
+                "message": "heroui-native의 같은 이름 대신 @src/shared/ui의 부품을 씁니다. 앱 안에서 같은 이름은 하나의 뜻만 갖습니다."
+              },
+              {
+                "name": "@tanstack/react-query",
+                "importNames": ["QueryClient"],
+                "allowTypeImports": true,
+                "message": "테스트에서 new QueryClient를 직접 만들지 말고 @src/shared/__tests__의 createTestQueryClient를 쓰세요. 각 테스트가 만들면 정리 타이머가 남아 Jest 종료를 붙잡습니다."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["src/shared/ui/**/*.{spec,test}.{ts,tsx}", "src/shared/ui/**/__tests__/**"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "paths": [
+              {
+                "name": "@tanstack/react-query",
+                "importNames": ["QueryClient"],
+                "allowTypeImports": true,
+                "message": "테스트에서 new QueryClient를 직접 만들지 말고 @src/shared/__tests__의 createTestQueryClient를 쓰세요. 각 테스트가 만들면 정리 타이머가 남아 Jest 종료를 붙잡습니다."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["src/shared/__tests__/query-client.ts"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "paths": [
+              {
+                "name": "heroui-native",
+                "importNames": ["Avatar", "BottomSheet", "Button", "Input", "Text", "TextArea"],
+                "message": "heroui-native의 같은 이름 대신 @src/shared/ui의 부품을 씁니다. 앱 안에서 같은 이름은 하나의 뜻만 갖습니다."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["src/**", "app/**"],
+      "rules": {
+        "no-restricted-properties": [
+          "error",
+          {
+            "property": "toSorted",
+            "message": "toSorted는 앱의 Hermes에 없어 호출하면 앱에서만 죽습니다. es-toolkit의 sortBy를 쓰세요."
+          },
+          {
+            "object": "Array",
+            "property": "fromAsync",
+            "message": "fromAsync는 앱의 Hermes에 없어 호출하면 앱에서만 죽습니다. for await를 쓰세요."
+          }
+        ]
+      }
+    },
+    {
+      "files": ["src/**", "app/**"],
+      "excludeFiles": ["**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}", "**/__tests__/**"],
+      "rules": {
+        "no-restricted-properties": [
+          "error",
+          {
+            "property": "toSorted",
+            "message": "toSorted는 앱의 Hermes에 없어 호출하면 앱에서만 죽습니다. es-toolkit의 sortBy를 쓰세요."
+          },
+          {
+            "object": "Array",
+            "property": "fromAsync",
+            "message": "fromAsync는 앱의 Hermes에 없어 호출하면 앱에서만 죽습니다. for await를 쓰세요."
+          },
+          {
+            "object": "Platform",
+            "property": "OS",
+            "message": "Platform.OS 대신 process.env.EXPO_OS를 씁니다. 번들에서 안 쓰는 플랫폼 코드가 빠집니다."
+          },
+          {
+            "object": "router",
+            "property": "setParams",
+            "message": "router.setParams는 use-*-param(s).ts 훅과 공용 훅에서만 부릅니다. useRouteParams의 setParams를 쓰세요."
+          },
+          {
+            "object": "Alert",
+            "property": "alert",
+            "message": "Alert.alert 대신 useConfirmDialog를 씁니다."
+          }
+        ]
+      }
+    },
+    {
+      "files": ["src/features/**"],
+      "excludeFiles": ["**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}", "**/__tests__/**"],
+      "rules": {
+        "no-restricted-properties": [
+          "error",
+          {
+            "property": "toSorted",
+            "message": "toSorted는 앱의 Hermes에 없어 호출하면 앱에서만 죽습니다. es-toolkit의 sortBy를 쓰세요."
+          },
+          {
+            "object": "Array",
+            "property": "fromAsync",
+            "message": "fromAsync는 앱의 Hermes에 없어 호출하면 앱에서만 죽습니다. for await를 쓰세요."
+          },
+          {
+            "object": "Platform",
+            "property": "OS",
+            "message": "Platform.OS 대신 process.env.EXPO_OS를 씁니다. 번들에서 안 쓰는 플랫폼 코드가 빠집니다."
+          },
+          {
+            "object": "router",
+            "property": "setParams",
+            "message": "router.setParams는 use-*-param(s).ts 훅과 공용 훅에서만 부릅니다. useRouteParams의 setParams를 쓰세요."
+          },
+          {
+            "object": "Alert",
+            "property": "alert",
+            "message": "Alert.alert 대신 useConfirmDialog를 씁니다."
+          },
+          {
+            "property": "hasCode",
+            "message": "서버 오류는 domains/{feature}.error.ts의 이름 있는 판별 함수로만 읽으세요. isApiError와 hasCode를 이 파일에서 직접 쓰지 않습니다."
+          }
+        ]
+      }
+    },
+    {
+      "files": ["src/features/**/*.error.ts"],
+      "excludeFiles": ["**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}", "**/__tests__/**"],
+      "rules": {
+        "no-restricted-properties": [
+          "error",
+          {
+            "property": "toSorted",
+            "message": "toSorted는 앱의 Hermes에 없어 호출하면 앱에서만 죽습니다. es-toolkit의 sortBy를 쓰세요."
+          },
+          {
+            "object": "Array",
+            "property": "fromAsync",
+            "message": "fromAsync는 앱의 Hermes에 없어 호출하면 앱에서만 죽습니다. for await를 쓰세요."
+          },
+          {
+            "object": "Platform",
+            "property": "OS",
+            "message": "Platform.OS 대신 process.env.EXPO_OS를 씁니다. 번들에서 안 쓰는 플랫폼 코드가 빠집니다."
+          },
+          {
+            "object": "router",
+            "property": "setParams",
+            "message": "router.setParams는 use-*-param(s).ts 훅과 공용 훅에서만 부릅니다. useRouteParams의 setParams를 쓰세요."
+          },
+          {
+            "object": "Alert",
+            "property": "alert",
+            "message": "Alert.alert 대신 useConfirmDialog를 씁니다."
+          }
+        ]
+      }
+    },
+    {
+      "files": ["src/shared/hooks/use-view.ts"],
+      "rules": {
+        "no-restricted-properties": [
+          "error",
+          {
+            "property": "toSorted",
+            "message": "toSorted는 앱의 Hermes에 없어 호출하면 앱에서만 죽습니다. es-toolkit의 sortBy를 쓰세요."
+          },
+          {
+            "object": "Array",
+            "property": "fromAsync",
+            "message": "fromAsync는 앱의 Hermes에 없어 호출하면 앱에서만 죽습니다. for await를 쓰세요."
+          },
+          {
+            "object": "Platform",
+            "property": "OS",
+            "message": "Platform.OS 대신 process.env.EXPO_OS를 씁니다. 번들에서 안 쓰는 플랫폼 코드가 빠집니다."
+          },
+          {
+            "object": "Alert",
+            "property": "alert",
+            "message": "Alert.alert 대신 useConfirmDialog를 씁니다."
+          }
+        ]
+      }
+    },
+    {
+      "files": ["**/hooks/use-*-param.{ts,tsx}", "**/hooks/use-*-params.{ts,tsx}"],
+      "excludeFiles": ["**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}", "**/__tests__/**"],
+      "rules": {
+        "no-restricted-properties": [
+          "error",
+          {
+            "property": "toSorted",
+            "message": "toSorted는 앱의 Hermes에 없어 호출하면 앱에서만 죽습니다. es-toolkit의 sortBy를 쓰세요."
+          },
+          {
+            "object": "Array",
+            "property": "fromAsync",
+            "message": "fromAsync는 앱의 Hermes에 없어 호출하면 앱에서만 죽습니다. for await를 쓰세요."
+          },
+          {
+            "object": "Platform",
+            "property": "OS",
+            "message": "Platform.OS 대신 process.env.EXPO_OS를 씁니다. 번들에서 안 쓰는 플랫폼 코드가 빠집니다."
+          },
+          {
+            "object": "Alert",
+            "property": "alert",
+            "message": "Alert.alert 대신 useConfirmDialog를 씁니다."
+          },
+          {
+            "object": "z",
+            "property": "object",
+            "message": "route 파라미터 스키마는 훅 파일이 아니라 schemas/{name}-params.schema.ts에 둡니다."
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "src/features/**/hooks/use-*-param.{ts,tsx}",
+        "src/features/**/hooks/use-*-params.{ts,tsx}"
+      ],
+      "excludeFiles": ["**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}", "**/__tests__/**"],
+      "rules": {
+        "no-restricted-properties": [
+          "error",
+          {
+            "property": "toSorted",
+            "message": "toSorted는 앱의 Hermes에 없어 호출하면 앱에서만 죽습니다. es-toolkit의 sortBy를 쓰세요."
+          },
+          {
+            "object": "Array",
+            "property": "fromAsync",
+            "message": "fromAsync는 앱의 Hermes에 없어 호출하면 앱에서만 죽습니다. for await를 쓰세요."
+          },
+          {
+            "object": "Platform",
+            "property": "OS",
+            "message": "Platform.OS 대신 process.env.EXPO_OS를 씁니다. 번들에서 안 쓰는 플랫폼 코드가 빠집니다."
+          },
+          {
+            "object": "Alert",
+            "property": "alert",
+            "message": "Alert.alert 대신 useConfirmDialog를 씁니다."
+          },
+          {
+            "property": "hasCode",
+            "message": "서버 오류는 domains/{feature}.error.ts의 이름 있는 판별 함수로만 읽으세요. isApiError와 hasCode를 이 파일에서 직접 쓰지 않습니다."
+          },
+          {
+            "object": "z",
+            "property": "object",
+            "message": "route 파라미터 스키마는 훅 파일이 아니라 schemas/{name}-params.schema.ts에 둡니다."
+          }
+        ]
+      }
+    },
+    {
+      "files": ["src/**", "app/**"],
+      "rules": {
+        "aido/no-strict-nullish": "error",
+        "aido/range-comparison-order": "error",
+        "aido/predicate-name": "error",
+        "aido/icon-prop-name": "error",
+        "aido/loading-namespace-name": "error"
+      }
+    },
+    {
+      "files": ["src/**/*.d.ts", "src/**/generated/**", "app/**/*.d.ts"],
+      "rules": {
+        "aido/no-strict-nullish": "off"
+      }
+    },
+    {
+      "files": ["src/**/*.tsx", "app/**/*.tsx"],
+      "rules": {
+        "aido/spacing-props-with-classname": "error"
+      }
+    },
+    {
+      "files": ["src/**"],
+      "rules": {
+        "react/forbid-component-props": [
+          "error",
+          {
+            "forbid": [
+              {
+                "propName": "isChecked",
+                "disallowedFor": ["TodoCheckbox"],
+                "message": "TodoCheckbox는 HeroUI Checkbox의 isSelected/onSelectedChange 계약을 그대로 사용해야 합니다."
+              },
+              {
+                "propName": "onCheckedChange",
+                "disallowedFor": ["TodoCheckbox"],
+                "message": "TodoCheckbox는 HeroUI Checkbox의 isSelected/onSelectedChange 계약을 그대로 사용해야 합니다."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["src/**", "app/**"],
+      "excludeFiles": ["**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}", "**/__tests__/**"],
+      "rules": {
+        "aido/function-declaration": "error",
+        "aido/policy-facade": "error",
+        "aido/function-name": "error",
+        "aido/type-name": "error",
+        "aido/worklet-param-default": "error",
+        "aido/no-render-call": "error",
+        "aido/tabs-label-text": "error",
+        "aido/form-shape": "error",
+        "aido/no-role-comparison": "error",
+        "aido/query-key-location": "error",
+        "aido/namespace-function-name": "error",
+        "aido/no-destructured-search-params": "error",
+        "react/forbid-elements": [
+          "error",
+          {
+            "forbid": [
+              {
+                "element": "Chip.Label",
+                "message": "Chip.Label은 앱 글꼴을 따르지 않습니다. 글자는 자식 <Text>로 넣으세요."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["src/**/*.d.ts", "app/**/*.d.ts"],
+      "rules": {
+        "aido/function-declaration": "off"
+      }
+    },
+    {
+      "files": ["src/**/domains/**", "app/**/domains/**"],
+      "rules": {
+        "aido/no-role-comparison": "off"
+      }
+    },
+    {
+      "files": ["src/**/constants/*query-keys.ts"],
+      "rules": {
+        "aido/query-key-location": "off"
+      }
+    },
+    {
+      "files": ["src/features/**", "app/**"],
+      "excludeFiles": ["**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}", "**/__tests__/**"],
+      "rules": {
+        "aido/component-name": "error"
+      }
+    },
+    {
+      "files": ["src/**/domains/**", "app/**/domains/**"],
+      "excludeFiles": ["**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}", "**/__tests__/**"],
+      "rules": {
+        "aido/no-this-outside-class": "error"
+      }
+    },
+    {
+      "files": ["src/features/**/domains/**/*.model.ts"],
+      "excludeFiles": ["**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}", "**/__tests__/**"],
+      "rules": {
+        "aido/model-exports": "error"
+      }
+    },
+    {
+      "files": ["src/**/queries/*.mutations.ts", "app/**/queries/*.mutations.ts"],
+      "excludeFiles": ["**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}", "**/__tests__/**"],
+      "rules": {
+        "aido/type-name": [
+          "error",
+          {
+            "suffixes": ["FormInput", "Params", "Args"]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["src/**/queries/*.mutations.{ts,tsx}", "app/**/queries/*.mutations.{ts,tsx}"],
+      "excludeFiles": ["**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}", "**/__tests__/**"],
+      "rules": {
+        "aido/mutation-on-error": "error"
+      }
+    },
+    {
+      "files": ["app/**"],
+      "excludeFiles": ["**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}", "**/__tests__/**"],
+      "rules": {
+        "aido/sheet-route-params": "error"
+      }
+    },
+    {
+      "files": ["src/features/**/*-card.tsx", "src/shared/ui/**/*-card.tsx"],
+      "excludeFiles": ["**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}", "**/__tests__/**"],
+      "rules": {
+        "aido/card-uses-heroui-card": "error"
+      }
+    },
+    {
+      "files": ["src/features/**/components/**"],
+      "rules": {
+        "aido/my-page-menu-navigation": "error"
+      }
+    },
+    {
+      "files": [
+        "src/**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}",
+        "src/**/__tests__/**",
+        "app/**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}",
+        "app/**/__tests__/**"
+      ],
+      "rules": {
+        "aido/no-jest-module-mock": "error"
+      }
+    },
+    {
+      "files": ["src/shared/infra/**/*.{spec,test}.{ts,tsx}", "src/shared/infra/**/__tests__/**"],
+      "rules": {
+        "aido/no-jest-module-mock": [
+          "error",
+          {
+            "allowPackages": true
+          }
+        ]
+      }
+    },
+    {
+      "files": ["src/features/engagement/comment/**", "app/?app?/todo/?todoId?/**"],
+      "rules": {
+        "aido/no-re-export": [
+          "error",
+          {
+            "checkDefaultExport": true
+          }
+        ],
+        "aido/no-inline-query-options": "error",
+        "aido/no-router-push": "error"
+      }
+    },
+    {
+      "files": ["src/features/engagement/comment/hooks/use-todo-comment-params.ts"],
+      "rules": {
+        "aido/no-router-push": "off"
+      }
+    },
+    {
+      "files": ["src/features/engagement/comment/components/**", "app/?app?/todo/?todoId?/**"],
+      "rules": {
+        "aido/no-route-id-props": "error"
+      }
+    },
+    {
+      "files": ["src/features/engagement/comment/**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}"],
+      "excludeFiles": [
+        "src/features/engagement/comment/constants/**",
+        "src/features/engagement/comment/domains/**",
+        "src/features/engagement/comment/apis/**",
+        "src/features/engagement/comment/schemas/**",
+        "src/features/engagement/comment/utils/**",
+        "src/features/engagement/comment/components/**"
+      ],
+      "rules": {
+        "aido/todo-comment-test-location": "error"
+      }
+    },
+    {
+      "files": [
+        "src/features/engagement/comment/components/**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}"
+      ],
+      "rules": {
+        "aido/todo-comment-test-location": [
+          "error",
+          {
+            "allowRenderUi": true
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "src/features/engagement/comment/constants/**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}",
+        "src/features/engagement/comment/domains/**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}",
+        "src/features/engagement/comment/apis/**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}",
+        "src/features/engagement/comment/schemas/**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}",
+        "src/features/engagement/comment/utils/**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}"
+      ],
+      "rules": {
+        "aido/todo-comment-test-purity": "error"
       }
     }
   ]

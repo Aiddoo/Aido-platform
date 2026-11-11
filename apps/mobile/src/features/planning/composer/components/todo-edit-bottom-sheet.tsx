@@ -177,7 +177,7 @@ function TodoEditForm({ todo, isOpen, onOpenChange, onClose }: TodoEditFormProps
           selectEditScope(todo.startDate, { isFollowingOnly: true }),
         )
         .exhaustive();
-      // nullish-strict: 생략은 범위가 없는 수정, null은 범위 선택에서 뒤로 간 취소다
+      // oxlint-disable-next-line aido/no-strict-nullish -- 생략은 범위가 없는 수정, null은 범위 선택에서 뒤로 간 취소다
       if (scope === null) {
         return;
       }
@@ -187,7 +187,7 @@ function TodoEditForm({ todo, isOpen, onOpenChange, onClose }: TodoEditFormProps
           input: changes.input,
           options: {
             ...(scope != null && { scope }),
-            // nullish-strict: repeat null은 반복 끝내기라 보낸다
+            // oxlint-disable-next-line aido/no-strict-nullish -- repeat null은 반복 끝내기라 보낸다
             ...(changes.repeat !== undefined && { repeat: changes.repeat }),
           },
         },

@@ -134,7 +134,7 @@ TodoTimeBottomSheet.TimeForm = function TimeForm({
             return;
           }
           const scope = await selectEditScope(todo.startDate);
-          // nullish-strict: null은 범위 선택에서 시트를 닫거나 뒤로 간 취소다
+          // oxlint-disable-next-line aido/no-strict-nullish -- null은 범위 선택에서 시트를 닫거나 뒤로 간 취소다
           if (scope === null) {
             return;
           }

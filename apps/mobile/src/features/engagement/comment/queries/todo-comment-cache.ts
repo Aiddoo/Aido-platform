@@ -48,7 +48,7 @@ export function cancelTodoCommentQueries(
 ) {
   return queryClient.cancelQueries({
     queryKey: TODO_COMMENT_QUERY_KEYS.todo({ todoId }),
-    // nullish-strict: 데이터가 아직 없음(undefined)만 첫 로드로 본다
+    // oxlint-disable-next-line aido/no-strict-nullish -- 데이터가 아직 없음(undefined)만 첫 로드로 본다
     predicate: (query) => query.state.data !== undefined,
   });
 }

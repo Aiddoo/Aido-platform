@@ -1189,6 +1189,9 @@ importers:
       babel-preset-expo:
         specifier: catalog:expo58
         version: 58.0.24(@babel/core@7.29.7(supports-color@8.1.1))(@babel/runtime@7.29.13)(expo-widgets@58.0.27)(expo@58.0.23)(react-refresh@0.14.2)(supports-color@8.1.1)
+      dependency-cruiser:
+        specifier: 'catalog:'
+        version: 18.7.2
       jest:
         specifier: catalog:expo58
         version: 30.5.2(@types/node@26.6.6)(supports-color@8.1.1)(ts-node@10.9.2(@swc/core@1.16.22)(@types/node@26.6.6)(typescript@6.0.3))

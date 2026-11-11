@@ -410,7 +410,8 @@ export function useUpdateTodoMutationOptions() {
     },
     onMutate: ({ todoId }) => ({ before: findCachedTodo(queryClient, { todoId }) }),
     onSuccess: (saved, variables, { before }) => {
-      // 반복 범위·규칙을 바꾸면 바뀐 회차의 날짜를 몰라 넓게 맞춘다. nullish-strict: repeat null은 반복 끝내기다
+      // 반복 범위·규칙을 바꾸면 바뀐 회차의 날짜를 몰라 넓게 맞춘다.
+      // oxlint-disable-next-line aido/no-strict-nullish -- repeat null은 반복 끝내기다
       if (variables.options?.scope == null && variables.options?.repeat === undefined) {
         settleTodoEdit(queryClient, { before, after: saved });
       } else {
@@ -422,7 +423,7 @@ export function useUpdateTodoMutationOptions() {
       if (variables.options?.scope != null) {
         trackEvent('todo_series_edited', { scope: variables.options.scope });
       }
-      // nullish-strict: repeat null만 반복 끝내기다
+      // oxlint-disable-next-line aido/no-strict-nullish -- repeat null만 반복 끝내기다
       if (variables.options?.repeat === null) {
         trackEvent('todo_series_stopped');
       }

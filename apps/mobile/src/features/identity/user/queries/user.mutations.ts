@@ -29,7 +29,7 @@ function writeChangedProfileFields(
     return {
       ...old,
       ...(input.name != null && { name: source.name }),
-      // nullish-strict: profileImage null은 사진 지우기다
+      // oxlint-disable-next-line aido/no-strict-nullish -- profileImage null은 사진 지우기다
       ...(input.profileImage !== undefined && { profileImage: source.profileImage }),
     };
   });
@@ -62,7 +62,7 @@ export function useUpdateProfileMutationOptions() {
         return {
           ...old,
           ...(input.name != null && { name: input.name }),
-          // nullish-strict: profileImage null은 사진 지우기다
+          // oxlint-disable-next-line aido/no-strict-nullish -- profileImage null은 사진 지우기다
           ...(input.profileImage !== undefined && { profileImage: input.profileImage }),
         };
       });

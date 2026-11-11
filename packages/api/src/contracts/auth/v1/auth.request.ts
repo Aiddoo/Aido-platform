@@ -205,7 +205,7 @@ export const updateProfileSchema = z
       .nullable()
       .describe("프로필 이미지 (아이콘 키 또는 URL, null로 설정 시 삭제)"),
   })
-  // nullish-strict: profileImage null(삭제)도 수정 입력이다
+  // oxlint-disable-next-line aido/no-strict-nullish -- profileImage null(삭제)도 수정 입력이다
   .refine((data) => data.name != null || data.profileImage !== undefined, {
     error: "최소 하나의 필드를 입력해주세요",
   })

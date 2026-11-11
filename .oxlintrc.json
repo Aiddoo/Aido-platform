@@ -1,6 +1,7 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
   "plugins": ["import", "typescript", "unicorn", "node"],
+  "jsPlugins": ["@aido/oxlint-plugin"],
   "categories": {
     "correctness": "error"
   },
@@ -51,6 +52,50 @@
       "files": ["apps/api/**/*.ts"],
       "rules": {
         "typescript/consistent-type-imports": "off"
+      }
+    },
+    {
+      "files": ["apps/api/src/**/*.ts", "apps/api/test/**/*.ts", "apps/api/scripts/**/*.ts"],
+      "rules": {
+        "aido/no-member-accessibility": "error",
+        "no-restricted-imports": [
+          "error",
+          {
+            "paths": [
+              {
+                "name": "@nestjs/common",
+                "importNames": ["forwardRef"],
+                "message": "forwardRef 순환 의존. 좁은 Port를 public으로 열고 반대 방향은 이벤트로 바꾼다."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["apps/api/src/shared/domain/**/*.ts"],
+      "rules": {
+        "aido/no-member-accessibility": ["error", { "allowProtected": true }]
+      }
+    },
+    {
+      "files": ["apps/api/src/**/*.{ts,tsx}", "packages/*/src/**/*.{ts,tsx}"],
+      "excludeFiles": ["**/*.d.ts", "**/generated/**"],
+      "rules": {
+        "aido/no-strict-nullish": "error"
+      }
+    },
+    {
+      "files": ["apps/api/src/platform/database/schema/*.ts"],
+      "rules": {
+        "aido/no-pg-enum-literal": "error"
+      }
+    },
+    {
+      "files": ["apps/api/src/**/index.ts"],
+      "excludeFiles": ["apps/api/src/platform/database/schema/index.ts"],
+      "rules": {
+        "aido/no-barrel-file": "error"
       }
     },
     {
@@ -272,7 +317,8 @@
           {
             "threshold": 0
           }
-        ]
+        ],
+        "aido/no-re-export": "error"
       }
     }
   ]

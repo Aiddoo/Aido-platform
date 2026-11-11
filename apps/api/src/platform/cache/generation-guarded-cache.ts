@@ -39,7 +39,7 @@ export class GenerationGuardedCache {
     ttlMs: CacheWrapTtlMs<T>,
   ): Promise<T> {
     const cached = await this.#store.get(key.valueKey, schema);
-    // nullish-strict: undefined는 cache miss, null은 저장해 둔 값이다
+    // oxlint-disable-next-line aido/no-strict-nullish -- undefined는 cache miss, null은 저장해 둔 값이다
     if (cached !== undefined) {
       return cached;
     }

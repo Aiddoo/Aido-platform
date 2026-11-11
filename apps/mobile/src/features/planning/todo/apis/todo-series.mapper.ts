@@ -40,7 +40,7 @@ export function toUpdateTodoRequest(
   return {
     ...input,
     ...(scope != null && { scope }),
-    // nullish-strict: 생략은 규칙 유지, null은 이 회차 뒤로 끝내기다
+    // oxlint-disable-next-line aido/no-strict-nullish -- 생략은 규칙 유지, null은 이 회차 뒤로 끝내기다
     ...(repeat !== undefined && { repeat: repeat == null ? null : toRepeatDto(repeat) }),
     ...(checklist != null && { checklist: checklist.map(({ title }) => ({ title })) }),
   };

@@ -57,9 +57,9 @@ function createUseCase(
     readonly logger?: SilentLogger;
   } = {},
 ) {
-  // nullish-strict: undefined는 기본 픽스처, null은 "없는 세션·사용자" 시나리오다
+  // oxlint-disable-next-line aido/no-strict-nullish -- undefined는 기본 픽스처, null은 "없는 세션·사용자" 시나리오다
   const session = params.session === undefined ? createAuthSessionFixture() : params.session;
-  // nullish-strict: 위와 같다
+  // oxlint-disable-next-line aido/no-strict-nullish -- 위와 같다
   const user = params.user === undefined ? createIdentityUserFixture() : params.user;
   const sessionReads: string[] = [];
   const dependencies: AuthenticateSessionDependencies = {

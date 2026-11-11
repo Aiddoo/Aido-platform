@@ -1,49 +1,150 @@
-# 서버 폴더는 모두 kebab-case이고, slice(modules/<context>/<slice>/…)의 파일은 역할 접미사가 있어야 한다.
-# 접미사 없는 `.ts`는 허용하지 않는다. 파일 이름의 kebab-case는 oxlint unicorn/filename-case가 서버 전체에 건다.
+# 폴더·파일 이름 규칙. 파일 이름의 kebab-case는 oxlint unicorn/filename-case가 서버 전체에 건다.
+# ls-lint는 규칙이 없는 다중 점 확장자(`memo.record.ts`)를 건너뛰므로 `.*.ts` 와일드카드로 막는다.
+# 같은 폴더에서는 이름 있는 확장자 규칙이 와일드카드보다 먼저다. 하위 폴더는 가장 가까운 설정 하나만 따른다.
 ls:
+  # .gitkeep만 남은 빈 폴더를 두지 않는다. .DS_Store는 .gitignore가 막는다
   apps/api/src:
     .dir: kebab-case
+    .gitkeep: regex:[^\s\S]
 
-  apps/api/src/modules/*/*:
+  # Context 폴더(modules/<context>/…)의 파일은 사전의 역할 접미사 하나를 단다. 테스트는 역할 접미사 뒤에 .spec·.integration-spec을 붙인다
+  apps/api/src/modules/*:
     .dir: kebab-case
+    .gitkeep: regex:[^\s\S]
     .ts: regex:[^\s\S]
+    .*.ts: regex:[^\s\S]
+    .*.*.ts: regex:[^\s\S]
+    .*.*.*.ts: regex:[^\s\S]
+    .*.*.*.*.ts: regex:[^\s\S]
+    .d.ts: kebab-case
     .aggregate.ts: kebab-case
+    .aggregate.spec.ts: kebab-case
+    .aggregate.integration-spec.ts: kebab-case
     .entity.ts: kebab-case
+    .entity.spec.ts: kebab-case
+    .entity.integration-spec.ts: kebab-case
     .vo.ts: kebab-case
+    .vo.spec.ts: kebab-case
+    .vo.integration-spec.ts: kebab-case
     .event.ts: kebab-case
+    .event.spec.ts: kebab-case
+    .event.integration-spec.ts: kebab-case
     .domain-service.ts: kebab-case
+    .domain-service.spec.ts: kebab-case
+    .domain-service.integration-spec.ts: kebab-case
     .constants.ts: kebab-case
+    .constants.spec.ts: kebab-case
+    .constants.integration-spec.ts: kebab-case
     .use-case.ts: kebab-case
+    .use-case.spec.ts: kebab-case
+    .use-case.integration-spec.ts: kebab-case
     .port.ts: kebab-case
+    .port.spec.ts: kebab-case
+    .port.integration-spec.ts: kebab-case
+    .repository.port.ts: kebab-case
+    .repository.port.spec.ts: kebab-case
+    .repository.port.integration-spec.ts: kebab-case
+    .reader.port.ts: kebab-case
+    .reader.port.spec.ts: kebab-case
+    .reader.port.integration-spec.ts: kebab-case
     .read-model.ts: kebab-case
+    .read-model.spec.ts: kebab-case
+    .read-model.integration-spec.ts: kebab-case
     .lock-keys.ts: kebab-case
+    .lock-keys.spec.ts: kebab-case
+    .lock-keys.integration-spec.ts: kebab-case
     .log-events.ts: kebab-case
+    .log-events.spec.ts: kebab-case
+    .log-events.integration-spec.ts: kebab-case
     .alerts.ts: kebab-case
+    .alerts.spec.ts: kebab-case
+    .alerts.integration-spec.ts: kebab-case
     .errors.ts: kebab-case
+    .errors.spec.ts: kebab-case
+    .errors.integration-spec.ts: kebab-case
     .messages.ts: kebab-case
+    .messages.spec.ts: kebab-case
+    .messages.integration-spec.ts: kebab-case
     .repository.ts: kebab-case
+    .repository.spec.ts: kebab-case
+    .repository.integration-spec.ts: kebab-case
     .reader.ts: kebab-case
+    .reader.spec.ts: kebab-case
+    .reader.integration-spec.ts: kebab-case
     .mapper.ts: kebab-case
+    .mapper.spec.ts: kebab-case
+    .mapper.integration-spec.ts: kebab-case
     .adapter.ts: kebab-case
+    .adapter.spec.ts: kebab-case
+    .adapter.integration-spec.ts: kebab-case
     .wire.ts: kebab-case
+    .wire.spec.ts: kebab-case
+    .wire.integration-spec.ts: kebab-case
     .policy.ts: regex:[a-z0-9]+(?:-[a-z0-9]+)*-outbound
+    .policy.spec.ts: regex:[a-z0-9]+(?:-[a-z0-9]+)*-outbound
+    .policy.integration-spec.ts: regex:[a-z0-9]+(?:-[a-z0-9]+)*-outbound
     .queue.ts: kebab-case
+    .queue.spec.ts: kebab-case
+    .queue.integration-spec.ts: kebab-case
     .processor.ts: kebab-case
+    .processor.spec.ts: kebab-case
+    .processor.integration-spec.ts: kebab-case
     .scheduler.ts: kebab-case
+    .scheduler.spec.ts: kebab-case
+    .scheduler.integration-spec.ts: kebab-case
     .cache.ts: kebab-case
+    .cache.spec.ts: kebab-case
+    .cache.integration-spec.ts: kebab-case
     .keyspace.ts: kebab-case
+    .keyspace.spec.ts: kebab-case
+    .keyspace.integration-spec.ts: kebab-case
     .event-handler.ts: kebab-case
+    .event-handler.spec.ts: kebab-case
+    .event-handler.integration-spec.ts: kebab-case
     .controller.ts: kebab-case
+    .controller.spec.ts: kebab-case
+    .controller.integration-spec.ts: kebab-case
     .dto.ts: kebab-case
+    .dto.spec.ts: kebab-case
+    .dto.integration-spec.ts: kebab-case
     .guard.ts: kebab-case
+    .guard.spec.ts: kebab-case
+    .guard.integration-spec.ts: kebab-case
     .interceptor.ts: kebab-case
+    .interceptor.spec.ts: kebab-case
+    .interceptor.integration-spec.ts: kebab-case
     .decorator.ts: kebab-case
+    .decorator.spec.ts: kebab-case
+    .decorator.integration-spec.ts: kebab-case
     .module.ts: kebab-case
+    .module.spec.ts: kebab-case
+    .module.integration-spec.ts: kebab-case
     .providers.ts: kebab-case
+    .providers.spec.ts: kebab-case
+    .providers.integration-spec.ts: kebab-case
     .public.ts: kebab-case
+    .public.spec.ts: kebab-case
+    .public.integration-spec.ts: kebab-case
     .config.ts: kebab-case
-    .spec.ts: kebab-case
-    .integration-spec.ts: kebab-case
+    .config.spec.ts: kebab-case
+    .config.integration-spec.ts: kebab-case
+
+  packages/api/src:
+    .gitkeep: regex:[^\s\S]
+
+  # schemas/는 폼·route·초안·쿼리 키·기기 저장·서버와 주고받는 모양만 둔다. 모델 스키마는 domains/{entity}.model.ts다
+  apps/mobile/src/features/**/schemas:
+    .schema.ts: regex:.*-(?:form|params|draft|query-key|storage|request|response|payload|entry)
+    .schema.test.ts: regex:.*-(?:form|params|draft|query-key|storage|request|response|payload|entry)
+    .ts: regex:[^\s\S]
+    .tsx: regex:[^\s\S]
+    .js: regex:[^\s\S]
+    .jsx: regex:[^\s\S]
+    .*.ts: regex:[^\s\S]
+    .*.tsx: regex:[^\s\S]
+    .*.*.ts: regex:[^\s\S]
+    .*.*.tsx: regex:[^\s\S]
+    .*.*.*.ts: regex:[^\s\S]
 
 ignore:
   # vitest가 spec 옆에 만드는 스냅숏 폴더

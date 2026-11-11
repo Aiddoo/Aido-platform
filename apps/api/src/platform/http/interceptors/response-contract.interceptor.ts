@@ -48,7 +48,7 @@ function declaredSuccessSchemas(declared: unknown): ReadonlyMap<number, z.ZodTyp
 
 // Express가 res.json으로 보내는 값(Date → 문자열, undefined 필드 제거)을 검증한다
 function toSentJson(body: unknown): unknown {
-  // nullish-strict: null은 JSON null로 보내고, undefined만 JSON.stringify가 문자열을 만들지 않는다
+  // oxlint-disable-next-line aido/no-strict-nullish -- null은 JSON null로 보내고, undefined만 JSON.stringify가 문자열을 만들지 않는다
   return body === undefined ? undefined : JSON.parse(JSON.stringify(body));
 }
 

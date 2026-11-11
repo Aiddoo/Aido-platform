@@ -13,7 +13,7 @@ if (isFetch(originalFetch)) {
 }
 
 // jest는 Node에서 돌아 앱의 Hermes에 없는 메서드도 그냥 통과한다. 앱에서 실측한 빈칸을 Node에서도 비운다.
-// 같은 목록을 scripts/check-mobile-conventions.mjs의 HERMES_MISSING_METHODS가 소스에서도 막는다.
+// 같은 목록을 .oxlintrc.json의 no-restricted-properties가 소스에서도 막는다.
 Reflect.deleteProperty(Array.prototype, 'toSorted');
 Reflect.deleteProperty(Array, 'fromAsync');
 

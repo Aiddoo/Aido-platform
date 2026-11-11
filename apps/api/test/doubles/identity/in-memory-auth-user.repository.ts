@@ -132,7 +132,7 @@ export class InMemoryAuthUserRepository extends AuthUserRepositoryPort {
     data: { name?: string | null; profileImage?: string | null },
   ): Promise<UserProfile> {
     const prior = this.#profiles.get(userId.value) ?? { name: null, profileImage: null };
-    // nullish-strict: PATCH라 undefined는 그대로 두고 null은 비운다
+    // PATCH라 undefined는 그대로 두고 null은 비운다
     const profile = {
       name: data.name === undefined ? prior.name : data.name,
       profileImage: data.profileImage === undefined ? prior.profileImage : data.profileImage,

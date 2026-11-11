@@ -147,8 +147,8 @@ export class UpdateTodoUseCase {
 /** 요청이 보낸 칸만 쓴다. 벽시계·순간·종일은 함께 맞춰지므로 한쪽만 보내도 모두 저장한다. */
 function toUpdatePatch(data: UpdateTodoData, todo: Todo, wasCompleted: boolean): TodoUpdatePatch {
   const { schedule } = todo;
-  // nullish-strict: scheduledTime null은 시간 지우기다
   const touchesTime =
+    // oxlint-disable-next-line aido/no-strict-nullish -- scheduledTime null은 시간 지우기다
     data.scheduledTime !== undefined || data.isAllDay != null || data.startDate != null;
   return {
     ...(data.title == null ? {} : { title: todo.title.value }),
@@ -156,7 +156,7 @@ function toUpdatePatch(data: UpdateTodoData, todo: Todo, wasCompleted: boolean):
       ? {}
       : { categoryId: TodoCategoryId.reconstitute(todo.categoryId) }),
     ...(data.startDate == null ? {} : { startDate: schedule.startDate }),
-    // nullish-strict: endDate null은 종료일 지우기다
+    // oxlint-disable-next-line aido/no-strict-nullish -- endDate null은 종료일 지우기다
     ...(data.endDate === undefined ? {} : { endDate: schedule.endDate }),
     ...(touchesTime
       ? {

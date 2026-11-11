@@ -674,11 +674,12 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
         title: dto.title,
         categoryId: dto.categoryId,
         startDate: dto.startDate == null ? undefined : Temporal.PlainDate.from(dto.startDate),
-        // nullish-strict: PATCH라 undefined는 유지, null은 종료일 지우기다
         endDate:
+          // oxlint-disable-next-line aido/no-strict-nullish -- PATCH라 undefined는 유지, null은 종료일 지우기다
           dto.endDate === undefined
             ? undefined
-            : dto.endDate === null
+            : // oxlint-disable-next-line aido/no-strict-nullish -- PATCH라 undefined는 유지, null은 종료일 지우기다
+              dto.endDate === null
               ? null
               : Temporal.PlainDate.from(dto.endDate),
         scheduledTime: dto.scheduledTime,

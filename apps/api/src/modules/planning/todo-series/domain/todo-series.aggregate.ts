@@ -338,8 +338,8 @@ export class TodoSeries extends AggregateRoot<TodoSeriesId, TodoSeriesProps> {
       categoryId: changes.categoryId ?? categoryId,
       title: changes.title == null ? title : TodoTitle.create(changes.title),
       visibility: changes.visibility ?? visibility,
-      // nullish-strict: null은 시간 지우기, undefined는 유지다
       scheduledLocalTime:
+        // oxlint-disable-next-line aido/no-strict-nullish -- null은 시간 지우기, undefined는 유지다
         changes.scheduledLocalTime === undefined ? scheduledLocalTime : changes.scheduledLocalTime,
       timezone: changes.timezone ?? this.props.timezone,
       rule: changes.rule ?? this.props.rule.continuingFrom(this.props.startDate, pivotDate),
@@ -366,8 +366,8 @@ export class TodoSeries extends AggregateRoot<TodoSeriesId, TodoSeriesProps> {
       this.props.visibility = changes.visibility;
       changed = true;
     }
-    // nullish-strict: null은 시간 지우기, undefined는 유지다
     if (
+      // oxlint-disable-next-line aido/no-strict-nullish -- null은 시간 지우기, undefined는 유지다
       changes.scheduledLocalTime !== undefined &&
       changes.scheduledLocalTime !== this.props.scheduledLocalTime
     ) {

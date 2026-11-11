@@ -288,10 +288,11 @@ jobs:
           fi
           pnpm changeset status --since="$BASE_SHA"
 
-      # 컨벤션 검사는 apps/api·packages의 규칙도 맡으므로 서버·공유 계약만 바뀐 PR에서도 실행한다.
-      # API 범위는 모바일 의존성이 없으므로 pnpm 스크립트(실행 전 설치) 대신 node로 직접 실행한다.
-      - name: Conventions
-        run: node apps/mobile/scripts/check-mobile-conventions.mjs
+      # 코드 관례는 Oxlint 단계(aido JS 플러그인)가 본다. 여기서는 파일 이름(ls-lint)과 import 경계(dependency-cruiser)를 본다.
+      # 모바일 의존성이 없는 API 범위에서는 서버만 돈다.
+      - name: Names & Dependencies
+        if: needs.gate.outputs.api == 'true' || needs.gate.outputs.mobile == 'true'
+        run: pnpm lint:names && pnpm turbo run lint:deps --affected ${{ needs.gate.outputs.mobile != 'true' && '--filter=@aido/server' || needs.gate.outputs.api != 'true' && '--filter=@aido/mobile' || '' }}
 
       - name: Type Check
         if: needs.gate.outputs.api == 'true' || needs.gate.outputs.mobile == 'true'
