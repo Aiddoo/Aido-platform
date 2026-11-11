@@ -142,6 +142,7 @@ DailyForecast.Header = function Header({ count }: { count: number }) {
       </HStack>
       <HStack
         align="center"
+        // oxlint-disable-next-line aido/spacing-scale -- 요일 아이콘과 글자 사이. 규격 단계 사이 5px을 쓴다
         gap={5}
         accessibilityElementsHidden
         importantForAccessibility="no-hide-descendants"
@@ -205,6 +206,7 @@ DailyForecast.Item = memo(function Item({
           accessibilityHint={t('daily.expandHint')}
           className="min-h-14 flex-row items-center justify-start gap-0 p-0"
         >
+          {/* oxlint-disable-next-line aido/spacing-scale -- 요일 아이콘과 글자 사이. 규격 단계 사이 5px을 쓴다 */}
           <HStack align="center" gap={5} style={{ width: width('day') }}>
             <Text size="b1" weight="medium" tone="onSky" numberOfLines={1} className="shrink">
               {label}
@@ -332,6 +334,7 @@ DailyForecast.TemperatureBar = function TemperatureBar({
       )}
       {nowPosition != null && (
         <Box
+          // oxlint-disable-next-line aido/no-arbitrary-spacing-class -- 현재 시각 점(size-[15px])의 가운데를 맞추는 절반 값이라 같은 토큰이 없다
           className="absolute -top-[5px] -ml-[7.5px] size-[15px] items-center justify-center rounded-full"
           style={{ left: `${nowPosition * 100}%`, backgroundColor: nowRing }}
         >

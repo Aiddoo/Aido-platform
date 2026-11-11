@@ -405,6 +405,7 @@ HourlyForecast.Loading = function Loading() {
         {range(LOADING_CELL_COUNT).map((index) => (
           <VStack key={index} align="center" style={{ width: CELL_WIDTH.TWENTY_FOUR_HOUR }}>
             <TextSkeleton size="b3" className="w-8 opacity-40" />
+            {/* oxlint-disable-next-line aido/spacing-scale -- 불러오는 칸이 아이콘 칸 높이(CELL_ICON_HEIGHT)와 같은 자리를 잡는다 */}
             <Spacing size={CELL_ICON_HEIGHT} />
             <TextSkeleton size="b1" className="w-8 opacity-40" />
           </VStack>

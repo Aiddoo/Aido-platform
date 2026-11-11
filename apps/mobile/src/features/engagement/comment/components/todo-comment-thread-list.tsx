@@ -181,11 +181,13 @@ TodoCommentThreadList.Header = function Header() {
       <QueryErrorBoundary resetKeys={[todoId]}>
         <Suspense
           fallback={
+            // oxlint-disable-next-line aido/spacing-scale -- 할 일 상세 머리 세로 여백. 규격 단계 사이 18px을 쓴다
             <Box px={16} py={18}>
               <TodoDetailSummary.Loading />
             </Box>
           }
         >
+          {/* oxlint-disable-next-line aido/spacing-scale -- 할 일 상세 머리 세로 여백. 규격 단계 사이 18px을 쓴다 */}
           <Box px={16} py={18}>
             <TodoDetailSummary />
           </Box>

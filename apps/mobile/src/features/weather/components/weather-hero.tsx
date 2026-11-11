@@ -206,6 +206,7 @@ WeatherHero.LocationLabel = function LocationLabel({
   const area = compact([country, district]).join(' · ');
 
   return (
+    // oxlint-disable-next-line aido/spacing-scale -- 위치 아이콘과 글자 사이. 규격 단계 사이 5px을 쓴다
     <HStack align="center" gap={5}>
       <WeatherIcon.Card glyph="location" size={11} colorClassName="text-on-sky/[0.78]" />
       <Text

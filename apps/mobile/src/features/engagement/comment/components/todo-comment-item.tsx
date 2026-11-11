@@ -103,6 +103,7 @@ export function TodoCommentItem({ comment }: TodoCommentItemProps) {
           // oxlint-disable-next-line aido/no-classname-concat -- 1.15.2 전환 #1400
           className={displayState === 'active' ? undefined : 'opacity-40'}
         />
+        {/* oxlint-disable-next-line aido/spacing-scale -- 작성자 줄과 본문 사이는 글줄 간격이라 규격 단계 사이 3px을 쓴다 */}
         <VStack gap={3} flex={1} className="min-w-0">
           {match(displayState)
             .with('active', () => (

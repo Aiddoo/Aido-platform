@@ -24,8 +24,10 @@ const LAYOUT_SPACING_PROP_NAMES = new Set([
   'columnGap',
 ]);
 
-// apps/mobile/docs/design.md의 간격 규격(px). 구역 8~40, 컴포넌트 안 2·4·6
-const DEFAULT_SPACING_SCALE = [0, 2, 4, 6, 8, 12, 16, 20, 24, 32, 40];
+// apps/mobile/docs/design.md의 간격 규격(px). Tailwind의 이름 붙은 간격 단계(0~96)와 같다
+const DEFAULT_SPACING_SCALE = [
+  0, 1, 2, 4, 6, 8, 10, 12, 14, 16, 20, 24, 28, 32, 36, 40, 44, 48, 56, 64, 80, 96,
+];
 
 // Tailwind 여백 유틸리티. auto·safe(안전 영역)는 여백 단계가 아니라 보지 않는다
 const SPACING_CLASS =

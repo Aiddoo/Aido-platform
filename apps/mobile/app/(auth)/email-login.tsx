@@ -42,6 +42,7 @@ export default function EmailLoginScreen() {
         >
           <H3 align="center">{t('emailLogin.title')}</H3>
 
+          {/* oxlint-disable-next-line aido/spacing-scale -- 제목과 이메일 입력 사이 한 화면 전용 구역. 규격 단계 밖 60px을 쓴다 */}
           <Spacing size={60} />
         </EmailLoginForm>
       </ReadableContent>

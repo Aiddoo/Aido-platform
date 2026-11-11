@@ -12,6 +12,7 @@ tester.run('spacing-scale', rules['spacing-scale'], {
   valid: [
     '<Spacing size={16} />',
     '<HStack gap={8} px={20} />',
+    '<HStack gap={10} px={14} />',
     '<Box mt={-4} />',
     '<Grid rowGap={12} columnGap={12} />',
     '<HStack gap={isCompact ? 12 : 20} />',
@@ -22,13 +23,13 @@ tester.run('spacing-scale', rules['spacing-scale'], {
     { code: '<Box gap={10} />', options: [{ allowed: [10] }] },
   ],
   invalid: [
-    { code: '<Spacing size={14} />', errors: 1 },
-    { code: '<HStack gap={10} />', errors: 1 },
+    { code: '<Spacing size={22} />', errors: 1 },
+    { code: '<HStack gap={5} />', errors: 1 },
     { code: '<Box px={18} />', errors: 1 },
     { code: '<Box mt={-3} />', errors: 1 },
-    { code: '<Grid columnGap={10} />', errors: 1 },
-    { code: '<HStack gap={isCompact ? 10 : 20} />', errors: 1 },
-    { code: 'const view = <VStack gap={HEADER_GAP} />;\nconst HEADER_GAP = 14;', errors: 1 },
+    { code: '<Grid columnGap={3} />', errors: 1 },
+    { code: '<HStack gap={isCompact ? 5 : 20} />', errors: 1 },
+    { code: 'const view = <VStack gap={HEADER_GAP} />;\nconst HEADER_GAP = 22;', errors: 1 },
     { code: '<Box gap={10} />', options: [{ allowed: [8, 12] }], errors: 1 },
   ],
 });

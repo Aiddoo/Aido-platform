@@ -310,6 +310,7 @@ InvitePawPrintBoard.Loading = function Loading() {
         <TextSkeleton size="b3" className="w-full" />
         <TextSkeleton size="b3" className="w-40" />
       </VStack>
+      {/* oxlint-disable-next-line aido/spacing-scale -- 불러온 판의 세로 연결선 높이(h-[22px])와 줄 간격을 맞춘다 */}
       <VStack align="center" gap={22}>
         {range(PAW_PRINT_BOARD_SIZE / grid.columns).map((rowIndex) => (
           <HStack key={rowIndex} style={{ width: grid.rowWidth, gap: grid.connectorLength }}>
