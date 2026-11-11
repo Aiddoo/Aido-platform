@@ -304,7 +304,8 @@ describe('PERSISTED_QUERY_SCHEMAS', () => {
     );
     const names = queryFiles.flatMap((path) =>
       readFileSync(path, 'utf8')
-        .split(/^export function /m)
+        // 쿼리 옵션을 내보내지 않는 지역 함수(달력 범위 조회 등)에 둘 수도 있어 모든 함수 선언을 훑는다
+        .split(/^(?:export )?function /m)
         .slice(1)
         .filter((block) => block.includes('PERSISTED_QUERY_OPTIONS'))
         .map((block) => /queryKey: (\w+_QUERY_KEYS\.\w+)\(/.exec(block)?.[1] ?? 'UNKNOWN'),
