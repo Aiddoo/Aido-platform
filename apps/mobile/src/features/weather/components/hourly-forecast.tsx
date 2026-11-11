@@ -15,22 +15,22 @@ import { cn } from '@src/shared/utils/cn';
 import { useSuspenseQueries } from '@tanstack/react-query';
 import { range } from 'es-toolkit';
 import { Separator } from 'heroui-native';
+import type { TFunction } from 'i18next';
 import { memo, type ReactNode } from 'react';
 import { FlatList } from 'react-native';
 import { match } from 'ts-pattern';
 
 import { PRECIPITATION_CHANCE_TEXT_CLASS } from '../constants/weather-colors.constants';
 import { VISIBLE_PRECIPITATION_CHANCE } from '../constants/weather.constants';
-import {
-  getHourlySummary,
-  type HourlySky,
-  type HourlySummary,
-} from '../domains/weather-hourly.model';
-import type { HourlyForecastEntry } from '../domains/weather-report.model';
+import type { HourlySky, HourlySummary } from '../domains/weather-hourly.model';
+import type { HourlyForecastEntry, WeatherReport } from '../domains/weather-report.model';
 import { useFormatLocalTime, useLocationDateFormat } from '../hooks/use-location-date-format';
 import { useTemperatureUnit } from '../hooks/use-temperature-unit';
-import { useGetWeatherReportQueryOptions, WeatherReportSelect } from '../queries/weather.queries';
-import { type HourlyTimelineItem, toHourlyTimeline } from '../utils/hourly-timeline.view-model';
+import {
+  type HourlyTimelineItem,
+  useGetWeatherReportQueryOptions,
+  WeatherReportSelect,
+} from '../queries/weather.queries';
 import {
   getPrecipitationSubjectLabelKey,
   getWeatherConditionLabelKey,
@@ -38,6 +38,7 @@ import {
 import {
   formatDegrees,
   formatTemperature,
+  type TemperatureUnit,
   toDisplayTemperature,
 } from '../utils/weather-temperature';
 import { WeatherCard } from './weather-card';
@@ -73,11 +74,19 @@ const ICON_SIZE = 28;
 /** 아이콘 아래에 강수 확률 줄까지 포함한 칸 높이. 확률이 없는 칸도 같은 높이를 차지한다. */
 const CELL_ICON_HEIGHT = 50;
 const INITIAL_RENDER_COUNT = 8;
+/** 칸 줄 좌우 여백. getItemLayout의 칸 위치에도 더한다 */
+const TIMELINE_INSET = 6;
+const TIMELINE_CONTENT_STYLE = { paddingHorizontal: TIMELINE_INSET };
 const LOADING_CELL_COUNT = 6;
 /** 시안 온도 줄 19/24 -0.4. 맞는 토큰이 없어 앱 글자 크기 비율만 곱한다. */
 const VALUE_TYPE = { fontSize: 19, lineHeight: 24, letterSpacing: -0.4 };
 
-function useHourlyValueTextStyle() {
+interface HourlyValueText {
+  style: typeof VALUE_TYPE;
+  minimumFontScale: number;
+}
+
+function useHourlyValueTextStyle(): HourlyValueText {
   const ratio = useFontScaleRatio();
   const minimumFontScale = useMinimumFontScale(VALUE_TYPE.fontSize);
   return {
@@ -90,9 +99,14 @@ function useHourlyValueTextStyle() {
   };
 }
 
+/** 칸이 부르던 번역·단위·글자 배율 훅을 부모가 한 번 불러 넘긴다 */
 interface TimelineContext {
+  t: TFunction<'weather'>;
+  unit: TemperatureUnit;
   dateFormat: DateFormatContext;
   timeFormat: TimeFormat;
+  labelMinimumFontScale: number;
+  valueText: HourlyValueText;
 }
 
 function getTimelineKey(item: HourlyTimelineItem): string {
@@ -101,20 +115,38 @@ function getTimelineKey(item: HourlyTimelineItem): string {
     : `${item.kind}-${toEpochMs(item.at)}`;
 }
 
+/** 칸 목록은 분마다 select로 다시 고르지만 같으면 구조 공유로 앞의 참조를 돌려줘 칸이 시간이 바뀔 때만 다시 그려진다 */
 export function HourlyForecast() {
+  const { t } = useTranslation('weather');
+  const unit = useTemperatureUnit();
+
+  // select가 지금 시각으로 칸을 고르므로 조회보다 먼저 읽는다
+  const now = useMinuteNow();
   const [{ data }, { data: preference }] = useSuspenseQueries({
     queries: [
-      { ...useGetWeatherReportQueryOptions(), select: WeatherReportSelect.hourly },
+      {
+        ...useGetWeatherReportQueryOptions(),
+        select: (report: WeatherReport) => WeatherReportSelect.hourly(report, now),
+      },
       useGetPreferenceQueryOptions(),
     ],
   });
+
   const fontScaleRatio = useFontScaleRatio();
+  const labelMinimumFontScale = useMinimumFontScale('b3');
+  const valueText = useHourlyValueTextStyle();
   const dateFormat = useLocationDateFormat(data.location.timezone);
-  const now = useMinuteNow();
-  const timeline = toHourlyTimeline(data, now);
-  const summary = getHourlySummary(data, now);
+
+  const { timeline, summary } = data;
   const cellWidth = CELL_WIDTH[preference.timeFormat] * fontScaleRatio;
-  const context: TimelineContext = { dateFormat, timeFormat: preference.timeFormat };
+  const context: TimelineContext = {
+    t,
+    unit,
+    dateFormat,
+    timeFormat: preference.timeFormat,
+    labelMinimumFontScale,
+    valueText,
+  };
 
   if (timeline.length === 0) {
     return <HourlyForecast.Empty />;
@@ -135,8 +167,13 @@ export function HourlyForecast() {
           keyExtractor={getTimelineKey}
           showsHorizontalScrollIndicator={false}
           initialNumToRender={INITIAL_RENDER_COUNT}
+          getItemLayout={(_, index) => ({
+            length: cellWidth,
+            offset: TIMELINE_INSET + cellWidth * index,
+            index,
+          })}
           className="mt-3"
-          contentContainerClassName="px-1.5"
+          contentContainerStyle={TIMELINE_CONTENT_STYLE}
           renderItem={({ item }) => (
             <HourlyForecast.Item item={item} width={cellWidth} context={context} />
           )}
@@ -149,15 +186,13 @@ export function HourlyForecast() {
 /** 문장 속 시각은 위치 벽시계가 기기와 다를 때만 '현지'를 붙인다. 칸마다 붙이면 좁은 칸이 넘쳐 문장에서만 밝힌다. */
 HourlyForecast.Summary = function Summary({
   summary,
-  context: { dateFormat, timeFormat },
+  context: { t, unit, dateFormat, timeFormat },
   now,
 }: {
   summary: HourlySummary;
   context: TimelineContext;
   now: Instant;
 }) {
-  const { t } = useTranslation('weather');
-  const unit = useTemperatureUnit();
   const localTime = useFormatLocalTime(dateFormat.timeZone, now);
   const hourLabel = (date: Instant) => localTime(formatInstantHour(date, timeFormat, dateFormat));
 
@@ -232,20 +267,16 @@ function HourCell({
   hour,
   isNow,
   width,
-  context: { dateFormat, timeFormat },
+  context: { t, unit, dateFormat, timeFormat, labelMinimumFontScale, valueText },
 }: {
   hour: HourlyForecastEntry;
   isNow: boolean;
   width: number;
   context: TimelineContext;
 }) {
-  const { t } = useTranslation('weather');
-  const unit = useTemperatureUnit();
   const time = isNow ? t('hourly.now') : formatInstantHour(hour.startsAt, timeFormat, dateFormat);
   const temperature = toDisplayTemperature(hour.temperature, unit);
   const isChanceVisible = hour.precipitationChance >= VISIBLE_PRECIPITATION_CHANCE;
-  const labelMinScale = useMinimumFontScale('b3');
-  const value = useHourlyValueTextStyle();
 
   return (
     <VStack
@@ -265,7 +296,7 @@ function HourCell({
         tone="onSky"
         numberOfLines={1}
         adjustsFontSizeToFit
-        minimumFontScale={labelMinScale}
+        minimumFontScale={labelMinimumFontScale}
         className="tabular-nums"
       >
         {time}
@@ -288,9 +319,9 @@ function HourCell({
         tone="onSky"
         numberOfLines={1}
         adjustsFontSizeToFit
-        minimumFontScale={value.minimumFontScale}
+        minimumFontScale={valueText.minimumFontScale}
         className="tabular-nums"
-        style={value.style}
+        style={valueText.style}
       >
         {formatDegrees(temperature)}
       </Text>
@@ -302,19 +333,16 @@ function SunCell({
   kind,
   at,
   width,
-  context: { dateFormat, timeFormat },
+  context: { t, dateFormat, timeFormat, labelMinimumFontScale, valueText },
 }: {
   kind: 'sunrise' | 'sunset';
   at: Instant;
   width: number;
   context: TimelineContext;
 }) {
-  const { t } = useTranslation('weather');
   const time = formatClockTime(at, timeFormat, dateFormat);
   const event = kind === 'sunrise' ? t('hourly.sunrise') : t('hourly.sunset');
   const Icon = kind === 'sunrise' ? WeatherIcon.Sunrise : WeatherIcon.Sunset;
-  const labelMinScale = useMinimumFontScale('b3');
-  const value = useHourlyValueTextStyle();
 
   return (
     <VStack
@@ -329,7 +357,7 @@ function SunCell({
         tone="onSky"
         numberOfLines={1}
         adjustsFontSizeToFit
-        minimumFontScale={labelMinScale}
+        minimumFontScale={labelMinimumFontScale}
         className="tabular-nums"
       >
         {time}
@@ -343,8 +371,8 @@ function SunCell({
         tone="onSky"
         numberOfLines={1}
         adjustsFontSizeToFit
-        minimumFontScale={value.minimumFontScale}
-        style={value.style}
+        minimumFontScale={valueText.minimumFontScale}
+        style={valueText.style}
       >
         {event}
       </Text>

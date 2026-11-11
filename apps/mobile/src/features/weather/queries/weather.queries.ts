@@ -6,7 +6,8 @@ import {
 } from '@src/bootstrap/providers/di-context';
 import { type Logger } from '@src/core/ports/logger';
 import { PERSISTED_QUERY_OPTIONS } from '@src/shared/constants/query-persistence';
-import { MINUTE_MS } from '@src/shared/constants/time-units';
+import { HOUR_MS, MINUTE_MS } from '@src/shared/constants/time-units';
+import { type Instant, toEpochMs } from '@src/shared/date/instant';
 import { getErrorMessage, isCodedError, toError, unwrap } from '@src/shared/errors';
 import {
   type Query,
@@ -15,13 +16,18 @@ import {
   useQuery,
   useQueryClient,
 } from '@tanstack/react-query';
-import { pick } from 'es-toolkit';
+import { orderBy, pick } from 'es-toolkit';
 import { match } from 'ts-pattern';
 
 import { WEATHER_LOG_EVENT } from '../constants/weather-log-events';
+import { getHourlySummary } from '../domains/weather-hourly.model';
 import { WeatherLocationPolicy } from '../domains/weather-location.model';
 import { type LocationReading } from '../domains/weather-location.model';
-import { findTodayOrFirstForecast } from '../domains/weather-report.model';
+import {
+  findTodayOrFirstForecast,
+  type HourlyForecastEntry,
+  WeatherReportPolicy,
+} from '../domains/weather-report.model';
 import { type WeatherReport } from '../domains/weather-report.model';
 import { WEATHER_ERROR_CODE } from '../domains/weather.error';
 import { useDevWeatherOverride } from '../hooks/use-dev-weather-override';
@@ -167,8 +173,51 @@ function selectPrecipitation(report: WeatherReport) {
   return pick(report, ['location', 'nextHour', 'hourly', 'fetchedAt']);
 }
 
-function selectHourly(report: WeatherReport) {
-  return pick(report, ['location', 'current', 'hourly', 'daily']);
+export type HourlyTimelineItem =
+  | { kind: 'hour'; hour: HourlyForecastEntry; isNow: boolean }
+  | { kind: 'sunrise' | 'sunset'; at: Instant };
+
+function getTimelineTime(item: HourlyTimelineItem): number {
+  return item.kind === 'hour' ? toEpochMs(item.hour.startsAt) : toEpochMs(item.at);
+}
+
+/** 남은 시간별 예보 사이에 그 범위 안의 일출·일몰 칸을 시각 순서로 끼워 넣는다. */
+function toHourlyTimeline(
+  report: Pick<WeatherReport, 'hourly' | 'daily'>,
+  now: Instant,
+): HourlyTimelineItem[] {
+  const hours = WeatherReportPolicy.getUpcomingHours(report.hourly, now);
+  const last = hours.at(-1);
+  if (last == null) {
+    return [];
+  }
+  const rangeEnd = toEpochMs(last.startsAt) + HOUR_MS;
+  const isInRange = (date: Instant) =>
+    toEpochMs(now) < toEpochMs(date) && toEpochMs(date) < rangeEnd;
+
+  const hourItems = hours.map((hour, index): HourlyTimelineItem => ({
+    kind: 'hour',
+    hour,
+    isNow: index === 0,
+  }));
+  const sunItems = report.daily.flatMap((day): HourlyTimelineItem[] => [
+    ...(day.sunrise != null && isInRange(day.sunrise)
+      ? [{ kind: 'sunrise' as const, at: day.sunrise }]
+      : []),
+    ...(day.sunset != null && isInRange(day.sunset)
+      ? [{ kind: 'sunset' as const, at: day.sunset }]
+      : []),
+  ]);
+  return orderBy([...hourItems, ...sunItems], [getTimelineTime], ['asc']);
+}
+
+/** 분마다 다시 골라도 칸이 같으면 구조 공유가 앞의 참조를 돌려준다 */
+function selectHourly(report: WeatherReport, now: Instant) {
+  return {
+    location: report.location,
+    timeline: toHourlyTimeline(report, now),
+    summary: getHourlySummary(report, now),
+  };
 }
 
 function selectBriefing(report: WeatherReport) {
