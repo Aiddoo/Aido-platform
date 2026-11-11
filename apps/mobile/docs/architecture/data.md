@@ -83,30 +83,34 @@ const storage = useStoredValueStorage(upsellDismissalStoredValue); // 핸들러�
 - 목록 옵션은 `useGet{X}QueryOptions({ filters, orderBy, limit })`이고 모델이 `Filter{X}`·`OrderBy{X}` 타입을 둔다. 클라이언트 필터는 키에 넣지 않고 `select`로 같은 캐시를 나눠 쓴다. 서버 파라미터만 키에 넣는다.
 - 옵션 훅 안의 인라인 `select`는 React Compiler가 메모한다. `select`로 오류를 던지거나 DTO를 바꾸지 않는다.
 - 순간은 `Instant` 문자열로 둔다. `Date`는 구조 공유가 안 돼 재조회마다 참조가 바뀌고 다시 그려진다.
-- 무한 목록 도구는 `shared/domains/cursor-page.model.ts` 하나다: `cursorPageSchema(item)`(`{ items, nextCursor }`), `getNextCursor(page)`(`getNextPageParam`), `selectPageItems(data)`(`select`), `mapInfiniteItems(data, fn)`(캐시 패치).
+- 무한 목록 도구는 `shared/domains/cursor-page.model.ts` 하나다: `cursorPageSchema(item, cursor)`(`{ items, nextCursor }`), `getNextCursor(page)`(`getNextPageParam`), `selectPageItems(data)`(`select`), `mapInfiniteItems(data, fn)`(캐시 패치).
+  - 쪽 모델은 `cursorPageSchema(item, cursor).extend({ totalCount })`처럼 만든다. 서버의 `hasNext`·`hasMore`와 "마지막 항목 id가 커서"는 mapper가 `nextCursor`로 접고 마지막 쪽이면 `null`이다. 계약은 그대로 둔다.
+  - 첫 쪽은 `initialPageParam: undefined`, 다음 쪽은 `getNextPageParam: getNextCursor`다. 위아래로 잇는 댓글 목록만 `pagination`과 자기 page param을 쓴다([todo-comments](../todo-comments.md)).
 
 ## 쿼리 키
 
 ```ts
-// features/notes/memo/queries/memo-query-keys.ts
-export const MEMO_QUERY_KEYS = {
-  all: ['memo'] as const,
-  lists: () => [...MEMO_QUERY_KEYS.all, 'list'] as const,
-  list: (filters: MemoListQueryKey) =>
-    queryOptions<MemoListResult>({ queryKey: [...MEMO_QUERY_KEYS.lists(), filters] }).queryKey,
-  detail: ({ memoId }: { memoId: number }) =>
-    queryOptions<Memo>({ queryKey: [...MEMO_QUERY_KEYS.all, 'detail', { memoId }] }).queryKey,
+// features/notification/queries/notification-query-keys.ts
+export const NOTIFICATION_QUERY_KEYS = {
+  all: ['notification'] as const,
+  lists: () => [...NOTIFICATION_QUERY_KEYS.all, 'list'] as const,
+  list: (filters: NotificationListQueryKey) =>
+    queryOptions<InfiniteData<NotificationPage, number | undefined>>({
+      queryKey: [...NOTIFICATION_QUERY_KEYS.lists(), filters],
+    }).queryKey,
+  unreadCount: () =>
+    queryOptions<number>({ queryKey: [...NOTIFICATION_QUERY_KEYS.all, 'unread-count'] }).queryKey,
 } as const;
 
-// features/notes/memo/queries/memo-mutation-keys.ts
-export const MEMO_MUTATION_KEYS = {
-  all: ['memo', 'mutation'] as const,
-  writes: () => [...MEMO_MUTATION_KEYS.all, 'write'] as const,
+// features/notification/queries/notification-mutation-keys.ts
+export const NOTIFICATION_MUTATION_KEYS = {
+  all: ['notification', 'mutation'] as const,
+  writes: () => [...NOTIFICATION_MUTATION_KEYS.all, 'write'] as const,
 } as const;
 ```
 
-- 키 팩토리는 `queries/{feature}-query-keys.ts`, mutation 키는 `queries/{feature}-mutation-keys.ts`다. 쿼리 옵션·cache helper와 함께 바뀌어 같은 폴더에 둔다.
-- 루트는 기능 이름 하나다(`['memo']`). 한 루트가 다른 기능 루트의 접두사가 되지 않는다.
+- 키 팩토리는 `queries/{feature}-query-keys.ts`, mutation 키는 `queries/{feature}-mutation-keys.ts`다. 쿼리 옵션·cache helper와 함께 바뀌어 같은 폴더에 둔다. `aido/query-key-location`이 그 밖의 `queryKey: [`를 막는다.
+- 루트는 기능 이름 하나다(`['notification']`). 한 루트가 다른 기능 루트의 접두사가 되지 않는다(`bootstrap/query/query-key-roots.test.ts`). mutation 키 루트는 `[feature, 'mutation']`이다.
 - 모든 잎은 `queryOptions<T>({ queryKey }).queryKey`로 데이터 타입을 붙여 `getQueryData`·`setQueryData`가 제네릭 없이 타입을 안다. 인자는 이름 있는 객체 하나이고 잎은 루트와 같지 않다. 그룹(`lists()`)은 무효화에 쓸 때만 만든다.
 - 기기 OS 상태(푸시 권한, 위치) 쿼리는 `['device', …]` 루트에 둔다. 기능 무효화에 휩쓸려 OS를 다시 묻지 않는다.
 - 키를 컴포넌트에서 만들거나 하드코딩하지 않는다. 키 자리에 기대는 구조 분해(`const [, , params] = queryKey`)를 쓰지 않는다.

@@ -153,7 +153,7 @@ pane은 `/feed?todoId=42&comment=cm_1`이다. 바꿀 때는 search만 바꾸고,
 
 ## Query, mutation, cache
 
-- 키(`queries/todo-comment-query-keys.ts`): `all → todo(todoId) → threadLists → threads(sort, anchorCommentId)`, `… → replyLists → thread(commentId) → replies(aroundReplyId)`.
+- 키(`queries/todo-comment-query-keys.ts`): `all → todo(todoId) → threadLists → threads(sort, anchorCommentId)`, `… → replyLists → threadReplies(commentId) → replies(aroundReplyId)`.
 - 무효화·갱신은 `queries/todo-comment-cache.ts`만 거친다. 페이지 변환은 `utils/todo-comment-cache-pages.ts` 순수 함수다.
 - 좋아요: `scope: todo-comment-like:<id>`로 같은 댓글 연타를 직렬화, `cancelQueries(todo)` → 묶음·답글 캐시 ±1.
   응답은 댓글마다 센 `likeComment` 키의 마지막만 서버 값으로 쓰고, 실패하면 마지막 하트만 되돌린 뒤 목록을 다시 받는다.
