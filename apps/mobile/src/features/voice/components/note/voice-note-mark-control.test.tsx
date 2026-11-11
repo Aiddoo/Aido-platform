@@ -30,7 +30,7 @@ async function renderMarkControl({
 }) {
   const httpClient = createHttpClientStub();
   httpClient.get.mockResolvedValue(ok(createCurrentUserDto()));
-  const { syncStorage, repository: coachmarkRepository } = createCoachmarkStorage(
+  const { syncStorage, records: coachmarkRepository } = createCoachmarkStorage(
     isSeen ? [{ accountId, kind: 'voice-note-mark' }] : [],
   );
   const analytics = createAnalyticsStub();

@@ -20,7 +20,7 @@ import type { SubscriptionService } from '@src/features/billing/subscription/ser
 import type { ActivationProgressRepository } from '@src/features/device/activation/apis/activation-progress.repository';
 import type { ActivationService } from '@src/features/device/activation/apis/activation.service';
 import type { AppIconService } from '@src/features/device/app-icon/apis/app-icon.service';
-import type { CoachmarkService } from '@src/features/device/coachmark/apis/coachmark.service';
+import type { CoachmarkRepository } from '@src/features/device/coachmark/repositories/coachmark.repository';
 import type { StoreReviewService } from '@src/features/device/store-review/apis/store-review.service';
 import type { WidgetNavigationRepository } from '@src/features/device/widget/apis/widget-navigation.repository';
 import type { WidgetSyncService } from '@src/features/device/widget/apis/widget-sync.service';
@@ -122,7 +122,7 @@ export interface DIContainer extends SharedDependencies {
   pushRegistrationService: PushRegistrationService;
   marketingPushPromptRepository: MarketingPushPromptRepository;
   todoNudgeService: TodoNudgeService;
-  coachmarkService: CoachmarkService;
+  coachmarkRepository: CoachmarkRepository;
   storeReviewService: StoreReviewService;
   userService: UserService;
   purchasesSession: PurchasesSession;
@@ -318,9 +318,6 @@ export function useMarketingPushPromptRepository() {
 }
 export function useTodoNudgeService() {
   return useDI().todoNudgeService;
-}
-export function useCoachmarkService() {
-  return useDI().coachmarkService;
 }
 export function useStoreReviewService() {
   return useDI().storeReviewService;

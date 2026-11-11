@@ -1,5 +1,6 @@
 import type { SyncStorage } from '@src/core/ports/sync-storage';
 import { upsellDismissalStoredValue } from '@src/features/billing/subscription/schemas/upsell-dismissal-storage.schema';
+import { coachmarkCompletedAtStoredValue } from '@src/features/device/coachmark/schemas/coachmark-storage.schema';
 import { widgetHeadlessFailureStoredValue } from '@src/features/device/widget/schemas/widget-headless-failure-storage.schema';
 import { deviceTimezoneStoredValue } from '@src/features/notification/schemas/device-timezone-storage.schema';
 import { pushNoticeDismissedAtStoredValue } from '@src/features/notification/schemas/push-notice-dismissed-at-storage.schema';
@@ -139,6 +140,19 @@ const RELEASED_VALUES = [
       value: '1',
       area: 'device',
     }),
+  },
+  {
+    name: 'coachmarkCompletedAtStoredValue',
+    ...releasedValue(
+      coachmarkCompletedAtStoredValue,
+      [{ accountId: 'user-1', kind: 'voice-note-start' }],
+      {
+        key: 'aido_coachmark_v1:user-1:voice-note-start',
+        raw: SAVED_AT,
+        value: SAVED_AT,
+        area: 'device',
+      },
+    ),
   },
   {
     name: 'deviceTimezoneStoredValue',

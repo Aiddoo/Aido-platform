@@ -46,7 +46,7 @@ async function renderCoachmarkOnHiddenTab() {
   jest.mocked(useIsFocused).mockReturnValue(false);
   const httpClient = createHttpClientStub();
   httpClient.get.mockResolvedValue(ok(createCurrentUserDto()));
-  const { syncStorage, repository: coachmarkRepository } = createCoachmarkStorage();
+  const { syncStorage, records: coachmarkRecords } = createCoachmarkStorage();
   const analytics = createAnalyticsStub();
   const coachmark = () => (
     <CoachmarkPopover kind="voice-note-start" title="안내 제목" description="안내 설명">
@@ -60,7 +60,7 @@ async function renderCoachmarkOnHiddenTab() {
   return {
     analytics,
     isPending: () =>
-      !coachmarkRepository.hasSeen({
+      !coachmarkRecords.hasSeen({
         accountId: createCurrentUserDto().userId,
         kind: 'voice-note-start',
       }),
@@ -236,7 +236,7 @@ describe('CoachmarkPopover', () => {
       // Given
       const httpClient = createHttpClientStub();
       httpClient.get.mockResolvedValue(ok(createCurrentUserDto()));
-      const { syncStorage, repository: coachmarkRepository } = createCoachmarkStorage();
+      const { syncStorage, records: coachmarkRecords } = createCoachmarkStorage();
       const analytics = createAnalyticsStub();
       const coachmark = (shouldAutoOpen: boolean) => (
         <CoachmarkPopover
@@ -278,7 +278,7 @@ describe('CoachmarkPopover', () => {
       expect(isOpenWhileCovered).toBe(false);
       expect(await screen.findByTestId('hint-popover', {}, POPOVER_WAIT)).toBeTruthy();
       expect(
-        coachmarkRepository.hasSeen({
+        coachmarkRecords.hasSeen({
           accountId: createCurrentUserDto().userId,
           kind: 'friend-strip',
         }),
@@ -342,7 +342,7 @@ describe('CoachmarkPopover', () => {
     // Given
     const httpClient = createHttpClientStub();
     httpClient.get.mockResolvedValue(ok(createCurrentUserDto()));
-    const { syncStorage, repository: coachmarkRepository } = createCoachmarkStorage();
+    const { syncStorage, records: coachmarkRecords } = createCoachmarkStorage();
     const analytics = createAnalyticsStub();
     const accountId = createCurrentUserDto().userId;
     const renderHint = (isDismissed: boolean) => (
@@ -374,7 +374,7 @@ describe('CoachmarkPopover', () => {
         kind: 'voice-quick-start',
       }),
     );
-    expect(coachmarkRepository.hasSeen({ accountId, kind: 'voice-quick-start' })).toBe(true);
+    expect(coachmarkRecords.hasSeen({ accountId, kind: 'voice-quick-start' })).toBe(true);
   });
 
   describe('가리키던 자리를 옮기면', () => {
@@ -383,7 +383,7 @@ describe('CoachmarkPopover', () => {
     async function renderMovableCoachmark() {
       const httpClient = createHttpClientStub();
       httpClient.get.mockResolvedValue(ok(createCurrentUserDto()));
-      const { syncStorage, repository: coachmarkRepository } = createCoachmarkStorage();
+      const { syncStorage, records: coachmarkRecords } = createCoachmarkStorage();
       const analytics = createAnalyticsStub();
       const coachmark = (dismissKey: string) => (
         <CoachmarkPopover
@@ -408,7 +408,7 @@ describe('CoachmarkPopover', () => {
         analytics,
         move: (dismissKey: string) => rerender(coachmark(dismissKey)),
         isPending: () =>
-          !coachmarkRepository.hasSeen({
+          !coachmarkRecords.hasSeen({
             accountId: createCurrentUserDto().userId,
             kind: 'repeat-horizon',
           }),

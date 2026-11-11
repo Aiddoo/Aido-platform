@@ -1,4 +1,4 @@
-import { useCoachmarkService, useLogger } from '@src/bootstrap/providers/di-context';
+import { useLogger } from '@src/bootstrap/providers/di-context';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { getErrorMessage } from '@src/shared/errors';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
@@ -9,6 +9,7 @@ import { useEffect, useState } from 'react';
 import { match } from 'ts-pattern';
 
 import { COACHMARK_LOG_EVENT } from '../constants/coachmark-log-events';
+import { usePendingCoachmark } from '../hooks/use-pending-coachmark';
 
 type ReorderCoachmarkKind = 'todo' | 'category';
 
@@ -31,11 +32,10 @@ export function ReorderCoachmark({ kind }: { kind: ReorderCoachmarkKind }) {
     return null;
   }
 
-  return <ReorderCoachmark.Contents kind={kind} accountId={user.id} />;
+  return <ReorderCoachmark.Alert kind={kind} accountId={user.id} />;
 }
 
-// oxlint-disable-next-line aido/component-name -- 1.15.2 전환 #1400
-ReorderCoachmark.Contents = function Contents({
+ReorderCoachmark.Alert = function Alert({
   kind,
   accountId,
 }: {
@@ -45,21 +45,22 @@ ReorderCoachmark.Contents = function Contents({
   const fontScaledSize = useFontScaledSize();
   const { t } = useTranslation('todo');
   // 기기 안에 저장된 값을 렌더 중에 동기로 읽는다(네트워크 조회가 없어 로딩 상태가 필요 없다)
-  const service = useCoachmarkService();
-  const coachmarkKind = match(kind)
-    .with('todo', () => 'todo-reorder' as const)
-    .with('category', () => 'category-reorder' as const)
-    .exhaustive();
-  const [isVisible, setIsVisible] = useState(() =>
-    service.isPending({ accountId, kind: coachmarkKind }),
-  );
+  const [isPending, complete] = usePendingCoachmark({
+    accountId,
+    kind: match(kind)
+      .with('todo', () => 'todo-reorder' as const)
+      .with('category', () => 'category-reorder' as const)
+      .exhaustive(),
+  });
+  // 보이면 끝나는 안내라 붙을 때의 값으로 정하고, 끝낸 뒤에도 닫을 때까지 보인다
+  const [isVisible, setIsVisible] = useState(isPending);
 
   // 렌더는 버려질 수 있어 "봤음"은 화면에 붙은 뒤에 저장한다.
   useEffect(() => {
     if (isVisible) {
-      service.complete({ accountId, kind: coachmarkKind });
+      complete();
     }
-  }, [isVisible, service, accountId, coachmarkKind]);
+  }, [isVisible, complete]);
 
   if (!isVisible) {
     return null;

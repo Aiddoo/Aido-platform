@@ -134,7 +134,7 @@ pane은 `/feed?todoId=42&comment=cm_1`이다. 바꿀 때는 search만 바꾸고,
   JS로는 좋아요 요청과 진동(`haptics.impact('light')`)만 넘긴다. 동작 줄이기면 큰 하트만 나타났다 사라진다.
 - 이미 좋아요면 애니메이션만 나오고 요청은 보내지 않는다.
 - 안내 줄: 첫 묶음 위 "댓글을 두 번 탭하면 하트를 남길 수 있어요 🐾". 처음 더블탭하거나 닫으면 계정당 다시 보이지 않는다
-  (`CoachmarkService`의 `comment-double-tap`, `usePendingCoachmark`).
+  (`useMyPendingCoachmark('comment-double-tap')`, 기록은 `coachmarkCompletedAtStoredValue`).
 
 ## 작성 바와 키보드
 

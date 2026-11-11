@@ -1,9 +1,8 @@
 import '@src/shared/i18n/init';
 import { ok, unwrap } from '@src/core/errors/result';
-import { createCoachmarkRepository } from '@src/features/device/coachmark/apis/coachmark.repository';
+import { createCoachmarkRecords } from '@src/features/device/coachmark/__tests__/coachmark.fixtures';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-keys';
-import { getNowInstant } from '@src/shared/date/clock';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import {
   createAnalyticsStub,
@@ -48,7 +47,7 @@ async function renderHint({
   const { userService } = createTestDi({ httpClient: userHttpClient });
   queryClient.setQueryData(USER_QUERY_KEYS.me(), unwrap(await userService.getCurrentUser()));
   const syncStorage = createMemoryObservableSyncStorage();
-  const coachmarkRepository = createCoachmarkRepository(syncStorage, getNowInstant);
+  const coachmarkRepository = createCoachmarkRecords(syncStorage);
   if (isSeen) {
     coachmarkRepository.markSeen({ accountId, kind: 'repeat-horizon' });
   }

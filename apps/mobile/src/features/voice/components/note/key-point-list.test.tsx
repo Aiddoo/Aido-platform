@@ -64,7 +64,7 @@ describe('KeyPointList', () => {
     const httpClient = createHttpClientStub();
     httpClient.get.mockResolvedValue(ok(createCurrentUserDto()));
     const analytics = createAnalyticsStub();
-    const { syncStorage, repository: coachmarkRepository } = createCoachmarkStorage();
+    const { syncStorage, records: coachmarkRepository } = createCoachmarkStorage();
 
     // When
     await renderScreen(<KeyPointList hasTimeCoachmark keyPoints={keyPoints} />, {

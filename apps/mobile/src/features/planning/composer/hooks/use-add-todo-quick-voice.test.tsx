@@ -4,14 +4,13 @@ import { err, ok } from '@src/core/errors/result';
 import '@src/shared/i18n/init';
 import { createEntitlementSnapshot } from '@src/features/billing/subscription/__tests__/entitlement.fixtures';
 import { ENTITLEMENT_QUERY_KEYS } from '@src/features/billing/subscription/queries/entitlement-query-keys';
-import { createCoachmarkRepository } from '@src/features/device/coachmark/apis/coachmark.repository';
+import { createCoachmarkRecords } from '@src/features/device/coachmark/__tests__/coachmark.fixtures';
 import { createConsent } from '@src/features/identity/consent/__tests__/consent.fixtures';
 import { type Consent } from '@src/features/identity/consent/domains/consent.model';
 import { CONSENT_QUERY_KEYS } from '@src/features/identity/consent/queries/consent-query-keys';
 import { createUser } from '@src/features/identity/user/__tests__/user.fixtures';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-keys';
 import type { TodoFormValues } from '@src/features/planning/todo/schemas/todo-form.schema';
-import { getNowInstant } from '@src/shared/date/clock';
 import { NetworkError } from '@src/shared/errors';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { OverlayProvider, Text } from '@src/shared/ui';
@@ -150,7 +149,7 @@ async function renderQuickVoice({
   const queryClient = createTestQueryClient();
   const syncStorage = createMemoryObservableSyncStorage();
   if (isCoachmarkSeen) {
-    createCoachmarkRepository(syncStorage, getNowInstant).markSeen({
+    createCoachmarkRecords(syncStorage).markSeen({
       accountId: ACCOUNT_ID,
       kind: 'ai-consent-renewal',
     });

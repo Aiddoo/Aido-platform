@@ -8,7 +8,7 @@ import { emitSessionExpired } from '@src/core/events/session-expired';
 import { subscribeTodoCreated } from '@src/core/events/todo-created';
 import { createSessionEpoch, withSessionEpoch } from '@src/core/session/session-epoch';
 import { createSessionManager } from '@src/core/session/session-manager';
-import { createCoachmarkRepository } from '@src/features/device/coachmark/apis/coachmark.repository';
+import { createCoachmarkRecords } from '@src/features/device/coachmark/__tests__/coachmark.fixtures';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
 import { UserService } from '@src/features/identity/user/apis/user.service';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-keys';
@@ -21,7 +21,6 @@ import {
 } from '@src/features/planning/todo/__tests__/todo.fixtures';
 import { TodoApi } from '@src/features/planning/todo/apis/todo.api';
 import { pendingRedemptionStoredValue } from '@src/features/social/invite/schemas/pending-redemption-storage.schema';
-import { getNowInstant } from '@src/shared/date/clock';
 import { toInstant } from '@src/shared/date/instant';
 import { createDraftKey } from '@src/shared/draft/draft.model';
 import { NetworkError, ServerError, TimeoutError } from '@src/shared/errors';
@@ -486,7 +485,7 @@ describe('탈퇴', () => {
     // Given
     const account = createCurrentUserDto({ userId: 'clz7x5p8k0001qz0z8z8z8z8a' });
     const session = createAuthSession({ tokens: ACCOUNT_A_TOKENS });
-    const coachmarks = createCoachmarkRepository(session.syncStorage, getNowInstant);
+    const coachmarks = createCoachmarkRecords(session.syncStorage);
     coachmarks.markSeen({ accountId: account.userId, kind: 'todo-reorder' });
     coachmarks.markSeen({ accountId: OTHER_ACCOUNT_ID, kind: 'todo-reorder' });
     session.userHttp.get.mockResolvedValue(ok(account));
@@ -521,7 +520,7 @@ describe('탈퇴', () => {
     // Given
     const account = createCurrentUserDto({ userId: 'clz7x5p8k0001qz0z8z8z8z8a' });
     const session = createAuthSession({ tokens: ACCOUNT_A_TOKENS });
-    const coachmarks = createCoachmarkRepository(session.syncStorage, getNowInstant);
+    const coachmarks = createCoachmarkRecords(session.syncStorage);
     coachmarks.markSeen({ accountId: account.userId, kind: 'todo-reorder' });
     const deleteRequest = createPendingResponse(ok(createDeleteAccountDto()));
     session.userHttp.get.mockResolvedValue(ok(account));

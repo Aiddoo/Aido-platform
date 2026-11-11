@@ -46,8 +46,7 @@ import { SubscriptionService } from '@src/features/billing/subscription/services
 import { createActivationProgressRepository } from '@src/features/device/activation/apis/activation-progress.repository';
 import { ActivationService } from '@src/features/device/activation/apis/activation.service';
 import { AppIconService } from '@src/features/device/app-icon/apis/app-icon.service';
-import { createCoachmarkRepository } from '@src/features/device/coachmark/apis/coachmark.repository';
-import { CoachmarkService } from '@src/features/device/coachmark/apis/coachmark.service';
+import { createCoachmarkRepository } from '@src/features/device/coachmark/repositories/coachmark.repository';
 import { createStoreReviewRepository } from '@src/features/device/store-review/apis/store-review.repository';
 import { StoreReviewService } from '@src/features/device/store-review/apis/store-review.service';
 import { createWidgetNavigationRepository } from '@src/features/device/widget/apis/widget-navigation.repository';
@@ -203,7 +202,7 @@ export function createAppContainer(ports: AppContainerPorts): DIContainer {
 
   const activationProgressRepository = createActivationProgressRepository(syncStorage);
   const whatsNewRepository = createWhatsNewRepository(syncStorage);
-  const coachmarkRepository = createCoachmarkRepository(syncStorage, getNowInstant);
+  const coachmarkRepository = createCoachmarkRepository(syncStorage);
   const marketingPushPromptRepository = createMarketingPushPromptRepository(syncStorage);
 
   const pendingRedemptionService = new PendingRedemptionService(
@@ -352,7 +351,7 @@ export function createAppContainer(ports: AppContainerPorts): DIContainer {
     pushRegistrationService,
     marketingPushPromptRepository,
     todoNudgeService: new TodoNudgeService(authHttpClient),
-    coachmarkService: new CoachmarkService(coachmarkRepository),
+    coachmarkRepository,
     storeReviewService: new StoreReviewService(
       createStoreReviewRepository(syncStorage),
       ports.appStoreReviewGateway,
