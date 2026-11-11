@@ -6,19 +6,19 @@ import { renderScreen } from '@src/testing/render';
 import { fireEvent, screen } from '@testing-library/react-native';
 import type { ReactElement } from 'react';
 
-import { TodoScopeSelectContent } from './todo-scope-select-content';
+import { TodoScopeSelect } from './todo-scope-select';
 
 const renderScope = (ui: ReactElement) =>
   renderScreen(<LocalDateProvider>{ui}</LocalDateProvider>, {
     di: { analytics: createAnalyticsStub(), errorReporter: createErrorReporterStub() },
   });
 
-describe('TodoScopeSelectContent', () => {
+describe('TodoScopeSelect', () => {
   it('수정은 이 할 일만과 이후 할 일 두 가지를 날짜 설명과 함께 보여준다', async () => {
     // Given
     const onChange = jest.fn();
     await renderScope(
-      <TodoScopeSelectContent
+      <TodoScopeSelect
         action="edit"
         date="2026-11-04"
         scopes={TODO_UPDATE_SCOPES}
@@ -40,7 +40,7 @@ describe('TodoScopeSelectContent', () => {
     // Given
     const onChange = jest.fn();
     await renderScope(
-      <TodoScopeSelectContent
+      <TodoScopeSelect
         action="delete"
         date="2026-11-04"
         scopes={TODO_EDIT_SCOPES}

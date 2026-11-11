@@ -21,7 +21,7 @@ import { useTodoSheetDateKey } from '../../hooks/use-todo-sheet-date-key';
 import { useUpdateTodoScheduleMutationOptions } from '../../queries/todo.mutations';
 import { useGetTodosByDateQueryOptions } from '../../queries/todo.queries';
 import { TodoScopeStep } from '../todo-scope-step';
-import { TodoTimePickerContent } from '../todo-time-picker-content';
+import { TodoTimePicker } from '../todo-time-picker';
 
 type TodoTimeBottomSheetProps = Omit<
   ComponentProps<typeof BottomSheet>,
@@ -85,7 +85,7 @@ TodoTimeBottomSheet.TimeForm = function TimeForm({
 
   return (
     <TodoScopeStep step={scopeSelector}>
-      <TodoTimePickerContent
+      <TodoTimePicker
         date={toLocalDay(todo.startDate)}
         value={{ scheduledTime: localTime, isAllDay: todo.isAllDay }}
         onCancel={onClose}
@@ -140,7 +140,7 @@ TodoTimeBottomSheet.TimeForm = function TimeForm({
   );
 };
 
-TodoTimeBottomSheet.Loading = TodoTimePickerContent.Loading;
+TodoTimeBottomSheet.Loading = TodoTimePicker.Loading;
 
 TodoTimeBottomSheet.Error = function ErrorFallback({
   reset,

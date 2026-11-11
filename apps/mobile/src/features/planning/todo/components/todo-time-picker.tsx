@@ -32,7 +32,7 @@ interface TodoTimeValue {
   isAllDay: boolean;
 }
 
-interface TodoTimePickerContentProps {
+interface TodoTimePickerProps {
   /** 시간 선택 휠이 기준으로 삼는 할 일 날짜 */
   date: Date;
   value: TodoTimeValue;
@@ -42,14 +42,13 @@ interface TodoTimePickerContentProps {
   isConfirmDisabled?: boolean;
 }
 
-// oxlint-disable-next-line aido/component-name -- 1.15.2 전환 #1400
-export function TodoTimePickerContent({
+export function TodoTimePicker({
   date,
   value,
   onChange,
   onCancel,
   isConfirmDisabled = false,
-}: TodoTimePickerContentProps) {
+}: TodoTimePickerProps) {
   const { scheduledTime, isAllDay } = value;
   const { t } = useTranslation('todo');
   const { data: preference } = useSuspenseQuery(useGetPreferenceQueryOptions());
@@ -168,7 +167,7 @@ export function TodoTimePickerContent({
   );
 }
 
-TodoTimePickerContent.Loading = function Loading() {
+TodoTimePicker.Loading = function Loading() {
   return (
     <SheetHeaderLayout gap={24} header={<TextSkeleton size="b2" className="w-24 self-center" />}>
       <VStack className="overflow-hidden rounded-xl bg-gray-1 dark:bg-gray-2 px-1 py-2" gap={8}>

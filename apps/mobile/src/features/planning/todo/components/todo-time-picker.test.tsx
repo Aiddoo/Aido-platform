@@ -11,7 +11,7 @@ import {
 import { renderScreen } from '@src/testing/render';
 import { fireEvent, screen } from '@testing-library/react-native';
 
-import { TodoTimePickerContent } from './todo-time-picker-content';
+import { TodoTimePicker } from './todo-time-picker';
 
 async function renderSheet({ isAllDay }: { isAllDay: boolean }) {
   const queryClient = createTestQueryClient({
@@ -24,7 +24,7 @@ async function renderSheet({ isAllDay }: { isAllDay: boolean }) {
 
   await renderScreen(
     <LocalDateProvider>
-      <TodoTimePickerContent
+      <TodoTimePicker
         date={new Date(2026, 10, 6, 12)}
         value={{ scheduledTime: isAllDay ? null : '10:00', isAllDay }}
         onChange={jest.fn()}
@@ -42,7 +42,7 @@ async function renderSheet({ isAllDay }: { isAllDay: boolean }) {
   );
 }
 
-describe('TodoTimePickerContent 알림 안내', () => {
+describe('TodoTimePicker 알림 안내', () => {
   it('시간이 있으면 1시간 전과 10분 전에 알린다고 안내한다', async () => {
     // Given
     await renderSheet({ isAllDay: false });

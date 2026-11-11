@@ -14,6 +14,7 @@ import {
   VStack,
   IconButton,
 } from '@src/shared/ui';
+import { cn } from '@src/shared/utils/cn';
 import { PressableFeedback } from 'heroui-native';
 import type { ComponentProps, ReactNode } from 'react';
 
@@ -42,12 +43,11 @@ function ScopeRow({
         verticalPadding="medium"
         left={
           <Box
-            // oxlint-disable-next-line aido/no-classname-concat -- 1.15.2 전환 #1400
-            className={
-              isDanger
-                ? 'size-7 items-center justify-center rounded-full bg-error/10 dark:bg-error/20'
-                : 'size-7 items-center justify-center rounded-full bg-gray-2'
-            }
+            className={cn(
+              'size-7 items-center justify-center rounded-full',
+              isDanger && 'bg-error/10 dark:bg-error/20',
+              !isDanger && 'bg-gray-2',
+            )}
           >
             {icon}
           </Box>
@@ -66,7 +66,7 @@ function ScopeRow({
   );
 }
 
-interface TodoScopeSelectContentProps {
+interface TodoScopeSelectProps {
   action: TodoScopeAction;
   /** 범위를 정하는 할 일의 날짜(YYYY-MM-DD). 설명에 "n월 n일"로 보인다 */
   date: string;
@@ -76,14 +76,7 @@ interface TodoScopeSelectContentProps {
   onBack?: () => void;
 }
 
-// oxlint-disable-next-line aido/component-name -- 1.15.2 전환 #1400
-export function TodoScopeSelectContent({
-  action,
-  date,
-  scopes,
-  onChange,
-  onBack,
-}: TodoScopeSelectContentProps) {
+export function TodoScopeSelect({ action, date, scopes, onChange, onBack }: TodoScopeSelectProps) {
   const { t } = useTranslation(['todo', 'common']);
   const dateFormatContext = useDateFormatContext();
   const todayKey = useTodayKey();

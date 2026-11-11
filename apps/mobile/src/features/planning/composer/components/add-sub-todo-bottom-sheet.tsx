@@ -21,13 +21,12 @@ type AddSubTodoBottomSheetProps = Omit<ComponentProps<typeof SubTodoBottomSheet>
 export function AddSubTodoBottomSheet(props: AddSubTodoBottomSheetProps) {
   return (
     <SubTodoBottomSheet {...props}>
-      {(close) => <AddSubTodoBottomSheet.Contents onClose={close} />}
+      {(close) => <AddSubTodoBottomSheet.Form onClose={close} />}
     </SubTodoBottomSheet>
   );
 }
 
-// oxlint-disable-next-line aido/component-name -- 1.15.2 전환 #1400
-AddSubTodoBottomSheet.Contents = function Contents({ onClose }: { onClose: () => void }) {
+AddSubTodoBottomSheet.Form = function Form({ onClose }: { onClose: () => void }) {
   const [todoId] = useTodoId();
   const [date] = useTodoSheetDateKey();
   const { data: todosByDate } = useSuspenseQuery(useGetTodosByDateQueryOptions({ date }));

@@ -26,8 +26,7 @@ export function RepeatHintLine({
       <RepeatIcon
         width={iconSize}
         height={iconSize}
-        // oxlint-disable-next-line aido/no-classname-concat -- 1.15.2 전환 #1400
-        colorClassName={isHighlighted ? 'text-main' : 'text-gray-6'}
+        colorClassName={cn(isHighlighted && 'text-main', !isHighlighted && 'text-gray-6')}
       />
       <Text
         size="b4"

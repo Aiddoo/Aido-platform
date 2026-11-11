@@ -36,7 +36,7 @@ import type { TodoFormValues } from '../schemas/todo-form.schema';
 import { formatRepeatSummary } from '../utils/format-repeat-summary';
 import { formatTodoPeriod } from '../utils/todo-period.view-model';
 import { TodoDatePickerContent } from './todo-date-picker-content';
-import { TodoTimePickerContent } from './todo-time-picker-content';
+import { TodoTimePicker } from './todo-time-picker';
 
 export type TodoScheduleChipsValue = TodoSchedule &
   Pick<TodoFormValues, 'visibility' | 'categoryId'>;
@@ -157,8 +157,8 @@ function TimeChip({
     const time = await openSheet<Pick<TodoSchedule, 'scheduledTime' | 'isAllDay'>>(
       (close) => (
         <QueryErrorBoundary>
-          <Suspense fallback={<TodoTimePickerContent.Loading />}>
-            <TodoTimePickerContent
+          <Suspense fallback={<TodoTimePicker.Loading />}>
+            <TodoTimePicker
               date={toLocalDay(value.startDate)}
               value={{ scheduledTime: value.scheduledTime, isAllDay: value.isAllDay }}
               onChange={close}

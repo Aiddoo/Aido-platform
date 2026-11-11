@@ -26,13 +26,12 @@ type EditSubTodoBottomSheetProps = Omit<ComponentProps<typeof SubTodoBottomSheet
 export function EditSubTodoBottomSheet(props: EditSubTodoBottomSheetProps) {
   return (
     <SubTodoBottomSheet {...props}>
-      {(close) => <EditSubTodoBottomSheet.Contents onClose={close} />}
+      {(close) => <EditSubTodoBottomSheet.Form onClose={close} />}
     </SubTodoBottomSheet>
   );
 }
 
-// oxlint-disable-next-line aido/component-name -- 1.15.2 전환 #1400
-EditSubTodoBottomSheet.Contents = function Contents({ onClose }: { onClose: () => void }) {
+EditSubTodoBottomSheet.Form = function Form({ onClose }: { onClose: () => void }) {
   const [todoId] = useTodoId();
   const [subTodoId] = useSubTodoId();
   const [date] = useTodoSheetDateKey();
