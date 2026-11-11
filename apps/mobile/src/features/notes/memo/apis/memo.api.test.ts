@@ -35,7 +35,7 @@ describe('MemoApi.parseMemo', () => {
 
     // Then
     await expect(parsing).rejects.toBeInstanceOf(ParseError);
-    expect(error).toHaveBeenCalledWith('ai.response-parse.failed', undefined, {
+    expect(error).toHaveBeenCalledWith('memo.response-parse.failed', undefined, {
       method: 'parseMemo',
       zodError: expect.any(String),
     });
