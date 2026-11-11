@@ -1,5 +1,6 @@
 import {
   isAutomatedEngagementNotification,
+  isGeneralRateLimitExemptNotification,
   isMarketingNotification,
   isNightExemptNotification,
 } from "./push-eligibility.domain-service.js";
@@ -47,6 +48,23 @@ describe("Push 발송 대상 판단 정책", () => {
     "광고성·소셜·재방문·공지 %s는 21:00~08:00 예외가 아니다",
     (type) => {
       expect(isNightExemptNotification(type)).toBe(false);
+    },
+  );
+
+  it.each([
+    ["TODO_REMINDER", true],
+    ["MORNING_REMINDER", false],
+    ["FOLLOW_NEW", false],
+    ["CHEER_RECEIVED", false],
+    ["LUNCH_NUDGE", false],
+    ["WINBACK", false],
+  ] as const)(
+    "사용자가 시각을 정한 할 일 리마인더만 일반 시간당 한도에서 빠진다(%s → %s)",
+    (type, exempt) => {
+      // When
+      const result = isGeneralRateLimitExemptNotification(type);
+      // Then
+      expect(result).toBe(exempt);
     },
   );
 });
