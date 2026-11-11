@@ -5,6 +5,7 @@ import { range } from 'es-toolkit';
 import {
   addDaysToDateKey,
   addMonthsToDateKey,
+  dateKeySchema,
   diffDateKeysInMonths,
   getMonthStartDateKey,
   diffDateKeysInDays,
@@ -16,6 +17,7 @@ import {
   getMonthEndDateKey,
   getYearOfDateKey,
   getDayOfMonth,
+  isDateKey,
   isSameMonthDateKey,
   isSameYearDateKey,
 } from './date-key';
@@ -352,5 +354,28 @@ describe('서버 Temporal과 같은 날짜 key 계산', () => {
 
     // Then
     expect(results).toEqual(['', '', '', '', '', NaN, NaN, NaN, NaN, NaN, false, false]);
+  });
+});
+
+describe('isDateKey — 계산 결과를 날짜 key로 좁히는 판정', () => {
+  it.each([
+    '2026-11-12',
+    '2028-02-29',
+    '2000-02-29',
+    '0000-01-01',
+    '9999-12-31',
+    '',
+    '2026-13-01',
+    '2026-02-30',
+    '2100-02-29',
+    '2026-2-3',
+    '10000-01-01',
+    '2026-11-12T00:00:00.000Z',
+  ])("'%s'를 계약 스키마와 같게 판정한다", (value) => {
+    // When
+    const result = isDateKey(value);
+
+    // Then
+    expect(result).toBe(dateKeySchema.safeParse(value).success);
   });
 });

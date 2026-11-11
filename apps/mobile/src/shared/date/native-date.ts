@@ -1,4 +1,4 @@
-import { parseDateKey } from './date-key';
+import { parseDateKey, toCivilDate } from './date-key';
 import { fromEpochMs, type Instant, toEpochMs } from './instant';
 import { isValidHHmm, type TimeOfDay, toTimeOfDay } from './time-of-day';
 
@@ -22,8 +22,12 @@ export function instantToDate(instant: Instant): Date {
 
 /** 기기 시간대의 그날 0시. 날짜 계산은 key로 하고 Date는 마지막에 만들어야 자정·서머타임에 날이 밀리지 않는다 */
 export function toLocalDay(dateKey: string): Date {
-  const date = parseDateKey(dateKey);
-  return date == null ? toNativeDate(Number.NaN) : new Date(date.year, date.month - 1, date.day);
+  const parsed = parseDateKey(dateKey);
+  if (parsed == null) {
+    return toNativeDate(Number.NaN);
+  }
+  const { year, month, day } = toCivilDate(parsed);
+  return new Date(year, month - 1, day);
 }
 
 /** 폼이 날짜를 기기 시간대 그날 0시의 순간으로 들고 있어 key를 그 순간으로 바꾼다 */
