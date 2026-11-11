@@ -4,11 +4,11 @@ import { Inject, Injectable } from "@nestjs/common";
 
 import {
   createTodoCommentNotificationMessage,
-  NotificationPublisher,
-  NOTIFICATION_RECIPIENT_LOCALE_READER,
-  type NotificationRecipientLocaleReaderPort,
+  PublishNotificationUseCase,
+  NotificationRecipientLocaleReaderPort,
   TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY,
 } from "#api/modules/notification/notification-delivery.public";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import {
   type TodoCommentActivityNotificationInput,
@@ -26,12 +26,12 @@ type TodoCommentNotificationActivity = TodoCommentNotificationCopyInput extends 
 
 @Injectable()
 export class TodoCommentNotificationAdapter implements TodoCommentNotificationPort {
-  readonly #notificationPublisher: NotificationPublisher;
+  readonly #notificationPublisher: PublishNotificationUseCase;
   readonly #recipientLocaleReader: NotificationRecipientLocaleReaderPort;
 
   constructor(
-    notificationPublisher: NotificationPublisher,
-    @Inject(NOTIFICATION_RECIPIENT_LOCALE_READER)
+    notificationPublisher: PublishNotificationUseCase,
+    @Inject(NotificationRecipientLocaleReaderPort)
     recipientLocaleReader: NotificationRecipientLocaleReaderPort,
   ) {
     this.#notificationPublisher = notificationPublisher;
@@ -67,7 +67,9 @@ export class TodoCommentNotificationAdapter implements TodoCommentNotificationPo
       return;
     }
 
-    const locale = await this.#recipientLocaleReader.getLocale(input.recipientId);
+    const locale = await this.#recipientLocaleReader.getLocale(
+      UserId.reconstitute(input.recipientId),
+    );
     const variantContext = {
       campaignKey: TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY.TODO_COMMENT_ACTIVITY,
       recipientId: input.recipientId,

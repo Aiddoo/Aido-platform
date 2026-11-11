@@ -94,17 +94,3 @@ export interface NormalizedCursorPagination<T extends CursorType = string> {
   size: number;
   take: number;
 }
-
-// ============================================
-// 타입 별칭 (편의성)
-// ============================================
-
-/** String 커서 페이지네이션 (CUID, UUID 등) */
-export type StringCursorPaginationParams = CursorPaginationParams<string>;
-export type StringCursorPaginationInfo = CursorPaginationInfo<string>;
-export type StringCursorPaginatedResponse<T> = CursorPaginatedResponse<T, string>;
-
-/** Number 커서 페이지네이션 (auto-increment) */
-export type NumberCursorPaginationParams = CursorPaginationParams<number>;
-export type NumberCursorPaginationInfo = CursorPaginationInfo<number>;
-export type NumberCursorPaginatedResponse<T> = CursorPaginatedResponse<T, number>;

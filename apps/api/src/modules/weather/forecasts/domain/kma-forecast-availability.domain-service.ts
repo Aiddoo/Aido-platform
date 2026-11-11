@@ -1,7 +1,9 @@
 import { clamp } from "es-toolkit";
 
-import { addDays, addMinutes } from "#api/shared/domain/date/utils/arithmetic";
-import { dayWindowInTimezone } from "#api/shared/domain/date/utils/timezone";
+import {
+  localDateAt,
+  startOfLocalDate,
+} from "../../shared/domain/weather-calendar.domain-service.js";
 
 /** KMA 발표·예보 날짜는 서버 시간대와 무관하게 KST다. */
 export const KMA_TIMEZONE = "Asia/Seoul";
@@ -13,7 +15,7 @@ export const KMA_TIMEZONE = "Asia/Seoul";
  * - 아직 하지 않은 발표는 줄 수 없다(resultCode 10 "현재 이후의 base_time은 호출할 수 없습니다").
  * - 한 발표는 발표일부터 이틀 뒤(모레)까지의 예보를 담는다.
  */
-export const KMA_FORECAST_AVAILABILITY = {
+const KMA_FORECAST_AVAILABILITY = {
   ISSUANCE_RETENTION_DAYS: 3,
   FORECAST_DAYS_AFTER_ISSUANCE: 2,
   /** 하루 첫 발표(02:00)와 제공 지연 15분 */
@@ -39,24 +41,22 @@ export function resolveKmaForecastAvailability(params: {
   readonly now: Date;
 }): KmaForecastAvailability {
   const { target, now } = params;
-  const today = dayWindowInTimezone(now, KMA_TIMEZONE);
-  const targetDay = dayWindowInTimezone(target, KMA_TIMEZONE).localDate;
-  const earliestDay = dayWindowInTimezone(
-    addDays(1 - KMA_FORECAST_AVAILABILITY.ISSUANCE_RETENTION_DAYS, today.startsAt),
-    KMA_TIMEZONE,
-  );
-  const latestDay = dayWindowInTimezone(
-    addDays(KMA_FORECAST_AVAILABILITY.FORECAST_DAYS_AFTER_ISSUANCE, today.startsAt),
-    KMA_TIMEZONE,
-  ).localDate;
-  if (targetDay < earliestDay.localDate || targetDay > latestDay) {
+  const today = localDateAt(now, KMA_TIMEZONE);
+  const targetDay = localDateAt(target, KMA_TIMEZONE);
+  const earliestDay = today.subtract({
+    days: KMA_FORECAST_AVAILABILITY.ISSUANCE_RETENTION_DAYS - 1,
+  });
+  const latestDay = today.add({ days: KMA_FORECAST_AVAILABILITY.FORECAST_DAYS_AFTER_ISSUANCE });
+  if (
+    Temporal.PlainDate.compare(targetDay, earliestDay) < 0 ||
+    Temporal.PlainDate.compare(targetDay, latestDay) > 0
+  ) {
     return { kind: "UNAVAILABLE" };
   }
 
-  const earliestIssuance = addMinutes(
-    KMA_FORECAST_AVAILABILITY.FIRST_ISSUANCE_OFFSET_MINUTES,
-    earliestDay.startsAt,
-  );
-  const issuance = new Date(clamp(target.getTime(), earliestIssuance.getTime(), now.getTime()));
+  const earliestIssuanceMs =
+    startOfLocalDate(earliestDay, KMA_TIMEZONE).getTime() +
+    KMA_FORECAST_AVAILABILITY.FIRST_ISSUANCE_OFFSET_MINUTES * 60_000;
+  const issuance = new Date(clamp(target.getTime(), earliestIssuanceMs, now.getTime()));
   return { kind: "AVAILABLE", timing: { target, issuance } };
 }

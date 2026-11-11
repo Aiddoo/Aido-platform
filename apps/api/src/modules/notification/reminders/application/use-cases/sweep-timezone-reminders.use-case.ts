@@ -1,8 +1,8 @@
 import { minutesToSweep } from "#api/shared/application/minutes-to-sweep";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
+import type { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 import type { SweepCursorPort } from "#api/shared/application/ports/sweep-cursor.port";
-import { instantToDate } from "#api/shared/domain/time/instant";
 
 import {
   FIRST_DAY_OF_MONTH,
@@ -19,6 +19,7 @@ import type {
   SocialDigestJobData,
   TimezoneReminderEnqueuerPort,
 } from "../ports/timezone-reminder-enqueuer.port.js";
+import { ReminderAlerts } from "../reminders.alerts.js";
 import { NotificationRemindersLogEvent } from "../reminders.log-events.js";
 import type { SendEveningReminderUseCase } from "./send-evening-reminder.use-case.js";
 import type { SendLunchNudgeUseCase } from "./send-lunch-nudge.use-case.js";
@@ -56,6 +57,7 @@ interface SweepTimezoneRemindersDependencies {
   readonly weatherMorning: Pick<SendWeatherMorningUseCase, "execute">;
   readonly weatherEvening: Pick<SendWeatherEveningUseCase, "execute">;
   readonly logger: Pick<ApplicationLoggerPort, "error" | "log" | "warn">;
+  readonly alert: Pick<OperationalAlertPort, "raise">;
 }
 
 /**
@@ -83,11 +85,16 @@ export class SweepTimezoneRemindersUseCase {
         maxCatchUpMinutes: REMINDER_LATE_LIMIT_MINUTES,
       });
       const skippedMinutes = countSkippedMinutes(lastCompletedAt, minutes);
+      // worker가 REMINDER_LATE_LIMIT_MINUTES(15분)보다 오래 멈춰 그보다 앞선 분의 정시 알림을 버렸다
       if (skippedMinutes > 0) {
         logger.warn({
           event: NotificationRemindersLogEvent.TIMEZONE_AWARE_REMINDER_MINUTES_SKIPPED,
           reason: REMINDER_LATE_SKIP_REASON,
           skippedMinutes,
+        });
+        this.#dependencies.alert.raise({
+          ...ReminderAlerts.SWEEP_CATCH_UP_CAPPED,
+          details: { skippedMinutes, maxCatchUpMinutes: REMINDER_LATE_LIMIT_MINUTES },
         });
       }
 
@@ -262,14 +269,10 @@ function timezoneContextAt(
     localMinute: local.minute,
     // Temporal은 월=1…일=7, 컨텍스트는 일=0
     dayOfWeek: local.dayOfWeek % 7,
-    today: utcMidnightOf(today),
-    tomorrow: utcMidnightOf(today.add({ days: 1 })),
+    today,
+    tomorrow: today.add({ days: 1 }),
     userId,
   };
-}
-
-function utcMidnightOf(date: Temporal.PlainDate): Date {
-  return instantToDate(date.toZonedDateTime("UTC").toInstant());
 }
 
 // 마지막으로 끝낸 분과 이번에 처음 처리하는 분 사이에서 버린 분의 수

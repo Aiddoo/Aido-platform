@@ -29,7 +29,7 @@ export function expandThread(
  * 답글을 올려 앱이 펼친 묶음은 사용자가 숨기기를 누를 이유가 없어 줄을 그리지 않는다.
  */
 export function getReplyFooter(
-  thread: Pick<TodoCommentThread, 'replySummary'>,
+  thread: TodoCommentThread,
   {
     loadedCount,
     hasNextPage,

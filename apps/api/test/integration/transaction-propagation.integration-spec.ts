@@ -49,6 +49,7 @@ it("중첩 UoW는 같은 트랜잭션을 공유하고 커밋 후 작업은 커�
         id: committedId,
         email: "drizzle-commit@test.aido.app",
         userTag: "DRIZZLC1",
+        updatedAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
       });
       const changed = await txHost.tx
         .update(user)
@@ -83,6 +84,7 @@ it("중첩 UoW는 같은 트랜잭션을 공유하고 커밋 후 작업은 커�
           id: rollbackId,
           email: "drizzle-rollback@test.aido.app",
           userTag: "DRIZZLR1",
+          updatedAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
         });
         await txHost.tx.update(user).set({ aiUsageCount: 3 }).where(eq(user.id, committedId));
         uow.register(async () => {

@@ -1,61 +1,62 @@
 import { getNowInstant } from '@src/shared/date/instant';
-import {
-  type InfiniteData,
-  notifyManager,
-  type QueryClient,
-  type QueryKey,
-} from '@tanstack/react-query';
+import { type InfiniteData, notifyManager, type QueryClient } from '@tanstack/react-query';
+import { uniq } from 'es-toolkit';
 
 import { NOTIFICATION_QUERY_KEYS } from '../constants/notification-query-keys';
-import type { NotificationListResult } from '../domains/notification.model';
+import type { Notification, NotificationListResult } from '../domains/notification.model';
 import type { PushPermission } from '../domains/push-permission.model';
 
-/** 읽음 처리가 고치는 알림함(목록·안 읽은 수). 기기 권한 상태는 읽음과 무관해 담지 않는다 */
-export interface NotificationCacheSnapshot {
-  lists: Array<[QueryKey, InfiniteData<NotificationListResult> | undefined]>;
-  unreadCount: number | undefined;
+type NotificationPages = InfiniteData<NotificationListResult>;
+
+/** 읽음 처리 하나가 알림함에서 바꾼 것. 실패하면 이것만 되돌려 함께 진행 중인 다른 읽음은 남긴다 */
+export interface NotificationReadChange {
+  /** 이 처리가 읽음으로 바꾼, 목록에 안 읽음으로 있던 알림 */
+  notificationIds: readonly number[];
+  /** 안 읽은 수에서 뺀 만큼. 수를 몰랐으면 0 */
+  readCount: number;
 }
 
-/** `notificationId`가 없으면 모든 알림을 읽음으로 바꾼다 */
-function markPagesRead(
-  cachedPages: InfiniteData<NotificationListResult> | undefined,
-  notificationId?: number,
-): InfiniteData<NotificationListResult> | undefined {
-  if (!cachedPages?.pages) {
-    return cachedPages;
-  }
+/** 바뀐 알림이 없는 쪽은 그대로 돌려 그 쪽을 그리는 행이 다시 그려지지 않는다 */
+function withNotificationsPatched(
+  pages: NotificationPages,
+  isTarget: (notification: Notification) => boolean,
+  patch: Pick<Notification, 'isRead' | 'readAt'>,
+): NotificationPages {
   return {
-    ...cachedPages,
-    pages: cachedPages.pages.map((page) => ({
-      ...page,
-      notifications: page.notifications.map((notification) =>
-        (notificationId == null || notification.id === notificationId) && !notification.isRead
-          ? { ...notification, isRead: true, readAt: getNowInstant() }
-          : notification,
-      ),
-    })),
+    ...pages,
+    pages: pages.pages.map((page) =>
+      page.notifications.some(isTarget)
+        ? {
+            ...page,
+            notifications: page.notifications.map((notification) =>
+              isTarget(notification) ? { ...notification, ...patch } : notification,
+            ),
+          }
+        : page,
+    ),
   };
 }
 
-function hasUnreadNotification(
-  cachedPages: InfiniteData<NotificationListResult> | undefined,
-  notificationId: number,
-): boolean {
-  return (
-    cachedPages?.pages.some((page) =>
-      page.notifications.some(
-        (notification) => notification.id === notificationId && !notification.isRead,
-      ),
-    ) ?? false
-  );
+/** `notificationId`가 없으면 안 읽은 알림 전부 */
+function findUnreadNotificationIds(pages: NotificationPages | undefined, notificationId?: number) {
+  return (pages?.pages ?? [])
+    .flatMap((page) => page.notifications)
+    .filter(
+      (notification) =>
+        !notification.isRead && (notificationId == null || notification.id === notificationId),
+    )
+    .map((notification) => notification.id);
 }
 
-/** 낙관적으로 읽음을 쓰지 않았으면(다른 세션) null */
+/**
+ * 목록의 그 알림(없으면 안 읽은 알림 전부)을 읽음으로, 안 읽은 수를 그만큼 줄인다.
+ * 낙관적으로 읽음을 쓰지 않았으면(다른 세션) null
+ */
 export async function optimisticallyMarkNotificationsRead(
   queryClient: QueryClient,
   notificationId?: number,
   { shouldApply }: { shouldApply?: () => boolean } = {},
-): Promise<NotificationCacheSnapshot | null> {
+): Promise<NotificationReadChange | null> {
   await Promise.all([
     queryClient.cancelQueries({ queryKey: NOTIFICATION_QUERY_KEYS.lists() }),
     queryClient.cancelQueries({ queryKey: NOTIFICATION_QUERY_KEYS.unreadCount(), exact: true }),
@@ -64,49 +65,51 @@ export async function optimisticallyMarkNotificationsRead(
     return null;
   }
   // 필터마다 목록이 여럿이라 접두사로 고르고, 키에 데이터 타입이 없어 TanStack 문서대로 제네릭으로 밝힌다
-  const listEntries = queryClient.getQueriesData<InfiniteData<NotificationListResult>>({
-    queryKey: NOTIFICATION_QUERY_KEYS.lists(),
-  });
-  const snapshot: NotificationCacheSnapshot = {
-    lists: listEntries,
-    unreadCount: queryClient.getQueryData(NOTIFICATION_QUERY_KEYS.unreadCount()),
-  };
-  const shouldDecrement =
-    notificationId == null ||
-    listEntries.some(([_queryKey, cachedPages]) =>
-      hasUnreadNotification(cachedPages, notificationId),
-    );
+  const notificationIds = uniq(
+    queryClient
+      .getQueriesData<NotificationPages>({ queryKey: NOTIFICATION_QUERY_KEYS.lists() })
+      .flatMap(([_queryKey, pages]) => findUnreadNotificationIds(pages, notificationId)),
+  );
+  const unreadCount = queryClient.getQueryData(NOTIFICATION_QUERY_KEYS.unreadCount());
+  // 하나 읽기는 목록에 안 읽음으로 있을 때만 하나를 뺀다. 수를 아직 모르면 채우지 않고 서버 값을 기다린다
+  const readCount =
+    notificationId == null ? (unreadCount ?? 0) : Math.min(notificationIds.length, 1);
+  const readAt = getNowInstant();
 
   notifyManager.batch(() => {
-    for (const [queryKey, cachedPages] of listEntries) {
-      queryClient.setQueryData(queryKey, markPagesRead(cachedPages, notificationId));
-    }
-    // 수를 아직 모르면 0으로 채우지 않는다. 성공 뒤 서버 값으로 맞춘다
-    queryClient.setQueryData(NOTIFICATION_QUERY_KEYS.unreadCount(), (old) => {
-      if (notificationId == null) {
-        return 0;
-      }
-      if (old == null) {
-        return undefined;
-      }
-      return shouldDecrement ? Math.max(0, old - 1) : old;
-    });
+    queryClient.setQueriesData<NotificationPages>(
+      { queryKey: NOTIFICATION_QUERY_KEYS.lists() },
+      (pages) =>
+        pages &&
+        withNotificationsPatched(
+          pages,
+          (notification) => notificationIds.includes(notification.id),
+          { isRead: true, readAt },
+        ),
+    );
+    queryClient.setQueryData(NOTIFICATION_QUERY_KEYS.unreadCount(), (old) =>
+      notificationId == null ? 0 : old == null ? old : Math.max(0, old - readCount),
+    );
   });
-  return snapshot;
+  return { notificationIds, readCount };
 }
 
-export function restoreNotificationCache(
-  queryClient: QueryClient,
-  snapshot: NotificationCacheSnapshot | null,
-): void {
-  if (snapshot == null) {
-    return;
-  }
+/** 이 처리가 읽음으로 바꾼 알림만 지금 캐시에서 안 읽음으로 되돌리고 뺀 수만큼 더한다 */
+export function revertNotificationsRead(queryClient: QueryClient, change: NotificationReadChange) {
   notifyManager.batch(() => {
-    for (const [queryKey, cachedPages] of snapshot.lists) {
-      queryClient.setQueryData(queryKey, cachedPages);
-    }
-    queryClient.setQueryData(NOTIFICATION_QUERY_KEYS.unreadCount(), snapshot.unreadCount);
+    queryClient.setQueriesData<NotificationPages>(
+      { queryKey: NOTIFICATION_QUERY_KEYS.lists() },
+      (pages) =>
+        pages &&
+        withNotificationsPatched(
+          pages,
+          (notification) => change.notificationIds.includes(notification.id),
+          { isRead: false, readAt: null },
+        ),
+    );
+    queryClient.setQueryData(NOTIFICATION_QUERY_KEYS.unreadCount(), (old) =>
+      old == null ? old : old + change.readCount,
+    );
   });
 }
 

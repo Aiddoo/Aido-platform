@@ -1,6 +1,6 @@
 import type { Provider } from "@nestjs/common";
 
-import { USER_MUTATION_LOCK } from "#api/modules/identity/identity-user-access.public";
+import { UserMutationLockPort } from "#api/modules/identity/users/identity-users.public";
 import { loggerFor, provideUseCase } from "#api/platform/di/provide-use-case";
 import { AfterCommitTaskRegistryPort } from "#api/shared/application/ports/after-commit-task.registry.port";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
@@ -8,14 +8,11 @@ import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port"
 
 import { BillingUserLockPort } from "./application/ports/billing-user-lock.port.js";
 import { PremiumAccessCachePort } from "./application/ports/premium-access-cache.port.js";
-import {
-  PREMIUM_ACCESS_READER,
-  PremiumAccessReaderPort,
-} from "./application/ports/premium-access.reader.port.js";
+import { PremiumAccessReaderPort } from "./application/ports/premium-access.reader.port.js";
 import { PremiumGrantEndingNoticeRepositoryPort } from "./application/ports/premium-grant-ending-notice.repository.port.js";
 import { PremiumGrantNotifierPort } from "./application/ports/premium-grant-notifier.port.js";
 import { PremiumGrantRepositoryPort } from "./application/ports/premium-grant.repository.port.js";
-import { PREMIUM_GRANTER, PremiumGranterPort } from "./application/ports/premium-granter.port.js";
+import { PremiumGranterPort } from "./application/ports/premium-granter.port.js";
 import { QuietHoursReaderPort } from "./application/ports/quiet-hours.reader.port.js";
 import { StoreEntitlementReaderPort } from "./application/ports/store-entitlement.reader.port.js";
 import { UserSubscriptionProjectionRepositoryPort } from "./application/ports/user-subscription-projection.repository.port.js";
@@ -51,12 +48,10 @@ export const BILLING_PREMIUM_GRANTS_PROVIDERS = [
   { provide: PremiumAccessCachePort, useClass: PremiumAccessCacheAdapter },
   { provide: PremiumGrantNotifierPort, useClass: PremiumGrantNotifierAdapter },
   { provide: QuietHoursReaderPort, useClass: QuietHoursReaderAdapter },
-  // 사용자 행 잠금은 identity가 소유한다. identity가 클래스 토큰으로 옮기면 이 별칭을 바꾼다
-  { provide: BillingUserLockPort, useExisting: USER_MUTATION_LOCK },
+  // 사용자 행 잠금은 identity가 소유한다
+  { provide: BillingUserLockPort, useExisting: UserMutationLockPort },
   { provide: PremiumGranterPort, useClass: PremiumGranterAdapter },
   { provide: PremiumAccessReaderPort, useClass: PremiumAccessReaderAdapter },
-  { provide: PREMIUM_GRANTER, useExisting: PremiumGranterPort },
-  { provide: PREMIUM_ACCESS_READER, useExisting: PremiumAccessReaderPort },
   provideUseCase(LoadPremiumEntitlementsUseCase, {
     storeEntitlementReader: StoreEntitlementReaderPort,
     premiumGrantRepository: PremiumGrantRepositoryPort,

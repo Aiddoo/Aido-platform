@@ -124,11 +124,14 @@ export const WEATHER_REPORT_LIMITS = {
  * 앱 브리핑과 날씨 푸시가 같은 판단을 내리도록 공유하는 기준.
  * 시간별 강수 확률(%)이 WET_HOUR_CHANCE 이상이면 비 오는 시간, 낮 체감 온도(°C)가 HOT_APPARENT_TEMPERATURE 이상이면 더운 시간,
  * 일 최저 기온(°C)이 CHILLY_TEMPERATURE 이하면 쌀쌀한 날로 본다.
+ * 하루는 MORNING_START_HOUR 전이 새벽, AFTERNOON_START_HOUR 전이 오전, EVENING_HOUR 전이 오후, 그 뒤가 저녁이다(위치 시간대).
  */
 export const WEATHER_BRIEFING_RULES = {
   WET_HOUR_CHANCE: 50,
   HOT_APPARENT_TEMPERATURE: 33,
   CHILLY_TEMPERATURE: 10,
+  MORNING_START_HOUR: 6,
+  AFTERNOON_START_HOUR: 12,
   EVENING_HOUR: 18,
 } as const;
 

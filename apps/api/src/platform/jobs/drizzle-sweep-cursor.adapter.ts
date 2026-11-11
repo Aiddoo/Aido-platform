@@ -4,7 +4,7 @@ import { eq, sql } from "drizzle-orm";
 
 import type { Database } from "#api/platform/database/database.client";
 import { scheduledSweepCursor } from "#api/platform/database/schema/index";
-import { SweepCursorPort } from "#api/shared/application/ports/index";
+import { SweepCursorPort } from "#api/shared/application/ports/sweep-cursor.port";
 
 interface CursorTransactionSource {
   readonly tx: Database;

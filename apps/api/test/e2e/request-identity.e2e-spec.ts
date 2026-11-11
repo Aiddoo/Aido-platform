@@ -9,7 +9,7 @@ describe("신뢰할 수 있는 요청 식별 E2E (실제 throttler, 직렬 실�
     ctx = await createE2eApp({
       withRealThrottler: true,
     });
-  }, 60000);
+  }, 60_000);
 
   afterAll(async () => {
     await destroyE2eApp(ctx);

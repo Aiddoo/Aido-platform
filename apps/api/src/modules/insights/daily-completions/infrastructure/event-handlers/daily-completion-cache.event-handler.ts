@@ -1,75 +1,86 @@
-import { OnEvent } from "@nestjs/event-emitter";
+import type { OnModuleInit } from "@nestjs/common";
+import type { EventEmitter2 } from "@nestjs/event-emitter";
+import type { z } from "zod";
 
 import {
-  TODO_CATEGORY_EVENTS,
-  type TodoCategoryDeletedEvent,
-  type TodoCategoryUpdatedEvent,
+  CATEGORY_CHANGE_EVENT_NAMES,
+  categoryChangedPayloadSchema,
 } from "#api/modules/planning/categories/planning-categories.public";
 import {
-  TODO_EVENTS,
-  type TodoCategoryChangedEvent,
-  type TodoCreatedEvent,
-  type TodoDeletedEvent,
-  type TodoOccurrencesChangedEvent,
-  type TodoOccurrencesCreatedEvent,
-  type TodoRescheduledEvent,
-  type TodoToggledEvent,
-  type TodoUpdatedEvent,
-  type TodoVisibilityChangedEvent,
+  TODO_CHANGE_EVENT_NAMES,
+  TODO_SERIES_CHANGE_EVENT_NAMES,
+  todoChangedPayloadSchema,
+  todoSeriesChangedPayloadSchema,
 } from "#api/modules/planning/todos/planning-todos.public";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
+import { defineEventSubscription } from "#api/shared/application/ports/domain-event-publisher.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { DailyCompletionLogEvent } from "../../application/daily-completions.log-events.js";
 import type { DailyCompletionCachePort } from "../../application/ports/daily-completion-cache.port.js";
 
-type CompletionSourceChangedEvent =
-  | TodoCreatedEvent
-  | TodoOccurrencesCreatedEvent
-  | TodoOccurrencesChangedEvent
-  | TodoDeletedEvent
-  | TodoToggledEvent
-  | TodoRescheduledEvent
-  | TodoUpdatedEvent
-  | TodoCategoryChangedEvent
-  | TodoVisibilityChangedEvent
-  | TodoCategoryUpdatedEvent
-  | TodoCategoryDeletedEvent;
+interface CacheOwnerPayload {
+  readonly userId: string;
+}
+
+function cacheSubscription<TPayload extends CacheOwnerPayload>(
+  eventName: string,
+  payloadSchema: z.ZodType<TPayload>,
+) {
+  return defineEventSubscription({
+    name: `insights.daily-completion-cache:${eventName}`,
+    eventName,
+    delivery: "after-commit",
+    payloadSchema,
+  });
+}
+
+// 할 일·회차·카테고리 사실이면 무엇이든 그날 집계(개수·색)를 바꿀 수 있어 planning이 내는 이름을 모두 받는다
+export const DAILY_COMPLETION_CACHE_SUBSCRIPTIONS = [
+  ...TODO_CHANGE_EVENT_NAMES.map((eventName) =>
+    cacheSubscription(eventName, todoChangedPayloadSchema),
+  ),
+  ...TODO_SERIES_CHANGE_EVENT_NAMES.map((eventName) =>
+    cacheSubscription(eventName, todoSeriesChangedPayloadSchema),
+  ),
+  ...CATEGORY_CHANGE_EVENT_NAMES.map((eventName) =>
+    cacheSubscription(eventName, categoryChangedPayloadSchema),
+  ),
+];
 
 export interface DailyCompletionCacheEventHandlerDependencies {
   readonly dailyCompletionCache: Pick<DailyCompletionCachePort, "invalidate">;
+  readonly eventEmitter: Pick<EventEmitter2, "on">;
   readonly logger: Pick<ApplicationLoggerPort, "warn">;
 }
 
-// planning이 새 이벤트를 아직 내지 않아 옛 in-process 이벤트를 구독한다(delivery: "after-commit" 구독 전환은 후속)
-export class DailyCompletionCacheEventHandler {
+/**
+ * planning이 커밋한 변경을 받아 그 사용자의 일간 완료 캐시를 버린다. 캐시만 지우고 상태는 쓰지 않는다.
+ * 실패하면 기록만 하고 다시 보내지 않는다(TTL이 지나면 맞아진다).
+ */
+export class DailyCompletionCacheEventHandler implements OnModuleInit {
   readonly #dependencies: DailyCompletionCacheEventHandlerDependencies;
 
   constructor(dependencies: DailyCompletionCacheEventHandlerDependencies) {
     this.#dependencies = dependencies;
   }
 
-  // 주의: @OnEvent에 배열을 넘기면 EventEmitter2가 "다중 구독"이 아니라
-  // 델리미터로 결합된 단일 이벤트명으로 해석한다. 이벤트별로 데코레이터를 쌓는다.
-  @OnEvent(TODO_EVENTS.CREATED)
-  @OnEvent(TODO_EVENTS.OCCURRENCES_CREATED)
-  @OnEvent(TODO_EVENTS.OCCURRENCES_CHANGED)
-  @OnEvent(TODO_EVENTS.DELETED)
-  @OnEvent(TODO_EVENTS.TOGGLED)
-  @OnEvent(TODO_EVENTS.RESCHEDULED)
-  @OnEvent(TODO_EVENTS.UPDATED)
-  @OnEvent(TODO_EVENTS.CATEGORY_CHANGED)
-  @OnEvent(TODO_EVENTS.VISIBILITY_CHANGED)
-  @OnEvent(TODO_CATEGORY_EVENTS.UPDATED)
-  @OnEvent(TODO_CATEGORY_EVENTS.DELETED)
-  async handle(event: CompletionSourceChangedEvent): Promise<void> {
+  onModuleInit(): void {
+    for (const { name } of DAILY_COMPLETION_CACHE_SUBSCRIPTIONS) {
+      this.#dependencies.eventEmitter.on(name, (payload: CacheOwnerPayload) =>
+        this.handle(payload),
+      );
+    }
+  }
+
+  async handle(payload: CacheOwnerPayload): Promise<void> {
     try {
-      await this.#dependencies.dailyCompletionCache.invalidate(UserId.reconstitute(event.userId));
+      await this.#dependencies.dailyCompletionCache.invalidate(UserId.reconstitute(payload.userId));
     } catch (error) {
       this.#dependencies.logger.warn({
         event: DailyCompletionLogEvent.CACHE_INVALIDATION_FAILED,
-        userId: event.userId,
+        userId: payload.userId,
         errorType: toErrorType(error),
       });
     }

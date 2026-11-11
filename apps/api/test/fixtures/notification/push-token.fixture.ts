@@ -1,5 +1,7 @@
 import type { RegisterPushTokenData } from "#api/modules/notification/push/application/ports/push-token.repository.port";
 import type { PushTokenRecord } from "#api/modules/notification/push/application/read-models/push-token.read-model";
+import { PushDeviceId } from "#api/modules/notification/push/domain/push-device-id.vo";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 export const PUSH_TOKEN_FIXTURE_NOW = Temporal.Instant.from("2026-11-10T03:00:00Z");
 export const PUSH_TOKEN_FIXTURE_USER_ID = "clz7x5p8k0031qz0z8z8z8z8z";
@@ -26,9 +28,9 @@ export function createRegisterPushTokenDataFixture(
   overrides: Partial<RegisterPushTokenData> = {},
 ): RegisterPushTokenData {
   return {
-    userId: PUSH_TOKEN_FIXTURE_USER_ID,
+    userId: UserId.reconstitute(PUSH_TOKEN_FIXTURE_USER_ID),
     token: "ExponentPushToken[token-a]",
-    deviceId: "ios_device-a",
+    deviceId: PushDeviceId.reconstitute("ios_device-a"),
     platform: "IOS",
     sessionId: null,
     payloadVersion: 2,

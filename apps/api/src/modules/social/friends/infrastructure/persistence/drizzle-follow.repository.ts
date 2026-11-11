@@ -11,7 +11,6 @@ import type { DrizzleTransactionalAdapter } from "#api/platform/database/databas
 import { createEntityId } from "#api/platform/database/entity-id";
 import { follow } from "#api/platform/database/schema/social.schema";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { instantToDate } from "#api/shared/domain/time/instant";
 
 import { friendRequestAlreadySent } from "../../application/friends.errors.js";
 import { FollowRepositoryPort } from "../../application/ports/follow.repository.port.js";
@@ -96,7 +95,7 @@ export class DrizzleFollowRepository implements FollowRepositoryPort {
   ): Promise<void> {
     await this.#db
       .update(follow)
-      .set({ sortOrder: sql`${follow.sortOrder} + ${shift.delta}`, updatedAt: instantToDate(now) })
+      .set({ sortOrder: sql`${follow.sortOrder} + ${shift.delta}`, updatedAt: now })
       .where(
         and(
           eq(follow.followerId, followerId.value),

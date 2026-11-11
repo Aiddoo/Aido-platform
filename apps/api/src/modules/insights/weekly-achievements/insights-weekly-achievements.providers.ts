@@ -2,10 +2,7 @@ import type { Provider } from "@nestjs/common";
 
 import { provideUseCase } from "#api/platform/di/provide-use-case";
 
-import {
-  WEEKLY_ACHIEVEMENT_WRITER,
-  WeeklyAchievementWriterPort,
-} from "./application/ports/weekly-achievement-writer.port.js";
+import { WeeklyAchievementWriterPort } from "./application/ports/weekly-achievement-writer.port.js";
 import { WeeklyAchievementRepositoryPort } from "./application/ports/weekly-achievement.repository.port.js";
 import { GetWeeklyAchievementUseCase } from "./application/use-cases/get-weekly-achievement.use-case.js";
 import { ListWeeklyAchievementsUseCase } from "./application/use-cases/list-weekly-achievements.use-case.js";
@@ -24,5 +21,4 @@ export const INSIGHTS_WEEKLY_ACHIEVEMENTS_PROVIDERS = [
     weeklyAchievementRepository: WeeklyAchievementRepositoryPort,
   }),
   { provide: WeeklyAchievementWriterPort, useExisting: RecordWeeklyAchievementsUseCase },
-  { provide: WEEKLY_ACHIEVEMENT_WRITER, useExisting: WeeklyAchievementWriterPort },
 ] satisfies Provider[];

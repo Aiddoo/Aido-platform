@@ -1,16 +1,17 @@
 import { chunk } from "es-toolkit";
 
+import { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
 import type { FollowReaderPort } from "#api/modules/social/friends/social-friends.public";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { NudgeId } from "../../domain/nudge-id.vo.js";
+import { judgeNudgeThanks } from "../../domain/nudge-interaction.domain-service.js";
 import { NUDGE_THANKS_BATCH_SIZE } from "../../domain/nudges.constants.js";
 import {
-  nudgeInteractionClosed,
   nudgeInteractionNotFound,
-  thanksTodoNotCompleted,
+  nudgeThanksRejected,
   thanksTodoNotFound,
 } from "../nudges.errors.js";
 import type { NudgeInteractionConfigPort } from "../ports/nudge-interaction-config.port.js";
@@ -66,17 +67,19 @@ export class SendNudgeThanksUseCase {
     }
     const ownerId = UserId.reconstitute(command.userId);
     const throughNudgeId = NudgeId.reconstitute(command.throughNudgeId);
+    const todoId = TodoId.reconstitute(command.todoId);
 
     return unitOfWork.run(async () => {
-      const todo = await nudgeRepository.lockInteractionTodo(command.todoId, ownerId);
+      const todo = await nudgeRepository.lockInteractionTodo(todoId, ownerId);
       if (todo == null) {
         throw thanksTodoNotFound();
       }
-      if (!todo.completed) {
-        throw thanksTodoNotCompleted();
-      }
-      if (todo.visibility !== "PUBLIC") {
-        throw nudgeInteractionClosed();
+      const judgement = judgeNudgeThanks({
+        isTodoCompleted: todo.completed,
+        todoVisibility: todo.visibility,
+      });
+      if (!judgement.ok) {
+        throw nudgeThanksRejected(judgement.reason);
       }
 
       const cutoff = await nudgeReader.findInteraction(throughNudgeId, ownerId);
@@ -87,11 +90,12 @@ export class SendNudgeThanksUseCase {
       ) {
         throw nudgeInteractionNotFound();
       }
+      const friendIds = await followReader.getCurrentMutualFriendIds(ownerId);
       const candidates = await nudgeRepository.listThanksCandidates({
         ownerId,
-        todoId: command.todoId,
+        todoId,
         throughNudgeId,
-        friendIds: await followReader.getCurrentMutualFriendIds(command.userId),
+        friendIds: friendIds.map((friendId) => UserId.reconstitute(friendId)),
       });
       const actorName = cutoff.receiver.name ?? cutoff.receiver.userTag;
       const thankedAt = clock.now();

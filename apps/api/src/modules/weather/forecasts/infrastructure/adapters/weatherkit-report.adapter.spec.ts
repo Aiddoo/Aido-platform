@@ -11,6 +11,7 @@ import { StubWeatherKitTokenResolver } from "#test/doubles/weather/stub-weatherk
 import { createWeatherOutbound } from "#test/doubles/weather/weather-outbound";
 import { WeatherKitReportFixture } from "#test/fixtures/weatherkit-report.fixture";
 
+import { ForecastAlerts } from "../../application/forecasts.alerts.js";
 import { WeatherKitReportAdapter, WeatherKitRequestError } from "./weatherkit-report.adapter.js";
 import { WeatherKitNotConfiguredError } from "./weatherkit-token.adapter.js";
 
@@ -374,7 +375,7 @@ describe("WeatherKitReportAdapter — 가용성·REST 요청과 실패 분류", 
     ]);
     // When
     const settled = provider.getReport(cell, REQUEST).catch((error: unknown) => error);
-    await vi.advanceTimersByTimeAsync(3_999);
+    await vi.advanceTimersByTimeAsync(3999);
     const beforeTimeout = await Promise.race([settled, Promise.resolve("pending")]);
     await vi.advanceTimersByTimeAsync(1);
     // Then
@@ -628,9 +629,7 @@ describe("WeatherKitReportAdapter — 가용성·REST 요청과 실패 분류", 
       // Then
       expect(alert.alerts).toEqual([
         {
-          key: "weather.weatherkit.monthly-calls",
-          severity: "warning",
-          message: "WeatherKit 이번 달 호출이 300000회에 닿았습니다",
+          ...ForecastAlerts.WEATHERKIT_MONTHLY_CALLS,
           tags: { period: "2026-11" },
           details: { threshold: 300_000, total: 300_000 },
         },

@@ -1,8 +1,7 @@
-import { Injectable } from "@nestjs/common";
+import { Inject, Injectable } from "@nestjs/common";
 
 import { TransactionalEmailSender } from "#api/modules/notification/notification-email.public";
-import { TypedConfigService } from "#api/platform/config/services/config.service";
-import { SWAGGER_TAGS } from "#api/platform/http/swagger/index";
+import { SWAGGER_TAGS } from "#api/platform/http/swagger/constants/swagger.constant";
 
 import type {
   UserReportDeliveryResult,
@@ -13,6 +12,7 @@ import {
   RESOLVE_USER_REPORT_OPERATION_ID,
   resolveUserReportPath,
 } from "../../presentation/http/v1/admin-user-report.constants.js";
+import { type SocialReportsConfig, socialReportsConfig } from "../../social-reports.config.js";
 
 const ADMIN_DOCS_PATH = "/api/admin/docs";
 
@@ -23,16 +23,19 @@ const ADMIN_DOCS_PATH = "/api/admin/docs";
 @Injectable()
 export class EmailUserReportNotifierAdapter implements UserReportNotifierPort {
   readonly #emailSender: TransactionalEmailSender;
-  readonly #configService: TypedConfigService;
+  readonly #config: SocialReportsConfig;
 
-  constructor(emailSender: TransactionalEmailSender, configService: TypedConfigService) {
+  constructor(
+    emailSender: TransactionalEmailSender,
+    @Inject(socialReportsConfig.KEY) config: SocialReportsConfig,
+  ) {
     this.#emailSender = emailSender;
-    this.#configService = configService;
+    this.#config = config;
   }
 
   notifyOperators(submission: UserReportSubmission): Promise<UserReportDeliveryResult> {
-    const apiPublicUrl = this.#configService.apiPublicUrl;
-    return this.#emailSender.sendUserReport(this.#configService.email.supportEmail, {
+    const { apiPublicUrl, supportEmail } = this.#config;
+    return this.#emailSender.sendUserReport(supportEmail, {
       ...submission,
       resolutionEndpoint: `POST ${resolveUserReportPath(submission.reportId)}`,
       resolutionDocsUrl:

@@ -52,27 +52,6 @@ function orderByRequest(
   return isExactSet ? ordered : null;
 }
 
-// 지문 도입 전에 쓴 글은 구조와 내용이 같을 때만 같은 요청으로 본다
-function isLegacyReplay(
-  ordered: readonly TodoComment[],
-  request: TodoCommentChainRequest,
-): boolean {
-  return ordered.every((comment, index) => {
-    const stored = comment.toPrimitives();
-    const expectedReplyToId = index === 0 ? request.parentId : ordered[index - 1]?.id.value;
-    const item = request.items[index];
-    return (
-      item != null &&
-      // nullish-strict: undefined는 목록 밖 항목, null은 할 일에 단 댓글이다
-      expectedReplyToId !== undefined &&
-      stored.todoId === request.todoId &&
-      stored.authorId === request.authorId &&
-      stored.replyToCommentId === expectedReplyToId &&
-      stored.content === item.content
-    );
-  });
-}
-
 export function matchTodoCommentChainReplay(params: {
   readonly request: TodoCommentChainRequest;
   readonly stored: readonly TodoComment[];
@@ -86,10 +65,7 @@ export function matchTodoCommentChainReplay(params: {
     return { ok: false };
   }
   const fingerprint = fingerprintTodoCommentChain(request);
-  const commentIds = ordered.map((comment) => comment.id.value);
-  if (ordered.every((comment) => comment.requestFingerprint === fingerprint)) {
-    return { ok: true, commentIds };
-  }
-  const isLegacy = ordered.every((comment) => comment.requestFingerprint == null);
-  return isLegacy && isLegacyReplay(ordered, request) ? { ok: true, commentIds } : { ok: false };
+  return ordered.every((comment) => comment.requestFingerprint === fingerprint)
+    ? { ok: true, commentIds: ordered.map((comment) => comment.id.value) }
+    : { ok: false };
 }

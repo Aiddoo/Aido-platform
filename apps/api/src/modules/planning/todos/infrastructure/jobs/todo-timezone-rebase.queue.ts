@@ -1,7 +1,6 @@
 import { z } from "zod";
 
-import { defineQueue } from "#api/shared/application/ports/job-queue.port";
-import { JOB_POLLING_SECONDS } from "#api/shared/application/ports/job-runtime.port";
+import { defineQueue, JOB_POLLING_SECONDS } from "#api/shared/application/ports/job-queue.port";
 
 const TODO_TIMEZONE_REBASE_JOB_NAME = "rebase-todo-timezone";
 

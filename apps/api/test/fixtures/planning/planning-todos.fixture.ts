@@ -5,13 +5,18 @@ import { PublishTodoSeriesEditUseCase } from "#api/modules/planning/todo-series/
 import type { TodoSeries } from "#api/modules/planning/todo-series/domain/todo-series.aggregate";
 import { ApplyTodoEventsUseCase } from "#api/modules/planning/todos/application/use-cases/apply-todo-events.use-case";
 import { ResolveTodoTimezoneUseCase } from "#api/modules/planning/todos/application/use-cases/resolve-todo-timezone.use-case";
-import { PaginationService } from "#api/shared/application/pagination/index";
+import { PaginationService } from "#api/shared/application/pagination/services/pagination.service";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { TodoBuilder } from "#test/builders/index";
 import { FakeTodoCache } from "#test/doubles/planning/fake-todo-cache";
 import { InMemoryTodoReadRepository } from "#test/doubles/planning/in-memory-todo-read.repository";
 import { InMemoryTodoSeriesRepository } from "#test/doubles/planning/in-memory-todo-series.repository";
-import { InMemoryTodoRepository } from "#test/doubles/planning/in-memory-todo.repository";
+import {
+  copyTodoRecord,
+  InMemoryTodoRepository,
+} from "#test/doubles/planning/in-memory-todo.repository";
 import { RecordingDomainEventPublisher } from "#test/doubles/planning/recording-domain-event-publisher";
+import { RecordingTodoCompletionEffects } from "#test/doubles/planning/recording-todo-completion-effects";
 import { RecordingTodoReminderScheduler } from "#test/doubles/planning/recording-todo-reminder-scheduler";
 import { createStubCategoryOwnership } from "#test/doubles/planning/stub-category-ownership";
 import { StubTodoOwnerTimezone } from "#test/doubles/planning/stub-todo-owner-timezone";
@@ -23,21 +28,27 @@ import { SilentLogger } from "#test/doubles/platform/silent-logger";
 import type { PlanningTodoRecord } from "#test/fixtures/todo-response.fixture";
 
 export const PLANNING_TIME = new Date("2026-05-15T03:00:00.000Z");
+export const PLANNING_INSTANT = Temporal.Instant.fromEpochMilliseconds(PLANNING_TIME.getTime());
+
+// Temporal 값은 structuredClone되지 않아 비교용 기록을 이 함수로 복사한다
+export function snapshotTodoRecord(
+  record: PlanningTodoRecord | undefined,
+): PlanningTodoRecord | undefined {
+  return record == null ? undefined : copyTodoRecord(record);
+}
 
 export function createPlanningTodoFixture(
   input: { userId?: string; todos?: PlanningTodoRecord[] } = {},
 ) {
   const userId = input.userId ?? "planning-user";
-  const records = new Map(
-    (input.todos ?? []).map((record) => [record.id, structuredClone(record)]),
-  );
+  const records = new Map((input.todos ?? []).map((record) => [record.id, copyTodoRecord(record)]));
   const categories = new Map<number, TodoResponse["category"]>([
     [1, { id: 1, name: "기본 카테고리", color: "#FFB3B3", sortOrder: 0 }],
   ]);
   const categoryOwners = new Map<number, string>([[1, userId]]);
   for (const record of records.values()) {
     if (record.category !== null) {
-      categories.set(record.categoryId, structuredClone(record.category));
+      categories.set(record.categoryId, { ...record.category });
       categoryOwners.set(record.categoryId, record.userId);
     }
   }
@@ -61,11 +72,8 @@ export function createPlanningTodoFixture(
     todoReminder,
     applyTodoEvents,
   });
-  const seriesEffects = new PublishTodoSeriesEditUseCase({
-    todoCache,
-    eventPublisher,
-    logger,
-  });
+  const seriesEffects = new PublishTodoSeriesEditUseCase({ todoCache, logger });
+  const completionEffects = new RecordingTodoCompletionEffects();
   const mutationLock = new RecordingMutationLock();
   const categoryOwnership = createStubCategoryOwnership(categories, categoryOwners);
   const unitOfWork = new ImmediateUnitOfWork();
@@ -75,17 +83,17 @@ export function createPlanningTodoFixture(
   const seriesCatchUp = { execute: async (_userId: string) => undefined };
   const friendIds = new Set<string>();
   const friendPort = {
-    async isMutualFriend(_userId: string, friendUserId: string) {
-      return friendIds.has(friendUserId);
+    async isMutualFriend(_userId: UserId, friendUserId: UserId) {
+      return friendIds.has(friendUserId.value);
     },
   };
-  const streakContext: { currentStreak: number; lastCompletedDate: Date | null } = {
+  const streakContext: { currentStreak: number; lastCompletedDate: Temporal.PlainDate | null } = {
     currentStreak: 0,
     lastCompletedDate: null,
   };
   const streakPort = {
-    async getStreakContext(_userId: string) {
-      return structuredClone(streakContext);
+    async getStreakContext(_userId: UserId) {
+      return { ...streakContext };
     },
   };
   return {
@@ -106,6 +114,7 @@ export function createPlanningTodoFixture(
     occurrenceMaterializer,
     todoCache,
     eventPublisher,
+    completionEffects,
     mutationLock,
     categoryOwnership,
     unitOfWork,
@@ -124,6 +133,6 @@ export function createPlanningTodoFixture(
 export function createPlanningTodo(userId = "planning-user", id = 1) {
   return TodoBuilder.create(userId)
     .withId(id)
-    .withStartDate(new Date("2026-05-15T00:00:00.000Z"))
+    .withStartDate(Temporal.PlainDate.from("2026-05-15"))
     .build();
 }

@@ -11,16 +11,10 @@ import { ScheduledTodoReaderPort } from "./application/ports/scheduled-todo.read
 import { SunTimeProviderPort } from "./application/ports/sun-time-provider.port.js";
 import { WeatherForecastCachePort } from "./application/ports/weather-forecast-cache.port.js";
 import { WeatherForecastProviderPort } from "./application/ports/weather-forecast-provider.port.js";
-import {
-  WEATHER_FORECAST_READER,
-  WeatherForecastReaderPort,
-} from "./application/ports/weather-forecast.reader.port.js";
+import { WeatherForecastReaderPort } from "./application/ports/weather-forecast.reader.port.js";
 import { WeatherReportCachePort } from "./application/ports/weather-report-cache.port.js";
 import { WeatherReportProviderPort } from "./application/ports/weather-report-provider.port.js";
-import {
-  WEATHER_REPORT_READER,
-  WeatherReportReaderPort,
-} from "./application/ports/weather-report.reader.port.js";
+import { WeatherReportReaderPort } from "./application/ports/weather-report.reader.port.js";
 import { GetWeatherConditionsUseCase } from "./application/use-cases/get-weather-conditions.use-case.js";
 import { GetWeatherForecastUseCase } from "./application/use-cases/get-weather-forecast.use-case.js";
 import { GetWeatherReportUseCase } from "./application/use-cases/get-weather-report.use-case.js";
@@ -30,13 +24,13 @@ import { AirkoreaAirQualityAdapter } from "./infrastructure/adapters/airkorea-ai
 import { KasiSunTimeAdapter } from "./infrastructure/adapters/kasi-sun-time.adapter.js";
 import { KmaLifestyleIndexAdapter } from "./infrastructure/adapters/kma-lifestyle-index.adapter.js";
 import { KmaWeatherForecastAdapter } from "./infrastructure/adapters/kma-weather-forecast.adapter.js";
+import { PlanningScheduledTodoAdapter } from "./infrastructure/adapters/planning-scheduled-todo.adapter.js";
 import { WeatherKitAttributionAdapter } from "./infrastructure/adapters/weatherkit-attribution.adapter.js";
 import { WeatherKitReportAdapter } from "./infrastructure/adapters/weatherkit-report.adapter.js";
 import { WeatherKitTokenAdapter } from "./infrastructure/adapters/weatherkit-token.adapter.js";
 import { WeatherKitUsageMeterAdapter } from "./infrastructure/adapters/weatherkit-usage-meter.adapter.js";
 import { WeatherForecastCache } from "./infrastructure/cache/weather-forecast.cache.js";
 import { WeatherReportCache } from "./infrastructure/cache/weather-report.cache.js";
-import { DrizzleScheduledTodoReader } from "./infrastructure/persistence/drizzle-scheduled-todo.reader.js";
 
 export const WEATHER_FORECASTS_PROVIDERS = [
   { provide: WeatherForecastProviderPort, useClass: KmaWeatherForecastAdapter },
@@ -49,7 +43,7 @@ export const WEATHER_FORECASTS_PROVIDERS = [
   WeatherKitUsageMeterAdapter,
   { provide: WeatherReportProviderPort, useClass: WeatherKitReportAdapter },
   { provide: WeatherReportCachePort, useClass: WeatherReportCache },
-  { provide: ScheduledTodoReaderPort, useClass: DrizzleScheduledTodoReader },
+  { provide: ScheduledTodoReaderPort, useClass: PlanningScheduledTodoAdapter },
   provideUseCase(WeatherForecastReader, {
     weatherProvider: WeatherForecastProviderPort,
     weatherCache: WeatherForecastCachePort,
@@ -64,9 +58,6 @@ export const WEATHER_FORECASTS_PROVIDERS = [
   }),
   { provide: WeatherForecastReaderPort, useExisting: WeatherForecastReader },
   { provide: WeatherReportReaderPort, useExisting: WeatherReportReader },
-  // 소비 Context가 클래스 토큰으로 옮길 때까지 옛 Symbol 토큰이 같은 인스턴스를 가리킨다
-  { provide: WEATHER_FORECAST_READER, useExisting: WeatherForecastReaderPort },
-  { provide: WEATHER_REPORT_READER, useExisting: WeatherReportReaderPort },
   provideUseCase(GetWeatherForecastUseCase, {
     userLocationRepository: UserLocationRepositoryPort,
     forecastReader: WeatherForecastReader,

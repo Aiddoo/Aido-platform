@@ -1,7 +1,7 @@
 import {
   ENTITLEMENT_CACHE_TTL_MS,
   EntitlementCacheKey,
-} from "#api/modules/access/infrastructure/cache/entitlement/entitlement-cache.keyspace";
+} from "#api/modules/access/entitlements/infrastructure/cache/entitlement-cache.keyspace";
 import {
   IDENTITY_CACHE_TTL_MS,
   IdentityCacheKey,

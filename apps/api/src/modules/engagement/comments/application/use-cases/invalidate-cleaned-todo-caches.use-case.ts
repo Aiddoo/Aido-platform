@@ -1,3 +1,4 @@
+import { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
 import type { TodoViewCacheInvalidatorPort } from "#api/modules/planning/todos/planning-todos.public";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 
@@ -27,7 +28,7 @@ export class InvalidateCleanedTodoCachesUseCase {
       command.todoIds.map((todoId) => ({
         failureEvent: TodoCommentLogEvent.ACCOUNT_CLEANUP_CACHE_INVALIDATION_FAILED,
         context: { todoId },
-        run: () => todoViewCache.invalidateForTodo(todoId),
+        run: () => todoViewCache.invalidateForTodo(TodoId.reconstitute(todoId)),
       })),
     );
   }

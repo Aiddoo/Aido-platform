@@ -7,12 +7,10 @@ import {
   CurrentUser,
   type CurrentUserPayload,
 } from "#api/modules/identity/identity-auth-http.public";
-import {
-  ApiDoc,
-  ApiForbiddenError,
-  ApiSuccessResponse,
-  SWAGGER_TAGS,
-} from "#api/platform/http/swagger/index";
+import { SWAGGER_TAGS } from "#api/platform/http/swagger/constants/swagger.constant";
+import { ApiForbiddenError } from "#api/platform/http/swagger/decorators/api-error.decorator";
+import { ApiDoc } from "#api/platform/http/swagger/decorators/api-operation.decorator";
+import { ApiSuccessResponse } from "#api/platform/http/swagger/decorators/api-response.decorator";
 
 import { GetGrowthSummaryUseCase } from "../../../application/use-cases/get-growth-summary.use-case.js";
 import { GROWTH_METRIC_DEFINITIONS } from "../../../domain/growth-metrics.constants.js";

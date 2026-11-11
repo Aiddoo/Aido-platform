@@ -1,11 +1,11 @@
 import type { Provider } from "@nestjs/common";
+import type { ConfigType } from "@nestjs/config";
 
 import { UserBlockReaderPort } from "#api/modules/social/blocks/social-blocks.public";
 import {
   FollowReaderPort,
   FriendshipEstablisherPort,
 } from "#api/modules/social/friends/social-friends.public";
-import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { loggerFor, provideUseCase } from "#api/platform/di/provide-use-case";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
@@ -49,13 +49,14 @@ import { DrizzleInviteUserReader } from "./infrastructure/persistence/drizzle-in
 import { DrizzleInviteRepository } from "./infrastructure/persistence/drizzle-invite.repository.js";
 import { DrizzleRewardClaimRepository } from "./infrastructure/persistence/drizzle-reward-claim.repository.js";
 import { DrizzleRewardGrantRepository } from "./infrastructure/persistence/drizzle-reward-grant.repository.js";
+import { socialInvitesConfig } from "./social-invites.config.js";
 
 export const SOCIAL_INVITES_PROVIDERS = [
   {
     provide: InviteConfigPort,
-    inject: [TypedConfigService],
-    useFactory: (config: TypedConfigService): InviteConfigPort => ({
-      isEnabled: config.invite.enabled,
+    inject: [socialInvitesConfig.KEY],
+    useFactory: (config: ConfigType<typeof socialInvitesConfig>): InviteConfigPort => ({
+      isEnabled: config.enabled,
     }),
   },
   { provide: InviteRepositoryPort, useClass: DrizzleInviteRepository },

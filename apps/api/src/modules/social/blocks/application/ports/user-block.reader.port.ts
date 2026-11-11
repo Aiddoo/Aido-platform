@@ -1,5 +1,4 @@
-// 옛 Symbol 토큰. engagement가 클래스 토큰으로 옮길 때까지 UserBlockReaderPort의 같은 인스턴스 별칭이다
-export const USER_BLOCK_READER = Symbol("USER_BLOCK_READER");
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 /** 두 사용자 사이의 차단 상태. 어느 쪽이든 차단이 있으면 서로의 콘텐츠와 상호작용을 막는다. */
 export interface UserBlockRelation {
@@ -15,10 +14,10 @@ export interface UserBlockRelation {
  * 활성 UoW 안에서 부르면 같은 transaction의 연결로 읽는다.
  */
 export abstract class UserBlockReaderPort {
-  abstract findRelation(userId: string, otherUserId: string): Promise<UserBlockRelation>;
+  abstract findRelation(userId: UserId, otherUserId: UserId): Promise<UserBlockRelation>;
   /** candidateUserIds 중 viewerId와 어느 방향으로든 차단 관계인 사용자 ID. 한 번의 조회로 읽는다. */
   abstract findBlockedCounterpartIds(
-    viewerId: string,
-    candidateUserIds: readonly string[],
+    viewerId: UserId,
+    candidateUserIds: readonly UserId[],
   ): Promise<ReadonlySet<string>>;
 }

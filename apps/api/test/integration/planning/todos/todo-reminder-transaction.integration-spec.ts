@@ -16,15 +16,14 @@ import { PostgresMutationLockAdapter } from "#api/platform/database/postgres-mut
 import { todo, todoCategory, user as userTable } from "#api/platform/database/schema/index";
 import { JobQueueRegistry } from "#api/platform/jobs/job-queue.registry";
 import { PgBossJobQueueAdapter } from "#api/platform/jobs/pg-boss-job-queue.adapter";
-import { PgBossJobRuntimeAdapter } from "#api/platform/jobs/pg-boss-job-runtime.adapter";
 import type {
   DomainEventPublisherPort,
   PublishedDomainEvent,
 } from "#api/shared/application/ports/domain-event-publisher.port";
-import { parseDateOnly } from "#api/shared/domain/date/utils/parse";
-import { parseLocalDateTime } from "#api/shared/domain/date/utils/timezone";
+import { DateClock } from "#test/doubles/platform/date-clock";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
+import { wallClockInstant } from "#test/fixtures/clock.fixture";
 import { TodoCategoryFixture, TodoFixture, UserFixture } from "#test/fixtures/index";
 import { createDatabaseTransactionFixture, createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
@@ -34,7 +33,7 @@ const SEOUL = "Asia/Seoul";
 // 리마인더가 아직 미래에 있도록 실제 시각보다 넉넉히 뒤 날짜를 쓴다
 const FUTURE_DATE = "2099-03-10";
 
-class SwitchablePublisher implements Pick<DomainEventPublisherPort, "publish" | "publishAll"> {
+class SwitchablePublisher implements Pick<DomainEventPublisherPort, "publish"> {
   readonly published: PublishedDomainEvent[] = [];
   failsOnPublish = false;
 
@@ -44,15 +43,13 @@ class SwitchablePublisher implements Pick<DomainEventPublisherPort, "publish" | 
     }
     this.published.push(...events);
   }
-
-  async publishAll(): Promise<void> {}
 }
 
 describe("할 일 리마인더를 같은 트랜잭션에서 예약·취소한다 (실제 PostgreSQL·pg-boss)", () => {
   let database: TestDatabase;
   let client: TestDatabaseClient;
   let boss: PgBoss;
-  let runtime: PgBossJobRuntimeAdapter;
+  let jobQueue: PgBossJobQueueAdapter;
   let reminderAdapter: ReminderSchedulerAdapter;
   let publisher: SwitchablePublisher;
   let updateSchedule: UpdateTodoScheduleUseCase;
@@ -69,16 +66,18 @@ describe("할 일 리마인더를 같은 트랜잭션에서 예약·취소한다
     await migrator.stop({ graceful: true, timeout: 10_000, close: true });
     boss = new PgBoss({ connectionString, schema: SCHEMA, migrate: false, max: 3 });
     const { txHost, uow } = createDatabaseTransactionFixture(client);
-    runtime = new PgBossJobRuntimeAdapter(boss, txHost, { job: { shutdownTimeoutMs: 10_000 } });
-    await runtime.start();
+    jobQueue = new PgBossJobQueueAdapter(boss, txHost, new JobQueueRegistry(), {
+      shutdownTimeoutMs: 10_000,
+    });
+    await jobQueue.start();
     reminderAdapter = new ReminderSchedulerAdapter(
       new TodoReminderSchedulerAdapter(
-        new PgBossJobQueueAdapter(boss, txHost, new JobQueueRegistry()),
+        jobQueue,
         new FixedClock(Temporal.Instant.from("2026-11-10T00:00:00Z")),
       ),
     );
     publisher = new SwitchablePublisher();
-    const todoRepository = new DrizzleTodoRepository(txHost);
+    const todoRepository = new DrizzleTodoRepository(txHost, new DateClock());
     const todoReadRepository = new DrizzleTodoReadRepository(txHost);
     const mutationLock = new PostgresMutationLockAdapter(txHost);
     const todoCache = { invalidateFriendTodos: async () => undefined };
@@ -98,7 +97,6 @@ describe("할 일 리마인더를 같은 트랜잭션에서 예약·취소한다
         ownerTimezone: { findTimezone: async () => SEOUL },
       }),
       todoCache,
-      eventPublisher: publisher,
       logger: new SilentLogger(),
     });
     setCompleted = new SetTodoCompletedUseCase({
@@ -109,7 +107,7 @@ describe("할 일 리마인더를 같은 트랜잭션에서 예약·취소한다
       applyTodoEvents,
       mutationLock,
       todoCache,
-      eventPublisher: publisher,
+      completionEffects: { execute: async () => undefined },
       logger: new SilentLogger(),
     });
   });
@@ -136,7 +134,7 @@ describe("할 일 리마인더를 같은 트랜잭션에서 예약·취소한다
   });
 
   afterAll(async () => {
-    await runtime?.stop();
+    await jobQueue?.stop();
     await database?.stop();
   });
 
@@ -145,9 +143,9 @@ describe("할 일 리마인더를 같은 트랜잭션에서 예약·취소한다
       .insert(todo)
       .values({
         ...omit(TodoFixture.create({ userId, categoryId }), ["id"]),
-        startDate: parseDateOnly(FUTURE_DATE),
+        startDate: Temporal.PlainDate.from(FUTURE_DATE),
         scheduledLocalTime: scheduled ? "10:00" : null,
-        scheduledTime: scheduled ? parseLocalDateTime(FUTURE_DATE, "10:00", SEOUL) : null,
+        scheduledTime: scheduled ? wallClockInstant(FUTURE_DATE, "10:00", SEOUL) : null,
         isAllDay: !scheduled,
         completed: false,
       })
@@ -170,7 +168,7 @@ describe("할 일 리마인더를 같은 트랜잭션에서 예약·취소한다
       id: todoId,
       userId,
       schedule: {
-        startDate: parseDateOnly(FUTURE_DATE),
+        startDate: Temporal.PlainDate.from(FUTURE_DATE),
         endDate: null,
         scheduledTime: "10:30",
         isAllDay: false,
@@ -215,7 +213,11 @@ describe("할 일 리마인더를 같은 트랜잭션에서 예약·취소한다
     // Given
     const todoId = await seedTodo(true);
     await reminderAdapter.scheduleReminders([
-      { todoId, scheduledTime: parseLocalDateTime(FUTURE_DATE, "10:00", SEOUL), userId },
+      {
+        todoId,
+        scheduledTime: wallClockInstant(FUTURE_DATE, "10:00", SEOUL),
+        userId,
+      },
     ]);
     publisher.failsOnPublish = true;
 
@@ -238,7 +240,11 @@ describe("할 일 리마인더를 같은 트랜잭션에서 예약·취소한다
     // Given
     const todoId = await seedTodo(true);
     await reminderAdapter.scheduleReminders([
-      { todoId, scheduledTime: parseLocalDateTime(FUTURE_DATE, "10:00", SEOUL), userId },
+      {
+        todoId,
+        scheduledTime: wallClockInstant(FUTURE_DATE, "10:00", SEOUL),
+        userId,
+      },
     ]);
 
     // When

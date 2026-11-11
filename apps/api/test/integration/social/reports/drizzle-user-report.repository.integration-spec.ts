@@ -37,7 +37,10 @@ describe("DrizzleUserReportRepository (실제 PostgreSQL)", () => {
         id: USER_REPORT_FIXTURE_TARGET_USER_ID,
         userTag: USER_REPORT_FIXTURE_TARGET_USER_TAG,
       }),
-      UserFixture.create({ id: DELETED_USER_ID, deletedAt: new Date("2026-10-01T00:00:00Z") }),
+      UserFixture.create({
+        id: DELETED_USER_ID,
+        deletedAt: Temporal.Instant.from("2026-10-01T00:00:00Z"),
+      }),
       UserFixture.create({ id: LOCKED_USER_ID, status: "LOCKED" }),
     ]);
   });

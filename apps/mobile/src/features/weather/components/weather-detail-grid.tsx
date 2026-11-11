@@ -49,11 +49,9 @@ import { WeatherMeter } from './weather-meter';
 const LOADING_TILE_COUNT = 8;
 
 /** 구름 단계에 낮밤을 더해 안내 문구 키를 고른다. 흐림은 낮밤이 같다. */
-function getCloudCoverNoteKey({
-  cloudCover,
-  isDaylight,
-}: Pick<WeatherReport['current'], 'cloudCover' | 'isDaylight'>) {
-  return match(WeatherIndicatorPolicy.getCloudCoverLevel({ cloudCover }))
+function getCloudCoverNoteKey(current: WeatherReport['current']) {
+  const { isDaylight } = current;
+  return match(WeatherIndicatorPolicy.getCloudCoverLevel(current))
     .with('overcast', () => CLOUD_COVER_NOTE_KEYS.overcast)
     .with('mostlyCloudy', () =>
       isDaylight ? CLOUD_COVER_NOTE_KEYS.brokenDay : CLOUD_COVER_NOTE_KEYS.brokenNight,

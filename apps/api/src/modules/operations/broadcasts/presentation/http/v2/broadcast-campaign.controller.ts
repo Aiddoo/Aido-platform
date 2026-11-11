@@ -5,17 +5,17 @@ import { Throttle } from "@nestjs/throttler";
 
 import { Admin } from "#api/modules/identity/identity-auth-http.public";
 import { API_VERSION } from "#api/platform/http/api-versioning";
+import { SWAGGER_TAGS } from "#api/platform/http/swagger/constants/swagger.constant";
 import {
   ApiConflictError,
-  ApiDoc,
   ApiForbiddenError,
   ApiNotFoundError,
-  ApiSuccessResponse,
   ApiTooManyRequestsError,
   ApiUnauthorizedError,
-  SWAGGER_TAGS,
-} from "#api/platform/http/swagger/index";
-import { ThrottleByUser } from "#api/platform/throttle/index";
+} from "#api/platform/http/swagger/decorators/api-error.decorator";
+import { ApiDoc } from "#api/platform/http/swagger/decorators/api-operation.decorator";
+import { ApiSuccessResponse } from "#api/platform/http/swagger/decorators/api-response.decorator";
+import { ThrottleByUser } from "#api/platform/throttle/user-aware-throttler.guard";
 
 import { CreateBroadcastCampaignUseCase } from "../../../application/use-cases/create-broadcast-campaign.use-case.js";
 import { GetBroadcastCampaignUseCase } from "../../../application/use-cases/get-broadcast-campaign.use-case.js";

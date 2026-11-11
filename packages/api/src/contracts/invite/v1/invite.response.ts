@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { datetimeSchema, nullableDatetimeSchema } from "../../../common/datetime.js";
+import { entityIdSchema } from "../../../common/entity-id.js";
 import { REDEEM_OUTCOME } from "../../../vocabulary/invite.constants.js";
 import {
   inviteCodeFormatSchema,
@@ -45,7 +46,7 @@ export type InvitePreviewResponse = z.infer<typeof invitePreviewResponseSchema>;
 
 export const inviterSummarySchema = invitePreviewInviterSchema
   .extend({
-    userId: z.cuid().describe("초대한 사람 사용자 ID (CUID 25자)"),
+    userId: entityIdSchema.describe("초대한 사람 사용자 ID"),
     userTag: userTagSchema,
   })
   .describe("초대한 사람 요약 (환영 화면과 친구 화면 이동용)");
@@ -126,7 +127,7 @@ export type MyInviteResponse = z.infer<typeof myInviteResponseSchema>;
 
 export const invitedFriendResponseSchema = z
   .object({
-    userId: z.cuid().describe("초대받은 사람 사용자 ID (CUID 25자, 다음 페이지 cursor로 쓴다)"),
+    userId: entityIdSchema.describe("초대받은 사람 사용자 ID (다음 페이지 cursor로 쓴다)"),
     name: userNameSchema,
     userTag: userTagSchema,
     profileImage: profileImageSchema,

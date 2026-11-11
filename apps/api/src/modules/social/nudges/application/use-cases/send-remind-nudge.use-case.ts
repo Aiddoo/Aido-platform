@@ -56,7 +56,7 @@ export class SendRemindNudgeUseCase {
     if (senderId.equals(receiverId)) {
       throw cannotNudgeSelf();
     }
-    if (!(await followReader.isMutualFriend(senderId.value, receiverId.value))) {
+    if (!(await followReader.isMutualFriend(senderId, receiverId))) {
       throw nudgeTargetNotFriend(receiverId);
     }
     const message = command.message == null ? null : NudgeMessage.create(command.message);
@@ -90,7 +90,7 @@ export class SendRemindNudgeUseCase {
       await nudgeRepository.saveReminder(created);
       return {
         reminder: created,
-        senderName: await followReader.getUserDisplayName(senderId.value),
+        senderName: await followReader.getUserDisplayName(senderId),
       };
     });
 

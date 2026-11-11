@@ -16,14 +16,14 @@ export interface InboxNotification {
   readonly friendId: string | null;
   readonly nudgeId: number | null;
   readonly cheerId: number | null;
-  readonly notificationDate: Date | null;
+  readonly notificationDate: Temporal.PlainDate | null;
   readonly metadata: unknown;
-  readonly createdAt: Date;
-  readonly readAt: Date | null;
+  readonly createdAt: Temporal.Instant;
+  readonly readAt: Temporal.Instant | null;
   readonly actionType: NotificationActionType;
   readonly actionUrl: string | null;
   readonly campaignKey: string | null;
   readonly variantId: string | null;
   readonly purpose: (typeof NOTIFICATION_PURPOSES)[number];
-  readonly openedAt: Date | null;
+  readonly openedAt: Temporal.Instant | null;
 }

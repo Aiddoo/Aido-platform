@@ -1,5 +1,4 @@
 import type { invite as inviteTable } from "#api/platform/database/schema/index";
-import { instantFromDate, instantToDate } from "#api/shared/domain/time/instant";
 
 import { Invite } from "../../domain/invite.aggregate.js";
 
@@ -18,18 +17,9 @@ export const INVITE_COLUMNS = {
 } as const;
 
 export function toInvite(row: InviteRow): Invite {
-  return Invite.reconstitute({
-    ...row,
-    createdAt: instantFromDate(row.createdAt),
-    revokedAt: row.revokedAt == null ? null : instantFromDate(row.revokedAt),
-  });
+  return Invite.reconstitute(row);
 }
 
 export function toInviteRow(invite: Invite): InviteRow {
-  const { createdAt, revokedAt, ...primitives } = invite.toPrimitives();
-  return {
-    ...primitives,
-    createdAt: instantToDate(createdAt),
-    revokedAt: revokedAt == null ? null : instantToDate(revokedAt),
-  };
+  return invite.toPrimitives();
 }

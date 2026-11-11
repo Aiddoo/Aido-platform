@@ -9,10 +9,7 @@ import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
 import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 
-import {
-  TODO_COMMENT_ACCOUNT_CLEANUP,
-  TodoCommentAccountCleanupPort,
-} from "./application/ports/todo-comment-account-cleanup.port.js";
+import { TodoCommentAccountCleanupPort } from "./application/ports/todo-comment-account-cleanup.port.js";
 import { TodoCommentBlockReaderPort } from "./application/ports/todo-comment-block-reader.port.js";
 import { TodoCommentCursorCodecPort } from "./application/ports/todo-comment-cursor-codec.port.js";
 import { TodoCommentLikeRepositoryPort } from "./application/ports/todo-comment-like.repository.port.js";
@@ -49,7 +46,6 @@ export const ENGAGEMENT_COMMENTS_PROVIDERS = [
   { provide: TodoCommentNotificationPort, useClass: TodoCommentNotificationAdapter },
   { provide: TodoCommentBlockReaderPort, useClass: TodoCommentBlockReaderAdapter },
   { provide: TodoCommentAccountCleanupPort, useClass: TodoCommentAccountCleanupAdapter },
-  { provide: TODO_COMMENT_ACCOUNT_CLEANUP, useExisting: TodoCommentAccountCleanupPort },
   provideUseCase(GetTodoDetailsUseCase, {
     unitOfWork: UnitOfWorkPort,
     reader: TodoCommentReaderPort,

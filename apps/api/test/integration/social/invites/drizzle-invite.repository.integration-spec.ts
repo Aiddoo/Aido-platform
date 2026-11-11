@@ -6,6 +6,7 @@ import { isUniqueConstraintViolation } from "#api/platform/database/database-err
 import { user } from "#api/platform/database/schema/index";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { describeInviteRepositoryContract } from "#test/contracts/social/invite-repository.contract";
+import { DateClock } from "#test/doubles/platform/date-clock";
 import {
   createInviteFixture,
   INVITE_FIXTURE_INVITER_ID,
@@ -38,7 +39,7 @@ describe("DrizzleInviteRepository (실제 PostgreSQL)", () => {
 
   function createRepository(): DrizzleInviteRepository {
     const { txHost } = createDatabaseTransactionFixture(client);
-    return new DrizzleInviteRepository(txHost);
+    return new DrizzleInviteRepository(txHost, new DateClock());
   }
 
   describeInviteRepositoryContract(async () => createRepository());
@@ -63,7 +64,7 @@ describe("DrizzleInviteRepository (실제 PostgreSQL)", () => {
     await repository.add(invite);
     await client
       .update(user)
-      .set({ deletedAt: new Date("2028-02-28T04:00:00Z") })
+      .set({ deletedAt: Temporal.Instant.from("2028-02-28T04:00:00Z") })
       .where(eq(user.id, INVITE_FIXTURE_INVITER_ID));
 
     // When

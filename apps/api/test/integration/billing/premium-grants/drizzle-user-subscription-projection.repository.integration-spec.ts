@@ -2,8 +2,8 @@ import { eq } from "drizzle-orm";
 
 import { DrizzleUserSubscriptionProjectionRepository } from "#api/modules/billing/premium-grants/infrastructure/persistence/drizzle-user-subscription-projection.repository";
 import { user } from "#api/platform/database/schema/index";
-import { instantFromDate } from "#api/shared/domain/time/instant";
 import { describeUserSubscriptionProjectionRepositoryContract } from "#test/contracts/billing/user-subscription-projection-repository.contract";
+import { DateClock } from "#test/doubles/platform/date-clock";
 import { UserFixture } from "#test/fixtures/index";
 import { createDatabaseTransactionFixture } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
@@ -30,7 +30,7 @@ describe("DrizzleUserSubscriptionProjectionRepository (실제 PostgreSQL)", () =
   describeUserSubscriptionProjectionRepositoryContract(async () => {
     const { txHost } = createDatabaseTransactionFixture(client);
     return {
-      repository: new DrizzleUserSubscriptionProjectionRepository(txHost),
+      repository: new DrizzleUserSubscriptionProjectionRepository(txHost, new DateClock()),
       seedUser: async (input) => {
         seeded += 1;
         await client.insert(user).values(
@@ -39,11 +39,9 @@ describe("DrizzleUserSubscriptionProjectionRepository (실제 PostgreSQL)", () =
             email: `projection-${seeded}@example.com`,
             userTag: `PROJ${String(seeded).padStart(4, "0")}`,
             subscriptionStatus: input.subscriptionStatus,
-            subscriptionExpiresAt:
-              input.subscriptionExpiresAt == null
-                ? null
-                : new Date(input.subscriptionExpiresAt.epochMilliseconds),
-            deletedAt: input.deleted === true ? new Date() : null,
+            subscriptionExpiresAt: input.subscriptionExpiresAt ?? null,
+            deletedAt:
+              input.deleted === true ? Temporal.Instant.fromEpochMilliseconds(Date.now()) : null,
           }),
         );
       },
@@ -60,8 +58,7 @@ describe("DrizzleUserSubscriptionProjectionRepository (실제 PostgreSQL)", () =
         }
         return {
           subscriptionStatus: row.subscriptionStatus,
-          subscriptionExpiresAt:
-            row.subscriptionExpiresAt == null ? null : instantFromDate(row.subscriptionExpiresAt),
+          subscriptionExpiresAt: row.subscriptionExpiresAt,
         };
       },
     };

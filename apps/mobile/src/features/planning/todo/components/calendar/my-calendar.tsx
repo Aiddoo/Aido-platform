@@ -1,6 +1,7 @@
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { Box } from '@src/shared/ui';
 import { useQuery } from '@tanstack/react-query';
+import type { ComponentProps } from 'react';
 import { match } from 'ts-pattern';
 
 import { TodoRepeatPolicy } from '../../domains/todo-repeat.model';
@@ -11,7 +12,9 @@ import { useGetDailyCompletionsQueryOptions } from '../../queries/todo.queries';
 import { Calendar } from './calendar';
 import { RepeatHorizonHint } from './repeat-horizon-hint';
 
-export function MyCalendar() {
+export function MyCalendar({
+  shouldShowHint,
+}: Pick<ComponentProps<typeof RepeatHorizonHint>, 'shouldShowHint'>) {
   const [{ rangeStart, rangeEnd }] = useCalendarRange();
   const [viewMode] = useCalendarViewMode();
   const [selectedDateKey] = useFeedDateKey();
@@ -29,7 +32,7 @@ export function MyCalendar() {
     .with({ isError: true }, () => <Calendar.Error onRetry={() => query.refetch()} />)
     .with({ isHorizonHintVisible: true }, () => (
       <Box className="items-start">
-        <RepeatHorizonHint />
+        <RepeatHorizonHint shouldShowHint={shouldShowHint} />
       </Box>
     ))
     .otherwise(() => undefined);

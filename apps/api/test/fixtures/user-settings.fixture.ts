@@ -1,7 +1,6 @@
 import type { UserConsentRecordWithId } from "#api/modules/identity/preferences/application/ports/user-consent.repository.port";
 import type { UserPreferenceRecordWithId } from "#api/modules/identity/preferences/application/ports/user-preference.repository.port";
 import { ReadUserPreferencesUseCase } from "#api/modules/identity/preferences/application/use-cases/read-user-preferences.use-case";
-import { instantFromDate } from "#api/shared/domain/time/instant";
 import { InMemoryUserConsentRepository } from "#test/doubles/identity/in-memory-user-consent.repository";
 import { InMemoryUserPreferenceRepository } from "#test/doubles/identity/in-memory-user-preference.repository";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
@@ -17,7 +16,7 @@ import {
   StubUserSettingsCache,
 } from "#test/mocks/ports/user-settings.stub";
 
-export const SETTINGS_TIME = new Date("2026-01-16T09:00:00.000Z");
+export const SETTINGS_TIME = Temporal.Instant.from("2026-01-16T09:00:00.000Z");
 
 export function createUserSettingsFixture(
   input: {
@@ -90,6 +89,6 @@ export function createUserSettingsFixture(
     logger: new SilentLogger(),
     todoTimezoneRebase: new StubTodoTimezoneRebaseEnqueuer(),
     unitOfWork: new ImmediateUnitOfWork(),
-    clock: new FixedClock(instantFromDate(SETTINGS_TIME)),
+    clock: new FixedClock(SETTINGS_TIME),
   };
 }

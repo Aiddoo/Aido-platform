@@ -5,7 +5,7 @@ import {
 import { useTranslation } from '@src/shared/i18n';
 import { Box, SettingsListGroup, WhatsNewDuoIcon } from '@src/shared/ui';
 
-import { useHasUnseenRelease } from '../hooks/use-has-unseen-release';
+import { useUnseenCampaignReleaseId } from '../hooks/use-unseen-campaign-release-id';
 
 const RELEASES_PATHNAME = '/whats-new/releases';
 
@@ -14,7 +14,7 @@ export function WhatsNewMenuItem() {
   const { t } = useTranslation('whatsNew');
   const navigate = useMyPageMenuNavigate();
   const isSelected = useIsMyPageMenuItemSelected(RELEASES_PATHNAME);
-  const hasUnseenRelease = useHasUnseenRelease();
+  const hasUnseenRelease = useUnseenCampaignReleaseId() != null;
   const label = t('entry.mypage');
 
   return (

@@ -4,7 +4,7 @@ import type {
 } from "../../../src/modules/operations/admin-notices/application/ports/admin-notifier.port.js";
 import type { AdminNotice } from "../../../src/modules/operations/admin-notices/application/read-models/admin-notice.read-model.js";
 
-export const ADMIN_NOTIFIER_CONTRACT_SCENARIOS = [
+const ADMIN_NOTIFIER_CONTRACT_SCENARIOS = [
   "sent",
   "not-configured",
   "server-error",
@@ -29,7 +29,7 @@ export const CONTRACT_NOTICE: AdminNotice = {
 };
 
 /** 사용자 블록이 있는 구독 알림도 같은 계약을 지킨다. */
-export const CONTRACT_SUBSCRIPTION_NOTICE: AdminNotice = {
+const CONTRACT_SUBSCRIPTION_NOTICE: AdminNotice = {
   type: "subscription_event",
   user: {
     userId: "contract-private-user",

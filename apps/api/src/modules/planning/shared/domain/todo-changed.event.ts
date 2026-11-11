@@ -1,7 +1,7 @@
 import { toIsoString } from "#api/shared/domain/time/instant";
 
 // 다른 Context에 트랜잭션 안에서 보내는 할 일 사실. 옛 todo.* 이름(커밋 뒤 in-process)은 구독이 옮겨질 때까지 함께 나간다
-const TODO_CHANGE_EVENT_NAMES = [
+export const TODO_CHANGE_EVENT_NAMES = [
   "planning.todo.created",
   "planning.todo.updated",
   "planning.todo.completed",

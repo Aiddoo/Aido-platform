@@ -18,7 +18,7 @@ describe("스토어 갱신 유예 — 엔타이틀먼트가 끝나는 시각", (
     const endsAt = storeEntitlementEndsAt(store);
 
     // Then
-    expect(STORE_RENEWAL_GRACE_MS).toBe(3 * 60 * 60 * 1_000);
+    expect(STORE_RENEWAL_GRACE_MS).toBe(3 * 60 * 60 * 1000);
     expect(endsAt).toEqual(GRACE_AFTER_WAIT);
     expect(storeRenewalGraceEndsAt(EXPIRES_AT)).toEqual(GRACE_AFTER_WAIT);
   });

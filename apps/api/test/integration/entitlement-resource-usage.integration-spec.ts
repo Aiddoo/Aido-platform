@@ -2,18 +2,14 @@ import { ErrorCode } from "@aido/api/errors";
 import { PLAN_CATALOG } from "@aido/api/vocabulary";
 import { eq } from "drizzle-orm";
 
-import { GetEntitlementSnapshotUseCase } from "#api/modules/identity/users/application/use-cases/get-entitlement-snapshot.use-case";
+import { GetEntitlementSnapshotUseCase } from "#api/modules/access/entitlements/application/use-cases/get-entitlement-snapshot.use-case";
 import { CreateTodoCategoryUseCase } from "#api/modules/planning/categories/application/use-cases/create-todo-category.use-case";
-import {
-  TODO_CATEGORY_COUNT_READER,
-  type TodoCategoryCountReaderPort,
-} from "#api/modules/planning/categories/planning-categories.public";
+import { TodoCategoryCountReaderPort } from "#api/modules/planning/categories/planning-categories.public";
 import { SendFriendRequestUseCase } from "#api/modules/social/friends/application/use-cases/send-friend-request.use-case";
-import {
-  FRIEND_COUNT_READER,
-  type FriendCountReaderPort,
-} from "#api/modules/social/friends/social-friends.public";
+import { FriendCountReaderPort } from "#api/modules/social/friends/social-friends.public";
 import { follow, resourceBonus, todoCategory, user } from "#api/platform/database/schema/index";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { instantFromDate } from "#api/shared/domain/time/instant";
 import { FollowFixture, UserFixture } from "#test/fixtures/index";
 
 import {
@@ -35,8 +31,8 @@ describe("권한 스냅샷의 친구·카테고리 개수는 한도 검사와 �
 
   beforeAll(async () => {
     context = await createE2eApp();
-    categoryCountReader = context.module.get(TODO_CATEGORY_COUNT_READER);
-    friendCountReader = context.module.get(FRIEND_COUNT_READER);
+    categoryCountReader = context.module.get(TodoCategoryCountReaderPort);
+    friendCountReader = context.module.get(FriendCountReaderPort);
     snapshot = context.module.get(GetEntitlementSnapshotUseCase);
   });
 
@@ -44,7 +40,10 @@ describe("권한 스냅샷의 친구·카테고리 개수는 한도 검사와 �
     await context.reset();
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(AT);
-    const owner = UserFixture.create({ createdAt: AT, updatedAt: AT });
+    const owner = UserFixture.create({
+      createdAt: instantFromDate(AT),
+      updatedAt: instantFromDate(AT),
+    });
     await context.testDatabase.getClient().insert(user).values(owner);
     userId = owner.id;
   });
@@ -66,6 +65,7 @@ describe("권한 스냅샷의 친구·카테고리 개수는 한도 검사와 �
           userId: ownerId,
           name: `카테고리 ${index}`,
           color: "#FFB3B3",
+          updatedAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
           sortOrder: index,
         })),
       );
@@ -94,7 +94,7 @@ describe("권한 스냅샷의 친구·카테고리 개수는 한도 검사와 �
   }
 
   function readSnapshot() {
-    return snapshot.execute({ userId, timezone: "Asia/Seoul" });
+    return snapshot.execute({ userId, timeZone: "Asia/Seoul" });
   }
 
   it("카테고리 개수는 다른 사용자 카테고리를 세지 않고, 한도에 닿으면 스냅샷과 만들기 거절이 같은 0을 말한다", async () => {
@@ -105,7 +105,7 @@ describe("권한 스냅샷의 친구·카테고리 개수는 한도 검사와 �
     await insertCategories(userId, FREE_CATEGORY_LIMIT);
 
     // When
-    const count = await categoryCountReader.countCategories(userId);
+    const count = await categoryCountReader.countCategories(UserId.reconstitute(userId));
     const { features } = await readSnapshot();
     const creation = context.module
       .get(CreateTodoCategoryUseCase)
@@ -130,7 +130,7 @@ describe("권한 스냅샷의 친구·카테고리 개수는 한도 검사와 �
     const { target } = await insertFriends(FREE_FRIEND_LIMIT);
 
     // When
-    const count = await friendCountReader.countCurrentFriends(userId);
+    const count = await friendCountReader.countCurrentFriends(UserId.reconstitute(userId));
     const { features } = await readSnapshot();
     const request = context.module
       .get(SendFriendRequestUseCase)

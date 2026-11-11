@@ -11,9 +11,9 @@ import { DomainException } from "#api/shared/domain/exceptions/domain.exception"
 import { TodoSchedule } from "./todo-schedule.vo.js";
 
 describe("TodoSchedule — 일정 값 객체", () => {
-  const START = new Date("2026-03-01");
+  const START = Temporal.PlainDate.from("2026-03-01");
   const LOCAL = "06:00";
-  const TIME = new Date("2026-03-01T06:00:00.000Z");
+  const TIME = Temporal.Instant.from("2026-03-01T06:00:00.000Z");
   const ZONE = "UTC";
 
   it.each([
@@ -82,28 +82,31 @@ describe("TodoSchedule — 일정 값 객체", () => {
       isAllDay: true,
     });
     // When
-    const patched = legacy.patch({ startDate: new Date("2026-03-02") }, ZONE);
+    const patched = legacy.patch({ startDate: Temporal.PlainDate.from("2026-03-02") }, ZONE);
     // Then
     expect(patched.isAllDay).toBe(true);
     expect(patched.scheduledLocalTime).toBe(LOCAL);
-    expect(patched.scheduledTime).toEqual(new Date("2026-03-02T06:00:00.000Z"));
+    expect(patched.scheduledTime).toEqual(Temporal.Instant.from("2026-03-02T06:00:00.000Z"));
   });
 
   it("날짜를 옮기면 고른 벽시계가 그대로이고 그 날짜의 오프셋으로 순간을 다시 만든다", () => {
     // Given
     const schedule = TodoSchedule.create({
-      startDate: new Date("2026-03-07"),
+      startDate: Temporal.PlainDate.from("2026-03-07"),
       endDate: null,
       scheduledLocalTime: "10:00",
       isAllDay: false,
       timezone: "America/New_York",
     });
     // When
-    const patched = schedule.patch({ startDate: new Date("2026-03-09") }, "America/New_York");
+    const patched = schedule.patch(
+      { startDate: Temporal.PlainDate.from("2026-03-09") },
+      "America/New_York",
+    );
     // Then
-    expect(schedule.scheduledTime).toEqual(new Date("2026-03-07T15:00:00.000Z"));
+    expect(schedule.scheduledTime).toEqual(Temporal.Instant.from("2026-03-07T15:00:00.000Z"));
     expect(patched.scheduledLocalTime).toBe("10:00");
-    expect(patched.scheduledTime).toEqual(new Date("2026-03-09T14:00:00.000Z"));
+    expect(patched.scheduledTime).toEqual(Temporal.Instant.from("2026-03-09T14:00:00.000Z"));
   });
 
   it("날짜·시간을 건드리지 않는 수정은 지난 시간대로 만든 순간을 바꾸지 않는다", () => {
@@ -116,7 +119,10 @@ describe("TodoSchedule — 일정 값 객체", () => {
       timezone: "Asia/Seoul",
     });
     // When
-    const patched = schedule.patch({ endDate: new Date("2026-03-02") }, "America/New_York");
+    const patched = schedule.patch(
+      { endDate: Temporal.PlainDate.from("2026-03-02") },
+      "America/New_York",
+    );
     // Then
     expect(patched.scheduledTime).toEqual(schedule.scheduledTime);
   });
@@ -142,22 +148,25 @@ describe("TodoSchedule — 일정 값 객체", () => {
       startDate: START,
       endDate: null,
       scheduledLocalTime: null,
-      scheduledTime: new Date("2026-03-01T01:00:00.000Z"),
+      scheduledTime: Temporal.Instant.from("2026-03-01T01:00:00.000Z"),
       isAllDay: false,
     });
     // When
-    const patched = legacy.patch({ startDate: new Date("2026-03-02") }, "Asia/Seoul");
+    const patched = legacy.patch(
+      { startDate: Temporal.PlainDate.from("2026-03-02") },
+      "Asia/Seoul",
+    );
     // Then
     expect(legacy.localTimeIn("Asia/Seoul")).toBe("10:00");
     expect(patched.scheduledLocalTime).toBe("10:00");
-    expect(patched.scheduledTime).toEqual(new Date("2026-03-02T01:00:00.000Z"));
+    expect(patched.scheduledTime).toEqual(Temporal.Instant.from("2026-03-02T01:00:00.000Z"));
   });
 
   it("유효한 일정으로 생성하면 각 필드를 그대로 노출한다", () => {
     // Given
-    const startDate = new Date("2026-03-01");
-    const endDate = new Date("2026-03-05");
-    const scheduledTime = new Date("2026-03-01T06:00:00.000Z");
+    const startDate = Temporal.PlainDate.from("2026-03-01");
+    const endDate = Temporal.PlainDate.from("2026-03-05");
+    const scheduledTime = Temporal.Instant.from("2026-03-01T06:00:00.000Z");
 
     // When
     const schedule = TodoSchedule.create({
@@ -178,7 +187,7 @@ describe("TodoSchedule — 일정 값 객체", () => {
   it("endDate가 null이면 단일 날짜 일정으로 생성된다", () => {
     // Given & When
     const schedule = TodoSchedule.create({
-      startDate: new Date("2026-03-01"),
+      startDate: Temporal.PlainDate.from("2026-03-01"),
       endDate: null,
       scheduledLocalTime: null,
       isAllDay: true,
@@ -194,8 +203,8 @@ describe("TodoSchedule — 일정 값 객체", () => {
     // Given - 역전된 날짜 범위
     const create = () =>
       TodoSchedule.create({
-        startDate: new Date("2026-03-05"),
-        endDate: new Date("2026-03-01"),
+        startDate: Temporal.PlainDate.from("2026-03-05"),
+        endDate: Temporal.PlainDate.from("2026-03-01"),
         scheduledLocalTime: null,
         isAllDay: true,
         timezone: "UTC",
@@ -213,50 +222,9 @@ describe("TodoSchedule — 일정 값 객체", () => {
     }
   });
 
-  it("getter가 반환한 Date를 변조해도 이후 조회 값은 영향받지 않는다 (방어 복사)", () => {
-    // Given
-    const schedule = TodoSchedule.create({
-      startDate: new Date("2026-03-01"),
-      endDate: new Date("2026-03-05"),
-      scheduledLocalTime: "06:00",
-      isAllDay: false,
-      timezone: "UTC",
-    });
-
-    // When - 반환된 Date를 임의로 변조
-    schedule.startDate.setFullYear(1999);
-    schedule.endDate?.setFullYear(1999);
-    schedule.scheduledTime?.setFullYear(1999);
-
-    // Then - 내부 값은 불변
-    expect(schedule.startDate).toEqual(new Date("2026-03-01"));
-    expect(schedule.endDate).toEqual(new Date("2026-03-05"));
-    expect(schedule.scheduledTime).toEqual(new Date("2026-03-01T06:00:00.000Z"));
-  });
-
-  it("toPrimitives()가 반환한 값을 변조해도 이후 조회 값은 영향받지 않는다 (방어 복사)", () => {
-    // Given
-    const schedule = TodoSchedule.create({
-      startDate: new Date("2026-03-01"),
-      endDate: new Date("2026-03-05"),
-      scheduledLocalTime: null,
-      isAllDay: true,
-      timezone: "UTC",
-    });
-
-    // When
-    const value = schedule.toPrimitives();
-    value.startDate.setFullYear(1999);
-    value.endDate?.setFullYear(1999);
-
-    // Then
-    expect(schedule.toPrimitives().startDate).toEqual(new Date("2026-03-01"));
-    expect(schedule.toPrimitives().endDate).toEqual(new Date("2026-03-05"));
-  });
-
   it("endDate와 startDate가 같으면 허용한다 (경계값)", () => {
     // Given & When
-    const sameDay = new Date("2026-03-01");
+    const sameDay = Temporal.PlainDate.from("2026-03-01");
     const schedule = TodoSchedule.create({
       startDate: sameDay,
       endDate: sameDay,
@@ -273,16 +241,16 @@ describe("TodoSchedule — 일정 값 객체", () => {
     it("역전된 날짜 범위도 재검증 없이 복원한다 (가드 도입 이전 데이터 보호)", () => {
       // Given - 불변식을 위반하는 저장 데이터
       const schedule = TodoSchedule.reconstitute({
-        startDate: new Date("2026-03-05"),
-        endDate: new Date("2026-03-01"),
+        startDate: Temporal.PlainDate.from("2026-03-05"),
+        endDate: Temporal.PlainDate.from("2026-03-01"),
         scheduledLocalTime: null,
         scheduledTime: null,
         isAllDay: true,
       });
 
       // When & Then - 복원은 항상 성공하고 값을 그대로 노출한다
-      expect(schedule.startDate).toEqual(new Date("2026-03-05"));
-      expect(schedule.endDate).toEqual(new Date("2026-03-01"));
+      expect(schedule.startDate).toEqual(Temporal.PlainDate.from("2026-03-05"));
+      expect(schedule.endDate).toEqual(Temporal.PlainDate.from("2026-03-01"));
     });
   });
 
@@ -290,20 +258,20 @@ describe("TodoSchedule — 일정 값 객체", () => {
     it("undefined 키는 기존 값을 유지하고 전달된 키만 머지한 새 VO를 반환한다", () => {
       // Given
       const base = TodoSchedule.create({
-        startDate: new Date("2026-03-01"),
-        endDate: new Date("2026-03-05"),
+        startDate: Temporal.PlainDate.from("2026-03-01"),
+        endDate: Temporal.PlainDate.from("2026-03-05"),
         scheduledLocalTime: null,
         isAllDay: true,
         timezone: "UTC",
       });
 
       // When - 시간/isAllDay만 패치
-      const scheduledTime = new Date("2026-03-01T06:00:00.000Z");
+      const scheduledTime = Temporal.Instant.from("2026-03-01T06:00:00.000Z");
       const patched = base.patch({ scheduledLocalTime: "06:00", isAllDay: false }, "UTC");
 
       // Then - 날짜는 유지, 시간·종일 여부만 변경 (원본 VO는 불변)
-      expect(patched.startDate).toEqual(new Date("2026-03-01"));
-      expect(patched.endDate).toEqual(new Date("2026-03-05"));
+      expect(patched.startDate).toEqual(Temporal.PlainDate.from("2026-03-01"));
+      expect(patched.endDate).toEqual(Temporal.PlainDate.from("2026-03-05"));
       expect(patched.scheduledTime).toEqual(scheduledTime);
       expect(patched.isAllDay).toBe(false);
       expect(base.scheduledTime).toBeNull();
@@ -313,8 +281,8 @@ describe("TodoSchedule — 일정 값 객체", () => {
     it("endDate: null 패치는 종료 날짜 제거로 반영된다 (undefined와 구분)", () => {
       // Given
       const base = TodoSchedule.create({
-        startDate: new Date("2026-03-01"),
-        endDate: new Date("2026-03-05"),
+        startDate: Temporal.PlainDate.from("2026-03-01"),
+        endDate: Temporal.PlainDate.from("2026-03-05"),
         scheduledLocalTime: null,
         isAllDay: true,
         timezone: "UTC",
@@ -330,13 +298,13 @@ describe("TodoSchedule — 일정 값 객체", () => {
     it("날짜를 건드리는 패치는 머지 결과를 재검증해 역전이면 DomainException(SYS_0002)을 던진다", () => {
       // Given - startDate가 2026-03-01인 일정
       const base = TodoSchedule.create({
-        startDate: new Date("2026-03-01"),
+        startDate: Temporal.PlainDate.from("2026-03-01"),
         endDate: null,
         scheduledLocalTime: null,
         isAllDay: true,
         timezone: "UTC",
       });
-      const patch = () => base.patch({ endDate: new Date("2026-02-20") }, "UTC");
+      const patch = () => base.patch({ endDate: Temporal.PlainDate.from("2026-02-20") }, "UTC");
 
       // When & Then - 단일 필드 패치도 교차 검증
       expect(patch).toThrow(DomainException);
@@ -352,8 +320,8 @@ describe("TodoSchedule — 일정 값 객체", () => {
     it("시간만 바꾸는 패치는 재검증하지 않아 위반 상태의 기존 날짜가 살아남는다 (기존 API 동작 보존)", () => {
       // Given - 가드 도입 이전에 저장된 역전 날짜 데이터
       const legacyViolating = TodoSchedule.reconstitute({
-        startDate: new Date("2026-03-05"),
-        endDate: new Date("2026-03-01"),
+        startDate: Temporal.PlainDate.from("2026-03-05"),
+        endDate: Temporal.PlainDate.from("2026-03-01"),
         scheduledLocalTime: null,
         scheduledTime: null,
         isAllDay: true,
@@ -366,52 +334,9 @@ describe("TodoSchedule — 일정 값 객체", () => {
       );
 
       // Then - 실패 없이 위반 날짜가 그대로 유지된다
-      expect(patched.startDate).toEqual(new Date("2026-03-05"));
-      expect(patched.endDate).toEqual(new Date("2026-03-01"));
+      expect(patched.startDate).toEqual(Temporal.PlainDate.from("2026-03-05"));
+      expect(patched.endDate).toEqual(Temporal.PlainDate.from("2026-03-01"));
       expect(patched.isAllDay).toBe(false);
     });
-  });
-});
-
-describe("TodoSchedule 입력 상태 보호", () => {
-  it("입력 Date 변경은 복원된 일정에 영향을 주지 않는다", () => {
-    // Given
-    const startDate = new Date("2026-03-01");
-    const endDate = new Date("2026-03-02");
-    const scheduledTime = new Date("2026-03-01T09:00:00Z");
-    const schedule = TodoSchedule.reconstitute({
-      startDate,
-      endDate,
-      scheduledLocalTime: "09:00",
-      scheduledTime,
-      isAllDay: false,
-    });
-    // When
-    startDate.setUTCFullYear(2030);
-    endDate.setUTCFullYear(2031);
-    scheduledTime.setUTCFullYear(2032);
-    // Then
-    expect(schedule.startDate).toEqual(new Date("2026-03-01"));
-    expect(schedule.endDate).toEqual(new Date("2026-03-02"));
-    expect(schedule.scheduledTime).toEqual(new Date("2026-03-01T09:00:00Z"));
-  });
-
-  it("입력 Date 변경은 검증된 일정에 영향을 주지 않는다", () => {
-    // Given
-    const startDate = new Date("2026-03-01");
-    const endDate = new Date("2026-03-02");
-    const schedule = TodoSchedule.create({
-      startDate,
-      endDate,
-      scheduledLocalTime: null,
-      isAllDay: true,
-      timezone: "UTC",
-    });
-    // When
-    startDate.setUTCFullYear(2030);
-    endDate.setUTCFullYear(2031);
-    // Then
-    expect(schedule.startDate).toEqual(new Date("2026-03-01"));
-    expect(schedule.endDate).toEqual(new Date("2026-03-02"));
   });
 });

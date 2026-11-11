@@ -1,4 +1,4 @@
-import { cacheKey, cachePattern } from "#api/platform/cache/keyspace/cache-key";
+import { cacheKey } from "#api/platform/cache/keyspace/cache-key";
 
 export const WEATHER_CACHE_TTL_MS = {
   FORECAST: 3 * 60 * 60_000,
@@ -23,8 +23,4 @@ export const WeatherCacheKey = {
     cacheKey("weather", "forecast-failure", String(gridX), String(gridY)),
   conditions: (gridX: number, gridY: number, localDate: string) =>
     cacheKey("weather", "conditions", String(gridX), String(gridY), localDate),
-  conditionsPattern: (gridX: number, gridY: number) =>
-    cachePattern("weather", "conditions", String(gridX), String(gridY)),
-  forecastPattern: (gridX: number, gridY: number) =>
-    cachePattern("weather", "forecast", String(gridX), String(gridY)),
 } as const;

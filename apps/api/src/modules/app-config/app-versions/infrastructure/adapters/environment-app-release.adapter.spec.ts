@@ -7,7 +7,7 @@ interface AppVersionConfig {
 }
 
 function createAdapter(appVersion: AppVersionConfig) {
-  return new EnvironmentAppReleaseAdapter({ appVersion });
+  return new EnvironmentAppReleaseAdapter(appVersion);
 }
 
 describe("EnvironmentAppReleaseAdapter — 환경 설정의 최신 앱 버전", () => {

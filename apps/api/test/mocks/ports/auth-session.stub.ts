@@ -6,6 +6,8 @@ import type {
   TokenPair,
 } from "#api/modules/identity/auth/application/ports/auth-crypto.port";
 import type { SessionPushDeviceReleaserPort } from "#api/modules/identity/auth/application/ports/session-push-device-releaser.port";
+import type { SessionId } from "#api/modules/identity/auth/domain/session-id.vo";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 export class StubAuthSessionCache implements Pick<AuthCachePort, "invalidateSession"> {
   readonly sessionIds: Set<string>;
@@ -14,8 +16,8 @@ export class StubAuthSessionCache implements Pick<AuthCachePort, "invalidateSess
     this.sessionIds = new Set(sessionIds);
   }
 
-  async invalidateSession(sessionId: string): Promise<void> {
-    this.sessionIds.delete(sessionId);
+  async invalidateSession(sessionId: SessionId): Promise<void> {
+    this.sessionIds.delete(sessionId.value);
   }
 }
 
@@ -23,8 +25,8 @@ export class StubAuthSessionCache implements Pick<AuthCachePort, "invalidateSess
 export class StubSessionPushDeviceReleaser implements SessionPushDeviceReleaserPort {
   readonly releasedSessionIds: string[] = [];
 
-  async releaseSessions(sessionIds: readonly string[]): Promise<void> {
-    this.releasedSessionIds.push(...sessionIds);
+  async releaseSessions(sessionIds: readonly SessionId[]): Promise<void> {
+    this.releasedSessionIds.push(...sessionIds.map((sessionId) => sessionId.value));
   }
 }
 
@@ -52,17 +54,24 @@ export class StubAuthTokenIssuer implements Pick<
   }
 
   async generateTokenPair(
-    userId: string,
+    userId: UserId,
     email: string,
-    sessionId: string,
+    sessionId: SessionId,
     role: UserRole,
     tokenFamily?: string,
     tokenVersion?: number,
   ): Promise<TokenPair> {
-    this.issued.push({ userId, email, sessionId, role, tokenFamily, tokenVersion });
+    this.issued.push({
+      userId: userId.value,
+      email,
+      sessionId: sessionId.value,
+      role,
+      tokenFamily,
+      tokenVersion,
+    });
     return {
-      accessToken: `access:${sessionId}:${tokenVersion}`,
-      refreshToken: `refresh:${sessionId}:${tokenVersion}`,
+      accessToken: `access:${sessionId.value}:${tokenVersion}`,
+      refreshToken: `refresh:${sessionId.value}:${tokenVersion}`,
       expiresIn: 900,
     };
   }

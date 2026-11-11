@@ -1,3 +1,4 @@
+import { ApiError } from '@src/core/errors/api-error';
 import { err, ok } from '@src/core/errors/result';
 import { createStoreReviewRepository } from '@src/features/device/store-review/apis/store-review.repository';
 import '@src/shared/i18n/init';
@@ -12,14 +13,17 @@ import {
 } from '@src/shared/__tests__';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { useMutation } from '@tanstack/react-query';
-import { act } from '@testing-library/react-native';
+import { act, screen } from '@testing-library/react-native';
 import { AppState } from 'react-native';
 
 import { createParentTodo } from '../__tests__/sub-todo.fixtures';
 import { createTodoApiError, createTodoDto } from '../__tests__/todo.fixtures';
 import { TODO_QUERY_KEYS } from '../constants/todo-query-keys';
 import type { Todo, TodoListResult } from '../domains/todo.model';
-import { useToggleTodoMutationOptions } from './todo.mutations';
+import {
+  useToggleTodoMutationOptions,
+  useUpdateTodoScheduleMutationOptions,
+} from './todo.mutations';
 
 const TODAY = '2026-10-27';
 const YESTERDAY = '2026-10-26';
@@ -275,5 +279,40 @@ describe('useToggleTodoMutationOptions settle', () => {
 
     // Then
     expect(invalidatedKeys()).toContainEqual(['achievement', 'weekly-list', { year: 2026 }]);
+  });
+});
+
+describe('useUpdateTodoScheduleMutationOptions 반복 상한', () => {
+  it('이후 회차까지 옮기다 반복 상한에 걸리면 서버가 보낸 한도로 안내한다', async () => {
+    // Given
+    const httpClient = createHttpClientStub();
+    httpClient.patch.mockResolvedValue(
+      err(new ApiError('TODO_0842', '서버 문구', 403, { limit: 7, activeCount: 7 })),
+    );
+    const current: { value: ReturnType<typeof useUpdateSchedule> | null } = { value: null };
+    function useUpdateSchedule() {
+      return useMutation(useUpdateTodoScheduleMutationOptions());
+    }
+    function Probe() {
+      current.value = useUpdateSchedule();
+      return null;
+    }
+    await renderUi(<Probe />, { di: { httpClient } });
+
+    // When
+    await act(async () => {
+      await current.value
+        ?.mutateAsync({
+          todoId: 1,
+          input: { startDate: TODAY },
+          scope: 'THIS_AND_FOLLOWING',
+        })
+        .catch(() => undefined);
+    });
+
+    // Then
+    expect(await screen.findAllByText('반복 할 일은 최대 7개까지 만들 수 있어요')).not.toHaveLength(
+      0,
+    );
   });
 });
