@@ -5,7 +5,6 @@ import type { NotificationType } from '@src/features/notification/domains/notifi
 import { useForegroundPushPresentation } from '@src/features/notification/hooks/use-foreground-push-presentation';
 import { useForegroundPushSync } from '@src/features/notification/hooks/use-foreground-push-sync';
 import { useNotificationBadgeSync } from '@src/features/notification/hooks/use-notification-badge-sync';
-import { usePushDeviceReleaseFlush } from '@src/features/notification/hooks/use-push-device-release-flush';
 import { usePushDeviceSync } from '@src/features/notification/hooks/use-push-device-sync';
 import { useRegisterMarketingNotificationCategory } from '@src/features/notification/hooks/use-register-marketing-notification-category';
 import { useTimezoneChangeNotice } from '@src/features/notification/hooks/use-timezone-change-notice';
@@ -41,7 +40,6 @@ export function NotificationProvider({ children }: PropsWithChildren) {
     deviceTimeZone: currentTimeZone,
     onReported: markReported,
   });
-  usePushDeviceReleaseFlush(status);
   useTimezoneChangeNotice({ accountId, reportCount });
   useNotificationBadgeSync(status);
 

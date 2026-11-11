@@ -97,6 +97,7 @@ describe('usePushDeviceSync', () => {
       emitPushTap: () => responseListener?.(),
       appLifecycle,
       removeTokenListener,
+      pushRegistrationService,
       emitAppState: appLifecycle.emit,
       emitTokenChange: () => tokenListener?.(),
     };
@@ -130,6 +131,7 @@ describe('usePushDeviceSync', () => {
 
     // When
     await act(async () => {
+      emitAppState('background');
       emitAppState('active');
       emitAppState('inactive');
       emitAppState('active');
@@ -148,6 +150,7 @@ describe('usePushDeviceSync', () => {
 
     // When
     await act(async () => {
+      emitAppState('background');
       emitAppState('active');
       await jest.advanceTimersByTimeAsync(1_000);
     });
@@ -163,6 +166,7 @@ describe('usePushDeviceSync', () => {
 
     // When
     await act(async () => {
+      emitAppState('background');
       emitAppState('active');
       await jest.advanceTimersByTimeAsync(1_000);
     });
@@ -210,6 +214,7 @@ describe('usePushDeviceSync', () => {
 
     // When
     await act(async () => {
+      emitAppState('background');
       emitAppState('active');
       await jest.advanceTimersByTimeAsync(1_000);
     });
@@ -295,10 +300,29 @@ describe('usePushDeviceSync', () => {
     );
   });
 
+  it('로그아웃 상태면 켤 때와 앱이 앞으로 올 때 끝난 세션의 해제를 다시 보내고 보고하지 않는다', async () => {
+    // Given
+    const { pushRegistrationService, httpClient, rerender, emitAppState } = await setup('loading');
+    const flushRelease = jest.spyOn(pushRegistrationService, 'flushRelease');
+
+    // When
+    await rerender({ status: 'unauthenticated' });
+    await act(async () => {
+      emitAppState('background');
+      emitAppState('active');
+      await jest.advanceTimersByTimeAsync(1_000);
+    });
+
+    // Then
+    expect(flushRelease).toHaveBeenCalledTimes(2);
+    expect(httpClient.put).not.toHaveBeenCalled();
+  });
+
   it('언마운트하면 모든 구독을 해제하고 기다리던 보고도 보내지 않는다', async () => {
     // Given
     const { gateway, unmount, emitAppState, appLifecycle, removeTokenListener } = await setup();
     gateway.getPermission.mockClear();
+    emitAppState('background');
     emitAppState('active');
 
     // When
