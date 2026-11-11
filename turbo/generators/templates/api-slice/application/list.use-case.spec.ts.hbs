@@ -1,0 +1,36 @@
+import { InMemory{{pascalCase aggregate}}Repository } from "#test/doubles/{{context}}/in-memory-{{aggregate}}.repository";
+import {
+  create{{pascalCase aggregate}}Fixture,
+  {{constantCase aggregate}}_FIXTURE_NOW,
+  {{constantCase aggregate}}_FIXTURE_USER_ID,
+} from "#test/fixtures/{{context}}/{{aggregate}}.fixture";
+
+import { List{{pascalCase slice}}UseCase } from "./list-{{slice}}.use-case.js";
+
+describe("List{{pascalCase slice}}UseCase — {{slice}} 목록", () => {
+  it("size보다 많으면 다음 커서를 주고 그 커서로 나머지를 이어서 준다", async () => {
+    // Given
+    const {{camelCase aggregate}}Repository = new InMemory{{pascalCase aggregate}}Repository();
+    const ids = [{{#if isSerial}}1, 2, 3{{else}}"c000000000000000000000001", "c000000000000000000000002", "c000000000000000000000003"{{/if}}];
+    for (const [index, id] of ids.entries()) {
+      await {{camelCase aggregate}}Repository.save(
+        create{{pascalCase aggregate}}Fixture({ id, createdAt: {{constantCase aggregate}}_FIXTURE_NOW.add({ seconds: index }) }),
+      );
+    }
+    const useCase = new List{{pascalCase slice}}UseCase({ {{camelCase aggregate}}Repository });
+
+    // When
+    const firstPage = await useCase.execute({ userId: {{constantCase aggregate}}_FIXTURE_USER_ID, size: 2 });
+    const secondPage = await useCase.execute({
+      userId: {{constantCase aggregate}}_FIXTURE_USER_ID,
+      size: 2,
+      cursor: firstPage.pagination.nextCursor ?? undefined,
+    });
+
+    // Then
+    expect(firstPage.items.map((item) => item.id.value)).toEqual([ids[2], ids[1]]);
+    expect(firstPage.pagination).toEqual({ nextCursor: ids[1], hasNext: true, size: 2 });
+    expect(secondPage.items.map((item) => item.id.value)).toEqual([ids[0]]);
+    expect(secondPage.pagination.hasNext).toBe(false);
+  });
+});

@@ -1,17 +1,25 @@
+import '@src/shared/i18n/init';
+import { ApiError } from '@src/core/errors/api-error';
+import { err, ok } from '@src/core/errors/result';
 import {
   createAnalyticsStub,
   createHapticsGatewayStub,
   createHttpClientStub,
+  createPendingResponse,
   createTestQueryClient,
   renderUi,
 } from '@src/shared/__tests__';
 import { NetworkError } from '@src/shared/errors/infra-error';
 import { onlineManager, useMutation } from '@tanstack/react-query';
-import { screen } from '@testing-library/react-native';
+import { screen, waitFor } from '@testing-library/react-native';
 
 import { createTodoCategoryDto } from '../__tests__/todo-category.fixtures';
 import { TODO_CATEGORY_QUERY_KEYS } from '../constants/todo-category-query-keys';
-import type { TodoCategoriesResult } from '../domains/todo-category.model';
+import type {
+  TodoCategoriesResult,
+  TodoCategoryDeletionRequest,
+} from '../domains/todo-category.model';
+import { changeCachedCategoryTodoCount } from './todo-category-cache';
 import {
   useCreateTodoCategoryMutationOptions,
   useDeleteTodoCategoryMutationOptions,
@@ -19,8 +27,12 @@ import {
 } from './todo-category.mutations';
 
 const CATEGORIES: TodoCategoriesResult = {
-  categories: [{ id: 1, name: '기본', color: '#3B82F6', sortOrder: 0, todoCount: 2 }],
+  categories: [
+    { id: 1, name: '기본', color: '#3B82F6', sortOrder: 0, todoCount: 2 },
+    { id: 2, name: '업무', color: '#EF4444', sortOrder: 1, todoCount: 0 },
+  ],
 };
+const MOVE_TO_WORK: TodoCategoryDeletionRequest = { todoHandling: 'move', moveToCategoryId: 2 };
 
 async function renderMutations() {
   const httpClient = createHttpClientStub();
@@ -55,11 +67,13 @@ async function renderMutations() {
   return {
     httpClient,
     analytics,
+    queryClient,
     cached: () => queryClient.getQueryData<TodoCategoriesResult>(TODO_CATEGORY_QUERY_KEYS.list()),
     create: (input: { name: string; color: string }) => actions.create?.mutateAsync(input),
     update: (id: number, input: { name: string; color?: string }) =>
       actions.update?.mutateAsync({ id, input }),
-    remove: (id: number) => actions.remove?.mutateAsync({ id }),
+    remove: (id: number, deletion: TodoCategoryDeletionRequest = MOVE_TO_WORK) =>
+      actions.remove?.mutateAsync({ id, deletion }),
   };
 }
 
@@ -99,7 +113,7 @@ describe('카테고리 저장', () => {
     expect(cached()).toEqual(CATEGORIES);
   });
 
-  it('오프라인에서 지우기는 기다리지 않고 바로 실패해 목록을 되돌린다', async () => {
+  it('오프라인에서 지우기는 기다리지 않고 바로 실패하고 목록은 그대로다', async () => {
     // Given
     const { httpClient, cached, remove } = await renderMutations();
     httpClient.delete.mockRejectedValue(new NetworkError());
@@ -142,5 +156,89 @@ describe('카테고리 고치기 지표', () => {
 
     // Then
     expect(analytics.trackEvent).toHaveBeenCalledWith('category_updated', { field: 'color' });
+  });
+});
+
+describe('카테고리 지우기', () => {
+  it('지우는 동안 목록에서 미리 빼지 않는다', async () => {
+    // Given
+    const { httpClient, cached, remove } = await renderMutations();
+    const pendingDelete = createPendingResponse(ok({ message: '삭제' }));
+    httpClient.delete.mockReturnValue(pendingDelete.response);
+
+    // When
+    const result = remove(1);
+
+    // Then
+    expect(cached()).toEqual(CATEGORIES);
+    pendingDelete.settle();
+    await result;
+  });
+
+  it('옮기면 응답으로 목록을 바로 고치고, 옮긴 곳 이름과 개수로 알리고, 처리 방식과 개수 구간을 남긴다', async () => {
+    // Given
+    const { httpClient, analytics, cached, remove } = await renderMutations();
+    httpClient.delete.mockResolvedValue({
+      ok: true,
+      value: {
+        message: '삭제',
+        result: { todoHandling: 'move', todoCount: 12, seriesCount: 1, moveToCategoryId: 2 },
+      },
+    });
+
+    // When
+    await remove(1);
+
+    // Then
+    // 업무 0개 + 옮긴 12개
+    expect(cached()?.categories).toEqual([{ ...CATEGORIES.categories[1], todoCount: 12 }]);
+    expect(await screen.findAllByText('할 일 12개를 ‘업무’ 카테고리로 옮겼어요')).not.toHaveLength(
+      0,
+    );
+    expect(analytics.trackEvent).toHaveBeenCalledWith('category_deleted', {
+      todo_handling: 'move',
+      todo_count_bucket: '10_49',
+    });
+  });
+
+  it('결과가 없는 옛 서버면 삭제만 알리고 개수는 목록 값으로 남긴다', async () => {
+    // Given
+    const { httpClient, analytics, remove } = await renderMutations();
+    httpClient.delete.mockResolvedValue({ ok: true, value: { message: '삭제' } });
+
+    // When
+    await remove(1, { todoHandling: null, moveToCategoryId: 2 });
+
+    // Then
+    expect(await screen.findAllByText('카테고리를 삭제했어요')).not.toHaveLength(0);
+    expect(analytics.trackEvent).toHaveBeenCalledWith('category_deleted', {
+      todo_handling: 'move',
+      todo_count_bucket: '1_9',
+    });
+  });
+});
+
+describe('카테고리 고치기와 동시에 바뀐 값', () => {
+  it('이름 고치기가 실패하면 그 이름만 되돌리고 그사이 늘어난 할 일 수는 지킨다', async () => {
+    // Given
+    const { httpClient, queryClient, cached, update } = await renderMutations();
+    const rejection = new ApiError('CATEGORY_0101', '이름을 바꾸지 못했어요', 409);
+    const pendingUpdate = createPendingResponse(err(rejection));
+    httpClient.patch.mockReturnValue(pendingUpdate.response);
+    const result = update(1, { name: '새 이름' });
+    await waitFor(() => expect(cached()?.categories[0]?.name).toBe('새 이름'));
+    changeCachedCategoryTodoCount(queryClient, { categoryId: 1, delta: 1 });
+
+    // When
+    pendingUpdate.settle();
+
+    // Then
+    await expect(result).rejects.toBe(rejection);
+    // 기본 2개 + 그사이 만든 1개
+    expect(cached()?.categories).toEqual([
+      { ...CATEGORIES.categories[0], todoCount: 3 },
+      CATEGORIES.categories[1],
+    ]);
+    expect(await screen.findAllByText(rejection.message)).not.toHaveLength(0);
   });
 });

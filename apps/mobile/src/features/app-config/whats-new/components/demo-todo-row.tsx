@@ -7,7 +7,11 @@ import {
   TodoScheduleLine,
   TodoTitleLine,
 } from '@src/features/planning/todo/components/todo-row';
-import { type Todo, TodoPolicy } from '@src/features/planning/todo/domains/todo.model';
+import {
+  isPrivateVisibility,
+  isRecurring,
+  type Todo,
+} from '@src/features/planning/todo/domains/todo.model';
 import type { PlanTodoFormValues } from '@src/features/voice/schemas/plan-review-form.schema';
 import { getPlanTodoSubtitle } from '@src/features/voice/utils/plan-todo-subtitle.view-model';
 import { formatTimeOfDay } from '@src/shared/date/date-format';
@@ -60,7 +64,7 @@ export function DemoTodoRow({
   // 예시라 설정을 받기까지 기다리지 않고 기본 표기로 먼저 보인다
   const { data: preference } = useQuery(useGetPreferenceQueryOptions());
   const timeFormat = preference?.timeFormat ?? 'TWELVE_HOUR';
-  const isPrivate = TodoPolicy.isPrivate(todo);
+  const isPrivate = isPrivateVisibility(todo.visibility);
 
   return match(surface)
     .with('plan', () => {
@@ -151,7 +155,7 @@ export function DemoTodoRow({
             />
           }
           middle={
-            timeLabel != null || TodoPolicy.isRecurringTodo(todo) ? (
+            timeLabel != null || isRecurring(todo.recurrenceGroupId) ? (
               <TodoScheduleLine todo={todo} timeLabel={timeLabel} />
             ) : undefined
           }

@@ -1,13 +1,11 @@
+import { MARKETING_PUSH_CATEGORY_ID } from '@aido/api/vocabulary';
 import { useLogger, usePushNotification } from '@src/bootstrap/providers/di-context';
 import { getErrorMessage } from '@src/shared/errors';
 import { useTranslation } from '@src/shared/i18n';
 import { useEffect } from 'react';
 
 import { NOTIFICATION_LOG_EVENT } from '../constants/notification-log-events';
-import {
-  MARKETING_CATEGORY_ID,
-  MARKETING_OPT_OUT_ACTION,
-} from '../constants/notification.constants';
+import { MARKETING_OPT_OUT_ACTION } from '../constants/notification.constants';
 
 export function useRegisterMarketingNotificationCategory() {
   const logger = useLogger();
@@ -17,7 +15,7 @@ export function useRegisterMarketingNotificationCategory() {
   useEffect(() => {
     gateway
       .setCategory({
-        identifier: MARKETING_CATEGORY_ID,
+        identifier: MARKETING_PUSH_CATEGORY_ID,
         actions: [
           {
             identifier: MARKETING_OPT_OUT_ACTION,

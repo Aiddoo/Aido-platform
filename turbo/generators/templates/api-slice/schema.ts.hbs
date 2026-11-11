@@ -1,0 +1,30 @@
+import { foreignKey, index, pgTable, {{#if isSerial}}serial, {{/if}}text } from "drizzle-orm/pg-core";
+
+import { instant } from "../columns/temporal-columns.js";
+import { user } from "./identity.schema.js";
+
+export const {{camelCase aggregate}} = pgTable(
+  "{{pascalCase aggregate}}",
+  {
+    id: {{#if isSerial}}serial(){{else}}text(){{/if}}.primaryKey(),
+    userId: text().notNull(),
+    name: text().notNull(),
+    createdAt: instant().notNull(),
+    updatedAt: instant().notNull(),
+  },
+  (table) => [
+    foreignKey({
+      columns: [table.userId],
+      foreignColumns: [user.id],
+      name: "{{pascalCase aggregate}}_userId_fkey",
+    })
+      .onUpdate("cascade")
+      .onDelete("cascade"),
+    index("{{pascalCase aggregate}}_userId_createdAt_id_idx").using(
+      "btree",
+      table.userId.asc().nullsLast(),
+      table.createdAt.desc(),
+      table.id.desc(),
+    ),
+  ],
+);

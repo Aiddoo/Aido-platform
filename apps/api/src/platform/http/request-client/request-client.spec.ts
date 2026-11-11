@@ -1,6 +1,11 @@
 import type { IncomingHttpHeaders } from "node:http";
 
-import { parseAcceptLanguage, parseRequestClient, type RequestClient } from "./request-client.js";
+import {
+  parseAcceptLanguage,
+  parseRequestClient,
+  type RequestClient,
+  resolveResponseLocale,
+} from "./request-client.js";
 import { requestTimezoneIfSent, requestTimezoneOrUtc } from "./request-timezone.js";
 
 const REQUEST_ID = "00000000-0000-4000-8000-000000000001";
@@ -112,11 +117,29 @@ describe("parseAcceptLanguage", () => {
   });
 
   it.each([undefined, null, "", 123, ["en"]])(
-    "헤더 미전송/비정상 값(%s)은 undefined — 저장된 locale을 덮어쓰지 않는다 (1.3.x 하위 호환)",
+    "헤더 미전송/비정상 값(%s)은 undefined — 저장된 locale을 덮어쓰지 않는다",
     (header) => {
       expect(parseAcceptLanguage(header)).toBeUndefined();
     },
   );
+});
+
+describe("resolveResponseLocale — 응답 문구 언어", () => {
+  it.each([
+    [undefined, "ko"],
+    ["", "ko"],
+    ["ko-KR,ko;q=0.9", "ko"],
+    ["ko;q=1", "ko"],
+    ["en-US,en;q=0.9,ko;q=0.8", "en"],
+    ["ja-JP,ja;q=0.9", "en"],
+    ["zh_CN", "en"],
+  ])("Accept-Language '%s'는 %s 문구를 받는다", (header, expected) => {
+    // When
+    const locale = resolveResponseLocale(header);
+
+    // Then
+    expect(locale).toBe(expected);
+  });
 });
 
 describe("요청 시간대 규칙", () => {

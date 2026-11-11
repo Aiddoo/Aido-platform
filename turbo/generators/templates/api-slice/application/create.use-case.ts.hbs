@@ -1,0 +1,57 @@
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
+import type { ClockPort } from "#api/shared/application/ports/clock.port";
+import type { MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
+import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+
+import { {{pascalCase aggregate}} } from "../../domain/{{aggregate}}.aggregate.js";
+import { {{pascalCase aggregate}}Name } from "../../domain/{{aggregate}}-name.vo.js";
+import type { {{pascalCase aggregate}}RepositoryPort } from "../ports/{{aggregate}}.repository.port.js";
+import { {{pascalCase aggregate}}LockKeys } from "../{{slice}}.lock-keys.js";
+import { {{pascalCase aggregate}}LogEvent } from "../{{slice}}.log-events.js";
+
+export interface Create{{pascalCase aggregate}}Command {
+  readonly userId: string;
+  readonly name: string;
+}
+
+export interface Create{{pascalCase aggregate}}Dependencies {
+  readonly unitOfWork: UnitOfWorkPort;
+  readonly mutationLock: MutationLockPort;
+  readonly {{camelCase aggregate}}Repository: Pick<{{pascalCase aggregate}}RepositoryPort, "nextId" | "save">;
+  readonly clock: ClockPort;
+  readonly logger: Pick<ApplicationLoggerPort, "log">;
+}
+
+export class Create{{pascalCase aggregate}}UseCase {
+  readonly #dependencies: Create{{pascalCase aggregate}}Dependencies;
+
+  constructor(dependencies: Create{{pascalCase aggregate}}Dependencies) {
+    this.#dependencies = dependencies;
+  }
+
+  async execute(command: Create{{pascalCase aggregate}}Command): Promise<{{pascalCase aggregate}}> {
+    const { unitOfWork, mutationLock, {{camelCase aggregate}}Repository, clock, logger } = this.#dependencies;
+    const userId = UserId.reconstitute(command.userId);
+    const name = {{pascalCase aggregate}}Name.create(command.name);
+
+    const created = await unitOfWork.run(async () => {
+      await mutationLock.acquire([{{pascalCase aggregate}}LockKeys.owner(userId)]);
+      const {{camelCase aggregate}} = {{pascalCase aggregate}}.create({
+        id: await {{camelCase aggregate}}Repository.nextId(),
+        userId,
+        name,
+        now: clock.now(),
+      });
+      await {{camelCase aggregate}}Repository.save({{camelCase aggregate}});
+      return {{camelCase aggregate}};
+    });
+
+    logger.log({
+      event: {{pascalCase aggregate}}LogEvent.CREATED,
+      {{camelCase aggregate}}Id: created.id.value,
+      userId: command.userId,
+    });
+    return created;
+  }
+}

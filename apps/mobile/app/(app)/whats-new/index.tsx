@@ -11,7 +11,7 @@ export default function WhatsNewRoute() {
   const isInviteAvailable = useIsInviteAvailable();
 
   return (
-    <StyledSafeAreaView className="flex-1 bg-white">
+    <StyledSafeAreaView className="flex-1 bg-white" testID="whats-new-screen">
       <ReadableContent flex={1} px={20} pb={16}>
         {match(releaseId)
           .with(RELEASE_ID.v1_15_0, () => <Release1150Steps />)

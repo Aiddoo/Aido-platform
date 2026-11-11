@@ -1,0 +1,7 @@
+import { EntityId } from "#api/shared/domain/model/entity-id";
+
+export class {{pascalCase aggregate}}Id extends EntityId<{{idTsType}}> {
+  static reconstitute(value: {{idTsType}}): {{pascalCase aggregate}}Id {
+    return new {{pascalCase aggregate}}Id(value);
+  }
+}

@@ -1,9 +1,10 @@
 import { z } from "zod";
 
 import { dateSchema, datetimeSchema } from "../../../common/datetime.js";
+import { AI_SUGGESTION_STATUSES } from "../../../vocabulary/ai.constants.js";
 import { dayOfWeekSchema } from "../../todo/v1/todo.common.js";
 
-export const suggestionStatusSchema = z.enum(["PENDING", "ACCEPTED", "DISMISSED"]);
+export const suggestionStatusSchema = z.enum(AI_SUGGESTION_STATUSES);
 
 export const recurringSuggestionSchema = z.object({
   id: z.number(),

@@ -1,6 +1,6 @@
 import type { Logger } from "@nestjs/common";
 
-import { PlatformLogEvent } from "#api/platform/logging/platform-log.events";
+import { PlatformLogEvent } from "#api/platform/logging/platform.log-events";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 
 /**

@@ -1,11 +1,17 @@
 import { renderUi } from '@src/shared/__tests__';
-import { getLastGorhomSheetProps } from '@src/shared/__tests__/mocks/gorhom-bottom-sheet';
+import {
+  getLastGorhomSheetProps,
+  gorhomForceClose,
+} from '@src/shared/__tests__/mocks/gorhom-bottom-sheet';
 import { t } from '@src/shared/i18n';
 import { Text } from '@src/shared/ui';
 import { act, render, screen } from '@testing-library/react-native';
-import { BackHandler } from 'react-native';
+import { BackHandler, Keyboard } from 'react-native';
+import { createGestureController } from 'react-native-gesture-handler/jest-utils';
+import { makeMutable } from 'react-native-reanimated';
 
 import { BottomSheet } from './bottom-sheet';
+import { SHEET_INDEX } from './bottom-sheet.constants';
 import { KeyboardBottomSheet } from './keyboard-bottom-sheet';
 
 describe('BottomSheet 닫힘 알림', () => {
@@ -132,5 +138,121 @@ describe('KeyboardBottomSheet 시트 면', () => {
     expect(previousRequest).not.toHaveBeenCalled();
     expect(onOpenChange).not.toHaveBeenCalled();
     expect(getLastGorhomSheetProps().backdropComponent).toBe(firstBackdrop);
+  });
+});
+
+describe('KeyboardBottomSheet 바깥 탭', () => {
+  const BACKDROP_TAP_TEST_ID = 'keyboard-sheet-backdrop-tap';
+
+  /** gorhom이 시트를 index까지 움직이고 backdrop을 그리는 것을 대신한다 */
+  async function drawBackdrop(index: number = SHEET_INDEX.OPEN) {
+    const { backdropComponent: Backdrop, animatedIndex } = getLastGorhomSheetProps();
+    if (animatedIndex == null) {
+      throw new Error('시트 index를 받지 않았어요');
+    }
+    await act(async () => animatedIndex.set(index));
+    await renderUi(<Backdrop animatedIndex={animatedIndex} animatedPosition={makeMutable(0)} />);
+  }
+
+  it('열린 시트 바깥을 누르면 키보드를 내리고 시트를 닫는다', async () => {
+    // Given
+    const dismissKeyboard = jest.spyOn(Keyboard, 'dismiss');
+    const onOpenChange = jest.fn();
+    await renderUi(
+      <KeyboardBottomSheet isOpen onOpenChange={onOpenChange}>
+        <Text>내용</Text>
+      </KeyboardBottomSheet>,
+    );
+    await drawBackdrop();
+
+    // When
+    await act(async () => {
+      const tap = createGestureController(BACKDROP_TAP_TEST_ID);
+      tap.begin();
+      tap.activate();
+      tap.end();
+    });
+
+    // Then
+    expect(dismissKeyboard).toHaveBeenCalledTimes(1);
+    expect(gorhomForceClose).toHaveBeenCalledTimes(1);
+    expect(onOpenChange).not.toHaveBeenCalled();
+  });
+
+  it('닫기 요청 핸들러가 바뀐 뒤 바깥을 누르면 최신 핸들러만 부르고 시트를 직접 닫지 않는다', async () => {
+    // Given
+    const dismissKeyboard = jest.spyOn(Keyboard, 'dismiss');
+    const previousRequest = jest.fn();
+    const nextRequest = jest.fn();
+    const view = await renderUi(
+      <KeyboardBottomSheet isOpen onOpenChange={jest.fn()} onDismissRequest={previousRequest}>
+        <Text>내용</Text>
+      </KeyboardBottomSheet>,
+    );
+    await view.rerender(
+      <KeyboardBottomSheet isOpen onOpenChange={jest.fn()} onDismissRequest={nextRequest}>
+        <Text>내용</Text>
+      </KeyboardBottomSheet>,
+    );
+    await drawBackdrop();
+
+    // When
+    await act(async () => {
+      const tap = createGestureController(BACKDROP_TAP_TEST_ID);
+      tap.begin();
+      tap.activate();
+      tap.end();
+    });
+
+    // Then
+    expect(nextRequest).toHaveBeenCalledTimes(1);
+    expect(previousRequest).not.toHaveBeenCalled();
+    expect(dismissKeyboard).not.toHaveBeenCalled();
+    expect(gorhomForceClose).not.toHaveBeenCalled();
+  });
+
+  it('끌기로 넘어가 탭이 실패하면 시트를 닫지 않는다', async () => {
+    // Given
+    const onDismissRequest = jest.fn();
+    await renderUi(
+      <KeyboardBottomSheet isOpen onOpenChange={jest.fn()} onDismissRequest={onDismissRequest}>
+        <Text>내용</Text>
+      </KeyboardBottomSheet>,
+    );
+    await drawBackdrop();
+
+    // When
+    await act(async () => {
+      const tap = createGestureController(BACKDROP_TAP_TEST_ID);
+      tap.begin();
+      tap.fail();
+    });
+
+    // Then
+    expect(onDismissRequest).not.toHaveBeenCalled();
+  });
+
+  it('gorhom이 backdrop 터치를 끈 닫힌 시트에서는 바깥 탭을 받지 않는다', async () => {
+    // Given
+    const dismissKeyboard = jest.spyOn(Keyboard, 'dismiss');
+    const onDismissRequest = jest.fn();
+    await renderUi(
+      <KeyboardBottomSheet isOpen onOpenChange={jest.fn()} onDismissRequest={onDismissRequest}>
+        <Text>내용</Text>
+      </KeyboardBottomSheet>,
+    );
+    await drawBackdrop(SHEET_INDEX.CLOSED);
+
+    // When
+    await act(async () => {
+      const tap = createGestureController(BACKDROP_TAP_TEST_ID);
+      tap.begin();
+      tap.activate();
+      tap.end();
+    });
+
+    // Then
+    expect(onDismissRequest).not.toHaveBeenCalled();
+    expect(dismissKeyboard).not.toHaveBeenCalled();
   });
 });

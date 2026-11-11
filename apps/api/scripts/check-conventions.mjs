@@ -1,5 +1,5 @@
-// 서버 관례 검사. 새 slice·옮긴 Context(architecture.ratchet.json)만 실패시키고 옛 경로는 경고로 둔다.
-//   node scripts/check-conventions.mjs [--file <path>] [--strict-enums]
+// 서버 관례 검사. 인자로 파일을 주면 그 파일만, 없으면 저장소가 보는 서버 파일 전체를 본다.
+//   node scripts/check-conventions.mjs [--file <path>...]
 import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
@@ -41,6 +41,7 @@ const ROLE_SUFFIXES = [
   "controller",
   "dto",
   "guard",
+  "interceptor",
   "decorator",
   "module",
   "providers",
@@ -55,37 +56,31 @@ const STEM_PATTERNS = {
   policy: new RegExp(`^${KEBAB}-outbound$`),
 };
 const DEFAULT_STEM = new RegExp(`^${KEBAB}$`);
-const LEGACY_LAYERS = new Set(["domain", "application", "infrastructure", "presentation"]);
 // 접근 제어자는 static·readonly·override·abstract·declare 같은 한정자와 어떤 순서로 와도 잡는다.
 const MEMBER_KEYWORD =
   /^\s+(?:(?:static|readonly|override|abstract|declare|async)\s+)*(private|public|protected)\s/;
 const NON_CODE_LINE = /^\s*(?:\/\/|\/\*|\*)/;
 const FORWARD_REF = /\bforwardRef\(/;
-const PG_ENUM_LITERAL = /pgEnum\(\s*["'`][^"'`]+["'`]\s*,\s*\[/g;
+const PG_ENUM_LITERAL = /pgEnum\(\s*["'`]([^"'`]+)["'`]\s*,\s*\[/g;
 
 const args = process.argv.slice(2);
-const strictEnums = args.includes("--strict-enums");
-const fileFlagIndex = args.indexOf("--file");
-const singleFile = fileFlagIndex === -1 ? null : args[fileFlagIndex + 1];
-
-const { migratedContexts } = JSON.parse(
-  readFileSync(join(apiRoot, "architecture.ratchet.json"), "utf8"),
-);
+// lefthook은 staged 파일 여러 개를 `--file a b c`로 넘긴다
+const selectedFiles = args.filter((arg) => !arg.startsWith("--"));
 
 function toApiRelative(filePath) {
   const absolute = isAbsolute(filePath) ? filePath : resolve(process.cwd(), filePath);
   return relative(apiRoot, absolute).split(sep).join("/");
 }
 
-function isStrictPath(rel) {
+// Context 폴더 안의 파일(modules/<context>/…)은 모두 역할 접미사를 단다
+function isContextPath(rel) {
   const segments = rel.split("/");
-  if (segments[0] !== "src" || segments[1] !== "modules" || segments.length < 4) {
-    return false;
-  }
-  if (migratedContexts.includes(segments[2])) {
-    return true;
-  }
-  return segments.length >= 5 && !LEGACY_LAYERS.has(segments[3]);
+  return segments[0] === "src" && segments[1] === "modules" && segments.length >= 4;
+}
+
+// 하위 클래스 확장점(props·raise)인 shared/domain 기반 클래스와 프레임워크 메서드 재정의만 protected를 쓴다
+function allowsProtected(rel, line) {
+  return rel.startsWith("src/shared/domain/") || /\boverride\s/.test(line);
 }
 
 function checkRoleSuffix(rel, violations) {
@@ -154,38 +149,103 @@ function findTemplateLiteralLines(lines) {
   return inside;
 }
 
-function checkFile(rel, violations, warnings) {
+// 다른 Context의 진입점(*.public.ts)과 drizzle-kit·relations가 읽는 schema 묶음만 다시 내보낸다
+const RE_EXPORT_ALLOWED = new Set([
+  "src/platform/database/schema/index.ts",
+  "src/platform/database/schema/tables.schema.ts",
+]);
+const RE_EXPORT_FROM =
+  /^\s*export\s+(?:type\s+)?(?:\*(?:\s+as\s+\w+)?|\{[^}]*\})\s*from\s*["'][^"']+["']/gm;
+const LOCAL_EXPORT_LIST = /^\s*export\s+(?:type\s+)?\{([^}]*)\}\s*;/gm;
+const IMPORT_BINDINGS =
+  /^\s*import\s+(?:type\s+)?(?:(\w+)\s*,?\s*)?(?:\{([^}]*)\}|\*\s+as\s+(\w+))?\s*from\s*["'][^"']+["']/gm;
+
+function importedNames(text) {
+  const names = new Set();
+  for (const match of text.matchAll(IMPORT_BINDINGS)) {
+    const [, defaultName, named, namespace] = match;
+    for (const name of [defaultName, namespace]) {
+      if (name != null) {
+        names.add(name);
+      }
+    }
+    for (const item of (named ?? "").split(",")) {
+      const local = item
+        .trim()
+        .replace(/^type\s+/, "")
+        .split(/\s+as\s+/)
+        .pop();
+      if (local) {
+        names.add(local);
+      }
+    }
+  }
+  return names;
+}
+
+// 경로를 바꾸면 import를 정의 파일로 옮겨야 해 결합만 늘리는 barrel·재수출을 막는다
+function checkReExports(rel, text, violations) {
+  if (!rel.startsWith("src/") || rel.endsWith(".public.ts") || RE_EXPORT_ALLOWED.has(rel)) {
+    return;
+  }
+  const reason =
+    "다시 내보내지 않는다. 쓰는 곳이 정의 파일을 import한다(다른 Context는 *.public.ts만).";
+  if (rel.endsWith("/index.ts")) {
+    violations.push(`${rel}: barrel(index.ts)을 두지 않는다. ${reason}`);
+    return;
+  }
+  for (const match of text.matchAll(RE_EXPORT_FROM)) {
+    violations.push(`${rel}:${lineOf(text, match.index)}: ${reason}`);
+  }
+  const imported = importedNames(text);
+  for (const match of text.matchAll(LOCAL_EXPORT_LIST)) {
+    const reExported = match[1]
+      .split(",")
+      .map(
+        (item) =>
+          item
+            .trim()
+            .replace(/^type\s+/, "")
+            .split(/\s+as\s+/)[0],
+      )
+      .filter((name) => name !== "" && imported.has(name));
+    if (reExported.length > 0) {
+      violations.push(`${rel}:${lineOf(text, match.index)}: ${reExported.join(", ")}를 ${reason}`);
+    }
+  }
+}
+
+function checkFile(rel, violations) {
   const text = readFileSync(join(apiRoot, rel), "utf8");
-  const strict = isStrictPath(rel);
-  if (strict && !rel.endsWith(".d.ts")) {
+  if (isContextPath(rel) && !rel.endsWith(".d.ts")) {
     checkRoleSuffix(rel, violations);
   }
   const lines = text.split("\n");
   const templateLines = findTemplateLiteralLines(lines);
 
   lines.forEach((line, index) => {
-    if (strict && !templateLines.has(index) && !NON_CODE_LINE.test(line)) {
+    if (!templateLines.has(index) && !NON_CODE_LINE.test(line)) {
       const match = MEMBER_KEYWORD.exec(line);
-      // shared/domain 기반 클래스의 하위 클래스 확장점은 'override protected'로 쓴다.
-      if (match && !(match[1] === "protected" && /\boverride\s/.test(line))) {
+      if (match && !(match[1] === "protected" && allowsProtected(rel, line))) {
         violations.push(
           `${rel}:${index + 1}: '${match[1]}' 멤버 키워드는 쓰지 않는다. 비공개는 '#' 필드·메서드로 둔다.`,
         );
       }
     }
     if (FORWARD_REF.test(line)) {
-      const entry = `${rel}:${index + 1}: forwardRef 순환 의존. 좁은 Port를 public으로 열고 반대 방향은 이벤트로 바꾼다.`;
-      (strict ? violations : warnings).push(entry);
+      violations.push(
+        `${rel}:${index + 1}: forwardRef 순환 의존. 좁은 Port를 public으로 열고 반대 방향은 이벤트로 바꾼다.`,
+      );
     }
   });
 
+  checkReExports(rel, text, violations);
+
   if (isEnumSchemaPath(rel)) {
-    const enumLines = [...text.matchAll(PG_ENUM_LITERAL)].map((match) => lineOf(text, match.index));
-    const reason = "pgEnum 값을 리터럴 배열로 적었다. @aido/api/vocabulary 상수 튜플에서 유도한다.";
-    if (strictEnums) {
-      violations.push(...enumLines.map((line) => `${rel}:${line}: ${reason}`));
-    } else if (enumLines.length > 0) {
-      warnings.push(`${rel}: ${reason} (${enumLines.length}건: 줄 ${enumLines.join(", ")})`);
+    for (const match of text.matchAll(PG_ENUM_LITERAL)) {
+      violations.push(
+        `${rel}:${lineOf(text, match.index)}: pgEnum("${match[1]}") 값을 리터럴 배열로 적었다. @aido/api/vocabulary 또는 소유 slice domain/*.constants.ts의 튜플에서 유도한다.`,
+      );
     }
   }
 }
@@ -204,10 +264,18 @@ function listRepoFiles() {
   }
 }
 
+// 멤버 키워드 규칙은 tsconfig(erasableSyntaxOnly)와 같은 범위인 src·test·scripts 전체에 건다
+const CHECKED_DIRS = ["src/", "test/", "scripts/"];
+
+function isCheckedFile(rel) {
+  return CHECKED_DIRS.some((dir) => rel.startsWith(dir)) && rel.endsWith(".ts");
+}
+
 function listSourceFiles(repoFiles) {
   return repoFiles
-    .filter((path) => path.startsWith("apps/api/src/") && path.endsWith(".ts"))
-    .map((path) => path.slice("apps/api/".length));
+    .filter((path) => path.startsWith("apps/api/"))
+    .map((path) => path.slice("apps/api/".length))
+    .filter(isCheckedFile);
 }
 
 // 저장소가 보는 파일이 .DS_Store·.gitkeep뿐인 폴더는 남기지 않는다. 빈 폴더는 git에 없어 CI에서 보이지 않으므로 대상이 아니다.
@@ -249,32 +317,27 @@ function findTrackedJunkFiles(violations) {
 }
 
 const violations = [];
-const warnings = [];
-const repoFiles = singleFile == null ? listRepoFiles() : null;
-if (singleFile == null && repoFiles == null) {
+const checksTree = selectedFiles.length === 0;
+const repoFiles = checksTree ? listRepoFiles() : null;
+if (checksTree && repoFiles == null) {
   console.error("git ls-files를 실행하지 못해 관례 검사를 할 수 없다.");
   process.exit(1);
 }
-const files = singleFile == null ? listSourceFiles(repoFiles) : [toApiRelative(singleFile)];
+const files = checksTree
+  ? listSourceFiles(repoFiles)
+  : selectedFiles.map(toApiRelative).filter((rel) => existsSync(join(apiRoot, rel)));
 
 for (const rel of files) {
-  if (!rel.startsWith("src/") || !rel.endsWith(".ts")) {
+  if (!isCheckedFile(rel)) {
     continue;
   }
-  checkFile(rel, violations, warnings);
+  checkFile(rel, violations);
 }
 
-if (singleFile == null) {
+if (checksTree) {
   checkLsLintSync(violations);
   findEmptyDirectories(repoFiles, violations);
   findTrackedJunkFiles(violations);
-}
-
-if (singleFile == null && warnings.length > 0) {
-  console.log(`경고 ${warnings.length}건(옛 경로이거나 --strict-enums 전에는 실패하지 않는 검사):`);
-  for (const warning of warnings) {
-    console.log(`  ${warning}`);
-  }
 }
 
 if (violations.length > 0) {

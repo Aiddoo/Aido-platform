@@ -99,6 +99,9 @@ export const NOTICE_DEEP_LINK_PATH = {
 
 export type NoticeDeepLinkPath = (typeof NOTICE_DEEP_LINK_PATH)[keyof typeof NOTICE_DEEP_LINK_PATH];
 
+/** 마케팅 푸시 payload의 categoryId. 앱은 같은 id로 수신 거부 버튼 카테고리를 등록한다. */
+export const MARKETING_PUSH_CATEGORY_ID = "MARKETING";
+
 export const NOTIFICATION_LIMITS = {
   MAX_FETCH_LIMIT: 50,
   DEFAULT_FETCH_LIMIT: 20,
@@ -202,3 +205,5 @@ export const CATEGORY_TYPE_MAP: Record<
     NOTIFICATION_TYPE.INVITE_QUALIFY_REMINDER,
   ],
 } as const;
+
+export const NOTIFICATION_PURPOSES = ["TRANSACTIONAL", "SCHEDULED_SERVICE", "ENGAGEMENT"] as const;

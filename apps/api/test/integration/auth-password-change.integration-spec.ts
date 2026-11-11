@@ -1,11 +1,11 @@
 import type { TestingModule } from "@nestjs/testing";
 import { omit } from "es-toolkit";
 
-import { ChangePassword } from "#api/modules/identity/application/use-cases/auth/change-password.use-case";
-import { LoginWithPassword } from "#api/modules/identity/application/use-cases/auth/login-with-password.use-case";
-import { Register } from "#api/modules/identity/application/use-cases/auth/register.use-case";
-import { VerifyEmail } from "#api/modules/identity/application/use-cases/auth/verify-email.use-case";
-import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
+import { ChangePasswordUseCase } from "#api/modules/identity/auth/application/use-cases/change-password.use-case";
+import { LoginWithPasswordUseCase } from "#api/modules/identity/auth/application/use-cases/login-with-password.use-case";
+import { RegisterUseCase } from "#api/modules/identity/auth/application/use-cases/register.use-case";
+import { VerifyEmailUseCase } from "#api/modules/identity/auth/application/use-cases/verify-email.use-case";
+import { ApplicationException } from "#api/shared/application/application.exception";
 import { AccountFixture, UserFixture } from "#test/fixtures/user.fixture";
 import { suppressLogger } from "#test/setup/suppress-logger";
 import { createUserDatabaseFixture } from "#test/setup/user-database-fixture";
@@ -16,10 +16,10 @@ import { createAuthTestModule } from "./helpers/auth-test-module.factory.js";
 
 describe("비밀번호 변경 통합 테스트 (실제 DB)", () => {
   let module: TestingModule;
-  let register: Register;
-  let verifyEmail: VerifyEmail;
-  let loginWithPassword: LoginWithPassword;
-  let changePassword: ChangePassword;
+  let register: RegisterUseCase;
+  let verifyEmail: VerifyEmailUseCase;
+  let loginWithPassword: LoginWithPasswordUseCase;
+  let changePassword: ChangePasswordUseCase;
   let fakeEmailService: FakeEmailService;
   let testDb: TestDatabase;
 
@@ -29,11 +29,11 @@ describe("비밀번호 변경 통합 테스트 (실제 DB)", () => {
     fakeEmailService = new FakeEmailService();
 
     module = await createAuthTestModule(testDb.getClient(), fakeEmailService);
-    register = module.get(Register);
-    verifyEmail = module.get(VerifyEmail);
-    loginWithPassword = module.get(LoginWithPassword);
-    changePassword = module.get(ChangePassword);
-  }, 60000);
+    register = module.get(RegisterUseCase);
+    verifyEmail = module.get(VerifyEmailUseCase);
+    loginWithPassword = module.get(LoginWithPasswordUseCase);
+    changePassword = module.get(ChangePasswordUseCase);
+  }, 60_000);
 
   beforeEach(async () => {
     suppressLogger();
@@ -65,7 +65,6 @@ describe("비밀번호 변경 통합 테스트 (실제 DB)", () => {
     const registerResult = await register.execute({
       email,
       password,
-      passwordConfirm: password,
       termsAgreed: true,
       privacyAgreed: true,
       marketingAgreed: false,

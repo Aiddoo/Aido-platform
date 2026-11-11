@@ -1,4 +1,3 @@
-import { TODO_SERIES_LIMITS } from '@aido/api/vocabulary';
 import { useHaptics, useTodoService } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
 import { useTrack } from '@src/shared/analytics';
@@ -7,7 +6,11 @@ import { t } from '@src/shared/i18n';
 import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
-import { findTodoSeriesFailure, shouldRefreshTodos } from '../domains/todo-series.error';
+import {
+  findTodoSeriesFailure,
+  getTodoSeriesLimit,
+  shouldRefreshTodos,
+} from '../domains/todo-series.error';
 import { invalidateTodos } from './todo-cache';
 
 interface StopTodoSeriesVariables {
@@ -40,7 +43,7 @@ export function useStopTodoSeriesMutationOptions() {
         }
         toast.error(
           t(`todo:toast.series.${seriesFailure}.title`, {
-            limit: TODO_SERIES_LIMITS.MAX_ACTIVE_PER_USER,
+            limit: getTodoSeriesLimit(error),
           }),
           { description: t(`todo:toast.series.${seriesFailure}.description`) },
         );

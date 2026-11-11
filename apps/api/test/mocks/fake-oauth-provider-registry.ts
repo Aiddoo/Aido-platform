@@ -1,62 +1,96 @@
 import { ErrorCode } from "@aido/api/errors";
 
-import type {
-  ExchangedToken,
-  GenerateAuthUrlParams,
-  OAuthIdentityProvider,
-  OAuthIdentityProviderRegistry,
-  SocialLoginOptions,
-  VerifiedProfile,
-} from "#api/modules/identity/application/ports/auth/oauth-identity-provider.port";
-import type { AccountProvider } from "#api/modules/identity/domain/types/auth/auth.types";
-import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
+import {
+  type ExchangedToken,
+  type GenerateAuthUrlParams,
+  OAuthIdentityProviderPort,
+  OAuthIdentityProviderRegistryPort,
+  type SocialLoginOptions,
+  type VerifiedProfile,
+} from "#api/modules/identity/auth/application/ports/oauth-identity-provider.port";
+import type { AccountProvider } from "#api/modules/identity/auth/domain/auth.constants";
+import { ApplicationException } from "#api/shared/application/application.exception";
+
+export type OAuthIdentityProviders = ReadonlyMap<AccountProvider, OAuthIdentityProviderPort>;
+
+/** 공급자 토큰 검증을 대신하는 테스트 대역. 없으면 실제 어댑터의 검증을 쓴다 */
+export interface OAuthTokenVerification {
+  verify(provider: AccountProvider, token: string, nonce?: string): Promise<VerifiedProfile>;
+}
 
 function exchangeKey(provider: AccountProvider, code: string): string {
   return `${provider}:${code}`;
 }
 
-class FakeOAuthIdentityProvider implements OAuthIdentityProvider {
+class FakeOAuthIdentityProvider extends OAuthIdentityProviderPort {
   readonly provider: AccountProvider;
   readonly failureEmail: string;
+  readonly #delegate: OAuthIdentityProviderPort;
+  readonly #exchange: (provider: AccountProvider, code: string) => Promise<ExchangedToken>;
+  readonly #verification: OAuthTokenVerification | undefined;
 
   constructor(
-    private readonly delegate: OAuthIdentityProvider,
-    private readonly exchange: (provider: AccountProvider, code: string) => Promise<ExchangedToken>,
+    delegate: OAuthIdentityProviderPort,
+    exchange: (provider: AccountProvider, code: string) => Promise<ExchangedToken>,
+    verification: OAuthTokenVerification | undefined,
   ) {
+    super();
     this.provider = delegate.provider;
     this.failureEmail = delegate.failureEmail;
+    this.#delegate = delegate;
+    this.#exchange = exchange;
+    this.#verification = verification;
   }
 
   generateAuthUrl(params: GenerateAuthUrlParams): Promise<string | null> {
-    return this.delegate.generateAuthUrl(params);
+    return this.#delegate.generateAuthUrl(params);
   }
 
   exchangeCode(code: string): Promise<ExchangedToken> {
-    return this.exchange(this.provider, code);
+    return this.#exchange(this.provider, code);
   }
 
   verifyToken(token: string, nonce?: string): Promise<VerifiedProfile> {
-    return this.delegate.verifyToken(token, nonce);
+    return this.#verification == null
+      ? this.#delegate.verifyToken(token, nonce)
+      : this.#verification.verify(this.provider, token, nonce);
   }
 
   buildLoginOptions(verifiedProfile: VerifiedProfile, userName?: string): SocialLoginOptions {
-    return this.delegate.buildLoginOptions(verifiedProfile, userName);
+    return this.#delegate.buildLoginOptions(verifiedProfile, userName);
+  }
+}
+
+class FakeOAuthIdentityProviderRegistry extends OAuthIdentityProviderRegistryPort {
+  readonly #providers: OAuthIdentityProviders;
+
+  constructor(providers: OAuthIdentityProviders) {
+    super();
+    this.#providers = providers;
+  }
+
+  get(provider: AccountProvider): OAuthIdentityProviderPort | undefined {
+    return this.#providers.get(provider);
   }
 }
 
 export class FakeOAuthProviderRegistry {
-  readonly registry: OAuthIdentityProviderRegistry;
+  readonly registry: OAuthIdentityProviderRegistryPort;
   readonly #exchangeTokens = new Map<string, string>();
   readonly #exchangeFailures = new Map<string, Error>();
 
-  constructor(delegates: OAuthIdentityProviderRegistry) {
-    this.registry = new Map(
-      [...delegates].map(([provider, delegate]) => [
-        provider,
-        new FakeOAuthIdentityProvider(delegate, (currentProvider, code) =>
-          this.#exchangeCode(currentProvider, code),
-        ),
-      ]),
+  constructor(delegates: OAuthIdentityProviders, verification?: OAuthTokenVerification) {
+    this.registry = new FakeOAuthIdentityProviderRegistry(
+      new Map(
+        [...delegates].map(([provider, delegate]) => [
+          provider,
+          new FakeOAuthIdentityProvider(
+            delegate,
+            (currentProvider, code) => this.#exchangeCode(currentProvider, code),
+            verification,
+          ),
+        ]),
+      ),
     );
   }
 

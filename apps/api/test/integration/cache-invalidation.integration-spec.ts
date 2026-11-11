@@ -6,7 +6,7 @@ import type { INestApplication } from "@nestjs/common";
  * 캐시 무효화 시나리오를 실제 환경과 유사하게 테스트합니다.
  * 캐시 모듈의 전체 라이프사이클과 무효화 동작을 검증합니다.
  */
-import { ConfigModule } from "@nestjs/config";
+import { ConfigModule, registerAs } from "@nestjs/config";
 import { Test, type TestingModule } from "@nestjs/testing";
 import { vi } from "vitest";
 import { z } from "zod";
@@ -14,24 +14,25 @@ import { z } from "zod";
 import {
   EntitlementCacheKey,
   ENTITLEMENT_CACHE_TTL_MS,
-} from "#api/modules/access/infrastructure/cache/entitlement/entitlement-cache.keyspace";
+} from "#api/modules/access/entitlements/infrastructure/cache/entitlement-cache.keyspace";
 import {
   IdentityCacheKey,
   IDENTITY_CACHE_TTL_MS,
-} from "#api/modules/identity/infrastructure/cache/auth/identity-cache.keyspace";
+} from "#api/modules/identity/auth/infrastructure/cache/identity-cache.keyspace";
 import {
   FollowCacheKey,
   FOLLOW_CACHE_TTL_MS,
-} from "#api/modules/social/infrastructure/cache/friends/follow-cache.keyspace";
+} from "#api/modules/social/friends/infrastructure/cache/follow-cache.keyspace";
+import { CacheStorePort } from "#api/platform/cache/cache-store.port";
 import { CacheModule } from "#api/platform/cache/cache.module";
-import { CacheService } from "#api/platform/cache/cache.service";
 import { cachePattern } from "#api/platform/cache/keyspace/cache-key";
+import { cacheConfig } from "#api/platform/config/cache.config";
 
 import { createMockUserProfile } from "../mocks/cache-test-utils.js";
 
 describe("캐시 무효화 통합 테스트 (Memory adapter)", () => {
   let app: INestApplication;
-  let cacheService: CacheService;
+  let cacheService: CacheStorePort;
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -39,11 +40,13 @@ describe("캐시 무효화 통합 테스트 (Memory adapter)", () => {
         ConfigModule.forRoot({
           isGlobal: true,
           load: [
-            () => ({
-              CACHE_TYPE: "memory",
-              CACHE_DEFAULT_TTL_MS: 60000,
-              CACHE_MAX_ITEMS: 1000,
-            }),
+            registerAs(cacheConfig.namespace, () =>
+              cacheConfig.parse({
+                CACHE_TYPE: "memory",
+                CACHE_DEFAULT_TTL_MS: 60_000,
+                CACHE_MAX_ITEMS: 1000,
+              }),
+            ),
           ],
         }),
         CacheModule.forRoot(),
@@ -53,7 +56,7 @@ describe("캐시 무효화 통합 테스트 (Memory adapter)", () => {
     app = moduleFixture.createNestApplication();
     await app.init();
 
-    cacheService = moduleFixture.get<CacheService>(CacheService);
+    cacheService = moduleFixture.get(CacheStorePort);
   });
 
   afterAll(async () => {
@@ -70,7 +73,7 @@ describe("캐시 무효화 통합 테스트 (Memory adapter)", () => {
       const sessionId = "sess_integration_test_123";
       const session = {
         userId: "user_integration_1",
-        expiresAt: new Date(Date.now() + 3600000),
+        expiresAt: new Date(Date.now() + 3_600_000),
         revokedAt: null,
       };
 
@@ -105,11 +108,13 @@ describe("캐시 무효화 통합 테스트 (Memory adapter)", () => {
           ConfigModule.forRoot({
             isGlobal: true,
             load: [
-              () => ({
-                CACHE_TYPE: "memory",
-                CACHE_DEFAULT_TTL_MS: 50,
-                CACHE_MAX_ITEMS: 100,
-              }),
+              registerAs(cacheConfig.namespace, () =>
+                cacheConfig.parse({
+                  CACHE_TYPE: "memory",
+                  CACHE_DEFAULT_TTL_MS: 50,
+                  CACHE_MAX_ITEMS: 100,
+                }),
+              ),
             ],
           }),
           CacheModule.forRoot(),
@@ -119,7 +124,7 @@ describe("캐시 무효화 통합 테스트 (Memory adapter)", () => {
       const shortTtlApp = shortTtlModule.createNestApplication();
       try {
         await shortTtlApp.init();
-        const shortTtlCache = shortTtlModule.get<CacheService>(CacheService);
+        const shortTtlCache = shortTtlModule.get(CacheStorePort);
 
         const sessionId = "sess_short_ttl";
         const session = {
@@ -439,11 +444,13 @@ describe("캐시 무효화 통합 테스트 (Memory adapter)", () => {
           ConfigModule.forRoot({
             isGlobal: true,
             load: [
-              () => ({
-                CACHE_TYPE: "memory",
-                CACHE_DEFAULT_TTL_MS: 60000,
-                CACHE_MAX_ITEMS: 5,
-              }),
+              registerAs(cacheConfig.namespace, () =>
+                cacheConfig.parse({
+                  CACHE_TYPE: "memory",
+                  CACHE_DEFAULT_TTL_MS: 60_000,
+                  CACHE_MAX_ITEMS: 5,
+                }),
+              ),
             ],
           }),
           CacheModule.forRoot(),
@@ -452,7 +459,7 @@ describe("캐시 무효화 통합 테스트 (Memory adapter)", () => {
 
       const smallCacheApp = smallCacheModule.createNestApplication();
       await smallCacheApp.init();
-      const smallCache = smallCacheModule.get<CacheService>(CacheService);
+      const smallCache = smallCacheModule.get(CacheStorePort);
 
       try {
         // When - 5개 항목 저장
@@ -464,12 +471,13 @@ describe("캐시 무효화 통합 테스트 (Memory adapter)", () => {
         expect(smallCache.getStats().keys).toBe(5);
         expect(await smallCache.get("key_1", z.unknown())).toBe("value_1");
 
-        // When - 6번째 항목 추가 (LRU로 key_1 퇴출)
+        // When - 6번째 항목 추가 (방금 읽은 key_1 대신 가장 오래 쓰지 않은 key_2 퇴출)
         await smallCache.set("key_6", "value_6");
 
-        // Then - key_1은 퇴출, key_6은 존재
+        // Then - key_2는 퇴출, key_1·key_6은 존재
         expect(smallCache.getStats().keys).toBe(5);
-        expect(await smallCache.get("key_1", z.unknown())).toBeUndefined();
+        expect(await smallCache.get("key_2", z.unknown())).toBeUndefined();
+        expect(await smallCache.get("key_1", z.unknown())).toBe("value_1");
         expect(await smallCache.get("key_6", z.unknown())).toBe("value_6");
       } finally {
         await smallCacheApp.close();

@@ -2,7 +2,8 @@ import { featureDiscoveryResponseSchema } from "@aido/api";
 import request from "supertest";
 import { vi } from "vitest";
 
-import { GetFeatureDiscovery } from "#api/modules/app-config/application/use-cases/discovery/get-feature-discovery.use-case";
+import { GetFeatureDiscoveryUseCase } from "#api/modules/app-config/feature-discovery/application/use-cases/get-feature-discovery.use-case";
+import { createFeatureDiscoveryCampaignFixture } from "#test/fixtures/app-config/feature-discovery-campaign.fixture";
 
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 
@@ -11,7 +12,7 @@ describe("기능 발견 설정 (E2E)", () => {
 
   beforeAll(async () => {
     ctx = await createE2eApp();
-  }, 60000);
+  }, 60_000);
 
   afterAll(async () => {
     await destroyE2eApp(ctx);
@@ -42,7 +43,7 @@ describe("기능 발견 설정 (E2E)", () => {
 
   it("모바일 Zod 계약으로 검증 가능한 활성 응답을 반환한다", async () => {
     // Given - use the real HTTP/interceptor path with an enabled rollout result
-    const getFeatureDiscoveryUseCase = ctx.module.get(GetFeatureDiscovery);
+    const getFeatureDiscoveryUseCase = ctx.module.get(GetFeatureDiscoveryUseCase);
     const response = {
       enabled: true as const,
       campaignId: "feature-discovery-2026-08",
@@ -50,7 +51,14 @@ describe("기능 발견 설정 (E2E)", () => {
       launchedAt: "2026-08-01T00:00:00.000Z",
       autoOpen: true,
     };
-    vi.spyOn(getFeatureDiscoveryUseCase, "execute").mockReturnValueOnce(response);
+    vi.spyOn(getFeatureDiscoveryUseCase, "execute").mockReturnValueOnce(
+      createFeatureDiscoveryCampaignFixture({
+        campaignId: response.campaignId,
+        minAppVersion: response.minAppVersion,
+        launchedAt: Temporal.Instant.from(response.launchedAt),
+        autoOpen: response.autoOpen,
+      }),
+    );
 
     // When
     const result = await request(ctx.app.getHttpServer())

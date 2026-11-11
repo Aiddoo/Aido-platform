@@ -21,6 +21,7 @@ import {
   withTodoCreated,
   withTodoRemoved,
   withTodoRestored,
+  withTodoSaved,
   withTodoUpdated,
 } from './todo-cache';
 
@@ -91,6 +92,34 @@ describe('목록 updater', () => {
     // Then
     expect(reinserted.todos).toEqual([first, second]);
     expect(reverted.todos).toEqual([first, second]);
+  });
+
+  it.each([
+    {
+      title: '만들기 응답은 임시 행을 서버 행으로 바꾼다',
+      todos: [first, createParentTodo({ id: -7 })],
+      expectedIds: [1, 2],
+    },
+    {
+      title: '응답 전에 다시 받아 임시 행이 사라졌으면 서버 행을 끝에 붙인다',
+      todos: [first],
+      expectedIds: [1, 2],
+    },
+    {
+      title: '다시 받은 목록에 이미 서버 행이 있으면 한 번만 둔다',
+      todos: [first, second],
+      expectedIds: [1, 2],
+    },
+  ])('$title', ({ todos, expectedIds }) => {
+    // Given
+    const list = toList(todos);
+
+    // When
+    const next = withTodoSaved(list, -7, second);
+
+    // Then
+    expect(next.todos.map((todo) => todo.id)).toEqual(expectedIds);
+    expect(next.todos.at(-1)).toBe(second);
   });
 
   it('존재 여부는 이미 참이면 같은 객체를 돌려 구독자가 다시 그리지 않는다', () => {

@@ -1,0 +1,9 @@
+import { Module } from "@nestjs/common";
+
+import { {{pascalCase context}}{{pascalCase slice}}Module } from "./{{slice}}/{{context}}-{{slice}}.module.js";
+
+@Module({
+  imports: [{{pascalCase context}}{{pascalCase slice}}Module],
+  exports: [{{pascalCase context}}{{pascalCase slice}}Module],
+})
+export class {{pascalCase context}}Module {}

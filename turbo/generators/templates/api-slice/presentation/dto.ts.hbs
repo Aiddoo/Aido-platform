@@ -1,0 +1,23 @@
+import {
+  create{{pascalCase aggregate}}Schema,
+  get{{pascalCase slice}}QuerySchema,
+  {{camelCase aggregate}}ListResponseSchema,
+  {{camelCase aggregate}}MutationResponseSchema,
+} from "@aido/api/contracts/{{aggregate}}";
+import type { z } from "zod";
+
+export const Create{{pascalCase aggregate}}Dto = create{{pascalCase aggregate}}Schema.meta({ id: "Create{{pascalCase aggregate}}Dto" });
+export type Create{{pascalCase aggregate}}Dto = z.infer<typeof Create{{pascalCase aggregate}}Dto>;
+
+export const Get{{pascalCase slice}}QueryDto = get{{pascalCase slice}}QuerySchema.meta({ id: "Get{{pascalCase slice}}QueryDto" });
+export type Get{{pascalCase slice}}QueryDto = z.infer<typeof Get{{pascalCase slice}}QueryDto>;
+
+export const {{pascalCase aggregate}}ListResponseDto = {{camelCase aggregate}}ListResponseSchema.meta({
+  id: "{{pascalCase aggregate}}ListResponseDto",
+});
+export type {{pascalCase aggregate}}ListResponseDto = z.infer<typeof {{pascalCase aggregate}}ListResponseDto>;
+
+export const {{pascalCase aggregate}}MutationResponseDto = {{camelCase aggregate}}MutationResponseSchema.meta({
+  id: "{{pascalCase aggregate}}MutationResponseDto",
+});
+export type {{pascalCase aggregate}}MutationResponseDto = z.infer<typeof {{pascalCase aggregate}}MutationResponseDto>;

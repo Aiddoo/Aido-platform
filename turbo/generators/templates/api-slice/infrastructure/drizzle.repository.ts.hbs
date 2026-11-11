@@ -1,0 +1,101 @@
+import { TransactionHost } from "@nestjs-cls/transactional";
+import { Injectable } from "@nestjs/common";
+import { and, desc, eq } from "drizzle-orm";
+
+import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
+{{#if isSerial}}
+import { tupleLessThan } from "#api/platform/database/keyset";
+import { {{camelCase aggregate}} as {{camelCase aggregate}}Table } from "#api/platform/database/schema/index";
+import { nextSequenceValue } from "#api/platform/database/sequence";
+{{else}}
+import { createEntityId } from "#api/platform/database/entity-id";
+import { tupleLessThan } from "#api/platform/database/keyset";
+import { {{camelCase aggregate}} as {{camelCase aggregate}}Table } from "#api/platform/database/schema/index";
+{{/if}}
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+
+import { {{pascalCase aggregate}}RepositoryPort } from "../../application/ports/{{aggregate}}.repository.port.js";
+import type { {{pascalCase aggregate}} } from "../../domain/{{aggregate}}.aggregate.js";
+import { {{pascalCase aggregate}}Id } from "../../domain/{{aggregate}}-id.vo.js";
+import { to{{pascalCase aggregate}}, to{{pascalCase aggregate}}Row } from "./{{aggregate}}-row.mapper.js";
+
+@Injectable()
+export class Drizzle{{pascalCase aggregate}}Repository implements {{pascalCase aggregate}}RepositoryPort {
+  readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
+
+  constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>) {
+    this.#txHost = txHost;
+  }
+
+  get #db() {
+    return this.#txHost.tx;
+  }
+
+  async nextId(): Promise<{{pascalCase aggregate}}Id> {
+{{#if isSerial}}
+    return {{pascalCase aggregate}}Id.reconstitute(await nextSequenceValue(this.#db, {{camelCase aggregate}}Table.id));
+{{else}}
+    return {{pascalCase aggregate}}Id.reconstitute(createEntityId());
+{{/if}}
+  }
+
+  async findByIdAndUserId(
+    {{camelCase aggregate}}Id: {{pascalCase aggregate}}Id,
+    userId: UserId,
+  ): Promise<{{pascalCase aggregate}} | null> {
+    const [row] = await this.#db
+      .select()
+      .from({{camelCase aggregate}}Table)
+      .where(
+        and(
+          eq({{camelCase aggregate}}Table.id, {{camelCase aggregate}}Id.value),
+          eq({{camelCase aggregate}}Table.userId, userId.value),
+        ),
+      )
+      .limit(1);
+    return row == null ? null : to{{pascalCase aggregate}}(row);
+  }
+
+  async listByUserId(params: {
+    readonly userId: UserId;
+    readonly after{{pascalCase aggregate}}Id: {{pascalCase aggregate}}Id | null;
+    readonly limit: number;
+  }): Promise<{{pascalCase aggregate}}[]> {
+    const { userId, after{{pascalCase aggregate}}Id, limit } = params;
+    const anchor =
+      after{{pascalCase aggregate}}Id == null ? null : await this.findByIdAndUserId(after{{pascalCase aggregate}}Id, userId);
+    if (after{{pascalCase aggregate}}Id != null && anchor == null) {
+      return [];
+    }
+
+    const anchorPrimitives = anchor?.toPrimitives();
+    const rows = await this.#db
+      .select()
+      .from({{camelCase aggregate}}Table)
+      .where(
+        and(
+          eq({{camelCase aggregate}}Table.userId, userId.value),
+          anchorPrimitives == null
+            ? undefined
+            : tupleLessThan(
+                [{{camelCase aggregate}}Table.createdAt, {{camelCase aggregate}}Table.id],
+                [anchorPrimitives.createdAt, anchorPrimitives.id],
+              ),
+        ),
+      )
+      .orderBy(desc({{camelCase aggregate}}Table.createdAt), desc({{camelCase aggregate}}Table.id))
+      .limit(limit);
+    return rows.map(to{{pascalCase aggregate}});
+  }
+
+  async save({{camelCase aggregate}}: {{pascalCase aggregate}}): Promise<void> {
+    const row = to{{pascalCase aggregate}}Row({{camelCase aggregate}});
+    await this.#db
+      .insert({{camelCase aggregate}}Table)
+      .values(row)
+      .onConflictDoUpdate({
+        target: {{camelCase aggregate}}Table.id,
+        set: { name: row.name, updatedAt: row.updatedAt },
+      });
+  }
+}
