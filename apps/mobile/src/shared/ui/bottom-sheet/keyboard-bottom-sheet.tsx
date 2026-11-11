@@ -5,6 +5,7 @@ import GorhomBottomSheet, {
   BottomSheetScrollView,
   useBottomSheetTimingConfigs,
 } from '@gorhom/bottom-sheet';
+import { useAppLifecycle } from '@src/shared/di/shared-di-context';
 import { useAndroidBackHandler } from '@src/shared/hooks/use-android-back-handler';
 import { useTranslation } from '@src/shared/i18n';
 import { BottomSheet as HeroBottomSheet } from 'heroui-native';
@@ -19,14 +20,7 @@ import {
   useRef,
   useState,
 } from 'react';
-import {
-  AppState,
-  type AppStateStatus,
-  Keyboard,
-  StyleSheet,
-  useWindowDimensions,
-  View,
-} from 'react-native';
+import { Keyboard, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { GestureDetector, useTapGesture } from 'react-native-gesture-handler';
 import { useKeyboardContext } from 'react-native-keyboard-controller';
 import Animated, {
@@ -99,6 +93,7 @@ export function KeyboardBottomSheet({
   const animatedPosition = useSharedValue(0);
   const animatedIndex = useSharedValue<number>(SHEET_INDEX.CLOSED);
   const isBackdropTouchable = useSharedValue(false);
+  const appLifecycle = useAppLifecycle();
   const isClosingRef = useRef(false);
   const hasNotifiedCloseRef = useRef(false);
   const prevIsOpenRef = useRef(isOpen);
@@ -281,22 +276,19 @@ export function KeyboardBottomSheet({
       resizeSheet();
     });
 
-    const appStateSubscription = AppState.addEventListener(
-      'change',
-      (nextState: AppStateStatus) => {
-        if (nextState === 'background' && !isClosingRef.current) {
-          Keyboard.dismiss();
-        }
-      },
-    );
+    const unsubscribeLifecycle = appLifecycle.subscribe((nextState) => {
+      if (nextState === 'background' && !isClosingRef.current) {
+        Keyboard.dismiss();
+      }
+    });
 
     return () => {
       showSubscription.remove();
       didShowSubscription.remove();
       hideSubscription.remove();
-      appStateSubscription.remove();
+      unsubscribeLifecycle();
     };
-  }, [isOpen, keyboardHeight, resizeSheet, scrollViewRef]);
+  }, [appLifecycle, isOpen, keyboardHeight, resizeSheet, scrollViewRef]);
 
   useEffect(() => {
     if (!isOpen) {

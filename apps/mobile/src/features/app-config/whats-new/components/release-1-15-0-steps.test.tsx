@@ -6,6 +6,7 @@ import { createUser } from '@src/features/identity/user/__tests__/user.fixtures'
 import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
 import {
   createAnalyticsStub,
+  createAppLifecycleGatewayStub,
   createErrorReporterStub,
   createHttpClientStub,
   createLoggerStub,
@@ -52,6 +53,8 @@ async function renderSteps() {
     withLocalDate: true,
     withOverlay: true,
     di: {
+      // 앞에 있는 앱은 자정 타이머를 계속 걸어 runAllTimers가 끝나지 않는다
+      appLifecycle: createAppLifecycleGatewayStub('background'),
       httpClient,
       analytics,
       logger,

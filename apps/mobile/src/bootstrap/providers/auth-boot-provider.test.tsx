@@ -1,5 +1,6 @@
 import { ok } from '@src/core/errors/result';
 import { emitSessionExpired, subscribeSessionExpired } from '@src/core/events/session-expired';
+import type { AppLifecycleState } from '@src/core/ports/app-lifecycle-gateway';
 import type { ErrorReporter } from '@src/core/ports/error-reporter';
 import { createPendingRevocationRepository } from '@src/features/identity/auth/apis/pending-revocation.repository';
 import { SessionCleanupService } from '@src/features/identity/auth/apis/session-cleanup.service';
@@ -15,6 +16,8 @@ import {
   createAnalyticsStub,
   createErrorReporterStub,
   createHttpClientStub,
+  type AppLifecycleGatewayStub,
+  createAppLifecycleGatewayStub,
   createLoggerStub,
   createMemoryStorage,
   createMemorySyncStorage,
@@ -37,7 +40,7 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import type { QueryClient } from '@tanstack/react-query';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { noop } from 'es-toolkit';
-import { AppState, type AppStateStatus, Text } from 'react-native';
+import { Text } from 'react-native';
 import { z } from 'zod';
 
 import {
@@ -68,6 +71,8 @@ describe('AuthBootProvider', () => {
   let tokenStore: ReturnType<typeof createMemoryTokenStore>;
   let errorReporter: jest.Mocked<ErrorReporter>;
   let analytics: ReturnType<typeof createAnalyticsStub>;
+  // 키체인이 잠긴 채 시작한 앱은 뒤에 있다가 잠금을 풀면 앞으로 온다
+  let appLifecycle: AppLifecycleGatewayStub;
   let queryClient: QueryClient;
   let draftService: DraftService;
   let queryCacheStorage: QueryCacheStorage;
@@ -86,6 +91,7 @@ describe('AuthBootProvider', () => {
     tokenStore = createMemoryTokenStore();
     errorReporter = createErrorReporterStub();
     analytics = createAnalyticsStub();
+    appLifecycle = createAppLifecycleGatewayStub('background');
     queryClient = createTestQueryClient();
     draftService = new DraftService(createDraftRepository(createMemorySyncStorage()), Date.now);
     queryCacheStorage = createQueryCacheStorage(createMemorySyncStorage());
@@ -117,6 +123,7 @@ describe('AuthBootProvider', () => {
     const mountedProvider = await render(
       <StaticDIProvider
         container={createTestDi({
+          appLifecycle,
           tokenStore,
           errorReporter,
           analytics,
@@ -342,16 +349,9 @@ describe('AuthBootProvider', () => {
 
   describe('잠금 해제 재판정', () => {
     function captureAppStateListeners() {
-      const listeners: Array<Parameters<typeof AppState.addEventListener>[1]> = [];
-      jest.spyOn(AppState, 'addEventListener').mockImplementation((_event, listener) => {
-        listeners.push(listener);
-        return { remove: jest.fn() };
-      });
-      return (appState: AppStateStatus) =>
+      return (appState: AppLifecycleState) =>
         act(async () => {
-          for (const listener of listeners) {
-            listener(appState);
-          }
+          appLifecycle.emit(appState);
           await jest.advanceTimersByTimeAsync(0);
         });
     }
@@ -405,6 +405,7 @@ describe('AuthBootProvider', () => {
       // When
       await changeAppState('active');
       await expectStatus('locked');
+      await changeAppState('background');
       await changeAppState('active');
 
       // Then
@@ -448,11 +449,6 @@ describe('AuthBootProvider', () => {
       '로그아웃 후 늦게 끝난 %s 판정은 세션을 변경하거나 리포팅하지 않는다',
       async (outcome) => {
         // Given
-        const listeners: Array<Parameters<typeof AppState.addEventListener>[1]> = [];
-        jest.spyOn(AppState, 'addEventListener').mockImplementation((_event, listener) => {
-          listeners.push(listener);
-          return { remove: jest.fn() };
-        });
         let resolveRead: (value: string | null) => void = () => {
           throw new Error('Deferred read is not initialized');
         };
@@ -470,9 +466,7 @@ describe('AuthBootProvider', () => {
         await expectStatus('locked');
 
         await act(() => {
-          for (const listener of listeners) {
-            listener('active');
-          }
+          appLifecycle.emit('active');
         });
         expect(tokenStore.getRefreshToken).toHaveBeenCalledTimes(2);
         await fireEvent.press(screen.getByTestId('logout'));

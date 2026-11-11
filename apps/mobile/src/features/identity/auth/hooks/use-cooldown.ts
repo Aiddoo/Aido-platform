@@ -1,6 +1,6 @@
 import { SECOND_MS } from '@src/shared/constants/time-units';
+import { useOnAppForeground } from '@src/shared/hooks/use-on-app-foreground';
 import { useCallback, useEffect, useState } from 'react';
-import { AppState } from 'react-native';
 
 import { getMsUntilNextCooldownTick, getRemainingCooldownSeconds } from '../utils/cooldown';
 
@@ -21,17 +21,11 @@ export function useCooldown() {
     return () => clearTimeout(timer);
   }, [deadlineMs, nowMs, cooldown]);
 
-  useEffect(() => {
-    if (cooldown <= 0) {
-      return;
+  useOnAppForeground(() => {
+    if (cooldown > 0) {
+      setNowMs(Date.now());
     }
-    const subscription = AppState.addEventListener('change', (state) => {
-      if (state === 'active') {
-        setNowMs(Date.now());
-      }
-    });
-    return () => subscription.remove();
-  }, [cooldown]);
+  });
 
   const startCooldown = useCallback((seconds: number) => {
     const startedAtMs = Date.now();

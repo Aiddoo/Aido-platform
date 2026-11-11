@@ -6,7 +6,7 @@ import {
   millisecondsUntilNextLocalMidnight,
   type LocalDateState,
 } from '@src/shared/date/local-date-clock';
-import { useAnalytics, useErrorReporter } from '@src/shared/di/shared-di-context';
+import { useAnalytics, useAppLifecycle, useErrorReporter } from '@src/shared/di/shared-di-context';
 import { toError } from '@src/shared/errors';
 import {
   type SystemCalendar,
@@ -21,7 +21,6 @@ import {
   useRef,
   useState,
 } from 'react';
-import { AppState } from 'react-native';
 
 const LocalDateContext = createContext<LocalDateState | null>(null);
 
@@ -44,6 +43,7 @@ export function LocalDateProvider({
 }: LocalDateProviderProps) {
   const analytics = useAnalytics();
   const errorReporter = useErrorReporter();
+  const appLifecycle = useAppLifecycle();
   const deviceCalendar = useDeviceCalendar();
   const deviceTimeZone = deviceCalendar.timeZone ?? FALLBACK_TIME_ZONE;
   const deviceTimeZoneRef = useRef(deviceTimeZone);
@@ -119,7 +119,7 @@ export function LocalDateProvider({
   );
 
   useEffect(() => {
-    let currentAppState = AppState.currentState;
+    let currentAppState = appLifecycle.getCurrentState();
     let localMidnightTimer: ReturnType<typeof setTimeout> | null = null;
 
     const clearLocalMidnightTimer = () => {
@@ -148,7 +148,7 @@ export function LocalDateProvider({
       reconcileCurrentLocalDate('foreground');
     }
     scheduleLocalMidnightTimer();
-    const subscription = AppState.addEventListener('change', (nextAppState) => {
+    const unsubscribe = appLifecycle.subscribe((nextAppState) => {
       currentAppState = nextAppState;
       if (nextAppState === 'active') {
         reconcileCurrentLocalDate('foreground');
@@ -160,17 +160,17 @@ export function LocalDateProvider({
 
     return () => {
       clearLocalMidnightTimer();
-      subscription.remove();
+      unsubscribe();
     };
-  }, [reconcileCurrentLocalDate, currentTimeZone]);
+  }, [appLifecycle, reconcileCurrentLocalDate, currentTimeZone]);
 
   // 첫 렌더의 재평가는 같은 상태라 무시된다.
   useEffect(() => {
     deviceTimeZoneRef.current = deviceTimeZone;
-    if (AppState.currentState === 'active') {
+    if (appLifecycle.getCurrentState() === 'active') {
       reconcileCurrentLocalDate('calendar_change');
     }
-  }, [deviceCalendar, deviceTimeZone, reconcileCurrentLocalDate]);
+  }, [appLifecycle, deviceCalendar, deviceTimeZone, reconcileCurrentLocalDate]);
 
   return <LocalDateContext value={localDateState}>{children}</LocalDateContext>;
 }

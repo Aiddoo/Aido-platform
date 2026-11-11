@@ -4,8 +4,8 @@ import { ERROR_REPORT_MESSAGES } from '@src/core/observability/telemetry-keys';
 import { AuthSessionPolicy } from '@src/features/identity/auth/domains/auth-session.model';
 import { track } from '@src/shared/analytics';
 import { toError } from '@src/shared/errors';
+import { useOnAppForeground } from '@src/shared/hooks/use-on-app-foreground';
 import { useCallback, useEffect, useSyncExternalStore } from 'react';
-import { AppState } from 'react-native';
 
 import { resolveInitialAuthStatus } from '../auth/resolve-initial-auth-status';
 // di-context에서 직접 가져온다 — di-provider를 경유하면 벤더 초기화 모듈까지 끌려온다.
@@ -25,7 +25,6 @@ export function useAuthBoot(): void {
   const analytics = useAnalytics();
   const sessionCleanupService = useSessionCleanupService();
   const authSession = useSyncExternalStore(authSessionStore.subscribe, authSessionStore.getState);
-  const { status } = authSession;
 
   /** `locked`는 잠금 해제를 기다리는 상태다. 잠금이 아닌 영구 오류까지 `locked`로 두면 재판정도 계속 실패해 조용히 무한 로딩에 갇힌다 */
   const resolveBoot = useCallback(
@@ -57,23 +56,12 @@ export function useAuthBoot(): void {
 
   // 잠긴 키체인으로 판정을 미뤘다면, 잠금 해제(포그라운드 복귀) 후 다시 시도한다.
   // 이 재판정이 없으면 잠금 중 콜드 스타트가 영구 로그인 화면이 된다.
-  useEffect(() => {
-    if (status !== 'locked') {
-      return;
+  useOnAppForeground(() => {
+    const isLocked = () => authSessionStore.getState().status === 'locked';
+    if (isLocked()) {
+      resolveBoot(() => !isLocked());
     }
-
-    let cancelled = false;
-    const subscription = AppState.addEventListener('change', (appState) => {
-      if (appState === 'active') {
-        resolveBoot(() => cancelled);
-      }
-    });
-
-    return () => {
-      cancelled = true;
-      subscription.remove();
-    };
-  }, [status, resolveBoot]);
+  });
 
   useEffect(() => {
     return subscribeSessionExpired(({ reason, serverErrorCode }) => {

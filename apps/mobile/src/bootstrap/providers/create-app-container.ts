@@ -99,6 +99,7 @@ import { getNowInstant } from '@src/shared/date/instant';
 import { createDraftRepository } from '@src/shared/draft/draft.repository';
 import { DraftService } from '@src/shared/draft/draft.service';
 import { removeStoredValue } from '@src/shared/storage/define-stored-value';
+import { createAppMinuteClock } from '@src/shared/stores/minute-clock-store';
 import type { QueryClient } from '@tanstack/react-query';
 
 import {
@@ -376,6 +377,7 @@ export function createAppContainer(ports: AppContainerPorts): DIContainer {
     accountSyncStorage: draftStorage,
     networkStatus: ports.networkStatus,
     appLifecycle: ports.appLifecycle,
+    minuteClock: createAppMinuteClock(ports.appLifecycle),
     viewCapture: ports.viewCapture,
     screenOrientation: ports.screenOrientation,
     widgetSyncService: new WidgetSyncService(

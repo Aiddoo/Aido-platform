@@ -1,8 +1,12 @@
 import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
-import { createAnalyticsStub, createErrorReporterStub, createTestDi } from '@src/shared/__tests__';
+import {
+  createAnalyticsStub,
+  createAppLifecycleGatewayStub,
+  createErrorReporterStub,
+  createTestDi,
+} from '@src/shared/__tests__';
 import { act, renderHook } from '@testing-library/react-native';
 import type { PropsWithChildren } from 'react';
-import { AppState, type AppStateStatus } from 'react-native';
 
 import { LocalDateProvider, useLocalDate } from './local-date-provider';
 
@@ -12,38 +16,22 @@ interface FakeDeviceCalendar {
 
 const PROCESS_TIME_ZONE = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
-const originalCurrentStateDescriptor = Object.getOwnPropertyDescriptor(AppState, 'currentState');
-
 describe('앱 로컬 날짜 Provider', () => {
   beforeEach(() => {
     jest.useFakeTimers();
-    Object.defineProperty(AppState, 'currentState', {
-      configurable: true,
-      writable: true,
-      value: 'active',
-    });
   });
 
   afterEach(() => {
     jest.useRealTimers();
-    if (originalCurrentStateDescriptor) {
-      Object.defineProperty(AppState, 'currentState', originalCurrentStateDescriptor);
-    }
   });
 
   async function setup(device: FakeDeviceCalendar = { timeZone: PROCESS_TIME_ZONE }) {
     const analytics = createAnalyticsStub();
     const errorReporter = createErrorReporterStub();
-    const remove = jest.fn();
-    let appStateListener: ((state: AppStateStatus) => void) | undefined;
-
-    jest.spyOn(AppState, 'addEventListener').mockImplementation((_type, listener) => {
-      appStateListener = listener;
-      return { remove };
-    });
+    const appLifecycle = createAppLifecycleGatewayStub();
 
     const wrapper = ({ children }: PropsWithChildren) => (
-      <StaticDIProvider container={createTestDi({ analytics, errorReporter })}>
+      <StaticDIProvider container={createTestDi({ analytics, appLifecycle, errorReporter })}>
         <LocalDateProvider useDeviceCalendar={() => ({ timeZone: device.timeZone })}>
           {children}
         </LocalDateProvider>
@@ -55,8 +43,7 @@ describe('앱 로컬 날짜 Provider', () => {
       ...hook,
       analytics,
       errorReporter,
-      remove,
-      getAppStateListener: () => appStateListener,
+      appLifecycle,
     };
   }
 
@@ -90,13 +77,13 @@ describe('앱 로컬 날짜 Provider', () => {
   it('백그라운드에서 날짜가 바뀐 뒤 foreground 복귀 시 즉시 보정한다', async () => {
     // Given
     jest.setSystemTime(new Date(2026, 6, 14, 12));
-    const { result, analytics, getAppStateListener } = await setup();
+    const { result, analytics, appLifecycle } = await setup();
 
     // When
     await act(() => {
-      getAppStateListener()?.('background');
+      appLifecycle.emit('background');
       jest.setSystemTime(new Date(2026, 6, 15, 0, 0, 1));
-      getAppStateListener()?.('active');
+      appLifecycle.emit('active');
     });
 
     // Then
@@ -148,10 +135,10 @@ describe('앱 로컬 날짜 Provider', () => {
     );
   });
 
-  it('언마운트 시 AppState 구독과 자정 타이머를 모두 정리한다', async () => {
+  it('언마운트 시 앱 수명 구독과 자정 타이머를 모두 정리한다', async () => {
     // Given
     jest.setSystemTime(new Date(2026, 6, 14, 23, 59, 59, 900));
-    const { unmount, remove, analytics } = await setup();
+    const { unmount, appLifecycle, analytics } = await setup();
 
     // When
     await unmount();
@@ -160,7 +147,7 @@ describe('앱 로컬 날짜 Provider', () => {
     });
 
     // Then
-    expect(remove).toHaveBeenCalledTimes(1);
+    expect(appLifecycle.getListenerCount()).toBe(0);
     expect(analytics.trackEvent).not.toHaveBeenCalled();
   });
 });

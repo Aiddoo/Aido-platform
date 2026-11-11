@@ -1,3 +1,4 @@
+import type { AppLifecycleGateway } from '@src/core/ports/app-lifecycle-gateway';
 import { MINUTE_MS } from '@src/shared/constants/time-units';
 
 type MinuteClockSource = {
@@ -67,4 +68,14 @@ export function createMinuteClockStore({ now, listenForeground }: MinuteClockSou
     },
     getSnapshot: (): number => toMinuteStart(now()),
   };
+}
+
+export type MinuteClockStore = ReturnType<typeof createMinuteClockStore>;
+
+/** 앱 수명 포트에 매단 분 시계. 컨테이너가 하나 만들어 모든 소비자가 나눠 쓴다 */
+export function createAppMinuteClock(appLifecycle: AppLifecycleGateway): MinuteClockStore {
+  return createMinuteClockStore({
+    now: () => Date.now(),
+    listenForeground: (onChange) => appLifecycle.subscribe((state) => onChange(state === 'active')),
+  });
 }
