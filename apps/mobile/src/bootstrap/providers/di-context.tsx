@@ -39,7 +39,7 @@ import type { MemoService } from '@src/features/notes/memo/apis/memo.service';
 import type { MarketingPushPromptRepository } from '@src/features/notification/apis/marketing-push-prompt.repository';
 import type { NotificationBadgeService } from '@src/features/notification/apis/notification-badge.service';
 import type { NotificationEntryStore } from '@src/features/notification/apis/notification-entry.store';
-import type { NotificationService } from '@src/features/notification/apis/notification.service';
+import type { NotificationApi } from '@src/features/notification/apis/notification.api';
 import type { PushDeviceService } from '@src/features/notification/apis/push-device.service';
 import type { TodoCategoryService } from '@src/features/planning/category/apis/todo-category.service';
 import type { SubTodoService } from '@src/features/planning/todo/apis/sub-todo.service';
@@ -110,7 +110,7 @@ export interface DIContainer extends SharedDependencies {
   todoService: TodoService;
   todoCommentService: TodoCommentService;
   todoCategoryService: TodoCategoryService;
-  notificationService: NotificationService;
+  notificationApi: NotificationApi;
   notificationBadgeService: NotificationBadgeService;
   /** 눌린 푸시 응답 슬롯 */
   notificationEntryStore: NotificationEntryStore;
@@ -293,8 +293,8 @@ export function useTodoCategoryService() {
 export function useNotificationBadgeService() {
   return useDI().notificationBadgeService;
 }
-export function useNotificationService() {
-  return useDI().notificationService;
+export function useNotificationApi() {
+  return useDI().notificationApi;
 }
 export function useNotificationEntryStore() {
   return useDI().notificationEntryStore;

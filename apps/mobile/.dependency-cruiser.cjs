@@ -479,11 +479,11 @@ module.exports = {
     {
       name: 'cache-helper-purity',
       comment:
-        '캐시 helper(queries/*-cache.ts)는 Query 캐시만 만진다. 이벤트 발행(core/events)·오류 보고·로그·Service 호출은 호출부(mutation)에서 한다.',
+        '캐시 helper(queries/*-cache.ts)는 Query 캐시만 만진다. 이벤트 발행(core/events)·오류 보고·로그·Api·Service 호출은 호출부(mutation)에서 한다.',
       severity: 'error',
       from: { path: '/queries/[^/]+-cache\\.ts$', pathNot: TEST },
       to: {
-        path: '^src/core/events/|/apis/[^/]+\\.service\\.tsx?$|/ports/(?:error-reporter|logger)\\.tsx?$',
+        path: '^src/core/events/|/(?:apis|services)/[^/]+\\.(?:api|service)\\.tsx?$|/ports/(?:error-reporter|logger)\\.tsx?$',
       },
     },
     ...modelAndFolderRules,

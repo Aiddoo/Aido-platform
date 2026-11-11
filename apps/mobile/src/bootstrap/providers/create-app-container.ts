@@ -71,7 +71,7 @@ import { DeviceIdService } from '@src/features/notification/apis/device-id.servi
 import { createMarketingPushPromptRepository } from '@src/features/notification/apis/marketing-push-prompt.repository';
 import { NotificationBadgeService } from '@src/features/notification/apis/notification-badge.service';
 import { createNotificationEntryStore } from '@src/features/notification/apis/notification-entry.store';
-import { NotificationService } from '@src/features/notification/apis/notification.service';
+import { NotificationApi } from '@src/features/notification/apis/notification.api';
 import { PushDeviceService } from '@src/features/notification/apis/push-device.service';
 import { createPushRegistrationRepository } from '@src/features/notification/apis/push-registration.repository';
 import { deviceTimezoneStoredValue } from '@src/features/notification/schemas/device-timezone-storage.schema';
@@ -339,7 +339,7 @@ export function createAppContainer(ports: AppContainerPorts): DIContainer {
     todoService: new TodoService(authHttpClient),
     todoCommentService: new TodoCommentService(authHttpClient),
     todoCategoryService: new TodoCategoryService(authHttpClient),
-    notificationService: new NotificationService({ httpClient: authHttpClient, publicHttpClient }),
+    notificationApi: new NotificationApi({ httpClient: authHttpClient, publicHttpClient }),
     notificationBadgeService: new NotificationBadgeService({
       badgeGateway: pushNotification,
       logger,

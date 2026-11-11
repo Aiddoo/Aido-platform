@@ -2,7 +2,7 @@ import {
   useAppLifecycle,
   useLogger,
   useNotificationEntryStore,
-  useNotificationService,
+  useNotificationApi,
   usePushNotification,
   useSessionEpoch,
 } from '@src/bootstrap/providers/di-context';
@@ -129,7 +129,7 @@ function useMarketingOptOut(
   finishResponse: (responseId: string) => void,
 ) {
   const status = useAuthStatus();
-  const notificationService = useNotificationService();
+  const notificationApi = useNotificationApi();
   const appLifecycle = useAppLifecycle();
   const logger = useLogger();
   const { trackEvent } = useTrack();
@@ -153,7 +153,7 @@ function useMarketingOptOut(
     inFlightIdRef.current = target.id;
     let withdrawnAt: Instant;
     try {
-      ({ withdrawnAt } = unwrap(await notificationService.optOutMarketingPush(token)));
+      ({ withdrawnAt } = unwrap(await notificationApi.optOutMarketingPush(token)));
     } catch (error) {
       logger.warn(NOTIFICATION_LOG_EVENT.RESPONSE_DEFERRED, { error: getErrorMessage(error) });
       return;
@@ -194,7 +194,7 @@ function useResolveResponse(
   const status = useAuthStatus();
   const isRestoring = useIsRestoring();
   const store = useNotificationEntryStore();
-  const notificationService = useNotificationService();
+  const notificationApi = useNotificationApi();
   const sessionEpoch = useSessionEpoch();
   const logger = useLogger();
   const queryClient = useQueryClient();
@@ -211,7 +211,7 @@ function useResolveResponse(
       sessionEpoch.current() === epoch && store.getState().pending?.id === target.id;
     const { notification } = target;
     try {
-      const ownership = await notificationService.markAsReadAndCheckOwnership(
+      const ownership = await notificationApi.markAsReadAndCheckOwnership(
         notification.notificationId,
       );
       if (!isCurrent()) {

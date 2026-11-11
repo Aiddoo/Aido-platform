@@ -1,4 +1,4 @@
-import { useNotificationService, usePushDeviceService } from '@src/bootstrap/providers/di-context';
+import { useNotificationApi, usePushDeviceService } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
 import { getNextCursor, selectPageItems } from '@src/shared/domains/cursor-page.model';
 import type { InfiniteData } from '@tanstack/react-query';
@@ -15,14 +15,14 @@ export function useGetNotificationsInfiniteQueryOptions({
   category,
   limit,
 }: NotificationListQueryKey) {
-  const notificationService = useNotificationService();
+  const notificationApi = useNotificationApi();
 
   return infiniteQueryOptions({
     queryKey: NOTIFICATION_QUERY_KEYS.list({ category, limit }),
 
     queryFn: async ({ pageParam, signal }) =>
       unwrap(
-        await notificationService.getNotifications({ cursor: pageParam, limit, category }, signal),
+        await notificationApi.getNotifications({ cursor: pageParam, limit, category }, signal),
       ),
 
     initialPageParam: FIRST_PAGE_CURSOR,
@@ -52,11 +52,11 @@ export function useGetPushPermissionQueryOptions() {
 }
 
 export function useGetUnreadCountQueryOptions() {
-  const notificationService = useNotificationService();
+  const notificationApi = useNotificationApi();
 
   return queryOptions({
     queryKey: NOTIFICATION_QUERY_KEYS.unreadCount(),
-    queryFn: async ({ signal }) => unwrap(await notificationService.getUnreadCount(signal)),
+    queryFn: async ({ signal }) => unwrap(await notificationApi.getUnreadCount(signal)),
     // 푸시를 받지 못하면 무효화가 오지 않아 낡은 수가 남는다. 화면을 열 때마다 다시 본다
     staleTime: 0,
   });

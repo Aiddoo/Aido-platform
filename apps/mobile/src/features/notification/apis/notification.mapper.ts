@@ -1,4 +1,5 @@
 import {
+  type MarkReadResponse as MarkReadResponseDto,
   type NotificationInboxItem as NotificationInboxItemDto,
   type NotificationInboxResponse as NotificationInboxResponseDto,
   type NotificationNavigation as NotificationNavigationDto,
@@ -108,4 +109,8 @@ export function toNotificationPage(dto: NotificationInboxResponseDto): Notificat
     items: dto.notifications.map(toNotification),
     nextCursor: dto.hasMore ? dto.nextCursor : null,
   };
+}
+
+export function toReadCount(dto: MarkReadResponseDto): number {
+  return dto.readCount;
 }

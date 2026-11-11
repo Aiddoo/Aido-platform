@@ -314,8 +314,6 @@ ignore:
   - apps/mobile/src/features/notification/apis/notification-badge.service.ts
   - apps/mobile/src/features/notification/apis/notification-entry.store.test.ts
   - apps/mobile/src/features/notification/apis/notification-entry.store.ts
-  - apps/mobile/src/features/notification/apis/notification.service.test.ts
-  - apps/mobile/src/features/notification/apis/notification.service.ts
   - apps/mobile/src/features/notification/apis/push-device.service.test.ts
   - apps/mobile/src/features/notification/apis/push-device.service.ts
   - apps/mobile/src/features/notification/apis/push-registration.repository.ts

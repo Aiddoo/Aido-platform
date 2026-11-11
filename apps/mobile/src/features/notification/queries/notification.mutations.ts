@@ -2,7 +2,7 @@ import {
   useExternalLink,
   useHaptics,
   useLogger,
-  useNotificationService,
+  useNotificationApi,
   usePushDeviceService,
   useSessionEpoch,
 } from '@src/bootstrap/providers/di-context';
@@ -39,12 +39,12 @@ function invalidateAfterLastNotificationWrite(queryClient: QueryClient) {
 
 // 앱 아이콘 배지는 안 읽은 수 캐시를 따라가므로(`useNotificationBadgeSync`) 캐시만 고친다
 export function useMarkAllAsReadMutationOptions() {
-  const notificationService = useNotificationService();
+  const notificationApi = useNotificationApi();
   const queryClient = useQueryClient();
 
   return mutationOptions({
     mutationKey: NOTIFICATION_MUTATION_KEYS.writes(),
-    mutationFn: async () => unwrap(await notificationService.markAllAsRead()),
+    mutationFn: async () => unwrap(await notificationApi.markAllAsRead()),
     onMutate: async () => ({ change: await optimisticallyMarkNotificationsRead(queryClient) }),
     onError: (_error, _variables, context) => {
       if (context?.change != null) {
@@ -63,13 +63,13 @@ export function useMarkAllAsReadMutationOptions() {
 
 export function useMarkAsReadMutationOptions() {
   const haptics = useHaptics();
-  const notificationService = useNotificationService();
+  const notificationApi = useNotificationApi();
   const queryClient = useQueryClient();
 
   return mutationOptions({
     mutationKey: NOTIFICATION_MUTATION_KEYS.writes(),
     mutationFn: async (notificationId: number) =>
-      unwrap(await notificationService.markAsRead(notificationId)),
+      unwrap(await notificationApi.markAsRead(notificationId)),
     onMutate: async (notificationId) => ({
       change: await optimisticallyMarkNotificationsRead(queryClient, notificationId),
     }),
@@ -163,7 +163,7 @@ function shouldRetryPushOpened(failureCount: number, error: unknown) {
 
 /** 서버의 opened는 읽음도 처리하므로 예산 안에 읽음을 확인하지 못한 탭도 여기서 뒤늦게 읽음이 된다 */
 export function useRecordPushOpenedMutationOptions() {
-  const notificationService = useNotificationService();
+  const notificationApi = useNotificationApi();
   const sessionEpoch = useSessionEpoch();
   const logger = useLogger();
   const queryClient = useQueryClient();
@@ -171,7 +171,7 @@ export function useRecordPushOpenedMutationOptions() {
   return mutationOptions({
     mutationKey: NOTIFICATION_MUTATION_KEYS.writes(),
     mutationFn: async (notificationId: number) =>
-      unwrap(await notificationService.markOpened(notificationId)),
+      unwrap(await notificationApi.markOpened(notificationId)),
     retry: shouldRetryPushOpened,
     onMutate: (notificationId) => {
       const epoch = sessionEpoch.current();
