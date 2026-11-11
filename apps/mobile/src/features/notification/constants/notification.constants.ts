@@ -2,6 +2,13 @@ import { EVENING_REMINDER_HOUR_RANGE, MORNING_REMINDER_HOUR_RANGE } from '@aido/
 
 import type { NotificationType } from '../domains/notification.model';
 import type { PushPermissionPrompt } from '../domains/push-permission.model';
+import type { PushRegistration } from '../domains/push-registration.model';
+
+/** 보고한 적도, 풀 해제도 없는 기기 */
+export const EMPTY_PUSH_REGISTRATION: PushRegistration = {
+  reportedToken: null,
+  releaseRequestedAt: null,
+};
 
 /** 진입 대기로 스플래시를 잡아 두는 상한. 판정이 어떻게 끝나든 스플래시에 갇히지 않게 한다 */
 export const NOTIFICATION_ENTRY_HOLD_MAX_MS = 3000;

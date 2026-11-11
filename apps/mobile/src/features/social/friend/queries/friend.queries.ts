@@ -6,7 +6,7 @@ import { type InfiniteData, infiniteQueryOptions } from '@tanstack/react-query';
 import { useCallback } from 'react';
 
 import { FRIEND_QUERY_KEYS } from '../constants/friend-query-keys';
-import { FriendPolicy, type FriendUser } from '../domains/friend.model';
+import { type FriendUser, isValidSearchQuery } from '../domains/friend.model';
 import { findFriendById } from '../utils/find-friend-by-id';
 
 const FIRST_PAGE_CURSOR: string | undefined = undefined;
@@ -107,7 +107,7 @@ export function useGetUserSearchInfiniteQueryOptions({ query }: { query: string 
     queryFn: async ({ pageParam, signal }) =>
       unwrap(await friendService.searchUsers({ query: trimmed, cursor: pageParam.cursor }, signal)),
     initialPageParam: INITIAL_SEARCH_USERS_PAGE_PARAM,
-    enabled: FriendPolicy.isValidSearchQuery({ query: trimmed }),
+    enabled: isValidSearchQuery(trimmed),
     getNextPageParam: (lastPage) => {
       if (!lastPage.hasMore || lastPage.nextCursor == null) {
         return undefined;

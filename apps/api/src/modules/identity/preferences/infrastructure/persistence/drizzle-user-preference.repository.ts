@@ -95,7 +95,7 @@ export class DrizzleUserPreferenceRepository extends UserPreferenceRepositoryPor
       .onConflictDoUpdate({
         target: userPreference.userId,
         set: { timezone },
-        where: ne(userPreference.timezone, timezone),
+        setWhere: ne(userPreference.timezone, timezone),
       })
       .returning({ id: userPreference.id });
     return written.length > 0;

@@ -1,5 +1,6 @@
 import '@src/shared/i18n/init';
-import { ok } from '@src/core/errors/result';
+import { ApiError } from '@src/core/errors/api-error';
+import { err, ok } from '@src/core/errors/result';
 import {
   createAnalyticsStub,
   createHapticsGatewayStub,
@@ -10,7 +11,7 @@ import {
 } from '@src/shared/__tests__';
 import { NetworkError } from '@src/shared/errors/infra-error';
 import { onlineManager, useMutation } from '@tanstack/react-query';
-import { screen } from '@testing-library/react-native';
+import { screen, waitFor } from '@testing-library/react-native';
 
 import { createTodoCategoryDto } from '../__tests__/todo-category.fixtures';
 import { TODO_CATEGORY_QUERY_KEYS } from '../constants/todo-category-query-keys';
@@ -18,6 +19,7 @@ import type {
   TodoCategoriesResult,
   TodoCategoryDeletionRequest,
 } from '../domains/todo-category.model';
+import { changeCachedCategoryTodoCount } from './todo-category-cache';
 import {
   useCreateTodoCategoryMutationOptions,
   useDeleteTodoCategoryMutationOptions,
@@ -65,6 +67,7 @@ async function renderMutations() {
   return {
     httpClient,
     analytics,
+    queryClient,
     cached: () => queryClient.getQueryData<TodoCategoriesResult>(TODO_CATEGORY_QUERY_KEYS.list()),
     create: (input: { name: string; color: string }) => actions.create?.mutateAsync(input),
     update: (id: number, input: { name: string; color?: string }) =>
@@ -212,5 +215,30 @@ describe('카테고리 지우기', () => {
       todo_handling: 'move',
       todo_count_bucket: '1_9',
     });
+  });
+});
+
+describe('카테고리 고치기와 동시에 바뀐 값', () => {
+  it('이름 고치기가 실패하면 그 이름만 되돌리고 그사이 늘어난 할 일 수는 지킨다', async () => {
+    // Given
+    const { httpClient, queryClient, cached, update } = await renderMutations();
+    const rejection = new ApiError('CATEGORY_0101', '이름을 바꾸지 못했어요', 409);
+    const pendingUpdate = createPendingResponse(err(rejection));
+    httpClient.patch.mockReturnValue(pendingUpdate.response);
+    const result = update(1, { name: '새 이름' });
+    await waitFor(() => expect(cached()?.categories[0]?.name).toBe('새 이름'));
+    changeCachedCategoryTodoCount(queryClient, { categoryId: 1, delta: 1 });
+
+    // When
+    pendingUpdate.settle();
+
+    // Then
+    await expect(result).rejects.toBe(rejection);
+    // 기본 2개 + 그사이 만든 1개
+    expect(cached()?.categories).toEqual([
+      { ...CATEGORIES.categories[0], todoCount: 3 },
+      CATEGORIES.categories[1],
+    ]);
+    expect(await screen.findAllByText(rejection.message)).not.toHaveLength(0);
   });
 });

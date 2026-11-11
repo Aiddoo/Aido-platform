@@ -71,15 +71,13 @@ export function describeTodoCategoryRepositoryContract(
         name: "업무",
       });
 
-      // When
-      const insertDuplicate = insertCategory(categoryRepository, { name: "업무", sortOrder: 2 });
-      const renameDuplicate = categoryRepository.update(other.id, { name: "업무" });
-
-      // Then
-      await expect(insertDuplicate).rejects.toMatchObject({
+      // When & Then: 거부 처리기를 만들 때 바로 걸어 먼저 끝난 거부가 처리되지 않은 채 남지 않게 한다
+      await expect(
+        insertCategory(categoryRepository, { name: "업무", sortOrder: 2 }),
+      ).rejects.toMatchObject({
         errorCode: ErrorCode.TODO_CATEGORY_0853,
       });
-      await expect(renameDuplicate).rejects.toMatchObject({
+      await expect(categoryRepository.update(other.id, { name: "업무" })).rejects.toMatchObject({
         errorCode: ErrorCode.TODO_CATEGORY_0853,
       });
       expect(

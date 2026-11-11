@@ -11,7 +11,7 @@ const QUERY_KEY = ['infinite-list-footer'];
 async function renderFooter(queryFn: (page: number) => Promise<number>) {
   const probe: { current: Probe | null } = { current: null };
   const queryClient = createTestQueryClient();
-  await queryClient.prefetchInfiniteQuery({
+  await queryClient.infiniteQuery({
     queryKey: QUERY_KEY,
     queryFn: ({ pageParam }) => queryFn(pageParam),
     initialPageParam: 1,

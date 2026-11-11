@@ -39,6 +39,59 @@ type LegacyDestinationSource = NotificationDestinationSource & { type: Notificat
 
 const NO_DESTINATION: NotificationDestination = { kind: 'none' };
 
+export const NOTIFICATION_INBOX_DESTINATION: NotificationDestination = {
+  kind: 'route',
+  href: '/notifications',
+};
+
+/** 지금 보고 있는 화면. 경로는 그룹 없이(`usePathname`), 값은 경로 조각과 쿼리를 합친 것(`useGlobalSearchParams`)이다 */
+export interface CurrentRoute {
+  pathname: string;
+  params: Partial<Record<string, string | string[]>>;
+}
+
+/** 같은 화면 안에서 날짜·진입 경로·댓글 위치만 바꾸는 값이라 다른 화면으로 보지 않는다 */
+const VIEW_POSITION_PARAMS: ReadonlySet<string> = new Set(['date', 'entry', 'comment']);
+const DYNAMIC_SEGMENT = /\[(?:\.\.\.)?([^\]]+)\]/g;
+
+function toParamText(value: unknown): string | undefined {
+  if (value == null) {
+    return undefined;
+  }
+  return Array.isArray(value) ? value.join(',') : String(value);
+}
+
+/** 알림이 여는 화면을 이미 보고 있는지. 경로가 같고 보는 대상(할 일·친구·콕 id 등)이 모두 같아야 한다 */
+export function isViewingNotificationDestination(
+  destination: NotificationDestination,
+  current: CurrentRoute,
+): boolean {
+  if (destination.kind !== 'route') {
+    return false;
+  }
+  const { href } = destination;
+  const [pathname = '', params = {}] =
+    typeof href === 'string' ? [href.split('?')[0]] : [href.pathname, href.params];
+  const targetParams = new Map(
+    Object.entries(params).map(([key, value]) => [key, toParamText(value)] as const),
+  );
+  const pathParams = new Set<string>();
+  const targetPathname = pathname.replace(DYNAMIC_SEGMENT, (_segment, name: string) => {
+    pathParams.add(name);
+    return targetParams.get(name) ?? '';
+  });
+  if (targetPathname !== current.pathname) {
+    return false;
+  }
+  return [...targetParams].every(
+    ([key, value]) =>
+      value == null ||
+      pathParams.has(key) ||
+      VIEW_POSITION_PARAMS.has(key) ||
+      toParamText(current.params[key]) === value,
+  );
+}
+
 interface NotificationDestinationOptions {
   /** 피드로 열 때 날짜를 오늘로 맞춘다 */
   shouldOpenToday?: boolean;
