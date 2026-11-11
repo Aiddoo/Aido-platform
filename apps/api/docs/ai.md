@@ -1,6 +1,6 @@
 # AI 기능 (파싱·리포트·제안)
 
-AI 작업의 프롬프트 버전·설정·평가를 바꿀 때 참고한다. 코드는 `apps/api/src/modules/ai-assistance`가 소유한다.
+AI 작업의 프롬프트 버전·설정·평가를 바꿀 때 읽는다. 코드는 `apps/api/src/modules/ai-assistance`(slice `generation`·`parsing`·`planning`·`reports`·`suggestions` + `shared`)가 소유하고 아래 경로는 그 기준이다. 녹음 정리·빠른 계획의 사용량·저장은 `modules/voice`가 소유한다.
 
 ## 역할 분리
 
@@ -16,31 +16,31 @@ AI 작업의 프롬프트 버전·설정·평가를 바꿀 때 참고한다. 코
 
 ## 프롬프트 구성
 
-모든 작업은 `application/prompts/kit/prompt-definition.ts`의 `PromptDefinition<I, O, R, C>` 하나로 정의한다: `id`(AiTaskId), `version`(`<task>@<n>`), `schema`(Zod, 구조화 출력), `build(input, locale) → { system, prompt }`, `normalize(raw, ctx) → R`. use case는 `generateWithPrompt(generator, definition, built, ctx, { agreedConsentVersion })`로 부른다. 버전 폴더(v1·v2)와 `AI_PROMPT_VERSION_*` 전환은 없다.
+모든 작업은 `generation/application/messages/prompt-definition.messages.ts`의 `PromptDefinition<I, O, R, C>` 하나로 정의한다: `id`(AiTaskId), `version`(`<task>@<n>`), `schema`(Zod, 구조화 출력), `build(input, locale) → { system, prompt }`, `normalize(raw, ctx) → R`. use case는 `generateWithPrompt(generator, definition, built, ctx, { agreedConsentVersion })`로 부른다. 버전 폴더(v1·v2)와 `AI_PROMPT_VERSION_*` 전환은 없다.
 
-| 작업              | 폴더                                 | 버전                   |
-| ----------------- | ------------------------------------ | ---------------------- |
-| parse-todo        | `prompts/parsing/parse-todo`         | `parse-todo@9`         |
-| parse-memo        | `prompts/parsing/parse-memo`         | `parse-memo@9`         |
-| report            | `prompts/reports/report`             | `report@3`             |
-| suggestion        | `prompts/suggestions/suggestion`     | `suggestion@3`         |
-| quick-plan        | `prompts/planning/quick-plan`        | `quick-plan@10`        |
-| voice-note-digest | `prompts/planning/voice-note-digest` | `voice-note-digest@10` |
+| 작업              | 정의 파일                                                            | 버전                   |
+| ----------------- | -------------------------------------------------------------------- | ---------------------- |
+| parse-todo        | `parsing/application/messages/parse-todo-prompt.messages.ts`         | `parse-todo@9`         |
+| parse-memo        | `parsing/application/messages/parse-memo-prompt.messages.ts`         | `parse-memo@9`         |
+| report            | `reports/application/messages/report-prompt.messages.ts`             | `report@3`             |
+| suggestion        | `suggestions/application/messages/suggestion-prompt.messages.ts`     | `suggestion@3`         |
+| quick-plan        | `planning/application/messages/quick-plan-prompt.messages.ts`        | `quick-plan@10`        |
+| voice-note-digest | `planning/application/messages/voice-note-digest-prompt.messages.ts` | `voice-note-digest@10` |
 
-- 작업 폴더는 `prompt.ko.ts`·`prompt.en.ts`(고정 system), `examples.ko.ts`·`examples.en.ts`, `schema.ts`(LLM schema), `index.ts`(정의·입력 타입)다. 파싱·계획이 함께 쓰는 일정 표현 schema·규칙·기준 시각은 `prompts/parsing/schedule`, 계획 공통 규칙·맥락은 `prompts/planning`에 있다.
+- 작업마다 같은 `application/messages/` 폴더에 `<task>-system-{ko,en}.messages.ts`(고정 system), `<task>-examples-{ko,en}.messages.ts`, `<task>-draft.wire.ts`(LLM schema)를 둔다. 파싱·계획이 함께 쓰는 일정 표현 schema·규칙·기준 시각은 parsing의 `schedule-expression.wire.ts`·`schedule-rules.messages.ts`·`schedule-context.messages.ts`, 계획 공통 규칙·맥락은 planning의 `planning-rules.messages.ts`·`planning-context.messages.ts`에 있다.
 - 캐시 친화 순서: system은 `<role>` `<security>` `<language_policy>` `<output_contract>` `<rules>` `<examples>`(사용자 값 없음, 업체 어댑터가 Claude `cacheControl`을 건다) → user 턴은 동적 `<context>`(기준 시각·요일·시간대, 카테고리 id·이름, 계획은 다가오는 할 일 30개) → 맨 끝에 사용자 입력 블록(`<user_input>`·`<transcript>`·`<report_data>`·`<suggestion_data>`). 과제 지시는 `<output_contract>`에 있어 입력 뒤에 지시가 오지 않는다.
-- `kit/security-rules.ts`: 데이터 블록·schema 출력 규칙 + 작업이 고르는 규칙(모델 대상 명령, 자기 계획 수정, 지어내기 금지, 목록에 있는 id만, 남에게 부탁은 내 할 일 "민지에게 회의록 요청", 군말·말 더듬기·받아쓰기 잡음 무시, 비슷하게 들린 고유명사는 `<context>` 표기로).
+- `generation/application/messages/security-rules.messages.ts`: 데이터 블록·schema 출력 규칙 + 작업이 고르는 규칙(모델 대상 명령, 자기 계획 수정, 지어내기 금지, 목록에 있는 id만, 남에게 부탁은 내 할 일 "민지에게 회의록 요청", 군말·말 더듬기·받아쓰기 잡음 무시, 비슷하게 들린 고유명사는 `<context>` 표기로).
 - 문맥 교정(`SPEECH_NOISE`·`PROPER_NOUNS`, quick-plan·voice-note-digest만): 받아쓰기가 소리가 비슷한 다른 단어로 적어 문맥에 맞지 않으면 맞는 단어로 고쳐 title에 쓴다("등기 보고서 정리" → "분기 보고서 정리"). 확실하지 않으면 들린 그대로 둔다. `<context>`의 카테고리·할 일 이름과 소리가 비슷하면 그 표기를 쓰고, 이 교정은 말한 그대로 쓰는 규칙보다 앞선다. golden은 `qp-ko-20`이다. 앱이 인식기에 주는 힌트(`apps/mobile/src/shared/infra/speech/speech-hints.ts`)는 인식 단계의 신호이고 서버는 모른다.
-- `kit/language-policy.ts`: 할 일·하위 할 일·메모 제목은 말한 언어 그대로(섞인 "팀 standup 준비"도 그대로), 요약·핵심 포인트·정리 제목·이유는 앱 언어. 언어를 더하려면 이 표와 작업별 `examples.<locale>`을 더한다.
+- `generation/application/messages/language-policy.messages.ts`: 할 일·하위 할 일·메모 제목은 말한 언어 그대로(섞인 "팀 standup 준비"도 그대로), 요약·핵심 포인트·정리 제목·이유는 앱 언어. 언어를 더하려면 이 표와 작업별 `system`·`examples` 파일을 더한다.
 - 지시 문구나 정규화를 바꾸면 그 작업의 버전 숫자를 올린다. 관측 로그(`promptVersion`)와 `AiReport.promptVersion`으로 전후를 구분한다.
 
 ### 업체 공통 구조화 출력 규칙
 
-세 업체가 같은 schema를 받도록 모든 LLM 출력 schema는 다음을 지킨다(`kit/prompt-schema-rules.spec.ts`가 `zodSchema(schema).jsonSchema`로 모든 정의를 검사한다).
+세 업체가 같은 schema를 받도록 모든 LLM 출력 schema는 다음을 지킨다(`generation/application/messages/llm-output.wire.spec.ts`가 `zodSchema(schema).jsonSchema`로 모든 정의를 검사한다).
 
 - 모든 칸 required, 값이 없을 수 있는 칸은 `.nullable()`, `.optional()`·`.nullish()` 금지. 루트는 object이고 `$ref`·재귀·`oneOf`·`allOf`·`const`·`default`·`pattern`·min/max 계열은 쓰지 않는다. 범위·길이는 서버 정규화가 맞춘다. `z.number().int()`는 안전 정수 min/max를 실으므로 `llmInteger()`를 쓴다. 객체 유니온은 쓰지 않는다(`oneOf`·`const`가 되거나, `anyOf`여도 Claude JSON 도구가 배열을 문자열로 내보내다 JSON을 깨뜨린 사례가 있다). 종류가 다른 값은 칸을 나눈다.
-- 없음은 모델 출력부터 도메인 IR(`todo-draft.types.ts`)까지 `null` 하나다. `?? undefined`로 되돌리지 않는다.
-- 객체는 `kit/llm-object.ts`의 `llmObject`·`nullableLlmObject`로 만든다. 비엄격 경로에서 모델이 뺀 칸은 preprocess가 null로 채우고, 배열·객체 칸을 JSON 문자열로 보내면(Claude JSON 도구 실측 `{"actions":"[...]"}`) 풀어서 받는다. 문자열을 받는 칸은 건드리지 않고, 풀리지 않으면 원래 값을 schema가 거부한다. `preprocess(...).nullable()`처럼 바깥에 씌우면 Zod가 required에서 그 칸을 빼 OpenAI strict가 400을 내므로 null 허용은 안쪽에 두고, `.extend` 대신 shape을 펼쳐 조합한다.
+- 없음은 모델 출력부터 도메인 IR(`shared/domain/todo-draft.constants.ts`)까지 `null` 하나다. `?? undefined`로 되돌리지 않는다.
+- 객체는 `generation/application/messages/llm-output.wire.ts`의 `llmObject`·`nullableLlmObject`로 만든다. 비엄격 경로에서 모델이 뺀 칸은 preprocess가 null로 채우고, 배열·객체 칸을 JSON 문자열로 보내면(Claude JSON 도구 실측 `{"actions":"[...]"}`) 풀어서 받는다. 문자열을 받는 칸은 건드리지 않고, 풀리지 않으면 원래 값을 schema가 거부한다. `preprocess(...).nullable()`처럼 바깥에 씌우면 Zod가 required에서 그 칸을 빼 OpenAI strict가 400을 내므로 null 허용은 안쪽에 두고, `.extend` 대신 shape을 펼쳐 조합한다.
 - 업체 옵션: OpenAI `strictJsonSchema: true`와 `reasoningEffort` minimal→none, Google `structuredOutputs: true`, Claude `structuredOutputMode: "jsonTool"`(네이티브는 null 허용 칸 16개 제한, parse-todo는 29개)과 minimal이면 `thinking: disabled` + effort low.
 - 프롬프트 문구·예시 JSON도 같은 규칙이다: "생략"이 아니라 "null"이고 예시는 모든 칸을 쓴다. golden의 `draft`는 빠진 칸을 그대로 둬도 schema가 null로 채운다.
 - 출시 parse 응답이 나타내지 못하는 반복(격주·매월 등)은 `UNSUPPORTED`이고 할 일은 한 번만 만들어지므로 말한 요일·날짜를 `date`에 그대로 쓴다(golden `ko-16` "격주 화요일 스터디" → 다음 화요일).
@@ -48,18 +48,18 @@ AI 작업의 프롬프트 버전·설정·평가를 바꿀 때 참고한다. 코
 ### 계획(quick-plan·voice-note-digest) 출력
 
 - 모델 출력은 `todos`(title, categoryId|null, date·endDate·time 일정 표현, repeat 표현, visibility `PRIVATE`|null, items, duplicateOfTodoId|null)와 `memo`(title, content 또는 null)다. 공개 계획 모양은 정규화(`NormalizedActionPlan`) 뒤에 만든다. 기한("금요일까지")은 date NONE + endDate, 반복의 요일·날짜는 daysOfWeek·monthDay에만 쓴다. 녹음 정리는 앱 언어의 title·summary·keyPoints(`{ text, sentenceIndex|null }`)를 더한다. 말한 언어가 달라도 이 셋은 앱 언어이고, 할 일 제목·항목과 메모만 말한 언어다. schema에서 title은 keyPoints 뒤에 둔다(앞에 두면 Claude가 말한 언어로 제목을 쓰는 일이 잦았다. 영어 앱·한국어 녹음 dg-mx-03 5회 중 5회 → 8회 중 0회). 모델은 날짜·시각을 계산하지 않고 표현만 낸다.
-- 반복 표현: `DAILY`, `WEEKDAYS`, `WEEKENDS`, `WEEKLY_DAYS`(daysOfWeek), `BIWEEKLY_DAYS`(daysOfWeek, 격주), `MONTHLY_DAY`(monthDay 1~31), 기간형 `THIS_WEEK`·`NEXT_WEEK`·`WEEK_AFTER_NEXT`·`THIS_WEEKEND`·`NEXT_WEEKEND`·`THIS_WEEKDAYS`, 그 밖 `UNSUPPORTED`. 종료는 말했을 때만 `until`/`forDuration`이고 없으면 계속 반복(NEVER)이다. 시작일보다 뒤가 아닌 끝은 반복이 되지 않으므로 말하지 않은 것으로 보고 버린다(`REPEAT_END_NOT_AFTER_START`, 출시 앱용 `recurrence`는 기본 +4주). "30분 운동"처럼 한 번에 걸리는 시간은 제목에 남기고 반복 기간으로 쓰지 않는다. `WEEKENDS`는 "주말마다", "매주 주말", "weekends"처럼 되풀이를 말했을 때만이고, 그냥 "주말에"·"이번 주말"·"this weekend"(`THIS_WEEKEND`)와 "다음 주말"(`NEXT_WEEKEND`)은 계획에서 그 주말 토요일 한 번이다(`resolvePlanSchedule`, 일요일에 말한 이번 주말은 오늘). 출시 parse 응답의 `recurrence`와 `repeat`은 이 둘을 지금처럼 토·일 + 종료일로 준다(1.15 앱은 `voice-plan.mapper.ts`가 parse-memo의 이번 주말을 한 번으로 받는다). 출시 parse 응답(요일 + 종료일)은 격주·매월을 나타낼 수 없어 parse-todo schema는 이 둘을 받지 않고, resolver도 이 둘을 `UNSUPPORTED_RECURRENCE`로 다룬다.
-- 정규화(`application/services/planning/action-plan.normalizer.ts`): 할 일 앞의 `ACTION_PLAN_LIMITS.MAX_TODOS`(10)개·메모 1개, 하위 항목 `TODO_ITEM_LIMITS.MAX_PER_TODO`, 제목 200자, 모르는 카테고리·겹침 id → null, 반복이면 기간(endDate)을 버린다. 핵심 포인트는 5개, 문장 번호는 준 문장 범위 안의 값만 남긴다. 계획·요약·핵심 포인트가 모두 비면 빈 결과(`isEmptyActionPlan`·`isEmptyVoiceNoteDigest`)로 호출부가 환불한다.
+- 반복 표현: `DAILY`, `WEEKDAYS`, `WEEKENDS`, `WEEKLY_DAYS`(daysOfWeek), `BIWEEKLY_DAYS`(daysOfWeek, 격주), `MONTHLY_DAY`(monthDay 1~31), 기간형 `THIS_WEEK`·`NEXT_WEEK`·`WEEK_AFTER_NEXT`·`THIS_WEEKEND`·`NEXT_WEEKEND`·`THIS_WEEKDAYS`, 그 밖 `UNSUPPORTED`. 종료는 말했을 때만 `until`/`forDuration`이고 없으면 계속 반복(NEVER)이다. 시작일보다 뒤가 아닌 끝은 반복이 되지 않으므로 말하지 않은 것으로 보고 버린다(`REPEAT_END_NOT_AFTER_START`, 출시 앱용 `recurrence`는 기본 +4주). "30분 운동"처럼 한 번에 걸리는 시간은 제목에 남기고 반복 기간으로 쓰지 않는다. `WEEKENDS`는 "주말마다", "매주 주말", "weekends"처럼 되풀이를 말했을 때만이고, 그냥 "주말에"·"이번 주말"·"this weekend"(`THIS_WEEKEND`)와 "다음 주말"(`NEXT_WEEKEND`)은 계획에서 그 주말 토요일 한 번이다(`resolvePlanSchedule`, 일요일에 말한 이번 주말은 오늘). parse 응답에서는 출시 앱용 `recurrence`가 이 둘을 지금처럼 토·일 + 종료일로 주고, 새 앱용 `repeat`은 서버 정규화(`normalizeMemoDraft`)가 이번 주말을 토요일 한 번으로 바꿔 준다. 앱은 반복을 다시 해석하지 않는다. 출시 parse 응답(요일 + 종료일)은 격주·매월을 나타낼 수 없어 parse-todo schema는 이 둘을 받지 않고, resolver도 이 둘을 `UNSUPPORTED_RECURRENCE`로 다룬다.
+- 정규화(`planning/application/action-plan-draft.mapper.ts`): 할 일 앞의 `ACTION_PLAN_LIMITS.MAX_TODOS`(10)개·메모 1개, 하위 항목 `TODO_ITEM_LIMITS.MAX_PER_TODO`, 제목 200자, 모르는 카테고리·겹침 id → null, 반복이면 기간(endDate)을 버린다. 핵심 포인트는 5개, 문장 번호는 준 문장 범위 안의 값만 남긴다. 계획·요약·핵심 포인트가 모두 비면 빈 결과(`isEmptyActionPlan`·`isEmptyVoiceNoteDigest`)로 호출부가 환불한다.
 
 ### 계획 생성과 적용(voice)
 
-- `ai-assistance-planning.public.ts`의 `ActionPlanGeneratorPort`가 프롬프트·동의 범위·정규화·일정 계산을 맡고, 사용량·겹침 판정·저장은 `modules/voice`(slice `action-plans`·`voice-notes`)가 맡는다. 서버는 녹음도 전사 글자도 저장하지 않는다.
+- `planning/ai-assistance-planning.public.ts`의 `ActionPlanGeneratorPort`가 프롬프트·동의 범위·정규화·일정 계산을 맡고, 사용량·겹침 판정·저장은 `modules/voice`(slice `action-plans`·`voice-notes`)가 맡는다. 서버는 녹음도 전사 글자도 저장하지 않는다.
 - 사용량: `ChargedPlanRunnerPort`가 호출 전 `reserve`, 차감 유지면 `commit`, 아니면 `refund`를 부른다. 빠른 계획은 결과가 할 일뿐이라 할 일이 있어야 차감하고 0개면 환불한다. 녹음 정리는 요약이나 핵심 내용도 결과이므로 할 일이 0개여도 VOICE_NOTE 1회를 확정(`charged: true`)하고, 실패·시간 초과·전 업체 장애와 요약·핵심 내용·계획이 모두 빈 결과(AI_1302)만 환불한다. 환불을 마친 실패만 `{ charged: false }`를 싣고, 환불에 실패하면 차감 여부를 말하지 않는다. 성공 응답의 `charged`는 실제 상태다. 확정을 저장하지 못하면 결과는 주되 `charged: false`(`ai.generation.commit-missed`)이고 그 예약은 정리 잡이 돌려준다. 확정 뒤 한도를 읽지 못하면 결과를 살리고 `featureQuota: null`이다. 이 흐름은 파싱과 계획 생성이 `ChargedGenerationPort.settle` 하나를 쓴다.
+- 녹음 길이: 앱이 보낸 `durationSeconds`가 등급별 `perUse.maxSeconds` + 30초를 넘으면 1.15.1은 거절하지 않고 운영 경보(`voice.note-digest.duration-over-limit`)만 올린다. 1.15.2부터 거절한다.
 - 같은 `Idempotency-Key`: 처리 중이면 AI_1314, 내용(SHA-256 지문)이나 작업이 다르면 AI_1318, 확정된 요청은 AI를 부르지 않고 프로세스 메모리에 10분 둔 결과를 돌려준다. 결과를 Redis·DB에 두지 않으므로 재시작이나 10분 경과(FIFO 200건 초과 포함)로 결과를 잃으면 같은 행을 다시 열어(`reopen`, COMMITTED → RESERVED, 사용량은 그대로) AI를 다시 부른다. 추가 차감은 없다. 동시에 온 재요청은 AI_1314다. 다시 만들기가 실패하거나 빈 결과면 평소처럼 환불해 `{ charged: false }`다. 재생성 비용은 차감되지 않지만 사용자 일 예산(`AI_BUDGET_USER_DAILY_USD`)에 잡힌다. 성공 응답은 `charged: true`다(이번 호출로 더 차감하지 않았어도 이 요청의 차감 1회가 그대로다). 다시 만든 결과가 할 일 0개면(NO_ACTION) 환불해 `charged: false`다. 환불된 키(할 일 0개 NO_ACTION, 빈 결과 AI_1302, 실패)를 같은 키로 다시 보내면 같은 행에서 다시 차감하고 생성하므로 순 차감은 많아야 1회다. 그 사이 한도가 찼으면 차감 없이 AI_1303이다.
 - 메모 나누기(`POST /v1/ai/parse-memo`)의 `Idempotency-Key`는 선택이다. 없으면(출시 앱) 요청마다 차감한다. 있으면 같은 원장 규칙(AI_1314·AI_1318, 추가 차감 없는 `reopen`)을 따르되, 메모 결과를 프로세스 메모리에 두지 않아 확정된 요청의 재시도도 AI를 다시 부른다.
-- 녹음 길이: 앱이 보낸 `durationSeconds`가 등급별 `perUse.maxSeconds` + 30초를 넘으면 1.15.1은 거절하지 않고 운영 경보(`voice.note-digest.duration-over-limit`)만 올린다. 1.15.2부터 거절한다.
-- 입력 상한: 녹음 글자 수(AI_1312)는 프롬프트에서 길어지는 글자(`<`·`>`·`&`·따옴표·줄바꿈)를 늘어난 길이로 세어 `maxInputChars`보다 먼저 막는다. 맥락의 카테고리는 `PLANNING_CATEGORY_LIMIT`(프리미엄 상한 30개)까지만 넣어 ADMIN도 상한 안에 들고, 저장된 제목의 이스케이프로 넘치면 겹침 후보를 뺀다.
-- 적용: `POST /v1/action-plans/apply`는 AI를 부르지 않고 차감하지 않는다. 한 UoW에서 잠금 → 멱등 기록(`PlanApplication`) → 원본 메모·카테고리 소유 확인 → `StagedTodoCreatorPort.stage` → 원본 메모 삭제 → 새 메모 → 기록 순서이고 하나라도 실패하면 전부 되돌린다. 재요청은 만든 id로 다시 읽어 준다. 같은 키의 다른 요청이 먼저 기록을 남기면 저장소가 unique 위반을 처리 중(AI_1314)으로 바꾼다. 응답의 `todos`는 반복이면 첫 회차만이다. 기록은 7일 뒤 `voice-plan-application-cleanup.v1` 작업이 지운다.
+- 입력 상한: 녹음 글자 수(AI_1312)는 프롬프트에서 길어지는 글자(`<`·`>`·`&`·따옴표·줄바꿈)를 늘어난 길이로 세어 `maxInputChars`보다 먼저 막는다. 맥락의 카테고리는 `PLANNING_CATEGORY_LIMIT`(프리미엄 상한 30개)까지만 넣고, 저장된 제목의 이스케이프로 넘치면 겹침 후보를 뺀다.
+- 적용: `POST /v1/action-plans/apply`는 AI를 부르지 않고 차감하지 않는다. 한 UoW에서 잠금 → 멱등 기록(`PlanApplication`) → 원본 메모·카테고리 소유 확인 → planning `StagedTodoCreatorPort.stage` → 원본 메모 삭제 → 새 메모 → 기록 순서이고 하나라도 실패하면 전부 되돌린다. 재요청은 만든 id로 다시 읽어 준다. 같은 키의 다른 요청이 먼저 기록을 남기면 저장소가 unique 위반을 처리 중(AI_1314)으로 바꾼다. 응답의 `todos`는 반복이면 첫 회차만이다. 기록은 7일 뒤 `voice-plan-application-cleanup.v1` 작업이 지운다.
 
 ## 운영 설정 (env, 키 외 모두 선택)
 
@@ -78,7 +78,7 @@ AI 작업의 프롬프트 버전·설정·평가를 바꿀 때 참고한다. 코
 | `AI_BUDGET_DAILY_USD` / `AI_BUDGET_MONTHLY_USD`                         | 전체 생성 중단 기준선                         | 3 / 30                                                      |
 | `AI_BUDGET_USER_DAILY_USD`                                              | 사용자 한 명의 일 추정 비용 상한              | 0.25                                                        |
 
-`<TASK>`는 `PARSE_TODO`·`PARSE_MEMO`·`REPORT`·`SUGGESTION`·`QUICK_PLAN`·`VOICE_NOTE_DIGEST`다. 기본값은 `platform/config/schemas/ai.schema.ts` 한 곳에 있고 generation slice의 namespace 설정(`ai-assistance-generation.config.ts`, `aiAssistanceGenerationConfig`)이 env 원문을 한 번 파싱해 업체·작업 단위로 묶는다. 2026-10-26 live eval에서 parse-todo는 `minimal`이 `low`와 정확도가 같고(어려운 16건 16/16) p50이 1725→1239ms로 짧아 `minimal`을 쓴다. parse-memo는 `minimal`에서 `totalTaskCount`를 과대 집계해(긴 메모 5/5, 프롬프트 v2.1 뒤에도 5/5) `low`를 유지한다. 리포트·제안은 야간 배치라 지연 이득이 작아 `low`를 유지한다. 작업별 토큰 상한과 작업 분류(interactive·background)별 마지막 업체 SDK 재시도 수(1·0, 배경은 pg-boss가 다시 부른다)·요청당 모델 호출 상한(`maxModelCalls` 4·3)은 `generation/infrastructure/adapters/ai-generation-policy.constants.ts`에 있다. 킬 스위치·예산 env는 바꾸면 재시작해야 반영된다. Claude는 thinking을 `effort`(minimal·low → low, medium → medium)로, OpenAI는 `reasoningEffort`로, Gemini는 `thinkingLevel`로 보낸다.
+`<TASK>`는 `PARSE_TODO`·`PARSE_MEMO`·`REPORT`·`SUGGESTION`·`QUICK_PLAN`·`VOICE_NOTE_DIGEST`다. 기본값은 `platform/config/schemas/ai.schema.ts` 한 곳에 있고 generation slice의 namespace 설정(`ai-assistance-generation.config.ts`, `aiAssistanceGenerationConfig`)이 부팅 때 env 원문을 한 번 파싱해 업체·작업 단위로 묶는다. 2026-10-26 live eval에서 parse-todo는 `minimal`이 `low`와 정확도가 같고(어려운 16건 16/16) p50이 1725→1239ms로 짧아 `minimal`을 쓴다. parse-memo는 `minimal`에서 `totalTaskCount`를 과대 집계해(긴 메모 5/5, 프롬프트 v2.1 뒤에도 5/5) `low`를 유지한다. 리포트·제안은 야간 배치라 지연 이득이 작아 `low`를 유지한다. 작업별 토큰 상한과 작업 분류(interactive·background)별 마지막 업체 SDK 재시도 수(1·0, 배경은 pg-boss가 다시 부른다)·요청당 모델 호출 상한(`maxModelCalls` 4·3)은 `generation/infrastructure/adapters/ai-generation-policy.constants.ts`에 있다. 킬 스위치·예산 env는 바꾸면 재시작해야 반영된다. Claude는 thinking을 `effort`(minimal·low → low, medium → medium)로, OpenAI는 `reasoningEffort`로, Gemini는 `thinkingLevel`로 보낸다.
 
 ## 업체 체인·폴백·회로
 
@@ -103,7 +103,7 @@ Sentry AI span에는 입력·지시·응답 문장을 싣지 않는다([보안](
 
 ### 입력 상한·킬 스위치·비용 예산
 
-- 모든 작업은 `AiSdkGenerator.generate` 맨 앞을 지난다. 순서: user 턴 글자 수 > `maxInputChars`면 업체 호출 없이 `BAD_REQUEST`(AI_1302) + `ai.generation.input-rejected` error 로그 → 킬 스위치·예산 판단(`domain/policies/generation/ai-spend.policy.ts` `decideAiSpend`) → 합치기 → bulkhead → 업체 체인. 요청은 `taskClass`·`userId`·`maxInputChars`를 싣는다. 분류와 입력 상한은 `PromptDefinition`이 정하고 `generateWithPrompt(…, { agreedConsentVersion, userId })`가 채운다.
+- 모든 작업은 `AiSdkGenerator.generate` 맨 앞을 지난다. 순서: user 턴 글자 수 > `maxInputChars`면 업체 호출 없이 `BAD_REQUEST`(AI_1302) + `ai.generation.input-rejected` error 로그 → 킬 스위치·예산 판단(`generation/domain/ai-spend.domain-service.ts` `decideAiSpend`) → 합치기 → bulkhead → 업체 체인. 요청은 `taskClass`·`userId`·`maxInputChars`를 싣는다. 분류와 입력 상한은 `PromptDefinition`이 정하고 `generateWithPrompt(…, { agreedConsentVersion, userId })`가 채운다.
 - `maxInputChars`(user 턴, 계약 길이·맥락 상한 최대치 실측에 여유): parse-todo 5,000(최대 약 3,700) · parse-memo 15,000(약 13,800) · quick-plan 12,000(약 9,800) · voice-note-digest 100,000(40,000자 전사를 문장 600개로 나눈 최대 약 94,000) · report·suggestion 16,000.
 - 킬 스위치 `AI_GENERATION_MODE`: `off`면 모든 생성, `interactive-only`면 리포트·제안만 `HALTED`(AI_1301)로 멈춘다.
 - 예산: 추정 비용(micro-USD)을 `OutboundUsage`(meter `ai.spend`, subject `*`·사용자 id, UTC 일 `2026-11-05`·월 `2026-11`)에 요청이 끝날 때 전역 일·전역 월·사용자 일 세 행으로 한 번 더한다(`ai-spend-budget.adapter.ts`). 판단은 메모리 스냅샷(재시작·날짜가 바뀌면 DB에서 다시 읽음, 사용자 1만 명 LRU)으로 한다. 전역 일 $3·월 $30 이상이면 전부, 배경 작업은 일 $2·월 $20 이상이면 `HALTED`, 사용자 일 $0.25 이상이면 `USER_SPEND_LIMITED`(AI_1310)다. 사용자 일 예산은 요금제·역할과 무관하게 모두 같고(ADMIN도 프리미엄과 같은 예산이다. 사용자 비용 예산은 access 횟수 한도와 다른 상한이다) 사용량 기록·전역 예산·킬 스위치·입력 상한도 같다. 사용자 행은 계정 영구 삭제 때 함께 지운다. 진행 중인 호출은 끝난 뒤 더해지므로 상한은 그만큼 넘을 수 있다. 경고·배경·중단 기준선을 처음 넘긴 요청 하나가 기간당 한 번 `ai.spend.threshold-reached` 경보를 올린다(원자적 누적값 비교). 계량 오류는 로그만 남기고 생성을 막지 않는다.
@@ -146,7 +146,7 @@ Sentry AI span에는 입력·지시·응답 문장을 싣지 않는다([보안](
 - 도구 호출(function calling)은 쓰지 않는다. 모델은 구조화 출력만 낸다.
 - Gemini `safetySettings`는 괴롭힘·혐오·성적·위험 4종을 `BLOCK_ONLY_HIGH`로 둔다. 응답 후보가 safety로 막히면(`finishReason: content-filter`) `BLOCKED`(AI_1302)로 분류한다.
 - 남용 방지: 파싱 endpoint는 사용자 기준 분당 parse-todo 20회·parse-memo 10회(`@ThrottleByUser`), 무료 월 한도·프리미엄 공정 사용 상한(동의 guard 뒤 access `@RequireQuota("AI_PLAN")` 선검사 + `QuotaLedger` 원자적 예약)을 공급자 호출 전에 적용한다. 작업별 `maxOutputTokens`·분류별 `maxRetries`·`maxModelCalls`는 `ai-generation-policy.constants.ts`, 입력 상한은 `PromptDefinition.maxInputChars`, 체인 전체 제한 시간은 `AI_DEADLINE_<TASK>_MS`, 비용 상한은 `AI_BUDGET_*`가 정한다.
-- 개인정보: 로그는 위 관측 필드만 남긴다. `/ai/` 요청은 5xx Sentry 이벤트에 요청 본문을 붙이지 않는다(`httpIntegration`의 `ignoreRequestBody`).
+- 개인정보: 로그는 위 관측 필드만 남긴다. Sentry는 모든 요청의 본문을 모으지 않고(`SENTRY_DATA_COLLECTION.httpBodies` 비움), 보내기 직전 `scrubErrorEvent`가 남은 본문을 한 번 더 지운다.
 
 ## 버전과 호환
 
@@ -173,4 +173,4 @@ Sentry AI span에는 입력·지시·응답 문장을 싣지 않는다([보안](
 
 ## 전환 중
 
-ai-assistance는 slice 구조로 옮겼다. 남은 것: parse-todo·parse-memo의 application 다섯 파일은 정리 결과를 공개 계약(`parsedTodoDataSchema`)으로 검증해 줄 단위 lint 예외가 있다(ParsedTodo read model로 옮길 때 지운다).
+parse-todo·parse-memo의 application 다섯 파일은 정리 결과를 공개 계약(`parsedTodoDataSchema`)으로 검증해 줄 단위 lint 예외가 있다(ParsedTodo read model로 옮길 때 지운다).

@@ -23,20 +23,20 @@
 
 - **서버**: 앱 헤더는 요청마다 한 번 `RequestClient`(`apps/api/src/platform/http/request-client`)로 정규화한다. Controller는 `@Headers("x-timezone")`로 직접 읽지 않고 `@Timezone()`·`@Locale()`·`@AppVersion()`·`@CurrentRequestClient()`를 쓴다([서버 HTTP 계약](../../apps/api/docs/http-contracts.md#요청-헤더와-throttle)). `timezone`은 런타임이 지원하는 IANA 이름이거나 null이다. 헤더가 없거나 잘못됐을 때의 규칙은 `request-timezone.ts`의 두 함수뿐이고, 엔드포인트마다 아래 규칙 하나를 쓴다.
 
-  | 규칙                  | 함수·데코레이터                                                    | 헤더 없음·오류        | 쓰는 곳                                                                                      |
-  | --------------------- | ------------------------------------------------------------------ | --------------------- | -------------------------------------------------------------------------------------------- |
-  | 날짜 경계             | `requestTimezoneOrUtc` · `@Timezone()`                             | `UTC`                 | 할 일·메모·응원·찌르기·초대·`/v1/auth/me`, 활동일 기록(`LastActiveInterceptor`)              |
-  | 저장 시간대 사용·보존 | `requestTimezoneIfSent` · `@Timezone({ preserveIfMissing: true })` | `undefined`           | AI 생성·제안·리포트(저장된 사용자 시간대로 대체), 푸시 기기 보고·토큰 등록(기존 저장값 유지) |
-  | 저장값 갱신           | `RequestClientReader.current().timezone`                           | 갱신하지 않음         | 시간대 자가 치유(`TimezoneSelfHealInterceptor`)                                              |
-  | 벽시계 해석           | `@Timezone({ preserveIfMissing: true })` + `TodoTimezoneResolver`  | 저장값 → `Asia/Seoul` | 할 일 생성·수정·일정 변경·메모 변환·계획 적용(5절)                                           |
+  | 규칙                  | 함수·데코레이터                                                         | 헤더 없음·오류        | 쓰는 곳                                                                                      |
+  | --------------------- | ----------------------------------------------------------------------- | --------------------- | -------------------------------------------------------------------------------------------- |
+  | 날짜 경계             | `requestTimezoneOrUtc` · `@Timezone()`                                  | `UTC`                 | 할 일·메모·응원·찌르기·초대·`/v1/auth/me`, 활동일 기록(`LastActiveInterceptor`)              |
+  | 저장 시간대 사용·보존 | `requestTimezoneIfSent` · `@Timezone({ preserveIfMissing: true })`      | `undefined`           | AI 생성·제안·리포트(저장된 사용자 시간대로 대체), 푸시 기기 보고·토큰 등록(기존 저장값 유지) |
+  | 저장값 갱신           | `RequestClientReader.current().timezone`                                | 갱신하지 않음         | 시간대 자가 치유(`TimezoneSelfHealInterceptor`)                                              |
+  | 벽시계 해석           | `@Timezone({ preserveIfMissing: true })` + `ResolveTodoTimezoneUseCase` | 저장값 → `Asia/Seoul` | 할 일 생성·수정·일정 변경·메모 변환·계획 적용(5절)                                           |
 
-  응답 형태는 규칙과 무관하다. 새 엔드포인트는 위 규칙 중 하나를 고르고 `X-Timezone`을 직접 읽지 않는다. 배치는 사용자별 저장 시간대로 계산한다. 공용 helper는 `apps/api/src/shared/domain/time`(`localDateIn`, `localDateOf`, `toZonedInstant`, `resolveTimezone`)이다. 한 순간의 사용자 달력 날짜는 `localDateIn(instant, timezone)`으로 구하고 `Intl.DateTimeFormat` 포매터를 새로 만들지 않는다. 사용자 기본 시간대 폴백은 `DEFAULT_DELIVERY_TIMEZONE`이다.
+  응답 형태는 규칙과 무관하다. 새 엔드포인트는 위 규칙 중 하나를 고르고 `X-Timezone`을 직접 읽지 않는다. 배치는 사용자별 저장 시간대로 계산한다. 공용 helper는 `apps/api/src/shared/domain/time`(`TimeZone` VO, `localDateIn`, `localDateOf`, `toZonedInstant`, `resolveTimezone`, `toIsoString`)이다. 한 순간의 사용자 달력 날짜는 `localDateIn(instant, timezone)`으로 구하고 `Intl.DateTimeFormat` 포매터를 새로 만들지 않는다. 사용자 기본 시간대 폴백은 `DEFAULT_DELIVERY_TIMEZONE`이다.
 
 - **모바일**: 시간대는 기기 달력(`expo-localization` `getCalendars()[0].timeZone`)에서만 온다. 앱 전체의 오늘 key·자정 전환은 `LocalDateProvider`(`apps/mobile/src/shared/providers/local-date-provider.tsx`)가 소유하고, Provider 밖(위젯 경계)은 같은 `readDeviceLocalDateState()`를 쓴다. 컴포넌트는 `useToday`/`useTodayKey`로 읽고 render 중 `new Date()`를 기준 상태로 만들지 않는다. 상대 시간처럼 분 단위로 바뀌는 표시는 `useMinuteNow()`를 쓴다. `Date`의 달력 날짜·요일은 `shared/date/instant.ts`의 `toDateKey(date, timeZone)`로 key를 만든 뒤 계산하고, 하루 길이 상수는 `shared/constants/time-units.ts`의 `DAY_MS` 하나를 쓴다. 시간대 인자는 생략할 수 없고 기기 시간대는 `shared/infra/localization/device-timezone.ts`의 `getDeviceTimezone()`이다.
-- 서버의 요청 언어는 `RequestClient.locale`(`@Locale()`)이다. `Accept-Language`가 없으면 null(저장된 언어 유지, 날씨 특보 문구는 `en`)이다. 지원하지 않는 언어는 앱과 같게 `en`, 저장값도 요청값도 없으면 `ko`(언어를 보고하지 않던 옛 앱 사용자)다. 규칙은 `@aido/api/vocabulary`의 `resolveSupportedLocale` 하나를 앱과 서버가 함께 쓴다([서버 다국어](../../apps/api/docs/i18n.md)). 서버 전환 중에는 아직 지원하지 않는 언어를 `ko`로 본다.
+- 언어: 앱은 기기 언어가 한국어면 `ko`, 그 밖은 `en`을 앱 언어로 쓰고 요청마다 `Accept-Language`로 보낸다. 서버는 같은 `@aido/api/vocabulary` `resolveSupportedLocale`(없음 `ko`, 지원하지 않는 언어 `en`)로 응답 문구와 푸시 문구의 언어를 정한다. 예외는 저장·알림함·날씨에 쓰는 요청 언어 `RequestClient.locale`(`@Locale()`, `parseAcceptLanguage`)로, 헤더가 없으면 null(저장값 유지)이고 지원하지 않는 언어는 옛 호환으로 `ko`다. 출시 앱은 `ko`·`en`만 보내 이 경로를 타지 않는다. 표와 이유: [서버 다국어](../../apps/api/docs/i18n.md#언어-결정).
 - 음성 인식 언어는 사용자가 고른 값이고 없으면 앱 언어다(`useRecognitionLanguage`). 기기 언어와 달라도 된다.
-- AI 출력은 `language-policy.ts` 한 곳이다. 할 일 제목은 말한 언어 그대로, 요약·핵심 포인트는 요청 언어(없으면 저장된 사용자 언어)다.
-- 푸시 문구(`series-paused` 포함)의 언어는 저장된 `UserPreference.locale` → 마지막 요청 언어 → `ko` 순서다(`resolveRecipientLocale`). 앱이 언어를 바꿀 때 보고한다.
+- AI 출력 언어는 ai-assistance `language-policy.messages.ts` 한 곳이다. 할 일 제목은 말한 언어 그대로, 요약·핵심 포인트는 요청 언어(없으면 저장된 사용자 언어)다.
+- 푸시 문구(`series-paused` 포함)의 언어는 저장된 `UserPreference.locale`이다(없으면 `ko`, 지원하지 않는 값은 `en`, `resolveRecipientLocale`). 앱이 언어를 바꿀 때 보고한다.
 - 표시 언어는 글자 모양만 바꾼다. 언어로 시간대·오늘·주 시작·날짜 key를 바꾸지 않는다(dayjs 전역 locale로 주 시작을 바꾸는 경로 포함).
 - 유료 기능 사용량 창: 응원·찌르기 일간 한도는 요청 `X-Timezone`의 하루(자정 초기화), AI 할 일 만들기·말로 메모하기 월간 한도는 계약에 고정된 KST 달력 월(매월 1일 00:00 KST)이다. 서버가 응답의 `resetsAt`으로 다음 초기화 순간을 준다.
 - 반복 할 일의 시간을 고치면 고른 시각을 요청 시간대(없으면 저장값)로 해석하고 규칙의 시간대도 그 값으로 저장한다. 반복을 만들 때도 같다. 이관에서 사용자 시간대가 없거나 잘못되면 `Asia/Seoul`이고 저장된 `UTC`는 유지한다.
@@ -66,8 +66,8 @@
 | 항목           | 규칙                                                                                                                                                                                                 |
 | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 저장           | `Todo.startDate` + `Todo.scheduledLocalTime`이 진실이다. `scheduledTime`은 파생값이고 종일이면 둘 다 없다                                                                                            |
-| 순간 계산      | `resolveScheduledInstant(날짜, 벽시계, 시간대)`(`TodoSchedule`) 하나뿐이다. 생성·수정·회차·재계산이 모두 쓴다                                                                                        |
-| 시간대         | 요청 `X-Timezone` → 저장된 사용자 시간대 → `Asia/Seoul`(`TodoTimezoneResolver`). 저장된 `UTC`는 진짜 UTC로 본다                                                                                      |
+| 순간 계산      | `resolveScheduledInstant(날짜, 벽시계, 시간대)`(planning `todo-calendar.domain-service.ts`) 하나뿐이다. 생성·수정·회차·재계산이 모두 쓴다                                                            |
+| 시간대         | 요청 `X-Timezone` → 저장된 사용자 시간대 → `Asia/Seoul`(`ResolveTodoTimezoneUseCase`). 저장된 `UTC`는 진짜 UTC로 본다                                                                                |
 | 시간대 변경    | 저장값이 실제로 바뀌면 같은 트랜잭션에서 `todo-timezone-rebase.v1`을 넣는다(자가 치유·토큰 등록·설정 변경). 구간(60초)마다 사용자당 작업 하나이고 실행 때 최신 저장값을 읽는다                       |
 | 재계산         | 시간 있는 모든 할 일의 순간을 다시 쓴다(완료·지난 할 일 포함). 순간이 그대로면 쓰지 않는다. 규칙의 시간대도 바꾼다                                                                                   |
 | 알림 예약      | 완료 전이고 앞으로 울릴 회차만 다시 잡는다. 이미 지난 단계는 건너뛰고 바로 보내지 않는다. 완료를 되돌리면 지금 순간으로 다시 잡는다                                                                  |

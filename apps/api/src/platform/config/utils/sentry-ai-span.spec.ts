@@ -50,7 +50,7 @@ describe("Sentry AI span", () => {
 
     // When
     await Sentry.startSpan({ name: "ai-span-test" }, () =>
-      generateText({ model, system: SYSTEM_TEXT, prompt: USER_TEXT }),
+      generateText({ model, instructions: SYSTEM_TEXT, prompt: USER_TEXT }),
     );
     await Sentry.flush(2000);
 

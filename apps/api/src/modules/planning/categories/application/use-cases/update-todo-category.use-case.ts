@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import { ErrorCode } from "@aido/api/errors";
 
 import { ApplicationException } from "#api/shared/application/application.exception";
+import type { AfterCommitTaskRegistryPort } from "#api/shared/application/ports/after-commit-task.registry.port";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { type DomainEventPublisherPort } from "#api/shared/application/ports/domain-event-publisher.port";
@@ -10,6 +11,7 @@ import { type MutationLockPort } from "#api/shared/application/ports/mutation-lo
 import { type UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
+import type { TodoCachePort } from "../../../todos/application/ports/todo-cache.port.js";
 import { CategoryChangedEvent } from "../../domain/category-changed.event.js";
 import { TodoCategoryId } from "../../domain/todo-category-id.vo.js";
 import type { TodoCategory } from "../../domain/todo-category.aggregate.js";
@@ -35,6 +37,9 @@ interface UpdateTodoCategoryDependencies {
     "findByIdAndUserId" | "existsByUserIdAndName" | "update"
   >;
   readonly cache: TodoCategoryCachePort;
+  // 친구 화면 할 일 캐시가 카테고리 이름·색·순서를 함께 담는다
+  readonly todoCache: Pick<TodoCachePort, "invalidateFriendTodos">;
+  readonly afterCommit: Pick<AfterCommitTaskRegistryPort, "register">;
   readonly mutationLock: MutationLockPort;
   readonly unitOfWork: UnitOfWorkPort;
   readonly clock: ClockPort;
@@ -85,6 +90,9 @@ export class UpdateTodoCategoryUseCase {
         name: data.name == null ? undefined : category.name.value,
         color: data.color == null ? undefined : category.color.value,
       });
+      this.#dependencies.afterCommit.register(() =>
+        this.#dependencies.todoCache.invalidateFriendTodos(userId),
+      );
       await this.#dependencies.eventPublisher.publish([
         new CategoryChangedEvent({
           eventName: "planning.todo-category.updated",

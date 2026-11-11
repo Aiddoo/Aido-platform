@@ -1,23 +1,24 @@
 # 서버 문서 안내
 
-서버 작업에 필요한 문서를 고를 때 읽는다. 순서대로 읽을 필요는 없다. 서버 규칙 체크리스트는 [서버 AGENTS](../AGENTS.md), 공통 코드 규칙은 [루트 AGENTS](../../../AGENTS.md#공통-코드-규칙)에 있다.
+서버 작업에 필요한 문서를 고를 때 읽는다. 순서대로 읽을 필요는 없다. 새 기능은 [새 기능 추가](new-feature.md)부터 따른다. 서버 규칙 체크리스트는 [서버 AGENTS](../AGENTS.md), 공통 코드 규칙은 [루트 AGENTS](../../../AGENTS.md#공통-코드-규칙)에 있다.
 
 ## 설계·규칙
 
 | 작업                                          | 문서                                |
 | --------------------------------------------- | ----------------------------------- |
-| Context·slice·레이어 의존·포트·트랜잭션       | [아키텍처](architecture.md)         |
+| 새 기능(slice·UseCase)을 더하는 순서          | [새 기능 추가](new-feature.md)      |
+| Context·slice·레이어 의존·공개 면·포트        | [아키텍처](architecture.md)         |
 | 파일·클래스·메서드·상수 이름, 공유 값 선언    | [이름 사전](conventions.md)         |
 | Entity·VO·팩토리·상태 전이·도메인 서비스·오류 | [도메인 모델](domain-modeling.md)   |
 | Drizzle·raw SQL·시간 칼럼·풀·마이그레이션     | [영속성](persistence.md)            |
 | 큐·도메인 이벤트·크론·배포 중 내구성          | [작업과 이벤트](jobs-and-events.md) |
 | Controller·DTO·페이지네이션·Swagger·요청 헤더 | [HTTP 계약](http-contracts.md)      |
 | 무엇을 어느 층에서 테스트하나, 실행·격리      | [테스트](testing.md)                |
-| 로그 키·경보·예외 보고·지연·포화도            | [관측](observability.md)            |
+| 로그 키·경보·예외 보고·환경별 전달·지연       | [관측](observability.md)            |
 | 경보 key·조건·첫 대응                         | [경보 카탈로그](alerts.md)          |
 | JWT·서명 키·TLS·웹훅·AI 데이터 처리           | [보안](security.md)                 |
-| env 규칙·운영 env 목록                        | [설정](configuration.md)            |
-| 캐시·잠금·메모리·인스턴스·DB 확장             | [확장](scaling.md)                  |
+| 배포 환경·공급자 선택·부팅 검증·운영 env      | [설정](configuration.md)            |
+| 캐시·잠금·메모리 상한·인스턴스·DB 확장        | [확장](scaling.md)                  |
 | 외부 공급자 호출 정책·체크리스트              | [외부 호출](outbound.md)            |
 | 언어 결정·카탈로그·언어 추가                  | [다국어](i18n.md)                   |
 
@@ -25,11 +26,13 @@
 
 | 작업                            | 문서                                                                                               |
 | ------------------------------- | -------------------------------------------------------------------------------------------------- |
-| 권한·한도·플랜·만료             | [유료 기능과 권한](entitlements.md)                                                                |
+| 권한·한도·플랜·만료·유료 기능   | [유료 기능과 권한](entitlements.md)                                                                |
 | 구독·결제 웹훅                  | [결제](billing.md)                                                                                 |
+| 카테고리 삭제·안의 할 일 처리   | [할 일 카테고리](todo-categories.md)                                                               |
 | 반복 할 일·휴면                 | [반복 할 일](todo-series.md), [휴면·복귀](todo-series-dormancy.md)                                 |
 | 할 일 떠 있는 시각              | [서버 구현](todo-floating-time.md), [공통 규칙](../../../docs/conventions/dates.md#5-떠-있는-시각) |
-| 푸시 기기·발송·receipt·큐       | [푸시 알림](push-notifications.md)                                                                 |
+| 푸시 정책·일정·알림 종류·문구   | [푸시 알림](push-notifications.md)                                                                 |
+| 푸시 delivery·receipt·기기·큐   | [푸시 발송](push-delivery.md)                                                                      |
 | 마케팅·대량 발송·방해 금지·지표 | [알림 발송 설계](notifications.md)                                                                 |
 | 관리자 채널 알림                | [관리자 알림](admin-notifications.md)                                                              |
 | AI 프롬프트·업체·비용·평가      | [AI](ai.md)                                                                                        |
@@ -47,10 +50,7 @@
 
 - 한 문서에 주제 하나, 200줄 이하. 첫 줄은 언제 읽는지 한 문장이다.
 - 규칙은 한 곳에만 쓰고 나머지는 링크한다.
-- 예시는 지금 코드의 실제 경로만 든다. 새 구조 예시는 "목표 예시"로 표시한다(기준은 notes/memos).
+- 예시는 지금 코드의 실제 경로만 든다. 기준 구현은 notes/memos다.
+- 지금 규칙만 쓴다. "전환 중"·"옛 구조" 설명을 남기지 않는다. 규칙이 바뀌면 같은 PR에서 문서를 고친다.
 - 지난 이관 기록·릴리스별 절차는 남기지 않는다(git 이력에 남는다). 릴리스별 되돌리기는 `docs/releases/<버전>/`에 둔다.
 - 검증은 실제 실행 범위·조건·결과로 적는다. 로컬 통과·병합·운영 배포를 구분한다.
-
-## 전환 중
-
-모든 Context가 slice 우선 구조(`modules/<context>/<slice>/<layer>`)로 옮겨졌고, 레이어 lint·이름·경계·관례 검사는 `apps/api/src` 전체에 걸린다. 각 문서의 "전환 중" 절은 아직 남은 옛 이름·저장 방식을 적는다.

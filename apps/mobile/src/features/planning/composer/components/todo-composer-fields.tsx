@@ -8,7 +8,11 @@ import { TodoDatePickerContent } from '@src/features/planning/todo/components/to
 import { TodoRepeatPickerContent } from '@src/features/planning/todo/components/todo-repeat-picker-content';
 import { TodoTimePickerContent } from '@src/features/planning/todo/components/todo-time-picker-content';
 import { TodoRepeatPolicy } from '@src/features/planning/todo/domains/todo-repeat.model';
-import { TodoPolicy } from '@src/features/planning/todo/domains/todo.model';
+import {
+  getShiftedEndDate,
+  isPrivateVisibility,
+  withVisibilityToggled,
+} from '@src/features/planning/todo/domains/todo.model';
 import { formatRepeatSummary } from '@src/features/planning/todo/utils/format-repeat-summary';
 import { parseInstant } from '@src/features/planning/todo/utils/parse-instant';
 import {
@@ -203,7 +207,7 @@ function DateChip({
       );
     }
     // 여러 날 할 일은 기간을 유지한 채 옮긴다. 날짜 변경 시트와 같은 규칙이고, 끝 날짜보다 뒤를 골라도 시작이 끝을 넘지 않는다
-    const nextEndDate = TodoPolicy.getShiftedEndDate(
+    const nextEndDate = getShiftedEndDate(
       {
         startDate: toDateKey(startDate, dateFormatContext.timeZone),
         endDate: endDate == null ? null : toDateKey(endDate, dateFormatContext.timeZone),
@@ -352,7 +356,7 @@ function VisibilityChip({ form }: { form: ComposerForm }) {
       control={form.control}
       name="visibility"
       render={({ field: { value, onChange } }) => {
-        const isPrivate = TodoPolicy.isPrivate({ visibility: value });
+        const isPrivate = isPrivateVisibility(value);
 
         return (
           <ActionButton
@@ -364,9 +368,7 @@ function VisibilityChip({ form }: { form: ComposerForm }) {
               )
             }
             label={isPrivate ? t('chip.private') : t('chip.public')}
-            onPress={() =>
-              onChange(TodoPolicy.withVisibilityToggled({ visibility: value }).visibility)
-            }
+            onPress={() => onChange(withVisibilityToggled({ visibility: value }).visibility)}
           />
         );
       }}

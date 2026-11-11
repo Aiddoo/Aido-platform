@@ -19,10 +19,7 @@ export function FriendTodoNudgeAction({ todo }: FriendTodoNudgeActionProps) {
   const { data: friend } = useRouteFriendQuery();
   const [selectedDateKey] = useFeedDateKey();
   const todayKey = useTodayKey();
-  const canNudgeTodo = TodoNudgePolicy.canNudgeTodoOnDate(
-    { targetDateKey: selectedDateKey, isCompleted: todo.completed },
-    todayKey,
-  );
+  const canNudgeTodo = TodoNudgePolicy.canNudgeTodoOnDate(todo, selectedDateKey, todayKey);
 
   if (!canNudgeTodo || friend == null) {
     return null;

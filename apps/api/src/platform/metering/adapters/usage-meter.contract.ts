@@ -13,7 +13,9 @@ export function describeUsageMeterContract(context: {
   describe("UsageMeterPort 계약", () => {
     let meter: UsageMeterPort;
 
+    // 같은 DB를 쓰는 다른 테스트가 먼저 남긴 행이 prune 수에 섞이지 않게 시작할 때도 비운다
     beforeEach(async () => {
+      await context.cleanup?.();
       meter = await context.createMeter();
     });
 

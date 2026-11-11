@@ -117,6 +117,40 @@ describe("ReportPushDeviceUseCase — 푸시 기기 보고", () => {
     expect(cache.invalidatedPushTokenUserIds).toEqual(["user-a", "user-a"]);
   });
 
+  it("허용인데 토큰 발급에 실패해 null로 보고하면 등록된 토큰을 두고 세션·앱 버전만 이번 보고로 옮긴다", async () => {
+    // Given 이전 세션에서 토큰을 등록한 기기
+    const { devices, tokens, useCase } = setup();
+    await useCase.execute(createCommand({ sessionId: "session-old", appVersion: "1.14.2" }));
+
+    // When 다시 로그인한 뒤 토큰 발급이 시간 초과로 실패한 보고
+    const report = await useCase.execute(
+      createCommand({ sessionId: "session-new", appVersion: "1.15.0", token: null }),
+    );
+
+    // Then
+    expect(report.hasActiveToken).toBe(true);
+    expect(tokens.tokenOf("user-a", "ios_device-a")).toMatchObject({
+      token: VALID_TOKEN,
+      isActive: true,
+      appVersion: "1.15.0",
+    });
+    expect(tokens.sessionOf("user-a", "ios_device-a")).toBe("session-new");
+    expect(devices.deviceOf("user-a", "ios_device-a")?.sessionId).toBe("session-new");
+  });
+
+  it("허용인데 토큰이 null이고 등록된 토큰도 없으면 토큰 없이 권한만 기록한다", async () => {
+    // Given
+    const { devices, tokens, useCase } = setup();
+
+    // When
+    const report = await useCase.execute(createCommand({ token: null }));
+
+    // Then
+    expect(report).toMatchObject({ hasActiveToken: false, permission: { status: "GRANTED" } });
+    expect(tokens.size).toBe(0);
+    expect(devices.deviceOf("user-a", "ios_device-a")?.permission.status).toBe("GRANTED");
+  });
+
   it("아직 묻지 않은 기기는 토큰 없이 기록한다", async () => {
     // Given
     const { devices, tokens, useCase } = setup();

@@ -17,6 +17,7 @@ const speechResultSchema = z.object({
 });
 export type SpeechResult = z.infer<typeof speechResultSchema>;
 
+// 빈 받아쓰기에서 시작하고 이어 받는 곳(노트 복원·예시 화면)은 일부 값만 넘긴다
 export function createVoiceTranscript(overrides: Partial<VoiceTranscript> = {}): VoiceTranscript {
   return { sentences: [], interim: '', ...overrides };
 }
@@ -88,7 +89,6 @@ export const VoiceTranscriptPolicy = {
   getFinalText,
   mergeHeardTextIntoTitle,
   isTranscriptEmpty,
-  createVoiceTranscript,
   appendFinalResult,
   applyResult,
   withInterimFinalized,

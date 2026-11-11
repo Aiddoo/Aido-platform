@@ -1,7 +1,15 @@
-import type { TodoCategory, TodoCategoryListResponse, TodoCategoryWithCount } from '@aido/api';
+import {
+  type TodoCategory,
+  type TodoCategoryDeletionPreview as TodoCategoryDeletionPreviewDto,
+  todoCategoryDeletionPreviewSchema as todoCategoryDeletionPreviewDtoSchema,
+  type TodoCategoryListResponse,
+  type TodoCategoryWithCount,
+} from '@aido/api';
 import { ApiError } from '@src/core/errors/api-error';
 
 import {
+  type TodoCategoryDeletionPreview,
+  todoCategoryDeletionPreviewSchema,
   type TodoCategoryWithCount as TodoCategoryWithCountModel,
   todoCategoryWithCountSchema,
 } from '../domains/todo-category.model';
@@ -15,6 +23,32 @@ export function createTodoCategoryWithCount(
     color: '#3B82F6',
     sortOrder: 0,
     todoCount: 0,
+    ...overrides,
+  });
+}
+
+export function createTodoCategoryDeletionPreview(
+  overrides?: Partial<TodoCategoryDeletionPreview>,
+): TodoCategoryDeletionPreview {
+  return todoCategoryDeletionPreviewSchema.parse({
+    todoCount: 12,
+    completedTodoCount: 3,
+    activeSeriesCount: 2,
+    isLastCategory: false,
+    isTodoHandlingSupported: true,
+    ...overrides,
+  });
+}
+
+export function createTodoCategoryDeletionPreviewDto(
+  overrides?: Partial<TodoCategoryDeletionPreviewDto>,
+): TodoCategoryDeletionPreviewDto {
+  return todoCategoryDeletionPreviewDtoSchema.parse({
+    categoryId: 3,
+    todoCount: 12,
+    completedTodoCount: 3,
+    activeSeriesCount: 2,
+    isLastCategory: false,
     ...overrides,
   });
 }

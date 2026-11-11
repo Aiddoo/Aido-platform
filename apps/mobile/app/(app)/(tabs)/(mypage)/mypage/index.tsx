@@ -1,13 +1,12 @@
 import { MyPageMenuPane } from '@src/bootstrap/navigation/my-page-menu-pane';
 import { NotificationBellToolbar } from '@src/features/notification/components/notification-bell-toolbar';
-import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
 import { useTranslation } from '@src/shared/i18n';
-import { MemoIllustration, Result, StyledSafeAreaView } from '@src/shared/ui';
+import { MemoIllustration, Result, StyledSafeAreaView, usePaneSizeClass } from '@src/shared/ui';
 
 /** 넓은 화면은 Stack이 왼쪽 칸에 메뉴를 그려 상세 칸에 빈 안내를 둔다 */
 export default function MyPageScreen() {
   const { t } = useTranslation('user');
-  const isCompact = useWindowSizeClass() === 'compact';
+  const isCompact = usePaneSizeClass() === 'compact';
 
   return (
     <>
