@@ -28,7 +28,7 @@ import { useFormatRefillSentence } from '../hooks/use-format-refill-sentence';
 import { useQuotaStatus } from '../hooks/use-quota-status';
 import { useSubscriptionReceipt } from '../hooks/use-subscription-receipt';
 import { useGetEntitlementsQueryOptions } from '../queries/entitlement.queries';
-import { toPlanSummary } from '../utils/plan-summary.view-model';
+import { toDisplayedUsedCount, toPlanSummary } from '../utils/plan-summary.view-model';
 
 const SUBSCRIPTION_PATHNAME = '/settings/subscription';
 
@@ -208,7 +208,7 @@ function QuotaRow({ feature, label, hint }: QuotaRowProps) {
           className="tabular-nums"
         >
           {t('upsell.usage', {
-            used: formatCount(Math.min(used, limit), locale),
+            used: formatCount(toDisplayedUsedCount(used, limit), locale),
             limit: formatCount(limit, locale),
           })}
         </Text>

@@ -3,12 +3,14 @@ import {
   createLoggerStub,
   createPurchasesGatewayStub,
 } from '@src/testing/core';
+import { setupFakeTimersPerTest } from '@src/testing/timers';
 
 import { SUBSCRIPTION_LOG_EVENT } from '../constants/subscription-log-events';
 import { PurchasesSession } from './purchases.session';
 
-// oxlint-disable-next-line aido/no-real-sleep -- 1.15.2 전환 #1400
-const flushPromises = () => new Promise((resolve) => setImmediate(resolve));
+setupFakeTimersPerTest();
+
+const flushPromises = () => jest.advanceTimersByTimeAsync(0);
 
 function createManager({
   purchases = createPurchasesGatewayStub(),
