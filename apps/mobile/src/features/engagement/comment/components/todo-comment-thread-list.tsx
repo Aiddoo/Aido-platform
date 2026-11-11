@@ -54,7 +54,7 @@ import {
   type TodoCommentThreadAnchor,
 } from '../domains/todo-comment.model';
 import { useTodoCommentParams, useTodoCommentSort } from '../hooks/use-todo-comment-params';
-import { invalidateTodoComments } from '../queries/todo-comment-cache';
+import { fetchTodoCommentThreads, invalidateTodoComments } from '../queries/todo-comment-cache';
 import { useGetTodoCommentThreadsInfiniteQueryOptions } from '../queries/todo-comment.queries';
 import { TodoCommentItem } from './todo-comment-item';
 import { TodoCommentKeyboardScrollView } from './todo-comment-keyboard-scroll-view';
@@ -490,9 +490,10 @@ function useSortChange() {
 
   const prefetchThenCommit = (sort: TodoCommentSort, commit: () => void) => {
     setIsPending(true);
-    // oxlint-disable-next-line aido/query-client-location -- 1.15.2 전환 #1400
-    queryClient
-      .infiniteQuery(sort === TODO_COMMENT_SORT.POPULAR ? popularOptions : latestOptions)
+    fetchTodoCommentThreads(
+      queryClient,
+      sort === TODO_COMMENT_SORT.POPULAR ? popularOptions : latestOptions,
+    )
       .catch(noop)
       .finally(() => {
         if (isUnmountedRef.current) {

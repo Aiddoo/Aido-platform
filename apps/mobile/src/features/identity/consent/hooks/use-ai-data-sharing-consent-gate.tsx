@@ -1,5 +1,5 @@
 import { useLogger } from '@src/bootstrap/providers/di-context';
-import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
+import { ensureMe, getCachedMe } from '@src/features/identity/user/queries/user-cache';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { getErrorMessage } from '@src/shared/errors';
 import { useOverlay } from '@src/shared/ui';
@@ -11,6 +11,7 @@ import { AiConsentBottomSheet } from '../components/ai-consent-bottom-sheet';
 import { CONSENT_LOG_EVENT } from '../constants/consent-log-events';
 import { type Consent } from '../domains/consent.model';
 import { ConsentPolicy } from '../domains/consent.model';
+import { ensureConsent, getCachedConsent } from '../queries/consent-cache';
 import { useGetConsentQueryOptions } from '../queries/consent.queries';
 
 /** 마이크를 누른 뒤 아무 표시 없이 기다릴 수 있는 시간. 넘기면 서버 판단에 맡기고 응답은 캐시에 쌓인다 */
@@ -61,10 +62,8 @@ export function useAiDataSharingConsentGate({
 
   const readConsent = () =>
     readWithoutBlocking(
-      // oxlint-disable-next-line aido/query-client-location -- 1.15.2 전환 #1400
-      queryClient.getQueryData(consentQueryOptions.queryKey),
-      // oxlint-disable-next-line aido/query-client-location -- 1.15.2 전환 #1400
-      () => queryClient.query({ ...consentQueryOptions, staleTime: 'static' }),
+      getCachedConsent(queryClient),
+      () => ensureConsent(queryClient, consentQueryOptions),
       logConsentCheckFailure,
     );
 
@@ -131,8 +130,7 @@ export function useAiDataSharingConsentGate({
       // 내 정보를 기다려 마이크 권한처럼 뒤에 오는 단계가 재안내를 앞지르지 않게 한다
       readWithoutBlocking(
         getCachedMe(queryClient),
-        // oxlint-disable-next-line aido/query-client-location -- 1.15.2 전환 #1400
-        () => queryClient.query({ ...meQueryOptions, staleTime: 'static' }),
+        () => ensureMe(queryClient, meQueryOptions),
         logConsentCheckFailure,
       ),
     ]);
@@ -147,8 +145,7 @@ export function useAiDataSharingConsentGate({
 
   /** 캐시 기준으로 동의가 필요한지. 서버가 AI_1311로 거절하면 AI mutation이 캐시를 미응답으로 되돌린다 */
   const isConsentRequired = (): boolean => {
-    // oxlint-disable-next-line aido/query-client-location -- 1.15.2 전환 #1400
-    const consent = queryClient.getQueryData(consentQueryOptions.queryKey);
+    const consent = getCachedConsent(queryClient);
     return consent != null && !ConsentPolicy.hasAgreedToAiDataSharing(consent);
   };
 

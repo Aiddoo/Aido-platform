@@ -5,7 +5,12 @@ import {
 } from '@src/bootstrap/providers/di-context';
 import { subscribeTodoCompletionChanged } from '@src/core/events/todo-completion-changed';
 import { readWithoutBlocking } from '@src/features/identity/consent/hooks/use-ai-data-sharing-consent-gate';
+import {
+  ensureConsent,
+  getCachedConsent,
+} from '@src/features/identity/consent/queries/consent-cache';
 import { useGetConsentQueryOptions } from '@src/features/identity/consent/queries/consent.queries';
+import { ensurePreference } from '@src/features/identity/preference/queries/preference-cache';
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
 import { useTrack } from '@src/shared/analytics';
@@ -21,6 +26,7 @@ import { MarketingPushOptInBottomSheet } from '../components/marketing-push-opt-
 import { NOTIFICATION_LOG_EVENT } from '../constants/notification-log-events';
 import { MarketingPushPromptPolicy } from '../domains/marketing-push-prompt.model';
 import { PushPermissionPolicy } from '../domains/push-permission.model';
+import { ensurePushPermission } from '../queries/push-permission-cache';
 import { useGetPushPermissionQueryOptions } from '../queries/push-permission.queries';
 
 /** null은 답 없이 사라졌을 때(로그아웃 등)라 거절로 남기지 않는다 */
@@ -103,20 +109,16 @@ function useFindMarketingPushOfferAccountId() {
       });
     // 설정 화면을 열지 않았어도 제안할 수 있게 캐시가 없으면 받아 온다
     const [preference, consent, permission] = await Promise.all([
-      // oxlint-disable-next-line aido/query-client-location -- 1.15.2 전환 #1400
-      queryClient.ensureQueryData(preferenceQueryOptions).catch((error: unknown) => {
+      ensurePreference(queryClient, preferenceQueryOptions).catch((error: unknown) => {
         logSkipped(error);
         return null;
       }),
       readWithoutBlocking(
-        // oxlint-disable-next-line aido/query-client-location -- 1.15.2 전환 #1400
-        queryClient.getQueryData(consentQueryOptions.queryKey),
-        // oxlint-disable-next-line aido/query-client-location -- 1.15.2 전환 #1400
-        () => queryClient.ensureQueryData(consentQueryOptions),
+        getCachedConsent(queryClient),
+        () => ensureConsent(queryClient, consentQueryOptions),
         logSkipped,
       ),
-      // oxlint-disable-next-line aido/query-client-location -- 1.15.2 전환 #1400
-      queryClient.ensureQueryData(permissionQueryOptions),
+      ensurePushPermission(queryClient, permissionQueryOptions),
     ]);
     if (
       preference == null ||

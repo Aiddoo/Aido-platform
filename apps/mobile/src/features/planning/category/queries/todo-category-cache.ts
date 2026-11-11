@@ -95,6 +95,11 @@ export function withCategoryDeleted(
   return withTodoCountChanged(remaining, deletionResult.moveToCategoryId, deletionResult.todoCount);
 }
 
+/** 훅 밖에서 이미 받은 카테고리만 읽는다. 받지 않았으면 없다 */
+export function getCachedTodoCategories(queryClient: QueryClient) {
+  return queryClient.getQueryData(TODO_CATEGORY_QUERY_KEYS.list());
+}
+
 export function invalidateTodoCategories(queryClient: QueryClient) {
   return queryClient.invalidateQueries({ queryKey: TODO_CATEGORY_QUERY_KEYS.all });
 }

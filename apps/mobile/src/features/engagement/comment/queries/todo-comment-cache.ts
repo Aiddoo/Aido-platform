@@ -22,6 +22,10 @@ import {
   type TodoCommentTransform,
 } from '../utils/todo-comment-cache-pages';
 import { TODO_COMMENT_QUERY_KEYS } from './todo-comment-query-keys';
+import type {
+  useGetTodoCommentRepliesInfiniteQueryOptions,
+  useGetTodoCommentThreadsInfiniteQueryOptions,
+} from './todo-comment.queries';
 
 interface TodoCommentCacheInput {
   todoId: number;
@@ -153,6 +157,22 @@ export function addTodoCommentRepliesToCaches(
     { queryKey: TODO_COMMENT_QUERY_KEYS.threadReplies({ todoId, commentId: threadCommentId }) },
     (data) => appendRepliesToReplyPages(data, replies),
   );
+}
+
+/** 정렬을 바꾸기 전에 그 정렬의 묶음 목록을 받는다. 받은 첫 페이지가 있으면 다시 받지 않는다 */
+export function fetchTodoCommentThreads(
+  queryClient: QueryClient,
+  options: ReturnType<typeof useGetTodoCommentThreadsInfiniteQueryOptions>,
+) {
+  return queryClient.infiniteQuery(options);
+}
+
+/** 펼치기 전에 답글을 받는다. 한 번 받은 답글은 다시 받지 않는다 */
+export function ensureTodoCommentReplies(
+  queryClient: QueryClient,
+  options: ReturnType<typeof useGetTodoCommentRepliesInfiniteQueryOptions>,
+) {
+  return queryClient.infiniteQuery({ ...options, staleTime: 'static' });
 }
 
 /** 새 댓글의 자리(정렬·페이지)는 서버가 정하므로 묶음 목록만 다시 받는다 */

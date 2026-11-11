@@ -272,7 +272,7 @@ describe('MemoEditor', () => {
 
     // Then
     await waitFor(() => expect(onLeave).toHaveBeenCalledTimes(1));
-    expect(screen.getByText('고친 메모')).toBeTruthy();
+    expect(await screen.findByText('고친 메모')).toBeTruthy();
     expect(screen.queryByText('처음 메모')).toBeNull();
   });
 
