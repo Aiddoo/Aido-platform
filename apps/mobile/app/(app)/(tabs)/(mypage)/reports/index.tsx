@@ -11,27 +11,28 @@ import { useTranslation } from '@src/shared/i18n';
 import {
   Box,
   H4,
+  Mascot,
   QueryErrorBoundary,
-  QueryErrorFallback,
+  SafeAreaScrollView,
   ScallopedContainer,
   SegmentTabTrigger,
   Spacing,
-  SafeAreaScrollView,
   Text,
   TextSkeleton,
+  TintedRefreshControl,
   ViewTabs,
   VStack,
-  TintedRefreshControl,
-  Mascot,
 } from '@src/shared/ui';
 import { useQueryClient } from '@tanstack/react-query';
 import { Tabs } from 'heroui-native';
-import { type ReactNode, Suspense } from 'react';
+import { Suspense } from 'react';
 import { match } from 'ts-pattern';
 
 export default function ReportsScreen() {
+  const { t } = useTranslation('ai');
   const queryClient = useQueryClient();
   const featureAccess = useFeatureAccess('AI_REPORT');
+  const [reportType] = useReportType();
   const [isRefreshing, handleRefresh] = useRefresh(() => invalidateReports(queryClient));
 
   return (
@@ -42,143 +43,125 @@ export default function ReportsScreen() {
       <Spacing size={16} />
 
       {match(featureAccess.status)
-        .with('premium', () => <ReportsPanel.Premium />)
-        .with('free', () => <ReportsPanel.Free />)
-        .with('loading', () => <ReportsPanel.Loading />)
-        .with('error', () => <ReportsPanel.Error />)
+        .with('premium', () => (
+          <VStack gap={12}>
+            <AiConsentNotice title={t('consent.notice.reports')} />
+
+            <ScallopedContainer>
+              <Box className="items-center px-5 pt-4">
+                <Mascot name="catSuggestion" size={100} />
+                <Spacing size={8} />
+                <H4
+                  align="center"
+                  lineBreakStrategyIOS="hangul-word"
+                  textBreakStrategy="highQuality"
+                >
+                  {t('report.list.premiumTitle')}
+                </H4>
+                <Text size="b4" shade={6} align="center">
+                  {t('report.list.premiumDescription')}
+                </Text>
+              </Box>
+
+              <Spacing size={16} />
+
+              <Box className="px-4">
+                <QueryErrorBoundary fallback={ReportStatusBanner.Error}>
+                  <Suspense fallback={<ReportStatusBanner.Loading />}>
+                    <ReportStatusBanner />
+                  </Suspense>
+                </QueryErrorBoundary>
+              </Box>
+
+              <Spacing size={12} />
+
+              <ReportTypeTabs />
+
+              <Spacing size={8} />
+
+              <Box className="px-4 pb-4">
+                <QueryErrorBoundary fallback={ReportList.Error} resetKeys={[reportType]}>
+                  <Suspense fallback={<ReportList.Loading />}>
+                    <ReportList />
+                  </Suspense>
+                </QueryErrorBoundary>
+              </Box>
+            </ScallopedContainer>
+          </VStack>
+        ))
+        .with('free', () => (
+          <ScallopedContainer>
+            <Box className="items-center px-5 pt-4">
+              <Mascot name="catSuggestion" size={100} />
+              <Spacing size={8} />
+              <H4 align="center" lineBreakStrategyIOS="hangul-word" textBreakStrategy="highQuality">
+                {t('report.list.freeTitle')}
+              </H4>
+              <Text size="b4" shade={6} align="center">
+                {t('report.list.freeDescription')}
+              </Text>
+            </Box>
+
+            <Spacing size={28} />
+
+            <ReportTypeTabs />
+
+            <Spacing size={8} />
+
+            <Box className="px-4 pb-4">
+              <ReportList.Free />
+            </Box>
+          </ScallopedContainer>
+        ))
+        // 프리미엄 사용자가 매번 보는 화면이라 권한을 기다리는 동안에도 같은 자리를 잡는다
+        .with('loading', () => (
+          <ScallopedContainer>
+            <Box className="items-center px-5 pt-4">
+              <Mascot name="catSuggestion" size={100} />
+              <Spacing size={8} />
+              <TextSkeleton size="t3" className="w-40" />
+              <TextSkeleton size="b4" className="w-56" />
+            </Box>
+
+            <Spacing size={16} />
+
+            <Box className="px-4">
+              <ReportStatusBanner.Loading />
+            </Box>
+
+            <Spacing size={12} />
+
+            <ReportTypeTabs />
+
+            <Spacing size={8} />
+
+            <Box className="px-4 pb-4">
+              <ReportList.Loading />
+            </Box>
+          </ScallopedContainer>
+        ))
+        .with('error', () => (
+          <ScallopedContainer>
+            <Box className="items-center px-5 pt-4">
+              <Mascot name="catSuggestion" size={100} />
+              <Spacing size={8} />
+            </Box>
+
+            <Spacing size={28} />
+
+            <ReportTypeTabs />
+
+            <Spacing size={8} />
+
+            <Box className="px-4 pb-4">
+              <ReportList.Error error={featureAccess.error} reset={() => featureAccess.refetch()} />
+            </Box>
+          </ScallopedContainer>
+        ))
         .exhaustive()}
 
       <Spacing size={32} />
     </SafeAreaScrollView>
-  );
-}
-
-interface ReportsPanelProps {
-  heading: ReactNode;
-  banner: ReactNode;
-  list: ReactNode;
-}
-
-// oxlint-disable-next-line aido/component-name -- 1.15.2 전환 #1400
-function ReportsPanel({ heading, banner, list }: ReportsPanelProps) {
-  return (
-    <ScallopedContainer>
-      <Box className="items-center px-5 pt-4">
-        <Mascot name="catSuggestion" size={100} />
-        <Spacing size={8} />
-        {heading}
-      </Box>
-
-      <Spacing size={16} />
-
-      {banner}
-
-      <Spacing size={12} />
-
-      <ReportTypeTabs />
-
-      <Spacing size={8} />
-
-      <Box className="px-4 pb-4">{list}</Box>
-    </ScallopedContainer>
-  );
-}
-
-ReportsPanel.Premium = function Premium() {
-  const { t } = useTranslation('ai');
-  const [reportType] = useReportType();
-
-  return (
-    <VStack gap={12}>
-      <AiConsentNotice title={t('consent.notice.reports')} />
-
-      <ReportsPanel
-        heading={
-          <ReportHeading
-            title={t('report.list.premiumTitle')}
-            description={t('report.list.premiumDescription')}
-          />
-        }
-        banner={
-          <Box className="px-4">
-            <QueryErrorBoundary>
-              <Suspense fallback={<ReportStatusBanner.Loading />}>
-                <ReportStatusBanner />
-              </Suspense>
-            </QueryErrorBoundary>
-          </Box>
-        }
-        list={
-          <QueryErrorBoundary resetKeys={[reportType]}>
-            <Suspense fallback={<ReportList.Loading />}>
-              <ReportList />
-            </Suspense>
-          </QueryErrorBoundary>
-        }
-      />
-    </VStack>
-  );
-};
-
-ReportsPanel.Free = function Free() {
-  const { t } = useTranslation('ai');
-
-  return (
-    <ReportsPanel
-      heading={
-        <ReportHeading
-          title={t('report.list.freeTitle')}
-          description={t('report.list.freeDescription')}
-        />
-      }
-      banner={null}
-      list={<ReportList.Free />}
-    />
-  );
-};
-
-/** 프리미엄 사용자가 매번 보는 화면이라 권한을 기다리는 동안에도 같은 자리를 잡는다 */
-ReportsPanel.Loading = function Loading() {
-  return (
-    <ReportsPanel
-      heading={
-        <>
-          <TextSkeleton size="t3" className="w-40" />
-          <TextSkeleton size="b4" className="w-56" />
-        </>
-      }
-      banner={
-        <Box className="px-4">
-          <ReportStatusBanner.Loading />
-        </Box>
-      }
-      list={<ReportList.Loading />}
-    />
-  );
-};
-
-ReportsPanel.Error = function ErrorFallback() {
-  const featureAccess = useFeatureAccess('AI_REPORT');
-
-  return (
-    <ReportsPanel
-      heading={null}
-      banner={null}
-      list={<QueryErrorFallback reset={() => featureAccess.refetch()} />}
-    />
-  );
-};
-
-function ReportHeading({ title, description }: { title: string; description: string }) {
-  return (
-    <>
-      <H4 align="center" lineBreakStrategyIOS="hangul-word" textBreakStrategy="highQuality">
-        {title}
-      </H4>
-      <Text size="b4" shade={6} align="center">
-        {description}
-      </Text>
-    </>
   );
 }
 

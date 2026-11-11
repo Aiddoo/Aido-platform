@@ -1,5 +1,13 @@
 import { useTranslation } from '@src/shared/i18n';
-import { HStack, Text, TextSkeleton, VStack, Box } from '@src/shared/ui';
+import {
+  Box,
+  HStack,
+  QueryErrorFallback,
+  type QueryErrorFallbackProps,
+  Text,
+  TextSkeleton,
+  VStack,
+} from '@src/shared/ui';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { Separator } from 'heroui-native';
 
@@ -55,6 +63,16 @@ ReportStatusBanner.Loading = function Loading() {
           <TextSkeleton size="t3" className="w-12" />
         </VStack>
       </HStack>
+    </Box>
+  );
+};
+
+ReportStatusBanner.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
+  const { t } = useTranslation('common');
+
+  return (
+    <Box className="rounded-2xl border border-dashed border-gray-3 bg-white px-4 py-3">
+      <QueryErrorFallback.Inline message={t('errorBoundary.title')} reset={reset} />
     </Box>
   );
 };
