@@ -25,12 +25,12 @@ import type { StoreReviewService } from '@src/features/device/store-review/apis/
 import type { WidgetNavigationRepository } from '@src/features/device/widget/apis/widget-navigation.repository';
 import type { WidgetSyncService } from '@src/features/device/widget/apis/widget-sync.service';
 import type { TodoCommentService } from '@src/features/engagement/comment/apis/todo-comment.service';
-import type { AuthSessionStore } from '@src/features/identity/auth/apis/auth-session.store';
 import type { AuthApi } from '@src/features/identity/auth/apis/auth.api';
-import type { SessionCleanupService } from '@src/features/identity/auth/apis/session-cleanup.service';
 import type { LogOutDeviceService } from '@src/features/identity/auth/services/log-out-device.service';
+import type { SessionCleanupService } from '@src/features/identity/auth/services/session-cleanup.service';
 import type { SessionRevocationService } from '@src/features/identity/auth/services/session-revocation.service';
 import type { SignInService } from '@src/features/identity/auth/services/sign-in.service';
+import type { AuthSessionStore } from '@src/features/identity/auth/stores/auth-session.store';
 import type { ConsentService } from '@src/features/identity/consent/apis/consent.service';
 import type { PreferenceService } from '@src/features/identity/preference/apis/preference.service';
 import type { UserService } from '@src/features/identity/user/apis/user.service';

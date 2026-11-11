@@ -1,3 +1,4 @@
+import { createSessionQueryCache } from '@src/bootstrap/query/session-query-cache';
 import type { Analytics } from '@src/core/ports/analytics';
 import type { AppIconGateway } from '@src/core/ports/app-icon-gateway';
 import type { AppLifecycleGateway } from '@src/core/ports/app-lifecycle-gateway';
@@ -53,15 +54,14 @@ import { createWidgetNavigationRepository } from '@src/features/device/widget/ap
 import { WidgetSyncService } from '@src/features/device/widget/apis/widget-sync.service';
 import type { WidgetBridge } from '@src/features/device/widget/bridge/widget-bridge';
 import { TodoCommentService } from '@src/features/engagement/comment/apis/todo-comment.service';
-import { createAuthSessionStore } from '@src/features/identity/auth/apis/auth-session.store';
 import { AuthApi } from '@src/features/identity/auth/apis/auth.api';
-import { createPendingRevocationRepository } from '@src/features/identity/auth/apis/pending-revocation.repository';
-import { SessionCleanupService } from '@src/features/identity/auth/apis/session-cleanup.service';
-import { createSessionQueryCache } from '@src/features/identity/auth/apis/session-query-cache';
-import { UserDeviceDataService } from '@src/features/identity/auth/apis/user-device-data.service';
+import { createPendingRevocationRepository } from '@src/features/identity/auth/repositories/pending-revocation.repository';
 import { LogOutDeviceService } from '@src/features/identity/auth/services/log-out-device.service';
+import { SessionCleanupService } from '@src/features/identity/auth/services/session-cleanup.service';
 import { SessionRevocationService } from '@src/features/identity/auth/services/session-revocation.service';
 import { SignInService } from '@src/features/identity/auth/services/sign-in.service';
+import { UserDeviceDataService } from '@src/features/identity/auth/services/user-device-data.service';
+import { createAuthSessionStore } from '@src/features/identity/auth/stores/auth-session.store';
 import { ConsentService } from '@src/features/identity/consent/apis/consent.service';
 import { PreferenceService } from '@src/features/identity/preference/apis/preference.service';
 import { UserService } from '@src/features/identity/user/apis/user.service';

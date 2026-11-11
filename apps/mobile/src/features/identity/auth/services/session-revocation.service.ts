@@ -5,8 +5,8 @@ import { HOUR_MS } from '@src/shared/constants/time-units';
 import { getErrorMessage } from '@src/shared/errors';
 
 import type { AuthApi } from '../apis/auth.api';
-import type { PendingRevocationRepository } from '../apis/pending-revocation.repository';
 import { AUTH_LOG_EVENT } from '../constants/auth-log-events';
+import type { PendingRevocationRepository } from '../repositories/pending-revocation.repository';
 import { refreshEnvelopeSchema } from '../schemas/auth-response.schema';
 import type { PendingRevocation } from '../schemas/pending-revocation-storage.schema';
 

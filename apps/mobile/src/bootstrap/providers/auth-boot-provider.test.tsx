@@ -1,13 +1,13 @@
+import { createSessionQueryCache } from '@src/bootstrap/query/session-query-cache';
 import { ok } from '@src/core/errors/result';
 import { emitSessionExpired, subscribeSessionExpired } from '@src/core/events/session-expired';
 import type { AppLifecycleState } from '@src/core/ports/app-lifecycle-gateway';
 import type { ErrorReporter } from '@src/core/ports/error-reporter';
 import { AuthApi } from '@src/features/identity/auth/apis/auth.api';
-import { createPendingRevocationRepository } from '@src/features/identity/auth/apis/pending-revocation.repository';
-import { SessionCleanupService } from '@src/features/identity/auth/apis/session-cleanup.service';
-import { createSessionQueryCache } from '@src/features/identity/auth/apis/session-query-cache';
 import { useAuthSession } from '@src/features/identity/auth/hooks/use-auth-session';
 import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
+import { createPendingRevocationRepository } from '@src/features/identity/auth/repositories/pending-revocation.repository';
+import { SessionCleanupService } from '@src/features/identity/auth/services/session-cleanup.service';
 import { SessionRevocationService } from '@src/features/identity/auth/services/session-revocation.service';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
 import { UserService } from '@src/features/identity/user/apis/user.service';

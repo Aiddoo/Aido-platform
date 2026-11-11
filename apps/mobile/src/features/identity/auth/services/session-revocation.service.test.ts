@@ -11,7 +11,7 @@ import {
 } from '@src/testing/core';
 
 import { AuthApi } from '../apis/auth.api';
-import { createPendingRevocationRepository } from '../apis/pending-revocation.repository';
+import { createPendingRevocationRepository } from '../repositories/pending-revocation.repository';
 import { PENDING_REVOCATION_TTL_MS, SessionRevocationService } from './session-revocation.service';
 
 const NOW = Date.UTC(2026, 10, 7);

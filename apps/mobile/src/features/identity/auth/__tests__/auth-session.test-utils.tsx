@@ -28,8 +28,8 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { renderHook, waitFor } from '@testing-library/react-native';
 import type { PropsWithChildren } from 'react';
 
-import { createPendingRevocationRepository } from '../apis/pending-revocation.repository';
 import { useAuthStatus } from '../hooks/use-auth-status';
+import { createPendingRevocationRepository } from '../repositories/pending-revocation.repository';
 
 export const ACCOUNT_A_TOKENS: AuthTokenPair = {
   accessToken: 'access-a',
