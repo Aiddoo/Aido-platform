@@ -41,6 +41,14 @@ const NIGHT_EXEMPT_NOTIFICATION_TYPES: ReadonlySet<NotificationType> = new Set<N
   "WEATHER_EVENING",
 ]);
 
+/**
+ * 일반 시간당 한도(사용자당 1시간 15회)로 막지도 세지도 않는 알림 타입. 광고성·소셜은 한도를 그대로 따른다
+ *
+ * - TODO_REMINDER: 사용자가 정한 할 일 시각의 60·10분 전이라 한 시간에 할 일이 몰려도(8개면 16건) 모두 보낸다. 반복 멈춤 안내도 같은 타입이다
+ */
+const GENERAL_RATE_LIMIT_EXEMPT_NOTIFICATION_TYPES: ReadonlySet<NotificationType> =
+  new Set<NotificationType>(["TODO_REMINDER"]);
+
 /** 마케팅 동의가 필요한 알림 타입인지 */
 export function isMarketingNotification(type: NotificationType): boolean {
   return MARKETING_NOTIFICATION_TYPES.has(type);
@@ -53,4 +61,8 @@ export function isAutomatedEngagementNotification(type: NotificationType): boole
 /** 야간 발송 예외 타입인지 */
 export function isNightExemptNotification(type: NotificationType): boolean {
   return NIGHT_EXEMPT_NOTIFICATION_TYPES.has(type);
+}
+
+export function isGeneralRateLimitExemptNotification(type: NotificationType): boolean {
+  return GENERAL_RATE_LIMIT_EXEMPT_NOTIFICATION_TYPES.has(type);
 }

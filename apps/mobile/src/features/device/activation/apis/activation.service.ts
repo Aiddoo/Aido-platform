@@ -1,4 +1,3 @@
-import type { FeatureCampaignConfig } from '@src/features/app-config/feature-campaign/domains/feature-campaign.model';
 import type { Instant } from '@src/shared/date/instant';
 
 import type { ActivationCompletedEvent } from '../constants/activation.events';
@@ -7,7 +6,6 @@ import type { ActivationProgress, ActivationUser } from '../domains/activation.m
 import type { ActivationProgressRepository } from './activation-progress.repository';
 
 interface ActivationActionInput {
-  config: FeatureCampaignConfig | undefined;
   user: ActivationUser | undefined;
   now: Instant;
 }
@@ -21,6 +19,7 @@ interface TodoCompletionResult {
   event: ActivationCompletedEvent | null;
 }
 
+/** 가입 7일 안의 계정만 기록한다. 오래된 계정이 할 일을 끝낼 때마다 활성화로 세지 않는다 */
 export class ActivationService {
   readonly #repository: ActivationProgressRepository;
 
@@ -28,33 +27,27 @@ export class ActivationService {
     this.#repository = repository;
   }
 
-  recordTodoCreated = ({ config, user, now }: ActivationActionInput): ActivationProgress | null => {
-    const identity = ActivationPolicy.findActivationIdentity(config, user);
-    if (!identity) {
+  recordTodoCreated = ({ user, now }: ActivationActionInput): ActivationProgress | null => {
+    if (user == null || !ActivationPolicy.isInChecklistWindow(user, now)) {
       return null;
     }
-    return this.#repository.markTodoCreated(identity, now);
+    return this.#repository.markTodoCreated(user.id, now);
   };
 
   recordTodoCompletion = ({
-    config,
     user,
     isCompleted,
     now,
   }: TodoCompletionInput): TodoCompletionResult => {
-    const identity = ActivationPolicy.findActivationIdentity(config, user);
-    if (!isCompleted || !identity || !user) {
+    if (!isCompleted || user == null || !ActivationPolicy.isInChecklistWindow(user, now)) {
       return { progress: null, event: null };
     }
 
-    const result = this.#repository.claimActivated(identity, now);
+    const result = this.#repository.claimActivated(user.id, now);
     return {
       progress: result.progress,
       event: result.isClaimed
-        ? {
-            campaign_id: identity.campaignId,
-            days_since_signup: ActivationPolicy.getDaysSinceSignup(user, now),
-          }
+        ? { days_since_signup: ActivationPolicy.getDaysSinceSignup(user, now) }
         : null,
     };
   };

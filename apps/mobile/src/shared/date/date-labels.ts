@@ -32,32 +32,48 @@ export function getWeekdayLabels(language?: string): string[] {
   );
 }
 
+interface WeekHeaderLabelInput {
+  /** 라벨의 달은 이 날의 달이다 */
+  monthDateKey: string;
+  weekOfMonth: number;
+  hasYear: boolean;
+}
+
+/** "11월 2주차", 연도가 있으면 "2025년 12월 5주차" */
+export function formatWeekHeaderLabel(
+  { monthDateKey, weekOfMonth, hasYear }: WeekHeaderLabelInput,
+  context: DateFormatContext,
+): string {
+  return t('common:calendar.weekHeader', {
+    lng: toCatalogLanguage(context),
+    month: formatDateKeyLabel(monthDateKey, hasYear ? 'yearShortMonth' : 'month', context),
+    week: weekOfMonth,
+  });
+}
+
 export function formatWeekOfMonthLabel(
   dateKey: string,
   todayDateKey: string,
   context: DateFormatContext,
 ): string {
   const week = getCalendarWeek(dateKey);
-  const isCurrentYear = isSameYearDateKey(week.startDateKey, todayDateKey);
-  return t('common:calendar.weekHeader', {
-    lng: toCatalogLanguage(context),
-    month: formatDateKeyLabel(
-      week.startDateKey,
-      isCurrentYear ? 'month' : 'yearShortMonth',
-      context,
-    ),
-    week: week.weekOfMonth,
-  });
+  return formatWeekHeaderLabel(
+    {
+      monthDateKey: week.startDateKey,
+      weekOfMonth: week.weekOfMonth,
+      hasYear: !isSameYearDateKey(week.startDateKey, todayDateKey),
+    },
+    context,
+  );
 }
 
 /** 월요일 시작 주를 "3월 2주차"로 읽는다. 어느 날짜 key를 넘겨도 같은 주면 같은 라벨이다 */
 export function formatIsoWeekOfMonthLabel(dateKey: string, context: DateFormatContext): string {
   const { thursdayDateKey, weekOfMonth } = getIsoWeekOfMonth(dateKey);
-  return t('common:calendar.weekHeader', {
-    lng: toCatalogLanguage(context),
-    month: formatDateKeyLabel(thursdayDateKey, 'month', context),
-    week: weekOfMonth,
-  });
+  return formatWeekHeaderLabel(
+    { monthDateKey: thursdayDateKey, weekOfMonth, hasYear: false },
+    context,
+  );
 }
 
 export function formatRelativeTimeLabel(

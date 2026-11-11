@@ -75,6 +75,23 @@ describe('TodoCategoryPolicy.hasChanges', () => {
   });
 });
 
+describe('TodoCategoryPolicy.isOptimisticCategory', () => {
+  it.each([
+    {
+      title: '서버 응답 전 임시 id(음수)는 임시 행이다',
+      category: createTodoCategoryWithCount({ id: -1 }),
+      expected: true,
+    },
+    { title: '저장된 카테고리는 임시 행이 아니다', category: WORK, expected: false },
+  ])('$title', ({ category, expected }) => {
+    // When
+    const result = TodoCategoryPolicy.isOptimisticCategory(category);
+
+    // Then
+    expect(result).toBe(expected);
+  });
+});
+
 describe('TodoCategoryPolicy.canReorder', () => {
   it.each([
     { title: '카테고리가 없으면 순서를 바꿀 수 없다', categories: [], expected: false },

@@ -20,6 +20,7 @@ export interface PushNotificationGatewayStub extends jest.Mocked<PushNotificatio
   setLastResponse(response: PushNotificationResponse | null): void;
   /** 앱이 앞에 있을 때 이 알림이 오면 어떻게 보일지 정해 둔 판단으로 답한다. 정하지 않았으면 배너다 */
   presentInForeground(notification: ReceivedPushNotification): ForegroundPushPresentation;
+  /** 토큰·수신·응답 구독과 앞에 있을 때 보일 모양을 정한 판단의 수 */
   getListenerCount(): number;
 }
 
@@ -27,6 +28,7 @@ export interface PushNotificationGatewayStub extends jest.Mocked<PushNotificatio
 export function createPushNotificationGatewayStub(
   overrides?: Partial<jest.Mocked<PushNotificationGateway>>,
 ): PushNotificationGatewayStub {
+  const tokenListeners = new Set<() => void>();
   const receivedListeners = new Set<(notification: ReceivedPushNotification) => void>();
   const responseListeners = new Set<(response: PushNotificationResponse) => void>();
   let lastResponse: PushNotificationResponse | null = null;
@@ -45,7 +47,7 @@ export function createPushNotificationGatewayStub(
     getPermission: jest.fn(async () => grantedPermission()),
     requestPermission: jest.fn(async () => grantedPermission()),
     getToken: jest.fn(async () => 'ExponentPushToken[device-123]'),
-    subscribeToken: jest.fn((_listener: () => void) => () => {}),
+    subscribeToken: jest.fn((listener: () => void) => subscribe(tokenListeners, listener)),
     subscribeReceived: jest.fn((listener: (notification: ReceivedPushNotification) => void) =>
       subscribe(receivedListeners, listener),
     ),
@@ -83,7 +85,11 @@ export function createPushNotificationGatewayStub(
       lastResponse = response;
     },
     presentInForeground: (notification) => decideForegroundPresentation?.(notification) ?? 'banner',
-    getListenerCount: () => receivedListeners.size + responseListeners.size,
+    getListenerCount: () =>
+      tokenListeners.size +
+      receivedListeners.size +
+      responseListeners.size +
+      (decideForegroundPresentation == null ? 0 : 1),
     ...overrides,
   };
 }

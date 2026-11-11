@@ -1,4 +1,5 @@
 import { WhatsNewEntryNotice } from '@src/features/app-config/whats-new/components/whats-new-entry-notice';
+import { useWhatsNewAutoOpen } from '@src/features/app-config/whats-new/hooks/use-whats-new-auto-open';
 import { useWhatsNewFeed } from '@src/features/app-config/whats-new/hooks/use-whats-new-feed';
 import { SuggestionEntry } from '@src/features/assistant/suggestion/components/suggestion-entry';
 import { ActivationChecklist } from '@src/features/device/activation/components/activation-checklist';
@@ -15,6 +16,7 @@ import { PushPermissionNotice } from '@src/features/notification/components/push
 import { useIsPushReminderOff } from '@src/features/notification/hooks/use-is-push-reminder-off';
 import { useHasPendingNotificationEntry } from '@src/features/notification/hooks/use-notification-entry';
 import { useOpenPushOnboarding } from '@src/features/notification/hooks/use-open-push-onboarding';
+import { useIsPushOnboardingGuardClosed } from '@src/features/notification/hooks/use-push-onboarding-guard';
 import { AddTodoRequestEntry } from '@src/features/planning/todo/components/add-todo-request-entry';
 import { Calendar } from '@src/features/planning/todo/components/calendar/calendar';
 import { FriendCalendar } from '@src/features/planning/todo/components/calendar/friend-calendar';
@@ -71,6 +73,11 @@ export default function FeedScreen() {
   const closeDetail = useCallback(() => setSelectedTodoId(undefined), [setSelectedTodoId]);
   // 피드를 내리기 시작하면 위에 떠 있는 친구 줄 안내가 내용을 가리지 않게 닫는다
   const [hasScrolledFeed, setHasScrolledFeed] = useState(false);
+  // 첫 피드는 알림 화면 → 새로운 기능 → 말풍선 순서라 앞 화면을 열지 정해진 뒤에만 말풍선을 띄운다
+  const isPushOnboardingSettled = useIsPushOnboardingGuardClosed();
+  const { shouldShowCoachmarks } = useWhatsNewAutoOpen({
+    isOnboardingSettled: isPushOnboardingSettled,
+  });
 
   useFeedTodoDetailHandoff();
 
@@ -79,19 +86,19 @@ export default function FeedScreen() {
       <NotificationBellToolbar />
       <AdaptivePane
         primary={
-          <Box flex={1} className="bg-white">
-            <StyledSafeAreaView edges={['left', 'right']}>
-              <QueryErrorBoundary fallback={FriendStrip.Error}>
-                <Suspense fallback={<FriendStrip.Loading />}>
-                  <FriendStrip
-                    onInvite={
-                      isInviteAvailable ? () => openMyInvite('friend_strip_empty') : undefined
-                    }
-                    isHintDismissed={hasScrolledFeed}
-                  />
-                </Suspense>
-              </QueryErrorBoundary>
-            </StyledSafeAreaView>
+          <Box flex={1} className="bg-white" testID="feed-screen">
+            {/* 친구 줄은 세로 레일 밑까지 밀리고 내용만 레일을 피해 스스로 inset을 둔다 */}
+            <QueryErrorBoundary fallback={FriendStrip.Error}>
+              <Suspense fallback={<FriendStrip.Loading />}>
+                <FriendStrip
+                  onInvite={
+                    isInviteAvailable ? () => openMyInvite('friend_strip_empty') : undefined
+                  }
+                  isHintDismissed={hasScrolledFeed}
+                  shouldShowHint={shouldShowCoachmarks}
+                />
+              </Suspense>
+            </QueryErrorBoundary>
 
             {match(friendId)
               .with(P.string, (id) => (
@@ -101,7 +108,12 @@ export default function FeedScreen() {
                   </Suspense>
                 </QueryErrorBoundary>
               ))
-              .with(undefined, () => <MyFeed onScrollBeginDrag={() => setHasScrolledFeed(true)} />)
+              .with(undefined, () => (
+                <MyFeed
+                  onScrollBeginDrag={() => setHasScrolledFeed(true)}
+                  shouldShowHint={shouldShowCoachmarks}
+                />
+              ))
               .exhaustive()}
           </Box>
         }
@@ -154,7 +166,9 @@ export default function FeedScreen() {
 
 function MyFeed({
   onScrollBeginDrag,
-}: Pick<ComponentProps<typeof ScrollViewContainer>, 'onScrollBeginDrag'>) {
+  shouldShowHint,
+}: Pick<ComponentProps<typeof ScrollViewContainer>, 'onScrollBeginDrag'> &
+  Pick<ComponentProps<typeof MyCalendar>, 'shouldShowHint'>) {
   const [selectedDateKey] = useFeedDateKey();
   const queryClient = useQueryClient();
   const status = useAuthStatus();
@@ -164,9 +178,9 @@ function MyFeed({
     hasPendingNavigation,
   });
   useOpenPushOnboarding({ isStable });
+  const isPushOnboardingSettled = useIsPushOnboardingGuardClosed();
   const isReminderOff = useIsPushReminderOff();
-  const isInviteAvailable = useIsInviteAvailable();
-  const whatsNew = useWhatsNewFeed({ isStable, isInviteAvailable });
+  const whatsNew = useWhatsNewFeed({ isStable, isOnboardingSettled: isPushOnboardingSettled });
   const [isRefreshing, handleRefresh] = useRefresh(() =>
     Promise.all([invalidateFeedTodos(queryClient), invalidateWeather(queryClient)]),
   );
@@ -180,7 +194,7 @@ function MyFeed({
     >
       <StyledSafeAreaView edges={['left', 'right']}>
         <AddTodoRequestEntry />
-        <MyCalendar />
+        <MyCalendar shouldShowHint={shouldShowHint} />
 
         <Spacing size={12} />
 

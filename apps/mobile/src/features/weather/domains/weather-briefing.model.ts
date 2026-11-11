@@ -16,12 +16,12 @@ import { keyBy, maxBy, range, takeWhile } from 'es-toolkit';
 import { match } from 'ts-pattern';
 
 import type {
-  DailyForecastEntry,
   HourlyForecastEntry,
   RescheduleOption,
+  WeatherReport,
   WeatherReportBriefing,
 } from './weather-report.model';
-import { WeatherReportPolicy } from './weather-report.model';
+import { isNowcastExpired, WeatherReportPolicy } from './weather-report.model';
 
 /** 체감 온도가 이 값(°C) 이상인 낮 시간은 야외 할 일을 피하라고 안내한다. 서버 날씨 알림과 같은 기준이다. */
 const HEAT_APPARENT_TEMPERATURE = WEATHER_BRIEFING_RULES.HOT_APPARENT_TEMPERATURE;
@@ -55,7 +55,7 @@ export interface BriefingTodo {
 
 /** 여러 날 할 일은 시작일이 어제여도 오늘 목록에 있어 보고 있는 날짜 + 벽시계 + 기기 시간대로 시각을 만든다 */
 function toBriefingTodo(
-  todo: Pick<Todo, 'id' | 'title' | 'localTime' | 'isAllDay' | 'completed' | 'subTodos'>,
+  todo: Todo,
   { date, timeZone }: { date: string; timeZone: string },
 ): BriefingTodo {
   return {
@@ -66,7 +66,9 @@ function toBriefingTodo(
         ? null
         : fromWallClock(date, todo.localTime, timeZone),
     completed: todo.completed,
-    subTodoProgress: SubTodoPolicy.hasSubTodos(todo) ? SubTodoPolicy.getSubTodoStats(todo) : null,
+    subTodoProgress: SubTodoPolicy.hasSubTodos(todo.subTodos)
+      ? SubTodoPolicy.getSubTodoStats(todo.subTodos)
+      : null,
   };
 }
 
@@ -112,12 +114,7 @@ export type BriefingResult =
   | { kind: 'dry'; todos: ForecastTodo[] }
   | { kind: 'noScheduledTodos' };
 
-type BriefingSource = {
-  location: { timezone: string };
-  hourly: HourlyForecastEntry[];
-  daily: DailyForecastEntry[];
-  briefing: WeatherReportBriefing | null;
-};
+type BriefingSource = Pick<WeatherReport, 'location' | 'hourly' | 'daily' | 'briefing'>;
 
 /** 할 일 날짜는 기기 시간대로 저장되므로 오늘·내일도 기기 시간대로 가른다. */
 interface BriefingClock {
@@ -200,7 +197,7 @@ function getForecastTodos(
 
 /** 서버가 고른 순서(시각 순)대로 오늘 목록의 할 일과 묶는다. 목록에서 사라졌거나 이미 지난 할 일은 뺀다. */
 function getAffectedTodos(
-  briefing: Pick<WeatherReportBriefing, 'affectedTodoIds' | 'rescheduleOptions'>,
+  briefing: WeatherReportBriefing,
   forecastTodos: readonly ForecastTodo[],
 ): AffectedTodo[] {
   const forecastTodosById = keyBy(forecastTodos, (todo) => todo.todoId);
@@ -359,7 +356,7 @@ function toTomorrowMorningBriefing(
  * 서버가 고른 할 일에 닿는 위험(뇌우·눈·비 → 더위)을 먼저, 없으면 곧 올 비·맑은 날·내일 아침 순으로 알린다.
  * 서버가 판단하지 못한 리포트(옛 서버·오늘 할 일 읽기 실패)는 앱이 다시 판단하지 않고 null이다.
  */
-function getWeatherBriefing(
+export function getWeatherBriefing(
   report: BriefingSource,
   todos: readonly BriefingTodo[],
   clock: BriefingClock,
@@ -406,15 +403,16 @@ function getSuggestedStartAt(
 
 type BriefingState = 'loading' | 'hidden' | 'visible';
 
-function getBriefingState(
-  report: { location: { timezone: string }; fetchedAt: Instant } | undefined,
+// 브리핑 카드는 예보의 브리핑 칸만 구독해 Policy 밖 함수로 두고 필요한 칸만 받는다
+export function getBriefingState(
+  report: Pick<WeatherReport, 'location' | 'fetchedAt'> | undefined,
   { now, deviceTimeZone }: { now: Instant; deviceTimeZone: string },
 ): BriefingState {
   if (report == null) {
     return 'loading';
   }
   if (
-    WeatherReportPolicy.isNowcastExpired(report, now) ||
+    isNowcastExpired(report, now) ||
     !hasSameWallClock(now, report.location.timezone, deviceTimeZone)
   ) {
     return 'hidden';
@@ -422,23 +420,21 @@ function getBriefingState(
   return 'visible';
 }
 
-function isTodoWithinRange(todo: Pick<ForecastTodo, 'scheduledAt'>, range: HourRange): boolean {
+function isTodoWithinRange(todo: ForecastTodo, range: HourRange): boolean {
   return (
     toEpochMs(range.startsAt) <= toEpochMs(todo.scheduledAt) &&
     toEpochMs(todo.scheduledAt) < toEpochMs(range.endsAt)
   );
 }
 
-function getUncompletedTodoIds(todos: readonly Pick<ForecastTodo, 'todoId' | 'completed'>[]) {
+function getUncompletedTodoIds(todos: readonly ForecastTodo[]) {
   return todos.filter((todo) => !todo.completed).map((todo) => todo.todoId);
 }
 
 export const WeatherBriefingPolicy = {
-  getBriefingState,
   isTodoWithinRange,
   getUncompletedTodoIds,
   toBriefingTodo,
-  getWeatherBriefing,
   getSuggestedStartAt,
   getForecastTodos,
   getAffectedTodos,

@@ -24,10 +24,10 @@ import { Suspense, type ComponentProps } from 'react';
 import { useWindowDimensions } from 'react-native';
 
 import {
-  NudgeInteractionPolicy,
+  NudgeThanksPreviewPolicy,
   type NudgeThanksPreview,
 } from '../../domains/nudge-interaction.model';
-import { isNudgeThanksChangedError } from '../../domains/todo-nudge.error';
+import { isNudgeUnavailableError } from '../../domains/todo-nudge.error';
 import { useSendNudgeThanksMutationOptions } from '../../queries/todo-nudge.mutations';
 import { useGetNudgeThanksPreviewInfiniteQueryOptions } from '../../queries/todo-nudge.queries';
 
@@ -104,7 +104,7 @@ NudgeThanksBottomSheet.Recipients = function Recipients({ onClose }: { onClose: 
     );
   }
 
-  if (preview == null || !NudgeInteractionPolicy.hasThankableRecipients(preview)) {
+  if (preview == null || !NudgeThanksPreviewPolicy.hasThankableRecipients(preview)) {
     return <NudgeThanksBottomSheet.Empty />;
   }
 
@@ -183,18 +183,18 @@ NudgeThanksBottomSheet.Error = function ErrorFallback({
   onClose,
 }: QueryErrorFallbackProps & { onClose: () => void }) {
   const { t } = useTranslation(['todo', 'common']);
-  const hasChanged = isNudgeThanksChangedError(error);
+  const isUnavailable = isNudgeUnavailableError(error);
 
   return (
     <VStack py={24}>
       <Result
         title={
-          (hasChanged ? getUserFacingMessage(error) : undefined) ??
+          (isUnavailable ? getUserFacingMessage(error) : undefined) ??
           t('todo:interaction.thanksLoadError')
         }
         button={
-          <Result.Button onPress={hasChanged ? onClose : reset}>
-            {t(hasChanged ? 'common:actions.close' : 'common:actions.retry')}
+          <Result.Button onPress={isUnavailable ? onClose : reset}>
+            {t(isUnavailable ? 'common:actions.close' : 'common:actions.retry')}
           </Result.Button>
         }
       />
