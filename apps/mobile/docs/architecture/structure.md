@@ -190,7 +190,7 @@ composition-root(프로세스 수명) → DIProvider: createAppContainer(ports)(
 - **TypeScript**: typed routes, `queryOptions<T>` 키, `AppEventMap`, `i18next.d.ts`, `DIContainer`, `satisfies Record<…>`, `match().exhaustive()`
 - **oxfmt**: `sortImports`, `sortTailwindcss`, `sortPackageJson`
 
-- `pnpm check`(루트)는 `oxfmt --check` → `ls-lint` → `oxlint .` → `turbo run lint:deps` → `knip` → `turbo typecheck` 순서다. 커밋 전 한 번 돌린다.
+- `pnpm check`(루트)는 `oxlint .` → `oxfmt --check` → `ls-lint` → `turbo run lint:deps` → `knip`(모바일 포함) → `turbo typecheck` 순서다. 커밋 전 한 번 돌린다. 지금 걸려 있는 규칙 이름과 예외는 [guardrails](./guardrails.md)에 있다.
 - 규칙을 끌 때는 그 줄에서만 `oxlint-disable-next-line 규칙 -- 이유`로 끈다.
 - 새 규칙은 지금 위반을 baseline으로 기록하고 켠다. 기능 PR마다 그 기능의 baseline을 0으로 줄인다. 남은 위반은 [migration-status](./migration-status.md)에 있다.
 - 도구가 못 막는 것(view-model과 Policy의 경계, 통과만 하는 service, 반복 UI의 개별 나열)은 리뷰로 지킨다.

@@ -36,22 +36,21 @@ test/                    # fixtures · doubles · contracts · integration · e2
 
 `pnpm --filter @aido/server <명령>`으로 실행한다. 안 쓰는 파일·export·의존성 검사(knip)는 루트 `pnpm check:unused`다.
 
-| 명령                | 설명                                                |
-| ------------------- | --------------------------------------------------- |
-| `dev`               | watch 모드 개발 서버 (`nest start --watch`)         |
-| `build`             | SWC 빌드 + 타입 검사 (`dist/`)                      |
-| `typecheck`         | `tsc --noEmit`                                      |
-| `lint:deps`         | dependency-cruiser 경계·순환 검사                   |
-| `check:conventions` | 이름·`#`·`forwardRef`·pgEnum 관례 검사              |
-| `test`              | unit (`--project unit`), `test:cov`로 커버리지 포함 |
-| `test:integration`  | 실제 PostgreSQL integration (pre-push 훅)           |
-| `test:e2e`          | HTTP 전체 e2e (로컬 전용, CI 제외)                  |
-| `test:contract`     | 배포된 앱 OpenAPI 계약 게이트 (pre-push 훅)         |
-| `test:performance`  | 수동 성능 측정 (CI 밖)                              |
-| `db:generate`       | Drizzle 스키마 변경으로 마이그레이션 SQL 생성       |
-| `db:check`          | 마이그레이션 정합성 검사                            |
-| `db:studio`         | Drizzle Studio                                      |
-| `ai:eval`           | 실제 모델 호출 AI 평가 (유료, 승인된 경우만)        |
+| 명령               | 설명                                                |
+| ------------------ | --------------------------------------------------- |
+| `dev`              | watch 모드 개발 서버 (`nest start --watch`)         |
+| `build`            | SWC 빌드 + 타입 검사 (`dist/`)                      |
+| `typecheck`        | `tsc --noEmit`                                      |
+| `lint:deps`        | dependency-cruiser 경계·순환 검사                   |
+| `test`             | unit (`--project unit`), `test:cov`로 커버리지 포함 |
+| `test:integration` | 실제 PostgreSQL integration (pre-push 훅)           |
+| `test:e2e`         | HTTP 전체 e2e (로컬 전용, CI 제외)                  |
+| `test:contract`    | 배포된 앱 OpenAPI 계약 게이트 (pre-push 훅)         |
+| `test:performance` | 수동 성능 측정 (CI 밖)                              |
+| `db:generate`      | Drizzle 스키마 변경으로 마이그레이션 SQL 생성       |
+| `db:check`         | 마이그레이션 정합성 검사                            |
+| `db:studio`        | Drizzle Studio                                      |
+| `ai:eval`          | 실제 모델 호출 AI 평가 (유료, 승인된 경우만)        |
 
 ## API 문서
 

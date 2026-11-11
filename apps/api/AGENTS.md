@@ -6,7 +6,7 @@
 
 - 새 기능은 [새 기능 추가](docs/new-feature.md) 순서를 따른다. 뼈대는 `pnpm gen:api-slice`(slice·계약·fixture·InMemory·계약 테스트)다.
 - 기준 구현은 notes/memos다([도메인 모델](docs/domain-modeling.md#기준-구현-notesmemos)). 모든 Context가 slice 구조이고 규칙은 모든 Context에 같다.
-- 검사: `pnpm lint:names`, `pnpm --filter @aido/server lint:deps`·`check:conventions`, `pnpm check:unused`(knip, 설정은 루트 `knip.jsonc`). 모두 `pnpm check`에 있고 `apps/api/src` 전체에 걸린다. Claude Code는 서버 파일을 고친 직후 `scripts/agent-hooks/lint-edited-file.mjs` hook이 lint·관례 검사를 돌린다.
+- 검사: `pnpm lint`(Oxlint와 `aido/*` 관례 규칙), `pnpm lint:names`(ls-lint), `pnpm --filter @aido/server lint:deps`(dependency-cruiser), `pnpm check:unused`(knip, 설정은 루트 `knip.jsonc`). 모두 `pnpm check`에 있고 `apps/api/src` 전체에 걸린다. Claude Code는 서버 파일을 고친 직후 `scripts/agent-hooks/lint-edited-file.mjs` hook이 Oxlint를 돌린다.
 
 ## 서버 규칙 체크리스트
 
@@ -20,7 +20,7 @@
 
 **이름**([사전](docs/conventions.md))
 
-- [ ] 역할 접미사는 `check-conventions.mjs`의 `ROLE_SUFFIXES` 하나(`.aggregate`·`.vo`·`.domain-service`·`.use-case`·`.port`·`.repository`·`.mapper`·`.adapter`·`.queue`·`.controller`·`.dto` …).
+- [ ] 역할 접미사는 루트 `.ls-lint.yml`의 `apps/api/src/modules/*` 목록 하나(`.aggregate`·`.vo`·`.domain-service`·`.use-case`·`.port`·`.repository`·`.mapper`·`.adapter`·`.queue`·`.controller`·`.dto` …).
 - [ ] UseCase는 `CreateMemoUseCase.execute(command)`. 구현은 `DrizzleMemoRepository`(`Impl` 금지).
 - [ ] 팩토리는 `create`·`generate`·`reconstitute`뿐, 값 꺼내기는 `toPrimitives()`/`<Noun>Primitives`.
 - [ ] 순수 판단은 `*.domain-service.ts` 함수. `.policy`는 `<vendor>-outbound.policy.ts`에만. static만 있는 클래스 금지.

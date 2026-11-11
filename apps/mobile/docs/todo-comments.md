@@ -43,7 +43,7 @@ pane은 `/feed?todoId=42&comment=cm_1`이다. 바꿀 때는 search만 바꾸고,
 `domains/todo-comment.model.ts`가 앱 모델과 규칙을 소유하고, `apis/todo-comment.mapper.ts`가 계약 DTO를 모델로 바꾼다.
 
 - zod: 모델 스키마는 `domains/`에서 앱 모양으로 직접 정의하고 시각은 `Instant`다. `schemas/`는 폼·params·초안·요청 모양만 둔다.
-  `@aido/api` 루트는 `apis/`와 `schemas/`만 import한다(lint).
+  `@aido/api` 루트는 `apis/`와 `schemas/`만 import한다(dependency-cruiser가 검사).
 - 이름 있는 순수 함수와 `TodoCommentPolicy` Facade(키 = 함수 이름)
   - 표시: `getDisplayState(active | deleted | blockedAuthor)`, `isReply`
   - 권한: `canLikeComment`, `canReplyToComment`, `canEditComment`, `canDeleteComment`, `canDeleteOnlyAsTodoOwner`,
@@ -85,7 +85,7 @@ pane은 `/feed?todoId=42&comment=cm_1`이다. 바꿀 때는 search만 바꾸고,
 </StyledSafeAreaView>
 ```
 
-- 화면은 `todoId`를 props로 넘기지 않는다. 블록 컴포넌트가 `const [todoId] = useTodoId()`로 읽고, 가상 목록의 댓글·답글 행은 route 훅을 부르지 않고 목록이 읽은 값을 받는다.
+- 화면은 `todoId`를 props로 넘기지 않는다. 블록 컴포넌트가 `const [todoId] = useTodoId()`로 읽고, 가상 목록의 댓글·답글 행은 route 훅을 부르지 않고 목록이 읽은 값을 받는다(Oxlint `aido/no-route-id-props`가 검사).
 - 스크롤은 `TodoCommentThreadList`의 `FlashList` 하나다. `renderScrollComponent`로 `KeyboardChatScrollView`를 쓰고,
   할 일 본문·정렬(`TodoCommentThreadList.Header`·`.SortBar`)·더블탭 안내·이전 댓글 보기는 `ListHeaderComponent`다. 묶음 행만 가상화하고 답글은 그 행 안에 그린다.
 - 할 일을 볼 수 없으면(`TodoAvailabilityGuard`, 404) 본문·댓글 대신 `TodoDetailSummary.Unavailable` 하나만 보인다.
@@ -190,6 +190,6 @@ features/engagement/comment/
 
 ## 검증
 
-- 단위: model/Policy, composer, 비자명한 mapper, cache pages, page params, route/back, draft(위치는 ls-lint가 검사).
+- 단위: model/Policy, composer, 비자명한 mapper, cache pages, page params, route/back, draft(위치는 Oxlint `aido/todo-comment-test-location`이 검사).
 - native: iOS·Android에서 목록, 펼치기·더 보기·숨기기, 답글 달기(키보드 위 대상 행), 게시 후 위치, 수정·삭제·신고·차단,
   묘비·긴 이름·큰 숫자, 더블탭(동작 줄이기·연타·이미 좋아요), 알림 위치(`?comment=`), pane, 라이트·다크, 글자 크기 xsmall~xlarge, ko·en.

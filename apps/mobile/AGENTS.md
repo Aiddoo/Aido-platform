@@ -5,7 +5,7 @@ Expo SDK 58 · React Native 0.88 · React 19(Compiler) · Expo Router · TanStac
 ## 명령
 
 - `pnpm dev`(Expo) · `pnpm ios` · `pnpm android`
-- `pnpm check`(루트): oxfmt → ls-lint → oxlint(+ `aido` 플러그인) → dependency-cruiser → knip → typecheck. 커밋 전 한 번 돌린다
+- `pnpm check`(루트): oxlint(+ `aido` 플러그인) → oxfmt → ls-lint → dependency-cruiser → knip(모바일 포함) → typecheck. 커밋 전 한 번 돌린다
 - `pnpm --filter @aido/mobile test -- <경로>`: 바꾼 기능의 테스트만 돈다. `AIDO_TEST_WORKERS`로 worker를 줄인다
 - `pnpm --filter @aido/mobile e2e:smoke`: Maestro E2E
 
@@ -13,7 +13,7 @@ Expo SDK 58 · React Native 0.88 · React 19(Compiler) · Expo Router · TanStac
 
 | 작업                                                                       | 문서                                                                                                                                                      |
 | -------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 기능 위치, 폴더 골격, 층·의존, DI, 가드레일                                | [architecture/structure.md](docs/architecture/structure.md)                                                                                               |
+| 기능 위치, 폴더 골격, 층·의존, DI, 가드레일                                | [architecture/structure.md](docs/architecture/structure.md), 지금 걸린 lint 규칙 [guardrails.md](docs/architecture/guardrails.md)                         |
 | 모델·Policy, mapper, 스키마, 서버와 공유, 파싱·null·호환                   | [architecture/model.md](docs/architecture/model.md)                                                                                                       |
 | Api·service·repository·store, 저장 값, 쿼리 키·select·무효화, mutation, 폼 | [architecture/data.md](docs/architecture/data.md)                                                                                                         |
 | 상태 원천, params 튜플, 라우팅·Link·시트                                   | [architecture/state-and-routing.md](docs/architecture/state-and-routing.md)                                                                               |

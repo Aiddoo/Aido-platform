@@ -49,7 +49,7 @@ iPad에서 NativeTabs(`preferredPlacement="automatic"`) 사이드바가 열리�
 - 다른 탭이나 탭 위 화면에서 이 화면들을 열면 마이 탭으로 바뀌어 열린다(NativeTabs는 처음부터 모든 탭을 띄워 메뉴가 아래에 있다). 탭 위 흐름에서 탭 안 화면으로 떠날 때는 `router.dismissTo`로 탭을 새로 쌓지 않는다.
 - 업셀 결제는 예외로 지금 맥락 위 모달(`/paywall`, `(app)/paywall.tsx`)로 연다. 마이 탭 메뉴·푸시는 `/settings/subscription` 그대로이고, 두 라우트는 `bootstrap/navigation/subscription-checkout.tsx`를 함께 그린다.
 - 넓은 화면 옵션은 `getMyPageDetailOptions`(`features/identity/user/utils/my-page-detail-options.ts`)가 정한다. 첫 상세는 메뉴가 고른 화면이라 뒤로 가기·스와이프 없이 애니메이션 없이 바꾼다. 두 번째 단계부터는 네이티브 헤더의 뒤로 가기이고, 밀어 넣지 않고 `fade`로 겹쳐 바꾼다(스와이프도 같은 애니메이션, `animationMatchesGesture`). 메뉴 칸이 화면마다 같은 자리에 있어 상세만 바뀌어 보인다.
-- 메뉴 이동은 메뉴 칸의 `MyPageMenuNavigationProvider`가 정한다(`useMyPageMenuNavigate`·`useIsMyPageMenuItemSelected`). 좁은 화면은 push, 넓은 화면은 쌓인 화면을 걷고(`dismissAll`) 고른 화면 하나를 연다. 메뉴 칸이 그리는 항목이 `router.push` 등으로 직접 이동하면 `check:conventions`가 거부한다.
+- 메뉴 이동은 메뉴 칸의 `MyPageMenuNavigationProvider`가 정한다(`useMyPageMenuNavigate`·`useIsMyPageMenuItemSelected`). 좁은 화면은 push, 넓은 화면은 쌓인 화면을 걷고(`dismissAll`) 고른 화면 하나를 연다. 메뉴 칸이 그리는 항목이 `router.push` 등으로 직접 이동하면 Oxlint `aido/my-page-menu-navigation`이 거부한다.
 - 종은 마이 탭 첫 화면 헤더의 `NotificationBellToolbar`(`Stack.Toolbar`) 한 곳이다.
 - 메뉴는 쌓인 화면마다 그려지고 `useMyPagePaneLayout`이 스크롤 위치를 넘긴다. 앞에 보이는 화면의 메뉴만 위치를 저장하고, 새로 그린 메뉴는 내용·보이는 높이가 바뀔 때마다 저장된 위치로 다시 맞춘다. 그래서 화면을 쌓거나 접고 펴도 메뉴가 같은 자리다.
 

@@ -89,7 +89,7 @@ presentation → application → domain        infrastructure → application(po
 | Application은 infrastructure·presentation·SDK·platform·계약을 모른다             | 같음                                                       |
 | 다른 Context는 `*.public.ts`로만 import한다                                      | dependency-cruiser `cross-context-only-via-public`         |
 | 파일·Module 순환 금지, `forwardRef(` 0건                                         | `import/no-cycle` + dependency-cruiser + 관례 검사         |
-| 폴더·파일 접미사. 역할 접미사는 사전의 하나만(`.spec`은 그 뒤에만)               | ls-lint + 관례 검사(`ROLE_SUFFIXES`)                       |
+| 폴더·파일 접미사. 역할 접미사는 사전의 하나만(`.spec`은 그 뒤에만)               | ls-lint(`.ls-lint.yml`)                                    |
 | 비공개 멤버는 `#`, 파라미터 프로퍼티 금지                                        | oxlint `typescript/parameter-properties` + 관례 검사       |
 | 안 쓰는 파일·export·의존성 0                                                     | knip(`check:unused`)                                       |
 | 재수출은 [공개 면](#공개-면과-재수출)의 진입 파일만. barrel `index.ts` 금지      | oxlint `oxc/no-barrel-file` + 관례 검사(`checkReExports`)  |
