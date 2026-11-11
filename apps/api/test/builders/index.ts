@@ -6,11 +6,7 @@
  *
  */
 
-export { AccountBuilder } from "./account.builder.js";
-export { SessionBuilder } from "./session.builder.js";
 export { SubscriptionEventBuilder } from "./subscription-event.builder.js";
 export { TodoBuilder } from "./todo.builder.js";
-export { TodoCategoryBuilder, type TodoCategoryWithCount } from "./todo-category.builder.js";
-export { UserBuilder } from "./user.builder.js";
 export { UserConsentBuilder } from "./user-consent.builder.js";
 export { UserPreferenceBuilder } from "./user-preference.builder.js";

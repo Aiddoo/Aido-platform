@@ -1,6 +1,5 @@
 import { DrizzleQuotaUsageRepository } from "#api/modules/access/quotas/infrastructure/persistence/drizzle-quota-usage.repository";
 import { user } from "#api/platform/database/schema/index";
-import { instantToDate } from "#api/shared/domain/time/instant";
 import { describeQuotaUsageRepositoryContract } from "#test/contracts/access/quota-usage-repository.contract";
 import { UserFixture } from "#test/fixtures/index";
 import { createDatabaseTransactionFixture } from "#test/setup/database-context";
@@ -36,7 +35,7 @@ describe("DrizzleQuotaUsageRepository (실제 PostgreSQL)", () => {
             id,
             userTag: `QUSG${String(seeded).padStart(4, "0")}`,
             aiUsageCount,
-            aiUsageResetAt: instantToDate(aiUsageResetAt),
+            aiUsageResetAt,
           }),
         );
       },

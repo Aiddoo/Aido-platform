@@ -1,5 +1,7 @@
 import { Injectable } from "@nestjs/common";
 
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+
 import {
   TodoCommentAccountCleanupPort,
   type TodoCommentAccountCleanupResult,
@@ -21,8 +23,8 @@ export class TodoCommentAccountCleanupAdapter implements TodoCommentAccountClean
     this.#invalidateCaches = invalidateCaches;
   }
 
-  cleanupInTransaction(userId: string): Promise<TodoCommentAccountCleanupResult> {
-    return this.#cleanUp.execute({ userId });
+  cleanupInTransaction(userId: UserId): Promise<TodoCommentAccountCleanupResult> {
+    return this.#cleanUp.execute({ userId: userId.value });
   }
 
   settleAfterCommit(result: TodoCommentAccountCleanupResult): Promise<void> {

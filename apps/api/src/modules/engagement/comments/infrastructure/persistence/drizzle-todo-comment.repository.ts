@@ -2,6 +2,7 @@ import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
 import { and, eq, inArray } from "drizzle-orm";
 
+import type { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
 import {
   databaseConstraint,
   isUniqueConstraintViolation,
@@ -35,9 +36,9 @@ export class DrizzleTodoCommentRepository implements TodoCommentRepositoryPort {
     return TodoCommentId.reconstitute(createEntityId());
   }
 
-  async findByIdAndTodoId(commentId: TodoCommentId, todoId: number): Promise<TodoComment | null> {
+  async findByIdAndTodoId(commentId: TodoCommentId, todoId: TodoId): Promise<TodoComment | null> {
     const row = await this.#db.query.todoComment.findFirst({
-      where: { id: commentId.value, todoId },
+      where: { id: commentId.value, todoId: todoId.value },
     });
     return row == null ? null : toTodoComment(row);
   }

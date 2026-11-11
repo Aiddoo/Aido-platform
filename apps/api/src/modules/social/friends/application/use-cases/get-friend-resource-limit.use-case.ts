@@ -15,7 +15,7 @@ export interface FriendResourceLimit {
 
 export interface GetFriendResourceLimitDependencies {
   readonly followReader: Pick<FollowReaderPort, "countFriends">;
-  readonly limitReader: Pick<FriendLimitReaderPort, "readMaxFriendCount">;
+  readonly limitReader: Pick<FriendLimitReaderPort, "readLimit">;
 }
 
 export class GetFriendResourceLimitUseCase {
@@ -27,9 +27,10 @@ export class GetFriendResourceLimitUseCase {
 
   async execute(query: GetFriendResourceLimitQuery): Promise<FriendResourceLimit> {
     const { followReader, limitReader } = this.#dependencies;
+    const userId = UserId.reconstitute(query.userId);
     const [maxCount, friendCount] = await Promise.all([
-      limitReader.readMaxFriendCount(UserId.reconstitute(query.userId)),
-      followReader.countFriends(query.userId),
+      limitReader.readLimit(userId),
+      followReader.countFriends(userId),
     ]);
     return { friendCount, maxCount };
   }

@@ -34,7 +34,7 @@ export class DeleteMemoUseCase {
     const memoId = MemoId.reconstitute(command.memoId);
 
     await unitOfWork.run(async () => {
-      await mutationLock.acquire([MemoLockKeys.memo(memoId), MemoLockKeys.sortOrder(userId)]);
+      await mutationLock.acquire(MemoLockKeys.existingMemo(memoId, userId));
       const memo = await memoRepository.findByIdAndUserId(memoId, userId);
       if (memo == null) {
         throw memoNotFound(memoId);

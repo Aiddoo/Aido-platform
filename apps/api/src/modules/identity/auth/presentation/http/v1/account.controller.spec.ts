@@ -1,6 +1,6 @@
+import type { CurrentUserPayload } from "#api/../../../packages/api/dist/contracts/auth/v1/auth.response.d";
 import { ListLinkedAccountsUseCase } from "#api/modules/identity/auth/application/use-cases/list-linked-accounts.use-case";
 import { UnlinkOAuthAccountUseCase } from "#api/modules/identity/auth/application/use-cases/unlink-oauth-account.use-case";
-import type { CurrentUserPayload } from "#api/modules/identity/auth/presentation/http/decorators/current-user.decorator";
 import { InMemoryAuthAccountRepository } from "#test/doubles/identity/in-memory-auth-account.repository";
 import { createAuthCredentialFixture } from "#test/fixtures/auth-credential.fixture";
 import { createAuthAccountFixture } from "#test/fixtures/identity/auth-credential.fixture";

@@ -62,7 +62,7 @@ function valueOf(embed: DiscordEmbed, name: string): string | undefined {
 }
 
 function relative(iso: string): string {
-  return `<t:${Date.parse(iso) / 1_000}:R>`;
+  return `<t:${Date.parse(iso) / 1000}:R>`;
 }
 
 describe("Discord 결제 알림 embed", () => {
@@ -185,10 +185,10 @@ describe("Discord 결제 알림 embed", () => {
 
   describe("금액은 현지 통화와 USD 환산을 웹훅 값 그대로 함께 적는다", () => {
     it.each([
-      ["현지 통화와 USD", { amount: 3_900, currency: "KRW", usd: 2.99 }, "₩3,900 · US$2.99"],
+      ["현지 통화와 USD", { amount: 3900, currency: "KRW", usd: 2.99 }, "₩3,900 · US$2.99"],
       ["USD 결제", { amount: 2.99, currency: "USD", usd: 2.99 }, "US$2.99"],
       ["USD 환산만", { usd: 2.99 }, "US$2.99"],
-      ["현지 통화만", { amount: 1_200, currency: "JPY" }, "JP¥1,200"],
+      ["현지 통화만", { amount: 1200, currency: "JPY" }, "JP¥1,200"],
       [
         "환불의 음수 금액",
         { amount: -39_000, currency: "KRW", usd: -27.99 },
@@ -323,7 +323,7 @@ describe("Discord 결제 알림 embed", () => {
       isFirstPurchase: true,
       endReason: "UNKNOWN",
       gracePeriodEndsAt: "2026-11-26T00:00:00.000Z",
-      newProductId: "x".repeat(2_000),
+      newProductId: "x".repeat(2000),
       transfer: { from: ["a"], to: ["b"] },
     });
 
@@ -331,7 +331,7 @@ describe("Discord 결제 알림 embed", () => {
     expect(embed.fields.length).toBeLessThanOrEqual(25);
     for (const field of embed.fields) {
       expect(field.value.length).toBeGreaterThan(0);
-      expect(field.value.length).toBeLessThanOrEqual(1_024);
+      expect(field.value.length).toBeLessThanOrEqual(1024);
     }
   });
 });

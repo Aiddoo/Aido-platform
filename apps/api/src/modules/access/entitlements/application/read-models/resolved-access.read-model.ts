@@ -1,5 +1,5 @@
-import type { AccessTierDecision } from "../../domain/entitlement.domain-service.js";
-import type { ResourceBonuses } from "../../domain/entitlements.constants.js";
+import type { AccessSubject } from "../../domain/entitlement.domain-service.js";
+import type { FeatureGrants } from "../../domain/entitlements.constants.js";
 
 const ACCESS_READ_CONSISTENCIES = ["cached", "latest"] as const;
 
@@ -9,7 +9,7 @@ const ACCESS_READ_CONSISTENCIES = ["cached", "latest"] as const;
  */
 export type AccessReadConsistency = (typeof ACCESS_READ_CONSISTENCIES)[number];
 
-/** 판단 시각의 권한 주체와 리소스 보너스 */
-export interface ResolvedAccess extends AccessTierDecision {
-  readonly resourceBonuses: ResourceBonuses;
+/** 판단 시각의 권한 주체와 받은 자리 */
+export interface ResolvedAccess extends AccessSubject {
+  readonly grants: FeatureGrants;
 }

@@ -14,7 +14,7 @@ describe("주간 달성 실제 HTTP·PostgreSQL 계약", () => {
   let context: E2eTestContext;
   beforeAll(async () => {
     context = await createE2eApp();
-  }, 60000);
+  }, 60_000);
   afterAll(async () => {
     await destroyE2eApp(context);
   });

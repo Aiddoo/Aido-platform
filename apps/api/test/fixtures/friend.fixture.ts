@@ -33,7 +33,7 @@ export const FollowFixture = {
    */
   create: (overrides: Partial<Follow> = {}): Follow => {
     const id = ++followCounter;
-    const now = new Date();
+    const now = Temporal.Instant.fromEpochMilliseconds(Date.now());
 
     return {
       id: overrides.id ?? `follow-${id}`,
@@ -89,7 +89,7 @@ export const NudgeFixture = {
    */
   create: (overrides: Partial<Nudge> = {}): Nudge => {
     const id = ++nudgeCounter;
-    const now = new Date();
+    const now = Temporal.Instant.fromEpochMilliseconds(Date.now());
 
     return {
       id: overrides.id ?? id,
@@ -111,7 +111,7 @@ export const NudgeFixture = {
    */
   createRead: (overrides: Partial<Nudge> = {}): Nudge => {
     return NudgeFixture.create({
-      readAt: new Date(),
+      readAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
       ...overrides,
     });
   },
@@ -143,7 +143,7 @@ export const CheerFixture = {
    */
   create: (overrides: Partial<Cheer> = {}): Cheer => {
     const id = ++cheerCounter;
-    const now = new Date();
+    const now = Temporal.Instant.fromEpochMilliseconds(Date.now());
 
     return {
       id: overrides.id ?? id,
@@ -160,7 +160,7 @@ export const CheerFixture = {
    */
   createRead: (overrides: Partial<Cheer> = {}): Cheer => {
     return CheerFixture.create({
-      readAt: new Date(),
+      readAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
       ...overrides,
     });
   },

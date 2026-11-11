@@ -9,10 +9,7 @@ import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port"
 import { CheerUsageReader } from "./application/cheer-usage.reader.js";
 import { CheerLimitReaderPort } from "./application/ports/cheer-limit.reader.port.js";
 import { CheerNotifierPort } from "./application/ports/cheer-notifier.port.js";
-import {
-  CHEER_USAGE_READER,
-  CheerUsageReaderPort,
-} from "./application/ports/cheer-usage.reader.port.js";
+import { CheerUsageReaderPort } from "./application/ports/cheer-usage.reader.port.js";
 import { CheerReaderPort } from "./application/ports/cheer.reader.port.js";
 import { CheerRepositoryPort } from "./application/ports/cheer.repository.port.js";
 import { GetCheerCooldownUseCase } from "./application/use-cases/get-cheer-cooldown.use-case.js";
@@ -33,7 +30,6 @@ export const SOCIAL_CHEERS_PROVIDERS = [
   { provide: CheerNotifierPort, useClass: CheerNotifierAdapter },
   provideUseCase(CheerUsageReader, { cheerRepository: CheerRepositoryPort, clock: ClockPort }),
   { provide: CheerUsageReaderPort, useExisting: CheerUsageReader },
-  { provide: CHEER_USAGE_READER, useExisting: CheerUsageReaderPort },
   provideUseCase(SendCheerUseCase, {
     unitOfWork: UnitOfWorkPort,
     mutationLock: MutationLockPort,

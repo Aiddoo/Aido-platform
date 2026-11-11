@@ -1,6 +1,5 @@
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
-import { instantToDate } from "#api/shared/domain/time/instant";
 
 import type { CreateNotificationData } from "../../../inbox/application/ports/notification-draft.port.js";
 import { type NotificationHistoryReaderPort } from "../../../inbox/application/ports/notification-history.reader.port.js";
@@ -17,7 +16,7 @@ import type { SendNotificationUseCase } from "./send-notification.use-case.js";
 /**
  * 중복 방지가 적용된 알림 생성 및 푸시 발송 유스케이스.
  *
- * Race Condition 방지: ILockProvider 기반 잠금으로
+ * Race Condition 방지: LockProviderPort 기반 잠금으로
  * 같은 (userId, type, contextKeys) 조합의 동시 요청을 직렬화한다.
  *
  * @returns 생성된 Notification 또는 null (중복 스킵 / 잠금 대기 스킵)
@@ -60,9 +59,7 @@ export class SendNotificationWithDedupUseCase {
     }
 
     try {
-      const since = instantToDate(
-        this.#dependencies.clock.now().subtract({ milliseconds: strategy.windowMs }),
-      );
+      const since = this.#dependencies.clock.now().subtract({ milliseconds: strategy.windowMs });
       const contextFields = buildDedupContextFields(data, strategy);
       const params = {
         userId: data.userId,

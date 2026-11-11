@@ -10,6 +10,7 @@ import {
 } from "#api/modules/identity/auth/domain/auth.constants";
 import { IdentityUser } from "#api/modules/identity/users/domain/identity-user.aggregate";
 import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { toIsoString } from "#api/shared/domain/time/instant";
 import type { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { AUTH_CREDENTIAL_NOW } from "#test/fixtures/auth-credential.fixture";
@@ -45,7 +46,7 @@ class PromotingUserRepository implements LoginUserReader {
     this.#promoteFromRead = promoteFromRead;
   }
 
-  async findById(id: string): Promise<IdentityUser | null> {
+  async findById(id: UserId): Promise<IdentityUser | null> {
     const user = await this.#source.findById(id);
     this.#reads += 1;
     if (user == null || this.#reads < this.#promoteFromRead) {
@@ -58,7 +59,7 @@ class PromotingUserRepository implements LoginUserReader {
     return this.#source.findByEmail(email);
   }
 
-  findByIdForUpdate(id: string): Promise<IdentityUser | null> {
+  findByIdForUpdate(id: UserId): Promise<IdentityUser | null> {
     return this.#source.findByIdForUpdate(id);
   }
 }
@@ -80,6 +81,9 @@ class ClockAdvancingUnitOfWork extends UnitOfWorkPort {
   }
 }
 
+// 탈퇴 유예 중 비활성 계정은 권한을 무료로 캐시한다
+const FREE_ACCESS_WHILE_DELETED = { status: null, isAdmin: false, resourceBonuses: {} };
+
 async function saveUserStatus(
   fixture: OAuthFixture,
   status: UserStatus,
@@ -97,7 +101,7 @@ function daysBeforeNow(days: number): Temporal.Instant {
 describe("LoginWithOAuthToken — 공급자 인증과 사용자 생명주기", () => {
   async function linkExistingIdentity(fixture: OAuthFixture, provider: AccountProvider) {
     await fixture.accountRepository.createOAuthAccount({
-      userId: fixture.user.id,
+      userId: UserId.reconstitute(fixture.user.id),
       provider,
       providerAccountId: fixture.identityProvider.profile.id,
     });
@@ -295,7 +299,7 @@ describe("LoginWithOAuthToken — 공급자 인증과 사용자 생명주기", (
   it("신원에 연결된 사용자가 없으면 USER_0601이고 신규 가입·실패 시도를 만들지 않는다", async () => {
     // Given
     const fixture = await givenExisting();
-    await fixture.userRepository.hardDelete(fixture.user.id);
+    await fixture.userRepository.hardDelete(UserId.reconstitute(fixture.user.id));
     // When
     const pending = fixture.useCase.execute({ provider: "GOOGLE", token: "token" });
     // Then
@@ -431,6 +435,7 @@ describe("LoginWithOAuthToken — 공급자 인증과 사용자 생명주기", (
       fixture.identityProvider.profile.email = fixture.user.email;
       await saveUserStatus(fixture, "SUSPENDED", daysBeforeNow(30).add({ milliseconds: 1 }));
       fixture.cacheService.userIds.add(fixture.user.id);
+      fixture.entitlementCache.entries.set(fixture.user.id, FREE_ACCESS_WHILE_DELETED);
       const unitOfWork = new ClockAdvancingUnitOfWork(fixture.clock, { milliseconds: 2 });
       // When
       const result = await new LoginWithOAuthTokenUseCase({ ...fixture, unitOfWork }).execute({
@@ -446,6 +451,7 @@ describe("LoginWithOAuthToken — 공급자 인증과 사용자 생명주기", (
         deletedAt: null,
       });
       expect(fixture.cacheService.userIds.has(fixture.user.id)).toBe(false);
+      expect(fixture.entitlementCache.entries.has(fixture.user.id)).toBe(false);
       expect(
         fixture.securityLogRepository.entries.some(
           (entry) => entry.event === SECURITY_EVENT.ACCOUNT_RESTORED,

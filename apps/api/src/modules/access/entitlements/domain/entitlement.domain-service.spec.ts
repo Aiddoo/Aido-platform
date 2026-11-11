@@ -1,110 +1,143 @@
-import { PLAN_CATALOG } from "@aido/api/vocabulary";
+import { ACCESS_TIERS, PLAN_CATALOG, PLANS } from "@aido/api/vocabulary";
 
 import {
   calculateRemainingLimit,
   isExemptFromDormancy,
-  resolveAccessTier,
-  resolveAllFeatureAccess,
-  resolveFeatureAccess,
+  planOfTier,
+  resolveAccessSubject,
+  resolveFeatureEntitlement,
+  resolveFeatureEntitlements,
+  resolveFeatureLimit,
   resolveFeatureQuota,
   resolvePerUseLimit,
   resolveQuotaLimit,
+  resolveResourceUsage,
 } from "./entitlement.domain-service.js";
-import { NO_RESOURCE_BONUSES } from "./entitlements.constants.js";
+import { NO_FEATURE_GRANTS } from "./entitlements.constants.js";
 
 const AT = Temporal.Instant.from("2028-03-04T00:00:00.000Z");
 
 describe("isExemptFromDormancy", () => {
   it.each([
-    { tier: "FREE", exempt: false },
-    { tier: "PREMIUM", exempt: true },
-    { tier: "ADMIN", exempt: true },
-  ] as const)("$tier 휴면 제외는 $exempt다", ({ tier, exempt }) => {
+    { plan: "free", exempt: false },
+    { plan: "premium", exempt: true },
+  ] as const)("$plan 요금제의 휴면 제외는 $exempt다", ({ plan, exempt }) => {
     // When
-    const result = isExemptFromDormancy(tier);
+    const result = isExemptFromDormancy(plan);
     // Then
     expect(result).toBe(exempt);
   });
 });
 
-describe("권한 정책 — 카탈로그와 접근 주체", () => {
+describe("권한 주체와 요금제", () => {
+  it("ADMIN 주체는 프리미엄 요금제를 받고 무료 주체만 무료 요금제다", () => {
+    // When
+    const plans = ACCESS_TIERS.map((tier) => [tier, planOfTier(tier)]);
+
+    // Then
+    expect(plans).toEqual([
+      ["FREE", "free"],
+      ["PREMIUM", "premium"],
+      ["ADMIN", "premium"],
+    ]);
+  });
+
   it.each([
-    { role: "USER", subscriptionStatus: "ACTIVE", expected: { tier: "PREMIUM", isPremium: true } },
-    { role: "USER", subscriptionStatus: "CANCELLED", expected: { tier: "FREE", isPremium: false } },
-    { role: "ADMIN", subscriptionStatus: "FREE", expected: { tier: "ADMIN", isPremium: false } },
-    { role: "ADMIN", subscriptionStatus: "ACTIVE", expected: { tier: "ADMIN", isPremium: true } },
-  ] as const)(
-    "$role·$subscriptionStatus 사용자의 접근 주체는 $expected.tier다",
-    ({ role, subscriptionStatus, expected }) => {
-      // Given
-      const state = { role, subscriptionStatus, accessDeadline: null };
-
-      // When
-      const context = resolveAccessTier({ state, now: AT });
-
-      // Then
-      expect(context).toEqual(expected);
+    {
+      case: "구독 중인 USER",
+      state: { role: "USER", subscriptionStatus: "ACTIVE", accessDeadline: null },
+      expected: { tier: "PREMIUM", plan: "premium", isPremium: true },
     },
-  );
+    {
+      case: "구독을 취소한 USER",
+      state: { role: "USER", subscriptionStatus: "CANCELLED", accessDeadline: null },
+      expected: { tier: "FREE", plan: "free", isPremium: false },
+    },
+    {
+      case: "구독 없는 ADMIN",
+      state: { role: "ADMIN", subscriptionStatus: "FREE", accessDeadline: null },
+      expected: { tier: "ADMIN", plan: "premium", isPremium: false },
+    },
+    {
+      case: "구독 중인 ADMIN",
+      state: { role: "ADMIN", subscriptionStatus: "ACTIVE", accessDeadline: AT.add({ hours: 1 }) },
+      expected: { tier: "ADMIN", plan: "premium", isPremium: true },
+    },
+    {
+      case: "구독이 지금 끝난 ADMIN",
+      state: { role: "ADMIN", subscriptionStatus: "ACTIVE", accessDeadline: AT },
+      expected: { tier: "ADMIN", plan: "premium", isPremium: false },
+    },
+    {
+      case: "구독이 1ms 전에 끝난 ADMIN",
+      state: {
+        role: "ADMIN",
+        subscriptionStatus: "ACTIVE",
+        accessDeadline: AT.subtract({ milliseconds: 1 }),
+      },
+      expected: { tier: "ADMIN", plan: "premium", isPremium: false },
+    },
+    {
+      case: "구독이 1ms 뒤에 끝나는 ADMIN",
+      state: {
+        role: "ADMIN",
+        subscriptionStatus: "ACTIVE",
+        accessDeadline: AT.add({ milliseconds: 1 }),
+      },
+      expected: { tier: "ADMIN", plan: "premium", isPremium: true },
+    },
+  ] as const)("$case는 $expected.tier·$expected.plan이다", ({ state, expected }) => {
+    // When
+    const subject = resolveAccessSubject({ state, now: AT });
 
-  it("끝나는 시각이 지난 ACTIVE는 tier와 isPremium이 함께 무료가 된다", () => {
+    // Then
+    expect(subject).toEqual(expected);
+  });
+
+  it("끝나는 시각이 지난 ACTIVE USER는 주체·요금제·isPremium이 함께 무료가 된다", () => {
     // Given
     const state = { role: "USER", subscriptionStatus: "ACTIVE", accessDeadline: AT } as const;
 
     // When
-    const context = resolveAccessTier({ state, now: AT });
+    const subject = resolveAccessSubject({ state, now: AT });
 
     // Then
-    expect(context).toEqual({ tier: "FREE", isPremium: false });
+    expect(subject).toEqual({ tier: "FREE", plan: "free", isPremium: false });
   });
+});
 
-  it("ACTIVE 카테고리도 명시된 최대 보유량이 있으며 ADMIN만 무제한이다", () => {
+describe("요금제별 기능", () => {
+  it("모든 기능 값은 요금제 열 그대로이고 무제한 경로는 카탈로그의 null뿐이다", () => {
     // When
-    const premium = resolveFeatureAccess({
-      tier: "PREMIUM",
-      feature: "TODO_CATEGORY",
-      resourceBonuses: NO_RESOURCE_BONUSES,
-    });
-    const admin = resolveFeatureAccess({
-      tier: "ADMIN",
-      feature: "TODO_CATEGORY",
-      resourceBonuses: NO_RESOURCE_BONUSES,
-    });
+    const entitlements = PLANS.map((plan) =>
+      resolveFeatureEntitlements({ plan, grants: NO_FEATURE_GRANTS }),
+    );
 
     // Then
-    expect(premium.limit).toBe(PLAN_CATALOG.TODO_CATEGORY.premium);
-    expect(admin.limit).toBeNull();
-  });
-
-  it("친구 자리 보너스는 무료 한도에 더하고 무제한에는 더하지 않는다", () => {
-    // Given
-    const bonuses = { FRIEND: 2 };
-
-    // When
-    const free = resolveFeatureAccess({
-      tier: "FREE",
-      feature: "FRIEND",
-      resourceBonuses: bonuses,
+    expect(entitlements.map((features) => Object.keys(features))).toEqual([
+      Object.keys(PLAN_CATALOG),
+      Object.keys(PLAN_CATALOG),
+    ]);
+    expect(entitlements[0]?.AI_REPORT).toEqual({ allowed: false, limit: null });
+    expect(entitlements[1]?.AI_REPORT).toEqual({ allowed: true, limit: null });
+    expect(entitlements[0]?.VOICE_NOTE).toEqual({
+      allowed: true,
+      limit: PLAN_CATALOG.VOICE_NOTE.free,
     });
-    const premium = resolveFeatureAccess({
-      tier: "PREMIUM",
-      feature: "FRIEND",
-      resourceBonuses: bonuses,
+    expect(entitlements[1]?.TODO_CATEGORY).toEqual({
+      allowed: true,
+      limit: PLAN_CATALOG.TODO_CATEGORY.premium,
     });
-
-    // Then
-    expect(free.limit).toBe(PLAN_CATALOG.FRIEND.free + 2);
-    expect(premium.limit).toBeNull();
   });
 
   it("프리미엄 AI 정리는 무제한으로 보이지만 서버는 공정 사용 상한으로 막는다", () => {
     // When
-    const displayed = resolveFeatureAccess({
-      tier: "PREMIUM",
+    const displayed = resolveFeatureEntitlement({
+      plan: "premium",
       feature: "AI_PARSE",
-      resourceBonuses: NO_RESOURCE_BONUSES,
+      grants: NO_FEATURE_GRANTS,
     });
-    const enforced = resolveQuotaLimit({ tier: "PREMIUM", feature: "AI_PARSE" });
+    const enforced = resolveQuotaLimit({ plan: "premium", feature: "AI_PARSE" });
 
     // Then
     expect(displayed.limit).toBeNull();
@@ -112,34 +145,23 @@ describe("권한 정책 — 카탈로그와 접근 주체", () => {
   });
 
   it.each([
-    { tier: "FREE" as const, expected: { limit: PLAN_CATALOG.AI_PARSE.free, isFairUse: false } },
-    { tier: "ADMIN" as const, expected: { limit: null, isFairUse: false } },
-  ])("$tier의 AI 정리 집행 한도는 $expected.limit이다", ({ tier, expected }) => {
+    {
+      plan: "free",
+      feature: "AI_PARSE",
+      expected: { limit: PLAN_CATALOG.AI_PARSE.free, isFairUse: false },
+    },
+    {
+      plan: "premium",
+      feature: "VOICE_NOTE",
+      expected: { limit: PLAN_CATALOG.VOICE_NOTE.fairUse.premium, isFairUse: true },
+    },
+    { plan: "premium", feature: "CHEER", expected: { limit: null, isFairUse: false } },
+  ] as const)("$plan $feature 집행 한도는 $expected.limit이다", ({ plan, feature, expected }) => {
     // When
-    const limit = resolveQuotaLimit({ tier, feature: "AI_PARSE" });
+    const limit = resolveQuotaLimit({ plan, feature });
 
     // Then
     expect(limit).toEqual(expected);
-  });
-
-  it("응원처럼 상한 없는 프리미엄 quota는 정말 무제한이다", () => {
-    // When
-    const limit = resolveQuotaLimit({ tier: "PREMIUM", feature: "CHEER" });
-
-    // Then
-    expect(limit).toEqual({ limit: null, isFairUse: false });
-  });
-
-  it("flag는 무료에서 꺼지고 프리미엄·ADMIN에서 켜지며 전체 권한은 카탈로그 순서다", () => {
-    // When
-    const free = resolveAllFeatureAccess({ tier: "FREE", resourceBonuses: NO_RESOURCE_BONUSES });
-    const admin = resolveAllFeatureAccess({ tier: "ADMIN", resourceBonuses: NO_RESOURCE_BONUSES });
-
-    // Then
-    expect(Object.keys(free)).toEqual(Object.keys(PLAN_CATALOG));
-    expect(free.AI_REPORT).toEqual({ allowed: false, limit: null });
-    expect(admin.AI_REPORT).toEqual({ allowed: true, limit: null });
-    expect(free.VOICE_NOTE).toEqual({ allowed: true, limit: PLAN_CATALOG.VOICE_NOTE.free });
   });
 
   it("무제한은 null을 유지하고 소진량이 한도를 넘으면 남은 횟수는 0이다", () => {
@@ -152,7 +174,7 @@ describe("권한 정책 — 카탈로그와 접근 주체", () => {
 
   it.each([
     {
-      tier: "FREE",
+      plan: "free",
       used: PLAN_CATALOG.VOICE_NOTE.free + 1,
       expected: {
         limit: PLAN_CATALOG.VOICE_NOTE.free,
@@ -165,11 +187,11 @@ describe("권한 정책 — 카탈로그와 접근 주체", () => {
       },
     },
     {
-      tier: "PREMIUM",
-      used: 3,
+      plan: "premium",
+      used: PLAN_CATALOG.VOICE_NOTE.fairUse.premium,
       expected: {
         limit: PLAN_CATALOG.VOICE_NOTE.fairUse.premium,
-        remaining: PLAN_CATALOG.VOICE_NOTE.fairUse.premium - 3,
+        remaining: 0,
         isFairUse: true,
         perUse: {
           maxSeconds: PLAN_CATALOG.VOICE_NOTE.perUse.maxSeconds.premium,
@@ -177,30 +199,17 @@ describe("권한 정책 — 카탈로그와 접근 주체", () => {
         },
       },
     },
-    {
-      tier: "ADMIN",
-      used: 3,
-      expected: {
-        limit: null,
-        remaining: null,
-        isFairUse: false,
-        perUse: {
-          maxSeconds: PLAN_CATALOG.VOICE_NOTE.perUse.maxSeconds.premium,
-          maxCharacters: PLAN_CATALOG.VOICE_NOTE.perUse.maxCharacters.premium,
-        },
-      },
-    },
   ] as const)(
-    "$tier 녹음 정리 featureQuota는 집행 한도·남은 횟수·길이 상한을 서버가 계산한다",
-    ({ tier, used, expected }) => {
+    "$plan 녹음 정리 featureQuota는 집행 한도·남은 횟수·길이 상한을 서버가 계산한다",
+    ({ plan, used, expected }) => {
       // Given
       const resetsAt = Temporal.Instant.from("2028-03-31T15:00:00.000Z");
 
       // When
       const quota = resolveFeatureQuota({
-        tier,
+        plan,
         feature: "VOICE_NOTE",
-        resourceBonuses: NO_RESOURCE_BONUSES,
+        grants: NO_FEATURE_GRANTS,
         usage: { used, resetsAt },
       });
 
@@ -216,18 +225,18 @@ describe("권한 정책 — 카탈로그와 접근 주체", () => {
     },
   );
 
-  it("사용량을 세지 않는 resource·flag는 used·period·resetsAt이 null이고 보너스를 더한 한도를 쓴다", () => {
+  it("사용량을 세지 않는 resource·flag는 used·period·resetsAt이 null이고 받은 자리를 더한 한도를 쓴다", () => {
     // When
     const friend = resolveFeatureQuota({
-      tier: "FREE",
+      plan: "free",
       feature: "FRIEND",
-      resourceBonuses: { FRIEND: 2 },
+      grants: { FRIEND: 2 },
       usage: null,
     });
     const report = resolveFeatureQuota({
-      tier: "FREE",
+      plan: "free",
       feature: "AI_REPORT",
-      resourceBonuses: NO_RESOURCE_BONUSES,
+      grants: NO_FEATURE_GRANTS,
       usage: null,
     });
 
@@ -250,9 +259,9 @@ describe("권한 정책 — 카탈로그와 접근 주체", () => {
 
     // When
     const friend = resolveFeatureQuota({
-      tier: "FREE",
+      plan: "free",
       feature: "FRIEND",
-      resourceBonuses: { FRIEND: 1 },
+      grants: { FRIEND: 1 },
       usage: { used: limit, resetsAt: null },
     });
 
@@ -268,9 +277,61 @@ describe("권한 정책 — 카탈로그와 접근 주체", () => {
 
   it("길이 상한이 없는 기능은 perUse가 null이다", () => {
     // When
-    const perUse = resolvePerUseLimit({ tier: "PREMIUM", feature: "AI_PARSE" });
+    const perUse = resolvePerUseLimit({ plan: "premium", feature: "AI_PARSE" });
 
     // Then
     expect(perUse).toBeNull();
+  });
+});
+
+describe("받은 자리(grant)", () => {
+  it.each([
+    { case: "무료 한도에 더한다", plan: "free", grant: 2, expected: PLAN_CATALOG.FRIEND.free + 2 },
+    { case: "무제한 프리미엄 한도는 무제한으로 둔다", plan: "premium", grant: 2, expected: null },
+    { case: "0은 더하지 않는다", plan: "free", grant: 0, expected: PLAN_CATALOG.FRIEND.free },
+    {
+      case: "음수는 한도를 줄이지 않는다",
+      plan: "free",
+      grant: -3,
+      expected: PLAN_CATALOG.FRIEND.free,
+    },
+  ] as const)("친구 자리: $case", ({ plan, grant, expected }) => {
+    // When
+    const limit = resolveFeatureLimit({ plan, feature: "FRIEND", grants: { FRIEND: grant } });
+
+    // Then
+    expect(limit).toBe(expected);
+  });
+
+  it("받을 수 없는 기능은 같은 자리 값이 있어도 요금제 한도 그대로다", () => {
+    // When
+    const category = resolveFeatureLimit({
+      plan: "free",
+      feature: "TODO_CATEGORY",
+      grants: { FRIEND: 5 },
+    });
+
+    // Then
+    expect(category).toBe(PLAN_CATALOG.TODO_CATEGORY.free);
+  });
+
+  it("자리를 받았어도 무제한 요금제의 resource는 스냅샷에 개수를 싣지 않고, 무료는 싣는다", () => {
+    // When
+    const premium = resolveResourceUsage({
+      plan: "premium",
+      feature: "FRIEND",
+      grants: { FRIEND: 3 },
+      count: 12,
+    });
+    const free = resolveResourceUsage({
+      plan: "free",
+      feature: "FRIEND",
+      grants: { FRIEND: 3 },
+      count: 7,
+    });
+
+    // Then
+    expect(premium).toBeNull();
+    expect(free).toEqual({ used: 7, resetsAt: null });
   });
 });

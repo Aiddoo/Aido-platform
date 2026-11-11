@@ -1,6 +1,7 @@
 import { GetResolvedAccessUseCase } from "#api/modules/access/entitlements/application/use-cases/get-resolved-access.use-case";
 import { EntitlementReaderAdapter } from "#api/modules/access/entitlements/infrastructure/adapters/entitlement-reader.adapter";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import {
   InMemoryAccessStateReader,
   type InMemoryAccessUser,
@@ -22,10 +23,10 @@ export function createEntitlementFixture(
   input: AccessUserInput & { readonly exists?: boolean } = {},
   options: { readonly clock?: ClockPort } = {},
 ) {
-  const userId = ACCESS_FIXTURE_USER_ID;
+  const userId = UserId.reconstitute(ACCESS_FIXTURE_USER_ID);
   const users = new Map<string, InMemoryAccessUser>();
   if (input.exists !== false) {
-    users.set(userId, createAccessUserFixture(input));
+    users.set(userId.value, createAccessUserFixture(input));
   }
   const accessStateReader = new InMemoryAccessStateReader(users);
   const cache = new InMemoryEntitlementCache();

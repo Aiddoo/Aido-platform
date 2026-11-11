@@ -139,7 +139,7 @@ export function describeNotificationRepositoryContract(
 
         // Then
         expect(created).toEqual([]);
-        expect(await inboxReader.countUnread(USER_ID)).toBe(0);
+        expect(await inboxReader.countUnread(UserId.reconstitute(USER_ID))).toBe(0);
       });
 
       it("같은 할 일 리마인더 회차는 하나만 저장한다: 단건은 중복 오류, 여러 건은 겹친 행만 건너뛴다", async () => {
@@ -211,18 +211,22 @@ export function describeNotificationRepositoryContract(
 
         // When
         const typed = await repository.markAllAsRead(
-          USER_ID,
+          UserId.reconstitute(USER_ID),
           ["CHEER_RECEIVED"],
           NOTIFICATION_FIXTURE_NOW,
         );
-        const unreadAfterTyped = await inboxReader.countUnread(USER_ID);
-        const rest = await repository.markAllAsRead(USER_ID, undefined, LATER);
-        const again = await repository.markAllAsRead(USER_ID, undefined, LATER);
+        const unreadAfterTyped = await inboxReader.countUnread(UserId.reconstitute(USER_ID));
+        const rest = await repository.markAllAsRead(UserId.reconstitute(USER_ID), undefined, LATER);
+        const again = await repository.markAllAsRead(
+          UserId.reconstitute(USER_ID),
+          undefined,
+          LATER,
+        );
 
         // Then
         expect([typed.count, unreadAfterTyped, rest.count, again.count]).toEqual([2, 1, 1, 0]);
-        expect(await inboxReader.countUnread(USER_ID)).toBe(0);
-        expect(await inboxReader.countUnread(OTHER_USER_ID)).toBe(1);
+        expect(await inboxReader.countUnread(UserId.reconstitute(USER_ID))).toBe(0);
+        expect(await inboxReader.countUnread(UserId.reconstitute(OTHER_USER_ID))).toBe(1);
       });
 
       it("전체 읽음은 바꾼 행의 읽은 시각을 now로 남긴다", async () => {
@@ -231,7 +235,11 @@ export function describeNotificationRepositoryContract(
         const created = await create(repository);
 
         // When
-        await repository.markAllAsRead(USER_ID, undefined, NOTIFICATION_FIXTURE_NOW);
+        await repository.markAllAsRead(
+          UserId.reconstitute(USER_ID),
+          undefined,
+          NOTIFICATION_FIXTURE_NOW,
+        );
 
         // Then
         const saved = await repository.findById(NotificationId.reconstitute(created.id));
@@ -247,8 +255,12 @@ export function describeNotificationRepositoryContract(
         const id = NotificationId.reconstitute(created.id);
 
         // When
-        const first = await repository.markAsOpened(id, USER_ID, NOTIFICATION_FIXTURE_NOW);
-        const second = await repository.markAsOpened(id, USER_ID, LATER);
+        const first = await repository.markAsOpened(
+          id,
+          UserId.reconstitute(USER_ID),
+          NOTIFICATION_FIXTURE_NOW,
+        );
+        const second = await repository.markAsOpened(id, UserId.reconstitute(USER_ID), LATER);
 
         // Then
         const saved = (await repository.findById(id))?.toPrimitives();
@@ -266,10 +278,14 @@ export function describeNotificationRepositoryContract(
 
         // When
         const results = [
-          await repository.markAsOpened(id, OTHER_USER_ID, NOTIFICATION_FIXTURE_NOW),
+          await repository.markAsOpened(
+            id,
+            UserId.reconstitute(OTHER_USER_ID),
+            NOTIFICATION_FIXTURE_NOW,
+          ),
           await repository.markAsOpened(
             NotificationId.reconstitute(999_999),
-            USER_ID,
+            UserId.reconstitute(USER_ID),
             NOTIFICATION_FIXTURE_NOW,
           ),
         ];
@@ -293,15 +309,19 @@ export function describeNotificationRepositoryContract(
       const kept = await create(repository, { friendId: OTHER_USER_ID });
 
       // When
-      const result = await repository.deleteNotificationsByActorId(NOTIFICATION_FIXTURE_ACTOR_ID);
-      const none = await repository.deleteNotificationsByActorId(NOTIFICATION_FIXTURE_ACTOR_ID);
+      const result = await repository.deleteNotificationsByActorId(
+        UserId.reconstitute(NOTIFICATION_FIXTURE_ACTOR_ID),
+      );
+      const none = await repository.deleteNotificationsByActorId(
+        UserId.reconstitute(NOTIFICATION_FIXTURE_ACTOR_ID),
+      );
 
       // Then
       expect(result.count).toBe(3);
       expect(result.affectedUserIds.toSorted()).toEqual([USER_ID, OTHER_USER_ID].toSorted());
       expect(none).toEqual({ count: 0, affectedUserIds: [] });
       const remaining = await inboxReader.listByUser({
-        userId: USER_ID,
+        userId: UserId.reconstitute(USER_ID),
         afterNotificationId: null,
         limit: 10,
         unreadOnly: false,
@@ -321,10 +341,10 @@ export function describeNotificationRepositoryContract(
         await create(repository, { userId: OTHER_USER_ID });
         const [oldest, second, third, newest] = idsOf(created);
         const query = {
-          userId: USER_ID,
+          userId: UserId.reconstitute(USER_ID),
           unreadOnly: false,
           types: undefined,
-        } as const;
+        };
 
         // When
         const firstPage = await inboxReader.listByUser({
@@ -334,7 +354,8 @@ export function describeNotificationRepositoryContract(
         });
         const nextPage = await inboxReader.listByUser({
           ...query,
-          afterNotificationId: firstPage.at(-1)?.id ?? null,
+          afterNotificationId:
+            firstPage.map(({ id }) => NotificationId.reconstitute(id)).at(-1) ?? null,
           limit: 5,
         });
 
@@ -350,8 +371,8 @@ export function describeNotificationRepositoryContract(
 
         // When
         const page = await inboxReader.listByUser({
-          userId: USER_ID,
-          afterNotificationId: 999_999,
+          userId: UserId.reconstitute(USER_ID),
+          afterNotificationId: NotificationId.reconstitute(999_999),
           limit: 5,
           unreadOnly: false,
           types: undefined,
@@ -369,22 +390,22 @@ export function describeNotificationRepositoryContract(
         await create(repository, { type: "FOLLOW_NEW" });
         await repository.markAsOpened(
           NotificationId.reconstitute(readCheer.id),
-          USER_ID,
+          UserId.reconstitute(USER_ID),
           NOTIFICATION_FIXTURE_NOW,
         );
 
         // When
         const page = await inboxReader.listByUser({
-          userId: USER_ID,
+          userId: UserId.reconstitute(USER_ID),
           afterNotificationId: null,
           limit: 10,
           unreadOnly: true,
           types: ["CHEER_RECEIVED"],
         });
         const counts = [
-          await inboxReader.countUnread(USER_ID),
-          await inboxReader.countUnread(USER_ID, ["CHEER_RECEIVED"]),
-          await inboxReader.countUnread(USER_ID, ["NUDGE_RECEIVED"]),
+          await inboxReader.countUnread(UserId.reconstitute(USER_ID)),
+          await inboxReader.countUnread(UserId.reconstitute(USER_ID), ["CHEER_RECEIVED"]),
+          await inboxReader.countUnread(UserId.reconstitute(USER_ID), ["NUDGE_RECEIVED"]),
         ];
 
         // Then
@@ -406,7 +427,7 @@ export function describeNotificationRepositoryContract(
         const base = {
           userId: USER_ID,
           type: "NUDGE_RECEIVED",
-          since: new Date("2000-01-01T00:00:00Z"),
+          since: Temporal.Instant.from("2000-01-01T00:00:00Z"),
         } as const;
 
         // When
@@ -423,7 +444,7 @@ export function describeNotificationRepositoryContract(
           await historyReader.existsRecentNotification({ ...base, userId: OTHER_USER_ID }),
           await historyReader.existsRecentNotification({
             ...base,
-            since: new Date("2999-01-01T00:00:00Z"),
+            since: Temporal.Instant.from("2999-01-01T00:00:00Z"),
           }),
         ];
 
@@ -434,7 +455,7 @@ export function describeNotificationRepositoryContract(
       it("이미 알린 사용자는 같은 타입·알림 날짜·친구의 알림을 가진 사용자만이다", async () => {
         // Given
         const { repository, historyReader } = await createSubject();
-        const notificationDate = new Date("2026-03-09T00:00:00Z");
+        const notificationDate = Temporal.PlainDate.from("2026-03-09");
         await create(repository, {
           type: "FRIEND_COMPLETED",
           friendId: NOTIFICATION_FIXTURE_ACTOR_ID,
@@ -444,7 +465,7 @@ export function describeNotificationRepositoryContract(
           userId: OTHER_USER_ID,
           type: "FRIEND_COMPLETED",
           friendId: NOTIFICATION_FIXTURE_ACTOR_ID,
-          notificationDate: new Date("2026-03-08T00:00:00Z"),
+          notificationDate: Temporal.PlainDate.from("2026-03-08"),
         });
 
         // When

@@ -12,7 +12,7 @@ import {
   reorderFriendSchema,
   searchUsersQuerySchema,
   searchUsersResponseSchema,
-  sendFriendRequestParamSchema,
+  userTagParamSchema,
 } from "@aido/api";
 import { ApiProperty } from "@nestjs/swagger";
 import type { z } from "zod";
@@ -89,7 +89,7 @@ export const SearchUsersResponseDto = searchUsersResponseSchema.meta({
 });
 export type SearchUsersResponseDto = z.infer<typeof SearchUsersResponseDto>;
 
-export const UserTagParamDto = sendFriendRequestParamSchema.meta({
+export const UserTagParamDto = userTagParamSchema.meta({
   id: "UserTagParamDto",
   apiParameter: true,
 });

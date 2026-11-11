@@ -2,8 +2,8 @@ import type { NotificationHistoryReader } from "#api/modules/notification/inbox/
 import type { FindAlreadyNotifiedUserIdsQuery } from "#api/modules/notification/inbox/application/ports/notification-history.reader.port";
 import type { NotificationType } from "#api/modules/notification/inbox/domain/notification-type.constants";
 
-function keyOf(type: NotificationType, notificationDate: Date): string {
-  return `${type}:${notificationDate.toISOString().slice(0, 10)}`;
+function keyOf(type: NotificationType, notificationDate: Temporal.PlainDate): string {
+  return `${type}:${notificationDate.toString()}`;
 }
 
 // 알림 타입별로 이미 받은 사용자를 두고 물어본 조회를 남긴다. 날짜를 주지 않으면 모든 날에 받은 것으로 본다
@@ -14,7 +14,11 @@ export class StubNotificationHistoryReader implements Pick<
   readonly queries: FindAlreadyNotifiedUserIdsQuery[] = [];
   readonly #notifiedByKey = new Map<string, Set<string>>();
 
-  notified(type: NotificationType, userIds: readonly string[], notificationDate?: Date): void {
+  notified(
+    type: NotificationType,
+    userIds: readonly string[],
+    notificationDate?: Temporal.PlainDate,
+  ): void {
     const key = notificationDate == null ? type : keyOf(type, notificationDate);
     const users = this.#notifiedByKey.get(key) ?? new Set<string>();
     for (const userId of userIds) {

@@ -4,7 +4,7 @@ import {
   defineQueue,
   JOB_POLLING_SECONDS,
   type JobRetryPolicy,
-} from "#api/shared/application/ports/index";
+} from "#api/shared/application/ports/job-queue.port";
 
 export const TODO_REMINDER_JOB_NAME = "send-reminder";
 export const TODO_SERIES_PAUSED_JOB_NAME = "send-series-paused-notice";
@@ -44,11 +44,19 @@ const TODO_SERIES_PAUSED_RETRY = {
   deleteAfterSeconds: 120 * DAY_SECONDS,
 } as const satisfies JobRetryPolicy;
 
+// 폴링(15초)마다 한 건이면 분당 4건이라 같은 분에 몰린 리마인더가 늦음 한도를 넘는다. 가득 찬 묶음이면 쉬지 않고 다음을 꺼낸다.
+// 묶음이 작아야 프로세스가 죽을 때 꺼낸 채 만료(10분)를 기다리는 작업이 적다. 반복 멈춤 안내는 다시 실행하면 또 보내므로 작업마다 끝낸다
 export const TODO_REMINDER_QUEUE = defineQueue({
   name: "todo-reminder.v1",
   payloadSchema: todoReminderJobSchema,
   retry: TODO_REMINDER_RETRY,
-  worker: { localConcurrency: 1, pollingIntervalSeconds: JOB_POLLING_SECONDS.SCHEDULED },
+  worker: {
+    localConcurrency: 1,
+    pollingIntervalSeconds: JOB_POLLING_SECONDS.SCHEDULED,
+    batchSize: 20,
+    burstWhenBatchFull: true,
+    isolateJobFailures: true,
+  },
 });
 
 // 같은 큐에 작업별 보존 기간만 다르게 넣는다. pg-boss는 작업 행의 deleteAfterSeconds를 큐 기본값보다 먼저 쓴다

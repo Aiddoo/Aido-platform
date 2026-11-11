@@ -8,13 +8,13 @@ import { DatabaseRecordNotFoundError } from "#api/platform/database/database-err
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { SUBSCRIPTION_FIXTURE_NOW } from "#test/fixtures/billing/subscription.fixture";
 
-export const PROJECTION_CONTRACT_USER_IDS = [
+const PROJECTION_CONTRACT_USER_IDS = [
   "clz7x5p8k0001qz0z8z8z8z8z",
   "clz7x5p8k0002qz0z8z8z8z8z",
   "clz7x5p8k0003qz0z8z8z8z8z",
 ] as const;
 
-export interface SeedProjectionUserInput {
+interface SeedProjectionUserInput {
   readonly id: string;
   readonly subscriptionStatus: SubscriptionStatus;
   readonly subscriptionExpiresAt: Temporal.Instant | null;

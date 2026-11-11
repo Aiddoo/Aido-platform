@@ -1,5 +1,6 @@
 import { ErrorCode } from "@aido/api/errors";
 
+import type { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
 import type { NudgeInteractionNotification } from "#api/modules/social/nudges/application/ports/nudge-notifier.port";
 import type { NudgeInteractionTodo } from "#api/modules/social/nudges/application/read-models/nudge-interaction.read-model";
 import type { NudgeListItem } from "#api/modules/social/nudges/application/read-models/nudge.read-model";
@@ -45,10 +46,10 @@ class CountingNudgeRepository extends InMemoryNudgeRepository {
 // 행 잠금을 기다리는 사이 할 일이 비공개로 바뀐 상황
 class TurnsPrivateWhileLockingRepository extends CountingNudgeRepository {
   override async lockInteractionTodo(
-    todoId: number,
+    todoId: TodoId,
     ownerId: UserId,
   ): Promise<NudgeInteractionTodo | null> {
-    this.updateTodo(todoId, { visibility: "PRIVATE" });
+    this.updateTodo(todoId.value, { visibility: "PRIVATE" });
     return super.lockInteractionTodo(todoId, ownerId);
   }
 }

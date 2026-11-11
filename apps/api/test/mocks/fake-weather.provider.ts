@@ -10,14 +10,14 @@ import type { KmaForecastTiming } from "#api/modules/weather/forecasts/domain/km
 export class FakeWeatherProvider implements WeatherForecastProviderPort {
   readonly name = "fake";
   readonly timeZone = "Asia/Seoul";
-  private _calls: Array<{ lat: number; lon: number; date: Date }> = [];
+  #calls: Array<{ lat: number; lon: number; date: Date }> = [];
 
   async getForecast(
     lat: number,
     lon: number,
     { target: date }: KmaForecastTiming,
   ): Promise<WeatherForecast> {
-    this._calls.push({ lat, lon, date });
+    this.#calls.push({ lat, lon, date });
     return {
       date,
       skyCondition: "CLEAR",
@@ -53,14 +53,14 @@ export class FakeWeatherProvider implements WeatherForecastProviderPort {
   }
 
   getCalls(): Array<{ lat: number; lon: number; date: Date }> {
-    return [...this._calls];
+    return [...this.#calls];
   }
 
   getCallCount(): number {
-    return this._calls.length;
+    return this.#calls.length;
   }
 
   clear(): void {
-    this._calls = [];
+    this.#calls = [];
   }
 }

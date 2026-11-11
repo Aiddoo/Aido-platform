@@ -1,6 +1,5 @@
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
-import { instantToDate } from "#api/shared/domain/time/instant";
 
 import { type PushDeliveryLifecycleRepositoryPort } from "../ports/push-delivery-lifecycle.repository.port.js";
 import type { PushDeliveryPublication } from "../read-models/push-delivery.read-model.js";
@@ -28,7 +27,7 @@ export class RecoverFailedPushDeliveriesUseCase {
     return this.#dependencies.unitOfWork.run(() =>
       this.#dependencies.lifecycle.reopenFailedPublications({
         publications: input.publications,
-        availableAt: instantToDate(this.#dependencies.clock.now()),
+        availableAt: this.#dependencies.clock.now(),
         error: "DELIVERY_RUNTIME_RETRIES_EXHAUSTED",
       }),
     );

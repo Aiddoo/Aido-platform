@@ -274,3 +274,53 @@ describe("resolveTodoSchedule — 자정 경계 (서울 2028-02-28 → 02-29)", 
     expect(resolveAt(now, LOS_ANGELES, tomorrow).startDate).toBe(date);
   });
 });
+
+describe("resolveTodoSchedule — 모델이 낸 범위 밖의 큰 수", () => {
+  // 서울 2026-11-10(화) 12:00
+  const NOW = "2026-11-10T03:00:00Z";
+
+  it.each([
+    { name: "Temporal 달력 범위를 넘는 일수", date: { kind: "OFFSET_DAYS", amount: 400_000_000 } },
+    { name: "다섯 자리 연도가 되는 내년 초", date: { kind: "YEAR_START", amount: 8000 } },
+    {
+      name: "다섯 자리 연도의 날짜",
+      date: { kind: "CALENDAR_DATE", year: 12_026, month: 1, day: 1 },
+    },
+  ] as const)("$name은 오늘과 INVALID_DATE 경고로 본다", ({ date }) => {
+    // Given
+    const input = draft({ date });
+    // When
+    const result = resolveAt(NOW, SEOUL, input);
+    // Then
+    expect({ startDate: result.startDate, warnings: result.warnings }).toEqual({
+      startDate: "2026-11-10",
+      warnings: ["INVALID_DATE"],
+    });
+  });
+
+  it("범위를 넘는 반복 기간은 말하지 않은 끝으로 보고 경고한다", () => {
+    // Given
+    const input = draft({
+      repeat: { pattern: "DAILY", forDuration: { amount: 400_000_000, unit: "DAY" } },
+    });
+    // When
+    const result = resolveAt(NOW, SEOUL, input);
+    // Then
+    expect({ repeat: result.repeat, warnings: result.warnings }).toEqual({
+      repeat: { frequency: "DAILY", end: { type: "NEVER" } },
+      warnings: ["REPEAT_END_NOT_AFTER_START"],
+    });
+  });
+
+  it("범위를 넘는 'N분 뒤'는 시각을 읽지 못한 것으로 본다", () => {
+    // Given
+    const input = draft({ time: { relativeMinutes: 900_000_000_000 } });
+    // When
+    const result = resolveAt(NOW, SEOUL, input);
+    // Then
+    expect({ scheduledTime: result.scheduledTime, warnings: result.warnings }).toEqual({
+      scheduledTime: null,
+      warnings: ["INVALID_TIME"],
+    });
+  });
+});

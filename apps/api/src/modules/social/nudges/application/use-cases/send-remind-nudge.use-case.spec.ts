@@ -180,7 +180,7 @@ describe("SendRemindNudgeUseCase — 할 일이 없는 친구에게 리마인드
     // Then
     await expect(result).rejects.toMatchObject({
       errorCode: ErrorCode.NUDGE_1108,
-      details: { targetUserId: NUDGE_FIXTURE_RECEIVER_ID, remainingSeconds: 3_599 },
+      details: { targetUserId: NUDGE_FIXTURE_RECEIVER_ID, remainingSeconds: 3599 },
     });
     expect(nudgeRepository.reminderCount).toBe(1);
   });

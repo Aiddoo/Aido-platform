@@ -34,7 +34,6 @@ import { DrizzleUserRepository } from "#api/modules/identity/users/infrastructur
 import { DrizzleClientAppVersionReader } from "#api/modules/notification/push/infrastructure/persistence/drizzle-client-app-version.reader";
 import type { StagedTodoCreatorPort } from "#api/modules/planning/todos/planning-todos.public";
 import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
-import { CacheService } from "#api/platform/cache/cache.service";
 import { databaseSqlState, requireRecord } from "#api/platform/database/database-error.util";
 import { createEntityId } from "#api/platform/database/entity-id";
 import {
@@ -45,8 +44,9 @@ import {
   todoCategory,
   user as userTable,
 } from "#api/platform/database/schema/index";
-import type { AfterCommitTask } from "#api/shared/application/ports/index";
+import type { AfterCommitTask } from "#api/shared/application/ports/after-commit-task.registry.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { instantFromDate } from "#api/shared/domain/time/instant";
 import { DateClock } from "#test/doubles/platform/date-clock";
 import { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
 import { createSuggestionPick } from "#test/fixtures/ai-assistance.fixture";
@@ -111,21 +111,27 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
     entitlement = new EntitlementReaderAdapter(
       new GetResolvedAccessUseCase({
         accessStateReader: new DrizzleAccessStateReader(fixture.txHost),
-        entitlementCache: new EntitlementCacheAdapter(new CacheService(memory)),
+        entitlementCache: new EntitlementCacheAdapter(memory),
         clock: new DateClock(),
       }),
     );
     suggestions = new DrizzleSuggestionRepository(fixture.txHost);
     activity = new DrizzleSuggestionActivityReader(fixture.txHost);
     reports = new DrizzleAiReportRepository(fixture.txHost);
-    users = new DrizzleUserRepository(fixture.txHost);
+    users = new DrizzleUserRepository(fixture.txHost, new DateClock());
     userId = createEntityId();
     await client
       .insert(userTable)
       .values(UserFixture.create({ id: userId, subscriptionStatus: "ACTIVE" }));
     const [category] = await client
       .insert(todoCategory)
-      .values({ userId, name: "독서", color: "#3B82F6", sortOrder: 0 })
+      .values({
+        userId,
+        name: "독서",
+        color: "#3B82F6",
+        updatedAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
+        sortOrder: 0,
+      })
       .returning();
     categoryId = requireRecord(category).id;
     await client.insert(todo).values(
@@ -134,7 +140,7 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
           userId,
           categoryId,
           title: "책 읽기 10분",
-          startDate: new Date(`${date}T00:00:00Z`),
+          startDate: Temporal.PlainDate.from(date),
         });
         return row;
       }),
@@ -148,7 +154,7 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
   });
 
   const userMutationLock = {
-    async lockById(id: string) {
+    async lockById(id: UserId) {
       return (await users.findByIdForUpdate(id)) !== null;
     },
   };
@@ -156,11 +162,14 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
   function generation(provider: FakeAiGenerator, repository = suggestions) {
     const logger = new Logger("AiGenerationIntegration");
     const clock = new DateClock();
+    const pushDeviceVersions = new DrizzleClientAppVersionReader(fixture.txHost);
     const scheduledAiConsent = new ScheduledAiConsentReader({
       consentReader: new GetAiDataSharingConsentUseCase({
         consentRepository: new DrizzleUserConsentRepository(fixture.txHost),
       }),
-      clientAppVersion: new DrizzleClientAppVersionReader(fixture.txHost),
+      clientAppVersion: {
+        findLatestAppVersion: (owner) => pushDeviceVersions.findLatestAppVersion(owner),
+      },
       clock,
     });
     const contextBuilder = new SuggestionContextReader({
@@ -262,15 +271,16 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
     await client.insert(dailyCompletion).values({
       id: createEntityId(),
       userId,
-      date: new Date("2026-10-05T00:00:00Z"),
+      date: Temporal.PlainDate.from("2026-10-05"),
       totalTodos: 2,
       completedTodos: 2,
-      achievedAt: new Date("2026-10-05T12:00:00Z"),
+      achievedAt: Temporal.Instant.from("2026-10-05T12:00:00Z"),
+      updatedAt: Temporal.Instant.from("2026-10-05T12:00:00Z"),
     });
 
     // When
     const rates = await activity.findDayCompletionRates(
-      userId,
+      UserId.reconstitute(userId),
       new Date("2026-10-01T00:00:00Z"),
       CURRENT_TIME,
       "America/Los_Angeles",
@@ -305,9 +315,9 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
             userId,
             categoryId,
             title: date,
-            startDate: new Date(`${date}T00:00:00Z`),
+            startDate: Temporal.PlainDate.from(date),
             completed: true,
-            completedAt: new Date(`${date}T12:00:00Z`),
+            completedAt: Temporal.Instant.from(`${date}T12:00:00Z`),
           });
           return row;
         }),
@@ -316,21 +326,23 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
         dates.map((date) => ({
           id: createEntityId(),
           userId,
-          date: new Date(`${date}T00:00:00Z`),
+          date: Temporal.PlainDate.from(date),
           totalTodos: 1,
           completedTodos: 1,
-          achievedAt: new Date(`${date}T12:00:00Z`),
+          achievedAt: Temporal.Instant.from(`${date}T12:00:00Z`),
+          updatedAt: Temporal.Instant.from(`${date}T12:00:00Z`),
         })),
       );
 
       // When
       const start = new Date(from);
       const end = new Date(to);
+      const owner = UserId.reconstitute(userId);
       const [todos, days, times, categories] = await Promise.all([
-        activity.findRecentTodos(userId, start, end, timezone),
-        activity.findDayCompletionRates(userId, start, end, timezone),
-        activity.findTimeCompletionRates(userId, start, end, timezone),
-        activity.findCategoryCompletionRates(userId, start, end, timezone),
+        activity.findRecentTodos(owner, start, end, timezone),
+        activity.findDayCompletionRates(owner, start, end, timezone),
+        activity.findTimeCompletionRates(owner, start, end, timezone),
+        activity.findCategoryCompletionRates(owner, start, end, timezone),
       ]);
 
       // Then
@@ -377,7 +389,10 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
     async ({ kind, offsetMs, expected }) => {
       // Given
       const grantEndsAt = new Date(CURRENT_TIME.getTime() + 60_000);
-      await patchUser({ subscriptionStatus: "ACTIVE", subscriptionExpiresAt: grantEndsAt });
+      await patchUser({
+        subscriptionStatus: "ACTIVE",
+        subscriptionExpiresAt: instantFromDate(grantEndsAt),
+      });
       vi.setSystemTime(new Date(grantEndsAt.getTime() + offsetMs));
       const provider = new FakeAiGenerator();
 
@@ -403,9 +418,9 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
             userId,
             categoryId,
             title: "주간 날짜 경계",
-            startDate: new Date(`${date}T00:00:00Z`),
+            startDate: Temporal.PlainDate.from(date),
             completed,
-            completedAt: completed ? new Date(`${date}T12:00:00Z`) : null,
+            completedAt: completed ? Temporal.Instant.from(`${date}T12:00:00Z`) : null,
           });
           return row;
         }),
@@ -431,15 +446,15 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
   it.each([
     { subscriptionStatus: "FREE" },
     { subscriptionStatus: "EXPIRED" },
-    { subscriptionStatus: "ACTIVE", status: "SUSPENDED", deletedAt: CURRENT_TIME },
-    { role: "ADMIN", status: "SUSPENDED", deletedAt: CURRENT_TIME },
+    { subscriptionStatus: "ACTIVE", status: "SUSPENDED", deletedAt: instantFromDate(CURRENT_TIME) },
+    { role: "ADMIN", status: "SUSPENDED", deletedAt: instantFromDate(CURRENT_TIME) },
   ] satisfies Partial<User>[])(
     "구독 캐시가 ACTIVE여도 현재 $subscriptionStatus/$status 사용자의 worker는 실행하지 않는다",
     async (patch) => {
       // Given
-      expect(await entitlement.can(userId, "AI_REPORT")).toBe(true);
+      expect(await entitlement.can(UserId.reconstitute(userId), "AI_REPORT")).toBe(true);
       await patchUser(patch);
-      expect(await entitlement.can(userId, "AI_REPORT")).toBe(true);
+      expect(await entitlement.can(UserId.reconstitute(userId), "AI_REPORT")).toBe(true);
 
       // When
       for (const kind of ["report", "suggestion"] as const) {
@@ -616,14 +631,14 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
   const creator: Pick<StagedTodoCreatorPort, "stage"> = {
     async stage(input) {
       const { id: _id, ...row } = TodoFixture.create({
-        userId: input.userId,
-        categoryId: input.categoryId,
+        userId: input.userId.value,
+        categoryId: input.categoryId.value,
         title: input.title,
-        startDate: new Date("2026-10-12T00:00:00Z"),
+        startDate: Temporal.PlainDate.from("2026-10-12"),
       });
       await fixture.txHost.tx.insert(todo).values(row);
       return {
-        todos: [createTodoReadModelFixture({ id: 1, userId: input.userId })],
+        todos: [createTodoReadModelFixture({ id: 1, userId: input.userId.value })],
         series: null,
         afterCommit: async () => undefined,
       };

@@ -1,30 +1,36 @@
 import type { Request, Response } from "express";
 import type { Params } from "nestjs-pino";
 
+import type { NodeEnvironment } from "#api/platform/config/schemas/app.schema";
 import { assignRequestId } from "#api/platform/http/request-client/request-id";
 
 import { LOGGER_REDACT_PATHS } from "./constants/logger.constant.js";
 import { HttpLogEvent, httpRequestPath } from "./http-log.js";
 import type { LoggerModuleOptions } from "./interfaces/logger.interface.js";
 
-function getDefaultLogLevel(nodeEnv: string): string {
-  switch (nodeEnv) {
-    case "test":
-      return "silent";
-    case "production":
-      return "info";
-    default:
-      return "debug";
-  }
-}
+const LOG_FORMATS = ["json", "pretty"] as const;
+type LogFormat = (typeof LOG_FORMATS)[number];
+
+// 형식·기본 레벨은 배포 환경이 아니라 실행 방식을 따른다. pino-pretty는 devDependency라 production 빌드(개발서버 포함)에 없다
+const DEFAULT_LOG_FORMAT = {
+  development: "pretty",
+  test: "json",
+  production: "json",
+} as const satisfies Record<NodeEnvironment, LogFormat>;
+
+const DEFAULT_LOG_LEVEL = {
+  development: "debug",
+  test: "silent",
+  production: "info",
+} as const satisfies Record<NodeEnvironment, string>;
 
 export function createLoggerOptions(
-  config: Readonly<{ nodeEnv: string; level: string | undefined }>,
+  config: Readonly<{ nodeEnv: NodeEnvironment; level: string | undefined }>,
   options: LoggerModuleOptions = {},
 ) {
   const isTest = config.nodeEnv === "test";
-  const level = options.level ?? config.level ?? getDefaultLogLevel(config.nodeEnv);
-  const prettyPrint = options.prettyPrint ?? (config.nodeEnv !== "production" && !isTest);
+  const level = options.level ?? config.level ?? DEFAULT_LOG_LEVEL[config.nodeEnv];
+  const prettyPrint = options.prettyPrint ?? DEFAULT_LOG_FORMAT[config.nodeEnv] === "pretty";
   const autoLogging = options.autoLogging ?? !isTest;
   const redactPaths = options.redactPaths ?? [...LOGGER_REDACT_PATHS];
 

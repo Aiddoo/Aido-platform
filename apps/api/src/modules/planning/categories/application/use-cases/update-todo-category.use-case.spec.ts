@@ -1,15 +1,19 @@
 import { ErrorCode } from "@aido/api/errors";
 
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { FakeTodoCache } from "#test/doubles/planning/fake-todo-cache";
 import { FakeTodoCategoryCache } from "#test/doubles/planning/fake-todo-category-cache";
 import { InMemoryTodoCategoryRepository } from "#test/doubles/planning/in-memory-todo-category.repository";
 import { RecordingDomainEventPublisher } from "#test/doubles/planning/recording-domain-event-publisher";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { ImmediateUnitOfWork } from "#test/doubles/platform/immediate-unit-of-work";
+import { RecordingAfterCommitRegistry } from "#test/doubles/platform/recording-after-commit-registry";
 import { RecordingMutationLock } from "#test/doubles/platform/recording-mutation-lock";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
 import { createTodoCategoryFixture } from "#test/fixtures/planning/todo-category.fixture";
 import { TODO_FIXTURE_NOW, TODO_FIXTURE_USER_ID } from "#test/fixtures/planning/todo.fixture";
 
+import type { TodoCategoryId } from "../../domain/todo-category-id.vo.js";
 import type { UpdateCategoryInput } from "../ports/todo-category.repository.port.js";
 import { UpdateTodoCategoryUseCase } from "./update-todo-category.use-case.js";
 
@@ -21,16 +25,16 @@ class RecordingCategoryRepository extends InMemoryTodoCategoryRepository {
   readonly nameChecks: string[] = [];
 
   override async existsByUserIdAndName(
-    userId: string,
+    userId: UserId,
     name: string,
-    excludeId?: number,
+    excludeId?: TodoCategoryId,
   ): Promise<boolean> {
     this.nameChecks.push(name);
     return super.existsByUserIdAndName(userId, name, excludeId);
   }
 
-  override async update(id: number, input: UpdateCategoryInput) {
-    this.updates.push([id, input]);
+  override async update(id: TodoCategoryId, input: UpdateCategoryInput) {
+    this.updates.push([id.value, input]);
     return super.update(id, input);
   }
 }
@@ -41,17 +45,21 @@ function setUp(unitOfWork: ImmediateUnitOfWork = new ImmediateUnitOfWork()) {
     createTodoCategoryFixture({ id: 2, name: "개인", sortOrder: 1 }),
   ]);
   const cache = new FakeTodoCategoryCache();
+  const todoCache = new FakeTodoCache();
+  const afterCommit = new RecordingAfterCommitRegistry();
   const eventPublisher = new RecordingDomainEventPublisher();
   const useCase = new UpdateTodoCategoryUseCase({
     repository,
     cache,
+    todoCache,
+    afterCommit,
     mutationLock: new RecordingMutationLock(),
     unitOfWork,
     clock: new FixedClock(LATER),
     eventPublisher,
     logger: new SilentLogger(),
   });
-  return { repository, cache, eventPublisher, useCase };
+  return { repository, cache, todoCache, afterCommit, eventPublisher, useCase };
 }
 
 describe("카테고리 수정", () => {
@@ -77,10 +85,10 @@ describe("카테고리 수정", () => {
     await expect(update).rejects.toMatchObject(error);
     expect(repository.updates).toEqual([]);
     expect(cache.invalidatedUserIds).toEqual([]);
-    expect(eventPublisher.events).toEqual([]);
+    expect(eventPublisher.publishedEvents).toEqual([]);
   });
 
-  it("수정한 이름과 색상을 저장하고 커밋 뒤에 캐시를 무효화하고 이벤트를 낸다", async () => {
+  it("수정한 이름과 색상을 저장하고 이벤트는 트랜잭션 안에서, 캐시 무효화는 커밋 뒤에 한다", async () => {
     // Given
     const insideCommit: { invalidated: number; events: number }[] = [];
     let cache: FakeTodoCategoryCache | null = null;
@@ -90,7 +98,7 @@ describe("카테고리 수정", () => {
         const result = await work();
         insideCommit.push({
           invalidated: cache?.invalidatedUserIds.length ?? 0,
-          events: eventPublisher?.events.length ?? 0,
+          events: eventPublisher?.publishedEvents.length ?? 0,
         });
         return result;
       }
@@ -107,12 +115,17 @@ describe("카테고리 수정", () => {
     });
 
     // Then
-    expect(insideCommit).toEqual([{ invalidated: 0, events: 0 }]);
+    expect(insideCommit).toEqual([{ invalidated: 0, events: 1 }]);
     expect(result.toPrimitives()).toMatchObject({ name: "수정", color: "#FF0000", sortOrder: 0 });
     expect(context.repository.updates).toEqual([[1, { name: "수정", color: "#FF0000" }]]);
     expect(context.cache.invalidatedUserIds).toEqual([USER_ID]);
-    expect(context.eventPublisher.events).toEqual([
-      { eventName: "todo-category.updated", userId: USER_ID, categoryId: 1 },
+    expect(
+      context.eventPublisher.publishedEvents.map((event) => [event.eventName, event.toPayload()]),
+    ).toEqual([
+      [
+        "planning.todo-category.updated",
+        { categoryId: 1, userId: USER_ID, occurredAt: "2026-11-10T01:00:00.000Z" },
+      ],
     ]);
   });
 
@@ -128,9 +141,23 @@ describe("카테고리 수정", () => {
     expect(repository.updates).toEqual([[1, { name: "기존", color: "#FF0000" }]]);
   });
 
+  it("이름을 바꾸면 친구 화면 할 일 캐시를 커밋 뒤에 지운다", async () => {
+    // Given
+    const { todoCache, afterCommit, useCase } = setUp();
+
+    // When
+    await useCase.execute({ id: 1, userId: USER_ID, data: { name: "수정" } });
+    const beforeCommit = todoCache.generations.get(USER_ID);
+    await afterCommit.runAll();
+
+    // Then
+    expect(beforeCommit).toBeUndefined();
+    expect(todoCache.generations.get(USER_ID)).toBe(1);
+  });
+
   it("같은 이름·색상이면 저장·이벤트 없이 그대로 돌려준다", async () => {
     // Given
-    const { repository, eventPublisher, useCase } = setUp();
+    const { repository, eventPublisher, afterCommit, useCase } = setUp();
 
     // When
     const result = await useCase.execute({
@@ -142,6 +169,7 @@ describe("카테고리 수정", () => {
     // Then
     expect(result.toPrimitives()).toMatchObject({ name: "기존", updatedAt: TODO_FIXTURE_NOW });
     expect(repository.updates).toEqual([]);
-    expect(eventPublisher.events).toEqual([]);
+    expect(eventPublisher.publishedEvents).toEqual([]);
+    expect(afterCommit.tasks).toEqual([]);
   });
 });

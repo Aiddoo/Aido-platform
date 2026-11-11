@@ -67,7 +67,7 @@ export class AcceptFriendRequestUseCase {
       userId: userId.value,
       requesterUserId: requesterUserId.value,
     });
-    await invalidateFriendshipCaches(cache, userId.value, requesterUserId.value);
+    await invalidateFriendshipCaches(cache, userId, requesterUserId);
     await this.#notifyRequester(userId, requesterUserId);
     return friend;
   }

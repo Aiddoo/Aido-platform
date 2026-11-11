@@ -1,9 +1,8 @@
 import { z } from "zod";
 
-import { defineQueue } from "#api/shared/application/ports/job-queue.port";
-import { JOB_POLLING_SECONDS } from "#api/shared/application/ports/job-runtime.port";
+import { defineQueue, JOB_POLLING_SECONDS } from "#api/shared/application/ports/job-queue.port";
 
-export const PREMIUM_GRANT_SWEEP_JOB_NAME = "sweep-premium-grants";
+const PREMIUM_GRANT_SWEEP_JOB_NAME = "sweep-premium-grants";
 
 // 옛 스케줄이 넣은 작업이 { name, data: {} } 모양이라 그대로 받는다
 const premiumGrantSweepPayloadSchema = z.object({

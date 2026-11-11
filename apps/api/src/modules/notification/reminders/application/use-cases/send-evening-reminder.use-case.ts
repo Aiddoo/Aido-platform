@@ -2,10 +2,10 @@ import { USER_PREFERENCE_DEFAULTS } from "@aido/api/vocabulary";
 
 import { computeEffectiveStreak } from "#api/modules/identity/identity-settings.public";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
-import { toDateString } from "#api/shared/domain/date/utils/format";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { NotificationHistoryReader } from "../../../inbox/application/notification-history.reader.js";
-import { createEveningReminderNotificationMessage } from "../../../push/application/messages/notification.messages.js";
+import { createEveningReminderNotificationMessage } from "../../../push/application/messages/scheduler-notification.messages.js";
 import type { PublishNotificationUseCase } from "../../../push/application/use-cases/publish-notification.use-case.js";
 import { resolveRecipientLocale } from "../../../push/domain/recipient-locale.domain-service.js";
 import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/notification-campaign.constants.js";
@@ -45,7 +45,7 @@ export class SendEveningReminderUseCase implements TimezoneReminderStrategyPort 
       minute: localMinute,
       today,
       tomorrow,
-      userId,
+      userId: userId == null ? undefined : UserId.reconstitute(userId),
     });
 
     // 무료 사용자: 고정 시간(19:00)에만 발송
@@ -107,7 +107,7 @@ export class SendEveningReminderUseCase implements TimezoneReminderStrategyPort 
         variantContext: {
           campaignKey: SCHEDULER_CAMPAIGN_KEY.EVENING_REMINDER,
           recipientId: user.id,
-          occurrenceKey: toDateString(today),
+          occurrenceKey: today.toString(),
         },
       });
 
@@ -139,3 +139,5 @@ export class SendEveningReminderUseCase implements TimezoneReminderStrategyPort 
     };
   }
 }
+
+// identity의 스트릭 판정은 아직 UTC 자정 Date로 계산한다

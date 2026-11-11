@@ -77,8 +77,6 @@ export interface RequestDevice {
 export interface RequestMetadata {
   ip?: string;
   userAgent?: string;
-  deviceName?: string;
-  deviceType?: string;
   device?: RequestDevice;
   /** Accept-Language의 지원 언어. 보내지 않은 요청에는 없다. */
   locale?: SupportedLocale;

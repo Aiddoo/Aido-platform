@@ -12,7 +12,7 @@ export const PASSWORD_RULES = {
 
 // Argon2id 해싱 설정 (OWASP 권장: https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html)
 export const ARGON2_CONFIG = {
-  MEMORY_COST: 65536, // 64MB
+  MEMORY_COST: 65_536, // 64MB
   TIME_COST: 3,
   PARALLELISM: 4,
   HASH_LENGTH: 32,

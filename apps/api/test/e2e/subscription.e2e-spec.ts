@@ -2,15 +2,13 @@ import { currentUserSchema, type RevenueCatWebhookPayload } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
 import request from "supertest";
 
+import { PremiumGranterPort } from "#api/modules/billing/premium-grants/billing-premium-grants.public";
 import { SubscriptionWebhookLockPort } from "#api/modules/billing/subscriptions/application/ports/subscription-webhook-lock.port";
-import {
-  PREMIUM_ACCESS_READER,
-  PREMIUM_GRANTER,
-  PremiumAccessReaderPort,
-  PremiumGranterPort,
-} from "#api/modules/billing/subscriptions/billing-subscriptions.public";
+import { billingSubscriptionsConfig } from "#api/modules/billing/subscriptions/billing-subscriptions.config";
 import { AuthCachePort } from "#api/modules/identity/auth/application/ports/auth-collaboration.port";
 import { subscription, subscriptionEventReceipt } from "#api/platform/database/schema/index";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { instantFromDate } from "#api/shared/domain/time/instant";
 import { SubscriptionEventBuilder } from "#test/builders/subscription-event.builder";
 
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
@@ -24,11 +22,19 @@ describe("구독 Webhook HTTP 계약과 권한 캐시 (실제 PostgreSQL)", () =
   let context: E2eTestContext;
 
   beforeAll(async () => {
-    context = await createE2eApp();
+    // 웹훅 비밀은 시작할 때 한 번 읽으므로 앱을 만들 때 넣는다
+    context = await createE2eApp({
+      customizeBuilder: (builder) =>
+        builder.overrideProvider(billingSubscriptionsConfig.KEY).useValue(
+          billingSubscriptionsConfig.parse({
+            NODE_ENV: "test",
+            REVENUECAT_WEBHOOK_SECRET: webhookSecret,
+          }),
+        ),
+    });
   });
 
   beforeEach(async () => {
-    vi.stubEnv("REVENUECAT_WEBHOOK_SECRET", webhookSecret);
     await context.reset();
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(at);
@@ -54,7 +60,7 @@ describe("구독 Webhook HTTP 계약과 권한 캐시 (실제 PostgreSQL)", () =
       .withAppUserId(userId)
       .withOriginalTransactionId(transactionId)
       .withEventId(`${transactionId}-purchase`)
-      .withPurchasedAtMs(pastExpiry.getTime() - 30 * 24 * 60 * 60 * 1_000)
+      .withPurchasedAtMs(pastExpiry.getTime() - 30 * 24 * 60 * 60 * 1000)
       .withExpirationAtMs(expiresAt.getTime())
       .build();
   }
@@ -97,7 +103,7 @@ describe("구독 Webhook HTTP 계약과 권한 캐시 (실제 PostgreSQL)", () =
     expect(profile.body.data.subscriptionStatus).toBe("ACTIVE");
     expect(await storedUser(user.userId)).toMatchObject({
       subscriptionStatus: "ACTIVE",
-      subscriptionExpiresAt: futureExpiry,
+      subscriptionExpiresAt: instantFromDate(futureExpiry),
     });
     expect(
       await context.testDatabase.getClient().select().from(subscriptionEventReceipt),
@@ -143,7 +149,7 @@ describe("구독 Webhook HTTP 계약과 권한 캐시 (실제 PostgreSQL)", () =
     await premiumPreference(user.accessToken).expect(200);
     expect(await storedUser(user.userId)).toMatchObject({
       subscriptionStatus: "ACTIVE",
-      subscriptionExpiresAt: futureExpiry,
+      subscriptionExpiresAt: instantFromDate(futureExpiry),
     });
     expect(
       await context.testDatabase.getClient().select().from(subscriptionEventReceipt),
@@ -183,7 +189,7 @@ describe("구독 Webhook HTTP 계약과 권한 캐시 (실제 PostgreSQL)", () =
       await premiumPreference(user.accessToken).expect(200);
       expect(await storedUser(user.userId)).toMatchObject({
         subscriptionStatus: "ACTIVE",
-        subscriptionExpiresAt: futureExpiry,
+        subscriptionExpiresAt: instantFromDate(futureExpiry),
       });
       expect(
         await context.testDatabase.getClient().select().from(subscriptionEventReceipt),
@@ -296,9 +302,12 @@ describe("구독 Webhook HTTP 계약과 권한 캐시 (실제 PostgreSQL)", () =
       .get("/v1/auth/me")
       .set("Authorization", `Bearer ${user.accessToken}`)
       .expect(200);
-    await context.module
-      .get<PremiumGranterPort>(PREMIUM_GRANTER)
-      .grant({ userId: user.userId, source: "INVITE", sourceKey: "invite:me", durationDays: 7 });
+    await context.module.get<PremiumGranterPort>(PremiumGranterPort).grant({
+      userId: UserId.reconstitute(user.userId),
+      source: "INVITE",
+      sourceKey: "invite:me",
+      durationDays: 7,
+    });
 
     const afterFirst = await request(context.app.getHttpServer())
       .get("/v1/auth/me")
@@ -306,9 +315,12 @@ describe("구독 Webhook HTTP 계약과 권한 캐시 (실제 PostgreSQL)", () =
       .expect(200);
 
     // When
-    await context.module
-      .get<PremiumGranterPort>(PREMIUM_GRANTER)
-      .grant({ userId: user.userId, source: "INVITE", sourceKey: "invite:me-2", durationDays: 7 });
+    await context.module.get<PremiumGranterPort>(PremiumGranterPort).grant({
+      userId: UserId.reconstitute(user.userId),
+      source: "INVITE",
+      sourceKey: "invite:me-2",
+      durationDays: 7,
+    });
     const after = await request(context.app.getHttpServer())
       .get("/v1/auth/me")
       .set("Authorization", `Bearer ${user.accessToken}`)
@@ -349,14 +361,17 @@ describe("구독 Webhook HTTP 계약과 권한 캐시 (실제 PostgreSQL)", () =
     const email = "premium-grant-ended@test.com";
     const password = "Test1234!";
     const user = await context.helpers.createVerifiedUser(email, password);
-    await context.module
-      .get<PremiumGranterPort>(PREMIUM_GRANTER)
-      .grant({ userId: user.userId, source: "INVITE", sourceKey: "invite:ended", durationDays: 1 });
-    const endsAt = new Date(Date.now() + 24 * 60 * 60 * 1_000);
+    await context.module.get<PremiumGranterPort>(PremiumGranterPort).grant({
+      userId: UserId.reconstitute(user.userId),
+      source: "INVITE",
+      sourceKey: "invite:ended",
+      durationDays: 1,
+    });
+    const endsAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
     const authCache = context.module.get<AuthCachePort>(AuthCachePort, { strict: false });
     const meAt = async (time: Date) => {
       vi.setSystemTime(time);
-      await authCache.invalidateUserProfile(user.userId);
+      await authCache.invalidateUserProfile(UserId.reconstitute(user.userId));
       const { accessToken } = await context.helpers.loginUser(email, password);
       const response = await request(context.app.getHttpServer())
         .get("/v1/auth/me")
@@ -367,8 +382,8 @@ describe("구독 Webhook HTTP 계약과 권한 캐시 (실제 PostgreSQL)", () =
 
     // When
     const justEnded = await meAt(endsAt);
-    const lastMoment = await meAt(new Date(endsAt.getTime() + 7 * 24 * 60 * 60 * 1_000 - 1));
-    const afterWindow = await meAt(new Date(endsAt.getTime() + 7 * 24 * 60 * 60 * 1_000));
+    const lastMoment = await meAt(new Date(endsAt.getTime() + 7 * 24 * 60 * 60 * 1000 - 1));
+    const afterWindow = await meAt(new Date(endsAt.getTime() + 7 * 24 * 60 * 60 * 1000));
 
     // Then
     expect(justEnded).toMatchObject({
@@ -465,17 +480,4 @@ describe("구독 Webhook HTTP 계약과 권한 캐시 (실제 PostgreSQL)", () =
       expect(after).toMatchObject({ premiumSource: "STORE", premiumPlanType: expected });
     },
   );
-
-  it("옛 Symbol 토큰은 새 클래스 토큰과 같은 인스턴스다", () => {
-    // Given
-    const module = context.module;
-
-    // When
-    const granter = module.get(PREMIUM_GRANTER);
-    const reader = module.get(PREMIUM_ACCESS_READER);
-
-    // Then
-    expect(granter).toBe(module.get(PremiumGranterPort));
-    expect(reader).toBe(module.get(PremiumAccessReaderPort));
-  });
 });

@@ -2,12 +2,13 @@ import { ErrorCode } from "@aido/api/errors";
 import { PREMIUM_FEATURE_KEYS } from "@aido/api/vocabulary";
 import { pick } from "es-toolkit";
 
-import type { EntitlementReaderPort } from "#api/modules/access/access-entitlement.public";
-import type { QuotaLedgerPort } from "#api/modules/access/access-quota.public";
-import type { PremiumAccessReaderPort } from "#api/modules/billing/subscriptions/billing-subscriptions.public";
+import type { EntitlementReaderPort } from "#api/modules/access/entitlements/access-entitlements.public";
+import type { QuotaLedgerPort } from "#api/modules/access/quotas/access-quotas.public";
+import type { PremiumAccessReaderPort } from "#api/modules/billing/premium-grants/billing-premium-grants.public";
 import type { DailySendUsageReaderPort } from "#api/modules/social/cheers/social-cheers.public";
 import { ApplicationException } from "#api/shared/application/application.exception";
-import { toISOString, toISOStringOrNull } from "#api/shared/domain/date/utils/format";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { instantFromDate, toIsoString } from "#api/shared/domain/time/instant";
 
 import type { AuthCachePort } from "../../../auth/application/ports/auth-collaboration.port.js";
 import type { AuthUserRepositoryPort } from "../../../auth/application/ports/auth-user.repository.port.js";
@@ -27,10 +28,15 @@ interface GetCurrentUserDependencies {
   readonly userRepository: Pick<AuthUserRepositoryPort, "findByIdWithProfile">;
   readonly cacheService: Pick<AuthCachePort, "wrapUserProfile">;
   readonly premiumAccessReader: Pick<PremiumAccessReaderPort, "getPremiumAccess">;
-  readonly entitlementReader: Pick<EntitlementReaderPort, "getAccessSnapshot">;
+  readonly entitlementReader: Pick<EntitlementReaderPort, "getEntitlements">;
   readonly quotaLedger: Pick<QuotaLedgerPort, "read">;
   readonly cheerUsageReader: Pick<DailySendUsageReaderPort, "readDailyUsage">;
   readonly nudgeUsageReader: Pick<DailySendUsageReaderPort, "readDailyUsage">;
+}
+
+// billing 프리미엄 조회 포트가 아직 Date를 돌려준다
+function dateToIsoStringOrNull(date: Date | null): string | null {
+  return date == null ? null : toIsoString(instantFromDate(date));
 }
 
 export class GetCurrentUserUseCase {
@@ -41,7 +47,8 @@ export class GetCurrentUserUseCase {
   }
 
   async execute(input: GetCurrentUserQuery): Promise<CurrentUserResult> {
-    const { userId, sessionId } = input;
+    const { sessionId } = input;
+    const userId = UserId.reconstitute(input.userId);
     const cachedProfile = await this.#dependencies.cacheService.wrapUserProfile(
       userId,
       async () => {
@@ -58,19 +65,20 @@ export class GetCurrentUserUseCase {
           role: user.role,
           userTag: user.userTag,
           status: user.status,
-          emailVerifiedAt: toISOStringOrNull(user.emailVerifiedAt),
+          emailVerifiedAt: user.emailVerifiedAt == null ? null : toIsoString(user.emailVerifiedAt),
           subscriptionStatus: user.subscriptionStatus,
-          subscriptionExpiresAt: toISOStringOrNull(user.subscriptionExpiresAt),
+          subscriptionExpiresAt:
+            user.subscriptionExpiresAt == null ? null : toIsoString(user.subscriptionExpiresAt),
           name: user.profile?.name ?? null,
           profileImage: user.profile?.profileImage ?? null,
-          createdAt: toISOString(user.createdAt),
+          createdAt: toIsoString(user.createdAt),
           providers: user.accounts.map((a) => a.provider),
           premiumSource: premiumAccess.source,
-          premiumEndsAt: toISOStringOrNull(premiumAccess.endsAt),
-          premiumPeriodEndsAt: toISOStringOrNull(premiumAccess.periodEndsAt),
+          premiumEndsAt: dateToIsoStringOrNull(premiumAccess.endsAt),
+          premiumPeriodEndsAt: dateToIsoStringOrNull(premiumAccess.periodEndsAt),
           willRenew: premiumAccess.willRenew,
           bankedPremiumDays: premiumAccess.bankedDays,
-          premiumGrantEndedAt: toISOStringOrNull(premiumAccess.recentGrantEndedAt),
+          premiumGrantEndedAt: dateToIsoStringOrNull(premiumAccess.recentGrantEndedAt),
           premiumIsTrial: premiumAccess.isTrial,
           premiumPlanType: premiumAccess.planType,
         };
@@ -78,7 +86,7 @@ export class GetCurrentUserUseCase {
     );
 
     if (cachedProfile == null) {
-      throw new ApplicationException(ErrorCode.USER_0601, { userId });
+      throw new ApplicationException(ErrorCode.USER_0601, { userId: input.userId });
     }
     // 만료 경계를 넘긴 프로필 캐시를 쓰지 않도록 권한은 기한을 함께 담은 Access 판단으로 매번 계산한다
     const { isPremium, entitlements } = await this.#entitlements(userId, input.timezone);
@@ -112,33 +120,33 @@ export class GetCurrentUserUseCase {
   }
 
   async #entitlements(
-    userId: string,
+    userId: UserId,
     timezone: string,
   ): Promise<{ isPremium: boolean; entitlements: CurrentUserEntitlements }> {
     const { entitlementReader, quotaLedger, cheerUsageReader, nudgeUsageReader } =
       this.#dependencies;
-    const [snapshot, aiUsage, cheerUsage, nudgeUsage] = await Promise.all([
-      entitlementReader.getAccessSnapshot(userId),
+    const [userEntitlements, aiUsage, cheerUsage, nudgeUsage] = await Promise.all([
+      entitlementReader.getEntitlements(userId),
       quotaLedger.read(userId, "AI_PARSE"),
       cheerUsageReader.readDailyUsage(userId, timezone),
       nudgeUsageReader.readDailyUsage(userId, timezone),
     ]);
     // 출시 앱 /me.entitlements 계약의 기능만 담는다. 1.15.0부터 더한 기능은 GET /v1/entitlements가 준다.
-    const features = pick(snapshot.features, PREMIUM_FEATURE_KEYS);
+    const features = pick(userEntitlements.features, PREMIUM_FEATURE_KEYS);
     return {
-      isPremium: snapshot.isPremium,
+      isPremium: userEntitlements.isPremium,
       entitlements: {
         ...features,
         AI_PARSE: { ...features.AI_PARSE, used: aiUsage.used, resetsAt: aiUsage.resetsAt },
         CHEER: {
           ...features.CHEER,
           used: cheerUsage.used,
-          resetsAt: toISOString(cheerUsage.resetsAt),
+          resetsAt: toIsoString(instantFromDate(cheerUsage.resetsAt)),
         },
         NUDGE: {
           ...features.NUDGE,
           used: nudgeUsage.used,
-          resetsAt: toISOString(nudgeUsage.resetsAt),
+          resetsAt: toIsoString(instantFromDate(nudgeUsage.resetsAt)),
         },
       },
     };

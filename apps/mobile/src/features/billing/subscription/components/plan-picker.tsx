@@ -10,7 +10,7 @@ import { match } from 'ts-pattern';
 import { useResolveClassNames } from 'uniwind';
 
 import { type SubscriptionOffering } from '../domains/subscription.model';
-import { SubscriptionPolicy } from '../domains/subscription.model';
+import { hasFreeTrial, SubscriptionPolicy } from '../domains/subscription.model';
 import { useReportStoreUnavailable } from '../hooks/use-report-store-unavailable';
 import { useSelectedPlanId, useSubscriptionParams } from '../hooks/use-subscription-params';
 import { useGetOfferingsQueryOptions } from '../queries/subscription.queries';
@@ -68,7 +68,7 @@ PlanPicker.Plans = function Plans({
       haptics.selection();
       trackEvent('paywall_plan_selected', {
         plan_type: nextPlan.planType,
-        is_trial: SubscriptionPolicy.hasFreeTrial(nextPlan),
+        is_trial: hasFreeTrial(nextPlan.freeTrial),
       });
     }
     setSelectedPlanId(planId);

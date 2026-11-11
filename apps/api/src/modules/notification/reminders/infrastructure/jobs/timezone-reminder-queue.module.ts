@@ -1,9 +1,6 @@
 import { Module } from "@nestjs/common";
 
-import {
-  REMINDER_TIMEZONE_CACHE,
-  ReminderTimezoneCachePort,
-} from "../../application/ports/reminder-timezone-cache.port.js";
+import { ReminderTimezoneCachePort } from "../../application/ports/reminder-timezone-cache.port.js";
 import { TimezoneReminderEnqueuerPort } from "../../application/ports/timezone-reminder-enqueuer.port.js";
 import { ReminderTimezoneCacheAdapter } from "../adapters/reminder-timezone-cache.adapter.js";
 import { TimezoneReminderQueueAdapter } from "./timezone-reminder-queue.adapter.js";
@@ -14,14 +11,7 @@ import { TimezoneReminderQueueAdapter } from "./timezone-reminder-queue.adapter.
     TimezoneReminderQueueAdapter,
     { provide: TimezoneReminderEnqueuerPort, useExisting: TimezoneReminderQueueAdapter },
     { provide: ReminderTimezoneCachePort, useClass: ReminderTimezoneCacheAdapter },
-    // identity가 옮길 때까지 옛 Symbol을 같은 인스턴스의 별칭으로 둔다
-    { provide: REMINDER_TIMEZONE_CACHE, useExisting: ReminderTimezoneCachePort },
   ],
-  exports: [
-    TimezoneReminderQueueAdapter,
-    TimezoneReminderEnqueuerPort,
-    ReminderTimezoneCachePort,
-    REMINDER_TIMEZONE_CACHE,
-  ],
+  exports: [TimezoneReminderQueueAdapter, TimezoneReminderEnqueuerPort, ReminderTimezoneCachePort],
 })
 export class TimezoneReminderQueueModule {}

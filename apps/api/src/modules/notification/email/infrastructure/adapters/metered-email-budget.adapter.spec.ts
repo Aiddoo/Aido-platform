@@ -2,7 +2,7 @@ import {
   USAGE_SUBJECT_ALL,
   type UsageKey,
   type UsageMeterPort,
-} from "#api/platform/metering/interfaces/usage-meter.interface";
+} from "#api/platform/metering/usage-meter.port";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";
 import { InMemoryUsageMeterAdapter } from "#test/mocks/in-memory-usage-meter.adapter";

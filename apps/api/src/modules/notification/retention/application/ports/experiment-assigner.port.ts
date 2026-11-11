@@ -1,4 +1,4 @@
-export interface ExperimentVariantWeight<TVariant extends string> {
+interface ExperimentVariantWeight<TVariant extends string> {
   readonly key: TVariant;
   readonly weight: number;
 }

@@ -14,7 +14,7 @@ describe("StartOAuthAuthorization — 허용된 복귀 주소와 OAuth state 저
     const fixture = createAuthOAuthFixture(provider);
     const useCase = new StartOAuthAuthorizationUseCase({
       ...fixture,
-      configService: { isDevelopment: false },
+      configService: { allowsDevRedirects: false },
     });
     // When
     const result = await useCase.execute({
@@ -79,7 +79,7 @@ describe("StartOAuthAuthorization — 허용된 복귀 주소와 OAuth state 저
       const fixture = createAuthOAuthFixture();
       const useCase = new StartOAuthAuthorizationUseCase({
         ...fixture,
-        configService: { isDevelopment: development },
+        configService: { allowsDevRedirects: development },
       });
       // When
       await useCase.execute({ provider: "GOOGLE", state: "state", clientRedirectUri: uri });
@@ -93,7 +93,7 @@ describe("StartOAuthAuthorization — 허용된 복귀 주소와 OAuth state 저
     const fixture = createAuthOAuthFixture();
     const useCase = new StartOAuthAuthorizationUseCase({
       ...fixture,
-      configService: { isDevelopment: false },
+      configService: { allowsDevRedirects: false },
     });
     // When
     const pending = useCase.execute({ provider: "NAVER", state: "state" });

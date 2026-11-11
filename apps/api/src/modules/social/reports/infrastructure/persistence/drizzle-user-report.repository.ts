@@ -6,7 +6,6 @@ import type { DrizzleTransactionalAdapter } from "#api/platform/database/databas
 import { createEntityId } from "#api/platform/database/entity-id";
 import { user, userReport } from "#api/platform/database/schema/index";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { instantToDate } from "#api/shared/domain/time/instant";
 
 import type { UserReportRepositoryPort } from "../../application/ports/user-report.repository.port.js";
 import { UserReportId } from "../../domain/user-report-id.vo.js";
@@ -51,7 +50,7 @@ export class DrizzleUserReportRepository implements UserReportRepositoryPort {
         targetUserId: params.targetUserId.value,
         targetType: params.target.type,
         targetId: contentId == null ? { isNull: true } : contentId,
-        createdAt: { gte: instantToDate(params.since) },
+        createdAt: { gte: params.since },
       },
       orderBy: { createdAt: "desc" },
     });
@@ -61,10 +60,7 @@ export class DrizzleUserReportRepository implements UserReportRepositoryPort {
   countByReporterSince(reporterId: UserId, since: Temporal.Instant): Promise<number> {
     return this.#db.$count(
       userReport,
-      and(
-        eq(userReport.reporterId, reporterId.value),
-        gte(userReport.createdAt, instantToDate(since)),
-      ),
+      and(eq(userReport.reporterId, reporterId.value), gte(userReport.createdAt, since)),
     );
   }
 

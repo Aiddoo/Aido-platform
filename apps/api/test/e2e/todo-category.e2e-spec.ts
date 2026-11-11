@@ -5,8 +5,10 @@
  * TodoCategory CRUD 전체 플로우 테스트
  * Testcontainers를 사용하여 독립적인 PostgreSQL 환경에서 테스트합니다.
  */
+import { friendTodoListResponseSchema } from "@aido/api";
 import { eq } from "drizzle-orm";
 import request from "supertest";
+import { z } from "zod";
 
 import { user as userTable } from "#api/platform/database/schema/index";
 
@@ -17,7 +19,7 @@ describe("할 일 카테고리 E2E", () => {
 
   beforeAll(async () => {
     ctx = await createE2eApp();
-  }, 60000);
+  }, 60_000);
 
   afterAll(async () => {
     await destroyE2eApp(ctx);
@@ -799,6 +801,50 @@ describe("할 일 카테고리 E2E", () => {
 
       expect(user1Names).toContain("User1 카테고리");
       expect(user2Names).not.toContain("User1 카테고리");
+    });
+  });
+
+  describe("친구 화면 할 일 캐시", () => {
+    it("카테고리 이름·색을 바꾸면 이미 할 일을 본 친구도 다음 조회에서 바로 새 이름·색을 본다", async () => {
+      // Given
+      const password = "Test1234!";
+      const owner = await createPremiumUser("cat-friend-owner@example.com", password);
+      const friend = await ctx.helpers.createVerifiedUser(
+        "cat-friend-viewer@example.com",
+        password,
+      );
+      await ctx.helpers.createFriendship(owner, friend);
+      const categoryResponse = await request(ctx.app.getHttpServer())
+        .post("/v1/todo-categories")
+        .set("Authorization", `Bearer ${owner.accessToken}`)
+        .send({ name: "공부", color: "#111111" })
+        .expect(201);
+      const categoryId = z.number().parse(categoryResponse.body.data.category.id);
+      await request(ctx.app.getHttpServer())
+        .post("/v1/todos")
+        .set("Authorization", `Bearer ${owner.accessToken}`)
+        .send({ title: "공개 할 일", categoryId, startDate: "2027-01-15", visibility: "PUBLIC" })
+        .expect(201);
+      async function friendTodoCategories() {
+        const response = await request(ctx.app.getHttpServer())
+          .get(`/v1/todos/friends/${owner.userId}`)
+          .set("Authorization", `Bearer ${friend.accessToken}`)
+          .expect(200);
+        return friendTodoListResponseSchema
+          .parse(response.body.data)
+          .items.map(({ category }) => ({ name: category.name, color: category.color }));
+      }
+      expect(await friendTodoCategories()).toEqual([{ name: "공부", color: "#111111" }]);
+
+      // When
+      await request(ctx.app.getHttpServer())
+        .patch(`/v1/todo-categories/${categoryId}`)
+        .set("Authorization", `Bearer ${owner.accessToken}`)
+        .send({ name: "운동", color: "#222222" })
+        .expect(200);
+
+      // Then
+      expect(await friendTodoCategories()).toEqual([{ name: "운동", color: "#222222" }]);
     });
   });
 });

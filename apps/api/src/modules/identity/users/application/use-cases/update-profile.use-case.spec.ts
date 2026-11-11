@@ -1,3 +1,4 @@
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { InMemoryAuthUserRepository } from "#test/doubles/identity/in-memory-auth-user.repository";
 import { createAuthCredentialFixture } from "#test/fixtures/auth-credential.fixture";
 
@@ -45,7 +46,7 @@ describe("UpdateProfile — 프로필 변경", () => {
   it("이름만 수정하면 저장한 이미지를 유지하고 다른 사용자 캐시에 영향이 없다", async () => {
     // Given
     const fixture = given();
-    await fixture.userRepository.createProfile(fixture.user.id, {
+    await fixture.userRepository.createProfile(UserId.reconstitute(fixture.user.id), {
       name: "사용자",
       profileImage: "scottish_fold",
     });

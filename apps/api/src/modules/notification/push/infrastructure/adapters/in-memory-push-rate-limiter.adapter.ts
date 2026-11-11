@@ -1,4 +1,4 @@
-import type { OnModuleDestroy } from "@nestjs/common";
+import { LRUCache } from "lru-cache";
 
 import type {
   EngagementPushRateLimitRequest,
@@ -10,23 +10,33 @@ import { PUSH_RATE_LIMIT_POLICY } from "../../domain/push-rate-limit.constants.j
 
 const { GENERAL, ENGAGEMENT } = PUSH_RATE_LIMIT_POLICY;
 
+// 저장소마다의 키 상한. 넘치면 가장 오래 안 쓴 사용자의 기록을 잊어 그 사용자에게 한도를 한 번 더 허용할 뿐이다
+export const PUSH_RATE_LIMIT_MAX_ENTRIES = 10_000;
+
+function createWindowStore<V extends object | number>(ttlMs: number): LRUCache<string, V> {
+  return new LRUCache<string, V>({
+    max: PUSH_RATE_LIMIT_MAX_ENTRIES,
+    ttl: ttlMs,
+    // 만료를 Date.now로 재서 테스트의 가짜 시계(setSystemTime)를 그대로 따른다
+    perf: { now: () => Date.now() },
+    ttlResolution: 0,
+  });
+}
+
 /**
  * 인메모리 푸시 Rate Limiter
  *
  * - 단일 인스턴스 개발/테스트 환경용
- * - Map 기반 슬라이딩 윈도우
- * - RATE_LIMIT_WINDOW_MS 주기로 zombie 엔트리 자동 정리
+ * - 슬라이딩 윈도우와 dispatch 예약을 lru-cache에 두고, 창이 지난 키는 읽을 때 지운다
  */
-export class InMemoryPushRateLimiterAdapter implements PushRateLimiterPort, OnModuleDestroy {
-  readonly #pushTimestamps = new Map<string, number[]>();
-  readonly #engagementTimestamps = new Map<string, number[]>();
-  readonly #generalReservations = new Map<string, Map<string, number>>();
-  readonly #engagementReservations = new Map<string, Map<string, number>>();
-  readonly #cleanupInterval: NodeJS.Timeout;
-
-  constructor() {
-    this.#cleanupInterval = setInterval(() => this.#cleanup(), GENERAL.WINDOW_MS);
-  }
+export class InMemoryPushRateLimiterAdapter implements PushRateLimiterPort {
+  /** userId → 일반 발송 시각. 마지막 기록 뒤 한 시간이 지나면 창 안에 남은 시각이 없다 */
+  readonly #pushTimestamps = createWindowStore<number[]>(GENERAL.WINDOW_MS);
+  /** `${userId}:${localDate}` → 참여 유도 발송 시각 */
+  readonly #engagementTimestamps = createWindowStore<number[]>(ENGAGEMENT.RETENTION_MS);
+  /** `${userId}:${reservationId}` → 예약 만료 시각 */
+  readonly #generalReservations = createWindowStore<number>(ENGAGEMENT.RETENTION_MS);
+  readonly #engagementReservations = createWindowStore<number>(ENGAGEMENT.RETENTION_MS);
 
   async reserveGeneral(request: GeneralPushRateLimitRequest): Promise<boolean> {
     return this.#reserveGeneral(request.userId, this.#reservationId(request.dispatchId));
@@ -39,13 +49,7 @@ export class InMemoryPushRateLimiterAdapter implements PushRateLimiterPort, OnMo
       return false;
     }
 
-    let timestamps = this.#pushTimestamps.get(userId);
-    if (!timestamps) {
-      timestamps = [];
-      this.#pushTimestamps.set(userId, timestamps);
-    }
-
-    const filtered = timestamps.filter((t) => t > windowStart);
+    const filtered = (this.#pushTimestamps.get(userId) ?? []).filter((t) => t > windowStart);
     this.#pushTimestamps.set(userId, filtered);
 
     if (filtered.length >= GENERAL.MAX) {
@@ -168,74 +172,23 @@ export class InMemoryPushRateLimiterAdapter implements PushRateLimiterPort, OnMo
     return results;
   }
 
-  onModuleDestroy(): void {
-    this.destroy();
-  }
-
-  destroy(): void {
-    clearInterval(this.#cleanupInterval);
-    this.#pushTimestamps.clear();
-    this.#engagementTimestamps.clear();
-    this.#generalReservations.clear();
-    this.#engagementReservations.clear();
-  }
-
-  #cleanup(): void {
-    const currentTime = Date.now();
-    const windowStart = currentTime - GENERAL.WINDOW_MS;
-
-    for (const [userId, timestamps] of this.#pushTimestamps.entries()) {
-      const filtered = timestamps.filter((t) => t > windowStart);
-
-      if (filtered.length === 0) {
-        this.#pushTimestamps.delete(userId);
-      } else {
-        this.#pushTimestamps.set(userId, filtered);
-      }
-    }
-
-    const engagementCutoff = currentTime - ENGAGEMENT.RETENTION_MS;
-    for (const [key, timestamps] of this.#engagementTimestamps.entries()) {
-      if ((timestamps.at(-1) ?? 0) < engagementCutoff) {
-        this.#engagementTimestamps.delete(key);
-      }
-    }
-    this.#removeExpiredReservations(this.#generalReservations, currentTime);
-    this.#removeExpiredReservations(this.#engagementReservations, currentTime);
-  }
-
   #hasReservation(
-    reservations: Map<string, Map<string, number>>,
-    key: string,
+    reservations: LRUCache<string, number>,
+    userId: string,
     reservationId: string,
     now: number,
   ): boolean {
-    const expiresAt = reservations.get(key)?.get(reservationId);
+    const expiresAt = reservations.get(`${userId}:${reservationId}`);
     return expiresAt != null && expiresAt > now;
   }
 
   #saveReservation(
-    reservations: Map<string, Map<string, number>>,
-    key: string,
+    reservations: LRUCache<string, number>,
+    userId: string,
     reservationId: string,
     expiresAt: number,
   ): void {
-    const values = reservations.get(key) ?? new Map<string, number>();
-    values.set(reservationId, expiresAt);
-    reservations.set(key, values);
-  }
-
-  #removeExpiredReservations(reservations: Map<string, Map<string, number>>, now: number): void {
-    for (const [key, values] of reservations) {
-      for (const [reservationId, expiresAt] of values) {
-        if (expiresAt <= now) {
-          values.delete(reservationId);
-        }
-      }
-      if (values.size === 0) {
-        reservations.delete(key);
-      }
-    }
+    reservations.set(`${userId}:${reservationId}`, expiresAt);
   }
 
   #reservationId(dispatchId: number): string {

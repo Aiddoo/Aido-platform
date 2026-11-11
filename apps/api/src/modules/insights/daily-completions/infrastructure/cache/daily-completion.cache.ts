@@ -141,8 +141,6 @@ export class DailyCompletionCache implements DailyCompletionCachePort {
 
   async invalidate(userId: UserId): Promise<void> {
     const previousGeneration = await this.#getGeneration(userId);
-    // prefix 삭제부터 이전 세대를 단절한다. 세대 miss는 새 UUID로만 복원한다.
-    await this.#cache.delByPattern(DailyCompletionCacheKey.legacyPattern(userId.value));
     await this.#cache.set(
       DailyCompletionCacheKey.generation(userId.value),
       randomUUID(),

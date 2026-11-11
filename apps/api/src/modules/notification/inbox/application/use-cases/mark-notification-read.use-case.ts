@@ -35,13 +35,14 @@ export class MarkNotificationReadUseCase {
     if (notification == null) {
       throw notificationNotFound(notificationId);
     }
-    if (!notification.markRead(UserId.reconstitute(command.userId), clock.now())) {
+    const userId = UserId.reconstitute(command.userId);
+    if (!notification.markRead(userId, clock.now())) {
       return;
     }
 
     const isChanged = await notificationRepository.markAsRead(notification);
     if (isChanged) {
-      await cache.invalidateUnreadCount(command.userId);
+      await cache.invalidateUnreadCount(userId);
     }
 
     logger.debug({

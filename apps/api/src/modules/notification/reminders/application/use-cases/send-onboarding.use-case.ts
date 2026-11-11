@@ -1,12 +1,9 @@
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
-import { subtractDays } from "#api/shared/domain/date/utils/arithmetic";
-import { diffInDays } from "#api/shared/domain/date/utils/compare";
-import { toDateString } from "#api/shared/domain/date/utils/format";
 import { DEFAULT_LOCALE } from "#api/shared/domain/locale";
 
 import type { NotificationHistoryReader } from "../../../inbox/application/notification-history.reader.js";
 import type { CreateNotificationData } from "../../../inbox/application/ports/notification-draft.port.js";
-import { createOnboardingNotificationMessage } from "../../../push/application/messages/notification.messages.js";
+import { createOnboardingNotificationMessage } from "../../../push/application/messages/system-notification.messages.js";
 import type { PublishNotificationUseCase } from "../../../push/application/use-cases/publish-notification.use-case.js";
 import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/notification-campaign.constants.js";
 import {
@@ -15,6 +12,7 @@ import {
   requiresCompletedCount,
   resolveOnboardingDeepLinkPath,
 } from "../../domain/onboarding.domain-service.js";
+import { elapsedDaysUntil, utcStartOf } from "../../domain/reminder-day.domain-service.js";
 import type { TimezoneContext } from "../../domain/timezone-context.read-model.js";
 import { type ReEngagementReaderPort } from "../ports/re-engagement-reader.port.js";
 import { type SchedulerPreferenceReaderPort } from "../ports/scheduler-preference-reader.port.js";
@@ -41,7 +39,7 @@ export class SendOnboardingUseCase implements TimezoneReminderStrategyPort {
 
   async execute(ctx: TimezoneContext): Promise<{ sent: number }> {
     const { tz, today } = ctx;
-    const cutoffDate = subtractDays(ONBOARDING_MAX_DAY, today);
+    const cutoffDate = utcStartOf(today.subtract({ days: ONBOARDING_MAX_DAY }));
 
     // 가입 0~7일 + 해당 timezone 유저 조회
     const users = await this.#dependencies.reader.findOnboardingCandidates({
@@ -55,7 +53,7 @@ export class SendOnboardingUseCase implements TimezoneReminderStrategyPort {
 
     // 발송 대상 day에 해당하는 유저만 필터
     const eligibleUsers = users.flatMap((user) => {
-      const day = diffInDays(today, user.createdAt);
+      const day = elapsedDaysUntil(today, user.createdAt);
       return isOnboardingDay(day) ? [{ user, day }] : [];
     });
 
@@ -103,7 +101,7 @@ export class SendOnboardingUseCase implements TimezoneReminderStrategyPort {
         variantContext: {
           campaignKey: `${SCHEDULER_CAMPAIGN_KEY.ONBOARDING}.day_${day}`,
           recipientId: user.id,
-          occurrenceKey: toDateString(today),
+          occurrenceKey: today.toString(),
         },
       };
       const message = requiresCompletedCount(day)

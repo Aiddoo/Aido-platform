@@ -1,21 +1,26 @@
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+
+import type { TodoCategoryId } from "../../../categories/domain/todo-category-id.vo.js";
+import type { TodoId } from "../../../shared/domain/todo-id.vo.js";
+import type { TodoSeriesId } from "../../../todo-series/domain/todo-series-id.vo.js";
 import type { FriendTodoReadModel, TodoReadModel } from "../read-models/todo.read-model.js";
 
 export interface FindTodosParams {
-  readonly userId: string;
+  readonly userId: UserId;
   readonly cursor?: number;
   readonly size: number;
   readonly completed?: boolean;
-  readonly categoryId?: number;
-  readonly startDate?: Date;
-  readonly endDate?: Date;
+  readonly categoryId?: TodoCategoryId;
+  readonly startDate?: Temporal.PlainDate;
+  readonly endDate?: Temporal.PlainDate;
 }
 
 export interface FindFriendTodosParams {
-  readonly friendUserId: string;
+  readonly friendUserId: UserId;
   readonly cursor?: number;
   readonly size: number;
-  readonly startDate?: Date;
-  readonly endDate?: Date;
+  readonly startDate?: Temporal.PlainDate;
+  readonly endDate?: Temporal.PlainDate;
 }
 
 /**
@@ -33,26 +38,26 @@ export interface TodaySummaryTodoRow {
 }
 
 export abstract class TodoReadRepositoryPort {
-  abstract findByIdAndUserId(id: number, userId: string): Promise<TodoReadModel | null>;
+  abstract findByIdAndUserId(id: TodoId, userId: UserId): Promise<TodoReadModel | null>;
 
   /** 소유자만 알면 되는 자리 — 목록 캐시 키가 소유자 기준이라 이 한 컬럼이면 충분하다. */
-  abstract findOwnerId(id: number): Promise<string | null>;
+  abstract findOwnerId(id: TodoId): Promise<string | null>;
 
   /** 반복 할 일의 회차 전체 (sortOrder asc — 생성 순서와 동일) */
-  abstract findManyBySeriesId(userId: string, seriesId: string): Promise<TodoReadModel[]>;
+  abstract findManyBySeriesId(userId: UserId, seriesId: TodoSeriesId): Promise<TodoReadModel[]>;
 
   abstract findManyByUserId(params: FindTodosParams): Promise<TodoReadModel[]>;
 
   abstract findPublicTodosByUserId(params: FindFriendTodosParams): Promise<FriendTodoReadModel[]>;
 
   /** 카테고리 한도에 세는 수: 반복 아닌 미완료 + 진행 중 규칙 1개당 1 */
-  abstract countCategoryUsage(userId: string, categoryId: number): Promise<number>;
+  abstract countCategoryUsage(userId: UserId, categoryId: TodoCategoryId): Promise<number>;
 
-  abstract countCompletedByUser(userId: string): Promise<number>;
+  abstract countCompletedByUser(userId: UserId): Promise<number>;
 
   abstract getTodayTodoStats(
-    userId: string,
-    today: Date,
+    userId: UserId,
+    today: Temporal.PlainDate,
   ): Promise<{ total: number; completed: number }>;
 
   /**
@@ -60,8 +65,8 @@ export abstract class TodoReadRepositoryPort {
    * 단일 쿼리 + 필요한 컬럼만 조회한다 (전체 read model 대비 경량).
    */
   abstract findTodayTopTodos(
-    userId: string,
-    today: Date,
+    userId: UserId,
+    today: Temporal.PlainDate,
     limit: number,
   ): Promise<TodaySummaryTodoRow[]>;
 }

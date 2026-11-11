@@ -1,5 +1,6 @@
 import { ErrorCode } from "@aido/api/errors";
 
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { createUserSettingsFixture } from "#test/fixtures/user-settings.fixture";
 
 import { PreferenceLogEvent } from "../preferences.log-events.js";
@@ -16,7 +17,7 @@ describe("UpdatePreference — 부분 수정과 리마인더 즉시 반영", () 
         weatherMorningMinute: 37,
         currentStreak: 3,
         longestStreak: 9,
-        lastCompletedDate: new Date("2026-01-16T00:00:00.000Z"),
+        lastCompletedDate: Temporal.PlainDate.from("2026-01-16"),
       },
     });
     const query = new GetPreferenceUseCase(fixture);
@@ -51,7 +52,7 @@ describe("UpdatePreference — 부분 수정과 리마인더 즉시 반영", () 
       premium: true,
       preference: { timezone: "Asia/Seoul", eveningReminderHour: 20 },
     });
-    await fixture.preferenceReader.read(fixture.userId);
+    await fixture.preferenceReader.read(UserId.reconstitute(fixture.userId));
     // When
     const result = await new UpdatePreferenceUseCase(fixture).execute({
       userId: fixture.userId,
@@ -132,7 +133,7 @@ describe("UpdatePreference — 부분 수정과 리마인더 즉시 반영", () 
     async ({ premium, changes, errorCode }) => {
       // Given
       const fixture = createUserSettingsFixture({ premium });
-      await fixture.preferenceReader.read(fixture.userId);
+      await fixture.preferenceReader.read(UserId.reconstitute(fixture.userId));
       const snapshot = fixture.cache.snapshots.get(fixture.userId);
       // When
       const pending = new UpdatePreferenceUseCase(fixture).execute({
@@ -163,7 +164,7 @@ describe("UpdatePreference — 부분 수정과 리마인더 즉시 반영", () 
   it("활성 timezone 캐시 삭제 실패를 전달하며 이미 저장된 설정을 되돌리지 않는다", async () => {
     // Given: 이전 설정 응답이 캐시되어 있고 목록 무효화가 실패한다.
     const fixture = createUserSettingsFixture();
-    await fixture.preferenceReader.read(fixture.userId);
+    await fixture.preferenceReader.read(UserId.reconstitute(fixture.userId));
     const failure = new Error("synthetic cache unavailable");
     const useCase = new UpdatePreferenceUseCase({
       ...fixture,

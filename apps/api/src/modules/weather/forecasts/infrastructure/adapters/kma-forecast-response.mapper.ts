@@ -1,7 +1,4 @@
-import { addDays } from "#api/shared/domain/date/utils/arithmetic";
-import { toDateString } from "#api/shared/domain/date/utils/format";
-import { dayWindowInTimezone } from "#api/shared/domain/date/utils/timezone";
-
+import { localDateAt } from "../../../shared/domain/weather-calendar.domain-service.js";
 import type {
   DailyForecast,
   HourlyForecast,
@@ -104,9 +101,9 @@ function buildDailyForecast(dateStr: string, dateItems: KmaResponseItem[]): Dail
  */
 export function parseKmaResponse(data: KmaApiResponse, targetDate: Date): WeatherForecast {
   const allItems = data.response.body?.items?.item ?? [];
-  const { date, localDate } = dayWindowInTimezone(targetDate, KMA_TIMEZONE);
-  const targetDateStr = localDate.replaceAll("-", "");
-  const nextDateStr = toDateString(addDays(1, date)).replaceAll("-", "");
+  const localDate = localDateAt(targetDate, KMA_TIMEZONE);
+  const targetDateStr = localDate.toString().replaceAll("-", "");
+  const nextDateStr = localDate.add({ days: 1 }).toString().replaceAll("-", "");
 
   // 시간별 데이터 수집 (대상 날짜 + 다음 날)
   const hourlyMap = new Map<

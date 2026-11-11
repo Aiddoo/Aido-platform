@@ -81,7 +81,10 @@ describe("@RequireQuota 남은 횟수 선검사 (실제 PostgreSQL)", () => {
 
   it("남은 AI 횟수가 0이면 출시 앱과 같은 AI_1303과 차감 없음·현재 한도를 주고 핸들러에 닿지 않는다", async () => {
     // Given
-    await updateUser({ aiUsageCount: PLAN_CATALOG.AI_PARSE.free, aiUsageResetAt: AT });
+    await updateUser({
+      aiUsageCount: PLAN_CATALOG.AI_PARSE.free,
+      aiUsageResetAt: instantFromDate(AT),
+    });
 
     // When
     const response = await call("ai-plan");
@@ -108,7 +111,10 @@ describe("@RequireQuota 남은 횟수 선검사 (실제 PostgreSQL)", () => {
 
   it("남은 횟수가 있으면 통과시키고 선검사는 차감하지 않는다", async () => {
     // Given
-    await updateUser({ aiUsageCount: PLAN_CATALOG.AI_PARSE.free - 1, aiUsageResetAt: AT });
+    await updateUser({
+      aiUsageCount: PLAN_CATALOG.AI_PARSE.free - 1,
+      aiUsageResetAt: instantFromDate(AT),
+    });
 
     // When
     const response = await call("ai-plan");
@@ -123,7 +129,7 @@ describe("@RequireQuota 남은 횟수 선검사 (실제 PostgreSQL)", () => {
     // Given
     await updateUser({
       aiUsageCount: PLAN_CATALOG.AI_PARSE.free,
-      aiUsageResetAt: new Date("2026-03-31T14:59:59.000Z"),
+      aiUsageResetAt: Temporal.Instant.from("2026-03-31T14:59:59.000Z"),
     });
 
     // When
@@ -160,19 +166,25 @@ describe("@RequireQuota 남은 횟수 선검사 (실제 PostgreSQL)", () => {
     expect(ai.status).toBe(200);
   });
 
-  it("ADMIN은 사용량과 무관하게 무제한이라 막지 않는다", async () => {
-    // Given
-    await updateUser({
-      role: "ADMIN",
-      aiUsageCount: PLAN_CATALOG.AI_PARSE.fairUse.premium + 5,
-      aiUsageResetAt: AT,
-    });
+  it.each([
+    { usedBefore: PLAN_CATALOG.AI_PARSE.fairUse.premium - 1, status: 200 },
+    { usedBefore: PLAN_CATALOG.AI_PARSE.fairUse.premium, status: 429 },
+  ])(
+    "ADMIN은 프리미엄 공정 사용 상한으로 선검사한다($usedBefore회 사용 → $status)",
+    async ({ usedBefore, status }) => {
+      // Given
+      await updateUser({
+        role: "ADMIN",
+        aiUsageCount: usedBefore,
+        aiUsageResetAt: instantFromDate(AT),
+      });
 
-    // When
-    const response = await call("ai-plan");
+      // When
+      const response = await call("ai-plan");
 
-    // Then
-    expect(response.status).toBe(200);
-    expect(await storedAiUsageCount()).toBe(PLAN_CATALOG.AI_PARSE.fairUse.premium + 5);
-  });
+      // Then
+      expect(response.status).toBe(status);
+      expect(await storedAiUsageCount()).toBe(usedBefore);
+    },
+  );
 });

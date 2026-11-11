@@ -1,3 +1,4 @@
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
 import { ACCESS_FIXTURE_NOW } from "#test/fixtures/access/access-user.fixture";
@@ -33,7 +34,7 @@ describe("QuotaAbandonedRefundProcessor — 멈춘 예약 정리 잡", () => {
     const fixture = setup();
     await fixture.processor.onModuleInit();
     await fixture.ledger.reserve({
-      userId: fixture.userId,
+      userId: UserId.reconstitute(fixture.userId),
       feature: "AI_PARSE",
       idempotencyKey: null,
       reason: "parse-todo",

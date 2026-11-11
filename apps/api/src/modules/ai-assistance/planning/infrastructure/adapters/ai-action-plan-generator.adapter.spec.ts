@@ -1,6 +1,7 @@
 import { ErrorCode } from "@aido/api/errors";
 import { ACTION_PLAN_LIMITS, PLAN_CATALOG } from "@aido/api/vocabulary";
 
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { createSpyApplicationLogger } from "#test/doubles/ai-assistance/spy-application-logger";
 import { StubAiDataSharingConsentReader } from "#test/doubles/ai-assistance/stub-ai-data-sharing-consent.reader";
 import { DateClock } from "#test/doubles/platform/date-clock";
@@ -19,7 +20,7 @@ const consentReader = new StubAiDataSharingConsentReader();
 consentReader.decision = "AGREED";
 
 const planningInput = {
-  userId: "user-1",
+  userId: UserId.reconstitute("user-1"),
   timezone: "Asia/Seoul",
   locale: "ko" as const,
   categories: [{ id: 1, name: "업무" }],

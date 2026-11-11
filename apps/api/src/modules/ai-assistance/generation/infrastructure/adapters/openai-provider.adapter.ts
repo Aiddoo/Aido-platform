@@ -1,10 +1,12 @@
 import { createOpenAI, type OpenAILanguageModelResponsesOptions } from "@ai-sdk/openai";
-import { Injectable } from "@nestjs/common";
+import { Inject, Injectable } from "@nestjs/common";
 import { match } from "ts-pattern";
 import { z } from "zod";
 
-import { TypedConfigService } from "#api/platform/config/services/config.service";
-
+import {
+  type AiAssistanceGenerationConfig,
+  aiAssistanceGenerationConfig,
+} from "../../ai-assistance-generation.config.js";
 import type { AiFailureKind } from "../../application/ai-generation.errors.js";
 import type { AiGenerationPolicy } from "./ai-generation-policy.constants.js";
 import {
@@ -48,9 +50,12 @@ export class OpenAiProviderAdapter extends AiProviderAdapter {
   };
   readonly #model: AiProviderModel | null;
 
-  constructor(config: TypedConfigService) {
+  constructor(
+    @Inject(aiAssistanceGenerationConfig.KEY)
+    config: Pick<AiAssistanceGenerationConfig, "providers">,
+  ) {
     super();
-    const { apiKey, model } = config.ai.providers.openai;
+    const { apiKey, model } = config.providers.openai;
     this.#model =
       apiKey == null ? null : { id: `${this.id}:${model}`, model: createOpenAI({ apiKey })(model) };
   }

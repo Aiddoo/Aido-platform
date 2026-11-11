@@ -8,6 +8,7 @@ import {
 } from "#api/modules/identity/auth/domain/auth-verification.aggregate";
 import type { VerificationType } from "#api/modules/identity/auth/domain/auth.constants";
 import { VerificationId } from "#api/modules/identity/auth/domain/verification-id.vo";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 function isAfter(left: Temporal.Instant, right: Temporal.Instant): boolean {
   return Temporal.Instant.compare(left, right) > 0;
@@ -35,14 +36,14 @@ export class InMemoryAuthVerificationRepository extends AuthVerificationReposito
   }
 
   async findValidByUserIdAndType(
-    userId: string,
+    userId: UserId,
     type: VerificationType,
     now: Temporal.Instant,
   ): Promise<AuthVerification | null> {
     const latest = this.all
       .filter(
         (verification) =>
-          verification.userId === userId &&
+          verification.userId === userId.value &&
           verification.type === type &&
           verification.usedAt == null &&
           isAfter(verification.expiresAt, now),
@@ -55,13 +56,13 @@ export class InMemoryAuthVerificationRepository extends AuthVerificationReposito
   }
 
   async countRecentByUserIdAndType(
-    userId: string,
+    userId: UserId,
     type: VerificationType,
     since: Temporal.Instant,
   ): Promise<number> {
     return this.all.filter(
       (verification) =>
-        verification.userId === userId &&
+        verification.userId === userId.value &&
         verification.type === type &&
         Temporal.Instant.compare(verification.createdAt, since) >= 0,
     ).length;
@@ -84,13 +85,13 @@ export class InMemoryAuthVerificationRepository extends AuthVerificationReposito
   }
 
   async invalidateAllByUserIdAndType(
-    userId: string,
+    userId: UserId,
     type: VerificationType,
     now: Temporal.Instant,
   ): Promise<number> {
     const targets = this.all.filter(
       (verification) =>
-        verification.userId === userId &&
+        verification.userId === userId.value &&
         verification.type === type &&
         verification.usedAt == null &&
         isAfter(verification.expiresAt, now),
@@ -102,10 +103,10 @@ export class InMemoryAuthVerificationRepository extends AuthVerificationReposito
   }
 
   async consume(input: ConsumeAuthVerificationInput): Promise<boolean> {
-    const verification = this.#verifications.get(input.id);
+    const verification = this.#verifications.get(input.id.value);
     if (
       verification == null ||
-      verification.userId !== input.userId ||
+      verification.userId !== input.userId.value ||
       verification.type !== input.type ||
       verification.tokenHash !== input.tokenHash ||
       verification.usedAt != null ||
@@ -114,16 +115,16 @@ export class InMemoryAuthVerificationRepository extends AuthVerificationReposito
     ) {
       return false;
     }
-    this.#verifications.set(input.id, { ...verification, usedAt: input.at });
+    this.#verifications.set(input.id.value, { ...verification, usedAt: input.at });
     return true;
   }
 
-  async incrementAttempts(verificationId: number): Promise<void> {
-    const verification = this.#verifications.get(verificationId);
+  async incrementAttempts(verificationId: VerificationId): Promise<void> {
+    const verification = this.#verifications.get(verificationId.value);
     if (verification == null) {
       return;
     }
-    this.#verifications.set(verificationId, {
+    this.#verifications.set(verificationId.value, {
       ...verification,
       attempts: verification.attempts + 1,
     });

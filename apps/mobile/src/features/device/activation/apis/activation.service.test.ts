@@ -1,17 +1,10 @@
-import type { FeatureCampaignConfig } from '@src/features/app-config/feature-campaign/domains/feature-campaign.model';
 import { createMemoryObservableSyncStorage } from '@src/shared/__tests__';
 import { toInstant } from '@src/shared/date/instant';
 
 import { createActivationProgressRepository } from './activation-progress.repository';
 import { ActivationService } from './activation.service';
 
-const config: FeatureCampaignConfig = {
-  enabled: true,
-  campaignId: 'feature-discovery-2026-08',
-  minAppVersion: '1.8.0',
-  launchedAt: toInstant('2026-08-01T00:00:00.000Z'),
-  autoOpen: true,
-};
+const newUser = { id: 'new-user', createdAt: toInstant('2026-08-01T00:00:00.000Z') };
 
 function createService(): ActivationService {
   return new ActivationService(
@@ -20,55 +13,40 @@ function createService(): ActivationService {
 }
 
 describe('ActivationService', () => {
-  it('신규 사용자의 생성 후 완료 성공에서 활성화 이벤트 payload를 한 번 반환한다', () => {
+  it('가입 7일 안에 만들고 끝내면 활성화 이벤트를 한 번 돌려준다', () => {
     // Given
     const service = createService();
-    const user = { id: 'new-user', createdAt: toInstant('2026-08-01T00:00:00.000Z') };
-    service.recordTodoCreated({
-      config,
-      user,
-      now: toInstant('2026-08-02T10:00:00.000Z'),
-    });
+    service.recordTodoCreated({ user: newUser, now: toInstant('2026-08-02T10:00:00.000Z') });
 
     // When
     const first = service.recordTodoCompletion({
-      config,
-      user,
+      user: newUser,
       isCompleted: true,
       now: toInstant('2026-08-03T12:00:00.000Z'),
     });
     const duplicate = service.recordTodoCompletion({
-      config,
-      user,
+      user: newUser,
       isCompleted: true,
       now: toInstant('2026-08-04T12:00:00.000Z'),
     });
 
     // Then
-    expect(first.event).toEqual({
-      campaign_id: 'feature-discovery-2026-08',
-      days_since_signup: 2,
-    });
+    expect(first.event).toEqual({ days_since_signup: 2 });
     expect(duplicate.event).toBeNull();
   });
 
-  it('완료 해제와 기존 사용자의 동작은 진행 상태를 바꾸지 않는다', () => {
+  it('가입 7일이 지난 계정과 완료 해제는 진행 상태를 바꾸지 않는다', () => {
     // Given
     const service = createService();
-    const existingUser = {
-      id: 'existing-user',
-      createdAt: toInstant('2026-07-01T00:00:00.000Z'),
-    };
+    const existingUser = { id: 'existing-user', createdAt: toInstant('2026-07-01T00:00:00.000Z') };
 
     // When
     const existingCreate = service.recordTodoCreated({
-      config,
       user: existingUser,
       now: toInstant('2026-08-02T10:00:00.000Z'),
     });
     const uncomplete = service.recordTodoCompletion({
-      config,
-      user: { id: 'new-user', createdAt: toInstant('2026-08-01T00:00:00.000Z') },
+      user: newUser,
       isCompleted: false,
       now: toInstant('2026-08-02T12:00:00.000Z'),
     });
@@ -76,5 +54,21 @@ describe('ActivationService', () => {
     // Then
     expect(existingCreate).toBeNull();
     expect(uncomplete.event).toBeNull();
+  });
+
+  it('가입 7일이 되는 순간부터 끝내도 활성화로 세지 않는다', () => {
+    // Given
+    const service = createService();
+    service.recordTodoCreated({ user: newUser, now: toInstant('2026-08-02T10:00:00.000Z') });
+
+    // When
+    const result = service.recordTodoCompletion({
+      user: newUser,
+      isCompleted: true,
+      now: toInstant('2026-08-08T00:00:00.000Z'),
+    });
+
+    // Then
+    expect(result.event).toBeNull();
   });
 });

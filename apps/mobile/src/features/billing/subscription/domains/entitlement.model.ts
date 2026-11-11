@@ -171,11 +171,7 @@ function withFeatureQuota(snapshot: EntitlementSnapshot, quota: FeatureQuota): E
 }
 
 /** 서버가 막은 기능의 오류가 한도 소진인지 등급 잠금인지. 서버가 한도를 함께 줬으면 그 값을 따른다 */
-function getBlockedDecision(
-  limited: Pick<LimitedFeature, 'feature'> & {
-    featureQuota: Pick<FeatureQuota, 'allowed'> | null;
-  },
-): Exclude<AccessDecision, 'allow'> {
+function getBlockedDecision(limited: LimitedFeature): Exclude<AccessDecision, 'allow'> {
   if (limited.featureQuota != null) {
     return limited.featureQuota.allowed ? 'limit-reached' : 'locked';
   }
@@ -198,7 +194,11 @@ export const EntitlementPolicy = {
   getQuotaStatus,
   getResetNotice,
   withFeatureQuota,
-  getBlockedDecision,
   shouldOfferPremium,
   getFreeLimit,
+} as const;
+
+/** 서버가 한도 오류로 막은 기능 */
+export const LimitedFeaturePolicy = {
+  getBlockedDecision,
 } as const;

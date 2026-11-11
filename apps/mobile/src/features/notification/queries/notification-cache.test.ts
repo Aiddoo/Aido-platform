@@ -5,10 +5,7 @@ import type { QueryClient } from '@tanstack/react-query';
 
 import { NOTIFICATION_QUERY_KEYS } from '../constants/notification-query-keys';
 import type { NotificationListResult } from '../domains/notification.model';
-import {
-  optimisticallyMarkNotificationsRead,
-  restoreNotificationCache,
-} from './notification-cache';
+import { optimisticallyMarkNotificationsRead, revertNotificationsRead } from './notification-cache';
 
 const makePage = (id: number): NotificationListResult => ({
   notifications: [
@@ -54,11 +51,13 @@ describe('notification cache optimistic update', () => {
     client.setQueryData(NOTIFICATION_QUERY_KEYS.unreadCount(), 2);
 
     // When
-    const snapshot = await optimisticallyMarkNotificationsRead(client);
+    const change = await optimisticallyMarkNotificationsRead(client);
     const updatedAll = client.getQueryData<InfiniteData<NotificationListResult>>(allKey);
     const updatedCategory = client.getQueryData<InfiniteData<NotificationListResult>>(categoryKey);
     const updatedCategoryCount = client.getQueryData(NOTIFICATION_QUERY_KEYS.unreadCount());
-    restoreNotificationCache(client, snapshot);
+    if (change != null) {
+      revertNotificationsRead(client, change);
+    }
 
     // Then
     expect(
@@ -69,6 +68,7 @@ describe('notification cache optimistic update', () => {
     ).toBe(true);
     expect(updatedCategoryCount).toBe(0);
     expect(client.getQueryData<InfiniteData<NotificationListResult>>(allKey)).toEqual(data);
+    expect(client.getQueryData(NOTIFICATION_QUERY_KEYS.unreadCount())).toBe(2);
   });
 
   it('단일 미읽음 알림은 모든 필터에서 한 번만 감소한다', async () => {
@@ -144,10 +144,10 @@ describe('notification cache optimistic update', () => {
     });
 
     // When
-    const snapshot = await optimisticallyMarkNotificationsRead(client, 1, { shouldApply });
+    const change = await optimisticallyMarkNotificationsRead(client, 1, { shouldApply });
 
     // Then
-    expect(snapshot).toBeNull();
+    expect(change).toBeNull();
     expect(client.getQueryData(listKey)).toBe(data);
   });
 });

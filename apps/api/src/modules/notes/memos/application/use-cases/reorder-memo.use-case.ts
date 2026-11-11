@@ -50,7 +50,7 @@ export class ReorderMemoUseCase {
     const memoId = MemoId.reconstitute(command.memoId);
 
     const { memo, isMoved } = await unitOfWork.run(async () => {
-      await mutationLock.acquire([MemoLockKeys.sortOrder(userId)]);
+      await mutationLock.acquire(MemoLockKeys.existingMemo(memoId, userId));
       // 옮길 메모가 없으면 기준 메모보다 먼저 거절한다(출시 앱이 받는 오류 우선순위)
       const found = await memoRepository.findByIdAndUserId(memoId, userId);
       if (found == null) {
