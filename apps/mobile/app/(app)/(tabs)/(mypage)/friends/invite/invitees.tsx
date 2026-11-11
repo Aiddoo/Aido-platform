@@ -1,11 +1,10 @@
 import { InvitedFriendFilterTabs } from '@src/features/social/invite/components/invited-friend-filter-tabs';
 import { InvitedFriendList } from '@src/features/social/invite/components/invited-friend-list';
+import { useInvitedFriendsView } from '@src/features/social/invite/hooks/use-invited-friends-view';
 import {
   useGetInviteQueryOptions,
   useGetInvitedFriendCountInfiniteQueryOptions,
 } from '@src/features/social/invite/queries/invite.queries';
-import { invitedFriendsViewSchema } from '@src/features/social/invite/schemas/invite-params.schema';
-import { useView } from '@src/shared/hooks/use-view';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, QueryErrorBoundary, ReadableContent, StyledSafeAreaView } from '@src/shared/ui';
 import { usePrefetchInfiniteQuery, usePrefetchQuery } from '@tanstack/react-query';
@@ -14,7 +13,7 @@ import { match } from 'ts-pattern';
 
 export default function InvitedFriendsScreen() {
   const { t } = useTranslation('invite');
-  const [view] = useView('view', invitedFriendsViewSchema);
+  const [view] = useInvitedFriendsView();
   // 탭 숫자와 목록이 같은 두 쿼리를 읽으므로 화면에서 함께 시작해 차례로 기다리지 않게 한다
   usePrefetchQuery(useGetInviteQueryOptions());
   usePrefetchInfiniteQuery(useGetInvitedFriendCountInfiniteQueryOptions());

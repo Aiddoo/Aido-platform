@@ -11,7 +11,7 @@ import {
   useFriendListIsEditing,
   useFriendListView,
 } from '@src/features/social/friend/hooks/use-friend-list-params';
-import { invitedFriendsViewSchema } from '@src/features/social/invite/schemas/invite-params.schema';
+import { useInvitedFriendsView } from '@src/features/social/invite/hooks/use-invited-friends-view';
 import { voiceNoteTabSchema } from '@src/features/voice/schemas/voice-note-params.schema';
 import { useWeatherRescheduleParams } from '@src/features/weather/hooks/use-weather-reschedule-params';
 import { useView } from '@src/shared/hooks/use-view';
@@ -208,7 +208,7 @@ describe('공개 URL 계약', () => {
 
   it('초대한 친구 보기', async () => {
     // Given
-    const route = await renderRouteHook(() => useView('view', invitedFriendsViewSchema), {
+    const route = await renderRouteHook(() => useInvitedFriendsView(), {
       url: '/invitees',
     });
 
