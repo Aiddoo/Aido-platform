@@ -26,7 +26,7 @@ const GUST_FREQUENCY = 0.9;
 const SHOOTING_STAR_WINDOW_SECONDS = 7;
 const SHOOTING_STAR_DURATION_SECONDS = 0.9;
 
-export const MAX_STARS = 110;
+const MAX_STARS = 110;
 /** 해와 달은 헤더 버튼 줄 바로 아래, 지명 오른쪽(화면 폭 90%, 높이 11.8%)에 둔다. */
 const CELESTIAL_POSITION = { x: 0.9, y: 0.118 } as const;
 /** 달(가장 큰 원반)의 지름이 기준 폭에서 차지하는 비율 */
@@ -38,7 +38,7 @@ export const NO_LIGHTNING_WINDOW = -1;
 const NO_SHOOTING_STAR = -1;
 
 /** 기준 화면(390×844)에서 밀도 1일 때 개수. 넓은 화면은 넓이만큼 늘려 밀도를 유지하되 기기 등급별 상한을 넘지 않는다. */
-export const PARTICLE_BUDGETS = {
+const PARTICLE_BUDGETS = {
   rain: { full: 160, standardCap: 240, lowEndCap: 110 },
   drizzle: { full: 240, standardCap: 320, lowEndCap: 140 },
   pellet: { full: 60, standardCap: 90, lowEndCap: 40 },
