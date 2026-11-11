@@ -5,7 +5,7 @@ import { invalidateEntitlements } from '@src/features/billing/subscription/queri
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
 import {
   invalidateCategorizedTodos,
-  invalidateTodos,
+  invalidateTodoDependentQueries,
   invalidateWidgetSummary,
 } from '@src/features/planning/todo/queries/todo-cache';
 import { useTrack } from '@src/shared/analytics';
@@ -155,8 +155,6 @@ export function useUpdateTodoCategoryMutationOptions() {
             old && withCategoryChanged(old, variables.id, pick(savedCategory, ['name', 'color'])),
         );
       }
-      // 할 일 행·달력 점·상세가 카테고리 이름·색을 함께 보여 준다
-      invalidateCategorizedTodos(queryClient);
       toast.success(t('todo:toast.categoryUpdated'));
       trackEvent('category_updated', {
         field: getCategoryUpdatedField(previous, variables.input),
@@ -174,7 +172,12 @@ export function useUpdateTodoCategoryMutationOptions() {
     },
     // 기다리면 저장한 시트가 목록을 다시 받을 때까지 닫히지 않는다
     onSettled: (_data, error) => {
-      if (error != null && isLastMutation(queryClient, TODO_CATEGORY_MUTATION_KEYS.writes())) {
+      if (error == null) {
+        // 할 일 행·달력 점·할 일 상세가 카테고리 이름·색을 함께 보여 준다
+        invalidateCategorizedTodos(queryClient);
+        return;
+      }
+      if (isLastMutation(queryClient, TODO_CATEGORY_MUTATION_KEYS.writes())) {
         invalidateTodoCategories(queryClient);
       }
     },
@@ -239,11 +242,8 @@ export function useDeleteTodoCategoryMutationOptions() {
         todo_handling: getCategoryDeletedTodoHandling(deletion),
         todo_count_bucket: toTodoCountBucket(deletionResult.todoCount),
       });
+      // 응답으로 목록을 고쳐(옮긴 곳 개수 포함) 시트가 다시 받기를 기다리지 않고 닫힌다
       removeDeletedCategory(queryClient, { categoryId: id, deletionResult });
-      // 그 카테고리의 할 일이 옮겨지거나 지워져 어느 날짜(목록·달력의 완료 기록)가 바뀌었는지 모른다
-      invalidateTodos(queryClient);
-      // 카테고리 수가 한도(TODO_CATEGORY)를 돌려받으므로 남은 개수를 다시 받는다
-      invalidateEntitlements(queryClient);
       toast.success(getCategoryDeletedMessage(deletionResult, context.categories, id));
     },
     onError: (error, { id }) => {
@@ -251,9 +251,18 @@ export function useDeleteTodoCategoryMutationOptions() {
         invalidateDeletionPreview(queryClient, { categoryId: id });
       }
     },
-    // 기다리면 지운 뒤 시트가 목록을 다시 받을 때까지 닫히지 않는다
-    onSettled: () => {
-      invalidateTodoCategories(queryClient);
+    // 기다리면 지운 뒤 시트가 할 일을 다시 받을 때까지 닫히지 않는다
+    onSettled: (_deletionResult, error) => {
+      if (error != null) {
+        invalidateTodoCategories(queryClient);
+        return;
+      }
+      // 그 카테고리의 할 일이 옮겨지거나 지워져 어느 날짜(목록·달력의 완료 기록)·상세가 바뀌었는지 모른다.
+      // 카테고리 목록은 응답으로 고쳐 다시 받지 않는다
+      invalidateCategorizedTodos(queryClient);
+      invalidateTodoDependentQueries(queryClient);
+      // 카테고리 수가 한도(TODO_CATEGORY)를 돌려받으므로 남은 개수를 다시 받는다
+      invalidateEntitlements(queryClient);
     },
     meta: { errorFeedback: { feature: 'todo', fallbackKey: 'todo:toast.deleteFailedRetry' } },
   });

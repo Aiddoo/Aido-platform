@@ -549,8 +549,10 @@ export function invalidateFeedTodos(queryClient: QueryClient) {
 
 /** 카테고리 이름·색을 함께 보여 주는 할 일 행·달력 점·상세를 다시 불러온다 */
 export function invalidateCategorizedTodos(queryClient: QueryClient) {
-  return Promise.all([
-    invalidateFeedTodos(queryClient),
-    queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.pages() }),
-  ]);
+  return Promise.all([invalidateFeedTodos(queryClient), invalidateTodoPages(queryClient)]);
+}
+
+/** 카테고리 이름·색처럼 할 일 상세 화면에 함께 보이는 값이 바뀐 뒤 열린 상세를 다시 불러온다 */
+export function invalidateTodoPages(queryClient: QueryClient) {
+  return queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.pages() });
 }

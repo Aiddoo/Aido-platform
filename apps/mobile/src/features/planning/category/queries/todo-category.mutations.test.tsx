@@ -1,6 +1,8 @@
 import '@src/shared/i18n/init';
 import { ApiError } from '@src/core/errors/api-error';
 import { err, ok } from '@src/core/errors/result';
+import { createTodoDetails } from '@src/features/planning/todo/__tests__/todo.fixtures';
+import { TODO_QUERY_KEYS } from '@src/features/planning/todo/queries/todo-query-keys';
 import { NetworkError } from '@src/shared/errors/infra-error';
 import {
   createAnalyticsStub,
@@ -157,6 +159,26 @@ describe('카테고리 고치기 지표', () => {
     // Then
     expect(analytics.trackEvent).toHaveBeenCalledWith('category_updated', { field: 'color' });
   });
+
+  it('이름을 바꾸면 열린 할 일 상세도 다시 받아 바뀐 카테고리 이름을 보인다', async () => {
+    // Given
+    const { httpClient, queryClient, update } = await renderMutations();
+    queryClient.setQueryData(TODO_QUERY_KEYS.detail({ todoId: 7 }), createTodoDetails());
+    httpClient.patch.mockResolvedValue({
+      ok: true,
+      value: { message: '수정', category: createTodoCategoryDto({ name: '새 이름' }) },
+    });
+
+    // When
+    await update(1, { name: '새 이름', color: '#3B82F6' });
+
+    // Then
+    await waitFor(() =>
+      expect(queryClient.getQueryState(TODO_QUERY_KEYS.detail({ todoId: 7 }))?.isInvalidated).toBe(
+        true,
+      ),
+    );
+  });
 });
 
 describe('카테고리 지우기', () => {
@@ -204,6 +226,30 @@ describe('카테고리 지우기', () => {
       todo_handling: 'move',
       todo_count_bucket: '10_49',
     });
+  });
+
+  it('응답으로 고친 카테고리 목록은 다시 받지 않고 할 일 상세는 다시 받는다', async () => {
+    // Given
+    const { httpClient, queryClient, remove } = await renderMutations();
+    queryClient.setQueryData(TODO_QUERY_KEYS.detail({ todoId: 7 }), createTodoDetails());
+    httpClient.delete.mockResolvedValue({
+      ok: true,
+      value: {
+        message: '삭제',
+        result: { todoHandling: 'move', todoCount: 2, seriesCount: 0, moveToCategoryId: 2 },
+      },
+    });
+
+    // When
+    await remove(1);
+
+    // Then
+    await waitFor(() =>
+      expect(queryClient.getQueryState(TODO_QUERY_KEYS.detail({ todoId: 7 }))?.isInvalidated).toBe(
+        true,
+      ),
+    );
+    expect(queryClient.getQueryState(TODO_CATEGORY_QUERY_KEYS.list())?.isInvalidated).toBe(false);
   });
 });
 
