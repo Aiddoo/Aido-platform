@@ -35,7 +35,11 @@ import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { mutationOptions, onlineManager, useQueryClient } from '@tanstack/react-query';
 
 import type { MemoFormValues } from '../schemas/memo-form.schema';
-import { createMemoDraftKey } from '../utils/memo-draft';
+import {
+  createMemoCreateRequestDraftKey,
+  createMemoDraftKey,
+  restoreOrCreateMemoCreateIdempotencyKey,
+} from '../utils/memo-draft';
 import {
   createMemoPlanDraftKey,
   createMemoPlanRequestDraftKey,
@@ -47,14 +51,34 @@ import { MEMO_QUERY_KEYS } from './memo-query-keys';
 
 export function useCreateMemoMutationOptions() {
   const memoService = useMemoService();
+  const draftService = useDraftService();
+  const idGenerator = useIdGenerator();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
 
   return mutationOptions({
     // 오프라인에도 멈춰 기다리지 않고 바로 실패해 글자를 남긴 채 안내한다. 글자는 초안에도 있다
     networkMode: 'always',
-    mutationFn: async (values: MemoFormValues) => unwrap(await memoService.createMemo(values)),
-    onSuccess: () => trackEvent('memo_created'),
+    // 시간 초과돼도 서버는 늦게 저장할 수 있어 다시 저장할 때 같은 키를 보낸다. 서버는 그 키로 만든 메모를 돌려준다
+    mutationFn: async (values: MemoFormValues) => {
+      const accountId = getCachedMe(queryClient)?.id;
+      const idempotencyKey =
+        accountId == null
+          ? idGenerator.create()
+          : restoreOrCreateMemoCreateIdempotencyKey(draftService, {
+              userId: accountId,
+              content: values.content,
+              createIdempotencyKey: () => idGenerator.create(),
+            });
+      return unwrap(await memoService.createMemo(values, idempotencyKey));
+    },
+    onSuccess: () => {
+      const accountId = getCachedMe(queryClient)?.id;
+      if (accountId != null) {
+        draftService.remove(createMemoCreateRequestDraftKey({ userId: accountId }));
+      }
+      trackEvent('memo_created');
+    },
     // 기다리면 mutateAsync가 재조회까지 묶여 저장 후 뒤로 가기가 늦어진다. 다른 메모 상세는 그대로다
     onSettled: () => {
       invalidateMemoList(queryClient);

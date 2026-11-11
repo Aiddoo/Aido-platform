@@ -74,9 +74,11 @@ export class MemoService {
       '[MemoService] Invalid getResourceLimit response',
     );
 
-  createMemo = async (values: MemoFormValues) =>
+  createMemo = async (values: MemoFormValues, idempotencyKey: string) =>
     parseApiResponse(
-      await this.#httpClient.post('v1/memos', toMemoRequest(values)),
+      await this.#httpClient.post('v1/memos', toMemoRequest(values), {
+        headers: { [IDEMPOTENCY_KEY_HEADER]: idempotencyKey },
+      }),
       memoMutationResponseSchema,
       ({ memo }) => toMemo(memo),
       '[MemoService] Invalid createMemo response',
