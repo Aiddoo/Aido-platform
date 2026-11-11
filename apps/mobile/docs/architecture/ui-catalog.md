@@ -99,7 +99,7 @@ UI는 heroui-native → `shared/ui` → React Native 순서로 고른다. 같은
 ## 이름
 
 - 원본을 확장하면 원본 이름으로 끝난다. 파일은 `{역할}-{원본}.tsx`, 컴포넌트는 `{역할}{원본}`이다(`unread-notification-card.tsx` → `UnreadNotificationCard`). 원본 이름: `Card`, `Chip`, `Popover`, `Dialog`, `Alert`, `Tabs`, `Menu`, `Avatar`, `Skeleton`, `Separator`, `Button`, `BottomSheet`.
-- `*-card`는 `SurfaceCard`를 쓴다. 목록 행은 `{역할}-row.tsx`, 동작만 주는 `PressableFeedback`은 `{역할}-button.tsx`다.
+- `*-card`는 `SurfaceCard`를 쓴다. 예외: `unread-notification-card`는 화면 톤을 지키려 heroui `Card`(`rounded-3xl`, 라이트 `shadow-surface`)를 그대로 쓴다. 목록 행은 `{역할}-row.tsx`, 동작만 주는 `PressableFeedback`은 `{역할}-button.tsx`다.
 - 값을 고르는 부품(`RadioGroup`, `InputOTP`)은 `{역할}-input.tsx`이고 `value`/`onValueChange`다. 피커는 `{대상}Picker`(`TodoDatePicker`)다.
 - 아이콘 prop은 둘이다. 크기·색을 부품이 정하면 `Icon: StyledIcon`(`<MenuActionItem Icon={TrashIcon} />`), 호출부가 그려 넘기면 `icon: ReactNode`(`<IconButton icon={<CloseIcon />} />`)다.
 
