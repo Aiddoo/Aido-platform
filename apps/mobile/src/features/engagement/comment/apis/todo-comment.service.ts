@@ -4,15 +4,17 @@ import {
   type GetTodoCommentThreadsQuery,
   type UpdateTodoCommentInput,
   deleteTodoCommentResponseSchema,
-  todoCommentChainResponseSchema,
   todoCommentLikeResponseSchema,
-  todoCommentMutationResponseSchema,
   todoCommentRepliesResponseSchema,
   todoCommentThreadsResponseSchema,
 } from '@aido/api';
 import type { HttpClient } from '@src/core/ports/http-client';
 import { parseApiResponse } from '@src/shared/errors/parse-api-response';
 
+import {
+  writtenTodoCommentChainResponseSchema,
+  writtenTodoCommentMutationResponseSchema,
+} from '../schemas/todo-comment-response.schema';
 import {
   toDeletedCommentId,
   toMutatedComment,
@@ -57,7 +59,7 @@ export class TodoCommentService {
   createCommentChain = async (todoId: number, input: CreateTodoCommentChainInput) =>
     parseApiResponse(
       await this.#httpClient.post(`v1/todos/${todoId}/comments`, input),
-      todoCommentChainResponseSchema,
+      writtenTodoCommentChainResponseSchema,
       (dto) => toTodoCommentChain(todoId, dto),
       '[TodoCommentService] Invalid comment chain',
     );
@@ -65,7 +67,7 @@ export class TodoCommentService {
   updateComment = async (todoId: number, commentId: string, input: UpdateTodoCommentInput) =>
     parseApiResponse(
       await this.#httpClient.patch(`v1/todos/${todoId}/comments/${commentId}`, input),
-      todoCommentMutationResponseSchema,
+      writtenTodoCommentMutationResponseSchema,
       (dto) => toMutatedComment(todoId, dto),
       '[TodoCommentService] Invalid updated comment',
     );
