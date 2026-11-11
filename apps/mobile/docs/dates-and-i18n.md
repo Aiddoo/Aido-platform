@@ -6,14 +6,15 @@
 
 ### 값과 도구
 
-| 값        | 앱 표현                                                                                                                                               | 만드는 곳                    |
-| --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------- |
-| 순간      | `Instant`(ISO 8601 문자열 brand)                                                                                                                      | `shared/date/instant.ts`     |
-| 달력 날짜 | `YYYY-MM-DD` 문자열. 계약 형식(`z.iso.date()`)만 읽는다(`parseDateKey`). `DateKey` brand는 아직 없다([전환 상태](./architecture/migration-status.md)) | `shared/date/date-key.ts`    |
-| 벽시계    | 모델·전송은 `HH:mm`(`timeOfDaySchema`), 계산·피커는 `TimeOfDay`(`{ hour, minute }`, `toTimeOfDay`·`isTimeOfDayInRange` 포함)                          | `shared/date/time-of-day.ts` |
-| 시간대    | IANA 이름. 기기 값은 `getDeviceTimezone()`(`shared/infra/localization`)                                                                               | `shared/date/zoned.ts`(계산) |
+| 값        | 앱 표현                                                                                                                                                                                     | 만드는 곳                    |
+| --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------- |
+| 순간      | `Instant`(ISO 8601 문자열 brand)                                                                                                                                                            | `shared/date/instant.ts`     |
+| 달력 날짜 | `DateKey`(`YYYY-MM-DD` 문자열 brand). 경계는 `dateKeySchema`(계약 `dateSchema.brand`)로 한 번 읽고, 검증 안 된 바깥 문자열은 `parseDateKey`(`DateKey \| null`), 폼은 `dateKeyFieldSchema`다 | `shared/date/date-key.ts`    |
+| 벽시계    | 모델·전송은 `HH:mm`(`timeOfDaySchema`), 계산·피커는 `TimeOfDay`(`{ hour, minute }`, `toTimeOfDay`·`isTimeOfDayInRange` 포함)                                                                | `shared/date/time-of-day.ts` |
+| 시간대    | IANA 이름. 기기 값은 `getDeviceTimezone()`(`shared/infra/localization`)                                                                                                                     | `shared/date/zoned.ts`(계산) |
 
 - 모델·캐시·전송은 문자열 brand다. 문자열은 같은 값이면 같은 참조라 재조회에도 구조 공유가 유지된다. 순간의 사전순 비교(`a < b`)는 오프셋이 다르면 틀리므로 쓰지 않는다.
+- 날짜 key 계산(`addDaysToDateKey`·`getMonthStartDateKey`·`toDateKey(instant, timeZone)` 등)은 `DateKey`만 받고 돌려준다. 계산 결과는 `isDateKey`(스키마와 같은 규칙)로 좁혀 칸마다 Zod를 거치지 않고, 0000~9999년을 벗어나면 던진다. 테스트 리터럴은 `src/testing/date-key.ts`의 `createDateKey('2026-11-12')`로 만든다.
 - `Date`는 `shared/date/native-date.ts`를 지나는 네이티브 피커·달력·파일 수정 시각 경계에서만 만든다. 앱 모델에 `Date`를 두지 않는다.
 - Hermes에는 Temporal이 없고 폴리필도 쓰지 않는다([Temporal spike](#temporal-spike)). 날짜 key 산술은 `date-key.ts`의 순수 계산(Hinnant의 civil 날짜 ↔ 일수 변환), 순간 직렬화는 `Date#toISOString`, 시간대 변환(`zoned.ts`)은 캐시한 `Intl.DateTimeFormat`이다. 테스트는 서버와 같은 Node 26 네이티브 Temporal을 정답으로 비교한다(`src/testing/temporal-oracle.ts`). `dayjs`·`temporal-polyfill` import는 depcruise(`date-library-dayjs`·`date-library-temporal`)가 막는다.
 - 이름과 규칙은 서버 `shared/domain/time`과 같다. 날짜 + 벽시계 → 순간은 `toZonedInstant({ date, time, timeZone })` 하나이고 겹치는 시각은 앞쪽, 없는 시각은 전환 뒤 순간이다(Temporal `compatible`). 순간 직렬화는 `Date#toISOString`이라 서버 `toIsoString`(ms 3자리 내림)과 바이트 단위로 같다.
@@ -59,7 +60,7 @@ shared/date/
 
 ### 오늘과 시계
 
-- 시간대는 기기 달력(`expo-localization`)에서만 온다. 앱의 오늘 key와 자정 전환은 `LocalDateProvider`가 소유하고(자정 timer, foreground, `useCalendars()` 변화에서 다시 평가) 컴포넌트는 `useToday()`·`useTodayKey()`로 읽는다. Provider 밖(위젯 경계)은 같은 `readDeviceLocalDateState()`를 쓴다. 렌더 중 `new Date()`를 기준 상태로 만들지 않는다.
+- 시간대는 기기 달력(`expo-localization`)에서만 온다. 앱의 오늘 key와 자정 전환은 `LocalDateProvider`가 소유하고(자정 timer, foreground, `useCalendars()` 변화에서 다시 평가) 컴포넌트는 `useTodayKey()`(`DateKey`)로 읽는다. Provider 밖(위젯 경계)은 같은 `readDeviceLocalDateState()`를 쓴다. 렌더 중 `new Date()`를 기준 상태로 만들지 않는다.
 - 지금 시각이 필요한 곳은 `useNow({ tickMs?, until? })` 하나다. 쿨다운·갱신 시각 표시·녹음 경과·분 단위 상대 시간이 모두 이것이다. 새 지금 시계 훅을 만들지 않는다.
 - 주는 `date-key.ts`의 `getCalendarWeek` 일요일 시작 규칙 하나다. 한 화면에서 두 주 규칙을 섞지 않는다. 하루 길이 상수는 `shared/constants/time-units.ts`의 `DAY_MS`다.
 - 지난 기록·결제일처럼 다른 해일 수 있는 날짜는 year-aware helper에 오늘 key를 넘겨 올해면 월·일, 아니면 연도까지 보인다.

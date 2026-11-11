@@ -32,7 +32,7 @@
 
   응답 형태는 규칙과 무관하다. 새 엔드포인트는 위 규칙 중 하나를 고르고 `X-Timezone`을 직접 읽지 않는다. 배치는 사용자별 저장 시간대로 계산한다. 공용 helper는 `apps/api/src/shared/domain/time`(`TimeZone` VO, `localDateIn`, `localDateOf`, `toZonedInstant`, `resolveTimezone`, `toIsoString`)이다. 한 순간의 사용자 달력 날짜는 `localDateIn(instant, timezone)`으로 구하고 `Intl.DateTimeFormat` 포매터를 새로 만들지 않는다. 사용자 기본 시간대 폴백은 `DEFAULT_DELIVERY_TIMEZONE`이다.
 
-- **모바일**: 시간대는 기기 달력(`expo-localization`)에서만 온다. 앱의 오늘 key·자정 전환은 `LocalDateProvider`가 소유하고 컴포넌트는 `useToday`/`useTodayKey`, 지금 시각은 `useNow` 하나로 읽는다. render 중 `new Date()`를 기준 상태로 만들지 않고, 시간대 인자는 생략할 수 없다. 구현과 도구는 [날짜·언어](../../apps/mobile/docs/dates-and-i18n.md#오늘과-시계)에 있다.
+- **모바일**: 시간대는 기기 달력(`expo-localization`)에서만 온다. 앱의 오늘 key·자정 전환은 `LocalDateProvider`가 소유하고 컴포넌트는 `useTodayKey`, 지금 시각은 `useNow` 하나로 읽는다. render 중 `new Date()`를 기준 상태로 만들지 않고, 시간대 인자는 생략할 수 없다. 구현과 도구는 [날짜·언어](../../apps/mobile/docs/dates-and-i18n.md#오늘과-시계)에 있다.
 - 언어: 앱은 기기 언어가 한국어면 `ko`, 그 밖은 `en`을 앱 언어로 쓰고 요청마다 `Accept-Language`로 보낸다. 서버는 같은 `@aido/api/vocabulary` `resolveSupportedLocale`(없음 `ko`, 지원하지 않는 언어 `en`)로 응답 문구와 푸시 문구의 언어를 정한다. 예외는 저장·알림함·날씨에 쓰는 요청 언어 `RequestClient.locale`(`@Locale()`, `parseAcceptLanguage`)로, 헤더가 없으면 null(저장값 유지)이고 지원하지 않는 언어는 옛 호환으로 `ko`다. 출시 앱은 `ko`·`en`만 보내 이 경로를 타지 않는다. 표와 이유: [서버 다국어](../../apps/api/docs/i18n.md#언어-결정).
 - 음성 인식 언어는 사용자가 고른 값이고 없으면 앱 언어다(`useRecognitionLanguage`). 기기 언어와 달라도 된다.
 - AI 출력 언어는 ai-assistance `language-policy.messages.ts` 한 곳이다. 할 일 제목은 말한 언어 그대로, 요약·핵심 포인트는 요청 언어(없으면 저장된 사용자 언어)다.
