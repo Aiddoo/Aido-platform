@@ -12,7 +12,7 @@ import type { Todo } from '../domains/todo.model';
 import { updateTodoEnvelopeSchema } from '../schemas/todo-response.schema';
 import { toTodo } from './todo.mapper';
 
-export class SubTodoService {
+export class SubTodoApi {
   readonly #httpClient: HttpClient;
 
   constructor(httpClient: HttpClient) {
@@ -29,7 +29,7 @@ export class SubTodoService {
       result,
       updateTodoEnvelopeSchema,
       (data) => toTodo(data.todo),
-      '[SubTodoService] Invalid addSubTodo response',
+      '[SubTodoApi] Invalid addSubTodo response',
     );
   };
 
@@ -44,7 +44,7 @@ export class SubTodoService {
       result,
       updateTodoEnvelopeSchema,
       (data) => toTodo(data.todo),
-      '[SubTodoService] Invalid updateSubTodo response',
+      '[SubTodoApi] Invalid updateSubTodo response',
     );
   };
 
@@ -55,7 +55,7 @@ export class SubTodoService {
       result,
       updateTodoEnvelopeSchema,
       (data) => toTodo(data.todo),
-      '[SubTodoService] Invalid deleteSubTodo response',
+      '[SubTodoApi] Invalid deleteSubTodo response',
     );
   };
 
@@ -69,7 +69,7 @@ export class SubTodoService {
       result,
       updateTodoEnvelopeSchema,
       (data) => toTodo(data.todo),
-      '[SubTodoService] Invalid reorderSubTodos response',
+      '[SubTodoApi] Invalid reorderSubTodos response',
     );
   };
 }

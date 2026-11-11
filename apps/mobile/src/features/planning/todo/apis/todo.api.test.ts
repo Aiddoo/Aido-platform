@@ -8,24 +8,24 @@ import {
   INVALID_DTO,
 } from '../__tests__/todo.fixtures';
 import type { RepeatingTodoDraft } from '../schemas/todo-series-request.schema';
-import { TodoService } from './todo.service';
+import { TodoApi } from './todo.api';
 
 function createSut() {
   const httpClient = createHttpClientStub();
 
-  return { httpClient, service: new TodoService(httpClient) };
+  return { httpClient, api: new TodoApi(httpClient) };
 }
 
-describe('TodoService', () => {
+describe('TodoApi', () => {
   describe('getTodos', () => {
     it('응답을 받으면 TodoListResult를 반환한다', async () => {
       // Given
-      const { httpClient, service } = createSut();
+      const { httpClient, api } = createSut();
       const dto = createTodoListResponseDto();
       httpClient.get.mockResolvedValue({ ok: true, value: dto });
 
       // When
-      const result = await service.getTodos({
+      const result = await api.getTodos({
         size: 20,
         startDate: '2026-03-08',
         endDate: '2026-03-08',
@@ -43,7 +43,7 @@ describe('TodoService', () => {
 
     it('응답에 모르는 반복 빈도가 있어도 목록은 살리고 그 할 일만 규칙을 비운다', async () => {
       // Given
-      const { httpClient, service } = createSut();
+      const { httpClient, api } = createSut();
       const dto = {
         ...createTodoListResponseDto(),
         items: [
@@ -57,7 +57,7 @@ describe('TodoService', () => {
       httpClient.get.mockResolvedValue({ ok: true, value: dto });
 
       // When
-      const result = await service.getTodos({ size: 20 });
+      const result = await api.getTodos({ size: 20 });
 
       // Then
       expect(result.ok).toBe(true);
@@ -70,12 +70,12 @@ describe('TodoService', () => {
 
     it('HTTP 에러 → Result.err 반환', async () => {
       // Given
-      const { httpClient, service } = createSut();
+      const { httpClient, api } = createSut();
       const apiError = createTodoApiError();
       httpClient.get.mockResolvedValue({ ok: false, error: apiError });
 
       // When
-      const result = await service.getTodos({
+      const result = await api.getTodos({
         size: 20,
         startDate: '2026-03-08',
         endDate: '2026-03-08',
@@ -87,11 +87,11 @@ describe('TodoService', () => {
 
     it('Zod 검증 실패 → ParseError throw', async () => {
       // Given
-      const { httpClient, service } = createSut();
+      const { httpClient, api } = createSut();
       httpClient.get.mockResolvedValue({ ok: true, value: INVALID_DTO });
 
       // When
-      const result = service.getTodos({ size: 20, startDate: '2026-03-08', endDate: '2026-03-08' });
+      const result = api.getTodos({ size: 20, startDate: '2026-03-08', endDate: '2026-03-08' });
 
       // Then
       await expect(result).rejects.toThrow('Invalid getTodos response');
@@ -101,7 +101,7 @@ describe('TodoService', () => {
   describe('getTodoSummary', () => {
     it('요약할 날짜를 date 쿼리로 보내고 응답 날짜를 그대로 반환한다', async () => {
       // Given
-      const { httpClient, service } = createSut();
+      const { httpClient, api } = createSut();
       httpClient.get.mockResolvedValue({
         ok: true,
         value: {
@@ -117,7 +117,7 @@ describe('TodoService', () => {
       const controller = new AbortController();
 
       // When
-      const result = await service.getTodoSummary('2026-07-13', controller.signal);
+      const result = await api.getTodoSummary('2026-07-13', controller.signal);
 
       // Then
       expect(httpClient.get).toHaveBeenCalledWith('v1/todos/summary', {
@@ -131,12 +131,12 @@ describe('TodoService', () => {
   describe('createTodo', () => {
     it('응답을 받으면 Todo를 반환한다', async () => {
       // Given
-      const { httpClient, service } = createSut();
+      const { httpClient, api } = createSut();
       const todo = createTodoDto();
       httpClient.post.mockResolvedValue({ ok: true, value: { todo, message: '완료' } });
 
       // When
-      const result = await service.createTodo({
+      const result = await api.createTodo({
         title: '테스트',
         categoryId: 1,
         startDate: '2026-03-08',
@@ -151,7 +151,7 @@ describe('TodoService', () => {
 
     it('프리미엄 한도 → TODO_0811 에러', async () => {
       // Given
-      const { httpClient, service } = createSut();
+      const { httpClient, api } = createSut();
       const apiError = createTodoApiError({
         code: 'TODO_0811',
         message: '할일 개수 한도에 도달했어요',
@@ -159,7 +159,7 @@ describe('TodoService', () => {
       httpClient.post.mockResolvedValue({ ok: false, error: apiError });
 
       // When
-      const result = await service.createTodo({
+      const result = await api.createTodo({
         title: '테스트',
         categoryId: 1,
         startDate: '2026-03-08',
@@ -173,11 +173,11 @@ describe('TodoService', () => {
 
     it('Zod 검증 실패 → ParseError throw', async () => {
       // Given
-      const { httpClient, service } = createSut();
+      const { httpClient, api } = createSut();
       httpClient.post.mockResolvedValue({ ok: true, value: { todo: INVALID_DTO } });
 
       // When
-      const result = service.createTodo({
+      const result = api.createTodo({
         title: '테스트',
         categoryId: 1,
         startDate: '2026-03-08',
@@ -193,12 +193,12 @@ describe('TodoService', () => {
   describe('toggleTodoComplete', () => {
     it('응답에 모르는 반복 빈도가 있어도 완료 처리는 성공으로 읽고 규칙만 비운다', async () => {
       // Given
-      const { httpClient, service } = createSut();
+      const { httpClient, api } = createSut();
       const todo = { ...createTodoDto(), repeat: { frequency: 'YEARLY', end: { type: 'NEVER' } } };
       httpClient.patch.mockResolvedValue({ ok: true, value: { todo, message: '완료' } });
 
       // When
-      const result = await service.toggleTodoComplete(1, { completed: true });
+      const result = await api.toggleTodoComplete(1, { completed: true });
 
       // Then
       expect(result.ok && result.value.repeat).toBeNull();
@@ -206,12 +206,12 @@ describe('TodoService', () => {
 
     it('응답을 받으면 Todo를 반환한다', async () => {
       // Given
-      const { httpClient, service } = createSut();
+      const { httpClient, api } = createSut();
       const todo = createTodoDto({ completed: true });
       httpClient.patch.mockResolvedValue({ ok: true, value: { todo, message: '완료' } });
 
       // When
-      const result = await service.toggleTodoComplete(1, { completed: true });
+      const result = await api.toggleTodoComplete(1, { completed: true });
 
       // Then
       expect(httpClient.patch).toHaveBeenCalledWith('v1/todos/1/complete', { completed: true });
@@ -220,12 +220,12 @@ describe('TodoService', () => {
 
     it('HTTP 에러 → Result.err 반환', async () => {
       // Given
-      const { httpClient, service } = createSut();
+      const { httpClient, api } = createSut();
       const apiError = createTodoApiError();
       httpClient.patch.mockResolvedValue({ ok: false, error: apiError });
 
       // When
-      const result = await service.toggleTodoComplete(1, { completed: true });
+      const result = await api.toggleTodoComplete(1, { completed: true });
 
       // Then
       expect(result).toEqual({ ok: false, error: apiError });
@@ -233,11 +233,11 @@ describe('TodoService', () => {
 
     it('Zod 검증 실패 → ParseError throw', async () => {
       // Given
-      const { httpClient, service } = createSut();
+      const { httpClient, api } = createSut();
       httpClient.patch.mockResolvedValue({ ok: true, value: { todo: INVALID_DTO } });
 
       // When
-      const result = service.toggleTodoComplete(1, { completed: true });
+      const result = api.toggleTodoComplete(1, { completed: true });
 
       // Then
       await expect(result).rejects.toThrow('Invalid toggleTodoComplete response');
@@ -247,14 +247,14 @@ describe('TodoService', () => {
   describe('deleteTodo', () => {
     it('응답을 받으면 void를 반환한다', async () => {
       // Given
-      const { httpClient, service } = createSut();
+      const { httpClient, api } = createSut();
       httpClient.delete.mockResolvedValue({
         ok: true,
         value: { message: '할일이 삭제되었습니다.' },
       });
 
       // When
-      const result = await service.deleteTodo(1);
+      const result = await api.deleteTodo(1);
 
       // Then
       expect(httpClient.delete).toHaveBeenCalledWith('v1/todos/1');
@@ -263,12 +263,12 @@ describe('TodoService', () => {
 
     it('HTTP 에러 → Result.err 반환', async () => {
       // Given
-      const { httpClient, service } = createSut();
+      const { httpClient, api } = createSut();
       const apiError = createTodoApiError();
       httpClient.delete.mockResolvedValue({ ok: false, error: apiError });
 
       // When
-      const result = await service.deleteTodo(1);
+      const result = await api.deleteTodo(1);
 
       // Then
       expect(result).toEqual({ ok: false, error: apiError });
@@ -292,7 +292,7 @@ describe('TodoService', () => {
 
     it('정상 응답 → POST /v1/todos의 repeat로 보내고 첫 회차를 돌려준다', async () => {
       // Given
-      const { httpClient, service } = createSut();
+      const { httpClient, api } = createSut();
       httpClient.post.mockResolvedValue({
         ok: true,
         value: {
@@ -317,7 +317,7 @@ describe('TodoService', () => {
       });
 
       // When
-      const result = await service.createRepeatingTodo(draft);
+      const result = await api.createRepeatingTodo(draft);
 
       // Then
       expect(httpClient.post).toHaveBeenCalledWith(
@@ -338,7 +338,7 @@ describe('TodoService', () => {
 
     it('반복 제한 → TODO_0813 에러', async () => {
       // Given
-      const { httpClient, service } = createSut();
+      const { httpClient, api } = createSut();
       const apiError = createTodoApiError({
         code: 'TODO_0813',
         message: '반복 할일 제한에 도달했어요',
@@ -346,7 +346,7 @@ describe('TodoService', () => {
       httpClient.post.mockResolvedValue({ ok: false, error: apiError });
 
       // When
-      const result = await service.createRepeatingTodo(draft);
+      const result = await api.createRepeatingTodo(draft);
 
       // Then
       expect(result).toEqual({ ok: false, error: apiError });
@@ -354,14 +354,14 @@ describe('TodoService', () => {
 
     it('반복으로 만들었는데 응답에 규칙이 없으면 검증 실패로 던진다', async () => {
       // Given
-      const { httpClient, service } = createSut();
+      const { httpClient, api } = createSut();
       httpClient.post.mockResolvedValue({
         ok: true,
         value: { todo: createTodoDto({ id: 1 }), message: '생성' },
       });
 
       // When
-      const result = service.createRepeatingTodo(draft);
+      const result = api.createRepeatingTodo(draft);
 
       // Then
       await expect(result).rejects.toThrow('Invalid createRepeatingTodo response');
@@ -369,11 +369,11 @@ describe('TodoService', () => {
 
     it('Zod 검증 실패 → ParseError throw', async () => {
       // Given
-      const { httpClient, service } = createSut();
+      const { httpClient, api } = createSut();
       httpClient.post.mockResolvedValue({ ok: true, value: INVALID_DTO });
 
       // When
-      const result = service.createRepeatingTodo(draft);
+      const result = api.createRepeatingTodo(draft);
 
       // Then
       await expect(result).rejects.toThrow('Invalid createRepeatingTodo response');
@@ -383,11 +383,11 @@ describe('TodoService', () => {
   describe('범위가 있는 수정·삭제', () => {
     it('범위를 고르지 않은 삭제는 쿼리 없이 보낸다', async () => {
       // Given
-      const { httpClient, service } = createSut();
+      const { httpClient, api } = createSut();
       httpClient.delete.mockResolvedValue({ ok: true, value: { message: '삭제' } });
 
       // When
-      const result = await service.deleteTodo(1);
+      const result = await api.deleteTodo(1);
 
       // Then
       expect(httpClient.delete).toHaveBeenCalledWith('v1/todos/1');
@@ -398,11 +398,11 @@ describe('TodoService', () => {
       '%s 삭제는 scope 쿼리로 보낸다',
       async (scope) => {
         // Given
-        const { httpClient, service } = createSut();
+        const { httpClient, api } = createSut();
         httpClient.delete.mockResolvedValue({ ok: true, value: { message: '삭제' } });
 
         // When
-        await service.deleteTodo(1, scope);
+        await api.deleteTodo(1, scope);
 
         // Then
         expect(httpClient.delete).toHaveBeenCalledWith('v1/todos/1', { params: { scope } });
@@ -411,14 +411,14 @@ describe('TodoService', () => {
 
     it('이후까지 시간을 바꾸면 PATCH로 범위와 시간만 보낸다', async () => {
       // Given
-      const { httpClient, service } = createSut();
+      const { httpClient, api } = createSut();
       httpClient.patch.mockResolvedValue({
         ok: true,
         value: { message: '수정', todo: createTodoDto() },
       });
 
       // When
-      await service.updateTodoSchedule(
+      await api.updateTodoSchedule(
         1,
         { startDate: '2026-11-05', scheduledTime: '10:00', isAllDay: false },
         'THIS_AND_FOLLOWING',
@@ -434,7 +434,7 @@ describe('TodoService', () => {
 
     it('이 할 일만 시간을 바꾸면 기존 일정 경로를 쓴다', async () => {
       // Given
-      const { httpClient, service } = createSut();
+      const { httpClient, api } = createSut();
       httpClient.patch.mockResolvedValue({
         ok: true,
         value: { message: '수정', todo: createTodoDto() },
@@ -442,7 +442,7 @@ describe('TodoService', () => {
       const input = { startDate: '2026-11-05', scheduledTime: '10:00', isAllDay: false };
 
       // When
-      await service.updateTodoSchedule(1, input, 'THIS_ONLY');
+      await api.updateTodoSchedule(1, input, 'THIS_ONLY');
 
       // Then
       expect(httpClient.patch).toHaveBeenCalledWith('v1/todos/1/schedule', input);
@@ -452,14 +452,14 @@ describe('TodoService', () => {
   describe('반복 규칙', () => {
     it('반복 끝내기는 repeat null로 PATCH한다', async () => {
       // Given
-      const { httpClient, service } = createSut();
+      const { httpClient, api } = createSut();
       httpClient.patch.mockResolvedValue({
         ok: true,
         value: { message: '수정', todo: createTodoDto() },
       });
 
       // When
-      const result = await service.stopTodoSeries(1);
+      const result = await api.stopTodoSeries(1);
 
       // Then
       expect(httpClient.patch).toHaveBeenCalledWith('v1/todos/1', { repeat: null });
@@ -470,7 +470,7 @@ describe('TodoService', () => {
   describe('reorderTodo', () => {
     it('응답을 받으면 Todo를 반환한다', async () => {
       // Given
-      const { httpClient, service } = createSut();
+      const { httpClient, api } = createSut();
       const todo = createTodoDto();
       httpClient.patch.mockResolvedValue({
         ok: true,
@@ -478,7 +478,7 @@ describe('TodoService', () => {
       });
 
       // When
-      const result = await service.reorderTodo(1, { position: 'after', targetTodoId: 2 });
+      const result = await api.reorderTodo(1, { position: 'after', targetTodoId: 2 });
 
       // Then
       expect(httpClient.patch).toHaveBeenCalledWith('v1/todos/1/reorder', {
@@ -490,12 +490,12 @@ describe('TodoService', () => {
 
     it('HTTP 에러 → Result.err 반환', async () => {
       // Given
-      const { httpClient, service } = createSut();
+      const { httpClient, api } = createSut();
       const apiError = createTodoApiError();
       httpClient.patch.mockResolvedValue({ ok: false, error: apiError });
 
       // When
-      const result = await service.reorderTodo(1, { position: 'after', targetTodoId: 2 });
+      const result = await api.reorderTodo(1, { position: 'after', targetTodoId: 2 });
 
       // Then
       expect(result).toEqual({ ok: false, error: apiError });
@@ -505,7 +505,7 @@ describe('TodoService', () => {
   describe('changeTodoCategory', () => {
     it('응답을 받으면 Todo를 반환한다 (카테고리 변경됨)', async () => {
       // Given
-      const { httpClient, service } = createSut();
+      const { httpClient, api } = createSut();
       const todo = createTodoDto({
         category: { id: 2, name: '업무', color: '#EF4444', sortOrder: 1 },
       });
@@ -515,7 +515,7 @@ describe('TodoService', () => {
       });
 
       // When
-      const result = await service.changeTodoCategory(1, { categoryId: 2 });
+      const result = await api.changeTodoCategory(1, { categoryId: 2 });
 
       // Then
       expect(httpClient.patch).toHaveBeenCalledWith('v1/todos/1/category', { categoryId: 2 });
@@ -524,12 +524,12 @@ describe('TodoService', () => {
 
     it('HTTP 에러 → Result.err 반환', async () => {
       // Given
-      const { httpClient, service } = createSut();
+      const { httpClient, api } = createSut();
       const apiError = createTodoApiError();
       httpClient.patch.mockResolvedValue({ ok: false, error: apiError });
 
       // When
-      const result = await service.changeTodoCategory(1, { categoryId: 2 });
+      const result = await api.changeTodoCategory(1, { categoryId: 2 });
 
       // Then
       expect(result).toEqual({ ok: false, error: apiError });
@@ -537,14 +537,14 @@ describe('TodoService', () => {
 
     it('Zod 검증 실패 → ParseError throw', async () => {
       // Given
-      const { httpClient, service } = createSut();
+      const { httpClient, api } = createSut();
       httpClient.patch.mockResolvedValue({
         ok: true,
         value: { message: '카테고리가 변경되었습니다.', todo: INVALID_DTO },
       });
 
       // When
-      const result = service.changeTodoCategory(1, { categoryId: 2 });
+      const result = api.changeTodoCategory(1, { categoryId: 2 });
 
       // Then
       await expect(result).rejects.toThrow('Invalid changeTodoCategory response');

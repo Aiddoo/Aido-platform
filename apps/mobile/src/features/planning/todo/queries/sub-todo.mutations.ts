@@ -1,4 +1,4 @@
-import { useSubTodoService } from '@src/bootstrap/providers/di-context';
+import { useSubTodoApi } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
 import { useTrack } from '@src/shared/analytics';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
@@ -22,7 +22,7 @@ interface ToggleSubTodoVariables {
 }
 
 export function useToggleSubTodoMutationOptions() {
-  const subTodoService = useSubTodoService();
+  const subTodoApi = useSubTodoApi();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
 
@@ -31,7 +31,7 @@ export function useToggleSubTodoMutationOptions() {
     networkMode: 'always',
     mutationKey: TODO_MUTATION_KEYS.listWrites(),
     mutationFn: async ({ todoId, subTodoId, isCompleted }: ToggleSubTodoVariables) => {
-      const result = await subTodoService.updateSubTodo(todoId, subTodoId, {
+      const result = await subTodoApi.updateSubTodo(todoId, subTodoId, {
         completed: isCompleted,
       });
       return unwrap(result);
@@ -83,7 +83,7 @@ interface DeleteSubTodoVariables {
 }
 
 export function useDeleteSubTodoMutationOptions() {
-  const subTodoService = useSubTodoService();
+  const subTodoApi = useSubTodoApi();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
 
@@ -92,7 +92,7 @@ export function useDeleteSubTodoMutationOptions() {
     networkMode: 'always',
     mutationKey: TODO_MUTATION_KEYS.listWrites(),
     mutationFn: async ({ todoId, subTodoId }: DeleteSubTodoVariables) => {
-      const result = await subTodoService.deleteSubTodo(todoId, subTodoId);
+      const result = await subTodoApi.deleteSubTodo(todoId, subTodoId);
       return unwrap(result);
     },
     onMutate: async ({ todoId, subTodoId, date }) => {
@@ -147,7 +147,7 @@ interface ReorderSubTodosVariables {
 }
 
 export function useReorderSubTodosMutationOptions() {
-  const subTodoService = useSubTodoService();
+  const subTodoApi = useSubTodoApi();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
 
@@ -156,7 +156,7 @@ export function useReorderSubTodosMutationOptions() {
     networkMode: 'always',
     mutationKey: TODO_MUTATION_KEYS.listWrites(),
     mutationFn: async ({ todoId, subTodoIds }: ReorderSubTodosVariables) => {
-      const result = await subTodoService.reorderSubTodos(todoId, { itemIds: subTodoIds });
+      const result = await subTodoApi.reorderSubTodos(todoId, { itemIds: subTodoIds });
       return unwrap(result);
     },
     onMutate: async ({ todoId, subTodoIds, date }) => {

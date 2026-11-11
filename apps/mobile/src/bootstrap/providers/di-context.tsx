@@ -43,8 +43,8 @@ import type { PushRegistrationService } from '@src/features/notification/service
 import type { PushNotificationEntryStore } from '@src/features/notification/stores/push-notification-entry.store';
 import type { PushOnboardingGuardStore } from '@src/features/notification/stores/push-onboarding-guard.store';
 import type { TodoCategoryService } from '@src/features/planning/category/apis/todo-category.service';
-import type { SubTodoService } from '@src/features/planning/todo/apis/sub-todo.service';
-import type { TodoService } from '@src/features/planning/todo/apis/todo.service';
+import type { SubTodoApi } from '@src/features/planning/todo/apis/sub-todo.api';
+import type { TodoApi } from '@src/features/planning/todo/apis/todo.api';
 import type { FriendService } from '@src/features/social/friend/apis/friend.service';
 import type { InviteShareService } from '@src/features/social/invite/apis/invite-share.service';
 import type { InviteService } from '@src/features/social/invite/apis/invite.service';
@@ -107,8 +107,8 @@ export interface DIContainer extends SharedDependencies {
   memoService: MemoService;
   voiceService: VoiceService;
   moderationService: ModerationService;
-  subTodoService: SubTodoService;
-  todoService: TodoService;
+  subTodoApi: SubTodoApi;
+  todoApi: TodoApi;
   todoCommentService: TodoCommentService;
   todoCategoryService: TodoCategoryService;
   notificationApi: NotificationApi;
@@ -281,11 +281,11 @@ export function useVoiceService() {
 export function useModerationService() {
   return useDI().moderationService;
 }
-export function useSubTodoService() {
-  return useDI().subTodoService;
+export function useSubTodoApi() {
+  return useDI().subTodoApi;
 }
-export function useTodoService() {
-  return useDI().todoService;
+export function useTodoApi() {
+  return useDI().todoApi;
 }
 export function useTodoCommentService() {
   return useDI().todoCommentService;

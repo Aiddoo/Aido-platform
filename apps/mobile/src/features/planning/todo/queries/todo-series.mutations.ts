@@ -1,4 +1,4 @@
-import { useHaptics, useTodoService } from '@src/bootstrap/providers/di-context';
+import { useHaptics, useTodoApi } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
 import { useTrack } from '@src/shared/analytics';
 import { t } from '@src/shared/i18n';
@@ -18,7 +18,7 @@ interface StopTodoSeriesVariables {
 }
 
 export function useStopTodoSeriesMutationOptions() {
-  const todoService = useTodoService();
+  const todoApi = useTodoApi();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
   const toast = useAppToast();
@@ -28,7 +28,7 @@ export function useStopTodoSeriesMutationOptions() {
     // 오프라인에 멈춰 두면 반복 끝내기가 끝나지 않는다. 바로 실패해 안내한다
     networkMode: 'always',
     mutationFn: async ({ todoId }: StopTodoSeriesVariables) =>
-      unwrap(await todoService.stopTodoSeries(todoId)),
+      unwrap(await todoApi.stopTodoSeries(todoId)),
     onSuccess: () => {
       invalidateTodos(queryClient);
       toast.success(t('todo:toast.seriesStopped'));

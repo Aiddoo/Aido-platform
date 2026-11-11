@@ -11,7 +11,7 @@ import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
 import { UserService } from '@src/features/identity/user/apis/user.service';
 import { deviceTimezoneStoredValue } from '@src/features/notification/schemas/device-timezone-storage.schema';
-import { TodoService } from '@src/features/planning/todo/apis/todo.service';
+import { TodoApi } from '@src/features/planning/todo/apis/todo.api';
 import { createDraftKey } from '@src/shared/draft/draft.model';
 import { createDraftRepository } from '@src/shared/draft/draft.repository';
 import { DraftService } from '@src/shared/draft/draft.service';
@@ -117,7 +117,7 @@ describe('AuthBootProvider', () => {
 
   const renderProvider = async () => {
     // AuthBootProvider가 마운트하는 위젯 동기화 훅의 의존성 — 네트워크/브리지는 전부 mock
-    const todoService = new TodoService(createHttpClientStub());
+    const todoApi = new TodoApi(createHttpClientStub());
     const userHttpClient = createHttpClientStub();
     userHttpClient.get.mockResolvedValue(ok(createCurrentUserDto()));
     const userService = new UserService(userHttpClient);
@@ -129,7 +129,7 @@ describe('AuthBootProvider', () => {
           tokenStore,
           errorReporter,
           analytics,
-          todoService,
+          todoApi,
           userService,
           widgetBridge: { writeSnapshot },
           sessionCleanupService: new SessionCleanupService({

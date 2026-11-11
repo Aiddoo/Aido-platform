@@ -1,5 +1,5 @@
 import { TODO_PAGE_SIZE } from '@aido/api/vocabulary';
-import { useLogger, useTodoService } from '@src/bootstrap/providers/di-context';
+import { useLogger, useTodoApi } from '@src/bootstrap/providers/di-context';
 import type { SyncStorage } from '@src/core/ports/sync-storage';
 import { TodoPolicy } from '@src/features/planning/todo/domains/todo.model';
 import { useTrack } from '@src/shared/analytics';
@@ -31,7 +31,7 @@ export function useTimezoneChangeNotice({
   reportCount: number;
 }) {
   const storage = useStoredValueStorage(deviceTimezoneStoredValue);
-  const todoService = useTodoService();
+  const todoApi = useTodoApi();
   const { trackEvent } = useTrack();
   const logger = useLogger();
   const { toast } = useAppToast();
@@ -39,7 +39,7 @@ export function useTimezoneChangeNotice({
 
   const getHasUpcomingTimedTodo = async (): Promise<boolean> => {
     const { currentLocalDate, currentLocalDateKey, currentTimeZone } = readDeviceLocalDateState();
-    const result = await todoService.getTodos({
+    const result = await todoApi.getTodos({
       startDate: currentLocalDateKey,
       endDate: addDaysToDateKey(currentLocalDateKey, UPCOMING_TODO_WINDOW_DAYS),
       size: TODO_PAGE_SIZE.MAX,

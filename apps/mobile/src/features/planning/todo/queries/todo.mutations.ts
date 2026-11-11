@@ -1,4 +1,4 @@
-import { useHaptics, useTodoService } from '@src/bootstrap/providers/di-context';
+import { useHaptics, useTodoApi } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
 import { emitTodoCompletionChanged } from '@src/core/events/todo-completion-changed';
 import { useStoreReviewMoment } from '@src/features/device/store-review/hooks/use-store-review-moment';
@@ -60,7 +60,7 @@ interface ToggleTodoVariables {
 }
 
 export function useToggleTodoMutationOptions() {
-  const todoService = useTodoService();
+  const todoApi = useTodoApi();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
   const todayKey = useTodayKey();
@@ -71,7 +71,7 @@ export function useToggleTodoMutationOptions() {
     networkMode: 'always',
     mutationKey: TODO_MUTATION_KEYS.completionWrites(),
     mutationFn: async ({ todoId, body }: ToggleTodoVariables) => {
-      const result = await todoService.toggleTodoComplete(todoId, body);
+      const result = await todoApi.toggleTodoComplete(todoId, body);
       return unwrap(result);
     },
     onMutate: async ({ todoId, body, date }) => {
@@ -152,7 +152,7 @@ interface ChangeTodoCategoryVariables {
 }
 
 export function useChangeTodoCategoryMutationOptions() {
-  const todoService = useTodoService();
+  const todoApi = useTodoApi();
   const queryClient = useQueryClient();
   const toast = useAppToast();
   const haptics = useHaptics();
@@ -164,7 +164,7 @@ export function useChangeTodoCategoryMutationOptions() {
     // 저장을 기다리는 시트라 낙관적으로 쓰지 않는다. 다른 체크의 낙관적 값을 재조회로 덮지 않게 같은 키로 센다
     mutationKey: TODO_MUTATION_KEYS.listWrites(),
     mutationFn: async ({ todoId, input, scope }: ChangeTodoCategoryVariables) => {
-      const result = await todoService.changeTodoCategory(todoId, input, scope);
+      const result = await todoApi.changeTodoCategory(todoId, input, scope);
       return unwrap(result);
     },
     onMutate: ({ todoId }) => ({ before: findCachedTodo(queryClient, { todoId }) }),
@@ -214,7 +214,7 @@ interface DeleteTodoVariables {
 }
 
 export function useDeleteTodoMutationOptions() {
-  const todoService = useTodoService();
+  const todoApi = useTodoApi();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
   const toast = useAppToast();
@@ -225,7 +225,7 @@ export function useDeleteTodoMutationOptions() {
     networkMode: 'always',
     mutationKey: TODO_MUTATION_KEYS.completionWrites(),
     mutationFn: async ({ todoId, scope }: DeleteTodoVariables) => {
-      const result = await todoService.deleteTodo(todoId, scope);
+      const result = await todoApi.deleteTodo(todoId, scope);
       return unwrap(result);
     },
     onMutate: async ({ todoId, date }) => {
@@ -308,7 +308,7 @@ interface ReorderTodoVariables {
 }
 
 export function useReorderTodoMutationOptions() {
-  const todoService = useTodoService();
+  const todoApi = useTodoApi();
   const queryClient = useQueryClient();
   const { trackEvent, trackAttributedFeatureSuccess } = useTrack();
 
@@ -317,7 +317,7 @@ export function useReorderTodoMutationOptions() {
     networkMode: 'always',
     mutationKey: TODO_MUTATION_KEYS.listWrites(),
     mutationFn: async ({ id, input }: ReorderTodoVariables) => {
-      const result = await todoService.reorderTodo(id, input);
+      const result = await todoApi.reorderTodo(id, input);
       return unwrap(result);
     },
     onSuccess: () => {
@@ -343,7 +343,7 @@ export interface UpdateTodoScheduleVariables {
 }
 
 export function useUpdateTodoScheduleMutationOptions() {
-  const todoService = useTodoService();
+  const todoApi = useTodoApi();
   const queryClient = useQueryClient();
   const toast = useAppToast();
   const haptics = useHaptics();
@@ -355,7 +355,7 @@ export function useUpdateTodoScheduleMutationOptions() {
     // 저장을 기다리는 시트라 낙관적으로 쓰지 않는다. 다른 체크의 낙관적 값을 재조회로 덮지 않게 같은 키로 센다
     mutationKey: TODO_MUTATION_KEYS.listWrites(),
     mutationFn: async ({ todoId, input, scope }: UpdateTodoScheduleVariables) => {
-      const result = await todoService.updateTodoSchedule(todoId, input, scope);
+      const result = await todoApi.updateTodoSchedule(todoId, input, scope);
       return unwrap(result);
     },
     onMutate: ({ todoId }) => ({ before: findCachedTodo(queryClient, { todoId }) }),

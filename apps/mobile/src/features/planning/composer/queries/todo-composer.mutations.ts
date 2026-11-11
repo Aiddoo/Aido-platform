@@ -1,4 +1,4 @@
-import { useHaptics, useTodoService, useSubTodoService } from '@src/bootstrap/providers/di-context';
+import { useHaptics, useTodoApi, useSubTodoApi } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
 import { emitTodoCreated } from '@src/core/events/todo-created';
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
@@ -64,7 +64,7 @@ function isRecurringTodoRejection(error: unknown) {
 
 export function useCreateTodoMutationOptions() {
   const haptics = useHaptics();
-  const todoService = useTodoService();
+  const todoApi = useTodoApi();
   const { trackEvent, trackAttributedFeatureSuccess } = useTrack();
   const queryClient = useQueryClient();
   const toast = useAppToast();
@@ -74,7 +74,7 @@ export function useCreateTodoMutationOptions() {
     networkMode: 'always',
     mutationKey: TODO_MUTATION_KEYS.completionWrites(),
     mutationFn: async ({ input }: CreateTodoVariables) => {
-      const result = await todoService.createTodo(input);
+      const result = await todoApi.createTodo(input);
       return unwrap(result);
     },
     onMutate: async ({ input }) => {
@@ -180,7 +180,7 @@ interface AddSubTodoVariables {
 }
 
 export function useAddSubTodoMutationOptions() {
-  const subTodoService = useSubTodoService();
+  const subTodoApi = useSubTodoApi();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
 
@@ -189,7 +189,7 @@ export function useAddSubTodoMutationOptions() {
     networkMode: 'always',
     mutationKey: TODO_MUTATION_KEYS.completionWrites(),
     mutationFn: async ({ todoId, title }: AddSubTodoVariables) => {
-      const result = await subTodoService.addSubTodo(todoId, { title });
+      const result = await subTodoApi.addSubTodo(todoId, { title });
       return unwrap(result);
     },
     onMutate: async ({ todoId, title, date }) => {
@@ -255,7 +255,7 @@ interface CreateRecurringTodoVariables {
 
 export function useCreateRecurringTodoMutationOptions() {
   const haptics = useHaptics();
-  const todoService = useTodoService();
+  const todoApi = useTodoApi();
   const { trackEvent, trackAttributedFeatureSuccess } = useTrack();
   const queryClient = useQueryClient();
   const toast = useAppToast();
@@ -264,7 +264,7 @@ export function useCreateRecurringTodoMutationOptions() {
     // 연결이 없을 때 요청을 쥐고 기다리면 저장 시트가 스피너만 돈다. 바로 실패해 입력값을 지킨다
     networkMode: 'always',
     mutationFn: async ({ input }: CreateRecurringTodoVariables) => {
-      const result = await todoService.createRepeatingTodo(input);
+      const result = await todoApi.createRepeatingTodo(input);
       return unwrap(result);
     },
     onSuccess: (_, { input }) => {
@@ -326,7 +326,7 @@ interface UpdateSubTodoVariables {
 }
 
 export function useUpdateSubTodoMutationOptions() {
-  const subTodoService = useSubTodoService();
+  const subTodoApi = useSubTodoApi();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
 
@@ -335,7 +335,7 @@ export function useUpdateSubTodoMutationOptions() {
     networkMode: 'always',
     mutationKey: TODO_MUTATION_KEYS.listWrites(),
     mutationFn: async ({ todoId, subTodoId, title }: UpdateSubTodoVariables) => {
-      const result = await subTodoService.updateSubTodo(todoId, subTodoId, { title });
+      const result = await subTodoApi.updateSubTodo(todoId, subTodoId, { title });
       return unwrap(result);
     },
     onMutate: async ({ todoId, subTodoId, title, date }) => {
@@ -389,7 +389,7 @@ interface UpdateTodoVariables {
 }
 
 export function useUpdateTodoMutationOptions() {
-  const todoService = useTodoService();
+  const todoApi = useTodoApi();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
   const toast = useAppToast();
@@ -401,7 +401,7 @@ export function useUpdateTodoMutationOptions() {
     // 저장을 기다리는 시트라 낙관적으로 쓰지 않는다. 다른 체크의 낙관적 값을 재조회로 덮지 않게 같은 키로 센다
     mutationKey: TODO_MUTATION_KEYS.listWrites(),
     mutationFn: async ({ todoId, input, options }: UpdateTodoVariables) => {
-      const result = await todoService.updateTodo(todoId, input, options);
+      const result = await todoApi.updateTodo(todoId, input, options);
       return unwrap(result);
     },
     onMutate: ({ todoId }) => ({ before: findCachedTodo(queryClient, { todoId }) }),

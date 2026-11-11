@@ -16,7 +16,7 @@ import { useUpdateProfileMutationOptions } from '@src/features/identity/user/que
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { useCreateTodoMutationOptions } from '@src/features/planning/composer/queries/todo-composer.mutations';
 import { createTodoDto } from '@src/features/planning/todo/__tests__/todo.fixtures';
-import { TodoService } from '@src/features/planning/todo/apis/todo.service';
+import { TodoApi } from '@src/features/planning/todo/apis/todo.api';
 import { pendingRedemptionStoredValue } from '@src/features/social/invite/schemas/pending-redemption-storage.schema';
 import { getNowInstant } from '@src/shared/date/clock';
 import { toInstant } from '@src/shared/date/instant';
@@ -847,7 +847,7 @@ describe('로그아웃 뒤 늦게 끝난 변경', () => {
     });
     const session = createAuthSession({
       tokens: ACCOUNT_A_TOKENS,
-      di: { todoService: new TodoService(todoHttp), analytics },
+      di: { todoApi: new TodoApi(todoHttp), analytics },
     });
     session.authHttp.delete.mockResolvedValue(ok({}));
     session.authHttp.post.mockResolvedValue(ok({ message: '로그아웃되었습니다.' }));

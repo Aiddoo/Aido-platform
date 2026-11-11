@@ -57,7 +57,7 @@ import {
   toTodoSummary,
 } from './todo.mapper';
 
-export class TodoService {
+export class TodoApi {
   readonly #httpClient: HttpClient;
 
   constructor(httpClient: HttpClient) {
@@ -84,7 +84,7 @@ export class TodoService {
       result,
       todoListEnvelopeSchema,
       toTodoListResult,
-      '[TodoService] Invalid getTodos response',
+      '[TodoApi] Invalid getTodos response',
     );
   };
 
@@ -95,7 +95,7 @@ export class TodoService {
       result,
       todoOverviewResponseSchema,
       toTodoOverview,
-      '[TodoService] Invalid getTodoOverview response',
+      '[TodoApi] Invalid getTodoOverview response',
     );
   };
 
@@ -118,7 +118,7 @@ export class TodoService {
       result,
       friendTodoListResponseSchema,
       toFriendTodoListResult,
-      '[TodoService] Invalid getFriendTodos response',
+      '[TodoApi] Invalid getFriendTodos response',
     );
   };
 
@@ -132,7 +132,7 @@ export class TodoService {
       result,
       updateTodoEnvelopeSchema,
       (data) => toTodo(data.todo),
-      '[TodoService] Invalid toggleTodoComplete response',
+      '[TodoApi] Invalid toggleTodoComplete response',
     );
   };
 
@@ -143,7 +143,7 @@ export class TodoService {
       result,
       createTodoEnvelopeSchema,
       (data) => toTodo(data.todo),
-      '[TodoService] Invalid createTodo response',
+      '[TodoApi] Invalid createTodo response',
     );
   };
 
@@ -161,7 +161,7 @@ export class TodoService {
       result,
       updateTodoEnvelopeSchema,
       (data) => toTodo(data.todo),
-      '[TodoService] Invalid updateTodo response',
+      '[TodoApi] Invalid updateTodo response',
     );
   };
 
@@ -179,7 +179,7 @@ export class TodoService {
       result,
       updateTodoEnvelopeSchema,
       (data) => toTodo(data.todo),
-      '[TodoService] Invalid updateTodoSchedule response',
+      '[TodoApi] Invalid updateTodoSchedule response',
     );
   };
 
@@ -193,7 +193,7 @@ export class TodoService {
       result,
       deleteTodoResponseSchema,
       noop,
-      '[TodoService] Invalid deleteTodo response',
+      '[TodoApi] Invalid deleteTodo response',
     );
   };
 
@@ -211,7 +211,7 @@ export class TodoService {
       result,
       dailyCompletionsRangeResponseSchema,
       toDailyCompletionsResult,
-      '[TodoService] Invalid getDailyCompletions response',
+      '[TodoApi] Invalid getDailyCompletions response',
     );
   };
 
@@ -231,7 +231,7 @@ export class TodoService {
       result,
       dailyCompletionsRangeResponseSchema,
       toDailyCompletionsResult,
-      '[TodoService] Invalid getFriendDailyCompletions response',
+      '[TodoApi] Invalid getFriendDailyCompletions response',
     );
   };
 
@@ -246,7 +246,7 @@ export class TodoService {
       result,
       todoSummaryResponseSchema,
       toTodoSummary,
-      '[TodoService] Invalid getTodoSummary response',
+      '[TodoApi] Invalid getTodoSummary response',
     );
   };
 
@@ -259,7 +259,7 @@ export class TodoService {
       result,
       createRepeatingTodoEnvelopeSchema,
       ({ todo, series }) => ({ todo: toTodo(todo), series: toTodoSeries(series) }),
-      '[TodoService] Invalid createRepeatingTodo response',
+      '[TodoApi] Invalid createRepeatingTodo response',
     );
   };
 
@@ -274,7 +274,7 @@ export class TodoService {
       result,
       updateTodoEnvelopeSchema,
       (data) => toTodo(data.todo),
-      '[TodoService] Invalid stopTodoSeries response',
+      '[TodoApi] Invalid stopTodoSeries response',
     );
   };
 
@@ -288,7 +288,7 @@ export class TodoService {
       result,
       reorderTodoEnvelopeSchema,
       (data) => toTodo(data.todo),
-      '[TodoService] Invalid reorderTodo response',
+      '[TodoApi] Invalid reorderTodo response',
     );
   };
 
@@ -302,7 +302,7 @@ export class TodoService {
       response,
       todoDetailsEnvelopeSchema,
       toTodoDetails,
-      '[TodoService] Invalid todo details',
+      '[TodoApi] Invalid todo details',
     );
   };
 
@@ -320,7 +320,7 @@ export class TodoService {
       result,
       updateTodoEnvelopeSchema,
       (data) => toTodo(data.todo),
-      '[TodoService] Invalid changeTodoCategory response',
+      '[TodoApi] Invalid changeTodoCategory response',
     );
   };
 }

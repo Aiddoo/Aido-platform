@@ -1,5 +1,5 @@
 import { TODO_PAGE_SIZE } from '@aido/api/vocabulary';
-import { useTodoService } from '@src/bootstrap/providers/di-context';
+import { useTodoApi } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
 import { PERSISTED_QUERY_OPTIONS } from '@src/shared/constants/query-persistence';
 import { MINUTE_MS } from '@src/shared/constants/time-units';
@@ -14,7 +14,7 @@ import {
 } from '@tanstack/react-query';
 import { keyBy } from 'es-toolkit';
 
-import type { TodoService } from '../apis/todo.service';
+import type { TodoApi } from '../apis/todo.api';
 import { type DailyCompletionSummary } from '../domains/daily-completion.model';
 import { type CalendarDateRange, getCalendarMonthRanges } from '../utils/calendar-grid';
 import { TODO_QUERY_KEYS } from './todo-query-keys';
@@ -25,14 +25,14 @@ export function shouldPersistTodosByDate({ date, todayKey }: { date: string; tod
 }
 
 export function useGetTodosByDateQueryOptions({ date }: { date: string }) {
-  const todoService = useTodoService();
+  const todoApi = useTodoApi();
   const todayKey = useTodayKey();
 
   return queryOptions({
     queryKey: TODO_QUERY_KEYS.listByDate({ date }),
     queryFn: async ({ signal }) =>
       unwrap(
-        await todoService.getTodos(
+        await todoApi.getTodos(
           { startDate: date, endDate: date, size: TODO_PAGE_SIZE.MAX },
           signal,
         ),
@@ -73,21 +73,21 @@ function toCalendarCompletions(
   };
 }
 
-function toDailyCompletionsQueryOptions(todoService: TodoService, range: CalendarDateRange) {
+function toDailyCompletionsQueryOptions(todoApi: TodoApi, range: CalendarDateRange) {
   const { startDate, endDate } = range;
   return queryOptions({
     queryKey: TODO_QUERY_KEYS.completionsByRange({ startDate, endDate }),
     queryFn: async ({ signal }) =>
-      unwrap(await todoService.getDailyCompletions(startDate, endDate, signal)),
+      unwrap(await todoApi.getDailyCompletions(startDate, endDate, signal)),
     select: toCompletionsByDate,
     ...PERSISTED_QUERY_OPTIONS,
   });
 }
 
 export function useGetDailyCompletionsQueryOptions(range: CalendarDateRange) {
-  const todoService = useTodoService();
+  const todoApi = useTodoApi();
 
-  return toDailyCompletionsQueryOptions(todoService, range);
+  return toDailyCompletionsQueryOptions(todoApi, range);
 }
 
 /**
@@ -95,13 +95,13 @@ export function useGetDailyCompletionsQueryOptions(range: CalendarDateRange) {
  * 점이 비는 프레임이 없다. 처음 열 때는 고른 달 하나만 먼저 묻는다
  */
 export function useCalendarCompletions({ dateKey }: { dateKey: string }) {
-  const todoService = useTodoService();
+  const todoApi = useTodoApi();
   const { selected, neighbors } = getCalendarMonthRanges(dateKey);
 
-  const selectedMonth = useQuery(toDailyCompletionsQueryOptions(todoService, selected));
+  const selectedMonth = useQuery(toDailyCompletionsQueryOptions(todoApi, selected));
   const neighborCompletions = useQueries({
     queries: neighbors.map((range) => ({
-      ...toDailyCompletionsQueryOptions(todoService, range),
+      ...toDailyCompletionsQueryOptions(todoApi, range),
       enabled: selectedMonth.isSuccess,
     })),
     combine: mergeNeighborCompletions,
@@ -111,7 +111,7 @@ export function useCalendarCompletions({ dateKey }: { dateKey: string }) {
 }
 
 function toFriendDailyCompletionsQueryOptions(
-  todoService: TodoService,
+  todoApi: TodoApi,
   { friendUserId, startDate, endDate }: CalendarDateRange & { friendUserId: string },
 ) {
   return queryOptions({
@@ -121,7 +121,7 @@ function toFriendDailyCompletionsQueryOptions(
       endDate,
     }),
     queryFn: async ({ signal }) =>
-      unwrap(await todoService.getFriendDailyCompletions(friendUserId, startDate, endDate, signal)),
+      unwrap(await todoApi.getFriendDailyCompletions(friendUserId, startDate, endDate, signal)),
     select: toCompletionsByDate,
   });
 }
@@ -134,15 +134,15 @@ export function useFriendCalendarCompletions({
   friendUserId: string;
   dateKey: string;
 }) {
-  const todoService = useTodoService();
+  const todoApi = useTodoApi();
   const { selected, neighbors } = getCalendarMonthRanges(dateKey);
 
   const selectedMonth = useQuery(
-    toFriendDailyCompletionsQueryOptions(todoService, { ...selected, friendUserId }),
+    toFriendDailyCompletionsQueryOptions(todoApi, { ...selected, friendUserId }),
   );
   const neighborCompletions = useQueries({
     queries: neighbors.map((range) => ({
-      ...toFriendDailyCompletionsQueryOptions(todoService, { ...range, friendUserId }),
+      ...toFriendDailyCompletionsQueryOptions(todoApi, { ...range, friendUserId }),
       enabled: selectedMonth.isSuccess,
     })),
     combine: mergeNeighborCompletions,
@@ -158,13 +158,13 @@ export function useGetFriendTodosQueryOptions({
   friendUserId: string;
   date: string;
 }) {
-  const todoService = useTodoService();
+  const todoApi = useTodoApi();
 
   return queryOptions({
     queryKey: TODO_QUERY_KEYS.friendListByDate({ userId: friendUserId, date }),
     queryFn: async ({ signal }) =>
       unwrap(
-        await todoService.getFriendTodos(
+        await todoApi.getFriendTodos(
           friendUserId,
           { startDate: date, endDate: date, size: TODO_PAGE_SIZE.MAX },
           signal,
@@ -174,21 +174,21 @@ export function useGetFriendTodosQueryOptions({
 }
 
 export function useGetTodoDetailsQueryOptions({ todoId }: { todoId: number }) {
-  const todoService = useTodoService();
+  const todoApi = useTodoApi();
 
   return queryOptions({
     queryKey: TODO_QUERY_KEYS.detail({ todoId }),
-    queryFn: async ({ signal }) => unwrap(await todoService.getTodoDetails(todoId, signal)),
+    queryFn: async ({ signal }) => unwrap(await todoApi.getTodoDetails(todoId, signal)),
   });
 }
 
 /** 반복 안내·시작 체크리스트가 각자 select로 고른다. 둘 다 화면 한쪽의 보조 정보라 실패해도 경계로 보내지 않고 그 안내만 뺀다 */
 export function useGetTodoOverviewQueryOptions() {
-  const todoService = useTodoService();
+  const todoApi = useTodoApi();
 
   return queryOptions({
     queryKey: TODO_QUERY_KEYS.overview(),
-    queryFn: async ({ signal }) => unwrap(await todoService.getTodoOverview(signal)),
+    queryFn: async ({ signal }) => unwrap(await todoApi.getTodoOverview(signal)),
     throwOnError: false,
   });
 }
@@ -222,11 +222,11 @@ export function getTodoSummaryRefetchInterval(
 
 /** 홈 위젯(오늘·내일)용. 자정 직후 기기·서버 날짜가 어긋나면 foreground를 기다리지 않고 5s→10s→20s→40s로 다시 묻는다 */
 export function useGetTodoSummaryQueryOptions({ date, userId }: TodoSummaryQueryInput) {
-  const todoService = useTodoService();
+  const todoApi = useTodoApi();
 
   return queryOptions({
     queryKey: TODO_QUERY_KEYS.widgetSummaryByDate({ date, userId }),
-    queryFn: async ({ signal }) => unwrap(await todoService.getTodoSummary(date, signal)),
+    queryFn: async ({ signal }) => unwrap(await todoApi.getTodoSummary(date, signal)),
     staleTime: MINUTE_MS,
     refetchInterval: (query) => getTodoSummaryRefetchInterval(query.state, date),
     // 전 화면 위(AuthBootProvider)의 백그라운드 쿼리라 실패를 ErrorBoundary로 보내면 콜드 스타트 fallback이 뜬다. 실패하면 위젯만 갱신되지 않는다

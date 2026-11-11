@@ -9,7 +9,7 @@ import type { AuthTokenPair, TokenStore } from '@src/core/ports/token-store';
 import { createSessionEpoch } from '@src/core/session/session-epoch';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
 import { UserService } from '@src/features/identity/user/apis/user.service';
-import { TodoService } from '@src/features/planning/todo/apis/todo.service';
+import { TodoApi } from '@src/features/planning/todo/apis/todo.api';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import {
   createErrorReporterStub,
@@ -74,7 +74,7 @@ export function createAuthSession({ tokens, tokenStore, di }: AuthSessionOptions
     widgetBridge: { writeSnapshot },
     deviceIdStore: createMemoryDeviceIdStore('device-1'),
     userService: new UserService(userHttp),
-    todoService: new TodoService(createHttpClientStub()),
+    todoApi: new TodoApi(createHttpClientStub()),
     ...di,
   });
 

@@ -4,6 +4,7 @@ import {
   todoListResponseSchema,
   todoSummaryResponseSchema,
 } from '@aido/api';
+import { createTestQueryClient } from '@src/testing/core';
 import { setupFakeTimersPerTest } from '@src/testing/timers';
 
 import {
@@ -13,7 +14,14 @@ import {
   createTodoListResponseDto,
 } from '../__tests__/todo.fixtures';
 import { dailyCompletionsResultSchema } from '../domains/daily-completion.model';
-import { todoDetailsSchema, todoListResultSchema, todoSummarySchema } from '../domains/todo.model';
+import { SubTodoPolicy } from '../domains/sub-todo.model';
+import {
+  todoDetailsSchema,
+  todoListResultSchema,
+  TodoPolicy,
+  todoSchema,
+  todoSummarySchema,
+} from '../domains/todo.model';
 import {
   toDailyCompletionsResult,
   toTodo,
@@ -55,6 +63,22 @@ describe('toTodo', () => {
     expect(result.scheduledAt).toBe(instant);
   });
 
+  it('동일한 응답을 다시 받으면 기존 엔티티 참조를 유지한다', () => {
+    // Given
+    const queryClient = createTestQueryClient();
+    const key = ['todo-cache-test'];
+    const dto = createTodoDto();
+    const todo = toTodo(dto);
+    queryClient.setQueryData(key, [todo]);
+
+    // When
+    queryClient.setQueryData(key, [toTodo({ ...dto })]);
+
+    // Then
+    expect(queryClient.getQueryData<ReturnType<typeof toTodo>[]>(key)?.[0]).toBe(todo);
+    expect(todoSchema.parse(todo)).toEqual(todo);
+  });
+
   it('isAllDay, completed, visibility 매핑', () => {
     // Given
     const dto = createTodoDto({ isAllDay: true, completed: true, visibility: 'PRIVATE' });
@@ -87,6 +111,24 @@ describe('toTodo — subTodos', () => {
     expect(result.subTodos).toHaveLength(2);
     expect(result.subTodos[0]?.title).toBe('항목 1');
     expect(result.subTodos[1]?.completed).toBe(true);
+  });
+
+  it('서버의 items를 항목 목록 하나로 받고 진행 숫자는 그 목록에서 센다', () => {
+    // Given
+    const dto = createTodoDto({
+      recurrenceGroupId: 'recurring-group',
+      items: [1, 2, 3, 4].map((id) => createTodoItemResponseDto({ id, completed: id === 1 })),
+      itemStats: { total: 4, completed: 1 },
+    });
+
+    // When
+    const todo = toTodo(dto);
+
+    // Then
+    expect(TodoPolicy.isRecurringTodo(todo)).toBe(true);
+    expect(SubTodoPolicy.getSubTodoStats(todo.subTodos)).toEqual({ total: 4, completed: 1 });
+    expect(todo).not.toHaveProperty('itemStats');
+    expect(todo).not.toHaveProperty('items');
   });
 
   it('빈 subTodos → 빈 배열', () => {
