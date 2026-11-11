@@ -1,4 +1,5 @@
 import {
+  useErrorReporter,
   useLogger,
   useWeatherLocationService,
   useWeatherApi,
@@ -6,7 +7,7 @@ import {
 import { type Logger } from '@src/core/ports/logger';
 import { PERSISTED_QUERY_OPTIONS } from '@src/shared/constants/query-persistence';
 import { MINUTE_MS } from '@src/shared/constants/time-units';
-import { getErrorMessage, isCodedError, unwrap } from '@src/shared/errors';
+import { getErrorMessage, isCodedError, toError, unwrap } from '@src/shared/errors';
 import {
   type Query,
   type QueryClient,
@@ -15,13 +16,16 @@ import {
   useQueryClient,
 } from '@tanstack/react-query';
 import { pick } from 'es-toolkit';
+import { match } from 'ts-pattern';
 
 import { WEATHER_LOG_EVENT } from '../constants/weather-log-events';
 import { WeatherLocationPolicy } from '../domains/weather-location.model';
 import { type LocationReading } from '../domains/weather-location.model';
 import { findTodayOrFirstForecast } from '../domains/weather-report.model';
 import { type WeatherReport } from '../domains/weather-report.model';
+import { WEATHER_ERROR_CODE } from '../domains/weather.error';
 import { withDevWeatherOverride, useDevWeatherOverride } from '../hooks/use-dev-weather-override';
+import { type UnexpectedLocationFailure } from '../services/weather-location.service';
 import { type WeatherSceneInput } from '../utils/weather-scene.view-model';
 import { removeOutdatedWeatherReports } from './weather-cache';
 import { WEATHER_QUERY_KEYS } from './weather-query-keys';
@@ -53,6 +57,19 @@ async function findReportLocation(client: QueryClient, logger: Logger, revision:
 export function useGetWeatherLocationQueryOptions() {
   const weatherLocationService = useWeatherLocationService();
   const logger = useLogger();
+  const errorReporter = useErrorReporter();
+
+  const reportUnexpectedFailure = ({ step, error }: UnexpectedLocationFailure) =>
+    errorReporter.captureException(
+      toError(error),
+      match(step)
+        .with('read', () => ({
+          feature: 'weather_location' as const,
+          errorCode: WEATHER_ERROR_CODE.LOCATION_UNAVAILABLE,
+        }))
+        .with('register', () => ({ feature: 'weather_location' as const }))
+        .exhaustive(),
+    );
 
   return queryOptions({
     queryKey: WEATHER_QUERY_KEYS.location(),
@@ -62,6 +79,7 @@ export function useGetWeatherLocationQueryOptions() {
           previous: client.getQueryData(queryKey),
           signal,
           findReportLocation: (revision) => findReportLocation(client, logger, revision),
+          onUnexpectedFailure: reportUnexpectedFailure,
         }),
       ),
     ...PERSISTED_QUERY_OPTIONS,

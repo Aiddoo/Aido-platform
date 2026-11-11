@@ -95,8 +95,8 @@ import { VoiceApi } from '@src/features/voice/apis/voice.api';
 import { createVoiceNoteDraftRepository } from '@src/features/voice/repositories/voice-note-draft.repository';
 import { createVoiceRecordingRepository } from '@src/features/voice/repositories/voice-recording.repository';
 import { VoiceNoteStorageService } from '@src/features/voice/services/voice-note-storage.service';
-import { WeatherLocationService } from '@src/features/weather/apis/weather-location.service';
 import { WeatherApi } from '@src/features/weather/apis/weather.api';
+import { WeatherLocationService } from '@src/features/weather/services/weather-location.service';
 import { createFeatureAttributionStore } from '@src/shared/analytics/feature-attribution';
 import { getNowInstant } from '@src/shared/date/clock';
 import { createDraftRepository } from '@src/shared/draft/draft.repository';
@@ -367,7 +367,6 @@ export function createAppContainer(ports: AppContainerPorts): DIContainer {
       gateway: ports.deviceLocation,
       weatherApi,
       logger,
-      errorReporter,
     }),
     deviceLocation: ports.deviceLocation,
     clipboard: ports.clipboard,

@@ -57,8 +57,8 @@ import type { VoiceApi } from '@src/features/voice/apis/voice.api';
 import type { VoiceNoteDraftRepository } from '@src/features/voice/repositories/voice-note-draft.repository';
 import type { VoiceRecordingRepository } from '@src/features/voice/repositories/voice-recording.repository';
 import type { VoiceNoteStorageService } from '@src/features/voice/services/voice-note-storage.service';
-import type { WeatherLocationService } from '@src/features/weather/apis/weather-location.service';
 import type { WeatherApi } from '@src/features/weather/apis/weather.api';
+import type { WeatherLocationService } from '@src/features/weather/services/weather-location.service';
 import { SharedDIContext, type SharedDependencies } from '@src/shared/di/shared-di-context';
 import { createContext, type PropsWithChildren, use } from 'react';
 

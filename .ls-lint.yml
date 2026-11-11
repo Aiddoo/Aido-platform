@@ -298,4 +298,3 @@ ignore:
   - apps/mobile/src/features/support/inquiry/apis/inquiry.service.test.ts
   - apps/mobile/src/features/support/inquiry/apis/inquiry.service.ts
   - apps/mobile/src/features/voice/queries/plan-in-progress-retry.ts
-  - apps/mobile/src/features/weather/apis/weather-location.service.ts
