@@ -14,7 +14,7 @@ import { type ComponentProps, Suspense } from 'react';
 import { getShiftedEndDate, TodoPolicy } from '../../domains/todo.model';
 import { useSheetTodo } from '../../hooks/use-sheet-todo';
 import { useUpdateTodoScheduleMutationOptions } from '../../queries/todo.mutations';
-import { TodoDatePickerContent } from '../todo-date-picker-content';
+import { TodoDatePicker } from '../todo-date-picker';
 
 type TodoDateBottomSheetProps = Omit<
   ComponentProps<typeof BottomSheet>,
@@ -52,7 +52,7 @@ TodoDateBottomSheet.DateForm = function DateForm({ onClose }: { onClose: () => v
   }
 
   return (
-    <TodoDatePickerContent
+    <TodoDatePicker
       value={todo.startDate}
       onCancel={onClose}
       isConfirmDisabled={updateSchedule.isPending}

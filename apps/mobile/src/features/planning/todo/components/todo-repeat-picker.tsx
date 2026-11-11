@@ -48,18 +48,13 @@ interface RepeatPickerValue {
   repeat: TodoRepeat | null;
 }
 
-interface TodoRepeatPickerContentProps {
+interface TodoRepeatPickerProps {
   value: RepeatPickerValue;
   onChange: (value: RepeatPickerValue) => void;
   onCancel: () => void;
 }
 
-// oxlint-disable-next-line aido/component-name -- 1.15.2 전환 #1400
-export function TodoRepeatPickerContent({
-  value,
-  onChange,
-  onCancel,
-}: TodoRepeatPickerContentProps) {
+export function TodoRepeatPicker({ value, onChange, onCancel }: TodoRepeatPickerProps) {
   const { timeZone } = useDateFormatContext();
   const form = useForm({
     resolver: zodResolver(createTodoRepeatFormSchema(timeZone)),
@@ -72,19 +67,13 @@ export function TodoRepeatPickerContent({
     <SheetHeaderLayout
       gap={20}
       header={
-        <TodoRepeatPickerContent.RepeatPickerHeader
-          form={form}
-          onChange={onChange}
-          onCancel={onCancel}
-        />
+        <TodoRepeatPicker.RepeatPickerHeader form={form} onChange={onChange} onCancel={onCancel} />
       }
-      footer={
-        <TodoRepeatPickerContent.RepeatPeriodFooter form={form} value={value} onChange={onChange} />
-      }
+      footer={<TodoRepeatPicker.RepeatPeriodFooter form={form} value={value} onChange={onChange} />}
     >
       <VStack gap={20}>
-        <TodoRepeatPickerContent.DayOfWeekSelector form={form} />
-        <TodoRepeatPickerContent.RepeatFormCalendar form={form} picker={picker} />
+        <TodoRepeatPicker.DayOfWeekSelector form={form} />
+        <TodoRepeatPicker.RepeatFormCalendar form={form} picker={picker} />
       </VStack>
     </SheetHeaderLayout>
   );
@@ -96,11 +85,7 @@ interface PresetChipProps {
   onPress: () => void;
 }
 
-TodoRepeatPickerContent.PresetChip = function PresetChip({
-  label,
-  isSelected,
-  onPress,
-}: PresetChipProps) {
+TodoRepeatPicker.PresetChip = function PresetChip({ label, isSelected, onPress }: PresetChipProps) {
   const haptics = useHaptics();
 
   return (
@@ -136,7 +121,7 @@ interface DayOfWeekChipProps {
   onPress: () => void;
 }
 
-TodoRepeatPickerContent.DayOfWeekChip = function DayOfWeekChip({
+TodoRepeatPicker.DayOfWeekChip = function DayOfWeekChip({
   day,
   isSelected,
   onPress,
@@ -183,11 +168,7 @@ function applyRepeatFormValues(form: RepeatForm, next: TodoRepeatFormValues) {
   form.setValue('untilDate', next.untilDate, VALIDATE);
 }
 
-TodoRepeatPickerContent.DayOfWeekSelector = function DayOfWeekSelector({
-  form,
-}: {
-  form: RepeatForm;
-}) {
+TodoRepeatPicker.DayOfWeekSelector = function DayOfWeekSelector({ form }: { form: RepeatForm }) {
   const { t } = useTranslation('todo');
   const { timeZone } = useDateFormatContext();
   const [weekdays, interval, isMonthly] = useWatch({
@@ -209,19 +190,19 @@ TodoRepeatPickerContent.DayOfWeekSelector = function DayOfWeekSelector({
         showsHorizontalScrollIndicator={false}
         contentContainerClassName="gap-1.5 px-4"
       >
-        <TodoRepeatPickerContent.PresetChip
+        <TodoRepeatPicker.PresetChip
           label={t('picker.presetDaily')}
           isSelected={isPresetSelected(DAYS_OF_WEEK)}
           onPress={() => applyFormValues(withTodoRepeatFormPreset(form.getValues(), DAYS_OF_WEEK))}
         />
-        <TodoRepeatPickerContent.PresetChip
+        <TodoRepeatPicker.PresetChip
           label={t('picker.presetWeekdays')}
           isSelected={isPresetSelected(TODO_REPEAT_WEEKDAYS)}
           onPress={() =>
             applyFormValues(withTodoRepeatFormPreset(form.getValues(), TODO_REPEAT_WEEKDAYS))
           }
         />
-        <TodoRepeatPickerContent.PresetChip
+        <TodoRepeatPicker.PresetChip
           label={t('picker.presetWeekends')}
           isSelected={isPresetSelected(TODO_REPEAT_WEEKEND_DAYS)}
           onPress={() =>
@@ -229,30 +210,30 @@ TodoRepeatPickerContent.DayOfWeekSelector = function DayOfWeekSelector({
           }
         />
         {DAYS_OF_WEEK.map((day) => (
-          <TodoRepeatPickerContent.DayOfWeekChip
+          <TodoRepeatPicker.DayOfWeekChip
             key={day}
             day={day}
             isSelected={!isMonthly && weekdays.includes(day)}
             onPress={() => applyFormValues(withTodoRepeatFormDayToggled(form.getValues(), day))}
           />
         ))}
-        <TodoRepeatPickerContent.PresetChip
+        <TodoRepeatPicker.PresetChip
           label={t('picker.presetBiweekly')}
           isSelected={!isMonthly && interval === 2}
           onPress={() => applyFormValues(withTodoRepeatFormBiweeklyToggled(form.getValues()))}
         />
-        <TodoRepeatPickerContent.PresetChip
+        <TodoRepeatPicker.PresetChip
           label={t('picker.presetMonthly', { day: monthDay })}
           isSelected={isMonthly}
           onPress={() => applyFormValues(withTodoRepeatFormMonthlyToggled(form.getValues()))}
         />
       </ScrollView>
-      <TodoRepeatPickerContent.RepeatSummary form={form} />
+      <TodoRepeatPicker.RepeatSummary form={form} />
     </VStack>
   );
 };
 
-TodoRepeatPickerContent.RepeatSummary = function RepeatSummary({ form }: { form: RepeatForm }) {
+TodoRepeatPicker.RepeatSummary = function RepeatSummary({ form }: { form: RepeatForm }) {
   const { t, i18n } = useTranslation('todo');
   const { timeZone } = useDateFormatContext();
   const [weekdays, interval, isMonthly] = useWatch({
@@ -309,7 +290,7 @@ interface RepeatPickerHeaderProps {
   onCancel: () => void;
 }
 
-TodoRepeatPickerContent.RepeatPickerHeader = function RepeatPickerHeader({
+TodoRepeatPicker.RepeatPickerHeader = function RepeatPickerHeader({
   form,
   onChange,
   onCancel,
@@ -337,7 +318,7 @@ interface RepeatFormCalendarProps {
   picker: DatePicker;
 }
 
-TodoRepeatPickerContent.RepeatFormCalendar = function RepeatFormCalendar({
+TodoRepeatPicker.RepeatFormCalendar = function RepeatFormCalendar({
   form,
   picker,
 }: RepeatFormCalendarProps) {
@@ -411,7 +392,7 @@ interface RepeatPeriodFooterProps {
   onChange: (value: RepeatPickerValue) => void;
 }
 
-TodoRepeatPickerContent.RepeatPeriodFooter = function RepeatPeriodFooter({
+TodoRepeatPicker.RepeatPeriodFooter = function RepeatPeriodFooter({
   form,
   value,
   onChange,
@@ -490,7 +471,7 @@ TodoRepeatPickerContent.RepeatPeriodFooter = function RepeatPeriodFooter({
             .exhaustive()}
         </HStack>
         <HStack gap={6} align="center" className="shrink-0">
-          <TodoRepeatPickerContent.PresetChip
+          <TodoRepeatPicker.PresetChip
             label={t('picker.repeatForever')}
             isSelected={endType === 'NEVER'}
             onPress={handleForeverPress}

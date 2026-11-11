@@ -109,7 +109,7 @@ export function InviteWelcomeBottomSheet(props: InviteWelcomeBottomSheetProps) {
       >
         {/* 수락 mutation이 내 정보를 이미 받아 캐시에서 바로 그린다. 기다릴 일이 거의 없어 자리를 잡지 않는다 */}
         <Suspense fallback={null}>
-          <InviteWelcomeBottomSheet.Contents redemption={redemption} />
+          <InviteWelcomeBottomSheet.Welcome redemption={redemption} />
         </Suspense>
       </QueryErrorBoundary>
     </BottomSheet>
@@ -130,12 +130,11 @@ InviteWelcomeBottomSheet.Error = function ErrorFallback({
   );
 };
 
-interface WelcomeContentsProps {
+interface WelcomeProps {
   redemption: RedemptionResult;
 }
 
-// oxlint-disable-next-line aido/component-name -- 1.15.2 전환 #1400
-InviteWelcomeBottomSheet.Contents = function Contents({ redemption }: WelcomeContentsProps) {
+InviteWelcomeBottomSheet.Welcome = function Welcome({ redemption }: WelcomeProps) {
   const { t } = useTranslation('invite');
   // 수락 mutation이 내 정보를 다시 불러온 뒤 열리므로 보상이 이어 붙은 결과를 읽는다
   const { data: me } = useSuspenseQuery(useGetMeQueryOptions());

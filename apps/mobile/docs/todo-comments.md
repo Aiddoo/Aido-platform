@@ -66,7 +66,7 @@ pane은 `/feed?todoId=42&comment=cm_1`이다. 바꿀 때는 search만 바꾸고,
     <TodoCommentTitleBar.StackHeader />
 
     <TodoAvailabilityGuard fallback={<TodoDetailSummary.Unavailable onClose={router.back} />}>
-      <TodoCommentKeyboardArea>
+      <TodoCommentKeyboardGesture>
         <QueryErrorBoundary
           resetKeys={[todoId, sort, comment]}
           fallback={TodoCommentThreadList.Error}
@@ -79,7 +79,7 @@ pane은 `/feed?todoId=42&comment=cm_1`이다. 바꿀 때는 search만 바꾸고,
         <QueryErrorBoundary resetKeys={[todoId]}>
           <TodoCommentComposerBar />
         </QueryErrorBoundary>
-      </TodoCommentKeyboardArea>
+      </TodoCommentKeyboardGesture>
     </TodoAvailabilityGuard>
   </TodoCommentSession>
 </StyledSafeAreaView>
@@ -182,7 +182,7 @@ features/engagement/comment/
   components/ todo-comment-thread-list.tsx  todo-comment-replies.tsx  todo-comment-item.tsx  todo-comment-thread-rail.tsx  todo-comment-heart-burst.tsx
               todo-comment-reveal.tsx  todo-comment-expansion.tsx  todo-comment-composer/{todo-comment-composer-bar,todo-comment-form}.tsx
               todo-comment-title-bar.tsx  todo-comment-author-avatar.tsx  todo-comment-keyboard-scroll-view.tsx
-              todo-comment-session.tsx  todo-comment-keyboard-area.tsx  todo-detail-summary.tsx
+              todo-comment-session.tsx  todo-comment-keyboard-gesture.tsx  todo-detail-summary.tsx
               comment-report-bottom-sheet.tsx
   utils/ todo-comment-cache-pages.ts  todo-comment-page-params.ts  todo-comment-draft.ts  todo-comment-replies.view-model.ts
          todo-comment-form-fields.ts  todo-comment-form-layout.ts  get-todo-comment-back-action.ts

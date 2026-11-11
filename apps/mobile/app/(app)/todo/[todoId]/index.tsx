@@ -1,5 +1,5 @@
 import { TodoCommentComposerBar } from '@src/features/engagement/comment/components/todo-comment-composer/todo-comment-composer-bar';
-import { TodoCommentKeyboardArea } from '@src/features/engagement/comment/components/todo-comment-keyboard-area';
+import { TodoCommentKeyboardGesture } from '@src/features/engagement/comment/components/todo-comment-keyboard-gesture';
 import { TodoCommentSession } from '@src/features/engagement/comment/components/todo-comment-session';
 import { TodoCommentThreadList } from '@src/features/engagement/comment/components/todo-comment-thread-list';
 import { TodoCommentTitleBar } from '@src/features/engagement/comment/components/todo-comment-title-bar';
@@ -29,7 +29,7 @@ export default function TodoDetailScreen() {
         <TodoCommentTitleBar.StackHeader />
 
         <TodoAvailabilityGuard fallback={<TodoDetailSummary.Unavailable onClose={goBack} />}>
-          <TodoCommentKeyboardArea>
+          <TodoCommentKeyboardGesture>
             <QueryErrorBoundary
               resetKeys={[todoId, sort, comment]}
               fallback={TodoCommentThreadList.Error}
@@ -44,7 +44,7 @@ export default function TodoDetailScreen() {
                 <TodoCommentComposerBar />
               </Suspense>
             </QueryErrorBoundary>
-          </TodoCommentKeyboardArea>
+          </TodoCommentKeyboardGesture>
         </TodoAvailabilityGuard>
       </TodoCommentSession>
     </StyledSafeAreaView>

@@ -14,7 +14,7 @@ import { PickerDateCell } from './picker-date-cell';
 import { PickerHeader } from './picker-header';
 import { PickerMonthHeader } from './picker-month-header';
 
-interface TodoDatePickerContentProps {
+interface TodoDatePickerProps {
   /** 고른 날짜(YYYY-MM-DD) */
   value: string;
   onChange: (dateKey: string) => void;
@@ -23,13 +23,12 @@ interface TodoDatePickerContentProps {
   isConfirmDisabled?: boolean;
 }
 
-// oxlint-disable-next-line aido/component-name -- 1.15.2 전환 #1400
-export function TodoDatePickerContent({
+export function TodoDatePicker({
   value,
   onChange,
   onCancel,
   isConfirmDisabled = false,
-}: TodoDatePickerContentProps) {
+}: TodoDatePickerProps) {
   const picker = useDatePicker({ initialDateKey: value });
   const { t } = useTranslation('todo');
 

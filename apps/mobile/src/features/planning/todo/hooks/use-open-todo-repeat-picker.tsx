@@ -3,7 +3,7 @@ import { toDateKey } from '@src/shared/date/zoned';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useOpenSheet } from '@src/shared/ui';
 
-import { TodoRepeatPickerContent } from '../components/todo-repeat-picker-content';
+import { TodoRepeatPicker } from '../components/todo-repeat-picker';
 import type { TodoSchedule } from '../domains/todo.model';
 
 export interface SheetOptions {
@@ -20,7 +20,7 @@ export function useOpenTodoRepeatPicker() {
     openSheet<Pick<TodoSchedule, 'startDate' | 'repeat'>>(
       (close) => (
         // 피커가 아직 그날 0시 순간을 주고받아 이 경계에서만 날짜 key와 바꾼다
-        <TodoRepeatPickerContent
+        <TodoRepeatPicker
           value={{ startDate: toLocalDayInstant(value.startDate), repeat: value.repeat }}
           onChange={(next) =>
             close({ startDate: toDateKey(next.startDate, timeZone), repeat: next.repeat })

@@ -35,7 +35,7 @@ import { type SheetOptions, useOpenTodoRepeatPicker } from '../hooks/use-open-to
 import type { TodoFormValues } from '../schemas/todo-form.schema';
 import { formatRepeatSummary } from '../utils/format-repeat-summary';
 import { formatTodoPeriod } from '../utils/todo-period.view-model';
-import { TodoDatePickerContent } from './todo-date-picker-content';
+import { TodoDatePicker } from './todo-date-picker';
 import { TodoTimePicker } from './todo-time-picker';
 
 export type TodoScheduleChipsValue = TodoSchedule &
@@ -115,7 +115,7 @@ function DateChip({ value, onChange, sheetOptions }: ChipProps<string>) {
   const handlePress = async () => {
     const startDate = await openSheet<string>(
       (close) => (
-        <TodoDatePickerContent value={value.startDate} onChange={close} onCancel={() => close()} />
+        <TodoDatePicker value={value.startDate} onChange={close} onCancel={() => close()} />
       ),
       { ...sheetOptions, hasFixedHeader: true },
     );

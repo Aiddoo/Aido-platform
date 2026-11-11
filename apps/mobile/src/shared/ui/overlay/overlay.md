@@ -11,7 +11,7 @@ const overlay = useOverlay();
 
 overlay.open(({ isOpen, close, unmount }) => (
   <ModalBottomSheet isOpen={isOpen} onOpenChange={() => close()} onExit={unmount}>
-    <TodoDatePickerContent
+    <TodoDatePicker
       value={startDate}
       onChange={(picked) => {
         setValue('startDate', picked);

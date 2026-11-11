@@ -83,7 +83,7 @@ export function PlanComparisonTable() {
 
   return (
     <ComparisonCard>
-      <Header />
+      <ColumnHeader />
 
       <Group Icon={ReportDuoIcon} label={t('planComparison.groups.ai')}>
         <Row feature="AI_PARSE" />
@@ -135,8 +135,7 @@ function ComparisonCard({ children, busy = false }: { children: ReactNode; busy?
   );
 }
 
-// oxlint-disable-next-line aido/component-name -- 1.15.2 전환 #1400
-function Header() {
+function ColumnHeader() {
   const { t } = useTranslation('subscription');
   const valueColumnWidth = useValueColumnWidth();
 
@@ -330,7 +329,7 @@ PlanComparisonTable.Loading = function Loading() {
 
   return (
     <ComparisonCard busy>
-      <Header />
+      <ColumnHeader />
       {range(LOADING_ROW_COUNT).map((row) => (
         <HStack
           key={row}

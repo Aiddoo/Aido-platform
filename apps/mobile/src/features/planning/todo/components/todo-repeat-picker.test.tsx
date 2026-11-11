@@ -11,7 +11,7 @@ import { setupFakeTimersPerTest } from '@src/testing/timers';
 import { screen, userEvent } from '@testing-library/react-native';
 
 import type { TodoRepeat } from '../domains/todo-repeat.model';
-import { TodoRepeatPickerContent } from './todo-repeat-picker-content';
+import { TodoRepeatPicker } from './todo-repeat-picker';
 
 const START_DATE = new Date(2026, 10, 5, 12);
 
@@ -32,7 +32,7 @@ async function renderSheet({
 
   await renderScreen(
     <LocalDateProvider>
-      <TodoRepeatPickerContent
+      <TodoRepeatPicker
         value={{ startDate: instantFromDate(startDate), repeat }}
         onChange={onChange}
         onCancel={onCancel}
@@ -48,7 +48,7 @@ const chip = (name: string) => screen.getByRole('button', { name });
 const press = (text: string) => userEvent.press(screen.getByText(text));
 const confirm = () => press('확인');
 
-describe('TodoRepeatPickerContent', () => {
+describe('TodoRepeatPicker', () => {
   setupFakeTimersPerTest({ now: new Date(2026, 10, 5, 9), advanceTimers: true });
 
   it('값이 없으면 시작일의 요일 하나와 날짜 종료로 시작하고 기간을 고를 때까지 확인이 막힌다', async () => {

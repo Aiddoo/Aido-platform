@@ -4,7 +4,7 @@ import { useWhatsNewFeed } from '@src/features/app-config/whats-new/hooks/use-wh
 import { SuggestionEntry } from '@src/features/assistant/suggestion/components/suggestion-entry';
 import { ActivationChecklist } from '@src/features/device/activation/components/activation-checklist';
 import { TodoCommentComposerBar } from '@src/features/engagement/comment/components/todo-comment-composer/todo-comment-composer-bar';
-import { TodoCommentKeyboardArea } from '@src/features/engagement/comment/components/todo-comment-keyboard-area';
+import { TodoCommentKeyboardGesture } from '@src/features/engagement/comment/components/todo-comment-keyboard-gesture';
 import { TodoCommentSession } from '@src/features/engagement/comment/components/todo-comment-session';
 import { TodoCommentThreadList } from '@src/features/engagement/comment/components/todo-comment-thread-list';
 import { TodoCommentTitleBar } from '@src/features/engagement/comment/components/todo-comment-title-bar';
@@ -152,7 +152,7 @@ export default function FeedScreen() {
                   <TodoAvailabilityGuard
                     fallback={<TodoDetailSummary.Unavailable onClose={closeDetail} />}
                   >
-                    <TodoCommentKeyboardArea>
+                    <TodoCommentKeyboardGesture>
                       <QueryErrorBoundary
                         resetKeys={[id, sort, comment]}
                         fallback={TodoCommentThreadList.Error}
@@ -167,7 +167,7 @@ export default function FeedScreen() {
                           <TodoCommentComposerBar />
                         </Suspense>
                       </QueryErrorBoundary>
-                    </TodoCommentKeyboardArea>
+                    </TodoCommentKeyboardGesture>
                   </TodoAvailabilityGuard>
                 </TodoCommentSession>
               </StyledSafeAreaView>
