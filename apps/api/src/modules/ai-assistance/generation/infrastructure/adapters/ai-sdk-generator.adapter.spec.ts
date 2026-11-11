@@ -44,7 +44,7 @@ function request(
     task: "parse-todo",
     taskClass: "interactive",
     userId: "user-1",
-    maxInputChars: 5_000,
+    maxInputChars: 5000,
     promptVersion: "parse-todo@test",
     system: "규칙",
     prompt: "PRIVATE_PROMPT",
@@ -1080,7 +1080,7 @@ describe("AiSdkGeneratorAdapter — 업체 회로 (공용 OutboundPolicy, 가짜
     await probe;
     // Then
     expect(short).toMatchObject({ provider: "google", fallbackFrom: null });
-    expect(waitedMs).toBeLessThan(1_000);
+    expect(waitedMs).toBeLessThan(1000);
     expect(anthropic.callCount).toBe(2);
   });
 });

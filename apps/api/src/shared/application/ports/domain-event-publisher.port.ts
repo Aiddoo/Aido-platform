@@ -4,8 +4,6 @@ import type { DomainEvent } from "#api/shared/domain/model/domain-event";
 
 import type { QueueDefinition } from "./job-queue.port.js";
 
-export const DOMAIN_EVENT_PUBLISHER = Symbol("DOMAIN_EVENT_PUBLISHER");
-
 export interface PublishedDomainEvent extends DomainEvent {
   readonly eventId: string;
   readonly occurredAt: Temporal.Instant;
@@ -21,7 +19,7 @@ interface EventSubscriptionBase<TPayload extends object> {
 }
 
 /** 상태를 바꾸는 반응. 발행 트랜잭션에 구독 큐 작업으로 함께 커밋된다. */
-export interface DurableEventSubscription<
+interface DurableEventSubscription<
   TPayload extends object,
 > extends EventSubscriptionBase<TPayload> {
   readonly delivery: "durable";

@@ -76,7 +76,11 @@ describe("EnrollRetentionExperimentUseCase — 신규 사용자만 등록", () =
 
     // Then
     expect(repository.enrollments).toEqual([
-      { userId: "new-user", variant: "TREATMENT", startedAt: new Date("2026-07-15T00:00:00Z") },
+      {
+        userId: "new-user",
+        variant: "TREATMENT",
+        startedAt: Temporal.Instant.from("2026-07-15T00:00:00Z"),
+      },
     ]);
   });
 

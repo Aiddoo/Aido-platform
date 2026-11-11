@@ -1,6 +1,8 @@
 import type { MeteredFeatureKey } from "@aido/api/vocabulary";
 import { Injectable } from "@nestjs/common";
 
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+
 import {
   QuotaLedgerPort,
   type QuotaReserveInput,
@@ -57,7 +59,9 @@ export class QuotaLedgerAdapter extends QuotaLedgerPort {
     return this.#refundQuotaReservation.execute({ reservation, reason });
   }
 
-  async read(userId: string, feature: MeteredFeatureKey): Promise<MeteredFeatureQuota> {
-    return toMeteredFeatureQuota(await this.#getMeteredFeatureQuota.execute({ userId, feature }));
+  async read(userId: UserId, feature: MeteredFeatureKey): Promise<MeteredFeatureQuota> {
+    return toMeteredFeatureQuota(
+      await this.#getMeteredFeatureQuota.execute({ userId: userId.value, feature }),
+    );
   }
 }

@@ -21,13 +21,13 @@ import type { RevenueCatWebhookPayload } from "@aido/api";
 type EventData = RevenueCatWebhookPayload["event"];
 
 export class SubscriptionEventBuilder {
-  private event: EventData;
+  #event: EventData;
 
-  private constructor(type: EventData["type"]) {
+  constructor(type: EventData["type"]) {
     const now = Date.now();
     const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
 
-    this.event = {
+    this.#event = {
       id: `evt-${crypto.randomUUID().slice(0, 8)}`,
       type,
       app_user_id: `user-${crypto.randomUUID().slice(0, 8)}`,
@@ -55,7 +55,7 @@ export class SubscriptionEventBuilder {
 
   static cancellation(): SubscriptionEventBuilder {
     const builder = new SubscriptionEventBuilder("CANCELLATION");
-    builder.event.cancel_reason = "UNSUBSCRIBE";
+    builder.#event.cancel_reason = "UNSUBSCRIBE";
     return builder;
   }
 
@@ -65,7 +65,7 @@ export class SubscriptionEventBuilder {
 
   static expiration(): SubscriptionEventBuilder {
     const builder = new SubscriptionEventBuilder("EXPIRATION");
-    builder.event.expiration_at_ms = Date.now() - 1000;
+    builder.#event.expiration_at_ms = Date.now() - 1000;
     return builder;
   }
 
@@ -92,7 +92,7 @@ export class SubscriptionEventBuilder {
   /** 환불 취소 (cancel_reason: CUSTOMER_SUPPORT) */
   static refundCancellation(): SubscriptionEventBuilder {
     const builder = new SubscriptionEventBuilder("CANCELLATION");
-    builder.event.cancel_reason = "CUSTOMER_SUPPORT";
+    builder.#event.cancel_reason = "CUSTOMER_SUPPORT";
     return builder;
   }
 
@@ -115,125 +115,125 @@ export class SubscriptionEventBuilder {
 
   /** TRANSFER에서 구매를 넘겨준 app_user_id 목록 */
   withTransferredFrom(appUserIds: string[]): this {
-    this.event.transferred_from = [...appUserIds];
+    this.#event.transferred_from = [...appUserIds];
     return this;
   }
 
   withAppUserId(appUserId: string): this {
-    this.event.app_user_id = appUserId;
+    this.#event.app_user_id = appUserId;
     return this;
   }
 
   withProductId(productId: string): this {
-    this.event.product_id = productId;
+    this.#event.product_id = productId;
     return this;
   }
 
   /** PRODUCT_CHANGE에서 바꾼 대상 상품 */
   withNewProductId(newProductId: string): this {
-    this.event.new_product_id = newProductId;
+    this.#event.new_product_id = newProductId;
     return this;
   }
 
   withStore(store: string): this {
-    this.event.store = store;
+    this.#event.store = store;
     return this;
   }
 
   withPeriodType(periodType: string): this {
-    this.event.period_type = periodType;
+    this.#event.period_type = periodType;
     return this;
   }
 
   withTransactionId(transactionId: string): this {
-    this.event.transaction_id = transactionId;
+    this.#event.transaction_id = transactionId;
     return this;
   }
 
   withOriginalTransactionId(originalTransactionId: string): this {
-    this.event.original_transaction_id = originalTransactionId;
+    this.#event.original_transaction_id = originalTransactionId;
     return this;
   }
 
   withPurchasedAtMs(purchasedAtMs: number): this {
-    this.event.purchased_at_ms = purchasedAtMs;
+    this.#event.purchased_at_ms = purchasedAtMs;
     return this;
   }
 
   withExpirationAtMs(expirationAtMs: number): this {
-    this.event.expiration_at_ms = expirationAtMs;
+    this.#event.expiration_at_ms = expirationAtMs;
     return this;
   }
 
   /** BILLING_ISSUE의 스토어 결제 유예 끝 */
   withGracePeriodExpirationAtMs(gracePeriodExpirationAtMs: number | null): this {
-    this.event.grace_period_expiration_at_ms = gracePeriodExpirationAtMs;
+    this.#event.grace_period_expiration_at_ms = gracePeriodExpirationAtMs;
     return this;
   }
 
   withPrice(price: number, currency = "KRW", priceInPurchasedCurrency?: number): this {
-    this.event.price = price;
-    this.event.currency = currency;
+    this.#event.price = price;
+    this.#event.currency = currency;
     if (priceInPurchasedCurrency != null) {
-      this.event.price_in_purchased_currency = priceInPurchasedCurrency;
+      this.#event.price_in_purchased_currency = priceInPurchasedCurrency;
     }
     return this;
   }
 
   /** 무료 체험이 끝나 첫 결제로 넘어간 RENEWAL */
   withTrialConversion(): this {
-    this.event.is_trial_conversion = true;
-    this.event.period_type = "NORMAL";
+    this.#event.is_trial_conversion = true;
+    this.#event.period_type = "NORMAL";
     return this;
   }
 
   withExpirationReason(reason: string): this {
-    this.event.expiration_reason = reason;
+    this.#event.expiration_reason = reason;
     return this;
   }
 
   withCancelReason(reason: string): this {
-    this.event.cancel_reason = reason;
+    this.#event.cancel_reason = reason;
     return this;
   }
 
   withEnvironment(env: "SANDBOX" | "PRODUCTION"): this {
-    this.event.environment = env;
+    this.#event.environment = env;
     return this;
   }
 
   /** purchased_at_ms를 undefined로 설정 (누락 시뮬레이션) */
   withoutPurchasedAt(): this {
-    this.event.purchased_at_ms = undefined;
+    this.#event.purchased_at_ms = undefined;
     return this;
   }
 
   /** expiration_at_ms를 undefined로 설정 (누락 시뮬레이션) */
   withoutExpiration(): this {
-    this.event.expiration_at_ms = undefined;
+    this.#event.expiration_at_ms = undefined;
     return this;
   }
 
   /** expiration_at_ms를 null로 설정 */
   withNullExpiration(): this {
-    this.event.expiration_at_ms = null;
+    this.#event.expiration_at_ms = null;
     return this;
   }
 
   /** transaction_id와 original_transaction_id를 모두 제거 */
   withoutTransactionIds(): this {
-    this.event.transaction_id = undefined;
-    this.event.original_transaction_id = undefined;
+    this.#event.transaction_id = undefined;
+    this.#event.original_transaction_id = undefined;
     return this;
   }
 
   withEventId(eventId: string): this {
-    this.event.id = eventId;
+    this.#event.id = eventId;
     return this;
   }
 
   withoutEventId(): this {
-    this.event.id = undefined;
+    this.#event.id = undefined;
     return this;
   }
 
@@ -244,12 +244,12 @@ export class SubscriptionEventBuilder {
   build(): RevenueCatWebhookPayload {
     return {
       api_version: "4.0.0",
-      event: { ...this.event },
+      event: { ...this.#event },
     };
   }
 
   /** event 객체만 반환 */
   buildEvent(): EventData {
-    return { ...this.event };
+    return { ...this.#event };
   }
 }

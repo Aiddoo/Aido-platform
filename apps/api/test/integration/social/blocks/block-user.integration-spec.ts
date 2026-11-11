@@ -212,7 +212,9 @@ describe("사용자 차단 (실제 PostgreSQL)", () => {
       expect(acceptance.reason).toMatchObject({ errorCode: ErrorCode.FOLLOW_0903 });
     }
     expect(await countFollowsBetween()).toBe(0);
-    expect(await blockRepository.findRelation(meId, otherId)).toEqual({
+    expect(
+      await blockRepository.findRelation(UserId.reconstitute(meId), UserId.reconstitute(otherId)),
+    ).toEqual({
       isBlocking: false,
       isBlockedBy: true,
     });
@@ -251,7 +253,9 @@ describe("사용자 차단 (실제 PostgreSQL)", () => {
     // Then
     expect(outcomes.map((outcome) => outcome.status)).toEqual(["fulfilled", "fulfilled"]);
     expect(await countFollowsBetween()).toBe(0);
-    expect(await blockRepository.findRelation(meId, otherId)).toEqual({
+    expect(
+      await blockRepository.findRelation(UserId.reconstitute(meId), UserId.reconstitute(otherId)),
+    ).toEqual({
       isBlocking: true,
       isBlockedBy: true,
     });

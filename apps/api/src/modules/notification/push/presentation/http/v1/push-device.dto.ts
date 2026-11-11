@@ -6,6 +6,8 @@ import {
   registerPushTokenSchema,
   registerTokenResponseSchema,
   reportPushDeviceSchema,
+  unregisterPushDeviceByTokenResponseSchema,
+  unregisterPushDeviceByTokenSchema,
   unregisterPushTokenQuerySchema,
 } from "@aido/api/contracts/notification";
 import type { z } from "zod";
@@ -24,6 +26,10 @@ export const UnregisterPushTokenQueryDto = unregisterPushTokenQuerySchema.meta({
   apiParameter: true,
 });
 export type UnregisterPushTokenQueryDto = z.infer<typeof UnregisterPushTokenQueryDto>;
+export const UnregisterPushDeviceByTokenDto = unregisterPushDeviceByTokenSchema.meta({
+  id: "UnregisterPushDeviceByTokenDto",
+});
+export type UnregisterPushDeviceByTokenDto = z.infer<typeof UnregisterPushDeviceByTokenDto>;
 export const MarketingPushOptOutDto = marketingPushOptOutSchema.meta({
   id: "MarketingPushOptOutDto",
 });
@@ -39,3 +45,8 @@ export const MarketingPushOptOutResponseDto = marketingPushOptOutResponseSchema.
   id: "MarketingPushOptOutResponseDto",
 });
 export type MarketingPushOptOutResponseDto = z.infer<typeof MarketingPushOptOutResponseDto>;
+export const UnregisterPushDeviceByTokenResponseDto =
+  unregisterPushDeviceByTokenResponseSchema.meta({ id: "UnregisterPushDeviceByTokenResponseDto" });
+export type UnregisterPushDeviceByTokenResponseDto = z.infer<
+  typeof UnregisterPushDeviceByTokenResponseDto
+>;

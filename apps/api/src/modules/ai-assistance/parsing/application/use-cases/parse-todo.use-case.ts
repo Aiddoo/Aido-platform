@@ -28,7 +28,7 @@ import type { ChargedGenerationPort } from "../ports/charged-generation.port.js"
 import { type UserCategoryReaderPort } from "../ports/user-category.reader.port.js";
 
 /** 공개 응답의 토큰 사용량 (사고 토큰은 로그에만 남긴다). */
-export interface ParseTokenUsage {
+interface ParseTokenUsage {
   input: number;
   output: number;
 }
@@ -113,7 +113,7 @@ export class ParseTodoUseCase {
     );
     const { quota } = this.#dependencies;
     const reservation = await quota.reserve({
-      userId,
+      userId: UserId.reconstitute(userId),
       feature: "AI_PARSE",
       idempotencyKey: null,
       reason: "parse-todo",
@@ -151,7 +151,9 @@ export class ParseTodoUseCase {
       userId,
     } as const;
 
-    const consent = await this.#dependencies.consentReader.findAiDataSharingConsent(userId);
+    const consent = await this.#dependencies.consentReader.findAiDataSharingConsent(
+      UserId.reconstitute(userId),
+    );
     const { agreedVersion } = consent.status();
     try {
       const { value, meta } = await generateWithPrompt(

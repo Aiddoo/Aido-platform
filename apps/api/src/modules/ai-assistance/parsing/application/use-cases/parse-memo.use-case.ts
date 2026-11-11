@@ -33,7 +33,7 @@ import { type UserCategoryReaderPort } from "../ports/user-category.reader.port.
 import { type ParseTodoMeta, toParseMeta } from "./parse-todo.use-case.js";
 
 /** parse-todo 메타에 상한을 넘어 만들지 않은 할 일 수를 더한다. */
-export interface ParseMemoMeta extends ParseTodoMeta {
+interface ParseMemoMeta extends ParseTodoMeta {
   omittedTodoCount: number;
 }
 
@@ -105,7 +105,7 @@ export class ParseMemoUseCase {
     );
     const { quota } = this.#dependencies;
     const reservation = await quota.reserve({
-      userId,
+      userId: UserId.reconstitute(userId),
       feature: "AI_PARSE",
       idempotencyKey,
       ...(idempotencyKey != null && {
@@ -155,7 +155,9 @@ export class ParseMemoUseCase {
       userId,
     } as const;
 
-    const consent = await this.#dependencies.consentReader.findAiDataSharingConsent(userId);
+    const consent = await this.#dependencies.consentReader.findAiDataSharingConsent(
+      UserId.reconstitute(userId),
+    );
     const { agreedVersion } = consent.status();
     try {
       const { value, meta } = await generateWithPrompt(

@@ -16,10 +16,10 @@ import {
 } from "#api/modules/identity/preferences/identity-preferences.providers";
 import { ReminderTimezoneCachePort } from "#api/modules/notification/notification-reminders-cache.public";
 import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
-import { CacheService } from "#api/platform/cache/cache.service";
+import { CacheStorePort } from "#api/platform/cache/cache-store.port";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
-import { UnitOfWorkPort } from "#api/shared/application/ports/index";
 import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
+import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
 import { createUserSettingsFixture } from "#test/fixtures/user-settings.fixture";
@@ -36,21 +36,21 @@ async function createFixture() {
     defaultTtlMs: REMINDER_CACHE_TTL_MS,
     maxItems: 10,
   });
-  const cache = new CacheService(underlyingCache);
+  const cache = underlyingCache;
   const settings = createUserSettingsFixture();
   const module = await Test.createTestingModule({
     imports: [
       {
         module: ReminderCacheDependenciesTestModule,
         providers: [
-          { provide: CacheService, useValue: cache },
+          { provide: CacheStorePort, useValue: cache },
           { provide: JobQueuePort, useValue: new InMemoryJobQueue() },
           {
             provide: ClockPort,
             useValue: new FixedClock(Temporal.Instant.from("2026-11-10T00:00:00Z")),
           },
         ],
-        exports: [CacheService, JobQueuePort, ClockPort],
+        exports: [CacheStorePort, JobQueuePort, ClockPort],
       },
       TimezoneReminderQueueModule,
     ],
@@ -79,7 +79,7 @@ async function createFixture() {
 
 describe("TimezoneReminderQueueModule — 활성 timezone 캐시 capability", () => {
   it("기존 활성 timezone 캐시만 지우고 다음 조회가 새 목록을 로드한다", async () => {
-    // Given: 실제 Module이 제공한 Adapter와 실제 CacheService에 이전 목록이 캐시되어 있다.
+    // Given: 실제 Module이 제공한 Adapter와 실제 CacheStorePort에 이전 목록이 캐시되어 있다.
     const fixture = await createFixture();
     const activeKey = ReminderCacheKey.activeTimezones();
     const unrelatedKey = "settings-fixture:preference";
@@ -112,7 +112,7 @@ describe("TimezoneReminderQueueModule — 활성 timezone 캐시 capability", ()
   });
 
   it("캐시 삭제 실패를 호출자에게 그대로 전달한다", async () => {
-    // Given: 실제 조립된 Adapter의 CacheService 삭제가 실패한다.
+    // Given: 실제 조립된 Adapter의 CacheStorePort 삭제가 실패한다.
     const fixture = await createFixture();
     const failure = new Error("synthetic cache unavailable");
     vi.spyOn(fixture.cache, "del").mockRejectedValueOnce(failure);

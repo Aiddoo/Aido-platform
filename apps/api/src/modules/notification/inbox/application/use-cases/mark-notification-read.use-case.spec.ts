@@ -45,7 +45,7 @@ describe("MarkNotificationReadUseCase — 단일 알림 읽음", () => {
     // Then
     expect(notificationRepository.rowOf(1)).toMatchObject({
       isRead: true,
-      readAt: new Date(NOW.epochMilliseconds),
+      readAt: NOW,
     });
     expect(cache.invalidatedUnreadCountUserIds).toEqual([USER_ID]);
   });
@@ -74,7 +74,7 @@ describe("MarkNotificationReadUseCase — 단일 알림 읽음", () => {
         userId: "other-user",
         id: 1,
         isRead,
-        readAt: isRead ? new Date("2026-11-01T00:00:00Z") : null,
+        readAt: isRead ? Temporal.Instant.from("2026-11-01T00:00:00Z") : null,
       });
       const notificationRepository = new InMemoryNotificationRepository([notification]);
       const useCase = createMarkNotificationReadUseCase({ notificationRepository });
@@ -97,7 +97,7 @@ describe("MarkNotificationReadUseCase — 단일 알림 읽음", () => {
       userId: USER_ID,
       id: 1,
       isRead: true,
-      readAt: new Date("2026-11-01T00:00:00Z"),
+      readAt: Temporal.Instant.from("2026-11-01T00:00:00Z"),
     });
     const notificationRepository = new InMemoryNotificationRepository([notification]);
     const cache = new PassThroughNotificationCache();

@@ -1,7 +1,7 @@
 import type { Provider } from "@nestjs/common";
 
 import { EntitlementReaderPort } from "#api/modules/access/entitlements/access-entitlements.public";
-import { UserMutationLockPort } from "#api/modules/identity/identity-user-access.public";
+import { UserMutationLockPort } from "#api/modules/identity/users/identity-users.public";
 import { StagedTodoCreatorPort } from "#api/modules/planning/todos/planning-todos.public";
 import { WeatherForecastReaderPort } from "#api/modules/weather/forecasts/weather-forecasts.public";
 import { loggerFor, provideUseCase } from "#api/platform/di/provide-use-case";

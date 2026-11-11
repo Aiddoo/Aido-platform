@@ -14,10 +14,10 @@ import { VoiceNoteDraftList } from '@src/features/voice/components/note/voice-no
 import { VoiceNoteStartButton } from '@src/features/voice/components/note/voice-note-start-button';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
-import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
 import { useTranslation } from '@src/shared/i18n';
 import {
   AdaptivePane,
+  usePaneSizeClass,
   Box,
   H3,
   HINT_OFFSET,
@@ -33,7 +33,7 @@ const HEADER_GAP = 8;
 export default function MemoScreen() {
   const { t } = useTranslation('memo');
   const fontScaledSize = useFontScaledSize();
-  const isCompact = useWindowSizeClass() === 'compact';
+  const isCompact = usePaneSizeClass() === 'compact';
   const [selectedMemoId, setSelectedMemoId] = useSelectedMemoId();
   const deselectMemo = useSingleTap(() => setSelectedMemoId(undefined));
 

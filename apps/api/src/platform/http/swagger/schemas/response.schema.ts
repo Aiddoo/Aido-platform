@@ -76,7 +76,7 @@ export class ErrorResponseSchema {
 
   @ApiProperty({
     description: "응답 타임스탬프 (Unix timestamp)",
-    example: 1704067200000,
+    example: 1_704_067_200_000,
   })
   timestamp!: number;
 }

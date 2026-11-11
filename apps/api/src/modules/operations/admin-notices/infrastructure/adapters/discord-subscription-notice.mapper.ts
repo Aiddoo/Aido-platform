@@ -212,7 +212,7 @@ function planLabel(planType: SubscriptionPlanType | undefined): string | undefin
 }
 
 /** 현지 통화 금액과 USD 환산을 둘 다 적는다. 둘 중 하나만 있으면 있는 값만 적는다. */
-export function formatNoticePrice(price: SubscriptionNoticePrice): string | undefined {
+function formatNoticePrice(price: SubscriptionNoticePrice): string | undefined {
   const local =
     price.amount != null && price.currency != null
       ? formatMoney(price.amount, price.currency)

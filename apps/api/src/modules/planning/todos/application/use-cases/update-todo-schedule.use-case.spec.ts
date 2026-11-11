@@ -5,6 +5,7 @@ import {
   createPlanningTodoFixture,
   createPlanningTodo,
   PLANNING_TIME,
+  snapshotTodoRecord,
 } from "#test/fixtures/planning/planning-todos.fixture";
 
 import { UpdateTodoScheduleUseCase } from "./update-todo-schedule.use-case.js";
@@ -25,14 +26,14 @@ describe("할 일 일정 수정", () => {
 
   it("시간 일정을 저장하고 리마인더 이벤트에 동일한 시간을 전달한다", async () => {
     // Given
-    const scheduledTime = new Date("2026-05-16T03:30:00Z");
+    const scheduledTime = Temporal.Instant.from("2026-05-16T03:30:00Z");
     // When
     const result = await useCase.execute({
       id: 1,
       userId: fixture.userId,
       timezone: "Asia/Seoul",
       schedule: {
-        startDate: new Date("2026-05-16T00:00:00Z"),
+        startDate: Temporal.PlainDate.from("2026-05-16"),
         endDate: null,
         scheduledTime: "12:30",
         isAllDay: false,
@@ -63,7 +64,7 @@ describe("할 일 일정 수정", () => {
       userId: fixture.userId,
       timezone: "Asia/Seoul",
       schedule: {
-        startDate: new Date("2026-05-16T00:00:00Z"),
+        startDate: Temporal.PlainDate.from("2026-05-16"),
         endDate: null,
         scheduledTime: null,
         isAllDay: true,
@@ -71,7 +72,7 @@ describe("할 일 일정 수정", () => {
     };
     // When
     const result = await useCase.execute(input);
-    const before = structuredClone(fixture.records.get(1));
+    const before = snapshotTodoRecord(fixture.records.get(1));
     // Then
     expect(result.scheduledTime).toBeNull();
     expect(fixture.todoReminder.cancelled).toEqual([1]);
@@ -81,7 +82,7 @@ describe("할 일 일정 수정", () => {
     await expect(
       useCase.execute({
         ...input,
-        schedule: { ...input.schedule, endDate: new Date("2026-05-15T00:00:00Z") },
+        schedule: { ...input.schedule, endDate: Temporal.PlainDate.from("2026-05-15") },
       }),
     ).rejects.toMatchObject({ errorCode: ErrorCode.SYS_0002 });
     expect(fixture.records.get(1)).toEqual(before);

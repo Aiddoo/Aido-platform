@@ -1,3 +1,4 @@
+import { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
@@ -41,7 +42,7 @@ export class MarkNudgeReadUseCase {
 
     const isMarked = await unitOfWork.run(async () => {
       // save()는 답장 컬럼도 함께 쓰므로 답장과 같은 할 일 행 잠금 뒤에 다시 읽어야 그사이 남은 답장을 지우지 않는다
-      await nudgeRepository.lockInteractionTodo(received.todoId, userId);
+      await nudgeRepository.lockInteractionTodo(TodoId.reconstitute(received.todoId), userId);
       const nudge = await nudgeRepository.findById(nudgeId);
       if (nudge == null) {
         throw nudgeNotFound(nudgeId);

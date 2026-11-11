@@ -2,6 +2,7 @@ import { voiceNoteDigestResponseSchema } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
 import { PLAN_CATALOG } from "@aido/api/vocabulary";
 
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { InMemoryPlanResultReplay } from "#test/doubles/voice/in-memory-plan-result-replay";
 import { StubPlanningContextReader } from "#test/doubles/voice/stub-planning-context.reader";
 import { QUOTA_LEDGER_TIME } from "#test/fixtures/access/quota-ledger.fixture";
@@ -20,7 +21,7 @@ const ADMIN = { role: "ADMIN", subscriptionStatus: "FREE", accessDeadline: null 
 
 const segments = [
   { startMs: 0, text: "다음 주 일정을 정했습니다.", isBookmarked: false },
-  { startMs: 4_200, text: "회의록은 제가 보냅니다.", isBookmarked: true },
+  { startMs: 4200, text: "회의록은 제가 보냅니다.", isBookmarked: true },
 ];
 
 function setup(ledgerInput: Parameters<typeof createPlanFlowFixture>[0] = {}) {
@@ -50,7 +51,8 @@ function setup(ledgerInput: Parameters<typeof createPlanFlowFixture>[0] = {}) {
       locale: "ko",
       ...overrides,
     });
-  const used = async () => (await fixture.ledger.read(fixture.userId, "VOICE_NOTE")).used;
+  const used = async () =>
+    (await fixture.ledger.read(UserId.reconstitute(fixture.userId), "VOICE_NOTE")).used;
   return { ...fixture, replay, execute, used };
 }
 
@@ -116,7 +118,7 @@ describe("DigestVoiceNoteUseCase", () => {
     // Then
     const parsed = voiceNoteDigestResponseSchema.parse(response);
     expect(parsed.keyPoints).toEqual([
-      { text: "회의록", startMs: 4_200 },
+      { text: "회의록", startMs: 4200 },
       { text: "번호 없음", startMs: null },
       { text: "범위 밖", startMs: null },
     ]);

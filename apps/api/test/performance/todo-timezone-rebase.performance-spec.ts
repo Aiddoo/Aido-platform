@@ -18,7 +18,6 @@ import {
 } from "#api/platform/database/schema/index";
 import { JobQueueRegistry } from "#api/platform/jobs/job-queue.registry";
 import { PgBossJobQueueAdapter } from "#api/platform/jobs/pg-boss-job-queue.adapter";
-import { PgBossJobRuntimeAdapter } from "#api/platform/jobs/pg-boss-job-runtime.adapter";
 import { DateClock } from "#test/doubles/platform/date-clock";
 import { TodoCategoryFixture, UserFixture } from "#test/fixtures/index";
 import { createDatabaseTransactionFixture, createTestClient } from "#test/setup/database-context";
@@ -69,10 +68,10 @@ describe("시간대 재계산 규모 측정", () => {
         max: 3,
       });
       const transaction = createDatabaseTransactionFixture(client);
-      const runtime = new PgBossJobRuntimeAdapter(boss, transaction.txHost, {
+      const jobQueue = new PgBossJobQueueAdapter(boss, transaction.txHost, new JobQueueRegistry(), {
         shutdownTimeoutMs: 10_000,
       });
-      await runtime.start();
+      await jobQueue.start();
       try {
         const user = UserFixture.create({
           id: createEntityId(),
@@ -120,20 +119,17 @@ describe("시간대 재계산 규모 측정", () => {
         }
         await client.execute(sql`ANALYZE "Todo"`);
         const reminders = new ReminderSchedulerAdapter(
-          new TodoReminderSchedulerAdapter(
-            new PgBossJobQueueAdapter(boss, transaction.txHost, new JobQueueRegistry()),
-            new DateClock(),
-          ),
+          new TodoReminderSchedulerAdapter(jobQueue, new DateClock()),
         );
         const useCase = new RebaseTodoTimezoneUseCase({
           clock: new DateClock(),
-          todoRepository: new DrizzleTodoRepository(transaction.txHost),
-          seriesRepository: new DrizzleTodoSeriesRepository(transaction.txHost),
+          todoRepository: new DrizzleTodoRepository(transaction.txHost, new DateClock()),
+          seriesRepository: new DrizzleTodoSeriesRepository(transaction.txHost, new DateClock()),
           ownerTimezone: {
             findTimezone: async (id) => {
               const row = await transaction.txHost.tx.query.userPreference.findFirst({
                 columns: { timezone: true },
-                where: { userId: id },
+                where: { userId: id.value },
               });
               return row?.timezone ?? null;
             },
@@ -189,7 +185,7 @@ describe("시간대 재계산 규모 측정", () => {
         expect(result.rebasedCount).toBe(seriesCount * days + historyRows);
         expect(repeated.rebasedCount).toBe(0);
       } finally {
-        await runtime.stop();
+        await jobQueue.stop();
         await database.stop();
       }
     },

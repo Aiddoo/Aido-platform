@@ -3,6 +3,7 @@ import { Injectable } from "@nestjs/common";
 
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { pushDispatch, pushDispatchOutbox } from "#api/platform/database/schema/index";
+import { ClockPort } from "#api/shared/application/ports/clock.port";
 
 import type {
   PushDispatchStagingRepositoryPort,
@@ -13,9 +14,11 @@ import type {
 @Injectable()
 export class DrizzlePushDispatchStagingRepository implements PushDispatchStagingRepositoryPort {
   readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
+  readonly #clock: ClockPort;
 
-  constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>) {
+  constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>, clock: ClockPort) {
     this.#txHost = txHost;
+    this.#clock = clock;
   }
 
   get #db() {
@@ -39,6 +42,7 @@ export class DrizzlePushDispatchStagingRepository implements PushDispatchStaging
       return [];
     }
 
+    const updatedAt = this.#clock.now();
     const dispatches = await this.#db
       .insert(pushDispatch)
       .values(
@@ -49,6 +53,7 @@ export class DrizzlePushDispatchStagingRepository implements PushDispatchStaging
           campaignKey: input.campaignKey ?? null,
           variantId: input.variantId ?? null,
           status: "PENDING" as const,
+          updatedAt,
         })),
       )
       .returning({ dispatchId: pushDispatch.id, notificationId: pushDispatch.notificationId });
@@ -71,6 +76,7 @@ export class DrizzlePushDispatchStagingRepository implements PushDispatchStaging
           dispatchId: dispatch.dispatchId,
           deliveryMode: input.deliveryMode,
           force: input.force,
+          updatedAt,
         };
       }),
     );

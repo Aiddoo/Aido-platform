@@ -2,6 +2,7 @@ import { SECURITY_EVENT } from "@aido/api/vocabulary";
 
 import type { AccountTodoCommentCleanupResult } from "#api/modules/identity/users/application/ports/account-cleanup.port";
 import type { IdentityUser } from "#api/modules/identity/users/domain/identity-user.aggregate";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { InMemoryAuthSecurityLogRepository } from "#test/doubles/identity/in-memory-auth-security-log.repository";
 import { InMemoryAuthUserRepository } from "#test/doubles/identity/in-memory-auth-user.repository";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
@@ -50,8 +51,8 @@ class FailingTodoCommentCleanup extends StubAccountTodoCommentCleanup {
 }
 
 class FailingHardDeleteUserRepository extends InMemoryAuthUserRepository {
-  override async hardDelete(id: string): Promise<void> {
-    if (id === "user-1") {
+  override async hardDelete(id: UserId): Promise<void> {
+    if (id.value === "user-1") {
       throw new Error("Delete failed");
     }
     await super.hardDelete(id);

@@ -746,7 +746,7 @@ describe("OAuth UseCase 통합 테스트 (실제 PostgreSQL)", () => {
       const oauthState = await createState(state, "GOOGLE", "aido://auth/callback");
 
       const exchangeCode = oauthStateRepository.generateExchangeCode();
-      await oauthStateRepository.saveExchangeData(oauthState.id.value, {
+      await oauthStateRepository.saveExchangeData(oauthState.id, {
         exchangeCode,
         ...loginResult.tokens,
         userId: loginResult.userId,
@@ -792,7 +792,7 @@ describe("OAuth UseCase 통합 테스트 (실제 PostgreSQL)", () => {
       const oauthState = await createState("reuse-state", "GOOGLE", "aido://auth/callback");
 
       const exchangeCode = oauthStateRepository.generateExchangeCode();
-      await oauthStateRepository.saveExchangeData(oauthState.id.value, {
+      await oauthStateRepository.saveExchangeData(oauthState.id, {
         exchangeCode,
         ...loginResult.tokens,
         userId: loginResult.userId,

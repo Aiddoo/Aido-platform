@@ -8,10 +8,10 @@ import { runInBackground } from "#api/platform/jobs/non-blocking-init";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
 import { instantToDate } from "#api/shared/domain/time/instant";
+import { resolveTimezone } from "#api/shared/domain/time/time-zone-name";
 import { TimeZone } from "#api/shared/domain/time/time-zone.vo";
 
 import { AiJobLogEvent } from "../../../reports/infrastructure/jobs/ai-job.log-events.js";
-import { toUserTimeZone } from "../../../shared/domain/user-calendar.domain-service.js";
 import {
   isInSuggestionDispatchWindow,
   suggestionDispatchLocalDate,
@@ -74,7 +74,11 @@ export class SuggestionAnalysisScheduler implements OnModuleInit {
 
     const at = this.#clock.now();
     const atDate = instantToDate(at);
-    const recentFrom = instantToDate(at.subtract({ hours: RECENT_ACTIVITY_DAYS * 24 }));
+    // planning Todo.startDate는 달력 날짜 칸이라 지금처럼 그 순간의 UTC 날짜와 비교한다
+    const recentFrom = at
+      .subtract({ hours: RECENT_ACTIVITY_DAYS * 24 })
+      .toZonedDateTimeISO("UTC")
+      .toPlainDate();
     let totalEnqueued = 0;
 
     await forEachBatch({
@@ -102,7 +106,7 @@ export class SuggestionAnalysisScheduler implements OnModuleInit {
         }),
       onBatch: async (batch) => {
         const due = batch.flatMap((user) => {
-          const timeZone = toUserTimeZone(user.preference?.timezone ?? TimeZone.SEOUL.value).value;
+          const timeZone = resolveTimezone(user.preference?.timezone ?? TimeZone.SEOUL.value);
           return isInSuggestionDispatchWindow({ at, timeZone }) ? [{ user, timeZone }] : [];
         });
         if (due.length === 0) {

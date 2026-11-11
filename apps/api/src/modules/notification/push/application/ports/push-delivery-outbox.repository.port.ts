@@ -5,12 +5,12 @@ import type {
 
 export interface ClaimPushDeliveryOutboxInput {
   readonly limit: number;
-  readonly lockedAt: Date;
+  readonly lockedAt: Temporal.Instant;
 }
 
 export interface DeferPushDeliveryPublicationsInput {
   readonly publications: readonly PushDeliveryPublication[];
-  readonly availableAt: Date;
+  readonly availableAt: Temporal.Instant;
   readonly error: string;
 }
 
@@ -18,15 +18,15 @@ export interface DeferPushDeliveryPublicationsInput {
 export abstract class PushDeliveryOutboxRepositoryPort {
   abstract claimByDispatchIds(
     dispatchIds: readonly number[],
-    lockedAt: Date,
+    lockedAt: Temporal.Instant,
   ): Promise<readonly ClaimedPushDeliveryPublication[]>;
   abstract claimAvailable(
     input: ClaimPushDeliveryOutboxInput,
   ): Promise<readonly ClaimedPushDeliveryPublication[]>;
   abstract markPublished(
     publications: readonly PushDeliveryPublication[],
-    publishedAt: Date,
+    publishedAt: Temporal.Instant,
   ): Promise<number>;
   abstract defer(input: DeferPushDeliveryPublicationsInput): Promise<number>;
-  abstract recoverStaleProcessing(lockedBefore: Date): Promise<number>;
+  abstract recoverStaleProcessing(lockedBefore: Temporal.Instant): Promise<number>;
 }

@@ -2,18 +2,14 @@ import { AI_PROVIDER_IDS } from "@aido/api/vocabulary";
 import { Inject, Injectable, Logger, type OnModuleInit } from "@nestjs/common";
 
 import {
-  USAGE_METER,
+  UsageMeterPort,
   USAGE_SUBJECT_ALL,
   type UsageKey,
-  type UsageMeterPort,
-} from "#api/platform/metering/interfaces/usage-meter.interface";
+} from "#api/platform/metering/usage-meter.port";
 import { crossedThresholds, usagePeriod } from "#api/platform/metering/usage-period";
 import type { AlertDefinition } from "#api/shared/application/alerts/define-alerts";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
-import {
-  OPERATIONAL_ALERT,
-  type OperationalAlertPort,
-} from "#api/shared/application/ports/operational-alert.port";
+import { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import { instantToDate } from "#api/shared/domain/time/instant";
 
@@ -34,7 +30,7 @@ import { hasKnownPricing } from "./ai-model-pricing.constants.js";
 import { AiGuardLogEvent } from "./ai-provider.log-events.js";
 
 /** 추정 비용 누적(micro-USD). subject "*"는 전역, 사용자 id는 사용자 일 예산이다. */
-export const AI_SPEND_METER = "ai.spend";
+const AI_SPEND_METER = "ai.spend";
 
 type SpendBudgetConfig = Pick<AiAssistanceGenerationConfig, "providers" | "enabled" | "budget">;
 
@@ -76,8 +72,8 @@ export class AiSpendBudgetAdapter implements OnModuleInit {
 
   constructor(
     @Inject(aiAssistanceGenerationConfig.KEY) config: SpendBudgetConfig,
-    @Inject(USAGE_METER) meter: Pick<UsageMeterPort, "add" | "read">,
-    @Inject(OPERATIONAL_ALERT) alert: OperationalAlertPort,
+    @Inject(UsageMeterPort) meter: Pick<UsageMeterPort, "add" | "read">,
+    alert: OperationalAlertPort,
     clock: ClockPort,
   ) {
     this.#config = config;

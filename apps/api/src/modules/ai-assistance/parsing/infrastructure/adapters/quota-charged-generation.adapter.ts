@@ -93,7 +93,7 @@ export class QuotaChargedGenerationAdapter extends ChargedGenerationPort {
     readonly task: AiTaskId;
   }): Promise<MeteredFeatureQuota | null> {
     try {
-      return await this.#dependencies.quota.read(input.userId.value, input.feature);
+      return await this.#dependencies.quota.read(input.userId, input.feature);
     } catch (error) {
       this.#dependencies.logger.warn({
         event: AiGenerationLogEvent.QUOTA_READ_FAILED,

@@ -10,7 +10,6 @@ import { DrizzleUserRepository } from "./infrastructure/persistence/drizzle-user
 
 // access·billing·ai·notification·planning이 import하는 사용자 포트만 둔다. 이 모듈은 다른 Context
 // 모듈을 import하지 않아 IdentityUsersModule → IdentityAuthModule → Access·Billing → 여기로 순환하지 않는다.
-// 옛 Symbol 토큰은 소비 Context가 옮길 때까지 클래스 토큰과 같은 인스턴스를 가리킨다.
 @Module({
   providers: [
     DrizzleUserRepository,

@@ -3,7 +3,6 @@ import type { ApplicationLoggerPort } from "#api/shared/application/ports/applic
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 import type { SweepCursorPort } from "#api/shared/application/ports/sweep-cursor.port";
-import { instantToDate } from "#api/shared/domain/time/instant";
 
 import {
   FIRST_DAY_OF_MONTH,
@@ -270,14 +269,10 @@ function timezoneContextAt(
     localMinute: local.minute,
     // Temporal은 월=1…일=7, 컨텍스트는 일=0
     dayOfWeek: local.dayOfWeek % 7,
-    today: utcMidnightOf(today),
-    tomorrow: utcMidnightOf(today.add({ days: 1 })),
+    today,
+    tomorrow: today.add({ days: 1 }),
     userId,
   };
-}
-
-function utcMidnightOf(date: Temporal.PlainDate): Date {
-  return instantToDate(date.toZonedDateTime("UTC").toInstant());
 }
 
 // 마지막으로 끝낸 분과 이번에 처음 처리하는 분 사이에서 버린 분의 수

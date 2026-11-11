@@ -1,6 +1,7 @@
 import { ErrorCode } from "@aido/api/errors";
 
 import type { AuthSession } from "#api/modules/identity/auth/domain/auth-session.aggregate";
+import { SessionId } from "#api/modules/identity/auth/domain/session-id.vo";
 import type { IdentityUser } from "#api/modules/identity/users/domain/identity-user.aggregate";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
@@ -25,18 +26,18 @@ class MemorySessionCache implements Pick<AuthCachePort, "getSession" | "setSessi
   failRead = false;
   failWrite = false;
 
-  async getSession(sessionId: string): Promise<AuthCachedSession | undefined> {
+  async getSession(sessionId: SessionId): Promise<AuthCachedSession | undefined> {
     if (this.failRead) {
       throw new Error("redis down");
     }
-    return this.entries.get(sessionId);
+    return this.entries.get(sessionId.value);
   }
 
-  async setSession(sessionId: string, session: AuthCachedSession): Promise<void> {
+  async setSession(sessionId: SessionId, session: AuthCachedSession): Promise<void> {
     if (this.failWrite) {
       throw new Error("redis down");
     }
-    this.entries.set(sessionId, session);
+    this.entries.set(sessionId.value, session);
   }
 }
 
@@ -64,7 +65,7 @@ function createUseCase(
   const dependencies: AuthenticateSessionDependencies = {
     sessionRepository: {
       findById: async (sessionId) => {
-        sessionReads.push(sessionId);
+        sessionReads.push(sessionId.value);
         return session;
       },
     },

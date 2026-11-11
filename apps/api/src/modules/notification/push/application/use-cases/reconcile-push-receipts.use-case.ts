@@ -4,7 +4,7 @@ import type { ApplicationLoggerPort } from "#api/shared/application/ports/applic
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
-import { instantToDate } from "#api/shared/domain/time/instant";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { NotificationCachePort } from "../../../inbox/application/ports/notification-cache.port.js";
 import {
@@ -51,7 +51,7 @@ export class ReconcilePushReceiptsUseCase {
     const startedAt = this.#dependencies.clock.now();
     const expired = await this.#dependencies.unitOfWork.run(() =>
       this.#dependencies.pushReceiptRepository.expireUnreceipted(
-        pushReceiptCheckWindow(instantToDate(startedAt)).acceptedAfter,
+        pushReceiptCheckWindow(startedAt).acceptedAfter,
         PUSH_RECEIPT_POLICY.expireBatchSize,
       ),
     );
@@ -59,7 +59,7 @@ export class ReconcilePushReceiptsUseCase {
     const providerFailures: PushFailureKind[] = [];
     for (;;) {
       const ticketIds = await this.#dependencies.pushReceiptRepository.findPendingTicketIds(
-        pushReceiptCheckWindow(this.#now()),
+        pushReceiptCheckWindow(this.#dependencies.clock.now()),
         PUSH_RECEIPT_POLICY.batchSize,
       );
       if (ticketIds.length === 0) {
@@ -109,7 +109,7 @@ export class ReconcilePushReceiptsUseCase {
       const invalid = await this.#dependencies.pushReceiptRepository.recordPushReceipts({
         requestedTicketIds: ticketIds,
         results: receipts,
-        checkedAt: this.#now(),
+        checkedAt: this.#dependencies.clock.now(),
       });
       if (invalid.length > 0) {
         await this.#dependencies.pushTokenRepository.deactivateInvalidTokens(
@@ -131,17 +131,15 @@ export class ReconcilePushReceiptsUseCase {
     };
   }
 
-  #now(): Date {
-    return instantToDate(this.#dependencies.clock.now());
-  }
-
   async #settleTokenCache(invalidTokens: readonly InvalidPushToken[]): Promise<void> {
     if (invalidTokens.length === 0) {
       return;
     }
     const userIds = uniq(invalidTokens.map(({ userId }) => userId));
     const settled = await Promise.allSettled(
-      userIds.map((userId) => this.#dependencies.cache.invalidatePushTokens(userId)),
+      userIds.map((userId) =>
+        this.#dependencies.cache.invalidatePushTokens(UserId.reconstitute(userId)),
+      ),
     );
     const failedCount = settled.filter((result) => result.status === "rejected").length;
     if (failedCount > 0) {

@@ -1,5 +1,5 @@
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
-import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
+import { usePaneSizeClass } from '@src/shared/ui';
 import { type Href, router, usePathname } from 'expo-router';
 import {
   createContext,
@@ -51,7 +51,7 @@ const MyPageMenuNavigationContext = createContext<MyPageMenuNavigation | null>(n
 /** 메뉴 행마다 경로·창 크기·연타 가드를 따로 구독하지 않게 메뉴 칸이 한 번만 구독해 내려 준다 */
 export function MyPageMenuNavigationProvider({ children }: PropsWithChildren) {
   const pathname = usePathname();
-  const isCompact = useWindowSizeClass() === 'compact';
+  const isCompact = usePaneSizeClass() === 'compact';
   const [currentPathname] = useState(() => createCurrentPathnameStore(pathname));
 
   useEffect(() => {

@@ -1,3 +1,7 @@
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+
+import type { MemoId } from "../../domain/memo-id.vo.js";
+
 // 계획 저장(voice)이 출시 응답에 그대로 싣는 메모라 시각은 ISO 문자열이다
 export interface PlanMemo {
   readonly id: number;
@@ -14,7 +18,7 @@ export interface PlanMemo {
  * 메모와 같다. delete는 호출자가 메모 잠금(memo·memo-sort-order)과 소유 확인(findById)을 마친 뒤 부른다.
  */
 export abstract class PlanMemoWriterPort {
-  abstract create(input: { readonly userId: string; readonly content: string }): Promise<PlanMemo>;
-  abstract findById(memoId: number, userId: string): Promise<PlanMemo | null>;
-  abstract delete(memoId: number, userId: string): Promise<void>;
+  abstract create(input: { readonly userId: UserId; readonly content: string }): Promise<PlanMemo>;
+  abstract findById(memoId: MemoId, userId: UserId): Promise<PlanMemo | null>;
+  abstract delete(memoId: MemoId, userId: UserId): Promise<void>;
 }

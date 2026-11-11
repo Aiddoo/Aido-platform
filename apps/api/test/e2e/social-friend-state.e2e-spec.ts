@@ -161,7 +161,7 @@ describe("친구 상태 변경 HTTP 계약", () => {
         where: { id: secondFollowId },
       });
     const beforeNoop = await readSecond();
-    vi.setSystemTime(new Date(SOCIAL_TIME.getTime() + 60000));
+    vi.setSystemTime(new Date(SOCIAL_TIME.getTime() + 60_000));
     await request(context.app.getHttpServer())
       .patch(`/v1/follows/friends/${secondFollowId}/reorder`)
       .set("Authorization", `Bearer ${owner.accessToken}`)

@@ -1,5 +1,6 @@
 import { resolve } from "node:path";
 
+import { resolveTestWorkers } from "@aido/vitest-config/test-workers";
 import swc from "unplugin-swc";
 import { defineConfig } from "vitest/config";
 
@@ -83,7 +84,7 @@ export default defineConfig({
             "test/architecture/**/*.spec.ts",
           ],
           setupFiles,
-          maxWorkers: "50%",
+          maxWorkers: resolveTestWorkers(process.env, "50%"),
         },
       },
       {

@@ -47,7 +47,7 @@ function at(hour: number, minute = 0) {
 function memoTodo(title: string, overrides: Record<string, unknown> = {}) {
   return {
     ...createTodoDraftResponse({ title }),
-    categoryId: 999999,
+    categoryId: 999_999,
     items: [],
     ...overrides,
   };
@@ -114,7 +114,7 @@ describe("AI E2E", () => {
         builder.overrideProvider(AiGeneratorPort).useValue(fakeAiGenerator),
       additionalResetters: [() => fakeAiGenerator.clear()],
     });
-  }, 60000);
+  }, 60_000);
 
   afterAll(async () => {
     await destroyE2eApp(ctx);
@@ -1058,7 +1058,7 @@ describe("AI E2E", () => {
       if (route === "parse-todo") {
         fakeAiGenerator.setResponse(draft);
       } else {
-        fakeAiGenerator.setRawResponse({ todos: [{ ...draft, categoryId: 999999, items: [] }] });
+        fakeAiGenerator.setRawResponse({ todos: [{ ...draft, categoryId: 999_999, items: [] }] });
       }
       vi.useFakeTimers({ toFake: ["Date"] });
       vi.setSystemTime(new Date("2026-03-07T14:30:00Z"));

@@ -20,7 +20,7 @@ describe("AI 파싱 E2E — 서버 일정 계산", () => {
         builder.overrideProvider(AiGeneratorPort).useValue(fakeAiGenerator),
       additionalResetters: [() => fakeAiGenerator.clear()],
     });
-  }, 60000);
+  }, 60_000);
 
   afterAll(async () => {
     await destroyE2eApp(ctx);
@@ -158,7 +158,7 @@ describe("AI 파싱 E2E — 서버 일정 계산", () => {
       date: { kind: "CALENDAR_DATE", year: 2030, month: 3, day: 5 },
       time: null,
       repeat: { pattern: "NONE" },
-      categoryId: 999999,
+      categoryId: 999_999,
       items: items.map((item) => ({ title: item })),
     });
     fakeAiGenerator.setRawResponse({

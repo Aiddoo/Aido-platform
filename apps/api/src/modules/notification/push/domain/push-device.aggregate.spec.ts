@@ -26,30 +26,46 @@ describe("PushDevice — 푸시 기기", () => {
   it.each([
     ["GRANTED", "ExponentPushToken[a]"],
     ["PROVISIONAL", "ExponentPushToken[a]"],
-  ] as const)("%s 권한이면 토큰을 발송 대상으로 둔다", (status, token) => {
+  ] as const)("%s 권한이면 보고한 토큰을 등록한다", (status, token) => {
     // Given
     const device = report(status, token);
 
     // When
-    const deliverableToken = device.deliverableToken;
+    const change = device.tokenChange;
 
     // Then
-    expect(deliverableToken).toBe(token);
+    expect(change).toEqual({ kind: "REGISTER", token });
   });
 
-  it.each(["DENIED", "NOT_DETERMINED"] as const)(
-    "%s 권한이면 앱이 토큰을 보내도 발송 대상으로 두지 않는다",
+  it.each(["GRANTED", "PROVISIONAL"] as const)(
+    "%s 권한인데 토큰 발급에 실패해 null이면 등록된 토큰을 그대로 둔다",
     (status) => {
       // Given
-      const device = report(status, "ExponentPushToken[stale]");
+      const device = report(status, null);
 
       // When
-      const deliverableToken = device.deliverableToken;
+      const change = device.tokenChange;
 
       // Then
-      expect(deliverableToken).toBeNull();
+      expect(change).toEqual({ kind: "KEEP" });
     },
   );
+
+  it.each([
+    ["DENIED", "ExponentPushToken[stale]"],
+    ["DENIED", null],
+    ["NOT_DETERMINED", "ExponentPushToken[stale]"],
+    ["NOT_DETERMINED", null],
+  ] as const)("%s 권한이면 토큰(%s)과 관계없이 이 기기의 토큰을 지운다", (status, token) => {
+    // Given
+    const device = report(status, token);
+
+    // When
+    const change = device.tokenChange;
+
+    // Then
+    expect(change).toEqual({ kind: "RELEASE" });
+  });
 
   it("플랫폼을 알 수 없으면 NOTIFICATION_1006을 던진다", () => {
     // Given

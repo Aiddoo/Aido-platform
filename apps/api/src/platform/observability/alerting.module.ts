@@ -7,10 +7,7 @@ import { sentryConfig } from "#api/platform/config/sentry.config";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { ExceptionReporterPort } from "#api/shared/application/ports/exception-reporter.port";
 import { JobHeartbeatPort } from "#api/shared/application/ports/job-heartbeat.port";
-import {
-  OPERATIONAL_ALERT,
-  OperationalAlertPort,
-} from "#api/shared/application/ports/operational-alert.port";
+import { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 
 import { DeduplicatingOperationalAlertAdapter } from "./deduplicating-operational-alert.adapter.js";
 import { LogExceptionReporterAdapter } from "./log-exception-reporter.adapter.js";
@@ -57,7 +54,7 @@ function adaptersFor(app: AppSettings, sentry: SentrySettings) {
 @Module({
   providers: [
     {
-      provide: OPERATIONAL_ALERT,
+      provide: OperationalAlertPort,
       inject: [appConfig.KEY, sentryConfig.KEY, ClockPort],
       useFactory: (
         app: AppSettings,
@@ -66,8 +63,6 @@ function adaptersFor(app: AppSettings, sentry: SentrySettings) {
       ): OperationalAlertPort =>
         new DeduplicatingOperationalAlertAdapter(new (adaptersFor(app, sentry).alert)(), clock),
     },
-    // 테스트가 OPERATIONAL_ALERT 하나만 바꿔도 클래스 토큰으로 받는 곳까지 같은 기록기를 받는다
-    { provide: OperationalAlertPort, useExisting: OPERATIONAL_ALERT },
     {
       provide: ExceptionReporterPort,
       inject: [appConfig.KEY, sentryConfig.KEY],
@@ -82,6 +77,6 @@ function adaptersFor(app: AppSettings, sentry: SentrySettings) {
     },
     { provide: APP_INTERCEPTOR, useClass: RequestScopeInterceptor },
   ],
-  exports: [OPERATIONAL_ALERT, OperationalAlertPort, ExceptionReporterPort, JobHeartbeatPort],
+  exports: [OperationalAlertPort, ExceptionReporterPort, JobHeartbeatPort],
 })
 export class AlertingModule {}

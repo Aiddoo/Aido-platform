@@ -2,8 +2,6 @@ import type { NOTIFICATION_PURPOSES } from "@aido/api/vocabulary";
 
 import type { PushDeliveryMode } from "../../domain/push-delivery-status.constants.js";
 
-export type { PushDeliveryMode } from "../../domain/push-delivery-status.constants.js";
-
 export interface StagePushDispatchInput {
   readonly notificationId: number;
   readonly userId: string;

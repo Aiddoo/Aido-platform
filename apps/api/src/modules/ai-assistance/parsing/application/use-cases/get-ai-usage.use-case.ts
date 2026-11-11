@@ -2,6 +2,7 @@ import type {
   MeteredFeatureQuota,
   QuotaLedgerPort,
 } from "#api/modules/access/quotas/access-quotas.public";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 export interface GetAiUsageQuery {
   readonly userId: string;
@@ -20,6 +21,6 @@ export class GetAiUsageUseCase {
   }
 
   execute(input: GetAiUsageQuery): Promise<MeteredFeatureQuota> {
-    return this.#dependencies.quota.read(input.userId, "AI_PARSE");
+    return this.#dependencies.quota.read(UserId.reconstitute(input.userId), "AI_PARSE");
   }
 }

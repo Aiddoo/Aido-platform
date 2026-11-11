@@ -131,7 +131,7 @@ export class AiActionPlanGeneratorAdapter extends ActionPlanGeneratorPort {
     const userId = owner.value;
     const startedAt = clock.now().epochMilliseconds;
     const logBase = { task: definition.id, promptVersion: definition.version, userId };
-    const consent = await consentReader.findAiDataSharingConsent(userId);
+    const consent = await consentReader.findAiDataSharingConsent(owner);
     const { agreedVersion } = consent.status();
     try {
       const generation = await generateWithPrompt(generator, definition, built, context, {

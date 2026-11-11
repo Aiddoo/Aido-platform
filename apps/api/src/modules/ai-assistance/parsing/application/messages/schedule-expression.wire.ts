@@ -63,7 +63,7 @@ export const nullableTimeRefSchema = nullableLlmObject({
 }).describe("null when no time is mentioned (all-day).") satisfies z.ZodType<TimeRef | null>;
 
 /** 출시 parse 응답(요일 + 종료일)이 나타낼 수 있는 반복. 격주·매월은 UNSUPPORTED로 받는다. */
-export const PARSE_REPEAT_PATTERNS = [
+const PARSE_REPEAT_PATTERNS = [
   "NONE",
   "WEEKLY_DAYS",
   "DAILY",

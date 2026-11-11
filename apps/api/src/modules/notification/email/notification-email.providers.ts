@@ -2,10 +2,7 @@ import { Logger, type Provider } from "@nestjs/common";
 import { Mailer } from "@nestjs/mail";
 
 import { loggerFor, provideUseCase } from "#api/platform/di/provide-use-case";
-import {
-  USAGE_METER,
-  type UsageMeterPort,
-} from "#api/platform/metering/interfaces/usage-meter.interface";
+import { UsageMeterPort } from "#api/platform/metering/usage-meter.port";
 import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
@@ -49,7 +46,7 @@ const NOTIFICATION_EMAIL_EXTERNAL_PROVIDERS = [
   },
   {
     provide: EmailBudgetPort,
-    inject: [USAGE_METER, OperationalAlertPort, ClockPort],
+    inject: [UsageMeterPort, OperationalAlertPort, ClockPort],
     useFactory: (meter: UsageMeterPort, alert: OperationalAlertPort, clock: ClockPort) =>
       new MeteredEmailBudgetAdapter({
         meter,

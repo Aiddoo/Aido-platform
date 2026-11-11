@@ -1,5 +1,6 @@
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { resolveMarketingAgreement } from "../../domain/marketing-consent.domain-service.js";
 import type { UserConsentRepositoryPort } from "../ports/user-consent.repository.port.js";
@@ -30,7 +31,7 @@ export class UpdateMarketingPushConsentUseCase {
   async execute(input: UpdateMarketingPushConsentCommand): Promise<MarketingPushConsentView> {
     const processedAt = this.#dependencies.clock.now();
     const updated = await this.#dependencies.consentRepository.upsertMarketingPushConsent(
-      input.userId,
+      UserId.reconstitute(input.userId),
       {
         agreedAt: resolveMarketingAgreement(input.agreed, processedAt),
       },

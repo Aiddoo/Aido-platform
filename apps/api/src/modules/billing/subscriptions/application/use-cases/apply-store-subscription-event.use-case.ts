@@ -196,7 +196,9 @@ export class ApplyStoreSubscriptionEventUseCase {
     userIds: readonly string[],
   ): Promise<boolean> {
     try {
-      await Promise.all(userIds.map((userId) => this.#dependencies.cache.invalidate(userId)));
+      await Promise.all(
+        userIds.map((userId) => this.#dependencies.cache.invalidate(UserId.reconstitute(userId))),
+      );
       return true;
     } catch (error) {
       this.#dependencies.notifier.reportWebhookFailure(error, failureContextOf(event));
@@ -213,7 +215,10 @@ export class ApplyStoreSubscriptionEventUseCase {
   // 영구 실패는 공급자가 다시 보내지 않으므로 스토어 상태를 다시 읽어 스스로 맞춘다
   async #scheduleRecovery(userId: string): Promise<void> {
     try {
-      await this.#dependencies.reconcileScheduler.schedule(userId, this.#dependencies.clock.now());
+      await this.#dependencies.reconcileScheduler.schedule(
+        UserId.reconstitute(userId),
+        this.#dependencies.clock.now(),
+      );
     } catch (error) {
       this.#dependencies.logger.warn({
         event: SubscriptionLogEvent.RECONCILE_FAILED,
@@ -263,7 +268,7 @@ export class ApplyStoreSubscriptionEventUseCase {
       const result = await unitOfWork.run(async () => {
         // 넘겨준·넘겨받은 사용자를 id 순으로 잠가 반대 방향 이전과 교착하지 않는다
         for (const user of sortBy([receiver, ...previousOwners], [(user) => user.id])) {
-          if (!(await userLock.lockById(user.id)) && user.id === receiver.id) {
+          if (!(await userLock.lockById(UserId.reconstitute(user.id))) && user.id === receiver.id) {
             throw subscriptionUserNotFound(lockKey);
           }
         }
@@ -368,7 +373,8 @@ export class ApplyStoreSubscriptionEventUseCase {
   ): Promise<SubscriptionEventPayload | null> {
     const { subscriptionRepository, userLock, clock } = this.#dependencies;
     return this.#dependencies.unitOfWork.run(async () => {
-      if (!(await userLock.lockById(user.id))) {
+      const userId = UserId.reconstitute(user.id);
+      if (!(await userLock.lockById(userId))) {
         throw subscriptionUserNotFound(event.appUserId);
       }
       // 처리 원장은 업무 변경과 함께 커밋한다. 실패한 트랜잭션은 다시 처리할 수 있다
@@ -377,7 +383,7 @@ export class ApplyStoreSubscriptionEventUseCase {
         return null;
       }
       // 이벤트는 신호다. 늦거나 빠진 이벤트로 어긋난 상태를 스토어에서 다시 읽어 맞추도록 함께 커밋한다
-      await this.#dependencies.reconcileScheduler.schedule(user.id, clock.now());
+      await this.#dependencies.reconcileScheduler.schedule(userId, clock.now());
       const subscription =
         event.storeSubscriptionId != null && event.storeSubscriptionId !== ""
           ? await subscriptionRepository.findByStoreSubscriptionId(
@@ -390,7 +396,7 @@ export class ApplyStoreSubscriptionEventUseCase {
       }
       const payload = await this.#applyEvent(user, event, subscription);
       if (payload != null && event.kind === "BILLING_ISSUE") {
-        await this.#dependencies.notifier.recordBillingIssue(user.id, clock.now());
+        await this.#dependencies.notifier.recordBillingIssue(userId, clock.now());
       }
       return payload;
     });

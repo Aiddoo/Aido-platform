@@ -2,8 +2,10 @@ import type { TodoRepeat } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
 
 import type { PlanMemo } from "#api/modules/notes/memos/notes-memos.public";
+import { TodoCategoryId } from "#api/modules/planning/categories/planning-categories.public";
 import type { StagedTodoCreatorPort } from "#api/modules/planning/todos/planning-todos.public";
 import type { TodoReadModel } from "#api/modules/planning/todos/planning-todos.public";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { ImmediateUnitOfWork } from "#test/doubles/platform/immediate-unit-of-work";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
@@ -106,17 +108,17 @@ function setup(ownedCategoryIds: readonly number[] = [1]) {
     memoWriter: {
       create: async (input) => {
         order.push("memo");
-        createdMemos.push({ userId: input.userId, content: input.content });
+        createdMemos.push({ userId: input.userId.value, content: input.content });
         return memo;
       },
-      findById: async (memoId) => (memoId === MISSING_MEMO_ID ? null : memo),
+      findById: async (memoId) => (memoId.value === MISSING_MEMO_ID ? null : memo),
       delete: async (memoId) => {
         order.push("deleteMemo");
-        deletedMemoIds.push(memoId);
+        deletedMemoIds.push(memoId.value);
       },
     },
     todoReader: {
-      findManyByIds: async (_userId, ids) => ids.map((id) => todoResponse(id)),
+      findManyByIds: async (_userId, ids) => ids.map((id) => todoResponse(id.value)),
     },
     clock: new FixedClock(Temporal.Instant.from("2027-01-04T00:00:00Z")),
     logger: new SilentLogger(),
@@ -175,12 +177,12 @@ describe("ApplyActionPlanUseCase", () => {
     const result = await execute([scheduled, todoAction({ key: "todo-1" })]);
     // Then
     expect(stagedInputs[0]).toMatchObject({
-      userId: USER_ID,
+      userId: UserId.reconstitute(USER_ID),
       timezone: "Asia/Seoul",
       title: "회의록 보내기",
-      categoryId: 1,
-      startDate: new Date("2027-01-04T00:00:00.000Z"),
-      endDate: new Date("2027-01-06T00:00:00.000Z"),
+      categoryId: TodoCategoryId.reconstitute(1),
+      startDate: Temporal.PlainDate.from("2027-01-04"),
+      endDate: Temporal.PlainDate.from("2027-01-06"),
       scheduledTime: "15:30",
       isAllDay: false,
       visibility: "PRIVATE",

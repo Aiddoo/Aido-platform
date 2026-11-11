@@ -94,7 +94,7 @@ describe("Engagement 댓글 실제 PostgreSQL 회귀", () => {
             userId,
             categoryId: category.id,
             visibility: "PUBLIC",
-            startDate: AT,
+            startDate: Temporal.PlainDate.from("2027-01-08"),
             sortOrder: 0,
             commentCount: 9,
           }),
@@ -424,7 +424,7 @@ describe("Engagement 댓글 실제 PostgreSQL 회귀", () => {
     expect(await client.$count(notification)).toBe(1);
   });
 
-  it("구버전 작성기와 unique 경합한 뒤 권한이 사라지면 저장된 댓글을 다시 보내도 거부한다", async () => {
+  it("다른 작성기와 unique 경합한 뒤 권한이 사라지면 저장된 댓글을 다시 보내도 거부한다", async () => {
     // Given
     await client.update(todo).set({ visibility: "PRIVATE" }).where(eq(todo.id, todoId));
     await client
@@ -438,7 +438,7 @@ describe("Engagement 댓글 실제 PostgreSQL 회귀", () => {
     );
     const save = repository.save.bind(repository);
     vi.spyOn(repository, "save").mockImplementationOnce(async (comment) => {
-      // 구버전 작성기가 같은 멱등 키로 다른 id의 글을 먼저 커밋한다
+      // 다른 작성기가 같은 멱등 키로 다른 id의 글을 먼저 커밋한다
       await outside.save(
         TodoComment.reconstitute({ ...comment.toPrimitives(), id: createEntityId() }),
       );
