@@ -4,9 +4,7 @@ type PushOnboardingGuardState = boolean | null;
 export interface PushOnboardingGuardStore {
   getSnapshot(): PushOnboardingGuardState;
   subscribe(listener: () => void): () => void;
-  /** 앱 화면 묶음이 guard를 이 값으로 그렸다 */
   markRendered(isDue: PushOnboardingGuardState): void;
-  /** guard가 화면에서 빠졌다 */
   clear(): void;
 }
 

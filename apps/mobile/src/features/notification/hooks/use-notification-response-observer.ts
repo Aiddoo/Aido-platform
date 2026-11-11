@@ -1,9 +1,9 @@
 import {
   useAppLifecycle,
   useLogger,
-  usePushNotificationEntryStore,
   useNotificationApi,
   usePushNotification,
+  usePushNotificationEntryStore,
   useSessionEpoch,
 } from '@src/bootstrap/providers/di-context';
 import type { PushNotificationResponse as OsPushNotificationResponse } from '@src/core/ports/push-notification-gateway';
