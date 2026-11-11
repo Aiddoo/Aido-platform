@@ -47,8 +47,8 @@ import { createActivationProgressRepository } from '@src/features/device/activat
 import { ActivationService } from '@src/features/device/activation/services/activation.service';
 import { AppIconService } from '@src/features/device/app-icon/apis/app-icon.service';
 import { createCoachmarkRepository } from '@src/features/device/coachmark/repositories/coachmark.repository';
-import { createStoreReviewRepository } from '@src/features/device/store-review/apis/store-review.repository';
-import { StoreReviewService } from '@src/features/device/store-review/apis/store-review.service';
+import { createStoreReviewRepository } from '@src/features/device/store-review/repositories/store-review.repository';
+import { StoreReviewService } from '@src/features/device/store-review/services/store-review.service';
 import { createWidgetNavigationRepository } from '@src/features/device/widget/apis/widget-navigation.repository';
 import { WidgetSyncService } from '@src/features/device/widget/apis/widget-sync.service';
 import type { WidgetBridge } from '@src/features/device/widget/bridge/widget-bridge';

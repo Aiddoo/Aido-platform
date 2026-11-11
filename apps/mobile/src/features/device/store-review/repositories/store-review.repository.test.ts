@@ -19,11 +19,11 @@ describe('StoreReviewRepository', () => {
     );
 
     // Then
-    expect(repository.get('account-a')).toEqual({
+    expect(repository.find('account-a')).toEqual({
       activeDays: ['2026-10-27'],
       requestedAt: [toInstant('2026-10-27T12:00:00.000Z')],
     });
-    expect(repository.get('account-b')).toEqual({ activeDays: [], requestedAt: [] });
+    expect(repository.find('account-b')).toBeNull();
     expect(storage.keys()).toEqual([KEY]);
   });
 
@@ -46,7 +46,7 @@ describe('StoreReviewRepository', () => {
     const repository = createStoreReviewRepository(storage);
 
     // When
-    const state = repository.get('account-a');
+    const state = repository.find('account-a');
 
     // Then
     expect(state).toEqual({
@@ -82,21 +82,21 @@ describe('StoreReviewRepository', () => {
     );
 
     // When
-    const state = createStoreReviewRepository(storage).get('account-a');
+    const state = createStoreReviewRepository(storage).find('account-a');
 
     // Then
     expect(state).toEqual({ activeDays: ['2026-08-10'], requestedAt: [] });
   });
 
-  it('손상된 저장값은 안전한 빈 상태로 복구한다', () => {
+  it('손상된 저장값은 기록이 없는 것으로 읽는다', () => {
     // Given
     const storage = createMemorySyncStorage();
     storage.get.mockReturnValue('{broken');
 
     // When
-    const state = createStoreReviewRepository(storage).get('account-a');
+    const state = createStoreReviewRepository(storage).find('account-a');
 
     // Then
-    expect(state).toEqual({ activeDays: [], requestedAt: [] });
+    expect(state).toBeNull();
   });
 });

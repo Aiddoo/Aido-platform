@@ -1,6 +1,6 @@
 import { ApiError } from '@src/core/errors/api-error';
 import { err, ok } from '@src/core/errors/result';
-import { createStoreReviewRepository } from '@src/features/device/store-review/apis/store-review.repository';
+import { createStoreReviewRepository } from '@src/features/device/store-review/repositories/store-review.repository';
 import '@src/shared/i18n/init';
 import { createUser } from '@src/features/identity/user/__tests__/user.fixtures';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-keys';
@@ -98,7 +98,7 @@ async function renderToggle() {
     httpClient,
     queryClient,
     appStoreReviewGateway,
-    getActiveDays: () => storeReviewRepository.get(ACCOUNT_ID).activeDays,
+    getActiveDays: () => storeReviewRepository.find(ACCOUNT_ID)?.activeDays,
     settleReviewWait: () => act(async () => jest.advanceTimersByTimeAsync(REVIEW_SETTLE_MS)),
     toggle,
     startToggle,

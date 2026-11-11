@@ -1,9 +1,13 @@
 import type { AppStoreReviewGateway } from '@src/core/ports/app-store-review-gateway';
 import { type Instant } from '@src/shared/date/instant';
 
-import { type StoreReviewEligibility, StoreReviewPolicy } from '../domains/store-review.model';
-import type { StoreReviewMoment } from '../domains/store-review.model';
-import type { StoreReviewRepository } from './store-review.repository';
+import {
+  createEmptyStoreReviewState,
+  type StoreReviewEligibility,
+  type StoreReviewMoment,
+  StoreReviewPolicy,
+} from '../domains/store-review.model';
+import type { StoreReviewRepository } from '../repositories/store-review.repository';
 
 export type StoreReviewOutcome =
   | 'requested'
@@ -64,7 +68,7 @@ export class StoreReviewService {
       return 'in_flight';
     }
     const eligibility = StoreReviewPolicy.getEligibility(
-      this.#repository.get(accountId),
+      this.#repository.find(accountId) ?? createEmptyStoreReviewState(),
       this.#now(),
     );
     if (eligibility !== 'eligible') {

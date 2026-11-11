@@ -1,8 +1,9 @@
 import { toInstant } from '@src/shared/date/instant';
 import { createAppStoreReviewGatewayStub, createMemorySyncStorage } from '@src/testing/core';
+import { noop } from 'es-toolkit';
 
 import { StoreReviewPolicy } from '../domains/store-review.model';
-import { createStoreReviewRepository } from './store-review.repository';
+import { createStoreReviewRepository } from '../repositories/store-review.repository';
 import { StoreReviewService, type WaitUntilPresentable } from './store-review.service';
 
 const NOW = toInstant('2026-10-27T12:00:00.000Z');
@@ -30,7 +31,7 @@ describe('StoreReviewService', () => {
     becomeEngaged();
     const waitUntilPresentable = jest.fn<Promise<boolean>, [number]>().mockResolvedValue(true);
     gateway.requestReview.mockImplementation(async () => {
-      expect(repository.get(ACCOUNT).requestedAt).toEqual([NOW]);
+      expect(repository.find(ACCOUNT)?.requestedAt).toEqual([NOW]);
     });
 
     // When
@@ -82,7 +83,7 @@ describe('StoreReviewService', () => {
     // Then
     expect(interrupted).toBe('interrupted');
     expect(gateway.requestReview).not.toHaveBeenCalled();
-    expect(repository.get(ACCOUNT).requestedAt).toEqual([]);
+    expect(repository.find(ACCOUNT)?.requestedAt).toEqual([]);
     await expect(service.requestReviewAt(ALL_DONE, presentable)).resolves.toBe('requested');
   });
 
@@ -108,18 +109,23 @@ describe('StoreReviewService', () => {
     // Given
     const { becomeEngaged, gateway, service } = createFixture();
     becomeEngaged();
-    let settle: ((isReady: boolean) => void) | undefined;
-    const waitUntilPresentable: WaitUntilPresentable = () =>
-      new Promise((resolve) => {
+    let settle: (isReady: boolean) => void = noop;
+    let markWaiting: () => void = noop;
+    const waiting = new Promise<void>((resolve) => {
+      markWaiting = resolve;
+    });
+    const waitUntilPresentable: WaitUntilPresentable = () => {
+      markWaiting();
+      return new Promise((resolve) => {
         settle = resolve;
       });
+    };
 
     // When
     const first = service.requestReviewAt(ALL_DONE, waitUntilPresentable);
     const second = await service.requestReviewAt(ALL_DONE, waitUntilPresentable);
-    // oxlint-disable-next-line aido/no-real-sleep -- 1.15.2 전환 #1400
-    await new Promise((resolve) => setImmediate(resolve));
-    settle?.(false);
+    await waiting;
+    settle(false);
 
     // Then
     expect(second).toBe('in_flight');
@@ -139,7 +145,7 @@ describe('StoreReviewService', () => {
 
     // Then
     await expect(failed).rejects.toThrow('native unavailable');
-    expect(repository.get(ACCOUNT).requestedAt).toEqual([]);
+    expect(repository.find(ACCOUNT)?.requestedAt).toEqual([]);
     await expect(service.requestReviewAt(ALL_DONE, presentable)).resolves.toBe('requested');
   });
 

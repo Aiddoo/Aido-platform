@@ -12,17 +12,6 @@
   },
   {
     "type": "dependency",
-    "from": "src/features/device/store-review/domains/store-review.model.ts",
-    "to": "src/features/device/store-review/constants/store-review.constants.ts",
-    "unresolvedTo": "../constants/store-review.constants",
-    "dependencyTypes": ["local", "import"],
-    "rule": {
-      "severity": "error",
-      "name": "domain-model-constants"
-    }
-  },
-  {
-    "type": "dependency",
     "from": "src/features/device/widget/domains/widget-navigation.model.ts",
     "to": "src/features/device/widget/constants/widget.constants.ts",
     "unresolvedTo": "../constants/widget.constants",
