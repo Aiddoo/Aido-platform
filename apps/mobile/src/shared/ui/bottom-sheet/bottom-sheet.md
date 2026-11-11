@@ -25,7 +25,7 @@
 | ------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 포커스 입력 스크롤은 `use-scroll-focused-input-into-view`                | keyboard-controller 문서의 `BottomSheetKeyboardAwareScrollView`는 스크롤 뷰가 제자리라고 보고 키보드 시작 때의 입력 위치로 스크롤 양을 정한다. gorhom `interactive`는 시트를 키보드만큼 함께 올리므로 그 양만큼 더 스크롤된다                                                |
 | `KeyboardBottomSheet`의 내용은 gorhom 직접 사용                          | `BottomSheet.Content`가 내용을 `BottomSheetView`로 감싸, 그 `onLayout`과 안쪽 `BottomSheetScrollView`가 같은 동적 높이를 번갈아 쓰고 키보드로 시트가 줄어도 안쪽 스크롤 높이가 줄지 않는다. HeroUI 문서도 스크롤 내용은 `enableDynamicSizing={false}`·고정 높이로만 안내한다 |
-| `KeyboardBottomSheet`의 `useAndroidSheetBackHandler`                     | `onDismissRequest`를 끼워 넣어야 하는데 HeroUI의 뒤로 가기 처리는 가로챌 수 없다                                                                                                                                                                                             |
+| `KeyboardBottomSheet`의 `useAndroidBackHandler`                          | `onDismissRequest`를 끼워 넣어야 하는데 HeroUI의 뒤로 가기 처리는 가로챌 수 없다                                                                                                                                                                                             |
 | 입력은 `BottomSheetTextInput` (`useBottomSheetAwareHandlers` 아님)       | gorhom 소스가 JS에서 `.set(updater)`를 쓰면 키보드 이벤트를 놓칠 수 있다고 경고하는데 공식 훅이 그 방식이고, 언마운트 정리도 없다                                                                                                                                            |
 | `footer`는 gorhom `BottomSheetFooter`를 쓰지 않음                        | gorhom footer는 매 프레임 화면에 보이는 바닥(키보드 위)에 붙어, 시트가 올라오는 동안 내용을 덮었다가 다 올라오면 비킨다. 시트 바닥에 붙여 함께 움직이고, `KeyboardBottomSheet`는 키보드에 가리는 만큼만 올린다                                                               |
 | `BottomSheet`가 `useBottomSheetInternal`의 `animatedDetentsState`를 읽음 | route처럼 열린 채 마운트하면 gorhom이 높이 측정 전의 열기를 버리는데, 측정 끝을 알리는 공개 이벤트가 없다. HeroUI 시트 내용도 같은 값을 읽는다                                                                                                                               |
@@ -179,7 +179,7 @@ const sheet = useSheetRoute('/feed');
 - 다음 시트로 이어질 때는 `close({ type: 'replace', href })`로 바꿔 뒤로가기 기록을 쌓지 않는다.
   완료 후 아래 화면도 바꿔야 하면 `close({ type: 'back-then-replace', href })`를 쓴다.
 - 구독 화면 이동처럼 애니메이션 없이 바로 떠날 때는 `sheet.exit()`를 쓴다.
-- Android 뒤로가기는 `BottomSheet`는 HeroUI가, `KeyboardBottomSheet`는 `useAndroidSheetBackHandler`가 먼저 소비해 닫기 애니메이션 뒤 route를 떠난다.
+- Android 뒤로가기는 `BottomSheet`는 HeroUI가, `KeyboardBottomSheet`는 `useAndroidBackHandler`가 먼저 소비해 닫기 애니메이션 뒤 route를 떠난다.
 - `SheetRouteScreen`은 제스처 루트와 `OverlayProvider`를 route 안에 다시 둔다. iOS transparentModal은 루트 위에
   따로 표시되므로, 시트와 그 위의 피커·다이얼로그가 이 모달 안에 그려지게 하기 위해서다. 호스트가 route 안에 있어 route 훅도 그대로 쓴다.
 - 이 호스트는 `disableFullWindowOverlay`다. iOS FullWindowOverlay는 모달 바깥 창에 붙어 화면에는 보여도 VoiceOver·XCUITest가 읽지 못한다.
@@ -262,7 +262,7 @@ route 시트는 모달이 크기를 받은 뒤 그려서, 시트에서 시트로
 ## Android 뒤로가기와 정리 (1.11.0)
 
 열린 시트가 시스템 뒤로가기를 소비한다. `BottomSheet`·`ModalBottomSheet`는 HeroUI가, `KeyboardBottomSheet`는
-`useAndroidSheetBackHandler`가 처리한다. 가장 마지막에 열린 시트가 먼저 닫히며, 닫힘 이후에는 기존 Expo Router 화면 뒤로가기가 이어진다.
+`useAndroidBackHandler`가 처리한다. 가장 마지막에 열린 시트가 먼저 닫히며, 닫힘 이후에는 기존 Expo Router 화면 뒤로가기가 이어진다.
 React Native `BackHandler`의 구독은 cleanup에서 제거한다.
 
 `KeyboardBottomSheet`의 내용 크기·키보드 변경은 하나의 예약 resize frame으로 모은다.

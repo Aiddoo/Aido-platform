@@ -5,6 +5,7 @@ import GorhomBottomSheet, {
   BottomSheetScrollView,
   useBottomSheetTimingConfigs,
 } from '@gorhom/bottom-sheet';
+import { useAndroidBackHandler } from '@src/shared/hooks/use-android-back-handler';
 import { useTranslation } from '@src/shared/i18n';
 import { BottomSheet as HeroBottomSheet } from 'heroui-native';
 import {
@@ -60,7 +61,6 @@ import {
 } from './keyboard-bottom-sheet.geometry';
 import { usePortalTarget } from './portal-target';
 import { SheetFooterContext, SheetFooterSlot } from './sheet-footer-slot';
-import { useAndroidSheetBackHandler } from './use-android-sheet-back-handler';
 import { useScrollFocusedInputIntoView } from './use-scroll-focused-input-into-view';
 import { useSheetLayout } from './use-sheet-layout';
 
@@ -210,7 +210,14 @@ export function KeyboardBottomSheet({
     (onDismissRequestRef.current ?? closeSheet)();
   }, [closeSheet]);
 
-  useAndroidSheetBackHandler(isOpen, requestDismiss);
+  // 닫힌 시트는 듣지 않고, 뒤에 열린 시트의 구독이 먼저 불려 마지막 시트부터 닫힌다
+  useAndroidBackHandler({
+    isEnabled: isOpen,
+    onBack: () => {
+      requestDismiss();
+      return true;
+    },
+  });
 
   const resizeSheet = useCallback(() => {
     if (isClosingRef.current) {

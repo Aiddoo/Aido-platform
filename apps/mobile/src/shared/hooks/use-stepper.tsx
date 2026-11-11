@@ -1,15 +1,12 @@
-import { useFocusEffect } from 'expo-router';
 import {
   Fragment,
   type ReactNode,
-  useCallback,
   useEffect,
   useEffectEvent,
   useRef,
   useState,
   useSyncExternalStore,
 } from 'react';
-import { BackHandler } from 'react-native';
 
 import {
   createStepperState,
@@ -20,6 +17,7 @@ import {
   type StepperContexts,
   stepperReducer,
 } from '../utils/stepper-reducer';
+import { useAndroidBackHandler } from './use-android-back-handler';
 
 export type { StepperContexts } from '../utils/stepper-reducer';
 
@@ -161,18 +159,15 @@ export function useStepper<Contexts extends StepperContexts>({
     notifyStepChange({ ...current, index: state.cursor });
   }, [current, state.cursor]);
 
-  useFocusEffect(
-    useCallback(() => {
-      const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
-        if (store.getState().cursor === 0) {
-          return false;
-        }
-        history.back();
-        return true;
-      });
-      return () => subscription.remove();
-    }, [store, history]),
-  );
+  useAndroidBackHandler({
+    onBack: () => {
+      if (store.getState().cursor === 0) {
+        return false;
+      }
+      history.back();
+      return true;
+    },
+  });
 
   return {
     ...current,

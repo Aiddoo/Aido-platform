@@ -1,13 +1,13 @@
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { useTrack } from '@src/shared/analytics';
 import { getNowInstant } from '@src/shared/date/instant';
+import { useAndroidBackHandler } from '@src/shared/hooks/use-android-back-handler';
 import { useTranslation } from '@src/shared/i18n';
 import { useStoredValue } from '@src/shared/storage/use-stored-value';
 import { Button, STACK_CLOSE_ICON } from '@src/shared/ui';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { Stack, useFocusEffect } from 'expo-router';
+import { Stack } from 'expo-router';
 import { useCallback, useEffect } from 'react';
-import { BackHandler } from 'react-native';
 
 import { PUSH_PERMISSION_STEP } from '../constants/notification.constants';
 import type { PushPermissionPromptSource } from '../constants/notification.events';
@@ -37,15 +37,12 @@ export function PushPermissionOnboardingActions() {
   }, [setDeferredAt, trackEvent]);
 
   // Android 뒤로 가기도 닫기로 받는다. 답 없이 피드로 돌아가면 피드가 이 화면을 다시 연다
-  useFocusEffect(
-    useCallback(() => {
-      const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
-        handleClose();
-        return true;
-      });
-      return () => subscription.remove();
-    }, [handleClose]),
-  );
+  useAndroidBackHandler({
+    onBack: () => {
+      handleClose();
+      return true;
+    },
+  });
 
   const handleContinue = () => {
     requestPermission.mutate(undefined, {
