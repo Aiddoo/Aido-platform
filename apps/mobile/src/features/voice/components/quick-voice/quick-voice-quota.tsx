@@ -13,8 +13,8 @@ import { useQuery } from '@tanstack/react-query';
 import { Popover, PressableFeedback, Separator } from 'heroui-native';
 import { useState } from 'react';
 
-// oxlint-disable-next-line aido/component-name -- 1.15.2 전환 #1400
-export function QuickVoiceInfo() {
+/** 빠른 말하기가 쓰는 AI 정리 횟수. 누르면 무엇에 쓰이고 언제 다시 차는지 알린다 */
+export function QuickVoiceQuota() {
   const { t } = useTranslation('voice');
   const fontScaledSize = useFontScaledSize();
   const [isOpen, setIsOpen] = useState(false);

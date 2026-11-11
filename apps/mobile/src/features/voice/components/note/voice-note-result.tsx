@@ -11,24 +11,27 @@ import {
   Box,
   HStack,
   QueryErrorBoundary,
+  QueryErrorFallback,
+  type QueryErrorFallbackProps,
   READABLE_CONTENT_MAX_WIDTH,
   ScrollFade,
   SegmentTabTrigger,
   Text,
+  TextSkeleton,
   ViewTabs,
   VStack,
   WordWrapText,
 } from '@src/shared/ui';
-import { noop } from 'es-toolkit';
+import { noop, range } from 'es-toolkit';
 import { Stack } from 'expo-router';
-import { Tabs } from 'heroui-native';
-import { type ComponentProps, type ReactNode, Suspense, useState } from 'react';
+import { Skeleton, Tabs } from 'heroui-native';
+import { type ComponentProps, type PropsWithChildren, Suspense, useState } from 'react';
 import { ScrollView } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { match } from 'ts-pattern';
 
-import { VoiceNotePolicy, type VoiceNote } from '../../domains/voice-note.model';
-import { useVoiceNoteRoute } from '../../hooks/use-current-voice-note';
+import { VoiceNotePolicy } from '../../domains/voice-note.model';
+import { useCurrentVoiceNote, useVoiceNoteRoute } from '../../hooks/use-current-voice-note';
 import {
   useVoiceNotePlayback,
   useVoiceNotePlayer,
@@ -46,16 +49,17 @@ import { VoiceNotePlayerBar } from './voice-note-player-bar';
 import { VoiceNoteToolbar } from './voice-note-toolbar';
 
 const PLAN_TODOS_CLASS_NAME = 'flex-1 pb-3';
+const LOADING_SUMMARY_LINE_COUNT = 3;
 
 interface VoiceNoteResultProps {
-  note: VoiceNote;
   onMemoChanged: () => void;
 }
 
-export function VoiceNoteResult({ note, onMemoChanged }: VoiceNoteResultProps) {
+export function VoiceNoteResult({ onMemoChanged }: VoiceNoteResultProps) {
   const [tab, setTab] = useView('tab', voiceNoteTabSchema);
+  const note = useCurrentVoiceNote();
   const isCompact = useWindowSizeClass() === 'compact';
-  const { player, canPlay } = useVoiceNoteResultPlayer(note);
+  const { player, canPlay } = useVoiceNoteResultPlayer();
   // 결과 화면에서는 문장이 바뀌지 않아 한 번만 만든다. 자동 저장으로 노트가 바뀔 때마다 다시 계산하지 않는다
   const [levels] = useState(() => createSpeechLevels(note.sentences, note.durationMs));
   const selectedTab = !isCompact && tab === 'todos' ? 'summary' : tab;
@@ -63,8 +67,8 @@ export function VoiceNoteResult({ note, onMemoChanged }: VoiceNoteResultProps) {
   return (
     <VStack flex={1} gap={12}>
       <Stack.Screen options={{ title: '' }} />
-      <VoiceNoteToolbar note={note} onMemoChanged={onMemoChanged} />
-      <VoiceNoteResult.Title note={note} />
+      <VoiceNoteToolbar onMemoChanged={onMemoChanged} />
+      <VoiceNoteResult.Title />
       <VoiceNotePlayerBar
         player={player}
         levels={levels}
@@ -73,19 +77,18 @@ export function VoiceNoteResult({ note, onMemoChanged }: VoiceNoteResultProps) {
       />
       <HStack flex={1} gap={20}>
         <VStack flex={1} gap={12}>
-          <VoiceNoteResult.TabList note={note} value={selectedTab} onValueChange={setTab} />
+          <VoiceNoteResult.TabList value={selectedTab} onValueChange={setTab} />
           <Animated.View entering={FadeIn.duration(200)} key={selectedTab} style={{ flex: 1 }}>
             {match(selectedTab)
               .with('summary', () => (
-                <VoiceNoteResult.Summary note={note}>
-                  <VoiceNoteResult.KeyPoints note={note} player={player} canPlay={canPlay} />
+                <VoiceNoteResult.Summary>
+                  <VoiceNoteResult.KeyPoints player={player} canPlay={canPlay} />
                 </VoiceNoteResult.Summary>
               ))
               .with('todos', () => (
                 <QueryErrorBoundary>
                   <Suspense fallback={<PlanReview.Loading className={PLAN_TODOS_CLASS_NAME} />}>
                     <VoiceNotePlanTodos
-                      note={note}
                       className={PLAN_TODOS_CLASS_NAME}
                       onMemoChanged={onMemoChanged}
                     />
@@ -93,7 +96,7 @@ export function VoiceNoteResult({ note, onMemoChanged }: VoiceNoteResultProps) {
                 </QueryErrorBoundary>
               ))
               .with('transcript', () => (
-                <VoiceNoteResult.Transcript note={note} player={player} canPlay={canPlay} />
+                <VoiceNoteResult.Transcript player={player} canPlay={canPlay} />
               ))
               .exhaustive()}
           </Animated.View>
@@ -103,7 +106,6 @@ export function VoiceNoteResult({ note, onMemoChanged }: VoiceNoteResultProps) {
             <QueryErrorBoundary>
               <Suspense fallback={<PlanReview.Loading className={PLAN_TODOS_CLASS_NAME} />}>
                 <VoiceNotePlanTodos
-                  note={note}
                   className={PLAN_TODOS_CLASS_NAME}
                   onMemoChanged={onMemoChanged}
                 />
@@ -116,28 +118,9 @@ export function VoiceNoteResult({ note, onMemoChanged }: VoiceNoteResultProps) {
   );
 }
 
-function useVoiceNoteResultPlayer(note: VoiceNote) {
-  const [{ accountId }] = useVoiceNoteRoute();
-  const recordingRepository = useVoiceRecordingRepository();
-  const [parts] = useState(() =>
-    note.recordings.flatMap(({ fileName, startMs }) => {
-      const uri = recordingRepository.findUri(accountId, fileName);
-      return uri == null ? [] : [{ uri, startMs }];
-    }),
-  );
-  const player = useVoiceNotePlayer({ parts, durationMs: note.durationMs });
-
-  useOnScreenBlur(() => {
-    if (player.getPlayback().isPlaying) {
-      player.togglePlay().catch(noop);
-    }
-  });
-
-  return { player, canPlay: parts.length > 0 };
-}
-
-VoiceNoteResult.Title = function Title({ note }: { note: VoiceNote }) {
+VoiceNoteResult.Title = function Title() {
   const { t } = useTranslation('voiceNote');
+  const note = useCurrentVoiceNote();
   const dateFormatContext = useDateFormatContext();
   const todayKey = useTodayKey();
   const markCount = VoiceNotePolicy.getMarkCount(note);
@@ -162,18 +145,17 @@ interface VoiceNoteResultTabListProps extends Omit<
   ComponentProps<typeof Tabs>,
   'value' | 'onValueChange' | 'children'
 > {
-  note: VoiceNote;
   value: VoiceNoteTab;
   onValueChange: (tab: VoiceNoteTab) => void;
 }
 
 VoiceNoteResult.TabList = function TabList({
-  note,
   value,
   onValueChange,
   ...tabsProps
 }: VoiceNoteResultTabListProps) {
   const { t } = useTranslation('voiceNote');
+  const note = useCurrentVoiceNote();
   const isCompact = useWindowSizeClass() === 'compact';
   const todoCount = VoiceNotePolicy.findTodoCount(note);
 
@@ -220,18 +202,13 @@ VoiceNoteResult.TabList = function TabList({
 };
 
 interface VoiceNoteResultPlaybackProps {
-  note: VoiceNote;
   player: VoiceNotePlayer;
   canPlay: boolean;
 }
 
-interface VoiceNoteResultSummaryProps {
-  note: VoiceNote;
-  children: ReactNode;
-}
-
-VoiceNoteResult.Summary = function Summary({ note, children }: VoiceNoteResultSummaryProps) {
+VoiceNoteResult.Summary = function Summary({ children }: PropsWithChildren) {
   const { t } = useTranslation('voiceNote');
+  const note = useCurrentVoiceNote();
   const isCompact = useWindowSizeClass() === 'compact';
 
   return (
@@ -255,12 +232,9 @@ VoiceNoteResult.Summary = function Summary({ note, children }: VoiceNoteResultSu
   );
 };
 
-VoiceNoteResult.KeyPoints = function KeyPoints({
-  note,
-  player,
-  canPlay,
-}: VoiceNoteResultPlaybackProps) {
+VoiceNoteResult.KeyPoints = function KeyPoints({ player, canPlay }: VoiceNoteResultPlaybackProps) {
   const { trackEvent } = useTrack();
+  const note = useCurrentVoiceNote();
   const activeKeyPointId = useVoiceNotePlayback(player, ({ isPlaying, positionMs }) =>
     isPlaying ? VoiceNotePolicy.findKeyPointAt(note, positionMs)?.id : undefined,
   );
@@ -288,10 +262,10 @@ VoiceNoteResult.KeyPoints = function KeyPoints({
 };
 
 VoiceNoteResult.Transcript = function Transcript({
-  note,
   player,
   canPlay,
 }: VoiceNoteResultPlaybackProps) {
+  const note = useCurrentVoiceNote();
   const activeSentenceIndex = useVoiceNotePlayback(player, ({ isPlaying, positionMs }) =>
     isPlaying ? VoiceNotePolicy.findSentenceIndexAt(note, positionMs) : undefined,
   );
@@ -305,3 +279,75 @@ VoiceNoteResult.Transcript = function Transcript({
     />
   );
 };
+
+/** 결과와 같은 자리(제목·재생 줄·탭·요약, 넓은 화면은 할 일 칸)를 잡는다 */
+VoiceNoteResult.Loading = function Loading() {
+  const isCompact = useWindowSizeClass() === 'compact';
+
+  return (
+    <VStack flex={1} gap={12} testID="voice-note-screen-loading">
+      <VStack gap={4}>
+        <TextSkeleton size="t3" className="w-2/3" />
+        <TextSkeleton size="e1" className="w-1/2" />
+      </VStack>
+      <HStack className="items-center rounded-2xl bg-gray-1 px-3 py-3">
+        <Skeleton className="size-9 rounded-full" />
+      </HStack>
+      <HStack flex={1} gap={20}>
+        <VStack flex={1} gap={12}>
+          <Tabs value="summary" onValueChange={noop} accessibilityState={{ busy: true }}>
+            <Tabs.List>
+              <Tabs.Indicator />
+              <Tabs.Trigger value="summary">
+                <TextSkeleton size="b2" className="w-10" />
+              </Tabs.Trigger>
+              {isCompact && (
+                <Tabs.Trigger value="todos">
+                  <TextSkeleton size="b2" className="w-14" />
+                </Tabs.Trigger>
+              )}
+              <Tabs.Trigger value="transcript">
+                <TextSkeleton size="b2" className="w-10" />
+              </Tabs.Trigger>
+            </Tabs.List>
+          </Tabs>
+          <VStack gap={4}>
+            {range(LOADING_SUMMARY_LINE_COUNT).map((index) => (
+              <TextSkeleton key={index} size="b2" className="w-full" />
+            ))}
+          </VStack>
+        </VStack>
+        {!isCompact && (
+          <Box flex={1} style={{ maxWidth: READABLE_CONTENT_MAX_WIDTH }}>
+            <PlanReview.Loading className={PLAN_TODOS_CLASS_NAME} />
+          </Box>
+        )}
+      </HStack>
+    </VStack>
+  );
+};
+
+VoiceNoteResult.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
+  return <QueryErrorFallback reset={reset} />;
+};
+
+function useVoiceNoteResultPlayer() {
+  const [{ accountId }] = useVoiceNoteRoute();
+  const note = useCurrentVoiceNote();
+  const recordingRepository = useVoiceRecordingRepository();
+  const [parts] = useState(() =>
+    note.recordings.flatMap(({ fileName, startMs }) => {
+      const uri = recordingRepository.findUri(accountId, fileName);
+      return uri == null ? [] : [{ uri, startMs }];
+    }),
+  );
+  const player = useVoiceNotePlayer({ parts, durationMs: note.durationMs });
+
+  useOnScreenBlur(() => {
+    if (player.getPlayback().isPlaying) {
+      player.togglePlay().catch(noop);
+    }
+  });
+
+  return { player, canPlay: parts.length > 0 };
+}

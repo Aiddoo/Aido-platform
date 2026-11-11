@@ -3,7 +3,6 @@ import { AI_DATA_SHARING_CONSENT } from '@aido/api/vocabulary';
 import { ApiError } from '@src/core/errors/api-error';
 import { err, ok } from '@src/core/errors/result';
 import { createEntitlementSnapshot } from '@src/features/billing/subscription/__tests__/entitlement.fixtures';
-import { EntitlementService } from '@src/features/billing/subscription/apis/entitlement.service';
 import { ENTITLEMENT_QUERY_KEYS } from '@src/features/billing/subscription/queries/entitlement-query-keys';
 import { createAllSeenCoachmarkStorage } from '@src/features/device/coachmark/__tests__/coachmark.fixtures';
 import { NetworkError } from '@src/shared/errors';
@@ -26,7 +25,6 @@ import { Pressable } from 'react-native';
 
 import { createSpokenVoiceNote } from '../__tests__/voice-note.fixtures';
 import { createVoiceNoteDigestDto } from '../__tests__/voice.fixtures';
-import { VoiceNoteDigestButton } from '../components/note/voice-note-digest-button';
 import { useVoiceNoteDigest } from './use-voice-note-digest';
 
 const ACCOUNT_ID = 'user-1';
@@ -247,49 +245,5 @@ describe('useVoiceNoteDigest', () => {
     await waitFor(() => expect(httpClient.post).toHaveBeenCalledTimes(2));
     expect(savedKey).toBe(getIdempotencyKey(httpClient, 0));
     expect(getIdempotencyKey(httpClient, 1)).toBe(getIdempotencyKey(httpClient, 0));
-  });
-});
-
-describe('VoiceNoteDigestButton', () => {
-  async function renderButton(snapshot: ReturnType<typeof createEntitlementSnapshot>) {
-    const queryClient = createTestQueryClient({
-      defaultOptions: { queries: { staleTime: Infinity } },
-    });
-    queryClient.setQueryData(ENTITLEMENT_QUERY_KEYS.snapshot(), snapshot);
-    await renderScreen(<VoiceNoteDigestButton label="정리하기" />, {
-      queryClient,
-      di: {
-        entitlementService: new EntitlementService(createHttpClientStub(), logger),
-        analytics: createAnalyticsStub(),
-        errorReporter: createErrorReporterStub(),
-        logger,
-      },
-    });
-  }
-
-  it('무료는 한 번 쓰고 이번 달 몇 번 남는지 서버 값으로 보여 준다', async () => {
-    // Given
-    const snapshot = createEntitlementSnapshot({ tier: 'FREE', used: { VOICE_NOTE: 1 } });
-
-    // When
-    await renderButton(snapshot);
-
-    // Then
-    expect(screen.getByText('정리하기')).toBeTruthy();
-    expect(screen.getByTestId('voice-note-digest-cost')).toHaveTextContent(
-      '1회 사용 · 이번 달 2회 남음',
-    );
-  });
-
-  it('프리미엄·관리자는 보조 문구를 숨긴다', async () => {
-    // Given
-    const snapshot = createEntitlementSnapshot({ tier: 'PREMIUM' });
-
-    // When
-    await renderButton(snapshot);
-
-    // Then
-    expect(screen.getByText('정리하기')).toBeTruthy();
-    expect(screen.queryByTestId('voice-note-digest-cost')).toBeNull();
   });
 });

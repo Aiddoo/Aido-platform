@@ -79,7 +79,11 @@ const emptyPlanDraft = createPlanReviewDraft(
   }),
 );
 
-async function renderVoiceNote(note: Parameters<typeof createSpokenVoiceNote>[0], tab?: string) {
+async function renderVoiceNote(
+  note: Parameters<typeof createSpokenVoiceNote>[0],
+  tab?: string,
+  entitlements = createEntitlementSnapshot(),
+) {
   jest.mocked(useLocalSearchParams).mockReturnValue({ draftId: DRAFT_ID, tab });
   const httpClient = createHttpClientStub();
   httpClient.get.mockReturnValue(new Promise(() => undefined));
@@ -89,7 +93,7 @@ async function renderVoiceNote(note: Parameters<typeof createSpokenVoiceNote>[0]
     defaultOptions: { queries: { staleTime: Infinity } },
   });
   queryClient.setQueryData(USER_QUERY_KEYS.me(), createUser({ id: ACCOUNT_ID }));
-  queryClient.setQueryData(ENTITLEMENT_QUERY_KEYS.snapshot(), createEntitlementSnapshot());
+  queryClient.setQueryData(ENTITLEMENT_QUERY_KEYS.snapshot(), entitlements);
   queryClient.setQueryData(TODO_CATEGORY_QUERY_KEYS.list(), {
     categories: [{ id: 1, name: '기본', color: '#3B82F6', sortOrder: 0, todoCount: 0 }],
   });
@@ -138,6 +142,18 @@ describe('말로 메모 화면', () => {
     expect(screen.getByTestId('voice-note-digest-cost')).toHaveTextContent(
       '1회 사용 · 이번 달 3회 남음',
     );
+  });
+
+  it('프리미엄은 정리할 때 쓰는 횟수 문구를 숨긴다', async () => {
+    // Given
+    await renderVoiceNote({}, undefined, createEntitlementSnapshot({ tier: 'PREMIUM' }));
+
+    // When
+    const button = await screen.findByRole('button', { name: '정리하기' });
+
+    // Then
+    expect(button).toBeOnTheScreen();
+    expect(screen.queryByTestId('voice-note-digest-cost')).toBeNull();
   });
 
   it('정리에 실패하면 글자를 남기고 차감되지 않았을 때만 그렇게 말하며 다시 정리를 보인다', async () => {

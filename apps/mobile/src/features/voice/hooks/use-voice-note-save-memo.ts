@@ -2,21 +2,21 @@ import { useIdGenerator, useVoiceNoteDraftRepository } from '@src/bootstrap/prov
 import { getNowInstant } from '@src/shared/date/clock';
 import { useMutation } from '@tanstack/react-query';
 
-import { VoiceNotePolicy, type VoiceNote, createDigestMemo } from '../domains/voice-note.model';
+import { VoiceNotePolicy, createDigestMemo } from '../domains/voice-note.model';
 import { isPlanKeyConflictError } from '../domains/voice.error';
 import { useApplyActionPlanMutationOptions } from '../queries/voice.mutations';
-import { useVoiceNoteRoute } from './use-current-voice-note';
+import { useCurrentVoiceNote, useVoiceNoteRoute } from './use-current-voice-note';
 
 /** 메모만 저장할 때 넘기는 값. 메모는 카테고리를 쓰지 않아 저장 요청에 실리지 않는다 */
 const UNUSED_CATEGORY_ID = 0;
 
 interface UseVoiceNoteSaveMemoOptions {
-  note: VoiceNote;
   onMemoChanged: () => void;
 }
 
-export function useVoiceNoteSaveMemo({ note, onMemoChanged }: UseVoiceNoteSaveMemoOptions) {
+export function useVoiceNoteSaveMemo({ onMemoChanged }: UseVoiceNoteSaveMemoOptions) {
   const [{ accountId, draftId }] = useVoiceNoteRoute();
+  const note = useCurrentVoiceNote();
   const drafts = useVoiceNoteDraftRepository();
   const idGenerator = useIdGenerator();
   const mutation = useMutation(

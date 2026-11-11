@@ -13,14 +13,13 @@ import {
 } from '@src/features/planning/todo/schemas/todo-form.schema';
 import { todoCreateParamsSchema } from '@src/features/planning/todo/schemas/todo-params.schema';
 import { QuickVoiceButton } from '@src/features/voice/components/quick-voice/quick-voice-button';
-import { QuickVoiceInfo } from '@src/features/voice/components/quick-voice/quick-voice-info';
+import { QuickVoiceQuota } from '@src/features/voice/components/quick-voice/quick-voice-quota';
 import {
-  QuickVoiceCardsLoading,
   QuickVoiceFailed,
   QuickVoiceListening,
   QuickVoicePlanning,
   QuickVoiceReview,
-} from '@src/features/voice/components/quick-voice/quick-voice-panel';
+} from '@src/features/voice/components/quick-voice/quick-voice-steps';
 import { SheetEdgeGlow } from '@src/features/voice/components/visualizers/sheet-edge-glow';
 import { VoiceCapturePolicy } from '@src/features/voice/domains/voice-capture.model';
 import { useOnScreenBlur } from '@src/shared/hooks/use-on-screen-blur';
@@ -368,7 +367,7 @@ function TodoCreateForm({
             <Separator thickness={1} className="bg-gray-2" />
 
             <HStack gap={8} align="center" justify="end">
-              <QuickVoiceInfo />
+              <QuickVoiceQuota />
               <CoachmarkPopover
                 kind="voice-quick-start"
                 title={tVoice('coach.quickStart.title')}
@@ -404,8 +403,8 @@ function TodoCreateVoiceReview({ form, ...props }: TodoCreateVoiceReviewProps) {
   const categoryId = useWatch({ control: form.control, name: 'categoryId' });
 
   return (
-    <QueryErrorBoundary>
-      <Suspense fallback={<QuickVoiceCardsLoading />}>
+    <QueryErrorBoundary fallback={QuickVoiceReview.Error}>
+      <Suspense fallback={<QuickVoiceReview.Loading />}>
         <QuickVoiceReview {...props} fallbackCategoryId={categoryId} />
       </Suspense>
     </QueryErrorBoundary>

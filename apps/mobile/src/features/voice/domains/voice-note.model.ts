@@ -309,6 +309,11 @@ export function getRecordingSizeBytes(
   return sumBy(note.recordings, ({ fileName }) => sizes[fileName] ?? 0);
 }
 
+// 요약을 받은 노트는 결과 화면, 아직이면 정리 화면이다
+export function isDigested(note: VoiceNote): boolean {
+  return note.digest != null;
+}
+
 export function hasText(note: VoiceNote): boolean {
   return note.sentences.some((sentence) => sentence.text.trim() !== '');
 }
@@ -399,6 +404,7 @@ export const VoiceNotePolicy = {
   getCharacterCount,
   getMarkCount,
   findDigestTitle,
+  isDigested,
   getRecordingSizeBytes,
   isExpired,
 } as const;

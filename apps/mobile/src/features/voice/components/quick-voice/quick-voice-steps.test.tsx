@@ -6,7 +6,7 @@ import { useSharedValue } from 'react-native-reanimated';
 
 import { createCaptureState, createTranscript } from '../../__tests__/voice.fixtures';
 import type { VoiceCaptureState } from '../../domains/voice-capture.model';
-import { QuickVoiceFailed, QuickVoiceListening } from './quick-voice-panel';
+import { QuickVoiceFailed, QuickVoiceListening } from './quick-voice-steps';
 
 function Panel({
   state,

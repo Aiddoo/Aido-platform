@@ -19,7 +19,7 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { View } from 'react-native';
 
-import { QuickVoiceInfo } from './quick-voice-info';
+import { QuickVoiceQuota } from './quick-voice-quota';
 
 let silentLogger: ReturnType<typeof createLoggerStub>;
 
@@ -27,7 +27,7 @@ beforeEach(() => {
   silentLogger = createLoggerStub();
 });
 
-describe('QuickVoiceInfo', () => {
+describe('QuickVoiceQuota', () => {
   it('앱처럼 HeroUIProvider가 DI·Query 바깥에 있어도 ⓘ를 누르면 죽지 않고 남은 횟수를 보여 준다', async () => {
     // Given
     jest.spyOn(View.prototype, 'measure').mockImplementation((callback) => {
@@ -46,7 +46,7 @@ describe('QuickVoiceInfo', () => {
             <QueryClientProvider client={createTestQueryClient()}>
               <StaticDIProvider container={createTestDi({ httpClient, logger: silentLogger })}>
                 <LocalDateProvider>
-                  <QuickVoiceInfo />
+                  <QuickVoiceQuota />
                 </LocalDateProvider>
               </StaticDIProvider>
             </QueryClientProvider>
@@ -83,7 +83,7 @@ describe('QuickVoiceInfo', () => {
               >
                 <LocalDateProvider>
                   <OverlayProvider>
-                    <QuickVoiceInfo />
+                    <QuickVoiceQuota />
                   </OverlayProvider>
                 </LocalDateProvider>
               </StaticDIProvider>

@@ -7,7 +7,6 @@ import { useTranslation } from '@src/shared/i18n';
 import { STACK_MORE_ICON, useConfirmDialog } from '@src/shared/ui';
 import { Stack } from 'expo-router';
 
-import type { VoiceNote } from '../../domains/voice-note.model';
 import { useVoiceNoteRoute } from '../../hooks/use-current-voice-note';
 import { useVoiceNoteSaveMemo } from '../../hooks/use-voice-note-save-memo';
 
@@ -18,18 +17,16 @@ const VOICE_NOTE_TOOLBAR_ICON = {
 } as const;
 
 interface VoiceNoteToolbarProps {
-  note: VoiceNote;
   onMemoChanged: () => void;
 }
 
-export function VoiceNoteToolbar({ note, onMemoChanged }: VoiceNoteToolbarProps) {
+export function VoiceNoteToolbar({ onMemoChanged }: VoiceNoteToolbarProps) {
   const { t } = useTranslation('voiceNote');
   const [{ accountId, draftId }] = useVoiceNoteRoute();
   const storage = useVoiceNoteStorageService();
   const confirmDialog = useConfirmDialog();
   const closeScreen = useGoBack({ fallbackHref: '/memo' });
   const { saveMemo, canSaveMemo, isMemoSaved, isSavingMemo } = useVoiceNoteSaveMemo({
-    note,
     onMemoChanged,
   });
   const saveMemoLabel = isMemoSaved ? t('result.memoSaved') : t('result.saveMemo');

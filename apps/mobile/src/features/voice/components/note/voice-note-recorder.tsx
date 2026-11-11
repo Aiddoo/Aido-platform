@@ -1,4 +1,5 @@
 import { useLogger } from '@src/bootstrap/providers/di-context';
+import type { SpeechLocale } from '@src/core/ports/speech-recognizer';
 import { useMyPendingCoachmark } from '@src/features/device/coachmark/hooks/use-my-pending-coachmark';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { getErrorMessage } from '@src/shared/errors/to-error';
@@ -10,7 +11,19 @@ import { useRouteParams } from '@src/shared/hooks/use-route-params';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
 import { useTranslation } from '@src/shared/i18n';
-import { Flex, HStack, STACK_CLOSE_ICON, useConfirmDialog, VStack } from '@src/shared/ui';
+import {
+  Box,
+  Button,
+  Flex,
+  HStack,
+  PauseIcon,
+  STACK_CLOSE_ICON,
+  StopIcon,
+  SurfaceCard,
+  Text,
+  useConfirmDialog,
+  VStack,
+} from '@src/shared/ui';
 import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { cn } from '@src/shared/utils/cn';
 import { useSuspenseQuery } from '@tanstack/react-query';
@@ -18,23 +31,25 @@ import { Stack, router } from 'expo-router';
 import { Skeleton } from 'heroui-native';
 import { type ComponentProps, useEffect, useEffectEvent, useLayoutEffect, useRef } from 'react';
 import { useWindowDimensions } from 'react-native';
-import { match } from 'ts-pattern';
+import { match, P } from 'ts-pattern';
 
 import { VOICE_LOG_EVENT } from '../../constants/voice-log-events';
 import { VoiceCapturePolicy, type VoiceCaptureState } from '../../domains/voice-capture.model';
 import { useCaptureElapsedMs } from '../../hooks/use-capture-elapsed-ms';
+import { useEnsureMicrophonePermission } from '../../hooks/use-ensure-microphone-permission';
 import { useReadSpeechContext } from '../../hooks/use-read-speech-context';
 import { useRecognitionLanguage } from '../../hooks/use-recognition-language';
 import { useVoiceNoteRecordLimit } from '../../hooks/use-voice-note-record-limit';
 import { useVoiceNoteRecording } from '../../hooks/use-voice-note-recording';
 import { voiceNoteRecordParamsSchema } from '../../schemas/voice-note-params.schema';
 import { getRecordingRingLayout } from '../../utils/recording-timer.geometry';
+import { RecognitionLanguageTabs } from '../quick-voice/recognition-language-tabs';
 import { RecognizerWaveform } from './recognizer-waveform';
+import { RECORD_BUTTON_ICON_SIZE, RecordButton } from './record-button';
 import { RecordingTimer } from './recording-timer';
 import { SentenceCaptionList } from './sentence-caption-list';
+import { VoiceNoteMarkControl } from './voice-note-mark-control';
 import { VoiceNoteOffline } from './voice-note-offline';
-import { VoiceNoteRecordFooter } from './voice-note-record-footer';
-import { VoiceNoteRecordLanguageTabs } from './voice-note-record-language-tabs';
 
 const MARK_HINT_HEIGHT = 124;
 
@@ -89,7 +104,7 @@ export function VoiceNoteRecorder() {
       <Stack.Screen
         options={{
           headerTitle: () => (
-            <VoiceNoteRecordLanguageTabs onLocaleChange={(next) => changeLocaleRef.current(next)} />
+            <RecordLanguageTabs onLocaleChange={(next) => changeLocaleRef.current(next)} />
           ),
         }}
       />
@@ -118,7 +133,7 @@ export function VoiceNoteRecorder() {
             className="self-stretch"
           />
           {!isCompact && (
-            <VoiceNoteRecordFooter
+            <VoiceNoteRecorder.Controls
               state={state}
               limitMs={limitMs}
               markCount={recording.markCount}
@@ -135,7 +150,7 @@ export function VoiceNoteRecorder() {
           <RecordCaptions sentences={recording.sentences} interimText={recording.interimText} />
         </VStack>
         {isCompact && (
-          <VoiceNoteRecordFooter
+          <VoiceNoteRecorder.Controls
             state={state}
             limitMs={limitMs}
             markCount={recording.markCount}
@@ -151,6 +166,179 @@ export function VoiceNoteRecorder() {
     </VStack>
   );
 }
+
+interface VoiceNoteRecorderControlsProps {
+  state: VoiceCaptureState;
+  limitMs: number | null;
+  markCount: number;
+  onPause: () => void;
+  onFinish: () => void;
+  onMark: () => void;
+  onSummarize: () => void;
+  onClose: () => void;
+  onResume: () => void;
+}
+
+VoiceNoteRecorder.Controls = function Controls({
+  state,
+  limitMs,
+  markCount,
+  onPause,
+  onFinish,
+  onMark,
+  onSummarize,
+  onClose,
+  onResume,
+}: VoiceNoteRecorderControlsProps) {
+  const { t } = useTranslation('voiceNote');
+
+  return (
+    <VStack gap={12} className="self-stretch">
+      {match(state)
+        .with({ status: P.union('paused', 'failed') }, (stopped) => (
+          <VoiceNoteRecorder.StoppedControls
+            state={stopped}
+            canResume={VoiceCapturePolicy.canResumeWithinLimit(stopped, limitMs)}
+            onSummarize={onSummarize}
+            onClose={onClose}
+            onResume={onResume}
+          />
+        ))
+        .otherwise(() => (
+          <Box className="w-full max-w-90 self-center">
+            <VoiceNoteRecorder.ListeningControls
+              isListening={state.status === 'listening'}
+              markCount={markCount}
+              onPause={onPause}
+              onFinish={onFinish}
+              onMark={onMark}
+            />
+          </Box>
+        ))}
+      <Text size="e1" shade={5} align="center" lineBreakStrategyIOS="hangul-word">
+        {t('record.privacy')}
+      </Text>
+    </VStack>
+  );
+};
+
+interface VoiceNoteRecorderListeningControlsProps {
+  isListening: boolean;
+  markCount: number;
+  onPause: () => void;
+  onFinish: () => void;
+  onMark: () => void;
+}
+
+VoiceNoteRecorder.ListeningControls = function ListeningControls({
+  isListening,
+  markCount,
+  onPause,
+  onFinish,
+  onMark,
+}: VoiceNoteRecorderListeningControlsProps) {
+  const { t } = useTranslation('voiceNote');
+  const fontScaledSize = useFontScaledSize();
+  const iconSize = fontScaledSize(RECORD_BUTTON_ICON_SIZE);
+
+  return (
+    <HStack align="start">
+      <RecordButton
+        label={t('record.pause')}
+        onPress={onPause}
+        isDisabled={!isListening}
+        testID="voice-note-pause"
+      >
+        <PauseIcon width={iconSize} height={iconSize} colorClassName="text-gray-7" />
+      </RecordButton>
+      <RecordButton
+        label={t('record.finish')}
+        onPress={onFinish}
+        isDisabled={!isListening}
+        isPrimary
+        testID="voice-note-finish"
+      >
+        <StopIcon width={iconSize} height={iconSize} colorClassName="text-white dark:text-gray-9" />
+      </RecordButton>
+      <VoiceNoteMarkControl markCount={markCount} isListening={isListening} onPress={onMark} />
+    </HStack>
+  );
+};
+
+interface VoiceNoteRecorderStoppedControlsProps {
+  state: Extract<VoiceCaptureState, { status: 'paused' | 'failed' }>;
+  canResume: boolean;
+  onSummarize: () => void;
+  onClose: () => void;
+  onResume: () => void;
+}
+
+VoiceNoteRecorder.StoppedControls = function StoppedControls({
+  state,
+  canResume,
+  onSummarize,
+  onClose,
+  onResume,
+}: VoiceNoteRecorderStoppedControlsProps) {
+  const { t } = useTranslation('voiceNote');
+  const hasHeard = VoiceCapturePolicy.canFinish(state);
+
+  return (
+    <VStack gap={12}>
+      <SurfaceCard className="gap-1 px-4 py-3">
+        <Text size="b3" weight="semibold" lineBreakStrategyIOS="hangul-word">
+          {state.status === 'paused' ? t('record.pausedTitle') : t('record.failedTitle')}
+        </Text>
+        <Text size="b4" shade={6} lineBreakStrategyIOS="hangul-word">
+          {match(state)
+            .with({ status: 'paused' }, ({ cause }) =>
+              hasHeard
+                ? t(`record.pausedDescription.${cause}`)
+                : t(`record.pausedEmptyDescription.${cause}`),
+            )
+            .with({ status: 'failed', reason: P.union('not-allowed', 'service-not-allowed') }, () =>
+              t('record.failedPermission'),
+            )
+            .otherwise(() =>
+              hasHeard ? t('record.failedDescription') : t('record.failedEmptyDescription'),
+            )}
+        </Text>
+      </SurfaceCard>
+      <HStack gap={8}>
+        <Box flex={1}>
+          {hasHeard ? (
+            <Button
+              size="large"
+              variant="weak"
+              color="dark"
+              onPress={onSummarize}
+              testID="voice-note-summarize"
+            >
+              {t('record.summarize')}
+            </Button>
+          ) : (
+            <Button
+              size="large"
+              variant="weak"
+              color="dark"
+              onPress={onClose}
+              testID="voice-note-stopped-close"
+            >
+              {t('record.close')}
+            </Button>
+          )}
+        </Box>
+        {canResume && (
+          <Box flex={1}>
+            <Button size="large" onPress={onResume} testID="voice-note-resume">
+              {t('record.resume')}
+            </Button>
+          </Box>
+        )}
+      </HStack>
+    </VStack>
+  );
+};
 
 /** 헤더는 레이아웃이 미리 그려 받은 뒤에 밀리지 않는다. 시계와 파형 자리를 받은 뒤와 같은 배치로 잡는다 */
 VoiceNoteRecorder.Loading = function Loading() {
@@ -181,6 +369,40 @@ VoiceNoteRecorder.Loading = function Loading() {
     .with(false, () => <VoiceNoteOffline className="px-4" />)
     .exhaustive();
 };
+
+interface RecordLanguageTabsProps {
+  onLocaleChange: (next: SpeechLocale) => Promise<void>;
+}
+
+/** 언어마다 필요한 권한이 달라 허용된 뒤에만 바꾼다. 거절하면 듣던 언어로 이어 간다 */
+function RecordLanguageTabs({ onLocaleChange }: RecordLanguageTabsProps) {
+  const { t } = useTranslation('voiceNote');
+  const toast = useAppToast();
+  const logger = useLogger();
+  const [locale, setLocale] = useRecognitionLanguage();
+  const ensureMicrophonePermission = useEnsureMicrophonePermission();
+
+  const handleLocaleChange = async (next: SpeechLocale) => {
+    if (await ensureMicrophonePermission('note', next)) {
+      await onLocaleChange(next);
+      setLocale(next);
+    }
+  };
+
+  return (
+    <RecognitionLanguageTabs
+      value={locale}
+      onValueChange={(next) => {
+        handleLocaleChange(next).catch((error: unknown) => {
+          logger.warn(VOICE_LOG_EVENT.RECORD_LANGUAGE_CHANGE_FAILED, {
+            error: getErrorMessage(error),
+          });
+          toast.error(t('record.languageChangeFailed'));
+        });
+      }}
+    />
+  );
+}
 
 function RecordCaptions(
   props: Omit<

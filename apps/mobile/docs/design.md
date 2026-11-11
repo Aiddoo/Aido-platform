@@ -8,15 +8,15 @@
 
 heroui 기본은 푸른 회색(hue 286)과 파란 accent다. Aido는 무채색 회색과 주황이라 앱 화면에 그려지는 heroui 변수를 `global.css`의 `light`·`dark`에서 앱 값으로 덮는다.
 
-| heroui 변수                                                     | 라이트                 | 다크                   | 그려지는 곳                                                                             |
-| --------------------------------------------------------------- | ---------------------- | ---------------------- | --------------------------------------------------------------------------------------- |
-| `--background`·`--foreground`·`--surface`·`--muted`·`--default` | 무채색 앱 값           | 무채색 앱 값           | 화면·글자·카드 면, `Tabs` 바탕, 꺼진 Switch                                             |
-| `--accent`·`--danger`·`--warning`·`--success`                   | 앱 주황·빨강·노랑·초록 | 라이트와 같다          | 컨트롤 선택·파괴 동작·주의·완료                                                         |
-| `--separator`                                                   | `--gray-5`             | `--gray-2`             | `Separator` 기본색, InputOTP 가운데 줄(50%)                                             |
-| `--border`                                                      | `--gray-4`             | `--gray-2`             | `HintPopover` 테두리·화살표, 팝오버 안 `bg-border` 줄(`plan-review`·`quick-voice-info`) |
-| `--overlay`                                                     | heroui 기본(`--white`) | `--gray-1`(전 #18181b) | `ConfirmDialog`·`HintPopover` 면. 시트 면(`bg-white dark:bg-gray-1`)과 같다             |
-| `--field-background`                                            | heroui 기본(`--white`) | `--gray-1`(전 #18181b) | Checkbox 안쪽, InputOTP 칸                                                              |
-| `--segment`                                                     | heroui 기본(`--white`) | `--gray-2`(전 #46464c) | primary `Tabs`의 선택 알약                                                              |
+| heroui 변수                                                     | 라이트                 | 다크                   | 그려지는 곳                                                                              |
+| --------------------------------------------------------------- | ---------------------- | ---------------------- | ---------------------------------------------------------------------------------------- |
+| `--background`·`--foreground`·`--surface`·`--muted`·`--default` | 무채색 앱 값           | 무채색 앱 값           | 화면·글자·카드 면, `Tabs` 바탕, 꺼진 Switch                                              |
+| `--accent`·`--danger`·`--warning`·`--success`                   | 앱 주황·빨강·노랑·초록 | 라이트와 같다          | 컨트롤 선택·파괴 동작·주의·완료                                                          |
+| `--separator`                                                   | `--gray-5`             | `--gray-2`             | `Separator` 기본색, InputOTP 가운데 줄(50%)                                              |
+| `--border`                                                      | `--gray-4`             | `--gray-2`             | `HintPopover` 테두리·화살표, 팝오버 안 `bg-border` 줄(`plan-review`·`quick-voice-quota`) |
+| `--overlay`                                                     | heroui 기본(`--white`) | `--gray-1`(전 #18181b) | `ConfirmDialog`·`HintPopover` 면. 시트 면(`bg-white dark:bg-gray-1`)과 같다              |
+| `--field-background`                                            | heroui 기본(`--white`) | `--gray-1`(전 #18181b) | Checkbox 안쪽, InputOTP 칸                                                               |
+| `--segment`                                                     | heroui 기본(`--white`) | `--gray-2`(전 #46464c) | primary `Tabs`의 선택 알약                                                               |
 
 선 색의 전후와 대비다. 화면은 `bg-white`(다크 #121212), 면은 카드·메뉴의 `gray-1`이다.
 

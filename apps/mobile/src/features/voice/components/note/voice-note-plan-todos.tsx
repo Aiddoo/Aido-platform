@@ -13,23 +13,22 @@ import type { ComponentProps } from 'react';
 import { useForm } from 'react-hook-form';
 import { match } from 'ts-pattern';
 
-import { VoiceNotePolicy, type VoiceNote } from '../../domains/voice-note.model';
+import { VoiceNotePolicy } from '../../domains/voice-note.model';
 import { voicePlanIdSchema } from '../../domains/voice-plan.model';
-import { useVoiceNoteRoute } from '../../hooks/use-current-voice-note';
+import { useCurrentVoiceNote, useVoiceNoteRoute } from '../../hooks/use-current-voice-note';
 import { planReviewFormSchema } from '../../schemas/plan-review-form.schema';
 import { toDraftVoicePlan } from '../../utils/plan-review-draft';
 import { PlanReview } from '../plan/plan-review';
 
-interface VoiceNotePlanTodosProps extends Pick<
+type VoiceNotePlanTodosProps = Pick<
   ComponentProps<typeof PlanReview>,
   'className' | 'onMemoChanged'
-> {
-  note: VoiceNote;
-}
+>;
 
-export function VoiceNotePlanTodos({ note, className, onMemoChanged }: VoiceNotePlanTodosProps) {
+export function VoiceNotePlanTodos({ className, onMemoChanged }: VoiceNotePlanTodosProps) {
   const { t } = useTranslation(['voiceNote', 'voicePlan']);
   const [{ accountId, draftId }] = useVoiceNoteRoute();
+  const note = useCurrentVoiceNote();
   const drafts = useVoiceNoteDraftRepository();
   // 설정 쿼리는 값을 쓰지 않는다. 아래 PlanReview.TodoRow가 같은 설정을 기다리다 카드 사이에서 멈추지 않게 미리 받는다
   const [{ data: categoriesResult }] = useSuspenseQueries({

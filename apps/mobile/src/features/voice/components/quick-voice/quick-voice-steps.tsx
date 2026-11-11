@@ -1,11 +1,16 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { SpeechLocale } from '@src/core/ports/speech-recognizer';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useIsReduceMotionEnabled } from '@src/shared/hooks/use-is-reduce-motion-enabled';
+import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
 import { useTranslation } from '@src/shared/i18n';
 import {
   Box,
   Button,
+  CloseIcon,
   HStack,
+  QueryErrorFallback,
+  type QueryErrorFallbackProps,
   Text,
   TextButton,
   useKeyboardSheetBodyMaxHeight,
@@ -13,7 +18,7 @@ import {
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { clamp } from 'es-toolkit';
-import { Skeleton } from 'heroui-native';
+import { CloseButton, Skeleton } from 'heroui-native';
 import { type ReactNode, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { useWindowDimensions } from 'react-native';
@@ -47,7 +52,6 @@ import { createPlanReviewFormValues } from '../../utils/plan-review-draft';
 import { PlanReview } from '../plan/plan-review';
 import { VoiceVisual } from '../visualizers/voice-visual';
 import { LiveTranscript } from './live-transcript';
-import { QuickVoiceHeader } from './quick-voice-header';
 import { RecognitionLanguageTabs } from './recognition-language-tabs';
 
 interface QuickVoiceListeningProps {
@@ -80,7 +84,7 @@ export function QuickVoiceListening({
   const canFinish = VoiceCapturePolicy.canFinish(state);
 
   return (
-    <SheetPanel
+    <CaptureLayout
       center={<ListeningClock state={state} />}
       right={<RecognitionLanguageTabs value={locale} onValueChange={onLocaleChange} />}
       onClose={onCancel}
@@ -174,7 +178,7 @@ export function QuickVoiceListening({
             </Box>
           </VStack>
         ))}
-    </SheetPanel>
+    </CaptureLayout>
   );
 }
 
@@ -188,7 +192,7 @@ export function QuickVoicePlanning({
   const { t } = useTranslation('voice');
 
   return (
-    <SheetPanel
+    <CaptureLayout
       center={
         <Text size="b4" weight="semibold" shade={7} numberOfLines={1}>
           {t('planning.title')}
@@ -200,7 +204,7 @@ export function QuickVoicePlanning({
       <Box flex={1}>
         <LiveTranscript transcript={transcript} isWordFadeEnabled={false} />
       </Box>
-      <QuickVoiceCardsLoading />
+      <QuickVoiceReview.Loading />
       <TextButton
         size="small"
         className="self-center"
@@ -209,17 +213,7 @@ export function QuickVoicePlanning({
       >
         {t('planning.cancel')}
       </TextButton>
-    </SheetPanel>
-  );
-}
-
-export function QuickVoiceCardsLoading() {
-  return (
-    <VStack gap={8}>
-      <Skeleton className="h-12 w-full rounded-xl" />
-      <Skeleton className="h-12 w-full rounded-xl" />
-      <Skeleton className="h-12 w-full rounded-xl" />
-    </VStack>
+    </CaptureLayout>
   );
 }
 
@@ -286,6 +280,21 @@ export function QuickVoiceReview({
   );
 }
 
+/** 계획을 받기 전 카드 자리. 정리를 기다리는 동안과 카드가 쓰는 조회를 기다리는 동안 같은 모양이다 */
+QuickVoiceReview.Loading = function Loading() {
+  return (
+    <VStack gap={8}>
+      <Skeleton className="h-12 w-full rounded-xl" />
+      <Skeleton className="h-12 w-full rounded-xl" />
+      <Skeleton className="h-12 w-full rounded-xl" />
+    </VStack>
+  );
+};
+
+QuickVoiceReview.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
+  return <QueryErrorFallback reset={reset} />;
+};
+
 export function QuickVoiceFailed({
   state,
   isConsentRequired = false,
@@ -344,14 +353,6 @@ export function QuickVoiceFailed({
   );
 }
 
-interface SheetPanelProps {
-  center: ReactNode;
-  right?: ReactNode;
-  onClose: () => void;
-  testID: string;
-  children: ReactNode;
-}
-
 function LimitMessage({ title, description }: { title: string; description: string }) {
   return (
     <VStack gap={4}>
@@ -365,9 +366,16 @@ function LimitMessage({ title, description }: { title: string; description: stri
   );
 }
 
-/** 높이를 고정해야 긴 자막이 시트를 키워 조작을 화면 밖으로 밀지 않는다(QA: 93초 발화) */
-// oxlint-disable-next-line aido/component-name -- 1.15.2 전환 #1400
-function SheetPanel({ center, right, onClose, testID, children }: SheetPanelProps) {
+interface CaptureLayoutProps {
+  center: ReactNode;
+  right?: ReactNode;
+  onClose: () => void;
+  testID: string;
+  children: ReactNode;
+}
+
+/** 듣기·정리 단계의 시트. 높이를 고정해야 긴 자막이 시트를 키워 조작을 화면 밖으로 밀지 않는다(QA: 93초 발화) */
+function CaptureLayout({ center, right, onClose, testID, children }: CaptureLayoutProps) {
   const { height: windowHeight } = useWindowDimensions();
   const bodyMaxHeight = useKeyboardSheetBodyMaxHeight();
   const height = clamp(
@@ -384,12 +392,47 @@ function SheetPanel({ center, right, onClose, testID, children }: SheetPanelProp
       testID={testID}
     >
       <VStack flex={1} gap={16}>
-        <QuickVoiceHeader center={center} right={right} onClose={onClose} />
+        <CaptureLayout.Header center={center} right={right} onClose={onClose} />
         {children}
       </VStack>
     </Animated.View>
   );
 }
+
+type CaptureLayoutHeaderProps = Pick<CaptureLayoutProps, 'center' | 'right' | 'onClose'>;
+
+/** 시트라 네이티브 헤더가 없다. 좁은 창은 오른쪽이 넓어 가운데를 남는 자리의 가운데에 둔다 */
+CaptureLayout.Header = function Header({ center, right, onClose }: CaptureLayoutHeaderProps) {
+  const { t } = useTranslation('voice');
+  const fontScaledSize = useFontScaledSize();
+  const isCompact = useWindowSizeClass() === 'compact';
+
+  return (
+    <HStack align="center" gap={8}>
+      <Box flex={isCompact ? undefined : 1} className="items-start">
+        <CloseButton
+          variant="ghost"
+          style={{ width: fontScaledSize(22), height: fontScaledSize(22) }}
+          onPress={onClose}
+          accessibilityLabel={t('listening.cancel')}
+          testID="quick-voice-cancel"
+        >
+          <CloseIcon
+            width={fontScaledSize(22)}
+            height={fontScaledSize(22)}
+            colorClassName="text-gray-7"
+          />
+        </CloseButton>
+      </Box>
+      <Box flex={isCompact ? 1 : undefined} className="items-center">
+        {center}
+      </Box>
+      <Box flex={isCompact ? undefined : 1} className="shrink items-end">
+        {right}
+      </Box>
+    </HStack>
+  );
+};
 
 function ListeningClock({ state }: { state: VoiceCaptureState }) {
   const elapsedMs = useCaptureElapsedMs(state);
