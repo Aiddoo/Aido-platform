@@ -1,5 +1,6 @@
 import type { SyncStorage } from '@src/core/ports/sync-storage';
 import { upsellDismissalStoredValue } from '@src/features/billing/subscription/schemas/upsell-dismissal-storage.schema';
+import { activationProgressStoredValue } from '@src/features/device/activation/schemas/activation-progress-storage.schema';
 import { coachmarkCompletedAtStoredValue } from '@src/features/device/coachmark/schemas/coachmark-storage.schema';
 import { widgetHeadlessFailureStoredValue } from '@src/features/device/widget/schemas/widget-headless-failure-storage.schema';
 import { deviceTimezoneStoredValue } from '@src/features/notification/schemas/device-timezone-storage.schema';
@@ -142,6 +143,15 @@ const RELEASED_VALUES = [
     }),
   },
   {
+    name: 'activationProgressStoredValue',
+    ...releasedValue(activationProgressStoredValue, ['user-1'], {
+      key: 'aido_activation_v2:user-1',
+      raw: `{"todoCreatedAt":"${SAVED_AT}","activatedAt":null}`,
+      value: { todoCreatedAt: toInstant(SAVED_AT), activatedAt: null },
+      area: 'device',
+    }),
+  },
+  {
     name: 'coachmarkCompletedAtStoredValue',
     ...releasedValue(
       coachmarkCompletedAtStoredValue,
@@ -183,4 +193,19 @@ describe('StoredValueDefinition', () => {
       expect(definitionArea).toBe(area);
     },
   );
+
+  it('activationProgressStoredValue: 1.14.x가 남긴 모르는 칸은 버리고 진행을 읽는다', () => {
+    // Given
+    const storage = createMemorySyncStorage();
+    storage.set(
+      'aido_activation_v2:user-1',
+      `{"todoCreatedAt":"${SAVED_AT}","activatedAt":null,"pushRegistrationUnlockedAt":"${SAVED_AT}"}`,
+    );
+
+    // When
+    const value = readStoredValue(storage, activationProgressStoredValue, 'user-1');
+
+    // Then
+    expect(value).toEqual({ todoCreatedAt: toInstant(SAVED_AT), activatedAt: null });
+  });
 });

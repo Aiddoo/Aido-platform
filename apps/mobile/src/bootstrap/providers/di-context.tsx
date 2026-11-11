@@ -17,8 +17,8 @@ import type { SuggestionService } from '@src/features/assistant/suggestion/apis/
 import type { EntitlementApi } from '@src/features/billing/subscription/apis/entitlement.api';
 import type { PurchasesSession } from '@src/features/billing/subscription/services/purchases.session';
 import type { SubscriptionService } from '@src/features/billing/subscription/services/subscription.service';
-import type { ActivationProgressRepository } from '@src/features/device/activation/apis/activation-progress.repository';
-import type { ActivationService } from '@src/features/device/activation/apis/activation.service';
+import type { ActivationProgressRepository } from '@src/features/device/activation/repositories/activation-progress.repository';
+import type { ActivationService } from '@src/features/device/activation/services/activation.service';
 import type { AppIconService } from '@src/features/device/app-icon/apis/app-icon.service';
 import type { CoachmarkRepository } from '@src/features/device/coachmark/repositories/coachmark.repository';
 import type { StoreReviewService } from '@src/features/device/store-review/apis/store-review.service';
@@ -249,9 +249,6 @@ export function usePreferenceService() {
 }
 export function useActivationService() {
   return useDI().activationService;
-}
-export function useActivationProgressRepository() {
-  return useDI().activationProgressRepository;
 }
 export function useAppVersionService() {
   return useDI().appVersionService;

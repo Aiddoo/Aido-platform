@@ -43,8 +43,8 @@ import { EntitlementApi } from '@src/features/billing/subscription/apis/entitlem
 import { upsellDismissalStoredValue } from '@src/features/billing/subscription/schemas/upsell-dismissal-storage.schema';
 import { PurchasesSession } from '@src/features/billing/subscription/services/purchases.session';
 import { SubscriptionService } from '@src/features/billing/subscription/services/subscription.service';
-import { createActivationProgressRepository } from '@src/features/device/activation/apis/activation-progress.repository';
-import { ActivationService } from '@src/features/device/activation/apis/activation.service';
+import { createActivationProgressRepository } from '@src/features/device/activation/repositories/activation-progress.repository';
+import { ActivationService } from '@src/features/device/activation/services/activation.service';
 import { AppIconService } from '@src/features/device/app-icon/apis/app-icon.service';
 import { createCoachmarkRepository } from '@src/features/device/coachmark/repositories/coachmark.repository';
 import { createStoreReviewRepository } from '@src/features/device/store-review/apis/store-review.repository';
@@ -311,7 +311,7 @@ export function createAppContainer(ports: AppContainerPorts): DIContainer {
       logger,
     }),
     preferenceService: new PreferenceService(authHttpClient),
-    activationService: new ActivationService(activationProgressRepository),
+    activationService: new ActivationService(syncStorage),
     activationProgressRepository,
     appVersionService: new AppVersionService(ports.jsonFetcher),
     appIconService: new AppIconService(ports.appIconGateway),

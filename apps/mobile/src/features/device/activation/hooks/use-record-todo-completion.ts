@@ -21,8 +21,8 @@ export function useRecordTodoCompletion() {
           isCompleted,
           now: getNowInstant(),
         });
-        if (activation.event) {
-          trackEvent('activation_completed', activation.event);
+        if (activation.status === 'activated') {
+          trackEvent('activation_completed', { days_since_signup: activation.daysSinceSignup });
         }
       }),
     [activationService, queryClient, trackEvent],
