@@ -5,7 +5,7 @@ import {
 } from '@src/testing/core';
 
 import { SUBSCRIPTION_ERROR_CODE } from '../domains/subscription.error';
-import { PurchasesSession } from './purchases-session';
+import { PurchasesSession } from './purchases.session';
 import { SubscriptionService } from './subscription.service';
 
 function createConfiguredService() {

@@ -9,7 +9,7 @@ import { SUBSCRIPTION_LOG_EVENT } from '../constants/subscription-log-events';
 import { type EntitlementSnapshot } from '../domains/entitlement.model';
 import { toEntitlementSnapshot } from './entitlement.mapper';
 
-export class EntitlementService {
+export class EntitlementApi {
   readonly #httpClient: HttpClient;
   readonly #logger: Logger;
 
@@ -27,7 +27,7 @@ export class EntitlementService {
       result,
       entitlementSnapshotSchema,
       toEntitlementSnapshot,
-      '[EntitlementService] Invalid getEntitlements response',
+      '[EntitlementApi] Invalid getEntitlements response',
       (zodError) => {
         this.#logger.error(SUBSCRIPTION_LOG_EVENT.ENTITLEMENT_SNAPSHOT_MAPPING_FAILED, undefined, {
           zodError,

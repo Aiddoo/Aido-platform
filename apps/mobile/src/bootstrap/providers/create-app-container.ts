@@ -38,10 +38,10 @@ import { AppVersionService } from '@src/features/app-config/app-version/apis/app
 import { FeatureCampaignService } from '@src/features/app-config/feature-campaign/apis/feature-campaign.service';
 import { createWhatsNewRepository } from '@src/features/app-config/whats-new/apis/whats-new.repository';
 import { SuggestionService } from '@src/features/assistant/suggestion/apis/suggestion.service';
-import { EntitlementService } from '@src/features/billing/subscription/apis/entitlement.service';
-import { PurchasesSession } from '@src/features/billing/subscription/apis/purchases-session';
-import { SubscriptionService } from '@src/features/billing/subscription/apis/subscription.service';
+import { EntitlementApi } from '@src/features/billing/subscription/apis/entitlement.api';
 import { upsellDismissalStoredValue } from '@src/features/billing/subscription/schemas/upsell-dismissal-storage.schema';
+import { PurchasesSession } from '@src/features/billing/subscription/services/purchases.session';
+import { SubscriptionService } from '@src/features/billing/subscription/services/subscription.service';
 import { createActivationProgressRepository } from '@src/features/device/activation/apis/activation-progress.repository';
 import { ActivationService } from '@src/features/device/activation/apis/activation.service';
 import { AppIconService } from '@src/features/device/app-icon/apis/app-icon.service';
@@ -360,7 +360,7 @@ export function createAppContainer(ports: AppContainerPorts): DIContainer {
     userService: new UserService(authHttpClient),
     purchasesSession,
     subscriptionService: new SubscriptionService(purchasesSession, ports.purchasesGateway, logger),
-    entitlementService: new EntitlementService(authHttpClient, logger),
+    entitlementApi: new EntitlementApi(authHttpClient, logger),
     weatherService,
     weatherLocationService: new WeatherLocationService({
       gateway: ports.deviceLocation,

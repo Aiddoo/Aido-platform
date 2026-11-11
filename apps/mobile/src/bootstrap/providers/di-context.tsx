@@ -14,9 +14,9 @@ import type { AppVersionService } from '@src/features/app-config/app-version/api
 import type { FeatureCampaignService } from '@src/features/app-config/feature-campaign/apis/feature-campaign.service';
 import type { WhatsNewRepository } from '@src/features/app-config/whats-new/apis/whats-new.repository';
 import type { SuggestionService } from '@src/features/assistant/suggestion/apis/suggestion.service';
-import type { EntitlementService } from '@src/features/billing/subscription/apis/entitlement.service';
-import type { PurchasesSession } from '@src/features/billing/subscription/apis/purchases-session';
-import type { SubscriptionService } from '@src/features/billing/subscription/apis/subscription.service';
+import type { EntitlementApi } from '@src/features/billing/subscription/apis/entitlement.api';
+import type { PurchasesSession } from '@src/features/billing/subscription/services/purchases.session';
+import type { SubscriptionService } from '@src/features/billing/subscription/services/subscription.service';
 import type { ActivationProgressRepository } from '@src/features/device/activation/apis/activation-progress.repository';
 import type { ActivationService } from '@src/features/device/activation/apis/activation.service';
 import type { AppIconService } from '@src/features/device/app-icon/apis/app-icon.service';
@@ -125,7 +125,7 @@ export interface DIContainer extends SharedDependencies {
   userService: UserService;
   purchasesSession: PurchasesSession;
   subscriptionService: SubscriptionService;
-  entitlementService: EntitlementService;
+  entitlementApi: EntitlementApi;
   weatherService: WeatherService;
   weatherLocationService: WeatherLocationService;
   widgetSyncService: WidgetSyncService;
@@ -329,8 +329,8 @@ export function usePurchasesSession() {
 export function useSubscriptionService() {
   return useDI().subscriptionService;
 }
-export function useEntitlementService() {
-  return useDI().entitlementService;
+export function useEntitlementApi() {
+  return useDI().entitlementApi;
 }
 export function useWeatherLocationService() {
   return useDI().weatherLocationService;

@@ -5,7 +5,7 @@ import {
 } from '@src/testing/core';
 
 import { SUBSCRIPTION_LOG_EVENT } from '../constants/subscription-log-events';
-import { PurchasesSession } from './purchases-session';
+import { PurchasesSession } from './purchases.session';
 
 // oxlint-disable-next-line aido/no-real-sleep -- 1.15.2 전환 #1400
 const flushPromises = () => new Promise((resolve) => setImmediate(resolve));
