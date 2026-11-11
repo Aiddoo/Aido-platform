@@ -1,18 +1,18 @@
 import { aiSchema, toAiSettings } from "./ai.schema.js";
 
-const LEGACY_KEY = `AIza${"a".repeat(35)}`;
+const AIZA_FORMAT_KEY = `AIza${"a".repeat(35)}`;
 const NEW_FORMAT_KEY = `AQ.${"Ab1_-".repeat(10)}`;
 
 describe("aiSchema — GOOGLE_GENERATIVE_AI_API_KEY", () => {
   it("기존 AIza 형식 키를 받는다", () => {
     // Given
-    const env = { GOOGLE_GENERATIVE_AI_API_KEY: LEGACY_KEY };
+    const env = { GOOGLE_GENERATIVE_AI_API_KEY: AIZA_FORMAT_KEY };
 
     // When
     const config = aiSchema.parse(env);
 
     // Then
-    expect(config.GOOGLE_GENERATIVE_AI_API_KEY).toBe(LEGACY_KEY);
+    expect(config.GOOGLE_GENERATIVE_AI_API_KEY).toBe(AIZA_FORMAT_KEY);
   });
 
   it("새 AQ. 형식 키를 받는다", () => {
@@ -29,7 +29,7 @@ describe("aiSchema — GOOGLE_GENERATIVE_AI_API_KEY", () => {
 
   it.each([
     ["앞뒤 공백", ` ${NEW_FORMAT_KEY} `],
-    ["중간 공백", `${LEGACY_KEY.slice(0, 20)} ${LEGACY_KEY.slice(20)}`],
+    ["중간 공백", `${AIZA_FORMAT_KEY.slice(0, 20)} ${AIZA_FORMAT_KEY.slice(20)}`],
     ["줄바꿈", `${NEW_FORMAT_KEY}\n`],
   ])("%s이 섞인 키를 거부한다", (_case, key) => {
     // Given

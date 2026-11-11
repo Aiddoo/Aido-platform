@@ -1,6 +1,6 @@
 import request from "supertest";
 
-import { INVITE_CONFIG } from "#api/modules/social/application/ports/invites/invite.config.port";
+import { InviteConfigPort } from "#api/modules/social/invites/application/ports/invite-config.port";
 
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 
@@ -11,7 +11,7 @@ describe("초대 요청 제한 E2E (실제 throttler, 직렬 실행)", () => {
     ctx = await createE2eApp({
       withRealThrottler: true,
       customizeBuilder: (builder) =>
-        builder.overrideProvider(INVITE_CONFIG).useValue({ isEnabled: true }),
+        builder.overrideProvider(InviteConfigPort).useValue({ isEnabled: true }),
     });
   }, 60_000);
 

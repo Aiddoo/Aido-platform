@@ -42,13 +42,17 @@ export function useWhatsNewFlow({ release, source }: WhatsNewFlowInput) {
   const isFinishedRef = useRef(false);
   const viewedStepsRef = useRef(new Set<string>());
 
+  // 캠페인이 없는 지난 출시는 자동으로 열리지 않아 본 기록·캠페인 지표를 남기지 않는다
   useEffect(() => {
-    if (accountId != null) {
+    if (accountId != null && campaignId != null) {
       repository.claimSeen({ userId: accountId, campaignId }, getNowInstant());
     }
   }, [accountId, campaignId, repository]);
 
   useEffect(() => {
+    if (campaignId == null) {
+      return;
+    }
     trackEvent('feature_hub_impression', { campaign_id: campaignId, source });
 
     return () => {
@@ -73,8 +77,11 @@ export function useWhatsNewFlow({ release, source }: WhatsNewFlowInput) {
   };
 
   const trackCta = ({ step, feature }: { step: string; feature: FeatureKey }) => {
-    trackEvent('feature_card_cta', { campaign_id: campaignId, feature, source });
     trackEvent('whats_new_cta_pressed', { release_id: releaseId, step });
+    if (campaignId == null) {
+      return;
+    }
+    trackEvent('feature_card_cta', { campaign_id: campaignId, feature, source });
     if (accountId == null) {
       return;
     }

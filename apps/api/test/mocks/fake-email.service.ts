@@ -1,6 +1,6 @@
-import type { AuthEmailSenderPort } from "#api/modules/identity/application/ports/auth/auth-collaboration.port";
-import type { EmailKind } from "#api/modules/notification/domain/types/email/email-delivery.types";
-import type { EmailTag } from "#api/modules/notification/domain/value-objects/email/email-message.vo";
+import type { AuthEmailSenderPort } from "#api/modules/identity/auth/application/ports/auth-collaboration.port";
+import type { EmailKind } from "#api/modules/notification/email/domain/email-delivery.constants";
+import type { EmailTag } from "#api/modules/notification/email/domain/email-message.vo";
 import type {
   EmailDispatch,
   EmailSendResult,

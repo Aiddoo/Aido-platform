@@ -9,17 +9,16 @@ import { PLAN_CATALOG } from "@aido/api/vocabulary";
 import { eq } from "drizzle-orm";
 import request from "supertest";
 
-import {
-  ENTITLEMENT_READER,
-  type EntitlementReaderPort,
-} from "#api/modules/access/access-entitlement.public";
-import { AI_GENERATOR } from "#api/modules/ai-assistance/ai-assistance-generation.public";
+import { EntitlementReaderPort } from "#api/modules/access/entitlements/access-entitlements.public";
+import { AiGeneratorPort } from "#api/modules/ai-assistance/generation/ai-assistance-generation.public";
 import type {
   AiGenerationRequest,
   AiGenerationResult,
-} from "#api/modules/ai-assistance/application/ports/generation/ai-generator.port";
+} from "#api/modules/ai-assistance/generation/application/ports/ai-generator.port";
 import { requireRecord } from "#api/platform/database/database-error.util";
 import { user as userTable } from "#api/platform/database/schema/index";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { instantFromDate } from "#api/shared/domain/time/instant";
 import { createAiGenerationError, FakeAiGenerator } from "#test/mocks/fake-ai.generator";
 
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
@@ -75,7 +74,7 @@ describe("Access AI quota HTTP 계약과 사용량 경쟁 (실제 PostgreSQL)", 
   beforeAll(async () => {
     provider = new DeferredAiGenerator();
     context = await createE2eApp({
-      customizeBuilder: (builder) => builder.overrideProvider(AI_GENERATOR).useValue(provider),
+      customizeBuilder: (builder) => builder.overrideProvider(AiGeneratorPort).useValue(provider),
       additionalResetters: [() => provider.clear()],
     });
   });
@@ -98,14 +97,16 @@ describe("Access AI quota HTTP 계약과 사용량 경쟁 (실제 PostgreSQL)", 
     count: number;
     resetAt: Date;
     subscriptionStatus?: "FREE" | "ACTIVE";
+    role?: "USER" | "ADMIN";
   }) {
     await context.testDatabase
       .getClient()
       .update(userTable)
       .set({
         aiUsageCount: input.count,
-        aiUsageResetAt: input.resetAt,
+        aiUsageResetAt: instantFromDate(input.resetAt),
         subscriptionStatus: input.subscriptionStatus,
+        role: input.role,
       })
       .where(eq(userTable.id, user.userId));
   }
@@ -311,7 +312,7 @@ describe("Access AI quota HTTP 계약과 사용량 경쟁 (실제 PostgreSQL)", 
       });
       expect(await storedQuota()).toMatchObject({
         aiUsageCount: 1,
-        aiUsageResetAt: newMonthAt,
+        aiUsageResetAt: instantFromDate(newMonthAt),
       });
       expect(provider.getCallCount()).toBe(2);
     } finally {
@@ -323,8 +324,10 @@ describe("Access AI quota HTTP 계약과 사용량 경쟁 (실제 PostgreSQL)", 
   it("FREE 권한 캐시가 남아도 DB의 ACTIVE 구독은 무료 한도 이상을 사용할 수 있다", async () => {
     // Given
     await setQuota({ count: FREE_AI_LIMIT, resetAt: oldMonthAt });
-    const entitlement = context.module.get<EntitlementReaderPort>(ENTITLEMENT_READER);
-    expect(await entitlement.getLimit(user.userId, "AI_PARSE")).toBe(FREE_AI_LIMIT);
+    const entitlement = context.module.get(EntitlementReaderPort);
+    expect(await entitlement.getFeatureLimit(UserId.reconstitute(user.userId), "AI_PARSE")).toBe(
+      FREE_AI_LIMIT,
+    );
     await setQuota({ count: FREE_AI_LIMIT, resetAt: oldMonthAt, subscriptionStatus: "ACTIVE" });
 
     // When
@@ -338,14 +341,18 @@ describe("Access AI quota HTTP 계약과 사용량 경쟁 (실제 PostgreSQL)", 
       used: FREE_AI_LIMIT + 1,
       limit: null,
     });
-    expect(await entitlement.getLimit(user.userId, "AI_PARSE")).toBe(FREE_AI_LIMIT);
+    expect(await entitlement.getFeatureLimit(UserId.reconstitute(user.userId), "AI_PARSE")).toBe(
+      FREE_AI_LIMIT,
+    );
   });
 
   it("ACTIVE 권한 캐시가 남아도 DB에서 FREE가 된 사용자는 소진한 무료 한도를 넘을 수 없다", async () => {
     // Given
     await setQuota({ count: FREE_AI_LIMIT, resetAt: oldMonthAt, subscriptionStatus: "ACTIVE" });
-    const entitlement = context.module.get<EntitlementReaderPort>(ENTITLEMENT_READER);
-    expect(await entitlement.getLimit(user.userId, "AI_PARSE")).toBeNull();
+    const entitlement = context.module.get(EntitlementReaderPort);
+    expect(
+      await entitlement.getFeatureLimit(UserId.reconstitute(user.userId), "AI_PARSE"),
+    ).toBeNull();
     await setQuota({ count: FREE_AI_LIMIT, resetAt: oldMonthAt, subscriptionStatus: "FREE" });
 
     // When
@@ -360,6 +367,66 @@ describe("Access AI quota HTTP 계약과 사용량 경쟁 (실제 PostgreSQL)", 
       used: FREE_AI_LIMIT,
       limit: FREE_AI_LIMIT,
     });
-    expect(await entitlement.getLimit(user.userId, "AI_PARSE")).toBeNull();
+    expect(
+      await entitlement.getFeatureLimit(UserId.reconstitute(user.userId), "AI_PARSE"),
+    ).toBeNull();
+  });
+
+  it("ADMIN은 프리미엄과 같은 AI 공정 사용 상한에서 같은 429 상세로 막히고 KST 다음 달에 다시 쓴다", async () => {
+    // Given
+    const fairUse = PLAN_CATALOG.AI_PARSE.fairUse.premium;
+    await setQuota({ count: fairUse, resetAt: oldMonthAt, subscriptionStatus: "ACTIVE" });
+    const premium = await parseTodo();
+    await setQuota({
+      count: fairUse,
+      resetAt: oldMonthAt,
+      subscriptionStatus: "FREE",
+      role: "ADMIN",
+    });
+
+    // When
+    const admin = await parseTodo();
+    vi.setSystemTime(newMonthAt);
+    const nextMonth = await parseTodo();
+
+    // Then
+    expect([premium.status, admin.status]).toEqual([429, 429]);
+    expect(admin.body.error.code).toBe(ErrorCode.AI_1303);
+    expect(admin.body.error.details).toEqual(premium.body.error.details);
+    expect(quotaErrorDetailsSchema.parse(admin.body.error.details).featureQuota).toEqual({
+      feature: "AI_PARSE",
+      allowed: true,
+      limit: fairUse,
+      used: fairUse,
+      remaining: 0,
+      period: "month",
+      resetsAt: "2026-04-30T15:00:00.000Z",
+      isFairUse: true,
+      perUse: null,
+    });
+    expect(nextMonth.status).toBe(200);
+    expect(provider.getCallCount()).toBe(1);
+    expect((await storedQuota())?.aiUsageCount).toBe(1);
+  });
+
+  it("USER→ADMIN으로 역할을 바꾸면 원장은 캐시와 무관하게 바로 프리미엄 상한으로 판단한다", async () => {
+    // Given
+    await setQuota({ count: FREE_AI_LIMIT, resetAt: oldMonthAt });
+    const entitlement = context.module.get(EntitlementReaderPort);
+    expect(await entitlement.getFeatureLimit(UserId.reconstitute(user.userId), "AI_PARSE")).toBe(
+      FREE_AI_LIMIT,
+    );
+    await setQuota({ count: FREE_AI_LIMIT, resetAt: oldMonthAt, role: "ADMIN" });
+
+    // When
+    const response = await parseTodo();
+
+    // Then
+    expect(response.status).toBe(200);
+    expect(response.body.data.featureQuota).toMatchObject({
+      limit: PLAN_CATALOG.AI_PARSE.fairUse.premium,
+      used: FREE_AI_LIMIT + 1,
+      isFairUse: true,
+    });
   });
 });

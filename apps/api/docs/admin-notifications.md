@@ -1,6 +1,6 @@
 # 관리자 알림
 
-운영 채널(가입)과 결제 채널(구독)로 가는 관리자 알림 기준이다. Application(`src/modules/operations/application`)은 채널에 상관없는 알림 사실(`AdminNotice`)만 만든다. 제목·이모지·색·필드 배치·날짜 표시는 채널 어댑터가 정하고, Discord는 `infrastructure/adapters/notifications/discord-*.renderer.ts` 한 곳에 있다. 지금 어댑터는 Discord와 로그(`ADMIN_NOTIFIER_PROVIDER=log`)이며, 다른 채널은 어댑터와 factory 표에 한 줄을 더해 붙인다.
+운영 채널(가입)과 결제 채널(구독)로 가는 관리자 알림을 바꿀 때 읽는다. Application(`src/modules/operations/admin-notices/application`)은 채널에 상관없는 알림 사실(`AdminNotice`)만 만든다. 제목·이모지·색·필드 배치·날짜 표시는 채널 어댑터가 정하고, Discord는 `admin-notices/infrastructure/adapters/discord-*.mapper.ts` 한 곳에 있다. 지금 어댑터는 Discord와 로그(`ADMIN_NOTIFIER_PROVIDER=log`)이며, 다른 채널은 어댑터와 `admin-notifier-selection.adapter.ts` 표에 한 줄을 더해 붙인다.
 
 | `AdminNotice.type`   | 내용                                                     | 만드는 곳                                     |
 | -------------------- | -------------------------------------------------------- | --------------------------------------------- |
@@ -8,9 +8,9 @@
 | `user_registered`    | 사용자 블록 + 가입 요청의 기기·앱 정보(`SignupNotice`)   | `EnqueueUserRegistered`                       |
 | `message`            | 이미 조립한 일반 알림(`AdminNotification`, 일일 요약 등) | `DispatchDailySignupSummary`, 이전 형식 큐 잡 |
 
-발송은 `admin-notification` 큐 잡으로 처리해 채널 실패가 회원가입·웹훅 처리를 막지 않는다. 일시 실패(429·5xx·연결 실패)만 큐가 2회까지 다시 시도하고, 채널이 거절한 요청(그 밖의 4xx)은 다시 보내지 않고 운영 경보(`operations.admin-notification.rejected`)를 올린다. webhook이 설정되지 않은 채널은 건너뛴다.
+발송은 `admin-notification.v1` 큐 잡으로 처리해 채널 실패가 회원가입·웹훅 처리를 막지 않는다. 일시 실패(429·5xx·연결 실패)만 큐가 2회까지 다시 시도하고, 채널이 거절한 요청(그 밖의 4xx)은 다시 보내지 않고 운영 경보(`operations.admin-notification.rejected`)를 올린다. webhook이 설정되지 않은 채널은 건너뛴다.
 
-큐 잡 데이터는 `{ channel, notice }`다. 배포 순간 큐에 남은 이전 잡(보관 24시간)은 그 모양 그대로 `message`로 보낸다. 1.15 조립 메시지(`{ channel, notification }`)와 1.14 형식(`color`·`fields[].name`, 색은 info로)이 해당하고 [제거 시점](../../../docs/conventions/compatibility.md)은 1.15.1이다. 표시에만 쓰는 값(스토어·사유·가입 방식 등)이 모르는 값이면 잡을 버리지 않고 그 칸만 비운다.
+큐 잡 데이터는 `{ channel, notice }`다. 배포 순간 큐에 남은 이전 잡(보관 24시간)은 그 모양 그대로 `message`로 보낸다. 조립 메시지(`{ channel, notification }`, `LegacySendDataSchema`)와 그 전 형식(`color`·`fields[].name`, `LegacyAdminNotificationSchema`, 색은 info로)이 해당하고 제거 조건은 [호환](../../../docs/conventions/compatibility.md#2-외부-계약-바꾸지-않는다)에 있다. 표시에만 쓰는 값(스토어·사유·가입 방식 등)이 모르는 값이면 잡을 버리지 않고 그 칸만 비운다.
 
 일반 메시지(`message`)의 `severity`는 채널 색으로 바뀐다: info 파랑·success 초록·warning 노랑·critical 빨강. 시각 필드는 보는 사람의 시간대로 보여 준다.
 
@@ -27,7 +27,7 @@
 | 이메일    | 전체 이메일. 가입·결제 알림이 같은 규칙이다(내부 운영 채널, 가리지 않음)    |
 | 사용자 ID | 내부 사용자 ID                                                              |
 
-사용자 블록은 `ADMIN_NOTICE_USER_READER`(`DrizzleAdminNoticeUserReader`: `User`·`UserProfile`·첫 `Account`)로 채운다. 업무 트랜잭션이 커밋된 뒤 큐에 넣기 직전에 읽으며, billing·identity Application은 이 조회를 모른다. 사용자가 없거나 조회가 실패하면 알림을 버리지 않고 호출한 Context가 준 값(이메일·이름, 가입은 가입 방식·시각)으로 보낸다. 실패 로그는 `operations.notifications.user-lookup.failed`(`userId`·`errorType`)뿐이다.
+사용자 블록은 `AdminNoticeUserReaderPort`(`DrizzleAdminNoticeUserReader`: `User`·`UserProfile`·첫 `Account`)로 채운다. 업무 트랜잭션이 커밋된 뒤 큐에 넣기 직전에 읽으며, billing·identity Application은 이 조회를 모른다. 사용자가 없거나 조회가 실패하면 알림을 버리지 않고 호출한 Context가 준 값(이메일·이름, 가입은 가입 방식·시각)으로 보낸다. 실패 로그는 `operations.notifications.user-lookup.failed`(`userId`·`errorType`)뿐이다.
 
 ## 결제 알림
 
@@ -53,7 +53,7 @@ RevenueCat 웹훅이 처리 원장에 새로 기록되고 구독 상태가 바�
 | `expired`                               | `EXPIRATION`                                      | ⌛ 구독 만료              | 빨강 | 만료 시각             |
 | `trial_expired`                         | 체험 중 `EXPIRATION`                              | 📉 체험 종료 (전환 안 됨) | 빨강 | 만료 시각             |
 
-이벤트 분류는 환불 → 체험 단계(billing `SubscriptionLifecyclePolicy`) → 일회성 구매 → 이벤트 종류 순이다(`subscriptionNoticeEventOf`).
+이벤트 분류는 환불 → 체험 단계(billing `classifySubscriptionLifecycle`) → 일회성 구매 → 이벤트 종류 순이다(`subscriptionNoticeEventOf`).
 
 사용자 블록 다음 줄은 국가·프리미엄·공급자 링크, 그 뒤가 결제 블록이다.
 
@@ -78,7 +78,7 @@ RevenueCat 웹훅이 처리 원장에 새로 기록되고 구독 상태가 바�
 | 앱·기기        | 구독자 속성 `appVersion`·`deviceModel`                                                                                                 |
 | 원거래 ID      | `original_transaction_id`. 20자를 넘으면 앞 8자…뒤 6자                                                                                 |
 
-사유 라벨: `UNSUBSCRIBE` 사용자가 해지 · `BILLING_ERROR` 결제 실패 · `DEVELOPER_INITIATED` 개발자가 취소 · `PRICE_INCREASE` 가격 인상에 동의하지 않음 · `CUSTOMER_SUPPORT` 스토어 고객지원 환불 · `SUBSCRIPTION_PAUSED` 구독 일시정지 · `UNKNOWN` 알 수 없음. RevenueCat 원문 → billing 어휘는 ACL(`revenuecat-event.translator.ts`), billing 어휘 → 사람 말은 Discord 어댑터가 바꾼다.
+사유 라벨: `UNSUBSCRIBE` 사용자가 해지 · `BILLING_ERROR` 결제 실패 · `DEVELOPER_INITIATED` 개발자가 취소 · `PRICE_INCREASE` 가격 인상에 동의하지 않음 · `CUSTOMER_SUPPORT` 스토어 고객지원 환불 · `SUBSCRIPTION_PAUSED` 구독 일시정지 · `UNKNOWN` 알 수 없음. RevenueCat 원문 → billing 어휘는 ACL(`revenuecat-webhook-translator.adapter.ts`), billing 어휘 → 사람 말은 Discord 어댑터가 바꾼다.
 
 웹훅 값은 billing이 `SubscriptionEventPayload`에 이벤트 종류와 상관없이 같은 이름으로 싣는다(`baseEventPayload`). 체험 시작처럼 금액이 0이면 0을 그대로 보인다.
 

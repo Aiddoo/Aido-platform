@@ -1,15 +1,15 @@
 import {
   ENTITLEMENT_CACHE_TTL_MS,
   EntitlementCacheKey,
-} from "#api/modules/access/infrastructure/cache/entitlement/entitlement-cache.keyspace";
+} from "#api/modules/access/entitlements/infrastructure/cache/entitlement-cache.keyspace";
 import {
   IDENTITY_CACHE_TTL_MS,
   IdentityCacheKey,
-} from "#api/modules/identity/infrastructure/cache/auth/identity-cache.keyspace";
+} from "#api/modules/identity/auth/infrastructure/cache/identity-cache.keyspace";
 import {
   FOLLOW_CACHE_TTL_MS,
   FollowCacheKey,
-} from "#api/modules/social/infrastructure/cache/friends/follow-cache.keyspace";
+} from "#api/modules/social/friends/infrastructure/cache/follow-cache.keyspace";
 describe("Context별 캐시 키 — 기존 키와 TTL 호환", () => {
   describe("TTL 상수", () => {
     it("세션 TTL은 30초이다", () => {

@@ -39,38 +39,34 @@ function isWithinNoticeDays(daysLeft: number, noticeDays: number) {
 }
 
 /** 스토어 구독으로 프리미엄을 쓰는 중이라 구독을 다시 권하지 않는다 */
-function isStoreSubscribed(access: Pick<PremiumAccess, 'source'>) {
+function isStoreSubscribed(access: PremiumAccess) {
   return access.source === PREMIUM_SOURCE.STORE;
 }
 
 /** 서버는 STORE일 때만 체험이라고 보낸다. 출처가 바뀐 캐시가 섞여도 스토어 구독일 때만 체험으로 본다 */
-function isTrial(access: Pick<PremiumAccess, 'source' | 'isTrial'>) {
+function isTrial(access: PremiumAccess) {
   return isStoreSubscribed(access) && access.isTrial;
 }
 
-function isGrantOnly(access: Pick<PremiumAccess, 'source'>) {
+function isGrantOnly(access: PremiumAccess) {
   return access.source === PREMIUM_SOURCE.GRANT;
 }
 
-function hasBankedDays(access: Pick<PremiumAccess, 'bankedDays'>) {
+function hasBankedDays(access: PremiumAccess) {
   return access.bankedDays > 0;
 }
 
 /** 자동 갱신되거나 이어서 받을 보상이 있으면 전체 프리미엄은 아직 끝나지 않는다 */
-function hasRenewal(access: Pick<PremiumAccess, 'willRenew' | 'bankedDays'>) {
+function hasRenewal(access: PremiumAccess) {
   return access.willRenew || hasBankedDays(access);
 }
 
-function getDaysLeft(access: Pick<PremiumAccess, 'endsAt'>, now: Instant, timeZone: string) {
+function getDaysLeft(access: PremiumAccess, now: Instant, timeZone: string) {
   return access.endsAt == null ? null : calculateCalendarDaysLeft(access.endsAt, now, timeZone);
 }
 
 /** 곧 끝나는데 이어질 길이 없는지. 이미 끝난 시각이면 곧 만료가 아니라 만료다 */
-function isExpiringSoon(
-  access: Pick<PremiumAccess, 'endsAt' | 'willRenew' | 'bankedDays'>,
-  now: Instant,
-  timeZone: string,
-) {
+function isExpiringSoon(access: PremiumAccess, now: Instant, timeZone: string) {
   const daysLeft = getDaysLeft(access, now, timeZone);
   if (access.endsAt == null || daysLeft == null) {
     return false;
@@ -84,11 +80,7 @@ function isExpiringSoon(
 }
 
 /** 체험이 끝나는 날(=첫 결제일)까지 남은 달력 일수. 체험이 아니면 null이다 */
-function getTrialDaysLeft(
-  access: Pick<PremiumAccess, 'source' | 'isTrial' | 'periodEndsAt'>,
-  now: Instant,
-  timeZone: string,
-) {
+function getTrialDaysLeft(access: PremiumAccess, now: Instant, timeZone: string) {
   if (!isTrial(access) || access.periodEndsAt == null) {
     return null;
   }
@@ -96,11 +88,7 @@ function getTrialDaysLeft(
 }
 
 /** 자동 갱신과 상관없이 체험 끝을 서버 체험 알림과 같은 날수부터 앱 안에서도 알린다 */
-function isTrialEndingSoon(
-  access: Pick<PremiumAccess, 'source' | 'isTrial' | 'periodEndsAt'>,
-  now: Instant,
-  timeZone: string,
-) {
+function isTrialEndingSoon(access: PremiumAccess, now: Instant, timeZone: string) {
   const daysLeft = getTrialDaysLeft(access, now, timeZone);
   if (access.periodEndsAt == null || daysLeft == null) {
     return false;
@@ -112,11 +100,7 @@ function isTrialEndingSoon(
 }
 
 /** 자동 갱신되는 연간 구독이 서버 갱신 알림과 같은 날수 안에 결제될 때 남은 달력 일수. 그 밖에는 null이다 */
-function getAnnualRenewalDaysLeft(
-  access: Pick<PremiumAccess, 'source' | 'isTrial' | 'willRenew' | 'planType' | 'periodEndsAt'>,
-  now: Instant,
-  timeZone: string,
-) {
+function getAnnualRenewalDaysLeft(access: PremiumAccess, now: Instant, timeZone: string) {
   if (
     !isStoreSubscribed(access) ||
     isTrial(access) ||
@@ -132,23 +116,19 @@ function getAnnualRenewalDaysLeft(
 }
 
 /** 자동 갱신 중인데 지금 기간 끝이 지났으면 스토어 갱신 결과를 기다리는 중이다. 경계는 끝나는 시각 자체를 포함한다 */
-function isRenewalPending(access: Pick<PremiumAccess, 'willRenew' | 'periodEndsAt'>, now: Instant) {
+function isRenewalPending(access: PremiumAccess, now: Instant) {
   return (
     access.willRenew && access.periodEndsAt != null && hasInstantPassed(access.periodEndsAt, now)
   );
 }
 
 /** 무료 페이월에서 "초대 보상 프리미엄이 끝났어요"를 붙일 시각. 아직 프리미엄이면 null이다 */
-function getRecentGrantEndedAt(access: Pick<PremiumAccess, 'source' | 'grantEndedAt'>) {
+function getRecentGrantEndedAt(access: PremiumAccess) {
   return access.source == null ? access.grantEndedAt : null;
 }
 
 /** 끝나는 순간엔 서버 이벤트가 없어 앱이 다시 받아야 한다. 경계는 hasInstantPassed처럼 끝나는 시각 자체를 포함한다 */
-function hasEndedSince(
-  access: Pick<PremiumAccess, 'periodEndsAt' | 'endsAt'>,
-  lastCheckedAt: Instant,
-  now: Instant,
-) {
+function hasEndedSince(access: PremiumAccess, lastCheckedAt: Instant, now: Instant) {
   return [access.periodEndsAt, access.endsAt].some(
     (endsAt) =>
       endsAt != null && !hasInstantPassed(endsAt, lastCheckedAt) && hasInstantPassed(endsAt, now),
@@ -156,9 +136,7 @@ function hasEndedSince(
 }
 
 /** 초대 보상은 지금 구독(체험 포함)이 끝나는 순간부터 이어진다. 자동 갱신 중이면 끝이 정해지지 않아 시작일도 없다 */
-function getBankedRewardStartsAt(
-  access: Pick<PremiumAccess, 'bankedDays' | 'willRenew' | 'periodEndsAt'>,
-) {
+function getBankedRewardStartsAt(access: PremiumAccess) {
   if (!hasBankedDays(access) || access.willRenew || access.periodEndsAt == null) {
     return null;
   }

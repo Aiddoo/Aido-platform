@@ -51,7 +51,9 @@ describe("UpdateMemoUseCase — 메모 내용 수정", () => {
     expect((await memoRepository.findByIdAndUserId(original.id, USER_ID))?.toPrimitives()).toEqual(
       expected,
     );
-    expect(mutationLock.acquiredKeys).toEqual([[MemoLockKeys.memo(original.id)]]);
+    expect(mutationLock.acquiredKeys).toEqual([
+      [MemoLockKeys.memo(original.id), MemoLockKeys.sortOrder(USER_ID)],
+    ]);
   });
 
   it("같은 내용이면 저장하지 않아 수정 시각이 그대로다", async () => {
