@@ -2,12 +2,14 @@ import Check from '@expo/material-symbols/check.xml';
 import Delete from '@expo/material-symbols/delete.xml';
 import NoteAdd from '@expo/material-symbols/note_add.xml';
 import { useVoiceNoteStorageService } from '@src/bootstrap/providers/di-context';
+import { useTrack } from '@src/shared/analytics';
 import { useGoBack } from '@src/shared/hooks/use-go-back';
 import { useTranslation } from '@src/shared/i18n';
 import { STACK_MORE_ICON, useConfirmDialog } from '@src/shared/ui';
 import { Stack } from 'expo-router';
 
-import { useVoiceNoteRoute } from '../../hooks/use-current-voice-note';
+import { VoiceNotePolicy } from '../../domains/voice-note.model';
+import { useCurrentVoiceNote, useVoiceNoteRoute } from '../../hooks/use-current-voice-note';
 import { useVoiceNoteSaveMemo } from '../../hooks/use-voice-note-save-memo';
 
 const VOICE_NOTE_TOOLBAR_ICON = {
@@ -22,7 +24,9 @@ interface VoiceNoteToolbarProps {
 
 export function VoiceNoteToolbar({ onMemoChanged }: VoiceNoteToolbarProps) {
   const { t } = useTranslation('voiceNote');
+  const { trackEvent } = useTrack();
   const [{ accountId, draftId }] = useVoiceNoteRoute();
+  const note = useCurrentVoiceNote();
   const storage = useVoiceNoteStorageService();
   const confirmDialog = useConfirmDialog();
   const closeScreen = useGoBack({ fallbackHref: '/memo' });
@@ -40,6 +44,7 @@ export function VoiceNoteToolbar({ onMemoChanged }: VoiceNoteToolbarProps) {
       cancelLabel: t('result.deleteCancel'),
     });
     if (isConfirmed) {
+      trackEvent('voice_note_deleted', { is_digested: VoiceNotePolicy.isDigested(note) });
       storage.discard(accountId, draftId);
       closeScreen();
     }

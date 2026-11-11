@@ -4,6 +4,7 @@ import type {
   SpeechLocale,
   SpeechMode,
 } from '@src/core/ports/speech-recognizer';
+import { useTrack } from '@src/shared/analytics';
 import { useOpenAppSettings } from '@src/shared/hooks/use-open-app-settings';
 import { t } from '@src/shared/i18n';
 import { useConfirmDialog } from '@src/shared/ui';
@@ -33,6 +34,7 @@ function getPermissionCopy(missing: MissingSpeechPermission) {
 
 export function useEnsureMicrophonePermission() {
   const speechRecognizer = useSpeechRecognizer();
+  const { trackEvent } = useTrack();
   const toast = useAppToast();
   const confirmDialog = useConfirmDialog();
   const openAppSettings = useOpenAppSettings();
@@ -40,10 +42,17 @@ export function useEnsureMicrophonePermission() {
   return useCallback(
     async (mode: SpeechMode, locale: SpeechLocale) => {
       const current = await speechRecognizer.getPermission(mode, locale);
-      const permission =
-        current.isGranted || !current.canAskAgain
-          ? current
-          : await speechRecognizer.requestPermission(mode, locale);
+      const shouldRequest = !current.isGranted && current.canAskAgain;
+      const permission = shouldRequest
+        ? await speechRecognizer.requestPermission(mode, locale)
+        : current;
+      // 받아쓰기는 음성 이벤트를 보내지 않는다
+      if (shouldRequest && mode !== 'dictation') {
+        trackEvent('voice_permission_requested', {
+          mode,
+          status: permission.isGranted ? 'granted' : 'denied',
+        });
+      }
 
       if (permission.isGranted) {
         return true;
@@ -64,6 +73,6 @@ export function useEnsureMicrophonePermission() {
       }
       return false;
     },
-    [speechRecognizer, toast, confirmDialog, openAppSettings],
+    [speechRecognizer, trackEvent, toast, confirmDialog, openAppSettings],
   );
 }

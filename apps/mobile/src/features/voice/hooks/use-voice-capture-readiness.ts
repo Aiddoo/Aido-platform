@@ -4,11 +4,13 @@ import type { EntitlementFeature } from '@src/features/billing/subscription/doma
 import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
 import { useClaimAiConsentRenewal } from '@src/features/device/coachmark/hooks/use-claim-ai-consent-renewal';
 import { useAiDataSharingConsentGate } from '@src/features/identity/consent/hooks/use-ai-data-sharing-consent-gate';
+import { useTrack } from '@src/shared/analytics';
 import { useTranslation } from '@src/shared/i18n';
 import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { useEffect, useRef } from 'react';
 import { Keyboard } from 'react-native';
 
+import type { VoiceCaptureEntry } from '../constants/voice.events';
 import { useEnsureMicrophonePermission } from './use-ensure-microphone-permission';
 
 interface UseVoiceCaptureReadinessOptions {
@@ -19,6 +21,8 @@ interface UseVoiceCaptureReadinessOptions {
 
 interface EnsureVoiceCaptureReadyOptions {
   locale: SpeechLocale;
+  /** 시작을 누른 곳. 막혀도 누른 것으로 센다 */
+  entry: VoiceCaptureEntry;
   /** 한도 안내에서 구독 화면으로 갈 때. 시트는 닫고 떠난다 */
   onSubscribe?: () => void;
 }
@@ -40,6 +44,7 @@ export function useVoiceCaptureReadiness({
   mode,
 }: UseVoiceCaptureReadinessOptions) {
   const { t } = useTranslation('ai');
+  const { trackEvent } = useTrack();
   const toast = useAppToast();
   const gate = useEntitlementGate(feature, { surface });
   const claimRenewalPrompt = useClaimAiConsentRenewal();
@@ -57,8 +62,10 @@ export function useVoiceCaptureReadiness({
 
   return async ({
     locale,
+    entry,
     onSubscribe,
   }: EnsureVoiceCaptureReadyOptions): Promise<VoiceCaptureReadiness> => {
+    trackEvent('voice_capture_start_tapped', { mode, entry });
     if (gate.promptIfBlocked({ onSubscribe })) {
       return NOT_READY;
     }

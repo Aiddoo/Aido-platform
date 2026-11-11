@@ -66,7 +66,7 @@ export function useAddTodoQuickVoice({ form, onExit }: UseAddTodoQuickVoiceOptio
 
   const start = async () => {
     const hasFailed = session.state.status === 'failed';
-    const readiness = await ensureReady({ locale, onSubscribe: onExit });
+    const readiness = await ensureReady({ locale, entry: 'add_todo_sheet', onSubscribe: onExit });
     if (!readiness.isReady) {
       return;
     }

@@ -32,6 +32,7 @@ export function useContinueAsVoiceNote() {
     const { locale, heard, onHandOff, onExit } = options;
 
     return startVoiceNote({
+      entry: 'quick_voice_upgrade',
       onSubscribe: onExit,
       onReadyToRecord: () => {
         const note = createTranscribedVoiceNote({

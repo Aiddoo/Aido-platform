@@ -33,7 +33,7 @@ function ReadinessProbe({ onResult }: { onResult: (readiness: VoiceCaptureReadin
   return (
     <Button
       onPress={() => {
-        ensureReady({ locale: 'ko-KR' }).then(onResult).catch(jest.fn());
+        ensureReady({ locale: 'ko-KR', entry: 'memo_tab' }).then(onResult).catch(jest.fn());
       }}
     >
       시작

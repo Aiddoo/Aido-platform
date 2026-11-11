@@ -394,7 +394,8 @@ MemoList.Error = function ErrorFallback({
 MemoList.Empty = function Empty() {
   const { t } = useTranslation('memo');
   const { t: tVoiceNote } = useTranslation('voiceNote');
-  const startVoiceNote = useStartVoiceNote();
+  // 연타가 시작 탭 이벤트와 동의·권한 확인을 두 번 내지 않게 한다
+  const startVoiceNote = useSingleTap(useStartVoiceNote());
 
   return (
     <HStack flex={1} justify="center" align="center">

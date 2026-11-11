@@ -2,6 +2,7 @@ import { CoachmarkPopover } from '@src/features/device/coachmark/components/coac
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
 import { useRouteParams } from '@src/shared/hooks/use-route-params';
+import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import {
   HStack,
@@ -28,6 +29,8 @@ export function VoiceNoteStartButton({
   const { t } = useTranslation('voiceNote');
   const fontScaledSize = useFontScaledSize();
   const start = useStartVoiceNote();
+  // 연타가 시작 탭 이벤트와 동의·권한 확인을 두 번 내지 않게 한다
+  const startOnce = useSingleTap(start);
   const layoutKey = useAdaptivePaneLayoutKey();
   useStartRequestedVoiceNote({ start });
 
@@ -44,7 +47,7 @@ export function VoiceNoteStartButton({
       isPassThrough
     >
       <PressableFeedback
-        onPress={() => start()}
+        onPress={() => startOnce()}
         accessibilityRole="button"
         accessibilityLabel={t('start.label')}
         style={{ height: fontScaledSize(44) }}
