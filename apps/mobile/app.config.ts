@@ -288,6 +288,9 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         // expo-file-system·expo-image가 더한다. 녹음과 공유 이미지는 앱 전용 폴더만 쓰고 외부 저장소를 읽거나 쓰지 않는다.
         'android.permission.READ_EXTERNAL_STORAGE',
         'android.permission.WRITE_EXTERNAL_STORAGE',
+        // expo-location이 더한다. 날씨는 약 5km 격자라 대략적 위치(COARSE)로 충분하다. Play는 정확한 위치에
+        // 데이터 보안 신고와 별도 권한 신고(2027-01-27 의무)를 요구하므로 대략적 위치만 받는다.
+        'android.permission.ACCESS_FINE_LOCATION',
         // 기본 템플릿이 넣는다. 개발 메뉴(expo-dev-menu debug)만 쓰므로 개발 빌드에는 남긴다.
         ...(isDevelopment ? [] : ['android.permission.SYSTEM_ALERT_WINDOW']),
       ],
@@ -408,7 +411,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         {
           // 언어별 문구는 native-locales/{ko,en}.json이 덮어쓴다. 기본값은 ko.json을 그대로 쓴다.
           locationWhenInUsePermission: koNativeLocale.ios.NSLocationWhenInUseUsageDescription,
-          // 날씨는 대략적인 위치(Balanced)만 쓰므로 정확한 위치 임시 요청과 동작 감지 권한을 넣지 않는다.
+          // 날씨는 약 5km 격자라 정확한 위치 임시 요청과 동작 감지 권한을 넣지 않는다. Android 정확한 위치 권한은 blockedPermissions가 뺀다.
           locationFullAccuracyPermission: false,
           motionUsagePermission: false,
           locationAlwaysAndWhenInUsePermission: false,
