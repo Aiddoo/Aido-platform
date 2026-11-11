@@ -19,7 +19,7 @@ import type { PurchasesSession } from '@src/features/billing/subscription/servic
 import type { SubscriptionService } from '@src/features/billing/subscription/services/subscription.service';
 import type { ActivationProgressRepository } from '@src/features/device/activation/repositories/activation-progress.repository';
 import type { ActivationService } from '@src/features/device/activation/services/activation.service';
-import type { AppIconService } from '@src/features/device/app-icon/apis/app-icon.service';
+import type { AppIconService } from '@src/features/device/app-icon/services/app-icon.service';
 import type { CoachmarkRepository } from '@src/features/device/coachmark/repositories/coachmark.repository';
 import type { StoreReviewService } from '@src/features/device/store-review/services/store-review.service';
 import type { WidgetNavigationRepository } from '@src/features/device/widget/apis/widget-navigation.repository';

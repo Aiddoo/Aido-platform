@@ -251,8 +251,6 @@ ignore:
   - apps/mobile/src/features/app-config/whats-new/apis/whats-new.repository.test.ts
   - apps/mobile/src/features/app-config/whats-new/apis/whats-new.repository.ts
   - apps/mobile/src/features/assistant/suggestion/apis/suggestion.service.ts
-  - apps/mobile/src/features/device/app-icon/apis/app-icon.service.test.ts
-  - apps/mobile/src/features/device/app-icon/apis/app-icon.service.ts
   - apps/mobile/src/features/device/widget/apis/android-widget-snapshot.repository.test.ts
   - apps/mobile/src/features/device/widget/apis/android-widget-snapshot.repository.ts
   - apps/mobile/src/features/device/widget/apis/widget-navigation.repository.test.ts

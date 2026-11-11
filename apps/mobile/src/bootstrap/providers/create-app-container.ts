@@ -45,7 +45,7 @@ import { PurchasesSession } from '@src/features/billing/subscription/services/pu
 import { SubscriptionService } from '@src/features/billing/subscription/services/subscription.service';
 import { createActivationProgressRepository } from '@src/features/device/activation/repositories/activation-progress.repository';
 import { ActivationService } from '@src/features/device/activation/services/activation.service';
-import { AppIconService } from '@src/features/device/app-icon/apis/app-icon.service';
+import { AppIconService } from '@src/features/device/app-icon/services/app-icon.service';
 import { createCoachmarkRepository } from '@src/features/device/coachmark/repositories/coachmark.repository';
 import { createStoreReviewRepository } from '@src/features/device/store-review/repositories/store-review.repository';
 import { StoreReviewService } from '@src/features/device/store-review/services/store-review.service';
