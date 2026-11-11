@@ -14,6 +14,7 @@ import { useDraftStorage } from '@src/shared/draft/use-draft-storage';
 import { useFormDraftAutosave } from '@src/shared/draft/use-form-draft-autosave';
 import { isConnectivityError } from '@src/shared/errors';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
+import { useGoBack } from '@src/shared/hooks/use-go-back';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useToday } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
@@ -304,14 +305,7 @@ MemoEditor.PaneLoading = function PaneLoading() {
 /** 서버는 지운 메모와 볼 권한이 없는 메모를 404로 답한다. 전체 화면은 어느 실패든 돌아갈 길을 남긴다 */
 MemoEditor.Error = function ErrorFallback(props: QueryErrorFallbackProps) {
   const backToolbar = useStackBackToolbar({ fallbackHref: '/memo' });
-  const goBack = useSingleTap(() => {
-    if (router.canGoBack()) {
-      router.back();
-
-      return;
-    }
-    router.replace('/memo');
-  });
+  const goBack = useGoBack({ fallbackHref: '/memo' });
 
   return (
     <>

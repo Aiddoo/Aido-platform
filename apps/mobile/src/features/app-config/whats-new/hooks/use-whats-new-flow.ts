@@ -8,6 +8,7 @@ import { useTrack } from '@src/shared/analytics';
 import type { FeatureKey } from '@src/shared/analytics/feature-key';
 import { getNowInstant } from '@src/shared/date/instant';
 import { getErrorMessage } from '@src/shared/errors';
+import { useGoBack } from '@src/shared/hooks/use-go-back';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useQuery } from '@tanstack/react-query';
 import { type Href, router } from 'expo-router';
@@ -20,14 +21,6 @@ import type { WhatsNewSource } from '../schemas/whats-new-params.schema';
 interface WhatsNewFlowInput {
   release: Pick<Release, 'id' | 'campaignId'>;
   source: WhatsNewSource;
-}
-
-function goBack() {
-  if (router.canGoBack()) {
-    router.back();
-    return;
-  }
-  router.replace('/feed');
 }
 
 // 닫기·iOS 스와이프·Android 뒤로 가기 모두 화면이 사라질 때 닫은 것으로 남기고, 기능으로 떠나거나 끝까지 본 경우만 뺀다
@@ -92,7 +85,7 @@ export function useWhatsNewFlow({ release, source }: WhatsNewFlowInput) {
     }
   };
 
-  const close = useSingleTap(goBack);
+  const goBack = useGoBack({ fallbackHref: '/feed' });
 
   const complete = useSingleTap(() => {
     isFinishedRef.current = true;
@@ -100,5 +93,5 @@ export function useWhatsNewFlow({ release, source }: WhatsNewFlowInput) {
     goBack();
   });
 
-  return { close, complete, leaveTo, trackCta, trackStepViewed };
+  return { close: goBack, complete, leaveTo, trackCta, trackStepViewed };
 }

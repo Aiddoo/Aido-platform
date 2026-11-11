@@ -2,9 +2,10 @@ import Check from '@expo/material-symbols/check.xml';
 import Delete from '@expo/material-symbols/delete.xml';
 import NoteAdd from '@expo/material-symbols/note_add.xml';
 import { useVoiceNoteStorageService } from '@src/bootstrap/providers/di-context';
+import { useGoBack } from '@src/shared/hooks/use-go-back';
 import { useTranslation } from '@src/shared/i18n';
 import { STACK_MORE_ICON, useConfirmDialog } from '@src/shared/ui';
-import { router, Stack } from 'expo-router';
+import { Stack } from 'expo-router';
 
 import type { VoiceNote } from '../../domains/voice-note.model';
 import { useVoiceNoteRoute } from '../../hooks/use-current-voice-note';
@@ -16,14 +17,6 @@ const VOICE_NOTE_TOOLBAR_ICON = {
   delete: process.env.EXPO_OS === 'ios' ? 'trash' : Delete,
 } as const;
 
-function closeScreen() {
-  if (router.canGoBack()) {
-    router.back();
-  } else {
-    router.replace('/memo');
-  }
-}
-
 interface VoiceNoteToolbarProps {
   note: VoiceNote;
   onMemoChanged: () => void;
@@ -34,6 +27,7 @@ export function VoiceNoteToolbar({ note, onMemoChanged }: VoiceNoteToolbarProps)
   const [{ accountId, draftId }] = useVoiceNoteRoute();
   const storage = useVoiceNoteStorageService();
   const confirmDialog = useConfirmDialog();
+  const closeScreen = useGoBack({ fallbackHref: '/memo' });
   const { saveMemo, canSaveMemo, isMemoSaved, isSavingMemo } = useVoiceNoteSaveMemo({
     note,
     onMemoChanged,
