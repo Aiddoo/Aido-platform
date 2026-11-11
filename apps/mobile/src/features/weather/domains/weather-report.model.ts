@@ -179,7 +179,7 @@ export const weatherReportSchema = z.object({
   airQuality: airQualitySchema.nullable(),
   attribution: attributionSchema,
   fetchedAt: instantSchema,
-  // 옛 서버이거나 서버가 오늘 할 일을 읽지 못하면 null이다
+  // 서버가 오늘 할 일을 읽지 못하면 null이다
   briefing: weatherReportBriefingSchema.nullable(),
 });
 export type WeatherReport = z.infer<typeof weatherReportSchema>;

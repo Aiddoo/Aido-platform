@@ -36,7 +36,7 @@ export function toTodo(dto: TodoDto): Todo {
     isAllDay: dto.isAllDay,
     visibility: dto.visibility,
     recurrenceGroupId: dto.recurrenceGroupId,
-    // 구 서버 응답과 친구 할 일에는 키가 없다
+    // 친구 할 일에는 키가 없다
     repeat: dto.repeat == null ? null : toRepeat(dto.repeat),
     subTodos: dto.items.map(toSubTodo),
     commentCount: dto.commentCount,

@@ -354,7 +354,7 @@ function toTomorrowMorningBriefing(
 
 /**
  * 서버가 고른 할 일에 닿는 위험(뇌우·눈·비 → 더위)을 먼저, 없으면 곧 올 비·맑은 날·내일 아침 순으로 알린다.
- * 서버가 판단하지 못한 리포트(옛 서버·오늘 할 일 읽기 실패)는 앱이 다시 판단하지 않고 null이다.
+ * 서버가 판단하지 못한 리포트(오늘 할 일 읽기 실패)는 앱이 다시 판단하지 않고 null이다.
  */
 export function getWeatherBriefing(
   report: BriefingSource,
