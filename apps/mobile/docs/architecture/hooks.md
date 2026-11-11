@@ -46,21 +46,21 @@
 
 새로 만들기 전에 이 표를 본다. 같은 일을 하는 훅이 있으면 그것을 쓰고, 모양이 맞지 않으면 그 훅을 고친다.
 
-| 훅                                                     | 자리                                  | 모양                                                 | 없애는 복제                                       |
-| ------------------------------------------------------ | ------------------------------------- | ---------------------------------------------------- | ------------------------------------------------- |
-| `useGoBack({ fallbackHref })`                          | `shared/hooks`                        | `() => void`(두 번 탭 방지)                          | `canGoBack ? back : replace` 8곳                  |
-| `useAndroidBackHandler({ isEnabled, onBack })`         | `shared/hooks`                        | `void`(`useEffectEvent`, 화면 포커스와 묶음)         | BackHandler 5곳                                   |
-| `useOnAppForeground(onForeground)`                     | `shared/hooks`                        | `void`(AppLifecycle 포트)                            | 4곳                                               |
-| `useNow({ tickMs, until })`                            | `shared/hooks`                        | `Instant`                                            | 지금 시계 4곳                                     |
-| `useCopyToClipboard()`                                 | `shared/hooks`                        | `{ copy(text, { successMessage, failureMessage }) }` | 2곳 + `useCopiedFeedback`                         |
-| `useEnsurePermission({ get, request, copy })`          | `shared/hooks`                        | `() => Promise<boolean>`                             | 마이크·위치 권한 흐름                             |
-| `useLayoutSize()`                                      | `shared/hooks`                        | `[size, onLayout]`                                   | 4곳                                               |
-| `useOpenSheet()`                                       | `shared/ui/overlay`                   | `openSheet(render, options)`                         | 14곳                                              |
-| `useStoredValue(def, scopeId?)`                        | `shared/storage`                      | `[value, setValue]`                                  | repository 11개                                   |
-| `useMyAccountId()`                                     | `features/identity/user/hooks`        | `string \| null`                                     | `useQuery(useGetMeQueryOptions())` 직접 호출 11곳 |
-| `usePushPermissionAction({ source })`                  | `features/notification/hooks`         | `{ runStep(step), isPending }`                       | 권한 요청·추적 6곳                                |
-| `useVoiceCaptureReadiness({ feature, surface, mode })` | `features/voice/hooks`                | `() => Promise<boolean>`(게이트 → 동의 → 마이크)     | `useStartVoiceNote`·`useAddTodoQuickVoice` 복제   |
-| `useWhatsNewCampaign()`                                | `features/app-config/whats-new/hooks` | `{ release, identity }`                              | 3개 훅의 같은 조회                                |
+| 훅                                                     | 자리                                  | 모양                                                 | 없애는 복제                                          |
+| ------------------------------------------------------ | ------------------------------------- | ---------------------------------------------------- | ---------------------------------------------------- |
+| `useGoBack({ fallbackHref })`                          | `shared/hooks`                        | `() => void`(두 번 탭 방지)                          | `canGoBack ? back : replace` 8곳                     |
+| `useAndroidBackHandler({ isEnabled, onBack })`         | `shared/hooks`                        | `void`(`useEffectEvent`, 화면 포커스와 묶음)         | BackHandler 5곳                                      |
+| `useOnAppForeground(onForeground)`                     | `shared/hooks`                        | `void`(AppLifecycle 포트)                            | 4곳                                                  |
+| `useNow({ tickMs, until })`                            | `shared/hooks`                        | `Instant`                                            | 지금 시계 4곳                                        |
+| `useCopyToClipboard()`                                 | `shared/hooks`                        | `{ copy(text, { successMessage, failureMessage }) }` | 2곳(`useCopiedFeedback`은 아이콘 타이머라 따로 둔다) |
+| `useEnsurePermission({ get, request, copy })`          | `shared/hooks`                        | `() => Promise<boolean>`                             | 마이크·위치 권한 흐름                                |
+| `useLayoutSize()`                                      | `shared/hooks`                        | `[size, onLayout]`                                   | 4곳                                                  |
+| `useOpenSheet()`                                       | `shared/ui/overlay`                   | `openSheet(render, options)`                         | 14곳                                                 |
+| `useStoredValue(def, scopeId?)`                        | `shared/storage`                      | `[value, setValue]`                                  | repository 11개                                      |
+| `useMyAccountId()`                                     | `features/identity/user/hooks`        | `string \| null`                                     | `useQuery(useGetMeQueryOptions())` 직접 호출 11곳    |
+| `usePushPermissionAction({ source })`                  | `features/notification/hooks`         | `{ runStep(step), isPending }`                       | 권한 요청·추적 6곳                                   |
+| `useVoiceCaptureReadiness({ feature, surface, mode })` | `features/voice/hooks`                | `() => Promise<boolean>`(게이트 → 동의 → 마이크)     | `useStartVoiceNote`·`useAddTodoQuickVoice` 복제      |
+| `useWhatsNewCampaign()`                                | `features/app-config/whats-new/hooks` | `{ release, identity }`                              | 3개 훅의 같은 조회                                   |
 
 있는 도구도 같은 일에는 하나만 쓴다.
 

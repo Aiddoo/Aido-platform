@@ -1,5 +1,4 @@
 import type { AppStoreListingGateway } from '@src/core/ports/app-store-listing-gateway';
-import type { ClipboardGateway } from '@src/core/ports/clipboard-gateway';
 import type { IdGenerator } from '@src/core/ports/id-generator';
 import type { LocationGateway } from '@src/core/ports/location-gateway';
 import type { NativeApplicationMetadataGateway } from '@src/core/ports/native-application-metadata-gateway';
@@ -66,7 +65,6 @@ import type { QueryCacheStorage } from '../query/query-cache-persistence';
 /** 화면이 `use{X}`로 꺼내는 것만 둔다. 조립에만 쓰는 포트는 `AppContainerPorts`에 있다 */
 export interface DIContainer extends SharedDependencies {
   deviceLocation: LocationGateway;
-  clipboard: ClipboardGateway;
   applicationMetadata: NativeApplicationMetadataGateway;
   socialAuth: SocialAuthGateway;
   appStoreListing: AppStoreListingGateway;
@@ -185,9 +183,6 @@ export function useApplicationMetadata() {
 }
 export function useAppStoreListing() {
   return useDI().appStoreListing;
-}
-export function useClipboard() {
-  return useDI().clipboard;
 }
 export function useViewCapture() {
   return useDI().viewCapture;

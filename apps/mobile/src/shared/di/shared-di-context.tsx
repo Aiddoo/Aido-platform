@@ -1,5 +1,6 @@
 import type { Analytics } from '@src/core/ports/analytics';
 import type { AppLifecycleGateway } from '@src/core/ports/app-lifecycle-gateway';
+import type { ClipboardGateway } from '@src/core/ports/clipboard-gateway';
 import type { ErrorReporter } from '@src/core/ports/error-reporter';
 import type { ExternalLinkGateway } from '@src/core/ports/external-link-gateway';
 import type { HapticsGateway } from '@src/core/ports/haptics-gateway';
@@ -23,6 +24,7 @@ export interface SharedDependencies {
   externalLink: ExternalLinkGateway;
   incomingLink: IncomingLinkGateway;
   systemShare: SystemShareGateway;
+  clipboard: ClipboardGateway;
   appLifecycle: AppLifecycleGateway;
   /** 분 단위로 지금을 읽는 소비자들이 함께 쓰는 시계 */
   minuteClock: MinuteClockStore;
@@ -70,6 +72,10 @@ export function useDraftService() {
 
 export function useExternalLink() {
   return useSharedDI().externalLink;
+}
+
+export function useClipboard() {
+  return useSharedDI().clipboard;
 }
 
 export function useSystemShare() {

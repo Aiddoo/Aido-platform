@@ -1,9 +1,9 @@
-import { useClipboard, useHaptics, useLogger } from '@src/bootstrap/providers/di-context';
+import { useHaptics } from '@src/bootstrap/providers/di-context';
 import { useMyPendingCoachmark } from '@src/features/device/coachmark/hooks/use-my-pending-coachmark';
 import { useTodoId } from '@src/features/planning/todo/hooks/use-todo-params';
 import { useTrack } from '@src/shared/analytics';
 import { formatRelativeTimeLabel } from '@src/shared/date/date-labels';
-import { getErrorMessage } from '@src/shared/errors';
+import { useCopyToClipboard } from '@src/shared/hooks/use-copy-to-clipboard';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useIsReduceMotionEnabled } from '@src/shared/hooks/use-is-reduce-motion-enabled';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
@@ -30,7 +30,6 @@ import {
   VStack,
   MenuContent,
 } from '@src/shared/ui';
-import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { useMutation } from '@tanstack/react-query';
 import { compact } from 'es-toolkit';
 import { router } from 'expo-router';
@@ -428,9 +427,7 @@ function ActionMenu({ comment, rowRef, isOpen, onOpenChange }: ActionMenuProps) 
   const [todoId] = useTodoId();
   const { t } = useTranslation(['todoComment', 'moderation']);
   const push = useSingleTap(router.push);
-  const clipboard = useClipboard();
-  const logger = useLogger();
-  const toast = useAppToast();
+  const { copy } = useCopyToClipboard();
   const confirmDialog = useConfirmDialog();
   const { reset, getValues } = useTodoCommentForm();
   const { reveal } = useTodoCommentReveal();
@@ -448,15 +445,12 @@ function ActionMenu({ comment, rowRef, isOpen, onOpenChange }: ActionMenuProps) 
     return null;
   }
 
-  const copyContent = async () => {
-    try {
-      await clipboard.copy(comment.content ?? '');
-      toast.success(t('toasts.copied'));
-    } catch (error) {
-      logger.warn(TODO_COMMENT_LOG_EVENT.COPY_FAILED, { error: getErrorMessage(error) });
-      toast.error(t('toasts.copyFailed'));
-    }
-  };
+  const copyContent = () =>
+    copy(comment.content ?? '', {
+      successMessage: t('toasts.copied'),
+      failureMessage: t('toasts.copyFailed'),
+      failureLogEvent: TODO_COMMENT_LOG_EVENT.COPY_FAILED,
+    });
 
   const confirmDelete = async () => {
     const isConfirmed = await confirmDialog.openAsync({
