@@ -8,6 +8,7 @@ import {
 } from "../../../common/datetime.js";
 import { entityIdSchema } from "../../../common/entity-id.js";
 import { cursorPageSchema } from "../../../common/pagination.js";
+import { TODAY_SUMMARY_TOP_TODOS_MAX } from "../../../vocabulary/todo.constants.js";
 import { todoCategorySummarySchema } from "../../todo-category/v1/todo-category.response.js";
 import { todoSeriesResponseSchema } from "./todo-series.response.js";
 import { todoRepeatSchema, todoVisibilitySchema } from "./todo.common.js";
@@ -336,7 +337,7 @@ export const todoSummaryResponseSchema = z
     currentStreak: z.number().int().min(0).describe("현재 연속 달성 일수 (0 이상)"),
     topTodos: z
       .array(todoSummaryTodoSchema)
-      .max(10)
+      .max(TODAY_SUMMARY_TOP_TODOS_MAX)
       .describe(
         "오늘 할 일 상위 목록 (미완료 우선, 이후 카테고리/정렬 순 — 최대 10개, 홈 위젯 표시용)",
       ),

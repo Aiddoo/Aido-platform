@@ -23,3 +23,13 @@ export const TODO_ITEM_LIMITS = {
   /** 투두당 최대 하위 항목 수 */
   MAX_PER_TODO: 20,
 } as const;
+
+/** 매월 반복의 날짜 범위. 없는 날짜의 달은 말일로 당긴다. */
+export const TODO_REPEAT_MONTH_DAY_MAX = 31;
+
+export const TODAY_SUMMARY_TOP_TODOS_MAX = 10;
+
+export const TODO_PAGE_SIZE = {
+  DEFAULT: 20,
+  MAX: 200,
+} as const;

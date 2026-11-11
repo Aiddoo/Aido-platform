@@ -2,11 +2,15 @@ import { z } from "zod";
 
 import { datetimeSchema } from "../../../common/datetime.js";
 import { entityIdSchema } from "../../../common/entity-id.js";
+import { USER_TAG_LENGTH } from "../../../vocabulary/follow.constants.js";
 
 export const blockedUserSchema = z
   .object({
     id: entityIdSchema.describe("차단한 사용자 ID"),
-    userTag: z.string().length(8).describe("사용자 태그 (8자 영숫자 대문자, 예: JOHN2026)"),
+    userTag: z
+      .string()
+      .length(USER_TAG_LENGTH)
+      .describe("사용자 태그 (8자 영숫자 대문자, 예: JOHN2026)"),
     name: z.string().nullable().describe("사용자 이름 (미설정 시 null)"),
     profileImage: z
       .string()
