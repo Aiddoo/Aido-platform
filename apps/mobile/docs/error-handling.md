@@ -67,38 +67,72 @@ class ApiError extends Error implements CodedError {
 
 ## mutation 오류 피드백
 
-햅틱·토스트·Sentry는 `QueryClient`의 `MutationCache` 전역 `onError` 하나가 맡는다. mutation 옵션은 `meta.errorFeedback`만 선언한다.
+모든 mutation 옵션은 `meta.errorFeedback`을 하나 둔다. 타입은 `shared/constants/query-meta.ts`가 TanStack `Register`로 등록해 키가 틀리면 컴파일 오류다.
 
 ```typescript
-// queries/push-permission.mutations.ts
+errorFeedback: { feature, fallbackKey, isHandledByFeature? } | false
+```
+
+| 값                                        | 전역이 하는 일                                                                                                                            |
+| ----------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `{ feature, fallbackKey }`                | 햅틱 한 번, `toast.error(getUserFacingMessage(error), { fallback: t(fallbackKey) })` 한 번, 예상하지 못한 오류만 `feature`로 보고         |
+| `isHandledByFeature(error)`가 true인 오류 | 아무것도 하지 않는다. 기능 `onError`(코드별 안내·이동·한도 시트)나 호출부의 `form.setError`가 한 곳에서 보인다                            |
+| `false`                                   | 아무것도 하지 않는다. 기능이 모든 실패를 직접 보이거나(결제·복원, 음성 계획, 날씨 일괄 옮기기) 화면 뒤 작업(로그아웃, 푸시 기기 보고)이다 |
+
+```typescript
+// features/identity/auth/queries/auth.mutations.ts
 mutationOptions({
-  mutationFn: (variables) => service.requestPermission(),
+  networkMode: 'always',
+  mutationFn: async ({ email, password }: EmailLoginVariables) =>
+    unwrap(await authService.emailLogin(email, password)),
+  onError: (error, variables) => {
+    if (isEmailNotVerifiedError(error)) {
+      haptics.notify('error');
+      push({ pathname: '/(auth)/verify-email', params: { email: variables.email } });
+    }
+  },
   meta: {
     errorFeedback: {
-      feature: 'notification',
-      fallbackKey: 'notification:permission.requestFailed',
+      feature: 'auth',
+      fallbackKey: 'auth:toasts.loginFailed',
+      isHandledByFeature: isEmailNotVerifiedError,
     },
   },
 });
 ```
 
-- 전역 핸들러는 `haptics.notify('error')`와 `toast.error(getUserFacingMessage(error), { fallback: t(fallbackKey) })`를 한 번 보이고, 예상하지 못한 오류만 분류해 Sentry로 보낸다([관측](./observability.md#mutation-오류-피드백)). `getUserFacingMessage`는 사용자 문구가 있는 오류만 그대로 보이고 나머지는 `fallback`을 쓴다. `ParseError` 같은 개발용 message는 걸러 낸다.
-- 기능 mutation 옵션의 `onError`는 롤백만 한다. 낙관적 갱신을 되돌리고, 이미 지워진 대상(`TODO_0833` 등)은 캐시에서 빼 서버 상태에 맞춘다. 토스트·햅틱·`captureException`을 더하지 않고 다시 던지지 않는다. 서버가 확정한 실패의 분석 이벤트(`auth_login_failed` 등)만 함께 둔다([관측](./observability.md#어디서-추적하나)). 햅틱과 토스트를 함수 하나로 묶어 각 `onError`에 넘기지도 않는다.
-- 저장 실패는 입력값과 화면을 그대로 둔다. 오프라인 저장도 같은 길이며 `networkMode: 'always'`로 바로 실패해 토스트가 한 번만 나온다. 실제 예는 `features/social/invite/queries/invite.mutations.ts`다.
+- **어디서 도나.** 앱 `MutationCache`(`bootstrap/query/mutation-error-feedback-cache.ts`)의 캐시 단계 `onError`가 `meta.errorFeedback`을 읽어 실패를 내보내고, DI·UI Provider 안에 한 번 둔 `bootstrap/query/mutation-error-feedback.tsx`가 받아 햅틱·토스트·보고를 한다. 토스트와 햅틱이 Provider 안의 훅이라 캐시가 직접 부르지 못한다. 언마운트하면 구독을 푼다. 테스트의 `createTestQueryClient`와 `renderUi`도 같은 캐시와 컴포넌트를 쓴다.
+- **왜 `MutationCache.subscribe`가 아닌가.** TanStack은 `await options.onSettled`가 끝난 뒤에야 `error` 상태를 알린다. `onSettled`가 재조회 Promise를 돌려주는 mutation(카테고리 순서, 모두 읽음, 댓글 삭제)은 토스트가 재조회를 기다리고, 오프라인이면 재조회가 멈춰 끝내 뜨지 않는다. 캐시 단계 `onError`는 기능 `onError`·`onSettled`보다 먼저 돈다. 그래서 칸 오류처럼 기능이 보일 오류는 미리 `isHandledByFeature`로 알려야 한다.
+- **문구와 보고.** `getUserFacingMessage`는 사용자 문구가 있는 오류(`ApiError`, 카탈로그의 `BusinessError`, 번역된 통신 오류)만 그대로 보이고 `ParseError`·SDK 오류(문자열 `code`가 있어도)의 개발용 message는 `fallbackKey`로 바꾼다. 보고 기준은 `isUnexpectedError`다. 코드를 지닌 오류와 연결 문제는 보고하지 않는다. 그래서 SDK 오류는 어댑터가 코드 없는 포트 오류(`ClipboardCopyError`처럼 원본은 `cause`)로 바꿔야 보고된다. 보고에는 `getErrorReportTags`가 `ServerError`의 상태·method·endpoint를 태그로 붙인다([관측](./observability.md#mutation-오류-피드백)).
+- **기능 `onError`.** 낙관적 갱신을 되돌리고, 이미 지워진 대상(`TODO_0833` 등)은 캐시에서 빼 서버 상태에 맞추고, `isHandledByFeature`로 뺀 오류만 보인다. 판별 함수는 `domains/{feature}.error.ts`의 것을 그대로 넘긴다(`isLimitedFeatureError`, `isTodoSeriesFailure`, `isLoginCancelledError`). 서버가 확정한 실패의 분석 이벤트만 함께 둔다([관측](./observability.md#어디서-추적하나)). 다시 던지지 않는다.
+- **호출부.** `mutateAsync`의 실패는 이미 알렸으므로 `.catch(noop)`이나 흐름만 잇는 `catch`로 받는다. `useReportUnexpectedError`는 mutation 밖의 실패(조회 결과·기기 작업)에만 쓴다.
+- **로그아웃.** 세션이 끝날 때 `abandonPendingMutations`가 진행 중인 mutation의 콜백을 비우면서 `errorFeedback`도 `false`로 바꾼다. 끝난 세션의 실패가 다음 화면에 토스트로 뜨지 않는다.
+- 저장 실패는 입력값과 화면을 그대로 둔다. 오프라인 저장도 같은 길이며 `networkMode: 'always'`로 바로 실패해 토스트가 한 번만 나온다.
+- `aido/mutation-error-feedback`이 `queries/*.mutations.ts`에서 막는다([가드레일](./architecture/guardrails.md)): `errorFeedback` 누락·`undefined`(mutation 옵션 훅이 아닌 객체를 펼쳐도 누락이다), 전역 피드백인데 `isHandledByFeature` 없이 `onError`가 조건 없이 햅틱·`toast.error`를 내거나 `getUserFacingMessage`를 쓰는 것, `isHandledByFeature`가 있어도 조건 없이 띄우는 기본 문구 토스트, `useReportUnexpectedError` import. 같은 파일의 const meta는 따라가 보고, import한 meta는 선언한 것으로 본다.
+- lint가 보지 않는 곳(컴포넌트에 바로 쓴 `useMutation({ … })`)의 빠진 선언은 개발 빌드의 캐시 `onError`가 `query-cache.error-feedback.missing` warn으로 알린다.
 
 ### 폼의 칸 오류
 
-서버 4xx 중 특정 칸에 속한 오류(이미 쓰는 이메일 등)는 토스트 대신 `form.setError`로 그 칸에 보인다. 오류 코드와 칸의 매핑은 `domains/{feature}.error.ts`가 소유하고, 폼을 가진 호출부가 `mutate(values, { onError })`에서 매핑 결과를 `form.setError`에 넘긴다. 칸에 보인 오류는 전역 토스트로 다시 알리지 않고, 매핑이 없는 오류만 전역 피드백으로 간다.
+서버 4xx 중 특정 칸에 속한 오류(이미 쓴 이메일, 없는 초대 코드)는 토스트 대신 `form.setError`로 그 칸에 보인다. 오류 코드와 칸의 매핑은 `domains/{feature}.error.ts`가 소유한다. mutation 옵션은 그 판별 함수를 `isHandledByFeature`에 넘겨 전역 토스트를 끄고, 폼을 가진 호출부가 `form.setError`에 넘긴다. 매핑이 없는 오류만 전역 피드백으로 간다.
 
 ```typescript
-mutate(values, {
-  onError: (error) => {
-    const field = toSignUpFieldError(error);
-    if (field != null) {
-      form.setError(field.name, { message: t(field.messageKey) });
-    }
+// queries/invite.mutations.ts
+meta: {
+  errorFeedback: {
+    feature: 'invite',
+    fallbackKey: 'common:toast.defaultError',
+    isHandledByFeature: isInviteCodeFieldError,
   },
-});
+},
+
+// components/invite-code-entry-form.tsx
+try {
+  await checkPreview.mutateAsync(inviteCode);
+} catch (error) {
+  if (isInviteCodeFieldError(error)) {
+    form.setError('inviteCode', { message: getUserFacingMessage(error) ?? t('errors.invalidCode') });
+  }
+}
 ```
 
 SDK 오류 변환은 어댑터와 mapper 경계에서만 한다(`expo-social-auth-gateway.ts`, `subscription-error.mapper.ts`의 `toSubscriptionError`). 원래 SDK 코드는 진단용으로만 남긴다.
@@ -227,12 +261,12 @@ RN 네이티브 브릿지와 서드파티 SDK는 `Error`가 아닌 값(문자열
 ```typescript
 errorReporter.captureException(toError(error), { feature: 'auth' });
 logger.warn(TOKEN_REFRESHER_LOG_EVENT.TRANSIENT_REFRESH_FAILED, { error: getErrorMessage(error) });
-logger.error(AI_LOG_EVENT.SUGGESTION_ACTION_FAILED, toError(error)); // Sentry 이벤트. captureException과 중복 금지
+logger.error(NOTIFICATION_LOG_EVENT.PUSH_DEVICE_REPORT_FAILED, toError(error)); // Sentry 이벤트. captureException과 중복 금지
 ```
 
 ## 관측
 
-예상하지 못한 오류(경계 도달, 5xx·파싱)만 보고한다. mutation은 전역 `onError`, 그 밖은 `useReportUnexpectedError` 같은 훅이 보내고 서비스는 삼킨 실패를 `logger.warn`으로만 남긴다. 예측 가능한 4xx는 이벤트가 아니다. 무엇을 어느 레벨로 남기는지는 [observability.md](./observability.md#오류-분류와-한-번만-보고)에 있다.
+예상하지 못한 오류(경계 도달, 5xx·파싱)만 보고한다. mutation은 `meta.errorFeedback`을 읽는 전역 캐시 `onError`, 그 밖은 `useReportUnexpectedError` 같은 훅이 보내고 서비스는 삼킨 실패를 `logger.warn`으로만 남긴다. 예측 가능한 4xx는 이벤트가 아니다. 무엇을 어느 레벨로 남기는지는 [observability.md](./observability.md#오류-분류와-한-번만-보고)에 있다.
 
 ## 참고 파일
 
@@ -247,4 +281,7 @@ logger.error(AI_LOG_EVENT.SUGGESTION_ACTION_FAILED, toError(error)); // Sentry �
 | `shared/infra/http/api-failure-breadcrumb.ts` | 실패 breadcrumb                  |
 | `shared/infra/http/ky-error.ts`               | `resolveMessage`, 오류 변환      |
 | `shared/ui/query-error-boundary/`             | QueryErrorBoundary               |
+| `shared/constants/query-meta.ts`              | `meta.errorFeedback` 타입        |
+| `bootstrap/query/mutation-error-feedback*`    | mutation 전역 오류 피드백        |
+| `shared/query/is-last-mutation.ts`            | 마지막 변경 판정                 |
 | `features/*/domains/*.error.ts`               | 기능 오류                        |

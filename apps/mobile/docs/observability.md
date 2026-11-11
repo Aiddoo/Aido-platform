@@ -83,7 +83,7 @@ errorReporter.captureMessage(ERROR_REPORT_MESSAGES.SESSION_EXPIRED, {
 });
 ```
 
-**Sentry는 두 곳에서만 보낸다.** mutation은 전역 `MutationCache` `onError`, 그 밖은 훅(`useReportUnexpectedError` 등)이다. 서비스는 삼킨 실패만 `logger.warn`하고 `captureException`을 부르지 않는다.
+**Sentry는 두 곳에서만 보낸다.** mutation은 `meta.errorFeedback`을 읽는 앱 `MutationCache`의 캐시 단계 `onError`, 그 밖은 훅(`useReportUnexpectedError` 등)이다. 서비스는 삼킨 실패만 `logger.warn`하고 `captureException`을 부르지 않는다.
 
 ### Breadcrumb: `addBreadcrumb`
 
@@ -137,7 +137,11 @@ Sentry로 나가는 모든 오류(`Logger.error`, `ErrorReporter.captureExceptio
 
 ## mutation 오류 피드백
 
-mutation의 햅틱·토스트·Sentry는 전역 `MutationCache` `onError` 하나가 맡는다. mutation 옵션은 `meta.errorFeedback = { fallbackKey, feature }`를 선언하고, 전역 핸들러가 이것을 읽어 `haptics.notify('error')`, `toast.error(getUserFacingMessage(error), { fallback })`, 분류된 Sentry 보고를 한다. 기능별 `onError`는 롤백만 하고, 칸 오류는 호출부가 `form.setError`로 보인다. 자세한 규칙은 [오류 처리](./error-handling.md#mutation-오류-피드백)를 본다.
+mutation의 햅틱·토스트·Sentry는 앱 `MutationCache`의 캐시 단계 `onError` 하나가 맡는다. 모든 mutation 옵션이 `meta.errorFeedback`을 둔다.
+
+- `{ feature, fallbackKey }`: `bootstrap/query/mutation-error-feedback.tsx`가 `haptics.notify('error')`, `toast.error(getUserFacingMessage(error), { fallback: t(fallbackKey) })`를 한 번 하고, `isUnexpectedError`인 오류만 `captureException(error, { feature, ...getErrorReportTags(error) })`로 보낸다. 태그는 `ServerError`가 지닌 상태·method·endpoint이고, 분류(이슈·breadcrumb)는 `classifyErrorReport` 그대로다. 코드를 지닌 오류와 연결 문제는 보고하지 않는다.
+- `isHandledByFeature(error)`가 true인 오류와 `errorFeedback: false`는 전역이 알리지도 보고하지도 않는다. 기능이 보이는 오류는 예측한 것이라 보고 대상이 아니고, 기능이 모든 실패를 보이는 mutation(결제·복원 등)은 그 자리에서 `captureMessage`한다.
+- 캐시 단계라 기능 `onSettled`가 기다리는 재조회에 묶이지 않는다. 자세한 규칙은 [오류 처리](./error-handling.md#mutation-오류-피드백)를 본다.
 
 ## Logger
 
@@ -158,7 +162,7 @@ mutation의 햅틱·토스트·Sentry는 전역 `MutationCache` `onError` 하나
 ## 실패를 삼키지 않는다
 
 - `.catch(() => undefined)`·`.catch(noop)`·빈 `catch`로 끝내지 않는다. `logger.warn(KEY, { error: getErrorMessage(error) })`로 남긴다.
-- `mutateAsync`의 실패는 전역 `onError`가 알리고 기록한다. 호출부 `.catch(() => null)`은 흐름만 잇는 용도다. `meta.errorFeedback`이 없는 mutation에는 쓰지 않는다.
+- `mutateAsync`의 실패는 전역 `meta.errorFeedback`이 알리고 기록한다. 그래서 호출부 `.catch(noop)`은 흐름만 잇는 용도로 쓸 수 있다. `errorFeedback: false`이거나 `isHandledByFeature`로 뺀 오류는 호출부나 기능이 직접 보이고 기록한다.
 - 기다리지 않는 Promise는 내부에서 실패를 처리하는 함수이거나 호출부 `.catch`에서 기록한다.
 - 예측 가능한 4xx는 이벤트가 아니다. `Result.err()`로 UI가 처리하고 HTTP 실패는 `addBreadcrumb({ category: 'http' })`로만 남긴다. breadcrumb의 `requestId`는 요청마다 보내는 `X-Request-Id`(`shared/infra/http/request-headers.ts`)이고 서버 로그 `reqId`·서버 Sentry `request_id`와 같다.
 

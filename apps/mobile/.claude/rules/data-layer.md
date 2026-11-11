@@ -27,7 +27,7 @@ paths:
 - `queryClient`는 `queries/{feature}-cache.ts`만 만진다. 컴포넌트·훅은 helper(`invalidate*`·`set*InCache`·`refresh{Feature}`)를 부른다.
 - `onSuccess`는 서버 응답을 캐시에 쓰고 무효화는 `onSettled`에 둔다. 같은 키를 set한 뒤 다시 invalidate하지 않는다.
 - 다른 기능의 `all`을 무효화하지 않는다. 다른 기능 효과는 `meta.refreshOn*`나 그 기능이 내보낸 helper로 한다.
-- 오류 안내는 mutation 옵션의 `meta.errorFeedback` 하나다. 기능 `onError`는 롤백만 하고 토스트·햅틱·보고를 더하지 않는다. 칸 오류만 호출부가 `form.setError`로 보인다.
+- 오류 안내는 mutation 옵션마다 둔 `meta.errorFeedback` 하나다(`{ feature, fallbackKey, isHandledByFeature? }` 또는 `false`). 기능 `onError`는 롤백과 `isHandledByFeature`로 뺀 오류(코드별 안내·이동·한도 시트)만 다루고, 칸 오류는 호출부가 `form.setError`로 보인다. 마지막 변경 판정은 `isLastMutation` 하나다.
 - 추적은 mutation 옵션(서버가 확정한 결과)이나 UI에서만 한다. api·repository·mapper에서 하지 않는다.
 
 **파싱·null**

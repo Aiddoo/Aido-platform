@@ -700,7 +700,7 @@
       "files": ["src/**/queries/*.mutations.{ts,tsx}", "app/**/queries/*.mutations.{ts,tsx}"],
       "excludeFiles": ["**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}", "**/__tests__/**"],
       "rules": {
-        "aido/mutation-on-error": "error"
+        "aido/mutation-error-feedback": "error"
       }
     },
     {

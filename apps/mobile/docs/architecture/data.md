@@ -119,37 +119,46 @@ export const MEMO_MUTATION_KEYS = {
 3. 다른 기능에 미치는 효과는 쿼리 옵션의 `meta.refreshOn*`(`refreshOnPremiumChange`)나 그 기능이 내보낸 helper로만 한다. 남의 `all`을 무효화하지 않는다. 바뀐 것만 무효화하고, 범위를 모를 때(반복 묶음, 카테고리 삭제, 언어 변경)만 넓게 쓴다.
 4. 당겨서 새로고침은 기능마다 `refresh{Feature}(queryClient)` 하나이고 활성 쿼리만 다시 받는다. 표시는 `useRefresh`가 당긴 동안만 한다.
 5. 영속 쿼리는 옵션의 `meta.persist`에 스키마까지 둔다. 영속 키 값을 바꾸면 `QUERY_CACHE_SCHEMA_VERSION`을 올린다.
-6. 마지막 변경 판정은 `isLastMutation(queryClient, mutationKey)` 하나다.
+6. 마지막 변경 판정은 `shared/query/is-last-mutation.ts`의 `isLastMutation(queryClient, mutationKey)` 하나다. mutation 콜백 안에서 불러 자기 자신까지 센다.
 7. 변경이 다른 기능의 값에 닿으면 그 helper로 맞춘다. 콕 보내기 → 할 일 상세 `permissions.canNudge`, 계정 연결·해제 → `me`, 카테고리 수정 → `TODO.pages()`.
 
 ## Mutation 옵션
 
 ```ts
-// features/notification/queries/push-permission.mutations.ts
-export function useRequestPushPermissionMutationOptions() {
-  const pushRegistrationService = usePushRegistrationService();
+// features/planning/category/queries/todo-category.mutations.ts
+export function useUpdateTodoCategoryMutationOptions() {
+  const todoCategoryService = useTodoCategoryService();
   const queryClient = useQueryClient();
-  const { trackEvent } = useTrack();
   return mutationOptions({
-    mutationFn: (_variables: { source: PushPermissionPromptSource }) =>
-      pushRegistrationService.requestPermission(),
-    onSuccess: (permission, { source }) => {
-      setPushPermissionInCache(queryClient, permission);
-      trackEvent('push_permission_requested', { source, status: permission.status });
+    networkMode: 'always',
+    mutationKey: TODO_CATEGORY_MUTATION_KEYS.writes(),
+    mutationFn: async ({ id, input }: UpdateTodoCategoryVariables) =>
+      unwrap(await todoCategoryService.updateCategory(id, input)),
+    onMutate: async ({ id, input }) => {
+      /* 이 카테고리의 이름·색만 낙관적으로 바꾸고 이전 값을 돌려준다 */
     },
-    meta: {
-      errorFeedback: {
-        feature: 'notification',
-        fallbackKey: 'notification:permission.requestFailed',
-      },
+    onSuccess: (saved, { id }) => {
+      if (isLastMutation(queryClient, TODO_CATEGORY_MUTATION_KEYS.writes())) {
+        /* 응답의 이름·색을 쓴다 */
+      }
     },
+    onError: (_error, { id }, context) => {
+      /* 이 카테고리의 이름·색만 되돌린다 */
+    },
+    meta: { errorFeedback: { feature: 'todo', fallbackKey: 'todo:toast.updateFailedRetry' } },
   });
 }
 ```
 
+푸시 권한 요청(`notification.mutations.ts`의 `useRequestPushPermissionMutationOptions`)은 지금 `errorFeedback: false`이고 `onError`가 `logger.warn`과 고정 문구 토스트를 직접 낸다. 기기 권한 실패를 Sentry 이벤트로 올릴지는 notification 정리 PR([18/32])이 정한다.
+
 - `use{Verb}{X}MutationOptions()`가 `mutationOptions`를 돌려주고 화면은 `useMutation`을 직접 부른다. 변수 타입에 이름을 붙이면 `*Variables`다. 화면 이동은 호출부가 한다.
 - `mutationFn`은 Api 결과를 반드시 `unwrap`한다. `Result.err`를 그대로 돌려주면 React Query가 성공으로 본다.
-- 오류 피드백은 `meta.errorFeedback = { feature, fallbackKey }` 하나다. 전역 `MutationCache`의 `onError`가 햅틱, 토스트(`getUserFacingMessage`, 없으면 `fallbackKey`), 예측 못한 오류 보고를 한 번에 한다. 기능 `onError`는 롤백만 한다(실패 추적은 다음 줄). 칸 오류는 폼을 가진 호출부가 `mutate(values, { onError })`에서 `form.setError`로 보이고 전역 토스트를 더하지 않는다([error-handling](../error-handling.md#mutation-오류-피드백)).
+- 오류 피드백은 mutation마다 둔 `meta.errorFeedback` 하나다: `{ feature, fallbackKey, isHandledByFeature? } | false`(없으면 `aido/mutation-error-feedback`이 막는다. 펼친 옵션은 이어받는다).
+  - 객체면 앱 `MutationCache`의 캐시 단계 `onError`가 실패를 내보내고 `bootstrap/query/mutation-error-feedback.tsx`가 햅틱, 토스트(`getUserFacingMessage`, 없으면 `fallbackKey`), 예측 못한 오류 보고를 한 번에 한다. 캐시 단계라 `onSettled`가 기다리는 재조회에 묶이지 않는다(`MutationCache.subscribe`는 `onSettled`가 끝난 뒤에 알려 오프라인 재조회가 멈추면 토스트가 뜨지 않는다).
+  - 기능이 직접 보이는 오류(코드별 안내·이동·한도 시트, 칸 오류)는 `domains/{feature}.error.ts`의 판별 함수를 `isHandledByFeature`에 넘긴다. 칸 오류는 폼을 가진 호출부가 `form.setError`로 보인다.
+  - `false`는 기능이 모든 실패를 직접 보이는 mutation(결제·복원, 음성 계획, 날씨 일괄 옮기기)과 화면 뒤 작업(로그아웃, 푸시 기기 보고)이다. 로그아웃의 `abandonPendingMutations`도 남은 mutation을 `false`로 바꾼다.
+  - 기능 `onError`는 롤백과 `isHandledByFeature`로 뺀 오류만 다룬다(실패 추적은 다음 줄). 상세: [error-handling](../error-handling.md#mutation-오류-피드백).
 - 서버가 확정한 결과는 mutation `onSuccess`·`onError`에서 추적하고 온 UI는 변수 `source`로 받는다. Api·Service·Repository·Store·mapper·모델·cache는 추적하지 않는다([observability](../observability.md)).
 - 저장 뒤 바로 떠나는 변경은 `onSettled`에서 Promise를 돌려주지 않는다. 돌려주면 `mutateAsync`가 재조회까지 기다린다. 화면에 남는 행 버튼(친구 수락·거절)은 무효화를 기다려 행이 사라질 때까지 버튼을 끈다.
 - 멈췄다가 나중에 실행되면 안 되는 쓰기는 `networkMode: 'always'`에 이유 주석을 단다.
