@@ -6,6 +6,7 @@ import { createAuthSessionStoreStub } from '@src/features/identity/auth/__tests_
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-keys';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
+import { readStoredValue } from '@src/shared/storage/define-stored-value';
 import { OverlayProvider } from '@src/shared/ui/overlay/overlay-provider';
 import {
   createHttpClientStub,
@@ -30,6 +31,7 @@ import * as AppLayoutRoute from '../../../../app/(app)/_layout';
 import NotificationOnboardingScreen from '../../../../app/(app)/onboarding/notifications';
 import { createPushPermissionResponse } from '../__tests__/notification.fixtures';
 import { PUSH_PERMISSION_QUERY_KEYS } from '../queries/push-permission-query-keys';
+import { pushPermissionDeferredAtStoredValue } from '../schemas/push-permission-deferred-at-storage.schema';
 import { useOpenPushOnboarding } from './use-open-push-onboarding';
 
 // renderRouter는 실제 라우터로 URL·이동을 검증하므로 jest.setup의 전역 mock을 끈다
@@ -103,11 +105,14 @@ function TabStackLayout() {
 async function renderAppRoutes({
   permission,
   requestedPermission,
+  requestError,
   initialUrl = '/feed',
   feedScreen = FeedScreen,
 }: {
   permission: PushPermissionResponse | Promise<PushPermissionResponse>;
   requestedPermission?: PushPermissionResponse;
+  /** 권한 창을 띄우지 못할 때 */
+  requestError?: Error;
   initialUrl?: string;
   feedScreen?: typeof FeedScreen;
 }) {
@@ -119,14 +124,17 @@ async function renderAppRoutes({
   const pushNotification = createPushNotificationGatewayStub();
   pushNotification.getPermission.mockImplementation(() => Promise.resolve(permission));
   pushNotification.requestPermission.mockImplementation(() =>
-    Promise.resolve(requestedPermission ?? permission),
+    requestError == null
+      ? Promise.resolve(requestedPermission ?? permission)
+      : Promise.reject(requestError),
   );
+  const syncStorage = createMemoryObservableSyncStorage();
   const container = createTestDi({
     queryClient,
     httpClient,
     pushNotification,
     authSessionStore: createAuthSessionStoreStub('authenticated'),
-    syncStorage: createMemoryObservableSyncStorage(),
+    syncStorage,
   });
   function AppFixture({ children }: PropsWithChildren) {
     return (
@@ -162,7 +170,7 @@ async function renderAppRoutes({
     },
     { initialUrl, wrapper: AppFixture },
   );
-  return { route, queryClient };
+  return { route, queryClient, syncStorage, accountId: me.userId };
 }
 
 /** 다시 연 앱은 저장한 할 일을 받은 뒤에야 피드 본문이 그려진다. 권한 조회가 끝난 바로 다음에 본문이 처음 그려지게 한다 */
@@ -258,6 +266,25 @@ describe('가입 직후 알림 화면 — 실제 라우터', () => {
         expect(getUnhandledNavigationErrors(consoleError)).toEqual([]);
       },
     );
+  });
+
+  it('[계속] 뒤 권한 창을 띄우지 못하면 닫은 것으로 남겨 원래 있던 피드로 돌아온다', async () => {
+    // Given
+    const { route, syncStorage, accountId } = await renderAppRoutes({
+      permission: UNDETERMINED,
+      requestError: new Error('unavailable'),
+    });
+    await waitFor(() => expect(route.getPathname()).toBe('/onboarding/notifications'));
+
+    // When
+    await pressContinue();
+
+    // Then
+    await waitFor(() => expect(screen.queryByText('계속')).toBeNull());
+    expect(route.getPathname()).toBe('/feed');
+    expect(
+      readStoredValue(syncStorage, pushPermissionDeferredAtStoredValue, accountId),
+    ).not.toBeNull();
   });
 
   it('다른 탭에서 링크로 열린 알림 화면은 답한 뒤 그 탭으로 돌아온다', async () => {
