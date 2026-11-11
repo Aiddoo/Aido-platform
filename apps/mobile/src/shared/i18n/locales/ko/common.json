@@ -30,9 +30,12 @@
     "previousMonth": "이전 달",
     "weekHeader": "{{month}} {{week}}주차"
   },
-  "dateSections": {
-    "today": "오늘",
+  "relativeDay": {
     "yesterday": "어제",
+    "today": "오늘",
+    "tomorrow": "내일"
+  },
+  "dateSections": {
     "thisWeek": "이번 주",
     "thisMonth": "이번 달",
     "earlier": "이전"

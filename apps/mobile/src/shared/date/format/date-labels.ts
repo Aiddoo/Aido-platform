@@ -4,6 +4,7 @@ import { toLanguageOfIntlLocale } from '@src/shared/i18n/app-locales';
 
 import {
   type DateKey,
+  diffDateKeysInDays,
   getCalendarWeek,
   getIsoWeekOfMonth,
   isSameMonthDateKey,
@@ -92,6 +93,23 @@ export function formatIsoWeekLabel(
     },
     context,
   );
+}
+
+/** 오늘·내일은 날짜 대신 말로 쓴다. 그 밖의 날은 null이다 */
+export function formatRelativeDayLabel(
+  dateKey: DateKey,
+  todayDateKey: DateKey,
+  context: DateFormatContext,
+): string | null {
+  const lng = toLanguageOfIntlLocale(context.locale);
+  const daysFromToday = diffDateKeysInDays(todayDateKey, dateKey);
+  if (daysFromToday === 0) {
+    return t('common:relativeDay.today', { lng });
+  }
+  if (daysFromToday === 1) {
+    return t('common:relativeDay.tomorrow', { lng });
+  }
+  return null;
 }
 
 export function formatRelativeTimeLabel(

@@ -118,7 +118,6 @@
   },
   "daily": {
     "title": "{{count}}일 예보",
-    "today": "오늘",
     "item": "{{day}}, {{condition}}, 최고 {{high}}도, 최저 {{low}}도, 강수 확률 {{chance}}%",
     "itemWithTodo": "{{item}}, 할 일 있음",
     "todoDay": "할 일 있는 날",

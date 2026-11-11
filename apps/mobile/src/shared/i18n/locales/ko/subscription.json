@@ -101,7 +101,6 @@
   },
   "trialTimeline": {
     "title": "무료 체험 일정",
-    "today": "오늘",
     "start": "체험 시작",
     "reminder": "{{days}}일 전 알림",
     "charge": "첫 결제 {{price}}",
@@ -109,7 +108,6 @@
   },
   "endingNotice": {
     "badgeTomorrow": "D-1",
-    "badgeToday": "오늘",
     "tomorrow": "내일 프리미엄이 끝나요. 구독하면 끊김 없이 이어져요",
     "today": "오늘 프리미엄이 끝나요. 구독하면 끊김 없이 이어져요",
     "paidTomorrow": "내일 구독이 끝나요. 자동 갱신을 켜면 끊김 없이 이어져요",

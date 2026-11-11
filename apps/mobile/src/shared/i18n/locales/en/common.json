@@ -30,9 +30,12 @@
     "previousMonth": "Previous month",
     "weekHeader": "Week {{week}} of {{month}}"
   },
-  "dateSections": {
-    "today": "Today",
+  "relativeDay": {
     "yesterday": "Yesterday",
+    "today": "Today",
+    "tomorrow": "Tomorrow"
+  },
+  "dateSections": {
     "thisWeek": "This week",
     "thisMonth": "This month",
     "earlier": "Earlier"

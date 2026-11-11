@@ -18,12 +18,16 @@ const TODO = {
 };
 
 describe('getPlanTodoSubtitle', () => {
-  it('오늘의 종일 할 일은 보일 것이 없다', () => {
+  it('오늘·내일 할 일은 할 일 칩과 같은 말로 보인다', () => {
     // When
-    const subtitle = getPlanTodoSubtitle(TODO, CONTEXT);
+    const today = getPlanTodoSubtitle(TODO, CONTEXT);
+    const tomorrow = getPlanTodoSubtitle(
+      { ...TODO, startDate: createDateKey('2026-11-08') },
+      CONTEXT,
+    );
 
     // Then
-    expect(subtitle).toBeNull();
+    expect([today, tomorrow]).toEqual(['오늘', '내일']);
   });
 
   it('다른 날의 할 일은 날짜를 보인다', () => {

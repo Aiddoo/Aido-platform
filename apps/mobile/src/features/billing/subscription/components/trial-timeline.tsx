@@ -54,7 +54,7 @@ interface TrialTimelineProps extends Omit<ComponentProps<typeof VStack>, 'childr
 
 /** 체험 요금제를 골랐을 때 결제까지의 예상 날짜를 도장으로 보여 준다(App Store 3.1.2: 체험 기간·뒤 금액·해지). 실제 날짜는 결제 뒤 서버 영수증이 보여 준다 */
 export function TrialTimeline({ reminder: Reminder, className, ...props }: TrialTimelineProps) {
-  const { t } = useTranslation('subscription');
+  const { t } = useTranslation(['subscription', 'common']);
   const [planId] = useSelectedPlanId();
   const { data: availability } = useSuspenseQuery(useGetOfferingsQueryOptions());
   const { currentLocalDateKey } = useLocalDate();
@@ -116,7 +116,7 @@ export function TrialTimeline({ reminder: Reminder, className, ...props }: Trial
               hasLineBefore={index > 0}
               hasLineAfter={index < steps.length - 1}
               label={match(step)
-                .with({ kind: 'start' }, () => t('trialTimeline.today'))
+                .with({ kind: 'start' }, () => t('common:relativeDay.today'))
                 .with({ kind: 'reminder' }, { kind: 'charge' }, ({ dateKey }) =>
                   formatDate(dateKey),
                 )

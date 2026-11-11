@@ -238,7 +238,7 @@ interface ReceiptRowsProps {
 
 /** 출처마다 보이는 줄과 순서가 달라 줄을 한 줄씩 적는다. 없는 줄은 값이 없을 때만 빠진다 */
 function ReceiptRows({ receipt, formatDate, planPrices }: ReceiptRowsProps) {
-  const { t } = useTranslation('subscription');
+  const { t } = useTranslation(['subscription', 'common']);
 
   return match(receipt)
     .with({ variant: 'admin' }, ({ details }) => (
@@ -342,7 +342,7 @@ function ReceiptRows({ receipt, formatDate, planPrices }: ReceiptRowsProps) {
           type="daysLeft"
           label={t('receipt.rows.daysLeft')}
           value={match(details.daysLeft.endingNotice)
-            .with('today', () => t('endingNotice.badgeToday'))
+            .with('today', () => t('common:relativeDay.today'))
             .with('tomorrow', () => t('endingNotice.badgeTomorrow'))
             .with(null, () => t('receipt.rows.days', { count: details.daysLeft.days }))
             .exhaustive()}

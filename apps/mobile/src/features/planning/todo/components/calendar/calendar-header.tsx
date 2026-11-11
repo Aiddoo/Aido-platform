@@ -84,7 +84,7 @@ export function CalendarHeader() {
             className="px-2 py-0.5 bg-gray-2 rounded-full"
           >
             <Text size="e1" weight="medium" shade={7}>
-              {t('dateSections.today')}
+              {t('relativeDay.today')}
             </Text>
           </PressableFeedback>
         </HStack>

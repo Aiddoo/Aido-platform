@@ -106,12 +106,9 @@ export function TodoScheduleChips({
 }
 
 function DateChip({ value, onChange, sheetOptions }: ChipProps<DateKey>) {
-  const { t } = useTranslation('common');
   const openSheet = useOpenSheet();
   const todayKey = useTodayKey();
   const dateFormatContext = useDateFormatContext();
-  const isToday =
-    value.startDate === todayKey && (value.endDate == null || value.endDate === value.startDate);
 
   const handlePress = async () => {
     const startDate = await openSheet<DateKey>(
@@ -128,9 +125,7 @@ function DateChip({ value, onChange, sheetOptions }: ChipProps<DateKey>) {
   return (
     <ActionButton
       icon={<ActionButton.Icon Icon={CalendarIcon} colorClassName="text-main" />}
-      label={
-        isToday ? t('dateSections.today') : formatTodoPeriod(value, todayKey, dateFormatContext)
-      }
+      label={formatTodoPeriod(value, todayKey, dateFormatContext)}
       isActive
       onPress={handlePress}
     />

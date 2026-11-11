@@ -18,12 +18,11 @@ import {
 } from '@src/features/planning/todo/queries/todo.queries';
 import { formatRepeatSummary } from '@src/features/planning/todo/utils/format-repeat-summary';
 import { formatTodoTime } from '@src/features/planning/todo/utils/format-todo-time';
+import { formatTodoPeriod } from '@src/features/planning/todo/utils/todo-period.view-model';
 import { ThanksSummaryRow } from '@src/features/social/nudge/components/nudge-interactions/thanks-summary-row';
 import { TodoNudgeButton } from '@src/features/social/nudge/components/todo-nudge-button';
 import { TodoThanksPolicy } from '@src/features/social/nudge/domains/nudge-interaction.model';
 import { TodoNudgePolicy } from '@src/features/social/nudge/domains/todo-nudge.model';
-import { formatYearAwareDateKeyLabel } from '@src/shared/date/format/date-format';
-import { formatDateKeyRange } from '@src/shared/date/format/date-labels';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
@@ -44,7 +43,6 @@ import { useMutation, useQuery, useSuspenseQueries, useSuspenseQuery } from '@ta
 import { router } from 'expo-router';
 import { Skeleton } from 'heroui-native';
 import { type ReactNode, Suspense } from 'react';
-import { match, P } from 'ts-pattern';
 
 /** 제목(t3) 한 줄 높이. 여러 줄 제목에서도 체크박스를 첫 줄 가운데에 맞춘다 */
 const TITLE_LINE_HEIGHT = 28;
@@ -146,11 +144,7 @@ TodoDetailSummary.Schedule = function Schedule() {
   const { todo } = detail;
   const timeLabel = formatTodoTime(todo, preference.timeFormat, dateFormatContext);
   const isRecurring = TodoPolicy.isRecurringTodo(todo);
-  const dateLabel = match({ endDate: todo.endDate, isMultiDay: TodoPolicy.isMultiDayTodo(todo) })
-    .with({ isMultiDay: true, endDate: P.string }, ({ endDate }) =>
-      formatDateKeyRange(todo.startDate, endDate, todayKey, dateFormatContext),
-    )
-    .otherwise(() => formatYearAwareDateKeyLabel(todo.startDate, todayKey, dateFormatContext));
+  const dateLabel = formatTodoPeriod(todo, todayKey, dateFormatContext);
 
   return (
     <VStack gap={6}>

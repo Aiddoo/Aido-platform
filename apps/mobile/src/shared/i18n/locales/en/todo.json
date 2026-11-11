@@ -70,8 +70,6 @@
     "dateTitle": "Date",
     "timeTitle": "Time",
     "repeatTitle": "Repeat",
-    "today": "Today",
-    "tomorrow": "Tomorrow",
     "allDay": "All day",
     "time": "Time",
     "selectTime": "Choose a time",

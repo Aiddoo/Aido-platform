@@ -149,11 +149,18 @@ NotificationList.Item = function Item({ notification, href, onOpen }: Notificati
 
 NotificationList.SectionHeader = function SectionHeader({ section }: { section: DateSectionKey }) {
   const { t } = useTranslation('common');
+  const labelKeys = {
+    today: 'relativeDay.today',
+    yesterday: 'relativeDay.yesterday',
+    thisWeek: 'dateSections.thisWeek',
+    thisMonth: 'dateSections.thisMonth',
+    earlier: 'dateSections.earlier',
+  } as const satisfies Record<DateSectionKey, string>;
 
   return (
     <Box className="bg-white px-4 py-2">
       <Text size="b3" shade={5} weight="semibold">
-        {t(`dateSections.${section}`)}
+        {t(labelKeys[section])}
       </Text>
     </Box>
   );

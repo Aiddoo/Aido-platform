@@ -11,10 +11,14 @@ import {
   formatDateKeyRange,
   formatDaysOfWeek,
   formatIsoWeekLabel,
+  formatRelativeDayLabel,
   formatRelativeTimeLabel,
   getDayOfWeekLabel,
   getWeekdayLabels,
 } from './date-labels';
+
+const KO_SEOUL_CONTEXT = { locale: 'ko-KR', timeZone: 'Asia/Seoul' } as const;
+const EN_SEOUL_CONTEXT = { locale: 'en-US', timeZone: 'Asia/Seoul' } as const;
 
 /** 서버 formatIsoWeekLabel도 같은 표를 읽는다. 두 구현의 글자가 어긋나면 어느 한쪽 테스트가 깨진다 */
 const SHARED_ISO_WEEK_LABEL_CASES = z
@@ -245,6 +249,24 @@ describe('formatIsoWeekLabel', () => {
       expect([korean, english]).toEqual([ko, en]);
     },
   );
+});
+
+describe('formatRelativeDayLabel', () => {
+  it.each([
+    ['오늘', '2026-11-12', '2026-11-12', '오늘', 'Today'],
+    ['해를 넘는 내일', '2027-01-01', '2026-12-31', '내일', 'Tomorrow'],
+    ['윤일 다음 날', '2028-03-01', '2028-02-29', '내일', 'Tomorrow'],
+    ['어제는 날짜로 쓴다', '2026-11-11', '2026-11-12', null, null],
+    ['모레는 날짜로 쓴다', '2026-11-14', '2026-11-12', null, null],
+  ] as const)('%s', (_name, dateKey, todayDateKey, korean, english) => {
+    // When
+    const labels = [KO_SEOUL_CONTEXT, EN_SEOUL_CONTEXT].map((context) =>
+      formatRelativeDayLabel(createDateKey(dateKey), createDateKey(todayDateKey), context),
+    );
+
+    // Then
+    expect(labels).toEqual([korean, english]);
+  });
 });
 
 describe('formatDateKeyRange·formatDateKeyCompactRange', () => {

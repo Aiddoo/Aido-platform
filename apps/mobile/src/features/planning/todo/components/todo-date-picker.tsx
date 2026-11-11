@@ -63,20 +63,20 @@ interface QuickDateOptionsProps {
 }
 
 function QuickDateOptions({ picker, onChange }: QuickDateOptionsProps) {
-  const { t } = useTranslation('todo');
+  const { t } = useTranslation('common');
   const todayKey = useTodayKey();
   const tomorrowKey = addDaysToDateKey(todayKey, 1);
 
   return (
     <VStack gap={4}>
       <QuickDateRow
-        label={t('picker.today')}
+        label={t('relativeDay.today')}
         dateKey={todayKey}
         isSelected={picker.selectedDateKey === todayKey}
         onChange={onChange}
       />
       <QuickDateRow
-        label={t('picker.tomorrow')}
+        label={t('relativeDay.tomorrow')}
         dateKey={tomorrowKey}
         isSelected={picker.selectedDateKey === tomorrowKey}
         onChange={onChange}

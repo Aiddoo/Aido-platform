@@ -70,7 +70,7 @@ interface RowFormat {
 
 /** 할 일 조회가 실패해도 예보는 그대로 보이도록 할 일 점은 suspend하지 않고 점만 뺀다 */
 export function DailyForecast() {
-  const { t } = useTranslation('weather');
+  const { t } = useTranslation(['weather', 'common']);
   const todayKey = useTodayKey();
   const completionsQuery = useGetDailyCompletionsQueryOptions({
     startDate: todayKey,
@@ -117,7 +117,7 @@ export function DailyForecast() {
               nowPosition={isToday ? nowPosition : null}
               label={
                 isToday
-                  ? t('daily.today')
+                  ? t('common:relativeDay.today')
                   : formatDateKeyLabel(day.date, 'weekday', format.dateFormat)
               }
               hasTodo={(completions?.[day.date]?.totalTodos ?? 0) > 0}

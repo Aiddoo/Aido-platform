@@ -105,7 +105,6 @@
   },
   "trialTimeline": {
     "title": "Your free trial",
-    "today": "Today",
     "start": "Trial starts",
     "reminder": "Reminder {{days}} days before",
     "charge": "First charge {{price}}",
@@ -113,7 +112,6 @@
   },
   "endingNotice": {
     "badgeTomorrow": "Tomorrow",
-    "badgeToday": "Today",
     "tomorrow": "Your Premium ends tomorrow. Subscribe to keep Premium going",
     "today": "Your Premium ends today. Subscribe to keep Premium going",
     "paidTomorrow": "Your subscription ends tomorrow. Turn auto-renew back on to keep Premium going",
