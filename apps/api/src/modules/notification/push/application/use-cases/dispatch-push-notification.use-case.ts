@@ -201,6 +201,8 @@ export class DispatchPushNotificationUseCase {
           body: payload.body,
           data: payload.data,
           categoryId: payload.categoryId,
+          priority: payload.priority,
+          ttlSeconds: payload.ttlSeconds,
         });
         dispatchIds.push(payload.dispatchId);
       }

@@ -4,9 +4,13 @@ import {
   NOTIFICATION_CATEGORY,
   NOTIFICATION_TYPE,
 } from '@aido/api/vocabulary';
+import type { AppLifecycleState } from '@src/core/ports/app-lifecycle-gateway';
+import type { ForegroundPushPresentation } from '@src/core/ports/push-notification-gateway';
 import type { AuthStatus } from '@src/core/session/auth-status';
-import { MINUTE_MS } from '@src/shared/constants/time-units';
+import { MINUTE_MS, SECOND_MS } from '@src/shared/constants/time-units';
 import { instantSchema } from '@src/shared/date/instant';
+import { entityIdSchema } from '@src/shared/domains/entity-id.model';
+import { takeRight, without } from 'es-toolkit';
 import { match } from 'ts-pattern';
 import { z } from 'zod';
 
@@ -60,7 +64,7 @@ export const notificationDestinationRoutingSchema = z.discriminatedUnion('type',
   z.object({
     type: z.literal('TODO_SHARED'),
     todoId: z.int().positive(),
-    commentId: z.cuid().optional().catch(undefined),
+    commentId: entityIdSchema.optional().catch(undefined),
     ...todoTargetShape,
   }),
   z.object({ type: z.literal('FOLLOW_NEW') }),
@@ -129,23 +133,38 @@ export type NotificationListResult = z.infer<typeof notificationListResultSchema
 /** 읽음 응답으로 본 소유. 네트워크·5xx·예산 초과는 모르는 것이라 막지 않는다 */
 export type NotificationOwnership = 'ok' | 'foreign' | 'unknown';
 
+/** 알림을 누를 때 앱 상태. `cold`는 꺼진 앱이 그 탭으로 켜졌다는 뜻이다 */
+export type PushOpenAppState = 'cold' | 'background' | 'foreground';
+
 export interface PendingNotificationResponse {
   id: string;
   actionIdentifier: string;
   data: PushNotificationPayload;
   receivedAt: number;
+  /** 시작할 때 읽은 마지막 응답이면 true. 꺼진 앱이 이 탭으로 켜졌다 */
+  isLaunchResponse: boolean;
+  /** 응답을 받을 때 앱 상태와, 앞에 있었다면 앞으로 온 시각 */
+  appState: AppLifecycleState;
+  activeSince: number | null;
 }
+
+/** 이미 처리한 응답 id. 최근 것만 남긴다 */
+export type HandledResponseIds = readonly string[];
 
 /** 인증을 기다리는 응답을 보관하는 수명 */
 const PENDING_RESPONSE_LIFETIME_MS = 10 * MINUTE_MS;
+/** 응답 리스너와 복귀 이벤트의 순서가 플랫폼마다 달라, 앞으로 온 직후의 탭은 뒤에 있던 앱에서 누른 것으로 본다 */
+const FOREGROUND_TAP_SETTLE_MS = SECOND_MS;
+/** 같은 응답이 다시 오는 경우(콜드 스타트의 마지막 응답과 리스너, 다시 그린 레이아웃)를 막기에 충분한 최근 기억 수 */
+const HANDLED_RESPONSE_ID_LIMIT = 20;
 
-function isAiFeature(notification: Pick<Notification, 'type'>) {
+function isAiFeature(notification: Notification) {
   return NOTIFICATION_TYPE_TRAITS[notification.type].isAiFeature;
 }
 
 /** 응원 ID가 없는 이전 알림은 null이다. 보낸 사람 이름은 1.13.0 서버부터 실리므로 이전 알림에는 없을 수 있다 */
 function findReceivedCheer(
-  notification: Pick<Notification, 'type' | 'context' | 'routing'>,
+  notification: Notification,
 ): { cheerId: number; senderId: string; senderName: string | null } | null {
   const cheerId = notification.context?.cheerId;
   const senderId = notification.context?.friendId;
@@ -159,18 +178,55 @@ function findReceivedCheer(
   return { cheerId, senderId, senderName: notification.routing?.senderName ?? null };
 }
 
+/** 알림 ID가 0이면 서버에 알림 기록이 없는 푸시라 읽음·열림을 서버에 묻지 않는다. 서비스는 ID만 받아 값으로 묻는다 */
+export function isServerNotificationId(notificationId: number) {
+  return notificationId > 0;
+}
+
+function hasServerRecord(payload: PushNotificationPayload) {
+  return isServerNotificationId(payload.notificationId);
+}
+
+/** 받을 때 그 타입의 화면을 다시 받는지. 다시 받으면 보고 있는 화면에 새 내용이 바로 보인다 */
+function isRefreshedOnReceipt(payload: Pick<PushNotificationPayload, 'type'>) {
+  return payload.type != null && NOTIFICATION_TYPE_TRAITS[payload.type].invalidation != null;
+}
+
+/**
+ * 앱이 앞에 있을 때 받은 알림을 보이는 방식. 알림함과 받은 타입의 화면은 받을 때 다시 받으므로, 그 화면을 보고 있으면
+ * 배너·소리로 가리지 않고 알림 센터에만 남긴다. 모르는 타입과 다시 받지 않는 화면은 새 내용이 보이지 않아 배너로 알린다
+ */
+function getForegroundPresentation(
+  payload: PushNotificationPayload,
+  {
+    isViewingInbox,
+    isViewingDestination,
+  }: { isViewingInbox: boolean; isViewingDestination: boolean },
+): ForegroundPushPresentation {
+  if (payload.type == null) {
+    return 'banner';
+  }
+  return isViewingInbox || (isViewingDestination && isRefreshedOnReceipt(payload))
+    ? 'quiet'
+    : 'banner';
+}
+
 type NotificationResponseAction =
   | { type: 'optOut' }
   | { type: 'open' }
   | { type: 'defer'; reason: 'auth-resolving' | 'authentication-required' }
   | { type: 'drop'; reason: 'expired' };
 
+function isExpiredResponse(response: Pick<PendingNotificationResponse, 'receivedAt'>, now: number) {
+  return now - response.receivedAt > PENDING_RESPONSE_LIFETIME_MS;
+}
+
 /** 눌린 응답을 지금 어떻게 할지. 공개 수신 거부 액션은 인증과 무관하게 처리한다. */
 function getResponseAction(
-  response: Pick<PendingNotificationResponse, 'actionIdentifier' | 'receivedAt'>,
+  response: PendingNotificationResponse,
   { authStatus, now }: { authStatus: AuthStatus; now: number },
 ): NotificationResponseAction {
-  if (now - response.receivedAt > PENDING_RESPONSE_LIFETIME_MS) {
+  if (isExpiredResponse(response, now)) {
     return { type: 'drop', reason: 'expired' };
   }
   if (response.actionIdentifier === MARKETING_OPT_OUT_ACTION) {
@@ -184,14 +240,54 @@ function getResponseAction(
     .exhaustive();
 }
 
-/** 알림 ID가 0이면 서버에 알림 기록이 없는 푸시라 읽음·열림을 서버에 묻지 않는다 */
-function hasServerRecord({ notificationId }: Pick<PushNotificationPayload, 'notificationId'>) {
-  return notificationId > 0;
+function getOpenAppState(response: PendingNotificationResponse): PushOpenAppState {
+  if (response.isLaunchResponse) {
+    return 'cold';
+  }
+  if (
+    response.appState !== 'active' ||
+    response.activeSince == null ||
+    response.receivedAt - response.activeSince < FOREGROUND_TAP_SETTLE_MS
+  ) {
+    return 'background';
+  }
+  return 'foreground';
 }
 
+function hasHandledResponse(handledResponseIds: HandledResponseIds, responseId: string) {
+  return handledResponseIds.includes(responseId);
+}
+
+function rememberHandledResponse(
+  handledResponseIds: HandledResponseIds,
+  responseId: string,
+): HandledResponseIds {
+  return takeRight(
+    [...without(handledResponseIds, responseId), responseId],
+    HANDLED_RESPONSE_ID_LIMIT,
+  );
+}
+
+/** 받은 알림(알림함 항목) */
 export const NotificationPolicy = {
-  hasServerRecord,
   isAiFeature,
   findReceivedCheer,
+} as const;
+
+/** 기기가 받은 푸시 */
+export const PushNotificationPolicy = {
+  hasServerRecord,
+  getForegroundPresentation,
+} as const;
+
+/** 사용자가 누른 푸시 */
+export const NotificationResponsePolicy = {
   getResponseAction,
+  getOpenAppState,
+} as const;
+
+/** 한 탭은 한 번만 연다 */
+export const HandledResponsePolicy = {
+  hasHandledResponse,
+  rememberHandledResponse,
 } as const;

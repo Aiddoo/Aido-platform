@@ -39,7 +39,12 @@ import { Fragment, useEffect, useRef } from 'react';
 import { match } from 'ts-pattern';
 
 import { BRIEFING_ROW_TONES } from '../constants/weather-colors.constants';
-import { type BriefingResult, WeatherBriefingPolicy } from '../domains/weather-briefing.model';
+import {
+  type BriefingResult,
+  getBriefingState,
+  getWeatherBriefing,
+  WeatherBriefingPolicy,
+} from '../domains/weather-briefing.model';
 import type { HourlyForecastEntry } from '../domains/weather-report.model';
 import { useTemperatureUnit } from '../hooks/use-temperature-unit';
 import { useGetWeatherReportQueryOptions, WeatherReportSelect } from '../queries/weather.queries';
@@ -88,7 +93,7 @@ export function WeatherBriefing() {
   });
   const now = useMinuteNow();
   const { timeZone: deviceTimeZone } = useDateFormatContext();
-  const state = WeatherBriefingPolicy.getBriefingState(report, { now, deviceTimeZone });
+  const state = getBriefingState(report, { now, deviceTimeZone });
 
   if (report == null || state === 'loading') {
     return <WeatherBriefing.Loading />;
@@ -97,7 +102,7 @@ export function WeatherBriefing() {
     return <WeatherBriefing.Empty />;
   }
 
-  const briefing = WeatherBriefingPolicy.getWeatherBriefing(
+  const briefing = getWeatherBriefing(
     report,
     todoList.todos.map((todo) =>
       WeatherBriefingPolicy.toBriefingTodo(todo, { date: todayKey, timeZone: deviceTimeZone }),
