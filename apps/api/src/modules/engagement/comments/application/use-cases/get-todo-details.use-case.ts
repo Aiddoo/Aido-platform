@@ -39,7 +39,10 @@ export class GetTodoDetailsUseCase {
       if (details.isOwner) {
         return details;
       }
-      const view = await engagementCounter.recordView(query.todoId, query.viewerId);
+      const view = await engagementCounter.recordView(
+        TodoId.reconstitute(query.todoId),
+        UserId.reconstitute(query.viewerId),
+      );
       return { ...details, viewCount: view.viewCount };
     });
   }

@@ -1,5 +1,6 @@
 import type { CurrentUserPayload } from "#api/modules/identity/identity-auth-http.public";
-import { parseRequestClient } from "#api/platform/http/request-client/index";
+import { parseRequestClient } from "#api/platform/http/request-client/request-client";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { FakePushProvider } from "#test/doubles/notification/fake-push-provider";
 import { InMemoryPushDeviceRepository } from "#test/doubles/notification/in-memory-push-device.repository";
 import { InMemoryPushTokenRepository } from "#test/doubles/notification/in-memory-push-token.repository";
@@ -12,6 +13,7 @@ import { SilentLogger } from "#test/doubles/platform/silent-logger";
 import type { UserNotificationSettingsPort } from "../../../application/ports/user-notification-settings.port.js";
 import { OptOutMarketingPushUseCase } from "../../../application/use-cases/opt-out-marketing-push.use-case.js";
 import { ReportPushDeviceUseCase } from "../../../application/use-cases/report-push-device.use-case.js";
+import { UnregisterPushDeviceByTokenUseCase } from "../../../application/use-cases/unregister-push-device-by-token.use-case.js";
 import { UnregisterPushDeviceUseCase } from "../../../application/use-cases/unregister-push-device.use-case.js";
 import { PushDeviceController } from "./push-device.controller.js";
 import type { RegisterPushTokenDto } from "./push-device.dto.js";
@@ -33,11 +35,13 @@ class RecordingSettings implements Pick<
   readonly timezones = new Map<string, string>();
   readonly locales = new Map<string, string>();
 
-  async upsertPushTimezone(userId: string, timezone: string): Promise<void> {
+  async upsertPushTimezone(user: UserId, timezone: string): Promise<void> {
+    const userId = user.value;
     this.timezones.set(userId, timezone);
   }
 
-  async upsertPushLocale(userId: string, locale: string): Promise<void> {
+  async upsertPushLocale(user: UserId, locale: string): Promise<void> {
+    const userId = user.value;
     this.locales.set(userId, locale);
   }
 
@@ -64,6 +68,13 @@ function setup() {
       logger,
     }),
     new UnregisterPushDeviceUseCase({
+      pushDeviceRepository: devices,
+      pushTokenRepository: tokens,
+      unitOfWork,
+      cache,
+      logger,
+    }),
+    new UnregisterPushDeviceByTokenUseCase({
       pushDeviceRepository: devices,
       pushTokenRepository: tokens,
       unitOfWork,

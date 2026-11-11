@@ -12,8 +12,8 @@ import type { NotificationVariantContext } from "./notification-copy-catalog.mes
 import {
   createEveningReminderNotificationMessage,
   createMorningReminderNotificationMessage,
-  createWinbackNotificationMessage,
-} from "./notification.messages.js";
+} from "./scheduler-notification.messages.js";
+import { createWinbackNotificationMessage } from "./system-notification.messages.js";
 
 const context: NotificationVariantContext = {
   campaignKey: "orthogonality-test",

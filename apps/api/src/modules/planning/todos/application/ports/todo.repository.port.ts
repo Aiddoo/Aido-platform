@@ -1,10 +1,14 @@
 import type { TodoVisibility } from "@aido/api/vocabulary";
 
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+
+import type { TodoCategoryId } from "../../../categories/domain/todo-category-id.vo.js";
 import type { TodoId } from "../../../shared/domain/todo-id.vo.js";
 import type { TodoItemId } from "../../../shared/domain/todo-item-id.vo.js";
 import type { TodoItem } from "../../../shared/domain/todo-item.entity.js";
 import type { TodoScheduleProps } from "../../../shared/domain/todo-schedule.vo.js";
 import type { Todo } from "../../../shared/domain/todo.aggregate.js";
+import type { TodoSeriesId } from "../../../todo-series/domain/todo-series-id.vo.js";
 import type { TodoOccurrenceDraft } from "../../../todo-series/domain/todo-series.aggregate.js";
 
 /** nextIds로 받은 id와 사용자 최대값 뒤 순서를 붙인 회차 */
@@ -23,12 +27,12 @@ export interface OccurrenceRow {
 
 export interface OccurrencePatch {
   readonly title?: string;
-  readonly categoryId?: number;
+  readonly categoryId?: TodoCategoryId;
   readonly visibility?: TodoVisibility;
 }
 
 export interface OccurrenceTime {
-  readonly todoId: number;
+  readonly todoId: TodoId;
   readonly scheduledLocalTime: string | null;
   readonly scheduledTime: Temporal.Instant | null;
 }
@@ -49,14 +53,14 @@ export interface RebaseCandidate {
 }
 
 export interface RebaseCandidateQuery {
-  readonly userId: string;
+  readonly userId: UserId;
   /** id 순 커서. 지난 묶음의 마지막 id */
-  readonly afterId: number | null;
+  readonly afterId: TodoId | null;
   readonly limit: number;
 }
 
 export interface RebasedInstant {
-  readonly todoId: number;
+  readonly todoId: TodoId;
   readonly scheduledTime: Temporal.Instant;
 }
 
@@ -68,7 +72,7 @@ export interface CreatedOccurrence {
 /** 부분 수정 패치. undefined 필드는 바꾸지 않는다. */
 export interface TodoUpdatePatch {
   readonly title?: string;
-  readonly categoryId?: number;
+  readonly categoryId?: TodoCategoryId;
   readonly startDate?: Temporal.PlainDate;
   readonly endDate?: Temporal.PlainDate | null;
   readonly scheduledLocalTime?: string | null;
@@ -91,35 +95,35 @@ export abstract class TodoRepositoryPort {
 
   abstract nextItemId(): Promise<TodoItemId>;
 
-  abstract findByIdAndUserId(id: number, userId: string): Promise<Todo | null>;
+  abstract findByIdAndUserId(id: TodoId, userId: UserId): Promise<Todo | null>;
 
   /** 새 할 일 행만 쓴다. 생성 때의 하위 항목은 createInlineItems로 함께 쓴다. */
   abstract insert(todo: Todo): Promise<void>;
 
   /** 인라인 하위 항목 일괄 생성(생성 트랜잭션 내부에서 호출) */
-  abstract createInlineItems(todoId: number, items: readonly { title: string }[]): Promise<void>;
+  abstract createInlineItems(todoId: TodoId, items: readonly { title: string }[]): Promise<void>;
 
   /** 부분 수정 패치 영속화 (undefined 필드는 미변경) */
-  abstract updateDetails(id: number, patch: TodoUpdatePatch): Promise<void>;
+  abstract updateDetails(id: TodoId, patch: TodoUpdatePatch): Promise<void>;
 
-  abstract updateTitle(id: number, title: string): Promise<void>;
+  abstract updateTitle(id: TodoId, title: string): Promise<void>;
 
-  abstract updateVisibility(id: number, visibility: TodoVisibility): Promise<void>;
+  abstract updateVisibility(id: TodoId, visibility: TodoVisibility): Promise<void>;
 
-  abstract updateSchedule(id: number, schedule: TodoScheduleProps): Promise<void>;
+  abstract updateSchedule(id: TodoId, schedule: TodoScheduleProps): Promise<void>;
 
-  abstract updateCategory(id: number, categoryId: number): Promise<void>;
+  abstract updateCategory(id: TodoId, categoryId: TodoCategoryId): Promise<void>;
 
-  abstract delete(id: number): Promise<void>;
+  abstract delete(id: TodoId): Promise<void>;
 
-  abstract updateSortOrder(id: number, sortOrder: number): Promise<void>;
+  abstract updateSortOrder(id: TodoId, sortOrder: number): Promise<void>;
 
   /**
    * [from, to] 범위(둘 다 포함)의 sortOrder를 delta만큼 일괄 이동.
    * to가 null이면 from 이상 전체.
    */
   abstract shiftSortOrders(
-    userId: string,
+    userId: UserId,
     from: number,
     to: number | null,
     delta: number,
@@ -131,19 +135,19 @@ export abstract class TodoRepositoryPort {
    */
   abstract insertOccurrences(
     plans: readonly TodoOccurrencePlan[],
-    seriesId: string,
+    seriesId: TodoSeriesId,
     checklist: readonly { title: string }[],
   ): Promise<readonly CreatedOccurrence[]>;
 
   /** fromDate 이후(포함) 회차를 회차 날짜 순으로. 옮긴 회차도 원래 회차 날짜로 찾는다. */
   abstract findOccurrencesFrom(
-    seriesIds: readonly string[],
+    seriesIds: readonly TodoSeriesId[],
     fromDate: string,
   ): Promise<readonly OccurrenceRow[]>;
 
   /** fromDate 이후(포함) 미완료 회차의 내용을 함께 고친다. 완료한 회차는 기록이라 두지 않는다. */
   abstract updateFollowingOccurrences(
-    seriesId: string,
+    seriesId: TodoSeriesId,
     fromDate: string,
     patch: OccurrencePatch,
   ): Promise<void>;
@@ -152,10 +156,10 @@ export abstract class TodoRepositoryPort {
   abstract updateOccurrenceTimes(times: readonly OccurrenceTime[]): Promise<void>;
 
   /** 할 일 id를 유지한 채 다른 규칙으로 옮겨 댓글·진행을 보존한다. */
-  abstract reassignOccurrences(todoIds: readonly number[], toSeriesId: string): Promise<void>;
+  abstract reassignOccurrences(todoIds: readonly TodoId[], toSeriesId: TodoSeriesId): Promise<void>;
 
   /** 새 규칙에 없는 날짜의 회차를 맞는 날짜로 옮긴다. */
-  abstract moveOccurrence(todoId: number, occurrence: TodoOccurrenceAttachment): Promise<void>;
+  abstract moveOccurrence(todoId: TodoId, occurrence: TodoOccurrenceAttachment): Promise<void>;
 
   /** 재계산 대상을 id 순으로 잠그고 최신 값을 읽는다. 활성 UoW 안에서 호출한다. */
   abstract lockRebaseCandidates(query: RebaseCandidateQuery): Promise<readonly RebaseCandidate[]>;
@@ -165,34 +169,37 @@ export abstract class TodoRepositoryPort {
 
   /** 단일 할 일을 규칙의 첫 회차로 삼는다. */
   abstract attachToSeries(
-    todoId: number,
-    seriesId: string,
+    todoId: TodoId,
+    seriesId: TodoSeriesId,
     occurrence: TodoOccurrenceAttachment,
   ): Promise<void>;
 
   /** 규칙들의 fromDate 이후 회차를 지우고 지운 id를 돌려준다. 완료 회차는 includeCompleted일 때만 지운다. */
   abstract deleteOccurrences(query: {
-    readonly userId: string;
-    readonly seriesIds: readonly string[];
+    readonly userId: UserId;
+    readonly seriesIds: readonly TodoSeriesId[];
     readonly fromDate?: string;
     readonly includeCompleted: boolean;
   }): Promise<readonly number[]>;
 
-  abstract deleteMany(todoIds: readonly number[]): Promise<void>;
+  abstract deleteMany(todoIds: readonly TodoId[]): Promise<void>;
 
   /** 카테고리 한도에 세는 수: 반복 아닌 미완료 + 진행 중 규칙 1개당 1 */
-  abstract countCategoryUsage(userId: string, categoryId: number): Promise<number>;
+  abstract countCategoryUsage(userId: UserId, categoryId: TodoCategoryId): Promise<number>;
 
-  abstract getMaxSortOrder(userId: string): Promise<number>;
+  abstract getMaxSortOrder(userId: UserId): Promise<number>;
 
   // ===== 하위 항목 (체크리스트) =====
 
-  abstract insertItem(todoId: number, item: TodoItem): Promise<void>;
+  abstract insertItem(todoId: TodoId, item: TodoItem): Promise<void>;
 
-  abstract updateItem(itemId: number, data: { title?: string; completed?: boolean }): Promise<void>;
+  abstract updateItem(
+    itemId: TodoItemId,
+    data: { title?: string; completed?: boolean },
+  ): Promise<void>;
 
-  abstract deleteItem(itemId: number): Promise<void>;
+  abstract deleteItem(itemId: TodoItemId): Promise<void>;
 
   /** 배열 인덱스가 새 sortOrder가 되도록 일괄 재정렬 */
-  abstract reorderItems(itemIds: readonly number[]): Promise<void>;
+  abstract reorderItems(itemIds: readonly TodoItemId[]): Promise<void>;
 }

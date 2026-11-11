@@ -1,5 +1,3 @@
-import { plainDateFromDate } from "#api/shared/domain/time/plain-date";
-
 export interface EffectiveStreakResult {
   streak: number;
   isAtRisk: boolean;
@@ -13,17 +11,13 @@ export interface EffectiveStreakResult {
  */
 export function computeEffectiveStreak(params: {
   currentStreak: number;
-  lastCompletedDate: Date | null;
+  lastCompletedDate: Temporal.PlainDate | null;
   todosCompleted: number;
   todosTotal: number;
-  today: Date;
+  today: Temporal.PlainDate;
 }): EffectiveStreakResult {
-  const { currentStreak, todosCompleted, todosTotal } = params;
-  // 호출자가 아직 UTC 자정 Date로 넘겨 UTC 달력 날짜로 비교한다
-  const today = plainDateFromDate(params.today);
+  const { currentStreak, lastCompletedDate, todosCompleted, todosTotal, today } = params;
   const yesterday = today.subtract({ days: 1 });
-  const lastCompletedDate =
-    params.lastCompletedDate == null ? null : plainDateFromDate(params.lastCompletedDate);
 
   // 전체 완료 시: streak 갱신 여부 판별
   if (todosCompleted === todosTotal && todosTotal > 0) {

@@ -1,5 +1,4 @@
 export type ActivationCompletedEvent = {
-  campaign_id: string;
   days_since_signup: number;
 };
 

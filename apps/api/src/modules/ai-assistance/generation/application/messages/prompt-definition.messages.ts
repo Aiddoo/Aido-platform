@@ -2,11 +2,11 @@ import type { z } from "zod";
 
 import type { SupportedLocale } from "#api/shared/domain/locale";
 
+import type { AiTaskClass } from "../../domain/ai-spend.domain-service.js";
 import type {
   AiGenerationMeta,
   AiGenerationRequest,
   AiGeneratorPort,
-  AiTaskClass,
   AiTaskId,
 } from "../ports/ai-generator.port.js";
 

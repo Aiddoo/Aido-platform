@@ -16,7 +16,7 @@ import {
   PlanningContextReaderPort,
 } from "../../application/ports/planning-context.reader.port.js";
 
-// 옛 날짜 함수(todayInTimezone)처럼 알 수 없는 시간대는 계획을 멈추지 않고 UTC 오늘로 본다
+// 알 수 없는 시간대는 계획을 멈추지 않고 UTC 오늘로 본다
 function toPlanningTimeZone(raw: string): TimeZone {
   try {
     return TimeZone.create(raw);
@@ -46,10 +46,9 @@ export class PlanningContextReaderAdapter extends PlanningContextReaderPort {
   async read(userId: UserId, timezone: string): Promise<PlanningContext> {
     const today = localDateOf(this.#clock.now(), toPlanningTimeZone(timezone));
     const [categories, upcomingTodos] = await Promise.all([
-      this.#categoryReader.listForUser(userId.value),
-      this.#todoReader.findUpcoming(userId.value, {
-        // planning 조회 포트는 아직 날짜를 UTC 자정 Date로 받는다
-        fromDate: new Date(today.toZonedDateTime("UTC").epochMilliseconds),
+      this.#categoryReader.listForUser(userId),
+      this.#todoReader.findUpcoming(userId, {
+        fromDate: today,
         limit: PLANNING_UPCOMING_TODO_LIMIT,
       }),
     ]);
@@ -62,7 +61,7 @@ export class PlanningContextReaderAdapter extends PlanningContextReaderPort {
   }
 
   async findOwnedCategoryIds(userId: UserId): Promise<ReadonlySet<number>> {
-    const categories = await this.#categoryReader.listForUser(userId.value);
+    const categories = await this.#categoryReader.listForUser(userId);
     return new Set(categories.map((category) => category.id));
   }
 }

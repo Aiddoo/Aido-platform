@@ -1,3 +1,5 @@
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+
 /**
  * 스트릭 갱신 포트 (user-settings 컨텍스트 경계)
  *
@@ -6,13 +8,13 @@
  */
 export abstract class StreakPort {
   /** 완료/미완료 전이를 스트릭에 기록합니다. */
-  abstract recordTodoToggle(userId: string, completed: boolean, timezone: string): Promise<void>;
+  abstract recordTodoToggle(userId: UserId, completed: boolean, timezone: string): Promise<void>;
 
   /**
    * 스트릭 판정 컨텍스트를 조회합니다 (기록 없으면 0/null).
    * effective streak 계산(도메인 정책)은 호출자가 오늘 통계와 함께 수행한다.
    */
-  abstract getStreakContext(userId: string): Promise<{
+  abstract getStreakContext(userId: UserId): Promise<{
     currentStreak: number;
     lastCompletedDate: Temporal.PlainDate | null;
   }>;

@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { defineQueue, JOB_POLLING_SECONDS } from "#api/shared/application/ports/index";
+import { defineQueue, JOB_POLLING_SECONDS } from "#api/shared/application/ports/job-queue.port";
 
 export const BroadcastFanOutJobName = {
   FAN_OUT: "fan-out-campaign",

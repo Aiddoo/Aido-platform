@@ -1,6 +1,6 @@
 import { DrizzleOAuthStateRepository } from "#api/modules/identity/auth/infrastructure/persistence/drizzle-oauth-state.repository";
 import { oAuthState } from "#api/platform/database/schema/index";
-import { EncryptionService } from "#api/platform/encryption/index";
+import { EncryptionService } from "#api/platform/encryption/encryption.service";
 import { describeAuthOAuthStateRepositoryContract } from "#test/contracts/identity/auth-oauth-state-repository.contract";
 import { AUTH_FIXTURE_NOW } from "#test/fixtures/identity/auth-session.fixture";
 import { createDatabaseTransactionFixture } from "#test/setup/database-context";

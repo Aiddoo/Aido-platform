@@ -1,6 +1,8 @@
+import type { PushDispatchSkipReason } from "@aido/api/vocabulary";
 import { uniq } from "es-toolkit";
 
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import {
   localDateIn,
   resolveDeliveryTimezone,
@@ -11,6 +13,7 @@ import { TimeZone } from "#api/shared/domain/time/time-zone.vo";
 import type { CreateNotificationData } from "../../../inbox/application/ports/notification-draft.port.js";
 import {
   isAutomatedEngagementNotification,
+  isGeneralRateLimitExemptNotification,
   isMarketingNotification,
   isNightExemptNotification,
 } from "../../domain/push-eligibility.domain-service.js";
@@ -28,7 +31,6 @@ import {
   type NotificationMarketingConsent,
   type UserNotificationSettingsPort,
 } from "../ports/user-notification-settings.port.js";
-import type { PushDispatchSkipReason } from "../read-models/push-delivery.read-model.js";
 
 export interface SinglePushDeliveryRecipient {
   readonly userId: string;
@@ -87,7 +89,9 @@ export class EvaluatePushDeliveryEligibilityUseCase {
   }
 
   async loadSingleRecipient(userId: string): Promise<SinglePushDeliveryRecipient> {
-    const preference = await this.#dependencies.recipientPreferenceReader.getPreference(userId);
+    const preference = await this.#dependencies.recipientPreferenceReader.getPreference(
+      UserId.reconstitute(userId),
+    );
     const timezone = resolveDeliveryTimezone(preference.timezone);
     return {
       userId,
@@ -102,8 +106,12 @@ export class EvaluatePushDeliveryEligibilityUseCase {
   ): Promise<ReadonlyMap<string, BatchPushDeliveryRecipient>> {
     const uniqueUserIds = uniq(userIds);
     const [preferences, consents] = await Promise.all([
-      this.#dependencies.userSettings.getPreferenceRecordsByUserIds(uniqueUserIds),
-      this.#dependencies.userSettings.getConsentRecordsByUserIds(uniqueUserIds),
+      this.#dependencies.userSettings.getPreferenceRecordsByUserIds(
+        uniqueUserIds.map((userId) => UserId.reconstitute(userId)),
+      ),
+      this.#dependencies.userSettings.getConsentRecordsByUserIds(
+        uniqueUserIds.map((userId) => UserId.reconstitute(userId)),
+      ),
     ]);
     const preferenceByUserId = new Map(
       preferences.map((preference) => [preference.userId, preference]),
@@ -142,6 +150,7 @@ export class EvaluatePushDeliveryEligibilityUseCase {
     // 단건 경로는 기존 계약대로 일반 rate counter를 설정·야간·동의보다 먼저 예약한다.
     if (
       !hasReservedRateLimit &&
+      !isGeneralRateLimitExemptNotification(data.type) &&
       (await this.#dependencies.rateLimiter.reserveGeneral({
         dispatchId: rateLimitDispatchId,
         userId: data.userId,
@@ -167,7 +176,9 @@ export class EvaluatePushDeliveryEligibilityUseCase {
     }
 
     if (isMarketing) {
-      const consent = await this.#dependencies.userSettings.getConsentRecord(data.userId);
+      const consent = await this.#dependencies.userSettings.getConsentRecord(
+        UserId.reconstitute(data.userId),
+      );
       if (!consent?.marketingPushAgreedAt) {
         return this.#skipped(data, "MARKETING_CONSENT_REQUIRED");
       }
@@ -211,17 +222,24 @@ export class EvaluatePushDeliveryEligibilityUseCase {
     candidates: readonly TCandidate[],
     recipients: ReadonlyMap<string, BatchPushDeliveryRecipient>,
   ): Promise<readonly PushDeliveryEligibilityDecision<TCandidate>[]> {
-    const requests = candidates.map((candidate) =>
-      this.#createRateLimitRequest(
-        candidate.data,
-        candidate.rateLimitDispatchId,
-        recipients.get(candidate.data.userId),
+    const reservable = candidates.filter(
+      (candidate) => !isGeneralRateLimitExemptNotification(candidate.data.type),
+    );
+    const limited = await this.#dependencies.rateLimiter.reserveBatch(
+      reservable.map((candidate) =>
+        this.#createRateLimitRequest(
+          candidate.data,
+          candidate.rateLimitDispatchId,
+          recipients.get(candidate.data.userId),
+        ),
       ),
     );
-    const limited = await this.#dependencies.rateLimiter.reserveBatch(requests);
+    const limitedCandidates = new Set(reservable.filter((_, index) => limited[index]));
 
-    return candidates.map((candidate, index) =>
-      limited[index] ? this.#skipped(candidate, "RATE_LIMITED") : { status: "eligible", candidate },
+    return candidates.map((candidate) =>
+      limitedCandidates.has(candidate)
+        ? this.#skipped(candidate, "RATE_LIMITED")
+        : { status: "eligible", candidate },
     );
   }
 

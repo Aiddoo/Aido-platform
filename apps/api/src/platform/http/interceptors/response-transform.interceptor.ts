@@ -9,7 +9,7 @@ import { Reflector } from "@nestjs/core";
 import type { Observable } from "rxjs";
 import { map } from "rxjs/operators";
 
-import { isRawResponse } from "../decorators/index.js";
+import { isRawResponse } from "../decorators/raw-response.decorator.js";
 
 export function toSuccessResponse<T>(data: T): SuccessResponse<T> {
   return { success: true, data, timestamp: Date.now() };

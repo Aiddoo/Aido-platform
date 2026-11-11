@@ -1,5 +1,5 @@
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
-import { FakeJobRuntime } from "#test/mocks/fake-job-runtime";
+import { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
 
 import { InviteMaintenanceProcessor } from "./invite-maintenance.processor.js";
 import {
@@ -31,7 +31,7 @@ function createProcessor() {
         return { status: "sent" };
       },
     },
-    new FakeJobRuntime(),
+    new InMemoryJobQueue(),
     new FixedClock(NOW),
   );
   return { processor, calls };
@@ -52,9 +52,9 @@ describe("InviteMaintenanceProcessor — 초대 정비 큐 소비", () => {
   });
 
   it.each([
-    { label: "등록된 일정", data: { name: INVITE_MAINTENANCE_JOB_NAME, data: {} } },
-    { label: "알 수 없는 payload", data: {} },
-  ])("$label은 서울 날짜로 마감 처리한 뒤 알림을 예약한다", async ({ data }) => {
+    { label: "등록된 일정", data: { name: INVITE_MAINTENANCE_JOB_NAME } },
+    { label: "name이 없는 옛 payload", data: {} },
+  ] as const)("$label은 서울 날짜로 마감 처리한 뒤 알림을 예약한다", async ({ data }) => {
     // Given
     const { processor, calls } = createProcessor();
 

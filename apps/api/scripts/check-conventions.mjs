@@ -1,5 +1,5 @@
 // 서버 관례 검사. 인자로 파일을 주면 그 파일만, 없으면 저장소가 보는 서버 파일 전체를 본다.
-//   node scripts/check-conventions.mjs [--file <path>...] [--strict-enums]
+//   node scripts/check-conventions.mjs [--file <path>...]
 import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
@@ -61,10 +61,9 @@ const MEMBER_KEYWORD =
   /^\s+(?:(?:static|readonly|override|abstract|declare|async)\s+)*(private|public|protected)\s/;
 const NON_CODE_LINE = /^\s*(?:\/\/|\/\*|\*)/;
 const FORWARD_REF = /\bforwardRef\(/;
-const PG_ENUM_LITERAL = /pgEnum\(\s*["'`][^"'`]+["'`]\s*,\s*\[/g;
+const PG_ENUM_LITERAL = /pgEnum\(\s*["'`]([^"'`]+)["'`]\s*,\s*\[/g;
 
 const args = process.argv.slice(2);
-const strictEnums = args.includes("--strict-enums");
 // lefthook은 staged 파일 여러 개를 `--file a b c`로 넘긴다
 const selectedFiles = args.filter((arg) => !arg.startsWith("--"));
 
@@ -150,7 +149,73 @@ function findTemplateLiteralLines(lines) {
   return inside;
 }
 
-function checkFile(rel, violations, warnings) {
+// 다른 Context의 진입점(*.public.ts)과 drizzle-kit·relations가 읽는 schema 묶음만 다시 내보낸다
+const RE_EXPORT_ALLOWED = new Set([
+  "src/platform/database/schema/index.ts",
+  "src/platform/database/schema/tables.schema.ts",
+]);
+const RE_EXPORT_FROM =
+  /^\s*export\s+(?:type\s+)?(?:\*(?:\s+as\s+\w+)?|\{[^}]*\})\s*from\s*["'][^"']+["']/gm;
+const LOCAL_EXPORT_LIST = /^\s*export\s+(?:type\s+)?\{([^}]*)\}\s*;/gm;
+const IMPORT_BINDINGS =
+  /^\s*import\s+(?:type\s+)?(?:(\w+)\s*,?\s*)?(?:\{([^}]*)\}|\*\s+as\s+(\w+))?\s*from\s*["'][^"']+["']/gm;
+
+function importedNames(text) {
+  const names = new Set();
+  for (const match of text.matchAll(IMPORT_BINDINGS)) {
+    const [, defaultName, named, namespace] = match;
+    for (const name of [defaultName, namespace]) {
+      if (name != null) {
+        names.add(name);
+      }
+    }
+    for (const item of (named ?? "").split(",")) {
+      const local = item
+        .trim()
+        .replace(/^type\s+/, "")
+        .split(/\s+as\s+/)
+        .pop();
+      if (local) {
+        names.add(local);
+      }
+    }
+  }
+  return names;
+}
+
+// 경로를 바꾸면 import를 정의 파일로 옮겨야 해 결합만 늘리는 barrel·재수출을 막는다
+function checkReExports(rel, text, violations) {
+  if (!rel.startsWith("src/") || rel.endsWith(".public.ts") || RE_EXPORT_ALLOWED.has(rel)) {
+    return;
+  }
+  const reason =
+    "다시 내보내지 않는다. 쓰는 곳이 정의 파일을 import한다(다른 Context는 *.public.ts만).";
+  if (rel.endsWith("/index.ts")) {
+    violations.push(`${rel}: barrel(index.ts)을 두지 않는다. ${reason}`);
+    return;
+  }
+  for (const match of text.matchAll(RE_EXPORT_FROM)) {
+    violations.push(`${rel}:${lineOf(text, match.index)}: ${reason}`);
+  }
+  const imported = importedNames(text);
+  for (const match of text.matchAll(LOCAL_EXPORT_LIST)) {
+    const reExported = match[1]
+      .split(",")
+      .map(
+        (item) =>
+          item
+            .trim()
+            .replace(/^type\s+/, "")
+            .split(/\s+as\s+/)[0],
+      )
+      .filter((name) => name !== "" && imported.has(name));
+    if (reExported.length > 0) {
+      violations.push(`${rel}:${lineOf(text, match.index)}: ${reExported.join(", ")}를 ${reason}`);
+    }
+  }
+}
+
+function checkFile(rel, violations) {
   const text = readFileSync(join(apiRoot, rel), "utf8");
   if (isContextPath(rel) && !rel.endsWith(".d.ts")) {
     checkRoleSuffix(rel, violations);
@@ -174,13 +239,13 @@ function checkFile(rel, violations, warnings) {
     }
   });
 
+  checkReExports(rel, text, violations);
+
   if (isEnumSchemaPath(rel)) {
-    const enumLines = [...text.matchAll(PG_ENUM_LITERAL)].map((match) => lineOf(text, match.index));
-    const reason = "pgEnum 값을 리터럴 배열로 적었다. @aido/api/vocabulary 상수 튜플에서 유도한다.";
-    if (strictEnums) {
-      violations.push(...enumLines.map((line) => `${rel}:${line}: ${reason}`));
-    } else if (enumLines.length > 0) {
-      warnings.push(`${rel}: ${reason} (${enumLines.length}건: 줄 ${enumLines.join(", ")})`);
+    for (const match of text.matchAll(PG_ENUM_LITERAL)) {
+      violations.push(
+        `${rel}:${lineOf(text, match.index)}: pgEnum("${match[1]}") 값을 리터럴 배열로 적었다. @aido/api/vocabulary 또는 소유 slice domain/*.constants.ts의 튜플에서 유도한다.`,
+      );
     }
   }
 }
@@ -252,7 +317,6 @@ function findTrackedJunkFiles(violations) {
 }
 
 const violations = [];
-const warnings = [];
 const checksTree = selectedFiles.length === 0;
 const repoFiles = checksTree ? listRepoFiles() : null;
 if (checksTree && repoFiles == null) {
@@ -267,20 +331,13 @@ for (const rel of files) {
   if (!isCheckedFile(rel)) {
     continue;
   }
-  checkFile(rel, violations, warnings);
+  checkFile(rel, violations);
 }
 
 if (checksTree) {
   checkLsLintSync(violations);
   findEmptyDirectories(repoFiles, violations);
   findTrackedJunkFiles(violations);
-}
-
-if (checksTree && warnings.length > 0) {
-  console.log(`경고 ${warnings.length}건(--strict-enums 전에는 실패하지 않는 검사):`);
-  for (const warning of warnings) {
-    console.log(`  ${warning}`);
-  }
 }
 
 if (violations.length > 0) {

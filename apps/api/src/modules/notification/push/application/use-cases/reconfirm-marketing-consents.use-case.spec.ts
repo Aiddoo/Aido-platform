@@ -20,7 +20,8 @@ function createReconfirm(
         cutoffs.push(params.cutoff);
         return targets.filter((target) => !reconfirmed.has(target.userId)).slice(0, params.limit);
       },
-      claimMarketingReconfirm: async (userIds) => {
+      claimMarketingReconfirm: async (users) => {
+        const userIds = users.map((user) => user.value);
         const claimed = targets.filter(
           (target) => userIds.includes(target.userId) && !reconfirmed.has(target.userId),
         );
@@ -31,15 +32,15 @@ function createReconfirm(
       },
     },
     localeReader: {
-      getLocales: async (userIds) =>
-        new Map(userIds.map((userId) => [userId, userId.endsWith("en") ? "en" : "ko"])),
+      getLocales: async (users) =>
+        new Map(users.map(({ value: userId }) => [userId, userId.endsWith("en") ? "en" : "ko"])),
     },
     timezoneReader: {
       getTimezones: async (userIds) => new Map(userIds.map((userId) => [userId, "Asia/Seoul"])),
     },
     quietHoursReader: {
-      findUsersInQuietHours: async (userIds) =>
-        new Set(userIds.filter((userId) => quietUserIds.has(userId))),
+      findUsersInQuietHours: async (users) =>
+        new Set(users.map((user) => user.value).filter((userId) => quietUserIds.has(userId))),
     },
     notificationPublisher: {
       publishBatch: async (notices) => {

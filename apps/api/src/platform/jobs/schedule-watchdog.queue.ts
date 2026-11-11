@@ -1,10 +1,7 @@
 import { z } from "zod";
 
-import {
-  defineQueue,
-  JOB_POLLING_SECONDS,
-  type JobHeartbeatSchedule,
-} from "#api/shared/application/ports/index";
+import { type JobHeartbeatSchedule } from "#api/shared/application/ports/job-heartbeat.port";
+import { defineQueue, JOB_POLLING_SECONDS } from "#api/shared/application/ports/job-queue.port";
 
 export const SCHEDULE_WATCHDOG_INTERVAL_MINUTES = 15;
 

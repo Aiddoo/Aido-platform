@@ -4,8 +4,6 @@ import type { z } from "zod";
 
 import type { AiTaskClass } from "../../domain/ai-spend.domain-service.js";
 
-export type { AiTaskClass } from "../../domain/ai-spend.domain-service.js";
-
 const AI_TASK_IDS = [
   "parse-todo",
   "parse-memo",

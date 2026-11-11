@@ -6,7 +6,10 @@ import { OperationsMetricsModule } from "#api/modules/operations/metrics/operati
 import { SocialReportsAdminModule } from "#api/modules/social/reports/social-reports.public";
 import { appConfig, type AppSettings } from "#api/platform/config/app.config";
 import { processEnv } from "#api/platform/config/env";
-import { SWAGGER_TAG_DESCRIPTIONS, SWAGGER_TAGS } from "#api/platform/http/swagger/index";
+import {
+  SWAGGER_TAG_DESCRIPTIONS,
+  SWAGGER_TAGS,
+} from "#api/platform/http/swagger/constants/swagger.constant";
 
 import { convertStandardSchema } from "./platform/http/swagger/standard-schema.converter.js";
 

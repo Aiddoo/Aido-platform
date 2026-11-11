@@ -11,13 +11,13 @@ export class StubWeatherBriefingTodoReader extends WeatherBriefingTodoReaderPort
 
   async listTodayTodos(query: WeatherBriefingTodoQuery): Promise<WeatherReminderTodo[]> {
     this.queries.push({ ...query });
-    const userIds = new Set(query.userIds);
+    const userIds = new Set(query.userIds.map((userId) => userId.value));
     return this.todos
       .filter(
         (todo) =>
           userIds.has(todo.userId) &&
-          todo.scheduledTime.getTime() >= query.from.getTime() &&
-          todo.scheduledTime.getTime() < query.until.getTime(),
+          todo.scheduledTime.getTime() >= query.from.epochMilliseconds &&
+          todo.scheduledTime.getTime() < query.until.epochMilliseconds,
       )
       .toSorted(
         (left, right) =>

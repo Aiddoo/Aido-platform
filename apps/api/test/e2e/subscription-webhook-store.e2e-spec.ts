@@ -9,7 +9,7 @@ import {
 } from "#api/modules/billing/subscriptions/billing-subscriptions.config";
 import type { AppEnvironment } from "#api/platform/config/schemas/app.schema";
 import { subscription, subscriptionEventReceipt } from "#api/platform/database/schema/index";
-import { OPERATIONAL_ALERT } from "#api/shared/application/ports/operational-alert.port";
+import { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 import { SubscriptionEventBuilder } from "#test/builders/subscription-event.builder";
 import { RecordingOperationalAlert } from "#test/mocks/recording-operational-alert";
 
@@ -37,7 +37,7 @@ describe("RevenueCat 웹훅의 스토어·환경별 처리 (실제 PostgreSQL)",
     context = await createE2eApp({
       customizeBuilder: (builder) =>
         builder
-          .overrideProvider(OPERATIONAL_ALERT)
+          .overrideProvider(OperationalAlertPort)
           .useValue(alert)
           .overrideProvider(billingSubscriptionsConfig.KEY)
           .useValue(billing),

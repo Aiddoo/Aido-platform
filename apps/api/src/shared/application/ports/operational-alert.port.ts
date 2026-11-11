@@ -1,7 +1,5 @@
 import type { AlertDefinition } from "../alerts/define-alerts.js";
 
-export const OPERATIONAL_ALERT = Symbol("OPERATIONAL_ALERT");
-
 /**
  * 사람이 확인해야 하는 운영 상황 하나. slice `*.alerts.ts`의 정의를 펼쳐 만든다(`{ ...TodoAlerts.X, tags }`).
  * key가 같으면 한 이슈로 모인다. tags·details에는 고정 기호와 id·숫자만 넣고 사용자 원문·토큰·키·공급자 message는 넣지 않는다.

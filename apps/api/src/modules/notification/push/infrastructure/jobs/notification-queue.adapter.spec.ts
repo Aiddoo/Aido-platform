@@ -1,6 +1,6 @@
 import { Logger } from "@nestjs/common";
 
-import type { EnqueueOptions, QueueDefinition } from "#api/shared/application/ports/index";
+import type { EnqueueOptions, QueueDefinition } from "#api/shared/application/ports/job-queue.port";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
 
@@ -145,7 +145,7 @@ describe("NotificationQueueAdapter — 알림 이벤트 등록", () => {
     // When
     const recording = service.enqueueBillingIssue(
       { userId: "user-1" },
-      new Date("2026-11-03T00:00:00.000Z"),
+      Temporal.Instant.from("2026-11-03T00:00:00.000Z"),
     );
 
     // Then

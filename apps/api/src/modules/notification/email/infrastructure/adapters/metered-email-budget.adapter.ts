@@ -2,7 +2,7 @@ import {
   USAGE_SUBJECT_ALL,
   type UsageKey,
   type UsageMeterPort,
-} from "#api/platform/metering/interfaces/usage-meter.interface";
+} from "#api/platform/metering/usage-meter.port";
 import { crossedThresholds, usagePeriod } from "#api/platform/metering/usage-period";
 import type { AlertDefinition } from "#api/shared/application/alerts/define-alerts";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";

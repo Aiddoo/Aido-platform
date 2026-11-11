@@ -16,6 +16,3 @@ export abstract class TodoReminderSchedulerPort {
   abstract scheduleReminders(reminders: readonly ReminderSchedule[]): Promise<void>;
   abstract cancelReminders(todoIds: readonly number[]): Promise<void>;
 }
-
-// planning이 쓰는 옛 타입 이름
-export type IReminderScheduler = TodoReminderSchedulerPort;

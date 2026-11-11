@@ -11,7 +11,7 @@ import request from "supertest";
  */
 
 import { SweepPremiumGrantsUseCase } from "#api/modules/billing/premium-grants/application/use-cases/sweep-premium-grants.use-case";
-import { PremiumGranterPort } from "#api/modules/billing/subscriptions/billing-subscriptions.public";
+import { PremiumGranterPort } from "#api/modules/billing/premium-grants/billing-premium-grants.public";
 import { requireRecord } from "#api/platform/database/database-error.util";
 import { resourceBonus, user as userTable } from "#api/platform/database/schema/index";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";

@@ -18,21 +18,23 @@ import {
   type CurrentUserPayload,
 } from "#api/modules/identity/identity-auth-http.public";
 import { API_VERSION } from "#api/platform/http/api-versioning";
-import { Timezone } from "#api/platform/http/decorators/index";
-import { UserIdParamDto } from "#api/platform/http/dtos/index";
-import { AppVersion } from "#api/platform/http/request-client/index";
+import { Timezone } from "#api/platform/http/decorators/timezone.decorator";
+import { UserIdParamDto } from "#api/platform/http/dtos/user-id-param.dto";
+import { AppVersion } from "#api/platform/http/request-client/request-client.decorator";
+import { SWAGGER_TAGS } from "#api/platform/http/swagger/constants/swagger.constant";
 import {
   ApiConflictError,
-  ApiCreatedResponse,
-  ApiDoc,
   ApiErrorCodesResponse,
   ApiForbiddenError,
   ApiNotFoundError,
-  ApiSuccessResponse,
   ApiTooManyRequestsError,
   ApiUnauthorizedError,
-  SWAGGER_TAGS,
-} from "#api/platform/http/swagger/index";
+} from "#api/platform/http/swagger/decorators/api-error.decorator";
+import { ApiDoc } from "#api/platform/http/swagger/decorators/api-operation.decorator";
+import {
+  ApiCreatedResponse,
+  ApiSuccessResponse,
+} from "#api/platform/http/swagger/decorators/api-response.decorator";
 
 import { GetNudgeCooldownUseCase } from "../../../application/use-cases/get-nudge-cooldown.use-case.js";
 import { GetNudgeLimitUseCase } from "../../../application/use-cases/get-nudge-limit.use-case.js";

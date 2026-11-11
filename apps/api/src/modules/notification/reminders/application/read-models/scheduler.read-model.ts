@@ -48,7 +48,7 @@ export interface UserTodoCount {
 }
 
 /** 팔로우 관계에서 조회된 상대 유저 (활동성·프로필명) */
-export interface FollowRelationUser {
+interface FollowRelationUser {
   readonly id: string;
   readonly lastActiveAt: Temporal.Instant | null;
   readonly profile: { readonly name: string | null } | null;

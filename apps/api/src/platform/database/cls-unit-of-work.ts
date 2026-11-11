@@ -7,11 +7,14 @@ import { PlatformLogEvent } from "#api/platform/logging/platform.log-events";
 import type {
   AfterCommitTask,
   AfterCommitTaskRegistryPort,
+} from "#api/shared/application/ports/after-commit-task.registry.port";
+import type {
   UnitOfWorkOptions,
   UnitOfWorkPort,
-} from "#api/shared/application/ports/index";
+} from "#api/shared/application/ports/unit-of-work.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 
+// DI 토큰이 아니라 요청마다 커밋 뒤 작업 목록을 담는 CLS 저장소 key다
 const AFTER_COMMIT_TASK_SCOPE = Symbol("AFTER_COMMIT_TASK_SCOPE");
 
 interface AfterCommitTaskScope {

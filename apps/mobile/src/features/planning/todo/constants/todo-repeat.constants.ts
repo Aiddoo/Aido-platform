@@ -6,7 +6,5 @@ export const TODO_REPEAT_COUNT = {
   DEFAULT: 10,
 } as const;
 
-export const TODO_REPEAT_MONTH_DAY_CLAMP_FROM = 29;
-
 export const TODO_REPEAT_WEEKDAYS: readonly DayOfWeek[] = ['MON', 'TUE', 'WED', 'THU', 'FRI'];
 export const TODO_REPEAT_WEEKEND_DAYS: readonly DayOfWeek[] = ['SAT', 'SUN'];

@@ -1,12 +1,13 @@
 import { USER_PREFERENCE_DEFAULTS } from "@aido/api/vocabulary";
 
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { NotificationHistoryReader } from "../../../inbox/application/notification-history.reader.js";
 import {
   createMorningNoTodoNotificationMessage,
   createMorningReminderNotificationMessage,
-} from "../../../push/application/messages/notification.messages.js";
+} from "../../../push/application/messages/scheduler-notification.messages.js";
 import type { PublishNotificationUseCase } from "../../../push/application/use-cases/publish-notification.use-case.js";
 import { resolveRecipientLocale } from "../../../push/domain/recipient-locale.domain-service.js";
 import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/notification-campaign.constants.js";
@@ -43,7 +44,7 @@ export class SendMorningReminderUseCase implements TimezoneReminderStrategyPort 
       minute: localMinute,
       today,
       tomorrow,
-      userId,
+      userId: userId == null ? undefined : UserId.reconstitute(userId),
     });
 
     // 무료 사용자: 고정 시간(08:00)에만 리마인더 발송 (catch-up 핸들러에서는 스킵)

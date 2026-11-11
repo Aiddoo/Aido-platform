@@ -6,7 +6,6 @@ import { activeSubscriptionCondition } from "#api/modules/access/entitlements/in
 import { STORE_RENEWAL_GRACE_MS } from "#api/modules/billing/subscriptions/billing-subscriptions-entitlement.public";
 import { DrizzleSchedulerReader } from "#api/modules/notification/reminders/infrastructure/persistence/drizzle-scheduler.reader";
 import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
-import { CacheService } from "#api/platform/cache/cache.service";
 import { createEntityId } from "#api/platform/database/entity-id";
 import { subscription, user, userPreference } from "#api/platform/database/schema/index";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
@@ -50,7 +49,7 @@ describe("유효 프리미엄 SQL 조건과 스케줄러 대상 (실제 PostgreS
     const { txHost } = createDatabaseTransactionFixture(client);
     reader = new DrizzleSchedulerReader(
       txHost,
-      new CacheService(memory),
+      memory,
       { onboardingV2: { enabled: false, treatmentPercent: 50 } },
       new DateClock(),
     );

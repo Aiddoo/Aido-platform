@@ -18,7 +18,7 @@ import { StagedTodoCreatorPort } from "#api/modules/planning/todos/application/p
  * - PATCH /ai/suggestions/:id: 제안 수락/거절
  * - 인증 에러 (401)
  */
-import { CacheService } from "#api/platform/cache/cache.service";
+import { CacheStorePort } from "#api/platform/cache/cache-store.port";
 import { createEntityId } from "#api/platform/database/entity-id";
 import {
   recurringSuggestion,
@@ -60,7 +60,7 @@ describe("AI 제안 E2E", () => {
       .update(userTable)
       .set({ subscriptionStatus: "ACTIVE" })
       .where(eq(userTable.id, user.userId));
-    const cacheService = ctx.module.get(CacheService);
+    const cacheService = ctx.module.get(CacheStorePort);
     await cacheService.del(EntitlementCacheKey.subscription(user.userId));
     return user;
   }

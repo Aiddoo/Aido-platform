@@ -8,7 +8,7 @@ import {
   type UserPreferenceRecord,
   type UserPreferenceRecordWithId,
 } from "#api/modules/identity/identity-settings.public";
-import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { MarketingConsentReconfirmPort } from "../../application/ports/marketing-consent-reconfirm.port.js";
 import type { UserNotificationSettingsPort } from "../../application/ports/user-notification-settings.port.js";
@@ -29,56 +29,50 @@ export class UserNotificationSettingsAdapter
     this.#userSettingsAccess = userSettingsAccess;
   }
 
-  upsertPushTimezone(userId: string, timezone: string): Promise<void> {
-    return this.#userSettingsAccess.upsertPushTimezone(UserId.reconstitute(userId), timezone);
+  upsertPushTimezone(userId: UserId, timezone: string): Promise<void> {
+    return this.#userSettingsAccess.upsertPushTimezone(userId, timezone);
   }
 
-  upsertPushLocale(userId: string, locale: string): Promise<void> {
-    return this.#userSettingsAccess.upsertPushLocale(UserId.reconstitute(userId), locale);
+  upsertPushLocale(userId: UserId, locale: string): Promise<void> {
+    return this.#userSettingsAccess.upsertPushLocale(userId, locale);
   }
 
-  getPreferenceRecord(userId: string): Promise<UserPreferenceRecord | null> {
-    return this.#userSettingsAccess.getPreferenceRecord(UserId.reconstitute(userId));
+  getPreferenceRecord(userId: UserId): Promise<UserPreferenceRecord | null> {
+    return this.#userSettingsAccess.getPreferenceRecord(userId);
   }
 
-  getPreferenceRecordsByUserIds(userIds: string[]): Promise<UserPreferenceRecordWithId[]> {
-    return this.#userSettingsAccess.getPreferenceRecordsByUserIds(
-      userIds.map((userId) => UserId.reconstitute(userId)),
-    );
+  getPreferenceRecordsByUserIds(userIds: readonly UserId[]): Promise<UserPreferenceRecordWithId[]> {
+    return this.#userSettingsAccess.getPreferenceRecordsByUserIds(userIds);
   }
 
-  getConsentRecord(userId: string): Promise<UserConsentRecord | null> {
-    return this.#userSettingsAccess.getConsentRecord(UserId.reconstitute(userId));
+  getConsentRecord(userId: UserId): Promise<UserConsentRecord | null> {
+    return this.#userSettingsAccess.getConsentRecord(userId);
   }
 
-  getConsentRecordsByUserIds(userIds: string[]): Promise<UserConsentRecordWithId[]> {
-    return this.#userSettingsAccess.getConsentRecordsByUserIds(
-      userIds.map((userId) => UserId.reconstitute(userId)),
-    );
+  getConsentRecordsByUserIds(userIds: readonly UserId[]): Promise<UserConsentRecordWithId[]> {
+    return this.#userSettingsAccess.getConsentRecordsByUserIds(userIds);
   }
 
-  async updateMarketingPushConsent(userId: string, agreed: boolean): Promise<void> {
-    await this.#userSettingsAccess.updateMarketingPushConsent(UserId.reconstitute(userId), agreed);
+  async updateMarketingPushConsent(userId: UserId, agreed: boolean): Promise<void> {
+    await this.#userSettingsAccess.updateMarketingPushConsent(userId, agreed);
   }
 
   findMarketingReconfirmTargets(params: {
     readonly cutoff: Temporal.Instant;
-    readonly afterUserId?: string;
+    readonly afterUserId?: UserId;
     readonly limit: number;
   }): Promise<MarketingReconfirmTarget[]> {
     return this.#userSettingsAccess.findMarketingReconfirmTargets({
-      ...params,
-      afterUserId: params.afterUserId == null ? undefined : UserId.reconstitute(params.afterUserId),
+      cutoff: params.cutoff,
+      afterUserId: params.afterUserId,
+      limit: params.limit,
     });
   }
 
   claimMarketingReconfirm(
-    userIds: readonly string[],
+    userIds: readonly UserId[],
     params: { readonly cutoff: Temporal.Instant; readonly at: Temporal.Instant },
   ): Promise<MarketingReconfirmTarget[]> {
-    return this.#userSettingsAccess.claimMarketingReconfirm(
-      userIds.map((userId) => UserId.reconstitute(userId)),
-      params,
-    );
+    return this.#userSettingsAccess.claimMarketingReconfirm(userIds, params);
   }
 }

@@ -9,7 +9,7 @@ import {
   normalizeDeviceName,
   normalizeDevicePlatform,
   type RequestClient,
-} from "#api/platform/http/request-client/index";
+} from "#api/platform/http/request-client/request-client";
 
 const MAX_USER_AGENT_LENGTH = 512;
 const LANGUAGE_TAG_PATTERN = /^[A-Za-z]{2,3}(?:-[A-Za-z0-9]{1,8}){0,3}$/;

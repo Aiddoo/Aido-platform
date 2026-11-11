@@ -5,11 +5,15 @@ import { isEqual, sortBy, uniq, uniqBy } from "es-toolkit";
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
-import { type MutationLockPort, type UnitOfWorkPort } from "#api/shared/application/ports/index";
+import { type MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
+import { type UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { TodoCategoryLockKeys } from "../../../categories/application/categories.lock-keys.js";
+import { TodoCategoryId } from "../../../categories/domain/todo-category-id.vo.js";
 import { addDaysToKey } from "../../../shared/domain/todo-calendar.domain-service.js";
 import { resolveScheduledInstant } from "../../../shared/domain/todo-calendar.domain-service.js";
+import { TodoId } from "../../../shared/domain/todo-id.vo.js";
 import type { CategoryOwnershipPort } from "../../../todos/application/ports/category-ownership.port.js";
 import type { TodoReadRepositoryPort } from "../../../todos/application/ports/todo-read.repository.port.js";
 import type {
@@ -17,6 +21,7 @@ import type {
   TodoReminderSchedule,
 } from "../../../todos/application/ports/todo-reminder-scheduler.port.js";
 import type {
+  OccurrencePatch,
   OccurrenceRow,
   OccurrenceTime,
   TodoRepositoryPort,
@@ -104,8 +109,8 @@ export class UpdateFollowingTodosUseCase {
     await this.publish(edited, userId);
 
     const response = await this.#dependencies.todoReadRepository.findByIdAndUserId(
-      edited.responseTodoId,
-      userId,
+      TodoId.reconstitute(edited.responseTodoId),
+      UserId.reconstitute(userId),
     );
     if (response == null) {
       throw new ApplicationException(ErrorCode.TODO_0801, { todoId: edited.responseTodoId });
@@ -123,7 +128,8 @@ export class UpdateFollowingTodosUseCase {
       TodoLockKeys.sortOrder(userId),
       TodoLockKeys.todo(id),
     ]);
-    const todo = await todoRepository.findByIdAndUserId(id, userId);
+    const ownerId = UserId.reconstitute(userId);
+    const todo = await todoRepository.findByIdAndUserId(TodoId.reconstitute(id), ownerId);
     if (todo == null) {
       throw new ApplicationException(ErrorCode.TODO_0801, { todoId: id });
     }
@@ -134,12 +140,15 @@ export class UpdateFollowingTodosUseCase {
         scope: "THIS_AND_FOLLOWING",
       });
     }
-    const series = await seriesRepository.lockForUpdate(seriesId);
+    const series = await seriesRepository.lockForUpdate(TodoSeriesId.reconstitute(seriesId));
     if (series == null || series.userId.value !== userId) {
       throw new ApplicationException(ErrorCode.TODO_0841, { seriesId });
     }
     if (input.categoryId != null) {
-      await this.#dependencies.categoryOwnership.validateOwnership(input.categoryId, userId);
+      await this.#dependencies.categoryOwnership.validateOwnership(
+        TodoCategoryId.reconstitute(input.categoryId),
+        ownerId,
+      );
     }
     const { occurrenceDate } = todo;
     if (occurrenceDate == null) {
@@ -186,13 +195,13 @@ export class UpdateFollowingTodosUseCase {
     const following = await seriesRepository.lockFollowingSegments(series);
     if (ruleChanged && ![series, ...following].some((segment) => segment.isActive)) {
       // 끝난 규칙의 규칙을 바꾸면 다시 진행 중이 된다. 진행 중인 구간을 합치면 수가 늘지 않는다.
-      await this.#assertSeriesLimit(series.userId.value);
+      await this.#assertSeriesLimit(series.userId);
     }
     if (
       input.categoryId != null &&
       [series, ...following].some((segment) => segment.categoryId !== input.categoryId)
     ) {
-      await this.#assertCategoryLimit(series.userId.value, input.categoryId);
+      await this.#assertCategoryLimit(series.userId, input.categoryId);
     }
 
     let target = series;
@@ -228,7 +237,7 @@ export class UpdateFollowingTodosUseCase {
         ruleChanged ? segment.resolveChangesToMatch(target) : details,
         pivot,
       );
-      cancelledTodoIds.push(...rescheduled.map(({ todoId }) => todoId));
+      cancelledTodoIds.push(...rescheduled.map(({ todoId }) => todoId.value));
       reminders.push(...toReminders(rescheduled, series.userId.value));
     }
 
@@ -243,16 +252,12 @@ export class UpdateFollowingTodosUseCase {
       responseTodoId = remapped.responseTodoId;
     }
 
-    await todoRepository.updateFollowingOccurrences(target.id.value, pivot, {
-      title: input.title,
-      categoryId: input.categoryId,
-      visibility: input.visibility,
-    });
+    await todoRepository.updateFollowingOccurrences(target.id, pivot, toOccurrencePatch(input));
 
     // nullish-strict: null은 시간 지우기, undefined는 시간을 건드리지 않은 수정이다
     if (details.scheduledLocalTime !== undefined) {
       const rescheduled = await this.#rescheduleRows(target, pivot, details.scheduledLocalTime);
-      cancelledTodoIds.push(...rescheduled.map(({ todoId }) => todoId));
+      cancelledTodoIds.push(...rescheduled.map(({ todoId }) => todoId.value));
       reminders.push(...toReminders(rescheduled, series.userId.value));
     }
 
@@ -287,11 +292,11 @@ export class UpdateFollowingTodosUseCase {
     pivot: string,
   ): Promise<readonly OccurrenceTime[]> {
     segment.applyDetails(changes);
-    await this.#dependencies.todoRepository.updateFollowingOccurrences(segment.id.value, pivot, {
-      title: changes.title,
-      categoryId: changes.categoryId,
-      visibility: changes.visibility,
-    });
+    await this.#dependencies.todoRepository.updateFollowingOccurrences(
+      segment.id,
+      pivot,
+      toOccurrencePatch(changes),
+    );
     // nullish-strict: null은 시간 지우기, undefined는 시간을 건드리지 않은 수정이다
     return changes.scheduledLocalTime === undefined
       ? []
@@ -313,7 +318,7 @@ export class UpdateFollowingTodosUseCase {
   ) {
     const { todoRepository } = this.#dependencies;
     const rows = await todoRepository.findOccurrencesFrom(
-      [source, ...following].map((segment) => segment.id.value),
+      [source, ...following].map((segment) => segment.id),
       pivot,
     );
     const lastRowDate = rows.at(-1)?.occurrenceDate ?? pivot;
@@ -348,14 +353,16 @@ export class UpdateFollowingTodosUseCase {
       }
     }
     // 유니크 인덱스 때문에 자리를 비운 뒤 기준 회차를 옮긴다.
-    await todoRepository.deleteMany([...deletedTodoIds]);
+    await todoRepository.deleteMany(
+      [...deletedTodoIds].map((todoId) => TodoId.reconstitute(todoId)),
+    );
 
     const movedTodoIds: number[] = [];
     const reminders: TodoReminderSchedule[] = [];
     if (pivotMoveDate != null) {
       const localTime = target.scheduledLocalTime;
       const scheduledTime = resolveScheduledInstant(pivotMoveDate, localTime, target.timezone);
-      await todoRepository.moveOccurrence(pivotTodoId, {
+      await todoRepository.moveOccurrence(TodoId.reconstitute(pivotTodoId), {
         occurrenceDate: pivotMoveDate,
         scheduledLocalTime: localTime,
         scheduledTime,
@@ -370,8 +377,10 @@ export class UpdateFollowingTodosUseCase {
       .filter((row) => row.seriesId !== target.id.value && !deletedTodoIds.has(row.todoId))
       .map((row) => row.todoId);
     await todoRepository.reassignOccurrences(
-      target === source ? reassigned : [...reassigned, ...movedTodoIds],
-      target.id.value,
+      (target === source ? reassigned : [...reassigned, ...movedTodoIds]).map((todoId) =>
+        TodoId.reconstitute(todoId),
+      ),
+      target.id,
     );
     return { deletedTodoIds: [...deletedTodoIds], movedTodoIds, reminders, responseTodoId };
   }
@@ -383,11 +392,11 @@ export class UpdateFollowingTodosUseCase {
     localTime: string | null,
   ): Promise<readonly OccurrenceTime[]> {
     const { todoRepository } = this.#dependencies;
-    const rows = await todoRepository.findOccurrencesFrom([target.id.value], pivot);
+    const rows = await todoRepository.findOccurrencesFrom([target.id], pivot);
     const times = rows
       .filter((row) => !row.completed)
       .map((row) => ({
-        todoId: row.todoId,
+        todoId: TodoId.reconstitute(row.todoId),
         scheduledLocalTime: localTime,
         scheduledTime: resolveScheduledInstant(row.startDate, localTime, target.timezone),
       }));
@@ -395,10 +404,10 @@ export class UpdateFollowingTodosUseCase {
     return times;
   }
 
-  async #assertCategoryLimit(userId: string, categoryId: number): Promise<void> {
+  async #assertCategoryLimit(userId: UserId, categoryId: number): Promise<void> {
     const activeCount = await this.#dependencies.todoRepository.countCategoryUsage(
       userId,
-      categoryId,
+      TodoCategoryId.reconstitute(categoryId),
     );
     if (activeCount >= TODO_LIMITS.MAX_PER_CATEGORY) {
       throw new ApplicationException(ErrorCode.TODO_0811, {
@@ -408,7 +417,7 @@ export class UpdateFollowingTodosUseCase {
     }
   }
 
-  async #assertSeriesLimit(userId: string): Promise<void> {
+  async #assertSeriesLimit(userId: UserId): Promise<void> {
     const activeCount = await this.#dependencies.seriesRepository.countActiveByUserId(userId);
     if (activeCount >= TODO_SERIES_LIMITS.MAX_ACTIVE_PER_USER) {
       throw new ApplicationException(ErrorCode.TODO_0842, {
@@ -439,8 +448,19 @@ function toReminders(
   userId: string,
 ): readonly TodoReminderSchedule[] {
   return times.flatMap(({ todoId, scheduledTime }) =>
-    scheduledTime == null ? [] : [{ todoId, scheduledTime, userId }],
+    scheduledTime == null ? [] : [{ todoId: todoId.value, scheduledTime, userId }],
   );
+}
+
+function toOccurrencePatch(
+  changes: Pick<TodoSeriesChanges, "title" | "categoryId" | "visibility">,
+): OccurrencePatch {
+  return {
+    title: changes.title,
+    categoryId:
+      changes.categoryId == null ? undefined : TodoCategoryId.reconstitute(changes.categoryId),
+    visibility: changes.visibility,
+  };
 }
 
 function resolveLocalTime(input: UpdateFollowingTodosInput): string | null | undefined {

@@ -1,3 +1,5 @@
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+
 import {
   resolveNotificationInboxScope,
   visibleNotificationTypes,
@@ -24,14 +26,11 @@ export class GetUnreadNotificationCountUseCase {
 
   execute(query: GetUnreadNotificationCountQuery): Promise<number> {
     const { notificationInboxReader, cache } = this.#dependencies;
+    const userId = UserId.reconstitute(query.userId);
     // 앱 버전마다 보이는 타입이 달라 캐시도 버전 범위별로 나눈다
     return cache.wrapUnreadCount(
-      query.userId,
-      () =>
-        notificationInboxReader.countUnread(
-          query.userId,
-          visibleNotificationTypes(query.appVersion),
-        ),
+      userId,
+      () => notificationInboxReader.countUnread(userId, visibleNotificationTypes(query.appVersion)),
       resolveNotificationInboxScope(query.appVersion),
     );
   }

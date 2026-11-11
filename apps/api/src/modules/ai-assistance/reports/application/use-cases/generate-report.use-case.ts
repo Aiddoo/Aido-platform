@@ -1,8 +1,8 @@
 import type { EntitlementReaderPort } from "#api/modules/access/entitlements/access-entitlements.public";
-import type { UserMutationLockPort } from "#api/modules/identity/identity-user-access.public";
+import type { UserMutationLockPort } from "#api/modules/identity/users/identity-users.public";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
-import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
+import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import type { SupportedLocale } from "#api/shared/domain/locale";
 
@@ -37,13 +37,14 @@ import {
   type ReportPeriod,
 } from "../../domain/report-period.domain-service.js";
 import { AiReportLogEvent } from "../ai-report.log-events.js";
+import { type ReportPromptInput } from "../messages/report-context.messages.js";
 import {
   buildNoAiConsentContent,
   buildFallbackContent,
   buildNoActivityContent,
 } from "../messages/report-fallback.messages.js";
 import { computePeriodLabel } from "../messages/report-period-label.messages.js";
-import { reportPrompt, type ReportPromptInput } from "../messages/report-prompt.messages.js";
+import { reportPrompt } from "../messages/report-prompt.messages.js";
 import { type AiReportRepositoryPort } from "../ports/ai-report.repository.port.js";
 import { type TodoStatsReaderPort } from "../ports/todo-stats.reader.port.js";
 import { DuplicateAiReportError } from "../reports.errors.js";

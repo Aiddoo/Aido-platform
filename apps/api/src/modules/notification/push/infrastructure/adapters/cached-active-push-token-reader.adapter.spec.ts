@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
-import { CacheService } from "#api/platform/cache/cache.service";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { InMemoryPushTokenRepository } from "#test/doubles/notification/in-memory-push-token.repository";
 import { createPushTokenFixture } from "#test/fixtures/notification/push-token.fixture";
 
@@ -14,7 +14,7 @@ import { CachedActivePushTokenReaderAdapter } from "./cached-active-push-token-r
 const TOKENS_SCHEMA = z.array(z.string());
 
 function createFixture(tokens: Parameters<typeof createPushTokenFixture>[0][] = []) {
-  const cache = new CacheService(new InMemoryCacheStore({ defaultTtlMs: 60_000, maxItems: 100 }));
+  const cache = new InMemoryCacheStore({ defaultTtlMs: 60_000, maxItems: 100 });
   const pushTokenRepository = new InMemoryPushTokenRepository(
     tokens.map((overrides, index) => createPushTokenFixture({ id: index + 1, ...overrides })),
   );
@@ -43,7 +43,7 @@ describe("CachedActivePushTokenReaderAdapter - 활성 푸시 토큰 cache-aside"
     ]);
 
     // When
-    const result = await reader.findByUserId(userId);
+    const result = await reader.findByUserId(UserId.reconstitute(userId));
 
     // Then
     const key = NotificationCacheKey.pushTokens(userId);
@@ -60,7 +60,7 @@ describe("CachedActivePushTokenReaderAdapter - 활성 푸시 토큰 cache-aside"
     await cache.set(NotificationCacheKey.pushTokens(userId), ["ExponentPushToken[cached]"]);
 
     // When
-    const result = await reader.findByUserId(userId);
+    const result = await reader.findByUserId(UserId.reconstitute(userId));
 
     // Then
     expect(result).toEqual(["ExponentPushToken[cached]"]);
@@ -88,10 +88,17 @@ describe("CachedActivePushTokenReaderAdapter - 활성 푸시 토큰 cache-aside"
     const findActive = vi.spyOn(pushTokenRepository, "findActivePushTokensByUsers");
 
     // When
-    const result = await reader.findByUserIds([cachedUserId, loadedUserId, tokenlessUserId]);
+    const result = await reader.findByUserIds([
+      UserId.reconstitute(cachedUserId),
+      UserId.reconstitute(loadedUserId),
+      UserId.reconstitute(tokenlessUserId),
+    ]);
 
     // Then
-    expect(findActive).toHaveBeenCalledExactlyOnceWith([loadedUserId, tokenlessUserId]);
+    expect(findActive).toHaveBeenCalledExactlyOnceWith([
+      UserId.reconstitute(loadedUserId),
+      UserId.reconstitute(tokenlessUserId),
+    ]);
     expect([...result]).toEqual([
       [cachedUserId, ["ExponentPushToken[cached]"]],
       [loadedUserId, ["ExponentPushToken[loaded-first]", "ExponentPushToken[loaded-second]"]],
@@ -122,7 +129,10 @@ describe("CachedActivePushTokenReaderAdapter - 활성 푸시 토큰 cache-aside"
     const mset = vi.spyOn(cache, "mset");
 
     // When
-    const result = await reader.findByUserIds(["user-with-token", "user-without-token"]);
+    const result = await reader.findByUserIds([
+      UserId.reconstitute("user-with-token"),
+      UserId.reconstitute("user-without-token"),
+    ]);
 
     // Then
     expect([...result]).toEqual([["user-with-token", ["ExponentPushToken[cached]"]]]);

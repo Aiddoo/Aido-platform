@@ -324,7 +324,7 @@ describe("시간대 재계산", () => {
     const result = await useCase.execute({ userId: "planning-user" });
     // Then
     expect(result).toMatchObject({ outcome: "COMPLETED", scannedCount: 5, rebasedCount: 5 });
-    expect(invalidate).toHaveBeenCalledWith(fixture.userId);
+    expect(invalidate).toHaveBeenCalledWith(UserId.reconstitute(fixture.userId));
   });
 
   it("실행 중 시간대가 또 바뀌면 남은 묶음을 멈추고 다음 작업에 맡긴다", async () => {

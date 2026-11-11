@@ -5,7 +5,7 @@ import { StubReEngagementReader } from "#test/doubles/notification/stub-re-engag
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
 import { createTimezoneContextFixture } from "#test/fixtures/notification/timezone-context.fixture";
 
-import { createStreakAtRiskNotificationMessage } from "../../../push/application/messages/notification.messages.js";
+import { createStreakAtRiskNotificationMessage } from "../../../push/application/messages/scheduler-notification.messages.js";
 import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/notification-campaign.constants.js";
 import type { UserWithTodosAndStreak } from "../read-models/scheduler.read-model.js";
 import { SendStreakAtRiskUseCase } from "./send-streak-at-risk.use-case.js";

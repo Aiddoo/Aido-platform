@@ -1,4 +1,4 @@
-import { validateEnv } from "./index.js";
+import { validateEnv } from "./env.schema.js";
 import { productionConfigWarnings } from "./production-readiness.js";
 
 const SECRET_VALUES = {

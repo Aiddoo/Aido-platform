@@ -5,14 +5,14 @@ import request from "supertest";
 import { z } from "zod";
 
 import { todo } from "#api/platform/database/schema/index";
-import { defineQueue, JobQueuePort } from "#api/shared/application/ports/index";
+import { defineQueue, JobQueuePort } from "#api/shared/application/ports/job-queue.port";
 import {
   createE2eApp,
   destroyE2eApp,
   type E2eTestContext,
   type VerifiedUser,
 } from "#test/e2e/helpers/index";
-import { preparePgBossSchema, useRealJobRuntime } from "#test/e2e/helpers/real-job-runtime";
+import { preparePgBossSchema, useRealJobQueue } from "#test/e2e/helpers/real-job-queue";
 
 /*
  * 측정(2026-11-10, Node 26.13, 로컬 macOS, Vitest fork worker, --no-flush-bytecode):
@@ -129,7 +129,7 @@ it(
   { timeout: 600_000 },
   async () => {
     await preparePgBossSchema();
-    const ctx = await createE2eApp({ customizeBuilder: useRealJobRuntime });
+    const ctx = await createE2eApp({ customizeBuilder: useRealJobQueue });
     try {
       // Given
       const users: VerifiedUser[] = [];

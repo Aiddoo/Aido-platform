@@ -4,6 +4,7 @@ import { Injectable } from "@nestjs/common";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { todoCategory } from "#api/platform/database/schema/index";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { DEFAULT_LOCALE, type SupportedLocale } from "#api/shared/domain/locale";
 
 import type { TodoCategoryProvisionerPort } from "../../application/ports/todo-category-provisioner.port.js";
@@ -20,11 +21,17 @@ export class DefaultTodoCategoryProvisionerAdapter implements TodoCategoryProvis
     this.#clock = clock;
   }
 
-  async seed(userId: string, locale: SupportedLocale = DEFAULT_LOCALE): Promise<number> {
+  async seed(userId: UserId, locale: SupportedLocale = DEFAULT_LOCALE): Promise<number> {
     const updatedAt = this.#clock.now();
     const rows = await this.#txHost.tx
       .insert(todoCategory)
-      .values(DEFAULT_CATEGORIES[locale].map((category) => ({ userId, ...category, updatedAt })))
+      .values(
+        DEFAULT_CATEGORIES[locale].map((category) => ({
+          userId: userId.value,
+          ...category,
+          updatedAt,
+        })),
+      )
       .returning({ id: todoCategory.id });
     return rows.length;
   }

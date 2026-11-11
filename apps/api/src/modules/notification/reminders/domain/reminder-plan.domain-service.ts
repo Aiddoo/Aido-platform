@@ -1,3 +1,5 @@
+import { REMINDER_LATE_SKIP_REASON } from "./notification-schedule.domain-service.js";
+
 /**
  * 투두 리마인더 다단계 스케줄 정책 (순수 도메인).
  *
@@ -17,7 +19,7 @@ export const REMINDER_STAGES: readonly ReminderStage[] = [
 ] as const;
 
 /** 최대 리드 타임 (복구/크론 범위 계산용) */
-export const REMINDER_MAX_LEAD_TIME_MS = REMINDER_STAGES[0]?.leadTimeMs ?? 60 * 60 * 1000;
+const REMINDER_MAX_LEAD_TIME_MS = REMINDER_STAGES[0]?.leadTimeMs ?? 60 * 60 * 1000;
 
 /** 예약할 단일 리마인더 잡 (label + 지연 ms) */
 export interface PlannedReminderJob {
@@ -47,17 +49,30 @@ export function reminderFireAt(
   return scheduledAt.subtract({ milliseconds: stage?.leadTimeMs ?? REMINDER_MAX_LEAD_TIME_MS });
 }
 
-/** 울려야 했던 시각보다 limitMinutes를 넘게 늦었으면 true다(보내지 않는다). */
-export function isReminderTooLate(params: {
+// 할 일이 시작된 뒤에는 "N분 뒤 시작" 문구가 틀리므로 늦음 한도 안이어도 보내지 않는다
+const REMINDER_STARTED_SKIP_REASON = "todo-started";
+
+export type ReminderLateSkipReason =
+  | typeof REMINDER_LATE_SKIP_REASON
+  | typeof REMINDER_STARTED_SKIP_REASON;
+
+/**
+ * 지금 보내면 늦는 단계의 사유. null이면 보낸다.
+ * 마지막 발송 시각은 min(울려야 했던 시각 + limitMinutes, 할 일 시각)이고 할 일 시각 자체는 이미 늦은 것으로 본다.
+ */
+export function reminderLateSkipReason(params: {
   readonly scheduledAt: Temporal.Instant;
   readonly stageLabel: string;
   readonly now: Temporal.Instant;
   readonly limitMinutes: number;
-}): boolean {
-  const deadline = reminderFireAt(params.scheduledAt, params.stageLabel).add({
+}): ReminderLateSkipReason | null {
+  if (Temporal.Instant.compare(params.now, params.scheduledAt) >= 0) {
+    return REMINDER_STARTED_SKIP_REASON;
+  }
+  const lateLimit = reminderFireAt(params.scheduledAt, params.stageLabel).add({
     minutes: params.limitMinutes,
   });
-  return Temporal.Instant.compare(params.now, deadline) > 0;
+  return Temporal.Instant.compare(params.now, lateLimit) > 0 ? REMINDER_LATE_SKIP_REASON : null;
 }
 
 /** 특정 todoId의 모든 단계 잡 라벨(취소 시 순회용) */

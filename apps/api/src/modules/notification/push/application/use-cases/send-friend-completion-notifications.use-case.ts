@@ -1,13 +1,14 @@
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { localDateIn } from "#api/shared/domain/time/time-zone-name";
 
 import type { NotificationHistoryReader } from "../../../inbox/application/notification-history.reader.js";
 import { DuplicateNotificationError } from "../../../inbox/application/ports/notification.repository.port.js";
 import { resolveRecipientLocale } from "../../domain/recipient-locale.domain-service.js";
 import { TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY } from "../../domain/transactional-notification-campaign.constants.js";
-import { createFriendCompletedNotificationMessage } from "../messages/notification.messages.js";
+import { createFriendCompletedNotificationMessage } from "../messages/social-notification.messages.js";
 import { NotificationDeliveryLogEvent } from "../notification-delivery.log-events.js";
 import { type UserNotificationSettingsPort } from "../ports/user-notification-settings.port.js";
 import type { PersistedBatchNotificationResult } from "../read-models/push-delivery.read-model.js";
@@ -72,7 +73,7 @@ export class SendFriendCompletionNotificationsUseCase {
 
     const preferences =
       await this.#dependencies.userNotificationSettings.getPreferenceRecordsByUserIds(
-        recipientUserIds,
+        recipientUserIds.map((userId) => UserId.reconstitute(userId)),
       );
     const storedLocaleByUserId = new Map(
       preferences.map((preference) => [preference.userId, preference.locale]),

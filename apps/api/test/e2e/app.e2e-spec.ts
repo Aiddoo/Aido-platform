@@ -8,24 +8,6 @@
 
 import request from "supertest";
 
-import { ClockPort } from "#api/shared/application/ports/clock.port";
-import {
-  AFTER_COMMIT_TASK_REGISTRY,
-  AfterCommitTaskRegistryPort,
-  DOMAIN_EVENT_PUBLISHER,
-  DomainEventPublisherPort,
-  JOB_RUNTIME,
-  JobRuntimePort,
-  MUTATION_LOCK,
-  MutationLockPort,
-  OPERATIONAL_ALERT,
-  OperationalAlertPort,
-  SAVEPOINT_RUNNER,
-  SavepointRunnerPort,
-  UNIT_OF_WORK,
-  UnitOfWorkPort,
-} from "#api/shared/application/ports/index";
-
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 
 describe("앱 컨트롤러 E2E", () => {
@@ -79,27 +61,5 @@ describe("앱 컨트롤러 E2E", () => {
       .split(",")
       .map((header) => header.trim());
     expect(allowedHeaders).toContain("x-timezone");
-  });
-
-  it("공용 포트 클래스 토큰은 옛 Symbol 토큰과 같은 인스턴스를 준다", () => {
-    // Given
-    const tokenPairs = [
-      [UnitOfWorkPort, UNIT_OF_WORK],
-      [AfterCommitTaskRegistryPort, AFTER_COMMIT_TASK_REGISTRY],
-      [MutationLockPort, MUTATION_LOCK],
-      [SavepointRunnerPort, SAVEPOINT_RUNNER],
-      [OperationalAlertPort, OPERATIONAL_ALERT],
-      [DomainEventPublisherPort, DOMAIN_EVENT_PUBLISHER],
-      [JobRuntimePort, JOB_RUNTIME],
-    ] as const;
-
-    // When
-    const isSameInstance = tokenPairs.map(
-      ([classToken, symbolToken]) => ctx.app.get(classToken) === ctx.app.get(symbolToken),
-    );
-
-    // Then
-    expect(isSameInstance).toEqual(tokenPairs.map(() => true));
-    expect(ctx.app.get(ClockPort).now()).toBeInstanceOf(Temporal.Instant);
   });
 });

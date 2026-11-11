@@ -13,7 +13,7 @@ import { z } from "zod";
 
 import { HttpLogEvent, httpRequestPath } from "#api/platform/logging/http-log";
 
-import { isRawResponse } from "../decorators/index.js";
+import { isRawResponse } from "../decorators/raw-response.decorator.js";
 import { toSuccessResponse } from "./response-transform.interceptor.js";
 
 class ResponseContractViolationError extends Error {

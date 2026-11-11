@@ -1,10 +1,11 @@
 import { ErrorCode } from "@aido/api/errors";
-import { REVOKE_REASON, SECURITY_EVENT } from "@aido/api/vocabulary";
+import { REVOKE_REASON, SECURITY_EVENT, type UserRole } from "@aido/api/vocabulary";
 
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
+import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { AuthSession } from "../../domain/auth-session.aggregate.js";
@@ -16,6 +17,7 @@ import type { AuthCachePort } from "../ports/auth-collaboration.port.js";
 import type { AuthTokenIssuerPort } from "../ports/auth-crypto.port.js";
 import type { AuthSecurityLogRepositoryPort } from "../ports/auth-security-log.repository.port.js";
 import type { AuthSessionRepositoryPort } from "../ports/auth-session.repository.port.js";
+import type { AuthUserRepositoryPort } from "../ports/auth-user.repository.port.js";
 import type { SessionPushDeviceReleaserPort } from "../ports/session-push-device-releaser.port.js";
 import type {
   RefreshTokensResult,
@@ -38,6 +40,7 @@ interface RefreshTokensDependencies {
     AuthTokenIssuerPort,
     "hashRefreshToken" | "generateTokenPair" | "getRefreshTokenExpiresInSeconds"
   >;
+  readonly userRepository: Pick<AuthUserRepositoryPort, "findById">;
   readonly securityLogRepository: Pick<AuthSecurityLogRepositoryPort, "create">;
   readonly cacheService: Pick<AuthCachePort, "invalidateSession">;
   readonly pushDevices: Pick<SessionPushDeviceReleaserPort, "releaseSessions">;
@@ -133,11 +136,12 @@ export class RefreshTokensUseCase {
       throw new ApplicationException(ErrorCode.SESSION_0702, { sessionId: undefined });
     }
 
-    const { userId, email, sessionId, role } = input.verifiedPayload;
+    const { userId, email, sessionId, role: claimRole } = input.verifiedPayload;
     if (!session.isOwnedBy(UserId.reconstitute(userId)) || session.id.value !== sessionId) {
       throw new ApplicationException(ErrorCode.SESSION_0701, { sessionId: undefined });
     }
 
+    const role = await this.#readCurrentRole(session, claimRole);
     const tokens = await this.#dependencies.tokenService.generateTokenPair(
       session.userId,
       email,
@@ -182,5 +186,28 @@ export class RefreshTokensUseCase {
       retryWithinGracePeriod,
     });
     return { tokens, sessionId };
+  }
+
+  // 강등된 ADMIN이 갱신으로 남지 않게 DB 역할로 발급한다. 못 읽으면 로그인을 끊지 않으려고 claim 역할을 쓴다
+  async #readCurrentRole(session: AuthSession, claimRole: UserRole): Promise<UserRole> {
+    const fallbackLog = {
+      event: AuthLogEvent.SESSION_REFRESH_ROLE_FALLBACK,
+      userId: session.userId.value,
+      sessionId: session.id.value,
+    };
+    try {
+      const user = await this.#dependencies.userRepository.findById(session.userId);
+      if (user != null) {
+        return user.role;
+      }
+      this.#dependencies.logger.warn({ ...fallbackLog, reason: "user-missing" });
+    } catch (error) {
+      this.#dependencies.logger.warn({
+        ...fallbackLog,
+        reason: "lookup-failed",
+        errorType: toErrorType(error),
+      });
+    }
+    return claimRole;
   }
 }

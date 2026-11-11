@@ -1,7 +1,7 @@
 import { toIsoString } from "#api/shared/domain/time/instant";
 import { createInboxNotificationFixture } from "#test/fixtures/notification/notification.fixture";
 
-import { createFollowAcceptedNotificationMessage } from "../../../../push/application/messages/notification.messages.js";
+import { createFollowAcceptedNotificationMessage } from "../../../../push/application/messages/social-notification.messages.js";
 import {
   renderInboxCopy,
   toNotificationInboxResponse,

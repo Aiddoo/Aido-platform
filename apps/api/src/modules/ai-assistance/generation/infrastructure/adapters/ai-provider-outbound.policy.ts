@@ -9,7 +9,8 @@ import {
   type AiFailureKind,
   resolveAiFailureRule,
 } from "../../application/ai-generation.errors.js";
-import type { AiTaskClass, AiTaskId } from "../../application/ports/ai-generator.port.js";
+import type { AiTaskId } from "../../application/ports/ai-generator.port.js";
+import type { AiTaskClass } from "../../domain/ai-spend.domain-service.js";
 
 /** 한 업체 호출의 실패. 회로가 종류로 열지 말지를 정한다. */
 export class AiAttemptFailure extends Error {
