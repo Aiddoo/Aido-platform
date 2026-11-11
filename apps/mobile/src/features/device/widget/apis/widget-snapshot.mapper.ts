@@ -1,7 +1,6 @@
 import { type Instant } from '@src/shared/date/instant';
 import type { ResolvedLanguage } from '@src/shared/preferences/language.preference';
 
-import { WIDGET_TOP_TODOS_LIMIT } from '../constants/widget.constants';
 import type { WidgetDaySnapshot, WidgetSnapshot } from '../schemas/widget-snapshot-storage.schema';
 import {
   getWidgetDayState,
@@ -59,7 +58,7 @@ function toWidgetDaySnapshot(
   summary: WidgetSummaryInput,
   context: WidgetSnapshotContext,
 ): WidgetDaySnapshot {
-  const topTodos = summary.topTodos.slice(0, WIDGET_TOP_TODOS_LIMIT).map((todo) => ({
+  const topTodos = summary.topTodos.map((todo) => ({
     id: todo.id,
     title: todo.title,
     completed: todo.completed,

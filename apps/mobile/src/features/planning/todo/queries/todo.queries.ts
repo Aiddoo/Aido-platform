@@ -12,7 +12,7 @@ import {
   useQuery,
   type UseQueryResult,
 } from '@tanstack/react-query';
-import { keyBy } from 'es-toolkit';
+import { keyBy, take } from 'es-toolkit';
 
 import type { TodoApi } from '../apis/todo.api';
 import { UPCOMING_TODO_WINDOW_DAYS } from '../constants/todo.constants';
@@ -200,6 +200,8 @@ const DATE_CATCH_UP_MAX_ATTEMPTS = 4;
 interface TodoSummaryQueryInput {
   date: string;
   userId?: string | null;
+  /** 상위 할 일을 이만큼만 고른다. 없으면 서버가 준 만큼이다 */
+  limit?: number;
 }
 
 type SummaryRefetchState = Pick<
@@ -222,7 +224,7 @@ export function getTodoSummaryRefetchInterval(
 }
 
 /** 홈 위젯(오늘·내일)용. 자정 직후 기기·서버 날짜가 어긋나면 foreground를 기다리지 않고 5s→10s→20s→40s로 다시 묻는다 */
-export function useGetTodoSummaryQueryOptions({ date, userId }: TodoSummaryQueryInput) {
+export function useGetTodoSummaryQueryOptions({ date, userId, limit }: TodoSummaryQueryInput) {
   const todoApi = useTodoApi();
 
   return queryOptions({
@@ -230,6 +232,10 @@ export function useGetTodoSummaryQueryOptions({ date, userId }: TodoSummaryQuery
     queryFn: async ({ signal }) => unwrap(await todoApi.getTodoSummary(date, signal)),
     staleTime: MINUTE_MS,
     refetchInterval: (query) => getTodoSummaryRefetchInterval(query.state, date),
+    select:
+      limit == null
+        ? undefined
+        : (summary) => ({ ...summary, topTodos: take(summary.topTodos, limit) }),
     // 전 화면 위(AuthBootProvider)의 백그라운드 쿼리라 실패를 ErrorBoundary로 보내면 콜드 스타트 fallback이 뜬다. 실패하면 위젯만 갱신되지 않는다
     throwOnError: false,
   });

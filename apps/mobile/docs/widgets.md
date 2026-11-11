@@ -34,7 +34,7 @@ iOS는 Expo SDK 58의 `expo-widgets`(`createWidget` + props + `updateTimeline`),
 
 ```text
 useWidgetSnapshotSync(authState)
-  → 현재 계정·로컬 날짜의 오늘·내일 TodoSummary(`?date=`) / daily completions Query
+  → 현재 계정·로컬 날짜의 오늘·내일 TodoSummary(`?date=`, `limit`으로 상위 10개) / daily completions Query
   → WidgetSyncService (직렬 쓰기·generation·내용/소유자 중복 제거)
   → 순수 snapshot / props mapper
   → 플랫폼별 WidgetBridge
@@ -86,7 +86,7 @@ OS 갤러리의 이름·설명은 앱 i18n이 아니라 Expo `locales`(`native-l
 - Android는 공식 FlexWidget / TextWidget / SvgWidget과 기존 paw SVG path를 쓴다.
 - 완성된 카드 한 개를 공식 ListWidget의 단일 항목으로 감싸 모든 날짜·할 일·생성 버튼을 collection의 PendingIntent template / fill-in 경로로 전달한다(라이브러리의 clock 기반 direct 클릭 충돌을 피한다). ListWidget을 걷어내는 일은 기기 비교 뒤로 미룬다.
 - Android renderer는 hooks 없이 props로만 tree를 만들고 library의 tree collector와 맞추기 위해 `use no memo`를 선언한다.
-- 실제 `WidgetInfo.width/height`로 카드 비율(small 1, medium 2.05, large .97)을 맞추고 launcher의 여유 slot 안에서 가운데 배치한다. 긴 제목은 한 줄 말줄임, 개수는 자리수에 따라 축소한다. `maxRows`는 렌더러가 받은 값을 그대로 따른다.
+- 실제 `WidgetInfo.width/height`로 카드 비율(small 1, medium 2.05, large .97)을 맞추고 launcher의 여유 slot 안에서 가운데 배치한다. 긴 제목은 한 줄 말줄임, 개수는 자리수에 따라 축소한다. Android는 정의의 `maxRows`(0·2·4)로 크기를 가르고(예전 3·8도 같은 크기로 읽는다) 할 일은 중간 2줄·큰 4줄이다. iOS는 family로 0·2·4줄을 고르고 props의 `maxRows`를 읽지 않는다.
 - Android TextWidget는 취소선을 제공하지 않는다. 완료는 흐린 제목과 체크 표시로 나타내고 글자 폭을 추측해 선을 그리지 않는다.
 - 첫 snapshot 부재(갤러리 미리보기·첫 배치)는 카탈로그의 로그인 안내를 기기 언어(ko, 그 밖은 en)로 렌더링한다. 동기화 뒤에는 앱 언어로 만든 snapshot 문구를 쓴다.
   - iOS `initialProps`는 빌드 시점에 고정되므로 영어 문구와 `localizeStateCopy`를 넘기고, 렌더러가 `Text markdownEnabled`(`LocalizedStringKey`)로 `Localizable.strings`를 조회한다. SwiftUI Text는 환경 locale의 lproj가 없으면 키를 그대로 보이므로 이 키는 영어여야 한다. 갤러리 이름은 OS가 번들 언어로 해석하므로 한국어 원문 키를 쓴다.

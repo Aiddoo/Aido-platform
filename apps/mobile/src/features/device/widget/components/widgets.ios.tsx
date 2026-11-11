@@ -30,7 +30,6 @@ import {
 import { createWidget, type WidgetEnvironment } from 'expo-widgets';
 import type { ReactElement } from 'react';
 
-import { WIDGET_LARGE_MAX_ROWS } from '../constants/widget.constants';
 import type { WidgetProps } from '../schemas/widget-props-payload.schema';
 import { createRegisteredWidgetProps } from '../utils/widget-initial-props';
 
@@ -468,4 +467,4 @@ export const aidoTodayListWidget = createWidget<WidgetProps>(
   createRegisteredWidgetProps(),
 );
 
-export const AIDO_WIDGETS = [{ widget: aidoTodayListWidget, maxRows: WIDGET_LARGE_MAX_ROWS }];
+export const AIDO_WIDGETS = [{ widget: aidoTodayListWidget }];

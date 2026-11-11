@@ -16,6 +16,7 @@ import { useEffect, useEffectEvent } from 'react';
 import { match } from 'ts-pattern';
 
 import type { WidgetSnapshotContext, WidgetSummaryInput } from '../apis/widget-snapshot.mapper';
+import { WIDGET_TOP_TODOS_LIMIT } from '../constants/widget.constants';
 import type { WidgetSyncResult, WidgetSyncService } from '../services/widget-sync.service';
 import type { WidgetTranslateFn } from '../utils/widget-snapshot.view-model';
 
@@ -119,10 +120,15 @@ export function useWidgetSnapshotSync(authState: WidgetSyncAuthState): void {
   const userId = useMyAccountId({ isEnabled: authState === 'authenticated' });
   const tomorrowDate = addDaysToDateKey(date, 1);
   const isUserDataEnabled = userId != null;
-  const todayQueryOptions = useGetTodoSummaryQueryOptions({ date, userId });
+  const todayQueryOptions = useGetTodoSummaryQueryOptions({
+    date,
+    userId,
+    limit: WIDGET_TOP_TODOS_LIMIT,
+  });
   const tomorrowQueryOptions = useGetTodoSummaryQueryOptions({
     date: tomorrowDate,
     userId,
+    limit: WIDGET_TOP_TODOS_LIMIT,
   });
   const [{ data }, { data: tomorrowData }] = useQueries({
     queries: [

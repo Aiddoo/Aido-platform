@@ -1,19 +1,8 @@
-import { range } from 'es-toolkit';
-
 import {
   createWidgetSnapshotContext,
   createWidgetSummary,
 } from '../__tests__/widget-snapshot.fixtures';
-import {
-  toLoggedOutWidgetSnapshot,
-  toWidgetSnapshot,
-  type WidgetSnapshotContext,
-  type WidgetSummaryInput,
-} from './widget-snapshot.mapper';
-
-function toTodaySnapshot(summary: WidgetSummaryInput, context: WidgetSnapshotContext) {
-  return toWidgetSnapshot({ today: summary }, context).days[0];
-}
+import { toLoggedOutWidgetSnapshot, toWidgetSnapshot } from './widget-snapshot.mapper';
 
 describe('toWidgetSnapshot', () => {
   it('요약을 data 상태 스냅샷으로 변환한다', () => {
@@ -52,24 +41,6 @@ describe('toWidgetSnapshot', () => {
       ['2026-07-19', 'empty'],
     ]);
     expect(days[1]?.weekDays?.[0]?.date).toBe('2026-07-19');
-  });
-
-  it('표시 한도(10개) 초과분은 절단한다', () => {
-    // Given
-    // 총 13개 중 topTodos 10개 도착
-    const topTodos = range(10).map((i) => ({
-      id: i + 1,
-      title: `할 일 ${i + 1}`,
-      completed: false,
-      categoryColor: '#FFB3B3',
-    }));
-    const summary = createWidgetSummary({ totalTodos: 13, topTodos });
-
-    // When
-    const snapshot = toTodaySnapshot(summary, createWidgetSnapshotContext());
-
-    // Then
-    expect(snapshot.topTodos).toHaveLength(10);
   });
 });
 
