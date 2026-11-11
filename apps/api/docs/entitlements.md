@@ -1,6 +1,6 @@
 # 유료 기능과 권한
 
-권한·한도·플랜 숫자·만료 판단을 바꿀 때 읽는다. 결제 공급자 운영 결정은 [결제](billing.md)에 있다.
+권한·한도·플랜 숫자·만료 판단을 바꾸거나 유료 기능을 더할 때 읽는다. 판단은 access Context(`entitlements`·`quotas` slice)가 소유하고, 결제 공급자 처리는 [결제](billing.md)에 있다.
 
 ## 판단하는 곳
 
@@ -10,7 +10,7 @@
 | ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 이 기능을 쓸 수 있나·한도는  | `EntitlementReaderPort`의 `can`/`getFeatureLimit`(잠금 뒤 재확인은 `canInTx`/`getFeatureLimitInTx`), 전체는 `getEntitlements`(tier·plan·isPremium·features), 거부는 `assertEntitled`/`assertEntitledInTx`(기능별 기존 ErrorCode) |
 | 여러 사용자를 SQL로 고를 때  | `access-entitlements.public`의 `premiumAccessCondition`/`freeAccessCondition`/`activeSubscriptionCondition`                                                                                                                      |
-| 프리미엄 출처·기간 표시(/me) | `PremiumAccessReaderPort`(Billing). 권한 판단에는 쓰지 않는다                                                                                                                                                                    |
+| 프리미엄 출처·기간 표시(/me) | `PremiumAccessReaderPort`(`billing-premium-grants.public`). 권한 판단에는 쓰지 않는다                                                                                                                                            |
 | 돈이 드는 횟수(AI·녹음 정리) | `QuotaLedgerPort`(`access-quotas.public`)의 `reserve`→`commit`/`refund`, 표시는 `read`가 주는 `featureQuota`. 남은 0을 미리 막을 때는 `@RequireQuota(meter)`                                                                     |
 
 ## 사용 횟수 원장
@@ -24,7 +24,8 @@
 1. `@aido/api/vocabulary`의 `PLAN_CATALOG`(plan-catalog.constants.ts)에 kind(quota·resource·flag)와 free/premium 값을 추가한다. 출시 앱 /me가 아는 기능만 `PREMIUM_FEATURES`에 두고, 새 기능은 `PLAN_CATALOG`에만 더해 `GET /v1/entitlements`로 내보낸다. 앱만 막는 기능은 `clientOnly`.
 2. 서버가 막는 flag면 [entitlements.errors](../src/modules/access/entitlements/application/entitlements.errors.ts)에 기존 ErrorCode를 연결하고 UseCase에서 `assertEntitled`를 호출한다. quota·resource는 `getFeatureLimit`로 한도를 읽고 사용량은 소유 Context가 센다.
 3. `/me.entitlements` 계약(`premiumEntitlementsSchema`)에 키를 추가한다. 이전 앱은 모르는 키를 무시한다.
-4. 사용량이 있는 quota는 `GetCurrentUser`에 `used`·`resetsAt`을 붙인다. 돈이 드는 횟수는 `QUOTA_METERS`에 계량기를 더하고(`QUOTA_METER_FEATURES`에 기능을 잇는다) 원장으로 센다. resource는 소유 Context가 한도 검사와 같은 개수를 읽는 포트(예: `FRIEND_COUNT_READER`·`TODO_CATEGORY_COUNT_READER`)를 내보내고 access의 `OwnedFeatureUsageReaderAdapter`가 모아 `GetEntitlementSnapshotUseCase`에 넘긴다.
+4. 사용량이 있는 quota는 `GetCurrentUser`에 `used`·`resetsAt`을 붙인다. 돈이 드는 횟수는 `QUOTA_METERS`에 계량기를 더하고(`QUOTA_METER_FEATURES`에 기능을 잇는다) 원장으로 센다. resource는 소유 Context가 한도 검사와 같은 개수를 읽는 포트(`FriendCountReaderPort`·`TodoCategoryCountReaderPort`)를 내보내고 access의 `OwnedFeatureUsageReaderAdapter`가 모아 `GetEntitlementSnapshotUseCase`에 넘긴다.
+5. 한도 오류는 기존 ErrorCode와 `details: { charged: false, featureQuota }`를 싣는다. 서버 판단(한도·남은 횟수)은 응답에 실어 앱이 다시 계산하지 않게 한다. 전체 순서는 [새 기능 추가](new-feature.md)다.
 
 ## 받은 자리(grant)와 충전 확장 지점
 
@@ -34,7 +35,10 @@
 
 ## 역할 변경
 
-역할(USER·ADMIN)을 바꾸는 서버 경로는 없다(운영자가 DB에서 바꾼다). 잠금 안의 쓰기 판단(`canInTx`·`getFeatureLimitInTx`·원장 예약)과 `GET /v1/entitlements`는 캐시 없이 읽어 바로 새 역할을 따른다. 캐시를 읽는 판단(`can`·`getFeatureLimit`·`getEntitlements`·/me)은 권한 캐시(10분)가 남는 동안 이전 역할을 쓰므로, 역할을 바꾼 뒤에는 `EntitlementCacheInvalidatorPort.invalidateEntitlements(userId)`로 비우거나 TTL이 지나기를 기다린다. ADMIN 권한 가드는 access token의 role claim을 보므로 다시 로그인해야 바뀐다.
+역할(USER·ADMIN)을 바꾸는 API는 없다. 잠금 안의 쓰기 판단(`canInTx`·`getFeatureLimitInTx`·원장 예약)과 `GET /v1/entitlements`는 캐시 없이 읽어 바로 새 역할을 따르고, 캐시를 읽는 판단(`can`·`getFeatureLimit`·`getEntitlements`)과 /me는 캐시가 남는 동안 이전 역할을 쓴다. 운영자가 DB에서 `User.role`을 바꾼 뒤:
+
+1. 그 사용자의 권한 캐시 `aido:v1:subscription:status:v2:{userId}`(10분)와 프로필 캐시 `aido:v1:auth:user-profile:{userId}`(5분)를 지운다. `CACHE_TYPE=redis`면 두 키를 `DEL`하고, 운영 기본값 memory는 밖에서 지울 수 없으니 10분을 기다린다(API 재시작은 모든 캐시를 비운다).
+2. ADMIN 가드는 access token의 role claim을 본다. refresh는 DB의 현재 `User.role`을 다시 읽어 새 토큰에 넣으므로, 새 역할은 이미 받은 access token이 끝나는 `JWT_EXPIRES_IN`(기본값·운영 예시 15분) 안에 적용된다. 사용자 행이 없거나 조회가 실패하면 갱신을 막지 않고 claim의 역할로 발급하며 `identity.session.refresh-role.fallback`(warn)을 남긴다. ADMIN을 급히 내릴 때는 그 사용자의 세션도 모두 끊는다. 다른 사용자의 세션을 끊는 API는 없으니 전체 로그아웃(`revokeAllByUserId`)과 같은 갱신을 DB에서 실행한다: `UPDATE "Session" SET "revokedAt" = now() AT TIME ZONE 'UTC', "revokedReason" = 'USER_LOGOUT_ALL', "updatedAt" = now() AT TIME ZONE 'UTC' WHERE "userId" = '<userId>' AND "revokedAt" IS NULL`. 그 뒤 refresh는 SESSION_0703으로 거절되고, 이미 받은 access token도 세션 캐시 `aido:v1:auth:session:{sessionId}`(30초)가 지나면 거절된다.
 
 ## 다운그레이드
 

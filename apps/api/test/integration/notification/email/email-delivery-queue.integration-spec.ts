@@ -25,6 +25,8 @@ import { createDatabaseTransactionFixture } from "#test/setup/database-context";
 import { suppressLogger } from "#test/setup/suppress-logger";
 import { TestDatabase } from "#test/setup/test-database";
 
+import { FastJobQueue, WORKER_WAIT } from "../../helpers/fast-job-timing.js";
+
 const FIXTURE_EMAIL_CONFIG = notificationEmailConfig.parse({
   NODE_ENV: "test",
   EMAIL_PROVIDER: "resend",
@@ -51,21 +53,6 @@ const reportOf = (reportId: string) => ({
   resolutionDocsUrl: null,
 });
 const code = "987654";
-
-async function eventually(assertion: () => Promise<void>, timeoutMs = 30_000): Promise<void> {
-  const deadline = Date.now() + timeoutMs;
-  let lastError: unknown;
-  while (Date.now() < deadline) {
-    try {
-      await assertion();
-      return;
-    } catch (error) {
-      lastError = error;
-      await new Promise((resolve) => setTimeout(resolve, 200));
-    }
-  }
-  throw lastError;
-}
 
 describe("이메일 발송 큐 (실제 pg-boss + PostgreSQL)", () => {
   let testDatabase: TestDatabase;
@@ -96,11 +83,13 @@ describe("이메일 발송 큐 (실제 pg-boss + PostgreSQL)", () => {
       max: 3,
     });
     await boss.start();
-    const jobQueue = new PgBossJobQueueAdapter(
-      boss,
-      createDatabaseTransactionFixture(client).txHost,
-      new JobQueueRegistry(),
-      { shutdownTimeoutMs: 10_000 },
+    const jobQueue = new FastJobQueue(
+      new PgBossJobQueueAdapter(
+        boss,
+        createDatabaseTransactionFixture(client).txHost,
+        new JobQueueRegistry(),
+        { shutdownTimeoutMs: 10_000 },
+      ),
     );
 
     @Global()
@@ -164,13 +153,13 @@ describe("이메일 발송 큐 (실제 pg-boss + PostgreSQL)", () => {
 
     // Then
     expect(dispatch).toEqual({ status: "queued" });
-    await eventually(async () => {
+    await vi.waitFor(async () => {
       const jobs = await boss.findJobs(EMAIL_DELIVERY_QUEUE.name);
       expect(http.requests).toHaveLength(1);
       expect(jobs.every((job) => job.state === "completed")).toBe(true);
       expect(JSON.stringify(jobs.map((job) => job.data))).not.toContain(code);
       expect(JSON.stringify(jobs.map((job) => job.data))).not.toContain(recipient);
-    });
+    }, WORKER_WAIT);
     expect(http.requests).toHaveLength(1);
     expect(http.request().headers.get("idempotency-key")).toEqual(expect.any(String));
     expect(await http.request().json()).toEqual(
@@ -191,17 +180,17 @@ describe("이메일 발송 큐 (실제 pg-boss + PostgreSQL)", () => {
 
     // Then
     expect(results).toEqual([{ status: "queued" }, { status: "queued" }]);
-    await eventually(async () => {
+    await vi.waitFor(async () => {
       const jobs = await boss.findJobs(EMAIL_DELIVERY_QUEUE.name, {
         key: "user-report:delivery-duplicate",
       });
       expect(jobs).toHaveLength(1);
       expect(jobs[0]?.state).toBe("completed");
-    });
+    }, WORKER_WAIT);
     expect(http.requests).toHaveLength(1);
   });
 
-  it("일시 장애는 pg-boss가 backoff로 다시 불러 같은 멱등 키로 보내 성공한다", async () => {
+  it("일시 장애는 pg-boss가 다시 불러 같은 멱등 키로 보내 성공한다", async () => {
     // Given
     http = new StubResendHttp([
       resendResponseFixture("send.application-error.json", 500),
@@ -213,14 +202,14 @@ describe("이메일 발송 큐 (실제 pg-boss + PostgreSQL)", () => {
     await sender.sendUserReport(recipient, reportOf("delivery-retry"));
 
     // Then
-    await eventually(async () => {
+    await vi.waitFor(async () => {
       const [job] = await boss.findJobs(EMAIL_DELIVERY_QUEUE.name, {
         key: "user-report:delivery-retry",
       });
       expect(job?.state).toBe("completed");
-    });
+    }, WORKER_WAIT);
     expect(http.requests).toHaveLength(2);
     expect(http.request(0).headers.get("idempotency-key")).toBe("user-report:delivery-retry");
     expect(http.request(1).headers.get("idempotency-key")).toBe("user-report:delivery-retry");
-  }, 60_000);
+  });
 });

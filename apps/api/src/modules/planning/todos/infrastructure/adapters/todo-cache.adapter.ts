@@ -114,13 +114,9 @@ export class TodoCacheAdapter implements TodoCachePort {
       TODO_CACHE_TTL_MS.FRIEND_VIEW_GENERATION,
     );
 
-    await Promise.all([
-      this.#cacheService.delByPattern(
-        TodoCacheKey.friendTodosGenerationPattern(ownerUserId.value, previousGeneration),
-      ),
-      // v1은 더 이상 읽지 않지만 롤링 배포 중인 이전 인스턴스와 잔존 키를 함께 정리한다.
-      this.#cacheService.delByPattern(TodoCacheKey.friendTodosPattern(ownerUserId.value)),
-    ]);
+    await this.#cacheService.delByPattern(
+      TodoCacheKey.friendTodosGenerationPattern(ownerUserId.value, previousGeneration),
+    );
   }
 
   async #getFriendTodosGeneration(ownerUserId: UserId): Promise<string> {

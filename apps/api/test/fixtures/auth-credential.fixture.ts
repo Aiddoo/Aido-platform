@@ -25,6 +25,7 @@ import type {
   DailySendUsageReaderPort,
 } from "#api/modules/social/cheers/social-cheers.public";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { InMemoryEntitlementCache } from "#test/doubles/access/in-memory-entitlement-cache";
 import { InMemoryAuthAccountRepository } from "#test/doubles/identity/in-memory-auth-account.repository";
 import { InMemoryAuthLoginAttemptRepository } from "#test/doubles/identity/in-memory-auth-login-attempt.repository";
 import { InMemoryAuthSecurityLogRepository } from "#test/doubles/identity/in-memory-auth-security-log.repository";
@@ -141,6 +142,7 @@ export function createAuthCredentialFixture(
     verificationRepository,
     verificationCodeSecurity,
     cacheService,
+    entitlementCache: new InMemoryEntitlementCache(),
     pushDevices,
     emailSender,
     adminEventNotifier,

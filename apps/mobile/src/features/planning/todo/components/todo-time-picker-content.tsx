@@ -125,12 +125,11 @@ export function TodoTimePickerContent({
                       mode="time"
                       display="spinner"
                       is24Hour={preference.timeFormat === 'TWENTY_FOUR_HOUR'}
-                      onChange={(_event, pickedTime) => {
+                      onValueChange={(_event, pickedTime) => {
                         setIsAndroidPickerOpen(false);
-                        if (pickedTime) {
-                          setLocalTime(toHHmm(pickedTime, dateFormatContext.timeZone));
-                        }
+                        setLocalTime(toHHmm(pickedTime, dateFormatContext.timeZone));
                       }}
+                      onDismiss={() => setIsAndroidPickerOpen(false)}
                     />
                   )}
                 </>
@@ -146,10 +145,8 @@ export function TodoTimePickerContent({
                 mode="time"
                 display="spinner"
                 locale={getPickerLocale(resolvedLanguage, preference.timeFormat)}
-                onChange={(_event, pickedTime) => {
-                  if (pickedTime) {
-                    setLocalTime(toHHmm(pickedTime, dateFormatContext.timeZone));
-                  }
+                onValueChange={(_event, pickedTime) => {
+                  setLocalTime(toHHmm(pickedTime, dateFormatContext.timeZone));
                 }}
                 style={{ height: 216 }}
               />

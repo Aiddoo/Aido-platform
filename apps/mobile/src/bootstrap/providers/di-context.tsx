@@ -4,16 +4,13 @@ import type { IdGenerator } from '@src/core/ports/id-generator';
 import type { LocationGateway } from '@src/core/ports/location-gateway';
 import type { NativeApplicationMetadataGateway } from '@src/core/ports/native-application-metadata-gateway';
 import type { NetworkStatusGateway } from '@src/core/ports/network-status-gateway';
-import type { PurchasesGateway } from '@src/core/ports/purchases-gateway';
 import type { PushNotificationGateway } from '@src/core/ports/push-notification-gateway';
+import type { ScreenOrientationGateway } from '@src/core/ports/screen-orientation-gateway';
 import type { SocialAuthGateway } from '@src/core/ports/social-auth-gateway';
 import type { SpeechRecognizer } from '@src/core/ports/speech-recognizer';
-import type { Storage } from '@src/core/ports/storage';
-import type { TokenRefresher } from '@src/core/ports/token-refresher';
 import type { TokenStore } from '@src/core/ports/token-store';
 import type { ViewCaptureGateway } from '@src/core/ports/view-capture-gateway';
 import type { SessionEpoch } from '@src/core/session/session-epoch';
-import type { SessionManager } from '@src/core/session/session-manager';
 import type { AppVersionService } from '@src/features/app-config/app-version/apis/app-version.service';
 import type { FeatureCampaignService } from '@src/features/app-config/feature-campaign/apis/feature-campaign.service';
 import type { WhatsNewRepository } from '@src/features/app-config/whats-new/apis/whats-new.repository';
@@ -74,8 +71,8 @@ import { createContext, type PropsWithChildren, use } from 'react';
 
 import type { QueryCacheStorage } from '../query/query-cache-persistence';
 
+/** 화면이 `use{X}`로 꺼내는 것만 둔다. 조립에만 쓰는 포트는 `AppContainerPorts`에 있다 */
 export interface DIContainer extends SharedDependencies {
-  storage: Storage;
   deviceLocation: LocationGateway;
   clipboard: ClipboardGateway;
   applicationMetadata: NativeApplicationMetadataGateway;
@@ -83,24 +80,19 @@ export interface DIContainer extends SharedDependencies {
   appStoreListing: AppStoreListingGateway;
   networkStatus: NetworkStatusGateway;
   viewCapture: ViewCaptureGateway;
+  screenOrientation: ScreenOrientationGateway;
   idGenerator: IdGenerator;
   speechRecognizer: SpeechRecognizer;
-  /** 스토어 결제 SDK. 화면은 SubscriptionService로만 쓴다 */
-  purchasesGateway: PurchasesGateway;
   pushNotification: PushNotificationGateway;
   /** 토큰 키를 아는 유일한 곳 */
   tokenStore: TokenStore;
   authSessionStore: AuthSessionStore;
   /** 토큰이 지워질 때마다 올라가는 세션 세대 */
   sessionEpoch: SessionEpoch;
-  /** 세션 종료(토큰 삭제 + 만료 이벤트)의 유일한 소유자 */
-  sessionManager: SessionManager;
   /** 세션이 끝난 뒤 기기에 남은 계정 데이터를 정리한다 */
   sessionCleanupService: SessionCleanupService;
   /** 오프라인 로그아웃 뒤 온라인이 되면 서버 세션과 푸시 기기를 푼다 */
   sessionRevocationService: SessionRevocationService;
-  /** 앱 전체 단일 토큰 리프레셔 — auth-client의 401 훅이 공유 (single-flight) */
-  tokenRefresher: TokenRefresher;
   /** 오프라인 조회 캐시(사용자 범위 로컬 상태) */
   queryCacheStorage: QueryCacheStorage;
   recognitionLanguageRepository: RecognitionLanguageRepository;
@@ -167,9 +159,9 @@ interface StaticDIProviderProps extends PropsWithChildren {
 
 export function StaticDIProvider({ container, children }: StaticDIProviderProps) {
   return (
-    <DIContext.Provider value={container}>
-      <SharedDIContext.Provider value={container}>{children}</SharedDIContext.Provider>
-    </DIContext.Provider>
+    <DIContext value={container}>
+      <SharedDIContext value={container}>{children}</SharedDIContext>
+    </DIContext>
   );
 }
 
@@ -185,6 +177,7 @@ export {
   useLogger,
   /** @public */
   useSyncStorage,
+  useSystemShare,
 } from '@src/shared/di/shared-di-context';
 
 function useDI(): DIContainer {
@@ -214,6 +207,9 @@ export function useClipboard() {
 }
 export function useViewCapture() {
   return useDI().viewCapture;
+}
+export function useScreenOrientation() {
+  return useDI().screenOrientation;
 }
 export function useNetworkStatus() {
   return useDI().networkStatus;

@@ -7,8 +7,10 @@ import type {
   AuthSessionRotation,
 } from "#api/modules/identity/auth/domain/auth-session.aggregate";
 import { SessionId } from "#api/modules/identity/auth/domain/session-id.vo";
+import type { IdentityUser } from "#api/modules/identity/users/domain/identity-user.aggregate";
 import { InMemoryAuthSecurityLogRepository } from "#test/doubles/identity/in-memory-auth-security-log.repository";
 import { InMemoryAuthSessionRepository } from "#test/doubles/identity/in-memory-auth-session.repository";
+import { InMemoryAuthUserRepository } from "#test/doubles/identity/in-memory-auth-user.repository";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
@@ -17,6 +19,7 @@ import {
   AUTH_FIXTURE_SESSION_ID,
   AUTH_FIXTURE_USER_ID,
   createAuthSessionFixture,
+  createIdentityUserFixture,
 } from "#test/fixtures/identity/auth-session.fixture";
 import {
   StubAuthSessionCache,
@@ -27,6 +30,7 @@ import {
 import { AUTH_DEFAULTS } from "../../domain/auth.constants.js";
 import { AuthAlerts } from "../auth.alerts.js";
 import { AuthLogEvent } from "../auth.log-events.js";
+import type { AuthUserRepositoryPort } from "../ports/auth-user.repository.port.js";
 import type { VerifiedRefreshPayload } from "../read-models/auth-result.read-model.js";
 import { RefreshTokensUseCase } from "./refresh-tokens.use-case.js";
 
@@ -61,10 +65,23 @@ class RotationRaceSessionRepository extends InMemoryAuthSessionRepository {
   }
 }
 
+// 역할 조회가 DB 오류로 실패하는 경우를 만든다
+class FailingAuthUserRepository extends InMemoryAuthUserRepository {
+  override async findById(): Promise<IdentityUser | null> {
+    throw new Error("connection terminated");
+  }
+}
+
 describe("RefreshTokens — 세션 연장과 Refresh Token 재사용 방어", () => {
   function given(
     sessions: readonly AuthSession[] = [sessionWith()],
-    sessionRepository = new InMemoryAuthSessionRepository(sessions),
+    {
+      sessionRepository = new InMemoryAuthSessionRepository(sessions),
+      userRepository = new InMemoryAuthUserRepository([createIdentityUserFixture()]),
+    }: {
+      readonly sessionRepository?: InMemoryAuthSessionRepository;
+      readonly userRepository?: Pick<AuthUserRepositoryPort, "findById">;
+    } = {},
   ) {
     const tokenService = new StubAuthTokenIssuer();
     const cacheService = new StubAuthSessionCache(sessions.map((session) => session.id.value));
@@ -77,6 +94,7 @@ describe("RefreshTokens — 세션 연장과 Refresh Token 재사용 방어", ()
       pushDevices,
       sessionRepository,
       tokenService,
+      userRepository,
       cacheService,
       securityLogRepository,
       logger,
@@ -138,6 +156,61 @@ describe("RefreshTokens — 세션 연장과 Refresh Token 재사용 방어", ()
     expect(logs).not.toContain(refreshToken);
     expect(logs).not.toContain(result.tokens.accessToken);
   });
+
+  it("DB에서 USER로 내린 ADMIN은 refresh token의 ADMIN claim이 아니라 USER로 다시 발급받는다", async () => {
+    // Given
+    const fixture = given([sessionWith()], {
+      userRepository: new InMemoryAuthUserRepository([createIdentityUserFixture({ role: "USER" })]),
+    });
+
+    // When
+    await fixture.useCase.execute({
+      refreshToken,
+      verifiedPayload: { ...verifiedPayload, role: "ADMIN" },
+    });
+
+    // Then
+    expect(fixture.tokenService.issued.map((issued) => issued.role)).toEqual(["USER"]);
+    expect(fixture.logger.messages).not.toContainEqual(
+      expect.objectContaining({ event: AuthLogEvent.SESSION_REFRESH_ROLE_FALLBACK }),
+    );
+  });
+
+  it.each([
+    {
+      scenario: "사용자 행이 없으면",
+      userRepository: new InMemoryAuthUserRepository(),
+      fallback: { reason: "user-missing" },
+    },
+    {
+      scenario: "역할 조회가 실패하면",
+      userRepository: new FailingAuthUserRepository(),
+      fallback: { reason: "lookup-failed", errorType: "Error" },
+    },
+  ])(
+    "$scenario 갱신을 막지 않고 claim의 역할로 발급하며 경고를 남긴다",
+    async ({ userRepository, fallback }) => {
+      // Given
+      const fixture = given([sessionWith()], { userRepository });
+
+      // When
+      const result = await fixture.useCase.execute({
+        refreshToken,
+        verifiedPayload: { ...verifiedPayload, role: "ADMIN" },
+      });
+
+      // Then
+      expect(result.tokens.refreshToken).toBe(`refresh:${sessionId}:2`);
+      expect(fixture.tokenService.issued.map((issued) => issued.role)).toEqual(["ADMIN"]);
+      expect(fixture.sessionRepository.stored(sessionId)?.tokenVersion).toBe(2);
+      expect(fixture.logger.messages).toContainEqual({
+        event: AuthLogEvent.SESSION_REFRESH_ROLE_FALLBACK,
+        userId,
+        sessionId,
+        ...fallback,
+      });
+    },
+  );
 
   it.each([5000, 10_000])(
     "로테이션 후 %i ms의 이전 토큰은 네트워크 재시도로 한 번 회전한다",
@@ -349,7 +422,9 @@ describe("RefreshTokens — 세션 연장과 Refresh Token 재사용 방어", ()
   it("조건부 회전 쓰기가 경합에 지면 발급 결과를 반환하거나 앞선 회전을 덮어쓰지 않는다", async () => {
     // Given
     const sessions = [sessionWith()];
-    const fixture = given(sessions, new RotationRaceSessionRepository(sessions));
+    const fixture = given(sessions, {
+      sessionRepository: new RotationRaceSessionRepository(sessions),
+    });
 
     // When
     const pending = fixture.useCase.execute({ refreshToken, verifiedPayload });

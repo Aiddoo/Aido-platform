@@ -1,3 +1,4 @@
+import { EntitlementCacheInvalidatorPort } from "#api/modules/access/entitlements/access-entitlements.public";
 import { loggerFor, provideUseCase } from "#api/platform/di/provide-use-case";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
@@ -188,6 +189,7 @@ export const loginWithOAuthTokenProvider = provideUseCase(LoginWithOAuthTokenUse
   loginAttemptRepository: AuthLoginAttemptRepositoryPort,
   unitOfWork: UnitOfWorkPort,
   cacheService: AuthCachePort,
+  entitlementCache: EntitlementCacheInvalidatorPort,
   issueLoginUseCase: IssueLoginUseCase,
   provisionUserUseCase: ProvisionUserUseCase,
   restoreAccount: RestoreAccountUseCase,
@@ -209,6 +211,7 @@ export const loginWithPasswordProvider = provideUseCase(LoginWithPasswordUseCase
   issueLoginUseCase: IssueLoginUseCase,
   restoreAccount: RestoreAccountUseCase,
   cacheService: AuthCachePort,
+  entitlementCache: EntitlementCacheInvalidatorPort,
   unitOfWork: UnitOfWorkPort,
   clock: ClockPort,
   logger: loggerFor(LoginWithPasswordUseCase),
@@ -241,6 +244,7 @@ export const refreshTokensProvider = provideUseCase(RefreshTokensUseCase, {
   pushDevices: SessionPushDeviceReleaserPort,
   sessionRepository: AuthSessionRepositoryPort,
   tokenService: AuthTokenIssuerPort,
+  userRepository: AuthUserRepositoryPort,
   securityLogRepository: AuthSecurityLogRepositoryPort,
   cacheService: AuthCachePort,
   clock: ClockPort,

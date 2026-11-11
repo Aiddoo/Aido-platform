@@ -1,6 +1,6 @@
 # 관측(Observability) 가이드
 
-**Version**: 1.2.0 · **Last Updated**: 2026-11-07 · **Owner**: Aido Mobile Team
+**Version**: 1.3.0 · **Last Updated**: 2026-11-11 · **Owner**: Aido Mobile Team
 
 무엇을 언제 어디로 남기는지의 규칙이다. 이벤트 목록과 GA 콘솔 설정은 [측정 계획](../docs/analytics-measurement-plan.md)에 있다.
 
@@ -21,7 +21,7 @@
 
 ## 환경별 구현
 
-`shared/infra/observability/observability-env.ts`와 `di-provider.tsx`가 정한다.
+`shared/infra/observability/observability-env.ts`와 `create-device-ports.ts`가 정한다. 프로세스에 한 번 만들고 전역 `logger`도 이때 정한다(`composition-root.ts`).
 
 | 포트·설정                 | 운영                        | 개발·프리뷰                                           |
 | ------------------------- | --------------------------- | ----------------------------------------------------- |
@@ -95,7 +95,7 @@ errorReporter.addBreadcrumb({ category: 'navigation', message: '화면 이동', 
 
 ### User
 
-`useSyncUserIdentity`가 로그인하면 `setUserId(id)`, 비인증이면 `setUserId(null)`을 부른다. 내부 계정 id만 싣는다. `sendDefaultPii: false`다.
+`useSyncUserIdentity`가 로그인하면 `setUserId(id)`, 비인증이면 `setUserId(null)`을 부른다. 내부 계정 id만 싣는다. `sendDefaultPii: false`다. core의 `sendDefaultPii`는 `dataCollection`으로 대체 예정이지만 RN SDK 8은 `dataCollection`을 옵션에서 빼고 이 값으로 IP 추론(`infer_ip: never`)·라우트 URL·딥링크 수집을 가르므로 그대로 둔다.
 
 ### Session Replay
 
@@ -103,11 +103,15 @@ errorReporter.addBreadcrumb({ category: 'navigation', message: '화면 이동', 
 
 | 설정                       | 값                                                         |
 | -------------------------- | ---------------------------------------------------------- |
-| `replaysSessionSampleRate` | `0.1`                                                      |
-| `replaysOnErrorSampleRate` | `1`                                                        |
+| `replaysSessionSampleRate` | `0`                                                        |
+| `replaysOnErrorSampleRate` | `0.2`                                                      |
 | `mobileReplayIntegration`  | `maskAllText`·`maskAllImages`·`maskAllVectors` 모두 `true` |
 
-마스킹을 끄지 않는다. 할 일과 전사가 화면에 보이기 때문이다.
+마스킹을 끄지 않는다. 할 일과 전사가 화면에 보이기 때문이다. 상시 녹화는 무료 할당(월 50개)을 넘겨 30일에 541개가 버려졌다. 오류 녹화는 세션마다 한 개라 월 오류 약 200건 × 0.2 = 40개로 할당 안에 든다.
+
+### 서버와 trace 잇기
+
+`tracePropagationTargets`는 `ENV.API_URL`의 출처 하나다(`trace-propagation-targets.ts`). 외부 주소에는 `sentry-trace`·`baggage`를 붙이지 않는다. 비우면 SDK 기본값이 모든 주소라 빈 배열로 둔다. `tracesSampleRate`는 두지 않아 앱 span을 보내지 않고, 표본 여부는 서버가 정한다. 앱에는 화면 이동 span이 없어 앱을 다시 켜기 전까지 요청이 한 trace id를 쓴다.
 
 ### Severity
 
@@ -135,15 +139,15 @@ errorReporter.addBreadcrumb({ category: 'navigation', message: '화면 이동', 
 
 Sentry로 나가는 모든 오류(`Logger.error`, `ErrorReporter.captureException`)는 `shared/infra/observability/capture-error.ts`의 `captureError` 한 곳을 지난다. 이슈로 보낼지는 `shared/errors/classify-error-report.ts`의 `classifyErrorReport`만 판단하고 표는 `classify-error-report.test.ts`가 고정한다.
 
-| 오류                                                    | Sentry                                             | 비고                             |
-| ------------------------------------------------------- | -------------------------------------------------- | -------------------------------- |
-| 4xx `ApiError`, `BusinessError`(`code` 가진 Error)      | breadcrumb(`category: error`)                      | UI가 `Result`·토스트로 처리      |
-| 검증 실패(`ZodError`)                                   | breadcrumb                                         |                                  |
-| `NetworkError`, `TimeoutError`                          | breadcrumb                                         | 기기 상태                        |
-| `KeychainLockedError`                                   | breadcrumb                                         | 잠금은 재시도할 상태             |
-| `ServerError`(5xx)                                      | 이슈. `request_id` 태그(`X-Request-Id`)            | `ky-client`가 요청 헤더에서 채움 |
-| `ParseError`(응답 파싱 실패), 렌더 오류, 잡지 못한 오류 | 이슈. 호출부가 `feature` 태그(`error_boundary` 등) |                                  |
-| 5xx `ApiError`                                          | 이슈                                               | 방어용                           |
+| 오류                                                    | Sentry                                                                                                    | 비고                             |
+| ------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- | -------------------------------- |
+| 4xx `ApiError`, `BusinessError`(`code` 가진 Error)      | breadcrumb(`category: error`)                                                                             | UI가 `Result`·토스트로 처리      |
+| 검증 실패(`ZodError`)                                   | breadcrumb                                                                                                |                                  |
+| `NetworkError`, `TimeoutError`                          | breadcrumb                                                                                                | 기기 상태                        |
+| `KeychainLockedError`                                   | breadcrumb                                                                                                | 잠금은 재시도할 상태             |
+| `ServerError`(5xx)                                      | 이슈. `request_id` 태그(`X-Request-Id`)                                                                   | `ky-client`가 요청 헤더에서 채움 |
+| `ParseError`(응답 파싱 실패), 렌더 오류, 잡지 못한 오류 | 이슈. 호출부가 `feature` 태그(`error_boundary` 등). 앱 전체를 덮는 루트 오류 화면은 `root_error_boundary` |                                  |
+| 5xx `ApiError`                                          | 이슈                                                                                                      | 방어용                           |
 
 - 같은 `Error` 객체는 어느 경로로 몇 번 보고해도 한 번만 처리한다(`WeakSet`). 먼저 닿은 쪽의 태그가 남는다. 재현과 고정은 `capture-error.test.ts`다. 현재 호출부 중 한 오류를 양쪽으로 보내는 곳은 없었고, 어댑터 구조상 가능했던 이중 전송을 막았다.
 - 새 오류 종류를 breadcrumb로 낮추려면 `classifyErrorReport`와 그 테스트 표에 먼저 더한다. 호출부가 `captureException`을 아끼는 식으로 정하지 않는다.
@@ -199,14 +203,15 @@ Sentry로 나가는 모든 오류(`Logger.error`, `ErrorReporter.captureExceptio
 
 운영이 아닌 빌드는 `ErrorReporter`·`Logger`가 console이라 Sentry에 가지 않는다. 확인할 때는 개발 DSN을 넣은 Release 빌드를 쓰고 운영 DSN이 아닌지 먼저 본다.
 
-| 시나리오             | 방법                                                | 기대                                                                                                   |
-| -------------------- | --------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| 일부러 500           | QA 서버에서 목록 API가 500을 내게 한다              | 이슈 1건. `request_id` 태그가 서버 로그 `reqId`와 같다. 토스트와 재시도가 뜬다                         |
-| 일부러 4xx(404, 409) | 지운 할 일을 열기, 중복 요청                        | 이슈가 생기지 않는다. 다른 이슈의 breadcrumb에만 `error`·`http`로 남는다                               |
-| 비행기 모드·타임아웃 | 네트워크를 끊고 새로 고침                           | 이슈가 생기지 않는다                                                                                   |
-| 응답 파싱 실패       | 서버 응답 필드를 일부러 어긋나게 한다               | 이슈 1건(`ParseError`), `feature` 태그가 있다. breadcrumb에 `*.response-parse.failed`가 있다           |
-| 렌더 오류            | 개발용 화면에서 렌더 중 throw                       | 이슈 1건, `feature=error_boundary`, 오류 화면. 같은 오류가 두 번 올라오지 않는다                       |
-| 개인정보             | 메모·음성·댓글을 쓰고 위 오류를 낸 직후 이슈를 연다 | 이벤트 JSON에 본문·글자·토큰·이메일이 없다. 사용자는 내부 id뿐이다. 로그아웃 뒤 이벤트엔 사용자가 없다 |
+| 시나리오             | 방법                                                | 기대                                                                                                          |
+| -------------------- | --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| 일부러 500           | QA 서버에서 목록 API가 500을 내게 한다              | 이슈 1건. `request_id` 태그가 서버 로그 `reqId`와 같다. 토스트와 재시도가 뜬다                                |
+| 일부러 4xx(404, 409) | 지운 할 일을 열기, 중복 요청                        | 이슈가 생기지 않는다. 다른 이슈의 breadcrumb에만 `error`·`http`로 남는다                                      |
+| 비행기 모드·타임아웃 | 네트워크를 끊고 새로 고침                           | 이슈가 생기지 않는다                                                                                          |
+| 응답 파싱 실패       | 서버 응답 필드를 일부러 어긋나게 한다               | 이슈 1건(`ParseError`), `feature` 태그가 있다. breadcrumb에 `*.response-parse.failed`가 있다                  |
+| 렌더 오류            | 개발용 화면에서 렌더 중 throw                       | 이슈 1건, `feature=error_boundary`, 오류 화면. 같은 오류가 두 번 올라오지 않는다                              |
+| 루트 렌더 오류       | 루트 Provider 안에서 임시로 throw한 뒤 "다시 시도"  | 이슈 1건, `feature=root_error_boundary`. 다시 시도해도 로그인·피드·초안이 남고 저장소 실패 보고가 늘지 않는다 |
+| 개인정보             | 메모·음성·댓글을 쓰고 위 오류를 낸 직후 이슈를 연다 | 이벤트 JSON에 본문·글자·토큰·이메일이 없다. 사용자는 내부 id뿐이다. 로그아웃 뒤 이벤트엔 사용자가 없다        |
 
 ## 관련 코드
 
@@ -219,5 +224,5 @@ Sentry로 나가는 모든 오류(`Logger.error`, `ErrorReporter.captureExceptio
 | 개인정보 걸러내기 | `shared/infra/observability/scrub-sentry-event.ts`                                                                                                  |
 | 테스트 stub       | `shared/__tests__/create-logger-stub.ts`, `create-error-reporter-stub.ts`                                                                           |
 | 카탈로그·파사드   | `core/observability/telemetry-keys.ts`, `shared/analytics/{track,use-track}.ts`                                                                     |
-| 환경별 구현·DI    | `shared/infra/observability/observability-env.ts`, `bootstrap/providers/di-provider.tsx`                                                            |
+| 환경별 구현·DI    | `shared/infra/observability/observability-env.ts`, `bootstrap/providers/create-device-ports.ts`, `bootstrap/providers/composition-root.ts`          |
 | 계측 지점         | `shared/infra/http/api-failure-breadcrumb.ts`(http), `shared/hooks/use-screen-tracking.ts`(navigation), `bootstrap/hooks/use-auth-boot.ts`(session) |

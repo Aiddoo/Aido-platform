@@ -11,6 +11,7 @@ import { Chip, PressableFeedback } from 'heroui-native';
 
 import { SAMPLE_REPORT_IDS } from '../constants/sample-reports.constants';
 import type { AiReport } from '../domains/report.model';
+import { formatReportPeriodLabel } from '../utils/report-period.view-model';
 import { ReportTypeChip } from './report-type-chip';
 
 interface ReportRowProps {
@@ -48,7 +49,7 @@ export function ReportRow({ report, isSample, isLast = false }: ReportRowProps) 
 
             <VStack align="end">
               <Text size="b4" shade={7}>
-                {report.periodLabel}
+                {formatReportPeriodLabel(report, dateFormatContext)}
               </Text>
               <Text size="e1" shade={7} className="tabular-nums">
                 {formatDateKeyRange(

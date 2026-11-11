@@ -1,4 +1,4 @@
-import { useLogger, useNotificationBadgeService } from '@src/bootstrap/providers/di-context';
+import { useLogger } from '@src/bootstrap/providers/di-context';
 import type { ReceivedPushNotification } from '@src/core/ports/push-notification-gateway';
 import { SECOND_MS } from '@src/shared/constants/time-units';
 import { toError } from '@src/shared/errors';
@@ -23,7 +23,6 @@ export function useForegroundNotificationSync({
   isAuthenticated,
   invalidateByType,
 }: UseForegroundNotificationSyncOptions) {
-  const notificationBadgeService = useNotificationBadgeService();
   const queryClient = useQueryClient();
   const logger = useLogger();
   const syncNotification = useMemo(() => {
@@ -32,9 +31,9 @@ export function useForegroundNotificationSync({
     const flush = debounce(() => {
       const types = [...pendingTypes];
       pendingTypes.clear();
+      // 안 읽은 수도 함께 다시 받아 앱 아이콘 배지가 따라간다(`useNotificationBadgeSync`)
       const tasks: Promise<unknown>[] = [
         queryClient.invalidateQueries({ queryKey: NOTIFICATION_QUERY_KEYS.all }),
-        notificationBadgeService.syncBadgeCount(),
         ...types.map((type) => invalidateByType(type)),
       ];
 
@@ -56,7 +55,7 @@ export function useForegroundNotificationSync({
         flush.cancel();
       },
     };
-  }, [invalidateByType, logger, notificationBadgeService, queryClient]);
+  }, [invalidateByType, logger, queryClient]);
 
   useEffect(() => {
     return () => {

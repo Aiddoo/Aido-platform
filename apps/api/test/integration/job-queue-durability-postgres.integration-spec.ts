@@ -13,6 +13,7 @@ import {
 import { createDatabaseTransactionFixture } from "#test/setup/database-context";
 
 import { TestDatabase } from "../setup/test-database.js";
+import { FAST_JOB_POLLING_SECONDS, WORKER_WAIT } from "./helpers/fast-job-timing.js";
 
 const SCHEMA = "pgboss";
 
@@ -36,24 +37,9 @@ function documentQueue(
     name,
     payloadSchema: documentSchema,
     retry: RETRY,
-    worker: { localConcurrency: 1, pollingIntervalSeconds: 1 },
+    worker: { localConcurrency: 1, pollingIntervalSeconds: FAST_JOB_POLLING_SECONDS },
     ...overrides,
   });
-}
-
-async function eventually(assertion: () => Promise<void>, timeoutMs = 15_000): Promise<void> {
-  const deadline = Date.now() + timeoutMs;
-  let lastError: unknown;
-  while (Date.now() < deadline) {
-    try {
-      await assertion();
-      return;
-    } catch (error) {
-      lastError = error;
-      await new Promise((resolve) => setTimeout(resolve, 100));
-    }
-  }
-  throw lastError;
 }
 
 describe("PgBossJobQueueAdapter 내구성 통합 테스트 (실제 PostgreSQL)", () => {
@@ -116,23 +102,34 @@ describe("PgBossJobQueueAdapter 내구성 통합 테스트 (실제 PostgreSQL)",
     await jobQueue.work(queue, handled);
 
     // Then
-    await eventually(async () => {
+    await vi.waitFor(async () => {
       expect(handled).toHaveBeenCalledTimes(1);
       const jobs = await boss.findJobs(queue.name, { id: id ?? undefined });
       expect(jobs[0]?.state).toBe("completed");
-    });
+    }, WORKER_WAIT);
   });
 
   it("startAfter 전에는 처리하지 않고 이후에 처리한다", async () => {
     // Given
     const queue = documentQueue("integration-delayed");
     const handled = vi.fn().mockResolvedValue(undefined);
+    // pg-boss가 startAfter를 DB 시계와 비교하므로 지연도 DB 시계에서 잰다
+    const {
+      rows: [clock],
+    } = await testDatabase
+      .getClient()
+      .execute<{ nowMs: number }>(
+        sql`SELECT (extract(epoch FROM clock_timestamp()) * 1000)::float8 AS "nowMs"`,
+      );
+    if (clock == null) {
+      throw new Error("DB 시각을 읽지 못했다");
+    }
     await jobQueue.enqueue(
       queue,
       { documentId: 2 },
       {
         idempotencyKey: "delayed:2",
-        startAfter: Temporal.Now.instant().add({ milliseconds: 1200 }),
+        startAfter: Temporal.Instant.fromEpochMilliseconds(Math.ceil(clock.nowMs) + 3000),
       },
     );
 
@@ -140,11 +137,12 @@ describe("PgBossJobQueueAdapter 내구성 통합 테스트 (실제 PostgreSQL)",
     await jobQueue.work(queue, handled);
 
     // Then
-    await new Promise((resolve) => setTimeout(resolve, 300));
+    // 일어나지 않음을 보는 확인이라 등록 직후 fetch와 polling 한 번이 지날 만큼만 기다린다
+    await new Promise((resolve) => setTimeout(resolve, 600));
     expect(handled).not.toHaveBeenCalled();
-    await eventually(async () => {
+    await vi.waitFor(async () => {
       expect(handled).toHaveBeenCalledTimes(1);
-    });
+    }, WORKER_WAIT);
   });
 
   it("enqueueMany는 한 번에 등록하고 이미 있는 idempotencyKey는 enqueue처럼 건너뛴다", async () => {
@@ -180,7 +178,7 @@ describe("PgBossJobQueueAdapter 내구성 통합 테스트 (실제 PostgreSQL)",
     await jobQueue.work(queue, handled);
 
     // Then
-    await eventually(async () => {
+    await vi.waitFor(async () => {
       expect(handled).toHaveBeenCalledTimes(2);
       const deadJobs = await boss.findJobs(deadLetterQueue.name);
       expect(deadJobs).toHaveLength(1);
@@ -192,7 +190,7 @@ describe("PgBossJobQueueAdapter 내구성 통합 테스트 (실제 PostgreSQL)",
         retryDelay: 1,
         retryBackoff: false,
       });
-    }, 20_000);
+    }, WORKER_WAIT);
   });
 
   it("같은 스케줄 key 등록은 하나의 스케줄로 교체된다", async () => {
@@ -233,11 +231,11 @@ describe("PgBossJobQueueAdapter 내구성 통합 테스트 (실제 PostgreSQL)",
     await jobQueue.work(queue, handled);
 
     // Then
-    await eventually(async () => {
+    await vi.waitFor(async () => {
       expect(handled).toHaveBeenCalledTimes(1);
       const jobs = await boss.findJobs(queue.name, { id: id ?? undefined });
       expect(jobs[0]?.state).toBe("completed");
-    });
+    }, WORKER_WAIT);
   });
 
   it("업무 트랜잭션 rollback 시 업무 row와 queue row가 함께 사라진다", async () => {
