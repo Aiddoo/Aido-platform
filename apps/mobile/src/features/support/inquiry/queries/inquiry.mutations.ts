@@ -1,6 +1,5 @@
 import { useHaptics, useInquiryService } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
-import { getUserFacingMessage } from '@src/shared/errors';
 import { t } from '@src/shared/i18n';
 import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { mutationOptions } from '@tanstack/react-query';
@@ -21,9 +20,6 @@ export function useCreateInquiryMutationOptions() {
       haptics.notify('success');
       toast.success(t('inquiry:toasts.submitted'));
     },
-    onError: (error) => {
-      haptics.notify('error');
-      toast.error(getUserFacingMessage(error), { fallback: t('inquiry:toasts.submitFailed') });
-    },
+    meta: { errorFeedback: { feature: 'inquiry', fallbackKey: 'inquiry:toasts.submitFailed' } },
   });
 }

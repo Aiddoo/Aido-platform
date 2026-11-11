@@ -1,5 +1,4 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, FormStepLayout, Input, KeyboardAdaptiveButton } from '@src/shared/ui';
@@ -19,7 +18,6 @@ interface EditNameFormProps {
 export function EditNameForm({ title }: EditNameFormProps) {
   const { t } = useTranslation('user');
   const navigation = useNavigation();
-  const reportUnexpectedError = useReportUnexpectedError('user');
   const goBack = useSingleTap(router.back);
   const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
   const updateProfile = useMutation(useUpdateProfileMutationOptions());
@@ -40,8 +38,8 @@ export function EditNameForm({ title }: EditNameFormProps) {
       if (navigation.isFocused()) {
         goBack();
       }
-    } catch (error) {
-      reportUnexpectedError(error);
+    } catch {
+      // 실패 안내와 보고는 mutation의 meta.errorFeedback이 맡는다
     }
   });
   const handleSubmit = useSingleTap(() => submitName());

@@ -4,7 +4,6 @@ import type { Todo } from '@src/features/planning/todo/domains/todo.model';
 import { useTodoId } from '@src/features/planning/todo/hooks/use-todo-params';
 import { useTodoSheetDateKey } from '@src/features/planning/todo/hooks/use-todo-sheet-date-key';
 import { useGetTodosByDateQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
-import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
 import { useRetainedValue } from '@src/shared/hooks/use-retained-value';
 import { Box, HStack, VStack } from '@src/shared/ui';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
@@ -54,7 +53,6 @@ function AddSubTodoForm({ todo, onClose }: { todo: Todo; onClose: () => void }) 
   });
   const { isValid } = useFormState({ control: form.control });
   const addSubTodo = useMutation(useAddSubTodoMutationOptions());
-  const reportUnexpectedError = useReportUnexpectedError('todo');
   const isSubmitDisabled = !isValid || addSubTodo.isPending;
 
   // 저장 중에는 아무 일도 하지 않는다. 시트를 닫으면 저장 결과를 볼 수 없다. 빈 제목은 저장 대신 닫는다
@@ -77,9 +75,7 @@ function AddSubTodoForm({ todo, onClose }: { todo: Todo; onClose: () => void }) 
 
     try {
       await addSubTodo.mutateAsync({ todoId: todo.id, title, date });
-    } catch (error) {
-      reportUnexpectedError(error);
-
+    } catch {
       return;
     }
 

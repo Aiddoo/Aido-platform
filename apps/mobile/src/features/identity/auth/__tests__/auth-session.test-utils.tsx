@@ -2,6 +2,7 @@ import { AuthBootProvider } from '@src/bootstrap/providers/auth-boot-provider';
 import { type DIContainer, StaticDIProvider } from '@src/bootstrap/providers/di-context';
 import { GestureHandlerProvider } from '@src/bootstrap/providers/gesture-handler-provider';
 import { HeroUIProvider } from '@src/bootstrap/providers/hero-ui-provider';
+import { MutationErrorFeedback } from '@src/bootstrap/query/mutation-error-feedback';
 import { createQueryCacheStorage } from '@src/bootstrap/query/query-cache-persistence';
 import { ok } from '@src/core/errors/result';
 import type { AuthTokenPair, TokenStore } from '@src/core/ports/token-store';
@@ -85,6 +86,7 @@ export function createAuthSession({ tokens, tokenStore, di }: AuthSessionOptions
             <HeroUIProvider
               config={{ animation: 'disable-all', devInfo: { stylingPrinciples: false } }}
             >
+              <MutationErrorFeedback />
               <LocalDateProvider>
                 <AuthBootProvider>{children}</AuthBootProvider>
               </LocalDateProvider>

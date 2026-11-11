@@ -7,7 +7,6 @@ import {
 import { unwrap } from '@src/core/errors/result';
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
 import { useTrack } from '@src/shared/analytics';
-import { getUserFacingMessage } from '@src/shared/errors';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { t } from '@src/shared/i18n';
 import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
@@ -40,6 +39,19 @@ import {
   type VerifyEmailInput,
 } from '../schemas/auth-request.schema';
 
+/** 인증 코드가 틀렸거나 만료됐거나 시도를 다 썼다. 코드마다 다른 문구로 알린다 */
+function getVerificationCodeMessage(error: unknown) {
+  return match(error)
+    .when(isVerificationCodeInvalidError, () => t('auth:toasts.codeInvalid'))
+    .when(isVerificationCodeExpiredError, () => t('auth:toasts.codeExpired'))
+    .when(isVerificationAttemptsExceededError, () => t('auth:toasts.codeAttemptsExceeded'))
+    .otherwise(() => null);
+}
+
+function isVerificationCodeRejection(error: unknown) {
+  return getVerificationCodeMessage(error) != null;
+}
+
 // 인증 폼은 오프라인에 스피너로 멈추지 않고 바로 실패해 입력값을 둔 채 안내한다
 export function useEmailLoginMutationOptions() {
   const haptics = useHaptics();
@@ -64,11 +76,14 @@ export function useEmailLoginMutationOptions() {
       if (isEmailNotVerifiedError(error)) {
         haptics.notify('error');
         push({ pathname: '/(auth)/verify-email', params: { email: variables.email } });
-        return;
       }
-
-      haptics.notify('error');
-      toast.error(getUserFacingMessage(error), { fallback: t('auth:toasts.loginFailed') });
+    },
+    meta: {
+      errorFeedback: {
+        feature: 'auth',
+        fallbackKey: 'auth:toasts.loginFailed',
+        isHandledByFeature: isEmailNotVerifiedError,
+      },
     },
   });
 }
@@ -93,13 +108,17 @@ export function useExchangeCodeMutationOptions() {
       trackEvent(data.isNewUser ? 'auth_signup' : 'auth_login', { method: variables.provider });
     },
     onError: (error) => {
-      haptics.notify('error');
       // 사용자가 직접 닫은 소셜 인증 창은 실패 문구 없이 햅틱만 울린다
       if (isLoginCancelledError(error)) {
-        return;
+        haptics.notify('error');
       }
-
-      toast.error(getUserFacingMessage(error), { fallback: t('auth:toasts.loginFailed') });
+    },
+    meta: {
+      errorFeedback: {
+        feature: 'auth',
+        fallbackKey: 'auth:toasts.loginFailed',
+        isHandledByFeature: isLoginCancelledError,
+      },
     },
   });
 }
@@ -123,13 +142,17 @@ export function useOpenAppleLoginMutationOptions() {
       trackEvent(data.isNewUser ? 'auth_signup' : 'auth_login', { method: 'apple' });
     },
     onError: (error) => {
-      haptics.notify('error');
       // 사용자가 직접 닫은 소셜 인증 창은 실패 문구 없이 햅틱만 울린다
       if (isLoginCancelledError(error)) {
-        return;
+        haptics.notify('error');
       }
-
-      toast.error(getUserFacingMessage(error), { fallback: t('auth:toasts.loginFailed') });
+    },
+    meta: {
+      errorFeedback: {
+        feature: 'auth',
+        fallbackKey: 'auth:toasts.loginFailed',
+        isHandledByFeature: isLoginCancelledError,
+      },
     },
   });
 }
@@ -137,19 +160,22 @@ export function useOpenAppleLoginMutationOptions() {
 export function useOpenGoogleLoginMutationOptions() {
   const authService = useAuthService();
   const haptics = useHaptics();
-  const toast = useAppToast();
 
   return mutationOptions({
     networkMode: 'always',
     mutationFn: async () => unwrap(await authService.openGoogleLogin()),
     onError: (error) => {
-      haptics.notify('error');
       // 사용자가 직접 닫은 소셜 인증 창은 실패 문구 없이 햅틱만 울린다
       if (isLoginCancelledError(error)) {
-        return;
+        haptics.notify('error');
       }
-
-      toast.error(getUserFacingMessage(error), { fallback: t('auth:toasts.loginFailed') });
+    },
+    meta: {
+      errorFeedback: {
+        feature: 'auth',
+        fallbackKey: 'auth:toasts.loginFailed',
+        isHandledByFeature: isLoginCancelledError,
+      },
     },
   });
 }
@@ -157,19 +183,22 @@ export function useOpenGoogleLoginMutationOptions() {
 export function useOpenKakaoLoginMutationOptions() {
   const authService = useAuthService();
   const haptics = useHaptics();
-  const toast = useAppToast();
 
   return mutationOptions({
     networkMode: 'always',
     mutationFn: async () => unwrap(await authService.openKakaoLogin()),
     onError: (error) => {
-      haptics.notify('error');
       // 사용자가 직접 닫은 소셜 인증 창은 실패 문구 없이 햅틱만 울린다
       if (isLoginCancelledError(error)) {
-        return;
+        haptics.notify('error');
       }
-
-      toast.error(getUserFacingMessage(error), { fallback: t('auth:toasts.loginFailed') });
+    },
+    meta: {
+      errorFeedback: {
+        feature: 'auth',
+        fallbackKey: 'auth:toasts.loginFailed',
+        isHandledByFeature: isLoginCancelledError,
+      },
     },
   });
 }
@@ -177,19 +206,22 @@ export function useOpenKakaoLoginMutationOptions() {
 export function useOpenNaverLoginMutationOptions() {
   const authService = useAuthService();
   const haptics = useHaptics();
-  const toast = useAppToast();
 
   return mutationOptions({
     networkMode: 'always',
     mutationFn: async () => unwrap(await authService.openNaverLogin()),
     onError: (error) => {
-      haptics.notify('error');
       // 사용자가 직접 닫은 소셜 인증 창은 실패 문구 없이 햅틱만 울린다
       if (isLoginCancelledError(error)) {
-        return;
+        haptics.notify('error');
       }
-
-      toast.error(getUserFacingMessage(error), { fallback: t('auth:toasts.loginFailed') });
+    },
+    meta: {
+      errorFeedback: {
+        feature: 'auth',
+        fallbackKey: 'auth:toasts.loginFailed',
+        isHandledByFeature: isLoginCancelledError,
+      },
     },
   });
 }
@@ -212,6 +244,7 @@ export function useLogoutMutationOptions() {
       clearUser();
       signOut();
     },
+    meta: { errorFeedback: false },
   });
 }
 
@@ -244,11 +277,14 @@ export function useDeleteAccountMutationOptions() {
       if (isPasswordMismatchError(error)) {
         haptics.notify('error');
         toast.error(t('auth:toasts.passwordMismatch'));
-        return;
       }
-
-      haptics.notify('error');
-      toast.error(getUserFacingMessage(error), { fallback: t('auth:toasts.deleteAccountFailed') });
+    },
+    meta: {
+      errorFeedback: {
+        feature: 'auth',
+        fallbackKey: 'auth:toasts.deleteAccountFailed',
+        isHandledByFeature: isPasswordMismatchError,
+      },
     },
   });
 }
@@ -280,18 +316,19 @@ export function useRegisterMutationOptions() {
             },
           },
         });
-        return;
       }
-
-      haptics.notify('error');
-      toast.error(getUserFacingMessage(error), { fallback: t('auth:toasts.registerFailed') });
+    },
+    meta: {
+      errorFeedback: {
+        feature: 'auth',
+        fallbackKey: 'auth:toasts.registerFailed',
+        isHandledByFeature: isEmailAlreadyRegisteredError,
+      },
     },
   });
 }
 
 export function useVerifyEmailMutationOptions() {
-  const haptics = useHaptics();
-  const toast = useAppToast();
   const authService = useAuthService();
   const { signIn } = useAuthSession();
 
@@ -301,15 +338,11 @@ export function useVerifyEmailMutationOptions() {
     onSuccess: () => {
       signIn();
     },
-    onError: (error) => {
-      haptics.notify('error');
-      toast.error(getUserFacingMessage(error), { fallback: t('auth:toasts.codeInvalid') });
-    },
+    meta: { errorFeedback: { feature: 'auth', fallbackKey: 'auth:toasts.codeInvalid' } },
   });
 }
 
 export function useResendVerificationMutationOptions() {
-  const haptics = useHaptics();
   const authService = useAuthService();
   const toast = useAppToast();
 
@@ -320,26 +353,18 @@ export function useResendVerificationMutationOptions() {
     onSuccess: () => {
       toast.success(t('auth:toasts.codeResent'));
     },
-    onError: (error) => {
-      haptics.notify('error');
-      toast.error(getUserFacingMessage(error), { fallback: t('auth:toasts.codeResendFailed') });
-    },
+    meta: { errorFeedback: { feature: 'auth', fallbackKey: 'auth:toasts.codeResendFailed' } },
   });
 }
 
 export function useForgotPasswordMutationOptions() {
-  const haptics = useHaptics();
-  const toast = useAppToast();
   const authService = useAuthService();
 
   return mutationOptions({
     networkMode: 'always',
     mutationFn: async (input: ForgotPasswordInput) =>
       unwrap(await authService.forgotPassword(input)),
-    onError: (error) => {
-      haptics.notify('error');
-      toast.error(getUserFacingMessage(error), { fallback: t('auth:toasts.requestFailed') });
-    },
+    meta: { errorFeedback: { feature: 'auth', fallbackKey: 'auth:toasts.requestFailed' } },
   });
 }
 
@@ -358,19 +383,18 @@ export function useResetPasswordMutationOptions() {
       replace('/(auth)/email-login');
     },
     onError: (error) => {
-      const codeMessage = match(error)
-        .when(isVerificationCodeInvalidError, () => t('auth:toasts.codeInvalid'))
-        .when(isVerificationCodeExpiredError, () => t('auth:toasts.codeExpired'))
-        .when(isVerificationAttemptsExceededError, () => t('auth:toasts.codeAttemptsExceeded'))
-        .otherwise(() => null);
+      const codeMessage = getVerificationCodeMessage(error);
       if (codeMessage != null) {
         haptics.notify('error');
         toast.error(codeMessage);
-        return;
       }
-
-      haptics.notify('error');
-      toast.error(getUserFacingMessage(error), { fallback: t('auth:toasts.passwordResetFailed') });
+    },
+    meta: {
+      errorFeedback: {
+        feature: 'auth',
+        fallbackKey: 'auth:toasts.passwordResetFailed',
+        isHandledByFeature: isVerificationCodeRejection,
+      },
     },
   });
 }
@@ -394,11 +418,14 @@ export function useChangePasswordMutationOptions() {
       if (isPasswordMismatchError(error)) {
         haptics.notify('error');
         toast.error(t('auth:toasts.currentPasswordMismatch'));
-        return;
       }
-
-      haptics.notify('error');
-      toast.error(getUserFacingMessage(error), { fallback: t('auth:toasts.passwordChangeFailed') });
+    },
+    meta: {
+      errorFeedback: {
+        feature: 'auth',
+        fallbackKey: 'auth:toasts.passwordChangeFailed',
+        isHandledByFeature: isPasswordMismatchError,
+      },
     },
   });
 }
@@ -425,19 +452,22 @@ export function useLinkAccountMutationOptions() {
       await queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEYS.linkedAccounts() });
     },
     onError: (error) => {
-      haptics.notify('error');
       // 사용자가 직접 닫은 소셜 인증 창은 실패 문구 없이 햅틱만 울린다
       if (isLoginCancelledError(error)) {
-        return;
+        haptics.notify('error');
       }
-
-      toast.error(getUserFacingMessage(error), { fallback: t('auth:toasts.linkFailed') });
+    },
+    meta: {
+      errorFeedback: {
+        feature: 'auth',
+        fallbackKey: 'auth:toasts.linkFailed',
+        isHandledByFeature: isLoginCancelledError,
+      },
     },
   });
 }
 
 export function useUnlinkAccountMutationOptions() {
-  const haptics = useHaptics();
   const authService = useAuthService();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
@@ -457,9 +487,6 @@ export function useUnlinkAccountMutationOptions() {
       // 화면에 머무는 행이라 새 연결 상태를 받을 때까지 버튼을 꺼 둔다. 옛 버튼을 다시 눌러 요청이 또 가지 않게 한다
       await queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEYS.linkedAccounts() });
     },
-    onError: (error) => {
-      haptics.notify('error');
-      toast.error(getUserFacingMessage(error), { fallback: t('auth:toasts.unlinkFailed') });
-    },
+    meta: { errorFeedback: { feature: 'auth', fallbackKey: 'auth:toasts.unlinkFailed' } },
   });
 }

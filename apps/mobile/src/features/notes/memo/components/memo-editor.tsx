@@ -14,7 +14,6 @@ import { useDraftStorage } from '@src/shared/draft/use-draft-storage';
 import { useFormDraftAutosave } from '@src/shared/draft/use-form-draft-autosave';
 import { isConnectivityError } from '@src/shared/errors';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
-import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useToday } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
@@ -579,7 +578,6 @@ function MemoDeleteDialog({ isOpen, onOpenChange, onDeleted }: MemoDeleteDialogP
 
 /** 입력값·초안·편집 상태와 저장을 맡는다. 저장은 saveChanges 하나이고 andThen이 저장 뒤의 일을 고른다 */
 function useMemoEditing({ onLeave }: Pick<MemoEditorProps, 'onLeave'>) {
-  const reportUnexpectedError = useReportUnexpectedError('memo');
   const { t } = useTranslation('memo');
   const toast = useAppToast();
   const [memoId] = useMemoId();
@@ -680,7 +678,6 @@ function useMemoEditing({ onLeave }: Pick<MemoEditorProps, 'onLeave'>) {
 
       return savedMemo;
     } catch (error) {
-      reportUnexpectedError(error);
       // 연결 문제로 못 보낸 글자는 초안에 남으니 화면에 가두지 않는다
       if (andThen === 'leave' && isConnectivityError(error)) {
         onLeave();

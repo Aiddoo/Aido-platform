@@ -1,5 +1,4 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
 import { useRetainedValue } from '@src/shared/hooks/use-retained-value';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
@@ -14,6 +13,7 @@ import {
   useSheetRoute,
 } from '@src/shared/ui';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
+import { noop } from 'es-toolkit';
 import { type ComponentProps, Suspense, useEffect } from 'react';
 import { useForm, useFormState } from 'react-hook-form';
 
@@ -90,7 +90,6 @@ interface CategoryEditFormProps extends Omit<
 
 function CategoryEditForm({ category, onClose, ...props }: CategoryEditFormProps) {
   const { t } = useTranslation('common');
-  const reportUnexpectedError = useReportUnexpectedError('todo');
   const updateCategory = useMutation(useUpdateTodoCategoryMutationOptions());
 
   const form = useForm({
@@ -107,11 +106,9 @@ function CategoryEditForm({ category, onClose, ...props }: CategoryEditFormProps
       return;
     }
 
-    try {
-      await updateCategory.mutateAsync({ id: category.id, input: values }, { onSuccess: onClose });
-    } catch (error) {
-      reportUnexpectedError(error);
-    }
+    await updateCategory
+      .mutateAsync({ id: category.id, input: values }, { onSuccess: onClose })
+      .catch(noop);
   });
   const handleSubmit = useSingleTap(() => submitCategory());
 

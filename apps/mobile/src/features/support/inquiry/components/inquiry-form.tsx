@@ -1,7 +1,6 @@
 import { INQUIRY_CONTENT_LIMITS } from '@aido/api/vocabulary';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
-import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
 import { useRouteParams } from '@src/shared/hooks/use-route-params';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
@@ -33,7 +32,6 @@ export function InquiryForm({ title }: InquiryFormProps) {
   const { t } = useTranslation('inquiry');
   const { locale } = useDateFormatContext();
   const navigation = useNavigation();
-  const reportUnexpectedError = useReportUnexpectedError('inquiry');
   const goBack = useSingleTap(router.back);
 
   const createInquiry = useMutation(useCreateInquiryMutationOptions());
@@ -52,8 +50,8 @@ export function InquiryForm({ title }: InquiryFormProps) {
       if (navigation.isFocused()) {
         goBack();
       }
-    } catch (error) {
-      reportUnexpectedError(error);
+    } catch {
+      // 실패 안내와 보고는 mutation의 meta.errorFeedback이 맡는다
     }
   });
   const handleSubmit = useSingleTap(() => submitInquiry());

@@ -13,6 +13,7 @@ import { SubTodoPolicy } from '@src/features/planning/todo/domains/sub-todo.mode
 import {
   findTodoSeriesFailure,
   getTodoSeriesLimit,
+  isTodoSeriesFailure,
   shouldRefreshTodos,
 } from '@src/features/planning/todo/domains/todo-series.error';
 import {
@@ -47,7 +48,6 @@ import type {
   TodoSeriesEditOptions,
 } from '@src/features/planning/todo/schemas/todo-series-request.schema';
 import { useTrack } from '@src/shared/analytics';
-import { getUserFacingMessage } from '@src/shared/errors';
 import { t } from '@src/shared/i18n';
 import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { createOptimisticId } from '@src/shared/utils/create-optimistic-id';
@@ -55,6 +55,11 @@ import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 interface CreateTodoVariables {
   input: CreateTodoInput;
+}
+
+/** 반복 묶음 오류와 반복 할 일의 카테고리 한도는 onError가 따로 안내한다 */
+function isRecurringTodoRejection(error: unknown) {
+  return isTodoSeriesFailure(error) || isRecurringCategoryTodoLimitError(error);
 }
 
 export function useCreateTodoMutationOptions() {
@@ -146,13 +151,7 @@ export function useCreateTodoMutationOptions() {
       if (isCategoryTodoLimitError(error)) {
         haptics.notify('error');
         toast.error(t('todo:toast.categoryLimitReached'));
-        return;
       }
-
-      haptics.notify('error');
-      toast.error(getUserFacingMessage(error), {
-        fallback: t('todo:toast.addFailedRetry'),
-      });
     },
     onSettled: (_saved, error, { input }, context) => {
       settleTodoWrite(queryClient, {
@@ -162,6 +161,13 @@ export function useCreateTodoMutationOptions() {
         hasFailed: error != null || context?.optimisticId == null,
         ticket: context?.ticket,
       });
+    },
+    meta: {
+      errorFeedback: {
+        feature: 'todo',
+        fallbackKey: 'todo:toast.addFailedRetry',
+        isHandledByFeature: isCategoryTodoLimitError,
+      },
     },
   });
 }
@@ -177,8 +183,6 @@ export function useAddSubTodoMutationOptions() {
   const subTodoService = useSubTodoService();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
-  const haptics = useHaptics();
-  const toast = useAppToast();
 
   return mutationOptions({
     // 연결이 없을 때 요청을 쥐고 기다리면 저장 시트가 스피너만 돈다. 바로 실패해 입력값을 지킨다
@@ -218,12 +222,7 @@ export function useAddSubTodoMutationOptions() {
       );
       trackEvent('todo_item_added', { todo_id: todoId });
     },
-    onError: (error, { todoId, date }, context) => {
-      haptics.notify('error');
-      toast.error(getUserFacingMessage(error), {
-        fallback: t('todo:toast.subTodoAddFailed'),
-      });
-
+    onError: (_error, { todoId, date }, context) => {
       if (context != null) {
         updateCachedTodo(queryClient, { date, todoId }, (todo) => ({
           ...SubTodoPolicy.withSubTodoRemoved(todo, context.optimisticId),
@@ -246,6 +245,7 @@ export function useAddSubTodoMutationOptions() {
         extra: wasCompleted ? getTodoExistenceFilters() : [],
       });
     },
+    meta: { errorFeedback: { feature: 'todo', fallbackKey: 'todo:toast.subTodoAddFailed' } },
   });
 }
 
@@ -305,13 +305,14 @@ export function useCreateRecurringTodoMutationOptions() {
       if (isRecurringCategoryTodoLimitError(error)) {
         haptics.notify('error');
         toast.error(t('todo:toast.recurringCategoryLimit'));
-        return;
       }
-
-      haptics.notify('error');
-      toast.error(getUserFacingMessage(error), {
-        fallback: t('todo:toast.addFailedRetry'),
-      });
+    },
+    meta: {
+      errorFeedback: {
+        feature: 'todo',
+        fallbackKey: 'todo:toast.addFailedRetry',
+        isHandledByFeature: isRecurringTodoRejection,
+      },
     },
   });
 }
@@ -328,8 +329,6 @@ export function useUpdateSubTodoMutationOptions() {
   const subTodoService = useSubTodoService();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
-  const haptics = useHaptics();
-  const toast = useAppToast();
 
   return mutationOptions({
     // 연결이 없을 때 요청을 쥐고 기다리면 저장 시트가 스피너만 돈다. 바로 실패해 입력값을 지킨다
@@ -361,11 +360,7 @@ export function useUpdateSubTodoMutationOptions() {
     onSuccess: (_data, { todoId, subTodoId }) => {
       trackEvent('todo_item_updated', { todo_id: todoId, item_id: subTodoId });
     },
-    onError: (error, { todoId, subTodoId, date }, context) => {
-      haptics.notify('error');
-      toast.error(getUserFacingMessage(error), {
-        fallback: t('todo:toast.subTodoUpdateFailed'),
-      });
+    onError: (_error, { todoId, subTodoId, date }, context) => {
       const previousTitle = context?.previousTitle;
       if (previousTitle != null) {
         updateCachedTodo(queryClient, { date, todoId }, (todo) =>
@@ -383,6 +378,7 @@ export function useUpdateSubTodoMutationOptions() {
         ticket: context?.ticket,
       });
     },
+    meta: { errorFeedback: { feature: 'todo', fallbackKey: 'todo:toast.subTodoUpdateFailed' } },
   });
 }
 
@@ -441,13 +437,14 @@ export function useUpdateTodoMutationOptions() {
           }),
           { description: t(`todo:toast.series.${seriesFailure}.description`) },
         );
-        return;
       }
-
-      haptics.notify('error');
-      toast.error(getUserFacingMessage(error), {
-        fallback: t('todo:toast.updateFailedRetry'),
-      });
+    },
+    meta: {
+      errorFeedback: {
+        feature: 'todo',
+        fallbackKey: 'todo:toast.updateFailedRetry',
+        isHandledByFeature: isTodoSeriesFailure,
+      },
     },
   });
 }

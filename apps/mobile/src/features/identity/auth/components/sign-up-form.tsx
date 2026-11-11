@@ -1,5 +1,4 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
 import { type Stepper } from '@src/shared/hooks/use-stepper';
 import { useMutation } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
@@ -40,7 +39,6 @@ export function SignUpForm({ stepper }: SignUpFormProps) {
     },
     mode: 'onTouched',
   });
-  const reportUnexpectedError = useReportUnexpectedError('auth');
   const register = useMutation(useRegisterMutationOptions());
   const verify = useMutation(useVerifyEmailMutationOptions());
   const resend = useMutation(useResendVerificationMutationOptions());
@@ -66,8 +64,7 @@ export function SignUpForm({ stepper }: SignUpFormProps) {
             });
             stepper.history.replace('verification', { email: input.email });
             resolve(true);
-          } catch (error) {
-            reportUnexpectedError(error);
+          } catch {
             resolve(false);
           }
         },

@@ -1,9 +1,6 @@
-import { useHaptics, useSubTodoService } from '@src/bootstrap/providers/di-context';
+import { useSubTodoService } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
 import { useTrack } from '@src/shared/analytics';
-import { getUserFacingMessage } from '@src/shared/errors';
-import { t } from '@src/shared/i18n';
-import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 import { TODO_MUTATION_KEYS } from '../constants/todo-mutation-keys';
@@ -25,11 +22,9 @@ interface ToggleSubTodoVariables {
 }
 
 export function useToggleSubTodoMutationOptions() {
-  const haptics = useHaptics();
   const subTodoService = useSubTodoService();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
-  const toast = useAppToast();
 
   return mutationOptions({
     // 응답까지 이 체크박스가 꺼진다. 오프라인에 멈춰 두면 연결될 때까지 꺼진 채 남으니 바로 실패해 되돌리고 알린다
@@ -61,12 +56,10 @@ export function useToggleSubTodoMutationOptions() {
         is_completed: isCompleted,
       });
     },
-    onError: (error, { todoId, subTodoId, isCompleted, date }) => {
+    onError: (_error, { todoId, subTodoId, isCompleted, date }) => {
       updateCachedTodo(queryClient, { date, todoId }, (todo) =>
         SubTodoPolicy.withSubTodoCompleted(todo, subTodoId, !isCompleted),
       );
-      haptics.notify('error');
-      toast.error(getUserFacingMessage(error), { fallback: t('todo:toast.subTodoUpdateFailed') });
     },
     onSettled: (_data, error, { todoId, date }, context) => {
       settleTodoWrite(queryClient, {
@@ -78,6 +71,7 @@ export function useToggleSubTodoMutationOptions() {
         ticket: context?.ticket,
       });
     },
+    meta: { errorFeedback: { feature: 'todo', fallbackKey: 'todo:toast.subTodoUpdateFailed' } },
   });
 }
 
@@ -92,8 +86,6 @@ export function useDeleteSubTodoMutationOptions() {
   const subTodoService = useSubTodoService();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
-  const haptics = useHaptics();
-  const toast = useAppToast();
 
   return mutationOptions({
     // 오프라인에 멈춰 두면 삭제 중 표시가 끝나지 않는다. 바로 실패해 안내하고 낙관 삭제를 되돌린다
@@ -125,11 +117,7 @@ export function useDeleteSubTodoMutationOptions() {
     onSuccess: (_data, { todoId, subTodoId }) => {
       trackEvent('todo_item_deleted', { todo_id: todoId, item_id: subTodoId });
     },
-    onError: (error, { todoId, date }, context) => {
-      haptics.notify('error');
-      toast.error(getUserFacingMessage(error), {
-        fallback: t('todo:toast.subTodoDeleteFailed'),
-      });
+    onError: (_error, { todoId, date }, context) => {
       if (context?.removed != null) {
         const { removed, index } = context;
         updateCachedTodo(queryClient, { date, todoId }, (todo) =>
@@ -147,6 +135,7 @@ export function useDeleteSubTodoMutationOptions() {
         ticket: context?.ticket,
       });
     },
+    meta: { errorFeedback: { feature: 'todo', fallbackKey: 'todo:toast.subTodoDeleteFailed' } },
   });
 }
 
@@ -158,11 +147,9 @@ interface ReorderSubTodosVariables {
 }
 
 export function useReorderSubTodosMutationOptions() {
-  const haptics = useHaptics();
   const subTodoService = useSubTodoService();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
-  const toast = useAppToast();
 
   return mutationOptions({
     // 저장하는 동안 목록이 끌기 전 순서를 붙잡는다. 오프라인에 멈춰 두면 연결될 때까지 묶이니 바로 실패해 제자리로 돌리고 알린다
@@ -194,15 +181,13 @@ export function useReorderSubTodosMutationOptions() {
     onSuccess: (_data, { todoId }) => {
       trackEvent('todo_item_reordered', { todo_id: todoId });
     },
-    onError: (error, { todoId, date }, context) => {
+    onError: (_error, { todoId, date }, context) => {
       const previousIds = context?.previousIds;
       if (previousIds != null) {
         updateCachedTodo(queryClient, { date, todoId }, (todo) =>
           SubTodoPolicy.withSubTodosOrdered(todo, previousIds),
         );
       }
-      haptics.notify('error');
-      toast.error(getUserFacingMessage(error), { fallback: t('todo:toast.changeFailedRetry') });
     },
     onSettled: (_data, error, { todoId, date }, context) => {
       settleTodoWrite(queryClient, {
@@ -214,5 +199,6 @@ export function useReorderSubTodosMutationOptions() {
         ticket: context?.ticket,
       });
     },
+    meta: { errorFeedback: { feature: 'todo', fallbackKey: 'todo:toast.changeFailedRetry' } },
   });
 }

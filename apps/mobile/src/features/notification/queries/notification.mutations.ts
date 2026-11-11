@@ -8,14 +8,9 @@ import {
 } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
 import { useUpdatePreferenceMutationOptions } from '@src/features/identity/preference/queries/preference.mutations';
-import {
-  getErrorMessage,
-  getUserFacingMessage,
-  isConnectivityError,
-  ServerError,
-  toError,
-} from '@src/shared/errors';
+import { getErrorMessage, isConnectivityError, ServerError, toError } from '@src/shared/errors';
 import { t } from '@src/shared/i18n';
+import { isLastMutation } from '@src/shared/query/is-last-mutation';
 import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { mutationOptions, type QueryClient, useQueryClient } from '@tanstack/react-query';
 
@@ -33,17 +28,17 @@ import {
 const PUSH_OPENED_RETRIES = 3;
 
 /**
- * 지금 끝나는 읽음 처리가 마지막이면 true. 응답은 읽은 개수만 주어 안 읽은 수를 확정하지 못해 다시 받아야 하는데,
- * 앞 처리 뒤에 다시 받으면 뒤 처리의 낙관적 수가 덮여 앱 아이콘 배지가 깜빡인다. 마지막만 다시 받는다
+ * 응답은 읽은 개수만 주어 안 읽은 수를 확정하지 못해 다시 받아야 하는데, 앞 처리 뒤에 다시 받으면
+ * 뒤 처리의 낙관적 수가 덮여 앱 아이콘 배지가 깜빡인다. 같은 키의 마지막 처리만 다시 받는다
  */
-function isLastNotificationWrite(queryClient: QueryClient) {
-  return queryClient.isMutating({ mutationKey: NOTIFICATION_MUTATION_KEYS.writes() }) === 1;
+function invalidateAfterLastNotificationWrite(queryClient: QueryClient) {
+  return isLastMutation(queryClient, NOTIFICATION_MUTATION_KEYS.writes())
+    ? invalidateNotifications(queryClient)
+    : undefined;
 }
 
 // 앱 아이콘 배지는 안 읽은 수 캐시를 따라가므로(`useNotificationBadgeSync`) 캐시만 고친다
 export function useMarkAllAsReadMutationOptions() {
-  const haptics = useHaptics();
-  const toast = useAppToast();
   const notificationService = useNotificationService();
   const queryClient = useQueryClient();
 
@@ -51,17 +46,18 @@ export function useMarkAllAsReadMutationOptions() {
     mutationKey: NOTIFICATION_MUTATION_KEYS.writes(),
     mutationFn: async () => unwrap(await notificationService.markAllAsRead()),
     onMutate: async () => ({ change: await optimisticallyMarkNotificationsRead(queryClient) }),
-    onError: (error, _variables, context) => {
+    onError: (_error, _variables, context) => {
       if (context?.change != null) {
         revertNotificationsRead(queryClient, context.change);
       }
-      haptics.notify('error');
-      toast.error(getUserFacingMessage(error), {
-        fallback: t('notification:list.markAllReadFailed'),
-      });
     },
-    onSettled: () =>
-      isLastNotificationWrite(queryClient) ? invalidateNotifications(queryClient) : undefined,
+    onSettled: () => invalidateAfterLastNotificationWrite(queryClient),
+    meta: {
+      errorFeedback: {
+        feature: 'notification',
+        fallbackKey: 'notification:list.markAllReadFailed',
+      },
+    },
   });
 }
 
@@ -84,8 +80,8 @@ export function useMarkAsReadMutationOptions() {
       // 읽음은 다음 탭에 다시 보내므로 이어서 이동한 화면을 토스트로 가리지 않는다
       haptics.notify('error');
     },
-    onSettled: () =>
-      isLastNotificationWrite(queryClient) ? invalidateNotifications(queryClient) : undefined,
+    onSettled: () => invalidateAfterLastNotificationWrite(queryClient),
+    meta: { errorFeedback: false },
   });
 }
 
@@ -106,6 +102,7 @@ export function useOpenPushSettingsMutationOptions() {
       haptics.notify('error');
       toast.error(t('notification:permission.toasts.settingsOpenFailed'));
     },
+    meta: { errorFeedback: false },
   });
 }
 
@@ -128,6 +125,7 @@ export function useReportPushDeviceMutationOptions() {
       }
       logger.error(NOTIFICATION_LOG_EVENT.PUSH_DEVICE_REPORT_FAILED, toError(error));
     },
+    meta: { errorFeedback: false },
   });
 }
 
@@ -152,6 +150,7 @@ export function useRequestPushPermissionMutationOptions() {
       haptics.notify('error');
       toast.error(t('notification:permission.toasts.requestFailed'));
     },
+    meta: { errorFeedback: false },
   });
 }
 
@@ -192,9 +191,10 @@ export function useRecordPushOpenedMutationOptions() {
       }),
     // onMutate의 수는 느린 망이나 오프라인이면 읽음 처리 전 수다. 서버가 처리한 뒤(실패면 되돌린 뒤)의 수로 다시 맞춘다
     onSettled: (_opened, _error, _notificationId, context) =>
-      sessionEpoch.current() === context?.epoch && isLastNotificationWrite(queryClient)
-        ? invalidateNotifications(queryClient)
+      sessionEpoch.current() === context?.epoch
+        ? invalidateAfterLastNotificationWrite(queryClient)
         : undefined,
+    meta: { errorFeedback: false },
   });
 }
 

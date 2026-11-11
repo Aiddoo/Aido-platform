@@ -1,5 +1,3 @@
-import { useHaptics } from '@src/bootstrap/providers/di-context';
-import { isCodedError } from '@src/core/errors/result';
 import { useTrack } from '@src/shared/analytics';
 import { getUserFacingMessage } from '@src/shared/errors';
 import { useTranslation } from '@src/shared/i18n';
@@ -21,6 +19,7 @@ import { type PropsWithChildren, useRef } from 'react';
 import { Controller, useForm, useFormState, useWatch } from 'react-hook-form';
 
 import { InviteCodePolicy } from '../domains/invite-code.model';
+import { isInviteCodeFieldError } from '../domains/invite.error';
 import { useInviteParams } from '../hooks/use-invite-params';
 import { useCheckInvitePreviewMutationOptions } from '../queries/invite.mutations';
 import {
@@ -33,7 +32,6 @@ import { InviteCodeInput } from './invite-code-input';
 export function InviteCodeEntryForm({ children }: PropsWithChildren) {
   const [{ openedAt }] = useInviteParams();
   const { t } = useTranslation('invite');
-  const haptics = useHaptics();
   const { trackEvent } = useTrack();
   const toast = useAppToast();
   const checkPreview = useMutation(useCheckInvitePreviewMutationOptions());
@@ -107,16 +105,12 @@ export function InviteCodeEntryForm({ children }: PropsWithChildren) {
           params: { inviteCode, source: 'code_entry' },
         });
       } catch (error) {
-        // 4xx는 같은 화면에서 다시 입력하게 하고, 네트워크·서버 장애는 토스트로 알려 입력한 코드를 지우지 않고 둔다
-        if (!isCodedError(error)) {
-          haptics.notify('error');
-          toast.error(getUserFacingMessage(error));
-          return;
+        // 4xx는 같은 화면에서 다시 입력하게 코드 칸에 보인다. 네트워크·서버 장애는 전역 토스트가 알리고 입력한 코드는 둔다
+        if (isInviteCodeFieldError(error)) {
+          form.setError('inviteCode', {
+            message: getUserFacingMessage(error) ?? t('errors.invalidCode'),
+          });
         }
-
-        form.setError('inviteCode', {
-          message: getUserFacingMessage(error) ?? t('errors.invalidCode'),
-        });
       }
     })();
 

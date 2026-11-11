@@ -1,6 +1,7 @@
 import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
 import { GestureHandlerProvider } from '@src/bootstrap/providers/gesture-handler-provider';
 import { HeroUIProvider } from '@src/bootstrap/providers/hero-ui-provider';
+import { MutationErrorFeedback } from '@src/bootstrap/query/mutation-error-feedback';
 import { FontScaleProvider } from '@src/shared/providers/font-scale-provider';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { OverlayProvider } from '@src/shared/ui/overlay/overlay-provider';
@@ -42,7 +43,10 @@ function createHarness({
     return (
       <StaticDIProvider container={container}>
         <QueryClientProvider client={client}>
-          <TestUiProvider>{dated}</TestUiProvider>
+          <TestUiProvider>
+            <MutationErrorFeedback />
+            {dated}
+          </TestUiProvider>
         </QueryClientProvider>
       </StaticDIProvider>
     );

@@ -43,6 +43,11 @@ export function findLimitedFeature(error: unknown): LimitedFeature | null {
   };
 }
 
+/** 한도에 막힌 오류. 한도 게이트가 안내 시트로 보인다 */
+export function isLimitedFeatureError(error: unknown): boolean {
+  return findLimitedFeature(error) != null;
+}
+
 /** 처리 중·길이 초과처럼 한도 오류가 아니어도 서버가 함께 준 현재 한도. 없으면 null */
 export function findErrorFeatureQuota(error: unknown): FeatureQuota | null {
   if (!isApiError(error)) {

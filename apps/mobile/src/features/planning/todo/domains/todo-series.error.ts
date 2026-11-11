@@ -35,6 +35,11 @@ export function findTodoSeriesFailure(error: unknown): TodoSeriesFailure | null 
   );
 }
 
+/** 반복 묶음 오류. 회차·한도별 안내 토스트로 보인다 */
+export function isTodoSeriesFailure(error: unknown): boolean {
+  return findTodoSeriesFailure(error) != null;
+}
+
 // 한도가 상세에 없는 옛 서버 응답은 공유 상한으로 안내한다
 export function getTodoSeriesLimit(error: unknown): number {
   const limit = isApiError(error) ? error.details?.limit : null;

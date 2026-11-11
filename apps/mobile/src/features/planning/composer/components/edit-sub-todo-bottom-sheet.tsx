@@ -8,7 +8,6 @@ import { useTodoSheetDateKey } from '@src/features/planning/todo/hooks/use-todo-
 import { useDeleteSubTodoMutationOptions } from '@src/features/planning/todo/queries/sub-todo.mutations';
 import { useGetTodosByDateQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
-import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
 import { useRetainedValue } from '@src/shared/hooks/use-retained-value';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, HStack, IconButton, TrashIcon, VStack } from '@src/shared/ui';
@@ -70,7 +69,6 @@ function EditSubTodoForm({ todo, subTodo, onClose }: EditSubTodoFormProps) {
   const { isValid } = useFormState({ control: form.control });
   const updateSubTodo = useMutation(useUpdateSubTodoMutationOptions());
   const deleteSubTodo = useMutation(useDeleteSubTodoMutationOptions());
-  const reportUnexpectedError = useReportUnexpectedError('todo');
   const isBusy = updateSubTodo.isPending || deleteSubTodo.isPending;
   const isSubmitDisabled = !isValid || isBusy;
 
@@ -105,8 +103,8 @@ function EditSubTodoForm({ todo, subTodo, onClose }: EditSubTodoFormProps) {
         date,
       });
       onClose();
-    } catch (error) {
-      reportUnexpectedError(error);
+    } catch {
+      // 실패 안내와 보고는 mutation의 meta.errorFeedback이 맡는다
     }
   });
 
@@ -118,8 +116,8 @@ function EditSubTodoForm({ todo, subTodo, onClose }: EditSubTodoFormProps) {
     try {
       await deleteSubTodo.mutateAsync({ todoId: todo.id, subTodoId: subTodo.id, date });
       onClose();
-    } catch (error) {
-      reportUnexpectedError(error);
+    } catch {
+      // 실패 안내와 보고는 mutation의 meta.errorFeedback이 맡는다
     }
   };
 

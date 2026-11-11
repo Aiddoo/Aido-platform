@@ -1,6 +1,6 @@
-import { useHaptics, useTodoCategoryService } from '@src/bootstrap/providers/di-context';
+import { useTodoCategoryService } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
-import { findLimitedFeature } from '@src/features/billing/subscription/domains/entitlement.error';
+import { isLimitedFeatureError } from '@src/features/billing/subscription/domains/entitlement.error';
 import { invalidateEntitlements } from '@src/features/billing/subscription/queries/entitlement-cache';
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
 import {
@@ -9,11 +9,11 @@ import {
   invalidateWidgetSummary,
 } from '@src/features/planning/todo/queries/todo-cache';
 import { useTrack } from '@src/shared/analytics';
-import { getUserFacingMessage } from '@src/shared/errors';
 import { t } from '@src/shared/i18n';
+import { isLastMutation } from '@src/shared/query/is-last-mutation';
 import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { createOptimisticId } from '@src/shared/utils/create-optimistic-id';
-import { mutationOptions, type QueryClient, useQueryClient } from '@tanstack/react-query';
+import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 import { pick } from 'es-toolkit';
 
 import { TODO_CATEGORY_MUTATION_KEYS } from '../constants/todo-category-mutation-keys';
@@ -46,17 +46,11 @@ import {
   withCategorySaved,
 } from './todo-category-cache';
 
-/** 지금 끝나는 쓰기가 마지막이면 true. 앞 쓰기의 응답이 뒤에 바꾼 이름·색을 덮지 않게 마지막만 캐시를 맞춘다 */
-function isLastCategoryWrite(queryClient: QueryClient) {
-  return queryClient.isMutating({ mutationKey: TODO_CATEGORY_MUTATION_KEYS.writes() }) === 1;
-}
-
 export function useCreateTodoCategoryMutationOptions() {
   const todoCategoryService = useTodoCategoryService();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
   const toast = useAppToast();
-  const haptics = useHaptics();
 
   return mutationOptions({
     // 연결이 없을 때 요청을 쥐고 기다리면 저장 시트가 스피너만 돈다. 바로 실패해 입력값을 지킨다
@@ -97,29 +91,27 @@ export function useCreateTodoCategoryMutationOptions() {
       toast.success(t('todo:toast.categoryAdded'));
       trackEvent('category_created', { color: variables.color });
     },
-    onError: (error, _variables, context) => {
+    onError: (_error, _variables, context) => {
       if (context != null) {
         queryClient.setQueryData(
           TODO_CATEGORY_QUERY_KEYS.list(),
           (old) => old && withCategoryRemoved(old, context.optimisticCategoryId),
         );
       }
-
-      // 카테고리 한도는 시트의 한도 게이트가 프리미엄 안내 시트로 안내한다
-      if (findLimitedFeature(error) != null) {
-        return;
-      }
-
-      haptics.notify('error');
-      toast.error(getUserFacingMessage(error), {
-        fallback: t('todo:toast.addFailedRetry'),
-      });
     },
     // 응답으로 임시 행을 이미 바꿨다. 기다리면 저장한 시트가 목록을 다시 받을 때까지 닫히지 않는다
     onSettled: (_data, error) => {
-      if (error != null && isLastCategoryWrite(queryClient)) {
+      if (error != null && isLastMutation(queryClient, TODO_CATEGORY_MUTATION_KEYS.writes())) {
         invalidateTodoCategories(queryClient);
       }
+    },
+    meta: {
+      errorFeedback: {
+        feature: 'todo',
+        fallbackKey: 'todo:toast.addFailedRetry',
+        // 카테고리 한도는 시트의 한도 게이트가 프리미엄 안내 시트로 안내한다
+        isHandledByFeature: isLimitedFeatureError,
+      },
     },
   });
 }
@@ -134,7 +126,6 @@ export function useUpdateTodoCategoryMutationOptions() {
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
   const toast = useAppToast();
-  const haptics = useHaptics();
 
   return mutationOptions({
     networkMode: 'always',
@@ -157,7 +148,7 @@ export function useUpdateTodoCategoryMutationOptions() {
       return { previous };
     },
     onSuccess: (savedCategory, variables, { previous }) => {
-      if (isLastCategoryWrite(queryClient)) {
+      if (isLastMutation(queryClient, TODO_CATEGORY_MUTATION_KEYS.writes())) {
         queryClient.setQueryData(
           TODO_CATEGORY_QUERY_KEYS.list(),
           (old) =>
@@ -172,7 +163,7 @@ export function useUpdateTodoCategoryMutationOptions() {
       });
     },
     // 목록을 통째로 되돌리면 그사이 바뀐 할 일 수와 다른 카테고리 변경을 지운다. 이 카테고리의 이름·색만 되돌린다
-    onError: (error, { id }, context) => {
+    onError: (_error, { id }, context) => {
       const previous = context?.previous;
       if (previous != null) {
         queryClient.setQueryData(
@@ -180,18 +171,14 @@ export function useUpdateTodoCategoryMutationOptions() {
           (old) => old && withCategoryChanged(old, id, pick(previous, ['name', 'color'])),
         );
       }
-
-      haptics.notify('error');
-      toast.error(getUserFacingMessage(error), {
-        fallback: t('todo:toast.updateFailedRetry'),
-      });
     },
     // 기다리면 저장한 시트가 목록을 다시 받을 때까지 닫히지 않는다
     onSettled: (_data, error) => {
-      if (error != null && isLastCategoryWrite(queryClient)) {
+      if (error != null && isLastMutation(queryClient, TODO_CATEGORY_MUTATION_KEYS.writes())) {
         invalidateTodoCategories(queryClient);
       }
     },
+    meta: { errorFeedback: { feature: 'todo', fallbackKey: 'todo:toast.updateFailedRetry' } },
   });
 }
 
@@ -237,7 +224,6 @@ export function useDeleteTodoCategoryMutationOptions() {
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
   const toast = useAppToast();
-  const haptics = useHaptics();
 
   return mutationOptions({
     // 오프라인에 멈춰 두면 삭제 중 표시가 끝나지 않는다. 바로 실패해 시트를 그대로 두고 알린다
@@ -265,15 +251,12 @@ export function useDeleteTodoCategoryMutationOptions() {
       if (isDeletionPreviewOutdatedError(error)) {
         invalidateDeletionPreview(queryClient, { categoryId: id });
       }
-      haptics.notify('error');
-      toast.error(getUserFacingMessage(error), {
-        fallback: t('todo:toast.deleteFailedRetry'),
-      });
     },
     // 기다리면 지운 뒤 시트가 목록을 다시 받을 때까지 닫히지 않는다
     onSettled: () => {
       invalidateTodoCategories(queryClient);
     },
+    meta: { errorFeedback: { feature: 'todo', fallbackKey: 'todo:toast.deleteFailedRetry' } },
   });
 }
 
@@ -283,11 +266,9 @@ interface ReorderTodoCategoryVariables {
 }
 
 export function useReorderTodoCategoryMutationOptions() {
-  const haptics = useHaptics();
   const todoCategoryService = useTodoCategoryService();
   const queryClient = useQueryClient();
   const { trackEvent, trackAttributedFeatureSuccess } = useTrack();
-  const toast = useAppToast();
 
   return mutationOptions({
     // 저장하는 동안 목록이 끌기 전 순서를 붙잡는다. 오프라인에 멈춰 두면 연결될 때까지 묶이니 바로 실패해 제자리로 돌리고 알린다
@@ -302,11 +283,8 @@ export function useReorderTodoCategoryMutationOptions() {
         trackAttributedFeatureSuccess({ accountId, feature: 'category_reorder' });
       }
     },
-    onError: (error) => {
-      haptics.notify('error');
-      toast.error(getUserFacingMessage(error), { fallback: t('todo:toast.changeFailedRetry') });
-    },
     // 성공하면 서버 순서를, 실패하면 끌기 전 순서를 받아 화면이 붙잡은 순서를 놓는다
     onSettled: () => invalidateTodoCategories(queryClient),
+    meta: { errorFeedback: { feature: 'todo', fallbackKey: 'todo:toast.changeFailedRetry' } },
   });
 }

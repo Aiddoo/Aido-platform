@@ -3,7 +3,6 @@ import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.q
 import { useDraftStorage } from '@src/shared/draft/use-draft-storage';
 import { useFormDraftAutosave } from '@src/shared/draft/use-form-draft-autosave';
 import { isConnectivityError } from '@src/shared/errors';
-import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { STACK_BACK_ICON, StyledSafeAreaView, TextArea } from '@src/shared/ui';
@@ -20,7 +19,6 @@ import { EMPTY_MEMO_FORM_VALUES, memoFormSchema } from '../schemas/memo-form.sch
 import { createMemoDraftKey } from '../utils/memo-draft';
 
 export function MemoCreateForm() {
-  const reportUnexpectedError = useReportUnexpectedError('memo');
   const goBack = useSingleTap(router.back);
   const { t } = useTranslation(['memo', 'common']);
   const navigation = useNavigation();
@@ -69,8 +67,8 @@ export function MemoCreateForm() {
       await createMemo.mutateAsync({ content: content.trim() });
       discardDraft();
       goBack();
-    } catch (error) {
-      reportUnexpectedError(error);
+    } catch {
+      // 실패 안내와 보고는 mutation의 meta.errorFeedback이 맡는다
     }
   });
 
@@ -80,7 +78,6 @@ export function MemoCreateForm() {
       discardDraft();
       goBack();
     } catch (error) {
-      reportUnexpectedError(error);
       // 연결 문제로 못 보낸 글자는 초안에 남으니 화면에 가두지 않는다
       if (isConnectivityError(error)) {
         goBack();

@@ -11,6 +11,7 @@ import { HTTPError, isNetworkError, TimeoutError as KyTimeoutError } from 'ky';
 
 import { errorEnvelopeSchema } from './error-envelope';
 import { REQUEST_ID_HEADER } from './request-headers';
+import { getPathname } from './request-path';
 
 /** RN 전역 fetch(expo/fetch)는 연결 실패를 `fetch failed: …` 일반 Error로 던지고 클래스를 내보내지 않아 ky도 알아보지 못한다 */
 const EXPO_FETCH_FAILURE_PREFIX = 'fetch failed: ';
@@ -81,7 +82,10 @@ export function toTransportError(error: unknown): TimeoutError | ServerError | N
   }
 
   if (error instanceof HTTPError && error.response.status >= 500) {
-    return new ServerError(error.response.status, error.request.headers.get(REQUEST_ID_HEADER));
+    return new ServerError(error.response.status, error.request.headers.get(REQUEST_ID_HEADER), {
+      method: error.request.method,
+      endpoint: getPathname(error.request.url),
+    });
   }
 
   // ky v2는 네트워크 실패를 자체 `NetworkError`로 감싸지만(`.cause`) raw TypeError도 방어적으로 처리한다

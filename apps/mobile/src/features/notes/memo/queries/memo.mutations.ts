@@ -49,23 +49,18 @@ export function useCreateMemoMutationOptions() {
   const memoService = useMemoService();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
-  const haptics = useHaptics();
-  const toast = useAppToast();
 
   return mutationOptions({
     // 오프라인에도 멈춰 기다리지 않고 바로 실패해 글자를 남긴 채 안내한다. 글자는 초안에도 있다
     networkMode: 'always',
     mutationFn: async (values: MemoFormValues) => unwrap(await memoService.createMemo(values)),
     onSuccess: () => trackEvent('memo_created'),
-    onError: (error) => {
-      haptics.notify('error');
-      toast.error(getUserFacingMessage(error), { fallback: t('memo:toasts.retryLater') });
-    },
     // 기다리면 mutateAsync가 재조회까지 묶여 저장 후 뒤로 가기가 늦어진다. 다른 메모 상세는 그대로다
     onSettled: () => {
       invalidateMemoList(queryClient);
       invalidateMemoResourceLimit(queryClient);
     },
+    meta: { errorFeedback: { feature: 'memo', fallbackKey: 'memo:toasts.retryLater' } },
   });
 }
 
@@ -73,8 +68,6 @@ export function useUpdateMemoMutationOptions() {
   const memoService = useMemoService();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
-  const haptics = useHaptics();
-  const toast = useAppToast();
 
   return mutationOptions({
     // 오프라인에도 멈춰 기다리지 않고 바로 실패해 글자를 남긴 채 안내한다. 글자는 초안에도 있다
@@ -91,15 +84,12 @@ export function useUpdateMemoMutationOptions() {
       replaceMemoInList(queryClient, memo);
       trackEvent('memo_updated', { memo_id: memoId });
     },
-    onError: (error) => {
-      haptics.notify('error');
-      toast.error(getUserFacingMessage(error), { fallback: t('memo:toasts.retryLater') });
-    },
     // 기다리면 mutateAsync가 재조회까지 묶여 저장 후 뒤로 가기가 늦어진다
     onSettled: (_memo, _error, { memoId }) => {
       invalidateMemoList(queryClient);
       queryClient.invalidateQueries({ queryKey: MEMO_QUERY_KEYS.detail({ memoId }) });
     },
+    meta: { errorFeedback: { feature: 'memo', fallbackKey: 'memo:toasts.retryLater' } },
   });
 }
 
@@ -121,7 +111,6 @@ export function useSetMemoPinnedMutationOptions() {
   const haptics = useHaptics();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
-  const toast = useAppToast();
   const { timeZone } = useDateFormatContext();
 
   return mutationOptions({
@@ -151,10 +140,6 @@ export function useSetMemoPinnedMutationOptions() {
       queryClient.setQueryData(MEMO_QUERY_KEYS.detail({ memoId }), memo);
       trackEvent('memo_pin_toggled', { memo_id: memoId, is_pinned: isPinned });
     },
-    onError: (error) => {
-      haptics.notify('error');
-      toast.error(getUserFacingMessage(error), { fallback: t('memo:toasts.retryLater') });
-    },
     // 상세는 응답으로 고쳤고 고정 순서만 서버가 정한다
     onSettled: (_memo, error, { memoId }) => {
       invalidateMemoList(queryClient);
@@ -162,6 +147,7 @@ export function useSetMemoPinnedMutationOptions() {
         queryClient.invalidateQueries({ queryKey: MEMO_QUERY_KEYS.detail({ memoId }) });
       }
     },
+    meta: { errorFeedback: { feature: 'memo', fallbackKey: 'memo:toasts.retryLater' } },
   });
 }
 
@@ -170,7 +156,6 @@ export function useDeleteMemoMutationOptions() {
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
   const toast = useAppToast();
-  const haptics = useHaptics();
 
   return mutationOptions({
     // 오프라인에 멈춰 두면 진행 중인 다이얼로그를 닫을 수 없다. 바로 실패해 안내한다
@@ -180,16 +165,13 @@ export function useDeleteMemoMutationOptions() {
       toast.success(t('memo:toasts.deleted'));
       trackEvent('memo_deleted', { memo_id: memoId });
     },
-    onError: (error) => {
-      haptics.notify('error');
-      toast.error(getUserFacingMessage(error), { fallback: t('memo:toasts.deleteRetry') });
-    },
     // 기다리면 지운 메모의 404 재조회가 먼저 끝나 다이얼로그가 닫히기 전에 경계로 내려갈 수 있다
     onSettled: (_result, _error, memoId) => {
       invalidateMemoList(queryClient);
       invalidateMemoResourceLimit(queryClient);
       queryClient.invalidateQueries({ queryKey: MEMO_QUERY_KEYS.detail({ memoId }) });
     },
+    meta: { errorFeedback: { feature: 'memo', fallbackKey: 'memo:toasts.deleteRetry' } },
   });
 }
 
@@ -198,7 +180,6 @@ export function useConvertMemoToTodosMutationOptions() {
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
   const toast = useAppToast();
-  const haptics = useHaptics();
 
   return mutationOptions({
     // 오프라인에도 멈춰 기다리지 않고 바로 실패해 시트와 입력값을 남긴 채 안내한다
@@ -217,15 +198,12 @@ export function useConvertMemoToTodosMutationOptions() {
       toast.success(t('memo:toasts.convertedOne'));
       trackEvent('memo_converted_to_todo', { memo_id: memoId });
     },
-    onError: (error) => {
-      haptics.notify('error');
-      toast.error(getUserFacingMessage(error), { fallback: t('memo:toasts.retryLater') });
-    },
     onSettled: () => {
       invalidateMemoList(queryClient);
       invalidateMemoResourceLimit(queryClient);
       invalidateTodos(queryClient);
     },
+    meta: { errorFeedback: { feature: 'todo', fallbackKey: 'memo:toasts.retryLater' } },
   });
 }
 
@@ -328,5 +306,6 @@ export function useParseMemoMutationOptions({ memoId }: { memoId: number }) {
         description: isFreeOfChargeError(error) ? t('subscription:gate.notCharged') : undefined,
       });
     },
+    meta: { errorFeedback: false },
   });
 }

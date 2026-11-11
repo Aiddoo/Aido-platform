@@ -1,22 +1,11 @@
-import {
-  useErrorReporter,
-  useHaptics,
-  useTodoCommentService,
-} from '@src/bootstrap/providers/di-context';
+import { useTodoCommentService } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
 import { useTrack } from '@src/shared/analytics';
-import {
-  ApiError,
-  getUserFacingMessage,
-  isInfraError,
-  NetworkError,
-  ServerError,
-  TimeoutError,
-  toError,
-} from '@src/shared/errors';
+import { NetworkError, ServerError, TimeoutError } from '@src/shared/errors';
 import { t } from '@src/shared/i18n';
+import { isLastMutation } from '@src/shared/query/is-last-mutation';
 import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
-import { mutationOptions, type QueryClient, useQueryClient } from '@tanstack/react-query';
+import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 import { pick } from 'es-toolkit';
 import { match, P } from 'ts-pattern';
 
@@ -77,21 +66,9 @@ function isRetryableCreationError(error: unknown) {
   );
 }
 
-/** 서버가 코드로 답하지 않은 실패만 Sentry에 남긴다. 예측한 거절은 토스트로 끝난다 */
-function useReportUnexpectedTodoCommentError({ todoId }: { todoId: number }) {
-  const errorReporter = useErrorReporter();
-
-  return (error: unknown, method: 'POST' | 'PATCH' | 'DELETE' | 'PUT/DELETE') => {
-    if (error instanceof ApiError) {
-      return;
-    }
-    errorReporter.captureException(toError(error), {
-      feature: 'todo_comment',
-      endpoint: `v1/todos/${todoId}/comments`,
-      method,
-      statusCode: isInfraError(error) ? (error.statusCode ?? undefined) : undefined,
-    });
-  };
+/** 지워진 댓글과 연타 제한은 onError가 경고 토스트로 알린다 */
+function isWarnedTodoCommentError(error: unknown) {
+  return isTodoCommentUnavailableError(error) || isTodoCommentRateLimitedError(error);
 }
 
 /**
@@ -102,9 +79,7 @@ export function useCreateTodoCommentChainMutationOptions({ todoId }: { todoId: n
   const todoCommentService = useTodoCommentService();
   const queryClient = useQueryClient();
   const { trackEvent } = useTrack();
-  const haptics = useHaptics();
   const toast = useAppToast();
-  const reportUnexpectedError = useReportUnexpectedTodoCommentError({ todoId });
 
   return mutationOptions({
     // 오프라인에도 멈춰 기다리지 않고 바로 실패해 글자를 남긴 채 안내한다. 연결 뒤 몰래 보내지 않는다
@@ -149,27 +124,22 @@ export function useCreateTodoCommentChainMutationOptions({ todoId }: { todoId: n
       }
       if (isTodoCommentRateLimitedError(error)) {
         toast.warning(t('todoComment:toasts.throttled'));
-        return;
       }
-
-      reportUnexpectedError(error, 'POST');
-      haptics.notify('error');
-      toast.error(getUserFacingMessage(error), { fallback: t('todoComment:toasts.writeFailed') });
+    },
+    meta: {
+      errorFeedback: {
+        feature: 'todo_comment',
+        fallbackKey: 'todoComment:toasts.writeFailed',
+        isHandledByFeature: isWarnedTodoCommentError,
+      },
     },
   });
-}
-
-/** 지금 끝나는 쓰기가 같은 키의 마지막이면 true. 앞 응답이 뒤에 바꾼 낙관적 값을 덮지 않게 마지막만 응답을 쓴다 */
-function isLastTodoCommentWrite(queryClient: QueryClient, mutationKey: readonly unknown[]) {
-  return queryClient.isMutating({ mutationKey }) === 1;
 }
 
 export function useUpdateTodoCommentMutationOptions({ todoId }: { todoId: number }) {
   const todoCommentService = useTodoCommentService();
   const queryClient = useQueryClient();
-  const haptics = useHaptics();
   const toast = useAppToast();
-  const reportUnexpectedError = useReportUnexpectedTodoCommentError({ todoId });
   const mutationKey = TODO_COMMENT_MUTATION_KEYS.updateComment(todoId);
 
   return mutationOptions({
@@ -205,22 +175,24 @@ export function useUpdateTodoCommentMutationOptions({ todoId }: { todoId: number
       }
       if (isTodoCommentRateLimitedError(error)) {
         toast.warning(t('todoComment:toasts.throttled'));
-        return;
       }
-
-      reportUnexpectedError(error, 'PATCH');
-      haptics.notify('error');
-      toast.error(getUserFacingMessage(error), { fallback: t('todoComment:toasts.updateFailed') });
     },
     // 하트 수처럼 함께 바뀌는 값은 그 뮤테이션이 맞추므로 글 칸만 응답으로 쓴다
     onSuccess: (updated) => {
-      if (isLastTodoCommentWrite(queryClient, mutationKey)) {
+      if (isLastMutation(queryClient, mutationKey)) {
         patchTodoCommentCaches(queryClient, {
           todoId,
           commentId: updated.id,
           transform: (comment) => ({ ...comment, ...pick(updated, EDITED_FIELDS) }),
         });
       }
+    },
+    meta: {
+      errorFeedback: {
+        feature: 'todo_comment',
+        fallbackKey: 'todoComment:toasts.updateFailed',
+        isHandledByFeature: isWarnedTodoCommentError,
+      },
     },
   });
 }
@@ -230,9 +202,7 @@ export function useDeleteTodoCommentMutationOptions({ todoId }: { todoId: number
   const todoCommentService = useTodoCommentService();
   const queryClient = useQueryClient();
   const { trackEvent } = useTrack();
-  const haptics = useHaptics();
   const toast = useAppToast();
-  const reportUnexpectedError = useReportUnexpectedTodoCommentError({ todoId });
   const mutationKey = TODO_COMMENT_MUTATION_KEYS.deleteComment(todoId);
 
   return mutationOptions({
@@ -258,12 +228,7 @@ export function useDeleteTodoCommentMutationOptions({ todoId }: { todoId: number
       }
       if (isTodoCommentRateLimitedError(error)) {
         toast.warning(t('todoComment:toasts.throttled'));
-        return;
       }
-
-      reportUnexpectedError(error, 'DELETE');
-      haptics.notify('error');
-      toast.error(getUserFacingMessage(error), { fallback: t('todoComment:toasts.deleteFailed') });
     },
     onSuccess: (_commentId, { comment }) => {
       trackEvent('todo_comment_deleted', {
@@ -273,9 +238,16 @@ export function useDeleteTodoCommentMutationOptions({ todoId }: { todoId: number
     },
     // 응답이 할 일의 댓글 수를 주지 않아 다시 받는다. 이어 지우는 중이면 마지막 지우기가 한 번만 받는다
     onSettled: () =>
-      isLastTodoCommentWrite(queryClient, mutationKey)
+      isLastMutation(queryClient, mutationKey)
         ? invalidateTodoCommentCount(queryClient, { todoId })
         : undefined,
+    meta: {
+      errorFeedback: {
+        feature: 'todo_comment',
+        fallbackKey: 'todoComment:toasts.deleteFailed',
+        isHandledByFeature: isWarnedTodoCommentError,
+      },
+    },
   });
 }
 
@@ -290,9 +262,7 @@ export function useSetTodoCommentLikeMutationOptions({
   const todoCommentService = useTodoCommentService();
   const queryClient = useQueryClient();
   const { trackEvent } = useTrack();
-  const haptics = useHaptics();
   const toast = useAppToast();
-  const reportUnexpectedError = useReportUnexpectedTodoCommentError({ todoId });
   const mutationKey = TODO_COMMENT_MUTATION_KEYS.likeComment({ todoId, commentId });
 
   return mutationOptions({
@@ -320,7 +290,7 @@ export function useSetTodoCommentLikeMutationOptions({
         return;
       }
       // 뒤에 누른 하트가 기다리고 있으면 그 값이 사용자가 바란 마지막 상태라 그대로 둔다
-      if (isLastTodoCommentWrite(queryClient, mutationKey)) {
+      if (isLastMutation(queryClient, mutationKey)) {
         patchTodoCommentCaches(queryClient, {
           todoId,
           commentId,
@@ -329,17 +299,12 @@ export function useSetTodoCommentLikeMutationOptions({
       }
       if (isTodoCommentRateLimitedError(error)) {
         toast.warning(t('todoComment:toasts.throttled'));
-        return;
       }
-
-      reportUnexpectedError(error, 'PUT/DELETE');
-      haptics.notify('error');
-      toast.error(getUserFacingMessage(error), { fallback: t('todoComment:toasts.likeFailed') });
     },
     onSuccess: (result, { via }) => {
       trackEvent('todo_comment_liked', { todo_id: todoId, is_liked: result.isLiked, via });
       // 앞 응답을 쓰면 뒤에 누른 하트가 잠깐 되돌아 깜빡인다
-      if (isLastTodoCommentWrite(queryClient, mutationKey)) {
+      if (isLastMutation(queryClient, mutationKey)) {
         patchTodoCommentCaches(queryClient, {
           todoId,
           commentId: result.commentId,
@@ -349,9 +314,16 @@ export function useSetTodoCommentLikeMutationOptions({
     },
     // 실패가 섞이면 하트 수가 서버와 다를 수 있다. 마지막 하트가 끝날 때 서버 값으로 맞춘다
     onSettled: (_result, error) => {
-      if (error != null && isLastTodoCommentWrite(queryClient, mutationKey)) {
+      if (error != null && isLastMutation(queryClient, mutationKey)) {
         invalidateTodoComments(queryClient, { todoId });
       }
+    },
+    meta: {
+      errorFeedback: {
+        feature: 'todo_comment',
+        fallbackKey: 'todoComment:toasts.likeFailed',
+        isHandledByFeature: isWarnedTodoCommentError,
+      },
     },
   });
 }

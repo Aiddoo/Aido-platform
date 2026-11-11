@@ -2,7 +2,6 @@ import { useHaptics, useModerationService } from '@src/bootstrap/providers/di-co
 import { unwrap } from '@src/core/errors/result';
 import { emitNotificationsChanged } from '@src/core/events/notifications-changed';
 import { useTrack } from '@src/shared/analytics';
-import { getUserFacingMessage } from '@src/shared/errors';
 import { t } from '@src/shared/i18n';
 import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
@@ -32,10 +31,7 @@ export function useBlockUserMutationOptions() {
       emitNotificationsChanged();
       invalidateAfterBlockChange(queryClient);
     },
-    onError: (error) => {
-      haptics.notify('error');
-      toast.error(getUserFacingMessage(error));
-    },
+    meta: { errorFeedback: { feature: 'friend', fallbackKey: 'common:toast.defaultError' } },
   });
 }
 
@@ -59,10 +55,7 @@ export function useUnblockUserMutationOptions() {
       // 화면에 머무는 차단 목록이라 행이 사라질 때까지 해제 버튼을 꺼 둔다. 다시 눌러 요청이 또 가지 않게 한다
       await invalidateAfterBlockChange(queryClient);
     },
-    onError: (error) => {
-      haptics.notify('error');
-      toast.error(getUserFacingMessage(error));
-    },
+    meta: { errorFeedback: { feature: 'friend', fallbackKey: 'common:toast.defaultError' } },
   });
 }
 
@@ -73,8 +66,6 @@ export interface ReportContentVariables {
 
 /** 성공 안내(토스트·차단 바로가기)는 시트가 맡는다. 시트가 닫히는 순서와 함께 정해야 해서다 */
 export function useReportContentMutationOptions() {
-  const haptics = useHaptics();
-  const toast = useAppToast();
   const moderationService = useModerationService();
   const { trackEvent } = useTrack();
 
@@ -85,9 +76,6 @@ export function useReportContentMutationOptions() {
     onSuccess: (_result, { target, form }) => {
       trackEvent('content_reported', { target_type: target.targetType, reason: form.reason });
     },
-    onError: (error) => {
-      haptics.notify('error');
-      toast.error(getUserFacingMessage(error));
-    },
+    meta: { errorFeedback: { feature: 'friend', fallbackKey: 'common:toast.defaultError' } },
   });
 }

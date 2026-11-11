@@ -14,7 +14,6 @@ import {
 } from '../__tests__/auth.fixtures';
 import { useAuthStatus } from '../hooks/use-auth-status';
 import {
-  useChangePasswordMutationOptions,
   useEmailLoginMutationOptions,
   useExchangeCodeMutationOptions,
   useLinkAccountMutationOptions,
@@ -196,40 +195,6 @@ describe('회원가입 인증 메일', () => {
 
     // Then
     expect(screen.queryByText(NOT_SENT_MESSAGE)).toBeNull();
-  });
-});
-
-describe('비밀번호 변경 실패 안내', () => {
-  const INPUT = {
-    currentPassword: 'current-pass1!',
-    newPassword: 'new-pass1234!',
-    newPasswordConfirm: 'new-pass1234!',
-  };
-
-  async function changePassword(session: ReturnType<typeof createAuthSession>) {
-    const { result } = await session.renderSession(
-      () => useMutation(useChangePasswordMutationOptions()),
-      'authenticated',
-    );
-
-    await act(async () => {
-      await result.current.mutateAsync(INPUT).catch(() => undefined);
-    });
-  }
-
-  it('네트워크 오류도 오류 화면으로 바꾸지 않고 토스트 한 번으로 알린다', async () => {
-    // Given
-    const haptics = createHapticsGatewayStub();
-    const session = createAuthSession({ tokens: ACCOUNT_A_TOKENS, di: { haptics } });
-    const error = new NetworkError();
-    session.authHttp.patch.mockRejectedValue(error);
-
-    // When
-    await changePassword(session);
-
-    // Then
-    expect(await screen.findAllByText(error.message)).not.toHaveLength(0);
-    expect(haptics.notify).toHaveBeenCalledTimes(1);
   });
 });
 

@@ -1,7 +1,6 @@
 import { USER_REPORT_LIMITS } from '@aido/api/vocabulary';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
-import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
 import { useTranslation } from '@src/shared/i18n';
 import {
   BottomSheetTextArea,
@@ -58,7 +57,6 @@ export function ReportReasonBottomSheet({
 }: ReportReasonBottomSheetProps) {
   const { t } = useTranslation('moderation');
   const toast = useAppToast();
-  const reportUnexpectedError = useReportUnexpectedError('friend');
   const sheet = useSheetRoute('/feed');
   const reportContent = useMutation(useReportContentMutationOptions());
   const form = useForm({
@@ -71,7 +69,6 @@ export function ReportReasonBottomSheet({
     try {
       await reportContent.mutateAsync({ target, form: values });
     } catch (error) {
-      reportUnexpectedError(error);
       if (isReportTargetUnavailableError(error)) {
         sheet.close();
       }

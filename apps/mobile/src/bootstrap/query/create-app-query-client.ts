@@ -1,6 +1,7 @@
 import { MINUTE_MS, SECOND_MS } from '@src/shared/constants/time-units';
 import { QueryClient } from '@tanstack/react-query';
 
+import { createAppMutationCache } from './mutation-error-feedback-cache';
 import { shouldRetryQuery } from './query-retry';
 
 const MIN_STALE_TIME = 5 * MINUTE_MS;
@@ -16,6 +17,7 @@ function retryDelay(attempt: number): number {
 /** 앱의 조회 캐시. 프로세스에 하나라 `composition-root`만 부른다 */
 export function createAppQueryClient(): QueryClient {
   return new QueryClient({
+    mutationCache: createAppMutationCache(),
     defaultOptions: {
       queries: {
         staleTime: MIN_STALE_TIME,

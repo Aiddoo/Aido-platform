@@ -10,7 +10,6 @@ import { useTodoId } from '@src/features/planning/todo/hooks/use-todo-params';
 import { useTodoSheetDateKey } from '@src/features/planning/todo/hooks/use-todo-sheet-date-key';
 import { useGetTodosByDateQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
-import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
 import { useRetainedValue } from '@src/shared/hooks/use-retained-value';
 import { useTranslation } from '@src/shared/i18n';
 import {
@@ -109,7 +108,6 @@ interface TodoEditFormProps {
 function TodoEditForm({ todo, isOpen, onOpenChange, onClose }: TodoEditFormProps) {
   const { t } = useTranslation('todo');
   const { timeZone } = useDateFormatContext();
-  const reportUnexpectedError = useReportUnexpectedError('todo');
   const overlay = useOverlay();
 
   // 서버 재조회로 할 일이 바뀌어도 고치기 시작한 값과 비교한다. 사용자가 안 고친 칸을 덮어쓰지 않는다
@@ -195,7 +193,6 @@ function TodoEditForm({ todo, isOpen, onOpenChange, onClose }: TodoEditFormProps
       );
     } catch (error) {
       // 안내는 mutation 토스트가 맡고 시트와 입력값은 그대로 남긴다. 루트 overlay에서는 경계로 보내면 앱 전체가 내려간다
-      reportUnexpectedError(error);
       if (shouldReopenRepeatPicker(error)) {
         openTodoRepeatPicker(overlay, form);
       }

@@ -1,10 +1,10 @@
 import { useHaptics, usePreferenceService } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
 import { useTrack } from '@src/shared/analytics';
-import { getUserFacingMessage } from '@src/shared/errors';
 import { t } from '@src/shared/i18n';
+import { isLastMutation } from '@src/shared/query/is-last-mutation';
 import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
-import { mutationOptions, type QueryClient, useQueryClient } from '@tanstack/react-query';
+import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 import { pickBy } from 'es-toolkit';
 
 import { PREFERENCE_MUTATION_KEYS } from '../constants/preference-mutation-keys';
@@ -28,9 +28,8 @@ function getRejectionMessage(error: unknown) {
   return undefined;
 }
 
-/** 지금 끝나는 저장이 마지막이면 true. 앞 저장의 응답이 뒤에 바꾼 토글을 덮지 않게 마지막만 캐시를 맞춘다 */
-function isLastPreferenceWrite(queryClient: QueryClient) {
-  return queryClient.isMutating({ mutationKey: PREFERENCE_MUTATION_KEYS.writes() }) === 1;
+function isRejectedPreference(error: unknown) {
+  return getRejectionMessage(error) != null;
 }
 
 export function useUpdatePreferenceMutationOptions() {
@@ -66,7 +65,7 @@ export function useUpdatePreferenceMutationOptions() {
         }
       }
       // invalidate 대신 응답을 직접 써 깜빡임을 막되, 다른 저장이 진행 중이면 그 변경이 없어 마지막 응답이 맞춘다
-      if (isLastPreferenceWrite(queryClient)) {
+      if (isLastMutation(queryClient, PREFERENCE_MUTATION_KEYS.writes())) {
         queryClient.setQueryData(PREFERENCE_QUERY_KEYS.current(), data);
       }
     },
@@ -83,17 +82,20 @@ export function useUpdatePreferenceMutationOptions() {
       if (rejection != null) {
         haptics.notify('error');
         toast.error(rejection);
-        return;
       }
-
-      haptics.notify('error');
-      toast.error(getUserFacingMessage(error), { fallback: t('auth:toasts.settingsChangeFailed') });
     },
     onSettled: (_data, error) => {
       // 실패가 섞이면 되돌린 값이 서버와 다를 수 있다. 마지막 저장이 끝날 때 서버 값으로 맞춘다
-      if (error != null && isLastPreferenceWrite(queryClient)) {
+      if (error != null && isLastMutation(queryClient, PREFERENCE_MUTATION_KEYS.writes())) {
         queryClient.invalidateQueries({ queryKey: PREFERENCE_QUERY_KEYS.current() });
       }
+    },
+    meta: {
+      errorFeedback: {
+        feature: 'user',
+        fallbackKey: 'auth:toasts.settingsChangeFailed',
+        isHandledByFeature: isRejectedPreference,
+      },
     },
   });
 }

@@ -1,4 +1,3 @@
-import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
 import { useRetainedValue } from '@src/shared/hooks/use-retained-value';
 import { useTranslation } from '@src/shared/i18n';
 import {
@@ -64,7 +63,6 @@ SubTodoActionsBottomSheet.ActionList = function ActionList({ onClose }: SubTodoA
   const todo = useRetainedValue(TodoPolicy.findTodo(todosByDate.todos, todoId));
   const subTodo = useRetainedValue(TodoPolicy.findSubTodo(todo, subTodoId));
   const deleteSubTodo = useMutation(useDeleteSubTodoMutationOptions());
-  const reportUnexpectedError = useReportUnexpectedError('todo');
   const isDeleting = deleteSubTodo.isPending;
 
   useEffect(() => {
@@ -85,8 +83,8 @@ SubTodoActionsBottomSheet.ActionList = function ActionList({ onClose }: SubTodoA
     try {
       await deleteSubTodo.mutateAsync({ todoId: todo.id, subTodoId: subTodo.id, date });
       onClose();
-    } catch (error) {
-      reportUnexpectedError(error);
+    } catch {
+      // 실패 안내와 보고는 mutation의 meta.errorFeedback이 맡는다
     }
   };
 

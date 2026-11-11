@@ -4,6 +4,8 @@ export { BusinessError } from './business-error';
 
 export { classifyBoundaryError } from './classify-boundary-error';
 
+export { getErrorReportTags, isUnexpectedError } from './classify-error-report';
+
 export {
   isConnectivityError,
   isInfraError,

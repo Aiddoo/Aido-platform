@@ -57,6 +57,19 @@ describe('getUserFacingMessage — 토스트에 그대로 보여 줄 오류 문�
     expect(message).toBeUndefined();
   });
 
+  it('문자열 code를 지닌 SDK 오류의 영문 message는 숨긴다', () => {
+    // Given
+    const sdkError = Object.assign(new Error('ExpoClipboard.setStringAsync has been rejected'), {
+      code: 'ERR_CLIPBOARD_UNAVAILABLE',
+    });
+
+    // When
+    const message = getUserFacingMessage(sdkError);
+
+    // Then
+    expect(message).toBeUndefined();
+  });
+
   it('코드 없는 일반 Error는 숨긴다', () => {
     // When
     const message = getUserFacingMessage(

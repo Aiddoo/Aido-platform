@@ -32,16 +32,25 @@ export class TimeoutError extends InfraError {
   }
 }
 
+interface FailedRequest {
+  method: string;
+  /** 쿼리를 뺀 경로 */
+  endpoint: string;
+}
+
 export class ServerError extends InfraError {
   override readonly name = 'ServerError';
   readonly statusCode: number;
   /** 같은 요청의 서버 로그·Sentry 이벤트를 찾는 `X-Request-Id` */
   readonly requestId: string | null;
+  /** 실패한 요청. 보고에 어느 API인지 태그로 남긴다 */
+  readonly request: FailedRequest | null;
 
-  constructor(status: number, requestId: string | null = null) {
+  constructor(status: number, requestId: string | null = null, request?: FailedRequest) {
     super(t('common:infraErrors.server'));
     this.statusCode = status;
     this.requestId = requestId;
+    this.request = request ?? null;
   }
 }
 

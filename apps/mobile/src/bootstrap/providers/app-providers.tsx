@@ -8,6 +8,7 @@ import { NotificationProvider } from '@src/bootstrap/providers/notification-prov
 import { OnlineManagerProvider } from '@src/bootstrap/providers/online-manager-provider';
 import { PurchasesProvider } from '@src/bootstrap/providers/purchases-provider';
 import { QueryProvider } from '@src/bootstrap/providers/query-provider';
+import { MutationErrorFeedback } from '@src/bootstrap/query/mutation-error-feedback';
 import { toError } from '@src/shared/errors';
 import { FontScaleProvider } from '@src/shared/providers/font-scale-provider';
 import { LanguageProvider } from '@src/shared/providers/language-provider';
@@ -104,6 +105,7 @@ export function AppProviders({ children, root }: AppProvidersProps) {
                   appLifecycle={ports.appLifecycle}
                 >
                   <DIProvider ports={ports}>
+                    <MutationErrorFeedback />
                     <OnlineManagerProvider>
                       <LocalDateProvider>
                         <AuthBootProvider>

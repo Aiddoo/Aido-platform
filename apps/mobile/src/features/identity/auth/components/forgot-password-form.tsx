@@ -1,11 +1,11 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ANIMATION } from '@src/shared/constants/animation';
-import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
 import { useStepper } from '@src/shared/hooks/use-stepper';
 import { useTranslation } from '@src/shared/i18n';
 import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
 import { Input, KeyboardAdaptiveButton, VStack, FormStepLayout, Box } from '@src/shared/ui';
 import { useMutation } from '@tanstack/react-query';
+import { noop } from 'es-toolkit';
 import {
   Controller,
   useController,
@@ -55,7 +55,6 @@ export function ForgotPasswordForm({ stepTitles }: ForgotPasswordFormProps) {
     id: 'forgot-password',
     initial: { step: 'email', context: {} },
   });
-  const reportUnexpectedError = useReportUnexpectedError('auth');
   const forgotPassword = useMutation(useForgotPasswordMutationOptions());
   const resetPassword = useMutation(useResetPasswordMutationOptions());
   const { t } = useTranslation('auth');
@@ -68,17 +67,13 @@ export function ForgotPasswordForm({ stepTitles }: ForgotPasswordFormProps) {
       const email = form.getValues('email');
       await forgotPassword.mutateAsync({ email });
       stepper.history.push('verificationCode', { email });
-    } catch (error) {
-      reportUnexpectedError(error);
+    } catch {
+      // 실패 안내와 보고는 mutation의 meta.errorFeedback이 맡는다
     }
   };
 
   const submitNewPassword = form.handleSubmit(async (input) => {
-    try {
-      await resetPassword.mutateAsync(input);
-    } catch (error) {
-      reportUnexpectedError(error);
-    }
+    await resetPassword.mutateAsync(input).catch(noop);
   });
 
   return (

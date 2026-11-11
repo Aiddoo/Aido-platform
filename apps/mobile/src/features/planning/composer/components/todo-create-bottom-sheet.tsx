@@ -228,7 +228,6 @@ function TodoCreateForm({
       }
     } catch (error) {
       // 안내는 mutation 토스트가 맡고 시트와 입력값은 그대로 남긴다. 루트 overlay에서는 경계로 보내면 앱 전체가 내려간다
-      reportUnexpectedError(error);
       if (shouldReopenRepeatPicker(error)) {
         openTodoRepeatPicker(overlay, form);
       }

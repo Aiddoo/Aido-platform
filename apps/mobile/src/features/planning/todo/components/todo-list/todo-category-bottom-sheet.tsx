@@ -1,5 +1,4 @@
 import { CategorySelectInput } from '@src/features/planning/category/components/category-select-input';
-import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
 import { useRetainedValue } from '@src/shared/hooks/use-retained-value';
 import { useTranslation } from '@src/shared/i18n';
 import {
@@ -56,7 +55,6 @@ TodoCategoryBottomSheet.CategoryForm = function CategoryForm({ onClose }: { onCl
   const { data: todosByDate } = useSuspenseQuery(useGetTodosByDateQueryOptions({ date }));
   const todo = useRetainedValue(TodoPolicy.findTodo(todosByDate.todos, todoId));
   const changeCategory = useMutation(useChangeTodoCategoryMutationOptions());
-  const reportUnexpectedError = useReportUnexpectedError('todo');
   const scopeSelector = useSelectTodoScope();
   const { selectEditScope } = scopeSelector;
 
@@ -78,8 +76,8 @@ TodoCategoryBottomSheet.CategoryForm = function CategoryForm({ onClose }: { onCl
         ...(scope != null && { scope }),
       });
       onClose();
-    } catch (error) {
-      reportUnexpectedError(error);
+    } catch {
+      // 실패 안내와 보고는 mutation의 meta.errorFeedback이 맡는다
     }
   };
 

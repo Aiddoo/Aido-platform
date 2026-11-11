@@ -1,15 +1,14 @@
-import { useHaptics, useLogger, useSuggestionService } from '@src/bootstrap/providers/di-context';
+import { useHaptics, useSuggestionService } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
 import { emitTodoCreated } from '@src/core/events/todo-created';
+import { isLimitedFeatureError } from '@src/features/billing/subscription/domains/entitlement.error';
 import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
 import { invalidateTodos } from '@src/features/planning/todo/queries/todo-cache';
 import { useTrack } from '@src/shared/analytics';
-import { ApiError, getUserFacingMessage, toError } from '@src/shared/errors';
 import { t } from '@src/shared/i18n';
 import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
-import { SUGGESTION_LOG_EVENT } from '../constants/suggestion-log-events';
 import { isSuggestionUnavailableError } from '../domains/suggestion.error';
 import type { AiSuggestionActionInput } from '../schemas/suggestion-action-request.schema';
 import { invalidateAiSuggestions } from './suggestion-cache';
@@ -23,7 +22,6 @@ export function useActOnSuggestionMutationOptions() {
   const haptics = useHaptics();
   const suggestionService = useSuggestionService();
   const { trackEvent } = useTrack();
-  const logger = useLogger();
   const queryClient = useQueryClient();
   const toast = useAppToast();
   const gate = useEntitlementGate('AI_SUGGESTION', { surface: 'suggestions' });
@@ -57,15 +55,16 @@ export function useActOnSuggestionMutationOptions() {
         haptics.notify('error');
         return;
       }
-
       if (isSuggestionUnavailableError(error)) {
         invalidateAiSuggestions(queryClient);
-      } else if (!(error instanceof ApiError)) {
-        logger.error(SUGGESTION_LOG_EVENT.SUGGESTION_ACTION_FAILED, toError(error));
       }
-
-      haptics.notify('error');
-      toast.error(getUserFacingMessage(error), { fallback: t('ai:suggestions.toasts.retryLater') });
+    },
+    meta: {
+      errorFeedback: {
+        feature: 'ai',
+        fallbackKey: 'ai:suggestions.toasts.retryLater',
+        isHandledByFeature: isLimitedFeatureError,
+      },
     },
   });
 }

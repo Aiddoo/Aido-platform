@@ -9,7 +9,6 @@ import { addTodoFormSchema } from '@src/features/planning/composer/schemas/add-t
 import { shouldReopenRepeatPicker } from '@src/features/planning/todo/domains/todo-series.error';
 import { fromDate } from '@src/shared/date/instant';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
-import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
 import { useTranslation } from '@src/shared/i18n';
 import { BottomSheetInput, HStack, KeyboardBottomSheet, useOverlay, VStack } from '@src/shared/ui';
 import { useMutation } from '@tanstack/react-query';
@@ -42,7 +41,6 @@ export function MemoConvertBottomSheet({
   onConverted,
 }: MemoConvertBottomSheetProps) {
   const { t } = useTranslation('todo');
-  const reportUnexpectedError = useReportUnexpectedError('todo');
   const overlay = useOverlay();
   const { timeZone } = useDateFormatContext();
   const form = useForm({
@@ -69,7 +67,6 @@ export function MemoConvertBottomSheet({
       onConverted();
     } catch (error) {
       // 안내는 mutation 토스트가 맡고 시트와 입력값은 그대로 남긴다. 루트 overlay에서는 경계로 보내면 앱 전체가 내려간다
-      reportUnexpectedError(error);
       if (shouldReopenRepeatPicker(error)) {
         openTodoRepeatPicker(overlay, form);
       }

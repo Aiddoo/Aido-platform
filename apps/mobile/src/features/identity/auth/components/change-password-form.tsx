@@ -1,11 +1,11 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ANIMATION } from '@src/shared/constants/animation';
-import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
 import { useStepper } from '@src/shared/hooks/use-stepper';
 import { useTranslation } from '@src/shared/i18n';
 import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
 import { Box, FormStepLayout, KeyboardAdaptiveButton } from '@src/shared/ui';
 import { useMutation } from '@tanstack/react-query';
+import { noop } from 'es-toolkit';
 import {
   Controller,
   useController,
@@ -44,7 +44,6 @@ export function ChangePasswordForm({ stepTitles }: ChangePasswordFormProps) {
     id: 'change-password',
     initial: { step: 'currentPassword', context: {} },
   });
-  const reportUnexpectedError = useReportUnexpectedError('auth');
   const changePassword = useMutation(useChangePasswordMutationOptions());
   const { t } = useTranslation('auth');
   const newPassword = useController({ control: form.control, name: 'newPassword' });
@@ -52,11 +51,7 @@ export function ChangePasswordForm({ stepTitles }: ChangePasswordFormProps) {
   const { isSubmitting } = useFormState({ control: form.control });
 
   const submitNewPassword = form.handleSubmit(async (input) => {
-    try {
-      await changePassword.mutateAsync(input);
-    } catch (error) {
-      reportUnexpectedError(error);
-    }
+    await changePassword.mutateAsync(input).catch(noop);
   });
 
   const handleNextStep = async () => {

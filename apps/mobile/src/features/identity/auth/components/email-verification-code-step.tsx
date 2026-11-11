@@ -1,5 +1,4 @@
 import { VERIFICATION_CODE } from '@aido/api/vocabulary';
-import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
 import { useTranslation } from '@src/shared/i18n';
 import { HStack, Text, TextButton, VStack, FormStepLayout, Box } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
@@ -35,7 +34,6 @@ export function EmailVerificationCodeStep({
   isSeparated,
 }: EmailVerificationCodeStepProps) {
   const { t } = useTranslation('auth');
-  const reportUnexpectedError = useReportUnexpectedError('auth');
   const inputOTPRef = useRef<InputOTPRef>(null);
   const [code, setCode] = useState('');
   const [isInvalid, setIsInvalid] = useState(false);
@@ -56,10 +54,9 @@ export function EmailVerificationCodeStep({
     setIsInvalid(false);
     try {
       await onComplete(completedCode);
-    } catch (error) {
+    } catch {
       setIsInvalid(true);
       clearCode();
-      reportUnexpectedError(error);
     }
   };
 

@@ -105,6 +105,7 @@ export function usePurchaseMutationOptions() {
             .catch(noop);
         })
         .exhaustive(),
+    meta: { errorFeedback: false },
   });
 }
 
@@ -166,5 +167,6 @@ export function useRestoreMutationOptions() {
           });
         })
         .exhaustive(),
+    meta: { errorFeedback: false },
   });
 }

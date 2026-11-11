@@ -1,7 +1,6 @@
 import { useHaptics, useTodoService } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
 import { useTrack } from '@src/shared/analytics';
-import { getUserFacingMessage } from '@src/shared/errors';
 import { t } from '@src/shared/i18n';
 import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
@@ -9,6 +8,7 @@ import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 import {
   findTodoSeriesFailure,
   getTodoSeriesLimit,
+  isTodoSeriesFailure,
   shouldRefreshTodos,
 } from '../domains/todo-series.error';
 import { invalidateTodos } from './todo-cache';
@@ -47,13 +47,14 @@ export function useStopTodoSeriesMutationOptions() {
           }),
           { description: t(`todo:toast.series.${seriesFailure}.description`) },
         );
-        return;
       }
-
-      haptics.notify('error');
-      toast.error(getUserFacingMessage(error), {
-        fallback: t('todo:toast.updateFailedRetry'),
-      });
+    },
+    meta: {
+      errorFeedback: {
+        feature: 'todo',
+        fallbackKey: 'todo:toast.updateFailedRetry',
+        isHandledByFeature: isTodoSeriesFailure,
+      },
     },
   });
 }

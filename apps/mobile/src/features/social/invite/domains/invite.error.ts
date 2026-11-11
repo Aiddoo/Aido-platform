@@ -9,6 +9,11 @@ export const INVITE_ERROR_CODE = {
 
 export type InviteErrorCode = (typeof INVITE_ERROR_CODE)[keyof typeof INVITE_ERROR_CODE];
 
+/** 서버가 코드로 거절한 초대 코드(없음·바뀜·내 코드 등). 같은 화면에서 다시 입력하게 코드 칸에 보인다 */
+export function isInviteCodeFieldError(error: unknown) {
+  return isCodedError(error);
+}
+
 /** 서버 플래그로 친구 초대가 꺼져 있다(INVITE_2105). 재시도 대신 쓸 수 없음 안내를 보인다 */
 export function isInviteDisabledError(error: unknown) {
   return isApiError(error) && error.hasCode(ErrorCode.INVITE_2105);

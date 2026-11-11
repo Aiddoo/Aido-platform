@@ -1,5 +1,4 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
 import { useTranslation } from '@src/shared/i18n';
 import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
 import {
@@ -10,6 +9,7 @@ import {
   StyledSafeAreaView,
 } from '@src/shared/ui';
 import { useMutation } from '@tanstack/react-query';
+import { noop } from 'es-toolkit';
 import { type ReactNode, useState } from 'react';
 import { Controller, useForm, useFormState } from 'react-hook-form';
 
@@ -24,7 +24,6 @@ interface EmailLoginFormProps {
 
 export function EmailLoginForm({ children, footer }: EmailLoginFormProps) {
   const { t } = useTranslation('auth');
-  const reportUnexpectedError = useReportUnexpectedError('auth');
   const emailLogin = useMutation(useEmailLoginMutationOptions());
   const [viewportHeight, setViewportHeight] = useState(0);
   const form = useForm({
@@ -35,11 +34,7 @@ export function EmailLoginForm({ children, footer }: EmailLoginFormProps) {
   const { isSubmitting } = useFormState({ control: form.control });
 
   const submitEmailLogin = form.handleSubmit(async (values) => {
-    try {
-      await emailLogin.mutateAsync({ email: values.email, password: values.password });
-    } catch (error) {
-      reportUnexpectedError(error);
-    }
+    await emailLogin.mutateAsync({ email: values.email, password: values.password }).catch(noop);
   });
 
   return (

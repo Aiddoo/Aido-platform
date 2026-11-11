@@ -125,6 +125,7 @@ export function useApplyActionPlanMutationOptions({
         description: t(`voicePlan:failure.${cause}.description`),
       });
     },
+    meta: { errorFeedback: false },
   });
 }
 
@@ -192,6 +193,7 @@ export function useCreateQuickPlanMutationOptions({
           : t(`voicePlan:failure.${cause}.description`),
       });
     },
+    meta: { errorFeedback: false },
   });
 }
 
@@ -253,5 +255,6 @@ export function useCreateVoiceNoteDigestMutationOptions() {
       }
       // 화면이 실패를 직접 보여 주므로 토스트를 띄우지 않는다. 한 오류는 한 곳에서만 보인다
     },
+    meta: { errorFeedback: false },
   });
 }

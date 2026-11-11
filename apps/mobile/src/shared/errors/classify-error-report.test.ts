@@ -1,7 +1,11 @@
 import { ApiError } from '@src/core/errors/api-error';
 import { ZodError } from 'zod';
 
-import { classifyErrorReport, type ErrorReportKind } from './classify-error-report';
+import {
+  classifyErrorReport,
+  type ErrorReportKind,
+  getErrorReportTags,
+} from './classify-error-report';
 import { NetworkError, ParseError, ServerError, TimeoutError } from './infra-error';
 import { KeychainLockedError } from './storage-error';
 
@@ -27,5 +31,29 @@ describe('classifyErrorReport', () => {
 
     // Then
     expect(kind).toBe(expected);
+  });
+});
+
+describe('getErrorReportTags', () => {
+  it('서버 장애는 상태와 실패한 요청을 태그로 남겨 어느 API인지 찾게 한다', () => {
+    // Given
+    const error = new ServerError(503, 'req-1', {
+      method: 'POST',
+      endpoint: '/v1/todos/1/comments',
+    });
+
+    // When
+    const tags = getErrorReportTags(error);
+
+    // Then
+    expect(tags).toEqual({ statusCode: 503, method: 'POST', endpoint: '/v1/todos/1/comments' });
+  });
+
+  it('요청 정보가 없는 오류는 태그를 더하지 않는다', () => {
+    // When
+    const tags = [new ParseError('invalid'), new Error('boom')].map(getErrorReportTags);
+
+    // Then
+    expect(tags).toEqual([{}, {}]);
   });
 });

@@ -1,7 +1,7 @@
 import { INVITE_QUALIFICATION } from '@aido/api/vocabulary';
 import { useFriendService, useHaptics } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
-import { findLimitedFeature } from '@src/features/billing/subscription/domains/entitlement.error';
+import { isLimitedFeatureError } from '@src/features/billing/subscription/domains/entitlement.error';
 import { EntitlementPolicy } from '@src/features/billing/subscription/domains/entitlement.model';
 import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
 import {
@@ -10,10 +10,10 @@ import {
 } from '@src/features/billing/subscription/queries/entitlement-cache';
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
 import { useTrack } from '@src/shared/analytics';
-import { getUserFacingMessage } from '@src/shared/errors';
 import { t } from '@src/shared/i18n';
+import { isLastMutation } from '@src/shared/query/is-last-mutation';
 import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
-import { mutationOptions, type QueryClient, useQueryClient } from '@tanstack/react-query';
+import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 import { FRIEND_MUTATION_KEYS } from '../constants/friend-mutation-keys';
 import { FRIEND_QUERY_KEYS } from '../constants/friend-query-keys';
@@ -29,7 +29,6 @@ import {
 } from './friend-cache';
 
 export function useAcceptRequestMutationOptions() {
-  const haptics = useHaptics();
   const friendService = useFriendService();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
@@ -50,16 +49,11 @@ export function useAcceptRequestMutationOptions() {
       // 화면에 머무는 목록이라 행이 사라질 때까지 버튼을 꺼 둔다. 다시 눌러 요청이 또 가지 않게 한다
       await invalidateFriends(queryClient);
     },
-    onError: (error) => {
-      haptics.notify('error');
-      toast.error(getUserFacingMessage(error));
-    },
+    meta: { errorFeedback: { feature: 'friend', fallbackKey: 'common:toast.defaultError' } },
   });
 }
 
 export function useCancelRequestMutationOptions() {
-  const haptics = useHaptics();
-  const toast = useAppToast();
   const friendService = useFriendService();
   const queryClient = useQueryClient();
   const { trackEvent } = useTrack();
@@ -77,15 +71,11 @@ export function useCancelRequestMutationOptions() {
       // 화면에 머무는 목록이라 행이 사라질 때까지 버튼을 꺼 둔다. 다시 눌러 요청이 또 가지 않게 한다
       await queryClient.invalidateQueries({ queryKey: FRIEND_QUERY_KEYS.sent() });
     },
-    onError: (error) => {
-      haptics.notify('error');
-      toast.error(getUserFacingMessage(error));
-    },
+    meta: { errorFeedback: { feature: 'friend', fallbackKey: 'common:toast.defaultError' } },
   });
 }
 
 export function useRejectRequestMutationOptions() {
-  const haptics = useHaptics();
   const friendService = useFriendService();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
@@ -104,21 +94,11 @@ export function useRejectRequestMutationOptions() {
       // 화면에 머무는 목록이라 행이 사라질 때까지 버튼을 꺼 둔다. 다시 눌러 요청이 또 가지 않게 한다
       await queryClient.invalidateQueries({ queryKey: FRIEND_QUERY_KEYS.received() });
     },
-    onError: (error) => {
-      haptics.notify('error');
-      toast.error(getUserFacingMessage(error));
-    },
+    meta: { errorFeedback: { feature: 'friend', fallbackKey: 'common:toast.defaultError' } },
   });
 }
 
-/** 지금 끝나는 지우기가 마지막이면 true. 앞 지우기 뒤에 다시 받으면 아직 지우는 중인 친구가 목록에 돌아온다 */
-function isLastFriendWrite(queryClient: QueryClient) {
-  return queryClient.isMutating({ mutationKey: FRIEND_MUTATION_KEYS.writes() }) === 1;
-}
-
 export function useRemoveFriendMutationOptions() {
-  const haptics = useHaptics();
-  const toast = useAppToast();
   const friendService = useFriendService();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
@@ -150,7 +130,7 @@ export function useRemoveFriendMutationOptions() {
       invalidateEntitlements(queryClient);
     },
     // 목록을 통째로 되돌리면 함께 지우는 다른 친구가 돌아온다. 이 친구만 원래 자리에 되돌린다
-    onError: (error, _userId, context) => {
+    onError: (_error, _userId, context) => {
       const placement = context?.placement;
       if (placement != null) {
         queryClient.setQueryData(
@@ -158,16 +138,15 @@ export function useRemoveFriendMutationOptions() {
           (old) => old && withFriendRestored(old, placement),
         );
       }
-
-      haptics.notify('error');
-      toast.error(getUserFacingMessage(error));
     },
+    // 앞 지우기 뒤에 다시 받으면 아직 지우는 중인 친구가 목록에 돌아온다
     onSettled: () => {
-      if (isLastFriendWrite(queryClient)) {
+      if (isLastMutation(queryClient, FRIEND_MUTATION_KEYS.writes())) {
         queryClient.invalidateQueries({ queryKey: FRIEND_QUERY_KEYS.friends(), exact: true });
         queryClient.invalidateQueries({ queryKey: FRIEND_QUERY_KEYS.searches() });
       }
     },
+    meta: { errorFeedback: { feature: 'friend', fallbackKey: 'common:toast.defaultError' } },
   });
 }
 
@@ -177,8 +156,6 @@ interface ReorderFriendVariables {
 }
 
 export function useReorderFriendMutationOptions() {
-  const haptics = useHaptics();
-  const toast = useAppToast();
   const friendService = useFriendService();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
@@ -194,11 +171,10 @@ export function useReorderFriendMutationOptions() {
       trackEvent('friend_reordered');
       queryClient.invalidateQueries({ queryKey: FRIEND_QUERY_KEYS.friends() });
     },
-    onError: (error) => {
-      haptics.notify('error');
-      toast.error(getUserFacingMessage(error));
+    onError: () => {
       queryClient.invalidateQueries({ queryKey: FRIEND_QUERY_KEYS.friends() });
     },
+    meta: { errorFeedback: { feature: 'friend', fallbackKey: 'common:toast.defaultError' } },
   });
 }
 
@@ -240,8 +216,8 @@ export function useSendRequestByTagMutationOptions({
       toast.success(t('friend:toast.requestSent'));
     },
     onError: (error) => {
-      haptics.notify('error');
-      if (findLimitedFeature(error) != null) {
+      if (isLimitedFeatureError(error)) {
+        haptics.notify('error');
         const snapshot = getCachedEntitlements(queryClient);
         const knownLimit = snapshot == null ? null : EntitlementPolicy.getLimit(snapshot, 'FRIEND');
         gate.promptIfBlockedError(
@@ -262,10 +238,14 @@ export function useSendRequestByTagMutationOptions({
                 },
               },
         );
-        return;
       }
-
-      toast.error(getUserFacingMessage(error), { fallback: t('friend:toast.requestFailed') });
+    },
+    meta: {
+      errorFeedback: {
+        feature: 'friend',
+        fallbackKey: 'friend:toast.requestFailed',
+        isHandledByFeature: isLimitedFeatureError,
+      },
     },
   });
 }
