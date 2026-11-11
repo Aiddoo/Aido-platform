@@ -74,13 +74,13 @@ migrate 이미지(`tooling/database-migrate`)는 Drizzle 마이그레이션 폴�
 
 ## Job과 종료
 
-durable job은 PostgreSQL(pg-boss)만 쓴다. 배포 env에 남은 `JOB_BACKEND`·`JOB_REDIS_DRAIN_ENABLED`·`JOB_POLLING_INTERVAL_SECONDS`는 무시된다. Redis는 `CACHE_TYPE=redis`·`PUSH_RATE_LIMIT_BACKEND=redis`를 고른 경우에만 연결한다.
+durable job은 PostgreSQL(pg-boss)만 쓴다. Redis는 `CACHE_TYPE=redis`·`PUSH_RATE_LIMIT_BACKEND=redis`를 고른 경우에만 연결한다.
 
 job runtime의 기본 graceful 종료 대기는 `JOB_SHUTDOWN_TIMEOUT_MS=90000`이며 production Compose의 `stop_grace_period`는 120초다. 기본 작업 대기 뒤 HTTP·자원 종료 여유를 둔다. 종료 대기를 더 길게 설정한다면 Compose 유예도 함께 늘린다. 제한 시간을 넘는 작업의 완료나 모든 background 작업의 drain까지 보장하는 설정은 아니다. 실제 적용 값과 active 작업 상태는 배포 후 확인한다.
 
-[`push-notifications.md`](push-notifications.md)는 delivery fence/receipt/cache와 남는 전달 한계를 정리한다. 리텐션 발송은 공용 push-delivery outbox를 쓴다. 배포 중 리마인더·푸시를 잃지 않는 기준은 [작업과 이벤트](jobs-and-events.md#배포-중-내구성)에 있다.
+delivery fence·receipt·남는 전달 한계는 [푸시 발송](push-delivery.md#deliveryreceipt)에 있다. 배포 중 리마인더·푸시를 잃지 않는 기준은 [작업과 이벤트](jobs-and-events.md#배포-중-내구성)에 있다.
 
-배포 시각: 03:00~03:40 KST(일간 정리 작업)와 07:00~08:00 KST(아침 리마인더 몰림)를 피한다. 스케줄 `missed` 정책과 워터마크가 들어간 뒤에도 사용량이 적은 시간을 고른다.
+배포 시각: 03:00~03:40 KST(일간 정리 작업)와 07:00~08:00 KST(아침 리마인더 몰림)를 피한다. 놓친 실행은 `missed`·워터마크가 보완하지만 사용량이 적은 시간을 고른다.
 
 ## 롤백의 범위
 
@@ -94,12 +94,12 @@ workflow 수동 실행은 특정 SHA와 force를 지원한다. 서버의 `script
 
 ## 공개 버전과 env 반영
 
-env 목록과 규칙은 [설정](configuration.md), 운영 경보를 사람에게 보내는 Sentry 규칙은 [관측](observability.md#경보-전달)에 있다.
+env 목록과 규칙은 [설정](configuration.md), 운영 경보를 사람에게 보내는 Sentry 규칙은 [관측](observability.md#sentry-무료-플랜-운영)에 있다.
 
-Swagger는 development에서 `/api/docs`, `/api/admin/docs`로만 제공한다. OS push 권한·외부 공급자 도착·LLM 의미 품질은 `/health` 성공만으로 확인되지 않는다.
+Swagger는 개발 도구가 켜진 로컬 실행에서만 `/api/docs`, `/api/admin/docs`로 제공한다(배포된 개발서버는 열지 않는다). OS push 권한·외부 공급자 도착·LLM 의미 품질은 `/health` 성공만으로 확인되지 않는다.
 
 스토어 공개 버전은 API `/v1/app-config/app-version` 설정으로 안내하며 API 접근을 차단하지 않는다. 두 store 공개 후에만 `scripts/update-app-version-env.py`의 `--enabled true --published`를 사용한다. script는 app-version 3개 키만 수정하고 private backup을 만들며 나머지 내용·권한을 보존한다. 실행 예시의 버전은 해당 release의 실제 공개값으로 선택한다.
 
 env만 반영할 때는 배포 락과 같은 image 확인 뒤 API만 `--no-deps --no-build --pull never --force-recreate`로 재생성한다. `docker restart`는 env_file 변경을 반영하지 않는다. 실패하면 private env backup과 같은 image로 복구한다.
 
-작업 PR과 릴리스 stack은 `main`으로 바로 머지한다(`develop`은 더 이상 쓰지 않는다). 검증 완료·merge 완료·이미지 발행·배포 health·실제 DB verify는 각각의 결과로 기록하며, 이 문서는 아직 수행하지 않은 작업을 완료로 표시하지 않는다.
+PR·stack 규칙은 [Git](../../../docs/conventions/git.md)에 있다. 검증 완료·merge 완료·이미지 발행·배포 health·실제 DB verify는 각각의 결과로 기록하며, 이 문서는 아직 수행하지 않은 작업을 완료로 표시하지 않는다.

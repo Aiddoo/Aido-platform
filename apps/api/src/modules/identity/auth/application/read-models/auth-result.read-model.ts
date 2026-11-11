@@ -1,8 +1,5 @@
-import type { PremiumEntitlements } from "@aido/api/contracts/auth";
-import type { DeviceType, SubscriptionStatus, UserRole } from "@aido/api/vocabulary";
-import type { PremiumSource, SubscriptionPlanType } from "@aido/api/vocabulary";
+import type { DeviceType, UserRole } from "@aido/api/vocabulary";
 
-import type { AccountProvider, UserStatus } from "#api/modules/identity/auth/domain/auth.constants";
 import type { SupportedLocale } from "#api/shared/domain/locale";
 
 import type { TokenPair } from "../ports/auth-crypto.port.js";
@@ -80,40 +77,9 @@ export interface RequestDevice {
 export interface RequestMetadata {
   ip?: string;
   userAgent?: string;
-  deviceName?: string;
-  deviceType?: string;
   device?: RequestDevice;
   /** Accept-Language의 지원 언어. 보내지 않은 요청에는 없다. */
   locale?: SupportedLocale;
-}
-
-/**
- * 현재 사용자 정보 결과
- */
-export interface CurrentUserResult {
-  userId: string;
-  email: string;
-  sessionId: string;
-  userTag: string;
-  role: UserRole;
-  status: UserStatus;
-  emailVerifiedAt: string | null;
-  subscriptionStatus: SubscriptionStatus;
-  subscriptionExpiresAt: string | null;
-  name: string | null;
-  profileImage: string | null;
-  createdAt: string;
-  providers: AccountProvider[];
-  premiumSource?: PremiumSource | null;
-  premiumEndsAt?: string | null;
-  premiumPeriodEndsAt?: string | null;
-  willRenew?: boolean;
-  bankedPremiumDays?: number;
-  premiumGrantEndedAt?: string | null;
-  premiumIsTrial?: boolean;
-  premiumPlanType?: SubscriptionPlanType | null;
-  isPremium?: boolean;
-  entitlements?: PremiumEntitlements;
 }
 
 /**

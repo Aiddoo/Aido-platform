@@ -7,6 +7,7 @@ import {
   type AuthSessionRotation,
 } from "#api/modules/identity/auth/domain/auth-session.aggregate";
 import { SessionId } from "#api/modules/identity/auth/domain/session-id.vo";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 export class InMemoryAuthSessionRepository extends AuthSessionRepositoryPort {
   readonly #sessions = new Map<string, AuthSessionPrimitives>();
@@ -34,8 +35,8 @@ export class InMemoryAuthSessionRepository extends AuthSessionRepositoryPort {
     return SessionId.reconstitute(`session-${this.#sequence}`);
   }
 
-  async findById(sessionId: string): Promise<AuthSession | null> {
-    const session = this.#sessions.get(sessionId);
+  async findById(sessionId: SessionId): Promise<AuthSession | null> {
+    const session = this.#sessions.get(sessionId.value);
     return session == null ? null : AuthSession.reconstitute(session);
   }
 
@@ -44,11 +45,11 @@ export class InMemoryAuthSessionRepository extends AuthSessionRepositoryPort {
     return session == null ? null : AuthSession.reconstitute(session);
   }
 
-  async listActiveByUserId(userId: string, now: Temporal.Instant): Promise<AuthSession[]> {
+  async listActiveByUserId(userId: UserId, now: Temporal.Instant): Promise<AuthSession[]> {
     return this.all
       .filter(
         (session) =>
-          session.userId === userId &&
+          session.userId === userId.value &&
           session.revokedAt == null &&
           Temporal.Instant.compare(session.expiresAt, now) > 0,
       )
@@ -72,16 +73,17 @@ export class InMemoryAuthSessionRepository extends AuthSessionRepositoryPort {
             lastUsedAt: saved.lastUsedAt,
             expiresAt: saved.expiresAt,
             revokedAt: saved.revokedAt,
+            updatedAt: saved.updatedAt,
           },
     );
   }
 
   async rotateToken(
-    sessionId: string,
+    sessionId: SessionId,
     rotation: AuthSessionRotation,
     now: Temporal.Instant,
   ): Promise<boolean> {
-    const session = this.#sessions.get(sessionId);
+    const session = this.#sessions.get(sessionId.value);
     if (
       session == null ||
       session.revokedAt != null ||
@@ -89,45 +91,48 @@ export class InMemoryAuthSessionRepository extends AuthSessionRepositoryPort {
     ) {
       return false;
     }
-    this.#sessions.set(sessionId, {
+    this.#sessions.set(sessionId.value, {
       ...session,
       refreshTokenHash: rotation.refreshTokenHash,
       previousTokenHash: rotation.previousTokenHash,
       tokenVersion: rotation.tokenVersion,
       expiresAt: rotation.expiresAt,
       lastUsedAt: now,
+      updatedAt: now,
     });
     return true;
   }
 
-  async revoke(sessionId: string, reason: RevokeReason, now: Temporal.Instant): Promise<void> {
-    const session = this.#sessions.get(sessionId);
+  async revoke(sessionId: SessionId, reason: RevokeReason, now: Temporal.Instant): Promise<void> {
+    const session = this.#sessions.get(sessionId.value);
     if (session == null) {
       return;
     }
-    this.#sessions.set(sessionId, { ...session, revokedAt: now });
-    this.revocationReasons.set(sessionId, reason);
+    this.#sessions.set(sessionId.value, { ...session, revokedAt: now, updatedAt: now });
+    this.revocationReasons.set(sessionId.value, reason);
   }
 
   async revokeByTokenFamily(
     tokenFamily: string,
     reason: RevokeReason,
     now: Temporal.Instant,
-  ): Promise<readonly string[]> {
+  ): Promise<readonly SessionId[]> {
     return this.#revokeWhere((session) => session.tokenFamily === tokenFamily, reason, now);
   }
 
   async revokeAllByUserId(params: {
-    readonly userId: string;
+    readonly userId: UserId;
     readonly reason: RevokeReason;
     readonly now: Temporal.Instant;
-    readonly exceptSessionId?: string;
-  }): Promise<readonly string[]> {
+    readonly exceptSessionId?: SessionId;
+  }): Promise<readonly SessionId[]> {
     const { userId, reason, now, exceptSessionId } = params;
     return this.#revokeWhere(
       (session) =>
-        session.userId === userId &&
-        (exceptSessionId == null || exceptSessionId === "" || session.id !== exceptSessionId),
+        session.userId === userId.value &&
+        (exceptSessionId == null ||
+          exceptSessionId.value === "" ||
+          session.id !== exceptSessionId.value),
       reason,
       now,
     );
@@ -137,11 +142,11 @@ export class InMemoryAuthSessionRepository extends AuthSessionRepositoryPort {
     predicate: (session: AuthSessionPrimitives) => boolean,
     reason: RevokeReason,
     now: Temporal.Instant,
-  ): Promise<readonly string[]> {
+  ): Promise<readonly SessionId[]> {
     const targets = this.all.filter((session) => session.revokedAt == null && predicate(session));
     for (const session of targets) {
-      await this.revoke(session.id, reason, now);
+      await this.revoke(SessionId.reconstitute(session.id), reason, now);
     }
-    return targets.map((session) => session.id);
+    return targets.map((session) => SessionId.reconstitute(session.id));
   }
 }

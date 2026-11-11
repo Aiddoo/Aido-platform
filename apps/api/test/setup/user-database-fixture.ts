@@ -23,14 +23,20 @@ interface RelatedFixtures {
   accounts?: RelatedInput<typeof account>[];
 }
 
+type UserInput = Omit<typeof user.$inferInsert, "updatedAt"> &
+  Partial<Pick<typeof user.$inferInsert, "updatedAt">>;
+
 /** 운영의 사용자 생성처럼 사용자와 연관 행을 한 트랜잭션에서 만든다. */
 export function createUserDatabaseFixture(
   client: Database,
-  userInput: typeof user.$inferInsert,
+  userInput: UserInput,
   related: RelatedFixtures,
 ) {
   return client.transaction(async (tx) => {
-    const [created] = await tx.insert(user).values(userInput).returning();
+    const [created] = await tx
+      .insert(user)
+      .values({ updatedAt: Temporal.Instant.fromEpochMilliseconds(Date.now()), ...userInput })
+      .returning();
     if (created == null) {
       throw new Error("user fixture was not created");
     }

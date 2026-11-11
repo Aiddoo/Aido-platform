@@ -9,6 +9,7 @@ import {
   WEATHER_PRECIPITATION_TYPES,
   WEATHER_PRESSURE_TRENDS,
   WEATHER_PROVIDERS,
+  WEATHER_RESCHEDULE_REASONS,
   type WeatherPrecipitationType,
 } from '@aido/api/vocabulary';
 import { HOUR_MS, MINUTE_MS } from '@src/shared/constants/time-units';
@@ -150,6 +151,24 @@ const attributionSchema = z.object({
 });
 export type AttributionInfo = z.infer<typeof attributionSchema>;
 
+const rescheduleOptionSchema = z.object({
+  startsAt: instantSchema,
+  precipitationChance: z.number(),
+  apparentTemperature: z.number(),
+  isRecommended: z.boolean(),
+});
+export type RescheduleOption = z.infer<typeof rescheduleOptionSchema>;
+
+/** 서버가 판단한 영향받는 할 일(시각 순)과 할 일별 옮길 시각 후보(첫 항목이 추천). reason이 null이면 영향받는 할 일이 없다 */
+const weatherReportBriefingSchema = z.object({
+  reason: z.enum(WEATHER_RESCHEDULE_REASONS).nullable(),
+  affectedTodoIds: z.array(z.int()),
+  rescheduleOptions: z.array(
+    z.object({ todoId: z.int(), options: z.array(rescheduleOptionSchema) }),
+  ),
+});
+export type WeatherReportBriefing = z.infer<typeof weatherReportBriefingSchema>;
+
 export const weatherReportSchema = z.object({
   location: registeredLocationSchema,
   current: currentWeatherSchema,
@@ -160,6 +179,8 @@ export const weatherReportSchema = z.object({
   airQuality: airQualitySchema.nullable(),
   attribution: attributionSchema,
   fetchedAt: instantSchema,
+  // 옛 서버이거나 서버가 오늘 할 일을 읽지 못하면 null이다
+  briefing: weatherReportBriefingSchema.nullable(),
 });
 export type WeatherReport = z.infer<typeof weatherReportSchema>;
 
@@ -188,6 +209,8 @@ function getUpcomingHours(
   return hourly.filter((hour) => getHourEndsAt(hour) > toEpochMs(now));
 }
 
+// 날씨 화면 부품은 예보에서 쓰는 칸만 select로 구독해 그 칸이 바뀔 때만 다시 그린다.
+// 그래서 예보 일부를 받는 규칙은 Policy 밖 함수로 두고 필요한 칸만 받는다
 type PrecipitationSource = Pick<WeatherReport, 'location' | 'nextHour' | 'hourly'>;
 
 /** 분 단위 예보에서 온 시각은 분까지, 시간별 예보에서 온 시각은 정시로 안내한다. */
@@ -256,7 +279,10 @@ function toWindow(
 }
 
 /** 분 단위 예보를 먼저 믿고, 그 범위 끝까지 이어지는 비는 시간별 예보에서 그치는 시각을 찾는다 */
-function getPrecipitationWindow(report: PrecipitationSource, now: Instant): PrecipitationWindow {
+export function getPrecipitationWindow(
+  report: PrecipitationSource,
+  now: Instant,
+): PrecipitationWindow {
   const nowMs = toEpochMs(now);
   const { nextHour, hourly } = report;
 
@@ -317,22 +343,22 @@ function findHourlyPrecipitationOutlook(
   return { hour, isOngoing: toEpochMs(hour.startsAt) <= toEpochMs(now) };
 }
 
-function isReportStale(report: Pick<WeatherReport, 'fetchedAt'>, now: Instant): boolean {
+export function isReportStale(report: Pick<WeatherReport, 'fetchedAt'>, now: Instant): boolean {
   return toEpochMs(now) - toEpochMs(report.fetchedAt) > STALE_AFTER_MS;
 }
 
 /** 6시간 넘게 갱신되지 않은 데이터로는 곧 올 비나 할 일 브리핑을 안내하지 않는다. */
-function isNowcastExpired(report: Pick<WeatherReport, 'fetchedAt'>, now: Instant): boolean {
+export function isNowcastExpired(report: Pick<WeatherReport, 'fetchedAt'>, now: Instant): boolean {
   return toEpochMs(now) - toEpochMs(report.fetchedAt) > NOWCAST_EXPIRES_AFTER_MS;
 }
 
 /** 예보 위치 시간대의 오늘 날짜(YYYY-MM-DD). 일별 예보의 날짜가 이 시간대를 따른다. */
-function getTodayKey(report: Pick<WeatherReport, 'location'>, now: Instant): string {
+export function getTodayKey(report: Pick<WeatherReport, 'location'>, now: Instant): string {
   return toDateKey(now, report.location.timezone);
 }
 
 /** 오늘 예보. 일별 예보에 오늘이 없으면(날짜 경계의 지연) 첫 예보를 오늘처럼 쓴다. */
-function findTodayOrFirstForecast(
+export function findTodayOrFirstForecast(
   report: Pick<WeatherReport, 'location' | 'daily'>,
   now: Instant,
 ): DailyForecastEntry | null {
@@ -366,12 +392,7 @@ export const WeatherReportPolicy = {
   isWetHour,
   isFrozenPrecipitation,
   getUpcomingHours,
-  getPrecipitationWindow,
   findHourlyPrecipitationOutlook,
-  isReportStale,
-  isNowcastExpired,
-  getTodayKey,
-  findTodayOrFirstForecast,
   getActiveAlerts,
   isAlertInEffect,
   getSunEvents,

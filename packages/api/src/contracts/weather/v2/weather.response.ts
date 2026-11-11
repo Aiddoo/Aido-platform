@@ -11,6 +11,8 @@ import {
   WEATHER_PRESSURE_TRENDS,
   WEATHER_PROVIDERS,
   WEATHER_REPORT_LIMITS,
+  WEATHER_RESCHEDULE_MAX_TODO_IDS,
+  WEATHER_RESCHEDULE_REASONS,
 } from "../../../vocabulary/weather.constants.js";
 
 const percentSchema = z.number().int().min(0).max(100);
@@ -176,6 +178,38 @@ export const weatherAttributionSchema = z.object({
 
 export type WeatherAttribution = z.infer<typeof weatherAttributionSchema>;
 
+export const weatherRescheduleOptionSchema = z.object({
+  startsAt: datetimeSchema.describe("옮길 시각 후보. 같은 날(요청 시간대)의 시간별 예보 시작 시각"),
+  precipitationChance: percentSchema.describe("그 시간의 강수 확률 (%)"),
+  apparentTemperature: z.number().describe("그 시간의 체감 온도 (°C)"),
+  isRecommended: z.boolean().describe("서버가 가장 낫다고 고른 후보. 목록의 첫 항목이다"),
+});
+
+export type WeatherRescheduleOption = z.infer<typeof weatherRescheduleOptionSchema>;
+
+export const weatherBriefingSchema = z.object({
+  reason: z
+    .enum(WEATHER_RESCHEDULE_REASONS)
+    .nullable()
+    .describe("영향받는 할 일이 있을 때 무엇을 피해 옮길지. 비·눈(rain)이 더위(heat)보다 먼저다"),
+  affectedTodoIds: z
+    .array(z.number().int().positive())
+    .max(WEATHER_RESCHEDULE_MAX_TODO_IDS)
+    .describe(
+      "오늘 남은 시간 중 시각이 정해진 미완료 할 일에서 날씨와 겹친 할 일 id. 시각이 이른 순이며 날씨 푸시와 같은 기준이다",
+    ),
+  rescheduleOptions: z
+    .array(
+      z.object({
+        todoId: z.number().int().positive(),
+        options: z.array(weatherRescheduleOptionSchema).max(4),
+      }),
+    )
+    .describe("affectedTodoIds의 각 할 일을 옮길 시간 후보(최대 4개, 첫 항목이 추천)"),
+});
+
+export type WeatherBriefing = z.infer<typeof weatherBriefingSchema>;
+
 export const weatherReportSchema = z
   .object({
     location: weatherLocationSchema,
@@ -197,6 +231,11 @@ export const weatherReportSchema = z
     fetchedAt: datetimeSchema.describe(
       "공급자에서 데이터를 받은 시각. 공급자 장애 때는 마지막 성공 시각",
     ),
+    briefing: weatherBriefingSchema
+      .optional()
+      .describe(
+        "영향받는 할 일과 옮길 시간 후보(서버가 판단). 오늘 할 일을 읽지 못하면 빠진다. 1.15.1에서 추가했다",
+      ),
   })
   .meta({
     example: {

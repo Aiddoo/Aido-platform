@@ -24,9 +24,9 @@ import {
 } from '@src/features/weather/utils/weather-analytics';
 import { useTrack } from '@src/shared/analytics';
 import { useRouteParams } from '@src/shared/hooks/use-route-params';
-import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
 import {
   AdaptivePane,
+  usePaneSizeClass,
   Box,
   QueryErrorBoundary,
   type QueryErrorFallbackProps,
@@ -50,7 +50,7 @@ export default function WeatherScreen() {
   const location = useWeatherLocation();
   useWeatherScreenTracking(location.status);
   const locationRevision = useWeatherLocationRevision();
-  const isCompact = useWindowSizeClass() === 'compact';
+  const isCompact = usePaneSizeClass() === 'compact';
 
   return (
     <>

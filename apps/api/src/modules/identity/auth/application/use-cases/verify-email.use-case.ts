@@ -6,12 +6,12 @@ import type {
   RequestMetadata,
   VerifyEmailResult,
 } from "#api/modules/identity/auth/application/read-models/auth-result.read-model";
-import { assertStatusAllowsLogin } from "#api/modules/identity/auth/domain/account-status.domain-service";
 import { AUTH_DEFAULTS } from "#api/modules/identity/auth/domain/auth.constants";
+import { assertStatusAllowsLogin } from "#api/modules/identity/users/domain/account-status.domain-service";
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
-import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
+import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 
 import { AuthLogEvent } from "../auth.log-events.js";
 import type { AuthSecurityLogRepositoryPort } from "../ports/auth-security-log.repository.port.js";
@@ -80,11 +80,11 @@ export class VerifyEmailUseCase {
       });
 
       await this.#dependencies.userRepository.markEmailVerified(
-        user.id.value,
+        user.id,
         this.#dependencies.clock.now(),
       );
 
-      await this.#dependencies.retentionEnroller.activateNewUser(user.id.value);
+      await this.#dependencies.retentionEnroller.activateNewUser(user.id);
 
       const { tokens } = await this.#dependencies.sessionService.execute({
         userId: user.id.value,
@@ -96,15 +96,13 @@ export class VerifyEmailUseCase {
       });
 
       await this.#dependencies.securityLogRepository.create({
-        userId: user.id.value,
+        userId: user.id,
         event: SECURITY_EVENT.EMAIL_VERIFIED,
         ipAddress: ip,
         userAgent,
       });
 
-      const userWithProfile = await this.#dependencies.userRepository.findByIdWithProfile(
-        user.id.value,
-      );
+      const userWithProfile = await this.#dependencies.userRepository.findByIdWithProfile(user.id);
 
       return {
         tokens,

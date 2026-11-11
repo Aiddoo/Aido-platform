@@ -2,32 +2,38 @@ import { ErrorCode } from "@aido/api/errors";
 import { Logger } from "@nestjs/common";
 import { and, eq, sql } from "drizzle-orm";
 
-import { EntitlementService } from "#api/modules/access/application/services/entitlement/entitlement.service";
-import { EntitlementCacheAdapter } from "#api/modules/access/infrastructure/adapters/entitlement/entitlement-cache.adapter";
-import { DrizzleEntitlementReader } from "#api/modules/access/infrastructure/persistence/entitlement/drizzle-entitlement.reader";
+import { GetResolvedAccessUseCase } from "#api/modules/access/entitlements/application/use-cases/get-resolved-access.use-case";
+import { EntitlementCacheAdapter } from "#api/modules/access/entitlements/infrastructure/adapters/entitlement-cache.adapter";
+import { EntitlementReaderAdapter } from "#api/modules/access/entitlements/infrastructure/adapters/entitlement-reader.adapter";
+import { DrizzleAccessStateReader } from "#api/modules/access/entitlements/infrastructure/persistence/drizzle-access-state.reader";
 import type {
   AiGenerationRequest,
   AiGenerationResult,
-} from "#api/modules/ai-assistance/application/ports/generation/ai-generator.port";
-import type { CreateSuggestionInput } from "#api/modules/ai-assistance/application/ports/suggestions/ai-suggestion.repository.port";
-import { SuggestionContextBuilder } from "#api/modules/ai-assistance/application/services/suggestions/suggestion-context.builder";
-import { GenerateReport } from "#api/modules/ai-assistance/application/use-cases/reports/generate-report.use-case";
-import { AnalyzeAndCreateSuggestions } from "#api/modules/ai-assistance/application/use-cases/suggestions/analyze-and-create-suggestions.use-case";
-import { HandleSuggestionAction } from "#api/modules/ai-assistance/application/use-cases/suggestions/handle-suggestion-action.use-case";
-import { AiReportJobName } from "#api/modules/ai-assistance/infrastructure/jobs/reports/ai-report-queue";
-import { AiSuggestionJobName } from "#api/modules/ai-assistance/infrastructure/jobs/suggestions/ai-suggestion-queue";
-import { DrizzleAiReportRepository } from "#api/modules/ai-assistance/infrastructure/persistence/reports/drizzle-ai-report.repository";
-import { DrizzleTodoStatsReader } from "#api/modules/ai-assistance/infrastructure/persistence/reports/drizzle-todo-stats.reader";
-import { DrizzleAiSuggestionRepository } from "#api/modules/ai-assistance/infrastructure/persistence/suggestions/drizzle-ai-suggestion.repository";
-import { ReportGenerationProcessor } from "#api/modules/ai-assistance/infrastructure/processors/reports/report-generation.processor";
-import { SuggestionAnalysisProcessor } from "#api/modules/ai-assistance/infrastructure/processors/suggestions/suggestion-analysis.processor";
-import { AiDataSharingConsentReader } from "#api/modules/identity/application/services/settings/ai-data-sharing-consent-reader.service";
-import { DrizzleUserRepository } from "#api/modules/identity/auth/infrastructure/persistence/drizzle-user.repository";
-import { DrizzleUserConsentRepository } from "#api/modules/identity/infrastructure/persistence/settings/drizzle-user-consent.repository";
-import { DrizzleClientAppVersionReader } from "#api/modules/notification/infrastructure/persistence/delivery/drizzle-client-app-version.reader";
-import type { StagedTodoCreatorPort } from "#api/modules/planning/application/ports/todos/staged-todo-creator.port";
+} from "#api/modules/ai-assistance/generation/application/ports/ai-generator.port";
+import { ScheduledAiConsentReader } from "#api/modules/ai-assistance/generation/application/scheduled-ai-consent.reader";
+import { GenerateReportUseCase } from "#api/modules/ai-assistance/reports/application/use-cases/generate-report.use-case";
+import { AiReportJobName } from "#api/modules/ai-assistance/reports/infrastructure/jobs/ai-report.queue";
+import { ReportGenerationProcessor } from "#api/modules/ai-assistance/reports/infrastructure/jobs/report-generation.processor";
+import { DrizzleAiReportRepository } from "#api/modules/ai-assistance/reports/infrastructure/persistence/drizzle-ai-report.repository";
+import { DrizzleTodoStatsReader } from "#api/modules/ai-assistance/reports/infrastructure/persistence/drizzle-todo-stats.reader";
+import { SuggestionContextReader } from "#api/modules/ai-assistance/suggestions/application/suggestion-context.reader";
+import { AnalyzeAndCreateSuggestionsUseCase } from "#api/modules/ai-assistance/suggestions/application/use-cases/analyze-and-create-suggestions.use-case";
+import { HandleSuggestionActionUseCase } from "#api/modules/ai-assistance/suggestions/application/use-cases/handle-suggestion-action.use-case";
+import { SuggestionId } from "#api/modules/ai-assistance/suggestions/domain/suggestion-id.vo";
+import {
+  Suggestion,
+  type SuggestionPrimitives,
+} from "#api/modules/ai-assistance/suggestions/domain/suggestion.aggregate";
+import { AiSuggestionJobName } from "#api/modules/ai-assistance/suggestions/infrastructure/jobs/ai-suggestion.queue";
+import { SuggestionAnalysisProcessor } from "#api/modules/ai-assistance/suggestions/infrastructure/jobs/suggestion-analysis.processor";
+import { DrizzleSuggestionActivityReader } from "#api/modules/ai-assistance/suggestions/infrastructure/persistence/drizzle-suggestion-activity.reader";
+import { DrizzleSuggestionRepository } from "#api/modules/ai-assistance/suggestions/infrastructure/persistence/drizzle-suggestion.repository";
+import { GetAiDataSharingConsentUseCase } from "#api/modules/identity/preferences/application/use-cases/get-ai-data-sharing-consent.use-case";
+import { DrizzleUserConsentRepository } from "#api/modules/identity/preferences/infrastructure/persistence/drizzle-user-consent.repository";
+import { DrizzleUserRepository } from "#api/modules/identity/users/infrastructure/persistence/drizzle-user.repository";
+import { DrizzleClientAppVersionReader } from "#api/modules/notification/push/infrastructure/persistence/drizzle-client-app-version.reader";
+import type { StagedTodoCreatorPort } from "#api/modules/planning/todos/planning-todos.public";
 import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
-import { CacheService } from "#api/platform/cache/cache.service";
 import { databaseSqlState, requireRecord } from "#api/platform/database/database-error.util";
 import { createEntityId } from "#api/platform/database/entity-id";
 import {
@@ -38,11 +44,14 @@ import {
   todoCategory,
   user as userTable,
 } from "#api/platform/database/schema/index";
-import type { AfterCommitTask } from "#api/shared/application/ports/index";
-import { TodoBuilder } from "#test/builders/todo.builder";
+import type { AfterCommitTask } from "#api/shared/application/ports/after-commit-task.registry.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { instantFromDate } from "#api/shared/domain/time/instant";
+import { DateClock } from "#test/doubles/platform/date-clock";
+import { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
 import { createSuggestionPick } from "#test/fixtures/ai-assistance.fixture";
 import { createReportAiResponse } from "#test/fixtures/ai-response.fixture";
-import { createTodoResponseFixture } from "#test/fixtures/todo-response.fixture";
+import { createTodoReadModelFixture } from "#test/fixtures/planning/todo-read-model.fixture";
 import { TodoFixture } from "#test/fixtures/todo.fixture";
 import { UserFixture } from "#test/fixtures/user.fixture";
 import { FakeAiGenerator } from "#test/mocks/fake-ai.generator";
@@ -66,9 +75,13 @@ class GatedAiGenerator extends FakeAiGenerator {
   }
 }
 
-class FailingSuggestionRepository extends DrizzleAiSuggestionRepository {
-  override createMany(inputs: CreateSuggestionInput[]) {
-    return super.createMany(inputs.map((input) => ({ ...input, userId: "missing-ai-user" })));
+class FailingSuggestionRepository extends DrizzleSuggestionRepository {
+  override saveMany(suggestions: readonly Suggestion[]) {
+    return super.saveMany(
+      suggestions.map((suggestion) =>
+        Suggestion.reconstitute({ ...suggestion.toPrimitives(), userId: "missing-ai-user" }),
+      ),
+    );
   }
 }
 
@@ -77,8 +90,9 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
   let client: TestDatabaseClient;
   let fixture: ReturnType<typeof createDatabaseTransactionFixture>;
   let memory: InMemoryCacheStore;
-  let entitlement: EntitlementService;
-  let suggestions: DrizzleAiSuggestionRepository;
+  let entitlement: EntitlementReaderAdapter;
+  let suggestions: DrizzleSuggestionRepository;
+  let activity: DrizzleSuggestionActivityReader;
   let reports: DrizzleAiReportRepository;
   let users: DrizzleUserRepository;
   let userId: string;
@@ -94,20 +108,30 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
     vi.setSystemTime(CURRENT_TIME);
     fixture = createDatabaseTransactionFixture(client);
     memory = new InMemoryCacheStore({ defaultTtlMs: 600_000, maxItems: 20 });
-    entitlement = new EntitlementService({
-      database: new DrizzleEntitlementReader(fixture.txHost),
-      cacheService: new EntitlementCacheAdapter(new CacheService(memory)),
-    });
-    suggestions = new DrizzleAiSuggestionRepository(fixture.txHost);
+    entitlement = new EntitlementReaderAdapter(
+      new GetResolvedAccessUseCase({
+        accessStateReader: new DrizzleAccessStateReader(fixture.txHost),
+        entitlementCache: new EntitlementCacheAdapter(memory),
+        clock: new DateClock(),
+      }),
+    );
+    suggestions = new DrizzleSuggestionRepository(fixture.txHost);
+    activity = new DrizzleSuggestionActivityReader(fixture.txHost);
     reports = new DrizzleAiReportRepository(fixture.txHost);
-    users = new DrizzleUserRepository(fixture.txHost);
+    users = new DrizzleUserRepository(fixture.txHost, new DateClock());
     userId = createEntityId();
     await client
       .insert(userTable)
       .values(UserFixture.create({ id: userId, subscriptionStatus: "ACTIVE" }));
     const [category] = await client
       .insert(todoCategory)
-      .values({ userId, name: "독서", color: "#3B82F6", sortOrder: 0 })
+      .values({
+        userId,
+        name: "독서",
+        color: "#3B82F6",
+        updatedAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
+        sortOrder: 0,
+      })
       .returning();
     categoryId = requireRecord(category).id;
     await client.insert(todo).values(
@@ -116,7 +140,7 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
           userId,
           categoryId,
           title: "책 읽기 10분",
-          startDate: new Date(`${date}T00:00:00Z`),
+          startDate: Temporal.PlainDate.from(date),
         });
         return row;
       }),
@@ -130,39 +154,48 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
   });
 
   const userMutationLock = {
-    async lockById(id: string) {
+    async lockById(id: UserId) {
       return (await users.findByIdForUpdate(id)) !== null;
     },
   };
 
   function generation(provider: FakeAiGenerator, repository = suggestions) {
     const logger = new Logger("AiGenerationIntegration");
-    const consentReader = new AiDataSharingConsentReader({
-      consentRepository: new DrizzleUserConsentRepository(fixture.txHost),
+    const clock = new DateClock();
+    const pushDeviceVersions = new DrizzleClientAppVersionReader(fixture.txHost);
+    const scheduledAiConsent = new ScheduledAiConsentReader({
+      consentReader: new GetAiDataSharingConsentUseCase({
+        consentRepository: new DrizzleUserConsentRepository(fixture.txHost),
+      }),
+      clientAppVersion: {
+        findLatestAppVersion: (owner) => pushDeviceVersions.findLatestAppVersion(owner),
+      },
+      clock,
     });
-    const contextBuilder = new SuggestionContextBuilder({
-      repository,
+    const contextBuilder = new SuggestionContextReader({
+      activityReader: activity,
       weatherForecastReader: { getForecastsByGridBatch: async () => new Map() },
-      reportReader: { findLatestWeekly: async () => null },
+      latestReportStats: { findLatestWeekly: async () => null },
+      clock,
       logger,
     });
-    const analyze = new AnalyzeAndCreateSuggestions({
+    const analyze = new AnalyzeAndCreateSuggestionsUseCase({
       repository,
       generator: provider,
-      aiDataSharingConsent: consentReader,
-      clientAppVersion: new DrizzleClientAppVersionReader(fixture.txHost),
+      scheduledAiConsent,
+      clock,
       contextBuilder,
       entitlementReader: entitlement,
       unitOfWork: fixture.uow,
       userMutationLock,
       logger,
     });
-    const report = new GenerateReport({
+    const report = new GenerateReportUseCase({
       aiReportRepository: reports,
       todoStatsReader: new DrizzleTodoStatsReader(fixture.txHost),
       generator: provider,
-      aiDataSharingConsent: consentReader,
-      clientAppVersion: new DrizzleClientAppVersionReader(fixture.txHost),
+      scheduledAiConsent,
+      clock,
       entitlementReader: entitlement,
       unitOfWork: fixture.uow,
       userMutationLock,
@@ -178,7 +211,9 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
           return null;
         },
       },
-      fixture.txHost,
+      new StubUserLocalePreferenceReader(),
+      { dispatchAnalysis: async () => undefined },
+      new InMemoryJobQueue(),
     );
     return { analyze, report, reportProcessor, suggestionProcessor, notifications };
   }
@@ -201,6 +236,32 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
     return flow;
   }
 
+  type SuggestionSeed = Pick<
+    SuggestionPrimitives,
+    "title" | "daysOfWeek" | "reason" | "matchedTodos" | "expiresAt"
+  >;
+
+  async function seedSuggestions(seeds: readonly SuggestionSeed[]): Promise<number[]> {
+    const ids = await suggestions.nextIds(seeds.length);
+    const now = Temporal.Instant.from(CURRENT_TIME.toISOString());
+    await suggestions.saveMany(
+      seeds.map((seed, index) =>
+        Suggestion.reconstitute({
+          ...seed,
+          id: ids[index]?.value ?? 0,
+          userId,
+          scheduledTime: null,
+          confidence: 0.8,
+          suggestedCategoryId: categoryId,
+          status: "PENDING",
+          createdAt: now,
+          updatedAt: now,
+        }),
+      ),
+    );
+    return ids.map((id) => id.value);
+  }
+
   async function patchUser(patch: Partial<User>) {
     await client.update(userTable).set(patch).where(eq(userTable.id, userId));
   }
@@ -210,15 +271,16 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
     await client.insert(dailyCompletion).values({
       id: createEntityId(),
       userId,
-      date: new Date("2026-10-05T00:00:00Z"),
+      date: Temporal.PlainDate.from("2026-10-05"),
       totalTodos: 2,
       completedTodos: 2,
-      achievedAt: new Date("2026-10-05T12:00:00Z"),
+      achievedAt: Temporal.Instant.from("2026-10-05T12:00:00Z"),
+      updatedAt: Temporal.Instant.from("2026-10-05T12:00:00Z"),
     });
 
     // When
-    const rates = await suggestions.findDayCompletionRates(
-      userId,
+    const rates = await activity.findDayCompletionRates(
+      UserId.reconstitute(userId),
       new Date("2026-10-01T00:00:00Z"),
       CURRENT_TIME,
       "America/Los_Angeles",
@@ -253,9 +315,9 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
             userId,
             categoryId,
             title: date,
-            startDate: new Date(`${date}T00:00:00Z`),
+            startDate: Temporal.PlainDate.from(date),
             completed: true,
-            completedAt: new Date(`${date}T12:00:00Z`),
+            completedAt: Temporal.Instant.from(`${date}T12:00:00Z`),
           });
           return row;
         }),
@@ -264,21 +326,23 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
         dates.map((date) => ({
           id: createEntityId(),
           userId,
-          date: new Date(`${date}T00:00:00Z`),
+          date: Temporal.PlainDate.from(date),
           totalTodos: 1,
           completedTodos: 1,
-          achievedAt: new Date(`${date}T12:00:00Z`),
+          achievedAt: Temporal.Instant.from(`${date}T12:00:00Z`),
+          updatedAt: Temporal.Instant.from(`${date}T12:00:00Z`),
         })),
       );
 
       // When
       const start = new Date(from);
       const end = new Date(to);
+      const owner = UserId.reconstitute(userId);
       const [todos, days, times, categories] = await Promise.all([
-        suggestions.findRecentTodos(userId, start, end, timezone),
-        suggestions.findDayCompletionRates(userId, start, end, timezone),
-        suggestions.findTimeCompletionRates(userId, start, end, timezone),
-        suggestions.findCategoryCompletionRates(userId, start, end, timezone),
+        activity.findRecentTodos(owner, start, end, timezone),
+        activity.findDayCompletionRates(owner, start, end, timezone),
+        activity.findTimeCompletionRates(owner, start, end, timezone),
+        activity.findCategoryCompletionRates(owner, start, end, timezone),
       ]);
 
       // Then
@@ -325,7 +389,10 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
     async ({ kind, offsetMs, expected }) => {
       // Given
       const grantEndsAt = new Date(CURRENT_TIME.getTime() + 60_000);
-      await patchUser({ subscriptionStatus: "ACTIVE", subscriptionExpiresAt: grantEndsAt });
+      await patchUser({
+        subscriptionStatus: "ACTIVE",
+        subscriptionExpiresAt: instantFromDate(grantEndsAt),
+      });
       vi.setSystemTime(new Date(grantEndsAt.getTime() + offsetMs));
       const provider = new FakeAiGenerator();
 
@@ -351,9 +418,9 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
             userId,
             categoryId,
             title: "주간 날짜 경계",
-            startDate: new Date(`${date}T00:00:00Z`),
+            startDate: Temporal.PlainDate.from(date),
             completed,
-            completedAt: completed ? new Date(`${date}T12:00:00Z`) : null,
+            completedAt: completed ? Temporal.Instant.from(`${date}T12:00:00Z`) : null,
           });
           return row;
         }),
@@ -370,24 +437,24 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
 
       // Then
       expect(report?.stats).toMatchObject({ totalTodos: 5, completedTodos: 2, completionRate: 40 });
-      expect(report?.dayPatterns.find((day) => day.day === "MON")?.total).toBe(1);
-      expect(report?.dayPatterns.find((day) => day.day === "WED")?.total).toBe(0);
-      expect(report?.dayPatterns.find((day) => day.day === "SUN")?.total).toBe(1);
+      expect(report?.toPrimitives().dayPatterns.find((day) => day.day === "MON")?.total).toBe(1);
+      expect(report?.toPrimitives().dayPatterns.find((day) => day.day === "WED")?.total).toBe(0);
+      expect(report?.toPrimitives().dayPatterns.find((day) => day.day === "SUN")?.total).toBe(1);
     },
   );
 
   it.each([
     { subscriptionStatus: "FREE" },
     { subscriptionStatus: "EXPIRED" },
-    { subscriptionStatus: "ACTIVE", status: "SUSPENDED", deletedAt: CURRENT_TIME },
-    { role: "ADMIN", status: "SUSPENDED", deletedAt: CURRENT_TIME },
+    { subscriptionStatus: "ACTIVE", status: "SUSPENDED", deletedAt: instantFromDate(CURRENT_TIME) },
+    { role: "ADMIN", status: "SUSPENDED", deletedAt: instantFromDate(CURRENT_TIME) },
   ] satisfies Partial<User>[])(
     "구독 캐시가 ACTIVE여도 현재 $subscriptionStatus/$status 사용자의 worker는 실행하지 않는다",
     async (patch) => {
       // Given
-      expect(await entitlement.can(userId, "AI_REPORT")).toBe(true);
+      expect(await entitlement.can(UserId.reconstitute(userId), "AI_REPORT")).toBe(true);
       await patchUser(patch);
-      expect(await entitlement.can(userId, "AI_REPORT")).toBe(true);
+      expect(await entitlement.can(UserId.reconstitute(userId), "AI_REPORT")).toBe(true);
 
       // When
       for (const kind of ["report", "suggestion"] as const) {
@@ -432,28 +499,20 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
 
   it("제안 교체 INSERT가 FK 실패하면 이전 PENDING·만료 행이 rollback된다", async () => {
     // Given
-    await suggestions.createMany([
+    await seedSuggestions([
       {
-        userId,
         title: "이전 제안",
         daysOfWeek: ["MON"],
-        scheduledTime: null,
-        confidence: 0.8,
         reason: "이전 기록",
         matchedTodos: [],
-        expiresAt: new Date("2026-10-22T00:00:00Z"),
-        suggestedCategoryId: categoryId,
+        expiresAt: Temporal.Instant.from("2026-10-22T00:00:00Z"),
       },
       {
-        userId,
         title: "만료 제안",
         daysOfWeek: ["TUE"],
-        scheduledTime: null,
-        confidence: 0.8,
         reason: "이전 기록",
         matchedTodos: [],
-        expiresAt: new Date("2026-10-01T00:00:00Z"),
-        suggestedCategoryId: categoryId,
+        expiresAt: Temporal.Instant.from("2026-10-01T00:00:00Z"),
       },
     ]);
     const before = await client.query.recurringSuggestion.findMany({
@@ -466,7 +525,7 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
 
     // When
     const error = await flow.analyze
-      .execute(userId, "Asia/Seoul", null)
+      .execute({ userId, timezone: "Asia/Seoul" })
       .catch((failure: unknown) => failure);
 
     // Then
@@ -513,7 +572,7 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
     ]);
 
     // When
-    const analysis = generation(provider).analyze.execute(userId, "Asia/Seoul", null);
+    const analysis = generation(provider).analyze.execute({ userId, timezone: "Asia/Seoul" });
     try {
       await waitForLocks(1);
     } finally {
@@ -528,34 +587,34 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
     expect(await counts()).toEqual({ reports: 0, suggestions: 0 });
   });
 
-  async function seedSuggestion() {
-    await suggestions.createMany([
+  async function seedSuggestion(): Promise<number> {
+    const [id] = await seedSuggestions([
       {
-        userId,
         title: "독서 5분",
         daysOfWeek: ["MON"],
-        scheduledTime: null,
-        confidence: 0.8,
         reason: "독서 기록 기반 제안",
         matchedTodos: ["독서"],
-        suggestedCategoryId: categoryId,
-        expiresAt: new Date("2026-10-22T00:00:00Z"),
+        expiresAt: Temporal.Instant.from("2026-10-22T00:00:00Z"),
       },
     ]);
-    const row = await client.query.recurringSuggestion.findFirst({
-      columns: { id: true },
-      where: { userId },
-    });
-    if (row == null) {
+    if (id == null) {
       throw new Error("제안 fixture 생성 실패");
     }
-    return row.id;
+    return id;
+  }
+
+  async function statusOf(suggestionId: number) {
+    const suggestion = await suggestions.findByIdAndUserId(
+      SuggestionId.reconstitute(suggestionId),
+      UserId.reconstitute(userId),
+    );
+    return suggestion?.status;
   }
 
   const registeredAfterCommit: AfterCommitTask[] = [];
 
-  function action(todoCreator: StagedTodoCreatorPort) {
-    return new HandleSuggestionAction({
+  function action(todoCreator: Pick<StagedTodoCreatorPort, "stage">) {
+    return new HandleSuggestionActionUseCase({
       repository: suggestions,
       todoCreator,
       entitlementReader: entitlement,
@@ -565,20 +624,21 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
       mutationLock: { acquire: async () => undefined },
       afterCommit: { register: (task) => registeredAfterCommit.push(task) },
       localePreferenceReader: new StubUserLocalePreferenceReader(),
+      clock: new DateClock(),
     });
   }
 
-  const creator: StagedTodoCreatorPort = {
+  const creator: Pick<StagedTodoCreatorPort, "stage"> = {
     async stage(input) {
       const { id: _id, ...row } = TodoFixture.create({
-        userId: input.userId,
-        categoryId: input.categoryId,
+        userId: input.userId.value,
+        categoryId: input.categoryId.value,
         title: input.title,
-        startDate: new Date("2026-10-12T00:00:00Z"),
+        startDate: Temporal.PlainDate.from("2026-10-12"),
       });
       await fixture.txHost.tx.insert(todo).values(row);
       return {
-        todos: [createTodoResponseFixture(TodoBuilder.create(input.userId).withId(1).build())],
+        todos: [createTodoReadModelFixture({ id: 1, userId: input.userId.value })],
         series: null,
         afterCommit: async () => undefined,
       };
@@ -641,7 +701,7 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
     expect(
       await client.$count(todo, and(eq(todo.userId, userId), eq(todo.title, "독서 5분"))),
     ).toBe(1);
-    expect((await suggestions.findByIdAndUserId(suggestionId, userId))?.status).toBe("ACCEPTED");
+    expect(await statusOf(suggestionId)).toBe("ACCEPTED");
   });
 
   it("수락 생성이 Todo INSERT 뒤 실패하면 상태와 Todo를 함께 rollback하고 다시 수락할 수 있다", async () => {
@@ -667,13 +727,13 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
     ).rejects.toBe(failure);
 
     // Then
-    expect((await suggestions.findByIdAndUserId(suggestionId, userId))?.status).toBe("PENDING");
+    expect(await statusOf(suggestionId)).toBe("PENDING");
     expect(
       await client.$count(todo, and(eq(todo.userId, userId), eq(todo.title, "독서 5분"))),
     ).toBe(0);
     expect(registeredAfterCommit).toEqual([]);
     await expect(action(creator).execute(input)).resolves.toMatchObject({ createdTodosCount: 1 });
-    expect((await suggestions.findByIdAndUserId(suggestionId, userId))?.status).toBe("ACCEPTED");
+    expect(await statusOf(suggestionId)).toBe("ACCEPTED");
     expect(registeredAfterCommit).toHaveLength(1);
   });
 });

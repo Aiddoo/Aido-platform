@@ -1,21 +1,18 @@
-import type { Request } from "express";
-
-import { parseRequestClient } from "#api/platform/http/request-client/index";
+import { parseRequestClient } from "#api/platform/http/request-client/request-client";
 import { TEST_REQUEST_ID } from "#test/mocks/request-client";
-import { mockOf } from "#test/mocks/typed-mock";
 
 import { extractMetadata } from "./auth-request.mapper.js";
 
 describe("extractMetadata", () => {
   it("감사 IP는 전달 헤더의 왼쪽 값이 아니라 Express가 확정한 req.ip를 사용한다", () => {
     // Given - 신뢰 프록시가 확정한 canonical IP와 공격자가 붙인 왼쪽 값
-    const req = mockOf<Request>({
+    const req = {
       ip: "198.51.100.24",
       headers: {
         "x-forwarded-for": "203.0.113.99, 198.51.100.24",
         "user-agent": "request-identity-test",
       },
-    });
+    };
 
     // When
     const metadata = extractMetadata(req, parseRequestClient(req.headers, TEST_REQUEST_ID));
@@ -24,18 +21,16 @@ describe("extractMetadata", () => {
     expect(metadata).toEqual({
       ip: "198.51.100.24",
       userAgent: "request-identity-test",
-      deviceName: undefined,
-      deviceType: undefined,
       device: {},
     });
   });
 
   it("본문에 기기 정보가 있으면 헤더보다 우선해 정규화한다", () => {
     // Given
-    const req = mockOf<Request>({
+    const req = {
       ip: "198.51.100.24",
       headers: { "x-device-type": "ANDROID", "x-device-name": "Header Phone" },
-    });
+    };
 
     // When
     const metadata = extractMetadata(req, parseRequestClient(req.headers, TEST_REQUEST_ID), {
@@ -49,7 +44,7 @@ describe("extractMetadata", () => {
 
   it("앱이 보낸 버전·OS·언어·시간대 헤더를 기기 정보로 정규화한다", () => {
     // Given
-    const req = mockOf<Request>({
+    const req = {
       ip: "198.51.100.24",
       headers: {
         "x-device-type": "IOS",
@@ -60,7 +55,7 @@ describe("extractMetadata", () => {
         "accept-language": "ko",
         "x-timezone": "Asia/Seoul",
       },
-    });
+    };
 
     // When
     const metadata = extractMetadata(req, parseRequestClient(req.headers, TEST_REQUEST_ID));

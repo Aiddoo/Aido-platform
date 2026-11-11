@@ -1,12 +1,13 @@
+import type { AuthCachePort } from "#api/modules/identity/auth/application/ports/auth-collaboration.port";
+import type { AuthPasswordHasherPort } from "#api/modules/identity/auth/application/ports/auth-crypto.port";
 import type {
   AccountNotificationCleanupPort,
   AccountNotificationCleanupResult,
   AccountTodoCommentCleanupPort,
   AccountTodoCommentCleanupResult,
   AccountUsageCleanupPort,
-} from "#api/modules/identity/auth/application/ports/account-cleanup.port";
-import type { AuthCachePort } from "#api/modules/identity/auth/application/ports/auth-collaboration.port";
-import type { AuthPasswordHasherPort } from "#api/modules/identity/auth/application/ports/auth-crypto.port";
+} from "#api/modules/identity/users/application/ports/account-cleanup.port";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { StubAuthSessionCache } from "./auth-session.stub.js";
 
@@ -30,8 +31,8 @@ export class StubAccountLifecycleCache
     this.userIds = new Set(userIds);
   }
 
-  async invalidateUserProfile(userId: string): Promise<void> {
-    this.userIds.delete(userId);
+  async invalidateUserProfile(userId: UserId): Promise<void> {
+    this.userIds.delete(userId.value);
   }
 }
 
@@ -39,9 +40,9 @@ export class StubAccountNotificationCleanup implements AccountNotificationCleanu
   readonly cleanedUserIds: string[] = [];
   readonly settlements: AccountNotificationCleanupResult[] = [];
 
-  async cleanupInTransaction(userId: string): Promise<AccountNotificationCleanupResult> {
-    this.cleanedUserIds.push(userId);
-    return { affectedUserIds: [userId] };
+  async cleanupInTransaction(userId: UserId): Promise<AccountNotificationCleanupResult> {
+    this.cleanedUserIds.push(userId.value);
+    return { affectedUserIds: [userId.value] };
   }
 
   async settleAfterCommit(result: AccountNotificationCleanupResult): Promise<void> {
@@ -52,8 +53,8 @@ export class StubAccountNotificationCleanup implements AccountNotificationCleanu
 export class StubAccountUsageCleanup implements AccountUsageCleanupPort {
   readonly cleanedUserIds: string[] = [];
 
-  async cleanupInTransaction(userId: string): Promise<void> {
-    this.cleanedUserIds.push(userId);
+  async cleanupInTransaction(userId: UserId): Promise<void> {
+    this.cleanedUserIds.push(userId.value);
   }
 }
 
@@ -61,8 +62,8 @@ export class StubAccountTodoCommentCleanup implements AccountTodoCommentCleanupP
   readonly cleanedUserIds: string[] = [];
   readonly settlements: AccountTodoCommentCleanupResult[] = [];
 
-  async cleanupInTransaction(userId: string): Promise<AccountTodoCommentCleanupResult> {
-    this.cleanedUserIds.push(userId);
+  async cleanupInTransaction(userId: UserId): Promise<AccountTodoCommentCleanupResult> {
+    this.cleanedUserIds.push(userId.value);
     return { affectedTodoIds: [101] };
   }
 

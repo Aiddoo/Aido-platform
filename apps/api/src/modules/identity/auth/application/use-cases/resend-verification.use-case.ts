@@ -1,9 +1,9 @@
 import { ErrorCode } from "@aido/api/errors";
 
-import { assertStatusAllowsLogin } from "#api/modules/identity/auth/domain/account-status.domain-service";
+import { assertStatusAllowsLogin } from "#api/modules/identity/users/domain/account-status.domain-service";
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
-import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
+import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 
 import { AuthLogEvent } from "../auth.log-events.js";
 import type { AuthUserRepositoryPort } from "../ports/auth-user.repository.port.js";

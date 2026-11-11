@@ -1,9 +1,6 @@
-import { DeleteAccountUseCase } from "#api/modules/identity/auth/application/use-cases/delete-account.use-case";
-import { GetCurrentUserUseCase } from "#api/modules/identity/auth/application/use-cases/get-current-user.use-case";
+import type { CurrentUserPayload } from "#api/../../../packages/api/dist/contracts/auth/v1/auth.response.d";
 import { ListLinkedAccountsUseCase } from "#api/modules/identity/auth/application/use-cases/list-linked-accounts.use-case";
 import { UnlinkOAuthAccountUseCase } from "#api/modules/identity/auth/application/use-cases/unlink-oauth-account.use-case";
-import { UpdateProfileUseCase } from "#api/modules/identity/auth/application/use-cases/update-profile.use-case";
-import type { CurrentUserPayload } from "#api/modules/identity/auth/presentation/http/decorators/current-user.decorator";
 import { InMemoryAuthAccountRepository } from "#test/doubles/identity/in-memory-auth-account.repository";
 import { createAuthCredentialFixture } from "#test/fixtures/auth-credential.fixture";
 import { createAuthAccountFixture } from "#test/fixtures/identity/auth-credential.fixture";
@@ -14,11 +11,8 @@ import { AccountController } from "./account.controller.js";
 function createAccountController(accountRepository: InMemoryAuthAccountRepository) {
   const fixture = { ...createAuthCredentialFixture(), accountRepository };
   return new AccountController(
-    new GetCurrentUserUseCase(fixture),
-    new UpdateProfileUseCase(fixture),
     new ListLinkedAccountsUseCase(fixture),
     new UnlinkOAuthAccountUseCase(fixture),
-    new DeleteAccountUseCase(fixture),
   );
 }
 

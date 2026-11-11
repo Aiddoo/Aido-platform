@@ -1,12 +1,12 @@
-import type { NotificationChannel } from "#api/modules/operations/application/ports/notifications/admin-notification-queue.port";
 import type {
   AdminNotifierPort,
   AdminNotifyOutcome,
-} from "#api/modules/operations/application/ports/notifications/admin-notifier.port";
-import type { AdminNotice } from "#api/modules/operations/application/read-models/notifications/admin-notice.read-model";
+} from "#api/modules/operations/admin-notices/application/ports/admin-notifier.port";
+import type { AdminNotice } from "#api/modules/operations/admin-notices/application/read-models/admin-notice.read-model";
+import type { AdminNotificationChannel } from "#api/modules/operations/admin-notices/domain/admin-notices.constants";
 
 export interface SentAdminNotification {
-  readonly channel: NotificationChannel;
+  readonly channel: AdminNotificationChannel;
   readonly notice: AdminNotice;
 }
 
@@ -18,12 +18,12 @@ export interface SentAdminNotification {
 export class FakeAdminNotifier implements AdminNotifierPort {
   #sent: SentAdminNotification[] = [];
 
-  async send(channel: NotificationChannel, notice: AdminNotice): Promise<AdminNotifyOutcome> {
+  async send(channel: AdminNotificationChannel, notice: AdminNotice): Promise<AdminNotifyOutcome> {
     this.#sent.push({ channel, notice });
     return { status: "sent" };
   }
 
-  getSent(channel?: NotificationChannel): SentAdminNotification[] {
+  getSent(channel?: AdminNotificationChannel): SentAdminNotification[] {
     return this.#sent.filter((sent) => channel == null || sent.channel === channel);
   }
 

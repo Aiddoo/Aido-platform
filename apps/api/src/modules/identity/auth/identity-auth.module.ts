@@ -3,28 +3,24 @@ import { ConfigModule, type ConfigType } from "@nestjs/config";
 import { HttpClientModule } from "@nestjs/http-client";
 import { JwtModule } from "@nestjs/jwt";
 
-import { AccessModule } from "#api/modules/access/access-entitlement.public";
-import { BillingSubscriptionsModule } from "#api/modules/billing/billing-subscriptions.public";
-import { EngagementCommentsModule } from "#api/modules/engagement/engagement-comments.public";
-import { IdentitySettingsModule } from "#api/modules/identity/identity-settings.public";
-import { NotificationDeliveryModule } from "#api/modules/notification/notification-delivery.public";
+import { AccessEntitlementsModule } from "#api/modules/access/entitlements/access-entitlements.public";
+import { NotificationPushModule } from "#api/modules/notification/notification-delivery.public";
 import {
   NotificationEmailModule,
   TransactionalEmailSender,
 } from "#api/modules/notification/notification-email.public";
 import { NotificationRetentionModule } from "#api/modules/notification/notification-retention.public";
 import {
-  AdminEventNotifier,
-  OperationsNotificationsModule,
-} from "#api/modules/operations/operations-notifications.public";
-import { PlanningCategoriesModule } from "#api/modules/planning/planning-categories.public";
-import { SocialCheersModule } from "#api/modules/social/social-cheers.public";
-import { SocialFriendsModule } from "#api/modules/social/social-friends.public";
-import { SocialNudgesModule } from "#api/modules/social/social-nudges.public";
+  AdminEventNotifierPort,
+  OperationsAdminNoticesModule,
+} from "#api/modules/operations/admin-notices/operations-admin-notices.public";
+import { PlanningCategoriesModule } from "#api/modules/planning/categories/planning-categories.public";
+import { appConfig, type AppSettings } from "#api/platform/config/app.config";
 import { jwtConfig } from "#api/platform/config/jwt.config";
-import { TypedConfigService } from "#api/platform/config/services/config.service";
 
-import { LastActiveInterceptor } from "../presentation/interceptors/auth/last-active.interceptor.js";
+import { IdentityPreferencesModule } from "../preferences/identity-preferences.module.js";
+import { IdentityUserAccessModule } from "../users/identity-user-access.module.js";
+import { DrizzleUserRepository } from "../users/infrastructure/persistence/drizzle-user.repository.js";
 import { AuthAccountRepositoryPort } from "./application/ports/auth-account.repository.port.js";
 import {
   AuthCachePort,
@@ -48,19 +44,11 @@ import { RetentionEnrollerPort } from "./application/ports/retention-enroller.po
 import { SessionPushDeviceReleaserPort } from "./application/ports/session-push-device-releaser.port.js";
 import { UserProvisioningSeederPort } from "./application/ports/user-provisioning-seeder.port.js";
 import { VerificationCodeSecurityPort } from "./application/ports/verification-code-security.port.js";
-import {
-  accountNotificationCleanupProvider,
-  accountTodoCommentCleanupProvider,
-  accountUsageCleanupProvider,
-} from "./identity-auth-account-cleanup.providers.js";
 import { identityAuthConfig } from "./identity-auth.config.js";
 import {
   changePasswordProvider,
   completeOAuthAuthorizationProvider,
-  deleteAccountProvider,
   exchangeOAuthCodeProvider,
-  getCurrentUserProvider,
-  getEntitlementSnapshotProvider,
   getOAuthRedirectUriProvider,
   issueLoginProvider,
   linkOAuthAccountProvider,
@@ -75,7 +63,6 @@ import {
   linkOAuthIdentityProvider,
   oauthSignupNotifierProvider,
   provisionUserProvider,
-  purgeDeletedAccountsProvider,
   restoreAccountProvider,
   refreshTokensProvider,
   registerProvider,
@@ -89,7 +76,6 @@ import {
   setPasswordProvider,
   startOAuthAuthorizationProvider,
   unlinkOAuthAccountProvider,
-  updateProfileProvider,
   issueVerificationCodeProvider,
   sendVerificationCodeProvider,
   consumeVerificationCodeProvider,
@@ -108,20 +94,16 @@ import { OAUTH_PROVIDER_TIMEOUT_MS } from "./infrastructure/adapters/oauth-outbo
 import { RetentionEnrollerAdapter } from "./infrastructure/adapters/retention-enroller.adapter.js";
 import { SessionPushDeviceReleaserAdapter } from "./infrastructure/adapters/session-push-device-releaser.adapter.js";
 import { UserProvisioningSeederAdapter } from "./infrastructure/adapters/user-provisioning-seeder.adapter.js";
-import { AccountPurgeProcessor } from "./infrastructure/jobs/account-purge.processor.js";
-import { AccountPurgeScheduler } from "./infrastructure/jobs/account-purge.scheduler.js";
 import { DrizzleAccountRepository } from "./infrastructure/persistence/drizzle-account.repository.js";
 import { DrizzleLoginAttemptRepository } from "./infrastructure/persistence/drizzle-login-attempt.repository.js";
 import { DrizzleOAuthStateRepository } from "./infrastructure/persistence/drizzle-oauth-state.repository.js";
 import { DrizzleSecurityLogRepository } from "./infrastructure/persistence/drizzle-security-log.repository.js";
 import { DrizzleSessionRepository } from "./infrastructure/persistence/drizzle-session.repository.js";
-import { DrizzleUserRepository } from "./infrastructure/persistence/drizzle-user.repository.js";
 import { DrizzleVerificationRepository } from "./infrastructure/persistence/drizzle-verification.repository.js";
 import { JwtAuthGuard } from "./presentation/http/guards/jwt-auth.guard.js";
 import { JwtRefreshGuard } from "./presentation/http/guards/jwt-refresh.guard.js";
 import { AccountController } from "./presentation/http/v1/account.controller.js";
 import { AuthController } from "./presentation/http/v1/auth.controller.js";
-import { EntitlementController } from "./presentation/http/v1/entitlement.controller.js";
 import { OAuthController } from "./presentation/http/v1/oauth.controller.js";
 import { SessionController } from "./presentation/http/v1/session.controller.js";
 
@@ -143,29 +125,18 @@ import { SessionController } from "./presentation/http/v1/session.controller.js"
       inject: [jwtConfig.KEY],
       useFactory: (jwt: ConfigType<typeof jwtConfig>) => ({ secret: jwt.secret }),
     }),
-    OperationsNotificationsModule,
-    NotificationDeliveryModule,
+    AccessEntitlementsModule,
+    OperationsAdminNoticesModule,
+    NotificationPushModule,
     NotificationEmailModule,
     // 회원가입 기본값 시딩(설정·동의·기본 카테고리)을 파사드에 위임하기 위한 의존.
-    IdentitySettingsModule,
+    IdentityPreferencesModule,
+    IdentityUserAccessModule,
     PlanningCategoriesModule,
     NotificationRetentionModule,
-    EngagementCommentsModule,
-    BillingSubscriptionsModule,
-    AccessModule,
-    SocialCheersModule,
-    SocialFriendsModule,
-    SocialNudgesModule,
   ],
-  controllers: [
-    AuthController,
-    OAuthController,
-    SessionController,
-    AccountController,
-    EntitlementController,
-  ],
+  controllers: [AuthController, OAuthController, SessionController, AccountController],
   providers: [
-    DrizzleUserRepository,
     DrizzleAccountRepository,
     DrizzleSessionRepository,
     DrizzleVerificationRepository,
@@ -205,22 +176,24 @@ import { SessionController } from "./presentation/http/v1/session.controller.js"
       provide: SessionPushDeviceReleaserPort,
       useClass: SessionPushDeviceReleaserAdapter,
     },
-    accountNotificationCleanupProvider,
-    accountTodoCommentCleanupProvider,
-    accountUsageCleanupProvider,
     Argon2PasswordHasherAdapter,
     createSessionProvider,
     JwtTokenIssuerAdapter,
     { provide: AuthPasswordHasherPort, useExisting: Argon2PasswordHasherAdapter },
     { provide: AuthTokenIssuerPort, useExisting: JwtTokenIssuerAdapter },
-    AuthCacheAdapter,
     { provide: AuthCachePort, useExisting: AuthCacheAdapter },
     { provide: AuthEmailSenderPort, useExisting: TransactionalEmailSender },
     {
       provide: AuthRegistrationNotifierPort,
-      useExisting: AdminEventNotifier,
+      useExisting: AdminEventNotifierPort,
     },
-    { provide: AuthRuntimeConfigPort, useExisting: TypedConfigService },
+    {
+      provide: AuthRuntimeConfigPort,
+      inject: [appConfig.KEY],
+      useFactory: (app: AppSettings): AuthRuntimeConfigPort => ({
+        allowsDevRedirects: app.devTools.oauthDevRedirects,
+      }),
+    },
     issueVerificationCodeProvider,
     sendVerificationCodeProvider,
     consumeVerificationCodeProvider,
@@ -233,7 +206,6 @@ import { SessionController } from "./presentation/http/v1/session.controller.js"
     // Use-cases (이메일·소셜 로그인·프로비저닝 수렴)
     issueLoginProvider,
     restoreAccountProvider,
-    purgeDeletedAccountsProvider,
     provisionUserProvider,
     registerProvider,
     verifyEmailProvider,
@@ -247,10 +219,6 @@ import { SessionController } from "./presentation/http/v1/session.controller.js"
     requestPasswordSetupCodeProvider,
     setPasswordProvider,
     changePasswordProvider,
-    getCurrentUserProvider,
-    getEntitlementSnapshotProvider,
-    updateProfileProvider,
-    deleteAccountProvider,
     listLinkedAccountsProvider,
     unlinkOAuthAccountProvider,
     listActiveSessionsProvider,
@@ -271,10 +239,19 @@ import { SessionController } from "./presentation/http/v1/session.controller.js"
     authenticateSessionProvider,
     JwtAuthGuard,
     JwtRefreshGuard,
-    LastActiveInterceptor,
-    AccountPurgeScheduler,
-    AccountPurgeProcessor,
   ],
-  exports: [JwtAuthGuard, JwtRefreshGuard, LastActiveInterceptor],
+  // 사용자 slice(IdentityUsersModule)가 탈퇴·프로필 UseCase에 쓴다. auth는 users 모듈을 import하지 않는다
+  exports: [
+    JwtAuthGuard,
+    JwtRefreshGuard,
+    AuthUserRepositoryPort,
+    AuthUserActivityWriterPort,
+    AuthAccountRepositoryPort,
+    AuthSessionRepositoryPort,
+    AuthSecurityLogRepositoryPort,
+    AuthPasswordHasherPort,
+    AuthCachePort,
+    SessionPushDeviceReleaserPort,
+  ],
 })
 export class IdentityAuthModule {}

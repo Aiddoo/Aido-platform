@@ -1,6 +1,12 @@
-import type { NotificationListResponse, PushDeviceResponse, UnreadCountResponse } from '@aido/api';
+import type {
+  NotificationInboxItem,
+  NotificationListResponse,
+  PushDeviceResponse,
+  UnreadCountResponse,
+} from '@aido/api';
 import {
   markReadResponseSchema,
+  notificationInboxResponseSchema,
   notificationListResponseSchema,
   pushDeviceResponseSchema,
   unreadCountResponseSchema,
@@ -8,8 +14,15 @@ import {
 } from '@aido/api';
 import { ApiError } from '@src/core/errors/api-error';
 import type { PushPermissionResponse } from '@src/core/ports/push-notification-gateway';
+import { toInstant } from '@src/shared/date/instant';
 
+import type { Notification, PendingNotificationResponse } from '../domains/notification.model';
 import type { PushPermission } from '../domains/push-permission.model';
+import { type PushRegistration, pushRegistrationSchema } from '../domains/push-registration.model';
+import {
+  type PushNotificationPayload,
+  pushNotificationPayloadSchema,
+} from '../schemas/push-notification-payload.schema';
 
 function generateNotificationListResponseDto(): NotificationListResponse {
   return {
@@ -51,6 +64,15 @@ export function createNotificationListResponseDto(
   return notificationListResponseSchema.parse({
     ...generateNotificationListResponseDto(),
     ...overrides,
+  });
+}
+
+export function createNotificationInboxResponseDto(notifications: NotificationInboxItem[]) {
+  return notificationInboxResponseSchema.parse({
+    notifications,
+    unreadCount: 0,
+    hasMore: false,
+    nextCursor: null,
   });
 }
 
@@ -112,6 +134,20 @@ export function createMarkReadResponseDto(overrides?: Partial<MarkReadResponse>)
   return markReadResponseSchema.parse({ ...generateMarkReadResponseDto(), ...overrides });
 }
 
+export function createNotification(overrides?: Partial<Notification>): Notification {
+  return {
+    id: 1,
+    userId: 'user-1',
+    type: 'SYSTEM_NOTICE',
+    title: '공지',
+    body: '새 기능이 나왔어요',
+    isRead: false,
+    createdAt: toInstant('2026-07-14T00:00:00.000Z'),
+    readAt: null,
+    ...overrides,
+  };
+}
+
 export function createNotificationApiError(
   overrides?: Partial<{ code: string; message: string; status: number }>,
 ) {
@@ -123,3 +159,41 @@ export function createNotificationApiError(
 }
 
 export const INVALID_DTO = { invalid: 'data' };
+
+const DEFAULT_PUSH_NOTIFICATION_PAYLOAD = pushNotificationPayloadSchema.parse({
+  notificationId: 7,
+  type: 'FOLLOW_NEW',
+  action: { type: 'DEEP_LINK' },
+});
+
+export function createPushNotificationPayload(
+  overrides: Partial<PushNotificationPayload> = {},
+): PushNotificationPayload {
+  return { ...DEFAULT_PUSH_NOTIFICATION_PAYLOAD, ...overrides };
+}
+
+const DEFAULT_PUSH_REGISTRATION = pushRegistrationSchema.parse({
+  reportedToken: null,
+  releaseRequestedAt: null,
+});
+
+export function createPushRegistration(
+  overrides: Partial<PushRegistration> = {},
+): PushRegistration {
+  return { ...DEFAULT_PUSH_REGISTRATION, ...overrides };
+}
+
+export function createPendingNotificationResponse(
+  overrides: Partial<PendingNotificationResponse> = {},
+): PendingNotificationResponse {
+  return {
+    id: 'response-1',
+    actionIdentifier: 'expo.modules.notifications.actions.DEFAULT',
+    data: DEFAULT_PUSH_NOTIFICATION_PAYLOAD,
+    receivedAt: 0,
+    isLaunchResponse: false,
+    appState: 'background',
+    activeSince: null,
+    ...overrides,
+  };
+}

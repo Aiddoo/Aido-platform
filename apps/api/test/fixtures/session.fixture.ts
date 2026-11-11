@@ -26,13 +26,13 @@ export const SessionFixture = {
    */
   create: (overrides: Partial<Session> = {}): Session => {
     const id = ++sessionCounter;
-    const now = new Date();
-    const expiresAt = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000); // 7일 후
+    const now = Temporal.Instant.fromEpochMilliseconds(Date.now());
+    const expiresAt = now.add({ hours: 7 * 24 });
 
     return {
       id: overrides.id ?? `session-${id}`,
       userId: overrides.userId ?? `user-${id}`,
-      refreshTokenHash: overrides.refreshTokenHash ?? `hash-${id}-${Date.now()}`,
+      refreshTokenHash: overrides.refreshTokenHash ?? `hash-${id}-${now.epochMilliseconds}`,
       tokenFamily: overrides.tokenFamily ?? `family-${id}`,
       tokenVersion: overrides.tokenVersion ?? 1,
       previousTokenHash: overrides.previousTokenHash ?? null,
@@ -52,9 +52,8 @@ export const SessionFixture = {
    * 만료된 Session 생성
    */
   createExpired: (overrides: Partial<Session> = {}): Session => {
-    const pastDate = new Date(Date.now() - 24 * 60 * 60 * 1000); // 1일 전
     return SessionFixture.create({
-      expiresAt: pastDate,
+      expiresAt: Temporal.Instant.fromEpochMilliseconds(Date.now()).subtract({ hours: 24 }),
       ...overrides,
     });
   },
@@ -64,7 +63,7 @@ export const SessionFixture = {
    */
   createRevoked: (overrides: Partial<Session> = {}): Session => {
     return SessionFixture.create({
-      revokedAt: new Date(),
+      revokedAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
       revokedReason: "USER_LOGOUT",
       ...overrides,
     });
@@ -91,10 +90,7 @@ export const SessionFixture = {
 export const VerificationFixture = {
   create: (overrides: Partial<Verification> = {}): Verification => {
     const id = ++verificationCounter;
-    const now = Temporal.Now.instant().round({
-      smallestUnit: "millisecond",
-      roundingMode: "floor",
-    });
+    const now = Temporal.Instant.fromEpochMilliseconds(Date.now());
 
     return {
       id: overrides.id ?? id,

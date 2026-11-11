@@ -675,7 +675,7 @@ describe("OAuth UseCase 통합 테스트 (실제 PostgreSQL)", () => {
   });
 
   async function createState(state: string, provider: AccountProvider, redirectUri: string) {
-    // use case의 DateNowClock과 같은 시계로 만료를 정한다
+    // use case의 DateClock과 같은 시계로 만료를 정한다
     const now = Temporal.Instant.fromEpochMilliseconds(Date.now());
     await oauthStateRepository.create({
       state,
@@ -746,7 +746,7 @@ describe("OAuth UseCase 통합 테스트 (실제 PostgreSQL)", () => {
       const oauthState = await createState(state, "GOOGLE", "aido://auth/callback");
 
       const exchangeCode = oauthStateRepository.generateExchangeCode();
-      await oauthStateRepository.saveExchangeData(oauthState.id.value, {
+      await oauthStateRepository.saveExchangeData(oauthState.id, {
         exchangeCode,
         ...loginResult.tokens,
         userId: loginResult.userId,
@@ -792,7 +792,7 @@ describe("OAuth UseCase 통합 테스트 (실제 PostgreSQL)", () => {
       const oauthState = await createState("reuse-state", "GOOGLE", "aido://auth/callback");
 
       const exchangeCode = oauthStateRepository.generateExchangeCode();
-      await oauthStateRepository.saveExchangeData(oauthState.id.value, {
+      await oauthStateRepository.saveExchangeData(oauthState.id, {
         exchangeCode,
         ...loginResult.tokens,
         userId: loginResult.userId,

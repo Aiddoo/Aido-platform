@@ -3,9 +3,7 @@ import { eq } from "drizzle-orm";
 import request from "supertest";
 
 import { userPreference } from "#api/platform/database/schema/index";
-import { addDaysToDateKey } from "#api/shared/domain/date/utils/arithmetic";
-import { toDateString } from "#api/shared/domain/date/utils/format";
-import { parseLocalDateTime, todayInTimezone } from "#api/shared/domain/date/utils/timezone";
+import { todayIn, wallClockInstant, shiftDateKey } from "#test/fixtures/clock.fixture";
 
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 
@@ -36,7 +34,7 @@ describe("반복 할 일의 시간대 규칙 E2E", () => {
 
   beforeAll(async () => {
     ctx = await createE2eApp();
-  }, 60000);
+  }, 60_000);
   afterAll(async () => {
     await destroyE2eApp(ctx);
   });
@@ -48,7 +46,7 @@ describe("반복 할 일의 시간대 규칙 E2E", () => {
     categoryId = await ctx.helpers.getDefaultCategoryId(accessToken);
   });
 
-  const startDate = () => addDaysToDateKey(toDateString(todayInTimezone(SEOUL)), 2);
+  const startDate = () => shiftDateKey(todayIn(SEOUL).toString(), 2);
 
   /** 자가 치유는 응답과 따로 돌므로 저장값이 필요한 경우를 정해 둔다. */
   async function storeTimezone(zone: string) {
@@ -109,7 +107,7 @@ describe("반복 할 일의 시간대 규칙 E2E", () => {
       // Then
       const rows = await occurrences(seriesId);
       expect(rows.map((row) => row.scheduledTime)).toEqual(
-        rows.map((row) => parseLocalDateTime(toDateString(row.startDate), "09:00", zone)),
+        rows.map((row) => wallClockInstant(row.startDate.toString(), "09:00", zone)),
       );
       expect(rows.every((row) => row.scheduledLocalTime === "09:00")).toBe(true);
       expect(await readSeries(seriesId, header)).toMatchObject({
@@ -123,7 +121,7 @@ describe("반복 할 일의 시간대 규칙 E2E", () => {
       const { seriesId } = await createSeries(header, null);
       // Then
       const rows = await occurrences(seriesId);
-      expect(rows[0] && toDateString(rows[0].startDate)).toBe(startDate());
+      expect(rows[0]?.startDate.toString()).toBe(startDate());
       expect(rows.every((row) => row.scheduledTime == null && row.isAllDay)).toBe(true);
       expect(await readSeries(seriesId, header)).toMatchObject({ scheduledTime: null });
     });
@@ -148,9 +146,7 @@ describe("반복 할 일의 시간대 규칙 E2E", () => {
         const rows = await occurrences(seriesId);
         expect(rows[0]?.scheduledTime).toEqual(first?.scheduledTime);
         expect(rows.slice(1).map((row) => row.scheduledTime)).toEqual(
-          [second, third].map((row) =>
-            parseLocalDateTime(toDateString(row?.startDate ?? new Date()), "10:00", zone),
-          ),
+          [second, third].map((row) => wallClockInstant(String(row?.startDate), "10:00", zone)),
         );
         expect(await readSeries(seriesId, header)).toMatchObject({
           scheduledTime: "10:00",
@@ -233,7 +229,7 @@ describe("반복 할 일의 시간대 규칙 E2E", () => {
         });
         const rows = await occurrences(newSeriesId);
         expect(rows.map((row) => row.scheduledTime)).toEqual(
-          rows.map((row) => parseLocalDateTime(toDateString(row.startDate), "10:00", zone)),
+          rows.map((row) => wallClockInstant(row.startDate.toString(), "10:00", zone)),
         );
       },
     );
@@ -254,7 +250,7 @@ describe("반복 할 일의 시간대 규칙 E2E", () => {
         // Then
         const rows = await occurrences(seriesId);
         expect(rows[1]?.scheduledTime).toEqual(
-          parseLocalDateTime(toDateString(target?.startDate ?? new Date()), "10:00", zone),
+          wallClockInstant(String(target?.startDate), "10:00", zone),
         );
         expect(rows[0]?.scheduledTime).toEqual(before[0]?.scheduledTime);
         expect(rows[2]?.scheduledTime).toEqual(before[2]?.scheduledTime);

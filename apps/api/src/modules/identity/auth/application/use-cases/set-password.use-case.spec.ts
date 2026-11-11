@@ -3,6 +3,7 @@ import { SECURITY_EVENT } from "@aido/api/vocabulary";
 
 import type { AuthVerificationPrimitives } from "#api/modules/identity/auth/domain/auth-verification.aggregate";
 import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import {
   AUTH_CREDENTIAL_NOW,
   createAuthCredentialFixture,
@@ -13,7 +14,7 @@ import {
   createIdentityUserFixture,
 } from "#test/fixtures/identity/auth-session.fixture";
 
-import { GetCurrentUserUseCase } from "./get-current-user.use-case.js";
+import { GetCurrentUserUseCase } from "../../../users/application/use-cases/get-current-user.use-case.js";
 import { SetPasswordUseCase } from "./set-password.use-case.js";
 
 type CredentialFixture = ReturnType<typeof createAuthCredentialFixture>;
@@ -81,7 +82,10 @@ describe("SetPassword — 소셜 세션을 유지하는 Credential 계정 추가
     // Then
     expect(result.message).toBe("비밀번호가 설정되었습니다. 이제 이메일로 로그인할 수 있습니다.");
     expect(
-      await fixture.accountRepository.findByUserIdAndProvider(fixture.user.id, "CREDENTIAL"),
+      await fixture.accountRepository.findByUserIdAndProvider(
+        UserId.reconstitute(fixture.user.id),
+        "CREDENTIAL",
+      ),
     ).toMatchObject({ password: `digest:${newPassword}` });
     expect(fixture.verificationRepository.all).toEqual([
       expect.objectContaining({ usedAt: AUTH_CREDENTIAL_NOW }),
@@ -143,7 +147,10 @@ describe("SetPassword — 소셜 세션을 유지하는 Credential 계정 추가
     // Then
     await expect(pending).rejects.toMatchObject({ errorCode: ErrorCode.VERIFY_0751 });
     expect(
-      await fixture.accountRepository.findByUserIdAndProvider(fixture.user.id, "CREDENTIAL"),
+      await fixture.accountRepository.findByUserIdAndProvider(
+        UserId.reconstitute(fixture.user.id),
+        "CREDENTIAL",
+      ),
     ).toBeNull();
     expect(fixture.verificationRepository.all).toEqual([expect.objectContaining({ usedAt: null })]);
     expect(fixture.securityLogRepository.entries).toEqual([]);
@@ -167,7 +174,10 @@ describe("SetPassword — 소셜 세션을 유지하는 Credential 계정 추가
       expect.objectContaining({ attempts: 1, usedAt: null }),
     ]);
     expect(
-      await fixture.accountRepository.findByUserIdAndProvider(fixture.user.id, "CREDENTIAL"),
+      await fixture.accountRepository.findByUserIdAndProvider(
+        UserId.reconstitute(fixture.user.id),
+        "CREDENTIAL",
+      ),
     ).toBeNull();
     expect(fixture.cacheService.userIds.has(fixture.user.id)).toBe(true);
     expect(fixture.securityLogRepository.entries).toEqual([]);
@@ -180,7 +190,7 @@ describe("SetPassword — 소셜 세션을 유지하는 Credential 계정 추가
       ...fixture,
       unitOfWork: new InterleavedUnitOfWork(() =>
         fixture.accountRepository.createCredentialAccount(
-          fixture.user.id,
+          UserId.reconstitute(fixture.user.id),
           "digest:OtherPassword3!",
         ),
       ),
@@ -192,7 +202,10 @@ describe("SetPassword — 소셜 세션을 유지하는 Credential 계정 추가
     // Then
     await expect(pending).rejects.toMatchObject({ errorCode: ErrorCode.USER_0614 });
     expect(
-      await fixture.accountRepository.findByUserIdAndProvider(fixture.user.id, "CREDENTIAL"),
+      await fixture.accountRepository.findByUserIdAndProvider(
+        UserId.reconstitute(fixture.user.id),
+        "CREDENTIAL",
+      ),
     ).toMatchObject({ password: "digest:OtherPassword3!" });
     expect(fixture.verificationRepository.all).toEqual([expect.objectContaining({ usedAt: null })]);
     expect(fixture.securityLogRepository.entries).toEqual([]);
@@ -212,7 +225,10 @@ describe("SetPassword — 소셜 세션을 유지하는 Credential 계정 추가
     // Then
     await expect(pending).rejects.toMatchObject({ errorCode: ErrorCode.USER_0606 });
     expect(
-      await fixture.accountRepository.findByUserIdAndProvider(fixture.user.id, "CREDENTIAL"),
+      await fixture.accountRepository.findByUserIdAndProvider(
+        UserId.reconstitute(fixture.user.id),
+        "CREDENTIAL",
+      ),
     ).toBeNull();
     expect(fixture.verificationRepository.all).toEqual([expect.objectContaining({ usedAt: null })]);
     expect(fixture.securityLogRepository.entries).toEqual([]);

@@ -1,10 +1,12 @@
+import { storeRenewalGraceEndsAt } from "#api/modules/billing/subscriptions/billing-subscriptions-entitlement.public";
 import { cacheKey } from "#api/platform/cache/keyspace/cache-key";
-import { storeRenewalGraceEndsAt } from "#api/shared/domain/store-renewal-grace";
+import { instantFromDate, instantToDate } from "#api/shared/domain/time/instant";
 
 export const IDENTITY_CACHE_TTL_MS = { SESSION: 30_000, USER_PROFILE: 5 * 60_000 } as const;
 export const IdentityCacheKey = {
   session: (sessionId: string) => cacheKey("auth", "session", sessionId),
   userProfile: (userId: string) => cacheKey("auth", "user-profile", userId),
+  userProfileGeneration: (userId: string) => cacheKey("auth", "user-profile-generation", userId),
 } as const;
 
 /**
@@ -34,7 +36,7 @@ export function userProfileTtlMs(
     profile.premiumPeriodEndsAt,
   ]
     .flatMap((iso) => (iso == null ? [] : [new Date(iso)]))
-    .flatMap((endsAt) => [endsAt, storeRenewalGraceEndsAt(endsAt)])
+    .flatMap((endsAt) => [endsAt, instantToDate(storeRenewalGraceEndsAt(instantFromDate(endsAt)))])
     .map((boundary) => boundary.getTime() - at.getTime())
     .filter((remainingMs) => remainingMs > 0);
   return Math.min(IDENTITY_CACHE_TTL_MS.USER_PROFILE, ...untilBoundaries);

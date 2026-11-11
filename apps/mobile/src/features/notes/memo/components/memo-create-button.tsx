@@ -39,6 +39,7 @@ export function MemoCreateButton() {
       onPress={handleCreate}
       accessibilityRole="button"
       accessibilityLabel={t('titles.create')}
+      testID="memo-create-button"
       style={{ width: createButtonSize, height: createButtonSize }}
       className={cn(
         'items-center justify-center rounded-full',

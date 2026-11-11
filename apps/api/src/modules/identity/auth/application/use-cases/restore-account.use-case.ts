@@ -2,8 +2,8 @@ import { SECURITY_EVENT } from "@aido/api/vocabulary";
 
 import { toIsoString } from "#api/shared/domain/time/instant";
 
+import type { IdentityUser } from "../../../users/domain/identity-user.aggregate.js";
 import { AUTH_DEFAULTS } from "../../domain/auth.constants.js";
-import type { IdentityUser } from "../../domain/identity-user.aggregate.js";
 import type { AuthSecurityLogRepositoryPort } from "../ports/auth-security-log.repository.port.js";
 import type { AuthUserRepositoryPort } from "../ports/auth-user.repository.port.js";
 import type { RequestMetadata } from "../read-models/auth-result.read-model.js";
@@ -34,7 +34,7 @@ export class RestoreAccountUseCase {
     }
     await this.#dependencies.userRepository.saveAccountStatus(input.user);
     await this.#dependencies.securityLogRepository.create({
-      userId: input.user.id.value,
+      userId: input.user.id,
       event: SECURITY_EVENT.ACCOUNT_RESTORED,
       ipAddress: input.metadata?.ip ?? AUTH_DEFAULTS.UNKNOWN_IP,
       userAgent: input.metadata?.userAgent ?? AUTH_DEFAULTS.UNKNOWN_USER_AGENT,

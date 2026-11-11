@@ -3,8 +3,9 @@ import {
   type EnqueueManyJob,
   type EnqueueOptions,
   type JobEnvelope,
+  type JobQueueHealth,
   type QueueDefinition,
-} from "#api/shared/application/ports/index";
+} from "#api/shared/application/ports/job-queue.port";
 
 export interface InMemoryJob {
   readonly queue: string;
@@ -25,13 +26,24 @@ export class InMemoryJobQueue extends JobQueuePort {
   readonly scheduledQueues: string[] = [];
   readonly #keys = new Set<string>();
   readonly #workers = new Map<string, StoredWorker>();
+  readonly #queueNames = new Set<string>();
   #sequence = 0;
+  running = false;
+
+  async start(): Promise<void> {
+    this.running = true;
+  }
+
+  async stop(): Promise<void> {
+    this.running = false;
+  }
 
   async enqueue<TPayload extends object>(
     queue: QueueDefinition<TPayload>,
     payload: TPayload,
     options: EnqueueOptions = {},
   ): Promise<string | null> {
+    this.#queueNames.add(queue.name);
     if (options.idempotencyKey != null) {
       const key = `${queue.name}:${options.idempotencyKey}`;
       if (this.#keys.has(key)) {
@@ -69,6 +81,7 @@ export class InMemoryJobQueue extends JobQueuePort {
     queue: QueueDefinition<TPayload>,
     handler: (jobs: readonly JobEnvelope<TPayload>[]) => Promise<void>,
   ): Promise<void> {
+    this.#queueNames.add(queue.name);
     this.#workers.set(queue.name, {
       queue,
       handler: async (jobs) =>
@@ -77,7 +90,32 @@ export class InMemoryJobQueue extends JobQueuePort {
   }
 
   async registerSchedules(queue: QueueDefinition<object>): Promise<void> {
+    this.#queueNames.add(queue.name);
     this.scheduledQueues.push(queue.name);
+  }
+
+  async health(): Promise<JobQueueHealth> {
+    return {
+      backend: "postgres",
+      degraded: false,
+      queues: Object.fromEntries(
+        [...this.#queueNames].map((name) => [
+          name,
+          {
+            waiting: this.jobs.filter((job) => job.queue === name).length,
+            active: 0,
+            failed: 0,
+            oldestAgeSeconds: null,
+          },
+        ]),
+      ),
+    };
+  }
+
+  /** 쌓인 작업과 멱등 key를 비운다. 등록된 worker는 남긴다(E2E가 테스트마다 정리할 때 쓴다). */
+  clear(): void {
+    this.jobs.length = 0;
+    this.#keys.clear();
   }
 
   jobsIn(queue: QueueDefinition<object>): readonly InMemoryJob[] {

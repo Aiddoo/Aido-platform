@@ -5,7 +5,7 @@ import {
 import {
   IdentityUser,
   type IdentityUserPrimitives,
-} from "#api/modules/identity/auth/domain/identity-user.aggregate";
+} from "#api/modules/identity/users/domain/identity-user.aggregate";
 
 export const AUTH_FIXTURE_NOW = Temporal.Instant.from("2026-11-10T00:00:00Z");
 export const AUTH_FIXTURE_USER_ID = "clz7x5p8k0001qz0z8z8z8z8z";
@@ -27,6 +27,7 @@ export function createAuthSessionFixture(
     userAgent: "Aido/1.15.0",
     lastUsedAt: AUTH_FIXTURE_NOW,
     createdAt: AUTH_FIXTURE_NOW,
+    updatedAt: AUTH_FIXTURE_NOW,
     expiresAt: AUTH_FIXTURE_NOW.add({ hours: 24 * 7 }),
     revokedAt: null,
     ...overrides,

@@ -15,8 +15,10 @@ export class CountingOAuthIdentityProvider implements OAuthIdentityProviderPort 
   exchangeError: Error | null = null;
   exchangedToken: string | null = "provider-token";
 
+  readonly provider: AccountProvider;
+
   constructor(
-    readonly provider: AccountProvider = "GOOGLE",
+    provider: AccountProvider = "GOOGLE",
     profile: VerifiedProfile = {
       id: "provider-account",
       email: "social@example.com",
@@ -25,6 +27,7 @@ export class CountingOAuthIdentityProvider implements OAuthIdentityProviderPort 
       picture: "https://example.com/avatar.png",
     },
   ) {
+    this.provider = provider;
     this.failureEmail = `${provider.toLowerCase()}@oauth.failed`;
     this.profile = { ...profile };
   }
