@@ -2,8 +2,6 @@ import { createUserSettingsFixture, SETTINGS_TIME } from "#test/fixtures/user-se
 
 import { UpdateMarketingConsentUseCase } from "./update-marketing-consent.use-case.js";
 
-const A_MINUTE_LATER = new Date(SETTINGS_TIME.getTime() + 60_000);
-
 describe("UpdateMarketingConsent — 일반 마케팅 동의 변경", () => {
   it("동의·재동의·철회는 해당 시각만 변경하고 약관·광고성 푸시 동의를 보존한다", async () => {
     // Given
@@ -17,8 +15,8 @@ describe("UpdateMarketingConsent — 일반 마케팅 동의 변경", () => {
     const reAgreed = await useCase.execute({ userId: fixture.userId, agreed: true });
     const revoked = await useCase.execute({ userId: fixture.userId, agreed: false });
     // Then
-    expect(agreed.marketingAgreedAt).toBe(SETTINGS_TIME.toISOString());
-    expect(reAgreed.marketingAgreedAt).toBe(A_MINUTE_LATER.toISOString());
+    expect(agreed.marketingAgreedAt).toBe("2026-01-16T09:00:00.000Z");
+    expect(reAgreed.marketingAgreedAt).toBe("2026-01-16T09:01:00.000Z");
     expect(revoked.marketingAgreedAt).toBeNull();
     expect(fixture.consentRepository.stored(fixture.userId)).toEqual({
       ...fixture.consent,
@@ -59,10 +57,10 @@ describe("UpdateMarketingConsent — 일반 마케팅 동의 변경", () => {
     // Then
     expect(withdrawn).toEqual({
       marketingAgreedAt: null,
-      marketingWithdrawnAt: A_MINUTE_LATER.toISOString(),
+      marketingWithdrawnAt: "2026-01-16T09:01:00.000Z",
     });
     expect(agreed).toEqual({
-      marketingAgreedAt: A_MINUTE_LATER.toISOString(),
+      marketingAgreedAt: "2026-01-16T09:01:00.000Z",
       marketingWithdrawnAt: null,
     });
   });

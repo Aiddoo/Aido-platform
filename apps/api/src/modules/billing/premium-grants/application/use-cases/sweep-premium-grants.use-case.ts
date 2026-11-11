@@ -12,7 +12,7 @@ import type { UserSubscriptionProjectionRepositoryPort } from "../ports/user-sub
 import { PremiumGrantLogEvent } from "../premium-grants.log-events.js";
 import type { ProjectPremiumAccessUseCase } from "./project-premium-access.use-case.js";
 
-export const PREMIUM_GRANT_SWEEP = {
+const PREMIUM_GRANT_SWEEP = {
   BATCH_SIZE: 500,
   // 한 번 실행이 job 만료 시간 안에 끝나도록 상한을 두고 남은 사용자는 다음 실행이 이어 받는다
   MAX_BATCHES_PER_RUN: 20,
@@ -146,7 +146,7 @@ export class SweepPremiumGrantsUseCase {
     let changedGrantCount: number;
     try {
       changedGrantCount = await this.#dependencies.unitOfWork.run(async () => {
-        if (!(await this.#dependencies.userLock.lockById(userId.value))) {
+        if (!(await this.#dependencies.userLock.lockById(userId))) {
           return 0;
         }
         const projected = await this.#dependencies.projectPremiumAccess.execute({ userId, now });
@@ -162,7 +162,7 @@ export class SweepPremiumGrantsUseCase {
     }
 
     try {
-      await this.#dependencies.cache.invalidate(userId.value);
+      await this.#dependencies.cache.invalidate(userId);
     } catch (error) {
       this.#dependencies.logger.warn({
         event: PremiumGrantLogEvent.PREMIUM_GRANT_CACHE_INVALIDATION_FAILED,

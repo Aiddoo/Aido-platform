@@ -12,21 +12,12 @@ export function isNudgeUnavailableError(error: unknown): error is ApiError {
   return isApiError(error) && error.status === 404;
 }
 
-/** 감사 인사를 보내기 전에 콕이나 할 일이 바뀌었다(사라짐, 상태 변경) */
-export function isNudgeThanksChangedError(error: unknown): error is ApiError {
-  return (
-    isNudgeUnavailableError(error) ||
-    (isApiError(error) &&
-      (error.hasCode(ErrorCode.NUDGE_1109) || error.hasCode(ErrorCode.NUDGE_1110)))
-  );
-}
-
 /** 서버 플래그로 보낸 콕 목록이 꺼져 있다(NUDGE_1105) */
 export function isSentNudgeListDisabledError(error: unknown): error is ApiError {
   return isApiError(error) && error.hasCode(ErrorCode.NUDGE_1105);
 }
 
-/** 콕을 보낸 뒤 할 일이 바뀌어 받는 사람 상태가 달라졌다(NUDGE_1110) */
-export function isNudgeTodoChangedError(error: unknown): error is ApiError {
+/** 서버에서 그 할 일이 아직 완료 전이다(NUDGE_1110). 다른 기기에서 완료를 풀었거나 완료 저장보다 먼저 닿은 요청이다 */
+export function isThanksTodoNotCompletedError(error: unknown): error is ApiError {
   return isApiError(error) && error.hasCode(ErrorCode.NUDGE_1110);
 }

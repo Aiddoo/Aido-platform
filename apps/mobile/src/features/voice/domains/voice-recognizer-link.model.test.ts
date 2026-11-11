@@ -37,7 +37,11 @@ describe('shouldRestartStalledRecognizer', () => {
     },
   ])('$why → $expected', ({ at, overrides, expected }) => {
     // Given
-    const link = { isStopRequested: false, stallWatch: watch(overrides) };
+    const link = {
+      ...VoiceRecognizerLinkPolicy.createVoiceRecognizerLink(),
+      isStopRequested: false,
+      stallWatch: watch(overrides),
+    };
 
     // When
     const result = VoiceRecognizerLinkPolicy.shouldRestartStalledRecognizer(
@@ -52,7 +56,11 @@ describe('shouldRestartStalledRecognizer', () => {
 
   it('앱이 이미 stop을 부른 구간은 멈춘 것처럼 보여도 다시 열지 않는다', () => {
     // Given
-    const link = { isStopRequested: true, stallWatch: watch() };
+    const link = {
+      ...VoiceRecognizerLinkPolicy.createVoiceRecognizerLink(),
+      isStopRequested: true,
+      stallWatch: watch(),
+    };
 
     // When
     const result = VoiceRecognizerLinkPolicy.shouldRestartStalledRecognizer(
@@ -75,7 +83,11 @@ describe('shouldRestartStalledRecognizer', () => {
 
       // When
       const result = VoiceRecognizerLinkPolicy.shouldRestartStalledRecognizer(
-        { isStopRequested: false, stallWatch: watch() },
+        {
+          ...VoiceRecognizerLinkPolicy.createVoiceRecognizerLink(),
+          isStopRequested: false,
+          stallWatch: watch(),
+        },
         state,
         NOW + 60_000,
       );
@@ -250,7 +262,11 @@ describe('reduceRecognizerLink', () => {
 describe('isRestartLooping', () => {
   it('400ms 안에 네 번째로 끝나면 다시 열어도 소용없다고 본다', () => {
     // Given
-    const link = { lastStartedAt: NOW, quickEndCount: 3 };
+    const link = {
+      ...VoiceRecognizerLinkPolicy.createVoiceRecognizerLink(),
+      lastStartedAt: NOW,
+      quickEndCount: 3,
+    };
 
     // When
     const isLooping = VoiceRecognizerLinkPolicy.isRestartLooping(link, NOW + 399);
@@ -261,7 +277,11 @@ describe('isRestartLooping', () => {
 
   it('간격이 벌어지면 횟수와 상관없이 다시 연다', () => {
     // Given
-    const link = { lastStartedAt: NOW, quickEndCount: 3 };
+    const link = {
+      ...VoiceRecognizerLinkPolicy.createVoiceRecognizerLink(),
+      lastStartedAt: NOW,
+      quickEndCount: 3,
+    };
 
     // When
     const isLooping = VoiceRecognizerLinkPolicy.isRestartLooping(link, NOW + 400);

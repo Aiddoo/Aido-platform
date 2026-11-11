@@ -1,6 +1,9 @@
-# 새 slice 경로(modules/<context>/<slice>/…)의 폴더·파일 이름만 검사한다.
-# 접미사 없는 `.ts`는 허용하지 않는다. 옛 레이어 폴더는 Context를 옮기면 사라지므로 ignore에서 뺀다.
+# 서버 폴더는 모두 kebab-case이고, slice(modules/<context>/<slice>/…)의 파일은 역할 접미사가 있어야 한다.
+# 접미사 없는 `.ts`는 허용하지 않는다. 파일 이름의 kebab-case는 oxlint unicorn/filename-case가 서버 전체에 건다.
 ls:
+  apps/api/src:
+    .dir: kebab-case
+
   apps/api/src/modules/*/*:
     .dir: kebab-case
     .ts: regex:[^\s\S]
@@ -45,7 +48,3 @@ ls:
 ignore:
   # vitest가 spec 옆에 만드는 스냅숏 폴더
   - apps/api/src/modules/*/*/**/__snapshots__
-  - apps/api/src/modules/*/domain
-  - apps/api/src/modules/*/application
-  - apps/api/src/modules/*/infrastructure
-  - apps/api/src/modules/*/presentation

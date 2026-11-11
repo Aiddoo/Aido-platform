@@ -37,21 +37,21 @@ export function Grid({
   const startColumns = getGridStartColumns(cells.map(getColSpan), columns);
 
   return (
-    <GridContext.Provider value={columns}>
+    <GridContext value={columns}>
       <HStack
         wrap="wrap"
         style={[resolvedRowGap != null && { rowGap: resolvedRowGap }, style]}
         {...props}
       >
         {cells.map((cell, index) => (
-          <GridCellContext.Provider
+          <GridCellContext
             key={isValidElement(cell) && cell.key != null ? cell.key : index}
             value={{ columnGap: resolvedColumnGap, startColumn: startColumns[index] ?? 0 }}
           >
             {cell}
-          </GridCellContext.Provider>
+          </GridCellContext>
         ))}
       </HStack>
-    </GridContext.Provider>
+    </GridContext>
   );
 }

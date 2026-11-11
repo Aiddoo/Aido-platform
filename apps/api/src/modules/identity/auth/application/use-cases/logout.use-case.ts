@@ -7,6 +7,7 @@ import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { AUTH_DEFAULTS } from "../../domain/auth.constants.js";
+import { SessionId } from "../../domain/session-id.vo.js";
 import { AuthLogEvent } from "../auth.log-events.js";
 import type { AuthCachePort } from "../ports/auth-collaboration.port.js";
 import type { AuthSecurityLogRepositoryPort } from "../ports/auth-security-log.repository.port.js";
@@ -37,8 +38,10 @@ export class LogoutUseCase {
   }
 
   async execute(input: LogoutCommand): Promise<{ message: string }> {
-    const authSession = await this.#dependencies.sessionRepository.findById(input.sessionId);
-    if (authSession == null || !authSession.isOwnedBy(UserId.reconstitute(input.userId))) {
+    const userId = UserId.reconstitute(input.userId);
+    const sessionId = SessionId.reconstitute(input.sessionId);
+    const authSession = await this.#dependencies.sessionRepository.findById(sessionId);
+    if (authSession == null || !authSession.isOwnedBy(userId)) {
       throw new ApplicationException(ErrorCode.SESSION_0701, { sessionId: undefined });
     }
 
@@ -47,14 +50,14 @@ export class LogoutUseCase {
     }
 
     await this.#dependencies.sessionRepository.revoke(
-      input.sessionId,
+      sessionId,
       REVOKE_REASON.USER_LOGOUT,
       this.#dependencies.clock.now(),
     );
-    await this.#dependencies.cacheService.invalidateSession(input.sessionId);
-    await this.#dependencies.pushDevices.releaseSessions([input.sessionId]);
+    await this.#dependencies.cacheService.invalidateSession(sessionId);
+    await this.#dependencies.pushDevices.releaseSessions([sessionId]);
     await this.#dependencies.securityLogRepository.create({
-      userId: input.userId,
+      userId,
       event: SECURITY_EVENT.LOGOUT,
       ipAddress: input.metadata?.ip ?? AUTH_DEFAULTS.UNKNOWN_IP,
       userAgent: input.metadata?.userAgent ?? AUTH_DEFAULTS.UNKNOWN_USER_AGENT,

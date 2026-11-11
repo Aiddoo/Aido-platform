@@ -5,7 +5,7 @@ import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
 import { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 
-import { EmailAlertKey } from "../../application/email.alerts.js";
+import { EmailAlerts } from "../../application/email.alerts.js";
 import { DeliverEmailUseCase } from "../../application/use-cases/deliver-email.use-case.js";
 import { EmailMessage } from "../../domain/email-message.vo.js";
 import {
@@ -67,9 +67,7 @@ export class EmailDeliveryQueueProcessor implements OnModuleInit {
     } catch (error) {
       // 인증·문의 메일이 말없이 사라지므로 사람이 보게 한다. 키 교체나 롤백이 원인일 때가 많다.
       this.#alert.raise({
-        key: EmailAlertKey.DELIVERY_UNSEAL_FAILED,
-        severity: "error",
-        message: "발송 큐의 이메일을 풀지 못해 버렸습니다.",
+        ...EmailAlerts.DELIVERY_UNSEAL_FAILED,
         details: { kind: job.kind, errorType: toErrorType(error) },
       });
       return null;

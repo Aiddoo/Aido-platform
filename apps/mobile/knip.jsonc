@@ -20,7 +20,8 @@
         "babel-plugin-react-compiler",
         "babel-jest",
       ],
-      "ignoreBinaries": ["adb", "eas"],
+      // Maestro CLI는 npm 패키지가 아니라 따로 설치한다(.maestro/README.md)
+      "ignoreBinaries": ["adb", "eas", "maestro"],
     },
   },
 }

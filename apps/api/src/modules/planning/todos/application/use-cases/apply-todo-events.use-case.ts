@@ -36,9 +36,8 @@ export interface ApplyTodoEventsDependencies {
 
 /**
  * Aggregate가 낸 사실을 같은 트랜잭션의 후속 작업으로 바꾼다. 활성 UoW 안에서 부른다.
- * - 리마인더: 커밋 뒤 구독 5개가 하던 예약·취소를 그대로 여기서 한다. 실패하면 할 일 변경도 롤백된다
- * - 다른 Context: planning.* 이벤트를 구독 큐 작업으로 함께 커밋한다
- * 옛 todo.* 이벤트(커밋 뒤 in-process)는 호출자가 그대로 publishAll한다.
+ * - 리마인더: 예약·취소를 여기서 한다. 실패하면 할 일 변경도 롤백된다
+ * - 다른 Context: planning.* 이벤트를 구독 큐 작업·커밋 뒤 전달로 함께 등록한다
  */
 export class ApplyTodoEventsUseCase {
   readonly #dependencies: ApplyTodoEventsDependencies;

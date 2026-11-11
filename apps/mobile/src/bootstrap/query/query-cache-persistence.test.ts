@@ -125,7 +125,7 @@ describe('shouldPersistQuery', () => {
     // Given
     const client = createClient();
     await client
-      .fetchQuery({
+      .query({
         queryKey: ['failed'],
         queryFn: () => Promise.reject(new Error('boom')),
         ...PERSISTED_QUERY_OPTIONS,

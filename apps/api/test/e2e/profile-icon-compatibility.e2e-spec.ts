@@ -6,7 +6,7 @@ describe("프로필 아이콘 배포 버전 호환", () => {
   let ctx: E2eTestContext;
   beforeAll(async () => {
     ctx = await createE2eApp();
-  }, 60000);
+  }, 60_000);
   afterAll(async () => {
     await destroyE2eApp(ctx);
   });

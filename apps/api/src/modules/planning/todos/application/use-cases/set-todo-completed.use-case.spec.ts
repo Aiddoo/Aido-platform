@@ -4,7 +4,9 @@ import { vi } from "vitest";
 import {
   createPlanningTodoFixture,
   createPlanningTodo,
+  PLANNING_INSTANT,
   PLANNING_TIME,
+  snapshotTodoRecord,
 } from "#test/fixtures/planning/planning-todos.fixture";
 
 import { TodoRescheduledEvent } from "../../../shared/domain/todo-rescheduled.event.js";
@@ -40,10 +42,10 @@ describe("할 일 완료 상태 전이", () => {
     expect(completed).toMatchObject({ completed: true, completedAt: PLANNING_TIME.toISOString() });
     expect(uncompleted).toMatchObject({ completed: false, completedAt: null });
     expect(fixture.records.get(1)).toMatchObject({ completed: false, completedAt: null });
-    expect(fixture.eventPublisher.events).toHaveLength(2);
-    expect(fixture.eventPublisher.events.every((event) => event instanceof TodoToggledEvent)).toBe(
-      true,
-    );
+    expect(fixture.completionEffects.events).toHaveLength(2);
+    expect(
+      fixture.completionEffects.events.every((event) => event instanceof TodoToggledEvent),
+    ).toBe(true);
   });
   it("같은 완료 요청은 시각과 이벤트를 중복 변경하지 않는다", async () => {
     // Given
@@ -60,22 +62,22 @@ describe("할 일 완료 상태 전이", () => {
     const result = await useCase.execute(input);
     // Then
     expect(result.completedAt).toBe(PLANNING_TIME.toISOString());
-    expect(fixture.eventPublisher.events).toHaveLength(1);
+    expect(fixture.completionEffects.events).toHaveLength(1);
     expect(completionWrite).not.toHaveBeenCalled();
   });
   it("완료를 되돌리면 순간은 그대로 두고 지금 순간으로 알림 재예약 이벤트를 낸다", async () => {
     // Given
-    const instant = new Date("2026-05-16T14:00:00.000Z");
+    const instant = Temporal.Instant.from("2026-05-16T14:00:00.000Z");
     fixture = createPlanningTodoFixture({
       todos: [
         {
           ...createPlanningTodo(),
-          startDate: new Date("2026-05-16T00:00:00.000Z"),
+          startDate: Temporal.PlainDate.from("2026-05-16"),
           scheduledLocalTime: "10:00",
           scheduledTime: instant,
           isAllDay: false,
           completed: true,
-          completedAt: PLANNING_TIME,
+          completedAt: PLANNING_INSTANT,
         },
       ],
     });
@@ -94,14 +96,14 @@ describe("할 일 완료 상태 전이", () => {
       completed: false,
     });
     expect(result).toMatchObject({ scheduledLocalTime: "10:00" });
-    expect(fixture.eventPublisher.events).toContainEqual(
+    expect(fixture.completionEffects.events).toContainEqual(
       new TodoRescheduledEvent(1, fixture.userId, instant),
     );
   });
 
   it("다른 사용자의 할 일은 완료할 수 없다", async () => {
     // Given
-    const before = structuredClone(fixture.records.get(1));
+    const before = snapshotTodoRecord(fixture.records.get(1));
     // When / Then
     await expect(
       useCase.execute({
@@ -112,16 +114,16 @@ describe("할 일 완료 상태 전이", () => {
       }),
     ).rejects.toMatchObject({ errorCode: ErrorCode.TODO_0801 });
     expect(fixture.records.get(1)).toEqual(before);
-    expect(fixture.eventPublisher.events).toEqual([]);
+    expect(fixture.completionEffects.events).toEqual([]);
   });
 
-  it("이벤트 발행이 끝나기 전에 응답 조회를 진행하지 않는다", async () => {
+  it("완료 효과가 끝나기 전에 응답 조회를 진행하지 않는다", async () => {
     // Given
     const entered = Promise.withResolvers<void>();
-    const publication = Promise.withResolvers<void>();
-    fixture.eventPublisher.publishAll = async () => {
+    const effects = Promise.withResolvers<void>();
+    fixture.completionEffects.execute = async () => {
       entered.resolve();
-      await publication.promise;
+      await effects.promise;
     };
     const responseRead = vi.spyOn(fixture.todoReadRepository, "findByIdAndUserId");
     // When
@@ -136,7 +138,7 @@ describe("할 일 완료 상태 전이", () => {
       // Then
       expect(responseRead).not.toHaveBeenCalled();
     } finally {
-      publication.resolve();
+      effects.resolve();
       await execution;
     }
     expect(responseRead).toHaveBeenCalledOnce();

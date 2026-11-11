@@ -2,6 +2,7 @@ import { ErrorCode } from "@aido/api/errors";
 
 import { accountDeleted } from "#api/modules/identity/auth/application/auth.errors";
 import { ApplicationException } from "#api/shared/application/application.exception";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { AuthAccountRepositoryPort } from "../ports/auth-account.repository.port.js";
 import type { AuthUserRepositoryPort } from "../ports/auth-user.repository.port.js";
@@ -27,10 +28,10 @@ export class RequestPasswordSetupCodeUseCase {
   }
 
   async execute(input: RequestPasswordSetupCodeCommand): Promise<{ message: string }> {
-    const { userId } = input;
+    const userId = UserId.reconstitute(input.userId);
     const user = await this.#dependencies.userRepository.findById(userId);
     if (user == null) {
-      throw new ApplicationException(ErrorCode.USER_0601, { userId });
+      throw new ApplicationException(ErrorCode.USER_0601, { userId: input.userId });
     }
     if (user.isDeleted) {
       throw accountDeleted(user.id.value);
@@ -41,15 +42,15 @@ export class RequestPasswordSetupCodeUseCase {
       "CREDENTIAL",
     );
     if (account != null) {
-      throw new ApplicationException(ErrorCode.USER_0614, { userId });
+      throw new ApplicationException(ErrorCode.USER_0614, { userId: input.userId });
     }
 
     const issued = await this.#dependencies.issueVerificationCode.execute({
-      userId,
+      userId: input.userId,
       type: "PASSWORD_SETUP",
     });
     await this.#dependencies.sendVerificationCode.execute({
-      userId,
+      userId: input.userId,
       email: user.email,
       code: issued.code,
       type: "PASSWORD_SETUP",

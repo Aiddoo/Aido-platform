@@ -6,13 +6,8 @@ import { BROADCAST_DELIVERY_QUEUE } from "#api/modules/operations/broadcasts/inf
 import { BROADCAST_FAN_OUT_QUEUE } from "#api/modules/operations/broadcasts/infrastructure/jobs/broadcast-fan-out.queue";
 import { DRIZZLE, type Database } from "#api/platform/database/database.client";
 import { user as userTable, userPreference } from "#api/platform/database/schema/index";
-import {
-  JOB_RUNTIME,
-  JobQueuePort,
-  type QueueDefinition,
-} from "#api/shared/application/ports/index";
+import { JobQueuePort, type QueueDefinition } from "#api/shared/application/ports/job-queue.port";
 import type { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
-import type { FakeJobRuntime } from "#test/mocks/fake-job-runtime";
 
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 
@@ -21,7 +16,7 @@ describe("관리자 E2E", () => {
 
   beforeAll(async () => {
     ctx = await createE2eApp();
-  }, 60000);
+  }, 60_000);
 
   afterAll(async () => {
     await destroyE2eApp(ctx);
@@ -139,10 +134,6 @@ describe("관리자 E2E", () => {
       force: true,
     };
 
-    function jobRuntime(): FakeJobRuntime {
-      return ctx.module.get<FakeJobRuntime>(JOB_RUNTIME);
-    }
-
     function jobQueue(): InMemoryJobQueue {
       return ctx.module.get<typeof JobQueuePort, InMemoryJobQueue>(JobQueuePort);
     }
@@ -170,7 +161,6 @@ describe("관리자 E2E", () => {
       const admin = await createAdminUser("admin-campaign@example.com", "Test1234!");
       await registerRecipient("campaign-recipient-1@example.com", "ios_device-one");
       await registerRecipient("campaign-recipient-2@example.com", "android_device-two");
-      jobRuntime().enqueueCalls.splice(0);
       jobQueue().clear();
 
       // When
@@ -208,7 +198,6 @@ describe("관리자 E2E", () => {
       // Given
       const admin = await createAdminUser("admin-replay@example.com", "Test1234!");
       await registerRecipient("replay-recipient@example.com", "ios_device-replay");
-      jobRuntime().enqueueCalls.splice(0);
       jobQueue().clear();
       const send = () =>
         request(ctx.app.getHttpServer())

@@ -7,10 +7,8 @@
  * 리마인더가 없으므로 멱등). 토글 전용 스트릭·마일스톤 부수효과는
  * TodoToggledEvent가 담당하며 이 이벤트에는 없습니다.
  */
-import { TODO_EVENTS } from "./todo-event-names.constants.js";
-
 export class TodoUpdatedEvent {
-  readonly eventName = TODO_EVENTS.UPDATED;
+  readonly eventName = "todo.updated";
 
   readonly todoId: number;
   readonly userId: string;

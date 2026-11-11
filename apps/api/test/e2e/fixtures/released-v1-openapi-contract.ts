@@ -326,8 +326,14 @@ export const RELEASED_V1_OPENAPI_CONTRACT = {
 	/** 1.15.0: /me(CurrentUserResponseDto)에 선택 칸 premiumPlanType(지금 기간을 정하는 스토어 구독의 요금제 ANNUAL·MONTHLY, 모르면 null)만 추가. 기존 칸·필수 여부는 같고 출시 앱의 Zod는 strip 모드라 새 키를 버린다. test/e2e/subscription.e2e-spec.ts가 공유 스키마 파싱으로 확인한다. */
 	prePremiumPlanTypeSchemasFingerprint:
 		"9884b465b5620978687c2933e8d3e76a6e29987249d441fe999f461d2df29f1b",
-	schemasFingerprint:
+	/** 1.15.1: 엔티티 ID를 z.cuid()(format cuid, pattern ^[cC][0-9a-z]{6,}$) 대신 공유 ENTITY_ID_PATTERN(^c[0-9a-z]{8,63}$)으로 검증한다. 서버가 발급한 ID(c + 24 hex, CUID v1 25자, 29자 옛 사용자 ID)는 모두 통과하고 필드·필수 여부·상태 코드는 같다. packages/api/test/entity-id.spec.ts가 출시 앱 요청(세션 해제·관리자 캠페인·대상 사용자 ID)으로 증명한다. */
+	preEntityIdPatternSchemasFingerprint:
 		"ee973e126a930fb9002180abe69f7985b1cee60191cebcc619b962abdebfa6f7",
+	/** 1.15.1: 카테고리 삭제 응답(DeleteTodoCategoryResponseDto)에 선택 칸 result(todoHandling·todoCount·seriesCount·moveToCategoryId)만 추가. 기존 칸·필수 여부는 같고 출시 앱의 Zod는 strip 모드라 새 키를 버린다. test/e2e/todo-category-deletion.e2e-spec.ts가 출시 앱 요청·응답 모양을 고정한다. */
+	preCategoryDeletionChoiceSchemasFingerprint:
+		"f9cdd86be7d22600eb61ec5d78f38f86cd51e1a369723615896b42741fee34a9",
+	schemasFingerprint:
+		"e69d9a25e4ed7fec5107bb9ca71a838eb143c1ce3849992b82103601da30f050",
 	/** 1.13.0: GET /todos/summary에 선택 date 쿼리(오늘·내일)만 추가. 생략 시 기존 응답과 같아 구버전 앱은 영향이 없다. */
 	preTodoSummaryDatePathsFingerprint:
 		"d52736c33c48601fea6473ce56d311e6e49857b7571a532ee943bdc9e3900a1b",
@@ -367,6 +373,12 @@ export const RELEASED_V1_OPENAPI_CONTRACT = {
 	/** 1.15.0: parse-memo에 선택 Idempotency-Key 헤더만 추가. 생략 시 기존과 같이 요청마다 차감해 출시 앱은 영향이 없다. */
 	preMemoIdempotencyPathsFingerprint:
 		"873a009001b7bf72246c5a62f5d3d4ba92dc89edeeea9003d7bc559ada98c14d",
-	pathsFingerprint:
+	/** 1.15.1: path·query의 엔티티 ID(세션·사용자·팔로우·캠페인)를 같은 ENTITY_ID_PATTERN으로 검증한다. 서버가 발급한 ID는 모두 통과하고 경로·응답·상태 코드는 같다. */
+	preEntityIdPatternPathsFingerprint:
 		"2a18ce7a5e5781a06d09e3f61be42b73a0b95932ff8dbf0e1e3f79e2070fc930",
+	/** 1.15.1: DELETE /todo-categories/{id}에 선택 query todoHandling(move·delete)만 추가. 생략하면 할 일이 있을 때 moveToCategoryId가 필요한 지금 규칙과 응답(0855 details 포함) 그대로다. 상태 코드·오류 코드는 같고, 새 400은 todoHandling을 보낸 요청에서만 닿는다. test/e2e/todo-category-deletion.e2e-spec.ts가 출시 앱 요청 모양으로 동작을 증명한다. */
+	preCategoryDeletionChoicePathsFingerprint:
+		"0cd87a71195aea7edbb8f2e16bd449f40fbea6d519947fa076dde204d6698622",
+	pathsFingerprint:
+		"a6928801cfc6cd81229c68710fde31c4bcb7d6bfed5ad417e85904028bedc087",
 } as const;

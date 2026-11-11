@@ -9,6 +9,7 @@ import {
   AuthOAuthState,
   type AuthOAuthStatePrimitives,
 } from "#api/modules/identity/auth/domain/auth-oauth-state.aggregate";
+import type { OAuthStateId } from "#api/modules/identity/auth/domain/oauth-state-id.vo";
 
 function isAfter(left: Temporal.Instant, right: Temporal.Instant): boolean {
   return Temporal.Instant.compare(left, right) > 0;
@@ -39,7 +40,7 @@ export class InMemoryAuthOAuthStateRepository extends AuthOAuthStateRepositoryPo
       provider: input.provider,
       redirectUri: input.redirectUri,
       mode: input.mode ?? null,
-      initiatingUserId: input.initiatingUserId ?? null,
+      initiatingUserId: input.initiatingUserId?.value ?? null,
       exchangeCode: null,
       accessToken: null,
       refreshToken: null,
@@ -73,13 +74,16 @@ export class InMemoryAuthOAuthStateRepository extends AuthOAuthStateRepositoryPo
     return found == null ? null : AuthOAuthState.reconstitute(found);
   }
 
-  async saveExchangeData(oauthStateId: number, data: AuthOAuthLoginExchangeData): Promise<void> {
-    const state = this.#states.get(oauthStateId);
+  async saveExchangeData(
+    oauthStateId: OAuthStateId,
+    data: AuthOAuthLoginExchangeData,
+  ): Promise<void> {
+    const state = this.#states.get(oauthStateId.value);
     if (state == null) {
       return;
     }
     // Drizzle update의 set처럼 생략한 칸(undefined)은 그대로 둔다
-    this.#states.set(oauthStateId, {
+    this.#states.set(oauthStateId.value, {
       ...state,
       exchangeCode: data.exchangeCode,
       accessToken: data.accessToken,
@@ -92,12 +96,12 @@ export class InMemoryAuthOAuthStateRepository extends AuthOAuthStateRepositoryPo
     });
   }
 
-  async saveLinkingData(oauthStateId: number, data: AuthOAuthLinkingData): Promise<void> {
-    const state = this.#states.get(oauthStateId);
+  async saveLinkingData(oauthStateId: OAuthStateId, data: AuthOAuthLinkingData): Promise<void> {
+    const state = this.#states.get(oauthStateId.value);
     if (state == null) {
       return;
     }
-    this.#states.set(oauthStateId, {
+    this.#states.set(oauthStateId.value, {
       ...state,
       exchangeCode: data.exchangeCode,
       provider: data.provider,
@@ -106,7 +110,7 @@ export class InMemoryAuthOAuthStateRepository extends AuthOAuthStateRepositoryPo
   }
 
   async consumeExchangeCode(input: ConsumeAuthOAuthStateInput): Promise<boolean> {
-    const state = this.#states.get(input.id);
+    const state = this.#states.get(input.id.value);
     if (
       state == null ||
       state.exchangeCode !== input.exchangeCode ||
@@ -120,11 +124,11 @@ export class InMemoryAuthOAuthStateRepository extends AuthOAuthStateRepositoryPo
       (state.mode !== "link" ||
         (state.initiatingUserId != null &&
           state.initiatingUserId !== "" &&
-          state.initiatingUserId !== input.actorUserId))
+          state.initiatingUserId !== input.actorUserId.value))
     ) {
       return false;
     }
-    this.#states.set(input.id, {
+    this.#states.set(input.id.value, {
       ...state,
       exchangedAt: input.at,
       accessToken: null,

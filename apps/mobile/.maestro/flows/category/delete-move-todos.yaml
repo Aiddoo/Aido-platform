@@ -1,0 +1,51 @@
+appId: ${MAESTRO_APP_ID}
+name: 할 일이 있는 카테고리를 지우면 고른 카테고리로 할 일을 옮긴다
+tags:
+  - regression
+  - category
+onFlowStart:
+  - runFlow: ../../subflows/app/load-helpers.yaml
+  - evalScript: ${output.main = output.api.signIn('main')}
+  - evalScript: ${output.main.removeE2eCategories()}
+  - evalScript: ${output.category = output.main.createCategory('move ' + output.config.runId)}
+  - evalScript: ${output.todo = output.main.createTodo(output.category.id, 'E2E move ' + output.config.runId)}
+  - evalScript: ${output.target = output.main.firstDefaultCategory()}
+  - runFlow: ../../subflows/app/launch-fresh.yaml
+onFlowComplete:
+  - evalScript: ${output.main && output.todo && output.main.deleteTodo(output.todo.id)}
+  - evalScript: ${output.main && output.main.removeE2eCategories()}
+---
+# Given: 할 일 하나가 든 테스트 카테고리의 삭제 시트를 연다
+- runFlow:
+    file: ../../subflows/auth/sign-in.yaml
+    env:
+      EMAIL: ${output.main.email}
+      PASSWORD: ${output.main.password}
+- runFlow:
+    file: ../../subflows/category/open-delete-sheet.yaml
+    env:
+      CATEGORY_ID: ${output.category.id}
+
+# When: 옮기기에서 옮길 카테고리를 고르고 삭제한다
+- tapOn:
+    id: ${output.ids.category.handlingOption('move')}
+- tapOn:
+    id: ${output.ids.category.moveTargetRow}
+- tapOn:
+    id: ${output.ids.categorySelect.option(output.target.id)}
+- tapOn:
+    id: ${output.ids.categorySelect.submitButton}
+- tapOn:
+    id: ${output.ids.category.submitButton}
+
+# Then: 목록에서 사라지고 할 일은 고른 카테고리로 옮겨진다
+- extendedWaitUntil:
+    notVisible:
+      id: ${output.ids.category.deleteButton(output.category.id)}
+    timeout: 10000
+- assertTrue:
+    condition: ${!output.main.hasCategory(output.category.id)}
+    label: 서버에서 카테고리가 지워졌다
+- assertTrue:
+    condition: ${output.main.hasTodoIn(output.target.id, output.todo.id)}
+    label: 할 일이 고른 카테고리로 옮겨졌다

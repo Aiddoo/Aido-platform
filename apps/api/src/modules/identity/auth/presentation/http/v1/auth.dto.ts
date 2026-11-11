@@ -1,13 +1,11 @@
 import {
   appleMobileCallbackSchema,
   authTokensSchema,
-  changePasswordResponseSchema,
   changePasswordSchema,
   currentUserSchema,
   deleteAccountResponseSchema,
   deleteAccountSchema,
   exchangeCodeSchema,
-  forgotPasswordResponseSchema,
   forgotPasswordSchema,
   googleMobileCallbackSchema,
   kakaoMobileCallbackSchema,
@@ -16,27 +14,18 @@ import {
   loginSchema,
   logoutResponseSchema,
   naverMobileCallbackSchema,
-  refreshTokenSchema,
   refreshTokensSchema,
-  registerResponseSchema,
   registerSchema,
-  resendVerificationResponseSchema,
   resendVerificationSchema,
-  resetPasswordResponseSchema,
   resetPasswordSchema,
   revokeSessionSchema,
-  sessionInfoSchema,
   sessionListResponseSchema,
-  sessionListSchema,
   setPasswordSchema,
-  unlinkAccountResponseSchema,
   unlinkAccountSchema,
   updateProfileResponseSchema,
   updateProfileSchema,
-  userProfileSchema,
   verifyEmailSchema,
 } from "@aido/api/contracts/auth";
-import { entitlementSnapshotSchema } from "@aido/api/contracts/entitlement";
 import type { z } from "zod";
 
 export const RegisterDto = registerSchema.meta({ id: "RegisterDto" });
@@ -55,8 +44,6 @@ export const ChangePasswordDto = changePasswordSchema.meta({ id: "ChangePassword
 export type ChangePasswordDto = z.infer<typeof ChangePasswordDto>;
 export const SetPasswordDto = setPasswordSchema.meta({ id: "SetPasswordDto" });
 export type SetPasswordDto = z.infer<typeof SetPasswordDto>;
-export const RefreshTokenDto = refreshTokenSchema.meta({ id: "RefreshTokenDto" });
-export type RefreshTokenDto = z.infer<typeof RefreshTokenDto>;
 export const ExchangeCodeDto = exchangeCodeSchema.meta({ id: "ExchangeCodeDto" });
 export type ExchangeCodeDto = z.infer<typeof ExchangeCodeDto>;
 export const RevokeSessionDto = revokeSessionSchema.meta({
@@ -99,34 +86,10 @@ export const RefreshTokensDto = refreshTokensSchema.meta({ id: "RefreshTokensDto
 export type RefreshTokensDto = z.infer<typeof RefreshTokensDto>;
 export const CurrentUserDto = currentUserSchema.meta({ id: "CurrentUserDto" });
 export type CurrentUserDto = z.infer<typeof CurrentUserDto>;
-export const UserProfileDto = userProfileSchema.meta({ id: "UserProfileDto" });
-export type UserProfileDto = z.infer<typeof UserProfileDto>;
-export const SessionInfoDto = sessionInfoSchema.meta({ id: "SessionInfoDto" });
-export type SessionInfoDto = z.infer<typeof SessionInfoDto>;
 export const SessionListDto = sessionListResponseSchema.meta({ id: "SessionListDto" });
 export type SessionListDto = z.infer<typeof SessionListDto>;
-export const SessionArrayDto = sessionListSchema.meta({ id: "SessionArrayDto" });
-export type SessionArrayDto = z.infer<typeof SessionArrayDto>;
 export const MessageResponseDto = logoutResponseSchema.meta({ id: "MessageResponseDto" });
 export type MessageResponseDto = z.infer<typeof MessageResponseDto>;
-export const RegisterResponseDto = registerResponseSchema.meta({ id: "RegisterResponseDto" });
-export type RegisterResponseDto = z.infer<typeof RegisterResponseDto>;
-export const ForgotPasswordResponseDto = forgotPasswordResponseSchema.meta({
-  id: "ForgotPasswordResponseDto",
-});
-export type ForgotPasswordResponseDto = z.infer<typeof ForgotPasswordResponseDto>;
-export const ResetPasswordResponseDto = resetPasswordResponseSchema.meta({
-  id: "ResetPasswordResponseDto",
-});
-export type ResetPasswordResponseDto = z.infer<typeof ResetPasswordResponseDto>;
-export const ChangePasswordResponseDto = changePasswordResponseSchema.meta({
-  id: "ChangePasswordResponseDto",
-});
-export type ChangePasswordResponseDto = z.infer<typeof ChangePasswordResponseDto>;
-export const ResendVerificationResponseDto = resendVerificationResponseSchema.meta({
-  id: "ResendVerificationResponseDto",
-});
-export type ResendVerificationResponseDto = z.infer<typeof ResendVerificationResponseDto>;
 export const UpdateProfileResponseDto = updateProfileResponseSchema.meta({
   id: "UpdateProfileResponseDto",
 });
@@ -135,15 +98,7 @@ export const LinkedAccountsResponseDto = linkedAccountsResponseSchema.meta({
   id: "LinkedAccountsResponseDto",
 });
 export type LinkedAccountsResponseDto = z.infer<typeof LinkedAccountsResponseDto>;
-export const UnlinkAccountResponseDto = unlinkAccountResponseSchema.meta({
-  id: "UnlinkAccountResponseDto",
-});
-export type UnlinkAccountResponseDto = z.infer<typeof UnlinkAccountResponseDto>;
 export const DeleteAccountResponseDto = deleteAccountResponseSchema.meta({
   id: "DeleteAccountResponseDto",
 });
 export type DeleteAccountResponseDto = z.infer<typeof DeleteAccountResponseDto>;
-export const EntitlementSnapshotDto = entitlementSnapshotSchema.meta({
-  id: "EntitlementSnapshotDto",
-});
-export type EntitlementSnapshotDto = z.infer<typeof EntitlementSnapshotDto>;

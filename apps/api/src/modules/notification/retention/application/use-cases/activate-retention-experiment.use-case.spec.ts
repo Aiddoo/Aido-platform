@@ -1,3 +1,4 @@
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { InMemoryRetentionRepository } from "#test/doubles/notification/in-memory-retention.repository";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { ImmediateUnitOfWork } from "#test/doubles/platform/immediate-unit-of-work";
@@ -8,7 +9,11 @@ const NOW = Temporal.Instant.from("2026-07-15T00:00:00Z");
 
 async function setup(enabled: boolean) {
   const repository = new InMemoryRetentionRepository();
-  await repository.enroll({ userId: "new-user", variant: "TREATMENT", startedAt: null });
+  await repository.enroll({
+    userId: UserId.reconstitute("new-user"),
+    variant: "TREATMENT",
+    startedAt: null,
+  });
   const unitOfWork = new ImmediateUnitOfWork();
   const useCase = new ActivateRetentionExperimentUseCase({
     repository,
@@ -29,7 +34,11 @@ describe("ActivateRetentionExperimentUseCase — 최초 인증 시점 시작", (
 
     // Then
     expect(repository.enrollments).toEqual([
-      { userId: "new-user", variant: "TREATMENT", startedAt: new Date("2026-07-15T00:00:00Z") },
+      {
+        userId: "new-user",
+        variant: "TREATMENT",
+        startedAt: Temporal.Instant.from("2026-07-15T00:00:00Z"),
+      },
     ]);
   });
 

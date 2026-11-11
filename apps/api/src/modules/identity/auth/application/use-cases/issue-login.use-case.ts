@@ -3,6 +3,7 @@ import { SECURITY_EVENT } from "@aido/api/vocabulary";
 
 import type { AccountProvider } from "#api/modules/identity/auth/domain/auth.constants";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { TokenPair } from "../ports/auth-crypto.port.js";
 import { type AuthLoginAttemptRepositoryPort } from "../ports/auth-login-attempt.repository.port.js";
@@ -54,6 +55,7 @@ export class IssueLoginUseCase {
   }
 
   async execute(input: IssueLoginCommand): Promise<IssueLoginOutcome> {
+    const userId = UserId.reconstitute(input.userId);
     const { sessionId, tokens } = await this.#dependencies.sessionService.execute({
       userId: input.userId,
       email: input.email,
@@ -73,16 +75,14 @@ export class IssueLoginUseCase {
     });
 
     await this.#dependencies.securityLogRepository.create({
-      userId: input.userId,
+      userId,
       event: SECURITY_EVENT.LOGIN_SUCCESS,
       ipAddress: input.ip,
       userAgent: input.userAgent,
       ...(input.securityMetadata ? { metadata: input.securityMetadata } : {}),
     });
 
-    const userWithProfile = await this.#dependencies.userRepository.findByIdWithProfile(
-      input.userId,
-    );
+    const userWithProfile = await this.#dependencies.userRepository.findByIdWithProfile(userId);
 
     return {
       sessionId,

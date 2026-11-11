@@ -16,7 +16,8 @@ import { PLAN_CATALOG, quotaErrorDetailsSchema } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
 import request from "supertest";
 
-import { dayWindowInTimezone } from "#api/shared/domain/date/utils/timezone";
+import { toIsoString } from "#api/shared/domain/time/instant";
+import { nowInstant, dayWindowIn } from "#test/fixtures/clock.fixture";
 
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 
@@ -25,7 +26,7 @@ describe("찔러보기 E2E", () => {
 
   beforeAll(async () => {
     ctx = await createE2eApp();
-  }, 60000);
+  }, 60_000);
 
   afterAll(async () => {
     await destroyE2eApp(ctx);
@@ -133,7 +134,7 @@ describe("찔러보기 E2E", () => {
             used: PLAN_CATALOG.NUDGE.free,
             remaining: 0,
             period: "day",
-            resetsAt: dayWindowInTimezone(new Date(), "Asia/Seoul").endsAt.toISOString(),
+            resetsAt: toIsoString(dayWindowIn(nowInstant(), "Asia/Seoul").endsAt),
             isFairUse: false,
             perUse: null,
           },

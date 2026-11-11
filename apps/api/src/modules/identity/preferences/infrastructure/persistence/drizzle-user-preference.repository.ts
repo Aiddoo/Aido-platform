@@ -5,6 +5,7 @@ import { and, eq, isNull, ne } from "drizzle-orm";
 import { requireRecord } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { userPreference } from "#api/platform/database/schema/index";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import {
   type PreferenceWriteInput,
@@ -29,42 +30,44 @@ export class DrizzleUserPreferenceRepository extends UserPreferenceRepositoryPor
     return this.#txHost.tx;
   }
 
-  async findByUserId(userId: string): Promise<UserPreferenceRow | null> {
-    const row = await this.#db.query.userPreference.findFirst({ where: { userId } });
+  async findByUserId(userId: UserId): Promise<UserPreferenceRow | null> {
+    const row = await this.#db.query.userPreference.findFirst({
+      where: { userId: userId.value },
+    });
     return row ?? null;
   }
 
-  async findStreakByUserId(userId: string): Promise<UserPreference | null> {
+  async findStreakByUserId(userId: UserId): Promise<UserPreference | null> {
     const row = await this.#db.query.userPreference.findFirst({
       columns: { userId: true, currentStreak: true, longestStreak: true, lastCompletedDate: true },
-      where: { userId },
+      where: { userId: userId.value },
     });
     return row == null ? null : UserPreference.reconstitute(row);
   }
 
-  async findByUserIds(userIds: readonly string[]): Promise<UserPreferenceRow[]> {
+  async findByUserIds(userIds: readonly UserId[]): Promise<UserPreferenceRow[]> {
     if (userIds.length === 0) {
       return [];
     }
     return this.#db.query.userPreference.findMany({
-      where: { userId: { in: [...userIds] } },
+      where: { userId: { in: userIds.map((userId) => userId.value) } },
     });
   }
 
-  async create(userId: string, data: PreferenceWriteInput = {}): Promise<UserPreferenceRow> {
+  async create(userId: UserId, data: PreferenceWriteInput = {}): Promise<UserPreferenceRow> {
     const [row] = await this.#db
       .insert(userPreference)
-      .values({ userId, ...this.#createFields(data) })
+      .values({ userId: userId.value, ...this.#createFields(data) })
       .returning();
     return requireRecord(row);
   }
 
-  async upsert(userId: string, data: PreferenceWriteInput): Promise<UserPreferenceRow> {
-    return this.#upsert(userId, this.#createFields(data), this.#writeFields(data));
+  async upsert(userId: UserId, data: PreferenceWriteInput): Promise<UserPreferenceRow> {
+    return this.#upsert(userId.value, this.#createFields(data), this.#writeFields(data));
   }
 
   async updateStreakIfUnchanged(
-    userId: string,
+    userId: UserId,
     expected: StreakState,
     next: StreakState,
   ): Promise<boolean> {
@@ -73,7 +76,7 @@ export class DrizzleUserPreferenceRepository extends UserPreferenceRepositoryPor
       .set(next)
       .where(
         and(
-          eq(userPreference.userId, userId),
+          eq(userPreference.userId, userId.value),
           eq(userPreference.currentStreak, expected.currentStreak),
           eq(userPreference.longestStreak, expected.longestStreak),
           expected.lastCompletedDate == null
@@ -85,30 +88,30 @@ export class DrizzleUserPreferenceRepository extends UserPreferenceRepositoryPor
     return updated.length === 1;
   }
 
-  async upsertTimezone(userId: string, timezone: string): Promise<boolean> {
+  async upsertTimezone(userId: UserId, timezone: string): Promise<boolean> {
     const written = await this.#db
       .insert(userPreference)
-      .values({ userId, timezone })
+      .values({ userId: userId.value, timezone })
       .onConflictDoUpdate({
         target: userPreference.userId,
         set: { timezone },
-        where: ne(userPreference.timezone, timezone),
+        setWhere: ne(userPreference.timezone, timezone),
       })
       .returning({ id: userPreference.id });
     return written.length > 0;
   }
 
-  async refreshTimezoneIfChanged(userId: string, timezone: string): Promise<number> {
+  async refreshTimezoneIfChanged(userId: UserId, timezone: string): Promise<number> {
     const updated = await this.#db
       .update(userPreference)
       .set({ timezone })
-      .where(and(eq(userPreference.userId, userId), ne(userPreference.timezone, timezone)))
+      .where(and(eq(userPreference.userId, userId.value), ne(userPreference.timezone, timezone)))
       .returning({ id: userPreference.id });
     return updated.length;
   }
 
-  async upsertLocale(userId: string, locale: string): Promise<void> {
-    await this.#upsert(userId, { locale }, { locale });
+  async upsertLocale(userId: UserId, locale: string): Promise<void> {
+    await this.#upsert(userId.value, { locale }, { locale });
   }
 
   async #upsert(

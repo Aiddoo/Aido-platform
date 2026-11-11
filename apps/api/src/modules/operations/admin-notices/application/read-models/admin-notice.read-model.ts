@@ -151,5 +151,3 @@ export type AdminNotice =
       readonly user: AdminNoticeUser;
       readonly subscription: SubscriptionNotice;
     };
-
-export type AdminNoticeType = AdminNotice["type"];

@@ -8,12 +8,13 @@ import { type ErrorCodeType, Errors } from "@aido/api/errors";
  * HTTP 오류 변환은 Platform의 GlobalExceptionFilter가 소유합니다.
  */
 export abstract class ErrorCodedException extends Error {
-  protected constructor(
-    public readonly errorCode: ErrorCodeType,
-    public readonly details?: unknown,
-    message?: string,
-  ) {
+  readonly errorCode: ErrorCodeType;
+  readonly details?: unknown;
+
+  protected constructor(errorCode: ErrorCodeType, details?: unknown, message?: string) {
     // 패키지 버전 불일치 등으로 코드 매핑이 없어도 2차 TypeError 없이 안전하게 폴백
     super(message ?? Errors[errorCode]?.message ?? "알 수 없는 오류가 발생했습니다.");
+    this.errorCode = errorCode;
+    this.details = details;
   }
 }

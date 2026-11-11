@@ -2,12 +2,10 @@ import { DEFAULT_LOCALE } from "@aido/api/vocabulary";
 import { Inject, Injectable } from "@nestjs/common";
 
 import {
-  NOTIFICATION_RECIPIENT_LOCALE_READER,
-  NOTIFICATION_RECIPIENT_TIMEZONE_READER,
-  type NotificationRecipientLocaleReaderPort,
-  type NotificationRecipientTimezoneReaderPort,
+  NotificationRecipientLocaleReaderPort,
+  NotificationRecipientTimezoneReaderPort,
 } from "#api/modules/notification/notification-delivery.public";
-import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { TimeZone } from "#api/shared/domain/time/time-zone.vo";
 
 import { BroadcastRecipientReaderPort } from "../../application/ports/broadcast-recipient.reader.port.js";
@@ -20,9 +18,9 @@ export class NotificationBroadcastRecipientAdapter extends BroadcastRecipientRea
   readonly #timezoneReader: NotificationRecipientTimezoneReaderPort;
 
   constructor(
-    @Inject(NOTIFICATION_RECIPIENT_LOCALE_READER)
+    @Inject(NotificationRecipientLocaleReaderPort)
     localeReader: NotificationRecipientLocaleReaderPort,
-    @Inject(NOTIFICATION_RECIPIENT_TIMEZONE_READER)
+    @Inject(NotificationRecipientTimezoneReaderPort)
     timezoneReader: NotificationRecipientTimezoneReaderPort,
   ) {
     super();
@@ -35,7 +33,7 @@ export class NotificationBroadcastRecipientAdapter extends BroadcastRecipientRea
   ): Promise<ReadonlyMap<string, BroadcastRecipient>> {
     const ids = userIds.map((userId) => userId.value);
     const [locales, timezones] = await Promise.all([
-      this.#localeReader.getLocales(ids),
+      this.#localeReader.getLocales(ids.map((userId) => UserId.reconstitute(userId))),
       this.#timezoneReader.getTimezones(ids),
     ]);
     return new Map(

@@ -2,12 +2,14 @@ import type { NotificationCategory } from "@aido/api/vocabulary";
 
 import { clampPageSize, type CursorPage, toCursorPage } from "#api/shared/application/cursor-page";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { NotificationDeliveryLogEvent } from "../../../push/application/notification-delivery.log-events.js";
 import {
   notificationTypesOfCategory,
   visibleNotificationTypes,
 } from "../../../push/domain/notification-client-capability.domain-service.js";
+import { NotificationId } from "../../domain/notification-id.vo.js";
 import type { NotificationInboxReaderPort } from "../ports/notification-inbox.reader.port.js";
 import type { InboxNotification } from "../read-models/inbox-notification.read-model.js";
 
@@ -41,8 +43,8 @@ export class ListNotificationsUseCase {
         : notificationTypesOfCategory(query.category);
 
     const notifications = await notificationInboxReader.listByUser({
-      userId: query.userId,
-      afterNotificationId: query.cursor ?? null,
+      userId: UserId.reconstitute(query.userId),
+      afterNotificationId: query.cursor == null ? null : NotificationId.reconstitute(query.cursor),
       limit: size + 1,
       unreadOnly: query.unreadOnly === true,
       types: visibleNotificationTypes(query.appVersion, categoryTypes),

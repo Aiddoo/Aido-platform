@@ -1,4 +1,3 @@
-import { parseDateOnly } from "#api/shared/domain/date/utils/parse";
 import type { SupportedLocale } from "#api/shared/domain/locale";
 import { RecordingNotificationPublisher } from "#test/doubles/notification/recording-notification-publisher";
 import { StubNotificationHistoryReader } from "#test/doubles/notification/stub-notification-history.reader";
@@ -6,7 +5,7 @@ import { StubReEngagementReader } from "#test/doubles/notification/stub-re-engag
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
 import { createTimezoneContextFixture } from "#test/fixtures/notification/timezone-context.fixture";
 
-import { createStreakAtRiskNotificationMessage } from "../../../push/application/messages/notification.messages.js";
+import { createStreakAtRiskNotificationMessage } from "../../../push/application/messages/scheduler-notification.messages.js";
 import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/notification-campaign.constants.js";
 import type { UserWithTodosAndStreak } from "../read-models/scheduler.read-model.js";
 import { SendStreakAtRiskUseCase } from "./send-streak-at-risk.use-case.js";
@@ -18,7 +17,7 @@ describe("SendStreakAtRiskUseCase — 연속 달성 위험 전략", () => {
   let strategy: SendStreakAtRiskUseCase;
 
   const ctx = createTimezoneContextFixture({ date: "2024-01-16", localHour: 20 });
-  const YESTERDAY = parseDateOnly("2024-01-15");
+  const YESTERDAY = Temporal.PlainDate.from("2024-01-15");
   const sent = () => publisher.published.map(({ data }) => data);
 
   /** 어제까지 이어 왔고 오늘 미완료 1개 → 위기 */

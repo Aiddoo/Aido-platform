@@ -1,15 +1,15 @@
 import type { RevenueCatWebhookPayload } from "@aido/api";
 
-import { STORE_RENEWAL_GRACE_MS } from "#api/modules/billing/shared/store-renewal-grace.domain-service";
 import {
-  PREMIUM_ACCESS_READER,
-  PREMIUM_GRANTER,
-  type PremiumAccessReaderPort,
-  type PremiumGranterPort,
-} from "#api/modules/billing/subscriptions/billing-subscriptions.public";
+  PremiumAccessReaderPort,
+  PremiumGranterPort,
+} from "#api/modules/billing/premium-grants/billing-premium-grants.public";
+import { STORE_RENEWAL_GRACE_MS } from "#api/modules/billing/shared/store-renewal-grace.domain-service";
 import { RevenueCatWebhookReceiver } from "#api/modules/billing/subscriptions/infrastructure/adapters/revenuecat/revenuecat-webhook-receiver.adapter";
 import { createEntityId } from "#api/platform/database/entity-id";
 import { user as userTable } from "#api/platform/database/schema/index";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { instantFromDate } from "#api/shared/domain/time/instant";
 import { SubscriptionEventBuilder } from "#test/builders/index";
 import { toDateOrNull } from "#test/fixtures/billing/subscription.fixture";
 import { UserFixture } from "#test/fixtures/index";
@@ -22,13 +22,13 @@ import {
   type E2eTestContext,
 } from "../e2e/helpers/e2e-app-factory.js";
 
-const DAY_MS = 24 * 60 * 60 * 1_000;
+const DAY_MS = 24 * 60 * 60 * 1000;
 const AT = new Date("2028-02-26T04:00:00.000Z");
 const FIRST_EXPIRY = new Date("2028-03-10T04:00:00.000Z");
 const NEXT_EXPIRY = new Date("2028-04-10T04:00:00.000Z");
-const RENEWED_AT = new Date(FIRST_EXPIRY.getTime() - 60 * 60 * 1_000);
+const RENEWED_AT = new Date(FIRST_EXPIRY.getTime() - 60 * 60 * 1000);
 // 지난 기간이 자동 갱신 유예(3시간)까지 끝난 뒤라 그 만료 시각으로 되돌아가면 바로 무료가 된다
-const LATE_AT = new Date(FIRST_EXPIRY.getTime() + STORE_RENEWAL_GRACE_MS + 60 * 60 * 1_000);
+const LATE_AT = new Date(FIRST_EXPIRY.getTime() + STORE_RENEWAL_GRACE_MS + 60 * 60 * 1000);
 const CHAIN = "edge-store-chain";
 
 describe("결제 생애주기의 순서 뒤바뀜·환불 경계 (실제 PostgreSQL)", () => {
@@ -42,7 +42,7 @@ describe("결제 생애주기의 순서 뒤바뀜·환불 경계 (실제 Postgre
     database = new TestDatabase({ createClient: (url) => createTestClient(url, { max: 8 }) });
     client = await database.start();
     context = await createE2eApp({ testDatabase: database });
-    granter = context.module.get<PremiumGranterPort>(PREMIUM_GRANTER);
+    granter = context.module.get<PremiumGranterPort>(PremiumGranterPort);
   });
 
   beforeEach(async () => {
@@ -53,8 +53,8 @@ describe("결제 생애주기의 순서 뒤바뀜·환불 경계 (실제 Postgre
       id: createEntityId(),
       email: "lifecycle-edge@example.com",
       userTag: "EDGE0001",
-      createdAt: AT,
-      updatedAt: AT,
+      createdAt: instantFromDate(AT),
+      updatedAt: instantFromDate(AT),
     });
     await client.insert(userTable).values(user);
     userId = user.id;
@@ -91,8 +91,8 @@ describe("결제 생애주기의 순서 뒤바뀜·환불 경계 (실제 Postgre
 
   function premiumAccess() {
     return context.module
-      .get<PremiumAccessReaderPort>(PREMIUM_ACCESS_READER)
-      .getPremiumAccess(userId);
+      .get<PremiumAccessReaderPort>(PremiumAccessReaderPort)
+      .getPremiumAccess(UserId.reconstitute(userId));
   }
 
   async function grantsOf() {
@@ -122,7 +122,12 @@ describe("결제 생애주기의 순서 뒤바뀜·환불 경계 (실제 Postgre
       await webhook(
         chainEvent(SubscriptionEventBuilder.initialPurchase(), "purchase", FIRST_EXPIRY),
       );
-      await granter.grant({ userId, source: "INVITE", sourceKey: "edge:invite", durationDays: 7 });
+      await granter.grant({
+        userId: UserId.reconstitute(userId),
+        source: "INVITE",
+        sourceKey: "edge:invite",
+        durationDays: 7,
+      });
       vi.setSystemTime(RENEWED_AT);
       await webhook(chainEvent(SubscriptionEventBuilder.renewal(), "renewal", NEXT_EXPIRY));
       vi.setSystemTime(LATE_AT);
@@ -170,7 +175,12 @@ describe("결제 생애주기의 순서 뒤바뀜·환불 경계 (실제 Postgre
   it("환불 뒤 다시 온 환불과 늦은 만료는 이미 시작한 보상을 다시 시작하거나 두 번 세지 않는다", async () => {
     // Given
     await webhook(chainEvent(SubscriptionEventBuilder.initialPurchase(), "purchase", FIRST_EXPIRY));
-    await granter.grant({ userId, source: "INVITE", sourceKey: "refund:invite", durationDays: 7 });
+    await granter.grant({
+      userId: UserId.reconstitute(userId),
+      source: "INVITE",
+      sourceKey: "refund:invite",
+      durationDays: 7,
+    });
     const refundedAt = new Date("2028-03-01T04:00:00.000Z");
     vi.setSystemTime(refundedAt);
     await webhook(

@@ -2,7 +2,7 @@ import { decideRetentionStage, isRetentionStageDue } from "./retention-stage.dom
 
 describe("decideRetentionStage — D7 리텐션 단계 정책", () => {
   const base = {
-    startedAt: new Date("2026-07-15T00:00:00.000Z"),
+    startedAt: Temporal.Instant.from("2026-07-15T00:00:00.000Z"),
     timezone: "Asia/Seoul",
     todoCount: 0,
     completedCount: 0,
@@ -16,13 +16,13 @@ describe("decideRetentionStage — D7 리텐션 단계 정책", () => {
     expect(
       decideRetentionStage("D0", {
         ...base,
-        now: new Date("2026-07-15T01:59:00.000Z"),
+        now: Temporal.Instant.from("2026-07-15T01:59:00.000Z"),
       }),
     ).toEqual({ kind: "WAIT" });
     expect(
       decideRetentionStage("D0", {
         ...base,
-        now: new Date("2026-07-15T02:00:00.000Z"),
+        now: Temporal.Instant.from("2026-07-15T02:00:00.000Z"),
       }),
     ).toEqual({ kind: "SEND", route: "/feed", variantId: "d0_no_todo" });
   });
@@ -31,7 +31,7 @@ describe("decideRetentionStage — D7 리텐션 단계 정책", () => {
     expect(
       decideRetentionStage("D0", {
         ...base,
-        now: new Date("2026-07-15T15:01:00.000Z"),
+        now: Temporal.Instant.from("2026-07-15T15:01:00.000Z"),
       }),
     ).toEqual({ kind: "SKIP", reason: "D0_COLLIDES_WITH_D1" });
   });
@@ -40,7 +40,7 @@ describe("decideRetentionStage — D7 리텐션 단계 정책", () => {
     expect(
       decideRetentionStage("D1", {
         ...base,
-        now: new Date("2026-07-16T01:30:00.000Z"),
+        now: Temporal.Instant.from("2026-07-16T01:30:00.000Z"),
         todoCount: 1,
         incompleteCount: 1,
       }),
@@ -55,14 +55,14 @@ describe("decideRetentionStage — D7 리텐션 단계 정책", () => {
     expect(
       decideRetentionStage("D7", {
         ...base,
-        now: new Date("2026-07-22T01:30:00.000Z"),
+        now: Temporal.Instant.from("2026-07-22T01:30:00.000Z"),
         activeToday: true,
       }),
     ).toEqual({ kind: "EVALUATE_ONLY", reason: "ACTIVE_ON_D7" });
   });
 
   describe("isRetentionStageDue — 결정할 때가 된 단계", () => {
-    const startedAt = new Date("2026-07-15T00:00:00.000Z");
+    const startedAt = Temporal.Instant.from("2026-07-15T00:00:00.000Z");
 
     it.each([
       ["D0", "2026-07-15T01:59:59.999Z", false],
@@ -73,19 +73,23 @@ describe("decideRetentionStage — D7 리텐션 단계 정책", () => {
       ["D7", "2026-07-23T00:00:00.000Z", true],
     ] as const)("Asia/Seoul %s는 %s에 %s다", (stage, now, due) => {
       expect(
-        isRetentionStageDue(stage, { startedAt, now: new Date(now), timezone: "Asia/Seoul" }),
+        isRetentionStageDue(stage, {
+          startedAt,
+          now: Temporal.Instant.from(now),
+          timezone: "Asia/Seoul",
+        }),
       ).toBe(due);
     });
 
     it("D0는 2시간 전이라도 현지 날짜가 바뀌었으면 건너뛰도록 결정 대상이다", () => {
       // Given: 현지 23:30 가입, 30분 뒤 자정을 넘김
-      const lateSignup = new Date("2026-07-15T14:30:00.000Z");
+      const lateSignup = Temporal.Instant.from("2026-07-15T14:30:00.000Z");
 
       // When / Then
       expect(
         isRetentionStageDue("D0", {
           startedAt: lateSignup,
-          now: new Date("2026-07-15T15:00:00.000Z"),
+          now: Temporal.Instant.from("2026-07-15T15:00:00.000Z"),
           timezone: "Asia/Seoul",
         }),
       ).toBe(true);

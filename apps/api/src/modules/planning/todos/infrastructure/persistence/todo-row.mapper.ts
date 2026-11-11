@@ -1,5 +1,4 @@
 import type { todo, todoCategory, todoItem } from "#api/platform/database/schema/index";
-import { instantFromDate, instantToDate } from "#api/shared/domain/time/instant";
 
 import type { TodoItem } from "../../../shared/domain/todo-item.entity.js";
 import { Todo } from "../../../shared/domain/todo.aggregate.js";
@@ -22,35 +21,14 @@ export type TodoWithCategory = TodoAggregateRow & {
 export type TodoWithSeries = TodoWithCategory & { series: RepeatRuleRow | null };
 
 export function toTodo(row: TodoAggregateRow): Todo {
-  return Todo.reconstitute({
-    ...row,
-    completedAt: row.completedAt == null ? null : instantFromDate(row.completedAt),
-    items: row.items.map((item) => ({
-      ...item,
-      createdAt: instantFromDate(item.createdAt),
-      updatedAt: instantFromDate(item.updatedAt),
-    })),
-    createdAt: instantFromDate(row.createdAt),
-    updatedAt: instantFromDate(row.updatedAt),
-  });
+  return Todo.reconstitute(row);
 }
 
 export function toTodoRow(entity: Todo): typeof todo.$inferInsert {
-  const { items: _items, completedAt, createdAt, updatedAt, ...primitives } = entity.toPrimitives();
-  return {
-    ...primitives,
-    completedAt: completedAt == null ? null : instantToDate(completedAt),
-    createdAt: instantToDate(createdAt),
-    updatedAt: instantToDate(updatedAt),
-  };
+  const { items: _items, ...primitives } = entity.toPrimitives();
+  return primitives;
 }
 
 export function toTodoItemRow(todoId: number, item: TodoItem): typeof todoItem.$inferInsert {
-  const { createdAt, updatedAt, ...primitives } = item.toPrimitives();
-  return {
-    ...primitives,
-    todoId,
-    createdAt: instantToDate(createdAt),
-    updatedAt: instantToDate(updatedAt),
-  };
+  return { ...item.toPrimitives(), todoId };
 }

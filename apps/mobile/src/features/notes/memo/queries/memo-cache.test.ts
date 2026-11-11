@@ -6,7 +6,7 @@ import { MEMO_QUERY_KEYS } from '../constants/memo-query-keys';
 import type { MemoPage } from '../domains/memo.model';
 import { replaceMemoInList } from './memo-cache';
 
-function createMemoList(): InfiniteData<MemoPage> {
+function createMemoList(): InfiniteData<MemoPage, number | undefined> {
   return {
     pages: [
       {
@@ -36,7 +36,7 @@ describe('replaceMemoInList', () => {
     replaceMemoInList(client, saved);
 
     // Then
-    const after = client.getQueryData<InfiniteData<MemoPage>>(MEMO_QUERY_KEYS.list());
+    const after = client.getQueryData(MEMO_QUERY_KEYS.list());
     expect(after?.pages[0]?.items[1]).toEqual(saved);
     expect(after?.pages[0]?.items[0]).toBe(before.pages[0]?.items[0]);
     expect(after?.pages[1]).toBe(before.pages[1]);

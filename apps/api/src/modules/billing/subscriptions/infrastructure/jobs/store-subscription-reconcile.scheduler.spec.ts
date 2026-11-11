@@ -1,3 +1,4 @@
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
 
 import { STORE_SUBSCRIPTION_RECONCILE_QUEUE } from "./store-subscription-reconcile.queue.js";
@@ -5,7 +6,6 @@ import { StoreSubscriptionReconcileScheduler } from "./store-subscription-reconc
 
 const ENABLED = {
   revenuecat: {
-    webhookSecret: undefined,
     projectId: "proj_test",
     apiV2SecretKey: "sk_test",
   },
@@ -18,9 +18,18 @@ describe("StoreSubscriptionReconcileScheduler — 웹훅 뒤 대조 예약", () 
     const scheduler = new StoreSubscriptionReconcileScheduler(jobQueue, ENABLED);
 
     // When
-    await scheduler.schedule("user-1", Temporal.Instant.from("2027-01-04T12:00:10.500Z"));
-    await scheduler.schedule("user-1", Temporal.Instant.from("2027-01-04T12:00:59.999Z"));
-    await scheduler.schedule("user-1", Temporal.Instant.from("2027-01-04T12:01:00.000Z"));
+    await scheduler.schedule(
+      UserId.reconstitute("user-1"),
+      Temporal.Instant.from("2027-01-04T12:00:10.500Z"),
+    );
+    await scheduler.schedule(
+      UserId.reconstitute("user-1"),
+      Temporal.Instant.from("2027-01-04T12:00:59.999Z"),
+    );
+    await scheduler.schedule(
+      UserId.reconstitute("user-1"),
+      Temporal.Instant.from("2027-01-04T12:01:00.000Z"),
+    );
 
     // Then
     expect(
@@ -45,7 +54,10 @@ describe("StoreSubscriptionReconcileScheduler — 웹훅 뒤 대조 예약", () 
     const scheduler = new StoreSubscriptionReconcileScheduler(jobQueue, ENABLED);
 
     // When
-    await scheduler.schedule("user-1", Temporal.Instant.from("2027-01-04T12:00:10.500Z"));
+    await scheduler.schedule(
+      UserId.reconstitute("user-1"),
+      Temporal.Instant.from("2027-01-04T12:00:10.500Z"),
+    );
 
     // Then
     expect(jobQueue.jobsIn(STORE_SUBSCRIPTION_RECONCILE_QUEUE).map((job) => job.payload)).toEqual([
@@ -61,7 +73,10 @@ describe("StoreSubscriptionReconcileScheduler — 웹훅 뒤 대조 예약", () 
     });
 
     // When
-    await scheduler.schedule("user-1", Temporal.Instant.from("2027-01-04T12:00:10.500Z"));
+    await scheduler.schedule(
+      UserId.reconstitute("user-1"),
+      Temporal.Instant.from("2027-01-04T12:00:10.500Z"),
+    );
 
     // Then
     expect(jobQueue.jobs).toEqual([]);

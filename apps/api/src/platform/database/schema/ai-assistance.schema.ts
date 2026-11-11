@@ -1,8 +1,8 @@
+import { sql } from "drizzle-orm";
 import {
   pgTable,
   integer,
   text,
-  timestamp,
   varchar,
   boolean,
   doublePrecision,
@@ -13,6 +13,7 @@ import {
   unique,
 } from "drizzle-orm/pg-core";
 
+import { instant } from "../columns/temporal-columns.js";
 import { reportType, suggestionStatus } from "./enums.schema.js";
 import { user } from "./identity.schema.js";
 
@@ -22,9 +23,11 @@ export const aiReport = pgTable(
     aiSummary: text().notNull(),
     aiTips: jsonb().notNull(),
     categoryBreakdown: jsonb().notNull(),
-    createdAt: timestamp({ precision: 3 }).defaultNow().notNull(),
+    createdAt: instant()
+      .default(sql`now()`)
+      .notNull(),
     dayPatterns: jsonb().notNull(),
-    generatedAt: timestamp({ precision: 3 }).notNull(),
+    generatedAt: instant().notNull(),
     hasActivity: boolean().notNull(),
     id: serial().primaryKey(),
     locale: varchar({ length: 10 }).default("ko").notNull(),
@@ -69,9 +72,11 @@ export const recurringSuggestion = pgTable(
   "RecurringSuggestion",
   {
     confidence: doublePrecision().notNull(),
-    createdAt: timestamp({ precision: 3 }).defaultNow().notNull(),
+    createdAt: instant()
+      .default(sql`now()`)
+      .notNull(),
     daysOfWeek: jsonb().notNull(),
-    expiresAt: timestamp({ precision: 3 }).notNull(),
+    expiresAt: instant().notNull(),
     id: serial().primaryKey(),
     matchedTodos: jsonb().notNull(),
     reason: text().notNull(),
@@ -79,10 +84,8 @@ export const recurringSuggestion = pgTable(
     status: suggestionStatus().default("PENDING").notNull(),
     suggestedCategoryId: integer(),
     title: text().notNull(),
-    updatedAt: timestamp({ precision: 3 })
-      .notNull()
-      .$defaultFn(() => new Date())
-      .$onUpdate(() => new Date()),
+    // Aggregate가 ClockPort 시각으로 채운다
+    updatedAt: instant().notNull(),
     userId: text().notNull(),
   },
   (table) => [

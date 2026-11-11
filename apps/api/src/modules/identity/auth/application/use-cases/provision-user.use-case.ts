@@ -78,13 +78,13 @@ export class ProvisionUserUseCase {
     switch (account.kind) {
       case "credential":
         await this.#dependencies.accountRepository.createCredentialAccount(
-          user.id.value,
+          user.id,
           account.hashedPassword,
         );
         break;
       case "oauth":
         await this.#dependencies.accountRepository.createOAuthAccount({
-          userId: user.id.value,
+          userId: user.id,
           provider: account.provider,
           providerAccountId: account.providerAccountId,
           refreshToken: account.refreshToken,
@@ -92,17 +92,14 @@ export class ProvisionUserUseCase {
         break;
     }
 
-    await this.#dependencies.userRepository.createProfile(user.id.value, input.profile);
+    await this.#dependencies.userRepository.createProfile(user.id, input.profile);
 
-    await this.#dependencies.seeder.seedDefaultSettings(user.id.value, input.consent);
+    await this.#dependencies.seeder.seedDefaultSettings(user.id, input.consent);
 
-    await this.#dependencies.seeder.seedDefaultCategories(user.id.value, input.locale);
+    await this.#dependencies.seeder.seedDefaultCategories(user.id, input.locale);
 
     // 신규 User 생성 경로에만 존재한다. 기존 로그인/인증 경로는 호출하지 않는다.
-    await this.#dependencies.retentionEnroller.enrollNewUser(
-      user.id.value,
-      input.status === "ACTIVE",
-    );
+    await this.#dependencies.retentionEnroller.enrollNewUser(user.id, input.status === "ACTIVE");
 
     return { id: user.id.value, email: user.email, userTag: user.userTag, role: user.role };
   }

@@ -1,10 +1,11 @@
-import { Injectable } from "@nestjs/common";
+import { Inject, Injectable } from "@nestjs/common";
+import type { ConfigType } from "@nestjs/config";
 
-import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { HmacTokenSigner } from "#api/platform/security/hmac-token-signer";
 import { SigningKeyRing } from "#api/platform/security/signing-key-ring";
 
 import type { MarketingPushOptOutTokenPort } from "../../application/ports/marketing-push-opt-out-token.port.js";
+import { notificationPushConfig } from "../../notification-push.config.js";
 
 const TOKEN_TTL_SECONDS = 90 * 24 * 60 * 60;
 const TOKEN_DOMAIN = {
@@ -16,11 +17,11 @@ const TOKEN_DOMAIN = {
 export class HmacMarketingPushOptOutTokenAdapter implements MarketingPushOptOutTokenPort {
   readonly #signer: HmacTokenSigner;
 
-  constructor(config: TypedConfigService) {
-    const ring = SigningKeyRing.fromEnv({
-      configured: config.optOutTokenSigningKeys,
-      legacySecret: config.jwtSecret,
-    });
+  constructor(
+    @Inject(notificationPushConfig.KEY)
+    config: Pick<ConfigType<typeof notificationPushConfig>, "optOutTokenSigning">,
+  ) {
+    const ring = SigningKeyRing.fromEnv(config.optOutTokenSigning);
     this.#signer = new HmacTokenSigner(ring, TOKEN_DOMAIN);
   }
 

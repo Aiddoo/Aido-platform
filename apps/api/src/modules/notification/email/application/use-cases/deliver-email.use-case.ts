@@ -3,7 +3,7 @@ import type { OperationalAlertPort } from "#api/shared/application/ports/operati
 
 import type { EmailKind } from "../../domain/email-delivery.constants.js";
 import type { EmailMessage } from "../../domain/email-message.vo.js";
-import { EmailAlertKey } from "../email.alerts.js";
+import { EmailAlerts } from "../email.alerts.js";
 import { EmailDeliveryLogEvent } from "../email.log-events.js";
 import type { EmailBudgetPort } from "../ports/email-budget.port.js";
 import type { EmailSenderPort } from "../ports/email-sender.port.js";
@@ -82,13 +82,7 @@ export class DeliverEmailUseCase {
       reason: outcome.reason,
     });
     this.#dependencies.alert.raise({
-      key: outcome.retryable
-        ? EmailAlertKey.DELIVERY_RETRY_EXHAUSTED
-        : EmailAlertKey.DELIVERY_REJECTED,
-      severity: "error",
-      message: outcome.retryable
-        ? "이메일을 재시도 끝에도 보내지 못했습니다"
-        : "이메일 공급자가 메일을 거절했습니다",
+      ...(outcome.retryable ? EmailAlerts.DELIVERY_RETRY_EXHAUSTED : EmailAlerts.DELIVERY_REJECTED),
       tags: { kind: message.kind, reason: outcome.reason },
     });
   }

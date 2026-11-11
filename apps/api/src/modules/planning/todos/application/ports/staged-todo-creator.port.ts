@@ -1,7 +1,9 @@
 import type { TodoVisibility } from "@aido/api/vocabulary";
 
-import type { AfterCommitTask } from "#api/shared/application/ports/index";
+import type { AfterCommitTask } from "#api/shared/application/ports/after-commit-task.registry.port";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
+import type { TodoCategoryId } from "../../../categories/domain/todo-category-id.vo.js";
 import type { TodoSeriesReadModel } from "../../../todo-series/application/read-models/todo-series.read-model.js";
 import type { RepeatSpec } from "../../../todo-series/domain/repeat-rule.vo.js";
 import type { TodoReadModel } from "../read-models/todo.read-model.js";
@@ -11,11 +13,11 @@ import type { TodoReadModel } from "../read-models/todo.read-model.js";
  * 반복은 회차 날짜마다 다시 해석해야 해서 이미 변환한 instant로는 받지 않는다.
  */
 export interface CreateTodoData {
-  readonly userId: string;
+  readonly userId: UserId;
   readonly title: string;
-  readonly categoryId: number;
-  readonly startDate: Date;
-  readonly endDate?: Date | null;
+  readonly categoryId: TodoCategoryId;
+  readonly startDate: Temporal.PlainDate;
+  readonly endDate?: Temporal.PlainDate | null;
   readonly scheduledTime?: string | null;
   /** 요청의 시간대. 없거나 잘못되면 저장된 사용자 시간대로 해석한다. */
   readonly timezone: string | undefined;
@@ -32,9 +34,6 @@ export interface CreateTodoData {
 
 /** 시간대를 해석한 뒤의 생성 입력. 쓰기 경로는 이 값만 받는다. */
 export type ResolvedCreateTodoData = CreateTodoData & { readonly timezone: string };
-
-// 옛 Symbol 토큰. 소비 Context가 클래스 토큰으로 옮길 때까지 같은 인스턴스 별칭으로 남긴다
-export const STAGED_TODO_CREATOR = Symbol("STAGED_TODO_CREATOR");
 
 export interface StagedTodoCreation {
   /** 만든 할 일. 반복이면 회차를 날짜순으로 담고 맨 앞이 첫 회차다. */

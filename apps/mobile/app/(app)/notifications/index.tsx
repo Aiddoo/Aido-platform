@@ -38,7 +38,11 @@ export default function NotificationsScreen() {
   const visibleDirection: NudgeDirection = isDirectionSelectable ? direction : 'received';
 
   return (
-    <StyledSafeAreaView className="flex-1 bg-white" edges={['left', 'right', 'bottom']}>
+    <StyledSafeAreaView
+      className="flex-1 bg-white"
+      edges={['left', 'right', 'bottom']}
+      testID="notification-inbox"
+    >
       <ReadableContent flex={1}>
         <ViewTabs
           schema={notificationCategoryParamSchema}

@@ -1,18 +1,22 @@
 import type { ReminderWeatherReport } from "#api/modules/notification/reminders/application/ports/reminder-weather-report.reader.port";
-import { WeatherReportReader } from "#api/modules/weather/application/services/forecast/weather-report.reader";
-import { WeatherReportCacheAdapter } from "#api/modules/weather/infrastructure/adapters/forecast/weather-report-cache.adapter";
+import { WeatherReportReader } from "#api/modules/weather/forecasts/application/weather-report.reader";
+import { WeatherReportCache } from "#api/modules/weather/forecasts/infrastructure/cache/weather-report.cache";
 import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
-import { CacheService } from "#api/platform/cache/cache.service";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { instantToDate } from "#api/shared/domain/time/instant";
 import { RecordingNotificationPublisher } from "#test/doubles/notification/recording-notification-publisher";
 import { StubNotificationHistoryReader } from "#test/doubles/notification/stub-notification-history.reader";
 import { StubReminderWeatherReportReader } from "#test/doubles/notification/stub-reminder-weather-report.reader";
+import { StubWeatherBriefingTodoReader } from "#test/doubles/notification/stub-weather-briefing-todo.reader";
 import { StubWeatherReminderReader } from "#test/doubles/notification/stub-weather-reminder.reader";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
+import { StubTimezoneResolver } from "#test/doubles/weather/stub-timezone-resolver";
+import { StubWeatherReportProvider } from "#test/doubles/weather/stub-weather-report-provider";
 import { weatherReportFixture } from "#test/fixtures/weather.fixture";
-import { StubTimezoneResolver, StubWeatherReportProvider } from "#test/mocks/ports/weather.stub";
 
 import type { TimezoneContext } from "../../domain/timezone-context.read-model.js";
+import type { ReminderWeatherReportReaderPort } from "../ports/reminder-weather-report.reader.port.js";
 import { SendWeatherMorningUseCase } from "./send-weather-morning.use-case.js";
 
 const HOUR_MS = 60 * 60_000;
@@ -26,8 +30,8 @@ const ctx = (overrides: Partial<TimezoneContext> = {}): TimezoneContext => ({
   localHour: 7,
   localMinute: 0,
   dayOfWeek: 1,
-  today: new Date("2026-11-02T00:00:00.000Z"),
-  tomorrow: new Date("2026-11-03T00:00:00.000Z"),
+  today: Temporal.PlainDate.from("2026-11-02"),
+  tomorrow: Temporal.PlainDate.from("2026-11-03"),
   ...overrides,
 });
 
@@ -61,6 +65,7 @@ function seoulReport(
 
 describe("SendWeatherMorningUseCase — 아침 날씨 알림", () => {
   let reader: StubWeatherReminderReader;
+  let todoReader: StubWeatherBriefingTodoReader;
   let publisher: RecordingNotificationPublisher;
   let history: StubNotificationHistoryReader;
   let weatherReports: StubReminderWeatherReportReader;
@@ -71,12 +76,14 @@ describe("SendWeatherMorningUseCase — 아침 날씨 알림", () => {
 
   beforeEach(() => {
     reader = new StubWeatherReminderReader();
+    todoReader = new StubWeatherBriefingTodoReader();
     publisher = new RecordingNotificationPublisher();
     history = new StubNotificationHistoryReader();
     weatherReports = new StubReminderWeatherReportReader();
     logger = new SilentLogger();
     strategy = new SendWeatherMorningUseCase({
       reader,
+      todoReader,
       notificationPublisher: publisher,
       notificationHistoryReader: history,
       weatherReportReader: weatherReports,
@@ -113,7 +120,7 @@ describe("SendWeatherMorningUseCase — 아침 날씨 알림", () => {
   it("오늘 할 일이 비와 겹치면 그 할 일과 옮기기 링크를 보낸다", async () => {
     // Given 15시 '한강 산책'에 강수 확률 70%
     reader.usersWithLocation = [{ id: "u1", preference: { locale: "ko" }, location: SEOUL }];
-    reader.todos = [{ id: 12, userId: "u1", title: "한강 산책", scheduledTime: atKst(15) }];
+    todoReader.todos = [{ id: 12, userId: "u1", title: "한강 산책", scheduledTime: atKst(15) }];
     weatherReports.reports.set("u1", seoulReport({ hour: 15, precipitationChance: 70 }));
     // When
     await strategy.execute(ctx());
@@ -123,17 +130,19 @@ describe("SendWeatherMorningUseCase — 아침 날씨 알림", () => {
       body: "강수 확률 70% · 시간 옮기기",
       action: { type: "DEEP_LINK", url: "/weather/reschedule?todoIds=12&reason=rain" },
     });
-    expect(reader.todoQueries[0]).toEqual({
-      userIds: ["u1"],
-      from: NOW,
-      until: new Date("2026-11-02T15:00:00.000Z"),
+    expect(todoReader.queries[0]).toEqual({
+      userIds: [UserId.reconstitute("u1")],
+      date: Temporal.PlainDate.from("2026-11-02"),
+      timezone: "Asia/Seoul",
+      from: Temporal.Instant.from(NOW.toISOString()),
+      until: Temporal.Instant.from("2026-11-02T15:00:00.000Z"),
     });
   });
 
   it("오늘 할 일이 낮 더위와 겹치면 체감 온도와 더위 옮기기 링크를 보낸다", async () => {
     // Given
     reader.usersWithLocation = [{ id: "u1", preference: { locale: "ko" }, location: SEOUL }];
-    reader.todos = [{ id: 7, userId: "u1", title: "테니스", scheduledTime: atKst(13) }];
+    todoReader.todos = [{ id: 7, userId: "u1", title: "테니스", scheduledTime: atKst(13) }];
     weatherReports.reports.set("u1", seoulReport({ hour: 13, apparentTemperature: 34.6 }));
     // When
     await strategy.execute(ctx());
@@ -184,7 +193,7 @@ describe("SendWeatherMorningUseCase — 아침 날씨 알림", () => {
     const result = await strategy.execute(ctx());
     // Then
     expect(weatherReports.requests).toEqual([]);
-    expect(reader.todoQueries).toEqual([]);
+    expect(todoReader.queries).toEqual([]);
     expect(result).toEqual({ sent: 1 });
     expect(sent()[0]).toMatchObject({
       userId: "no-location",
@@ -196,14 +205,24 @@ describe("SendWeatherMorningUseCase — 아침 날씨 알림", () => {
     // When
     await strategy.execute(ctx({ userId: "user-specific" }));
     // Then
-    expect(reader.userParams[0]).toMatchObject({ userId: "user-specific", hour: 7, minute: 0 });
+    expect(reader.userParams[0]).toMatchObject({
+      userId: UserId.reconstitute("user-specific"),
+      hour: 7,
+      minute: 0,
+    });
   });
 });
+
+// weather 조회 포트는 아직 Date를 받아 알림 경계(providers)와 같은 변환을 거친다
+function weatherReportReaderAt(reader: WeatherReportReader): ReminderWeatherReportReaderPort {
+  return { readReports: (requests, now) => reader.readReports(requests, instantToDate(now)) };
+}
 
 describe("SendWeatherMorningUseCase + weather v2 리포트 — 공급자 호출 예산", () => {
   let memory: InMemoryCacheStore;
   let provider: StubWeatherReportProvider;
   let reader: StubWeatherReminderReader;
+  let todoReader: StubWeatherBriefingTodoReader;
   let publisher: RecordingNotificationPublisher;
   let clock: FixedClock;
   let strategy: SendWeatherMorningUseCase;
@@ -217,17 +236,24 @@ describe("SendWeatherMorningUseCase + weather v2 리포트 — 공급자 호출 
     provider = new StubWeatherReportProvider();
     provider.report = weatherReportFixture(NOW);
     reader = new StubWeatherReminderReader();
+    todoReader = new StubWeatherBriefingTodoReader();
     publisher = new RecordingNotificationPublisher();
     strategy = new SendWeatherMorningUseCase({
       reader,
+      todoReader,
       notificationPublisher: publisher,
       notificationHistoryReader: new StubNotificationHistoryReader(),
-      weatherReportReader: new WeatherReportReader({
-        weatherReportProvider: provider,
-        weatherReportCache: new WeatherReportCacheAdapter(new CacheService(memory)),
-        timezoneResolver: new StubTimezoneResolver(),
-        logger: new SilentLogger(),
-      }),
+      weatherReportReader: weatherReportReaderAt(
+        new WeatherReportReader({
+          weatherReportProvider: provider,
+          weatherReportCache: new WeatherReportCache(
+            memory,
+            new FixedClock(Temporal.Instant.fromEpochMilliseconds(NOW.getTime())),
+          ),
+          timezoneResolver: new StubTimezoneResolver(),
+          logger: new SilentLogger(),
+        }),
+      ),
       clock,
       logger: new SilentLogger(),
     });

@@ -29,16 +29,16 @@ export class FakeOAuthTokenVerifierService {
   }
 
   /** 실패 시뮬레이션 설정 */
-  private _shouldFail = false;
-  private _failureError: Error | null = null;
+  #shouldFail = false;
+  #failureError: Error | null = null;
 
   /** 커스텀 프로필 설정 */
-  private _customProfiles: Map<string, VerifiedProfile> = new Map();
+  #customProfiles: Map<string, VerifiedProfile> = new Map();
 
   /**
    * 기본 테스트 프로필 생성
    */
-  private _createDefaultProfile(provider: string, providerAccountId: string): VerifiedProfile {
+  #createDefaultProfile(provider: string, providerAccountId: string): VerifiedProfile {
     return {
       id: `${provider.toLowerCase()}-${providerAccountId}`,
       email: `test-${provider.toLowerCase()}-${providerAccountId}@example.com`,
@@ -51,56 +51,56 @@ export class FakeOAuthTokenVerifierService {
    * Apple 토큰 검증 (Mock)
    */
   async verifyAppleToken(idToken: string): Promise<VerifiedProfile> {
-    this._checkFailure("APPLE");
+    this.#checkFailure("APPLE");
 
-    const customProfile = this._customProfiles.get(`apple:${idToken}`);
+    const customProfile = this.#customProfiles.get(`apple:${idToken}`);
     if (customProfile) {
       return customProfile;
     }
 
-    return this._createDefaultProfile("APPLE", `apple-${idToken.slice(0, 8)}`);
+    return this.#createDefaultProfile("APPLE", `apple-${idToken.slice(0, 8)}`);
   }
 
   /**
    * Google 토큰 검증 (Mock)
    */
   async verifyGoogleToken(idToken: string): Promise<VerifiedProfile> {
-    this._checkFailure("GOOGLE");
+    this.#checkFailure("GOOGLE");
 
-    const customProfile = this._customProfiles.get(`google:${idToken}`);
+    const customProfile = this.#customProfiles.get(`google:${idToken}`);
     if (customProfile) {
       return customProfile;
     }
 
-    return this._createDefaultProfile("GOOGLE", `google-${idToken.slice(0, 8)}`);
+    return this.#createDefaultProfile("GOOGLE", `google-${idToken.slice(0, 8)}`);
   }
 
   /**
    * Kakao 토큰 검증 (Mock)
    */
   async verifyKakaoToken(accessToken: string): Promise<VerifiedProfile> {
-    this._checkFailure("KAKAO");
+    this.#checkFailure("KAKAO");
 
-    const customProfile = this._customProfiles.get(`kakao:${accessToken}`);
+    const customProfile = this.#customProfiles.get(`kakao:${accessToken}`);
     if (customProfile) {
       return customProfile;
     }
 
-    return this._createDefaultProfile("KAKAO", `kakao-${accessToken.slice(0, 8)}`);
+    return this.#createDefaultProfile("KAKAO", `kakao-${accessToken.slice(0, 8)}`);
   }
 
   /**
    * Naver 토큰 검증 (Mock)
    */
   async verifyNaverToken(accessToken: string): Promise<VerifiedProfile> {
-    this._checkFailure("NAVER");
+    this.#checkFailure("NAVER");
 
-    const customProfile = this._customProfiles.get(`naver:${accessToken}`);
+    const customProfile = this.#customProfiles.get(`naver:${accessToken}`);
     if (customProfile) {
       return customProfile;
     }
 
-    return this._createDefaultProfile("NAVER", `naver-${accessToken.slice(0, 8)}`);
+    return this.#createDefaultProfile("NAVER", `naver-${accessToken.slice(0, 8)}`);
   }
 
   // ===== 테스트 유틸리티 메서드 =====
@@ -110,16 +110,16 @@ export class FakeOAuthTokenVerifierService {
    * @param error 던질 에러 (기본값: null - provider별 ApplicationException 사용)
    */
   simulateFailure(error?: Error): void {
-    this._shouldFail = true;
-    this._failureError = error ?? null;
+    this.#shouldFail = true;
+    this.#failureError = error ?? null;
   }
 
   /**
    * 실패 시뮬레이션 비활성화
    */
   resetFailureSimulation(): void {
-    this._shouldFail = false;
-    this._failureError = null;
+    this.#shouldFail = false;
+    this.#failureError = null;
   }
 
   /**
@@ -133,14 +133,14 @@ export class FakeOAuthTokenVerifierService {
     token: string,
     profile: VerifiedProfile,
   ): void {
-    this._customProfiles.set(`${provider}:${token}`, profile);
+    this.#customProfiles.set(`${provider}:${token}`, profile);
   }
 
   /**
    * 모든 커스텀 프로필 초기화
    */
   clearCustomProfiles(): void {
-    this._customProfiles.clear();
+    this.#customProfiles.clear();
   }
 
   /**
@@ -157,11 +157,11 @@ export class FakeOAuthTokenVerifierService {
    * 실패 시뮬레이션 체크 및 에러 발생
    * @param provider OAuth 제공자 (APPLE, GOOGLE, KAKAO, NAVER)
    */
-  private _checkFailure(provider: "APPLE" | "GOOGLE" | "KAKAO" | "NAVER"): void {
-    if (this._shouldFail) {
+  #checkFailure(provider: "APPLE" | "GOOGLE" | "KAKAO" | "NAVER"): void {
+    if (this.#shouldFail) {
       // 커스텀 에러가 설정되어 있으면 해당 에러를 던짐
-      if (this._failureError) {
-        throw this._failureError;
+      if (this.#failureError) {
+        throw this.#failureError;
       }
 
       // provider별 적절한 ApplicationException을 던짐 (401 반환)

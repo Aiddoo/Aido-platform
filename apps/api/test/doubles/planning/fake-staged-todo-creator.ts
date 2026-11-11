@@ -1,4 +1,3 @@
-import { dateKeyOf } from "#api/modules/planning/shared/domain/todo-calendar.domain-service";
 import {
   type CreateTodoData,
   type StagedTodoCreation,
@@ -20,7 +19,7 @@ export class FakeStagedTodoCreator extends StagedTodoCreatorPort {
     if (error != null) {
       throw error;
     }
-    this.inputs.push(structuredClone(input));
+    this.inputs.push({ ...input });
     const todos = input.repeat == null ? [this.#createTodo(input)] : [...this.recurringTodos];
     return {
       todos,
@@ -34,14 +33,14 @@ export class FakeStagedTodoCreator extends StagedTodoCreatorPort {
   #createTodo(input: CreateTodoData): TodoReadModel {
     const todo = createTodoReadModelFixture({
       id: this.#nextTodoId,
-      userId: input.userId,
+      userId: input.userId.value,
       title: input.title,
-      startDate: dateKeyOf(input.startDate),
-      endDate: input.endDate == null ? null : dateKeyOf(input.endDate),
+      startDate: input.startDate.toString(),
+      endDate: input.endDate?.toString() ?? null,
       isAllDay: input.isAllDay ?? true,
       visibility: input.visibility ?? "PUBLIC",
     });
     this.#nextTodoId += 1;
-    return { ...todo, category: { ...todo.category, id: input.categoryId } };
+    return { ...todo, category: { ...todo.category, id: input.categoryId.value } };
   }
 }

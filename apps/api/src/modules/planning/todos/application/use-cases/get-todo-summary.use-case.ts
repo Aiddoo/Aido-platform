@@ -1,6 +1,6 @@
 import { computeEffectiveStreak } from "#api/modules/identity/identity-settings.public";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import { dateKeyOf } from "../../../shared/domain/todo-calendar.domain-service.js";
 import type { CatchUpTodoSeriesUseCase } from "../../../todo-series/application/use-cases/catch-up-todo-series.use-case.js";
 import { summarizeCompletion } from "../../domain/todo-completion.domain-service.js";
 import { resolveTodoSummaryDate } from "../../domain/todo-summary-date.domain-service.js";
@@ -11,13 +11,13 @@ const TOP_TODOS_LIMIT = 10;
 
 export interface GetTodoSummaryInput {
   readonly userId: string;
-  /** 사용자 시간대의 오늘 (UTC 자정 DATE) */
-  readonly today: Date;
+  /** 사용자 시간대의 오늘 */
+  readonly today: Temporal.PlainDate;
   /** 요약할 날짜. 생략하면 오늘이며 오늘·내일만 허용한다. */
-  readonly requestedDate?: Date;
+  readonly requestedDate?: Temporal.PlainDate;
 }
 
-export interface TodoSummaryTodoResult {
+interface TodoSummaryTodoResult {
   readonly id: number;
   readonly title: string;
   readonly completed: boolean;
@@ -58,25 +58,27 @@ export class GetTodoSummaryUseCase {
     // 앱이 목록과 나란히 부르므로 같은 복귀를 기다려야 위젯·요약이 0개로 남지 않는다.
     await this.#dependencies.seriesCatchUp.execute(userId);
 
+    const ownerId = UserId.reconstitute(userId);
     const [stats, topTodos, streakContext] = await Promise.all([
-      this.#dependencies.todoReadRepository.getTodayTodoStats(userId, date),
+      this.#dependencies.todoReadRepository.getTodayTodoStats(ownerId, date),
 
-      this.#dependencies.todoReadRepository.findTodayTopTodos(userId, date, TOP_TODOS_LIMIT),
-      this.#dependencies.streakPort.getStreakContext(userId),
+      this.#dependencies.todoReadRepository.findTodayTopTodos(ownerId, date, TOP_TODOS_LIMIT),
+      this.#dependencies.streakPort.getStreakContext(ownerId),
     ]);
 
     const { completionRate, isComplete } = summarizeCompletion(stats);
 
+    const { lastCompletedDate } = streakContext;
     const { streak: currentStreak } = computeEffectiveStreak({
       currentStreak: streakContext.currentStreak,
-      lastCompletedDate: streakContext.lastCompletedDate,
+      lastCompletedDate,
       todosCompleted: stats.completed,
       todosTotal: stats.total,
       today: date,
     });
 
     return {
-      date: dateKeyOf(date),
+      date: date.toString(),
       totalTodos: stats.total,
       completedTodos: stats.completed,
       completionRate,

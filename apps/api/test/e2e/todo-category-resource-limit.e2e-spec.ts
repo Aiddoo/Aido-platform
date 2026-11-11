@@ -10,7 +10,8 @@ import request from "supertest";
  * Testcontainers를 사용하여 독립적인 PostgreSQL 환경에서 테스트합니다.
  */
 
-import { user as userTable } from "#api/platform/database/schema/index";
+import { todoCategory, user as userTable } from "#api/platform/database/schema/index";
+import { nowInstant } from "#test/fixtures/clock.fixture";
 
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 
@@ -21,7 +22,7 @@ describe("할 일 카테고리 리소스 제한 E2E", () => {
 
   beforeAll(async () => {
     ctx = await createE2eApp();
-  }, 60000);
+  }, 60_000);
 
   afterAll(async () => {
     await destroyE2eApp(ctx);
@@ -118,6 +119,66 @@ describe("할 일 카테고리 리소스 제한 E2E", () => {
       // Then
       expect(limitResponse.body.data.maxCount).toBe(PLAN_CATALOG.TODO_CATEGORY.premium);
       expect(limitResponse.body.data.categoryCount).toBe(5);
+    });
+  });
+
+  describe("ADMIN은 프리미엄 한도", () => {
+    const PREMIUM_LIMIT = PLAN_CATALOG.TODO_CATEGORY.premium;
+
+    it("한도보다 많이 가진 ADMIN은 목록·수정·순서 변경은 그대로 하고 새로 만들기만 프리미엄 한도로 막힌다", async () => {
+      // Given - 기본 2개에 더해 프리미엄 한도를 하나 넘게 가진 ADMIN
+      const admin = await ctx.helpers.createVerifiedUser("cat-limit-admin@test.com", password);
+      const client = ctx.testDatabase.getClient();
+      await client.update(userTable).set({ role: "ADMIN" }).where(eq(userTable.id, admin.userId));
+      await client.insert(todoCategory).values(
+        Array.from({ length: PREMIUM_LIMIT - 1 }, (_, index) => ({
+          userId: admin.userId,
+          name: `관리자 카테고리 ${index + 1}`,
+          color: "#123456",
+          sortOrder: 100 + index,
+          updatedAt: nowInstant(),
+        })),
+      );
+      const owned = PREMIUM_LIMIT + 1;
+      const server = ctx.app.getHttpServer();
+      const authorization = `Bearer ${admin.accessToken}`;
+
+      // When
+      const list = await request(server)
+        .get("/v1/todo-categories")
+        .set("Authorization", authorization);
+      const firstId: unknown = list.body.data.items[0]?.id;
+      const lastId: unknown = list.body.data.items.at(-1)?.id;
+      const renamed = await request(server)
+        .patch(`/v1/todo-categories/${String(firstId)}`)
+        .set("Authorization", authorization)
+        .send({ name: "이름 바꾼 카테고리" });
+      const reordered = await request(server)
+        .patch(`/v1/todo-categories/${String(lastId)}/reorder`)
+        .set("Authorization", authorization)
+        .send({ position: "before" });
+      const created = await request(server)
+        .post("/v1/todo-categories")
+        .set("Authorization", authorization)
+        .send({ name: "한도 넘는 카테고리", color: "#0000FF" });
+      const limit = await request(server)
+        .get("/v1/todo-categories/resource-limit")
+        .set("Authorization", authorization);
+
+      // Then
+      expect(list.status).toBe(200);
+      expect(list.body.data.items).toHaveLength(owned);
+      expect(renamed.status).toBe(200);
+      expect(reordered.status).toBe(200);
+      expect(created.status).toBe(403);
+      expect(created.body.error.code).toBe("TODO_CATEGORY_0857");
+      expect(quotaErrorDetailsSchema.parse(created.body.error.details).featureQuota).toMatchObject({
+        feature: "TODO_CATEGORY",
+        limit: PREMIUM_LIMIT,
+        used: owned,
+        remaining: 0,
+      });
+      expect(limit.body.data).toMatchObject({ maxCount: PREMIUM_LIMIT, categoryCount: owned });
     });
   });
 });

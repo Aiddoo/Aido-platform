@@ -1,6 +1,6 @@
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
-import { instantToDate } from "#api/shared/domain/time/instant";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { resolveMarketingAgreement } from "../../domain/marketing-consent.domain-service.js";
 import type { UserConsentRepositoryPort } from "../ports/user-consent.repository.port.js";
@@ -29,9 +29,9 @@ export class UpdateMarketingConsentUseCase {
   }
 
   async execute(input: UpdateMarketingConsentCommand): Promise<MarketingConsentView> {
-    const processedAt = instantToDate(this.#dependencies.clock.now());
+    const processedAt = this.#dependencies.clock.now();
     const updated = await this.#dependencies.consentRepository.upsertMarketingConsent(
-      input.userId,
+      UserId.reconstitute(input.userId),
       {
         agreedAt: resolveMarketingAgreement(input.agreed, processedAt),
       },

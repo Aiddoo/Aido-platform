@@ -129,7 +129,9 @@ describe("ReorderMemoUseCase — 메모 순서 변경", () => {
     expect(await readSortOrders(memoRepository, [first, second, last, foreign])).toEqual([
       1, 2, 0, 1,
     ]);
-    expect(mutationLock.acquiredKeys).toEqual([[MemoLockKeys.sortOrder(USER_ID)]]);
+    expect(mutationLock.acquiredKeys).toEqual([
+      [MemoLockKeys.memo(last.id), MemoLockKeys.sortOrder(USER_ID)],
+    ]);
   });
 
   it.each([

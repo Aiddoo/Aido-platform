@@ -1,5 +1,5 @@
 import { createTranscript } from '../__tests__/voice.fixtures';
-import { VoiceTranscriptPolicy } from './voice-transcript.model';
+import { createVoiceTranscript, VoiceTranscriptPolicy } from './voice-transcript.model';
 
 describe('applyResult', () => {
   it('Android처럼 문장마다 final이 오면 문장으로 쌓고 다음 interim은 꼬리로 보여준다', () => {
@@ -143,7 +143,7 @@ describe('mergeHeardTextIntoTitle', () => {
     ],
   ])('%s', (_name, title, heardText, expected) => {
     // Given
-    const transcript = VoiceTranscriptPolicy.createVoiceTranscript({ interim: heardText });
+    const transcript = createVoiceTranscript({ interim: heardText });
 
     // When
     const merged = VoiceTranscriptPolicy.mergeHeardTextIntoTitle(transcript, title);
@@ -154,7 +154,7 @@ describe('mergeHeardTextIntoTitle', () => {
 
   it('확정된 문장과 듣던 글자를 이어 붙인 글자를 합친다', () => {
     // Given
-    const transcript = VoiceTranscriptPolicy.createVoiceTranscript({
+    const transcript = createVoiceTranscript({
       sentences: ['치과 가기'],
       interim: '약국 가기',
     });
