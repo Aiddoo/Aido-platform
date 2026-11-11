@@ -56,28 +56,6 @@
   },
   {
     "type": "dependency",
-    "from": "src/features/weather/domains/weather-indicator.model.ts",
-    "to": "src/features/weather/constants/weather.constants.ts",
-    "unresolvedTo": "../constants/weather.constants",
-    "dependencyTypes": ["local", "import"],
-    "rule": {
-      "severity": "error",
-      "name": "domain-model-constants"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/features/weather/domains/weather-location.model.ts",
-    "to": "src/features/weather/constants/weather.constants.ts",
-    "unresolvedTo": "../constants/weather.constants",
-    "dependencyTypes": ["local", "import"],
-    "rule": {
-      "severity": "error",
-      "name": "domain-model-constants"
-    }
-  },
-  {
-    "type": "dependency",
     "from": "src/features/device/widget/bridge/widget-timeline.mapper.ts",
     "to": "src/shared/date/clock.ts",
     "unresolvedTo": "@src/shared/date/clock",

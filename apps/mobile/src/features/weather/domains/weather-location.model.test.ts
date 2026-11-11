@@ -1,4 +1,3 @@
-import { SAVED_LOCATION_REVISION } from '../constants/weather.constants';
 import type { LocationReading } from './weather-location.model';
 import { WeatherLocationPolicy } from './weather-location.model';
 
@@ -82,7 +81,8 @@ describe('getNextRevision', () => {
     const revision = WeatherLocationPolicy.getNextRevision(undefined, BUSAN, SEOUL);
 
     // Then
-    expect(revision).toBe(SAVED_LOCATION_REVISION + 1);
+    // 서버 저장 위치 리비전 0 + 1
+    expect(revision).toBe(1);
   });
 });
 
@@ -92,7 +92,7 @@ describe('getReadingRevision', () => {
     const revision = WeatherLocationPolicy.getReadingRevision(undefined);
 
     // Then
-    expect(revision).toBe(SAVED_LOCATION_REVISION);
+    expect(revision).toBe(0);
   });
 });
 
