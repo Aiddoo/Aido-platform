@@ -128,7 +128,7 @@ GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=core.fsmonitor GIT_CONFIG_VALUE_0=false TMPD
 ### 네이티브 검증
 
 ```bash
-pnpm test:native-config                              # plugin·Firebase 초기화·위젯 갤러리 locale 등
+pnpm test:node                                       # plugin·Firebase 초기화·위젯 갤러리 locale·스크립트 등
 pnpm check:ipa-linkage /absolute/path/to/production.ipa
 pnpm check:native-icons
 ```

@@ -3,9 +3,7 @@ import { createRequire } from 'node:module';
 import test from 'node:test';
 
 const require = createRequire(import.meta.url);
-const {
-  removeDevLauncherLocalNetworkKeys,
-} = require('../plugins/withoutDevLauncherLocalNetwork.js');
+const { removeDevLauncherLocalNetworkKeys } = require('../withoutDevLauncherLocalNetwork.js');
 
 test('개발 도구가 넣은 로컬 네트워크 키만 지우고 다른 키는 그대로 둔다', () => {
   // Given

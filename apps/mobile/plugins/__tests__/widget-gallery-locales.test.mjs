@@ -7,7 +7,7 @@ import test from 'node:test';
 const require = createRequire(import.meta.url);
 const { getConfig } = require('expo/config');
 
-const projectRoot = path.resolve(import.meta.dirname, '..');
+const projectRoot = path.resolve(import.meta.dirname, '../..');
 const { exp } = getConfig(projectRoot, { skipSDKVersionRequirement: true });
 
 // app.config는 홈 화면 이름을 환경별로 더하려고 locales를 파일 경로 대신 객체로 넘긴다

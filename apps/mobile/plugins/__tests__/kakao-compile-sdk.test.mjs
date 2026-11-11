@@ -3,7 +3,7 @@ import { createRequire } from 'node:module';
 import test from 'node:test';
 
 const require = createRequire(import.meta.url);
-const { addKakaoCompileSdk } = require('../plugins/withKakaoAndroidCompileSdk.js');
+const { addKakaoCompileSdk } = require('../withKakaoAndroidCompileSdk.js');
 
 const rootBuildGradle = `apply plugin: "expo-root-project"
 apply plugin: "com.facebook.react.rootproject"

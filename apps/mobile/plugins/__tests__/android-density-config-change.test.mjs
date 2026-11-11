@@ -3,7 +3,7 @@ import { createRequire } from 'node:module';
 import test from 'node:test';
 
 const require = createRequire(import.meta.url);
-const { addDensityConfigChange } = require('../plugins/withAndroidDensityConfigChange.js');
+const { addDensityConfigChange } = require('../withAndroidDensityConfigChange.js');
 
 const TEMPLATE_CONFIG_CHANGES =
   'keyboard|keyboardHidden|orientation|screenSize|screenLayout|uiMode|smallestScreenSize|assetsPaths|locale|layoutDirection';

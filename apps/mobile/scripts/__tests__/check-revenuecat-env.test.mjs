@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { inspectRevenueCatExtra, maskKey } from './check-revenuecat-env.mjs';
+import { inspectRevenueCatExtra, maskKey } from '../check-revenuecat-env.mjs';
 
 const APPLE = 'appl_abcdefghijklmnopqrstuvwxyz';
 const GOOGLE = 'goog_abcdefghijklmnopqrstuvwxyz';

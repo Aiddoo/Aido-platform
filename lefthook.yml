@@ -30,7 +30,7 @@ pre-push:
   jobs:
     # 한 번의 turbo 실행이 공통 ^build를 한 번만 수행하고 변경 없는 패키지는 캐시를 쓴다.
     - name: typecheck-test-build
-      run: pnpm turbo run typecheck test build
+      run: pnpm turbo run typecheck test test:node build
     # DB 컨테이너가 동시에 여러 개 뜨지 않게 통합·계약 테스트는 한 번에 하나씩 돈다.
     - name: integration-contract
       run: pnpm test:integration && pnpm test:contract

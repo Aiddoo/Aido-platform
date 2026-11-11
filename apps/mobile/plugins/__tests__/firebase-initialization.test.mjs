@@ -3,7 +3,7 @@ import { createRequire } from 'node:module';
 import test from 'node:test';
 
 const require = createRequire(import.meta.url);
-const { configureFirebaseAppDelegate } = require('../plugins/withFirebaseInitialization.js');
+const { configureFirebaseAppDelegate } = require('../withFirebaseInitialization.js');
 
 // SDK 58 starts React Native in SceneDelegate, so RNFirebase's old factory.startReactNative anchor is absent.
 const delegate = `internal import Expo

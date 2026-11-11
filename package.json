@@ -33,7 +33,7 @@
     "lint:names": "ls-lint",
     "postinstall": "turbo build --filter=./packages/*",
     "prepare": "lefthook install",
-    "test": "turbo run test",
+    "test": "turbo run test test:node",
     "test:all": "turbo run test && turbo run test:integration && turbo run test:e2e",
     "test:cov": "turbo run test:cov",
     "test:e2e": "turbo run test:e2e --filter=@aido/server",
