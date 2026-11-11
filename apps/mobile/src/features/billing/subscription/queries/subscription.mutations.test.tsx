@@ -160,6 +160,6 @@ describe('결제 성공', () => {
     expect(
       await screen.findAllByText(SYNC_PENDING_TOAST, {}, { timeout: LONGER_THAN_STORE_SYNC_MS }),
     ).not.toHaveLength(0);
-    expect(getResult()).toEqual({ isReflected: false, hadRewardOnly: false });
+    await waitFor(() => expect(getResult()).toEqual({ isReflected: false, hadRewardOnly: false }));
   });
 });
