@@ -1,20 +1,15 @@
-import {
-  pushDeviceResponseSchema,
-  type ReportPushDeviceInput,
-  type UnregisterPushDeviceByTokenInput,
-  unregisterPushDeviceByTokenResponseSchema,
-} from '@aido/api';
 import type { ApiError } from '@src/core/errors/api-error';
 import { ok, type Result } from '@src/core/errors/result';
-import type { HttpClient, RequestConfig } from '@src/core/ports/http-client';
+import type { RequestConfig } from '@src/core/ports/http-client';
 import type { Logger } from '@src/core/ports/logger';
 import type { PushNotificationGateway } from '@src/core/ports/push-notification-gateway';
 import type { SessionEpoch } from '@src/core/session/session-epoch';
-import { getNowInstant } from '@src/shared/date/clock';
+import type { Instant } from '@src/shared/date/instant';
 import { getErrorMessage } from '@src/shared/errors';
-import { parseApiResponse } from '@src/shared/errors/parse-api-response';
 import { isEqual, noop, withTimeout } from 'es-toolkit';
 
+import type { PushDeviceApi } from '../apis/push-device.api';
+import { toPushPermission } from '../apis/push-permission.mapper';
 import { NOTIFICATION_LOG_EVENT } from '../constants/notification-log-events';
 import { PushPermissionPolicy } from '../domains/push-permission.model';
 import type { PushDevice, PushPermission } from '../domains/push-permission.model';
@@ -24,47 +19,48 @@ import {
   PushRegistrationPolicy,
 } from '../domains/push-registration.model';
 import type { PushRegistrationRepository } from '../repositories/push-registration.repository';
-import type { DeviceIdService } from '../services/device-id.service';
-import { toPushDevice, toPushPermission, toReportPushDeviceInput } from './push-permission.mapper';
+import type { DeviceIdService } from './device-id.service';
 
 const REPORT_WAIT_TIMEOUT_MS = 3_000;
 // oxlint-disable-next-line aido/http-status-literal -- 1.15.2 전환 #1400
 const TOO_MANY_REQUESTS_STATUS = 429;
 
-interface ReportedPushDevice {
+interface PushDeviceReport {
   deviceId: string;
-  input: ReportPushDeviceInput;
+  permission: PushPermission;
+  token: string | null;
   timeZone: string;
   language: string;
+}
+
+interface ReportedPushDevice {
+  report: PushDeviceReport;
   device: PushDevice;
 }
 
-type PushDeviceReport = Pick<ReportedPushDevice, 'deviceId' | 'input' | 'timeZone' | 'language'>;
-
-interface PushDeviceServicePorts {
+interface PushRegistrationServicePorts {
   gateway: PushNotificationGateway;
+  pushDeviceApi: Pick<PushDeviceApi, 'report' | 'unregister' | 'release'>;
   deviceIdService: Pick<DeviceIdService, 'get'>;
-  httpClient: HttpClient;
-  /** 끝난 세션의 해제는 인증 없이 보낸다. 인증 클라이언트는 401에 지금 세션을 끝낸다 */
-  publicHttpClient: Pick<HttpClient, 'post'>;
   registrationRepository: PushRegistrationRepository;
   logger: Logger;
   getTimeZone: () => string;
   /** 서버는 푸시 문구 언어를 요청 헤더에서 읽어 언어가 바뀌면 다시 보낸다 */
   getLanguage: () => string;
   sessionEpoch: Pick<SessionEpoch, 'current'>;
+  now: () => Instant;
 }
 
-export class PushDeviceService {
+export class PushRegistrationService {
   readonly #gateway: PushNotificationGateway;
+  readonly #pushDeviceApi: Pick<PushDeviceApi, 'report' | 'unregister' | 'release'>;
   readonly #deviceIdService: Pick<DeviceIdService, 'get'>;
-  readonly #httpClient: HttpClient;
-  readonly #publicHttpClient: Pick<HttpClient, 'post'>;
   readonly #registrationRepository: PushRegistrationRepository;
   readonly #logger: Logger;
   readonly #getTimeZone: () => string;
   readonly #getLanguage: () => string;
   readonly #sessionEpoch: Pick<SessionEpoch, 'current'>;
+  readonly #now: () => Instant;
   #lastReported: ReportedPushDevice | null = null;
   #pendingSend: {
     report: PushDeviceReport;
@@ -78,24 +74,24 @@ export class PushDeviceService {
 
   constructor({
     gateway,
+    pushDeviceApi,
     deviceIdService,
-    httpClient,
-    publicHttpClient,
     registrationRepository,
     logger,
     getTimeZone,
     getLanguage,
     sessionEpoch,
-  }: PushDeviceServicePorts) {
+    now,
+  }: PushRegistrationServicePorts) {
     this.#gateway = gateway;
+    this.#pushDeviceApi = pushDeviceApi;
     this.#deviceIdService = deviceIdService;
-    this.#httpClient = httpClient;
-    this.#publicHttpClient = publicHttpClient;
     this.#registrationRepository = registrationRepository;
     this.#logger = logger;
     this.#getTimeZone = getTimeZone;
     this.#getLanguage = getLanguage;
     this.#sessionEpoch = sessionEpoch;
+    this.#now = now;
   }
 
   getPermission = async (): Promise<PushPermission> =>
@@ -147,23 +143,13 @@ export class PushDeviceService {
         : createEmptyPushRegistration();
     const token = PushRegistrationPolicy.getReportToken(registration, { permission, issuedToken });
     const deviceId = await this.#deviceIdService.get();
-    const input = toReportPushDeviceInput({ permission, token });
     const timeZone = this.#getTimeZone();
     const language = this.#getLanguage();
 
-    const report: PushDeviceReport = { deviceId, input, timeZone, language };
+    const report: PushDeviceReport = { deviceId, permission, token, timeZone, language };
 
     const lastReported = this.#lastReported;
-    if (
-      !force &&
-      lastReported != null &&
-      isEqual(report, {
-        deviceId: lastReported.deviceId,
-        input: lastReported.input,
-        timeZone: lastReported.timeZone,
-        language: lastReported.language,
-      })
-    ) {
+    if (!force && lastReported != null && isEqual(report, lastReported.report)) {
       return ok(lastReported.device);
     }
 
@@ -185,7 +171,7 @@ export class PushDeviceService {
 
     // 새 세션이 이 기기를 다시 등록하므로 아직 보내지 못한 끝난 세션의 해제는 버린다
     this.#releaseCancelCount += 1;
-    const result = this.#send(report, { permission, hasToken: token != null });
+    const result = this.#send(report);
     this.#pendingSend = { report, result };
     return result.finally(() => {
       if (this.#pendingSend?.result === result) {
@@ -194,24 +180,17 @@ export class PushDeviceService {
     });
   };
 
-  #send = async (
-    { deviceId, input, timeZone, language }: PushDeviceReport,
-    { permission, hasToken }: { permission: PushPermission; hasToken: boolean },
-  ): Promise<Result<PushDevice | null, ApiError>> => {
-    const result = parseApiResponse(
-      await this.#httpClient.put(`v1/notifications/push-devices/${deviceId}`, input),
-      pushDeviceResponseSchema,
-      toPushDevice,
-      '[PushDeviceService] Invalid reportPushDevice response',
-    );
+  #send = async (report: PushDeviceReport): Promise<Result<PushDevice | null, ApiError>> => {
+    const { deviceId, permission, token } = report;
+    const result = await this.#pushDeviceApi.report(deviceId, { permission, token });
     if (!result.ok) {
       return result;
     }
 
     const device = result.value;
-    this.#lastReported = { deviceId, input, timeZone, language, device };
+    this.#lastReported = { report, device };
     await this.#updateRegistration((registration) =>
-      PushRegistrationPolicy.recordReported(registration, input.token),
+      PushRegistrationPolicy.recordReported(registration, token),
     ).catch((error: unknown) =>
       this.#logger.warn(NOTIFICATION_LOG_EVENT.PUSH_REGISTRATION_SAVE_FAILED, {
         error: getErrorMessage(error),
@@ -219,7 +198,7 @@ export class PushDeviceService {
     );
     this.#logger.info(NOTIFICATION_LOG_EVENT.PUSH_DEVICE_REPORTED, {
       ...permission,
-      hasToken,
+      hasToken: token != null,
       hasActiveToken: device.hasActiveToken,
     });
     return ok(device);
@@ -239,10 +218,7 @@ export class PushDeviceService {
       return ok(undefined);
     }
     this.#lastReported = null;
-    const result = await this.#httpClient.delete('v1/notifications/token', {
-      ...config,
-      params: { deviceId },
-    });
+    const result = await this.#pushDeviceApi.unregister(deviceId, config);
 
     if (!result.ok) {
       return result;
@@ -263,7 +239,7 @@ export class PushDeviceService {
   requestRelease = (): Promise<void> => {
     this.#lastReported = null;
     return this.#updateRegistration((registration) =>
-      PushRegistrationPolicy.requestRelease(registration, getNowInstant()),
+      PushRegistrationPolicy.requestRelease(registration, this.#now()),
     ).then(
       () => this.flushRelease(),
       (error: unknown) =>
@@ -320,13 +296,8 @@ export class PushDeviceService {
   };
 
   /** 연결·서버 장애는 던진다. 429면 다시 보낸다 */
-  #postRelease = async (input: UnregisterPushDeviceByTokenInput): Promise<'done' | 'retry'> => {
-    const result = parseApiResponse(
-      await this.#publicHttpClient.post('v1/notifications/push-devices/unregister', input),
-      unregisterPushDeviceByTokenResponseSchema,
-      noop,
-      '[PushDeviceService] Invalid unregisterPushDeviceByToken response',
-    );
+  #postRelease = async (input: { deviceId: string; token: string }): Promise<'done' | 'retry'> => {
+    const result = await this.#pushDeviceApi.release(input);
     if (result.ok) {
       return 'done';
     }

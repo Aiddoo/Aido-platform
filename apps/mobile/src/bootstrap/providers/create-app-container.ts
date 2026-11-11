@@ -68,7 +68,7 @@ import { AchievementService } from '@src/features/insights/achievement/apis/achi
 import { ReportService } from '@src/features/insights/report/apis/report.service';
 import { MemoService } from '@src/features/notes/memo/apis/memo.service';
 import { NotificationApi } from '@src/features/notification/apis/notification.api';
-import { PushDeviceService } from '@src/features/notification/apis/push-device.service';
+import { PushDeviceApi } from '@src/features/notification/apis/push-device.api';
 import { createMarketingPushPromptRepository } from '@src/features/notification/repositories/marketing-push-prompt.repository';
 import { createPushRegistrationRepository } from '@src/features/notification/repositories/push-registration.repository';
 import { deviceTimezoneStoredValue } from '@src/features/notification/schemas/device-timezone-storage.schema';
@@ -76,6 +76,7 @@ import { pushNoticeDismissedAtStoredValue } from '@src/features/notification/sch
 import { pushPermissionDeferredAtStoredValue } from '@src/features/notification/schemas/push-permission-deferred-at-storage.schema';
 import { DeviceIdService } from '@src/features/notification/services/device-id.service';
 import { NotificationBadgeService } from '@src/features/notification/services/notification-badge.service';
+import { PushRegistrationService } from '@src/features/notification/services/push-registration.service';
 import { createPushNotificationEntryStore } from '@src/features/notification/stores/push-notification-entry.store';
 import { TodoCategoryService } from '@src/features/planning/category/apis/todo-category.service';
 import { SubTodoService } from '@src/features/planning/todo/apis/sub-todo.service';
@@ -215,21 +216,21 @@ export function createAppContainer(ports: AppContainerPorts): DIContainer {
     ports.installReferrerGateway,
   );
 
-  const pushDeviceService = new PushDeviceService({
+  const pushRegistrationService = new PushRegistrationService({
     gateway: pushNotification,
+    pushDeviceApi: new PushDeviceApi({ httpClient: authHttpClient, publicHttpClient }),
     deviceIdService: new DeviceIdService({
       store: ports.deviceIdStore,
       vendorIdGateway: ports.vendorIdGateway,
       idGenerator: ports.idGenerator,
       platform: ports.platform,
     }),
-    httpClient: authHttpClient,
-    publicHttpClient,
     registrationRepository: createPushRegistrationRepository(ports.storage),
     logger,
     getTimeZone: ports.getTimeZone,
     getLanguage: ports.getLanguage,
     sessionEpoch,
+    now: getNowInstant,
   });
 
   const purchasesSession = new PurchasesSession({
@@ -277,7 +278,7 @@ export function createAppContainer(ports: AppContainerPorts): DIContainer {
       pendingRedemption: {
         clear: () => removeStoredValue(syncStorage, pendingRedemptionStoredValue),
       },
-      pushDevice: pushDeviceService,
+      pushDevice: pushRegistrationService,
       userDeviceData: new UserDeviceDataService({
         repositories: {
           'whats-new': whatsNewRepository,
@@ -345,7 +346,7 @@ export function createAppContainer(ports: AppContainerPorts): DIContainer {
       logger,
     }),
     pushNotificationEntryStore: createPushNotificationEntryStore(),
-    pushDeviceService,
+    pushRegistrationService,
     marketingPushPromptRepository,
     todoNudgeService: new TodoNudgeService(authHttpClient),
     coachmarkService: new CoachmarkService(coachmarkRepository),
@@ -388,7 +389,7 @@ export function createAppContainer(ports: AppContainerPorts): DIContainer {
     widgetNavigationRepository: createWidgetNavigationRepository(ports.widgetStorage),
     logOutDeviceService: new LogOutDeviceService({
       authService,
-      pushDeviceService,
+      pushRegistrationService,
       tokenStore,
       sessionRevocationService,
       sessionEpoch,

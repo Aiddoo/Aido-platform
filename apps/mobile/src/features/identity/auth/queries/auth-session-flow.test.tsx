@@ -755,7 +755,7 @@ describe('로그아웃과 늦은 갱신', () => {
     });
     const logout = new LogOutDeviceService({
       authService,
-      pushDeviceService: { unregister: async () => ok(undefined), requestRelease: () => {} },
+      pushRegistrationService: { unregister: async () => ok(undefined), requestRelease: () => {} },
       tokenStore,
       sessionRevocationService: { record: async () => undefined },
       sessionEpoch,

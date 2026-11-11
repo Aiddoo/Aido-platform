@@ -3,7 +3,7 @@ import {
   useHaptics,
   useLogger,
   useNotificationApi,
-  usePushDeviceService,
+  usePushRegistrationService,
   useSessionEpoch,
 } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
@@ -108,13 +108,13 @@ export function useOpenPushSettingsMutationOptions() {
 
 /** 화면 뒤에서 기기 상태를 서버에 알린다. 실패는 다음 동기화 때 다시 보내므로 사용자에게 보이지 않는다 */
 export function useReportPushDeviceMutationOptions() {
-  const pushDeviceService = usePushDeviceService();
+  const pushRegistrationService = usePushRegistrationService();
   const logger = useLogger();
   const queryClient = useQueryClient();
 
   return mutationOptions({
     mutationFn: async ({ force }: { force: boolean }) =>
-      unwrap(await pushDeviceService.report({ force })),
+      unwrap(await pushRegistrationService.report({ force })),
     onSuccess: () => invalidatePushPermission(queryClient),
     onError: (error) => {
       if (isPushReportRetryableError(error)) {
@@ -130,14 +130,14 @@ export function useReportPushDeviceMutationOptions() {
 }
 
 export function useRequestPushPermissionMutationOptions() {
-  const pushDeviceService = usePushDeviceService();
+  const pushRegistrationService = usePushRegistrationService();
   const logger = useLogger();
   const queryClient = useQueryClient();
   const haptics = useHaptics();
   const toast = useAppToast();
 
   return mutationOptions({
-    mutationFn: () => pushDeviceService.requestPermission(),
+    mutationFn: () => pushRegistrationService.requestPermission(),
     // 권한 창은 기기 안에서 뜨므로 오프라인에서도 멈추지 않는다
     networkMode: 'always',
     onSuccess: (permission) => {
@@ -201,7 +201,7 @@ export function useRecordPushOpenedMutationOptions() {
 // 권한 창이 닫힐 때까지 pending이라 토글을 두 번 누를 수 없다
 export function useUpdatePushEnabledAndAskPermissionMutationOptions() {
   const updatePreferenceOptions = useUpdatePreferenceMutationOptions();
-  const pushDeviceService = usePushDeviceService();
+  const pushRegistrationService = usePushRegistrationService();
   const logger = useLogger();
   const queryClient = useQueryClient();
   const haptics = useHaptics();
@@ -214,7 +214,7 @@ export function useUpdatePushEnabledAndAskPermissionMutationOptions() {
       if (variables.pushEnabled !== true) {
         return;
       }
-      await pushDeviceService.requestPermission().then(
+      await pushRegistrationService.requestPermission().then(
         (permission) => {
           setCachedPushPermission(queryClient, permission);
         },

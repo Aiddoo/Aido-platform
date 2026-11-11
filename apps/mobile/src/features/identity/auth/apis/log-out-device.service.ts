@@ -16,7 +16,7 @@ export const LOGOUT_REQUEST_TIMEOUT_MS = 3_000;
 interface LogOutDeviceServicePorts {
   authService: Pick<AuthService, 'logout' | 'clearLocalSession'>;
   /** 위층 기능이라 조립하는 곳이 넘긴다 */
-  pushDeviceService: {
+  pushRegistrationService: {
     unregister(config?: Pick<RequestConfig, 'timeout'>): Promise<Result<void, ApiError>>;
     /** 인증 해제를 보내지 못했을 때 기기 id와 토큰으로 나중에 푼다 */
     requestRelease(): void;
@@ -33,7 +33,7 @@ type LogOutOutcome = 'ended' | 'superseded';
 /** 서버 정리는 최선 노력이라 실패해도 토큰은 지운다. 기다리는 사이 세대가 오르면 다음 세션을 끝낼 수 있어 멈춘다 */
 export class LogOutDeviceService {
   readonly #authService: LogOutDeviceServicePorts['authService'];
-  readonly #pushDeviceService: LogOutDeviceServicePorts['pushDeviceService'];
+  readonly #pushRegistrationService: LogOutDeviceServicePorts['pushRegistrationService'];
   readonly #tokenStore: LogOutDeviceServicePorts['tokenStore'];
   readonly #sessionRevocationService: LogOutDeviceServicePorts['sessionRevocationService'];
   readonly #sessionEpoch: LogOutDeviceServicePorts['sessionEpoch'];
@@ -41,14 +41,14 @@ export class LogOutDeviceService {
 
   constructor({
     authService,
-    pushDeviceService,
+    pushRegistrationService,
     tokenStore,
     sessionRevocationService,
     sessionEpoch,
     logger,
   }: LogOutDeviceServicePorts) {
     this.#authService = authService;
-    this.#pushDeviceService = pushDeviceService;
+    this.#pushRegistrationService = pushRegistrationService;
     this.#tokenStore = tokenStore;
     this.#sessionRevocationService = sessionRevocationService;
     this.#sessionEpoch = sessionEpoch;
@@ -83,7 +83,7 @@ export class LogOutDeviceService {
     const releasePushIfStillRegistered = (outcome: LogOutOutcome): LogOutOutcome => {
       if (outcome === 'ended' && !isPushUnregistered) {
         try {
-          this.#pushDeviceService.requestRelease();
+          this.#pushRegistrationService.requestRelease();
         } catch (error) {
           this.#logger.warn(AUTH_LOG_EVENT.PUSH_UNREGISTER_FAILED, {
             error: getErrorMessage(error),
@@ -118,7 +118,7 @@ export class LogOutDeviceService {
     const config = { timeout: LOGOUT_REQUEST_TIMEOUT_MS };
 
     try {
-      const unregisterResult = await this.#pushDeviceService.unregister(config);
+      const unregisterResult = await this.#pushRegistrationService.unregister(config);
       isPushUnregistered = unregisterResult.ok;
       if (!unregisterResult.ok) {
         this.#logger.warn(AUTH_LOG_EVENT.PUSH_UNREGISTER_SKIPPED, {

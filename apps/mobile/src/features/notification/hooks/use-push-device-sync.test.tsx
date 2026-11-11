@@ -1,6 +1,7 @@
 import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
 import type { AuthStatus } from '@src/core/session/auth-status';
 import { createSessionEpoch } from '@src/core/session/session-epoch';
+import { getNowInstant } from '@src/shared/date/clock';
 import {
   createAppLifecycleGatewayStub,
   createHttpClientStub,
@@ -18,8 +19,9 @@ import {
   createNotificationApiError,
   createPushDeviceResponseDto,
 } from '../__tests__/notification.fixtures';
-import { PushDeviceService } from '../apis/push-device.service';
+import { PushDeviceApi } from '../apis/push-device.api';
 import { createPushRegistrationRepository } from '../repositories/push-registration.repository';
+import { PushRegistrationService } from '../services/push-registration.service';
 import { usePushDeviceSync } from './use-push-device-sync';
 
 describe('usePushDeviceSync', () => {
@@ -55,19 +57,19 @@ describe('usePushDeviceSync', () => {
     httpClient.put.mockResolvedValue({ ok: true, value: createPushDeviceResponseDto() });
     const timeZone = { current: 'Asia/Seoul' };
     const onReported = jest.fn();
-    const pushDeviceService = new PushDeviceService({
+    const pushRegistrationService = new PushRegistrationService({
       gateway,
+      pushDeviceApi: new PushDeviceApi({ httpClient, publicHttpClient: httpClient }),
       deviceIdService: { get: async () => 'ios_device-123' },
-      httpClient,
-      publicHttpClient: httpClient,
       registrationRepository: createPushRegistrationRepository(createMemoryStorage()),
       logger: createLoggerStub(),
       getTimeZone: () => timeZone.current,
       getLanguage: () => 'ko',
       sessionEpoch: createSessionEpoch(),
+      now: getNowInstant,
     });
     const container = createTestDi({
-      pushDeviceService,
+      pushRegistrationService,
       pushNotification: gateway,
       appLifecycle,
       logger: createLoggerStub(),

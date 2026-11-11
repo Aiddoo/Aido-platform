@@ -306,8 +306,6 @@ ignore:
   - apps/mobile/src/features/notes/memo/apis/memo.mapper.structural-sharing.test.ts
   - apps/mobile/src/features/notes/memo/apis/memo.service.test.ts
   - apps/mobile/src/features/notes/memo/apis/memo.service.ts
-  - apps/mobile/src/features/notification/apis/push-device.service.test.ts
-  - apps/mobile/src/features/notification/apis/push-device.service.ts
   - apps/mobile/src/features/planning/category/apis/todo-category.service.test.ts
   - apps/mobile/src/features/planning/category/apis/todo-category.service.ts
   - apps/mobile/src/features/planning/composer/queries/todo-composer.optimistic-mutations.test.tsx

@@ -1,4 +1,5 @@
 import { createSessionEpoch } from '@src/core/session/session-epoch';
+import { toInstant } from '@src/shared/date/instant';
 import { NetworkError, ok } from '@src/shared/errors';
 import {
   createHttpClientStub,
@@ -15,14 +16,15 @@ import {
   createNotificationApiError,
   createPushDeviceResponseDto,
   createPushPermissionResponse,
-  INVALID_DTO,
 } from '../__tests__/notification.fixtures';
+import { PushDeviceApi } from '../apis/push-device.api';
 import { createPushRegistrationRepository } from '../repositories/push-registration.repository';
-import { DeviceIdService } from '../services/device-id.service';
-import { PushDeviceService } from './push-device.service';
+import { DeviceIdService } from './device-id.service';
+import { PushRegistrationService } from './push-registration.service';
 
 const DEVICE_ID = 'ios_device-123';
 const RELEASE_PATH = 'v1/notifications/push-devices/unregister';
+const NOW = toInstant('2026-11-12T09:00:00.000Z');
 
 function setup(
   gateway = createPushNotificationGatewayStub(),
@@ -37,16 +39,16 @@ function setup(
   publicHttpClient.post.mockResolvedValue({ ok: true, value: { unregistered: true } });
   const registrationRepository = createPushRegistrationRepository(storage);
   const logger = createLoggerStub();
-  const service = new PushDeviceService({
+  const service = new PushRegistrationService({
     gateway,
+    pushDeviceApi: new PushDeviceApi({ httpClient, publicHttpClient }),
     deviceIdService: { get: async () => DEVICE_ID },
-    httpClient,
-    publicHttpClient,
     registrationRepository,
     logger,
     getTimeZone,
     getLanguage,
     sessionEpoch,
+    now: () => NOW,
   });
   return {
     service,
@@ -59,7 +61,7 @@ function setup(
   };
 }
 
-describe('PushDeviceService.report', () => {
+describe('PushRegistrationService.report', () => {
   it('값이 같아도 기기 시간대가 바뀌면 서버가 헤더를 읽도록 다시 보낸다', async () => {
     // Given
     let timeZone = 'Asia/Seoul';
@@ -256,21 +258,21 @@ describe('PushDeviceService.report', () => {
     gateway.getToken.mockRejectedValueOnce(new Error('timeout'));
     const httpClient = createHttpClientStub();
     httpClient.put.mockResolvedValue({ ok: true, value: createPushDeviceResponseDto() });
-    const service = new PushDeviceService({
+    const service = new PushRegistrationService({
       gateway,
+      pushDeviceApi: new PushDeviceApi({ httpClient, publicHttpClient: createHttpClientStub() }),
       deviceIdService: new DeviceIdService({
         store: deviceIdStore,
         vendorIdGateway,
         idGenerator: createIdGeneratorStub(),
         platform: 'ios',
       }),
-      httpClient,
-      publicHttpClient: createHttpClientStub(),
       registrationRepository: createPushRegistrationRepository(createMemoryStorage()),
       logger: createLoggerStub(),
       getTimeZone: () => 'Asia/Seoul',
       getLanguage: () => 'ko',
       sessionEpoch: createSessionEpoch(),
+      now: () => NOW,
     });
 
     // When
@@ -351,21 +353,9 @@ describe('PushDeviceService.report', () => {
     expect(failed).toEqual({ ok: false, error: apiError });
     expect(httpClient.put).toHaveBeenCalledTimes(2);
   });
-
-  it('응답 계약이 맞지 않으면 ParseError를 던진다', async () => {
-    // Given
-    const { service, httpClient } = setup();
-    httpClient.put.mockResolvedValue({ ok: true, value: INVALID_DTO });
-
-    // When
-    const result = service.report();
-
-    // Then
-    await expect(result).rejects.toThrow('Invalid reportPushDevice response');
-  });
 });
 
-describe('PushDeviceService.requestPermission', () => {
+describe('PushRegistrationService.requestPermission', () => {
   it('시스템 창을 띄우고, 바뀐 권한을 바로 보고한다', async () => {
     // Given
     const gateway = createPushNotificationGatewayStub({
@@ -398,7 +388,7 @@ describe('PushDeviceService.requestPermission', () => {
   });
 });
 
-describe('PushDeviceService.unregister', () => {
+describe('PushRegistrationService.unregister', () => {
   it('이 기기의 토큰만 해제하고, 다시 로그인하면 같은 값도 다시 보고한다', async () => {
     // Given
     const { service, httpClient } = setup();
@@ -579,7 +569,7 @@ describe('PushDeviceService.unregister', () => {
   });
 });
 
-describe('PushDeviceService.requestRelease', () => {
+describe('PushRegistrationService.requestRelease', () => {
   const CURRENT_TOKEN = 'ExponentPushToken[device-123]';
 
   it('온라인 로그아웃 없이 세션이 끝나면 인증 없이 기기 id와 보고한 토큰으로 해제하고, 다음 로그인은 같은 값도 다시 등록한다', async () => {
@@ -644,6 +634,10 @@ describe('PushDeviceService.requestRelease', () => {
     await before.service.report();
     before.publicHttpClient.post.mockRejectedValueOnce(new NetworkError());
     await before.service.requestRelease();
+    expect(await before.registrationRepository.find()).toEqual({
+      reportedToken: CURRENT_TOKEN,
+      releaseRequestedAt: NOW,
+    });
 
     // When
     const after = setup(undefined, undefined, storage);

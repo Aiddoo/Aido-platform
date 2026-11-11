@@ -29,7 +29,7 @@ const createStubServices = ({
   } = { unregister: [], logout: [], clearLocalSession: 0, recorded: [], pushReleaseRequests: 0 };
   return {
     calls,
-    pushDeviceService: {
+    pushRegistrationService: {
       unregister: (config?: TimeoutConfig) => {
         calls.unregister.push(config);
         return unregister();

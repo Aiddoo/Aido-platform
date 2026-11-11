@@ -1,4 +1,7 @@
-import { useNotificationApi, usePushDeviceService } from '@src/bootstrap/providers/di-context';
+import {
+  useNotificationApi,
+  usePushRegistrationService,
+} from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
 import { getNextCursor, selectPageItems } from '@src/shared/domains/cursor-page.model';
 import type { InfiniteData } from '@tanstack/react-query';
@@ -38,11 +41,11 @@ function selectNotifications(infinitePages: InfiniteData<NotificationPage, numbe
 }
 
 export function useGetPushPermissionQueryOptions() {
-  const pushDeviceService = usePushDeviceService();
+  const pushRegistrationService = usePushRegistrationService();
 
   return queryOptions({
     queryKey: NOTIFICATION_QUERY_KEYS.permission(),
-    queryFn: () => pushDeviceService.getPermission(),
+    queryFn: () => pushRegistrationService.getPermission(),
     // 기기 안에서만 처리해 연결 상태와 무관하다
     networkMode: 'always',
 
