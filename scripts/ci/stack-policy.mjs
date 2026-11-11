@@ -1,6 +1,6 @@
 const TIP_LABEL = 'ci:stack-tip';
 const BASE_BRANCH = 'main';
-export const VERIFY_JOB = 'Lint, Type Check & Build';
+export const VERIFY_JOB = 'Lint, Test & Build';
 const STACK_LABEL_PATTERN = /^stack:[a-zA-Z0-9][a-zA-Z0-9._-]*$/;
 const STACK_BRANCH_PATTERN = /^[^/]+\/\d+\.\d+(?:\.\d+)?-/;
 

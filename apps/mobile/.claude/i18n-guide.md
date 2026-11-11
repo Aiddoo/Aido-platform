@@ -19,7 +19,7 @@ src/shared/i18n/
 
 **네임스페이스**: `resources.ts`가 정본이다. feature별(`todo`, `voice`, `voicePlan`, `voiceNote` 등)과 횡단 4개(`common`, `errors`, `validation`, `settings`)가 있다. 파일 이름은 kebab-case(`voice-plan.json`), namespace는 camelCase(`voicePlan`)다.
 
-**언어 상태**: `src/shared/preferences/language.preference.ts` (MMKV `aido_language`, `'system'|'ko'|'en'`) + `src/shared/providers/language-provider.tsx` (`useLanguage()` — `resolvedLanguage` 파생, useEffect로 i18n 단방향 동기화. `'system'` 모드는 expo-localization `useLocales()`를 구독해 실행 중 기기 언어 변경도 반영한다). 설정 화면: `app/(app)/(tabs)/(mypage)/settings/language.tsx`.
+**언어 상태**: `src/shared/preferences/language.preference.ts` (MMKV `aido_language`, `'system'|'ko'|'en'`) + `src/shared/providers/language-provider.tsx` (`useLanguage()` — `resolvedLanguage` 파생, useEffect로 i18n 단방향 동기화. `'system'` 모드는 expo-localization `useLocales()`를 구독해 실행 중 기기 언어 변경도 반영한다). `'system'`은 기기 언어가 한국어면 `ko`, 그 밖의 언어(예: `ja`)와 감지하지 못한 기기는 `en`이다(`toResolvedLanguage`, 규칙은 `@aido/api/vocabulary`의 `resolveSupportedLocale`). 설정 화면: `app/(app)/(tabs)/(mypage)/settings/language.tsx`.
 
 ---
 
@@ -219,9 +219,9 @@ toast.error(t('friend:toast.sendFailed'));
 
 ## 서버 연동
 
-- Ky 클라이언트가 `Accept-Language: <i18n.language>` 헤더 전송 (auth/public 공통, beforeRequest 훅)
-- 서버는 푸시 토큰 등록 시 `UserPreference.locale` upsert → 푸시 알림 언어 결정 (`apps/api/src/modules/notification/push/application/messages/`)
-- 미전송(1.3.x)·미지원 언어는 서버가 'ko'로 처리 — 하위 호환
+- Ky 클라이언트가 `Accept-Language: <i18n.language>` 헤더 전송 (auth/public 공통, beforeRequest 훅). 앱 언어라 값은 `ko`·`en`뿐이고 기기 언어(`ja` 등)를 그대로 보내지 않는다
+- 서버는 푸시 기기 보고 때 이 값으로 `UserPreference.locale`을 저장하고 푸시 문구 언어를 정한다 (`apps/api/src/modules/notification/push/application/messages/`)
+- 헤더가 없던 옛 앱(1.3.x)은 서버가 `ko`로 본다. 서버가 지원하지 않는 요청 언어를 받았을 때의 규칙(응답 문구는 `en`, 저장값은 옛 호환으로 `ko`)은 [서버 다국어](../../api/docs/i18n.md#언어-결정) 한 곳에 있다
 
 ## 테스트
 
