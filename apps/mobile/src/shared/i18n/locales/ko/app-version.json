@@ -1,6 +1,7 @@
 {
   "section": "앱 정보",
   "item": "버전 정보",
+  "itemHint": "새 버전이 있으면 앱 스토어를 열어요",
   "latestTitle": "앱 버전 정보",
   "latestDescription": "현재 최신 버전을 사용하고 있어요.",
   "confirm": "확인",

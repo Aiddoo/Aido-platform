@@ -72,6 +72,8 @@ export function AppVersionCheck() {
     <SettingsListGroup label={t('section')}>
       <SettingsListGroup.Item
         label={t('item')}
+        accessibilityHint={t('itemHint')}
+        accessibilityState={{ busy: query.isFetching }}
         onPress={handlePress}
         isDisabled={query.isFetching}
         right={

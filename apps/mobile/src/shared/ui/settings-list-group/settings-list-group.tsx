@@ -63,13 +63,14 @@ function SettingsListGroupItem({
   right,
   isSelected = false,
   isDisabled = false,
+  accessibilityState,
   className,
   ...props
 }: SettingsListGroupItemProps) {
   return (
     <ListGroup.Item
       accessibilityRole="button"
-      accessibilityState={{ selected: isSelected, disabled: isDisabled }}
+      accessibilityState={{ selected: isSelected, disabled: isDisabled, ...accessibilityState }}
       disabled={isDisabled}
       className={cn(
         'min-h-12 py-3 active:bg-gray-3 dark:active:bg-gray-2',
