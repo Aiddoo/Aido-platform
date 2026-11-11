@@ -51,10 +51,7 @@ interface TrialTimelineProps extends Omit<ComponentProps<typeof VStack>, 'childr
   reminder?: ComponentType<{ reminderDateKey: string }>;
 }
 
-/**
- * 체험을 줄 수 있는 요금제를 골랐을 때 결제까지의 날짜를 도장으로 보여 준다(App Store 3.1.2: 체험 기간·뒤 금액·해지).
- * 날짜는 결제 전 예상이고, 결제 뒤 실제 날짜는 서버가 준 영수증이 보여 준다
- */
+/** 체험 요금제를 골랐을 때 결제까지의 예상 날짜를 도장으로 보여 준다(App Store 3.1.2: 체험 기간·뒤 금액·해지). 실제 날짜는 결제 뒤 서버 영수증이 보여 준다 */
 export function TrialTimeline({ reminder: Reminder, className, ...props }: TrialTimelineProps) {
   const { t } = useTranslation('subscription');
   const [planId] = useSelectedPlanId();
