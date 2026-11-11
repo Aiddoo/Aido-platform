@@ -1,5 +1,6 @@
 import { useTrack } from '@src/shared/analytics';
 import { useTranslation } from '@src/shared/i18n';
+import { APP_LOCALES } from '@src/shared/i18n/app-locales';
 import { isLanguageMode } from '@src/shared/preferences/language.preference';
 import { useLanguage } from '@src/shared/providers/language-provider';
 import {
@@ -39,14 +40,14 @@ function LanguageSettingsScreen() {
           {/* 언어 이름은 그 언어를 읽는 사람이 찾도록 번역하지 않는다 */}
           <SettingsListGroup.Radio
             value="ko"
-            label="한국어"
+            label={APP_LOCALES.ko.nativeName}
             icon={<SettingsListGroup.Icon Icon={KoreanDuoIcon} />}
             testID="language-option-ko"
           />
           <SettingsListGroup.Separator />
           <SettingsListGroup.Radio
             value="en"
-            label="English"
+            label={APP_LOCALES.en.nativeName}
             icon={<SettingsListGroup.Icon Icon={EnglishDuoIcon} />}
             testID="language-option-en"
           />

@@ -1,6 +1,6 @@
 import type { TIME_FORMATS } from '@aido/api/vocabulary';
 import { DAY_MS, HOUR_MS, MINUTE_MS } from '@src/shared/constants/time-units';
-import type { ResolvedLanguage } from '@src/shared/preferences/language.preference';
+import type { IntlLocale } from '@src/shared/i18n/app-locales';
 import { match } from 'ts-pattern';
 
 import { isSameMonthDateKey, isSameYearDateKey } from '../date-key';
@@ -12,12 +12,8 @@ import { getFormatter, getPartValue, PARTS_LOCALE } from './intl-formatter';
 
 /** 표시 언어(locale)는 글자 모양만, 시간대(timeZone)는 날짜·시각 계산만 정한다. */
 export interface DateFormatContext {
-  locale: 'ko-KR' | 'en-US';
+  locale: IntlLocale;
   timeZone: string;
-}
-
-export function toDateFormatLocale(language: ResolvedLanguage): DateFormatContext['locale'] {
-  return language === 'ko' ? 'ko-KR' : 'en-US';
 }
 
 export type TimeFormat = (typeof TIME_FORMATS)[number];

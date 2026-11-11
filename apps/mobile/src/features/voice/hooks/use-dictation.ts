@@ -1,13 +1,12 @@
 import { useSpeechRecognizer } from '@src/bootstrap/providers/di-context';
 import type { SpeechErrorCode } from '@src/core/ports/speech-recognizer';
+import { useLocaleContext } from '@src/shared/hooks/use-locale-context';
 import { tDynamic } from '@src/shared/i18n';
-import { useLanguage } from '@src/shared/providers/language-provider';
 import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { noop } from 'es-toolkit';
 import { useEffect, useRef, useState } from 'react';
 import { match } from 'ts-pattern';
 
-import { APP_LANGUAGE_SPEECH_LOCALE } from '../constants/voice.constants';
 import { VoiceCapturePolicy } from '../domains/voice-capture.model';
 import { useEnsureMicrophonePermission } from './use-ensure-microphone-permission';
 import { useSpeechEvent } from './use-speech-event';
@@ -28,7 +27,7 @@ export function useDictation({ onResult, onEnd }: UseDictationOptions) {
   const speechRecognizer = useSpeechRecognizer();
   const ensureMicrophonePermission = useEnsureMicrophonePermission();
   const toast = useAppToast();
-  const { resolvedLanguage } = useLanguage();
+  const { speechLocale } = useLocaleContext();
   const [isListening, setIsListening] = useState(false);
   const isMountedRef = useRef(false);
   const isSessionOwnerRef = useRef(false);
@@ -101,7 +100,7 @@ export function useDictation({ onResult, onEnd }: UseDictationOptions) {
     hasFailedRef.current = false;
     isStopRequestedRef.current = false;
     try {
-      const locale = APP_LANGUAGE_SPEECH_LOCALE[resolvedLanguage];
+      const locale = speechLocale;
       const isGranted = await ensureMicrophonePermission('dictation', locale);
       if (!isGranted || !isMountedRef.current) {
         isStartingRef.current = false;

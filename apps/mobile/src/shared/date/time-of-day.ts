@@ -1,7 +1,4 @@
 import { timeOfDaySchema } from '@aido/api/common';
-import type { SupportedLocale } from '@aido/api/vocabulary';
-
-import type { TimeFormat } from './format/date-format';
 
 const MINUTES_PER_HOUR = 60;
 
@@ -9,17 +6,6 @@ const MINUTES_PER_HOUR = 60;
 export interface TimeOfDay {
   hour: number;
   minute: number;
-}
-
-/** 24시간제는 en_GB로 강제해 오전/오후 없는 스피너를 쓴다 */
-export function getPickerLocale(
-  resolvedLanguage: SupportedLocale,
-  timeFormat: TimeFormat = 'TWELVE_HOUR',
-): string {
-  if (timeFormat !== 'TWELVE_HOUR') {
-    return 'en_GB';
-  }
-  return resolvedLanguage === 'en' ? 'en_US' : 'ko';
 }
 
 export function isValidHHmm(time: string): boolean {

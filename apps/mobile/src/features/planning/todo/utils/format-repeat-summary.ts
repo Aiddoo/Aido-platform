@@ -2,8 +2,9 @@ import {
   type DateFormatContext,
   formatYearAwareDateKeyLabel,
 } from '@src/shared/date/format/date-format';
-import { formatDaysOfWeek, toCatalogLanguage } from '@src/shared/date/format/date-labels';
+import { formatDaysOfWeek } from '@src/shared/date/format/date-labels';
 import { t } from '@src/shared/i18n';
+import { toLanguageOfIntlLocale } from '@src/shared/i18n/app-locales';
 import { compact } from 'es-toolkit';
 import { match } from 'ts-pattern';
 
@@ -59,7 +60,7 @@ export function formatRepeatSummary(
   context: DateFormatContext,
 ): string {
   return compact([
-    formatRepeatCadence(repeat, toCatalogLanguage(context)),
+    formatRepeatCadence(repeat, toLanguageOfIntlLocale(context.locale)),
     formatEnd(repeat.end, todayDateKey, context),
   ]).join(SUMMARY_SEPARATOR);
 }

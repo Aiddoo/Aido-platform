@@ -5,9 +5,11 @@ import type { ResolvedLanguage } from '../../../../shared/preferences/language.p
 import { WIDGET_LARGE_MAX_ROWS } from '../constants/widget.constants';
 import type { WidgetProps } from '../schemas/widget-props-payload.schema';
 
+const WIDGET_STRINGS = { ko, en } as const satisfies Record<ResolvedLanguage, typeof ko>;
+
 /** 첫 동기화 전(로그아웃 안내) props. 동기화 뒤에는 앱 언어로 만든 snapshot 문구를 쓴다. */
 export function createInitialWidgetProps(locale: ResolvedLanguage): WidgetProps {
-  const strings = locale === 'en' ? en : ko;
+  const strings = WIDGET_STRINGS[locale];
 
   return {
     state: 'loggedOut',

@@ -5,11 +5,12 @@ import DateTimePicker, {
 import { PickerHeader } from '@src/features/planning/todo/components/picker-header';
 import { formatTimeOfDay, type TimeFormat } from '@src/shared/date/format/date-format';
 import { toPickerDate, getPickerTimeOfDay } from '@src/shared/date/native-date';
-import { getPickerLocale, isTimeOfDayInRange, type TimeOfDay } from '@src/shared/date/time-of-day';
+import { isTimeOfDayInRange, type TimeOfDay } from '@src/shared/date/time-of-day';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
+import { useLocaleContext } from '@src/shared/hooks/use-locale-context';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
-import { useLanguage } from '@src/shared/providers/language-provider';
+import { getTimePickerLocale } from '@src/shared/i18n/app-locales';
 import {
   BottomSheet,
   Box,
@@ -121,7 +122,7 @@ export function SettingsTimeInput({
   ...itemProps
 }: SettingsTimeInputProps) {
   const { t } = useTranslation('notification');
-  const { resolvedLanguage } = useLanguage();
+  const { language } = useLocaleContext();
   const dateFormatContext = useDateFormatContext();
   const toast = useAppToast();
   const overlay = useOverlay();
@@ -174,7 +175,7 @@ export function SettingsTimeInput({
             initialValue={toPickerDate(value)}
             minimumDate={minimumDate}
             maximumDate={maximumDate}
-            locale={getPickerLocale(resolvedLanguage, timeFormat)}
+            locale={getTimePickerLocale(language, timeFormat)}
             onCancel={dismiss}
             onConfirm={(date) => {
               commit(date);

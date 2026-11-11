@@ -4,10 +4,9 @@ import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use
 import { useFormatRefillSentence } from '@src/features/billing/subscription/hooks/use-format-refill-sentence';
 import { useQuotaStatus } from '@src/features/billing/subscription/hooks/use-quota-status';
 import { useGetEntitlementsQueryOptions } from '@src/features/billing/subscription/queries/entitlement.queries';
-import { toDateFormatLocale } from '@src/shared/date/format/date-format';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
+import { useLocaleContext } from '@src/shared/hooks/use-locale-context';
 import { useTranslation } from '@src/shared/i18n';
-import { useLanguage } from '@src/shared/providers/language-provider';
 import { AiFilledIcon, HintPopoverContent, HStack, InfoIcon, Text, VStack } from '@src/shared/ui';
 import { formatCount } from '@src/shared/utils/number-format';
 import { useQuery } from '@tanstack/react-query';
@@ -26,7 +25,7 @@ export function QuickVoiceInfo() {
   const refill = formatRefillSentence(snapshot, 'AI_PARSE');
   const { type: quotaType } = useQuotaStatus('AI_PARSE');
   // 팝오버 안은 LocalDateProvider 바깥이라 useDateFormatContext를 쓸 수 없다
-  const locale = toDateFormatLocale(useLanguage().resolvedLanguage);
+  const { intlLocale } = useLocaleContext();
 
   return (
     <HStack gap={8} align="center">
@@ -75,7 +74,7 @@ export function QuickVoiceInfo() {
                   className="tabular-nums"
                   lineBreakStrategyIOS="hangul-word"
                 >
-                  {t('info.remaining', { amount: formatCount(remaining, locale) })}
+                  {t('info.remaining', { amount: formatCount(remaining, intlLocale) })}
                 </Text>
               )}
               {refill != null && (

@@ -1,5 +1,6 @@
 import { SPEECH_LOCALES, type SpeechLocale } from '@src/core/ports/speech-recognizer';
 import { useTranslation } from '@src/shared/i18n';
+import { APP_LOCALES } from '@src/shared/i18n/app-locales';
 import { SegmentTabTrigger } from '@src/shared/ui';
 import { Tabs } from 'heroui-native';
 import type { ComponentProps } from 'react';
@@ -33,7 +34,7 @@ export function RecognitionLanguageTabs({
       <Tabs.List>
         <Tabs.Indicator />
         <SegmentTabTrigger
-          value="ko-KR"
+          value={APP_LOCALES.ko.speechLocale}
           testID="recognition-language-ko"
           size="b2"
           numberOfLines={1}
@@ -41,7 +42,7 @@ export function RecognitionLanguageTabs({
           {t('language.ko')}
         </SegmentTabTrigger>
         <SegmentTabTrigger
-          value="en-US"
+          value={APP_LOCALES.en.speechLocale}
           testID="recognition-language-en"
           size="b2"
           numberOfLines={1}

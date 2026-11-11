@@ -14,6 +14,7 @@ import { FriendCountValue } from '@src/features/social/friend/components/friend-
 import { InviteRewardButton } from '@src/features/social/invite/components/invite-reward-button';
 import { useIsInviteAvailable } from '@src/features/social/invite/hooks/use-is-invite-available';
 import { useTranslation } from '@src/shared/i18n';
+import { APP_LOCALES } from '@src/shared/i18n/app-locales';
 import type { FontScale } from '@src/shared/preferences/font-scale.preference';
 import type { ThemeMode } from '@src/shared/preferences/theme-mode.preference';
 import { useFontScale } from '@src/shared/providers/font-scale-provider';
@@ -43,7 +44,6 @@ import {
   VStack,
 } from '@src/shared/ui';
 import { Suspense } from 'react';
-import { match } from 'ts-pattern';
 
 /** 좁은 화면은 마이 탭 첫 화면이, 넓은 화면은 마이 탭 화면마다 왼쪽 칸이 그린다 */
 export function MyPageMenuPane() {
@@ -243,11 +243,7 @@ function LanguageValue() {
   // 언어 이름은 언어 설정 화면처럼 그 언어로 고정해 적는다
   return (
     <Text size="b3" shade={7}>
-      {match(languageMode)
-        .with('system', () => t('language.system'))
-        .with('ko', () => '한국어')
-        .with('en', () => 'English')
-        .exhaustive()}
+      {languageMode === 'system' ? t('language.system') : APP_LOCALES[languageMode].nativeName}
     </Text>
   );
 }

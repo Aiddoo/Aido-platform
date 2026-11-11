@@ -1,5 +1,6 @@
 // Hermes의 Intl.PluralRules 플랫폼 편차를 제거하기 위해 항상 폴리필을 로드한다
 import 'intl-pluralrules';
+import { FALLBACK_LOCALE } from '@aido/api/vocabulary';
 import { getDeviceLanguage } from '@src/shared/infra/localization/device-locale';
 import { deviceSyncStorage } from '@src/shared/infra/storage/device-sync-storage';
 import {
@@ -19,7 +20,7 @@ const initialLanguage = resolveLanguage(
 
 i18n.use(initReactI18next).init({
   lng: initialLanguage,
-  fallbackLng: 'ko',
+  fallbackLng: FALLBACK_LOCALE,
   resources,
   defaultNS: 'common',
   interpolation: {

@@ -94,8 +94,8 @@ src/shared/i18n/
   locales/{ko,en}/ # 네임스페이스별 카탈로그
 ```
 
-- **언어 레지스트리** `app-locales.ts`: 언어마다 `{ nativeName, intlLocale, speechLocale, pickerLocale }`를 두고 `satisfies Record<SupportedLocale, AppLocaleConfig>`를 건다. 언어 매핑을 다른 곳에 흩어 두지 않는다. `useLocaleContext()`로 읽고, React 밖도 같은 저장소에서 읽는다.
-- `fallbackLng`는 `'en'`이다.
+- **언어 레지스트리** `app-locales.ts`: 언어마다 `{ nativeName, intlLocale, speechLocale, pickerLocale }`를 두고 `satisfies Record<SupportedLocale, AppLocaleConfig>`를 건다. 언어 매핑을 다른 곳에 흩어 두지 않는다. 컴포넌트는 `useLocaleContext()`(`shared/hooks`)로 읽고, React 밖은 `APP_LOCALES[language]`·`getTimePickerLocale`·`toLanguageOfIntlLocale`을 쓴다. 카탈로그 묶음 `resources.ts`도 `satisfies Record<SupportedLocale, …>`다.
+- `fallbackLng`는 `@aido/api/vocabulary`의 `FALLBACK_LOCALE`(`'en'`)이다.
 - **언어 선택**: 저장 값(`'system'|'ko'|'en'`, `aido_language`)과 `LanguageProvider`의 `useLanguage()`(`resolvedLanguage`)가 i18n과 단방향으로 동기화한다. `'system'`은 `useLocales()`를 구독해 기기 언어 변경도 반영한다. 기기 언어가 한국어면 `ko`, 그 밖과 감지 실패는 `en`이다(`resolveSupportedLocale`, `@aido/api/vocabulary`). 화면: `app/(app)/(tabs)/(mypage)/settings/language.tsx`.
 - 네임스페이스는 `resources.ts`가 정본이다. 기능별과 횡단 4개(`common`, `errors`, `validation`, `settings`). 파일은 kebab-case(`voice-plan.json`), namespace는 camelCase(`voicePlan`)다.
 

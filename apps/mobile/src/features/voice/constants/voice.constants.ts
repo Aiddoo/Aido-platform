@@ -1,11 +1,3 @@
-import type { SpeechLocale } from '@src/core/ports/speech-recognizer';
-import type { ResolvedLanguage } from '@src/shared/preferences/language.preference';
-
-export const APP_LANGUAGE_SPEECH_LOCALE = {
-  ko: 'ko-KR',
-  en: 'en-US',
-} as const satisfies Record<ResolvedLanguage, SpeechLocale>;
-
 export const QUICK_CAPTURE_MAX_SECONDS = 90;
 
 /** 듣기를 시작하라고 한 뒤 인식기가 이 안에 시작을 알리지 않으면 실패로 보고 글자를 들고 멈춘다 */

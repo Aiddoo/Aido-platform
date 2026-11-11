@@ -1,13 +1,10 @@
-import { DAY_OF_WEEK_MAP, type DayOfWeek, type SupportedLocale } from '@aido/api/vocabulary';
+import { DAY_OF_WEEK_MAP, type DayOfWeek } from '@aido/api/vocabulary';
 import { t } from '@src/shared/i18n';
+import { toLanguageOfIntlLocale } from '@src/shared/i18n/app-locales';
 
 import { getCalendarWeek, getIsoWeekOfMonth, isSameYearDateKey } from '../date-key';
 import type { Instant } from '../instant';
 import { type DateFormatContext, formatDateKeyLabel, formatRelativeTimeWith } from './date-format';
-
-export function toCatalogLanguage(context: DateFormatContext): SupportedLocale {
-  return context.locale === 'ko-KR' ? 'ko' : 'en';
-}
 
 export function formatDaysOfWeek(
   daysOfWeek: DayOfWeek[],
@@ -45,7 +42,7 @@ export function formatWeekHeaderLabel(
   context: DateFormatContext,
 ): string {
   return t('common:calendar.weekHeader', {
-    lng: toCatalogLanguage(context),
+    lng: toLanguageOfIntlLocale(context.locale),
     month: formatDateKeyLabel(monthDateKey, hasYear ? 'yearShortMonth' : 'month', context),
     week: weekOfMonth,
   });
@@ -81,7 +78,7 @@ export function formatRelativeTimeLabel(
   now: Instant,
   context: DateFormatContext,
 ): string {
-  const lng = toCatalogLanguage(context);
+  const lng = toLanguageOfIntlLocale(context.locale);
   return formatRelativeTimeWith(
     date,
     now,

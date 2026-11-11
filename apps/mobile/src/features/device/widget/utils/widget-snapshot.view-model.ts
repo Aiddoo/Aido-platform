@@ -1,9 +1,6 @@
 import { addDaysToDateKey, getCalendarWeek } from '@src/shared/date/date-key';
-import {
-  type DateFormatContext,
-  formatDateKeyLabel,
-  toDateFormatLocale,
-} from '@src/shared/date/format/date-format';
+import { formatDateKeyLabel, type DateFormatContext } from '@src/shared/date/format/date-format';
+import { APP_LOCALES } from '@src/shared/i18n/app-locales';
 import type { ResolvedLanguage } from '@src/shared/preferences/language.preference';
 import { keyBy, range } from 'es-toolkit';
 
@@ -89,7 +86,7 @@ export function toWidgetWeek(
 ) {
   const completions = keyBy(weekCompletions ?? [], (completion) => completion.date);
   const dateFormatContext: DateFormatContext = {
-    locale: toDateFormatLocale(locale),
+    locale: APP_LOCALES[locale].intlLocale,
     timeZone: 'UTC',
   };
   const week = getCalendarWeek(summary.date);

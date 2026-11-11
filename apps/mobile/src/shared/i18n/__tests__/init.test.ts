@@ -7,12 +7,12 @@ afterEach(async () => {
 });
 
 describe('i18n init', () => {
-  it('fallback 언어는 ko이다', () => {
+  it('fallback 언어는 en이다', () => {
     // When
     const fallbackLanguages = i18n.options.fallbackLng;
 
     // Then
-    expect(fallbackLanguages).toEqual(['ko']);
+    expect(fallbackLanguages).toEqual(['en']);
   });
 
   it('ko 카탈로그의 키를 번역한다', () => {

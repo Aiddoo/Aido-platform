@@ -2,10 +2,10 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
 import { formatHHmmTime } from '@src/shared/date/format/date-format';
 import { getDateWithTime } from '@src/shared/date/native-date';
-import { getPickerLocale } from '@src/shared/date/time-of-day';
 import { toHHmm } from '@src/shared/date/zoned';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useTranslation } from '@src/shared/i18n';
+import { getTimePickerLocale } from '@src/shared/i18n/app-locales';
 import { useLanguage } from '@src/shared/providers/language-provider';
 import {
   Box,
@@ -145,7 +145,7 @@ export function TodoTimePickerContent({
                 value={getDateWithTime(date, localTime, DEFAULT_TODO_TIME)}
                 mode="time"
                 display="spinner"
-                locale={getPickerLocale(resolvedLanguage, preference.timeFormat)}
+                locale={getTimePickerLocale(resolvedLanguage, preference.timeFormat)}
                 onValueChange={(_event, pickedTime) => {
                   setLocalTime(toHHmm(pickedTime, dateFormatContext.timeZone));
                 }}

@@ -5,11 +5,12 @@ import {
   type DateFormatContext,
   type TimeFormat,
 } from '@src/shared/date/format/date-format';
-import { formatDaysOfWeek, toCatalogLanguage } from '@src/shared/date/format/date-labels';
+import { formatDaysOfWeek } from '@src/shared/date/format/date-labels';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
+import { toLanguageOfIntlLocale } from '@src/shared/i18n/app-locales';
 import {
   Box,
   Button,
@@ -108,7 +109,7 @@ function formatSchedule(
     allDayLabel,
   }: { timeFormat: TimeFormat; context: DateFormatContext; allDayLabel: string },
 ): string {
-  const days = formatDaysOfWeek(suggestion.daysOfWeek, toCatalogLanguage(context));
+  const days = formatDaysOfWeek(suggestion.daysOfWeek, toLanguageOfIntlLocale(context.locale));
   const time =
     suggestion.scheduledTime == null
       ? allDayLabel

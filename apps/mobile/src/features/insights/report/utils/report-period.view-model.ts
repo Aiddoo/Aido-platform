@@ -1,6 +1,6 @@
 import { type DateFormatContext, formatDateKeyLabel } from '@src/shared/date/format/date-format';
-import { toCatalogLanguage } from '@src/shared/date/format/date-labels';
 import { t } from '@src/shared/i18n';
+import { toLanguageOfIntlLocale } from '@src/shared/i18n/app-locales';
 
 import type { AiReport } from '../domains/report.model';
 
@@ -11,7 +11,7 @@ export function formatReportPeriodLabel(
 ): string {
   if (type === 'WEEKLY') {
     return t('ai:report.weeklyPeriodLabel', {
-      lng: toCatalogLanguage(context),
+      lng: toLanguageOfIntlLocale(context.locale),
       year,
       period,
     });
