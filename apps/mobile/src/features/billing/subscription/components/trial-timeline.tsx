@@ -7,10 +7,21 @@ import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context'
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
 import { useLocalDate } from '@src/shared/providers/local-date-provider';
-import { Box, HStack, IconCircle, PawIcon, StampPress, Text, VStack } from '@src/shared/ui';
+import {
+  Box,
+  HStack,
+  IconCircle,
+  PawIcon,
+  SettingsListGroup,
+  StampPress,
+  Text,
+  TextSkeleton,
+  VStack,
+} from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { useSuspenseQuery } from '@tanstack/react-query';
-import { Separator } from 'heroui-native';
+import { range } from 'es-toolkit';
+import { Separator, Skeleton } from 'heroui-native';
 import { type ComponentProps, type ComponentType, useEffect, useRef } from 'react';
 import Animated, { FadeIn, FadeOut, ReduceMotion } from 'react-native-reanimated';
 import { match } from 'ts-pattern';
@@ -32,6 +43,8 @@ const TIMELINE_ENTERING = FadeIn.duration(ANIMATION.duration.fast).reduceMotion(
 const TIMELINE_EXITING = FadeOut.duration(ANIMATION.duration.fast).reduceMotion(
   ReduceMotion.System,
 );
+
+type TrialTimelineLoadingProps = Omit<ComponentProps<typeof VStack>, 'children'>;
 
 interface TrialTimelineProps extends Omit<ComponentProps<typeof VStack>, 'children'> {
   /** 알림 도장이 있을 때 일정 아래에 둘 알림 켜기. 알림일은 일정이 정하므로 받아서 그린다 */
@@ -138,7 +151,43 @@ export function TrialTimeline({ reminder: Reminder, className, ...props }: Trial
   );
 }
 
+/** 체험이 가능한 첫 방문자에게 일정이 늦게 끼어들어 아래가 밀리지 않게 같은 자리를 잡는다 */
+TrialTimeline.Loading = function Loading({ className, ...props }: TrialTimelineLoadingProps) {
+  const fontScaledSize = useFontScaledSize();
+  const stampSize = fontScaledSize(STAMP_SIZE);
+
+  return (
+    <VStack
+      gap={14}
+      accessibilityState={{ busy: true }}
+      className={cn('rounded-2xl bg-white px-3 py-4 dark:bg-gray-2', className)}
+      {...props}
+    >
+      <TextSkeleton size="b4" className="mx-1 w-32" />
+
+      <HStack align="start">
+        {range(TIMELINE_STEP_COUNT).map((index) => (
+          <VStack key={index} flex={1} gap={4} align="center">
+            <Skeleton
+              className="mb-1 rounded-full"
+              style={{ width: stampSize, height: stampSize }}
+            />
+            <TextSkeleton size="e1" className="w-14" />
+            <TextSkeleton size="e1" className="w-16" />
+          </VStack>
+        ))}
+      </HStack>
+
+      <TextSkeleton size="e1" className="w-full" />
+
+      <Separator className="bg-gray-3" />
+      <SettingsListGroup.Toggle.Loading hasDescription />
+    </VStack>
+  );
+};
+
 const STAMP_SIZE = 44;
+const TIMELINE_STEP_COUNT = 3;
 const PAW_ICON_SIZE = 20;
 
 const STAMP_STYLES = {

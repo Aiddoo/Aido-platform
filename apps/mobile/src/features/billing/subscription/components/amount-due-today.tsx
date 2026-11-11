@@ -1,6 +1,6 @@
 import { ANIMATION } from '@src/shared/constants/animation';
 import { useTranslation } from '@src/shared/i18n';
-import { HStack, Text } from '@src/shared/ui';
+import { HStack, Text, TextSkeleton } from '@src/shared/ui';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import type { ComponentProps } from 'react';
 import Animated, { FadeIn, ReduceMotion } from 'react-native-reanimated';
@@ -46,3 +46,12 @@ export function AmountDueToday(props: Omit<ComponentProps<typeof HStack>, 'child
     </HStack>
   );
 }
+
+AmountDueToday.Loading = function Loading(props: Omit<ComponentProps<typeof HStack>, 'children'>) {
+  return (
+    <HStack justify="between" align="center" gap={12} {...props}>
+      <TextSkeleton size="b3" className="w-24" />
+      <TextSkeleton size="t2" className="w-28" />
+    </HStack>
+  );
+};

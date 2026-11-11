@@ -85,6 +85,18 @@ export function PurchaseButton({ onPurchased }: PurchaseButtonProps) {
   );
 }
 
+/** 요금제를 받는 동안 잠긴 버튼과 약관 줄 자리를 그대로 잡는다 */
+PurchaseButton.Loading = function Loading() {
+  const { t } = useTranslation('subscription');
+
+  return (
+    <>
+      <Button isDisabled>{t('paywall.subscribeButton')}</Button>
+      <TextSkeleton size={DISCLOSURE_TEXT_SIZE} className="mt-2 w-56 self-center" />
+    </>
+  );
+};
+
 const DISCLOSURE_TEXT_SIZE = 'e1';
 
 interface PurchaseDisclosureProps {

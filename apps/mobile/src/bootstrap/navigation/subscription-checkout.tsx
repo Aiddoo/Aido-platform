@@ -21,6 +21,8 @@ import { useGetEntitlementsQueryOptions } from '@src/features/billing/subscripti
 import { useGetOfferingsQueryOptions } from '@src/features/billing/subscription/queries/subscription.queries';
 import type { SubscriptionView } from '@src/features/billing/subscription/schemas/subscription-params.schema';
 import { toSubscriptionLoadFailure } from '@src/features/billing/subscription/utils/subscription-failure.view-model';
+import { UserPolicy } from '@src/features/identity/user/domains/user.model';
+import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { PushPermissionToggle } from '@src/features/notification/components/push-permission-toggle';
 import { useTrack } from '@src/shared/analytics';
 import { formatYearAwareDateKeyLabel } from '@src/shared/date/format/date-format';
@@ -34,7 +36,6 @@ import {
   Box,
   Button,
   DashedDivider,
-  H2,
   QueryErrorBoundary,
   type QueryErrorFallbackProps,
   ReadableContent,
@@ -45,9 +46,9 @@ import {
   Text,
   VStack,
 } from '@src/shared/ui';
-import { usePrefetchQuery, useSuspenseQuery } from '@tanstack/react-query';
+import { usePrefetchQuery, useQuery, useSuspenseQueries } from '@tanstack/react-query';
 import { router } from 'expo-router';
-import { Suspense } from 'react';
+import { type PropsWithChildren, type ReactNode, Suspense } from 'react';
 import { ScrollView } from 'react-native';
 import { match } from 'ts-pattern';
 
@@ -90,7 +91,10 @@ interface PurchaseFlowProps {
 }
 
 SubscriptionScreen.Status = function Status({ onPurchased }: PurchaseFlowProps) {
-  const { data: entitlements } = useSuspenseQuery(useGetEntitlementsQueryOptions());
+  // 권한과 내 정보는 서로 몰라 한 번에 시작한다. 영수증은 같은 내 정보 캐시를 읽는다
+  const [{ data: entitlements }] = useSuspenseQueries({
+    queries: [useGetEntitlementsQueryOptions(), useGetMeQueryOptions()],
+  });
   const receipt = useSubscriptionReceipt();
   const [{ view }] = useSubscriptionParams();
 
@@ -109,90 +113,67 @@ SubscriptionScreen.Status = function Status({ onPurchased }: PurchaseFlowProps) 
 };
 
 SubscriptionScreen.Plans = function Plans({ onPurchased }: PurchaseFlowProps) {
-  const { t } = useTranslation('subscription');
   // 혜택·요금제·비교표가 형제 경계라 서로를 기다리지 않게 한 번에 시작한다
   usePrefetchQuery(useGetEntitlementsQueryOptions());
   usePrefetchQuery(useGetOfferingsQueryOptions());
 
   return (
-    <Box className="flex-1" testID="subscription-paywall">
-      <ScrollView className="flex-1 px-4" contentContainerClassName="pb-8">
-        <StyledSafeAreaView edges={['left', 'right']}>
-          <ReadableContent>
-            <Spacing size={16} />
+    <PlansScaffold
+      testID="subscription-paywall"
+      footer={<PurchaseButton onPurchased={onPurchased} />}
+    >
+      <PremiumNotice.GrantEnded className="mb-3" />
 
-            <PremiumNotice.GrantEnded className="mb-3" />
+      <ScallopedContainer>
+        <Box className="p-5">
+          <Paywall />
 
-            <ScallopedContainer>
-              <Box className="p-5">
-                <VStack gap={4} align="center">
-                  <H2>{t('paywall.title')}</H2>
+          <Spacing size={20} />
 
-                  <Text size="b3" shade={6} lineBreakStrategyIOS="hangul-word">
-                    {t('paywall.subtitle')}
-                  </Text>
-                </VStack>
+          <Paywall.BlockedFeature className="mb-4" />
 
-                <Spacing size={20} />
+          <QueryErrorBoundary fallback={BenefitCarousel.Error}>
+            <Suspense fallback={<BenefitCarousel.Loading />}>
+              <BenefitCarousel />
+            </Suspense>
+          </QueryErrorBoundary>
 
-                <Paywall.BlockedFeature className="mb-4" />
+          <Spacing size={24} />
 
-                <QueryErrorBoundary fallback={BenefitCarousel.Error}>
-                  <Suspense fallback={<BenefitCarousel.Loading />}>
-                    <BenefitCarousel />
-                  </Suspense>
-                </QueryErrorBoundary>
+          <QueryErrorBoundary fallback={PlanPicker.Error}>
+            <Suspense fallback={<PlanPickerFallback />}>
+              <VStack gap={16}>
+                <PlanPicker />
+                <AmountDueToday className="px-1" />
+                <TrialTimeline reminder={TrialReminderToggle} />
+              </VStack>
+            </Suspense>
+          </QueryErrorBoundary>
 
-                <Spacing size={24} />
+          <Spacing size={24} />
+          <DashedDivider />
+          <Spacing size={24} />
 
-                <QueryErrorBoundary fallback={PlanPicker.Error}>
-                  <Suspense fallback={<PlanPicker.Loading />}>
-                    <VStack gap={16}>
-                      <PlanPicker />
-                      <AmountDueToday className="px-1" />
-                      <TrialTimeline reminder={TrialReminderToggle} />
-                    </VStack>
-                  </Suspense>
-                </QueryErrorBoundary>
+          <PlanComparisonHeading />
 
-                <DashedDivider className="my-6" />
+          <Spacing size={12} />
 
-                <VStack gap={2}>
-                  <Text size="b2" weight="bold" shade={9}>
-                    {t('planComparison.title')}
-                  </Text>
-                  <Text size="e1" shade={6} lineBreakStrategyIOS="hangul-word">
-                    {t('planComparison.hint')}
-                  </Text>
-                </VStack>
+          <QueryErrorBoundary fallback={PlanComparisonTable.Error}>
+            <Suspense fallback={<PlanComparisonTable.Loading />}>
+              <PlanComparisonTable />
+            </Suspense>
+          </QueryErrorBoundary>
+        </Box>
+      </ScallopedContainer>
 
-                <Spacing size={12} />
+      <Spacing size={24} />
 
-                <QueryErrorBoundary fallback={PlanComparisonTable.Error}>
-                  <Suspense fallback={<PlanComparisonTable.Loading />}>
-                    <PlanComparisonTable />
-                  </Suspense>
-                </QueryErrorBoundary>
-              </Box>
-            </ScallopedContainer>
-
-            <Spacing size={24} />
-
-            <VStack gap={8} className="items-center">
-              <Paywall.RenewalNotice />
-              <Paywall.Terms />
-              <RestorePurchaseButton size="small" />
-            </VStack>
-          </ReadableContent>
-        </StyledSafeAreaView>
-      </ScrollView>
-
-      <StyledSafeAreaView edges={['left', 'right']} className="px-4 pb-4 pt-2">
-        <ReadableContent>
-          <PurchaseButton onPurchased={onPurchased} />
-        </ReadableContent>
-      </StyledSafeAreaView>
-    </Box>
+      <VStack gap={8} className="items-center">
+        <Paywall.RenewalNotice />
+        <Paywall.Terms />
+        <RestorePurchaseButton size="small" />
+      </VStack>
+    </PlansScaffold>
   );
 };
 
@@ -253,7 +234,7 @@ SubscriptionScreen.Receipt = function Receipt() {
         <ReadableContent>
           <Spacing size={16} />
 
-          <PremiumNotice.Ending className="mb-3" />
+          <PremiumNotice className="mb-3" />
 
           <SubscriptionReceipt />
 
@@ -292,8 +273,16 @@ SubscriptionScreen.Receipt = function Receipt() {
   );
 };
 
+/** 로딩은 곧 그릴 화면 모양을 미리 고른다. 이용 중인 사용자는 영수증, 그 밖에는 요금제 모양이다 */
 SubscriptionScreen.Loading = function Loading() {
   const isOnline = useIsOnline();
+  const [{ view }] = useSubscriptionParams();
+  const { pathname } = useCheckoutRoute();
+  const { data: hasPremiumAccess = false } = useQuery({
+    ...useGetMeQueryOptions(),
+    select: UserPolicy.hasPremiumAccess,
+  });
+  const isPlansShape = view === 'plans' || pathname === '/paywall' || !hasPremiumAccess;
 
   // 오프라인이면 조회가 멈춰 스켈레톤이 끝나지 않는다. 연결되면 멈춘 조회가 이어서 화면을 채운다
   if (!isOnline) {
@@ -306,15 +295,51 @@ SubscriptionScreen.Loading = function Loading() {
     );
   }
 
+  if (!isPlansShape) {
+    return (
+      <ScrollView className="flex-1 px-4" contentContainerClassName="pb-8" scrollEnabled={false}>
+        <StyledSafeAreaView edges={['left', 'right']} accessibilityState={{ busy: true }}>
+          <ReadableContent>
+            <Spacing size={16} />
+            <SubscriptionReceipt.Loading />
+          </ReadableContent>
+        </StyledSafeAreaView>
+      </ScrollView>
+    );
+  }
+
   return (
-    <ScrollView className="flex-1 px-4" contentContainerClassName="pb-8" scrollEnabled={false}>
-      <StyledSafeAreaView edges={['left', 'right']} accessibilityState={{ busy: true }}>
-        <ReadableContent>
-          <Spacing size={16} />
-          <SubscriptionReceipt.Loading />
-        </ReadableContent>
-      </StyledSafeAreaView>
-    </ScrollView>
+    <PlansScaffold
+      testID="subscription-paywall-skeleton"
+      isScrollEnabled={false}
+      footer={<PurchaseButton.Loading />}
+    >
+      <ScallopedContainer>
+        <Box className="p-5">
+          <Paywall />
+
+          <Spacing size={20} />
+
+          <Paywall.BlockedFeature.Loading className="mb-4" />
+
+          <BenefitCarousel.Loading />
+
+          <Spacing size={24} />
+
+          <PlanPickerFallback />
+
+          <Spacing size={24} />
+          <DashedDivider />
+          <Spacing size={24} />
+
+          <PlanComparisonHeading />
+
+          <Spacing size={12} />
+
+          <PlanComparisonTable.Loading />
+        </Box>
+      </ScallopedContainer>
+    </PlansScaffold>
   );
 };
 
@@ -330,6 +355,74 @@ SubscriptionScreen.Error = function ErrorFallback({ error, reset }: QueryErrorFa
     </StyledSafeAreaView>
   );
 };
+
+interface PlansScaffoldProps extends PropsWithChildren {
+  footer: ReactNode;
+  isScrollEnabled?: boolean;
+  testID: string;
+}
+
+/** 요금제 화면과 그 로딩이 같은 스크롤 영역·하단 버튼 자리를 쓴다 */
+function PlansScaffold({ children, footer, isScrollEnabled = true, testID }: PlansScaffoldProps) {
+  return (
+    <Box className="flex-1" testID={testID}>
+      <ScrollView
+        className="flex-1 px-4"
+        contentContainerClassName="pb-8"
+        scrollEnabled={isScrollEnabled}
+      >
+        <StyledSafeAreaView edges={['left', 'right']}>
+          <ReadableContent>
+            <Spacing size={16} />
+
+            {children}
+          </ReadableContent>
+        </StyledSafeAreaView>
+      </ScrollView>
+
+      <StyledSafeAreaView edges={['left', 'right']} className="px-4 pb-4 pt-2">
+        <ReadableContent>{footer}</ReadableContent>
+      </StyledSafeAreaView>
+    </Box>
+  );
+}
+
+/** 요금제 조회 동안의 자리. 무료 체험을 처음 보는 사용자에게만 일정 카드 자리를 잡는다 */
+function PlanPickerFallback() {
+  const isOnline = useIsOnline();
+  const { data: isNeverSubscribed = false } = useQuery({
+    ...useGetMeQueryOptions(),
+    select: (user) => user.subscriptionStatus === 'FREE',
+  });
+
+  // 오프라인 안내는 요금제 자리 하나가 맡는다
+  if (!isOnline) {
+    return <PlanPicker.Loading />;
+  }
+
+  return (
+    <VStack gap={16}>
+      <PlanPicker.Loading />
+      <AmountDueToday.Loading className="px-1" />
+      {isNeverSubscribed && <TrialTimeline.Loading />}
+    </VStack>
+  );
+}
+
+function PlanComparisonHeading() {
+  const { t } = useTranslation('subscription');
+
+  return (
+    <VStack gap={2}>
+      <Text size="b2" weight="bold" shade={9}>
+        {t('planComparison.title')}
+      </Text>
+      <Text size="e1" shade={6} lineBreakStrategyIOS="hangul-word">
+        {t('planComparison.hint')}
+      </Text>
+    </VStack>
+  );
+}
 
 /** billing은 알림 기능을 모르므로 체험 일정의 알림 칸은 화면이 알림 토글로 채운다 */
 function TrialReminderToggle({ reminderDateKey }: { reminderDateKey: string }) {

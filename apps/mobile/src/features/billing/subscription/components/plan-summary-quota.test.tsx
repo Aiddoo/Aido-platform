@@ -12,7 +12,7 @@ import {
 } from '../__tests__/entitlement.fixtures';
 import { type EntitlementSnapshot } from '../domains/entitlement.model';
 import { ENTITLEMENT_QUERY_KEYS } from '../queries/entitlement-query-keys';
-import { QuotaSummary } from './quota-summary';
+import { PlanSummary } from './plan-summary';
 
 const AI_PARSE_FREE_LIMIT = PLAN_CATALOG.AI_PARSE.free;
 const VOICE_NOTE_FREE_LIMIT = PLAN_CATALOG.VOICE_NOTE.free;
@@ -27,13 +27,13 @@ async function renderSummary(snapshot: EntitlementSnapshot) {
 
   return renderScreen(
     <LocalDateProvider>
-      <QuotaSummary />
+      <PlanSummary.Quota />
     </LocalDateProvider>,
     { di: { httpClient }, queryClient },
   );
 }
 
-describe('QuotaSummary', () => {
+describe('PlanSummary.Quota', () => {
   beforeEach(() => {
     // 고정 초기화 시각이 지난 스냅샷으로 보이지 않게 시계를 맞춘다
     // oxlint-disable-next-line aido/test-spy-target -- 1.15.2 전환 #1400
