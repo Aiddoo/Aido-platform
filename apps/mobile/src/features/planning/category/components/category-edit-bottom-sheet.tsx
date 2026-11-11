@@ -1,7 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
 import { useRetainedValue } from '@src/shared/hooks/use-retained-value';
-import { useRouteParams } from '@src/shared/hooks/use-route-params';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import {
@@ -20,10 +19,10 @@ import { useForm, useFormState } from 'react-hook-form';
 
 import { TodoCategoryPolicy } from '../domains/todo-category.model';
 import type { TodoCategory } from '../domains/todo-category.model';
+import { useTodoCategoryId } from '../hooks/use-todo-category-id';
 import { useUpdateTodoCategoryMutationOptions } from '../queries/todo-category.mutations';
 import { useGetTodoCategoriesQueryOptions } from '../queries/todo-category.queries';
 import { todoCategoryFormSchema } from '../schemas/todo-category-form.schema';
-import { todoCategoryParamsSchema } from '../schemas/todo-category-params.schema';
 import { CategoryFormFields } from './category-form-fields';
 
 type CategoryEditBottomSheetProps = Omit<
@@ -44,7 +43,7 @@ export function CategoryEditBottomSheet(props: CategoryEditBottomSheetProps) {
 
 CategoryEditBottomSheet.Contents = function Contents(props: CategoryEditBottomSheetProps) {
   const sheet = useSheetRoute('/settings/category-settings');
-  const [{ categoryId }] = useRouteParams(todoCategoryParamsSchema);
+  const [categoryId] = useTodoCategoryId();
   const { data: categoriesResult } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
   const category = useRetainedValue(
     TodoCategoryPolicy.findCategory(categoriesResult.categories, categoryId),

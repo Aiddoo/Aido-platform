@@ -2,22 +2,15 @@ import { and, eq, sql } from "drizzle-orm";
 import { omit } from "es-toolkit";
 import { Pool } from "pg";
 
-import {
-  CHEER_REPOSITORY,
-  type CheerRepositoryPort,
-} from "#api/modules/social/application/ports/cheers/cheer.repository.port";
-import {
-  FOLLOW_REPOSITORY,
-  type FollowRepositoryPort,
-} from "#api/modules/social/application/ports/friends/follow.repository.port";
-import {
-  NUDGE_REPOSITORY,
-  type NudgeRepositoryPort,
-} from "#api/modules/social/application/ports/nudges/nudge.repository.port";
-import { MarkCheerRead } from "#api/modules/social/application/use-cases/cheers/mark-cheer-read.use-case";
-import { SendCheer } from "#api/modules/social/application/use-cases/cheers/send-cheer.use-case";
-import { SendNudge } from "#api/modules/social/application/use-cases/nudges/send-nudge.use-case";
-import { normalizeUserSearchQuery } from "#api/modules/social/domain/policies/friends/user-search-query.policy";
+import { CheerReaderPort } from "#api/modules/social/cheers/application/ports/cheer.reader.port";
+import { CheerRepositoryPort } from "#api/modules/social/cheers/application/ports/cheer.repository.port";
+import { MarkCheerReadUseCase } from "#api/modules/social/cheers/application/use-cases/mark-cheer-read.use-case";
+import { SendCheerUseCase } from "#api/modules/social/cheers/application/use-cases/send-cheer.use-case";
+import { FollowRepositoryPort } from "#api/modules/social/friends/application/ports/follow.repository.port";
+import { FriendSearchReaderPort } from "#api/modules/social/friends/application/ports/friend-search.reader.port";
+import { UserSearchTerm } from "#api/modules/social/friends/domain/user-search-term.vo";
+import { NudgeRepositoryPort } from "#api/modules/social/nudges/application/ports/nudge.repository.port";
+import { SendNudgeUseCase } from "#api/modules/social/nudges/application/use-cases/send-nudge.use-case";
 import { createEntityId } from "#api/platform/database/entity-id";
 import {
   cheer,
@@ -28,7 +21,9 @@ import {
   user as userTable,
   userProfile,
 } from "#api/platform/database/schema/index";
-import { dayWindowInTimezone } from "#api/shared/domain/date/utils/timezone";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { instantFromDate, toIsoString } from "#api/shared/domain/time/instant";
+import { dayWindowIn } from "#test/fixtures/clock.fixture";
 import { UserFixture, TodoFixture, TodoCategoryFixture } from "#test/fixtures/index";
 import { createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
@@ -84,8 +79,20 @@ describe("Social 일일 한도·쿨다운·조회 쿼리 (실제 PostgreSQL)", (
     todoIds = [];
     for (const [index, receiverId] of receiverIds.entries()) {
       await client.insert(follow).values([
-        { followerId: senderId, followingId: receiverId, status: "ACCEPTED", sortOrder: index },
-        { followerId: receiverId, followingId: senderId, status: "ACCEPTED", sortOrder: 0 },
+        {
+          followerId: senderId,
+          followingId: receiverId,
+          status: "ACCEPTED",
+          sortOrder: index,
+          updatedAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
+        },
+        {
+          followerId: receiverId,
+          followingId: senderId,
+          status: "ACCEPTED",
+          sortOrder: 0,
+          updatedAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
+        },
       ]);
       const [category] = await client
         .insert(todoCategory)
@@ -98,8 +105,8 @@ describe("Social 일일 한도·쿨다운·조회 쿼리 (실제 PostgreSQL)", (
         userId: receiverId,
         categoryId: category.id,
         visibility: "PUBLIC",
-        startDate: new Date("2027-01-04"),
-        endDate: new Date("2027-01-05"),
+        startDate: Temporal.PlainDate.from("2027-01-04"),
+        endDate: Temporal.PlainDate.from("2027-01-05"),
         sortOrder: 0,
       });
       const [row] = await client
@@ -159,32 +166,37 @@ describe("Social 일일 한도·쿨다운·조회 쿼리 (실제 PostgreSQL)", (
       if (kind === "Cheer") {
         await client
           .insert(cheer)
-          .values({ senderId, receiverId, message: null, createdAt: SEED_AT });
+          .values({ senderId, receiverId, message: null, createdAt: instantFromDate(SEED_AT) });
       } else {
         const todoId = todoIds[index];
         if (todoId === undefined) {
           throw new Error("todo fixture 누락");
         }
-        await client
-          .insert(nudge)
-          .values({ senderId, receiverId, todoId, message: null, createdAt: SEED_AT });
+        await client.insert(nudge).values({
+          senderId,
+          receiverId,
+          todoId,
+          message: null,
+          createdAt: instantFromDate(SEED_AT),
+        });
       }
     }
   }
   async function usage(kind: "Cheer" | "Nudge") {
     const repo =
       kind === "Cheer"
-        ? context.module.get<CheerRepositoryPort>(CHEER_REPOSITORY)
-        : context.module.get<NudgeRepositoryPort>(NUDGE_REPOSITORY);
+        ? context.module.get(CheerRepositoryPort)
+        : context.module.get(NudgeRepositoryPort);
     return Promise.all(
       ["UTC", "Asia/Seoul"].map(async (tz) => {
-        const window = dayWindowInTimezone(AT, tz);
+        const at = instantFromDate(AT);
+        const window = dayWindowIn(at, tz);
         return {
           tz,
-          localDate: window.localDate,
-          startsAt: window.startsAt.toISOString(),
-          endsAt: window.endsAt.toISOString(),
-          used: await repo.countSentSince(senderId, window.startsAt, window.endsAt),
+          localDate: at.toZonedDateTimeISO(tz).toPlainDate().toString(),
+          startsAt: toIsoString(window.startsAt),
+          endsAt: toIsoString(window.endsAt),
+          used: await repo.countSentBetween(UserId.reconstitute(senderId), window),
         };
       }),
     );
@@ -201,8 +213,10 @@ describe("Social 일일 한도·쿨다운·조회 쿼리 (실제 PostgreSQL)", (
             throw new Error("요청 fixture 누락");
           }
           return kind === "Cheer"
-            ? context.module.get(SendCheer).execute({ senderId, receiverId, timezone: tz })
-            : context.module.get(SendNudge).execute({ senderId, receiverId, todoId, timezone: tz });
+            ? context.module.get(SendCheerUseCase).execute({ senderId, receiverId, timezone: tz })
+            : context.module
+                .get(SendNudgeUseCase)
+                .execute({ senderId, receiverId, todoId, timezone: tz });
         };
 
         // When
@@ -225,7 +239,7 @@ describe("Social 일일 한도·쿨다운·조회 쿼리 (실제 PostgreSQL)", (
     if (receiverId === undefined) {
       throw new Error("receiver fixture 누락");
     }
-    const send = context.module.get(SendCheer);
+    const send = context.module.get(SendCheerUseCase);
 
     // When
     const results = await contend(
@@ -251,7 +265,7 @@ describe("Social 일일 한도·쿨다운·조회 쿼리 (실제 PostgreSQL)", (
         senderId,
         receiverId,
         message: "목록",
-        createdAt: SEED_AT,
+        createdAt: instantFromDate(SEED_AT),
       })),
     );
     const listStatements: string[] = [];
@@ -260,15 +274,17 @@ describe("Social 일일 한도·쿨다운·조회 쿼리 (실제 PostgreSQL)", (
     // When
     recording = listStatements;
     const list = await context.module
-      .get<CheerRepositoryPort>(CHEER_REPOSITORY)
-      .findReceivedCheers({ userId: receiverId, size: 3 });
+      .get(CheerReaderPort)
+      .listReceived({ userId: UserId.reconstitute(receiverId), afterCheerId: null, limit: 3 });
     recording = null;
     const first = list[0];
     if (first === undefined) {
       throw new Error("list fixture 누락");
     }
     recording = readStatements;
-    await context.module.get(MarkCheerRead).execute({ userId: receiverId, cheerId: first.id });
+    await context.module
+      .get(MarkCheerReadUseCase)
+      .execute({ userId: receiverId, cheerId: first.id });
     recording = null;
 
     // Then
@@ -283,27 +299,36 @@ describe("Social 일일 한도·쿨다운·조회 쿼리 (실제 PostgreSQL)", (
     if (receiverId === undefined) {
       throw new Error("receiver fixture 누락");
     }
-    const repository = context.module.get<FollowRepositoryPort>(FOLLOW_REPOSITORY);
+    const repository = context.module.get(FollowRepositoryPort);
+    const isMutualFriend = (userId: string, targetUserId: string) =>
+      repository.existsMutualFriendship(
+        UserId.reconstitute(userId),
+        UserId.reconstitute(targetUserId),
+      );
     const statements: string[] = [];
 
     // When
     recording = statements;
-    const accepted = await repository.isMutualFriend(senderId, receiverId);
+    const accepted = await isMutualFriend(senderId, receiverId);
     recording = null;
     await client
       .update(follow)
       .set({ status: "PENDING" })
       .where(and(eq(follow.followerId, receiverId), eq(follow.followingId, senderId)));
-    const pending = await repository.isMutualFriend(senderId, receiverId);
+    const pending = await isMutualFriend(senderId, receiverId);
     await client
       .delete(follow)
       .where(and(eq(follow.followerId, receiverId), eq(follow.followingId, senderId)));
-    const missingReverse = await repository.isMutualFriend(senderId, receiverId);
-    await client
-      .insert(follow)
-      .values({ followerId: senderId, followingId: senderId, status: "ACCEPTED", sortOrder: 0 });
-    const self = await repository.isMutualFriend(senderId, senderId);
-    const missingUser = await repository.isMutualFriend(senderId, createEntityId());
+    const missingReverse = await isMutualFriend(senderId, receiverId);
+    await client.insert(follow).values({
+      followerId: senderId,
+      followingId: senderId,
+      status: "ACCEPTED",
+      sortOrder: 0,
+      updatedAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
+    });
+    const self = await isMutualFriend(senderId, senderId);
+    const missingUser = await isMutualFriend(senderId, createEntityId());
 
     // Then
     expect({ accepted, pending, missingReverse, self, missingUser }).toEqual({
@@ -329,9 +354,12 @@ describe("Social 일일 한도·쿨다운·조회 쿼리 (실제 PostgreSQL)", (
       { userId: deletedId, name: "민서 가나다" },
       { userId: inactiveId, name: "민서 가나다" },
     ]);
-    await client.update(userTable).set({ deletedAt: AT }).where(eq(userTable.id, deletedId));
+    await client
+      .update(userTable)
+      .set({ deletedAt: instantFromDate(AT) })
+      .where(eq(userTable.id, deletedId));
     await client.update(userTable).set({ status: "LOCKED" }).where(eq(userTable.id, inactiveId));
-    const repository = context.module.get<FollowRepositoryPort>(FOLLOW_REPOSITORY);
+    const searchReader = context.module.get(FriendSearchReaderPort);
 
     // When
     const results = [];
@@ -344,16 +372,10 @@ describe("Social 일일 한도·쿨다운·조회 쿼리 (실제 PostgreSQL)", (
       { query: "_", expected: 2 },
       { query: "없는 이름", expected: 0 },
     ]) {
-      const normalized = normalizeUserSearchQuery(query);
-      const input = {
-        viewerId: senderId,
-        nfcQuery: normalized.nfc,
-        upperTag: normalized.upperTag,
-        size: 20,
-      };
+      const input = { viewerId: UserId.reconstitute(senderId), term: UserSearchTerm.create(query) };
       const [page, count] = await Promise.all([
-        repository.searchUsers(input),
-        repository.countSearchUsers(input),
+        searchReader.searchUsers({ ...input, after: null, limit: 21 }),
+        searchReader.countUsers(input),
       ]);
       results.push({ query, expected, page, count });
     }
@@ -363,44 +385,9 @@ describe("Social 일일 한도·쿨다운·조회 쿼리 (실제 PostgreSQL)", (
       expect(count, query).toBe(expected);
       expect(page, query).toHaveLength(count);
       expect(
-        page.every((item) => item.id !== deletedId && item.id !== inactiveId),
+        page.every((item) => item.user.id !== deletedId && item.user.id !== inactiveId),
         query,
       ).toBe(true);
     }
-  });
-
-  it("팔로우 수정은 실제 수정된 상태와 프로필 없는 사용자 관계를 반환한다", async () => {
-    // Given
-    const receiverId = receiverIds[0];
-    if (receiverId === undefined) {
-      throw new Error("receiver fixture 누락");
-    }
-    const row = await client.query.follow.findFirst({
-      columns: { id: true },
-      where: { followerId: senderId, followingId: receiverId },
-    });
-    if (row === undefined) {
-      throw new Error("follow fixture 누락");
-    }
-    const repository = context.module.get<FollowRepositoryPort>(FOLLOW_REPOSITORY);
-
-    // When
-    const updated = await repository.update(row.id, { status: "PENDING", sortOrder: 4 });
-    const reciprocal = await repository.updateByFollowerAndFollowing(senderId, receiverId, {
-      status: "ACCEPTED",
-      sortOrder: 0,
-    });
-    const projection = await repository.updateFollowSortOrder(row.id, 2);
-
-    // Then
-    expect(updated.isPending()).toBe(true);
-    expect(updated.sortOrder).toBe(4);
-    expect(reciprocal.isAccepted()).toBe(true);
-    expect(reciprocal.sortOrder).toBe(0);
-    expect(projection).toMatchObject({
-      sortOrder: 2,
-      follower: { id: senderId, profile: null },
-      following: { id: receiverId, profile: null },
-    });
   });
 });

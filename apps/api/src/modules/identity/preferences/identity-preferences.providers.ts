@@ -1,7 +1,7 @@
 import type { Provider } from "@nestjs/common";
 
-import { ENTITLEMENT_READER } from "#api/modules/access/access-entitlement.public";
-import { REMINDER_TIMEZONE_CACHE } from "#api/modules/notification/notification-reminders-cache.public";
+import { EntitlementReaderPort } from "#api/modules/access/entitlements/access-entitlements.public";
+import { ReminderTimezoneCachePort as NotificationReminderTimezoneCachePort } from "#api/modules/notification/notification-reminders-cache.public";
 import { loggerFor, provideUseCase } from "#api/platform/di/provide-use-case";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
@@ -33,10 +33,10 @@ import { UpdatePreferenceUseCase } from "./application/use-cases/update-preferen
 import { UpsertPushLocaleUseCase } from "./application/use-cases/upsert-push-locale.use-case.js";
 import { UpsertPushTimezoneUseCase } from "./application/use-cases/upsert-push-timezone.use-case.js";
 
-// access 권한 판단과 notification 활성 시간대 캐시는 아직 Symbol 토큰이라 이 slice의 포트로 잇는다
+// access 권한 판단과 notification 활성 시간대 캐시를 이 slice의 포트로 잇는다
 const PREFERENCE_COLLABORATOR_PROVIDERS = [
-  { provide: PreferenceEntitlementPort, useExisting: ENTITLEMENT_READER },
-  { provide: ReminderTimezoneCachePort, useExisting: REMINDER_TIMEZONE_CACHE },
+  { provide: PreferenceEntitlementPort, useExisting: EntitlementReaderPort },
+  { provide: ReminderTimezoneCachePort, useExisting: NotificationReminderTimezoneCachePort },
 ] satisfies Provider[];
 
 export const refreshPushTimezoneProvider = provideUseCase(RefreshPushTimezoneUseCase, {

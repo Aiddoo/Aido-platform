@@ -7,6 +7,7 @@ import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import { instantFromDate, toIsoString } from "#api/shared/domain/time/instant";
 
+import { SessionId } from "../../domain/session-id.vo.js";
 import { getSessionValidity } from "../../domain/session-validity.domain-service.js";
 import { sessionRejection } from "../auth.errors.js";
 import { AuthLogEvent } from "../auth.log-events.js";
@@ -64,7 +65,8 @@ export class AuthenticateSessionUseCase {
       role: claims.role,
     };
 
-    const cachedSession = await this.#readCachedSession(claims.sessionId);
+    const sessionId = SessionId.reconstitute(claims.sessionId);
+    const cachedSession = await this.#readCachedSession(sessionId);
     if (cachedSession != null) {
       this.#assertUsable(
         getSessionValidity({
@@ -80,7 +82,7 @@ export class AuthenticateSessionUseCase {
       return authenticated;
     }
 
-    const session = await sessionRepository.findById(claims.sessionId);
+    const session = await sessionRepository.findById(sessionId);
     this.#assertUsable(
       session == null ? "missing" : session.validityAt(this.#dependencies.clock.now()),
       claims.sessionId,
@@ -89,14 +91,14 @@ export class AuthenticateSessionUseCase {
       return authenticated;
     }
 
-    const user = await userRepository.findById(session.userId.value);
+    const user = await userRepository.findById(session.userId);
     const userStatus = user?.status;
     const userDeletedAt = user?.deletedAt == null ? null : toIsoString(user.deletedAt);
     if (userStatus) {
       assertUserStatus(userStatus, userDeletedAt);
     }
 
-    await this.#writeCachedSession(claims.sessionId, {
+    await this.#writeCachedSession(sessionId, {
       userId: session.userId.value,
       expiresAt: toIsoString(session.expiresAt),
       revokedAt: session.revokedAt == null ? null : toIsoString(session.revokedAt),
@@ -114,7 +116,7 @@ export class AuthenticateSessionUseCase {
   }
 
   // 인증은 마지막 방어선이라 캐시 장애는 미스로 본다. try 안에는 캐시 I/O만 두어 의도한 401을 삼키지 않는다
-  async #readCachedSession(sessionId: string): Promise<AuthCachedSession | undefined> {
+  async #readCachedSession(sessionId: SessionId): Promise<AuthCachedSession | undefined> {
     try {
       return await this.#dependencies.cache.getSession(sessionId);
     } catch (error) {
@@ -127,7 +129,7 @@ export class AuthenticateSessionUseCase {
   }
 
   // 저장 실패는 다음 요청이 DB를 다시 읽을 뿐이라 무시한다
-  async #writeCachedSession(sessionId: string, session: AuthCachedSession): Promise<void> {
+  async #writeCachedSession(sessionId: SessionId, session: AuthCachedSession): Promise<void> {
     try {
       await this.#dependencies.cache.setSession(sessionId, session);
     } catch (error) {

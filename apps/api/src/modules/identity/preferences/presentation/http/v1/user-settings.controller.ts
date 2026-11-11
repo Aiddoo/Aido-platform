@@ -2,18 +2,16 @@ import { ErrorCode } from "@aido/api/errors";
 import { Body, Controller, Get, HttpCode, HttpStatus, Patch } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 
-import {
-  CurrentUser,
-  type CurrentUserPayload,
-} from "#api/modules/identity/auth/presentation/http/decorators/current-user.decorator";
+import { type CurrentUserPayload } from "#api/../../../packages/api/dist/contracts/auth/v1/auth.response.d";
+import { CurrentUser } from "#api/modules/identity/auth/presentation/http/decorators/current-user.decorator";
+import { SWAGGER_TAGS } from "#api/platform/http/swagger/constants/swagger.constant";
 import {
   ApiBadRequestError,
-  ApiDoc,
   ApiForbiddenError,
-  ApiSuccessResponse,
   ApiUnauthorizedError,
-  SWAGGER_TAGS,
-} from "#api/platform/http/swagger/index";
+} from "#api/platform/http/swagger/decorators/api-error.decorator";
+import { ApiDoc } from "#api/platform/http/swagger/decorators/api-operation.decorator";
+import { ApiSuccessResponse } from "#api/platform/http/swagger/decorators/api-response.decorator";
 
 import { GetConsentUseCase } from "../../../application/use-cases/get-consent.use-case.js";
 import { GetPreferenceUseCase } from "../../../application/use-cases/get-preference.use-case.js";

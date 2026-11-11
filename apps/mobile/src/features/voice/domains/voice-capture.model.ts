@@ -12,6 +12,7 @@ import { COMMON_SPEECH_HINTS } from '../constants/speech-hints';
 import { AUTO_FINISH_SILENCE_MS, QUICK_CAPTURE_MAX_SECONDS } from '../constants/voice.constants';
 import { voicePlanSchema } from './voice-plan.model';
 import {
+  createVoiceTranscript,
   type SpeechResult,
   type VoiceTranscript,
   VoiceTranscriptPolicy,
@@ -76,7 +77,7 @@ export type VoiceCaptureEvent =
 export function createVoiceCaptureState(): VoiceCaptureState {
   return {
     status: 'idle',
-    transcript: VoiceTranscriptPolicy.createVoiceTranscript(),
+    transcript: createVoiceTranscript(),
     elapsedMs: 0,
     pauseCount: 0,
   };
@@ -265,7 +266,7 @@ export function isActive(state: VoiceCaptureState): boolean {
 }
 
 // 음성이 돌지 않고 계획도 없어 손으로 입력하는 때
-export function isManualInput(state: Pick<VoiceCaptureState, 'status'>): boolean {
+export function isManualInput(state: VoiceCaptureState): boolean {
   return state.status === 'idle' || state.status === 'failed';
 }
 

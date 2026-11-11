@@ -16,8 +16,6 @@ import type {
   SubscriptionStore,
 } from "../../domain/subscriptions.constants.js";
 
-export type { SubscriptionLifecycle };
-
 /**
  * 공급자 웹훅이 준 값은 이벤트마다 같은 이름으로 싣는다. 이벤트에 없으면 비운다.
  */
@@ -52,10 +50,8 @@ export interface SubscriptionEventPayload {
   newPlanType?: SubscriptionPlanType;
   /** 구매를 넘겨준·넘겨받은 앱 사용자 ID(TRANSFERRED만) */
   transfer?: SubscriptionTransfer;
-  /** 앱 사용자 ID. 운영 알림의 공급자 고객 화면 링크에 쓴다. */
+  /** 앱 사용자 ID. 알림 어댑터가 공급자 고객 화면 주소를 만들 때만 쓰고 운영 알림에는 싣지 않는다. */
   appUserId?: string;
-  /** 공급자 고객 화면 주소. 알림 어댑터가 설정이 있을 때만 채운다. */
-  providerCustomerUrl?: string;
   /** 공급자 이벤트 ID. 알림 잡 멱등 키로 쓴다. */
   eventId?: string;
   countryCode?: string;
@@ -70,7 +66,7 @@ export interface SubscriptionEventPayload {
   premium?: PremiumAccessSummary;
 }
 
-export interface SubscriptionTransfer {
+interface SubscriptionTransfer {
   readonly from: readonly string[];
   readonly to: readonly string[];
 }

@@ -1,4 +1,4 @@
-/** Material window size class 기준 폭(dp). iOS regular width와도 일치한다. */
+/** Material window size class 기준 폭(dp). iOS size class는 폭 숫자로 정해지지 않아 iOS도 같은 숫자(pt)로 나눈다 */
 const MEDIUM_WINDOW_MIN_WIDTH = 600;
 const EXPANDED_WINDOW_MIN_WIDTH = 840;
 

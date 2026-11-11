@@ -43,7 +43,7 @@ export class AiDataSharingConsent extends Entity<UserId, AiDataSharingConsentPro
     return AiDataSharingConsent.reconstitute({ userId, agreedAt: null, version: null });
   }
 
-  /** 저장 행 그대로(Date 시각)도 판정할 수 있게 시각의 있고 없음만 본다 */
+  /** 저장 행 그대로도 판정할 수 있게 시각의 있고 없음만 본다 */
   static statusOf(state: {
     readonly hasAgreed: boolean;
     readonly version: string | null;

@@ -6,7 +6,6 @@ import {
   isTransportFailure,
   type OutboundPolicySpec,
 } from "#api/platform/resilience/outbound-policy";
-import { TIME_UNIT } from "#api/shared/domain/date/constants/date.constant";
 
 /**
  * RevenueCat REST v2 구독 상태 읽기. 재시도는 pg-boss 한 층이다. 공급자 전체 장애(시간 초과·네트워크·5xx)가
@@ -19,7 +18,7 @@ export const REVENUECAT_API_POLICY: OutboundPolicySpec = {
     {
       name: "health",
       consecutiveFailures: 5,
-      halfOpenAfterMs: TIME_UNIT.MS_PER_MINUTE,
+      halfOpenAfterMs: 60_000,
       handles: isTransportFailure,
       handlesResult: isServerFailureOutcome,
     },

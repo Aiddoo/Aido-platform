@@ -1,45 +1,44 @@
 import { ErrorCode } from "@aido/api/errors";
-import { ConfigService } from "@nestjs/config";
 
-import { NotificationJobName } from "#api/modules/notification/infrastructure/jobs/delivery/notification-queue.constants";
-import { notificationEventJobKey } from "#api/modules/notification/infrastructure/jobs/notification-job-keys";
-import { NotificationQueueService } from "#api/modules/notification/notification-delivery-jobs.public";
-import { AdminEventNotifier } from "#api/modules/operations/operations-notifications.public";
-import type { EnvConfig } from "#api/platform/config/schemas/index";
-import { TypedConfigService } from "#api/platform/config/services/config.service";
+import { NotificationQueueAdapter } from "#api/modules/notification/notification-delivery-jobs.public";
+import { notificationEventJobKey } from "#api/modules/notification/push/infrastructure/jobs/notification-job-keys.constants";
+import {
+  NOTIFICATION_QUEUE,
+  NotificationJobName,
+} from "#api/modules/notification/push/infrastructure/jobs/notification.queue";
 import { ApplicationException } from "#api/shared/application/application.exception";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { RecordingAdminEventNotifier } from "#test/doubles/operations/recording-admin-event-notifier";
+import { FixedClock } from "#test/doubles/platform/fixed-clock";
+import { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
 import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";
-import { SilentLogger } from "#test/doubles/platform/silent-logger";
-import { FakeJobRuntime } from "#test/mocks/fake-job-runtime";
 import { suppressLogger } from "#test/setup/suppress-logger";
 
 import type { StoreSubscriptionEventFailureContext } from "../../application/ports/subscription-event-notifier.port.js";
 import type { SubscriptionEventPayload } from "../../application/read-models/subscription-event-payload.read-model.js";
+import { SubscriptionAlerts } from "../../application/subscriptions.alerts.js";
 import { SubscriptionEventNotifierAdapter } from "./subscription-event-notifier.adapter.js";
 
 function createAdapter(options: { projectId?: string } = {}) {
-  const forwarded: SubscriptionEventPayload[] = [];
+  const adminEventNotifier = new RecordingAdminEventNotifier();
   const alerts = new RecordingOperationalAlert();
-  const jobRuntime = new FakeJobRuntime();
-  const adminEventNotifier = new AdminEventNotifier({
-    enqueueUserRegistered: { execute: async () => undefined },
-    enqueueSubscriptionEvent: {
-      execute: async (payload) => {
-        forwarded.push(payload);
-      },
+  const jobQueue = new InMemoryJobQueue();
+  const config = {
+    revenuecat: {
+      projectId: options.projectId,
+      apiV2SecretKey: undefined,
     },
-    logger: new SilentLogger(),
-  });
-  const config = new TypedConfigService(
-    new ConfigService<EnvConfig, true>({ REVENUECAT_PROJECT_ID: options.projectId }),
-  );
+  };
   const adapter = new SubscriptionEventNotifierAdapter(
     adminEventNotifier,
-    new NotificationQueueService(jobRuntime),
+    new NotificationQueueAdapter(
+      jobQueue,
+      new FixedClock(Temporal.Instant.from("2028-02-26T12:00:00Z")),
+    ),
     alerts,
     config,
   );
-  return { adapter, alerts, forwarded, jobRuntime };
+  return { adapter, alerts, forwarded: adminEventNotifier.subscriptionEvents, jobQueue };
 }
 
 describe("SubscriptionEventNotifierAdapter — 웹훅 실패 보고", () => {
@@ -62,9 +61,7 @@ describe("SubscriptionEventNotifierAdapter — 웹훅 실패 보고", () => {
     // Then
     expect(alerts.alerts).toEqual([
       {
-        key: "billing.subscription.webhook.processing-failed",
-        severity: "error",
-        message: "RevenueCat 웹훅 처리에 실패했습니다",
+        ...SubscriptionAlerts.WEBHOOK_PROCESSING_FAILED,
         tags: { eventKind: "STARTED", store: "APP_STORE", storeEnvironment: "SANDBOX" },
         details: {
           eventId: "evt-1",
@@ -130,7 +127,7 @@ describe("SubscriptionEventNotifierAdapter — 구독 이벤트 운영 알림", 
     );
   });
 
-  it("프로젝트 ID가 없으면 받은 그대로 넘긴다", () => {
+  it("프로젝트 ID가 없으면 고객 화면 주소 없이 넘기고 앱 사용자 ID는 싣지 않는다", () => {
     // Given
     const { adapter, forwarded } = createAdapter();
 
@@ -138,7 +135,17 @@ describe("SubscriptionEventNotifierAdapter — 구독 이벤트 운영 알림", 
     adapter.notifySubscriptionEvent(event);
 
     // Then
-    expect(forwarded).toEqual([event]);
+    expect(forwarded).toEqual([
+      {
+        userId: "user-1",
+        email: "user@example.com",
+        kind: "STARTED",
+        productId: "premium_monthly",
+        store: "APP_STORE",
+      },
+    ]);
+    expect(forwarded[0]).not.toHaveProperty("appUserId");
+    expect(forwarded[0]?.providerCustomerUrl).toBeUndefined();
   });
 });
 
@@ -147,17 +154,18 @@ describe("SubscriptionEventNotifierAdapter — 결제 문제 푸시 기록", () 
 
   it("발생 시각을 같은 시각의 Date로 바꿔 결제 문제 알림 작업을 등록한다", async () => {
     // Given
-    const { adapter, jobRuntime } = createAdapter();
+    const { adapter, jobQueue } = createAdapter();
     const at = Temporal.Instant.from("2028-02-26T12:00:00.000Z");
     const job = { name: NotificationJobName.BILLING_ISSUE, data: { userId: "user-1" } } as const;
 
     // When
-    await adapter.recordBillingIssue("user-1", at);
+    await adapter.recordBillingIssue(UserId.reconstitute("user-1"), at);
 
     // Then
-    expect(jobRuntime.enqueueCalls).toHaveLength(1);
-    expect(jobRuntime.enqueueCalls[0]?.data).toEqual(job);
-    expect(jobRuntime.enqueueCalls[0]?.options.idempotencyKey).toBe(
+    const queued = jobQueue.jobsIn(NOTIFICATION_QUEUE);
+    expect(queued).toHaveLength(1);
+    expect(queued[0]?.payload).toEqual(job);
+    expect(queued[0]?.options.idempotencyKey).toBe(
       notificationEventJobKey(job, new Date("2028-02-26T12:00:00.000Z")),
     );
   });

@@ -1,9 +1,11 @@
 import {
+  getPlanActionGroups,
+  type PlanHeadline,
   type PlannedMemo,
   type PlannedTodo,
-  voicePlanIdSchema,
+  sortPlanActionsByGroup,
   type VoicePlan,
-  type PlanHeadline,
+  voicePlanIdSchema,
   VoicePlanPolicy,
 } from './voice-plan.model';
 
@@ -126,7 +128,7 @@ describe('getPlanActionGroups', () => {
     const actions = categories.map((categoryId) => todo({ categoryId }));
 
     // When
-    const result = VoicePlanPolicy.getPlanActionGroups(actions, FALLBACK_CATEGORY_ID);
+    const result = getPlanActionGroups(actions, FALLBACK_CATEGORY_ID);
 
     // Then
     expect(result).toEqual(groups);
@@ -137,7 +139,7 @@ describe('getPlanActionGroups', () => {
     const actions = [todo({ categoryId: 1 }), memo(), todo({ categoryId: 1 })];
 
     // When
-    const result = VoicePlanPolicy.getPlanActionGroups(actions, FALLBACK_CATEGORY_ID);
+    const result = getPlanActionGroups(actions, FALLBACK_CATEGORY_ID);
 
     // Then
     expect(result).toEqual([
@@ -158,7 +160,7 @@ describe('sortPlanActionsByGroup', () => {
     ];
 
     // When
-    const result = VoicePlanPolicy.sortPlanActionsByGroup(actions, FALLBACK_CATEGORY_ID);
+    const result = sortPlanActionsByGroup(actions, FALLBACK_CATEGORY_ID);
 
     // Then
     expect(result.map(({ actionId }) => actionId)).toEqual(['a', 'c', 'b', 'm1']);

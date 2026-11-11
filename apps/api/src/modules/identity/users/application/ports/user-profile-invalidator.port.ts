@@ -1,6 +1,5 @@
-/** 옛 토큰. 아직 옮기지 않은 소비 Context가 쓴다(같은 인스턴스 별칭으로 바인딩) */
-export const USER_PROFILE_INVALIDATOR = Symbol("USER_PROFILE_INVALIDATOR");
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 export abstract class UserProfileInvalidatorPort {
-  abstract invalidateUserProfile(userId: string): Promise<void>;
+  abstract invalidateUserProfile(userId: UserId): Promise<void>;
 }

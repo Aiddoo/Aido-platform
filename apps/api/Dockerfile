@@ -33,7 +33,9 @@ CMD ["pnpm", "dev"]
 FROM base AS migrate-deps
 COPY --from=pruner /app/out/migrate/json/ ./
 COPY --from=pruner /app/out/migrate/pnpm-lock.yaml ./pnpm-lock.yaml
-RUN pnpm install --prod --frozen-lockfile --ignore-scripts && \
+# store·metadata 캐시(약 400MB)가 이미지 층에 남지 않게 빌드 캐시 마운트에 둔다. 파일은 node_modules로 복사된다.
+RUN --mount=type=cache,id=pnpm-migrate,target=/pnpm \
+    pnpm install --prod --frozen-lockfile --ignore-scripts --store-dir=/pnpm/store --config.cache-dir=/pnpm/cache && \
     chmod a+r pnpm-workspace.yaml
 
 FROM migrate-deps AS migrate

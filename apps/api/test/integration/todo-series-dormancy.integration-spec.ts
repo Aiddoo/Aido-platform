@@ -1,25 +1,23 @@
 import { Logger } from "@nestjs/common";
 import { eq, inArray, sql } from "drizzle-orm";
 import { omit } from "es-toolkit";
-import { mock } from "vitest-mock-extended";
 
-import type {
-  AccessSnapshot,
-  EntitlementReaderPort,
-} from "#api/modules/access/access-entitlement.public";
+import type { EntitlementReaderPort } from "#api/modules/access/entitlements/access-entitlements.public";
 import { DrizzleUserRepository } from "#api/modules/identity/users/infrastructure/persistence/drizzle-user.repository";
-import { TodoSeriesOwnerDormancyAdapter } from "#api/modules/notification/infrastructure/adapters/reminders/todo-series-owner-dormancy.adapter";
-import { TodoReminderSchedulerAdapter } from "#api/modules/notification/infrastructure/jobs/reminders/todo-reminder-scheduler.adapter";
-import { TodoOccurrenceMaterializer } from "#api/modules/planning/application/services/series/todo-occurrence-materializer.service";
-import { TodoSeriesCatchUp } from "#api/modules/planning/application/services/series/todo-series-catch-up.service";
-import { TodoSeriesDueRunner } from "#api/modules/planning/application/services/series/todo-series-due-runner.service";
-import { TodoCreationEffects } from "#api/modules/planning/application/services/todos/todo-creation-effects.service";
-import { MaterializeDueTodoSeries } from "#api/modules/planning/application/use-cases/series/materialize-due-todo-series.use-case";
-import { TodoSeries } from "#api/modules/planning/domain/aggregates/series/todo-series.aggregate";
-import { RepeatRule } from "#api/modules/planning/domain/value-objects/series/repeat-rule.vo";
-import { TodoSeriesOwnerAdapter } from "#api/modules/planning/infrastructure/adapters/series/todo-series-owner.adapter";
-import { DrizzleTodoSeriesRepository } from "#api/modules/planning/infrastructure/persistence/series/drizzle-todo-series.repository";
-import { DrizzleTodoRepository } from "#api/modules/planning/infrastructure/persistence/todos/drizzle-todo.repository";
+import { TodoSeriesOwnerDormancyAdapter } from "#api/modules/notification/reminders/infrastructure/adapters/todo-series-owner-dormancy.adapter";
+import { TodoReminderSchedulerAdapter } from "#api/modules/notification/reminders/infrastructure/jobs/todo-reminder-scheduler.adapter";
+import { TodoTitle } from "#api/modules/planning/shared/domain/todo-title.vo";
+import { CatchUpTodoSeriesUseCase } from "#api/modules/planning/todo-series/application/use-cases/catch-up-todo-series.use-case";
+import { MaterializeDueTodoSeriesUseCase } from "#api/modules/planning/todo-series/application/use-cases/materialize-due-todo-series.use-case";
+import { MaterializeTodoOccurrencesUseCase } from "#api/modules/planning/todo-series/application/use-cases/materialize-todo-occurrences.use-case";
+import { MaterializeTodoSeriesUseCase } from "#api/modules/planning/todo-series/application/use-cases/materialize-todo-series.use-case";
+import { PublishTodoCreationUseCase } from "#api/modules/planning/todo-series/application/use-cases/publish-todo-creation.use-case";
+import { RepeatRule } from "#api/modules/planning/todo-series/domain/repeat-rule.vo";
+import { TodoSeriesId } from "#api/modules/planning/todo-series/domain/todo-series-id.vo";
+import { TodoSeries } from "#api/modules/planning/todo-series/domain/todo-series.aggregate";
+import { TodoSeriesOwnerAdapter } from "#api/modules/planning/todo-series/infrastructure/adapters/todo-series-owner.adapter";
+import { DrizzleTodoSeriesRepository } from "#api/modules/planning/todo-series/infrastructure/persistence/drizzle-todo-series.repository";
+import { DrizzleTodoRepository } from "#api/modules/planning/todos/infrastructure/persistence/drizzle-todo.repository";
 import { createEntityId } from "#api/platform/database/entity-id";
 import { PostgresMutationLockAdapter } from "#api/platform/database/postgres-mutation-lock.adapter";
 import {
@@ -29,9 +27,13 @@ import {
   user as userTable,
   userPreference,
 } from "#api/platform/database/schema/index";
-import type { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { instantFromDate } from "#api/shared/domain/time/instant";
+import { DateClock } from "#test/doubles/platform/date-clock";
+import { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
+import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";
+import { StubCurrentUserAccess } from "#test/fixtures/auth-credential.fixture";
 import { TodoCategoryFixture, UserFixture } from "#test/fixtures/index";
-import { FakeJobRuntime } from "#test/mocks/fake-job-runtime";
 import { createDatabaseTransactionFixture, createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
@@ -40,6 +42,29 @@ const RETURNED_AT = new Date(`${TODAY}T03:00:00.000Z`);
 const LAST_MOVED_AT = new Date("2026-05-01T00:00:00.000Z");
 const STALE_CURSOR = "2026-07-30";
 const HORIZON_ROWS = 91;
+
+// 휴면 판정은 등급만 읽는다. 나머지 권한 조회가 불리면 테스트가 잘못 짠 것이다
+class StubTierEntitlementReader extends StubCurrentUserAccess implements EntitlementReaderPort {
+  async can(): Promise<boolean> {
+    throw new Error("휴면 판정은 can을 부르지 않는다");
+  }
+
+  async canInTx(): Promise<boolean> {
+    throw new Error("휴면 판정은 canInTx를 부르지 않는다");
+  }
+
+  async getFeatureLimit(): Promise<number | null> {
+    throw new Error("휴면 판정은 getFeatureLimit을 부르지 않는다");
+  }
+
+  async getFeatureLimitInTx(): Promise<number | null> {
+    throw new Error("휴면 판정은 getFeatureLimitInTx를 부르지 않는다");
+  }
+
+  async getFeatureQuotaInTx(): ReturnType<EntitlementReaderPort["getFeatureQuotaInTx"]> {
+    throw new Error("휴면 판정은 getFeatureQuotaInTx를 부르지 않는다");
+  }
+}
 
 describe("반복 할 일 휴면·복귀 (실제 PostgreSQL)", () => {
   const statements: string[] = [];
@@ -51,7 +76,7 @@ describe("반복 할 일 휴면·복귀 (실제 PostgreSQL)", () => {
   });
   let client: TestDatabaseClient;
   let fixture: ReturnType<typeof createDatabaseTransactionFixture>;
-  let runtime: FakeJobRuntime;
+  let jobQueue: InMemoryJobQueue;
   let userId: string;
   const premiumUserIds = new Set<string>();
   let categoryId: number;
@@ -65,7 +90,7 @@ describe("반복 할 일 휴면·복귀 (실제 PostgreSQL)", () => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(RETURNED_AT);
     fixture = createDatabaseTransactionFixture(client);
-    runtime = new FakeJobRuntime();
+    jobQueue = new InMemoryJobQueue();
     const seeded = await seedUser("dormant@example.com", "DORMANT1", {
       lastActiveAt: RETURNED_AT,
     });
@@ -89,8 +114,11 @@ describe("반복 할 일 휴면·복귀 (실제 PostgreSQL)", () => {
       email,
       userTag,
       status: "ACTIVE",
-      lastActiveAt: activity.lastActiveAt,
-      createdAt: activity.createdAt ?? new Date("2026-01-01T00:00:00.000Z"),
+      lastActiveAt: activity.lastActiveAt == null ? null : instantFromDate(activity.lastActiveAt),
+      createdAt:
+        activity.createdAt == null
+          ? Temporal.Instant.from("2026-01-01T00:00:00.000Z")
+          : instantFromDate(activity.createdAt),
     });
     await client.insert(userTable).values(user);
     if (activity.timezone != null) {
@@ -107,19 +135,20 @@ describe("반복 할 일 휴면·복귀 (실제 PostgreSQL)", () => {
   }
 
   function dueRunner() {
-    const todoRepository = new DrizzleTodoRepository(fixture.txHost);
-    return new TodoSeriesDueRunner({
-      seriesRepository: new DrizzleTodoSeriesRepository(fixture.txHost),
-      materializer: new TodoOccurrenceMaterializer({
+    const todoRepository = new DrizzleTodoRepository(fixture.txHost, new DateClock());
+    return new MaterializeTodoSeriesUseCase({
+      clock: new DateClock(),
+      seriesRepository: new DrizzleTodoSeriesRepository(fixture.txHost, new DateClock()),
+      materializer: new MaterializeTodoOccurrencesUseCase({
         todoRepository,
-        todoReminder: new TodoReminderSchedulerAdapter(runtime),
+        todoReminder: new TodoReminderSchedulerAdapter(jobQueue, new DateClock()),
+        applyTodoEvents: { execute: async () => undefined },
       }),
-      effects: new TodoCreationEffects({
+      effects: new PublishTodoCreationUseCase({
         todoCache: {
           invalidateTodoCategories: async () => undefined,
           invalidateFriendTodos: async () => undefined,
         },
-        eventPublisher: { publishAll: async () => undefined, publish: async () => undefined },
         logger: new Logger("DormancyIntegration"),
       }),
       unitOfWork: fixture.uow,
@@ -128,21 +157,25 @@ describe("반복 할 일 휴면·복귀 (실제 PostgreSQL)", () => {
   }
 
   function entitlements() {
-    const reader = mock<EntitlementReaderPort>();
-    reader.getAccessSnapshot.mockImplementation(async (id) =>
-      mock<AccessSnapshot>({ tier: premiumUserIds.has(id) ? "PREMIUM" : "FREE" }),
-    );
+    const reader = new StubTierEntitlementReader();
+    for (const id of premiumUserIds) {
+      reader.tiers.set(id, "PREMIUM");
+    }
     return reader;
   }
 
   function seriesOwner() {
-    return new TodoSeriesOwnerAdapter(new DrizzleUserRepository(fixture.txHost), entitlements());
+    return new TodoSeriesOwnerAdapter(
+      new DrizzleUserRepository(fixture.txHost, new DateClock()),
+      entitlements(),
+    );
   }
 
   /** 서버 프로세스 하나. 메모리 캐시는 프로세스마다 따로다. */
   function catchUp() {
-    return new TodoSeriesCatchUp({
-      seriesRepository: new DrizzleTodoSeriesRepository(fixture.txHost),
+    return new CatchUpTodoSeriesUseCase({
+      clock: new DateClock(),
+      seriesRepository: new DrizzleTodoSeriesRepository(fixture.txHost, new DateClock()),
       seriesOwner: seriesOwner(),
       dueRunner: dueRunner(),
       logger: new Logger("DormancyIntegration"),
@@ -150,11 +183,12 @@ describe("반복 할 일 휴면·복귀 (실제 PostgreSQL)", () => {
   }
 
   function job() {
-    return new MaterializeDueTodoSeries({
-      seriesRepository: new DrizzleTodoSeriesRepository(fixture.txHost),
+    return new MaterializeDueTodoSeriesUseCase({
+      clock: new DateClock(),
+      seriesRepository: new DrizzleTodoSeriesRepository(fixture.txHost, new DateClock()),
       seriesOwner: seriesOwner(),
       dueRunner: dueRunner(),
-      alert: mock<OperationalAlertPort>(),
+      alert: new RecordingOperationalAlert(),
       logger: new Logger("DormancyIntegration"),
     });
   }
@@ -171,25 +205,25 @@ describe("반복 할 일 휴면·복귀 (실제 PostgreSQL)", () => {
     } = {},
   ) {
     const id = overrides.id ?? createEntityId();
-    const series = TodoSeries.planCreation({
-      id,
-      userId: overrides.owner?.userId ?? userId,
+    const series = TodoSeries.create({
+      id: TodoSeriesId.reconstitute(id),
+      userId: UserId.reconstitute(overrides.owner?.userId ?? userId),
       categoryId: overrides.owner?.categoryId ?? categoryId,
-      title: "매일 반복",
+      title: TodoTitle.create("매일 반복"),
       visibility: "PUBLIC",
       scheduledLocalTime: overrides.scheduledLocalTime ?? null,
       timezone: overrides.timezone ?? "UTC",
-      rule: overrides.rule ?? RepeatRule.daily({ type: "NEVER" }),
+      rule: overrides.rule ?? RepeatRule.create({ frequency: "DAILY", end: { type: "NEVER" } }),
       startDate: overrides.startDate ?? "2026-03-01",
       checklistTemplate: [{ title: "항목" }],
-      at: LAST_MOVED_AT,
+      now: Temporal.Instant.fromEpochMilliseconds(LAST_MOVED_AT.getTime()),
     });
-    await new DrizzleTodoSeriesRepository(fixture.txHost).insert(series);
+    await new DrizzleTodoSeriesRepository(fixture.txHost, new DateClock()).insert(series);
     await client
       .update(todoSeries)
       .set({
-        nextOccurrenceDate: new Date(overrides.nextOccurrenceDate ?? STALE_CURSOR),
-        updatedAt: LAST_MOVED_AT,
+        nextOccurrenceDate: Temporal.PlainDate.from(overrides.nextOccurrenceDate ?? STALE_CURSOR),
+        updatedAt: instantFromDate(LAST_MOVED_AT),
       })
       .where(eq(todoSeries.id, id));
     return id;
@@ -201,12 +235,12 @@ describe("반복 할 일 휴면·복귀 (실제 PostgreSQL)", () => {
       .from(todo)
       .where(eq(todo.seriesId, seriesId))
       .orderBy(todo.occurrenceDate);
-    return rows.map((row) => row.date?.toISOString().slice(0, 10));
+    return rows.map((row) => row.date?.toString());
   }
 
   async function cursorOf(seriesId: string) {
     const row = await client.query.todoSeries.findFirst({ where: { id: seriesId } });
-    return row?.nextOccurrenceDate?.toISOString().slice(0, 10) ?? null;
+    return row?.nextOccurrenceDate?.toString() ?? null;
   }
 
   describe("밤 작업의 휴면", () => {
@@ -288,7 +322,7 @@ describe("반복 할 일 휴면·복귀 (실제 PostgreSQL)", () => {
       // Given
       const id = await seedStaleSeries();
       // When
-      await catchUp().ensureCaughtUp(userId);
+      await catchUp().execute(userId);
       // Then
       const dates = await occurrenceDates(id);
       expect(dates).toHaveLength(HORIZON_ROWS);
@@ -310,10 +344,10 @@ describe("반복 할 일 휴면·복귀 (실제 PostgreSQL)", () => {
       });
       await client
         .update(todoSeries)
-        .set({ updatedAt: new Date("2024-01-01T00:00:00.000Z") })
+        .set({ updatedAt: Temporal.Instant.from("2024-01-01T00:00:00.000Z") })
         .where(eq(todoSeries.id, id));
       // When
-      await catchUp().ensureCaughtUp(userId);
+      await catchUp().execute(userId);
       // Then
       const dates = await occurrenceDates(id);
       expect(dates.at(0)).toBe(TODAY);
@@ -326,7 +360,7 @@ describe("반복 할 일 휴면·복귀 (실제 PostgreSQL)", () => {
       const seoulId = await seedStaleSeries({ timezone: "Asia/Seoul" });
       const newYorkId = await seedStaleSeries({ timezone: "America/New_York" });
       // When
-      await catchUp().ensureCaughtUp(userId);
+      await catchUp().execute(userId);
       // Then
       expect((await occurrenceDates(seoulId)).at(0)).toBe("2026-11-06");
       expect((await occurrenceDates(newYorkId)).at(0)).toBe(TODAY);
@@ -336,7 +370,7 @@ describe("반복 할 일 휴면·복귀 (실제 PostgreSQL)", () => {
       // Given
       const id = await seedStaleSeries({ nextOccurrenceDate: "2026-11-07" });
       // When
-      await catchUp().ensureCaughtUp(userId);
+      await catchUp().execute(userId);
       // Then
       expect(await cursorOf(id)).toBe("2026-11-07");
       expect(await occurrenceDates(id)).toHaveLength(0);
@@ -345,15 +379,15 @@ describe("반복 할 일 휴면·복귀 (실제 PostgreSQL)", () => {
     it("자리 비운 사이 끝난 규칙은 회차도 새 규칙도 만들지 않고 진행 중에서 빠진다", async () => {
       // Given
       const untilId = await seedStaleSeries({
-        rule: RepeatRule.daily({ type: "UNTIL", date: "2026-10-01" }),
+        rule: RepeatRule.create({ frequency: "DAILY", end: { type: "UNTIL", date: "2026-10-01" } }),
       });
       const countId = await seedStaleSeries({
-        rule: RepeatRule.daily({ type: "COUNT", count: 100 }),
+        rule: RepeatRule.create({ frequency: "DAILY", end: { type: "COUNT", count: 100 } }),
         nextOccurrenceDate: "2026-05-20",
       });
       const before = await client.$count(todoSeries);
       // When
-      await catchUp().ensureCaughtUp(userId);
+      await catchUp().execute(userId);
       // Then
       expect(await cursorOf(untilId)).toBeNull();
       expect(await cursorOf(countId)).toBeNull();
@@ -369,7 +403,7 @@ describe("반복 할 일 휴면·복귀 (실제 PostgreSQL)", () => {
         ids.push(await seedStaleSeries({ scheduledLocalTime: "23:00" }));
       }
       // When
-      await catchUp().ensureCaughtUp(userId);
+      await catchUp().execute(userId);
       // Then
       const counts = await client
         .select({
@@ -385,7 +419,10 @@ describe("반복 할 일 휴면·복귀 (실제 PostgreSQL)", () => {
       expect(counts.every(({ total, distinctDates }) => total === 91 && distinctDates === 91)).toBe(
         true,
       );
-      const today = await client.$count(todo, eq(todo.occurrenceDate, new Date(TODAY)));
+      const today = await client.$count(
+        todo,
+        eq(todo.occurrenceDate, Temporal.PlainDate.from(TODAY)),
+      );
       expect(today).toBe(30);
     });
 
@@ -394,16 +431,17 @@ describe("반복 할 일 휴면·복귀 (실제 PostgreSQL)", () => {
       const ids = [await seedStaleSeries(), await seedStaleSeries(), await seedStaleSeries()];
       let seenByFirst = 0;
       let seenBySecond = 0;
-      const countToday = () => client.$count(todo, eq(todo.occurrenceDate, new Date(TODAY)));
+      const countToday = () =>
+        client.$count(todo, eq(todo.occurrenceDate, Temporal.PlainDate.from(TODAY)));
       // When
       await Promise.all([
         catchUp()
-          .ensureCaughtUp(userId)
+          .execute(userId)
           .then(async () => {
             seenByFirst = await countToday();
           }),
         catchUp()
-          .ensureCaughtUp(userId)
+          .execute(userId)
           .then(async () => {
             seenBySecond = await countToday();
           }),
@@ -422,7 +460,7 @@ describe("반복 할 일 휴면·복귀 (실제 PostgreSQL)", () => {
       // Given
       const ids = [await seedStaleSeries(), await seedStaleSeries(), await seedStaleSeries()];
       // When
-      await Promise.all([job().execute(), catchUp().ensureCaughtUp(userId)]);
+      await Promise.all([job().execute(), catchUp().execute(userId)]);
       await job().execute();
       // Then
       for (const id of ids) {
@@ -444,7 +482,7 @@ describe("반복 할 일 휴면·복귀 (실제 PostgreSQL)", () => {
       });
       await held.promise;
       // When
-      const pending = catchUp().ensureCaughtUp(userId);
+      const pending = catchUp().execute(userId);
       release.resolve();
       await holder;
       await pending;
@@ -457,12 +495,12 @@ describe("반복 할 일 휴면·복귀 (실제 PostgreSQL)", () => {
       vi.setSystemTime(new Date(`${TODAY}T15:00:00.000Z`));
       const id = await seedStaleSeries({ scheduledLocalTime: "09:00" });
       // When
-      await catchUp().ensureCaughtUp(userId);
+      await catchUp().execute(userId);
       // Then
       const today = await client.query.todo.findFirst({
-        where: { seriesId: id, occurrenceDate: { eq: new Date(TODAY) } },
+        where: { seriesId: id, occurrenceDate: { eq: Temporal.PlainDate.from(TODAY) } },
       });
-      const keys = runtime.enqueueCalls.map((call) => call.options.idempotencyKey);
+      const keys = jobQueue.jobs.map((job) => job.options.idempotencyKey);
       expect(today).toBeDefined();
       expect(keys.filter((key) => key?.startsWith(`reminder_${today?.id}_`))).toEqual([]);
       expect(keys).toHaveLength((HORIZON_ROWS - 1) * 2);
@@ -491,7 +529,7 @@ describe("반복 할 일 휴면·복귀 (실제 PostgreSQL)", () => {
       });
       const warn = vi.spyOn(Logger.prototype, "warn").mockImplementation(() => undefined);
       // When
-      await expect(catchUp().ensureCaughtUp(userId)).resolves.toBeUndefined();
+      await expect(catchUp().execute(userId)).resolves.toBeUndefined();
       // Then
       expect(await cursorOf(goneId)).toBe(STALE_CURSOR);
       expect(await occurrenceDates(goneId)).toEqual([]);
@@ -507,18 +545,19 @@ describe("반복 할 일 휴면·복귀 (실제 PostgreSQL)", () => {
     it("복귀가 실패해도 트랜잭션이 되돌아가고 밤 작업이 오늘부터 채운다", async () => {
       // Given
       const id = await seedStaleSeries();
-      const broken = new TodoSeriesCatchUp({
-        seriesRepository: new DrizzleTodoSeriesRepository(fixture.txHost),
+      const broken = new CatchUpTodoSeriesUseCase({
+        clock: new DateClock(),
+        seriesRepository: new DrizzleTodoSeriesRepository(fixture.txHost, new DateClock()),
         seriesOwner: seriesOwner(),
         dueRunner: {
-          materialize: async () => {
+          execute: async () => {
             throw new Error("쓰기 실패");
           },
         },
-        logger: mock<Logger>(),
+        logger: new Logger("DormancyIntegration"),
       });
       // When
-      await expect(broken.ensureCaughtUp(userId)).resolves.toBeUndefined();
+      await expect(broken.execute(userId)).resolves.toBeUndefined();
       const afterFailure = await cursorOf(id);
       await job().execute();
       // Then
@@ -536,10 +575,10 @@ describe("반복 할 일 휴면·복귀 (실제 PostgreSQL)", () => {
       const service = catchUp();
       statements.length = 0;
       // When
-      await service.ensureCaughtUp(userId);
+      await service.execute(userId);
       const first = statements.length;
-      await service.ensureCaughtUp(userId);
-      await service.ensureCaughtUp(userId);
+      await service.execute(userId);
+      await service.execute(userId);
       // Then
       expect(first).toBe(1);
       expect(statements).toHaveLength(1);
@@ -549,8 +588,9 @@ describe("반복 할 일 휴면·복귀 (실제 PostgreSQL)", () => {
   describe("리마인더 발송 시점의 휴면", () => {
     function dormancy() {
       return new TodoSeriesOwnerDormancyAdapter(
-        new DrizzleUserRepository(fixture.txHost),
+        new DrizzleUserRepository(fixture.txHost, new DateClock()),
         entitlements(),
+        new DateClock(),
       );
     }
 
@@ -564,7 +604,7 @@ describe("반복 할 일 휴면·복귀 (실제 PostgreSQL)", () => {
         timezone: "UTC",
       });
       // When
-      const dormantSince = await dormancy().findDormantSince(owner.userId);
+      const dormantSince = await dormancy().findDormantSince(UserId.reconstitute(owner.userId));
       // Then
       expect(dormantSince).toBe(expected ? lastActiveAt.slice(0, 10) : null);
     });
@@ -576,14 +616,14 @@ describe("반복 할 일 휴면·복귀 (실제 PostgreSQL)", () => {
         createdAt: new Date("2026-01-01T00:00:00.000Z"),
       });
       // When
-      const dormantSince = await dormancy().findDormantSince(owner.userId);
+      const dormantSince = await dormancy().findDormantSince(UserId.reconstitute(owner.userId));
       // Then
       expect(dormantSince).toBe("2026-01-01");
     });
 
     it("지워진 계정은 휴면으로 보지 않는다", async () => {
       // When
-      const dormantSince = await dormancy().findDormantSince("no-such-user");
+      const dormantSince = await dormancy().findDormantSince(UserId.reconstitute("no-such-user"));
       // Then
       expect(dormantSince).toBeNull();
     });
@@ -596,7 +636,7 @@ describe("반복 할 일 휴면·복귀 (실제 PostgreSQL)", () => {
       });
       premiumUserIds.add(owner.userId);
       // When
-      const dormantSince = await dormancy().findDormantSince(owner.userId);
+      const dormantSince = await dormancy().findDormantSince(UserId.reconstitute(owner.userId));
       // Then
       expect(dormantSince).toBeNull();
     });

@@ -94,7 +94,7 @@ describe("RedisModule — Redis 연결 모듈", () => {
 
       // When
       const shutdown = module.onApplicationShutdown();
-      await vi.advanceTimersByTimeAsync(3_000);
+      await vi.advanceTimersByTimeAsync(3000);
       await shutdown;
 
       // Then

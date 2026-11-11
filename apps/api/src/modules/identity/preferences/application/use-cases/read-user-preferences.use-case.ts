@@ -1,3 +1,5 @@
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+
 import type { UserPreferenceReaderPort } from "../ports/user-preference.reader.port.js";
 import type { UserPreferenceRepositoryPort } from "../ports/user-preference.repository.port.js";
 import type { UserSettingsCachePort } from "../ports/user-settings-cache.port.js";
@@ -19,7 +21,7 @@ export class ReadUserPreferencesUseCase implements UserPreferenceReaderPort {
     this.#dependencies = dependencies;
   }
 
-  read(userId: string): Promise<PreferenceSnapshot> {
+  read(userId: UserId): Promise<PreferenceSnapshot> {
     return this.#dependencies.cache.wrapUserPreference(userId, async () => {
       const preference = await this.#dependencies.preferenceRepository.findByUserId(userId);
       return preference == null

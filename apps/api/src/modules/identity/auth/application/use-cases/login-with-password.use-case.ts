@@ -1,6 +1,7 @@
 import { ErrorCode } from "@aido/api/errors";
 import { LOGIN_ATTEMPT, SECURITY_EVENT } from "@aido/api/vocabulary";
 
+import type { EntitlementCacheInvalidatorPort } from "#api/modules/access/entitlements/access-entitlements.public";
 import type {
   LoginResult,
   RequestMetadata,
@@ -14,7 +15,7 @@ import { assertStatusAllowsLogin } from "#api/modules/identity/users/domain/acco
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
-import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
+import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 
 import { AuthLogEvent } from "../auth.log-events.js";
 import type { AuthAccountRepositoryPort } from "../ports/auth-account.repository.port.js";
@@ -48,6 +49,8 @@ interface LoginWithPasswordDependencies {
   readonly issueLoginUseCase: Pick<IssueLoginUseCase, "execute">;
   readonly restoreAccount: Pick<RestoreAccountUseCase, "execute">;
   readonly cacheService: Pick<AuthCachePort, "invalidateUserProfile">;
+  // 탈퇴 유예 중에는 권한을 무료로 캐시하므로 되살리면 함께 비운다
+  readonly entitlementCache: Pick<EntitlementCacheInvalidatorPort, "invalidateEntitlements">;
   readonly unitOfWork: UnitOfWorkPort;
   readonly clock: ClockPort;
   readonly logger: ApplicationLoggerPort;
@@ -101,7 +104,7 @@ export class LoginWithPasswordUseCase {
     }
 
     const account = await this.#dependencies.accountRepository.findByUserIdAndProvider(
-      user.id.value,
+      user.id,
       "CREDENTIAL",
     );
     if (account == null || account.password == null || account.password === "") {
@@ -139,7 +142,7 @@ export class LoginWithPasswordUseCase {
         .hash(password)
         .then((passwordHash) =>
           this.#dependencies.accountRepository.updatePasswordIfUnchanged(
-            user.id.value,
+            user.id,
             expectedPasswordHash,
             passwordHash,
           ),
@@ -193,7 +196,10 @@ export class LoginWithPasswordUseCase {
     });
 
     if (needsRestore) {
-      await this.#dependencies.cacheService.invalidateUserProfile(user.id.value);
+      await Promise.all([
+        this.#dependencies.cacheService.invalidateUserProfile(user.id),
+        this.#dependencies.entitlementCache.invalidateEntitlements(user.id),
+      ]);
       this.#dependencies.logger.log({
         event: AuthLogEvent.ACCOUNT_RESTORED,
         userId: user.id.value,

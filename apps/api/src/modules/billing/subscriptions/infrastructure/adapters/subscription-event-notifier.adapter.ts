@@ -1,19 +1,25 @@
 import { Inject, Injectable } from "@nestjs/common";
 
-import { NotificationQueueService } from "#api/modules/notification/notification-delivery-jobs.public";
-import { AdminEventNotifier } from "#api/modules/operations/operations-notifications.public";
-import { TypedConfigService } from "#api/platform/config/services/config.service";
+import { NotificationQueueAdapter } from "#api/modules/notification/notification-delivery-jobs.public";
+import {
+  AdminEventNotifierPort,
+  type SubscriptionAlertInput,
+} from "#api/modules/operations/admin-notices/operations-admin-notices.public";
 import { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import { ErrorCodedException } from "#api/shared/domain/exceptions/error-coded.exception";
-import { instantToDate } from "#api/shared/domain/time/instant";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import {
   type StoreSubscriptionEventFailureContext,
   SubscriptionEventNotifierPort,
 } from "../../application/ports/subscription-event-notifier.port.js";
 import type { SubscriptionEventPayload } from "../../application/read-models/subscription-event-payload.read-model.js";
-import { SubscriptionAlertKey } from "../../application/subscriptions.alerts.js";
+import { SubscriptionAlerts } from "../../application/subscriptions.alerts.js";
+import {
+  type BillingSubscriptionsConfig,
+  billingSubscriptionsConfig,
+} from "../../billing-subscriptions.config.js";
 
 /**
  * 구독 이벤트 알림 어댑터.
@@ -23,16 +29,16 @@ import { SubscriptionAlertKey } from "../../application/subscriptions.alerts.js"
  */
 @Injectable()
 export class SubscriptionEventNotifierAdapter extends SubscriptionEventNotifierPort {
-  readonly #adminEventNotifier: AdminEventNotifier;
-  readonly #notificationQueueService: NotificationQueueService;
+  readonly #adminEventNotifier: AdminEventNotifierPort;
+  readonly #notificationQueueService: NotificationQueueAdapter;
   readonly #alert: OperationalAlertPort;
-  readonly #config: TypedConfigService;
+  readonly #config: Pick<BillingSubscriptionsConfig, "revenuecat">;
 
   constructor(
-    adminEventNotifier: AdminEventNotifier,
-    notificationQueueService: NotificationQueueService,
+    adminEventNotifier: AdminEventNotifierPort,
+    notificationQueueService: NotificationQueueAdapter,
     alert: OperationalAlertPort,
-    @Inject(TypedConfigService) config: TypedConfigService,
+    @Inject(billingSubscriptionsConfig.KEY) config: Pick<BillingSubscriptionsConfig, "revenuecat">,
   ) {
     super();
     this.#adminEventNotifier = adminEventNotifier;
@@ -42,26 +48,18 @@ export class SubscriptionEventNotifierAdapter extends SubscriptionEventNotifierP
   }
 
   notifySubscriptionEvent(payload: SubscriptionEventPayload): void {
-    const projectId = this.#config.revenuecat.projectId;
     this.#adminEventNotifier.notifySubscriptionEvent(
-      projectId == null || payload.appUserId == null
-        ? payload
-        : {
-            ...payload,
-            providerCustomerUrl: `https://app.revenuecat.com/projects/${encodeURIComponent(projectId)}/customers/${encodeURIComponent(payload.appUserId)}`,
-          },
+      toSubscriptionAlertInput(payload, this.#providerCustomerUrl(payload.appUserId)),
     );
   }
 
-  recordBillingIssue(userId: string, at: Temporal.Instant): Promise<void> {
-    return this.#notificationQueueService.enqueueBillingIssue({ userId }, instantToDate(at));
+  recordBillingIssue(userId: UserId, at: Temporal.Instant): Promise<void> {
+    return this.#notificationQueueService.enqueueBillingIssue({ userId: userId.value }, at);
   }
 
   reportWebhookFailure(error: unknown, context: StoreSubscriptionEventFailureContext): void {
     this.#alert.raise({
-      key: SubscriptionAlertKey.WEBHOOK_PROCESSING_FAILED,
-      severity: "error",
-      message: "RevenueCat 웹훅 처리에 실패했습니다",
+      ...SubscriptionAlerts.WEBHOOK_PROCESSING_FAILED,
       // Sentry 이벤트의 environment는 배포 환경(APP_ENV)이라 스토어 결제 환경은 다른 이름으로 싣는다
       tags: {
         eventKind: context.kind,
@@ -77,4 +75,50 @@ export class SubscriptionEventNotifierAdapter extends SubscriptionEventNotifierP
       cause: error,
     });
   }
+
+  #providerCustomerUrl(appUserId: string | undefined): string | undefined {
+    const projectId = this.#config.revenuecat.projectId;
+    if (projectId == null || appUserId == null) {
+      return undefined;
+    }
+    return `https://app.revenuecat.com/projects/${encodeURIComponent(projectId)}/customers/${encodeURIComponent(appUserId)}`;
+  }
+}
+
+// operations가 소유한 입력 모양으로 한 필드씩 옮긴다. 앱 사용자 ID 같은 billing 내부 값은 넘기지 않는다
+function toSubscriptionAlertInput(
+  payload: SubscriptionEventPayload,
+  providerCustomerUrl: string | undefined,
+) {
+  return {
+    userId: payload.userId,
+    email: payload.email,
+    name: payload.name,
+    kind: payload.kind,
+    isOneTime: payload.isOneTime,
+    productId: payload.productId,
+    planType: payload.planType,
+    store: payload.store,
+    environment: payload.environment,
+    storeSubscriptionId: payload.storeSubscriptionId,
+    purchasedAt: payload.purchasedAt,
+    expiresAt: payload.expiresAt,
+    gracePeriodEndsAt: payload.gracePeriodEndsAt,
+    endReason: payload.endReason,
+    priceUsd: payload.priceUsd,
+    priceInPurchasedCurrency: payload.priceInPurchasedCurrency,
+    purchasedCurrency: payload.purchasedCurrency,
+    newProductId: payload.newProductId,
+    newPlanType: payload.newPlanType,
+    transfer: payload.transfer,
+    providerCustomerUrl,
+    eventId: payload.eventId,
+    countryCode: payload.countryCode,
+    periodKind: payload.periodKind,
+    appVersion: payload.appVersion,
+    deviceModel: payload.deviceModel,
+    lifecycle: payload.lifecycle,
+    isFirstPurchase: payload.isFirstPurchase,
+    premium: payload.premium,
+  } satisfies SubscriptionAlertInput;
 }

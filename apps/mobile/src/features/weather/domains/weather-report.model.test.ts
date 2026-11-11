@@ -10,7 +10,14 @@ import {
   createWeatherReportWithHours,
 } from '../__tests__/weather-report.fixtures';
 import { toWeatherReport } from '../apis/weather.mapper';
-import { WeatherReportPolicy } from './weather-report.model';
+import {
+  findTodayOrFirstForecast,
+  getPrecipitationWindow,
+  getTodayKey,
+  isNowcastExpired,
+  isReportStale,
+  WeatherReportPolicy,
+} from './weather-report.model';
 
 const NOW = toInstant('2026-11-02T06:26:00.000Z');
 
@@ -54,7 +61,7 @@ describe('getPrecipitationWindow', () => {
     });
 
     // When
-    const window = WeatherReportPolicy.getPrecipitationWindow(report, NOW);
+    const window = getPrecipitationWindow(report, NOW);
 
     // Then
     expect(window).toEqual({
@@ -83,7 +90,7 @@ describe('getPrecipitationWindow', () => {
     });
 
     // When
-    const window = WeatherReportPolicy.getPrecipitationWindow(report, NOW);
+    const window = getPrecipitationWindow(report, NOW);
 
     // Then
     expect(window).toEqual({
@@ -103,7 +110,7 @@ describe('getPrecipitationWindow', () => {
     });
 
     // When
-    const window = WeatherReportPolicy.getPrecipitationWindow(report, NOW);
+    const window = getPrecipitationWindow(report, NOW);
 
     // Then
     expect(window).toMatchObject({ kind: 'upcoming', endsAt: null, isEndingOnLaterDay: false });
@@ -125,7 +132,7 @@ describe('getPrecipitationWindow', () => {
     });
 
     // When
-    const window = WeatherReportPolicy.getPrecipitationWindow(report, NOW);
+    const window = getPrecipitationWindow(report, NOW);
 
     // Then
     expect(window).toEqual({ kind: 'dry' });
@@ -139,7 +146,7 @@ describe('getPrecipitationWindow', () => {
     });
 
     // When
-    const window = WeatherReportPolicy.getPrecipitationWindow(report, NOW);
+    const window = getPrecipitationWindow(report, NOW);
 
     // Then
     expect(window).toEqual({
@@ -161,7 +168,7 @@ describe('getPrecipitationWindow', () => {
     });
 
     // When
-    const window = WeatherReportPolicy.getPrecipitationWindow(report, NOW);
+    const window = getPrecipitationWindow(report, NOW);
 
     // Then
     expect(window).toMatchObject({
@@ -178,7 +185,7 @@ describe('getPrecipitationWindow', () => {
     });
 
     // When
-    const window = WeatherReportPolicy.getPrecipitationWindow(report, NOW);
+    const window = getPrecipitationWindow(report, NOW);
 
     // Then
     expect(window).toEqual({ kind: 'dry' });
@@ -200,7 +207,7 @@ describe('getPrecipitationWindow', () => {
       });
 
       // When
-      const window = WeatherReportPolicy.getPrecipitationWindow(report, now);
+      const window = getPrecipitationWindow(report, now);
 
       // Then
       expect(window).toMatchObject({
@@ -216,7 +223,7 @@ describe('getPrecipitationWindow', () => {
     const report = toWeatherReport(createSeoulReportDto());
 
     // When
-    const window = WeatherReportPolicy.getPrecipitationWindow(report, NOW);
+    const window = getPrecipitationWindow(report, NOW);
 
     // Then
     expect(window).toEqual({
@@ -235,7 +242,7 @@ describe('getPrecipitationWindow', () => {
     const report = toWeatherReport(createTokyoReportDto());
 
     // When
-    const window = WeatherReportPolicy.getPrecipitationWindow(report, NOW);
+    const window = getPrecipitationWindow(report, NOW);
 
     // Then
     expect(window).toMatchObject({
@@ -292,8 +299,8 @@ describe('getTodayKey', () => {
     const at = toInstant('2026-11-02T15:00:00.000Z');
 
     // When
-    const keyBefore = WeatherReportPolicy.getTodayKey(seoul, before);
-    const keyAt = WeatherReportPolicy.getTodayKey(seoul, at);
+    const keyBefore = getTodayKey(seoul, before);
+    const keyAt = getTodayKey(seoul, at);
 
     // Then
     expect(keyBefore).toBe('2026-11-02');
@@ -308,9 +315,9 @@ describe('getTodayKey', () => {
     const nextMidnight = toInstant('2026-11-02T08:00:00.000Z');
 
     // When
-    const keyBeforeEnd = WeatherReportPolicy.getTodayKey(losAngeles, beforeEnd);
-    const keyAfterEnd = WeatherReportPolicy.getTodayKey(losAngeles, afterEnd);
-    const keyNextMidnight = WeatherReportPolicy.getTodayKey(losAngeles, nextMidnight);
+    const keyBeforeEnd = getTodayKey(losAngeles, beforeEnd);
+    const keyAfterEnd = getTodayKey(losAngeles, afterEnd);
+    const keyNextMidnight = getTodayKey(losAngeles, nextMidnight);
 
     // Then
     expect(keyBeforeEnd).toBe('2026-11-01');
@@ -325,7 +332,7 @@ describe('getTodayKey', () => {
     const justAfterSeoulMidnight = toInstant('2026-09-30T15:05:00Z');
 
     // When
-    const key = WeatherReportPolicy.getTodayKey(report, justAfterSeoulMidnight);
+    const key = getTodayKey(report, justAfterSeoulMidnight);
 
     // Then
     expect(key).toBe('2026-10-01');
@@ -338,7 +345,7 @@ describe('isReportStale', () => {
     const report = createWeatherReport({ fetchedAt: '2026-11-02T06:20:00.000Z' });
 
     // When
-    const stale = WeatherReportPolicy.isReportStale(report, toInstant('2026-11-02T06:50:00.000Z'));
+    const stale = isReportStale(report, toInstant('2026-11-02T06:50:00.000Z'));
 
     // Then
     expect(stale).toBe(false);
@@ -349,7 +356,7 @@ describe('isReportStale', () => {
     const report = createWeatherReport({ fetchedAt: '2026-11-02T06:20:00.000Z' });
 
     // When
-    const stale = WeatherReportPolicy.isReportStale(report, toInstant('2026-11-02T06:50:01.000Z'));
+    const stale = isReportStale(report, toInstant('2026-11-02T06:50:01.000Z'));
 
     // Then
     expect(stale).toBe(true);
@@ -513,7 +520,7 @@ describe('isNowcastExpired', () => {
       const report = createWeatherReport({ fetchedAt: '2026-11-02T06:20:00.000Z' });
 
       // When
-      const expired = WeatherReportPolicy.isNowcastExpired(report, toInstant(now));
+      const expired = isNowcastExpired(report, toInstant(now));
 
       // Then
       expect(expired).toBe(expected);
@@ -526,7 +533,7 @@ describe('isNowcastExpired', () => {
     const reopenedAt = toInstant('2026-11-02T13:10:00.000Z');
 
     // When
-    const expired = WeatherReportPolicy.isNowcastExpired(restored, reopenedAt);
+    const expired = isNowcastExpired(restored, reopenedAt);
 
     // Then
     expect(expired).toBe(true);
@@ -588,7 +595,7 @@ describe('findTodayOrFirstForecast', () => {
   it('위치 시간대의 오늘 예보를 고른다', () => {
     // When
     // 06:26Z는 서울 11월 2일 15:26이다
-    const today = WeatherReportPolicy.findTodayOrFirstForecast(report, NOW);
+    const today = findTodayOrFirstForecast(report, NOW);
 
     // Then
     expect(today?.date).toBe('2026-11-02');
@@ -600,8 +607,8 @@ describe('findTodayOrFirstForecast', () => {
     const atMidnight = toInstant('2026-11-01T15:00:00.000Z');
 
     // When
-    const before = WeatherReportPolicy.findTodayOrFirstForecast(report, beforeMidnight);
-    const after = WeatherReportPolicy.findTodayOrFirstForecast(report, atMidnight);
+    const before = findTodayOrFirstForecast(report, beforeMidnight);
+    const after = findTodayOrFirstForecast(report, atMidnight);
 
     // Then
     expect([before?.date, after?.date]).toEqual(['2026-11-01', '2026-11-02']);
@@ -612,7 +619,7 @@ describe('findTodayOrFirstForecast', () => {
     const lagging = createWeatherReport({ daily: createDays('2026-11-03', '2026-11-04') });
 
     // When
-    const today = WeatherReportPolicy.findTodayOrFirstForecast(lagging, NOW);
+    const today = findTodayOrFirstForecast(lagging, NOW);
 
     // Then
     expect(today?.date).toBe('2026-11-03');
@@ -623,7 +630,7 @@ describe('findTodayOrFirstForecast', () => {
     const empty = createWeatherReport({ daily: [] });
 
     // When
-    const today = WeatherReportPolicy.findTodayOrFirstForecast(empty, NOW);
+    const today = findTodayOrFirstForecast(empty, NOW);
 
     // Then
     expect(today).toBeNull();
