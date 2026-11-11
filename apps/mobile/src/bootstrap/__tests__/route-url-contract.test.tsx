@@ -1,5 +1,5 @@
 import { useSubscriptionParams } from '@src/features/billing/subscription/hooks/use-subscription-params';
-import { useTodoCommentParams } from '@src/features/engagement/comment/hooks/use-todo-comment-params';
+import { useTodoCommentSort } from '@src/features/engagement/comment/hooks/use-todo-comment-params';
 import { useReportType } from '@src/features/insights/report/hooks/use-report-type';
 import { useSelectedMemoId } from '@src/features/notes/memo/hooks/use-memo-params';
 import { useNotificationCategory } from '@src/features/notification/hooks/use-notification-params';
@@ -108,12 +108,12 @@ describe('공개 URL 계약', () => {
 
   it('댓글: 정렬을 바꾸면 알림으로 연 위치가 사라진다', async () => {
     // Given
-    const route = await renderRouteHook(() => useTodoCommentParams(), {
+    const route = await renderRouteHook(() => useTodoCommentSort(), {
       url: `/feed?sort=LATEST&comment=${COMMENT}`,
     });
 
     // When
-    await route.run(([_values, setParams]) => setParams({ sort: 'POPULAR', comment: undefined }));
+    await route.run(([_sort, setSort]) => setSort('POPULAR'));
 
     // Then
     expect(route.url()).toBe('/feed?sort=POPULAR');

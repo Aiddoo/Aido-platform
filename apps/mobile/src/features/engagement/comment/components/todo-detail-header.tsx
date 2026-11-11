@@ -15,7 +15,7 @@ import { Separator } from 'heroui-native';
 import { Suspense, useEffect, useRef, useState } from 'react';
 
 import { TODO_COMMENT_LOG_EVENT } from '../constants/todo-comment-log-events';
-import { useTodoCommentParams } from '../hooks/use-todo-comment-params';
+import { useTodoCommentSort } from '../hooks/use-todo-comment-params';
 import { useGetTodoCommentThreadsInfiniteQueryOptions } from '../queries/todo-comment.queries';
 import { TodoCommentSortBar } from './todo-comment-sort-bar';
 import { TodoDetailSummary } from './todo-detail-summary';
@@ -23,7 +23,7 @@ import { TodoDetailSummary } from './todo-detail-summary';
 /** 할 일 본문과 댓글 수·정렬. 댓글과 함께 스크롤된다 */
 export function TodoDetailHeader() {
   const [todoId] = useTodoId();
-  const [{ sort }, setCommentParams] = useTodoCommentParams();
+  const [sort, setSort] = useTodoCommentSort();
   const { trackEvent } = useTrack();
   const sortChange = useSortChange();
 
@@ -52,7 +52,7 @@ export function TodoDetailHeader() {
           isLoading={sortChange.isPending}
           onChange={(next) =>
             sortChange.prefetchThenCommit(next, () => {
-              setCommentParams({ sort: next, comment: undefined });
+              setSort(next);
               trackEvent('todo_comment_sorted', { todo_id: todoId, sort: next });
             })
           }
