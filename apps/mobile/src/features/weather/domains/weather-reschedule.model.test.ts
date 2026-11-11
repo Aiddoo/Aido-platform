@@ -1,4 +1,5 @@
 import { toInstant } from '@src/shared/date/instant';
+import { createDateKey } from '@src/testing/date-key';
 
 import {
   createBriefingDto,
@@ -164,7 +165,12 @@ describe('getMovedScheduleInput', () => {
 
     // When
     const input = WeatherReschedulePolicy.getMovedScheduleInput(
-      { startDate: '2026-11-02', endDate: null, localTime: '16:00', isAllDay: false },
+      {
+        startDate: createDateKey('2026-11-02'),
+        endDate: null,
+        localTime: '16:00',
+        isAllDay: false,
+      },
       startsAt,
       'Asia/Seoul',
     );
@@ -183,8 +189,8 @@ describe('getOriginalScheduleInput', () => {
   it('되돌릴 때는 원래 날짜와 시각을 그대로 되돌린다', () => {
     // Given
     const todo = {
-      startDate: '2026-11-02',
-      endDate: '2026-11-03',
+      startDate: createDateKey('2026-11-02'),
+      endDate: createDateKey('2026-11-03'),
       localTime: '16:30',
       isAllDay: false,
     };
@@ -203,7 +209,12 @@ describe('getOriginalScheduleInput', () => {
 
   it('종일이었다면 시각 없이 종일로 되돌린다', () => {
     // Given
-    const todo = { startDate: '2026-11-02', endDate: null, localTime: '16:30', isAllDay: true };
+    const todo = {
+      startDate: createDateKey('2026-11-02'),
+      endDate: null,
+      localTime: '16:30',
+      isAllDay: true,
+    };
 
     // When
     const input = WeatherReschedulePolicy.getOriginalScheduleInput(todo);

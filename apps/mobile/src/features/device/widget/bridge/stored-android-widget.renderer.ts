@@ -1,3 +1,4 @@
+import type { DateKey } from '@src/shared/date/date-key';
 import { toResolvedLanguage } from '@src/shared/preferences/language.preference';
 import type { WidgetInfo } from 'react-native-android-widget';
 
@@ -13,7 +14,7 @@ interface StoredAndroidWidgetRendererDependencies<Rendered> {
     findSnapshot: () => WidgetSnapshot | null;
     findUserId: () => string | null;
   };
-  readLocalDateKey: () => string;
+  readLocalDateKey: () => DateKey;
   readDeviceLanguage: () => string | null;
   readAppScheme: () => string;
   renderWidget: (props: WidgetProps, widgetInfo: WidgetInfo, userId: string | null) => Rendered;
@@ -50,7 +51,7 @@ function toStoredWidgetProps(
   snapshot: WidgetSnapshot,
   userId: string | null,
   appScheme: string,
-  localDateKey: string,
+  localDateKey: DateKey,
 ) {
   const { day, renderState } = WidgetSnapshotPolicy.getDayForOwner(snapshot, localDateKey, userId);
   return toWidgetProps(day, renderState, appScheme);

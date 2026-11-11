@@ -1,5 +1,6 @@
 import type { WeatherEntry } from '@src/features/weather/schemas/weather-entry-params.schema';
 import { toWeatherRescheduleHref } from '@src/features/weather/utils/weather-reschedule-link';
+import type { DateKey } from '@src/shared/date/date-key';
 import type { WindowSizeClass } from '@src/shared/utils/get-window-size-class';
 import type { Href } from 'expo-router';
 import { P, match } from 'ts-pattern';
@@ -170,7 +171,7 @@ export function toNotificationDestination(
 
 /** 펼친 화면 목록 pane의 피드. 남의 할 일이면 그 친구 피드, 내 할 일이거나 나를 모르면 내 피드다. */
 function toTodoFeed(
-  { ownerId, dateKey }: { ownerId: string | null; dateKey: string | null },
+  { ownerId, dateKey }: { ownerId: string | null; dateKey: DateKey | null },
   viewerId: string | undefined,
 ) {
   const isFriendTodo = ownerId != null && viewerId != null && ownerId !== viewerId;
@@ -184,8 +185,8 @@ interface TodoDetailTarget {
   comment?: string;
   /** 친구의 할 일이면 그 친구. 내 할 일이거나 모르면 비운다 */
   friendId?: string;
-  /** 할 일 날짜(YYYY-MM-DD). 모르면 피드의 기본 날짜다 */
-  date?: string;
+  /** 할 일 날짜. 모르면 피드의 기본 날짜다 */
+  date?: DateKey;
 }
 
 /** 목록에서 고를 때처럼 접힌 화면은 상세를 push하고, 펼친 화면은 피드 상세 pane에 고른다 */
