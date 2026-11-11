@@ -82,3 +82,17 @@ tester.run('no-this-outside-class', rules['no-this-outside-class'], {
     { code: 'export const TodoPolicy = { canDelete() { return this.canEdit(); } };', errors: 1 },
   ],
 });
+
+tester.run('no-clock-read', rules['no-clock-read'], {
+  valid: [
+    'function isExpired(record, now) { return record.expiresAt < now; }',
+    'const parsed = new Date(value);',
+    'const zoned = Temporal.Instant.from(value);',
+  ],
+  invalid: [
+    { code: 'const now = Date.now();', errors: 1 },
+    { code: 'function shouldShow(record, now = new Date()) { return now; }', errors: 1 },
+    { code: 'const today = Temporal.Now.plainDateISO();', errors: 1 },
+    { code: 'const startedAt = performance.now();', errors: 1 },
+  ],
+});

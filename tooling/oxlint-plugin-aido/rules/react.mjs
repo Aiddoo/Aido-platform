@@ -1,4 +1,4 @@
-import { getImportedName, getKeyName, isComponentName } from '../ast.mjs';
+import { getCalleeName, getImportedName, getKeyName, isComponentName, unwrap } from '../ast.mjs';
 
 function isJsxMemberName(name, object, property) {
   return (
@@ -17,21 +17,162 @@ function isMeaningfulChild(child) {
   );
 }
 
-// Tabs.Label의 날글자는 앱 글꼴과 글꼴 크기 설정을 따르지 않는다
-const tabsLabelText = {
-  meta: { type: 'problem' },
+function createRawTextRule(object, property, message) {
+  return {
+    meta: { type: 'problem' },
+    createOnce(context) {
+      return {
+        JSXElement(node) {
+          if (
+            isJsxMemberName(node.openingElement.name, object, property) &&
+            node.children.some(isMeaningfulChild)
+          ) {
+            context.report({ node, message });
+          }
+        },
+      };
+    },
+  };
+}
+
+// heroui 글자 부품의 날글자는 앱 글꼴과 글꼴 크기 설정을 따르지 않는다
+const tabsLabelText = createRawTextRule(
+  'Tabs',
+  'Label',
+  'Tabs.Label의 날글자는 앱 글꼴을 따르지 않습니다. SegmentTabTrigger, LineTabTrigger를 쓰거나 자식 <Text>로 넣으세요.',
+);
+
+const menuItemTitleText = createRawTextRule(
+  'Menu',
+  'ItemTitle',
+  'Menu.ItemTitle의 날글자는 앱 글꼴을 따르지 않습니다. MenuActionItem을 쓰거나 자식 <Text>로 넣으세요.',
+);
+
+function isStringNode(node) {
+  return (
+    (node.type === 'Literal' && typeof node.value === 'string') || node.type === 'TemplateLiteral'
+  );
+}
+
+function isClassNameAttribute(attribute) {
+  return (
+    attribute.name.type === 'JSXIdentifier' &&
+    (attribute.name.name === 'className' || attribute.name.name.endsWith('ClassName'))
+  );
+}
+
+/** 문자열을 잇거나 고르는 모양이면 그 이름 */
+function describeClassNameComposition(expression) {
+  switch (expression.type) {
+    case 'TemplateLiteral':
+      return expression.expressions.length > 0 ? '템플릿 리터럴' : null;
+    case 'BinaryExpression':
+      return expression.operator === '+' ? '문자열 더하기' : null;
+    case 'ConditionalExpression':
+      return isStringNode(expression.consequent) || isStringNode(expression.alternate)
+        ? '삼항'
+        : null;
+    case 'LogicalExpression':
+      return expression.operator === '&&' && isStringNode(expression.right) ? '&&' : null;
+    default:
+      return null;
+  }
+}
+
+// 조건부 className은 cn, 변형이 둘 이상이면 tv다. 잇거나 고른 문자열은 tailwind-merge를 지나지 않아 충돌한 클래스가 남는다
+const noClassNameConcat = {
+  meta: { type: 'suggestion' },
   createOnce(context) {
     return {
-      JSXElement(node) {
-        if (
-          isJsxMemberName(node.openingElement.name, 'Tabs', 'Label') &&
-          node.children.some(isMeaningfulChild)
-        ) {
+      JSXAttribute(node) {
+        if (!isClassNameAttribute(node) || node.value?.type !== 'JSXExpressionContainer') {
+          return;
+        }
+        const composition = describeClassNameComposition(unwrap(node.value.expression));
+        if (composition != null) {
           context.report({
             node,
-            message:
-              'Tabs.Label의 날글자는 앱 글꼴을 따르지 않습니다. SegmentTabTrigger, LineTabTrigger를 쓰거나 자식 <Text>로 넣으세요.',
+            message: `${node.name.name}를 ${composition}으로 만들지 않습니다. 조건부 클래스는 cn(…), 변형이 둘 이상이면 tv(*.variants.ts)를 쓰세요.`,
           });
+        }
+      },
+    };
+  },
+};
+
+const SHARED_VALUE_FACTORIES = new Set([
+  'useSharedValue',
+  'useDerivedValue',
+  'useAnimatedValue',
+  'makeMutable',
+]);
+const SHARED_VALUE_TYPES = new Set(['SharedValue', 'DerivedValue', 'Mutable']);
+
+function isSharedValueType(annotation) {
+  const type = annotation?.typeAnnotation;
+  return (
+    type?.type === 'TSTypeReference' &&
+    type.typeName.type === 'Identifier' &&
+    SHARED_VALUE_TYPES.has(type.typeName.name)
+  );
+}
+
+// Reanimated 4는 React Compiler와 함께 쓸 때 .value 대신 .get()·.set()을 권장한다.
+// 같은 파일에서 만든 값과 SharedValue 타입을 단 이름만 본다(다른 파일에서 받은 값은 리뷰)
+const sharedValueAccessor = {
+  meta: { type: 'suggestion' },
+  create(context) {
+    const sharedValueNames = new Set();
+    const valueReads = [];
+    function collect(identifier) {
+      if (identifier?.type === 'Identifier') {
+        sharedValueNames.add(identifier.name);
+      }
+    }
+    return {
+      VariableDeclarator(node) {
+        const init = unwrap(node.init);
+        if (
+          init?.type === 'CallExpression' &&
+          SHARED_VALUE_FACTORIES.has(getCalleeName(init.callee))
+        ) {
+          collect(node.id);
+        } else if (isSharedValueType(node.id.typeAnnotation)) {
+          collect(node.id);
+        }
+      },
+      Identifier(node) {
+        if (node.parent.type !== 'VariableDeclarator' && isSharedValueType(node.typeAnnotation)) {
+          collect(node);
+        }
+      },
+      TSPropertySignature(node) {
+        if (!node.computed && isSharedValueType(node.typeAnnotation)) {
+          collect(node.key);
+        }
+      },
+      MemberExpression(node) {
+        if (
+          !node.computed &&
+          node.property.type === 'Identifier' &&
+          node.property.name === 'value'
+        ) {
+          valueReads.push(node);
+        }
+      },
+      'Program:exit'() {
+        for (const node of valueReads) {
+          const { object } = node;
+          const name =
+            object.type === 'MemberExpression' && !object.computed
+              ? object.property.name
+              : object.name;
+          if (sharedValueNames.has(name)) {
+            context.report({
+              node,
+              message: `${name}.value 대신 ${name}.get()·${name}.set(…)을 씁니다(Reanimated 4, React Compiler).`,
+            });
+          }
         }
       },
     };
@@ -246,6 +387,9 @@ const noRouteIdProps = {
 
 export default {
   'tabs-label-text': tabsLabelText,
+  'menu-item-title-text': menuItemTitleText,
+  'no-classname-concat': noClassNameConcat,
+  'shared-value-accessor': sharedValueAccessor,
   'spacing-props-with-classname': spacingPropsWithClassName,
   'no-render-call': noRenderCall,
   'card-uses-heroui-card': cardUsesHerouiCard,
