@@ -94,6 +94,7 @@ env를 더하거나 읽는 위치를 바꿀 때, 운영 env를 준비할 때 읽
 | DISCORD_SIGNUP_WEBHOOK_URL / DISCORD_PAYMENT_WEBHOOK_URL                | 운영 가입/결제 채널                                                                                                                            |
 | REVENUECAT_WEBHOOK_SECRET                                               | 웹훅 Authorization 비교 값. 운영 필수                                                                                                          |
 | REVENUECAT_API_V2_SECRET_KEY / REVENUECAT_PROJECT_ID                    | 선택. 둘 다 있으면 웹훅 뒤 스토어 상태 대조를 켠다([결제](billing.md#웹훅-뒤-스토어-상태-대조)). v2 비밀 키, 권한은 읽기 둘뿐                  |
+| APP_VERSION_CHECK_*                                                     | `_ENABLED`(기본 false)·`_IOS_LATEST_VERSION`·`_ANDROID_LATEST_VERSION`. 설정의 버전 정보 탭이 스토어를 열지 판단하는 플랫폼별 최신 공개 버전   |
 | FEATURE_DISCOVERY_*                                                     | 새 기능 소개. 규칙은 아래                                                                                                                      |
 
 ## 새 기능 소개 값

@@ -98,7 +98,15 @@ env 목록과 규칙은 [설정](configuration.md), 운영 경보를 사람에�
 
 Swagger는 개발 도구가 켜진 로컬 실행에서만 `/api/docs`, `/api/admin/docs`로 제공한다(배포된 개발서버는 열지 않는다). OS push 권한·외부 공급자 도착·LLM 의미 품질은 `/health` 성공만으로 확인되지 않는다.
 
-스토어 공개 버전은 API `/v1/app-config/app-version` 설정으로 안내하며 API 접근을 차단하지 않는다. 두 store 공개 후에만 `scripts/update-app-version-env.py`의 `--enabled true --published`를 사용한다. script는 app-version 3개 키만 수정하고 private backup을 만들며 나머지 내용·권한을 보존한다. 실행 예시의 버전은 해당 release의 실제 공개값으로 선택한다.
+스토어 공개 버전(`APP_VERSION_CHECK_*`, `/v1/app-config/app-version`)은 앱 설정의 "버전 정보"를 누를 때만 쓰인다. 서버 값보다 낮은 앱은 그 탭에서 스토어를 연다. 앱을 열 때 뜨는 업데이트 안내나 강제 업데이트는 없고 API 접근도 막지 않는다.
+
+- **올리기**: 플랫폼마다 그 스토어에서 실제로 업데이트를 받을 수 있게 된 뒤에 올린다. 그 전에 올리면 사용자가 스토어에 가도 "열기"만 보인다.
+  - Android: 100% 출시하고 Play 화면에 업데이트가 보인 뒤. 단계 출시 대상이 아닌 기기는 업데이트를 받을 수 없다.
+  - iOS: 공개(Ready for Sale) 뒤. 단계적 출시 중에도 App Store에서 직접 업데이트할 수 있다.
+  - 두 값은 따로 정한다. 한쪽만 공개됐으면 다른 쪽은 이전 공개값을 둔다.
+- **반영**: `scripts/update-app-version-env.py`의 `--enabled true --published`를 사용한다. script는 app-version 3개 키만 수정하고 private backup을 만들며 나머지 내용·권한을 보존한다. 실행 예시의 버전은 해당 release의 실제 공개값으로 선택한다.
+- **되돌리기**: 이전 공개값으로 다시 실행하거나 backup을 복원한다. `--enabled false`로 끄지 않는다. 1.10.0~1.15.0 앱은 꺼진 응답을 실패로 보고 "버전 정보를 확인하지 못했어요"를 띄운다.
+- **응답 모양**: `/v1/app-config/app-version` 응답에 칸을 더하지 않는다. 1.10.0 이후 출시 앱이 strict로 읽어 버전 확인이 실패한다([app-config-released-client.e2e-spec.ts](../test/e2e/app-config-released-client.e2e-spec.ts)). 자동·강제 업데이트 안내를 만들면 envelope 응답의 새 endpoint를 연다.
 
 env만 반영할 때는 배포 락과 같은 image 확인 뒤 API만 `--no-deps --no-build --pull never --force-recreate`로 재생성한다. `docker restart`는 env_file 변경을 반영하지 않는다. 실패하면 private env backup과 같은 image로 복구한다.
 
