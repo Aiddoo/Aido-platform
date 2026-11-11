@@ -31,7 +31,7 @@
 - `POST /v1/ai/parse-memo`의 `Idempotency-Key` 생략: 마지막 지원 앱 1.14.x. 헤더가 없으면 요청마다 차감한다. 1.15 앱은 항상 보낸다. 생략을 막는 것은 1.14.x 사용자가 사라진 뒤에 판단한다.
 - 메모 변환의 `isRecurring`·`recurrence`: 마지막 지원 앱 1.14.x. 서버가 Presentation에서 같은 `repeat`로 바꾼다. 1.16.0에서 `/recurring`과 같이 판단한다.
 - 파싱 응답의 `recurrence`(요일 + 종료일): 마지막 지원 앱 1.14.x. 새 앱은 `repeat`를 쓴다. 1.16.0에서 `/recurring`과 같이 판단한다.
-- `POST`·`DELETE /v1/notifications/token`: 마지막 지원 앱 1.14.1. 1.14.2 앱부터 `PUT /v1/notifications/push-devices/{deviceId}`를 쓴다. 같은 UseCase로 위임한다.
+- `POST /v1/notifications/token`: 마지막 지원 앱 1.14.1. 1.14.2 앱부터 `PUT /v1/notifications/push-devices/{deviceId}`를 쓴다. 같은 UseCase로 위임한다. 같은 경로의 `DELETE /v1/notifications/token?deviceId=`는 구 앱 경로가 아니다. 1.15.x 앱이 로그인한 채 로그아웃할 때 이 기기를 푸는 현행 경로(`PushDeviceApi.unregister`)이고, 세션이 끝난 기기는 인증 없이 `POST /v1/notifications/push-devices/unregister`로 푼다.
 - `Todo.recurrenceGroupId`(DB 칸·응답): 영구. 출시 앱 응답의 필수 칸이다.
 - `Todo.scheduledTime`(응답): 영구. 출시 앱은 이 순간을 기기 시간대로 보여 준다. 시간대 재계산은 완료했거나 지난 할 일까지 모두 다시 쓰므로 옛 앱에서도 고른 시각으로 보인다. 재계산 전 1~2분만 옛 시간대의 시각으로 보인다.
 - Gemini 전용 AI 동의 경로: 영구. 재동의를 받지 않는 한 그 동의자는 Gemini만 쓴다.
