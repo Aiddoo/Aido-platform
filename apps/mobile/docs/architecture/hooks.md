@@ -51,6 +51,7 @@
 | `useGoBack({ fallbackHref })`                          | `shared/hooks`                        | `() => void`(두 번 탭 방지)                                                                                              | `canGoBack ? back : replace` 8곳                          |
 | `useAndroidBackHandler({ isEnabled, onBack })`         | `shared/hooks`                        | `void`(`useEffectEvent`, 화면 포커스와 묶음)                                                                             | BackHandler 5곳                                           |
 | `useOnAppForeground(onForeground)`                     | `shared/hooks`                        | `void`(AppLifecycle 포트)                                                                                                | 4곳                                                       |
+| `useAppLifecycleState()`                               | `shared/hooks`                        | `AppLifecycleState`(AppLifecycle 포트 구독 하나)                                                                         | `useSyncExternalStore(appLifecycle…)` 3곳                 |
 | `useNow({ tickMs, until })`                            | `shared/hooks`                        | `Instant`                                                                                                                | 지금 시계 4곳                                             |
 | `useMinuteNow()`                                       | `shared/hooks`                        | `Instant`(앱 하나의 분 시계 구독, 상대 시간·날짜 판단)                                                                   | 행마다 거는 분 타이머                                     |
 | `useLocaleContext()`                                   | `shared/hooks`                        | 앱 언어 + `APP_LOCALES` 항목                                                                                             | 언어 매핑 약 15곳                                         |
@@ -78,7 +79,7 @@
 | `useConfirmDialog()`                                 | `shared/ui/confirm-dialog`                      | `{ openAsync(options) }` → `Promise<boolean>`              | 확인 다이얼로그                    |
 | `useFetchNextPage(…)`                                | `shared/ui/infinite-list`                       | 다음 페이지 요청                                           | `InfiniteList`의 끝 도달           |
 
-애니메이션 멈춤 조건 `useIsAnimationActive()`와 UI 부품이 주는 훅은 [ui](./ui.md)·[ui-catalog](./ui-catalog.md)에 있다.
+애니메이션 멈춤 조건 `useIsAnimationActive()`(꾸밈 `withRepeat`·프레임 콜백은 모두 이것으로 멈춘다)와 UI 부품이 주는 훅은 [ui](./ui.md)·[ui-catalog](./ui-catalog.md)에 있다.
 
 ## 만들지 않는 것
 

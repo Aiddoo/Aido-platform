@@ -4,7 +4,7 @@ import { useStoreReviewMoment } from '@src/features/device/store-review/hooks/us
 import { PremiumAccessPolicy } from '@src/features/identity/user/domains/premium-access.model';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
-import { useIsReduceMotionEnabled } from '@src/shared/hooks/use-is-reduce-motion-enabled';
+import { useIsAnimationActive } from '@src/shared/hooks/use-is-animation-active';
 import { useLayoutSize } from '@src/shared/hooks/use-layout-size';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
@@ -27,7 +27,7 @@ import { cn } from '@src/shared/utils/cn';
 import { formatCount } from '@src/shared/utils/number-format';
 import { useSuspenseQueries, useSuspenseQuery } from '@tanstack/react-query';
 import { range } from 'es-toolkit';
-import { router, useIsFocused } from 'expo-router';
+import { router } from 'expo-router';
 import { Skeleton } from 'heroui-native';
 import { type ComponentProps, useEffect, useId, useState } from 'react';
 import { StyleSheet } from 'react-native';
@@ -402,14 +402,13 @@ function StaticPawPrint({ state, isNext = false }: { state: PawPrintState; isNex
   );
 }
 
-/** 기다리는 발자국은 가끔 살짝 흔들려 곧 찍힐 것을 알린다. 화면이 가려지면 UI 스레드에서 돌지 않게 멈춘다 */
+/** 기다리는 발자국은 가끔 살짝 흔들려 곧 찍힐 것을 알린다. 화면이 가려지거나 앱이 뒤로 가면 UI 스레드에서 돌지 않게 멈춘다 */
 function WaitingPawPrint() {
-  const isReducedMotion = useIsReduceMotionEnabled();
-  const isFocused = useIsFocused();
+  const isAnimating = useIsAnimationActive();
   const rotation = useSharedValue(0);
 
   useEffect(() => {
-    if (isReducedMotion || !isFocused) {
+    if (!isAnimating) {
       rotation.set(0);
       return;
     }
@@ -428,7 +427,7 @@ function WaitingPawPrint() {
     );
 
     return () => cancelAnimation(rotation);
-  }, [isFocused, isReducedMotion, rotation]);
+  }, [isAnimating, rotation]);
 
   const wiggleStyle = useAnimatedStyle(() => ({
     transform: [{ rotate: `${rotation.get()}deg` }],

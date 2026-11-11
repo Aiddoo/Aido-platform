@@ -6,7 +6,7 @@ import { invalidateTodoDetails } from '@src/features/planning/todo/queries/todo-
 import { useGetTodoDetailsQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
 import { useTrack } from '@src/shared/analytics';
 import { getErrorMessage } from '@src/shared/errors';
-import { useIsReduceMotionEnabled } from '@src/shared/hooks/use-is-reduce-motion-enabled';
+import { useIsAnimationActive } from '@src/shared/hooks/use-is-animation-active';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
 import { useTranslation } from '@src/shared/i18n';
 import { useLanguage } from '@src/shared/providers/language-provider';
@@ -430,12 +430,13 @@ function DoubleTapHint({ className }: { className?: string }) {
 }
 
 function PulsingHeart() {
-  const isReducedMotion = useIsReduceMotionEnabled();
+  const isAnimating = useIsAnimationActive();
   const scale = useSharedValue(1);
   const style = useAnimatedStyle(() => ({ transform: [{ scale: scale.get() }] }));
 
   useEffect(() => {
-    if (isReducedMotion) {
+    if (!isAnimating) {
+      scale.set(1);
       return;
     }
     scale.set(
@@ -449,7 +450,7 @@ function PulsingHeart() {
     );
 
     return () => cancelAnimation(scale);
-  }, [isReducedMotion, scale]);
+  }, [isAnimating, scale]);
 
   return (
     <Animated.View style={style}>
