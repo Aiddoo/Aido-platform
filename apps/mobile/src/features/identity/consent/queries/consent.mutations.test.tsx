@@ -11,8 +11,8 @@ import { useMutation } from '@tanstack/react-query';
 import { act, screen, waitFor } from '@testing-library/react-native';
 
 import { createConsent, createUpdateMarketingConsentDto } from '../__tests__/consent.fixtures';
-import { CONSENT_QUERY_KEYS } from '../constants/consent-query-keys';
 import { type Consent } from '../domains/consent.model';
+import { CONSENT_QUERY_KEYS } from './consent-query-keys';
 import {
   useUpdateMarketingConsentMutationOptions,
   useUpdateMarketingPushConsentMutationOptions,

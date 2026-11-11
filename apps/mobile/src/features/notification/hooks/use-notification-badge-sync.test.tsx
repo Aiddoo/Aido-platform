@@ -9,7 +9,7 @@ import { focusManager, QueryClientProvider } from '@tanstack/react-query';
 import { act, renderHook, waitFor } from '@testing-library/react-native';
 import type { PropsWithChildren } from 'react';
 
-import { NOTIFICATION_QUERY_KEYS } from '../constants/notification-query-keys';
+import { NOTIFICATION_QUERY_KEYS } from '../queries/notification-query-keys';
 import { useNotificationBadgeSync } from './use-notification-badge-sync';
 
 async function setup() {

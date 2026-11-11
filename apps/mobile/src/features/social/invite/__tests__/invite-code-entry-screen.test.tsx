@@ -13,8 +13,8 @@ import { noop } from 'es-toolkit';
 import { router } from 'expo-router';
 
 import InviteCodeEntryRoute from '../../../../../app/invite';
-import { INVITE_QUERY_KEYS } from '../constants/invite-query-keys';
 import { parseInviteCode } from '../domains/invite-code.model';
+import { INVITE_QUERY_KEYS } from '../queries/invite-query-keys';
 import { createInvitePreviewDto } from './invite.fixtures';
 
 const CODE = parseInviteCode('K7M2QX') ?? '';

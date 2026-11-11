@@ -5,8 +5,8 @@ import { useTranslation } from '@src/shared/i18n';
 import { queryOptions } from '@tanstack/react-query';
 import { useCallback } from 'react';
 
-import { USER_QUERY_KEYS } from '../constants/user-query-keys';
 import { type User } from '../domains/user.model';
+import { USER_QUERY_KEYS } from './user-query-keys';
 
 function toMe(user: User, { defaultName }: { defaultName: string }) {
   return {

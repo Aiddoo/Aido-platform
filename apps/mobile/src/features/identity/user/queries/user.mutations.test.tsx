@@ -10,8 +10,8 @@ import { useMutation } from '@tanstack/react-query';
 import { act, waitFor } from '@testing-library/react-native';
 
 import { createUpdateProfileDto, createUser } from '../__tests__/user.fixtures';
-import { USER_QUERY_KEYS } from '../constants/user-query-keys';
 import { type User } from '../domains/user.model';
+import { USER_QUERY_KEYS } from './user-query-keys';
 import { useUpdateProfileMutationOptions } from './user.mutations';
 
 const NEW_IMAGE = 'https://example.com/new.jpg';

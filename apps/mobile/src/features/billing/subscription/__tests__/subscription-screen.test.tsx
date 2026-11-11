@@ -4,12 +4,12 @@ import { ok } from '@src/core/errors/result';
 import { PurchasesGatewayError, type PurchaseOffering } from '@src/core/ports/purchases-gateway';
 import { createPreferenceDto } from '@src/features/identity/preference/__tests__/preference.fixtures';
 import { toPreference } from '@src/features/identity/preference/apis/preference.mapper';
-import { PREFERENCE_QUERY_KEYS } from '@src/features/identity/preference/constants/preference-query-keys';
+import { PREFERENCE_QUERY_KEYS } from '@src/features/identity/preference/queries/preference-query-keys';
 import { PREMIUM_ME_EXAMPLES } from '@src/features/identity/user/__tests__/premium-access.fixtures';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
 import { toUser } from '@src/features/identity/user/apis/user.mapper';
-import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
 import { type User, userSchema } from '@src/features/identity/user/domains/user.model';
+import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-keys';
 import { type CurrentUserResponse } from '@src/features/identity/user/schemas/user-response.schema';
 import {
   createAnalyticsStub,
@@ -27,7 +27,7 @@ import { onlineManager } from '@tanstack/react-query';
 import { screen, userEvent, waitFor, within } from '@testing-library/react-native';
 
 import SubscriptionRoute from '../../../../../app/(app)/(tabs)/(mypage)/settings/subscription';
-import { ENTITLEMENT_QUERY_KEYS } from '../constants/entitlement-query-keys';
+import { ENTITLEMENT_QUERY_KEYS } from '../queries/entitlement-query-keys';
 import { createEntitlementSnapshot, createEntitlementSnapshotDto } from './entitlement.fixtures';
 
 const HOUR_MS = 60 * 60 * 1000;

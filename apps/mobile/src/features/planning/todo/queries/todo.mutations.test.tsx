@@ -3,7 +3,7 @@ import { err, ok } from '@src/core/errors/result';
 import { createStoreReviewRepository } from '@src/features/device/store-review/apis/store-review.repository';
 import '@src/shared/i18n/init';
 import { createUser } from '@src/features/identity/user/__tests__/user.fixtures';
-import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
+import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-keys';
 import {
   createAppStoreReviewGatewayStub,
   createHttpClientStub,
@@ -18,8 +18,8 @@ import { AppState } from 'react-native';
 
 import { createParentTodo } from '../__tests__/sub-todo.fixtures';
 import { createTodoApiError, createTodoDto } from '../__tests__/todo.fixtures';
-import { TODO_QUERY_KEYS } from '../constants/todo-query-keys';
 import type { Todo, TodoListResult } from '../domains/todo.model';
+import { TODO_QUERY_KEYS } from './todo-query-keys';
 import {
   useToggleTodoMutationOptions,
   useUpdateTodoScheduleMutationOptions,

@@ -2,7 +2,7 @@ import type { Memo as MemoDto } from '@aido/api';
 import { useDraftService } from '@src/bootstrap/providers/di-context';
 import { ok } from '@src/core/errors/result';
 import { createUser } from '@src/features/identity/user/__tests__/user.fixtures';
-import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
+import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-keys';
 import { voicePlanSchema } from '@src/features/voice/domains/voice-plan.model';
 import {
   createAnalyticsStub,
@@ -20,10 +20,10 @@ import { act, screen } from '@testing-library/react-native';
 
 import { toMemo } from '../apis/memo.mapper';
 import { MemoService } from '../apis/memo.service';
-import { MEMO_QUERY_KEYS } from '../constants/memo-query-keys';
 import type { Memo } from '../domains/memo.model';
 import { createMemoDraftKey } from '../utils/memo-draft';
 import { createMemoPlanDraftKey, createMemoPlanRequestDraftKey } from '../utils/memo-plan-draft';
+import { MEMO_QUERY_KEYS } from './memo-query-keys';
 import {
   useConvertMemoToTodosMutationOptions,
   useDeleteMemoMutationOptions,

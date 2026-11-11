@@ -9,8 +9,8 @@ import {
   createEntitlementSnapshot,
   createEntitlementSnapshotDto,
 } from '../__tests__/entitlement.fixtures';
-import { ENTITLEMENT_QUERY_KEYS } from '../constants/entitlement-query-keys';
 import { type EntitlementSnapshot } from '../domains/entitlement.model';
+import { ENTITLEMENT_QUERY_KEYS } from '../queries/entitlement-query-keys';
 import { QuotaSummary } from './quota-summary';
 
 const AI_PARSE_FREE_LIMIT = PLAN_CATALOG.AI_PARSE.free;

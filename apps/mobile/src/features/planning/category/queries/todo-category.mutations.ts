@@ -16,8 +16,6 @@ import { createOptimisticId } from '@src/shared/utils/create-optimistic-id';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 import { pick } from 'es-toolkit';
 
-import { TODO_CATEGORY_MUTATION_KEYS } from '../constants/todo-category-mutation-keys';
-import { TODO_CATEGORY_QUERY_KEYS } from '../constants/todo-category-query-keys';
 import { isDeletionPreviewOutdatedError } from '../domains/todo-category.error';
 import { TodoCategoryPolicy } from '../domains/todo-category.model';
 import type {
@@ -45,6 +43,8 @@ import {
   withCategoryRemoved,
   withCategorySaved,
 } from './todo-category-cache';
+import { TODO_CATEGORY_MUTATION_KEYS } from './todo-category-mutation-keys';
+import { TODO_CATEGORY_QUERY_KEYS } from './todo-category-query-keys';
 
 export function useCreateTodoCategoryMutationOptions() {
   const todoCategoryService = useTodoCategoryService();

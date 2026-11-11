@@ -7,12 +7,12 @@ import { isLastMutation } from '@src/shared/query/is-last-mutation';
 import { mutationOptions, type QueryClient, useQueryClient } from '@tanstack/react-query';
 import { pick } from 'es-toolkit';
 
-import { CONSENT_MUTATION_KEYS } from '../constants/consent-mutation-keys';
-import { CONSENT_QUERY_KEYS } from '../constants/consent-query-keys';
 import { type Consent, getConsentResult } from '../domains/consent.model';
 import { useConsentResultToast } from '../hooks/use-consent-result-toast';
 import { type ConsentAgreement } from '../schemas/consent-request.schema';
 import { invalidateConsent } from './consent-cache';
+import { CONSENT_MUTATION_KEYS } from './consent-mutation-keys';
+import { CONSENT_QUERY_KEYS } from './consent-query-keys';
 
 /** 실패가 섞이면 되돌린 값이 서버와 다를 수 있다. 마지막 저장이 끝날 때 서버 값으로 맞춘다 */
 function settleConsentWrite(queryClient: QueryClient, error: unknown) {

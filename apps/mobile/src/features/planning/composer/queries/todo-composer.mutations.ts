@@ -2,13 +2,12 @@ import { useHaptics, useTodoService, useSubTodoService } from '@src/bootstrap/pr
 import { unwrap } from '@src/core/errors/result';
 import { emitTodoCreated } from '@src/core/events/todo-created';
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
-import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/planning/category/constants/todo-category-query-keys';
 import { TodoCategoryPolicy } from '@src/features/planning/category/domains/todo-category.model';
 import {
   changeCachedCategoryTodoCount,
   invalidateTodoCategories,
 } from '@src/features/planning/category/queries/todo-category-cache';
-import { TODO_MUTATION_KEYS } from '@src/features/planning/todo/constants/todo-mutation-keys';
+import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/planning/category/queries/todo-category-query-keys';
 import { SubTodoPolicy } from '@src/features/planning/todo/domains/sub-todo.model';
 import {
   findTodoSeriesFailure,
@@ -39,6 +38,7 @@ import {
   updateCachedTodoExistence,
   withTodoCreated,
 } from '@src/features/planning/todo/queries/todo-cache';
+import { TODO_MUTATION_KEYS } from '@src/features/planning/todo/queries/todo-mutation-keys';
 import type {
   CreateTodoInput,
   UpdateTodoInput,

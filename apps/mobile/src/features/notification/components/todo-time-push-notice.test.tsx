@@ -8,8 +8,8 @@ import {
 } from '@src/shared/__tests__';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 
-import { NOTIFICATION_QUERY_KEYS } from '../constants/notification-query-keys';
 import type { PushPermission } from '../domains/push-permission.model';
+import { NOTIFICATION_QUERY_KEYS } from '../queries/notification-query-keys';
 import { TodoTimePushNotice } from './todo-time-push-notice';
 
 const OFF_LINE = '알림이 꺼져 있어 알려드릴 수 없어요';

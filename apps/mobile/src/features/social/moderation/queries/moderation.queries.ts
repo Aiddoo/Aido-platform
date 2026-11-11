@@ -4,8 +4,8 @@ import { unwrap } from '@src/core/errors/result';
 import type { Page } from '@src/shared/types/page.types';
 import { type InfiniteData, infiniteQueryOptions } from '@tanstack/react-query';
 
-import { MODERATION_QUERY_KEYS } from '../constants/moderation-query-keys';
 import type { BlockedUser } from '../domains/user-block.model';
+import { MODERATION_QUERY_KEYS } from './moderation-query-keys';
 
 const FIRST_PAGE_CURSOR: string | undefined = undefined;
 

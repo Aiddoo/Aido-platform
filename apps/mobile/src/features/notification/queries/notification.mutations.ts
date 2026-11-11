@@ -15,7 +15,6 @@ import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { mutationOptions, type QueryClient, useQueryClient } from '@tanstack/react-query';
 
 import { NOTIFICATION_LOG_EVENT } from '../constants/notification-log-events';
-import { NOTIFICATION_MUTATION_KEYS } from '../constants/notification-mutation-keys';
 import { isPushReportRetryableError } from '../domains/notification.error';
 import {
   invalidateNotifications,
@@ -24,6 +23,7 @@ import {
   revertNotificationsRead,
   setCachedPushPermission,
 } from './notification-cache';
+import { NOTIFICATION_MUTATION_KEYS } from './notification-mutation-keys';
 
 const PUSH_OPENED_RETRIES = 3;
 

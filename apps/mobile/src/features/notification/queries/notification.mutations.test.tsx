@@ -16,9 +16,9 @@ import {
   createNotification,
   createNotificationApiError,
 } from '../__tests__/notification.fixtures';
-import { NOTIFICATION_QUERY_KEYS } from '../constants/notification-query-keys';
 import type { NotificationListResult } from '../domains/notification.model';
 import { useNotificationBadgeSync } from '../hooks/use-notification-badge-sync';
+import { NOTIFICATION_QUERY_KEYS } from './notification-query-keys';
 import {
   useMarkAsReadMutationOptions,
   useRecordPushOpenedMutationOptions,

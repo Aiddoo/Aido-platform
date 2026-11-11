@@ -1,8 +1,8 @@
 import { createParentTodo } from '@src/features/planning/todo/__tests__/sub-todo.fixtures';
-import { TODO_QUERY_KEYS } from '@src/features/planning/todo/constants/todo-query-keys';
 import type { DailyCompletionsResult } from '@src/features/planning/todo/domains/daily-completion.model';
 import type { TodoListResult } from '@src/features/planning/todo/domains/todo.model';
 import { syncDailyCompletionWithList } from '@src/features/planning/todo/queries/todo-cache';
+import { TODO_QUERY_KEYS } from '@src/features/planning/todo/queries/todo-query-keys';
 import { createMemorySyncStorage, createTestQueryClient } from '@src/shared/__tests__';
 import { setupFakeTimersPerTest } from '@src/shared/__tests__/setup-fake-timers-per-test';
 import { PERSISTED_QUERY_OPTIONS } from '@src/shared/constants/query-persistence';

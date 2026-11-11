@@ -1,7 +1,7 @@
 import '@src/shared/i18n/init';
 import { ok } from '@src/core/errors/result';
 import { createPreference } from '@src/features/identity/preference/__tests__/preference.fixtures';
-import { PREFERENCE_QUERY_KEYS } from '@src/features/identity/preference/constants/preference-query-keys';
+import { PREFERENCE_QUERY_KEYS } from '@src/features/identity/preference/queries/preference-query-keys';
 import { createTodoCategoryListDto } from '@src/features/planning/category/__tests__/todo-category.fixtures';
 import { createHttpClientStub, createTestQueryClient, renderUi } from '@src/shared/__tests__';
 import { fromDate } from '@src/shared/date/instant';

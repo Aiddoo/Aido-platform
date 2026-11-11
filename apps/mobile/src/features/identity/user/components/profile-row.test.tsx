@@ -5,8 +5,8 @@ import { fireEvent, screen } from '@testing-library/react-native';
 
 import { createCurrentUserDto } from '../__tests__/user.fixtures';
 import { toUser } from '../apis/user.mapper';
-import { USER_QUERY_KEYS } from '../constants/user-query-keys';
 import { MyPageMenuNavigationProvider } from '../hooks/use-my-page-menu-navigation';
+import { USER_QUERY_KEYS } from '../queries/user-query-keys';
 import { ProfileRow } from './profile-row';
 
 async function renderProfileRow(clipboard: ReturnType<typeof createClipboardGatewayStub>) {

@@ -1,8 +1,8 @@
 import { ok } from '@src/core/errors/result';
 import { createPreference } from '@src/features/identity/preference/__tests__/preference.fixtures';
 import '@src/shared/i18n/init';
-import { PREFERENCE_QUERY_KEYS } from '@src/features/identity/preference/constants/preference-query-keys';
-import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/planning/category/constants/todo-category-query-keys';
+import { PREFERENCE_QUERY_KEYS } from '@src/features/identity/preference/queries/preference-query-keys';
+import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/planning/category/queries/todo-category-query-keys';
 import {
   createHttpClientStub,
   createPendingResponse,
@@ -17,9 +17,9 @@ import { Text } from 'react-native';
 import { ScrollViewContainer } from 'react-native-reorderable-list';
 
 import { createParentTodo, createSubTodo } from '../../__tests__/sub-todo.fixtures';
-import { TODO_QUERY_KEYS } from '../../constants/todo-query-keys';
 import type { Todo } from '../../domains/todo.model';
 import { updateCachedTodo } from '../../queries/todo-cache';
+import { TODO_QUERY_KEYS } from '../../queries/todo-query-keys';
 import { TodoList } from './todo-list';
 
 const DATE = '2026-03-08';

@@ -4,7 +4,7 @@ import {
   createCurrentUserDto,
   createUser,
 } from '@src/features/identity/user/__tests__/user.fixtures';
-import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
+import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-keys';
 import {
   createAppLifecycleGatewayStub,
   createHttpClientStub,
@@ -18,7 +18,7 @@ import { MINUTE_MS } from '@src/shared/constants/time-units';
 import { toInstant } from '@src/shared/date/instant';
 import { act, waitFor } from '@testing-library/react-native';
 
-import { NOTIFICATION_QUERY_KEYS } from '../constants/notification-query-keys';
+import { NOTIFICATION_QUERY_KEYS } from '../queries/notification-query-keys';
 import { useIsPushOnboardingDue } from './use-is-push-onboarding-due';
 
 const SIGNED_UP_AT = '2026-11-08T00:00:00.000Z';

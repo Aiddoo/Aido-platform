@@ -15,8 +15,6 @@ import { isLastMutation } from '@src/shared/query/is-last-mutation';
 import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
-import { FRIEND_MUTATION_KEYS } from '../constants/friend-mutation-keys';
-import { FRIEND_QUERY_KEYS } from '../constants/friend-query-keys';
 import { findFriendLimit } from '../domains/friend.error';
 import { FriendPolicy } from '../domains/friend.model';
 import type { ReorderFriendInput } from '../schemas/friend-request.schema';
@@ -27,6 +25,8 @@ import {
   withFriendRemoved,
   withFriendRestored,
 } from './friend-cache';
+import { FRIEND_MUTATION_KEYS } from './friend-mutation-keys';
+import { FRIEND_QUERY_KEYS } from './friend-query-keys';
 
 export function useAcceptRequestMutationOptions() {
   const friendService = useFriendService();

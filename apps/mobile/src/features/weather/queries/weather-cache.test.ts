@@ -1,8 +1,8 @@
 import { createTestQueryClient } from '@src/shared/__tests__';
 import type { QueryClient } from '@tanstack/react-query';
 
-import { WEATHER_QUERY_KEYS } from '../constants/weather-query-keys';
 import { removeOutdatedWeatherReports } from './weather-cache';
+import { WEATHER_QUERY_KEYS } from './weather-query-keys';
 
 describe('removeOutdatedWeatherReports', () => {
   let queryClient: QueryClient;

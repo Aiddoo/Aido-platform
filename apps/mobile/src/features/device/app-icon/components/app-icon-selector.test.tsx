@@ -1,8 +1,8 @@
 import { createEntitlementSnapshot } from '@src/features/billing/subscription/__tests__/entitlement.fixtures';
-import { ENTITLEMENT_QUERY_KEYS } from '@src/features/billing/subscription/constants/entitlement-query-keys';
 import type { EntitlementSnapshot } from '@src/features/billing/subscription/domains/entitlement.model';
+import { ENTITLEMENT_QUERY_KEYS } from '@src/features/billing/subscription/queries/entitlement-query-keys';
 import { createUser } from '@src/features/identity/user/__tests__/user.fixtures';
-import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
+import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-keys';
 import {
   createAnalyticsStub,
   createAppIconGatewayStub,
@@ -13,8 +13,8 @@ import {
 import { screen, userEvent, waitFor } from '@testing-library/react-native';
 import { Suspense } from 'react';
 
-import { APP_ICON_QUERY_KEYS } from '../constants/app-icon-query-keys';
 import type { AppIconKey } from '../domains/app-icon.model';
+import { APP_ICON_QUERY_KEYS } from '../queries/app-icon-query-keys';
 import { AppIconSelector } from './app-icon-selector';
 
 const PREMIUM_GATE_TITLE = '앱 아이콘 변경은 프리미엄 기능이에요';

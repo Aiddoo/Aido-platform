@@ -4,7 +4,7 @@ import { PERSISTED_QUERY_OPTIONS } from '@src/shared/constants/query-persistence
 import { MINUTE_MS } from '@src/shared/constants/time-units';
 import { queryOptions } from '@tanstack/react-query';
 
-import { ENTITLEMENT_QUERY_KEYS } from '../constants/entitlement-query-keys';
+import { ENTITLEMENT_QUERY_KEYS } from './entitlement-query-keys';
 
 /** 한도·사용량이 서버에서 바뀌어도 1분 안에는 다시 묻지 않는다. AI 응답의 featureQuota가 그 사이를 채운다 */
 const ENTITLEMENTS_STALE_TIME_MS = MINUTE_MS;

@@ -4,7 +4,7 @@ import { screen, userEvent } from '@testing-library/react-native';
 import { router } from 'expo-router';
 import { Suspense } from 'react';
 
-import { MEMO_QUERY_KEYS } from '../constants/memo-query-keys';
+import { MEMO_QUERY_KEYS } from '../queries/memo-query-keys';
 import { MemoCreateButton } from './memo-create-button';
 
 describe('MemoCreateButton', () => {

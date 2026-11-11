@@ -4,7 +4,6 @@ import { unwrap } from '@src/core/errors/result';
 import { infiniteQueryOptions } from '@tanstack/react-query';
 
 import { toRepliesQuery, toThreadsQuery } from '../apis/todo-comment.mapper';
-import { TODO_COMMENT_QUERY_KEYS } from '../constants/todo-comment-query-keys';
 import { TODO_COMMENT_QUERY_TIMING } from '../constants/todo-comment.constants';
 import { TodoCommentPolicy } from '../domains/todo-comment.model';
 import type {
@@ -16,6 +15,7 @@ import {
   getNextTodoCommentPageParam,
   getPreviousTodoCommentPageParam,
 } from '../utils/todo-comment-page-params';
+import { TODO_COMMENT_QUERY_KEYS } from './todo-comment-query-keys';
 
 interface TodoCommentThreadsQueryInput {
   todoId: number;

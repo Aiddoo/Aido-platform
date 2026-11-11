@@ -3,7 +3,7 @@ import { ok } from '@src/core/errors/result';
 import { PREMIUM_ME_EXAMPLES } from '@src/features/identity/user/__tests__/premium-access.fixtures';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
 import { toUser } from '@src/features/identity/user/apis/user.mapper';
-import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
+import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-keys';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { type CurrentUserResponse } from '@src/features/identity/user/schemas/user-response.schema';
 import {

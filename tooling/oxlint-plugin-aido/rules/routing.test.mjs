@@ -79,8 +79,24 @@ tester.run('query-key-location', rules['query-key-location'], {
     'useQuery({ queryKey: todoQueryKeys.detail(todoId) });',
     "const keys = { queryKey: ['todos'] as const };",
     'const { queryKey: [scope] } = query;',
+    {
+      code: "queryOptions<Memo>({ queryKey: [...MEMO_QUERY_KEYS.all, 'detail', { memoId }] });",
+      filename: '/repo/apps/mobile/src/features/notes/memo/queries/memo-query-keys.ts',
+    },
   ],
-  invalid: [{ code: "useQuery({ queryKey: ['todos', todoId] });", errors: 1 }],
+  invalid: [
+    { code: "useQuery({ queryKey: ['todos', todoId] });", errors: 1 },
+    {
+      code: "queryOptions<Memo>({ queryKey: [...MEMO_QUERY_KEYS.all, 'detail', { memoId }] });",
+      filename: '/repo/apps/mobile/src/features/notes/memo/constants/memo-query-keys.ts',
+      errors: 1,
+    },
+    {
+      code: "useQuery({ queryKey: ['memo', 'list'] });",
+      filename: '/repo/apps/mobile/src/features/notes/memo/queries/memo.queries.ts',
+      errors: 1,
+    },
+  ],
 });
 
 const GLOBAL_FEEDBACK =

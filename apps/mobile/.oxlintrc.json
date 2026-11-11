@@ -714,12 +714,6 @@
       }
     },
     {
-      "files": ["src/**/constants/*query-keys.ts"],
-      "rules": {
-        "aido/query-key-location": "off"
-      }
-    },
-    {
       "files": ["src/features/**", "app/**"],
       "excludeFiles": ["**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}", "**/__tests__/**"],
       "rules": {
@@ -829,7 +823,7 @@
     {
       "files": ["src/features/engagement/comment/**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}"],
       "excludeFiles": [
-        "src/features/engagement/comment/constants/**",
+        "src/features/engagement/comment/queries/*-query-keys.test.ts",
         "src/features/engagement/comment/domains/**",
         "src/features/engagement/comment/apis/**",
         "src/features/engagement/comment/schemas/**",
@@ -855,7 +849,7 @@
     },
     {
       "files": [
-        "src/features/engagement/comment/constants/**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}",
+        "src/features/engagement/comment/queries/*-query-keys.test.ts",
         "src/features/engagement/comment/domains/**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}",
         "src/features/engagement/comment/apis/**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}",
         "src/features/engagement/comment/schemas/**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}",

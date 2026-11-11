@@ -1,7 +1,7 @@
 import '@src/shared/i18n/init';
 import { err, ok } from '@src/core/errors/result';
 import { createConsent } from '@src/features/identity/consent/__tests__/consent.fixtures';
-import { CONSENT_QUERY_KEYS } from '@src/features/identity/consent/constants/consent-query-keys';
+import { CONSENT_QUERY_KEYS } from '@src/features/identity/consent/queries/consent-query-keys';
 import { createTodoCategoryListDto } from '@src/features/planning/category/__tests__/todo-category.fixtures';
 import { createTodoApiError } from '@src/features/planning/todo/__tests__/todo.fixtures';
 import {

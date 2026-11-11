@@ -1,11 +1,9 @@
-import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/planning/category/constants/todo-category-query-keys';
+import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/planning/category/queries/todo-category-query-keys';
 import { createPendingResponse, createTestQueryClient } from '@src/shared/__tests__';
 import { QueryObserver, type QueryClient } from '@tanstack/react-query';
 import { noop } from 'es-toolkit';
 
 import { createParentTodo } from '../__tests__/sub-todo.fixtures';
-import { TODO_MUTATION_KEYS } from '../constants/todo-mutation-keys';
-import { TODO_QUERY_KEYS } from '../constants/todo-query-keys';
 import type { DailyCompletionsResult } from '../domains/daily-completion.model';
 import type { Todo, TodoListResult, TodoSummary } from '../domains/todo.model';
 import {
@@ -24,6 +22,8 @@ import {
   withTodoSaved,
   withTodoUpdated,
 } from './todo-cache';
+import { TODO_MUTATION_KEYS } from './todo-mutation-keys';
+import { TODO_QUERY_KEYS } from './todo-query-keys';
 
 const DAY = '2026-07-14';
 const NEXT_DAY = '2026-07-15';

@@ -1,4 +1,4 @@
-import { TODO_QUERY_KEYS } from '../constants/todo-query-keys';
+import { TODO_QUERY_KEYS } from './todo-query-keys';
 import { getTodoSummaryRefetchInterval, shouldPersistTodosByDate } from './todo.queries';
 
 describe('shouldPersistTodosByDate', () => {

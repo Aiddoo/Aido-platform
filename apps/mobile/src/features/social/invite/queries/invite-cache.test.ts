@@ -1,15 +1,15 @@
-import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
-import { FRIEND_QUERY_KEYS } from '@src/features/social/friend/constants/friend-query-keys';
+import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-keys';
+import { FRIEND_QUERY_KEYS } from '@src/features/social/friend/queries/friend-query-keys';
 import { createTestQueryClient } from '@src/shared/__tests__';
 import type { QueryClient } from '@tanstack/react-query';
 
 import { createInvite } from '../__tests__/invite.fixtures';
-import { INVITE_QUERY_KEYS } from '../constants/invite-query-keys';
 import {
   invalidateAfterRedeem,
   invalidateOnInviteNotification,
   replaceMyInvite,
 } from './invite-cache';
+import { INVITE_QUERY_KEYS } from './invite-query-keys';
 
 function createQueryClient() {
   return createTestQueryClient();

@@ -4,10 +4,10 @@ import { useTrack } from '@src/shared/analytics';
 import { isLastMutation } from '@src/shared/query/is-last-mutation';
 import { mutationOptions, type QueryClient, useQueryClient } from '@tanstack/react-query';
 
-import { USER_MUTATION_KEYS } from '../constants/user-mutation-keys';
-import { USER_QUERY_KEYS } from '../constants/user-query-keys';
 import { type UpdateProfileResult } from '../domains/user.model';
 import { type ProfileChange } from '../schemas/update-profile-request.schema';
+import { USER_MUTATION_KEYS } from './user-mutation-keys';
+import { USER_QUERY_KEYS } from './user-query-keys';
 
 /** 다른 필드는 진행 중인 저장보다 오래됐을 수 있고 통째로 덮으면 그 저장을 지워 바꾼 필드만 덮는다 */
 function writeChangedProfileFields(

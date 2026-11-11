@@ -2,24 +2,24 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 import { createEntitlementSnapshot } from '@src/features/billing/subscription/__tests__/entitlement.fixtures';
-import { ENTITLEMENT_QUERY_KEYS } from '@src/features/billing/subscription/constants/entitlement-query-keys';
+import { ENTITLEMENT_QUERY_KEYS } from '@src/features/billing/subscription/queries/entitlement-query-keys';
 import { createPreference } from '@src/features/identity/preference/__tests__/preference.fixtures';
-import { PREFERENCE_QUERY_KEYS } from '@src/features/identity/preference/constants/preference-query-keys';
+import { PREFERENCE_QUERY_KEYS } from '@src/features/identity/preference/queries/preference-query-keys';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
 import { toUser } from '@src/features/identity/user/apis/user.mapper';
-import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
+import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-keys';
 import { createTodoCategoryWithCountDto } from '@src/features/planning/category/__tests__/todo-category.fixtures';
 import { toTodoCategoryWithCount } from '@src/features/planning/category/apis/todo-category.mapper';
-import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/planning/category/constants/todo-category-query-keys';
+import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/planning/category/queries/todo-category-query-keys';
 import { createParentTodo } from '@src/features/planning/todo/__tests__/sub-todo.fixtures';
 import { createDailyCompletionsDto } from '@src/features/planning/todo/__tests__/todo.fixtures';
 import { toDailyCompletionsResult } from '@src/features/planning/todo/apis/todo.mapper';
-import { TODO_QUERY_KEYS } from '@src/features/planning/todo/constants/todo-query-keys';
+import { TODO_QUERY_KEYS } from '@src/features/planning/todo/queries/todo-query-keys';
 import { createFriendsListDto } from '@src/features/social/friend/__tests__/friend.fixtures';
 import { toFriendsPage } from '@src/features/social/friend/apis/friend.mapper';
-import { FRIEND_QUERY_KEYS } from '@src/features/social/friend/constants/friend-query-keys';
+import { FRIEND_QUERY_KEYS } from '@src/features/social/friend/queries/friend-query-keys';
 import { createWeatherReport } from '@src/features/weather/__tests__/weather-report.fixtures';
-import { WEATHER_QUERY_KEYS } from '@src/features/weather/constants/weather-query-keys';
+import { WEATHER_QUERY_KEYS } from '@src/features/weather/queries/weather-query-keys';
 import {
   createLoggerStub,
   createMemorySyncStorage,

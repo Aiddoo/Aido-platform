@@ -14,7 +14,6 @@ import { mutationOptions, onlineManager, useQueryClient } from '@tanstack/react-
 import { router } from 'expo-router';
 import { match } from 'ts-pattern';
 
-import { AUTH_QUERY_KEYS } from '../constants/auth-query-keys';
 import { getOAuthProviderLabel } from '../constants/oauth-labels';
 import {
   isEmailAlreadyRegisteredError,
@@ -38,6 +37,7 @@ import {
   type ResetPasswordInput,
   type VerifyEmailInput,
 } from '../schemas/auth-request.schema';
+import { AUTH_QUERY_KEYS } from './auth-query-keys';
 
 /** 인증 코드가 틀렸거나 만료됐거나 시도를 다 썼다. 코드마다 다른 문구로 알린다 */
 function getVerificationCodeMessage(error: unknown) {

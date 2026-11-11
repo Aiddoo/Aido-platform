@@ -14,12 +14,12 @@ import { onlineManager, useMutation } from '@tanstack/react-query';
 import { screen, waitFor } from '@testing-library/react-native';
 
 import { createTodoCategoryDto } from '../__tests__/todo-category.fixtures';
-import { TODO_CATEGORY_QUERY_KEYS } from '../constants/todo-category-query-keys';
 import type {
   TodoCategoriesResult,
   TodoCategoryDeletionRequest,
 } from '../domains/todo-category.model';
 import { changeCachedCategoryTodoCount } from './todo-category-cache';
+import { TODO_CATEGORY_QUERY_KEYS } from './todo-category-query-keys';
 import {
   useCreateTodoCategoryMutationOptions,
   useDeleteTodoCategoryMutationOptions,

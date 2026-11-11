@@ -2,8 +2,8 @@ import { useReportService } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
 import { queryOptions } from '@tanstack/react-query';
 
-import { REPORT_QUERY_KEYS } from '../constants/report-query-keys';
 import type { GetAiReportsQuery } from '../schemas/report-list-request.schema';
+import { REPORT_QUERY_KEYS } from './report-query-keys';
 
 export function useGetReportsQueryOptions(query: GetAiReportsQuery) {
   const reportService = useReportService();

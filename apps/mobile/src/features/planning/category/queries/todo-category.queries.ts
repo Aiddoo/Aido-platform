@@ -3,7 +3,7 @@ import { unwrap } from '@src/core/errors/result';
 import { PERSISTED_QUERY_OPTIONS } from '@src/shared/constants/query-persistence';
 import { queryOptions } from '@tanstack/react-query';
 
-import { TODO_CATEGORY_QUERY_KEYS } from '../constants/todo-category-query-keys';
+import { TODO_CATEGORY_QUERY_KEYS } from './todo-category-query-keys';
 
 export function useGetTodoCategoriesQueryOptions() {
   const todoCategoryService = useTodoCategoryService();

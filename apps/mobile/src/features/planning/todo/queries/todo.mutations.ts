@@ -16,8 +16,6 @@ import { isLastMutation } from '@src/shared/query/is-last-mutation';
 import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
-import { TODO_MUTATION_KEYS } from '../constants/todo-mutation-keys';
-import { TODO_QUERY_KEYS } from '../constants/todo-query-keys';
 import type { TodoUpdateScope, TodoEditScope } from '../domains/todo-repeat.model';
 import {
   findTodoSeriesFailure,
@@ -51,6 +49,8 @@ import {
   updateCachedTodoExistence,
   withTodoCompleted,
 } from './todo-cache';
+import { TODO_MUTATION_KEYS } from './todo-mutation-keys';
+import { TODO_QUERY_KEYS } from './todo-query-keys';
 
 interface ToggleTodoVariables {
   todoId: number;

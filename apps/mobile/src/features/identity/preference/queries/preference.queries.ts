@@ -3,7 +3,7 @@ import { unwrap } from '@src/core/errors/result';
 import { PERSISTED_QUERY_OPTIONS } from '@src/shared/constants/query-persistence';
 import { queryOptions } from '@tanstack/react-query';
 
-import { PREFERENCE_QUERY_KEYS } from '../constants/preference-query-keys';
+import { PREFERENCE_QUERY_KEYS } from './preference-query-keys';
 
 export function useGetPreferenceQueryOptions() {
   const preferenceService = usePreferenceService();

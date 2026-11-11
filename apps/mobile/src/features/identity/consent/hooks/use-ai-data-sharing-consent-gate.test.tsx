@@ -4,7 +4,7 @@ import { ok } from '@src/core/errors/result';
 import { useClaimAiConsentRenewal } from '@src/features/device/coachmark/hooks/use-claim-ai-consent-renewal';
 import { createUser } from '@src/features/identity/user/__tests__/user.fixtures';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
-import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
+import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-keys';
 import { createHttpClientStub, createTestQueryClient, renderUi } from '@src/shared/__tests__';
 import { NetworkError } from '@src/shared/errors';
 import { Button, Text } from '@src/shared/ui';
@@ -15,8 +15,8 @@ import { noop } from 'es-toolkit';
 import { useState } from 'react';
 
 import { createConsent } from '../__tests__/consent.fixtures';
-import { CONSENT_QUERY_KEYS } from '../constants/consent-query-keys';
 import { type Consent } from '../domains/consent.model';
+import { CONSENT_QUERY_KEYS } from '../queries/consent-query-keys';
 import {
   AI_CONSENT_CHECK_TIMEOUT_MS,
   readWithoutBlocking,

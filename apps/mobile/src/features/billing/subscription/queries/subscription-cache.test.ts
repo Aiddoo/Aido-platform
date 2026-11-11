@@ -1,15 +1,15 @@
-import { SUGGESTION_QUERY_KEYS } from '@src/features/assistant/suggestion/constants/suggestion-query-keys';
-import { PREFERENCE_QUERY_KEYS } from '@src/features/identity/preference/constants/preference-query-keys';
+import { SUGGESTION_QUERY_KEYS } from '@src/features/assistant/suggestion/queries/suggestion-query-keys';
+import { PREFERENCE_QUERY_KEYS } from '@src/features/identity/preference/queries/preference-query-keys';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
 import { toUser } from '@src/features/identity/user/apis/user.mapper';
-import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
-import { MEMO_QUERY_KEYS } from '@src/features/notes/memo/constants/memo-query-keys';
-import { TODO_QUERY_KEYS } from '@src/features/planning/todo/constants/todo-query-keys';
-import { TODO_NUDGE_QUERY_KEYS } from '@src/features/social/nudge/constants/todo-nudge-query-keys';
+import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-keys';
+import { MEMO_QUERY_KEYS } from '@src/features/notes/memo/queries/memo-query-keys';
+import { TODO_QUERY_KEYS } from '@src/features/planning/todo/queries/todo-query-keys';
+import { TODO_NUDGE_QUERY_KEYS } from '@src/features/social/nudge/queries/todo-nudge-query-keys';
 import { createTestQueryClient } from '@src/shared/__tests__';
 import type { QueryClient, QueryKey } from '@tanstack/react-query';
 
-import { ENTITLEMENT_QUERY_KEYS } from '../constants/entitlement-query-keys';
+import { ENTITLEMENT_QUERY_KEYS } from './entitlement-query-keys';
 import {
   isPremiumDependentQuery,
   syncMeUntilStorePremium,

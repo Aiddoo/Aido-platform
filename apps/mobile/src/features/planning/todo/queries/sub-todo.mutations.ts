@@ -3,7 +3,6 @@ import { unwrap } from '@src/core/errors/result';
 import { useTrack } from '@src/shared/analytics';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
-import { TODO_MUTATION_KEYS } from '../constants/todo-mutation-keys';
 import { SubTodoPolicy } from '../domains/sub-todo.model';
 import {
   beginTodoWrite,
@@ -12,6 +11,7 @@ import {
   settleTodoWrite,
   updateCachedTodo,
 } from './todo-cache';
+import { TODO_MUTATION_KEYS } from './todo-mutation-keys';
 
 interface ToggleSubTodoVariables {
   todoId: number;

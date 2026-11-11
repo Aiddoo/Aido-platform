@@ -2,8 +2,8 @@ import { useAchievementService } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
 import { type InfiniteData, infiniteQueryOptions, queryOptions } from '@tanstack/react-query';
 
-import { ACHIEVEMENT_QUERY_KEYS } from '../constants/achievement-query-keys';
 import type { WeeklyAchievementPage } from '../domains/achievement.model';
+import { ACHIEVEMENT_QUERY_KEYS } from './achievement-query-keys';
 
 const FIRST_PAGE_CURSOR: number | undefined = undefined;
 

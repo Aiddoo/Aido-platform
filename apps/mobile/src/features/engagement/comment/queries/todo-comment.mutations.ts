@@ -9,7 +9,6 @@ import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 import { pick } from 'es-toolkit';
 import { match, P } from 'ts-pattern';
 
-import { TODO_COMMENT_MUTATION_KEYS } from '../constants/todo-comment-mutation-keys';
 import {
   isTodoCommentRateLimitedError,
   isTodoCommentUnavailableError,
@@ -31,6 +30,7 @@ import {
   removeTodoCommentFromCaches,
   restoreTodoCommentToCaches,
 } from './todo-comment-cache';
+import { TODO_COMMENT_MUTATION_KEYS } from './todo-comment-mutation-keys';
 
 const MAX_RETRY_COUNT = 2;
 const RETRY_BASE_DELAY_MS = 500;

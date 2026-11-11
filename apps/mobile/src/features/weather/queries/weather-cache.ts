@@ -1,10 +1,10 @@
 import type { QueryClient } from '@tanstack/react-query';
 import { last } from 'es-toolkit';
 
-import { WEATHER_QUERY_KEYS } from '../constants/weather-query-keys';
 import { WeatherLocationPolicy } from '../domains/weather-location.model';
 import type { RegisteredLocation } from '../domains/weather-report.model';
 import { weatherReportQueryKeySchema } from '../schemas/weather-report-query-key.schema';
+import { WEATHER_QUERY_KEYS } from './weather-query-keys';
 
 /** 리포트 쿼리 키의 인자는 객체 하나이고 항상 마지막에 둔다 */
 function getReportKeyParams(queryKey: readonly unknown[]) {

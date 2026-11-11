@@ -15,8 +15,8 @@ import {
   createPreferenceApiError,
   createPreferenceDto,
 } from '../__tests__/preference.fixtures';
-import { PREFERENCE_QUERY_KEYS } from '../constants/preference-query-keys';
 import { type Preference } from '../domains/preference.model';
+import { PREFERENCE_QUERY_KEYS } from './preference-query-keys';
 import { useUpdatePreferenceMutationOptions } from './preference.mutations';
 
 async function renderUpdate(httpClient = createHttpClientStub()) {

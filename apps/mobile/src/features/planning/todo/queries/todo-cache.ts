@@ -7,8 +7,6 @@ import type {
   QueryKey,
 } from '@tanstack/react-query';
 
-import { TODO_MUTATION_KEYS } from '../constants/todo-mutation-keys';
-import { TODO_QUERY_KEYS } from '../constants/todo-query-keys';
 import { DailyCompletionPolicy } from '../domains/daily-completion.model';
 import { type DailyCompletionsResult } from '../domains/daily-completion.model';
 import {
@@ -17,6 +15,8 @@ import {
   type TodoListResult,
   TodoPolicy,
 } from '../domains/todo.model';
+import { TODO_MUTATION_KEYS } from './todo-mutation-keys';
+import { TODO_QUERY_KEYS } from './todo-query-keys';
 
 export interface TodoSnapshot {
   date: string;

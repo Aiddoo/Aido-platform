@@ -1,6 +1,6 @@
 import { err, ok } from '@src/core/errors/result';
 import '@src/shared/i18n/init';
-import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/planning/category/constants/todo-category-query-keys';
+import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/planning/category/queries/todo-category-query-keys';
 import {
   createParentTodo,
   createSubTodo,
@@ -9,7 +9,6 @@ import {
   createTodoApiError,
   createTodoDto,
 } from '@src/features/planning/todo/__tests__/todo.fixtures';
-import { TODO_QUERY_KEYS } from '@src/features/planning/todo/constants/todo-query-keys';
 import type { DailyCompletionsResult } from '@src/features/planning/todo/domains/daily-completion.model';
 import { SubTodoPolicy } from '@src/features/planning/todo/domains/sub-todo.model';
 import type {
@@ -20,6 +19,7 @@ import type {
 import { useDeleteSubTodoMutationOptions } from '@src/features/planning/todo/queries/sub-todo.mutations';
 import { useReorderSubTodosMutationOptions } from '@src/features/planning/todo/queries/sub-todo.mutations';
 import { useToggleSubTodoMutationOptions } from '@src/features/planning/todo/queries/sub-todo.mutations';
+import { TODO_QUERY_KEYS } from '@src/features/planning/todo/queries/todo-query-keys';
 import { useDeleteTodoMutationOptions } from '@src/features/planning/todo/queries/todo.mutations';
 import { useToggleTodoMutationOptions } from '@src/features/planning/todo/queries/todo.mutations';
 import {

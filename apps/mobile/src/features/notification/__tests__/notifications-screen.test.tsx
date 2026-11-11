@@ -6,7 +6,7 @@ import { fireEvent, screen } from '@testing-library/react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 
 import NotificationsScreen from '../../../../app/(app)/notifications/index';
-import { NOTIFICATION_QUERY_KEYS } from '../constants/notification-query-keys';
+import { NOTIFICATION_QUERY_KEYS } from '../queries/notification-query-keys';
 import { createNotificationInboxResponseDto } from './notification.fixtures';
 
 async function renderScreen(category: string) {

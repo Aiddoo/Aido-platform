@@ -10,8 +10,8 @@ import {
 import { act, waitFor } from '@testing-library/react-native';
 
 import { createPushDeviceResponseDto } from '../__tests__/notification.fixtures';
-import { NOTIFICATION_QUERY_KEYS } from '../constants/notification-query-keys';
 import type { PushPermission } from '../domains/push-permission.model';
+import { NOTIFICATION_QUERY_KEYS } from '../queries/notification-query-keys';
 import { usePromptPushPermission } from './use-prompt-push-permission';
 
 async function renderPrompt(permission: PushPermission) {

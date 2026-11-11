@@ -4,7 +4,7 @@ import {
 } from '@src/features/planning/todo/queries/todo-cache';
 import type { Query, QueryClient } from '@tanstack/react-query';
 
-import { MODERATION_QUERY_KEYS } from '../constants/moderation-query-keys';
+import { MODERATION_QUERY_KEYS } from './moderation-query-keys';
 
 /** 조회 옵션이 `meta.refreshOnBlockChange`로 차단에 따라 보이는 사람이 달라진다고 밝힌 쿼리 */
 function isBlockDependentQuery(query: Pick<Query, 'meta'>) {

@@ -3,20 +3,20 @@ import type { ApiError } from '@src/core/errors/api-error';
 import { err, ok, type Result } from '@src/core/errors/result';
 import '@src/shared/i18n/init';
 import { createTodoCategoryListDto } from '@src/features/planning/category/__tests__/todo-category.fixtures';
-import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/planning/category/constants/todo-category-query-keys';
+import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/planning/category/queries/todo-category-query-keys';
 import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/category/queries/todo-category.queries';
 import {
   createTodoApiError,
   createTodoDto,
   createTodoItemResponseDto,
 } from '@src/features/planning/todo/__tests__/todo.fixtures';
-import { TODO_QUERY_KEYS } from '@src/features/planning/todo/constants/todo-query-keys';
 import { SubTodoPolicy } from '@src/features/planning/todo/domains/sub-todo.model';
 import {
   useDeleteSubTodoMutationOptions,
   useReorderSubTodosMutationOptions,
   useToggleSubTodoMutationOptions,
 } from '@src/features/planning/todo/queries/sub-todo.mutations';
+import { TODO_QUERY_KEYS } from '@src/features/planning/todo/queries/todo-query-keys';
 import {
   useChangeTodoCategoryMutationOptions,
   useDeleteTodoMutationOptions,

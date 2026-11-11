@@ -1,12 +1,12 @@
 import type { QueryClient } from '@tanstack/react-query';
 
-import { TODO_CATEGORY_QUERY_KEYS } from '../constants/todo-category-query-keys';
 import type {
   TodoCategoriesResult,
   TodoCategory,
   TodoCategoryDeletionResult,
   TodoCategoryWithCount,
 } from '../domains/todo-category.model';
+import { TODO_CATEGORY_QUERY_KEYS } from './todo-category-query-keys';
 import type { useGetTodoCategoryDeletionPreviewQueryOptions } from './todo-category.queries';
 
 /** 만들기 응답 전에 목록에 먼저 그리는 임시 행 */

@@ -1,4 +1,4 @@
-import { FRIEND_QUERY_KEYS } from '@src/features/social/friend/constants/friend-query-keys';
+import { FRIEND_QUERY_KEYS } from '@src/features/social/friend/queries/friend-query-keys';
 import { createTestQueryClient } from '@src/shared/__tests__';
 
 import { invalidateOnNotificationReceived } from './notification-received-invalidation';

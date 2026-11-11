@@ -4,7 +4,7 @@ import { ok } from '@src/core/errors/result';
 import type { PushPermissionResponse } from '@src/core/ports/push-notification-gateway';
 import { createAuthSessionStoreStub } from '@src/features/identity/auth/__tests__/create-auth-session-store-stub';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
-import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
+import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-keys';
 import {
   createHttpClientStub,
   createMemoryObservableSyncStorage,
@@ -29,7 +29,7 @@ import * as TabsLayoutRoute from '../../../../app/(app)/(tabs)/_layout';
 import * as AppLayoutRoute from '../../../../app/(app)/_layout';
 import NotificationOnboardingScreen from '../../../../app/(app)/onboarding/notifications';
 import { createPushPermissionResponse } from '../__tests__/notification.fixtures';
-import { NOTIFICATION_QUERY_KEYS } from '../constants/notification-query-keys';
+import { NOTIFICATION_QUERY_KEYS } from '../queries/notification-query-keys';
 import { useOpenPushOnboarding } from './use-open-push-onboarding';
 
 // renderRouter는 실제 라우터로 URL·이동을 검증하므로 jest.setup의 전역 mock을 끈다

@@ -7,10 +7,10 @@ import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 import { pickBy } from 'es-toolkit';
 
-import { PREFERENCE_MUTATION_KEYS } from '../constants/preference-mutation-keys';
-import { PREFERENCE_QUERY_KEYS } from '../constants/preference-query-keys';
 import { isInvalidTimeRangeError, isPremiumReminderTimeError } from '../domains/preference.error';
 import { type PreferenceChange } from '../schemas/preference-request.schema';
+import { PREFERENCE_MUTATION_KEYS } from './preference-mutation-keys';
+import { PREFERENCE_QUERY_KEYS } from './preference-query-keys';
 
 type UpdatePreferenceVariables = PreferenceChange & {
   /** 여러 필드를 한 번에 바꾸는 토글을 설정 하나로 집계할 때 쓴다. */

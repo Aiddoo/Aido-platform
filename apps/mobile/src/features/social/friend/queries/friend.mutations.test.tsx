@@ -15,7 +15,7 @@ import {
   createFriendUser,
   createSentRequestsDto,
 } from '../__tests__/friend.fixtures';
-import { FRIEND_QUERY_KEYS } from '../constants/friend-query-keys';
+import { FRIEND_QUERY_KEYS } from './friend-query-keys';
 import {
   useCancelRequestMutationOptions,
   useRemoveFriendMutationOptions,

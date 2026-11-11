@@ -1,6 +1,6 @@
 import { createUser } from '@src/features/identity/user/__tests__/user.fixtures';
 import '@src/shared/i18n/init';
-import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
+import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-keys';
 import { createSpokenVoiceNote } from '@src/features/voice/__tests__/voice-note.fixtures';
 import {
   createHttpClientStub,
@@ -12,7 +12,7 @@ import {
 import { screen } from '@testing-library/react-native';
 import { Suspense } from 'react';
 
-import { MEMO_QUERY_KEYS } from '../constants/memo-query-keys';
+import { MEMO_QUERY_KEYS } from '../queries/memo-query-keys';
 import { MemoList } from './memo-list';
 
 const ACCOUNT_ID = 'account-1';

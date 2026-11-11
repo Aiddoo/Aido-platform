@@ -4,9 +4,9 @@ import type { InfiniteData } from '@tanstack/react-query';
 import { infiniteQueryOptions, queryOptions } from '@tanstack/react-query';
 import { uniqBy } from 'es-toolkit';
 
-import { NOTIFICATION_QUERY_KEYS } from '../constants/notification-query-keys';
 import type { NotificationListResult } from '../domains/notification.model';
 import type { NotificationListQueryKey } from '../schemas/notification-list-query-key.schema';
+import { NOTIFICATION_QUERY_KEYS } from './notification-query-keys';
 
 const FIRST_PAGE_CURSOR: number | undefined = undefined;
 

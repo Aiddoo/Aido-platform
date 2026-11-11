@@ -2,9 +2,9 @@ import { getNowInstant } from '@src/shared/date/instant';
 import { type InfiniteData, notifyManager, type QueryClient } from '@tanstack/react-query';
 import { uniq } from 'es-toolkit';
 
-import { NOTIFICATION_QUERY_KEYS } from '../constants/notification-query-keys';
 import type { Notification, NotificationListResult } from '../domains/notification.model';
 import type { PushPermission } from '../domains/push-permission.model';
+import { NOTIFICATION_QUERY_KEYS } from './notification-query-keys';
 
 type NotificationPages = InfiniteData<NotificationListResult>;
 

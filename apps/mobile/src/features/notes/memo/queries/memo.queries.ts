@@ -3,8 +3,8 @@ import { unwrap } from '@src/core/errors/result';
 import { DEFAULT_PAGE_SIZE } from '@src/shared/constants/page-size';
 import { type InfiniteData, infiniteQueryOptions, queryOptions } from '@tanstack/react-query';
 
-import { MEMO_QUERY_KEYS } from '../constants/memo-query-keys';
 import type { MemoPage } from '../domains/memo.model';
+import { MEMO_QUERY_KEYS } from './memo-query-keys';
 
 const FIRST_PAGE_CURSOR: number | undefined = undefined;
 

@@ -5,8 +5,8 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { act, renderHook } from '@testing-library/react-native';
 import type { PropsWithChildren } from 'react';
 
-import { NOTIFICATION_QUERY_KEYS } from '../constants/notification-query-keys';
 import type { NotificationType } from '../domains/notification.model';
+import { NOTIFICATION_QUERY_KEYS } from '../queries/notification-query-keys';
 import { useForegroundNotificationSync } from './use-foreground-notification-sync';
 
 async function setup(isAuthenticated: boolean) {

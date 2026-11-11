@@ -10,7 +10,6 @@ import { t } from '@src/shared/i18n';
 import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
-import { TODO_NUDGE_QUERY_KEYS } from '../constants/todo-nudge-query-keys';
 import { isThanksTodoNotCompletedError } from '../domains/todo-nudge.error';
 import type {
   CreateNudgeInput,
@@ -19,6 +18,7 @@ import type {
   SendNudgeThanksInput,
 } from '../schemas/nudge-request.schema';
 import { invalidateNudgeInteractions } from './todo-nudge-cache';
+import { TODO_NUDGE_QUERY_KEYS } from './todo-nudge-query-keys';
 
 export function useReplyToNudgeMutationOptions() {
   const todoNudgeService = useTodoNudgeService();

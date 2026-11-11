@@ -5,7 +5,7 @@ import type { AuthTokenPair } from '@src/core/ports/token-store';
 import { createSessionEpoch, withSessionEpoch } from '@src/core/session/session-epoch';
 import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
-import { NOTIFICATION_QUERY_KEYS } from '@src/features/notification/constants/notification-query-keys';
+import { NOTIFICATION_QUERY_KEYS } from '@src/features/notification/queries/notification-query-keys';
 import {
   type AppLifecycleGatewayStub,
   createAnalyticsStub,

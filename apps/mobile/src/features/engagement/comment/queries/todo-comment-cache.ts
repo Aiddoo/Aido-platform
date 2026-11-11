@@ -1,7 +1,6 @@
 import { invalidateTodoSummaries } from '@src/features/planning/todo/queries/todo-cache';
 import type { QueryClient, QueryKey } from '@tanstack/react-query';
 
-import { TODO_COMMENT_QUERY_KEYS } from '../constants/todo-comment-query-keys';
 import type { TodoComment } from '../domains/todo-comment.model';
 import {
   addRepliesToThreadPages,
@@ -22,6 +21,7 @@ import {
   type TodoCommentThreadPages,
   type TodoCommentTransform,
 } from '../utils/todo-comment-cache-pages';
+import { TODO_COMMENT_QUERY_KEYS } from './todo-comment-query-keys';
 
 interface TodoCommentCacheInput {
   todoId: number;

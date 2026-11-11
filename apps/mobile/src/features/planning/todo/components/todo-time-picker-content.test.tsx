@@ -1,6 +1,6 @@
 import { createPreference } from '@src/features/identity/preference/__tests__/preference.fixtures';
 import '@src/shared/i18n/init';
-import { PREFERENCE_QUERY_KEYS } from '@src/features/identity/preference/constants/preference-query-keys';
+import { PREFERENCE_QUERY_KEYS } from '@src/features/identity/preference/queries/preference-query-keys';
 import {
   createErrorReporterStub,
   createHapticsGatewayStub,

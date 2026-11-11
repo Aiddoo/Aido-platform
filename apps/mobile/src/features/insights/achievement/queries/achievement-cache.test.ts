@@ -1,8 +1,8 @@
 import { createTestQueryClient } from '@src/shared/__tests__';
 import type { QueryClient } from '@tanstack/react-query';
 
-import { ACHIEVEMENT_QUERY_KEYS } from '../constants/achievement-query-keys';
 import { invalidateWeeklyAchievements } from './achievement-cache';
+import { ACHIEVEMENT_QUERY_KEYS } from './achievement-query-keys';
 
 describe('invalidateWeeklyAchievements', () => {
   let queryClient: QueryClient;

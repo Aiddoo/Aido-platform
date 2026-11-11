@@ -64,12 +64,12 @@ import Animated, { FadeIn } from 'react-native-reanimated';
 import { match } from 'ts-pattern';
 import { useResolveClassNames } from 'uniwind';
 
-import { MEMO_MUTATION_KEYS } from '../constants/memo-mutation-keys';
 import { MEMO_TOOLBAR_ICON } from '../constants/memo.constants';
 import { isMemoUnavailableError } from '../domains/memo.error';
 import { MemoPolicy } from '../domains/memo.model';
 import type { Memo } from '../domains/memo.model';
 import { useMemoId, useSelectedMemoId } from '../hooks/use-memo-params';
+import { MEMO_MUTATION_KEYS } from '../queries/memo-mutation-keys';
 import {
   useDeleteMemoMutationOptions,
   useParseMemoMutationOptions,

@@ -2,14 +2,14 @@ import '@src/shared/i18n/init';
 import type { AccessTier } from '@aido/api/vocabulary';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
 import { toUser } from '@src/features/identity/user/apis/user.mapper';
-import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
 import { MyPageMenuNavigationProvider } from '@src/features/identity/user/hooks/use-my-page-menu-navigation';
+import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-keys';
 import { createTestQueryClient, renderUi } from '@src/shared/__tests__';
 import { screen } from '@testing-library/react-native';
 import { Suspense } from 'react';
 
 import { createEntitlementSnapshot } from '../__tests__/entitlement.fixtures';
-import { ENTITLEMENT_QUERY_KEYS } from '../constants/entitlement-query-keys';
+import { ENTITLEMENT_QUERY_KEYS } from '../queries/entitlement-query-keys';
 import { PlanSummary } from './plan-summary';
 
 const DAY_MS = 24 * 60 * 60 * 1000;

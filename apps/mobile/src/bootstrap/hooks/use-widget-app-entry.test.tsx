@@ -7,7 +7,7 @@ import { WIDGET_NAVIGATION_COMMAND_TTL_MS } from '@src/features/device/widget/co
 import { type WidgetNavigationCommand } from '@src/features/device/widget/domains/widget-navigation.model';
 import { createAuthSessionStoreStub } from '@src/features/identity/auth/__tests__/create-auth-session-store-stub';
 import { createUser } from '@src/features/identity/user/__tests__/user.fixtures';
-import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
+import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-keys';
 import {
   createTestDi,
   createMemoryObservableSyncStorage,

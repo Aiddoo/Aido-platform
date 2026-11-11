@@ -17,7 +17,6 @@ import {
 import { pick } from 'es-toolkit';
 
 import { WEATHER_LOG_EVENT } from '../constants/weather-log-events';
-import { WEATHER_QUERY_KEYS } from '../constants/weather-query-keys';
 import { WeatherLocationPolicy } from '../domains/weather-location.model';
 import { type LocationReading } from '../domains/weather-location.model';
 import { findTodayOrFirstForecast } from '../domains/weather-report.model';
@@ -25,6 +24,7 @@ import { type WeatherReport } from '../domains/weather-report.model';
 import { withDevWeatherOverride, useDevWeatherOverride } from '../hooks/use-dev-weather-override';
 import { type WeatherSceneInput } from '../utils/weather-scene.view-model';
 import { removeOutdatedWeatherReports } from './weather-cache';
+import { WEATHER_QUERY_KEYS } from './weather-query-keys';
 
 const LOCATION_STALE_TIME_MS = 30 * MINUTE_MS;
 

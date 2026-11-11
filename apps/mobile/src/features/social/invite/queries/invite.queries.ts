@@ -14,7 +14,6 @@ import {
 import { orderBy } from 'es-toolkit';
 
 import { INVITE_LOG_EVENT } from '../constants/invite-log-events';
-import { INVITE_QUERY_KEYS } from '../constants/invite-query-keys';
 import { INVITED_FRIEND_SUMMARY_LIMIT } from '../constants/invite.constants';
 import type { InviteCode } from '../domains/invite-code.model';
 import type { RedemptionResult } from '../domains/invite-redemption.model';
@@ -22,6 +21,7 @@ import { isInviteDisabledError } from '../domains/invite.error';
 import { InvitedFriendPolicy } from '../domains/invited-friend.model';
 import type { InvitedFriend } from '../domains/invited-friend.model';
 import { invalidateInviteAvailability } from './invite-cache';
+import { INVITE_QUERY_KEYS } from './invite-query-keys';
 
 // 운영 플래그라 자주 바뀌지 않는다. 진입점이 여러 곳이어도 한 번만 묻는다
 const AVAILABILITY_STALE_TIME_MS = 5 * MINUTE_MS;

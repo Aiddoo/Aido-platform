@@ -1,8 +1,8 @@
 import { useAppIconService } from '@src/bootstrap/providers/di-context';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
-import { APP_ICON_QUERY_KEYS } from '../constants/app-icon-query-keys';
 import type { AppIconKey } from '../domains/app-icon.model';
+import { APP_ICON_QUERY_KEYS } from './app-icon-query-keys';
 
 export function useChangeAppIconMutationOptions() {
   const appIconService = useAppIconService();

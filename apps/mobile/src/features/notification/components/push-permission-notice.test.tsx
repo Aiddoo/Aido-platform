@@ -1,13 +1,13 @@
 import '@src/shared/i18n/init';
 import { createPreferenceDto } from '@src/features/identity/preference/__tests__/preference.fixtures';
 import { toPreference } from '@src/features/identity/preference/apis/preference.mapper';
-import { PREFERENCE_QUERY_KEYS } from '@src/features/identity/preference/constants/preference-query-keys';
+import { PREFERENCE_QUERY_KEYS } from '@src/features/identity/preference/queries/preference-query-keys';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
 import { toUser } from '@src/features/identity/user/apis/user.mapper';
-import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
+import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-keys';
 import { createTodoDto } from '@src/features/planning/todo/__tests__/todo.fixtures';
 import { toTodo } from '@src/features/planning/todo/apis/todo.mapper';
-import { TODO_QUERY_KEYS } from '@src/features/planning/todo/constants/todo-query-keys';
+import { TODO_QUERY_KEYS } from '@src/features/planning/todo/queries/todo-query-keys';
 import {
   createAnalyticsStub,
   createExternalLinkGatewayStub,
@@ -22,8 +22,8 @@ import { addDaysToDateKey } from '@src/shared/date/date-key';
 import { readDeviceLocalDateState } from '@src/shared/date/local-date-clock';
 import { screen, userEvent, waitFor } from '@testing-library/react-native';
 
-import { NOTIFICATION_QUERY_KEYS } from '../constants/notification-query-keys';
 import type { PushPermission } from '../domains/push-permission.model';
+import { NOTIFICATION_QUERY_KEYS } from '../queries/notification-query-keys';
 import { PushPermissionNotice } from './push-permission-notice';
 
 const DENIED_TITLE = '알림이 꺼져 있어요';

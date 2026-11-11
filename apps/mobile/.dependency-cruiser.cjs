@@ -116,7 +116,6 @@ const CLIENT_OWNED_MODEL_PATHS = [
   'src/features/app-config/app-version/components/',
   'src/features/app-config/app-version/domains/',
   'src/features/app-config/app-version/queries/',
-  'src/features/app-config/feature-campaign/constants/',
   'src/features/app-config/feature-campaign/queries/',
   'src/features/app-config/whats-new/components/',
   'src/features/app-config/whats-new/constants/',

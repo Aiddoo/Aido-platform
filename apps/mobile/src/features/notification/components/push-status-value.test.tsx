@@ -2,7 +2,7 @@ import '@src/shared/i18n/init';
 import type { PushPermissionResponse } from '@src/core/ports/push-notification-gateway';
 import { createPreferenceDto } from '@src/features/identity/preference/__tests__/preference.fixtures';
 import { toPreference } from '@src/features/identity/preference/apis/preference.mapper';
-import { PREFERENCE_QUERY_KEYS } from '@src/features/identity/preference/constants/preference-query-keys';
+import { PREFERENCE_QUERY_KEYS } from '@src/features/identity/preference/queries/preference-query-keys';
 import {
   createPushNotificationGatewayStub,
   createTestQueryClient,

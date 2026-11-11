@@ -175,10 +175,15 @@ const noInlineQueryOptions = {
   },
 };
 
-// 쿼리 키는 constants/{feature}-query-keys.ts에서 만든다
+// 쿼리 키는 queries/{feature}-query-keys.ts에서 만든다
+const QUERY_KEY_FILE = /\/queries\/[a-z0-9-]+-query-keys\.ts$/u;
+
 const queryKeyLocation = {
   meta: { type: 'suggestion' },
-  createOnce(context) {
+  create(context) {
+    if (QUERY_KEY_FILE.test(context.filename)) {
+      return {};
+    }
     return {
       Property(node) {
         if (
@@ -188,7 +193,7 @@ const queryKeyLocation = {
         ) {
           context.report({
             node,
-            message: '쿼리 키는 constants/{feature}-query-keys.ts에서 만듭니다.',
+            message: '쿼리 키는 queries/{feature}-query-keys.ts에서 만듭니다.',
           });
         }
       },

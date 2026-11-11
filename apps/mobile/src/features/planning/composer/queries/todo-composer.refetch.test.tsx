@@ -9,7 +9,7 @@ import {
   createTodoDto,
   createTodoListResponseDto,
 } from '@src/features/planning/todo/__tests__/todo.fixtures';
-import { TODO_QUERY_KEYS } from '@src/features/planning/todo/constants/todo-query-keys';
+import { TODO_QUERY_KEYS } from '@src/features/planning/todo/queries/todo-query-keys';
 import {
   useGetDailyCompletionsQueryOptions,
   useGetTodoExistenceQueryOptions,

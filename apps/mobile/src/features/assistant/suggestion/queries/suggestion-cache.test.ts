@@ -1,9 +1,9 @@
-import { REPORT_QUERY_KEYS } from '@src/features/insights/report/constants/report-query-keys';
+import { REPORT_QUERY_KEYS } from '@src/features/insights/report/queries/report-query-keys';
 import { createTestQueryClient } from '@src/shared/__tests__';
 import type { QueryClient } from '@tanstack/react-query';
 
-import { SUGGESTION_QUERY_KEYS } from '../constants/suggestion-query-keys';
 import { invalidateAiSuggestions } from './suggestion-cache';
+import { SUGGESTION_QUERY_KEYS } from './suggestion-query-keys';
 
 describe('invalidateAiSuggestions', () => {
   let queryClient: QueryClient;

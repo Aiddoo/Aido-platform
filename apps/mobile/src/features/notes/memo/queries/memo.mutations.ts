@@ -34,8 +34,6 @@ import { t } from '@src/shared/i18n';
 import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { mutationOptions, onlineManager, useQueryClient } from '@tanstack/react-query';
 
-import { MEMO_MUTATION_KEYS } from '../constants/memo-mutation-keys';
-import { MEMO_QUERY_KEYS } from '../constants/memo-query-keys';
 import type { MemoFormValues } from '../schemas/memo-form.schema';
 import { createMemoDraftKey } from '../utils/memo-draft';
 import {
@@ -44,6 +42,8 @@ import {
   restoreOrCreateMemoPlanIdempotencyKey,
 } from '../utils/memo-plan-draft';
 import { invalidateMemoList, invalidateMemoResourceLimit, replaceMemoInList } from './memo-cache';
+import { MEMO_MUTATION_KEYS } from './memo-mutation-keys';
+import { MEMO_QUERY_KEYS } from './memo-query-keys';
 
 export function useCreateMemoMutationOptions() {
   const memoService = useMemoService();

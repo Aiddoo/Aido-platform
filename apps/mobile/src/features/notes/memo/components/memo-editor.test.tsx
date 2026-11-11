@@ -3,13 +3,13 @@ import '@src/shared/i18n/init';
 import { ApiError } from '@src/core/errors/api-error';
 import { err, ok } from '@src/core/errors/result';
 import { createEntitlementSnapshot } from '@src/features/billing/subscription/__tests__/entitlement.fixtures';
-import { ENTITLEMENT_QUERY_KEYS } from '@src/features/billing/subscription/constants/entitlement-query-keys';
 import { type EntitlementSnapshot } from '@src/features/billing/subscription/domains/entitlement.model';
+import { ENTITLEMENT_QUERY_KEYS } from '@src/features/billing/subscription/queries/entitlement-query-keys';
 import { createConsent } from '@src/features/identity/consent/__tests__/consent.fixtures';
-import { CONSENT_QUERY_KEYS } from '@src/features/identity/consent/constants/consent-query-keys';
 import { type Consent } from '@src/features/identity/consent/domains/consent.model';
+import { CONSENT_QUERY_KEYS } from '@src/features/identity/consent/queries/consent-query-keys';
 import { createUser } from '@src/features/identity/user/__tests__/user.fixtures';
-import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
+import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-keys';
 import { createTodoCategoryListDto } from '@src/features/planning/category/__tests__/todo-category.fixtures';
 import {
   createHttpClientStub,
@@ -27,7 +27,7 @@ import { Keyboard } from 'react-native';
 
 import { createMemo } from '../__tests__/memo.fixtures';
 import { createParseMemoResponseDto } from '../__tests__/parsed-memo.fixtures';
-import { MEMO_QUERY_KEYS } from '../constants/memo-query-keys';
+import { MEMO_QUERY_KEYS } from '../queries/memo-query-keys';
 import { MemoEditor } from './memo-editor';
 import { MemoList } from './memo-list';
 

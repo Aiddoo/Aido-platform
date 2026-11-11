@@ -4,7 +4,7 @@ import { ErrorCode } from '@aido/api/errors';
 import { PLAN_CATALOG } from '@aido/api/vocabulary';
 import { ok } from '@src/core/errors/result';
 import { createUser } from '@src/features/identity/user/__tests__/user.fixtures';
-import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
+import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-keys';
 import {
   createAnalyticsStub,
   createErrorReporterStub,
@@ -26,9 +26,9 @@ import {
   createFeatureQuotaDto,
   createLimitApiError,
 } from '../__tests__/entitlement.fixtures';
-import { ENTITLEMENT_QUERY_KEYS } from '../constants/entitlement-query-keys';
 import { type EntitlementSnapshot } from '../domains/entitlement.model';
 import { EntitlementPolicy } from '../domains/entitlement.model';
+import { ENTITLEMENT_QUERY_KEYS } from '../queries/entitlement-query-keys';
 import { upsellDismissalStoredValue } from '../schemas/upsell-dismissal-storage.schema';
 import { useEntitlementGate } from './use-entitlement-gate';
 
