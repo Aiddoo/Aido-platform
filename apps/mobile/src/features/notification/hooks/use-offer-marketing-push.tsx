@@ -16,7 +16,7 @@ import { MarketingPushOptInBottomSheet } from '../components/marketing-push-opt-
 import { NOTIFICATION_LOG_EVENT } from '../constants/notification-log-events';
 import { MarketingPushPromptPolicy } from '../domains/marketing-push-prompt.model';
 import { PushPermissionPolicy } from '../domains/push-permission.model';
-import { useGetPushPermissionQueryOptions } from '../queries/notification.queries';
+import { useGetPushPermissionQueryOptions } from '../queries/push-permission.queries';
 
 /** null은 답 없이 사라졌을 때(로그아웃 등)라 거절로 남기지 않는다 */
 type MarketingPushOfferChoice = 'agree' | 'dismiss' | null;

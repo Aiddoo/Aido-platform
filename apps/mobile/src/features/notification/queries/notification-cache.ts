@@ -3,9 +3,7 @@ import { type InfiniteData, notifyManager, type QueryClient } from '@tanstack/re
 import { uniq } from 'es-toolkit';
 
 import type { Notification, NotificationPage } from '../domains/notification.model';
-import type { PushPermission } from '../domains/push-permission.model';
 import { NOTIFICATION_QUERY_KEYS } from './notification-query-keys';
-import { PUSH_PERMISSION_QUERY_KEYS } from './push-permission-query-keys';
 
 type NotificationPages = InfiniteData<NotificationPage, number | undefined>;
 
@@ -101,18 +99,10 @@ export function revertNotificationsRead(queryClient: QueryClient, change: Notifi
   });
 }
 
-/** 알림함(목록·안 읽은 수)만 다시 받는다. 권한은 OS 설정에서 돌아올 때 따로 맞춘다 */
+/** 알림함(목록·안 읽은 수)만 다시 받는다. 권한은 `['device', 'push-permission']`이라 닿지 않는다 */
 export function invalidateNotifications(queryClient: QueryClient) {
   return Promise.all([
     queryClient.invalidateQueries({ queryKey: NOTIFICATION_QUERY_KEYS.lists() }),
     queryClient.invalidateQueries({ queryKey: NOTIFICATION_QUERY_KEYS.unreadCount() }),
   ]);
-}
-
-export function setCachedPushPermission(queryClient: QueryClient, permission: PushPermission) {
-  queryClient.setQueryData(PUSH_PERMISSION_QUERY_KEYS.current(), permission);
-}
-
-export function invalidatePushPermission(queryClient: QueryClient) {
-  return queryClient.invalidateQueries({ queryKey: PUSH_PERMISSION_QUERY_KEYS.current() });
 }

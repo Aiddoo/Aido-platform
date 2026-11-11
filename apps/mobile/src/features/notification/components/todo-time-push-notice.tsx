@@ -5,8 +5,8 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 
 import { PUSH_ASK_MOMENT } from '../constants/notification.constants';
 import { PushPermissionPolicy } from '../domains/push-permission.model';
-import { useOpenPushSettingsMutationOptions } from '../queries/notification.mutations';
-import { useGetPushPermissionQueryOptions } from '../queries/notification.queries';
+import { useOpenPushSettingsMutationOptions } from '../queries/push-permission.mutations';
+import { useGetPushPermissionQueryOptions } from '../queries/push-permission.queries';
 
 interface TodoTimePushNoticeProps {
   /** 종일이 아니고 시각을 정했을 때만 알림이 간다 */

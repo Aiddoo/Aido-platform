@@ -6,7 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 
 import { PUSH_ASK_MOMENT } from '../constants/notification.constants';
 import { PushPermissionPolicy } from '../domains/push-permission.model';
-import { useGetPushPermissionQueryOptions } from '../queries/notification.queries';
+import { useGetPushPermissionQueryOptions } from '../queries/push-permission.queries';
 import { pushPermissionDeferredAtStoredValue } from '../schemas/push-permission-deferred-at-storage.schema';
 
 /**

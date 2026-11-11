@@ -10,8 +10,8 @@ import { PushPermissionPolicy } from '../../domains/push-permission.model';
 import {
   useOpenPushSettingsMutationOptions,
   useRequestPushPermissionMutationOptions,
-} from '../../queries/notification.mutations';
-import { useGetPushPermissionQueryOptions } from '../../queries/notification.queries';
+} from '../../queries/push-permission.mutations';
+import { useGetPushPermissionQueryOptions } from '../../queries/push-permission.queries';
 
 const SOURCE: PushPermissionPromptSource = 'settings';
 

@@ -5,7 +5,7 @@ import { useSuspenseQueries } from '@tanstack/react-query';
 import { Suspense } from 'react';
 
 import { PUSH_SUMMARY_LABEL_KEYS } from '../constants/notification-labels';
-import { useGetPushPermissionQueryOptions } from '../queries/notification.queries';
+import { useGetPushPermissionQueryOptions } from '../queries/push-permission.queries';
 import { toPushSummary } from '../utils/push-permission.view-model';
 
 /** 알림 설정 행의 현재 값. 알림 설정 화면의 푸시 값과 같은 말을 쓴다. 못 읽으면 값 없이 둔다 */

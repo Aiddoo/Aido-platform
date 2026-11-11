@@ -12,8 +12,8 @@ import {
   useOpenPushSettingsMutationOptions,
   useRequestPushPermissionMutationOptions,
   useUpdatePushEnabledAndAskPermissionMutationOptions,
-} from '../queries/notification.mutations';
-import { useGetPushPermissionQueryOptions } from '../queries/notification.queries';
+} from '../queries/push-permission.mutations';
+import { useGetPushPermissionQueryOptions } from '../queries/push-permission.queries';
 
 type PushPermissionToggleProps = Omit<
   ComponentProps<typeof SettingsListGroup.Toggle>,

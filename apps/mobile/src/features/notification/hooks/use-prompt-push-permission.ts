@@ -7,8 +7,8 @@ import { NOTIFICATION_LOG_EVENT } from '../constants/notification-log-events';
 import { PUSH_ASK_MOMENT } from '../constants/notification.constants';
 import type { PushPermissionPromptSource } from '../constants/notification.events';
 import { PushPermissionPolicy } from '../domains/push-permission.model';
-import { useRequestPushPermissionMutationOptions } from '../queries/notification.mutations';
-import { useGetPushPermissionQueryOptions } from '../queries/notification.queries';
+import { useRequestPushPermissionMutationOptions } from '../queries/push-permission.mutations';
+import { useGetPushPermissionQueryOptions } from '../queries/push-permission.queries';
 
 const SOURCE: PushPermissionPromptSource = 'todo_time';
 

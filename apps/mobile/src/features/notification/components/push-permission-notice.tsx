@@ -21,8 +21,8 @@ import { PushPermissionPolicy } from '../domains/push-permission.model';
 import {
   useOpenPushSettingsMutationOptions,
   useRequestPushPermissionMutationOptions,
-} from '../queries/notification.mutations';
-import { useGetPushPermissionQueryOptions } from '../queries/notification.queries';
+} from '../queries/push-permission.mutations';
+import { useGetPushPermissionQueryOptions } from '../queries/push-permission.queries';
 import { pushNoticeDismissedAtStoredValue } from '../schemas/push-notice-dismissed-at-storage.schema';
 
 const SOURCE: PushPermissionPromptSource = 'feed_card';

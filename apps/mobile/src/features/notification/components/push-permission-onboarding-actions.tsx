@@ -11,7 +11,7 @@ import { useCallback, useEffect } from 'react';
 
 import { PUSH_PERMISSION_STEP } from '../constants/notification.constants';
 import type { PushPermissionPromptSource } from '../constants/notification.events';
-import { useRequestPushPermissionMutationOptions } from '../queries/notification.mutations';
+import { useRequestPushPermissionMutationOptions } from '../queries/push-permission.mutations';
 import { pushPermissionDeferredAtStoredValue } from '../schemas/push-permission-deferred-at-storage.schema';
 
 const SOURCE: PushPermissionPromptSource = 'onboarding';

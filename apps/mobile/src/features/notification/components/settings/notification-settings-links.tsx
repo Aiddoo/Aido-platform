@@ -17,7 +17,7 @@ import { router } from 'expo-router';
 import type { ComponentProps } from 'react';
 
 import { PUSH_SUMMARY_LABEL_KEYS } from '../../constants/notification-labels';
-import { useGetPushPermissionQueryOptions } from '../../queries/notification.queries';
+import { useGetPushPermissionQueryOptions } from '../../queries/push-permission.queries';
 import { toPushSummary } from '../../utils/push-permission.view-model';
 
 type SettingsSectionProps = Omit<ComponentProps<typeof SettingsListGroup>, 'children'>;

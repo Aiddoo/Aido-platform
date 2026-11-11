@@ -6,8 +6,8 @@ import { useMutation, useSuspenseQueries } from '@tanstack/react-query';
 import type { ComponentProps } from 'react';
 
 import { PushPermissionPolicy } from '../../domains/push-permission.model';
-import { useUpdatePushEnabledAndAskPermissionMutationOptions } from '../../queries/notification.mutations';
-import { useGetPushPermissionQueryOptions } from '../../queries/notification.queries';
+import { useUpdatePushEnabledAndAskPermissionMutationOptions } from '../../queries/push-permission.mutations';
+import { useGetPushPermissionQueryOptions } from '../../queries/push-permission.queries';
 
 type SettingsSectionProps = Omit<ComponentProps<typeof SettingsListGroup>, 'children'>;
 

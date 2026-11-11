@@ -5,7 +5,7 @@ import { useMutation } from '@tanstack/react-query';
 import { debounce, noop } from 'es-toolkit';
 import { useEffect } from 'react';
 
-import { useReportPushDeviceMutationOptions } from '../queries/notification.mutations';
+import { useReportPushDeviceMutationOptions } from '../queries/push-device.mutations';
 
 /** 권한 창·제어 센터처럼 짧게 오가는 복귀를 한 번으로 묶는다 */
 const APP_ACTIVE_SYNC_DELAY_MS = 1_000;

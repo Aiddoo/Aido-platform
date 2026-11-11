@@ -1,7 +1,7 @@
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { PushPermissionPolicy } from '@src/features/notification/domains/push-permission.model';
-import { useRequestPushPermissionMutationOptions } from '@src/features/notification/queries/notification.mutations';
-import { useGetPushPermissionQueryOptions } from '@src/features/notification/queries/notification.queries';
+import { useRequestPushPermissionMutationOptions } from '@src/features/notification/queries/push-permission.mutations';
+import { useGetPushPermissionQueryOptions } from '@src/features/notification/queries/push-permission.queries';
 import { useRouteParams } from '@src/shared/hooks/use-route-params';
 import { useTranslation } from '@src/shared/i18n';
 import {
