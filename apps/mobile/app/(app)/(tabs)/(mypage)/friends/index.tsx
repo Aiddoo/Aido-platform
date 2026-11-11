@@ -4,8 +4,10 @@ import Search from '@expo/material-symbols/search.xml';
 import { FriendList } from '@src/features/social/friend/components/friend-list';
 import { ReceivedRequestList } from '@src/features/social/friend/components/received-request-list';
 import { SentRequestList } from '@src/features/social/friend/components/sent-request-list';
-import { useFriendListEditMode } from '@src/features/social/friend/hooks/use-friend-list-edit-mode';
-import { useFriendListView } from '@src/features/social/friend/hooks/use-friend-list-view';
+import {
+  useFriendListIsEditing,
+  useFriendListView,
+} from '@src/features/social/friend/hooks/use-friend-list-params';
 import {
   FRIEND_LIST_VIEW,
   friendListViewSchema,
@@ -37,7 +39,7 @@ export default function FriendsScreen() {
 
   const { t } = useTranslation(['friend', 'common']);
   const [view, setView] = useFriendListView();
-  const [isEditMode, setIsEditMode] = useFriendListEditMode();
+  const [isEditing, setIsEditing] = useFriendListIsEditing();
   const isInviteAvailable = useIsInviteAvailable();
   const openMyInvite = useOpenMyInvite();
 
@@ -53,11 +55,11 @@ export default function FriendsScreen() {
         </Stack.Toolbar.Button>
         <Stack.Toolbar.Button
           hidden={view !== FRIEND_LIST_VIEW.friends}
-          icon={isEditMode ? DONE_ICON : EDIT_ICON}
-          accessibilityLabel={isEditMode ? t('common:actions.done') : t('list.edit')}
-          onPress={() => setIsEditMode(!isEditMode)}
+          icon={isEditing ? DONE_ICON : EDIT_ICON}
+          accessibilityLabel={isEditing ? t('common:actions.done') : t('list.edit')}
+          onPress={() => setIsEditing(!isEditing)}
         >
-          {isEditMode ? t('common:actions.done') : t('list.edit')}
+          {isEditing ? t('common:actions.done') : t('list.edit')}
         </Stack.Toolbar.Button>
       </Stack.Toolbar>
 

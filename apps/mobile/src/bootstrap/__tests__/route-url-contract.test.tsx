@@ -7,8 +7,10 @@ import { notificationDirectionParamSchema } from '@src/features/notification/sch
 import { categorySettingsViewSchema } from '@src/features/planning/category/schemas/category-settings-params.schema';
 import { useFeedAction, useFeedFriendId } from '@src/features/planning/todo/hooks/use-feed-params';
 import { useFeedSelectedTodoId } from '@src/features/planning/todo/hooks/use-feed-selected-todo-id';
-import { useFriendListEditMode } from '@src/features/social/friend/hooks/use-friend-list-edit-mode';
-import { useFriendListView } from '@src/features/social/friend/hooks/use-friend-list-view';
+import {
+  useFriendListIsEditing,
+  useFriendListView,
+} from '@src/features/social/friend/hooks/use-friend-list-params';
 import { invitedFriendsViewSchema } from '@src/features/social/invite/schemas/invite-params.schema';
 import { voiceNoteTabSchema } from '@src/features/voice/schemas/voice-note-params.schema';
 import { useWeatherRescheduleParams } from '@src/features/weather/hooks/use-weather-reschedule-params';
@@ -137,7 +139,7 @@ describe('공개 URL 계약', () => {
     ['끄면 값이 사라진다', '/friends?isEditing=true', false, '/friends'],
   ])('친구 편집: %s', async (_name, url, next, expected) => {
     // Given
-    const route = await renderRouteHook(() => useFriendListEditMode(), { url });
+    const route = await renderRouteHook(() => useFriendListIsEditing(), { url });
 
     // When
     await route.run(([_isEditMode, setIsEditMode]) => setIsEditMode(next));

@@ -28,7 +28,7 @@ import {
   TextSkeleton,
   TintedRefreshControl,
   useFetchNextPage,
-  useOverlay,
+  useConfirmDialog,
   VStack,
   MenuContent,
   Mascot,
@@ -49,13 +49,12 @@ import ReorderableList, { useIsActive, useReorderableDrag } from 'react-native-r
 import { match } from 'ts-pattern';
 
 import type { FriendUser } from '../domains/friend.model';
-import { useFriendListEditMode } from '../hooks/use-friend-list-edit-mode';
+import { useFriendListIsEditing } from '../hooks/use-friend-list-params';
 import {
   useRemoveFriendMutationOptions,
   useReorderFriendMutationOptions,
 } from '../queries/friend.mutations';
 import { useGetFriendsInfiniteQueryOptions } from '../queries/friend.queries';
-import { FriendDeleteConfirmDialog } from './friend-delete-confirm-dialog';
 
 interface FriendListProps {
   /** 초대를 쓸 수 있으면 빈 목록에서 링크로 데려오는 길을 먼저 보인다. 없으면 태그 찾기만 안내한다 */
@@ -82,6 +81,7 @@ export function FriendList({ onInvite, inviteWelcomeDays }: FriendListProps) {
     fetchNextPage,
   });
   const reorderMutation = useMutation(useReorderFriendMutationOptions());
+  const [isEditing] = useFriendListIsEditing();
   const [isRefreshing, handleRefresh] = useRefresh(refetch);
 
   const { items: friends, totalCount } = data;
@@ -112,7 +112,8 @@ export function FriendList({ onInvite, inviteWelcomeDays }: FriendListProps) {
           <EditModeGuideTooltip />
         </HStack>
       }
-      renderItem={({ item }) => <FriendList.Item friend={item} />}
+      extraData={isEditing}
+      renderItem={({ item }) => <FriendList.Item friend={item} isEditing={isEditing} />}
       ListEmptyComponent={
         <FriendList.Empty onInvite={onInvite} inviteWelcomeDays={inviteWelcomeDays} />
       }
@@ -134,51 +135,41 @@ export function FriendList({ onInvite, inviteWelcomeDays }: FriendListProps) {
 
 interface FriendListItemProps {
   friend: FriendUser;
+  isEditing: boolean;
 }
 
-FriendList.Item = function Item({ friend }: FriendListItemProps) {
+FriendList.Item = function Item({ friend, isEditing }: FriendListItemProps) {
   const drag = useReorderableDrag();
   const isActive = useIsActive();
   const fontScaledSize = useFontScaledSize();
   const { t } = useTranslation(['common', 'friend']);
   const displayName = friend.name ?? t('friend:fallbackName');
-  const [isEditMode] = useFriendListEditMode();
   const removeMutation = useMutation(useRemoveFriendMutationOptions());
-  const overlay = useOverlay();
+  const confirmDialog = useConfirmDialog();
 
-  const openDeleteConfirmDialog = () => {
-    overlay.open(({ isOpen, close, unmount }) => {
-      const closeDialog = () => {
-        close();
-        unmount();
-      };
-      return (
-        <FriendDeleteConfirmDialog
-          name={displayName}
-          isOpen={isOpen}
-          onOpenChange={(open) => {
-            if (!open) {
-              closeDialog();
-            }
-          }}
-          onCancel={closeDialog}
-          onConfirm={() => {
-            closeDialog();
-            removeMutation.mutate(friend.id);
-          }}
-        />
-      );
+  const openDeleteConfirmDialog = async () => {
+    const isConfirmed = await confirmDialog.openAsync({
+      title: t('friend:deleteDialog.title', { name: displayName }),
+      description: t('friend:deleteDialog.description'),
+      confirmLabel: t('common:actions.delete'),
+      confirmColor: 'danger',
+      confirmTestID: 'friend-delete-confirm',
+      cancelLabel: t('common:actions.cancel'),
     });
+    // 낙관적 갱신이 행을 바로 지우므로 다이얼로그를 연 채 기다리지 않는다
+    if (isConfirmed) {
+      removeMutation.mutate(friend.id);
+    }
   };
 
   return (
     <PressableFeedback
-      onLongPress={isEditMode ? drag : undefined}
+      onLongPress={isEditing ? drag : undefined}
       isDisabled={isActive}
       className={cn(isActive && 'bg-gray-1 rounded-xl')}
     >
       <HStack align="center">
-        {isEditMode && (
+        {isEditing && (
           <Animated.View
             entering={FadeInLeft.duration(ANIMATION.duration.normal)}
             exiting={FadeOutLeft.duration(ANIMATION.duration.fast)}
@@ -204,11 +195,11 @@ FriendList.Item = function Item({ friend }: FriendListItemProps) {
               />
             }
             contents={<ListRow.Texts type="1RowTypeA" top={displayName} />}
-            right={match({ isEditMode, isActive })
-              .with({ isEditMode: false }, () => (
+            right={match({ isEditing, isActive })
+              .with({ isEditing: false }, () => (
                 <FriendModerationMenu userId={friend.id} displayName={displayName} />
               ))
-              .with({ isEditMode: true, isActive: false }, () => (
+              .with({ isEditing: true, isActive: false }, () => (
                 <Animated.View
                   entering={FadeInRight.duration(ANIMATION.duration.normal)}
                   exiting={FadeOutRight.duration(ANIMATION.duration.fast)}
@@ -226,7 +217,7 @@ FriendList.Item = function Item({ friend }: FriendListItemProps) {
                   </Button>
                 </Animated.View>
               ))
-              .with({ isEditMode: true, isActive: true }, () => null)
+              .with({ isEditing: true, isActive: true }, () => null)
               .exhaustive()}
           />
         </Animated.View>

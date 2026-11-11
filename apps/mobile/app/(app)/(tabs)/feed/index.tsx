@@ -35,7 +35,9 @@ import {
   invalidateFriendTodos,
 } from '@src/features/planning/todo/queries/todo-cache';
 import { FriendStrip } from '@src/features/social/friend/components/friend-strip';
-import { useRouteFriendQuery } from '@src/features/social/friend/hooks/use-route-friend-query';
+import type { FriendUser } from '@src/features/social/friend/domains/friend.model';
+import { useFriendQuery } from '@src/features/social/friend/hooks/use-friend-query';
+import { useRouteFriendId } from '@src/features/social/friend/hooks/use-route-friend-id';
 import { InviteEntryBanner } from '@src/features/social/invite/components/invite-entry-banner';
 import { useIsInviteAvailable } from '@src/features/social/invite/hooks/use-is-invite-available';
 import { useOpenMyInvite } from '@src/features/social/invite/hooks/use-open-my-invite';
@@ -66,7 +68,7 @@ import { match, P } from 'ts-pattern';
 type FriendFeedView =
   | { status: 'loading' }
   | ({ status: 'error' } & QueryErrorFallbackProps)
-  | { status: 'ready'; friendId: string };
+  | { status: 'ready'; friend: FriendUser };
 
 export default function FeedScreen() {
   const [friendId] = useFeedFriendId();
@@ -281,7 +283,7 @@ function FriendFeed({ view }: { view: FriendFeedView }) {
       }
     >
       {match(view)
-        .with({ status: 'ready' }, ({ friendId }) => <FriendCalendar friendId={friendId} />)
+        .with({ status: 'ready' }, ({ friend }) => <FriendCalendar friendId={friend.id} />)
         .otherwise(() => (
           <Calendar />
         ))}
@@ -305,17 +307,23 @@ function FriendFeed({ view }: { view: FriendFeedView }) {
           .with({ status: 'error' }, ({ error, reset }) => (
             <FriendTodoList.Error error={error} reset={reset} />
           ))
-          .with({ status: 'ready' }, ({ friendId }) => (
+          .with({ status: 'ready' }, ({ friend }) => (
             <QueryErrorBoundary
-              resetKeys={[friendId, selectedDateKey]}
+              resetKeys={[friend.id, selectedDateKey]}
               fallback={FriendTodoList.Error}
             >
               <Suspense fallback={<FriendTodoList.Loading />}>
                 <FriendTodoList
                   key={selectedDateKey}
-                  friendId={friendId}
-                  rowAction={FriendTodoNudgeAction}
-                  emptyAction={FriendRemindNudgeAction}
+                  friendId={friend.id}
+                  renderRowAction={(todo) => (
+                    <FriendTodoNudgeAction
+                      todo={todo}
+                      friend={friend}
+                      selectedDateKey={selectedDateKey}
+                    />
+                  )}
+                  emptyAction={<FriendRemindNudgeAction friend={friend} />}
                 />
               </Suspense>
             </QueryErrorBoundary>
@@ -328,17 +336,18 @@ function FriendFeed({ view }: { view: FriendFeedView }) {
 
 /** route의 friendId를 친구 목록에서 확인한다. 더는 친구가 아니면 내 피드로 돌아간다 */
 FriendFeed.RouteFriend = function RouteFriend() {
+  const [friendId] = useRouteFriendId();
   const {
     data: friend,
     hasNextPage,
     isFetchNextPageError,
     error,
     fetchNextPage,
-  } = useRouteFriendQuery();
+  } = useFriendQuery(friendId);
 
   return match({ friend, isFetchNextPageError, hasNextPage })
     .with({ friend: P.nonNullable }, ({ friend }) => (
-      <FriendFeed view={{ status: 'ready', friendId: friend.id }} />
+      <FriendFeed view={{ status: 'ready', friend }} />
     ))
     .with({ isFetchNextPageError: true }, () => (
       <FriendFeed

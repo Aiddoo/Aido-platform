@@ -21,10 +21,6 @@ import { FriendTodoList } from './friend-todo-list';
 const FRIEND_ID = 'cmfriend000000000000000001';
 const CALENDAR_RETRY_LABEL = '캘린더 표시를 업데이트하지 못했어요';
 
-function NoAction() {
-  return null;
-}
-
 describe('FriendTodoList', () => {
   it('보던 친구가 친구를 끊어 403 FOLLOW_0906이 오면 오류로 보고하지 않고 볼 수 없다는 안내와 내 피드로 가는 길만 보인다', async () => {
     // Given
@@ -45,7 +41,7 @@ describe('FriendTodoList', () => {
         <FriendCalendar friendId={FRIEND_ID} />
         <QueryErrorBoundary fallback={FriendTodoList.Error}>
           <Suspense fallback={<FriendTodoList.Loading />}>
-            <FriendTodoList friendId={FRIEND_ID} rowAction={NoAction} emptyAction={NoAction} />
+            <FriendTodoList friendId={FRIEND_ID} renderRowAction={() => null} emptyAction={null} />
           </Suspense>
         </QueryErrorBoundary>
       </>,
