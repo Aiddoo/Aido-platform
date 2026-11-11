@@ -5,8 +5,7 @@ import {
   useVoiceNoteStorageService,
 } from '@src/bootstrap/providers/di-context';
 import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
-import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
-import { useQuery } from '@tanstack/react-query';
+import { useMyAccountId } from '@src/features/identity/user/hooks/use-my-account-id';
 import { useEffect } from 'react';
 
 /** 로그인한 계정을 기기에 저장된 초안, 조회 캐시, 음성 메모, 계정 구분 없던 안내 기록의 주인으로 정하고 다른 계정의 것은 지운다 */
@@ -18,11 +17,7 @@ export function useClaimDeviceDataForUser(): void {
   const marketingPushPromptRepository = useMarketingPushPromptRepository();
   const isAuthenticated = status === 'authenticated';
 
-  const { data: meId } = useQuery({
-    ...useGetMeQueryOptions(),
-    enabled: isAuthenticated,
-    select: (me) => me.id,
-  });
+  const meId = useMyAccountId({ isEnabled: isAuthenticated });
 
   useEffect(() => {
     if (isAuthenticated && meId != null) {

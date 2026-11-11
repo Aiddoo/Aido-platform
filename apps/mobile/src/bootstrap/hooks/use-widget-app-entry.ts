@@ -7,12 +7,12 @@ import {
   isWidgetRouteShown,
 } from '@src/features/device/widget/utils/widget-navigation-link';
 import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
+import { useMyAccountId } from '@src/features/identity/user/hooks/use-my-account-id';
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
-import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { feedParamsSchema } from '@src/features/planning/todo/schemas/feed-params.schema';
 import { toError } from '@src/shared/errors';
 import { useLinkingUrl } from '@src/shared/infra/linking/use-linking-url';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { router, useGlobalSearchParams, usePathname, useSegments } from 'expo-router';
 import { useEffect, useEffectEvent, useRef, useState, useSyncExternalStore } from 'react';
 
@@ -23,11 +23,7 @@ export function useWidgetAppEntry() {
   const errorReporter = useErrorReporter();
   const widgetNavigationRepository = useWidgetNavigationRepository();
   const queryClient = useQueryClient();
-  const meQuery = useQuery({
-    ...useGetMeQueryOptions(),
-    enabled: status === 'authenticated',
-    select: (user) => user.id,
-  });
+  const accountId = useMyAccountId({ isEnabled: status === 'authenticated' });
   const segments = useSegments();
   const pathname = usePathname();
   const parameters = feedParamsSchema.parse(useGlobalSearchParams());
@@ -130,7 +126,7 @@ export function useWidgetAppEntry() {
       pendingCommand == null
         ? null
         : WidgetNavigationPolicy.getCommandState(pendingCommand, {
-            userId: meQuery.data ?? null,
+            userId: accountId,
             now: Date.now(),
           });
     if (pendingCommand != null && commandState === 'stale') {
@@ -163,7 +159,7 @@ export function useWidgetAppEntry() {
     isAuthenticatedRouteMounted,
     pendingInitialUrl,
     pendingCommand,
-    meQuery.data,
+    accountId,
     widgetNavigationRepository,
   ]);
 }

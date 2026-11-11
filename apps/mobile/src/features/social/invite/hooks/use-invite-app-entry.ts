@@ -1,19 +1,13 @@
 import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
-import { type User } from '@src/features/identity/user/domains/user.model';
-import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
+import { useMyAccountId } from '@src/features/identity/user/hooks/use-my-account-id';
 import { getNowInstant } from '@src/shared/date/clock';
 import { readStoredValue, removeStoredValue } from '@src/shared/storage/define-stored-value';
 import { useStoredValueStorage } from '@src/shared/storage/use-stored-value';
-import { useQuery } from '@tanstack/react-query';
 import { router, useSegments } from 'expo-router';
 import { useEffect, useRef } from 'react';
 
 import { PendingRedemptionPolicy } from '../domains/pending-redemption.model';
 import { pendingRedemptionStoredValue } from '../schemas/pending-redemption-storage.schema';
-
-function selectUserId(user: User) {
-  return user.id;
-}
 
 /**
  * 로그인 전에 연 초대를 로그인 뒤 초대 카드로 이어서 연다(위젯 진입과 같은 방식).
@@ -24,12 +18,7 @@ export function useInviteAppEntry() {
   const status = useAuthStatus();
   const storage = useStoredValueStorage(pendingRedemptionStoredValue);
   const segments = useSegments();
-  const { data: userId } = useQuery({
-    ...useGetMeQueryOptions(),
-    enabled: status === 'authenticated',
-    throwOnError: false,
-    select: selectUserId,
-  });
+  const userId = useMyAccountId({ isEnabled: status === 'authenticated' });
   const isAuthenticatedRouteMounted = segments[0] === '(app)';
   const openedPendingKeyRef = useRef<string | null>(null);
 

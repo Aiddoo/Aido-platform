@@ -1,6 +1,6 @@
 import { subscribeNotificationsChanged } from '@src/core/events/notifications-changed';
 import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
-import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
+import { useMyAccountId } from '@src/features/identity/user/hooks/use-my-account-id';
 import type { NotificationType } from '@src/features/notification/domains/notification.model';
 import { useForegroundPushPresentation } from '@src/features/notification/hooks/use-foreground-push-presentation';
 import { useForegroundPushSync } from '@src/features/notification/hooks/use-foreground-push-sync';
@@ -10,7 +10,7 @@ import { useRegisterMarketingNotificationCategory } from '@src/features/notifica
 import { useTimezoneChangeNotice } from '@src/features/notification/hooks/use-timezone-change-notice';
 import { invalidateNotifications } from '@src/features/notification/queries/notification-cache';
 import { useLocalDate } from '@src/shared/providers/local-date-provider';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { type PropsWithChildren, useCallback, useEffect, useReducer } from 'react';
 
 import { invalidateOnNotificationReceived } from '../query/notification-received-invalidation';
@@ -23,8 +23,7 @@ export function NotificationProvider({ children }: PropsWithChildren) {
     (type: NotificationType) => invalidateOnNotificationReceived(queryClient, type),
     [queryClient],
   );
-  const { data: me } = useQuery({ ...useGetMeQueryOptions(), enabled: isAuthenticated });
-  const accountId = isAuthenticated ? (me?.id ?? null) : null;
+  const accountId = useMyAccountId({ isEnabled: isAuthenticated });
   const { currentTimeZone } = useLocalDate();
   const [reportCount, markReported] = useReducer((count: number) => count + 1, 0);
 

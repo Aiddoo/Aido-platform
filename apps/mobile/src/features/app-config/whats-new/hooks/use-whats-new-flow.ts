@@ -3,14 +3,13 @@ import {
   useLogger,
   useWhatsNewRepository,
 } from '@src/bootstrap/providers/di-context';
-import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
+import { useMyAccountId } from '@src/features/identity/user/hooks/use-my-account-id';
 import { useTrack } from '@src/shared/analytics';
 import type { FeatureKey } from '@src/shared/analytics/feature-key';
 import { getNowInstant } from '@src/shared/date/clock';
 import { getErrorMessage } from '@src/shared/errors';
 import { useGoBack } from '@src/shared/hooks/use-go-back';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
-import { useQuery } from '@tanstack/react-query';
 import { type Href, router } from 'expo-router';
 import { useEffect, useRef } from 'react';
 
@@ -30,8 +29,7 @@ export function useWhatsNewFlow({ release, source }: WhatsNewFlowInput) {
   const featureAttribution = useFeatureAttribution();
   const logger = useLogger();
   const repository = useWhatsNewRepository();
-  const { data: user } = useQuery(useGetMeQueryOptions());
-  const accountId = user?.id;
+  const accountId = useMyAccountId();
   const isFinishedRef = useRef(false);
   const viewedStepsRef = useRef(new Set<string>());
 

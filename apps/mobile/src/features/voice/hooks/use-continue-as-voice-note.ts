@@ -1,9 +1,8 @@
 import { useIdGenerator, useVoiceNoteDraftRepository } from '@src/bootstrap/providers/di-context';
 import type { SpeechLocale } from '@src/core/ports/speech-recognizer';
-import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
+import { useMyAccountId } from '@src/features/identity/user/hooks/use-my-account-id';
 import { getNowInstant } from '@src/shared/date/clock';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
-import { useQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 
 import { createTranscribedVoiceNote } from '../domains/voice-note-caption.model';
@@ -26,9 +25,9 @@ export function useContinueAsVoiceNote() {
   const voiceNoteDraftRepository = useVoiceNoteDraftRepository();
   const startVoiceNote = useStartVoiceNote();
   const pushRecordScreen = useSingleTap(router.push);
-  const { data: me } = useQuery({ ...useGetMeQueryOptions(), throwOnError: false });
+  const accountId = useMyAccountId();
 
-  const continueAsVoiceNote = (accountId: string, options: ContinueAsVoiceNoteOptions) => {
+  const continueAsVoiceNote = (myAccountId: string, options: ContinueAsVoiceNoteOptions) => {
     const { locale, heard, onHandOff, onExit } = options;
 
     return startVoiceNote({
@@ -44,7 +43,7 @@ export function useContinueAsVoiceNote() {
         });
         const hasHeardText = note.sentences.length > 0;
         if (hasHeardText) {
-          voiceNoteDraftRepository.save(accountId, note);
+          voiceNoteDraftRepository.save(myAccountId, note);
         }
         onHandOff();
         onExit();
@@ -60,7 +59,7 @@ export function useContinueAsVoiceNote() {
   };
 
   // 이어 갈 계정을 모르면 글자를 저장할 곳이 없어 넘기지 않는다. 부르는 쪽은 들은 글자로 정리한다
-  return me == null
+  return accountId == null
     ? null
-    : (options: ContinueAsVoiceNoteOptions) => continueAsVoiceNote(me.id, options);
+    : (options: ContinueAsVoiceNoteOptions) => continueAsVoiceNote(accountId, options);
 }

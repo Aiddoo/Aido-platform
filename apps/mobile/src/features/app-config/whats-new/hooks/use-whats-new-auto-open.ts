@@ -1,7 +1,7 @@
 import { useApplicationMetadata, useWhatsNewRepository } from '@src/bootstrap/providers/di-context';
 import { useGetFeatureCampaignConfigQueryOptions } from '@src/features/app-config/feature-campaign/queries/feature-campaign.queries';
 import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
-import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
+import { useMyAccountId } from '@src/features/identity/user/hooks/use-my-account-id';
 import { useQuery } from '@tanstack/react-query';
 import { noop } from 'es-toolkit';
 import { useCallback, useMemo, useSyncExternalStore } from 'react';
@@ -23,7 +23,7 @@ export function useWhatsNewAutoOpen({ isOnboardingSettled }: WhatsNewAutoOpenInp
     ...useGetFeatureCampaignConfigQueryOptions(),
     enabled: isAuthenticated,
   });
-  const { data: user } = useQuery({ ...useGetMeQueryOptions(), enabled: isAuthenticated });
+  const accountId = useMyAccountId({ isEnabled: isAuthenticated });
   const applicationMetadata = useApplicationMetadata();
   const appVersion = useMemo(
     () => applicationMetadata.getInstallation()?.currentVersion,
@@ -34,7 +34,6 @@ export function useWhatsNewAutoOpen({ isOnboardingSettled }: WhatsNewAutoOpenInp
   const campaignId = config?.enabled ? config.campaignId : null;
   const release =
     campaignId == null ? null : WhatsNewPolicy.findReleaseByCampaign(RELEASES, campaignId);
-  const accountId = user?.id;
   const identity = useMemo(
     () =>
       accountId != null && campaignId != null && release != null

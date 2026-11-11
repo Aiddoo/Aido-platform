@@ -1,3 +1,4 @@
+import { useMyAccountId } from '@src/features/identity/user/hooks/use-my-account-id';
 import { useTrack } from '@src/shared/analytics';
 import { HintPopoverContent, type HintPopoverContentProps, MicIcon } from '@src/shared/ui';
 import { useIsFocused } from 'expo-router';
@@ -7,7 +8,6 @@ import { type ComponentProps, type ReactNode, useEffect, useEffectEvent, useRef 
 import { CoachmarkPolicy } from '../domains/coachmark.model';
 import type { CoachmarkKind } from '../domains/coachmark.model';
 import { useIsCoachmarkSettled } from '../hooks/use-is-coachmark-settled';
-import { useMyAccountId } from '../hooks/use-my-account-id';
 import { usePendingCoachmark } from '../hooks/use-pending-coachmark';
 
 interface CoachmarkPopoverProps

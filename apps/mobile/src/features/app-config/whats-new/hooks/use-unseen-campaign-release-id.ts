@@ -1,7 +1,7 @@
 import { useWhatsNewRepository } from '@src/bootstrap/providers/di-context';
 import { useGetFeatureCampaignConfigQueryOptions } from '@src/features/app-config/feature-campaign/queries/feature-campaign.queries';
 import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
-import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
+import { useMyAccountId } from '@src/features/identity/user/hooks/use-my-account-id';
 import { useQuery } from '@tanstack/react-query';
 import { noop } from 'es-toolkit';
 import { useCallback, useMemo, useSyncExternalStore } from 'react';
@@ -20,11 +20,10 @@ export function useUnseenCampaignReleaseId(): ReleaseId | null {
     ...useGetFeatureCampaignConfigQueryOptions(),
     enabled: isAuthenticated,
   });
-  const { data: user } = useQuery({ ...useGetMeQueryOptions(), enabled: isAuthenticated });
+  const userId = useMyAccountId({ isEnabled: isAuthenticated });
   const campaignId = config?.enabled ? config.campaignId : null;
   const release =
     campaignId == null ? null : WhatsNewPolicy.findReleaseByCampaign(RELEASES, campaignId);
-  const userId = user?.id;
   const identity = useMemo(
     () => (userId == null || campaignId == null || release == null ? null : { userId, campaignId }),
     [userId, campaignId, release],
