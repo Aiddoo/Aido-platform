@@ -17,8 +17,7 @@
     "marketingAgreed": "You agreed to Aido marketing messages on {{date}}",
     "marketingPushAgreed": "You agreed to Aido promotional push notifications on {{date}}",
     "marketingWithdrawn": "You withdrew consent to Aido marketing messages on {{date}}",
-    "marketingPushWithdrawn": "You withdrew consent to Aido promotional push notifications on {{date}}",
-    "marketingPushOptedOut": "We'll stop sending Aido promotional push notifications"
+    "marketingPushWithdrawn": "You withdrew consent to Aido promotional push notifications on {{date}}"
   },
   "titles": {
     "notifications": "Notifications",

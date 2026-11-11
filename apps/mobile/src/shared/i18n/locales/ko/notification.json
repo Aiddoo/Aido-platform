@@ -17,8 +17,7 @@
     "marketingAgreed": "{{date}} 아이두 마케팅 정보 수신에 동의했어요",
     "marketingPushAgreed": "{{date}} 아이두 광고성 앱 푸시 수신에 동의했어요",
     "marketingWithdrawn": "{{date}} 아이두 마케팅 정보 수신 동의를 철회했어요",
-    "marketingPushWithdrawn": "{{date}} 아이두 광고성 앱 푸시 수신 동의를 철회했어요",
-    "marketingPushOptedOut": "광고성 앱 푸시를 더 보내지 않을게요"
+    "marketingPushWithdrawn": "{{date}} 아이두 광고성 앱 푸시 수신 동의를 철회했어요"
   },
   "titles": {
     "notifications": "알림",

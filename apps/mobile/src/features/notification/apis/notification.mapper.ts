@@ -1,5 +1,4 @@
 import {
-  type MarketingPushOptOutResponse,
   type NotificationInboxResponse,
   type NotificationInboxItem as ServerNotification,
   notificationRoutingSchema,
@@ -11,12 +10,12 @@ import {
   type NotificationListResult,
   type NotificationRouting,
 } from '../domains/notification.model';
+import { type MarketingPushOptOutEnvelope } from '../schemas/marketing-push-opt-out-response.schema';
 
-/** 구 서버는 처리 시각을 주지 않아 null이다 */
-export function toMarketingPushOptOutResult(dto: MarketingPushOptOutResponse): {
-  withdrawnAt: Instant | null;
+export function toMarketingPushOptOutResult(dto: MarketingPushOptOutEnvelope): {
+  withdrawnAt: Instant;
 } {
-  return { withdrawnAt: toNullableInstant(dto.marketingPushWithdrawnAt ?? null) };
+  return { withdrawnAt: toInstant(dto.marketingPushWithdrawnAt) };
 }
 
 export function toNotification(server: ServerNotification): Notification {

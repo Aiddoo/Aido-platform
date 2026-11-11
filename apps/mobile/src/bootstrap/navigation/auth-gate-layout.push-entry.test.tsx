@@ -623,7 +623,9 @@ describe('푸시 탭 진입', () => {
     const { route, gateway, httpClient, appLifecycle } = await setup({ status: 'authenticated' });
     await waitFor(() => expect(route.getPathname()).toBe('/feed'));
     httpClient.post.mockRejectedValueOnce(new NetworkError());
-    httpClient.post.mockResolvedValue(ok({ optedOut: true }));
+    httpClient.post.mockResolvedValue(
+      ok({ optedOut: true, marketingPushWithdrawnAt: '2026-11-09T03:00:00.000Z' }),
+    );
 
     // When
     await act(async () =>
@@ -646,32 +648,6 @@ describe('푸시 탭 진입', () => {
         ),
       ).toHaveLength(2),
     );
-  });
-
-  it('수신 거부 버튼: 처리 시각을 주지 않는 구 서버면 일시 없이 알린다', async () => {
-    // Given
-    const { route, gateway, httpClient } = await setup({ status: 'authenticated' });
-    await waitFor(() => expect(route.getPathname()).toBe('/feed'));
-    httpClient.post.mockResolvedValue(ok({ optedOut: true }));
-
-    // When
-    await act(async () =>
-      gateway.emitResponse({
-        ...TODO_RESPONSE,
-        id: 'opt-out-legacy',
-        actionIdentifier: 'MARKETING_OPT_OUT',
-        data: { ...TODO_RESPONSE.data, marketingOptOutToken: 'token-1' },
-      }),
-    );
-
-    // Then
-    expect(await screen.findAllByText('광고성 앱 푸시를 더 보내지 않을게요')).not.toHaveLength(0);
-    expect(
-      httpClient.post.mock.calls.filter(
-        ([url]) => url === 'v1/notifications/marketing-push/opt-out',
-      ),
-    ).toHaveLength(1);
-    expect(route.getPathname()).toBe('/feed');
   });
 
   it('수신 거부 버튼: 로그인 없이 처리하고 이동하지 않는다', async () => {

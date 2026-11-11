@@ -1,5 +1,4 @@
 import {
-  marketingPushOptOutResponseSchema,
   markReadResponseSchema,
   notificationInboxResponseSchema,
   notificationOpenedResponseSchema,
@@ -14,6 +13,7 @@ import { isForeignNotificationError } from '../domains/notification.error';
 import { isServerNotificationId } from '../domains/notification.model';
 import type { NotificationOwnership } from '../domains/notification.model';
 import type { GetNotificationsQuery } from '../schemas/get-notifications-request.schema';
+import { marketingPushOptOutEnvelopeSchema } from '../schemas/marketing-push-opt-out-response.schema';
 import { toMarketingPushOptOutResult, toNotificationListResult } from './notification.mapper';
 
 interface NotificationServicePorts {
@@ -81,7 +81,7 @@ export class NotificationService {
   optOutMarketingPush = async (token: string) =>
     parseApiResponse(
       await this.#publicHttpClient.post('v1/notifications/marketing-push/opt-out', { token }),
-      marketingPushOptOutResponseSchema,
+      marketingPushOptOutEnvelopeSchema,
       toMarketingPushOptOutResult,
       '[NotificationService] Invalid marketing opt-out response',
     );

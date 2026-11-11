@@ -8,7 +8,6 @@ import {
 } from '@src/bootstrap/providers/di-context';
 import type { PushNotificationResponse } from '@src/core/ports/push-notification-gateway';
 import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
-import { getConsentResult } from '@src/features/identity/consent/domains/consent.model';
 import { useConsentResultToast } from '@src/features/identity/consent/hooks/use-consent-result-toast';
 import { invalidateConsent } from '@src/features/identity/consent/queries/consent-cache';
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
@@ -16,8 +15,6 @@ import { useTrack } from '@src/shared/analytics';
 import { type Instant } from '@src/shared/date/instant';
 import { getErrorMessage, unwrap } from '@src/shared/errors';
 import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
-import { t } from '@src/shared/i18n';
-import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { useIsRestoring, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   useCallback,
@@ -130,7 +127,6 @@ function useMarketingOptOut(
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
   const showConsentResult = useConsentResultToast();
-  const toast = useAppToast();
   const inFlightIdRef = useRef<string | null>(null);
 
   const send = useEffectEvent(async (target: PendingNotificationResponse) => {
@@ -147,7 +143,7 @@ function useMarketingOptOut(
       return;
     }
     inFlightIdRef.current = target.id;
-    let withdrawnAt: Instant | null;
+    let withdrawnAt: Instant;
     try {
       ({ withdrawnAt } = unwrap(await notificationService.optOutMarketingPush(token)));
     } catch (error) {
@@ -165,12 +161,7 @@ function useMarketingOptOut(
     }
     finishResponse(target.id);
     // 설정 토글과 같은 결과 안내(처리 일시는 서버 값)를 띄우고, 설정 화면의 토글도 서버 값으로 맞춘다
-    const result = getConsentResult({ agreedAt: null, withdrawnAt });
-    if (result == null) {
-      toast.success(t('notification:consentResult.marketingPushOptedOut'));
-    } else {
-      showConsentResult('marketingPush', result);
-    }
+    showConsentResult('marketingPush', { type: 'withdrawn', at: withdrawnAt });
     invalidateConsent(queryClient);
   });
 
