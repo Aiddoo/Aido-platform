@@ -110,7 +110,10 @@ Mapper의 DTO는 계약 스키마로 검증해 만든다(`memo.mapper.test.ts`�
 
 ## Stub 우선 DI 테스트
 
-서비스가 포트에 기대면 실제 서비스에 stub 포트를 끼운다. 호출 여부보다 결과 상태를 확인한다.
+서비스가 포트에 기대면 실제 서비스에 stub 포트를 끼운다. mock이 아니라 stub이다.
+
+- **결과는 상태로 본다.** 저장소 값, 쿼리 캐시, 화면, stub이 기록한 상태(`getListenerCount()`, `isConfigured()`)를 확인한다. 내부 포트를 몇 번 불렀는지는 구현 세부라 보지 않는다.
+- **호출 확인은 가장 바깥 경계에서만 한다.** 서버 요청은 서버 계약이라 method·path·body가 곧 결과다(`httpClient.post`). 오류 보고·분석 이벤트처럼 앱 밖으로 나가는 기록도 같다.
 
 |                                     | `jest.mock`                 | stub·fake                                  |
 | ----------------------------------- | --------------------------- | ------------------------------------------ |
@@ -134,7 +137,7 @@ Mapper의 DTO는 계약 스키마로 검증해 만든다(`memo.mapper.test.ts`�
 | `HttpClient`                           | `createHttpClientStub()`                                                                                       |
 | `Storage`                              | `createMemoryStorage()` (`jest.Mocked`, 메모리에 JSON으로 왕복)                                                |
 | `SyncStorage`, `EnumerableSyncStorage` | `createMemorySyncStorage()` (`keys`·`clear`까지 있는 `jest.Mocked`)                                            |
-| `ObservableSyncStorage`                | `createMemoryObservableSyncStorage()`                                                                          |
+| `ObservableSyncStorage`                | `createMemoryObservableSyncStorage()` (`getListenerCount()`로 남은 구독 수를 본다)                             |
 | `TokenStore`                           | `createMemoryTokenStore(tokens)`                                                                               |
 | `DeviceIdStore`                        | `createMemoryDeviceIdStore(initial)`                                                                           |
 | `LocalFileSystem`                      | `createLocalFileSystemFake()`                                                                                  |
@@ -145,7 +148,7 @@ Mapper의 DTO는 계약 스키마로 검증해 만든다(`memo.mapper.test.ts`�
 | `SystemShareGateway`                   | `createSystemShareGatewayStub()`                                                                               |
 | `SocialShareGateway`                   | `createSocialShareGatewayStub()`                                                                               |
 | `LocationGateway`                      | `createLocationGatewayStub()`                                                                                  |
-| `NetworkStatusGateway`                 | `createNetworkStatusGatewayStub()`                                                                             |
+| `NetworkStatusGateway`                 | `createNetworkStatusGatewayStub()` (`emit(isOnline)`, `getListenerCount()`)                                    |
 | `ViewCaptureGateway`                   | `createViewCaptureGatewayStub()` (항상 파일 uri 하나를 찍은 것으로 답함)                                       |
 | `AppLifecycleGateway`                  | `createAppLifecycleGatewayStub(initial)` (`emit(state)`로 전환을 흘림, 앱 상태를 `AppState` spy로 잡지 않는다) |
 | `AppStoreReviewGateway`                | `createAppStoreReviewGatewayStub()`                                                                            |
@@ -156,28 +159,28 @@ Mapper의 DTO는 계약 스키마로 검증해 만든다(`memo.mapper.test.ts`�
 | `VendorIdGateway`                      | `createVendorIdGatewayStub()`                                                                                  |
 | `JsonFetcher`                          | `createJsonFetcherStub()`                                                                                      |
 | `NativeApplicationMetadataGateway`     | `createNativeApplicationMetadataGatewayStub(installation)`                                                     |
-| `PurchasesGateway`                     | `createPurchasesGatewayStub()`                                                                                 |
+| `PurchasesGateway`                     | `createPurchasesGatewayStub()` (`isConfigured()`, `getListenerCount()`)                                        |
 | `PushNotificationGateway`              | `createPushNotificationGatewayStub(overrides)` (수신·응답을 `emit*`로 흘림)                                    |
 | `SocialAuthGateway`                    | `createSocialAuthGatewayStub()`                                                                                |
 | `SpeechRecognizer`                     | `createSpeechRecognizerStub()`                                                                                 |
-| `TokenRefresher`                       | `createTokenRefresherStub()`                                                                                   |
 
 **stub 기본값 규칙.** 기본은 정상 기기와 빈 데이터다(알림을 허용했고, 클립보드는 비었고, 요금제와 구독은 없고, 사용자는 로그인 창을 닫는다). 값이 있어야 하는 메서드(`HttpClient`, `JsonFetcher`, 좌표·장소)는 정하지 않고 부르면 `createXStub: get 응답을 정하지 않았습니다`처럼 이름을 대며 실패한다. 같은 포트의 모든 도구가 이 규칙을 따른다. 어긋난 기본값이 필요하면 테스트가 반환된 `jest.fn`을 바꾼다. 포트를 넓히면 stub도 같은 커밋에서 넓힌다.
 
 SDK를 `jest.mock`하는 `shared/infra` 어댑터 테스트는 `index.ts` 대신 도구 파일을 직접 import한다. index가 `createTestDi`를 통해 앱 전체와 어댑터를 불러와 테스트가 가로챈 SDK보다 먼저 읽히기 때문이다.
 
-| 도구                                                            | 용도                                                                                                                                                                                            |
-| --------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `createTestDi({ httpClient, …overrides })`                      | 운영의 `di-provider`와 같은 모양으로 실제 Service 전부를 조립한 DI. 응답은 `httpClient`에 정한다. 기기 저장소 `syncStorage` 하나를 모든 저장소가 함께 쓴다. 넣은 포트는 Service 조립에도 쓰인다 |
-| `renderUi(ui, { di, queryClient, withLocalDate, withOverlay })` | 실제 provider 위에 `di`(`TestDiOverrides`)를 얹어 렌더. `di: createTestDi(...)`를 다시 넘기지 않는다. 오늘 날짜를 읽거나 시트를 띄우면 옵션을 켠다                                              |
-| `renderUiHook(useHook, { di, … })`                              | `renderUi`와 같은 provider 위에서 훅을 돌린다                                                                                                                                                   |
-| `renderRouteHook(useHook, { url })`                             | 진짜 Expo Router 위에서 훅을 돌려 URL을 본다(`index`가 아니라 `render-route-hook`을 직접 import하고 `jest.unmock('expo-router')`)                                                               |
-| `createTestQueryClient()`                                       | 테스트용 QueryClient                                                                                                                                                                            |
-| `createPendingResponse()`                                       | 끝나는 시점을 테스트가 정하는 응답(두 번 누름, 늦은 응답)                                                                                                                                       |
-| `createRouteParamsFake(initial)`                                | 공용 expo-router mock의 URL을 움직인다. `router.setParams`가 값을 바꾸면 param을 읽는 컴포넌트가 다시 그려진다(요금제 고르기, 달력 날짜)                                                        |
-| `stubWindowDimensions(width)`                                   | 창 폭·글꼴 배율. spy라 테스트가 끝나면 되돌아간다                                                                                                                                               |
-| `OverlayStateContext.Provider`                                  | 시트·다이얼로그 활성 여부를 읽는 훅 테스트. `@src/shared/ui`를 mock하지 않고 값을 준다                                                                                                          |
-| `features/{area}/{f}/__tests__/{entity}.fixtures.ts`            | 모델 fixture(`createX(overrides)`)                                                                                                                                                              |
+| 도구                                                            | 용도                                                                                                                                                                                                                                                                                                                                             |
+| --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `createTestDi({ httpClient, …overrides })`                      | stub 포트(`createTestPorts`)로 운영과 같은 `createAppContainer`를 부른 DI. 응답은 `httpClient`에 정한다(공개·인증 클라이언트가 함께 쓴다. 나눠 보려면 `publicHttpClient`·`authHttpClient`). 기기 저장소 `syncStorage` 하나를 모든 저장소가 함께 쓴다. 포트를 넣으면 그 포트를 쓰는 Service가 모두 다시 조립되고, Service를 넣으면 그 키만 바뀐다 |
+| `createTestPorts(overrides)`                                    | `AppContainerPorts`의 stub 기본값. 앱 Provider 트리를 올리는 테스트가 `createCompositionRoot`에 넘긴다                                                                                                                                                                                                                                           |
+| `renderUi(ui, { di, queryClient, withLocalDate, withOverlay })` | 실제 provider 위에 `di`(`TestDiOverrides`)를 얹어 렌더. `di: createTestDi(...)`를 다시 넘기지 않는다. 오늘 날짜를 읽거나 시트를 띄우면 옵션을 켠다                                                                                                                                                                                               |
+| `renderUiHook(useHook, { di, … })`                              | `renderUi`와 같은 provider 위에서 훅을 돌린다                                                                                                                                                                                                                                                                                                    |
+| `renderRouteHook(useHook, { url })`                             | 진짜 Expo Router 위에서 훅을 돌려 URL을 본다(`index`가 아니라 `render-route-hook`을 직접 import하고 `jest.unmock('expo-router')`)                                                                                                                                                                                                                |
+| `createTestQueryClient()`                                       | 테스트용 QueryClient                                                                                                                                                                                                                                                                                                                             |
+| `createPendingResponse()`                                       | 끝나는 시점을 테스트가 정하는 응답(두 번 누름, 늦은 응답)                                                                                                                                                                                                                                                                                        |
+| `createRouteParamsFake(initial)`                                | 공용 expo-router mock의 URL을 움직인다. `router.setParams`가 값을 바꾸면 param을 읽는 컴포넌트가 다시 그려진다(요금제 고르기, 달력 날짜)                                                                                                                                                                                                         |
+| `stubWindowDimensions(width)`                                   | 창 폭·글꼴 배율. spy라 테스트가 끝나면 되돌아간다                                                                                                                                                                                                                                                                                                |
+| `OverlayStateContext.Provider`                                  | 시트·다이얼로그 활성 여부를 읽는 훅 테스트. `@src/shared/ui`를 mock하지 않고 값을 준다                                                                                                                                                                                                                                                           |
+| `features/{area}/{f}/__tests__/{entity}.fixtures.ts`            | 모델 fixture(`createX(overrides)`)                                                                                                                                                                                                                                                                                                               |
 
 `mocks/`는 `jest.config.js`의 `moduleNameMapper`와 `jest.setup.ts`가 가리키는 SDK 모듈 대체(expo-router, MMKV, Skia 등)다. 포트 stub이 아니라 jest가 모듈을 바꿔 끼우는 층이고, 테스트 파일이 직접 import하지 않는다.
 
@@ -233,7 +236,9 @@ it('연결이 끊겨 실패해도 입력값을 지키고 화면에 머문다', a
 });
 ```
 
-`di`에는 이 테스트가 바꾸는 포트만 더한다(`di: { httpClient, analytics }`). `di: { xService: new XService(httpClient) }`처럼 Service를 직접 조립하지 않는다. 값을 미리 넣을 때는 저장소가 아니라 `syncStorage`에 넣는다(`createTestDi().syncStorage.set(key, value)` 또는 `di: { syncStorage }`). 쓰는 Service가 `createTestDi`에 없으면 거기에 더한다.
+`di`에는 이 테스트가 바꾸는 포트만 더한다(`di: { httpClient, analytics }`). 포트는 `createAppContainer`를 거쳐 그 포트를 쓰는 Service 모두에 들어간다. `di: { xService: new XService(httpClient) }`처럼 Service를 직접 조립하지 않는다. Service를 넣으면 그 키만 바뀌고, 그 Service를 쓰는 다른 Service(`LogOutDeviceService`의 `authService` 등)는 원래 것을 써서 운영과 다른 그래프가 된다. 값을 미리 넣을 때는 저장소가 아니라 `syncStorage`에 넣는다(`createTestDi().syncStorage.set(key, value)` 또는 `di: { syncStorage }`). 새 Service는 `createAppContainer`에 더하면 테스트에도 생긴다.
+
+앱 Provider 트리 전체(`AppProviders`)는 `createCompositionRoot`에 `createTestPorts`를 넘겨 올린다(`app-providers.test.tsx`). 루트 "다시 시도"처럼 다시 올려도 같은 프로세스 수명 객체를 쓰는지, 내린 뒤 구독·타이머가 남지 않는지를 여기서 본다.
 
 ## expo-router 공용 mock
 
@@ -286,9 +291,10 @@ await renderUi(
 
 기존 테스트는 일괄 교체하지 않고 손대는 파일부터 옮긴다.
 
-| 규칙                       | 지금 코드 (2026-11-07 grep)                                                              |
+| 규칙                       | 지금 코드 (2026-11-11 grep)                                                              |
 | -------------------------- | ---------------------------------------------------------------------------------------- |
 | 폼 스키마와 계약 교차 검증 | 폼 스키마와 계약 스키마가 같은 값을 통과시키는지 mapper 테스트로 확인하는 곳이 아직 없다 |
+| `di`에는 포트만            | Service·저장소를 직접 만들어 `di`에 넣는 곳 42개(키 기준). 손댈 때 포트로 옮긴다         |
 
 ## UI와 native 검증
 
