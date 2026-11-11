@@ -5,7 +5,6 @@ import { useTranslation } from '@src/shared/i18n';
 import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
 import { Box, FormStepLayout, KeyboardAdaptiveButton } from '@src/shared/ui';
 import { useMutation } from '@tanstack/react-query';
-import { noop } from 'es-toolkit';
 import {
   Controller,
   useController,
@@ -15,6 +14,7 @@ import {
 } from 'react-hook-form';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
+import { findPasswordFieldError, PASSWORD_MISMATCH_FIELD_ERROR } from '../domains/auth.error';
 import { useChangePasswordMutationOptions } from '../queries/auth.mutations';
 import {
   changePasswordFormSchema,
@@ -33,7 +33,7 @@ interface ChangePasswordFormProps {
   stepTitles: Record<'currentPassword' | 'newPassword', string>;
 }
 
-/** 실패하면 토스트로 알리고 입력값은 그대로 둔다 */
+/** 현재 비밀번호가 틀리면 그 칸으로 돌아가 보이고, 그 밖의 실패는 토스트로 알린다. 입력값은 그대로 둔다 */
 export function ChangePasswordForm({ stepTitles }: ChangePasswordFormProps) {
   const form = useForm({
     resolver: zodResolver(changePasswordFormSchema),
@@ -56,7 +56,16 @@ export function ChangePasswordForm({ stepTitles }: ChangePasswordFormProps) {
   const { isSubmitting } = useFormState({ control: form.control });
 
   const submitNewPassword = form.handleSubmit(async (input) => {
-    await changePassword.mutateAsync(input).catch(noop);
+    try {
+      await changePassword.mutateAsync(input);
+    } catch (error) {
+      // 그 밖의 실패 안내는 mutation의 meta.errorFeedback이 맡는다
+      const fieldError = findPasswordFieldError(error);
+      if (fieldError != null) {
+        form.setError('currentPassword', fieldError);
+        stepper.history.go(-stepper.index);
+      }
+    }
   });
 
   const handleNextStep = async () => {
@@ -137,6 +146,7 @@ function CurrentPasswordStep({ title, form, onNext }: CurrentPasswordStepProps) 
                 isInvalid={!!error}
                 errorMessage={resolveValidationMessage(error, {
                   default: 'currentPassword.required',
+                  byType: { [PASSWORD_MISMATCH_FIELD_ERROR.type]: 'currentPassword.mismatch' },
                 })}
                 onSubmitEditing={() => {
                   if (isValid) {

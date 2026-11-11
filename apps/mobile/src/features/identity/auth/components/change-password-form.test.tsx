@@ -60,6 +60,32 @@ describe('비밀번호 변경 폼', () => {
     expect(await screen.findByText('비밀번호가 일치하지 않아요')).toBeTruthy();
   });
 
+  it('현재 비밀번호가 틀리면 그 단계로 돌아가 칸에 알리고 새 비밀번호를 지킨다', async () => {
+    // Given
+    const session = createAuthSession({ tokens: ACCOUNT_A_TOKENS });
+    session.authHttp.patch.mockResolvedValue(
+      err(createAuthApiError({ code: 'USER_0602', status: 401 })),
+    );
+    await renderChangePasswordForm(session);
+    await fillAllSteps();
+
+    // When
+    await fireEvent.press(screen.getByText('비밀번호 변경'));
+
+    // Then
+    expect(await screen.findByText('현재 비밀번호가 일치하지 않아요')).toBeTruthy();
+    expect(screen.getByDisplayValue('Current123')).toBeTruthy();
+    expect(screen.getByRole('button', { name: '다음' })).toBeDisabled();
+
+    // When
+    await fireEvent.changeText(screen.getByDisplayValue('Current123'), 'Current1234');
+    await fireEvent.press(screen.getByText('다음'));
+    await fireEvent.press(screen.getByText('다음'));
+
+    // Then
+    expect(await screen.findAllByDisplayValue('NewPass1234')).toHaveLength(2);
+  });
+
   it('변경 버튼을 연달아 눌러도 요청은 한 번이다', async () => {
     // Given
     const session = createAuthSession({ tokens: ACCOUNT_A_TOKENS });

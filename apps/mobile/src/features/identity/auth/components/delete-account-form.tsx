@@ -1,6 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ANIMATION } from '@src/shared/constants/animation';
 import { useTranslation } from '@src/shared/i18n';
+import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
 import { Box, FormStepLayout, KeyboardAdaptiveButton, useConfirmDialog } from '@src/shared/ui';
 import { useMutation } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
@@ -8,6 +9,7 @@ import { Controller, useForm, useFormState } from 'react-hook-form';
 import { Keyboard } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
+import { findPasswordFieldError, PASSWORD_MISMATCH_FIELD_ERROR } from '../domains/auth.error';
 import { useDeleteAccountMutationOptions } from '../queries/auth.mutations';
 import { deleteAccountFormSchema } from '../schemas/delete-account-form.schema';
 import { PasswordInput } from './password-input';
@@ -37,8 +39,17 @@ export function DeleteAccountForm({ title, footer }: DeleteAccountFormProps) {
       confirmLabel: t('deleteAccount.confirm'),
       confirmColor: 'danger',
     });
-    if (isConfirmed) {
-      deleteAccountMutation.mutate({ password });
+    if (!isConfirmed) {
+      return;
+    }
+    try {
+      await deleteAccountMutation.mutateAsync({ password });
+    } catch (error) {
+      // 그 밖의 실패 안내는 mutation의 meta.errorFeedback이 맡는다
+      const fieldError = findPasswordFieldError(error);
+      if (fieldError != null) {
+        form.setError('password', fieldError, { shouldFocus: true });
+      }
     }
   });
 
@@ -61,7 +72,7 @@ export function DeleteAccountForm({ title, footer }: DeleteAccountFormProps) {
           <Controller
             control={form.control}
             name="password"
-            render={({ field: { ref, onChange, value } }) => (
+            render={({ field: { ref, onChange, value }, fieldState: { error } }) => (
               <PasswordInput
                 ref={ref}
                 label={t('deleteAccount.currentPasswordLabel')}
@@ -73,7 +84,11 @@ export function DeleteAccountForm({ title, footer }: DeleteAccountFormProps) {
                 autoFocus
                 submitBehavior="submit"
                 returnKeyType="done"
-                renderErrorMessage={false}
+                isInvalid={error != null}
+                errorMessage={resolveValidationMessage(error, {
+                  default: 'password.required',
+                  byType: { [PASSWORD_MISMATCH_FIELD_ERROR.type]: 'password.mismatch' },
+                })}
                 onSubmitEditing={() => handleDeletePress()}
               />
             )}

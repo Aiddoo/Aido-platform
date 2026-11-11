@@ -274,10 +274,10 @@ export function useDeleteAccountMutationOptions() {
       }
       signOut();
     },
+    // 비밀번호가 틀리면 폼이 그 칸에 보인다
     onError: (error) => {
       if (isPasswordMismatchError(error)) {
         haptics.notify('error');
-        toast.error(t('auth:toasts.passwordMismatch'));
       }
     },
     meta: {
@@ -413,10 +413,10 @@ export function useChangePasswordMutationOptions() {
       toast.success(t('auth:toasts.passwordChanged'));
       goBack();
     },
+    // 현재 비밀번호가 틀리면 폼이 그 칸으로 돌아가 보인다
     onError: (error) => {
       if (isPasswordMismatchError(error)) {
         haptics.notify('error');
-        toast.error(t('auth:toasts.currentPasswordMismatch'));
       }
     },
     meta: {

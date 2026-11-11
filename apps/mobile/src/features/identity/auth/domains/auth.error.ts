@@ -25,9 +25,15 @@ export function isEmailAlreadyRegisteredError(error: unknown) {
   return isApiError(error) && error.hasCode(ErrorCode.EMAIL_0501);
 }
 
-/** 탈퇴·비밀번호 변경에서 현재 비밀번호가 틀렸다 */
 export function isPasswordMismatchError(error: unknown) {
   return isApiError(error) && error.hasCode(ErrorCode.USER_0602);
+}
+
+/** 현재 비밀번호 칸(탈퇴 password, 비밀번호 변경 currentPassword)에 보일 서버 오류. type은 그 칸 문구를 고르는 byType 키다 */
+export const PASSWORD_MISMATCH_FIELD_ERROR = { type: 'passwordMismatch' } as const;
+
+export function findPasswordFieldError(error: unknown) {
+  return isPasswordMismatchError(error) ? PASSWORD_MISMATCH_FIELD_ERROR : null;
 }
 
 export function isVerificationCodeInvalidError(error: unknown) {

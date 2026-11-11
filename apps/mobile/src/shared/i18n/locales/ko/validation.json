@@ -26,7 +26,8 @@
     "tooLong": "카테고리명은 50자 이하로 입력해주세요"
   },
   "currentPassword": {
-    "required": "현재 비밀번호를 입력해주세요"
+    "required": "현재 비밀번호를 입력해주세요",
+    "mismatch": "현재 비밀번호가 일치하지 않아요"
   },
   "inquiryContent": {
     "tooShort": "내용은 10자 이상 입력해주세요",
