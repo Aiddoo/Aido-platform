@@ -67,7 +67,10 @@ function setup(todos: ReturnType<typeof createTodoDto>[]) {
 }
 
 async function report(di: ReturnType<typeof setup>['di'], accountId: string | null = USER_ID) {
-  const rendered = await renderScreen(<Probe accountId={accountId} reportCount={1} />, { di });
+  const rendered = await renderScreen(<Probe accountId={accountId} reportCount={1} />, {
+    di,
+    withLocalDate: true,
+  });
   await act(() => jest.advanceTimersByTimeAsync(0));
   return {
     rerender: async (props: ProbeProps) => {

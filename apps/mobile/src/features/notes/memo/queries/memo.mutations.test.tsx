@@ -14,6 +14,7 @@ import {
   createLoggerStub,
   createTestQueryClient,
 } from '@src/testing/core';
+import { createDateKey } from '@src/testing/date-key';
 import { renderScreen } from '@src/testing/render';
 import { onlineManager, type QueryClient, useMutation } from '@tanstack/react-query';
 import { act, screen } from '@testing-library/react-native';
@@ -357,7 +358,7 @@ describe('오프라인에서 할 일로 바꾸기', () => {
       memoId: 5,
       values: {
         title: '메모',
-        startDate: '2026-10-02',
+        startDate: createDateKey('2026-10-02'),
         endDate: null,
         scheduledTime: null,
         isAllDay: true,

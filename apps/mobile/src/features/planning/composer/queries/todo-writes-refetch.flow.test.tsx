@@ -1,8 +1,8 @@
 import type { FriendTodo, Todo as TodoDto, TodoItemResponse } from '@aido/api';
 import type { ApiError } from '@src/core/errors/api-error';
 import { err, ok, type Result } from '@src/core/errors/result';
-import '@src/shared/i18n/init';
 import { createTodoCategoryListDto } from '@src/features/planning/category/__tests__/todo-category.fixtures';
+import '@src/shared/i18n/init';
 import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/planning/category/queries/todo-category-query-keys';
 import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/category/queries/todo-category.queries';
 import {
@@ -42,6 +42,7 @@ import {
   createTestQueryClient,
   deliverQueryNotifications,
 } from '@src/testing/core';
+import { createDateKey } from '@src/testing/date-key';
 import { renderScreen } from '@src/testing/render';
 import { hashKey, type QueryKey, useMutation, useQuery } from '@tanstack/react-query';
 import { act } from '@testing-library/react-native';
@@ -55,11 +56,11 @@ import {
   useUpdateTodoMutationOptions,
 } from './todo-composer.mutations';
 
-const DAY = '2026-03-08';
-const OTHER_DAY = '2026-03-20';
-const MOVED_DAY = '2026-04-20';
-const MONTH = { startDate: '2026-02-23', endDate: '2026-04-05' };
-const NEXT_MONTH = { startDate: '2026-04-06', endDate: '2026-05-10' };
+const DAY = createDateKey('2026-03-08');
+const OTHER_DAY = createDateKey('2026-03-20');
+const MOVED_DAY = createDateKey('2026-04-20');
+const MONTH = { startDate: createDateKey('2026-02-23'), endDate: createDateKey('2026-04-05') };
+const NEXT_MONTH = { startDate: createDateKey('2026-04-06'), endDate: createDateKey('2026-05-10') };
 const FRIEND_ID = 'friend-1';
 const OWNER_ID = 'clz7x5p8k0010qz0z8z8z8z8z';
 
@@ -676,7 +677,7 @@ describe('할 일 쓰기의 되돌리기와 겹친 쓰기', () => {
   });
 });
 
-const WEEK = { startDate: '2026-03-02', endDate: '2026-03-08' };
+const WEEK = { startDate: createDateKey('2026-03-02'), endDate: createDateKey('2026-03-08') };
 const BLUE = '#3B82F6';
 const RED = '#EF4444';
 const EXISTING = createTodoDto({

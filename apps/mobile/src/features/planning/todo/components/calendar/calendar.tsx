@@ -6,6 +6,7 @@ import {
   diffDateKeysInMonths,
   getDayOfWeek,
   getMonthStartDateKey,
+  type DateKey,
 } from '@src/shared/date/date-key';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useTodayKey } from '@src/shared/hooks/use-today';
@@ -204,14 +205,14 @@ function CalendarMonthPager({ pageWidth, completions }: CalendarMonthPagerProps)
 }
 
 interface CalendarPageProps {
-  selectedDateKey: string;
-  todayKey: string;
+  selectedDateKey: DateKey;
+  todayKey: DateKey;
   completions: CompletionsByDate;
-  onSelect: (dateKey: string) => void;
+  onSelect: (dateKey: DateKey) => void;
 }
 
 interface WeekRowProps extends CalendarPageProps {
-  weekKey: string;
+  weekKey: DateKey;
 }
 
 function WeekRow({ weekKey, selectedDateKey, todayKey, completions, onSelect }: WeekRowProps) {
@@ -239,7 +240,7 @@ function WeekRow({ weekKey, selectedDateKey, todayKey, completions, onSelect }: 
 }
 
 interface MonthGridProps extends CalendarPageProps {
-  monthKey: string;
+  monthKey: DateKey;
 }
 
 function MonthGrid({ monthKey, selectedDateKey, todayKey, completions, onSelect }: MonthGridProps) {

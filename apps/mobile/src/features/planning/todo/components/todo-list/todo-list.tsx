@@ -6,6 +6,7 @@ import {
   type TodoCategoryWithCount,
 } from '@src/features/planning/category/domains/todo-category.model';
 import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/category/queries/todo-category.queries';
+import type { DateKey } from '@src/shared/date/date-key';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useReorderableList } from '@src/shared/hooks/use-reorderable-list';
@@ -133,7 +134,7 @@ TodoList.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
 
 interface CategoryHeaderProps {
   category: TodoCategoryWithCount;
-  date: string;
+  date: DateKey;
 }
 
 function CategoryHeader({ category, date }: CategoryHeaderProps) {
@@ -163,7 +164,7 @@ interface TodoReorderableListProps {
   items: Todo[];
   updatedAt: number;
   /** 보고 있는 날짜. 여러 날 할 일은 시작일이 아니라 이 날짜 목록을 고친다 */
-  date: string;
+  date: DateKey;
   isReminderOff: boolean;
   onOpenDetail: (todoId: number) => void;
 }
@@ -212,7 +213,7 @@ function TodoReorderableList({
 interface TodoListItemProps {
   todo: Todo;
   updatedAt: number;
-  date: string;
+  date: DateKey;
   isReminderOff: boolean;
   onOpenDetail: (todoId: number) => void;
 }

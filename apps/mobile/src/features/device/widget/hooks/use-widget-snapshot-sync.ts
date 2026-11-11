@@ -6,7 +6,7 @@ import {
   useGetTodoSummaryQueryOptions,
 } from '@src/features/planning/todo/queries/todo.queries';
 import { getNowInstant } from '@src/shared/date/clock';
-import { addDaysToDateKey, getCalendarWeek } from '@src/shared/date/date-key';
+import { addDaysToDateKey, getCalendarWeek, type DateKey } from '@src/shared/date/date-key';
 import { i18n } from '@src/shared/i18n';
 import { toResolvedLanguage } from '@src/shared/preferences/language.preference';
 import { useLocalDate } from '@src/shared/providers/local-date-provider';
@@ -42,9 +42,9 @@ function buildContext(
 interface LatestWidgetSnapshot {
   authState: WidgetSyncAuthState;
   userId: string | null;
-  date: string;
+  date: DateKey;
   timeZone: string;
-  tomorrowDate: string;
+  tomorrowDate: DateKey;
   data?: WidgetSummaryInput;
   tomorrowData?: WidgetSummaryInput;
   completions?: Record<string, NonNullable<WidgetSnapshotContext['weekCompletions']>[number]>;

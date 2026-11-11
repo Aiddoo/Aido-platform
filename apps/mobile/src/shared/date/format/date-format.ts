@@ -3,7 +3,7 @@ import { DAY_MS, HOUR_MS, MINUTE_MS } from '@src/shared/constants/time-units';
 import type { IntlLocale } from '@src/shared/i18n/app-locales';
 import { match } from 'ts-pattern';
 
-import { isSameMonthDateKey, isSameYearDateKey } from '../date-key';
+import { type DateKey, isSameMonthDateKey, isSameYearDateKey } from '../date-key';
 import { diffMs, type Instant } from '../instant';
 import { instantToDate, isValidDate, toNativeDate } from '../native-date';
 import { isValidHHmm, type TimeOfDay, toTimeOfDay } from '../time-of-day';
@@ -54,7 +54,7 @@ function toUtcContext(context: DateFormatContext): DateFormatContext {
   return { ...context, timeZone: 'UTC' };
 }
 
-function toUtcMidnight(dateKey: string): Date {
+function toUtcMidnight(dateKey: DateKey): Date {
   return toNativeDate(Date.parse(`${dateKey}T00:00:00Z`));
 }
 
@@ -92,7 +92,7 @@ export function formatDateLabel(
 }
 
 export function formatDateKeyLabel(
-  dateKey: string,
+  dateKey: DateKey,
   kind: DateLabel,
   context: DateFormatContext,
 ): string {
@@ -100,7 +100,7 @@ export function formatDateKeyLabel(
 }
 
 /** 오늘(사용자 시간대의 날짜 key)과 같은 해의 날만 연도를 뺀다. 지난해·내년 날짜는 연도까지 보여야 헷갈리지 않는다 */
-function toYearAwareDateLabel(dateKeys: readonly string[], todayDateKey: string): DateLabel {
+function toYearAwareDateLabel(dateKeys: readonly DateKey[], todayDateKey: DateKey): DateLabel {
   return dateKeys.every((dateKey) => isSameYearDateKey(dateKey, todayDateKey))
     ? 'monthDay'
     : 'fullDate';
@@ -109,16 +109,19 @@ function toYearAwareDateLabel(dateKeys: readonly string[], todayDateKey: string)
 /** 올해면 "1월 5일", 올해가 아니면 "2027년 1월 5일". 순간의 해는 context 시간대로 읽는다 */
 export function formatYearAwareDateLabel(
   value: Date | Instant,
-  todayDateKey: string,
+  todayDateKey: DateKey,
   context: DateFormatContext,
 ): string {
+  if (!isValidDate(toFormatDate(value))) {
+    return '';
+  }
   const kind = toYearAwareDateLabel([toDateKey(value, context.timeZone)], todayDateKey);
   return formatDateLabel(value, kind, context);
 }
 
 export function formatYearAwareDateKeyLabel(
-  dateKey: string,
-  todayDateKey: string,
+  dateKey: DateKey,
+  todayDateKey: DateKey,
   context: DateFormatContext,
 ): string {
   return formatDateKeyLabel(dateKey, toYearAwareDateLabel([dateKey], todayDateKey), context);
@@ -126,9 +129,9 @@ export function formatYearAwareDateKeyLabel(
 
 /** 두 끝이 모두 올해면 월·일만, 하나라도 올해가 아니면 둘 다 연도까지 쓴다 */
 export function formatDateKeyRange(
-  startDateKey: string,
-  endDateKey: string,
-  todayDateKey: string,
+  startDateKey: DateKey,
+  endDateKey: DateKey,
+  todayDateKey: DateKey,
   context: DateFormatContext,
 ): string {
   const kind = toYearAwareDateLabel([startDateKey, endDateKey], todayDateKey);
@@ -136,9 +139,9 @@ export function formatDateKeyRange(
 }
 
 export function formatDateKeyCompactRange(
-  startDateKey: string,
-  endDateKey: string,
-  todayDateKey: string,
+  startDateKey: DateKey,
+  endDateKey: DateKey,
+  todayDateKey: DateKey,
   context: DateFormatContext,
 ): string {
   if (toYearAwareDateLabel([startDateKey, endDateKey], todayDateKey) === 'fullDate') {

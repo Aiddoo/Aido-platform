@@ -1,6 +1,7 @@
 import { type MemoListResponse, memoListResponseSchema, updateMemoSchema } from '@aido/api';
 import type { TodoFormValues } from '@src/features/planning/todo/schemas/todo-form.schema';
 import { createTestQueryClient } from '@src/testing/core';
+import { createDateKey } from '@src/testing/date-key';
 import { ZodError } from 'zod';
 
 import { createParseMemoResponseDto } from '../__tests__/parsed-memo.fixtures';
@@ -83,7 +84,7 @@ describe('메모 작성·수정 요청', () => {
 
 const createFormData = (overrides: Partial<TodoFormValues> = {}): TodoFormValues => ({
   title: '수정한 메모 제목',
-  startDate: '2026-10-02',
+  startDate: createDateKey('2026-10-02'),
   endDate: null,
   scheduledTime: null,
   isAllDay: true,
@@ -136,7 +137,7 @@ describe('toConvertMemoToTodosRequest', () => {
         frequency: 'WEEKLY',
         interval: 1,
         weekdays: ['MON', 'FRI'],
-        end: { type: 'UNTIL', date: '2026-10-30' },
+        end: { type: 'UNTIL', date: createDateKey('2026-10-30') },
       },
       scheduledTime: '13:30',
     });
@@ -162,7 +163,7 @@ describe('toConvertMemoToTodosRequest', () => {
     const values = createFormData({
       isAllDay: false,
       scheduledTime: '13:30',
-      endDate: '2026-10-03',
+      endDate: createDateKey('2026-10-03'),
     });
 
     // When

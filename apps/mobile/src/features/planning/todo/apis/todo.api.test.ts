@@ -1,5 +1,6 @@
 import { unwrap } from '@src/core/errors/result';
 import { createHttpClientStub } from '@src/testing/core';
+import { createDateKey } from '@src/testing/date-key';
 
 import {
   createTodoApiError,
@@ -196,9 +197,13 @@ describe('TodoApi', () => {
       frequency: 'WEEKLY',
       interval: 1,
       weekdays: ['MON', 'WED', 'FRI'],
-      end: { type: 'UNTIL', date: '2026-06-30' },
+      end: { type: 'UNTIL', date: createDateKey('2026-06-30') },
     };
-    const draft = createTodoFormValues({ title: '반복 할일', startDate: '2026-03-09', repeat });
+    const draft = createTodoFormValues({
+      title: '반복 할일',
+      startDate: createDateKey('2026-03-09'),
+      repeat,
+    });
 
     it('정상 응답 → POST /v1/todos의 repeat로 보내고 첫 회차를 돌려준다', async () => {
       // Given

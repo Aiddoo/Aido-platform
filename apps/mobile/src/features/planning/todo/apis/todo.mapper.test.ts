@@ -6,6 +6,7 @@ import {
 } from '@aido/api';
 import { toInstant } from '@src/shared/date/instant';
 import { createTestQueryClient } from '@src/testing/core';
+import { createDateKey } from '@src/testing/date-key';
 import { setupFakeTimersPerTest } from '@src/testing/timers';
 
 import { createParentTodo } from '../__tests__/sub-todo.fixtures';
@@ -297,7 +298,11 @@ describe('toCreateTodoRequest', () => {
   it('여러 날 시간 할 일은 끝 날짜와 벽시계를 보낸다', () => {
     // When
     const request = toCreateTodoRequest(
-      createTodoFormValues({ endDate: '2026-03-10', scheduledTime: '09:30', isAllDay: false }),
+      createTodoFormValues({
+        endDate: createDateKey('2026-03-10'),
+        scheduledTime: '09:30',
+        isAllDay: false,
+      }),
     );
 
     // Then
@@ -326,7 +331,10 @@ describe('toCreateTodoRequest', () => {
 describe('toTodoFormValues', () => {
   it('수정 폼 날짜는 할 일의 날짜 key 그대로다', () => {
     // Given
-    const todo = createParentTodo({ startDate: '2026-11-05', endDate: '2026-11-07' });
+    const todo = createParentTodo({
+      startDate: createDateKey('2026-11-05'),
+      endDate: createDateKey('2026-11-07'),
+    });
 
     // When
     const values = toTodoFormValues(todo, 'America/New_York');

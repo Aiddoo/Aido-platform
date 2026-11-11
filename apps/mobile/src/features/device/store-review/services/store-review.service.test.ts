@@ -1,5 +1,6 @@
 import { toInstant } from '@src/shared/date/instant';
 import { createAppStoreReviewGatewayStub, createMemorySyncStorage } from '@src/testing/core';
+import { createDateKey } from '@src/testing/date-key';
 import { noop } from 'es-toolkit';
 
 import { StoreReviewPolicy } from '../domains/store-review.model';
@@ -18,7 +19,7 @@ const createFixture = () => {
   const service = new StoreReviewService(repository, gateway, () => NOW);
   const becomeEngaged = (accountId = ACCOUNT) => {
     for (const localDate of ['2026-10-25', '2026-10-26', '2026-10-27']) {
-      service.recordActiveDay(accountId, localDate);
+      service.recordActiveDay(accountId, createDateKey(localDate));
     }
   };
   return { becomeEngaged, gateway, repository, service };
@@ -46,7 +47,7 @@ describe('StoreReviewService', () => {
   it('끝낸 날이 모자라면 기다리지도 요청하지도 않는다', async () => {
     // Given
     const { gateway, service } = createFixture();
-    service.recordActiveDay(ACCOUNT, '2026-10-27');
+    service.recordActiveDay(ACCOUNT, createDateKey('2026-10-27'));
     const waitUntilPresentable = jest.fn(presentable);
 
     // When

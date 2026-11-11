@@ -9,7 +9,7 @@ import {
   invalidateTodoCategories,
 } from '@src/features/planning/category/queries/todo-category-cache';
 import { useTrack } from '@src/shared/analytics';
-import { getIsoWeekYear } from '@src/shared/date/date-key';
+import { getIsoWeekYear, type DateKey } from '@src/shared/date/date-key';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { t } from '@src/shared/i18n';
 import { isLastMutation } from '@src/shared/query/is-last-mutation';
@@ -56,7 +56,7 @@ interface ToggleTodoVariables {
   todoId: number;
   body: ToggleTodoCompleteInput;
   /** 체크한 목록의 날짜. 여러 날 할 일은 시작일이 아니라 보고 있는 날짜 목록을 고친다 */
-  date: string;
+  date: DateKey;
 }
 
 export function useToggleTodoMutationOptions() {
@@ -209,7 +209,7 @@ export function useChangeTodoCategoryMutationOptions() {
 interface DeleteTodoVariables {
   todoId: number;
   /** 지운 목록의 날짜. 여러 날 할 일은 시작일이 아니라 보고 있는 날짜 목록을 고친다 */
-  date: string;
+  date: DateKey;
   scope?: TodoEditScope;
 }
 

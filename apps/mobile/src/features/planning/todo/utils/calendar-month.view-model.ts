@@ -1,4 +1,9 @@
-import { getDayOfMonth, getDayOfWeek, isSameMonthDateKey } from '@src/shared/date/date-key';
+import {
+  getDayOfMonth,
+  getDayOfWeek,
+  isSameMonthDateKey,
+  type DateKey,
+} from '@src/shared/date/date-key';
 import { type DateFormatContext, formatDateKeyLabel } from '@src/shared/date/format/date-format';
 
 import { getMonthWeekStartKeys, getWeekDateKeys } from './calendar-grid';
@@ -8,7 +13,7 @@ export const FEED_MONTH_WEEK_COUNT = 6;
 
 /** 달력 한 칸. 쪽(주·달)과 언어가 같으면 다시 만들지 않아, 칸은 Intl·날짜 계산 없이 그린다 */
 export interface CalendarDayCell {
-  dateKey: string;
+  dateKey: DateKey;
   /** 칸에 보이는 일 */
   dayNumber: string;
   /** 읽어 줄 날짜 */
@@ -20,8 +25,8 @@ export interface CalendarDayCell {
 }
 
 function toCalendarDayCell(
-  dateKey: string,
-  monthKey: string | null,
+  dateKey: DateKey,
+  monthKey: DateKey | null,
   context: DateFormatContext,
 ): CalendarDayCell {
   return {
@@ -34,7 +39,7 @@ function toCalendarDayCell(
 }
 
 function getMonthWeeks(
-  monthKey: string,
+  monthKey: DateKey,
   minWeekCount: number,
   context: DateFormatContext,
 ): CalendarDayCell[][] {
@@ -45,21 +50,21 @@ function getMonthWeeks(
 
 /** 날짜·반복 피커의 한 달. 그 달이 걸친 주만 그리고, 달 밖 칸은 비워 둔다 */
 export function getPickerMonthWeeks(
-  monthKey: string,
+  monthKey: DateKey,
   context: DateFormatContext,
 ): CalendarDayCell[][] {
   return getMonthWeeks(monthKey, 0, context);
 }
 
 export function getFeedMonthWeeks(
-  monthKey: string,
+  monthKey: DateKey,
   context: DateFormatContext,
 ): CalendarDayCell[][] {
   return getMonthWeeks(monthKey, FEED_MONTH_WEEK_COUNT, context);
 }
 
 export function getFeedWeekCells(
-  weekStartKey: string,
+  weekStartKey: DateKey,
   context: DateFormatContext,
 ): CalendarDayCell[] {
   return getWeekDateKeys(weekStartKey).map((dateKey) => toCalendarDayCell(dateKey, null, context));

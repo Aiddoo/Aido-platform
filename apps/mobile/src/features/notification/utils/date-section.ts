@@ -1,4 +1,9 @@
-import { addDaysToDateKey, getCalendarWeek, isSameMonthDateKey } from '@src/shared/date/date-key';
+import {
+  addDaysToDateKey,
+  getCalendarWeek,
+  isSameMonthDateKey,
+  type DateKey,
+} from '@src/shared/date/date-key';
 import { type Instant } from '@src/shared/date/instant';
 import { toDateKey } from '@src/shared/date/zoned';
 import { groupBy } from 'es-toolkit';
@@ -6,7 +11,7 @@ import { groupBy } from 'es-toolkit';
 export type DateSectionKey = 'today' | 'yesterday' | 'thisWeek' | 'thisMonth' | 'earlier';
 
 /** 목록 날짜 섹션. 두 날짜 key를 그대로 비교하며 주는 앱 달력 주(일요일 시작)다. */
-export function getDateSectionKey(dateKey: string, todayDateKey: string): DateSectionKey {
+export function getDateSectionKey(dateKey: DateKey, todayDateKey: DateKey): DateSectionKey {
   if (dateKey === todayDateKey) {
     return 'today';
   }
@@ -28,7 +33,7 @@ export type DateSectionedListItem<TEntry> =
 
 export function toDateSectionedListItems<TEntry extends { createdAt: Instant }>(
   entries: readonly TEntry[],
-  todayDateKey: string,
+  todayDateKey: DateKey,
   timeZone: string,
 ): DateSectionedListItem<TEntry>[] {
   const getSection = (entry: TEntry) =>

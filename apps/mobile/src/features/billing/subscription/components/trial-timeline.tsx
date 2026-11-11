@@ -2,6 +2,7 @@ import { PREMIUM_TRIAL_ENDING_NOTICE_DAYS } from '@aido/api/vocabulary';
 import { useHaptics } from '@src/bootstrap/providers/di-context';
 import { useTrack } from '@src/shared/analytics';
 import { ANIMATION } from '@src/shared/constants/animation';
+import type { DateKey } from '@src/shared/date/date-key';
 import { formatYearAwareDateKeyLabel } from '@src/shared/date/format/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
@@ -48,7 +49,7 @@ type TrialTimelineLoadingProps = Omit<ComponentProps<typeof VStack>, 'children'>
 
 interface TrialTimelineProps extends Omit<ComponentProps<typeof VStack>, 'children'> {
   /** 알림 도장이 있을 때 일정 아래에 둘 알림 켜기. 알림일은 일정이 정하므로 받아서 그린다 */
-  reminder?: ComponentType<{ reminderDateKey: string }>;
+  reminder?: ComponentType<{ reminderDateKey: DateKey }>;
 }
 
 /** 체험 요금제를 골랐을 때 결제까지의 예상 날짜를 도장으로 보여 준다(App Store 3.1.2: 체험 기간·뒤 금액·해지). 실제 날짜는 결제 뒤 서버 영수증이 보여 준다 */
@@ -89,7 +90,7 @@ export function TrialTimeline({ reminder: Reminder, className, ...props }: Trial
   if (plan == null || steps == null) {
     return null;
   }
-  const formatDate = (dateKey: string) =>
+  const formatDate = (dateKey: DateKey) =>
     formatYearAwareDateKeyLabel(dateKey, currentLocalDateKey, dateFormatContext);
   const price = t(getPlanPriceLabelKey(plan.planType), { price: plan.priceString });
   const reminderStep = steps.find((step) => step.kind === 'reminder');

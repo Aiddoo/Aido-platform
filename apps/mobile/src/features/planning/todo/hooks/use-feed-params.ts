@@ -1,3 +1,4 @@
+import type { DateKey } from '@src/shared/date/date-key';
 import { useRouteParams } from '@src/shared/hooks/use-route-params';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useCallback } from 'react';
@@ -10,7 +11,7 @@ export function useFeedDateKey() {
   const [{ date }, setParams] = useRouteParams(feedParamsSchema);
   const todayKey = useTodayKey();
   const setSelectedDateKey = useCallback(
-    (nextDateKey: string) =>
+    (nextDateKey: DateKey) =>
       setParams({ date: nextDateKey === todayKey ? undefined : nextDateKey }),
     [todayKey, setParams],
   );

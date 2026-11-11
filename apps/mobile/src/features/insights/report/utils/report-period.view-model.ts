@@ -1,3 +1,4 @@
+import { parseDateKey } from '@src/shared/date/date-key';
 import { type DateFormatContext, formatDateKeyLabel } from '@src/shared/date/format/date-format';
 import { t } from '@src/shared/i18n';
 import { toLanguageOfIntlLocale } from '@src/shared/i18n/app-locales';
@@ -16,6 +17,8 @@ export function formatReportPeriodLabel(
       period,
     });
   }
-  const monthStartDateKey = `${year}-${String(period).padStart(2, '0')}-01`;
-  return formatDateKeyLabel(monthStartDateKey, 'yearMonth', context);
+  const monthStartDateKey = parseDateKey(`${year}-${String(period).padStart(2, '0')}-01`);
+  return monthStartDateKey == null
+    ? ''
+    : formatDateKeyLabel(monthStartDateKey, 'yearMonth', context);
 }

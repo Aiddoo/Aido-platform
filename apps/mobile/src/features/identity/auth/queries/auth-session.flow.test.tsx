@@ -37,6 +37,7 @@ import {
   createAnalyticsStub,
   createPendingResponse,
 } from '@src/testing/core';
+import { createDateKey } from '@src/testing/date-key';
 import { setupFakeTimersPerTest } from '@src/testing/timers';
 import { onlineManager, useMutation, useQuery } from '@tanstack/react-query';
 import { act, waitFor } from '@testing-library/react-native';
@@ -850,7 +851,10 @@ describe('로그아웃 뒤 늦게 끝난 변경', () => {
       .getMutationCache()
       .build(session.queryClient, result.current.createOptions)
       .execute({
-        values: createTodoFormValues({ title: 'A의 할 일', startDate: '2026-11-07' }),
+        values: createTodoFormValues({
+          title: 'A의 할 일',
+          startDate: createDateKey('2026-11-07'),
+        }),
       })
       .catch(() => undefined);
     await waitFor(() => expect(todoHttp.post).toHaveBeenCalled());

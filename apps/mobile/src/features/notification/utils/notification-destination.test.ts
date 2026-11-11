@@ -2,7 +2,9 @@ import { readdirSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 
 import { NOTIFICATION_NAVIGATION_KIND, NOTIFICATION_TYPE } from '@aido/api/vocabulary';
+import type { DateKey } from '@src/shared/date/date-key';
 import type { WindowSizeClass } from '@src/shared/utils/get-window-size-class';
+import { createDateKey } from '@src/testing/date-key';
 import type { Href } from 'expo-router';
 
 import { NAVIGATION_CASES } from '../__tests__/notification-navigation-cases';
@@ -17,16 +19,16 @@ import {
 const COMMENT_ID = 'cmt92zn3n000b7voxx9quc2th';
 const VIEWER = 'cmviewer00000000000000001';
 const FRIEND = 'cmfriend00000000000000001';
-const DATE = '2026-08-14';
+const DATE = createDateKey('2026-08-14');
 
 function todoTarget({
   ownerId = null,
   dateKey = null,
-}: { ownerId?: string | null; dateKey?: string | null } = {}) {
+}: { ownerId?: string | null; dateKey?: DateKey | null } = {}) {
   return { kind: 'TODO', todoId: 42, ownerId, dateKey } satisfies NotificationTarget;
 }
 
-function todoCommentTarget(owner: { ownerId?: string; dateKey?: string } = {}) {
+function todoCommentTarget(owner: { ownerId?: string; dateKey?: DateKey } = {}) {
   return {
     ...todoTarget(owner),
     kind: 'TODO_COMMENT',

@@ -1,5 +1,5 @@
-import '@src/shared/i18n/init';
 import { nudgeThanksPreviewResponseSchema } from '@aido/api';
+import '@src/shared/i18n/init';
 import { ApiError } from '@src/core/errors/api-error';
 import { err, ok } from '@src/core/errors/result';
 import type { HttpClient } from '@src/core/ports/http-client';
@@ -19,6 +19,7 @@ import {
   createHttpClientStub,
   createPendingResponse,
 } from '@src/testing/core';
+import { createDateKey } from '@src/testing/date-key';
 import { renderScreen } from '@src/testing/render';
 import { onlineManager } from '@tanstack/react-query';
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react-native';
@@ -478,13 +479,16 @@ describe('할 일 상세 체크', () => {
     const todo = createTodoDto({ id: TODO_ID, ...PRIVATE_TODO });
     const { httpClient, queryClient } = await renderTodoDetail({ details: { todo } });
     await act(async () => {
-      updateCachedTodo(queryClient, { date: todo.startDate, todoId: TODO_ID }, (cached) =>
-        SubTodoPolicy.withSubTodoAdded(cached, {
-          id: -1,
-          title: '스트레칭',
-          completed: false,
-          sortOrder: 0,
-        }),
+      updateCachedTodo(
+        queryClient,
+        { date: createDateKey(todo.startDate), todoId: TODO_ID },
+        (cached) =>
+          SubTodoPolicy.withSubTodoAdded(cached, {
+            id: -1,
+            title: '스트레칭',
+            completed: false,
+            sortOrder: 0,
+          }),
       );
     });
 

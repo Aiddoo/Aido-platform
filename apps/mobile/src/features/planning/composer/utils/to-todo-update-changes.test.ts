@@ -1,10 +1,11 @@
 import type { TodoFormValues } from '@src/features/planning/todo/schemas/todo-form.schema';
+import { createDateKey } from '@src/testing/date-key';
 
 import { toTodoUpdateChanges } from './to-todo-update-changes';
 
 const DEFAULTS: TodoFormValues = {
   title: '운동',
-  startDate: '2026-11-05',
+  startDate: createDateKey('2026-11-05'),
   endDate: null,
   scheduledTime: '09:00',
   isAllDay: false,
@@ -75,7 +76,10 @@ describe('toTodoUpdateChanges', () => {
 
   it('날짜만 옮기면 날짜만 보낸다', () => {
     // When
-    const changes = toTodoUpdateChanges({ ...DEFAULTS, startDate: '2026-11-06' }, DEFAULTS);
+    const changes = toTodoUpdateChanges(
+      { ...DEFAULTS, startDate: createDateKey('2026-11-06') },
+      DEFAULTS,
+    );
 
     // Then
     expect(changes).toEqual({ input: { startDate: '2026-11-06' } });

@@ -18,6 +18,7 @@ import { fontScaleStoredValue } from '@src/shared/preferences/schemas/font-scale
 import { languageModeStoredValue } from '@src/shared/preferences/schemas/language-mode-storage.schema';
 import { themeModeStoredValue } from '@src/shared/preferences/schemas/theme-mode-storage.schema';
 import { createMemorySyncStorage } from '@src/testing/core';
+import { createDateKey } from '@src/testing/date-key';
 
 import {
   readStoredValue,
@@ -123,7 +124,7 @@ const RELEASED_VALUES = [
     ...releasedValue(upsellDismissalStoredValue, ['user-1'], {
       key: 'aido_upsell_dismissed_v1:user-1',
       raw: '{"AI_PARSE":"2026-11-10","FUTURE_FEATURE":"2026-11-01"}',
-      value: { AI_PARSE: '2026-11-10', FUTURE_FEATURE: '2026-11-01' },
+      value: { AI_PARSE: createDateKey('2026-11-10'), FUTURE_FEATURE: createDateKey('2026-11-01') },
       area: 'device',
     }),
   },

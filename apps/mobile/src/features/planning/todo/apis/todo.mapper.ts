@@ -9,6 +9,7 @@ import {
   type TodoOverviewResponse,
   type TodoSummaryResponse,
 } from '@aido/api';
+import { dateKeySchema } from '@src/shared/date/date-key';
 import { toNullableInstant } from '@src/shared/date/instant';
 
 import { DailyCompletionPolicy } from '../domains/daily-completion.model';
@@ -33,8 +34,8 @@ export function toTodo(dto: TodoDto): Todo {
   return {
     id: dto.id,
     title: dto.title,
-    startDate: dto.startDate,
-    endDate: dto.endDate,
+    startDate: dateKeySchema.parse(dto.startDate),
+    endDate: dto.endDate == null ? null : dateKeySchema.parse(dto.endDate),
     category: { id: dto.category.id, name: dto.category.name, color: dto.category.color },
     completed: dto.completed,
     localTime: dto.scheduledLocalTime ?? null,
@@ -51,7 +52,7 @@ export function toTodo(dto: TodoDto): Todo {
 
 function toDailyCompletionSummary(dto: DailyCompletionSummaryDTO): DailyCompletionSummary {
   return {
-    date: dto.date,
+    date: dateKeySchema.parse(dto.date),
     totalTodos: dto.totalTodos,
     completedTodos: dto.completedTodos,
     isComplete: dto.isComplete,
@@ -66,7 +67,10 @@ export function toDailyCompletionsResult(
   return {
     completions: dto.completions.map(toDailyCompletionSummary),
     totalCompleteDays: dto.totalCompleteDays,
-    dateRange: dto.dateRange,
+    dateRange: {
+      startDate: dateKeySchema.parse(dto.dateRange.startDate),
+      endDate: dateKeySchema.parse(dto.dateRange.endDate),
+    },
   };
 }
 
@@ -80,7 +84,7 @@ export function toTodoOverview(dto: TodoOverviewResponse): TodoOverview {
 
 export function toTodoSummary(dto: TodoSummaryResponse): TodoSummary {
   return {
-    date: dto.date,
+    date: dateKeySchema.parse(dto.date),
     totalTodos: dto.totalTodos,
     completedTodos: dto.completedTodos,
     completionRate: dto.completionRate,

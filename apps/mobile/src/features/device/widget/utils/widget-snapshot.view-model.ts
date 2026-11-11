@@ -1,4 +1,4 @@
-import { addDaysToDateKey, getCalendarWeek } from '@src/shared/date/date-key';
+import { addDaysToDateKey, getCalendarWeek, type DateKey } from '@src/shared/date/date-key';
 import { formatDateKeyLabel, type DateFormatContext } from '@src/shared/date/format/date-format';
 import { APP_LOCALES } from '@src/shared/i18n/app-locales';
 import type { ResolvedLanguage } from '@src/shared/preferences/language.preference';
@@ -28,7 +28,7 @@ export type WidgetTranslateFn = (
 ) => string;
 
 interface WidgetDayCounts {
-  date: string;
+  date: DateKey;
   totalTodos: number;
   completedTodos: number;
   completionRate: number;
@@ -37,7 +37,7 @@ interface WidgetDayCounts {
 }
 
 export interface WidgetWeekCompletion {
-  date: string;
+  date: DateKey;
   totalTodos: number;
   isComplete: boolean;
 }

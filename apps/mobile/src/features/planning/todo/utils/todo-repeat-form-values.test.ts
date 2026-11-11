@@ -1,4 +1,5 @@
 import { instantFromDate } from '@src/shared/date/native-date';
+import { createDateKey } from '@src/testing/date-key';
 
 import { getRepeatPresetDays } from '../domains/todo-repeat.model';
 import type { TodoRepeatFormValues } from '../schemas/todo-repeat-form.schema';
@@ -13,7 +14,7 @@ import {
 } from './todo-repeat-form-values';
 
 const TIME_ZONE = Intl.DateTimeFormat().resolvedOptions().timeZone;
-const TODAY_KEY = '2026-11-02';
+const TODAY_KEY = createDateKey('2026-11-02');
 
 const createValues = (overrides: Partial<TodoRepeatFormValues> = {}): TodoRepeatFormValues => ({
   startDate: instantFromDate(new Date(2026, 10, 2)),
@@ -96,7 +97,7 @@ describe('반복 달력에서 날짜 누르기', () => {
 
     // When
     const next = withTodoRepeatFormCalendarDate(values, {
-      dateKey: '2026-11-01',
+      dateKey: createDateKey('2026-11-01'),
       todayKey: TODAY_KEY,
       timeZone: TIME_ZONE,
     });
@@ -111,7 +112,7 @@ describe('반복 달력에서 날짜 누르기', () => {
 
     // When
     const next = withTodoRepeatFormCalendarDate(values, {
-      dateKey: '2026-11-20',
+      dateKey: createDateKey('2026-11-20'),
       todayKey: TODAY_KEY,
       timeZone: TIME_ZONE,
     });
@@ -129,7 +130,7 @@ describe('반복 달력에서 날짜 누르기', () => {
 
     // When
     const next = withTodoRepeatFormCalendarDate(values, {
-      dateKey: '2026-11-25',
+      dateKey: createDateKey('2026-11-25'),
       todayKey: TODAY_KEY,
       timeZone: TIME_ZONE,
     });
@@ -150,12 +151,12 @@ describe('반복 달력에서 날짜 누르기', () => {
 
     // When
     const moved = withTodoRepeatFormCalendarDate(values, {
-      dateKey: '2026-11-03',
+      dateKey: createDateKey('2026-11-03'),
       todayKey: TODAY_KEY,
       timeZone: TIME_ZONE,
     });
     const same = withTodoRepeatFormCalendarDate(values, {
-      dateKey: '2026-11-09',
+      dateKey: createDateKey('2026-11-09'),
       todayKey: TODAY_KEY,
       timeZone: TIME_ZONE,
     });

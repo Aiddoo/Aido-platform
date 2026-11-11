@@ -1,4 +1,5 @@
 import { getDayOfWeek } from '@src/shared/date/date-key';
+import { createDateKey } from '@src/testing/date-key';
 import { range } from 'es-toolkit';
 
 import {
@@ -58,7 +59,7 @@ describe('getMonthViewDayState', () => {
   // 2025-03-17 월, 2025-03-22 토, 2025-03-23 일, 2025-03-20 목
   const keys = (dateKey: string, selectedDateKey: string, todayKey = '2025-03-20') => ({
     dateKey,
-    dayOfWeek: getDayOfWeek(dateKey),
+    dayOfWeek: getDayOfWeek(createDateKey(dateKey)),
     selectedDateKey,
     todayKey,
   });
@@ -151,10 +152,10 @@ describe('getWeekRangeBand', () => {
 
 describe('getRepeatWeekDays', () => {
   const cell = (dateKey: string, isOutsideMonth = false): CalendarDayCell => ({
-    dateKey,
+    dateKey: createDateKey(dateKey),
     dayNumber: String(Number(dateKey.slice(-2))),
     label: dateKey,
-    dayOfWeek: getDayOfWeek(dateKey),
+    dayOfWeek: getDayOfWeek(createDateKey(dateKey)),
     isOutsideMonth,
   });
   const WEEK = ['2026-11-01', '2026-11-02', '2026-11-03', '2026-11-04'].map((dateKey) =>

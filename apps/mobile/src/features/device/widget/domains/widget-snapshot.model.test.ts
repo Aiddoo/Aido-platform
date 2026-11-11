@@ -1,4 +1,5 @@
 import { toDateKey } from '@src/shared/date/zoned';
+import { createDateKey } from '@src/testing/date-key';
 
 import { createWidgetSnapshot } from '../__tests__/widget-snapshot.fixtures';
 import { widgetSnapshotStorageSchema } from '../schemas/widget-snapshot-storage.schema';
@@ -80,7 +81,10 @@ describe('getDay', () => {
 
   it('loggedOut 스냅샷은 날짜가 지나도 loggedOut을 유지한다', () => {
     // Given
-    const snapshot = createWidgetSnapshot({ state: 'loggedOut', date: '2026-07-01' });
+    const snapshot = createWidgetSnapshot({
+      state: 'loggedOut',
+      date: createDateKey('2026-07-01'),
+    });
 
     // When
     const { renderState } = WidgetSnapshotPolicy.getDay(snapshot, '2026-07-12');

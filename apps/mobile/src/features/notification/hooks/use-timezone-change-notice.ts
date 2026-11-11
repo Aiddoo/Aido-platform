@@ -4,8 +4,10 @@ import { TodoPolicy, type TodoListResult } from '@src/features/planning/todo/dom
 import { useGetUpcomingTodosQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
 import { useTrack } from '@src/shared/analytics';
 import { readDeviceLocalDateState } from '@src/shared/date/clock';
+import type { DateKey } from '@src/shared/date/date-key';
 import { toHHmm } from '@src/shared/date/zoned';
 import { getErrorMessage } from '@src/shared/errors';
+import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
 import { readStoredValue, writeStoredValue } from '@src/shared/storage/define-stored-value';
 import { useStoredValueStorage } from '@src/shared/storage/use-stored-value';
@@ -88,7 +90,7 @@ export function useTimezoneChangeNotice({
 
 /** 바뀐 순간의 기기 날짜·벽시계. 할 일을 묻는 범위와 "앞으로"의 기준이다 */
 interface DeviceNow {
-  dateKey: string;
+  dateKey: DateKey;
   time: string;
   timeZone: string;
 }
@@ -137,8 +139,9 @@ function useRecordedTimezoneChange({
 
 /** 그 시각 뒤로 끝나지 않은 시간 있는 할 일이 있는가. 기준 시각이 있을 때만 묻는다 */
 function useHasUpcomingTimedTodo({ now }: { now: DeviceNow | null }) {
+  const todayKey = useTodayKey();
   return useQuery({
-    ...useGetUpcomingTodosQueryOptions({ todayKey: now?.dateKey ?? '' }),
+    ...useGetUpcomingTodosQueryOptions({ todayKey: now?.dateKey ?? todayKey }),
     enabled: now != null,
     select: ({ todos }: TodoListResult) =>
       now != null && TodoPolicy.hasUpcomingTimedTodo(todos, now),

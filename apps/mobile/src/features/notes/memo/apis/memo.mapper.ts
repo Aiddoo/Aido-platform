@@ -14,6 +14,7 @@ import {
   type VoicePlan,
   voicePlanSchema,
 } from '@src/features/voice/domains/voice-plan.model';
+import { dateKeySchema } from '@src/shared/date/date-key';
 import { toInstant } from '@src/shared/date/instant';
 import { pick } from 'es-toolkit';
 
@@ -53,8 +54,8 @@ export function toMemoVoicePlan(planId: string, dto: ParseMemoPlanResponse): Voi
     type: 'create-todo',
     actionId: `memo-todo-${index}`,
     title: todo.title,
-    startDate: todo.startDate,
-    endDate: todo.repeat != null ? null : todo.endDate,
+    startDate: dateKeySchema.parse(todo.startDate),
+    endDate: todo.repeat != null || todo.endDate == null ? null : dateKeySchema.parse(todo.endDate),
     scheduledTime: todo.isAllDay ? null : todo.scheduledTime,
     repeat: todo.repeat == null ? null : toRepeat(todo.repeat),
     visibility: null,

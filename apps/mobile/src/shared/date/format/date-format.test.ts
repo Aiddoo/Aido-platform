@@ -1,3 +1,5 @@
+import { createDateKey } from '@src/testing/date-key';
+
 import { fromEpochMs, toEpochMs, toInstant } from '../instant';
 import {
   type DateFormatContext,
@@ -195,9 +197,9 @@ describe('formatInstantHour', () => {
 describe('formatDateKeyLabel', () => {
   it('위젯용 숫자 일과 MM.DD 표기는 로케일과 무관하게 유지한다', () => {
     // When
-    const dayNumber = formatDateKeyLabel('2026-09-07', 'dayNumber', KO_SEOUL);
-    const koDotted = formatDateKeyLabel('2026-09-07', 'dottedMonthDay', KO_SEOUL);
-    const enDotted = formatDateKeyLabel('2026-09-07', 'dottedMonthDay', EN_SEOUL);
+    const dayNumber = formatDateKeyLabel(createDateKey('2026-09-07'), 'dayNumber', KO_SEOUL);
+    const koDotted = formatDateKeyLabel(createDateKey('2026-09-07'), 'dottedMonthDay', KO_SEOUL);
+    const enDotted = formatDateKeyLabel(createDateKey('2026-09-07'), 'dottedMonthDay', EN_SEOUL);
 
     // Then
     expect(dayNumber).toBe('7');
@@ -219,7 +221,7 @@ describe('formatDateKeyLabel', () => {
 
     try {
       // When
-      const label = formatDateKeyLabel('2026-09-07', 'dayNumber', KO_SEOUL);
+      const label = formatDateKeyLabel(createDateKey('2026-09-07'), 'dayNumber', KO_SEOUL);
 
       // Then
       expect(label).toBe('7');
@@ -234,8 +236,8 @@ describe('formatDateKeyLabel', () => {
     const losAngeles = { locale: 'ko-KR', timeZone: 'America/Los_Angeles' } as const;
 
     // When
-    const ko = formatDateKeyLabel('2026-10-20', 'fullDate', losAngeles);
-    const en = formatDateKeyLabel('2028-02-29', 'fullDate', EN_SEOUL);
+    const ko = formatDateKeyLabel(createDateKey('2026-10-20'), 'fullDate', losAngeles);
+    const en = formatDateKeyLabel(createDateKey('2028-02-29'), 'fullDate', EN_SEOUL);
 
     // Then
     expect(ko).toBe('2026년 10월 20일');
@@ -269,7 +271,10 @@ describe('formatDateKeyLabel', () => {
     ['en-US', '2028-02-29', 'dayNumber', '29'],
   ] as const)('%s %s %s는 이전과 같은 글자다', (locale, dateKey, kind, expected) => {
     // When
-    const label = formatDateKeyLabel(dateKey, kind, { locale, timeZone: 'Asia/Seoul' });
+    const label = formatDateKeyLabel(createDateKey(dateKey), kind, {
+      locale,
+      timeZone: 'Asia/Seoul',
+    });
 
     // Then
     expect(label).toBe(expected);
@@ -299,7 +304,7 @@ describe('formatYearAwareDateLabel', () => {
     ],
   ] as const)('%s', (_name, todayDateKey, context, expected) => {
     // When
-    const label = formatYearAwareDateLabel(NEW_YEAR_BOUNDARY, todayDateKey, context);
+    const label = formatYearAwareDateLabel(NEW_YEAR_BOUNDARY, createDateKey(todayDateKey), context);
 
     // Then
     expect(label).toBe(expected);
@@ -307,8 +312,8 @@ describe('formatYearAwareDateLabel', () => {
 
   it('같은 순간도 사용자 시간대의 날짜로 해를 가른다', () => {
     // Given
-    const seoulToday = '2027-01-01';
-    const losAngelesToday = '2026-12-31';
+    const seoulToday = createDateKey('2027-01-01');
+    const losAngelesToday = createDateKey('2026-12-31');
 
     // When
     const seoul = formatYearAwareDateLabel(NEW_YEAR_BOUNDARY, seoulToday, KO_SEOUL);
@@ -321,7 +326,11 @@ describe('formatYearAwareDateLabel', () => {
 
   it('유효하지 않은 날짜는 빈 문자열이다', () => {
     // When
-    const label = formatYearAwareDateLabel(new Date('invalid'), '2026-11-09', KO_SEOUL);
+    const label = formatYearAwareDateLabel(
+      new Date('invalid'),
+      createDateKey('2026-11-09'),
+      KO_SEOUL,
+    );
 
     // Then
     expect(label).toBe('');
@@ -336,10 +345,14 @@ describe('formatYearAwareDateKeyLabel', () => {
     ['en 다른 해', 'en-US', '2029-01-01', 'February 29, 2028'],
   ] as const)('윤일 2028-02-29를 %s에는 %s', (_name, locale, todayDateKey, expected) => {
     // When
-    const label = formatYearAwareDateKeyLabel('2028-02-29', todayDateKey, {
-      locale,
-      timeZone: 'America/Los_Angeles',
-    });
+    const label = formatYearAwareDateKeyLabel(
+      createDateKey('2028-02-29'),
+      createDateKey(todayDateKey),
+      {
+        locale,
+        timeZone: 'America/Los_Angeles',
+      },
+    );
 
     // Then
     expect(label).toBe(expected);
@@ -349,8 +362,18 @@ describe('formatYearAwareDateKeyLabel', () => {
 describe('formatDateKeyRange', () => {
   it('두 끝이 모두 올해면 월·일만 표시한다', () => {
     // When
-    const ko = formatDateKeyRange('2026-10-19', '2026-10-25', '2026-11-09', KO_SEOUL);
-    const en = formatDateKeyRange('2026-10-19', '2026-10-25', '2026-11-09', EN_SEOUL);
+    const ko = formatDateKeyRange(
+      createDateKey('2026-10-19'),
+      createDateKey('2026-10-25'),
+      createDateKey('2026-11-09'),
+      KO_SEOUL,
+    );
+    const en = formatDateKeyRange(
+      createDateKey('2026-10-19'),
+      createDateKey('2026-10-25'),
+      createDateKey('2026-11-09'),
+      EN_SEOUL,
+    );
 
     // Then
     expect(ko).toBe('10월 19일 ~ 10월 25일');
@@ -359,7 +382,12 @@ describe('formatDateKeyRange', () => {
 
   it('같은 해라도 올해가 아니면 연도까지 표시한다', () => {
     // When
-    const lastYear = formatDateKeyRange('2025-10-19', '2025-10-25', '2026-11-09', KO_SEOUL);
+    const lastYear = formatDateKeyRange(
+      createDateKey('2025-10-19'),
+      createDateKey('2025-10-25'),
+      createDateKey('2026-11-09'),
+      KO_SEOUL,
+    );
 
     // Then
     expect(lastYear).toBe('2025년 10월 19일 ~ 2025년 10월 25일');
@@ -367,8 +395,18 @@ describe('formatDateKeyRange', () => {
 
   it('해를 넘는 기간은 연도까지 표시한다', () => {
     // When
-    const ko = formatDateKeyRange('2026-12-28', '2027-01-03', '2026-12-31', KO_SEOUL);
-    const en = formatDateKeyRange('2026-12-28', '2027-01-03', '2027-01-01', EN_SEOUL);
+    const ko = formatDateKeyRange(
+      createDateKey('2026-12-28'),
+      createDateKey('2027-01-03'),
+      createDateKey('2026-12-31'),
+      KO_SEOUL,
+    );
+    const en = formatDateKeyRange(
+      createDateKey('2026-12-28'),
+      createDateKey('2027-01-03'),
+      createDateKey('2027-01-01'),
+      EN_SEOUL,
+    );
 
     // Then
     expect(ko).toBe('2026년 12월 28일 ~ 2027년 1월 3일');
@@ -417,8 +455,18 @@ describe('formatDateKeyRange', () => {
       const context = { locale, timeZone: 'Asia/Seoul' };
 
       // When
-      const range = formatDateKeyRange(startDateKey, endDateKey, todayDateKey, context);
-      const compact = formatDateKeyCompactRange(startDateKey, endDateKey, todayDateKey, context);
+      const range = formatDateKeyRange(
+        createDateKey(startDateKey),
+        createDateKey(endDateKey),
+        createDateKey(todayDateKey),
+        context,
+      );
+      const compact = formatDateKeyCompactRange(
+        createDateKey(startDateKey),
+        createDateKey(endDateKey),
+        createDateKey(todayDateKey),
+        context,
+      );
 
       // Then
       expect([range, compact]).toEqual([expected, expectedCompact]);
@@ -429,8 +477,18 @@ describe('formatDateKeyRange', () => {
 describe('formatDateKeyCompactRange', () => {
   it('올해 같은 달이면 끝은 날만 쓴다', () => {
     // When
-    const ko = formatDateKeyCompactRange('2026-11-05', '2026-11-07', '2026-11-09', KO_SEOUL);
-    const en = formatDateKeyCompactRange('2026-11-05', '2026-11-07', '2026-11-09', EN_SEOUL);
+    const ko = formatDateKeyCompactRange(
+      createDateKey('2026-11-05'),
+      createDateKey('2026-11-07'),
+      createDateKey('2026-11-09'),
+      KO_SEOUL,
+    );
+    const en = formatDateKeyCompactRange(
+      createDateKey('2026-11-05'),
+      createDateKey('2026-11-07'),
+      createDateKey('2026-11-09'),
+      EN_SEOUL,
+    );
 
     // Then
     expect(ko).toBe('11월 5일~7일');
@@ -440,13 +498,23 @@ describe('formatDateKeyCompactRange', () => {
   it('달이 다르면 끝에도 달을 쓰고 올해가 아닌 끝이 있으면 연도까지 쓴다', () => {
     // When
     const otherMonth = formatDateKeyCompactRange(
-      '2026-11-30',
-      '2026-12-02',
-      '2026-11-09',
+      createDateKey('2026-11-30'),
+      createDateKey('2026-12-02'),
+      createDateKey('2026-11-09'),
       KO_SEOUL,
     );
-    const otherYear = formatDateKeyCompactRange('2026-12-30', '2027-01-02', '2026-11-09', KO_SEOUL);
-    const nextYear = formatDateKeyCompactRange('2027-01-05', '2027-01-07', '2026-11-09', KO_SEOUL);
+    const otherYear = formatDateKeyCompactRange(
+      createDateKey('2026-12-30'),
+      createDateKey('2027-01-02'),
+      createDateKey('2026-11-09'),
+      KO_SEOUL,
+    );
+    const nextYear = formatDateKeyCompactRange(
+      createDateKey('2027-01-05'),
+      createDateKey('2027-01-07'),
+      createDateKey('2026-11-09'),
+      KO_SEOUL,
+    );
 
     // Then
     expect(otherMonth).toBe('11월 30일~12월 2일');

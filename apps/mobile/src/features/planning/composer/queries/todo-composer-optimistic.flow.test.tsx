@@ -1,6 +1,6 @@
 import { err, ok } from '@src/core/errors/result';
-import '@src/shared/i18n/init';
 import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/planning/category/queries/todo-category-query-keys';
+import '@src/shared/i18n/init';
 import {
   createParentTodo,
   createSubTodo,
@@ -29,6 +29,7 @@ import {
   createPendingResponse,
   createTestQueryClient,
 } from '@src/testing/core';
+import { createDateKey } from '@src/testing/date-key';
 import { renderScreen } from '@src/testing/render';
 import { useMutation } from '@tanstack/react-query';
 import { act } from '@testing-library/react-native';
@@ -37,10 +38,10 @@ import { useAddSubTodoMutationOptions } from './todo-composer.mutations';
 import { useCreateTodoMutationOptions } from './todo-composer.mutations';
 import { useUpdateSubTodoMutationOptions } from './todo-composer.mutations';
 
-const DAY_1 = '2026-03-08';
-const DAY_2 = '2026-03-09';
-const DAY_3 = '2026-03-10';
-const WEEK = { startDate: '2026-03-08', endDate: '2026-03-14' };
+const DAY_1 = createDateKey('2026-03-08');
+const DAY_2 = createDateKey('2026-03-09');
+const DAY_3 = createDateKey('2026-03-10');
+const WEEK = { startDate: createDateKey('2026-03-08'), endDate: createDateKey('2026-03-14') };
 const LIST_DAY_1 = TODO_QUERY_KEYS.listByDate({ date: DAY_1 });
 const LIST_DAY_2 = TODO_QUERY_KEYS.listByDate({ date: DAY_2 });
 const LIST_DAY_3 = TODO_QUERY_KEYS.listByDate({ date: DAY_3 });
@@ -578,7 +579,7 @@ describe('할 일 낙관적 갱신', () => {
       LIST_DAY_1,
       toList([
         createParentTodo({ startDate: DAY_1 }),
-        createParentTodo({ id: 2, startDate: '2026-03-07', endDate: DAY_1 }),
+        createParentTodo({ id: 2, startDate: createDateKey('2026-03-07'), endDate: DAY_1 }),
       ]),
     );
     queryClient.setQueryData(WEEK_COMPLETIONS, createCompletions(1, 0));

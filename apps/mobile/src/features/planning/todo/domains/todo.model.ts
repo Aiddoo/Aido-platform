@@ -1,7 +1,12 @@
 import { entityIdSchema } from '@aido/api/common';
 import { TODAY_SUMMARY_TOP_TODOS_MAX, TODO_VISIBILITIES } from '@aido/api/vocabulary';
 import { todoCategorySchema } from '@src/features/planning/category/domains/todo-category.model';
-import { addDaysToDateKey, diffDateKeysInDays } from '@src/shared/date/date-key';
+import {
+  addDaysToDateKey,
+  diffDateKeysInDays,
+  dateKeySchema,
+  type DateKey,
+} from '@src/shared/date/date-key';
 import { instantSchema } from '@src/shared/date/instant';
 import { toHHmm } from '@src/shared/date/zoned';
 import { userSummarySchema } from '@src/shared/domains/user-summary.model';
@@ -18,8 +23,8 @@ export const todoSchema = z.object({
   visibility: z.enum(TODO_VISIBILITIES),
   recurrenceGroupId: z.string().nullable(),
   commentCount: z.int().nonnegative(),
-  startDate: z.iso.date(),
-  endDate: z.iso.date().nullable(),
+  startDate: dateKeySchema,
+  endDate: dateKeySchema.nullable(),
   category: todoCategorySchema.pick({ id: true, name: true, color: true }),
   /** 사용자가 고른 벽시계(HH:mm). 어디서든 이 시각이라 표시와 수정 기본값은 이 값만 쓴다. 종일은 null */
   localTime: z.iso.time({ precision: -1 }).nullable(),
@@ -50,7 +55,7 @@ const todoOverviewSchema = z.object({
 export type TodoOverview = z.infer<typeof todoOverviewSchema>;
 
 export const todoSummarySchema = z.object({
-  date: z.string(),
+  date: dateKeySchema,
   totalTodos: z.int().min(0),
   completedTodos: z.int().min(0),
   completionRate: z.number().min(0).max(100),
@@ -138,8 +143,8 @@ export function isMultiDayTodo(todo: Todo): boolean {
 // 할 일과 폼의 날짜 칸이 함께 쓰는 기간 규칙이라 필요한 날짜만 받는다
 export function getShiftedEndDate(
   todo: Pick<Todo, 'startDate' | 'endDate'>,
-  startDate: string,
-): string | null {
+  startDate: DateKey,
+): DateKey | null {
   return todo.endDate == null
     ? null
     : addDaysToDateKey(startDate, diffDateKeysInDays(todo.startDate, todo.endDate));
@@ -147,8 +152,8 @@ export function getShiftedEndDate(
 
 // 작성·수정 폼과 음성 계획 카드가 고르는 일정. 날짜는 앱 시간대의 날짜 key, 시각은 벽시계(HH:mm)다
 const todoScheduleSchema = z.object({
-  startDate: z.iso.date(),
-  endDate: z.iso.date().nullable(),
+  startDate: dateKeySchema,
+  endDate: dateKeySchema.nullable(),
   scheduledTime: z.iso.time({ precision: -1 }).nullable(),
   isAllDay: z.boolean(),
   repeat: todoRepeatSchema.nullable(),
@@ -165,7 +170,7 @@ export function getScheduledTime(
 // 시작일을 옮기면 여러 날 기간은 길이를 지키고 반복은 시작일을 따라온다. 반복 회차의 날짜 이동은 그 회차에만 적용돼 규칙을 그대로 둔다
 export function withScheduleStartDate(
   schedule: TodoSchedule,
-  startDate: string,
+  startDate: DateKey,
   { isSeriesOccurrence }: { isSeriesOccurrence: boolean },
 ): TodoSchedule {
   const repeat =
@@ -196,7 +201,7 @@ export function isLastOpenTodo(todos: readonly Todo[], completedTodoId: number):
   );
 }
 
-export function isTodoOnDate(todo: Todo, date: string): boolean {
+export function isTodoOnDate(todo: Todo, date: DateKey): boolean {
   return todo.startDate <= date && date <= (todo.endDate ?? todo.startDate);
 }
 
@@ -214,7 +219,7 @@ export function getLocalTime(todo: Todo, timeZone: string): string | null {
 // 완료 전이고 시간이 있으며 아직 지나지 않은 할 일이 있는가. 시각은 어디서든 그 시각이라 벽시계로 비교한다
 export function hasUpcomingTimedTodo(
   todos: readonly Todo[],
-  now: { dateKey: string; time: string; timeZone: string },
+  now: { dateKey: DateKey; time: string; timeZone: string },
 ): boolean {
   return todos.some((todo) => {
     const localTime = getLocalTime(todo, now.timeZone);
@@ -227,14 +232,14 @@ export function hasUpcomingTimedTodo(
 }
 
 // 상세 화면은 피드 날짜를 모른다. 오늘이 기간 안이면 오늘 목록을, 아니면 시작일 목록을 먼저 고친다
-export function getOptimisticListDate(todo: Todo, todayKey: string): string {
+export function getOptimisticListDate(todo: Todo, todayKey: DateKey): DateKey {
   return isTodoOnDate(todo, todayKey) ? todayKey : todo.startDate;
 }
 
 // 오늘 할 일은 내일로, 다른 날 할 일은 오늘로 옮기고 새 시작일보다 앞선 끝 날짜는 지운다
 export function getTodayToggleDates(
   todo: Todo,
-  todayKey: string,
+  todayKey: DateKey,
 ): Pick<Todo, 'startDate' | 'endDate'> {
   const startDate = todo.startDate === todayKey ? addDaysToDateKey(todayKey, 1) : todayKey;
   return {

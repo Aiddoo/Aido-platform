@@ -1,5 +1,6 @@
 import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/planning/category/queries/todo-category-query-keys';
 import { createPendingResponse, createTestQueryClient } from '@src/testing/core';
+import { createDateKey } from '@src/testing/date-key';
 import { QueryObserver, type QueryClient } from '@tanstack/react-query';
 import { noop } from 'es-toolkit';
 
@@ -25,10 +26,10 @@ import {
 import { TODO_MUTATION_KEYS } from './todo-mutation-keys';
 import { TODO_QUERY_KEYS } from './todo-query-keys';
 
-const DAY = '2026-07-14';
-const NEXT_DAY = '2026-07-15';
-const WEEK = { startDate: '2026-07-13', endDate: '2026-07-19' };
-const NEXT_WEEK = { startDate: '2026-07-20', endDate: '2026-07-26' };
+const DAY = createDateKey('2026-07-14');
+const NEXT_DAY = createDateKey('2026-07-15');
+const WEEK = { startDate: createDateKey('2026-07-13'), endDate: createDateKey('2026-07-19') };
+const NEXT_WEEK = { startDate: createDateKey('2026-07-20'), endDate: createDateKey('2026-07-26') };
 
 const toList = (todos: Todo[]): TodoListResult => ({ todos, hasNext: false, nextCursor: null });
 const toCompletions = (range: typeof WEEK): DailyCompletionsResult => ({
@@ -37,7 +38,7 @@ const toCompletions = (range: typeof WEEK): DailyCompletionsResult => ({
   dateRange: range,
 });
 const toSummary = (date: string): TodoSummary => ({
-  date,
+  date: createDateKey(date),
   totalTodos: 0,
   completedTodos: 0,
   completionRate: 0,
@@ -140,7 +141,11 @@ describe('캐시에서 할 일 찾기', () => {
   it('알림으로 연 상세처럼 그날 목록이 없으면 상세의 여러 날 기간으로 달력 범위를 고른다', () => {
     // Given
     const queryClient = createTestQueryClient();
-    const multiDay = createParentTodo({ id: 7, startDate: DAY, endDate: '2026-07-22' });
+    const multiDay = createParentTodo({
+      id: 7,
+      startDate: DAY,
+      endDate: createDateKey('2026-07-22'),
+    });
     queryClient.setQueryData(TODO_QUERY_KEYS.detail({ todoId: 7 }), {
       todo: multiDay,
       owner: { id: 'u', name: null, profileImage: null },

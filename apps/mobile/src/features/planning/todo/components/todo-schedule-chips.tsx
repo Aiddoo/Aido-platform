@@ -2,6 +2,7 @@ import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/
 import { CategorySelectInput } from '@src/features/planning/category/components/category-select-input';
 import { TodoCategoryPolicy } from '@src/features/planning/category/domains/todo-category.model';
 import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/category/queries/todo-category.queries';
+import type { DateKey } from '@src/shared/date/date-key';
 import { formatHHmmTime } from '@src/shared/date/format/date-format';
 import { toLocalDay } from '@src/shared/date/native-date';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
@@ -104,7 +105,7 @@ export function TodoScheduleChips({
   );
 }
 
-function DateChip({ value, onChange, sheetOptions }: ChipProps<string>) {
+function DateChip({ value, onChange, sheetOptions }: ChipProps<DateKey>) {
   const { t } = useTranslation('common');
   const openSheet = useOpenSheet();
   const todayKey = useTodayKey();
@@ -113,7 +114,7 @@ function DateChip({ value, onChange, sheetOptions }: ChipProps<string>) {
     value.startDate === todayKey && (value.endDate == null || value.endDate === value.startDate);
 
   const handlePress = async () => {
-    const startDate = await openSheet<string>(
+    const startDate = await openSheet<DateKey>(
       (close) => (
         <TodoDatePicker value={value.startDate} onChange={close} onCancel={() => close()} />
       ),

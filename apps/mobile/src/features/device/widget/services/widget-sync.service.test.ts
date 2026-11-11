@@ -1,6 +1,7 @@
 import { toInstant } from '@src/shared/date/instant';
 import { writeStoredValue } from '@src/shared/storage/define-stored-value';
 import { createMemorySyncStorage } from '@src/testing/core';
+import { createDateKey } from '@src/testing/date-key';
 
 import type { WidgetSnapshotContext, WidgetSummaryInput } from '../apis/widget-snapshot.mapper';
 import type { WidgetBridge } from '../bridge/widget-bridge';
@@ -19,7 +20,7 @@ const context: WidgetSnapshotContext = {
 };
 
 const summary: WidgetSummaryInput = {
-  date: '2026-07-12',
+  date: createDateKey('2026-07-12'),
   totalTodos: 3,
   completedTodos: 1,
   completionRate: 33,
@@ -77,7 +78,7 @@ describe('WidgetSyncService', () => {
     const { service } = createService(bridge);
 
     // When
-    await service.syncLoggedOut('2026-07-12', context);
+    await service.syncLoggedOut(createDateKey('2026-07-12'), context);
 
     // Then
     expect(bridge.writeSnapshot).toHaveBeenCalledWith(
@@ -95,7 +96,7 @@ describe('WidgetSyncService', () => {
     const { service } = createService(bridge);
 
     // When
-    const result = service.syncLoggedOut('2026-07-12', context);
+    const result = service.syncLoggedOut(createDateKey('2026-07-12'), context);
 
     // Then
     await expect(result).resolves.toEqual({ status: 'failed', error: expect.any(Error) });

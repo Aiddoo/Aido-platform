@@ -1,4 +1,5 @@
 import { DAY_MS } from '@src/shared/constants/time-units';
+import { dateKeySchema } from '@src/shared/date/date-key';
 import { type Instant, diffMs } from '@src/shared/date/instant';
 import { isSemanticVersionAtLeast } from '@src/shared/utils/semantic-version';
 import { maxBy } from 'es-toolkit';
@@ -27,7 +28,7 @@ export const releaseSchema = z.object({
   id: releaseIdSchema,
   /** 서버가 자동으로 열 수 있는 출시에만 있다. 지난 출시는 목록에서만 연다 */
   campaignId: z.string().min(1).optional(),
-  releasedOn: z.iso.date(),
+  releasedOn: dateKeySchema,
   /** 초대가 꺼져 있으면 쓸 수 없는 기능이라 목록에서 숨긴다 */
   requiresInvite: z.boolean(),
 });

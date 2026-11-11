@@ -1,6 +1,7 @@
 import { useSubTodoApi } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
 import { useTrack } from '@src/shared/analytics';
+import type { DateKey } from '@src/shared/date/date-key';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 import { SubTodoPolicy } from '../domains/sub-todo.model';
@@ -18,7 +19,7 @@ interface ToggleSubTodoVariables {
   subTodoId: number;
   isCompleted: boolean;
   /** 바꾼 목록의 날짜. 여러 날 할 일은 시작일이 아니라 보고 있는 날짜 목록을 고친다 */
-  date: string;
+  date: DateKey;
 }
 
 export function useToggleSubTodoMutationOptions() {
@@ -79,7 +80,7 @@ interface DeleteSubTodoVariables {
   todoId: number;
   subTodoId: number;
   /** 바꾼 목록의 날짜. 여러 날 할 일은 시작일이 아니라 보고 있는 날짜 목록을 고친다 */
-  date: string;
+  date: DateKey;
 }
 
 export function useDeleteSubTodoMutationOptions() {
@@ -143,7 +144,7 @@ interface ReorderSubTodosVariables {
   todoId: number;
   subTodoIds: number[];
   /** 바꾼 목록의 날짜. 여러 날 할 일은 시작일이 아니라 보고 있는 날짜 목록을 고친다 */
-  date: string;
+  date: DateKey;
 }
 
 export function useReorderSubTodosMutationOptions() {

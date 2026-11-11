@@ -1,4 +1,4 @@
-import { addDaysToDateKey, getDayOfWeek } from '@src/shared/date/date-key';
+import { addDaysToDateKey, getDayOfWeek, type DateKey } from '@src/shared/date/date-key';
 import { getWeekdayLabels } from '@src/shared/date/format/date-labels';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
@@ -16,8 +16,8 @@ import { PickerMonthHeader } from './picker-month-header';
 
 interface TodoDatePickerProps {
   /** 고른 날짜(YYYY-MM-DD) */
-  value: string;
-  onChange: (dateKey: string) => void;
+  value: DateKey;
+  onChange: (dateKey: DateKey) => void;
   onCancel: () => void;
   /** 고른 날짜를 저장하는 동안 확인을 막는다 */
   isConfirmDisabled?: boolean;
@@ -59,7 +59,7 @@ export function TodoDatePicker({
 
 interface QuickDateOptionsProps {
   picker: DatePicker;
-  onChange: (dateKey: string) => void;
+  onChange: (dateKey: DateKey) => void;
 }
 
 function QuickDateOptions({ picker, onChange }: QuickDateOptionsProps) {
@@ -87,9 +87,9 @@ function QuickDateOptions({ picker, onChange }: QuickDateOptionsProps) {
 
 interface QuickDateRowProps {
   label: string;
-  dateKey: string;
+  dateKey: DateKey;
   isSelected: boolean;
-  onChange: (dateKey: string) => void;
+  onChange: (dateKey: DateKey) => void;
 }
 
 function QuickDateRow({ label, dateKey, isSelected, onChange }: QuickDateRowProps) {
@@ -129,7 +129,7 @@ function QuickDateRow({ label, dateKey, isSelected, onChange }: QuickDateRowProp
 
 interface DatePickerCalendarProps {
   picker: DatePicker;
-  onValueChange: (dateKey: string) => void;
+  onValueChange: (dateKey: DateKey) => void;
 }
 
 function DatePickerCalendar({ picker, onValueChange }: DatePickerCalendarProps) {

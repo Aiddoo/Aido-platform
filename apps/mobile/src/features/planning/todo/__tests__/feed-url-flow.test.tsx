@@ -1,4 +1,5 @@
 import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
+import type { DateKey } from '@src/shared/date/date-key';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import {
   createAnalyticsStub,
@@ -6,6 +7,7 @@ import {
   createTestDi,
   stubWindowDimensions,
 } from '@src/testing/core';
+import { createDateKey } from '@src/testing/date-key';
 import { renderRouteHook } from '@src/testing/render-route-hook';
 import { setupFakeTimersPerTest } from '@src/testing/timers';
 import { act } from '@testing-library/react-native';
@@ -108,7 +110,7 @@ describe('피드 URL 플로우', () => {
       // Given
       const feed = await renderFeed('/feed?todoId=5&sort=POPULAR');
       // When
-      await feed.run(({ setSelectedDateKey }) => setSelectedDateKey('2030-01-02'));
+      await feed.run(({ setSelectedDateKey }) => setSelectedDateKey(createDateKey('2030-01-02')));
 
       // Then
       expect(feed.hook().selectedTodoId).toBe(5);
@@ -140,7 +142,7 @@ describe('피드 URL 플로우', () => {
       const feed = await renderFeed('/feed', { from: '/mypage' });
 
       // When
-      await feed.run(({ setSelectedDateKey }) => setSelectedDateKey('2030-01-02'));
+      await feed.run(({ setSelectedDateKey }) => setSelectedDateKey(createDateKey('2030-01-02')));
       await feed.run(({ selectFriend }) => selectFriend(FRIEND));
       await feed.run(({ setSelectedTodoId }) => setSelectedTodoId(5));
       await act(async () => router.back());
@@ -265,8 +267,8 @@ describe('피드 URL 플로우', () => {
   });
 });
 
-function toKey(date: Date): string {
+function toKey(date: Date): DateKey {
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const day = String(date.getDate()).padStart(2, '0');
-  return `${date.getFullYear()}-${month}-${day}`;
+  return createDateKey(`${date.getFullYear()}-${month}-${day}`);
 }

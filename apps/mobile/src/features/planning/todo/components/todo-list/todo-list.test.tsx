@@ -1,7 +1,7 @@
 import { ok } from '@src/core/errors/result';
 import { createPreference } from '@src/features/identity/preference/__tests__/preference.fixtures';
-import '@src/shared/i18n/init';
 import { PREFERENCE_QUERY_KEYS } from '@src/features/identity/preference/queries/preference-query-keys';
+import '@src/shared/i18n/init';
 import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/planning/category/queries/todo-category-query-keys';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import {
@@ -9,6 +9,7 @@ import {
   createPendingResponse,
   createTestQueryClient,
 } from '@src/testing/core';
+import { createDateKey } from '@src/testing/date-key';
 import { renderScreen } from '@src/testing/render';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { useLocalSearchParams } from 'expo-router';
@@ -22,7 +23,7 @@ import { updateCachedTodo } from '../../queries/todo-cache';
 import { TODO_QUERY_KEYS } from '../../queries/todo-query-keys';
 import { TodoList } from './todo-list';
 
-const DATE = '2026-03-08';
+const DATE = createDateKey('2026-03-08');
 
 async function renderTodoList(todo: Todo) {
   const httpClient = createHttpClientStub();

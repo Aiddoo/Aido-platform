@@ -1,7 +1,8 @@
-import '@src/shared/i18n/init';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
+import '@src/shared/i18n/init';
 import { Text } from '@src/shared/ui';
 import { createErrorReporterStub, createAnalyticsStub } from '@src/testing/core';
+import { createDateKey } from '@src/testing/date-key';
 import { renderScreen } from '@src/testing/render';
 import { fireEvent, screen } from '@testing-library/react-native';
 import { useState } from 'react';
@@ -20,7 +21,9 @@ function SheetProbe({ onSettled }: { onSettled: (scope: TodoEditScope | null) =>
       <TextInput testID="title" value={title} onChangeText={setTitle} />
       <Pressable
         testID="save"
-        onPress={async () => onSettled(await scopeSelector.selectEditScope('2026-11-04'))}
+        onPress={async () =>
+          onSettled(await scopeSelector.selectEditScope(createDateKey('2026-11-04')))
+        }
       />
       <Text>폼</Text>
     </TodoScopeStep>

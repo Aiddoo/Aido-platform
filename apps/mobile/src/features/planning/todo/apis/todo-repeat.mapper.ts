@@ -1,4 +1,5 @@
 import type { TodoRepeat as TodoRepeatDto, TodoRepeatEnd as TodoRepeatEndDto } from '@aido/api';
+import { dateKeySchema } from '@src/shared/date/date-key';
 import { match } from 'ts-pattern';
 
 import type { TodoRepeat, TodoRepeatEnd } from '../domains/todo-repeat.model';
@@ -7,7 +8,7 @@ function toRepeatEnd(end: TodoRepeatEndDto): TodoRepeatEnd {
   return match(end)
     .returnType<TodoRepeatEnd>()
     .with({ type: 'NEVER' }, () => ({ type: 'NEVER' }))
-    .with({ type: 'UNTIL' }, ({ date }) => ({ type: 'UNTIL', date }))
+    .with({ type: 'UNTIL' }, ({ date }) => ({ type: 'UNTIL', date: dateKeySchema.parse(date) }))
     .with({ type: 'COUNT' }, ({ count }) => ({ type: 'COUNT', count }))
     .exhaustive();
 }

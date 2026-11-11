@@ -9,11 +9,17 @@ import { pendingRedemptionStoredValue } from '@src/features/social/invite/schema
 import { toInstant } from '@src/shared/date/instant';
 import { readStoredValue, writeStoredValue } from '@src/shared/storage/define-stored-value';
 import { createLoggerStub, createMemorySyncStorage, createTestDi } from '@src/testing/core';
+import { createDateKey } from '@src/testing/date-key';
 
 const DISMISSED_AT = toInstant('2026-11-09T01:02:03.000Z');
 
 function rememberPrompts(storage: SyncStorage, userId: string) {
-  writeStoredValue(storage, upsellDismissalStoredValue, { AI_PARSE: '2026-11-10' }, userId);
+  writeStoredValue(
+    storage,
+    upsellDismissalStoredValue,
+    { AI_PARSE: createDateKey('2026-11-10') },
+    userId,
+  );
   writeStoredValue(storage, pushPermissionDeferredAtStoredValue, DISMISSED_AT, userId);
   writeStoredValue(storage, pushNoticeDismissedAtStoredValue, DISMISSED_AT, userId);
 }

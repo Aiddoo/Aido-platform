@@ -1,3 +1,4 @@
+import type { DateKey } from '@src/shared/date/date-key';
 import { formatYearAwareDateKeyLabel } from '@src/shared/date/format/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useIsOnline } from '@src/shared/hooks/use-is-online';
@@ -101,7 +102,7 @@ const DISCLOSURE_TEXT_SIZE = 'e1';
 
 interface PurchaseDisclosureProps {
   plan: SubscriptionPlan | null;
-  trialEndDateKey: string | null;
+  trialEndDateKey: DateKey | null;
   isPlanLoading: boolean;
 }
 

@@ -1,4 +1,5 @@
 import { todoRepeatSchema, todoSeriesResponseSchema, updateTodoSchema } from '@aido/api';
+import { createDateKey } from '@src/testing/date-key';
 
 import type { TodoRepeat } from '../domains/todo-repeat.model';
 import { todoSeriesSchema } from '../domains/todo-series.model';
@@ -24,7 +25,7 @@ const REPEATS: TodoRepeat[] = [
     frequency: 'WEEKLY',
     interval: 1,
     weekdays: ['MON', 'FRI'],
-    end: { type: 'UNTIL', date: '2026-12-31' },
+    end: { type: 'UNTIL', date: createDateKey('2026-12-31') },
   },
   BIWEEKLY_COUNT,
   { frequency: 'MONTHLY', monthDay: 31, end: { type: 'NEVER' } },

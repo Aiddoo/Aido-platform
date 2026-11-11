@@ -2,7 +2,7 @@ import { WEATHER_BRIEFING_RULES, type WeatherCondition } from '@aido/api/vocabul
 import { SubTodoPolicy } from '@src/features/planning/todo/domains/sub-todo.model';
 import type { Todo } from '@src/features/planning/todo/domains/todo.model';
 import { HOUR_MS } from '@src/shared/constants/time-units';
-import { addDaysToDateKey } from '@src/shared/date/date-key';
+import { addDaysToDateKey, type DateKey } from '@src/shared/date/date-key';
 import { type Instant, fromEpochMs, toEpochMs } from '@src/shared/date/instant';
 import { toZonedInstant, getZonedHour, hasSameWallClock, toDateKey } from '@src/shared/date/zoned';
 import { keyBy, maxBy, range, takeWhile } from 'es-toolkit';
@@ -49,7 +49,7 @@ export interface BriefingTodo {
 /** 여러 날 할 일은 시작일이 어제여도 오늘 목록에 있어 보고 있는 날짜 + 벽시계 + 기기 시간대로 시각을 만든다 */
 function toBriefingTodo(
   todo: Todo,
-  { date, timeZone }: { date: string; timeZone: string },
+  { date, timeZone }: { date: DateKey; timeZone: string },
 ): BriefingTodo {
   return {
     id: todo.id,
@@ -275,7 +275,7 @@ function toRainLaterBriefing(
   }
   const todayKey = toDateKey(now, timeZone);
   const wetDateKey = toDateKey(wetHour.startsAt, timeZone);
-  const day = match(wetDateKey)
+  const day = match<string>(wetDateKey)
     .with(todayKey, () => 'today' as const)
     .with(addDaysToDateKey(todayKey, 1), () => 'tomorrow' as const)
     .otherwise(() => null);

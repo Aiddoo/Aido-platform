@@ -1,3 +1,4 @@
+import type { DateKey } from '@src/shared/date/date-key';
 import { Box, FishIcon, HStack, Text } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { PressableFeedback } from 'heroui-native';
@@ -10,7 +11,7 @@ export const CALENDAR_DATE_CELL_HEIGHT = 56;
 const MAX_CATEGORY_INDICATOR_COUNT = 3;
 
 interface CalendarDateCellProps {
-  dateKey: string;
+  dateKey: DateKey;
   dayNumber: string;
   /** 읽어 줄 날짜. 쪽마다 한 번 만들어 칸이 다시 그려질 때 Intl을 부르지 않는다 */
   label: string;
@@ -19,7 +20,7 @@ interface CalendarDateCellProps {
   isTodayHighlighted: boolean;
   isOutsideMonth: boolean;
   completion: DailyCompletionSummary | undefined;
-  onSelect: (dateKey: string) => void;
+  onSelect: (dateKey: DateKey) => void;
 }
 
 /** 칸이 많아 pager가 route를 한 번 읽고 파생 값만 넘긴다. 날짜를 바꾸면 선택이 바뀐 칸만 다시 그린다 */

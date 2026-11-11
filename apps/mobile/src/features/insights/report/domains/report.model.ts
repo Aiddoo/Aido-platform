@@ -1,4 +1,5 @@
 import { AI_REPORT_TYPES, DAYS_OF_WEEK } from '@aido/api/vocabulary';
+import { dateKeySchema } from '@src/shared/date/date-key';
 import { instantSchema } from '@src/shared/date/instant';
 import { orderBy } from 'es-toolkit';
 import { match } from 'ts-pattern';
@@ -42,7 +43,7 @@ export const aiReportSchema = z.object({
   type: reportTypeSchema,
   year: z.number(),
   period: z.number(),
-  dateRange: z.object({ startDate: z.iso.date(), endDate: z.iso.date() }),
+  dateRange: z.object({ startDate: dateKeySchema, endDate: dateKeySchema }),
   stats: reportStatsSchema,
   categoryBreakdown: z.array(categoryBreakdownItemSchema),
   dayPatterns: z.array(dayPatternItemSchema),

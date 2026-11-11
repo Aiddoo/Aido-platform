@@ -1,4 +1,5 @@
 import { SUPPORTED_LOCALES } from '@aido/api/vocabulary';
+import { dateKeySchema } from '@src/shared/date/date-key';
 import { omit } from 'es-toolkit';
 import { z } from 'zod';
 
@@ -11,7 +12,7 @@ const widgetDaySnapshotSchema = z.object({
   /** data: 그날 할 일 있음 · empty: 로그인했으나 그날 할 일 없음 · loggedOut: 비로그인 */
   state: widgetRenderStateSchema.exclude(['stale']),
   /** 이 day가 설명하는 로컬 날짜 (YYYY-MM-DD) — 렌더 시점 오늘 key와 비교한다 */
-  date: z.string(),
+  date: dateKeySchema,
   totalTodos: z.number().int().min(0),
   completedTodos: z.number().int().min(0),
   completionRate: z.number().min(0).max(100),
@@ -32,7 +33,7 @@ const widgetDaySnapshotSchema = z.object({
   weekDays: z
     .array(
       z.object({
-        date: z.string(),
+        date: dateKeySchema,
         weekdayLabel: z.string(),
         dayLabel: z.string(),
         isComplete: z.boolean(),

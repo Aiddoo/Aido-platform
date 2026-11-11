@@ -5,6 +5,7 @@ import type {
   TodoListResponse,
 } from '@aido/api';
 import { ApiError } from '@src/core/errors/api-error';
+import { createDateKey } from '@src/testing/date-key';
 
 import { type TodoDetails, todoDetailsSchema } from '../domains/todo.model';
 import type { TodoFormValues } from '../schemas/todo-form.schema';
@@ -133,7 +134,7 @@ export function createTodoFormValues(overrides: Partial<TodoFormValues> = {}): T
   return {
     title: '테스트 할일',
     categoryId: 1,
-    startDate: '2026-03-08',
+    startDate: createDateKey('2026-03-08'),
     endDate: null,
     scheduledTime: null,
     isAllDay: true,

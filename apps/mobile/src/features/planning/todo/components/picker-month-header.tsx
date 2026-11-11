@@ -1,3 +1,4 @@
+import type { DateKey } from '@src/shared/date/date-key';
 import { formatDateKeyLabel } from '@src/shared/date/format/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useTranslation } from '@src/shared/i18n';
@@ -5,7 +6,7 @@ import { ArrowLeftIcon, ArrowRightIcon, HStack, IconButton, Text } from '@src/sh
 
 interface PickerMonthHeaderProps {
   /** 보이는 달의 아무 날(YYYY-MM-DD) */
-  displayMonthKey: string;
+  displayMonthKey: DateKey;
   onPreviousMonth: () => void;
   onNextMonth: () => void;
 }

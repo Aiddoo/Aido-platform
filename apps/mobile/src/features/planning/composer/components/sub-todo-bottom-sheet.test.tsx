@@ -1,10 +1,10 @@
 import { ApiError } from '@src/core/errors/api-error';
 import { err, ok } from '@src/core/errors/result';
-import '@src/shared/i18n/init';
 import {
   createParentTodo,
   createSubTodo,
 } from '@src/features/planning/todo/__tests__/sub-todo.fixtures';
+import '@src/shared/i18n/init';
 import type { TodoListResult } from '@src/features/planning/todo/domains/todo.model';
 import { TODO_QUERY_KEYS } from '@src/features/planning/todo/queries/todo-query-keys';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
@@ -17,6 +17,7 @@ import {
   createSpeechRecognizerStub,
   createTestQueryClient,
 } from '@src/testing/core';
+import { createDateKey } from '@src/testing/date-key';
 import { renderScreen } from '@src/testing/render';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { useLocalSearchParams } from 'expo-router';
@@ -160,11 +161,14 @@ describe('EditSubTodoBottomSheet', () => {
 describe('AddSubTodoBottomSheet', () => {
   it('여러 날 할 일에 다른 날짜에서 추가하면 보고 있는 날짜 목록에 바로 들어간다', async () => {
     // Given
-    const viewingDate = '2026-03-09';
+    const viewingDate = createDateKey('2026-03-09');
     const httpClient = createHttpClientStub();
     const pendingPost = createPendingResponse(ok(undefined));
     httpClient.post.mockReturnValue(pendingPost.response);
-    const todo = createParentTodo({ startDate: '2026-03-08', endDate: '2026-03-10' });
+    const todo = createParentTodo({
+      startDate: createDateKey('2026-03-08'),
+      endDate: createDateKey('2026-03-10'),
+    });
     const queryClient = createTestQueryClient({
       defaultOptions: { queries: { staleTime: Infinity } },
     });
@@ -203,7 +207,7 @@ describe('AddSubTodoBottomSheet', () => {
 
   it('추가에 실패하면 적은 제목을 그대로 두고 다시 보낼 수 있다', async () => {
     // Given
-    const viewingDate = '2026-03-09';
+    const viewingDate = createDateKey('2026-03-09');
     const httpClient = createHttpClientStub();
     httpClient.post.mockResolvedValue(
       err(new ApiError('SERVER', '잠시 후 다시 시도해주세요', 500)),

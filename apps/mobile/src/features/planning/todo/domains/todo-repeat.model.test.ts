@@ -1,4 +1,5 @@
 import { todoRepeatSchema as todoRepeatDtoSchema } from '@aido/api';
+import { createDateKey } from '@src/testing/date-key';
 import { z } from 'zod';
 
 import repeatLastOccurrenceCases from '../../../../../../../packages/api/test/fixtures/repeat-last-occurrence-cases.json';
@@ -33,8 +34,8 @@ const SHARED_LAST_OCCURRENCE_CASES = z
   )
   .parse(repeatLastOccurrenceCases);
 
-const MONDAY = '2026-11-02';
-const WEDNESDAY = '2026-11-04';
+const MONDAY = createDateKey('2026-11-02');
+const WEDNESDAY = createDateKey('2026-11-04');
 
 const createWeekly = (overrides: Partial<Extract<TodoRepeat, { frequency: 'WEEKLY' }>> = {}) =>
   todoRepeatSchema.parse({
@@ -50,7 +51,7 @@ const createMonthly = (monthDay: number) =>
 
 const withUntil = (repeat: TodoRepeat, date: string): TodoRepeat => ({
   ...repeat,
-  end: { type: 'UNTIL', date },
+  end: { type: 'UNTIL', date: createDateKey(date) },
 });
 
 const withCount = (repeat: TodoRepeat, count: number): TodoRepeat => ({
@@ -81,7 +82,11 @@ describe('withRepeatStartDate', () => {
     const repeat = createMonthly(15);
 
     // When
-    const moved = TodoRepeatPolicy.withRepeatStartDate(repeat, '2026-11-15', '2026-12-31');
+    const moved = TodoRepeatPolicy.withRepeatStartDate(
+      repeat,
+      createDateKey('2026-11-15'),
+      createDateKey('2026-12-31'),
+    );
 
     // Then
     expect(moved).toMatchObject({ frequency: 'MONTHLY', monthDay: 31 });
@@ -106,7 +111,7 @@ describe('withRepeatStartDate', () => {
     const repeat = withUntil(createWeekly(), '2026-11-10');
 
     // When
-    const moved = TodoRepeatPolicy.withRepeatStartDate(repeat, MONDAY, '2026-11-20');
+    const moved = TodoRepeatPolicy.withRepeatStartDate(repeat, MONDAY, createDateKey('2026-11-20'));
 
     // Then
     expect(moved.end).toEqual({ type: 'UNTIL', date: '2026-11-20' });
@@ -130,7 +135,7 @@ describe('isRepeatMonthDayClamped', () => {
 });
 
 describe('getRepeatOccurrenceDateKeys', () => {
-  const NOVEMBER = { from: '2026-11-01', to: '2026-11-30' };
+  const NOVEMBER = { from: createDateKey('2026-11-01'), to: createDateKey('2026-11-30') };
 
   it('주말이면 시작일 이후의 토·일만 회차다', () => {
     // Given
@@ -138,8 +143,8 @@ describe('getRepeatOccurrenceDateKeys', () => {
 
     // When
     const dates = TodoRepeatPolicy.getRepeatOccurrenceDateKeys(repeat, WEDNESDAY, {
-      from: '2026-11-01',
-      to: '2026-11-15',
+      from: createDateKey('2026-11-01'),
+      to: createDateKey('2026-11-15'),
     });
 
     // Then
@@ -152,8 +157,8 @@ describe('getRepeatOccurrenceDateKeys', () => {
 
     // When
     const dates = TodoRepeatPolicy.getRepeatOccurrenceDateKeys(repeat, WEDNESDAY, {
-      from: '2026-11-01',
-      to: '2026-11-06',
+      from: createDateKey('2026-11-01'),
+      to: createDateKey('2026-11-06'),
     });
 
     // Then
@@ -180,10 +185,14 @@ describe('getRepeatOccurrenceDateKeys', () => {
     });
 
     // When
-    const dates = TodoRepeatPolicy.getRepeatOccurrenceDateKeys(repeat, '2026-10-31', {
-      from: '2026-10-01',
-      to: '2027-03-01',
-    });
+    const dates = TodoRepeatPolicy.getRepeatOccurrenceDateKeys(
+      repeat,
+      createDateKey('2026-10-31'),
+      {
+        from: createDateKey('2026-10-01'),
+        to: createDateKey('2027-03-01'),
+      },
+    );
 
     // Then
     expect(dates).toEqual(['2026-10-31', '2026-11-30', '2026-12-31', '2027-01-31', '2027-02-28']);
@@ -205,10 +214,14 @@ describe('getRepeatOccurrenceDateKeys', () => {
     const repeat = withCount(createWeekly({ weekdays: ['MON'] }), 3);
 
     // When
-    const dates = TodoRepeatPolicy.getRepeatOccurrenceDateKeys(repeat, '2026-11-23', {
-      from: '2026-11-30',
-      to: '2026-12-31',
-    });
+    const dates = TodoRepeatPolicy.getRepeatOccurrenceDateKeys(
+      repeat,
+      createDateKey('2026-11-23'),
+      {
+        from: createDateKey('2026-11-30'),
+        to: createDateKey('2026-12-31'),
+      },
+    );
 
     // Then
     expect(dates).toEqual(['2026-11-30', '2026-12-07']);
@@ -328,7 +341,7 @@ describe('getTodoEditScopeDecision', () => {
   });
 });
 
-const HORIZON_TODAY = '2026-11-05';
+const HORIZON_TODAY = createDateKey('2026-11-05');
 
 describe('isBeyondRepeatHorizon', () => {
   it.each([
@@ -337,7 +350,7 @@ describe('isBeyondRepeatHorizon', () => {
     { title: '오늘 + 91일부터는 미리 만든 범위를 넘는다', dateKey: '2027-02-04', expected: true },
   ])('$title', ({ dateKey, expected }) => {
     // When
-    const result = TodoRepeatPolicy.isBeyondRepeatHorizon(dateKey, HORIZON_TODAY);
+    const result = TodoRepeatPolicy.isBeyondRepeatHorizon(createDateKey(dateKey), HORIZON_TODAY);
 
     // Then
     expect(result).toBe(expected);
@@ -355,7 +368,10 @@ describe('isMonthBeyondRepeatHorizon', () => {
     { title: '범위를 완전히 벗어난 달은 넘어간 달이다', dateKey: '2027-03-01', expected: true },
   ])('$title', ({ dateKey, expected }) => {
     // When
-    const result = TodoRepeatPolicy.isMonthBeyondRepeatHorizon(dateKey, HORIZON_TODAY);
+    const result = TodoRepeatPolicy.isMonthBeyondRepeatHorizon(
+      createDateKey(dateKey),
+      HORIZON_TODAY,
+    );
 
     // Then
     expect(result).toBe(expected);
@@ -441,11 +457,18 @@ describe('서버와 같은 마지막 회차 표', () => {
       const appRepeat = toRepeat(repeat);
 
       // When
-      const last = TodoRepeatPolicy.findLastRepeatOccurrenceDateKey(appRepeat, startDate);
-      const count = TodoRepeatPolicy.getRepeatOccurrenceDateKeys(appRepeat, startDate, {
-        from: startDate,
-        to: expectedLast,
-      }).length;
+      const last = TodoRepeatPolicy.findLastRepeatOccurrenceDateKey(
+        appRepeat,
+        createDateKey(startDate),
+      );
+      const count = TodoRepeatPolicy.getRepeatOccurrenceDateKeys(
+        appRepeat,
+        createDateKey(startDate),
+        {
+          from: createDateKey(startDate),
+          to: createDateKey(expectedLast),
+        },
+      ).length;
 
       // Then
       expect({ count, last }).toEqual({ count: expectedCount, last: expectedLast });
@@ -459,10 +482,14 @@ describe('서버와 같은 회차 표', () => {
     const appRepeat = toRepeat(repeat);
 
     // When
-    const occurrences = TodoRepeatPolicy.getRepeatOccurrenceDateKeys(appRepeat, startDate, {
-      from: startDate,
-      to: through,
-    });
+    const occurrences = TodoRepeatPolicy.getRepeatOccurrenceDateKeys(
+      appRepeat,
+      createDateKey(startDate),
+      {
+        from: createDateKey(startDate),
+        to: createDateKey(through),
+      },
+    );
 
     // Then
     expect(occurrences).toEqual(expected);

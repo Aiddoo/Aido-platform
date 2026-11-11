@@ -1,3 +1,4 @@
+import type { DateKey } from '@src/shared/date/date-key';
 import {
   type DateFormatContext,
   formatYearAwareDateKeyLabel,
@@ -45,7 +46,7 @@ export function formatRepeatRuleLabel(repeat: TodoRepeat | null, language: strin
 
 function formatEnd(
   end: TodoRepeatEnd,
-  todayDateKey: string,
+  todayDateKey: DateKey,
   context: DateFormatContext,
 ): string | null {
   return match(end)
@@ -61,7 +62,7 @@ function formatEnd(
 
 export function formatRepeatSummary(
   repeat: TodoRepeat,
-  todayDateKey: string,
+  todayDateKey: DateKey,
   context: DateFormatContext,
 ): string {
   return compact([

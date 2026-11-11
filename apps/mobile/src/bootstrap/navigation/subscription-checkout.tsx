@@ -25,6 +25,7 @@ import { UserPolicy } from '@src/features/identity/user/domains/user.model';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { PushPermissionToggle } from '@src/features/notification/components/push-permission-toggle';
 import { useTrack } from '@src/shared/analytics';
+import type { DateKey } from '@src/shared/date/date-key';
 import { formatYearAwareDateKeyLabel } from '@src/shared/date/format/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useIsOnline } from '@src/shared/hooks/use-is-online';
@@ -54,7 +55,7 @@ import { match } from 'ts-pattern';
 
 type CheckoutStepContexts = {
   status: Record<string, never>;
-  welcome: { plan: SubscriptionPlan; purchasedOn: string; hadRewardOnly: boolean };
+  welcome: { plan: SubscriptionPlan; purchasedOn: DateKey; hadRewardOnly: boolean };
 };
 
 /** 결제가 끝나면 서버 반영과 상관없이 방금 산 요금제로 시작 화면을 보여 준다. 뒤로 가기로 결제 화면에 돌아가지 않는다 */
@@ -179,7 +180,7 @@ SubscriptionScreen.Plans = function Plans({ onPurchased }: PurchaseFlowProps) {
 
 interface WelcomeProps {
   plan: SubscriptionPlan;
-  purchasedOn: string;
+  purchasedOn: DateKey;
   hadRewardOnly: boolean;
   onDone: () => void;
 }
@@ -425,7 +426,7 @@ function PlanComparisonHeading() {
 }
 
 /** billing은 알림 기능을 모르므로 체험 일정의 알림 칸은 화면이 알림 토글로 채운다 */
-function TrialReminderToggle({ reminderDateKey }: { reminderDateKey: string }) {
+function TrialReminderToggle({ reminderDateKey }: { reminderDateKey: DateKey }) {
   const { t } = useTranslation('notification');
   const { currentLocalDateKey } = useLocalDate();
   const date = formatYearAwareDateKeyLabel(

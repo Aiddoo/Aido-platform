@@ -1,4 +1,5 @@
 import { DAY_MS } from '@src/shared/constants/time-units';
+import { dateKeySchema, type DateKey } from '@src/shared/date/date-key';
 import { type Instant, diffMs, instantSchema, toEpochMs } from '@src/shared/date/instant';
 import { maxBy, uniq } from 'es-toolkit';
 import { z } from 'zod';
@@ -14,7 +15,7 @@ const storeReviewMomentSchema = z.enum(['all_todos_done', 'paw_print_celebration
 export type StoreReviewMoment = z.infer<typeof storeReviewMomentSchema>;
 
 export const storeReviewStateSchema = z.object({
-  activeDays: z.array(z.iso.date()).max(STORE_REVIEW_MIN_ACTIVE_DAYS),
+  activeDays: z.array(dateKeySchema).max(STORE_REVIEW_MIN_ACTIVE_DAYS),
   requestedAt: z.array(instantSchema).max(STORE_REVIEW_MAX_REQUESTS_PER_WINDOW),
 });
 export type StoreReviewState = z.infer<typeof storeReviewStateSchema>;
@@ -34,7 +35,7 @@ function isWithinRequestWindow(requestedAt: Instant, now: Instant) {
 }
 
 /** 할 일을 끝낸 날들을 차례로 더한다. 같은 날은 한 번만 세고 마지막 날들만 남긴다 */
-function withActiveDays(state: StoreReviewState, localDates: readonly string[]): StoreReviewState {
+function withActiveDays(state: StoreReviewState, localDates: readonly DateKey[]): StoreReviewState {
   return {
     ...state,
     activeDays: uniq([...state.activeDays, ...localDates]).slice(-STORE_REVIEW_MIN_ACTIVE_DAYS),
@@ -42,7 +43,7 @@ function withActiveDays(state: StoreReviewState, localDates: readonly string[]):
 }
 
 /** 할 일을 하나라도 끝낸 날을 남긴다. 같은 날은 한 번만 센다 */
-function withActiveDay(state: StoreReviewState, localDate: string): StoreReviewState {
+function withActiveDay(state: StoreReviewState, localDate: DateKey): StoreReviewState {
   return state.activeDays.includes(localDate) ? state : withActiveDays(state, [localDate]);
 }
 

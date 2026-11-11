@@ -1,4 +1,5 @@
 import { TODO_UPDATE_SCOPES } from '@aido/api/vocabulary';
+import type { DateKey } from '@src/shared/date/date-key';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Keyboard } from 'react-native';
 
@@ -6,7 +7,7 @@ import type { TodoEditScope, TodoUpdateScope } from '../domains/todo-repeat.mode
 
 export interface ScopeRequest {
   action: 'edit' | 'delete';
-  date: string;
+  date: DateKey;
   scopes: readonly TodoEditScope[];
   resolve: (scope: TodoEditScope | null) => void;
 }
@@ -30,7 +31,7 @@ export function useSelectTodoScope() {
 
   const selectScope = (
     action: ScopeRequest['action'],
-    date: string,
+    date: DateKey,
     scopes: readonly TodoEditScope[],
   ) =>
     new Promise<TodoEditScope | null>((resolve) => {
@@ -44,11 +45,11 @@ export function useSelectTodoScope() {
   };
 
   return {
-    selectEditScope: async (date: string): Promise<TodoUpdateScope | null> => {
+    selectEditScope: async (date: DateKey): Promise<TodoUpdateScope | null> => {
       const scope = await selectScope('edit', date, TODO_UPDATE_SCOPES);
       return scope === 'ALL' ? null : scope;
     },
-    selectDeleteScope: (date: string, scopes: readonly TodoEditScope[]) =>
+    selectDeleteScope: (date: DateKey, scopes: readonly TodoEditScope[]) =>
       selectScope('delete', date, scopes),
     scopeRequest: request,
     settleScope: settle,

@@ -1,9 +1,10 @@
 import { ApiError } from '@src/core/errors/api-error';
 import { err, ok } from '@src/core/errors/result';
 import { createStoreReviewRepository } from '@src/features/device/store-review/repositories/store-review.repository';
-import '@src/shared/i18n/init';
 import { createUser } from '@src/features/identity/user/__tests__/user.fixtures';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-keys';
+import '@src/shared/i18n/init';
+import type { DateKey } from '@src/shared/date/date-key';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import {
   createAppStoreReviewGatewayStub,
@@ -11,6 +12,7 @@ import {
   createMemoryObservableSyncStorage,
   createPendingResponse,
 } from '@src/testing/core';
+import { createDateKey } from '@src/testing/date-key';
 import { renderScreen } from '@src/testing/render';
 import { setupFakeTimersPerTest } from '@src/testing/timers';
 import { useMutation } from '@tanstack/react-query';
@@ -26,12 +28,12 @@ import {
   useUpdateTodoScheduleMutationOptions,
 } from './todo.mutations';
 
-const TODAY = '2026-10-27';
-const YESTERDAY = '2026-10-26';
+const TODAY = createDateKey('2026-10-27');
+const YESTERDAY = createDateKey('2026-10-26');
 const DEVICE_CALENDAR = { timeZone: 'Asia/Seoul' };
 const ACCOUNT_ID = 'account-1';
 /** 리뷰 요청은 이 두 날에 오늘이 더해져 3일을 채워야 열린다 */
-const PAST_ACTIVE_DAYS = ['2026-10-24', '2026-10-25'];
+const PAST_ACTIVE_DAYS = [createDateKey('2026-10-24'), createDateKey('2026-10-25')];
 /** 축하 화면이 가라앉기를 기다리는 시간(1.2초)보다 길게 */
 const REVIEW_SETTLE_MS = 2_000;
 
@@ -68,7 +70,7 @@ async function renderToggle() {
   );
   queryClient.setQueryData(USER_QUERY_KEYS.me(), createUser({ id: ACCOUNT_ID }));
 
-  const toggle = async (todoId: number, completed: boolean, date: string) => {
+  const toggle = async (todoId: number, completed: boolean, date: DateKey) => {
     if (current.value == null) {
       throw new Error('Probe가 렌더되지 않았다');
     }
@@ -77,7 +79,7 @@ async function renderToggle() {
       await toggled.mutateAsync({ todoId, body: { completed }, date }).catch(() => undefined);
     });
   };
-  const startToggle = async (todoId: number, completed: boolean, date: string) => {
+  const startToggle = async (todoId: number, completed: boolean, date: DateKey) => {
     if (current.value == null) {
       throw new Error('Probe가 렌더되지 않았다');
     }
@@ -86,7 +88,7 @@ async function renderToggle() {
       toggled.mutate({ todoId, body: { completed }, date });
     });
   };
-  const givenList = (date: string, todos: Todo[]) =>
+  const givenList = (date: DateKey, todos: Todo[]) =>
     queryClient.setQueryData(TODO_QUERY_KEYS.listByDate({ date }), toList(todos));
   // 관찰자가 없는 조회라 무효화돼도 다시 받지 않고 무효 표시만 남는다
   const givenCached = (queryKey: readonly unknown[]) =>

@@ -1,8 +1,8 @@
 import { AI_DATA_SHARING_CONSENT, PLAN_CATALOG } from '@aido/api/vocabulary';
 import { ApiError } from '@src/core/errors/api-error';
 import { err, ok } from '@src/core/errors/result';
-import '@src/shared/i18n/init';
 import { createEntitlementSnapshot } from '@src/features/billing/subscription/__tests__/entitlement.fixtures';
+import '@src/shared/i18n/init';
 import { ENTITLEMENT_QUERY_KEYS } from '@src/features/billing/subscription/queries/entitlement-query-keys';
 import { createCoachmarkRecords } from '@src/features/device/coachmark/__tests__/coachmark.fixtures';
 import { createConsent } from '@src/features/identity/consent/__tests__/consent.fixtures';
@@ -25,6 +25,7 @@ import {
   createVoiceNoteStorageFake,
   createTestQueryClient,
 } from '@src/testing/core';
+import { createDateKey } from '@src/testing/date-key';
 import { renderScreen } from '@src/testing/render';
 import { setupFakeTimersPerTest } from '@src/testing/timers';
 import { onlineManager } from '@tanstack/react-query';
@@ -69,7 +70,7 @@ const titlesRenderedAsFailed: string[] = [];
 
 function QuickVoiceProbe({ onExit }: { onExit: () => void }) {
   const form = useForm<TodoFormValues>({
-    defaultValues: { title: '', startDate: '2026-11-05', repeat: null },
+    defaultValues: { title: '', startDate: createDateKey('2026-11-05'), repeat: null },
   });
   const quickVoice = useAddTodoQuickVoice({ form, onExit });
   const title = useWatch({ control: form.control, name: 'title' });

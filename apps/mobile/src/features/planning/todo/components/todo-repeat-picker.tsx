@@ -1,6 +1,7 @@
 import { DAYS_OF_WEEK, type DayOfWeek } from '@aido/api/vocabulary';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useHaptics } from '@src/bootstrap/providers/di-context';
+import type { DateKey } from '@src/shared/date/date-key';
 import { hasSameDaysOfWeek } from '@src/shared/date/day-of-week';
 import { formatYearAwareDateKeyLabel } from '@src/shared/date/format/date-format';
 import { formatDaysOfWeek, getDayOfWeekLabel } from '@src/shared/date/format/date-labels';
@@ -369,7 +370,7 @@ TodoRepeatPicker.RepeatFormCalendar = function RepeatFormCalendar({
   const displayStartDateKey = hasOccurrenceInPeriod ? firstOccurrenceKey : startDateKey;
 
   // 칸마다 넘기는 함수라 렌더 값에 기대지 않고 누른 순간의 폼 값을 읽어 항상 같은 함수로 둔다
-  const handleDateChange = (dateKey: string) => {
+  const handleDateChange = (dateKey: DateKey) => {
     applyRepeatFormValues(
       form,
       withTodoRepeatFormCalendarDate(form.getValues(), { dateKey, todayKey, timeZone }),
@@ -420,7 +421,7 @@ TodoRepeatPicker.RepeatPeriodFooter = function RepeatPeriodFooter({
           );
     },
   });
-  const formatDate = (dateKey: string) =>
+  const formatDate = (dateKey: DateKey) =>
     formatYearAwareDateKeyLabel(dateKey, todayKey, dateFormatContext);
   const isMonthDayClamped = useWatch({
     control: form.control,

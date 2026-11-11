@@ -1,4 +1,5 @@
 import { formatRepeatSummary } from '@src/features/planning/todo/utils/format-repeat-summary';
+import type { DateKey } from '@src/shared/date/date-key';
 import {
   type DateFormatContext,
   formatDateKeyRange,
@@ -13,7 +14,7 @@ import { match, P } from 'ts-pattern';
 import type { PlanTodoFormValues } from '../schemas/plan-review-form.schema';
 
 interface PlanTodoSubtitleContext {
-  todayKey: string;
+  todayKey: DateKey;
   timeFormat: TimeFormat;
   dateFormatContext: DateFormatContext;
 }

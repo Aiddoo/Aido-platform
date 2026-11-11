@@ -1,5 +1,5 @@
-import '@src/shared/i18n/init';
 import { ApiError } from '@src/core/errors/api-error';
+import '@src/shared/i18n/init';
 import { err, ok, type Result } from '@src/core/errors/result';
 import { Button } from '@src/shared/ui';
 import {
@@ -7,6 +7,7 @@ import {
   createHttpClientStub,
   createTestQueryClient,
 } from '@src/testing/core';
+import { createDateKey } from '@src/testing/date-key';
 import { renderScreen } from '@src/testing/render';
 import { useMutation } from '@tanstack/react-query';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
@@ -18,7 +19,7 @@ const TODO_ACTION: PlannedAction = {
   type: 'create-todo',
   actionId: 'todo-1',
   title: '운동',
-  startDate: '2026-11-05',
+  startDate: createDateKey('2026-11-05'),
   endDate: null,
   scheduledTime: null,
   repeat: null,

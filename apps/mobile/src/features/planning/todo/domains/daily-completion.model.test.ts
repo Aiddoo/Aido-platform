@@ -1,15 +1,17 @@
+import { createDateKey } from '@src/testing/date-key';
+
 import { createParentTodo } from '../__tests__/sub-todo.fixtures';
 import { type DailyCompletionsResult } from './daily-completion.model';
 import { DailyCompletionPolicy } from './daily-completion.model';
 
 describe('withTodoDailyCompletion', () => {
-  const DATE = '2026-11-05';
+  const DATE = createDateKey('2026-11-05');
   const RED = { id: 1, name: '빨강', color: '#FF0000' };
   const BLUE = { id: 2, name: '파랑', color: '#0000FF' };
   const createResult = (): DailyCompletionsResult => ({
     completions: [
       {
-        date: '2026-11-03',
+        date: createDateKey('2026-11-03'),
         totalTodos: 1,
         completedTodos: 1,
         isComplete: true,
@@ -26,7 +28,7 @@ describe('withTodoDailyCompletion', () => {
       },
     ],
     totalCompleteDays: 1,
-    dateRange: { startDate: '2026-11-01', endDate: '2026-11-07' },
+    dateRange: { startDate: createDateKey('2026-11-01'), endDate: createDateKey('2026-11-07') },
   });
 
   it('그날 할 일로 숫자·달성·완료율·색을 다시 계산하고 달성한 날 수를 맞춘다', () => {
@@ -68,12 +70,12 @@ describe('withTodoDailyCompletion', () => {
 
   it('요약이 없던 날에 첫 할 일이 생기면 날짜 순서대로 들어간다', () => {
     // Given
-    const todos = [createParentTodo({ startDate: '2026-11-04', category: RED })];
+    const todos = [createParentTodo({ startDate: createDateKey('2026-11-04'), category: RED })];
 
     // When
     const result = DailyCompletionPolicy.withTodoDailyCompletion(
       createResult(),
-      '2026-11-04',
+      createDateKey('2026-11-04'),
       todos,
     );
 
@@ -88,10 +90,18 @@ describe('withTodoDailyCompletion', () => {
   it('조회 범위 밖 날짜는 바꾸지 않고 기간 안의 날이면 다른 날 시작한 여러 날 할 일도 센다', () => {
     // Given
     const given = createResult();
-    const multiDay = createParentTodo({ startDate: '2026-11-04', endDate: DATE, category: BLUE });
+    const multiDay = createParentTodo({
+      startDate: createDateKey('2026-11-04'),
+      endDate: DATE,
+      category: BLUE,
+    });
 
     // When
-    const outside = DailyCompletionPolicy.withTodoDailyCompletion(given, '2026-11-20', [multiDay]);
+    const outside = DailyCompletionPolicy.withTodoDailyCompletion(
+      given,
+      createDateKey('2026-11-20'),
+      [multiDay],
+    );
     const counted = DailyCompletionPolicy.withTodoDailyCompletion(given, DATE, [
       multiDay,
       createParentTodo({ id: 2, startDate: DATE, category: RED }),

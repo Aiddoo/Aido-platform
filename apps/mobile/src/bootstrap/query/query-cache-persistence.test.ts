@@ -5,6 +5,7 @@ import { syncDailyCompletionWithList } from '@src/features/planning/todo/queries
 import { TODO_QUERY_KEYS } from '@src/features/planning/todo/queries/todo-query-keys';
 import { PERSISTED_QUERY_OPTIONS } from '@src/shared/constants/query-persistence';
 import { createMemorySyncStorage, createTestQueryClient } from '@src/testing/core';
+import { createDateKey } from '@src/testing/date-key';
 import { setupFakeTimersPerTest } from '@src/testing/timers';
 import type { QueryClient } from '@tanstack/react-query';
 import {
@@ -186,7 +187,7 @@ describe('createQueryPersistOptions', () => {
 
   it('실제 저장·복원을 거친 달력 요약과 목록에도 체크 결과를 날짜 순서대로 반영한다', async () => {
     // Given
-    const date = '2026-11-05';
+    const date = createDateKey('2026-11-05');
     const listKey = TODO_QUERY_KEYS.listByDate({ date });
     const rangeKey = TODO_QUERY_KEYS.completionsByRange({
       startDate: '2026-11-01',
@@ -210,7 +211,7 @@ describe('createQueryPersistOptions', () => {
     source.setQueryData<DailyCompletionsResult>(rangeKey, {
       completions: [
         {
-          date: '2026-11-07',
+          date: createDateKey('2026-11-07'),
           totalTodos: 1,
           completedTodos: 0,
           isComplete: false,
@@ -219,7 +220,7 @@ describe('createQueryPersistOptions', () => {
         },
       ],
       totalCompleteDays: 0,
-      dateRange: { startDate: '2026-11-01', endDate: '2026-11-07' },
+      dateRange: { startDate: createDateKey('2026-11-01'), endDate: createDateKey('2026-11-07') },
     });
     await persistQueryClientSave({ queryClient: source, ...options });
     await jest.runAllTimersAsync();

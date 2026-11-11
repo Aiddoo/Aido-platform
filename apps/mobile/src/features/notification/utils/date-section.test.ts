@@ -1,4 +1,5 @@
 import { toInstant } from '@src/shared/date/instant';
+import { createDateKey } from '@src/testing/date-key';
 
 import { createNotificationListResponseDto } from '../__tests__/notification.fixtures';
 import { toNotification } from '../apis/notification.mapper';
@@ -8,27 +9,29 @@ describe('getDateSectionKey', () => {
   it('이번 주는 달력과 같은 일요일 시작 주다', () => {
     // Given
     // 일요일 오늘, ISO 주(월요일 시작)로는 같은 주였던 지난 수요일
-    const sundayDateKey = '2026-10-25';
+    const sundayDateKey = createDateKey('2026-10-25');
 
     // When
-    const section = getDateSectionKey('2026-10-21', sundayDateKey);
+    const section = getDateSectionKey(createDateKey('2026-10-21'), sundayDateKey);
 
     // Then
     expect(section).toBe('thisMonth');
-    expect(getDateSectionKey('2026-10-26', '2026-10-31')).toBe('thisWeek');
+    expect(getDateSectionKey(createDateKey('2026-10-26'), createDateKey('2026-10-31'))).toBe(
+      'thisWeek',
+    );
   });
 
   it('연말을 넘는 주와 어제를 날짜 key로 판단한다', () => {
     // Given
     // 2026-12-27(일)~2027-01-02(토) 주
-    const newYearDateKey = '2027-01-01';
+    const newYearDateKey = createDateKey('2027-01-01');
 
     // When
     const sections = [
-      getDateSectionKey('2026-12-31', newYearDateKey),
-      getDateSectionKey('2026-12-27', newYearDateKey),
-      getDateSectionKey('2026-12-26', newYearDateKey),
-      getDateSectionKey('2028-02-28', '2028-02-29'),
+      getDateSectionKey(createDateKey('2026-12-31'), newYearDateKey),
+      getDateSectionKey(createDateKey('2026-12-27'), newYearDateKey),
+      getDateSectionKey(createDateKey('2026-12-26'), newYearDateKey),
+      getDateSectionKey(createDateKey('2028-02-28'), createDateKey('2028-02-29')),
     ];
 
     // Then
@@ -46,8 +49,16 @@ describe('알림 목록 날짜 섹션', () => {
     const notification = { ...toNotification(dto), createdAt: toInstant('2026-10-04T14:59:00Z') };
 
     // When
-    const before = toDateSectionedListItems([notification], '2026-10-04', 'Asia/Seoul');
-    const after = toDateSectionedListItems([notification], '2026-10-05', 'Asia/Seoul');
+    const before = toDateSectionedListItems(
+      [notification],
+      createDateKey('2026-10-04'),
+      'Asia/Seoul',
+    );
+    const after = toDateSectionedListItems(
+      [notification],
+      createDateKey('2026-10-05'),
+      'Asia/Seoul',
+    );
 
     // Then
     expect(before[0]).toEqual({ type: 'header', section: 'today' });
@@ -65,7 +76,11 @@ describe('알림 목록 날짜 섹션', () => {
     const second = { ...first, id: 1 };
 
     // When
-    const items = toDateSectionedListItems([first, second], '2026-10-04', 'Asia/Seoul');
+    const items = toDateSectionedListItems(
+      [first, second],
+      createDateKey('2026-10-04'),
+      'Asia/Seoul',
+    );
 
     // Then
     expect(items).toEqual([
@@ -80,7 +95,11 @@ describe('알림 목록 날짜 섹션', () => {
     const notifications: [] = [];
 
     // When
-    const items = toDateSectionedListItems(notifications, '2026-10-04', 'Asia/Seoul');
+    const items = toDateSectionedListItems(
+      notifications,
+      createDateKey('2026-10-04'),
+      'Asia/Seoul',
+    );
 
     // Then
     expect(items).toEqual([]);

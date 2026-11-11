@@ -9,6 +9,7 @@ import { TodoPolicy } from '@src/features/planning/todo/domains/todo.model';
 import { type Todo } from '@src/features/planning/todo/domains/todo.model';
 import { useSheetTodo } from '@src/features/planning/todo/hooks/use-sheet-todo';
 import { todoFormSchema } from '@src/features/planning/todo/schemas/todo-form.schema';
+import type { DateKey } from '@src/shared/date/date-key';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
 import { useTranslation } from '@src/shared/i18n';
@@ -124,7 +125,7 @@ function TodoEditForm({ todo, isOpen, onOpenChange, onClose }: TodoEditFormProps
 
   // 입력 시트 안에서 내용을 갈아 끼우면 키보드가 내려가는 동안 높이가 튀어 떠 있는 시트로 묻는다
   const selectEditScope = async (
-    date: string,
+    date: DateKey,
     { isFollowingOnly = false }: { isFollowingOnly?: boolean } = {},
   ): Promise<EditScopeChoice> => {
     const scope = await openSheet<TodoUpdateScope>((close) => (

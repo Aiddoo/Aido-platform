@@ -1,4 +1,5 @@
 import { invalidateTodoCategories } from '@src/features/planning/category/queries/todo-category-cache';
+import type { DateKey } from '@src/shared/date/date-key';
 import type {
   InvalidateQueryFilters,
   MutationFilters,
@@ -19,7 +20,7 @@ import { TODO_MUTATION_KEYS } from './todo-mutation-keys';
 import { TODO_QUERY_KEYS } from './todo-query-keys';
 
 export interface TodoSnapshot {
-  date: string;
+  date: DateKey;
   todo: Todo;
   index: number;
 }
@@ -37,7 +38,7 @@ export function getTodoDateSpan(todo: Pick<Todo, 'startDate' | 'endDate'>): Date
 /** 할 일의 기간. 그날 목록도 상세도 불러오지 않았으면 보고 있는 하루로 본다 */
 export function getCachedTodoDateSpan(
   queryClient: QueryClient,
-  { date, todoId }: { date: string; todoId: number },
+  { date, todoId }: { date: DateKey; todoId: number },
 ): DateSpan {
   const todo = findCachedTodo(queryClient, { date, todoId });
   return todo == null ? { startDate: date, endDate: date } : getTodoDateSpan(todo);
@@ -102,7 +103,7 @@ export function withTodoCompleted(overview: TodoOverview): TodoOverview {
 
 export function snapshotTodo(
   queryClient: QueryClient,
-  { date, todoId }: { date: string; todoId: number },
+  { date, todoId }: { date: DateKey; todoId: number },
 ): TodoSnapshot | null {
   const todos = getCachedTodosByDate(queryClient, { date }) ?? [];
   const index = todos.findIndex((todo) => todo.id === todoId);
@@ -121,7 +122,7 @@ export function snapshotTodo(
  */
 export function findCachedTodo(
   queryClient: QueryClient,
-  { date, todoId }: { date?: string; todoId: number },
+  { date, todoId }: { date?: DateKey; todoId: number },
 ): Todo | null {
   const isTarget = (todo: Todo) => todo.id === todoId;
   return (
@@ -138,7 +139,7 @@ export function findCachedTodo(
 /** 그 날짜 목록에 지금 보이는 할 일. 아직 불러오지 않았으면 undefined */
 export function getCachedTodosByDate(
   queryClient: QueryClient,
-  { date }: { date: string },
+  { date }: { date: DateKey },
 ): Todo[] | undefined {
   return queryClient.getQueryData(TODO_QUERY_KEYS.listByDate({ date }))?.todos;
 }
@@ -153,7 +154,7 @@ export function getCachedTodoTitles(queryClient: QueryClient): string[] {
 
 export function updateCachedTodo(
   queryClient: QueryClient,
-  { date, todoId }: { date: string; todoId: number },
+  { date, todoId }: { date: DateKey; todoId: number },
   update: (todo: Todo) => Todo,
 ) {
   queryClient.setQueryData(
@@ -166,7 +167,11 @@ export function updateCachedTodo(
   );
 }
 
-export function appendTodoToList(queryClient: QueryClient, { date }: { date: string }, todo: Todo) {
+export function appendTodoToList(
+  queryClient: QueryClient,
+  { date }: { date: DateKey },
+  todo: Todo,
+) {
   queryClient.setQueryData(
     TODO_QUERY_KEYS.listByDate({ date }),
     (old) => old && withTodoAdded(old, todo),
@@ -175,7 +180,7 @@ export function appendTodoToList(queryClient: QueryClient, { date }: { date: str
 
 export function saveCreatedTodo(
   queryClient: QueryClient,
-  { date, optimisticId }: { date: string; optimisticId: number },
+  { date, optimisticId }: { date: DateKey; optimisticId: number },
   saved: Todo,
 ) {
   queryClient.setQueryData(
@@ -186,7 +191,7 @@ export function saveCreatedTodo(
 
 export function removeTodoFromList(
   queryClient: QueryClient,
-  { date, todoId }: { date: string; todoId: number },
+  { date, todoId }: { date: DateKey; todoId: number },
 ) {
   queryClient.setQueryData(
     TODO_QUERY_KEYS.listByDate({ date }),
@@ -209,7 +214,7 @@ export function updateCachedTodoOverview(
 }
 
 /** 증감 대신 목록에서 계산해 낙관적 반영·되돌리기가 같다. 목록이 잘려 있으면(서버 한도 초과) 서버 값을 기다린다 */
-export function syncDailyCompletionWithList(queryClient: QueryClient, { date }: { date: string }) {
+export function syncDailyCompletionWithList(queryClient: QueryClient, { date }: { date: DateKey }) {
   const list = queryClient.getQueryData(TODO_QUERY_KEYS.listByDate({ date }));
   if (list == null || list.hasNext) {
     return;
@@ -313,7 +318,7 @@ function listsShowingTodoFilter(queryKey: QueryKey, todoId: number): InvalidateQ
 
 interface TodoWriteTarget {
   /** 낙관적으로 고친 목록의 날짜. 여러 날 할 일은 시작일이 아니라 보고 있는 날짜다 */
-  date: string;
+  date: DateKey;
   /** 고친 할 일. 만들기처럼 아직 서버 id가 없으면 비운다 */
   todoId?: number;
   /** 할 일이 걸친 날짜 */
@@ -366,7 +371,7 @@ export async function beginTodoWrite(
     date,
     todoId,
     isCompletionAffected,
-  }: { date: string; todoId?: number; isCompletionAffected: boolean },
+  }: { date: DateKey; todoId?: number; isCompletionAffected: boolean },
 ): Promise<TodoWriteTicket> {
   const sequence = (todoWriteSequences.get(queryClient) ?? 0) + 1;
   todoWriteSequences.set(queryClient, sequence);

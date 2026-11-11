@@ -1,4 +1,5 @@
 import { toInstant } from '@src/shared/date/instant';
+import { createDateKey } from '@src/testing/date-key';
 
 import { RELEASE_1_15_0, RELEASES } from '../constants/releases';
 import type { WhatsNewCampaignConfig } from './whats-new-campaign.model';
@@ -58,8 +59,8 @@ describe('getLatestRelease', () => {
   it('목록 순서와 상관없이 가장 최근에 나온 출시를 고른다', () => {
     // Given
     const releases: [Release, ...Release[]] = [
-      { ...RELEASES[0], releasedOn: '2026-10-01' },
-      { ...RELEASES[0], releasedOn: '2026-11-01' },
+      { ...RELEASES[0], releasedOn: createDateKey('2026-10-01') },
+      { ...RELEASES[0], releasedOn: createDateKey('2026-11-01') },
     ];
 
     // When

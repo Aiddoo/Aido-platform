@@ -3,7 +3,7 @@ import { useTodoApi } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
 import { PERSISTED_QUERY_OPTIONS } from '@src/shared/constants/query-persistence';
 import { MINUTE_MS } from '@src/shared/constants/time-units';
-import { addDaysToDateKey } from '@src/shared/date/date-key';
+import { addDaysToDateKey, type DateKey } from '@src/shared/date/date-key';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import {
   type QueryState,
@@ -21,11 +21,11 @@ import { type CalendarDateRange, getCalendarMonthRanges } from '../utils/calenda
 import { TODO_QUERY_KEYS } from './todo-query-keys';
 
 /** 다시 열 때 먼저 보일 어제·오늘·내일 목록만 기기에 남긴다. 둘러본 다른 날짜는 콜드 스타트 복원 크기만 키운다 */
-export function shouldPersistTodosByDate({ date, todayKey }: { date: string; todayKey: string }) {
+export function shouldPersistTodosByDate({ date, todayKey }: { date: DateKey; todayKey: DateKey }) {
   return addDaysToDateKey(todayKey, -1) <= date && date <= addDaysToDateKey(todayKey, 1);
 }
 
-export function useGetTodosByDateQueryOptions({ date }: { date: string }) {
+export function useGetTodosByDateQueryOptions({ date }: { date: DateKey }) {
   const todoApi = useTodoApi();
   const todayKey = useTodayKey();
 
@@ -95,7 +95,7 @@ export function useGetDailyCompletionsQueryOptions(range: CalendarDateRange) {
  * 달마다 같은 키로 고른 달을 받고, 받은 뒤 앞뒤 달을 미리 받는다. 넘긴 달은 이미 받아 둔 이웃이라
  * 점이 비는 프레임이 없다. 처음 열 때는 고른 달 하나만 먼저 묻는다
  */
-export function useCalendarCompletions({ dateKey }: { dateKey: string }) {
+export function useCalendarCompletions({ dateKey }: { dateKey: DateKey }) {
   const todoApi = useTodoApi();
   const { selected, neighbors } = getCalendarMonthRanges(dateKey);
 
@@ -133,7 +133,7 @@ export function useFriendCalendarCompletions({
   dateKey,
 }: {
   friendUserId: string;
-  dateKey: string;
+  dateKey: DateKey;
 }) {
   const todoApi = useTodoApi();
   const { selected, neighbors } = getCalendarMonthRanges(dateKey);
@@ -157,7 +157,7 @@ export function useGetFriendTodosQueryOptions({
   date,
 }: {
   friendUserId: string;
-  date: string;
+  date: DateKey;
 }) {
   const todoApi = useTodoApi();
 
@@ -198,21 +198,21 @@ const DATE_CATCH_UP_BASE_DELAY_MS = 5_000;
 const DATE_CATCH_UP_MAX_ATTEMPTS = 4;
 
 interface TodoSummaryQueryInput {
-  date: string;
+  date: DateKey;
   userId?: string | null;
   /** 상위 할 일을 이만큼만 고른다. 없으면 서버가 준 만큼이다 */
   limit?: number;
 }
 
 type SummaryRefetchState = Pick<
-  QueryState<{ date: string }>,
+  QueryState<{ date: DateKey }>,
   'data' | 'status' | 'dataUpdateCount' | 'errorUpdateCount'
 >;
 
 /** 서버 요약이 요청한 날짜에 닿을 때까지 몇 ms 뒤에 다시 물을지. 따라잡았거나 시도를 다 썼으면 false */
 export function getTodoSummaryRefetchInterval(
   { data, status, dataUpdateCount, errorUpdateCount }: SummaryRefetchState,
-  date: string,
+  date: DateKey,
 ) {
   const isCaughtUp = status !== 'error' && (data == null || data.date === date);
   if (isCaughtUp) {
@@ -242,7 +242,7 @@ export function useGetTodoSummaryQueryOptions({ date, userId, limit }: TodoSumma
 }
 
 /** 오늘부터 앞으로 알림 시각을 다시 계산하는 기간의 내 할 일. 기기 시간대가 바뀐 순간에만 켜서 부른다 */
-export function useGetUpcomingTodosQueryOptions({ todayKey }: { todayKey: string }) {
+export function useGetUpcomingTodosQueryOptions({ todayKey }: { todayKey: DateKey }) {
   const todoApi = useTodoApi();
   const endDate = addDaysToDateKey(todayKey, UPCOMING_TODO_WINDOW_DAYS);
 

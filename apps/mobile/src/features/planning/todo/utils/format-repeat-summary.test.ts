@@ -1,4 +1,6 @@
+import { createDateKey } from '@src/testing/date-key';
 import '@src/shared/i18n/init';
+
 import type { TodoRepeat } from '../domains/todo-repeat.model';
 import {
   formatRepeatCadence,
@@ -49,7 +51,7 @@ describe('formatRepeatSummary', () => {
     // When
     const label = formatRepeatSummary(
       { frequency: 'MONTHLY', monthDay: 15, end: { type: 'COUNT', count: 10 } },
-      '2026-11-09',
+      createDateKey('2026-11-09'),
       { locale: 'ko-KR', timeZone: 'Asia/Seoul' },
     );
 
@@ -63,8 +65,8 @@ describe('formatRepeatSummary', () => {
   ] as const)('%s', (_name, untilDate, expectedEnd) => {
     // When
     const label = formatRepeatSummary(
-      { frequency: 'DAILY', end: { type: 'UNTIL', date: untilDate } },
-      '2026-11-09',
+      { frequency: 'DAILY', end: { type: 'UNTIL', date: createDateKey(untilDate) } },
+      createDateKey('2026-11-09'),
       { locale: 'ko-KR', timeZone: 'Asia/Seoul' },
     );
 

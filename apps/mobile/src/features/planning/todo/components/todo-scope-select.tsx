@@ -1,3 +1,4 @@
+import type { DateKey } from '@src/shared/date/date-key';
 import { formatYearAwareDateKeyLabel } from '@src/shared/date/format/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useTodayKey } from '@src/shared/hooks/use-today';
@@ -69,7 +70,7 @@ function ScopeRow({
 interface TodoScopeSelectProps {
   action: TodoScopeAction;
   /** 범위를 정하는 할 일의 날짜(YYYY-MM-DD). 설명에 "n월 n일"로 보인다 */
-  date: string;
+  date: DateKey;
   /** 보일 범위. 규칙 변경은 이후만, 규칙 없는 묶음의 삭제는 이후가 없다 */
   scopes: readonly TodoEditScope[];
   onChange: (scope: TodoEditScope) => void;

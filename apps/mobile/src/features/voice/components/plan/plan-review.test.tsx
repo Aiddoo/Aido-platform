@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import '@src/shared/i18n/init';
 import { createPreference } from '@src/features/identity/preference/__tests__/preference.fixtures';
+import '@src/shared/i18n/init';
 import { PreferenceApi } from '@src/features/identity/preference/apis/preference.api';
 import { PREFERENCE_QUERY_KEYS } from '@src/features/identity/preference/queries/preference-query-keys';
 import { TodoCategoryApi } from '@src/features/planning/category/apis/todo-category.api';
@@ -13,6 +13,7 @@ import {
   createHttpClientStub,
   createTestQueryClient,
 } from '@src/testing/core';
+import { createDateKey } from '@src/testing/date-key';
 import { renderScreen } from '@src/testing/render';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { Suspense, useEffect } from 'react';
@@ -35,7 +36,7 @@ const createTodoAction = (overrides: Partial<PlannedTodo>): PlannedTodo => ({
   type: 'create-todo',
   actionId: 'todo-1',
   title: '운동',
-  startDate: '2026-11-05',
+  startDate: createDateKey('2026-11-05'),
   endDate: null,
   scheduledTime: null,
   repeat: null,

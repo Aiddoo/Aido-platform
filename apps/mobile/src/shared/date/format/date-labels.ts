@@ -2,7 +2,7 @@ import { DAY_OF_WEEK_MAP, type DayOfWeek } from '@aido/api/vocabulary';
 import { t } from '@src/shared/i18n';
 import { toLanguageOfIntlLocale } from '@src/shared/i18n/app-locales';
 
-import { getCalendarWeek, getIsoWeekOfMonth, isSameYearDateKey } from '../date-key';
+import { type DateKey, getCalendarWeek, getIsoWeekOfMonth, isSameYearDateKey } from '../date-key';
 import type { Instant } from '../instant';
 import { type DateFormatContext, formatDateKeyLabel, formatRelativeTimeWith } from './date-format';
 
@@ -31,7 +31,7 @@ export function getWeekdayLabels(language?: string): string[] {
 
 interface WeekHeaderLabelInput {
   /** 라벨의 달은 이 날의 달이다 */
-  monthDateKey: string;
+  monthDateKey: DateKey;
   weekOfMonth: number;
   hasYear: boolean;
 }
@@ -49,8 +49,8 @@ export function formatWeekHeaderLabel(
 }
 
 export function formatWeekOfMonthLabel(
-  dateKey: string,
-  todayDateKey: string,
+  dateKey: DateKey,
+  todayDateKey: DateKey,
   context: DateFormatContext,
 ): string {
   const week = getCalendarWeek(dateKey);
@@ -65,7 +65,7 @@ export function formatWeekOfMonthLabel(
 }
 
 /** 월요일 시작 주를 "3월 2주차"로 읽는다. 어느 날짜 key를 넘겨도 같은 주면 같은 라벨이다 */
-export function formatIsoWeekOfMonthLabel(dateKey: string, context: DateFormatContext): string {
+export function formatIsoWeekOfMonthLabel(dateKey: DateKey, context: DateFormatContext): string {
   const { thursdayDateKey, weekOfMonth } = getIsoWeekOfMonth(dateKey);
   return formatWeekHeaderLabel(
     { monthDateKey: thursdayDateKey, weekOfMonth, hasYear: false },

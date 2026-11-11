@@ -1,4 +1,5 @@
 import type { AppStoreReviewGateway } from '@src/core/ports/app-store-review-gateway';
+import type { DateKey } from '@src/shared/date/date-key';
 import { type Instant } from '@src/shared/date/instant';
 
 import {
@@ -51,7 +52,7 @@ export class StoreReviewService {
   }
 
   /** 할 일을 하나라도 끝낸 날을 남긴다. 하루에 몇 개를 끝냈는지는 세지 않는다 */
-  recordActiveDay = (accountId: string, localDate: string): void => {
+  recordActiveDay = (accountId: string, localDate: DateKey): void => {
     this.#repository.update(accountId, (state) =>
       StoreReviewPolicy.withActiveDay(state, localDate),
     );

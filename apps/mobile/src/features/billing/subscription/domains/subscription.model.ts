@@ -4,6 +4,7 @@ import {
   addDaysToDateKey,
   addMonthsToDateKey,
   diffDateKeysInDays,
+  type DateKey,
 } from '@src/shared/date/date-key';
 import { planTypeSchema } from '@src/shared/domains/plan-type.model';
 import { round } from 'es-toolkit';
@@ -65,7 +66,7 @@ export function hasFreeTrial(freeTrial: FreeTrial | null) {
 }
 
 /** 결제 전 예상일이다. 실제 체험 끝은 결제 뒤 서버(premiumPeriodEndsAt)가 알려 준다. 월 단위는 말일을 넘기면 그 달 마지막 날로 맞춘다 */
-function getFreeTrialEndDateKey(plan: SubscriptionPlan, todayKey: string) {
+function getFreeTrialEndDateKey(plan: SubscriptionPlan, todayKey: DateKey) {
   if (plan.freeTrial == null) {
     return null;
   }
@@ -79,7 +80,7 @@ function getFreeTrialEndDateKey(plan: SubscriptionPlan, todayKey: string) {
 }
 
 /** 서버가 체험 끝 N일 전에 한 번 알린다. 체험이 그보다 짧아 오늘이거나 지난 날이면 알림이 없다 */
-function getFreeTrialReminderDateKey(plan: SubscriptionPlan, todayKey: string) {
+function getFreeTrialReminderDateKey(plan: SubscriptionPlan, todayKey: DateKey) {
   const endDateKey = getFreeTrialEndDateKey(plan, todayKey);
   if (endDateKey == null) {
     return null;

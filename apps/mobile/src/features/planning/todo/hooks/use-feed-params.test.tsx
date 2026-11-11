@@ -1,6 +1,7 @@
 import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { createAnalyticsStub, createErrorReporterStub, createTestDi } from '@src/testing/core';
+import { createDateKey } from '@src/testing/date-key';
 import { setupFakeTimersPerTest } from '@src/testing/timers';
 import { act, renderHook } from '@testing-library/react-native';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -162,7 +163,7 @@ describe('useFeedDateKey', () => {
     jest.setSystemTime(new Date(2026, 6, 14, 23, 59, 59, 900));
     const { result, rerender, readDate } = await setup('2026-07-13');
     // When
-    await act(() => result.current.setSelectedDateKey('2026-07-14'));
+    await act(() => result.current.setSelectedDateKey(createDateKey('2026-07-14')));
     await rerender({});
     await act(() => jest.advanceTimersByTimeAsync(200));
     // Then
@@ -175,7 +176,7 @@ describe('useFeedDateKey', () => {
     jest.setSystemTime(new Date(2026, 6, 14, 12));
     const { result, rerender, readDate } = await setup();
     // When
-    await act(() => result.current.setSelectedDateKey('2026-07-20'));
+    await act(() => result.current.setSelectedDateKey(createDateKey('2026-07-20')));
     await rerender({});
     // Then
     expect(readDate()).toBe('2026-07-20');

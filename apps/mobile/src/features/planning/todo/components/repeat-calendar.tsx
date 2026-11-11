@@ -1,3 +1,4 @@
+import type { DateKey } from '@src/shared/date/date-key';
 import { Box, HStack, VStack } from '@src/shared/ui';
 
 import { PICKER_MONTH_HEIGHT } from '../constants/todo.constants';
@@ -9,13 +10,13 @@ import { PickerMonthHeader } from './picker-month-header';
 
 interface RepeatCalendarProps {
   picker: DatePicker;
-  todayKey: string;
-  startDateKey: string;
-  endDateKey: string | null;
+  todayKey: DateKey;
+  startDateKey: DateKey;
+  endDateKey: DateKey | null;
   isOpenEnded: boolean;
   /** 띠 안에서 실제로 반복되는 날(YYYY-MM-DD). null이면 흐리게 하지 않는다 */
   occurrenceKeys: ReadonlySet<string> | null;
-  onValueChange: (dateKey: string) => void;
+  onValueChange: (dateKey: DateKey) => void;
 }
 
 export function RepeatCalendar({

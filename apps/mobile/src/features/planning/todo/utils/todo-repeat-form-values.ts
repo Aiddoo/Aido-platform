@@ -1,4 +1,5 @@
 import { DAYS_OF_WEEK, type DayOfWeek } from '@aido/api/vocabulary';
+import type { DateKey } from '@src/shared/date/date-key';
 import { getDateKeyDayOfWeek, hasSameDaysOfWeek } from '@src/shared/date/day-of-week';
 import { type Instant } from '@src/shared/date/instant';
 import { toLocalDayInstant } from '@src/shared/date/native-date';
@@ -126,7 +127,7 @@ export function withTodoRepeatFormDayToggled(
 export function getTodoRepeatFormFirstOccurrenceKey(
   values: TodoRepeatFormValues,
   timeZone: string,
-): string | null {
+): DateKey | null {
   const repeat = toTodoRepeat({ ...values, endType: 'NEVER' }, timeZone);
   return repeat == null
     ? null
@@ -137,8 +138,8 @@ export function getTodoRepeatFormFirstOccurrenceKey(
 }
 
 interface PickedCalendarDate {
-  dateKey: string;
-  todayKey: string;
+  dateKey: DateKey;
+  todayKey: DateKey;
   timeZone: string;
 }
 

@@ -45,6 +45,7 @@ import type { TodoFormValues } from '@src/features/planning/todo/schemas/todo-fo
 import type { UpdateTodoInput } from '@src/features/planning/todo/schemas/todo-request.schema';
 import type { TodoSeriesEditOptions } from '@src/features/planning/todo/schemas/todo-series-request.schema';
 import { useTrack } from '@src/shared/analytics';
+import type { DateKey } from '@src/shared/date/date-key';
 import { t } from '@src/shared/i18n';
 import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { createOptimisticId } from '@src/shared/utils/create-optimistic-id';
@@ -173,7 +174,7 @@ interface AddSubTodoVariables {
   todoId: number;
   title: string;
   /** 바꾼 목록의 날짜. 여러 날 할 일은 시작일이 아니라 보고 있는 날짜 목록을 고친다 */
-  date: string;
+  date: DateKey;
 }
 
 export function useAddSubTodoMutationOptions() {
@@ -319,7 +320,7 @@ interface UpdateSubTodoVariables {
   subTodoId: number;
   title: string;
   /** 바꾼 목록의 날짜. 여러 날 할 일은 시작일이 아니라 보고 있는 날짜 목록을 고친다 */
-  date: string;
+  date: DateKey;
 }
 
 export function useUpdateSubTodoMutationOptions() {

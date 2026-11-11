@@ -4,6 +4,7 @@ import type {
   UpdateTodoInput,
   UpdateTodoScheduleInput,
 } from '@aido/api';
+import { dateKeySchema } from '@src/shared/date/date-key';
 
 import type { TodoSeries } from '../domains/todo-series.model';
 import type { TodoSeriesEditOptions } from '../schemas/todo-series-request.schema';
@@ -13,7 +14,7 @@ export function toTodoSeries(dto: TodoSeriesResponse): TodoSeries {
   return {
     id: dto.id,
     repeat: toRepeat(dto.repeat),
-    startDate: dto.startDate,
+    startDate: dateKeySchema.parse(dto.startDate),
   };
 }
 

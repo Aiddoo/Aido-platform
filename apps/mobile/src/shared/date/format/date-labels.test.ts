@@ -1,6 +1,7 @@
 import type { DayOfWeek } from '@aido/api';
 import { fromEpochMs, toEpochMs, toInstant } from '@src/shared/date/instant';
 import { i18n } from '@src/shared/i18n';
+import { createDateKey } from '@src/testing/date-key';
 
 import {
   formatDaysOfWeek,
@@ -93,7 +94,7 @@ describe('getDayOfWeekLabel', () => {
 describe('로케일 인지 포맷 (i18n)', () => {
   const KO_SEOUL = { locale: 'ko-KR', timeZone: 'Asia/Seoul' } as const;
   const EN_SEOUL = { locale: 'en-US', timeZone: 'Asia/Seoul' } as const;
-  const TODAY_DATE_KEY = '2026-10-26';
+  const TODAY_DATE_KEY = createDateKey('2026-10-26');
 
   it('요일 라벨은 앱 언어를 따른다', async () => {
     // When
@@ -122,7 +123,7 @@ describe('로케일 인지 포맷 (i18n)', () => {
   it('주 헤더는 넘겨받은 context의 언어로 만든다', () => {
     // Given
     // 앱 언어(i18n)는 ko
-    const dateKey = '2026-07-07';
+    const dateKey = createDateKey('2026-07-07');
 
     // When
     const korean = formatWeekOfMonthLabel(dateKey, TODAY_DATE_KEY, KO_SEOUL);
@@ -141,8 +142,16 @@ describe('로케일 인지 포맷 (i18n)', () => {
     ['2027-01-03', '2026-12-31', '2027년 1월 1주차', 'Week 1 of Jan 2027'],
   ])('%s 주 헤더는 오늘이 %s이면 %s / %s다', (dateKey, todayDateKey, korean, english) => {
     // When
-    const koreanLabel = formatWeekOfMonthLabel(dateKey, todayDateKey, KO_SEOUL);
-    const englishLabel = formatWeekOfMonthLabel(dateKey, todayDateKey, EN_SEOUL);
+    const koreanLabel = formatWeekOfMonthLabel(
+      createDateKey(dateKey),
+      createDateKey(todayDateKey),
+      KO_SEOUL,
+    );
+    const englishLabel = formatWeekOfMonthLabel(
+      createDateKey(dateKey),
+      createDateKey(todayDateKey),
+      EN_SEOUL,
+    );
 
     // Then
     // 올해가 아닌 주는 연도를 보여 몇 년 뒤로 튄 날짜를 알아챌 수 있어야 한다. 주가 시작한 달의 연도로 판단한다
@@ -180,7 +189,7 @@ describe('formatIsoWeekOfMonthLabel', () => {
   it('주의 목요일이 속한 달 기준으로 앱 언어에 맞는 주차를 만든다', () => {
     // Given
     // 2026-03-02 주의 목요일은 3월 5일이라 3월 1주차
-    const mondayKey = '2026-03-02';
+    const mondayKey = createDateKey('2026-03-02');
 
     // When
     const korean = formatIsoWeekOfMonthLabel(mondayKey, KO);
@@ -194,7 +203,7 @@ describe('formatIsoWeekOfMonthLabel', () => {
   it('달이 걸치는 주는 목요일이 속한 달로 센다', () => {
     // Given
     // 2026-03-30 주의 목요일은 4월 2일
-    const mondayKey = '2026-03-30';
+    const mondayKey = createDateKey('2026-03-30');
 
     // When
     const label = formatIsoWeekOfMonthLabel(mondayKey, KO);
@@ -218,8 +227,12 @@ describe('formatWeekOfMonthLabel', () => {
     const context = { locale, timeZone: 'Asia/Seoul' };
 
     // When
-    const week = formatWeekOfMonthLabel(dateKey, '2026-11-11', context);
-    const isoWeek = formatIsoWeekOfMonthLabel(dateKey, context);
+    const week = formatWeekOfMonthLabel(
+      createDateKey(dateKey),
+      createDateKey('2026-11-11'),
+      context,
+    );
+    const isoWeek = formatIsoWeekOfMonthLabel(createDateKey(dateKey), context);
 
     // Then
     expect([week, isoWeek]).toEqual([expected, expectedIso]);
