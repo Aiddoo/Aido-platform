@@ -28,9 +28,6 @@ interface OpenPushSettingsVariables {
 /** 알림을 거절해 시스템 창을 다시 띄울 수 없을 때 이 앱의 설정 화면을 연다. 돌아오면 권한 쿼리가 다시 읽는다 */
 export function useOpenPushSettingsMutationOptions() {
   const externalLink = useExternalLink();
-  const logger = useLogger();
-  const haptics = useHaptics();
-  const toast = useAppToast();
   const { trackEvent } = useTrack();
 
   return mutationOptions({
@@ -41,23 +38,18 @@ export function useOpenPushSettingsMutationOptions() {
         trackEvent('push_permission_settings_opened', { source });
       }
     },
-    onError: (error) => {
-      logger.warn(NOTIFICATION_LOG_EVENT.PUSH_PERMISSION_SETTINGS_OPEN_FAILED, {
-        error: getErrorMessage(error),
-      });
-      haptics.notify('error');
-      toast.error(t('notification:permission.toasts.settingsOpenFailed'));
+    meta: {
+      errorFeedback: {
+        feature: 'notification',
+        fallbackKey: 'notification:permission.toasts.settingsOpenFailed',
+      },
     },
-    meta: { errorFeedback: false },
   });
 }
 
 export function useRequestPushPermissionMutationOptions() {
   const pushRegistrationService = usePushRegistrationService();
-  const logger = useLogger();
   const queryClient = useQueryClient();
-  const haptics = useHaptics();
-  const toast = useAppToast();
   const { trackEvent } = useTrack();
 
   return mutationOptions({
@@ -69,14 +61,12 @@ export function useRequestPushPermissionMutationOptions() {
       setCachedPushPermission(queryClient, permission);
       trackEvent('push_permission_requested', { source, status: permission.status });
     },
-    onError: (error) => {
-      logger.warn(NOTIFICATION_LOG_EVENT.PUSH_PERMISSION_REQUEST_FAILED, {
-        error: getErrorMessage(error),
-      });
-      haptics.notify('error');
-      toast.error(t('notification:permission.toasts.requestFailed'));
+    meta: {
+      errorFeedback: {
+        feature: 'notification',
+        fallbackKey: 'notification:permission.toasts.requestFailed',
+      },
     },
-    meta: { errorFeedback: false },
   });
 }
 
