@@ -12,7 +12,7 @@ import type {
 import type {
   PremiumAccess,
   PremiumAccessReaderPort,
-} from "#api/modules/billing/subscriptions/billing-subscriptions.public";
+} from "#api/modules/billing/premium-grants/billing-premium-grants.public";
 import { ConsumeVerificationCodeUseCase } from "#api/modules/identity/auth/application/use-cases/consume-verification-code.use-case";
 import { CreateSessionUseCase } from "#api/modules/identity/auth/application/use-cases/create-session.use-case";
 import { IssueLoginUseCase } from "#api/modules/identity/auth/application/use-cases/issue-login.use-case";
@@ -25,6 +25,7 @@ import type {
   DailySendUsageReaderPort,
 } from "#api/modules/social/cheers/social-cheers.public";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { InMemoryEntitlementCache } from "#test/doubles/access/in-memory-entitlement-cache";
 import { InMemoryAuthAccountRepository } from "#test/doubles/identity/in-memory-auth-account.repository";
 import { InMemoryAuthLoginAttemptRepository } from "#test/doubles/identity/in-memory-auth-login-attempt.repository";
 import { InMemoryAuthSecurityLogRepository } from "#test/doubles/identity/in-memory-auth-security-log.repository";
@@ -141,6 +142,7 @@ export function createAuthCredentialFixture(
     verificationRepository,
     verificationCodeSecurity,
     cacheService,
+    entitlementCache: new InMemoryEntitlementCache(),
     pushDevices,
     emailSender,
     adminEventNotifier,

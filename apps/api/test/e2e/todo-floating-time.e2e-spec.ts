@@ -13,16 +13,16 @@ import { RebaseTodoTimezoneUseCase } from "#api/modules/planning/todos/applicati
 import { TODO_TIMEZONE_REBASE_QUEUE } from "#api/modules/planning/todos/infrastructure/jobs/todo-timezone-rebase.queue";
 import { createEntityId } from "#api/platform/database/entity-id";
 import { todoSeries, userPreference } from "#api/platform/database/schema/index";
-import { JobQueuePort } from "#api/shared/application/ports/index";
-import { addDaysToDateKey } from "#api/shared/domain/date/utils/arithmetic";
-import { toDateString } from "#api/shared/domain/date/utils/format";
-import {
-  parseLocalDateTime,
-  todayInTimezone,
-  toLocalTimeString,
-} from "#api/shared/domain/date/utils/timezone";
+import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
+import { toIsoString } from "#api/shared/domain/time/instant";
 import { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
-import { nowInstant, todayUtc } from "#test/fixtures/clock.fixture";
+import {
+  nowInstant,
+  shiftDateKey,
+  todayIn,
+  todayUtc,
+  wallClockInstant,
+} from "#test/fixtures/clock.fixture";
 
 import { releasedTodoSchema } from "./fixtures/released-todo-response.schema.js";
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
@@ -37,7 +37,7 @@ describe("떠 있는 시각 E2E", () => {
   let accessToken: string;
   let userId: string;
   let categoryId: number;
-  const date = () => addDaysToDateKey(toDateString(todayInTimezone(SEOUL)), 3);
+  const date = () => shiftDateKey(todayIn(SEOUL).toString(), 3);
 
   beforeAll(async () => {
     ctx = await createE2eApp();
@@ -109,7 +109,7 @@ describe("떠 있는 시각 E2E", () => {
     const [item] = todoListResponseSchema.parse(response.body.data).items;
     expect(created.scheduledLocalTime).toBe("10:00");
     expect(item?.scheduledLocalTime).toBe("10:00");
-    expect(item?.scheduledTime).toBe(parseLocalDateTime(date(), "10:00", SEOUL).toISOString());
+    expect(item?.scheduledTime).toBe(toIsoString(wallClockInstant(date(), "10:00", SEOUL)));
   });
 
   it("출시 앱 응답 모양을 그대로 지킨다", async () => {
@@ -118,7 +118,7 @@ describe("떠 있는 시각 E2E", () => {
     // When
     const parsed = releasedTodoSchema.parse(created);
     // Then
-    expect(parsed.scheduledTime).toBe(parseLocalDateTime(date(), "10:00", SEOUL).toISOString());
+    expect(parsed.scheduledTime).toBe(toIsoString(wallClockInstant(date(), "10:00", SEOUL)));
   });
 
   it("친구 화면도 작성자의 벽시계를 그대로 보여 준다", async () => {
@@ -157,7 +157,7 @@ describe("떠 있는 시각 E2E", () => {
   ])("$name", async ({ body, local, zone, dateOffset }) => {
     // Given
     const created = await createTimed(SEOUL);
-    const moved = addDaysToDateKey(date(), dateOffset);
+    const moved = shiftDateKey(date(), dateOffset);
     const payload = "startDate" in body ? { startDate: moved } : body;
     // When
     const response = await send("patch", `/v1/todos/${created.id}`, zone, payload).expect(200);
@@ -165,7 +165,7 @@ describe("떠 있는 시각 E2E", () => {
     const todo = patchedTodo(response);
     expect(todo.scheduledLocalTime).toBe(local);
     expect(todo.startDate).toBe(moved);
-    expect(todo.scheduledTime).toBe(parseLocalDateTime(moved, local, zone).toISOString());
+    expect(todo.scheduledTime).toBe(toIsoString(wallClockInstant(moved, local, zone)));
   });
 
   it("일정 변경 경로도 벽시계를 함께 저장하고 종일로 바꾸면 비운다", async () => {
@@ -184,7 +184,7 @@ describe("떠 있는 시각 E2E", () => {
     // Then
     expect(patchedTodo(timed).scheduledLocalTime).toBe("08:15");
     expect(patchedTodo(timed).scheduledTime).toBe(
-      parseLocalDateTime(date(), "08:15", NEW_YORK).toISOString(),
+      toIsoString(wallClockInstant(date(), "08:15", NEW_YORK)),
     );
     expect(patchedTodo(allDay)).toMatchObject({
       scheduledLocalTime: null,
@@ -230,13 +230,13 @@ describe("떠 있는 시각 E2E", () => {
     // Then
     expect(patchedTodo(response)).toMatchObject({
       scheduledLocalTime: "10:00",
-      scheduledTime: parseLocalDateTime(date(), "10:00", SEOUL).toISOString(),
+      scheduledTime: toIsoString(wallClockInstant(date(), "10:00", SEOUL)),
     });
   });
 
   it("옛 앱은 서울 → 뉴욕 → 서울 왕복에서 지난 완료 할 일도 그곳의 오전 10시로 읽는다", async () => {
     // Given
-    const past = addDaysToDateKey(toDateString(todayInTimezone(SEOUL)), -30);
+    const past = shiftDateKey(todayIn(SEOUL).toString(), -30);
     const created = await createTimed(SEOUL, "10:00", { startDate: past });
     await send("patch", `/v1/todos/${created.id}/complete`, SEOUL, { completed: true }).expect(200);
     const readLocalTimeIn = async (timezone: string) => {
@@ -248,7 +248,10 @@ describe("떠 있는 시각 E2E", () => {
       const [item] = releasedListSchema.parse(response.body.data).items;
       return item?.scheduledTime == null
         ? null
-        : toLocalTimeString(new Date(item.scheduledTime), timezone);
+        : Temporal.Instant.from(item.scheduledTime)
+            .toZonedDateTimeISO(timezone)
+            .toPlainTime()
+            .toString({ smallestUnit: "minute" });
     };
     const rebaseTo = async (timezone: string) => {
       await storeTimezone(timezone);
@@ -290,7 +293,7 @@ describe("떠 있는 시각 E2E", () => {
     const created = await createTimed(header);
     // Then
     expect(created.scheduledTime).toBe(
-      parseLocalDateTime(date(), "10:00", "Europe/London").toISOString(),
+      toIsoString(wallClockInstant(date(), "10:00", "Europe/London")),
     );
     expect(jobQueue.jobsIn(TODO_TIMEZONE_REBASE_QUEUE)).toHaveLength(before);
     const stored = await ctx.testDatabase
@@ -305,7 +308,7 @@ describe("떠 있는 시각 E2E", () => {
     // When
     const created = await createTimed(null);
     // Then
-    expect(created.scheduledTime).toBe(parseLocalDateTime(date(), "10:00", SEOUL).toISOString());
+    expect(created.scheduledTime).toBe(toIsoString(wallClockInstant(date(), "10:00", SEOUL)));
   });
 
   it("기기 시간대가 바뀌면 사용자당 지연 작업을 하나 넣는다", async () => {
@@ -358,7 +361,7 @@ describe("떠 있는 시각 E2E", () => {
       title: "옛 앱 반복",
       categoryId,
       startDate: date(),
-      endDate: addDaysToDateKey(date(), 14),
+      endDate: shiftDateKey(date(), 14),
       daysOfWeek: ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"],
       scheduledTime: "07:00",
       isAllDay: false,
@@ -396,9 +399,9 @@ describe("떠 있는 시각 표 (시간대 × 할 일 종류)", () => {
     const friend = await ctx.helpers.createVerifiedUser("table-friend@example.com", "Test1234!");
     await ctx.helpers.createFriendship(friend, owner);
     const categoryId = await ctx.helpers.getDefaultCategoryId(owner.accessToken);
-    const today = toDateString(todayInTimezone(SEOUL));
-    const future = addDaysToDateKey(today, 5);
-    const past = addDaysToDateKey(today, -5);
+    const today = todayIn(SEOUL).toString();
+    const future = shiftDateKey(today, 5);
+    const past = shiftDateKey(today, -5);
     const client = ctx.testDatabase.getClient();
     const server = ctx.app.getHttpServer();
     const post = async (body: object) => {
@@ -420,7 +423,7 @@ describe("떠 있는 시각 표 (시간대 × 할 일 종류)", () => {
     const period = await post({
       title: "기간",
       startDate: future,
-      endDate: addDaysToDateKey(future, 2),
+      endDate: shiftDateKey(future, 2),
     });
     const repeating = await post({
       title: "반복",
@@ -442,7 +445,7 @@ describe("떠 있는 시각 표 (시간대 × 할 일 종류)", () => {
     // When
     await ctx.module.get(RebaseTodoTimezoneUseCase).execute({ userId: owner.userId });
     const ownerRows = await request(server)
-      .get(`/v1/todos?startDate=${past}&endDate=${addDaysToDateKey(future, 3)}&size=50`)
+      .get(`/v1/todos?startDate=${past}&endDate=${shiftDateKey(future, 3)}&size=50`)
       .set("Authorization", `Bearer ${owner.accessToken}`)
       .set("X-Timezone", header)
       .expect(200);
@@ -455,7 +458,7 @@ describe("떠 있는 시각 표 (시간대 × 할 일 종류)", () => {
     const items = new Map(
       todoListResponseSchema.parse(ownerRows.body.data).items.map((item) => [item.id, item]),
     );
-    const moved = parseLocalDateTime(future, "10:00", zone).toISOString();
+    const moved = toIsoString(wallClockInstant(future, "10:00", zone));
     expect(items.get(general.todo.id)).toMatchObject({
       scheduledLocalTime: "10:00",
       scheduledTime: moved,
@@ -480,7 +483,7 @@ describe("떠 있는 시각 표 (시간대 × 할 일 종류)", () => {
     });
     expect(items.get(pastDay.todo.id)).toMatchObject({
       scheduledLocalTime: "10:00",
-      scheduledTime: parseLocalDateTime(past, "10:00", zone).toISOString(),
+      scheduledTime: toIsoString(wallClockInstant(past, "10:00", zone)),
     });
     const friendItems = friendTodoListResponseSchema.parse(friendRows.body.data).items;
     expect(friendItems.length).toBeGreaterThan(0);

@@ -1,7 +1,7 @@
-import { Inject, Injectable } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 
-import { cacheKey } from "#api/platform/cache/index";
-import { type ILockProvider, LOCK_PROVIDER } from "#api/platform/lock/index";
+import { cacheKey } from "#api/platform/cache/keyspace/cache-key";
+import { LockProviderPort } from "#api/platform/lock/lock-provider.port";
 
 import type { NotificationDedupLockPort } from "../../application/ports/notification-dedup.port.js";
 import { DEDUP_LOCK_TTL } from "../../domain/notification-dedup.domain-service.js";
@@ -9,9 +9,9 @@ import { DEDUP_LOCK_TTL } from "../../domain/notification-dedup.domain-service.j
 /** 알림 중복 잠금의 Redis keyspace와 TTL을 소유한다. */
 @Injectable()
 export class NotificationDedupLockAdapter implements NotificationDedupLockPort {
-  readonly #lockProvider: ILockProvider;
+  readonly #lockProvider: LockProviderPort;
 
-  constructor(@Inject(LOCK_PROVIDER) lockProvider: ILockProvider) {
+  constructor(lockProvider: LockProviderPort) {
     this.#lockProvider = lockProvider;
   }
 

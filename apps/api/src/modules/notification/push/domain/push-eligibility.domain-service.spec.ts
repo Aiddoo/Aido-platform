@@ -1,5 +1,6 @@
 import {
   isAutomatedEngagementNotification,
+  isGeneralRateLimitExemptNotification,
   isMarketingNotification,
   isNightExemptNotification,
 } from "./push-eligibility.domain-service.js";
@@ -32,12 +33,38 @@ describe("Push 발송 대상 판단 정책", () => {
     expect(isAutomatedEngagementNotification(type)).toBe(false);
   });
 
-  it("사용자 설정 날씨 알림은 광고성 알림이 아니며 야간 설정 예외다", () => {
-    expect(isMarketingNotification("WEATHER_MORNING")).toBe(false);
-    expect(isNightExemptNotification("WEATHER_MORNING")).toBe(true);
+  it.each([
+    "TODO_REMINDER",
+    "MORNING_REMINDER",
+    "EVENING_REMINDER",
+    "WEATHER_MORNING",
+    "WEATHER_EVENING",
+  ] as const)("사용자가 시각을 정한 %s는 광고성이 아니며 야간 설정 예외다", (type) => {
+    expect(isMarketingNotification(type)).toBe(false);
+    expect(isNightExemptNotification(type)).toBe(true);
   });
 
-  it("광고성 스트릭 알림은 21:00~08:00 예외가 아니다", () => {
-    expect(isNightExemptNotification("STREAK_AT_RISK")).toBe(false);
-  });
+  it.each(["STREAK_AT_RISK", "WINBACK", "FOLLOW_NEW", "CHEER_RECEIVED", "SYSTEM_NOTICE"] as const)(
+    "광고성·소셜·재방문·공지 %s는 21:00~08:00 예외가 아니다",
+    (type) => {
+      expect(isNightExemptNotification(type)).toBe(false);
+    },
+  );
+
+  it.each([
+    ["TODO_REMINDER", true],
+    ["MORNING_REMINDER", false],
+    ["FOLLOW_NEW", false],
+    ["CHEER_RECEIVED", false],
+    ["LUNCH_NUDGE", false],
+    ["WINBACK", false],
+  ] as const)(
+    "사용자가 시각을 정한 할 일 리마인더만 일반 시간당 한도에서 빠진다(%s → %s)",
+    (type, exempt) => {
+      // When
+      const result = isGeneralRateLimitExemptNotification(type);
+      // Then
+      expect(result).toBe(exempt);
+    },
+  );
 });

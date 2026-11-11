@@ -7,7 +7,7 @@ const memoKey = (memoId: MemoId): string => `${MUTATION_KEY_PREFIX}:memo:${memoI
 const sortOrderKey = (userId: UserId): string =>
   `${MUTATION_KEY_PREFIX}:memo-sort-order:${userId.value}`;
 
-// 문자열은 voice가 쓰는 공용 메모 잠금 키와 같아야 voice 계획 저장·배포 중 옛 버전과 같은 잠금을 잡는다
+// voice 계획 저장과 같은 잠금을 잡고, 문자열을 바꾸면 배포가 겹치는 동안 이전 버전과 다른 잠금을 잡는다
 export const MemoLockKeys = {
   memo: memoKey,
   sortOrder: sortOrderKey,

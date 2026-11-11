@@ -1,5 +1,5 @@
 import type { FeatureDiscoveryResponse } from '@aido/api';
-import { toInstant } from '@src/shared/date/instant';
+import { pick } from 'es-toolkit';
 
 import type { FeatureCampaignConfig } from '../domains/feature-campaign.model';
 
@@ -8,8 +8,5 @@ export function toFeatureCampaignConfig(response: FeatureDiscoveryResponse): Fea
     return { enabled: false };
   }
 
-  return {
-    ...response,
-    launchedAt: toInstant(response.launchedAt),
-  };
+  return pick(response, ['enabled', 'campaignId', 'minAppVersion', 'autoOpen']);
 }

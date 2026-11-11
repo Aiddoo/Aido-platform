@@ -1,8 +1,8 @@
 import { ErrorCode } from "@aido/api/errors";
 
 import { ApplicationException } from "#api/shared/application/application.exception";
-import type { CursorPaginatedResponse } from "#api/shared/application/pagination/index";
-import type { PaginationService } from "#api/shared/application/pagination/index";
+import type { CursorPaginatedResponse } from "#api/shared/application/pagination/interfaces/pagination.interface";
+import type { PaginationService } from "#api/shared/application/pagination/services/pagination.service";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { TodoCategoryId } from "../../../categories/domain/todo-category-id.vo.js";

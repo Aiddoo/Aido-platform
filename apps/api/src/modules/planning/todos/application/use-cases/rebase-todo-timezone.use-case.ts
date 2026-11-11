@@ -1,6 +1,7 @@
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
-import { type MutationLockPort, type UnitOfWorkPort } from "#api/shared/application/ports/index";
+import { type MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
+import { type UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { resolveWallClockTimezone } from "#api/shared/domain/time/time-zone-name";
 
@@ -15,7 +16,7 @@ import type { RebaseCandidate, TodoRepositoryPort } from "../ports/todo.reposito
 import { TodoLockKeys } from "../todos.lock-keys.js";
 import { TodoLogEvent } from "../todos.log-events.js";
 
-export const TODO_TIMEZONE_REBASE_BUDGET = {
+const TODO_TIMEZONE_REBASE_BUDGET = {
   /** 한 트랜잭션에 잡는 할 일 수. 사용자 잠금을 짧게 쥐어 앱 요청을 오래 막지 않는다. */
   BATCH_SIZE: 500,
 } as const;
@@ -24,7 +25,7 @@ export interface RebaseTodoTimezoneInput {
   readonly userId: string;
 }
 
-export type RebaseTodoTimezoneOutcome = "COMPLETED" | "NO_PREFERENCE" | "SUPERSEDED";
+type RebaseTodoTimezoneOutcome = "COMPLETED" | "NO_PREFERENCE" | "SUPERSEDED";
 
 export interface RebaseTodoTimezoneResult {
   readonly outcome: RebaseTodoTimezoneOutcome;

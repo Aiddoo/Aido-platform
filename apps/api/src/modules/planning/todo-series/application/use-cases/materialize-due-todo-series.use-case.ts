@@ -22,7 +22,7 @@ import { TodoSeriesAlerts } from "../todo-series.alerts.js";
 import { TodoSeriesLogEvent } from "../todo-series.log-events.js";
 import type { MaterializeTodoSeriesUseCase } from "./materialize-todo-series.use-case.js";
 
-export const TODO_SERIES_MATERIALIZATION_BUDGET = {
+const TODO_SERIES_MATERIALIZATION_BUDGET = {
   /** ID만 읽으므로 배치 메모리는 1MB 미만이다. */
   BATCH_SIZE: 100,
   /** 큐 만료(10분)보다 먼저 멈추고 남은 규칙은 다음 실행이 커서로 이어받는다. */

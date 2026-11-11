@@ -1,6 +1,6 @@
 import { vi } from "vitest";
 
-import type { QueueDefinition } from "#api/shared/application/ports/index";
+import type { QueueDefinition } from "#api/shared/application/ports/job-queue.port";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
 

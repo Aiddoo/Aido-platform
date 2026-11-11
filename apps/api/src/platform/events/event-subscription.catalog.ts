@@ -2,7 +2,7 @@ import type { FactoryProvider, ValueProvider } from "@nestjs/common";
 import { DiscoveryService } from "@nestjs/core";
 import { groupBy } from "es-toolkit";
 
-import type { EventSubscription } from "#api/shared/application/ports/index";
+import type { EventSubscription } from "#api/shared/application/ports/domain-event-publisher.port";
 
 type AnyEventSubscription = EventSubscription<object>;
 

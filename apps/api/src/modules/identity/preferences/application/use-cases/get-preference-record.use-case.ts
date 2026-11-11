@@ -1,9 +1,7 @@
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import type {
-  UserPreferenceRepositoryPort,
-  UserPreferenceRecord,
-} from "../ports/user-preference.repository.port.js";
+import type { UserPreferenceRecord } from "../../domain/user-preference.constants.js";
+import type { UserPreferenceRepositoryPort } from "../ports/user-preference.repository.port.js";
 
 export interface GetPreferenceRecordQuery {
   readonly userId: string;

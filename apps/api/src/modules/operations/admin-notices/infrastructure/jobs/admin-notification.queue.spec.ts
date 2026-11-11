@@ -1,4 +1,4 @@
-import { JOB_POLLING_SECONDS } from "#api/shared/application/ports/index";
+import { JOB_POLLING_SECONDS } from "#api/shared/application/ports/job-queue.port";
 
 import { ADMIN_NOTIFICATION_QUEUE, AdminNotificationJobName } from "./admin-notification.queue.js";
 

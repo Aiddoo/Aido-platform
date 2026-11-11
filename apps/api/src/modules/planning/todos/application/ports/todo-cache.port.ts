@@ -1,4 +1,4 @@
-import type { CursorPaginatedResponse } from "#api/shared/application/pagination/index";
+import type { CursorPaginatedResponse } from "#api/shared/application/pagination/interfaces/pagination.interface";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { FriendTodoReadModel } from "../read-models/todo.read-model.js";

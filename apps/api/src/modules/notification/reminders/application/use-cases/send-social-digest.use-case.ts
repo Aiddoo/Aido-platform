@@ -5,7 +5,7 @@ import { DEFAULT_LOCALE } from "#api/shared/domain/locale";
 
 import type { NotificationHistoryReader } from "../../../inbox/application/notification-history.reader.js";
 import type { CreateNotificationData } from "../../../inbox/application/ports/notification-draft.port.js";
-import { createSocialDigestNotificationMessage } from "../../../push/application/messages/notification.messages.js";
+import { createSocialDigestNotificationMessage } from "../../../push/application/messages/scheduler-notification.messages.js";
 import { getNotificationFriendFallback } from "../../../push/application/messages/social-notification.messages.js";
 import type { PublishNotificationUseCase } from "../../../push/application/use-cases/publish-notification.use-case.js";
 import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/notification-campaign.constants.js";

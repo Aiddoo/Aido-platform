@@ -16,8 +16,7 @@ import { AuthCachePort } from "#api/modules/identity/auth/application/ports/auth
 import { AuthTokenIssuerPort } from "#api/modules/identity/auth/application/ports/auth-crypto.port";
 import { TOKEN_REUSE_GRACE_PERIOD_MS } from "#api/modules/identity/auth/domain/auth.constants";
 import { SessionId } from "#api/modules/identity/auth/domain/session-id.vo";
-import { CacheService } from "#api/platform/cache/cache.service";
-import { CACHE_SERVICE, type ICacheService } from "#api/platform/cache/interfaces/cache.interface";
+import { CacheStorePort } from "#api/platform/cache/cache-store.port";
 import { requireRecord } from "#api/platform/database/database-error.util";
 import {
   loginAttempt,
@@ -30,15 +29,13 @@ import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/inde
 
 describe("인증 E2E", () => {
   let ctx: E2eTestContext;
-  let cacheService: CacheService;
-  let _cacheAdapter: ICacheService;
+  let cacheService: CacheStorePort;
 
   beforeAll(async () => {
     ctx = await createE2eApp();
 
-    // CacheService 인스턴스 가져오기
-    cacheService = ctx.module.get<CacheService>(CacheService);
-    _cacheAdapter = ctx.module.get<ICacheService>(CACHE_SERVICE);
+    // CacheStorePort 인스턴스 가져오기
+    cacheService = ctx.module.get(CacheStorePort);
   }, 60_000);
 
   afterAll(async () => {
@@ -1709,9 +1706,10 @@ describe("인증 E2E", () => {
       expect(response1.body.success).toBe(true);
       expect(response1.body.data.email).toBe("cache-test@example.com");
 
-      // 세션·프로필·권한(Access) 캐시를 한 번씩 채운다
+      // 세션·프로필·권한(Access) 캐시를 한 번씩 채운다. 프로필·권한은 저장 전후로 세대 키를 세 번씩 읽고
+      // 무효화 전에는 세대 키가 없어 미스로 센다
       const statsAfterFirst = cacheService.getStats();
-      expect(statsAfterFirst.misses).toBe(statsBefore.misses + 3);
+      expect(statsAfterFirst.misses).toBe(statsBefore.misses + 3 + 2 * 3);
 
       // When
       const response2 = await request(ctx.app.getHttpServer())
@@ -1820,7 +1818,8 @@ describe("인증 E2E", () => {
 
       // Then
       const finalStats = cacheService.getStats();
-      expect(finalStats.misses).toBe(initialStats.misses + 3);
+      // 첫 호출만 세션·프로필·권한 미스와 프로필·권한의 세대 키 읽기(각 3번)다
+      expect(finalStats.misses).toBe(initialStats.misses + 3 + 2 * 3);
       expect(finalStats.hits).toBe(initialStats.hits + 12);
     });
   });

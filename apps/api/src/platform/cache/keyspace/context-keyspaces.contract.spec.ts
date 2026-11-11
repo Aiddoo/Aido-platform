@@ -63,8 +63,8 @@ describe("Bounded Context별 cache keyspace 계약", () => {
     expect(WeatherCacheKey.conditions(60, 127, "2026-04-01")).toBe(
       "aido:v1:weather:conditions:60:127:2026-04-01",
     );
-    expect(TodoCacheKey.friendTodosFirstPage("user-1", "-", "-", 20)).toBe(
-      "aido:v1:todo:friend-view-v1:user-1:-:-:20",
+    expect(TodoCacheKey.friendTodosFirstPageVersioned("user-1", "generation-1", "-", "-", 20)).toBe(
+      "aido:v1:todo:friend-view-v2:user-1:generation-1:-:-:20",
     );
     expect(
       DailyCompletionCacheKey.range("user-1", "generation-1", "2026-01-01", "2026-01-31"),

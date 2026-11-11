@@ -29,7 +29,9 @@ import {
   PRECIPITATION_SUBJECT_LABEL_KEYS,
 } from '../constants/weather-labels';
 import {
+  getPrecipitationWindow,
   type HourlyPrecipitationOutlook,
+  isNowcastExpired,
   type PrecipitationPrecision,
   type PrecipitationWindow,
   WeatherReportPolicy,
@@ -69,7 +71,7 @@ export function NextHourPrecipitation() {
     now,
   });
 
-  if (WeatherReportPolicy.isNowcastExpired(data, now)) {
+  if (isNowcastExpired(data, now)) {
     return <NextHourPrecipitation.Empty />;
   }
   if (data.nextHour == null) {
@@ -86,7 +88,7 @@ export function NextHourPrecipitation() {
     );
   }
 
-  const window = WeatherReportPolicy.getPrecipitationWindow(data, now);
+  const window = getPrecipitationWindow(data, now);
   const { headline, detail } = toMessage(window);
   const summary = detail == null ? headline : t('nextHour.summary', { headline, detail });
 

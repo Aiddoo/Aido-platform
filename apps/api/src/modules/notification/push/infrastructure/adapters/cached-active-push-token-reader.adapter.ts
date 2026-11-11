@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { z } from "zod";
 
-import { CacheService } from "#api/platform/cache/cache.service";
+import { CacheStorePort } from "#api/platform/cache/cache-store.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import {
@@ -16,9 +16,9 @@ const PUSH_TOKENS_SCHEMA = z.array(z.string());
 @Injectable()
 export class CachedActivePushTokenReaderAdapter implements ActivePushTokenReaderPort {
   readonly #pushTokenRepository: PushTokenRepositoryPort;
-  readonly #cacheService: CacheService;
+  readonly #cacheService: CacheStorePort;
 
-  constructor(pushTokenRepository: PushTokenRepositoryPort, cacheService: CacheService) {
+  constructor(pushTokenRepository: PushTokenRepositoryPort, cacheService: CacheStorePort) {
     this.#pushTokenRepository = pushTokenRepository;
     this.#cacheService = cacheService;
   }

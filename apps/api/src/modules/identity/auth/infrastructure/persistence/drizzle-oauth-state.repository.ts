@@ -15,7 +15,7 @@ import type { AuthOAuthState } from "#api/modules/identity/auth/domain/auth-oaut
 import type { OAuthStateId } from "#api/modules/identity/auth/domain/oauth-state-id.vo";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { oAuthState } from "#api/platform/database/schema/index";
-import { EncryptionService } from "#api/platform/encryption/index";
+import { EncryptionService } from "#api/platform/encryption/encryption.service";
 
 import { toAuthOAuthState } from "./auth-row.mapper.js";
 

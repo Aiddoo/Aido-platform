@@ -4,8 +4,6 @@ import type { DomainEvent } from "#api/shared/domain/model/domain-event";
 
 import type { QueueDefinition } from "./job-queue.port.js";
 
-export const DOMAIN_EVENT_PUBLISHER = Symbol("DOMAIN_EVENT_PUBLISHER");
-
 export interface PublishedDomainEvent extends DomainEvent {
   readonly eventId: string;
   readonly occurredAt: Temporal.Instant;

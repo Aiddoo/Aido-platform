@@ -1,48 +1,52 @@
 import { randomUUID } from "node:crypto";
 
-import { ErrorCode } from "@aido/api/errors";
+import type { CategoryTodoHandling } from "@aido/api/vocabulary";
+import { match } from "ts-pattern";
 
-import { ApplicationException } from "#api/shared/application/application.exception";
+import type { AfterCommitTaskRegistryPort } from "#api/shared/application/ports/after-commit-task.registry.port";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
-import {
-  type DomainEventPublisherPort,
-  type MutationLockPort,
-  type UnitOfWorkPort,
-} from "#api/shared/application/ports/index";
+import { type DomainEventPublisherPort } from "#api/shared/application/ports/domain-event-publisher.port";
+import { type MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
+import { type UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
+import type { TodoCachePort } from "../../../todos/application/ports/todo-cache.port.js";
 import { TodoLockKeys } from "../../../todos/application/todos.lock-keys.js";
+import type { RemoveCategoryTodosUseCase } from "../../../todos/application/use-cases/remove-category-todos.use-case.js";
 import { CategoryChangedEvent } from "../../domain/category-changed.event.js";
+import { planCategoryDeletion } from "../../domain/category-deletion.domain-service.js";
 import { TodoCategoryId } from "../../domain/todo-category-id.vo.js";
+import { categoryDeletionRejected, todoCategoryNotFound } from "../categories.errors.js";
 import { TodoCategoryLockKeys } from "../categories.lock-keys.js";
 import { TodoCategoryLogEvent } from "../categories.log-events.js";
 import { type TodoCategoryCachePort } from "../ports/todo-category-cache.port.js";
 import { type TodoCategoryRepositoryPort } from "../ports/todo-category.repository.port.js";
+import type { TodoCategoryDeletionReadModel } from "../read-models/todo-category-deletion.read-model.js";
 
 export interface DeleteTodoCategoryInput {
   userId: string;
   categoryId: number;
   moveToCategoryId?: number;
+  /** 생략은 출시 앱(1.15.0까지)의 요청이다. 할 일이 있으면 moveToCategoryId가 필요하다 */
+  todoHandling?: CategoryTodoHandling;
 }
 
-/**
- * 카테고리 삭제 use-case.
- *
- * 트랜잭션 안에서 소유·최소개수(1개 이상 유지)·잔여 할 일을 검사하고, 할 일이 있으면 지정 카테고리로
- * 이동 후 삭제한다(Todo.category는 onDelete: Restrict). 커밋 후 목록 캐시를 무효화한다.
- */
 interface DeleteTodoCategoryDependencies {
   readonly repository: Pick<
     TodoCategoryRepositoryPort,
     | "findByIdAndUserId"
     | "countByUserId"
-    | "getTodoCount"
+    | "countTodos"
     | "countActiveSeries"
     | "moveTodosToCategory"
     | "delete"
   >;
+  readonly categoryTodos: Pick<RemoveCategoryTodosUseCase, "execute">;
   readonly cache: TodoCategoryCachePort;
+  // 함께 지우기는 categoryTodos가 지운다. 옮기기는 친구 화면 할 일의 카테고리가 바뀐다
+  readonly todoCache: Pick<TodoCachePort, "invalidateFriendTodos">;
+  readonly afterCommit: Pick<AfterCommitTaskRegistryPort, "register">;
   readonly mutationLock: MutationLockPort;
   readonly unitOfWork: UnitOfWorkPort;
   readonly clock: ClockPort;
@@ -50,6 +54,11 @@ interface DeleteTodoCategoryDependencies {
   readonly logger: ApplicationLoggerPort;
 }
 
+/**
+ * 카테고리를 지운다. 잠금 → 읽기 → 계획 → 실행 → 발행 순서다.
+ * 할 일을 옮기거나 함께 지우는 모든 쓰기는 카테고리·정렬 잠금 아래에서 하므로 그동안 이 카테고리에
+ * 할 일이 새로 들어오거나(생성·이동·반복 회차) 진행 중 규칙이 바뀌지 않는다.
+ */
 export class DeleteTodoCategoryUseCase {
   readonly #dependencies: DeleteTodoCategoryDependencies;
 
@@ -57,76 +66,101 @@ export class DeleteTodoCategoryUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: DeleteTodoCategoryInput): Promise<void> {
-    const { categoryId, moveToCategoryId } = input;
+  async execute(input: DeleteTodoCategoryInput): Promise<TodoCategoryDeletionReadModel> {
+    const {
+      repository,
+      categoryTodos,
+      todoCache,
+      afterCommit,
+      mutationLock,
+      unitOfWork,
+      clock,
+      eventPublisher,
+    } = this.#dependencies;
+    const startedAt = clock.now();
     const userId = UserId.reconstitute(input.userId);
-    const id = TodoCategoryId.reconstitute(categoryId);
+    const categoryId = TodoCategoryId.reconstitute(input.categoryId);
+    const moveToCategoryId =
+      input.moveToCategoryId == null ? null : TodoCategoryId.reconstitute(input.moveToCategoryId);
 
-    await this.#dependencies.unitOfWork.run(async () => {
-      await this.#dependencies.mutationLock.acquire([
+    const deletion = await unitOfWork.run(async () => {
+      await mutationLock.acquire([
         TodoCategoryLockKeys.userCategories(input.userId),
         TodoLockKeys.sortOrder(input.userId),
       ]);
 
-      const category = await this.#dependencies.repository.findByIdAndUserId(id, userId);
+      const category = await repository.findByIdAndUserId(categoryId, userId);
       if (category == null) {
-        throw new ApplicationException(ErrorCode.TODO_CATEGORY_0851, {
+        throw todoCategoryNotFound(categoryId);
+      }
+      const categoryCount = await repository.countByUserId(userId);
+      const todoCount = await repository.countTodos(userId, categoryId);
+      const activeSeriesCount = await repository.countActiveSeries(categoryId);
+
+      const plan = planCategoryDeletion({
+        categoryId,
+        categoryCount,
+        todoCount: todoCount.total,
+        activeSeriesCount,
+        todoHandling: input.todoHandling ?? null,
+        moveToCategoryId,
+      });
+      if (!plan.ok) {
+        throw categoryDeletionRejected({
+          reason: plan.reason,
           categoryId,
+          moveToCategoryId,
+          todoCount: todoCount.total,
         });
       }
 
-      const total = await this.#dependencies.repository.countByUserId(userId);
-      if (total <= 1) {
-        throw new ApplicationException(ErrorCode.TODO_CATEGORY_0854);
-      }
+      const result = await match(plan)
+        .with({ plan: "delete-empty" }, async () => ({
+          todoHandling: "none" as const,
+          moveToCategoryId: null,
+        }))
+        .with({ plan: "move" }, async ({ moveToCategoryId: targetId }) => {
+          const target = await repository.findByIdAndUserId(targetId, userId);
+          if (target == null) {
+            throw todoCategoryNotFound(targetId);
+          }
+          await repository.moveTodosToCategory(userId, categoryId, targetId);
+          afterCommit.register(() => todoCache.invalidateFriendTodos(userId));
+          return { todoHandling: "move" as const, moveToCategoryId: targetId.value };
+        })
+        .with({ plan: "delete-with-todos" }, async () => {
+          await categoryTodos.execute({ userId, categoryId });
+          return { todoHandling: "delete" as const, moveToCategoryId: null };
+        })
+        .exhaustive();
 
-      const todoCount = await this.#dependencies.repository.getTodoCount(id);
-      // 회차가 아직 없어도 진행 중 규칙이 있으면 옮길 곳을 받아야 한다.
-      const activeSeries = await this.#dependencies.repository.countActiveSeries(id);
-      if (todoCount + activeSeries > 0) {
-        if (moveToCategoryId == null) {
-          throw new ApplicationException(ErrorCode.TODO_CATEGORY_0855, {
-            categoryId,
-            todoCount,
-          });
-        }
-        if (moveToCategoryId === categoryId) {
-          throw new ApplicationException(ErrorCode.SYS_0002, {
-            message: "삭제할 카테고리와 이동 대상 카테고리가 같을 수 없습니다",
-            categoryId,
-            moveToCategoryId,
-          });
-        }
-        const moveTargetId = TodoCategoryId.reconstitute(moveToCategoryId);
-        const moveTarget = await this.#dependencies.repository.findByIdAndUserId(
-          moveTargetId,
-          userId,
-        );
-        if (moveTarget == null) {
-          throw new ApplicationException(ErrorCode.TODO_CATEGORY_0851, {
-            categoryId: moveToCategoryId,
-          });
-        }
-        await this.#dependencies.repository.moveTodosToCategory(id, moveTargetId);
-      }
-
-      await this.#dependencies.repository.delete(id);
-      await this.#dependencies.eventPublisher.publish([
+      await repository.delete(categoryId);
+      await eventPublisher.publish([
         new CategoryChangedEvent({
           eventName: "planning.todo-category.deleted",
           eventId: randomUUID(),
-          occurredAt: this.#dependencies.clock.now(),
-          categoryId,
+          occurredAt: clock.now(),
+          categoryId: input.categoryId,
           userId: input.userId,
         }),
       ]);
+      return {
+        ...result,
+        todoCount: todoCount.total,
+        seriesCount: activeSeriesCount,
+      };
     });
 
     await this.#dependencies.cache.invalidate(userId);
-    this.#dependencies.logger.debug({
+    this.#dependencies.logger.log({
       event: TodoCategoryLogEvent.DELETED,
       userId: input.userId,
-      categoryId: categoryId,
+      categoryId: input.categoryId,
+      todoHandling: deletion.todoHandling,
+      todoCount: deletion.todoCount,
+      seriesCount: deletion.seriesCount,
+      durationMs: startedAt.until(clock.now()).total("milliseconds"),
     });
+    return deletion;
   }
 }

@@ -34,7 +34,6 @@ import { DrizzleUserRepository } from "#api/modules/identity/users/infrastructur
 import { DrizzleClientAppVersionReader } from "#api/modules/notification/push/infrastructure/persistence/drizzle-client-app-version.reader";
 import type { StagedTodoCreatorPort } from "#api/modules/planning/todos/planning-todos.public";
 import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
-import { CacheService } from "#api/platform/cache/cache.service";
 import { databaseSqlState, requireRecord } from "#api/platform/database/database-error.util";
 import { createEntityId } from "#api/platform/database/entity-id";
 import {
@@ -45,7 +44,7 @@ import {
   todoCategory,
   user as userTable,
 } from "#api/platform/database/schema/index";
-import type { AfterCommitTask } from "#api/shared/application/ports/index";
+import type { AfterCommitTask } from "#api/shared/application/ports/after-commit-task.registry.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantFromDate } from "#api/shared/domain/time/instant";
 import { DateClock } from "#test/doubles/platform/date-clock";
@@ -112,7 +111,7 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
     entitlement = new EntitlementReaderAdapter(
       new GetResolvedAccessUseCase({
         accessStateReader: new DrizzleAccessStateReader(fixture.txHost),
-        entitlementCache: new EntitlementCacheAdapter(new CacheService(memory)),
+        entitlementCache: new EntitlementCacheAdapter(memory),
         clock: new DateClock(),
       }),
     );

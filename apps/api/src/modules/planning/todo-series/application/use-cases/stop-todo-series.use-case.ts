@@ -2,7 +2,7 @@ import { ErrorCode } from "@aido/api/errors";
 
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
-import { type MutationLockPort } from "#api/shared/application/ports/index";
+import { type MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { TodoCategoryLockKeys } from "../../../categories/application/categories.lock-keys.js";

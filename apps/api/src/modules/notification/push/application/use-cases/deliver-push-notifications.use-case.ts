@@ -1,3 +1,5 @@
+import type { PushDispatchSkipReason } from "@aido/api/vocabulary";
+
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
@@ -15,10 +17,7 @@ import type { PushNotificationPayloadPort } from "../ports/push-notification-pay
 import type { PushResult } from "../ports/push-provider.port.js";
 import { PushDeliveryClaimRecoveryConflictError } from "../push-delivery-claim-recovery-conflict.errors.js";
 import { PushDeliveryRateLimitReservationConflictError } from "../push-delivery-rate-limit-reservation-conflict.errors.js";
-import type {
-  DeliverPushNotificationsInput,
-  PushDispatchSkipReason,
-} from "../read-models/push-delivery.read-model.js";
+import type { DeliverPushNotificationsInput } from "../read-models/push-delivery.read-model.js";
 import type { DispatchPushNotificationUseCase } from "./dispatch-push-notification.use-case.js";
 import type { EvaluatePushDeliveryEligibilityUseCase } from "./evaluate-push-delivery-eligibility.use-case.js";
 import {

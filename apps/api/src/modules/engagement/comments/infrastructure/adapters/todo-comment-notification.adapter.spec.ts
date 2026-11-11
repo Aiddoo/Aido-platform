@@ -2,7 +2,7 @@ import type { SupportedLocale } from "@aido/api/vocabulary";
 
 import {
   createTodoCommentNotificationMessage,
-  NotificationPublisher,
+  PublishNotificationUseCase,
   type NotificationRecipientLocaleReaderPort,
   TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY,
 } from "#api/modules/notification/notification-delivery.public";
@@ -10,11 +10,11 @@ import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { TodoCommentNotificationAdapter } from "./todo-comment-notification.adapter.js";
 
-type PublishedNotification = Parameters<NotificationPublisher["publish"]>[0];
+type PublishedNotification = Parameters<PublishNotificationUseCase["publish"]>[0];
 
 /** 실제 발행기를 쓰고 저장 단계만 기록용으로 바꾼다 */
-function createRecordingPublisher(published: PublishedNotification[]): NotificationPublisher {
-  return new NotificationPublisher({
+function createRecordingPublisher(published: PublishedNotification[]): PublishNotificationUseCase {
+  return new PublishNotificationUseCase({
     sendNotification: {
       execute: async (data) => {
         published.push(data);

@@ -1,0 +1,79 @@
+// 흐름이 찾는 화면 요소의 단 하나의 원천. 화면이 바뀌면 이 파일(또는 subflow)만 고친다.
+// id는 앱 testID(`<feature>-<element>[-<action>]`)이고, testID를 받지 않는 네이티브 헤더 버튼만 접근성 라벨(ko|en)로 찾는다.
+// docs: https://docs.maestro.dev/get-started/supported-platform/react-native
+
+output.ids = {
+  common: {
+    hintPopover: 'hint-popover',
+    hintPopoverClose: 'hint-popover-close',
+    // 네이티브 헤더 버튼은 testID를 받지 않아 접근성 라벨(ko|en)로 찾는다
+    headerCloseLabel: '닫기|Close',
+  },
+  app: {
+    rootError: 'root-error-fallback',
+    offlineBanner: 'offline-banner',
+    queryErrorRetry: 'query-error-retry',
+  },
+  auth: {
+    emailEntry: 'login-email-entry',
+    emailInput: 'email-login-email',
+    passwordInput: 'email-login-password',
+    submitButton: 'email-login-submit',
+  },
+  feed: {
+    screen: 'feed-screen',
+  },
+  whatsNew: {
+    screen: 'whats-new-screen',
+  },
+  todo: {
+    addButton: (categoryId) => 'todo-add-' + categoryId,
+    addSheet: 'todo-add-sheet',
+    titleInput: 'todo-add-title-input',
+    submitButton: 'todo-add-submit',
+    checkbox: (todoId) => 'todo-checkbox-' + todoId,
+    moreButton: (todoId) => 'todo-more-' + todoId,
+    deleteAction: 'todo-action-delete',
+  },
+  category: {
+    deleteButton: (categoryId) => 'category-delete-' + categoryId,
+    deleteSheet: 'category-delete-sheet',
+    handlingOption: (todoHandling) => 'category-delete-handling-' + todoHandling,
+    moveTargetRow: 'category-delete-move-target',
+    submitButton: 'category-delete-submit',
+    confirmButton: 'category-delete-confirm',
+  },
+  categorySelect: {
+    option: (categoryId) => 'category-select-option-' + categoryId,
+    submitButton: 'category-select-submit',
+  },
+  memo: {
+    createButton: 'memo-create-button',
+    createInput: 'memo-create-input',
+    editorInput: 'memo-editor-input',
+    item: (memoId) => 'memo-item-' + memoId,
+  },
+  notification: {
+    onboardingScreen: 'push-onboarding-screen',
+    inbox: 'notification-inbox',
+    item: (type) => 'notification-item-' + type,
+  },
+  invite: {
+    codeInput: 'invite-code-input',
+    codeSubmit: 'invite-code-submit',
+    redeemButton: 'invite-card-redeem',
+    welcomeSheet: 'invite-welcome-sheet',
+    welcomeLater: 'invite-welcome-later',
+    welcomeOpenFriendFeed: 'invite-welcome-open-friend-feed',
+  },
+  subscription: {
+    paywall: 'subscription-paywall',
+  },
+};
+
+output.labels = {
+  close: '닫기|Close',
+  save: '저장|Save',
+  // iOS 시스템 창(암호 저장 제안)의 버튼
+  savePasswordNotNow: '지금 안 함|Not Now',
+};

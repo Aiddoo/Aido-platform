@@ -18,13 +18,13 @@ import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { PressableFeedback, Skeleton } from 'heroui-native';
 import { match, P } from 'ts-pattern';
 
-import { TodoNudgePolicy } from '../domains/todo-nudge.model';
+import { NudgeLimitPolicy } from '../domains/todo-nudge.model';
 import { useGetTodoNudgeLimitQueryOptions } from '../queries/todo-nudge.queries';
 
 export function NudgeLimitBanner() {
   const { t } = useTranslation('todo');
   const { data: limitInfo } = useSuspenseQuery(useGetTodoNudgeLimitQueryOptions());
-  const isLimitReached = TodoNudgePolicy.isLimitReached(limitInfo);
+  const isLimitReached = NudgeLimitPolicy.isLimitReached(limitInfo);
 
   const gate = useEntitlementGate('NUDGE', { surface: 'poke_banner' });
   // 다시 생기는 때는 서버 한도 스냅샷이 원본이다. 아직 없으면 제목만 보인다

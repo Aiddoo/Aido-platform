@@ -15,7 +15,7 @@ import { ADMIN_NOTIFICATION_QUEUE } from "#api/modules/operations/admin-notices/
 import { DrizzleAdminNoticeUserReader } from "#api/modules/operations/admin-notices/infrastructure/persistence/drizzle-admin-notice-user.reader";
 import { createEntityId } from "#api/platform/database/entity-id";
 import { account, user as userTable, userProfile } from "#api/platform/database/schema/index";
-import { JobQueuePort } from "#api/shared/application/ports/index";
+import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantFromDate } from "#api/shared/domain/time/instant";
 import { SubscriptionEventBuilder } from "#test/builders/index";

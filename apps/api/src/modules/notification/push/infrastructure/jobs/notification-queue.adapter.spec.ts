@@ -1,6 +1,6 @@
 import { Logger } from "@nestjs/common";
 
-import type { EnqueueOptions, QueueDefinition } from "#api/shared/application/ports/index";
+import type { EnqueueOptions, QueueDefinition } from "#api/shared/application/ports/job-queue.port";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
 

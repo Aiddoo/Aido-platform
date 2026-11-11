@@ -1,0 +1,48 @@
+appId: ${MAESTRO_APP_ID}
+name: 알림함의 친구 요청 알림을 누르면 받은 요청 화면이 한 번 열리고 읽음이 된다
+tags:
+  - regression
+  - notification
+  - needs-second-account
+onFlowStart:
+  - runFlow: ../../subflows/app/load-helpers.yaml
+  - evalScript: ${output.main = output.api.signIn('main')}
+  - evalScript: ${output.second = output.api.signIn('second')}
+  - evalScript: ${output.second.unfollow(output.main.userId)}
+  - evalScript: ${output.main.unfollow(output.second.userId)}
+  - evalScript: ${output.second.requestFriend(output.main.userTag)}
+  - evalScript: ${output.notification = output.main.waitForNotification('FOLLOW_NEW')}
+  - runFlow: ../../subflows/app/launch-fresh.yaml
+onFlowComplete:
+  - evalScript: ${output.second && output.main && output.second.unfollow(output.main.userId)}
+---
+# Given: 두 번째 계정이 친구 요청을 보내 알림함에 알림이 있다
+- runFlow:
+    file: ../../subflows/auth/sign-in.yaml
+    env:
+      EMAIL: ${output.main.email}
+      PASSWORD: ${output.main.password}
+- openLink: ${output.config.appScheme}://notifications
+- extendedWaitUntil:
+    visible:
+      id: ${output.ids.notification.item('FOLLOW_NEW')}
+    timeout: 15000
+
+# When: 친구 요청 알림을 누른다
+- tapOn:
+    id: ${output.ids.notification.item('FOLLOW_NEW')}
+    index: 0
+
+# Then: 알림함을 떠나 받은 요청 화면에 머물고, 알림은 읽음이 된다
+- extendedWaitUntil:
+    notVisible:
+      id: ${output.ids.notification.inbox}
+    timeout: 10000
+- waitForAnimationToEnd:
+    timeout: 3000
+- assertNotVisible:
+    id: ${output.ids.notification.inbox}
+- assertVisible: ${'.*' + output.second.name + '.*'}
+- assertTrue:
+    condition: ${output.main.isNotificationRead(output.notification.id)}
+    label: 서버에서 알림이 읽음이 됐다

@@ -5,8 +5,8 @@ import { Injectable } from "@nestjs/common";
 import { z } from "zod";
 
 import { TodoCategoryCacheKey } from "#api/modules/planning/categories/infrastructure/cache/todo-category-cache.keyspace";
-import { CacheService } from "#api/platform/cache/cache.service";
-import type { CursorPaginatedResponse } from "#api/shared/application/pagination/index";
+import { CacheStorePort } from "#api/platform/cache/cache-store.port";
+import type { CursorPaginatedResponse } from "#api/shared/application/pagination/interfaces/pagination.interface";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type {
@@ -35,13 +35,13 @@ const FRIEND_TODOS_PAGE_SCHEMA = z.object({
 }) satisfies z.ZodType<CursorPaginatedResponse<FriendTodoReadModel, number>>;
 
 /**
- * Todo 캐시 포트 어댑터 — CacheService에 위임
+ * Todo 캐시 포트 어댑터 — CacheStorePort에 위임
  */
 @Injectable()
 export class TodoCacheAdapter implements TodoCachePort {
-  readonly #cacheService: CacheService;
+  readonly #cacheService: CacheStorePort;
 
-  constructor(cacheService: CacheService) {
+  constructor(cacheService: CacheStorePort) {
     this.#cacheService = cacheService;
   }
 
@@ -114,13 +114,9 @@ export class TodoCacheAdapter implements TodoCachePort {
       TODO_CACHE_TTL_MS.FRIEND_VIEW_GENERATION,
     );
 
-    await Promise.all([
-      this.#cacheService.delByPattern(
-        TodoCacheKey.friendTodosGenerationPattern(ownerUserId.value, previousGeneration),
-      ),
-      // v1은 더 이상 읽지 않지만 롤링 배포 중인 이전 인스턴스와 잔존 키를 함께 정리한다.
-      this.#cacheService.delByPattern(TodoCacheKey.friendTodosPattern(ownerUserId.value)),
-    ]);
+    await this.#cacheService.delByPattern(
+      TodoCacheKey.friendTodosGenerationPattern(ownerUserId.value, previousGeneration),
+    );
   }
 
   async #getFriendTodosGeneration(ownerUserId: UserId): Promise<string> {

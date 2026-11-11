@@ -2,9 +2,9 @@ import { currentUserSchema, type RevenueCatWebhookPayload } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
 import request from "supertest";
 
+import { PremiumGranterPort } from "#api/modules/billing/premium-grants/billing-premium-grants.public";
 import { SubscriptionWebhookLockPort } from "#api/modules/billing/subscriptions/application/ports/subscription-webhook-lock.port";
 import { billingSubscriptionsConfig } from "#api/modules/billing/subscriptions/billing-subscriptions.config";
-import { PremiumGranterPort } from "#api/modules/billing/subscriptions/billing-subscriptions.public";
 import { AuthCachePort } from "#api/modules/identity/auth/application/ports/auth-collaboration.port";
 import { subscription, subscriptionEventReceipt } from "#api/platform/database/schema/index";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";

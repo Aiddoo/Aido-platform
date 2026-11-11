@@ -3,7 +3,7 @@ import { setTimeout as sleep } from "node:timers/promises";
 import request from "supertest";
 
 import { createE2eApp, destroyE2eApp } from "./helpers/index.js";
-import { preparePgBossSchema, useRealJobRuntime } from "./helpers/real-job-runtime.js";
+import { preparePgBossSchema, useRealJobQueue } from "./helpers/real-job-queue.js";
 
 // Vitest fork worker의 stdin·stdout·stderr·IPC 파이프다. 앱과 무관하게 처음부터 열려 있다
 const STDIO_RESOURCES = new Set(["PipeWrap", "TTYWrap"]);
@@ -24,10 +24,10 @@ async function waitForResourcesToSettle(): Promise<string[]> {
   return remaining;
 }
 
-it("실제 job runtime으로 띄운 앱을 닫으면 앱이 만든 타이머·소켓·풀이 하나도 남지 않는다", async () => {
+it("실제 작업 큐로 띄운 앱을 닫으면 앱이 만든 타이머·소켓·풀이 하나도 남지 않는다", async () => {
   // Given
   await preparePgBossSchema();
-  const ctx = await createE2eApp({ customizeBuilder: useRealJobRuntime });
+  const ctx = await createE2eApp({ customizeBuilder: useRealJobQueue });
   const user = await ctx.helpers.createVerifiedUser("shutdown-handles@example.com", "Test1234!");
   const categoryId = await ctx.helpers.getDefaultCategoryId(user.accessToken);
   await request(ctx.app.getHttpServer())

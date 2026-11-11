@@ -20,7 +20,7 @@ import {
   subscriptionEventReceipt,
   user as userTable,
 } from "#api/platform/database/schema/index";
-import { UNIT_OF_WORK, type UnitOfWorkPort } from "#api/shared/application/ports/index";
+import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantFromDate, toIsoString } from "#api/shared/domain/time/instant";
 import { SubscriptionEventBuilder } from "#test/builders/index";
@@ -80,7 +80,7 @@ describe("구독 이벤트 처리 원장과 상태 전이 (실제 PostgreSQL)", 
     useCase = context.module.get(RevenueCatWebhookReceiver);
     entitlement = context.module.get(EntitlementReaderPort);
     receipts = context.module.get(SubscriptionEventReceiptRepositoryPort);
-    unitOfWork = context.module.get(UNIT_OF_WORK);
+    unitOfWork = context.module.get(UnitOfWorkPort);
   });
 
   beforeEach(async () => {

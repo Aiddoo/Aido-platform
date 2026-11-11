@@ -1,4 +1,5 @@
 import { ErrorCode } from '@aido/api/errors';
+import { TODO_SERIES_LIMITS } from '@aido/api/vocabulary';
 import { isApiError } from '@src/shared/errors';
 import { match, P } from 'ts-pattern';
 
@@ -32,6 +33,14 @@ export function findTodoSeriesFailure(error: unknown): TodoSeriesFailure | null 
       .with(P.string, () => null)
       .exhaustive()
   );
+}
+
+// 한도가 상세에 없는 옛 서버 응답은 공유 상한으로 안내한다
+export function getTodoSeriesLimit(error: unknown): number {
+  const limit = isApiError(error) ? error.details?.limit : null;
+  return typeof limit === 'number' && Number.isInteger(limit) && limit > 0
+    ? limit
+    : TODO_SERIES_LIMITS.MAX_ACTIVE_PER_USER;
 }
 
 export function shouldReopenRepeatPicker(error: unknown): boolean {

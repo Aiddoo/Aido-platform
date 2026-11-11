@@ -6,12 +6,12 @@ import { UserSubscriptionProjectionRepositoryPort } from "#api/modules/billing/p
 import { NotifyEndingPremiumGrantsUseCase } from "#api/modules/billing/premium-grants/application/use-cases/notify-ending-premium-grants.use-case";
 import { RevokePremiumGrantUseCase } from "#api/modules/billing/premium-grants/application/use-cases/revoke-premium-grant.use-case";
 import { SweepPremiumGrantsUseCase } from "#api/modules/billing/premium-grants/application/use-cases/sweep-premium-grants.use-case";
-import { SubscriptionRepositoryPort } from "#api/modules/billing/subscriptions/application/ports/subscription.repository.port";
-import { STORE_RENEWAL_GRACE_MS } from "#api/modules/billing/subscriptions/billing-subscriptions-entitlement.public";
 import {
   PremiumAccessReaderPort,
   PremiumGranterPort,
-} from "#api/modules/billing/subscriptions/billing-subscriptions.public";
+} from "#api/modules/billing/premium-grants/billing-premium-grants.public";
+import { SubscriptionRepositoryPort } from "#api/modules/billing/subscriptions/application/ports/subscription.repository.port";
+import { STORE_RENEWAL_GRACE_MS } from "#api/modules/billing/subscriptions/billing-subscriptions-entitlement.public";
 import { RevenueCatWebhookReceiver } from "#api/modules/billing/subscriptions/infrastructure/adapters/revenuecat/revenuecat-webhook-receiver.adapter";
 import { createEntityId } from "#api/platform/database/entity-id";
 import { notification, premiumGrant, user as userTable } from "#api/platform/database/schema/index";

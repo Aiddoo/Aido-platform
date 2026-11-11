@@ -5,7 +5,7 @@ import { TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY } from "../../domain/transactio
 import {
   createNudgeReceivedNotificationMessage,
   createTodoCreationNudgeNotificationMessage,
-} from "../messages/notification.messages.js";
+} from "../messages/social-notification.messages.js";
 import { NotificationDeliveryLogEvent } from "../notification-delivery.log-events.js";
 import type { NotificationRecipientLocaleReaderPort } from "../ports/notification-recipient-locale.reader.port.js";
 import type { PublishNotificationUseCase } from "./publish-notification.use-case.js";

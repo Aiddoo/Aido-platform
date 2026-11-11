@@ -1,7 +1,4 @@
-import {
-  AI_REPORT_QUEUE,
-  AiReportRuntimeJobSchema,
-} from "#api/modules/ai-assistance/reports/infrastructure/jobs/ai-report.queue";
+import { AI_REPORT_QUEUE } from "#api/modules/ai-assistance/reports/infrastructure/jobs/ai-report.queue";
 import { ReportGenerationProcessor } from "#api/modules/ai-assistance/reports/infrastructure/jobs/report-generation.processor";
 import { ReportGenerationScheduler } from "#api/modules/ai-assistance/reports/infrastructure/jobs/report-generation.scheduler";
 import {
@@ -22,7 +19,6 @@ import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
 import { TodoFixture } from "#test/fixtures/todo.fixture";
 import { UserFixture } from "#test/fixtures/user.fixture";
-import { FakeJobRuntime } from "#test/mocks/fake-job-runtime";
 import { createDatabaseTransactionFixture } from "#test/setup/database-context";
 import { suppressLogger } from "#test/setup/suppress-logger";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
@@ -162,24 +158,22 @@ describe("AI 제안·리포트 디스패치 — 사용자 현지 시각 (실제 
   });
 
   describe("리포트", () => {
-    let runtime: FakeJobRuntime;
+    let reportQueue: InMemoryJobQueue;
 
     function reportScheduler() {
-      runtime = new FakeJobRuntime();
+      reportQueue = new InMemoryJobQueue();
       return new ReportGenerationScheduler(
         createDatabaseTransactionFixture(client).txHost,
-        runtime,
+        reportQueue,
         new ReportGenerationProcessor({ execute: async () => null }),
         new DateClock(),
       );
     }
 
     function reportJobs(name: "generate-report" | "dispatch-reports" = "generate-report") {
-      return runtime.enqueueCalls.flatMap((call) => {
-        const job = AiReportRuntimeJobSchema.parse(call.data);
-        return call.queue === AI_REPORT_QUEUE && job.name === name
-          ? [{ key: call.options.idempotencyKey, data: job.data }]
-          : [];
+      return reportQueue.jobsIn(AI_REPORT_QUEUE).flatMap((queued) => {
+        const job = AI_REPORT_QUEUE.payloadSchema.parse(queued.payload);
+        return job.name === name ? [{ key: queued.options.idempotencyKey, data: job.data }] : [];
       });
     }
 

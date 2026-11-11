@@ -45,14 +45,11 @@ import {
 } from "#api/platform/database/schema/index";
 import { loggerFor, provideUseCase } from "#api/platform/di/provide-use-case";
 import { DrizzleUsageMeterAdapter } from "#api/platform/metering/adapters/drizzle-usage-meter.adapter";
-import { USAGE_METER } from "#api/platform/metering/interfaces/usage-meter.interface";
+import { UsageMeterPort } from "#api/platform/metering/usage-meter.port";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
-import {
-  MUTATION_LOCK,
-  MutationLockPort,
-  UnitOfWorkPort,
-} from "#api/shared/application/ports/index";
+import { MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
 import { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
+import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { RecordingTodoViewCacheInvalidator } from "#test/doubles/engagement/recording-todo-view-cache-invalidator";
 import { DateClock } from "#test/doubles/platform/date-clock";
@@ -255,7 +252,6 @@ describe("댓글 계정 purge (실제 PostgreSQL)", () => {
         { provide: ClockPort, useClass: DateClock },
         { provide: OperationalAlertPort, useValue: new RecordingOperationalAlert() },
         PostgresMutationLockAdapter,
-        { provide: MUTATION_LOCK, useExisting: PostgresMutationLockAdapter },
         { provide: MutationLockPort, useExisting: PostgresMutationLockAdapter },
         { provide: TodoCommentPurgeRepositoryPort, useClass: DrizzleTodoCommentPurgeRepository },
         { provide: TodoEngagementCounterPort, useClass: DrizzleTodoEngagementCounterAdapter },
@@ -284,7 +280,7 @@ describe("댓글 계정 purge (실제 PostgreSQL)", () => {
         { provide: AuthSecurityLogRepositoryPort, useExisting: DrizzleSecurityLogRepository },
         accountNotificationCleanupProvider,
         accountTodoCommentCleanupProvider,
-        { provide: USAGE_METER, useClass: DrizzleUsageMeterAdapter },
+        { provide: UsageMeterPort, useClass: DrizzleUsageMeterAdapter },
         accountUsageCleanupProvider,
         purgeDeletedAccountsProvider,
       ],

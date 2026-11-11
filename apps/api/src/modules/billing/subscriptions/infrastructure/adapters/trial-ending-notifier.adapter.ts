@@ -3,7 +3,7 @@ import { Inject, Injectable } from "@nestjs/common";
 
 import {
   createPremiumTrialEndingNotificationMessage,
-  NotificationPublisher,
+  PublishNotificationUseCase,
   NotificationRecipientLocaleReaderPort,
   NotificationRecipientTimezoneReaderPort,
   SCHEDULER_CAMPAIGN_KEY,
@@ -18,12 +18,12 @@ import { TrialEndingNotifierPort } from "../../application/ports/trial-ending-no
 
 @Injectable()
 export class TrialEndingNotifierAdapter extends TrialEndingNotifierPort {
-  readonly #notificationPublisher: NotificationPublisher;
+  readonly #notificationPublisher: PublishNotificationUseCase;
   readonly #localeReader: NotificationRecipientLocaleReaderPort;
   readonly #timezoneReader: NotificationRecipientTimezoneReaderPort;
 
   constructor(
-    notificationPublisher: NotificationPublisher,
+    notificationPublisher: PublishNotificationUseCase,
     @Inject(NotificationRecipientLocaleReaderPort)
     localeReader: NotificationRecipientLocaleReaderPort,
     @Inject(NotificationRecipientTimezoneReaderPort)

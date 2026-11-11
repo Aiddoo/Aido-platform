@@ -1,10 +1,13 @@
 import { ErrorCode } from "@aido/api/errors";
 
 import { ApplicationException } from "#api/shared/application/application.exception";
+import type { AfterCommitTaskRegistryPort } from "#api/shared/application/ports/after-commit-task.registry.port";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
-import { type MutationLockPort, type UnitOfWorkPort } from "#api/shared/application/ports/index";
+import { type MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
+import { type UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
+import type { TodoCachePort } from "../../../todos/application/ports/todo-cache.port.js";
 import {
   planReorderRelativeTo,
   planReorderToEdge,
@@ -28,7 +31,7 @@ export interface ReorderTodoCategoryInput {
  * 카테고리 재배치 use-case.
  *
  * 트랜잭션 안에서 이동 계획(사이 카테고리 시프트 + 새 순번)을 계산·적용한다. 자기 자신 대상이면 no-op.
- * 커밋 후 목록 캐시를 무효화한다.
+ * 커밋 후 목록 캐시와 친구 화면 할 일 캐시를 무효화한다.
  */
 interface ReorderTodoCategoryDependencies {
   readonly repository: Pick<
@@ -36,6 +39,9 @@ interface ReorderTodoCategoryDependencies {
     "findByIdAndUserId" | "getMaxSortOrder" | "shiftSortOrders" | "update"
   >;
   readonly cache: TodoCategoryCachePort;
+  // 친구 화면 할 일 캐시가 카테고리 순서를 담고 그 순서로 정렬한다
+  readonly todoCache: Pick<TodoCachePort, "invalidateFriendTodos">;
+  readonly afterCommit: Pick<AfterCommitTaskRegistryPort, "register">;
   readonly mutationLock: MutationLockPort;
   readonly unitOfWork: UnitOfWorkPort;
   readonly logger: ApplicationLoggerPort;
@@ -93,6 +99,9 @@ export class ReorderTodoCategoryUseCase {
         plan.shift.from,
         plan.shift.to,
         plan.shift.delta,
+      );
+      this.#dependencies.afterCommit.register(() =>
+        this.#dependencies.todoCache.invalidateFriendTodos(userId),
       );
       return this.#dependencies.repository.update(category.id, {
         sortOrder: plan.newSortOrder,

@@ -8,7 +8,7 @@ import {
   TODO_FIXTURE_USER_ID,
 } from "#test/fixtures/planning/todo.fixture";
 
-export const TODO_SERIES_FIXTURE_ID = "0f9d7c1e-6a4b-4c2d-9e8f-1a2b3c4d5e6f";
+const TODO_SERIES_FIXTURE_ID = "0f9d7c1e-6a4b-4c2d-9e8f-1a2b3c4d5e6f";
 
 export function createTodoSeriesFixture(overrides: Partial<TodoSeriesPrimitives> = {}): TodoSeries {
   const id = overrides.id ?? TODO_SERIES_FIXTURE_ID;

@@ -4,7 +4,7 @@ import { pick } from "es-toolkit";
 
 import type { EntitlementReaderPort } from "#api/modules/access/entitlements/access-entitlements.public";
 import type { QuotaLedgerPort } from "#api/modules/access/quotas/access-quotas.public";
-import type { PremiumAccessReaderPort } from "#api/modules/billing/subscriptions/billing-subscriptions.public";
+import type { PremiumAccessReaderPort } from "#api/modules/billing/premium-grants/billing-premium-grants.public";
 import type { DailySendUsageReaderPort } from "#api/modules/social/cheers/social-cheers.public";
 import { ApplicationException } from "#api/shared/application/application.exception";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";

@@ -9,7 +9,7 @@ import {
   createWeatherEveningFallbackNotificationMessage,
   createWeatherEveningNotificationMessage,
   createWeatherEveningUnavailableNotificationMessage,
-} from "../../../push/application/messages/notification.messages.js";
+} from "../../../push/application/messages/weather-notification.messages.js";
 import type { PublishNotificationUseCase } from "../../../push/application/use-cases/publish-notification.use-case.js";
 import type { TimezoneContext } from "../../domain/timezone-context.read-model.js";
 import type { ReminderWeatherReportReaderPort } from "../ports/reminder-weather-report.reader.port.js";

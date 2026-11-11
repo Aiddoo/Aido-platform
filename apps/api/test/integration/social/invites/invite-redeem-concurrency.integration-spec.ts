@@ -1,7 +1,7 @@
 import { ErrorCode } from "@aido/api/errors";
 import { and, count as countRows, eq, inArray } from "drizzle-orm";
 
-import { PremiumAccessReaderPort } from "#api/modules/billing/subscriptions/billing-subscriptions.public";
+import { PremiumAccessReaderPort } from "#api/modules/billing/premium-grants/billing-premium-grants.public";
 import { RevenueCatWebhookReceiver } from "#api/modules/billing/subscriptions/infrastructure/adapters/revenuecat/revenuecat-webhook-receiver.adapter";
 import { InviteConfigPort } from "#api/modules/social/invites/application/ports/invite-config.port";
 import { GetMyInviteUseCase } from "#api/modules/social/invites/application/use-cases/get-my-invite.use-case";

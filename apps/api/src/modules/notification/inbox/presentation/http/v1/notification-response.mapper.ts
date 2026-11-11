@@ -10,7 +10,7 @@ import type { CursorPage } from "#api/shared/application/cursor-page";
 import type { SupportedLocale } from "#api/shared/domain/locale";
 import { toIsoString } from "#api/shared/domain/time/instant";
 
-import { renderNotificationCopy } from "../../../../push/application/messages/notification.messages.js";
+import { renderNotificationCopy } from "../../../../push/application/messages/notification-copy-render.messages.js";
 import { toWireNotificationType } from "../../../../push/domain/notification-client-capability.domain-service.js";
 import { toNotificationNavigation } from "../../../../push/infrastructure/adapters/notification-navigation.mapper.js";
 import { toNotificationRouting } from "../../../../push/infrastructure/adapters/notification-routing.mapper.js";

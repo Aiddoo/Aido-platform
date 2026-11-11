@@ -9,10 +9,6 @@ import {
 import type { AddTodoFormValues } from '@src/features/planning/composer/schemas/add-todo-form.schema';
 import { toRepeat, toRepeatDto } from '@src/features/planning/todo/apis/todo-repeat.mapper';
 import {
-  type TodoRepeat,
-  TodoRepeatPolicy,
-} from '@src/features/planning/todo/domains/todo-repeat.model';
-import {
   type PlannedAction,
   type VoicePlan,
   voicePlanSchema,
@@ -68,16 +64,6 @@ export function toConvertMemoToTodosRequest(
   });
 }
 
-function toParsedMemoRepeat({
-  repeat,
-  startDate,
-}: ParseMemoPlanResponse['data']['todos'][number]): TodoRepeat | null {
-  const parsed = repeat == null ? null : toRepeat(repeat);
-  return parsed != null && TodoRepeatPolicy.isSingleWeekendRepeat(parsed, startDate)
-    ? null
-    : parsed;
-}
-
 export function toMemoVoicePlan(planId: string, dto: ParseMemoPlanResponse): VoicePlan {
   const actions = dto.data.todos.map((todo, index): PlannedAction => ({
     type: 'create-todo',
@@ -86,7 +72,7 @@ export function toMemoVoicePlan(planId: string, dto: ParseMemoPlanResponse): Voi
     startDate: todo.startDate,
     endDate: todo.repeat != null ? null : todo.endDate,
     scheduledTime: todo.isAllDay ? null : todo.scheduledTime,
-    repeat: toParsedMemoRepeat(todo),
+    repeat: todo.repeat == null ? null : toRepeat(todo.repeat),
     visibility: null,
     items: todo.items,
     categoryId: todo.categoryId,

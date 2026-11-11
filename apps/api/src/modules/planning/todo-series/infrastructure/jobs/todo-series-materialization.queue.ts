@@ -1,7 +1,6 @@
 import { z } from "zod";
 
-import { defineQueue } from "#api/shared/application/ports/job-queue.port";
-import { JOB_POLLING_SECONDS } from "#api/shared/application/ports/job-runtime.port";
+import { defineQueue, JOB_POLLING_SECONDS } from "#api/shared/application/ports/job-queue.port";
 
 const TODO_SERIES_MATERIALIZATION_JOB_NAME = "materialize-due-series";
 
