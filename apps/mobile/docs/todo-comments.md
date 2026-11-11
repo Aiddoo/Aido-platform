@@ -17,13 +17,13 @@
 
 ## 상태와 소유자
 
-| 구분      | 무엇                                                 | 어디서                                                                                      |
-| --------- | ---------------------------------------------------- | ------------------------------------------------------------------------------------------- |
-| 서버 상태 | 묶음 페이지, 묶음별 답글 페이지, 할 일 상세          | TanStack Query 무한 쿼리 2종 + 상세 쿼리                                                    |
-| URL 상태  | 정렬 `sort`, 알림·링크로 연 위치 `comment`           | `todoCommentParamsSchema` 튜플 훅. 정렬 세터 `useTodoCommentSort`가 `comment`를 함께 지운다 |
-| 작성기    | 모드(`new`·`reply`·`edit`)와 대상, 이어 쓰기 입력값  | `TodoCommentSession`이 가진 `useForm` 하나. 하위는 `useWatch`·`useFormState`                |
-| 펼친 묶음 | 묶음별 펼침 여부                                     | `TodoCommentExpansionProvider`(게시하면 작성 바가 그 묶음을 펼친다)                         |
-| 클라 계산 | 상대 시간, 좋아요 ±1, 더블탭 애니메이션, 키보드 위치 | `useNow`, `TodoCommentPolicy`, Reanimated shared value                                      |
+| 구분      | 무엇                                                 | 어디서                                                                                                        |
+| --------- | ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| 서버 상태 | 묶음 페이지, 묶음별 답글 페이지, 할 일 상세          | TanStack Query 무한 쿼리 2종 + 상세 쿼리                                                                      |
+| URL 상태  | 정렬 `sort`, 알림·링크로 연 위치 `comment`           | `todoCommentParamsSchema` 읽기 훅 `useTodoCommentParams`와 세터 `useTodoCommentSort`(`comment`를 함께 지운다) |
+| 작성기    | 모드(`new`·`reply`·`edit`)와 대상, 이어 쓰기 입력값  | `TodoCommentSession`이 가진 `useForm` 하나. 하위는 `useWatch`·`useFormState`                                  |
+| 펼친 묶음 | 묶음별 펼침 여부                                     | `TodoCommentExpansionProvider`(게시하면 작성 바가 그 묶음을 펼친다)                                           |
+| 클라 계산 | 상대 시간, 좋아요 ±1, 더블탭 애니메이션, 키보드 위치 | `useNow`, `TodoCommentPolicy`, Reanimated shared value                                                        |
 
 전체 화면과 펼친 피드 칸은 같은 조각을 각자 route에 나열한다. 화면 URL은 `/todo/42?sort=LATEST&comment=cm_1`,
 pane은 `/feed?todoId=42&comment=cm_1`이다. 바꿀 때는 search만 바꾸고, 원시 `setParams` 대신 이름 있는 세터를 쓴다([params 튜플](./architecture/state-and-routing.md#params-튜플)).
@@ -85,7 +85,7 @@ pane은 `/feed?todoId=42&comment=cm_1`이다. 바꿀 때는 search만 바꾸고,
 </StyledSafeAreaView>
 ```
 
-- 화면은 `todoId`를 props로 넘기지 않는다. 블록 컴포넌트가 `const [todoId] = useTodoId()`로 읽고, 가상 목록의 댓글·답글 행은 route 훅을 부르지 않고 목록이 읽은 값을 받는다(Oxlint `aido/no-route-id-props`가 검사).
+- 화면은 `todoId`를 props로 넘기지 않는다. 블록 컴포넌트가 `const [todoId] = useTodoId()`로 읽고, 가상 목록의 댓글·답글 행은 route 훅을 부르지 않고 댓글 모델의 `todoId`를 읽는다(Oxlint `aido/no-route-id-props`가 검사).
 - 스크롤은 `TodoCommentThreadList`의 `FlashList` 하나다. `renderScrollComponent`로 `KeyboardChatScrollView`를 쓰고,
   할 일 본문·정렬(`TodoCommentThreadList.Header`·`.SortBar`)·더블탭 안내·이전 댓글 보기는 `ListHeaderComponent`다. 묶음 행만 가상화하고 답글은 그 행 안에 그린다.
 - 할 일을 볼 수 없으면(`TodoAvailabilityGuard`, 404) 본문·댓글 대신 `TodoDetailSummary.Unavailable` 하나만 보인다.
@@ -177,7 +177,8 @@ features/engagement/comment/
   apis/ todo-comment.api.ts  todo-comment.mapper.ts
   constants/ todo-comment.constants.ts  todo-comment-log-events.ts  todo-comment.events.ts
   queries/ todo-comment-query-keys.ts  todo-comment-mutation-keys.ts  todo-comment.queries.ts  todo-comment.mutations.ts  todo-comment-cache.ts
-  hooks/ use-todo-comment-sort.ts  use-todo-comment-back.ts  use-is-todo-comment-submitting.ts  use-todo-comment-form.tsx
+  hooks/ use-todo-comment-params.ts(+ useTodoCommentSort)  use-todo-comment-back.ts  use-android-todo-comment-back-handler.ts
+         use-is-todo-comment-submitting.ts  use-todo-comment-form.tsx
   components/ todo-comment-thread-list.tsx  todo-comment-replies.tsx  todo-comment-item.tsx  todo-comment-thread-rail.tsx  todo-comment-heart-burst.tsx
               todo-comment-reveal.tsx  todo-comment-expansion.tsx  todo-comment-composer/{todo-comment-composer-bar,todo-comment-form}.tsx
               todo-comment-title-bar.tsx  todo-comment-author-avatar.tsx  todo-comment-keyboard-scroll-view.tsx
