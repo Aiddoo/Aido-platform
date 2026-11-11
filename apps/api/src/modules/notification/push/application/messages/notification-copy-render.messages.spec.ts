@@ -12,11 +12,23 @@ import type {
   NotificationMessage,
   NotificationVariantContext,
 } from "./notification-copy-catalog.messages.js";
+import { formatWeatherNotificationTime } from "./notification-copy-format.messages.js";
+import { renderNotificationCopy } from "./notification-copy-render.messages.js";
+import { createRetentionNotificationMessage } from "./retention-notification.messages.js";
 import {
-  createAiSuggestionNotificationMessage,
-  createBillingIssueNotificationMessage,
-  createCheerReceivedNotificationMessage,
   createEveningReminderNotificationMessage,
+  createLunchNudgeNotificationMessage,
+  createMorningNoTodoNotificationMessage,
+  createMorningReminderNotificationMessage,
+  createNudgeSuggestionNotificationMessage,
+  createSocialDigestNotificationMessage,
+  createStreakAtRiskNotificationMessage,
+  createTodoReminderNotificationMessage,
+  createTodoSeriesPausedNotificationMessage,
+  createWeeklyAchievementNotificationMessage,
+} from "./scheduler-notification.messages.js";
+import {
+  createCheerReceivedNotificationMessage,
   createFollowAcceptedNotificationMessage,
   createFollowRequestNotificationMessage,
   createFriendCompletedNotificationMessage,
@@ -24,40 +36,34 @@ import {
   createInviteProgressNotificationMessage,
   createInviteQualifyReminderNotificationMessage,
   createInviteRewardedNotificationMessage,
-  createLunchNudgeNotificationMessage,
+  createNudgeReceivedNotificationMessage,
+  createNudgeReplyNotificationMessage,
+  createNudgeThanksNotificationMessage,
+  createTodoCommentNotificationMessage,
+  createTodoCreationNudgeNotificationMessage,
+} from "./social-notification.messages.js";
+import { getNotificationFriendFallback } from "./social-notification.messages.js";
+import {
+  createAiSuggestionNotificationMessage,
+  createBillingIssueNotificationMessage,
   createMarketingConsentReconfirmNotificationMessage,
   createMilestoneNotificationMessage,
   createMonthlyReportNotificationMessage,
-  createMorningNoTodoNotificationMessage,
-  createMorningReminderNotificationMessage,
-  createNudgeReceivedNotificationMessage,
-  createNudgeReplyNotificationMessage,
-  createNudgeSuggestionNotificationMessage,
-  createNudgeThanksNotificationMessage,
   createOnboardingNotificationMessage,
   createPremiumGrantEndingNotificationMessage,
   createPremiumRenewalUpcomingNotificationMessage,
   createPremiumTrialEndingNotificationMessage,
-  createRetentionNotificationMessage,
-  createSocialDigestNotificationMessage,
-  createStreakAtRiskNotificationMessage,
-  createTodoCommentNotificationMessage,
-  createTodoCreationNudgeNotificationMessage,
-  createTodoReminderNotificationMessage,
-  createTodoSeriesPausedNotificationMessage,
+  createWeeklyReportNotificationMessage,
+  createWinbackNotificationMessage,
+} from "./system-notification.messages.js";
+import {
   createWeatherEveningFallbackNotificationMessage,
   createWeatherEveningNotificationMessage,
   createWeatherEveningUnavailableNotificationMessage,
   createWeatherMorningFallbackNotificationMessage,
   createWeatherMorningNotificationMessage,
   createWeatherMorningUnavailableNotificationMessage,
-  createWeeklyAchievementNotificationMessage,
-  createWeeklyReportNotificationMessage,
-  createWinbackNotificationMessage,
-  formatWeatherNotificationTime,
-  renderNotificationCopy,
-} from "./notification.messages.js";
-import { getNotificationFriendFallback } from "./social-notification.messages.js";
+} from "./weather-notification.messages.js";
 
 /** 한 알림을 같은 입력·variant seed로 만든다. 이름을 모를 때는 그 언어의 대체 이름을 쓴다. */
 type CopyCase = readonly [

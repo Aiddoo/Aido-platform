@@ -1,3 +1,5 @@
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+
 import type {
   UserPreferenceRepositoryPort,
   UserPreferenceRecordWithId,
@@ -19,6 +21,8 @@ export class GetPreferenceRecordsUseCase {
   }
 
   execute(input: GetPreferenceRecordsQuery): Promise<UserPreferenceRecordWithId[]> {
-    return this.#dependencies.preferenceRepository.findByUserIds(input.userIds);
+    return this.#dependencies.preferenceRepository.findByUserIds(
+      input.userIds.map((userId) => UserId.reconstitute(userId)),
+    );
   }
 }

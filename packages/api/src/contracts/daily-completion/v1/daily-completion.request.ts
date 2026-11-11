@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { dateSchema } from "../../../common/datetime.js";
+import { entityIdSchemaWithMessage } from "../../../common/entity-id.js";
 
 const dailyCompletionDateSchema = z
   .string()
@@ -24,9 +25,9 @@ export type GetDailyCompletionsRangeInput = z.infer<typeof getDailyCompletionsRa
 
 export const getUserDailyCompletionsSchema = z
   .object({
-    userId: z
-      .cuid("유효하지 않은 사용자 ID입니다")
-      .describe("사용자 ID (CUID 25자, 예: clz7x5p8k0001qz0z8z8z8z8z)"),
+    userId: entityIdSchemaWithMessage("유효하지 않은 사용자 ID입니다").describe(
+      "사용자 ID (예: clz7x5p8k0001qz0z8z8z8z8z)",
+    ),
     startDate: dailyCompletionDateSchema.describe("시작 날짜 (YYYY-MM-DD, 예: 2026-01-01)"),
     endDate: dailyCompletionDateSchema.describe("종료 날짜 (YYYY-MM-DD, 예: 2026-01-31)"),
   })

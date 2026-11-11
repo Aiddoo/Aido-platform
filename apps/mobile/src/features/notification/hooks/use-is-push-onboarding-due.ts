@@ -10,11 +10,14 @@ import { PushPermissionPolicy } from '../domains/push-permission.model';
 import { useGetPushPermissionQueryOptions } from '../queries/notification.queries';
 import { usePushPermissionPrompt } from './use-push-permission-prompt';
 
-/** 내 정보나 OS 권한을 아직 모르면 띄우지 않는다. 알면 화면을 열고, 답하면 닫는다 */
-export function useIsPushOnboardingDue(): boolean {
+/**
+ * 알면 화면을 열고, 답하면 닫는다. 내 정보나 OS 권한을 아직 모르면 null이라 띄우지 않고 다른 자동 화면도 기다린다.
+ * 권한을 읽지 못하면 알림 화면도 띄울 수 없으므로 열 차례가 아닌 것으로 정한다
+ */
+export function useIsPushOnboardingDue(): boolean | null {
   const isAuthenticated = useAuthStatus() === 'authenticated';
   const { data: me } = useQuery({ ...useGetMeQueryOptions(), enabled: isAuthenticated });
-  const { data: permission } = useQuery({
+  const { data: permission, isError: isPermissionUnreadable } = useQuery({
     ...useGetPushPermissionQueryOptions(),
     enabled: isAuthenticated,
   });
@@ -23,8 +26,11 @@ export function useIsPushOnboardingDue(): boolean {
     me == null ? null : PushPermissionPolicy.getOnboardingWindowEndsAt(me.createdAt),
   );
 
-  if (!isAuthenticated || me == null || permission == null) {
-    return false;
+  if (!isAuthenticated || me == null) {
+    return null;
+  }
+  if (permission == null) {
+    return isPermissionUnreadable ? false : null;
   }
 
   return (

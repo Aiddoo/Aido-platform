@@ -6,7 +6,7 @@ import type { BroadcastCampaignId } from "../../domain/broadcast-campaign-id.vo.
 import { BroadcastLogEvent } from "../broadcasts.log-events.js";
 import type { BroadcastCampaignRepositoryPort } from "../ports/broadcast-campaign.repository.port.js";
 
-export const BROADCAST_FAN_OUT_EXHAUSTED_REASON = "FAN_OUT_RETRIES_EXHAUSTED";
+const BROADCAST_FAN_OUT_EXHAUSTED_REASON = "FAN_OUT_RETRIES_EXHAUSTED";
 
 export interface FailBroadcastCampaignCommand {
   readonly campaignId: BroadcastCampaignId;

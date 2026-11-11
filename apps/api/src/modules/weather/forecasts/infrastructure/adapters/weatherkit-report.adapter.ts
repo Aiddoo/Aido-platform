@@ -10,7 +10,6 @@ import { OutboundRejectedError } from "#api/platform/resilience/outbound-policy.
 import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
-import { TIME_UNIT } from "#api/shared/domain/date/constants/date.constant";
 import { instantToDate } from "#api/shared/domain/time/instant";
 
 import type { GeoCell } from "../../../shared/domain/geo-cell.vo.js";
@@ -57,11 +56,12 @@ const availabilitySchema = z
 const cachedAvailabilitySchema = z.array(z.enum(DATA_SETS));
 
 /** 사용자 요청 경로라 모듈 공용 10초보다 짧게 끊고 폴백으로 넘긴다. */
-const WEATHER_TIMEOUT_MS = 4_000;
-const AVAILABILITY_TIMEOUT_MS = 3_000;
+const WEATHER_TIMEOUT_MS = 4000;
+const AVAILABILITY_TIMEOUT_MS = 3000;
 const AUTH_REJECTED_STATUSES: readonly number[] = [401, 403];
 
-const { MS_PER_HOUR, MS_PER_DAY } = TIME_UNIT;
+const MS_PER_HOUR = 60 * 60_000;
+const MS_PER_DAY = 24 * MS_PER_HOUR;
 /** 응답 24시간·10일에 최신 폴백(6시간)과 자정 경계 여유를 더해 받는다. */
 const HOURLY_RANGE_MS = 30 * MS_PER_HOUR;
 const DAILY_RANGE_MS = 11 * MS_PER_DAY;

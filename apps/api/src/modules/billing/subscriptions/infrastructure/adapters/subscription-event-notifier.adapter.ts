@@ -1,6 +1,6 @@
 import { Inject, Injectable } from "@nestjs/common";
 
-import { NotificationQueueService } from "#api/modules/notification/notification-delivery-jobs.public";
+import { NotificationQueueAdapter } from "#api/modules/notification/notification-delivery-jobs.public";
 import {
   AdminEventNotifierPort,
   type SubscriptionAlertInput,
@@ -8,14 +8,14 @@ import {
 import { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import { ErrorCodedException } from "#api/shared/domain/exceptions/error-coded.exception";
-import { instantToDate } from "#api/shared/domain/time/instant";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import {
   type StoreSubscriptionEventFailureContext,
   SubscriptionEventNotifierPort,
 } from "../../application/ports/subscription-event-notifier.port.js";
 import type { SubscriptionEventPayload } from "../../application/read-models/subscription-event-payload.read-model.js";
-import { SubscriptionAlertKey } from "../../application/subscriptions.alerts.js";
+import { SubscriptionAlerts } from "../../application/subscriptions.alerts.js";
 import {
   type BillingSubscriptionsConfig,
   billingSubscriptionsConfig,
@@ -30,13 +30,13 @@ import {
 @Injectable()
 export class SubscriptionEventNotifierAdapter extends SubscriptionEventNotifierPort {
   readonly #adminEventNotifier: AdminEventNotifierPort;
-  readonly #notificationQueueService: NotificationQueueService;
+  readonly #notificationQueueService: NotificationQueueAdapter;
   readonly #alert: OperationalAlertPort;
   readonly #config: Pick<BillingSubscriptionsConfig, "revenuecat">;
 
   constructor(
     adminEventNotifier: AdminEventNotifierPort,
-    notificationQueueService: NotificationQueueService,
+    notificationQueueService: NotificationQueueAdapter,
     alert: OperationalAlertPort,
     @Inject(billingSubscriptionsConfig.KEY) config: Pick<BillingSubscriptionsConfig, "revenuecat">,
   ) {
@@ -53,15 +53,13 @@ export class SubscriptionEventNotifierAdapter extends SubscriptionEventNotifierP
     );
   }
 
-  recordBillingIssue(userId: string, at: Temporal.Instant): Promise<void> {
-    return this.#notificationQueueService.enqueueBillingIssue({ userId }, instantToDate(at));
+  recordBillingIssue(userId: UserId, at: Temporal.Instant): Promise<void> {
+    return this.#notificationQueueService.enqueueBillingIssue({ userId: userId.value }, at);
   }
 
   reportWebhookFailure(error: unknown, context: StoreSubscriptionEventFailureContext): void {
     this.#alert.raise({
-      key: SubscriptionAlertKey.WEBHOOK_PROCESSING_FAILED,
-      severity: "error",
-      message: "RevenueCat 웹훅 처리에 실패했습니다",
+      ...SubscriptionAlerts.WEBHOOK_PROCESSING_FAILED,
       // Sentry 이벤트의 environment는 배포 환경(APP_ENV)이라 스토어 결제 환경은 다른 이름으로 싣는다
       tags: {
         eventKind: context.kind,

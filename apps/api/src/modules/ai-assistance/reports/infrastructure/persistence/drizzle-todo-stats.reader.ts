@@ -4,16 +4,18 @@ import { and, count, eq, gte, isNotNull, lt } from "drizzle-orm";
 
 import type { Database, DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { todo, todoCategory } from "#api/platform/database/schema/index";
-import { startOfDayInTimezone } from "#api/shared/domain/date/utils/timezone";
+import { instantToDate } from "#api/shared/domain/time/instant";
+import { plainDateToDate } from "#api/shared/domain/time/plain-date";
 
+import { localDateAt } from "../../../shared/domain/user-calendar.domain-service.js";
 import { TodoStatsReaderPort } from "../../application/ports/todo-stats.reader.port.js";
 import type { AggregateParams, AggregationInputs } from "../../domain/ai-report.constants.js";
 import { toAggregationInputs } from "./report-aggregation.mapper.js";
 
 interface ReportPeriod {
   userId: string;
-  start: Date;
-  end: Date;
+  start: Temporal.PlainDate;
+  end: Temporal.PlainDate;
 }
 
 function inPeriod({ userId, start, end }: ReportPeriod) {
@@ -71,7 +73,7 @@ export class DrizzleTodoStatsReader extends TodoStatsReaderPort {
   async fetchAggregationInputs(params: AggregateParams): Promise<AggregationInputs> {
     const { userId, startDate, endDate, prevStartDate, prevEndDate, timezone } = params;
     const db = this.#txHost.tx;
-    const day = (value: Date) => startOfDayInTimezone(value, timezone);
+    const day = (value: Date) => localDateAt(value, timezone);
     const current = { userId, start: day(startDate), end: day(endDate) };
     const previous = { userId, start: day(prevStartDate), end: day(prevEndDate) };
     const [daily, prev, category, categories, completed] = await Promise.all([
@@ -82,6 +84,16 @@ export class DrizzleTodoStatsReader extends TodoStatsReaderPort {
       selectCompletedTodos(db, current),
     ]);
 
-    return toAggregationInputs(daily, prev, category, categories, completed);
+    // 리포트 집계는 아직 UTC 자정 Date와 Date 순간으로 계산한다
+    return toAggregationInputs(
+      daily.map((row) => ({ ...row, startDate: plainDateToDate(row.startDate) })),
+      prev,
+      category,
+      categories,
+      completed.map((row) => ({
+        startDate: plainDateToDate(row.startDate),
+        completedAt: row.completedAt == null ? null : instantToDate(row.completedAt),
+      })),
+    );
   }
 }

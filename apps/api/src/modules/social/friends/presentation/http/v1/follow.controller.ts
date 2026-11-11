@@ -19,20 +19,22 @@ import {
   CurrentUser,
   type CurrentUserPayload,
 } from "#api/modules/identity/identity-auth-http.public";
-import { UserIdParamDto } from "#api/platform/http/dtos/index";
-import { AppVersion } from "#api/platform/http/request-client/index";
+import { UserIdParamDto } from "#api/platform/http/dtos/user-id-param.dto";
+import { AppVersion } from "#api/platform/http/request-client/request-client.decorator";
+import { SWAGGER_TAGS } from "#api/platform/http/swagger/constants/swagger.constant";
 import {
   ApiBadRequestError,
-  ApiCreatedResponse,
-  ApiDoc,
   ApiErrorCodesResponse,
   ApiForbiddenError,
   ApiNotFoundError,
-  ApiSuccessResponse,
   ApiUnauthorizedError,
-  SWAGGER_TAGS,
-} from "#api/platform/http/swagger/index";
-import { ThrottleByUser } from "#api/platform/throttle/index";
+} from "#api/platform/http/swagger/decorators/api-error.decorator";
+import { ApiDoc } from "#api/platform/http/swagger/decorators/api-operation.decorator";
+import {
+  ApiCreatedResponse,
+  ApiSuccessResponse,
+} from "#api/platform/http/swagger/decorators/api-response.decorator";
+import { ThrottleByUser } from "#api/platform/throttle/user-aware-throttler.guard";
 
 import { AcceptFriendRequestUseCase } from "../../../application/use-cases/accept-friend-request.use-case.js";
 import { GetFriendResourceLimitUseCase } from "../../../application/use-cases/get-friend-resource-limit.use-case.js";

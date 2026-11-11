@@ -1,5 +1,6 @@
 import { ErrorCode } from "@aido/api/errors";
 
+import { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
 import {
   createTodoCommentLikeFixture,
   createTodoCommentReadModelFixture,
@@ -12,6 +13,7 @@ import {
   type TodoCommentsFixture,
 } from "#test/fixtures/engagement/todo-comments.fixture";
 
+import { TodoCommentId } from "../../domain/todo-comment-id.vo.js";
 import type { TodoCommentThreadItemReadModel } from "../read-models/todo-comment.read-model.js";
 import { ListTodoCommentThreadsUseCase } from "./list-todo-comment-threads.use-case.js";
 
@@ -107,7 +109,13 @@ describe("ListTodoCommentThreadsUseCase — 댓글 묶음 목록", () => {
 
     // Then
     expect(fixture.reader.threadParams).toEqual([
-      { todoId: TODO_ID, sort: "POPULAR", size: 10, mode: "ANCHOR", anchorCommentId: HEAD_ID },
+      {
+        todoId: TodoId.reconstitute(TODO_ID),
+        sort: "POPULAR",
+        size: 10,
+        mode: "ANCHOR",
+        anchorCommentId: TodoCommentId.reconstitute(HEAD_ID),
+      },
     ]);
     expect(page.anchor).toEqual({ threadCommentId: HEAD_ID, replyId: REPLY_ID });
   });
@@ -179,10 +187,10 @@ describe("ListTodoCommentThreadsUseCase — 댓글 묶음 목록", () => {
 
     // Then
     const base = {
-      todoId: TODO_ID,
+      todoId: TodoId.reconstitute(TODO_ID),
       sort: "POPULAR",
       size: 10,
-      anchorCommentId: HEAD_ID,
+      anchorCommentId: TodoCommentId.reconstitute(HEAD_ID),
       anchorPosition: position,
     };
     expect(fixture.reader.threadParams).toEqual([

@@ -1,3 +1,4 @@
+import { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
 import type { FollowReaderPort } from "#api/modules/social/friends/social-friends.public";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
@@ -66,12 +67,13 @@ export class SendNudgeUseCase {
     const senderId = UserId.reconstitute(command.senderId);
     const receiverId = UserId.reconstitute(command.receiverId);
     const { todoId } = command;
+    const targetTodoId = TodoId.reconstitute(todoId);
 
     // 자기 자신 → 친구 아님 → 메시지 → 할 일 → 일간 한도 → 쿨다운 순서는 출시 앱이 받는 오류 우선순위다
     if (senderId.equals(receiverId)) {
       throw cannotNudgeSelf();
     }
-    if (!(await followReader.isMutualFriend(senderId.value, receiverId.value))) {
+    if (!(await followReader.isMutualFriend(senderId, receiverId))) {
       throw nudgeTargetNotFriend(receiverId);
     }
     const message = command.message == null ? null : NudgeMessage.create(command.message);
@@ -85,7 +87,7 @@ export class SendNudgeUseCase {
         NudgeLockKeys.cooldown(senderId, todoId),
       ]);
 
-      const target = await nudgeRepository.findTargetTodo(todoId);
+      const target = await nudgeRepository.findTargetTodo(targetTodoId);
       if (target == null || !target.isOwnedBy(receiverId) || !target.isPublic()) {
         throw nudgeTodoNotFound(todoId);
       }
@@ -101,7 +103,7 @@ export class SendNudgeUseCase {
         );
       }
 
-      const lastNudge = await nudgeRepository.findLastSentForTodo(senderId, todoId);
+      const lastNudge = await nudgeRepository.findLastSentForTodo(senderId, targetTodoId);
       const cooldown = evaluateNudgeCooldown({
         lastSentAt: lastNudge?.createdAt ?? null,
         now: clock.now(),
@@ -122,7 +124,7 @@ export class SendNudgeUseCase {
       return {
         nudge: created,
         todoTitle: target.title,
-        senderName: await followReader.getUserDisplayName(senderId.value),
+        senderName: await followReader.getUserDisplayName(senderId),
       };
     });
 

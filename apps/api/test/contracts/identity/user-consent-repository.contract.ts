@@ -2,6 +2,7 @@ import { AI_DATA_SHARING_CONSENT } from "@aido/api/vocabulary";
 
 import type { UserConsentRepositoryPort } from "#api/modules/identity/preferences/application/ports/user-consent.repository.port";
 import type { UserConsentRecord } from "#api/modules/identity/preferences/domain/user-consent.constants";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import {
   USER_SETTINGS_FIXTURE_DELETED_USER_ID,
   USER_SETTINGS_FIXTURE_INACTIVE_USER_ID,
@@ -42,8 +43,8 @@ export function describeUserConsentRepositoryContract(
       const repository = await createRepository();
 
       // When
-      const record = await repository.findByUserId(USER_ID);
-      const aiConsent = await repository.findAiDataSharingConsent(USER_ID);
+      const record = await repository.findByUserId(UserId.reconstitute(USER_ID));
+      const aiConsent = await repository.findAiDataSharingConsent(UserId.reconstitute(USER_ID));
 
       // Then
       expect(record).toBeNull();
@@ -62,8 +63,8 @@ export function describeUserConsentRepositoryContract(
       };
 
       // When
-      const created = await repository.create(USER_ID, seed);
-      const found = await repository.findByUserId(USER_ID);
+      const created = await repository.create(UserId.reconstitute(USER_ID), seed);
+      const found = await repository.findByUserId(UserId.reconstitute(USER_ID));
 
       // Then
       const expected = { ...EMPTY_CONSENT, ...seed };
@@ -76,23 +77,29 @@ export function describeUserConsentRepositoryContract(
       const repository = await createRepository();
 
       // When
-      await repository.create(USER_ID, { marketingAgreedAt: null });
+      await repository.create(UserId.reconstitute(USER_ID), { marketingAgreedAt: null });
 
       // Then
-      expect(await repository.findByUserId(USER_ID)).toMatchObject(EMPTY_CONSENT);
+      expect(await repository.findByUserId(UserId.reconstitute(USER_ID))).toMatchObject(
+        EMPTY_CONSENT,
+      );
     });
 
     it("이미 동의가 있는 사용자에게 다시 만들면 실패한다", async () => {
       // Given
       const repository = await createRepository();
-      await repository.create(USER_ID, { agreedTermsVersion: "1.0" });
+      await repository.create(UserId.reconstitute(USER_ID), { agreedTermsVersion: "1.0" });
 
       // When
-      const duplicated = repository.create(USER_ID, { agreedTermsVersion: "2.0" });
+      const duplicated = repository.create(UserId.reconstitute(USER_ID), {
+        agreedTermsVersion: "2.0",
+      });
 
       // Then
       await expect(duplicated).rejects.toThrow();
-      expect((await repository.findByUserId(USER_ID))?.agreedTermsVersion).toBe("1.0");
+      expect(
+        (await repository.findByUserId(UserId.reconstitute(USER_ID)))?.agreedTermsVersion,
+      ).toBe("1.0");
     });
 
     it("마케팅·광고성 푸시 동의 upsert는 행이 없으면 그 값만 가진 행을 만든다", async () => {
@@ -100,22 +107,29 @@ export function describeUserConsentRepositoryContract(
       const repository = await createRepository();
 
       // When
-      const marketing = await repository.upsertMarketingConsent(USER_ID, { agreedAt: NOW });
-      const marketingPush = await repository.upsertMarketingPushConsent(OTHER_USER_ID, {
+      const marketing = await repository.upsertMarketingConsent(UserId.reconstitute(USER_ID), {
         agreedAt: NOW,
       });
+      const marketingPush = await repository.upsertMarketingPushConsent(
+        UserId.reconstitute(OTHER_USER_ID),
+        {
+          agreedAt: NOW,
+        },
+      );
 
       // Then
       expect(marketing).toMatchObject({ ...EMPTY_CONSENT, marketingAgreedAt: NOW });
       expect(marketingPush).toMatchObject({ ...EMPTY_CONSENT, marketingPushAgreedAt: NOW });
-      expect(await repository.findByUserId(USER_ID)).toMatchObject(marketing);
-      expect(await repository.findByUserId(OTHER_USER_ID)).toMatchObject(marketingPush);
+      expect(await repository.findByUserId(UserId.reconstitute(USER_ID))).toMatchObject(marketing);
+      expect(await repository.findByUserId(UserId.reconstitute(OTHER_USER_ID))).toMatchObject(
+        marketingPush,
+      );
     });
 
     it("마케팅·광고성 푸시 동의 upsert는 자기 시각만 바꾸고 약관과 서로의 동의를 둔다", async () => {
       // Given
       const repository = await createRepository();
-      await repository.create(USER_ID, {
+      await repository.create(UserId.reconstitute(USER_ID), {
         termsAgreedAt: TERMS_AGREED_AT,
         privacyAgreedAt: TERMS_AGREED_AT,
         agreedTermsVersion: "1.0",
@@ -123,8 +137,10 @@ export function describeUserConsentRepositoryContract(
       });
 
       // When
-      await repository.upsertMarketingPushConsent(USER_ID, { agreedAt: NOW });
-      const withdrawn = await repository.upsertMarketingConsent(USER_ID, { agreedAt: null });
+      await repository.upsertMarketingPushConsent(UserId.reconstitute(USER_ID), { agreedAt: NOW });
+      const withdrawn = await repository.upsertMarketingConsent(UserId.reconstitute(USER_ID), {
+        agreedAt: null,
+      });
 
       // Then
       const expected = {
@@ -136,23 +152,28 @@ export function describeUserConsentRepositoryContract(
         marketingPushAgreedAt: NOW,
       };
       expect(withdrawn).toMatchObject(expected);
-      expect(await repository.findByUserId(USER_ID)).toMatchObject(expected);
+      expect(await repository.findByUserId(UserId.reconstitute(USER_ID))).toMatchObject(expected);
     });
 
     it("AI 데이터 처리 동의 upsert는 시각과 답한 버전을 남기고 Entity로 다시 읽는다", async () => {
       // Given
       const repository = await createRepository();
-      await repository.create(USER_ID, { agreedTermsVersion: "1.0" });
+      await repository.create(UserId.reconstitute(USER_ID), { agreedTermsVersion: "1.0" });
       const version = AI_DATA_SHARING_CONSENT.VERSION;
 
       // When
-      const agreed = await repository.upsertAiDataSharingConsent(USER_ID, {
+      const agreed = await repository.upsertAiDataSharingConsent(UserId.reconstitute(USER_ID), {
         agreedAt: NOW,
         version,
       });
-      const agreedConsent = await repository.findAiDataSharingConsent(USER_ID);
-      await repository.upsertAiDataSharingConsent(USER_ID, { agreedAt: null, version });
-      const declinedConsent = await repository.findAiDataSharingConsent(USER_ID);
+      const agreedConsent = await repository.findAiDataSharingConsent(UserId.reconstitute(USER_ID));
+      await repository.upsertAiDataSharingConsent(UserId.reconstitute(USER_ID), {
+        agreedAt: null,
+        version,
+      });
+      const declinedConsent = await repository.findAiDataSharingConsent(
+        UserId.reconstitute(USER_ID),
+      );
 
       // Then
       expect(agreed).toMatchObject({
@@ -166,7 +187,7 @@ export function describeUserConsentRepositoryContract(
         false,
       );
       expect(declinedConsent.status()).toEqual({ decision: "DECLINED", agreedVersion: null });
-      expect(await repository.findByUserId(USER_ID)).toMatchObject({
+      expect(await repository.findByUserId(UserId.reconstitute(USER_ID))).toMatchObject({
         agreedTermsVersion: "1.0",
         aiDataSharingAgreedAt: null,
         aiDataSharingVersion: version,
@@ -176,12 +197,19 @@ export function describeUserConsentRepositoryContract(
     it("여러 사용자 조회는 동의가 있는 사용자만 userId와 함께 주고 빈 목록이면 빈 배열이다", async () => {
       // Given
       const repository = await createRepository();
-      await repository.create(USER_ID, { agreedTermsVersion: "1.0" });
-      await repository.create(OTHER_USER_ID, { agreedTermsVersion: "2.0" });
+      await repository.create(UserId.reconstitute(USER_ID), { agreedTermsVersion: "1.0" });
+      await repository.create(UserId.reconstitute(OTHER_USER_ID), { agreedTermsVersion: "2.0" });
 
       // When
-      const found = await repository.findByUserIds([OTHER_USER_ID, "missing-user", OTHER_USER_ID]);
-      const both = await repository.findByUserIds([USER_ID, OTHER_USER_ID]);
+      const found = await repository.findByUserIds([
+        UserId.reconstitute(OTHER_USER_ID),
+        UserId.reconstitute("missing-user"),
+        UserId.reconstitute(OTHER_USER_ID),
+      ]);
+      const both = await repository.findByUserIds([
+        UserId.reconstitute(USER_ID),
+        UserId.reconstitute(OTHER_USER_ID),
+      ]);
       const none = await repository.findByUserIds([]);
 
       // Then
@@ -200,8 +228,10 @@ export function describeUserConsentRepositoryContract(
     it("재확인 대상은 광고성 동의가 cutoff와 같거나 이전인 사용자만이고 1ms 뒤는 빠진다", async () => {
       // Given
       const repository = await createRepository();
-      await repository.create(USER_ID, { marketingAgreedAt: CUTOFF });
-      await repository.create(OTHER_USER_ID, { marketingPushAgreedAt: AFTER_CUTOFF });
+      await repository.create(UserId.reconstitute(USER_ID), { marketingAgreedAt: CUTOFF });
+      await repository.create(UserId.reconstitute(OTHER_USER_ID), {
+        marketingPushAgreedAt: AFTER_CUTOFF,
+      });
 
       // When
       const targets = await repository.findMarketingReconfirmTargets({ cutoff: CUTOFF, limit: 10 });
@@ -215,12 +245,14 @@ export function describeUserConsentRepositoryContract(
     it("재확인 대상에서 비활성·탈퇴 사용자와 광고성 동의가 없는 사용자는 빠진다", async () => {
       // Given
       const repository = await createRepository();
-      await repository.create(USER_ID, { marketingPushAgreedAt: BEFORE_CUTOFF });
-      await repository.create(OTHER_USER_ID, { termsAgreedAt: BEFORE_CUTOFF });
-      await repository.create(USER_SETTINGS_FIXTURE_INACTIVE_USER_ID, {
+      await repository.create(UserId.reconstitute(USER_ID), {
+        marketingPushAgreedAt: BEFORE_CUTOFF,
+      });
+      await repository.create(UserId.reconstitute(OTHER_USER_ID), { termsAgreedAt: BEFORE_CUTOFF });
+      await repository.create(UserId.reconstitute(USER_SETTINGS_FIXTURE_INACTIVE_USER_ID), {
         marketingAgreedAt: BEFORE_CUTOFF,
       });
-      await repository.create(USER_SETTINGS_FIXTURE_DELETED_USER_ID, {
+      await repository.create(UserId.reconstitute(USER_SETTINGS_FIXTURE_DELETED_USER_ID), {
         marketingAgreedAt: BEFORE_CUTOFF,
       });
 
@@ -236,16 +268,20 @@ export function describeUserConsentRepositoryContract(
     it("두 동의 중 이른 시각을 기준으로 보고 모두 철회하면 대상이 아니다", async () => {
       // Given
       const repository = await createRepository();
-      await repository.create(USER_ID, {
+      await repository.create(UserId.reconstitute(USER_ID), {
         marketingAgreedAt: AFTER_CUTOFF,
         marketingPushAgreedAt: BEFORE_CUTOFF,
       });
-      await repository.create(OTHER_USER_ID, {
+      await repository.create(UserId.reconstitute(OTHER_USER_ID), {
         marketingAgreedAt: BEFORE_CUTOFF,
         marketingPushAgreedAt: BEFORE_CUTOFF,
       });
-      await repository.upsertMarketingConsent(OTHER_USER_ID, { agreedAt: null });
-      await repository.upsertMarketingPushConsent(OTHER_USER_ID, { agreedAt: null });
+      await repository.upsertMarketingConsent(UserId.reconstitute(OTHER_USER_ID), {
+        agreedAt: null,
+      });
+      await repository.upsertMarketingPushConsent(UserId.reconstitute(OTHER_USER_ID), {
+        agreedAt: null,
+      });
 
       // When
       const targets = await repository.findMarketingReconfirmTargets({ cutoff: CUTOFF, limit: 10 });
@@ -259,9 +295,9 @@ export function describeUserConsentRepositoryContract(
     it("다시 알린 뒤에는 처음 동의 시각 대신 마지막 재확인 시각을 기준으로 본다", async () => {
       // Given
       const repository = await createRepository();
-      await repository.create(USER_ID, { marketingAgreedAt: BEFORE_CUTOFF });
+      await repository.create(UserId.reconstitute(USER_ID), { marketingAgreedAt: BEFORE_CUTOFF });
       const reconfirmedAt = CUTOFF.add({ minutes: 1 });
-      await repository.claimMarketingReconfirm([USER_ID], {
+      await repository.claimMarketingReconfirm([UserId.reconstitute(USER_ID)], {
         cutoff: CUTOFF,
         at: reconfirmedAt,
       });
@@ -279,28 +315,30 @@ export function describeUserConsentRepositoryContract(
       // Then
       expect(beforeReconfirm).toEqual([]);
       expect(atReconfirm.map((target) => target.userId)).toEqual([USER_ID]);
-      expect((await repository.findByUserId(USER_ID))?.marketingReconfirmedAt).toEqual(
-        reconfirmedAt,
-      );
+      expect(
+        (await repository.findByUserId(UserId.reconstitute(USER_ID)))?.marketingReconfirmedAt,
+      ).toEqual(reconfirmedAt);
     });
 
     it("재확인 대상은 userId 순서로 afterUserId 다음부터 limit만큼 준다", async () => {
       // Given
       const repository = await createRepository();
-      await repository.create(OTHER_USER_ID, { marketingAgreedAt: BEFORE_CUTOFF });
-      await repository.create(USER_ID, { marketingAgreedAt: BEFORE_CUTOFF });
+      await repository.create(UserId.reconstitute(OTHER_USER_ID), {
+        marketingAgreedAt: BEFORE_CUTOFF,
+      });
+      await repository.create(UserId.reconstitute(USER_ID), { marketingAgreedAt: BEFORE_CUTOFF });
 
       // When
       const all = await repository.findMarketingReconfirmTargets({ cutoff: CUTOFF, limit: 10 });
       const first = await repository.findMarketingReconfirmTargets({ cutoff: CUTOFF, limit: 1 });
       const second = await repository.findMarketingReconfirmTargets({
         cutoff: CUTOFF,
-        afterUserId: USER_ID,
+        afterUserId: UserId.reconstitute(USER_ID),
         limit: 1,
       });
       const last = await repository.findMarketingReconfirmTargets({
         cutoff: CUTOFF,
-        afterUserId: OTHER_USER_ID,
+        afterUserId: UserId.reconstitute(OTHER_USER_ID),
         limit: 1,
       });
 
@@ -314,16 +352,25 @@ export function describeUserConsentRepositoryContract(
     it("재확인 기록은 아직 대상인 사용자만 남겨 돌려주고 같은 사용자는 한 번만 얻는다", async () => {
       // Given
       const repository = await createRepository();
-      await repository.create(USER_ID, { marketingAgreedAt: BEFORE_CUTOFF });
-      await repository.create(OTHER_USER_ID, { marketingAgreedAt: AFTER_CUTOFF });
+      await repository.create(UserId.reconstitute(USER_ID), { marketingAgreedAt: BEFORE_CUTOFF });
+      await repository.create(UserId.reconstitute(OTHER_USER_ID), {
+        marketingAgreedAt: AFTER_CUTOFF,
+      });
       const params = { cutoff: CUTOFF, at: NOW };
 
       // When
       const claimed = await repository.claimMarketingReconfirm(
-        [USER_ID, OTHER_USER_ID, "missing-user"],
+        [
+          UserId.reconstitute(USER_ID),
+          UserId.reconstitute(OTHER_USER_ID),
+          UserId.reconstitute("missing-user"),
+        ],
         params,
       );
-      const repeated = await repository.claimMarketingReconfirm([USER_ID, OTHER_USER_ID], params);
+      const repeated = await repository.claimMarketingReconfirm(
+        [UserId.reconstitute(USER_ID), UserId.reconstitute(OTHER_USER_ID)],
+        params,
+      );
       const empty = await repository.claimMarketingReconfirm([], params);
 
       // Then
@@ -331,8 +378,12 @@ export function describeUserConsentRepositoryContract(
         { userId: USER_ID, marketingAgreedAt: BEFORE_CUTOFF, marketingPushAgreedAt: null },
       ]);
       expect({ repeated, empty }).toEqual({ repeated: [], empty: [] });
-      expect((await repository.findByUserId(USER_ID))?.marketingReconfirmedAt).toEqual(NOW);
-      expect((await repository.findByUserId(OTHER_USER_ID))?.marketingReconfirmedAt).toBeNull();
+      expect(
+        (await repository.findByUserId(UserId.reconstitute(USER_ID)))?.marketingReconfirmedAt,
+      ).toEqual(NOW);
+      expect(
+        (await repository.findByUserId(UserId.reconstitute(OTHER_USER_ID)))?.marketingReconfirmedAt,
+      ).toBeNull();
     });
   });
 }

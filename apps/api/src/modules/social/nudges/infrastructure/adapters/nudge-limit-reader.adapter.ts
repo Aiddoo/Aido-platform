@@ -29,15 +29,15 @@ export class NudgeLimitReaderAdapter extends NudgeLimitReaderPort {
   }
 
   readLimit(userId: UserId): Promise<number | null> {
-    return this.#entitlementReader.getFeatureLimit(userId.value, "NUDGE");
+    return this.#entitlementReader.getFeatureLimit(userId, "NUDGE");
   }
 
   readLimitInTx(userId: UserId): Promise<number | null> {
-    return this.#entitlementReader.getFeatureLimitInTx(userId.value, "NUDGE");
+    return this.#entitlementReader.getFeatureLimitInTx(userId, "NUDGE");
   }
 
   readFeatureQuotaInTx(userId: UserId, usage: DailySendQuotaUsage): Promise<DailySendFeatureQuota> {
-    return this.#entitlementReader.getFeatureQuotaInTx(userId.value, "NUDGE", {
+    return this.#entitlementReader.getFeatureQuotaInTx(userId, "NUDGE", {
       used: usage.used,
       resetsAt: instantToDate(usage.resetsAt),
     });

@@ -1,6 +1,7 @@
 import type { TodoCommentKind } from "@aido/api/vocabulary";
 import { uniq } from "es-toolkit";
 
+import { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
 import type {
   TodoEngagementCounterPort,
   TodoViewCacheInvalidatorPort,
@@ -122,7 +123,7 @@ export class WriteTodoCommentChainUseCase {
         {
           failureEvent: TodoCommentLogEvent.VIEW_CACHE_INVALIDATION_FAILED,
           context,
-          run: () => todoViewCache.invalidateForTodo(command.todoId),
+          run: () => todoViewCache.invalidateForTodo(TodoId.reconstitute(command.todoId)),
         },
         {
           failureEvent: TodoCommentLogEvent.WRITE_NOTIFICATION_FAILED,
@@ -169,14 +170,15 @@ export class WriteTodoCommentChainUseCase {
 
   #write(request: TodoCommentChainRequest): Promise<WriteOutcome> {
     const { unitOfWork, mutationLock, repository, blockReader } = this.#dependencies;
+    const todoId = TodoId.reconstitute(request.todoId);
+    const authorId = UserId.reconstitute(request.authorId);
     const parentId = request.parentId == null ? null : TodoCommentId.reconstitute(request.parentId);
     return unitOfWork.run(async () => {
       const lockKeys = request.items.map((item) =>
         TodoCommentLockKeys.request(request.authorId, item.clientRequestId),
       );
       // 답글 수를 바꾸는 묶음 머리까지 삭제와 같은 순서로 한 번에 잠근다. 묶음 머리는 바뀌지 않는다
-      const target =
-        parentId == null ? null : await repository.findByIdAndTodoId(parentId, request.todoId);
+      const target = parentId == null ? null : await repository.findByIdAndTodoId(parentId, todoId);
       if (parentId != null && target == null) {
         throw commentNotFound(parentId.value);
       }
@@ -193,13 +195,13 @@ export class WriteTodoCommentChainUseCase {
       }
 
       const replyTarget =
-        parentId == null ? null : await repository.findByIdAndTodoId(parentId, request.todoId);
+        parentId == null ? null : await repository.findByIdAndTodoId(parentId, todoId);
       if (parentId != null && replyTarget == null) {
         throw commentNotFound(parentId.value);
       }
       if (replyTarget != null) {
-        const blockedIds = await blockReader.findBlockedCounterpartIds(request.authorId, [
-          replyTarget.authorId.value,
+        const blockedIds = await blockReader.findBlockedCounterpartIds(authorId, [
+          replyTarget.authorId,
         ]);
         if (blockedIds.has(replyTarget.authorId.value)) {
           throw blockedCounterpart();
@@ -209,17 +211,14 @@ export class WriteTodoCommentChainUseCase {
       const placement =
         replyTarget == null ? CommentPlacement.create(null) : replyTarget.placeReply();
       const created = await this.#createChain(request, placement);
-      await this.#dependencies.engagementCounter.increaseCommentCount(
-        request.todoId,
-        created.length,
-      );
+      await this.#dependencies.engagementCounter.increaseCommentCount(todoId, created.length);
       if (thread != null) {
         thread.addReplies(created.length, this.#dependencies.clock.now());
         await repository.save(thread);
       }
 
-      const commentIds = created.map((comment) => comment.id.value);
-      const written = await this.#dependencies.reader.listComments(request.todoId, commentIds);
+      const commentIds = created.map((comment) => comment.id);
+      const written = await this.#dependencies.reader.listComments(todoId, commentIds);
       const first = requireFirst(written);
       if (written.length !== commentIds.length) {
         throw commentStateConflict();
@@ -269,8 +268,8 @@ export class WriteTodoCommentChainUseCase {
 
   async #assertAccess(request: TodoCommentChainRequest): Promise<void> {
     const todoOwnerId = await this.#dependencies.reader.findAccessibleTodoOwnerId(
-      request.todoId,
-      request.authorId,
+      TodoId.reconstitute(request.todoId),
+      UserId.reconstitute(request.authorId),
     );
     if (todoOwnerId == null) {
       throw todoNotFound(request.todoId);
@@ -295,7 +294,7 @@ export class WriteTodoCommentChainUseCase {
     }
     const thread = await this.#dependencies.repository.findByIdAndTodoId(
       replyTarget.threadCommentId,
-      replyTarget.todoId,
+      TodoId.reconstitute(replyTarget.todoId),
     );
     if (thread == null) {
       throw commentStateConflict(replyTarget.threadCommentId.value);
@@ -320,12 +319,16 @@ export class WriteTodoCommentChainUseCase {
     commentIds: readonly string[],
   ): Promise<WriteOutcome> {
     const { reader } = this.#dependencies;
-    const written = await reader.listComments(request.todoId, commentIds);
+    const ids = commentIds.map((commentId) => TodoCommentId.reconstitute(commentId));
+    const written = await reader.listComments(TodoId.reconstitute(request.todoId), ids);
     const first = requireFirst(written);
     if (written.length !== commentIds.length) {
       throw new TodoCommentIdempotencyConflict();
     }
-    const likedCommentIds = await reader.listLikedCommentIds(commentIds, request.authorId);
+    const likedCommentIds = await reader.listLikedCommentIds(
+      ids,
+      UserId.reconstitute(request.authorId),
+    );
     return {
       written,
       likedCommentIds,

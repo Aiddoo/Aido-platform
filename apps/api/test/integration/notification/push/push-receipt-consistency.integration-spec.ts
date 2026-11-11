@@ -4,6 +4,7 @@ import { vi } from "vitest";
 
 import type { PushReceiptResult } from "#api/modules/notification/push/application/ports/push-provider.port";
 import { ReconcilePushReceiptsUseCase } from "#api/modules/notification/push/application/use-cases/reconcile-push-receipts.use-case";
+import { PushDeviceId } from "#api/modules/notification/push/domain/push-device-id.vo";
 import { pushReceiptCheckWindow } from "#api/modules/notification/push/domain/push-receipt.domain-service";
 import { DrizzlePushDeliveryLifecycleRepository } from "#api/modules/notification/push/infrastructure/persistence/drizzle-push-delivery-lifecycle.repository";
 import { DrizzlePushDeliveryOutboxRepository } from "#api/modules/notification/push/infrastructure/persistence/drizzle-push-delivery-outbox.repository";
@@ -17,14 +18,17 @@ import {
   pushDispatch,
   user as userTable,
 } from "#api/platform/database/schema/index";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { DateClock } from "#test/doubles/platform/date-clock";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
+import { nowInstant } from "#test/fixtures/clock.fixture";
 import { UserFixture } from "#test/fixtures/user.fixture";
 import { createDatabaseTransactionFixture } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
 const AT = new Date("2026-10-08T03:00:00.000Z");
 const AT_INSTANT = Temporal.Instant.from(AT.toISOString());
-const ACCEPTED_AT = new Date("2026-10-08T02:40:00.000Z");
+const ACCEPTED_AT = Temporal.Instant.from("2026-10-08T02:40:00.000Z");
 const fingerprint = (token: string) => createHash("sha256").update(token).digest("hex");
 const unregistered = (ticketId: string): PushReceiptResult => ({
   ticketId,
@@ -56,7 +60,7 @@ describe("receipt 정합성 (실제 PostgreSQL)", () => {
 
   async function fixture(
     suffix: string,
-    options: { readonly acceptedAt?: Date; readonly legacy?: boolean } = {},
+    options: { readonly acceptedAt?: Temporal.Instant; readonly legacy?: boolean } = {},
   ) {
     const user = UserFixture.create({
       email: `receipt-${suffix}@example.com`,
@@ -67,9 +71,9 @@ describe("receipt 정합성 (실제 PostgreSQL)", () => {
     const tokens = new DrizzlePushTokenRepository(txHost);
     const receipts = new DrizzlePushReceiptRepository(txHost);
     const token = await tokens.registerPushToken({
-      userId: user.id,
+      userId: UserId.reconstitute(user.id),
       token: `ExponentPushToken[${suffix}-old]`,
-      deviceId: "device",
+      deviceId: PushDeviceId.reconstitute("device"),
       platform: "IOS",
       sessionId: null,
       payloadVersion: 1,
@@ -87,6 +91,7 @@ describe("receipt 정합성 (실제 PostgreSQL)", () => {
         userId: user.id,
         purpose: "TRANSACTIONAL",
         status: "SENT",
+        updatedAt: nowInstant(),
       })
       .returning();
     const [attempt] = await client
@@ -98,6 +103,7 @@ describe("receipt 정합성 (실제 PostgreSQL)", () => {
         status: "TICKET_ACCEPTED",
         providerTicketId: `ticket-${suffix}`,
         createdAt: options.acceptedAt ?? ACCEPTED_AT,
+        updatedAt: nowInstant(),
       })
       .returning();
     return {
@@ -121,7 +127,7 @@ describe("receipt 정합성 (실제 PostgreSQL)", () => {
     return f.receipts.recordPushReceipts({
       requestedTicketIds: results.map(({ ticketId }) => ticketId),
       results,
-      checkedAt: AT,
+      checkedAt: AT_INSTANT,
     });
   }
 
@@ -135,9 +141,9 @@ describe("receipt 정합성 (실제 PostgreSQL)", () => {
     // Given
     const f = await fixture("rotation");
     await f.tokens.registerPushToken({
-      userId: f.user.id,
+      userId: UserId.reconstitute(f.user.id),
       token: "ExponentPushToken[rotation-new]",
-      deviceId: "device",
+      deviceId: PushDeviceId.reconstitute("device"),
       platform: "IOS",
       sessionId: null,
       payloadVersion: 1,
@@ -154,13 +160,15 @@ describe("receipt 정합성 (실제 PostgreSQL)", () => {
 
     // Then
     expect(invalid).toEqual([]);
-    expect(await f.tokens.findPushTokensByUser({ userId: f.user.id })).toEqual([
-      expect.objectContaining({
-        id: f.token.id,
-        token: "ExponentPushToken[rotation-new]",
-        isActive: true,
-      }),
-    ]);
+    expect(await f.tokens.findPushTokensByUser({ userId: UserId.reconstitute(f.user.id) })).toEqual(
+      [
+        expect.objectContaining({
+          id: f.token.id,
+          token: "ExponentPushToken[rotation-new]",
+          isActive: true,
+        }),
+      ],
+    );
     expect((await readAttempt(f.ticketId)).status).toBe("FAILED");
   });
 
@@ -177,9 +185,12 @@ describe("receipt 정합성 (실제 PostgreSQL)", () => {
 
     // Then
     expect(invalid).toEqual([{ userId: f.user.id, token: f.token.token }]);
-    expect(await f.tokens.findPushTokensByUser({ userId: f.user.id, activeOnly: true })).toEqual(
-      [],
-    );
+    expect(
+      await f.tokens.findPushTokensByUser({
+        userId: UserId.reconstitute(f.user.id),
+        activeOnly: true,
+      }),
+    ).toEqual([]);
   });
 
   it("receipt 확인 뒤 등록이 토큰을 회전해도 이전 문자열의 비활성화는 새 토큰을 건드리지 않는다", async () => {
@@ -189,9 +200,9 @@ describe("receipt 정합성 (실제 PostgreSQL)", () => {
 
     // When
     await f.tokens.registerPushToken({
-      userId: f.user.id,
+      userId: UserId.reconstitute(f.user.id),
       token: "ExponentPushToken[between-new]",
-      deviceId: "device",
+      deviceId: PushDeviceId.reconstitute("device"),
       platform: "IOS",
       sessionId: null,
       payloadVersion: 1,
@@ -205,9 +216,12 @@ describe("receipt 정합성 (실제 PostgreSQL)", () => {
 
     // Then
     expect(result.count).toBe(0);
-    expect(await f.tokens.findPushTokensByUser({ userId: f.user.id, activeOnly: true })).toEqual([
-      expect.objectContaining({ token: "ExponentPushToken[between-new]" }),
-    ]);
+    expect(
+      await f.tokens.findPushTokensByUser({
+        userId: UserId.reconstitute(f.user.id),
+        activeOnly: true,
+      }),
+    ).toEqual([expect.objectContaining({ token: "ExponentPushToken[between-new]" })]);
   });
 
   it("fingerprint 없는 기존 이력은 상태만 반영하고 현재 토큰을 추측해 비활성화하지 않는다", async () => {
@@ -221,7 +235,10 @@ describe("receipt 정합성 (실제 PostgreSQL)", () => {
     expect(invalid).toEqual([]);
     expect((await readAttempt(f.ticketId)).status).toBe("FAILED");
     expect(
-      await f.tokens.findPushTokensByUser({ userId: f.user.id, activeOnly: true }),
+      await f.tokens.findPushTokensByUser({
+        userId: UserId.reconstitute(f.user.id),
+        activeOnly: true,
+      }),
     ).toHaveLength(1);
   });
 
@@ -256,11 +273,13 @@ describe("receipt 정합성 (실제 PostgreSQL)", () => {
 
   it("24시간 지난 missing ticket이 조회 가능한 새 receipt의 batch를 점유하지 않는다", async () => {
     // Given
-    const old = await fixture("old", { acceptedAt: new Date("2026-10-07T01:00:00.000Z") });
+    const old = await fixture("old", {
+      acceptedAt: Temporal.Instant.from("2026-10-07T01:00:00.000Z"),
+    });
     const recent = await fixture("recent");
 
     // When
-    const pending = await old.receipts.findPendingTicketIds(pushReceiptCheckWindow(AT), 1);
+    const pending = await old.receipts.findPendingTicketIds(pushReceiptCheckWindow(AT_INSTANT), 1);
 
     // Then
     expect(pending).toEqual([recent.ticketId]);
@@ -268,11 +287,18 @@ describe("receipt 정합성 (실제 PostgreSQL)", () => {
 
   it("15분 이전 ticket은 대기하고 15분 경계 ticket부터 조회한다", async () => {
     // Given
-    const waiting = await fixture("waiting", { acceptedAt: new Date("2026-10-08T02:59:00.000Z") });
-    const ready = await fixture("ready", { acceptedAt: new Date("2026-10-08T02:45:00.000Z") });
+    const waiting = await fixture("waiting", {
+      acceptedAt: Temporal.Instant.from("2026-10-08T02:59:00.000Z"),
+    });
+    const ready = await fixture("ready", {
+      acceptedAt: Temporal.Instant.from("2026-10-08T02:45:00.000Z"),
+    });
 
     // When
-    const pending = await waiting.receipts.findPendingTicketIds(pushReceiptCheckWindow(AT), 900);
+    const pending = await waiting.receipts.findPendingTicketIds(
+      pushReceiptCheckWindow(AT_INSTANT),
+      900,
+    );
 
     // Then
     expect(pending).toEqual([ready.ticketId]);
@@ -280,7 +306,9 @@ describe("receipt 정합성 (실제 PostgreSQL)", () => {
 
   it("5분마다 도는 receipt 확인은 수락 15분 전 ticket을 묻지 않고 15분이 된 다음 실행에서 묻는다", async () => {
     // Given: 03:00 실행 10분 전에 수락된 ticket
-    const f = await fixture("cadence", { acceptedAt: new Date("2026-10-08T02:50:00.000Z") });
+    const f = await fixture("cadence", {
+      acceptedAt: Temporal.Instant.from("2026-10-08T02:50:00.000Z"),
+    });
     const clock = new FixedClock(AT_INSTANT);
     const requests: string[][] = [];
     const reconciler = new ReconcilePushReceiptsUseCase({
@@ -296,6 +324,7 @@ describe("receipt 정합성 (실제 PostgreSQL)", () => {
       cache: { async invalidatePushTokens() {} },
       clock,
       logger: { log() {}, warn() {} },
+      alert: { raise() {} },
     });
 
     // When
@@ -312,33 +341,40 @@ describe("receipt 정합성 (실제 PostgreSQL)", () => {
 
   it("아직 결과가 없는 ticket은 확인 시각만 남겨 다른 ticket보다 뒤로 미룬다", async () => {
     // Given: 가장 오래된 ticket의 receipt가 아직 오지 않는다
-    const stuck = await fixture("stuck", { acceptedAt: new Date("2026-10-08T01:00:00.000Z") });
+    const stuck = await fixture("stuck", {
+      acceptedAt: Temporal.Instant.from("2026-10-08T01:00:00.000Z"),
+    });
     const next = await fixture("next");
 
     // When
     await stuck.receipts.recordPushReceipts({
       requestedTicketIds: [stuck.ticketId],
       results: [],
-      checkedAt: AT,
+      checkedAt: AT_INSTANT,
     });
-    const pending = await stuck.receipts.findPendingTicketIds(pushReceiptCheckWindow(AT), 1);
+    const pending = await stuck.receipts.findPendingTicketIds(
+      pushReceiptCheckWindow(AT_INSTANT),
+      1,
+    );
 
     // Then
     expect(pending).toEqual([next.ticketId]);
     expect(await readAttempt(stuck.ticketId)).toMatchObject({
       status: "TICKET_ACCEPTED",
-      receiptCheckedAt: AT,
+      receiptCheckedAt: AT_INSTANT,
     });
   });
 
   it("보관 기간 안에 receipt가 오지 않은 ticket은 결과 미상으로 닫는다", async () => {
     // Given
-    const expired = await fixture("expired", { acceptedAt: new Date("2026-10-07T01:00:00.000Z") });
+    const expired = await fixture("expired", {
+      acceptedAt: Temporal.Instant.from("2026-10-07T01:00:00.000Z"),
+    });
     const fresh = await fixture("fresh");
 
     // When
     const closed = await expired.receipts.expireUnreceipted(
-      pushReceiptCheckWindow(AT).acceptedAfter,
+      pushReceiptCheckWindow(AT_INSTANT).acceptedAfter,
       100,
     );
 
@@ -359,7 +395,7 @@ describe("receipt 정합성 (실제 PostgreSQL)", () => {
       .values({ userId: f.user.id, type: "SYSTEM_NOTICE", title: "새 알림", body: "새 본문" })
       .returning();
     const notification = requireRecord(created);
-    const staging = new DrizzlePushDispatchStagingRepository(f.txHost);
+    const staging = new DrizzlePushDispatchStagingRepository(f.txHost, new DateClock());
     const outbox = new DrizzlePushDeliveryOutboxRepository(f.txHost);
     const lifecycle = new DrizzlePushDeliveryLifecycleRepository(f.txHost);
     const staged = await f.uow.run(() =>
@@ -371,13 +407,15 @@ describe("receipt 정합성 (실제 PostgreSQL)", () => {
         force: false,
       }),
     );
-    const publications = await f.uow.run(() => outbox.claimByDispatchIds([staged.dispatchId], AT));
+    const publications = await f.uow.run(() =>
+      outbox.claimByDispatchIds([staged.dispatchId], AT_INSTANT),
+    );
     const claimed = await f.uow.run(() =>
       lifecycle.claim({
         publications,
         processingJobId: "receipt-finalize-job",
         processingJobAttempt: 1,
-        startedAt: AT,
+        startedAt: AT_INSTANT,
       }),
     );
     const claim = requireRecord(claimed[0]);
@@ -387,7 +425,7 @@ describe("receipt 정합성 (실제 PostgreSQL)", () => {
       lifecycle.finalizeResults([
         {
           fence: claim.fence,
-          context: { timezone: "UTC", localDate: new Date("2026-10-08T00:00:00.000Z") },
+          context: { timezone: "UTC", localDate: Temporal.PlainDate.from("2026-10-08") },
           results: [{ token: f.token.token, status: "accepted", ticketId: "finalized-ticket" }],
         },
       ]),
@@ -432,6 +470,7 @@ describe("receipt 정합성 (실제 PostgreSQL)", () => {
       cache: { async invalidatePushTokens() {} },
       clock: new FixedClock(AT_INSTANT),
       logger: { log() {}, warn() {} },
+      alert: { raise() {} },
     });
 
     // When
@@ -445,7 +484,12 @@ describe("receipt 정합성 (실제 PostgreSQL)", () => {
     expect.soft(afterFailure.status).toBe("TICKET_ACCEPTED");
     expect.soft(requests).toEqual([[f.ticketId], [f.ticketId]]);
     expect
-      .soft(await f.tokens.findPushTokensByUser({ userId: f.user.id, activeOnly: true }))
+      .soft(
+        await f.tokens.findPushTokensByUser({
+          userId: UserId.reconstitute(f.user.id),
+          activeOnly: true,
+        }),
+      )
       .toEqual([]);
     expect((await readAttempt(f.ticketId)).status).toBe("FAILED");
   });

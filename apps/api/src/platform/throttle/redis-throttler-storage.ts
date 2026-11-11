@@ -16,7 +16,7 @@ type ThrottlerStorageRecord = Awaited<ReturnType<ThrottlerStorage["increment"]>>
  * ARGV[2] = limit
  * ARGV[3] = blockDuration (ms)
  *
- * Returns: [totalHits, timeToExpire, isBlocked(0|1), timeToBlockExpire]
+ * Returns: [totalHits, timeToExpireMs, isBlocked(0|1), timeToBlockExpireMs]
  */
 const THROTTLE_INCREMENT_SCRIPT = `
   local hitKey = KEYS[1]
@@ -68,13 +68,14 @@ function parseThrottleResult(raw: unknown): ThrottlerStorageRecord {
     throw new Error(`Unexpected throttle script result: ${JSON.stringify(raw)}`);
   }
 
-  const [totalHits, timeToExpire, isBlocked, timeToBlockExpire] = raw;
+  const [totalHits, timeToExpireMs, isBlocked, timeToBlockExpireMs] = raw;
 
+  // @nestjs/throttler는 두 값을 초로 받아 X-RateLimit-Reset·Retry-After 헤더에 그대로 쓴다(기본 in-memory 저장소와 같게)
   return {
     totalHits,
-    timeToExpire,
+    timeToExpire: Math.ceil(timeToExpireMs / 1000),
     isBlocked: isBlocked === 1,
-    timeToBlockExpire,
+    timeToBlockExpire: Math.ceil(timeToBlockExpireMs / 1000),
   };
 }
 

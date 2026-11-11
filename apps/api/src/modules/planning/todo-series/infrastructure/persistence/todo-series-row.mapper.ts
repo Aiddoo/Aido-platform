@@ -1,9 +1,7 @@
 import { match } from "ts-pattern";
 
 import type { todoSeries } from "#api/platform/database/schema/index";
-import { instantFromDate, instantToDate } from "#api/shared/domain/time/instant";
 
-import { dateKeyOf, utcMidnightOf } from "../../../shared/domain/todo-calendar.domain-service.js";
 import { TodoSeries } from "../../domain/todo-series.aggregate.js";
 import { toRepeatRule } from "./repeat-rule-row.mapper.js";
 
@@ -20,23 +18,25 @@ export function toTodoSeries(row: TodoSeriesRow): TodoSeries {
     scheduledLocalTime: row.scheduledLocalTime,
     timezone: row.timezone,
     rule: toRepeatRule(row).toPrimitives(),
-    startDate: dateKeyOf(row.startDate),
+    startDate: row.startDate.toString(),
     checklistTemplate: row.checklistTemplate,
-    nextOccurrenceDate: row.nextOccurrenceDate == null ? null : dateKeyOf(row.nextOccurrenceDate),
+    nextOccurrenceDate: row.nextOccurrenceDate?.toString() ?? null,
     generatedCount: row.generatedCount,
-    createdAt: instantFromDate(row.createdAt),
-    updatedAt: instantFromDate(row.updatedAt),
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
   });
 }
 
-// updatedAt은 칸의 $onUpdate가 쓴다
-export function toTodoSeriesRow(series: TodoSeries): typeof todoSeries.$inferInsert {
+// 규칙의 updatedAt은 도메인이 바꾸지 않아 저장소가 쓸 때마다 ClockPort 값으로 채운다
+export function toTodoSeriesRow(
+  series: TodoSeries,
+): Omit<typeof todoSeries.$inferInsert, "updatedAt"> {
   const primitives = series.toPrimitives();
   const { frequency, interval, weekdays, monthDay, end } = primitives.rule;
   const { repeatUntil, repeatCount } = match(end)
     .with({ type: "NEVER" }, () => ({ repeatUntil: null, repeatCount: null }))
     .with({ type: "UNTIL" }, ({ date }) => ({
-      repeatUntil: utcMidnightOf(date),
+      repeatUntil: Temporal.PlainDate.from(date),
       repeatCount: null,
     }))
     .with({ type: "COUNT" }, ({ count }) => ({ repeatUntil: null, repeatCount: count }))
@@ -54,13 +54,15 @@ export function toTodoSeriesRow(series: TodoSeries): typeof todoSeries.$inferIns
     repeatInterval: interval,
     repeatWeekdays: weekdays == null ? null : [...weekdays],
     repeatMonthDay: monthDay,
-    startDate: utcMidnightOf(primitives.startDate),
+    startDate: Temporal.PlainDate.from(primitives.startDate),
     repeatUntil,
     repeatCount,
     checklistTemplate: [...primitives.checklistTemplate],
     nextOccurrenceDate:
-      primitives.nextOccurrenceDate == null ? null : utcMidnightOf(primitives.nextOccurrenceDate),
+      primitives.nextOccurrenceDate == null
+        ? null
+        : Temporal.PlainDate.from(primitives.nextOccurrenceDate),
     generatedCount: primitives.generatedCount,
-    createdAt: instantToDate(primitives.createdAt),
+    createdAt: primitives.createdAt,
   };
 }

@@ -1,4 +1,5 @@
 import { FollowReaderPort } from "#api/modules/social/friends/social-friends.public";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 function pairKey(userId: string, targetUserId: string): string {
   return userId < targetUserId ? `${userId}:${targetUserId}` : `${targetUserId}:${userId}`;
@@ -21,33 +22,33 @@ export class StubFollowReader extends FollowReaderPort {
     this.#displayNames.set(userId, name);
   }
 
-  async isMutualFriend(userId: string, targetUserId: string): Promise<boolean> {
-    return this.#mutualPairs.has(pairKey(userId, targetUserId));
+  async isMutualFriend(userId: UserId, targetUserId: UserId): Promise<boolean> {
+    return this.#mutualPairs.has(pairKey(userId.value, targetUserId.value));
   }
 
-  async isCurrentMutualFriend(userId: string, targetUserId: string): Promise<boolean> {
-    return this.#mutualPairs.has(pairKey(userId, targetUserId));
+  async isCurrentMutualFriend(userId: UserId, targetUserId: UserId): Promise<boolean> {
+    return this.#mutualPairs.has(pairKey(userId.value, targetUserId.value));
   }
 
-  async countFriends(userId: string): Promise<number> {
+  async countFriends(userId: UserId): Promise<number> {
     return (await this.getMutualFriendIds(userId)).length;
   }
 
-  async getUserDisplayName(userId: string): Promise<string> {
-    return this.#displayNames.get(userId) ?? userId;
+  async getUserDisplayName(userId: UserId): Promise<string> {
+    return this.#displayNames.get(userId.value) ?? userId.value;
   }
 
-  async getMutualFriendIds(userId: string): Promise<string[]> {
+  async getMutualFriendIds(userId: UserId): Promise<string[]> {
     return [...this.#mutualPairs].flatMap((pair) => {
       const [left = "", right = ""] = pair.split(":");
-      if (left === userId) {
+      if (left === userId.value) {
         return [right];
       }
-      return right === userId ? [left] : [];
+      return right === userId.value ? [left] : [];
     });
   }
 
-  async getCurrentMutualFriendIds(userId: string): Promise<string[]> {
+  async getCurrentMutualFriendIds(userId: UserId): Promise<string[]> {
     return this.getMutualFriendIds(userId);
   }
 }

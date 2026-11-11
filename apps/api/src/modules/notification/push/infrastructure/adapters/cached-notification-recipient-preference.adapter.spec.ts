@@ -1,5 +1,6 @@
 import type { PreferenceSnapshot } from "#api/modules/identity/identity-settings.public";
 import { ReadUserPreferencesUseCase } from "#api/modules/identity/preferences/application/use-cases/read-user-preferences.use-case";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { createUserSettingsFixture } from "#test/fixtures/user-settings.fixture";
 
 import {
@@ -21,12 +22,14 @@ class StubUserNotificationSettings extends UserNotificationSettingsPort {
 
   async upsertPushLocale(): Promise<void> {}
 
-  async getPreferenceRecord(userId: string): Promise<NotificationDeliveryPreference | null> {
+  async getPreferenceRecord(user: UserId): Promise<NotificationDeliveryPreference | null> {
+    const userId = user.value;
     this.singleRequests.push(userId);
     return this.preferenceRows.find((row) => row.userId === userId) ?? null;
   }
 
-  async getPreferenceRecordsByUserIds(userIds: string[]): Promise<PreferenceRow[]> {
+  async getPreferenceRecordsByUserIds(users: readonly UserId[]): Promise<PreferenceRow[]> {
+    const userIds = users.map((user) => user.value);
     this.batchRequests.push([...userIds]);
     return this.preferenceRows.filter((row) => userIds.includes(row.userId));
   }
@@ -58,7 +61,7 @@ describe("CachedNotificationRecipientPreferenceAdapter - 수신자 언어와 공
     const fixture = createFixture();
 
     // When
-    const preference = await fixture.reader.getPreference(fixture.userId);
+    const preference = await fixture.reader.getPreference(UserId.reconstitute(fixture.userId));
     const cached = fixture.cache.snapshots.get(fixture.userId);
 
     // Then
@@ -78,7 +81,7 @@ describe("CachedNotificationRecipientPreferenceAdapter - 수신자 언어와 공
     );
 
     // When
-    const preference = await reader.getPreference(settings.userId);
+    const preference = await reader.getPreference(UserId.reconstitute(settings.userId));
 
     // Then
     expect(preference).toMatchObject({
@@ -93,13 +96,13 @@ describe("CachedNotificationRecipientPreferenceAdapter - 수신자 언어와 공
   it("locale이 없는 기존 캐시는 DB 조회 없이 한국어로 읽는다", async () => {
     // Given
     const fixture = createFixture();
-    const preference = await fixture.reader.getPreference(fixture.userId);
+    const preference = await fixture.reader.getPreference(UserId.reconstitute(fixture.userId));
     const snapshot: PreferenceSnapshot = { ...preference };
     delete snapshot.locale;
     fixture.cache.snapshots.set(fixture.userId, snapshot);
 
     // When
-    const locale = await fixture.reader.getLocale(fixture.userId);
+    const locale = await fixture.reader.getLocale(UserId.reconstitute(fixture.userId));
 
     // Then
     expect(locale).toBe("ko");
@@ -114,10 +117,13 @@ describe("CachedNotificationRecipientPreferenceAdapter - 수신자 언어와 공
   ])("저장 언어 %s를 지원 언어 %s로 읽는다", async (storedLocale, expectedLocale) => {
     // Given
     const fixture = createFixture();
-    await fixture.preferenceRepository.upsertLocale(fixture.userId, storedLocale);
+    await fixture.preferenceRepository.upsertLocale(
+      UserId.reconstitute(fixture.userId),
+      storedLocale,
+    );
 
     // When
-    const locale = await fixture.reader.getLocale(fixture.userId);
+    const locale = await fixture.reader.getLocale(UserId.reconstitute(fixture.userId));
 
     // Then
     expect(locale).toBe(expectedLocale);
@@ -133,7 +139,11 @@ describe("CachedNotificationRecipientPreferenceAdapter - 수신자 언어와 공
     });
 
     // When
-    const locales = await fixture.reader.getLocales(["english", "legacy", "english"]);
+    const locales = await fixture.reader.getLocales([
+      UserId.reconstitute("english"),
+      UserId.reconstitute("legacy"),
+      UserId.reconstitute("english"),
+    ]);
 
     // Then
     expect(locales).toEqual(

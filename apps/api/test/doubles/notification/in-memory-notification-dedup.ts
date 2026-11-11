@@ -4,8 +4,8 @@ import {
   type NotificationDedupRecord,
 } from "#api/modules/notification/push/application/ports/notification-dedup.port";
 
-function keyOf(type: NotificationType, notificationDate: Date): string {
-  return `${type}:${notificationDate.toISOString().slice(0, 10)}`;
+function keyOf(type: NotificationType, notificationDate: Temporal.PlainDate): string {
+  return `${type}:${notificationDate.toString()}`;
 }
 
 // Redis 어댑터처럼 기록·warm-up이 한 번이라도 된 (타입, 날짜)만 warm으로 보고, 아니면 null(cold)을 준다
@@ -21,7 +21,7 @@ export class InMemoryNotificationDedup extends NotificationDedupPort {
 
   async readKnownRecipients(
     type: NotificationType,
-    notificationDate: Date,
+    notificationDate: Temporal.PlainDate,
     userIds: readonly string[],
   ): Promise<Set<string> | null> {
     const notified = this.#notifiedByKey.get(keyOf(type, notificationDate));
@@ -33,7 +33,7 @@ export class InMemoryNotificationDedup extends NotificationDedupPort {
 
   async warmRecipients(
     type: NotificationType,
-    notificationDate: Date,
+    notificationDate: Temporal.PlainDate,
     userIds: readonly string[],
   ): Promise<void> {
     if (this.failWarmUp) {
@@ -42,7 +42,7 @@ export class InMemoryNotificationDedup extends NotificationDedupPort {
     this.#add(keyOf(type, notificationDate), userIds);
   }
 
-  isWarm(type: NotificationType, notificationDate: Date): boolean {
+  isWarm(type: NotificationType, notificationDate: Temporal.PlainDate): boolean {
     return this.#notifiedByKey.has(keyOf(type, notificationDate));
   }
 

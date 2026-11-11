@@ -5,7 +5,6 @@ import { sortBy } from "es-toolkit";
 
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { todo } from "#api/platform/database/schema/index";
-import { instantFromDate, instantToDate } from "#api/shared/domain/time/instant";
 
 import {
   localTimeIn,
@@ -16,7 +15,6 @@ import {
   type TimedTodoView,
   TodoScheduleReaderPort,
 } from "../../application/ports/todo-schedule.reader.port.js";
-import { toDateColumnValue } from "./todo-date-column.mapper.js";
 
 @Injectable()
 export class DrizzleTodoScheduleReader implements TodoScheduleReaderPort {
@@ -31,7 +29,6 @@ export class DrizzleTodoScheduleReader implements TodoScheduleReaderPort {
     if (userIds.length === 0) {
       return [];
     }
-    const day = toDateColumnValue(date);
     const rows = await this.#txHost.tx
       .select({
         id: todo.id,
@@ -44,16 +41,16 @@ export class DrizzleTodoScheduleReader implements TodoScheduleReaderPort {
       .from(todo)
       .where(
         and(
-          inArray(todo.userId, [...userIds]),
+          inArray(
+            todo.userId,
+            userIds.map((userId) => userId.value),
+          ),
           eq(todo.isAllDay, false),
           eq(todo.completed, false),
           or(
-            and(
-              gte(todo.scheduledTime, instantToDate(from)),
-              lt(todo.scheduledTime, instantToDate(until)),
-            ),
+            and(gte(todo.scheduledTime, from), lt(todo.scheduledTime, until)),
             // 전날 이전에 시작해 그날까지 이어지는 여러 날 할 일. 시각은 시작일의 것이라 그날 벽시계로 다시 만든다
-            and(lt(todo.startDate, day), gte(todo.endDate, day), isNotNull(todo.scheduledTime)),
+            and(lt(todo.startDate, date), gte(todo.endDate, date), isNotNull(todo.scheduledTime)),
           ),
         ),
       )
@@ -64,7 +61,7 @@ export class DrizzleTodoScheduleReader implements TodoScheduleReaderPort {
         return [];
       }
       const scheduledAt =
-        startDate.getTime() < day.getTime()
+        Temporal.PlainDate.compare(startDate, date) < 0
           ? resolveScheduledInstant(
               date.toString(),
               scheduledLocalTime ?? localTimeIn(scheduledTime, timezone),
@@ -74,10 +71,10 @@ export class DrizzleTodoScheduleReader implements TodoScheduleReaderPort {
       if (scheduledAt == null) {
         return [];
       }
-      const at = instantFromDate(scheduledAt);
       const inWindow =
-        Temporal.Instant.compare(at, from) >= 0 && Temporal.Instant.compare(at, until) < 0;
-      return inWindow ? [{ ...row, scheduledAt: at }] : [];
+        Temporal.Instant.compare(scheduledAt, from) >= 0 &&
+        Temporal.Instant.compare(scheduledAt, until) < 0;
+      return inWindow ? [{ ...row, scheduledAt }] : [];
     });
     return sortBy(todos, [({ scheduledAt }) => scheduledAt.epochMilliseconds, ({ id }) => id]);
   }

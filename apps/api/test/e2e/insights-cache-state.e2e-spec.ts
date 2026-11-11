@@ -50,7 +50,7 @@ describe("일일 집계 캐시 정합성 실제 HTTP·PostgreSQL", () => {
           .overrideProvider(DailyCompletionRepositoryPort)
           .useClass(HoldableDailyCompletionRepository),
     });
-  }, 60000);
+  }, 60_000);
   beforeEach(async () => {
     await context.reset();
     vi.useFakeTimers({ toFake: ["Date"] });

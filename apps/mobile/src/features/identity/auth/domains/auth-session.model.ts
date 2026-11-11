@@ -17,7 +17,7 @@ export type AuthSessionEvent =
   | { type: 'signedOut' }
   | { type: 'sessionExpired' };
 
-function isAuthBootPending({ status }: Pick<AuthSessionState, 'status'>) {
+function isAuthBootPending({ status }: AuthSessionState) {
   return status === 'loading' || status === 'locked';
 }
 

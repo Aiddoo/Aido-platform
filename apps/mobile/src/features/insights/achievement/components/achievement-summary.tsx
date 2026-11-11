@@ -3,6 +3,7 @@ import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.q
 import { useTrack } from '@src/shared/analytics';
 import { formatDateKeyRange } from '@src/shared/date/date-format';
 import { getIsoWeekYear } from '@src/shared/date/date-key';
+import { formatIsoWeekOfMonthLabel } from '@src/shared/date/date-labels';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
@@ -61,18 +62,18 @@ export function AchievementSummary() {
   const latest = weeklyAchievements.items[0];
   const latestBadgeType = latest == null ? null : AchievementPolicy.getBadgeType(latest);
   const latestCompletionRate = latest?.completionRate;
-  const latestWeekLabel = latest?.weekLabel;
+  const latestWeekKey = latest == null ? null : `${latest.year}-W${latest.week}`;
 
   useEffect(() => {
-    if (latestBadgeType == null || latestCompletionRate == null || latestWeekLabel == null) {
+    if (latestBadgeType == null || latestCompletionRate == null || latestWeekKey == null) {
       return;
     }
     trackEvent('badge_summary_viewed', {
       badge_type: latestBadgeType,
       completion_rate: latestCompletionRate,
-      week_label: latestWeekLabel,
+      week_label: latestWeekKey,
     });
-  }, [trackEvent, latestBadgeType, latestCompletionRate, latestWeekLabel]);
+  }, [trackEvent, latestBadgeType, latestCompletionRate, latestWeekKey]);
 
   if (latest == null || latestBadgeType == null || weeklyAchievements.summary == null) {
     return <AchievementSummary.Empty />;
@@ -133,7 +134,7 @@ export function AchievementSummary() {
           >
             {t('card.certificate', {
               weekLabel: t('card.weekWithPeriod', {
-                weekLabel: latest.weekLabel,
+                weekLabel: formatIsoWeekOfMonthLabel(latest.dateRange.startDate, dateFormatContext),
                 period: formatDateKeyRange(
                   latest.dateRange.startDate,
                   latest.dateRange.endDate,

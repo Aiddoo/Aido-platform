@@ -1,6 +1,6 @@
 import type { Provider } from "@nestjs/common";
 
-import { UserMutationLockPort } from "#api/modules/identity/identity-user-access.public";
+import { UserMutationLockPort } from "#api/modules/identity/users/identity-users.public";
 import { loggerFor, provideUseCase } from "#api/platform/di/provide-use-case";
 import { AfterCommitTaskRegistryPort } from "#api/shared/application/ports/after-commit-task.registry.port";
 import { ClockPort } from "#api/shared/application/ports/clock.port";

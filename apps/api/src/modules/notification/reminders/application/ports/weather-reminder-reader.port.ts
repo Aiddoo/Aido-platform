@@ -1,3 +1,5 @@
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+
 import type {
   WeatherFallbackUser,
   WeatherReminderUser,
@@ -8,7 +10,7 @@ export interface WeatherReminderParams {
   readonly hour: number;
   readonly minute: number;
   /** 리마인더 시간을 바꾼 직후 그 사용자만 볼 때 */
-  readonly userId?: string;
+  readonly userId?: UserId;
 }
 
 export abstract class WeatherReminderReaderPort {

@@ -67,7 +67,7 @@ export class SendCheerUseCase {
     if (senderId.equals(receiverId)) {
       throw cannotCheerSelf();
     }
-    if (!(await followReader.isMutualFriend(senderId.value, receiverId.value))) {
+    if (!(await followReader.isMutualFriend(senderId, receiverId))) {
       throw cheerTargetNotFriend(receiverId);
     }
     const message = command.message == null ? null : CheerMessage.create(command.message);
@@ -106,7 +106,7 @@ export class SendCheerUseCase {
         now: requestedAt,
       });
       await cheerRepository.save(created);
-      return { cheer: created, senderName: await followReader.getUserDisplayName(senderId.value) };
+      return { cheer: created, senderName: await followReader.getUserDisplayName(senderId) };
     });
 
     logger.log({

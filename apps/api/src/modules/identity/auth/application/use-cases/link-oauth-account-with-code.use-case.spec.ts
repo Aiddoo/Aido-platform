@@ -47,7 +47,7 @@ describe("LinkOAuthAccountWithCode — 사용자에게 귀속된 일회용 연�
   }
 
   it.each([null, "", "credential-user"])(
-    "레거시 actor %s 코드도 소비해 신원을 연결하고 커밋 후 캐시를 제거한다",
+    "시작 사용자 %s(user_hint를 보내지 않은 출시 앱 포함) 코드도 소비해 신원을 연결하고 커밋 후 캐시를 제거한다",
     async (initiatingUserId) => {
       // Given
       const fixture = given({ initiatingUserId });

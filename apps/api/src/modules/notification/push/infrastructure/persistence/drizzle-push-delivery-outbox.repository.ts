@@ -41,7 +41,7 @@ export class DrizzlePushDeliveryOutboxRepository implements PushDeliveryOutboxRe
 
   claimByDispatchIds(
     dispatchIds: readonly number[],
-    lockedAt: Date,
+    lockedAt: Temporal.Instant,
   ): Promise<readonly ClaimedPushDeliveryPublication[]> {
     if (dispatchIds.length === 0) {
       return Promise.resolve([]);
@@ -64,7 +64,7 @@ export class DrizzlePushDeliveryOutboxRepository implements PushDeliveryOutboxRe
 
   async markPublished(
     publications: readonly PushDeliveryPublication[],
-    publishedAt: Date,
+    publishedAt: Temporal.Instant,
   ): Promise<number> {
     if (publications.length === 0) {
       return 0;
@@ -72,7 +72,13 @@ export class DrizzlePushDeliveryOutboxRepository implements PushDeliveryOutboxRe
     await lockPublicationGenerations(this.#db, publications, ["PROCESSING"]);
     const updated = await this.#db
       .update(pushDispatchOutbox)
-      .set({ status: "PUBLISHED", lockedAt: null, publishedAt, lastError: null })
+      .set({
+        status: "PUBLISHED",
+        lockedAt: null,
+        publishedAt,
+        lastError: null,
+        updatedAt: publishedAt,
+      })
       .where(this.#processingGenerations(publications))
       .returning({ dispatchId: pushDispatchOutbox.dispatchId });
     return updated.length;
@@ -91,6 +97,7 @@ export class DrizzlePushDeliveryOutboxRepository implements PushDeliveryOutboxRe
         lockedAt: null,
         publishedAt: null,
         lastError: input.error.slice(0, 500),
+        updatedAt: sql`CURRENT_TIMESTAMP`,
       })
       .where(this.#processingGenerations(input.publications))
       .returning({ dispatchId: pushDispatchOutbox.dispatchId });
@@ -105,7 +112,7 @@ export class DrizzlePushDeliveryOutboxRepository implements PushDeliveryOutboxRe
     );
   }
 
-  async recoverStaleProcessing(lockedBefore: Date): Promise<number> {
+  async recoverStaleProcessing(lockedBefore: Temporal.Instant): Promise<number> {
     const result = await this.#db.execute<Record<string, unknown>>(sql`
       WITH locked_outboxes AS MATERIALIZED (
         SELECT
@@ -151,7 +158,7 @@ export class DrizzlePushDeliveryOutboxRepository implements PushDeliveryOutboxRe
 
   async #claim(input: {
     readonly limit: number;
-    readonly lockedAt: Date;
+    readonly lockedAt: Temporal.Instant;
     readonly dispatchFilter?: SQL;
   }): Promise<readonly ClaimedPushDeliveryPublication[]> {
     const candidates = this.#db

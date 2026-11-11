@@ -1,3 +1,4 @@
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { createUserSettingsFixture } from "#test/fixtures/user-settings.fixture";
 
 import { UpsertPushLocaleUseCase } from "./upsert-push-locale.use-case.js";
@@ -10,7 +11,7 @@ describe("UpsertPushLocale — 푸시 언어 저장 경계", () => {
       const fixture = createUserSettingsFixture({
         preference: { timezone: "Asia/Tokyo", currentStreak: 3 },
       });
-      await fixture.preferenceReader.read(fixture.userId);
+      await fixture.preferenceReader.read(UserId.reconstitute(fixture.userId));
       // When
       await new UpsertPushLocaleUseCase(fixture).execute({ userId: fixture.userId, locale });
       // Then
@@ -19,13 +20,15 @@ describe("UpsertPushLocale — 푸시 언어 저장 경계", () => {
         locale,
       });
       expect(fixture.cache.snapshots.has(fixture.userId)).toBe(false);
-      expect((await fixture.preferenceReader.read(fixture.userId)).locale).toBe(locale);
+      expect(
+        (await fixture.preferenceReader.read(UserId.reconstitute(fixture.userId))).locale,
+      ).toBe(locale);
     },
   );
   it("저장 실패는 전달하고 기존 locale 캐시를 무효화하지 않는다", async () => {
     // Given
     const fixture = createUserSettingsFixture();
-    await fixture.preferenceReader.read(fixture.userId);
+    await fixture.preferenceReader.read(UserId.reconstitute(fixture.userId));
     const cached = fixture.cache.snapshots.get(fixture.userId);
     const storageError = new Error("locale 저장 실패");
     const useCase = new UpsertPushLocaleUseCase({

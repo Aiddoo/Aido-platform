@@ -4,8 +4,8 @@ import { HttpClient, InjectHttpClient } from "@nestjs/http-client";
 import { requestVendorJson } from "#api/platform/http/request-vendor-json";
 import type { OutboundPolicy } from "#api/platform/resilience/outbound-policy";
 import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
-import { dayWindowInTimezone, toLocalTimeString } from "#api/shared/domain/date/utils/timezone";
 
+import { localDateTimeAt } from "../../../shared/domain/weather-calendar.domain-service.js";
 import type {
   LifestyleIndex,
   LifestyleIndexProviderPort,
@@ -79,9 +79,9 @@ export class KmaLifestyleIndexAdapter implements LifestyleIndexProviderPort {
     lon: number,
     date: Date,
   ): Promise<number | null> {
-    const localDate = dayWindowInTimezone(date, KMA_TIMEZONE).localDate.replaceAll("-", "");
-    const hour = toLocalTimeString(date, KMA_TIMEZONE).slice(0, 2);
-    const time = `${localDate}${hour}`;
+    const local = localDateTimeAt(date, KMA_TIMEZONE);
+    const localDate = local.toPlainDate().toString().replaceAll("-", "");
+    const time = `${localDate}${String(local.hour).padStart(2, "0")}`;
 
     const outcome = await this.#policy.execute((signal) =>
       requestVendorJson(

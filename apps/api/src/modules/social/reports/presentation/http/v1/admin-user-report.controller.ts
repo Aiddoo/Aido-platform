@@ -8,15 +8,15 @@ import {
   type CurrentUserPayload,
 } from "#api/modules/identity/identity-auth-http.public";
 import { API_VERSION } from "#api/platform/http/api-versioning";
+import { SWAGGER_TAGS } from "#api/platform/http/swagger/constants/swagger.constant";
 import {
   ApiBadRequestError,
-  ApiCreatedResponse,
-  ApiDoc,
   ApiForbiddenError,
   ApiNotFoundError,
   ApiUnauthorizedError,
-  SWAGGER_TAGS,
-} from "#api/platform/http/swagger/index";
+} from "#api/platform/http/swagger/decorators/api-error.decorator";
+import { ApiDoc } from "#api/platform/http/swagger/decorators/api-operation.decorator";
+import { ApiCreatedResponse } from "#api/platform/http/swagger/decorators/api-response.decorator";
 
 import { ResolveUserReportUseCase } from "../../../application/use-cases/resolve-user-report.use-case.js";
 import { RESOLVE_USER_REPORT_OPERATION_ID } from "./admin-user-report.constants.js";

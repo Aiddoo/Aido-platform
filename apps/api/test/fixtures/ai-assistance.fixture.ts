@@ -30,7 +30,7 @@ import {
 
 import { createReportAiResponse } from "./ai-response.fixture.js";
 
-export const AI_ASSISTANCE_TIME = new Date("2026-03-22T12:00:00Z");
+const AI_ASSISTANCE_TIME = new Date("2026-03-22T12:00:00Z");
 
 export function createAnalysisTodo(
   overrides: Partial<TodoSummaryForAnalysis> = {},

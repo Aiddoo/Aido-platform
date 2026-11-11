@@ -11,7 +11,6 @@ import {
   type TodoCompletionGroupQuery,
   TodoCompletionGroupReaderPort,
 } from "../../application/ports/todo-completion-group.reader.port.js";
-import { toCalendarDate, toDateColumnValue } from "./todo-date-column.mapper.js";
 
 @Injectable()
 export class DrizzleTodoCompletionGroupReader implements TodoCompletionGroupReaderPort {
@@ -32,7 +31,6 @@ export class DrizzleTodoCompletionGroupReader implements TodoCompletionGroupRead
     end,
     publicOnly,
   }: TodoCompletionGroupQuery): Promise<TodoCompletionGroup[]> {
-    const rangeStart = toDateColumnValue(start);
     const groups = await this.#db
       .select({
         startDate: todo.startDate,
@@ -45,11 +43,8 @@ export class DrizzleTodoCompletionGroupReader implements TodoCompletionGroupRead
       .where(
         and(
           eq(todo.userId, userId.value),
-          lte(todo.startDate, toDateColumnValue(end)),
-          or(
-            gte(todo.endDate, rangeStart),
-            and(isNull(todo.endDate), gte(todo.startDate, rangeStart)),
-          ),
+          lte(todo.startDate, end),
+          or(gte(todo.endDate, start), and(isNull(todo.endDate), gte(todo.startDate, start))),
           publicOnly ? eq(todo.visibility, "PUBLIC") : undefined,
         ),
       )
@@ -64,8 +59,8 @@ export class DrizzleTodoCompletionGroupReader implements TodoCompletionGroupRead
     });
     const colors = new Map(categories.map((category) => [category.id, category.color]));
     return groups.map((group) => ({
-      startDate: toCalendarDate(group.startDate),
-      endDate: group.endDate == null ? null : toCalendarDate(group.endDate),
+      startDate: group.startDate,
+      endDate: group.endDate,
       completed: group.completed,
       categoryColor: colors.get(group.categoryId) ?? null,
       todoCount: group.todoCount,

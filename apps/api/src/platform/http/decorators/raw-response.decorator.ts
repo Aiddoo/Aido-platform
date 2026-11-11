@@ -1,7 +1,7 @@
 import { type ExecutionContext, SetMetadata } from "@nestjs/common";
 import type { Reflector } from "@nestjs/core";
 
-export const RAW_RESPONSE_KEY = "rawResponse";
+const RAW_RESPONSE_KEY = "rawResponse";
 
 /**
  * Excludes a narrowly scoped endpoint from the global success-response wrapper.

@@ -61,8 +61,36 @@ describe("PushNotificationPayloadMapper — 푸시 payload 조립", () => {
         variantId: "comment.created.ko.v1",
         dispatchId: 202,
       },
+      ttlSeconds: 43_200,
+      priority: "high",
     });
     expect(optOutTokens.issuedUserIds).toEqual([]);
+  });
+
+  it("단건과 배치 모두 알림 종류의 보관 시간을 싣는다(할 일 리마인더 1시간, 재방문 안내 하루)", () => {
+    // Given
+    const reminder = {
+      userId: "user-1",
+      type: "TODO_REMINDER",
+      title: "곧 시작",
+      body: "본문",
+    } as const;
+    const winback = {
+      userId: "user-1",
+      type: "WINBACK",
+      title: "다시 와요",
+      body: "본문",
+    } as const;
+
+    // When
+    const single = factory.createSingle({ data: reminder, notificationId: 1, dispatchId: 2 });
+    const batch = factory.createBatch({ data: winback, notificationId: 3, dispatchId: 4 });
+
+    // Then
+    expect([single, batch]).toEqual([
+      expect.objectContaining({ ttlSeconds: 3600, priority: "high" }),
+      expect.objectContaining({ ttlSeconds: 86_400, priority: "high" }),
+    ]);
   });
 
   it("마케팅 단건은 opt-out token과 interactive category를 포함한다", () => {
