@@ -52,10 +52,10 @@ import type { PendingRedemptionService } from '@src/features/social/invite/apis/
 import type { ModerationService } from '@src/features/social/moderation/apis/moderation.service';
 import type { TodoNudgeService } from '@src/features/social/nudge/apis/todo-nudge.service';
 import type { InquiryService } from '@src/features/support/inquiry/apis/inquiry.service';
-import type { VoiceNoteDraftRepository } from '@src/features/voice/apis/voice-note-draft.repository';
-import type { VoiceNoteStorageService } from '@src/features/voice/apis/voice-note-storage.service';
-import type { VoiceRecordingRepository } from '@src/features/voice/apis/voice-recording.repository';
-import type { VoiceService } from '@src/features/voice/apis/voice.service';
+import type { VoiceApi } from '@src/features/voice/apis/voice.api';
+import type { VoiceNoteDraftRepository } from '@src/features/voice/repositories/voice-note-draft.repository';
+import type { VoiceRecordingRepository } from '@src/features/voice/repositories/voice-recording.repository';
+import type { VoiceNoteStorageService } from '@src/features/voice/services/voice-note-storage.service';
 import type { WeatherLocationService } from '@src/features/weather/apis/weather-location.service';
 import type { WeatherService } from '@src/features/weather/apis/weather.service';
 import { SharedDIContext, type SharedDependencies } from '@src/shared/di/shared-di-context';
@@ -105,7 +105,7 @@ export interface DIContainer extends SharedDependencies {
   whatsNewRepository: WhatsNewRepository;
   inquiryService: InquiryService;
   memoApi: MemoApi;
-  voiceService: VoiceService;
+  voiceApi: VoiceApi;
   moderationService: ModerationService;
   subTodoApi: SubTodoApi;
   todoApi: TodoApi;
@@ -275,8 +275,8 @@ export function useInquiryService() {
 export function useMemoApi() {
   return useDI().memoApi;
 }
-export function useVoiceService() {
-  return useDI().voiceService;
+export function useVoiceApi() {
+  return useDI().voiceApi;
 }
 export function useModerationService() {
   return useDI().moderationService;

@@ -411,7 +411,7 @@ module.exports = {
       // 메인 debounce에는 maxWait이 없어 입력이 계속돼도 초안이 저장되도록 compat을 쓴다
       from: {
         path: '^(?:src|app)/',
-        pathNot: '^src/features/voice/apis/voice-note-draft\\.repository\\.ts$',
+        pathNot: '^src/features/voice/repositories/voice-note-draft\\.repository\\.ts$',
       },
       to: { path: '(?:^|/node_modules/)es-toolkit/(?:dist/)?compat(?:/|\\.|$)' },
     },

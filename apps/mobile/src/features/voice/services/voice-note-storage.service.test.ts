@@ -7,9 +7,9 @@ import {
 
 import { createVoiceNoteDigest, createSpokenVoiceNote } from '../__tests__/voice-note.fixtures';
 import { VoiceNotePolicy } from '../domains/voice-note.model';
-import { createVoiceNoteDraftRepository } from './voice-note-draft.repository';
+import { createVoiceNoteDraftRepository } from '../repositories/voice-note-draft.repository';
+import { createVoiceRecordingRepository } from '../repositories/voice-recording.repository';
 import { VoiceNoteStorageService } from './voice-note-storage.service';
-import { createVoiceRecordingRepository } from './voice-recording.repository';
 
 const NOW = toInstant('2026-12-05T00:00:00.000Z');
 const OWNER_DIRECTORY = ['voice-notes', 'user-1'];

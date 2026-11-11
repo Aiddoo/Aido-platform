@@ -90,10 +90,10 @@ import { pendingRedemptionStoredValue } from '@src/features/social/invite/schema
 import { ModerationService } from '@src/features/social/moderation/apis/moderation.service';
 import { TodoNudgeService } from '@src/features/social/nudge/apis/todo-nudge.service';
 import { InquiryService } from '@src/features/support/inquiry/apis/inquiry.service';
-import { createVoiceNoteDraftRepository } from '@src/features/voice/apis/voice-note-draft.repository';
-import { VoiceNoteStorageService } from '@src/features/voice/apis/voice-note-storage.service';
-import { createVoiceRecordingRepository } from '@src/features/voice/apis/voice-recording.repository';
-import { VoiceService } from '@src/features/voice/apis/voice.service';
+import { VoiceApi } from '@src/features/voice/apis/voice.api';
+import { createVoiceNoteDraftRepository } from '@src/features/voice/repositories/voice-note-draft.repository';
+import { createVoiceRecordingRepository } from '@src/features/voice/repositories/voice-recording.repository';
+import { VoiceNoteStorageService } from '@src/features/voice/services/voice-note-storage.service';
 import { WeatherLocationService } from '@src/features/weather/apis/weather-location.service';
 import { WeatherService } from '@src/features/weather/apis/weather.service';
 import { createFeatureAttributionStore } from '@src/shared/analytics/feature-attribution';
@@ -335,7 +335,7 @@ export function createAppContainer(ports: AppContainerPorts): DIContainer {
     whatsNewRepository,
     inquiryService: new InquiryService(authHttpClient),
     memoApi: new MemoApi(authHttpClient, logger),
-    voiceService: new VoiceService(authHttpClient, logger),
+    voiceApi: new VoiceApi(authHttpClient, logger),
     moderationService: new ModerationService(authHttpClient),
     subTodoApi: new SubTodoApi(authHttpClient),
     todoApi: new TodoApi(authHttpClient),

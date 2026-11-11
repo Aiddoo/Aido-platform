@@ -2,8 +2,8 @@ import { type Instant, toEpochMs } from '@src/shared/date/instant';
 import { orderBy, partition, sumBy } from 'es-toolkit';
 
 import { VoiceNotePolicy, type VoiceNote } from '../domains/voice-note.model';
-import type { VoiceNoteDraftRepository } from './voice-note-draft.repository';
-import type { VoiceRecordingRepository } from './voice-recording.repository';
+import type { VoiceNoteDraftRepository } from '../repositories/voice-note-draft.repository';
+import type { VoiceRecordingRepository } from '../repositories/voice-recording.repository';
 
 export interface VoiceNoteRecordingUsage {
   /** 아래 메모들의 녹음 크기 합. 메모에 속하지 않은 파일은 사용자가 볼 수도 지울 수도 없어 넣지 않는다 */

@@ -6,11 +6,11 @@ import {
   VOICE_RECORDING_SAVE_WAIT_MS,
 } from '../constants/voice-note.constants';
 import { VoiceNotePolicy, type VoiceNoteRecording } from '../domains/voice-note.model';
-import type { VoiceNoteDraftRepository } from './voice-note-draft.repository';
+import type { VoiceNoteDraftRepository } from '../repositories/voice-note-draft.repository';
+import type { VoiceRecordingRepository } from '../repositories/voice-recording.repository';
 import type { VoiceNoteStorageService } from './voice-note-storage.service';
-import type { VoiceRecordingRepository } from './voice-recording.repository';
 
-interface VoiceRecordingIntakeDeps {
+interface VoiceRecordingIntakeSessionDeps {
   accountId: string;
   draftId: string;
   draftRepository: Pick<VoiceNoteDraftRepository, 'find' | 'save'>;
@@ -21,8 +21,8 @@ interface VoiceRecordingIntakeDeps {
 }
 
 /** 인식기 파일은 화면이 내려간 뒤에도 올 수 있어 React 밖에서 받는다. 지운 초안의 파일만 바로 지운다 */
-export class VoiceRecordingIntake {
-  readonly #deps: VoiceRecordingIntakeDeps;
+export class VoiceRecordingIntakeSession {
+  readonly #deps: VoiceRecordingIntakeSessionDeps;
   readonly #segmentStarts = new Map<string, number>();
   readonly #pendingSaves = new Set<Promise<void>>();
   #recordings: VoiceNoteRecording[] = [];
@@ -34,7 +34,7 @@ export class VoiceRecordingIntake {
   /** 사용자가 초안을 지웠다. 뒤늦은 글자·파일이 초안을 되살리지 않게 막는다 */
   #hasDiscarded = false;
 
-  constructor(deps: VoiceRecordingIntakeDeps) {
+  constructor(deps: VoiceRecordingIntakeSessionDeps) {
     this.#deps = deps;
   }
 

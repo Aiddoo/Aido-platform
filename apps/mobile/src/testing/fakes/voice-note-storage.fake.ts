@@ -4,12 +4,12 @@ import type { EnumerableSyncStorage } from '@src/core/ports/sync-storage';
 import {
   createVoiceNoteDraftRepository,
   type VoiceNoteDraftRepository,
-} from '@src/features/voice/apis/voice-note-draft.repository';
-import { VoiceNoteStorageService } from '@src/features/voice/apis/voice-note-storage.service';
+} from '@src/features/voice/repositories/voice-note-draft.repository';
 import {
   createVoiceRecordingRepository,
   type VoiceRecordingRepository,
-} from '@src/features/voice/apis/voice-recording.repository';
+} from '@src/features/voice/repositories/voice-recording.repository';
+import { VoiceNoteStorageService } from '@src/features/voice/services/voice-note-storage.service';
 import { getNowInstant } from '@src/shared/date/clock';
 
 import { createLoggerStub } from '../ports/logger.stub';

@@ -1,4 +1,4 @@
-import { useHaptics, useVoiceService } from '@src/bootstrap/providers/di-context';
+import { useHaptics, useVoiceApi } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
 import { emitTodoCreated } from '@src/core/events/todo-created';
 import {
@@ -50,7 +50,7 @@ export function useApplyActionPlanMutationOptions({
   onMemoChanged,
 }: ApplyActionPlanMutationOptionsInput) {
   const haptics = useHaptics();
-  const voiceService = useVoiceService();
+  const voiceApi = useVoiceApi();
   const queryClient = useQueryClient();
   const { trackEvent, trackAttributedFeatureSuccess } = useTrack();
   const toast = useAppToast();
@@ -66,7 +66,7 @@ export function useApplyActionPlanMutationOptions({
       idempotencyKey,
     }: ApplyActionPlanVariables) =>
       unwrap(
-        await voiceService.applyActionPlan(
+        await voiceApi.applyActionPlan(
           { source, sourceMemoId, actions, fallbackCategoryId },
           idempotencyKey,
         ),
@@ -141,7 +141,7 @@ interface CreateQuickPlanMutationOptionsInput {
 export function useCreateQuickPlanMutationOptions({
   onSubscribe,
 }: CreateQuickPlanMutationOptionsInput = {}) {
-  const voiceService = useVoiceService();
+  const voiceApi = useVoiceApi();
   const queryClient = useQueryClient();
   const { trackEvent } = useTrack();
   const haptics = useHaptics();
@@ -153,7 +153,7 @@ export function useCreateQuickPlanMutationOptions({
     // 오프라인에도 멈춰 기다리지 않고 바로 실패해 글자를 남긴 채 안내한다
     networkMode: 'always',
     mutationFn: async ({ input, idempotencyKey, signal }: CreateQuickPlanVariables) =>
-      unwrap(await voiceService.createQuickPlan(input, idempotencyKey, signal)),
+      unwrap(await voiceApi.createQuickPlan(input, idempotencyKey, signal)),
     onSuccess: ({ plan, featureQuota, isCharged }) => {
       reflectFeatureQuota(queryClient, featureQuota);
       trackEvent('voice_plan_generated', {
@@ -203,7 +203,7 @@ interface CreateVoiceNoteDigestVariables extends PreparedPlanRequest<VoiceNoteDi
 }
 
 export function useCreateVoiceNoteDigestMutationOptions() {
-  const voiceService = useVoiceService();
+  const voiceApi = useVoiceApi();
   const queryClient = useQueryClient();
   const { trackEvent, trackAttributedFeatureSuccess } = useTrack();
   const haptics = useHaptics();
@@ -218,7 +218,7 @@ export function useCreateVoiceNoteDigestMutationOptions() {
       if (!onlineManager.isOnline()) {
         throw new NetworkError();
       }
-      return unwrap(await voiceService.createVoiceNoteDigest(input, idempotencyKey, signal));
+      return unwrap(await voiceApi.createVoiceNoteDigest(input, idempotencyKey, signal));
     },
     onSuccess: ({ plan, featureQuota, isCharged }) => {
       reflectFeatureQuota(queryClient, featureQuota);

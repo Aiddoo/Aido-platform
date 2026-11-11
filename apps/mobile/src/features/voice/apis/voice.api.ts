@@ -35,7 +35,7 @@ import {
 const QUICK_PLAN_TIMEOUT_MS = 30_000;
 const DIGEST_TIMEOUT_MS = MINUTE_MS;
 
-export class VoiceService {
+export class VoiceApi {
   readonly #httpClient: HttpClient;
   readonly #logger: Logger;
 
@@ -119,7 +119,7 @@ export class VoiceService {
       ),
       applyActionPlanResponseSchema,
       toAppliedPlanResult,
-      '[VoiceService] Invalid applyActionPlan response',
+      '[VoiceApi] Invalid applyActionPlan response',
     );
   };
 
@@ -130,7 +130,7 @@ export class VoiceService {
     } catch (error) {
       const zodError = error instanceof Error ? error.message : undefined;
       this.#logger.error(VOICE_LOG_EVENT.PLAN_MAPPING_FAILED, undefined, { method, zodError });
-      throw new ParseError(`[VoiceService] Invalid ${method} response: ${zodError}`);
+      throw new ParseError(`[VoiceApi] Invalid ${method} response: ${zodError}`);
     }
   };
 }

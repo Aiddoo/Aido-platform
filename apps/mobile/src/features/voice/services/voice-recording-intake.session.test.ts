@@ -6,7 +6,7 @@ import {
 import { setupFakeTimersPerTest } from '@src/testing/timers';
 
 import { createSpokenVoiceNote } from '../__tests__/voice-note.fixtures';
-import { VoiceRecordingIntake } from './voice-recording-intake';
+import { VoiceRecordingIntakeSession } from './voice-recording-intake.session';
 
 const ACCOUNT_ID = 'user-1';
 const DRAFT_ID = 'draft-1';
@@ -16,7 +16,7 @@ function createIntake() {
   const files = createLocalFileSystemFake();
   const storage = createVoiceNoteStorageFake(files);
   const onRecordingSaved = jest.fn();
-  const intake = new VoiceRecordingIntake({
+  const intake = new VoiceRecordingIntakeSession({
     accountId: ACCOUNT_ID,
     draftId: DRAFT_ID,
     draftRepository: storage.drafts,
@@ -27,7 +27,7 @@ function createIntake() {
   return { files, storage, intake, onRecordingSaved };
 }
 
-describe('VoiceRecordingIntake', () => {
+describe('VoiceRecordingIntakeSession', () => {
   setupFakeTimersPerTest();
 
   it('기다릴 파일이 없으면 바로 끝난다', async () => {

@@ -1,6 +1,6 @@
 import { createHttpClientStub, createLoggerStub } from '@src/testing/core';
 
-import { VoiceService } from './voice.service';
+import { VoiceApi } from './voice.api';
 
 const quickPlanDto = {
   plan: { actions: [], omittedTodoCount: 0 },
@@ -8,15 +8,15 @@ const quickPlanDto = {
   charged: false,
 };
 
-describe('VoiceService', () => {
+describe('VoiceApi', () => {
   let httpClient: ReturnType<typeof createHttpClientStub>;
   let logger: ReturnType<typeof createLoggerStub>;
-  let service: VoiceService;
+  let api: VoiceApi;
 
   beforeEach(() => {
     httpClient = createHttpClientStub();
     logger = createLoggerStub();
-    service = new VoiceService(httpClient, logger);
+    api = new VoiceApi(httpClient, logger);
   });
 
   it('빠른 계획은 Idempotency-Key 헤더와 함께 보내고 한도가 없어도 결과를 돌려준다', async () => {
@@ -24,10 +24,7 @@ describe('VoiceService', () => {
     httpClient.post.mockResolvedValue({ ok: true, value: quickPlanDto });
 
     // When
-    const result = await service.createQuickPlan(
-      { text: '장보기', source: 'quick-voice' },
-      'key-1',
-    );
+    const result = await api.createQuickPlan({ text: '장보기', source: 'quick-voice' }, 'key-1');
 
     // Then
     expect(httpClient.post).toHaveBeenCalledWith(
@@ -43,7 +40,7 @@ describe('VoiceService', () => {
     httpClient.post.mockResolvedValue({ ok: true, value: { plan: 1 } });
 
     // When
-    const result = service.createQuickPlan({ text: '장보기', source: 'quick-text' }, 'key-1');
+    const result = api.createQuickPlan({ text: '장보기', source: 'quick-text' }, 'key-1');
 
     // Then
     await expect(result).rejects.toThrow('Invalid createQuickPlan response');
