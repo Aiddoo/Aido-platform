@@ -31,6 +31,7 @@ import type {
 import {
   getCategoryDeletedTodoHandling,
   getCategoryUpdatedField,
+  toCategoryColorParam,
   toTodoCountBucket,
 } from '../utils/todo-category-analytics';
 import {
@@ -89,7 +90,7 @@ export function useCreateTodoCategoryMutationOptions() {
       // 카테고리 수가 한도(TODO_CATEGORY)를 쓰므로 남은 개수를 다시 받는다
       invalidateEntitlements(queryClient);
       toast.success(t('todo:toast.categoryAdded'));
-      trackEvent('category_created', { color: variables.color });
+      trackEvent('category_created', { color: toCategoryColorParam(variables.color) });
     },
     onError: (_error, _variables, context) => {
       if (context != null) {

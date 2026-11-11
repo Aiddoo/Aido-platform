@@ -35,14 +35,13 @@ export function CategoryEditBottomSheet(props: CategoryEditBottomSheetProps) {
   return (
     <QueryErrorBoundary fallback={CategoryEditBottomSheet.Error}>
       <Suspense fallback={null}>
-        <CategoryEditBottomSheet.Contents {...props} />
+        <CategoryEditBottomSheet.Form {...props} />
       </Suspense>
     </QueryErrorBoundary>
   );
 }
 
-// oxlint-disable-next-line aido/component-name -- 1.15.2 전환 #1400
-CategoryEditBottomSheet.Contents = function Contents(props: CategoryEditBottomSheetProps) {
+CategoryEditBottomSheet.Form = function Form(props: CategoryEditBottomSheetProps) {
   const sheet = useSheetRoute('/settings/category-settings');
   const [categoryId] = useTodoCategoryId();
   const { data: categoriesResult } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
