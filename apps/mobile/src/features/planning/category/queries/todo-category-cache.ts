@@ -80,15 +80,15 @@ export function withTodoCountChanged(
   };
 }
 
-/** 지운 카테고리를 빼고, 옮겼으면 옮긴 곳에 옮긴 할 일 수를 더한다. 결과가 없는 옛 서버는 다시 받을 때 맞춰진다 */
+/** 지운 카테고리를 빼고, 옮겼으면 옮긴 곳에 옮긴 할 일 수를 더한다 */
 export function withCategoryDeleted(
   result: TodoCategoriesResult,
   categoryId: number,
-  deletionResult: TodoCategoryDeletionResult | null,
+  deletionResult: TodoCategoryDeletionResult,
 ): TodoCategoriesResult {
   const remaining = withCategoryRemoved(result, categoryId);
 
-  if (deletionResult?.todoHandling !== 'move' || deletionResult.moveToCategoryId == null) {
+  if (deletionResult.todoHandling !== 'move' || deletionResult.moveToCategoryId == null) {
     return remaining;
   }
 
@@ -116,7 +116,7 @@ export function removeDeletedCategory(
   {
     categoryId,
     deletionResult,
-  }: { categoryId: number; deletionResult: TodoCategoryDeletionResult | null },
+  }: { categoryId: number; deletionResult: TodoCategoryDeletionResult },
 ) {
   queryClient.setQueryData(
     TODO_CATEGORY_QUERY_KEYS.list(),

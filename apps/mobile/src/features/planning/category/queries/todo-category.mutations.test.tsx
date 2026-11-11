@@ -163,7 +163,12 @@ describe('카테고리 지우기', () => {
   it('지우는 동안 목록에서 미리 빼지 않는다', async () => {
     // Given
     const { httpClient, cached, remove } = await renderMutations();
-    const pendingDelete = createPendingResponse(ok({ message: '삭제' }));
+    const pendingDelete = createPendingResponse(
+      ok({
+        message: '삭제',
+        result: { todoHandling: 'none', todoCount: 0, seriesCount: 0, moveToCategoryId: null },
+      }),
+    );
     httpClient.delete.mockReturnValue(pendingDelete.response);
 
     // When
@@ -198,22 +203,6 @@ describe('카테고리 지우기', () => {
     expect(analytics.trackEvent).toHaveBeenCalledWith('category_deleted', {
       todo_handling: 'move',
       todo_count_bucket: '10_49',
-    });
-  });
-
-  it('결과가 없는 옛 서버면 삭제만 알리고 개수는 목록 값으로 남긴다', async () => {
-    // Given
-    const { httpClient, analytics, remove } = await renderMutations();
-    httpClient.delete.mockResolvedValue({ ok: true, value: { message: '삭제' } });
-
-    // When
-    await remove(1, { todoHandling: null, moveToCategoryId: 2 });
-
-    // Then
-    expect(await screen.findAllByText('카테고리를 삭제했어요')).not.toHaveLength(0);
-    expect(analytics.trackEvent).toHaveBeenCalledWith('category_deleted', {
-      todo_handling: 'move',
-      todo_count_bucket: '1_9',
     });
   });
 });

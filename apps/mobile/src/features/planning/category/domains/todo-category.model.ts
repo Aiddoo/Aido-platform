@@ -27,8 +27,6 @@ export const todoCategoryDeletionPreviewSchema = z.object({
   completedTodoCount: z.int().nonnegative(),
   activeSeriesCount: z.int().nonnegative(),
   isLastCategory: z.boolean(),
-  // 미리보기가 없는 옛 서버는 할 일을 옮기기만 해서 함께 삭제를 고를 수 없다
-  isTodoHandlingSupported: z.boolean(),
 });
 export type TodoCategoryDeletionPreview = z.infer<typeof todoCategoryDeletionPreviewSchema>;
 
@@ -38,7 +36,7 @@ const todoCategoryDeletionChoiceSchema = z.object({
 });
 export type TodoCategoryDeletionChoice = z.infer<typeof todoCategoryDeletionChoiceSchema>;
 
-// 처리 방식이 null이면 보내지 않는다. 옮기거나 지울 할 일이 없거나 옛 서버라서다
+// 처리 방식이 null이면 보내지 않는다. 옮기거나 지울 할 일이 없어서다
 const todoCategoryDeletionRequestSchema = z.object({
   todoHandling: z.enum(CATEGORY_TODO_HANDLINGS).nullable(),
   moveToCategoryId: z.int().nullable(),
@@ -134,11 +132,6 @@ export function shouldChooseTodoHandling(preview: TodoCategoryDeletionPreview) {
   return canDelete(preview) && hasTodosToHandle(preview.todoCount, preview.activeSeriesCount);
 }
 
-// 옛 서버는 처리 방식을 받지 않아 옮기기만 할 수 있다
-export function canDeleteTodosTogether(preview: TodoCategoryDeletionPreview) {
-  return preview.isTodoHandlingSupported;
-}
-
 // 완료한 할 일을 함께 지우면 달력의 날짜별 완료 기록에서도 빠진다. 연속 기록과 지난 주간 달성은 저장된 값이라 그대로다
 export function shouldWarnHistoryLoss(preview: TodoCategoryDeletionPreview) {
   return preview.completedTodoCount > 0;
@@ -161,39 +154,20 @@ export function toDeletionRequest(
 
   return match(choice)
     .returnType<TodoCategoryDeletionRequest | null>()
-    .with({ todoHandling: 'delete' }, () =>
-      canDeleteTodosTogether(preview) ? { todoHandling: 'delete', moveToCategoryId: null } : null,
-    )
+    .with({ todoHandling: 'delete' }, () => ({ todoHandling: 'delete', moveToCategoryId: null }))
     .with({ todoHandling: 'move', moveToCategoryId: P.nullish }, () => null)
     .with({ todoHandling: 'move', moveToCategoryId: P.number }, ({ moveToCategoryId }) => ({
-      // 옛 서버는 처리 방식을 몰라 출시 앱처럼 옮길 곳만 받는다
-      todoHandling: preview.isTodoHandlingSupported ? 'move' : null,
+      todoHandling: 'move',
       moveToCategoryId,
     }))
     .exhaustive();
 }
 
-/** 미리보기가 없는 옛 서버에서는 목록의 할 일 수로 대신한다. 반복·완료 수는 알 수 없다 */
-export function createFallbackPreview(
-  category: TodoCategoryWithCount,
-  categories: readonly TodoCategory[],
-): TodoCategoryDeletionPreview {
-  return {
-    todoCount: category.todoCount,
-    completedTodoCount: 0,
-    activeSeriesCount: 0,
-    isLastCategory: excludeCategory(categories, category.id).length === 0,
-    isTodoHandlingSupported: false,
-  };
-}
-
 export const TodoCategoryDeletionPolicy = {
   canDelete,
   shouldChooseTodoHandling,
-  canDeleteTodosTogether,
   shouldWarnHistoryLoss,
   toDeletionRequest,
-  createFallbackPreview,
 } as const;
 
 // 정책이 조합하는 순수 함수. 필요한 값만 받는다

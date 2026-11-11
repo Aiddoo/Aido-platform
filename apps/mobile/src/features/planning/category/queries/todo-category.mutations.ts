@@ -187,13 +187,13 @@ interface DeleteTodoCategoryVariables {
   deletion: TodoCategoryDeletionRequest;
 }
 
-/** 옮기거나 함께 지운 할 일이 있으면 그 결과를, 없거나 옛 서버라 결과가 없으면 삭제만 알린다 */
+/** 옮기거나 함께 지운 할 일이 있으면 그 결과를, 없으면 삭제만 알린다 */
 function getCategoryDeletedMessage(
-  deletionResult: TodoCategoryDeletionResult | null,
+  deletionResult: TodoCategoryDeletionResult,
   categories: readonly TodoCategoryWithCount[],
   categoryId: number,
 ) {
-  if (deletionResult == null || deletionResult.todoCount === 0) {
+  if (deletionResult.todoCount === 0) {
     return t('todo:toast.categoryDeleted');
   }
 
@@ -235,10 +235,9 @@ export function useDeleteTodoCategoryMutationOptions() {
       categories: queryClient.getQueryData(TODO_CATEGORY_QUERY_KEYS.list())?.categories ?? [],
     }),
     onSuccess: (deletionResult, { id, deletion }, context) => {
-      const category = TodoCategoryPolicy.findCategory(context.categories, id);
       trackEvent('category_deleted', {
         todo_handling: getCategoryDeletedTodoHandling(deletion),
-        todo_count_bucket: toTodoCountBucket(deletionResult?.todoCount ?? category?.todoCount ?? 0),
+        todo_count_bucket: toTodoCountBucket(deletionResult.todoCount),
       });
       removeDeletedCategory(queryClient, { categoryId: id, deletionResult });
       // 그 카테고리의 할 일이 옮겨지거나 지워져 어느 날짜(목록·달력의 완료 기록)가 바뀌었는지 모른다

@@ -1,6 +1,5 @@
 import {
   createTodoCategoryResponseSchema,
-  deleteTodoCategoryResponseSchema,
   reorderTodoCategoryResponseSchema,
   todoCategoryDeletionPreviewSchema,
   todoCategoryListResponseSchema,
@@ -15,6 +14,7 @@ import type {
   TodoCategoryChange,
   TodoCategoryReorder,
 } from '../schemas/todo-category-request.schema';
+import { deleteTodoCategoryEnvelopeSchema } from '../schemas/todo-category-response.schema';
 import {
   toTodoCategory,
   toTodoCategoryDeletionPreview,
@@ -67,7 +67,7 @@ export class TodoCategoryService {
       await this.#httpClient.delete(`v1/todo-categories/${id}`, {
         params: toTodoCategoryRemoval(deletion),
       }),
-      deleteTodoCategoryResponseSchema,
+      deleteTodoCategoryEnvelopeSchema,
       (dto) => toTodoCategoryDeletionResult(dto.result),
       '[TodoCategoryService] Invalid deleteCategory response',
     );

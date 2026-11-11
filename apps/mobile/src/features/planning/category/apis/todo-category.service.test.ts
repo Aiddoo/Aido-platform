@@ -145,7 +145,7 @@ describe('TodoCategoryService', () => {
   });
 
   describe('getDeletionPreview', () => {
-    it('미리보기 경로로 묻고 처리 방식을 고를 수 있는 미리보기로 바꾼다', async () => {
+    it('미리보기 경로로 묻고 앱 미리보기로 바꾼다', async () => {
       // Given
       const { httpClient, service } = createSut();
       httpClient.get.mockResolvedValue({ ok: true, value: createTodoCategoryDeletionPreviewDto() });
@@ -162,7 +162,6 @@ describe('TodoCategoryService', () => {
         completedTodoCount: 3,
         activeSeriesCount: 2,
         isLastCategory: false,
-        isTodoHandlingSupported: true,
       });
     });
   });
@@ -180,11 +179,6 @@ describe('TodoCategoryService', () => {
         params: { todoHandling: 'delete' },
       },
       {
-        title: '옛 서버로 옮기면 출시 앱처럼 옮길 곳만 보낸다',
-        deletion: { todoHandling: null, moveToCategoryId: 1 },
-        params: { moveToCategoryId: 1 },
-      },
-      {
         title: '옮기거나 지울 할 일이 없으면 아무 query도 보내지 않는다',
         deletion: { todoHandling: null, moveToCategoryId: null },
         params: {},
@@ -194,7 +188,10 @@ describe('TodoCategoryService', () => {
       const { httpClient, service } = createSut();
       httpClient.delete.mockResolvedValue({
         ok: true,
-        value: { message: '카테고리가 삭제되었습니다.' },
+        value: {
+          message: '카테고리가 삭제되었습니다.',
+          result: { todoHandling: 'none', todoCount: 0, seriesCount: 0, moveToCategoryId: null },
+        },
       });
 
       // When
@@ -204,32 +201,28 @@ describe('TodoCategoryService', () => {
       expect(httpClient.delete).toHaveBeenCalledWith('v1/todo-categories/3', { params });
     });
 
-    it('서버가 준 결과를 돌려주고, 결과가 없는 옛 서버면 null이다', async () => {
+    it('서버가 준 결과를 돌려준다', async () => {
       // Given
       const { httpClient, service } = createSut();
       const deletion = { todoHandling: 'move', moveToCategoryId: 1 } as const;
-      httpClient.delete
-        .mockResolvedValueOnce({
-          ok: true,
-          value: {
-            message: '카테고리가 삭제되었습니다.',
-            result: { todoHandling: 'move', todoCount: 12, seriesCount: 2, moveToCategoryId: 1 },
-          },
-        })
-        .mockResolvedValueOnce({ ok: true, value: { message: '카테고리가 삭제되었습니다.' } });
+      httpClient.delete.mockResolvedValue({
+        ok: true,
+        value: {
+          message: '카테고리가 삭제되었습니다.',
+          result: { todoHandling: 'move', todoCount: 12, seriesCount: 2, moveToCategoryId: 1 },
+        },
+      });
 
       // When
-      const withResult = await service.deleteCategory(3, deletion);
-      const legacy = await service.deleteCategory(3, deletion);
+      const result = await service.deleteCategory(3, deletion);
 
       // Then
-      expect(unwrap(withResult)).toEqual({
+      expect(unwrap(result)).toEqual({
         todoHandling: 'move',
         todoCount: 12,
         seriesCount: 2,
         moveToCategoryId: 1,
       });
-      expect(unwrap(legacy)).toBeNull();
     });
 
     it('마지막 카테고리 → TODO_CATEGORY_0854 에러', async () => {

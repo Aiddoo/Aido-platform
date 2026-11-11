@@ -1,5 +1,5 @@
 import '@src/shared/i18n/init';
-import { ApiError } from '@src/core/errors/api-error';
+import type { ApiError } from '@src/core/errors/api-error';
 import { err, ok, type Result } from '@src/core/errors/result';
 import {
   createAnalyticsStub,
@@ -155,24 +155,6 @@ describe('CategoryDeleteBottomSheet', () => {
     // Then
     expect(screen.getByTestId('category-delete-confirm')).toBeDisabled();
     expect(httpClient.delete).not.toHaveBeenCalled();
-  });
-
-  it('미리보기가 없는 옛 서버면 함께 삭제 없이 출시 앱처럼 옮길 곳만 보낸다', async () => {
-    // Given
-    const { httpClient } = await renderDeleteSheet({
-      previews: [err(new ApiError('SYS_0002', 'Not Found', 404))],
-    });
-    await screen.findByTestId('category-delete-sheet');
-    expect(screen.queryByTestId('category-delete-handling-delete')).toBeNull();
-
-    // When
-    await fireEvent.press(screen.getByText('옮기고 삭제'));
-
-    // Then
-    expect(httpClient.delete).toHaveBeenCalledWith('v1/todo-categories/3', {
-      params: { moveToCategoryId: PERSONAL.id },
-    });
-    expect(await screen.findAllByText('카테고리를 삭제했어요')).not.toHaveLength(0);
   });
 
   it('할 일과 반복이 없으면 확인만 받고 처리 방식 없이 지운다', async () => {

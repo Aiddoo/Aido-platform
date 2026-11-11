@@ -71,11 +71,6 @@ describe('카테고리 삭제 지표의 todo_handling', () => {
       expected: 'delete',
     },
     {
-      title: '옛 서버로 옮길 곳만 보내도 move다',
-      deletion: { todoHandling: null, moveToCategoryId: 2 },
-      expected: 'move',
-    },
-    {
       title: '옮기거나 지울 할 일이 없으면 empty다',
       deletion: { todoHandling: null, moveToCategoryId: null },
       expected: 'empty',

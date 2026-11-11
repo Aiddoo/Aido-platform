@@ -35,7 +35,6 @@ export function createTodoCategoryDeletionPreview(
     completedTodoCount: 3,
     activeSeriesCount: 2,
     isLastCategory: false,
-    isTodoHandlingSupported: true,
     ...overrides,
   });
 }

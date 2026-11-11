@@ -43,19 +43,13 @@ export function toTodoCategory(dto: TodoCategoryDTO): TodoCategory {
 export function toTodoCategoryDeletionPreview(
   dto: TodoCategoryDeletionPreviewDTO,
 ): TodoCategoryDeletionPreview {
-  return {
-    ...pick(dto, ['todoCount', 'completedTodoCount', 'activeSeriesCount', 'isLastCategory']),
-    isTodoHandlingSupported: true,
-  };
+  return pick(dto, ['todoCount', 'completedTodoCount', 'activeSeriesCount', 'isLastCategory']);
 }
 
-/** 1.15.1 이전 서버는 결과를 주지 않는다 */
 export function toTodoCategoryDeletionResult(
-  dto: CategoryDeletionResultDTO | undefined,
-): TodoCategoryDeletionResult | null {
-  return dto == null
-    ? null
-    : pick(dto, ['todoHandling', 'todoCount', 'seriesCount', 'moveToCategoryId']);
+  dto: CategoryDeletionResultDTO,
+): TodoCategoryDeletionResult {
+  return pick(dto, ['todoHandling', 'todoCount', 'seriesCount', 'moveToCategoryId']);
 }
 
 /** 처리 방식을 생략하면 서버는 출시 앱의 규칙(할 일이 있으면 옮길 곳 필수)으로 지운다 */

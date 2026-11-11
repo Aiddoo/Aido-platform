@@ -60,7 +60,7 @@ const LOADING_SHEET_DELAY_MS = 300;
 export function CategoryDeleteBottomSheet() {
   const sheet = useSheetRoute('/settings/category-settings');
   const [categoryId] = useTodoCategoryId();
-  const [{ data: categoriesResult }, { data: serverPreview }] = useSuspenseQueries({
+  const [{ data: categoriesResult }, { data: preview }] = useSuspenseQueries({
     queries: [
       useGetTodoCategoriesQueryOptions(),
       useGetTodoCategoryDeletionPreviewQueryOptions({ categoryId }),
@@ -80,10 +80,6 @@ export function CategoryDeleteBottomSheet() {
   if (category == null) {
     return null;
   }
-
-  const preview =
-    serverPreview ??
-    TodoCategoryDeletionPolicy.createFallbackPreview(category, categoriesResult.categories);
 
   if (!TodoCategoryDeletionPolicy.shouldChooseTodoHandling(preview)) {
     return (
@@ -369,20 +365,18 @@ function TodoHandlingBottomSheet({
             )}
           </TodoHandlingCard>
 
-          {TodoCategoryDeletionPolicy.canDeleteTodosTogether(preview) && (
-            <TodoHandlingCard isSelected={isDeletingTodos} isDanger>
-              <TodoHandlingOption
-                isDanger
-                value="delete"
-                title={t('categoryDelete.deleteAll.title')}
-                description={
-                  TodoCategoryDeletionPolicy.shouldWarnHistoryLoss(preview)
-                    ? t('categoryDelete.deleteAll.descriptionWithHistory')
-                    : t('categoryDelete.deleteAll.description')
-                }
-              />
-            </TodoHandlingCard>
-          )}
+          <TodoHandlingCard isSelected={isDeletingTodos} isDanger>
+            <TodoHandlingOption
+              isDanger
+              value="delete"
+              title={t('categoryDelete.deleteAll.title')}
+              description={
+                TodoCategoryDeletionPolicy.shouldWarnHistoryLoss(preview)
+                  ? t('categoryDelete.deleteAll.descriptionWithHistory')
+                  : t('categoryDelete.deleteAll.description')
+              }
+            />
+          </TodoHandlingCard>
         </RadioGroup>
       </VStack>
     </BottomSheet>

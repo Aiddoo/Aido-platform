@@ -30,13 +30,8 @@ export function toTodoCountBucket(todoCount: number): TodoCountBucket {
   return todoCount < TODO_COUNT_BUCKET_START.fifties ? '10_49' : '50_plus';
 }
 
-/** 처리 방식 없이 옮길 곳만 보낸 옛 서버의 삭제도 move로 센다 */
 export function getCategoryDeletedTodoHandling(
   deletion: TodoCategoryDeletionRequest,
 ): CategoryDeletedTodoHandling {
-  if (deletion.todoHandling != null) {
-    return deletion.todoHandling;
-  }
-
-  return deletion.moveToCategoryId == null ? 'empty' : 'move';
+  return deletion.todoHandling ?? 'empty';
 }

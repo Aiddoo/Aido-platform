@@ -231,30 +231,6 @@ describe('TodoCategoryDeletionPolicy.shouldChooseTodoHandling', () => {
   });
 });
 
-describe('TodoCategoryDeletionPolicy.canDeleteTodosTogether', () => {
-  it.each([
-    {
-      title: '미리보기를 주는 서버면 함께 지울 수 있다',
-      isTodoHandlingSupported: true,
-      expected: true,
-    },
-    {
-      title: '처리 방식을 모르는 옛 서버면 옮기기만 할 수 있다',
-      isTodoHandlingSupported: false,
-      expected: false,
-    },
-  ])('$title', ({ isTodoHandlingSupported, expected }) => {
-    // Given
-    const preview = createTodoCategoryDeletionPreview({ isTodoHandlingSupported });
-
-    // When
-    const result = TodoCategoryDeletionPolicy.canDeleteTodosTogether(preview);
-
-    // Then
-    expect(result).toBe(expected);
-  });
-});
-
 describe('TodoCategoryDeletionPolicy.shouldWarnHistoryLoss', () => {
   it.each([
     {
@@ -308,18 +284,6 @@ describe('TodoCategoryDeletionPolicy.toDeletionRequest', () => {
       expected: null,
     },
     {
-      title: '옛 서버로 옮기면 처리 방식 없이 옮길 곳만 보낸다',
-      preview: { isTodoHandlingSupported: false },
-      choice: { todoHandling: 'move', moveToCategoryId: 4 },
-      expected: { todoHandling: null, moveToCategoryId: 4 },
-    },
-    {
-      title: '옛 서버에는 함께 삭제를 보낼 수 없다',
-      preview: { isTodoHandlingSupported: false },
-      choice: { todoHandling: 'delete', moveToCategoryId: null },
-      expected: null,
-    },
-    {
       title: '할 일과 반복이 없으면 고르지 않아도 처리 방식 없이 지운다',
       preview: { todoCount: 0, completedTodoCount: 0, activeSeriesCount: 0 },
       choice: null,
@@ -340,30 +304,6 @@ describe('TodoCategoryDeletionPolicy.toDeletionRequest', () => {
 
     // Then
     expect(deletionRequest).toEqual(expected);
-  });
-});
-
-describe('TodoCategoryDeletionPolicy.createFallbackPreview', () => {
-  it('옛 서버에서는 목록의 할 일 수만 쓰고 함께 삭제를 고를 수 없다', () => {
-    // When
-    const preview = TodoCategoryDeletionPolicy.createFallbackPreview(WORKOUT, CATEGORIES);
-
-    // Then
-    expect(preview).toEqual({
-      todoCount: 12,
-      completedTodoCount: 0,
-      activeSeriesCount: 0,
-      isLastCategory: false,
-      isTodoHandlingSupported: false,
-    });
-  });
-
-  it('목록에 그 카테고리만 남았으면 마지막 카테고리다', () => {
-    // When
-    const preview = TodoCategoryDeletionPolicy.createFallbackPreview(WORKOUT, [WORKOUT]);
-
-    // Then
-    expect(preview.isLastCategory).toBe(true);
   });
 });
 
