@@ -8,8 +8,6 @@ const { resolveTestWorkers } = require('@aido/vitest-config/test-workers');
 const base = {
   resolver: '<rootDir>/jest.resolver.cjs',
   setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],
-  // 첫 렌더가 늦게 불러오는 모듈을 변환하는 시간이 변환 캐시가 비었거나 CI처럼 느린 곳에서 5초를 넘긴다
-  testTimeout: 10_000,
   clearMocks: true,
   restoreMocks: true,
   // d3-shape·d3-path는 ESM 전용(.mjs)으로 배포된다. preset의 [jt]sx? 변환에 .mjs만 더한다
@@ -50,6 +48,9 @@ const base = {
 
 /** @type {import('jest').Config} */
 module.exports = {
+  // testTimeout은 전역 옵션이라 projects 안에 두면 무시되고 기본 5초로 돈다. 첫 렌더가 불러오는 모듈을
+  // 변환하는 시간이 변환 캐시가 비었거나 CI·부하가 큰 곳에서 5초를 넘긴다
+  testTimeout: 15_000,
   // 워크트리마다 감시자를 띄우지 않고 파일 목록만 읽는다
   watchman: false,
   // 폐기된 Jest API를 쓰면 조용히 넘어가지 않고 실패한다
