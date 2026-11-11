@@ -9,7 +9,7 @@ import { createWidgetNavigationRepository } from '../repositories/widget-navigat
 import { createAndroidWidgetTaskHandler } from './android-widget-task-handler';
 import { renderStoredAndroidWidget } from './android-widgets.bridge';
 
-// 위젯만 깨어난 프로세스에는 DIProvider가 없어 실패를 저장해 두고 다음 앱 시작 때 `reportHeadlessFailure`가 보낸다
+// 위젯만 깨어난 프로세스에는 DIProvider가 없어 실패를 저장해 두고 다음 앱 시작 때 `useWidgetSnapshotSync`가 꺼내 보낸다
 export function registerWidgetTaskHandler(): void {
   registerNativeWidgetTaskHandler(
     createAndroidWidgetTaskHandler({

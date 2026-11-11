@@ -33,7 +33,6 @@ export interface WidgetSnapshotContext {
   now: Instant;
   /** 쓰기 시점의 기기 시간대. 표시 내용이 같아도 바뀌면 iOS timeline의 자정 경계를 다시 써야 한다. */
   timeZone: string;
-  userId?: string;
   weekCompletions?: readonly WidgetWeekCompletion[];
 }
 

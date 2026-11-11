@@ -1,4 +1,3 @@
-import type { ErrorReporter } from '@src/core/ports/error-reporter';
 import type { SyncStorage } from '@src/core/ports/sync-storage';
 import { toError } from '@src/shared/errors';
 import { readStoredValue, removeStoredValue } from '@src/shared/storage/define-stored-value';
@@ -13,23 +12,33 @@ import type { WidgetBridge } from '../bridge/widget-bridge';
 import { widgetHeadlessFailureStoredValue } from '../schemas/widget-headless-failure-storage.schema';
 import type { WidgetSnapshot } from '../schemas/widget-snapshot-storage.schema';
 
+/** 쓰기는 앱 인증·시작을 막지 않도록 던지지 않고 결과로 알린다. 보고는 부른 훅이 한다 */
+export type WidgetSyncResult =
+  | { status: 'written'; snapshot: WidgetSnapshot }
+  | { status: 'unchanged' }
+  | { status: 'superseded' }
+  | { status: 'failed'; error: Error };
+
+interface WidgetHeadlessFailure {
+  error: Error;
+  method: string;
+}
+
 export class WidgetSyncService {
   readonly #bridge: WidgetBridge;
-  readonly #errorReporter: ErrorReporter;
   /** 위젯만 깨어난 프로세스가 실패를 남기는 위젯 저장소 */
   readonly #widgetStorage: SyncStorage;
-  #pendingWrite: Promise<void> = Promise.resolve();
+  #pendingWrite: Promise<unknown> = Promise.resolve();
   #generation = 0;
   #lastSnapshotKey: string | null = null;
 
-  constructor(bridge: WidgetBridge, errorReporter: ErrorReporter, widgetStorage: SyncStorage) {
+  constructor(bridge: WidgetBridge, widgetStorage: SyncStorage) {
     this.#bridge = bridge;
-    this.#errorReporter = errorReporter;
     this.#widgetStorage = widgetStorage;
   }
 
-  /** 앱 없이 깨어난 위젯이 남긴 실패를 꺼내 지우고 오류 보고기로 보낸다. 앱 시작을 막지 않는다 */
-  reportHeadlessFailure = (): void => {
+  /** 앱 없이 깨어난 위젯이 남긴 실패를 꺼내고 지운다. 한 번만 돌려준다 */
+  takeHeadlessFailure = (): WidgetHeadlessFailure | null => {
     const failure = readStoredValue(this.#widgetStorage, widgetHeadlessFailureStoredValue);
     try {
       removeStoredValue(this.#widgetStorage, widgetHeadlessFailureStoredValue);
@@ -37,41 +46,38 @@ export class WidgetSyncService {
       // Widget storage failures must not reject the app's startup.
     }
     if (failure == null) {
-      return;
+      return null;
     }
     const error = new Error(failure.message);
     error.name = failure.name;
-    this.#report(error, failure.method);
+    return { error, method: failure.method };
   };
 
-  syncSummary = (summaries: WidgetDaySummaries, context: WidgetSnapshotContext): Promise<void> =>
-    this.#scheduleWrite(
-      () => toWidgetSnapshot(summaries, context),
-      'syncSummary',
-      context.userId ?? null,
-      context.timeZone,
-    );
+  syncSummary = (
+    summaries: WidgetDaySummaries,
+    context: WidgetSnapshotContext,
+    userId: string,
+  ): Promise<WidgetSyncResult> =>
+    this.#scheduleWrite(() => toWidgetSnapshot(summaries, context), userId, context.timeZone);
 
-  syncLoggedOut = (localDate: string, context: WidgetSnapshotContext): Promise<void> =>
+  syncLoggedOut = (localDate: string, context: WidgetSnapshotContext): Promise<WidgetSyncResult> =>
     this.#scheduleWrite(
       () => toLoggedOutWidgetSnapshot(localDate, context),
-      'syncLoggedOut',
       null,
       context.timeZone,
     );
 
   #scheduleWrite = (
     createSnapshot: () => WidgetSnapshot,
-    method: string,
     userId: string | null,
     timeZone: string,
-  ): Promise<void> => {
+  ): Promise<WidgetSyncResult> => {
     const generation = ++this.#generation;
 
     // Native writes are serialized so an in-flight account snapshot cannot overwrite logout.
-    this.#pendingWrite = this.#pendingWrite.then(async () => {
+    const write = this.#pendingWrite.then(async (): Promise<WidgetSyncResult> => {
       if (generation !== this.#generation) {
-        return;
+        return { status: 'superseded' };
       }
 
       try {
@@ -83,34 +89,18 @@ export class WidgetSyncService {
           timeZone,
         });
         if (snapshotKey === this.#lastSnapshotKey) {
-          return;
+          return { status: 'unchanged' };
         }
 
         await this.#bridge.writeSnapshot(snapshot, userId);
         this.#lastSnapshotKey = snapshotKey;
-        this.#errorReporter.addBreadcrumb({
-          category: 'widget',
-          message: 'widget snapshot synced',
-          data: {
-            date: snapshot.days[0].date,
-            state: snapshot.days[0].state,
-            total: snapshot.days[0].totalTodos,
-            dayCount: snapshot.days.length,
-          },
-        });
+        return { status: 'written', snapshot };
       } catch (error) {
-        this.#report(error, method);
+        return { status: 'failed', error: toError(error) };
       }
     });
+    this.#pendingWrite = write;
 
-    return this.#pendingWrite;
-  };
-
-  #report = (error: unknown, method: string): void => {
-    try {
-      this.#errorReporter.captureException(toError(error), { feature: 'widget', method });
-    } catch {
-      // Widget and observability failures must not reject the app's auth lifecycle.
-    }
+    return write;
   };
 }

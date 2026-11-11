@@ -382,11 +382,7 @@ export function createAppContainer(ports: AppContainerPorts): DIContainer {
     minuteClock: createAppMinuteClock(ports.appLifecycle),
     viewCapture: ports.viewCapture,
     screenOrientation: ports.screenOrientation,
-    widgetSyncService: new WidgetSyncService(
-      ports.widgetBridge,
-      errorReporter,
-      ports.widgetStorage,
-    ),
+    widgetSyncService: new WidgetSyncService(ports.widgetBridge, ports.widgetStorage),
     widgetNavigationRepository: createWidgetNavigationRepository(ports.widgetStorage),
     logOutDeviceService: new LogOutDeviceService({
       authApi,
