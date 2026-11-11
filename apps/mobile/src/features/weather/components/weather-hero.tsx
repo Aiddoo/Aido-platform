@@ -1,4 +1,3 @@
-import catAnchorImage from '@assets/images/weather/mascot-anchor.png';
 import { useTrack } from '@src/shared/analytics';
 import { formatRelativeTimeLabel } from '@src/shared/date/format/date-labels';
 import { type Instant } from '@src/shared/date/instant';
@@ -20,7 +19,6 @@ import {
 import { cn } from '@src/shared/utils/cn';
 import { useMutation, useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { compact } from 'es-toolkit';
-import type { ImageSource } from 'expo-image';
 import { type ComponentProps, type ReactNode, useEffect } from 'react';
 import Animated, { Easing, FadeInDown, ReduceMotion } from 'react-native-reanimated';
 import { match, P } from 'ts-pattern';
@@ -372,7 +370,6 @@ WeatherHero.Error = function ErrorFallback({ error, reset }: QueryErrorFallbackP
     )
     .with(P.when(isWeatherProviderUnavailableError), () => (
       <WeatherResult
-        image={catAnchorImage}
         title={t('weather:screen.providerUnavailable')}
         description={t('weather:screen.retryLater')}
       >
@@ -381,7 +378,6 @@ WeatherHero.Error = function ErrorFallback({ error, reset }: QueryErrorFallbackP
     ))
     .with(P.when(isTimeoutError), () => (
       <WeatherResult
-        image={catAnchorImage}
         title={t('weather:screen.timeout')}
         description={t('weather:screen.retryLater')}
       >
@@ -390,7 +386,6 @@ WeatherHero.Error = function ErrorFallback({ error, reset }: QueryErrorFallbackP
     ))
     .with(P.when(isOfflineError), () => (
       <WeatherResult
-        image={catAnchorImage}
         title={t('weather:screen.offline')}
         description={t('weather:screen.offlineDescription')}
       >
@@ -399,7 +394,6 @@ WeatherHero.Error = function ErrorFallback({ error, reset }: QueryErrorFallbackP
     ))
     .otherwise(() => (
       <WeatherResult
-        image={catAnchorImage}
         title={t('weather:screen.loadFailed')}
         description={t('weather:screen.retryLater')}
       >
@@ -433,7 +427,6 @@ WeatherHero.LocationUnavailable = function LocationUnavailable({
 
   return (
     <WeatherResult
-      image={catAnchorImage}
       title={t('weather:locationPrompt.unavailableTitle')}
       description={t('weather:locationPrompt.unavailableDescription')}
     >
@@ -445,17 +438,16 @@ WeatherHero.LocationUnavailable = function LocationUnavailable({
 };
 
 interface WeatherResultProps {
-  image: ImageSource | number;
   title: string;
   description?: string;
   children?: ReactNode;
 }
 
 /** 시안 V2States 2·6. 마스코트 이미지는 장식이라 보조 기술에서 숨긴다 */
-function WeatherResult({ image, title, description, children }: WeatherResultProps) {
+function WeatherResult({ title, description, children }: WeatherResultProps) {
   return (
     <VStack align="center" px={8}>
-      <WeatherMascot source={image} className="size-[136px]" fallbackCondition="CLEAR" />
+      <WeatherMascot name="weatherAnchor" className="size-[136px]" fallbackCondition="CLEAR" />
       <Text
         size="t2"
         weight="semibold"

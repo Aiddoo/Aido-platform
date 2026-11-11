@@ -6,10 +6,10 @@ import { useGetInviteQueryOptions } from '@src/features/social/invite/queries/in
 import { ANIMATION } from '@src/shared/constants/animation';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
-import { Box, CheckmarkIcon, HStack, Text, VStack } from '@src/shared/ui';
+import { Box, CheckmarkIcon, HStack, LabelChip, Text, VStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { useQuery } from '@tanstack/react-query';
-import { Chip, PressableFeedback } from 'heroui-native';
+import { PressableFeedback } from 'heroui-native';
 import { type ReactNode, useCallback, useEffect, useState } from 'react';
 import type { LayoutChangeEvent } from 'react-native';
 import Animated, {
@@ -202,17 +202,18 @@ function ActivationStep({ label, isCompleted, reward }: ActivationStepProps) {
         </Text>
         {/* 초대 단계는 PressableFeedback 안이라 Pressable인 Chip이 탭을 가로채지 않게 한다 */}
         {hasReward && (
-          <Chip size="sm" variant="soft" color="accent" className="max-w-full" pointerEvents="none">
-            <Text
-              size="e1"
-              weight="semibold"
-              lineBreakStrategyIOS="hangul-word"
-              textBreakStrategy="highQuality"
-              className="shrink text-accent-soft-foreground"
-            >
-              {reward}
-            </Text>
-          </Chip>
+          <LabelChip
+            color="accent"
+            label={reward}
+            labelProps={{
+              weight: 'semibold',
+              lineBreakStrategyIOS: 'hangul-word',
+              textBreakStrategy: 'highQuality',
+              className: 'shrink',
+            }}
+            className="max-w-full"
+            pointerEvents="none"
+          />
         )}
       </VStack>
     </HStack>

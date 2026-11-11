@@ -1,5 +1,4 @@
 import type { WeatherCondition } from '@aido/api/vocabulary';
-import catSuggestionImage from '@assets/images/weather/mascot-suggestion.webp';
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
 import {
   TodoCheckbox,
@@ -184,7 +183,7 @@ WeatherBriefing.Card = function Card({
           </Text>
         </VStack>
         <WeatherMascot
-          source={catSuggestionImage}
+          name="weatherSuggestion"
           className="-mt-1.5 -mr-1 size-[72px]"
           fallbackCondition={view.mascotCondition}
         />

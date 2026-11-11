@@ -8,6 +8,7 @@ import {
   Button,
   HStack,
   IconCircle,
+  LabelChip,
   MicIcon,
   QueryErrorBoundary,
   ReportDuoIcon,
@@ -21,7 +22,7 @@ import {
   Mascot,
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
-import { Chip, PressableFeedback } from 'heroui-native';
+import { PressableFeedback } from 'heroui-native';
 import { type ComponentProps, Suspense, useCallback, useState } from 'react';
 import { View } from 'react-native';
 import {
@@ -333,22 +334,13 @@ function FeatureCard({
         />
         <VStack flex={1} gap={4}>
           {badge != null && (
-            <Chip
-              size="sm"
-              variant="soft"
+            <LabelChip
               color="accent"
+              label={badge}
+              labelProps={{ weight: 'semibold', numberOfLines: 1 }}
               pointerEvents="none"
               className="self-start"
-            >
-              <Text
-                size="e1"
-                weight="semibold"
-                numberOfLines={1}
-                className="text-accent-soft-foreground"
-              >
-                {badge}
-              </Text>
-            </Chip>
+            />
           )}
           <Text size="b3" weight="semibold" lineBreakStrategyIOS="hangul-word">
             {title}

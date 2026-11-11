@@ -3,10 +3,10 @@ import { useGetEntitlementsQueryOptions } from '@src/features/billing/subscripti
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
-import { AiFilledIcon, ListRow, type QueryErrorFallbackProps, Text } from '@src/shared/ui';
+import { AiFilledIcon, LabelChip, ListRow, type QueryErrorFallbackProps } from '@src/shared/ui';
 import { useQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
-import { Chip, PressableFeedback } from 'heroui-native';
+import { PressableFeedback } from 'heroui-native';
 import type { ComponentProps } from 'react';
 
 import { isSuggestionsPremiumRequiredError } from '../domains/suggestion.error';
@@ -113,16 +113,12 @@ function InfoCard({ label, isPremiumOnly = false, ...props }: InfoCardProps) {
         right={
           isPremiumOnly && (
             // Chip도 Pressable이라 그대로 두면 칩 자리 탭을 가로채 카드가 눌리지 않는다
-            <Chip size="sm" variant="soft" color="accent" pointerEvents="none">
-              <Text
-                size="e1"
-                weight="semibold"
-                numberOfLines={1}
-                className="text-accent-soft-foreground"
-              >
-                {t('tier.premium')}
-              </Text>
-            </Chip>
+            <LabelChip
+              color="accent"
+              label={t('tier.premium')}
+              labelProps={{ weight: 'semibold', numberOfLines: 1 }}
+              pointerEvents="none"
+            />
           )
         }
       />
