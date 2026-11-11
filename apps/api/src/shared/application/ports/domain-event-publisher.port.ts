@@ -1,16 +1,54 @@
+import type { z } from "zod";
+
 import type { DomainEvent } from "#api/shared/domain/model/domain-event";
 
-export const DOMAIN_EVENT_PUBLISHER = Symbol("DOMAIN_EVENT_PUBLISHER");
+import type { QueueDefinition } from "./job-queue.port.js";
+
+export interface PublishedDomainEvent extends DomainEvent {
+  readonly eventId: string;
+  readonly occurredAt: Temporal.Instant;
+  /** 구독 schema로 parse할 직렬화 값. Temporal 객체는 넣지 않고 toIsoString 문자열로 둔다. */
+  toPayload(): Record<string, unknown>;
+}
+
+interface EventSubscriptionBase<TPayload extends object> {
+  /** 멱등 key(`<eventId>:<name>`)의 일부라 바꾸면 같은 이벤트가 다시 전달된다. */
+  readonly name: string;
+  readonly eventName: string;
+  readonly payloadSchema: z.ZodType<TPayload>;
+}
+
+/** 상태를 바꾸는 반응. 발행 트랜잭션에 구독 큐 작업으로 함께 커밋된다. */
+interface DurableEventSubscription<
+  TPayload extends object,
+> extends EventSubscriptionBase<TPayload> {
+  readonly delivery: "durable";
+  readonly queue: QueueDefinition<TPayload>;
+}
+
+/** 캐시 정리 전용. 커밋 뒤 in-process로 `name` 채널에 보내며 실패해도 다시 보내지 않는다. */
+export interface AfterCommitEventSubscription<
+  TPayload extends object,
+> extends EventSubscriptionBase<TPayload> {
+  readonly delivery: "after-commit";
+}
+
+export type EventSubscription<TPayload extends object> =
+  | DurableEventSubscription<TPayload>
+  | AfterCommitEventSubscription<TPayload>;
+
+export function defineEventSubscription<TPayload extends object>(
+  subscription: EventSubscription<TPayload>,
+): EventSubscription<TPayload> {
+  return subscription;
+}
 
 /**
  * 도메인 이벤트 발행 포트
  *
- * use-case가 트랜잭션 커밋 **이후** `pullDomainEvents()`로 드레인한 이벤트를
- * 발행하는 유일한 통로입니다. 벤더(EventEmitter2)는 인프라 어댑터 뒤에 숨습니다.
- *
- * 계약: 비동기 구독자 완료까지 관측하되 발행 실패는 호출자에게 전파하지 않습니다.
- * 커밋이 끝난 요청을 부수효과 오류로 실패시키지 않기 위함입니다.
+ * `publish`는 UoW 안에서 부른다. 구독마다 durable은 같은 트랜잭션의 큐 작업으로,
+ * after-commit은 커밋 뒤 in-process 전달로 나뉜다.
  */
 export abstract class DomainEventPublisherPort {
-  abstract publishAll(events: readonly DomainEvent[]): Promise<void>;
+  abstract publish(events: readonly PublishedDomainEvent[]): Promise<void>;
 }

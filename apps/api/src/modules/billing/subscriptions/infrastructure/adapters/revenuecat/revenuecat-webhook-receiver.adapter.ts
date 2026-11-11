@@ -1,0 +1,66 @@
+import { Inject, Injectable, Logger } from "@nestjs/common";
+
+import { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
+
+import { SubscriptionAlerts } from "../../../application/subscriptions.alerts.js";
+import { SubscriptionLogEvent } from "../../../application/subscriptions.log-events.js";
+import { ApplyStoreSubscriptionEventUseCase } from "../../../application/use-cases/apply-store-subscription-event.use-case.js";
+import {
+  billingSubscriptionsConfig,
+  type BillingSubscriptionsConfig,
+} from "../../../billing-subscriptions.config.js";
+import { translateRevenueCatWebhook } from "./revenuecat-webhook-translator.adapter.js";
+
+export interface RevenueCatWebhookInput {
+  readonly body: unknown;
+}
+
+@Injectable()
+export class RevenueCatWebhookReceiver {
+  readonly #logger = new Logger(RevenueCatWebhookReceiver.name);
+  readonly #applyStoreSubscriptionEvent: Pick<ApplyStoreSubscriptionEventUseCase, "execute">;
+  readonly #alert: OperationalAlertPort;
+  readonly #config: Pick<BillingSubscriptionsConfig, "acceptsTestStorePurchases">;
+
+  constructor(
+    applyStoreSubscriptionEvent: ApplyStoreSubscriptionEventUseCase,
+    alert: OperationalAlertPort,
+    @Inject(billingSubscriptionsConfig.KEY)
+    config: Pick<BillingSubscriptionsConfig, "acceptsTestStorePurchases">,
+  ) {
+    this.#applyStoreSubscriptionEvent = applyStoreSubscriptionEvent;
+    this.#alert = alert;
+    this.#config = config;
+  }
+
+  async receive({ body }: RevenueCatWebhookInput): Promise<{ received: true }> {
+    const translation = translateRevenueCatWebhook(body, {
+      acceptsTestStore: this.#config.acceptsTestStorePurchases,
+    });
+    if (translation.status === "skipped") {
+      this.#logger.log({
+        event: SubscriptionLogEvent.WEBHOOK_SKIPPED,
+        reason: translation.reason,
+        eventType: translation.eventType,
+        eventId: translation.eventId,
+      });
+      return { received: true };
+    }
+    // 계약과 다른 원문은 다시 보내도 같으므로 받은 것으로 닫고 사람이 보게 한다
+    if (translation.status === "invalid") {
+      this.#logger.warn({
+        event: SubscriptionLogEvent.WEBHOOK_INVALID,
+        eventType: translation.eventType,
+        issueCount: translation.issueCount,
+      });
+      this.#alert.raise({
+        ...SubscriptionAlerts.WEBHOOK_INVALID,
+        tags: { eventType: translation.eventType ?? "unknown" },
+        details: { issueCount: translation.issueCount },
+      });
+      return { received: true };
+    }
+    await this.#applyStoreSubscriptionEvent.execute(translation.event);
+    return { received: true };
+  }
+}

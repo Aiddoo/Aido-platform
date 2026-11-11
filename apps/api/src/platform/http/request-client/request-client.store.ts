@@ -1,26 +1,26 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 
 import { Injectable } from "@nestjs/common";
-import * as Sentry from "@sentry/nestjs";
 import { type ClsMiddlewareOptions, ClsService, ClsServiceManager } from "nestjs-cls";
 
-import { SENTRY_TAG } from "#api/platform/observability/sentry-keys";
+import { tagRequestScope } from "#api/platform/observability/sentry-scope";
 
 import { parseRequestClient, type RequestClient } from "./request-client.js";
 import { assignRequestId } from "./request-id.js";
 
+// DI 토큰이 아니라 요청 클라이언트 정보를 담는 CLS 저장소 key다
 const REQUEST_CLIENT_CLS_KEY = Symbol("REQUEST_CLIENT");
 
 /**
  * 모든 HTTP 요청의 CLS context를 열고 guard·interceptor·controller보다 먼저 RequestClient를
- * 한 번 만든다. 요청 ID는 같은 요청의 Sentry 이벤트에도 태그로 붙는다.
+ * 한 번 만든다. 요청 ID·앱 버전·플랫폼은 같은 요청의 Sentry 이벤트에도 태그로 붙는다.
  */
 export const REQUEST_CLIENT_CLS_MIDDLEWARE: ClsMiddlewareOptions = {
   mount: true,
   setup: (cls: ClsService, request: IncomingMessage, response: ServerResponse) => {
-    const requestId = assignRequestId(request, response);
-    storeRequestClient(cls, parseRequestClient(request.headers, requestId));
-    Sentry.setTag(SENTRY_TAG.REQUEST_ID, requestId);
+    const client = parseRequestClient(request.headers, assignRequestId(request, response));
+    storeRequestClient(cls, client);
+    tagRequestScope(client);
   },
 };
 

@@ -124,7 +124,7 @@ function useTodoMutations() {
 
 const flush = () => act(async () => {});
 /** 행과 상세의 진행 막대가 읽는 값 */
-const progress = (todo: Todo | undefined) => todo && SubTodoPolicy.getSubTodoStats(todo);
+const progress = (todo: Todo | undefined) => todo && SubTodoPolicy.getSubTodoStats(todo.subTodos);
 
 describe('하위 할 일 낙관적 갱신', () => {
   it('여러 날 할 일은 시작일이 아니라 보고 있는 날짜 목록에 첫 항목이 바로 들어간다', async () => {
@@ -386,7 +386,7 @@ describe('하위 할 일 낙관적 갱신', () => {
     queryClient.setQueryData(LIST_DAY_1, toList([todo]));
     const staleRefetch = createPendingResponse(toList([todo]));
     queryClient
-      .fetchQuery({ queryKey: LIST_DAY_1, queryFn: () => staleRefetch.response })
+      .query({ queryKey: LIST_DAY_1, queryFn: () => staleRefetch.response })
       .catch(() => undefined);
     const pending = respondWith({ id: 1 });
     httpClient.patch.mockReturnValue(pending.response);

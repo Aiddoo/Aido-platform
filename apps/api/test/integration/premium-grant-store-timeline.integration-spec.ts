@@ -1,18 +1,18 @@
-import { ENTITLEMENT_READER } from "#api/modules/access/access-entitlement.public";
-import type { EntitlementReaderPort } from "#api/modules/access/access-entitlement.public";
-import { SweepPremiumGrants } from "#api/modules/billing/application/use-cases/subscriptions/sweep-premium-grants.use-case";
+import { EntitlementReaderPort } from "#api/modules/access/entitlements/access-entitlements.public";
+import { SweepPremiumGrantsUseCase } from "#api/modules/billing/premium-grants/application/use-cases/sweep-premium-grants.use-case";
 import {
-  PREMIUM_ACCESS_READER,
-  PREMIUM_GRANTER,
-  type PremiumAccessReaderPort,
-  type PremiumGranterPort,
-} from "#api/modules/billing/billing-subscriptions.public";
-import { RevenueCatWebhookReceiver } from "#api/modules/billing/infrastructure/revenuecat/revenuecat-webhook.receiver";
-import { GetCurrentUser } from "#api/modules/identity/application/use-cases/auth/get-current-user.use-case";
+  PremiumAccessReaderPort,
+  PremiumGranterPort,
+} from "#api/modules/billing/premium-grants/billing-premium-grants.public";
+import { STORE_RENEWAL_GRACE_MS } from "#api/modules/billing/shared/store-renewal-grace.domain-service";
+import { RevenueCatWebhookReceiver } from "#api/modules/billing/subscriptions/infrastructure/adapters/revenuecat/revenuecat-webhook-receiver.adapter";
+import { GetCurrentUserUseCase } from "#api/modules/identity/users/application/use-cases/get-current-user.use-case";
 import { createEntityId } from "#api/platform/database/entity-id";
 import { user as userTable } from "#api/platform/database/schema/index";
-import { STORE_RENEWAL_GRACE_MS } from "#api/shared/domain/store-renewal-grace";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { instantFromDate } from "#api/shared/domain/time/instant";
 import { SubscriptionEventBuilder } from "#test/builders/index";
+import { toDateOrNull } from "#test/fixtures/billing/subscription.fixture";
 import { UserFixture } from "#test/fixtures/index";
 import { createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
@@ -27,7 +27,7 @@ import {
 const AT = new Date("2028-02-26T04:00:00.000Z");
 const STORE_EXPIRY = new Date("2028-03-10T04:00:00.000Z");
 const CHAIN = "timeline-store-chain";
-const DAY_MS = 24 * 60 * 60 * 1_000;
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 describe("결제 구독과 보상 기간 결합 타임라인 QA (실제 PostgreSQL)", () => {
   let database: TestDatabase;
@@ -41,8 +41,8 @@ describe("결제 구독과 보상 기간 결합 타임라인 QA (실제 PostgreS
     database = new TestDatabase({ createClient: (url) => createTestClient(url, { max: 8 }) });
     client = await database.start();
     context = await createE2eApp({ testDatabase: database });
-    granter = context.module.get<PremiumGranterPort>(PREMIUM_GRANTER);
-    entitlement = context.module.get<EntitlementReaderPort>(ENTITLEMENT_READER);
+    granter = context.module.get<PremiumGranterPort>(PremiumGranterPort);
+    entitlement = context.module.get(EntitlementReaderPort);
   });
 
   beforeEach(async () => {
@@ -53,8 +53,8 @@ describe("결제 구독과 보상 기간 결합 타임라인 QA (실제 PostgreS
       id: createEntityId(),
       email: "timeline@example.com",
       userTag: "TLINE001",
-      createdAt: AT,
-      updatedAt: AT,
+      createdAt: instantFromDate(AT),
+      updatedAt: instantFromDate(AT),
     });
     await client.insert(userTable).values(user);
     userId = user.id;
@@ -86,23 +86,26 @@ describe("결제 구독과 보상 기간 결합 타임라인 QA (실제 PostgreS
 
   function premiumAccess() {
     return context.module
-      .get<PremiumAccessReaderPort>(PREMIUM_ACCESS_READER)
-      .getPremiumAccess(userId);
+      .get<PremiumAccessReaderPort>(PremiumAccessReaderPort)
+      .getPremiumAccess(UserId.reconstitute(userId));
   }
 
   function isPremium() {
-    return entitlement.canInTx(userId, "AI_REPORT");
+    return entitlement.canInTx(UserId.reconstitute(userId), "AI_REPORT");
   }
 
   async function userProjection() {
-    return client.query.user.findFirst({
+    const row = await client.query.user.findFirst({
       columns: { subscriptionStatus: true, subscriptionExpiresAt: true },
       where: { id: userId },
     });
+    return row == null
+      ? row
+      : { ...row, subscriptionExpiresAt: toDateOrNull(row.subscriptionExpiresAt) };
   }
 
   async function grantsOf() {
-    return client.query.premiumGrant.findMany({
+    const rows = await client.query.premiumGrant.findMany({
       columns: {
         sourceKey: true,
         status: true,
@@ -114,6 +117,11 @@ describe("결제 구독과 보상 기간 결합 타임라인 QA (실제 PostgreS
       where: { userId },
       orderBy: { createdAt: "asc" },
     });
+    return rows.map((row) => ({
+      ...row,
+      startsAt: toDateOrNull(row.startsAt),
+      endsAt: toDateOrNull(row.endsAt),
+    }));
   }
 
   it("자동 갱신 구독 중 받은 보상은 쌓이고 /me 끝은 유예 3시간 뒤부터 이어 붙인다", async () => {
@@ -121,7 +129,12 @@ describe("결제 구독과 보상 기간 결합 타임라인 QA (실제 PostgreS
     await webhook(storeEvent(SubscriptionEventBuilder.initialPurchase(), "s5-purchase"));
 
     // When
-    await granter.grant({ userId, source: "INVITE", sourceKey: "s5:invite", durationDays: 7 });
+    await granter.grant({
+      userId: UserId.reconstitute(userId),
+      source: "INVITE",
+      sourceKey: "s5:invite",
+      durationDays: 7,
+    });
 
     // Then
     expect(await premiumAccess()).toEqual({
@@ -140,7 +153,12 @@ describe("결제 구독과 보상 기간 결합 타임라인 QA (실제 PostgreS
   it("자동 갱신을 끈 구독과 쌓아 둔 보상은 /me와 취소 웹훅 projection 모두 만료 시각부터 이어 붙인다", async () => {
     // Given
     await webhook(storeEvent(SubscriptionEventBuilder.initialPurchase(), "s6-purchase"));
-    await granter.grant({ userId, source: "INVITE", sourceKey: "s6:invite", durationDays: 7 });
+    await granter.grant({
+      userId: UserId.reconstitute(userId),
+      source: "INVITE",
+      sourceKey: "s6:invite",
+      durationDays: 7,
+    });
     vi.setSystemTime(new Date("2028-03-01T04:00:00.000Z"));
 
     // When
@@ -177,7 +195,12 @@ describe("결제 구독과 보상 기간 결합 타임라인 QA (실제 PostgreS
   it("환불되면 스토어는 즉시 끝나고 쌓아 둔 보상은 환불 시각부터 바로 시작한다", async () => {
     // Given
     await webhook(storeEvent(SubscriptionEventBuilder.initialPurchase(), "s8-purchase"));
-    await granter.grant({ userId, source: "INVITE", sourceKey: "s8:invite", durationDays: 7 });
+    await granter.grant({
+      userId: UserId.reconstitute(userId),
+      source: "INVITE",
+      sourceKey: "s8:invite",
+      durationDays: 7,
+    });
     const refundedAt = new Date("2028-03-01T04:00:00.000Z");
     vi.setSystemTime(refundedAt);
 
@@ -195,7 +218,7 @@ describe("결제 구독과 보상 기간 결합 타임라인 QA (실제 PostgreS
       isTrial: false,
       planType: null,
     });
-    expect(await entitlement.canInTx(userId, "AI_REPORT")).toBe(true);
+    expect(await entitlement.canInTx(UserId.reconstitute(userId), "AI_REPORT")).toBe(true);
   });
 
   function billingIssue(eventId: string, graceEndsAt: Date) {
@@ -220,7 +243,12 @@ describe("결제 구독과 보상 기간 결합 타임라인 QA (실제 PostgreS
   it("스토어 결제 유예 10일째에는 프리미엄을 유지하고 보상을 시작하지 않으며, 결제가 복구되면 쌓아 둔 일수를 그대로 둔다", async () => {
     // Given 결제 실패: RevenueCat은 BILLING_ISSUE와 CANCELLATION(BILLING_ERROR)을 함께 보낸다
     await webhook(storeEvent(SubscriptionEventBuilder.initialPurchase(), "s7-purchase"));
-    await granter.grant({ userId, source: "INVITE", sourceKey: "s7:invite", durationDays: 7 });
+    await granter.grant({
+      userId: UserId.reconstitute(userId),
+      source: "INVITE",
+      sourceKey: "s7:invite",
+      durationDays: 7,
+    });
     const graceEndsAt = new Date(STORE_EXPIRY.getTime() + 16 * DAY_MS);
     vi.setSystemTime(STORE_EXPIRY);
     await webhook(billingIssue("s7-billing", graceEndsAt));
@@ -229,7 +257,9 @@ describe("결제 구독과 보상 기간 결합 타임라인 QA (실제 PostgreS
     // When 유예 10일째 정리
     const insideGrace = new Date(STORE_EXPIRY.getTime() + 10 * DAY_MS);
     vi.setSystemTime(insideGrace);
-    await context.module.get(SweepPremiumGrants).execute({ now: insideGrace });
+    await context.module
+      .get(SweepPremiumGrantsUseCase)
+      .execute({ now: instantFromDate(insideGrace) });
     const accessInsideGrace = await premiumAccess();
     const premiumInsideGrace = await isPremium();
     const grantsInsideGrace = await grantsOf();
@@ -277,7 +307,12 @@ describe("결제 구독과 보상 기간 결합 타임라인 QA (실제 PostgreS
   it("결제 유예가 복구 없이 끝나면 쌓아 둔 보상을 유예 끝부터 한 번만 시작하고 늦은 EXPIRATION도 다시 시작하지 않는다", async () => {
     // Given
     await webhook(storeEvent(SubscriptionEventBuilder.initialPurchase(), "g-purchase"));
-    await granter.grant({ userId, source: "INVITE", sourceKey: "g:invite", durationDays: 7 });
+    await granter.grant({
+      userId: UserId.reconstitute(userId),
+      source: "INVITE",
+      sourceKey: "g:invite",
+      durationDays: 7,
+    });
     const graceEndsAt = new Date(STORE_EXPIRY.getTime() + 16 * DAY_MS);
     vi.setSystemTime(STORE_EXPIRY);
     await webhook(billingIssue("g-billing", graceEndsAt));
@@ -286,7 +321,9 @@ describe("결제 구독과 보상 기간 결합 타임라인 QA (실제 PostgreS
     // When 유예가 끝난 뒤 정리, 이어서 늦은 만료 웹훅
     const afterGrace = new Date(graceEndsAt.getTime() + 10 * 60_000);
     vi.setSystemTime(afterGrace);
-    await context.module.get(SweepPremiumGrants).execute({ now: afterGrace });
+    await context.module
+      .get(SweepPremiumGrantsUseCase)
+      .execute({ now: instantFromDate(afterGrace) });
     await webhook(
       SubscriptionEventBuilder.expiration()
         .withAppUserId(userId)
@@ -296,7 +333,9 @@ describe("결제 구독과 보상 기간 결합 타임라인 QA (실제 PostgreS
         .withExpirationAtMs(STORE_EXPIRY.getTime())
         .build(),
     );
-    await context.module.get(SweepPremiumGrants).execute({ now: afterGrace });
+    await context.module
+      .get(SweepPremiumGrantsUseCase)
+      .execute({ now: instantFromDate(afterGrace) });
 
     // Then
     expect(await grantsOf()).toEqual([
@@ -318,7 +357,12 @@ describe("결제 구독과 보상 기간 결합 타임라인 QA (실제 PostgreS
 
   it("진행 중인 보상을 두 번 끊어도 남은 기간을 ms 그대로 쌓아 일수 올림이 누적되지 않는다", async () => {
     // Given 보상 진행 중 1일 21시간 뒤 구매, 환불 뒤 다시 1일 9시간 뒤 구매
-    await granter.grant({ userId, source: "INVITE", sourceKey: "r:invite", durationDays: 7 });
+    await granter.grant({
+      userId: UserId.reconstitute(userId),
+      source: "INVITE",
+      sourceKey: "r:invite",
+      durationDays: 7,
+    });
     vi.setSystemTime(new Date(AT.getTime() + DAY_MS + 21 * 3_600_000));
     await webhook(storeEvent(SubscriptionEventBuilder.initialPurchase(), "r-purchase"));
     const refundedAt = new Date(AT.getTime() + 3 * DAY_MS);
@@ -383,7 +427,7 @@ describe("결제 구독과 보상 기간 결합 타임라인 QA (실제 PostgreS
     ).toEqual({
       userId,
       status: "ACTIVE",
-      expiresAt: nextExpiry,
+      expiresAt: instantFromDate(nextExpiry),
       environment: "SANDBOX",
       productId: "premium_monthly",
     });
@@ -397,7 +441,12 @@ describe("결제 구독과 보상 기간 결합 타임라인 QA (실제 PostgreS
   it("만료 시각 없는 UNCANCELLATION은 저장된 만료 시각을 유지해 유료 기간 중에 쌓아 둔 보상을 시작하지 않는다", async () => {
     // Given
     await webhook(storeEvent(SubscriptionEventBuilder.initialPurchase(), "u-purchase"));
-    await granter.grant({ userId, source: "INVITE", sourceKey: "u:invite", durationDays: 7 });
+    await granter.grant({
+      userId: UserId.reconstitute(userId),
+      source: "INVITE",
+      sourceKey: "u:invite",
+      durationDays: 7,
+    });
     vi.setSystemTime(new Date("2028-03-01T04:00:00.000Z"));
     await webhook(storeEvent(SubscriptionEventBuilder.cancellation(), "u-cancel"));
     const uncancelledAt = new Date("2028-03-02T04:00:00.000Z");
@@ -432,7 +481,7 @@ describe("결제 구독과 보상 기간 결합 타임라인 QA (실제 PostgreS
     vi.setSystemTime(STORE_EXPIRY);
     await webhook(billingIssue("m-billing", graceEndsAt));
     await webhook(billingErrorCancellation("m-billing-cancel"));
-    const getMe = context.module.get(GetCurrentUser);
+    const getMe = context.module.get(GetCurrentUserUseCase);
     const input = { userId, sessionId: "qa-session", timezone: "Asia/Seoul" };
     vi.setSystemTime(new Date(graceEndsAt.getTime() - 60_000));
     const beforeEnd = await getMe.execute(input);
@@ -454,9 +503,14 @@ describe("결제 구독과 보상 기간 결합 타임라인 QA (실제 PostgreS
 
   it("보상이 끝난 직후 sweep 전이라도 /me 프로필 캐시가 경계에서 만료돼 source와 isPremium이 함께 무료가 된다", async () => {
     // Given
-    await granter.grant({ userId, source: "INVITE", sourceKey: "c:invite", durationDays: 7 });
+    await granter.grant({
+      userId: UserId.reconstitute(userId),
+      source: "INVITE",
+      sourceKey: "c:invite",
+      durationDays: 7,
+    });
     const endsAt = new Date(AT.getTime() + 7 * DAY_MS);
-    const getMe = context.module.get(GetCurrentUser);
+    const getMe = context.module.get(GetCurrentUserUseCase);
     const input = { userId, sessionId: "qa-session", timezone: "Asia/Seoul" };
     vi.setSystemTime(new Date(endsAt.getTime() - 60_000));
     await getMe.execute(input);
@@ -464,7 +518,9 @@ describe("결제 구독과 보상 기간 결합 타임라인 QA (실제 PostgreS
     // When
     vi.setSystemTime(new Date(endsAt.getTime() + 60_000));
     const afterEnd = await getMe.execute(input);
-    await context.module.get(SweepPremiumGrants).execute({ now: new Date() });
+    await context.module
+      .get(SweepPremiumGrantsUseCase)
+      .execute({ now: instantFromDate(new Date()) });
     const fresh = await getMe.execute(input);
 
     // Then
@@ -481,7 +537,12 @@ describe("결제 구독과 보상 기간 결합 타임라인 QA (실제 PostgreS
   it("월간에서 연간으로 바꾸면 상품 변경 안내는 기간을 두고, 연간 갱신이 만료만 늘리며 쌓아 둔 보상은 유지된다", async () => {
     // Given
     await webhook(storeEvent(SubscriptionEventBuilder.initialPurchase(), "p-purchase"));
-    await granter.grant({ userId, source: "INVITE", sourceKey: "p:invite", durationDays: 7 });
+    await granter.grant({
+      userId: UserId.reconstitute(userId),
+      source: "INVITE",
+      sourceKey: "p:invite",
+      durationDays: 7,
+    });
     const annualExpiry = new Date("2029-03-10T04:00:00.000Z");
 
     // When

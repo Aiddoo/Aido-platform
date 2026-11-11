@@ -1,8 +1,9 @@
 import { type DynamicModule, Module, type Provider } from "@nestjs/common";
+import type { ConfigType } from "@nestjs/config";
 import type { ThrottlerStorage } from "@nestjs/throttler";
 import type { Redis } from "ioredis";
 
-import { TypedConfigService } from "../config/services/config.service.js";
+import { cacheConfig, selectSharedRedis } from "../config/cache.config.js";
 import { REDIS_COMMAND_CLIENT } from "../redis/redis.constants.js";
 import { RedisThrottlerStorage } from "./redis-throttler-storage.js";
 import { THROTTLER_STORAGE } from "./throttle.constants.js";
@@ -28,21 +29,18 @@ export class ThrottleModule {
     const storageProvider: Provider = {
       provide: THROTTLER_STORAGE,
       useFactory: (
-        configService: TypedConfigService,
+        cache: ConfigType<typeof cacheConfig>,
         redis?: Redis,
       ): ThrottlerStorage | undefined => {
-        if (configService.cache.type === "redis" && redis) {
-          return new RedisThrottlerStorage(redis);
-        }
-
-        return undefined;
+        const shared = selectSharedRedis(cache, redis);
+        return shared == null ? undefined : new RedisThrottlerStorage(shared);
       },
-      inject: [TypedConfigService, { token: REDIS_COMMAND_CLIENT, optional: true }],
+      inject: [cacheConfig.KEY, { token: REDIS_COMMAND_CLIENT, optional: true }],
     };
 
     return {
       module: ThrottleModule,
-      providers: [TypedConfigService, storageProvider],
+      providers: [storageProvider],
       exports: [THROTTLER_STORAGE],
     };
   }

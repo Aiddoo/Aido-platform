@@ -4,7 +4,6 @@ import {
   pgTable,
   integer,
   text,
-  timestamp,
   varchar,
   serial,
   index,
@@ -13,6 +12,7 @@ import {
   unique,
 } from "drizzle-orm/pg-core";
 
+import { instant } from "../columns/temporal-columns.js";
 import { createEntityId } from "../entity-id.js";
 import {
   subscriptionEnvironment,
@@ -25,15 +25,18 @@ import { user } from "./identity.schema.js";
 export const subscription = pgTable(
   "Subscription",
   {
-    cancelledAt: timestamp({ precision: 3 }),
-    createdAt: timestamp({ precision: 3 }).defaultNow().notNull(),
-    dataRetentionUntil: timestamp({ precision: 3 }),
-    deletedAt: timestamp({ precision: 3 }),
+    cancelledAt: instant(),
+    createdAt: instant()
+      .default(sql`now()`)
+      .notNull(),
+    // 1.15.2에서 DROP: 코드 참조 없음(롤백 호환 때문에 1.15.1은 유지)
+    dataRetentionUntil: instant(),
+    deletedAt: instant(),
     /** 구매 웹훅의 결제 환경. 이 열을 추가하기 전에 만든 행은 null(알 수 없음)이다. */
     environment: subscriptionEnvironment(),
-    expiresAt: timestamp({ precision: 3 }).notNull(),
+    expiresAt: instant().notNull(),
     /** BILLING_ISSUE가 알려 준 스토어 결제 유예의 끝. 그때까지 엔타이틀먼트가 남고 RENEWAL·EXPIRATION이 지운다. */
-    gracePeriodEndsAt: timestamp({ precision: 3 }),
+    gracePeriodEndsAt: instant(),
     id: serial().primaryKey(),
     lastProcessedEventId: varchar({ length: 255 }),
     /** PRODUCT_CHANGE가 예약한 다음 갱신의 상품(new_product_id). 실제 결제·재개 이벤트가 productId로 옮기고 비운다. */
@@ -42,16 +45,14 @@ export const subscription = pgTable(
     periodType: text(),
     productId: varchar({ length: 100 }).notNull(),
     /** 연간 갱신 7일 전 안내를 보낸 기간의 expiresAt. 갱신으로 expiresAt이 바뀌면 다음 기간에 다시 보낸다. */
-    renewalNoticeExpiresAt: timestamp({ precision: 3 }),
+    renewalNoticeExpiresAt: instant(),
     revenueCatId: varchar({ length: 255 }).notNull(),
-    startedAt: timestamp({ precision: 3 }).notNull(),
+    startedAt: instant().notNull(),
     status: subscriptionStatus().notNull(),
     /** 무료 체험 종료 3일 전 안내를 보낸 시각. 조건부 UPDATE로 체인마다 한 번만 보낸다. */
-    trialEndingNotifiedAt: timestamp({ precision: 3, withTimezone: true }),
-    updatedAt: timestamp({ precision: 3 })
-      .notNull()
-      .$defaultFn(() => new Date())
-      .$onUpdate(() => new Date()),
+    trialEndingNotifiedAt: instant({ withTimezone: true }),
+    // 도메인이 ClockPort 값으로 채운다. 집합 update도 저장소가 명시한다
+    updatedAt: instant().notNull(),
     userId: text().notNull(),
   },
   (table) => [
@@ -84,7 +85,7 @@ export const subscriptionEventReceipt = pgTable(
     environment: subscriptionEnvironment(),
     eventId: varchar({ length: 255 }).notNull(),
     eventType: varchar({ length: 50 }).notNull(),
-    processedAt: timestamp({ precision: 3 }).notNull(),
+    processedAt: instant().notNull(),
     provider: varchar({ length: 30 }).notNull(),
   },
   (table) => [
@@ -95,21 +96,21 @@ export const subscriptionEventReceipt = pgTable(
 export const premiumGrant = pgTable(
   "PremiumGrant",
   {
-    createdAt: timestamp({ precision: 3 }).defaultNow().notNull(),
+    createdAt: instant()
+      .default(sql`now()`)
+      .notNull(),
     durationDays: integer().notNull(),
     /** 진행 중에 끊고 남은 기간의 정확한 길이(ms). null이면 durationDays일이다. */
     durationMs: bigint({ mode: "number" }),
-    endingNotifiedAt: timestamp({ precision: 3 }),
-    endsAt: timestamp({ precision: 3 }),
+    endingNotifiedAt: instant(),
+    endsAt: instant(),
     id: text().primaryKey().$defaultFn(createEntityId),
     source: premiumGrantSource().notNull(),
     sourceKey: varchar({ length: 128 }).notNull(),
-    startsAt: timestamp({ precision: 3 }),
+    startsAt: instant(),
     status: premiumGrantStatus().notNull(),
-    updatedAt: timestamp({ precision: 3 })
-      .notNull()
-      .$defaultFn(() => new Date())
-      .$onUpdate(() => new Date()),
+    // 도메인이 ClockPort 값으로 채운다. 집합 update도 저장소가 명시한다
+    updatedAt: instant().notNull(),
     userId: text().notNull(),
   },
   (table) => [

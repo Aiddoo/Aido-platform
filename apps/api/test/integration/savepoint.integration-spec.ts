@@ -5,19 +5,14 @@ import { Test, type TestingModule } from "@nestjs/testing";
 import { asc, eq, sql } from "drizzle-orm";
 import { ClsModule } from "nestjs-cls";
 
-import { TypedConfigService } from "#api/platform/config/services/config.service";
+import { databaseConfig } from "#api/platform/config/database.config";
 import { databaseSqlState } from "#api/platform/database/database-error.util";
 import { DRIZZLE, type DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { DatabaseModule } from "#api/platform/database/database.module";
 import { memo, user } from "#api/platform/database/schema/index";
-import {
-  AFTER_COMMIT_TASK_REGISTRY,
-  SAVEPOINT_RUNNER,
-  UNIT_OF_WORK,
-  type AfterCommitTaskRegistryPort,
-  type SavepointRunnerPort,
-  type UnitOfWorkPort,
-} from "#api/shared/application/ports/index";
+import { AfterCommitTaskRegistryPort } from "#api/shared/application/ports/after-commit-task.registry.port";
+import { SavepointRunnerPort } from "#api/shared/application/ports/savepoint-runner.port";
+import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserFixture } from "#test/fixtures/index";
 import { createTestClient } from "#test/setup/database-context";
 import { TestDatabase } from "#test/setup/test-database";
@@ -27,13 +22,11 @@ import { TestDatabase } from "#test/setup/test-database";
 @Module({
   providers: [
     {
-      provide: TypedConfigService,
-      useValue: {
-        database: { url: "postgresql://unused:unused@localhost:5432/unused", poolMax: 1 },
-      },
+      provide: databaseConfig.KEY,
+      useValue: { url: "postgresql://unused:unused@localhost:5432/unused", poolMax: 1 },
     },
   ],
-  exports: [TypedConfigService],
+  exports: [databaseConfig.KEY],
 })
 class TestConfigModule {}
 
@@ -68,9 +61,9 @@ describe("Drizzle 동일 연결 savepoint (실제 PostgreSQL)", () => {
       .useValue(client)
       .compile();
     await module.init();
-    unitOfWork = module.get<UnitOfWorkPort>(UNIT_OF_WORK);
-    savepointRunner = module.get<SavepointRunnerPort>(SAVEPOINT_RUNNER);
-    afterCommitTasks = module.get<AfterCommitTaskRegistryPort>(AFTER_COMMIT_TASK_REGISTRY);
+    unitOfWork = module.get(UnitOfWorkPort);
+    savepointRunner = module.get(SavepointRunnerPort);
+    afterCommitTasks = module.get(AfterCommitTaskRegistryPort);
     txHost = module.get<TransactionHost<DrizzleTransactionalAdapter>>(TransactionHost);
   });
 
@@ -94,7 +87,9 @@ describe("Drizzle 동일 연결 savepoint (실제 PostgreSQL)", () => {
   }
 
   async function createMemo(content: string, memoUserId = userId): Promise<void> {
-    await txHost.tx.insert(memo).values({ userId: memoUserId, content, sortOrder: 0 });
+    await txHost.tx
+      .insert(memo)
+      .values({ userId: memoUserId, content, sortOrder: 0, updatedAt: Temporal.Now.instant() });
   }
 
   it.each(["postgres", "application"])(

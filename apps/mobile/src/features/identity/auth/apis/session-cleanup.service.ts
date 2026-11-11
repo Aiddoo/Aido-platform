@@ -27,6 +27,8 @@ interface SessionCleanupServicePorts {
   /** 계정 구분이 없는 키라 지우지 않으면 다음 계정이 앞사람의 초대를 받는다. 위층 기능이라 조립하는 곳이 넘긴다 */
   pendingRedemption: { clear(): void };
   userDeviceData: Pick<UserDeviceDataService, 'clearForUser'>;
+  /** 위층 기능이라 조립하는 곳이 넘긴다 */
+  pushDevice: { requestRelease(): void };
   logger: Pick<Logger, 'warn'>;
 }
 
@@ -39,6 +41,7 @@ export class SessionCleanupService {
   readonly #deviceTimezone: SessionCleanupServicePorts['deviceTimezone'];
   readonly #pendingRedemption: SessionCleanupServicePorts['pendingRedemption'];
   readonly #userDeviceData: SessionCleanupServicePorts['userDeviceData'];
+  readonly #pushDevice: SessionCleanupServicePorts['pushDevice'];
   readonly #logger: SessionCleanupServicePorts['logger'];
 
   constructor({
@@ -49,6 +52,7 @@ export class SessionCleanupService {
     deviceTimezone,
     pendingRedemption,
     userDeviceData,
+    pushDevice,
     logger,
   }: SessionCleanupServicePorts) {
     this.#queryCache = queryCache;
@@ -58,6 +62,7 @@ export class SessionCleanupService {
     this.#deviceTimezone = deviceTimezone;
     this.#pendingRedemption = pendingRedemption;
     this.#userDeviceData = userDeviceData;
+    this.#pushDevice = pushDevice;
     this.#logger = logger;
   }
 
@@ -73,6 +78,12 @@ export class SessionCleanupService {
   /** 탈퇴: 그 계정의 안내 기록을 지운다. 로그아웃은 같은 사람이 돌아오므로 남긴다 */
   afterAccountDeleted = (accountId: string): void => {
     this.#run('user-device-data', () => this.#userDeviceData.clearForUser(accountId));
+  };
+
+  /** 세션 만료: 서버에 로그아웃을 알리지 못했으므로 이 기기의 푸시 등록도 푼다 */
+  afterSessionExpired = (): void => {
+    this.afterSessionEnded();
+    this.#run('push-device-release', () => this.#pushDevice.requestRelease());
   };
 
   /** 세션 만료·미인증 부팅: 캐시만 지운다. 같은 사람이 돌아오면 초안을 이어 쓴다 */

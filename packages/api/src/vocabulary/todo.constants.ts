@@ -10,11 +10,14 @@ export const RECURRING_TODO_LIMITS = {
 /** 반복 할 일 시스템 상한. 성능·안정성 한도라 등급과 상관없이 ADMIN에도 같다. */
 export const TODO_SERIES_LIMITS = {
   MAX_ACTIVE_PER_USER: 30,
-  /** 출시 앱(1.14.x까지)의 옛 경로 상한. 옛 서버에 없던 거절이라 카테고리 한도만큼 넉넉하게 둔다. */
+  /** 1.14.x 이하 앱이 쓰는 반복 생성 경로의 상한. 그 앱의 서버에 없던 거절이라 넉넉하게 두고, 최소 지원 버전이 1.15.0이 되면 지운다. */
   MAX_ACTIVE_PER_USER_LEGACY: 300,
   MAX_COUNT: 365,
   VISIBLE_AHEAD_DAYS: 90,
 } as const;
+
+/** 매월 반복에서 이 날짜 이상은 31일이 없는 달에 말일로 당겨질 수 있다. */
+export const TODO_REPEAT_MONTH_DAY_CLAMP_FROM = 29;
 
 export const TODO_ITEM_LIMITS = {
   /** 투두당 최대 하위 항목 수 */

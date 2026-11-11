@@ -5,7 +5,7 @@ import type { ComponentProps, ReactNode } from 'react';
 
 interface TodoActionRowProps extends Pick<
   ComponentProps<typeof PressableFeedback>,
-  'onPress' | 'isDisabled'
+  'onPress' | 'isDisabled' | 'testID'
 > {
   icon: ReactNode;
   label: string;

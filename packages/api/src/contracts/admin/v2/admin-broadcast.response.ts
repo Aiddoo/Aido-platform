@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { datetimeSchema, nullableDatetimeSchema } from "../../../common/datetime.js";
+import { entityIdSchema } from "../../../common/entity-id.js";
 import {
   BROADCAST_CAMPAIGN_STATUS,
   BROADCAST_TARGET_FILTER,
@@ -11,7 +12,7 @@ const countSchema = z.number().int().nonnegative();
 
 export const broadcastCampaignAcceptedSchema = z
   .object({
-    campaignId: z.cuid().describe("브로드캐스트 캠페인 ID"),
+    campaignId: entityIdSchema.describe("브로드캐스트 캠페인 ID"),
     requestId: z.uuid().describe("요청에 실린 요청 ID"),
     status: z.enum(BROADCAST_CAMPAIGN_STATUS).describe("접수 시점의 캠페인 상태"),
     acceptedAt: datetimeSchema.describe("처음 접수한 시각 (ISO 8601 UTC)"),
@@ -30,7 +31,7 @@ export type BroadcastCampaignAccepted = z.infer<typeof broadcastCampaignAccepted
 
 export const broadcastCampaignSchema = z
   .object({
-    campaignId: z.cuid().describe("브로드캐스트 캠페인 ID"),
+    campaignId: entityIdSchema.describe("브로드캐스트 캠페인 ID"),
     requestId: z.uuid().describe("요청 ID"),
     status: z.enum(BROADCAST_CAMPAIGN_STATUS).describe("캠페인 상태"),
     title: z.string().describe("알림 제목"),

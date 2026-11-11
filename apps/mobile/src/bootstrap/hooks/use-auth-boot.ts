@@ -102,6 +102,8 @@ export function useAuthBoot(): void {
     }
     if (authSession.reason === 'signed-out') {
       sessionCleanupService.afterSignedOut();
+    } else if (authSession.reason === 'expired') {
+      sessionCleanupService.afterSessionExpired();
     } else {
       sessionCleanupService.afterSessionEnded();
     }

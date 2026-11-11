@@ -1,9 +1,6 @@
 import type { Provider } from "@nestjs/common";
 
-import {
-  RETENTION_ENROLLER,
-  type RetentionEnrollerPort,
-} from "#api/modules/identity/application/ports/auth/retention-enroller.port";
+import { RetentionEnrollerPort } from "#api/modules/identity/auth/application/ports/retention-enroller.port";
 
 const retentionEnrollerTestDouble: RetentionEnrollerPort = {
   enrollNewUser: () => Promise.resolve(),
@@ -12,6 +9,6 @@ const retentionEnrollerTestDouble: RetentionEnrollerPort = {
 
 /** 리텐션 모듈 전체를 조립하지 않는 인증 통합 테스트용 ACL 대역. */
 export const retentionEnrollerTestProvider: Provider<RetentionEnrollerPort> = {
-  provide: RETENTION_ENROLLER,
+  provide: RetentionEnrollerPort,
   useValue: retentionEnrollerTestDouble,
 };

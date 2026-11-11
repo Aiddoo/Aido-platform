@@ -1,13 +1,13 @@
 import { vi } from "vitest";
 
-import type {
-  OAuthIdentityProvider,
-  OAuthIdentityProviderRegistry,
-} from "#api/modules/identity/application/ports/auth/oauth-identity-provider.port";
+import type { OAuthIdentityProviderPort } from "#api/modules/identity/auth/application/ports/oauth-identity-provider.port";
 
-import { FakeOAuthProviderRegistry } from "../mocks/fake-oauth-provider-registry.js";
+import {
+  FakeOAuthProviderRegistry,
+  type OAuthIdentityProviders,
+} from "../mocks/fake-oauth-provider-registry.js";
 
-function createGoogleProvider(): OAuthIdentityProvider {
+function createGoogleProvider(): OAuthIdentityProviderPort {
   return {
     provider: "GOOGLE",
     failureEmail: "google_unknown@social.aido.kr",
@@ -25,7 +25,7 @@ describe("FakeOAuthProviderRegistry", () => {
   it("설정한 authorization code를 외부 호출 없이 token으로 교환해야 한다", async () => {
     // Given - 실제 exchangeCode가 호출되면 실패하는 delegate
     const delegate = createGoogleProvider();
-    const delegates: OAuthIdentityProviderRegistry = new Map([["GOOGLE", delegate]]);
+    const delegates: OAuthIdentityProviders = new Map([["GOOGLE", delegate]]);
     const fakeRegistry = new FakeOAuthProviderRegistry(delegates);
     fakeRegistry.setExchangeToken("GOOGLE", "success-code", "fake-id-token");
 

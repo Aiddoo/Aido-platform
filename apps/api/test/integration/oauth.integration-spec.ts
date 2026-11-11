@@ -1,31 +1,29 @@
 import { ErrorCode } from "@aido/api/errors";
-import { Logger } from "@nestjs/common";
 import { HttpClient } from "@nestjs/http-client";
 import type { TestingModule } from "@nestjs/testing";
 import { count, eq } from "drizzle-orm";
 import { vi } from "vitest";
 
-import type { OAuthIdentityProvider } from "#api/modules/identity/application/ports/auth/oauth-identity-provider.port";
-import { ExchangeOAuthCode } from "#api/modules/identity/application/use-cases/auth/exchange-oauth-code.use-case";
-import { GetOAuthRedirectUri } from "#api/modules/identity/application/use-cases/auth/get-oauth-redirect-uri.use-case";
-import { LinkOAuthAccount } from "#api/modules/identity/application/use-cases/auth/link-oauth-account.use-case";
-import { ListLinkedAccounts } from "#api/modules/identity/application/use-cases/auth/list-linked-accounts.use-case";
-import { LoginWithOAuthToken } from "#api/modules/identity/application/use-cases/auth/login-with-oauth-token.use-case";
-import { UnlinkOAuthAccount } from "#api/modules/identity/application/use-cases/auth/unlink-oauth-account.use-case";
-import type { AccountProvider } from "#api/modules/identity/domain/types/auth/auth.types";
-import {
-  AppleOAuthProvider,
-  GoogleOAuthProvider,
-  KakaoOAuthProvider,
-  NaverOAuthProvider,
-} from "#api/modules/identity/infrastructure/oauth/auth/adapters/index";
-import { DrizzleOAuthStateRepository } from "#api/modules/identity/infrastructure/persistence/auth/drizzle-oauth-state.repository";
+import type { OAuthIdentityProviderPort } from "#api/modules/identity/auth/application/ports/oauth-identity-provider.port";
+import { ExchangeOAuthCodeUseCase } from "#api/modules/identity/auth/application/use-cases/exchange-oauth-code.use-case";
+import { GetOAuthRedirectUriUseCase } from "#api/modules/identity/auth/application/use-cases/get-oauth-redirect-uri.use-case";
+import { LinkOAuthAccountUseCase } from "#api/modules/identity/auth/application/use-cases/link-oauth-account.use-case";
+import { ListLinkedAccountsUseCase } from "#api/modules/identity/auth/application/use-cases/list-linked-accounts.use-case";
+import { LoginWithOAuthTokenUseCase } from "#api/modules/identity/auth/application/use-cases/login-with-oauth-token.use-case";
+import { UnlinkOAuthAccountUseCase } from "#api/modules/identity/auth/application/use-cases/unlink-oauth-account.use-case";
+import type { AccountProvider } from "#api/modules/identity/auth/domain/auth.constants";
+import { AppleOAuthIdentityAdapter } from "#api/modules/identity/auth/infrastructure/adapters/apple-oauth-identity.adapter";
+import { GoogleOAuthIdentityAdapter } from "#api/modules/identity/auth/infrastructure/adapters/google-oauth-identity.adapter";
+import { KakaoOAuthIdentityAdapter } from "#api/modules/identity/auth/infrastructure/adapters/kakao-oauth-identity.adapter";
+import { NaverOAuthIdentityAdapter } from "#api/modules/identity/auth/infrastructure/adapters/naver-oauth-identity.adapter";
+import { DrizzleOAuthStateRepository } from "#api/modules/identity/auth/infrastructure/persistence/drizzle-oauth-state.repository";
 import { requireRecord } from "#api/platform/database/database-error.util";
 import { session as sessionTable, user as userTable } from "#api/platform/database/schema/index";
 import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
 import { ApplicationException } from "#api/shared/application/application.exception";
 import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
 import { FakeEmailService } from "#test/mocks/fake-email.service";
+import { FakeOAuthProviderRegistry } from "#test/mocks/fake-oauth-provider-registry";
 import { FakeOAuthTokenVerifierService } from "#test/mocks/fake-oauth-token-verifier.service";
 import { RecordingOperationalAlert } from "#test/mocks/recording-operational-alert";
 import { suppressLogger } from "#test/setup/suppress-logger";
@@ -47,12 +45,12 @@ const at = new Date("2026-10-07T12:00:00.000Z");
 
 describe("OAuth UseCase 통합 테스트 (실제 PostgreSQL)", () => {
   let module: TestingModule;
-  let loginWithOAuthToken: LoginWithOAuthToken;
-  let linkOAuthAccount: LinkOAuthAccount;
-  let unlinkOAuthAccount: UnlinkOAuthAccount;
-  let listLinkedAccounts: ListLinkedAccounts;
-  let getOAuthRedirectUri: GetOAuthRedirectUri;
-  let exchangeOAuthCode: ExchangeOAuthCode;
+  let loginWithOAuthToken: LoginWithOAuthTokenUseCase;
+  let linkOAuthAccount: LinkOAuthAccountUseCase;
+  let unlinkOAuthAccount: UnlinkOAuthAccountUseCase;
+  let listLinkedAccounts: ListLinkedAccountsUseCase;
+  let getOAuthRedirectUri: GetOAuthRedirectUriUseCase;
+  let exchangeOAuthCode: ExchangeOAuthCodeUseCase;
   let fakeTokenVerifier: FakeOAuthTokenVerifierService;
   let testDb: TestDatabase;
   let client: TestDatabaseClient;
@@ -62,30 +60,38 @@ describe("OAuth UseCase 통합 테스트 (실제 PostgreSQL)", () => {
     testDb = new TestDatabase();
     client = await testDb.start();
     fakeTokenVerifier = new FakeOAuthTokenVerifierService();
-    const getConfig = () => ({
+    const oauthClient = {
       clientId: "test-client-id",
       clientSecret: "test-client-secret",
       callbackUrl: "http://localhost:3000/auth/callback",
       isConfigured: true,
-    });
-    const logger = new Logger("OAuthIdentityProvider");
+    };
+    const config = {
+      google: oauthClient,
+      kakao: oauthClient,
+      naver: oauthClient,
+      apple: { clientId: undefined, jwksUrl: undefined, jwksCooldownDurationMs: undefined },
+    };
     const http = new HttpClient({ retry: false, throwOnHttpError: false });
     const policies = new OutboundPolicyRegistry(new RecordingOperationalAlert());
-    const registry = new Map<AccountProvider, OAuthIdentityProvider>([
-      ["APPLE", new AppleOAuthProvider(fakeTokenVerifier)],
-      ["GOOGLE", new GoogleOAuthProvider(getConfig, fakeTokenVerifier, logger, http, policies)],
-      ["KAKAO", new KakaoOAuthProvider(getConfig, fakeTokenVerifier, logger, http, policies)],
-      ["NAVER", new NaverOAuthProvider(getConfig, fakeTokenVerifier, logger, http, policies)],
-    ]);
+    const registry = new FakeOAuthProviderRegistry(
+      new Map<AccountProvider, OAuthIdentityProviderPort>([
+        ["APPLE", new AppleOAuthIdentityAdapter(config)],
+        ["GOOGLE", new GoogleOAuthIdentityAdapter(config, http, policies)],
+        ["KAKAO", new KakaoOAuthIdentityAdapter(config, http, policies)],
+        ["NAVER", new NaverOAuthIdentityAdapter(config, http, policies)],
+      ]),
+      fakeTokenVerifier,
+    ).registry;
     module = await createAuthTestModule(testDb.getClient(), new FakeEmailService(), {
       oauthProviderRegistry: registry,
     });
-    loginWithOAuthToken = module.get(LoginWithOAuthToken);
-    linkOAuthAccount = module.get(LinkOAuthAccount);
-    unlinkOAuthAccount = module.get(UnlinkOAuthAccount);
-    listLinkedAccounts = module.get(ListLinkedAccounts);
-    getOAuthRedirectUri = module.get(GetOAuthRedirectUri);
-    exchangeOAuthCode = module.get(ExchangeOAuthCode);
+    loginWithOAuthToken = module.get(LoginWithOAuthTokenUseCase);
+    linkOAuthAccount = module.get(LinkOAuthAccountUseCase);
+    unlinkOAuthAccount = module.get(UnlinkOAuthAccountUseCase);
+    listLinkedAccounts = module.get(ListLinkedAccountsUseCase);
+    getOAuthRedirectUri = module.get(GetOAuthRedirectUriUseCase);
+    exchangeOAuthCode = module.get(ExchangeOAuthCodeUseCase);
     oauthStateRepository = module.get(DrizzleOAuthStateRepository);
   });
 
@@ -641,7 +647,7 @@ describe("OAuth UseCase 통합 테스트 (실제 PostgreSQL)", () => {
       expect(naverAccount).toBeDefined();
       expect(naverAccount?.linked).toBe(true);
       expect(naverAccount?.providerAccountId).toBe("naver-pid-test");
-      expect(naverAccount?.linkedAt).toBeInstanceOf(Date);
+      expect(naverAccount?.linkedAt).toBeInstanceOf(Temporal.Instant);
     });
 
     it("다른 유저에 연결된 계정을 연동하면 409 에러가 발생해야 한다", async () => {
@@ -668,13 +674,29 @@ describe("OAuth UseCase 통합 테스트 (실제 PostgreSQL)", () => {
     });
   });
 
+  async function createState(state: string, provider: AccountProvider, redirectUri: string) {
+    // use case의 DateClock과 같은 시계로 만료를 정한다
+    const now = Temporal.Instant.fromEpochMilliseconds(Date.now());
+    await oauthStateRepository.create({
+      state,
+      provider,
+      redirectUri,
+      expiresAt: now.add({ minutes: 10 }),
+    });
+    const created = await oauthStateRepository.findByState(state, now);
+    if (created == null) {
+      throw new Error(`OAuth state가 만들어지지 않았습니다: ${state}`);
+    }
+    return created;
+  }
+
   describe("OAuth State 및 Exchange Code", () => {
     it("저장된 state로 redirectUri를 조회할 수 있어야 한다", async () => {
       // Given
       const state = "redirect-lookup-state";
       const redirectUri = "aido-dev://auth/naver";
 
-      await oauthStateRepository.create(state, "NAVER", redirectUri);
+      await createState(state, "NAVER", redirectUri);
 
       // When
       const resolved = await getOAuthRedirectUri.execute({ state: state });
@@ -697,17 +719,12 @@ describe("OAuth UseCase 통합 테스트 (실제 PostgreSQL)", () => {
       const redirectUri = "aido://auth/callback";
 
       // When
-      const oauthState = await oauthStateRepository.create(state, "KAKAO", redirectUri);
+      const oauthState = await createState(state, "KAKAO", redirectUri);
 
       // Then
-      expect(oauthState).toBeDefined();
       expect(oauthState.state).toBe(state);
       expect(oauthState.provider).toBe("KAKAO");
       expect(oauthState.redirectUri).toBe(redirectUri);
-
-      const found = await oauthStateRepository.findByState(state);
-      expect(found).not.toBeNull();
-      expect(found?.state).toBe(state);
     });
 
     it("교환 코드로 토큰을 교환할 수 있어야 한다", async () => {
@@ -726,7 +743,7 @@ describe("OAuth UseCase 통합 테스트 (실제 PostgreSQL)", () => {
       });
 
       const state = "exchange-state-456";
-      const oauthState = await oauthStateRepository.create(state, "GOOGLE", "aido://auth/callback");
+      const oauthState = await createState(state, "GOOGLE", "aido://auth/callback");
 
       const exchangeCode = oauthStateRepository.generateExchangeCode();
       await oauthStateRepository.saveExchangeData(oauthState.id, {
@@ -772,11 +789,7 @@ describe("OAuth UseCase 통합 테스트 (실제 PostgreSQL)", () => {
         token: googleToken,
       });
 
-      const oauthState = await oauthStateRepository.create(
-        "reuse-state",
-        "GOOGLE",
-        "aido://auth/callback",
-      );
+      const oauthState = await createState("reuse-state", "GOOGLE", "aido://auth/callback");
 
       const exchangeCode = oauthStateRepository.generateExchangeCode();
       await oauthStateRepository.saveExchangeData(oauthState.id, {

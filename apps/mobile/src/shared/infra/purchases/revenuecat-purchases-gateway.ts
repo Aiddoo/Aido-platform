@@ -5,11 +5,13 @@ import {
   type PurchasePackage,
   type PurchasePackageType,
   type PurchasePeriodUnit,
+  type PurchasesConfigureResult,
   type PurchasesGateway,
   PurchasesGatewayError,
   type PurchaseStore,
 } from '@src/core/ports/purchases-gateway';
 import { getErrorMessage } from '@src/shared/errors';
+import { LogBox } from 'react-native';
 import Purchases, {
   type CustomerInfo,
   INTRO_ELIGIBILITY_STATUS,
@@ -207,17 +209,27 @@ export function createRevenueCatPurchasesGateway({
   isLogEnabled,
   logger,
 }: RevenueCatPurchasesGatewayOptions): PurchasesGateway {
+  // 다시 설정하면 SDK가 공유 인스턴스를 바꿔 붙여 둔 고객 정보 리스너를 잃는다
+  let configureResult: PurchasesConfigureResult | null = null;
+
   return {
     configure: () => {
+      if (configureResult != null) {
+        return configureResult;
+      }
       const apiKey = getRevenueCatApiKey();
       if (!apiKey) {
-        return 'missing-api-key';
+        configureResult = 'missing-api-key';
+        return configureResult;
       }
       if (isLogEnabled) {
+        // 개발 빌드의 테스트 스토어 키는 상품·권한 매핑 갱신이 실패해 SDK 오류 로그가 LogBox로 로그인 화면을 덮는다. 터미널에는 그대로 찍힌다
+        LogBox.ignoreLogs(['[RevenueCat]']);
         Purchases.setLogLevel(LOG_LEVEL.WARN);
       }
       Purchases.configure({ apiKey });
-      return 'configured';
+      configureResult = 'configured';
+      return configureResult;
     },
 
     logIn: async (userId) => {
