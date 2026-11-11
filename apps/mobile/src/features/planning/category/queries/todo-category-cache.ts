@@ -12,11 +12,6 @@ import type { useGetTodoCategoryDeletionPreviewQueryOptions } from './todo-categ
 /** 만들기 응답 전에 목록에 먼저 그리는 임시 행 */
 export type OptimisticTodoCategoryWithCount = TodoCategoryWithCount & { readonly optimistic: true };
 
-// 서버 응답 전의 임시 행은 음수 id다. 임시 id로는 요청을 보낼 수 없어 행 버튼과 옮길 곳에서 뺀다
-export function isOptimisticCategory(category: Pick<TodoCategory, 'id'>) {
-  return category.id < 0;
-}
-
 export function withCategoryAdded(
   result: TodoCategoriesResult,
   category: TodoCategoryWithCount,

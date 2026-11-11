@@ -85,25 +85,25 @@ export const todoDetailsSchema = z.object({
 });
 export type TodoDetails = z.infer<typeof todoDetailsSchema>;
 
-// 정하지 않은(null, 생략) 공개 범위는 서버 기본값인 공개로 본다
-export function getVisibility(todo: {
-  visibility?: Todo['visibility'] | null;
-}): Todo['visibility'] {
-  return todo.visibility ?? 'PUBLIC';
+// 공개 범위 규칙은 할 일·폼·음성 계획이 함께 써서 공개 범위 값만 받는다. 정하지 않은(null, 생략) 공개 범위는 서버 기본값인 공개로 본다
+export function getVisibility(
+  visibility: Todo['visibility'] | null | undefined,
+): Todo['visibility'] {
+  return visibility ?? 'PUBLIC';
 }
 
 // 비공개 할 일은 친구에게 보이지 않는다
-export function isPrivate(todo: { visibility: Todo['visibility'] | null }): boolean {
-  return getVisibility(todo) === 'PRIVATE';
+export function isPrivateVisibility(visibility: Todo['visibility'] | null): boolean {
+  return getVisibility(visibility) === 'PRIVATE';
 }
 
 export function withVisibilityToggled<T extends { visibility: Todo['visibility'] | null }>(
   todo: T,
 ): T {
-  return { ...todo, visibility: isPrivate(todo) ? 'PUBLIC' : 'PRIVATE' };
+  return { ...todo, visibility: isPrivateVisibility(todo.visibility) ? 'PUBLIC' : 'PRIVATE' };
 }
 
-// 종일이 아닌 시각만 비교한다. 종일끼리는 남은 시각 값이 달라도 바뀐 것이 아니다
+// 일정 시트와 수정 폼의 값을 비교한다. 종일이 아닌 시각만 비교하고 종일끼리는 남은 시각 값이 달라도 바뀐 것이 아니다
 export function hasScheduleChanged(
   next: Pick<Todo, 'isAllDay'> & { scheduledTime: string | null },
   previous: Pick<Todo, 'isAllDay'> & { scheduledTime: string | null },
@@ -119,21 +119,24 @@ export function findTodo(todos: readonly Todo[], todoId: number): Todo | null {
   return todos.find((todo) => todo.id === todoId) ?? null;
 }
 
-export function findSubTodo(
-  todo: Pick<Todo, 'subTodos'> | null,
-  subTodoId: number,
-): SubTodo | null {
+export function findSubTodo(todo: Todo | null, subTodoId: number): SubTodo | null {
   return todo?.subTodos.find((subTodo) => subTodo.id === subTodoId) ?? null;
 }
 
-export function isRecurringTodo(todo: Pick<Todo, 'recurrenceGroupId'>): boolean {
-  return todo.recurrenceGroupId != null;
+// 묶음 id가 있으면 반복에서 생긴 할 일이다. 예시 카드처럼 할 일 모델이 없는 곳도 같은 규칙을 쓴다
+export function isRecurring(recurrenceGroupId: string | null): boolean {
+  return recurrenceGroupId != null;
 }
 
-export function isMultiDayTodo(todo: Pick<Todo, 'startDate' | 'endDate'>): boolean {
+export function isRecurringTodo(todo: Todo): boolean {
+  return isRecurring(todo.recurrenceGroupId);
+}
+
+export function isMultiDayTodo(todo: Todo): boolean {
   return todo.endDate != null && todo.endDate !== todo.startDate;
 }
 
+// 할 일과 폼의 날짜 칸이 함께 쓰는 기간 규칙이라 필요한 날짜만 받는다
 export function getShiftedEndDate(
   todo: Pick<Todo, 'startDate' | 'endDate'>,
   startDate: string,
@@ -144,7 +147,7 @@ export function getShiftedEndDate(
 }
 
 // 서버 응답 전의 임시 행. 임시 id로는 요청을 보낼 수 없다
-export function isOptimisticTodo(todo: Pick<Todo, 'id'>): boolean {
+export function isOptimisticTodo(todo: Todo): boolean {
   return todo.id < 0;
 }
 
@@ -156,15 +159,12 @@ export function isLastOpenTodo(todos: readonly Todo[], completedTodoId: number):
   );
 }
 
-export function isTodoOnDate(todo: Pick<Todo, 'startDate' | 'endDate'>, date: string): boolean {
+export function isTodoOnDate(todo: Todo, date: string): boolean {
   return todo.startDate <= date && date <= (todo.endDate ?? todo.startDate);
 }
 
 // 서버가 준 벽시계는 어디서든 그 시각이고 칸을 비워 둔 시간 행만 순간을 시간대로 읽는다. 종일·시간 없음은 null
-export function getLocalTime(
-  todo: Pick<Todo, 'isAllDay' | 'localTime' | 'scheduledAt'>,
-  timeZone: string,
-): string | null {
+export function getLocalTime(todo: Todo, timeZone: string): string | null {
   if (todo.isAllDay) {
     return null;
   }
@@ -190,16 +190,13 @@ export function hasUpcomingTimedTodo(
 }
 
 // 상세 화면은 피드 날짜를 모른다. 오늘이 기간 안이면 오늘 목록을, 아니면 시작일 목록을 먼저 고친다
-export function getOptimisticListDate(
-  todo: Pick<Todo, 'startDate' | 'endDate'>,
-  todayKey: string,
-): string {
+export function getOptimisticListDate(todo: Todo, todayKey: string): string {
   return isTodoOnDate(todo, todayKey) ? todayKey : todo.startDate;
 }
 
 // 오늘 할 일은 내일로, 다른 날 할 일은 오늘로 옮기고 새 시작일보다 앞선 끝 날짜는 지운다
 export function getTodayToggleDates(
-  todo: Pick<Todo, 'startDate' | 'endDate'>,
+  todo: Todo,
   todayKey: string,
 ): Pick<Todo, 'startDate' | 'endDate'> {
   const startDate = todo.startDate === todayKey ? addDaysToDateKey(todayKey, 1) : todayKey;
@@ -211,23 +208,18 @@ export function getTodayToggleDates(
 
 const MIN_REORDERABLE_COUNT = 2;
 
-export function canReorderTodos(todos: readonly Pick<Todo, 'id'>[]) {
+export function canReorderTodos(todos: readonly Todo[]) {
   return todos.length >= MIN_REORDERABLE_COUNT;
 }
 
 export const TodoPolicy = {
   canReorderTodos,
-  getVisibility,
-  isPrivate,
-  withVisibilityToggled,
-  hasScheduleChanged,
   findTodo,
   findSubTodo,
   getOptimisticListDate,
   isTodoOnDate,
   isRecurringTodo,
   isMultiDayTodo,
-  getShiftedEndDate,
   getTodayToggleDates,
   isOptimisticTodo,
   isLastOpenTodo,

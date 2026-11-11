@@ -261,6 +261,67 @@ describe("EvaluatePushDeliveryEligibilityUseCase — 푸시 발송 자격 판정
     ]);
   });
 
+  describe("일반 시간당 한도 — 사용자가 정한 할 일 리마인더는 막지도 세지도 않는다", () => {
+    const reminder = { ...transactional, type: "TODO_REMINDER" as const };
+
+    it("단건은 한도에 닿은 사용자에게도 할 일 리마인더를 보내고 소셜 알림은 막는다", async () => {
+      // Given
+      const { useCase, rateLimiter } = createEvaluatePushDeliveryEligibilityUseCase();
+      rateLimiter.limitedGeneralUserIds.add("user-1");
+      const recipient = await useCase.loadSingleRecipient("user-1");
+
+      // When
+      const decisions = await Promise.all(
+        [reminder, transactional].map((data, index) =>
+          useCase.evaluateSingle(data, recipient, RATE_LIMIT_DISPATCH_ID + index, false),
+        ),
+      );
+
+      // Then
+      expect(decisions).toEqual([
+        { status: "eligible", candidate: reminder },
+        { status: "skipped", candidate: transactional, reason: "RATE_LIMITED" },
+      ]);
+      expect(rateLimiter.generalRequests).toEqual([
+        { dispatchId: RATE_LIMIT_DISPATCH_ID + 1, userId: "user-1" },
+      ]);
+    });
+
+    it("배치는 할 일 리마인더를 예약 요청에서 빼고 나머지의 순서·제한 결과를 지킨다", async () => {
+      // Given
+      const { useCase, userSettings, rateLimiter } = createEvaluatePushDeliveryEligibilityUseCase();
+      userSettings.preferences.set("user-1", createNotificationDeliveryPreferenceFixture());
+      userSettings.preferences.set("user-2", createNotificationDeliveryPreferenceFixture());
+      rateLimiter.limitedBatchUserIds.add("user-1");
+      const recipients = await useCase.loadBatchRecipients(["user-1", "user-2"]);
+      const limitedReminder = { data: reminder, rateLimitDispatchId: 1 };
+      const limitedSocial = { data: transactional, rateLimitDispatchId: 2 };
+      const allowedSocial = {
+        data: { ...transactional, userId: "user-2" },
+        rateLimitDispatchId: 3,
+      };
+
+      // When
+      const decisions = await useCase.reserveBatch(
+        [limitedReminder, limitedSocial, allowedSocial],
+        recipients,
+      );
+
+      // Then
+      expect(decisions).toEqual([
+        { status: "eligible", candidate: limitedReminder },
+        { status: "skipped", candidate: limitedSocial, reason: "RATE_LIMITED" },
+        { status: "eligible", candidate: allowedSocial },
+      ]);
+      expect(rateLimiter.batchRequests).toEqual([
+        [
+          { dispatchId: 2, userId: "user-1" },
+          { dispatchId: 3, userId: "user-2" },
+        ],
+      ]);
+    });
+  });
+
   describe("야간 경계 — 사용자가 정한 리마인더만 야간 수신을 꺼도 보낸다", () => {
     it.each([
       ["Asia/Seoul", "20:59", false],

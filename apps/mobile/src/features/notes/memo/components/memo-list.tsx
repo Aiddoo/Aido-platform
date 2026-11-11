@@ -140,7 +140,11 @@ MemoList.Item = function Item({ memo, isSelected, onSelect }: MemoListItemProps)
   const { title, body } = toMemoPreview(memo);
 
   return (
-    <PressableFeedback onPress={() => selectMemo(memo.id)} className="rounded-2xl">
+    <PressableFeedback
+      onPress={() => selectMemo(memo.id)}
+      className="rounded-2xl"
+      testID={`memo-item-${memo.id}`}
+    >
       <VStack
         gap={8}
         className={cn(

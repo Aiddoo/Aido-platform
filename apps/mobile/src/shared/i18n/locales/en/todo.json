@@ -177,7 +177,10 @@
     "emptyTitle": "Your friend has no to-dos yet",
     "emptyDescription": "Nudge them to create one",
     "nudge": "Nudge",
-    "alreadyNudged": "Already nudged"
+    "alreadyNudged": "Already nudged",
+    "unavailableTitle": "You can't see this friend's feed anymore",
+    "unavailableDescription": "Your friendship may have changed",
+    "backToMyFeed": "Go to my feed"
   },
   "nudge": {
     "limitSpentTitle": "You've used up today's nudges",

@@ -96,9 +96,7 @@ export type TodoCommentLikeResult = z.infer<typeof todoCommentLikeResultSchema>;
 
 type TodoCommentDisplayState = 'active' | 'deleted' | 'blockedAuthor';
 
-export function getDisplayState(
-  comment: Pick<TodoComment, 'isDeleted' | 'isAuthorBlocked'>,
-): TodoCommentDisplayState {
+export function getDisplayState(comment: TodoComment): TodoCommentDisplayState {
   return match(comment)
     .returnType<TodoCommentDisplayState>()
     .with({ isAuthorBlocked: true }, () => 'blockedAuthor')
@@ -106,15 +104,15 @@ export function getDisplayState(
     .otherwise(() => 'active');
 }
 
-function isActiveComment(comment: Pick<TodoComment, 'isDeleted' | 'isAuthorBlocked'>) {
+function isActiveComment(comment: TodoComment) {
   return getDisplayState(comment) === 'active';
 }
 
-export function isReply(comment: Pick<TodoComment, 'threadCommentId'>) {
+export function isReply(comment: TodoComment) {
   return comment.threadCommentId != null;
 }
 
-export function canLikeComment(comment: Pick<TodoComment, 'isDeleted' | 'isAuthorBlocked'>) {
+export function canLikeComment(comment: TodoComment) {
   return isActiveComment(comment);
 }
 
@@ -135,9 +133,7 @@ export function canDeleteOnlyAsTodoOwner(comment: TodoComment) {
   return canDeleteComment(comment) && !comment.viewer.canEdit;
 }
 
-export function canCopyComment(
-  comment: Pick<TodoComment, 'isDeleted' | 'isAuthorBlocked' | 'content'>,
-) {
+export function canCopyComment(comment: TodoComment) {
   return isActiveComment(comment) && comment.content != null;
 }
 
@@ -164,23 +160,18 @@ export function isTombstonedOnDelete(comment: TodoComment) {
   return !isReply(comment) && comment.replyCount > 0;
 }
 
-export function getHiddenReplyCount(
-  thread: Pick<TodoCommentThread, 'replySummary'>,
-  loadedCount: number,
-) {
+export function getHiddenReplyCount(thread: TodoCommentThread, loadedCount: number) {
   return Math.max(0, thread.replySummary.totalCount - loadedCount);
 }
 
 // 접힌 묶음은 대표 답글 하나를 보이므로, 대표 답글이 없으면 답글 전체가 숨은 수다
-export function getCollapsedHiddenReplyCount(
-  thread: Pick<TodoCommentThread, 'previewReply' | 'replySummary'>,
-) {
+export function getCollapsedHiddenReplyCount(thread: TodoCommentThread) {
   return thread.previewReply == null
     ? thread.replySummary.totalCount
     : thread.replySummary.hiddenCount;
 }
 
-export function hasRepliesToShow(thread: Pick<TodoCommentThread, 'replySummary'>) {
+export function hasRepliesToShow(thread: TodoCommentThread) {
   return thread.replySummary.totalCount > 0;
 }
 

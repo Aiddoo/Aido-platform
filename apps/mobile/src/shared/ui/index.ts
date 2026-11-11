@@ -20,7 +20,6 @@ export {
   type SheetRouteExit,
   SheetRouteScreen,
   SheetScrollShadow,
-  usePortalTarget,
   useKeyboardSheetBodyMaxHeight,
   useSheetRoute,
 } from './bottom-sheet';
