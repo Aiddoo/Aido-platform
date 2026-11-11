@@ -4,12 +4,15 @@ import {
   todoListResponseSchema,
   todoSummaryResponseSchema,
 } from '@aido/api';
+import { toInstant } from '@src/shared/date/instant';
 import { createTestQueryClient } from '@src/testing/core';
 import { setupFakeTimersPerTest } from '@src/testing/timers';
 
+import { createParentTodo } from '../__tests__/sub-todo.fixtures';
 import {
   createDailyCompletionsDto,
   createTodoDto,
+  createTodoFormValues,
   createTodoItemResponseDto,
   createTodoListResponseDto,
 } from '../__tests__/todo.fixtures';
@@ -23,8 +26,10 @@ import {
   todoSummarySchema,
 } from '../domains/todo.model';
 import {
+  toCreateTodoRequest,
   toDailyCompletionsResult,
   toTodo,
+  toTodoFormValues,
   toTodoDetails,
   toTodoListResult,
   toTodoSummary,
@@ -261,5 +266,103 @@ describe('계약 응답과 앱 스키마', () => {
 
     // Then
     expect(todoDetailsSchema.parse(result)).toEqual(result);
+  });
+});
+
+describe('toCreateTodoRequest', () => {
+  it('하루짜리 종일 할 일은 시각·끝 날짜·반복 없이 보낸다', () => {
+    // When
+    const request = toCreateTodoRequest(createTodoFormValues({ title: '우유 사기' }));
+
+    // Then
+    expect(request).toEqual({
+      title: '우유 사기',
+      categoryId: 1,
+      startDate: '2026-03-08',
+      isAllDay: true,
+      visibility: 'PUBLIC',
+    });
+  });
+
+  it('종일로 바꾼 할 일은 남아 있던 시각을 보내지 않는다', () => {
+    // When
+    const request = toCreateTodoRequest(
+      createTodoFormValues({ scheduledTime: '09:30', isAllDay: true }),
+    );
+
+    // Then
+    expect(request).not.toHaveProperty('scheduledTime');
+  });
+
+  it('여러 날 시간 할 일은 끝 날짜와 벽시계를 보낸다', () => {
+    // When
+    const request = toCreateTodoRequest(
+      createTodoFormValues({ endDate: '2026-03-10', scheduledTime: '09:30', isAllDay: false }),
+    );
+
+    // Then
+    expect(request).toMatchObject({
+      startDate: '2026-03-08',
+      endDate: '2026-03-10',
+      scheduledTime: '09:30',
+      isAllDay: false,
+    });
+  });
+
+  it('반복 할 일은 서버 반복 규칙으로 바꿔 함께 보낸다', () => {
+    // When
+    const request = toCreateTodoRequest(
+      createTodoFormValues({
+        repeat: { frequency: 'MONTHLY', monthDay: 15, end: { type: 'NEVER' } },
+      }),
+    );
+
+    // Then
+    expect(request.repeat).toEqual({ frequency: 'MONTHLY', monthDay: 15, end: { type: 'NEVER' } });
+    expect(request).not.toHaveProperty('endDate');
+  });
+});
+
+describe('toTodoFormValues', () => {
+  it('수정 폼 날짜는 할 일의 날짜 key 그대로다', () => {
+    // Given
+    const todo = createParentTodo({ startDate: '2026-11-05', endDate: '2026-11-07' });
+
+    // When
+    const values = toTodoFormValues(todo, 'America/New_York');
+
+    // Then
+    expect([values.startDate, values.endDate]).toEqual(['2026-11-05', '2026-11-07']);
+  });
+
+  it('종일이면 수정 폼에 시각이 없다', () => {
+    // Given
+    const todo = createParentTodo({ localTime: null, isAllDay: true });
+
+    // When
+    const values = toTodoFormValues(todo, 'Asia/Seoul');
+
+    // Then
+    expect(values.scheduledTime).toBeNull();
+  });
+
+  it('서버가 벽시계 칸을 비운 시간 행은 보는 시간대로 계산하고, 칸이 있으면 시간대를 바꿔도 그대로다', () => {
+    // Given
+    const legacy = createParentTodo({
+      localTime: null,
+      scheduledAt: toInstant('2026-11-05T01:00:00.000Z'),
+      isAllDay: false,
+    });
+    const floating = createParentTodo({ localTime: '10:00', isAllDay: false });
+
+    // When
+    const legacyInSeoul = toTodoFormValues(legacy, 'Asia/Seoul');
+    const legacyInNewYork = toTodoFormValues(legacy, 'America/New_York');
+    const floatingInNewYork = toTodoFormValues(floating, 'America/New_York');
+
+    // Then
+    expect(legacyInSeoul.scheduledTime).toBe('10:00');
+    expect(legacyInNewYork.scheduledTime).toBe('20:00');
+    expect(floatingInNewYork.scheduledTime).toBe('10:00');
   });
 });

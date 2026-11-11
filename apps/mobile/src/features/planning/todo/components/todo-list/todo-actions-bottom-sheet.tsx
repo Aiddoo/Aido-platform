@@ -1,4 +1,3 @@
-import { formatDateKeyCompactRange } from '@src/shared/date/format/date-format';
 import { toDateKey } from '@src/shared/date/zoned';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useRetainedValue } from '@src/shared/hooks/use-retained-value';
@@ -40,6 +39,7 @@ import {
   useUpdateTodoScheduleMutationOptions,
 } from '../../queries/todo.mutations';
 import { useGetTodosByDateQueryOptions } from '../../queries/todo.queries';
+import { formatTodoPeriod } from '../../utils/todo-period.view-model';
 import { TodoActionRow } from '../todo-action-row';
 import { TodoScopeStep } from '../todo-scope-step';
 
@@ -140,12 +140,7 @@ TodoActionsBottomSheet.ActionList = function ActionList({
     confirmDialog.openAsync({
       title: t('multiDayDelete.title'),
       description: t('multiDayDelete.description', {
-        period: formatDateKeyCompactRange(
-          todo.startDate,
-          todo.endDate ?? todo.startDate,
-          todayKey,
-          dateFormatContext,
-        ),
+        period: formatTodoPeriod(todo, todayKey, dateFormatContext),
       }),
       cancelLabel: t('common:actions.cancel'),
       confirmLabel: t('multiDayDelete.confirm'),

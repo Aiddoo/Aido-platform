@@ -1,16 +1,12 @@
 import type {
   ChangeTodoCategoryInput,
-  CreateTodoInput,
   TodoSeriesResponse,
   UpdateTodoInput,
   UpdateTodoScheduleInput,
 } from '@aido/api';
 
 import type { TodoSeries } from '../domains/todo-series.model';
-import type {
-  RepeatingTodoDraft,
-  TodoSeriesEditOptions,
-} from '../schemas/todo-series-request.schema';
+import type { TodoSeriesEditOptions } from '../schemas/todo-series-request.schema';
 import { toRepeat, toRepeatDto } from './todo-repeat.mapper';
 
 export function toTodoSeries(dto: TodoSeriesResponse): TodoSeries {
@@ -19,18 +15,6 @@ export function toTodoSeries(dto: TodoSeriesResponse): TodoSeries {
     repeat: toRepeat(dto.repeat),
     startDate: dto.startDate,
   };
-}
-
-export function toCreateRepeatingTodoRequest(draft: RepeatingTodoDraft) {
-  return {
-    title: draft.title,
-    categoryId: draft.categoryId,
-    startDate: draft.startDate,
-    scheduledTime: draft.isAllDay ? undefined : draft.scheduledTime,
-    isAllDay: draft.isAllDay,
-    visibility: draft.visibility,
-    repeat: toRepeatDto(draft.repeat),
-  } satisfies CreateTodoInput;
 }
 
 export function toUpdateTodoRequest(

@@ -7,6 +7,7 @@ import {
   createDailyCompletionsDto,
   createTodoApiError,
   createTodoDto,
+  createTodoFormValues,
   createTodoListResponseDto,
 } from '@src/features/planning/todo/__tests__/todo.fixtures';
 import { TODO_QUERY_KEYS } from '@src/features/planning/todo/queries/todo-query-keys';
@@ -41,13 +42,7 @@ const EXISTING = createTodoDto({
   category: { id: 2, name: '업무', color: RED, sortOrder: 1 },
 });
 const CREATED = createTodoDto({ id: 501, title: '새 할 일', startDate: DAY, sortOrder: 1 });
-const INPUT = {
-  title: '새 할 일',
-  startDate: DAY,
-  isAllDay: true,
-  visibility: 'PUBLIC' as const,
-  categoryId: 1,
-};
+const VALUES = createTodoFormValues({ title: '새 할 일', startDate: DAY });
 
 function completionsDto(range: { startDate: string; endDate: string }, hasCreated: boolean) {
   return createDailyCompletionsDto({
@@ -195,7 +190,7 @@ async function renderFeed() {
   /** 사용자가 저장을 누르고 → 서버가 답하고 → 다시 받은 응답이 오는 세 단계를 따로 그린다 */
   async function addTodo() {
     await act(async () => {
-      mutation.createTodo?.({ input: INPUT }).catch(noop);
+      mutation.createTodo?.({ values: VALUES }).catch(noop);
       await deliverQueryNotifications();
     });
     await act(async () => {

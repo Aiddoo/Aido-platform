@@ -8,6 +8,7 @@ import {
 import {
   createTodoApiError,
   createTodoDto,
+  createTodoFormValues,
 } from '@src/features/planning/todo/__tests__/todo.fixtures';
 import type { DailyCompletionsResult } from '@src/features/planning/todo/domains/daily-completion.model';
 import { SubTodoPolicy } from '@src/features/planning/todo/domains/sub-todo.model';
@@ -678,14 +679,12 @@ describe('할 일 낙관적 갱신', () => {
     await act(async () => {
       mutations()
         .createTodo.mutateAsync({
-          input: {
+          values: createTodoFormValues({
             title: '새 할 일',
             startDate: DAY_1,
             endDate: DAY_3,
-            isAllDay: true,
-            visibility: 'PUBLIC',
             categoryId: CATEGORY.id,
-          },
+          }),
         })
         .catch(() => undefined);
     });
@@ -727,14 +726,12 @@ describe('할 일 낙관적 갱신', () => {
     // When
     await act(async () => {
       await mutations().createTodo.mutateAsync({
-        input: {
+        values: createTodoFormValues({
           title: '새 할 일',
           startDate: DAY_1,
           endDate: DAY_3,
-          isAllDay: true,
-          visibility: 'PUBLIC',
           categoryId: CATEGORY.id,
-        },
+        }),
       });
     });
 
@@ -769,14 +766,13 @@ describe('할 일 낙관적 갱신', () => {
     await act(async () => {
       mutations()
         .createTodo.mutateAsync({
-          input: {
+          values: createTodoFormValues({
             title: '새 할 일',
             startDate: DAY_1,
             scheduledTime: '10:00',
             isAllDay: false,
-            visibility: 'PUBLIC',
             categoryId: CATEGORY.id,
-          },
+          }),
         })
         .catch(() => undefined);
     });

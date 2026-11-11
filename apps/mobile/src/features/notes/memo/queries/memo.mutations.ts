@@ -11,8 +11,8 @@ import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use
 import { isAiDataSharingConsentRequiredError } from '@src/features/identity/consent/domains/consent.error';
 import { markAiDataSharingConsentRequired } from '@src/features/identity/consent/queries/consent-cache';
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
-import type { AddTodoFormValues } from '@src/features/planning/composer/schemas/add-todo-form.schema';
 import { invalidateTodos } from '@src/features/planning/todo/queries/todo-cache';
+import type { TodoFormValues } from '@src/features/planning/todo/schemas/todo-form.schema';
 import {
   getVoicePlanFailureCause,
   isPlanKeyConflictError,
@@ -184,15 +184,8 @@ export function useConvertMemoToTodosMutationOptions() {
   return mutationOptions({
     // 오프라인에도 멈춰 기다리지 않고 바로 실패해 시트와 입력값을 남긴 채 안내한다
     networkMode: 'always',
-    mutationFn: async ({
-      memoId,
-      values,
-      timeZone,
-    }: {
-      memoId: number;
-      values: AddTodoFormValues;
-      timeZone: string;
-    }) => unwrap(await memoService.convertToTodos(memoId, values, timeZone)),
+    mutationFn: async ({ memoId, values }: { memoId: number; values: TodoFormValues }) =>
+      unwrap(await memoService.convertToTodos(memoId, values)),
     onSuccess: (_result, { memoId }) => {
       emitTodoCreated();
       toast.success(t('memo:toasts.convertedOne'));

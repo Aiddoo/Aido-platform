@@ -1,16 +1,17 @@
 import { TODO_LIMITS } from '@aido/api/vocabulary';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
-  openTodoRepeatPicker,
   TodoComposerChips,
   TodoComposerSubmitButton,
+  useReopenTodoRepeatPicker,
 } from '@src/features/planning/composer/components/todo-composer-fields';
-import { addTodoFormSchema } from '@src/features/planning/composer/schemas/add-todo-form.schema';
 import { shouldReopenRepeatPicker } from '@src/features/planning/todo/domains/todo-series.error';
-import { instantFromDate } from '@src/shared/date/native-date';
+import { todoFormSchema } from '@src/features/planning/todo/schemas/todo-form.schema';
+import { toDateKey } from '@src/shared/date/zoned';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
+import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
 import { useTranslation } from '@src/shared/i18n';
-import { BottomSheetInput, HStack, KeyboardBottomSheet, useOverlay, VStack } from '@src/shared/ui';
+import { BottomSheetInput, HStack, KeyboardBottomSheet, VStack } from '@src/shared/ui';
 import { useMutation } from '@tanstack/react-query';
 import { Separator } from 'heroui-native';
 import type { ComponentProps } from 'react';
@@ -41,13 +42,13 @@ export function MemoConvertBottomSheet({
   onConverted,
 }: MemoConvertBottomSheetProps) {
   const { t } = useTranslation('todo');
-  const overlay = useOverlay();
   const { timeZone } = useDateFormatContext();
+  const reportUnexpectedError = useReportUnexpectedError('todo');
   const form = useForm({
-    resolver: zodResolver(addTodoFormSchema),
+    resolver: zodResolver(todoFormSchema),
     defaultValues: {
       title: memo.content.slice(0, TODO_LIMITS.TITLE_MAX_LENGTH),
-      startDate: instantFromDate(selectedDate),
+      startDate: toDateKey(selectedDate, timeZone),
       endDate: null,
       scheduledTime: null,
       isAllDay: true,
@@ -58,17 +59,18 @@ export function MemoConvertBottomSheet({
   });
   const { isSubmitting, isValid } = useFormState({ control: form.control });
   const convertMemo = useMutation(useConvertMemoToTodosMutationOptions());
+  const reopenRepeatPicker = useReopenTodoRepeatPicker(form);
   const isSubmitDisabled = !isValid || isSubmitting;
 
   const handleSubmit = form.handleSubmit(async (values) => {
     try {
-      await convertMemo.mutateAsync({ memoId: memo.id, values, timeZone });
+      await convertMemo.mutateAsync({ memoId: memo.id, values });
       onClose();
       onConverted();
     } catch (error) {
       // 안내는 mutation 토스트가 맡고 시트와 입력값은 그대로 남긴다. 루트 overlay에서는 경계로 보내면 앱 전체가 내려간다
       if (shouldReopenRepeatPicker(error)) {
-        openTodoRepeatPicker(overlay, form);
+        reopenRepeatPicker().catch(reportUnexpectedError);
       }
     }
   });

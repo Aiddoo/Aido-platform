@@ -7,6 +7,7 @@ import type {
 import { ApiError } from '@src/core/errors/api-error';
 
 import { type TodoDetails, todoDetailsSchema } from '../domains/todo.model';
+import type { TodoFormValues } from '../schemas/todo-form.schema';
 import { createParentTodo } from './sub-todo.fixtures';
 
 function generateTodoDto(): TodoDto {
@@ -125,4 +126,19 @@ export function createTodoDetails(overrides?: Partial<TodoDetails>): TodoDetails
     metrics: { viewCount: 0, commentCount: 0 },
     ...overrides,
   });
+}
+
+/** 작성 시트의 기본값과 같은 하루짜리 종일 할 일 폼 값 */
+export function createTodoFormValues(overrides: Partial<TodoFormValues> = {}): TodoFormValues {
+  return {
+    title: '테스트 할일',
+    categoryId: 1,
+    startDate: '2026-03-08',
+    endDate: null,
+    scheduledTime: null,
+    isAllDay: true,
+    visibility: 'PUBLIC',
+    repeat: null,
+    ...overrides,
+  };
 }

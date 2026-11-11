@@ -8,7 +8,7 @@ import { userSummarySchema } from '@src/shared/domains/user-summary.model';
 import { z } from 'zod';
 
 import { type SubTodo, subTodoSchema } from './sub-todo.model';
-import { todoRepeatSchema } from './todo-repeat.model';
+import { TodoRepeatPolicy, todoRepeatSchema } from './todo-repeat.model';
 
 export const todoSchema = z.object({
   id: z.int(),
@@ -143,6 +143,44 @@ export function getShiftedEndDate(
   return todo.endDate == null
     ? null
     : addDaysToDateKey(startDate, diffDateKeysInDays(todo.startDate, todo.endDate));
+}
+
+// 작성·수정 폼과 음성 계획 카드가 고르는 일정. 날짜는 앱 시간대의 날짜 key, 시각은 벽시계(HH:mm)다
+const todoScheduleSchema = z.object({
+  startDate: z.iso.date(),
+  endDate: z.iso.date().nullable(),
+  scheduledTime: z.iso.time({ precision: -1 }).nullable(),
+  isAllDay: z.boolean(),
+  repeat: todoRepeatSchema.nullable(),
+});
+export type TodoSchedule = z.infer<typeof todoScheduleSchema>;
+
+// 종일이면 남아 있는 시각을 버린다. 시각과 종일을 따로 가진 폼·시트가 보낼 시각이다
+export function getScheduledTime(
+  schedule: Pick<TodoSchedule, 'isAllDay' | 'scheduledTime'>,
+): string | null {
+  return schedule.isAllDay ? null : schedule.scheduledTime;
+}
+
+// 시작일을 옮기면 여러 날 기간은 길이를 지키고 반복은 시작일을 따라온다. 반복 회차의 날짜 이동은 그 회차에만 적용돼 규칙을 그대로 둔다
+export function withScheduleStartDate(
+  schedule: TodoSchedule,
+  startDate: string,
+  { isSeriesOccurrence }: { isSeriesOccurrence: boolean },
+): TodoSchedule {
+  const repeat =
+    schedule.repeat != null && !isSeriesOccurrence
+      ? TodoRepeatPolicy.withRepeatStartDate(schedule.repeat, schedule.startDate, startDate)
+      : schedule.repeat;
+  return { ...schedule, startDate, endDate: getShiftedEndDate(schedule, startDate), repeat };
+}
+
+// 반복과 여러 날 기간은 함께 두지 않는다. 반복을 정하면 끝 날짜를 지운다
+export function withScheduleRepeat(
+  schedule: TodoSchedule,
+  { startDate, repeat }: Pick<TodoSchedule, 'startDate' | 'repeat'>,
+): TodoSchedule {
+  return { ...schedule, startDate, repeat, endDate: repeat == null ? schedule.endDate : null };
 }
 
 // 서버 응답 전의 임시 행. 임시 id로는 요청을 보낼 수 없다

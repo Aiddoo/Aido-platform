@@ -12,6 +12,7 @@ import {
   createHapticsGatewayStub,
   createHttpClientStub,
   createMemoryStorage,
+  createPendingResponse,
   createSpeechRecognizerStub,
   createTestQueryClient,
   createVoiceNoteStorageFake,
@@ -83,6 +84,45 @@ describe('TodoCreateBottomSheet 저장 실패', () => {
       expect(httpClient.post).toHaveBeenCalledTimes(2);
     });
     expect(httpClient.post.mock.calls[1]?.[1]).toMatchObject({ title: '우유 사기' });
+  });
+});
+
+describe('TodoCreateBottomSheet 두 번 제출', () => {
+  it('저장 중에 다시 보내도 요청은 한 번이고, 보내는 날짜는 고른 날짜 key 그대로다', async () => {
+    // Given
+    const { httpClient } = await renderCreateSheet();
+    const pending = createPendingResponse(err(createTodoApiError()));
+    httpClient.post.mockReturnValue(pending.response);
+    await fireEvent.changeText(await screen.findByPlaceholderText(PLACEHOLDER), '우유 사기');
+
+    // When
+    await fireEvent(screen.getByPlaceholderText(PLACEHOLDER), 'submitEditing');
+    await fireEvent(screen.getByPlaceholderText(PLACEHOLDER), 'submitEditing');
+
+    // Then
+    await waitFor(() => {
+      expect(httpClient.post).toHaveBeenCalledTimes(1);
+    });
+    expect(httpClient.post.mock.calls[0]?.[1]).toMatchObject({
+      title: '우유 사기',
+      startDate: '2026-10-27',
+    });
+    pending.settle();
+  });
+});
+
+describe('TodoCreateBottomSheet 제목 한도', () => {
+  it('한도를 넘는 제목을 붙여 넣으면 바로 줄이라는 안내가 보이고 저장이 꺼진다', async () => {
+    // Given
+    await renderCreateSheet();
+    const input = await screen.findByPlaceholderText(PLACEHOLDER);
+
+    // When
+    await fireEvent.changeText(input, '가'.repeat(250));
+
+    // Then
+    expect(await screen.findByText('제목은 200자 이내로 줄여주세요')).toBeTruthy();
+    expect(screen.getByTestId('todo-add-submit')).toBeDisabled();
   });
 });
 

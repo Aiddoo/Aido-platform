@@ -4,10 +4,11 @@ import { createHttpClientStub } from '@src/testing/core';
 import {
   createTodoApiError,
   createTodoDto,
+  createTodoFormValues,
   createTodoListResponseDto,
   INVALID_DTO,
 } from '../__tests__/todo.fixtures';
-import type { RepeatingTodoDraft } from '../schemas/todo-series-request.schema';
+import type { TodoRepeat } from '../domains/todo-repeat.model';
 import { TodoApi } from './todo.api';
 
 function createSut() {
@@ -136,13 +137,7 @@ describe('TodoApi', () => {
       httpClient.post.mockResolvedValue({ ok: true, value: { todo, message: '완료' } });
 
       // When
-      const result = await api.createTodo({
-        title: '테스트',
-        categoryId: 1,
-        startDate: '2026-03-08',
-        isAllDay: true,
-        visibility: 'PUBLIC',
-      });
+      const result = await api.createTodo(createTodoFormValues({ title: '테스트' }));
 
       // Then
       expect(httpClient.post).toHaveBeenCalledWith('v1/todos', expect.any(Object));
@@ -159,13 +154,7 @@ describe('TodoApi', () => {
       httpClient.post.mockResolvedValue({ ok: false, error: apiError });
 
       // When
-      const result = await api.createTodo({
-        title: '테스트',
-        categoryId: 1,
-        startDate: '2026-03-08',
-        isAllDay: true,
-        visibility: 'PUBLIC',
-      });
+      const result = await api.createTodo(createTodoFormValues({ title: '테스트' }));
 
       // Then
       expect(result).toEqual({ ok: false, error: apiError });
@@ -177,13 +166,7 @@ describe('TodoApi', () => {
       httpClient.post.mockResolvedValue({ ok: true, value: { todo: INVALID_DTO } });
 
       // When
-      const result = api.createTodo({
-        title: '테스트',
-        categoryId: 1,
-        startDate: '2026-03-08',
-        isAllDay: true,
-        visibility: 'PUBLIC',
-      });
+      const result = api.createTodo(createTodoFormValues({ title: '테스트' }));
 
       // Then
       await expect(result).rejects.toThrow('Invalid createTodo response');
@@ -276,19 +259,13 @@ describe('TodoApi', () => {
   });
 
   describe('createRepeatingTodo', () => {
-    const draft: RepeatingTodoDraft = {
-      title: '반복 할일',
-      categoryId: 1,
-      startDate: '2026-03-09',
-      isAllDay: true,
-      visibility: 'PUBLIC',
-      repeat: {
-        frequency: 'WEEKLY',
-        interval: 1,
-        weekdays: ['MON', 'WED', 'FRI'],
-        end: { type: 'UNTIL', date: '2026-06-30' },
-      },
+    const repeat: TodoRepeat = {
+      frequency: 'WEEKLY',
+      interval: 1,
+      weekdays: ['MON', 'WED', 'FRI'],
+      end: { type: 'UNTIL', date: '2026-06-30' },
     };
+    const draft = createTodoFormValues({ title: '반복 할일', startDate: '2026-03-09', repeat });
 
     it('정상 응답 → POST /v1/todos의 repeat로 보내고 첫 회차를 돌려준다', async () => {
       // Given
@@ -305,7 +282,7 @@ describe('TodoApi', () => {
             visibility: 'PUBLIC',
             scheduledTime: null,
             timezone: 'Asia/Seoul',
-            repeat: draft.repeat,
+            repeat,
             startDate: '2026-03-09',
             nextOccurrenceDate: '2026-03-11',
             isActive: true,

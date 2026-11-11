@@ -1,35 +1,14 @@
-import {
-  createTodoSchema,
-  todoRepeatSchema,
-  todoSeriesResponseSchema,
-  updateTodoSchema,
-} from '@aido/api';
+import { todoRepeatSchema, todoSeriesResponseSchema, updateTodoSchema } from '@aido/api';
 
 import type { TodoRepeat } from '../domains/todo-repeat.model';
 import { todoSeriesSchema } from '../domains/todo-series.model';
-import type { RepeatingTodoDraft } from '../schemas/todo-series-request.schema';
 import { toRepeat, toRepeatDto } from './todo-repeat.mapper';
 import {
-  toCreateRepeatingTodoRequest,
   toFollowingCategoryRequest,
   toFollowingScheduleRequest,
   toTodoSeries,
   toUpdateTodoRequest,
 } from './todo-series.mapper';
-
-const createDraft = (
-  repeat: TodoRepeat,
-  overrides: Partial<RepeatingTodoDraft> = {},
-): RepeatingTodoDraft => ({
-  title: '약 먹기',
-  categoryId: 3,
-  startDate: '2026-11-02',
-  isAllDay: false,
-  scheduledTime: '09:00',
-  visibility: 'PUBLIC',
-  repeat,
-  ...overrides,
-});
 
 const DAILY: TodoRepeat = { frequency: 'DAILY', end: { type: 'NEVER' } };
 const BIWEEKLY_COUNT: TodoRepeat = {
@@ -61,31 +40,6 @@ describe('반복 규칙 변환', () => {
 
     // Then
     expect(result).toEqual(repeat);
-  });
-});
-
-describe('toCreateRepeatingTodoRequest', () => {
-  it('격주·매월·끝없는 반복도 POST /v1/todos의 repeat로 보낸다', () => {
-    // Given
-    const draft = createDraft({ frequency: 'MONTHLY', monthDay: 9, end: { type: 'NEVER' } });
-
-    // When
-    const request = createTodoSchema.parse(toCreateRepeatingTodoRequest(draft));
-
-    // Then
-    expect(request.repeat).toEqual({ frequency: 'MONTHLY', monthDay: 9, end: { type: 'NEVER' } });
-    expect(request.endDate).toBeUndefined();
-  });
-
-  it('종일이면 시간을 보내지 않는다', () => {
-    // Given
-    const draft = createDraft(DAILY, { isAllDay: true });
-
-    // When
-    const request = toCreateRepeatingTodoRequest(draft);
-
-    // Then
-    expect(request.scheduledTime).toBeUndefined();
   });
 });
 

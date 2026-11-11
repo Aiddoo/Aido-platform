@@ -9,6 +9,7 @@ import { useClaimAiConsentRenewal } from '@src/features/device/coachmark/hooks/u
 import { isAiDataSharingConsentRequiredError } from '@src/features/identity/consent/domains/consent.error';
 import { useAiDataSharingConsentGate } from '@src/features/identity/consent/hooks/use-ai-data-sharing-consent-gate';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
+import type { TodoFormValues } from '@src/features/planning/todo/schemas/todo-form.schema';
 import { VOICE_LOG_EVENT } from '@src/features/voice/constants/voice-log-events';
 import {
   PlanRequestPolicy,
@@ -36,10 +37,8 @@ import { useEffect, useRef, useState } from 'react';
 import type { UseFormReturn } from 'react-hook-form';
 import { Keyboard } from 'react-native';
 
-import type { AddTodoFormValues } from '../schemas/add-todo-form.schema';
-
 interface UseAddTodoQuickVoiceOptions {
-  form: UseFormReturn<AddTodoFormValues>;
+  form: UseFormReturn<TodoFormValues>;
   onExit: () => void;
 }
 

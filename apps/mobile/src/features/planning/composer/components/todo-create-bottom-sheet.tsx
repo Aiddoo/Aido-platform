@@ -7,6 +7,10 @@ import { TodoCategoryPolicy } from '@src/features/planning/category/domains/todo
 import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/category/queries/todo-category.queries';
 import { shouldReopenRepeatPicker } from '@src/features/planning/todo/domains/todo-series.error';
 import { useTodoSheetDateKey } from '@src/features/planning/todo/hooks/use-todo-sheet-date-key';
+import {
+  type TodoFormValues,
+  todoFormSchema,
+} from '@src/features/planning/todo/schemas/todo-form.schema';
 import { todoCreateParamsSchema } from '@src/features/planning/todo/schemas/todo-params.schema';
 import { QuickVoiceButton } from '@src/features/voice/components/quick-voice/quick-voice-button';
 import { QuickVoiceInfo } from '@src/features/voice/components/quick-voice/quick-voice-info';
@@ -19,9 +23,6 @@ import {
 } from '@src/features/voice/components/quick-voice/quick-voice-panel';
 import { SheetEdgeGlow } from '@src/features/voice/components/visualizers/sheet-edge-glow';
 import { VoiceCapturePolicy } from '@src/features/voice/domains/voice-capture.model';
-import { toLocalDayInstant } from '@src/shared/date/native-date';
-import { toDateKey } from '@src/shared/date/zoned';
-import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useOnScreenBlur } from '@src/shared/hooks/use-on-screen-blur';
 import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
 import { useRouteParams } from '@src/shared/hooks/use-route-params';
@@ -39,7 +40,6 @@ import {
   type QueryErrorFallbackProps,
   Result,
   useConfirmDialog,
-  useOverlay,
   useSheetRoute,
   VStack,
 } from '@src/shared/ui';
@@ -54,11 +54,10 @@ import {
   useCreateRecurringTodoMutationOptions,
   useCreateTodoMutationOptions,
 } from '../queries/todo-composer.mutations';
-import { type AddTodoFormValues, addTodoFormSchema } from '../schemas/add-todo-form.schema';
 import {
-  openTodoRepeatPicker,
   TodoComposerChips,
   TodoComposerSubmitButton,
+  useReopenTodoRepeatPicker,
 } from './todo-composer-fields';
 
 interface TodoCreateBottomSheetProps {
@@ -101,7 +100,7 @@ TodoCreateBottomSheet.Form = function Form({ onMemoChanged }: TodoCreateBottomSh
     <TodoCreateForm
       defaultValues={{
         title: title ?? '',
-        startDate: toLocalDayInstant(date),
+        startDate: date,
         endDate: null,
         scheduledTime: time ?? null,
         isAllDay: time == null,
@@ -136,7 +135,7 @@ TodoCreateBottomSheet.Error = function ErrorFallback({ reset }: QueryErrorFallba
 };
 
 interface TodoCreateFormProps {
-  defaultValues: AddTodoFormValues;
+  defaultValues: TodoFormValues;
   /** 새 기능 소개처럼 말하기를 권한 화면에서 왔다. 열리면 바로 동의·마이크를 거쳐 듣기 시작한다 */
   isVoiceStartRequested: boolean;
   isOpen: boolean;
@@ -158,16 +157,14 @@ function TodoCreateForm({
 }: TodoCreateFormProps) {
   const { t } = useTranslation('todo');
   const { t: tVoice } = useTranslation('voice');
-  const { timeZone } = useDateFormatContext();
   const reportUnexpectedError = useReportUnexpectedError('todo');
-  const overlay = useOverlay();
   const confirmDialog = useConfirmDialog();
 
   const form = useForm({
-    resolver: zodResolver(addTodoFormSchema),
+    resolver: zodResolver(todoFormSchema),
     defaultValues,
   });
-  const { isSubmitting } = useFormState({ control: form.control });
+  const { isSubmitting, isValid } = useFormState({ control: form.control });
   const title = useWatch({ control: form.control, name: 'title' });
   // 한도 아래로 지워도 칸을 바꾸지 않는다. 다시 마운트되면 커서와 키보드가 튄다
   const [hasExceededTitleLimit, setHasExceededTitleLimit] = useState(false);
@@ -177,6 +174,7 @@ function TodoCreateForm({
 
   const createTodo = useMutation(useCreateTodoMutationOptions());
   const createRecurringTodo = useMutation(useCreateRecurringTodoMutationOptions());
+  const reopenRepeatPicker = useReopenTodoRepeatPicker(form);
 
   const voice = useAddTodoQuickVoice({ form, onExit });
   useOnScreenBlur(voice.interrupt);
@@ -197,46 +195,36 @@ function TodoCreateForm({
     hasStartedRequestedVoiceRef.current = true;
     startRequestedVoice();
   }, [isVoiceStartRequested, isOpen]);
+  // 한도를 넘긴 뒤로는 글자를 고칠 때마다 다시 검사해 저장이 꺼진 이유를 칸 아래에 바로 보인다
+  useEffect(() => {
+    if (hasExceededTitleLimit) {
+      form.trigger('title').catch(reportUnexpectedError);
+    }
+  }, [form, hasExceededTitleLimit, title, reportUnexpectedError]);
   const [isTitleFocused, setIsTitleFocused] = useState(false);
   const [hasTouchedForm, setHasTouchedForm] = useState(false);
 
   const submitTodo = form.handleSubmit(async (values) => {
-    const common = {
-      title: values.title,
-      startDate: toDateKey(values.startDate, timeZone),
-      scheduledTime: values.isAllDay ? undefined : values.scheduledTime,
-      isAllDay: values.isAllDay,
-      visibility: values.visibility,
-      categoryId: values.categoryId,
-    };
-
+    const { repeat } = values;
     try {
-      if (values.repeat != null) {
-        await createRecurringTodo.mutateAsync(
-          { input: { ...common, repeat: values.repeat } },
-          { onSuccess: onClose },
-        );
+      if (repeat == null) {
+        await createTodo.mutateAsync({ values }, { onSuccess: onClose });
       } else {
-        await createTodo.mutateAsync(
-          {
-            input: {
-              ...common,
-              endDate: values.endDate == null ? undefined : toDateKey(values.endDate, timeZone),
-            },
-          },
+        await createRecurringTodo.mutateAsync(
+          { values: { ...values, repeat } },
           { onSuccess: onClose },
         );
       }
     } catch (error) {
       // 안내는 mutation 토스트가 맡고 시트와 입력값은 그대로 남긴다. 루트 overlay에서는 경계로 보내면 앱 전체가 내려간다
       if (shouldReopenRepeatPicker(error)) {
-        openTodoRepeatPicker(overlay, form);
+        reopenRepeatPicker().catch(reportUnexpectedError);
       }
     }
   });
 
   const isFormStep = VoiceCapturePolicy.isManualInput(voice.state);
-  const isSubmitDisabled = title.trim().length === 0 || isSubmitting;
+  const isSubmitDisabled = !isValid || isSubmitting;
 
   // 저장 중에는 아무 일도 하지 않는다. 시트를 닫으면 저장 결과를 볼 수 없다
   const handleTitleSubmit = () => {
@@ -338,11 +326,11 @@ function TodoCreateForm({
                     placeholder={t('add.placeholder')}
                     value={value}
                     onChange={onChange}
-                    isInvalid={error != null}
+                    isInvalid={error?.type === 'too_big'}
                     errorMessage={
-                      error == null
-                        ? undefined
-                        : resolveValidationMessage(error, { default: 'todoTitle.tooLong' })
+                      error?.type === 'too_big'
+                        ? resolveValidationMessage(error, { default: 'todoTitle.tooLong' })
+                        : undefined
                     }
                     growsWithContent
                     textSize="b3"
@@ -409,7 +397,7 @@ function TodoCreateForm({
 type TodoCreateVoiceReviewProps = Omit<
   ComponentProps<typeof QuickVoiceReview>,
   'fallbackCategoryId'
-> & { form: UseFormReturn<AddTodoFormValues> };
+> & { form: UseFormReturn<TodoFormValues> };
 
 /** 고르는 단계. 카드가 쓰는 조회가 실패해도 시트(루트 overlay)가 앱 경계까지 터지지 않게 이 안에서 처리한다 */
 function TodoCreateVoiceReview({ form, ...props }: TodoCreateVoiceReviewProps) {

@@ -1,7 +1,5 @@
 import { memoListResponseSchema, updateMemoSchema } from '@aido/api';
-import type { AddTodoFormValues } from '@src/features/planning/composer/schemas/add-todo-form.schema';
-import { instantFromDate } from '@src/shared/date/native-date';
-import { getDeviceTimezone } from '@src/shared/infra/localization/device-timezone';
+import type { TodoFormValues } from '@src/features/planning/todo/schemas/todo-form.schema';
 import { ZodError } from 'zod';
 
 import { createParseMemoResponseDto } from '../__tests__/parsed-memo.fixtures';
@@ -81,9 +79,9 @@ describe('메모 작성·수정 요청', () => {
   });
 });
 
-const createFormData = (overrides: Partial<AddTodoFormValues> = {}): AddTodoFormValues => ({
+const createFormData = (overrides: Partial<TodoFormValues> = {}): TodoFormValues => ({
   title: '수정한 메모 제목',
-  startDate: instantFromDate(new Date(2026, 9, 2)),
+  startDate: '2026-10-02',
   endDate: null,
   scheduledTime: null,
   isAllDay: true,
@@ -93,15 +91,13 @@ const createFormData = (overrides: Partial<AddTodoFormValues> = {}): AddTodoForm
   ...overrides,
 });
 
-const TIME_ZONE = getDeviceTimezone();
-
 describe('toConvertMemoToTodosRequest', () => {
   it('편집한 제목과 카테고리, 공개 범위를 기존 batch 계약의 한 항목으로 보낸다', () => {
     // Given
     const values = createFormData({ visibility: 'PRIVATE' });
 
     // When
-    const input = toConvertMemoToTodosRequest(values, TIME_ZONE);
+    const input = toConvertMemoToTodosRequest(values);
 
     // Then
     expect(input.todos).toHaveLength(1);
@@ -121,7 +117,7 @@ describe('toConvertMemoToTodosRequest', () => {
     });
 
     // When
-    const input = toConvertMemoToTodosRequest(values, TIME_ZONE);
+    const input = toConvertMemoToTodosRequest(values);
 
     // Then
     expect(input.todos[0]?.repeat).toEqual({
@@ -144,7 +140,7 @@ describe('toConvertMemoToTodosRequest', () => {
     });
 
     // When
-    const input = toConvertMemoToTodosRequest(values, TIME_ZONE);
+    const input = toConvertMemoToTodosRequest(values);
 
     // Then
     expect(input.todos[0]).toMatchObject({
@@ -164,11 +160,11 @@ describe('toConvertMemoToTodosRequest', () => {
     const values = createFormData({
       isAllDay: false,
       scheduledTime: '13:30',
-      endDate: instantFromDate(new Date(2026, 9, 3)),
+      endDate: '2026-10-03',
     });
 
     // When
-    const input = toConvertMemoToTodosRequest(values, TIME_ZONE);
+    const input = toConvertMemoToTodosRequest(values);
 
     // Then
     expect(input.todos[0]).toMatchObject({ scheduledTime: '13:30', endDate: '2026-10-03' });
@@ -180,7 +176,7 @@ describe('toConvertMemoToTodosRequest', () => {
     const values = createFormData({ title: 'a'.repeat(201) });
 
     // When
-    const convert = () => toConvertMemoToTodosRequest(values, TIME_ZONE);
+    const convert = () => toConvertMemoToTodosRequest(values);
 
     // Then
     expect(convert).toThrow(ZodError);

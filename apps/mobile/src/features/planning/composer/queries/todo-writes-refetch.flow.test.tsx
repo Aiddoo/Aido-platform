@@ -8,6 +8,7 @@ import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/categor
 import {
   createTodoApiError,
   createTodoDto,
+  createTodoFormValues,
   createTodoItemResponseDto,
 } from '@src/features/planning/todo/__tests__/todo.fixtures';
 import { SubTodoPolicy } from '@src/features/planning/todo/domains/sub-todo.model';
@@ -442,13 +443,7 @@ describe('할 일 쓰기 뒤 다시 받는 조회', () => {
       path: '할 일 만들기',
       start: (w) =>
         w.createTodo.mutateAsync({
-          input: {
-            title: '새 할 일',
-            startDate: DAY,
-            isAllDay: true,
-            visibility: 'PUBLIC',
-            categoryId: 1,
-          },
+          values: createTodoFormValues({ title: '새 할 일', startDate: DAY }),
         }),
       expected: ['widget:day'],
     },

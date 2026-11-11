@@ -1,6 +1,5 @@
 import {
   type ChangeTodoCategoryInput,
-  type CreateTodoInput,
   dailyCompletionsRangeResponseSchema,
   deleteTodoResponseSchema,
   friendTodoListResponseSchema,
@@ -28,6 +27,7 @@ import type {
   TodoSummary,
   TodoListResult,
 } from '../domains/todo.model';
+import type { TodoFormValues } from '../schemas/todo-form.schema';
 import {
   createRepeatingTodoEnvelopeSchema,
   createTodoEnvelopeSchema,
@@ -36,18 +36,15 @@ import {
   todoListEnvelopeSchema,
   updateTodoEnvelopeSchema,
 } from '../schemas/todo-response.schema';
-import type {
-  RepeatingTodoDraft,
-  TodoSeriesEditOptions,
-} from '../schemas/todo-series-request.schema';
+import type { TodoSeriesEditOptions } from '../schemas/todo-series-request.schema';
 import {
-  toCreateRepeatingTodoRequest,
   toFollowingCategoryRequest,
   toFollowingScheduleRequest,
   toTodoSeries,
   toUpdateTodoRequest,
 } from './todo-series.mapper';
 import {
+  toCreateTodoRequest,
   toDailyCompletionsResult,
   toFriendTodoListResult,
   toTodo,
@@ -136,8 +133,8 @@ export class TodoApi {
     );
   };
 
-  createTodo = async (params: CreateTodoInput): Promise<Result<Todo, ApiError>> => {
-    const result = await this.#httpClient.post('v1/todos', params);
+  createTodo = async (values: TodoFormValues): Promise<Result<Todo, ApiError>> => {
+    const result = await this.#httpClient.post('v1/todos', toCreateTodoRequest(values));
 
     return parseApiResponse(
       result,
@@ -251,9 +248,9 @@ export class TodoApi {
   };
 
   createRepeatingTodo = async (
-    draft: RepeatingTodoDraft,
+    values: TodoFormValues,
   ): Promise<Result<{ todo: Todo; series: TodoSeries }, ApiError>> => {
-    const result = await this.#httpClient.post('v1/todos', toCreateRepeatingTodoRequest(draft));
+    const result = await this.#httpClient.post('v1/todos', toCreateTodoRequest(values));
 
     return parseApiResponse(
       result,

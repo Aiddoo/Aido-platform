@@ -10,6 +10,7 @@ import {
 import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/planning/category/queries/todo-category-query-keys';
 import type { TodoEditedFields } from '@src/features/planning/todo/constants/todo.events';
 import { SubTodoPolicy } from '@src/features/planning/todo/domains/sub-todo.model';
+import type { TodoRepeat } from '@src/features/planning/todo/domains/todo-repeat.model';
 import {
   findTodoSeriesFailure,
   getTodoSeriesLimit,
@@ -20,7 +21,7 @@ import {
   isCategoryTodoLimitError,
   isRecurringCategoryTodoLimitError,
 } from '@src/features/planning/todo/domains/todo.error';
-import { getVisibility } from '@src/features/planning/todo/domains/todo.model';
+import { getScheduledTime } from '@src/features/planning/todo/domains/todo.model';
 import type { OptimisticTodo } from '@src/features/planning/todo/domains/todo.model';
 import {
   appendTodoToList,
@@ -40,14 +41,9 @@ import {
   withTodoCreated,
 } from '@src/features/planning/todo/queries/todo-cache';
 import { TODO_MUTATION_KEYS } from '@src/features/planning/todo/queries/todo-mutation-keys';
-import type {
-  CreateTodoInput,
-  UpdateTodoInput,
-} from '@src/features/planning/todo/schemas/todo-request.schema';
-import type {
-  RepeatingTodoDraft,
-  TodoSeriesEditOptions,
-} from '@src/features/planning/todo/schemas/todo-series-request.schema';
+import type { TodoFormValues } from '@src/features/planning/todo/schemas/todo-form.schema';
+import type { UpdateTodoInput } from '@src/features/planning/todo/schemas/todo-request.schema';
+import type { TodoSeriesEditOptions } from '@src/features/planning/todo/schemas/todo-series-request.schema';
 import { useTrack } from '@src/shared/analytics';
 import { t } from '@src/shared/i18n';
 import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
@@ -55,7 +51,7 @@ import { createOptimisticId } from '@src/shared/utils/create-optimistic-id';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 interface CreateTodoVariables {
-  input: CreateTodoInput;
+  values: TodoFormValues;
 }
 
 /** 반복 묶음 오류와 반복 할 일의 카테고리 한도는 onError가 따로 안내한다 */
@@ -74,13 +70,13 @@ export function useCreateTodoMutationOptions() {
     // 연결이 없을 때 요청을 쥐고 기다리면 저장 시트가 스피너만 돈다. 바로 실패해 입력값을 지킨다
     networkMode: 'always',
     mutationKey: TODO_MUTATION_KEYS.completionWrites(),
-    mutationFn: async ({ input }: CreateTodoVariables) => {
-      const result = await todoApi.createTodo(input);
+    mutationFn: async ({ values }: CreateTodoVariables) => {
+      const result = await todoApi.createTodo(values);
       return unwrap(result);
     },
-    onMutate: async ({ input }) => {
-      const startDate = input.startDate;
-      const span = getTodoDateSpan({ startDate, endDate: input.endDate ?? null });
+    onMutate: async ({ values }) => {
+      const startDate = values.startDate;
+      const span = getTodoDateSpan(values);
       const ticket = await beginTodoWrite(queryClient, {
         date: startDate,
         isCompletionAffected: true,
@@ -88,7 +84,7 @@ export function useCreateTodoMutationOptions() {
 
       const category = TodoCategoryPolicy.findCategory(
         queryClient.getQueryData(TODO_CATEGORY_QUERY_KEYS.list())?.categories ?? [],
-        input.categoryId,
+        values.categoryId,
       );
 
       // 카테고리를 찾지 못하면 낙관적 삽입을 건너뛰고 서버 응답 뒤 invalidate로 맞춘다
@@ -98,15 +94,15 @@ export function useCreateTodoMutationOptions() {
 
       const optimisticTodo: OptimisticTodo = {
         id: createOptimisticId(),
-        title: input.title,
-        startDate: input.startDate,
-        endDate: input.endDate ?? null,
+        title: values.title,
+        startDate: values.startDate,
+        endDate: values.endDate,
         category: { id: category.id, name: category.name, color: category.color },
         completed: false,
-        localTime: input.scheduledTime ?? null,
+        localTime: getScheduledTime(values),
         scheduledAt: null,
-        isAllDay: input.isAllDay,
-        visibility: getVisibility(input.visibility),
+        isAllDay: values.isAllDay,
+        visibility: values.visibility,
         recurrenceGroupId: null,
         repeat: null,
         subTodos: [],
@@ -119,7 +115,7 @@ export function useCreateTodoMutationOptions() {
 
       return { startDate, span, ticket, optimisticId: optimisticTodo.id };
     },
-    onSuccess: (saved, { input }, { startDate, optimisticId }) => {
+    onSuccess: (saved, { values }, { startDate, optimisticId }) => {
       // 응답이 만든 할 일 전체라 목록·존재 여부·카테고리 개수를 응답으로 고치고 다시 받지 않는다
       if (optimisticId == null) {
         invalidateTodoCategories(queryClient);
@@ -134,9 +130,9 @@ export function useCreateTodoMutationOptions() {
         source: 'manual',
         creation_entry: 'manual',
         is_recurring: false,
-        has_scheduled_time: !!input.scheduledTime,
-        is_all_day: input.isAllDay,
-        visibility: getVisibility(input.visibility),
+        has_scheduled_time: getScheduledTime(values) != null,
+        is_all_day: values.isAllDay,
+        visibility: values.visibility,
       });
       const accountId = getCachedMe(queryClient)?.id;
       if (accountId) {
@@ -154,10 +150,10 @@ export function useCreateTodoMutationOptions() {
         toast.error(t('todo:toast.categoryLimitReached'));
       }
     },
-    onSettled: (_saved, error, { input }, context) => {
+    onSettled: (_saved, error, { values }, context) => {
       settleTodoWrite(queryClient, {
-        date: input.startDate,
-        span: context?.span ?? getTodoDateSpan({ startDate: input.startDate, endDate: null }),
+        date: values.startDate,
+        span: context?.span ?? getTodoDateSpan({ startDate: values.startDate, endDate: null }),
         isCompletionAffected: true,
         hasFailed: error != null || context?.optimisticId == null,
         ticket: context?.ticket,
@@ -251,7 +247,7 @@ export function useAddSubTodoMutationOptions() {
 }
 
 interface CreateRecurringTodoVariables {
-  input: RepeatingTodoDraft;
+  values: TodoFormValues & { repeat: TodoRepeat };
 }
 
 export function useCreateRecurringTodoMutationOptions() {
@@ -264,11 +260,11 @@ export function useCreateRecurringTodoMutationOptions() {
   return mutationOptions({
     // 연결이 없을 때 요청을 쥐고 기다리면 저장 시트가 스피너만 돈다. 바로 실패해 입력값을 지킨다
     networkMode: 'always',
-    mutationFn: async ({ input }: CreateRecurringTodoVariables) => {
-      const result = await todoApi.createRepeatingTodo(input);
+    mutationFn: async ({ values }: CreateRecurringTodoVariables) => {
+      const result = await todoApi.createRepeatingTodo(values);
       return unwrap(result);
     },
-    onSuccess: (_, { input }) => {
+    onSuccess: (_, { values }) => {
       emitTodoCreated();
       invalidateTodos(queryClient);
       toast.success(t('todo:toast.recurringAdded'));
@@ -276,11 +272,11 @@ export function useCreateRecurringTodoMutationOptions() {
         source: 'manual',
         creation_entry: 'recurring',
         is_recurring: true,
-        has_scheduled_time: !!input.scheduledTime,
-        is_all_day: input.isAllDay,
-        visibility: input.visibility,
-        repeat_frequency: input.repeat.frequency,
-        repeat_end: input.repeat.end.type,
+        has_scheduled_time: getScheduledTime(values) != null,
+        is_all_day: values.isAllDay,
+        visibility: values.visibility,
+        repeat_frequency: values.repeat.frequency,
+        repeat_end: values.repeat.end.type,
       });
       const accountId = getCachedMe(queryClient)?.id;
       if (accountId) {

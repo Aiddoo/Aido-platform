@@ -12,7 +12,7 @@ import type { Result } from '@src/core/errors/result';
 import type { HttpClient } from '@src/core/ports/http-client';
 import type { Logger } from '@src/core/ports/logger';
 import { toFeatureQuota } from '@src/features/billing/subscription/apis/entitlement.mapper';
-import type { AddTodoFormValues } from '@src/features/planning/composer/schemas/add-todo-form.schema';
+import type { TodoFormValues } from '@src/features/planning/todo/schemas/todo-form.schema';
 import { ParseError } from '@src/shared/errors/infra-error';
 import { parseApiResponse } from '@src/shared/errors/parse-api-response';
 import { noop } from 'es-toolkit';
@@ -106,11 +106,11 @@ export class MemoService {
       '[MemoService] Invalid deleteMemo response',
     );
 
-  convertToTodos = async (memoId: number, values: AddTodoFormValues, timeZone: string) =>
+  convertToTodos = async (memoId: number, values: TodoFormValues) =>
     parseApiResponse(
       await this.#httpClient.post(
         `v1/memos/${memoId}/convert-to-todos`,
-        toConvertMemoToTodosRequest(values, timeZone),
+        toConvertMemoToTodosRequest(values),
       ),
       convertMemoToTodosResponseSchema,
       noop,

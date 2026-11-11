@@ -1,5 +1,4 @@
-import { instantToDate } from '@src/shared/date/native-date';
-import { toDateKey } from '@src/shared/date/zoned';
+import { toLocalDay } from '@src/shared/date/native-date';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useRetainedValue } from '@src/shared/hooks/use-retained-value';
 import {
@@ -15,13 +14,12 @@ import { type ComponentProps, Suspense, useEffect } from 'react';
 
 import { TodoRepeatPolicy } from '../../domains/todo-repeat.model';
 import type { TodoUpdateScope } from '../../domains/todo-repeat.model';
-import { hasScheduleChanged, TodoPolicy } from '../../domains/todo.model';
+import { getScheduledTime, hasScheduleChanged, TodoPolicy } from '../../domains/todo.model';
 import { useSelectTodoScope } from '../../hooks/use-select-todo-scope';
 import { useTodoId } from '../../hooks/use-todo-params';
 import { useTodoSheetDateKey } from '../../hooks/use-todo-sheet-date-key';
 import { useUpdateTodoScheduleMutationOptions } from '../../queries/todo.mutations';
 import { useGetTodosByDateQueryOptions } from '../../queries/todo.queries';
-import { toTodoScheduleValues } from '../../utils/todo-schedule-values';
 import { TodoScopeStep } from '../todo-scope-step';
 import { TodoTimePickerContent } from '../todo-time-picker-content';
 
@@ -83,22 +81,19 @@ TodoTimeBottomSheet.TimeForm = function TimeForm({
     return null;
   }
 
-  const editValues = toTodoScheduleValues(todo, timeZone);
+  const localTime = TodoPolicy.getLocalTime(todo, timeZone);
 
   return (
     <TodoScopeStep step={scopeSelector}>
       <TodoTimePickerContent
-        date={instantToDate(editValues.startDate)}
-        value={{
-          scheduledTime: editValues.scheduledTime,
-          isAllDay: todo.isAllDay,
-        }}
+        date={toLocalDay(todo.startDate)}
+        value={{ scheduledTime: localTime, isAllDay: todo.isAllDay }}
         onCancel={onClose}
         isConfirmDisabled={updateSchedule.isPending}
         onChange={async ({ scheduledTime, isAllDay }) => {
           const isUnchanged = !hasScheduleChanged(
             { isAllDay, scheduledTime },
-            { isAllDay: todo.isAllDay, scheduledTime: editValues.scheduledTime },
+            { isAllDay: todo.isAllDay, scheduledTime: localTime },
           );
           if (isUnchanged) {
             onClose();
@@ -112,10 +107,9 @@ TodoTimeBottomSheet.TimeForm = function TimeForm({
                 changedField: 'time',
                 ...(scope != null && { scope }),
                 input: {
-                  startDate: toDateKey(editValues.startDate, timeZone),
-                  endDate:
-                    editValues.endDate == null ? null : toDateKey(editValues.endDate, timeZone),
-                  scheduledTime: isAllDay ? null : scheduledTime,
+                  startDate: todo.startDate,
+                  endDate: todo.endDate,
+                  scheduledTime: getScheduledTime({ isAllDay, scheduledTime }),
                   isAllDay,
                 },
               },

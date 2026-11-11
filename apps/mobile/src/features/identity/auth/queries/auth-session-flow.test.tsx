@@ -15,7 +15,10 @@ import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-
 import { useUpdateProfileMutationOptions } from '@src/features/identity/user/queries/user.mutations';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { useCreateTodoMutationOptions } from '@src/features/planning/composer/queries/todo-composer.mutations';
-import { createTodoDto } from '@src/features/planning/todo/__tests__/todo.fixtures';
+import {
+  createTodoDto,
+  createTodoFormValues,
+} from '@src/features/planning/todo/__tests__/todo.fixtures';
 import { TodoApi } from '@src/features/planning/todo/apis/todo.api';
 import { pendingRedemptionStoredValue } from '@src/features/social/invite/schemas/pending-redemption-storage.schema';
 import { getNowInstant } from '@src/shared/date/clock';
@@ -863,13 +866,7 @@ describe('로그아웃 뒤 늦게 끝난 변경', () => {
       .getMutationCache()
       .build(session.queryClient, result.current.createOptions)
       .execute({
-        input: {
-          title: 'A의 할 일',
-          categoryId: 1,
-          startDate: '2026-11-07',
-          isAllDay: true,
-          visibility: 'PUBLIC',
-        },
+        values: createTodoFormValues({ title: 'A의 할 일', startDate: '2026-11-07' }),
       })
       .catch(() => undefined);
     await waitFor(() => expect(todoHttp.post).toHaveBeenCalled());

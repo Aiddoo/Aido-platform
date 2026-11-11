@@ -167,67 +167,6 @@ describe('sortPlanActionsByGroup', () => {
   });
 });
 
-describe('withRepeat', () => {
-  it('반복으로 바꾸면 기간(종료일)을 지운다', () => {
-    // Given
-    const period = todo({ endDate: '2026-11-07' });
-
-    // When
-    const result = VoicePlanPolicy.withRepeat(period, {
-      frequency: 'DAILY',
-      end: { type: 'NEVER' },
-    });
-
-    // Then
-    expect(result.endDate).toBeNull();
-  });
-});
-
-describe('withStartDate', () => {
-  it.each([
-    {
-      label: '평일',
-      startDate: '2026-11-05',
-      endDate: '2026-11-07',
-      movedTo: '2026-11-10',
-      expected: '2026-11-12',
-    },
-    {
-      label: 'LA 서머타임이 끝나는 날(25시간)을 낀 기간',
-      startDate: '2026-10-31',
-      endDate: '2026-11-02',
-      movedTo: '2026-11-01',
-      expected: '2026-11-03',
-    },
-    {
-      label: 'LA 서머타임이 시작하는 날(23시간)을 낀 기간',
-      startDate: '2026-03-07',
-      endDate: '2026-03-09',
-      movedTo: '2026-03-08',
-      expected: '2026-03-10',
-    },
-    {
-      label: '연말을 넘는 기간',
-      startDate: '2026-12-30',
-      endDate: '2027-01-02',
-      movedTo: '2027-02-27',
-      expected: '2027-03-02',
-    },
-  ])(
-    '시작일을 옮기면 기간 일수를 유지한다: $label',
-    ({ startDate, endDate, movedTo, expected }) => {
-      // Given
-      const period = todo({ startDate, endDate });
-
-      // When
-      const result = VoicePlanPolicy.withStartDate(period, movedTo);
-
-      // Then
-      expect(result).toMatchObject({ startDate: movedTo, endDate: expected });
-    },
-  );
-});
-
 describe('getHeadline', () => {
   it.each<{
     name: string;
@@ -321,30 +260,5 @@ describe('isDuplicateAction', () => {
 
     // Then
     expect(result).toBe(false);
-  });
-});
-
-describe('withScheduledTime', () => {
-  it('시각만 바꾸고 나머지 카드 값은 그대로 둔다', () => {
-    // Given
-    const action = todo({ scheduledTime: '08:00' });
-
-    // When
-    const next = VoicePlanPolicy.withScheduledTime(action, '21:30');
-
-    // Then
-    expect(next).toEqual({ ...action, scheduledTime: '21:30' });
-    expect(action.scheduledTime).toBe('08:00');
-  });
-
-  it('null이면 시각 없는 할 일이 된다', () => {
-    // Given
-    const action = todo({ scheduledTime: '08:00' });
-
-    // When
-    const next = VoicePlanPolicy.withScheduledTime(action, null);
-
-    // Then
-    expect(next.scheduledTime).toBeNull();
   });
 });

@@ -1,50 +1,15 @@
 import { ACTION_PLAN_LIMITS } from '@aido/api/vocabulary';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
-import { CategorySelectInput } from '@src/features/planning/category/components/category-select-input';
-import { TodoCategoryPolicy } from '@src/features/planning/category/domains/todo-category.model';
-import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/category/queries/todo-category.queries';
-import { TodoDatePickerContent } from '@src/features/planning/todo/components/todo-date-picker-content';
-import { TodoRepeatPickerContent } from '@src/features/planning/todo/components/todo-repeat-picker-content';
-import { TodoTimePickerContent } from '@src/features/planning/todo/components/todo-time-picker-content';
 import {
-  isPrivateVisibility,
-  withVisibilityToggled,
-} from '@src/features/planning/todo/domains/todo.model';
-import { formatRepeatSummary } from '@src/features/planning/todo/utils/format-repeat-summary';
-import {
-  formatDateKeyRange,
-  formatHHmmTime,
-  formatYearAwareDateKeyLabel,
-} from '@src/shared/date/format/date-format';
-import { toLocalDay, toLocalDayInstant } from '@src/shared/date/native-date';
-import { toDateKey } from '@src/shared/date/zoned';
-import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
-import { useTodayKey } from '@src/shared/hooks/use-today';
+  TodoScheduleChips,
+  type TodoScheduleChipsValue,
+} from '@src/features/planning/todo/components/todo-schedule-chips';
+import { getScheduledTime, getVisibility } from '@src/features/planning/todo/domains/todo.model';
 import { useTranslation } from '@src/shared/i18n';
-import {
-  ActionButton,
-  BottomSheetInput,
-  Box,
-  Button,
-  CalendarIcon,
-  ClockIcon,
-  EyeIcon,
-  EyeOffIcon,
-  KeyboardBottomSheet,
-  ModalBottomSheet,
-  QueryErrorBoundary,
-  RepeatIcon,
-  SheetChipRow,
-  useOverlay,
-  VStack,
-} from '@src/shared/ui';
-import { cn } from '@src/shared/utils/cn';
-import { useSuspenseQuery } from '@tanstack/react-query';
-import { Suspense } from 'react';
+import { BottomSheetInput, Button, KeyboardBottomSheet, VStack } from '@src/shared/ui';
 import { Controller, useForm, useFormState, useWatch, type UseFormReturn } from 'react-hook-form';
 
-import { VoicePlanPolicy, type PlannedTodo } from '../../domains/voice-plan.model';
+import type { PlannedTodo } from '../../domains/voice-plan.model';
 import {
   type PlanTodoEditFormValues,
   planTodoEditFormSchema,
@@ -81,13 +46,7 @@ export function PlanTodoEditBottomSheet({
       onOpenChange={onOpenChange}
       footer={
         <VStack gap={12}>
-          <SheetChipRow>
-            <DateChip form={form} />
-            <TimeChip form={form} />
-            <RepeatChip form={form} />
-            <VisibilityChip form={form} />
-            <CategoryChip form={form} fallbackCategoryId={fallbackCategoryId} />
-          </SheetChipRow>
+          <PlanTodoScheduleChips form={form} fallbackCategoryId={fallbackCategoryId} />
 
           <Button
             isDisabled={!isValid}
@@ -119,8 +78,30 @@ export function PlanTodoEditBottomSheet({
   );
 }
 
-interface PlanTodoChipProps {
+interface PlanTodoScheduleChipsProps {
   form: UseFormReturn<PlanTodoEditFormValues>;
+  fallbackCategoryId: number;
+}
+
+/** 할 일 작성과 같은 일정 칩. 계획 카드는 종일을 시각 null로, 정하지 않은 공개 범위·카테고리를 null로 둔다 */
+function PlanTodoScheduleChips({ form, fallbackCategoryId }: PlanTodoScheduleChipsProps) {
+  const todo = useWatch({ control: form.control, name: 'todo' });
+  const value: TodoScheduleChipsValue = {
+    startDate: todo.startDate,
+    endDate: todo.endDate,
+    scheduledTime: todo.scheduledTime,
+    isAllDay: todo.scheduledTime == null,
+    repeat: todo.repeat,
+    visibility: getVisibility(todo.visibility),
+    categoryId: todo.categoryId ?? fallbackCategoryId,
+  };
+
+  return (
+    <TodoScheduleChips
+      value={value}
+      onChange={(next) => updateTodo(form, (current) => withScheduleChips(current, value, next))}
+    />
+  );
 }
 
 function updateTodo(
@@ -131,229 +112,19 @@ function updateTodo(
   setValue('todo', { ...change(current), isSelected }, { shouldDirty: true, shouldValidate: true });
 }
 
-function DateChip({ form }: PlanTodoChipProps) {
-  const { t } = useTranslation('common');
-  const overlay = useOverlay();
-  const todayKey = useTodayKey();
-  const dateFormatContext = useDateFormatContext();
-  const [startDate, endDate] = useWatch({
-    control: form.control,
-    name: ['todo.startDate', 'todo.endDate'],
-  });
-  const singleDayLabel =
-    startDate === todayKey
-      ? t('dateSections.today')
-      : formatYearAwareDateKeyLabel(startDate, todayKey, dateFormatContext);
-
-  const handlePress = () => {
-    overlay.open(({ isOpen, close, unmount }) => (
-      <ModalBottomSheet
-        hasFixedHeader
-        isOpen={isOpen}
-        onOpenChange={() => close()}
-        onExit={unmount}
-      >
-        <TodoDatePickerContent
-          value={startDate}
-          onChange={(nextStartDate) => {
-            updateTodo(form, (current) => VoicePlanPolicy.withStartDate(current, nextStartDate));
-            close();
-          }}
-          onCancel={close}
-        />
-      </ModalBottomSheet>
-    ));
+// 칩이 바꾼 칸만 옮긴다. 정하지 않은 공개 범위·카테고리(null)는 직접 고르기 전까지 그대로 둔다
+function withScheduleChips(
+  todo: PlannedTodo,
+  previous: TodoScheduleChipsValue,
+  next: TodoScheduleChipsValue,
+): PlannedTodo {
+  return {
+    ...todo,
+    startDate: next.startDate,
+    endDate: next.endDate,
+    scheduledTime: getScheduledTime(next),
+    repeat: next.repeat,
+    visibility: next.visibility === previous.visibility ? todo.visibility : next.visibility,
+    categoryId: next.categoryId === previous.categoryId ? todo.categoryId : next.categoryId,
   };
-
-  return (
-    <ActionButton
-      icon={<ActionButton.Icon Icon={CalendarIcon} colorClassName="text-main" />}
-      label={
-        endDate == null
-          ? singleDayLabel
-          : formatDateKeyRange(startDate, endDate, todayKey, dateFormatContext)
-      }
-      isActive
-      onPress={handlePress}
-    />
-  );
-}
-
-function TimeChip({ form }: PlanTodoChipProps) {
-  const { t } = useTranslation('todo');
-  const overlay = useOverlay();
-  const dateFormatContext = useDateFormatContext();
-  const { data: preference } = useSuspenseQuery(useGetPreferenceQueryOptions());
-  const [startDate, scheduledTime] = useWatch({
-    control: form.control,
-    name: ['todo.startDate', 'todo.scheduledTime'],
-  });
-
-  const handlePress = () => {
-    overlay.open(({ isOpen, close, unmount }) => (
-      <ModalBottomSheet
-        hasFixedHeader
-        isOpen={isOpen}
-        onOpenChange={() => close()}
-        onExit={unmount}
-      >
-        <QueryErrorBoundary>
-          <Suspense fallback={<TodoTimePickerContent.Loading />}>
-            <TodoTimePickerContent
-              date={toLocalDay(startDate)}
-              value={{ scheduledTime, isAllDay: scheduledTime == null }}
-              onChange={(nextTime) => {
-                updateTodo(form, (current) =>
-                  VoicePlanPolicy.withScheduledTime(
-                    current,
-                    nextTime.isAllDay ? null : nextTime.scheduledTime,
-                  ),
-                );
-                close();
-              }}
-              onCancel={close}
-            />
-          </Suspense>
-        </QueryErrorBoundary>
-      </ModalBottomSheet>
-    ));
-  };
-
-  return (
-    <ActionButton
-      icon={
-        <ActionButton.Icon
-          Icon={ClockIcon}
-          // oxlint-disable-next-line aido/no-classname-concat -- 1.15.2 전환 #1400
-          colorClassName={scheduledTime == null ? 'text-gray-5' : 'text-main'}
-        />
-      }
-      label={
-        scheduledTime == null
-          ? t('chip.allDay')
-          : formatHHmmTime(scheduledTime, preference.timeFormat, dateFormatContext)
-      }
-      isActive={scheduledTime != null}
-      onPress={handlePress}
-    />
-  );
-}
-
-function RepeatChip({ form }: PlanTodoChipProps) {
-  const { t } = useTranslation('todo');
-  const overlay = useOverlay();
-  const dateFormatContext = useDateFormatContext();
-  const todayKey = useTodayKey();
-  const [startDate, repeat] = useWatch({
-    control: form.control,
-    name: ['todo.startDate', 'todo.repeat'],
-  });
-
-  const handlePress = () => {
-    overlay.open(({ isOpen, close, unmount }) => (
-      <ModalBottomSheet
-        hasFixedHeader
-        isOpen={isOpen}
-        onOpenChange={() => close()}
-        onExit={unmount}
-      >
-        <TodoRepeatPickerContent
-          value={{ startDate: toLocalDayInstant(startDate), repeat }}
-          onChange={(next) => {
-            updateTodo(form, (current) =>
-              VoicePlanPolicy.withRepeat(
-                { ...current, startDate: toDateKey(next.startDate, dateFormatContext.timeZone) },
-                next.repeat,
-              ),
-            );
-            close();
-          }}
-          onCancel={close}
-        />
-      </ModalBottomSheet>
-    ));
-  };
-
-  return (
-    <ActionButton
-      icon={
-        <ActionButton.Icon
-          Icon={RepeatIcon}
-          // oxlint-disable-next-line aido/no-classname-concat -- 1.15.2 전환 #1400
-          colorClassName={repeat == null ? 'text-gray-5' : 'text-main'}
-        />
-      }
-      label={
-        repeat == null ? t('chip.repeat') : formatRepeatSummary(repeat, todayKey, dateFormatContext)
-      }
-      isActive={repeat != null}
-      onPress={handlePress}
-    />
-  );
-}
-
-function VisibilityChip({ form }: PlanTodoChipProps) {
-  const { t } = useTranslation('todo');
-  const visibility = useWatch({ control: form.control, name: 'todo.visibility' });
-  const isPrivate = isPrivateVisibility(visibility);
-
-  return (
-    <ActionButton
-      icon={
-        isPrivate ? (
-          <ActionButton.Icon Icon={EyeOffIcon} colorClassName="text-gray-6" />
-        ) : (
-          <ActionButton.Icon Icon={EyeIcon} colorClassName="text-gray-5" />
-        )
-      }
-      label={isPrivate ? t('chip.private') : t('chip.public')}
-      onPress={() => updateTodo(form, withVisibilityToggled)}
-    />
-  );
-}
-
-function CategoryChip({
-  form,
-  fallbackCategoryId,
-}: PlanTodoChipProps & { fallbackCategoryId: number }) {
-  const { t } = useTranslation('todo');
-  const overlay = useOverlay();
-  const todoCategoryId = useWatch({ control: form.control, name: 'todo.categoryId' });
-  const {
-    data: { categories },
-  } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
-  const categoryId = todoCategoryId ?? fallbackCategoryId;
-  const category = TodoCategoryPolicy.findCategory(categories, categoryId);
-
-  const handlePress = () => {
-    overlay.open(({ isOpen, close, unmount }) => (
-      <ModalBottomSheet isOpen={isOpen} onOpenChange={() => close()} onExit={unmount}>
-        <QueryErrorBoundary>
-          <Suspense fallback={<CategorySelectInput.Loading />}>
-            <CategorySelectInput
-              defaultValue={categoryId}
-              onSubmit={(nextCategoryId) => {
-                updateTodo(form, (current) => ({ ...current, categoryId: nextCategoryId }));
-                close();
-              }}
-              submitLabel={t('add.submit')}
-            />
-          </Suspense>
-        </QueryErrorBoundary>
-      </ModalBottomSheet>
-    ));
-  };
-
-  return (
-    <ActionButton
-      icon={
-        <Box
-          className={cn('size-2 rounded-full', category == null && 'bg-gray-5')}
-          style={category == null ? undefined : { backgroundColor: category.color }}
-        />
-      }
-      label={category?.name ?? t('chip.category')}
-      onPress={handlePress}
-    />
-  );
 }

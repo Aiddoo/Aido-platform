@@ -1,12 +1,16 @@
 import { toInstant } from '@src/shared/date/instant';
 
 import { createParentTodo, createSubTodo } from '../__tests__/sub-todo.fixtures';
+import type { TodoRepeat } from './todo-repeat.model';
 import {
   getShiftedEndDate,
   getVisibility,
   hasScheduleChanged,
   isPrivateVisibility,
+  type TodoSchedule,
   TodoPolicy,
+  withScheduleRepeat,
+  withScheduleStartDate,
   withVisibilityToggled,
 } from './todo.model';
 
@@ -509,5 +513,90 @@ describe('getTodayToggleDates', () => {
 
     // Then
     expect(result).toEqual({ startDate: '2026-04-01', endDate: null });
+  });
+});
+
+describe('withScheduleStartDate', () => {
+  const schedule = (overrides: Partial<TodoSchedule> = {}): TodoSchedule => ({
+    startDate: '2026-11-05',
+    endDate: null,
+    scheduledTime: null,
+    isAllDay: true,
+    repeat: null,
+    ...overrides,
+  });
+
+  it.each([
+    {
+      label: '평일',
+      startDate: '2026-11-05',
+      endDate: '2026-11-07',
+      movedTo: '2026-11-10',
+      expected: '2026-11-12',
+    },
+    {
+      label: 'LA 서머타임이 끝나는 날(25시간)을 낀 기간',
+      startDate: '2026-10-31',
+      endDate: '2026-11-02',
+      movedTo: '2026-11-01',
+      expected: '2026-11-03',
+    },
+    {
+      label: 'LA 서머타임이 시작하는 날(23시간)을 낀 기간',
+      startDate: '2026-03-07',
+      endDate: '2026-03-09',
+      movedTo: '2026-03-08',
+      expected: '2026-03-10',
+    },
+    {
+      label: '연말을 넘는 기간',
+      startDate: '2026-12-30',
+      endDate: '2027-01-02',
+      movedTo: '2027-02-27',
+      expected: '2027-03-02',
+    },
+  ])(
+    '시작일을 옮기면 기간 일수를 유지한다: $label',
+    ({ startDate, endDate, movedTo, expected }) => {
+      // When
+      const result = withScheduleStartDate(schedule({ startDate, endDate }), movedTo, {
+        isSeriesOccurrence: false,
+      });
+
+      // Then
+      expect(result).toMatchObject({ startDate: movedTo, endDate: expected });
+    },
+  );
+
+  it('반복 회차의 날짜를 옮기면 반복 규칙은 그대로 둔다', () => {
+    // Given
+    const repeat: TodoRepeat = { frequency: 'MONTHLY', monthDay: 5, end: { type: 'NEVER' } };
+
+    // When
+    const result = withScheduleStartDate(schedule({ repeat }), '2026-11-09', {
+      isSeriesOccurrence: true,
+    });
+
+    // Then
+    expect(result.repeat).toBe(repeat);
+  });
+});
+
+describe('withScheduleRepeat', () => {
+  it('반복으로 바꾸면 기간(끝 날짜)을 지운다', () => {
+    // When
+    const result = withScheduleRepeat(
+      {
+        startDate: '2026-11-05',
+        endDate: '2026-11-07',
+        scheduledTime: null,
+        isAllDay: true,
+        repeat: null,
+      },
+      { startDate: '2026-11-05', repeat: { frequency: 'DAILY', end: { type: 'NEVER' } } },
+    );
+
+    // Then
+    expect(result.endDate).toBeNull();
   });
 });

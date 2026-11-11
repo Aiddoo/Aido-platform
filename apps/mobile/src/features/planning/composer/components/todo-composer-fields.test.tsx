@@ -3,7 +3,7 @@ import { ok } from '@src/core/errors/result';
 import { createPreference } from '@src/features/identity/preference/__tests__/preference.fixtures';
 import { PREFERENCE_QUERY_KEYS } from '@src/features/identity/preference/queries/preference-query-keys';
 import { createTodoCategoryListDto } from '@src/features/planning/category/__tests__/todo-category.fixtures';
-import { instantFromDate } from '@src/shared/date/native-date';
+import type { TodoFormValues } from '@src/features/planning/todo/schemas/todo-form.schema';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { OverlayProvider } from '@src/shared/ui/overlay/overlay-provider';
 import { createHttpClientStub, createTestQueryClient } from '@src/testing/core';
@@ -11,14 +11,13 @@ import { renderScreen } from '@src/testing/render';
 import { screen } from '@testing-library/react-native';
 import { useForm } from 'react-hook-form';
 
-import type { AddTodoFormValues } from '../schemas/add-todo-form.schema';
 import { TodoComposerChips } from './todo-composer-fields';
 
 function ChipsHarness() {
-  const form = useForm<AddTodoFormValues>({
+  const form = useForm<TodoFormValues>({
     defaultValues: {
       title: '',
-      startDate: instantFromDate(new Date('2026-10-27T00:00:00.000Z')),
+      startDate: '2026-10-27',
       endDate: null,
       scheduledTime: '14:30',
       isAllDay: false,

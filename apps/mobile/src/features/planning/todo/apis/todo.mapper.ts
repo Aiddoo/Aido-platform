@@ -1,4 +1,5 @@
 import {
+  type CreateTodoInput,
   type DailyCompletionSummary as DailyCompletionSummaryDTO,
   type DailyCompletionsRangeResponse,
   type FriendTodoListResponse,
@@ -16,14 +17,17 @@ import {
   type DailyCompletionsResult,
 } from '../domains/daily-completion.model';
 import {
+  getScheduledTime,
   type Todo,
   type TodoDetails,
   type TodoOverview,
+  TodoPolicy,
   type TodoSummary,
   type TodoListResult,
 } from '../domains/todo.model';
+import type { TodoFormValues } from '../schemas/todo-form.schema';
 import { toSubTodo } from './sub-todo.mapper';
-import { toRepeat } from './todo-repeat.mapper';
+import { toRepeat, toRepeatDto } from './todo-repeat.mapper';
 
 export function toTodo(dto: TodoDto): Todo {
   return {
@@ -118,5 +122,34 @@ export function toTodoListResult(dto: TodoListResponse): TodoListResult {
     todos: dto.items.map(toTodo),
     hasNext: dto.pagination.hasNext,
     nextCursor: dto.pagination.nextCursor,
+  };
+}
+
+/** 할 일 만들기 요청. 작성 시트·반복 작성·메모 옮기기가 모두 이 모양으로 보낸다 */
+export function toCreateTodoRequest(values: TodoFormValues): CreateTodoInput {
+  const scheduledTime = getScheduledTime(values);
+  return {
+    title: values.title,
+    categoryId: values.categoryId,
+    startDate: values.startDate,
+    ...(values.endDate != null && { endDate: values.endDate }),
+    ...(scheduledTime != null && { scheduledTime }),
+    isAllDay: values.isAllDay,
+    visibility: values.visibility,
+    ...(values.repeat != null && { repeat: toRepeatDto(values.repeat) }),
+  };
+}
+
+/** 수정 폼의 처음 값. 시각은 서버 벽시계를, 칸을 비워 둔 옛 시간 행은 시간대로 읽은 시각을 쓴다 */
+export function toTodoFormValues(todo: Todo, timeZone: string): TodoFormValues {
+  return {
+    title: todo.title,
+    categoryId: todo.category.id,
+    startDate: todo.startDate,
+    endDate: todo.endDate,
+    scheduledTime: TodoPolicy.getLocalTime(todo, timeZone),
+    isAllDay: todo.isAllDay,
+    visibility: todo.visibility,
+    repeat: todo.repeat,
   };
 }

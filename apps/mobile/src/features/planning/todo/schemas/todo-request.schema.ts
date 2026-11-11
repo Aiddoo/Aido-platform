@@ -1,6 +1,5 @@
 export type {
   ChangeTodoCategoryInput,
-  CreateTodoInput,
   ReorderTodoInput,
   ToggleTodoCompleteInput,
   UpdateTodoInput,

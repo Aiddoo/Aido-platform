@@ -1,11 +1,6 @@
 import { ACTION_PLAN_LIMITS, TODO_ITEM_LIMITS, TODO_VISIBILITIES } from '@aido/api/vocabulary';
 import type { FeatureQuota } from '@src/features/billing/subscription/domains/entitlement.model';
-import {
-  type TodoRepeat,
-  TodoRepeatPolicy,
-  todoRepeatSchema,
-} from '@src/features/planning/todo/domains/todo-repeat.model';
-import { addDaysToDateKey, diffDateKeysInDays } from '@src/shared/date/date-key';
+import { todoRepeatSchema } from '@src/features/planning/todo/domains/todo-repeat.model';
 import { groupBy, uniq } from 'es-toolkit';
 import { z } from 'zod';
 
@@ -115,31 +110,6 @@ export function canApplyPlan(plan: VoicePlan, selection: PlanSelection) {
   return getSelectedActions(plan, selection).length > 0;
 }
 
-// 반복으로 바꾸면 기간(종료일)은 지운다. 서버가 둘을 함께 받지 않는다
-export function withRepeat(todo: PlannedTodo, repeat: TodoRepeat | null): PlannedTodo {
-  return { ...todo, repeat, endDate: repeat == null ? todo.endDate : null };
-}
-
-// 시작일을 옮기면 기간이 거꾸로 되지 않게 종료일을 같은 길이만큼 옮기고, 반복은 시작일을 따라오는 값을 맞춘다
-export function withStartDate(todo: PlannedTodo, startDate: string): PlannedTodo {
-  if (todo.repeat != null) {
-    return {
-      ...todo,
-      startDate,
-      repeat: TodoRepeatPolicy.withRepeatStartDate(todo.repeat, todo.startDate, startDate),
-    };
-  }
-  if (todo.endDate == null) {
-    return { ...todo, startDate };
-  }
-  const spanInDays = diffDateKeysInDays(todo.startDate, todo.endDate);
-  return { ...todo, startDate, endDate: addDaysToDateKey(startDate, spanInDays) };
-}
-
-export function withScheduledTime(todo: PlannedTodo, scheduledTime: string | null): PlannedTodo {
-  return { ...todo, scheduledTime };
-}
-
 // 고르기 시트의 폼 카드도 묶어 Policy 밖 함수로 두고 종류와 카테고리만 받는다
 type PlanGroupableAction = Pick<PlannedTodo, 'type' | 'categoryId'> | Pick<PlannedMemo, 'type'>;
 
@@ -211,9 +181,6 @@ export function getHeadline(plan: VoicePlan, selection: PlanSelection): PlanHead
 export const VoicePlanPolicy = {
   getDefaultSelection,
   isTodoAction,
-  withRepeat,
-  withStartDate,
-  withScheduledTime,
   isDuplicateAction,
   getSelectedActions,
   getSelectedTodoCount,

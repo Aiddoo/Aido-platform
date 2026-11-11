@@ -1,4 +1,3 @@
-import { toDateKey } from '@src/shared/date/zoned';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useRetainedValue } from '@src/shared/hooks/use-retained-value';
 import {
@@ -18,7 +17,6 @@ import { useTodoId } from '../../hooks/use-todo-params';
 import { useTodoSheetDateKey } from '../../hooks/use-todo-sheet-date-key';
 import { useUpdateTodoScheduleMutationOptions } from '../../queries/todo.mutations';
 import { useGetTodosByDateQueryOptions } from '../../queries/todo.queries';
-import { toTodoScheduleValues } from '../../utils/todo-schedule-values';
 import { TodoDatePickerContent } from '../todo-date-picker-content';
 
 type TodoDateBottomSheetProps = Omit<
@@ -65,11 +63,9 @@ TodoDateBottomSheet.DateForm = function DateForm({ onClose }: { onClose: () => v
     return null;
   }
 
-  const editValues = toTodoScheduleValues(todo, timeZone);
-
   return (
     <TodoDatePickerContent
-      value={toDateKey(editValues.startDate, timeZone)}
+      value={todo.startDate}
       onCancel={onClose}
       isConfirmDisabled={updateSchedule.isPending}
       onChange={(startDateKey) => {
@@ -89,7 +85,7 @@ TodoDateBottomSheet.DateForm = function DateForm({ onClose }: { onClose: () => v
             input: {
               startDate: startDateKey,
               endDate: getShiftedEndDate(todo, startDateKey),
-              scheduledTime: todo.isAllDay ? null : editValues.scheduledTime,
+              scheduledTime: TodoPolicy.getLocalTime(todo, timeZone),
               isAllDay: todo.isAllDay,
             },
           },

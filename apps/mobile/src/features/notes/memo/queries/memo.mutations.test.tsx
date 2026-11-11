@@ -5,7 +5,6 @@ import { createUser } from '@src/features/identity/user/__tests__/user.fixtures'
 import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-keys';
 import { voicePlanSchema } from '@src/features/voice/domains/voice-plan.model';
 import { toEpochMs } from '@src/shared/date/instant';
-import { instantFromDate } from '@src/shared/date/native-date';
 import { NetworkError } from '@src/shared/errors/infra-error';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import {
@@ -340,7 +339,7 @@ describe('오프라인에서 할 일로 바꾸기', () => {
       memoId: 5,
       values: {
         title: '메모',
-        startDate: instantFromDate(new Date('2026-10-02T00:00:00.000Z')),
+        startDate: '2026-10-02',
         endDate: null,
         scheduledTime: null,
         isAllDay: true,
@@ -348,7 +347,6 @@ describe('오프라인에서 할 일로 바꾸기', () => {
         visibility: 'PUBLIC',
         repeat: null,
       },
-      timeZone: 'UTC',
     });
 
     // Then

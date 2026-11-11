@@ -6,15 +6,15 @@ import {
   type MemoListResponse,
   type MemoResourceLimitResponse,
 } from '@aido/api';
-import type { AddTodoFormValues } from '@src/features/planning/composer/schemas/add-todo-form.schema';
-import { toRepeat, toRepeatDto } from '@src/features/planning/todo/apis/todo-repeat.mapper';
+import { toRepeat } from '@src/features/planning/todo/apis/todo-repeat.mapper';
+import { toCreateTodoRequest } from '@src/features/planning/todo/apis/todo.mapper';
+import type { TodoFormValues } from '@src/features/planning/todo/schemas/todo-form.schema';
 import {
   type PlannedAction,
   type VoicePlan,
   voicePlanSchema,
 } from '@src/features/voice/domains/voice-plan.model';
 import { toInstant } from '@src/shared/date/instant';
-import { toDateKey } from '@src/shared/date/zoned';
 import { pick } from 'es-toolkit';
 
 import type { Memo, MemoPage, MemoResourceLimit } from '../domains/memo.model';
@@ -44,24 +44,8 @@ export function toMemoRequest({ content }: MemoFormValues): CreateMemoInput {
   return { content };
 }
 
-export function toConvertMemoToTodosRequest(
-  values: AddTodoFormValues,
-  timeZone: string,
-): ConvertMemoToTodosInput {
-  return convertMemoToTodosSchema.parse({
-    todos: [
-      {
-        title: values.title,
-        categoryId: values.categoryId,
-        startDate: toDateKey(values.startDate, timeZone),
-        endDate: values.endDate == null ? undefined : toDateKey(values.endDate, timeZone),
-        scheduledTime: values.isAllDay ? undefined : (values.scheduledTime ?? undefined),
-        isAllDay: values.isAllDay,
-        visibility: values.visibility,
-        ...(values.repeat != null && { repeat: toRepeatDto(values.repeat) }),
-      },
-    ],
-  });
+export function toConvertMemoToTodosRequest(values: TodoFormValues): ConvertMemoToTodosInput {
+  return convertMemoToTodosSchema.parse({ todos: [toCreateTodoRequest(values)] });
 }
 
 export function toMemoVoicePlan(planId: string, dto: ParseMemoPlanResponse): VoicePlan {
