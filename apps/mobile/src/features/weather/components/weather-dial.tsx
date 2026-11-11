@@ -2,7 +2,6 @@ import { useResolvedColor } from '@src/shared/hooks/use-resolved-color';
 import { useTranslation } from '@src/shared/i18n';
 import Svg, { Circle, Path, Text as SvgText } from 'react-native-svg';
 
-import { COMPASS_SHORT_LABEL_KEYS } from '../constants/weather-labels';
 import {
   type CompassDial,
   DIAL_CENTER,
@@ -11,6 +10,7 @@ import {
   PRESSURE_GAUGE_LABELS,
   type PressureGauge,
 } from '../utils/weather-dial.geometry';
+import { getCompassShortLabelKey } from '../utils/weather-labels.view-model';
 
 const DIAL_FONT = { regular: 'WantedSans-Medium', label: 'WantedSans-SemiBold' } as const;
 const DIAL_VIEWBOX = `0 0 ${DIAL_VIEWBOX_SIZE} ${DIAL_VIEWBOX_SIZE}`;
@@ -107,7 +107,7 @@ export function WeatherCompass({ size, dial, value, unit }: WeatherCompassProps)
       <DialTicksPaths {...dial} />
       {dial.cardinals.map(({ direction, position }) => (
         <DialLabel key={direction} x={position.x} y={position.y}>
-          {t(COMPASS_SHORT_LABEL_KEYS[direction])}
+          {t(getCompassShortLabelKey(direction))}
         </DialLabel>
       ))}
       {dial.needle != null && (

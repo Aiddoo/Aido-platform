@@ -29,10 +29,6 @@ import { match } from 'ts-pattern';
 
 import { NEXT_HOUR_CHART_COLORS } from '../constants/weather-colors.constants';
 import {
-  PRECIPITATION_LEVEL_LABEL_KEYS,
-  PRECIPITATION_SUBJECT_LABEL_KEYS,
-} from '../constants/weather-labels';
-import {
   getPrecipitationWindow,
   type HourlyPrecipitationOutlook,
   isNowcastExpired,
@@ -43,9 +39,20 @@ import {
 import type { MinuteForecast } from '../domains/weather-report.model';
 import { useFormatLocalTime, useLocationDateFormat } from '../hooks/use-location-date-format';
 import { useGetWeatherReportQueryOptions, WeatherReportSelect } from '../queries/weather.queries';
-import { NEXT_HOUR_CHART_SIZE, toNextHourChart } from '../utils/next-hour-chart.geometry';
+import {
+  NEXT_HOUR_CHART_SIZE,
+  type PrecipitationLevel,
+  toNextHourChart,
+} from '../utils/next-hour-chart.geometry';
+import { getPrecipitationSubjectLabelKey } from '../utils/weather-labels.view-model';
 import { WeatherCard } from './weather-card';
 import { WeatherIcon } from './weather-icon';
+
+const PRECIPITATION_LEVEL_LABEL_KEYS = {
+  light: 'nextHour.level.light',
+  moderate: 'nextHour.level.moderate',
+  heavy: 'nextHour.level.heavy',
+} as const satisfies Record<PrecipitationLevel, string>;
 
 const AnimatedPath = Animated.createAnimatedComponent(Path);
 
@@ -344,7 +351,7 @@ function useFormatPrecipitationMessage({
 
   /** 공급자가 형태 없이 강수라고만 알리면(null) 비와 눈을 함께 말한다. */
   const toSubject = (type: WeatherPrecipitationType | null) =>
-    t(PRECIPITATION_SUBJECT_LABEL_KEYS[type ?? 'MIXED']);
+    t(getPrecipitationSubjectLabelKey(type ?? 'MIXED'));
 
   const formatEnd = (wet: Exclude<PrecipitationWindow, { kind: 'dry' }>) => {
     if (wet.endsAt == null) {

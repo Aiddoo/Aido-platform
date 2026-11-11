@@ -1,3 +1,4 @@
+import type { WeatherMoonPhase } from '@aido/api/vocabulary';
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
 import { formatClockTime, formatYearAwareDateKeyLabel } from '@src/shared/date/format/date-format';
 import { type Instant } from '@src/shared/date/instant';
@@ -9,8 +10,7 @@ import { isNotNil, range } from 'es-toolkit';
 import { Separator } from 'heroui-native';
 import { match } from 'ts-pattern';
 
-import { MOON_PHASE_LABEL_KEYS, SUN_EVENT_LABEL_KEYS } from '../constants/weather-labels';
-import { WeatherDetailPolicy } from '../domains/weather-detail.model';
+import { type NextSunEvent, WeatherDetailPolicy } from '../domains/weather-detail.model';
 import {
   findTodayOrFirstForecast,
   getTodayKey,
@@ -23,6 +23,23 @@ import { WeatherCard } from './weather-card';
 import { WeatherIcon } from './weather-icon';
 import { WeatherMoonIcon } from './weather-moon-icon';
 import { WeatherSunArc } from './weather-sun-arc';
+
+const MOON_PHASE_LABEL_KEYS = {
+  NEW: 'moonPhase.new',
+  WAXING_CRESCENT: 'moonPhase.waxingCrescent',
+  FIRST_QUARTER: 'moonPhase.firstQuarter',
+  WAXING_GIBBOUS: 'moonPhase.waxingGibbous',
+  FULL: 'moonPhase.full',
+  WANING_GIBBOUS: 'moonPhase.waningGibbous',
+  THIRD_QUARTER: 'moonPhase.thirdQuarter',
+  WANING_CRESCENT: 'moonPhase.waningCrescent',
+} as const satisfies Record<WeatherMoonPhase, string>;
+
+const SUN_EVENT_LABEL_KEYS = {
+  sunrise: 'sunMoon.sunrise',
+  sunset: 'sunMoon.sunset',
+  sunriseTomorrow: 'sunMoon.sunriseTomorrow',
+} as const satisfies Record<NextSunEvent['kind'], string>;
 
 const SUN_FACT_COUNT = 3;
 

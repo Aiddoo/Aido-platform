@@ -8,7 +8,6 @@ import type { ParseKeys } from 'i18next';
 import { match } from 'ts-pattern';
 
 import type { BriefingRowTone } from '../constants/weather-colors.constants';
-import { WEATHER_CONDITION_LABEL_KEYS } from '../constants/weather-labels';
 import {
   type AffectedTodo,
   type BriefingResult,
@@ -18,6 +17,7 @@ import {
 } from '../domains/weather-briefing.model';
 import type { HourlyForecastEntry } from '../domains/weather-report.model';
 import { WeatherReschedulePolicy } from '../domains/weather-reschedule.model';
+import { getWeatherConditionLabelKey } from './weather-labels.view-model';
 
 /** 강수 형태를 아이콘이 그릴 상태로 바꾼다. 얼어 내리면 눈, 그 밖에는 비로 그린다. */
 function toPrecipitationCondition(type: WeatherPrecipitationType): WeatherCondition {
@@ -284,7 +284,7 @@ export function toBriefingView(briefing: BriefingResult, deps: BriefingViewDeps)
       body: { key: 'briefing.dryBody' },
       rows: todos.map((todo): BriefingRow => ({
         todo,
-        advice: { key: WEATHER_CONDITION_LABEL_KEYS[todo.hour.condition] },
+        advice: { key: getWeatherConditionLabelKey(todo.hour.condition) },
         tone: 'neutral',
         chipCondition: todo.hour.condition,
         chipLabel: formatTemperature(todo.hour.temperature),

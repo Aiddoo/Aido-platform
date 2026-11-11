@@ -20,20 +20,21 @@ import { FlatList } from 'react-native';
 import { match } from 'ts-pattern';
 
 import { PRECIPITATION_CHANCE_TEXT_CLASS } from '../constants/weather-colors.constants';
-import {
-  PRECIPITATION_SUBJECT_LABEL_KEYS,
-  SKY_AFTER_KEYS,
-  SKY_BEFORE_KEYS,
-  SKY_STEADY_KEYS,
-  WEATHER_CONDITION_LABEL_KEYS,
-} from '../constants/weather-labels';
 import { VISIBLE_PRECIPITATION_CHANCE } from '../constants/weather.constants';
-import { getHourlySummary, type HourlySummary } from '../domains/weather-hourly.model';
+import {
+  getHourlySummary,
+  type HourlySky,
+  type HourlySummary,
+} from '../domains/weather-hourly.model';
 import type { HourlyForecastEntry } from '../domains/weather-report.model';
 import { useFormatLocalTime, useLocationDateFormat } from '../hooks/use-location-date-format';
 import { useTemperatureUnit } from '../hooks/use-temperature-unit';
 import { useGetWeatherReportQueryOptions, WeatherReportSelect } from '../queries/weather.queries';
 import { type HourlyTimelineItem, toHourlyTimeline } from '../utils/hourly-timeline.view-model';
+import {
+  getPrecipitationSubjectLabelKey,
+  getWeatherConditionLabelKey,
+} from '../utils/weather-labels.view-model';
 import {
   formatDegrees,
   formatTemperature,
@@ -41,6 +42,27 @@ import {
 } from '../utils/weather-temperature';
 import { WeatherCard } from './weather-card';
 import { WeatherIcon } from './weather-icon';
+
+const SKY_BEFORE_KEYS = {
+  clear: 'hourly.summary.skyBefore.clear',
+  partlyCloudy: 'hourly.summary.skyBefore.partlyCloudy',
+  cloudy: 'hourly.summary.skyBefore.cloudy',
+  hazy: 'hourly.summary.skyBefore.hazy',
+} as const satisfies Record<HourlySky, string>;
+
+const SKY_AFTER_KEYS = {
+  clear: 'hourly.summary.skyAfter.clear',
+  partlyCloudy: 'hourly.summary.skyAfter.partlyCloudy',
+  cloudy: 'hourly.summary.skyAfter.cloudy',
+  hazy: 'hourly.summary.skyAfter.hazy',
+} as const satisfies Record<HourlySky, string>;
+
+const SKY_STEADY_KEYS = {
+  clear: 'hourly.summary.steady.clear',
+  partlyCloudy: 'hourly.summary.steady.partlyCloudy',
+  cloudy: 'hourly.summary.steady.cloudy',
+  hazy: 'hourly.summary.steady.hazy',
+} as const satisfies Record<HourlySky, string>;
 
 /** 12시간제는 "오후 10시"가 15pt 그대로 들어가도록 넓히고, 글자 배율에 비례해 늘린다 */
 const CELL_WIDTH = { TWELVE_HOUR: 70, TWENTY_FOUR_HOUR: 58 } as const satisfies Record<
@@ -141,7 +163,7 @@ HourlyForecast.Summary = function Summary({
 
   const sentence = match(summary)
     .with({ kind: 'precipitationOngoing' }, ({ precipitationType, endsAt, isEndingOnLaterDay }) => {
-      const subject = t(PRECIPITATION_SUBJECT_LABEL_KEYS[precipitationType]);
+      const subject = t(getPrecipitationSubjectLabelKey(precipitationType));
       if (endsAt == null) {
         return t('hourly.summary.ongoingAllDay', { subject });
       }
@@ -152,7 +174,7 @@ HourlyForecast.Summary = function Summary({
     })
     .with({ kind: 'precipitationUpcoming' }, (upcoming) => {
       const params = {
-        subject: t(PRECIPITATION_SUBJECT_LABEL_KEYS[upcoming.precipitationType]),
+        subject: t(getPrecipitationSubjectLabelKey(upcoming.precipitationType)),
         time: hourLabel(upcoming.startsAt),
         sky: t(SKY_BEFORE_KEYS[upcoming.skyBefore]),
       };
@@ -233,7 +255,7 @@ function HourCell({
       accessibilityLabel={t('hourly.item', {
         time,
         temperature,
-        condition: t(WEATHER_CONDITION_LABEL_KEYS[hour.condition]),
+        condition: t(getWeatherConditionLabelKey(hour.condition)),
         chance: hour.precipitationChance,
       })}
     >

@@ -23,7 +23,6 @@ import Animated, { Easing, FadeInDown, ReduceMotion } from 'react-native-reanima
 import { match, P } from 'ts-pattern';
 
 import { HERO_TEXT_SHADOW_COLOR } from '../constants/weather-colors.constants';
-import { WEATHER_CONDITION_LABEL_KEYS } from '../constants/weather-labels';
 import type { PlaceName } from '../domains/weather-location.model';
 import { findTodayOrFirstForecast, isReportStale } from '../domains/weather-report.model';
 import type { DailyForecastEntry } from '../domains/weather-report.model';
@@ -43,6 +42,7 @@ import {
 } from '../queries/weather.queries';
 import { findForeignCountryName } from '../utils/find-foreign-country-name';
 import { toWeatherReportFailedCause } from '../utils/weather-analytics';
+import { getWeatherConditionLabelKey } from '../utils/weather-labels.view-model';
 import {
   type TemperatureReading,
   formatTemperature,
@@ -118,7 +118,7 @@ export function WeatherHero() {
   const isLastKnown = readyLocation?.isLastKnown === true;
   const title = place?.city ?? t(isLastKnown ? 'hero.lastLocation' : 'hero.currentLocation');
   const reading = toTemperatureReading(toDisplayTemperature(data.current.temperature, unit));
-  const condition = t(WEATHER_CONDITION_LABEL_KEYS[data.current.condition]);
+  const condition = t(getWeatherConditionLabelKey(data.current.condition));
   const temperature = reading.isBelowZero
     ? t('hero.temperatureBelowZero', { count: reading.magnitude })
     : t('hero.temperature', { count: reading.magnitude });
@@ -299,7 +299,7 @@ WeatherHero.RestOfDay = function RestOfDay({
   return (
     <Text size="b4" align="center" className="mt-1 text-on-sky/[0.78]" style={HERO_TEXT_SHADOW}>
       {t('hero.restOfDay', {
-        condition: t(WEATHER_CONDITION_LABEL_KEYS[restOfDay.condition]),
+        condition: t(getWeatherConditionLabelKey(restOfDay.condition)),
         chance: restOfDay.precipitationChance,
       })}
     </Text>

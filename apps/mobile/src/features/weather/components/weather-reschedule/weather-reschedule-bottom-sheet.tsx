@@ -25,7 +25,6 @@ import { Separator } from 'heroui-native';
 import { Fragment, Suspense } from 'react';
 import { useForm, type UseFormReturn } from 'react-hook-form';
 
-import { RESCHEDULE_COPY_KEYS } from '../../constants/weather-labels';
 import { WeatherBriefingPolicy } from '../../domains/weather-briefing.model';
 import { WeatherReportPolicy } from '../../domains/weather-report.model';
 import {
@@ -41,6 +40,7 @@ import {
   type WeatherRescheduleFormValues,
   weatherRescheduleFormSchema,
 } from '../../schemas/weather-reschedule-form.schema';
+import { getRescheduleCopyKeys } from '../../utils/weather-labels.view-model';
 import { WeatherAttribution } from '../weather-attribution';
 import { WeatherRescheduleSubmitButton } from './weather-reschedule-submit-button';
 import { WeatherRescheduleTimeline } from './weather-reschedule-timeline';
@@ -129,7 +129,7 @@ function RescheduleTodoList({
   );
   // 링크의 이유가 지금 브리핑과 다르면 지금 브리핑의 이유로 문구를 고른다
   const reason = report.briefing?.reason ?? linkReason;
-  const copy = RESCHEDULE_COPY_KEYS[reason];
+  const copy = getRescheduleCopyKeys(reason);
 
   const handleExclude = (todoId: number) => {
     const remaining = affectedTodos.flatMap((todo) =>

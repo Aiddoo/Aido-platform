@@ -1,3 +1,4 @@
+import type { WeatherPressureTrend } from '@aido/api/vocabulary';
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
 import { formatInstantHour } from '@src/shared/date/format/date-format';
 import { type Instant } from '@src/shared/date/instant';
@@ -10,20 +11,16 @@ import { range } from 'es-toolkit';
 import { match } from 'ts-pattern';
 
 import { UV_METER_COLORS } from '../constants/weather-colors.constants';
-import {
-  CLOUD_COVER_LEVEL_LABEL_KEYS,
-  CLOUD_COVER_NOTE_KEYS,
-  COMPASS_LABEL_KEYS,
-  COMPASS_SHORT_LABEL_KEYS,
-  FEELS_LIKE_LABEL_KEYS,
-  FEELS_LIKE_NOTE_KEYS,
-  PRESSURE_TREND_LABEL_KEYS,
-  UV_LEVEL_LABEL_KEYS,
-  VISIBILITY_LEVEL_LABEL_KEYS,
-  WIND_LEVEL_NOTE_KEYS,
-} from '../constants/weather-labels';
 import { WeatherDetailPolicy } from '../domains/weather-detail.model';
-import { WeatherIndicatorPolicy } from '../domains/weather-indicator.model';
+import {
+  type CloudCoverLevel,
+  type CompassDirection,
+  type FeelsLikeComparison,
+  type UvLevel,
+  type VisibilityLevel,
+  WeatherIndicatorPolicy,
+  type WindLevel,
+} from '../domains/weather-indicator.model';
 import type { WeatherReport } from '../domains/weather-report.model';
 import { useLocationDateFormat } from '../hooks/use-location-date-format';
 import { useTemperatureUnit } from '../hooks/use-temperature-unit';
@@ -31,6 +28,7 @@ import { useGetWeatherReportQueryOptions, WeatherReportSelect } from '../queries
 import { toVisibilityKilometers } from '../utils/to-visibility-kilometers';
 import { toUvMeterPosition } from '../utils/weather-bar.geometry';
 import { toCompassDial, toPressureGauge } from '../utils/weather-dial.geometry';
+import { getCompassShortLabelKey } from '../utils/weather-labels.view-model';
 import {
   formatDegrees,
   formatTemperature,
@@ -45,6 +43,70 @@ import {
 } from './weather-detail-tile';
 import { WeatherCompass, WeatherPressureGauge } from './weather-dial';
 import { WeatherMeter } from './weather-meter';
+
+const UV_LEVEL_LABEL_KEYS = {
+  low: 'uvLevel.low',
+  moderate: 'uvLevel.moderate',
+  high: 'uvLevel.high',
+  veryHigh: 'uvLevel.veryHigh',
+  extreme: 'uvLevel.extreme',
+} as const satisfies Record<UvLevel, string>;
+
+const PRESSURE_TREND_LABEL_KEYS = {
+  RISING: 'pressureTrend.rising',
+  FALLING: 'pressureTrend.falling',
+  STEADY: 'pressureTrend.steady',
+} as const satisfies Record<WeatherPressureTrend, string>;
+
+const COMPASS_LABEL_KEYS = {
+  n: 'compass.n',
+  ne: 'compass.ne',
+  e: 'compass.e',
+  se: 'compass.se',
+  s: 'compass.s',
+  sw: 'compass.sw',
+  w: 'compass.w',
+  nw: 'compass.nw',
+} as const satisfies Record<CompassDirection, string>;
+
+const FEELS_LIKE_LABEL_KEYS = {
+  colder: 'details.feelsColder',
+  similar: 'details.feelsSimilar',
+  warmer: 'details.feelsWarmer',
+} as const satisfies Record<FeelsLikeComparison, string>;
+
+const FEELS_LIKE_NOTE_KEYS = {
+  colder: 'details.feelsColderNote',
+  similar: 'details.feelsSimilarNote',
+  warmer: 'details.feelsWarmerNote',
+} as const satisfies Record<FeelsLikeComparison, string>;
+
+const VISIBILITY_LEVEL_LABEL_KEYS = {
+  clear: 'details.visibilityClear',
+  moderate: 'details.visibilityModerate',
+  poor: 'details.visibilityPoor',
+} as const satisfies Record<VisibilityLevel, string>;
+
+const CLOUD_COVER_LEVEL_LABEL_KEYS = {
+  overcast: 'details.cloudOvercast',
+  mostlyCloudy: 'details.cloudMostlyCloudy',
+  mostlyClear: 'details.cloudMostlyClear',
+} as const satisfies Record<CloudCoverLevel, string>;
+
+const WIND_LEVEL_NOTE_KEYS = {
+  calm: 'details.windCalm',
+  breeze: 'details.windBreeze',
+  strong: 'details.windStrong',
+} as const satisfies Record<WindLevel, string>;
+
+type CloudCoverNote = 'overcast' | 'brokenDay' | 'brokenNight' | 'clearDay' | 'clearNight';
+const CLOUD_COVER_NOTE_KEYS = {
+  overcast: 'details.cloudOvercastNote',
+  brokenDay: 'details.cloudBrokenDayNote',
+  brokenNight: 'details.cloudBrokenNightNote',
+  clearDay: 'details.cloudClearDayNote',
+  clearNight: 'details.cloudClearNightNote',
+} as const satisfies Record<CloudCoverNote, string>;
 
 const LOADING_TILE_COUNT = 8;
 
@@ -159,7 +221,7 @@ export function WeatherDetailGrid() {
                   direction == null
                     ? t('details.windUnit')
                     : t('details.windUnitWithDirection', {
-                        direction: t(COMPASS_SHORT_LABEL_KEYS[direction]),
+                        direction: t(getCompassShortLabelKey(direction)),
                       })
                 }
               />

@@ -5,10 +5,10 @@ import { useTranslation } from '@src/shared/i18n';
 import { Box, HStack, Text, TextButton, VStack } from '@src/shared/ui';
 import { Controller, type UseFormReturn } from 'react-hook-form';
 
-import { RESCHEDULE_COPY_KEYS } from '../../constants/weather-labels';
 import type { ForecastTodo } from '../../domains/weather-briefing.model';
 import type { RescheduleOption } from '../../domains/weather-report.model';
 import type { WeatherRescheduleFormValues } from '../../schemas/weather-reschedule-form.schema';
+import { getRescheduleCopyKeys } from '../../utils/weather-labels.view-model';
 import { toSelectionKey } from '../../utils/weather-reschedule-form';
 import { WeatherRescheduleTimeInput } from './weather-reschedule-time-input';
 
@@ -46,7 +46,7 @@ export function WeatherRescheduleTodo({
       </HStack>
       {recommended == null ? (
         <Text size="b3" shade={6}>
-          {t(RESCHEDULE_COPY_KEYS[reason].noTime)}
+          {t(getRescheduleCopyKeys(reason).noTime)}
         </Text>
       ) : (
         <Controller

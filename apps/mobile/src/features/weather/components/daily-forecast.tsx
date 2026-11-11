@@ -27,7 +27,6 @@ import {
   PRECIPITATION_CHANCE_TEXT_CLASS,
   TODO_DOT_COLOR,
 } from '../constants/weather-colors.constants';
-import { WEATHER_CONDITION_LABEL_KEYS } from '../constants/weather-labels';
 import { VISIBLE_PRECIPITATION_CHANCE } from '../constants/weather.constants';
 import { getTodayKey } from '../domains/weather-report.model';
 import type { DailyForecastEntry } from '../domains/weather-report.model';
@@ -41,6 +40,7 @@ import {
   toTemperatureBars,
   toTemperaturePosition,
 } from '../utils/weather-bar.geometry';
+import { getWeatherConditionLabelKey } from '../utils/weather-labels.view-model';
 import {
   formatDegrees,
   formatTemperature,
@@ -180,7 +180,7 @@ DailyForecast.Item = memo(function Item({
   const width = (column: keyof typeof COLUMN_WIDTH) => COLUMN_WIDTH[column] * format.columnScale;
   const description = t('daily.item', {
     day: label,
-    condition: t(WEATHER_CONDITION_LABEL_KEYS[day.condition]),
+    condition: t(getWeatherConditionLabelKey(day.condition)),
     high,
     low,
     chance: day.precipitationChance,
@@ -274,7 +274,7 @@ DailyForecast.Item = memo(function Item({
                 end: hour(DAYTIME_HOURS.end),
               })}
               value={t('daily.dayPart', {
-                condition: t(WEATHER_CONDITION_LABEL_KEYS[day.daytime.condition]),
+                condition: t(getWeatherConditionLabelKey(day.daytime.condition)),
                 temperature: degrees(day.daytime.temperatureMax ?? day.temperatureMax),
               })}
             />
@@ -286,7 +286,7 @@ DailyForecast.Item = memo(function Item({
                 end: hour(DAYTIME_HOURS.start),
               })}
               value={t('daily.nightPart', {
-                condition: t(WEATHER_CONDITION_LABEL_KEYS[day.overnight.condition]),
+                condition: t(getWeatherConditionLabelKey(day.overnight.condition)),
                 temperature: degrees(day.overnight.temperatureMin ?? day.temperatureMin),
               })}
             />
