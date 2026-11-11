@@ -29,7 +29,7 @@ export function VoiceNoteStartButton({
   const fontScaledSize = useFontScaledSize();
   const start = useStartVoiceNote();
   const layoutKey = useAdaptivePaneLayoutKey();
-  useStartRequestedVoiceNote(start);
+  useStartRequestedVoiceNote({ start });
 
   return (
     <CoachmarkPopover
@@ -62,8 +62,13 @@ export function VoiceNoteStartButton({
   );
 }
 
+interface UseStartRequestedVoiceNoteOptions {
+  /** 버튼과 같은 시작. 한도·동의·마이크를 거친다 */
+  start: () => Promise<void>;
+}
+
 /** 다른 화면이 시작을 요청했으면 한 번만 버튼을 누른 것처럼 시작한다. 동의·마이크를 거절하면 메모 탭에 남아 다시 누를 수 있다 */
-function useStartRequestedVoiceNote(start: ReturnType<typeof useStartVoiceNote>) {
+function useStartRequestedVoiceNote({ start }: UseStartRequestedVoiceNoteOptions) {
   const [{ startVoiceNote }, setParams] = useRouteParams(voiceNoteStartParamsSchema);
   const hasStartedRef = useRef(false);
   const reportUnexpectedError = useReportUnexpectedError('voice');
