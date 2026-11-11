@@ -1,6 +1,7 @@
 import { useApplicationMetadata } from '@src/bootstrap/providers/di-context';
 import { useTrack } from '@src/shared/analytics';
 import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
+import { useResolvedColor } from '@src/shared/hooks/use-resolved-color';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { ArrowRightIcon, HStack, SettingsListGroup, Text, useConfirmDialog } from '@src/shared/ui';
@@ -20,6 +21,7 @@ export function AppVersionCheck() {
   const toast = useAppToast();
   const { trackEvent } = useTrack();
   const confirmDialog = useConfirmDialog();
+  const spinnerColor = useResolvedColor('text-accent');
   const installation = applicationMetadata.getInstallation();
   const query = useQuery({ ...useGetAppVersionQueryOptions(), enabled: false });
   const openStoreListing = useMutation(useOpenStoreListingMutationOptions());
@@ -82,7 +84,7 @@ export function AppVersionCheck() {
               {installation.currentVersion}
             </Text>
             {query.isFetching ? (
-              <Spinner size="sm" />
+              <Spinner size="sm" color={spinnerColor} />
             ) : (
               <ArrowRightIcon colorClassName="text-gray-6" />
             )}

@@ -7,6 +7,6 @@
   "confirm": "확인",
   "checkFailed": "버전 정보를 확인하지 못했어요. 잠시 후 다시 시도해주세요.",
   "noUpdateInfo": "지금은 안내할 새 버전이 없어요.",
-  "checkOffline": "인터넷에 연결되면 버전을 확인할 수 있어요",
+  "checkOffline": "인터넷에 연결되면 버전을 확인할 수 있어요.",
   "storeOpenFailed": "앱 스토어를 열지 못했어요. 잠시 후 다시 시도해주세요."
 }
