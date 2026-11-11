@@ -4,9 +4,9 @@ import { Box } from '@src/shared/ui';
 import Animated, { css } from 'react-native-reanimated';
 import Svg, { Defs, Line, LinearGradient, Path, Stop } from 'react-native-svg';
 
-import { SUN_COLORS } from '../constants/weather-colors.constants';
-import { SUN_ARC_HORIZON_Y, SUN_ARC_PATHS, SUN_ARC_VIEWBOX } from '../utils/sun-arc.geometry';
-import type { DialPoint } from '../utils/weather-dial.geometry';
+import { SUN_COLORS } from '../../constants/weather-colors.constants';
+import { SUN_ARC_HORIZON_Y, SUN_ARC_PATHS, SUN_ARC_VIEWBOX } from '../../utils/sun-arc.geometry';
+import type { DialPoint } from '../../utils/weather-dial.geometry';
 
 const SUN_DOT_SIZE = 14;
 const NIGHT_SUN_DOT_SIZE = 10;

@@ -9,8 +9,8 @@ import {
   type DialTicks,
   PRESSURE_GAUGE_LABELS,
   type PressureGauge,
-} from '../utils/weather-dial.geometry';
-import { getCompassShortLabelKey } from '../utils/weather-labels.view-model';
+} from '../../utils/weather-dial.geometry';
+import { getCompassShortLabelKey } from '../../utils/weather-labels.view-model';
 
 const DIAL_FONT = { regular: 'WantedSans-Medium', label: 'WantedSans-SemiBold' } as const;
 const DIAL_VIEWBOX = `0 0 ${DIAL_VIEWBOX_SIZE} ${DIAL_VIEWBOX_SIZE}`;

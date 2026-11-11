@@ -10,8 +10,8 @@ import { useSuspenseQueries } from '@tanstack/react-query';
 import { range } from 'es-toolkit';
 import { match } from 'ts-pattern';
 
-import { UV_METER_COLORS } from '../constants/weather-colors.constants';
-import { WeatherDetailPolicy } from '../domains/weather-detail.model';
+import { UV_METER_COLORS } from '../../constants/weather-colors.constants';
+import { WeatherDetailPolicy } from '../../domains/weather-detail.model';
 import {
   type CloudCoverLevel,
   type CompassDirection,
@@ -20,20 +20,24 @@ import {
   type VisibilityLevel,
   WeatherIndicatorPolicy,
   type WindLevel,
-} from '../domains/weather-indicator.model';
-import type { WeatherReport } from '../domains/weather-report.model';
-import { useLocationDateFormat } from '../hooks/use-location-date-format';
-import { useTemperatureUnit } from '../hooks/use-temperature-unit';
-import { useGetWeatherReportQueryOptions, WeatherReportSelect } from '../queries/weather.queries';
-import { toVisibilityKilometers } from '../utils/to-visibility-kilometers';
-import { toUvMeterPosition } from '../utils/weather-bar.geometry';
-import { toCompassDial, toPressureGauge } from '../utils/weather-dial.geometry';
-import { getCompassShortLabelKey } from '../utils/weather-labels.view-model';
+} from '../../domains/weather-indicator.model';
+import type { WeatherReport } from '../../domains/weather-report.model';
+import { useLocationDateFormat } from '../../hooks/use-location-date-format';
+import { useTemperatureUnit } from '../../hooks/use-temperature-unit';
+import {
+  useGetWeatherReportQueryOptions,
+  WeatherReportSelect,
+} from '../../queries/weather.queries';
+import { toVisibilityKilometers } from '../../utils/to-visibility-kilometers';
+import { toUvMeterPosition } from '../../utils/weather-bar.geometry';
+import { toCompassDial, toPressureGauge } from '../../utils/weather-dial.geometry';
+import { getCompassShortLabelKey } from '../../utils/weather-labels.view-model';
 import {
   formatDegrees,
   formatTemperature,
   toDisplayTemperature,
-} from '../utils/weather-temperature';
+} from '../../utils/weather-temperature';
+import { WeatherMeter } from '../weather-meter';
 import {
   TILE_GRID_GAP,
   useTileLayout,
@@ -42,7 +46,6 @@ import {
   WeatherTile,
 } from './weather-detail-tile';
 import { WeatherCompass, WeatherPressureGauge } from './weather-dial';
-import { WeatherMeter } from './weather-meter';
 
 const UV_LEVEL_LABEL_KEYS = {
   low: 'uvLevel.low',

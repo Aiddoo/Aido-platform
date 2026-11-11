@@ -17,7 +17,7 @@ import {
   MOON_RADIUS,
   MOON_VIEWBOX,
   toMoonGeometry,
-} from '../utils/moon-phase.geometry';
+} from '../../utils/moon-phase.geometry';
 
 const MOON_ICON_SIZE = 46;
 /** 북반구에서 본 달의 바다 자리(반지름 비율): 폭풍의 대양·비·맑음·고요·위난·풍요·구름의 바다 순서 */

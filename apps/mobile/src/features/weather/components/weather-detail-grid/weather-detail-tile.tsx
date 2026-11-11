@@ -5,8 +5,8 @@ import { Box, Text, TextSkeleton, VStack } from '@src/shared/ui';
 import { type ReactNode, useState } from 'react';
 import type { LayoutChangeEvent } from 'react-native';
 
-import { WeatherCard } from './weather-card';
-import { WeatherIcon, type WeatherCardGlyph } from './weather-icon';
+import { WeatherCard } from '../weather-card';
+import { WeatherIcon, type WeatherCardGlyph } from '../weather-icon';
 
 /** 태블릿·펼친 폴더블처럼 부모 폭이 넓으면 타일을 네 칸으로 펼쳐 시안 비율을 지킨다. */
 const FOUR_COLUMN_MIN_WIDTH = 760;

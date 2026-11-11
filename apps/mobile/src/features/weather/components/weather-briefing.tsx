@@ -1,3 +1,4 @@
+import type { WeatherCondition } from '@aido/api/vocabulary';
 import catSuggestionImage from '@assets/images/weather/mascot-suggestion.webp';
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
 import {
@@ -39,11 +40,11 @@ import { cn } from '@src/shared/utils/cn';
 import { useMutation, useQuery, useSuspenseQueries } from '@tanstack/react-query';
 import { mapValues } from 'es-toolkit';
 import { router } from 'expo-router';
-import { PressableFeedback, Separator } from 'heroui-native';
-import { Fragment, useEffect, useRef } from 'react';
+import { Chip, PressableFeedback, Separator } from 'heroui-native';
+import { type ComponentProps, Fragment, useEffect, useRef } from 'react';
 import { match } from 'ts-pattern';
 
-import { BRIEFING_ROW_TONES } from '../constants/weather-colors.constants';
+import { BRIEFING_ROW_TONES, type BriefingRowTone } from '../constants/weather-colors.constants';
 import {
   type BriefingResult,
   getBriefingState,
@@ -62,12 +63,12 @@ import {
 } from '../utils/weather-briefing.view-model';
 import { toWeatherRescheduleHref } from '../utils/weather-reschedule-link';
 import { formatTemperature } from '../utils/weather-temperature';
-import { WeatherBriefingChip } from './weather-briefing-chip';
 import { WeatherCard } from './weather-card';
 import { WeatherIcon } from './weather-icon';
 import { WeatherMascot } from './weather-mascot';
 
 const MORE_CHEVRON_SIZE = 13;
+const CHIP_ICON_SIZE = 15;
 /** 영향이 큰 할 일만 보인다. 옮기기 시트가 있는 브리핑은 나머지를 시트에서 보고, 없으면 개수만 알린다. */
 const VISIBLE_TODO_LIMIT = 3;
 
@@ -119,7 +120,7 @@ export function WeatherBriefing() {
   }
 
   return (
-    <WeatherBriefing.Contents
+    <WeatherBriefing.Card
       briefing={briefing}
       hourly={report.hourly}
       now={now}
@@ -128,8 +129,7 @@ export function WeatherBriefing() {
   );
 }
 
-// oxlint-disable-next-line aido/component-name -- 1.15.2 전환 #1400
-WeatherBriefing.Contents = function Contents({
+WeatherBriefing.Card = function Card({
   briefing,
   hourly,
   now,
@@ -251,7 +251,7 @@ WeatherBriefing.Item = function Item({
     push({ pathname: '/todo/[todoId]/actions', params: { todoId: todo.todoId, date: todayKey } });
   // TodoRow가 누름 영역이라 Pressable인 Chip이 줄 탭을 가로채지 않게 한다
   const chip = (
-    <WeatherBriefingChip
+    <WeatherBriefing.Chip
       pointerEvents="none"
       condition={row.chipCondition}
       isDaylight={todo.hour.isDaylight}
@@ -339,6 +339,49 @@ WeatherBriefing.Item = function Item({
         </HStack>
       }
     />
+  );
+};
+
+interface WeatherBriefingChipProps extends Omit<
+  ComponentProps<typeof Chip>,
+  'variant' | 'size' | 'color' | 'children'
+> {
+  condition: WeatherCondition;
+  isDaylight: boolean;
+  label: string;
+  tone: BriefingRowTone;
+}
+
+/** 할 일 시각의 날씨를 아이콘과 강수 확률·기온 한 값으로 줄여 보여 준다. */
+WeatherBriefing.Chip = function BriefingChip({
+  condition,
+  isDaylight,
+  label,
+  tone,
+  className,
+  ...props
+}: WeatherBriefingChipProps) {
+  const iconSize = Math.round(CHIP_ICON_SIZE * useFontScaleRatio());
+  return (
+    <Chip
+      variant="tertiary"
+      className={cn(
+        'min-h-[26px] gap-[3px] self-start rounded-[13px] py-0 pr-[9px] pl-[7px]',
+        BRIEFING_ROW_TONES[tone].chip,
+        className,
+      )}
+      {...props}
+    >
+      <WeatherIcon
+        condition={condition}
+        isDaylight={isDaylight}
+        width={iconSize}
+        height={iconSize}
+      />
+      <Text size="e1" weight="semibold" tone="onSky" className="tabular-nums">
+        {label}
+      </Text>
+    </Chip>
   );
 };
 
