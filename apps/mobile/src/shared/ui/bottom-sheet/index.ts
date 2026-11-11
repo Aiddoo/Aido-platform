@@ -8,4 +8,3 @@ export { SheetRouteScreen } from './sheet-route-screen';
 export { usePortalTarget } from './portal-target';
 export { SHEET_RADIUS } from './bottom-sheet.constants';
 export { useSheetRoute } from './use-sheet-route';
-export { SheetScrollShadow } from './sheet-scroll-area';

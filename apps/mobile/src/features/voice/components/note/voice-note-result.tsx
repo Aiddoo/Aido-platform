@@ -12,7 +12,7 @@ import {
   HStack,
   QueryErrorBoundary,
   READABLE_CONTENT_MAX_WIDTH,
-  ScreenScrollShadow,
+  ScrollFade,
   SegmentTabTrigger,
   Text,
   ViewTabs,
@@ -235,7 +235,7 @@ VoiceNoteResult.Summary = function Summary({ note, children }: VoiceNoteResultSu
   const isCompact = useWindowSizeClass() === 'compact';
 
   return (
-    <ScreenScrollShadow className="flex-1">
+    <ScrollFade surface="screen" className="flex-1">
       <ScrollView contentContainerClassName="gap-4 pb-6" showsVerticalScrollIndicator={false}>
         <WordWrapText size="b2">{note.digest?.summary ?? ''}</WordWrapText>
         {/* 넓은 화면은 할 일 칸이 늘 보여 거기서 알린다 */}
@@ -251,7 +251,7 @@ VoiceNoteResult.Summary = function Summary({ note, children }: VoiceNoteResultSu
           {children}
         </VStack>
       </ScrollView>
-    </ScreenScrollShadow>
+    </ScrollFade>
   );
 };
 

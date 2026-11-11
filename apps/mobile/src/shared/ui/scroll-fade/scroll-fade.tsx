@@ -3,15 +3,22 @@ import { ScrollShadow } from 'heroui-native';
 import type { ComponentProps } from 'react';
 import { useResolveClassNames } from 'uniwind';
 
-export const SCROLL_FADE_HEIGHT = 32;
+const SCROLL_FADE_HEIGHT = 32;
 
-type ScreenScrollShadowProps = Omit<
+const SURFACE_BACKGROUND_CLASS_NAMES = {
+  screen: 'bg-white',
+  sheet: 'bg-white dark:bg-gray-1',
+} as const;
+
+type ScrollFadeProps = Omit<
   ComponentProps<typeof ScrollShadow>,
   'LinearGradientComponent' | 'color' | 'size'
->;
+> & {
+  surface: keyof typeof SURFACE_BACKGROUND_CLASS_NAMES;
+};
 
-export function ScreenScrollShadow(props: ScreenScrollShadowProps) {
-  const { backgroundColor } = useResolveClassNames('bg-white');
+export function ScrollFade({ surface, ...props }: ScrollFadeProps) {
+  const { backgroundColor } = useResolveClassNames(SURFACE_BACKGROUND_CLASS_NAMES[surface]);
 
   return (
     <ScrollShadow

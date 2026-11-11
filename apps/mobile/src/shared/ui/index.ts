@@ -19,7 +19,6 @@ export {
   SHEET_ROUTE_SCREEN_OPTIONS,
   type SheetRouteExit,
   SheetRouteScreen,
-  SheetScrollShadow,
   useKeyboardSheetBodyMaxHeight,
   useSheetRoute,
 } from './bottom-sheet';
@@ -151,7 +150,7 @@ export {
 } from './query-error-boundary';
 export { READABLE_CONTENT_MAX_WIDTH, ReadableContent } from './readable-content';
 export { Result } from './result';
-export { ScreenScrollShadow } from './screen-scroll-shadow';
+export { ScrollFade } from './scroll-fade';
 export { SafeAreaScrollView } from './safe-area-scroll-view';
 export { StyledSafeAreaView } from './styled-safe-area-view';
 export { ScallopedContainer } from './scalloped-container';

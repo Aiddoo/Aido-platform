@@ -1,5 +1,5 @@
 import { useIsReduceMotionEnabled } from '@src/shared/hooks/use-is-reduce-motion-enabled';
-import { Box, SheetScrollShadow, splitWords, Text } from '@src/shared/ui';
+import { Box, ScrollFade, splitWords, Text } from '@src/shared/ui';
 import { type ComponentRef, useRef } from 'react';
 import type { NativeScrollEvent, NativeSyntheticEvent } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
@@ -46,7 +46,7 @@ export function LiveTranscript({
   };
 
   return (
-    <SheetScrollShadow className="flex-1">
+    <ScrollFade surface="sheet" className="flex-1">
       <ScrollView
         ref={scrollRef}
         onContentSizeChange={scrollToLatest}
@@ -97,6 +97,6 @@ export function LiveTranscript({
           ))}
         </Box>
       </ScrollView>
-    </SheetScrollShadow>
+    </ScrollFade>
   );
 }

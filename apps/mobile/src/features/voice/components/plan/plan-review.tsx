@@ -23,8 +23,7 @@ import {
   InfoIcon,
   QueryErrorBoundary,
   Result,
-  ScreenScrollShadow,
-  SheetScrollShadow,
+  ScrollFade,
   Text,
   TextSkeleton,
   useOverlay,
@@ -146,7 +145,6 @@ export function PlanReview({
   const todoCount = VoicePlanPolicy.getSelectedTodoCount(plan, selection);
   const canApply = VoicePlanPolicy.canApplyPlan(plan, selection);
   const headline = VoicePlanPolicy.getHeadline(plan, selection);
-  const ScrollFade = surface === 'sheet' ? SheetScrollShadow : ScreenScrollShadow;
 
   if (fields.length === 0) {
     return (
@@ -176,7 +174,7 @@ export function PlanReview({
         )}
       </VStack>
 
-      <ScrollFade className="shrink grow">
+      <ScrollFade surface={surface} className="shrink grow">
         <ScrollView
           contentContainerClassName="pb-4"
           showsVerticalScrollIndicator={false}

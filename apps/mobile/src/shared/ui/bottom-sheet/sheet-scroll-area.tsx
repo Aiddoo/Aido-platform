@@ -1,29 +1,8 @@
-import { LinearGradient } from 'expo-linear-gradient';
-import { ScrollShadow } from 'heroui-native';
 import type { ComponentProps, ReactNode } from 'react';
 import { type StyleProp, StyleSheet, type ViewStyle } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
-import { useResolveClassNames } from 'uniwind';
 
-import { SCROLL_FADE_HEIGHT } from '../screen-scroll-shadow/screen-scroll-shadow';
-
-type SheetScrollShadowProps = Omit<
-  ComponentProps<typeof ScrollShadow>,
-  'LinearGradientComponent' | 'color' | 'size'
->;
-
-export function SheetScrollShadow(props: SheetScrollShadowProps) {
-  const { backgroundColor } = useResolveClassNames('bg-white dark:bg-gray-1');
-
-  return (
-    <ScrollShadow
-      {...props}
-      LinearGradientComponent={LinearGradient}
-      color={typeof backgroundColor === 'string' ? backgroundColor : undefined}
-      size={SCROLL_FADE_HEIGHT}
-    />
-  );
-}
+import { ScrollFade } from '../scroll-fade/scroll-fade';
 
 interface SheetScrollAreaProps extends Pick<
   ComponentProps<typeof ScrollView>,
@@ -35,7 +14,7 @@ interface SheetScrollAreaProps extends Pick<
 
 export function SheetScrollArea({ style, contentContainerStyle, children }: SheetScrollAreaProps) {
   return (
-    <SheetScrollShadow style={[styles.area, style]}>
+    <ScrollFade surface="sheet" style={[styles.area, style]}>
       <ScrollView
         testID="sheet-scroll-area"
         style={styles.scroll}
@@ -46,7 +25,7 @@ export function SheetScrollArea({ style, contentContainerStyle, children }: Shee
       >
         {children}
       </ScrollView>
-    </SheetScrollShadow>
+    </ScrollFade>
   );
 }
 
