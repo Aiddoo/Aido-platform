@@ -6,6 +6,9 @@ import type {
 } from '@aido/api';
 import { ApiError } from '@src/core/errors/api-error';
 
+import { type TodoDetails, todoDetailsSchema } from '../domains/todo.model';
+import { createParentTodo } from './sub-todo.fixtures';
+
 function generateTodoDto(): TodoDto {
   return {
     id: 1,
@@ -113,3 +116,13 @@ export function createTodoApiError(
 }
 
 export const INVALID_DTO = { invalid: 'data' };
+
+export function createTodoDetails(overrides?: Partial<TodoDetails>): TodoDetails {
+  return todoDetailsSchema.parse({
+    todo: createParentTodo(),
+    owner: { id: 'clz7x5p8k0010qz0z8z8z8z8z', name: '친구', profileImage: null },
+    permissions: { canEdit: false, canComment: true, canNudge: true },
+    metrics: { viewCount: 0, commentCount: 0 },
+    ...overrides,
+  });
+}

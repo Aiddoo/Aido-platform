@@ -1,9 +1,8 @@
 import { MyPageMenuPane } from '@src/bootstrap/navigation/my-page-menu-pane';
 import { MyPageStack } from '@src/bootstrap/navigation/my-page-stack';
-import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
 import { useTranslation } from '@src/shared/i18n';
 import { IS_IPAD } from '@src/shared/infra/device/device-info';
-import { StackHeaderTitle } from '@src/shared/ui';
+import { PaneArea, StackHeaderTitle, usePaneSizeClass } from '@src/shared/ui';
 import { Stack } from 'expo-router';
 
 // 푸시·링크로 하위 화면을 바로 열어도 뒤로 가면 내 정보 메뉴가 나온다
@@ -12,7 +11,16 @@ export const unstable_settings = {
 };
 
 export default function MyPageTabLayout() {
-  const isCompact = useWindowSizeClass() === 'compact';
+  return (
+    <PaneArea>
+      <MyPageTabStack />
+    </PaneArea>
+  );
+}
+
+/** 메뉴 칸과 첫 화면 제목은 탭 사이드바를 뺀 폭으로 정하므로 `PaneArea` 안에서 그린다 */
+function MyPageTabStack() {
+  const isCompact = usePaneSizeClass() === 'compact';
   const { t } = useTranslation([
     'user',
     'settings',

@@ -1,13 +1,15 @@
 import { ErrorCode } from "@aido/api/errors";
 import { AI_SUGGESTION_LIMITS } from "@aido/api/vocabulary";
-import dayjs from "dayjs";
 
 import {
   type EntitlementReaderPort,
   premiumFeatureDenied,
 } from "#api/modules/access/entitlements/access-entitlements.public";
-import type { UserMutationLockPort } from "#api/modules/identity/identity-user-access.public";
-import { TodoCategoryLockKeys } from "#api/modules/planning/categories/planning-categories.public";
+import type { UserMutationLockPort } from "#api/modules/identity/users/identity-users.public";
+import {
+  TodoCategoryId,
+  TodoCategoryLockKeys,
+} from "#api/modules/planning/categories/planning-categories.public";
 import {
   type StagedTodoCreatorPort,
   TodoLockKeys,
@@ -18,13 +20,10 @@ import type { ApplicationLoggerPort } from "#api/shared/application/ports/applic
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
-import { toDateString } from "#api/shared/domain/date/utils/format";
-import { parseDateOnly } from "#api/shared/domain/date/utils/parse";
-import { startOfDayInTimezone } from "#api/shared/domain/date/utils/timezone";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { instantToDate } from "#api/shared/domain/time/instant";
 
 import type { UserLocalePreferenceReaderPort } from "../../../generation/application/ports/user-locale-preference.reader.port.js";
+import { localDateAt } from "../../../shared/domain/user-calendar.domain-service.js";
 import { SuggestionId } from "../../domain/suggestion-id.vo.js";
 import type { Suggestion } from "../../domain/suggestion.aggregate.js";
 import type { SuggestionAction } from "../../domain/suggestion.constants.js";
@@ -75,19 +74,18 @@ export class HandleSuggestionActionUseCase {
   }
 
   async execute(command: HandleSuggestionActionCommand): Promise<SuggestionActionResult> {
+    const owner = UserId.reconstitute(command.userId);
     const timezone =
-      command.timezone ??
-      (await this.#dependencies.localePreferenceReader.read(command.userId)).timezone;
+      command.timezone ?? (await this.#dependencies.localePreferenceReader.read(owner)).timezone;
     const result = await this.#dependencies.unitOfWork.run(async () => {
-      if (!(await this.#dependencies.userMutationLock.lockById(command.userId))) {
+      if (
+        !(await this.#dependencies.userMutationLock.lockById(UserId.reconstitute(command.userId)))
+      ) {
         throw new ApplicationException(ErrorCode.AI_1309);
       }
       await this.#enforcePremium(command.userId);
       const suggestionId = SuggestionId.reconstitute(command.suggestionId);
-      const suggestion = await this.#dependencies.repository.findByIdAndUserId(
-        suggestionId,
-        UserId.reconstitute(command.userId),
-      );
+      const suggestion = await this.#dependencies.repository.findByIdAndUserId(suggestionId, owner);
       if (suggestion == null) {
         throw suggestionNotFound(suggestionId);
       }
@@ -131,11 +129,11 @@ export class HandleSuggestionActionUseCase {
       });
     }
     // 반복은 사용자 로컬 "오늘"부터 시작해야 KST 새벽·미주 저녁 수락이 하루 밀리지 않는다.
-    const localToday = dayjs.utc(startOfDayInTimezone(instantToDate(at.now), at.timezone));
-    const startDate = command.startDate ?? toDateString(localToday.toDate());
+    const localToday = localDateAt(at.now, at.timezone);
+    const startDate = command.startDate ?? localToday.toString();
     const endDate =
       command.endDate ??
-      toDateString(localToday.add(AI_SUGGESTION_LIMITS.DEFAULT_RECURRING_WEEKS, "week").toDate());
+      localToday.add({ weeks: AI_SUGGESTION_LIMITS.DEFAULT_RECURRING_WEEKS }).toString();
     await this.#dependencies.repository.save(suggestion);
     await this.#dependencies.mutationLock.acquire([
       TodoCategoryLockKeys.userCategories(command.userId),
@@ -143,10 +141,10 @@ export class HandleSuggestionActionUseCase {
     ]);
     // 같은 UoW에 참여하므로 생성이 실패하면 상태 갱신도 함께 rollback된다.
     const staged = await this.#dependencies.todoCreator.stage({
-      userId: command.userId,
+      userId: UserId.reconstitute(command.userId),
       title: suggestion.title,
-      categoryId: command.categoryId,
-      startDate: parseDateOnly(startDate),
+      categoryId: TodoCategoryId.reconstitute(command.categoryId),
+      startDate: Temporal.PlainDate.from(startDate),
       scheduledTime: suggestion.scheduledTime,
       timezone: at.timezone,
       repeat: {
@@ -163,7 +161,12 @@ export class HandleSuggestionActionUseCase {
   }
 
   async #enforcePremium(userId: string): Promise<void> {
-    if (!(await this.#dependencies.entitlementReader.canInTx(userId, "AI_SUGGESTION"))) {
+    if (
+      !(await this.#dependencies.entitlementReader.canInTx(
+        UserId.reconstitute(userId),
+        "AI_SUGGESTION",
+      ))
+    ) {
       this.#dependencies.logger.warn({ event: AiSuggestionLogEvent.PREMIUM_DENIED, userId });
       throw premiumFeatureDenied("AI_SUGGESTION");
     }

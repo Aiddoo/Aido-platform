@@ -6,8 +6,10 @@ import { groupBy, mapValues, omit } from "es-toolkit";
 
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { pushDevice } from "#api/platform/database/schema/index";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { PushDeviceRepositoryPort } from "../../application/ports/push-device.repository.port.js";
+import type { PushDeviceId } from "../../domain/push-device-id.vo.js";
 import type { PushDevice } from "../../domain/push-device.aggregate.js";
 import { toPushDeviceRow } from "./push-device-row.mapper.js";
 
@@ -24,12 +26,12 @@ export class DrizzlePushDeviceRepository implements PushDeviceRepositoryPort {
   }
 
   async releasePushDeviceHeldElsewhere(
-    userId: string,
-    deviceId: string,
+    userId: UserId,
+    deviceId: PushDeviceId,
   ): Promise<{ readonly userIds: readonly string[] }> {
     const released = await this.#db
       .delete(pushDevice)
-      .where(and(eq(pushDevice.deviceId, deviceId), ne(pushDevice.userId, userId)))
+      .where(and(eq(pushDevice.deviceId, deviceId.value), ne(pushDevice.userId, userId.value)))
       .returning({ userId: pushDevice.userId });
     return { userIds: released.map((row) => row.userId) };
   }
@@ -45,14 +47,14 @@ export class DrizzlePushDeviceRepository implements PushDeviceRepositoryPort {
       });
   }
 
-  async deletePushDevice(userId: string, deviceId: string): Promise<void> {
+  async deletePushDevice(userId: UserId, deviceId: PushDeviceId): Promise<void> {
     await this.#db
       .delete(pushDevice)
-      .where(and(eq(pushDevice.userId, userId), eq(pushDevice.deviceId, deviceId)));
+      .where(and(eq(pushDevice.userId, userId.value), eq(pushDevice.deviceId, deviceId.value)));
   }
 
-  async deleteAllPushDevicesByUser(userId: string): Promise<void> {
-    await this.#db.delete(pushDevice).where(eq(pushDevice.userId, userId));
+  async deleteAllPushDevicesByUser(userId: UserId): Promise<void> {
+    await this.#db.delete(pushDevice).where(eq(pushDevice.userId, userId.value));
   }
 
   async deletePushDevicesBySessions(
@@ -66,7 +68,7 @@ export class DrizzlePushDeviceRepository implements PushDeviceRepositoryPort {
   }
 
   async findPermissionStatusesByUsers(
-    userIds: readonly string[],
+    userIds: readonly UserId[],
     reportedSince: Temporal.Instant,
   ): Promise<ReadonlyMap<string, readonly PushPermissionStatus[]>> {
     if (userIds.length === 0) {
@@ -76,7 +78,13 @@ export class DrizzlePushDeviceRepository implements PushDeviceRepositoryPort {
       .select({ userId: pushDevice.userId, status: pushDevice.permissionStatus })
       .from(pushDevice)
       .where(
-        and(inArray(pushDevice.userId, [...userIds]), gte(pushDevice.reportedAt, reportedSince)),
+        and(
+          inArray(
+            pushDevice.userId,
+            userIds.map((userId) => userId.value),
+          ),
+          gte(pushDevice.reportedAt, reportedSince),
+        ),
       );
     const statusesByUser = mapValues(
       groupBy(rows, (row) => row.userId),

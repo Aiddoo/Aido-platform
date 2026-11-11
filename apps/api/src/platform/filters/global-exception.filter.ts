@@ -8,17 +8,18 @@ import {
   HttpStatus,
   Inject,
 } from "@nestjs/common";
-import type { ConfigType } from "@nestjs/config";
 import type { Request, Response } from "express";
 import { PinoLogger } from "nestjs-pino";
 
-import { appConfig } from "#api/platform/config/app.config";
+import { appConfig, type AppSettings } from "#api/platform/config/app.config";
 import {
   classifyDatabaseError,
   databaseConstraint,
   databaseSqlState,
   isRecordNotFoundError,
 } from "#api/platform/database/database-error.util";
+import { DatabaseAlerts } from "#api/platform/database/database.alerts";
+import { readRouteTemplate } from "#api/platform/http/request-route";
 import { readRequestUserId } from "#api/platform/http/request-user-id";
 import { ErrorMessageTranslator } from "#api/platform/i18n/error-message.translator";
 import { HttpLogEvent, httpRequestPath } from "#api/platform/logging/http-log";
@@ -28,7 +29,6 @@ import { ExceptionReporterPort } from "#api/shared/application/ports/exception-r
 import { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 import { ErrorCodedException } from "#api/shared/domain/exceptions/error-coded.exception";
 
-import { LEGACY_CONSTRAINT_ERRORS } from "./legacy-constraint-errors.js";
 import {
   concurrentModification,
   internalServerError,
@@ -55,26 +55,34 @@ function isDatabaseFailure(exception: unknown): boolean {
   );
 }
 
-const UNKNOWN_UNIQUE_CONSTRAINT_ALERT_KEY = "database.unique-constraint.unknown";
+/**
+ * 업체 장애(AI_1301·WEATHER_1901)·DB 일시 장애(SYS_0005)처럼 코드로 분류해 던진 5xx는 던진 곳의 스택과 상관없이
+ * 코드별 한 이슈로 모은다. 분류되지 않은 예외(SYS_0001)는 스택으로 모아 버그마다 이슈가 따로 생긴다.
+ */
+function classifiedFailureGroup(exception: unknown): string | undefined {
+  return exception instanceof ErrorCodedException && exception.errorCode !== ErrorCode.SYS_0001
+    ? `http-5xx.${exception.errorCode}`
+    : undefined;
+}
 
 /** 모든 예외를 공유 오류 envelope로 바꾸고, 5xx만 예외 보고로 보낸다. */
 @Catch()
 export class GlobalExceptionFilter implements ExceptionFilter {
   readonly #logger: PinoLogger;
-  readonly #config: Pick<ConfigType<typeof appConfig>, "isDevelopment">;
+  readonly #exposeErrorDetails: boolean;
   readonly #messages: ErrorMessageTranslator;
   readonly #exceptionReporter: ExceptionReporterPort;
   readonly #operationalAlert: OperationalAlertPort;
 
   constructor(
     logger: PinoLogger,
-    @Inject(appConfig.KEY) config: Pick<ConfigType<typeof appConfig>, "isDevelopment">,
+    @Inject(appConfig.KEY) app: Pick<AppSettings, "devTools">,
     messages: ErrorMessageTranslator,
     exceptionReporter: ExceptionReporterPort,
     operationalAlert: OperationalAlertPort,
   ) {
     this.#logger = logger;
-    this.#config = config;
+    this.#exposeErrorDetails = app.devTools.exposeErrorDetails;
     this.#messages = messages;
     this.#exceptionReporter = exceptionReporter;
     this.#operationalAlert = operationalAlert;
@@ -96,11 +104,12 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         userId: userId === "anonymous" ? null : userId,
         tags: {
           [SENTRY_TAG.HTTP_METHOD]: request.method,
-          [SENTRY_TAG.HTTP_URL]: requestPath,
+          [SENTRY_TAG.HTTP_ROUTE]: readRouteTemplate(request) ?? "unmatched",
           [SENTRY_TAG.HTTP_STATUS_CODE]: String(statusCode),
           [SENTRY_TAG.ERROR_CODE]: errorResponse.error.code,
         },
         extras: { [SENTRY_EXTRA.ERROR_RESPONSE]: errorResponse },
+        groupKey: classifiedFailureGroup(exception),
       });
     }
 
@@ -150,7 +159,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         error: {
           code: ErrorCode.SYS_0001,
           message: this.#messages.translate(ErrorCode.SYS_0001),
-          ...(this.#config.isDevelopment && { details: errorMessage }),
+          ...(this.#exposeErrorDetails && { details: errorMessage }),
         },
         timestamp: Date.now(),
       },
@@ -176,7 +185,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
               ? exceptionResponse.message.join(", ")
               : String(exceptionResponse.message)
             : exception.message,
-          ...(hasMessage && this.#config.isDevelopment && { details: exceptionResponse }),
+          ...(hasMessage && this.#exposeErrorDetails && { details: exceptionResponse }),
         },
         timestamp: Date.now(),
       },
@@ -189,7 +198,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
   } {
     const definition = Errors[exception.errorCode];
     // 운영에서는 앱이 계약으로 쓰는 코드의 검증된 상세만 내보낸다
-    const details = this.#config.isDevelopment
+    const details = this.#exposeErrorDetails
       ? exception.details
       : toPublicErrorDetails(exception.errorCode, exception.details);
     return {
@@ -217,7 +226,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
   #mapDatabaseError(error: unknown): ErrorCodedException {
     if (isRecordNotFoundError(error)) {
       return invalidParameter(
-        this.#config.isDevelopment ? { reason: "Record to update/delete not found" } : undefined,
+        this.#exposeErrorDetails ? { reason: "Record to update/delete not found" } : undefined,
       );
     }
     const kind = classifyDatabaseError(error);
@@ -230,10 +239,11 @@ export class GlobalExceptionFilter implements ExceptionFilter {
           constraint: databaseConstraint(error) ?? "unknown",
         });
         return invalidParameter(
-          this.#config.isDevelopment ? { reason: "Referenced record does not exist" } : undefined,
+          this.#exposeErrorDetails ? { reason: "Referenced record does not exist" } : undefined,
         );
       case "connection":
       case "pool-timeout":
+      case "query-timeout":
       case "statement-timeout":
       case "lock-timeout":
         this.#logger.warn({
@@ -241,32 +251,24 @@ export class GlobalExceptionFilter implements ExceptionFilter {
           kind,
           sqlState: databaseSqlState(error) ?? "none",
         });
-        return transientDatabaseFailure(this.#config.isDevelopment ? { kind } : undefined);
+        return transientDatabaseFailure(this.#exposeErrorDetails ? { kind } : undefined);
       default: {
         const sqlState = databaseSqlState(error);
         this.#logger.warn({
           event: PlatformLogEvent.DATABASE_ERROR_UNHANDLED,
           sqlState: sqlState ?? "unknown",
         });
-        return internalServerError(this.#config.isDevelopment ? { sqlState } : undefined);
+        return internalServerError(this.#exposeErrorDetails ? { sqlState } : undefined);
       }
     }
   }
 
-  /** 저장소가 번역하지 않은 unique 충돌. 알려진 옛 제약은 업무 오류, 모르는 제약은 SYS_0004 + 경보다. */
+  /** 저장소가 번역하지 않은 unique 충돌은 SYS_0004 + 경보다. 저장소가 자기 제약을 번역한다. */
   #mapUniqueConstraintError(error: unknown): ErrorCodedException {
     const constraint = databaseConstraint(error) ?? "unknown";
-    const legacyError = Object.hasOwn(LEGACY_CONSTRAINT_ERRORS, constraint)
-      ? LEGACY_CONSTRAINT_ERRORS[constraint]
-      : undefined;
-    if (legacyError != null) {
-      return legacyError();
-    }
     this.#logger.warn({ event: PlatformLogEvent.DATABASE_UNIQUE_CONSTRAINT_UNKNOWN, constraint });
     this.#operationalAlert.raise({
-      key: UNKNOWN_UNIQUE_CONSTRAINT_ALERT_KEY,
-      severity: "warning",
-      message: "저장소가 번역하지 않은 unique 제약 충돌",
+      ...DatabaseAlerts.UNIQUE_CONSTRAINT_UNKNOWN,
       tags: { constraint },
     });
     return concurrentModification();

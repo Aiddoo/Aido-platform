@@ -16,13 +16,7 @@ export const AiGenerationLogEvent = {
   QUOTA_READ_FAILED: "ai.generation.quota-read-failed",
 } as const;
 
-export const AI_GENERATION_OUTCOMES = [
-  "SUCCESS",
-  "NO_ACTION",
-  "FALLBACK",
-  "RETRYING",
-  "FAILED",
-] as const;
+const AI_GENERATION_OUTCOMES = ["SUCCESS", "NO_ACTION", "FALLBACK", "RETRYING", "FAILED"] as const;
 
 export type AiGenerationOutcome = (typeof AI_GENERATION_OUTCOMES)[number];
 

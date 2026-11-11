@@ -2,7 +2,7 @@ import { RecordingNotificationPublisher } from "#test/doubles/notification/recor
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
 
 import { TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY } from "../../domain/transactional-notification-campaign.constants.js";
-import { createFollowRequestNotificationMessage } from "../messages/notification.messages.js";
+import { createFollowRequestNotificationMessage } from "../messages/social-notification.messages.js";
 import { SendFollowRequestNotificationUseCase } from "./send-follow-request-notification.use-case.js";
 
 function setup() {

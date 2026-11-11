@@ -1,14 +1,10 @@
-import dayjs from "dayjs";
-
 import type { EntitlementReaderPort } from "#api/modules/access/entitlements/access-entitlements.public";
-import type { UserMutationLockPort } from "#api/modules/identity/identity-user-access.public";
+import type { UserMutationLockPort } from "#api/modules/identity/users/identity-users.public";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
-import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
-import { parseLocalDateTime } from "#api/shared/domain/date/utils/timezone";
+import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import type { SupportedLocale } from "#api/shared/domain/locale";
-import { instantToDate } from "#api/shared/domain/time/instant";
 
 import {
   AiGenerationError,
@@ -23,6 +19,10 @@ import {
 import { generateWithPrompt } from "../../../generation/application/messages/prompt-definition.messages.js";
 import type { AiGeneratorPort } from "../../../generation/application/ports/ai-generator.port.js";
 import type { ScheduledAiConsentReader } from "../../../generation/application/scheduled-ai-consent.reader.js";
+import {
+  localDateAt,
+  startOfLocalDate,
+} from "../../../shared/domain/user-calendar.domain-service.js";
 import { AiReport } from "../../domain/ai-report.aggregate.js";
 import type {
   AggregatedReportData,
@@ -31,14 +31,20 @@ import type {
   ReportType,
 } from "../../domain/ai-report.constants.js";
 import { assembleAggregatedData } from "../../domain/report-aggregation.domain-service.js";
+import {
+  isoWeekPeriodOf,
+  monthPeriodOf,
+  type ReportPeriod,
+} from "../../domain/report-period.domain-service.js";
 import { AiReportLogEvent } from "../ai-report.log-events.js";
+import { type ReportPromptInput } from "../messages/report-context.messages.js";
 import {
   buildNoAiConsentContent,
   buildFallbackContent,
   buildNoActivityContent,
 } from "../messages/report-fallback.messages.js";
 import { computePeriodLabel } from "../messages/report-period-label.messages.js";
-import { reportPrompt, type ReportPromptInput } from "../messages/report-prompt.messages.js";
+import { reportPrompt } from "../messages/report-prompt.messages.js";
 import { type AiReportRepositoryPort } from "../ports/ai-report.repository.port.js";
 import { type TodoStatsReaderPort } from "../ports/todo-stats.reader.port.js";
 import { DuplicateAiReportError } from "../reports.errors.js";
@@ -92,7 +98,12 @@ export class GenerateReportUseCase {
     isFinalAttempt?: boolean;
   }): Promise<AiReport | null> {
     const { userId, timezone, type, locale = "ko", isFinalAttempt = true } = input;
-    if (!(await this.#dependencies.entitlementReader.canInTx(userId, "AI_REPORT"))) {
+    if (
+      !(await this.#dependencies.entitlementReader.canInTx(
+        UserId.reconstitute(userId),
+        "AI_REPORT",
+      ))
+    ) {
       this.#dependencies.logger.debug({
         event: AiReportLogEvent.SKIPPED,
         userId,
@@ -101,12 +112,12 @@ export class GenerateReportUseCase {
       });
       return null;
     }
-    const localNow = dayjs(instantToDate(this.#dependencies.clock.now())).tz(timezone);
+    const localToday = localDateAt(this.#dependencies.clock.now(), timezone);
 
     const window =
       type === "WEEKLY"
-        ? this.#weeklyWindow(localNow, timezone)
-        : this.#monthlyWindow(localNow, timezone);
+        ? this.#weeklyWindow(localToday, timezone)
+        : this.#monthlyWindow(localToday, timezone);
 
     const exists = await this.#dependencies.aiReportRepository.existsForPeriod({
       userId: UserId.reconstitute(userId),
@@ -136,42 +147,47 @@ export class GenerateReportUseCase {
   }
 
   /** 지난 주(월~일) 윈도우 */
-  #weeklyWindow(localNow: dayjs.Dayjs, timezone: string): ReportWindow {
-    // 달력 label을 먼저 계산하고 각 경계를 다시 타임존에 적용해 DST offset을 갱신한다.
-    const lastWeekStart = dayjs
-      .utc(localNow.format("YYYY-MM-DD"))
-      .subtract(1, "week")
-      .startOf("isoWeek");
-    const lastWeekEnd = lastWeekStart.add(1, "week");
-    const prevWeekStart = lastWeekStart.subtract(1, "week");
-    const prevWeekEnd = lastWeekStart;
-    return {
-      year: lastWeekStart.isoWeekYear(),
-      period: lastWeekStart.isoWeek(),
-      startDate: parseLocalDateTime(lastWeekStart.format("YYYY-MM-DD"), "00:00", timezone),
-      endDate: parseLocalDateTime(lastWeekEnd.format("YYYY-MM-DD"), "00:00", timezone),
-      prevStartDate: parseLocalDateTime(prevWeekStart.format("YYYY-MM-DD"), "00:00", timezone),
-      prevEndDate: parseLocalDateTime(prevWeekEnd.format("YYYY-MM-DD"), "00:00", timezone),
-      periodStart: lastWeekStart.format("YYYY-MM-DD"),
-      periodEnd: lastWeekEnd.subtract(1, "day").format("YYYY-MM-DD"),
-    };
+  #weeklyWindow(localToday: Temporal.PlainDate, timezone: string): ReportWindow {
+    const thisMonday = localToday.subtract({ days: localToday.dayOfWeek - 1 });
+    const lastWeekStart = thisMonday.subtract({ weeks: 1 });
+    return this.#window(isoWeekPeriodOf(lastWeekStart), {
+      start: lastWeekStart,
+      end: thisMonday,
+      previousStart: lastWeekStart.subtract({ weeks: 1 }),
+      timezone,
+    });
   }
 
-  #monthlyWindow(localNow: dayjs.Dayjs, timezone: string): ReportWindow {
-    const lastMonth = dayjs.utc(localNow.format("YYYY-MM-DD")).subtract(1, "month");
-    const lastMonthStart = lastMonth.startOf("month");
-    const lastMonthEnd = lastMonthStart.add(1, "month");
-    const prevMonthStart = lastMonthStart.subtract(1, "month");
-    const prevMonthEnd = lastMonthStart;
+  #monthlyWindow(localToday: Temporal.PlainDate, timezone: string): ReportWindow {
+    const thisMonthStart = localToday.with({ day: 1 });
+    const lastMonthStart = thisMonthStart.subtract({ months: 1 });
+    return this.#window(monthPeriodOf(lastMonthStart), {
+      start: lastMonthStart,
+      end: thisMonthStart,
+      previousStart: lastMonthStart.subtract({ months: 1 }),
+      timezone,
+    });
+  }
+
+  /** 달력 날짜를 먼저 정하고 각 경계를 다시 시간대에 적용해 DST offset을 반영한다. end는 다음 주기 첫날이다 */
+  #window(
+    period: ReportPeriod,
+    days: {
+      readonly start: Temporal.PlainDate;
+      readonly end: Temporal.PlainDate;
+      readonly previousStart: Temporal.PlainDate;
+      readonly timezone: string;
+    },
+  ): ReportWindow {
+    const { start, end, previousStart, timezone } = days;
     return {
-      year: lastMonthStart.year(),
-      period: lastMonthStart.month() + 1,
-      startDate: parseLocalDateTime(lastMonthStart.format("YYYY-MM-DD"), "00:00", timezone),
-      endDate: parseLocalDateTime(lastMonthEnd.format("YYYY-MM-DD"), "00:00", timezone),
-      prevStartDate: parseLocalDateTime(prevMonthStart.format("YYYY-MM-DD"), "00:00", timezone),
-      prevEndDate: parseLocalDateTime(prevMonthEnd.format("YYYY-MM-DD"), "00:00", timezone),
-      periodStart: lastMonthStart.format("YYYY-MM-DD"),
-      periodEnd: lastMonthEnd.subtract(1, "day").format("YYYY-MM-DD"),
+      ...period,
+      startDate: startOfLocalDate(start, timezone),
+      endDate: startOfLocalDate(end, timezone),
+      prevStartDate: startOfLocalDate(previousStart, timezone),
+      prevEndDate: startOfLocalDate(start, timezone),
+      periodStart: start.toString(),
+      periodEnd: end.subtract({ days: 1 }).toString(),
     };
   }
 
@@ -259,8 +275,8 @@ export class GenerateReportUseCase {
     try {
       return await unitOfWork.run(async () => {
         if (
-          !(await userMutationLock.lockById(userId)) ||
-          !(await entitlementReader.canInTx(userId, "AI_REPORT"))
+          !(await userMutationLock.lockById(owner)) ||
+          !(await entitlementReader.canInTx(owner, "AI_REPORT"))
         ) {
           return null;
         }

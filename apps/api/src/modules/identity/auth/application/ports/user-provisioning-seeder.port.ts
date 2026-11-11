@@ -1,3 +1,4 @@
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import type { SupportedLocale } from "#api/shared/domain/locale";
 
 /** 회원가입 시딩할 초기 약관 동의 값. */
@@ -16,6 +17,6 @@ export interface ProvisioningConsent {
  * 어댑터가 설정과 기본 카테고리 생성을 위임하며, 호출측이 연 CLS 트랜잭션에 참여한다.
  */
 export abstract class UserProvisioningSeederPort {
-  abstract seedDefaultSettings(userId: string, consent: ProvisioningConsent): Promise<void>;
-  abstract seedDefaultCategories(userId: string, locale?: SupportedLocale): Promise<void>;
+  abstract seedDefaultSettings(userId: UserId, consent: ProvisioningConsent): Promise<void>;
+  abstract seedDefaultCategories(userId: UserId, locale?: SupportedLocale): Promise<void>;
 }

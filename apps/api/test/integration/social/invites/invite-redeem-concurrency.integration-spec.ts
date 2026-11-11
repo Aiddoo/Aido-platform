@@ -1,7 +1,7 @@
 import { ErrorCode } from "@aido/api/errors";
 import { and, count as countRows, eq, inArray } from "drizzle-orm";
 
-import { PremiumAccessReaderPort } from "#api/modules/billing/subscriptions/billing-subscriptions.public";
+import { PremiumAccessReaderPort } from "#api/modules/billing/premium-grants/billing-premium-grants.public";
 import { RevenueCatWebhookReceiver } from "#api/modules/billing/subscriptions/infrastructure/adapters/revenuecat/revenuecat-webhook-receiver.adapter";
 import { InviteConfigPort } from "#api/modules/social/invites/application/ports/invite-config.port";
 import { GetMyInviteUseCase } from "#api/modules/social/invites/application/use-cases/get-my-invite.use-case";
@@ -16,6 +16,7 @@ import {
   rewardGrant,
   user,
 } from "#api/platform/database/schema/index";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { SubscriptionEventBuilder } from "#test/builders/index";
 import { UserFixture } from "#test/fixtures/index";
 import { createTestClient } from "#test/setup/database-context";
@@ -118,7 +119,7 @@ describe("초대 수락 동시성 (실제 PostgreSQL)", () => {
       .withTransactionId("redeem-purchase-chain")
       .withEventId("redeem-purchase")
       .withPurchasedAtMs(purchasedAt)
-      .withExpirationAtMs(purchasedAt + 30 * 24 * 60 * 60 * 1_000)
+      .withExpirationAtMs(purchasedAt + 30 * 24 * 60 * 60 * 1000)
       .build();
 
     // When
@@ -136,7 +137,7 @@ describe("초대 수락 동시성 (실제 PostgreSQL)", () => {
     expect(redeemed.outcome).toBe("REDEEMED");
     const access = await context.module
       .get<PremiumAccessReaderPort>(PremiumAccessReaderPort)
-      .getPremiumAccess(inviteeId);
+      .getPremiumAccess(UserId.reconstitute(inviteeId));
     expect(access).toMatchObject({ source: "STORE", bankedDays: 7 });
     expect(
       await client

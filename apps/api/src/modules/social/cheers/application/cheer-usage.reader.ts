@@ -1,5 +1,5 @@
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
-import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantToDate } from "#api/shared/domain/time/instant";
 
 import { dailySendWindowAt } from "../../shared/domain/daily-send-window.domain-service.js";
@@ -20,10 +20,10 @@ export class CheerUsageReader extends CheerUsageReaderPort {
     this.#dependencies = dependencies;
   }
 
-  async readDailyUsage(userId: string, timezone: string): Promise<DailySendUsage> {
+  async readDailyUsage(userId: UserId, timezone: string): Promise<DailySendUsage> {
     const { cheerRepository, clock } = this.#dependencies;
     const window = dailySendWindowAt({ now: clock.now(), timeZone: timezone });
-    const used = await cheerRepository.countSentBetween(UserId.reconstitute(userId), window);
+    const used = await cheerRepository.countSentBetween(userId, window);
     return { used, resetsAt: instantToDate(window.endsAt) };
   }
 }

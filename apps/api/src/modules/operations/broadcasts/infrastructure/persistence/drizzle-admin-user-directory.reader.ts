@@ -4,7 +4,7 @@ import { Injectable } from "@nestjs/common";
 import { and, asc, eq, exists, gt, gte, inArray, isNull, type SQL } from "drizzle-orm";
 import { match } from "ts-pattern";
 
-import { activeSubscriptionCondition } from "#api/modules/access/access-entitlement-sql.public";
+import { activeSubscriptionCondition } from "#api/modules/access/entitlements/access-entitlements.public";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { pushToken, user } from "#api/platform/database/schema/index";
 import { ClockPort } from "#api/shared/application/ports/clock.port";

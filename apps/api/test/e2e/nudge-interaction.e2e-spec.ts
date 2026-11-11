@@ -37,7 +37,7 @@ describe("콕 답장·감사 E2E (실제 DB)", () => {
       customizeBuilder: (builder) =>
         builder.overrideProvider(NudgeInteractionConfigPort).useValue({ isEnabled: true }),
     });
-  }, 60000);
+  }, 60_000);
 
   afterAll(async () => {
     await destroyE2eApp(ctx);
@@ -335,24 +335,43 @@ describe("콕 답장·감사 E2E (실제 DB)", () => {
     expect((await getThanksPreview(receiver, todo.id)).recipients).toEqual([]);
   });
 
-  it("미완료 할 일에는 감사 미리보기와 전송을 허용하지 않는다", async () => {
+  it("완료 저장보다 먼저 온 미리보기는 빈 미리보기이고 완료 뒤에 친구를 보이며, 완료 전 감사 전송은 거절한다", async () => {
     // Given
     const sender = await ctx.helpers.createVerifiedUser("sender@test.com", "Test1234!");
     const receiver = await ctx.helpers.createVerifiedUser("receiver@test.com", "Test1234!");
     await ctx.helpers.createFriendship(sender, receiver);
     const todo = await createTodo(receiver);
     const nudge = await sendNudge(sender, receiver, todo.id);
+    const getReleasedAppPreview = () =>
+      request(ctx.app.getHttpServer())
+        .get(`/v1/nudges/todos/${todo.id}/thanks`)
+        .query({ limit: 20 })
+        .set("Authorization", `Bearer ${receiver.accessToken}`)
+        .expect(200);
 
     // When
-    const preview = await request(ctx.app.getHttpServer())
-      .get(`/v1/nudges/todos/${todo.id}/thanks`)
-      .set("Authorization", `Bearer ${receiver.accessToken}`)
-      .expect(409);
+    const beforeCompletion = await getReleasedAppPreview();
     const thanks = await sendThanks(receiver, todo.id, nudge.id).expect(409);
+    await setCompleted(receiver, todo.id, true);
+    const afterCompletion = await getReleasedAppPreview();
 
     // Then
-    expect(preview.body.error.code).toBe(ErrorCode.NUDGE_1110);
+    expect(nudgeThanksPreviewResponseSchema.parse(beforeCompletion.body.data)).toEqual({
+      todoId: todo.id,
+      throughNudgeId: null,
+      recipients: [],
+      totalRecipients: 0,
+      nextCursor: null,
+      hasNext: false,
+      thankedRecipientCount: 0,
+      lastThankedAt: null,
+    });
     expect(thanks.body.error.code).toBe(ErrorCode.NUDGE_1110);
+    expect(
+      nudgeThanksPreviewResponseSchema
+        .parse(afterCompletion.body.data)
+        .recipients.map((friend) => friend.id),
+    ).toEqual([sender.userId]);
   });
 
   it("같은 친구의 여러 콕을 묶고 감사 동시 요청 20개에도 친구별 한 번만 전한다", async () => {

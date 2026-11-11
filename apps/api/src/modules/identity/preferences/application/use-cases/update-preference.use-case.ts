@@ -1,12 +1,12 @@
 import { ErrorCode } from "@aido/api/errors";
 
-import { assertEntitled } from "#api/modules/access/access-entitlement.public";
+import { assertEntitled } from "#api/modules/access/entitlements/access-entitlements.public";
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
-import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
-import { normalizeIanaTimezone } from "#api/shared/domain/date/utils/timezone";
-import { instantToDate } from "#api/shared/domain/time/instant";
+import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { normalizeIanaTimezone } from "#api/shared/domain/time/time-zone-name";
 
 import { ReminderTime } from "../../domain/reminder-time.vo.js";
 import type { PreferenceEntitlementPort } from "../ports/preference-entitlement.port.js";
@@ -46,7 +46,7 @@ export class UpdatePreferenceUseCase {
   }
 
   async execute(input: UpdatePreferenceCommand): Promise<PreferenceView> {
-    const { userId } = input;
+    const userId = UserId.reconstitute(input.userId);
     const changesReminder =
       input.morningReminderHour != null ||
       input.morningReminderMinute != null ||
@@ -88,7 +88,7 @@ export class UpdatePreferenceUseCase {
         weatherEveningMinute: input.weatherEveningMinute,
       });
       if (timezoneChanged) {
-        await todoTimezoneRebase.enqueueRebase(userId, instantToDate(clock.now()));
+        await todoTimezoneRebase.enqueueRebase(userId, clock.now());
       }
       return written;
     });
@@ -100,7 +100,7 @@ export class UpdatePreferenceUseCase {
 
     this.#dependencies.logger.log({
       event: PreferenceLogEvent.PREFERENCE_UPDATED,
-      userId,
+      userId: input.userId,
       pushEnabled: updated.pushEnabled,
       nightPushEnabled: updated.nightPushEnabled,
       timezone: updated.timezone,
@@ -109,7 +109,7 @@ export class UpdatePreferenceUseCase {
     // 변경한 시각의 cron이 이미 지난 경우에도 리마인더를 즉시 반영한다.
     if (changesReminder) {
       this.#dependencies.reminderEnqueuer.enqueueReminderHourChanged({
-        userId,
+        userId: input.userId,
         timezone: updated.timezone,
         morningReminderHour: input.morningReminderHour,
         morningReminderMinute: input.morningReminderMinute,

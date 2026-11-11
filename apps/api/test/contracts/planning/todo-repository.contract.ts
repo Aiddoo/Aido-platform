@@ -1,12 +1,16 @@
+import { TodoCategoryId } from "#api/modules/planning/categories/domain/todo-category-id.vo";
+import { TodoId } from "#api/modules/planning/shared/domain/todo-id.vo";
 import { TodoItemId } from "#api/modules/planning/shared/domain/todo-item-id.vo";
 import { TodoItem } from "#api/modules/planning/shared/domain/todo-item.entity";
 import { TodoTitle } from "#api/modules/planning/shared/domain/todo-title.vo";
 import type { Todo, TodoPrimitives } from "#api/modules/planning/shared/domain/todo.aggregate";
 import type { TodoSeriesRepositoryPort } from "#api/modules/planning/todo-series/application/ports/todo-series.repository.port";
+import { TodoSeriesId } from "#api/modules/planning/todo-series/domain/todo-series-id.vo";
 import type {
   TodoOccurrencePlan,
   TodoRepositoryPort,
 } from "#api/modules/planning/todos/application/ports/todo.repository.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { createTodoSeriesFixture } from "#test/fixtures/planning/todo-series.fixture";
 import {
   createTodoFixture,
@@ -55,10 +59,10 @@ async function occurrencePlans(
             categoryId: context.categoryId,
             title: "물 마시기",
             visibility: "PUBLIC",
-            startDate: new Date(`${date}T00:00:00.000Z`),
+            startDate: Temporal.PlainDate.from(date),
             endDate: null,
             scheduledLocalTime: "09:00",
-            scheduledTime: new Date(`${date}T00:00:00.000Z`),
+            scheduledTime: Temporal.Instant.from(`${date}T00:00:00.000Z`),
             isAllDay: false,
             occurrenceDate: date,
             createdAt: TODO_FIXTURE_NOW,
@@ -72,9 +76,7 @@ async function findPrimitives(
   context: TodoRepositoryContractContext,
   todo: Todo,
 ): Promise<TodoPrimitives | undefined> {
-  return (
-    await context.todoRepository.findByIdAndUserId(todo.id.value, todo.userId.value)
-  )?.toPrimitives();
+  return (await context.todoRepository.findByIdAndUserId(todo.id, todo.userId))?.toPrimitives();
 }
 
 export function describeTodoRepositoryContract(
@@ -101,20 +103,20 @@ export function describeTodoRepositoryContract(
       const todo = await insertTodo(context, {
         title: "치과 예약",
         scheduledLocalTime: "09:30",
-        scheduledTime: new Date("2026-11-10T00:30:00.000Z"),
+        scheduledTime: Temporal.Instant.from("2026-11-10T00:30:00.000Z"),
         isAllDay: false,
-        endDate: new Date("2026-11-12T00:00:00.000Z"),
+        endDate: Temporal.PlainDate.from("2026-11-12"),
         visibility: "PRIVATE",
       });
 
       // When
       const found = await context.todoRepository.findByIdAndUserId(
-        todo.id.value,
-        TODO_FIXTURE_USER_ID,
+        todo.id,
+        UserId.reconstitute(TODO_FIXTURE_USER_ID),
       );
       const foreign = await context.todoRepository.findByIdAndUserId(
-        todo.id.value,
-        TODO_FIXTURE_OTHER_USER_ID,
+        todo.id,
+        UserId.reconstitute(TODO_FIXTURE_OTHER_USER_ID),
       );
 
       // Then
@@ -126,19 +128,19 @@ export function describeTodoRepositoryContract(
       // Given
       const context = await createContext();
       const todo = await insertTodo(context, {
-        endDate: new Date("2026-11-12T00:00:00.000Z"),
+        endDate: Temporal.PlainDate.from("2026-11-12"),
         visibility: "PRIVATE",
       });
 
       // When
-      await context.todoRepository.updateDetails(todo.id.value, {
+      await context.todoRepository.updateDetails(todo.id, {
         title: "바뀐 제목",
         endDate: null,
         completed: true,
         completedAt: LATER,
       });
       const completed = await findPrimitives(context, todo);
-      await context.todoRepository.updateDetails(todo.id.value, {
+      await context.todoRepository.updateDetails(todo.id, {
         completed: false,
         completedAt: null,
       });
@@ -160,19 +162,22 @@ export function describeTodoRepositoryContract(
       const context = await createContext();
       const todo = await insertTodo(context);
       const schedule = {
-        startDate: new Date("2026-11-20T00:00:00.000Z"),
+        startDate: Temporal.PlainDate.from("2026-11-20"),
         endDate: null,
         scheduledLocalTime: "08:00",
-        scheduledTime: new Date("2026-11-19T23:00:00.000Z"),
+        scheduledTime: Temporal.Instant.from("2026-11-19T23:00:00.000Z"),
         isAllDay: false,
       };
 
       // When
-      await context.todoRepository.updateTitle(todo.id.value, "새 제목");
-      await context.todoRepository.updateVisibility(todo.id.value, "PRIVATE");
-      await context.todoRepository.updateCategory(todo.id.value, context.categoryId);
-      await context.todoRepository.updateSchedule(todo.id.value, schedule);
-      await context.todoRepository.updateSortOrder(todo.id.value, 7);
+      await context.todoRepository.updateTitle(todo.id, "새 제목");
+      await context.todoRepository.updateVisibility(todo.id, "PRIVATE");
+      await context.todoRepository.updateCategory(
+        todo.id,
+        TodoCategoryId.reconstitute(context.categoryId),
+      );
+      await context.todoRepository.updateSchedule(todo.id, schedule);
+      await context.todoRepository.updateSortOrder(todo.id, 7);
 
       // Then
       expect(await findPrimitives(context, todo)).toMatchObject({
@@ -199,7 +204,12 @@ export function describeTodoRepositoryContract(
         todos.push(await insertTodo(context, { userId: TODO_FIXTURE_OTHER_USER_ID, sortOrder: 1 }));
 
         // When
-        await context.todoRepository.shiftSortOrders(TODO_FIXTURE_USER_ID, from, to, delta);
+        await context.todoRepository.shiftSortOrders(
+          UserId.reconstitute(TODO_FIXTURE_USER_ID),
+          from,
+          to,
+          delta,
+        );
 
         // Then
         const sortOrders = [];
@@ -213,12 +223,16 @@ export function describeTodoRepositoryContract(
     it("최대 순서는 그 사용자 할 일만 보고 없으면 -1이다", async () => {
       // Given
       const context = await createContext();
-      const empty = await context.todoRepository.getMaxSortOrder(TODO_FIXTURE_USER_ID);
+      const empty = await context.todoRepository.getMaxSortOrder(
+        UserId.reconstitute(TODO_FIXTURE_USER_ID),
+      );
       await insertTodo(context, { sortOrder: 4 });
       await insertTodo(context, { userId: TODO_FIXTURE_OTHER_USER_ID, sortOrder: 9 });
 
       // When
-      const maxSortOrder = await context.todoRepository.getMaxSortOrder(TODO_FIXTURE_USER_ID);
+      const maxSortOrder = await context.todoRepository.getMaxSortOrder(
+        UserId.reconstitute(TODO_FIXTURE_USER_ID),
+      );
 
       // Then
       expect({ empty, maxSortOrder }).toEqual({ empty: -1, maxSortOrder: 4 });
@@ -229,21 +243,26 @@ export function describeTodoRepositoryContract(
       const context = await createContext();
       const [existing] = await context.todoRepository.insertOccurrences(
         await occurrencePlans(context, ["2026-11-10"]),
-        SERIES_ID,
+        TodoSeriesId.reconstitute(SERIES_ID),
         [],
       );
 
       // When
       const created = await context.todoRepository.insertOccurrences(
         await occurrencePlans(context, ["2026-11-10", "2026-11-11"], 1),
-        SERIES_ID,
+        TodoSeriesId.reconstitute(SERIES_ID),
         [{ title: "물병 채우기" }, { title: "마시기" }],
       );
-      const rows = await context.todoRepository.findOccurrencesFrom([SERIES_ID], "2026-11-10");
+      const rows = await context.todoRepository.findOccurrencesFrom(
+        [TodoSeriesId.reconstitute(SERIES_ID)],
+        "2026-11-10",
+      );
 
       // Then
       expect(created).toEqual([
-        expect.objectContaining({ scheduledTime: new Date("2026-11-11T00:00:00.000Z") }),
+        expect.objectContaining({
+          scheduledTime: Temporal.Instant.from("2026-11-11T00:00:00.000Z"),
+        }),
       ]);
       expect(rows.map((row) => [row.todoId, row.occurrenceDate])).toEqual([
         [existing?.todoId, "2026-11-10"],
@@ -251,7 +270,12 @@ export function describeTodoRepositoryContract(
       ]);
       const titles = await Promise.all(
         [existing?.todoId, created[0]?.todoId].map(async (todoId) =>
-          (await context.todoRepository.findByIdAndUserId(todoId ?? 0, TODO_FIXTURE_USER_ID))
+          (
+            await context.todoRepository.findByIdAndUserId(
+              TodoId.reconstitute(todoId ?? 0),
+              UserId.reconstitute(TODO_FIXTURE_USER_ID),
+            )
+          )
             ?.toPrimitives()
             .items.map((item) => item.title),
         ),
@@ -264,25 +288,25 @@ export function describeTodoRepositoryContract(
       const context = await createContext();
       const created = await context.todoRepository.insertOccurrences(
         await occurrencePlans(context, ["2026-11-10", "2026-11-11", "2026-11-12"]),
-        SERIES_ID,
+        TodoSeriesId.reconstitute(SERIES_ID),
         [],
       );
       const completedId = created[2]?.todoId ?? 0;
-      await context.todoRepository.updateDetails(completedId, {
+      await context.todoRepository.updateDetails(TodoId.reconstitute(completedId), {
         completed: true,
         completedAt: LATER,
       });
 
       // When
       const following = await context.todoRepository.deleteOccurrences({
-        userId: TODO_FIXTURE_USER_ID,
-        seriesIds: [SERIES_ID],
+        userId: UserId.reconstitute(TODO_FIXTURE_USER_ID),
+        seriesIds: [TodoSeriesId.reconstitute(SERIES_ID)],
         fromDate: "2026-11-11",
         includeCompleted: false,
       });
       const rest = await context.todoRepository.deleteOccurrences({
-        userId: TODO_FIXTURE_USER_ID,
-        seriesIds: [SERIES_ID],
+        userId: UserId.reconstitute(TODO_FIXTURE_USER_ID),
+        seriesIds: [TodoSeriesId.reconstitute(SERIES_ID)],
         includeCompleted: true,
       });
 
@@ -302,7 +326,7 @@ export function describeTodoRepositoryContract(
       await insertTodo(context, { userId: TODO_FIXTURE_OTHER_USER_ID });
       await context.todoRepository.insertOccurrences(
         await occurrencePlans(context, ["2026-11-10", "2026-11-11"]),
-        SERIES_ID,
+        TodoSeriesId.reconstitute(SERIES_ID),
         [],
       );
       await context.seriesRepository.insert(
@@ -311,8 +335,8 @@ export function describeTodoRepositoryContract(
 
       // When
       const usage = await context.todoRepository.countCategoryUsage(
-        TODO_FIXTURE_USER_ID,
-        context.categoryId,
+        UserId.reconstitute(TODO_FIXTURE_USER_ID),
+        TodoCategoryId.reconstitute(context.categoryId),
       );
 
       // Then
@@ -323,7 +347,7 @@ export function describeTodoRepositoryContract(
       // Given
       const context = await createContext();
       const todo = await insertTodo(context);
-      await context.todoRepository.createInlineItems(todo.id.value, [
+      await context.todoRepository.createInlineItems(todo.id, [
         { title: "첫째" },
         { title: "둘째" },
       ]);
@@ -333,14 +357,19 @@ export function describeTodoRepositoryContract(
         sortOrder: 2,
         now: TODO_FIXTURE_NOW,
       });
-      await context.todoRepository.insertItem(todo.id.value, added);
+      await context.todoRepository.insertItem(todo.id, added);
       const inserted = (await findPrimitives(context, todo))?.items ?? [];
       const [first, second] = inserted;
 
       // When
-      await context.todoRepository.updateItem(first?.id ?? 0, { completed: true });
-      await context.todoRepository.deleteItem(second?.id ?? 0);
-      await context.todoRepository.reorderItems([added.id.value, first?.id ?? 0]);
+      await context.todoRepository.updateItem(TodoItemId.reconstitute(first?.id ?? 0), {
+        completed: true,
+      });
+      await context.todoRepository.deleteItem(TodoItemId.reconstitute(second?.id ?? 0));
+      await context.todoRepository.reorderItems([
+        added.id,
+        TodoItemId.reconstitute(first?.id ?? 0),
+      ]);
 
       // Then
       const items = (await findPrimitives(context, todo))?.items ?? [];
@@ -359,7 +388,7 @@ export function describeTodoRepositoryContract(
       const kept = await insertTodo(context);
 
       // When
-      await context.todoRepository.delete(todo.id.value);
+      await context.todoRepository.delete(todo.id);
 
       // Then
       expect(await findPrimitives(context, todo)).toBeUndefined();

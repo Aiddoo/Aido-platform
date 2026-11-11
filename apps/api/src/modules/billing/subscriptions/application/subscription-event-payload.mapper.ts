@@ -23,7 +23,7 @@ import type {
 type NotifiableChainEvent = Exclude<StoreSubscriptionChainEvent, { kind: "IGNORED" }>;
 
 /** 체험 판단에 쓰는 이벤트 값 */
-export function lifecycleEventOf(event: StoreSubscriptionChainEvent): StoreLifecycleEvent {
+function lifecycleEventOf(event: StoreSubscriptionChainEvent): StoreLifecycleEvent {
   return {
     kind: event.kind,
     isOneTime: event.kind === "STARTED" && event.isOneTime,

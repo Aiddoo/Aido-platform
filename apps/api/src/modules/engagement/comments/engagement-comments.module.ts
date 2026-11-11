@@ -1,7 +1,7 @@
 import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 
-import { NotificationDeliveryModule } from "#api/modules/notification/notification-delivery.public";
+import { NotificationPushModule } from "#api/modules/notification/notification-delivery.public";
 import { PlanningTodoQueriesModule } from "#api/modules/planning/todos/planning-todo-queries.public";
 import { PlanningTodosModule } from "#api/modules/planning/todos/planning-todos.public";
 import { SocialBlocksModule } from "#api/modules/social/blocks/social-blocks.public";
@@ -14,7 +14,7 @@ import { TodoCommentV2Controller } from "./presentation/http/v2/todo-comment.con
 
 @Module({
   imports: [
-    NotificationDeliveryModule,
+    NotificationPushModule,
     PlanningTodosModule,
     PlanningTodoQueriesModule,
     SocialBlocksModule,

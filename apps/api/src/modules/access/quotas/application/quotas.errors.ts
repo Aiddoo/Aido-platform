@@ -32,7 +32,7 @@ export function quotaKeyReused(): ApplicationException {
   return new ApplicationException(ErrorCode.AI_1318, { charged: false });
 }
 
-/** 같은 사용자·계량기·키의 차감을 동시에 만들었다. 저장소 제약을 필터의 옛 응답과 같은 SYS_0004로 옮긴다. */
+/** 같은 사용자·계량기·키의 차감을 동시에 만들었다. 저장소 제약을 출시 앱이 받던 SYS_0004로 옮긴다. */
 export function quotaChargeConflict(): ApplicationException {
   return new ApplicationException(ErrorCode.SYS_0004);
 }

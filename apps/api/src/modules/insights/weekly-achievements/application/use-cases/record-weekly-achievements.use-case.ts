@@ -1,7 +1,6 @@
 import { zip } from "es-toolkit";
 
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { instantFromDate } from "#api/shared/domain/time/instant";
 
 import { WeeklyAchievement } from "../../domain/weekly-achievement.entity.js";
 import type {
@@ -42,7 +41,7 @@ export class RecordWeeklyAchievementsUseCase implements WeeklyAchievementWriterP
         week: record.week,
         totalTodos: record.totalTodos,
         completedTodos: record.completedTodos,
-        achievedAt: instantFromDate(record.achievedAt),
+        achievedAt: record.achievedAt,
       });
     });
     await weeklyAchievementRepository.saveAll(achievements);

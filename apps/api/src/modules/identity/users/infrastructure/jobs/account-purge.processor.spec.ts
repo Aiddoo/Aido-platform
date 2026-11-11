@@ -1,7 +1,8 @@
 import type { PurgeDeletedAccountsUseCase } from "#api/modules/identity/users/application/use-cases/purge-deleted-accounts.use-case";
-import { FakeJobRuntime } from "#test/mocks/fake-job-runtime";
+import { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
 
 import { AccountPurgeProcessor } from "./account-purge.processor.js";
+import { ACCOUNT_PURGE_JOB_NAME, ACCOUNT_PURGE_QUEUE } from "./account-purge.queue.js";
 
 class CountingAccountPurge implements Pick<PurgeDeletedAccountsUseCase, "execute"> {
   runs = 0;
@@ -12,26 +13,27 @@ class CountingAccountPurge implements Pick<PurgeDeletedAccountsUseCase, "execute
 }
 
 describe("AccountPurgeProcessor — Queue 실행 경계", () => {
-  it("account-purge.v1 작업이 계정 정리 흐름을 실행한다", async () => {
+  it.each([
+    { label: "등록된 일정", payload: { name: ACCOUNT_PURGE_JOB_NAME } },
+    { label: "name이 없는 옛 payload", payload: {} },
+  ] as const)("$label 작업이 계정 정리 흐름을 실행한다", async ({ payload }) => {
     // Given
-    const runtime = new FakeJobRuntime();
+    const jobQueue = new InMemoryJobQueue();
     const purge = new CountingAccountPurge();
-    const processor = new AccountPurgeProcessor(purge, runtime);
+    const processor = new AccountPurgeProcessor(purge, jobQueue);
+    await processor.onModuleInit();
+    await jobQueue.enqueue(ACCOUNT_PURGE_QUEUE, payload);
 
     // When
-    await processor.onModuleInit();
-    await runtime.run("account-purge.v1", {});
+    await jobQueue.drain(ACCOUNT_PURGE_QUEUE);
 
     // Then
-    expect(runtime.workCalls).toEqual([
-      { queue: "account-purge.v1", options: { teamSize: 1, pollingIntervalSeconds: 30 } },
-    ]);
     expect(purge.runs).toBe(1);
   });
 
   it("계정 정리 실행 오류는 Queue의 재시도 판단으로 전파한다", async () => {
     // Given
-    const runtime = new FakeJobRuntime();
+    const jobQueue = new InMemoryJobQueue();
     const failure = new Error("Database unavailable");
     const processor = new AccountPurgeProcessor(
       {
@@ -39,12 +41,13 @@ describe("AccountPurgeProcessor — Queue 실행 경계", () => {
           throw failure;
         },
       },
-      runtime,
+      jobQueue,
     );
     await processor.onModuleInit();
+    await jobQueue.enqueue(ACCOUNT_PURGE_QUEUE, { name: ACCOUNT_PURGE_JOB_NAME });
 
     // When
-    const result = runtime.run("account-purge.v1", {});
+    const result = jobQueue.drain(ACCOUNT_PURGE_QUEUE);
 
     // Then
     await expect(result).rejects.toBe(failure);

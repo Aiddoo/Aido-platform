@@ -4,7 +4,7 @@ import { ApplicationException } from "#api/shared/application/application.except
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { FriendshipId } from "../domain/friendship-id.vo.js";
-import type { FriendQuota } from "./ports/friend-limit.reader.port.js";
+import type { FriendFeatureQuota } from "./ports/friend-limit.reader.port.js";
 
 export function cannotFriendSelf(): ApplicationException {
   return new ApplicationException(ErrorCode.FOLLOW_0904);
@@ -13,7 +13,7 @@ export function cannotFriendSelf(): ApplicationException {
 export function friendLimitReached(params: {
   readonly friendCount: number;
   readonly maxFriendCount: number | null;
-  readonly featureQuota: FriendQuota;
+  readonly featureQuota: FriendFeatureQuota;
 }): ApplicationException {
   return new ApplicationException(ErrorCode.FOLLOW_0909, {
     current: params.friendCount,

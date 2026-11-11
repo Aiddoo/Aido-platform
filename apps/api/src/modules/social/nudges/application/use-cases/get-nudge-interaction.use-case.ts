@@ -32,12 +32,10 @@ export class GetNudgeInteractionUseCase {
       throw nudgeInteractionNotFound();
     }
 
+    const viewerId = UserId.reconstitute(query.userId);
     const [nudge, friendIds] = await Promise.all([
-      nudgeReader.findInteraction(
-        NudgeId.reconstitute(query.nudgeId),
-        UserId.reconstitute(query.userId),
-      ),
-      followReader.getCurrentMutualFriendIds(query.userId),
+      nudgeReader.findInteraction(NudgeId.reconstitute(query.nudgeId), viewerId),
+      followReader.getCurrentMutualFriendIds(viewerId),
     ]);
     if (nudge == null) {
       throw nudgeInteractionNotFound();

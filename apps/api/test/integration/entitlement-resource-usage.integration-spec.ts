@@ -8,6 +8,7 @@ import { TodoCategoryCountReaderPort } from "#api/modules/planning/categories/pl
 import { SendFriendRequestUseCase } from "#api/modules/social/friends/application/use-cases/send-friend-request.use-case";
 import { FriendCountReaderPort } from "#api/modules/social/friends/social-friends.public";
 import { follow, resourceBonus, todoCategory, user } from "#api/platform/database/schema/index";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantFromDate } from "#api/shared/domain/time/instant";
 import { FollowFixture, UserFixture } from "#test/fixtures/index";
 
@@ -64,6 +65,7 @@ describe("권한 스냅샷의 친구·카테고리 개수는 한도 검사와 �
           userId: ownerId,
           name: `카테고리 ${index}`,
           color: "#FFB3B3",
+          updatedAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
           sortOrder: index,
         })),
       );
@@ -103,7 +105,7 @@ describe("권한 스냅샷의 친구·카테고리 개수는 한도 검사와 �
     await insertCategories(userId, FREE_CATEGORY_LIMIT);
 
     // When
-    const count = await categoryCountReader.countCategories(userId);
+    const count = await categoryCountReader.countCategories(UserId.reconstitute(userId));
     const { features } = await readSnapshot();
     const creation = context.module
       .get(CreateTodoCategoryUseCase)
@@ -128,7 +130,7 @@ describe("권한 스냅샷의 친구·카테고리 개수는 한도 검사와 �
     const { target } = await insertFriends(FREE_FRIEND_LIMIT);
 
     // When
-    const count = await friendCountReader.countCurrentFriends(userId);
+    const count = await friendCountReader.countCurrentFriends(UserId.reconstitute(userId));
     const { features } = await readSnapshot();
     const request = context.module
       .get(SendFriendRequestUseCase)

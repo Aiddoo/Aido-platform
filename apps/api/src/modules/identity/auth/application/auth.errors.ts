@@ -14,6 +14,10 @@ export function accountAlreadyExists(): ApplicationException {
   return new ApplicationException(ErrorCode.USER_0604);
 }
 
+export function emailAlreadyRegistered(email: string): ApplicationException {
+  return new ApplicationException(ErrorCode.EMAIL_0501, { email });
+}
+
 /** 공급자 계정이 이미 어떤 사용자에게 연결돼 있으면 출시 앱이 아는 공급자별 코드다 */
 export function oauthAccountAlreadyLinked(
   provider: AccountProvider,

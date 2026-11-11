@@ -1,4 +1,5 @@
 import { UserMutationLockPort } from "#api/modules/identity/users/identity-users.public";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { InMemoryAccessUser } from "./in-memory-access-state.reader.js";
 
@@ -11,7 +12,7 @@ export class StubUserMutationLock extends UserMutationLockPort {
     this.#users = users;
   }
 
-  async lockById(userId: string): Promise<boolean> {
-    return this.#users.has(userId);
+  async lockById(userId: UserId): Promise<boolean> {
+    return this.#users.has(userId.value);
   }
 }

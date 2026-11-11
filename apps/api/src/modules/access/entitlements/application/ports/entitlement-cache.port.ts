@@ -1,14 +1,14 @@
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import type { ResourceBonuses } from "../../domain/entitlements.constants.js";
+import type { FeatureGrants } from "../../domain/entitlements.constants.js";
 
-/** 캐시에 담는 권한 상태. 캐시 key v2의 값 모양이라 필드를 바꾸지 않는다. */
+/** 캐시에 담는 권한 상태. 캐시 key v2의 값 모양이라 필드 이름을 바꾸지 않는다(resourceBonuses = 받은 자리). */
 export interface CachedAccessState {
   readonly status: string | null;
   readonly isAdmin: boolean;
   /** 1.13.0 이전 캐시에는 없다. 없으면 기한 없이 status를 그대로 쓴다. */
   readonly accessDeadlineMs?: number | null;
-  readonly resourceBonuses: ResourceBonuses;
+  readonly resourceBonuses: FeatureGrants;
 }
 
 export abstract class EntitlementCachePort {

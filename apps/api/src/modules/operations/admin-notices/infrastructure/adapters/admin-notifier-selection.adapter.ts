@@ -8,6 +8,8 @@ import type { OperationsAdminNoticesConfig } from "../../operations-admin-notice
 import { DiscordAdminNotifierAdapter } from "./discord-admin-notifier.adapter.js";
 import { LogAdminNotifierAdapter } from "./log-admin-notifier.adapter.js";
 
+type AdminNotifierConfig = Pick<OperationsAdminNoticesConfig, "provider" | "discordWebhookUrls">;
+
 /** 어댑터를 더하려면 AdminNotifierProviderId와 이 표에 한 줄씩 더한다. */
 const adapters = {
   discord: (config, http, policies) =>
@@ -22,8 +24,8 @@ const adapters = {
   ) => AdminNotifierPort
 >;
 
-export function createAdminNotifier(
-  config: OperationsAdminNoticesConfig,
+export function selectAdminNotifier(
+  config: AdminNotifierConfig,
   http: HttpClient,
   policies: OutboundPolicyRegistry,
 ): AdminNotifierPort {

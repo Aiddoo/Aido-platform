@@ -7,6 +7,7 @@ import {
   NotificationJobName,
 } from "#api/modules/notification/push/infrastructure/jobs/notification.queue";
 import { ApplicationException } from "#api/shared/application/application.exception";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { RecordingAdminEventNotifier } from "#test/doubles/operations/recording-admin-event-notifier";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
@@ -15,6 +16,7 @@ import { suppressLogger } from "#test/setup/suppress-logger";
 
 import type { StoreSubscriptionEventFailureContext } from "../../application/ports/subscription-event-notifier.port.js";
 import type { SubscriptionEventPayload } from "../../application/read-models/subscription-event-payload.read-model.js";
+import { SubscriptionAlerts } from "../../application/subscriptions.alerts.js";
 import { SubscriptionEventNotifierAdapter } from "./subscription-event-notifier.adapter.js";
 
 function createAdapter(options: { projectId?: string } = {}) {
@@ -23,7 +25,6 @@ function createAdapter(options: { projectId?: string } = {}) {
   const jobQueue = new InMemoryJobQueue();
   const config = {
     revenuecat: {
-      webhookSecret: undefined,
       projectId: options.projectId,
       apiV2SecretKey: undefined,
     },
@@ -60,9 +61,7 @@ describe("SubscriptionEventNotifierAdapter — 웹훅 실패 보고", () => {
     // Then
     expect(alerts.alerts).toEqual([
       {
-        key: "billing.subscription.webhook.processing-failed",
-        severity: "error",
-        message: "RevenueCat 웹훅 처리에 실패했습니다",
+        ...SubscriptionAlerts.WEBHOOK_PROCESSING_FAILED,
         tags: { eventKind: "STARTED", store: "APP_STORE", storeEnvironment: "SANDBOX" },
         details: {
           eventId: "evt-1",
@@ -160,7 +159,7 @@ describe("SubscriptionEventNotifierAdapter — 결제 문제 푸시 기록", () 
     const job = { name: NotificationJobName.BILLING_ISSUE, data: { userId: "user-1" } } as const;
 
     // When
-    await adapter.recordBillingIssue("user-1", at);
+    await adapter.recordBillingIssue(UserId.reconstitute("user-1"), at);
 
     // Then
     const queued = jobQueue.jobsIn(NOTIFICATION_QUEUE);

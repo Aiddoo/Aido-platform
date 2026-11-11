@@ -67,8 +67,7 @@ export class ConvertMemoToTodosUseCase {
 
     const outcome = await unitOfWork.run<ConversionOutcome>(async () => {
       await mutationLock.acquire([
-        MemoLockKeys.memo(memoId),
-        MemoLockKeys.sortOrder(userId),
+        ...MemoLockKeys.existingMemo(memoId, userId),
         TodoCategoryLockKeys.userCategories(command.userId),
         TodoLockKeys.sortOrder(command.userId),
       ]);
@@ -76,7 +75,7 @@ export class ConvertMemoToTodosUseCase {
       if (memo == null) {
         throw memoNotFound(memoId);
       }
-      const staged = await this.#stageInOrder(command);
+      const staged = await this.#stageInOrder(command, userId);
       if (staged.kind === "failed") {
         return staged;
       }
@@ -97,7 +96,10 @@ export class ConvertMemoToTodosUseCase {
     return outcome.todos;
   }
 
-  async #stageInOrder(command: ConvertMemoToTodosCommand): Promise<ConversionOutcome> {
+  async #stageInOrder(
+    command: ConvertMemoToTodosCommand,
+    userId: UserId,
+  ): Promise<ConversionOutcome> {
     const { savepointRunner, afterCommit, todoCreator } = this.#dependencies;
     const todos: ConvertedTodo[] = [];
     for (const draft of command.todos) {
@@ -105,7 +107,7 @@ export class ConvertMemoToTodosUseCase {
         const staged = await savepointRunner.run(() =>
           todoCreator.stage({
             ...draft,
-            userId: command.userId,
+            userId,
             timezone: command.timezone,
             isAllDay: draft.isAllDay ?? true,
             visibility: draft.visibility ?? "PUBLIC",

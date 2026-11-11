@@ -15,7 +15,7 @@ function seedNotifications() {
       userId: USER_ID,
       id: 4,
       isRead: true,
-      readAt: new Date("2026-11-10T00:00:00Z"),
+      readAt: Temporal.Instant.from("2026-11-10T00:00:00Z"),
     }),
     createInboxNotificationFixture({ userId: "other-user", id: 5 }),
   ];

@@ -2,8 +2,7 @@ import { Inject, Injectable, type OnModuleInit } from "@nestjs/common";
 import { match } from "ts-pattern";
 import type { z } from "zod";
 
-import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
-import type { JobEnvelope } from "#api/shared/application/ports/job-runtime.port";
+import { type JobEnvelope, JobQueuePort } from "#api/shared/application/ports/job-queue.port";
 
 import { DeliverPushNotificationsUseCase } from "../../application/use-cases/deliver-push-notifications.use-case.js";
 import { RecoverFailedPushDeliveriesUseCase } from "../../application/use-cases/recover-failed-push-deliveries.use-case.js";

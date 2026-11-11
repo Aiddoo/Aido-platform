@@ -1,8 +1,10 @@
 import type { InviteFriendship, REDEEM_OUTCOME } from "@aido/api/vocabulary";
 
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+
 export interface EstablishFriendshipInput {
-  readonly requesterId: string;
-  readonly targetUserId: string;
+  readonly requesterId: UserId;
+  readonly targetUserId: UserId;
   /** 초대처럼 호출자가 자기 알림을 따로 보낼 때 친구 성립 알림을 생략한다. 친구 요청 알림은 항상 보낸다. */
   readonly shouldNotifyFriends: boolean;
 }

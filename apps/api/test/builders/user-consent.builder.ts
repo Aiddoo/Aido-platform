@@ -13,11 +13,11 @@ import * as crypto from "node:crypto";
 import type { UserConsent } from "#test/types/database-rows";
 
 export class UserConsentBuilder {
-  private data: UserConsent;
+  #data: UserConsent;
 
-  private constructor(userId: string) {
+  constructor(userId: string) {
     const now = Temporal.Instant.fromEpochMilliseconds(Date.now());
-    this.data = {
+    this.#data = {
       id: `consent-${crypto.randomUUID().slice(0, 8)}`,
       userId,
       termsAgreedAt: now,
@@ -36,32 +36,32 @@ export class UserConsentBuilder {
   }
 
   withId(id: string): UserConsentBuilder {
-    this.data.id = id;
+    this.#data.id = id;
     return this;
   }
 
   withTermsAgreedAt(date: Temporal.Instant): UserConsentBuilder {
-    this.data.termsAgreedAt = date;
+    this.#data.termsAgreedAt = date;
     return this;
   }
 
   withPrivacyAgreedAt(date: Temporal.Instant): UserConsentBuilder {
-    this.data.privacyAgreedAt = date;
+    this.#data.privacyAgreedAt = date;
     return this;
   }
 
   withAgreedTermsVersion(version: string): UserConsentBuilder {
-    this.data.agreedTermsVersion = version;
+    this.#data.agreedTermsVersion = version;
     return this;
   }
 
   /** 마케팅 동의 포함 */
   withMarketingConsent(): UserConsentBuilder {
-    this.data.marketingAgreedAt = Temporal.Instant.fromEpochMilliseconds(Date.now());
+    this.#data.marketingAgreedAt = Temporal.Instant.fromEpochMilliseconds(Date.now());
     return this;
   }
 
   build(): UserConsent {
-    return { ...this.data };
+    return { ...this.#data };
   }
 }

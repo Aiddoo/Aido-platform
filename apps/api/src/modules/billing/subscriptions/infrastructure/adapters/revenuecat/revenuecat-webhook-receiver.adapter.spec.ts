@@ -1,10 +1,10 @@
 import { Logger } from "@nestjs/common";
-import type { ConfigType } from "@nestjs/config";
 
-import { appConfig } from "#api/platform/config/app.config";
+import type { AppEnvironment } from "#api/platform/config/schemas/app.schema";
 import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";
 
 import { ApplyStoreSubscriptionEventUseCase } from "../../../application/use-cases/apply-store-subscription-event.use-case.js";
+import { billingSubscriptionsConfig } from "../../../billing-subscriptions.config.js";
 import type { StoreSubscriptionEvent } from "../../../domain/store-subscription.event.js";
 import { RevenueCatWebhookReceiver } from "./revenuecat-webhook-receiver.adapter.js";
 
@@ -38,10 +38,11 @@ function purchase(store: string) {
   };
 }
 
-function receiverIn(appEnv: ConfigType<typeof appConfig>["appEnv"]) {
+function receiverIn(appEnv: AppEnvironment) {
   const applied: StoreSubscriptionEvent[] = [];
   const alert = new RecordingOperationalAlert();
-  const receiver = new RevenueCatWebhookReceiver(recordingApplyUseCase(applied), alert, { appEnv });
+  const config = billingSubscriptionsConfig.parse({ NODE_ENV: "production", APP_ENV: appEnv });
+  const receiver = new RevenueCatWebhookReceiver(recordingApplyUseCase(applied), alert, config);
   return { receiver, applied, alert };
 }
 
@@ -85,9 +86,9 @@ describe("RevenueCatWebhookReceiver — Test Store 웹훅", () => {
 
   it.each(["development", "staging"] as const)(
     "%s 서버는 Test Store 구매를 지금처럼 반영한다",
-    async (appEnv) => {
+    async (environment) => {
       // Given
-      const { receiver, applied } = receiverIn(appEnv);
+      const { receiver, applied } = receiverIn(environment);
 
       // When
       await receiver.receive({ body: purchase("TEST_STORE") });

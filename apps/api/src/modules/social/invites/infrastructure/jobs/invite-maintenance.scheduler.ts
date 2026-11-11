@@ -2,13 +2,12 @@ import { Injectable, Logger, type OnModuleInit } from "@nestjs/common";
 
 import { runInBackground } from "#api/platform/jobs/non-blocking-init";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
-import { JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
+import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
 import { TimeZone } from "#api/shared/domain/time/time-zone.vo";
 
 import { InviteLogEvent } from "../../application/invites.log-events.js";
 import {
   INVITE_MAINTENANCE_JOB_NAME,
-  INVITE_MAINTENANCE_JOB_OPTIONS,
   INVITE_MAINTENANCE_QUEUE,
   INVITE_MAINTENANCE_SCHEDULE,
   InviteMaintenanceJobKey,
@@ -19,11 +18,11 @@ export class InviteMaintenanceScheduler implements OnModuleInit {
   readonly #logger = new Logger(InviteMaintenanceScheduler.name);
   schedulerRegistration: Promise<void> = Promise.resolve();
 
-  readonly #runtime: Pick<JobRuntimePort, "schedule" | "enqueue">;
+  readonly #jobQueue: Pick<JobQueuePort, "registerSchedules" | "enqueue">;
   readonly #clock: ClockPort;
 
-  constructor(runtime: JobRuntimePort, clock: ClockPort) {
-    this.#runtime = runtime;
+  constructor(jobQueue: JobQueuePort, clock: ClockPort) {
+    this.#jobQueue = jobQueue;
     this.#clock = clock;
   }
 
@@ -33,13 +32,7 @@ export class InviteMaintenanceScheduler implements OnModuleInit {
       this.#logger,
       "Invite maintenance scheduler registration",
       async () => {
-        await this.#runtime.schedule(
-          INVITE_MAINTENANCE_SCHEDULE.id,
-          INVITE_MAINTENANCE_SCHEDULE.cron,
-          INVITE_MAINTENANCE_QUEUE,
-          { name: INVITE_MAINTENANCE_JOB_NAME, data: {} },
-          INVITE_MAINTENANCE_JOB_OPTIONS,
-        );
+        await this.#jobQueue.registerSchedules(INVITE_MAINTENANCE_QUEUE);
         this.#logger.log({ event: InviteLogEvent.MAINTENANCE_SCHEDULER_REGISTERED });
         await this.#catchUpIfNeeded();
       },
@@ -55,13 +48,10 @@ export class InviteMaintenanceScheduler implements OnModuleInit {
     }
 
     const runDate = local.toPlainDate();
-    await this.#runtime.enqueue(
+    await this.#jobQueue.enqueue(
       INVITE_MAINTENANCE_QUEUE,
-      { name: INVITE_MAINTENANCE_JOB_NAME, data: {} },
-      {
-        ...INVITE_MAINTENANCE_JOB_OPTIONS,
-        idempotencyKey: InviteMaintenanceJobKey.catchUp(runDate),
-      },
+      { name: INVITE_MAINTENANCE_JOB_NAME },
+      { idempotencyKey: InviteMaintenanceJobKey.catchUp(runDate) },
     );
     this.#logger.log({
       event: InviteLogEvent.MAINTENANCE_CATCH_UP_DISPATCHED,

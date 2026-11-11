@@ -8,7 +8,7 @@ import { WeatherReportProviderPort } from "#api/modules/weather/forecasts/applic
 import { SHARED_WEATHER_REPORT_SCOPE } from "#api/modules/weather/forecasts/domain/weather-report-language.domain-service";
 import { WeatherKitRequestError } from "#api/modules/weather/forecasts/infrastructure/adapters/weatherkit-report.adapter";
 import { WeatherReportCacheKey } from "#api/modules/weather/forecasts/infrastructure/cache/weather-report.keyspace";
-import { CacheService } from "#api/platform/cache/cache.service";
+import { CacheStorePort } from "#api/platform/cache/cache-store.port";
 import { userLocation } from "#api/platform/database/schema/index";
 import { StubAirQualityProvider } from "#test/doubles/weather/stub-air-quality-provider";
 import { StubWeatherReportProvider } from "#test/doubles/weather/stub-weather-report-provider";
@@ -294,7 +294,7 @@ describe("날씨 v2 E2E", () => {
       reportProvider.report = weatherReportFixture(fetchedAt);
       await getReport(user.accessToken).expect(200);
       await ctx.module
-        .get(CacheService)
+        .get(CacheStorePort)
         .del(WeatherReportCacheKey.report(SEOUL_CELL, SHARED_WEATHER_REPORT_SCOPE));
       reportProvider.failure = new WeatherKitRequestError("http_failure");
       // When

@@ -16,13 +16,13 @@
 import type { TimeFormat, UserPreference } from "#test/types/database-rows";
 
 export class UserPreferenceBuilder {
-  private data: UserPreference;
-  private static idCounter = 0;
+  #data: UserPreference;
+  static #idCounter = 0;
 
-  private constructor(userId: string) {
-    UserPreferenceBuilder.idCounter += 1;
-    this.data = {
-      id: `pref-${UserPreferenceBuilder.idCounter}`,
+  constructor(userId: string) {
+    UserPreferenceBuilder.#idCounter += 1;
+    this.#data = {
+      id: `pref-${UserPreferenceBuilder.#idCounter}`,
       userId,
       pushEnabled: true,
       nightPushEnabled: false,
@@ -51,74 +51,74 @@ export class UserPreferenceBuilder {
 
   /** ID 카운터 리셋 (테스트 간 격리용) */
   static resetIdCounter(): void {
-    UserPreferenceBuilder.idCounter = 0;
+    UserPreferenceBuilder.#idCounter = 0;
   }
 
   // === ID 관련 ===
 
   withId(id: string): UserPreferenceBuilder {
-    this.data.id = id;
+    this.#data.id = id;
     return this;
   }
 
   // === 푸시 설정 ===
 
   withPushEnabled(enabled = true): UserPreferenceBuilder {
-    this.data.pushEnabled = enabled;
+    this.#data.pushEnabled = enabled;
     return this;
   }
 
   withPushDisabled(): UserPreferenceBuilder {
-    this.data.pushEnabled = false;
+    this.#data.pushEnabled = false;
     return this;
   }
 
   withNightPushEnabled(enabled = true): UserPreferenceBuilder {
-    this.data.nightPushEnabled = enabled;
+    this.#data.nightPushEnabled = enabled;
     return this;
   }
 
   // === 타임존 & 리마인더 ===
 
   withLocale(locale: string): UserPreferenceBuilder {
-    this.data.locale = locale;
+    this.#data.locale = locale;
     return this;
   }
 
   withTimezone(timezone: string): UserPreferenceBuilder {
-    this.data.timezone = timezone;
+    this.#data.timezone = timezone;
     return this;
   }
 
   withMorningReminderHour(hour: number): UserPreferenceBuilder {
-    this.data.morningReminderHour = hour;
+    this.#data.morningReminderHour = hour;
     return this;
   }
 
   withMorningReminderMinute(minute: number): UserPreferenceBuilder {
-    this.data.morningReminderMinute = minute;
+    this.#data.morningReminderMinute = minute;
     return this;
   }
 
   withEveningReminderHour(hour: number): UserPreferenceBuilder {
-    this.data.eveningReminderHour = hour;
+    this.#data.eveningReminderHour = hour;
     return this;
   }
 
   withEveningReminderMinute(minute: number): UserPreferenceBuilder {
-    this.data.eveningReminderMinute = minute;
+    this.#data.eveningReminderMinute = minute;
     return this;
   }
 
   withTimeFormat(format: TimeFormat): UserPreferenceBuilder {
-    this.data.timeFormat = format;
+    this.#data.timeFormat = format;
     return this;
   }
 
   // === 빌드 ===
 
   build(): UserPreference {
-    return { ...this.data };
+    return { ...this.#data };
   }
 
   /** 여러 개 생성 */

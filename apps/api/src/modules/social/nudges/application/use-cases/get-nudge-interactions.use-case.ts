@@ -37,14 +37,15 @@ export class GetNudgeInteractionsUseCase {
     }
 
     const size = clampPageSize(query.size);
+    const viewerId = UserId.reconstitute(query.userId);
     const [rows, friendIds] = await Promise.all([
       nudgeReader.listInteractions({
-        viewerId: UserId.reconstitute(query.userId),
+        viewerId,
         direction: query.direction,
         afterNudgeId: query.cursor == null ? null : NudgeId.reconstitute(query.cursor),
         limit: size + 1,
       }),
-      followReader.getCurrentMutualFriendIds(query.userId),
+      followReader.getCurrentMutualFriendIds(viewerId),
     ]);
     const friends = new Set(friendIds);
     const page = toCursorPage({ rows, size, toCursor: (nudge) => nudge.id });

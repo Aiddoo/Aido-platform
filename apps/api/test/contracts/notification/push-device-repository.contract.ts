@@ -1,4 +1,6 @@
 import type { PushDeviceRepositoryPort } from "#api/modules/notification/push/application/ports/push-device.repository.port";
+import { PushDeviceId } from "#api/modules/notification/push/domain/push-device-id.vo";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import {
   createPushDeviceFixture,
   PUSH_DEVICE_FIXTURE_NOW,
@@ -17,7 +19,10 @@ async function statusesOf(
   userIds: readonly string[],
   reportedSince: Temporal.Instant = EARLIER,
 ): Promise<Record<string, string[]>> {
-  const statuses = await repository.findPermissionStatusesByUsers(userIds, reportedSince);
+  const statuses = await repository.findPermissionStatusesByUsers(
+    userIds.map((userId) => UserId.reconstitute(userId)),
+    reportedSince,
+  );
   return Object.fromEntries(
     [...statuses.entries()]
       .map(([userId, values]): [string, string[]] => [userId, values.toSorted()])
@@ -52,8 +57,14 @@ export function describePushDeviceRepositoryContract(
       await repository.savePushDevice(createPushDeviceFixture({ permissionStatus: "DENIED" }));
 
       // When
-      const released = await repository.releasePushDeviceHeldElsewhere(USER_ID, "ios_device-a");
-      const none = await repository.releasePushDeviceHeldElsewhere(USER_ID, "ios_device-a");
+      const released = await repository.releasePushDeviceHeldElsewhere(
+        UserId.reconstitute(USER_ID),
+        PushDeviceId.reconstitute("ios_device-a"),
+      );
+      const none = await repository.releasePushDeviceHeldElsewhere(
+        UserId.reconstitute(USER_ID),
+        PushDeviceId.reconstitute("ios_device-a"),
+      );
 
       // Then
       expect(released.userIds).toEqual([OTHER_USER_ID]);
@@ -108,9 +119,12 @@ export function describePushDeviceRepositoryContract(
       await repository.savePushDevice(createPushDeviceFixture({ userId: OTHER_USER_ID }));
 
       // When
-      await repository.deletePushDevice(USER_ID, "ios_device-a");
+      await repository.deletePushDevice(
+        UserId.reconstitute(USER_ID),
+        PushDeviceId.reconstitute("ios_device-a"),
+      );
       const afterOne = await statusesOf(repository, [USER_ID, OTHER_USER_ID]);
-      await repository.deleteAllPushDevicesByUser(USER_ID);
+      await repository.deleteAllPushDevicesByUser(UserId.reconstitute(USER_ID));
       const afterAll = await statusesOf(repository, [USER_ID, OTHER_USER_ID]);
 
       // Then

@@ -1,4 +1,5 @@
 import { PgBoss } from "pg-boss";
+import { vi } from "vitest";
 import { z } from "zod";
 
 import { JobQueueRegistry } from "#api/platform/jobs/job-queue.registry";
@@ -8,9 +9,11 @@ import {
   type JobEnvelope,
   type JobRetryPolicy,
   type QueueDefinition,
-} from "#api/shared/application/ports/index";
+} from "#api/shared/application/ports/job-queue.port";
 import { createDatabaseTransactionFixture } from "#test/setup/database-context";
 import { TestDatabase } from "#test/setup/test-database";
+
+import { FAST_JOB_POLLING_SECONDS, WORKER_WAIT } from "./helpers/fast-job-timing.js";
 
 const SCHEMA = "pgboss";
 
@@ -39,23 +42,8 @@ function documentQueue(
     name,
     payloadSchema: documentSchema,
     retry: RETRY,
-    worker: { localConcurrency: 1, pollingIntervalSeconds: 0.5, ...worker },
+    worker: { localConcurrency: 1, pollingIntervalSeconds: FAST_JOB_POLLING_SECONDS, ...worker },
   });
-}
-
-async function eventually(assertion: () => Promise<void> | void, timeoutMs = 15_000) {
-  const deadline = Date.now() + timeoutMs;
-  let lastError: unknown;
-  while (Date.now() < deadline) {
-    try {
-      await assertion();
-      return;
-    } catch (error) {
-      lastError = error;
-      await new Promise((resolve) => setTimeout(resolve, 100));
-    }
-  }
-  throw lastError;
 }
 
 describe("PgBossJobQueueAdapter 통합 테스트 (실제 PostgreSQL)", () => {
@@ -85,6 +73,7 @@ describe("PgBossJobQueueAdapter 통합 테스트 (실제 PostgreSQL)", () => {
       boss,
       createDatabaseTransactionFixture(client).txHost,
       registry,
+      { shutdownTimeoutMs: 10_000 },
     );
   });
 
@@ -106,14 +95,14 @@ describe("PgBossJobQueueAdapter 통합 테스트 (실제 PostgreSQL)", () => {
     });
 
     // Then
-    await eventually(() => {
+    await vi.waitFor(() => {
       expect(received.map(({ data }) => data)).toEqual(
         expect.arrayContaining([
           { documentId: 1, locale: "en" },
           { documentId: 2, locale: "ko" },
         ]),
       );
-    });
+    }, WORKER_WAIT);
     expect(registry.queueNames()).toContain(queue.name);
   });
 
@@ -130,11 +119,11 @@ describe("PgBossJobQueueAdapter 통합 테스트 (실제 PostgreSQL)", () => {
     });
 
     // Then
-    await eventually(async () => {
+    await vi.waitFor(async () => {
       const [invalid] = await boss.findJobs(queue.name, { id: invalidId ?? undefined });
       expect(invalid?.state).toBe("failed");
       expect(received).toEqual([{ documentId: 3, locale: "ko" }]);
-    });
+    }, WORKER_WAIT);
   });
 
   it("같은 idempotencyKey로 두 번 등록하면 한 번만 처리한다", async () => {
@@ -160,10 +149,10 @@ describe("PgBossJobQueueAdapter 통합 테스트 (실제 PostgreSQL)", () => {
     // Then
     expect(first).not.toBeNull();
     expect(duplicate).toBeNull();
-    await eventually(() => {
-      expect(received).toEqual([4]);
-    });
-    await new Promise((resolve) => setTimeout(resolve, 1_000));
+    await vi.waitFor(async () => {
+      const jobs = await boss.findJobs(queue.name);
+      expect(jobs.map(({ state }) => state)).toEqual(["completed"]);
+    }, WORKER_WAIT);
     expect(received).toEqual([4]);
   });
 
@@ -185,9 +174,9 @@ describe("PgBossJobQueueAdapter 통합 테스트 (실제 PostgreSQL)", () => {
     });
 
     // Then
-    await eventually(() => {
+    await vi.waitFor(() => {
       expect(received).toEqual([99]);
-    });
+    }, WORKER_WAIT);
     const marketing = await boss.findJobs(queue.name, { queued: true });
     expect(marketing.map(({ data }) => data)).toHaveLength(3);
   });
@@ -215,12 +204,12 @@ describe("PgBossJobQueueAdapter 통합 테스트 (실제 PostgreSQL)", () => {
     });
 
     // Then
-    await eventually(async () => {
+    await vi.waitFor(async () => {
       const states = await Promise.all(
         ids.map(async (id) => (await boss.findJobs(queue.name, { id: id ?? undefined }))[0]?.state),
       );
       expect(states).toEqual(["completed", "failed", "completed"]);
-    });
+    }, WORKER_WAIT);
     expect(handled.sort()).toEqual([20, 21, 22]);
   });
 

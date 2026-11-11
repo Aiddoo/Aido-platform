@@ -52,7 +52,7 @@ function request<T>(
     task: "parse-todo",
     taskClass: "interactive",
     userId: null,
-    maxInputChars: 5_000,
+    maxInputChars: 5000,
     promptVersion: "parse-todo@test",
     system: "",
     prompt: "독서",

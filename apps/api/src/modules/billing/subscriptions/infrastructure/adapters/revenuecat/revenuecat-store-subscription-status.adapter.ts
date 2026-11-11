@@ -12,6 +12,7 @@ import {
   type BillingSubscriptionsConfig,
   billingSubscriptionsConfig,
 } from "../../../billing-subscriptions.config.js";
+import type { StoreSubscriptionId } from "../../../domain/store-subscription-id.vo.js";
 import type { StoreSubscriptionState } from "../../../domain/subscription.aggregate.js";
 import { REVENUECAT_API_POLICY } from "./revenuecat-outbound.policy.js";
 import {
@@ -21,7 +22,7 @@ import {
 } from "./revenuecat-subscription.wire.js";
 import { RevenueCatLogEvent } from "./revenuecat.log-events.js";
 
-export const REVENUECAT_API_BASE_URL = "https://api.revenuecat.com/v2";
+const REVENUECAT_API_BASE_URL = "https://api.revenuecat.com/v2";
 export const REVENUECAT_HTTP_CLIENT = "revenuecat";
 export const REVENUECAT_TIMEOUT_MS = 10_000;
 
@@ -76,14 +77,16 @@ export class RevenueCatStoreSubscriptionStatusAdapter extends StoreSubscriptionS
     this.#policy = policies.get(REVENUECAT_API_POLICY);
   }
 
-  async read(storeSubscriptionIds: readonly string[]): Promise<StoreSubscriptionState[] | null> {
+  async read(
+    storeSubscriptionIds: readonly StoreSubscriptionId[],
+  ): Promise<StoreSubscriptionState[] | null> {
     const { apiV2SecretKey, projectId } = this.#config.revenuecat;
     if (apiV2SecretKey == null || projectId == null) {
       return null;
     }
     const states: StoreSubscriptionState[] = [];
     // 사용자당 체인이 몇 개뿐이라 순서대로 읽어 한도와 bulkhead를 아낀다
-    for (const storeSubscriptionId of storeSubscriptionIds) {
+    for (const { value: storeSubscriptionId } of storeSubscriptionIds) {
       const subscription = await this.#findSubscription(projectId, storeSubscriptionId);
       if (subscription != null) {
         states.push({

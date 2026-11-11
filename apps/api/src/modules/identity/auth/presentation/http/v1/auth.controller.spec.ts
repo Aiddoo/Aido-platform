@@ -3,6 +3,7 @@ import { Socket } from "node:net";
 
 import express, { type Request } from "express";
 
+import type { CurrentUserPayload } from "#api/../../../packages/api/dist/contracts/auth/v1/auth.response.d";
 import { ChangePasswordUseCase } from "#api/modules/identity/auth/application/use-cases/change-password.use-case";
 import { LoginWithPasswordUseCase } from "#api/modules/identity/auth/application/use-cases/login-with-password.use-case";
 import { LogoutAllUseCase } from "#api/modules/identity/auth/application/use-cases/logout-all.use-case";
@@ -15,8 +16,7 @@ import { ResendVerificationUseCase } from "#api/modules/identity/auth/applicatio
 import { ResetPasswordUseCase } from "#api/modules/identity/auth/application/use-cases/reset-password.use-case";
 import { SetPasswordUseCase } from "#api/modules/identity/auth/application/use-cases/set-password.use-case";
 import { VerifyEmailUseCase } from "#api/modules/identity/auth/application/use-cases/verify-email.use-case";
-import type { CurrentUserPayload } from "#api/modules/identity/auth/presentation/http/decorators/current-user.decorator";
-import { parseRequestClient } from "#api/platform/http/request-client/index";
+import { parseRequestClient } from "#api/platform/http/request-client/request-client";
 import { createAuthCredentialFixture } from "#test/fixtures/auth-credential.fixture";
 import { createAuthSessionFixture } from "#test/fixtures/identity/auth-session.fixture";
 import { TEST_REQUEST_ID } from "#test/mocks/request-client";

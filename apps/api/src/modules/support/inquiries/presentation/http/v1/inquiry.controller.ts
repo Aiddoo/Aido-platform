@@ -7,14 +7,14 @@ import {
   CurrentUser,
   type CurrentUserPayload,
 } from "#api/modules/identity/identity-auth-http.public";
+import { SWAGGER_TAGS } from "#api/platform/http/swagger/constants/swagger.constant";
 import {
-  ApiCreatedResponse,
-  ApiDoc,
   ApiErrorResponse,
   ApiUnauthorizedError,
-  SWAGGER_TAGS,
-} from "#api/platform/http/swagger/index";
-import { ThrottleByUser } from "#api/platform/throttle/index";
+} from "#api/platform/http/swagger/decorators/api-error.decorator";
+import { ApiDoc } from "#api/platform/http/swagger/decorators/api-operation.decorator";
+import { ApiCreatedResponse } from "#api/platform/http/swagger/decorators/api-response.decorator";
+import { ThrottleByUser } from "#api/platform/throttle/user-aware-throttler.guard";
 
 import { CreateInquiryUseCase } from "../../../application/use-cases/create-inquiry.use-case.js";
 import { toCreateInquiryResponse } from "./inquiry-response.mapper.js";

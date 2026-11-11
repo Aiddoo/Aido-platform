@@ -1,13 +1,16 @@
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { StubUserLocalePreferenceReader } from "#test/mocks/ports/ai-parsing.stub";
 
 import { resolveRequestLocale } from "./request-locale.reader.js";
+
+const USER_ID = UserId.reconstitute("user-1");
 
 describe("resolveRequestLocale", () => {
   it("헤더가 모두 있으면 저장된 설정을 조회하지 않는다", async () => {
     // Given
     const reader = new StubUserLocalePreferenceReader();
     // When
-    const result = await resolveRequestLocale(reader, "user-1", {
+    const result = await resolveRequestLocale(reader, USER_ID, {
       timezone: "America/Los_Angeles",
       locale: "en",
     });
@@ -21,7 +24,7 @@ describe("resolveRequestLocale", () => {
     const reader = new StubUserLocalePreferenceReader();
     reader.preferences.set("user-1", { timezone: "Asia/Seoul", locale: "ko" });
     // When
-    const result = await resolveRequestLocale(reader, "user-1", {
+    const result = await resolveRequestLocale(reader, USER_ID, {
       timezone: undefined,
       locale: "en",
     });
@@ -34,7 +37,7 @@ describe("resolveRequestLocale", () => {
     const reader = new StubUserLocalePreferenceReader();
     reader.preferences.set("user-1", { timezone: "UTC", locale: "en" });
     // When
-    const result = await resolveRequestLocale(reader, "user-1", {
+    const result = await resolveRequestLocale(reader, USER_ID, {
       timezone: "Asia/Seoul",
       locale: undefined,
     });

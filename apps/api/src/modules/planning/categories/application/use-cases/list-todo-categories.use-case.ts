@@ -1,3 +1,5 @@
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+
 import type { TodoCategoryCachePort } from "../ports/todo-category-cache.port.js";
 import type { TodoCategoryRepositoryPort } from "../ports/todo-category.repository.port.js";
 import type { TodoCategoryWithCountReadModel } from "../read-models/todo-category-with-count.read-model.js";
@@ -15,8 +17,9 @@ export class ListTodoCategoriesUseCase {
   }
 
   execute(input: { readonly userId: string }): Promise<TodoCategoryWithCountReadModel[]> {
-    return this.#dependencies.cache.wrapList(input.userId, () =>
-      this.#dependencies.repository.findManyByUserId(input.userId),
+    const userId = UserId.reconstitute(input.userId);
+    return this.#dependencies.cache.wrapList(userId, () =>
+      this.#dependencies.repository.findManyByUserId(userId),
     );
   }
 }

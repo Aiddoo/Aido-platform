@@ -7,7 +7,7 @@ import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import type { QuotaUsageRepositoryPort } from "../../../quotas/application/ports/quota-usage.repository.port.js";
 import { QuotaWindow } from "../../../quotas/domain/quota-window.vo.js";
 import {
-  resolveAccessTier,
+  resolveAccessSubject,
   resolveFeatureQuota,
   resolveResourceUsage,
   type FeatureUsageReading,
@@ -24,10 +24,7 @@ export interface GetEntitlementSnapshotQuery {
 }
 
 export interface GetEntitlementSnapshotDependencies {
-  readonly accessStateReader: Pick<
-    AccessStateReaderPort,
-    "findAccessState" | "findResourceBonuses"
-  >;
+  readonly accessStateReader: Pick<AccessStateReaderPort, "findAccessState" | "findFeatureGrants">;
   readonly quotaUsageRepository: Pick<QuotaUsageRepositoryPort, "countUsage">;
   readonly ownedFeatureUsageReader: OwnedFeatureUsageReaderPort;
   readonly clock: ClockPort;
@@ -50,22 +47,23 @@ export class GetEntitlementSnapshotUseCase {
       this.#dependencies;
     const userId = UserId.reconstitute(query.userId);
     const ownedUsage = await ownedFeatureUsageReader.read({ userId, timeZone: query.timeZone });
-    const [state, resourceBonuses] = await Promise.all([
+    const [state, grants] = await Promise.all([
       accessStateReader.findAccessState(userId),
-      accessStateReader.findResourceBonuses(userId),
+      accessStateReader.findFeatureGrants(userId),
     ]);
     if (state == null) {
       throw accessUserNotFound(query.userId);
     }
     const now = clock.now();
-    const { tier, isPremium } = resolveAccessTier({ state, now });
+    const subject = resolveAccessSubject({ state, now });
+    const { plan } = subject;
     const window = QuotaWindow.monthOf(now);
     const [aiPlanUsed, voiceNoteUsed] = await Promise.all([
       quotaUsageRepository.countUsage({ userId, meter: "AI_PLAN", window }),
       quotaUsageRepository.countUsage({ userId, meter: "VOICE_NOTE", window }),
     ]);
     const resourceUsage = mapValues(ownedUsage.resourceCounts, (count, feature) =>
-      resolveResourceUsage({ tier, feature, resourceBonuses, count }),
+      resolveResourceUsage({ plan, feature, grants, count }),
     );
     const usage: Readonly<Partial<Record<PlanFeature, FeatureUsageReading | null>>> = {
       ...ownedUsage.daily,
@@ -74,10 +72,9 @@ export class GetEntitlementSnapshotUseCase {
       VOICE_NOTE: { used: voiceNoteUsed, resetsAt: window.resetsAt },
     };
     return {
-      tier,
-      isPremium,
+      ...subject,
       features: mapValues(PLAN_CATALOG, (_definition, feature) =>
-        resolveFeatureQuota({ tier, feature, resourceBonuses, usage: usage[feature] ?? null }),
+        resolveFeatureQuota({ plan, feature, grants, usage: usage[feature] ?? null }),
       ),
     };
   }

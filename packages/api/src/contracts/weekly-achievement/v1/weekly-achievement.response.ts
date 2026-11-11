@@ -3,7 +3,7 @@ import { z } from "zod";
 import { dateSchema, datetimeSchema } from "../../../common/datetime.js";
 import { cursorPageSchema } from "../../../common/pagination.js";
 
-export const weeklyAchievementSchema = z
+const weeklyAchievementSchema = z
   .object({
     id: z.number().int().describe("주간 달성 기록 ID (양의 정수)"),
     year: z.number().int().describe("ISO 연도 (예: 2026)"),

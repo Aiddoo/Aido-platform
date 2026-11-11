@@ -12,7 +12,6 @@ export { AiDataSharingConsent } from "./preferences/domain/ai-data-sharing-conse
 export { UserPreferenceReaderPort } from "./preferences/application/ports/user-preference.reader.port.js";
 export type { PreferenceSnapshot } from "./preferences/application/read-models/preference.read-model.js";
 export type {
-  FindMarketingReconfirmTargetsParams,
   MarketingReconfirmTarget,
   UserConsentRecordWithId,
 } from "./preferences/application/ports/user-consent.repository.port.js";

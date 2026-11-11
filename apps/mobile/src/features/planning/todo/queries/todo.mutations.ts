@@ -1,4 +1,3 @@
-import { TODO_SERIES_LIMITS } from '@aido/api/vocabulary';
 import { useHaptics, useTodoService } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
 import { emitTodoCompletionChanged } from '@src/core/events/todo-completion-changed';
@@ -20,7 +19,11 @@ import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 import { TODO_MUTATION_KEYS } from '../constants/todo-mutation-keys';
 import { TODO_QUERY_KEYS } from '../constants/todo-query-keys';
 import type { TodoUpdateScope, TodoEditScope } from '../domains/todo-repeat.model';
-import { findTodoSeriesFailure, shouldRefreshTodos } from '../domains/todo-series.error';
+import {
+  findTodoSeriesFailure,
+  getTodoSeriesLimit,
+  shouldRefreshTodos,
+} from '../domains/todo-series.error';
 import { TodoPolicy } from '../domains/todo.model';
 import type {
   ChangeTodoCategoryInput,
@@ -36,6 +39,7 @@ import {
   getUpcomingRepeatFilters,
   invalidateTodoDependentQueries,
   invalidateTodos,
+  isLastTodoWrite,
   removeTodoFromList,
   restoreTodo,
   settleTodoEdit,
@@ -87,7 +91,17 @@ export function useToggleTodoMutationOptions() {
 
       return { ticket, span };
     },
-    onSuccess: (_data, variables) => {
+    onSuccess: (saved, variables) => {
+      const target = { date: variables.date, todoId: variables.todoId };
+      // 그사이 다른 조회가 낡은 완료 값을 썼으면 서버 값으로 고친다. 앞 체크의 응답은 뒤에 누른 체크를 덮지 않게 마지막만 쓰고,
+      // 값이 같으면 쓰지 않는다. 쓰면 함께 끝난 제목 저장이 남긴 낡음 표시가 지워져 그 목록을 다시 받지 않는다
+      if (
+        isLastTodoWrite(queryClient) &&
+        findCachedTodo(queryClient, target)?.completed !== saved.completed
+      ) {
+        updateCachedTodo(queryClient, target, (todo) => ({ ...todo, completed: saved.completed }));
+        syncDailyCompletionWithList(queryClient, { date: variables.date });
+      }
       trackEvent('todo_completed', {
         todo_id: variables.todoId,
         is_completed: variables.body.completed,
@@ -115,6 +129,7 @@ export function useToggleTodoMutationOptions() {
       toast.error(getUserFacingMessage(error), { fallback: t('todo:toast.changeFailedRetry') });
     },
     onSettled: (_data, error, { todoId, body, date }, context) => {
+      // 주간 달성(목록·상세)은 서버가 주간 알림 때 저장한 값이라 할 일을 바꿔도 바로 다시 계산되지 않는다. 지우기·일정 옮기기도 다시 받지 않는다
       if (date < todayKey) {
         invalidateWeeklyAchievements(queryClient, { year: getIsoWeekYear(date) });
       }
@@ -178,7 +193,7 @@ export function useChangeTodoCategoryMutationOptions() {
         }
         toast.error(
           t(`todo:toast.series.${seriesFailure}.title`, {
-            limit: TODO_SERIES_LIMITS.MAX_ACTIVE_PER_USER,
+            limit: getTodoSeriesLimit(error),
           }),
           { description: t(`todo:toast.series.${seriesFailure}.description`) },
         );
@@ -257,7 +272,7 @@ export function useDeleteTodoMutationOptions() {
         }
         toast.error(
           t(`todo:toast.series.${seriesFailure}.title`, {
-            limit: TODO_SERIES_LIMITS.MAX_ACTIVE_PER_USER,
+            limit: getTodoSeriesLimit(error),
           }),
           { description: t(`todo:toast.series.${seriesFailure}.description`) },
         );
@@ -375,7 +390,7 @@ export function useUpdateTodoScheduleMutationOptions() {
         }
         toast.error(
           t(`todo:toast.series.${seriesFailure}.title`, {
-            limit: TODO_SERIES_LIMITS.MAX_ACTIVE_PER_USER,
+            limit: getTodoSeriesLimit(error),
           }),
           { description: t(`todo:toast.series.${seriesFailure}.description`) },
         );
