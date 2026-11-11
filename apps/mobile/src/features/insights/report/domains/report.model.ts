@@ -29,7 +29,7 @@ const dayPatternItemSchema = z.object({
   completed: z.int().nonnegative(),
   rate: z.number().min(0).max(100),
 });
-export type DayPatternItem = z.infer<typeof dayPatternItemSchema>;
+type DayPatternItem = z.infer<typeof dayPatternItemSchema>;
 
 const timePatternItemSchema = z.object({
   hour: z.int().min(0).max(23),

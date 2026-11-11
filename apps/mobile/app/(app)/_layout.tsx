@@ -1,5 +1,6 @@
 import { useErrorReporter } from '@src/bootstrap/providers/di-context';
 import { useRecordTodoCompletion } from '@src/features/device/activation/hooks/use-record-todo-completion';
+import { useRecordTodoCreated } from '@src/features/device/activation/hooks/use-record-todo-created';
 import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
 import { useLogoutMutationOptions } from '@src/features/identity/auth/queries/auth.mutations';
 import { useOfferMarketingPushAfterCompletion } from '@src/features/notification/hooks/use-offer-marketing-push';
@@ -50,6 +51,7 @@ function AppLayout() {
   const headerOptions = useStackScreenOptions();
   const { t } = useTranslation(['notification', 'todo', 'ai']);
   const isPushOnboardingDue = usePushOnboardingGuard();
+  useRecordTodoCreated();
   useRecordTodoCompletion();
   useOfferMarketingPushAfterCompletion();
 

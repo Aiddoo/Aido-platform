@@ -132,6 +132,7 @@ export function MemoCreateForm() {
               placeholder={t('create.placeholder')}
               value={value}
               onChange={onChange}
+              testID="memo-create-input"
             />
           )}
         />
