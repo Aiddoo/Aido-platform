@@ -1,3 +1,4 @@
+import { USER_TAG_LENGTH } from "@aido/api/vocabulary";
 import { sql } from "drizzle-orm";
 import {
   pgTable,
@@ -51,7 +52,7 @@ export const user = pgTable(
     twoFactorSecret: varchar({ length: 255 }),
     // User를 바꾸는 저장소가 ClockPort 값으로 insert·update마다 명시한다
     updatedAt: instant().notNull(),
-    userTag: varchar({ length: 8 }).notNull(),
+    userTag: varchar({ length: USER_TAG_LENGTH }).notNull(),
     lastSeenAppVersion: varchar({ length: 30 }),
     lastSeenAppVersionAt: instant(),
   },

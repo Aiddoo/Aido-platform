@@ -1,11 +1,12 @@
+import type { AppPlatform } from "@aido/api/vocabulary";
+
 import { Entity } from "#api/shared/domain/model/entity";
 
 import { AppVersion } from "../../shared/app-version.vo.js";
 import { AppReleaseId } from "./app-release-id.vo.js";
-import type { AppReleasePlatform } from "./app-versions.constants.js";
 
 export interface AppReleasePrimitives {
-  readonly platform: AppReleasePlatform;
+  readonly platform: AppPlatform;
   readonly latestVersion: string;
 }
 
@@ -21,7 +22,7 @@ export class AppRelease extends Entity<AppReleaseId, AppReleaseProps> {
     });
   }
 
-  get platform(): AppReleasePlatform {
+  get platform(): AppPlatform {
     return this.id.value;
   }
 

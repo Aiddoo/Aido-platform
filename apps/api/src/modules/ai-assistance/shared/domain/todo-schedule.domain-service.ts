@@ -1,4 +1,4 @@
-import { DAY_OF_WEEK_ORDER, type DayOfWeek } from "@aido/api/vocabulary";
+import { DAY_OF_WEEK_ORDER, type DayOfWeek, TODO_REPEAT_MONTH_DAY_MAX } from "@aido/api/vocabulary";
 import { range, uniq } from "es-toolkit";
 import { match } from "ts-pattern";
 
@@ -263,7 +263,9 @@ function resolveRepeat(
 
 function readMonthDay(repeat: RepeatRef | PlanRepeatRef, start: CalendarDay): number {
   const monthDay = "monthDay" in repeat ? repeat.monthDay : null;
-  return monthDay != null && monthDay >= 1 && monthDay <= 31 ? monthDay : start.day;
+  return monthDay != null && 1 <= monthDay && monthDay <= TODO_REPEAT_MONTH_DAY_MAX
+    ? monthDay
+    : start.day;
 }
 
 function resolveRepeatEnd(

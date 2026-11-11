@@ -1,9 +1,10 @@
 import { ErrorCode } from "@aido/api/errors";
+import { USER_TAG_LENGTH } from "@aido/api/vocabulary";
 
 import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
 import { ValueObject } from "#api/shared/domain/model/value-object";
 
-const USER_TAG_PATTERN = /^[A-Z0-9]{8}$/;
+const USER_TAG_PATTERN = new RegExp(`^[A-Z0-9]{${USER_TAG_LENGTH}}$`);
 
 export class UserTag extends ValueObject<string> {
   static create(raw: string): UserTag {

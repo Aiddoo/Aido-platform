@@ -2,6 +2,7 @@ import { ErrorCode } from "@aido/api/errors";
 import {
   DAY_OF_WEEK_ORDER,
   TODO_REPEAT_INTERVALS,
+  TODO_REPEAT_MONTH_DAY_MAX,
   TODO_SERIES_LIMITS,
   type DayOfWeek,
   type TodoRepeatFrequency,
@@ -81,7 +82,10 @@ export class RepeatRule extends ValueObject<RepeatRuleProps> {
   }
 
   static #monthly(monthDay: number, end: RepeatEnd): RepeatRule {
-    assertRule(Number.isInteger(monthDay) && monthDay >= 1 && monthDay <= 31, "monthDay");
+    assertRule(
+      Number.isInteger(monthDay) && 1 <= monthDay && monthDay <= TODO_REPEAT_MONTH_DAY_MAX,
+      "monthDay",
+    );
     assertEnd(end);
     return new RepeatRule({ frequency: "MONTHLY", interval: 1, weekdays: null, monthDay, end });
   }
