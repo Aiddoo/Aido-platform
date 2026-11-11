@@ -92,8 +92,16 @@ export function GlassDropletLayer({ width, height, isLowEndDevice, time }: Glass
     for (let index = 0; index < count; index += 1) {
       const drop = dropAt(index, t);
       if (drop.slide > 0) {
-        const trailWidth = drop.radius * TRAIL_WIDTH_RATIO;
-        builder.addRect(Skia.XYWHRect(drop.x - trailWidth / 2, drop.y, trailWidth, drop.slide));
+        // 프레임마다 물방울 수만큼 Rect 객체를 만들지 않도록 같은 사각형을 선으로 그린다
+        const left = drop.x - (drop.radius * TRAIL_WIDTH_RATIO) / 2;
+        const right = left + drop.radius * TRAIL_WIDTH_RATIO;
+        const bottom = drop.y + drop.slide;
+        builder
+          .moveTo(left, drop.y)
+          .lineTo(right, drop.y)
+          .lineTo(right, bottom)
+          .lineTo(left, bottom)
+          .close();
       }
     }
   });

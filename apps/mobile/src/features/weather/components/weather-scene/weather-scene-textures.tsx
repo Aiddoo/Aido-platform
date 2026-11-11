@@ -157,10 +157,12 @@ function buildLeafVeinPath(): SkPath {
     .detach();
 }
 
+// 입력이 상수인 텍스처 경로는 앱 수명 동안 한 번만 만든다. 장면을 열 때마다 네이티브 경로를 새로 만들지 않는다
+const CRYSTAL_PATH = buildCrystalPath();
+const LEAF_VEIN_PATH = buildLeafVeinPath();
+
 export function useParticleTexture() {
   const { streak, dot, soft, ice, warm, leaf } = PARTICLE_SPRITES;
-  const crystalPath = useMemo(() => buildCrystalPath(), []);
-  const leafVeinPath = useMemo(() => buildLeafVeinPath(), []);
   const dotCenter = getCenter(dot);
   const softCenter = getCenter(soft);
   const iceCenter = getCenter(ice);
@@ -219,7 +221,7 @@ export function useParticleTexture() {
         />
       </Circle>
       <Path
-        path={crystalPath}
+        path={CRYSTAL_PATH}
         style="stroke"
         strokeWidth={CRYSTAL.stroke}
         strokeCap="round"
@@ -234,7 +236,7 @@ export function useParticleTexture() {
           color={LEAF.color}
         />
         <Path
-          path={leafVeinPath}
+          path={LEAF_VEIN_PATH}
           style="stroke"
           strokeWidth={LEAF.veinWidth}
           color={LEAF.veinColor}
@@ -333,22 +335,19 @@ function buildWavePath(
 }
 
 /** 바람 줄기는 가운데가 가장 크게 물결치고 양 끝이 사라지는 선이다. */
+const WIND_STREAK_PATH = buildWavePath(WIND_STREAK.segments, (progress) => ({
+  x: progress * WIND_STREAK_SPRITE.width,
+  y:
+    WIND_STREAK_SPRITE.height / 2 +
+    Math.sin(progress * Math.PI * WIND_STREAK.halfWaves) *
+      WIND_STREAK.amplitude *
+      Math.sin(progress * Math.PI),
+}));
+
 export function useWindStreakTexture() {
-  const { width, height } = WIND_STREAK_SPRITE;
-  const path = useMemo(
-    () =>
-      buildWavePath(WIND_STREAK.segments, (progress) => ({
-        x: progress * width,
-        y:
-          height / 2 +
-          Math.sin(progress * Math.PI * WIND_STREAK.halfWaves) *
-            WIND_STREAK.amplitude *
-            Math.sin(progress * Math.PI),
-      })),
-    [width, height],
-  );
+  const { width } = WIND_STREAK_SPRITE;
   return useOwnedTexture(
-    <Path path={path} style="stroke" strokeWidth={WIND_STREAK.stroke} strokeCap="round">
+    <Path path={WIND_STREAK_PATH} style="stroke" strokeWidth={WIND_STREAK.stroke} strokeCap="round">
       <LinearGradient
         start={vec(0, 0)}
         end={vec(width, 0)}
@@ -360,21 +359,18 @@ export function useWindStreakTexture() {
   );
 }
 
+const HEAT_WAVE_PATH = buildWavePath(HEAT_WAVE.segments, (progress) => ({
+  x: progress * HEAT_WAVE_SPRITE.width,
+  y:
+    HEAT_WAVE_SPRITE.height / 2 +
+    Math.sin(((progress * HEAT_WAVE_SPRITE.width) / HEAT_WAVE.period) * Math.PI * 2) *
+      HEAT_WAVE.amplitude,
+}));
+
 export function useHeatWaveTexture() {
-  const { width, height } = HEAT_WAVE_SPRITE;
-  const path = useMemo(
-    () =>
-      buildWavePath(HEAT_WAVE.segments, (progress) => ({
-        x: progress * width,
-        y:
-          height / 2 +
-          Math.sin(((progress * width) / HEAT_WAVE.period) * Math.PI * 2) * HEAT_WAVE.amplitude,
-      })),
-    [width, height],
-  );
   return useOwnedTexture(
     <Path
-      path={path}
+      path={HEAT_WAVE_PATH}
       style="stroke"
       strokeWidth={HEAT_WAVE.stroke}
       strokeCap="round"
@@ -384,28 +380,33 @@ export function useHeatWaveTexture() {
   );
 }
 
+const GLASS_DROP_CENTER = vec(GLASS_DROP_SPRITE.width / 2, GLASS_DROP_SPRITE.height / 2);
+
+function buildGlassDropRimPath(): SkPath {
+  const builder = Skia.PathBuilder.Make();
+  builder.addArc(
+    Skia.XYWHRect(
+      GLASS_DROP_CENTER.x - GLASS_DROP_SPRITE.radius,
+      GLASS_DROP_CENTER.y - GLASS_DROP_SPRITE.radius,
+      GLASS_DROP_SPRITE.radius * 2,
+      GLASS_DROP_SPRITE.radius * 2,
+    ),
+    GLASS_DROP.rimStartDegrees,
+    GLASS_DROP.rimSweepDegrees,
+  );
+  return builder.detach();
+}
+
+const GLASS_DROP_RIM_PATH = buildGlassDropRimPath();
+
 /** 유리에 맺힌 물방울: 어두운 몸통, 위쪽 테두리 반사, 왼쪽 위 하이라이트 */
 export function useGlassDropTexture() {
-  const center = vec(GLASS_DROP_SPRITE.width / 2, GLASS_DROP_SPRITE.height / 2);
-  const rim = useMemo(() => {
-    const builder = Skia.PathBuilder.Make();
-    builder.addArc(
-      Skia.XYWHRect(
-        center.x - GLASS_DROP_SPRITE.radius,
-        center.y - GLASS_DROP_SPRITE.radius,
-        GLASS_DROP_SPRITE.radius * 2,
-        GLASS_DROP_SPRITE.radius * 2,
-      ),
-      GLASS_DROP.rimStartDegrees,
-      GLASS_DROP.rimSweepDegrees,
-    );
-    return builder.detach();
-  }, [center.x, center.y]);
+  const center = GLASS_DROP_CENTER;
   return useOwnedTexture(
     <Group>
       <Circle c={center} r={GLASS_DROP_SPRITE.radius} color="rgba(20,30,45,0.18)" />
       <Path
-        path={rim}
+        path={GLASS_DROP_RIM_PATH}
         style="stroke"
         strokeWidth={GLASS_DROP.rimWidth}
         color="rgba(235,242,250,0.45)"
@@ -433,22 +434,37 @@ const SUN_RAYS = {
   rgb: '255,250,235',
 } as const;
 
-type SunRay = { angle: number; length: number; halfWidth: number; alpha: number };
+type SunRay = { angle: number; length: number; alpha: number; path: SkPath };
+
+function buildSunRayPath(length: number, halfWidth: number): SkPath {
+  return Skia.PathBuilder.Make()
+    .moveTo(0, -halfWidth)
+    .lineTo(length, 0)
+    .lineTo(0, halfWidth)
+    .close()
+    .detach();
+}
 
 function createSunRays(): SunRay[] {
   const random = createSeededRandom(SUN_RAYS.seed);
   const between = ([min, max]: readonly [number, number]) => min + random() * (max - min);
-  return range(SUN_RAYS.count).map(() => ({
-    angle: random() * Math.PI * 2,
-    length: SUN_RAYS_SIZE * between(SUN_RAYS.length),
-    halfWidth: between(SUN_RAYS.halfWidth),
-    alpha: between(SUN_RAYS.alpha),
-  }));
+  return range(SUN_RAYS.count).map(() => {
+    const angle = random() * Math.PI * 2;
+    const length = SUN_RAYS_SIZE * between(SUN_RAYS.length);
+    const halfWidth = between(SUN_RAYS.halfWidth);
+    return {
+      angle,
+      length,
+      alpha: between(SUN_RAYS.alpha),
+      path: buildSunRayPath(length, halfWidth),
+    };
+  });
 }
+
+const SUN_RAY_SHAPES = createSunRays();
 
 /** 가는 빛살 64개를 미리 흐리게 구워 두고, 그리는 동안에는 돌리기만 한다. */
 export function useSunRaysTexture() {
-  const rays = useMemo(() => createSunRays(), []);
   const center = SUN_RAYS_SIZE / 2;
   return useOwnedTexture(
     <Group
@@ -458,7 +474,7 @@ export function useSunRaysTexture() {
         </Paint>
       }
     >
-      {rays.map((ray) => (
+      {SUN_RAY_SHAPES.map((ray) => (
         <SunRayShape key={ray.angle} ray={ray} center={center} />
       ))}
     </Group>,
@@ -467,19 +483,9 @@ export function useSunRaysTexture() {
 }
 
 function SunRayShape({ ray, center }: { ray: SunRay; center: number }) {
-  const path = useMemo(
-    () =>
-      Skia.PathBuilder.Make()
-        .moveTo(0, -ray.halfWidth)
-        .lineTo(ray.length, 0)
-        .lineTo(0, ray.halfWidth)
-        .close()
-        .detach(),
-    [ray.halfWidth, ray.length],
-  );
   return (
     <Group transform={[{ translateX: center }, { translateY: center }, { rotate: ray.angle }]}>
-      <Path path={path}>
+      <Path path={ray.path}>
         <LinearGradient
           start={vec(0, 0)}
           end={vec(ray.length, 0)}
