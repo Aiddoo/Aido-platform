@@ -5,10 +5,12 @@
  * 실제 앱과 PostgreSQL로 확인한다. 공급자는 FakeAiGenerator로 막는다.
  */
 
-import { AI_DATA_SHARING_CONSENT } from "@aido/api/vocabulary";
+import { AI_DATA_SHARING_CONSENT, PLAN_CATALOG } from "@aido/api/vocabulary";
+import { eq } from "drizzle-orm";
 import request from "supertest";
 
-import { AI_GENERATOR } from "#api/modules/ai-assistance/ai-assistance-generation.public";
+import { AiGeneratorPort } from "#api/modules/ai-assistance/generation/ai-assistance-generation.public";
+import { user as userTable } from "#api/platform/database/schema/index";
 
 import { FakeAiGenerator } from "../mocks/fake-ai.generator.js";
 import {
@@ -27,10 +29,10 @@ describe("AI 데이터 처리 동의 E2E", () => {
     fakeAiGenerator = new FakeAiGenerator();
     ctx = await createE2eApp({
       customizeBuilder: (builder) =>
-        builder.overrideProvider(AI_GENERATOR).useValue(fakeAiGenerator),
+        builder.overrideProvider(AiGeneratorPort).useValue(fakeAiGenerator),
       additionalResetters: [() => fakeAiGenerator.clear()],
     });
-  }, 60000);
+  }, 60_000);
 
   afterAll(async () => {
     await destroyE2eApp(ctx);
@@ -76,6 +78,23 @@ describe("AI 데이터 처리 동의 E2E", () => {
       .set("Authorization", `Bearer ${user.accessToken}`)
       .expect(200);
     expect(usage.body.data.data.used).toBe(0);
+  });
+
+  it("한도를 다 쓴 1.13.0 앱도 동의 전이면 한도 오류보다 동의 오류를 먼저 받는다", async () => {
+    // Given
+    await ctx.testDatabase
+      .getClient()
+      .update(userTable)
+      .set({ aiUsageCount: PLAN_CATALOG.AI_PARSE.free, aiUsageResetAt: Temporal.Now.instant() })
+      .where(eq(userTable.id, user.userId));
+
+    // When
+    const response = await parseTodo("1.13.0");
+
+    // Then
+    expect(response.status).toBe(403);
+    expect(response.body.error.code).toBe("AI_1311");
+    expect(fakeAiGenerator.getCallCount()).toBe(0);
   });
 
   it("동의하면 1.13.0 앱의 AI 요청을 처리하고 동의 조회에 상태가 보인다", async () => {

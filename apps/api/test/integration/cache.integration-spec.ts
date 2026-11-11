@@ -17,19 +17,18 @@ import { z } from "zod";
 import {
   EntitlementCacheKey,
   ENTITLEMENT_CACHE_TTL_MS,
-} from "#api/modules/access/infrastructure/cache/entitlement/entitlement-cache.keyspace";
+} from "#api/modules/access/entitlements/infrastructure/cache/entitlement-cache.keyspace";
 import {
   IdentityCacheKey,
   IDENTITY_CACHE_TTL_MS,
-} from "#api/modules/identity/infrastructure/cache/auth/identity-cache.keyspace";
+} from "#api/modules/identity/auth/infrastructure/cache/identity-cache.keyspace";
 import {
   FollowCacheKey,
   FOLLOW_CACHE_TTL_MS,
-} from "#api/modules/social/infrastructure/cache/friends/follow-cache.keyspace";
+} from "#api/modules/social/friends/infrastructure/cache/follow-cache.keyspace";
 import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
+import { CacheStorePort } from "#api/platform/cache/cache-store.port";
 import { CacheModule } from "#api/platform/cache/cache.module";
-import { CacheService } from "#api/platform/cache/cache.service";
-import { CACHE_SERVICE, ICacheService } from "#api/platform/cache/interfaces/cache.interface";
 import { cachePattern } from "#api/platform/cache/keyspace/cache-key";
 import { cacheConfig } from "#api/platform/config/cache.config";
 
@@ -38,8 +37,7 @@ import { createMockUserProfile } from "../mocks/cache-test-utils.js";
 describe("CacheModule 통합 테스트", () => {
   describe("인메모리 어댑터 (기본 설정)", () => {
     let module: TestingModule;
-    let cacheService: CacheService;
-    let cacheAdapter: ICacheService;
+    let cacheService: CacheStorePort;
 
     beforeAll(async () => {
       module = await Test.createTestingModule({
@@ -50,7 +48,7 @@ describe("CacheModule 통합 테스트", () => {
               registerAs(cacheConfig.namespace, () =>
                 cacheConfig.parse({
                   CACHE_TYPE: "memory",
-                  CACHE_DEFAULT_TTL_MS: 60000,
+                  CACHE_DEFAULT_TTL_MS: 60_000,
                   CACHE_MAX_ITEMS: 1000,
                 }),
               ),
@@ -60,8 +58,7 @@ describe("CacheModule 통합 테스트", () => {
         ],
       }).compile();
 
-      cacheService = module.get<CacheService>(CacheService);
-      cacheAdapter = module.get<ICacheService>(CACHE_SERVICE);
+      cacheService = module.get(CacheStorePort);
     });
 
     afterAll(async () => {
@@ -73,7 +70,7 @@ describe("CacheModule 통합 테스트", () => {
     });
 
     describe("모듈 설정", () => {
-      it("CacheService가 제공된다", () => {
+      it("CacheStorePort가 제공된다", () => {
         // Given
         // 모듈이 컴파일되었음
 
@@ -82,17 +79,6 @@ describe("CacheModule 통합 테스트", () => {
 
         // Then
         expect(service).toBeDefined();
-      });
-
-      it("ICacheService 어댑터가 제공된다", () => {
-        // Given
-        // 모듈이 컴파일되었음
-
-        // When
-        const adapter = cacheAdapter;
-
-        // Then
-        expect(adapter).toBeDefined();
       });
     });
 
@@ -151,7 +137,7 @@ describe("CacheModule 통합 테스트", () => {
         }).compile();
 
         try {
-          const shortTtlService = shortTtlModule.get<CacheService>(CacheService);
+          const shortTtlService = shortTtlModule.get(CacheStorePort);
           await shortTtlService.set("test-key", "test-value");
 
           // When - 값이 설정됨을 확인
@@ -559,7 +545,7 @@ describe("CacheModule 통합 테스트", () => {
         await cacheService.set("touch-test", "value", 1000);
 
         // When
-        const success = await cacheService.touch("touch-test", 10000);
+        const success = await cacheService.touch("touch-test", 10_000);
 
         // Then
         expect(success).toBe(true);
@@ -584,7 +570,7 @@ describe("CacheModule 통합 테스트", () => {
       const module = await Test.createTestingModule({
         imports: [CacheModule.forTesting(mockAdapter)],
       }).compile();
-      const service = module.get<CacheService>(CacheService);
+      const service = module.get(CacheStorePort);
 
       try {
         // When
@@ -601,7 +587,7 @@ describe("CacheModule 통합 테스트", () => {
 
     it("Jest 모킹된 어댑터를 사용할 수 있다", async () => {
       // Given
-      const mockAdapter: ICacheService = {
+      const mockAdapter: CacheStorePort = {
         get: vi.fn().mockResolvedValue("mocked-value"),
         set: vi.fn(),
         del: vi.fn(),
@@ -618,7 +604,7 @@ describe("CacheModule 통합 테스트", () => {
       const module = await Test.createTestingModule({
         imports: [CacheModule.forTesting(mockAdapter)],
       }).compile();
-      const service = module.get<CacheService>(CacheService);
+      const service = module.get(CacheStorePort);
 
       try {
         // When
@@ -634,7 +620,7 @@ describe("CacheModule 통합 테스트", () => {
 
     it("모킹된 wrap 메서드를 사용할 수 있다", async () => {
       // Given
-      const mockAdapter: ICacheService = {
+      const mockAdapter: CacheStorePort = {
         get: vi.fn(),
         set: vi.fn(),
         del: vi.fn(),
@@ -651,7 +637,7 @@ describe("CacheModule 통합 테스트", () => {
       const module = await Test.createTestingModule({
         imports: [CacheModule.forTesting(mockAdapter)],
       }).compile();
-      const service = module.get<CacheService>(CacheService);
+      const service = module.get(CacheStorePort);
 
       try {
         // When
@@ -679,7 +665,7 @@ describe("CacheModule 통합 테스트", () => {
           CacheModule.forRoot(),
         ],
       }).compile();
-      const service = module.get<CacheService>(CacheService);
+      const service = module.get(CacheStorePort);
 
       try {
         // When
@@ -712,7 +698,7 @@ describe("CacheModule 통합 테스트", () => {
           CacheModule.forRoot(),
         ],
       }).compile();
-      const service = module.get<CacheService>(CacheService);
+      const service = module.get(CacheStorePort);
 
       try {
         // When - 최대 항목 수를 초과하여 저장
@@ -746,8 +732,8 @@ describe("CacheModule 통합 테스트", () => {
 
       try {
         // When
-        const service = module.get<CacheService>(CacheService);
-        const adapter = module.get<ICacheService>(CACHE_SERVICE);
+        const service = module.get(CacheStorePort);
+        const adapter = module.get(CacheStorePort);
 
         // Then
         expect(service).toBeDefined();

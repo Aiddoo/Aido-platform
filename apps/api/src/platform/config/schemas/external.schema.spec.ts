@@ -1,4 +1,4 @@
-import { envSchema } from "./index.js";
+import { envSchema } from "./env.schema.js";
 
 describe("envSchema — WeatherKit 자격", () => {
   const requiredEnvironment = {
@@ -20,6 +20,12 @@ describe("envSchema — WeatherKit 자격", () => {
     ["개발에서 네 값이 모두 있으면 통과한다", "development", weatherKit, true],
     ["운영에서 네 값이 모두 있으면 통과한다", "production", weatherKit, true],
     ["운영에서 네 값이 없으면 기동을 막는다", "production", {}, false],
+    [
+      "배포된 개발서버(production 빌드 + APP_ENV=development)는 네 값이 없어도 통과한다",
+      "production",
+      { APP_ENV: "development" },
+      true,
+    ],
   ])("%s", (_case, nodeEnv, values, expected) => {
     // Given
     const environment = { ...requiredEnvironment, NODE_ENV: nodeEnv, ...values };
@@ -60,7 +66,7 @@ describe("envSchema — WeatherKit 자격", () => {
 });
 
 describe("envSchema — DB 연결 풀", () => {
-  it("DATABASE_POOL_MAX 기본값은 10이고 시간 제한은 비우면 pg 기본값을 쓴다", () => {
+  it("DATABASE_POOL_MAX 기본값은 10, 연결 대기는 5초이고 유휴 시간은 비우면 pg 기본값을 쓴다", () => {
     // Given
     const environment = {
       DATABASE_URL: "postgresql://localhost:5432/aido",
@@ -73,7 +79,7 @@ describe("envSchema — DB 연결 풀", () => {
     // Then
     expect(config.DATABASE_POOL_MAX).toBe(10);
     expect(config.DATABASE_POOL_IDLE_TIMEOUT_MS).toBeUndefined();
-    expect(config.DATABASE_POOL_CONNECTION_TIMEOUT_MS).toBeUndefined();
+    expect(config.DATABASE_POOL_CONNECTION_TIMEOUT_MS).toBe(5000);
   });
 });
 

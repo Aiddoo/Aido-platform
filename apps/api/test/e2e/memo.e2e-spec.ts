@@ -34,7 +34,7 @@ describe("메모 E2E", () => {
 
   beforeAll(async () => {
     ctx = await createE2eApp();
-  }, 60000);
+  }, 60_000);
 
   afterAll(async () => {
     await destroyE2eApp(ctx);
@@ -161,6 +161,7 @@ describe("메모 E2E", () => {
           userId: user.userId,
           content: `시딩 메모 ${i + 1}`,
           sortOrder: i,
+          updatedAt: Temporal.Now.instant(),
         })),
       );
 
@@ -458,7 +459,7 @@ describe("메모 E2E", () => {
       const response = await request(ctx.app.getHttpServer())
         .patch(`/v1/memos/${memo.id}/reorder`)
         .set("Authorization", `Bearer ${user.accessToken}`)
-        .send({ targetMemoId: 999999, position: "after" })
+        .send({ targetMemoId: 999_999, position: "after" })
         .expect(404);
 
       // Then - MEMO_2002 에러

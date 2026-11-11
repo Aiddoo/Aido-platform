@@ -1,4 +1,5 @@
 import { ErrorCode } from "@aido/api/errors";
+import { REVOKE_REASON } from "@aido/api/vocabulary";
 import { eq } from "drizzle-orm";
 import request from "supertest";
 /**
@@ -10,21 +11,12 @@ import request from "supertest";
  */
 import { vi } from "vitest";
 
-import { EntitlementCacheKey } from "#api/modules/access/infrastructure/cache/entitlement/entitlement-cache.keyspace";
-import {
-  AUTH_CACHE,
-  type AuthCachePort,
-} from "#api/modules/identity/application/ports/auth/auth-collaboration.port";
-import {
-  AUTH_TOKEN_ISSUER,
-  type AuthTokenIssuerPort,
-} from "#api/modules/identity/application/ports/auth/auth-crypto.port";
-import {
-  REVOKE_REASON,
-  TOKEN_REUSE_GRACE_PERIOD_MS,
-} from "#api/modules/identity/domain/constants/auth/auth.constants";
-import { CacheService } from "#api/platform/cache/cache.service";
-import { CACHE_SERVICE, type ICacheService } from "#api/platform/cache/interfaces/cache.interface";
+import { EntitlementCacheKey } from "#api/modules/access/entitlements/infrastructure/cache/entitlement-cache.keyspace";
+import { AuthCachePort } from "#api/modules/identity/auth/application/ports/auth-collaboration.port";
+import { AuthTokenIssuerPort } from "#api/modules/identity/auth/application/ports/auth-crypto.port";
+import { TOKEN_REUSE_GRACE_PERIOD_MS } from "#api/modules/identity/auth/domain/auth.constants";
+import { SessionId } from "#api/modules/identity/auth/domain/session-id.vo";
+import { CacheStorePort } from "#api/platform/cache/cache-store.port";
 import { requireRecord } from "#api/platform/database/database-error.util";
 import {
   loginAttempt,
@@ -37,16 +29,14 @@ import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/inde
 
 describe("인증 E2E", () => {
   let ctx: E2eTestContext;
-  let cacheService: CacheService;
-  let _cacheAdapter: ICacheService;
+  let cacheService: CacheStorePort;
 
   beforeAll(async () => {
     ctx = await createE2eApp();
 
-    // CacheService 인스턴스 가져오기
-    cacheService = ctx.module.get<CacheService>(CacheService);
-    _cacheAdapter = ctx.module.get<ICacheService>(CACHE_SERVICE);
-  }, 60000);
+    // CacheStorePort 인스턴스 가져오기
+    cacheService = ctx.module.get(CacheStorePort);
+  }, 60_000);
 
   afterAll(async () => {
     await destroyE2eApp(ctx);
@@ -809,8 +799,8 @@ describe("인증 E2E", () => {
         .send({ email, password: securityPassword })
         .expect(200);
       const originalRefreshToken: string = login.body.data.refreshToken;
-      const tokenIssuer = ctx.module.get<AuthTokenIssuerPort>(AUTH_TOKEN_ISSUER);
-      const authCache = ctx.module.get<AuthCachePort>(AUTH_CACHE);
+      const tokenIssuer = ctx.module.get<AuthTokenIssuerPort>(AuthTokenIssuerPort);
+      const authCache = ctx.module.get<AuthCachePort>(AuthCachePort);
       const client = ctx.testDatabase.getClient();
       const session = requireRecord(
         await client.query.session.findFirst({
@@ -826,10 +816,14 @@ describe("인증 E2E", () => {
         .get("/v1/auth/me")
         .set("Authorization", `Bearer ${accessToken}`)
         .expect(200);
-      expect(await authCache.getSession(session.id)).toBeDefined();
+      expect(await authCache.getSession(SessionId.reconstitute(session.id))).toBeDefined();
       await client
         .update(sessionTable)
-        .set({ lastUsedAt: new Date(Date.now() - TOKEN_REUSE_GRACE_PERIOD_MS - 1_000) })
+        .set({
+          lastUsedAt: Temporal.Now.instant().subtract({
+            milliseconds: TOKEN_REUSE_GRACE_PERIOD_MS + 1000,
+          }),
+        })
         .where(eq(sessionTable.id, session.id));
 
       // When
@@ -844,7 +838,7 @@ describe("인증 E2E", () => {
 
       // Then
       expect(reused.body.error.code).toBe("SESSION_0704");
-      expect(await authCache.getSession(session.id)).toBeUndefined();
+      expect(await authCache.getSession(SessionId.reconstitute(session.id))).toBeUndefined();
       expect(denied.body.error.code).toBe("AUTH_0101");
       const revoked = requireRecord(
         await client.query.session.findFirst({ where: { id: session.id } }),
@@ -1712,9 +1706,10 @@ describe("인증 E2E", () => {
       expect(response1.body.success).toBe(true);
       expect(response1.body.data.email).toBe("cache-test@example.com");
 
-      // 세션·프로필·권한(Access) 캐시를 한 번씩 채운다
+      // 세션·프로필·권한(Access) 캐시를 한 번씩 채운다. 프로필·권한은 저장 전후로 세대 키를 세 번씩 읽고
+      // 무효화 전에는 세대 키가 없어 미스로 센다
       const statsAfterFirst = cacheService.getStats();
-      expect(statsAfterFirst.misses).toBe(statsBefore.misses + 3);
+      expect(statsAfterFirst.misses).toBe(statsBefore.misses + 3 + 2 * 3);
 
       // When
       const response2 = await request(ctx.app.getHttpServer())
@@ -1823,7 +1818,8 @@ describe("인증 E2E", () => {
 
       // Then
       const finalStats = cacheService.getStats();
-      expect(finalStats.misses).toBe(initialStats.misses + 3);
+      // 첫 호출만 세션·프로필·권한 미스와 프로필·권한의 세대 키 읽기(각 3번)다
+      expect(finalStats.misses).toBe(initialStats.misses + 3 + 2 * 3);
       expect(finalStats.hits).toBe(initialStats.hits + 12);
     });
   });
@@ -2068,7 +2064,7 @@ describe("인증 E2E", () => {
           mode: "link",
           exchangeCode,
           userId: providerAccountId,
-          expiresAt: new Date(Date.now() + 10 * 60 * 1000),
+          expiresAt: Temporal.Now.instant().add({ minutes: 10 }),
         });
 
       return exchangeCode;
@@ -2300,7 +2296,7 @@ describe("인증 E2E", () => {
         .set("Authorization", `Bearer ${user.accessToken}`)
         .send({ title: "복구 후에도 유지할 할 일", categoryId, startDate: "2024-01-15" })
         .expect(201);
-      const authCache = ctx.module.get<AuthCachePort>(AUTH_CACHE);
+      const authCache = ctx.module.get<AuthCachePort>(AuthCachePort);
       const sessionIds: string[] = [];
       for (const accessToken of accessTokens) {
         const profile = await request(ctx.app.getHttpServer())
@@ -2308,7 +2304,9 @@ describe("인증 E2E", () => {
           .set("Authorization", `Bearer ${accessToken}`)
           .expect(200);
         sessionIds.push(profile.body.data.sessionId);
-        expect(await authCache.getSession(profile.body.data.sessionId)).toBeDefined();
+        expect(
+          await authCache.getSession(SessionId.reconstitute(profile.body.data.sessionId)),
+        ).toBeDefined();
       }
       expect(new Set(sessionIds).size).toBe(3);
 
@@ -2322,7 +2320,7 @@ describe("인증 E2E", () => {
       // Then
       expect(deletion.body.data.gracePeriodDays).toBe(30);
       for (const sessionId of sessionIds) {
-        expect(await authCache.getSession(sessionId)).toBeUndefined();
+        expect(await authCache.getSession(SessionId.reconstitute(sessionId))).toBeUndefined();
       }
       for (const accessToken of accessTokens) {
         const denied = await request(ctx.app.getHttpServer())
@@ -2425,7 +2423,11 @@ describe("인증 E2E", () => {
       await ctx.testDatabase
         .getClient()
         .update(userTable)
-        .set({ deletedAt: new Date(Date.now() - 31 * 24 * 60 * 60 * 1000) })
+        .set({
+          deletedAt: Temporal.Instant.fromEpochMilliseconds(Date.now()).subtract({
+            hours: 31 * 24,
+          }),
+        })
         .where(eq(userTable.email, deleteEmail));
 
       // When

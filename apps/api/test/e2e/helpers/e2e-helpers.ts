@@ -18,16 +18,19 @@ export interface VerifiedUser {
 }
 
 export class E2eHelpers {
-  constructor(
-    private readonly app: INestApplication,
-    private readonly fakeEmailService: FakeEmailService,
-  ) {}
+  readonly #app: INestApplication;
+  readonly #fakeEmailService: FakeEmailService;
+
+  constructor(app: INestApplication, fakeEmailService: FakeEmailService) {
+    this.#app = app;
+    this.#fakeEmailService = fakeEmailService;
+  }
 
   /**
    * 사용자 등록 (이메일 인증 전 단계)
    */
   async registerUser(email: string, password: string, options?: { name?: string }): Promise<void> {
-    await request(this.app.getHttpServer())
+    await request(this.#app.getHttpServer())
       .post("/v1/auth/register")
       .send({
         email,
@@ -44,8 +47,8 @@ export class E2eHelpers {
    * 이메일 인증 + 토큰 반환
    */
   async verifyUser(email: string): Promise<string> {
-    const code = this.fakeEmailService.getLastCode(email);
-    const response = await request(this.app.getHttpServer())
+    const code = this.#fakeEmailService.getLastCode(email);
+    const response = await request(this.#app.getHttpServer())
       .post("/v1/auth/verify-email")
       .send({ email, code })
       .expect(200);
@@ -65,8 +68,8 @@ export class E2eHelpers {
     await this.registerUser(email, password, options);
 
     // 이메일 인증
-    const code = this.fakeEmailService.getLastCode(email);
-    const response = await request(this.app.getHttpServer())
+    const code = this.#fakeEmailService.getLastCode(email);
+    const response = await request(this.#app.getHttpServer())
       .post("/v1/auth/verify-email")
       .send({ email, code })
       .expect(200);
@@ -85,7 +88,7 @@ export class E2eHelpers {
     email: string,
     password: string,
   ): Promise<{ accessToken: string; refreshToken: string }> {
-    const response = await request(this.app.getHttpServer())
+    const response = await request(this.#app.getHttpServer())
       .post("/v1/auth/login")
       .send({ email, password })
       .expect(200);
@@ -101,13 +104,13 @@ export class E2eHelpers {
    */
   async createFriendship(user1: VerifiedUser, user2: VerifiedUser): Promise<void> {
     // user1 -> user2 팔로우 요청
-    await request(this.app.getHttpServer())
+    await request(this.#app.getHttpServer())
       .post(`/v1/follows/${user2.userTag}`)
       .set("Authorization", `Bearer ${user1.accessToken}`)
       .expect(201);
 
     // user2 -> user1 맞팔로우 (친구 성립)
-    await request(this.app.getHttpServer())
+    await request(this.#app.getHttpServer())
       .post(`/v1/follows/${user1.userTag}`)
       .set("Authorization", `Bearer ${user2.accessToken}`)
       .expect(201);
@@ -117,7 +120,7 @@ export class E2eHelpers {
    * 기본 카테고리 ID 조회
    */
   async getDefaultCategoryId(accessToken: string): Promise<number> {
-    const response = await request(this.app.getHttpServer())
+    const response = await request(this.#app.getHttpServer())
       .get("/v1/todo-categories")
       .set("Authorization", `Bearer ${accessToken}`)
       .expect(200);

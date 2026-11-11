@@ -77,6 +77,18 @@ export function isSameYearDateKey(first: string, second: string): boolean {
   return parseDateKey(first).isSame(parseDateKey(second), 'year');
 }
 
+/** 서버 주차 라벨과 같은 규칙이다. 주의 목요일이 속한 달의 몇 번째 목요일인지가 주차다 */
+export function getIsoWeekOfMonth(dateKey: string): {
+  thursdayDateKey: string;
+  weekOfMonth: number;
+} {
+  const thursdayDateKey = addDaysToDateKey(getMondayOfDateKey(dateKey), 3);
+  return {
+    thursdayDateKey,
+    weekOfMonth: Math.ceil(getDayOfMonth(thursdayDateKey) / DAYS_PER_WEEK),
+  };
+}
+
 export interface CalendarWeek {
   startDateKey: string;
   endDateKey: string;

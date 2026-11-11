@@ -13,3 +13,4 @@ export * from "./planning.schema.js";
 export * from "./platform.schema.js";
 export * from "./social.schema.js";
 export * from "./voice.schema.js";
+export * from "./weather.schema.js";

@@ -1,4 +1,5 @@
 import { timeOfDaySchema } from '@aido/api/common';
+import type { SupportedLocale } from '@aido/api/vocabulary';
 import dayjs from 'dayjs';
 
 import type { TimeFormat } from './date-format';
@@ -31,7 +32,7 @@ export function getTodayAt(hour: number, minute: number): Date {
 
 /** 24시간제는 en_GB로 강제해 오전/오후 없는 스피너를 쓴다 */
 export function getPickerLocale(
-  resolvedLanguage: 'ko' | 'en',
+  resolvedLanguage: SupportedLocale,
   timeFormat: TimeFormat = 'TWELVE_HOUR',
 ): string {
   if (timeFormat !== 'TWELVE_HOUR') {

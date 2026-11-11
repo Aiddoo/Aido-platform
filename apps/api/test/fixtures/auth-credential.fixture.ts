@@ -1,86 +1,97 @@
-import { mock } from "vitest-mock-extended";
+import type { AccessTier } from "@aido/api/vocabulary";
 
 import type {
-  AccessSnapshot,
   EntitlementReaderPort,
-} from "#api/modules/access/access-entitlement.public";
-import type { MeteredFeatureQuota, QuotaLedgerPort } from "#api/modules/access/access-quota.public";
-import {
-  type AccessTier,
-  NO_RESOURCE_BONUSES,
-  resolveAllFeatureAccess,
-} from "#api/modules/access/domain/policies/entitlement/entitlement.policy";
+  UserEntitlements,
+} from "#api/modules/access/entitlements/access-entitlements.public";
+import { planOfTier } from "#api/modules/access/entitlements/domain/entitlement.domain-service";
+import type {
+  MeteredFeatureQuota,
+  QuotaLedgerPort,
+} from "#api/modules/access/quotas/access-quotas.public";
 import type {
   PremiumAccess,
   PremiumAccessReaderPort,
-} from "#api/modules/billing/billing-subscriptions.public";
-import { SessionService } from "#api/modules/identity/application/services/auth/session.service";
-import { VerificationService } from "#api/modules/identity/application/services/auth/verification.service";
-import { IssueLogin } from "#api/modules/identity/application/use-cases/auth/issue-login.use-case";
-import { ProvisionUser } from "#api/modules/identity/application/use-cases/auth/provision-user.use-case";
-import { RestoreAccount } from "#api/modules/identity/application/use-cases/auth/restore-account.use-case";
+} from "#api/modules/billing/premium-grants/billing-premium-grants.public";
+import { ConsumeVerificationCodeUseCase } from "#api/modules/identity/auth/application/use-cases/consume-verification-code.use-case";
+import { CreateSessionUseCase } from "#api/modules/identity/auth/application/use-cases/create-session.use-case";
+import { IssueLoginUseCase } from "#api/modules/identity/auth/application/use-cases/issue-login.use-case";
+import { IssueVerificationCodeUseCase } from "#api/modules/identity/auth/application/use-cases/issue-verification-code.use-case";
+import { ProvisionUserUseCase } from "#api/modules/identity/auth/application/use-cases/provision-user.use-case";
+import { RestoreAccountUseCase } from "#api/modules/identity/auth/application/use-cases/restore-account.use-case";
+import { SendVerificationCodeUseCase } from "#api/modules/identity/auth/application/use-cases/send-verification-code.use-case";
 import type {
   DailySendUsage,
   DailySendUsageReaderPort,
-} from "#api/modules/social/social-cheers.public";
-import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
+} from "#api/modules/social/cheers/social-cheers.public";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { InMemoryEntitlementCache } from "#test/doubles/access/in-memory-entitlement-cache";
+import { InMemoryAuthAccountRepository } from "#test/doubles/identity/in-memory-auth-account.repository";
+import { InMemoryAuthLoginAttemptRepository } from "#test/doubles/identity/in-memory-auth-login-attempt.repository";
+import { InMemoryAuthSecurityLogRepository } from "#test/doubles/identity/in-memory-auth-security-log.repository";
+import { InMemoryAuthSessionRepository } from "#test/doubles/identity/in-memory-auth-session.repository";
+import { InMemoryAuthUserRepository } from "#test/doubles/identity/in-memory-auth-user.repository";
+import { InMemoryAuthVerificationRepository } from "#test/doubles/identity/in-memory-auth-verification.repository";
+import { FixedClock } from "#test/doubles/platform/fixed-clock";
+import { ImmediateUnitOfWork } from "#test/doubles/platform/immediate-unit-of-work";
+import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";
+import { SilentLogger } from "#test/doubles/platform/silent-logger";
+import { createFeatureEntitlementsFixture } from "#test/fixtures/access/access-user.fixture";
 import { FakeEmailService } from "#test/mocks/fake-email.service";
-import { StubAccountRepository } from "#test/mocks/ports/account-lifecycle.stub";
 import {
-  StubAuthUserRepository,
   StubAuthPasswordHasher,
-  StubAuthLoginAttemptRepository,
   StubAuthProfileCache,
-  StubAuthVerificationRepository,
   StubVerificationCodeSecurity,
   StubAuthRegistrationNotifier,
   StubAuthRetentionEnroller,
   StubAuthProvisioningSeeder,
 } from "#test/mocks/ports/auth-credentials.stub";
 import {
-  StubAuthSessionRepository,
   StubSessionPushDeviceReleaser,
-  StubAuthSecurityLogRepository,
   StubAuthTokenIssuer,
 } from "#test/mocks/ports/auth-session.stub";
-import { createUnitOfWorkMock } from "#test/mocks/ports/unit-of-work.mock";
 
-import { AccountFixture, UserFixture } from "./user.fixture.js";
+import { createAuthAccountFixture } from "./identity/auth-credential.fixture.js";
+import { AUTH_FIXTURE_NOW, createIdentityUserFixture } from "./identity/auth-session.fixture.js";
 
-export const AUTH_CREDENTIAL_TIME = new Date("2026-12-31T23:59:00Z");
+export const AUTH_CREDENTIAL_NOW = AUTH_FIXTURE_NOW;
 export const AUTH_CREDENTIAL_PASSWORD = "CorrectPassword1!";
 
 export function createAuthCredentialFixture(
   input: { socialOnly?: boolean; pending?: boolean; empty?: boolean } = {},
 ) {
-  const user = UserFixture.create({
+  const user = createIdentityUserFixture({
     id: "credential-user",
     email: "credential@example.com",
+    userTag: "CRED0001",
     status: input.pending ? "PENDING_VERIFY" : "ACTIVE",
-    emailVerifiedAt: input.pending ? null : AUTH_CREDENTIAL_TIME,
-  });
-  const accountRepository = new StubAccountRepository(
+    emailVerifiedAt: input.pending ? null : AUTH_CREDENTIAL_NOW,
+  }).toPrimitives();
+  const accountRepository = new InMemoryAuthAccountRepository(
     input.empty
       ? []
       : [
-          AccountFixture.create({
+          createAuthAccountFixture({
             userId: user.id,
+            providerAccountId: user.id,
             provider: input.socialOnly ? "GOOGLE" : "CREDENTIAL",
             password: input.socialOnly ? null : `digest:${AUTH_CREDENTIAL_PASSWORD}`,
           }),
         ],
   );
-  const userRepository = new StubAuthUserRepository(
-    input.empty ? [] : [user],
-    accountRepository.accounts,
+  const userRepository = new InMemoryAuthUserRepository(
+    input.empty ? [] : [createIdentityUserFixture(user)],
+    {
+      accounts: accountRepository,
+      profiles: new Map(input.empty ? [] : [[user.id, { name: "사용자", profileImage: null }]]),
+    },
   );
-  userRepository.profiles.set(user.id, { name: "사용자", profileImage: null });
-  const sessionRepository = new StubAuthSessionRepository();
-  const securityLogRepository = new StubAuthSecurityLogRepository();
+  const sessionRepository = new InMemoryAuthSessionRepository();
+  const securityLogRepository = new InMemoryAuthSecurityLogRepository();
   const tokenService = new StubAuthTokenIssuer();
   const passwordService = new StubAuthPasswordHasher();
-  const loginAttemptRepository = new StubAuthLoginAttemptRepository();
-  const verificationRepository = new StubAuthVerificationRepository();
+  const loginAttemptRepository = new InMemoryAuthLoginAttemptRepository();
+  const verificationRepository = new InMemoryAuthVerificationRepository();
   const verificationCodeSecurity = new StubVerificationCodeSecurity();
   const cacheService = new StubAuthProfileCache();
   const pushDevices = new StubSessionPushDeviceReleaser();
@@ -88,28 +99,37 @@ export function createAuthCredentialFixture(
   const adminEventNotifier = new StubAuthRegistrationNotifier();
   const retentionEnroller = new StubAuthRetentionEnroller();
   const seeder = new StubAuthProvisioningSeeder();
-  const logger = mock<ApplicationLoggerPort>();
-  const unitOfWork = createUnitOfWorkMock();
-  const sessionService = new SessionService({ sessionRepository, tokenService });
-  const verificationService = new VerificationService({
+  const logger = new SilentLogger();
+  const unitOfWork = new ImmediateUnitOfWork();
+  const clock = new FixedClock(AUTH_CREDENTIAL_NOW);
+  const sessionService = new CreateSessionUseCase({ sessionRepository, tokenService, clock });
+  const issueVerificationCode = new IssueVerificationCodeUseCase({
     verificationRepository,
     verificationCodeSecurity,
-    emailSender,
+    clock,
     logger,
   });
-  const provisionUserUseCase = new ProvisionUser({
+  const sendVerificationCode = new SendVerificationCodeUseCase({ emailSender, logger });
+  const consumeVerificationCode = new ConsumeVerificationCodeUseCase({
+    verificationRepository,
+    verificationCodeSecurity,
+    clock,
+    logger,
+  });
+  const provisionUserUseCase = new ProvisionUserUseCase({
     userRepository,
     accountRepository,
     seeder,
     retentionEnroller,
   });
-  const issueLoginUseCase = new IssueLogin({
+  const issueLoginUseCase = new IssueLoginUseCase({
     sessionService,
     loginAttemptRepository,
     securityLogRepository,
     userRepository,
+    clock,
   });
-  const restoreAccount = new RestoreAccount({ userRepository, securityLogRepository });
+  const restoreAccount = new RestoreAccountUseCase({ userRepository, securityLogRepository });
   return {
     user,
     userRepository,
@@ -122,15 +142,20 @@ export function createAuthCredentialFixture(
     verificationRepository,
     verificationCodeSecurity,
     cacheService,
+    entitlementCache: new InMemoryEntitlementCache(),
     pushDevices,
     emailSender,
     adminEventNotifier,
     retentionEnroller,
     seeder,
     logger,
+    alert: new RecordingOperationalAlert(),
     unitOfWork,
+    clock,
     sessionService,
-    verificationService,
+    issueVerificationCode,
+    sendVerificationCode,
+    consumeVerificationCode,
     provisionUserUseCase,
     issueLoginUseCase,
     restoreAccount,
@@ -143,25 +168,26 @@ export function createAuthCredentialFixture(
 }
 
 /** 사용자별 권한 주체를 정해 두는 대역. 기능 권한은 실제 Access 정책으로 계산한다. */
-export class StubCurrentUserAccess implements Pick<EntitlementReaderPort, "getAccessSnapshot"> {
+export class StubCurrentUserAccess implements Pick<EntitlementReaderPort, "getEntitlements"> {
   readonly tiers = new Map<string, AccessTier>();
   readonly activeSubscriptionUserIds = new Set<string>();
 
-  async getAccessSnapshot(userId: string): Promise<AccessSnapshot> {
-    const tier = this.tiers.get(userId) ?? "FREE";
+  async getEntitlements(userId: UserId): Promise<UserEntitlements> {
+    const tier = this.tiers.get(userId.value) ?? "FREE";
     return {
       tier,
-      isPremium: this.activeSubscriptionUserIds.has(userId),
-      features: resolveAllFeatureAccess(tier, NO_RESOURCE_BONUSES),
+      plan: planOfTier(tier),
+      isPremium: this.activeSubscriptionUserIds.has(userId.value),
+      features: createFeatureEntitlementsFixture(tier),
     };
   }
 }
 
-export class StubCurrentUserQuotaLedger implements Pick<QuotaLedgerPort, "read"> {
+class StubCurrentUserQuotaLedger implements Pick<QuotaLedgerPort, "read"> {
   used = 0;
   resetsAt = "2026-11-30T15:00:00.000Z";
 
-  async read(_userId: string): Promise<MeteredFeatureQuota> {
+  async read(_userId: UserId): Promise<MeteredFeatureQuota> {
     return {
       feature: "AI_PARSE",
       allowed: true,
@@ -176,26 +202,26 @@ export class StubCurrentUserQuotaLedger implements Pick<QuotaLedgerPort, "read">
   }
 }
 
-export class StubDailySendUsage implements Pick<DailySendUsageReaderPort, "readDailyUsage"> {
+class StubDailySendUsage implements Pick<DailySendUsageReaderPort, "readDailyUsage"> {
   used = 0;
   resetsAt = new Date("2026-11-03T15:00:00.000Z");
   readonly timezones: string[] = [];
 
-  async readDailyUsage(_userId: string, timezone: string): Promise<DailySendUsage> {
+  async readDailyUsage(_userId: UserId, timezone: string): Promise<DailySendUsage> {
     this.timezones.push(timezone);
     return { used: this.used, resetsAt: new Date(this.resetsAt) };
   }
 }
 
 /** 사용자별 프리미엄 출처를 정해 두는 대역. 기본값은 프리미엄 아님이다. */
-export class StubPremiumAccessReader implements PremiumAccessReaderPort {
+class StubPremiumAccessReader implements PremiumAccessReaderPort {
   readonly accesses = new Map<string, PremiumAccess>();
   readonly requestedUserIds: string[] = [];
 
-  async getPremiumAccess(userId: string): Promise<PremiumAccess> {
-    this.requestedUserIds.push(userId);
+  async getPremiumAccess(userId: UserId): Promise<PremiumAccess> {
+    this.requestedUserIds.push(userId.value);
     return (
-      this.accesses.get(userId) ?? {
+      this.accesses.get(userId.value) ?? {
         source: null,
         endsAt: null,
         periodEndsAt: null,

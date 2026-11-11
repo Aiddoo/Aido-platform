@@ -1,0 +1,87 @@
+import { TransactionHost } from "@nestjs-cls/transactional";
+import { Injectable } from "@nestjs/common";
+import { and, asc, eq, gt, inArray, isNull, lte, sql } from "drizzle-orm";
+
+import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
+import { subscription } from "#api/platform/database/schema/billing.schema";
+
+import type { FindDueBillingNoticesParams } from "../../../premium-grants/application/ports/billing-notice.port.js";
+import { planTypeOfProduct } from "../../../shared/subscription-plan.domain-service.js";
+import {
+  type TrialEndingNotice,
+  TrialEndingNoticeRepositoryPort,
+} from "../../application/ports/trial-ending-notice.repository.port.js";
+
+@Injectable()
+export class DrizzleTrialEndingNoticeRepository extends TrialEndingNoticeRepositoryPort {
+  readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
+
+  constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>) {
+    super();
+    this.#txHost = txHost;
+  }
+
+  get #db() {
+    return this.#txHost.tx;
+  }
+
+  async listDue(
+    params: FindDueBillingNoticesParams<TrialEndingNotice>,
+  ): Promise<TrialEndingNotice[]> {
+    const rows = await this.#db
+      .select({
+        subscriptionId: subscription.id,
+        userId: subscription.userId,
+        startedAt: subscription.startedAt,
+        expiresAt: subscription.expiresAt,
+        status: subscription.status,
+        productId: subscription.productId,
+      })
+      .from(subscription)
+      .where(
+        and(
+          eq(subscription.periodType, "TRIAL"),
+          isNull(subscription.trialEndingNotifiedAt),
+          isNull(subscription.deletedAt),
+          inArray(subscription.status, ["ACTIVE", "CANCELLED"]),
+          gt(subscription.expiresAt, params.now),
+          lte(subscription.expiresAt, params.endsBefore),
+          params.after == null
+            ? undefined
+            : sql`(${subscription.expiresAt}, ${subscription.id}) > (${sql.param(params.after.expiresAt, subscription.expiresAt)}, ${params.after.subscriptionId})`,
+        ),
+      )
+      .orderBy(asc(subscription.expiresAt), asc(subscription.id))
+      .limit(params.limit);
+    return rows.map(({ status, productId, ...row }) => ({
+      ...row,
+      willRenew: status === "ACTIVE",
+      planType: planTypeOfProduct(productId),
+    }));
+  }
+
+  async claim(
+    notices: readonly TrialEndingNotice[],
+    claimedAt: Temporal.Instant,
+  ): Promise<TrialEndingNotice[]> {
+    if (notices.length === 0) {
+      return [];
+    }
+    const claimed = await this.#db
+      .update(subscription)
+      .set({ trialEndingNotifiedAt: claimedAt, updatedAt: claimedAt })
+      .where(
+        and(
+          inArray(
+            subscription.id,
+            notices.map((notice) => notice.subscriptionId),
+          ),
+          isNull(subscription.trialEndingNotifiedAt),
+          eq(subscription.periodType, "TRIAL"),
+        ),
+      )
+      .returning({ id: subscription.id });
+    const claimedIds = new Set(claimed.map((row) => row.id));
+    return notices.filter((notice) => claimedIds.has(notice.subscriptionId));
+  }
+}
