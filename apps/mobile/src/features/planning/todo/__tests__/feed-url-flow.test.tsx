@@ -7,6 +7,7 @@ import {
   stubWindowDimensions,
 } from '@src/testing/core';
 import { renderRouteHook } from '@src/testing/render-route-hook';
+import { setupFakeTimersPerTest } from '@src/testing/timers';
 import { act } from '@testing-library/react-native';
 import { router } from 'expo-router';
 import type { PropsWithChildren } from 'react';
@@ -61,33 +62,29 @@ function renderFeed(url: string, options: { from?: string; routes?: string[] } =
 const FIXED_NOW = new Date(2026, 10, 8, 12);
 
 describe('피드 URL 플로우', () => {
-  beforeEach(() => {
-    // oxlint-disable-next-line jest/no-restricted-jest-methods -- 1.15.2 전환 #1400
-    jest.useFakeTimers({
-      now: FIXED_NOW,
-      doNotFake: [
-        'hrtime',
-        'nextTick',
-        'performance',
-        'queueMicrotask',
-        'requestAnimationFrame',
-        'cancelAnimationFrame',
-        'requestIdleCallback',
-        'cancelIdleCallback',
-        'setImmediate',
-        'clearImmediate',
-        'setInterval',
-        'clearInterval',
-        'setTimeout',
-        'clearTimeout',
-      ],
-    });
-    stubWindowDimensions(FOLD_WIDTH);
+  // 날짜만 고정한다. 타이머·프레임은 실제로 돌아 route 이동이 끝까지 간다
+  setupFakeTimersPerTest({
+    now: FIXED_NOW,
+    doNotFake: [
+      'hrtime',
+      'nextTick',
+      'performance',
+      'queueMicrotask',
+      'requestAnimationFrame',
+      'cancelAnimationFrame',
+      'requestIdleCallback',
+      'cancelIdleCallback',
+      'setImmediate',
+      'clearImmediate',
+      'setInterval',
+      'clearInterval',
+      'setTimeout',
+      'clearTimeout',
+    ],
   });
 
-  afterEach(() => {
-    // oxlint-disable-next-line jest/no-restricted-jest-methods -- 1.15.2 전환 #1400
-    jest.useRealTimers();
+  beforeEach(() => {
+    stubWindowDimensions(FOLD_WIDTH);
   });
 
   describe('날짜', () => {

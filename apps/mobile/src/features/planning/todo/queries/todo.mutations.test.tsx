@@ -12,6 +12,7 @@ import {
   createPendingResponse,
 } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
+import { setupFakeTimersPerTest } from '@src/testing/timers';
 import { useMutation } from '@tanstack/react-query';
 import { act, screen } from '@testing-library/react-native';
 import { AppState } from 'react-native';
@@ -34,15 +35,10 @@ const PAST_ACTIVE_DAYS = ['2026-10-24', '2026-10-25'];
 /** 축하 화면이 가라앉기를 기다리는 시간(1.2초)보다 길게 */
 const REVIEW_SETTLE_MS = 2_000;
 
-beforeEach(() => {
-  // oxlint-disable-next-line jest/no-restricted-jest-methods -- 1.15.2 전환 #1400
-  jest.useFakeTimers({ now: new Date('2026-10-27T03:00:00.000Z'), doNotFake: ['nextTick'] });
-  Object.defineProperty(AppState, 'currentState', { configurable: true, value: 'active' });
-});
+setupFakeTimersPerTest({ now: new Date('2026-10-27T03:00:00.000Z'), doNotFake: ['nextTick'] });
 
-afterEach(() => {
-  // oxlint-disable-next-line jest/no-restricted-jest-methods -- 1.15.2 전환 #1400
-  jest.useRealTimers();
+beforeEach(() => {
+  Object.defineProperty(AppState, 'currentState', { configurable: true, value: 'active' });
 });
 
 async function renderToggle() {
@@ -71,8 +67,6 @@ async function renderToggle() {
     },
   );
   queryClient.setQueryData(USER_QUERY_KEYS.me(), createUser({ id: ACCOUNT_ID }));
-  // oxlint-disable-next-line aido/test-spy-target -- 1.15.2 전환 #1400
-  const invalidateQueries = jest.spyOn(queryClient, 'invalidateQueries');
 
   const toggle = async (todoId: number, completed: boolean, date: string) => {
     if (current.value == null) {
@@ -94,7 +88,11 @@ async function renderToggle() {
   };
   const givenList = (date: string, todos: Todo[]) =>
     queryClient.setQueryData(TODO_QUERY_KEYS.listByDate({ date }), toList(todos));
-  const invalidatedKeys = () => invalidateQueries.mock.calls.map(([filters]) => filters?.queryKey);
+  // 관찰자가 없는 조회라 무효화돼도 다시 받지 않고 무효 표시만 남는다
+  const givenCached = (queryKey: readonly unknown[]) =>
+    queryClient.getQueryCache().build(queryClient, { queryKey });
+  const isInvalidated = (queryKey: readonly unknown[]) =>
+    queryClient.getQueryState(queryKey)?.isInvalidated === true;
 
   return {
     httpClient,
@@ -105,10 +103,8 @@ async function renderToggle() {
     toggle,
     startToggle,
     givenList,
-    invalidatedKeys,
-    clearCalls: () => {
-      invalidateQueries.mockClear();
-    },
+    givenCached,
+    isInvalidated,
   };
 }
 
@@ -221,11 +217,13 @@ describe('useToggleTodoMutationOptions store review wiring', () => {
 describe('useToggleTodoMutationOptions settle', () => {
   it('다른 체크가 아직 진행 중이면 완료 기록을 다시 부르지 않아 낙관적 값이 깜빡이지 않는다', async () => {
     // Given
-    const { httpClient, givenList, toggle, startToggle, invalidatedKeys } = await renderToggle();
+    const { httpClient, givenList, givenCached, toggle, startToggle, isInvalidated } =
+      await renderToggle();
     givenList(TODAY, [
       createParentTodo({ id: 41, completed: false }),
       createParentTodo({ id: 42, completed: false }),
     ]);
+    givenCached(TODO_QUERY_KEYS.completionsByRange({ startDate: TODAY, endDate: TODAY }));
     const first = createPendingResponse(respondWithTodo(42));
     httpClient.patch.mockReturnValueOnce(first.response).mockResolvedValueOnce(respondWithTodo(41));
 
@@ -234,54 +232,62 @@ describe('useToggleTodoMutationOptions settle', () => {
     await toggle(41, true, TODAY);
 
     // Then
-    expect(invalidatedKeys()).not.toContainEqual(TODO_QUERY_KEYS.completions());
+    expect(
+      isInvalidated(TODO_QUERY_KEYS.completionsByRange({ startDate: TODAY, endDate: TODAY })),
+    ).toBe(false);
     await act(async () => first.settle());
   });
 
   it('하루짜리 체크가 확정되면 목록·달력은 다시 받지 않고 서버만 아는 위젯 요약만 맞춘다', async () => {
     // Given
-    const { httpClient, givenList, toggle, invalidatedKeys } = await renderToggle();
+    const { httpClient, givenList, givenCached, toggle, isInvalidated } = await renderToggle();
     givenList(TODAY, [createParentTodo({ id: 42, startDate: TODAY, completed: false })]);
+    givenCached(TODO_QUERY_KEYS.widgetSummaryByDate({ date: TODAY, userId: ACCOUNT_ID }));
+    givenCached(TODO_QUERY_KEYS.completionsByRange({ startDate: TODAY, endDate: TODAY }));
     httpClient.patch.mockResolvedValue(respondWithTodo(42));
 
     // When
     await toggle(42, true, TODAY);
 
     // Then
-    expect(invalidatedKeys()).toContainEqual(TODO_QUERY_KEYS.widgetSummary());
-    expect(invalidatedKeys()).not.toContainEqual(TODO_QUERY_KEYS.listByDate({ date: TODAY }));
-    expect(invalidatedKeys()).not.toContainEqual(TODO_QUERY_KEYS.completionRanges());
+    expect(
+      isInvalidated(TODO_QUERY_KEYS.widgetSummaryByDate({ date: TODAY, userId: ACCOUNT_ID })),
+    ).toBe(true);
+    expect(isInvalidated(TODO_QUERY_KEYS.listByDate({ date: TODAY }))).toBe(false);
+    expect(
+      isInvalidated(TODO_QUERY_KEYS.completionsByRange({ startDate: TODAY, endDate: TODAY })),
+    ).toBe(false);
   });
 
   it('체크가 실패하면 그 목록과 달력을 서버 값으로 다시 맞춘다', async () => {
     // Given
-    const { httpClient, givenList, toggle, invalidatedKeys } = await renderToggle();
+    const { httpClient, givenList, givenCached, toggle, isInvalidated } = await renderToggle();
     givenList(TODAY, [createParentTodo({ id: 42, startDate: TODAY, completed: false })]);
+    givenCached(TODO_QUERY_KEYS.completionsByRange({ startDate: TODAY, endDate: TODAY }));
     httpClient.patch.mockResolvedValue(err(createTodoApiError()));
 
     // When
     await toggle(42, true, TODAY);
 
     // Then
-    expect(invalidatedKeys()).toEqual(
-      expect.arrayContaining([
-        TODO_QUERY_KEYS.listByDate({ date: TODAY }),
-        TODO_QUERY_KEYS.completionRanges(),
-      ]),
-    );
+    expect(isInvalidated(TODO_QUERY_KEYS.listByDate({ date: TODAY }))).toBe(true);
+    expect(
+      isInvalidated(TODO_QUERY_KEYS.completionsByRange({ startDate: TODAY, endDate: TODAY })),
+    ).toBe(true);
   });
 
   it('지난 날짜를 체크하면 그 해의 주간 달성 목록을 다시 부른다', async () => {
     // Given
-    const { httpClient, givenList, toggle, invalidatedKeys } = await renderToggle();
+    const { httpClient, givenList, givenCached, toggle, isInvalidated } = await renderToggle();
     givenList(YESTERDAY, [createParentTodo({ id: 42, completed: false })]);
+    givenCached(['achievement', 'weekly-list', { year: 2026 }]);
     httpClient.patch.mockResolvedValue(respondWithTodo(42));
 
     // When
     await toggle(42, true, YESTERDAY);
 
     // Then
-    expect(invalidatedKeys()).toContainEqual(['achievement', 'weekly-list', { year: 2026 }]);
+    expect(isInvalidated(['achievement', 'weekly-list', { year: 2026 }])).toBe(true);
   });
 });
 

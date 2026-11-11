@@ -40,7 +40,13 @@ import {
   createTestQueryClient,
 } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
-import { hashKey, type QueryKey, useMutation, useQuery } from '@tanstack/react-query';
+import {
+  hashKey,
+  notifyManager,
+  type QueryKey,
+  useMutation,
+  useQuery,
+} from '@tanstack/react-query';
 import { act } from '@testing-library/react-native';
 import { noop } from 'es-toolkit';
 import { Profiler } from 'react';
@@ -303,10 +309,14 @@ function useTodoWrites() {
 }
 type TodoWrites = ReturnType<typeof useTodoWrites>;
 
-/** TanStack notifyManager는 구독자 알림을 setTimeout(0)으로 미뤄 act 안에서 한 틱을 기다린다 */
-function deliverQueryNotifications() {
-  // oxlint-disable-next-line aido/no-real-sleep -- 1.15.2 전환 #1400
-  return new Promise((resolve) => setTimeout(resolve, 10));
+/** 쿼리 알림이 다 나갈 때까지 기다리는 스케줄러 차례 수. 비동기 onMutate가 남긴 알림은 다음 차례에 잡힌다 */
+const NOTIFICATION_ROUNDS = 3;
+
+/** TanStack notifyManager는 구독자 알림을 다음 틱으로 미룬다. 같은 스케줄러에 여러 번 줄을 서 앞선 알림이 다 나간 뒤 돌아온다 */
+async function deliverQueryNotifications() {
+  for (let round = 0; round < NOTIFICATION_ROUNDS; round += 1) {
+    await new Promise<void>((resolve) => notifyManager.schedule(resolve));
+  }
 }
 
 async function renderFeed() {

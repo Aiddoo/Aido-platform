@@ -1,5 +1,6 @@
 import '@src/shared/i18n/init';
 import { ApiError } from '@src/core/errors/api-error';
+import { TODO_QUERY_KEYS } from '@src/features/planning/todo/queries/todo-query-keys';
 import {
   createAnalyticsStub,
   createHapticsGatewayStub,
@@ -34,8 +35,10 @@ async function updateFollowing(error: ApiError) {
     },
     withOverlay: true,
   });
-  // oxlint-disable-next-line aido/test-spy-target -- 1.15.2 전환 #1400
-  const invalidateQueries = jest.spyOn(queryClient, 'invalidateQueries');
+  // 보고 있던 목록. 관찰자가 없어 무효화되면 다시 받지 않고 무효 표시만 남는다
+  queryClient
+    .getQueryCache()
+    .build(queryClient, { queryKey: TODO_QUERY_KEYS.listByDate({ date: '2026-10-27' }) });
   const update = current.value;
   if (update == null) {
     throw new Error('Probe가 렌더되지 않았다');
@@ -49,7 +52,13 @@ async function updateFollowing(error: ApiError) {
       })
       .catch(jest.fn());
   });
-  return { invalidateQueries };
+  return {
+    invalidatedQueries: () =>
+      queryClient
+        .getQueryCache()
+        .findAll()
+        .filter((query) => query.state.isInvalidated),
+  };
 }
 
 describe('이후 회차까지 고치다 거절됐을 때', () => {
@@ -74,12 +83,12 @@ describe('이후 회차까지 고치다 거절됐을 때', () => {
     const rejected = error;
 
     // When
-    const { invalidateQueries } = await updateFollowing(rejected);
+    const { invalidatedQueries } = await updateFollowing(rejected);
 
     // Then
     expect((await screen.findAllByText(title)).length).toBeGreaterThan(0);
     expect(screen.getAllByText(description).length).toBeGreaterThan(0);
     expect(screen.queryByText('서버 문구')).toBeNull();
-    expect(invalidateQueries).not.toHaveBeenCalled();
+    expect(invalidatedQueries()).toEqual([]);
   });
 });
