@@ -155,7 +155,7 @@ export function useUpdateTodoCategoryMutationOptions() {
 }
 ```
 
-푸시 권한 요청(`notification.mutations.ts`의 `useRequestPushPermissionMutationOptions`)은 지금 `errorFeedback: false`이고 `onError`가 `logger.warn`과 고정 문구 토스트를 직접 낸다. 기기 권한 실패를 Sentry 이벤트로 올릴지는 notification 정리 PR([18/32])이 정한다.
+푸시 권한 요청(`push-permission.mutations.ts`의 `useRequestPushPermissionMutationOptions`)은 지금 `errorFeedback: false`이고 `onError`가 `logger.warn`과 고정 문구 토스트를 직접 낸다. 기기 권한 실패를 Sentry 이벤트로 올릴지는 notification 정리 PR([18/32])이 정한다.
 
 - `use{Verb}{X}MutationOptions()`가 `mutationOptions`를 돌려주고 화면은 `useMutation`을 직접 부른다. 변수 타입에 이름을 붙이면 `*Variables`다. 화면 이동은 호출부가 한다.
 - `mutationFn`은 Api 결과를 반드시 `unwrap`한다. `Result.err`를 그대로 돌려주면 React Query가 성공으로 본다.
