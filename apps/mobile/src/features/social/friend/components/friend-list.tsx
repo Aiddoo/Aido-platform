@@ -1,10 +1,8 @@
-import catHiImage from '@assets/images/ido_cat_hi.webp';
 import { UserAvatar } from '@src/features/identity/user/components/user-avatar';
 import { UserList } from '@src/features/identity/user/components/user-list';
 import type { BlockTarget } from '@src/features/social/moderation/domains/user-block.model';
 import { createProfileReportTarget } from '@src/features/social/moderation/domains/user-report.model';
 import { ANIMATION } from '@src/shared/constants/animation';
-import { CAT_HI_CENTER_OFFSET_RATIO } from '@src/shared/constants/mascot';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
 import { useReorderableList } from '@src/shared/hooks/use-reorderable-list';
@@ -18,7 +16,6 @@ import {
   HintPopoverContent,
   HStack,
   IconButton,
-  Image,
   InfiniteListFooter,
   InfoIcon,
   ListRow,
@@ -34,6 +31,7 @@ import {
   useOverlay,
   VStack,
   MenuContent,
+  Mascot,
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { useMutation, useSuspenseInfiniteQuery } from '@tanstack/react-query';
@@ -309,15 +307,7 @@ FriendList.Empty = function Empty({ onInvite, inviteWelcomeDays }: FriendListPro
   if (onInvite != null) {
     return (
       <UserList.Empty
-        icon={
-          <Image
-            source={catHiImage}
-            accessibilityIgnoresInvertColors
-            className="size-[120px]"
-            style={{ transform: [{ translateX: CAT_HI_CENTER_OFFSET_RATIO * 120 }] }}
-            contentFit="contain"
-          />
-        }
+        icon={<Mascot name="catHi" size={120} isCentered />}
         title={t('invite:entry.friendsEmptyTitle')}
         description={t('invite:entry.friendsEmptyDescription', {
           days: inviteWelcomeDays,

@@ -1,4 +1,3 @@
-import catHiImage from '@assets/images/ido_cat_hi.webp';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useStepper } from '@src/shared/hooks/use-stepper';
@@ -9,7 +8,6 @@ import {
   Button,
   HStack,
   IconCircle,
-  Image,
   MicIcon,
   QueryErrorBoundary,
   ReportDuoIcon,
@@ -20,6 +18,7 @@ import {
   VoiceDuoIcon,
   VStack,
   WordWrapText,
+  Mascot,
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { Chip, PressableFeedback } from 'heroui-native';
@@ -270,12 +269,7 @@ function IntroMedia({ onSelect }: { onSelect: (chapter: Release1150Chapter) => v
 
   return (
     <Box flex={1} className="justify-center overflow-hidden rounded-3xl bg-highlight p-3">
-      <Image
-        source={catHiImage}
-        accessibilityIgnoresInvertColors
-        className="absolute -bottom-6 -right-2.5 size-[132px]"
-        contentFit="contain"
-      />
+      <Mascot name="catHi" size={132} className="absolute -bottom-6 -right-2.5" />
       <VStack gap={8}>
         <FeatureCard
           Icon={VoiceDuoIcon}
@@ -397,11 +391,9 @@ function FinishMedia() {
             {t('v1_15_0.finish.bubble')}
           </Text>
         </HStack>
-        <Image
-          source={catHiImage}
-          accessibilityIgnoresInvertColors
+        <Mascot
+          name="catHi"
           style={{ height: FINISH_CAT_SIZE, aspectRatio: 1, flexShrink: 1, minHeight: 0 }}
-          contentFit="contain"
         />
       </VStack>
     </Box>

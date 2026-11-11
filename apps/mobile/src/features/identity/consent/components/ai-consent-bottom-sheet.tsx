@@ -16,7 +16,7 @@ import {
   TextButton,
   VStack,
   WordWrapText,
-  Image,
+  Mascot,
 } from '@src/shared/ui';
 import { useMutation } from '@tanstack/react-query';
 import type { ComponentProps, ReactNode } from 'react';
@@ -83,12 +83,7 @@ export function AiConsentBottomSheet({
     >
       <VStack gap={20} testID="ai-consent-sheet">
         <VStack gap={12} align="center">
-          <Image
-            source={require('@assets/images/ido_cat_suggestion.webp')}
-            style={{ width: 72, height: 72 }}
-            contentFit="contain"
-            accessibilityIgnoresInvertColors
-          />
+          <Mascot name="catSuggestion" size={72} />
           <VStack gap={6} align="center">
             <H4 align="center" lineBreakStrategyIOS="hangul-word" textBreakStrategy="highQuality">
               {t('consent.title')}

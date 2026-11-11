@@ -1,11 +1,10 @@
-import catHiImage from '@assets/images/ido_cat_hi.webp';
 import { type User } from '@src/features/identity/user/domains/user.model';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { useGetTodoSummaryQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
 import { useStoredValue } from '@src/shared/storage/use-stored-value';
-import { Button, Image, InlineAlert, Text } from '@src/shared/ui';
+import { Button, InlineAlert, Text, Mascot } from '@src/shared/ui';
 import { useQuery } from '@tanstack/react-query';
 import type { ComponentProps } from 'react';
 
@@ -50,14 +49,7 @@ export function InviteEntryBanner({
   return (
     <InlineAlert
       className={className}
-      image={
-        <Image
-          source={catHiImage}
-          accessibilityIgnoresInvertColors
-          className="size-[72px]"
-          contentFit="contain"
-        />
-      }
+      image={<Mascot name="catHi" size={72} />}
       title={
         <>
           {t('entry.allDoneTitlePrefix')}{' '}

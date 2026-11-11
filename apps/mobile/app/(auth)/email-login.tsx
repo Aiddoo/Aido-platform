@@ -1,8 +1,7 @@
-import idoCatHiImage from '@assets/images/ido_cat_hi.webp';
 import { EmailLoginForm } from '@src/features/identity/auth/components/email-login-form';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
-import { H3, HStack, Image, ReadableContent, Spacing, TextButton, Box } from '@src/shared/ui';
+import { H3, HStack, ReadableContent, Spacing, TextButton, Box, Mascot } from '@src/shared/ui';
 import { router } from 'expo-router';
 import { Separator } from 'heroui-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -14,14 +13,14 @@ export default function EmailLoginScreen() {
 
   return (
     <Box className="flex-1 overflow-hidden bg-white">
-      <Image
-        source={idoCatHiImage}
-        className="absolute top-0 z-10 h-[100px] w-[100px]"
+      <Mascot
+        name="catHi"
+        size={100}
+        className="absolute top-0 z-10"
         style={{
           right: rightInset,
           transform: [{ translateX: 20 }, { translateY: 20 }, { rotate: '-60deg' }],
         }}
-        contentFit="contain"
       />
       <ReadableContent flex={1}>
         <EmailLoginForm

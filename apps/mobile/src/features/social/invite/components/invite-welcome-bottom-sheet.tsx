@@ -1,9 +1,7 @@
-import catHiImage from '@assets/images/ido_cat_hi.webp';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { PushPermissionPolicy } from '@src/features/notification/domains/push-permission.model';
 import { useRequestPushPermissionMutationOptions } from '@src/features/notification/queries/notification.mutations';
 import { useGetPushPermissionQueryOptions } from '@src/features/notification/queries/notification.queries';
-import { CAT_HI_CENTER_OFFSET_RATIO } from '@src/shared/constants/mascot';
 import { useRouteParams } from '@src/shared/hooks/use-route-params';
 import { useTranslation } from '@src/shared/i18n';
 import {
@@ -25,8 +23,8 @@ import {
   TextButton,
   useSheetRoute,
   VStack,
-  Image,
   SurfaceCard,
+  Mascot,
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { useMutation, useQuery, useSuspenseQuery } from '@tanstack/react-query';
@@ -325,13 +323,7 @@ function WelcomeCat() {
       <FishBone progress={progress} x={80} y={-26} rotate={30} />
       <FishBone progress={progress} x={-86} y={10} rotate={-70} />
       <FishBone progress={progress} x={84} y={14} rotate={60} />
-      <Image
-        source={catHiImage}
-        accessibilityIgnoresInvertColors
-        className="size-[140px]"
-        style={{ transform: [{ translateX: CAT_HI_CENTER_OFFSET_RATIO * 140 }] }}
-        contentFit="contain"
-      />
+      <Mascot name="catHi" size={140} isCentered />
     </Box>
   );
 }

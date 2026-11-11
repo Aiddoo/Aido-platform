@@ -16,7 +16,6 @@ import {
   DashedDivider,
   H4,
   HStack,
-  Image,
   QueryErrorFallback,
   type QueryErrorFallbackProps,
   ScallopedContainer,
@@ -24,6 +23,7 @@ import {
   Text,
   TextSkeleton,
   VStack,
+  Mascot,
 } from '@src/shared/ui';
 import { useMutation, usePrefetchQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { range } from 'es-toolkit';
@@ -47,11 +47,7 @@ interface SuggestionsIntroProps {
 function SuggestionsIntro({ title, description }: SuggestionsIntroProps) {
   return (
     <Box className="items-center px-5 pt-4">
-      <Image
-        source={require('@assets/images/ido_cat_suggestion.webp')}
-        style={{ width: INTRO_IMAGE_SIZE, height: INTRO_IMAGE_SIZE }}
-        contentFit="contain"
-      />
+      <Mascot name="catSuggestion" size={INTRO_IMAGE_SIZE} />
       <Spacing size={8} />
       <H4 align="center" lineBreakStrategyIOS="hangul-word" textBreakStrategy="highQuality">
         {title}
@@ -287,11 +283,7 @@ SuggestionsList.Loading = function Loading() {
   return (
     <ScallopedContainer>
       <Box className="items-center px-5 pt-4">
-        <Image
-          source={require('@assets/images/ido_cat_suggestion.webp')}
-          style={{ width: INTRO_IMAGE_SIZE, height: INTRO_IMAGE_SIZE }}
-          contentFit="contain"
-        />
+        <Mascot name="catSuggestion" size={INTRO_IMAGE_SIZE} />
         <Spacing size={8} />
         <TextSkeleton size="t3" className="w-48" />
         <Spacing size={4} />

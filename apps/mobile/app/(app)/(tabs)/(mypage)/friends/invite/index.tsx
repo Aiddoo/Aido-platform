@@ -1,5 +1,4 @@
 import { INVITE_QUALIFICATION, INVITE_REWARD_CAPS } from '@aido/api/vocabulary';
-import catHiImage from '@assets/images/ido_cat_hi.webp';
 import { InvitePawPrintBoard } from '@src/features/social/invite/components/invite-paw-print-board';
 import { InviteShareActions } from '@src/features/social/invite/components/invite-share-actions';
 import { InviteShareToolbar } from '@src/features/social/invite/components/invite-share-toolbar';
@@ -17,7 +16,6 @@ import {
   Box,
   H4,
   HStack,
-  Image,
   QueryErrorBoundary,
   QueryErrorFallback,
   type QueryErrorFallbackProps,
@@ -27,6 +25,7 @@ import {
   TintedRefreshControl,
   VStack,
   WordWrapText,
+  Mascot,
 } from '@src/shared/ui';
 import { useQueryClient } from '@tanstack/react-query';
 import { Chip } from 'heroui-native';
@@ -54,11 +53,11 @@ export default function MyInviteScreen() {
             <VStack gap={20}>
               <Box className="min-h-[168px] overflow-hidden rounded-3xl bg-highlight px-5 pb-5 pt-[22px]">
                 {/* 고양이를 먼저 그려 글자 아래에 깔고, 제목은 고양이가 보이는 폭(98pt)만큼 비켜 선다 */}
-                <Image
-                  source={catHiImage}
-                  accessibilityIgnoresInvertColors
-                  className="absolute -bottom-[30px] -right-[18px] size-[136px]"
+                <Mascot
+                  name="catHi"
+                  size={136}
                   contentFit="cover"
+                  className="absolute -bottom-[30px] -right-[18px]"
                 />
 
                 <Text

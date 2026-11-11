@@ -137,6 +137,7 @@ export { InlineAlert } from './inline-alert';
 export { BottomSheetInput, Input } from './input';
 export { LabelChip } from './label-chip';
 export { ListRow, type ListRowProps } from './list-row';
+export { Mascot } from './mascot';
 export { Meter } from './meter';
 export { OfflineBanner } from './offline-banner';
 export { type Overlay, OverlayProvider, useOverlay, useOverlayState } from './overlay';

@@ -11,7 +11,6 @@ import { useTranslation } from '@src/shared/i18n';
 import {
   Box,
   H4,
-  Image,
   QueryErrorBoundary,
   QueryErrorFallback,
   ScallopedContainer,
@@ -23,6 +22,7 @@ import {
   ViewTabs,
   VStack,
   TintedRefreshControl,
+  Mascot,
 } from '@src/shared/ui';
 import { useQueryClient } from '@tanstack/react-query';
 import { Tabs } from 'heroui-native';
@@ -63,11 +63,7 @@ function ReportsPanel({ heading, banner, list }: ReportsPanelProps) {
   return (
     <ScallopedContainer>
       <Box className="items-center px-5 pt-4">
-        <Image
-          source={require('@assets/images/ido_cat_suggestion.webp')}
-          className="size-[100px]"
-          contentFit="contain"
-        />
+        <Mascot name="catSuggestion" size={100} />
         <Spacing size={8} />
         {heading}
       </Box>
