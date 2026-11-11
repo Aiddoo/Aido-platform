@@ -1,6 +1,6 @@
 import { DAY_MS, MINUTE_MS } from '@src/shared/constants/time-units';
 
-import { diffDateKeysInDays } from './date-key';
+import { addDaysToDateKey, diffDateKeysInDays } from './date-key';
 import { getFormatter, getPartValue, PARTS_LOCALE } from './format/intl-formatter';
 import { fromEpochMs, type Instant, toEpochMs } from './instant';
 import { toNativeDate } from './native-date';
@@ -123,4 +123,9 @@ export function calculateCalendarDaysLeft(endsAt: Instant, now: Instant, timeZon
 /** 그 날짜가 시작하는 순간. 자정이 없거나 두 번 오는 날도 그 날의 첫 순간이다 */
 export function getStartOfDateKey(dateKey: string, timeZone: string): Instant {
   return toZonedInstant({ date: dateKey, time: '00:00', timeZone });
+}
+
+/** 자정이 없거나 두 번 오는 DST 날짜도 다음 날짜의 첫 순간이다 */
+export function getNextLocalMidnight(now: Instant, timeZone: string): Instant {
+  return getStartOfDateKey(addDaysToDateKey(toDateKey(now, timeZone), 1), timeZone);
 }

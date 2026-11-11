@@ -31,16 +31,5 @@
       "severity": "error",
       "name": "domain-model-constants"
     }
-  },
-  {
-    "type": "dependency",
-    "from": "src/features/device/widget/bridge/widget-timeline.mapper.ts",
-    "to": "src/shared/date/clock.ts",
-    "unresolvedTo": "@src/shared/date/clock",
-    "dependencyTypes": ["aliased", "aliased-tsconfig", "aliased-tsconfig-paths", "local", "import"],
-    "rule": {
-      "severity": "error",
-      "name": "mapper-purity"
-    }
   }
 ]

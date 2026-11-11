@@ -1,10 +1,9 @@
 import { MINUTE_MS } from '@src/shared/constants/time-units';
 import { getDeviceTimezone } from '@src/shared/infra/localization/device-timezone';
 
-import { addDaysToDateKey } from './date-key';
 import { fromEpochMs, type Instant, toEpochMs } from './instant';
 import { instantToDate } from './native-date';
-import { getStartOfDateKey, getZoneOffsetMs, toDateKey } from './zoned';
+import { getNextLocalMidnight, getZoneOffsetMs, toDateKey } from './zoned';
 
 export type LocalDateState = {
   currentLocalDate: Date;
@@ -40,11 +39,6 @@ export function isSameLocalDateState(previous: LocalDateState, next: LocalDateSt
     previous.currentTimeZone === next.currentTimeZone &&
     previous.currentUtcOffsetMinutes === next.currentUtcOffsetMinutes
   );
-}
-
-/** 자정이 없거나 두 번 오는 DST 날짜도 다음 날짜의 첫 순간이다 */
-export function getNextLocalMidnight(now: Instant, timeZone: string): Instant {
-  return getStartOfDateKey(addDaysToDateKey(toDateKey(now, timeZone), 1), timeZone);
 }
 
 export function millisecondsUntilNextLocalMidnight(now: Instant, timeZone: string): number {

@@ -1,13 +1,12 @@
 import {
   createLocalDateState,
-  getNextLocalMidnight,
   getNowInstant,
   isSameLocalDateState,
   millisecondsUntilNextLocalMidnight,
 } from './clock';
 import { addDaysToDateKey } from './date-key';
 import { diffMs, toInstant } from './instant';
-import { toDateKey, toHHmm } from './zoned';
+import { getNextLocalMidnight, toDateKey, toHHmm } from './zoned';
 
 describe('로컬 날짜와 시간대 상태', () => {
   it('같은 시각도 명시한 시간대의 날짜로 계산한다', () => {
