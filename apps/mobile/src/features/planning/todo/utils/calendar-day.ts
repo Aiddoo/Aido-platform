@@ -1,38 +1,34 @@
-import { getDayOfWeek } from '@src/shared/date/date-key';
-import { toDateKey } from '@src/shared/date/zoned';
 import type { TextTone } from '@src/shared/ui';
 
-import { isAfterDay, isBeforeDay, isSameDay, isSameMonth } from './calendar-day-comparison';
+import type { CalendarDayCell } from './calendar-month.view-model';
 
 const SUNDAY = 0;
 const SATURDAY = 6;
 
 export type CalendarDayType = 'selected' | 'today' | 'sunday' | 'saturday' | 'default';
 
-interface CalendarDayInput {
-  date: Date;
+interface DayTypeInput {
+  dayOfWeek: number;
   isSelected: boolean;
-  /** 렌더 중 new Date()를 만들지 않도록 useToday()의 오늘을 받는다. */
-  today: Date;
-  timeZone: string;
+  isToday: boolean;
 }
 
-export function getDatePickerDayType({
-  date,
+/** 피커 칸의 글자색. 오늘이 주말 색보다 앞선다 */
+export function getPickerDayType({
+  dayOfWeek,
   isSelected,
-  today,
-  timeZone,
-}: CalendarDayInput): CalendarDayType {
+  isToday,
+}: DayTypeInput): CalendarDayType {
   if (isSelected) {
     return 'selected';
   }
-  if (isSameDay(date, today, timeZone)) {
+  if (isToday) {
     return 'today';
   }
-  if (getDayOfWeek(toDateKey(date, timeZone)) === SUNDAY) {
+  if (dayOfWeek === SUNDAY) {
     return 'sunday';
   }
-  if (getDayOfWeek(toDateKey(date, timeZone)) === SATURDAY) {
+  if (dayOfWeek === SATURDAY) {
     return 'saturday';
   }
   return 'default';
@@ -40,31 +36,31 @@ export function getDatePickerDayType({
 
 interface MonthViewDayInput {
   dateKey: string;
+  /** 쪽을 만들 때 한 번 구한 요일 */
+  dayOfWeek: number;
   selectedDateKey: string;
   todayKey: string;
 }
 
-/** 피드 달력 칸의 선택·글자색·오늘 강조. 날짜 키만 비교해 칸마다 Intl로 날짜를 다시 읽지 않는다 */
-export function getMonthViewDayState({ dateKey, selectedDateKey, todayKey }: MonthViewDayInput) {
+/** 피드 달력 칸의 선택·글자색·오늘 강조. 날짜 키만 비교해 칸마다 날짜를 다시 읽지 않는다 */
+export function getMonthViewDayState({
+  dateKey,
+  dayOfWeek,
+  selectedDateKey,
+  todayKey,
+}: MonthViewDayInput) {
   const isSelected = dateKey === selectedDateKey;
   const isToday = dateKey === todayKey;
 
   return {
     isSelected,
-    dayType: getMonthViewDayType({ dayOfWeek: getDayOfWeek(dateKey), isSelected, isToday }),
+    dayType: getMonthViewDayType({ dayOfWeek, isSelected, isToday }),
     isTodayHighlighted: !isSelected && isToday,
   };
 }
 
-function getMonthViewDayType({
-  dayOfWeek,
-  isSelected,
-  isToday,
-}: {
-  dayOfWeek: number;
-  isSelected: boolean;
-  isToday: boolean;
-}): CalendarDayType {
+/** 피드 달력은 주말 색이 오늘보다 앞선다 */
+function getMonthViewDayType({ dayOfWeek, isSelected, isToday }: DayTypeInput): CalendarDayType {
   if (isSelected) {
     return 'selected';
   }
@@ -78,10 +74,6 @@ function getMonthViewDayType({
     return 'today';
   }
   return 'default';
-}
-
-export function isTodayHighlighted({ date, isSelected, today, timeZone }: CalendarDayInput) {
-  return !isSelected && isSameDay(date, today, timeZone);
 }
 
 export const DAY_TYPE_TONE: Record<CalendarDayType, TextTone> = {
@@ -121,36 +113,34 @@ export function getWeekRangeBand(
 }
 
 interface RepeatWeekPeriod {
-  displayMonth: Date;
-  startDate: Date;
-  endDate: Date | null;
+  startDateKey: string;
+  endDateKey: string | null;
   isOpenEnded: boolean;
-  timeZone: string;
 }
 
 /** 반복 달력 한 주의 칸마다 시작·끝과 기간 띠에 드는지 정한다. 다른 달의 칸은 띠에 넣지 않는다 */
 export function getRepeatWeekDays(
-  week: readonly Date[],
-  { displayMonth, startDate, endDate, isOpenEnded, timeZone }: RepeatWeekPeriod,
+  week: readonly CalendarDayCell[],
+  { startDateKey, endDateKey, isOpenEnded }: RepeatWeekPeriod,
 ) {
-  const hasDistinctRange =
-    isOpenEnded || (endDate != null && !isSameDay(startDate, endDate, timeZone));
+  const hasDistinctRange = isOpenEnded || (endDateKey != null && startDateKey !== endDateKey);
 
-  return week.map((date) => {
-    const isVisible = isSameMonth(date, displayMonth, timeZone);
-    const isStart = isSameDay(date, startDate, timeZone);
-    const isEnd = endDate != null && isSameDay(date, endDate, timeZone);
+  return week.map((cell) => {
+    const { dateKey } = cell;
+    const isVisible = !cell.isOutsideMonth;
+    const isStart = dateKey === startDateKey;
+    const isEnd = dateKey === endDateKey;
 
     return {
-      date,
+      cell,
       isVisible,
       isStart,
       isEnd,
       isInRange:
         isVisible &&
         hasDistinctRange &&
-        isAfterDay(date, startDate, timeZone) &&
-        (isOpenEnded || (endDate != null && isBeforeDay(date, endDate, timeZone))),
+        startDateKey < dateKey &&
+        (isOpenEnded || (endDateKey != null && dateKey < endDateKey)),
       isRangeStart: isVisible && hasDistinctRange && isStart,
       isRangeEnd: isVisible && !isOpenEnded && hasDistinctRange && isEnd,
     };

@@ -6,7 +6,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import type { PropsWithChildren } from 'react';
 import { AppState } from 'react-native';
 
-import { useFeedDateKey, useFeedDate } from './use-feed-params';
+import { useFeedDateKey } from './use-feed-params';
 
 const originalCurrentStateDescriptor = Object.getOwnPropertyDescriptor(AppState, 'currentState');
 
@@ -48,8 +48,8 @@ describe('피드 날짜 선택', () => {
     );
     const rendered = await renderHook(
       () => {
-        const [selectedDate, setSelectedDate] = useFeedDate();
-        return { selectedDate, setSelectedDate, selectedDateKey: useFeedDateKey()[0] };
+        const [selectedDateKey, setSelectedDateKey] = useFeedDateKey();
+        return { selectedDateKey, setSelectedDateKey };
       },
       { wrapper },
     );
@@ -83,12 +83,10 @@ describe('피드 날짜 선택', () => {
       // Given
       jest.setSystemTime(new Date(2026, 6, 14, 23, 59, 59, 900));
       const { result } = await setup(date);
-      const selectedDate = result.current.selectedDate;
       // When
       await act(() => jest.advanceTimersByTimeAsync(200));
       // Then
       expect(result.current.selectedDateKey).toBe(date);
-      expect(result.current.selectedDate).toBe(selectedDate);
       expect(router.setParams).not.toHaveBeenCalled();
     },
   );
@@ -98,7 +96,7 @@ describe('피드 날짜 선택', () => {
     jest.setSystemTime(new Date(2026, 6, 14, 23, 59, 59, 900));
     const { result, rerender, readDate } = await setup('2026-07-13');
     // When
-    await act(() => result.current.setSelectedDate(new Date(2026, 6, 14)));
+    await act(() => result.current.setSelectedDateKey('2026-07-14'));
     await rerender({});
     await act(() => jest.advanceTimersByTimeAsync(200));
     // Then
@@ -111,23 +109,11 @@ describe('피드 날짜 선택', () => {
     jest.setSystemTime(new Date(2026, 6, 14, 12));
     const { result, rerender, readDate } = await setup();
     // When
-    await act(() => result.current.setSelectedDate(new Date(2026, 6, 20)));
+    await act(() => result.current.setSelectedDateKey('2026-07-20'));
     await rerender({});
     // Then
     expect(readDate()).toBe('2026-07-20');
     expect(result.current.selectedDateKey).toBe('2026-07-20');
-  });
-
-  it('날짜 말고 다른 URL 값이 바뀌어도 고른 날짜의 참조가 같다', async () => {
-    // Given
-    jest.setSystemTime(new Date(2026, 6, 14, 12));
-    const { result, rerender } = await setup('2026-07-13');
-    const selectedDate = result.current.selectedDate;
-    // When
-    jest.mocked(useLocalSearchParams).mockReturnValue({ date: '2026-07-13', todoId: '5' });
-    await rerender({});
-    // Then
-    expect(result.current.selectedDate).toBe(selectedDate);
   });
 
   it.each(['내일', '2026-13-40', ''])('잘못된 날짜 %s는 오늘로 읽는다', async (date) => {

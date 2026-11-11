@@ -1,17 +1,17 @@
 import { formatDateKeyLabel } from '@src/shared/date/format/date-format';
-import { toDateKey } from '@src/shared/date/zoned';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useTranslation } from '@src/shared/i18n';
 import { ArrowLeftIcon, ArrowRightIcon, HStack, IconButton, Text } from '@src/shared/ui';
 
 interface PickerMonthHeaderProps {
-  displayMonth: Date;
+  /** 보이는 달의 아무 날(YYYY-MM-DD) */
+  displayMonthKey: string;
   onPreviousMonth: () => void;
   onNextMonth: () => void;
 }
 
 export function PickerMonthHeader({
-  displayMonth,
+  displayMonthKey,
   onPreviousMonth,
   onNextMonth,
 }: PickerMonthHeaderProps) {
@@ -28,11 +28,7 @@ export function PickerMonthHeader({
         onPress={onPreviousMonth}
       />
       <Text size="b2" weight="semibold" tone="neutral" shade={9}>
-        {formatDateKeyLabel(
-          toDateKey(displayMonth, dateFormatContext.timeZone),
-          'yearMonth',
-          dateFormatContext,
-        )}
+        {formatDateKeyLabel(displayMonthKey, 'yearMonth', dateFormatContext)}
       </Text>
       <IconButton
         accessibilityLabel={t('calendar.nextMonth')}

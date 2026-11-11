@@ -6,7 +6,6 @@ import {
   type TodoCategoryWithCount,
 } from '@src/features/planning/category/domains/todo-category.model';
 import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/category/queries/todo-category.queries';
-import { toDateKey } from '@src/shared/date/zoned';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useReorderableList } from '@src/shared/hooks/use-reorderable-list';
@@ -41,7 +40,7 @@ import { SubTodoPolicy } from '../../domains/sub-todo.model';
 import { type SubTodo } from '../../domains/sub-todo.model';
 import { isPrivateVisibility, TodoPolicy } from '../../domains/todo.model';
 import { type Todo } from '../../domains/todo.model';
-import { useFeedDate } from '../../hooks/use-feed-params';
+import { useFeedDateKey } from '../../hooks/use-feed-params';
 import { useFeedSelectedTodoId } from '../../hooks/use-feed-selected-todo-id';
 import {
   useReorderSubTodosMutationOptions,
@@ -70,9 +69,7 @@ interface TodoListProps {
 }
 
 export function TodoList({ isReminderOff = false }: TodoListProps) {
-  const { timeZone } = useDateFormatContext();
-  const [selectedDate] = useFeedDate();
-  const date = toDateKey(selectedDate, timeZone);
+  const [date] = useFeedDateKey();
   // 행마다 route 훅을 부르면 URL이 바뀔 때마다 행 수만큼 params를 다시 파싱한다. 목록이 한 번 읽어 넘긴다
   const [_selectedTodoId, openTodoDetail] = useFeedSelectedTodoId();
   const [{ data: categoriesResult }, { data: todosByDate, dataUpdatedAt }] = useSuspenseQueries({

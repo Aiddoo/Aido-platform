@@ -1,25 +1,23 @@
-import { getDayOfWeek } from '@src/shared/date/date-key';
-import { formatDateLabel } from '@src/shared/date/format/date-format';
+import { addDaysToDateKey, getDayOfWeek } from '@src/shared/date/date-key';
 import { getWeekdayLabels } from '@src/shared/date/format/date-labels';
-import { addLocalDays, startOfLocalDay, toDateKey } from '@src/shared/date/zoned';
-import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
-import { useToday } from '@src/shared/hooks/use-today';
+import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
-import { Box, HStack, ListRow, SheetHeaderLayout, Text, VStack } from '@src/shared/ui';
+import { HStack, ListRow, SheetHeaderLayout, Text, VStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { PressableFeedback } from 'heroui-native';
 
-import { PICKER_DATE_CELL_HEIGHT, PICKER_MONTH_HEIGHT } from '../constants/todo.constants';
+import { PICKER_MONTH_HEIGHT } from '../constants/todo.constants';
 import { type DatePicker, useDatePicker } from '../hooks/use-date-picker';
-import { DAY_TYPE_TONE, getDatePickerDayType, isTodayHighlighted } from '../utils/calendar-day';
-import { isSameDay, isSameMonth } from '../utils/calendar-day-comparison';
+import { getPickerDayType } from '../utils/calendar-day';
 import { CalendarWeekdayHeader } from './calendar/calendar-weekday-header';
+import { PickerDateCell } from './picker-date-cell';
 import { PickerHeader } from './picker-header';
 import { PickerMonthHeader } from './picker-month-header';
 
 interface TodoDatePickerContentProps {
-  value: Date;
-  onChange: (date: Date) => void;
+  /** 고른 날짜(YYYY-MM-DD) */
+  value: string;
+  onChange: (dateKey: string) => void;
   onCancel: () => void;
   /** 고른 날짜를 저장하는 동안 확인을 막는다 */
   isConfirmDisabled?: boolean;
@@ -32,11 +30,11 @@ export function TodoDatePickerContent({
   onCancel,
   isConfirmDisabled = false,
 }: TodoDatePickerContentProps) {
-  const picker = useDatePicker({ initialDate: value });
+  const picker = useDatePicker({ initialDateKey: value });
   const { t } = useTranslation('todo');
 
   const handleConfirm = () => {
-    onChange(picker.selectedDate);
+    onChange(picker.selectedDateKey);
   };
 
   return (
@@ -62,28 +60,26 @@ export function TodoDatePickerContent({
 
 interface QuickDateOptionsProps {
   picker: DatePicker;
-  onChange: (date: Date) => void;
+  onChange: (dateKey: string) => void;
 }
 
 function QuickDateOptions({ picker, onChange }: QuickDateOptionsProps) {
   const { t } = useTranslation('todo');
-  const today = useToday();
-  const { timeZone } = useDateFormatContext();
-  const todayStart = startOfLocalDay(today, timeZone);
-  const tomorrowStart = addLocalDays(todayStart, 1, timeZone);
+  const todayKey = useTodayKey();
+  const tomorrowKey = addDaysToDateKey(todayKey, 1);
 
   return (
     <VStack gap={4}>
       <QuickDateRow
         label={t('picker.today')}
-        date={todayStart}
-        isSelected={isSameDay(picker.selectedDate, todayStart, timeZone)}
+        dateKey={todayKey}
+        isSelected={picker.selectedDateKey === todayKey}
         onChange={onChange}
       />
       <QuickDateRow
         label={t('picker.tomorrow')}
-        date={tomorrowStart}
-        isSelected={isSameDay(picker.selectedDate, tomorrowStart, timeZone)}
+        dateKey={tomorrowKey}
+        isSelected={picker.selectedDateKey === tomorrowKey}
         onChange={onChange}
       />
     </VStack>
@@ -92,20 +88,19 @@ function QuickDateOptions({ picker, onChange }: QuickDateOptionsProps) {
 
 interface QuickDateRowProps {
   label: string;
-  date: Date;
+  dateKey: string;
   isSelected: boolean;
-  onChange: (date: Date) => void;
+  onChange: (dateKey: string) => void;
 }
 
-function QuickDateRow({ label, date, isSelected, onChange }: QuickDateRowProps) {
+function QuickDateRow({ label, dateKey, isSelected, onChange }: QuickDateRowProps) {
   const { i18n } = useTranslation();
-  const { timeZone } = useDateFormatContext();
   const weekdayLabels = getWeekdayLabels(i18n.language);
   const tone = isSelected ? 'brand' : 'neutral';
 
   return (
     <PressableFeedback
-      onPress={() => onChange(date)}
+      onPress={() => onChange(dateKey)}
       className={cn('rounded-lg', isSelected && 'bg-main/5')}
     >
       <ListRow
@@ -123,7 +118,7 @@ function QuickDateRow({ label, date, isSelected, onChange }: QuickDateRowProps) 
         }
         right={
           <Text size="b2" tone={tone} shade={isSelected ? undefined : 6}>
-            {weekdayLabels[getDayOfWeek(toDateKey(date, timeZone))]}
+            {weekdayLabels[getDayOfWeek(dateKey)]}
           </Text>
         }
         horizontalPadding="medium"
@@ -135,17 +130,17 @@ function QuickDateRow({ label, date, isSelected, onChange }: QuickDateRowProps) 
 
 interface DatePickerCalendarProps {
   picker: DatePicker;
-  onValueChange: (date: Date) => void;
+  onValueChange: (dateKey: string) => void;
 }
 
 function DatePickerCalendar({ picker, onValueChange }: DatePickerCalendarProps) {
-  const { displayMonth, weeks, selectedDate, goToPrevMonth, goToNextMonth } = picker;
-  const dateFormatContext = useDateFormatContext();
+  const { displayMonthKey, weeks, selectedDateKey, goToPrevMonth, goToNextMonth } = picker;
+  const todayKey = useTodayKey();
 
   return (
     <VStack gap={16}>
       <PickerMonthHeader
-        displayMonth={displayMonth}
+        displayMonthKey={displayMonthKey}
         onPreviousMonth={goToPrevMonth}
         onNextMonth={goToNextMonth}
       />
@@ -156,69 +151,29 @@ function DatePickerCalendar({ picker, onValueChange }: DatePickerCalendarProps) 
         {weeks.map((week, weekIndex) => (
           // 주 순서는 고정되어 index가 안정적인 key다.
           <HStack key={weekIndex} px={8}>
-            {week.map((date) =>
-              isSameMonth(date, displayMonth, dateFormatContext.timeZone) ? (
-                <DatePickerDateCell
-                  key={date.toISOString()}
-                  date={date}
-                  selectedDate={selectedDate}
+            {week.map(({ dateKey, dayNumber, label, dayOfWeek, isOutsideMonth }) => {
+              if (isOutsideMonth) {
+                return <PickerDateCell.Placeholder key={dateKey} />;
+              }
+              const isSelected = dateKey === selectedDateKey;
+              const isToday = dateKey === todayKey;
+
+              return (
+                <PickerDateCell
+                  key={dateKey}
+                  dateKey={dateKey}
+                  dayNumber={dayNumber}
+                  label={label}
+                  dayType={getPickerDayType({ dayOfWeek, isSelected, isToday })}
+                  isSelected={isSelected}
+                  isTodayHighlighted={!isSelected && isToday}
                   onPress={onValueChange}
                 />
-              ) : (
-                <Box
-                  key={date.toISOString()}
-                  className="flex-1"
-                  style={{ height: PICKER_DATE_CELL_HEIGHT }}
-                />
-              ),
-            )}
+              );
+            })}
           </HStack>
         ))}
       </VStack>
     </VStack>
-  );
-}
-
-interface DatePickerDateCellProps {
-  date: Date;
-  selectedDate: Date;
-  onPress: (date: Date) => void;
-}
-
-function DatePickerDateCell({ date, selectedDate, onPress }: DatePickerDateCellProps) {
-  const dayOfMonth = date.getDate();
-  const today = useToday();
-  const dateFormatContext = useDateFormatContext();
-  const { timeZone } = dateFormatContext;
-  const isSelected = isSameDay(date, selectedDate, timeZone);
-  const dayType = getDatePickerDayType({ date, isSelected, today, timeZone });
-  const highlightToday = isTodayHighlighted({ date, isSelected, today, timeZone });
-
-  return (
-    <PressableFeedback
-      accessibilityRole="button"
-      accessibilityLabel={formatDateLabel(date, 'fullDate', dateFormatContext)}
-      accessibilityState={{ selected: isSelected }}
-      onPress={() => onPress(date)}
-      style={{ height: PICKER_DATE_CELL_HEIGHT }}
-      className="relative flex-1 items-center justify-center"
-    >
-      <Box
-        className={cn(
-          'z-10 size-8 items-center justify-center rounded-[16px]',
-          isSelected && 'bg-main',
-          highlightToday && 'bg-main/10 dark:bg-main/20',
-        )}
-      >
-        <Text
-          size="b3"
-          weight="medium"
-          tone={DAY_TYPE_TONE[dayType]}
-          shade={isSelected ? undefined : 7}
-        >
-          {dayOfMonth}
-        </Text>
-      </Box>
-    </PressableFeedback>
   );
 }

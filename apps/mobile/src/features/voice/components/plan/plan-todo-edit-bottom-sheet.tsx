@@ -154,14 +154,9 @@ function DateChip({ form }: PlanTodoChipProps) {
         onExit={unmount}
       >
         <TodoDatePickerContent
-          value={toLocalDay(startDate)}
+          value={startDate}
           onChange={(nextStartDate) => {
-            updateTodo(form, (current) =>
-              VoicePlanPolicy.withStartDate(
-                current,
-                toDateKey(nextStartDate, dateFormatContext.timeZone),
-              ),
-            );
+            updateTodo(form, (current) => VoicePlanPolicy.withStartDate(current, nextStartDate));
             close();
           }}
           onCancel={close}

@@ -64,7 +64,7 @@ const [todoId] = useTodoId(); // 읽기 전용도 튜플
 | `invitedFriendsViewSchema` | `useInvitedFriendsView` → `[view, setView]`                                                                                           |
 | 그 밖                      | `useTodoSheetDateKey`·`useTodoCategoryId`·`useNudgeId`·`useVoiceNoteDraftId` → `[id]`, `useCheckoutRoute` → `[{ pathname, leaveTo }]` |
 
-- 계산 값은 튜플이 아니다(`useCalendarRange`는 값을 돌려준다). 저장소가 없는 구독 값(`useIsOnline`)과 동작 묶음도 튜플이 아니다.
+- 계산 값은 튜플이 아니다(`useDateFormatContext`는 값을 돌려준다). 저장소가 없는 구독 값(`useIsOnline`)과 동작 묶음도 튜플이 아니다.
 
 ## 라우팅
 

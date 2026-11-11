@@ -1,4 +1,3 @@
-import { instantToDate } from '@src/shared/date/native-date';
 import { toDateKey } from '@src/shared/date/zoned';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useRetainedValue } from '@src/shared/hooks/use-retained-value';
@@ -70,15 +69,14 @@ TodoDateBottomSheet.DateForm = function DateForm({ onClose }: { onClose: () => v
 
   return (
     <TodoDatePickerContent
-      value={instantToDate(editValues.startDate)}
+      value={toDateKey(editValues.startDate, timeZone)}
       onCancel={onClose}
       isConfirmDisabled={updateSchedule.isPending}
-      onChange={(startDate) => {
+      onChange={(startDateKey) => {
         // 빠른 날짜 행도 같은 길로 오므로 저장 중에는 다시 보내지 않는다
         if (updateSchedule.isPending) {
           return;
         }
-        const startDateKey = toDateKey(startDate, timeZone);
         if (startDateKey === todo.startDate) {
           onClose();
 

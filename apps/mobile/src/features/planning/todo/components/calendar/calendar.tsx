@@ -1,22 +1,18 @@
 import { ANIMATION } from '@src/shared/constants/animation';
 import { DAYS_PER_WEEK } from '@src/shared/constants/time-units';
-import { getDayOfWeek, isSameMonthDateKey } from '@src/shared/date/date-key';
-import { type DateFormatContext, formatDateLabel } from '@src/shared/date/format/date-format';
-import { toLocalDay } from '@src/shared/date/native-date';
 import {
-  addLocalDays,
-  addLocalMonths,
-  diffLocalMonths,
-  moveToLocalMonth,
-  startOfLocalMonth,
-  toDateKey,
-} from '@src/shared/date/zoned';
+  addDaysToDateKey,
+  addMonthsToDateKey,
+  diffDateKeysInMonths,
+  getDayOfWeek,
+  getMonthStartDateKey,
+} from '@src/shared/date/date-key';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
 import { useStoredValue } from '@src/shared/storage/use-stored-value';
 import { Box, HStack, usePaneColumns, VStack, QueryErrorFallback } from '@src/shared/ui';
-import { type ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
+import { type ReactNode, useEffect, useMemo, useState } from 'react';
 import type { LayoutChangeEvent } from 'react-native';
 import Animated, {
   Easing,
@@ -28,11 +24,17 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { match } from 'ts-pattern';
 
-import { useFeedDate } from '../../hooks/use-feed-params';
+import { useFeedDateKey } from '../../hooks/use-feed-params';
 import type { CompletionsByDate } from '../../queries/todo.queries';
 import { calendarViewModeStoredValue } from '../../schemas/calendar-view-mode-storage.schema';
 import { getMonthViewDayState } from '../../utils/calendar-day';
-import { diffWeeks, getMonthWeeks, getWeekDates, getWeekStart } from '../../utils/calendar-grid';
+import { diffCalendarWeeks, getWeekStartKey } from '../../utils/calendar-grid';
+import {
+  type CalendarDayCell,
+  FEED_MONTH_WEEK_COUNT,
+  getFeedMonthWeeks,
+  getFeedWeekCells,
+} from '../../utils/calendar-month.view-model';
 import { clampCalendarPage } from '../../utils/calendar-pager.geometry';
 import { CALENDAR_DATE_CELL_HEIGHT, CalendarDateCell } from './calendar-date-cell';
 import { CalendarHeader } from './calendar-header';
@@ -40,7 +42,6 @@ import { CALENDAR_CENTER_PAGE, CALENDAR_TOTAL_PAGES, CalendarPager } from './cal
 import { CalendarWeekdayHeader } from './calendar-weekday-header';
 
 const EMPTY_COMPLETIONS: CompletionsByDate = {};
-const MONTH_WEEKS = 6;
 const PAGER_HEIGHT_TIMING = {
   duration: ANIMATION.duration.normal,
   easing: Easing.out(Easing.cubic),
@@ -58,7 +59,7 @@ export function Calendar({ completions = EMPTY_COMPLETIONS, status }: CalendarPr
 
   const pagerHeight = match(viewMode)
     .with('week', () => CALENDAR_DATE_CELL_HEIGHT)
-    .with('month', () => MONTH_WEEKS * CALENDAR_DATE_CELL_HEIGHT)
+    .with('month', () => FEED_MONTH_WEEK_COUNT * CALENDAR_DATE_CELL_HEIGHT)
     .exhaustive();
 
   return (
@@ -122,35 +123,35 @@ interface CalendarWeekPagerProps {
 }
 
 function CalendarWeekPager({ pageWidth, completions }: CalendarWeekPagerProps) {
-  const [selectedDate, setSelectedDate] = useFeedDate();
-  const { timeZone } = useDateFormatContext();
+  const [selectedDateKey, setSelectedDateKey] = useFeedDateKey();
+  const todayKey = useTodayKey();
   // 처음 연 날의 주를 가운데 쪽으로 고정한다. 이후 날짜를 골라도 바뀌지 않는다
-  const [baseWeek] = useState(() => getWeekStart(selectedDate, timeZone));
+  const [baseWeekKey] = useState(() => getWeekStartKey(selectedDateKey));
 
-  const getWeekAtPage = useCallback(
-    (page: number) =>
-      addLocalDays(baseWeek, (page - CALENDAR_CENTER_PAGE) * DAYS_PER_WEEK, timeZone),
-    [baseWeek, timeZone],
-  );
-
-  const getWeekPage = useCallback(
-    (week: Date) =>
-      clampCalendarPage(
-        diffWeeks(week, baseWeek, timeZone) + CALENDAR_CENTER_PAGE,
-        CALENDAR_TOTAL_PAGES,
-      ),
-    [baseWeek, timeZone],
-  );
+  const getWeekKeyAtPage = (page: number) =>
+    addDaysToDateKey(baseWeekKey, (page - CALENDAR_CENTER_PAGE) * DAYS_PER_WEEK);
 
   const handleChange = (page: number) => {
-    const week = getWeekAtPage(page);
-    setSelectedDate(addLocalDays(week, getDayOfWeek(toDateKey(selectedDate, timeZone)), timeZone));
+    setSelectedDateKey(addDaysToDateKey(getWeekKeyAtPage(page), getDayOfWeek(selectedDateKey)));
   };
 
   return (
-    <CalendarPager value={getWeekPage(selectedDate)} pageWidth={pageWidth} onChange={handleChange}>
+    <CalendarPager
+      value={clampCalendarPage(
+        diffCalendarWeeks(baseWeekKey, selectedDateKey) + CALENDAR_CENTER_PAGE,
+        CALENDAR_TOTAL_PAGES,
+      )}
+      pageWidth={pageWidth}
+      onChange={handleChange}
+    >
       {(page) => (
-        <WeekRow weekKey={toDateKey(getWeekAtPage(page), timeZone)} completions={completions} />
+        <WeekRow
+          weekKey={getWeekKeyAtPage(page)}
+          selectedDateKey={selectedDateKey}
+          todayKey={todayKey}
+          completions={completions}
+          onSelect={setSelectedDateKey}
+        />
       )}
     </CalendarPager>
   );
@@ -162,114 +163,106 @@ interface CalendarMonthPagerProps {
 }
 
 function CalendarMonthPager({ pageWidth, completions }: CalendarMonthPagerProps) {
-  const [selectedDate, setSelectedDate] = useFeedDate();
-  const { timeZone } = useDateFormatContext();
+  const [selectedDateKey, setSelectedDateKey] = useFeedDateKey();
+  const todayKey = useTodayKey();
   // 처음 연 날의 달을 가운데 쪽으로 고정한다. 이후 날짜를 골라도 바뀌지 않는다
-  const [baseMonth] = useState(() => startOfLocalMonth(selectedDate, timeZone));
+  const [baseMonthKey] = useState(() => getMonthStartDateKey(selectedDateKey));
 
-  const getMonthAtPage = useCallback(
-    (page: number) => addLocalMonths(baseMonth, page - CALENDAR_CENTER_PAGE, timeZone),
-    [baseMonth, timeZone],
-  );
+  const getMonthKeyAtPage = (page: number) =>
+    addMonthsToDateKey(baseMonthKey, page - CALENDAR_CENTER_PAGE);
 
-  const getMonthPage = useCallback(
-    (month: Date) =>
-      clampCalendarPage(
-        diffLocalMonths(month, baseMonth, timeZone) + CALENDAR_CENTER_PAGE,
-        CALENDAR_TOTAL_PAGES,
-      ),
-    [baseMonth, timeZone],
-  );
-
+  // 달만 옮기고 일은 고른 날의 일을 쓴다. 그 달에 없는 일은 마지막 날이다
   const handleChange = (page: number) => {
-    const month = getMonthAtPage(page);
-    setSelectedDate(moveToLocalMonth(selectedDate, month, timeZone));
+    setSelectedDateKey(
+      addMonthsToDateKey(
+        selectedDateKey,
+        diffDateKeysInMonths(selectedDateKey, getMonthKeyAtPage(page)),
+      ),
+    );
   };
 
   return (
-    <CalendarPager value={getMonthPage(selectedDate)} pageWidth={pageWidth} onChange={handleChange}>
+    <CalendarPager
+      value={clampCalendarPage(
+        diffDateKeysInMonths(baseMonthKey, selectedDateKey) + CALENDAR_CENTER_PAGE,
+        CALENDAR_TOTAL_PAGES,
+      )}
+      pageWidth={pageWidth}
+      onChange={handleChange}
+    >
       {(page) => (
-        <MonthGrid monthKey={toDateKey(getMonthAtPage(page), timeZone)} completions={completions} />
+        <MonthGrid
+          monthKey={getMonthKeyAtPage(page)}
+          selectedDateKey={selectedDateKey}
+          todayKey={todayKey}
+          completions={completions}
+          onSelect={setSelectedDateKey}
+        />
       )}
     </CalendarPager>
   );
 }
 
-interface WeekRowProps {
-  /** 날짜 키로 받아, 목록이 쪽을 다시 그려도 같은 주면 칸의 Date가 그대로라 memo가 맞는다 */
-  weekKey: string;
+interface CalendarPageProps {
+  selectedDateKey: string;
+  todayKey: string;
   completions: CompletionsByDate;
+  onSelect: (dateKey: string) => void;
 }
 
-function WeekRow({ weekKey, completions }: WeekRowProps) {
-  const [selectedDate, setSelectedDate] = useFeedDate();
-  const todayKey = useTodayKey();
-  const dateFormatContext = useDateFormatContext();
-  const { timeZone } = dateFormatContext;
-  // 컴파일러는 이 결과를 아래 JSX와 한 캐시로 묶어 날짜를 고를 때마다 칸 Date를 새로 만든다. 칸 memo가 맞게 따로 둔다
+interface WeekRowProps extends CalendarPageProps {
+  weekKey: string;
+}
+
+function WeekRow({ weekKey, selectedDateKey, todayKey, completions, onSelect }: WeekRowProps) {
+  const { locale, timeZone } = useDateFormatContext();
+  // 주·언어가 같으면 칸 글자와 요일을 다시 만들지 않는다. 날짜를 골라도 Intl을 부르지 않는다
   const days = useMemo(
-    () =>
-      getWeekDates(
-        getWeekStart(toLocalDay(weekKey), dateFormatContext.timeZone),
-        dateFormatContext.timeZone,
-      ).map((date) => toCalendarDay(date, dateFormatContext)),
-    [weekKey, dateFormatContext],
+    () => getFeedWeekCells(weekKey, { locale, timeZone }),
+    [weekKey, locale, timeZone],
   );
-  const selectedDateKey = toDateKey(selectedDate, timeZone);
 
   return (
     <HStack px={8}>
-      {days.map(({ date, dateKey, label }) => (
-        <CalendarDateCell
-          key={dateKey}
-          date={date}
-          label={label}
-          {...getMonthViewDayState({ dateKey, selectedDateKey, todayKey })}
-          isOutsideMonth={false}
-          completion={completions[dateKey]}
-          onSelect={setSelectedDate}
+      {days.map((day) => (
+        <CalendarDay
+          key={day.dateKey}
+          day={day}
+          selectedDateKey={selectedDateKey}
+          todayKey={todayKey}
+          completions={completions}
+          onSelect={onSelect}
         />
       ))}
     </HStack>
   );
 }
 
-interface MonthGridProps {
-  /** 날짜 키로 받는 이유는 `WeekRowProps.weekKey`와 같다 */
+interface MonthGridProps extends CalendarPageProps {
   monthKey: string;
-  completions: CompletionsByDate;
 }
 
-function MonthGrid({ monthKey, completions }: MonthGridProps) {
-  const [selectedDate, setSelectedDate] = useFeedDate();
-  const todayKey = useTodayKey();
-  const dateFormatContext = useDateFormatContext();
-  const { timeZone } = dateFormatContext;
-  // 따로 두는 이유는 WeekRow의 days와 같다
+function MonthGrid({ monthKey, selectedDateKey, todayKey, completions, onSelect }: MonthGridProps) {
+  const { locale, timeZone } = useDateFormatContext();
+  // 다시 만들지 않는 이유는 WeekRow의 days와 같다
   const weeks = useMemo(
-    () =>
-      fillMonthGrid(
-        getMonthWeeks(toLocalDay(monthKey), dateFormatContext.timeZone),
-        dateFormatContext.timeZone,
-      ).map((week) => week.map((date) => toCalendarDay(date, dateFormatContext))),
-    [monthKey, dateFormatContext],
+    () => getFeedMonthWeeks(monthKey, { locale, timeZone }),
+    [monthKey, locale, timeZone],
   );
-  const selectedDateKey = toDateKey(selectedDate, timeZone);
 
   return (
     <VStack>
       {weeks.map((week, weekIndex) => (
         // 주 순서는 고정되어 index가 안정적인 key다.
         <HStack key={weekIndex} px={8}>
-          {week.map(({ date, dateKey, label }) => (
-            <CalendarDateCell
-              key={dateKey}
-              date={date}
-              label={label}
-              {...getMonthViewDayState({ dateKey, selectedDateKey, todayKey })}
-              isOutsideMonth={!isSameMonthDateKey(dateKey, monthKey)}
-              completion={completions[dateKey]}
-              onSelect={setSelectedDate}
+          {week.map((day) => (
+            <CalendarDay
+              key={day.dateKey}
+              day={day}
+              selectedDateKey={selectedDateKey}
+              todayKey={todayKey}
+              completions={completions}
+              onSelect={onSelect}
             />
           ))}
         </HStack>
@@ -278,33 +271,25 @@ function MonthGrid({ monthKey, completions }: MonthGridProps) {
   );
 }
 
-interface CalendarDay {
-  date: Date;
-  dateKey: string;
-  label: string;
+interface CalendarDayProps extends CalendarPageProps {
+  day: CalendarDayCell;
 }
 
-/** 날짜 키와 읽어 줄 글자는 쪽을 그릴 때 한 번 만들고, 선택이 바뀌어도 다시 만들지 않는다 */
-function toCalendarDay(date: Date, dateFormatContext: DateFormatContext): CalendarDay {
-  return {
-    date,
-    dateKey: toDateKey(date, dateFormatContext.timeZone),
-    label: formatDateLabel(date, 'fullDate', dateFormatContext),
-  };
-}
+/** 쪽에서 미리 구한 칸 값과 선택·오늘을 메모된 칸의 파생 값으로 바꾼다 */
+function CalendarDay({ day, selectedDateKey, todayKey, completions, onSelect }: CalendarDayProps) {
+  const { dateKey, dayNumber, label, dayOfWeek, isOutsideMonth } = day;
 
-function fillMonthGrid(weeks: Date[][], timeZone: string): Date[][] {
-  const filled = [...weeks];
-  while (filled.length < MONTH_WEEKS) {
-    const lastWeek = filled.at(-1);
-    const lastDate = lastWeek?.[DAYS_PER_WEEK - 1];
-    if (!lastDate) {
-      break;
-    }
-    filled.push(getWeekDates(addLocalDays(lastDate, 1, timeZone), timeZone));
-  }
-
-  return filled;
+  return (
+    <CalendarDateCell
+      dateKey={dateKey}
+      dayNumber={dayNumber}
+      label={label}
+      {...getMonthViewDayState({ dateKey, dayOfWeek, selectedDateKey, todayKey })}
+      isOutsideMonth={isOutsideMonth}
+      completion={completions[dateKey]}
+      onSelect={onSelect}
+    />
+  );
 }
 
 Calendar.Error = function ErrorFallback({ onRetry }: { onRetry: () => void }) {

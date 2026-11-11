@@ -1,15 +1,9 @@
 import { DAY_MS, MINUTE_MS } from '@src/shared/constants/time-units';
 
-import {
-  addDaysToDateKey,
-  addMonthsToDateKey,
-  diffDateKeysInDays,
-  diffDateKeysInMonths,
-  getMonthStartDateKey,
-} from './date-key';
+import { diffDateKeysInDays } from './date-key';
 import { getFormatter, getPartValue, PARTS_LOCALE } from './format/intl-formatter';
 import { fromEpochMs, type Instant, toEpochMs } from './instant';
-import { toLocalDay, toNativeDate } from './native-date';
+import { toNativeDate } from './native-date';
 
 const DATE_KEY_OPTIONS: Intl.DateTimeFormatOptions = {
   year: 'numeric',
@@ -25,7 +19,7 @@ const WALL_CLOCK_OPTIONS: Intl.DateTimeFormatOptions = {
   hourCycle: 'h23',
 };
 
-// 앱 모델은 Instant지만 달력·피커가 넘기는 Date도 같은 순간으로 읽는다
+// 앱 모델은 Instant지만 네이티브 피커·파일 시각이 넘기는 Date도 같은 순간으로 읽는다
 type ZonedInput = Date | Instant;
 
 function getEpochMs(value: ZonedInput): number {
@@ -129,31 +123,4 @@ export function calculateCalendarDaysLeft(endsAt: Instant, now: Instant, timeZon
 /** 그 날짜가 시작하는 순간. 자정이 없거나 두 번 오는 날도 그 날의 첫 순간이다 */
 export function getStartOfDateKey(dateKey: string, timeZone: string): Instant {
   return toZonedInstant({ date: dateKey, time: '00:00', timeZone });
-}
-
-// 달력 칸 Date는 기기 시간대 그날 0시다. 그 시간대의 날짜 key로 읽어 옮기고 마지막에 Date로 되돌린다
-
-export function startOfLocalDay(date: Date, timeZone: string): Date {
-  return toLocalDay(toDateKey(date, timeZone));
-}
-
-export function addLocalDays(date: Date, days: number, timeZone: string): Date {
-  return toLocalDay(addDaysToDateKey(toDateKey(date, timeZone), days));
-}
-
-export function addLocalMonths(date: Date, months: number, timeZone: string): Date {
-  return toLocalDay(addMonthsToDateKey(toDateKey(date, timeZone), months));
-}
-
-export function startOfLocalMonth(date: Date, timeZone: string): Date {
-  return toLocalDay(getMonthStartDateKey(toDateKey(date, timeZone)));
-}
-
-/** 달만 옮기고 일은 기준 날짜의 일을 쓴다. 그 달에 없는 일은 마지막 날이다 */
-export function moveToLocalMonth(date: Date, monthSource: Date, timeZone: string): Date {
-  return addLocalMonths(date, diffLocalMonths(monthSource, date, timeZone), timeZone);
-}
-
-export function diffLocalMonths(first: Date, second: Date, timeZone: string): number {
-  return diffDateKeysInMonths(toDateKey(second, timeZone), toDateKey(first, timeZone));
 }

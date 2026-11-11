@@ -1,54 +1,56 @@
+import { getDayOfWeek } from '@src/shared/date/date-key';
 import { range } from 'es-toolkit';
 
 import {
-  getDatePickerDayType,
   getMonthViewDayState,
+  getPickerDayType,
   getRepeatWeekDays,
   getWeekRangeBand,
-  isTodayHighlighted,
 } from './calendar-day';
+import type { CalendarDayCell } from './calendar-month.view-model';
 
-const TIME_ZONE = 'Asia/Seoul';
-const MONDAY = new Date('2025-03-17T03:00:00Z');
-const SATURDAY = new Date('2025-03-22T03:00:00Z');
-const SUNDAY = new Date('2025-03-23T03:00:00Z');
-const OTHER_DAY = new Date('2025-03-20T03:00:00Z');
+const MONDAY = 1;
+const SATURDAY = 6;
+const SUNDAY = 0;
 
-const input = (date: Date, isSelected: boolean, today: Date = OTHER_DAY) => ({
-  date,
-  isSelected,
-  today,
-  timeZone: TIME_ZONE,
-});
-
-describe('getDatePickerDayType', () => {
+describe('getPickerDayType', () => {
   it.each([
-    ['선택된 날짜는 항상 selected', input(SUNDAY, true, SUNDAY), 'selected'],
-    ['오늘이고 선택되지 않은 날짜는 today', input(MONDAY, false, MONDAY), 'today'],
-    ['일요일이고 선택되지 않고 오늘이 아니면 sunday', input(SUNDAY, false), 'sunday'],
-    ['토요일이고 선택되지 않고 오늘이 아니면 saturday', input(SATURDAY, false), 'saturday'],
-    ['평일이고 선택되지 않고 오늘이 아니면 default', input(MONDAY, false), 'default'],
-    ['오늘이 일요일이면 today가 sunday보다 우선', input(SUNDAY, false, SUNDAY), 'today'],
+    [
+      '선택된 날짜는 항상 selected',
+      { dayOfWeek: SUNDAY, isSelected: true, isToday: true },
+      'selected',
+    ],
+    [
+      '오늘이고 선택되지 않은 날짜는 today',
+      { dayOfWeek: MONDAY, isSelected: false, isToday: true },
+      'today',
+    ],
+    [
+      '일요일이고 선택되지 않고 오늘이 아니면 sunday',
+      { dayOfWeek: SUNDAY, isSelected: false, isToday: false },
+      'sunday',
+    ],
+    [
+      '토요일이고 선택되지 않고 오늘이 아니면 saturday',
+      { dayOfWeek: SATURDAY, isSelected: false, isToday: false },
+      'saturday',
+    ],
+    [
+      '평일이고 선택되지 않고 오늘이 아니면 default',
+      { dayOfWeek: MONDAY, isSelected: false, isToday: false },
+      'default',
+    ],
+    [
+      '오늘이 일요일이면 today가 sunday보다 우선',
+      { dayOfWeek: SUNDAY, isSelected: false, isToday: true },
+      'today',
+    ],
   ])('%s', (_title, params, expected) => {
     // When
-    const result = getDatePickerDayType(params);
+    const result = getPickerDayType(params);
 
     // Then
     expect(result).toBe(expected);
-  });
-
-  it('자정을 막 넘긴 순간은 서울에서는 월요일, 뉴욕에서는 일요일로 칠한다', () => {
-    // Given
-    const justAfterMidnightInSeoul = new Date('2025-03-16T15:30:00Z');
-    const params = input(justAfterMidnightInSeoul, false);
-
-    // When
-    const seoul = getDatePickerDayType(params);
-    const newYork = getDatePickerDayType({ ...params, timeZone: 'America/New_York' });
-
-    // Then
-    expect(seoul).toBe('default');
-    expect(newYork).toBe('sunday');
   });
 });
 
@@ -56,6 +58,7 @@ describe('getMonthViewDayState', () => {
   // 2025-03-17 월, 2025-03-22 토, 2025-03-23 일, 2025-03-20 목
   const keys = (dateKey: string, selectedDateKey: string, todayKey = '2025-03-20') => ({
     dateKey,
+    dayOfWeek: getDayOfWeek(dateKey),
     selectedDateKey,
     todayKey,
   });
@@ -95,21 +98,6 @@ describe('getMonthViewDayState', () => {
     // Then
     expect(result.isTodayHighlighted).toBe(isTodayHighlighted);
     expect(result.isSelected).toBe(isSelected);
-  });
-});
-
-describe('isTodayHighlighted', () => {
-  it.each([
-    ['오늘이고 선택되지 않은 경우 true', input(MONDAY, false, MONDAY), true],
-    ['오늘이지만 선택된 경우 false', input(MONDAY, true, MONDAY), false],
-    ['오늘이 아니고 선택되지 않은 경우 false', input(MONDAY, false), false],
-    ['오늘이 아니고 선택된 경우 false', input(MONDAY, true), false],
-  ])('%s', (_title, params, expected) => {
-    // When
-    const result = isTodayHighlighted(params);
-
-    // Then
-    expect(result).toBe(expected);
   });
 });
 
@@ -162,16 +150,22 @@ describe('getWeekRangeBand', () => {
 });
 
 describe('getRepeatWeekDays', () => {
-  const toSeoulDate = (day: number, month = 11) => new Date(Date.UTC(2026, month - 1, day, 3));
-  const WEEK = [toSeoulDate(1), toSeoulDate(2), toSeoulDate(3), toSeoulDate(4)];
-  const PERIOD = { displayMonth: toSeoulDate(1), timeZone: TIME_ZONE };
+  const cell = (dateKey: string, isOutsideMonth = false): CalendarDayCell => ({
+    dateKey,
+    dayNumber: String(Number(dateKey.slice(-2))),
+    label: dateKey,
+    dayOfWeek: getDayOfWeek(dateKey),
+    isOutsideMonth,
+  });
+  const WEEK = ['2026-11-01', '2026-11-02', '2026-11-03', '2026-11-04'].map((dateKey) =>
+    cell(dateKey),
+  );
 
   it('시작과 끝 사이의 날만 기간 띠에 넣는다', () => {
     // When
     const days = getRepeatWeekDays(WEEK, {
-      ...PERIOD,
-      startDate: toSeoulDate(1),
-      endDate: toSeoulDate(3),
+      startDateKey: '2026-11-01',
+      endDateKey: '2026-11-03',
       isOpenEnded: false,
     });
 
@@ -184,9 +178,8 @@ describe('getRepeatWeekDays', () => {
   it('시작과 끝이 같은 날이면 띠를 그리지 않는다', () => {
     // When
     const days = getRepeatWeekDays(WEEK, {
-      ...PERIOD,
-      startDate: toSeoulDate(2),
-      endDate: toSeoulDate(2),
+      startDateKey: '2026-11-02',
+      endDateKey: '2026-11-02',
       isOpenEnded: false,
     });
 
@@ -198,9 +191,8 @@ describe('getRepeatWeekDays', () => {
   it('계속 반복은 끝이 없어 시작 뒤 모든 날이 띠에 든다', () => {
     // When
     const days = getRepeatWeekDays(WEEK, {
-      ...PERIOD,
-      startDate: toSeoulDate(2),
-      endDate: null,
+      startDateKey: '2026-11-02',
+      endDateKey: null,
       isOpenEnded: true,
     });
 
@@ -210,10 +202,9 @@ describe('getRepeatWeekDays', () => {
 
   it('보고 있는 달이 아닌 칸은 띠에 넣지 않는다', () => {
     // When
-    const [day] = getRepeatWeekDays([toSeoulDate(31, 10)], {
-      ...PERIOD,
-      startDate: toSeoulDate(1, 10),
-      endDate: null,
+    const [day] = getRepeatWeekDays([cell('2026-10-31', true)], {
+      startDateKey: '2026-10-01',
+      endDateKey: null,
       isOpenEnded: true,
     });
 

@@ -11,12 +11,7 @@ import { act } from '@testing-library/react-native';
 import { router } from 'expo-router';
 import type { PropsWithChildren } from 'react';
 
-import {
-  useFeedAction,
-  useFeedDateKey,
-  useFeedDate,
-  useFeedFriendId,
-} from '../hooks/use-feed-params';
+import { useFeedAction, useFeedDateKey, useFeedFriendId } from '../hooks/use-feed-params';
 import {
   useFeedSelectedTodoId,
   useFeedTodoDetailHandoff,
@@ -43,15 +38,14 @@ function FeedProviders({ children }: PropsWithChildren) {
 }
 
 function useFeedScreen() {
-  const [selectedDate, setSelectedDate] = useFeedDate();
+  const [selectedDateKey, setSelectedDateKey] = useFeedDateKey();
   const [friendId, selectFriend] = useFeedFriendId();
   const [action] = useFeedAction();
   const [selectedTodoId, setSelectedTodoId] = useFeedSelectedTodoId();
 
   return {
-    selectedDate,
-    setSelectedDate,
-    selectedDateKey: useFeedDateKey()[0],
+    selectedDateKey,
+    setSelectedDateKey,
     friendId,
     selectFriend,
     action,
@@ -104,9 +98,9 @@ describe('피드 URL 플로우', () => {
       tomorrow.setDate(tomorrow.getDate() + 1);
 
       // When
-      await feed.run(({ setSelectedDate }) => setSelectedDate(tomorrow));
+      await feed.run(({ setSelectedDateKey }) => setSelectedDateKey(toKey(tomorrow)));
       const pickedUrl = feed.url();
-      await feed.run(({ setSelectedDate }) => setSelectedDate(new Date()));
+      await feed.run(({ setSelectedDateKey }) => setSelectedDateKey(toKey(new Date())));
 
       // Then
       expect(pickedUrl).toBe(`/feed?date=${toKey(tomorrow)}`);
@@ -116,10 +110,8 @@ describe('피드 URL 플로우', () => {
     it('날짜를 바꿔도 폴드에서 고른 할 일 칸과 정렬은 그대로다', async () => {
       // Given
       const feed = await renderFeed('/feed?todoId=5&sort=POPULAR');
-      const picked = new Date(2030, 0, 2);
-
       // When
-      await feed.run(({ setSelectedDate }) => setSelectedDate(picked));
+      await feed.run(({ setSelectedDateKey }) => setSelectedDateKey('2030-01-02'));
 
       // Then
       expect(feed.hook().selectedTodoId).toBe(5);
@@ -151,7 +143,7 @@ describe('피드 URL 플로우', () => {
       const feed = await renderFeed('/feed', { from: '/mypage' });
 
       // When
-      await feed.run(({ setSelectedDate }) => setSelectedDate(new Date(2030, 0, 2)));
+      await feed.run(({ setSelectedDateKey }) => setSelectedDateKey('2030-01-02'));
       await feed.run(({ selectFriend }) => selectFriend(FRIEND));
       await feed.run(({ setSelectedTodoId }) => setSelectedTodoId(5));
       await act(async () => router.back());

@@ -20,7 +20,7 @@ import {
   formatHHmmTime,
   formatYearAwareDateKeyLabel,
 } from '@src/shared/date/format/date-format';
-import { instantFromDate, instantToDate } from '@src/shared/date/native-date';
+import { instantToDate, toLocalDayInstant } from '@src/shared/date/native-date';
 import { toDateKey } from '@src/shared/date/zoned';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
@@ -194,28 +194,21 @@ function DateChip({
       ? t('dateSections.today')
       : formatYearAwareDateKeyLabel(startDateKey, todayDateKey, dateFormatContext);
 
-  const applyStartDate = (nextStartDate: Date) => {
+  const applyStartDate = (nextStartDateKey: string) => {
     const repeat = getValues('repeat');
     // 반복 회차의 날짜 이동은 이 회차에만 적용되므로 규칙은 그대로 둔다
     if (repeat != null && !isSeriesOccurrence) {
       setValue(
         'repeat',
-        TodoRepeatPolicy.withRepeatStartDate(
-          repeat,
-          toDateKey(startDate, dateFormatContext.timeZone),
-          toDateKey(nextStartDate, dateFormatContext.timeZone),
-        ),
+        TodoRepeatPolicy.withRepeatStartDate(repeat, startDateKey, nextStartDateKey),
       );
     }
     // 여러 날 할 일은 기간을 유지한 채 옮긴다. 날짜 변경 시트와 같은 규칙이고, 끝 날짜보다 뒤를 골라도 시작이 끝을 넘지 않는다
     const nextEndDate = getShiftedEndDate(
-      {
-        startDate: toDateKey(startDate, dateFormatContext.timeZone),
-        endDate: endDate == null ? null : toDateKey(endDate, dateFormatContext.timeZone),
-      },
-      toDateKey(nextStartDate, dateFormatContext.timeZone),
+      { startDate: startDateKey, endDate: endDateKey },
+      nextStartDateKey,
     );
-    setValue('startDate', instantFromDate(nextStartDate));
+    setValue('startDate', toLocalDayInstant(nextStartDateKey));
     setValue('endDate', parseInstant(nextEndDate));
   };
 
@@ -229,9 +222,9 @@ function DateChip({
         onExit={unmount}
       >
         <TodoDatePickerContent
-          value={instantToDate(startDate)}
-          onChange={(nextStartDate) => {
-            applyStartDate(nextStartDate);
+          value={startDateKey}
+          onChange={(nextStartDateKey) => {
+            applyStartDate(nextStartDateKey);
             close();
           }}
           onCancel={close}

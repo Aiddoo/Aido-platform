@@ -2,7 +2,7 @@ import { addMonthsToDateKey, getMonthStartDateKey } from '@src/shared/date/date-
 import { formatDateKeyLabel } from '@src/shared/date/format/date-format';
 import { formatWeekHeaderLabel, formatWeekOfMonthLabel } from '@src/shared/date/format/date-labels';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
-import { useToday, useTodayKey } from '@src/shared/hooks/use-today';
+import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
 import { useFontScale } from '@src/shared/providers/font-scale-provider';
 import { useStoredValue } from '@src/shared/storage/use-stored-value';
@@ -20,13 +20,13 @@ import {
 import type { HostInstance, LayoutChangeEvent } from 'react-native';
 import { match } from 'ts-pattern';
 
-import { useFeedDate, useFeedDateKey } from '../../hooks/use-feed-params';
+import { useFeedDateKey } from '../../hooks/use-feed-params';
 import {
   type CalendarViewMode,
   calendarViewModeSchema,
   calendarViewModeStoredValue,
 } from '../../schemas/calendar-view-mode-storage.schema';
-import { shiftCalendarDate } from '../../utils/calendar-grid';
+import { shiftCalendarDateKey } from '../../utils/calendar-grid';
 import {
   type CalendarHeaderLayout,
   getCalendarHeaderLayout,
@@ -42,10 +42,9 @@ const TITLE_TEXT_STYLE = { size: 'b1', weight: 'semibold' } as const;
 
 export function CalendarHeader() {
   const { t } = useTranslation('common');
-  const [selectedDate, setSelectedDate] = useFeedDate();
-  const today = useToday();
+  const [selectedDateKey, setSelectedDateKey] = useFeedDateKey();
+  const todayKey = useTodayKey();
   const [viewMode] = useStoredValue(calendarViewModeStoredValue);
-  const { timeZone } = useDateFormatContext();
   const {
     layout,
     rowRef,
@@ -58,9 +57,9 @@ export function CalendarHeader() {
   const isInline = layout === 'inline';
 
   const handlePrevious = () =>
-    setSelectedDate(shiftCalendarDate({ viewMode, date: selectedDate, step: -1, timeZone }));
+    setSelectedDateKey(shiftCalendarDateKey({ viewMode, dateKey: selectedDateKey, step: -1 }));
   const handleNext = () =>
-    setSelectedDate(shiftCalendarDate({ viewMode, date: selectedDate, step: 1, timeZone }));
+    setSelectedDateKey(shiftCalendarDateKey({ viewMode, dateKey: selectedDateKey, step: 1 }));
 
   return (
     <Box className="px-4 py-2">
@@ -77,7 +76,7 @@ export function CalendarHeader() {
           <CalendarHeaderText />
           <PressableFeedback
             ref={todayRef}
-            onPress={() => setSelectedDate(today)}
+            onPress={() => setSelectedDateKey(todayKey)}
             hitSlop={8}
             className="px-2 py-0.5 bg-gray-2 rounded-full"
           >

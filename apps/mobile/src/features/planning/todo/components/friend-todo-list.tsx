@@ -1,6 +1,5 @@
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
 import { CategoryHeaderPill } from '@src/features/planning/category/components/category-header-pill';
-import { toDateKey } from '@src/shared/date/zoned';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTodayKey } from '@src/shared/hooks/use-today';
@@ -25,7 +24,7 @@ import { type ComponentType, useMemo, useState } from 'react';
 import { SubTodoPolicy } from '../domains/sub-todo.model';
 import { isFriendFeedUnavailableError } from '../domains/todo.error';
 import type { Todo } from '../domains/todo.model';
-import { useFeedDateKey, useFeedDate, useFeedFriendId } from '../hooks/use-feed-params';
+import { useFeedDateKey, useFeedFriendId } from '../hooks/use-feed-params';
 import { useFeedSelectedTodoId } from '../hooks/use-feed-selected-todo-id';
 import { useGetFriendTodosQueryOptions } from '../queries/todo.queries';
 import { formatTodoTime } from '../utils/format-todo-time';
@@ -42,13 +41,12 @@ interface FriendTodoListProps {
 }
 
 export function FriendTodoList({ friendId, rowAction, emptyAction }: FriendTodoListProps) {
-  const { timeZone } = useDateFormatContext();
-  const [date] = useFeedDate();
+  const [date] = useFeedDateKey();
   const [{ data: todos }] = useSuspenseQueries({
     queries: [
       useGetFriendTodosQueryOptions({
         friendUserId: friendId,
-        date: toDateKey(date, timeZone),
+        date,
       }),
       useGetPreferenceQueryOptions(),
     ],

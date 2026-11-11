@@ -1,7 +1,7 @@
 import { DAYS_OF_WEEK, type DayOfWeek } from '@aido/api/vocabulary';
 import { getDateKeyDayOfWeek, hasSameDaysOfWeek } from '@src/shared/date/day-of-week';
 import { type Instant } from '@src/shared/date/instant';
-import { instantFromDate, toLocalDayInstant } from '@src/shared/date/native-date';
+import { toLocalDayInstant } from '@src/shared/date/native-date';
 import { toDateKey } from '@src/shared/date/zoned';
 import { without } from 'es-toolkit';
 import { match } from 'ts-pattern';
@@ -10,7 +10,6 @@ import { TODO_REPEAT_COUNT } from '../constants/todo-repeat.constants';
 import { TodoRepeatPolicy } from '../domains/todo-repeat.model';
 import { type TodoRepeat } from '../domains/todo-repeat.model';
 import { toTodoRepeat, type TodoRepeatFormValues } from '../schemas/todo-repeat-form.schema';
-import { isAfterDay, isBeforeDay, isSameDay } from './calendar-day-comparison';
 
 export function toTodoRepeatFormValues(
   startDate: Instant,
@@ -138,32 +137,30 @@ export function getTodoRepeatFormFirstOccurrenceKey(
 }
 
 interface PickedCalendarDate {
-  date: Date;
-  today: Date;
+  dateKey: string;
+  todayKey: string;
   timeZone: string;
 }
 
 export function withTodoRepeatFormCalendarDate(
   values: TodoRepeatFormValues,
-  { date, today, timeZone }: PickedCalendarDate,
+  { dateKey, todayKey, timeZone }: PickedCalendarDate,
 ): TodoRepeatFormValues {
-  if (isBeforeDay(date, today, timeZone)) {
+  if (dateKey < todayKey) {
     return values;
   }
 
+  const startDateKey = toDateKey(values.startDate, timeZone);
   const isFirstOccurrence =
-    toDateKey(date, timeZone) === getTodoRepeatFormFirstOccurrenceKey(values, timeZone) &&
-    !isSameDay(date, values.startDate, timeZone);
+    dateKey === getTodoRepeatFormFirstOccurrenceKey(values, timeZone) && dateKey !== startDateKey;
   const hasPickedPeriod = values.endType === 'UNTIL' && values.untilDate != null;
 
-  const picked = instantFromDate(date);
+  const picked = toLocalDayInstant(dateKey);
   if (isFirstOccurrence || hasPickedPeriod) {
     return { ...withTodoRepeatFormStartDate(values, picked, timeZone), untilDate: null };
   }
-  if (isAfterDay(date, values.startDate, timeZone)) {
+  if (dateKey > startDateKey) {
     return { ...values, endType: 'UNTIL', untilDate: picked };
   }
-  return isBeforeDay(date, values.startDate, timeZone)
-    ? withTodoRepeatFormStartDate(values, picked, timeZone)
-    : values;
+  return dateKey < startDateKey ? withTodoRepeatFormStartDate(values, picked, timeZone) : values;
 }

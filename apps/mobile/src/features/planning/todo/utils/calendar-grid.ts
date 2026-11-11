@@ -4,53 +4,36 @@ import {
   addMonthsToDateKey,
   diffDateKeysInDays,
   getCalendarWeek,
-  type CalendarWeek,
   getMonthEndDateKey,
   getMonthStartDateKey,
 } from '@src/shared/date/date-key';
-import { toLocalDay } from '@src/shared/date/native-date';
-import { addLocalDays, addLocalMonths, startOfLocalMonth, toDateKey } from '@src/shared/date/zoned';
 import { range } from 'es-toolkit';
 import { match } from 'ts-pattern';
 
 import type { CalendarViewMode } from '../schemas/calendar-view-mode-storage.schema';
 
-function getWeekOfDate(date: Date, timeZone: string): CalendarWeek {
-  return getCalendarWeek(toDateKey(date, timeZone));
+/** 앱 달력 주(일요일 시작)의 첫날 */
+export function getWeekStartKey(dateKey: string): string {
+  return getCalendarWeek(dateKey).startDateKey;
 }
 
-/** 앱 달력 주의 시작. 그 주 일요일 0시다 */
-export function getWeekStart(date: Date, timeZone: string): Date {
-  return toLocalDay(getWeekOfDate(date, timeZone).startDateKey);
+/** 두 날이 속한 주의 차이 (to - from) */
+export function diffCalendarWeeks(from: string, to: string): number {
+  return diffDateKeysInDays(getWeekStartKey(from), getWeekStartKey(to)) / DAYS_PER_WEEK;
 }
 
-/** 두 날짜의 주 단위 차이 (date1 - date2, 앱 달력 주의 시작으로 정규화) */
-export function diffWeeks(date1: Date, date2: Date, timeZone: string): number {
-  const days = diffDateKeysInDays(
-    getWeekOfDate(date2, timeZone).startDateKey,
-    getWeekOfDate(date1, timeZone).startDateKey,
-  );
-
-  return days / DAYS_PER_WEEK;
+export function getWeekDateKeys(weekStartKey: string): string[] {
+  return range(DAYS_PER_WEEK).map((index) => addDaysToDateKey(weekStartKey, index));
 }
 
-export function getWeekDates(weekStartDate: Date, timeZone: string): Date[] {
-  return range(DAYS_PER_WEEK).map((index) => addLocalDays(weekStartDate, index, timeZone));
-}
-
-export function getMonthWeeks(displayDate: Date, timeZone: string): Date[][] {
-  const monthStart = startOfLocalMonth(displayDate, timeZone);
-  const monthStartKey = toDateKey(monthStart, timeZone);
-  const lastWeekStartKey = getCalendarWeek(getMonthEndDateKey(monthStartKey)).startDateKey;
-
-  const firstWeekStartKey = getCalendarWeek(monthStartKey).startDateKey;
+/** 그 날이 속한 달이 걸친 주의 첫날들. `minWeekCount`보다 적으면 뒤로 주를 더 붙인다 */
+export function getMonthWeekStartKeys(dateKey: string, minWeekCount = 0): string[] {
+  const firstWeekStartKey = getWeekStartKey(getMonthStartDateKey(dateKey));
+  const lastWeekStartKey = getWeekStartKey(getMonthEndDateKey(dateKey));
   const weekCount = diffDateKeysInDays(firstWeekStartKey, lastWeekStartKey) / DAYS_PER_WEEK + 1;
 
-  return range(weekCount).map((weekIndex) =>
-    getWeekDates(
-      toLocalDay(addDaysToDateKey(firstWeekStartKey, weekIndex * DAYS_PER_WEEK)),
-      timeZone,
-    ),
+  return range(Math.max(weekCount, minWeekCount)).map((weekIndex) =>
+    addDaysToDateKey(firstWeekStartKey, weekIndex * DAYS_PER_WEEK),
   );
 }
 
@@ -61,10 +44,9 @@ export interface CalendarDateRange {
 
 /** 그 날이 속한 달을 앞뒤 주까지 채운 달력 범위(일요일 시작) */
 function getMonthGridRange(dateKey: string): CalendarDateRange {
-  const monthStartKey = getMonthStartDateKey(dateKey);
   return {
-    startDate: getCalendarWeek(monthStartKey).startDateKey,
-    endDate: getCalendarWeek(getMonthEndDateKey(monthStartKey)).endDateKey,
+    startDate: getWeekStartKey(getMonthStartDateKey(dateKey)),
+    endDate: getCalendarWeek(getMonthEndDateKey(dateKey)).endDateKey,
   };
 }
 
@@ -87,19 +69,14 @@ export function getCalendarMonthRanges(dateKey: string): {
 
 interface ShiftCalendarDateInput {
   viewMode: CalendarViewMode;
-  date: Date;
+  dateKey: string;
   step: -1 | 1;
-  timeZone: string;
 }
 
-export function shiftCalendarDate({
-  viewMode,
-  date,
-  step,
-  timeZone,
-}: ShiftCalendarDateInput): Date {
+/** 주 보기는 그 주 일요일에서, 월 보기는 그 달 1일에서 한 칸 옮긴다 */
+export function shiftCalendarDateKey({ viewMode, dateKey, step }: ShiftCalendarDateInput): string {
   return match(viewMode)
-    .with('week', () => addLocalDays(getWeekStart(date, timeZone), step * DAYS_PER_WEEK, timeZone))
-    .with('month', () => addLocalMonths(startOfLocalMonth(date, timeZone), step, timeZone))
+    .with('week', () => addDaysToDateKey(getWeekStartKey(dateKey), step * DAYS_PER_WEEK))
+    .with('month', () => addMonthsToDateKey(getMonthStartDateKey(dateKey), step))
     .exhaustive();
 }

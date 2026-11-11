@@ -13,7 +13,7 @@ import {
 } from './todo-repeat-form-values';
 
 const TIME_ZONE = Intl.DateTimeFormat().resolvedOptions().timeZone;
-const TODAY = new Date(2026, 10, 2);
+const TODAY_KEY = '2026-11-02';
 
 const createValues = (overrides: Partial<TodoRepeatFormValues> = {}): TodoRepeatFormValues => ({
   startDate: instantFromDate(new Date(2026, 10, 2)),
@@ -96,8 +96,8 @@ describe('반복 달력에서 날짜 누르기', () => {
 
     // When
     const next = withTodoRepeatFormCalendarDate(values, {
-      date: new Date(2026, 10, 1),
-      today: TODAY,
+      dateKey: '2026-11-01',
+      todayKey: TODAY_KEY,
       timeZone: TIME_ZONE,
     });
 
@@ -108,33 +108,37 @@ describe('반복 달력에서 날짜 누르기', () => {
   it('시작일 뒤를 누르면 그 날이 종료일이 된다', () => {
     // Given
     const values = createValues({ endType: 'NEVER' });
-    const date = new Date(2026, 10, 20);
 
     // When
     const next = withTodoRepeatFormCalendarDate(values, {
-      date: date,
-      today: TODAY,
+      dateKey: '2026-11-20',
+      todayKey: TODAY_KEY,
       timeZone: TIME_ZONE,
     });
 
     // Then
-    expect(next).toMatchObject({ endType: 'UNTIL', untilDate: instantFromDate(date) });
+    expect(next).toMatchObject({
+      endType: 'UNTIL',
+      untilDate: instantFromDate(new Date(2026, 10, 20)),
+    });
   });
 
   it('기간을 이미 골랐으면 누른 날부터 다시 시작한다', () => {
     // Given
     const values = createValues({ untilDate: instantFromDate(new Date(2026, 10, 20)) });
-    const date = new Date(2026, 10, 25);
 
     // When
     const next = withTodoRepeatFormCalendarDate(values, {
-      date: date,
-      today: TODAY,
+      dateKey: '2026-11-25',
+      todayKey: TODAY_KEY,
       timeZone: TIME_ZONE,
     });
 
     // Then
-    expect(next).toMatchObject({ startDate: instantFromDate(date), untilDate: null });
+    expect(next).toMatchObject({
+      startDate: instantFromDate(new Date(2026, 10, 25)),
+      untilDate: null,
+    });
   });
 
   it('시작일 앞을 누르면 시작일을 옮기고 시작일을 다시 누르면 그대로다', () => {
@@ -143,22 +147,21 @@ describe('반복 달력에서 날짜 누르기', () => {
       startDate: instantFromDate(new Date(2026, 10, 9)),
       endType: 'NEVER',
     });
-    const earlier = new Date(2026, 10, 3);
 
     // When
     const moved = withTodoRepeatFormCalendarDate(values, {
-      date: earlier,
-      today: TODAY,
+      dateKey: '2026-11-03',
+      todayKey: TODAY_KEY,
       timeZone: TIME_ZONE,
     });
     const same = withTodoRepeatFormCalendarDate(values, {
-      date: new Date(2026, 10, 9),
-      today: TODAY,
+      dateKey: '2026-11-09',
+      todayKey: TODAY_KEY,
       timeZone: TIME_ZONE,
     });
 
     // Then
-    expect(moved.startDate).toEqual(instantFromDate(earlier));
+    expect(moved.startDate).toEqual(instantFromDate(new Date(2026, 10, 3)));
     expect(same).toBe(values);
   });
 });

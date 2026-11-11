@@ -22,7 +22,7 @@
 ```text
 shared/date/
   instant.ts  date-key.ts  time-of-day.ts  day-of-week.ts
-  zoned.ts       # 시간대 계산(Intl). 순간 ↔ 날짜 key·벽시계, 달력 칸 Date 옮기기
+  zoned.ts       # 시간대 계산(Intl). 순간 ↔ 날짜 key·벽시계
   clock.ts       # 지금(getNowInstant), 오늘 상태, 다음 자정
   format/        # Intl 표시 helper와 카탈로그 문구를 붙이는 label helper
   native-date.ts # Date가 드나드는 유일한 경계
