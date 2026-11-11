@@ -3,7 +3,6 @@ import type {
   reminderNudge as reminderNudgeTable,
   todo as todoTable,
 } from "#api/platform/database/schema/index";
-import { instantFromDate, instantToDate } from "#api/shared/domain/time/instant";
 
 import type { UserBriefRow } from "../../../friends/infrastructure/persistence/user-brief-relation.constants.js";
 import type { NudgeInteractionTodo } from "../../application/read-models/nudge-interaction.read-model.js";
@@ -32,15 +31,6 @@ export type NudgeRowWithRelations = NudgeRow & {
   readonly todo: InteractionTodoRow;
 };
 
-// planning Todo의 DATE 컬럼은 아직 드라이버가 UTC 자정 Date로 준다
-function toPlainDate(date: Date): Temporal.PlainDate {
-  return instantFromDate(date).toZonedDateTimeISO("UTC").toPlainDate();
-}
-
-export function toDateColumn(date: Temporal.PlainDate): Date {
-  return instantToDate(date.toZonedDateTime("UTC").toInstant());
-}
-
 export function toNudge(row: NudgeRow): Nudge {
   return Nudge.reconstitute(row);
 }
@@ -64,8 +54,8 @@ export function toNudgeTargetTodo(
     ownerId: row.userId,
     title: row.title,
     visibility: row.visibility,
-    startDate: toPlainDate(row.startDate),
-    endDate: row.endDate == null ? null : toPlainDate(row.endDate),
+    startDate: row.startDate,
+    endDate: row.endDate,
   });
 }
 

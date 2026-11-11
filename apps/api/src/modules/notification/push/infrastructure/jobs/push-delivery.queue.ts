@@ -4,7 +4,7 @@ import {
   defineQueue,
   JOB_POLLING_SECONDS,
   type JobRetryPolicy,
-} from "#api/shared/application/ports/index";
+} from "#api/shared/application/ports/job-queue.port";
 
 import { PUSH_DELIVERY_JOB_MAX_PUBLICATIONS } from "../../application/read-models/push-delivery.read-model.js";
 import type { PushDeliveryLane } from "../../domain/push-delivery-lane.domain-service.js";

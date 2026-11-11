@@ -21,7 +21,7 @@ import { WEATHERKIT_POLICY } from "./weather-outbound.policy.js";
 import { WeatherKitUsageMeterAdapter } from "./weatherkit-usage-meter.adapter.js";
 
 const WEATHERKIT_ORIGIN = "https://weatherkit.apple.com";
-const ATTRIBUTION_TIMEOUT_MS = 3_000;
+const ATTRIBUTION_TIMEOUT_MS = 3000;
 const LEGAL_PAGE_URL = "https://developer.apple.com/weatherkit/data-source-attribution/";
 const SERVICE_NAME = "Apple Weather";
 

@@ -4,7 +4,7 @@ import { match, P } from "ts-pattern";
 import type { StoreSubscriptionEventKind } from "./subscriptions.constants.js";
 
 /** 무료 체험의 단계. 스토어에 체험 전용 이벤트가 없어 이벤트 종류와 기간 유형으로 판단한다. */
-export const SUBSCRIPTION_LIFECYCLES = [
+const SUBSCRIPTION_LIFECYCLES = [
   "trial_started",
   "trial_cancelled",
   "trial_converted",

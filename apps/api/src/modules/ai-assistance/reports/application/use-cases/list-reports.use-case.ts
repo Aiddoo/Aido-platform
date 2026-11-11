@@ -27,7 +27,11 @@ export class ListReportsUseCase {
   }
 
   async execute(query: ListReportsQuery): Promise<AiReport[]> {
-    await assertEntitled(this.#dependencies.entitlementReader, query.userId, "AI_REPORT");
+    await assertEntitled(
+      this.#dependencies.entitlementReader,
+      UserId.reconstitute(query.userId),
+      "AI_REPORT",
+    );
 
     return this.#dependencies.aiReportRepository.listByUserId({
       userId: UserId.reconstitute(query.userId),

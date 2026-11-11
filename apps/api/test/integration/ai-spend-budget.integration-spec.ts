@@ -7,11 +7,7 @@ import {
 import { AiSpendBudgetAdapter } from "#api/modules/ai-assistance/generation/infrastructure/adapters/ai-spend-budget.adapter";
 import { createEntityId } from "#api/platform/database/entity-id";
 import { user as userTable } from "#api/platform/database/schema/index";
-import {
-  USAGE_METER,
-  USAGE_SUBJECT_ALL,
-  type UsageMeterPort,
-} from "#api/platform/metering/interfaces/usage-meter.interface";
+import { UsageMeterPort, USAGE_SUBJECT_ALL } from "#api/platform/metering/usage-meter.port";
 import { DateClock } from "#test/doubles/platform/date-clock";
 import { UserFixture } from "#test/fixtures/index";
 import { RecordingOperationalAlert } from "#test/mocks/recording-operational-alert";
@@ -37,7 +33,7 @@ describe("AI 비용 예산 누적 (실제 PostgreSQL)", () => {
     database = new TestDatabase({ createClient: (url) => createTestClient(url, { max: 12 }) });
     client = await database.start();
     context = await createE2eApp({ testDatabase: database });
-    meter = context.module.get(USAGE_METER);
+    meter = context.module.get(UsageMeterPort);
     config = context.module.get<AiAssistanceGenerationConfig>(aiAssistanceGenerationConfig.KEY);
   });
   beforeEach(async () => {

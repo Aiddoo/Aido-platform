@@ -1,5 +1,7 @@
 import { Injectable } from "@nestjs/common";
 
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+
 import type { RetentionEnrollmentPort } from "../../application/ports/retention-enrollment.port.js";
 import { ActivateRetentionExperimentUseCase } from "../../application/use-cases/activate-retention-experiment.use-case.js";
 import { EnrollRetentionExperimentUseCase } from "../../application/use-cases/enroll-retention-experiment.use-case.js";
@@ -18,11 +20,11 @@ export class RetentionEnrollmentAdapter implements RetentionEnrollmentPort {
     this.#activateRetentionExperimentUseCase = activateRetentionExperimentUseCase;
   }
 
-  enrollNewUser(userId: string, isActivated: boolean): Promise<void> {
-    return this.#enrollRetentionExperimentUseCase.execute(userId, isActivated);
+  enrollNewUser(userId: UserId, isActivated: boolean): Promise<void> {
+    return this.#enrollRetentionExperimentUseCase.execute(userId.value, isActivated);
   }
 
-  activateNewUser(userId: string): Promise<void> {
-    return this.#activateRetentionExperimentUseCase.execute(userId);
+  activateNewUser(userId: UserId): Promise<void> {
+    return this.#activateRetentionExperimentUseCase.execute(userId.value);
   }
 }

@@ -15,7 +15,6 @@ function buildWeeklySampleReport(): AiReport {
     type: 'WEEKLY',
     year: 2026,
     period: 10,
-    periodLabel: t('ai:sampleReport.weekly.periodLabel'),
     dateRange: { startDate: '2026-03-02', endDate: '2026-03-08' },
     stats: {
       totalTodos: 35,
@@ -96,7 +95,6 @@ function buildMonthlySampleReport(): AiReport {
     type: 'MONTHLY',
     year: 2026,
     period: 2,
-    periodLabel: t('ai:sampleReport.monthly.periodLabel'),
     dateRange: { startDate: '2026-02-01', endDate: '2026-02-28' },
     stats: {
       totalTodos: 156,

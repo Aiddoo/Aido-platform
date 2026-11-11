@@ -2,8 +2,8 @@ import { SECURITY_EVENT } from "@aido/api/vocabulary";
 
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
-import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
 import type { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
+import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { toIsoString } from "#api/shared/domain/time/instant";
 
 import { AuthLogEvent } from "../../../auth/application/auth.log-events.js";
@@ -47,9 +47,7 @@ export class PurgeDeletedAccountsUseCase {
     for (const candidate of users) {
       try {
         const cleanup = await this.#dependencies.unitOfWork.run(async () => {
-          const user = await this.#dependencies.userRepository.findByIdForUpdate(
-            candidate.id.value,
-          );
+          const user = await this.#dependencies.userRepository.findByIdForUpdate(candidate.id);
           if (user == null) {
             return null;
           }
@@ -58,20 +56,21 @@ export class PurgeDeletedAccountsUseCase {
           if (deletedAt == null || !user.isPurgeEligibleAt(at)) {
             return null;
           }
-          const userId = user.id.value;
-          const notification =
-            await this.#dependencies.notificationCleanup.cleanupInTransaction(userId);
-          const todoComment =
-            await this.#dependencies.todoCommentCleanup.cleanupInTransaction(userId);
-          await this.#dependencies.usageCleanup.cleanupInTransaction(userId);
-          await this.#dependencies.userRepository.hardDelete(userId);
+          const notification = await this.#dependencies.notificationCleanup.cleanupInTransaction(
+            user.id,
+          );
+          const todoComment = await this.#dependencies.todoCommentCleanup.cleanupInTransaction(
+            user.id,
+          );
+          await this.#dependencies.usageCleanup.cleanupInTransaction(user.id);
+          await this.#dependencies.userRepository.hardDelete(user.id);
           // 삭제된 User FK를 참조하지 않고 삭제·감사 기록을 함께 커밋한다.
           await this.#dependencies.securityLogRepository.create({
             event: SECURITY_EVENT.ACCOUNT_HARD_DELETED,
             ipAddress: "SYSTEM",
             userAgent: "AccountPurgeJob",
             metadata: {
-              purgedUserId: userId,
+              purgedUserId: user.id.value,
               email: user.email,
               deletedAt: toIsoString(deletedAt),
             },

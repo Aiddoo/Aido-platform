@@ -1,4 +1,5 @@
 import { useClaimDeviceDataForUser } from '@src/bootstrap/hooks/use-claim-device-data-for-user';
+import { useOrientationLock } from '@src/bootstrap/hooks/use-orientation-lock';
 import { useSyncUserIdentity } from '@src/bootstrap/hooks/use-sync-user-identity';
 import { useWidgetAppEntry } from '@src/bootstrap/hooks/use-widget-app-entry';
 import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
@@ -22,6 +23,7 @@ export function AuthGateLayout() {
   const status = useAuthStatus();
   const isRestoring = useIsRestoring();
   const { resolvedTheme } = useTheme();
+  useOrientationLock();
   useScreenTracking();
   useSyncUserIdentity();
   useClaimDeviceDataForUser();

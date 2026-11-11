@@ -1,7 +1,6 @@
 import type { WeeklyAchievementStatsReaderPort } from "#api/modules/notification/reminders/application/ports/weekly-achievement-stats-reader.port";
-import { parseDateOnly } from "#api/shared/domain/date/utils/parse";
 
-export const WEEKLY_STATS_USER_PLANS = ["FREE", "PREMIUM", "ADMIN"] as const;
+const WEEKLY_STATS_USER_PLANS = ["FREE", "PREMIUM", "ADMIN"] as const;
 
 export interface WeeklyStatsTodoSeed {
   readonly start: string;
@@ -24,8 +23,8 @@ const SEOUL = "Asia/Seoul";
 const LOS_ANGELES = "America/Los_Angeles";
 // 월요일 2026-11-02 ~ 일요일 2026-11-08, 끝은 다음 월요일(배타)
 const PERIOD = {
-  periodStart: parseDateOnly("2026-11-02"),
-  periodEnd: parseDateOnly("2026-11-09"),
+  periodStart: Temporal.PlainDate.from("2026-11-02"),
+  periodEnd: Temporal.PlainDate.from("2026-11-09"),
 };
 
 // 집계 결과는 순서를 약속하지 않아(GROUP BY) 사용자 ID 순으로 맞춰 비교한다

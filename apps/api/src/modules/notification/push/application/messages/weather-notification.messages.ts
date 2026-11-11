@@ -19,8 +19,6 @@ import type {
 import { WEATHER_COPY, WEATHER_FALLBACK_COPY } from "./notification-copy-templates.messages.js";
 import { renderNotificationTemplate } from "./notification-copy.messages.js";
 
-export { formatWeatherNotificationTime } from "./notification-copy-format.messages.js";
-
 interface LocalizedWeatherInput {
   readonly locale?: SupportedLocale;
   readonly variantContext?: NotificationVariantContext;

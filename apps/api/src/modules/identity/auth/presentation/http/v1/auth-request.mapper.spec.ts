@@ -1,4 +1,4 @@
-import { parseRequestClient } from "#api/platform/http/request-client/index";
+import { parseRequestClient } from "#api/platform/http/request-client/request-client";
 import { TEST_REQUEST_ID } from "#test/mocks/request-client";
 
 import { extractMetadata } from "./auth-request.mapper.js";
@@ -21,8 +21,6 @@ describe("extractMetadata", () => {
     expect(metadata).toEqual({
       ip: "198.51.100.24",
       userAgent: "request-identity-test",
-      deviceName: undefined,
-      deviceType: undefined,
       device: {},
     });
   });

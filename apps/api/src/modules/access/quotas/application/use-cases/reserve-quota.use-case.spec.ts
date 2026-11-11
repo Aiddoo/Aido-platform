@@ -1,6 +1,7 @@
 import { ErrorCode } from "@aido/api/errors";
 import { PLAN_CATALOG, type MeteredFeatureKey } from "@aido/api/vocabulary";
 
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import {
   ACCESS_FIXTURE_NOW,
@@ -28,14 +29,14 @@ function setup(input: AccessUserInput = {}) {
     } = {},
   ) =>
     fixture.ledger.reserve({
-      userId: fixture.userId,
+      userId: UserId.reconstitute(fixture.userId),
       feature: options.feature ?? "AI_PARSE",
       idempotencyKey: options.idempotencyKey ?? null,
       requestHash: options.requestHash,
       reason: options.reason ?? "parse-todo",
     });
   const used = async (feature: MeteredFeatureKey) =>
-    (await fixture.ledger.read(fixture.userId, feature)).used;
+    (await fixture.ledger.read(UserId.reconstitute(fixture.userId), feature)).used;
   const moveTo = (instant: Temporal.Instant) =>
     clock.advanceBy({ milliseconds: instant.epochMilliseconds - clock.now().epochMilliseconds });
   return { ...fixture, clock, reserve, used, moveTo };

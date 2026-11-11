@@ -1,5 +1,6 @@
 import { PLAN_CATALOG } from "@aido/api/vocabulary";
 
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { createAiParsingFixture } from "#test/fixtures/ai-parsing.fixture";
 import { createAiGenerationError } from "#test/mocks/fake-ai.generator";
 
@@ -68,7 +69,9 @@ describe("ParseTodoUseCase", () => {
     });
     expect(result.meta.promptVersion).toBe("parse-todo@9");
     expect(fixture.generator.getLastRequest()?.promptVersion).toBe("parse-todo@9");
-    expect((await fixture.quota.read(fixture.userId, "AI_PARSE")).used).toBe(1);
+    expect((await fixture.quota.read(UserId.reconstitute(fixture.userId), "AI_PARSE")).used).toBe(
+      1,
+    );
   });
 
   it("프롬프트 system에는 날짜가 없고 user 턴에 연도를 포함한 로컬 시각이 들어간다", async () => {
@@ -110,7 +113,9 @@ describe("ParseTodoUseCase", () => {
       isRecurring: false,
     });
     expect(result.data.categoryId).toBeUndefined();
-    expect((await fixture.quota.read(fixture.userId, "AI_PARSE")).used).toBe(0);
+    expect((await fixture.quota.read(UserId.reconstitute(fixture.userId), "AI_PARSE")).used).toBe(
+      0,
+    );
     expect(result.featureQuota).toMatchObject({ used: 0 });
     expect([...fixture.quotaChargeRepository.all]).toMatchObject([
       { status: "REFUNDED", refundReason: "NO_ACTION" },
@@ -174,7 +179,9 @@ describe("ParseTodoUseCase", () => {
     const execution = fixture.useCase.execute(fixture.input);
     // Then
     await expect(execution).rejects.toMatchObject({ errorCode: "AI_1302" });
-    expect((await fixture.quota.read(fixture.userId, "AI_PARSE")).used).toBe(0);
+    expect((await fixture.quota.read(UserId.reconstitute(fixture.userId), "AI_PARSE")).used).toBe(
+      0,
+    );
     expect(fixture.generator.getCallCount()).toBe(1);
   });
 
@@ -202,10 +209,12 @@ describe("ParseTodoUseCase", () => {
     // When
     const result = await fixture.useCase.execute(fixture.input);
     // Then
-    expect(await fixture.quota.read(fixture.userId, "AI_PARSE")).toMatchObject({
-      used: 1,
-      limit: FREE_AI_LIMIT,
-    });
+    expect(await fixture.quota.read(UserId.reconstitute(fixture.userId), "AI_PARSE")).toMatchObject(
+      {
+        used: 1,
+        limit: FREE_AI_LIMIT,
+      },
+    );
     expect(result.featureQuota).toMatchObject({
       feature: "AI_PARSE",
       used: 1,
@@ -265,7 +274,9 @@ describe("ParseTodoUseCase", () => {
       errorCode: "AI_1301",
       details: { charged: false },
     });
-    expect((await fixture.quota.read(fixture.userId, "AI_PARSE")).used).toBe(0);
+    expect((await fixture.quota.read(UserId.reconstitute(fixture.userId), "AI_PARSE")).used).toBe(
+      0,
+    );
   });
 
   it("한도가 소진된 요청은 provider를 호출하지 않고 AI_1303을 반환한다", async () => {
@@ -273,7 +284,7 @@ describe("ParseTodoUseCase", () => {
     const fixture = createFixture();
     for (let index = 0; index < FREE_AI_LIMIT; index += 1) {
       await fixture.quota.reserve({
-        userId: fixture.userId,
+        userId: UserId.reconstitute(fixture.userId),
         feature: "AI_PARSE",
         idempotencyKey: null,
         reason: "parse-todo",
@@ -305,7 +316,9 @@ describe("ParseTodoUseCase", () => {
       const execution = fixture.useCase.execute(fixture.input);
       // Then
       await expect(execution).rejects.toMatchObject({ errorCode });
-      expect((await fixture.quota.read(fixture.userId, "AI_PARSE")).used).toBe(0);
+      expect((await fixture.quota.read(UserId.reconstitute(fixture.userId), "AI_PARSE")).used).toBe(
+        0,
+      );
       expect([...fixture.quotaChargeRepository.all]).toMatchObject([
         { status: "REFUNDED", refundReason: "FAILED" },
       ]);
@@ -321,7 +334,9 @@ describe("ParseTodoUseCase", () => {
     const execution = fixture.useCase.execute(fixture.input);
     // Then
     await expect(execution).rejects.toBe(failure);
-    expect((await fixture.quota.read(fixture.userId, "AI_PARSE")).used).toBe(0);
+    expect((await fixture.quota.read(UserId.reconstitute(fixture.userId), "AI_PARSE")).used).toBe(
+      0,
+    );
     expect(fixture.generator.getCallCount()).toBe(0);
   });
 
@@ -338,7 +353,7 @@ describe("ParseTodoUseCase", () => {
       task: "parse-todo",
       taskClass: "interactive",
       userId: fixture.input.userId,
-      maxInputChars: 5_000,
+      maxInputChars: 5000,
       promptVersion: "parse-todo@9",
       agreedConsentVersion: "2026-10-26",
     });
@@ -411,7 +426,9 @@ describe("ParseTodoUseCase", () => {
     const execution = fixture.useCase.execute({ ...fixture.input, locale: undefined });
     // Then
     await expect(execution).rejects.toBe(failure);
-    expect((await fixture.quota.read(fixture.userId, "AI_PARSE")).used).toBe(0);
+    expect((await fixture.quota.read(UserId.reconstitute(fixture.userId), "AI_PARSE")).used).toBe(
+      0,
+    );
     expect(fixture.generator.getCallCount()).toBe(0);
   });
 
@@ -422,7 +439,9 @@ describe("ParseTodoUseCase", () => {
     const execution = fixture.useCase.execute({ ...fixture.input, timezone: "Invalid/Timezone" });
     // Then
     await expect(execution).rejects.toBeInstanceOf(RangeError);
-    expect((await fixture.quota.read(fixture.userId, "AI_PARSE")).used).toBe(0);
+    expect((await fixture.quota.read(UserId.reconstitute(fixture.userId), "AI_PARSE")).used).toBe(
+      0,
+    );
     expect(fixture.generator.getCallCount()).toBe(0);
   });
 });

@@ -875,7 +875,10 @@ describe("resolveTodoSchedule — 반복 규칙 (서울 수 2026-10-28)", () => 
     },
     {
       why: "until이 시작일보다 앞선 날",
-      repeat: { pattern: "DAILY", until: { kind: "CALENDAR_DATE", year: 2026, month: 10, day: 1 } },
+      repeat: {
+        pattern: "DAILY",
+        until: { kind: "CALENDAR_DATE", year: 2026, month: 10, day: 1 },
+      },
     },
     {
       why: "기간이 하루뿐인 forDuration",

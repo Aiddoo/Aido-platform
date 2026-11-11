@@ -13,7 +13,7 @@ export interface RuntimeSample {
   readonly pool: PoolStats | null;
 }
 
-export const RUNTIME_BREACH_KINDS = ["pool-waiting", "event-loop-delay", "heap-usage"] as const;
+const RUNTIME_BREACH_KINDS = ["pool-waiting", "event-loop-delay", "heap-usage"] as const;
 
 export type RuntimeBreachKind = (typeof RUNTIME_BREACH_KINDS)[number];
 

@@ -10,6 +10,7 @@ import { match } from 'ts-pattern';
 import type { BriefingRowTone } from '../constants/weather-colors.constants';
 import { WEATHER_CONDITION_LABEL_KEYS } from '../constants/weather-labels';
 import {
+  type AffectedTodo,
   type BriefingResult,
   type ForecastTodo,
   type HourRange,
@@ -65,7 +66,6 @@ export interface BriefingView {
 export interface BriefingViewDeps {
   hourly: readonly HourlyForecastEntry[];
   now: Instant;
-  timeZone: string;
   formatClock: (date: Instant) => string;
   formatHour: (date: Instant) => string;
   formatTemperature: (celsius: number) => string;
@@ -73,15 +73,14 @@ export interface BriefingViewDeps {
 }
 
 export function toBriefingView(briefing: BriefingResult, deps: BriefingViewDeps): BriefingView {
-  const { hourly, now, timeZone, formatClock, formatHour, formatTemperature, formatChance } = deps;
+  const { hourly, now, formatClock, formatHour, formatTemperature, formatChance } = deps;
   const range = (hours: HourRange): BriefingCopy => ({
     key: 'briefing.range',
     values: { start: formatHour(hours.startsAt), end: formatHour(hours.endsAt) },
   });
   const chance = (todo: ForecastTodo) => formatChance(todo.hour.precipitationChance);
-  const firstOption = (todo: ForecastTodo, reason: WeatherRescheduleReason) =>
-    WeatherReschedulePolicy.getRescheduleOptions(hourly, todo, { now, timeZone, reason })[0]
-      ?.startsAt ?? null;
+  const firstOption = (todo: AffectedTodo) =>
+    WeatherReschedulePolicy.getUpcomingOptions(todo.rescheduleOptions, now)[0]?.startsAt ?? null;
   /** 완료한 할 일은 옮기지 않는다. 모두 완료했으면 옮길 버튼을 감춘다. */
   const reschedule = (
     todos: ForecastTodo[],
@@ -103,7 +102,7 @@ export function toBriefingView(briefing: BriefingResult, deps: BriefingViewDeps)
             : { key: 'briefing.rainyMany', values: { count: todos.length } },
         body: { key: 'briefing.rainyBody' },
         rows: todos.map((todo): BriefingRow => {
-          const dryHour = firstOption(todo, 'rain');
+          const dryHour = firstOption(todo);
           return {
             todo,
             advice:
@@ -153,7 +152,7 @@ export function toBriefingView(briefing: BriefingResult, deps: BriefingViewDeps)
     })
     .with({ kind: 'hot' }, ({ todos, range: hours, peakApparentTemperature }): BriefingView => {
       const [first] = todos;
-      const coolHour = first == null ? null : firstOption(first, 'heat');
+      const coolHour = first == null ? null : firstOption(first);
       const peak = formatTemperature(peakApparentTemperature);
       return {
         headline: { key: 'briefing.hot.title' },
@@ -168,7 +167,7 @@ export function toBriefingView(briefing: BriefingResult, deps: BriefingViewDeps)
                 values: { range: range(hours), temperature: peak, time: formatHour(coolHour) },
               },
         rows: todos.map((todo): BriefingRow => {
-          const cool = firstOption(todo, 'heat');
+          const cool = firstOption(todo);
           return {
             todo,
             advice:

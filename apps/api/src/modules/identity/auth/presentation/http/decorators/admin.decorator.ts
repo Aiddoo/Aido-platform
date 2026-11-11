@@ -2,7 +2,7 @@ import { applyDecorators, SetMetadata, UseGuards } from "@nestjs/common";
 
 import { AdminGuard } from "#api/modules/identity/auth/presentation/http/guards/admin.guard";
 
-export const IS_ADMIN_KEY = "isAdmin";
+const IS_ADMIN_KEY = "isAdmin";
 
 /**
  * 관리자 전용 라우트를 표시하는 데코레이터

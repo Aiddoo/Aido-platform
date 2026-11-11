@@ -9,15 +9,18 @@ import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy
  */
 @Injectable()
 export class OutboundHealthIndicator {
-  constructor(
-    private readonly healthIndicatorService: HealthIndicatorService,
-    private readonly registry: OutboundPolicyRegistry,
-  ) {}
+  readonly #healthIndicatorService: HealthIndicatorService;
+  readonly #registry: OutboundPolicyRegistry;
+
+  constructor(healthIndicatorService: HealthIndicatorService, registry: OutboundPolicyRegistry) {
+    this.#healthIndicatorService = healthIndicatorService;
+    this.#registry = registry;
+  }
 
   isHealthy(key: string): HealthIndicatorResult {
-    const degraded = Object.values(this.registry.getStates()).some(
+    const degraded = Object.values(this.#registry.getStates()).some(
       (state) => state.openBreakers.length > 0,
     );
-    return this.healthIndicatorService.check(key).up({ degraded });
+    return this.#healthIndicatorService.check(key).up({ degraded });
   }
 }

@@ -12,6 +12,7 @@ import { ReorderMemoUseCase } from "#api/modules/notes/memos/application/use-cas
 import { SetMemoPinnedUseCase } from "#api/modules/notes/memos/application/use-cases/set-memo-pinned.use-case";
 import { UpdateMemoUseCase } from "#api/modules/notes/memos/application/use-cases/update-memo.use-case";
 import { MemoId } from "#api/modules/notes/memos/domain/memo-id.vo";
+import { TodoCategoryId } from "#api/modules/planning/categories/planning-categories.public";
 import {
   DatabaseRecordNotFoundError,
   databaseSqlState,
@@ -326,20 +327,20 @@ describe("메모 변경 원자성 (실제 PostgreSQL)", () => {
     const own = await seedMemo();
     const foreign = await seedMemo(1, otherUserId);
 
-    // When
-    const update = context.module
-      .get(UpdateMemoUseCase)
-      .execute({ userId, memoId: foreign.id, content: "덮어쓰기" });
-    const reorder = context.module
-      .get(ReorderMemoUseCase)
-      .execute({ userId, memoId: own.id, targetMemoId: foreign.id, position: "after" });
-
-    // Then
-    await expect(update).rejects.toMatchObject({
+    // When & Then: 거부 처리기를 만들 때 바로 걸어 먼저 끝난 거부가 처리되지 않은 채 남지 않게 한다
+    await expect(
+      context.module
+        .get(UpdateMemoUseCase)
+        .execute({ userId, memoId: foreign.id, content: "덮어쓰기" }),
+    ).rejects.toMatchObject({
       errorCode: ErrorCode.MEMO_2001,
       details: { memoId: foreign.id },
     });
-    await expect(reorder).rejects.toMatchObject({
+    await expect(
+      context.module
+        .get(ReorderMemoUseCase)
+        .execute({ userId, memoId: own.id, targetMemoId: foreign.id, position: "after" }),
+    ).rejects.toMatchObject({
       errorCode: ErrorCode.MEMO_2002,
       details: { targetMemoId: foreign.id },
     });
@@ -359,7 +360,7 @@ describe("메모 변경 원자성 (실제 PostgreSQL)", () => {
       where: { userId },
       orderBy: { id: "asc" },
     });
-    const missing = createMemoFixture({ id: 2147483647, userId });
+    const missing = createMemoFixture({ id: 2_147_483_647, userId });
 
     // When
     const result = context.module.get(UnitOfWorkPort).run(async () => {
@@ -449,7 +450,7 @@ describe("메모 변경 원자성 (실제 PostgreSQL)", () => {
       .returning();
     const categoryId = requireRecord(category).id;
     const publish = vi.spyOn(context.module.get(DomainEventPublisherPort), "publish");
-    const startDate = new Date("2027-01-08T00:00:00.000Z");
+    const startDate = Temporal.PlainDate.from("2027-01-08");
 
     // When
     recording = [];
@@ -460,10 +461,14 @@ describe("메모 변경 원자성 (실제 PostgreSQL)", () => {
         memoId: seeded.id,
         timezone: "UTC",
         todos: [
-          { title: "앞선 성공 항목", categoryId, startDate },
+          {
+            title: "앞선 성공 항목",
+            categoryId: TodoCategoryId.reconstitute(categoryId),
+            startDate,
+          },
           {
             title: "실패 반복 항목",
-            categoryId,
+            categoryId: TodoCategoryId.reconstitute(categoryId),
             startDate,
             repeat: {
               frequency: "WEEKLY",

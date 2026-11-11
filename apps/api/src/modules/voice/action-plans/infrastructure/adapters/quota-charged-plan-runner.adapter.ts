@@ -30,7 +30,7 @@ export class QuotaChargedPlanRunnerAdapter extends ChargedPlanRunnerPort {
     const { quota, chargedGeneration } = this.#dependencies;
     const { userId, feature, idempotencyKey, reason, requestHash, replay } = request;
     const reservation = await quota.reserve({
-      userId: userId.value,
+      userId,
       feature,
       idempotencyKey,
       requestHash,

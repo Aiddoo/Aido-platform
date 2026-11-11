@@ -1,12 +1,11 @@
-import { resolveDeliveryTimezone } from "#api/shared/domain/date/utils/timezone";
-import { instantFromDate } from "#api/shared/domain/time/instant";
+import { resolveDeliveryTimezone } from "#api/shared/domain/time/time-zone-name";
 
 export interface RetentionPushEligibilityInput {
   readonly pushEnabled: boolean;
-  readonly marketingPushAgreedAt: Date | null;
+  readonly marketingPushAgreedAt: Temporal.Instant | null;
   readonly activeTokenCount: number;
   readonly timezone: string;
-  readonly now: Date;
+  readonly now: Temporal.Instant;
 }
 
 export function retentionPushSkipReason(input: RetentionPushEligibilityInput): string | null {
@@ -26,7 +25,7 @@ export function retentionPushSkipReason(input: RetentionPushEligibilityInput): s
   return null;
 }
 
-function localHour(date: Date, timezone: string): number {
+function localHour(instant: Temporal.Instant, timezone: string): number {
   // 마케팅 quiet-hours는 지역 기준 — 미상(UTC) 유저는 KST로 폴백해 판정
-  return instantFromDate(date).toZonedDateTimeISO(resolveDeliveryTimezone(timezone)).hour;
+  return instant.toZonedDateTimeISO(resolveDeliveryTimezone(timezone)).hour;
 }

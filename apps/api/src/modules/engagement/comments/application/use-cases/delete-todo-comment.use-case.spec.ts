@@ -137,7 +137,7 @@ describe("DeleteTodoCommentUseCase — 댓글 삭제", () => {
   it("할 일 댓글 수가 이미 0이면 SYS_0003으로 거부한다", async () => {
     // Given
     const comment = await fixture.addComment();
-    await fixture.engagementCounter.decrementCommentCount(TODO_ID);
+    await fixture.engagementCounter.decrementCommentCount(TodoId.reconstitute(TODO_ID));
 
     // When
     const deleting = new DeleteTodoCommentUseCase(fixture).execute({

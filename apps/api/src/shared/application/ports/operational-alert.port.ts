@@ -1,8 +1,4 @@
-import type { AlertDefinition, AlertSeverity } from "../alerts/define-alerts.js";
-
-export const OPERATIONAL_ALERT = Symbol("OPERATIONAL_ALERT");
-
-export type OperationalAlertSeverity = AlertSeverity;
+import type { AlertDefinition } from "../alerts/define-alerts.js";
 
 /**
  * 사람이 확인해야 하는 운영 상황 하나. slice `*.alerts.ts`의 정의를 펼쳐 만든다(`{ ...TodoAlerts.X, tags }`).

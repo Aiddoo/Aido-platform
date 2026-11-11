@@ -9,7 +9,7 @@ const INVISIBLE_CHARACTERS =
   /(?!\u{200C}|\u{200D}|[\u{FE00}-\u{FE0F}])[\p{Default_Ignorable_Code_Point}\p{Bidi_Control}]|(?![\t\n])\p{Cc}/gu;
 
 /** 사용자 입력·저장 데이터를 담는 블록 이름. 블록 안은 지시가 아니라 데이터다. */
-export const UNTRUSTED_TAGS = [
+const UNTRUSTED_TAGS = [
   "context",
   "user_input",
   "transcript",

@@ -7,12 +7,12 @@ import {
   type CurrentUserPayload,
 } from "#api/modules/identity/identity-auth-http.public";
 import { API_VERSION } from "#api/platform/http/api-versioning";
+import { ApiUnauthorizedError } from "#api/platform/http/swagger/decorators/api-error.decorator";
+import { ApiDoc } from "#api/platform/http/swagger/decorators/api-operation.decorator";
 import {
   ApiCreatedResponse,
-  ApiDoc,
   ApiSuccessResponse,
-  ApiUnauthorizedError,
-} from "#api/platform/http/swagger/index";
+} from "#api/platform/http/swagger/decorators/api-response.decorator";
 
 import { Create{{pascalCase aggregate}}UseCase } from "../../../application/use-cases/create-{{aggregate}}.use-case.js";
 import { List{{pascalCase slice}}UseCase } from "../../../application/use-cases/list-{{slice}}.use-case.js";

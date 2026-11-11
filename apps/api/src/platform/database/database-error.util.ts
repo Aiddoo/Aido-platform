@@ -102,6 +102,7 @@ export type DatabaseErrorKind =
   | "statement-timeout"
   | "connection"
   | "pool-timeout"
+  | "query-timeout"
   | "unknown";
 
 const DATABASE_ERROR_KIND_BY_SQL_STATE: Readonly<Record<string, DatabaseErrorKind>> = {
@@ -120,6 +121,8 @@ const CONNECTION_EXCEPTION_CLASS = "08";
 
 // SQLSTATE가 없는 연결 문제는 pg·pg-pool이 고정 문구로 던진다
 const POOL_TIMEOUT_MESSAGE = "timeout exceeded when trying to connect";
+// 클라이언트 query_timeout이 지나도록 DB가 답하지 않았다
+const QUERY_TIMEOUT_MESSAGE = "Query read timeout";
 const CONNECTION_LOST_MESSAGE = /^Connection terminated/;
 // 네트워크 오류 code는 외부 HTTP 호출에서도 나오므로 Drizzle 쿼리 오류 아래에 있을 때만 DB 연결 문제로 본다
 const NETWORK_ERROR_CODES = new Set([
@@ -136,6 +139,9 @@ function classifyWithoutSqlState(error: unknown): DatabaseErrorKind {
   const chain = causeChain(error);
   if (chain.some((cause) => cause.message === POOL_TIMEOUT_MESSAGE)) {
     return "pool-timeout";
+  }
+  if (chain.some((cause) => cause.message === QUERY_TIMEOUT_MESSAGE)) {
+    return "query-timeout";
   }
   if (chain.some((cause) => CONNECTION_LOST_MESSAGE.test(cause.message))) {
     return "connection";

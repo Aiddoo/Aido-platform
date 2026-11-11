@@ -1,0 +1,38 @@
+appId: ${MAESTRO_APP_ID}
+name: 페이월을 열었다가 결제 없이 닫으면 피드로 돌아오고 구독 상태가 그대로다
+tags:
+  - smoke
+  - subscription
+onFlowStart:
+  - runFlow: ../../subflows/app/load-helpers.yaml
+  - evalScript: ${output.main = output.api.signIn('main')}
+  - evalScript: ${output.subscriptionBefore = output.main.subscriptionStatus()}
+  - runFlow: ../../subflows/app/launch-fresh.yaml
+---
+# Given: 무료 계정으로 로그인했다
+- runFlow:
+    file: ../../subflows/auth/sign-in.yaml
+    env:
+      EMAIL: ${output.main.email}
+      PASSWORD: ${output.main.password}
+
+# When: 페이월을 연다
+- openLink: ${output.config.appScheme}://paywall
+# Then: 요금제 화면이 보인다
+- extendedWaitUntil:
+    visible:
+      id: ${output.ids.subscription.paywall}
+    timeout: 20000
+
+# When: 결제하지 않고 닫는다
+- tapOn: ${output.labels.close}
+# Then: 피드로 돌아오고 구독 상태가 바뀌지 않는다
+- extendedWaitUntil:
+    visible:
+      id: ${output.ids.feed.screen}
+    timeout: 10000
+- assertNotVisible:
+    id: ${output.ids.subscription.paywall}
+- assertTrue:
+    condition: ${output.main.subscriptionStatus() === output.subscriptionBefore}
+    label: 구독 상태가 그대로다

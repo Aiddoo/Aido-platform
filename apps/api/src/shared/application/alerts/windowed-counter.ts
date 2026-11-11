@@ -1,4 +1,4 @@
-const DEFAULT_MAX_KEYS = 1_000;
+const DEFAULT_MAX_KEYS = 1000;
 
 /**
  * 고정 길이 창 안에서 키별로 센다. 창이 지나면 모든 키를 0부터 다시 센다.

@@ -20,7 +20,6 @@ import {
 } from "cockatiel";
 
 import type { AlertDefinition } from "#api/shared/application/alerts/define-alerts";
-import { now } from "#api/shared/domain/date/utils/core";
 
 import { OutboundRejectedError, OutboundTimeoutError } from "./outbound-policy.errors.js";
 
@@ -173,7 +172,8 @@ export class OutboundPolicy {
   }
 
   #openBreakers(): string[] {
-    const at = now().getTime();
+    // cockatiel이 halfOpenAfter를 Date.now()로 재므로 열린 시각도 같은 시계로 잰다
+    const at = Date.now();
     return this.#breakers
       .filter(
         ({ policy, openedAt, spec }) =>
@@ -202,7 +202,7 @@ export class OutboundPolicy {
     circuit = policy;
     const breaker: Breaker = { spec, policy, openedAt: null };
     policy.onBreak((reason) => {
-      breaker.openedAt = now().getTime();
+      breaker.openedAt = Date.now();
       const failure = "error" in reason ? reason.error : "value" in reason ? reason.value : null;
       this.#events.onOpened({
         policy: policySpec.name,

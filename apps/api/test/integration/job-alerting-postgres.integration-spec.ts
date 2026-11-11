@@ -12,9 +12,9 @@ import { DeduplicatingOperationalAlertAdapter } from "#api/platform/observabilit
 import {
   defineQueue,
   type JobRetryPolicy,
-  type OperationalAlertPort,
   type QueueDefinition,
-} from "#api/shared/application/ports/index";
+} from "#api/shared/application/ports/job-queue.port";
+import { type OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 import { alertIssueKey } from "#api/shared/application/ports/operational-alert.port";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { RecordingJobHeartbeat } from "#test/doubles/platform/recording-job-heartbeat";
@@ -111,7 +111,7 @@ describe("작업 실패 경보 통합 테스트 (실제 PostgreSQL·pg-boss)", (
 
   function jobQueueWith(alerts: OperationalAlertPort, registry = new JobQueueRegistry()) {
     const { txHost } = createDatabaseTransactionFixture(database);
-    return new PgBossJobQueueAdapter(boss, txHost, registry, alerts);
+    return new PgBossJobQueueAdapter(boss, txHost, registry, { shutdownTimeoutMs: 10_000 }, alerts);
   }
 
   function watchdogWith(alerts: OperationalAlertPort, registry = new JobQueueRegistry()) {

@@ -11,7 +11,6 @@ import { NotificationDeliveryLogEvent } from "../notification-delivery.log-event
 import { PublishPushDeliveryOutboxUseCase } from "./publish-push-delivery-outbox.use-case.js";
 
 const NOW = Temporal.Instant.from("2026-08-29T00:00:00.000Z");
-const NOW_DATE = new Date(NOW.epochMilliseconds);
 
 function createPublishUseCase(rows: readonly InMemoryPushDeliveryOutboxRow[]) {
   const outbox = new InMemoryPushDeliveryOutboxRepository(rows);
@@ -78,7 +77,7 @@ describe("PublishPushDeliveryOutboxUseCase — outbox job 발행", () => {
     expect(outbox.rowOf(41)).toMatchObject({
       status: "PENDING",
       publishAttempts: 2,
-      availableAt: new Date(NOW_DATE.getTime() + 2_000),
+      availableAt: NOW.add({ milliseconds: 2000 }),
       lastError: "queue unavailable",
     });
     expect(logger.messages).toContainEqual(
@@ -120,7 +119,7 @@ describe("PublishPushDeliveryOutboxUseCase — outbox job 발행", () => {
     expect(outbox.rowOf(52)).toMatchObject({
       status: "PROCESSING",
       publishAttempts: 3,
-      lockedAt: NOW_DATE,
+      lockedAt: NOW,
       lastError: null,
     });
   });

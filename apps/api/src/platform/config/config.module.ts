@@ -10,7 +10,7 @@ import { processEnv } from "./env.js";
 import { jobConfig } from "./job.config.js";
 import { jwtConfig } from "./jwt.config.js";
 import { redisConfig } from "./redis.config.js";
-import { validateEnv } from "./schemas/index.js";
+import { validateEnv } from "./schemas/env.schema.js";
 import { productionConfigWarnings } from "./schemas/production-readiness.js";
 import { sentryConfig } from "./sentry.config.js";
 import { throttleConfig } from "./throttle.config.js";

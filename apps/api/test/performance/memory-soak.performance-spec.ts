@@ -5,14 +5,14 @@ import request from "supertest";
 import { z } from "zod";
 
 import { todo } from "#api/platform/database/schema/index";
-import { defineQueue, JobQueuePort } from "#api/shared/application/ports/index";
+import { defineQueue, JobQueuePort } from "#api/shared/application/ports/job-queue.port";
 import {
   createE2eApp,
   destroyE2eApp,
   type E2eTestContext,
   type VerifiedUser,
 } from "#test/e2e/helpers/index";
-import { preparePgBossSchema, useRealJobRuntime } from "#test/e2e/helpers/real-job-runtime";
+import { preparePgBossSchema, useRealJobQueue } from "#test/e2e/helpers/real-job-queue";
 
 /*
  * 측정(2026-11-10, Node 26.13, 로컬 macOS, Vitest fork worker, --no-flush-bytecode):
@@ -20,8 +20,8 @@ import { preparePgBossSchema, useRealJobRuntime } from "#test/e2e/helpers/real-j
  * JIT 코드(code·trusted space) 0.5MB다. flushing을 켠 채 소크를 6번 이어 돌려도 회차마다 -0.1~+0.5MB로 평탄했다.
  * 기준 4MB는 요청마다 1KB를 붙잡는 누수를 주입했을 때 +5.75MB로 실패하는 것을 확인했다.
  */
-const WARM_UP = { requests: 3_000, jobs: 500 };
-const SOAK = { requests: 5_000, jobs: 1_000 };
+const WARM_UP = { requests: 3000, jobs: 500 };
+const SOAK = { requests: 5000, jobs: 1000 };
 const HEAP_GROWTH_LIMIT_BYTES = 4 * 1024 * 1024;
 const USER_COUNT = 20;
 const MB = 1024 * 1024;
@@ -129,7 +129,7 @@ it(
   { timeout: 600_000 },
   async () => {
     await preparePgBossSchema();
-    const ctx = await createE2eApp({ customizeBuilder: useRealJobRuntime });
+    const ctx = await createE2eApp({ customizeBuilder: useRealJobQueue });
     try {
       // Given
       const users: VerifiedUser[] = [];

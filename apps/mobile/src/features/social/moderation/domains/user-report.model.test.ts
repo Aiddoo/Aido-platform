@@ -1,4 +1,13 @@
-import { UserReportPolicy } from './user-report.model';
+import { createTodoDetails } from '@src/features/planning/todo/__tests__/todo.fixtures';
+
+import {
+  createCheerMessageReportTarget,
+  createCommentReportTarget,
+  createNudgeMessageReportTarget,
+  createProfileReportTarget,
+  createTodoReportTarget,
+  TodoReportPolicy,
+} from './user-report.model';
 
 const USER_ID = 'clz7x5p8k0001qz0z8z8z8z8z';
 
@@ -8,7 +17,7 @@ describe('createTodoReportTarget', () => {
     const todo = { todoId: 42, ownerId: USER_ID };
 
     // When
-    const target = UserReportPolicy.createTodoReportTarget(todo);
+    const target = createTodoReportTarget(todo);
 
     // Then
     expect(target).toEqual({ targetUserId: USER_ID, targetType: 'TODO', targetId: '42' });
@@ -21,7 +30,7 @@ describe('createCommentReportTarget', () => {
     const comment = { commentId: 'clz7x5p8k0099qz0z8z8z8z8z', authorId: USER_ID };
 
     // When
-    const target = UserReportPolicy.createCommentReportTarget(comment);
+    const target = createCommentReportTarget(comment);
 
     // Then
     expect(target).toEqual({
@@ -38,7 +47,7 @@ describe('createProfileReportTarget', () => {
     const user = { userId: USER_ID };
 
     // When
-    const target = UserReportPolicy.createProfileReportTarget(user);
+    const target = createProfileReportTarget(user);
 
     // Then
     expect(target).toEqual({ targetUserId: USER_ID, targetType: 'PROFILE' });
@@ -51,7 +60,7 @@ describe('메시지 신고 대상', () => {
     const nudge = { nudgeId: 7, senderId: USER_ID };
 
     // When
-    const target = UserReportPolicy.createNudgeMessageReportTarget(nudge);
+    const target = createNudgeMessageReportTarget(nudge);
 
     // Then
     expect(target).toEqual({
@@ -66,7 +75,7 @@ describe('메시지 신고 대상', () => {
     const cheer = { cheerId: 9, senderId: USER_ID };
 
     // When
-    const target = UserReportPolicy.createCheerMessageReportTarget(cheer);
+    const target = createCheerMessageReportTarget(cheer);
 
     // Then
     expect(target).toEqual({
@@ -80,10 +89,12 @@ describe('메시지 신고 대상', () => {
 describe('canReportTodo', () => {
   it('수정할 수 없는 남의 할 일은 신고할 수 있다', () => {
     // Given
-    const todo = { permissions: { canEdit: false } };
+    const details = createTodoDetails({
+      permissions: { canEdit: false, canComment: true, canNudge: true },
+    });
 
     // When
-    const result = UserReportPolicy.canReportTodo(todo);
+    const result = TodoReportPolicy.canReportTodo(details);
 
     // Then
     expect(result).toBe(true);
@@ -91,10 +102,12 @@ describe('canReportTodo', () => {
 
   it('수정할 수 있는 내 할 일은 신고할 수 없다', () => {
     // Given
-    const todo = { permissions: { canEdit: true } };
+    const details = createTodoDetails({
+      permissions: { canEdit: true, canComment: true, canNudge: true },
+    });
 
     // When
-    const result = UserReportPolicy.canReportTodo(todo);
+    const result = TodoReportPolicy.canReportTodo(details);
 
     // Then
     expect(result).toBe(false);

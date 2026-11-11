@@ -30,6 +30,7 @@ import {
   userProfile,
 } from "#api/platform/database/schema/index";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { nowInstant } from "#test/fixtures/clock.fixture";
 import { createDatabaseTransactionFixture, createTestClient } from "#test/setup/database-context";
 import type { TestDatabaseClient } from "#test/setup/test-database";
 
@@ -48,7 +49,7 @@ const PARTICIPANT_A_REPLY = "cm1conversationparticipantareply1";
 const PARTICIPANT_B_REPLY = "cm1conversationparticipantbreply1";
 
 type CommentRow = Omit<typeof todoComment.$inferInsert, "updatedAt">;
-const TODO_START_DATE = new Date("2026-08-26T00:00:00.000Z");
+const TODO_START_DATE = Temporal.PlainDate.from("2026-08-26");
 const COMMENT_UPDATED_AT = Temporal.Instant.from("2026-08-26T00:00:00.000Z");
 
 describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
@@ -142,7 +143,12 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
     ]);
     const [category] = await client
       .insert(todoCategory)
-      .values({ userId: "conversation-owner", name: "Conversation", color: "#123456" })
+      .values({
+        userId: "conversation-owner",
+        name: "Conversation",
+        color: "#123456",
+        updatedAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
+      })
       .returning();
     if (category === undefined) {
       throw new Error("category fixture was not created");
@@ -155,6 +161,7 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
         title: "한 화면의 댓글 대화",
         startDate: TODO_START_DATE,
         commentCount: 5,
+        updatedAt: nowInstant(),
       })
       .returning();
     if (createdTodo === undefined) {
@@ -864,38 +871,7 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
     });
   });
 
-  it("지문이 없는 구버전 행도 구조와 내용이 같으면 안전하게 replay한다", async () => {
-    // Given
-    const input = {
-      todoId,
-      authorId: "conversation-author",
-      parentId: null,
-      items: [
-        {
-          clientRequestId: "00000000-0000-4000-8000-000000000001",
-          content: "오래된 루트",
-        },
-        {
-          clientRequestId: "00000000-0000-4000-8000-000000000004",
-          content: "같은 시각 id가 앞인 형제",
-        },
-      ],
-    };
-
-    // When
-    const replayed = matchTodoCommentChainReplay({
-      request: input,
-      stored: await repository.listByAuthorIdAndClientRequestIds(
-        UserId.reconstitute(input.authorId),
-        input.items.map((item) => item.clientRequestId),
-      ),
-    });
-
-    // Then
-    expect(replayed).toEqual({ ok: true, commentIds: [ROOT_A, CHILD_A] });
-  });
-
-  it("지문이 없는 멱등 키의 내용이 다르면 replay하지 않는다", async () => {
+  it("지문이 없는 행은 replay하지 않는다", async () => {
     // Given
     const input = {
       todoId,

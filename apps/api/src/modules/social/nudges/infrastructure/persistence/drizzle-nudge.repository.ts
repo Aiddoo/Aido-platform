@@ -55,7 +55,6 @@ import type { NudgeDirection } from "../../domain/nudges.constants.js";
 import { ReminderNudgeId } from "../../domain/reminder-nudge-id.vo.js";
 import type { ReminderNudge } from "../../domain/reminder-nudge.aggregate.js";
 import {
-  toDateColumn,
   toNudge,
   toNudgeInteractionTodo,
   toNudgeListItem,
@@ -210,14 +209,13 @@ export class DrizzleNudgeRepository implements NudgeRepositoryPort, NudgeReaderP
   }
 
   countTodosOn(ownerId: UserId, date: Temporal.PlainDate): Promise<number> {
-    const day = toDateColumn(date);
     return this.#db.$count(
       todoTable,
       and(
         eq(todoTable.userId, ownerId.value),
         or(
-          and(lte(todoTable.startDate, day), gte(todoTable.endDate, day)),
-          and(eq(todoTable.startDate, day), isNull(todoTable.endDate)),
+          and(lte(todoTable.startDate, date), gte(todoTable.endDate, date)),
+          and(eq(todoTable.startDate, date), isNull(todoTable.endDate)),
         ),
       ),
     );

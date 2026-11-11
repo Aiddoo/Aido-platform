@@ -43,7 +43,7 @@ describe("DiscordAdminNotifierAdapter 실제 HTTP wire와 로그 경계", () => 
     nativeFetch = vi
       .spyOn(globalThis, "fetch")
       .mockRejectedValue(new Error("Live network blocked"));
-    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.useFakeTimers({ toFake: ["Date", "Temporal"] });
     vi.setSystemTime(new Date("2026-10-08T00:00:00.000Z"));
   });
 
@@ -153,7 +153,7 @@ describe("DiscordAdminNotifierAdapter 실제 HTTP wire와 로그 경계", () => 
 
   it("응답이 없는 webhook은 제한 시간 뒤 재시도 가능한 실패로 끊는다", async () => {
     // Given
-    vi.useFakeTimers({ toFake: ["Date", "setTimeout", "clearTimeout"] });
+    vi.useFakeTimers({ toFake: ["Date", "Temporal", "setTimeout", "clearTimeout"] });
     nativeFetch.mockImplementation(
       (_url: string | URL | Request, init?: RequestInit) =>
         new Promise<Response>((_resolve, reject) => {

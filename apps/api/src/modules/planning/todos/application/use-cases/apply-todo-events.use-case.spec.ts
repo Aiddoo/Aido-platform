@@ -15,7 +15,7 @@ import {
 import { ApplyTodoEventsUseCase } from "./apply-todo-events.use-case.js";
 
 const AT = Temporal.Instant.from("2026-11-10T00:00:00Z");
-const TEN_AM = new Date("2026-11-11T01:00:00.000Z");
+const TEN_AM = Temporal.Instant.from("2026-11-11T01:00:00.000Z");
 
 function createUseCase() {
   const reminders = new RecordingTodoReminderScheduler();

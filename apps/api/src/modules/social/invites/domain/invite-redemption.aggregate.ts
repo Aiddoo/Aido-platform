@@ -3,6 +3,7 @@ import {
   REDEMPTION_STATUS,
   type RedemptionRejectionReason,
 } from "@aido/api/vocabulary";
+import type { RedemptionStatus as RedemptionStatusValue } from "@aido/api/vocabulary";
 
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { AggregateRoot } from "#api/shared/domain/model/aggregate-root";
@@ -19,7 +20,7 @@ import {
   qualifyReminderExpiresBefore,
 } from "./invite-qualify-reminder.domain-service.js";
 import { InviteRedemptionId } from "./invite-redemption-id.vo.js";
-import { RedemptionStatus, type RedemptionStatusValue } from "./redemption-status.vo.js";
+import { RedemptionStatus } from "./redemption-status.vo.js";
 
 export interface InviteRedemptionPrimitives {
   readonly id: string;

@@ -1,6 +1,6 @@
 import { TodoCommentLockKeys } from "./comments.lock-keys.js";
 
-// 배포 중 옛 버전과 같은 잠금을 잡아야 해서 옮긴 문자열을 바이트 단위로 고정한다
+// 배포가 겹치는 동안 이전 버전과 같은 잠금을 잡아야 해서 문자열을 바이트 단위로 고정한다
 describe("TodoCommentLockKeys", () => {
   it("댓글·댓글 요청 잠금 키는 옮기기 전 문자열과 같다", () => {
     // When

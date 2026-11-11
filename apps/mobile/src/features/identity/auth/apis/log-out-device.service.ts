@@ -18,6 +18,8 @@ interface LogOutDeviceServicePorts {
   /** 위층 기능이라 조립하는 곳이 넘긴다 */
   pushDeviceService: {
     unregister(config?: Pick<RequestConfig, 'timeout'>): Promise<Result<void, ApiError>>;
+    /** 인증 해제를 보내지 못했을 때 기기 id와 토큰으로 나중에 푼다 */
+    requestRelease(): void;
   };
   tokenStore: Pick<TokenStore, 'getRefreshToken'>;
   sessionRevocationService: Pick<SessionRevocationService, 'record'>;
@@ -76,6 +78,21 @@ export class LogOutDeviceService {
       });
     };
 
+    let isPushUnregistered = false;
+    // 끝난 세션의 기기 해제는 공개 API로 연결될 때 보낸다. 다시 로그인했다면 새 세션의 등록이라 풀지 않는다
+    const releasePushIfStillRegistered = (outcome: LogOutOutcome): LogOutOutcome => {
+      if (outcome === 'ended' && !isPushUnregistered) {
+        try {
+          this.#pushDeviceService.requestRelease();
+        } catch (error) {
+          this.#logger.warn(AUTH_LOG_EVENT.PUSH_UNREGISTER_FAILED, {
+            error: getErrorMessage(error),
+          });
+        }
+      }
+      return outcome;
+    };
+
     const finish = async (): Promise<LogOutOutcome> => {
       if (isSameSession()) {
         await this.#authService.clearLocalSession().catch((error: unknown) => {
@@ -95,13 +112,14 @@ export class LogOutDeviceService {
     if (!isOnline) {
       this.#logger.info(AUTH_LOG_EVENT.LOGOUT_SERVER_SKIPPED_OFFLINE);
       await recordRevocation();
-      return finish();
+      return releasePushIfStillRegistered(await finish());
     }
 
     const config = { timeout: LOGOUT_REQUEST_TIMEOUT_MS };
 
     try {
       const unregisterResult = await this.#pushDeviceService.unregister(config);
+      isPushUnregistered = unregisterResult.ok;
       if (!unregisterResult.ok) {
         this.#logger.warn(AUTH_LOG_EVENT.PUSH_UNREGISTER_SKIPPED, {
           code: unregisterResult.error.code,
@@ -113,7 +131,7 @@ export class LogOutDeviceService {
 
     if (!isSameSession()) {
       await recordRevocation();
-      return finish();
+      return releasePushIfStillRegistered(await finish());
     }
 
     try {
@@ -126,6 +144,6 @@ export class LogOutDeviceService {
       await recordRevocation();
     }
 
-    return finish();
+    return releasePushIfStillRegistered(await finish());
   };
 }

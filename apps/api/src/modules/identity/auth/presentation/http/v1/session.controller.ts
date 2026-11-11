@@ -3,20 +3,19 @@ import { Controller, Delete, Get, HttpCode, HttpStatus, Param, Req } from "@nest
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import type { Request } from "express";
 
+import { type CurrentUserPayload } from "#api/../../../packages/api/dist/contracts/auth/v1/auth.response.d";
 import { ListActiveSessionsUseCase } from "#api/modules/identity/auth/application/use-cases/list-active-sessions.use-case";
 import { RevokeSessionUseCase } from "#api/modules/identity/auth/application/use-cases/revoke-session.use-case";
+import { CurrentUser } from "#api/modules/identity/auth/presentation/http/decorators/current-user.decorator";
+import { type RequestClient } from "#api/platform/http/request-client/request-client";
+import { CurrentRequestClient } from "#api/platform/http/request-client/request-client.decorator";
+import { SWAGGER_TAGS } from "#api/platform/http/swagger/constants/swagger.constant";
 import {
-  CurrentUser,
-  type CurrentUserPayload,
-} from "#api/modules/identity/auth/presentation/http/decorators/current-user.decorator";
-import { CurrentRequestClient, type RequestClient } from "#api/platform/http/request-client/index";
-import {
-  ApiDoc,
   ApiNotFoundError,
-  ApiSuccessResponse,
   ApiUnauthorizedError,
-  SWAGGER_TAGS,
-} from "#api/platform/http/swagger/index";
+} from "#api/platform/http/swagger/decorators/api-error.decorator";
+import { ApiDoc } from "#api/platform/http/swagger/decorators/api-operation.decorator";
+import { ApiSuccessResponse } from "#api/platform/http/swagger/decorators/api-response.decorator";
 
 import { extractMetadata } from "./auth-request.mapper.js";
 import { RevokeSessionDto } from "./auth.dto.js";

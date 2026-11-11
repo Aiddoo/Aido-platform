@@ -20,7 +20,7 @@ import { router } from 'expo-router';
 import { Skeleton } from 'heroui-native';
 import { match } from 'ts-pattern';
 
-import { FriendPolicy, type SearchedUser } from '../domains/friend.model';
+import { FriendPolicy, isValidSearchQuery, type SearchedUser } from '../domains/friend.model';
 import { useDebouncedValue } from '../hooks/use-debounced-value';
 import { useFriendSearchTracking } from '../hooks/use-friend-search-tracking';
 import {
@@ -47,7 +47,7 @@ export function FriendSearchList({ query, onFriendLimitInvite }: FriendSearchLis
   });
   useFriendSearchTracking(debouncedQuery);
 
-  if (!FriendPolicy.isValidSearchQuery({ query: normalizedQuery })) {
+  if (!isValidSearchQuery(normalizedQuery)) {
     return <FriendSearchList.Prompt />;
   }
   if (!isSettled || search.isPending) {

@@ -1,6 +1,7 @@
 import { Inject, Injectable } from "@nestjs/common";
 
 import { RetentionEnrollmentPort } from "#api/modules/notification/notification-retention.public";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { RetentionEnrollerPort } from "../../application/ports/retention-enroller.port.js";
 
@@ -15,11 +16,11 @@ export class RetentionEnrollerAdapter implements RetentionEnrollerPort {
     this.#retentionEnrollment = retentionEnrollment;
   }
 
-  enrollNewUser(userId: string, activated: boolean): Promise<void> {
+  enrollNewUser(userId: UserId, activated: boolean): Promise<void> {
     return this.#retentionEnrollment.enrollNewUser(userId, activated);
   }
 
-  activateNewUser(userId: string): Promise<void> {
+  activateNewUser(userId: UserId): Promise<void> {
     return this.#retentionEnrollment.activateNewUser(userId);
   }
 }

@@ -107,7 +107,7 @@ export function WeatherMoonIcon({
         )}
       </Defs>
       <Circle cx={MOON_CENTER} cy={MOON_CENTER} r={MOON_CENTER} fill={`url(#${ids.glow})`} />
-      <G rotation={rotation} origin={`${MOON_CENTER}, ${MOON_CENTER}`}>
+      <G transform={`rotate(${rotation} ${MOON_CENTER} ${MOON_CENTER})`}>
         <Circle cx={MOON_CENTER} cy={MOON_CENTER} r={MOON_RADIUS} fill={`url(#${ids.dark})`} />
         <G clipPath={`url(#${ids.disc})`}>
           {MOON_MARIA.map(({ cx, cy, rx, ry }) => (

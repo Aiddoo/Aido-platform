@@ -1,7 +1,7 @@
 import type { z } from "zod";
 
 import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
-import type { ICacheService } from "#api/platform/cache/interfaces/cache.interface";
+import type { CacheStorePort } from "#api/platform/cache/cache-store.port";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { PlanResultReplay } from "../../application/ports/plan-result-replay.port.js";
@@ -22,11 +22,11 @@ export class PlanResultReplayCache extends InMemoryCacheStore {
 }
 
 export class InMemoryPlanResultReplayAdapter<T> implements PlanResultReplay<T> {
-  readonly #cache: Pick<ICacheService, "get" | "set">;
+  readonly #cache: Pick<CacheStorePort, "get" | "set">;
   readonly #namespace: string;
   readonly #schema: z.ZodType<T>;
 
-  constructor(cache: Pick<ICacheService, "get" | "set">, namespace: string, schema: z.ZodType<T>) {
+  constructor(cache: Pick<CacheStorePort, "get" | "set">, namespace: string, schema: z.ZodType<T>) {
     this.#cache = cache;
     this.#namespace = namespace;
     this.#schema = schema;

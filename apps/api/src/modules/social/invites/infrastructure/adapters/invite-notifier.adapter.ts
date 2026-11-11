@@ -5,13 +5,12 @@ import {
   createInviteProgressNotificationMessage,
   createInviteQualifyReminderNotificationMessage,
   createInviteRewardedNotificationMessage,
-  NotificationPublisher,
+  PublishNotificationUseCase,
   NotificationRecipientLocaleReaderPort,
   PushQuietHoursReaderPort,
   TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY,
 } from "#api/modules/notification/notification-delivery.public";
-import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { instantToDate } from "#api/shared/domain/time/instant";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import {
   type InviteJoinedNotification,
@@ -23,12 +22,12 @@ import {
 
 @Injectable()
 export class InviteNotifierAdapter extends InviteNotifierPort {
-  readonly #notificationPublisher: NotificationPublisher;
+  readonly #notificationPublisher: PublishNotificationUseCase;
   readonly #localeReader: NotificationRecipientLocaleReaderPort;
   readonly #quietHoursReader: PushQuietHoursReaderPort;
 
   constructor(
-    notificationPublisher: NotificationPublisher,
+    notificationPublisher: PublishNotificationUseCase,
     @Inject(NotificationRecipientLocaleReaderPort)
     localeReader: NotificationRecipientLocaleReaderPort,
     @Inject(PushQuietHoursReaderPort)
@@ -44,7 +43,7 @@ export class InviteNotifierAdapter extends InviteNotifierPort {
     const campaignKey = TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY.INVITE_JOINED;
     const message = createInviteJoinedNotificationMessage({
       inviteeName: notification.inviteeName,
-      locale: await this.#localeReader.getLocale(notification.inviterId),
+      locale: await this.#localeReader.getLocale(UserId.reconstitute(notification.inviterId)),
       variantContext: {
         campaignKey,
         recipientId: notification.inviterId,
@@ -67,7 +66,7 @@ export class InviteNotifierAdapter extends InviteNotifierPort {
     const message = createInviteRewardedNotificationMessage({
       premiumDays: notification.premiumDays,
       friendSlots: notification.friendSlots,
-      locale: await this.#localeReader.getLocale(notification.recipientId),
+      locale: await this.#localeReader.getLocale(UserId.reconstitute(notification.recipientId)),
       variantContext: {
         campaignKey,
         recipientId: notification.recipientId,
@@ -89,7 +88,7 @@ export class InviteNotifierAdapter extends InviteNotifierPort {
     const campaignKey = TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY.INVITE_PROGRESS;
     const message = createInviteProgressNotificationMessage({
       inviteeName: notification.inviteeName,
-      locale: await this.#localeReader.getLocale(notification.inviterId),
+      locale: await this.#localeReader.getLocale(UserId.reconstitute(notification.inviterId)),
       variantContext: {
         campaignKey,
         recipientId: notification.inviterId,
@@ -111,7 +110,7 @@ export class InviteNotifierAdapter extends InviteNotifierPort {
     const campaignKey = TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY.INVITE_QUALIFY_REMINDER;
     const message = createInviteQualifyReminderNotificationMessage({
       inviterName: notification.inviterName,
-      locale: await this.#localeReader.getLocale(notification.inviteeId),
+      locale: await this.#localeReader.getLocale(UserId.reconstitute(notification.inviteeId)),
       variantContext: {
         campaignKey,
         recipientId: notification.inviteeId,
@@ -132,10 +131,7 @@ export class InviteNotifierAdapter extends InviteNotifierPort {
   }
 
   async isInQuietHours(userId: UserId, at: Temporal.Instant): Promise<boolean> {
-    const quietUserIds = await this.#quietHoursReader.findUsersInQuietHours(
-      [userId.value],
-      instantToDate(at),
-    );
+    const quietUserIds = await this.#quietHoursReader.findUsersInQuietHours([userId], at);
     return quietUserIds.has(userId.value);
   }
 }

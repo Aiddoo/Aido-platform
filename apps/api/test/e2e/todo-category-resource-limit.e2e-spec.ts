@@ -11,6 +11,7 @@ import request from "supertest";
  */
 
 import { todoCategory, user as userTable } from "#api/platform/database/schema/index";
+import { nowInstant } from "#test/fixtures/clock.fixture";
 
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 
@@ -21,7 +22,7 @@ describe("할 일 카테고리 리소스 제한 E2E", () => {
 
   beforeAll(async () => {
     ctx = await createE2eApp();
-  }, 60000);
+  }, 60_000);
 
   afterAll(async () => {
     await destroyE2eApp(ctx);
@@ -135,6 +136,7 @@ describe("할 일 카테고리 리소스 제한 E2E", () => {
           name: `관리자 카테고리 ${index + 1}`,
           color: "#123456",
           sortOrder: 100 + index,
+          updatedAt: nowInstant(),
         })),
       );
       const owned = PREMIUM_LIMIT + 1;

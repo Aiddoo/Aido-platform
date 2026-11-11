@@ -3,7 +3,8 @@ import { ErrorCode } from "@aido/api/errors";
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
-import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
+import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { AuthLogEvent } from "../auth.log-events.js";
 import type { AuthCachePort } from "../ports/auth-collaboration.port.js";
@@ -39,8 +40,9 @@ export class LinkOAuthAccountWithCodeUseCase {
   }
 
   async execute(input: LinkOAuthAccountWithCodeCommand): Promise<{ message: string }> {
+    const userId = UserId.reconstitute(input.userId);
     const result = await this.#dependencies.unitOfWork.run(async () => {
-      await this.#dependencies.userRepository.findByIdForUpdate(input.userId);
+      await this.#dependencies.userRepository.findByIdForUpdate(userId);
       const at = this.#dependencies.clock.now();
       const state = await this.#dependencies.oauthStateRepository.findByExchangeCode(
         input.code,
@@ -54,11 +56,11 @@ export class LinkOAuthAccountWithCodeUseCase {
         throw this.#invalidCode();
       }
       const consumed = await this.#dependencies.oauthStateRepository.consumeExchangeCode({
-        id: state.id.value,
+        id: state.id,
         exchangeCode: input.code,
         at,
         purpose: "link",
-        actorUserId: input.userId,
+        actorUserId: userId,
       });
       if (!consumed) {
         throw this.#invalidCode();
@@ -72,7 +74,7 @@ export class LinkOAuthAccountWithCodeUseCase {
       });
     });
     if (result.linked) {
-      await this.#dependencies.cacheService.invalidateUserProfile(input.userId);
+      await this.#dependencies.cacheService.invalidateUserProfile(userId);
       this.#dependencies.logger.log({
         event: AuthLogEvent.OAUTH_ACCOUNT_LINKED,
         userId: input.userId,

@@ -1,5 +1,6 @@
 import { ErrorCode } from "@aido/api/errors";
 
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { FakeTodoCategoryCache } from "#test/doubles/planning/fake-todo-category-cache";
 import { InMemoryTodoCategoryRepository } from "#test/doubles/planning/in-memory-todo-category.repository";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
@@ -31,8 +32,8 @@ class StubTodoCategoryLimitReader extends TodoCategoryLimitReaderPort {
     return this.maxCount;
   }
 
-  async readFeatureQuotaInTx(userId: string, count: number): Promise<TodoCategoryFeatureQuota> {
-    this.quotaReads.push([userId, count]);
+  async readFeatureQuotaInTx(userId: UserId, count: number): Promise<TodoCategoryFeatureQuota> {
+    this.quotaReads.push([userId.value, count]);
     return this.quota;
   }
 }
@@ -98,7 +99,7 @@ describe("카테고리 생성", () => {
       details: { charged: false, featureQuota },
     });
     expect(limitReader.quotaReads).toEqual([[USER_ID, 2]]);
-    expect(await repository.countByUserId(USER_ID)).toBe(2);
+    expect(await repository.countByUserId(UserId.reconstitute(USER_ID))).toBe(2);
     expect(cache.invalidatedUserIds).toEqual([]);
   });
 
@@ -114,7 +115,7 @@ describe("카테고리 생성", () => {
       errorCode: ErrorCode.TODO_CATEGORY_0853,
       details: { name: "업무" },
     });
-    expect(await repository.countByUserId(USER_ID)).toBe(2);
+    expect(await repository.countByUserId(UserId.reconstitute(USER_ID))).toBe(2);
     expect(cache.invalidatedUserIds).toEqual([]);
   });
 
@@ -130,7 +131,7 @@ describe("카테고리 생성", () => {
     });
 
     // Then
-    const saved = await repository.findByIdAndUserId(result.id.value, USER_ID);
+    const saved = await repository.findByIdAndUserId(result.id, UserId.reconstitute(USER_ID));
     expect(saved?.toPrimitives()).toEqual({
       id: 3,
       userId: USER_ID,
@@ -167,15 +168,15 @@ describe("카테고리 생성", () => {
       }
     }
     class OrderedRepository extends InMemoryTodoCategoryRepository {
-      override async countByUserId(userId: string): Promise<number> {
+      override async countByUserId(userId: UserId): Promise<number> {
         events.push("count");
         return super.countByUserId(userId);
       }
-      override async existsByUserIdAndName(userId: string, name: string): Promise<boolean> {
+      override async existsByUserIdAndName(userId: UserId, name: string): Promise<boolean> {
         events.push("name-read");
         return super.existsByUserIdAndName(userId, name);
       }
-      override async getMaxSortOrder(userId: string): Promise<number> {
+      override async getMaxSortOrder(userId: UserId): Promise<number> {
         events.push("max-order-read");
         return super.getMaxSortOrder(userId);
       }
@@ -185,7 +186,7 @@ describe("카테고리 생성", () => {
       }
     }
     class OrderedCache extends FakeTodoCategoryCache {
-      override async invalidate(userId: string): Promise<void> {
+      override async invalidate(userId: UserId): Promise<void> {
         events.push("cache");
         await super.invalidate(userId);
       }

@@ -67,20 +67,20 @@ catalog:
   '@ai-sdk/openai': '4.0.111'
   '@changesets/cli': '3.0.3'
   '@ls-lint/ls-lint': '2.3.2'
-  '@photostructure/tz-lookup': '11.7.0'
+  '@photostructure/tz-lookup': '11.8.0'
   '@react-native-kakao/core': '2.4.11'
   '@react-native-kakao/share': '2.4.11'
   '@react-native-kakao/social': '2.4.11'
   '@react-native-kakao/user': '2.4.11'
-  '@sentry/nestjs': '11.10.0'
+  '@sentry/nestjs': '11.11.0'
   '@swc/cli': '0.8.2'
   '@swc/core': '1.16.22'
-  '@tanstack/query-async-storage-persister': 5.105.3
-  '@tanstack/react-query': 5.105.3
-  '@tanstack/react-query-persist-client': 5.105.3
+  '@tanstack/query-async-storage-persister': '5.107.1'
+  '@tanstack/react-query': '5.107.1'
+  '@tanstack/react-query-persist-client': '5.107.1'
   '@testcontainers/postgresql': '12.2.1'
   '@turbo/gen': '2.11.10'
-  '@types/d3-shape': ^3.2.0
+  '@types/d3-shape': '3.2.0'
   '@types/ngeohash': '0.6.8'
   '@types/node': '26.6.6'
   '@types/pg': '8.23.1'
@@ -90,7 +90,7 @@ catalog:
   'bowser': '2.15.0'
   'cockatiel': '4.0.0'
   'countries-and-timezones': '3.11.0'
-  d3-shape: 3.2.1
+  'd3-shape': '3.2.1'
   'dayjs': '1.11.23'
   'dependency-cruiser': '18.7.2'
   'es-toolkit': '1.53.2'
@@ -100,7 +100,7 @@ catalog:
   'helmet': '8.3.0'
   'ioredis': '5.11.1'
   'jose': '6.2.17'
-  knip: 6.44.1
+  'knip': '6.45.0'
   'lru-cache': '11.5.3'
   'ngeohash': '0.6.4'
   'oxfmt': '0.78.0'
@@ -118,7 +118,7 @@ catalog:
   'ts-pattern': '5.9.2'
   'typescript': '6.0.3'
   'unplugin-swc': '2.0.0'
-  'vite': '8.3.5'
+  'vite': '8.3.7'
   'vitest': '5.1.0'
   'zod': '4.6.7'
 
@@ -138,6 +138,7 @@ catalogs:
     'expo': '58.0.23'
     'expo-apple-authentication': '~58.0.2'
     'expo-application': '~58.1.2'
+    'expo-asset': '~58.0.20'
     'expo-audio': '~58.0.11'
     'expo-auth-session': '~58.0.17'
     'expo-blur': '~58.0.5'
@@ -160,6 +161,7 @@ catalogs:
     'expo-network': '~58.0.4'
     'expo-notifications': '~58.1.8'
     'expo-router': '~58.0.30'
+    'expo-screen-orientation': '~58.0.4'
     'expo-secure-store': '~58.0.2'
     'expo-sharing': '~58.0.22'
     'expo-splash-screen': '~58.0.13'
@@ -182,7 +184,7 @@ catalogs:
     'react-native-svg': '15.16.0'
     'react-native-view-shot': '6.1.1'
     'react-native-worklets': '0.13.0'
-    'uniwind': '1.13.1'
+    'uniwind': '1.13.2'
   drizzle1:
     '@nestjs-cls/transactional-adapter-drizzle-orm': '2.0.2'
     'drizzle-kit': '1.0.0-rc.5'

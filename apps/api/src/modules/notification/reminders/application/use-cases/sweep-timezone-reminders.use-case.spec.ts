@@ -148,8 +148,8 @@ describe("SweepTimezoneRemindersUseCase — 타임존 리마인더 오케스트�
           localHour: 8,
           localMinute: 0,
           dayOfWeek: 3,
-          today: new Date("2024-01-17T00:00:00.000Z"),
-          tomorrow: new Date("2024-01-18T00:00:00.000Z"),
+          today: Temporal.PlainDate.from("2024-01-17"),
+          tomorrow: Temporal.PlainDate.from("2024-01-18"),
           userId: undefined,
         },
       ]);
@@ -353,7 +353,7 @@ describe("SweepTimezoneRemindersUseCase — 타임존 리마인더 오케스트�
         expect(
           strategies.morningReminder.contexts.map(({ localHour, localMinute, today }) => [
             `${localHour}:${localMinute}`,
-            today.toISOString().slice(0, 10),
+            today.toString(),
           ]),
         ).toEqual([
           ["23:58", "2024-01-16"],
@@ -588,7 +588,7 @@ describe("SweepTimezoneRemindersUseCase — 타임존 리마인더 오케스트�
         {
           context: expect.objectContaining({
             tz: "Asia/Seoul",
-            today: new Date("2024-01-16T00:00:00.000Z"),
+            today: Temporal.PlainDate.from("2024-01-16"),
           }),
           recipientUserIds: [TEST_CUID.USER_1],
         },
