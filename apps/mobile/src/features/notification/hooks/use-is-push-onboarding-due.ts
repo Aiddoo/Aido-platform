@@ -1,10 +1,8 @@
-import { useAppLifecycle } from '@src/bootstrap/providers/di-context';
 import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
-import { diffMs, getNowInstant, hasInstantPassed, type Instant } from '@src/shared/date/instant';
+import { useNow } from '@src/shared/hooks/use-now';
 import { useStoredValue } from '@src/shared/storage/use-stored-value';
 import { useQuery } from '@tanstack/react-query';
-import { useEffect, useState } from 'react';
 
 import { PUSH_ASK_MOMENT } from '../constants/notification.constants';
 import { PushPermissionPolicy } from '../domains/push-permission.model';
@@ -23,9 +21,10 @@ export function useIsPushOnboardingDue(): boolean | null {
     enabled: isAuthenticated,
   });
   const [deferredAt] = useStoredValue(pushPermissionDeferredAtStoredValue, me?.id);
-  const now = useNowRefreshedAt(
-    me == null ? null : PushPermissionPolicy.getOnboardingWindowEndsAt(me.createdAt),
-  );
+  // 앱 화면 묶음의 guard라 분마다 다시 그리지 않는다. 가입 창이 끝나는 순간에 한 번만 다시 읽는다
+  const now = useNow({
+    until: me == null ? null : PushPermissionPolicy.getOnboardingWindowEndsAt(me.createdAt),
+  });
 
   if (!isAuthenticated || me == null) {
     return null;
@@ -42,31 +41,4 @@ export function useIsPushOnboardingDue(): boolean | null {
       now,
     }) === PUSH_ASK_MOMENT.ONBOARDING_SCREEN
   );
-}
-
-/**
- * 앱 화면 묶음의 guard라 분마다 다시 그리지 않는다. 가입 창이 끝나는 순간에 한 번, 백그라운드에서
- * 타이머가 멈췄을 수 있어 앱으로 돌아올 때 지금 시각을 다시 읽는다. 창이 끝나면 더 읽지 않는다
- */
-function useNowRefreshedAt(deadline: Instant | null): Instant {
-  const appLifecycle = useAppLifecycle();
-  const [now, setNow] = useState(getNowInstant);
-
-  useEffect(() => {
-    if (deadline == null || hasInstantPassed(deadline, now)) {
-      return;
-    }
-    const timer = setTimeout(() => setNow(getNowInstant()), diffMs(deadline, now));
-    const unsubscribe = appLifecycle.subscribe((state) => {
-      if (state === 'active') {
-        setNow(getNowInstant());
-      }
-    });
-    return () => {
-      clearTimeout(timer);
-      unsubscribe();
-    };
-  }, [appLifecycle, deadline, now]);
-
-  return now;
 }

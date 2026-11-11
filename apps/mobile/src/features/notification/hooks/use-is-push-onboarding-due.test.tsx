@@ -101,11 +101,11 @@ describe('useIsPushOnboardingDue — 앱 화면 묶음 guard', () => {
     const rendersAfterWindow = getRenderCount();
 
     // When
+    await act(async () => appLifecycle.emit('background'));
     await act(async () => appLifecycle.emit('active'));
 
     // Then
     expect(getRenderCount()).toBe(rendersAfterWindow);
-    expect(appLifecycle.getListenerCount()).toBe(0);
   });
 });
 

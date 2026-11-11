@@ -7,9 +7,3 @@ export function getRemainingCooldownSeconds(deadlineMs: number | null, nowMs: nu
   }
   return Math.max(0, Math.ceil((deadlineMs - nowMs) / SECOND_MS));
 }
-
-/** 남은 초 글자가 다음에 바뀌는 순간까지의 ms. 마감에서 초 단위로 떨어지는 경계에 맞춘다 */
-export function getMsUntilNextCooldownTick(deadlineMs: number, nowMs: number): number {
-  const remainderMs = (deadlineMs - nowMs) % SECOND_MS;
-  return remainderMs > 0 ? remainderMs : SECOND_MS;
-}
