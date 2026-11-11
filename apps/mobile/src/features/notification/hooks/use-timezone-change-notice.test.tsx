@@ -9,6 +9,7 @@ import {
   createMemoryObservableSyncStorage,
 } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
+import { setupFakeTimersPerTest } from '@src/testing/timers';
 import { act, screen } from '@testing-library/react-native';
 import { getCalendars } from 'expo-localization';
 
@@ -77,15 +78,13 @@ async function report(di: ReturnType<typeof setup>['di'], accountId: string | nu
 }
 
 describe('useTimezoneChangeNotice', () => {
+  setupFakeTimersPerTest({ now: NOW });
+
   beforeEach(() => {
-    // oxlint-disable-next-line jest/no-restricted-jest-methods -- 1.15.2 전환 #1400
-    jest.useFakeTimers({ now: NOW });
     setDeviceTimeZone('America/New_York');
   });
 
   afterEach(() => {
-    // oxlint-disable-next-line jest/no-restricted-jest-methods -- 1.15.2 전환 #1400
-    jest.useRealTimers();
     setDeviceTimeZone('UTC');
   });
 
