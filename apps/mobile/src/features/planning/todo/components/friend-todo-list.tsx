@@ -19,11 +19,11 @@ import {
 } from '@src/shared/ui';
 import { useSuspenseQueries, useSuspenseQuery } from '@tanstack/react-query';
 import { groupBy, range } from 'es-toolkit';
-import { type ComponentType, useMemo, useState } from 'react';
+import { type ComponentType, useState } from 'react';
 
 import { SubTodoPolicy } from '../domains/sub-todo.model';
 import { isFriendFeedUnavailableError } from '../domains/todo.error';
-import type { Todo } from '../domains/todo.model';
+import type { Todo, TodoListResult } from '../domains/todo.model';
 import { useFeedDateKey, useFeedFriendId } from '../hooks/use-feed-params';
 import { useFeedSelectedTodoId } from '../hooks/use-feed-selected-todo-id';
 import { useGetFriendTodosQueryOptions } from '../queries/todo.queries';
@@ -50,13 +50,15 @@ export function FriendTodoList({ friendId, rowAction, emptyAction }: FriendTodoL
   // 행마다 route 훅을 부르면 URL이 바뀔 때마다 행 수만큼 params를 다시 파싱한다. 목록이 한 번 읽어 넘긴다
   const [dateKey] = useFeedDateKey();
   const [_selectedTodoId, openTodoDetail] = useFeedSelectedTodoId();
-  const [{ data: todos }] = useSuspenseQueries({
+  const [{ data: categoryGroups }] = useSuspenseQueries({
     queries: [
-      useGetFriendTodosQueryOptions({ friendUserId: friendId, date: dateKey }),
+      {
+        ...useGetFriendTodosQueryOptions({ friendUserId: friendId, date: dateKey }),
+        select: (result: TodoListResult) => groupFriendTodosByCategory(result.todos),
+      },
       useGetPreferenceQueryOptions(),
     ],
   });
-  const categoryGroups = useMemo(() => groupFriendTodosByCategory(todos.todos), [todos]);
 
   if (categoryGroups.length === 0) {
     return <FriendTodoList.Empty action={emptyAction} />;

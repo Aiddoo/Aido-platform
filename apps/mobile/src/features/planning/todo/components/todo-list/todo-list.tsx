@@ -27,7 +27,7 @@ import { useMutation, useSuspenseQueries, useSuspenseQuery } from '@tanstack/rea
 import { groupBy, noop, range } from 'es-toolkit';
 import { router } from 'expo-router';
 import { PressableFeedback } from 'heroui-native';
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import type { AccessibilityActionEvent } from 'react-native';
 import {
   NestedReorderableList,
@@ -72,17 +72,19 @@ export function TodoList({ isReminderOff = false }: TodoListProps) {
   const [date] = useFeedDateKey();
   // 행마다 route 훅을 부르면 URL이 바뀔 때마다 행 수만큼 params를 다시 파싱한다. 목록이 한 번 읽어 넘긴다
   const [_selectedTodoId, openTodoDetail] = useFeedSelectedTodoId();
-  const [{ data: categoriesResult }, { data: todosByDate, dataUpdatedAt }] = useSuspenseQueries({
+
+  const { categoryGroups, dataUpdatedAt } = useSuspenseQueries({
     queries: [
       useGetTodoCategoriesQueryOptions(),
       useGetTodosByDateQueryOptions({ date }),
       useGetPreferenceQueryOptions(),
     ],
+    combine: ([categories, todosByDate]) => ({
+      categoryGroups: groupTodosByCategory(todosByDate.data.todos, categories.data.categories),
+      dataUpdatedAt: todosByDate.dataUpdatedAt,
+    }),
   });
-  const categoryGroups = useMemo(
-    () => groupTodosByCategory(todosByDate.todos, categoriesResult.categories),
-    [todosByDate.todos, categoriesResult.categories],
-  );
+
   const canReorderTodos = categoryGroups.some((group) => TodoPolicy.canReorderTodos(group.todos));
 
   return (
@@ -222,21 +224,38 @@ TodoList.Item = function Item({
   isReminderOff,
   onOpenDetail,
 }: TodoListItemProps) {
+  const { t } = useTranslation('todo');
+  const dateFormatContext = useDateFormatContext();
+
+  const { data: preference } = useSuspenseQuery(useGetPreferenceQueryOptions());
+
+  // 접거나 펴기 전에는 서브투두 유무를 따른다. 처음 값으로만 두면 나중에 생긴 서브투두가 접힌 채 남는다
+  const [userExpanded, setUserExpanded] = useState<boolean | null>(null);
+
   const drag = useReorderableDrag();
   const isActive = useIsActive();
   const selectTodo = useSingleTap(onOpenDetail);
-
-  const { t } = useTranslation('todo');
   const push = useSingleTap(router.push);
   const toggleTodo = useMutation(useToggleTodoMutationOptions());
   const toggleSubTodo = useMutation(useToggleSubTodoMutationOptions());
   const reorderSubTodos = useMutation(useReorderSubTodosMutationOptions());
-  // 접거나 펴기 전에는 서브투두 유무를 따른다. 처음 값으로만 두면 나중에 생긴 서브투두가 접힌 채 남는다
-  const [userExpanded, setUserExpanded] = useState<boolean | null>(null);
+  const subTodoReorderableList = useReorderableList({
+    items: todo.subTodos,
+    updatedAt,
+    isPending: reorderSubTodos.isPending,
+    getItemId: (subTodo) => subTodo.id,
+    isOptimistic: SubTodoPolicy.isOptimisticSubTodo,
+    onReorder: ({ items: reorderedSubTodos }) => {
+      reorderSubTodos.mutate({
+        todoId: todo.id,
+        subTodoIds: reorderedSubTodos.map((subTodo) => subTodo.id),
+        date,
+      });
+    },
+  });
+
   const isExpanded = userExpanded ?? SubTodoPolicy.hasSubTodos(todo.subTodos);
   const subTodoStats = SubTodoPolicy.getSubTodoStats(todo.subTodos);
-  const { data: preference } = useSuspenseQuery(useGetPreferenceQueryOptions());
-  const dateFormatContext = useDateFormatContext();
   const formattedTime = formatTodoTime(todo, preference.timeFormat, dateFormatContext);
   const isOptimistic = TodoPolicy.isOptimisticTodo(todo);
 
@@ -255,21 +274,6 @@ TodoList.Item = function Item({
       pathname: '/todo/[todoId]/sub-todos/[subTodoId]/actions',
       params: { todoId: todo.id, subTodoId: subTodo.id, date },
     });
-
-  const subTodoReorderableList = useReorderableList({
-    items: todo.subTodos,
-    updatedAt,
-    isPending: reorderSubTodos.isPending,
-    getItemId: (subTodo) => subTodo.id,
-    isOptimistic: SubTodoPolicy.isOptimisticSubTodo,
-    onReorder: ({ items: reorderedSubTodos }) => {
-      reorderSubTodos.mutate({
-        todoId: todo.id,
-        subTodoIds: reorderedSubTodos.map((subTodo) => subTodo.id),
-        date,
-      });
-    },
-  });
 
   const handleCompletedToggle = () =>
     toggleTodo.mutate({
