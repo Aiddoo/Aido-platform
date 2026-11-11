@@ -13,6 +13,7 @@ import type { HttpClient } from '@src/core/ports/http-client';
 import type { Logger } from '@src/core/ports/logger';
 import { toFeatureQuota } from '@src/features/billing/subscription/apis/entitlement.mapper';
 import type { TodoFormValues } from '@src/features/planning/todo/schemas/todo-form.schema';
+import { VOICE_LOG_EVENT } from '@src/features/voice/constants/voice-log-events';
 import { ParseError } from '@src/shared/errors/infra-error';
 import { parseApiResponse } from '@src/shared/errors/parse-api-response';
 import { noop } from 'es-toolkit';
@@ -138,7 +139,7 @@ export class MemoApi {
             featureQuota: dto.featureQuota == null ? null : toFeatureQuota(dto.featureQuota),
           };
         } catch (error) {
-          this.#logger.error(MEMO_LOG_EVENT.PLAN_MAPPING_FAILED, undefined, {
+          this.#logger.error(VOICE_LOG_EVENT.PLAN_MAPPING_FAILED, undefined, {
             method: 'parseMemo',
             zodError: error instanceof Error ? error.message : undefined,
           });
