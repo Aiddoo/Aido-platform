@@ -1,3 +1,4 @@
+import { SUPPORTED_LOCALES } from '@aido/api/vocabulary';
 import { omit } from 'es-toolkit';
 import { z } from 'zod';
 
@@ -26,7 +27,7 @@ const widgetDaySnapshotSchema = z.object({
       }),
     )
     .max(WIDGET_TOP_TODOS_LIMIT),
-  locale: z.enum(['ko', 'en']),
+  locale: z.enum(SUPPORTED_LOCALES),
   weekDays: z
     .array(
       z.object({

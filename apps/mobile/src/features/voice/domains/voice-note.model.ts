@@ -13,7 +13,7 @@ import {
 import { type PlanReviewDraft, planReviewDraftSchema } from '../schemas/plan-review-form.schema';
 import type { VoiceCaptureSeed } from './voice-capture.model';
 import { type PlannedMemo, type VoiceNoteDigestResult, VoicePlanPolicy } from './voice-plan.model';
-import { VoiceTranscriptPolicy } from './voice-transcript.model';
+import { createVoiceTranscript } from './voice-transcript.model';
 
 export const speechLocaleSchema = z.enum(SPEECH_LOCALES);
 
@@ -334,15 +334,16 @@ export function findKeyPointAt(note: VoiceNote, positionMs: number): VoiceNoteKe
 }
 
 // 이어 말하기의 시작 상태. 저장된 문장을 확정된 글자로, 저장된 길이를 이미 들은 시간으로 잇는다
-export function toCaptureSeed(note: Pick<VoiceNote, 'sentences' | 'durationMs'>): VoiceCaptureSeed {
+export function toCaptureSeed(note: VoiceNote): VoiceCaptureSeed {
   return {
-    transcript: VoiceTranscriptPolicy.createVoiceTranscript({
+    transcript: createVoiceTranscript({
       sentences: note.sentences.map(({ text }) => text),
     }),
     elapsedMs: note.durationMs,
   };
 }
 
+// 재생 조각 목록도 같은 규칙으로 찾아 시작 위치만 받는다
 export function findRecordingIndexAt(
   recordings: readonly Pick<VoiceNoteRecording, 'startMs'>[],
   positionMs: number,
@@ -360,10 +361,7 @@ export function isExpired(note: VoiceNote, now: Instant): boolean {
 }
 
 // 어느 초안도 가리키지 않는 녹음 파일의 보관 기한. 수정 시각을 모르면 기한이 지난 것으로 본다
-export function isRecordingFileExpired(
-  { modifiedAt }: Pick<LocalFileEntry, 'modifiedAt'>,
-  now: Instant,
-): boolean {
+export function isRecordingFileExpired({ modifiedAt }: LocalFileEntry, now: Instant): boolean {
   return (
     modifiedAt == null ||
     toEpochMs(now) - modifiedAt.getTime() >= VOICE_RECORDING_ORPHAN_RETENTION_MS
@@ -392,7 +390,6 @@ export const VoiceNotePolicy = {
   canPlayRecording,
   findKeyPointAt,
   toCaptureSeed,
-  findRecordingIndexAt,
   findSentenceIndexAt,
   getPlanStatus,
   findTodoCount,
@@ -401,5 +398,9 @@ export const VoiceNotePolicy = {
   findDigestTitle,
   getRecordingSizeBytes,
   isExpired,
+} as const;
+
+/** 기기에 남은 녹음 파일 */
+export const VoiceRecordingFilePolicy = {
   isRecordingFileExpired,
 } as const;

@@ -5,6 +5,8 @@ import type {
   AuthSession,
   AuthSessionPrimitives,
 } from "#api/modules/identity/auth/domain/auth-session.aggregate";
+import { SessionId } from "#api/modules/identity/auth/domain/session-id.vo";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import {
   AUTH_FIXTURE_NOW,
   AUTH_FIXTURE_OTHER_USER_ID,
@@ -54,7 +56,7 @@ export function describeAuthSessionRepositoryContract(
       });
 
       // When
-      const byId = await repository.findById(saved.id.value);
+      const byId = await repository.findById(saved.id);
       const byHash = await repository.findByRefreshTokenHash(saved.refreshTokenHash);
 
       // Then
@@ -67,7 +69,7 @@ export function describeAuthSessionRepositoryContract(
       const repository = await createRepository();
 
       // When
-      const byId = await repository.findById("missing-session");
+      const byId = await repository.findById(UserId.reconstitute("missing-session"));
       const byHash = await repository.findByRefreshTokenHash("missing-hash");
 
       // Then
@@ -93,7 +95,7 @@ export function describeAuthSessionRepositoryContract(
 
       // When
       await repository.save(changed);
-      const found = await repository.findById(saved.id.value);
+      const found = await repository.findById(saved.id);
 
       // Then
       expect(found?.toPrimitives()).toEqual({
@@ -114,7 +116,10 @@ export function describeAuthSessionRepositoryContract(
       await saveSession(repository, { userId: AUTH_FIXTURE_OTHER_USER_ID });
 
       // When
-      const active = await repository.listActiveByUserId(AUTH_FIXTURE_USER_ID, LATER);
+      const active = await repository.listActiveByUserId(
+        UserId.reconstitute(AUTH_FIXTURE_USER_ID),
+        LATER,
+      );
 
       // Then
       expect(active.map((session) => session.id.value)).toEqual([newer.id.value, older.id.value]);
@@ -127,9 +132,9 @@ export function describeAuthSessionRepositoryContract(
       const rotation = saved.planRotation("rotated-hash", LATER.add({ hours: 24 }));
 
       // When
-      const first = await repository.rotateToken(saved.id.value, rotation, LATER);
-      const stale = await repository.rotateToken(saved.id.value, rotation, LATER);
-      const found = await repository.findById(saved.id.value);
+      const first = await repository.rotateToken(saved.id, rotation, LATER);
+      const stale = await repository.rotateToken(saved.id, rotation, LATER);
+      const found = await repository.findById(saved.id);
 
       // Then
       expect({ first, stale }).toEqual({ first: true, stale: false });
@@ -146,15 +151,15 @@ export function describeAuthSessionRepositoryContract(
       // Given
       const repository = await createRepository();
       const saved = await saveSession(repository);
-      await repository.revoke(saved.id.value, REVOKE_REASON.USER_LOGOUT, LATER);
+      await repository.revoke(saved.id, REVOKE_REASON.USER_LOGOUT, LATER);
 
       // When
       const rotated = await repository.rotateToken(
-        saved.id.value,
+        saved.id,
         saved.planRotation("rotated-hash", LATER.add({ hours: 24 })),
         LATER,
       );
-      const found = await repository.findById(saved.id.value);
+      const found = await repository.findById(saved.id);
 
       // Then
       expect(rotated).toBe(false);
@@ -185,10 +190,12 @@ export function describeAuthSessionRepositoryContract(
       );
 
       // Then
-      expect(revoked.toSorted()).toEqual([first.id.value, second.id.value].toSorted());
+      expect(revoked.map((id) => id.value).toSorted()).toEqual(
+        [first.id.value, second.id.value].toSorted(),
+      );
       expect(repeated).toEqual([]);
-      expect((await repository.findById(first.id.value))?.revokedAt).toEqual(LATER);
-      expect((await repository.findById(other.id.value))?.revokedAt).toBeNull();
+      expect((await repository.findById(first.id))?.revokedAt).toEqual(LATER);
+      expect((await repository.findById(other.id))?.revokedAt).toBeNull();
     });
 
     it("사용자 전체 폐기는 제외한 세션과 다른 사용자를 두고 바꾼 id만 준다", async () => {
@@ -199,10 +206,10 @@ export function describeAuthSessionRepositoryContract(
       await saveSession(repository, { revokedAt: AUTH_FIXTURE_NOW });
       const otherUser = await saveSession(repository, { userId: AUTH_FIXTURE_OTHER_USER_ID });
       const params = {
-        userId: AUTH_FIXTURE_USER_ID,
+        userId: UserId.reconstitute(AUTH_FIXTURE_USER_ID),
         reason: REVOKE_REASON.PASSWORD_CHANGED,
         now: LATER,
-        exceptSessionId: current.id.value,
+        exceptSessionId: current.id,
       };
 
       // When
@@ -210,10 +217,10 @@ export function describeAuthSessionRepositoryContract(
       const repeated = await repository.revokeAllByUserId(params);
 
       // Then
-      expect(revoked).toEqual([another.id.value]);
+      expect(revoked).toEqual([another.id]);
       expect(repeated).toEqual([]);
-      expect((await repository.findById(current.id.value))?.revokedAt).toBeNull();
-      expect((await repository.findById(otherUser.id.value))?.revokedAt).toBeNull();
+      expect((await repository.findById(current.id))?.revokedAt).toBeNull();
+      expect((await repository.findById(otherUser.id))?.revokedAt).toBeNull();
     });
 
     it("제외할 세션 id가 비어 있으면 그 사용자의 세션을 모두 폐기한다", async () => {
@@ -224,14 +231,16 @@ export function describeAuthSessionRepositoryContract(
 
       // When
       const revoked = await repository.revokeAllByUserId({
-        userId: AUTH_FIXTURE_USER_ID,
+        userId: UserId.reconstitute(AUTH_FIXTURE_USER_ID),
         reason: REVOKE_REASON.ACCOUNT_DELETION,
         now: LATER,
-        exceptSessionId: "",
+        exceptSessionId: SessionId.reconstitute(""),
       });
 
       // Then
-      expect(revoked.toSorted()).toEqual([first.id.value, second.id.value].toSorted());
+      expect(revoked.map((id) => id.value).toSorted()).toEqual(
+        [first.id.value, second.id.value].toSorted(),
+      );
     });
   });
 }

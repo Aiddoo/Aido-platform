@@ -18,18 +18,19 @@ import {
   type CurrentUserPayload,
 } from "#api/modules/identity/identity-auth-http.public";
 import { API_VERSION } from "#api/platform/http/api-versioning";
-import { UserIdParamDto } from "#api/platform/http/dtos/index";
-import { AppVersion } from "#api/platform/http/request-client/index";
+import { UserIdParamDto } from "#api/platform/http/dtos/user-id-param.dto";
+import { AppVersion } from "#api/platform/http/request-client/request-client.decorator";
+import { SWAGGER_TAGS } from "#api/platform/http/swagger/constants/swagger.constant";
 import {
   ApiBadRequestError,
-  ApiDoc,
   ApiNotFoundError,
-  ApiSuccessResponse,
   ApiTooManyRequestsError,
   ApiUnauthorizedError,
-  SWAGGER_TAGS,
-} from "#api/platform/http/swagger/index";
-import { THROTTLED_DESCRIPTION, ThrottleByUser } from "#api/platform/throttle/index";
+} from "#api/platform/http/swagger/decorators/api-error.decorator";
+import { ApiDoc } from "#api/platform/http/swagger/decorators/api-operation.decorator";
+import { ApiSuccessResponse } from "#api/platform/http/swagger/decorators/api-response.decorator";
+import { THROTTLED_DESCRIPTION } from "#api/platform/throttle/throttle.constants";
+import { ThrottleByUser } from "#api/platform/throttle/user-aware-throttler.guard";
 
 import { BlockUserUseCase } from "../../../application/use-cases/block-user.use-case.js";
 import { GetBlockedUsersUseCase } from "../../../application/use-cases/get-blocked-users.use-case.js";

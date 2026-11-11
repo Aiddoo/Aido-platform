@@ -3,7 +3,7 @@ import { LRUCache } from "lru-cache";
 
 import { PlatformLogEvent } from "#api/platform/logging/platform.log-events";
 
-import type { IDedupProvider } from "../interfaces/dedup.interface.js";
+import { DedupProviderPort } from "../dedup-provider.port.js";
 
 // 키는 날짜·주·사용자 단위다. 넘치면 가장 오래 안 쓴 Set을 버리고, 그 뒤 중복은 DB unique index가 막는다
 export const DEDUP_MAX_ENTRIES = 20_000;
@@ -15,11 +15,11 @@ export const DEDUP_MAX_ENTRIES = 20_000;
  * - 단일 프로세스 환경에서만 유효 (수평 확장 시 Redis 필요)
  */
 @Injectable()
-export class InMemoryDedupAdapter implements IDedupProvider, OnModuleInit {
+export class InMemoryDedupAdapter extends DedupProviderPort implements OnModuleInit {
   readonly #logger = new Logger(InMemoryDedupAdapter.name);
   readonly #sets = new LRUCache<string, Set<string>>({
     max: DEDUP_MAX_ENTRIES,
-    // 옛 저장소처럼 만료를 Date.now로 재서 테스트의 가짜 시계(setSystemTime)를 그대로 따른다
+    // 만료를 Date.now로 재서 테스트의 가짜 시계(setSystemTime)를 그대로 따른다
     perf: { now: () => Date.now() },
     ttlResolution: 0,
   });

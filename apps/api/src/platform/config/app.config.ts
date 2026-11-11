@@ -25,7 +25,7 @@ export interface DevTools {
  * 소스로 띄운 개발 환경이다. 배포된 개발서버(APP_ENV=development)도 production 빌드라 여기서 빠지고,
  * 개발 공급자·관측(로그 어댑터, Sentry 끔)은 그대로 쓰되 개발 도구는 1.15.0처럼 열지 않는다.
  */
-export function isLocalRun(input: {
+function isLocalRun(input: {
   readonly environment: AppEnvironment;
   readonly nodeEnv: NodeEnvironment;
 }): boolean {

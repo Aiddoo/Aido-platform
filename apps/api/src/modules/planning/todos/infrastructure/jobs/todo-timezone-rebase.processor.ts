@@ -1,10 +1,7 @@
 import { Inject, Injectable, Logger, type OnModuleInit } from "@nestjs/common";
 
 import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
-import {
-  OPERATIONAL_ALERT,
-  type OperationalAlertPort,
-} from "#api/shared/application/ports/operational-alert.port";
+import { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 
 import { TodoAlerts } from "../../application/todos.alerts.js";
@@ -25,7 +22,7 @@ export class TodoTimezoneRebaseProcessor implements OnModuleInit {
   constructor(
     @Inject(RebaseTodoTimezoneUseCase)
     rebaseTodoTimezone: Pick<RebaseTodoTimezoneUseCase, "execute">,
-    @Inject(OPERATIONAL_ALERT) alert: OperationalAlertPort,
+    alert: OperationalAlertPort,
     jobQueue: JobQueuePort,
   ) {
     this.#rebaseTodoTimezone = rebaseTodoTimezone;

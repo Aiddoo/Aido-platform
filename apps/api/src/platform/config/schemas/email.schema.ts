@@ -3,7 +3,7 @@ import { z } from "zod";
 import type { AppEnvironment } from "./app.schema.js";
 
 /** 이메일 발송 어댑터. 어댑터를 더하면 여기와 email-sender-factory·nest-mail-module.config 표에 한 줄씩 더한다. */
-export const EMAIL_PROVIDERS = ["resend", "log"] as const;
+const EMAIL_PROVIDERS = ["resend", "log"] as const;
 export type EmailProviderId = (typeof EMAIL_PROVIDERS)[number];
 
 /** EMAIL_PROVIDER가 비었을 때의 발송 어댑터. 개발 환경은 Resend 키가 있을 때만 실제로 보낸다. */

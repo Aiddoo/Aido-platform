@@ -11,9 +11,10 @@ import request from "supertest";
  */
 
 import { SweepPremiumGrantsUseCase } from "#api/modules/billing/premium-grants/application/use-cases/sweep-premium-grants.use-case";
-import { PremiumGranterPort } from "#api/modules/billing/subscriptions/billing-subscriptions.public";
+import { PremiumGranterPort } from "#api/modules/billing/premium-grants/billing-premium-grants.public";
 import { requireRecord } from "#api/platform/database/database-error.util";
 import { resourceBonus, user as userTable } from "#api/platform/database/schema/index";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantFromDate } from "#api/shared/domain/time/instant";
 
 import type { VerifiedUser } from "./helpers/e2e-helpers.js";
@@ -26,7 +27,7 @@ describe("팔로우 리소스 제한 E2E", () => {
 
   beforeAll(async () => {
     ctx = await createE2eApp();
-  }, 60000);
+  }, 60_000);
 
   afterAll(async () => {
     await destroyE2eApp(ctx);
@@ -149,12 +150,12 @@ describe("팔로우 리소스 제한 E2E", () => {
           sourceKey: "invite:follow-limit-grant",
         });
         await ctx.module.get<PremiumGranterPort>(PremiumGranterPort).grant({
-          userId: user.userId,
+          userId: UserId.reconstitute(user.userId),
           source: "INVITE",
           sourceKey: "invite:limit",
           durationDays: 7,
         });
-        const endsAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1_000);
+        const endsAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
         const maxCountAt = async (at: Date) => {
           vi.setSystemTime(at);
           await ctx.module.get(SweepPremiumGrantsUseCase).execute({ now: instantFromDate(at) });

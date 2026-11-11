@@ -87,7 +87,7 @@ describe("회차 채우기", () => {
       fixture.todoSeriesRepository,
     );
     vi.spyOn(fixture.todoSeriesRepository, "lockForUpdate").mockImplementation(async (id) => {
-      if (id === "series-1") {
+      if (id.value === "series-1") {
         throw new Error("저장 실패");
       }
       return lockForUpdate(id);
@@ -131,8 +131,8 @@ describe("회차 채우기", () => {
     // Given
     await seed("series-1");
     fixture.seriesOwner.activity = {
-      lastActiveAt: new Date("2026-09-05T00:00:00.000Z"),
-      signedUpAt: new Date("2026-01-01T00:00:00.000Z"),
+      lastActiveAt: Temporal.Instant.from("2026-09-05T00:00:00.000Z"),
+      signedUpAt: Temporal.Instant.from("2026-01-01T00:00:00.000Z"),
       timezone: "Asia/Seoul",
     };
     // When
@@ -149,8 +149,8 @@ describe("회차 채우기", () => {
     // Given
     await seed("series-1");
     fixture.seriesOwner.activity = {
-      lastActiveAt: new Date("2026-09-05T00:00:00.000Z"),
-      signedUpAt: new Date("2026-01-01T00:00:00.000Z"),
+      lastActiveAt: Temporal.Instant.from("2026-09-05T00:00:00.000Z"),
+      signedUpAt: Temporal.Instant.from("2026-01-01T00:00:00.000Z"),
       timezone: "Asia/Seoul",
     };
     fixture.seriesOwner.exemptUserIds.add(fixture.userId);
@@ -174,8 +174,8 @@ describe("회차 채우기", () => {
     // Given
     await seed("series-1");
     fixture.seriesOwner.activity = {
-      lastActiveAt: new Date("2026-09-06T00:00:00.000Z"),
-      signedUpAt: new Date("2026-01-01T00:00:00.000Z"),
+      lastActiveAt: Temporal.Instant.from("2026-09-06T00:00:00.000Z"),
+      signedUpAt: Temporal.Instant.from("2026-01-01T00:00:00.000Z"),
       timezone: "Asia/Seoul",
     };
     // When

@@ -4,7 +4,7 @@ import type { appConfig } from "#api/platform/config/app.config";
 import type { sentryConfig } from "#api/platform/config/sentry.config";
 import { isSentryEnabled } from "#api/platform/config/utils/sentry-options";
 
-export const OBSERVABILITY_BACKENDS = ["sentry", "log"] as const;
+const OBSERVABILITY_BACKENDS = ["sentry", "log"] as const;
 
 export type ObservabilityBackend = (typeof OBSERVABILITY_BACKENDS)[number];
 

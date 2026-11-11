@@ -1,0 +1,25 @@
+appId: ${MAESTRO_APP_ID}
+name: 개발 테스트 계정으로 로그인하면 피드가 열린다
+tags:
+  - smoke
+  - auth
+onFlowStart:
+  - runFlow: ../../subflows/app/load-helpers.yaml
+  - runFlow: ../../subflows/app/launch-fresh.yaml
+---
+# Given: 앱 데이터를 비워 로그인 화면이 열려 있다
+- assertVisible:
+    id: ${output.ids.auth.emailEntry}
+
+# When: 이메일 계정으로 로그인한다
+- runFlow:
+    file: ../../subflows/auth/sign-in.yaml
+    env:
+      EMAIL: ${output.config.accounts.main.email}
+      PASSWORD: ${output.config.accounts.main.password}
+
+# Then: 앱 오류 화면 없이 피드가 보인다
+- assertVisible:
+    id: ${output.ids.feed.screen}
+- assertNotVisible:
+    id: ${output.ids.app.rootError}

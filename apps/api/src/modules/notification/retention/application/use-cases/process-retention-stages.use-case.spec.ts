@@ -34,7 +34,7 @@ function dueD1Stages(count: number): RetentionStageCandidate[] {
     candidate({
       stageId: `stage-${String(index).padStart(4, "0")}`,
       userId: `user-${index}`,
-      stageCreatedAt: new Date(Date.UTC(2026, 6, 15, 10, 30, 0, index)),
+      stageCreatedAt: Temporal.Instant.from("2026-07-15T10:30:00Z").add({ milliseconds: index }),
     }),
   );
 }
@@ -50,7 +50,7 @@ describe("ProcessRetentionStagesUseCase — 신규 코호트 단계 처리", () 
     // Then
     expect(repository.stage("stage-1")).toMatchObject({
       status: "OUTBOXED",
-      processedAt: new Date("2026-07-16T10:30:00Z"),
+      processedAt: Temporal.Instant.from("2026-07-16T10:30:00Z"),
     });
     expect(publisher.published.map(({ data }) => data)).toEqual([
       expect.objectContaining({
@@ -78,7 +78,11 @@ describe("ProcessRetentionStagesUseCase — 신규 코호트 단계 처리", () 
   it("CONTROL은 D7 결과만 기록하고 알림을 만들지 않는다", async () => {
     // Given
     const { useCase, repository, publisher } = setup([
-      candidate({ variant: "CONTROL", stage: "D7", startedAt: new Date("2026-07-09T10:30:00Z") }),
+      candidate({
+        variant: "CONTROL",
+        stage: "D7",
+        startedAt: Temporal.Instant.from("2026-07-09T10:30:00Z"),
+      }),
     ]);
 
     // When
@@ -88,7 +92,7 @@ describe("ProcessRetentionStagesUseCase — 신규 코호트 단계 처리", () 
     expect(repository.d7Results.get("assignment-1")).toEqual({
       returnedWithinD7: false,
       todoActionWithinD7: false,
-      measuredAt: new Date("2026-07-16T10:30:00Z"),
+      measuredAt: Temporal.Instant.from("2026-07-16T10:30:00Z"),
     });
     expect(publisher.published).toHaveLength(0);
   });
@@ -114,14 +118,18 @@ describe("ProcessRetentionStagesUseCase — 신규 코호트 단계 처리", () 
       candidate({
         stageId: "due-at-1031",
         stage: "D0",
-        startedAt: new Date("2026-07-16T08:31:00Z"),
+        startedAt: Temporal.Instant.from("2026-07-16T08:31:00Z"),
       }),
       candidate({
         stageId: "due-at-1034",
         stage: "D0",
-        startedAt: new Date("2026-07-16T08:34:00Z"),
+        startedAt: Temporal.Instant.from("2026-07-16T08:34:00Z"),
       }),
-      candidate({ stageId: "overdue", stage: "D0", startedAt: new Date("2026-07-16T05:00:00Z") }),
+      candidate({
+        stageId: "overdue",
+        stage: "D0",
+        startedAt: Temporal.Instant.from("2026-07-16T05:00:00Z"),
+      }),
     ]);
     await useCase.execute();
     const afterFirstRun = publisher.published.length;

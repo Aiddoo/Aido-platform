@@ -1,6 +1,7 @@
 import { ErrorCode } from "@aido/api/errors";
 import { vi } from "vitest";
 
+import { copyTodoRecord } from "#test/doubles/planning/in-memory-todo.repository";
 import {
   createPlanningTodoFixture,
   createPlanningTodo,
@@ -60,7 +61,7 @@ describe("할 일 순서 변경", () => {
   );
   it("없는 기준과 다른 소유자의 요청은 순서를 변경하지 않는다", async () => {
     // Given
-    const before = structuredClone([...fixture.records.values()]);
+    const before = [...fixture.records.values()].map(copyTodoRecord);
     // When / Then
     await expect(
       useCase.execute({ id: 1, userId: fixture.userId, targetTodoId: 999, position: "before" }),

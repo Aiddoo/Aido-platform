@@ -1,7 +1,8 @@
 import { Injectable } from "@nestjs/common";
 import { z } from "zod";
 
-import { CacheService } from "#api/platform/cache/cache.service";
+import { CacheStorePort } from "#api/platform/cache/cache-store.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import {
   NOTIFICATION_CACHE_TTL_MS,
@@ -15,16 +16,16 @@ const PUSH_TOKENS_SCHEMA = z.array(z.string());
 @Injectable()
 export class CachedActivePushTokenReaderAdapter implements ActivePushTokenReaderPort {
   readonly #pushTokenRepository: PushTokenRepositoryPort;
-  readonly #cacheService: CacheService;
+  readonly #cacheService: CacheStorePort;
 
-  constructor(pushTokenRepository: PushTokenRepositoryPort, cacheService: CacheService) {
+  constructor(pushTokenRepository: PushTokenRepositoryPort, cacheService: CacheStorePort) {
     this.#pushTokenRepository = pushTokenRepository;
     this.#cacheService = cacheService;
   }
 
-  findByUserId(userId: string): Promise<readonly string[]> {
+  findByUserId(userId: UserId): Promise<readonly string[]> {
     return this.#cacheService.wrap(
-      NotificationCacheKey.pushTokens(userId),
+      NotificationCacheKey.pushTokens(userId.value),
       PUSH_TOKENS_SCHEMA,
       async () => {
         const records = await this.#pushTokenRepository.findPushTokensByUser({
@@ -37,10 +38,11 @@ export class CachedActivePushTokenReaderAdapter implements ActivePushTokenReader
     );
   }
 
-  async findByUserIds(userIds: readonly string[]): Promise<ReadonlyMap<string, readonly string[]>> {
-    if (userIds.length === 0) {
+  async findByUserIds(users: readonly UserId[]): Promise<ReadonlyMap<string, readonly string[]>> {
+    if (users.length === 0) {
       return new Map();
     }
+    const userIds = users.map((user) => user.value);
 
     const tokensByUserId = new Map<string, readonly string[]>();
     const cacheKeys = userIds.map((userId) => NotificationCacheKey.pushTokens(userId));
@@ -60,7 +62,9 @@ export class CachedActivePushTokenReaderAdapter implements ActivePushTokenReader
       return tokensByUserId;
     }
 
-    const records = await this.#pushTokenRepository.findActivePushTokensByUsers(missedUserIds);
+    const records = await this.#pushTokenRepository.findActivePushTokensByUsers(
+      missedUserIds.map((userId) => UserId.reconstitute(userId)),
+    );
     const loadedTokensByUserId = new Map<string, string[]>();
     for (const record of records) {
       const tokens = loadedTokensByUserId.get(record.userId) ?? [];

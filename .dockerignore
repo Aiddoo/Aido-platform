@@ -1,38 +1,58 @@
-# Allowlist: turbo prune inputs and workspaces used by @aido/server and @aido/database-migrate
+# Docker build context — .dockerignore
+# - 허용 목록 방식: 먼저 전부 빼고(*) 이미지 빌드에 필요한 경로만 다시 넣는다.
+# - 대상 이미지: @aido/server(apps/api/Dockerfile)와 @aido/database-migrate.
+# - 운영 이미지는 pnpm deploy --prod와 files: ["dist"]로 dist만 담는다.
+#   아래 제외 규칙은 빌드 중간 단계에도 비밀값·테스트가 남지 않게 막는다.
+
+# Deny everything by default
 *
+
+# Allow: workspace manifests (turbo prune 입력)
 !package.json
 !pnpm-lock.yaml
 !pnpm-workspace.yaml
 !turbo.json
 !patches/
+
+# Allow: workspaces the images build
 !apps/api/
 !packages/api/
 !tooling/
 
-# Dependencies
+# Exclude: dependencies & build outputs
 **/node_modules/
-
-# Build outputs
 **/dist/
 **/*.tsbuildinfo
 
-# Tests & coverage
-**/coverage/
+# Exclude: environment & secrets
+# CI는 깨끗한 checkout으로 빌드하지만 로컬 빌드 문맥에도 들어가지 않게 막는다
+**/.env*
+**/.secrets/
+**/credentials*.json
+**/*service-account*.json
+**/*.pem
+**/*.key
+**/*.p8
+**/*.p12
+**/*.keystore
+**/*.jks
+
+# Exclude: tests & coverage
 **/test/
 **/*.spec.ts
+**/__snapshots__/
+**/.vitest/
+**/coverage/
 apps/api/scripts/ai-eval/
 apps/api/vitest.config.ts
 packages/api/vitest.config.ts
 
-# Environment & secrets
-**/.env*
-
-# Docs & agent guides
+# Exclude: docs & agent guides
 **/*.md
 **/.claude/
 apps/api/docs/
 
-# Tool caches
+# Exclude: tool caches & OS files
 **/.turbo/
-**/.DS_Store
 **/*.log
+**/.DS_Store

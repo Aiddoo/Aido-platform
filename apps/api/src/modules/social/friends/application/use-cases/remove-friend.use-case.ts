@@ -56,7 +56,7 @@ export class RemoveFriendUseCase {
       }
     });
 
-    await invalidateFriendshipCaches(cache, command.userId, command.targetUserId);
+    await invalidateFriendshipCaches(cache, userId, targetUserId);
     logger.log({
       event: FriendLogEvent.REMOVED,
       userId: command.userId,

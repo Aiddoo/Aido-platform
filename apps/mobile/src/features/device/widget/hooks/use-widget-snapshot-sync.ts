@@ -19,7 +19,7 @@ import type { WidgetTranslateFn } from '../utils/widget-snapshot.view-model';
 export type WidgetSyncAuthState = 'authenticated' | 'unauthenticated' | 'resolving';
 
 function translate(...[key, params]: Parameters<WidgetTranslateFn>): ReturnType<WidgetTranslateFn> {
-  return i18n.t(key, params);
+  return i18n.t(key, params ?? {});
 }
 
 function buildContext(

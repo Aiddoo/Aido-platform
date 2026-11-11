@@ -3,7 +3,6 @@ import {
   isTransportFailure,
   type OutboundPolicySpec,
 } from "#api/platform/resilience/outbound-policy";
-import { TIME_UNIT } from "#api/shared/domain/date/constants/date.constant";
 
 import { EmailAlerts } from "../../application/email.alerts.js";
 
@@ -35,7 +34,7 @@ export const EMAIL_PROVIDER_POLICY: OutboundPolicySpec = {
     {
       name: "health",
       consecutiveFailures: 5,
-      halfOpenAfterMs: TIME_UNIT.MS_PER_MINUTE,
+      halfOpenAfterMs: 60_000,
       handles: isTransportFailure,
       handlesResult: isUnavailableOutcome,
       alert: EmailAlerts.CIRCUIT_OPEN,

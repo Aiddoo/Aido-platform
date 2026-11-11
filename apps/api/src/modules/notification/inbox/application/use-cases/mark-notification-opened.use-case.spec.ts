@@ -41,7 +41,7 @@ describe("MarkNotificationOpenedUseCase — 푸시 열기 기록", () => {
     const result = await useCase.execute({ userId: USER_ID, notificationId: 42 });
 
     // Then
-    const openedAt = new Date(NOW.epochMilliseconds);
+    const openedAt = NOW;
     expect(result).toBe(true);
     expect(notificationRepository.rowOf(42)).toMatchObject({
       openedAt,
@@ -57,7 +57,7 @@ describe("MarkNotificationOpenedUseCase — 푸시 열기 기록", () => {
   ])("%s은 캐시를 두고 false를 준다", async (_case, notification, isOpened) => {
     // Given
     const row = isOpened
-      ? { ...notification, openedAt: new Date("2026-11-01T00:00:00Z") }
+      ? { ...notification, openedAt: Temporal.Instant.from("2026-11-01T00:00:00Z") }
       : notification;
     const notificationRepository = new InMemoryNotificationRepository([row]);
     const cache = new PassThroughNotificationCache();
@@ -70,6 +70,24 @@ describe("MarkNotificationOpenedUseCase — 푸시 열기 기록", () => {
     expect(result).toBe(false);
     expect(notificationRepository.rowOf(42)).toEqual(row);
     expect(cache.invalidatedUnreadCountUserIds).toEqual([]);
+  });
+
+  it("같은 알림을 두 번 열어도 열림 로그는 처음 한 번만 남긴다", async () => {
+    // Given
+    const notificationRepository = new InMemoryNotificationRepository([
+      createInboxNotificationFixture({ userId: USER_ID, id: 42, isRead: false, readAt: null }),
+    ]);
+    const logger = new SilentLogger();
+    const useCase = createMarkNotificationOpenedUseCase({ notificationRepository, logger });
+    await useCase.execute({ userId: USER_ID, notificationId: 42 });
+
+    // When
+    await useCase.execute({ userId: USER_ID, notificationId: 42 });
+
+    // Then
+    expect(logger.messages).toEqual([
+      { event: "notification.push.opened", userId: USER_ID, notificationId: 42 },
+    ]);
   });
 
   it("없는 알림도 오류 없이 false를 준다", async () => {

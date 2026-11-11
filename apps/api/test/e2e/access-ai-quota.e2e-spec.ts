@@ -17,6 +17,7 @@ import type {
 } from "#api/modules/ai-assistance/generation/application/ports/ai-generator.port";
 import { requireRecord } from "#api/platform/database/database-error.util";
 import { user as userTable } from "#api/platform/database/schema/index";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantFromDate } from "#api/shared/domain/time/instant";
 import { createAiGenerationError, FakeAiGenerator } from "#test/mocks/fake-ai.generator";
 
@@ -324,7 +325,9 @@ describe("Access AI quota HTTP 계약과 사용량 경쟁 (실제 PostgreSQL)", 
     // Given
     await setQuota({ count: FREE_AI_LIMIT, resetAt: oldMonthAt });
     const entitlement = context.module.get(EntitlementReaderPort);
-    expect(await entitlement.getFeatureLimit(user.userId, "AI_PARSE")).toBe(FREE_AI_LIMIT);
+    expect(await entitlement.getFeatureLimit(UserId.reconstitute(user.userId), "AI_PARSE")).toBe(
+      FREE_AI_LIMIT,
+    );
     await setQuota({ count: FREE_AI_LIMIT, resetAt: oldMonthAt, subscriptionStatus: "ACTIVE" });
 
     // When
@@ -338,14 +341,18 @@ describe("Access AI quota HTTP 계약과 사용량 경쟁 (실제 PostgreSQL)", 
       used: FREE_AI_LIMIT + 1,
       limit: null,
     });
-    expect(await entitlement.getFeatureLimit(user.userId, "AI_PARSE")).toBe(FREE_AI_LIMIT);
+    expect(await entitlement.getFeatureLimit(UserId.reconstitute(user.userId), "AI_PARSE")).toBe(
+      FREE_AI_LIMIT,
+    );
   });
 
   it("ACTIVE 권한 캐시가 남아도 DB에서 FREE가 된 사용자는 소진한 무료 한도를 넘을 수 없다", async () => {
     // Given
     await setQuota({ count: FREE_AI_LIMIT, resetAt: oldMonthAt, subscriptionStatus: "ACTIVE" });
     const entitlement = context.module.get(EntitlementReaderPort);
-    expect(await entitlement.getFeatureLimit(user.userId, "AI_PARSE")).toBeNull();
+    expect(
+      await entitlement.getFeatureLimit(UserId.reconstitute(user.userId), "AI_PARSE"),
+    ).toBeNull();
     await setQuota({ count: FREE_AI_LIMIT, resetAt: oldMonthAt, subscriptionStatus: "FREE" });
 
     // When
@@ -360,7 +367,9 @@ describe("Access AI quota HTTP 계약과 사용량 경쟁 (실제 PostgreSQL)", 
       used: FREE_AI_LIMIT,
       limit: FREE_AI_LIMIT,
     });
-    expect(await entitlement.getFeatureLimit(user.userId, "AI_PARSE")).toBeNull();
+    expect(
+      await entitlement.getFeatureLimit(UserId.reconstitute(user.userId), "AI_PARSE"),
+    ).toBeNull();
   });
 
   it("ADMIN은 프리미엄과 같은 AI 공정 사용 상한에서 같은 429 상세로 막히고 KST 다음 달에 다시 쓴다", async () => {
@@ -404,7 +413,9 @@ describe("Access AI quota HTTP 계약과 사용량 경쟁 (실제 PostgreSQL)", 
     // Given
     await setQuota({ count: FREE_AI_LIMIT, resetAt: oldMonthAt });
     const entitlement = context.module.get(EntitlementReaderPort);
-    expect(await entitlement.getFeatureLimit(user.userId, "AI_PARSE")).toBe(FREE_AI_LIMIT);
+    expect(await entitlement.getFeatureLimit(UserId.reconstitute(user.userId), "AI_PARSE")).toBe(
+      FREE_AI_LIMIT,
+    );
     await setQuota({ count: FREE_AI_LIMIT, resetAt: oldMonthAt, role: "ADMIN" });
 
     // When

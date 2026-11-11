@@ -6,6 +6,7 @@
   "report": {
     "typeWeekly": "Weekly",
     "typeMonthly": "Monthly",
+    "weeklyPeriodLabel": "Week {{period}}, {{year}}",
     "sampleBadge": "Sample",
     "card": {
       "completionRate": "Completion",
@@ -98,7 +99,6 @@
       "side": "Side projects"
     },
     "weekly": {
-      "periodLabel": "Week 10, 2026",
       "summary": "Work projects hit a 92% completion rate — your most focused category this week. Your after-work self-development routine is settling in, and you're on a 5-day streak! Wednesday's completion rate dipped noticeably, though.",
       "tip1": "Your completion rate tends to drop on Wednesdays. Try trimming Wednesdays down to 3–4 to-dos and your rate should climb.",
       "tip2": "9 AM and 7 PM after work are your most active hours. Try scheduling important to-dos in those slots.",
@@ -106,7 +106,6 @@
       "tip4": "You're on a 5-day streak! Keep it going through the weekend to earn the 7-day streak badge."
     },
     "monthly": {
-      "periodLabel": "February 2026",
       "summary": "You finished February at an 82% completion rate — up 8 points from last month (74%)! Work projects led the way at 91%, and the self-development routine you set early in the month is turning into a habit. Your rate dipped slightly in week three but bounced back in week four, which is impressive.",
       "tip1": "Breaking monthly goals into weekly chunks makes them lighter. Try splitting this month's self-development goal into 8 per week.",
       "tip2": "Wednesday is your lowest day every week at 74%. A midweek refresh routine — a walk or a short meditation — can help you recharge.",

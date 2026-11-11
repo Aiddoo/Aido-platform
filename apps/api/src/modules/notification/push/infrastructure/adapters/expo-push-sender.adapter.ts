@@ -29,11 +29,11 @@ import {
 import { PushThroughputLimiterAdapter } from "./push-throughput-limiter.adapter.js";
 
 /** Expo 프로젝트 한도(초당 600건)보다 여유를 둔다. 운영 API는 단일 프로세스다. */
-export const EXPO_PUSH_MESSAGES_PER_SECOND = 500;
+const EXPO_PUSH_MESSAGES_PER_SECOND = 500;
 /** 기기별 MessageRateExceeded는 Expo 안내대로 지수 backoff 뒤 해당 메시지만 다시 보낸다. */
-export const EXPO_RATE_EXCEEDED_RETRY_DELAYS_MS = [1_000, 2_000, 4_000] as const;
+export const EXPO_RATE_EXCEEDED_RETRY_DELAYS_MS = [1000, 2000, 4000] as const;
 
-export function toPushFailureKind(providerCode: string | undefined): PushFailureKind {
+function toPushFailureKind(providerCode: string | undefined): PushFailureKind {
   return match(providerCode)
     .with("DeviceNotRegistered", () => PUSH_FAILURE_KIND.DEVICE_UNREGISTERED)
     .with("MessageTooBig", () => PUSH_FAILURE_KIND.PAYLOAD_TOO_LARGE)

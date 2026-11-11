@@ -10,13 +10,12 @@ import { compact, countBy, groupBy, sumBy } from "es-toolkit";
 
 import { requireRecord } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantFromDate } from "#api/shared/domain/time/instant";
 
 import {
-  dateColumnOf,
   localDateAt,
   localDateTimeAt,
-  plainDateOfDateColumn,
   sundayBasedDayIndex,
 } from "../../../shared/domain/user-calendar.domain-service.js";
 import { SuggestionActivityReaderPort } from "../../application/ports/suggestion-activity.reader.port.js";
@@ -29,9 +28,9 @@ import type {
   UserStreakInfo,
 } from "../../domain/suggestion.constants.js";
 
-// planning Todo.startDate는 아직 UTC 자정 Date로 읽는 달력 날짜다
-function localDay(value: Date, timezone: string): Date {
-  return dateColumnOf(localDateAt(value, timezone));
+// planning Todo.startDate는 달력 날짜 칸이라 같은 현지 날짜를 PlainDate로 비교한다
+function localDay(value: Date, timezone: string): Temporal.PlainDate {
+  return localDateAt(value, timezone);
 }
 
 function toWallClock(local: Temporal.ZonedDateTime): string {
@@ -53,7 +52,7 @@ export class DrizzleSuggestionActivityReader extends SuggestionActivityReaderPor
   }
 
   async findDayCompletionRates(
-    userId: string,
+    userId: UserId,
     from: Date,
     to: Date,
     timezone: string,
@@ -61,7 +60,7 @@ export class DrizzleSuggestionActivityReader extends SuggestionActivityReaderPor
     const completions = await this.#db.query.dailyCompletion.findMany({
       columns: { date: true, totalTodos: true, completedTodos: true },
       where: {
-        userId,
+        userId: userId.value,
         date: { gte: localDateAt(from, timezone), lte: localDateAt(to, timezone) },
       },
     });
@@ -82,7 +81,7 @@ export class DrizzleSuggestionActivityReader extends SuggestionActivityReaderPor
   }
 
   async findTimeCompletionRates(
-    userId: string,
+    userId: UserId,
     from: Date,
     to: Date,
     timezone: string,
@@ -90,7 +89,7 @@ export class DrizzleSuggestionActivityReader extends SuggestionActivityReaderPor
     const todos = await this.#db.query.todo.findMany({
       columns: { completedAt: true },
       where: {
-        userId,
+        userId: userId.value,
         completed: true,
         completedAt: { isNotNull: true },
         startDate: { gte: localDay(from, timezone), lte: localDay(to, timezone) },
@@ -116,7 +115,7 @@ export class DrizzleSuggestionActivityReader extends SuggestionActivityReaderPor
   }
 
   async findCategoryCompletionRates(
-    userId: string,
+    userId: UserId,
     from: Date,
     to: Date,
     timezone = "UTC",
@@ -125,7 +124,7 @@ export class DrizzleSuggestionActivityReader extends SuggestionActivityReaderPor
       columns: { completed: true },
       with: { category: { columns: { name: true } } },
       where: {
-        userId,
+        userId: userId.value,
         startDate: { gte: localDay(from, timezone), lte: localDay(to, timezone) },
       },
     });
@@ -152,10 +151,10 @@ export class DrizzleSuggestionActivityReader extends SuggestionActivityReaderPor
       .sort((a, b) => b.total - a.total);
   }
 
-  async findUserStreakInfo(userId: string): Promise<UserStreakInfo | null> {
+  async findUserStreakInfo(userId: UserId): Promise<UserStreakInfo | null> {
     const pref = await this.#db.query.userPreference.findFirst({
       columns: { currentStreak: true, longestStreak: true },
-      where: { userId },
+      where: { userId: userId.value },
     });
 
     if (pref == null) {
@@ -169,7 +168,7 @@ export class DrizzleSuggestionActivityReader extends SuggestionActivityReaderPor
   }
 
   async findRecentTodos(
-    userId: string,
+    userId: UserId,
     from: Date,
     to: Date,
     timezone: string,
@@ -185,7 +184,7 @@ export class DrizzleSuggestionActivityReader extends SuggestionActivityReaderPor
       },
       with: { category: { columns: { name: true } } },
       where: {
-        userId,
+        userId: userId.value,
         seriesId: { isNull: true },
         startDate: { gte: localDay(from, timezone), lte: localDay(to, timezone) },
       },
@@ -196,7 +195,7 @@ export class DrizzleSuggestionActivityReader extends SuggestionActivityReaderPor
 
     return todos.toReversed().map((t) => ({
       title: t.title,
-      startDate: plainDateOfDateColumn(t.startDate).toString(),
+      startDate: t.startDate.toString(),
       scheduledTime:
         t.scheduledTime == null
           ? null
@@ -207,11 +206,11 @@ export class DrizzleSuggestionActivityReader extends SuggestionActivityReaderPor
     }));
   }
 
-  async findRecentResponded(userId: string, since: Date): Promise<SuggestionHistoryItem[]> {
+  async findRecentResponded(userId: UserId, since: Date): Promise<SuggestionHistoryItem[]> {
     const rows = await this.#db.query.recurringSuggestion.findMany({
       columns: { title: true, status: true },
       where: {
-        userId,
+        userId: userId.value,
         status: { in: ["ACCEPTED", "DISMISSED"] },
         updatedAt: { gte: instantFromDate(since) },
       },

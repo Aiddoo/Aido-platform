@@ -69,6 +69,7 @@ import { SendMilestoneNotificationUseCase } from "./application/use-cases/send-m
 import { SendNotificationWithDedupUseCase } from "./application/use-cases/send-notification-with-dedup.use-case.js";
 import { SendNotificationUseCase } from "./application/use-cases/send-notification.use-case.js";
 import { SendNudgeNotificationUseCase } from "./application/use-cases/send-nudge-notification.use-case.js";
+import { UnregisterPushDeviceByTokenUseCase } from "./application/use-cases/unregister-push-device-by-token.use-case.js";
 import { UnregisterPushDeviceUseCase } from "./application/use-cases/unregister-push-device.use-case.js";
 import { CachedActivePushTokenReaderAdapter } from "./infrastructure/adapters/cached-active-push-token-reader.adapter.js";
 import { CachedNotificationRecipientPreferenceAdapter } from "./infrastructure/adapters/cached-notification-recipient-preference.adapter.js";
@@ -319,6 +320,13 @@ export const NOTIFICATION_PUSH_USE_CASE_PROVIDERS = [
     unitOfWork: UnitOfWorkPort,
     cache: NotificationCachePort,
     logger: loggerFor(UnregisterPushDeviceUseCase),
+  }),
+  provideUseCase(UnregisterPushDeviceByTokenUseCase, {
+    pushDeviceRepository: PushDeviceRepositoryPort,
+    pushTokenRepository: PushTokenRepositoryPort,
+    unitOfWork: UnitOfWorkPort,
+    cache: NotificationCachePort,
+    logger: loggerFor(UnregisterPushDeviceByTokenUseCase),
   }),
   provideUseCase(ReleaseSessionPushDevicesUseCase, {
     pushDeviceRepository: PushDeviceRepositoryPort,

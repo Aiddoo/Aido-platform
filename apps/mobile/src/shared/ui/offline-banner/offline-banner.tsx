@@ -42,6 +42,7 @@ export function OfflineBanner() {
           accessible
           accessibilityRole="text"
           accessibilityLabel={message}
+          testID="offline-banner"
         >
           <InfoIcon
             width={fontScaledSize(ICON_SIZE)}

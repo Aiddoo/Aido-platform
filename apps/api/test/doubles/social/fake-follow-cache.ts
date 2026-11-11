@@ -1,6 +1,8 @@
 import { FollowCachePort } from "#api/modules/social/friends/application/ports/follow-cache.port";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-function pairKey(userId: string, targetUserId: string): string {
+function pairKey(user: UserId, target: UserId): string {
+  const [userId, targetUserId] = [user.value, target.value];
   return userId < targetUserId ? `${userId}:${targetUserId}` : `${targetUserId}:${userId}`;
 }
 
@@ -11,46 +13,46 @@ export class FakeFollowCache extends FollowCachePort {
   readonly friendCounts = new Map<string, number>();
   readonly invalidated: string[] = [];
 
-  async getMutualFriend(smallerId: string, largerId: string): Promise<boolean | undefined> {
+  async getMutualFriend(smallerId: UserId, largerId: UserId): Promise<boolean | undefined> {
     return this.mutual.get(pairKey(smallerId, largerId));
   }
 
-  async setMutualFriend(smallerId: string, largerId: string, isMutual: boolean): Promise<void> {
+  async setMutualFriend(smallerId: UserId, largerId: UserId, isMutual: boolean): Promise<void> {
     this.mutual.set(pairKey(smallerId, largerId), isMutual);
   }
 
-  async invalidateMutualFriend(userId: string, targetUserId: string): Promise<void> {
+  async invalidateMutualFriend(userId: UserId, targetUserId: UserId): Promise<void> {
     this.mutual.delete(pairKey(userId, targetUserId));
     this.invalidated.push(`mutual:${pairKey(userId, targetUserId)}`);
   }
 
-  async wrapMutualFriendIds(userId: string, factory: () => Promise<string[]>): Promise<string[]> {
-    const cached = this.friendIds.get(userId);
+  async wrapMutualFriendIds(userId: UserId, factory: () => Promise<string[]>): Promise<string[]> {
+    const cached = this.friendIds.get(userId.value);
     if (cached != null) {
       return [...cached];
     }
     const ids = await factory();
-    this.friendIds.set(userId, [...ids]);
+    this.friendIds.set(userId.value, [...ids]);
     return ids;
   }
 
-  async invalidateMutualFriendIds(userId: string): Promise<void> {
-    this.friendIds.delete(userId);
-    this.invalidated.push(`ids:${userId}`);
+  async invalidateMutualFriendIds(userId: UserId): Promise<void> {
+    this.friendIds.delete(userId.value);
+    this.invalidated.push(`ids:${userId.value}`);
   }
 
-  async wrapFriendCount(userId: string, factory: () => Promise<number>): Promise<number> {
-    const cached = this.friendCounts.get(userId);
+  async wrapFriendCount(userId: UserId, factory: () => Promise<number>): Promise<number> {
+    const cached = this.friendCounts.get(userId.value);
     if (cached != null) {
       return cached;
     }
     const count = await factory();
-    this.friendCounts.set(userId, count);
+    this.friendCounts.set(userId.value, count);
     return count;
   }
 
-  async invalidateFriendCount(userId: string): Promise<void> {
-    this.friendCounts.delete(userId);
-    this.invalidated.push(`count:${userId}`);
+  async invalidateFriendCount(userId: UserId): Promise<void> {
+    this.friendCounts.delete(userId.value);
+    this.invalidated.push(`count:${userId.value}`);
   }
 }

@@ -16,7 +16,7 @@ const HOUR_MS = 60 * 60 * 1000;
 export const OPERATIONAL_ALERT_LIMITS = {
   repeatIntervalMs: HOUR_MS,
   maxRepeatsPerHour: 2,
-  maxTrackedKeys: 1_000,
+  maxTrackedKeys: 1000,
 } as const;
 
 /**

@@ -57,14 +57,14 @@ describe("DrizzleVerificationRepository (실제 PostgreSQL)", () => {
 
     // When
     const outcome = uow.run(async () => {
-      await repository.incrementAttempts(verification.id.value);
+      await repository.incrementAttempts(verification.id);
       throw failure;
     });
 
     // Then
     await expect(outcome).rejects.toBe(failure);
     const found = await repository.findValidByUserIdAndType(
-      verification.userId.value,
+      verification.userId,
       verification.type,
       AUTH_FIXTURE_NOW,
     );
@@ -84,7 +84,7 @@ describe("DrizzleVerificationRepository (실제 PostgreSQL)", () => {
     // When
     await repository.save(verification);
     const found = await repository.findValidByUserIdAndType(
-      verification.userId.value,
+      verification.userId,
       verification.type,
       createdAt,
     );

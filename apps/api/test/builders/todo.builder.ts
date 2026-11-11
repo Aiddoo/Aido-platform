@@ -19,19 +19,19 @@ import type {
 } from "#api/modules/planning/todos/infrastructure/persistence/todo-row.mapper";
 
 export class TodoBuilder {
-  private data: TodoWithCategory;
-  private static idCounter = 0;
+  #data: TodoWithCategory;
+  static #idCounter = 0;
 
-  private constructor(userId: string) {
-    const now = new Date();
-    TodoBuilder.idCounter += 1;
-    this.data = {
-      id: TodoBuilder.idCounter,
+  constructor(userId: string) {
+    const now = Temporal.Instant.fromEpochMilliseconds(Date.now());
+    TodoBuilder.#idCounter += 1;
+    this.#data = {
+      id: TodoBuilder.#idCounter,
       userId,
-      title: `테스트 할 일 ${TodoBuilder.idCounter}`,
+      title: `테스트 할 일 ${TodoBuilder.#idCounter}`,
       categoryId: 1,
       sortOrder: 0,
-      startDate: now,
+      startDate: now.toZonedDateTimeISO("UTC").toPlainDate(),
       endDate: null,
       scheduledLocalTime: null,
       scheduledTime: null,
@@ -61,31 +61,31 @@ export class TodoBuilder {
 
   /** ID 카운터 리셋 (테스트 간 격리용) */
   static resetIdCounter(): void {
-    TodoBuilder.idCounter = 0;
+    TodoBuilder.#idCounter = 0;
   }
 
   // === ID 관련 ===
 
   withId(id: number): TodoBuilder {
-    this.data.id = id;
+    this.#data.id = id;
     return this;
   }
 
   // === 제목 관련 ===
 
   withTitle(title: string): TodoBuilder {
-    this.data.title = title;
+    this.#data.title = title;
     return this;
   }
 
   // === 카테고리 관련 ===
 
   withCategoryId(categoryId: number): TodoBuilder {
-    this.data.categoryId = categoryId;
-    if (this.data.category === null) {
+    this.#data.categoryId = categoryId;
+    if (this.#data.category === null) {
       throw new Error("Todo fixture category is missing");
     }
-    this.data.category.id = categoryId;
+    this.#data.category.id = categoryId;
     return this;
   }
 
@@ -95,105 +95,105 @@ export class TodoBuilder {
     color: string;
     sortOrder: number;
   }): TodoBuilder {
-    this.data.categoryId = category.id;
-    this.data.category = category;
+    this.#data.categoryId = category.id;
+    this.#data.category = category;
     return this;
   }
 
   // === 일정 관련 ===
 
-  withStartDate(date: Date): TodoBuilder {
-    this.data.startDate = date;
+  withStartDate(date: Temporal.PlainDate): TodoBuilder {
+    this.#data.startDate = date;
     return this;
   }
 
-  withEndDate(date: Date | null): TodoBuilder {
-    this.data.endDate = date;
+  withEndDate(date: Temporal.PlainDate | null): TodoBuilder {
+    this.#data.endDate = date;
     return this;
   }
 
-  withScheduledTime(time: Date | null): TodoBuilder {
-    this.data.scheduledTime = time;
+  withScheduledTime(time: Temporal.Instant | null): TodoBuilder {
+    this.#data.scheduledTime = time;
     return this;
   }
 
   withIsAllDay(isAllDay: boolean): TodoBuilder {
-    this.data.isAllDay = isAllDay;
+    this.#data.isAllDay = isAllDay;
     return this;
   }
 
-  withDateRange(startDate: Date, endDate: Date): TodoBuilder {
-    this.data.startDate = startDate;
-    this.data.endDate = endDate;
+  withDateRange(startDate: Temporal.PlainDate, endDate: Temporal.PlainDate): TodoBuilder {
+    this.#data.startDate = startDate;
+    this.#data.endDate = endDate;
     return this;
   }
 
   // === 정렬 관련 ===
 
   withSortOrder(sortOrder: number): TodoBuilder {
-    this.data.sortOrder = sortOrder;
+    this.#data.sortOrder = sortOrder;
     return this;
   }
 
   // === 공개 범위 관련 ===
 
   withVisibility(visibility: "PUBLIC" | "PRIVATE"): TodoBuilder {
-    this.data.visibility = visibility;
+    this.#data.visibility = visibility;
     return this;
   }
 
   asPrivate(): TodoBuilder {
-    this.data.visibility = "PRIVATE";
+    this.#data.visibility = "PRIVATE";
     return this;
   }
 
   asPublic(): TodoBuilder {
-    this.data.visibility = "PUBLIC";
+    this.#data.visibility = "PUBLIC";
     return this;
   }
 
   // === 반복 생성 그룹 관련 ===
 
-  withOccurrenceDate(occurrenceDate: Date | null): TodoBuilder {
-    this.data.occurrenceDate = occurrenceDate;
+  withOccurrenceDate(occurrenceDate: Temporal.PlainDate | null): TodoBuilder {
+    this.#data.occurrenceDate = occurrenceDate;
     return this;
   }
 
   withSeriesId(seriesId: string | null): TodoBuilder {
-    this.data.seriesId = seriesId;
+    this.#data.seriesId = seriesId;
     return this;
   }
 
   // === 완료 상태 관련 ===
 
-  completed(completedAt?: Date): TodoBuilder {
-    this.data.completed = true;
-    this.data.completedAt = completedAt ?? new Date();
+  completed(completedAt?: Temporal.Instant): TodoBuilder {
+    this.#data.completed = true;
+    this.#data.completedAt = completedAt ?? Temporal.Instant.fromEpochMilliseconds(Date.now());
     return this;
   }
 
   uncompleted(): TodoBuilder {
-    this.data.completed = false;
-    this.data.completedAt = null;
+    this.#data.completed = false;
+    this.#data.completedAt = null;
     return this;
   }
 
   // === 하위 항목 관련 ===
 
   withItems(items: TodoItemRow[]): TodoBuilder {
-    this.data.items = items;
+    this.#data.items = items;
     return this;
   }
 
   // === 타임스탬프 관련 ===
 
-  withCreatedAt(date: Date): TodoBuilder {
-    this.data.createdAt = date;
+  withCreatedAt(date: Temporal.Instant): TodoBuilder {
+    this.#data.createdAt = date;
     return this;
   }
 
-  withUpdatedAt(date: Date): TodoBuilder {
-    this.data.updatedAt = date;
+  withUpdatedAt(date: Temporal.Instant): TodoBuilder {
+    this.#data.updatedAt = date;
     return this;
   }
 
@@ -201,9 +201,9 @@ export class TodoBuilder {
 
   build(): TodoWithCategory {
     return {
-      ...this.data,
-      category: this.data.category === null ? null : { ...this.data.category },
-      items: [...this.data.items],
+      ...this.#data,
+      category: this.#data.category === null ? null : { ...this.#data.category },
+      items: [...this.#data.items],
     };
   }
 

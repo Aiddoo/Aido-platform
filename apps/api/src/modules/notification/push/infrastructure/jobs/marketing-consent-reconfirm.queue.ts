@@ -4,11 +4,11 @@ import {
   defineQueue,
   JOB_POLLING_SECONDS,
   type JobRetryPolicy,
-} from "#api/shared/application/ports/index";
+} from "#api/shared/application/ports/job-queue.port";
 
-export const MARKETING_CONSENT_RECONFIRM_JOB_NAME = "reconfirm-marketing-consents";
+const MARKETING_CONSENT_RECONFIRM_JOB_NAME = "reconfirm-marketing-consents";
 
-export const MARKETING_CONSENT_RECONFIRM_RETRY = {
+const MARKETING_CONSENT_RECONFIRM_RETRY = {
   retryLimit: 2,
   retryDelaySeconds: 60,
   retryBackoff: true,

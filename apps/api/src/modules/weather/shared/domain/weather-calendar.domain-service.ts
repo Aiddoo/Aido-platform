@@ -2,7 +2,7 @@ import { instantFromDate } from "#api/shared/domain/time/instant";
 import { TimeZone } from "#api/shared/domain/time/time-zone.vo";
 import { localDateOf } from "#api/shared/domain/time/zoned-time";
 
-// 옛 날짜 함수(resolveTimezone)처럼 알 수 없는 시간대는 날씨 응답을 멈추지 않고 UTC로 계산한다
+// 알 수 없는 시간대는 날씨 응답을 멈추지 않고 UTC로 계산한다
 function toWeatherTimeZone(raw: string): TimeZone {
   try {
     return TimeZone.create(raw);

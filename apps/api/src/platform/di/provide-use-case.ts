@@ -8,7 +8,7 @@ export interface LoggerToken {
 type ClassToken<T> = abstract new (...args: never[]) => T;
 
 // logger 토큰은 Nest Logger가 그 자리 타입을 만족할 때만 받는다(시계 자리에 logger를 넣지 못하게)
-export type DependencyToken<T> = ClassToken<T> | (Logger extends T ? LoggerToken : never);
+type DependencyToken<T> = ClassToken<T> | (Logger extends T ? LoggerToken : never);
 
 type DependencyTokens<TDependencies extends object> = {
   readonly [K in keyof TDependencies]: DependencyToken<TDependencies[K]>;

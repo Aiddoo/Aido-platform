@@ -1,6 +1,7 @@
 import { Inject, Injectable } from "@nestjs/common";
 
 import { EntitlementReaderPort } from "#api/modules/access/entitlements/access-entitlements.public";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import {
   TodoCategoryLimitReaderPort,
@@ -26,15 +27,15 @@ export class TodoCategoryLimitReaderAdapter extends TodoCategoryLimitReaderPort 
     this.#entitlementReader = entitlementReader;
   }
 
-  readLimit(userId: string): Promise<number | null> {
+  readLimit(userId: UserId): Promise<number | null> {
     return this.#entitlementReader.getFeatureLimit(userId, "TODO_CATEGORY");
   }
 
-  readLimitInTx(userId: string): Promise<number | null> {
+  readLimitInTx(userId: UserId): Promise<number | null> {
     return this.#entitlementReader.getFeatureLimitInTx(userId, "TODO_CATEGORY");
   }
 
-  readFeatureQuotaInTx(userId: string, count: number): Promise<TodoCategoryFeatureQuota> {
+  readFeatureQuotaInTx(userId: UserId, count: number): Promise<TodoCategoryFeatureQuota> {
     return this.#entitlementReader.getFeatureQuotaInTx(userId, "TODO_CATEGORY", {
       used: count,
       resetsAt: null,

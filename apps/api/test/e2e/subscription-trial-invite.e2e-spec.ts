@@ -1,16 +1,17 @@
 import { currentUserSchema, type RevenueCatWebhookPayload } from "@aido/api";
 import request from "supertest";
 
+import { PremiumGranterPort } from "#api/modules/billing/premium-grants/billing-premium-grants.public";
 import { STORE_RENEWAL_GRACE_MS } from "#api/modules/billing/shared/store-renewal-grace.domain-service";
 import { billingSubscriptionsConfig } from "#api/modules/billing/subscriptions/billing-subscriptions.config";
-import { PremiumGranterPort } from "#api/modules/billing/subscriptions/billing-subscriptions.public";
 import { subscription } from "#api/platform/database/schema/index";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { SubscriptionEventBuilder } from "#test/builders/subscription-event.builder";
 
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 
 const webhookSecret = "subscription-trial-invite-webhook-secret";
-const DAY_MS = 24 * 60 * 60 * 1_000;
+const DAY_MS = 24 * 60 * 60 * 1000;
 // 2월 15일에 시작한 2주 체험을 스토어가 윤년 2월 29일로 끝낸다
 const TRIAL_STARTED_AT = new Date("2028-02-15T09:00:00.000Z");
 const TRIAL_ENDS_AT = new Date("2028-02-29T09:00:00.000Z");
@@ -92,9 +93,12 @@ describe("무료 체험 중 받은 초대 보상과 체험 종료 뒤 /me (실�
       trialEvent(SubscriptionEventBuilder.initialPurchase().withPrice(0), userId, "trial-start"),
     );
     vi.setSystemTime(INVITED_AT);
-    await context.module
-      .get<PremiumGranterPort>(PremiumGranterPort)
-      .grant({ userId, source: "INVITE", sourceKey: "invite:trial", durationDays: 7 });
+    await context.module.get<PremiumGranterPort>(PremiumGranterPort).grant({
+      userId: UserId.reconstitute(userId),
+      source: "INVITE",
+      sourceKey: "invite:trial",
+      durationDays: 7,
+    });
 
     // When
     const duringTrial = await meAt(INVITED_AT);
@@ -112,7 +116,7 @@ describe("무료 체험 중 받은 초대 보상과 체험 종료 뒤 /me (실�
     );
     const afterTrial = await meAt(trialEndedAt);
     const grantLastMoment = await meAt(new Date(GRANT_ENDS_AT.getTime() - 1));
-    const afterGrant = await meAt(new Date(GRANT_ENDS_AT.getTime() + 1_000));
+    const afterGrant = await meAt(new Date(GRANT_ENDS_AT.getTime() + 1000));
 
     // Then 스토어가 보낸 체험 끝(윤년 2월 29일)을 서버가 다시 계산하지 않고 그대로 쓴다
     expect(

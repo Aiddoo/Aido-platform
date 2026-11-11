@@ -3,10 +3,10 @@ import type { CoachmarkRepository } from './coachmark.repository';
 
 // 보이면 끝나는 안내는 claim, 쓰거나 닫아야 끝나는 안내는 isPending·complete(구독 화면도 바로 닫힌다)를 쓴다
 export class CoachmarkService {
-  readonly #repository: Pick<CoachmarkRepository, 'hasSeen' | 'markSeen'>;
+  readonly #repository: Pick<CoachmarkRepository, 'hasSeen' | 'markSeen' | 'removeRetiredKeys'>;
   readonly #listeners = new Set<() => void>();
 
-  constructor(repository: Pick<CoachmarkRepository, 'hasSeen' | 'markSeen'>) {
+  constructor(repository: Pick<CoachmarkRepository, 'hasSeen' | 'markSeen' | 'removeRetiredKeys'>) {
     this.#repository = repository;
   }
 
@@ -26,6 +26,10 @@ export class CoachmarkService {
     }
     this.#repository.markSeen(input);
     this.#listeners.forEach((listener) => listener());
+  };
+
+  removeRetiredKeys = (): void => {
+    this.#repository.removeRetiredKeys();
   };
 
   subscribe = (listener: () => void): (() => void) => {

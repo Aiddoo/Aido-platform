@@ -5,6 +5,7 @@ import {
   createPlanningTodoFixture,
   createPlanningTodo,
   PLANNING_TIME,
+  snapshotTodoRecord,
 } from "#test/fixtures/planning/planning-todos.fixture";
 
 import { UpdateTodoTitleUseCase } from "./update-todo-title.use-case.js";
@@ -25,7 +26,7 @@ describe("할 일 제목 수정", () => {
 
   it("제목을 저장하며 일정과 하위 항목을 보존하고 변경 이벤트를 발행한다", async () => {
     // Given
-    const before = structuredClone(fixture.records.get(1));
+    const before = snapshotTodoRecord(fixture.records.get(1));
     // When
     const result = await useCase.execute({ id: 1, userId: fixture.userId, title: "변경된 제목" });
     // Then
@@ -37,7 +38,7 @@ describe("할 일 제목 수정", () => {
   });
   it("잘못된 제목과 다른 사용자의 요청은 저장 상태를 바꾸지 않는다", async () => {
     // Given
-    const before = structuredClone(fixture.records.get(1));
+    const before = snapshotTodoRecord(fixture.records.get(1));
     // When / Then
     await expect(
       useCase.execute({ id: 1, userId: fixture.userId, title: "가".repeat(201) }),

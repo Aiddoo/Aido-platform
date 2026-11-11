@@ -4,6 +4,7 @@ import type { WeatherForecastReaderPort } from "#api/modules/weather/forecasts/w
 import { type GridInput } from "#api/modules/weather/forecasts/weather-forecasts.public";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import type { SupportedLocale } from "#api/shared/domain/locale";
 import { instantToDate } from "#api/shared/domain/time/instant";
 
@@ -69,6 +70,7 @@ export class SuggestionContextReader {
     const to = instantToDate(now);
 
     const historySince = daysAgo(30);
+    const owner = UserId.reconstitute(userId);
 
     const [
       todos,
@@ -80,19 +82,19 @@ export class SuggestionContextReader {
       weeklyReport,
       respondedSuggestions,
     ] = await Promise.all([
-      this.#dependencies.activityReader.findRecentTodos(userId, analysisFrom, to, timezone),
-      this.#dependencies.activityReader.findDayCompletionRates(userId, contextFrom, to, timezone),
-      this.#dependencies.activityReader.findTimeCompletionRates(userId, contextFrom, to, timezone),
+      this.#dependencies.activityReader.findRecentTodos(owner, analysisFrom, to, timezone),
+      this.#dependencies.activityReader.findDayCompletionRates(owner, contextFrom, to, timezone),
+      this.#dependencies.activityReader.findTimeCompletionRates(owner, contextFrom, to, timezone),
       this.#dependencies.activityReader.findCategoryCompletionRates(
-        userId,
+        owner,
         contextFrom,
         to,
         timezone,
       ),
-      this.#dependencies.activityReader.findUserStreakInfo(userId),
+      this.#dependencies.activityReader.findUserStreakInfo(owner),
       this.#fetchWeatherByGrid(weatherGrid, to, locale),
-      this.#dependencies.latestReportStats.findLatestWeekly(userId),
-      this.#dependencies.activityReader.findRecentResponded(userId, historySince),
+      this.#dependencies.latestReportStats.findLatestWeekly(owner),
+      this.#dependencies.activityReader.findRecentResponded(owner, historySince),
     ]);
 
     const missingRoutines = this.detectMissingRoutines(todos, timezone, locale);

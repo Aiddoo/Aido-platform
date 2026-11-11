@@ -34,8 +34,8 @@ type PublishedBatch = Parameters<
 >[0];
 
 const locales: SupportedLocale[] = ["ko", "en"];
-const today = new Date("2026-07-27T00:00:00.000Z");
-const yesterday = new Date("2026-07-26T00:00:00.000Z");
+const today = Temporal.PlainDate.from("2026-07-27");
+const yesterday = Temporal.PlainDate.from("2026-07-26");
 const totalCompletionClaim = /모두|every\s+(?:planned\s+)?to-do|all\s+(?:done|complete)/i;
 
 describe.each(locales)("%s 알림 문구와 실제 정책의 사실 조건", (locale) => {
@@ -114,8 +114,8 @@ describe.each(locales)("%s 알림 문구와 실제 정책의 사실 조건", (lo
       localHour: 7,
       localMinute: 0,
       dayOfWeek: 1,
-      today,
-      tomorrow: new Date("2026-07-28T00:00:00.000Z"),
+      today: Temporal.PlainDate.from("2026-07-27"),
+      tomorrow: Temporal.PlainDate.from("2026-07-28"),
     };
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(new Date("2026-07-26T22:00:00.000Z"));
@@ -126,8 +126,8 @@ describe.each(locales)("%s 알림 문구와 실제 정책의 사실 조건", (lo
       const record = writtenRecords[0]?.[0];
       const message = publishedBatches[0]?.[0];
       // Then - 실제 조회/저장은 이전 주인데 문장은 이번 주라고 말하면 안 된다
-      expect(params?.periodStart.toISOString()).toBe("2026-07-20T00:00:00.000Z");
-      expect(params?.periodEnd.toISOString()).toBe("2026-07-27T00:00:00.000Z");
+      expect(params?.periodStart.toString()).toBe("2026-07-20");
+      expect(params?.periodEnd.toString()).toBe("2026-07-27");
       expect(record).toMatchObject({ year: 2026, week: 30, totalTodos: 8, completedTodos: 3 });
       expect(message).toBeDefined();
       const text = `${message?.title} ${message?.body}`;

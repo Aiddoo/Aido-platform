@@ -22,7 +22,6 @@ import { AiController } from "./presentation/http/v1/ai.controller.js";
   ],
   controllers: [AiController],
   providers: [...AI_ASSISTANCE_PARSING_PROVIDERS],
-  // generation 재내보내기는 옛 USER_LOCALE_PREFERENCE_READER를 parsing에서 받던 voice를 위한 것이다
-  exports: [ChargedGenerationPort, AiDataSharingConsentGuard, AiAssistanceGenerationModule],
+  exports: [ChargedGenerationPort, AiDataSharingConsentGuard],
 })
 export class AiAssistanceParsingModule {}

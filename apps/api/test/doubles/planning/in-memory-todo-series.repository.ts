@@ -3,7 +3,9 @@ import {
   type DueTodoSeriesQuery,
   TodoSeriesRepositoryPort,
 } from "#api/modules/planning/todo-series/application/ports/todo-series.repository.port";
+import { TodoSeriesId } from "#api/modules/planning/todo-series/domain/todo-series-id.vo";
 import { TodoSeries } from "#api/modules/planning/todo-series/domain/todo-series.aggregate";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 export class InMemoryTodoSeriesRepository extends TodoSeriesRepositoryPort {
   readonly store: Map<string, TodoSeries>;
@@ -13,21 +15,21 @@ export class InMemoryTodoSeriesRepository extends TodoSeriesRepositoryPort {
     this.store = store;
   }
 
-  async updateTimezoneByUserId(userId: string, timezone: string): Promise<number> {
+  async updateTimezoneByUserId(userId: UserId, timezone: string): Promise<number> {
     const owned = [...this.store.values()].filter(
-      (series) => series.userId.value === userId && series.timezone !== timezone,
+      (series) => series.userId.equals(userId) && series.timezone !== timezone,
     );
     for (const series of owned) {
       series.applyDetails({ timezone });
     }
     return owned.length;
   }
-  async findByIdAndUserId(id: string, userId: string): Promise<TodoSeries | null> {
-    const series = this.store.get(id);
-    return series === undefined || series.userId.value !== userId ? null : this.#copy(series);
+  async findByIdAndUserId(id: TodoSeriesId, userId: UserId): Promise<TodoSeries | null> {
+    const series = this.store.get(id.value);
+    return series === undefined || !series.userId.equals(userId) ? null : this.#copy(series);
   }
-  async lockForUpdate(id: string): Promise<TodoSeries | null> {
-    const series = this.store.get(id);
+  async lockForUpdate(id: TodoSeriesId): Promise<TodoSeries | null> {
+    const series = this.store.get(id.value);
     return series === undefined ? null : this.#copy(series);
   }
   async insert(series: TodoSeries): Promise<void> {
@@ -36,13 +38,15 @@ export class InMemoryTodoSeriesRepository extends TodoSeriesRepositoryPort {
   async update(series: TodoSeries): Promise<void> {
     this.store.set(series.id.value, this.#copy(series));
   }
-  async lockFamilyIds(userId: string, originSeriesId: string): Promise<readonly string[]> {
+  async lockFamilyIds(
+    userId: UserId,
+    originSeriesId: TodoSeriesId,
+  ): Promise<readonly TodoSeriesId[]> {
     return [...this.store.values()]
       .filter(
-        (series) =>
-          series.userId.value === userId && series.originSeriesId.value === originSeriesId,
+        (series) => series.userId.equals(userId) && series.originSeriesId.equals(originSeriesId),
       )
-      .map((series) => series.id.value);
+      .map((series) => TodoSeriesId.reconstitute(series.id.value));
   }
   async lockFollowingSegments(series: TodoSeries): Promise<readonly TodoSeries[]> {
     return [...this.store.values()]
@@ -55,14 +59,14 @@ export class InMemoryTodoSeriesRepository extends TodoSeriesRepositoryPort {
       )
       .map((segment) => this.#copy(segment));
   }
-  async deleteMany(ids: readonly string[]): Promise<void> {
+  async deleteMany(ids: readonly TodoSeriesId[]): Promise<void> {
     for (const id of ids) {
-      this.store.delete(id);
+      this.store.delete(id.value);
     }
   }
-  async countActiveByUserId(userId: string): Promise<number> {
+  async countActiveByUserId(userId: UserId): Promise<number> {
     return [...this.store.values()].filter(
-      (series) => series.userId.value === userId && series.isActive,
+      (series) => series.userId.equals(userId) && series.isActive,
     ).length;
   }
   async findDueBatch(query: DueTodoSeriesQuery): Promise<readonly TodoSeriesRef[]> {
@@ -72,7 +76,7 @@ export class InMemoryTodoSeriesRepository extends TodoSeriesRepositoryPort {
         return (
           next !== null &&
           next <= query.through &&
-          (query.afterId === null || series.id.value > query.afterId)
+          (query.afterId === null || series.id.value > query.afterId.value)
         );
       })
       .map((series) => ({
@@ -82,11 +86,11 @@ export class InMemoryTodoSeriesRepository extends TodoSeriesRepositoryPort {
       .sort((left, right) => left.id.localeCompare(right.id))
       .slice(0, query.limit);
   }
-  async findIdsBehind(userId: string, through: string): Promise<readonly string[]> {
+  async findIdsBehind(userId: UserId, through: string): Promise<readonly string[]> {
     return [...this.store.values()]
       .filter((series) => {
         const next = series.nextOccurrenceDate;
-        return series.userId.value === userId && next !== null && next <= through;
+        return series.userId.equals(userId) && next !== null && next <= through;
       })
       .map((series) => series.id.value);
   }

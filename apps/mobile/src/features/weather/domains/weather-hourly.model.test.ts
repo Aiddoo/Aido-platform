@@ -2,7 +2,7 @@ import { toInstant } from '@src/shared/date/instant';
 import { range } from 'es-toolkit';
 
 import { createHourlyForecasts, createWeatherReport } from '../__tests__/weather-report.fixtures';
-import { WeatherHourlyPolicy } from './weather-hourly.model';
+import { getHourlySummary } from './weather-hourly.model';
 
 /** 서울 오후 3시 26분 */
 const NOW = toInstant('2026-11-02T06:26:00.000Z');
@@ -17,7 +17,7 @@ describe('getHourlySummary', () => {
     const report = createWeatherReport({ hourly: createHourlyForecasts([RAIN, RAIN, DRY_CLOUDY]) });
 
     // When
-    const summary = WeatherHourlyPolicy.getHourlySummary(report, NOW);
+    const summary = getHourlySummary(report, NOW);
 
     // Then
     // 오후 5시에 그친다
@@ -41,7 +41,7 @@ describe('getHourlySummary', () => {
     } as const;
 
     // When
-    const summary = WeatherHourlyPolicy.getHourlySummary(report, NOW);
+    const summary = getHourlySummary(report, NOW);
 
     // Then
     expect(summary).toMatchObject({
@@ -56,7 +56,7 @@ describe('getHourlySummary', () => {
     const report = createWeatherReport({ hourly: createHourlyForecasts([RAIN, RAIN]) });
 
     // When
-    const summary = WeatherHourlyPolicy.getHourlySummary(report, NOW);
+    const summary = getHourlySummary(report, NOW);
 
     // Then
     expect(summary).toMatchObject({ kind: 'precipitationOngoing', endsAt: null });
@@ -70,7 +70,7 @@ describe('getHourlySummary', () => {
     });
 
     // When
-    const summary = WeatherHourlyPolicy.getHourlySummary(report, NOW);
+    const summary = getHourlySummary(report, NOW);
 
     // Then
     expect(summary).toEqual({
@@ -90,7 +90,7 @@ describe('getHourlySummary', () => {
     });
 
     // When
-    const summary = WeatherHourlyPolicy.getHourlySummary(report, NOW);
+    const summary = getHourlySummary(report, NOW);
 
     // Then
     expect(summary).not.toMatchObject({ kind: 'precipitationUpcoming' });
@@ -105,7 +105,7 @@ describe('getHourlySummary', () => {
     });
 
     // When
-    const summary = WeatherHourlyPolicy.getHourlySummary(report, NOW);
+    const summary = getHourlySummary(report, NOW);
 
     // Then
     expect(summary).toEqual({
@@ -130,7 +130,7 @@ describe('getHourlySummary', () => {
     });
 
     // When
-    const summary = WeatherHourlyPolicy.getHourlySummary(report, NOW);
+    const summary = getHourlySummary(report, NOW);
 
     // Then
     // 오후 4시 16도가 정점이다
@@ -152,7 +152,7 @@ describe('getHourlySummary', () => {
     });
 
     // When
-    const summary = WeatherHourlyPolicy.getHourlySummary(report, NOW);
+    const summary = getHourlySummary(report, NOW);
 
     // Then
     expect(summary).toEqual({ kind: 'steady', sky: 'cloudy', peak: null });
@@ -164,7 +164,7 @@ describe('getHourlySummary', () => {
     const lateNow = toInstant('2026-11-02T08:00:00.000Z');
 
     // When
-    const summary = WeatherHourlyPolicy.getHourlySummary(report, lateNow);
+    const summary = getHourlySummary(report, lateNow);
 
     // Then
     expect(summary).toBeNull();

@@ -2,16 +2,13 @@ import type { FactoryProvider, Provider } from "@nestjs/common";
 
 import { EntitlementReaderPort } from "#api/modules/access/entitlements/access-entitlements.public";
 import { QuotaLedgerPort } from "#api/modules/access/quotas/access-quotas.public";
-import { PremiumAccessReaderPort } from "#api/modules/billing/subscriptions/billing-subscriptions.public";
+import { PremiumAccessReaderPort } from "#api/modules/billing/premium-grants/billing-premium-grants.public";
 import { TodoCommentAccountCleanupPort } from "#api/modules/engagement/comments/engagement-comments.public";
-import { NotificationAccountCleanup } from "#api/modules/notification/notification-delivery.public";
+import { DeleteActorNotificationsUseCase } from "#api/modules/notification/notification-delivery.public";
 import { CheerUsageReaderPort } from "#api/modules/social/cheers/social-cheers.public";
 import { NudgeUsageReaderPort } from "#api/modules/social/nudges/social-nudges.public";
 import { loggerFor, provideUseCase } from "#api/platform/di/provide-use-case";
-import {
-  USAGE_METER,
-  type UsageMeterPort,
-} from "#api/platform/metering/interfaces/usage-meter.interface";
+import { UsageMeterPort } from "#api/platform/metering/usage-meter.port";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
@@ -35,22 +32,26 @@ import { UpdateProfileUseCase } from "./application/use-cases/update-profile.use
 
 export const accountNotificationCleanupProvider: FactoryProvider<AccountNotificationCleanupPort> = {
   provide: AccountNotificationCleanupPort,
-  inject: [NotificationAccountCleanup],
-  useFactory: (cleanup: NotificationAccountCleanup): AccountNotificationCleanupPort => cleanup,
+  inject: [DeleteActorNotificationsUseCase],
+  useFactory: (cleanup: DeleteActorNotificationsUseCase): AccountNotificationCleanupPort => ({
+    cleanupInTransaction: (userId) => cleanup.cleanupInTransaction(userId.value),
+    settleAfterCommit: (result) => cleanup.settleAfterCommit(result),
+  }),
 };
 
 export const accountTodoCommentCleanupProvider: FactoryProvider<AccountTodoCommentCleanupPort> = {
   provide: AccountTodoCommentCleanupPort,
   inject: [TodoCommentAccountCleanupPort],
+  // 두 포트가 같은 UserId 시그니처라 그대로 넘긴다. useExisting과 달리 반환 타입이 시그니처를 검사한다
   useFactory: (cleanup: TodoCommentAccountCleanupPort): AccountTodoCommentCleanupPort => cleanup,
 };
 
 export const accountUsageCleanupProvider: FactoryProvider<AccountUsageCleanupPort> = {
   provide: AccountUsageCleanupPort,
-  inject: [USAGE_METER],
+  inject: [UsageMeterPort],
   useFactory: (meter: Pick<UsageMeterPort, "deleteSubject">): AccountUsageCleanupPort => ({
     cleanupInTransaction: async (userId) => {
-      await meter.deleteSubject(userId);
+      await meter.deleteSubject(userId.value);
     },
   }),
 };

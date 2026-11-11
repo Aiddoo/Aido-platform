@@ -3,11 +3,10 @@ import { vi } from "vitest";
 import { createE2eTestStateResetter } from "../e2e/helpers/e2e-test-state.js";
 
 describe("E2E 테스트 상태 reset", () => {
-  it("DB, cache, Redis, 공용 fake와 suite fake를 모두 초기화해야 한다", async () => {
+  it("DB, cache, 공용 fake와 suite fake를 모두 초기화해야 한다", async () => {
     // Given - 상태를 가진 모든 테스트 의존성
     const cleanupDatabase = vi.fn().mockResolvedValue(undefined);
     const resetCache = vi.fn().mockResolvedValue(undefined);
-    const flushRedis = vi.fn().mockResolvedValue("OK");
     const clearEmail = vi.fn();
     const clearOAuth = vi.fn();
     const clearPush = vi.fn();
@@ -15,7 +14,6 @@ describe("E2E 테스트 상태 reset", () => {
     const reset = createE2eTestStateResetter({
       cleanupDatabase,
       resetCache,
-      flushRedis,
       sharedResetters: [clearEmail, clearOAuth, clearPush],
       additionalResetters: [clearSuiteFake],
     });
@@ -26,7 +24,6 @@ describe("E2E 테스트 상태 reset", () => {
     // Then - 모든 상태 저장소가 정확히 한 번 초기화
     expect(cleanupDatabase).toHaveBeenCalledTimes(1);
     expect(resetCache).toHaveBeenCalledTimes(1);
-    expect(flushRedis).toHaveBeenCalledTimes(1);
     expect(clearEmail).toHaveBeenCalledTimes(1);
     expect(clearOAuth).toHaveBeenCalledTimes(1);
     expect(clearPush).toHaveBeenCalledTimes(1);
@@ -47,7 +44,6 @@ describe("E2E 테스트 상태 reset", () => {
       drainBackgroundWork,
       cleanupDatabase,
       resetCache: vi.fn(),
-      flushRedis: vi.fn(),
       sharedResetters: [],
     });
 
@@ -66,13 +62,11 @@ describe("E2E 테스트 상태 reset", () => {
     const drainBackgroundWork = vi.fn().mockRejectedValue(drainError);
     const cleanupDatabase = vi.fn();
     const resetCache = vi.fn().mockRejectedValue("cache failed");
-    const flushRedis = vi.fn().mockResolvedValue("OK");
     const clearFake = vi.fn();
     const reset = createE2eTestStateResetter({
       drainBackgroundWork,
       cleanupDatabase,
       resetCache,
-      flushRedis,
       sharedResetters: [clearFake],
     });
 
@@ -81,7 +75,6 @@ describe("E2E 테스트 상태 reset", () => {
     });
     expect(cleanupDatabase).toHaveBeenCalledTimes(1);
     expect(resetCache).toHaveBeenCalledTimes(1);
-    expect(flushRedis).toHaveBeenCalledTimes(1);
     expect(clearFake).toHaveBeenCalledTimes(1);
   });
 
@@ -96,7 +89,6 @@ describe("E2E 테스트 상태 reset", () => {
         drainBackgroundWork: neverSettles,
         cleanupDatabase,
         resetCache: vi.fn(),
-        flushRedis: vi.fn(),
         sharedResetters: [],
         timeoutMs: 20,
       });
@@ -116,7 +108,6 @@ describe("E2E 테스트 상태 reset", () => {
       const reset = createE2eTestStateResetter({
         cleanupDatabase: vi.fn(),
         resetCache: neverSettles,
-        flushRedis: vi.fn(),
         sharedResetters: [],
         timeoutMs: 20,
       });
@@ -132,7 +123,6 @@ describe("E2E 테스트 상태 reset", () => {
       const reset = createE2eTestStateResetter({
         cleanupDatabase,
         resetCache: neverSettles,
-        flushRedis: vi.fn(),
         sharedResetters: [],
         timeoutMs: 20,
       });

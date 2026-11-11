@@ -13,7 +13,7 @@ import type {
 import type { UpcomingRenewalNotifierPort } from "../ports/upcoming-renewal-notifier.port.js";
 import { SubscriptionLogEvent } from "../subscriptions.log-events.js";
 
-export const UPCOMING_RENEWAL_NOTICE = {
+const UPCOMING_RENEWAL_NOTICE = {
   noticeDays: PREMIUM_RENEWAL_NOTICE_DAYS,
   // Play에서 요금제를 바꿔 원래 만료까지 남은 옛 체인은 다음 결제를 정하지 않는다
   isNoticeable: (notice) => notice.isCurrentChain,

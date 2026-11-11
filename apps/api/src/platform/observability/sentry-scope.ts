@@ -59,18 +59,20 @@ export function withJobScope<T>(job: JobScope, run: () => Promise<T>): Promise<T
       [SENTRY_TAG.JOB_ID]: job.jobId,
       [SENTRY_TAG.JOB_ATTEMPT]: String(job.attempt),
     });
-    return Sentry.startSpan(
-      {
-        name: job.queue,
-        op: "queue.process",
-        forceTransaction: true,
-        attributes: {
-          [JOB_QUEUE_SPAN_ATTRIBUTE]: job.queue,
-          "messaging.system": "pg-boss",
-          "messaging.batch.message_count": job.batchSize,
+    // 부모 span이 있어도 작업마다 root span으로 남겨 큐별 표본 비율(tracesSampler)이 적용되게 한다
+    return Sentry.withActiveSpan(null, () =>
+      Sentry.startSpan(
+        {
+          name: job.queue,
+          op: "queue.process",
+          attributes: {
+            [JOB_QUEUE_SPAN_ATTRIBUTE]: job.queue,
+            "messaging.system": "pg-boss",
+            "messaging.batch.message_count": job.batchSize,
+          },
         },
-      },
-      run,
+        run,
+      ),
     );
   });
 }

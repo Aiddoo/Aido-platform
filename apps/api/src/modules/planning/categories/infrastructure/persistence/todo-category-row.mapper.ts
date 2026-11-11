@@ -1,5 +1,5 @@
 import type { todoCategory } from "#api/platform/database/schema/index";
-import { instantFromDate, instantToDate } from "#api/shared/domain/time/instant";
+import { toIsoString } from "#api/shared/domain/time/instant";
 
 import type { TodoCategoryWithCountReadModel } from "../../application/read-models/todo-category-with-count.read-model.js";
 import { TodoCategory } from "../../domain/todo-category.aggregate.js";
@@ -14,18 +14,13 @@ export function toTodoCategory(row: TodoCategoryRow): TodoCategory {
     name: row.name,
     color: row.color,
     sortOrder: row.sortOrder,
-    createdAt: instantFromDate(row.createdAt),
-    updatedAt: instantFromDate(row.updatedAt),
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
   });
 }
 
 export function toTodoCategoryRow(category: TodoCategory): typeof todoCategory.$inferInsert {
-  const { createdAt, updatedAt, ...primitives } = category.toPrimitives();
-  return {
-    ...primitives,
-    createdAt: instantToDate(createdAt),
-    updatedAt: instantToDate(updatedAt),
-  };
+  return category.toPrimitives();
 }
 
 export function toTodoCategoryWithCountReadModel(
@@ -37,8 +32,8 @@ export function toTodoCategoryWithCountReadModel(
     name: row.name,
     color: row.color,
     sortOrder: row.sortOrder,
-    createdAt: row.createdAt,
-    updatedAt: row.updatedAt,
+    createdAt: toIsoString(row.createdAt),
+    updatedAt: toIsoString(row.updatedAt),
     todoCount: row.todos,
   };
 }
