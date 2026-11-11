@@ -1,6 +1,4 @@
 import '@src/shared/i18n/init';
-import type { FeatureCampaignConfig } from '@src/features/app-config/feature-campaign/domains/feature-campaign.model';
-import { FEATURE_CAMPAIGN_QUERY_KEYS } from '@src/features/app-config/feature-campaign/queries/feature-campaign-query-keys';
 import { createAuthSessionStoreStub } from '@src/features/identity/auth/__tests__/create-auth-session-store-stub';
 import { createUser } from '@src/features/identity/user/__tests__/user.fixtures';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-keys';
@@ -12,6 +10,8 @@ import { router } from 'expo-router';
 
 import { RELEASE_1_15_0 } from '../constants/releases';
 import { RELEASE_ID } from '../constants/whats-new.constants';
+import type { WhatsNewCampaignConfig } from '../domains/whats-new-campaign.model';
+import { WHATS_NEW_QUERY_KEYS } from '../queries/whats-new-query-keys';
 import { useWhatsNewFeed } from './use-whats-new-feed';
 
 const USER_ID = 'user-1';
@@ -32,13 +32,13 @@ async function renderFeed({
     USER_QUERY_KEYS.me(),
     createUser({ id: USER_ID, createdAt: toInstant(signedUpAt) }),
   );
-  const config: FeatureCampaignConfig = {
+  const config: WhatsNewCampaignConfig = {
     enabled: true,
     campaignId: RELEASE_1_15_0.campaignId,
     minAppVersion: '1.15.0',
     autoOpen: true,
   };
-  queryClient.setQueryData(FEATURE_CAMPAIGN_QUERY_KEYS.config(), config);
+  queryClient.setQueryData(WHATS_NEW_QUERY_KEYS.campaign(), config);
   const onboarding = { isSettled: isOnboardingSettled };
   const hook = await renderScreenHook(
     () => useWhatsNewFeed({ isStable: true, isOnboardingSettled: onboarding.isSettled }),

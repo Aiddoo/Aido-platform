@@ -246,8 +246,8 @@ ignore:
   # 모바일 역할 폴더 이름이 아직 맞지 않는 파일(baseline #1400).
   # ls-lint는 남은 ignore를 알리지 않으므로 파일을 옮기거나 지우는 기능 PR이 그 줄을 함께 지운다
   - apps/mobile/src/features/app-config/app-version/apis/app-version.service.ts
-  - apps/mobile/src/features/app-config/feature-campaign/apis/feature-campaign.service.test.ts
-  - apps/mobile/src/features/app-config/feature-campaign/apis/feature-campaign.service.ts
+  - apps/mobile/src/features/app-config/whats-new/apis/whats-new-campaign.service.test.ts
+  - apps/mobile/src/features/app-config/whats-new/apis/whats-new-campaign.service.ts
   - apps/mobile/src/features/app-config/whats-new/apis/whats-new.repository.test.ts
   - apps/mobile/src/features/app-config/whats-new/apis/whats-new.repository.ts
   - apps/mobile/src/features/assistant/suggestion/apis/suggestion.service.ts

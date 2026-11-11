@@ -2,9 +2,9 @@ import { unwrap } from '@src/core/errors/result';
 import { ParseError } from '@src/shared/errors/infra-error';
 import { createJsonFetcherStub } from '@src/testing/core';
 
-import { FeatureCampaignService } from './feature-campaign.service';
+import { WhatsNewCampaignService } from './whats-new-campaign.service';
 
-describe('FeatureCampaignService', () => {
+describe('WhatsNewCampaignService', () => {
   it('원문 설정 응답을 검증하고 도메인 설정으로 반환한다', async () => {
     // Given
     const fetcher = createJsonFetcherStub();
@@ -15,7 +15,7 @@ describe('FeatureCampaignService', () => {
       launchedAt: '2026-08-01T00:00:00.000Z',
       autoOpen: true,
     });
-    const service = new FeatureCampaignService(fetcher);
+    const service = new WhatsNewCampaignService(fetcher);
 
     // When
     const result = unwrap(await service.getConfig());
@@ -33,7 +33,7 @@ describe('FeatureCampaignService', () => {
     // Given
     const fetcher = createJsonFetcherStub();
     fetcher.get.mockResolvedValue({ data: { enabled: false } });
-    const service = new FeatureCampaignService(fetcher);
+    const service = new WhatsNewCampaignService(fetcher);
 
     // When
     const result = service.getConfig();
@@ -46,7 +46,7 @@ describe('FeatureCampaignService', () => {
     // Given
     const fetcher = createJsonFetcherStub();
     fetcher.get.mockRejectedValue(new Error('offline'));
-    const service = new FeatureCampaignService(fetcher);
+    const service = new WhatsNewCampaignService(fetcher);
 
     // When
     const result = service.getConfig();

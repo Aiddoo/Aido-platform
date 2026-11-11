@@ -1,5 +1,4 @@
 import { useApplicationMetadata, useWhatsNewRepository } from '@src/bootstrap/providers/di-context';
-import { useGetFeatureCampaignConfigQueryOptions } from '@src/features/app-config/feature-campaign/queries/feature-campaign.queries';
 import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
 import { useMyAccountId } from '@src/features/identity/user/hooks/use-my-account-id';
 import { useQuery } from '@tanstack/react-query';
@@ -8,6 +7,7 @@ import { useCallback, useMemo, useSyncExternalStore } from 'react';
 
 import { RELEASES } from '../constants/releases';
 import { WhatsNewPolicy } from '../domains/whats-new.model';
+import { useGetWhatsNewCampaignConfigQueryOptions } from '../queries/whats-new-campaign.queries';
 import { shouldShowCoachmarks } from '../utils/should-show-coachmarks';
 
 interface WhatsNewAutoOpenInput {
@@ -20,7 +20,7 @@ export function useWhatsNewAutoOpen({ isOnboardingSettled }: WhatsNewAutoOpenInp
   const isAuthenticated = useAuthStatus() === 'authenticated';
   // isLoading은 처음 받는 중에만 true다. 실패했거나 오프라인이라 멈추면 false라 말풍선을 붙잡아 두지 않는다
   const { data: config, isLoading: isConfigLoading } = useQuery({
-    ...useGetFeatureCampaignConfigQueryOptions(),
+    ...useGetWhatsNewCampaignConfigQueryOptions(),
     enabled: isAuthenticated,
   });
   const accountId = useMyAccountId({ isEnabled: isAuthenticated });

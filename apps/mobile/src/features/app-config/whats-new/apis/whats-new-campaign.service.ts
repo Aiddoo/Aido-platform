@@ -3,9 +3,9 @@ import { ok } from '@src/core/errors/result';
 import type { JsonFetcher } from '@src/core/ports/json-fetcher';
 import { parseApiResponse } from '@src/shared/errors/parse-api-response';
 
-import { toFeatureCampaignConfig } from './feature-campaign.mapper';
+import { toWhatsNewCampaignConfig } from './whats-new-campaign.mapper';
 
-export class FeatureCampaignService {
+export class WhatsNewCampaignService {
   readonly #jsonFetcher: JsonFetcher;
 
   constructor(jsonFetcher: JsonFetcher) {
@@ -16,7 +16,7 @@ export class FeatureCampaignService {
     parseApiResponse(
       ok(await this.#jsonFetcher.get('v1/app-config/feature-discovery', signal)),
       featureDiscoveryResponseSchema,
-      toFeatureCampaignConfig,
-      '[FeatureCampaignService] Invalid response',
+      toWhatsNewCampaignConfig,
+      '[WhatsNewCampaignService] Invalid response',
     );
 }

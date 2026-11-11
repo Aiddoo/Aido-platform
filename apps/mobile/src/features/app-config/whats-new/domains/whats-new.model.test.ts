@@ -1,13 +1,13 @@
-import type { FeatureCampaignConfig } from '@src/features/app-config/feature-campaign/domains/feature-campaign.model';
 import { toInstant } from '@src/shared/date/instant';
 
 import { RELEASE_1_15_0, RELEASES } from '../constants/releases';
+import type { WhatsNewCampaignConfig } from './whats-new-campaign.model';
 import type { Release } from './whats-new.model';
 import { WhatsNewPolicy } from './whats-new.model';
 
 const createEnabledConfig = (
-  overrides: Partial<Extract<FeatureCampaignConfig, { enabled: true }>> = {},
-): Extract<FeatureCampaignConfig, { enabled: true }> => ({
+  overrides: Partial<Extract<WhatsNewCampaignConfig, { enabled: true }>> = {},
+): Extract<WhatsNewCampaignConfig, { enabled: true }> => ({
   enabled: true,
   campaignId: RELEASE_1_15_0.campaignId,
   minAppVersion: '1.15.0',

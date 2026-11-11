@@ -1,5 +1,4 @@
 import { useWhatsNewRepository } from '@src/bootstrap/providers/di-context';
-import { useGetFeatureCampaignConfigQueryOptions } from '@src/features/app-config/feature-campaign/queries/feature-campaign.queries';
 import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
 import { useMyAccountId } from '@src/features/identity/user/hooks/use-my-account-id';
 import { useQuery } from '@tanstack/react-query';
@@ -8,6 +7,7 @@ import { useCallback, useMemo, useSyncExternalStore } from 'react';
 
 import { RELEASES } from '../constants/releases';
 import { type ReleaseId, WhatsNewPolicy } from '../domains/whats-new.model';
+import { useGetWhatsNewCampaignConfigQueryOptions } from '../queries/whats-new-campaign.queries';
 
 /**
  * 서버 캠페인이 가리키는 출시를 이 계정이 아직 보지 않았으면 그 id. 메뉴 점과 목록의 새 기능 표시가 이 값 하나를 본다.
@@ -17,7 +17,7 @@ export function useUnseenCampaignReleaseId(): ReleaseId | null {
   const repository = useWhatsNewRepository();
   const isAuthenticated = useAuthStatus() === 'authenticated';
   const { data: config } = useQuery({
-    ...useGetFeatureCampaignConfigQueryOptions(),
+    ...useGetWhatsNewCampaignConfigQueryOptions(),
     enabled: isAuthenticated,
   });
   const userId = useMyAccountId({ isEnabled: isAuthenticated });

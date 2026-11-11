@@ -1,4 +1,3 @@
-import type { FeatureCampaignConfig } from '@src/features/app-config/feature-campaign/domains/feature-campaign.model';
 import { type Instant, diffMs } from '@src/shared/date/instant';
 import { isSemanticVersionAtLeast } from '@src/shared/utils/semantic-version';
 import { maxBy } from 'es-toolkit';
@@ -9,6 +8,7 @@ import {
   TOUR_RELEASE_IDS,
   WHATS_NEW_REENTRY_WINDOW_MS,
 } from '../constants/whats-new.constants';
+import type { WhatsNewCampaignConfig } from './whats-new-campaign.model';
 
 const releaseIdSchema = z.enum(RELEASE_ID);
 export type ReleaseId = z.infer<typeof releaseIdSchema>;
@@ -27,7 +27,7 @@ export const releaseSchema = z.object({
 export type Release = z.infer<typeof releaseSchema>;
 
 interface AutoOpenContext {
-  config: FeatureCampaignConfig | undefined;
+  config: WhatsNewCampaignConfig | undefined;
   appVersion: string | undefined;
   hasSeen: boolean;
 }

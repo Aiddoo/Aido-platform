@@ -11,7 +11,7 @@ import type { TokenStore } from '@src/core/ports/token-store';
 import type { ViewCaptureGateway } from '@src/core/ports/view-capture-gateway';
 import type { SessionEpoch } from '@src/core/session/session-epoch';
 import type { AppVersionService } from '@src/features/app-config/app-version/apis/app-version.service';
-import type { FeatureCampaignService } from '@src/features/app-config/feature-campaign/apis/feature-campaign.service';
+import type { WhatsNewCampaignService } from '@src/features/app-config/whats-new/apis/whats-new-campaign.service';
 import type { WhatsNewRepository } from '@src/features/app-config/whats-new/apis/whats-new.repository';
 import type { SuggestionService } from '@src/features/assistant/suggestion/apis/suggestion.service';
 import type { EntitlementApi } from '@src/features/billing/subscription/apis/entitlement.api';
@@ -103,7 +103,7 @@ export interface DIContainer extends SharedDependencies {
   inviteService: InviteService;
   pendingRedemptionService: PendingRedemptionService;
   inviteShareService: InviteShareService;
-  featureCampaignService: FeatureCampaignService;
+  whatsNewCampaignService: WhatsNewCampaignService;
   whatsNewRepository: WhatsNewRepository;
   inquiryService: InquiryService;
   memoApi: MemoApi;
@@ -265,8 +265,8 @@ export function usePendingRedemptionService() {
 export function useInviteShareService() {
   return useDI().inviteShareService;
 }
-export function useFeatureCampaignService() {
-  return useDI().featureCampaignService;
+export function useWhatsNewCampaignService() {
+  return useDI().whatsNewCampaignService;
 }
 export function useWhatsNewRepository() {
   return useDI().whatsNewRepository;

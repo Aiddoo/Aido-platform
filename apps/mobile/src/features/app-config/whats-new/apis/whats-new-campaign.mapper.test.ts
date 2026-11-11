@@ -1,8 +1,8 @@
 import { type FeatureDiscoveryResponse, featureDiscoveryResponseSchema } from '@aido/api';
 
-import { toFeatureCampaignConfig } from './feature-campaign.mapper';
+import { toWhatsNewCampaignConfig } from './whats-new-campaign.mapper';
 
-describe('toFeatureCampaignConfig', () => {
+describe('toWhatsNewCampaignConfig', () => {
   it('계약이 그대로 보내는 출시 시각은 1.15.0 이하 앱만 읽어 옮기지 않는다', () => {
     // Given
     const response: FeatureDiscoveryResponse = featureDiscoveryResponseSchema.parse({
@@ -14,7 +14,7 @@ describe('toFeatureCampaignConfig', () => {
     });
 
     // When
-    const result = toFeatureCampaignConfig(response);
+    const result = toWhatsNewCampaignConfig(response);
 
     // Then
     expect(result).toEqual({
@@ -27,7 +27,7 @@ describe('toFeatureCampaignConfig', () => {
 
   it('비활성 응답은 비활성 도메인 값으로 유지한다', () => {
     // When
-    const result = toFeatureCampaignConfig({ enabled: false });
+    const result = toWhatsNewCampaignConfig({ enabled: false });
 
     // Then
     expect(result).toEqual({ enabled: false });

@@ -36,7 +36,7 @@ import type { VendorIdGateway } from '@src/core/ports/vendor-id-gateway';
 import type { ViewCaptureGateway } from '@src/core/ports/view-capture-gateway';
 import type { SessionEpoch } from '@src/core/session/session-epoch';
 import { AppVersionService } from '@src/features/app-config/app-version/apis/app-version.service';
-import { FeatureCampaignService } from '@src/features/app-config/feature-campaign/apis/feature-campaign.service';
+import { WhatsNewCampaignService } from '@src/features/app-config/whats-new/apis/whats-new-campaign.service';
 import { createWhatsNewRepository } from '@src/features/app-config/whats-new/apis/whats-new.repository';
 import { SuggestionService } from '@src/features/assistant/suggestion/apis/suggestion.service';
 import { EntitlementApi } from '@src/features/billing/subscription/apis/entitlement.api';
@@ -331,7 +331,7 @@ export function createAppContainer(ports: AppContainerPorts): DIContainer {
       errorReporter,
     }),
     // 기능 소개 캠페인 설정은 API envelope 없이 원문 JSON이다
-    featureCampaignService: new FeatureCampaignService(ports.jsonFetcher),
+    whatsNewCampaignService: new WhatsNewCampaignService(ports.jsonFetcher),
     whatsNewRepository,
     inquiryService: new InquiryService(authHttpClient),
     memoApi: new MemoApi(authHttpClient, logger),

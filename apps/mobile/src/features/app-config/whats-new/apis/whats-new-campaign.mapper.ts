@@ -1,9 +1,11 @@
 import type { FeatureDiscoveryResponse } from '@aido/api';
 import { pick } from 'es-toolkit';
 
-import type { FeatureCampaignConfig } from '../domains/feature-campaign.model';
+import type { WhatsNewCampaignConfig } from '../domains/whats-new-campaign.model';
 
-export function toFeatureCampaignConfig(response: FeatureDiscoveryResponse): FeatureCampaignConfig {
+export function toWhatsNewCampaignConfig(
+  response: FeatureDiscoveryResponse,
+): WhatsNewCampaignConfig {
   if (!response.enabled) {
     return { enabled: false };
   }

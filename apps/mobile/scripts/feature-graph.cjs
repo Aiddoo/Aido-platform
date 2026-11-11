@@ -29,7 +29,6 @@ const FEATURE_LAYERS = {
   'billing/subscription': 1,
   'support/inquiry': 1,
   'app-config/app-version': 1,
-  'app-config/feature-campaign': 1,
   'device/app-icon': 1,
   'planning/todo': 2,
   'planning/category': 2,
