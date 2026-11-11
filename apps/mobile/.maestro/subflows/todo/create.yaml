@@ -1,0 +1,21 @@
+appId: ${MAESTRO_APP_ID}
+name: 피드의 카테고리에서 할 일을 추가한다
+# env: CATEGORY_ID, TODO_TITLE
+---
+- scrollUntilVisible:
+    element:
+      id: ${output.ids.todo.addButton(CATEGORY_ID)}
+- tapOn:
+    id: ${output.ids.todo.addButton(CATEGORY_ID)}
+- extendedWaitUntil:
+    visible:
+      id: ${output.ids.todo.addSheet}
+    timeout: 10000
+- tapOn:
+    id: ${output.ids.todo.titleInput}
+- inputText: ${TODO_TITLE}
+- tapOn:
+    id: ${output.ids.todo.submitButton}
+- extendedWaitUntil:
+    visible: ${TODO_TITLE}
+    timeout: 10000

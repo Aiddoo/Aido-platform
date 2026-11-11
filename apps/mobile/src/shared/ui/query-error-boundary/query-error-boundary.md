@@ -67,8 +67,8 @@ route 시트 안에서는 시트를 먼저 닫고 그 자리를 문의 화면으
 ## 오류 보고
 
 `classifyBoundaryError` 결과에 따라 보고 강도를 나눕니다. 인증 전환 401은 warning 메시지, 예상된 404와
-기능이 꺼진 코드(`INVITE_2105`)는 breadcrumb, 연결 오류(`NetworkError`·`TimeoutError`)는 `network` breadcrumb,
-그 밖(5xx·파싱 등)은 `captureException`입니다.
+기능이 꺼진 코드(`INVITE_2105`), 친구가 끊겨 볼 수 없게 된 친구 할 일(`FOLLOW_0906`)은 breadcrumb,
+연결 오류(`NetworkError`·`TimeoutError`)는 `network` breadcrumb, 그 밖(5xx·파싱 등)은 `captureException`입니다.
 
 ## 오프라인
 

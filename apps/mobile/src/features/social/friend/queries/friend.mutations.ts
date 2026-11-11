@@ -12,15 +12,21 @@ import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
 import { useTrack } from '@src/shared/analytics';
 import { getUserFacingMessage } from '@src/shared/errors';
 import { t } from '@src/shared/i18n';
-import type { Page } from '@src/shared/types/page.types';
 import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
-import { mutationOptions, useQueryClient, type InfiniteData } from '@tanstack/react-query';
+import { mutationOptions, type QueryClient, useQueryClient } from '@tanstack/react-query';
 
+import { FRIEND_MUTATION_KEYS } from '../constants/friend-mutation-keys';
 import { FRIEND_QUERY_KEYS } from '../constants/friend-query-keys';
 import { findFriendLimit } from '../domains/friend.error';
-import { FriendPolicy, type FriendUser } from '../domains/friend.model';
+import { FriendPolicy } from '../domains/friend.model';
 import type { ReorderFriendInput } from '../schemas/friend-request.schema';
-import { invalidateFriends, patchSearchedUser } from './friend-cache';
+import {
+  findFriendPlacement,
+  invalidateFriends,
+  patchSearchedUser,
+  withFriendRemoved,
+  withFriendRestored,
+} from './friend-cache';
 
 export function useAcceptRequestMutationOptions() {
   const haptics = useHaptics();
@@ -105,66 +111,62 @@ export function useRejectRequestMutationOptions() {
   });
 }
 
+/** 지금 끝나는 지우기가 마지막이면 true. 앞 지우기 뒤에 다시 받으면 아직 지우는 중인 친구가 목록에 돌아온다 */
+function isLastFriendWrite(queryClient: QueryClient) {
+  return queryClient.isMutating({ mutationKey: FRIEND_MUTATION_KEYS.writes() }) === 1;
+}
+
 export function useRemoveFriendMutationOptions() {
   const haptics = useHaptics();
   const toast = useAppToast();
   const friendService = useFriendService();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
-  const friendsQueryKey = FRIEND_QUERY_KEYS.friends();
-
-  type FriendsInfiniteData = InfiniteData<Page<FriendUser>, string | undefined>;
 
   return mutationOptions({
     // 삭제 중에는 행 버튼이 꺼진다. 오프라인에 멈춰 두면 행이 빠진 채 연결될 때까지 남으니 바로 실패해 되돌린다
     networkMode: 'always',
+    mutationKey: FRIEND_MUTATION_KEYS.writes(),
     mutationFn: async (userId: string) => {
       const result = await friendService.removeFriend(userId);
       return unwrap(result);
     },
     onMutate: async (userId) => {
-      await queryClient.cancelQueries({ queryKey: friendsQueryKey });
+      await queryClient.cancelQueries({ queryKey: FRIEND_QUERY_KEYS.friends(), exact: true });
 
-      const previousData = queryClient.getQueryData<FriendsInfiniteData>(friendsQueryKey);
+      const cachedFriends = queryClient.getQueryData(FRIEND_QUERY_KEYS.friends());
+      const placement = cachedFriends == null ? null : findFriendPlacement(cachedFriends, userId);
 
-      queryClient.setQueryData<FriendsInfiniteData>(friendsQueryKey, (old) => {
-        if (!old) {
-          return old;
-        }
+      queryClient.setQueryData(
+        FRIEND_QUERY_KEYS.friends(),
+        (old) => old && withFriendRemoved(old, userId),
+      );
 
-        const exists = old.pages.some((page) => page.items.some((item) => item.id === userId));
-        if (!exists) {
-          return old;
-        }
-
-        return {
-          ...old,
-          pages: old.pages.map((page) => ({
-            ...page,
-            items: page.items.filter((item) => item.id !== userId),
-            totalCount: Math.max(0, page.totalCount - 1),
-          })),
-        };
-      });
-
-      return { previousData };
+      return { placement };
     },
+    onSuccess: () => {
+      trackEvent('friend_removed');
+      // 친구 수가 한도(FRIEND)를 돌려받으므로 남은 횟수를 다시 받는다
+      invalidateEntitlements(queryClient);
+    },
+    // 목록을 통째로 되돌리면 함께 지우는 다른 친구가 돌아온다. 이 친구만 원래 자리에 되돌린다
     onError: (error, _userId, context) => {
+      const placement = context?.placement;
+      if (placement != null) {
+        queryClient.setQueryData(
+          FRIEND_QUERY_KEYS.friends(),
+          (old) => old && withFriendRestored(old, placement),
+        );
+      }
+
       haptics.notify('error');
       toast.error(getUserFacingMessage(error));
-
-      if (context?.previousData) {
-        queryClient.setQueryData(friendsQueryKey, context.previousData);
-      }
     },
-    onSettled: (_data, error) => {
-      if (!error) {
-        trackEvent('friend_removed');
-        // 친구 수가 한도(FRIEND)를 돌려받으므로 남은 횟수를 다시 받는다
-        invalidateEntitlements(queryClient);
+    onSettled: () => {
+      if (isLastFriendWrite(queryClient)) {
+        queryClient.invalidateQueries({ queryKey: FRIEND_QUERY_KEYS.friends(), exact: true });
+        queryClient.invalidateQueries({ queryKey: FRIEND_QUERY_KEYS.searches() });
       }
-      queryClient.invalidateQueries({ queryKey: friendsQueryKey });
-      queryClient.invalidateQueries({ queryKey: FRIEND_QUERY_KEYS.searches() });
     },
   });
 }

@@ -6,7 +6,6 @@ import { PressableFeedback, Skeleton } from 'heroui-native';
 import { useState } from 'react';
 
 import { TodoCategoryPolicy } from '../domains/todo-category.model';
-import { isOptimisticCategory } from '../queries/todo-category-cache';
 import { useGetTodoCategoriesQueryOptions } from '../queries/todo-category.queries';
 
 const LOADING_ROW_COUNT = 3;
@@ -53,11 +52,12 @@ export function CategorySelectInput({
           return (
             <PressableFeedback
               key={category.id}
+              testID={`category-select-option-${category.id}`}
               accessibilityRole="button"
               accessibilityLabel={category.name}
               accessibilityState={{ selected: isSelected }}
               onPress={() => setLocalCategoryId(category.id)}
-              isDisabled={isOptimisticCategory(category)}
+              isDisabled={TodoCategoryPolicy.isOptimisticCategory(category)}
               className="rounded-xl"
             >
               <PressableFeedback.Highlight className="rounded-xl" />
@@ -82,7 +82,12 @@ export function CategorySelectInput({
         })}
       </VStack>
 
-      <Button size="large" onPress={() => onSubmit(localCategoryId)} isLoading={isLoading}>
+      <Button
+        size="large"
+        testID="category-select-submit"
+        onPress={() => onSubmit(localCategoryId)}
+        isLoading={isLoading}
+      >
         {submitLabel}
       </Button>
     </VStack>

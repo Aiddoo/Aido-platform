@@ -11,13 +11,24 @@ export function usePushOnboardingGuard(): boolean {
 
   useEffect(() => {
     pushOnboardingGuard.set(isDue);
-    return () => pushOnboardingGuard.set(false);
+    return () => pushOnboardingGuard.set(null);
   }, [isDue]);
 
-  return isDue;
+  return isDue ?? false;
 }
 
 /** guard가 열린 채 그려졌을 때만 true다. 이 값으로 열어야 열자마자 guard에 막혀 되돌아가지 않는다 */
 export function useIsPushOnboardingGuardOpen(): boolean {
-  return useSyncExternalStore(pushOnboardingGuard.subscribe, pushOnboardingGuard.get);
+  return useSyncExternalStore(
+    pushOnboardingGuard.subscribe,
+    () => pushOnboardingGuard.get() === true,
+  );
+}
+
+/** 알림 화면을 열 차례가 아니라고 정해진 채 그려졌을 때만 true다. 다른 자동 화면은 이때 열어야 알림 화면과 겹치거나 앞서지 않는다 */
+export function useIsPushOnboardingGuardClosed(): boolean {
+  return useSyncExternalStore(
+    pushOnboardingGuard.subscribe,
+    () => pushOnboardingGuard.get() === false,
+  );
 }

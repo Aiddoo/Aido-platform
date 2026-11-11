@@ -2,8 +2,13 @@ import type { WeatherBriefing, WeatherHourlyForecast, WeatherReportResponse } fr
 import { fromEpochMs, toInstant } from '@src/shared/date/instant';
 
 import { toWeatherReport } from '../apis/weather.mapper';
-import type { BriefingTodo } from '../domains/weather-briefing.model';
-import type { WeatherReport } from '../domains/weather-report.model';
+import type { BriefingTodo, ForecastTodo } from '../domains/weather-briefing.model';
+import type {
+  AirQuality,
+  CurrentWeather,
+  DailyForecastEntry,
+  WeatherReport,
+} from '../domains/weather-report.model';
 
 const HOUR_MS = 60 * 60_000;
 
@@ -222,6 +227,40 @@ export function createWeatherReportWithHours(
   overrides: Partial<WeatherReportResponse> = {},
 ) {
   return createWeatherReport({ hourly: createHourlyForecasts(rows), ...overrides });
+}
+
+export function createCurrentWeather(overrides: Partial<CurrentWeather> = {}): CurrentWeather {
+  return { ...createWeatherReport().current, ...overrides };
+}
+
+export function createDailyForecast(
+  overrides: Partial<DailyForecastEntry> = {},
+): DailyForecastEntry {
+  const [today] = createWeatherReport().daily;
+  if (today == null) {
+    throw new Error('기본 예보에 일별 예보가 없습니다');
+  }
+  return { ...today, ...overrides };
+}
+
+export function createAirQuality(overrides: Partial<AirQuality> = {}): AirQuality {
+  return { pm10: null, pm25: null, source: 'AIRKOREA', ...overrides };
+}
+
+export function createForecastTodo(overrides: Partial<ForecastTodo> = {}): ForecastTodo {
+  const [hour] = createWeatherReport().hourly;
+  if (hour == null) {
+    throw new Error('기본 예보에 시간별 예보가 없습니다');
+  }
+  return {
+    todoId: 1,
+    title: '산책',
+    scheduledAt: hour.startsAt,
+    completed: false,
+    subTodoProgress: null,
+    hour,
+    ...overrides,
+  };
 }
 
 export function createBriefingTodo(overrides: Partial<BriefingTodo> = {}): BriefingTodo {

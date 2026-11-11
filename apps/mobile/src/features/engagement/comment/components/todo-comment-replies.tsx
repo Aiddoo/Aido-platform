@@ -70,10 +70,8 @@ export function TodoCommentReplies({ thread, anchor, isHighlightActive }: TodoCo
             onPress={() => {
               setExpansion({ isExpanded: true, source: 'user' });
               queryClient
-                .ensureInfiniteQueryData(repliesOptions)
-                .then((data) =>
-                  trackLoadedCount(TodoCommentPolicy.flattenReplies(data.pages).length),
-                )
+                .infiniteQuery({ ...repliesOptions, staleTime: 'static' })
+                .then((replies) => trackLoadedCount(replies.length))
                 .catch(noop);
             }}
           />

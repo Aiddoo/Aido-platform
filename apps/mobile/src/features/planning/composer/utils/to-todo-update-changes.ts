@@ -1,5 +1,5 @@
 import { TodoRepeatPolicy } from '@src/features/planning/todo/domains/todo-repeat.model';
-import { TodoPolicy } from '@src/features/planning/todo/domains/todo.model';
+import { hasScheduleChanged } from '@src/features/planning/todo/domains/todo.model';
 import { type Instant, toDateKey } from '@src/shared/date/instant';
 
 import type { AddTodoFormValues } from '../schemas/add-todo-form.schema';
@@ -22,7 +22,7 @@ export function toTodoUpdateChanges(
   const startDate = toDateKey(values.startDate, timeZone);
   const endDate = toNullableDateKey(values.endDate, timeZone);
   const scheduledTime = toScheduledTime(values);
-  const isScheduleChanged = TodoPolicy.hasScheduleChanged(
+  const isScheduleChanged = hasScheduleChanged(
     { isAllDay: values.isAllDay, scheduledTime },
     { isAllDay: defaults.isAllDay, scheduledTime: toScheduledTime(defaults) },
   );

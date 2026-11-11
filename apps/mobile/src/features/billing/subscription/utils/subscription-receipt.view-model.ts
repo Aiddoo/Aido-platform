@@ -294,7 +294,7 @@ export function toReceiptDateLabel(variant: SubscriptionReceiptViewModel['varian
 
 /** 출처·기간·자동 갱신·이어서 받을 보상은 서버 값을 쓰고 여기서는 기기 시간대 기준 남은 일수와 보일 행만 고른다 */
 export function toSubscriptionReceiptViewModel(
-  user: Pick<User, 'role' | 'premiumAccess'>,
+  user: User,
   context: SubscriptionReceiptContext,
 ): SubscriptionReceiptViewModel {
   const access = user.premiumAccess;
