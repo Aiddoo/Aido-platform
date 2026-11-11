@@ -135,6 +135,7 @@ export {
 export { InfiniteList, InfiniteListFooter, useFetchNextPage } from './infinite-list';
 export { InlineAlert } from './inline-alert';
 export { BottomSheetInput, Input } from './input';
+export { LabelChip } from './label-chip';
 export { ListRow, type ListRowProps } from './list-row';
 export { Meter } from './meter';
 export { OfflineBanner } from './offline-banner';

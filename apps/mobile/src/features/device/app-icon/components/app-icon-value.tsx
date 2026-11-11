@@ -1,9 +1,8 @@
 import { EntitlementPolicy } from '@src/features/billing/subscription/domains/entitlement.model';
 import { useGetEntitlementsQueryOptions } from '@src/features/billing/subscription/queries/entitlement.queries';
 import { useTranslation } from '@src/shared/i18n';
-import { QueryErrorBoundary, Text } from '@src/shared/ui';
+import { QueryErrorBoundary, Text, LabelChip } from '@src/shared/ui';
 import { useSuspenseQueries } from '@tanstack/react-query';
-import { Chip } from 'heroui-native';
 import { Suspense } from 'react';
 
 import { APP_ICONS } from '../constants/app-icon.constants';
@@ -29,13 +28,7 @@ function AppIcon() {
 
   if (!EntitlementPolicy.canUseFeature(entitlements, 'APP_ICON')) {
     // 행 누름을 가로채지 않게 표시만 한다
-    return (
-      <Chip size="sm" variant="soft" color="accent" pointerEvents="none">
-        <Text size="e1" weight="medium" className="text-accent-soft-foreground">
-          {t('subscription:tier.premium')}
-        </Text>
-      </Chip>
-    );
+    return <LabelChip color="accent" label={t('subscription:tier.premium')} pointerEvents="none" />;
   }
 
   return currentIcon == null ? null : (

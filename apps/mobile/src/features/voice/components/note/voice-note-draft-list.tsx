@@ -15,11 +15,12 @@ import {
   TextSkeleton,
   VStack,
   SurfaceCard,
+  LabelChip,
 } from '@src/shared/ui';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { range } from 'es-toolkit';
 import { router } from 'expo-router';
-import { Chip, PressableFeedback, Skeleton } from 'heroui-native';
+import { PressableFeedback, Skeleton } from 'heroui-native';
 import { ScrollView, StyleSheet } from 'react-native';
 
 import { VOICE_NOTE_PREVIEW_COUNT } from '../../constants/voice-note.constants';
@@ -117,11 +118,7 @@ VoiceNoteDraftList.Item = function Item({ note }: { note: VoiceNote }) {
         </VStack>
         {/* Chip도 Pressable이라 그대로 두면 칩 자리 탭을 가로채 줄이 눌리지 않는다 */}
         {note.digest == null && (
-          <Chip size="sm" variant="soft" color="accent" pointerEvents="none">
-            <Text size="e1" weight="medium" className="text-accent-soft-foreground">
-              {t('drafts.notDigested')}
-            </Text>
-          </Chip>
+          <LabelChip color="accent" label={t('drafts.notDigested')} pointerEvents="none" />
         )}
       </HStack>
     </PressableFeedback>
