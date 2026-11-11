@@ -1,6 +1,8 @@
 import { createWidgetNavigationCommand } from '../__tests__/widget-navigation.fixtures';
-import { WIDGET_NAVIGATION_COMMAND_TTL_MS } from '../constants/widget.constants';
 import { parseWidgetNavigationUri, WidgetNavigationPolicy } from './widget-navigation.model';
+
+/** 위젯을 누른 뒤 5분 안에 앱이 열려야 저장된 목적지로 옮긴다 */
+const WIDGET_NAVIGATION_COMMAND_TTL_MS = 5 * 60_000;
 
 describe('isFresh', () => {
   it('만료 직전 명령만 허용하고 만료 시점과 미래 명령은 거절한다', () => {

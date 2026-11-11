@@ -2,8 +2,8 @@ import { readStoredValue } from '@src/shared/storage/define-stored-value';
 import { createMemoryObservableSyncStorage } from '@src/testing/core';
 import type { WidgetTaskHandlerProps } from 'react-native-android-widget';
 
-import { createWidgetNavigationRepository } from '../apis/widget-navigation.repository';
 import { ANDROID_WIDGET_NAVIGATION_ACTION } from '../constants/widget.constants';
+import { createWidgetNavigationRepository } from '../repositories/widget-navigation.repository';
 import { widgetHeadlessFailureStoredValue } from '../schemas/widget-headless-failure-storage.schema';
 import { createAndroidWidgetTaskHandler } from './android-widget-task-handler';
 

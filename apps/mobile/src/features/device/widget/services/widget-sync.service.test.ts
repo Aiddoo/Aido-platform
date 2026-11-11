@@ -2,9 +2,9 @@ import { toInstant } from '@src/shared/date/instant';
 import { writeStoredValue } from '@src/shared/storage/define-stored-value';
 import { createErrorReporterStub, createMemorySyncStorage } from '@src/testing/core';
 
+import type { WidgetSnapshotContext, WidgetSummaryInput } from '../apis/widget-snapshot.mapper';
 import type { WidgetBridge } from '../bridge/widget-bridge';
 import { widgetHeadlessFailureStoredValue } from '../schemas/widget-headless-failure-storage.schema';
-import type { WidgetSnapshotContext, WidgetSummaryInput } from './widget-snapshot.mapper';
 import { WidgetSyncService } from './widget-sync.service';
 
 function createWidgetBridgeStub(): jest.Mocked<WidgetBridge> {

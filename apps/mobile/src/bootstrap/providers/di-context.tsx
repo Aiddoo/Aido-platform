@@ -22,8 +22,8 @@ import type { ActivationService } from '@src/features/device/activation/services
 import type { AppIconService } from '@src/features/device/app-icon/services/app-icon.service';
 import type { CoachmarkRepository } from '@src/features/device/coachmark/repositories/coachmark.repository';
 import type { StoreReviewService } from '@src/features/device/store-review/services/store-review.service';
-import type { WidgetNavigationRepository } from '@src/features/device/widget/apis/widget-navigation.repository';
-import type { WidgetSyncService } from '@src/features/device/widget/apis/widget-sync.service';
+import type { WidgetNavigationRepository } from '@src/features/device/widget/repositories/widget-navigation.repository';
+import type { WidgetSyncService } from '@src/features/device/widget/services/widget-sync.service';
 import type { TodoCommentService } from '@src/features/engagement/comment/apis/todo-comment.service';
 import type { AuthApi } from '@src/features/identity/auth/apis/auth.api';
 import type { LogOutDeviceService } from '@src/features/identity/auth/services/log-out-device.service';

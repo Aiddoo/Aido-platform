@@ -3,15 +3,15 @@ import type { SyncStorage } from '@src/core/ports/sync-storage';
 import { toError } from '@src/shared/errors';
 import { readStoredValue, removeStoredValue } from '@src/shared/storage/define-stored-value';
 
-import type { WidgetBridge } from '../bridge/widget-bridge';
-import { widgetHeadlessFailureStoredValue } from '../schemas/widget-headless-failure-storage.schema';
-import type { WidgetSnapshot } from '../schemas/widget-snapshot-storage.schema';
 import {
   toLoggedOutWidgetSnapshot,
   toWidgetSnapshot,
   type WidgetDaySummaries,
   type WidgetSnapshotContext,
-} from './widget-snapshot.mapper';
+} from '../apis/widget-snapshot.mapper';
+import type { WidgetBridge } from '../bridge/widget-bridge';
+import { widgetHeadlessFailureStoredValue } from '../schemas/widget-headless-failure-storage.schema';
+import type { WidgetSnapshot } from '../schemas/widget-snapshot-storage.schema';
 
 export class WidgetSyncService {
   readonly #bridge: WidgetBridge;

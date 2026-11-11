@@ -1,10 +1,9 @@
 import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
+import { type WidgetNavigationCommand } from '@src/features/device/widget/domains/widget-navigation.model';
 import {
   createWidgetNavigationRepository,
   type WidgetNavigationRepository,
-} from '@src/features/device/widget/apis/widget-navigation.repository';
-import { WIDGET_NAVIGATION_COMMAND_TTL_MS } from '@src/features/device/widget/constants/widget.constants';
-import { type WidgetNavigationCommand } from '@src/features/device/widget/domains/widget-navigation.model';
+} from '@src/features/device/widget/repositories/widget-navigation.repository';
 import { createAuthSessionStoreStub } from '@src/features/identity/auth/__tests__/create-auth-session-store-stub';
 import { createUser } from '@src/features/identity/user/__tests__/user.fixtures';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-keys';
@@ -23,6 +22,9 @@ import { router, usePathname } from 'expo-router';
 import type { PropsWithChildren } from 'react';
 
 import { useWidgetAppEntry } from './use-widget-app-entry';
+
+/** 위젯을 누른 뒤 5분 안에 앱이 열려야 저장된 목적지로 옮긴다 */
+const WIDGET_NAVIGATION_COMMAND_TTL_MS = 5 * 60_000;
 
 let authSessionStore = createAuthSessionStoreStub('loading');
 let mockRepository: WidgetNavigationRepository;

@@ -1,8 +1,10 @@
 import { createMemorySyncStorage } from '@src/testing/core';
 
 import { createWidgetSnapshot } from '../__tests__/widget-snapshot.fixtures';
-import { ANDROID_WIDGET_STORAGE_KEYS } from '../constants/widget.constants';
-import { createAndroidWidgetSnapshotRepository } from './android-widget-snapshot.repository';
+import {
+  ANDROID_WIDGET_STORAGE_KEYS,
+  createAndroidWidgetSnapshotRepository,
+} from './android-widget-snapshot.repository';
 
 describe('Android 위젯 스냅샷 저장소', () => {
   it('같은 저장 키에 이미 저장된 v1 payload를 하루짜리 v2로 읽는다', () => {

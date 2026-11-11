@@ -49,9 +49,9 @@ import { AppIconService } from '@src/features/device/app-icon/services/app-icon.
 import { createCoachmarkRepository } from '@src/features/device/coachmark/repositories/coachmark.repository';
 import { createStoreReviewRepository } from '@src/features/device/store-review/repositories/store-review.repository';
 import { StoreReviewService } from '@src/features/device/store-review/services/store-review.service';
-import { createWidgetNavigationRepository } from '@src/features/device/widget/apis/widget-navigation.repository';
-import { WidgetSyncService } from '@src/features/device/widget/apis/widget-sync.service';
 import type { WidgetBridge } from '@src/features/device/widget/bridge/widget-bridge';
+import { createWidgetNavigationRepository } from '@src/features/device/widget/repositories/widget-navigation.repository';
+import { WidgetSyncService } from '@src/features/device/widget/services/widget-sync.service';
 import { TodoCommentService } from '@src/features/engagement/comment/apis/todo-comment.service';
 import { AuthApi } from '@src/features/identity/auth/apis/auth.api';
 import { createPendingRevocationRepository } from '@src/features/identity/auth/repositories/pending-revocation.repository';

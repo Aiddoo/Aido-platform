@@ -3,7 +3,6 @@ import { toError } from '@src/shared/errors';
 import { writeStoredValue } from '@src/shared/storage/define-stored-value';
 import type { WidgetTaskHandlerProps } from 'react-native-android-widget';
 
-import type { WidgetNavigationRepository } from '../apis/widget-navigation.repository';
 import {
   ANDROID_WIDGET_DEFINITIONS,
   ANDROID_WIDGET_NAVIGATION_ACTION,
@@ -12,6 +11,7 @@ import {
   parseWidgetNavigationUri,
   WidgetNavigationPolicy,
 } from '../domains/widget-navigation.model';
+import type { WidgetNavigationRepository } from '../repositories/widget-navigation.repository';
 import { widgetHeadlessFailureStoredValue } from '../schemas/widget-headless-failure-storage.schema';
 import type { renderStoredAndroidWidget } from './android-widgets.bridge';
 

@@ -5,7 +5,7 @@ import { widgetStorage } from '@src/shared/infra/storage/widget-storage';
 import { AppState } from 'react-native';
 import { registerWidgetTaskHandler as registerNativeWidgetTaskHandler } from 'react-native-android-widget';
 
-import { createWidgetNavigationRepository } from '../apis/widget-navigation.repository';
+import { createWidgetNavigationRepository } from '../repositories/widget-navigation.repository';
 import { createAndroidWidgetTaskHandler } from './android-widget-task-handler';
 import { renderStoredAndroidWidget } from './android-widgets.bridge';
 

@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
-import { WIDGET_NAVIGATION_COMMAND_TTL_MS } from '../constants/widget.constants';
+/** 위젯을 누른 뒤 앱이 이 시간 안에 열려야 저장된 목적지로 옮긴다 */
+const WIDGET_NAVIGATION_COMMAND_TTL_MS = 5 * 60_000;
 
 const widgetFeedParametersSchema = z.strictObject({
   date: z.union([z.iso.date(), z.literal('today')]),

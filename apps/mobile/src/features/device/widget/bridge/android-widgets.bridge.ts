@@ -4,11 +4,11 @@ import { getDeviceLanguage } from '@src/shared/infra/localization/device-locale'
 import { widgetStorage } from '@src/shared/infra/storage/widget-storage';
 import { requestWidgetUpdate } from 'react-native-android-widget';
 
-import { createAndroidWidgetSnapshotRepository } from '../apis/android-widget-snapshot.repository';
-import { createWidgetNavigationRepository } from '../apis/widget-navigation.repository';
 import { renderAndroidWidget } from '../components/widgets.android';
 import { ANDROID_WIDGET_DEFINITIONS } from '../constants/widget.constants';
 import { WidgetSnapshotPolicy } from '../domains/widget-snapshot.model';
+import { createAndroidWidgetSnapshotRepository } from '../repositories/android-widget-snapshot.repository';
+import { createWidgetNavigationRepository } from '../repositories/widget-navigation.repository';
 import { createStoredAndroidWidgetRenderer } from './stored-android-widget.renderer';
 import type { WidgetBridge } from './widget-bridge';
 
